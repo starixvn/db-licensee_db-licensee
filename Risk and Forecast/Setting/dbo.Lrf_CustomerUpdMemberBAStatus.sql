@@ -1,0 +1,644 @@
+﻿ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberBAStatus]
+	@LicenseeID INT,
+	@CustID INT,
+	@ModifyBy INT,
+	@IsBA BIT,
+	@IsAdmin BIT = 0,
+	@langkey VARCHAR(10) = 'en-US',
+	@IP VARCHAR(40),
+	@ErrCode INT = 0 OUTPUT,
+	@ErrMsg nvarchar(4000) = '' OUTPUT
+AS
+
+/*
+Created: 20110606@Henry
+Task : Update Bet Aggregator ON/OFF for member
+DB: DBTXN/bodb02
+
+
+Revisions:
+	- 20110728@Henry: Add new bettypes: Warrior, NextCombo, Number Group + remove Over/Under Dead Ball
+	- 20110824@Johnson: change to store commission by group for Handicap, Over/Under, Odd/Evem bettype
+	- 20110826@Henry: Remove PT of Number Game
+	- 20110907@Henry: update all BA members to normal when disable BA (Acc Site)
+	- 20110914@Henry: Input @LicenseeID to SP Lrf_BATimeCheck
+	- 20110916@Henry: do not allow Licensee 12BET turn on BA Member on EUR and GBP + apply +30% virtual rate when turn on (+0% when off)
+	- 20110926@Henry: do not allow Dela to turn off BA status
+	- 20111028@Henry: remove block +30% virtual rate when turn on BA
+	- 20111031@Henry: put error handling when insert into LicenseeBAHistory
+	- 20111101@Henry: call remote SP instead of insert/update/delete on remote table
+	- 20111118@Jim: change ugroup variable  reference
+	- 20111212@Henry: hardcode Alog members to just only allow group a
+	- 20111213@Henry: do not allow Zzun88 to turn off BA status
+	- 20120208@Jim:  hardcode to change point spread for members (group a and group d)
+	- 20120215@Henry: add more customer for hard-code group a
+	- 20120223@Jim: add more customer for spread member (group a and group d)
+	- 20120306@Jim: Edit parameter @Danger 
+	- 20120403@Jim: get SpecialCust from LicenseeSpecialCust replace for hard-code
+	- 20120418@Dom: replace table custsettting to dep_custsetting
+	- 20120528@Henry: Change error message for Licensees which only allowed BA
+	- 20120625@Henry: Only Allow Power BA users (Martin, Justin, Anthony) to turn-on BA members who they've turned off before
+	- 20120831@Henry: allow Zzun88 to turn off BA status
+	- 20121119@Henry: not allowed insert null value to column ugroup when turn-on BA
+    - 20130123@Daniel: Change link server alias
+	- 20130429@Jim: support base currency USD
+
+	
+Param's Explanation:
+
+*/
+SET NOCOUNT ON
+
+--Check Time allow for BA
+DECLARE @IsAllow BIT
+DECLARE @ugroup VARCHAR(3), @Danger tinyint
+DECLARE @currency INT
+DECLARE @CurrencyUgroup VARCHAR(3)
+DECLARE @IsPowerBAUser BIT
+DECLARE @LastOffBy INT
+
+
+IF @IsAdmin = 0 --This is only for LRF system
+BEGIN
+	--For Power BA users, no need to call function [Lrf_BATimeCheck]
+	IF EXISTS (SELECT 1 FROM DBLIC.bodb_licensee.dbo.LicenseeUserFunctions WITH (NOLOCK) WHERE FunctionID = 54 AND UserID = @ModifyBy)	
+	BEGIN
+		SELECT @IsAllow = 1	
+		SELECT @IsPowerBAUser = 1
+	END
+	ELSE
+	BEGIN
+		EXEC DBLIC.bodb_licensee.dbo.[Lrf_BATimeCheck] @LicenseeID=@LicenseeID, @IsAllow=@IsAllow OUTPUT,@Langkey=@Langkey,@ErrCode=@ErrCode OUTPUT,@ErrMsg=@ErrMsg OUTPUT
+		
+	END
+
+	IF @IsAllow = 0
+	BEGIN
+		RETURN
+	END
+END
+
+
+IF @isBA = 1 --enable BA
+	BEGIN
+		--check allowed BA
+		DECLARE @EnableBA BIT
+		DECLARE @GroupComm decimal(9,8),
+		@Comm1x2 decimal(9,8),
+		@OtherComm decimal (9,8)
+
+			-- store current group and danger level of member for restore after
+		SELECT @currency=currency FROM  bodb02.dbo.custinfo with (nolock) WHERE custid=@custid
+		SELECT @CurrencyUgroup=ugroup FROM DBLIC.bodb_licensee.dbo.LicenseeCurrencyBAGroup with (nolock) WHERE LicenseeID=@LicenseeID AND Currency=@Currency
+
+		SELECT @ugroup = ugroup FROM customer WITH (NOLOCK) WHERE custid = @custid
+		SELECT @Danger = Danger FROM custinfo WITH(NOLOCK) WHERE custid = @custid
+
+		SET @ErrCode=0
+		SET @ErrMsg= ''
+		
+		IF ISNULL(@CurrencyUgroup,'') = ''
+		BEGIN
+			SELECT @ErrMsg = CASE @Langkey 
+							WHEN 'en-US' THEN 'This currency is not offered to operate BA yet !'
+							ELSE  bodb02.dbo.Lrf_f_Get_MsgNamebyMsgID(200033,@Langkey)
+					END, @ErrCode = 104
+			RETURN
+		END
+		
+		
+		IF EXISTS (SELECT 1  FROM DBLIC.bodb_licensee.dbo.LicenseeSpecialCust WITH (NOLOCK) WHERE @CustID=CustID AND ugroup='a')
+		BEGIN
+			SELECT @GroupComm= groupa ,
+					@EnableBA = EnableBA ,
+					@Comm1x2 = [1x2Comm],
+					@OtherComm = [OtherComm]
+			FROM DBLIC.bodb_licensee.dbo.LicenseeBAConfig WITH (NOLOCK) 
+			WHERE LicenseeID=@LicenseeID
+		END
+		ELSE
+			IF EXISTS (SELECT 1 FROM DBLIC.bodb_licensee.dbo.LicenseeSpecialCust WITH (NOLOCK) WHERE @CustID=CustID AND  ugroup='d')
+				BEGIN
+					SELECT @GroupComm= groupd ,
+							@EnableBA = EnableBA ,
+							@Comm1x2 = [1x2Comm],
+							@OtherComm = [OtherComm]
+					FROM DBLIC.bodb_licensee.dbo.LicenseeBAConfig WITH (NOLOCK) 
+					WHERE LicenseeID=@LicenseeID
+				END	
+			ELSE					
+				BEGIN
+					SELECT
+						@GroupComm = CASE
+									WHEN @CurrencyUgroup = 'a' THEN groupa
+									WHEN @CurrencyUgroup = 'b' THEN groupb
+									WHEN @CurrencyUgroup = 'c' THEN groupc
+									WHEN @CurrencyUgroup = 'd' THEN groupd ELSE 0 END,
+						@EnableBA = EnableBA ,	
+						@Comm1x2 = [1x2Comm],
+						@OtherComm = [OtherComm]
+					FROM DBLIC.bodb_licensee.dbo.LicenseeBAConfig WITH (NOLOCK)
+					WHERE LicenseeID = @LicenseeID
+				END
+		IF ISNULL(@EnableBA,0) = 0
+			BEGIN
+				SELECT @ErrMsg = 	CASE @Langkey 
+							WHEN 'en-US' THEN 'This licensee is not allowed BA !'
+							ELSE  bodb02.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200037,@Langkey)
+					END, @ErrCode = 100
+				RETURN
+			END
+
+		--do not allow Licensee 12BET turn on BA Member on EUR and GBP
+		IF @LicenseeID=1 --12bet
+			BEGIN
+				SELECT @Currency = Currency FROM CustInfo WITH (NOLOCK) WHERE CustID = @CustID
+				IF @Currency IN (6,12) --EUR, GBP
+				BEGIN
+					
+				SELECT @ErrMsg = 	CASE @Langkey 
+										WHEN 'en-US' THEN 'This currency is not allowed BA !'
+										ELSE  [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200034,@Langkey)
+									END, @ErrCode = 101
+					RETURN
+				END
+
+			END
+
+
+		--check status
+		IF EXISTS(
+			SELECT
+				1
+			FROM
+				DBLIC.bodb_licensee.dbo.[LicenseeBAHistory] WITH (NOLOCK)
+			WHERE
+				[LicenseeID] = @LicenseeID AND
+				[CustID] = @CustID AND
+				[Status] = 'Running'
+		)
+			BEGIN
+				SELECT @ErrMsg = 	CASE @Langkey 
+							WHEN 'en-US' THEN 'This member has already enabled BA !'
+							ELSE  [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200035,@Langkey)
+					END, @ErrCode = 102
+				RETURN
+			END
+
+		IF @IsAdmin = 0 --for LRF only
+		BEGIN	
+			--Get last turn-off BA UserID
+			SELECT Top 1 @LastOffBy = OffBy FROM DBLIC.bodb_licensee.dbo.[LicenseeBAHistory] WITH (NOLOCK)
+			WHERE
+					[LicenseeID] = @LicenseeID AND
+					[CustID] = @CustID AND
+					[Status] = 'Done'
+			ORDER BY ID DESC
+
+			--Check whether the Last turn-off BA is Power BA user or not
+			--If is Power BA User then only Power BA Users can turn-on again
+			IF ISNULL(@LastOffBy,0) <> 0 AND EXISTS (
+				SELECT 1 FROM DBLIC.bodb_licensee.dbo.LicenseeUserFunctions WITH (NOLOCK) WHERE FunctionID = 54
+				AND UserID = ISNULL(@LastOffBy,0)
+			) AND @IsPowerBAUser=0
+			BEGIN
+				SELECT @ErrMsg = 	CASE @Langkey 
+							WHEN 'en-US' THEN 'You are not allowed to change BA status !'
+							ELSE  [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200036,@Langkey)
+					END, @ErrCode = 103
+				RETURN
+			END
+		END
+
+		--apply commission
+		EXEC [Lrf_CustomerUpdMemberBAComm]
+				@LicenseeID = @LicenseeID,
+				@CustID = @CustID,
+				@ModifyBy = @ModifyBy,
+				@IsBA = @IsBA,
+				@IsAdmin = @IsAdmin,
+				@Language = @langkey,
+				@IP = @IP,
+				@ErrCode = @ErrCode OUTPUT,
+				@ErrMsg = @ErrMsg OUTPUT
+
+		IF @ErrCode <> 0
+		RETURN
+
+		SET @ErrCode=0
+		SET @ErrMsg= ''
+		--apply PT
+		EXEC [Lrf_CustomerUpdMemberBA_PositionTaking]
+		@custid = @CustID,
+		@apositiontaking_1 = 0 ,
+		@apositiontaking_2 = 0 ,
+		@apositiontaking_3 = 0 ,
+		@apositiontaking_4 = 0 ,
+		@apositiontaking_5 = 0 ,
+		@apositiontaking_6 = 0 ,
+		@apositiontaking_7 = 0 ,
+		@apositiontaking_8 = 0 ,
+		@apositiontaking_9 = 0 ,
+		@apositiontaking_10 = 0 ,
+
+		@alivepositiontaking_1 = 0 ,
+		@alivepositiontaking_3 = 0 ,
+		@alivepositiontaking_7 = 0 ,
+		@alivepositiontaking_8 = 0 ,
+
+		@v2apositiontaking_1 = 0 ,
+		@v2apositiontaking_2 = 0 ,
+		@v2apositiontaking_3 = 0 ,
+		@v2apositiontaking_7 = 0 ,
+		@v2apositiontaking_8 = 0 ,
+		@v2apositiontaking_20 = 0 ,
+
+		@v3apositiontaking_1 = 0 ,
+		@v3apositiontaking_2 = 0 ,
+		@v3apositiontaking_3 = 0 ,
+		@v3apositiontaking_20 = 0 ,
+
+		@v5apositiontaking_1 = 0 ,
+		@v5apositiontaking_2 = 0 ,
+		@v5apositiontaking_3 = 0 ,
+		@v5apositiontaking_20 = 0 ,
+
+		@v8apositiontaking_1 = 0 ,
+		@v8apositiontaking_3 = 0 ,
+		@v8apositiontaking_20 = 0 ,
+
+		@v10apositiontaking_1 = 0 ,
+		@v10apositiontaking_2 = 0 ,
+		@v10apositiontaking_3 = 0 ,
+		@v10apositiontaking_20 = 0 ,
+
+		@v11apositiontaking_1 = 0 ,
+		@v11apositiontaking_20 = 0 ,
+
+		@v99apositiontaking_1 = 0 ,
+		@v99apositiontaking_2 = 0 ,
+		@v99apositiontaking_3 = 0 ,
+		@v99apositiontaking_9 = 0 ,
+		@v99apositiontaking_20 = 0 ,
+
+		@UserID = @ModifyBy,
+		@IP = @IP,
+		@ErrCode = @ErrCode OUTPUT,
+		@ErrMsg = @ErrMsg OUTPUT
+
+		IF @ErrCode <> 0
+		RETURN
+
+
+
+		--remove update virtual rate block
+		/*
+		SET @ErrCode=0
+		SET @ErrMsg= ''
+
+		--apply virtual multiplier to 1.3 (30%)
+		EXEC Acc_CustomerUpdVirtualMultiplier
+		@custid = @CustID,
+		@virtualmultiplier = 1.3,
+		@UserID = @ModifyBy,
+		@IP = @IP,
+		@IsLicenseeUser = 1,
+		@ErrCode = @ErrCode OUTPUT,
+		@ErrMsg = @ErrMsg OUTPUT
+
+		IF @ErrCode <> 0
+		RETURN
+		*/
+
+
+		SET @ErrCode=0
+		SET @ErrMsg= ''
+
+
+		IF(@danger=0)
+			BEGIN
+				SELECT @danger=100
+			END	
+		EXEC DBLIC.bodb_licensee.dbo.[Lrf_LicenseeBAHistoryIns]
+		@LicenseeID = @LicenseeID,
+		@CustID = @CustID,
+		@ModifyBy = @ModifyBy,
+		@GroupComm = @GroupComm,
+		@Comm1x2 = @Comm1x2,
+		@OtherComm = @OtherComm,
+		@ugroup = @ugroup,
+		@Language = @langkey,
+		@IP = @IP,
+		@ErrCode = @ErrCode OUTPUT,
+		@ErrMsg = @ErrMsg OUTPUT
+		IF @ErrCode <> 0
+		RETURN
+
+
+		SET @ErrCode=0
+		SET @ErrMsg= ''
+		EXEC [Lrf_CustomerUpdDanger]
+		@CustID = @CustID,
+		@UserID = @ModifyBy,
+		@Danger = @danger,
+		@Language = @langkey,
+		@IP = @IP,
+		@ErrCode = @ErrCode OUTPUT,
+		@ErrMsg = @ErrMsg OUTPUT
+
+
+END
+ELSE --disable BA
+	BEGIN
+		--not allow Dela sport to turn off BA
+		IF @LicenseeID IN (7)
+			BEGIN
+				SELECT @ErrMsg = 	CASE @Langkey 
+							WHEN 'en-US' THEN 'You are not allowed to change BA status !'
+							ELSE  [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200036,@Langkey)
+					END, @ErrCode = 103
+				RETURN
+			END
+
+		--check status
+		BEGIN
+			IF NOT EXISTS(
+				SELECT
+					1
+				FROM
+					DBLIC.bodb_licensee.dbo.[LicenseeBAHistory] WITH (NOLOCK)
+				WHERE
+					[LicenseeID] = @LicenseeID AND
+					[CustID] = @CustID AND
+					[Status] = 'Running'
+			)
+				BEGIN
+					SELECT @ErrMsg = 	CASE @Langkey 
+							WHEN 'en-US' THEN 'This member has already disabled BA ! !'
+							ELSE  [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200038,@Langkey)
+					END, @ErrCode = 106
+					RETURN
+				END	
+			ELSE
+				BEGIN
+				
+					SET @ErrCode=0
+					SET @ErrMsg= ''
+					--apply commission
+					EXEC [Lrf_CustomerUpdMemberBAComm]
+							@LicenseeID = @LicenseeID,
+							@CustID = @CustID,
+							@ModifyBy = @ModifyBy,
+							@IsBA = @IsBA,
+							@Language = @langkey,
+							@IsAdmin = @IsAdmin,
+							@IP = @IP,
+							@ErrCode = @ErrCode OUTPUT,
+							@ErrMsg = @ErrMsg OUTPUT
+
+					IF @ErrCode <> 0
+					RETURN
+
+					--apply PT
+					DECLARE
+					@apositiontaking_1 SMALLMONEY,
+					@apositiontaking_2 SMALLMONEY,
+					@apositiontaking_3 SMALLMONEY,
+					@apositiontaking_4 SMALLMONEY,
+					@apositiontaking_5 SMALLMONEY,
+					@apositiontaking_6 SMALLMONEY,
+					@apositiontaking_7 SMALLMONEY,
+					@apositiontaking_8 SMALLMONEY,
+					@apositiontaking_9 SMALLMONEY,
+					@apositiontaking_10 SMALLMONEY,
+					@alivepositiontaking_1 SMALLMONEY,
+					@alivepositiontaking_3 SMALLMONEY,
+					@alivepositiontaking_7 SMALLMONEY,
+					@alivepositiontaking_8 SMALLMONEY,
+
+					@v2apositiontaking_1 SMALLMONEY,
+					@v2apositiontaking_2 SMALLMONEY,
+					@v2apositiontaking_3 SMALLMONEY,
+					@v2apositiontaking_7 SMALLMONEY,
+					@v2apositiontaking_8 SMALLMONEY,
+					@v2apositiontaking_20 SMALLMONEY,
+
+					@v3apositiontaking_1 SMALLMONEY,
+					@v3apositiontaking_2 SMALLMONEY,
+					@v3apositiontaking_3 SMALLMONEY,
+					@v3apositiontaking_20 SMALLMONEY,
+
+					@v5apositiontaking_1 SMALLMONEY,
+					@v5apositiontaking_2 SMALLMONEY,
+					@v5apositiontaking_3 SMALLMONEY,
+					@v5apositiontaking_20 SMALLMONEY,
+
+					@v8apositiontaking_1 SMALLMONEY,
+					@v8apositiontaking_3 SMALLMONEY,
+					@v8apositiontaking_20 SMALLMONEY,
+
+					@v10apositiontaking_1 SMALLMONEY,
+					@v10apositiontaking_2 SMALLMONEY,
+					@v10apositiontaking_3 SMALLMONEY,
+					@v10apositiontaking_20 SMALLMONEY,
+
+					@v11apositiontaking_1 SMALLMONEY,
+					@v11apositiontaking_20 SMALLMONEY,
+
+					@v99apositiontaking_1 SMALLMONEY,
+					@v99apositiontaking_2 SMALLMONEY,
+					@v99apositiontaking_3 SMALLMONEY,
+					@v99apositiontaking_9 SMALLMONEY,
+					@v99apositiontaking_20 SMALLMONEY,
+
+					@recommend INT
+
+					SELECT @recommend = recommend FROM custinfo (NOLOCK) WHERE custid = @CustID
+
+					SELECT
+						@apositiontaking_1 = ISNULL(MAX(CASE WHEN cs.bettype = 1 AND cs.sporttype=1 AND cs.islive=0 THEN cs.apositiontaking ELSE 0 END), 0),
+						@apositiontaking_2 = ISNULL(MAX(CASE WHEN cs.bettype = 2 AND cs.sporttype=1 THEN cs.apositiontaking ELSE 0 END), 0),
+						@apositiontaking_3 = ISNULL(MAX(CASE WHEN cs.bettype = 3 AND cs.sporttype=1 AND cs.islive=0 THEN cs.apositiontaking ELSE 0 END), 0),
+						@apositiontaking_4 = ISNULL(MAX(CASE WHEN cs.bettype = 4 AND cs.sporttype=1 THEN cs.apositiontaking ELSE 0 END), 0),
+						@apositiontaking_5 = ISNULL(MAX(CASE WHEN cs.bettype = 5 AND cs.sporttype=1 THEN cs.apositiontaking ELSE 0 END), 0),
+						@apositiontaking_6 = ISNULL(MAX(CASE WHEN cs.bettype = 6 AND cs.sporttype=1 THEN cs.apositiontaking ELSE 0 END), 0),
+						@apositiontaking_7 = ISNULL(MAX(CASE WHEN cs.bettype = 7 AND cs.sporttype=1 AND cs.islive=0 THEN cs.apositiontaking ELSE 0 END), 0),
+						@apositiontaking_8 = ISNULL(MAX(CASE WHEN cs.bettype = 8 AND cs.sporttype=1 AND cs.islive=0 THEN cs.apositiontaking ELSE 0 END), 0),
+						@apositiontaking_9 = ISNULL(MAX(CASE WHEN cs.bettype = 9 AND cs.sporttype=1 THEN cs.apositiontaking ELSE 0 END), 0),
+						@apositiontaking_10= ISNULL(MAX(CASE WHEN cs.bettype = 10 AND cs.sporttype=1 THEN cs.apositiontaking ELSE 0 END), 0),
+
+						@alivepositiontaking_1 = ISNULL(MAX(CASE WHEN cs.bettype = 1 AND cs.sporttype=1 AND cs.islive=1 THEN cs.apositiontaking ELSE 0 END), 0),
+						@alivepositiontaking_3 = ISNULL(MAX(CASE WHEN cs.bettype = 3 AND cs.sporttype=1 AND cs.islive=1 THEN cs.apositiontaking ELSE 0 END), 0),
+						@alivepositiontaking_7 = ISNULL(MAX(CASE WHEN cs.bettype = 7 AND cs.sporttype=1 AND cs.islive=1 THEN cs.apositiontaking ELSE 0 END), 0),
+						@alivepositiontaking_8 = ISNULL(MAX(CASE WHEN cs.bettype = 8 AND cs.sporttype=1 AND cs.islive=1 THEN cs.apositiontaking ELSE 0 END), 0),
+
+						@v2apositiontaking_1 = ISNULL(MAX(CASE WHEN cs.bettype = 1 AND cs.sporttype=2 THEN cs.apositiontaking ELSE 0 END), 0),
+						@v2apositiontaking_2 = ISNULL(MAX(CASE WHEN cs.bettype = 2 AND cs.sporttype=2 THEN cs.apositiontaking ELSE 0 END), 0),
+						@v2apositiontaking_3 = ISNULL(MAX(CASE WHEN cs.bettype = 3 AND cs.sporttype=2 THEN cs.apositiontaking ELSE 0 END), 0),
+						@v2apositiontaking_7 = ISNULL(MAX(CASE WHEN cs.bettype = 7 AND cs.sporttype=2 THEN cs.apositiontaking ELSE 0 END), 0),
+						@v2apositiontaking_8 = ISNULL(MAX(CASE WHEN cs.bettype = 8 AND cs.sporttype=2 THEN cs.apositiontaking ELSE 0 END), 0),
+
+						@v2apositiontaking_20 = ISNULL(MAX(CASE WHEN cs.bettype = 20 AND cs.sporttype=2 THEN cs.apositiontaking ELSE 0 END), 0),
+
+						@v3apositiontaking_1 = ISNULL(MAX(CASE WHEN cs.bettype = 1 AND cs.sporttype=3 THEN cs.apositiontaking ELSE 0 END), 0),
+						@v3apositiontaking_2 = ISNULL(MAX(CASE WHEN cs.bettype = 2 AND cs.sporttype=3 THEN cs.apositiontaking ELSE 0 END), 0),
+						@v3apositiontaking_3 = ISNULL(MAX(CASE WHEN cs.bettype = 3 AND cs.sporttype=3 THEN cs.apositiontaking ELSE 0 END), 0),
+
+						@v3apositiontaking_20 =	ISNULL(MAX(CASE WHEN cs.bettype = 20 AND cs.sporttype=3 THEN cs.apositiontaking ELSE 0 END), 0),
+
+						@v5apositiontaking_1 = ISNULL(MAX(CASE WHEN cs.bettype = 1 AND cs.sporttype=5 THEN cs.apositiontaking ELSE 0 END), 0),
+						@v5apositiontaking_2 = ISNULL(MAX(CASE WHEN cs.bettype = 2 AND cs.sporttype=5 THEN cs.apositiontaking ELSE 0 END), 0),
+						@v5apositiontaking_3 = ISNULL(MAX(CASE WHEN cs.bettype = 3 AND cs.sporttype=5 THEN cs.apositiontaking ELSE 0 END), 0),
+						@v5apositiontaking_20 = ISNULL(MAX(CASE WHEN cs.bettype = 20 AND cs.sporttype=5 THEN cs.apositiontaking ELSE 0 END), 0),
+
+						@v8apositiontaking_1 = ISNULL(MAX(CASE WHEN cs.bettype = 1 AND cs.sporttype=8 THEN cs.apositiontaking ELSE 0 END), 0),
+						@v8apositiontaking_3 = ISNULL(MAX(CASE WHEN cs.bettype = 3 AND cs.sporttype=8 THEN cs.apositiontaking ELSE 0 END), 0),
+						@v8apositiontaking_20 =	ISNULL(MAX(CASE WHEN cs.bettype = 20 AND cs.sporttype=8 THEN cs.apositiontaking ELSE 0 END), 0),
+
+						@v10apositiontaking_1 =	ISNULL(MAX(CASE WHEN cs.bettype = 1 AND cs.sporttype=10 THEN cs.apositiontaking ELSE 0 END), 0),
+						@v10apositiontaking_2 =	ISNULL(MAX(CASE WHEN cs.bettype = 2 AND cs.sporttype=10 THEN cs.apositiontaking ELSE 0 END), 0),
+						@v10apositiontaking_3 =	ISNULL(MAX(CASE WHEN cs.bettype = 3 AND cs.sporttype=10 THEN cs.apositiontaking ELSE 0 END), 0),
+						@v10apositiontaking_20 = ISNULL(MAX(CASE WHEN cs.bettype = 20 AND cs.sporttype=10 THEN cs.apositiontaking ELSE 0 END), 0),
+
+						@v11apositiontaking_1 =	ISNULL(MAX(CASE WHEN cs.bettype = 1 AND cs.sporttype=11 THEN cs.apositiontaking ELSE 0 END), 0),
+						@v11apositiontaking_20 = ISNULL(MAX(CASE WHEN cs.bettype = 20 AND cs.sporttype=11 THEN cs.apositiontaking ELSE 0 END), 0),
+
+
+						@v99apositiontaking_1 = ISNULL(MAX(CASE WHEN cs.bettype = 1 AND cs.sporttype=99 THEN cs.apositiontaking ELSE 0 END), 0),
+						@v99apositiontaking_2 =	ISNULL(MAX(CASE WHEN cs.bettype = 2 AND cs.sporttype=99 THEN cs.apositiontaking ELSE 0 END), 0),
+						@v99apositiontaking_3 = ISNULL(MAX(CASE WHEN cs.bettype = 3 AND cs.sporttype=99 THEN cs.apositiontaking ELSE 0 END), 0),
+						@v99apositiontaking_9 = ISNULL(MAX(CASE WHEN cs.bettype = 9 AND cs.sporttype=99 THEN cs.apositiontaking ELSE 0 END), 0),
+						@v99apositiontaking_20 = ISNULL(MAX(CASE WHEN cs.bettype = 20 AND cs.sporttype=99 THEN cs.apositiontaking ELSE 0 END), 0)
+
+					FROM
+						CustInfo AS c WITH (NOLOCK)
+						INNER JOIN dep_CustSetting AS cs WITH (NOLOCK) on c.custid = cs.custid
+						--INNER JOIN dep_CustSetting3rd cs3 WITH (NOLOCK) on c.custid = cs3.custid
+					WHERE C.custid= @recommend AND C.roleid = 2
+
+
+					SET @ErrCode=0
+					SET @ErrMsg= ''
+					EXEC [Lrf_CustomerUpdMemberBA_PositionTaking]
+					@custid = @CustID,
+					@apositiontaking_1 = @apositiontaking_1 ,
+					@apositiontaking_2 = @apositiontaking_2 ,
+					@apositiontaking_3 = @apositiontaking_3 ,
+					@apositiontaking_4 = @apositiontaking_4 ,
+					@apositiontaking_5 = @apositiontaking_5 ,
+					@apositiontaking_6 = @apositiontaking_6 ,
+					@apositiontaking_7 = @apositiontaking_7 ,
+					@apositiontaking_8 = @apositiontaking_8 ,
+					@apositiontaking_9 = @apositiontaking_9 ,
+					@apositiontaking_10 = @apositiontaking_10 ,
+
+					@alivepositiontaking_1 = @alivepositiontaking_1 ,
+					@alivepositiontaking_3 = @alivepositiontaking_3 ,
+					@alivepositiontaking_7 = @alivepositiontaking_7 ,
+					@alivepositiontaking_8 = @alivepositiontaking_8 ,
+
+					@v2apositiontaking_1 = @v2apositiontaking_1 ,
+					@v2apositiontaking_2 = @v2apositiontaking_2 ,
+					@v2apositiontaking_3 = @v2apositiontaking_3 ,
+					@v2apositiontaking_7 = @v2apositiontaking_7 ,
+					@v2apositiontaking_8 = @v2apositiontaking_8 ,
+					@v2apositiontaking_20 = @v2apositiontaking_20 ,
+
+					@v3apositiontaking_1 = @v3apositiontaking_1 ,
+					@v3apositiontaking_2 = @v3apositiontaking_2 ,
+					@v3apositiontaking_3 = @v3apositiontaking_3 ,
+					@v3apositiontaking_20 = @v3apositiontaking_20 ,
+
+					@v5apositiontaking_1 = @v5apositiontaking_1 ,
+					@v5apositiontaking_2 = @v5apositiontaking_2 ,
+					@v5apositiontaking_3 = @v5apositiontaking_3 ,
+					@v5apositiontaking_20 = @v5apositiontaking_20 ,
+
+					@v8apositiontaking_1 = @v8apositiontaking_1 ,
+					@v8apositiontaking_3 = @v8apositiontaking_3 ,
+					@v8apositiontaking_20 = @v8apositiontaking_20 ,
+
+					@v10apositiontaking_1 = @v10apositiontaking_1 ,
+					@v10apositiontaking_2 = @v10apositiontaking_2 ,
+					@v10apositiontaking_3 = @v10apositiontaking_3 ,
+					@v10apositiontaking_20 = @v10apositiontaking_20 ,
+
+					@v11apositiontaking_1 = @v11apositiontaking_1 ,
+					@v11apositiontaking_20 = @v11apositiontaking_20 ,
+
+					@v99apositiontaking_1 = @v99apositiontaking_1 ,
+					@v99apositiontaking_2 = @v99apositiontaking_2 ,
+					@v99apositiontaking_3 = @v99apositiontaking_3 ,
+					@v99apositiontaking_9 = @v99apositiontaking_9 ,
+					@v99apositiontaking_20 = @v99apositiontaking_20 ,
+
+					@UserID = @ModifyBy,
+					@IsAdmin = @IsAdmin,
+					@IP = @IP,
+					@ErrCode = @ErrCode OUTPUT,
+					@ErrMsg = @ErrMsg OUTPUT
+
+					IF @ErrCode <> 0
+					RETURN
+					--restore old dangerous level
+
+					--SELECT @Danger = ISNULL(Danger,0) FROM DBLIC.bodb_licensee.dbo.[LicenseeBAHistory] WITH(NOLOCK) WHERE LicenseeID = @LicenseeID AND CustID = @CustID AND [Status] = 'Running'
+					SELECT @Danger=ISNULL(Danger,0) FROM Custinfo WITH (NOLOCK)  WHERE CustID=@CustID 
+					IF (@Danger=100)
+						BEGIN	
+							Select @Danger=0
+						END
+					SET @ErrCode=0
+					SET @ErrMsg= ''
+					EXEC [Lrf_CustomerUpdDanger]
+					@CustID = @CustID,
+					@UserID = @ModifyBy,
+					@Danger = @Danger,
+					@Language = @langkey,
+					@IP = @IP,
+					@ErrCode = @ErrCode OUTPUT,
+					@ErrMsg = @ErrMsg OUTPUT
+					IF @ErrCode <> 0
+					RETURN
+
+				
+					--remove update virtual rate block
+					/*
+					SET @ErrCode=0
+					SET @ErrMsg= ''
+					--apply virtual multiplier to 1.0 (0%)
+					EXEC Acc_CustomerUpdVirtualMultiplier
+					@custid = @CustID,
+					@virtualmultiplier = 1,
+					@UserID = @ModifyBy,
+					@IP = @IP,
+					@IsLicenseeUser = 1,
+					@ErrCode = @ErrCode OUTPUT,
+					@ErrMsg = @ErrMsg OUTPUT
+
+					IF @ErrCode <> 0
+					RETURN
+					*/
+
+					--update data to [LicenseeBAHistory]
+					SET @ErrCode=0
+					SET @ErrMsg= ''
+					EXEC DBLIC.bodb_Licensee.dbo.[Lrf_LicenseeBAHistoryUpdDone]
+					@LicenseeID = @LicenseeID,
+					@CustID = @CustID,
+					@ModifyBy = @ModifyBy,
+					@Language = @langkey,
+					@IP = @IP,
+					@ErrCode = @ErrCode OUTPUT,
+					@ErrMsg = @ErrMsg OUTPUT
+				END
+		END
+	END
+GO
+GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMemberBAStatus] TO [bodbAdminNet] AS [dbo]
+GO
+GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMemberBAStatus] TO [bodbLicenseeNet] AS [dbo]
+GO
+GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerUpdMemberBAStatus] TO [vnteam] AS [dbo]
+
+

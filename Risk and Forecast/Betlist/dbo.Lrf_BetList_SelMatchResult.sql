@@ -1,0 +1,245 @@
+﻿set ANSI_NULLS ON
+set QUOTED_IDENTIFIER ON
+go
+
+ALTER  PROCEDURE [dbo].[Lrf_BetList_SelMatchResult]
+	@MatchID INT,
+	@RaceNo VARCHAR(50)=NULL
+AS
+
+/*
+Created: Henry@20101210
+Task: Get Result of match
+DB: DB052.bodb02
+
+Revisions:    
+	- 20110308@Henry: get more sporttype (152,153)
+	- 20110907@Sophia: Add column IsHTCal, calculate for pending result
+	- 20110926@Henry: Add column kickofftime,IsPending , add more columns for HR
+	- 20120817@Henry: Add Showtime for Table - hand - Shoe of Live Casino
+	- 20120911@Henry: Add homeid2 for Roulettle
+	- 20130403@Jim: support base currency USD 
+	
+*/
+
+SET NOCOUNT ON
+IF(@RaceNo is NULL )
+BEGIN
+	IF exists(SELECT 1 FROM match WITH(NOLOCK) WHERE matchid = @matchid)
+	BEGIN	
+		SELECT 
+			m.sporttype, 
+			m.betstatus, 
+			hthomescore,
+			htawayscore,
+			datediff(minute,kickofftime,CURRENT_TIMESTAMP) playtime,
+			m.LeagueID,
+			m.matchid, 
+			m.homeID,
+			m.awayID,
+			m.matchcode,
+			m.kickofftime,
+			m.eventdate,
+			m.finalhomescore,
+			m.finalawayscore,
+			case when m.betstatus like 'Refund FT%' then 'Refund FT' 
+						 when m.betstatus like 'Refund HT%' then 'Refund HT'
+						 when m.betstatus like 'Refund%' then 'Refund' 
+						else m.eventstatus end as eventstatus,
+			isnull(mr.refund,0) IsRefund, 
+			isnull(mr.calrefund,0) IsCalRefund,
+			isnull(m.isNeutral, CONVERT(BIT,0)) as IsNeutral,
+			m.goalrecord,
+			ISNULL(mr.IsHTCal,0) as IsHTCal,
+			ISNULL(mr.calculate,0) as calculate	,
+			ISNULL(mr.IsPending,0) as IsPending	 ,
+			ISNULL(m.showtime,'') AS showtime,
+			m.homeid2
+		FROM match m WITH(NOLOCK)
+			LEFT OUTER JOIN match_remark mr WITH(NOLOCK) ON m.matchid = mr.matchid
+		WHERE m.matchid = @matchid
+		ORDER BY m.eventdate,m.matchcode
+		RETURN
+	END
+	IF exists(SELECT 1 FROM match14 WITH(NOLOCK) WHERE matchid = @matchid)	
+	BEGIN
+		SELECT 
+			m.sporttype, 
+			m.betstatus, 
+			hthomescore,
+			htawayscore,
+			datediff(minute,kickofftime,CURRENT_TIMESTAMP) playtime,
+			m.LeagueID,
+			m.matchid, 
+			m.homeID,
+			m.awayID,
+			m.matchcode,
+			m.kickofftime,
+			m.eventdate,
+			m.finalhomescore,
+			m.finalawayscore,
+			case when m.betstatus like 'Refund FT%' then 'Refund FT' 
+						 when m.betstatus like 'Refund HT%' then 'Refund HT'
+						 when m.betstatus like 'Refund%' then 'Refund' 
+						else m.eventstatus end as eventstatus,
+			isnull(mr.refund,0) IsRefund, 
+			isnull(mr.calrefund,0) IsCalRefund,
+			isnull(m.isNeutral, CONVERT(BIT,0)) as IsNeutral,
+			m.goalrecord,
+			ISNULL(mr.IsHTCal,0) as IsHTCal,
+			ISNULL(mr.calculate,0) as calculate,
+			ISNULL(mr.IsPending,0) as IsPending	 ,
+			ISNULL(m.showtime,'') AS showtime,
+			m.homeid2
+		FROM match14 m WITH(NOLOCK)		
+			LEFT OUTER JOIN match_remark mr WITH(NOLOCK) ON m.matchid = mr.matchid
+		WHERE m.matchid = @matchid
+		ORDER BY m.eventdate,m.matchcode
+		RETURN
+	END
+	ELSE
+	BEGIN
+		SELECT 
+			m.sporttype, 
+			m.betstatus, 
+			hthomescore,
+			htawayscore,
+			datediff(minute,kickofftime,CURRENT_TIMESTAMP) playtime,
+			m.LeagueID,
+			m.matchid, 
+			m.homeID,
+			m.awayID,
+			m.matchcode,
+			m.eventdate,
+			m.kickofftime,
+			m.finalhomescore,
+			m.finalawayscore,
+			case when m.betstatus like 'Refund FT%' then 'Refund FT' 
+						 when m.betstatus like 'Refund HT%' then 'Refund HT'
+						 when m.betstatus like 'Refund%' then 'Refund' 
+						else m.eventstatus end as eventstatus,
+			isnull(mr.refund,0) IsRefund,  
+			isnull(mr.calrefund,0) IsCalRefund,
+			isnull(m.isNeutral, CONVERT(BIT,0)) as IsNeutral,
+			m.goalrecord,
+			ISNULL(mr.IsHTCal,0) as IsHTCal,
+			ISNULL(mr.calculate,0) as calculate,
+			ISNULL(mr.IsPending,0) as IsPending,
+			ISNULL(m.showtime,'') AS showtime,
+			m.homeid2
+		FROM DB06.bodb_archive.dbo.Match_BK m WITH(NOLOCK)		
+			LEFT OUTER JOIN match_remark mr WITH(NOLOCK) ON m.matchid = mr.matchid
+		WHERE m.matchid = @matchid
+		ORDER BY m.eventdate,m.matchcode
+	END
+END
+ELSE
+BEGIN
+	DECLARE	@leagueid INT, @eventdate DATETIME 
+	IF exists(select 1 from outright WITH(NOLOCK) where orid = @matchid)
+	BEGIN
+		SELECT	@leagueid = leagueid , @eventdate = eventdate 
+		FROM	Outright WITH (NOLOCK)
+		WHERE	orid = @matchid 
+
+		SELECT	matchcode AS horseNo, 
+				CAST(o.groupmatch AS INT) AS racename,
+				CASE WHEN o.placing = 0 THEN 5 ELSE isnull(placing,5) END place, 
+				l.sporttype, 
+				teamid horseid,
+				o.odds,
+				o.placeodds,
+				o.leagueid AS meetingid,
+				o.oddsstatus status,
+				o.IsFavor,
+				o.IsSCR,
+				o.FOddsStatus
+		FROM	Outright o WITH (NOLOCK)	
+					INNER JOIN league l WITH(NOLOCK) ON o.leagueid = l.leagueid
+		WHERE	o.leagueid = @leagueid 
+				AND groupmatch = @RaceNo
+				AND eventdate = @eventdate 
+				AND ( ISNULL(placing,0) <> 0 OR isScr = 1)
+		ORDER BY placing
+		
+	END 
+	ELSE IF EXISTS( SELECT 1 FROM Outright14 WITH (NOLOCK) WHERE orid = @matchid)
+	BEGIN
+		SELECT	@leagueid = leagueid , @eventdate = eventdate 
+		FROM	Outright14 WITH (NOLOCK)
+		WHERE	orid = @matchid 
+
+		SELECT	matchcode AS horseNo, 
+				CAST(o.groupmatch AS INT) AS racename,
+				CASE WHEN o.placing = 0 THEN 5 ELSE isnull(placing,5) END place, 
+				l.sporttype, 
+				teamid horseid,
+				o.odds,
+				o.placeodds,
+				o.leagueid AS meetingid,
+				o.oddsstatus status,
+				o.IsFavor,
+				o.IsSCR,
+				o.FOddsStatus
+		FROM	Outright14 o WITH (NOLOCK)
+					INNER JOIN league l WITH(NOLOCK) ON l.leagueid = o.leagueid
+		WHERE	o.leagueid = @leagueid 
+				AND groupmatch = @RaceNo
+				AND eventdate = @eventdate 
+				AND (ISNULL(placing,0) <> 0  OR isScr = 1)
+		ORDER BY placing	
+	END 
+	ELSE 
+	BEGIN
+		SELECT	@leagueid = leagueid , @eventdate = eventdate 
+		FROM	DB06.bodb_Archive.dbo.Outright_bk WITH (NOLOCK)
+		WHERE	orid = @matchid 
+
+		SELECT	matchcode AS horseNo, 
+				CAST(bk.groupmatch AS INT) AS racename,
+				CASE WHEN placing = 0 THEN 5 ELSE isnull(placing,5) END place, 
+				l.sporttype, 
+				teamid horseid,
+				bk.odds,
+				bk.placeodds,
+				bk.leagueid AS meetingid,
+				bk.oddsstatus status,
+				bk.IsFavor,
+				bk.IsSCR,
+				bk.FOddsStatus
+		FROM	DB06.bodb_Archive.dbo.Outright_bk bk WITH (NOLOCK)
+					INNER JOIN league l WITH(NOLOCK) ON l.leagueid = bk.leagueid
+		WHERE	bk.leagueid = @leagueid 
+				AND groupmatch = @RaceNo
+				AND eventdate = @eventdate 
+				AND (ISNULL(placing,0)<> 0  OR isScr = 1)
+		ORDER BY placing	
+	END 
+END
+DECLARE @Today SMALLDATETIME 
+SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
+BEGIN
+	--get data from bettransg for bettype 1101
+	SELECT 
+		bg.refno, 
+		bg.odds, 
+		bg.stake,
+		bg.status ,
+		bg.apositiontaking, 
+		bg.betteam ,
+		bg.stake*e.EUR AS stakeEUR,
+		bg.stake*e.USD AS stakeUSD	
+	FROM bettransg bg with (NOLOCK)
+	INNER JOIN match m with (NOLOCK) ON bg.matchid=m.matchid 
+	INNER JOIN bettrans B ON bg.refno = B.refno
+	INNER JOIN 
+		(SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
+	ON e.exchangeid = b.currency AND  e.ExchangeDate = B.winlostdate
+	WHERE	b.bettype between 1101 and 1199 and
+			b.statusID in (0,1)
+			AND m.matchid=@matchID
+END
+GO
+GRANT EXECUTE ON [dbo].[Lrf_BetList_SelMatchResult] TO [bodbLicenseeNet]
+GO
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelMatchResult] TO [vnteam]

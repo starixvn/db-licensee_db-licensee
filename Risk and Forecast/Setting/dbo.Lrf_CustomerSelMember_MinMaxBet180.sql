@@ -1,0 +1,59 @@
+﻿CREATE PROCEDURE dbo.Lrf_CustomerSelMember_MinMaxBet180
+	@custid INT
+AS
+
+/*
+Created: 20121004@Dom.Cao
+Task : SELECT customer's bet setting of virtual sport
+DB: DB052.bodb02
+Original: Acc_CustomerSelStatus
+
+Revisions:
+   
+Param's Explanation:
+• @CustID: customer id.   
+*/
+
+DECLARE	@UserName VARCHAR(30), @recommend INT
+
+DECLARE @minminbet MONEY,
+	@maxmaxbet MONEY,
+	@maxmaxpermatch MONEY
+	
+SELECT @UserName = username, @recommend = recommend
+from customer with (NOLOCK)
+WHERE roleid = 1 AND CustID = @CustID
+
+IF (@username = NULL) RETURN
+
+SELECT
+	@MinMinBet = Max(CASE WHEN MinBet = 0 THEN NULL ELSE MinBet END), 
+	@MaxMaxBet = Min(CASE WHEN MaxBet = 0 THEN NULL ELSE MaxBet END)
+from 
+	Dep_CustSetting3rd as cs WITH (NOLOCK)
+	INNER JOIN custinfo as ci WITH (NOLOCK) on (cs.CustID = ci.Recommend or cs.CustID = ci.MRecommend or cs.CustID = ci.SRecommend)
+	AND cs.bettype = 1201 AND cs.sporttype=180
+WHERE ci.custid = @recommend
+
+SELECT @MaxMaxperMatch = Min(CASE WHEN cs.maxpermatch180 = 0 THEN NULL ELSE cs.maxpermatch180 END)
+from 
+	custinfo as cs WITH (NOLOCK) 
+	INNER JOIN custinfo as ci WITH (NOLOCK) on (cs.CustID = ci.Recommend or cs.CustID = ci.MRecommend or cs.CustID = ci.SRecommend)
+WHERE ci.custid = @recommend
+
+SELECT isnull(@minminbet,0) minminbet,
+		isnull(@maxmaxbet,0) maxmaxbet,
+		isnull(@maxmaxpermatch,0) maxmaxpermatch,
+		0 AS maxpermatch_min,
+		ci.maxpermatch180 maxpermatch,
+		cs.minbet,
+		cs.maxbet
+FROM custinfo ci WITH(NOLOCK)
+INNER JOIN Dep_CustSetting3rd cs ON ci.custid = cs.custid
+WHERE ci.custid = @custid AND cs.sporttype = 180 AND cs.bettype = 1201
+GO
+
+GRANT EXECUTE ON [dbo].[Lrf_CustomerSelMember_MinMaxBet180] TO [bodbLicenseeNet]
+GO
+GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerSelMember_MinMaxBet180] TO vnteam
+

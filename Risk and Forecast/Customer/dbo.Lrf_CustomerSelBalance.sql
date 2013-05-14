@@ -1,0 +1,514 @@
+﻿ALTER  PROCEDURE [dbo].[Lrf_CustomerSelBalance]
+	@LicenseeID INT,
+	@CurrencyID INT=0,
+	@LicenseeType VARCHAR(100) = NULL,
+	@MoveBetsDay SMALLDATETIME,
+	@FromDate SMALLDATETIME,
+	@ToDate SMALLDATETIME,
+	@IsOld BIT = 0
+AS
+/*
+Created: 20101203@Henry
+Task: Get Agent Balance
+DB: DB052.bodb02
+Original: Age_CustomerSelBalance_Ag
+Param's Explanation:  
+	+ @IsOld: 0 - query IN table rptLicWinloss, 1 - query IN table rptLicWinloss_old. 
+Revisions:
+    - 20110225@Henry: Allow to choose all type of licensee AND all currency + suppport based currency
+    - 20110513@Henry: change bettype to new range
+    - 20110609@Henry: change rptLicWinlost to rptLicWinloss
+    - 20110711@Henry: show Comm, Amt Due to for each 3rd party product: BA, Racing. Show Licensee W/L (remove PT)
+    - 20110729@Henry: offer 3 new bettypes for Number Game
+    - 20111013@Henry: Change to use rptLicWinloss2
+    - 20111212@Jim:   Change condition bettype<19000
+    - 20120214@Jim: change table ExchangeDaily by function Lrf_f_GetExchangeDaily  
+    - 20120305@Henry: enhance performance
+    - 20120319@Don: reduce IO by using covering index
+	- 20120724@Jim: add player commission value 
+	- 20121004@Jim: replace @currencyname input param by @currencyID
+	- 20130417@Scott: Support RNG Casino and Bingo  
+*/
+SET NOCOUNT ON
+
+
+DECLARE 
+	@UserName VARCHAR(50),
+	@SelectedMonthLicenseeWL MONEY,
+	@SelectedMonthLicenseeWLUSD MONEY,
+	@SelectedMonthLicenseeWLEUR MONEY,
+	@SelectedMonthWinlossRB MONEY,
+	@SelectedMonthWinlossRBUSD MONEY,
+	@SelectedMonthWinlossRBEUR MONEY,
+	@SelectedMonthAmtDuetoBA MONEY,
+	@SelectedMonthAmtDuetoBAUSD MONEY,
+	@SelectedMonthAmtDuetoBAEUR MONEY,
+	@SelectedMonthAmtDuetoRB MONEY,
+	@SelectedMonthAmtDuetoRBUSD MONEY,
+	@SelectedMonthAmtDuetoRBEUR MONEY,
+	@SelectedMonthCommBA MONEY,
+	@SelectedMonthCommRB MONEY,
+	@SelectedMonthCommBAUSD MONEY,
+	@SelectedMonthCommBAEUR MONEY,
+	@SelectedMonthPlayerComm MONEY,
+	@SelectedMonthCommRBUSD MONEY,
+	@SelectedMonthCommRBEUR MONEY,
+	@SelectedMonthPlayerCommUSD MONEY,
+	@SelectedMonthPlayerCommEUR MONEY,
+	
+	@TodayLicenseeWL MONEY,
+	@TodayLicenseeWLUSD MONEY,
+	@TodayLicenseeWLEUR MONEY,
+	@TodayWinlossRB MONEY,
+	@TodayWinlossRBUSD MONEY,
+	@TodayWinlossRBEUR MONEY,
+	@TodayAmtDuetoBA MONEY,
+	@TodayAmtDuetoBAUSD MONEY,
+	@TodayAmtDuetoBAEUR MONEY,
+	@TodayAmtDuetoRB MONEY,
+	@TodayAmtDuetoRBUSD MONEY,
+	@TodayAmtDuetoRBEUR MONEY,
+	@TodayCommBA  MONEY,
+	@TodayCommBAUSD MONEY,
+	@TodayCommBAEUR MONEY,
+	@TodayCommRB  MONEY,
+	@TodayCommRBUSD MONEY,
+	@TodayCommRBEUR MONEY,
+	@TodayPlayerComm 	  MONEY,
+	@TodayPlayerCommUSD MONEY,
+	@TodayPlayerCommEUR MONEY,
+	
+		
+	@YesterdayLicenseeWL MONEY,
+	@YesterdayLicenseeWLUSD MONEY,
+	@YesterdayLicenseeWLEUR MONEY,
+	@YesterdayWinlossRB MONEY,
+	@YesterdayWinlossRBUSD MONEY,
+	@YesterdayWinlossRBEUR MONEY,
+	@YesterdayAmtDuetoBA MONEY,
+	@YesterdayAmtDuetoBAUSD MONEY,
+	@YesterdayAmtDuetoBAEUR MONEY,
+	@YesterdayAmtDuetoRB MONEY,
+	@YesterdayAmtDuetoRBUSD MONEY,
+	@YesterdayAmtDuetoRBEUR MONEY,
+	@YesterdayCommBA  MONEY,
+	@YesterdayCommBAUSD MONEY,
+	@YesterdayCommBAEUR MONEY,
+	@YesterdayCommRB  MONEY,
+	@YesterdayCommRBUSD MONEY,
+	@YesterdayCommRBEUR MONEY,
+	@YesterdayPlayerComm    MONEY,
+	@YesterdayPlayerCommUSD MONEY,
+	@YesterdayPlayerCommEUR MONEY,
+	
+	
+	@MemberOutstanding MONEY,
+	@MemberOutstandingUSD MONEY,
+	@MemberOutstandingEUR MONEY,
+	
+	@TotalMemberActive INT,
+	@TotalMemberClosed INT,
+	@TotalMemberSuspended INT,
+	@_FromDate SMALLDATETIME,
+	@_ToDate SMALLDATETIME
+	
+SELECT 	@_FromDate=@FromDate, @_ToDate=@ToDate
+
+DECLARE @SumTemp as table
+(
+	currency INT,
+	SelectedMonthLicenseeWL MONEY,
+	SelectedMonthAmtDuetoBA MONEY,
+	SelectedMonthAmtDuetoRB MONEY,
+	SelectedMonthWinlossRB MONEY,
+	SelectedMonthCommBA MONEY,
+	SelectedMonthCommRB MONEY,
+	SelectedMonthPlayerComm MONEY
+	
+	
+	
+)
+DECLARE @SumOutstanding as table
+(
+	currency INT,
+	outstanding MONEY
+)
+DECLARE @LicenseeWL as table
+(
+    winlostdate smalldatetime,
+	currency INT,
+	LicenseeWL money,
+	AmtDuetoBA money,
+	AmtDuetoRB money,
+	WinlossRB money,
+	CommBA money,
+	CommRB money,
+	PlayerComm MONEY
+	
+	
+)
+
+
+DECLARE @Today SMALLDATETIME, @Yesterday SMALLDATETIME
+DECLARE @LicenseeName VARCHAR(50)
+
+SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
+SET @Yesterday = CONVERT(VARCHAR(10), DATEADD(DAY,-1,@Today), 120) 
+SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WHERE LicenseeID = @LicenseeID
+
+
+DECLARE @TempAg AS TABLE (custid INT primary key)
+INSERT INTO @TempAg (custid)
+SELECT CustID FROM bodb_Licensee.dbo.LicenseeCust (NOLOCK)
+		WHERE LicenseeID = @LicenseeID 
+		AND (@CurrencyID=0 OR  (@CurrencyID<>0 AND Currency = @CurrencyID ))
+		AND [Description] = COALESCE(@LicenseeType,[Description])
+
+IF (SELECT COUNT(*) FROM @TempAg) = 1
+BEGIN
+	SELECT TOP 1 @UserName = username FROM CustInfo c WITH (NOLOCK)
+	WHERE roleid = 2 and custid IN (select custid from @TempAg)
+END
+
+SELECT 
+	@TotalMemberActive = ISNULL(SUM(CASE WHEN Closed = 0 AND ISNULL(reject,0) = 0 THEN 1 ELSE 0 END), 0),
+	@TotalMemberClosed = ISNULL(SUM(CASE WHEN Closed = 1 THEN 1 ELSE 0 END), 0),
+	@TotalMemberSuspended = ISNULL(SUM(CASE WHEN ISNULL(reject,0) = 1 AND closed = 0 THEN 1 ELSE 0 END), 0)
+FROM CustInfo WITH (NOLOCK)
+WHERE 
+	Recommend IN (SELECT CustID FROM @TempAg)
+AND RoleID=1
+
+DECLARE @Super AS TABLE (custid int primary key, currency int)
+
+INSERT INTO @Super (Custid,currency)
+SELECT custid,currency
+FROM Dep_Custsuper (NOLOCK)
+WHERE
+site = @LicenseeName AND
+(@CurrencyID=0 OR  (@CurrencyID<>0 AND Currency = @CurrencyID ))
+
+
+--outstanding then get today rate
+INSERT INTO @SumOutstanding (currency,outstanding)
+    SELECT s.currency,ISNULL(SUM(b.actual_stake),0)
+    FROM 
+	    dbo.bettrans b WITH(NOLOCK,INDEX=IX_srecommend) 
+        INNER JOIN @Super s ON b.srecommend = s.custid
+        INNER JOIN @TempAg a ON b.recommend = a.custid
+    WHERE 
+	    b.bettype <= 1299 
+	    AND b.statusid IN (0,1)
+    GROUP BY s.currency
+	
+SELECT 
+	@MemberOutstanding=ISNULL(SUM(outstanding),0),
+	@MemberOutstandingUSD=ISNULL(SUM(outstanding*e.USD),0),
+	@MemberOutstandingEUR=ISNULL(SUM(outstanding*e.EUR),0)
+FROM 
+	@SumOutstanding b 
+	INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
+	ON e.exchangeid = b.currency	
+	
+	
+--****Begin For Yesterday and Today Winloss Part***	
+--Yesterday/Today Licensee WL
+INSERT INTO @LicenseeWL (winlostdate,currency,LicenseeWL,AmtDuetoBA,AmtDuetoRB,WinlossRB,CommBA,CommRB,PlayerComm)
+SELECT
+	b.winlostdate,s.currency,
+	ISNULL(- SUM(CASE WHEN b.tpositiontaking<>0 AND (b.bettype in (71,73) or (b.bettype NOT BETWEEN 31 AND 80)) THEN (b.winlost - b.actual_stake)  ELSE 0 END),0) as LicenseeWL,
+	ISNULL(- SUM ( CASE WHEN b.tpositiontaking=0 AND (b.bettype in (71,73) or (b.bettype NOT BETWEEN 31 AND 120 AND b.bettype<=999)) THEN (b.winlost - b.actual_stake + awinlost + comm) ELSE 0 END),0) AS AmtDuetoBA,
+	ISNULL(- SUM ( CASE WHEN b.bettype IN (31,32,33) THEN (b.winlost - b.actual_stake + awinlost + comm) ELSE 0 END),0)AS AmtDuetoRB,
+	ISNULL(SUM (CASE WHEN b.bettype IN (31,32,33) THEN b.awinlost ELSE 0 END),0) AS WinlossRB,
+	ISNULL(SUM ( CASE WHEN b.tpositiontaking=0 AND (b.bettype in (71,73) or (b.bettype NOT BETWEEN 31 AND 120 AND b.bettype<=999)) THEN  comm  ELSE 0 END),0) AS CommBA,
+	ISNULL(SUM ( CASE WHEN b.bettype IN (31,32,33) THEN comm  ELSE 0 END),0) AS CommRB,
+	ISNULL(SUM (  playercomm ),0) AS PlayerComm
+	
+FROM 
+	dbo.bettrans b WITH(NOLOCK,INDEX=IX_srecommend) 
+	INNER JOIN @Super s ON b.srecommend = s.custid
+    INNER JOIN @TempAg a ON b.recommend = a.custid
+WHERE 
+	b.bettype <= 1299 
+	AND b.winlostdate BETWEEN @MoveBetsDay AND @Today
+	AND b.statusID IN (111,112,113)
+GROUP BY b.winlostdate,s.currency
+
+
+SELECT   
+	@YesterdayLicenseeWL = sum(LicenseeWL),
+	@YesterdayLicenseeWLUSD = sum(LicenseeWL*e.USD),
+	@YesterdayLicenseeWLEUR = sum(LicenseeWL*e.EUR),
+	@YesterdayAmtDuetoBA = sum(AmtDuetoBA),
+	@YesterdayAmtDuetoBAUSD = sum(AmtDuetoBA*e.USD),
+	@YesterdayAmtDuetoBAEUR = sum(AmtDuetoBA*e.EUR),
+	@YesterdayAmtDuetoRB = sum(AmtDuetoRB),
+	@YesterdayAmtDuetoRBUSD = sum(AmtDuetoRB*e.USD),
+	@YesterdayAmtDuetoRBEUR = sum(AmtDuetoRB*e.EUR),
+	@YesterdayWinlossRB = sum(WinlossRB),
+	@YesterdayWinlossRBUSD = sum(WinlossRB*e.USD),
+	@YesterdayWinlossRBEUR = sum(WinlossRB*e.EUR),
+	@YesterdayCommBA = sum(CommBA),
+	@YesterdayCommBAUSD = sum(CommBA*e.USD),
+	@YesterdayCommBAEUR = sum(CommBA*e.EUR),
+	@YesterdayCommRB = sum(CommRB),
+	@YesterdayCommRBUSD = sum(CommRB*e.USD),
+	@YesterdayCommRBEUR = sum(CommRB*e.EUR),--
+	@YesterdayPlayerComm    = sum(PlayerComm),
+	@YesterdayPlayerCommUSD = sum(PlayerComm*e.USD),
+	@YesterdayPlayerCommEUR = sum(PlayerComm*e.EUR) -- yesterday
+	
+	
+FROM 
+	@LicenseeWL b 
+	INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Yesterday,@Yesterday))e 
+	    ON e.exchangeid = b.currency AND b.winlostdate = @Yesterday
+
+
+SELECT   
+	@TodayLicenseeWL = sum(LicenseeWL),
+	@TodayLicenseeWLUSD = sum(LicenseeWL*e.USD),
+	@TodayLicenseeWLEUR = sum(LicenseeWL*e.EUR),
+	@TodayAmtDuetoBA = sum(AmtDuetoBA),
+	@TodayAmtDuetoBAUSD = sum(AmtDuetoBA*e.USD),
+	@TodayAmtDuetoBAEUR = sum(AmtDuetoBA*e.EUR),
+	@TodayAmtDuetoRB = sum(AmtDuetoRB),
+	@TodayAmtDuetoRBUSD = sum(AmtDuetoRB*e.USD),
+	@TodayAmtDuetoRBEUR = sum(AmtDuetoRB*e.EUR),
+	@TodayWinlossRB = sum(WinlossRB),
+	@TodayWinlossRBUSD = sum(WinlossRB*e.USD),
+	@TodayWinlossRBEUR = sum(WinlossRB*e.EUR),
+	
+	@TodayCommBA = sum(CommBA),
+	@TodayCommBAUSD = sum(CommBA*e.USD),
+	@TodayCommBAEUR = sum(CommBA*e.EUR),
+	@TodayCommRB = sum(CommRB),
+	@TodayCommRBUSD = sum(CommRB*e.USD),
+	@TodayCommRBEUR = sum(CommRB*e.EUR),
+	@TodayPlayerComm=ISNULL(SUM(playercomm),0),
+	@TodayPlayerCommUSD=ISNULL(SUM(Playercomm*e.USD),0),
+	@TodayPlayerCommEUR=ISNULL(SUM((Playercomm)*e.EUR),0)
+	
+	
+
+	
+FROM 
+	@LicenseeWL b 
+	INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
+	    ON  e.exchangeid = b.currency AND b.winlostdate = @Today
+	    	
+ --****End For Yesterday and Today Winloss Part***	
+
+			
+--****Begin for Selected Month Winloss part*******			
+DECLARE @TempFromDate DATETIME 
+DECLARE @TempToDate DATETIME
+
+IF @_ToDate > @MoveBetsDay
+BEGIN
+	IF @_FromDate <= @MoveBetsDay 
+		SET @TempFromDate =  DATEADD(DAY,1,@MoveBetsDay)
+	ELSE
+		SET @TempFromDate = @_FromDate
+	
+	INSERT INTO @SumTemp(currency,
+						SelectedMonthLicenseeWL,
+						SelectedMonthAmtDuetoBA,
+						SelectedMonthAmtDuetoRB,
+						SelectedMonthWinlossRB,
+						SelectedMonthCommBA,
+						SelectedMonthCommRB,
+						SelectedMonthPlayerComm
+						)
+						
+    SELECT 
+	    b.currency,
+	    ISNULL(SUM(LicenseeWL),0),
+	    ISNULL(SUM(AmtDuetoBA),0),
+	    ISNULL(SUM(AmtDuetoRB),0),
+	    ISNULL(SUM (WinlossRB),0),
+	    ISNULL(SUM (CommBA),0),
+	    ISNULL(SUM (CommRB),0),
+		ISNULL(SUM (playercomm),0)
+	
+    FROM 
+	    @LicenseeWL b
+    WHERE 
+	    b.winlostdate BETWEEN @TempFromDate AND @_ToDate 
+    GROUP by b.currency
+	
+	
+END
+IF @_FromDate <= @MoveBetsDay AND @IsOld = 0
+BEGIN
+	IF @_ToDate >= @MoveBetsDay
+		SET @TempToDate = @MoveBetsDay
+	ELSE
+		SET  @TempToDate = @_ToDate
+
+	INSERT INTO @SumTemp 
+	SELECT 
+		currency,
+		ISNULL(- SUM(CASE WHEN ISNULL(b.isBA,0) = 0 AND (b.sporttype IN (0,161,162,180,251,252))  THEN b.winlost ELSE 0 END),0) AS SelectedMonthLicenseeWL,
+		ISNULL(- SUM ( CASE WHEN ISNULL(b.isBA,0) = 1 THEN  (b.winlost+b.awinlost+b.comm) ELSE 0 END),0) AS SelectedMonthAmtDuetoBA,
+		ISNULL(- SUM ( CASE WHEN b.sporttype = 151 THEN (b.winlost+b.awinlost+b.comm) ELSE 0 END),0) AS SelectedMonthAmtDuetoRB,
+		ISNULL(SUM (CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END),0) AS SelectedMonthWinlossRB,
+		ISNULL(SUM ( CASE WHEN ISNULL(b.isBA,0) = 1 THEN  comm  ELSE 0 END),0) AS SelectedMonthCommBA,
+		ISNULL(SUM ( CASE WHEN b.sporttype = 151 THEN comm ELSE 0 END),0)  AS SelectedMonthCommRB,
+		ISNULL(SUM ( playercomm),0) AS SelectedMonthPlayerComm
+		
+	FROM 
+		bodb_Licensee.dbo.rptLicWinloss2 b WITH(NOLOCK) 
+	WHERE
+		b.Winlostdate BETWEEN @_FromDate AND @TempToDate AND	
+		recommend IN (SELECT custid FROM @TempAg) AND
+		roleID = 2 AND 
+		b.statusID <> 101 --exclude REJECT bets
+	GROUP BY currency
+	
+END	
+ELSE IF @IsOld = 1
+BEGIN
+	INSERT INTO @SumTemp
+	SELECT 
+		currency,
+		ISNULL(- SUM(CASE WHEN ISNULL(b.isBA,0) = 0 AND ( b.sporttype IN (0,161,162,180,251,252))  THEN b.winlost ELSE 0 END),0) AS SelectedMonthLicenseeWL,
+		ISNULL(- SUM ( CASE WHEN ISNULL(b.isBA,0) = 1 THEN  (b.winlost+b.awinlost+b.comm) ELSE 0 END),0) AS SelectedMonthAmtDuetoBA,
+		ISNULL(- SUM ( CASE WHEN b.sporttype = 151 THEN (b.winlost+b.awinlost+b.comm) ELSE 0 END),0) AS SelectedMonthAmtDuetoRB,
+		ISNULL(SUM (CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END),0) AS SelectedMonthWinlossRB,
+		ISNULL(SUM ( CASE WHEN ISNULL(b.isBA,0) = 1 THEN  comm  ELSE 0 END),0) AS SelectedMonthCommBA,
+		ISNULL(SUM ( CASE WHEN b.sporttype = 151 THEN comm  ELSE 0 END),0)  AS SelectedMonthCommRB,
+		ISNULL(SUM ( playercomm ),0) AS SelectedMonthPlayerComm
+	FROM 
+		bodb_Licensee.dbo.rptLicWinloss_old b WITH(NOLOCK) 
+	WHERE
+		b.Winlostdate BETWEEN @_FromDate AND @_ToDate AND	
+		recommend IN (SELECT custid FROM @TempAg) AND
+		roleID = 2 AND 
+		b.statusID <> 101 --exclude REJECT bets
+	--GROUP BY winlostdate,currency
+	GROUP BY currency
+END
+
+
+SELECT 
+	@SelectedMonthLicenseeWL = SUM(SelectedMonthLicenseeWL),
+	@SelectedMonthLicenseeWLUSD = SUM(SelectedMonthLicenseeWL * e.USD),
+	@SelectedMonthLicenseeWLEUR = SUM(SelectedMonthLicenseeWL * e.EUR),
+	@SelectedMonthAmtDuetoBA =  SUM(SelectedMonthAmtDuetoBA),
+	@SelectedMonthAmtDuetoBAUSD = SUM(SelectedMonthAmtDuetoBA * e.USD),
+	@SelectedMonthAmtDuetoBAEUR = SUM(SelectedMonthAmtDuetoBA * e.EUR),
+	@SelectedMonthAmtDuetoRB = SUM(SelectedMonthAmtDuetoRB),
+	@SelectedMonthAmtDuetoRBUSD =  SUM(SelectedMonthAmtDuetoRB * e.USD),
+	@SelectedMonthAmtDuetoRBEUR = SUM(SelectedMonthAmtDuetoRB * e.EUR),
+	@SelectedMonthWinlossRB = SUM(SelectedMonthWinlossRB),
+	@SelectedMonthWinlossRBUSD = SUM(SelectedMonthWinlossRB * e.USD),
+	@SelectedMonthWinlossRBEUR = SUM(SelectedMonthWinlossRB * e.EUR),
+	@SelectedMonthCommBA = SUM(SelectedMonthCommBA),
+	@SelectedMonthCommBAUSD = SUM(SelectedMonthCommBA * e.USD),
+	@SelectedMonthCommBAEUR =  SUM(SelectedMonthCommBA * e.EUR),
+	@SelectedMonthCommRB = SUM(SelectedMonthCommRB),
+	@SelectedMonthCommRBUSD = SUM(SelectedMonthCommRB * e.USD),
+	@SelectedMonthCommRBEUR = SUM(SelectedMonthCommRB * e.EUR),----
+	@SelectedMonthPlayerComm = SUM(SelectedMonthPLayerComm),
+	@SelectedMonthPlayerCommUSD = SUM(SelectedMonthPlayerComm * e.USD),
+	@SelectedMonthPlayerCommEUR =  SUM(SelectedMonthPlayerComm * e.EUR)
+	
+
+FROM 
+	@SumTemp b 
+	INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@_FromDate,@_FromDate))e 
+	ON e.exchangeid = b.currency
+--****End for Selected Month Winloss part*******			
+
+
+SELECT
+	ISNULL(@UserName,'') AS UserName,
+	ISNULL(@SelectedMonthLicenseeWL,0) AS SelectedMonthLicenseeWL,
+	ISNULL(@SelectedMonthLicenseeWLUSD,0) AS SelectedMonthLicenseeWLUSD,
+	ISNULL(@SelectedMonthLicenseeWLEUR,0) AS SelectedMonthLicenseeWLEUR,
+	ISNULL(@SelectedMonthWinlossRB,0) AS SelectedMonthWinlossRB,
+	ISNULL(@SelectedMonthWinlossRBUSD,0) AS SelectedMonthWinlossRBUSD,
+	ISNULL(@SelectedMonthWinlossRBEUR,0) AS SelectedMonthWinlossRBEUR,
+	--Month Comm
+	ISNULL(@SelectedMonthCommBA,0) AS SelectedMonthCommBA,
+	ISNULL(@SelectedMonthCommBAUSD,0) AS SelectedMonthCommBAUSD,
+	ISNULL(@SelectedMonthCommBAEUR,0) AS SelectedMonthCommBAEUR,
+	ISNULL(@SelectedMonthCommRB,0) AS SelectedMonthCommRB,
+	ISNULL(@SelectedMonthCommRBUSD,0) AS SelectedMonthCommRBUSD,
+	ISNULL(@SelectedMonthCommRBEUR,0) AS SelectedMonthCommRBEUR,---
+	ISNULL(@SelectedMonthPlayerComm,0) AS SelectedMonthPlayerComm,
+	ISNULL(@SelectedMonthPlayerCommUSD,0) AS SelectedMonthPlayerCommUSD,
+	ISNULL(@SelectedMonthPlayerCommEUR,0) AS SelectedMonthPlayerCommEUR,
+
+	--Month Amount Due To BA
+	ISNULL(@SelectedMonthAmtDuetoBA,0) AS SelectedMonthAmtDuetoBA,
+	ISNULL(@SelectedMonthAmtDuetoBAUSD,0) AS SelectedMonthAmtDuetoBAUSD,
+	ISNULL(@SelectedMonthAmtDuetoBAEUR,0) AS SelectedMonthAmtDuetoBAEUR,
+	ISNULL(@SelectedMonthAmtDuetoRB,0) AS SelectedMonthAmtDuetoRB,
+	ISNULL(@SelectedMonthAmtDuetoRBUSD,0) AS SelectedMonthAmtDuetoRBUSD,
+	ISNULL(@SelectedMonthAmtDuetoRBEUR,0) AS SelectedMonthAmtDuetoRBEUR,
+	--Yesterday WL
+	ISNULL(@YesterdayLicenseeWL,0) AS YesterdayLicenseeWL,
+	ISNULL(@YesterdayLicenseeWLUSD,0) AS YesterdayLicenseeWLUSD,
+	ISNULL(@YesterdayLicenseeWLEUR,0) AS YesterdayLicenseeWLEUR,
+	ISNULL(@YesterdayWinlossRB,0) AS YesterdayWinlossRB,
+	ISNULL(@YesterdayWinlossRBUSD,0) AS YesterdayWinlossRBUSD,
+	ISNULL(@YesterdayWinlossRBEUR,0) AS YesterdayWinlossRBEUR,
+	--Yesterday Comm
+	ISNULL(@YesterdayCommBA,0) AS YesterdayCommBA,
+	ISNULL(@YesterdayCommBAUSD,0) AS YesterdayCommBAUSD,
+	ISNULL(@YesterdayCommBAEUR,0) AS YesterdayCommBAEUR,
+	ISNULL(@YesterdayCommRB,0) AS YesterdayCommRB,
+	ISNULL(@YesterdayCommRBUSD,0) AS YesterdayCommRBUSD,
+	ISNULL(@YesterdayCommRBEUR,0) AS YesterdayCommRBEUR,--
+	ISNULL(@YesterdayPlayerComm,0) AS YesterdayPlayerComm,
+	ISNULL(@YesterdayPlayerCommUSD,0) AS YesterdayPlayerCommUSD,
+	ISNULL(@YesterdayPlayerCommEUR,0) AS YesterdayPlayerCommEUR,
+	
+	--YesterdayAmtDue
+	ISNULL(@YesterdayAmtDuetoBA,0) AS YesterdayAmtDuetoBA,
+	ISNULL(@YesterdayAmtDuetoBAUSD,0) AS YesterdayAmtDuetoBAUSD,
+	ISNULL(@YesterdayAmtDuetoBAEUR,0) AS YesterdayAmtDuetoBAEUR,
+	ISNULL(@YesterdayAmtDuetoRB,0) AS YesterdayAmtDuetoRB,
+	ISNULL(@YesterdayAmtDuetoRBUSD,0) AS YesterdayAmtDuetoRBUSD,
+	ISNULL(@YesterdayAmtDuetoRBEUR,0) AS YesterdayAmtDuetoRBEUR,
+	--TodayLicenseeWL
+	ISNULL(@TodayLicenseeWL,0) AS TodayLicenseeWL,
+	ISNULL(@TodayLicenseeWLUSD,0) AS TodayLicenseeWLUSD,
+	ISNULL(@TodayLicenseeWLEUR,0) AS TodayLicenseeWLEUR,
+	ISNULL(@TodayWinlossRB,0) AS TodayWinlossRB,
+	ISNULL(@TodayWinlossRBUSD,0) AS TodayWinlossRBUSD,
+	ISNULL(@TodayWinlossRBEUR,0) AS TodayWinlossRBEUR,
+	--TodayComm
+	ISNULL(@TodayCommBA,0) AS TodayCommBA,
+	ISNULL(@TodayCommBAUSD,0) AS TodayCommBAUSD,
+	ISNULL(@TodayCommBAEUR,0) AS TodayCommBAEUR,
+	ISNULL(@TodayCommRB,0) AS TodayCommRB,
+	ISNULL(@TodayCommRBUSD,0) AS TodayCommRBUSD,
+	ISNULL(@TodayCommRBEUR,0) AS TodayCommRBEUR,---
+	ISNULL(@TodayPlayerComm,0) AS TodayPlayerComm,
+	ISNULL(@TodayPlayerCommUSD,0) AS TodayPlayerCommUSD,
+	ISNULL(@TodayPlayerCommEUR,0) AS TodayPlayerCommEUR,
+	
+	--TodayAmtDueToBA
+	ISNULL(@TodayAmtDuetoBA,0) AS TodayAmtDuetoBA,
+	ISNULL(@TodayAmtDuetoBAUSD,0) AS TodayAmtDuetoBAUSD,
+	ISNULL(@TodayAmtDuetoBAEUR,0) AS TodayAmtDuetoBAEUR,
+	ISNULL(@TodayAmtDuetoRB,0) AS TodayAmtDuetoRB,
+	ISNULL(@TodayAmtDuetoRBUSD,0) AS TodayAmtDuetoRBUSD,
+	ISNULL(@TodayAmtDuetoRBEUR,0) AS TodayAmtDuetoRBEUR,
+	--
+	ISNULL(@MemberOutstanding,0) MemberOutstanding,
+	ISNULL(@MemberOutstandingUSD,0) MemberOutstandingUSD,
+	ISNULL(@MemberOutstandingEUR,0) MemberOutstandingEUR,
+	ISNULL(@TotalMemberActive,0) TotalMemberActive,
+	ISNULL(@TotalMemberClosed,0) TotalMemberClosed,
+	ISNULL(@TotalMemberSuspended,0) TotalMemberSuspended
+
+GO
+GRANT EXECUTE ON [dbo].[Lrf_CustomerSelBalance] TO [bodbLicenseeNet]
+
+GO
+GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerSelBalance] TO [vnteam]
+

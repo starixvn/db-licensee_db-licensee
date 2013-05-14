@@ -1,0 +1,154 @@
+﻿ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel121] 
+	@LicenseeID INT,
+	@CurrencyID INT=0,
+	@licenseetype VARCHAR(100) = NULL,
+	@PageSize INT=50,
+	@PageIndex INT=0,
+	@TotalRows INT=0 OUTPUT
+ AS
+
+/*
+Created: 20120703@Henry
+Task : Retrieve Total bets for bettype No Bet (Home/Draw/Away No bet)
+DB: DB052.bodb02
+Original:
+Revisions:
+	 - 20121004@Jim: replace @currencyname input param by @currencyID
+
+Param's Explanation:
+• @CustID: AgentID
+*/
+
+SET NOCOUNT ON
+DECLARE @Today SMALLDATETIME 
+SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
+
+DECLARE @TempAg AS TABLE (CustID INT)
+INSERT INTO @TempAg (CustID)
+SELECT  CustID  
+                FROM    bodb_Licensee.dbo.LicenseeCust WITH ( NOLOCK )  
+                WHERE   LicenseeID = @LicenseeID  
+                        AND  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID))
+                        AND [Description] = COALESCE(@LicenseeType,  
+                                                     [Description])
+
+DECLARE @RowCount INT, @RowStart INT, @RowEnd INT  
+SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
+
+DECLARE @Data AS Table
+(
+	currency INT,
+	showtime NVARCHAR (50),
+	leagueid INT,
+	matchcode NVARCHAR(50),
+	liveindicator BIT,
+	livehomescore INT,
+	liveawayscore INT,
+	matchid INT,
+	homeID INT,
+	awayID INT,
+
+	home_odds_DNB MONEY,
+	away_odds_DNB MONEY,
+	home_odds_HNB MONEY,
+	away_odds_HNB MONEY,
+	home_odds_ANB MONEY,
+	away_odds_ANB MONEY,
+
+	BetCount_DNB INT,
+	BetCount_HNB INT,
+	BetCount_ANB INT,
+	isNeutral BIT
+)
+
+INSERT INTO @Data
+SELECT 
+		b.currency,
+		m.showtime, 
+		m.leagueid,
+		m.matchcode, 
+		b.liveindicator, 
+		b.livehomescore,
+		b.liveawayscore,
+		m.matchid,
+		m.homeid,
+		m.awayid,
+		sum(Case when bettype=25 and betteam = 'h' then  stake   else 0 end) AS home_odds_DNB,
+		sum(Case when bettype=25 and betteam = 'a' then  stake   else 0 end) AS away_odds_DNB,
+
+		sum(Case when bettype=121 and betteam = 'x' then  stake   else 0 end) AS home_odds_HNB,
+		sum(Case when bettype=121 and betteam = 'a' then  stake   else 0 end) AS away_odds_HNB,
+		
+		sum(Case when bettype=122 and betteam = 'h' then  stake   else 0 end) AS home_odds_ANB,
+		sum(Case when bettype=122 and betteam = 'x' then  stake   else 0 end) AS away_odds_ANB,
+
+		sum(case when bettype=25 then 1 else 0 end) as BetCount_DNB,
+		sum(case when bettype=121 then 1 else 0 end) as BetCount_HNB,
+		sum(case when bettype=122 then 1 else 0 end) as BetCount_ANB,
+		isnull(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral
+	FROM
+		bettrans AS b  WITH (NOLOCK)
+		INNER JOIN match AS m  WITH (NOLOCK) ON m.matchid = b.matchid and m.eventstatus='running'
+	WHERE  	
+		b.recommend IN (SELECT CustID FROM @TempAg)
+		AND b.bettype in (25,121,122)
+		AND b.statusID in (0,1)
+		AND b.ruben = 0
+		AND b.tpositiontaking <> 0
+	GROUP BY 
+		b.currency,
+		b.liveindicator, 
+		b.livehomescore,
+		b.liveawayscore,
+		m.homeid,
+		m.awayid,
+		m.matchid,
+		m.matchcode, 
+		m.leagueid,
+		m.showtime,
+		m.isNeutral
+	ORDER BY b.liveindicator DESC, m.matchcode
+
+IF @TotalRows = 0  
+BEGIN  
+	SELECT @TotalRows = COUNT(matchid) FROM @Data
+END
+
+SELECT * INTO #TempExchange 
+FROM Lrf_f_GetExchangeDaily(@Today,@Today)
+WHERE exchangeid IN (SELECT DISTINCT Currency FROM @Data)
+
+SELECT c.* FROM
+(
+	SELECT 
+		ROW_NUMBER() over (ORDER BY liveindicator DESC, matchcode) AS RowNum ,
+		*,
+		home_odds_DNB * e.USD home_odds_DNBUSD,
+		home_odds_DNB * e.EUR home_odds_DNBEUR,
+		
+		away_odds_DNB * e.USD away_odds_DNBUSD,
+		away_odds_DNB * e.EUR away_odds_DNBEUR,
+		
+		home_odds_HNB * e.USD home_odds_HNBUSD,
+		home_odds_HNB * e.EUR home_odds_HNBEUR,
+		
+		away_odds_HNB * e.USD away_odds_HNBUSD,
+		away_odds_HNB * e.EUR away_odds_HNBEUR,
+		
+		home_odds_ANB * e.USD home_odds_ANBUSD,
+		home_odds_ANB * e.EUR home_odds_ANBEUR,
+		
+		away_odds_ANB * e.USD away_odds_ANBUSD,
+		away_odds_ANB * e.EUR away_odds_ANBEUR
+		
+	FROM @Data b
+	INNER JOIN #TempExchange e ON b.currency = e.exchangeid
+) c WHERE c.RowNum BETWEEN @RowStart AND @RowEnd
+
+GO
+GRANT EXECUTE ON [dbo].[Lrf_TotalBets_Sel121] TO [bodbLicenseeNet]
+
+GO
+GRANT VIEW DEFINITION ON [dbo].[Lrf_TotalBets_Sel121] TO [vnteam]
+
+ 
