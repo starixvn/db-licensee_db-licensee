@@ -12,7 +12,7 @@ DB: bodb_CustomerLog
       
 Revisions:      
 	20130411Scott : Check Customer belong Licensee
-	20130514@Jim: Restrict permission of Licensee Users by currency
+
        
 Param's Explaination:          
  - @UserName: customer name type in textbox to search      
@@ -71,7 +71,7 @@ INSERT INTO @RowFilter VALUES (2200)
 INSERT INTO @RowFilter VALUES (2201)    
 INSERT INTO @RowFilter VALUES (2612)    
 INSERT INTO @RowFilter VALUES (2407)    
-INSERT INTO @RowFilter VALUES (2801)
+
  
  
 IF @filterby=1     
@@ -82,8 +82,7 @@ IF @filterby=3
 	DELETE @RowFilter WHERE actionid not in (2612)    
 IF @filterby=4    
 	DELETE @RowFilter WHERE actionid not in (2407)    
-IF @filterby=5     
-    DELETE @RowFilter WHERE actionid not in (2801)    
+   
 --### GET DATA     
 SELECT Logid, LogDate,u.username 'Editedby',l.Actionid,    
 		CASE	WHEN l.Actionid = 2401 then 'Turn On BA'     
