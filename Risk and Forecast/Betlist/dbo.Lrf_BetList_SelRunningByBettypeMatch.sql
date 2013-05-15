@@ -1,11 +1,13 @@
-﻿set ANSI_NULLS ON
+set ANSI_NULLS ON
 set QUOTED_IDENTIFIER ON
 go
 
-ALTER PROCEDURE [dbo].[Lrf_BetList_SelRunningByBettypeMatch]
+
+ALTER   PROCEDURE [dbo].[Lrf_BetList_SelRunningByBettypeMatch]
 	@MatchID INT,
 	@LicenseeID INT,
 	@CurrencyID INT=0,
+	@UserID		INT,
 	@LicenseeType VARCHAR(100) = NULL,
 	@Bettype INT,
 	@Langkey VARCHAR(10) = 'en-US',
@@ -39,17 +41,21 @@ Revisions:
    - 20120817@Henry: add live casino
    - 20121004@Jim: replace @currencyname input param by @currencyID
    - 20130411@Jim: support base currency USD
+   - 20130514@Jim:Restrict permission of Licensee Users by currency
 */
 
 SET NOCOUNT ON
 
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+
 DECLARE @TempAg AS TABLE (custid INT)
 INSERT INTO @TempAg (custid)
 SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust WITH ( NOLOCK )  
-                WHERE   LicenseeID = @LicenseeID  
-                        AND  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID))
-                        AND [Description] = COALESCE(@LicenseeType,  
+                FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )
+				INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID		
+                WHERE   [Description] = COALESCE(@LicenseeType,  
                                                      [Description]) 
 
 SET @betteam = RTRIM(LTRIM(ISNULL(@betteam,'')))
@@ -222,6 +228,10 @@ FROM
 ---Live Casino
 IF @Bettype BETWEEN 1101 AND 1199
 BEGIN 
+	SELECT * INTO #TempExchange 
+	FROM Lrf_f_GetExchangeDaily(@Today,@Today)
+	WHERE exchangeid IN (SELECT DISTINCT CurrencyID FROM #currency)
+
 	SELECT 
 		bg.refno, 
 		bg.odds, 
@@ -233,18 +243,21 @@ BEGIN
 		bg.stake*e.USD AS stakeUSD	
 	FROM bettransg bg with (NOLOCK)
 	INNER JOIN bettrans B with (NOLOCK) ON bg.refno = B.refno
-	INNER JOIN 
-		(SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
-	ON e.exchangeid = b.currency AND  e.ExchangeDate = B.winlostdate
+	INNER JOIN #TempExchange e ON e.exchangeid = b.currency AND  e.ExchangeDate = B.winlostdate
 	WHERE	bg.matchid=@matchid and 
 			b.recommend IN (SELECT custid FROM @TempAg) AND
 			b.statusID in (0,1) and 		
 			b.bettype=@bettype 
 			
+	------------------------
+    DROP TABLE #TempExchange 
+	-----------------------
 
 END 
-
+------------------------
+DROP TABLE #Currency
 DROP TABLE #Data
+------------------------
 GO
 
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelRunningByBettypeMatch] TO [bodbLicenseeNet]
