@@ -38,8 +38,8 @@ INSERT INTO @TempAg (CustID)
 SELECT  CustID  
                 FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
 						INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
-                WHERE   [lc.Description] = COALESCE(@LicenseeType,  
-                                                     [lc.Description])
+                WHERE   lc.Description = COALESCE(@LicenseeType,  
+                                                     lc.[Description])
 
 ---------------------
 DROP TABLE #currency
