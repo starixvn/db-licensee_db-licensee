@@ -1,5 +1,6 @@
 ﻿ALTER PROCEDURE [dbo].[Lrf_TotalBets_SelHR]  
 	@LicenseeID INT,
+	@UserID		INT,
 	@CurrencyID INT=0,
 	@LicenseeType VARCHAR(100) = NULL, 
 	@PageSize INT=50,  
@@ -17,7 +18,8 @@ Revisions:
 	- 201134@Alex: Allow to choose all type of licensee AND all currency + suppport based currency
 	- 20110727@Henry: Show net revenue instead of comm
 	- 20120214@Jim: change to use  table ExchangeDaily by use function Lrf_f_GetExchangeDaily  
-	- 20121004@Jim: replace @currencyname input param by @currencyID	
+	- 20121004@Jim: replace @currencyname input param by @currencyID
+	- 20130514@Jim:Restrict permission of Licensee Users by currency	
 Param's Explanation:  
 • @CustID: agentID  
 */  
@@ -25,14 +27,20 @@ SET NOCOUNT ON
 DECLARE @Today smalldatetime 
 SET @Today = convert(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
 
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+
 DECLARE @TempAg as TABLE (CustID INT)
 INSERT INTO @TempAg (CustID)
 SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust WITH ( NOLOCK )  
-                WHERE   LicenseeID = @LicenseeID  
-                        AND  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID))
-                        AND [Description] = COALESCE(@LicenseeType,  
+                FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+						INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
+                WHERE   [Description] = COALESCE(@LicenseeType,  
                                                      [Description])
+-------------------------
+DROP TABLE #currency
+-------------------------
 
 DECLARE @FromDate DATETIME  
 SELECT @FromDate = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP,120)  
