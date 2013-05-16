@@ -1,5 +1,6 @@
 ﻿ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel121] 
 	@LicenseeID INT,
+	@UserID		INT,
 	@CurrencyID INT=0,
 	@licenseetype VARCHAR(100) = NULL,
 	@PageSize INT=50,
@@ -14,6 +15,7 @@ DB: DB052.bodb02
 Original:
 Revisions:
 	 - 20121004@Jim: replace @currencyname input param by @currencyID
+	 - 20130514@Jim:Restrict permission of Licensee Users by currency
 
 Param's Explanation:
 • @CustID: AgentID
@@ -23,14 +25,20 @@ SET NOCOUNT ON
 DECLARE @Today SMALLDATETIME 
 SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
 
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+
 DECLARE @TempAg AS TABLE (CustID INT)
 INSERT INTO @TempAg (CustID)
 SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust WITH ( NOLOCK )  
-                WHERE   LicenseeID = @LicenseeID  
-                        AND  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID))
-                        AND [Description] = COALESCE(@LicenseeType,  
+                FROM    bodb_Licensee.dbo.LicenseeCust lc  WITH ( NOLOCK )  
+						INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
+                WHERE    [Description] = COALESCE(@LicenseeType,  
                                                      [Description])
+-------------------------
+DROP TABLE #currency
+-------------------------
 
 DECLARE @RowCount INT, @RowStart INT, @RowEnd INT  
 SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
