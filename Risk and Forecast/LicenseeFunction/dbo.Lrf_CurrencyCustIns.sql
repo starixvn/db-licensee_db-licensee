@@ -42,11 +42,17 @@ FROM
 WITH (currencyid varchar(20),status varchar(10))
 
 BEGIN
+	DELETE dbo.CurrencyUser WHERE usrID=@UserID AND LicenseeID=@LicenseeID
 	
+	INSERT INTO dbo.CurrencyUser
+	SELECT @UserID,@LicenseeID,CurrencyID,1,status
+	FROM #Currency
+	/*
 	UPDATE dbo.CurrencyUser WITH (ROWLOCK,UPDLOCK)
 	SET isActive=s.status
 	FROM dbo.CurrencyUser d
 		INNER JOIN #Currency s ON d.CurrencyID=s.CurrencyID AND d.usrID=@UserID AND d.LicenseeID=@LicenseeID 
+	*/	
 	-------------------------------------
 	DROP TABLE #Currency
 	exec sp_xml_removedocument @iDoc		
