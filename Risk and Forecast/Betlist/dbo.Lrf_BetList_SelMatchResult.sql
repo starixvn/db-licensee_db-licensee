@@ -3,6 +3,9 @@ set QUOTED_IDENTIFIER ON
 go
 
 ALTER  PROCEDURE [dbo].[Lrf_BetList_SelMatchResult]
+	@LicenseeID INT,
+	@UserID		INT,
+	@CurrencyID INT=0,
 	@MatchID INT,
 	@RaceNo VARCHAR(50)=NULL
 AS
@@ -19,10 +22,12 @@ Revisions:
 	- 20120817@Henry: Add Showtime for Table - hand - Shoe of Live Casino
 	- 20120911@Henry: Add homeid2 for Roulettle
 	- 20130403@Jim: support base currency USD 
+	- 20130514@Jim:Restrict permission of Licensee Users by currency
 	
 */
 
 SET NOCOUNT ON
+
 IF(@RaceNo is NULL )
 BEGIN
 	IF exists(SELECT 1 FROM match WITH(NOLOCK) WHERE matchid = @matchid)
@@ -218,7 +223,16 @@ BEGIN
 END
 DECLARE @Today SMALLDATETIME 
 SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
+
 BEGIN
+	SELECT  currencyID,LicenseeID into #currency
+	FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+	WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+	
+	SELECT * INTO #TempExchange 
+	FROM Lrf_f_GetExchangeDaily(@Today,@Today)
+	WHERE exchangeid IN (SELECT DISTINCT CurrencyID FROM #currency)
+
 	--get data from bettransg for bettype 1101
 	SELECT 
 		bg.refno, 
@@ -232,12 +246,15 @@ BEGIN
 	FROM bettransg bg with (NOLOCK)
 	INNER JOIN match m with (NOLOCK) ON bg.matchid=m.matchid 
 	INNER JOIN bettrans B ON bg.refno = B.refno
-	INNER JOIN 
-		(SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
+	INNER JOIN #TempExchange e 
 	ON e.exchangeid = b.currency AND  e.ExchangeDate = B.winlostdate
 	WHERE	b.bettype between 1101 and 1199 and
 			b.statusID in (0,1)
 			AND m.matchid=@matchID
+	----------------------------------		
+	DROP TABLE #currency
+	DROP TABLE #TempExchange
+	----------------------------------
 END
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelMatchResult] TO [bodbLicenseeNet]
