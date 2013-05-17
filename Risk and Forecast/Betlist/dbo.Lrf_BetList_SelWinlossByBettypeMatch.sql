@@ -1,6 +1,7 @@
 ﻿ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinlossByBettypeMatch]
 	@MatchID INT,
 	@LicenseeID INT,
+	@UserID		INT,
 	@CurrencyID INT=0,
 	@LicenseeType VARCHAR(100) = NULL,
 	@bettype INT=0,
@@ -54,6 +55,7 @@ Revisions:
    - 20121115@Henry: Only Sportsbook needs to exclude BA
    - 20121207@Henry: fix bug 1 match got 2 different winlostdate by add param @Date
    - 20130422@Scott: Add more parameter @ShowCS, @ShowBG
+   - 20130514@Jim:Restrict permission of Licensee Users by currency
 Param's Explanation: 
 	
 */
@@ -65,13 +67,16 @@ DECLARE @_Date AS SMALLDATETIME
 IF @Date IS NOT NULL
 SET @_Date = @Date
 
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+
 DECLARE @TempAg AS TABLE (custid INT)
 INSERT INTO @TempAg (custid)
 SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust WITH ( NOLOCK )  
-                WHERE   LicenseeID = @LicenseeID  
-                        AND  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID))
-                        AND [Description] = COALESCE(@LicenseeType,  
+                FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )
+						INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
+                WHERE   [Description] = COALESCE(@LicenseeType,  
                                                      [Description])
 													 
 DECLARE @Fromdate DATETIME
@@ -482,7 +487,7 @@ CREATE NONCLUSTERED INDEX IDX_Index_Data ON #Data (Currency)
 
 SELECT * INTO #TempExchange 
 FROM Lrf_f_GetExchangeDaily(@FromDate,@ToDate)
-WHERE exchangeid IN (SELECT DISTINCT Currency FROM #Data)
+WHERE exchangeid IN (SELECT DISTINCT CurrencyID FROM #Currency)
 
 SELECT 
 	@TotalRows = COUNT(transid),
@@ -542,6 +547,7 @@ DECLARE @BettransDetail TABLE(
 
 IF @ShowLC=1
 BEGIN
+	
 	IF EXISTS(SELECT TOP 1 1 FROM Match WITH(NOLOCK) WHERE MatchID=@MatchID)
 	BEGIN
 		INSERT INTO @BettransDetail
