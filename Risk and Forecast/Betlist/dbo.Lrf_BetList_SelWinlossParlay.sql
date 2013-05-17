@@ -5,6 +5,7 @@ go
 ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinlossParlay]
 	@LicenseeID INT ,
     @LicenseeType VARCHAR(100) = NULL ,
+	@UserID		INT,
     @CurrencyID INT=0,
     @Bettype INT = 9,
     @ShowBA BIT = 1,
@@ -49,6 +50,7 @@ Revisions:
    - 20120614@Jim: optimize code 
    - 20120726@Jim: add playercomm value 
    - 20121004@Jim: replace @currencyname input param by @currencyID
+   - 20130514@Jim:Restrict permission of Licensee Users by currency
 Param's Explanation: 
 	
 Example	
@@ -90,15 +92,20 @@ select @p13, @p14, @p15, @p16, @p17, @p18, @p19, @p20, @p21, @p22
 */
 SET NOCOUNT ON
 
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+
 CREATE  TABLE #TempAg  (custid INT)
 INSERT INTO #TempAg (custid)
 SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust WITH ( NOLOCK )  
-                WHERE   LicenseeID = @LicenseeID  
-                        AND  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID))
-                        AND [Description] = COALESCE(@LicenseeType,  
+                FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+				INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
+                WHERE  [Description] = COALESCE(@LicenseeType,  
                                                      [Description])
-													 
+----------------------------
+DROP TABLE #currency
+----------------------------													 
 CREATE NONCLUSTERED INDEX IDX_Index_Ag ON #TempAg (CustID)
 
 CREATE TABLE #AgWinlossMP
