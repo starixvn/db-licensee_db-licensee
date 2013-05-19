@@ -3,6 +3,8 @@ set QUOTED_IDENTIFIER ON
 go
 
 ALTER  PROCEDURE [dbo].[Lrf_BetList_SelWinloss_Mem]
+	@LicenseeID 	INT,
+	@UserID			INT,
 	@CustID			INT,
 	@FromDate		DATETIME,
 	@ToDate			DATETIME,
@@ -52,6 +54,7 @@ Revisions:
 	 - 20120911@Jim : add virtual sport
      - 20130123@Daniel: Change link server alias
 	 - 20130204@Jim: support RNG Casino and Bingo product
+	 - 20130514@Jim:Restrict permission of Licensee Users by currency
 Param's Explanation:
 	+ @drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
 
@@ -62,8 +65,6 @@ SET NOCOUNT ON
 declare @fdate DATETIME, @tdate datetime
 select @fdate = @FromDate, @tdate = @ToDate
 
-DECLARE	@currency INT 
-SELECT	@currency = currency FROM custinfo (NOLOCK) WHERE custid = @custid
 
 DECLARE @BetListByDateMem AS TABLE(
 	Sporttype		INT,
@@ -2068,6 +2069,19 @@ END
 
 
 --@currency
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+
+DECLARE	@currency INT 
+SELECT	@currency = currency 
+FROM custinfo c (NOLOCK) 
+INNER JOIN 	#currency cy ON c.currency=cy.currencyID
+WHERE custid = @custid
+---------------------------------------
+DROP TABLE #currency
+---------------------------------------
+
+
 SELECT * INTO #TempExchange 
 FROM Lrf_f_GetExchangeDaily(@FDate,@TDate)
 WHERE exchangeid = @currency

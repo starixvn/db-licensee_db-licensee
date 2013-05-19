@@ -13,6 +13,7 @@ exec Lrf_BetList_SelWinlossDaily
 ALTER  PROCEDURE [dbo].[Lrf_BetList_SelWinlossDaily]
 	@date SMALLDATETIME,
 	@LicenseeID INT,
+	@UserID		INT,
 	@CurrencyID INT=0,
 	@LicenseeType VARCHAR(100) = NULL,
 	@Langkey VARCHAR(10) = 'en-US',
@@ -57,6 +58,7 @@ Revisions:
 	- 20130305@Jim: change input param @winlostdate by @date
 	- 20130320@Jim: fix bug wrong Total Rows's value 
 	- 20130328@Scott: Support RNG Casino and Bingo
+	- 20130514@Jim:Restrict permission of Licensee Users by currency
 Param's Explanation: 
 	
 */
@@ -115,6 +117,9 @@ DECLARE @DataSum TABLE
 	SumPlayerComm MONEY
 )
 
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 DECLARE @TempAg AS TABLE (custid INT)
 DECLARE @TmpCondBettype AS TABLE (bettype INT primary key)
@@ -170,10 +175,9 @@ SELECT @wldate = @date
 
 INSERT INTO @TempAg (custid)
 SELECT  CustID  
-FROM    bodb_Licensee.dbo.LicenseeCust WITH ( NOLOCK )  
-WHERE   LicenseeID = @LicenseeID  
-        AND  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID))
-        AND [Description] = COALESCE(@LicenseeType,[Description])   
+FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+		INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
+WHERE   [Description] = COALESCE(@LicenseeType,[Description])   
 
 DECLARE @RowStart INT, @RowEnd INT  
 SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1
@@ -449,6 +453,7 @@ END
 
 SELECT * FROM @BettransDetail ORDER BY RefNo,Bettype
 
+DROP TABLE #Currency
 DROP TABLE #TempExchange
 DROP TABLE #TempExchangeSum
 DROP TABLE #Data

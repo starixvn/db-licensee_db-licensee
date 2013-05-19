@@ -4,6 +4,7 @@ go
 
 ALTER  PROCEDURE [dbo].[Lrf_BetList_SelWinlostRacing]
 	@LicenseeID INT ,
+	@UserID		INT,
     @LicenseeType VARCHAR(100) = NULL ,
     @CurrencyID	INT=0,
 	@date	DATETIME,
@@ -44,6 +45,7 @@ AS
     - 20130123@Daniel: Change link server alias
 	- 20130305@Jim: change input param @winlostdate by @date 
 	- 20130402@Jim: support base currency by USD
+	- 20130514@Jim:Restrict permission of Licensee Users by currency
 
 	Param's Explanation:
 		
@@ -57,19 +59,24 @@ BEGIN
 		 @MoveBetsDay=MAX(eventdate)  
 	FROM match14 WITH(NOLOCK)  
 	
+	SELECT  currencyID,LicenseeID into #currency
+	FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+	WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+
 	DECLARE @TempAg AS TABLE ( CustId INT )
 	INSERT  INTO @TempAg(CustId)
 	SELECT    CustId  
       FROM      custInfo WITH ( NOLOCK )  
       WHERE     CustID IN (  
                 SELECT  CustID  
-                FROM    DBLIC.bodb_Licensee.dbo.LicenseeCust WITH ( NOLOCK )  
-                WHERE   LicenseeID = @LicenseeID  
-                        AND (@CurrencyID=0 OR (@CurrencyID<>0 AND Currency=@CurrencyID))
-                        AND [Description] = COALESCE(@LicenseeType,  
+                FROM    DBLIC.bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+						INNER JOIN  #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID 
+                WHERE   [Description] = COALESCE(@LicenseeType,  
                                                      [Description]) )  
                 AND RoleId = 2  
-	
+	------------
+	DROP TABLE #currency 
+	------------
 	DECLARE @LicenseeName VARCHAR(50)
 	SELECT @LicenseeName = LicenseeName FROM DBLIC.bodb_Licensee.dbo.Licensees WITH (NOLOCK)
 	WHERE LicenseeID = @LicenseeID
@@ -203,7 +210,7 @@ CREATE NONCLUSTERED INDEX IDX_Index_Ag ON #DataTmp(Currency)
 
 SELECT * INTO #TempExchange
 FROM Lrf_f_GetExchangeDaily(@date,@date)
-WHERE exchangeid IN (SELECT DISTINCT Currency FROM #DataTmp)
+WHERE exchangeid IN (SELECT DISTINCT CurrencyID FROM #DataTmp)
 
 SELECT 
 	@TotalRows = count(transid),
@@ -311,7 +318,6 @@ DECLARE @BettransDetail TABLE(
 
 SELECT * FROM @BettransDetail ORDER BY RefNo,Bettype 
 -------------------------------------
-
 DROP TABLE #DataTmp
 DROP TABLE #TempExchange	
 	

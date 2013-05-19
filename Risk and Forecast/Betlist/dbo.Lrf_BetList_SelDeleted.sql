@@ -3,6 +3,8 @@ set QUOTED_IDENTIFIER ON
 go
 
 ALTER PROCEDURE [dbo].[Lrf_BetList_SelDeleted]
+	@LicenseeID INT ,
+	@UserID		INT,
 	@CustID INT,
 	@Langkey NVARCHAR(10)='en-US'	,
 	@PageSize INT=1000,
@@ -29,6 +31,7 @@ Revisions:
 	- 20120614@Jim: optimize code 	
 	- 20120816@Henry: add ShowLiveCasino 
 	- 20130411@Jim: support base currency
+	- 20130514@Jim:Restrict permission of Licensee Users by currency
 Param's Explanation:
 + @CustID: AgentID
 */
@@ -38,8 +41,17 @@ SET NOCOUNT ON
 DECLARE @recommend INT
 DECLARE @Fromdate DATETIME
 DECLARE @Todate DATETIME
-SELECT @recommend = recommend from customer WITH(NOLOCK) WHERE custid=@custid
 
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+
+SELECT @recommend = recommend 
+from customer c WITH(NOLOCK)
+inner join 	#currency cy ON c.currency=cy.currencyID						
+ WHERE custid=@custid
+------------------------------------------
+DROP TABLE #Currency 
+-----------------------------------------
 CREATE TABLE #Data 
 (
 	Sporttype SMALLINT,

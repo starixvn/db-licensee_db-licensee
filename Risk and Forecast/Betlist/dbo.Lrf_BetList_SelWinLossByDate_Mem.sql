@@ -3,6 +3,8 @@ set QUOTED_IDENTIFIER ON
 go
 
 ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinLossByDate_Mem]
+	@LicenseeID 	INT,
+	@UserID			INT,
 	@CustID INT,
 	@FromDate SMALLDATETIME,
 	@ToDate SMALLDATETIME,
@@ -61,14 +63,24 @@ Revisions:
    - 20120913@Jim: add virtual sport 	
    - 20130123@Daniel: Change link server alias
    - 20130225@Jim: support RNG Casino, Bingo 
+   - 20130514@Jim:Restrict permission of Licensee Users by currency
    
    */
 
 SET NOCOUNT ON
 
 DECLARE @UserName NVARCHAR(20), @Recommend INT
-SELECT @UserName =UserName, @Recommend = Recommend FROM custinfo WITH(NOLOCK) WHERE CustID=@CustID
 
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+
+SELECT @UserName =UserName, @Recommend = Recommend 
+FROM custinfo c WITH(NOLOCK) 
+	INNER JOIN #Currency cy ON c.Currency=cy.CurrencyID	
+WHERE CustID=@CustID
+----------------------------------------
+DROP TABLE #currency
+-----------------------------------------
 CREATE TABLE #BetListByDateMem (
 	Sporttype SMALLINT,
 	Username NVARCHAR(20), 
@@ -1411,6 +1423,7 @@ BEGIN
 			INNER JOIN DBLIC.bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid				
 		WHERE
 			b.winlostdate BETWEEN @fromdate AND @TempToDate AND
+			b.recommend = @Recommend  AND
 			b.custid=@custid AND
 			b.ruben = 1 
 
@@ -1645,6 +1658,7 @@ BEGIN
 			WHERE
 				b.winlostdate BETWEEN @fromdate AND @TempToDate AND
 				b.custid=@custid AND
+				b.recommend = @Recommend AND 
 				b.ruben = 1 AND
 				(b.bettype < 31 OR (b.bettype BETWEEN 121 AND 999 ) ) AND
 				b.bettype <> 10 AND
@@ -1693,7 +1707,8 @@ BEGIN
 				bodb_archive.dbo.bettrans_bk AS b WITH (nolock, index=IX_custid)
 			WHERE
 				b.winlostdate BETWEEN @fromdate AND @TempToDate AND
-				b.custid=@custid AND			
+				b.custid=@custid AND	
+				b.recommend = @Recommend AND				
 				b.bettype = 9 AND
 				b.matchid IN (0,9) AND --should not remove 0 in Archive
 				b.ruben = 1 AND
@@ -1741,7 +1756,8 @@ BEGIN
 				bodb_archive.dbo.bettrans_bk AS b WITH (nolock, index=IX_custid)
 			WHERE
 				b.winlostdate BETWEEN @fromdate AND @TempToDate AND
-				b.custid=@custid AND			
+				b.custid=@custid AND
+				b.recommend = @Recommend  AND 		
 				b.bettype = 29 AND
 				b.matchid = 29 AND
 				b.ruben = 1 AND
@@ -1791,7 +1807,8 @@ BEGIN
 				INNER JOIN dbo.League AS l WITH (nolock) ON m.leagueID = l.leagueID
 			WHERE
 				b.winlostdate BETWEEN @fromdate AND @TempToDate AND
-				b.custid=@custid AND			
+				b.custid=@custid AND
+				b.recommend = @Recommend  AND		
 				b.ruben = 1 AND
 				b.bettype = 10 AND
 				b.ruben = 1 AND
@@ -1844,7 +1861,8 @@ BEGIN
 				INNER JOIN dbo.League AS l WITH (nolock) ON m.leagueID = l.leagueID
 			WHERE
 				b.winlostdate BETWEEN @fromdate AND @TempToDate AND
-				b.custid=@custid AND			
+				b.custid=@custid AND
+				b.recommend = @Recommend AND 		
 				b.ruben = 1 AND 
 				b.bettype IN (31, 32, 33)
 	
@@ -1896,6 +1914,7 @@ BEGIN
 		WHERE
 			b.winlostdate BETWEEN @fromdate AND @TempToDate AND			
 			b.custid=@CustID AND
+			b.recommend = @Recommend  AND
 			((@ShowNG=1 AND b.bettype BETWEEN 81 AND 120) 
 				OR (@ShowLC=1 AND b.bettype BETWEEN 1101 AND 1199 )
 				OR (@ShowVS=1 AND b.bettype BETWEEN 1201 AND 1299 )
@@ -1948,7 +1967,8 @@ BEGIN
 			bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK, index=IX_custid)		
 		WHERE
 			b.winlostdate BETWEEN @fromdate AND @TempToDate AND			
-			b.custid=@CustID AND 
+			b.custid=@CustID AND
+			b.recommend = @Recommend AND	
 			b.bettype=71 AND 
 			b.ruben = 1
 			
@@ -1963,6 +1983,7 @@ DECLARE @Today SMALLDATETIME
 SET @Today = convert(VARCHAR(10), CURRENT_TIMESTAMP, 120)
 
 CREATE NONCLUSTERED INDEX IDX_Index_betlist ON #BetListByDateMem (Currency)
+
 
 SELECT * INTO #TempExchange 
 FROM Lrf_f_GetExchangeDaily(@FromDate,@ToDate)
