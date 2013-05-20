@@ -1,4 +1,6 @@
 ﻿ALTER  PROCEDURE [dbo].[Lrf_BetList_SelByDayAll_Mem_Old]
+	@LicenseeID INT ,
+	@UserID		INT,
 	@custid		INT,
 	@fromdate	smalldatetime,
 	@language	nvarchar(10) = 'en-us',
@@ -42,6 +44,7 @@ Revisions:
     - 20130123@Daniel: Change link server alias
 	- 20130410@Jim: return betteam,modd value for Parlay ticket (Mix parlay & system parlay)
 	- 20130411@Jim: support base currency USD
+	- 20130514@Jim: Restrict permission of Licensee Users by currency
 	
 Param's Explanation: 
 
@@ -49,9 +52,17 @@ Param's Explanation:
 
 SET NOCOUNT ON
 
-DECLARE @Username VARCHAR(30) 
-SELECT	@Username = username FROM Custinfo WITH (NOLOCK) WHERE custid = @CustID 
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
 
+DECLARE @Username VARCHAR(30) 
+SELECT	@Username = c.username 
+FROM Custinfo c WITH (NOLOCK) 
+	INNER JOIN #Currency cy ON c.currency=cy.CurrencyID
+WHERE c.custid = @CustID 
+------------------------------------
+DROP TABLE #Currency
+------------------------------------
 DECLARE @Data TABLE (
 	sporttype INT, 
 	leagueid INT, 

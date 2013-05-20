@@ -4,6 +4,7 @@ go
 
 ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinlossOutright]
 	@LicenseeID INT ,
+	@UserID		INT,
     @LicenseeType VARCHAR(100) = NULL ,
     @CurrencyID	INT=0,
 	@FromDate SMALLDATETIME,
@@ -46,6 +47,7 @@ Revisions:
 - 20120614@Jim: optimize code 
 - 20120726@Jim: add player comm value 
 - 20121004@Jim: replace @currencyname input param by @currencyID
+- 20130514@Jim: Restrict permission of Licensee Users by currency
 Example:
 
 declare @p12 int
@@ -86,15 +88,18 @@ select @p12, @p13, @p14, @p15, @p16, @p17, @p18, @p19, @p20, @p21
 
 SET NOCOUNT ON
 
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+
 DECLARE @TempAg AS TABLE (custid INT)
 INSERT INTO @TempAg (custid)
-SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust WITH ( NOLOCK )  
-                WHERE   LicenseeID = @LicenseeID  
-                        AND  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID))
-                        AND [Description] = COALESCE(@LicenseeType,  
+SELECT  lc.CustID  
+                FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+						INNER JOIN #Currency c ON c.LicenseeID=lc.LicenseeID AND lc.Currency=c.CurrencyID
+                WHERE   [Description] = COALESCE(@LicenseeType,  
                                                      [Description])
-
+ DROP TABLE #Currency
 CREATE TABLE #AgWinlossOutright
 (
 	sporttype INT,
@@ -235,10 +240,6 @@ BEGIN
 			b.Ruben=1 AND
 			b.tpositiontaking<>0 AND
 			(@ExcludeReject = 0 OR (@ExcludeReject=1 AND b.statusID NOT IN (101, 102, 103))) 
-			
-			
-			
-			
 	END		
 	
 	

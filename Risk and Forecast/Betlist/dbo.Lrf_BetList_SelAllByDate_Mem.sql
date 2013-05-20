@@ -3,6 +3,8 @@ set QUOTED_IDENTIFIER ON
 go
 
 ALTER  PROCEDURE [dbo].[Lrf_BetList_SelAllByDate_Mem]
+	@LicenseeID INT ,
+	@UserID		INT,
 	@custid INT=NULL,
 	@FromDate DATETIME,
 	@ToDate DATETIME,
@@ -61,16 +63,24 @@ Revisions:
 	- 20120912@Jim: add virtual sport
 	- 20121115@Henry: Only Sportsbook needs to exclude BA
 	- 201300426@Scott: Support RNG Casino and Bingo
+	- 20130514@Jim: Restrict permission of Licensee Users by currency
 */
 
 
 if @custid is NULL
 	SELECT @custid = custid FROM customer WITH (NOLOCK) WHERE username = @username
 
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+
 DECLARE @Recommend INT
-	SELECT @Recommend = Recommend, @UserName = Username FROM custinfo WITH(NOLOCK) WHERE CustID=@CustID
-
-
+	SELECT @Recommend = Recommend, @UserName = Username 
+FROM custinfo  c WITH(NOLOCK) 
+	INNER JOIN #Currency cy ON cy.CurrencyID=c.Currency
+WHERE CustID=@CustID
+------------------------------
+DROP TABLE #currency
+------------------------------
 CREATE TABLE #BetListSelAllByDateMem (
 	Username NVARCHAR(50), 
 	Sporttype INT,
