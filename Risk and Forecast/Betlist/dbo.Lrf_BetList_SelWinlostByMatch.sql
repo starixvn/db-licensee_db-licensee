@@ -1,6 +1,7 @@
 ﻿ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinlossByMatch]
 	@MatchID INT,
 	@LicenseeID INT,
+	@UserID	 INT,
 	@CurrencyID INT=0,
 	@LicenseeType VARCHAR(100) = NULL,	
 	@PageSize INT=1000,
@@ -25,6 +26,7 @@ Revisions:
 	-20121004@Jim: replace @currencyname input param by @currencyID
 	- 20121115@Henry: Only Sportsbook needs to exclude BA
 	- 20130411@Jim: support base currency USD
+	- 20130514@Jim: Restrict permission of Licensee Users by currency
 	
    Get all tickets for a match
 Param's Explanation: 
@@ -34,15 +36,19 @@ Param's Explanation:
 
 SET NOCOUNT ON
 
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+
 DECLARE @TempAg AS TABLE (custid INT)
 INSERT INTO @TempAg (custid)
 SELECT CustID 
-FROM bodb_Licensee.dbo.LicenseeCust WITH ( NOLOCK )
-WHERE   LicenseeID = @LicenseeID  
-		AND  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID))
-		AND [Description] = COALESCE(@LicenseeType,[Description])    
+FROM bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )
+	INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID  AND lc.Currency=c.CurrencyID
+WHERE    [Description] = COALESCE(@LicenseeType,[Description])    
 
 
+DROP TABLE #Currency 
 
 DECLARE @RowStart INT, @RowEnd INT  
 SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1
