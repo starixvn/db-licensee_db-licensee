@@ -1,5 +1,6 @@
 ﻿ALTER PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossParlay]
 	@LicenseeID INT ,
+	@UserID		INT,
 	@CurrencyID INT = 0,
     @Bettype INT = 9,
     @ShowBA BIT = 0,
@@ -24,22 +25,27 @@ Revisions:
 		- 20121004@Jim: replace @currency input param by @currencyID
 		- 20130305@Jim: remove Grand total row in the result data
 		- 20130404@Jim: set default @ShowBA=0
+		- 20130514@Jim:Restrict permission of Licensee Users by currency
 Param's Explanation: 
 
 
 */
 SET NOCOUNT ON
 
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+
 DECLARE @TempAg AS TABLE (custid INT)
 
 INSERT  INTO @TempAg ( CustId)
 SELECT  CustID  
-FROM    bodb_Licensee.dbo.LicenseeCust WITH ( NOLOCK )  
-WHERE   LicenseeID = @LicenseeID  
-		AND Currency <> 20
-		AND (@CurrencyID=0 OR (@CurrencyID <> 0 AND Currency = @CurrencyID))
-
-
+FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+		INNER JOIN #currency c ON c.LicenseeID=lc.LicenseeID AND c.CurrencyID=lc.Currency
+WHERE   lc.Currency <> 20
+------------------------------
+DROP TABLE #currency 
+------------------------------
 
 CREATE TABLE #AgWinlossMP
 (
@@ -265,10 +271,6 @@ BEGIN
 			b.statusID IN (111,112,113) 
 			
 	END
-	
-	
-	
-	
 		
 END
 

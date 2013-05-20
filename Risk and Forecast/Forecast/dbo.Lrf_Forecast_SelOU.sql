@@ -30,7 +30,7 @@ Revisions:
 	SELECT  lc.CustID  
 	FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
 	INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
-	WHERE   [lc.Description] = COALESCE(@LicenseeType,  
+	WHERE   lc.[Description] = COALESCE(@LicenseeType,  
 										 [Description])
 		
 	--------------

@@ -9,6 +9,8 @@ GO
 /****** Object:  Stored Procedure dbo.Lrf_BetList_SelCombinationParlayDetail_xtest    Script Date: 8/29/2012 9:32:11 PM ******/
 /****** Object:  Stored Procedure dbo.Lrf_BetList_SelCombinationParlayDetail    Script Date: 8/27/2012 3:45:13 PM ******/
 ALTER PROC [dbo].[Lrf_BetList_SelCombinationParlayDetail]
+	@LicenseeID INT ,
+	@UserID		INT,
 	@transid		BIGINT = 0,
 	@Refno BIGINT,
 	@betid			BIGINT = 0,
@@ -32,8 +34,8 @@ Revisions:
 	- 20120214@Jim: change to use  table ExchangeDaily by use function Lrf_f_GetExchangeDaily  
 	- 20120319@Henry: Fix bug in case of sub & main ticket are not in the same table (bettrans14, bettrans_bk,..)
 	- 20120724@Jim : add player commission value 
-	- 20120724@Jim : add player commission value
 	- 20130404@Daniel : fix bug check movebet day in case movebetday = min(matchdate) 
+	- 20130514@Jim:Restrict permission of Licensee Users by currency
 */
 SET NOCOUNT ON
 
@@ -128,9 +130,17 @@ DECLARE @betParlayDetail TABLE (
 	DECLARE @minMatchdate DATETIME,
 			@maxMatchdate DATETIME
 
-SELECT @currency = currency FROM custinfo c WITH (NOLOCK)
-WHERE custid = @custid
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
 
+
+SELECT @currency = c.currency 
+FROM custinfo c WITH (NOLOCK)
+INNER JOIN #Currency cy ON c.Currency=cy.CurrencyID 
+WHERE c.custid = @custid
+-----
+DROP TABLE #Currency
+----
 INSERT INTO @parlay_base(transid,refno,winlostdate,bettype,homeid,awayid,hdp1,hdp2,odds,betteam,statusid,
 						livehomescore,liveawayscore,liveindicator,leagueid,sporttype,isNeutral,matchid,matchcode,matchdate)
 
