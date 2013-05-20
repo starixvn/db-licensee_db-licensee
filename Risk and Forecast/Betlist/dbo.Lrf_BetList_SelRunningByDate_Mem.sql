@@ -3,6 +3,8 @@ set QUOTED_IDENTIFIER ON
 go
 
 ALTER PROCEDURE [dbo].[Lrf_BetList_SelRunningByDate_Mem]
+	@LicenseeID INT ,
+	@UserID		INT,
 	@CustID INT=NULL,
 	@FromDate DATETIME = '',
 	@ToDate DATETIME  = '',
@@ -46,14 +48,24 @@ Revisions:
    - 20120924@Jim: add virtual sport 
    - 20130226@Jim: support RNG Casino,Bingo	
    - 20130326@Jim: remove input parameter @GetAll
+   - 20130514@Jim: Restrict permission of Licensee Users by currency
 */
 
 SET NOCOUNT ON
 
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+
 IF @custid IS NULL
-	SELECT @custid = custid FROM customer WITH (nolock) WHERE username = @username
+	SELECT @custid = custid 
+	FROM customer c WITH (nolock) 
+		INNER JOIN #currency cy ON c.Currency=cy.CurrencyID
+	WHERE username = @username
 ELSE
-	SELECT @username = username FROM customer WITH(nolock) WHERE CustID=@CustID
+	SELECT @username = username 
+	FROM customer  c WITH(nolock) 
+	INNER JOIN #currency cy ON c.Currency=cy.CurrencyID
+	WHERE CustID=@CustID
 
 
 CREATE TABLE #BetListSelRunningByDateMem

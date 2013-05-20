@@ -1,5 +1,6 @@
 ﻿ALTER PROCEDURE [dbo].[Lrf_BetList_SelDeleted_UserList]
 @LicenseeID INT,
+@UserID	INT,
 @CurrencyID INT=0,
 @LicenseeType VARCHAR(100) = NULL
 
@@ -15,19 +16,24 @@ AS
 		 - 20110302@Henry: Allow to choose all type of licensee AND all currency 
 		 - 20110325@Henry: support username2 to the list
 		 - 20121004@Jim: replace @currencyname input param by @currencyID
+		 - 20130514@Jim: Restrict permission of Licensee Users by currency
 	
 */
 SET NOCOUNT ON
 
+
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+
 DECLARE @TempAg AS TABLE (custid INT)
 INSERT INTO @TempAg (custid)
     SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust WITH ( NOLOCK )  
-                WHERE   LicenseeID = @LicenseeID  
-                        AND  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID))
-                        AND [Description] = COALESCE(@LicenseeType,  
+                FROM    bodb_Licensee.dbo.LicenseeCust lc  WITH ( NOLOCK )  
+						INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
+                WHERE    [Description] = COALESCE(@LicenseeType,  
                                                      [Description]) 
-
+DROP TABLE #Currency
 DECLARE @bc TABLE (custid INT, betcount INT)
 INSERT INTO @bc (custid, betcount)
 SELECT  b.custid, SUM(1) AS betcount
