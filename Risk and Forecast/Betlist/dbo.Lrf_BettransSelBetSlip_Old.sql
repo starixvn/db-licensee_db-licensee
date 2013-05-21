@@ -1,4 +1,6 @@
 ﻿ALTER PROCEDURE [dbo].[Lrf_BettransSelBetSlip_Old]
+	@LicenseeID INT=0,
+	@UserID	 INT=0,
 	@transid bigint,
 	@Language VARCHAR(10) = 'en-us'
 AS

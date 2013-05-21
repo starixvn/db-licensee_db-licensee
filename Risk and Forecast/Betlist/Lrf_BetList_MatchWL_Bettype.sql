@@ -7,6 +7,7 @@ go
 ALTER PROCEDURE [dbo].[Lrf_BetList_MatchWL_Bettype]
 	@MatchID INT,
 	@LicenseeID INT,
+	@UserID	 INT,
 	@LicenseeType VARCHAR(100) = NULL,
 	@CurrencyID INT=0,
 	@bettype INT=0,
@@ -58,6 +59,7 @@ Revisions:
    - 20121115@Henry: Only Sportsbook needs to exclude BA
    - 20121207@Henry: fix bug 1 match got 2 different winlostdate by add param @Date
    - 20130417@Jim: support base currency USD	
+   - 20130514@Jim: Restrict permission of Licensee Users by currency
 Param's Explanation: 
 	
 */
@@ -69,14 +71,18 @@ DECLARE @_Date AS SMALLDATETIME
 IF @Date IS NOT NULL
 SET @_Date = @Date
 
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+
 DECLARE @TempAg AS TABLE (custid INT)
 INSERT INTO @TempAg (custid)
 SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust WITH ( NOLOCK )  
-                WHERE   LicenseeID = @LicenseeID  
-                        AND  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID))
-                        AND [Description] = COALESCE(@LicenseeType,  
+                FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+						INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
+                WHERE   [Description] = COALESCE(@LicenseeType,  
                                                      [Description])
+DROP TABLE #Currency 
 													 
 DECLARE @Fromdate DATETIME
 DECLARE @Todate  DATETIME

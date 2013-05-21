@@ -6,6 +6,7 @@ go
 ALTER PROCEDURE [dbo].[Lrf_BetList_MatchWL_Racing]
 	 --@CustID INT=null, --AgentID  
 	 @LicenseeID INT ,
+	 @UserID	 INT,
      @LicenseeType VARCHAR(100) = NULL ,
      @CurrencyID  INT=0,
 	 @Bettype INT,  
@@ -45,6 +46,7 @@ Revisions:
     -- 20120214@Jim: change table ExchangeDaily by function Lrf_f_GetExchangeDaily  
 	-- 20120726@Jim: add playercomm value 
 	-- 20121004@Jim: replace @currencyname input param by @currencyID
+	-- 20130514@Jim: Restrict permission of Licensee Users by currency
 */
 
 SET NOCOUNT ON  
@@ -87,13 +89,17 @@ CREATE  TABLE #AgWinlossHR (
 	 currency SMALLINT
 )  
 
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+
 INSERT INTO @TempAg (custid)
 SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust WITH ( NOLOCK )  
-                WHERE   LicenseeID = @LicenseeID  
-                        AND  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID))
-                        AND [Description] = COALESCE(@LicenseeType,  
+                FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+						INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID 
+                WHERE    [Description] = COALESCE(@LicenseeType,  
                                                      [Description])
+DROP TABLE #Currency 
   
 IF @Todate > @MoveBetsDay  
 BEGIN  

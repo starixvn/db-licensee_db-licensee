@@ -5,6 +5,7 @@ go
 
 ALTER PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossNumberGame]	 
 	 @LicenseeID INT ,
+	 @UserID	 INT,
      @CurrencyID INT = 0 ,     
 	 @FromDate SMALLDATETIME,  
 	 @ToDate SMALLDATETIME,  
@@ -26,6 +27,7 @@ Revisions:
 	-20120724@Jim: add player commision value 
 	-20121004@Jim: replace @currency input param by @currencyID
 	-20130403@Jim: fix bug page index and liveindicator value 
+	- 20130514@Jim: Restrict permission of Licensee Users by currency
 */
 
 
@@ -77,15 +79,18 @@ CREATE TABLE #Data (
 )  
 CREATE INDEX IX_Data on #Data (Winlostdate, Currency)
 
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+
 
 INSERT  INTO @TempAg ( CustId)
 SELECT  CustID  
-FROM    bodb_Licensee.dbo.LicenseeCust WITH ( NOLOCK )  
-WHERE   LicenseeID = @LicenseeID  
-		AND Currency <> 20
-		AND (@CurrencyID=0 OR (@CurrencyID <> 0 AND Currency = @CurrencyID))
-
-  
+FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+		INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID 
+WHERE    Currency <> 20
+		
+DROP TABLE #Currency 		
 
 
 IF @Fromdate <= @MoveBetsDay 

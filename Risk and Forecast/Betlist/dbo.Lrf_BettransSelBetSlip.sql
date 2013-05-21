@@ -3,6 +3,8 @@ set QUOTED_IDENTIFIER ON
 go
 
 ALTER PROCEDURE [dbo].[Lrf_BettransSelBetSlip]
+	@LicenseeID INT=0,
+	@UserID	 INT=0,
 	@transid bigint,
 	@Langkey VARCHAR(10) = 'en-US'
 AS
