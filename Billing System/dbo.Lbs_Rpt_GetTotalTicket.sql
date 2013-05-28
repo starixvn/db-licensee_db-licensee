@@ -12,6 +12,7 @@ ALTER PROCEDURE [dbo].[Lbs_Rpt_GetTotalTicket]
 	@ShowNG		BIT=0,
 	@ShowLC 	BIT=0,
 	@ShowVS		BIT=0,
+	@ShowCS  	BIT=0, -- RNG Casino
 	@ResellerID INT =0,
 	@LicenseeID INT = 0, 
 	@BalanceUpDay SMALLDATETIME,  
@@ -39,6 +40,7 @@ AS
   - 20120816@Jim: add live casino
   - 20120905@Henry: add Virtual Sports
   - 20121122@Jim: fix bug sportbook bettype range 
+  - 20130527@Jim: support RNG Casino
  Param's Explanation:    
   
 */    
@@ -49,6 +51,7 @@ BEGIN
 	DECLARE @ToDate DATETIME  
 	
 	DECLARE @data AS TABLE (ResellerID INT,LicenseeID INT, betcount INT)  
+	DECLARE @bettype AS TABLE (bettype INT PRIMARY KEY) 
 	
 	DECLARE @tmpLicenseeReseller AS TABLE (ResellerID INT ,LicenseeID INT)
 
@@ -59,9 +62,20 @@ BEGIN
 	SELECT lr.ResellerID,lr.LicenseeID FROM bodb_licensee.dbo.LicenseeReseller lr (NOLOCK)
 	INNER JOIN bodb_licensee.dbo.Resellers r WITH (NOLOCK) ON lr.ResellerID = r.ResellerID
 	WHERE (@ResellerID=0 OR lr.ResellerID = @ResellerID) AND (@LicenseeID = 0 OR LicenseeID = @LicenseeID)
-
 	
-	IF (@ShowSB = 1 OR @ShowNG = 1 OR @ShowRB = 1 OR @ShowLC=1 OR @ShowVS=1)
+	INSERT INTO @bettype
+	SELECT typeid FROM dbo.bettype 
+	WHERE (
+			(@showSB=1 AND typeid  between 121 and 999)
+			OR (@showSB=1 AND typeid<31)
+			OR (@showRB=1 AND typeid between 31 and 33)
+			OR (@showNG=1 AND typeid between 81 and 120)
+			OR (@showLC=1 AND typeid between 1101 and 1199)
+			OR (@showVS=1 AND typeid between 1201 and 1299)
+			OR (@showCS=1 AND typeid=71)
+		    )	
+		
+	IF (@ShowSB = 1 OR @ShowNG = 1 OR @ShowRB = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1)
 	BEGIN
 		--exclude BA & FDL & PIH...
 		IF EXISTS(SELECT 1 FROM @tmpLicenseeReseller lr INNER JOIN bodb_licensee.dbo.licensees l WITH (nolock) ON lr.licenseeid=l.licenseeid  WHERE l.IsDeposit=1 AND lr.ResellerID<>3)
@@ -75,6 +89,7 @@ BEGIN
 				INNER JOIN bodb_Licensee.dbo.rpt_Betting b WITH ( NOLOCK) ON lr.LicenseeID = b.siteID
 				INNER JOIN bodb_Licensee.dbo.SystemLicensee sl (NOLOCK) ON lic.LicenseeID=sl.LicenseeID 
 				INNER JOIN bodb_Licensee.dbo.Systems s (NOLOCK) ON sl.SystemID=s.ID
+				INNER JOIN @bettype bet ON b.bettype=bet.bettype
 			WHERE 
 				b.rptDate BETWEEN @FromDate AND @ToDate
 				AND lr.ResellerID<>3
@@ -84,14 +99,6 @@ BEGIN
 				AND @FromDate>=isnull(lic.AffectedDate,'1999-01-01')
 				AND b.status NOT IN (-1,103)
 				AND CurrencyID<>20
-				AND (
-					(@showSB=1 AND bettype  between 121 and 999)
-					OR (@showSB=1 AND bettype<31)
-					OR (@showRB=1 AND bettype between 31 and 33)
-					OR (@showNG=1 AND bettype between 81 and 120)
-					OR (@showLC=1 AND bettype between 1101 and 1199)
-					OR (@showVS=1 AND bettype between 1201 and 1299)
-					)		
 				GROUP BY lr.ResellerID,lr.licenseeid		
 		END	
 	
@@ -132,6 +139,7 @@ BEGIN
 				INNER JOIN bodb_licensee.dbo.licensees lic WITH ( NOLOCK) ON lic.licenseeid=lr.licenseeid
 				INNER JOIN bodb_Licensee.dbo.SystemLicensee sl (NOLOCK) ON lic.LicenseeID=sl.LicenseeID 
 				INNER JOIN bodb_Licensee.dbo.Systems s (NOLOCK) ON sl.SystemID=s.ID
+				INNER JOIN @bettype bet ON b.bettype=bet.bettype
 			WHERE 
 				b.rptDate BETWEEN @FromDate AND @ToDate
 				AND b.status NOT IN (-1,103)
@@ -142,13 +150,6 @@ BEGIN
 				AND @FromDate>=isnull(lb.AffectedDate,'1999-01-01')
 				AND lr.ResellerID<>3
 				AND isnull(b.customercategory,-1) NOT IN (27 ,28)
-				AND ( bettype < CASE WHEN @showSB = 1 THEN 31 ELSE 0 END  
-				  OR bettype BETWEEN 121 AND CASE WHEN @showSB=1 THEN 999 ELSE 0 END    
-					OR bettype BETWEEN 31 AND CASE WHEN @showRB=1 THEN 33 ELSE 0 END    
-					OR bettype BETWEEN 81 AND CASE WHEN @showNG=1 THEN 120 ELSE 0 END   
-					OR bettype BETWEEN 1101 AND CASE WHEN @ShowLC=1 THEN 1199 ELSE 0 END  
-					OR bettype BETWEEN 1201 AND CASE WHEN @ShowVS=1 THEN 1299 ELSE 0 END  
-				  )  
 			GROUP BY lr.ResellerID,lr.LicenseeID
 		END
 	
