@@ -1,4 +1,13 @@
-﻿ALTER  PROCEDURE [dbo].[Lrf_CustomerSelBalance]
+﻿USE [bodb02]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_CustomerSelBalance]    Script Date: 05/29/2013 04:55:43 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+/****** Object:  Stored Procedure dbo.Lrf_CustomerSelBalance    Script Date: 5/8/2013 3:14:05 AM ******/
+/****** Object:  Stored Procedure dbo.Lrf_CustomerSelBalance    Script Date: 4/29/2013 9:54:22 AM ******/
+ALTER PROCEDURE [dbo].[Lrf_CustomerSelBalance]
 	@LicenseeID INT,
 	@CurrencyID INT=0,
 	@LicenseeType VARCHAR(100) = NULL,
@@ -28,6 +37,7 @@ Revisions:
 	- 20120724@Jim: add player commission value 
 	- 20121004@Jim: replace @currencyname input param by @currencyID
 	- 20130417@Scott: Support RNG Casino and Bingo  
+	- 20130529@Daniel: Fix bug regconize BA tickets caused by "Support RNG Casino and Bingo"
 */
 SET NOCOUNT ON
 
@@ -216,11 +226,11 @@ FROM
 INSERT INTO @LicenseeWL (winlostdate,currency,LicenseeWL,AmtDuetoBA,AmtDuetoRB,WinlossRB,CommBA,CommRB,PlayerComm)
 SELECT
 	b.winlostdate,s.currency,
-	ISNULL(- SUM(CASE WHEN b.tpositiontaking<>0 AND (b.bettype in (71,73) or (b.bettype NOT BETWEEN 31 AND 80)) THEN (b.winlost - b.actual_stake)  ELSE 0 END),0) as LicenseeWL,
-	ISNULL(- SUM ( CASE WHEN b.tpositiontaking=0 AND (b.bettype in (71,73) or (b.bettype NOT BETWEEN 31 AND 120 AND b.bettype<=999)) THEN (b.winlost - b.actual_stake + awinlost + comm) ELSE 0 END),0) AS AmtDuetoBA,
+	ISNULL(- SUM(CASE WHEN b.tpositiontaking<>0 AND (b.bettype NOT BETWEEN 31 AND 80 OR b.bettype in (71,73) ) THEN (b.winlost - b.actual_stake)  ELSE 0 END),0) as LicenseeWL,
+	ISNULL(- SUM ( CASE WHEN b.tpositiontaking=0 AND (b.bettype NOT BETWEEN 31 AND 120 AND b.bettype<=999) THEN (b.winlost - b.actual_stake + awinlost + comm) ELSE 0 END),0) AS AmtDuetoBA,
 	ISNULL(- SUM ( CASE WHEN b.bettype IN (31,32,33) THEN (b.winlost - b.actual_stake + awinlost + comm) ELSE 0 END),0)AS AmtDuetoRB,
 	ISNULL(SUM (CASE WHEN b.bettype IN (31,32,33) THEN b.awinlost ELSE 0 END),0) AS WinlossRB,
-	ISNULL(SUM ( CASE WHEN b.tpositiontaking=0 AND (b.bettype in (71,73) or (b.bettype NOT BETWEEN 31 AND 120 AND b.bettype<=999)) THEN  comm  ELSE 0 END),0) AS CommBA,
+	ISNULL(SUM ( CASE WHEN b.tpositiontaking=0 AND (b.bettype NOT BETWEEN 31 AND 120 AND b.bettype<=999) THEN  comm  ELSE 0 END),0) AS CommBA,
 	ISNULL(SUM ( CASE WHEN b.bettype IN (31,32,33) THEN comm  ELSE 0 END),0) AS CommRB,
 	ISNULL(SUM (  playercomm ),0) AS PlayerComm
 	
@@ -505,10 +515,9 @@ SELECT
 	ISNULL(@TotalMemberActive,0) TotalMemberActive,
 	ISNULL(@TotalMemberClosed,0) TotalMemberClosed,
 	ISNULL(@TotalMemberSuspended,0) TotalMemberSuspended
-
 GO
-GRANT EXECUTE ON [dbo].[Lrf_CustomerSelBalance] TO [bodbLicenseeNet]
-
+GRANT EXECUTE ON [dbo].[Lrf_CustomerSelBalance] TO [bodbDownlineNet] AS [dbo]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerSelBalance] TO [vnteam]
-
+GRANT EXECUTE ON [dbo].[Lrf_CustomerSelBalance] TO [bodbLicenseeNet] AS [dbo]
+GO
+GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerSelBalance] TO [vnteam] AS [dbo]
