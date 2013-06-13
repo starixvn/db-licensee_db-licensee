@@ -49,7 +49,9 @@ Revisions:
 	INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
 	WHERE    [Description] = COALESCE(@LicenseeType,  
 										 [Description])
-	
+	----------------------------
+	DROP TABLE #currency
+	---------------------------
 --WinlostStatus: 
 --	1: home win 1/2
 --	2: home win 1
