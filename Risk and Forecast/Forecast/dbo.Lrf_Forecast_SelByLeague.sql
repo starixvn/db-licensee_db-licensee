@@ -1,5 +1,6 @@
 ﻿ALTER  PROCEDURE [dbo].[Lrf_Forecast_SelByLeague]
     @LicenseeID INT ,
+	@UserID		INT,	
     @Licenseetype VARCHAR(100) = NULL ,
     @CurrencyID INT=0,
     @BaseOffsetHDP INT ,
@@ -18,6 +19,7 @@ Revisions:
 	- 20110801@Henry: Remove PT + exclude BA ticket
 	- 20120214@Jim: change to use  table ExchangeDaily by use function Lrf_f_GetExchangeDaily  
 	- 20121004@Jim: replace @currencyname input param by @currencyID
+	- 20130514@Jim:Restrict permission of Licensee Users by currency
 */
 
 
@@ -36,13 +38,16 @@ Revisions:
     DECLARE @Today SMALLDATETIME 
     SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
 	
+	SELECT  currencyID,LicenseeID into #currency
+	FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+	WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+
     DECLARE @TempAg AS TABLE ( CustId INT )
     INSERT  INTO @TempAg ( CustId)
 	SELECT  CustID  
-	FROM    bodb_Licensee.dbo.LicenseeCust WITH ( NOLOCK )  
-	WHERE   LicenseeID = @LicenseeID  
-			AND  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID))
-			AND [Description] = COALESCE(@LicenseeType,  
+	FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+	INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
+	WHERE    [Description] = COALESCE(@LicenseeType,  
 										 [Description])
 	
 --WinlostStatus: 
