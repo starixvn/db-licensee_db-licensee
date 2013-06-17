@@ -5,6 +5,7 @@ go
 
 ALTER  PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail]  
  @LicenseeID	INT,
+ @UserID		INT,
  @CurrencyID	INT = 0,
  @CustID		INT = 0, --AgentID
  @FromDate		SMALLDATETIME,  
@@ -41,6 +42,7 @@ AS
 	- 20121128@Henry: use new table LicenseeBATransaction_active to get bettrans BA tickets
 	- 20130222@Jim: support RNG Casino,Bingo
 	- 20130402@Jim: support base currency USD 
+	- 20130514@Jim: Restrict permission of Licensee Users by currency
 	Param's Explanation:  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
 	  + @IsOld: 0 - query in table rptLicWinloss, 1 - query in table rptLicWinloss_old. 
@@ -94,13 +96,16 @@ DECLARE @bettype AS TABLE (bettype INT PRIMARY KEY)
 DECLARE @sporttype TABLE(sporttype INT)
 DECLARE @Exchange TABLE(ExchangeDate SMALLDATETIME, ExchangeId INT,  EUR FLOAT,USD FLOAT,Code VARCHAR(10), PRIMARY KEY(ExchangeDate,ExchangeId))
 
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+
 INSERT INTO @tempAg (custID,currency) 
-SELECT custID,currency FROM bodb_Licensee.dbo.LicenseeCust (NOLOCK) 
-WHERE 
-	LicenseeID = @LicenseeID
-	AND (@CustID=0 OR (@CustID<>0 AND CustiD=@CustID))
-	AND (@CurrencyID = 0 OR (@CurrencyID<> 0 AND Currency=@CurrencyID))
-	AND (@excludeTest=0 OR (@excludeTest=1 AND Currency <> 20))	
+SELECT custID,currency 
+FROM bodb_Licensee.dbo.LicenseeCust lc (NOLOCK) 
+	INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID	
+WHERE (@CustID=0 OR (@CustID<>0 AND CustiD=@CustID))
+		AND (@excludeTest=0 OR (@excludeTest=1 AND Currency <> 20))	
 
 DECLARE @site VARCHAR(50)
 SELECT @site=LicenseeName FROM bodb_licensee.dbo.Licensees (NOLOCK) 
@@ -108,8 +113,14 @@ WHERE LicenseeID=@LicenseeID
 
 DECLARE @Super AS TABLE (custid int primary key, currency int)
 INSERT INTO @Super(custid,currency)  
-SELECT CustID,currency FROM Dep_CustSuper WITH (NOLOCK)  
+SELECT CustID,currency 
+FROM Dep_CustSuper dc WITH (NOLOCK)  
+INNER JOIN #Currency c ON dc.Currency=c.CurrencyID
 WHERE  site = @site	
+
+--------------------
+DROP TABLE #Currency
+--------------------
 
 SELECT TOP 1 @TempCurrencyID=currency FROM @tempAg 
 
