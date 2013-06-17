@@ -1,5 +1,6 @@
 ﻿ALTER PROCEDURE [dbo].[Lrf_Rpt_MatchWinLoss]
     @LicenseeID INT,
+	@UserID		INT,
     @LicenseeType VARCHAR(100) = NULL,
     @CurrencyName VARCHAR(20) = NULL,
     @Date SMALLDATETIME,
@@ -16,7 +17,7 @@ Task :
 DB: DB052.bodb02
 Original: Lrf_Rpt_MatchWinLossDetail
 Revisions:
-
+	20130514@Jim: Restrict permission of Licensee Users by currency
 Param's Explanation: 
 	
 */
@@ -34,10 +35,23 @@ SET @_Date = @Date
 DECLARE @Today SMALLDATETIME 
 SELECT @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
 
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+
 DECLARE @TempAg AS TABLE ( CustId INT )
 INSERT  INTO @TempAg ( CustId)
-SELECT  CustID FROM    [Lrf_f_GetCustId](@LicenseeID, @licenseetype,@CurrencyName)
+SELECT  CustID 
+FROM    DBLIC.bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )
+	INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
+WHERE CurrencyName = COALESCE(@CurrencyName,
+							CurrencyName)
+		AND [Description] = COALESCE(@LicenseeType,
+									 [Description]) 
+		AND RoleId = 2	
 
+---------------------------------
+DROP TABLE #Currency
+---------------------------------
 DECLARE @AgMatchWLDetails TABLE
 (
 	Winlostdate SMALLDATETIME,

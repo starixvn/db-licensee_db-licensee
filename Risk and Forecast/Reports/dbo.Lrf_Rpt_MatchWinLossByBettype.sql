@@ -1,5 +1,6 @@
 ﻿CREATE PROCEDURE [dbo].[Lrf_Rpt_MatchWinLossByBettype]  
 	@LicenseeID INT,  
+	@UserID		INT,
 	@LicenseeType VARCHAR(100) = NULL,  
 	@CurrencyID   INT=0,  
 	@MatchID INT, -- in case of Racing, this param is 'race'  
@@ -28,6 +29,7 @@ Revisions:
 	- 20121115@Henry: Only Sportsbook needs to exclude BA  
 	- 20121128@Henry: use new table LicenseeBATransaction_active to get bettrans BA tickets  
 	- 20130401@Scott: add more parameter @ShowCS,@ShowBG  
+	- 20130514@Jim: Restrict permission of Licensee Users by currency
 Param's Explanation:   
    
 */  
@@ -46,17 +48,22 @@ SET @_Date = @Date
   
 DECLARE @Today SMALLDATETIME   
 SELECT @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120)   
+
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
   
 DECLARE @TempAg AS TABLE ( CustId INT )  
 INSERT  INTO @TempAg ( CustId)  
 SELECT  CustID    
-                FROM    bodb_Licensee.dbo.LicenseeCust WITH ( NOLOCK )    
-                WHERE   LicenseeID = @LicenseeID    
-                        AND  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID))  
-                        AND [Description] = COALESCE(@LicenseeType,    
-                                                     [Description])   
+FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )    
+		INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
+WHERE   [Description] = COALESCE(@LicenseeType,    
+									 [Description])   
                                                        
-    
+-----------------------------------    
+DROP TABLE #currency
+-----------------------------------
   
 DECLARE @AgMatchWLDetails TABLE  
 (  
