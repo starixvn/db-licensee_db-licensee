@@ -1,6 +1,7 @@
 ﻿
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]  
  @LicenseeID	INT,
+ @UserID		INT,
  @CurrencyID	INT = 0,
  @FromDate		SMALLDATETIME,  
  @ToDate		SMALLDATETIME,   
@@ -33,7 +34,7 @@ AS
 	- 20121115@Henry: Only Sportsbook needs to exclude BA
 	- 20121128@Henry: use new table LicenseeBATransaction_active to get bettrans BA tickets
 	- 20130204@Jim: support RNG Casino and Bingo product
-	
+	- 20130514@Jim: Restrict permission of Licensee Users by currency
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -95,19 +96,26 @@ SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WH
 
 SELECT @VNDCurrencyName = currency FROM exchange (NOLOCK) WHERE ExchangeId = 51
 
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 INSERT INTO @tempAg (custID,currency) 
-SELECT custID,currency FROM bodb_Licensee.dbo.LicenseeCust (NOLOCK) 
+SELECT custID,currency 
+FROM bodb_Licensee.dbo.LicenseeCust lc(NOLOCK) 
+	INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID 
 WHERE 
-	LicenseeID = @LicenseeID
-	AND (@CurrencyID = 0 OR (@CurrencyID<> 0 AND Currency=@CurrencyID))
-	AND (@excludeTest=0 OR (@excludeTest=1 AND Currency <> 20))	
+	 (@excludeTest=0 OR (@excludeTest=1 AND Currency <> 20))	
 	
 DECLARE @Super AS TABLE (custid int primary key, currency int)
 INSERT INTO @Super(custid,currency)  
-SELECT CustID,currency FROM Dep_CustSuper WITH (NOLOCK)  
-WHERE  site = @LicenseeName	
-
+SELECT CustID,currency 
+FROM Dep_CustSuper dc WITH (NOLOCK)  
+INNER JOIN #Currency c ON dc.Currency=c.CurrencyID
+WHERE  dc.site = @LicenseeName	
+-----------------------
+DROP TABLE #Currency
+-----------------------
 IF @ShowSB = 1  
 BEGIN  
 	INSERT  INTO @sporttype( sporttype)

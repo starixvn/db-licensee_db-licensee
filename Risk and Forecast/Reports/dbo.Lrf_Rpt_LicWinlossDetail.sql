@@ -17,6 +17,7 @@ exec Lrf_Rpt_LicWinlossDetail_xtest
 */
 ALTER  PROCEDURE [dbo].[Lrf_Rpt_LicWinlossDetail]  
 	@LicenseeID	INT,
+	@UserID		INT,
 	@CurrencyID	INT = 0,
 	@CustID		INT = 0, --AgentID			
 	@FromDate	SMALLDATETIME,  
@@ -51,6 +52,7 @@ AS
 		- 20121128@Henry: use new table LicenseeBATransaction_active to get bettrans BA tickets
 		- 20130204@Jim: support RNG Casino and Bingo product
 		- 20130414@Jim: support USD base currency 
+		- 20130514@Jim: Restrict permission of Licensee Users by currency
 	Param's Explanation:  
 	  + @CustID: SuperID  
 	  + @BaseCurrency (input currencyID): 2-MYR ; 3-USD; 6-EUR
@@ -156,13 +158,16 @@ DECLARE @sporttype TABLE(sporttype INT)
 DECLARE @Exchange TABLE(ExchangeDate SMALLDATETIME, ExchangeId INT, USD FLOAT, EUR FLOAT,MYR FLOAT,Code VARCHAR(10), PRIMARY KEY(ExchangeDate,ExchangeId))
 
 
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 INSERT INTO @tempAg (custID,currency) 
-SELECT custID,currency FROM bodb_Licensee.dbo.LicenseeCust (NOLOCK) 
+SELECT custID,currency 
+FROM bodb_Licensee.dbo.LicenseeCust lc(NOLOCK) 
+INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID 
 WHERE 
-	LicenseeID = @LicenseeID
-	AND (@CustID=0 OR (@CustID<>0 AND CustiD=@CustID))
-	AND (@CurrencyID = 0 OR (@CurrencyID<> 0 AND Currency=@CurrencyID))
+	(@CustID=0 OR (@CustID<>0 AND CustiD=@CustID))
 	AND (@excludeTest=0 OR (@excludeTest=1 AND Currency <> 20))	
 	
 
@@ -172,9 +177,14 @@ WHERE LicenseeID=@LicenseeID
 
 DECLARE @Super AS TABLE (custid int primary key, currency int)
 INSERT INTO @Super(custid,currency)  
-SELECT CustID,currency FROM Dep_CustSuper WITH (NOLOCK)  
+SELECT CustID,currency 
+FROM Dep_CustSuper dc WITH (NOLOCK)  
+INNER JOIN #Currency c ON dc.Currency=c.CurrencyID
 WHERE  site = @site
 
+------------------
+DROP TABLE #Currency
+------------------
 SELECT TOP 1 @TempCurrencyID=currency FROM @tempAg 
 
 IF @TempCurrencyID in (51,20)

@@ -1,14 +1,14 @@
 ﻿USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_CustomerSelBalance]    Script Date: 05/29/2013 04:55:43 ******/
+
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-/****** Object:  Stored Procedure dbo.Lrf_CustomerSelBalance    Script Date: 5/8/2013 3:14:05 AM ******/
-/****** Object:  Stored Procedure dbo.Lrf_CustomerSelBalance    Script Date: 4/29/2013 9:54:22 AM ******/
+
 ALTER PROCEDURE [dbo].[Lrf_CustomerSelBalance]
 	@LicenseeID INT,
+	@UserID	INT,
 	@CurrencyID INT=0,
 	@LicenseeType VARCHAR(100) = NULL,
 	@MoveBetsDay SMALLDATETIME,
@@ -38,6 +38,7 @@ Revisions:
 	- 20121004@Jim: replace @currencyname input param by @currencyID
 	- 20130417@Scott: Support RNG Casino and Bingo  
 	- 20130529@Daniel: Fix bug regconize BA tickets caused by "Support RNG Casino and Bingo"
+	- 20130514@Jim: Restrict permission of Licensee Users by currency
 */
 SET NOCOUNT ON
 
@@ -166,13 +167,16 @@ SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120)
 SET @Yesterday = CONVERT(VARCHAR(10), DATEADD(DAY,-1,@Today), 120) 
 SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WHERE LicenseeID = @LicenseeID
 
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 DECLARE @TempAg AS TABLE (custid INT primary key)
 INSERT INTO @TempAg (custid)
-SELECT CustID FROM bodb_Licensee.dbo.LicenseeCust (NOLOCK)
-		WHERE LicenseeID = @LicenseeID 
-		AND (@CurrencyID=0 OR  (@CurrencyID<>0 AND Currency = @CurrencyID ))
-		AND [Description] = COALESCE(@LicenseeType,[Description])
+SELECT CustID 
+		FROM bodb_Licensee.dbo.LicenseeCust lc(NOLOCK)
+		INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID 
+		WHERE [Description] = COALESCE(@LicenseeType,[Description])
 
 IF (SELECT COUNT(*) FROM @TempAg) = 1
 BEGIN
@@ -193,11 +197,13 @@ DECLARE @Super AS TABLE (custid int primary key, currency int)
 
 INSERT INTO @Super (Custid,currency)
 SELECT custid,currency
-FROM Dep_Custsuper (NOLOCK)
+FROM Dep_Custsuper dc(NOLOCK)
+	INNER JOIN #Currency c ON dc.Currency=c.CurrencyID
 WHERE
-site = @LicenseeName AND
-(@CurrencyID=0 OR  (@CurrencyID<>0 AND Currency = @CurrencyID ))
-
+dc.site = @LicenseeName 
+-----------------------
+DROP TABLE #Currency
+-----------------------
 
 --outstanding then get today rate
 INSERT INTO @SumOutstanding (currency,outstanding)
