@@ -1,6 +1,7 @@
 ﻿ALTER PROCEDURE [dbo].[Lrf_LeagueSelRunning]
     @LicenseeID INT ,
     @LicenseeType VARCHAR(100) = NULL ,
+	@UserID		INT,
     @CurrencyID INT=0,
     @Bettypes VARCHAR(100) = '0'--0: all, 1:1,3,7,8; 5:5,15 
 AS 
@@ -14,6 +15,7 @@ DB: DB052.bodb02
 Revisions: 
 	- 20110513@Henry: change @Bettypes from VARCHAR(20) to VARCHAR(100)
 	- 20121004@Jim: replace @currencyname input param by @currencyID
+	- 20130514@Jim:Restrict permission of Licensee Users by currency
 */
 
     SELECT  @Bettypes = CASE @Bettypes
@@ -22,18 +24,23 @@ Revisions:
                           WHEN '5' THEN '5,15'
                           ELSE '1,3,7,8,5,15'
                         END 
-
+	
+	SELECT  currencyID,LicenseeID into #currency
+	FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+	WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+	
 	DECLARE @TempAg AS TABLE ( CustId INT )
     INSERT  INTO @TempAg
             ( CustId
             )
             SELECT  CustID  
-			FROM    bodb_Licensee.dbo.LicenseeCust WITH ( NOLOCK )  
-			WHERE   LicenseeID = @LicenseeID  
-			AND  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID))
-			AND [Description] = COALESCE(@LicenseeType,  
+			FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )
+					INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
+			WHERE    [Description] = COALESCE(@LicenseeType,  
 										 [Description])
-	
+	----------------------
+	DROP TABLE #currency
+	----------------------
     SELECT  match.leagueid ,
             match.sporttype
     FROM    league WITH ( NOLOCK )
