@@ -1,5 +1,6 @@
 ﻿CREATE  PROCEDURE [dbo].[Lrf_Rpt_WinLossByBettype]
     @LicenseeID INT ,
+	@UserID		INT,
     @LicenseeType VARCHAR(100) = NULL ,
     @CurrencyID	INT=0,
     @FromDate SMALLDATETIME ,
@@ -32,6 +33,7 @@ Revisions:
 	- 20121225@Henry: enhance performance
 	- 20130402@Jim: add support for base currency USD
 	- 20130426@Scott: Doesn't support RNG casino and Bingo (bettype : 71,73)
+	- 20130618@Jim: Restrict permission of Licensee Users by currency
 	
 Param's Explanation: 
 */
@@ -48,15 +50,21 @@ SELECT  @PageIndex = @PageIndex - 1 ,
         @RowEnd = @RowStart + @PageSize - 1 ,
         @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
 
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+
 DECLARE @TempAg AS TABLE ( CustId INT,currency INT )
+
 INSERT  INTO @TempAg(CustId,currency)
 SELECT  CustID  ,currency
-                FROM    bodb_Licensee.dbo.LicenseeCust WITH ( NOLOCK )  
-                WHERE   LicenseeID = @LicenseeID  
-                        AND  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID))
-                        AND [Description] = COALESCE(@LicenseeType,  
-                                                     [Description]) 
-                
+FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+		INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
+WHERE   [Description] = COALESCE(@LicenseeType,  
+									 [Description]) 
+--------------------------------------
+DROP TABLE #Currency
+--------------------------------------                
 CREATE TABLE #AgWinLoss
 (
 	bettype 		INT ,

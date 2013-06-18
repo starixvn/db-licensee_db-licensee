@@ -1,5 +1,6 @@
 ﻿ALTER  PROCEDURE [dbo].[Lrf_Rpt_LiveReportBySport]      
 	@LicenseeID INT ,  
+	@UserID		INT,
 	@CurrencyID INT = NULL ,  
 	@ProductCode VARCHAR(20) = NULL,  
 	@FromDate  SMALLDATETIME,    
@@ -22,6 +23,7 @@ Revisions:
 	-20121004@Jim: replace @currency input param by @currencyID
 	-20121128@Henry: use new table LicenseeBATransaction_active to get bettrans BA tickets
 	-20130328@Scott: Support RNG Casino and Bingo
+	-20130618@Jim:  Restrict permission of Licensee Users by currency
 Param's Explanation:  
   
 Example:  
@@ -58,15 +60,19 @@ SELECT @sql = @sql + '--Declare variable:' + char(13)
 
 SELECT @sql = @sql + 'DECLARE @TempAg AS TABLE ( CustId INT )' + char(13) +
 			'CREATE TABLE #tmpWinloss (winlostdate  DATETIME,Currency  INT,SportType  INT,TurnOver  MONEY,Winlost   MONEY,LicenseeWL  MONEY,Comm   MONEY,PlayerComm MONEY,AmtDueTo3rd  MONEY,Betcount  INT)' + char(13)			
-			
+SELECT @sql = @sql + 
+			'SELECT  currencyID,LicenseeID into #currency'+char(13)+
+			'FROM  dbo.Lrf_f_GetCurrencybyUser('+convert(varchar(20),@licenseeID)+','+convert(varchar(20),@userID)+',1)'+char(13)+ -- System is default=1 (LRF)
+			'WHERE ('+convert(varchar(10),@CurrencyID)+'=0  OR ('+convert(varchar(10),@CurrencyID)+'<>0 AND CurrencyID='+convert(varchar(20),@CurrencyID)+'))'+char(13)			
+
 --insert agentIds to temp table
 SELECT @sql = @sql + 'INSERT  INTO @TempAg ( CustId)' + char(13) +
-			'SELECT  CustID  FROM    bodb_Licensee.dbo.LicenseeCust WITH ( NOLOCK ) ' + char(13) +
-			'WHERE LicenseeID =' + convert(varchar(10), @LicenseeID ) + char(13) +
-				'AND Currency <> 20' + char(13) +
-				CASE WHEN @CurrencyID<>0 THEN 'AND Currency=' + convert(varchar(10), @CurrencyID) ELSE '' END + char(13) 			
- 
-      
+			'SELECT  CustID  FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK ) ' + char(13) +
+							'INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID'+char(13)+
+			'WHERE lc.LicenseeID =' + convert(varchar(10), @LicenseeID ) + char(13) +
+				'AND lc.currency <> 20 ' + char(13) +
+				CASE WHEN @CurrencyID<>0 THEN 'AND lc.Currency=' + convert(varchar(10), @CurrencyID) ELSE '' END + char(13) 
+				
 IF @ProductCode IS NULL  
 	SET @ProductCode = ''      
   
@@ -203,12 +209,13 @@ BEGIN
 						'- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + char(13) +
 						'sum(b.betcount) BetCount' + char(13) +
 					'FROM bodb_Licensee.dbo.rpt_Betting_BA b WITH ( NOLOCK )' + char(13) +
+						'INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID'+char(13)+
 						'LEFT JOIN league l WITH (NOLOCK) ON b.LeagueID = l.LeagueID' + char(13) +
 					'WHERE b.rptDate BETWEEN ''' + convert(varchar(10),@FDate, 120) + ''' AND ''' + convert(varchar(10),@TempToDate, 120) + '''' + char(13) + 
 						'AND b.status NOT IN (-1,103)' + char(13) +
 						'AND b.siteID ='  + convert(varchar(10), @LicenseeID ) + char(13) +
-						'AND CurrencyID <> 20 ' + char(13) +
-						CASE WHEN @CurrencyID <> 0 THEN 'AND CurrencyID ='  + convert(varchar(10), @CurrencyID ) ELSE '' END + char(13) +
+						'AND b.CurrencyID <> 20 ' + char(13) +
+						CASE WHEN @CurrencyID <> 0 THEN 'AND b.CurrencyID ='  + convert(varchar(10), @CurrencyID ) ELSE '' END + char(13) +
 					'GROUP BY b.rptDate, b.currencyID, ' + char(13) +
 						'CASE' + char(13) +
 							'WHEN b.bettype = 9 THEN 101 --Mix Parlay' + char(13) +
@@ -246,12 +253,13 @@ BEGIN
 						'- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' 	+ char(13) +
 						'sum(b.betcount) BetCount' 	+ char(13) +
 					'FROM bodb_Licensee.dbo.rpt_Betting b WITH ( NOLOCK )' 	+ char(13) +
+						'INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID'+char(13)+
 						'LEFT JOIN league l WITH (NOLOCK) ON b.LeagueID = l.LeagueID' 	+ char(13) +
 					'WHERE b.rptDate BETWEEN ''' + convert(varchar(10),@FDate, 120) + ''' AND ''' + convert(varchar(10),@TempToDate, 120) + '''' + char(13) + 
 						'AND b.status NOT IN (-1,103)' + char(13) +
 						'AND b.siteID ='  + convert(varchar(10), @LicenseeID ) + char(13) +
-						'AND CurrencyID <> 20 ' + char(13) +
-						CASE WHEN @CurrencyID <> 0 THEN 'AND CurrencyID ='  + convert(varchar(10), @CurrencyID ) ELSE '' END + char(13) +
+						'AND b.CurrencyID <> 20 ' + char(13) +
+						CASE WHEN @CurrencyID <> 0 THEN 'AND b.CurrencyID ='  + convert(varchar(10), @CurrencyID ) ELSE '' END + char(13) +
 						CASE 
 							WHEN @ProductCode='NG' THEN 'AND b.bettype BETWEEN 81 AND 120 '
 							WHEN @ProductCode='SB' THEN 'AND (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999))'
@@ -315,7 +323,8 @@ SELECT @sql = @sql + 'select b.SportType, ' + char(13) +
 					'group by b.SportType' + char(13) + 
 			
 'DROP TABLE #tmpWinloss' + char(13)+
-'DROP TABLE #TempExchange' + char(13)
+'DROP TABLE #TempExchange' + char(13)+
+'DROP TABLE #Currency' + char(13)
  					
   
 IF (@debug = 1) PRINT @sql

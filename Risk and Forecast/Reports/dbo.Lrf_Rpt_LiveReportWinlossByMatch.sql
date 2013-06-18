@@ -1,5 +1,6 @@
 ﻿ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportWinlossByMatch]    
 	@LicenseeID		INT ,
+	@UserID			INT,
     @CurrencyID		INT = NULL , 
     @ShowSB			BIT	= 0,
     @ShowBA			BIT	= 0,
@@ -22,7 +23,8 @@ Revisions:
 	- 20120820@Jim : add live casino 
 	- 20120830@Henry: split column for clearer + Add Virtual Sports
 	- 20121004@Jim: replace @currency input param by @currencyID
-	-20121115@Henry: Only Sportsbook needs to exclude BA
+	- 20121115@Henry: Only Sportsbook needs to exclude BA
+	- 20130618@Jim:  Restrict permission of Licensee Users by currency
 Return 3 tables:
 WinlostBySport
 WinlostByCurrency
@@ -54,13 +56,18 @@ SELECT @FDate=@FromDate,@TDate=@ToDate
 IF @CurrencyID IS NULL
 	SET @CurrencyID = 0  
 
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+
 DECLARE @TempAg AS TABLE ( CustId INT )
 INSERT  INTO @TempAg ( CustId)
 SELECT  CustID  
-FROM    bodb_Licensee.dbo.LicenseeCust WITH ( NOLOCK )  
-WHERE   LicenseeID = @LicenseeID  
-		AND Currency <> 20
-		AND (@CurrencyID=0 OR (@CurrencyID <> 0 AND Currency = @CurrencyID))
+FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+		INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
+WHERE   Currency <> 20
+		
+DROP TABLE #Currency 
     
 DECLARE @bettype AS TABLE (bettype INT PRIMARY KEY)
 

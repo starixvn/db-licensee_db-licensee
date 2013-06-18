@@ -4,6 +4,7 @@ go
 
 ALTER  PROCEDURE [dbo].[Lrf_Rpt_WinlostRacing]
 	@LicenseeID    INT ,
+	@UserID		INT,
     @LicenseeType  VARCHAR(100) = NULL ,
     @CurrencyID    INT=0 ,
 	@winlostdate	DATETIME
@@ -20,6 +21,7 @@ AS
 		 -- 20121004@Jim: replace @currencyname input param by @currencyID
          -- 20130124@Daniel: Change link server alias		 
 		 -- 20130403@Jim: support base currency USD
+		 -- 20130618@Jim: Restrict permission of Licensee Users by currency	
 	Param's Explanation:
 		
 */
@@ -32,20 +34,30 @@ BEGIN
 	FROM match14 WITH(NOLOCK)  
 
 	SELECT @wldate=@winlostdate
-
+	
+	SELECT CurrencyID
+		  ,LicenseeID
+		  INTO #Currency
+	FROM  DBLIC.bodb_licensee.dbo.CurrencyUser WITH (NOLOCK)
+	WHERE  usrID=@userID 
+		AND LicenseeID=@LicenseeID 
+		AND SystemID=1
+		
 	DECLARE @TempAg AS TABLE ( CustId INT )
 	INSERT  INTO @TempAg(CustId)
 	SELECT    CustId  
       FROM      custInfo WITH ( NOLOCK )  
       WHERE     CustID IN (  
                 SELECT  CustID  
-                FROM    DBLIC.bodb_Licensee.dbo.LicenseeCust WITH ( NOLOCK )  
-                WHERE   LicenseeID = @LicenseeID  
-                         AND  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID))
+                FROM    DBLIC.bodb_Licensee.dbo.LicenseeCust lc  WITH ( NOLOCK )  
+						INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
+                WHERE   (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID))
                          AND [Description] = COALESCE(@LicenseeType,  
                                                      [Description]) )  
                 AND RoleId = 2  
-
+---------------------------
+DROP TABLE #Currency
+---------------------------
 IF @wldate > @MoveBetsDay 	
 BEGIN
 	SELECT	
