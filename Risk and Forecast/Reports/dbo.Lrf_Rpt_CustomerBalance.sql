@@ -1,6 +1,7 @@
 ﻿ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerBalance]  
 	@LicenseeID INT ,  
-	@LicenseeType VARCHAR(100) = NULL,  
+	@LicenseeType VARCHAR(100) = NULL,
+	@UserID		INT,	
 	@CurrencyID INT,  
 	@FromDate  SMALLDATETIME,    
 	@ToDate  SMALLDATETIME,     
@@ -29,7 +30,7 @@ Revisions:
    -20130117@henry: enhance performance  
    -20130123@Daniel: Change link server alias  
    -20130225@Scott: support RNG Casino ,Bingo     
-   
+   -20130618@Jim:  Restrict permission of Licensee Users by currency
 Param's Explanation:  
  + @excludeTest: remove currency UUS  
  + @TopCount:   
@@ -68,14 +69,23 @@ IF @ShowVS = 1 INSERT INTO @sporttype(sporttype) VALUES(180)
 IF @ShowCS = 1 INSERT INTO @sporttype(sporttype) VALUES(251) -- RNG Casino  
 IF @ShowBG = 1 INSERT INTO @sporttype(sporttype) VALUES(252) -- Bingo    
 
+
+SELECT CurrencyID,LicenseeID
+INTO #Currency
+FROM  DBLIC.bodb_licensee.dbo.CurrencyUser WITH (NOLOCK)
+WHERE  usrID=@userID 
+AND LicenseeID=@LicenseeID 
+AND SystemID=1 -- System is default=1 (LRF)
   
 INSERT INTO @tmpAg  
 SELECT CustID   
-FROM DBLIC.bodb_Licensee.dbo.LicenseeCust WITH( NOLOCK )  
-WHERE LicenseeID = @LicenseeID  
- AND [Description] = COALESCE(@LicenseeType,[Description])   
+FROM DBLIC.bodb_Licensee.dbo.LicenseeCust lc WITH( NOLOCK )  
+	INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
+WHERE  [Description] = COALESCE(@LicenseeType,[Description])   
  AND (@CurrencyID=0 OR (@CurrencyID<>0 AND Currency = @CurrencyID))  
  AND (@excludeTest = 0 OR (@excludeTest=1 AND Currency<>20))  
+ 
+ DROP TABLE #Currency 
   
 CREATE TABLE #SumWinlost  
 (  
