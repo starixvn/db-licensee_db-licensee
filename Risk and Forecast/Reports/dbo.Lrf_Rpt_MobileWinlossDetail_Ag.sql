@@ -4,6 +4,7 @@ go
 
 ALTER  PROCEDURE [dbo].[Lrf_Rpt_MobileWinlossDetail_Ag]  
  @LicenseeID	INT,
+ @UserID		INT,
  @CurrencyID	INT = 0,
  @FromDate		SMALLDATETIME,  
  @ToDate		SMALLDATETIME,   
@@ -29,6 +30,7 @@ AS
     Revisions:  
 			- 20130225@Jim: add RNG Casino,Bingo
 			- 20140414@Jim: support USD base currency 
+			- 20130618@Jim: Restrict permission of Licensee Users by currency
 	Param's Explanation:  
 	  + @SiteType: 1-WAP; 2-Smartphone; 3: Others;0-All  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -74,12 +76,16 @@ SELECT @FDate=@FromDate,@TDate=@ToDate
 
 SELECT @VNDCurrencyName = currency FROM exchange (NOLOCK) WHERE ExchangeId = 51
 
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+
 INSERT INTO @tempAg (custID,currency) 
-SELECT custID,currency FROM bodb_Licensee.dbo.LicenseeCust (NOLOCK) 
+SELECT custID,currency 
+FROM bodb_Licensee.dbo.LicenseeCust lc (NOLOCK) 
+	INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
 WHERE 
-	LicenseeID = @LicenseeID
-	AND (@CurrencyID = 0 OR (@CurrencyID<> 0 AND Currency=@CurrencyID))
-	AND (@excludeTest=0 OR (@excludeTest=1 AND Currency <> 20))	
+	(@excludeTest=0 OR (@excludeTest=1 AND Currency <> 20))	
 
 DECLARE @site VARCHAR(50)
 SELECT @site=LicenseeName FROM bodb_licensee.dbo.Licensees (NOLOCK) 
@@ -87,9 +93,12 @@ WHERE LicenseeID=@LicenseeID
 
 DECLARE @Super AS TABLE (custid int primary key, currency int)
 INSERT INTO @Super(custid,currency)  
-SELECT CustID,currency FROM Dep_CustSuper WITH (NOLOCK)  
+SELECT CustID,currency 
+FROM Dep_CustSuper dc  WITH (NOLOCK)  
+	 INNER JOIN #Currency c ON  dc.Currency=c.CurrencyID
 WHERE  site = @site
 
+DROP TABLE #Currency 
 
 IF @ShowSB = 1  INSERT  INTO @sporttype( sporttype) VALUES  (0)	
 IF @ShowRB = 1  
