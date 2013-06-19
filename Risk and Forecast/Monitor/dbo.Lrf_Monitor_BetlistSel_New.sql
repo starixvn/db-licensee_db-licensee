@@ -149,6 +149,7 @@ SELECT @SQL = @SQL + 'SELECT TOP ('+CONVERT(VARCHAR(10),@LimitRowCount)+')'+CHAR
    ELSE ' '               
   END  +CHAR(13)+               
    'WHERE b.LicenseeID='+convert(varchar(10),@LicenseeID)+ ' '  +CHAR(13)+  
+   'AND cr.isActive=1'+char(13)+
    'AND cr.UsrID='+convert(varchar(20),@UserID)+''+char(13)+
    'AND cr.SystemID=1'+char(13)+
    'AND Transid >'+convert(varchar(10),@transid)+'  '+CHAR(13)+              

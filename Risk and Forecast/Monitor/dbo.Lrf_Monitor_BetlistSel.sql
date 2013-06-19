@@ -76,7 +76,8 @@ BEGIN
 					--CASE WHEN @Currency <> '0' THEN ' AND currency IN (SELECT convert(int,val) FROM dbo.strSplit('''+@Currency+''','',''))' ELSE '' END + char(13)+
 					CASE WHEN @Currency <> '0' THEN ' AND lc.currency IN ('+@Currency+')' ELSE '' END + char(13)+
 					CASE WHEN @LicenseeType <> 'ALL' THEN ' AND [Description] = ''' + @LicenseeType + ''' ' ELSE '' END + char(13)+
-					'AND lc.RoleId = 2'+CHAR(13)
+					'AND lc.RoleId = 2'+CHAR(13)+
+					'AND c.IsActive=1'+CHAR(13)
 
     SELECT @SQL = @SQL + 
         CASE 
