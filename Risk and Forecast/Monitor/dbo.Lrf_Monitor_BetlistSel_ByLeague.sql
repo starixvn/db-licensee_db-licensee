@@ -1,5 +1,6 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_Monitor_BetlistSel_ByLeague]
+﻿CREATE PROCEDURE [dbo].[Lrf_Monitor_BetlistSel_ByLeague]
 	@LicenseeID INT,
+	@UserID	 INT,
 	@bettype VARCHAR(50) = NULL,
 	@LicenseeType VARCHAR(100) = NULL,
 	@Currency VARCHAR(200) = NULL ,
@@ -21,7 +22,7 @@ BEGIN
 	Original: [Lrf_Monitor_BetlistSel]
 	Revision:
 		20130315@Scott : Change index hint (IX_matchid_bettype)
-	
+		20130618@Jim:  Restrict permission of Licensee Users by currency
 	Parameter's Explanation:
 		- @bettypes: 
 			+ HDP: 1,7
@@ -73,27 +74,23 @@ BEGIN
 	IF 	@Currency = ''
 		SET @Currency = '0'
 		
-/*		
---scott
-	SELECT @SQL = @SQL + 'DECLARE @TempAg AS TABLE ( Recommend INT PRIMARY KEY, currency int )'+CHAR(13)+
-				'INSERT INTO @TempAg'+CHAR(13)+
-				'SELECT  CustID, currency'+CHAR(13)+	
-				'FROM    bodb_Licensee.dbo.LicenseeCust WITH ( NOLOCK )'+CHAR(13)+
-				'WHERE   LicenseeID = '+convert(varchar(10),@LicenseeID)+CHAR(13)+
-					--CASE WHEN @Currency <> '0' THEN ' AND currency IN (SELECT convert(int,val) FROM dbo.strSplit('''+@Currency+''','',''))' ELSE '' END + char(13)+
-					CASE WHEN @Currency <> '0' THEN ' AND currency IN ('+@Currency+')' ELSE '' END + char(13)+
-					CASE WHEN @LicenseeType <> 'ALL' THEN ' AND [Description] = ''' + @LicenseeType + ''' ' ELSE '' END + char(13)+
-					'AND RoleId = 2'+CHAR(13)
-*/
-
-
+	
+	 SELECT @SQL = @SQL +'	SELECT CurrencyID
+							,LicenseeID
+							,UsrID INTO #Currency 
+							FROM  bodb_licensee.dbo.CurrencyUser WITH (NOLOCK)
+							WHERE  usrID='+convert(varchar(20),@userID)+ char(13)+
+							'AND LicenseeID='+convert(varchar(20),@LicenseeID)+ char(13)+
+							'AND SystemID=1
+							 AND isActive=1'
+			+char(13)
     SELECT @SQL = @SQL + 
         CASE 
 	        WHEN @SpecialLevel <> '' AND (CHARINDEX('0', @SpecialLevel)>1 OR CHARINDEX('0', @SpecialLevel)=0) THEN 
 	            'DECLARE @Level AS TABLE ( custid INT PRIMARY KEY, username2 varchar(50), SpecialLevel int)'+CHAR(13)+ 
 				'INSERT INTO @Level'+CHAR(13)+
 				'SELECT  custid, username2, SpecialLevel'+CHAR(13)+	
-				'FROM    bodb_Licensee.dbo.LicenseeCustinfo WITH (NOLOCK)'+CHAR(13)+
+				'FROM    bodb_Licensee.dbo.LicenseeCustinfo lo WITH (NOLOCK)'+CHAR(13)+
 				--'WHERE   SpecialLevel IN (SELECT val FROM dbo.strSplit('''+@SpecialLevel+''','',''))'+CHAR(13)
 				'WHERE   SpecialLevel IN ('+@SpecialLevel+')'+CHAR(13)
 	        ELSE ''
@@ -139,6 +136,7 @@ BEGIN
 							'lc.SpecialLevel'+CHAR(13)+
 						'FROM dbo.bettrans b WITH(NOLOCK,INDEX(IX_matchid_bettype))'+CHAR(13)+
 							'INNER JOIN bodb_Licensee.dbo.LicenseeCust t ON b.recommend=t.custid'+CHAR(13)+
+							'INNER JOIN #Currency c ON t.LicenseeID=c.LicenseeID AND t.Currency=c.CurrencyID'+char(13)+
 							CASE 
 								WHEN @SpecialLevel <> '' AND (CHARINDEX('0', @SpecialLevel)>1 OR CHARINDEX('0', @SpecialLevel)=0)
 									THEN 'INNER JOIN  @Level lc ON b.custid = lc.custid'
@@ -164,7 +162,8 @@ BEGIN
 							CASE WHEN @Currency <> '0' THEN ' AND currency IN ('+@Currency+')' ELSE '' END + char(13)+
 							CASE WHEN @LicenseeType <> 'ALL' THEN ' AND [Description] = ''' + @LicenseeType + ''' ' ELSE '' END + char(13)+
 								'AND RoleId = 2'+CHAR(13)+
-						'ORDER BY b.transid DESC'+CHAR(13)	
+						'ORDER BY b.transid DESC'+CHAR(13)+	
+						'DROP TABLE #Currency'+CHAR(13)
 			
 		
 	IF (@debug = 1) PRINT @sql
