@@ -1,5 +1,6 @@
 ﻿ALTER PROC [dbo].[Lrf_Rpt_CustomerPerformance]
 	@LicenseeID INT,
+	@UserID		INT,
 	@Username VARCHAR(50),
 	@FromDate SMALLDATETIME,
 	@ToDate SMALLDATETIME,
@@ -23,7 +24,7 @@ BEGIN
 	- 20120214@Henry: Seperate 3 options: Win/Loss/Draw (and all)
 	- 20120801@Jim: add PlayerComm value 
     - 20130124@Daniel: Change link server alias
-
+	- 20130618@Jim:  Restrict permission of Licensee Users by currency
 	Parameter's Explanation:
 		- @ReportBy:  1: daily, 2: monthly
 		- @FilterBy:  1: Win, 2: Loss, 3: Draw
@@ -57,24 +58,31 @@ DECLARE @Status AS TABLE
 	StatusID INT
 )
  
+SELECT CustID INTO #Currency
+FROM DBLIC.bodb_licensee.dbo.LicenseeCust lc WITH (NOLOCK) 
+	INNER JOIN DBLIC.bodb_licensee.dbo.CurrencyUser c WITH (NOLOCK)
+	ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID	
+WHERE lc.LicenseeID=@LicenseeID 
+AND lc.RoleID=2
+AND c.usrID=@userID 
+AND c.SystemID=1 -- System is default=1 (LRF)	
 
 SELECT @Username = ltrim(rtrim(@Username))
 
-SELECT @CustID = CustID FROM Customer (NOLOCK)
-WHERE
-	recommend IN (SELECT CustID FROM DBLIC.bodb_licensee.dbo.LicenseeCust WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND RoleID=2)
-	AND 
-	username2 LIKE '%$' + @Username
+SELECT @CustID = CustID 
+FROM Customer cr (NOLOCK)
+	INNER JOIN #Currency c ON cr.recommend=c.CustID
+WHERE username2 LIKE '%$' + @Username
 
 IF ISNULL(@CustID,0) = 0
 BEGIN
-	SELECT @CustID = CustID FROM Customer (NOLOCK)
-	WHERE
-		recommend IN (SELECT CustID FROM DBLIC.bodb_licensee.dbo.LicenseeCust WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND RoleID=2)
-		AND 
-		username = @Username
+	SELECT @CustID = CustID 
+	FROM Customer cr(NOLOCK)
+		INNER JOIN #Currency c ON cr.recommend=c.CustID
+	WHERE username = @Username
 END
 
+DROP TABLE #Currency 
 
 IF ISNULL(@CustID,0) = 0
 BEGIN

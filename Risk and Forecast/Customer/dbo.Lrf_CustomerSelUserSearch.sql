@@ -1,9 +1,9 @@
 ﻿ALTER PROCEDURE [dbo].[Lrf_CustomerSelUserSearch]
 	@LicenseeID INT,
+	@UserID		INT,
 	@CurrencyID INT=0,
 	@LicenseeType VARCHAR(100) = NULL,	
-	@username VARCHAR(50),
-	@UserID INT
+	@username VARCHAR(50)
 AS 
 /*
 Created: 20110309@Henry
@@ -16,24 +16,26 @@ Revisions:
 Param's Explanation:
 	20110322@Henry: support 2 kinds of search (inside & outside)
 	20120326@Henry: replace "where username like '%' + @username + '%'" (index scan) by "where username like @username + '%'" (index seek).
+	20130619@Jim: Restrict permission of Licensee Users by currency	
 
 */
 
 SET NOCOUNT ON
 
+SELECT  currencyID,LicenseeID into #currency
+FROM  bodb02.dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 IF  isnull(@LicenseeType,'') <> ''
 BEGIN
 	DECLARE @TempAg as TABLE (custid INT)
 	
 	INSERT INTO @TempAg (custid)
-	SELECT custID FROM bodb_Licensee.dbo.LicenseeCust (NOLOCK) 
+	SELECT custID FROM bodb_Licensee.dbo.LicenseeCust lc (NOLOCK) 
+			INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
 	WHERE 
-		LicenseeID = @LicenseeID
-		AND (@CurrencyID = 0 OR (@CurrencyID<> 0 AND Currency=@CurrencyID))
-		AND [Description] = COALESCE(@LicenseeType,[Description])
+		 [Description] = COALESCE(@LicenseeType,[Description])
 		
-
 	SELECT TOP 10 
 				SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, LEN(c.username2)-CHARINDEX('$',c.username2)) AS Username,
 				c.custid
@@ -42,7 +44,6 @@ BEGIN
 		WHERE 
 			 c.username2 LIKE + '%$' + @Username + '%' OR c.username LIKE @Username + '%'
 		ORDER BY username
-
 END
 ELSE
 BEGIN --this for quick search
@@ -62,6 +63,7 @@ BEGIN --this for quick search
 				-1 AS searchcount
 		FROM LicenseeCustinfo c WITH (NOLOCK)
 			INNER JOIN licenseecust lc (NOLOCK) ON c.recommend = lc.custid
+			INNER JOIN #Currency cy ON lc.LicenseeID=cy.LicenseeID AND lc.Currency=cy.CurrencyID
 		WHERE 
 			lc.licenseeid = @LicenseeID
 			AND (c.username2 LIKE + '%$' + @Username + '%' OR c.username LIKE @Username + '%')
@@ -85,6 +87,7 @@ BEGIN --this for quick search
 				username NOT IN (SELECT username FROM @tmpUsername WHERE searchcount >= 0) 
 		)a
 	ORDER BY searchcount DESC, username
+	DROP TABLE #Currency 
 END	
 
 	
