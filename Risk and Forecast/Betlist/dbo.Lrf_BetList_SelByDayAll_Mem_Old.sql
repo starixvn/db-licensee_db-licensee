@@ -52,8 +52,14 @@ Param's Explanation:
 
 SET NOCOUNT ON
 
-SELECT  currencyID,LicenseeID into #currency
-FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+SELECT CurrencyID
+	  ,LicenseeID
+INTO #Currency
+FROM  DBLIC.bodb_licensee.dbo.CurrencyUser WITH (NOLOCK)
+WHERE  usrID=@userID 
+	AND LicenseeID=@LicenseeID 
+	AND SystemID=1
+	AND isActive=1
 
 DECLARE @Username VARCHAR(30) 
 SELECT	@Username = c.username 

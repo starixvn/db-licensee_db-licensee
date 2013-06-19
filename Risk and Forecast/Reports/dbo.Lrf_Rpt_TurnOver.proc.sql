@@ -58,6 +58,7 @@ FROM  DBLIC.bodb_licensee.dbo.CurrencyUser WITH (NOLOCK)
 WHERE  usrID=@userID 
 AND LicenseeID=@LicenseeID 
 AND SystemID=1 -- System is default=1 (LRF)
+AND isActive=1
 
 INSERT INTO @tmpAg
 SELECT CustID,currency 

@@ -70,6 +70,7 @@ WHERE lc.LicenseeID=@LicenseeID
 AND lc.RoleID=2
 AND c.usrID=@userID 
 AND c.SystemID=1 -- System is default=1 (LRF)	
+AND c.isActive=1
 
 SELECT @Username = ltrim(rtrim(@Username))
 
