@@ -42,6 +42,7 @@ BEGIN
 	WHERE  usrID=@userID 
 		AND LicenseeID=@LicenseeID 
 		AND SystemID=1
+		AND isActive=1
 		
 	DECLARE @TempAg AS TABLE ( CustId INT )
 	INSERT  INTO @TempAg(CustId)
