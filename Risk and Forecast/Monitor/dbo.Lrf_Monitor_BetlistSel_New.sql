@@ -1,5 +1,6 @@
 ﻿ALTER PROCEDURE [dbo].[Lrf_Monitor_BetlistSel_New]                
- @LicenseeID INT,                
+ @LicenseeID INT,
+ @UserID	 INT,	
  @bettype VARCHAR(50) = NULL,                
  @LicenseeType VARCHAR(100) = NULL,                
  @Currency VARCHAR(200) = NULL ,                
@@ -23,7 +24,7 @@ AS
  DB: DB052.BODB02                
  Original: [Lrf_Monitor_BetlistSel]                
  Revision:                
-                 
+    -20130618@Jim:  Restrict permission of Licensee Users by currency             
  Parameter's Explanation:                
   - @bettypes:                 
    + HDP: 1,7                
@@ -142,12 +143,14 @@ SELECT @SQL = @SQL + 'SELECT TOP ('+CONVERT(VARCHAR(10),@LimitRowCount)+')'+CHAR
   'b.SpecialLevel' +CHAR(13)+                
   'FROM bettrans_lrf_betRunning b WITH(NOLOCK)  '+CHAR(13) +   
   'INNER JOIN Lrf_f_GetExchangeDaily(CONVERT(VARCHAR(10), getdate(), 111),CONVERT(VARCHAR(10), getdate(), 111))  ex on ex.exchangeid = b.currency ' + CHAR(13) +             
-  
+  'INNER JOIN bodb_licensee.dbo.CurrencyUser cr WITH (NOLOCK) ON b.LicenseeID=cr.LicenseeID AND b.Currency=cr.CurrencyID'+char(13)+
   CASE               
    WHEN @SportID>0 and @Sportid <> 999 THEN 'INNER JOIN @Match m on b.matchid = m.matchid '               
    ELSE ' '               
   END  +CHAR(13)+               
-   'WHERE LicenseeID='+convert(varchar(10),@LicenseeID)+ ' '  +CHAR(13)+              
+   'WHERE b.LicenseeID='+convert(varchar(10),@LicenseeID)+ ' '  +CHAR(13)+  
+   'AND cr.UsrID='+convert(varchar(20),@UserID)+''+char(13)+
+   'AND cr.SystemID=1'+char(13)+
    'AND Transid >'+convert(varchar(10),@transid)+'  '+CHAR(13)+              
     'AND Statusid = 0   '+CHAR(13)+                  
 	CASE 

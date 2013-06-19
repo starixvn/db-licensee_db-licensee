@@ -1,4 +1,8 @@
-﻿ALTER PROC [dbo].[Lrf_Rpt_CustomerPerformance]
+﻿set ANSI_NULLS ON
+set QUOTED_IDENTIFIER ON
+go
+
+ALTER PROC [dbo].[Lrf_Rpt_CustomerPerformance]
 	@LicenseeID INT,
 	@UserID		INT,
 	@Username VARCHAR(50),
@@ -58,7 +62,7 @@ DECLARE @Status AS TABLE
 	StatusID INT
 )
  
-SELECT CustID INTO #Currency
+SELECT lc.CustID INTO #Currency
 FROM DBLIC.bodb_licensee.dbo.LicenseeCust lc WITH (NOLOCK) 
 	INNER JOIN DBLIC.bodb_licensee.dbo.CurrencyUser c WITH (NOLOCK)
 	ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID	
@@ -69,14 +73,14 @@ AND c.SystemID=1 -- System is default=1 (LRF)
 
 SELECT @Username = ltrim(rtrim(@Username))
 
-SELECT @CustID = CustID 
+SELECT @CustID = cr.CustID 
 FROM Customer cr (NOLOCK)
 	INNER JOIN #Currency c ON cr.recommend=c.CustID
 WHERE username2 LIKE '%$' + @Username
 
 IF ISNULL(@CustID,0) = 0
 BEGIN
-	SELECT @CustID = CustID 
+	SELECT @CustID = cr.CustID 
 	FROM Customer cr(NOLOCK)
 		INNER JOIN #Currency c ON cr.recommend=c.CustID
 	WHERE username = @Username

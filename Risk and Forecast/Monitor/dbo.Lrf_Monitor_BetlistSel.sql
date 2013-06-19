@@ -1,5 +1,6 @@
 ﻿ALTER PROCEDURE [dbo].[Lrf_Monitor_BetlistSel]
 	@LicenseeID INT,
+	@UserID		INT,
 	@bettype VARCHAR(50) = NULL,
 	@LicenseeType VARCHAR(100) = NULL,
 	@Currency VARCHAR(200) = NULL ,
@@ -28,6 +29,7 @@ BEGIN
 		- 20120906@Jim : add virtual sport bettype
 		- 20130219@Daniel : remove support virtual sport 
 		- 20130402@Jim: re-filter bettype condition 
+		-20130618@Jim:  Restrict permission of Licensee Users by currency
 		Parameter's Explanation:
 			- @bettypes: 
 				+ HDP: 1,7
@@ -66,13 +68,15 @@ BEGIN
 
 	SELECT @SQL = @SQL + 'DECLARE @TempAg AS TABLE ( Recommend INT PRIMARY KEY, currency int )'+CHAR(13)+
 				'INSERT INTO @TempAg'+CHAR(13)+
-				'SELECT  CustID, currency'+CHAR(13)+	
-				'FROM    bodb_Licensee.dbo.LicenseeCust WITH ( NOLOCK )'+CHAR(13)+
-				'WHERE   LicenseeID = '+convert(varchar(10),@LicenseeID)+CHAR(13)+
+				'SELECT  lc.CustID, currency'+CHAR(13)+	
+				'FROM    bodb_Licensee.dbo.LicenseeCust WITH lc ( NOLOCK )'+CHAR(13)+
+							'INNER JOIN bodb_licensee.dbo.CurrencyUser c WITH (NOLOCK) ON  lc.LicenseeID=c.LicenseeID AND lc.Currency=c.Currency'+char(13)+
+				'WHERE   lc.LicenseeID = '+convert(varchar(10),@LicenseeID)+CHAR(13)+
+					'AND c.usrID='+convert(VARCHAR(20),@userID)+char(13)+
 					--CASE WHEN @Currency <> '0' THEN ' AND currency IN (SELECT convert(int,val) FROM dbo.strSplit('''+@Currency+''','',''))' ELSE '' END + char(13)+
-					CASE WHEN @Currency <> '0' THEN ' AND currency IN ('+@Currency+')' ELSE '' END + char(13)+
+					CASE WHEN @Currency <> '0' THEN ' AND lc.currency IN ('+@Currency+')' ELSE '' END + char(13)+
 					CASE WHEN @LicenseeType <> 'ALL' THEN ' AND [Description] = ''' + @LicenseeType + ''' ' ELSE '' END + char(13)+
-					'AND RoleId = 2'+CHAR(13)
+					'AND lc.RoleId = 2'+CHAR(13)
 
     SELECT @SQL = @SQL + 
         CASE 
