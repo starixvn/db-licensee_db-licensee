@@ -59,6 +59,7 @@ Revisions:
 	- 20130320@Jim: fix bug wrong Total Rows's value 
 	- 20130328@Scott: Support RNG Casino and Bingo
 	- 20130514@Jim:Restrict permission of Licensee Users by currency
+	- 20130619@Jim: fix bug missing RNG Casino data 
 Param's Explanation: 
 	
 */
@@ -194,7 +195,7 @@ BEGIN
 		SUM(ISNULL(b.comm,0)),
 		SUM(b.playercomm )  AS  SumPlayerComm
 	FROM bettrans b WITH (nolock) 
-		INNER JOIN match m WITH (nolock) ON b.matchid=m.matchid	
+		LEFT JOIN match m WITH (nolock) ON b.matchid=m.matchid	
 		INNER JOIN @TmpCondBettype bt ON b.bettype = bt.bettype
 		LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
 	WHERE
@@ -249,7 +250,7 @@ BEGIN
 			CASE WHEN b.bettype BETWEEN 1101 AND 1199 THEN  ISNULL(m.showtime,'') ELSE '' END AS ShowTime
 		FROM
 			bettrans b WITH (nolock) 
-			INNER JOIN match m WITH (nolock) ON b.matchid=m.matchid	
+			LEFT JOIN match m WITH (nolock) ON b.matchid=m.matchid	
 			INNER JOIN customer c WITH (nolock) ON b.custid = c.custid
 			INNER JOIN @TmpCondBettype bt ON b.bettype = bt.bettype
 			LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
@@ -277,7 +278,7 @@ BEGIN
 		SUM(b.playercomm )  AS  SumPlayerComm
 			
 	FROM bettrans14 b WITH (NOLOCK)	
-		INNER JOIN match14 m WITH (nolock) ON b.matchid=m.matchid 
+		LEFT JOIN match14 m WITH (nolock) ON b.matchid=m.matchid 
 		INNER JOIN @TmpCondBettype bt ON b.bettype = bt.bettype
 		--INNER JOIN customer c WITH (nolock) ON b.custid = c.custid 
 		LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
@@ -331,7 +332,7 @@ BEGIN
 			CASE WHEN b.bettype BETWEEN 1101 AND 1199 THEN ISNULL (m.showtime, '') ELSE '' END AS ShowTime 
 		FROM
 			bettrans14 b WITH (NOLOCK)	
-			INNER JOIN match14 m WITH (nolock) ON b.matchid=m.matchid 	
+			LEFT JOIN match14 m WITH (nolock) ON b.matchid=m.matchid 	
 			INNER JOIN customer c WITH (nolock) ON b.custid = c.custid 	
 			INNER JOIN @TmpCondBettype bt ON b.bettype = bt.bettype
 			LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
