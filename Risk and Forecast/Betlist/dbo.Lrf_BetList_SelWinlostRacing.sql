@@ -59,9 +59,16 @@ BEGIN
 		 @MoveBetsDay=MAX(eventdate)  
 	FROM match14 WITH(NOLOCK)  
 	
-	SELECT  currencyID,LicenseeID into #currency
-	FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
-	WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+	SELECT CurrencyID
+	  ,LicenseeID
+	  INTO #Currency
+	FROM  DBLIC.bodb_licensee.dbo.CurrencyUser WITH (NOLOCK)
+	WHERE  usrID=@userID 
+		AND LicenseeID=@LicenseeID 
+		AND SystemID=1
+		AND isActive=1
+		AND (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+
 
 	DECLARE @TempAg AS TABLE ( CustId INT )
 	INSERT  INTO @TempAg(CustId)
