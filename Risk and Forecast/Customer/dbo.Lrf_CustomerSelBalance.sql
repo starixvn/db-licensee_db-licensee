@@ -1,14 +1,11 @@
-﻿USE [bodb02]
-GO
-/****** Object:  StoredProcedure [dbo].[Lrf_CustomerSelBalance]    Script Date: 06/19/2013 06:25:28 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-/****** Object:  Stored Procedure dbo.Lrf_CustomerSelBalance    Script Date: 5/8/2013 3:14:05 AM ******/
-/****** Object:  Stored Procedure dbo.Lrf_CustomerSelBalance    Script Date: 4/29/2013 9:54:22 AM ******/
+﻿set ANSI_NULLS ON
+set QUOTED_IDENTIFIER ON
+go
+
+
 ALTER PROCEDURE [dbo].[Lrf_CustomerSelBalance]
 	@LicenseeID INT,
+	@UserID	INT,
 	@CurrencyID INT=0,
 	@LicenseeType VARCHAR(100) = NULL,
 	@MoveBetsDay SMALLDATETIME,
@@ -38,7 +35,9 @@ Revisions:
 	- 20121004@Jim: replace @currencyname input param by @currencyID
 	- 20130417@Scott: Support RNG Casino and Bingo  
 	- 20130529@Daniel: Fix bug regconize BA tickets caused by "Support RNG Casino and Bingo"
+	- 20130514@Jim: Restrict permission of Licensee Users by currency
 	- 20130619@Daniel: Fix more bug regconize BA tickets
+	- 20130620@Jim: fix bug wrong value Licensee Winloss of Racing
 */
 SET NOCOUNT ON
 
@@ -167,13 +166,16 @@ SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120)
 SET @Yesterday = CONVERT(VARCHAR(10), DATEADD(DAY,-1,@Today), 120) 
 SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WHERE LicenseeID = @LicenseeID
 
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 DECLARE @TempAg AS TABLE (custid INT primary key)
 INSERT INTO @TempAg (custid)
-SELECT CustID FROM bodb_Licensee.dbo.LicenseeCust (NOLOCK)
-		WHERE LicenseeID = @LicenseeID 
-		AND (@CurrencyID=0 OR  (@CurrencyID<>0 AND Currency = @CurrencyID ))
-		AND [Description] = COALESCE(@LicenseeType,[Description])
+SELECT CustID 
+		FROM bodb_Licensee.dbo.LicenseeCust lc(NOLOCK)
+		INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID 
+		WHERE [Description] = COALESCE(@LicenseeType,[Description])
 
 IF (SELECT COUNT(*) FROM @TempAg) = 1
 BEGIN
@@ -194,11 +196,13 @@ DECLARE @Super AS TABLE (custid int primary key, currency int)
 
 INSERT INTO @Super (Custid,currency)
 SELECT custid,currency
-FROM Dep_Custsuper (NOLOCK)
+FROM Dep_Custsuper dc(NOLOCK)
+	INNER JOIN #Currency c ON dc.Currency=c.CurrencyID
 WHERE
-site = @LicenseeName AND
-(@CurrencyID=0 OR  (@CurrencyID<>0 AND Currency = @CurrencyID ))
-
+dc.site = @LicenseeName 
+-----------------------
+DROP TABLE #Currency
+-----------------------
 
 --outstanding then get today rate
 INSERT INTO @SumOutstanding (currency,outstanding)
@@ -224,24 +228,49 @@ FROM
 	
 --****Begin For Yesterday and Today Winloss Part***	
 --Yesterday/Today Licensee WL
+;WITH cte_bettrans
+AS 
+(
+SELECT srecommend
+	  ,winlostdate
+	  ,bettype
+	  ,statusID
+	  ,recommend
+	  ,winlost
+	  ,tpositiontaking
+	  ,comm
+	  ,playercomm
+	  ,awinlost
+	  ,actual_stake
+	  ,b.currency
+FROM dbo.bettrans b WITH(NOLOCK,INDEX=IX_srecommend) 
+WHERE 
+	srecommend IN (SELECT CustID FROM @Super)
+	AND b.winlostdate BETWEEN @MoveBetsDay AND @Today
+	AND b.bettype <= 1299 
+	AND b.statusID IN (111,112,113)	
+)
 INSERT INTO @LicenseeWL (winlostdate,currency,LicenseeWL,AmtDuetoBA,AmtDuetoRB,WinlossRB,CommBA,CommRB,PlayerComm)
 SELECT
-	b.winlostdate,s.currency,
-	--ISNULL(- SUM(CASE WHEN b.tpositiontaking<>0 AND (b.bettype NOT BETWEEN 31 AND 80 OR b.bettype in (71,73) ) THEN (b.winlost - b.actual_stake)  ELSE 0 END),0) as LicenseeWL,
-	ISNULL(- SUM(CASE WHEN (
+	b.winlostdate,b.currency,
+	
+	ISNULL(- SUM(
+			CASE WHEN (
 			(
 				(bettype < 31 OR bettype BETWEEN 121 AND 999) 
 				AND b.tpositiontaking<>0
 			) 
 			OR 
 			(
-				b.bettype BETWEEN 31 AND 120 
+				b.bettype BETWEEN 81 AND 120 
 				OR b.bettype BETWEEN 1101 AND 1199 
 				OR b.bettype BETWEEN 1201 AND 1299 
-				OR bettype = 1000
+				OR b.bettype IN (71,73)
 			)
 		  )  
-		  THEN (b.winlost - b.actual_stake)  ELSE 0 END),0) as LicenseeWL,	--20130619@Daniel: Fix more bug regconize BA tickets
+			THEN (b.winlost - b.actual_stake)  
+			WHEN b.bettype BETWEEN 31 AND 33 THEN awinlost
+			ELSE 0 END),0) as LicenseeWL,	--20130619@Daniel: Fix more bug regconize BA tickets
 	ISNULL(- SUM ( CASE WHEN b.tpositiontaking=0 AND (b.bettype NOT BETWEEN 31 AND 120 AND b.bettype<=999) THEN (b.winlost - b.actual_stake + awinlost + comm) ELSE 0 END),0) AS AmtDuetoBA,
 	ISNULL(- SUM ( CASE WHEN b.bettype IN (31,32,33) THEN (b.winlost - b.actual_stake + awinlost + comm) ELSE 0 END),0)AS AmtDuetoRB,
 	ISNULL(SUM (CASE WHEN b.bettype IN (31,32,33) THEN b.awinlost ELSE 0 END),0) AS WinlossRB,
@@ -249,15 +278,9 @@ SELECT
 	ISNULL(SUM ( CASE WHEN b.bettype IN (31,32,33) THEN comm  ELSE 0 END),0) AS CommRB,
 	ISNULL(SUM (  playercomm ),0) AS PlayerComm
 	
-FROM 
-	dbo.bettrans b WITH(NOLOCK,INDEX=IX_srecommend) 
-	INNER JOIN @Super s ON b.srecommend = s.custid
-    INNER JOIN @TempAg a ON b.recommend = a.custid
-WHERE 
-	b.bettype <= 1299 
-	AND b.winlostdate BETWEEN @MoveBetsDay AND @Today
-	AND b.statusID IN (111,112,113)
-GROUP BY b.winlostdate,s.currency
+FROM cte_bettrans b 
+	INNER JOIN @TempAg a ON b.recommend = a.custid
+GROUP BY b.winlostdate,b.currency
 
 
 SELECT   
