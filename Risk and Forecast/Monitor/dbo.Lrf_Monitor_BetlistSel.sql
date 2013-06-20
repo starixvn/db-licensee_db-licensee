@@ -69,8 +69,8 @@ BEGIN
 	SELECT @SQL = @SQL + 'DECLARE @TempAg AS TABLE ( Recommend INT PRIMARY KEY, currency int )'+CHAR(13)+
 				'INSERT INTO @TempAg'+CHAR(13)+
 				'SELECT  lc.CustID, currency'+CHAR(13)+	
-				'FROM    bodb_Licensee.dbo.LicenseeCust WITH lc ( NOLOCK )'+CHAR(13)+
-							'INNER JOIN bodb_licensee.dbo.CurrencyUser c WITH (NOLOCK) ON  lc.LicenseeID=c.LicenseeID AND lc.Currency=c.Currency'+char(13)+
+				'FROM    bodb_Licensee.dbo.LicenseeCust lc WITH  ( NOLOCK )'+CHAR(13)+
+							'INNER JOIN bodb_licensee.dbo.CurrencyUser c WITH (NOLOCK) ON  lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID'+char(13)+
 				'WHERE   lc.LicenseeID = '+convert(varchar(10),@LicenseeID)+CHAR(13)+
 					'AND c.usrID='+convert(VARCHAR(20),@userID)+char(13)+
 					--CASE WHEN @Currency <> '0' THEN ' AND currency IN (SELECT convert(int,val) FROM dbo.strSplit('''+@Currency+''','',''))' ELSE '' END + char(13)+
