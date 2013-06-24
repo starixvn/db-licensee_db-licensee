@@ -217,7 +217,7 @@ CREATE NONCLUSTERED INDEX IDX_Index_Ag ON #DataTmp(Currency)
 
 SELECT * INTO #TempExchange
 FROM Lrf_f_GetExchangeDaily(@date,@date)
-WHERE exchangeid IN (SELECT DISTINCT CurrencyID FROM #DataTmp)
+WHERE exchangeid IN (SELECT DISTINCT Currency FROM #DataTmp)
 
 SELECT 
 	@TotalRows = count(transid),
