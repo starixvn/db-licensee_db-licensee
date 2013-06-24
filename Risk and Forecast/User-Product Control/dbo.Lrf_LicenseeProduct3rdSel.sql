@@ -16,6 +16,7 @@ Original:
 	
 Revisions:
 	- 20111122@Henry: Add filter @ProductPrefix + default values
+	- 20130624@Jim: support to view active licensee only
 */
 SET NOCOUNT ON
 
@@ -33,10 +34,12 @@ from
 	LicenseeProduct3rd lp (nolock)
 	inner join Licensees l (nolock) on lp.LicenseeID = l.LicenseeID
 	inner join Product3rd p (nolock) on lp.Productid = p.ProductID
+	inner join dbo.SystemLicensee sl (nolock) on l.licenseeid=sl.licenseeid and sl.systemid=3
 WHERE 
 	(@LicenseeID=0 OR (@LicenseeID<>0 AND l.LicenseeID = @LicenseeID))
 	AND
 	(@ProductPrefix='' OR (@ProductPrefix<>'' AND p.ProductPrefix = @ProductPrefix))
+	AND sl.isActive=1
 
 
 GO
