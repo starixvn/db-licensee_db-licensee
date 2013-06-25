@@ -17,7 +17,7 @@ AS
 	
 	
 	Revisions:
-	
+	- 20130625@Jim: set default currency permission for new licensee's user
 */
 
 SET NOCOUNT ON
@@ -25,6 +25,7 @@ DECLARE @LicenseeID INT
 DECLARE @Old_Username VARCHAR (50)
 DECLARE @UserRole VARCHAR (50)
 DECLARE @Cnt INT
+DECLARE @Currency as table (CurrencyID INT)
 
 SET @Username = RTRIM(LTRIM(@Username))
 SET @LicenseeName = RTRIM(LTRIM(@LicenseeName))
@@ -94,6 +95,16 @@ BEGIN
 			BEGIN
 				INSERT INTO LicenseeUser (LicenseeID, UserID, isActive,ModifyDate)
 				VALUES (@LicenseeID, @UserID, 1,GETDATE())
+				
+				INSERT INTO @Currency 
+				SELECT DISTINCT  Currency as CurrencyID
+				FROM dbo.LicenseeCust with (NOLOCK)
+				WHERE LicenseeID=@LicenseeID
+				
+				-- Currency User
+				INSERT INTO dbo.CurrencyUser (usrID,LicenseeID,CurrencyID,SystemID,isActive)
+				select @UserID,@LicenseeID,CurrencyID,1,1 -- systemID=1 is default from Lrf
+				from @currency
 			END
 			ELSE IF (@Cnt = 1) --Re-map to new Licensee
 			BEGIN

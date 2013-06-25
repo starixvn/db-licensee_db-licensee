@@ -24,6 +24,7 @@ AS
 	Revisions:
 	- 20111004@Henry: check only LRF pure users (isInternal=0)
 	- 20130405@Jim: support multiple language
+	- 20130625@Jim: set default currency permission for new licensee's user
 */
 
 SET NOCOUNT ON
@@ -31,6 +32,8 @@ SET NOCOUNT ON
 DECLARE @startRun DATETIME  
 DECLARE @endRun DATETIME  
 DECLARE @duration INT  
+DECLARE @Currency as table (CurrencyID INT)
+
 SET @startRun = GETDATE()  
 
 DECLARE @LicenseeName VARCHAR(50)
@@ -60,8 +63,18 @@ END
 --insert new licenseeuser
 if not exists(SELECT 1 from LicenseeUser (nolock) WHERE LicenseeID = @LicenseeID AND UserID = @UserID)
 begin
+	
 	insert into LicenseeUser (LicenseeID, UserID, isActive,ModifyBy,ModifyDate)
 	values (@LicenseeID, @UserID, 1,@Creator,GETDATE())
+	
+	INSERT INTO @Currency 
+	SELECT DISTINCT  Currency as CurrencyID
+	FROM dbo.LicenseeCust with (NOLOCK)
+	WHERE LicenseeID=@LicenseeID
+	
+	INSERT INTO dbo.CurrencyUser (usrID,LicenseeID,CurrencyID,SystemID,isActive)
+	select @UserID,@LicenseeID,CurrencyID,1,1 -- systemID=1 is default from Lrf
+	from @currency
 END
 
 

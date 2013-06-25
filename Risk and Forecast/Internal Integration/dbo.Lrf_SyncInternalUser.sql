@@ -2,6 +2,7 @@
 set QUOTED_IDENTIFIER ON
 go
 
+
 ALTER PROCEDURE [dbo].[Lrf_SyncInternalUser]
 	@LicenseeName VARCHAR (50),
 	@Username VARCHAR(50),
@@ -22,12 +23,13 @@ AS
 	- 20111220@Henry: Add default Function to new created user (remove PageAccess)
 	- 20120220@Henry: Define New Category "Customer Reports" and Move Customer related reports to it
 	- 20120417@Minzy: Define New Category "Admin"
+	- 20130625@Jim: set default currency permission for new licensee user
 */
 
 SET NOCOUNT ON
 DECLARE @LicenseeID INT
 DECLARE @UserID INT
-
+DECLARE @Currency as table (CurrencyID INT)
 
 IF NOT EXISTS (
 	SELECT 1 FROM Licensees WITH(NOLOCK) WHERE LicenseeName = @LicenseeName
@@ -44,6 +46,12 @@ BEGIN
 	SELECT @LicenseeID = LicenseeID 
 	FROM Licensees WITH (NOLOCK)
 	WHERE LicenseeName = @LicenseeName
+
+	INSERT INTO @Currency 
+	SELECT DISTINCT  Currency as CurrencyID
+	FROM dbo.LicenseeCust with (NOLOCK)
+	WHERE LicenseeID=@LicenseeID
+		
 END
 
 
@@ -76,6 +84,10 @@ BEGIN
 	INSERT INTO LicenseeUser (LicenseeID, UserID, isActive,ModifyDate,PageAccess)
 	VALUES (@LicenseeID, @UserID, 1,GETDATE(),'')
 	
+	-- Currency User
+	INSERT INTO dbo.CurrencyUser (usrID,LicenseeID,CurrencyID,SystemID,isActive)
+	select @UserID,@LicenseeID,CurrencyID,1,1 -- systemID=1 is default from Lrf
+	from @currency
 	--Total bets
 	INSERT INTO [LicenseeUserFunctions](LicenseeId, UserId, FunctionId)
 	SELECT DISTINCT @LicenseeId, @UserId, f.FunctionId 
@@ -137,9 +149,7 @@ BEGIN
 	
 END
 GO
-
 GRANT EXECUTE ON [dbo].[Lrf_SyncInternalUser] TO [bodbLicenseeNet] 
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_SyncInternalUser] TO [vnteam]  
-
 
