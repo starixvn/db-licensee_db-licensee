@@ -36,6 +36,7 @@ Revisions:
    - 20130225@Jim: support RNG Casino , Bingo 
    - 20130402@Jim: support base currency USD
    - 20130618@Jim:  Restrict permission of Licensee Users by currency
+   - 20130625@Jim: fix bug missing filter currency condition
 Param's Explanation:
 	+ @excludeTest: remove currency UUS
 	+ @CurrencyID = 0: get all currency
@@ -59,6 +60,7 @@ WHERE  usrID=@userID
 AND LicenseeID=@LicenseeID 
 AND SystemID=1 -- System is default=1 (LRF)
 AND isActive=1
+AND (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 INSERT INTO @tmpAg
 SELECT CustID,currency 

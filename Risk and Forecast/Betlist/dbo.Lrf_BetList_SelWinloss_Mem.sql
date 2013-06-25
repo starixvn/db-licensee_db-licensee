@@ -2077,7 +2077,8 @@ WHERE  usrID=@userID
 	AND LicenseeID=@LicenseeID 
 	AND SystemID=1
 	AND isActive=1
-		
+	
+	
 DECLARE	@currency INT 
 SELECT	@currency = currency 
 FROM custinfo c (NOLOCK) 

@@ -43,7 +43,7 @@ BEGIN
 		AND LicenseeID=@LicenseeID 
 		AND SystemID=1
 		AND isActive=1
-		
+		AND (@CurrencyID =0 OR (CurrencyID=@CurrencyID ))
 	DECLARE @TempAg AS TABLE ( CustId INT )
 	INSERT  INTO @TempAg(CustId)
 	SELECT    CustId  
