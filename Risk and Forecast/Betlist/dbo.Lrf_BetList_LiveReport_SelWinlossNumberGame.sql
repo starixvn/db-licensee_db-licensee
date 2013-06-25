@@ -27,7 +27,8 @@ Revisions:
 	-20120724@Jim: add player commision value 
 	-20121004@Jim: replace @currency input param by @currencyID
 	-20130403@Jim: fix bug page index and liveindicator value 
-	- 20130514@Jim: Restrict permission of Licensee Users by currency
+	-20130514@Jim: Restrict permission of Licensee Users by currency
+	-20130625@Jim: Support to view currency UUS
 */
 
 
@@ -88,7 +89,7 @@ INSERT  INTO @TempAg ( CustId)
 SELECT  CustID  
 FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
 		INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID 
-WHERE    Currency <> 20
+-- WHERE    Currency <> 20
 		
 DROP TABLE #Currency 		
 

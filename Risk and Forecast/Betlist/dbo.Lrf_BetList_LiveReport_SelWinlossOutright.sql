@@ -25,6 +25,7 @@ Revisions:
 		-20130305@Jim: remove Grand Total Row in the result data	
 		-20130404@Jim: set default @ShowBA=0
 		-20130514@Jim: Restrict permission of Licensee Users by currency
+		-20130625@Jim: support to view currency UUS
 */
 
 SET NOCOUNT ON
@@ -39,7 +40,7 @@ INSERT  INTO @TempAg ( CustId)
 SELECT  lc.CustID  
 FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
 		INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID 
-WHERE   lc.Currency <> 20
+-- WHERE   lc.Currency <> 20
 		
 ----------------------------------
 DROP TABLE #currency

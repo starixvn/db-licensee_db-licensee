@@ -25,6 +25,7 @@ Revisions:
 	-20121128@Henry: use new table LicenseeBATransaction_active to get bettrans BA tickets
 	-20130328@Scott: Support RNG Casino and Bingo
 	-20130514@Jim:  Restrict permission of Licensee Users by currency
+	-20130625@Jim: support to view currency UUS
 	
 	
 Param's Explanation:
@@ -76,7 +77,7 @@ INSERT  INTO @TempAg ( CustId)
 SELECT  CustID  
 FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
 		INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID	
-WHERE    (@CurrencyID=0 OR (@CurrencyID NOT IN  (0,20) AND Currency = @CurrencyID))
+WHERE    (@CurrencyID=0 OR (Currency = @CurrencyID))
 
 DECLARE @site VARCHAR(50)
 SELECT @site=LicenseeName FROM bodb_licensee.dbo.Licensees (NOLOCK) 

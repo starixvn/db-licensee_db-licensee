@@ -31,6 +31,7 @@ WinlostByBetType
 -20121128@Henry: use new table LicenseeBATransaction_active to get bettrans BA tickets
 -20130328@Scott: Support RNG Casino and Bingo
 -20130618@Jim:  Restrict permission of Licensee Users by currency
+-20130625@Jim: support to view Currency UUS
      
 Param's Explanation:  
   
@@ -83,7 +84,7 @@ SELECT @sql = @sql + 'INSERT  INTO @TempAg ( CustId)' + char(13) +
 			'SELECT  CustID  FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK ) ' + char(13) +
 							'INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID'+char(13)+
 			'WHERE lc.LicenseeID =' + convert(varchar(10), @LicenseeID ) + char(13) +
-				'AND lc.currency <> 20 ' + char(13) +
+				--'AND lc.currency <> 20 ' + char(13) +
 				CASE WHEN @CurrencyID<>0 THEN 'AND lc.Currency=' + convert(varchar(10), @CurrencyID) ELSE '' END + char(13) 
 
 SELECT @sql = @sql + 'DECLARE @Super AS TABLE (custid int primary key, currency int)' + char(13) 
@@ -203,7 +204,7 @@ BEGIN
 					'WHERE b.rptDate BETWEEN ''' + convert(varchar(10),@FDate, 120) + ''' AND ''' + convert(varchar(10),@TempToDate, 120) + '''' + char(13) + 
 						'AND b.status NOT IN (-1,103)' + char(13) +
 						'AND b.siteID ='  + convert(varchar(10), @LicenseeID ) + char(13) +
-						'AND b.CurrencyID <> 20 '  + char(13) +
+						--'AND b.CurrencyID <> 20 '  + char(13) +
 						CASE WHEN @CurrencyID <> 0 THEN 'AND b.CurrencyID ='  + convert(varchar(10), @CurrencyID ) ELSE '' END + char(13) +
 					'GROUP BY b.rptDate, b.currencyID, b.bettype' + char(13) 
 	END
@@ -230,7 +231,7 @@ BEGIN
 					'WHERE b.rptDate BETWEEN ''' + convert(varchar(10),@FDate, 120) + ''' AND ''' + convert(varchar(10),@TempToDate, 120) + '''' + char(13) + 
 						'AND b.status NOT IN (-1,103)' + char(13) +
 						'AND b.siteID ='  + convert(varchar(10), @LicenseeID ) + char(13) +
-						'AND b.CurrencyID <> 20 '  + char(13) +
+						---'AND b.CurrencyID <> 20 '  + char(13) +
 						CASE WHEN @CurrencyID <> 0 THEN 'AND b.CurrencyID ='  + convert(varchar(10), @CurrencyID ) ELSE '' END + char(13) +	
 						CASE 
 							WHEN @ProductCode='NG' THEN 'AND b.bettype BETWEEN 81 AND 120 '

@@ -25,6 +25,7 @@ Revisions:
 	- 20121004@Jim: replace @currency input param by @currencyID
 	- 20121115@Henry: Only Sportsbook needs to exclude BA
 	- 20130618@Jim:  Restrict permission of Licensee Users by currency
+	- 20130625@Jim: support to view currency UUS 
 Return 3 tables:
 WinlostBySport
 WinlostByCurrency
@@ -65,7 +66,7 @@ INSERT  INTO @TempAg ( CustId)
 SELECT  CustID  
 FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
 		INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
-WHERE   Currency <> 20
+--WHERE   Currency <> 20
 		
 DROP TABLE #Currency 
     

@@ -28,6 +28,7 @@ Revisions:
 		- 20120706@Henry: fix bug due to missing insert playerdiscount
 		- 20121004@Jim: replace @currency input param by @currencyID
 		- 20130514@Jim:Restrict permission of Licensee Users by currency
+		- 20130625@Jim: Support to view currency UUS 
 */
 
 SET NOCOUNT ON  
@@ -86,7 +87,7 @@ INSERT  INTO @TempAg ( CustId)
 SELECT  lc.CustID  
 FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
 		INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
-WHERE   lc.Currency <> 20
+--WHERE   lc.Currency <> 20
 --------------------------------------------------------		
 DROP TABLE #Currency 
 --------------------------------------------------------  
