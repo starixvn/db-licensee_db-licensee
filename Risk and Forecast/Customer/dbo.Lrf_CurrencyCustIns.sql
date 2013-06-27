@@ -7,7 +7,7 @@ go
 ALTER PROCEDURE  [dbo].[Lrf_CurrencyCustIns]		
 	@UserID INT,
 	@LicenseeID INT ,	
-	@CurrencyXML VARCHAR(1000),
+	@CurrencyXML VARCHAR(max),
 	@ModifyBy INT,
 	@Langkey VARCHAR(10) = 'en-US',
 	@IP VARCHAR(40),
