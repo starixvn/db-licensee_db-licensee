@@ -1,11 +1,12 @@
 ﻿USE [bodb02]
 GO
-
+/****** Object:  StoredProcedure [dbo].[Lrf_TotalBets_Sel10]    Script Date: 06/28/2013 06:23:40 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-
+/****** Object:  Stored Procedure dbo.Lrf_TotalBets_Sel10    Script Date: 6/26/2013 10:58:41 PM ******/
+/****** Object:  Stored Procedure dbo.Lrf_TotalBets_Sel10    Script Date: 5/31/2013 2:41:29 PM ******/
 
 ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel10]
 @LicenseeID INT,
@@ -30,7 +31,6 @@ Revisions:
    - 20121004@Jim: replace @currencyname input param by @currencyID
    - 20130410@Jim: improve performance
    - 20130514@Jim:Restrict permission of Licensee Users by currency
-   - 20130628@Jim: fix bug wrong totalwinlost value in case @CurrencyID=0
 	 
 Param's Explanation:
 • @custid: agent ID
@@ -52,9 +52,9 @@ INSERT INTO @TempAg (custid)
 				INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
                 WHERE   [Description] = COALESCE(@LicenseeType,  
                                                      [Description])
-----------------------
+-----------------
 DROP TABLE #currency
----------------------
+-----------------
 DECLARE @RowCount INT, @RowStart INT, @RowEnd INT  
 SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1  
 
@@ -75,11 +75,25 @@ DECLARE @Data as TABLE
 	
 )
 
-
+DECLARE @Temp1 as TABLE
+(
+	matchcode VARCHAR (50),
+	leagueid INT,
+	teamid INT,
+	orid INT,
+	balance MONEY,
+	balanceusd MONEY,
+	balanceeur MONEY,
+	betcount INT,
+	wl MONEY,
+	wlusd MONEY,
+	wleur MONEY,
+	IsNeutral BIT
+)
 SELECT * INTO #TempExchange 
 FROM Lrf_f_GetExchangeDaily(@Today,@Today)
 
-INSERT INTO @Data
+INSERT INTO @Temp1
 SELECT
 		m.matchcode, 
 		m.leagueid, 
@@ -89,20 +103,23 @@ SELECT
 		SUM(stake*e.usd) AS balanceusd,
 		SUM(stake*e.eur) AS balanceeur,
 		SUM(1) as BetCount,
-		SUM(stake*a.odds-stake) AS totalwinlost,
-		SUM(stake*a.odds*e.usd-stake*e.usd) AS totalwinlostusd,
-		SUM(stake*a.odds*e.eur-stake*e.eur) AS totalwinlosteur,
+		SUM(stake*a.odds) AS wl,
+		SUM(stake*a.odds*e.usd) AS wlusd,
+		SUM(stake*a.odds*e.eur) AS wleur,
 		CONVERT(BIT,0) as IsNeutral
 	FROM
 		bettrans AS a  WITH (NOLOCK)
-		INNER JOIN outright AS m  WITH (NOLOCK) ON m.orid= a.matchid AND a.statusID = 0
+		INNER JOIN outright AS m  WITH (NOLOCK) ON m.orid     = a.matchid 
+									AND a.statusID = 0
 		INNER JOIN @TempAg t ON a.recommend=t.custid
 		INNER JOIN #TempExchange e 
 		ON e.exchangeid = a.currency
 	WHERE  	
+--		a.recommend IN (SELECT custid FROM @TempAg) AND
 		a.bettype = 10 AND
 		a.statusID=0 AND
 		a.tpositiontaking <>0
+			
 	GROUP BY 
 		m.teamid,
 		m.orid,
@@ -111,9 +128,50 @@ SELECT
 		a.winlostdate,a.currency
 	ORDER BY  a.winlostdate,a.currency
 
------------------------------
-DROP TABLE #TempExchange
-----------------------------
+DECLARE @Temp2 as TABLE
+(
+	leagueid INT,
+	totalbalance MONEY,
+	totalbalanceusd MONEY,
+	totalbalanceeur MONEY
+)
+INSERT INTO  @Temp2
+SELECT 
+						m.leagueid, 
+						SUM(stake) as totalbalance,
+						SUM(stake*e.usd) as totalbalanceusd,
+						SUM(stake*e.eur) as totalbalanceeur
+					FROM
+						bettrans AS a  WITH (NOLOCK)
+						INNER JOIN outright AS m  WITH (NOLOCK) ON m.orid = a.matchid  AND a.statusID = 0
+						INNER JOIN 	@TempAg t ON a.recommend=t.custid
+						INNER JOIN #TempExchange e ON e.exchangeid = a.currency
+					WHERE  	
+						a.bettype = 10 AND
+						 a.statusID = 0 AND
+						a.tpositiontaking <>0
+						
+					GROUP BY  m.leagueid
+					ORDER BY   m.leagueid ASC 
+
+
+INSERT INTO @Data
+SELECT 
+A.matchcode,
+A.leagueid,
+A.teamid,
+A.orid,
+A.balance,
+A.balanceusd,
+A.balanceeur,
+A.BetCount,
+A.wl - B.totalbalance as totalwinlost,
+A.wlusd - B.totalbalanceusd as totalwinlostusd,
+A.wleur - B.totalbalanceeur as totalwinlosteur,
+A.IsNeutral 
+FROM @Temp1 A
+INNER JOIN @Temp2 B on A.leagueid = B.leagueid
+
 SELECT c.*
 FROM
 (
@@ -125,6 +183,5 @@ WHERE RowNum BETWEEN @RowStart AND @RowEnd
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_TotalBets_Sel10] TO [bodbLicenseeNet]
-
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_TotalBets_Sel10] TO [vnteam]
