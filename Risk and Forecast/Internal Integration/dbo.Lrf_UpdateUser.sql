@@ -30,6 +30,7 @@ DECLARE @Currency as table (CurrencyID INT)
 SET @Username = RTRIM(LTRIM(@Username))
 SET @LicenseeName = RTRIM(LTRIM(@LicenseeName))
 
+
 --check UserID
 IF NOT EXISTS (SELECT 1 FROM users WITH(NOLOCK) WHERE UserID = @UserID)
 BEGIN
@@ -39,6 +40,7 @@ BEGIN
 END
 
 --Update Username if is not blank
+
 IF (@Username <> '') 
 BEGIN 
 	SELECT @Old_Username = Username 
@@ -89,9 +91,10 @@ BEGIN
 		
 		IF @UserRole = 'Licensee'
 		BEGIN
-			SELECT @Cnt = COUNT(LicenseeID) FROM LicenseeUser WITH (NOLOCK) WHERE UserID = @UserID
+			SELECT @Cnt = LicenseeID FROM LicenseeUser WITH (NOLOCK) WHERE UserID = @UserID
+		
 			--Map User to Licensee if not exist
-			IF (@Cnt = 0)
+			IF (ISNULL(@Cnt,0) = 0)
 			BEGIN
 				INSERT INTO LicenseeUser (LicenseeID, UserID, isActive,ModifyDate)
 				VALUES (@LicenseeID, @UserID, 1,GETDATE())
@@ -106,7 +109,7 @@ BEGIN
 				select @UserID,@LicenseeID,CurrencyID,1,1 -- systemID=1 is default from Lrf
 				from @currency
 			END
-			ELSE IF (@Cnt = 1) --Re-map to new Licensee
+			ELSE IF (ISNULL(@Cnt,0) <>0) --Re-map to new Licensee
 			BEGIN
 				IF NOT EXISTS(SELECT 1 FROM LicenseeUser WITH (NOLOCK) WHERE UserID = @UserID AND LicenseeID = @LicenseeID AND isActive=1 )
 				BEGIN
@@ -117,6 +120,7 @@ BEGIN
 					UPDATE CurrencyUser WITH (ROWLOCK,UPDLOCK)
 					SET LicenseeID=@LicenseeID
 					WHERE usrID=@UserID 
+						AND LicenseeID=@Cnt	
 				END
 			END
 		END
