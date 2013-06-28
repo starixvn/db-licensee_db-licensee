@@ -113,6 +113,10 @@ BEGIN
 					UPDATE LicenseeUser WITH (ROWLOCK, UPDLOCK)
 					SET LicenseeID = @LicenseeID, isActive = 1, ModifyDate = GETDATE()
 					WHERE UserID = @UserID	
+					
+					UPDATE CurrencyUser WITH (ROWLOCK,UPDLOCK)
+					SET LicenseeID=@LicenseeID
+					WHERE usrID=@UserID 
 				END
 			END
 		END
