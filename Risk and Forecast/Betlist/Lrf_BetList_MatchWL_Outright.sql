@@ -97,9 +97,10 @@ DECLARE @TempAg AS TABLE (custid INT)
 INSERT INTO @TempAg (custid)
 SELECT  CustID  
                 FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
-						INNER JOIN #Currency c ON lc.LicenseeID=lc.LicenseeID AND lc.Currency=c.CurrencyID
+						INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
                 WHERE    [Description] = COALESCE(@LicenseeType,  
                                                      [Description])
+DROP TABLE #currency
 
 CREATE TABLE #AgWinlossOutright
 (
