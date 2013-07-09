@@ -37,6 +37,7 @@ Revisions:
    - 20130402@Jim: support base currency USD
    - 20130618@Jim:  Restrict permission of Licensee Users by currency
    - 20130625@Jim: fix bug missing filter currency condition
+   - 20130709@Jim: change formula to sum Transfer3rd value
 Param's Explanation:
 	+ @excludeTest: remove currency UUS
 	+ @CurrencyID = 0: get all currency
@@ -193,7 +194,7 @@ BEGIN
 			,0 as PendingFund
 			,0 as Winloss 
 			,SUM(isnull(b.ClosingBalance,0))
-			,SUM(isnull(b.Transfer3rd,0))
+			,SUM(isnull(b.Transfer3rd+b.Transfer3rdOthers,0))
 			,0 as DrawGame
 			,SUM(isnull(b.Turnover_BA,0))
 			,SUM(isnull(b.Comm_BA,0))
@@ -249,7 +250,7 @@ BEGIN
 			,0 as PendingFund
 			,0 as Winloss 
 			,SUM(isnull(b.ClosingBalance,0))
-			,SUM(isnull(b.Transfer3rd,0))
+			,SUM(isnull(b.Transfer3rd+b.Transfer3rdOthers,0))
 			,0 as DrawGame
 			,SUM(isnull(b.Turnover_BA,0))
 			,SUM(isnull(b.Comm_BA,0))
@@ -311,7 +312,7 @@ BEGIN
 			,0 as PendingFund
 			,0 as Winloss 
 			,SUM(isnull(b.ClosingBalance,0))
-			,SUM(isnull(b.Transfer3rd,0))
+			,SUM(isnull(b.Transfer3rd+b.Transfer3rdOthers,0))
 			,0 as DrawGame
 			,SUM(isnull(b.Turnover_BA,0))
 			,SUM(isnull(b.Comm_BA,0))
@@ -367,7 +368,7 @@ BEGIN
 			,0 as PendingFund
 			,0 as Winloss 
 			,SUM(isnull(b.ClosingBalance,0))
-			,SUM(isnull(b.Transfer3rd,0))
+			,SUM(isnull(b.Transfer3rd+b.Transfer3rdOthers,0))
 			,0 as DrawGame
 			,SUM(isnull(b.Turnover_BA,0))
 			,SUM(isnull(b.Comm_BA,0))
