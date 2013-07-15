@@ -31,11 +31,11 @@ Revisions:
 Param's Explanation:
 
 1. To update a member/batch members without GroupCommID
-EXEC [Lrf_CustomerUpdMemberComm_907] @LicenseeID=xx,@strCustID,xx,@UserID=xx,@SBComm=xx,@NGComm=xx,@RacingComm=xx,@IsUpdateNG=xx,@IsUpdateRacing=xx,@IP=xx,@ErrCode=@ErrCode OUTPUT,@ErrMsg=@ErrMsg OUTPUT
+EXEC [Lrf_CustomerUpdMemberComm] @LicenseeID=xx,@strCustID,xx,@UserID=xx,@SBComm=xx,@NGComm=xx,@RacingComm=xx,@IsUpdateNG=xx,@IsUpdateRacing=xx,@IP=xx,@ErrCode=@ErrCode OUTPUT,@ErrMsg=@ErrMsg OUTPUT
 2. To update a member/batch members with GroupCommID
-EXEC [Lrf_CustomerUpdMemberComm_907] @LicenseeID=xx,@strCustID,xx,@UserID=xx,@GroupCommID=xx,@SBComm=xx,@NGComm=xx,@RacingComm=xx,@IsUpdateNG=xx,@IsUpdateRacing=xx,@IP=xx,@ErrCode=@ErrCode OUTPUT,@ErrMsg=@ErrMsg OUTPUT
+EXEC [Lrf_CustomerUpdMemberComm] @LicenseeID=xx,@strCustID,xx,@UserID=xx,@GroupCommID=xx,@SBComm=xx,@NGComm=xx,@RacingComm=xx,@IsUpdateNG=xx,@IsUpdateRacing=xx,@IP=xx,@ErrCode=@ErrCode OUTPUT,@ErrMsg=@ErrMsg OUTPUT
 3. To update member group without update commission
-EXEC [Lrf_CustomerUpdMemberComm_907] @IsUpdateComm=0,@LicenseeID=xx,@strCustID,xx,@UserID=xx,@GroupCommID=xx,@SBComm=xx,@NGComm=xx,@RacingComm=xx,@IsUpdateNG=xx,@IsUpdateRacing=xx,@IP=xx,@ErrCode=@ErrCode OUTPUT,@ErrMsg=@ErrMsg OUTPUT
+EXEC [Lrf_CustomerUpdMemberComm] @IsUpdateComm=0,@LicenseeID=xx,@strCustID,xx,@UserID=xx,@GroupCommID=xx,@SBComm=xx,@NGComm=xx,@RacingComm=xx,@IsUpdateNG=xx,@IsUpdateRacing=xx,@IP=xx,@ErrCode=@ErrCode OUTPUT,@ErrMsg=@ErrMsg OUTPUT
 
 */
 
