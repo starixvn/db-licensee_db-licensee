@@ -60,6 +60,7 @@ Revisions:
 	- 20130328@Scott: Support RNG Casino and Bingo
 	- 20130514@Jim:Restrict permission of Licensee Users by currency
 	- 20130619@Jim: fix bug missing RNG Casino data 
+	- 20130716@Jim: update matchid for RNG Casino and Bingo
 Param's Explanation: 
 	
 */

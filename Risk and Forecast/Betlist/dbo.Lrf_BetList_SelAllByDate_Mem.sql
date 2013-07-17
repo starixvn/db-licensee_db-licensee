@@ -64,6 +64,7 @@ Revisions:
 	- 20121115@Henry: Only Sportsbook needs to exclude BA
 	- 201300426@Scott: Support RNG Casino and Bingo
 	- 20130514@Jim: Restrict permission of Licensee Users by currency
+	- 20130716@Jim: update matchid for RNG Casino and Bingo
 */
 
 
@@ -678,7 +679,7 @@ END
 
 --NUMBER GAME
 
-IF (@ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowBG=1 )
+IF (@ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1  )
 BEGIN
 	INSERT INTO #BetListSelAllByDateMem
 	SELECT 
@@ -727,7 +728,7 @@ BEGIN
 	WHERE
 		b.CustID = @CustID AND
 		b.recommend=@Recommend  
-		AND b.bettype<>71
+		AND b.bettype NOT IN (71,73)
 		AND b.transdate>=@FROMDate AND b.transdate<=@ToDate
 END
 
@@ -742,7 +743,7 @@ BEGIN
 		b.transid,
 		ISNULL(b.BetID,0),
 		'' AS matchcode, 
-		0  AS matchid,
+		71  AS matchid,
 		'' AS Race, 
 		0  AS homeID,
 		0  AS awayID,
@@ -782,6 +783,59 @@ BEGIN
 		AND b.bettype=71
 		AND b.transdate>=@FROMDate AND b.transdate<=@ToDate
 END
+
+IF @ShowBG=1 
+BEGIN
+	INSERT INTO #BetListSelAllByDateMem
+	SELECT 
+		@UserName AS UserName,
+		252 sporttype,
+		b.bettype,
+		b.refno,		
+		b.transid,
+		ISNULL(b.BetID,0),
+		'' AS matchcode, 
+		73  AS matchid,
+		'' AS Race, 
+		0  AS homeID,
+		0  AS awayID,
+		CONVERT(FLOAT, b.hdp1) AS hdp1, 
+		CONVERT(FLOAT, b.hdp2) AS hdp2,  
+		b.odds,
+		b.modds,
+		CASE WHEN b.status = 'running' AND IsNull(b.SecAcceptFlag, 0) = 1 and IsNull(b.checktime, CURRENT_TIMESTAMP) > CURRENT_TIMESTAMP THEN 'waiting'  
+		ELSE b.status   
+		END as status,
+		b.stake,
+		b.actual_stake,
+		(winlost-actual_stake) winlost,
+		- (b.winlost-b.actual_stake) AS LicenseeWL ,
+		b.comm ,
+		b.playercomm  AS PlayerComm ,
+		b.discount,
+		b.transdate,
+		b.winlostdate,
+		b.betteam,
+		0 AS leagueID,
+		b.liveindicator, 
+		b.livehomescore, 
+		b.liveawayscore,
+		b.IP AS IP,
+		0 AS betstatus,
+		CONVERT(BIT,0) AS IsNeutral,
+		b.Oddstype,
+		b.currency,
+		''  AS ShowTime 
+	FROM 
+		bettrans b WITH (NOLOCK)
+		INNER JOIN @TempBettype bt ON b.bettype = bt.bettype	
+	WHERE
+		b.CustID = @CustID AND
+		b.recommend=@Recommend  
+		AND b.bettype=73
+		AND b.transdate>=@FROMDate AND b.transdate<=@ToDate
+END
+
 
 DECLARE @RowStart INT, @RowEnd INT  
 SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1

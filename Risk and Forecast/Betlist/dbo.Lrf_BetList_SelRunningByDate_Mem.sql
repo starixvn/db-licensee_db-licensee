@@ -49,6 +49,7 @@ Revisions:
    - 20130226@Jim: support RNG Casino,Bingo	
    - 20130326@Jim: remove input parameter @GetAll
    - 20130514@Jim: Restrict permission of Licensee Users by currency
+   - 20130716@Jim: update matchid for RNG Casino and Bingo
 */
 
 SET NOCOUNT ON
@@ -613,7 +614,7 @@ CREATE TABLE #TempBetList
 	
 	--NUMBER GAME
 	
-	IF (@ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1  OR @ShowBG=1 )
+	IF (@ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1  )
 	BEGIN
 		INSERT INTO #BetListSelRunningByDateMem
 		SELECT
@@ -661,7 +662,6 @@ CREATE TABLE #TempBetList
 			AND ((@ShowNG=1 AND b.bettype BETWEEN 81 AND 120)
 				OR (@ShowLC=1 AND b.bettype BETWEEN 1101 AND 1199)
 				OR (@ShowVS=1 AND b.bettype BETWEEN 1201 AND 1299)
-				OR (@ShowBG=1 AND b.bettype=73)
 				)
 	END
 	--- RNG Casino
@@ -710,6 +710,53 @@ CREATE TABLE #TempBetList
 			b.custid=@CustID 
 			AND b.statusID IN (0,1) 
 			AND b.bettype=71
+	END
+	
+	IF @ShowBG=1 
+	BEGIN
+		INSERT INTO #BetListSelRunningByDateMem
+		SELECT
+			252 sporttype,
+			@Username AS UserName,
+			b.bettype,
+			0 AS leagueID,	
+			b.refno,					
+			b.transid,
+			ISNULL(b.BetID,0),
+			'' AS matchcode,
+			'' AS Race,
+			0 AS homeID,
+			0 AS awayID,
+			b.hdp1 AS hdp1, 
+			b.hdp2 AS hdp2,
+			b.odds,
+			b.modds,
+			--b.status,
+			CASE WHEN b.status = 'running' AND IsNull(b.SecAcceptFlag, 0) = 1 and IsNull(b.checktime, CURRENT_TIMESTAMP) > CURRENT_TIMESTAMP THEN 'waiting'  
+			ELSE b.status   
+			END as status,
+			b.stake,
+			b.actual_stake, 
+			b.transdate,		
+			b.betteam,
+			b.discount,
+			b.liveindicator, 
+			b.livehomescore, 
+			b.liveawayscore,
+			b.IP AS IP,
+			CONVERT(BIT,0) AS IsNeutral,
+			b.oddstype,
+			b.winlostdate,
+			b.currency,
+			b.playercomm,
+			 '' as ShowTime
+		FROM 
+			bettrans b WITH (NOLOCK)			
+		WHERE
+			b.transdate>= @FromDate AND b.transdate<= @ToDate AND 
+			b.custid=@CustID 
+			AND b.statusID IN (0,1) 
+			AND b.bettype=73
 	END
 	
 DECLARE @RowStart INT, @RowEnd INT  
