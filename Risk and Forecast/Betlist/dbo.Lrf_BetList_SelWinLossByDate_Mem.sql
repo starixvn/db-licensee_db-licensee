@@ -64,7 +64,7 @@ Revisions:
    - 20130123@Daniel: Change link server alias
    - 20130225@Jim: support RNG Casino, Bingo 
    - 20130514@Jim:Restrict permission of Licensee Users by currency
-   
+   - 20130716@Jim: update matchid for RNG Casino and Bingo
    */
 
 SET NOCOUNT ON
@@ -689,7 +689,7 @@ BEGIN
 			b.ruben = 1 
 			
 	END
-	IF (@ShowLC=1 OR @ShowVS=1 OR @ShowBG=1)
+	IF (@ShowLC=1 OR @ShowVS=1 )
 	BEGIN
 		INSERT INTO #BetListByDateMem
 			SELECT
@@ -737,7 +737,6 @@ BEGIN
 			b.custid=@CustID AND
 			((@ShowLC=1 AND b.bettype BETWEEN 1101 AND 1199) 
 				OR (@ShowVS=1 AND b.bettype BETWEEN 1201 AND 1299)
-				OR (@ShowBG=1 AND b.bettype=73)
 				)  AND
 			--((b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 1101 AND 1199) ) AND
 			b.ruben = 1 
@@ -773,7 +772,7 @@ BEGIN
 			b.Liveawayscore,
 			b.IP AS IP,
 			0  AS  LeagueID,
-			0  AS MatchID,	
+			71  AS MatchID,	
 			'' AS  MatchCode,
 			'' AS  Race,	
 			0  AS HomeID,
@@ -789,6 +788,56 @@ BEGIN
 			b.recommend = @Recommend AND --to improve performance
 			b.custid=@CustID AND
 			b.bettype=71 AND 
+			b.ruben = 1 
+			
+	END
+	
+	IF @ShowBG=1
+	BEGIN
+		INSERT INTO #BetListByDateMem
+			SELECT
+			252 Sporttype, 
+			@Username, 
+			b.TransID,
+			ISNULL(b.BetID,0),
+			b.Bettype,
+			CONVERT(FLOAT, b.hdp1) AS hdp1, 
+			CONVERT(FLOAT, b.hdp2) AS hdp2,
+			b.Oddstype,			
+			b.Odds,
+			b.modds,
+			b.stake,
+			b.actual_stake, 
+			b.betteam,
+			b.status AS Status,				
+			b.refno,
+			b.Transdate,	
+			b.winlostdate,			
+			(b.winlost-actual_stake),
+			- (b.winlost-b.actual_stake) AS LicenseeWL ,
+			b.comm,
+			b.playercomm ,				
+			b.Liveindicator,
+			b.Livehomescore,
+			b.Liveawayscore,
+			b.IP AS IP,
+			0  AS  LeagueID,
+			73  AS MatchID,	
+			'' AS  MatchCode,
+			'' AS  Race,	
+			0  AS HomeID,
+			0  AS AwayID, 		
+			0  AS Betstatus,
+			CONVERT(BIT,0) AS IsNeutral	,
+			b.currency,
+			'' AS  ShowTime 	
+		FROM
+			dbo.bettrans AS b WITH (NOLOCK)		
+		WHERE
+			b.winlostdate BETWEEN @TempFromDate AND @todate AND
+			b.recommend = @Recommend AND --to improve performance
+			b.custid=@CustID AND
+			b.bettype=73 AND 
 			b.ruben = 1 
 			
 	END
@@ -1282,7 +1331,7 @@ BEGIN
 	END
 	
 	--Number Game , Live Casino ,Virtual Sport, Bingo
-	IF (@ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowBG=1 ) 
+	IF (@ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1  ) 
 	BEGIN	
 		INSERT INTO #BetListByDateMem
 		SELECT
@@ -1331,7 +1380,6 @@ BEGIN
 			((@ShowNG=1 AND b.bettype BETWEEN 81 AND 120) 
 				OR (@ShowLC=1 AND b.bettype BETWEEN 1101 AND 1199 )
 				OR (@ShowVS=1 AND b.bettype BETWEEN 1201 AND 1299 )
-				OR (@ShowBG=1 AND b.bettype=73)
 				) AND
 			b.ruben = 1
 	END
@@ -1366,7 +1414,7 @@ BEGIN
 			b.Liveawayscore,
 			b.IP AS IP,
 			0  AS  LeagueID,
-			0  AS  MatchID,	
+			71  AS  MatchID,	
 			'' AS  MatchCode,
 			'' AS Race,	
 			0  AS HomeID,
@@ -1384,7 +1432,55 @@ BEGIN
 			b.bettype=71 AND 
 			b.ruben = 1
 	END
-				
+	---- Bingo
+	IF @ShowBG=1 
+	BEGIN	
+		INSERT INTO #BetListByDateMem
+		SELECT
+			252 Sporttype, 
+			@Username, 
+			b.TransID,
+			ISNULL(b.BetID,0),
+			b.Bettype,
+			CONVERT(FLOAT, b.hdp1) AS hdp1, 
+			CONVERT(FLOAT, b.hdp2) AS hdp2,
+			b.Oddstype,
+			b.odds,
+			b.modds,
+			b.stake,
+			b.actual_stake, 
+			b.betteam,
+			b.status AS Status,				
+			b.refno,
+			b.Transdate,	
+			b.winlostdate,			
+			(b.winlost-actual_stake),
+			- (b.winlost-b.actual_stake) AS LicenseeWL ,
+			b.comm,
+			b.playercomm  ,
+			b.Liveindicator,
+			b.Livehomescore,
+			b.Liveawayscore,
+			b.IP AS IP,
+			0  AS  LeagueID,
+			73  AS  MatchID,	
+			'' AS  MatchCode,
+			'' AS Race,	
+			0  AS HomeID,
+			0  AS AwayID, 		
+			0  AS Betstatus,
+			CONVERT(BIT,0) AS IsNeutral	,
+			b.currency,
+			''  AS ShowTime 	
+		FROM
+			dbo.bettrans14 AS b WITH (NOLOCK, INDEX=bettrans1423)		
+		WHERE
+			b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate AND
+			b.recommend = @Recommend AND --to improve performance
+			b.custid=@CustID AND
+			b.bettype=73 AND 
+			b.ruben = 1
+	END	
 END	
 
 IF @FromDate < @BalanceUpDay
@@ -1875,7 +1971,7 @@ BEGIN
 	END
 	
 	--Number Game,Live Casino 
-	IF (@ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1  OR @ShowBG=1)
+	IF (@ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1  )
 	BEGIN	
 		INSERT INTO #BetListByDateMem
 		SELECT			
@@ -1924,7 +2020,6 @@ BEGIN
 			((@ShowNG=1 AND b.bettype BETWEEN 81 AND 120) 
 				OR (@ShowLC=1 AND b.bettype BETWEEN 1101 AND 1199 )
 				OR (@ShowVS=1 AND b.bettype BETWEEN 1201 AND 1299 )
-				OR (@ShowBG=1 AND b.bettype=73)
 				) AND
 			b.ruben = 1
 			
@@ -1960,7 +2055,7 @@ BEGIN
 			b.Liveawayscore,
 			b.IP AS IP,
 			0 AS  LeagueID,
-			0 AS  MatchID,	
+			71 AS  MatchID,	
 			'' AS MatchCode,
 			'' AS Race,	
 			0  AS  HomeID,
@@ -1976,6 +2071,56 @@ BEGIN
 			b.custid=@CustID AND
 			b.recommend = @Recommend AND	
 			b.bettype=71 AND 
+			b.ruben = 1
+			
+			
+	END
+	IF @ShowBG=1
+	BEGIN	
+		INSERT INTO #BetListByDateMem
+		SELECT			
+			252 Sporttype, 
+			@Username, 
+			b.TransID,
+			ISNULL(b.BetID,0),
+			b.Bettype,
+			CONVERT(FLOAT, b.hdp1) AS hdp1, 
+			CONVERT(FLOAT, b.hdp2) AS hdp2,
+			b.OddsType,
+			b.Odds,
+			b.modds,
+			b.stake,
+			b.actual_stake, 
+			b.Betteam,
+			b.status AS Status,				
+			b.refno,
+			b.Transdate,	
+			b.winlostdate,			
+			(b.winlost-actual_stake),
+			- (b.winlost-b.actual_stake) AS LicenseeWL ,
+			b.comm,
+			b.playercomm  AS PlayerComm,				
+			b.Liveindicator,
+			b.Livehomescore,
+			b.Liveawayscore,
+			b.IP AS IP,
+			0 AS  LeagueID,
+			73 AS  MatchID,	
+			'' AS MatchCode,
+			'' AS Race,	
+			0  AS  HomeID,
+			0  AS  AwayID, 		
+			0  AS  Betstatus,
+			CONVERT(BIT,0) AS IsNeutral	,
+			b.currency,
+			'' AS ShowTime 	
+		FROM
+			bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK, index=IX_custid)		
+		WHERE
+			b.winlostdate BETWEEN @fromdate AND @TempToDate AND			
+			b.custid=@CustID AND
+			b.recommend = @Recommend AND	
+			b.bettype=73 AND 
 			b.ruben = 1
 			
 			
