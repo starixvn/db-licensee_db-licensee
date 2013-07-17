@@ -55,6 +55,7 @@ Revisions:
      - 20130123@Daniel: Change link server alias
 	 - 20130204@Jim: support RNG Casino and Bingo product
 	 - 20130514@Jim:Restrict permission of Licensee Users by currency
+	 - 20130716@Jim: update matchid for RNG Casino and Bingo
 Param's Explanation:
 	+ @drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
 
@@ -653,7 +654,7 @@ BEGIN
 			b.Liveawayscore,
 			b.IP AS IP,
 			0 LeagueID,
-			0 MatchID,	
+			71 MatchID,	
 			0 MatchCode,
 			'' AS Race,	
 			0 HomeID,
@@ -701,7 +702,7 @@ BEGIN
 			b.Liveawayscore,
 			b.IP AS IP,
 			0 LeagueID,
-			0 MatchID,	
+			73 MatchID,	
 			0 MatchCode,
 			'' AS Race,	
 			0 HomeID,
@@ -713,7 +714,6 @@ BEGIN
 			'' as showtime
 		FROM
 			dbo.bettrans AS b WITH (NOLOCK)		
-				
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @tdate AND
 			b.custid=@custid AND
@@ -1295,7 +1295,7 @@ BEGIN
 			b.Liveawayscore,
 			b.IP AS IP,
 			0 LeagueID,
-			0 MatchID,	
+			71 MatchID,	
 			0 MatchCode,
 			'' AS Race,	
 			0 HomeID,
@@ -1344,7 +1344,7 @@ BEGIN
 			b.Liveawayscore,
 			b.IP AS IP,
 			0 LeagueID,
-			0 MatchID,	
+			73 MatchID,	
 			0 MatchCode,
 			'' AS Race,	
 			0 HomeID,
@@ -1942,7 +1942,7 @@ BEGIN
 			b.Liveawayscore,
 			b.IP AS IP,
 			0 LeagueID,
-			0 MatchID,	
+			71 MatchID,	
 			0 MatchCode,
 			'' AS Race,	
 			0 HomeID,
@@ -1992,7 +1992,7 @@ BEGIN
 			b.Liveawayscore,
 			b.IP AS IP,
 			0 LeagueID,
-			0 MatchID,	
+			73 MatchID,	
 			0 MatchCode,
 			'' AS Race,	
 			0 HomeID,
