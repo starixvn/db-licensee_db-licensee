@@ -33,6 +33,7 @@ AS
 	- 20120801@Henry: return group commission information of members
 	- 20121004@Jim: replace @currencyname input param by @currencyID
 	- 20130118@Henry: fix bug @LastOffBy - Forgot to put param @LicenseeID
+	- 20130718@Jim: remove status Suspended
 	Param's Explanation:
 	  + @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 	  + @SpecialLevel: default value = -1 (all)
@@ -88,8 +89,8 @@ BEGIN
 			LEFT JOIN bodb_licensee.dbo.LicenseeCustComm cc ON c.custid = cc.custid AND cc.Licenseeid=@LicenseeID
 		WHERE 
 			c.roleid=1 
-			AND ((@CustStatus='') OR (@CustStatus IN ('Open','Suspended') AND closed=0) OR (@CustStatus='Closed' AND closed = 1))
-			AND ((@CustStatus IN('','Closed')) OR (@CustStatus = 'Open' AND ISNULL(reject,0)=0) OR (@CustStatus = 'Suspended' AND ISNULL(reject,0)=1))
+			AND ((@CustStatus='') OR (@CustStatus IN ('Open') AND closed=0) OR (@CustStatus='Closed' AND closed = 1))
+			AND ((@CustStatus IN('','Closed')) OR (@CustStatus = 'Open' AND ISNULL(reject,0)=0) )
 			AND (@SpecialLevel=-1 OR (@SpecialLevel<>-1 AND lc.SpecialLevel=@SpecialLevel)  )
 			AND (@GroupCommID=-1 OR (@GroupCommID<>-1 AND ISNULL(cc.GroupCommID,0)=@GroupCommID ))
 		IF ISNULL(@TotalRows,0) = 0
@@ -130,8 +131,8 @@ BEGIN
 		WHERE 
 			lb.LicenseeID=@LicenseeID
 			AND lb.Status= 'Running'
-			AND ((@CustStatus='') OR (@CustStatus IN ('Open','Suspended') AND closed=0) OR (@CustStatus='Closed' AND closed = 1))
-			AND ((@CustStatus IN('','Closed')) OR (@CustStatus = 'Open' AND ISNULL(reject,0)=0) OR (@CustStatus = 'Suspended' AND ISNULL(reject,0)=1))
+			AND ((@CustStatus='') OR (@CustStatus IN ('Open') AND closed=0) OR (@CustStatus='Closed' AND closed = 1))
+			AND ((@CustStatus IN('','Closed')) OR (@CustStatus = 'Open' AND ISNULL(reject,0)=0) )
 			AND (@SpecialLevel=-1 OR (@SpecialLevel<>-1 AND lc.SpecialLevel=@SpecialLevel)  )
 			AND (@GroupCommID=-1 OR (@GroupCommID<>-1 AND ISNULL(cc.GroupCommID,0)=@GroupCommID ))
 		IF ISNULL(@TotalRows,0) = 0
@@ -170,8 +171,8 @@ BEGIN
 			LEFT JOIN bodb_licensee.dbo.LicenseeCustComm cc ON c.custid = cc.custid AND cc.Licenseeid=@LicenseeID
 		WHERE 
 			c.roleid=1 
-			AND ((@CustStatus='') OR (@CustStatus IN ('Open','Suspended') AND closed=0) OR (@CustStatus='Closed' AND closed = 1))
-			AND ((@CustStatus IN('','Closed')) OR (@CustStatus = 'Open' AND ISNULL(reject,0)=0) OR (@CustStatus = 'Suspended' AND ISNULL(reject,0)=1))
+			AND ((@CustStatus='') OR (@CustStatus IN ('Open') AND closed=0) OR (@CustStatus='Closed' AND closed = 1))
+			AND ((@CustStatus IN('','Closed')) OR (@CustStatus = 'Open' AND ISNULL(reject,0)=0))
 			AND ISNULL(lb.CustID ,0)=0
 			AND (@SpecialLevel=-1 OR (@SpecialLevel<>-1 AND lc.SpecialLevel=@SpecialLevel)  )
 			AND (@GroupCommID=-1 OR (@GroupCommID<>-1 AND ISNULL(cc.GroupCommID,0)=@GroupCommID ))
@@ -228,8 +229,8 @@ BEGIN
 				custinfo ci (nolock)  INNER JOIN @TempMember t ON ci.custid = t.custid
 				INNER JOIN bodb_licensee.dbo.LicenseeCustInfo lc WITH (NOLOCK) ON ci.custid = lc.custid
 			WHERE 
-				((@CustStatus='') OR (@CustStatus IN ('Open','Suspended') AND closed=0) OR (@CustStatus='Closed' AND closed = 1))
-				AND ((@CustStatus IN('','Closed')) OR (@CustStatus = 'Open' AND ISNULL(reject,0)=0) OR (@CustStatus = 'Suspended' AND ISNULL(reject,0)=1))
+				((@CustStatus='') OR (@CustStatus IN ('Open') AND closed=0) OR (@CustStatus='Closed' AND closed = 1))
+				AND ((@CustStatus IN('','Closed')) OR (@CustStatus = 'Open' AND ISNULL(reject,0)=0))
 				AND (@SpecialLevel=-1 OR (@SpecialLevel<>-1 AND lc.SpecialLevel=@SpecialLevel)  )
 		END
 		ELSE
@@ -242,8 +243,8 @@ BEGIN
 				LEFT JOIN 
 						bodb_Licensee.dbo.LicenseeBAHistory lb WITH (nolock) ON LicenseeID = @LicenseeID AND ci.custid = lb.custid AND lb.Status= 'Running'
 			WHERE 
-				((@CustStatus='') OR (@CustStatus IN ('Open','Suspended') AND closed=0) OR (@CustStatus='Closed' AND closed = 1))
-				AND ((@CustStatus IN('','Closed')) OR (@CustStatus = 'Open' AND ISNULL(reject,0)=0) OR (@CustStatus = 'Suspended' AND ISNULL(reject,0)=1))
+				((@CustStatus='') OR (@CustStatus IN ('Open') AND closed=0) OR (@CustStatus='Closed' AND closed = 1))
+				AND ((@CustStatus IN('','Closed')) OR (@CustStatus = 'Open' AND ISNULL(reject,0)=0))
 				AND ((@BAFilter=0) OR (@BAFilter=1 AND isnull(lb.Status,'') = 'Running') OR (@BAFilter=2 AND isnull(lb.Status,'') <> 'Running'))
 				AND (@SpecialLevel=-1 OR (@SpecialLevel<>-1 AND lc.SpecialLevel=@SpecialLevel)  )
 		END
@@ -271,8 +272,8 @@ BEGIN
 			LEFT JOIN
 				bodb_Licensee.dbo.Users u with (nolock) ON lb.OnBy = u.userid		
 		WHERE 
-			((@CustStatus='') OR (@CustStatus IN ('Open','Suspended') AND closed=0) OR (@CustStatus='Closed' AND closed = 1))
-			AND ((@CustStatus IN('','Closed')) OR (@CustStatus = 'Open' AND ISNULL(reject,0)=0) OR (@CustStatus = 'Suspended' AND ISNULL(reject,0)=1))
+			((@CustStatus='') OR (@CustStatus IN ('Open') AND closed=0) OR (@CustStatus='Closed' AND closed = 1))
+			AND ((@CustStatus IN('','Closed')) OR (@CustStatus = 'Open' AND ISNULL(reject,0)=0))
 			AND ((@BAFilter=0) OR (@BAFilter=1 AND isnull(lb.Status,'') = 'Running') OR (@BAFilter=2 AND isnull(lb.Status,'') <> 'Running'))
 			AND (@SpecialLevel=-1 OR (@SpecialLevel<>-1 AND lc.SpecialLevel=@SpecialLevel)  )
 			
