@@ -9,7 +9,7 @@ DB: DB052.bodb02
 Original: Acc_CustomerSelStatus
 
 Revisions:
-   
+   - 20130719@Jim: remove suspended status 
 Param's Explanation:
 • @CustID: customer id.   
 */
@@ -35,7 +35,7 @@ BEGIN
 	IF @ErrCode<> 0 SELECT @IsAdminCanViewVNIP = 0 ELSE SELECT @IsAdminCanViewVNIP = 1     
 END
 
-SELECT ISNULL(reject,0) AS Suspend,
+SELECT --ISNULL(reject,0) AS Suspend,
 	   ISNULL (closed,0) As Closed,
 	   ISNULL (autosuspend,0) As AutoSuspend,	
 	   ISNULL (cm.DisableAutoMPT ,0) As DisableAutoMPT,	
