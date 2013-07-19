@@ -1,5 +1,10 @@
-﻿ALTER  PROCEDURE [dbo].[Lrf_CustomerSel]
+﻿set ANSI_NULLS ON
+set QUOTED_IDENTIFIER ON
+go
+
+ALTER   PROCEDURE [dbo].[Lrf_CustomerSel]
 	@LicenseeID INT,
+	@UserID		  INT,	
 	@CurrencyID INT=0,
 	@LicenseeType VARCHAR(100) = NULL,
 	@username VARCHAR(50) = NULL,
@@ -33,6 +38,7 @@ AS
 	- 20120801@Henry: return group commission information of members
 	- 20121004@Jim: replace @currencyname input param by @currencyID
 	- 20130118@Henry: fix bug @LastOffBy - Forgot to put param @LicenseeID
+	- 20130514@Jim:  Restrict permission of Licensee Users by currency
 	- 20130718@Jim: remove status Suspended
 	Param's Explanation:
 	  + @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
@@ -48,15 +54,18 @@ SELECT @currentDate = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120)
 DECLARE @RowCount INT, @RowStart INT, @RowEnd INT
 SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
 
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+
 DECLARE @TempAg AS TABLE (custid INT)
 INSERT INTO @TempAg (custid)
 SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust WITH ( NOLOCK )  
-                WHERE   LicenseeID = @LicenseeID  
-                        AND  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID))
-                        AND [Description] = COALESCE(@LicenseeType,  
+                FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK ) 
+						INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID	
+                WHERE    [Description] = COALESCE(@LicenseeType,  
                                                      [Description])  
-
+	DROP TABLE #Currency 
 SET @Username = isnull(@Username, '')
 
 CREATE TABLE #Temp
@@ -64,7 +73,6 @@ CREATE TABLE #Temp
 	custid INT PRIMARY KEY,
 	username NVARCHAR (50),
 	closed BIT,
-	suspended BIT,
 	nickname NVARCHAR (50),
 	BAStatus BIT,
 	SpecialLevel INT,
@@ -99,14 +107,13 @@ BEGIN
 			FROM @TempMember c 
 		END
 
-		INSERT INTO #Temp (custid, username,closed,suspended, nickname, BAStatus,SpecialLevel, RowNumber)
+		INSERT INTO #Temp (custid, username,closed,nickname, BAStatus,SpecialLevel, RowNumber)
 		SELECT * FROM 
 		(
 			SELECT 
 				ci.custid, 
 				ci.username, 
 				ci.closed,
-				ISNULL(ci.reject,0) AS suspended,
 				SUBSTRING(m.username2,  CHARINDEX('$',m.username2)+1, LEN(m.username2)-CHARINDEX('$',m.username2)) AS nickname,
 				CASE WHEN lb.CustID IS NULL THEN 0 ELSE 1 END AS BAStatus,
 				m.SpecialLevel,
@@ -132,7 +139,7 @@ BEGIN
 			lb.LicenseeID=@LicenseeID
 			AND lb.Status= 'Running'
 			AND ((@CustStatus='') OR (@CustStatus IN ('Open') AND closed=0) OR (@CustStatus='Closed' AND closed = 1))
-			AND ((@CustStatus IN('','Closed')) OR (@CustStatus = 'Open' AND ISNULL(reject,0)=0) )
+			AND ((@CustStatus IN('','Closed')) OR (@CustStatus = 'Open' AND ISNULL(reject,0)=0))
 			AND (@SpecialLevel=-1 OR (@SpecialLevel<>-1 AND lc.SpecialLevel=@SpecialLevel)  )
 			AND (@GroupCommID=-1 OR (@GroupCommID<>-1 AND ISNULL(cc.GroupCommID,0)=@GroupCommID ))
 		IF ISNULL(@TotalRows,0) = 0
@@ -140,14 +147,13 @@ BEGIN
 			SELECT @TotalRows = COUNT(c.custid)
 			FROM @TempMember c
 		END
-		INSERT INTO #Temp (custid, username,closed,suspended, nickname, BAStatus,SpecialLevel, RowNumber)
+		INSERT INTO #Temp (custid, username,closed, nickname, BAStatus,SpecialLevel, RowNumber)
 		SELECT * FROM 
 		(
 			SELECT 
 				ci.custid, 
 				ci.username, 
 				ci.closed,
-				ISNULL(ci.reject,0) AS suspended,
 				SUBSTRING(m.username2,  CHARINDEX('$',m.username2)+1, LEN(m.username2)-CHARINDEX('$',m.username2)) AS nickname,
 				1 AS BAStatus, 
 				m.SpecialLevel, 
@@ -172,7 +178,7 @@ BEGIN
 		WHERE 
 			c.roleid=1 
 			AND ((@CustStatus='') OR (@CustStatus IN ('Open') AND closed=0) OR (@CustStatus='Closed' AND closed = 1))
-			AND ((@CustStatus IN('','Closed')) OR (@CustStatus = 'Open' AND ISNULL(reject,0)=0))
+			AND ((@CustStatus IN('','Closed')) OR (@CustStatus = 'Open' AND ISNULL(reject,0)=0) )
 			AND ISNULL(lb.CustID ,0)=0
 			AND (@SpecialLevel=-1 OR (@SpecialLevel<>-1 AND lc.SpecialLevel=@SpecialLevel)  )
 			AND (@GroupCommID=-1 OR (@GroupCommID<>-1 AND ISNULL(cc.GroupCommID,0)=@GroupCommID ))
@@ -183,14 +189,13 @@ BEGIN
 			FROM @TempMember c
 		END		
 	
-		INSERT INTO #Temp (custid, username,closed,suspended, nickname, BAStatus,SpecialLevel, RowNumber)
+		INSERT INTO #Temp (custid, username,closed,nickname, BAStatus,SpecialLevel, RowNumber)
 		SELECT * FROM 
 		(
 			SELECT 
 				ci.custid, 
 				ci.username, 
 				ci.closed,
-				ISNULL(ci.reject,0) AS suspended,
 				SUBSTRING(m.username2,  CHARINDEX('$',m.username2)+1, LEN(m.username2)-CHARINDEX('$',m.username2)) AS nickname,
 				0 AS BAStatus, 
 				m.SpecialLevel, 
@@ -252,14 +257,13 @@ BEGIN
 	
 	
 
-	INSERT INTO #Temp (custid, username,closed,suspended, nickname, BAStatus,SpecialLevel, RowNumber)
+	INSERT INTO #Temp (custid, username,closed, nickname, BAStatus,SpecialLevel, RowNumber)
 	SELECT * FROM 
 	(
 		SELECT 
 			ci.custid, 
 			ci.username, 
 			ci.closed,
-			ISNULL(ci.reject,0) AS suspended,
 			SUBSTRING(lc.username2,  CHARINDEX('$',lc.username2)+1, LEN(lc.username2)-CHARINDEX('$',lc.username2)) AS nickname,
 			CASE WHEN lb.CustID is NULL THEN 0 ELSE 1 END AS BAStatus, 
 			lc.SpecialLevel, 
@@ -358,7 +362,7 @@ FROM #Temp t
 			ON e.exchangeid = b.currency
 	LEFT JOIN bodb_Licensee.dbo.LicenseeCustComm lc WITH (NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
 	LEFT JOIN bodb_Licensee.dbo.LicenseeGroupComm lg WITH (NOLOCK) ON lc.GroupCommID = lg.id
-GROUP BY t.custid, t.username, t.nickname, t.BAStatus, t.RowNumber,t.closed,t.suspended, t.SpecialLevel, t.IsPowerBAUserTurnoff,lg.color,lg.groupname,lc.SBComm,lc.RacingComm,lc.NGComm,lg.id
+GROUP BY t.custid, t.username, t.nickname, t.BAStatus, t.RowNumber,t.closed, t.SpecialLevel, t.IsPowerBAUserTurnoff,lg.color,lg.groupname,lc.SBComm,lc.RacingComm,lc.NGComm,lg.id
 ORDER BY t.username
 
 DROP TABLE #Temp
@@ -367,3 +371,4 @@ GO
 GRANT EXECUTE ON [dbo].[Lrf_CustomerSel] TO [bodbLicenseeNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerSel] TO [vnteam]
+
