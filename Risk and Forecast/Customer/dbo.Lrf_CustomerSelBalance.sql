@@ -38,6 +38,7 @@ Revisions:
 	- 20130514@Jim: Restrict permission of Licensee Users by currency
 	- 20130619@Daniel: Fix more bug regconize BA tickets
 	- 20130620@Jim: fix bug wrong value Licensee Winloss of Racing
+	- 20130718@Jim: remove status Suspended
 */
 SET NOCOUNT ON
 
@@ -118,7 +119,7 @@ DECLARE
 	
 	@TotalMemberActive INT,
 	@TotalMemberClosed INT,
-	@TotalMemberSuspended INT,
+	--@TotalMemberSuspended INT,
 	@_FromDate SMALLDATETIME,
 	@_ToDate SMALLDATETIME
 	
@@ -185,8 +186,8 @@ END
 
 SELECT 
 	@TotalMemberActive = ISNULL(SUM(CASE WHEN Closed = 0 AND ISNULL(reject,0) = 0 THEN 1 ELSE 0 END), 0),
-	@TotalMemberClosed = ISNULL(SUM(CASE WHEN Closed = 1 THEN 1 ELSE 0 END), 0),
-	@TotalMemberSuspended = ISNULL(SUM(CASE WHEN ISNULL(reject,0) = 1 AND closed = 0 THEN 1 ELSE 0 END), 0)
+	@TotalMemberClosed = ISNULL(SUM(CASE WHEN Closed = 1 THEN 1 ELSE 0 END), 0)
+	--,@TotalMemberSuspended = ISNULL(SUM(CASE WHEN ISNULL(reject,0) = 1 AND closed = 0 THEN 1 ELSE 0 END), 0)
 FROM CustInfo WITH (NOLOCK)
 WHERE 
 	Recommend IN (SELECT CustID FROM @TempAg)
@@ -551,8 +552,8 @@ SELECT
 	ISNULL(@MemberOutstandingUSD,0) MemberOutstandingUSD,
 	ISNULL(@MemberOutstandingEUR,0) MemberOutstandingEUR,
 	ISNULL(@TotalMemberActive,0) TotalMemberActive,
-	ISNULL(@TotalMemberClosed,0) TotalMemberClosed,
-	ISNULL(@TotalMemberSuspended,0) TotalMemberSuspended
+	ISNULL(@TotalMemberClosed,0) TotalMemberClosed
+	--,ISNULL(@TotalMemberSuspended,0) TotalMemberSuspended
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_CustomerSelBalance] TO [bodbDownlineNet] AS [dbo]
