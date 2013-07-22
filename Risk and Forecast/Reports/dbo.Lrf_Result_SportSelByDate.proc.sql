@@ -15,13 +15,14 @@ Revisions:
 	20120321@Henry: Fix bug to not show Casino
 	20120815@Jim: add live casino
 	20120906@Jim: add virtual sport
+	20130722@Jim: add Virtual Horse Racing (Sporttype=181)
 */
 
 SET NOCOUNT ON
 
 DECLARE @toDate		DATETIME,
 		@matchcode	VARCHAR(10) --HRDummy
-SELECT @toDate = dateadd(s,-1, dateadd(d, 1, @EventDate))
+SELECT  @toDate = dateadd(s,-1, dateadd(d, 1, @EventDate))
 
 SELECT distinct sports.sporttype, sportname from sports with (nolock)
 	inner join (
@@ -39,29 +40,25 @@ WHERE
 			OR ( mr.IsPending=1 AND match.eventstatus IN ('running','closed') )
 			OR ( mr.IsHTCal = 1 AND match.eventstatus ='running')
 		 )
-	AND (sports.sporttype <= 99 OR sports.sporttype IN( 161,162,180))
-	
-union all
-
-
-
+	AND (sports.sporttype <= 99 OR sports.sporttype IN( 161,162,180,181))
+UNION ALL 
 SELECT s.sporttype, s.sportname  
 FROM (  
-  SELECT ROW_NUMBER() OVER (PARTITION BY sporttype ORDER BY l.leagueid) AS RowNumber, l.sporttype, l.leagueid  
-  FROM league l with (nolock)   
-   INNER JOIN  
-    ( SELECT leagueid, oddsstatus, eventdate FROM outright WITH (nolock)  
-     WHERE eventdate >= @EventDate AND eventdate <= @toDate  
-     UNION ALL  
-     SELECT leagueid, oddsstatus, eventdate FROM outright14 WITH (nolock)   
-     WHERE eventdate >= @EventDate AND eventdate <= @toDate  
-     ) o ON o.leagueid = l.leagueid   
-  WHERE l.sporttype BETWEEN 151 AND 153 AND o.oddsstatus='completed'  
-  ) t INNER JOIN sports s WITH(NOLOCK) ON t.sporttype = s.sporttype  
+	  SELECT ROW_NUMBER() OVER (PARTITION BY sporttype ORDER BY l.leagueid) AS RowNumber, l.sporttype, l.leagueid  
+	  FROM league l with (nolock)   
+	  INNER JOIN  
+			( 
+			SELECT leagueid, oddsstatus, eventdate FROM outright WITH (nolock)  
+			 WHERE eventdate >= @EventDate AND eventdate <= @toDate  
+			 UNION ALL  
+			 SELECT leagueid, oddsstatus, eventdate FROM outright14 WITH (nolock)   
+			 WHERE eventdate >= @EventDate AND eventdate <= @toDate  
+			) o ON o.leagueid = l.leagueid   
+	  WHERE l.sporttype BETWEEN 151 AND 153 AND o.oddsstatus='completed'  
+	) t INNER JOIN sports s WITH(NOLOCK) ON t.sporttype = s.sporttype  
 WHERE t.RowNumber < 2  
-	 
 
-order by sports.sporttype, sports.sportname
+ORDER BY sports.sporttype, sports.sportname
 GO
 GRANT EXECUTE ON [dbo].Lrf_Result_SportSelByDate TO [bodbLicenseeNet]
 GO
