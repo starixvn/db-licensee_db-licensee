@@ -22,6 +22,7 @@ Revisions:
 	- 20120911@Henry: Add homeid2 for Roulettle
 	- 20130403@Jim: support base currency USD 
 	- 20130514@Jim:Restrict permission of Licensee Users by currency
+	- 20130722@Jim: support Virtual Horse Racing
 	
 */
 
@@ -146,7 +147,8 @@ BEGIN
 		WHERE	orid = @matchid 
 
 		SELECT	matchcode AS horseNo, 
-				CAST(o.groupmatch AS INT) AS racename,
+				CAST(o.groupmatch AS INT) 
+				AS racename,
 				CASE WHEN o.placing = 0 THEN 5 ELSE isnull(placing,5) END place, 
 				l.sporttype, 
 				teamid horseid,
@@ -192,7 +194,7 @@ BEGIN
 				AND (ISNULL(placing,0) <> 0  OR isScr = 1)
 		ORDER BY placing	
 	END 
-	ELSE 
+	ELSE  IF EXISTS( SELECT 1 FROM DB06.bodb_Archive.dbo.Outright_bk WITH (NOLOCK) WHERE orid = @matchid)
 	BEGIN
 		SELECT	@leagueid = leagueid , @eventdate = eventdate 
 		FROM	DB06.bodb_Archive.dbo.Outright_bk WITH (NOLOCK)
@@ -218,7 +220,75 @@ BEGIN
 				AND (ISNULL(placing,0)<> 0  OR isScr = 1)
 		ORDER BY placing	
 	END 
+	--------------------------------------------------Virtual Horse Racing
+
+	ELSE IF exists(select 1 from VSOutright WITH(NOLOCK) where orid = @RaceNo)
+		BEGIN
+			-- Virtual HR 
+			SELECT	RacerNum AS horseNo, 
+					r.EventTime AS racename,
+					placing AS place, 
+					r.SportType,
+					o.RacerID horseid,
+					o.WinOdds odds,
+					o.placeodds,
+					'' AS meetingid,
+					o.EventStatus status,
+					o.IsFavor,
+					'' IsSCR,
+					'' FOddsStatus
+			FROM	VSOutright o WITH (NOLOCK)
+					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
+			WHERE	o.EventID = @MatchID
+					AND (ISNULL(placing,0) <> 0)
+			ORDER BY placing
+		END
+		ELSE IF exists(select 1 from VSOutright14 WITH(NOLOCK) where orid = @RaceNo)
+		BEGIN
+			-- Virtual HR 
+			SELECT	RacerNum AS horseNo, 
+					r.EventTime AS racename,
+					placing AS place, 
+					r.SportType,
+					o.RacerID horseid,
+					o.WinOdds odds,
+					o.placeodds,
+					'' AS meetingid,
+					o.EventStatus status,
+					o.IsFavor,
+					'' IsSCR,
+					'' FOddsStatus
+			FROM	VSOutright14 o WITH (NOLOCK)
+					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
+			WHERE	o.EventID = @MatchID
+					AND (ISNULL(placing,0) <> 0)
+			ORDER BY placing
+		END
+		ELSE 
+		BEGIN
+			-- Virtual HR 
+			SELECT	RacerNum AS horseNo, 
+					r.EventTime AS racename,
+					placing AS place, 
+					r.SportType,
+					o.RacerID horseid,
+					o.WinOdds odds,
+					o.placeodds,
+					'' AS meetingid,
+					o.EventStatus status,
+					o.IsFavor,
+					'' IsSCR,
+					'' FOddsStatus
+			FROM	DBARC.bodb_Archive.dbo.VSOutright_bk o WITH (NOLOCK)
+					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
+			WHERE	o.EventID = @MatchID
+					AND (ISNULL(placing,0) <> 0)
+			ORDER BY placing
+		END
+	--------------------------------------------------End Virtual Horse Racing
+
 END
+
 DECLARE @Today SMALLDATETIME 
 SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
 BEGIN
