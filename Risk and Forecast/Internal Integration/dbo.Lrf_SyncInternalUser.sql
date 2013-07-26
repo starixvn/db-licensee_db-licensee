@@ -128,7 +128,7 @@ BEGIN
 		INNER JOIN [LicenseeFunctions] l WITH(NOLOCK) ON f.FunctionId = l.FunctionId
 	WHERE l.LicenseeId =@LicenseeId			
 	AND (f.FunctionId = 5 OR f.ParentId = 5)
-	AND @LicenseeID=3
+	
 	--Customer Reports
 	INSERT INTO [LicenseeUserFunctions](LicenseeId, UserId, FunctionId)
 	SELECT DISTINCT @LicenseeId, @UserId, f.FunctionId 
