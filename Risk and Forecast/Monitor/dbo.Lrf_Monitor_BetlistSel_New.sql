@@ -201,7 +201,7 @@ SELECT @SQL = @SQL + 'SELECT TOP ('+CONVERT(VARCHAR(10),@LimitRowCount)+')'+CHAR
 											WHEN @MinStake>0 AND @MaxStake>0 THEN 'AND b.stake  between '+convert(varchar(20),@MinStake) +' and ' +convert(varchar(20),@MaxStake)               
 										ELSE ' ' END 
 	END + CHAR(13) +      
-  CASE WHEN @Currency <> 'ALL' THEN 'AND currency in ('+@Currency+') 'ELSE ' ' END + CHAR(13)+              
+  CASE WHEN @Currency <> 'ALL' THEN 'AND b.currency in ('+@Currency+') 'ELSE ' ' END + CHAR(13)+              
   CASE WHEN @LicenseeType <> 'ALL' THEN 'AND [Description] = '''+@LicenseeType+'''' ELSE ' ' END + CHAR(13)+              
   CASE WHEN @SpecialLevel <> 'ALL' THEN 'AND SpecialLevel IN ('+@SpecialLevel+')' ELSE ' ' END+ CHAR(13)+              
   CASE 
