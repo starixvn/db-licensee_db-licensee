@@ -13,6 +13,8 @@
  @MinStake MONEY = 0,                
  @MaxStake MONEY = 0,                
  @Liveindicator INT = 0 ,
+ @includebetfrom BIT=0,
+ @betfrom	TINYINT=0,
  @BaseCurrency VARCHAR(10) ='USD',
  @debug bit = 0                
 AS                
@@ -24,7 +26,8 @@ AS
  DB: DB052.BODB02                
  Original: [Lrf_Monitor_BetlistSel]                
  Revision:                
-    -20130618@Jim:  Restrict permission of Licensee Users by currency             
+    -20130618@Jim:  Restrict permission of Licensee Users by currency 
+	-20130806@Jim:  Add betting platform to Last bets monitoring 	
  Parameter's Explanation:                
   - @bettypes:                 
    + HDP: 1,7                
@@ -35,7 +38,12 @@ AS
   - @LimitRowCount: max record return (10,20,30)                
   - @SportID = 999  -> Parlay and System Parlay       
   - @Liveindicator ( 0 : non live, 1 : live , 2 : mix non live & live)   
-                
+  - @includebetfrom: 1: show column betfrom, 0: hide
+  - @betfrom: 0: All
+			  1: WEB (d)
+		      2: WAP (m)		
+              3: SMARTPHONE (sl) 
+			  4: Other (not in  (d,m,s,l))
  Excecute sample :                
                 
 [Lrf_Monitor_BetlistSel_New]                 
@@ -134,6 +142,10 @@ SELECT @SQL = @SQL + 'SELECT TOP ('+CONVERT(VARCHAR(10),@LimitRowCount)+')'+CHAR
 		WHEN @BaseCurrency = 'EUR' THEN 'b.stake * ex.EUR StakeEUR,'
 		ELSE 'b.stake ' + 'Stake' + @BaseCurrency + ',' 
 	END + CHAR(13) +
+	CASE 
+		WHEN @includebetfrom=1 THEN 'bettrans.betfrom,'
+		ELSE ''
+		END+CHAR(13)+
   '''running'' as status,'+CHAR(13)+                
   'b.betteam,'+CHAR(13)+                    
   'CONVERT(BIT,0) AS isNeutral,'+CHAR(13)+                   
@@ -144,6 +156,10 @@ SELECT @SQL = @SQL + 'SELECT TOP ('+CONVERT(VARCHAR(10),@LimitRowCount)+')'+CHAR
   'FROM bettrans_lrf_betRunning b WITH(NOLOCK)  '+CHAR(13) +   
   'INNER JOIN Lrf_f_GetExchangeDaily(CONVERT(VARCHAR(10), getdate(), 111),CONVERT(VARCHAR(10), getdate(), 111))  ex on ex.exchangeid = b.currency ' + CHAR(13) +             
   'INNER JOIN bodb_licensee.dbo.CurrencyUser cr WITH (NOLOCK) ON b.LicenseeID=cr.LicenseeID AND b.Currency=cr.CurrencyID'+char(13)+
+  CASE 
+  WHEN @includebetfrom=1 THEN 'INNER JOIN dbo.bettrans bettrans (NOLOCK) ON b.transid=bettrans.transid'
+  ELSE ''
+  END+CHAR(13)+
   CASE               
    WHEN @SportID>0 and @Sportid <> 999 THEN 'INNER JOIN @Match m on b.matchid = m.matchid '               
    ELSE ' '               
@@ -152,8 +168,15 @@ SELECT @SQL = @SQL + 'SELECT TOP ('+CONVERT(VARCHAR(10),@LimitRowCount)+')'+CHAR
    'AND cr.isActive=1'+char(13)+
    'AND cr.UsrID='+convert(varchar(20),@UserID)+''+char(13)+
    'AND cr.SystemID=1'+char(13)+
-   'AND Transid >'+convert(varchar(10),@transid)+'  '+CHAR(13)+              
-    'AND Statusid = 0   '+CHAR(13)+                  
+   'AND b.Transid >'+convert(varchar(10),@transid)+'  '+CHAR(13)+              
+    'AND b.statusid = 0   '+CHAR(13)+
+	CASE WHEN @betfrom=1 THEN 'AND bettrans.betfrom=''d'''
+		 WHEN @betfrom=2 THEN 'AND bettrans.betfrom=''m'''
+		 WHEN @betfrom=3 THEN 'AND bettrans.betfrom IN (''s'',''l'')'
+		 WHEN @betfrom=4 THEN 'AND betrans.betfrom NOT IN (''d'',''m'',''s'',''l'')'
+		 ELSE ''
+	END+CHAR(13)+
+		 
 	CASE 
 		WHEN @BaseCurrency = 'USD' THEN
 										CASE               
@@ -178,7 +201,7 @@ SELECT @SQL = @SQL + 'SELECT TOP ('+CONVERT(VARCHAR(10),@LimitRowCount)+')'+CHAR
 											WHEN @MinStake>0 AND @MaxStake>0 THEN 'AND b.stake  between '+convert(varchar(20),@MinStake) +' and ' +convert(varchar(20),@MaxStake)               
 										ELSE ' ' END 
 	END + CHAR(13) +      
-  CASE WHEN @Currency <> 'ALL' THEN 'AND currency in ('+@Currency+') 'ELSE ' ' END + CHAR(13)+              
+  CASE WHEN @Currency <> 'ALL' THEN 'AND b.currency in ('+@Currency+') 'ELSE ' ' END + CHAR(13)+              
   CASE WHEN @LicenseeType <> 'ALL' THEN 'AND [Description] = '''+@LicenseeType+'''' ELSE ' ' END + CHAR(13)+              
   CASE WHEN @SpecialLevel <> 'ALL' THEN 'AND SpecialLevel IN ('+@SpecialLevel+')' ELSE ' ' END+ CHAR(13)+              
   CASE 

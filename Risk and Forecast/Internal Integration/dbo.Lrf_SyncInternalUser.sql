@@ -24,6 +24,7 @@ AS
 	- 20120220@Henry: Define New Category "Customer Reports" and Move Customer related reports to it
 	- 20120417@Minzy: Define New Category "Admin"
 	- 20130625@Jim: set default currency permission for new licensee user
+	- 20130725@Jim: restrict permission for DW function 
 */
 
 SET NOCOUNT ON
@@ -119,14 +120,14 @@ BEGIN
 		INNER JOIN [LicenseeFunctions] l WITH(NOLOCK) ON f.FunctionId = l.FunctionId
 	WHERE l.LicenseeId =@LicenseeId			
 	AND f.FunctionId = 4 OR f.ParentId = 4
-	
+
 	--DataWarehouse
 	INSERT INTO [LicenseeUserFunctions](LicenseeId, UserId, FunctionId)
 	SELECT DISTINCT @LicenseeId, @UserId, f.FunctionId 
 	FROM [Functions] f WITH(NOLOCK)
 		INNER JOIN [LicenseeFunctions] l WITH(NOLOCK) ON f.FunctionId = l.FunctionId
 	WHERE l.LicenseeId =@LicenseeId			
-	AND f.FunctionId = 5 OR f.ParentId = 5
+	AND (f.FunctionId = 5 OR f.ParentId = 5)
 	
 	--Customer Reports
 	INSERT INTO [LicenseeUserFunctions](LicenseeId, UserId, FunctionId)
@@ -135,7 +136,7 @@ BEGIN
 		INNER JOIN [LicenseeFunctions] l WITH(NOLOCK) ON f.FunctionId = l.FunctionId
 	WHERE l.LicenseeId =@LicenseeId			
 	AND f.FunctionId = 52 OR f.ParentId = 52
-
+	
 	IF (@Username = 'Administrator') OR (@Username = 'Admin') 
 	BEGIN	
 		-- Manage Account
