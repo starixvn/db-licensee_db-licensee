@@ -35,6 +35,7 @@ AS
 	- 20121128@Henry: use new table LicenseeBATransaction_active to get bettrans BA tickets
 	- 20130204@Jim: support RNG Casino and Bingo product
 	- 20130514@Jim: Restrict permission of Licensee Users by currency
+	- 20130809@Jim: offer Virtual Horse Racing
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -151,7 +152,10 @@ END
 IF @ShowVS = 1
 BEGIN
 	INSERT  INTO @sporttype( Sporttype)
-    VALUES  (180)
+	SELECT 180
+	UNION ALL
+	SELECT 181
+	
 	INSERT INTO @bettype(bettype)
 	SELECT typeid FROM bettype (NOLOCK)
 	WHERE (typeid BETWEEN 1201 AND 1299)
@@ -386,12 +390,14 @@ BEGIN
 			INNER JOIN @TempAg a ON b.recommend = a.custid
 			INNER JOIN @Super s ON b.srecommend = s.custid
 			INNER JOIN @bettype bt ON b.bettype = bt.bettype
+			LEFT JOIN dbo.VSRaceInfo r WITH(NOLOCK) ON b.matchid = r.eventid  AND b.bettype IN  (111, 112, 113)
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @_ToDate AND  
 			b.statusID  IN (111, 112, 113)
 			
 		GROUP BY   
 			b.winlostdate,s.currency,statusID,b.bettype
+			
 	END
 	
 	
@@ -561,7 +567,7 @@ BEGIN
 						ELSE 1 END
 					ELSE 1 END
 			ELSE 0 END) AS turnoverLC,
-			SUM(CASE WHEN b.sporttype=180 THEN 
+			SUM(CASE WHEN b.sporttype IN (180,181) THEN 
 				b.turnover
 				*
 					CASE WHEN @drawfilter IN (2,3) THEN
@@ -615,6 +621,7 @@ BEGIN
 			bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
 			INNER JOIN @sporttype t ON b.sporttype = t.sporttype
 			INNER JOIN @TempAg ag ON ag.custid = b.recommend
+			
 		WHERE  
 			b.Winlostdate BETWEEN @_FromDate AND @TempToDate  
 			AND b.roleid = 2   
