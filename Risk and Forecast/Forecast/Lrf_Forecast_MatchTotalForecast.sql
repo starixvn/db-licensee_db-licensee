@@ -79,7 +79,7 @@ BEGIN
 		CASE WHEN bettype IN (3,8) THEN hdp1
 			ELSE hdp2 - hdp1
 		END AS hdp,
-		bettype, stake, odds, betteam, currency
+		bettype, stake, odds, betteam, currency, livehomescore, liveawayscore
 	INTO #Data
 	FROM bodb02.dbo.bettrans b (NOLOCK)
 	WHERE	b.recommend IN ( SELECT custid FROM   @TempAg )
@@ -93,14 +93,14 @@ BEGIN
 	;WITH ScoreDiff AS
 	(
 		SELECT  
-			b.*,
+			b.[Type],b.hdp,bettype, stake, odds, betteam, currency,
 			CASE
 				WHEN betteam LIKE 'h' THEN hdp
 				ELSE -hdp
 			END	+
 			CASE
-				WHEN betteam LIKE 'h' THEN @HomeScore - @AwayScore
-				ELSE @AwayScore - @HomeScore
+				WHEN betteam LIKE 'h' THEN (@HomeScore - livehomescore) - (@AwayScore - liveawayscore)
+				ELSE (@AwayScore - liveawayscore) - (@HomeScore - livehomescore)
 			END AS ScoreDiff
 	
 		FROM #Data b
@@ -139,7 +139,8 @@ BEGIN
 
 	;WITH ScoreDiff AS
 	(
-		SELECT d.*, CASE WHEN betteam LIKE 'h' THEN @TotalScore - hdp ELSE hdp - @TotalScore END AS ScoreDiff
+		SELECT [Type], hdp, bettype, stake, odds, betteam, currency, 
+			CASE WHEN betteam LIKE 'h' THEN @TotalScore - hdp ELSE hdp - @TotalScore END AS ScoreDiff
 		FROM #Data d
 		WHERE bettype IN (3,8)
 	), LCWinloss AS
