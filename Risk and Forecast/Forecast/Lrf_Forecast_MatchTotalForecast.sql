@@ -20,8 +20,7 @@ Created: Victor@20130805
 Task : Forecast
 DB: DB052.bodb02
 Original: [Lrf_Forecast_MatchTotalForecast]
-Revisions:  
-	- Remove 17  
+Revisions:    
 
 */
 
@@ -132,6 +131,7 @@ BEGIN
 	FROM LCWinloss lc
 		INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today)) e ON e.exchangeid = lc.currency
 	GROUP BY bettype, hdp
+	ORDER BY 2
 
 	-- Over/Under detail resultset
 	DECLARE @TotalScore INT
@@ -223,11 +223,29 @@ BEGIN
 	GROUP BY d.[Type], w.OutcomeHDP,w.OutcomeHDPUSD,w.OutcomeHDPEUR,w.OutcomeOU,w.OutcomeOUUSD,w.OutcomeOUEUR
 	ORDER BY 1
 
+	
+	-- Insert running bet-lines without any tickets placed
+	;WITH BetLines AS
+	(
+		SELECT 
+			bettype,
+			ISNULL(CASE WHEN bettype IN (3,8) THEN hdp1
+					ELSE hdp2 - hdp1
+				END,0) AS hdp
+		FROM odds o
+		WHERE oddsstatus LIKE 'running'  AND bettype IN (1,3,7,8) AND matchid = @MatchID
+	)
+
+	INSERT INTO #SecondRS
+	SELECT bettype,hdp,0,0,0,0,0,0 
+	FROM BetLines l
+	WHERE NOT EXISTS (SELECT 1 FROM #SecondRS s WHERE s.bettype = l.bettype AND s.hdp = l.hdp)
+
 	-- Retrieve Second Resultset
 	SELECT * 
 	FROM #SecondRS
 	
-	-- Drop tempdb
+	-- Drop temp tables
 	DROP TABLE #Data
 	DROP TABLE #SecondRS
 
