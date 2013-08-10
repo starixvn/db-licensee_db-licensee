@@ -612,6 +612,7 @@ BEGIN
 			bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
 			INNER JOIN @TempAg ag ON ag.custid = b.recommend
 			INNER JOIN @sporttype t ON b.sporttype = t.sporttype
+			
 		WHERE  
 			b.Winlostdate BETWEEN @FDate AND @TempToDate  
 			AND b.roleid = 2   
