@@ -31,6 +31,7 @@ AS
 			- 20130225@Jim: add RNG Casino,Bingo
 			- 20140414@Jim: support USD base currency 
 			- 20130618@Jim: Restrict permission of Licensee Users by currency
+			- 20130809@Jim: offer Virtual Horse Racing
 	Param's Explanation:  
 	  + @SiteType: 1-WAP; 2-Smartphone; 3: Others;0-All  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -130,7 +131,10 @@ END
 
 IF @ShowVS = 1	
 BEGIN
-	INSERT  INTO @sporttype( Sporttype) VALUES  (180)
+	INSERT  INTO @sporttype( Sporttype) 
+	SELECT 180
+	UNION ALL 
+	SELECT 181 
 	
 	INSERT INTO @bettype(bettype)
 	SELECT typeid FROM bettype (NOLOCK)
