@@ -60,7 +60,7 @@ Revisions:
    - 20121207@Henry: fix bug 1 match got 2 different winlostdate by add param @Date
    - 20130417@Jim: support base currency USD	
    - 20130514@Jim: Restrict permission of Licensee Users by currency
-   - 20130809@Jim: offer Virtual Horse Racing
+ 
 Param's Explanation: 
 	
 */
@@ -299,7 +299,6 @@ BEGIN
 			bettrans b WITH (NOLOCK) 
 			INNER JOIN match m WITH (NOLOCK) ON b.matchid=m.matchid
 			INNER JOIN @TempBettype bt ON b.bettype = bt.bettype
-			LEFT JOIN dbo.VSRaceInfo r WITH(NOLOCK) ON b.matchid = r.eventid  AND b.bettype IN  (111, 112, 113)
 		WHERE
 			b.matchid=@matchid AND
 			(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
@@ -466,7 +465,6 @@ BEGIN
 			bettrans14 b WITH (NOLOCK) 
 			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid 		
 			INNER JOIN @TempBettype bt ON b.bettype = bt.bettype
-			LEFT JOIN dbo.VSRaceInfo r WITH(NOLOCK) ON b.matchid = r.eventid  AND b.bettype IN  (111, 112, 113)	
 		WHERE
 			b.matchid=@matchid AND
 			(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
