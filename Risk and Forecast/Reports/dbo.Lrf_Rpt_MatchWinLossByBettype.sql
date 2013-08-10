@@ -30,6 +30,7 @@ Revisions:
 	- 20121128@Henry: use new table LicenseeBATransaction_active to get bettrans BA tickets  
 	- 20130401@Scott: add more parameter @ShowCS,@ShowBG  
 	- 20130514@Jim: Restrict permission of Licensee Users by currency
+	- 20130809@Jim: offer Virtual Horse Racing
 Param's Explanation:   
    
 */  
@@ -347,7 +348,8 @@ BEGIN
   FROM      
    #TempBetList b  
    INNER JOIN match m WITH ( NOLOCK ) ON m.matchid = b.matchid  
-   INNER JOIN @bettype bt ON b.bettype = bt.bettype     
+   INNER JOIN @bettype bt ON b.bettype = bt.bettype
+   LEFT JOIN dbo.VSRaceInfo r WITH(NOLOCK) ON b.matchid = r.eventid  AND b.bettype IN  (111, 112, 113)	
   GROUP BY  
    b.Winlostdate,  
    b.currency,  
@@ -613,7 +615,8 @@ BEGIN
   FROM     
    #TempBetList b  
    INNER JOIN match14 m WITH ( NOLOCK ) ON m.matchid = b.matchid  
-   INNER JOIN @bettype bt ON b.bettype = bt.bettype  
+   INNER JOIN @bettype bt ON b.bettype = bt.bettype 
+   LEFT JOIN dbo.VSRaceInfo r WITH(NOLOCK) ON b.matchid = r.eventid  AND b.bettype IN  (111, 112, 113)
     
   GROUP BY  
    b.Winlostdate,  

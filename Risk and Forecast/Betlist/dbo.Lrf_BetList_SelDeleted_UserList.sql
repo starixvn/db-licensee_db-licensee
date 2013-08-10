@@ -17,6 +17,7 @@ AS
 		 - 20110325@Henry: support username2 to the list
 		 - 20121004@Jim: replace @currencyname input param by @currencyID
 		 - 20130514@Jim: Restrict permission of Licensee Users by currency
+		 - 20130809@Jim: offer Virtual Horse Racing
 	
 */
 SET NOCOUNT ON
@@ -55,6 +56,15 @@ WHERE
 	AND b.statusID IN (101, 102)
 GROUP BY b.custid
 
+INSERT INTO @bc (custid, betcount)
+SELECT b.custid, SUM(1) AS betcount
+FROM 
+	bettrans AS b WITH (nolock)
+	INNER JOIN (SELECT orid,eventdate FROM dbo.VSOutright WITH (nolock) WHERE eventdate > DATEADD(day,-3,CURRENT_TIMESTAMP))  AS m ON b.matchid = m.orid
+WHERE 
+	b.recommend IN (SELECT custid FROM @TempAg) 
+	AND b.statusID IN (101, 102)
+GROUP BY b.custid
 
 SELECT 
 c.username, 

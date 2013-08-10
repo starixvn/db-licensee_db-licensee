@@ -32,6 +32,7 @@ WinlostByBetType
 -20130328@Scott: Support RNG Casino and Bingo
 -20130618@Jim:  Restrict permission of Licensee Users by currency
 -20130625@Jim: support to view Currency UUS
+
      
 Param's Explanation:  
   

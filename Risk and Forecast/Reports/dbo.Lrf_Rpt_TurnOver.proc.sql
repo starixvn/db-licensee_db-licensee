@@ -38,6 +38,7 @@ Revisions:
    - 20130618@Jim:  Restrict permission of Licensee Users by currency
    - 20130625@Jim: fix bug missing filter currency condition
    - 20130709@Jim: change formula to sum Transfer3rd value
+   - 20130809@Jim: offer Virtual Horse Racing
 Param's Explanation:
 	+ @excludeTest: remove currency UUS
 	+ @CurrencyID = 0: get all currency
@@ -76,7 +77,12 @@ IF @ShowSB = 1 INSERT INTO @sporttype(sporttype) VALUES(0)
 IF @ShowRB = 1 INSERT INTO @sporttype(sporttype) VALUES(151) 
 IF @ShowNG = 1 INSERT INTO @sporttype(sporttype) VALUES(161)
 IF @ShowLC = 1 INSERT INTO @sporttype(sporttype) VALUES(162)
-IF @ShowVS = 1 INSERT INTO @sporttype(sporttype) VALUES(180)
+IF @ShowVS = 1 
+	INSERT INTO @sporttype(sporttype) 
+	SELECT 180
+	UNION ALL 
+	SELECT 181 -- VHR
+
 IF @ShowCS = 1 INSERT INTO @sporttype(sporttype) VALUES(251)
 IF @ShowBG = 1 INSERT INTO @sporttype(sporttype) VALUES(252)
 	

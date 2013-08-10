@@ -26,6 +26,7 @@ Revisions:
 	-20130328@Scott: Support RNG Casino and Bingo
 	-20130514@Jim:  Restrict permission of Licensee Users by currency
 	-20130625@Jim: support to view currency UUS
+	-20130809@Jim: offer Virtual Horse Racing
 	
 	
 Param's Explanation:
@@ -229,6 +230,7 @@ BEGIN
 				WHEN 161 THEN 'NG'
 				WHEN 162 THEN 'LC'
 				WHEN 180 THEN 'VS'
+				WHEN 181 THEN 'VS'
 				WHEN 251 THEN 'CS'
 				WHEN 252 THEN 'BG'
 			END 
@@ -237,7 +239,7 @@ BEGIN
 		SUM(b.winlost),  
 		SUM(CASE WHEN ISNULL(b.isBA,0) = 1 THEN 0 
 			ELSE 
-				CASE WHEN b.sporttype IN (0,161,162,180,251,252)  THEN -1 * b.winlost 
+				CASE WHEN b.sporttype IN (0,161,162,180,181,251,252)  THEN -1 * b.winlost 
 					WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END
 			END) AS LicenseeWL ,
 		SUM (comm ) as Comm,
