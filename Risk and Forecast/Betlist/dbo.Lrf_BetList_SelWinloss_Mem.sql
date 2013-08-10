@@ -56,6 +56,7 @@ Revisions:
 	 - 20130204@Jim: support RNG Casino and Bingo product
 	 - 20130514@Jim:Restrict permission of Licensee Users by currency
 	 - 20130716@Jim: update matchid for RNG Casino and Bingo
+	 - 20130809@Jim: offer Virtual Horse Racing
 Param's Explanation:
 	+ @drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
 
@@ -617,7 +618,8 @@ BEGIN
 			'' as showtime
 		FROM
 			dbo.bettrans AS b WITH (NOLOCK)		
-			INNER JOIN dbo.match AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
+			INNER JOIN dbo.match AS m WITH (NOLOCK) ON b.matchid=m.matchid
+			LEFT JOIN dbo.VSRaceInfo r WITH(NOLOCK) ON b.matchid = r.eventid  AND b.bettype IN  (111, 112, 113)	
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @tdate AND
 			b.custid=@custid AND

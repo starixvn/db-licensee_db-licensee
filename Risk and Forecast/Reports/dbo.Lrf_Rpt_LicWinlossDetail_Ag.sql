@@ -32,6 +32,7 @@ AS
 		 - 20121128@Henry: use new table LicenseeBATransaction_active to get bettrans BA tickets
 		- 20130204@Jim: support RNG Casino and Bingo product
 		- 20130514@Jim: Restrict permission of Licensee Users by currency
+		- 20130809@Jim: offer Virtual Horse Racing
 	Param's Explanation:  
 	  + @CustID: SuperID  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -145,7 +146,10 @@ END
 IF @ShowVS = 1
 BEGIN
 	INSERT  INTO @sporttype( Sporttype)
-    VALUES  (180)
+    SELECT 180 
+	UNION ALL 
+	SELECT 181
+	
 	INSERT INTO @bettype(bettype)
 	SELECT typeid FROM bettype (NOLOCK)
 	WHERE (typeid BETWEEN 1201 AND 1299)
@@ -383,6 +387,7 @@ BEGIN
 			INNER JOIN @Super s ON b.srecommend = s.custid
 			INNER JOIN @TempAg a ON b.recommend = a.custid
 			INNER JOIN @bettype bt ON b.bettype = bt.bettype
+			LEFT JOIN dbo.VSRaceInfo r WITH(NOLOCK) ON b.matchid = r.eventid  AND b.bettype IN  (111, 112, 113)
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
 			b.statusID  IN (111, 112, 113)
