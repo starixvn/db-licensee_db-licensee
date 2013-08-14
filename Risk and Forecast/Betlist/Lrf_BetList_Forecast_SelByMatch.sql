@@ -27,7 +27,8 @@ Original: [Lrf_BetList_Forecast_SelByMatch]
 Revisions:
 Param's explanation:
  - BetChoice: one of the following list: 'All','Home', 'Away', 'Over', 'Under'
-	+ All: List all tickets
+	+ Full: List all tickets bet on FT Handicap or FT Over/Under (@bettype must be 0)
+	+ Half: List all tickets bet on HT Handicap or HT Over/Under (bettype must be 0)
 	+ Home: List all Tickets bet on Home team
 	+ Away: List all tickets bet on Away team
 	+ Over: List all tickets bet on 'Over' 
@@ -158,7 +159,15 @@ BEGIN
 	BEGIN
 		DELETE FROM #Data WHERE betteam NOT LIKE 'a'
 	END
-	ELSE IF (@BetChoice NOT LIKE 'All')
+	ELSE IF (@BetChoice LIKE 'Full')
+	BEGIN
+		DELETE FROM #Data WHERE bettype IN (7,8)
+	END
+	ELSE IF (@BetChoice LIKE 'Half')
+	BEGIN
+		DELETE FROM #Data WHERE bettype IN (1,3)
+	END
+	ELSE
 	BEGIN
 		DELETE FROM #Data
 	END
