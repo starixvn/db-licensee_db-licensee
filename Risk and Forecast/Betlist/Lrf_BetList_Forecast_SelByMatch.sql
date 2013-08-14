@@ -9,7 +9,7 @@ ALTER   PROCEDURE [dbo].[Lrf_BetList_Forecast_SelByMatch]
 	@CurrencyID INT=0,
 	@UserID		INT,
 	@LicenseeType VARCHAR(100) = NULL,
-	@Bettype INT,
+	@Bettype INT = 0,
 	@Langkey VARCHAR(10) = 'en-US',
 	@betteam VARCHAR(20) = NULL,
 	@liveindicator INT = -1,
@@ -125,7 +125,7 @@ BEGIN
 		INNER JOIN Match m WITH (NOLOCK) ON b.matchid=m.matchid 
 	WHERE
 		b.matchid=@matchid AND 
-		b.bettype=@bettype AND
+		((@bettype=0 AND b.bettype IN (1,3,7,8)) OR (@bettype!=0 AND b.bettype=@bettype)) AND
 		b.recommend IN (SELECT custid FROM @TempAg) AND
 		b.statusID IN (0,1) AND
 		((@Liveindicator=-1) OR (@Liveindicator=0 AND b.Liveindicator = 0) OR (@Liveindicator=1 AND b.Liveindicator = 1)) AND
