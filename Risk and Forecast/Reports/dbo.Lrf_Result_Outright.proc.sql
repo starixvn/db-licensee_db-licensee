@@ -15,6 +15,7 @@ Revisions:
 	- 20110308@Henry: exclude Greyhound & Harness racing sports (152,153)  
 	- 20110524@Henry: fix Show All/is not show test
 	- 20110630@Jamie: Add REFUND Result cho Outright 
+	- 20130722@Jim: support Virtual Horse Racing
 */
 SET NOCOUNT ON 
 
@@ -24,15 +25,25 @@ SELECT DISTINCT
 		league.sporttype, outright.leagueid, outright.eventdate, outright.teamid, 
 		outright.status
 	FROM         
-		(SELECT leagueid, eventdate, teamid, status
-		 FROM dbo.outright AS o1 with (nolock)
-		 WHERE oddsstatus = 'completed' AND [status] IN ( 'WON','REFUND')
-			AND eventdate >= @FromDate AND eventdate <= @ToDate
-		 UNION ALL
-		 SELECT leagueid, eventdate, teamid, status
-		 FROM dbo.outright14 AS o14 with (nolock)
-		 WHERE oddsstatus = 'completed' AND [status] IN( 'WON','REFUND')
-			AND eventdate >= @FromDate AND eventdate <= @ToDate
+		(	SELECT leagueid, eventdate, teamid, status
+			FROM dbo.outright AS o1 with (nolock)
+			WHERE oddsstatus = 'completed' AND [status] IN ( 'WON','REFUND')
+				AND eventdate >= @FromDate AND eventdate <= @ToDate
+		UNION ALL
+			SELECT leagueid, eventdate, teamid, status
+			FROM dbo.outright14 AS o14 with (nolock)
+			WHERE oddsstatus = 'completed' AND [status] IN( 'WON','REFUND')
+				AND eventdate >= @FromDate AND eventdate <= @ToDate
+		UNION ALL	
+			SELECT vsr.leagueid, eventdate, teamid, vsr.eventstatus status
+			FROM dbo.VSOutright AS vso with (nolock)
+				INNER JOIN dbo.VSRaceInfo vsr with (nolock) ON vso.EventID=vsr.EventID
+			WHERE eventdate >= @FromDate AND eventdate <= @ToDate
+		UNION ALL
+			SELECT vsr.leagueid, eventdate, teamid,vsr.eventstatus status
+			FROM dbo.VSOutright14 AS vso14 with (nolock)
+				INNER JOIN dbo.VSRaceInfo vsr with (nolock) ON vso.EventID=vsr.EventID	
+			WHERE eventdate >= @FromDate AND eventdate <= @ToDate
 		) AS outright 
 		 INNER JOIN dbo.league with (nolock) on outright.leagueid = league.leagueid
 	WHERE league.sporttype not in (151,152,153) 
