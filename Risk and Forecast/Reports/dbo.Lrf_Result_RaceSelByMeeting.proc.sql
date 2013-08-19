@@ -23,7 +23,7 @@ BEGIN
 	SELECT  o.leagueid meetingid, o.eventdate, o.kickofftime, 
 			l.lcolor,
 			o.groupmatch AS racename, 
-			CASE WHEN o.placing = 0 THEN 5 ELSE isnull(placing,5) END place, 
+			CASE WHEN CONVERT(INT,o.placing) = 0 THEN 5 ELSE isnull(CONVERT(INT,placing),5) END place, 
 			o.matchcode horseNo, 
 			o.teamid Horseid , 
 			o.odds,
@@ -33,24 +33,25 @@ BEGIN
 			o.IsSCR,
 			o.FOddsStatus
 	FROM 
-		(	SELECT	leagueid, teamid, eventdate, kickofftime, groupmatch, matchcode, placing, oddsstatus, odds, placeodds, IsFavor, IsSCR, FOddsStatus FROM outright o with (nolock)
+		(	SELECT	leagueid, teamid, eventdate, kickofftime, groupmatch, matchcode, placing, oddsstatus, odds, placeodds, CONVERT(VARCHAR(20),IsFavor) IsFavor, IsSCR, FOddsStatus FROM outright o with (nolock)
 			UNION ALL
-			SELECT	leagueid, teamid, eventdate, kickofftime, groupmatch, matchcode, placing, oddsstatus, odds, placeodds, IsFavor, IsSCR, 'completed' FOddsStatus FROM outright14 o with (nolock)
+			SELECT	leagueid, teamid, eventdate, kickofftime, groupmatch, matchcode, placing, oddsstatus, odds, placeodds, CONVERT(VARCHAR(20),IsFavor) IsFavor, IsSCR, 'completed' FOddsStatus FROM outright14 o with (nolock)
 			UNION ALL
-			SELECT	leagueid, teamid, eventdate, kickofftime, groupmatch, matchcode, placing, oddsstatus, odds, placeodds, IsFavor, IsSCR, 'completed' FOddsStatus FROM DB06.bodb_Archive.dbo.outright_bk o with (nolock)
+			SELECT	leagueid, teamid, eventdate, kickofftime, groupmatch, matchcode, placing, oddsstatus, odds, placeodds, CONVERT(VARCHAR(20),IsFavor) IsFavor, IsSCR, 'completed' FOddsStatus FROM DB06.bodb_Archive.dbo.outright_bk o with (nolock)
+			
 			UNION ALL 
 				SELECT vsr.leagueid,
 					   vso.racerID,
 					   vso.EventDate,
 					   vso.KickoffTime,
-					   vsr.EventTime groupmatch,
-					   vso.RacerNum  matchcode,
+					   convert(varchar,vso.RacerID) groupmatch,
+					  CONVERT(INT,vso.RacerNum)  matchcode,
 					   vso.placing,
 					   vsr.EventStatus oddsstatus,
-					   vso.Winodds odds,
+						vso.Winodds odds,
 					   vso.PlaceOdds,
-					   vso.IsFavor,
-					   '' IsSCR,
+					  CONVERT(VARCHAR(20),vso.IsFavor) IsFavor,
+					   NULL IsSCR,
 					   '' FOddsStatus
 				FROM dbo.VSOutright vso (NOLOCK)
 					INNER JOIN dbo.VSRaceInfo vsr with (nolock) ON vso.EventID=vsr.EventID
@@ -59,17 +60,18 @@ BEGIN
 					   vso14.racerID,
 					   vso14.EventDate,
 					   vso14.KickoffTime,
-					   vsr.EventTime groupmatch,
-					   vso14.RacerNum matchcode,
+					   convert(varchar,vso14.RacerID) groupmatch,
+					   CONVERT(INT,vso14.RacerNum) matchcode,
 					   vso14.placing,
 					   vsr.EventStatus  oddsstatus,
 					   vso14.Winodds odds,
 					   vso14.PlaceOdds,
-					   vso14.IsFavor,
-					   '' IsSCR,
+					   CONVERT(VARCHAR(20),vso14.IsFavor) IsFavor,
+					   NULL IsSCR,
 					   '' FOddsStatus
 				FROM dbo.VSOutright14 vso14 (NOLOCK)
 				INNER JOIN dbo.VSRaceInfo vsr with (nolock) ON vso14.EventID=vsr.EventID	
+				
 		 ) o 
 		INNER JOIN league l WITH (NOLOCK) ON o.leagueid = l.leagueid 
 	WHERE	o.eventdate = @FromDate 
