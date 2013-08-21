@@ -37,7 +37,7 @@ BEGIN
 			UNION ALL
 			SELECT	leagueid, teamid, eventdate, kickofftime, groupmatch, matchcode, placing, oddsstatus, odds, placeodds, CONVERT(VARCHAR(20),IsFavor) IsFavor, IsSCR, 'completed' FOddsStatus FROM outright14 o with (nolock)
 			UNION ALL
-			SELECT	leagueid, teamid, eventdate, kickofftime, groupmatch, matchcode, placing, oddsstatus, odds, placeodds, CONVERT(VARCHAR(20),IsFavor) IsFavor, IsSCR, 'completed' FOddsStatus FROM DB06.bodb_Archive.dbo.outright_bk o with (nolock)
+			SELECT	 leagueid, teamid, eventdate, kickofftime, groupmatch, matchcode, placing, oddsstatus, odds, placeodds, CONVERT(VARCHAR(20),IsFavor) IsFavor, IsSCR, 'completed' FOddsStatus FROM DB06.bodb_Archive.dbo.outright_bk o with (nolock)
 			
 			UNION ALL 
 				SELECT vsr.leagueid,
@@ -45,7 +45,7 @@ BEGIN
 					   vso.EventDate,
 					   vso.KickoffTime,
 					   NULL groupmatch,
-					  CONVERT(INT,vso.RacerNum)  matchcode,
+					  CONVERT(VARCHAR(20),vso.RacerNum)  matchcode,
 					   vso.placing,
 					   vsr.EventStatus oddsstatus,
 						vso.Winodds odds,
@@ -61,7 +61,7 @@ BEGIN
 					   vso14.EventDate,
 					   vso14.KickoffTime,
 					   NULL groupmatch,
-					   CONVERT(INT,vso14.RacerNum) matchcode,
+					   CONVERT(VARCHAR(20),vso14.RacerNum) matchcode,
 					   vso14.placing,
 					   vsr.EventStatus  oddsstatus,
 					   vso14.Winodds odds,
