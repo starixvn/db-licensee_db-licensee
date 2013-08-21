@@ -86,7 +86,7 @@ BEGIN
 			FROM 
 			(
 			SELECT vsr.leagueid,
-				   NULL teamid,
+				  vso.RacerID  teamid,
 				   vso.EventDate,
 				   vso.KickoffTime,
 				   NULL groupmatch,
@@ -102,7 +102,7 @@ BEGIN
 				INNER JOIN dbo.VSRaceInfo vsr with (nolock) ON vso.EventID=vsr.EventID
 			UNION ALL 
 			SELECT vsr.leagueid,
-				   NULL teamid,
+				   vso14.RacerID teamid,
 				   vso14.EventDate,
 				   vso14.KickoffTime,
 				   NULL groupmatch,
@@ -117,8 +117,10 @@ BEGIN
 			FROM dbo.VSOutright14 vso14 (NOLOCK)
 			INNER JOIN dbo.VSRaceInfo vsr with (nolock) ON vso14.EventID=vsr.EventID	
 			 ) o 
-			INNER JOIN league l WITH (NOLOCK) ON o.leagueid = l.leagueid 
+			INNER JOIN dbo.league l WITH (NOLOCK) ON o.leagueid = l.leagueid 
+			INNER JOIN dbo.HRCode c WITH (NOLOCK) ON c.CodeID=o.teamid
 			WHERE	o.eventdate = @FromDate 
+					AND c.CodeType=11
 					AND l.sporttype =  @Sporttype
 					AND o.leagueid = CASE WHEN @leagueid =0 THEN o.leagueid 
 									 ELSE @leagueid END 
