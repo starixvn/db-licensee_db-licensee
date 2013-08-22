@@ -38,7 +38,7 @@ Revisions:
 	- 20130514@Jim: Restrict permission of Licensee Users by currency
 	- 20130619@Daniel: Fix more bug regconize BA tickets
 	- 20130620@Jim: fix bug wrong value Licensee Winloss of Racing
-	/*- 20130718@Jim: remove status Suspended */
+	- 20130718@Jim: remove status Suspended
 	- 20130809@Jim: offer Virtual Horse Racing
 */
 SET NOCOUNT ON

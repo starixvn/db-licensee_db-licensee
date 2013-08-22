@@ -1,5 +1,10 @@
-﻿ALTER  PROCEDURE [dbo].[Lrf_CustomerSel]
+﻿set ANSI_NULLS ON
+set QUOTED_IDENTIFIER ON
+go
+
+ALTER   PROCEDURE [dbo].[Lrf_CustomerSel]
 	@LicenseeID INT,
+	@UserID		  INT,	
 	@CurrencyID INT=0,
 	@LicenseeType VARCHAR(100) = NULL,
 	@username VARCHAR(50) = NULL,
@@ -33,6 +38,8 @@ AS
 	- 20120801@Henry: return group commission information of members
 	- 20121004@Jim: replace @currencyname input param by @currencyID
 	- 20130118@Henry: fix bug @LastOffBy - Forgot to put param @LicenseeID
+	- 20130514@Jim:  Restrict permission of Licensee Users by currency
+	- 20130718@Jim: remove status Suspended
 	Param's Explanation:
 	  + @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 	  + @SpecialLevel: default value = -1 (all)
@@ -47,15 +54,18 @@ SELECT @currentDate = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120)
 DECLARE @RowCount INT, @RowStart INT, @RowEnd INT
 SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
 
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+
 DECLARE @TempAg AS TABLE (custid INT)
 INSERT INTO @TempAg (custid)
 SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust WITH ( NOLOCK )  
-                WHERE   LicenseeID = @LicenseeID  
-                        AND  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID))
-                        AND [Description] = COALESCE(@LicenseeType,  
+                FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK ) 
+						INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID	
+                WHERE    [Description] = COALESCE(@LicenseeType,  
                                                      [Description])  
-
+	DROP TABLE #Currency 
 SET @Username = isnull(@Username, '')
 
 CREATE TABLE #Temp
@@ -88,7 +98,7 @@ BEGIN
 			LEFT JOIN bodb_licensee.dbo.LicenseeCustComm cc ON c.custid = cc.custid AND cc.Licenseeid=@LicenseeID
 		WHERE 
 			c.roleid=1 
-			AND ((@CustStatus='') OR (@CustStatus IN ('Open','Suspended') AND closed=0) OR (@CustStatus='Closed' AND closed = 1))
+			AND ((@CustStatus='') OR (@CustStatus IN ('Open') AND closed=0) OR (@CustStatus='Closed' AND closed = 1))
 			AND ((@CustStatus IN('','Closed')) OR (@CustStatus = 'Open' AND ISNULL(reject,0)=0) OR (@CustStatus = 'Suspended' AND ISNULL(reject,0)=1))
 			AND (@SpecialLevel=-1 OR (@SpecialLevel<>-1 AND lc.SpecialLevel=@SpecialLevel)  )
 			AND (@GroupCommID=-1 OR (@GroupCommID<>-1 AND ISNULL(cc.GroupCommID,0)=@GroupCommID ))
@@ -98,7 +108,7 @@ BEGIN
 			FROM @TempMember c 
 		END
 
-		INSERT INTO #Temp (custid, username,closed,suspended, nickname, BAStatus,SpecialLevel, RowNumber)
+		INSERT INTO #Temp (custid, username,closed,suspended,nickname, BAStatus,SpecialLevel, RowNumber)
 		SELECT * FROM 
 		(
 			SELECT 
@@ -139,7 +149,7 @@ BEGIN
 			SELECT @TotalRows = COUNT(c.custid)
 			FROM @TempMember c
 		END
-		INSERT INTO #Temp (custid, username,closed,suspended, nickname, BAStatus,SpecialLevel, RowNumber)
+		INSERT INTO #Temp (custid, username,closed, suspended,nickname, BAStatus,SpecialLevel, RowNumber)
 		SELECT * FROM 
 		(
 			SELECT 
@@ -171,7 +181,7 @@ BEGIN
 		WHERE 
 			c.roleid=1 
 			AND ((@CustStatus='') OR (@CustStatus IN ('Open','Suspended') AND closed=0) OR (@CustStatus='Closed' AND closed = 1))
-			AND ((@CustStatus IN('','Closed')) OR (@CustStatus = 'Open' AND ISNULL(reject,0)=0) OR (@CustStatus = 'Suspended' AND ISNULL(reject,0)=1))
+			AND ((@CustStatus IN('','Closed')) OR (@CustStatus = 'Open' AND ISNULL(reject,0)=0)OR (@CustStatus = 'Suspended' AND ISNULL(reject,0)=1) )
 			AND ISNULL(lb.CustID ,0)=0
 			AND (@SpecialLevel=-1 OR (@SpecialLevel<>-1 AND lc.SpecialLevel=@SpecialLevel)  )
 			AND (@GroupCommID=-1 OR (@GroupCommID<>-1 AND ISNULL(cc.GroupCommID,0)=@GroupCommID ))
@@ -182,7 +192,7 @@ BEGIN
 			FROM @TempMember c
 		END		
 	
-		INSERT INTO #Temp (custid, username,closed,suspended, nickname, BAStatus,SpecialLevel, RowNumber)
+		INSERT INTO #Temp (custid, username,closed,suspended,nickname, BAStatus,SpecialLevel, RowNumber)
 		SELECT * FROM 
 		(
 			SELECT 
@@ -243,7 +253,7 @@ BEGIN
 						bodb_Licensee.dbo.LicenseeBAHistory lb WITH (nolock) ON LicenseeID = @LicenseeID AND ci.custid = lb.custid AND lb.Status= 'Running'
 			WHERE 
 				((@CustStatus='') OR (@CustStatus IN ('Open','Suspended') AND closed=0) OR (@CustStatus='Closed' AND closed = 1))
-				AND ((@CustStatus IN('','Closed')) OR (@CustStatus = 'Open' AND ISNULL(reject,0)=0) OR (@CustStatus = 'Suspended' AND ISNULL(reject,0)=1))
+				AND ((@CustStatus IN('','Closed')) OR (@CustStatus = 'Open' AND ISNULL(reject,0)=0)OR (@CustStatus = 'Suspended' AND ISNULL(reject,0)=1))
 				AND ((@BAFilter=0) OR (@BAFilter=1 AND isnull(lb.Status,'') = 'Running') OR (@BAFilter=2 AND isnull(lb.Status,'') <> 'Running'))
 				AND (@SpecialLevel=-1 OR (@SpecialLevel<>-1 AND lc.SpecialLevel=@SpecialLevel)  )
 		END
@@ -366,3 +376,4 @@ GO
 GRANT EXECUTE ON [dbo].[Lrf_CustomerSel] TO [bodbLicenseeNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerSel] TO [vnteam]
+
