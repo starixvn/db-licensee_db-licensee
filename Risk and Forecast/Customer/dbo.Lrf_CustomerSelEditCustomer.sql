@@ -11,7 +11,6 @@ Original: Acc_CustomerSelEditCustomer
 Revisions:
     - 20110519@Henry: Remove Number Game (use Number game in SP: Lrf_CustomerSelEditNG)
 	- 20120326@Dom: Change CustSetting to Dep_CustSetting, CustSetting3rd to Dep_CustSetting3rd
-	- 20130718@Jim: remove status Suspended
 Param's Explanation:
 • @CustID: member ID
 */
@@ -32,7 +31,7 @@ DECLARE @MinBet_Max MONEY, @MaxBet_Min MONEY, @MaxPerMatch_Min MONEY, @MaxPerMat
 
 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-DECLARE @mrecommend INT, @recommend INT---, @Asuspended BIT
+DECLARE @mrecommend INT, @recommend INT, @Asuspended BIT
 SELECT	@mrecommend = mrecommend, @recommend=recommend from custinfo with (NOLOCK) WHERE custid = @custid
 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -247,6 +246,8 @@ SELECT
 	IsNull(@MaxBetv99MP_Min, 0) as MaxBetv99MP_Min,	
 	IsNull(@MaxPerMatchv99MP_Min, 0) as MaxPerMatchv99MP_Min,	
 	IsNull(@MaxPerMatchv99MP_Max, 0) as MaxPerMatchv99MP_Max
+	
+	
 	
 from 
 	
