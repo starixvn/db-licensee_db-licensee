@@ -2,7 +2,7 @@ SET ANSI_NULLS ON
 SET QUOTED_IDENTIFIER ON
 GO
 
-ALTER PROCEDURE Lrf_Forecast_MatchTotalForecast 
+ALTER PROCEDURE Lrf_Forecast_MatchTotalForecast
 (
 	@LicenseeID INT,
 	@LicenseeType VARCHAR(100) = NULL,
@@ -73,13 +73,12 @@ BEGIN
 	SELECT 
 		CASE 
 			WHEN bettype IN (7,8) THEN 1
-			--WHEN bettype IN (17,18) THEN 2
 			ELSE 3
 		END AS [Type],
 		CASE WHEN bettype IN (3,8) THEN hdp1
 			ELSE hdp2 - hdp1
 		END AS hdp,
-		bettype, stake, odds, betteam, currency, ISNULL(livehomescore,0) AS livehomescore, ISNULL(liveawayscore,0) AS liveawayscore
+		bettype, stake, odds, betteam, currency
 	INTO #Data
 	FROM bodb02.dbo.bettrans b (NOLOCK)
 	WHERE	b.recommend IN ( SELECT custid FROM   @TempAg )
@@ -89,121 +88,41 @@ BEGIN
 			AND b.ruben = 0
 			AND b.tpositiontaking <> 0
 	
-	-- Handicap detail resultset
-	;WITH ScoreDiff AS
+	-- Get detail resultset
+	;WITH LCWinloss AS
 	(
-		SELECT  
-			b.[Type],b.hdp,bettype, stake, odds, betteam, currency,
-			CASE
-				WHEN betteam LIKE 'h' THEN hdp
-				ELSE -hdp
-			END	+
-			CASE
-				WHEN betteam LIKE 'h' THEN (@HomeScore - livehomescore) - (@AwayScore - liveawayscore)
-				ELSE (@AwayScore - liveawayscore) - (@HomeScore - livehomescore)
-			END AS ScoreDiff
-	
-		FROM #Data b
-		WHERE b.bettype IN (1,7) -- Handicap only
-	)
-	, LCWinloss AS
-	(
-		SELECT d.*,
-			CASE 
-				WHEN ScoreDiff < 0 THEN -- Licensee Win
-					(CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END) * stake * (CASE WHEN ABS(ScoreDiff) = 0.25 THEN 0.5 ELSE 1 END)
-				WHEN ScoreDiff > 0  -- Licensee Lose
-					THEN -((CASE WHEN odds < 0 THEN 1 ELSE odds END) * stake * (CASE WHEN ABS(ScoreDiff) = 0.25 THEN 0.5 ELSE 1 END))
+		SELECT d.bettype, d.hdp, d.currency,
+			CASE d.betteam
+				WHEN 'h' THEN -((CASE WHEN odds < 0 THEN 1 ELSE odds END) * stake)
+				WHEN 'a' THEN (CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END) * stake
 				ELSE 0
-			END AS LCWinloss
-		FROM ScoreDiff d
+			END AS HWinLCWinloss,
+			CASE d.betteam
+				WHEN 'h' THEN (CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END) * stake
+				WHEN 'a' THEN -((CASE WHEN odds < 0 THEN 1 ELSE odds END) * stake)
+				ELSE 0
+			END AS AWinLCWinloss
+		FROM #Data d
 	)
 
 	INSERT INTO #SecondRS
 	SELECT bettype, 
 		hdp, 
-		SUM(CASE betteam WHEN 'h' THEN LCWinloss ELSE 0 END) AS HomeWinloss,
-		SUM((CASE betteam WHEN 'h' THEN LCWinloss ELSE 0 END)*e.USD) AS HomeWinlossUSD,
-		SUM((CASE betteam WHEN 'h' THEN LCWinloss ELSE 0 END)*e.EUR) AS HomeWinlossEUR,
-		SUM(CASE betteam WHEN 'a' THEN LCWinloss ELSE 0 END) AS AwayWinloss,
-		SUM((CASE betteam WHEN 'a' THEN LCWinloss ELSE 0 END) * e.USD) AS AwayWinlossUSD,
-		SUM((CASE betteam WHEN 'a' THEN LCWinloss ELSE 0 END) * e.EUR) AS AwayWinlossEUR
+		SUM(HWinLCWinloss) AS HomeWinloss,
+		SUM(HWinLCWinloss*e.USD) AS HomeWinlossUSD,
+		SUM(HWinLCWinloss*e.EUR) AS HomeWinlossEUR,
+		SUM(AWinLCWinloss) AS AwayWinloss,
+		SUM(AWinLCWinloss*e.USD) AS AwayWinlossUSD,
+		SUM(AWinLCWinloss*e.EUR) AS AwayWinlossEUR
 	FROM LCWinloss lc
 		INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today)) e ON e.exchangeid = lc.currency
 	GROUP BY bettype, hdp
 	ORDER BY 2
 
-	-- Over/Under detail resultset
-	DECLARE @TotalScore INT
-	SET @TotalScore = @HomeScore + @AwayScore
-
-	;WITH ScoreDiff AS
-	(
-		SELECT [Type], hdp, bettype, stake, odds, betteam, currency, 
-			CASE WHEN betteam LIKE 'h' THEN @TotalScore - hdp ELSE hdp - @TotalScore END AS ScoreDiff
-		FROM #Data d
-		WHERE bettype IN (3,8)
-	), LCWinloss AS
-	(
-		SELECT d.*,
-			CASE 
-				WHEN ScoreDiff < 0 THEN -- Licensee Win
-					(CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END) * stake * (CASE WHEN ABS(ScoreDiff) = 0.25 THEN 0.5 ELSE 1 END)
-				WHEN ScoreDiff > 0  -- Licensee Lose
-					THEN -((CASE WHEN odds < 0 THEN 1 ELSE odds END) * stake * (CASE WHEN ABS(ScoreDiff) = 0.25 THEN 0.5 ELSE 1 END))
-				ELSE 0
-			END AS LCWinloss
-		FROM ScoreDiff d
-	)
-
-	INSERT INTO #SecondRS
-	SELECT bettype, 
-		hdp, 
-		SUM(CASE betteam WHEN 'h' THEN LCWinloss ELSE 0 END) AS HomeWinloss,
-		SUM((CASE betteam WHEN 'h' THEN LCWinloss ELSE 0 END)*e.USD) AS HomeWinlossUSD,
-		SUM((CASE betteam WHEN 'h' THEN LCWinloss ELSE 0 END)*e.EUR) AS HomeWinlossEUR,
-		SUM(CASE betteam WHEN 'a' THEN LCWinloss ELSE 0 END) AS AwayWinloss,
-		SUM((CASE betteam WHEN 'a' THEN LCWinloss ELSE 0 END) * e.USD) AS AwayWinlossUSD,
-		SUM((CASE betteam WHEN 'a' THEN LCWinloss ELSE 0 END) * e.EUR) AS AwayWinlossEUR
-	FROM LCWinloss lc
-		INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today)) e ON e.exchangeid = lc.currency
-	GROUP BY bettype, hdp
-	ORDER BY 2 DESC
-
 	-- Retrieve total Info
-	;WITH BettypeWL AS
-	(
-		SELECT CASE 
-				WHEN bettype IN (7,8) THEN 1
-				--WHEN bettype IN (17,18) THEN 2
-				ELSE 3
-			END AS [Type], bettype,
-			SUM(HomeWinloss + AwayWinloss) AS Outcome,
-			SUM(HomeWinlossUSD + AwayWinlossUSD) AS OutcomeUSD,
-			SUM(HomeWinlossEUR + AwayWinlossEUR) AS OutcomeEUR
-		FROM #SecondRS
-		GROUP BY bettype
-	), TypeWL AS
-	(
-		SELECT [Type], 
-			SUM(CASE WHEN bettype IN (1,7) THEN Outcome ELSE 0 END) AS OutcomeHDP,
-			SUM(CASE WHEN bettype IN (1,7) THEN OutcomeUSD ELSE 0 END) AS OutcomeHDPUSD,
-			SUM(CASE WHEN bettype IN (1,7) THEN OutcomeEUR ELSE 0 END) AS OutcomeHDPEUR,
-			SUM(CASE WHEN bettype IN (3,8) THEN Outcome ELSE 0 END) AS OutcomeOU,
-			SUM(CASE WHEN bettype IN (3,8) THEN OutcomeUSD ELSE 0 END) AS OutcomeOUUSD,
-			SUM(CASE WHEN bettype IN (3,8) THEN OutcomeEUR ELSE 0 END) AS OutcomeOUEUR
-		FROM BettypeWL
-		GROUP BY [Type]
-	)
 	SELECT 
 		d.[Type],
 		COUNT(*) AS TotalTickets,
-		w.OutcomeHDP,
-		w.OutcomeHDPUSD,
-		w.OutcomeHDPEUR,
-		w.OutcomeOU,
-		w.OutcomeOUUSD,
-		w.OutcomeOUEUR,
 		SUM(CASE WHEN bettype IN (1,7) AND betteam LIKE 'h' THEN stake ELSE 0 END) AS HomeTurnover,
 		SUM(CASE WHEN bettype IN (1,7) AND betteam LIKE 'h' THEN stake*e.USD ELSE 0 END) AS HomeTurnoverUSD,
 		SUM(CASE WHEN bettype IN (1,7) AND betteam LIKE 'h' THEN stake*e.EUR ELSE 0 END) AS HomeTurnoverEUR,
@@ -220,8 +139,7 @@ BEGIN
 
 		FROM #Data d
 		INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today)) e ON e.exchangeid = d.currency
-		INNER JOIN TypeWL w ON d.[Type] = w.[Type]
-	GROUP BY d.[Type], w.OutcomeHDP,w.OutcomeHDPUSD,w.OutcomeHDPEUR,w.OutcomeOU,w.OutcomeOUUSD,w.OutcomeOUEUR
+	GROUP BY d.[Type]
 	ORDER BY 1
 
 	
