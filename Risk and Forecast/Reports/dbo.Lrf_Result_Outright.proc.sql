@@ -42,7 +42,7 @@ SELECT DISTINCT
 		UNION ALL
 			SELECT vsr.leagueid, eventdate, teamid,vsr.eventstatus status
 			FROM dbo.VSOutright14 AS vso14 with (nolock)
-				INNER JOIN dbo.VSRaceInfo vsr with (nolock) ON vso.EventID=vsr.EventID	
+				INNER JOIN dbo.VSRaceInfo vsr with (nolock) ON vso14.EventID=vsr.EventID	
 			WHERE eventdate >= @FromDate AND eventdate <= @ToDate
 		) AS outright 
 		 INNER JOIN dbo.league with (nolock) on outright.leagueid = league.leagueid

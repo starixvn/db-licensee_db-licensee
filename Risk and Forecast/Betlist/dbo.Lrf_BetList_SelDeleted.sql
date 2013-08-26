@@ -123,7 +123,8 @@ SELECT
 	CASE WHEN b.bettype BETWEEN 1101 AND 1199 THEN ISNULL(m.showtime,'') ELSE '' END AS ShowTime
 FROM 
 	bettrans AS b WITH (NOLOCK)
-	INNER JOIN (SELECT sporttype, homeid, awayid, leagueid, matchid, matchcode, eventdate, isneutral,showtime FROM match (NOLOCK) WHERE eventdate > DATEADD(DAY,-3,CURRENT_TIMESTAMP)) AS m ON b.matchid = m.matchid
+	INNER JOIN (SELECT sporttype, homeid, awayid, leagueid, matchid, matchcode, eventdate, isneutral,showtime FROM match (NOLOCK) WHERE eventdate > DATEADD(DAY,-3,CURRENT_TIMESTAMP)
+				) AS m ON b.matchid = m.matchid
 WHERE
 	b.custid = @CustID
 	AND b.recommend = @recommend
@@ -165,10 +166,22 @@ SELECT
 	'' AS ShowTime
 FROM 
 	bettrans AS b WITH (NOLOCK)
-	INNER JOIN (SELECT teamid AS homeid, leagueid, orid, matchcode, groupmatch, eventdate FROM outright (NOLOCK) WHERE eventdate > DATEADD(DAY,-3,CURRENT_TIMESTAMP)) AS m ON b.matchid = m.orid
+	INNER JOIN (SELECT teamid AS homeid, leagueid, orid, matchcode, groupmatch, eventdate
+				FROM outright (NOLOCK) WHERE eventdate > DATEADD(DAY,-3,CURRENT_TIMESTAMP)
+				UNION ALL 
+				SELECT vso.RacerID as homeid,
+						vsr.LeagueID,
+						vso.Orid,
+						CONVERT(VARCHAR(20),vso.RacerNum) as matchcode,
+						'' groupmatch,
+						vso.EventDate
+				FROM dbo.VSOutright vso (NOLOCK) 
+				INNER JOIN dbo.VSRaceInfo vsr with (nolock) ON vso.EventID=vsr.EventID
+				WHERE 	vso.eventdate > DATEADD(DAY,-3,CURRENT_TIMESTAMP)
+				) AS m ON b.matchid = m.orid
 	INNER JOIN league l WITH (NOLOCK) ON m.leagueid = l.leagueid
 WHERE		
-	b.bettype in (10,31,32,33,41,42,43)
+	b.bettype in (10,31,32,33,41,42,43,1231,1232,1233 )
 	AND b.recommend = @recommend
 	AND b.custid = @CustID
 	AND b.statusID IN (101,102)
