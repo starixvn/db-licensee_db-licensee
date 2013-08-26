@@ -35,12 +35,12 @@ SELECT DISTINCT
 			WHERE oddsstatus = 'completed' AND [status] IN( 'WON','REFUND')
 				AND eventdate >= @FromDate AND eventdate <= @ToDate
 		UNION ALL	
-			SELECT vsr.leagueid, eventdate, teamid, vsr.eventstatus status
+			SELECT vsr.leagueid, eventdate, vso.RacerID, vsr.eventstatus status
 			FROM dbo.VSOutright AS vso with (nolock)
 				INNER JOIN dbo.VSRaceInfo vsr with (nolock) ON vso.EventID=vsr.EventID
 			WHERE eventdate >= @FromDate AND eventdate <= @ToDate
 		UNION ALL
-			SELECT vsr.leagueid, eventdate, teamid,vsr.eventstatus status
+			SELECT vsr.leagueid, eventdate, vso14.RacerID,vsr.eventstatus status
 			FROM dbo.VSOutright14 AS vso14 with (nolock)
 				INNER JOIN dbo.VSRaceInfo vsr with (nolock) ON vso14.EventID=vsr.EventID	
 			WHERE eventdate >= @FromDate AND eventdate <= @ToDate
