@@ -31,6 +31,14 @@ SELECT distinct sports.sporttype, sportname from sports with (nolock)
 	UNION ALL
 	SELECT matchid, eventdate, eventstatus, sporttype 
 	from match14 (nolock)	
+	UNION ALL 
+	SELECT vso.Orid as matchid,vso.EventDate,vso.EventStatus,vsr.Sporttype
+	FROM dbo.VSOutright vso WITH (NOLOCK)
+		INNER JOIN dbo.VSRaceInfo vsr with (nolock) ON vso.EventID=vsr.EventID
+	UNION ALL 
+	SELECT vso14.Orid as matchid,vso14.EventDate,vso14.EventStatus,vsr.Sporttype
+	FROM dbo.VSOutright14 vso14 WITH (NOLOCK)
+		INNER JOIN dbo.VSRaceInfo vsr with (nolock) ON vso14.EventID=vsr.EventID
 	) match on match.sporttype = sports.sporttype
 LEFT JOIN match_remark mr ON match.matchid = mr.matchid
 WHERE
