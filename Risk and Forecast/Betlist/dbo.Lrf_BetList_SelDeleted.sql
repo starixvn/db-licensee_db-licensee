@@ -32,6 +32,7 @@ Revisions:
 	- 20120816@Henry: add ShowLiveCasino 
 	- 20130411@Jim: support base currency
 	- 20130514@Jim:Restrict permission of Licensee Users by currency
+	- 20130809@Jim: offer Virtual Horse Racing
 Param's Explanation:
 + @CustID: AgentID
 */
