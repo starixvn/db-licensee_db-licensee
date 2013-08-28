@@ -100,6 +100,11 @@ BEGIN
 				   '' FOddsStatus
 			FROM dbo.VSOutright vso (NOLOCK)
 				INNER JOIN dbo.VSRaceInfo vsr with (nolock) ON vso.EventID=vsr.EventID
+				WHERE eventdate = @FromDate 
+					AND leagueid = CASE WHEN @leagueid =0 THEN leagueid 
+									 ELSE @leagueid END 
+					AND placing<5
+					AND ISNULL(placing,0)<>0
 			UNION ALL 
 			SELECT vsr.leagueid,
 				   vso14.RacerID teamid,
@@ -116,18 +121,18 @@ BEGIN
 				   '' FOddsStatus
 			FROM dbo.VSOutright14 vso14 (NOLOCK)
 			INNER JOIN dbo.VSRaceInfo vsr with (nolock) ON vso14.EventID=vsr.EventID	
+				WHERE eventdate = @FromDate 
+					AND leagueid = CASE WHEN @leagueid =0 THEN leagueid 
+									 ELSE @leagueid END 
+					AND placing<5
+					AND ISNULL( placing,0)<>0
 			 ) o 
 			INNER JOIN dbo.league l WITH (NOLOCK) ON o.leagueid = l.leagueid 
 			INNER JOIN dbo.HRCode c WITH (NOLOCK) ON c.CodeID=o.teamid
-			WHERE	o.eventdate = @FromDate 
-					AND c.CodeType=11
+			WHERE	c.CodeType=11
 					AND l.sporttype =  @Sporttype
-					AND o.leagueid = CASE WHEN @leagueid =0 THEN o.leagueid 
-									 ELSE @leagueid END 
 					AND (oddsstatus ='completed' OR FoddsStatus='completed')
 					AND l.isTest = isnull(@isShowAll, l.isTest)
-					AND o.placing<5
-					AND ISNULL( o.placing,0)<>0
 			ORDER BY o.leagueid, o.kickofftime
 			
 	END
