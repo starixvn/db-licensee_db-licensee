@@ -50,7 +50,7 @@ Revisions:
 					Show odds value AND odds type for Number game
 	- 20110712@Henry: Add column LicenseeWL
 	- 20110729@Henry: offer 3 new bettypes for Number Game + Combination Mix Parlay
-	- 20111128@Henry: Compare Checktime and CURRENT_TIMESTAMP to show waiting or running status
+	- 20111128@Henry: Compare Checktime and CURRENT_TIMESTAMP to shDow waiting or running status
 	- 20111208@Jim: Chang condition  bettype < 31
 	- 20111229@Jim: change the way to get odds/oddstype/betteam to web dev
 	- 20120214@Jim: change table ExchangeDaily by function Lrf_f_GetExchangeDaily
