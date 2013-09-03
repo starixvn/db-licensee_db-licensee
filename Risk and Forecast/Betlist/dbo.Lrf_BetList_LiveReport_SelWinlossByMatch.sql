@@ -258,6 +258,55 @@ BEGIN
 			b.statusID IN (111,112,113)	
 		ORDER BY
 			b.status, b.transid
+		IF EXISTS (SELECT 1 FROM @bettype WHERE bettype IN (1231, 1232, 1233, 1237, 1238) )	
+			BEGIN 
+				INSERT INTO #Data	
+				SELECT TOP(@RowEnd)
+					r.sporttype,
+					b.username,
+					b.custid,
+					b.bettype,
+					r.leagueID,			
+					b.transid,
+					o.RacerNum as matchcode,
+					o.RacerID as homeID,
+					0 awayID,
+					CONVERT(FLOAT, b.hdp1) AS hdp1, 
+					CONVERT(FLOAT, b.hdp2) AS hdp2, 
+					b.odds,
+					b.status,
+					b.stake,
+					(b.winlost-actual_stake) winlost,
+					- (b.winlost-b.actual_stake) AS LicenseeWL ,
+					b.comm,
+					b.playercomm,
+					b.transdate,
+					b.winlostdate,
+					b.betteam,
+					b.liveindicator,
+					b.livehomescore,
+					b.liveawayscore,
+					b.matchid, 
+					b.IP AS IP,
+					r.betstatus,
+					ISNULL(0, CONVERT(BIT,0)) AS IsNeutral,
+					b.OddsType,
+					b.betid,
+					b.currency,
+					b.refno,
+					r.EventTime  AS ShowTime 
+				FROM
+					bettrans b WITH (NOLOCK) 
+					INNER JOIN VSOutright o with (nolock) ON b.oddsid=o.Orid
+					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
+					INNER JOIN @bettype bt ON b.bettype = bt.bettype   
+				WHERE
+					b.matchid=@matchid AND			
+					b.recommend IN (SELECT custid FROM @TempAg)	AND	
+					b.statusID IN (111,112,113)	
+				ORDER BY
+					b.status, b.transid
+			END	
 	END
 	
 	
@@ -414,6 +463,55 @@ BEGIN
 			b.statusID IN (111,112,113)	
 		ORDER BY
 			b.status, b.transid
+		IF EXISTS (SELECT 1 FROM @bettype WHERE bettype IN (1231, 1232, 1233, 1237, 1238))	
+		BEGIN 
+			INSERT INTO #Data	
+				SELECT TOP(@RowEnd)
+					r.sporttype,
+					b.username,
+					b.custid,
+					b.bettype,
+					r.leagueID,			
+					b.transid,
+					o.RacerNum as matchcode,
+					o.RacerID as homeID,
+					0 awayID,
+					CONVERT(FLOAT, b.hdp1) AS hdp1, 
+					CONVERT(FLOAT, b.hdp2) AS hdp2, 
+					b.odds,
+					b.status,
+					b.stake,
+					(b.winlost-actual_stake) winlost,
+					- (b.winlost-b.actual_stake) AS LicenseeWL ,
+					b.comm,
+					b.playercomm,
+					b.transdate,
+					b.winlostdate,
+					b.betteam,
+					b.liveindicator,
+					b.livehomescore,
+					b.liveawayscore,
+					b.matchid, 
+					b.IP AS IP,
+					r.betstatus,
+					ISNULL(0, CONVERT(BIT,0)) AS IsNeutral,
+					b.OddsType,
+					b.betid,
+					b.currency,
+					b.refno,
+					r.EventTime AS ShowTime 
+				FROM
+					bettrans14 b WITH (NOLOCK) 
+					INNER JOIN VSOutright14 o with (nolock) ON b.oddsid=o.Orid
+					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
+					INNER JOIN @bettype bt ON b.bettype = bt.bettype   
+				WHERE
+					b.matchid=@matchid AND			
+					b.recommend IN (SELECT custid FROM @TempAg)	AND	
+					b.statusID IN (111,112,113)	
+				ORDER BY
+					b.status, b.transid
+		END	
 	END
 	
 END

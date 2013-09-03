@@ -65,6 +65,7 @@ Revisions:
 	- 201300426@Scott: Support RNG Casino and Bingo
 	- 20130514@Jim: Restrict permission of Licensee Users by currency
 	- 20130716@Jim: update matchid for RNG Casino and Bingo
+	- 20130903@Jim: offer VHR
 */
 
 
@@ -730,6 +731,58 @@ BEGIN
 		b.recommend=@Recommend  
 		AND b.bettype NOT IN (71,73)
 		AND b.transdate>=@FROMDate AND b.transdate<=@ToDate
+	IF EXISTS (SELECT 1 FROM @TempBettype WHERE bettype IN (1231, 1232, 1233, 1237, 1238) )	
+		BEGIN 
+			INSERT INTO #BetListSelAllByDateMem
+			SELECT 
+				@UserName AS UserName,
+				r.sporttype,
+				b.bettype,
+				CASE WHEN b.bettype BETWEEN 1101 AND 1199 THEN CONVERT(NVARCHAR(20),b.refno)  ELSE '' END AS refno,		
+				b.transid,
+				ISNULL(b.BetID,0),
+				o.RacerNum as matchcode, 
+				o.Orid as matchid,
+				'' AS Race, 
+				o.RacerID as homeID,
+				0 as awayID,
+				CONVERT(FLOAT, b.hdp1) AS hdp1, 
+				CONVERT(FLOAT, b.hdp2) AS hdp2,  
+				b.odds,
+				b.modds,
+				CASE WHEN b.status = 'running' AND IsNull(b.SecAcceptFlag, 0) = 1 and IsNull(b.checktime, CURRENT_TIMESTAMP) > CURRENT_TIMESTAMP THEN 'waiting'  
+				ELSE b.status   
+				END as status,
+				b.stake,
+				b.actual_stake,
+				(winlost-actual_stake) winlost,
+				- (b.winlost-b.actual_stake) AS LicenseeWL ,
+				b.comm ,
+				b.playercomm  AS PlayerComm ,
+				b.discount,
+				b.transdate,
+				b.winlostdate,
+				b.betteam,
+				r.leagueID,
+				b.liveindicator, 
+				b.livehomescore, 
+				b.liveawayscore,
+				b.IP AS IP,
+				r.betstatus,
+				CONVERT(BIT,0) AS IsNeutral,
+				b.Oddstype,
+				b.currency,
+				r.EventTime  AS ShowTime 
+			FROM bettrans b WITH (NOLOCK)
+				INNER JOIN VSOutright14 o with (nolock) ON b.oddsid=o.Orid
+				INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
+				INNER JOIN @TempBettype bt ON b.bettype = bt.bettype	
+			WHERE
+				b.CustID = @CustID AND
+				b.recommend=@Recommend  
+				AND b.bettype NOT IN (71,73)
+				AND b.transdate>=@FROMDate AND b.transdate<=@ToDate
+		END	
 END
 
 IF @ShowCS=1 

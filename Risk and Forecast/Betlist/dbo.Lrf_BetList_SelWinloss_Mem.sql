@@ -56,6 +56,7 @@ Revisions:
 	 - 20130204@Jim: support RNG Casino and Bingo product
 	 - 20130514@Jim:Restrict permission of Licensee Users by currency
 	 - 20130716@Jim: update matchid for RNG Casino and Bingo
+	 - 20130809@Jim: offer Virtual Horse Racing 	
 	
 Param's Explanation:
 	+ @drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -624,6 +625,49 @@ BEGIN
 			b.custid=@custid AND
 			b.bettype BETWEEN 1201 AND 1299 AND
 			b.statusID IN (111,112,113)
+		UNION ALL
+		SELECT 
+			r.sporttype,
+			b.transid,
+			ISNULL(b.BetID,0),
+			b.Bettype,
+			b.hdp1 AS hdp1, 
+			b.hdp2 AS hdp2,
+			modds,
+			b.oddstype,
+			b.Odds,
+			b.stake,
+			b.actual_stake, 
+			b.betteam,
+			b.status AS Status,				
+			b.refno,
+			b.Transdate,	
+			b.winlostdate,			
+			(b.winlost-actual_stake),
+			- (b.winlost-actual_stake) ,
+			b.comm ,
+			b.playercomm,
+			b.Liveindicator,
+			b.Livehomescore,
+			b.Liveawayscore,
+			b.IP AS IP,
+			r.LeagueID,
+			o.Orid MatchID,	
+			o.RacerNum MatchCode,
+			'' AS Race,	
+			o.RacerID HomeID,
+			0 as AwayID, 		
+			r.Betstatus,
+			ISNULL(0, CONVERT(BIT,0)) AS IsNeutral,
+			0,0,
+			b.currency,
+			'' as showtime
+		FROM dbo.bettrans AS b WITH (NOLOCK)	
+			INNER JOIN VSOutright o with (nolock) ON b.oddsid=o.Orid
+			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
+
+				
+			
 	END
 	------- RNG Casino
 	IF @ShowCS=1
@@ -1265,6 +1309,47 @@ BEGIN
 			b.custid=@custid AND
 			b.bettype BETWEEN 1201 AND 1299 AND
 			b.statusID IN (111,112,113)
+	 UNION ALL
+		SELECT 
+			r.sporttype,
+			b.transid,
+			ISNULL(b.BetID,0),
+			b.Bettype,
+			b.hdp1 AS hdp1, 
+			b.hdp2 AS hdp2,
+			modds,
+			b.oddstype,
+			b.Odds,
+			b.stake,
+			b.actual_stake, 
+			b.betteam,
+			b.status AS Status,				
+			b.refno,
+			b.Transdate,	
+			b.winlostdate,			
+			(b.winlost-actual_stake),
+			- (b.winlost-actual_stake) ,
+			b.comm ,
+			b.playercomm,
+			b.Liveindicator,
+			b.Livehomescore,
+			b.Liveawayscore,
+			b.IP AS IP,
+			r.LeagueID,
+			o.Orid MatchID,	
+			o.RacerNum MatchCode,
+			'' AS Race,	
+			o.RacerID HomeID,
+			0 as AwayID, 		
+			r.Betstatus,
+			ISNULL(0, CONVERT(BIT,0)) AS IsNeutral,
+			0,0,
+			b.currency,
+			'' as showtime
+		FROM dbo.bettrans14 AS b WITH (NOLOCK)	
+			INNER JOIN VSOutright14 o with (nolock) ON b.oddsid=o.Orid
+			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
+		
 	END
 	--- RNG Casino
 	IF @ShowCS = 1

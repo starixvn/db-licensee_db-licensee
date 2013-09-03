@@ -65,6 +65,7 @@ Revisions:
    - 20130225@Jim: support RNG Casino, Bingo 
    - 20130514@Jim:Restrict permission of Licensee Users by currency
    - 20130716@Jim: update matchid for RNG Casino and Bingo
+   - 20130903@Jim: support Virtual Horse Racing
    */
 
 SET NOCOUNT ON
@@ -740,6 +741,54 @@ BEGIN
 				)  AND
 			--((b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 1101 AND 1199) ) AND
 			b.ruben = 1 
+		UNION ALL 
+			SELECT
+			r.Sporttype, 
+			@Username, 
+			b.TransID,
+			ISNULL(b.BetID,0),
+			b.Bettype,
+			CONVERT(FLOAT, b.hdp1) AS hdp1, 
+			CONVERT(FLOAT, b.hdp2) AS hdp2,
+			b.Oddstype,			
+			b.Odds,
+			b.modds,
+			b.stake,
+			b.actual_stake, 
+			b.betteam,
+			b.status AS Status,				
+			b.refno,
+			b.Transdate,	
+			b.winlostdate,			
+			(b.winlost-actual_stake),
+			- (b.winlost-b.actual_stake) AS LicenseeWL ,
+			b.comm,
+			b.playercomm ,				
+			b.Liveindicator,
+			b.Livehomescore,
+			b.Liveawayscore,
+			b.IP AS IP,
+			r.LeagueID,
+			o.Orid,	
+			o.RacerNum MatchCode,
+			'' AS Race,	
+			o.RacerID HomeID,
+			0 AwayID, 		
+			r.Betstatus,
+			CONVERT(BIT,0) AS IsNeutral	,
+			b.currency,
+			r.EventTime AS  ShowTime 	
+		FROM
+			dbo.bettrans AS b WITH (NOLOCK)		
+			INNER JOIN VSOutright o with (nolock) ON b.oddsid=o.Orid
+			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
+		WHERE
+			b.winlostdate BETWEEN @TempFromDate AND @todate AND
+			b.recommend = @Recommend AND --to improve performance
+			b.custid=@CustID AND
+			((@ShowVS=1 AND b.bettype IN (1231, 1232, 1233, 1237, 1238))
+				)  AND
+			b.ruben = 1 
 			
 	END
 	IF @ShowCS=1
@@ -1382,6 +1431,55 @@ BEGIN
 				OR (@ShowVS=1 AND b.bettype BETWEEN 1201 AND 1299 )
 				) AND
 			b.ruben = 1
+			
+		UNION ALL 
+			SELECT
+			r.Sporttype, 
+			@Username, 
+			b.TransID,
+			ISNULL(b.BetID,0),
+			b.Bettype,
+			CONVERT(FLOAT, b.hdp1) AS hdp1, 
+			CONVERT(FLOAT, b.hdp2) AS hdp2,
+			b.Oddstype,			
+			b.Odds,
+			b.modds,
+			b.stake,
+			b.actual_stake, 
+			b.betteam,
+			b.status AS Status,				
+			b.refno,
+			b.Transdate,	
+			b.winlostdate,			
+			(b.winlost-actual_stake),
+			- (b.winlost-b.actual_stake) AS LicenseeWL ,
+			b.comm,
+			b.playercomm ,				
+			b.Liveindicator,
+			b.Livehomescore,
+			b.Liveawayscore,
+			b.IP AS IP,
+			r.LeagueID,
+			o.Orid,	
+			o.RacerNum MatchCode,
+			'' AS Race,	
+			o.RacerID HomeID,
+			0 AwayID, 		
+			r.Betstatus,
+			CONVERT(BIT,0) AS IsNeutral	,
+			b.currency,
+			r.EventTime AS  ShowTime 	
+		FROM
+			dbo.bettrans14 AS b WITH (NOLOCK)		
+			INNER JOIN VSOutright14 o with (nolock) ON b.oddsid=o.Orid
+			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
+		WHERE
+			b.winlostdate BETWEEN @TempFromDate AND @todate AND
+			b.recommend = @Recommend AND --to improve performance
+			b.custid=@CustID AND
+			((@ShowVS=1 AND b.bettype IN (1231, 1232, 1233, 1237, 1238))
+				)  AND
+			b.ruben = 1 	
 	END
 	-- RNG Casino
 	IF @ShowCS=1 

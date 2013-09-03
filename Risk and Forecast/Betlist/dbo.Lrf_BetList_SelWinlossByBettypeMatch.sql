@@ -56,6 +56,7 @@ Revisions:
    - 20121207@Henry: fix bug 1 match got 2 different winlostdate by add param @Date
    - 20130422@Scott: Add more parameter @ShowCS, @ShowBG
    - 20130514@Jim:Restrict permission of Licensee Users by currency
+   - 20130903@Jim: support VHR
 Param's Explanation: 
 	
 */
@@ -301,7 +302,59 @@ BEGIN
 			((@Liveindicator=-1) OR (@Liveindicator=0 AND b.Liveindicator = 0) OR (@Liveindicator=1 AND b.Liveindicator = 1)) AND
 			(@_Date IS NULL OR (@_Date IS NOT NULL AND b.winlostdate=@_Date))
 		ORDER BY
-			b.status, b.transid
+			b.status, b.transid	
+		IF EXISTS (SELECT 1 FROM @TempBettype WHERE bettype IN (1231, 1232, 1233, 1237, 1238))
+			BEGIN 
+				INSERT INTO #Data	
+				SELECT
+					r.sporttype,
+					b.username,
+					b.custid,
+					b.bettype,
+					r.leagueID,			
+					b.transid,
+					o.RacerNum matchcode,
+					o.RacerID as homeID,
+					0 as awayID,
+					CONVERT(FLOAT, b.hdp1) AS hdp1, 
+					CONVERT(FLOAT, b.hdp2) AS hdp2, 
+					b.odds,
+					b.status,
+					b.stake,
+					(b.winlost-actual_stake) winlost,
+					- (b.winlost-b.actual_stake) AS LicenseeWL ,
+					b.comm,
+					b.playercomm AS PlayerComm,
+					b.transdate,
+					b.winlostdate,
+					b.betteam,
+					b.liveindicator,
+					b.livehomescore,
+					b.liveawayscore,
+					o.Orid  matchid, 
+					r.betstatus,
+					ISNULL(0, CONVERT(BIT,0)) AS IsNeutral,
+					b.OddsType,
+					b.betid,
+					b.currency,
+					b.refno,
+					r.EventTime  AS ShowTime 
+				FROM
+					bettrans b WITH (NOLOCK) 
+					INNER JOIN VSOutright o with (nolock) ON b.oddsid=o.Orid
+					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
+					INNER JOIN @TempBettype bt ON b.bettype = bt.bettype
+				WHERE
+					b.matchid=@matchid AND
+					(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
+					b.recommend IN (SELECT custid FROM @TempAg)	AND
+					b.statusID IN (111,112,113) AND
+					((@Liveindicator=-1) OR (@Liveindicator=0 AND b.Liveindicator = 0) OR (@Liveindicator=1 AND b.Liveindicator = 1)) AND
+					(@_Date IS NULL OR (@_Date IS NOT NULL AND b.winlostdate=@_Date))
+				ORDER BY
+					b.status, b.transid	
+			END
+		
 	END
 	
 	
@@ -468,6 +521,57 @@ BEGIN
 			(@_Date IS NULL OR (@_Date IS NOT NULL AND b.winlostdate=@_Date))
 		ORDER BY
 			b.status, b.transid
+		IF EXISTS (SELECT 1 FROM @TempBettype WHERE bettype IN (1231, 1232, 1233, 1237, 1238))
+			BEGIN 
+				INSERT INTO #Data	
+				SELECT
+					r.sporttype,
+					b.username,
+					b.custid,
+					b.bettype,
+					r.leagueID,			
+					b.transid,
+					o.RacerNum matchcode,
+					o.RacerID as homeID,
+					0 as awayID,
+					CONVERT(FLOAT, b.hdp1) AS hdp1, 
+					CONVERT(FLOAT, b.hdp2) AS hdp2, 
+					b.odds,
+					b.status,
+					b.stake,
+					(b.winlost-actual_stake) winlost,
+					- (b.winlost-b.actual_stake) AS LicenseeWL ,
+					b.comm,
+					b.playercomm AS PlayerComm,
+					b.transdate,
+					b.winlostdate,
+					b.betteam,
+					b.liveindicator,
+					b.livehomescore,
+					b.liveawayscore,
+					o.Orid  matchid, 
+					r.betstatus,
+					ISNULL(0, CONVERT(BIT,0)) AS IsNeutral,
+					b.OddsType,
+					b.betid,
+					b.currency,
+					b.refno,
+					r.EventTime  AS ShowTime 
+				FROM
+					bettrans14 b WITH (NOLOCK) 
+					INNER JOIN VSOutright14 o with (nolock) ON b.oddsid=o.Orid
+					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
+					INNER JOIN @TempBettype bt ON b.bettype = bt.bettype
+				WHERE
+					b.matchid=@matchid AND
+					(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
+					b.recommend IN (SELECT custid FROM @TempAg)	AND
+					b.statusID IN (111,112,113) AND
+					((@Liveindicator=-1) OR (@Liveindicator=0 AND b.Liveindicator = 0) OR (@Liveindicator=1 AND b.Liveindicator = 1)) AND
+					(@_Date IS NULL OR (@_Date IS NOT NULL AND b.winlostdate=@_Date))
+				ORDER BY
+					b.status, b.transid	
+			END	
 	END
 	
 END
