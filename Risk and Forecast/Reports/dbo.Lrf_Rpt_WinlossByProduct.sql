@@ -426,6 +426,7 @@ BEGIN
 				WHEN 161 THEN 'NG'
 				WHEN 162 THEN 'LC'
 				WHEN 180 THEN 'VS'
+				WHEN 181 THEN 'VS'
 				WHEN 251 THEN 'CS'
 				WHEN 252 THEN 'BG'
 			END AS ProductCode,
@@ -435,6 +436,7 @@ BEGIN
 				WHEN 161 THEN 'Number Game'
 				WHEN 162 THEN 'Live Casino'
 				WHEN 180 THEN 'Virtual Sports'
+				WHEN 181 THEN 'Virtual Sports'
 				WHEN 251 THEN 'RNG Casino'
 				WHEN 252 THEN 'Bingo'
 			END AS ProductName,	
@@ -447,7 +449,7 @@ BEGIN
 				ELSE 1 END
 			),     
 			SUM(b.winlost),  
-			SUM(CASE WHEN (b.sporttype in(0,161,162,180,251,252))  THEN -1 * b.winlost 
+			SUM(CASE WHEN (b.sporttype in(0,161,162,180,181,251,252))  THEN -1 * b.winlost 
 					WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END
 				) AS LicenseeWL,
 			SUM(comm ) as Comm,
@@ -476,6 +478,7 @@ BEGIN
 				WHEN 161 THEN 'NG'
 				WHEN 162 THEN 'LC'
 				WHEN 180 THEN 'VS'
+				WHEN 181 THEN 'VS'
 				WHEN 251 THEN 'CS'
 				WHEN 252 THEN 'BG'
 			END,		
@@ -485,6 +488,7 @@ BEGIN
 				WHEN 161 THEN 'Number Game'
 				WHEN 162 THEN 'Live Casino'
 				WHEN 180 THEN 'Virtual Sports'
+				WHEN 181 THEN 'Virtual Sports'
 				WHEN 251 THEN 'RNG Casino'
 				WHEN 252 THEN 'Bingo'
 			END
@@ -548,6 +552,7 @@ BEGIN
 				WHEN 161 THEN 'NG'
 				WHEN 162 THEN 'LC'
 				WHEN 180 THEN 'VS'
+				WHEN 181 THEN 'VS'
 				WHEN 251 THEN 'CS'
 				WHEN 252 THEN 'BG'
 			END AS ProductCode,
@@ -557,6 +562,7 @@ BEGIN
 				WHEN 161 THEN 'Number Game'
 				WHEN 162 THEN 'Live Casino'
 				WHEN 180 THEN 'Virtual Sports'
+				WHEN 181 THEN 'Virtual Sports'
 				WHEN 251 THEN 'RNG Casino'
 				WHEN 252 THEN 'Bingo'
 			END AS ProductName,	
@@ -570,7 +576,7 @@ BEGIN
 				ELSE 1 END
 			),     
 			SUM(b.winlost),  
-			SUM(CASE WHEN (b.sporttype in(0,161,162,180,251,252))  THEN -1 * b.winlost WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS LicenseeWL ,
+			SUM(CASE WHEN (b.sporttype in(0,161,162,180,181,251,252))  THEN -1 * b.winlost WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS LicenseeWL ,
 			SUM(comm) as Comm,
 			SUM( playerComm  ) AS PlayerComm,
 			- SUM (b.awinlost + b.winlost + b.comm) as AmountDueTo3rd,
@@ -597,6 +603,7 @@ BEGIN
 				WHEN 161 THEN 'NG'
 				WHEN 162 THEN 'LC'
 				WHEN 180 THEN 'VS'
+				WHEN 181 THEN 'VS'
 				WHEN 251 THEN 'CS'
 				WHEN 252 THEN 'BG'
 			END,
@@ -606,6 +613,7 @@ BEGIN
 				WHEN 161 THEN 'Number Game'
 				WHEN 162 THEN 'Live Casino'
 				WHEN 180 THEN 'Virtual Sports'
+				WHEN 181 THEN 'Virtual Sports'
 				WHEN 251 THEN 'RNG Casino'
 				WHEN 252 THEN 'Bingo'
 			END

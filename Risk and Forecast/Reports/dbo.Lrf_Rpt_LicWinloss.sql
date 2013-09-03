@@ -399,9 +399,6 @@ BEGIN
 			
 	END
 	
-	
-	
-	
 	IF @ShowRB = 1
 	BEGIN
 		INSERT INTO #SAgWinLoss
@@ -601,7 +598,7 @@ BEGIN
 			-SUM(CASE WHEN b.sporttype=161 THEN b.winlost ELSE 0 END) AS LicenseeWLNG,
 			SUM(CASE WHEN  b.sporttype=151 THEN b.awinlost ELSE 0 END) AS LicenseeWLRB,
 			-SUM(CASE WHEN b.sporttype=162 THEN b.winlost ELSE 0 END) AS LicenseeWLLC,
-			-SUM(CASE WHEN b.sporttype=180 THEN b.winlost ELSE 0 END) AS LicenseeWLVS,-- virtual sport
+			-SUM(CASE WHEN b.sporttype IN (180,181) THEN b.winlost ELSE 0 END) AS LicenseeWLVS,-- virtual sport
 			-SUM(CASE WHEN b.sporttype=251 THEN b.winlost ELSE 0 END) AS LicenseeWLCS,
 			-SUM(CASE WHEN b.sporttype=252 THEN b.winlost ELSE 0 END) AS LicenseeWLBG,
 			--SUM(CASE WHEN  b.sporttype=151 THEN b.awinlost ELSE 0 END) AS WinlossRB,
@@ -737,7 +734,7 @@ BEGIN
 						ELSE 1 END
 					ELSE 1 END
 			ELSE 0 END) AS turnoverLC,
-			SUM(CASE WHEN b.sporttype=180 THEN 
+			SUM(CASE WHEN b.sporttype IN (180,181) THEN 
 				b.turnover
 				*
 					CASE WHEN @drawfilter IN (2,3) THEN
@@ -772,7 +769,7 @@ BEGIN
 			-SUM(CASE WHEN b.sporttype=161 THEN b.winlost ELSE 0 END) AS LicenseeWLNG,
 			SUM(CASE WHEN  b.sporttype=151 THEN b.awinlost ELSE 0 END) AS LicenseeWLRB,
 			-SUM(CASE WHEN b.sporttype=162 THEN b.winlost ELSE 0 END) AS LicenseeWLLC,
-			-SUM(CASE WHEN b.sporttype=180 THEN b.winlost ELSE 0 END) AS LicenseeWLVS,-- virtual sport
+			-SUM(CASE WHEN b.sporttype IN (180,181) THEN b.winlost ELSE 0 END) AS LicenseeWLVS,-- virtual sport
 			-SUM(CASE WHEN b.sporttype=251 THEN b.winlost ELSE 0 END) AS LicenseeWLCS,
 			-SUM(CASE WHEN b.sporttype=252 THEN b.winlost ELSE 0 END) AS LicenseeWLBG,
 			--SUM(CASE WHEN  b.sporttype=151 THEN b.awinlost ELSE 0 END) AS WinlossRB,
