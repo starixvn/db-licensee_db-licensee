@@ -16,6 +16,7 @@ Revisions:
 20110726@Daniel: Process Non-BA data only
 20111115@Don: Add information to identify 8RM (customercategory=27)
 20121102@Jim: add process to generate data for KPI NumberGame report
+20130903@Jim: support Virtual Horse Racing
 
 Param's Explanation:
 
