@@ -18,6 +18,7 @@ Original:Lrf_BetList_SelWinlossLiveCasino
 Revisions:        
      - 20121004@Jim: replace @currencyname input param by @currencyID
 	 - 20130514@Jim: Restrict permission of Licensee Users by currency
+	 - 20130904@Jim: support Virtual Horse Racing
 */
 
 
@@ -135,8 +136,54 @@ BEGIN
 	  b.bettype BETWEEN 1201 AND 1299 AND
 	  b.Winlostdate BETWEEN @FromDate AND @TempToDate AND
 	  b.statusID IN (111,112,113)	
-	 ORDER  BY b.transid
-	 
+	-- VHR
+	UNION ALL 
+	 SELECT TOP (@RowEnd)
+	  181,  
+	  b.custid,
+	  b.username,  	  
+	  b.bettype,    	    
+	  b.transid,  
+	  ISNULL(b.BetID,0),
+	  CONVERT (VARCHAR(50),o.RacerNum) AS race,  
+	  CONVERT(VARCHAR(50),o.RacerNum) matchcode,  
+	  0,  
+	  0,  
+	  b.hdp1,  
+	  b.hdp2,  
+	  modds,
+	  b.odds,  
+	  b.status,  
+	  b.stake,  
+	  (b.winlost-actual_stake),  
+	  (-1 * (b.winlost - b.actual_stake))  AS LicenseeWL,    
+      comm , 
+	  playercomm,
+	  b.adiscount,
+	  b.transdate,  
+	  '',  
+	  b.apositiontaking,
+	  0,
+	  b.livehomescore,
+	  b.liveawayscore,    
+	  r.leagueID,  
+	  b.matchid,   
+	  b.IP AS IP,
+	  NULL,  
+	  CONVERT(BIT,0) AS IsNeutral,
+	  b.winlostdate,
+	  b.currency,
+	  b.refno
+	 FROM
+		bettrans14 b WITH (NOLOCK)  
+		INNER JOIN @TempAg t  ON b.recommend =t.custid 
+		INNER JOIN VSOutright14 o with (nolock) ON b.oddsid=o.Orid
+		INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	 	  
+	 WHERE  		  
+	  b.bettype BETWEEN 1201 AND 1299 AND
+	  b.Winlostdate BETWEEN @FromDate AND @TempToDate AND
+	  b.statusID IN (111,112,113)		
+	 ORDER BY transid
 END  
 
 SELECT @TempCount = COUNT(1) FROM #Data
@@ -194,7 +241,55 @@ BEGIN
 	  b.bettype BETWEEN 1201 AND 1299 AND
 	  b.Winlostdate BETWEEN @TempFromDate AND @ToDate AND  	  
 	  b.statusID IN (111,112,113)
-	 ORDER  BY b.transid
+	 -- VHR
+	UNION ALL 
+	 SELECT TOP (@RowEnd)
+	  181,  
+	  b.custid,
+	  b.username,  	  
+	  b.bettype,    	    
+	  b.transid,  
+	  ISNULL(b.BetID,0),
+	  CONVERT (VARCHAR(50),o.RacerNum) AS race,  
+	  CONVERT(VARCHAR(50),o.RacerNum) matchcode,  
+	  0,  
+	  0,  
+	  b.hdp1,  
+	  b.hdp2,  
+	  modds,
+	  b.odds,  
+	  b.status,  
+	  b.stake,  
+	  (b.winlost-actual_stake),  
+	  (-1 * (b.winlost - b.actual_stake))  AS LicenseeWL,    
+      comm , 
+	  playercomm,
+	  b.adiscount,
+	  b.transdate,  
+	  '',  
+	  b.apositiontaking,
+	  0,
+	  b.livehomescore,
+	  b.liveawayscore,    
+	  r.leagueID,  
+	  b.matchid,   
+	  b.IP AS IP,
+	  NULL,  
+	  CONVERT(BIT,0) AS IsNeutral,
+	  b.winlostdate,
+	  b.currency,
+	  b.refno
+	 FROM
+		bettrans b WITH (NOLOCK)  
+		INNER JOIN @TempAg t  ON b.recommend =t.custid 
+		INNER JOIN VSOutright o with (nolock) ON b.oddsid=o.Orid
+		INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	 	  
+	 WHERE  		  
+	  b.bettype BETWEEN 1201 AND 1299 AND
+	  b.Winlostdate BETWEEN @FromDate AND @TempToDate AND
+	  b.statusID IN (111,112,113)		
+	 ORDER BY transid 
+	
 END  
 
 CREATE NONCLUSTERED INDEX IDX_Index_data ON #Data(Currency)
