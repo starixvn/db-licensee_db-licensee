@@ -665,6 +665,11 @@ BEGIN
 		FROM dbo.bettrans AS b WITH (NOLOCK)	
 			INNER JOIN VSOutright o with (nolock) ON b.oddsid=o.Orid
 			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
+		WHERE
+			b.winlostdate BETWEEN @TempFromDate AND @tdate AND
+			b.custid=@custid AND
+			b.bettype BETWEEN 1201 AND 1299 AND
+			b.statusID IN (111,112,113)	
 
 				
 			
@@ -1349,6 +1354,11 @@ BEGIN
 		FROM dbo.bettrans14 AS b WITH (NOLOCK)	
 			INNER JOIN VSOutright14 o with (nolock) ON b.oddsid=o.Orid
 			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
+		WHERE
+			b.winlostdate BETWEEN @BalanceUpDay AND @tdate AND
+			b.custid=@custid AND
+			b.bettype BETWEEN 1201 AND 1299 AND
+			b.statusID IN (111,112,113)	
 		
 	END
 	--- RNG Casino
