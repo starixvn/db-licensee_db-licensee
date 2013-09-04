@@ -2311,6 +2311,45 @@ BEGIN
 		WHERE B.Bettype IN (33,43)
 	END
 END
+IF @ShowVS=1
+BEGIN 
+	IF @tdate > @MoveBetsDay 
+	BEGIN
+		INSERT INTO @BettransDetail
+		SELECT 
+			BM.refno, 
+			BM.odds, 
+			BM.stake,
+			BM.status, 
+			BM.apositiontaking, 
+			BM.bettype  ,
+			BM.Betteam,
+			BM.stake * e.EUR,
+			BM.stake * e.USD
+		FROM bettransm BM WITH (NOLOCK)
+		INNER JOIN @BetListByDateMem B ON BM.refno = B.transid
+		INNER JOIN #TempExchange e ON e.ExchangeDate = b.winlostdate   AND e.exchangeid = b.currency
+		WHERE B.Bettype=1233
+	END
+	IF @fdate <= @MoveBetsDay
+	BEGIN
+		INSERT INTO @BettransDetail
+		SELECT 
+			BM.refno, 
+			BM.odds, 
+			BM.stake,
+			BM.status, 
+			BM.apositiontaking, 
+			BM.bettype  ,
+			BM.Betteam,
+			BM.stake * e.EUR,  
+			BM.stake * e.USD
+		FROM bettransm14 BM WITH (NOLOCK)
+		INNER JOIN @BetListByDateMem B ON BM.refno = B.transid
+		INNER JOIN #TempExchange e ON e.ExchangeDate = b.winlostdate   AND e.exchangeid = b.currency
+		WHERE B.Bettype=1233
+	END	
+END 
 
 IF @ShowLC=1
 BEGIN
