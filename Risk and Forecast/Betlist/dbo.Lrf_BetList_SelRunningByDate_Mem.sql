@@ -673,7 +673,7 @@ CREATE TABLE #TempBetList
 			b.refno,					
 			b.transid,
 			ISNULL(b.BetID,0),
-			o.RacerNum as matchcode,
+			CONVERT(VARCHAR(50),o.RacerNum) as matchcode,
 			'' AS Race,
 			o.RacerID as homeID,
 			0 as awayID,

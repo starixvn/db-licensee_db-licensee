@@ -741,7 +741,7 @@ BEGIN
 				CASE WHEN b.bettype BETWEEN 1101 AND 1199 THEN CONVERT(NVARCHAR(20),b.refno)  ELSE '' END AS refno,		
 				b.transid,
 				ISNULL(b.BetID,0),
-				o.RacerNum as matchcode, 
+				CONVERT(varchar(50),o.RacerNum) as matchcode, 
 				o.Orid as matchid,
 				'' AS Race, 
 				o.RacerID as homeID,
