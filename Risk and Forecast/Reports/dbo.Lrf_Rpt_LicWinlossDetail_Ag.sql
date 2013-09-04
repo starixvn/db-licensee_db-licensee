@@ -387,7 +387,7 @@ BEGIN
 			INNER JOIN @Super s ON b.srecommend = s.custid
 			INNER JOIN @TempAg a ON b.recommend = a.custid
 			INNER JOIN @bettype bt ON b.bettype = bt.bettype
-			LEFT JOIN dbo.VSRaceInfo r WITH(NOLOCK) ON b.matchid = r.eventid  AND b.bettype IN  (111, 112, 113)
+			
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
 			b.statusID  IN (111, 112, 113)
