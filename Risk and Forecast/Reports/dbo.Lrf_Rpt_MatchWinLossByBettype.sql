@@ -97,7 +97,8 @@ CREATE TABLE #TempBetList(
  Stake   MONEY,  
  Winlost   MONEY,  
  awinlost  MONEY,  
- comm   MONEY,  
+ comm   MONEY,
+ oddsid INT,
  playercomm  MONEY,  
  MatchID         INT,  
  Liveawayscore SMALLINT,  
@@ -145,7 +146,8 @@ BEGIN
    SUM(stake) as Stake,  
    SUM(winlost - actual_stake) as Winlost,  
    0 AS awinlost,  
-   SUM(comm),  
+   SUM(comm), 
+   b.oddsid,
    SUM(playercomm ) AS PlayerComm,  
    b.matchid,  
    0 AS Liveawayscore,  
@@ -161,7 +163,8 @@ BEGIN
    AND b.matchid = @MatchID  
   GROUP BY  
    b.Winlostdate,  
-   b.currency,  
+   b.currency,
+   b.oddsid,	
    b.bettype,  
    b.matchid  
       
@@ -219,7 +222,8 @@ BEGIN
          SUM(stake) as Stake,  
          SUM(winlost - actual_stake) as Winlost,  
          SUM(b.awinlost) AS awinlost,  
-         SUM(b.comm) AS comm,  
+         SUM(b.comm) AS comm,
+		 b.oddsid, 	
          SUM(b.playercomm) AS playercomm,  
          b.matchid,  
          b.Liveawayscore,  
@@ -234,7 +238,8 @@ BEGIN
          AND b.matchid = @MatchID  
         GROUP BY  
          b.Winlostdate,  
-         b.currency,  
+         b.currency,
+         b.oddsid,		 
          b.bettype,  
          b.matchid,  
          b.Liveawayscore,  
@@ -251,7 +256,8 @@ BEGIN
          SUM(stake) as Stake,  
          SUM(winlost - actual_stake) as Winlost,  
          SUM(b.awinlost) AS awinlost,  
-         SUM(b.comm) AS comm,  
+         SUM(b.comm) AS comm,
+		 b.oddsid,	
          SUM(b.playercomm ) AS playercomm,  
          b.matchid,  
          b.Liveawayscore,  
@@ -268,7 +274,8 @@ BEGIN
          AND o.groupmatch = @MatchID  
         GROUP BY  
          b.Winlostdate,  
-         b.currency,  
+         b.currency,
+		 b.oddsid,	
          b.bettype,  
          b.matchid,  
          b.Liveawayscore,  
@@ -453,7 +460,8 @@ BEGIN
    SUM(stake) as Stake,  
    SUM(winlost - actual_stake) as Winlost,  
    0 AS awinlost,  
-   SUM(comm),  
+   SUM(comm),
+   b.oddsid,	
    SUM(playercomm  ),  
    b.matchid,  
    0 AS Liveawayscore,  
@@ -471,7 +479,8 @@ BEGIN
    AND (b.bettype < 31 OR (b.Bettype BETWEEN 121 AND 999))  
   GROUP BY  
    b.Winlostdate,  
-   b.currency,  
+   b.currency,
+   b.oddsid	,
    b.bettype,  
    b.matchid  
   
@@ -528,7 +537,8 @@ BEGIN
       SUM(stake) as Stake,  
       SUM(winlost - actual_stake) as Winlost,  
       SUM(b.awinlost) AS awinlost,  
-      SUM(b.comm) AS comm,  
+      SUM(b.comm) AS comm, 
+	  b.oddsid,	
       SUM(b.playercomm  ) AS playercomm,  
       b.matchid,  
       b.Liveawayscore ,  
@@ -542,7 +552,8 @@ BEGIN
       AND b.matchid = @MatchID  
      GROUP BY  
       b.Winlostdate,  
-      b.currency,  
+      b.currency,
+	  b.oddsid,	
       b.bettype,  
       b.matchid,  
       b.Liveawayscore,  
@@ -557,7 +568,8 @@ BEGIN
       SUM(stake) as Stake,  
       SUM(winlost - actual_stake) as Winlost,  
       SUM(b.awinlost) AS awinlost,  
-      SUM(b.comm) AS comm,  
+      SUM(b.comm) AS comm,
+	  b.oddsid,	
       SUM(b.playercomm ) AS playercomm,  
       b.matchid,  
       b.Liveawayscore ,  
@@ -574,7 +586,8 @@ BEGIN
          AND o.groupmatch = @MatchID  
      GROUP BY  
       b.Winlostdate,  
-      b.currency,  
+      b.currency,
+	  b.oddsid,	
       b.bettype,  
       b.matchid,  
       b.Liveawayscore,  
@@ -705,7 +718,8 @@ BEGIN
 			o.RacerID,  
 			b.bettype,  
 			r.leagueid,  
-			o.RacerNum,  
+			o.RacerNum,
+			b.liveindicator,		
 			r.sporttype,  
 			r.EventTime
 	END			
