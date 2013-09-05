@@ -235,7 +235,11 @@ BEGIN
             b.recommend IN (SELECT custid FROM @TempAg)  
          AND b.winlostdate = @_Date  
          AND b.statusID IN (111,112,113)  
-         AND b.matchid = @MatchID  
+         AND 
+		 (
+		 b.matchid = @MatchID 
+		OR (b.oddsid= @MatchID AND b.bettype IN (1231, 1232, 1233, 1237, 1238))
+		)	
         GROUP BY  
          b.Winlostdate,  
          b.currency,
@@ -374,7 +378,7 @@ BEGIN
 			SELECT    
 			b.Winlostdate,  
 			b.currency,  
-			b.matchid,  
+			b.oddsid matchid,  
 			o.RacerID as homeID,  
 			0 as awayid,  
 			b.bettype,  
@@ -400,7 +404,7 @@ BEGIN
 			GROUP BY  
 			b.Winlostdate,  
 			b.currency,  
-			b.matchid,  
+			b.oddsid, 
 			o.RacerID,  
 			b.bettype, 
 			b.liveindicator,	
@@ -550,7 +554,10 @@ BEGIN
       INNER JOIN @TempAg ag ON b.recommend = ag.custid  
      WHERE           b.winlostdate = @_Date  
       AND b.statusID NOT IN ( 101, 102, 103 )  
-      AND b.matchid = @MatchID  
+      AND 
+	  (b.matchid = @MatchID  
+	  OR (b.oddsid= @MatchID  AND b.bettype IN  (1231, 1232, 1233, 1237, 1238))
+	  )
      GROUP BY  
       b.Winlostdate,  
       b.currency,
@@ -669,7 +676,6 @@ BEGIN
    #TempBetList b  
    INNER JOIN match14 m WITH ( NOLOCK ) ON m.matchid = b.matchid  
    INNER JOIN @bettype bt ON b.bettype = bt.bettype 
-   LEFT JOIN dbo.VSRaceInfo r WITH(NOLOCK) ON b.matchid = r.eventid  AND b.bettype IN  (111, 112, 113)
     
   GROUP BY  
    b.Winlostdate,  
@@ -689,7 +695,7 @@ BEGIN
 			SELECT    
 			b.Winlostdate,  
 			b.currency,  
-			b.matchid,  
+			b.oddsid matchid,  
 			o.RacerID as homeID,  
 			0 as awayid,  
 			b.bettype,  
@@ -703,7 +709,7 @@ BEGIN
 			0 AS CommBA,  
 			0 as CommRB,  
 			SUM(b.playercomm)  as PlayerComm,  
-			'',  
+			b.oddsid race,  
 			o.RacerNum as matchcode,  
 			ISNULL(0, CONVERT(BIT, 0)) AS IsNeutral,  
 			b.liveindicator AS liveindicator  
@@ -715,7 +721,7 @@ BEGIN
 			GROUP BY  
 			b.Winlostdate,  
 			b.currency,  
-			b.matchid,  
+			b.oddsid,  
 			o.RacerID,  
 			b.bettype,  
 			r.leagueid,  

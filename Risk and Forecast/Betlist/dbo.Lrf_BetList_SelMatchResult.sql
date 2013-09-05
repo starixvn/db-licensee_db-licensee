@@ -65,7 +65,8 @@ BEGIN
 		ORDER BY m.eventdate,m.matchcode
 		RETURN
 	END
-	IF exists(SELECT 1 FROM match14 WITH(NOLOCK) WHERE matchid = @matchid)	
+	IF exists(SELECT 1 FROM match14 WITH(NOLOCK) WHERE matchid = @matchid)
+			 	
 	BEGIN
 		SELECT 
 			m.sporttype, 
@@ -222,69 +223,69 @@ BEGIN
 	END 
 	--------------------------------------------------Virtual Horse Racing
 
-	ELSE IF exists(select 1 from VSOutright WITH(NOLOCK) where orid = @RaceNo)
-		BEGIN
-			-- Virtual HR 
-			SELECT	RacerNum AS horseNo, 
-					r.EventTime AS racename,
-					placing AS place, 
-					r.SportType,
-					o.RacerID horseid,
-					o.WinOdds odds,
-					o.placeodds,
-					'' AS meetingid,
-					o.EventStatus status,
-					o.IsFavor,
-					'' IsSCR,
-					'' FOddsStatus
-			FROM	VSOutright o WITH (NOLOCK)
-					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
-			WHERE	o.EventID = @MatchID
-					AND (ISNULL(placing,0) <> 0)
-			ORDER BY placing
-		END
-		ELSE IF exists(select 1 from VSOutright14 WITH(NOLOCK) where orid = @RaceNo)
-		BEGIN
-			-- Virtual HR 
-			SELECT	RacerNum AS horseNo, 
-					r.EventTime AS racename,
-					placing AS place, 
-					r.SportType,
-					o.RacerID horseid,
-					o.WinOdds odds,
-					o.placeodds,
-					'' AS meetingid,
-					o.EventStatus status,
-					o.IsFavor,
-					'' IsSCR,
-					'' FOddsStatus
-			FROM	VSOutright14 o WITH (NOLOCK)
-					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
-			WHERE	o.EventID = @MatchID
-					AND (ISNULL(placing,0) <> 0)
-			ORDER BY placing
-		END
-		ELSE 
-		BEGIN
-			-- Virtual HR 
-			SELECT	RacerNum AS horseNo, 
-					r.EventTime AS racename,
-					placing AS place, 
-					r.SportType,
-					o.RacerID horseid,
-					o.WinOdds odds,
-					o.placeodds,
-					'' AS meetingid,
-					o.EventStatus status,
-					o.IsFavor,
-					'' IsSCR,
-					'' FOddsStatus
-			FROM	DBARC.bodb_Archive.dbo.VSOutright_bk o WITH (NOLOCK)
-					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
-			WHERE	o.EventID = @MatchID
-					AND (ISNULL(placing,0) <> 0)
-			ORDER BY placing
-		END
+IF exists( SELECT TOP 1 1 FROM bettrans WITH(NOLOCK) WHERE oddsid=@MatchID)
+	BEGIN
+		-- Virtual HR 
+		SELECT	RacerNum AS horseNo, 
+				r.EventTime AS racename,
+				placing AS place, 
+				r.SportType,
+				o.RacerID horseid,
+				o.WinOdds odds,
+				o.placeodds,
+				'' AS meetingid,
+				o.EventStatus status,
+				o.IsFavor,
+				'' IsSCR,
+				'' FOddsStatus
+		FROM	VSOutright o WITH (NOLOCK)
+				INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
+		WHERE	o.Orid = @MatchID
+				AND (ISNULL(placing,0) <> 0)
+		ORDER BY placing
+	END
+	ELSE IF exists(SELECT TOP 1 1 FROM bettrans14 WITH(NOLOCK) WHERE oddsid=@MatchID)
+	BEGIN
+		-- Virtual HR 
+		SELECT	RacerNum AS horseNo, 
+				r.EventTime AS racename,
+				placing AS place, 
+				r.SportType,
+				o.RacerID horseid,
+				o.WinOdds odds,
+				o.placeodds,
+				'' AS meetingid,
+				o.EventStatus status,
+				o.IsFavor,
+				'' IsSCR,
+				'' FOddsStatus
+		FROM	VSOutright14 o WITH (NOLOCK)
+				INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
+		WHERE	o.Orid = @MatchID
+				AND (ISNULL(placing,0) <> 0)
+		ORDER BY placing
+	END
+	ELSE 
+	BEGIN
+		-- Virtual HR 
+		SELECT	RacerNum AS horseNo, 
+				r.EventTime AS racename,
+				placing AS place, 
+				r.SportType,
+				o.RacerID horseid,
+				o.WinOdds odds,
+				o.placeodds,
+				'' AS meetingid,
+				o.EventStatus status,
+				o.IsFavor,
+				'' IsSCR,
+				'' FOddsStatus
+		FROM	DBARC.bodb_Archive.dbo.VSOutright_bk o WITH (NOLOCK)
+				INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
+		WHERE	o.Orid = @MatchID
+				AND (ISNULL(placing,0) <> 0)
+		ORDER BY placing
+	END
 	--------------------------------------------------End Virtual Horse Racing
 
 END
