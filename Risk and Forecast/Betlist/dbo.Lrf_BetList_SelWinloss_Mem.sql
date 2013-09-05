@@ -35,6 +35,7 @@ ALTER  PROCEDURE [dbo].[Lrf_BetList_SelWinloss_Mem]
 	@SumPLayerCommEUR MONEY=0 OUTPUT,
 	@drawfilter SMALLINT = 1,
 	@Langkey VARCHAR(10) = 'en-US'  
+
 AS
 
 /*
@@ -652,7 +653,7 @@ BEGIN
 			b.Liveawayscore,
 			b.IP AS IP,
 			r.LeagueID,
-			o.Orid MatchID,	
+			b.matchID MatchID,	
 			CONVERT(varchar(50),o.RacerNum) MatchCode,
 			b.oddsid  AS Race,	
 			o.RacerID HomeID,
@@ -1341,7 +1342,7 @@ BEGIN
 			b.Liveawayscore,
 			b.IP AS IP,
 			r.LeagueID,
-			o.Orid MatchID,	
+			b.matchID MatchID,	
 			convert(varchar(50),o.RacerNum) MatchCode,
 			b.oddsid AS Race,	
 			o.RacerID HomeID,
