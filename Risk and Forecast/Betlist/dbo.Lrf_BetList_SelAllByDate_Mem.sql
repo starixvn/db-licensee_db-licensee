@@ -742,7 +742,7 @@ BEGIN
 				b.transid,
 				ISNULL(b.BetID,0),
 				CONVERT(varchar(50),o.RacerNum) as matchcode, 
-				o.Orid as matchid,
+				b.matchid,
 				b.oddsid AS Race, 
 				o.RacerID as homeID,
 				0 as awayID,
@@ -774,7 +774,7 @@ BEGIN
 				b.currency,
 				r.EventTime  AS ShowTime 
 			FROM bettrans b WITH (NOLOCK)
-				INNER JOIN VSOutright14 o with (nolock) ON b.oddsid=o.Orid
+				INNER JOIN VSOutright o with (nolock) ON b.oddsid=o.Orid
 				INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
 				INNER JOIN @TempBettype bt ON b.bettype = bt.bettype	
 			WHERE
