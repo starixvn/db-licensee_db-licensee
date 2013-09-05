@@ -674,7 +674,7 @@ CREATE TABLE #TempBetList
 			b.transid,
 			ISNULL(b.BetID,0),
 			CONVERT(VARCHAR(50),o.RacerNum) as matchcode,
-			'' AS Race,
+			b.oddsid AS Race,
 			o.RacerID as homeID,
 			0 as awayID,
 			b.hdp1 AS hdp1, 
@@ -702,7 +702,7 @@ CREATE TABLE #TempBetList
 			r.EventTime as ShowTime
 		FROM 
 			bettrans b WITH (NOLOCK)			
-			INNER JOIN VSOutright14 o with (nolock) ON b.oddsid=o.Orid
+			INNER JOIN VSOutright o with (nolock) ON b.oddsid=o.Orid
 			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
 		WHERE
 			b.transdate>= @FromDate AND b.transdate<= @ToDate AND 
@@ -867,6 +867,27 @@ begin
 		(SELECT * FROM Lrf_f_GetExchangeDaily(@Fromdate,@Todate))e 
 	ON  e.ExchangeDate = B.winlostdate AND e.exchangeid = b.currency
 	WHERE B.Bettype IN (33,43)
+END
+IF @ShowVS = 1
+begin
+	--get data FROM bettransm for bettype 1233
+	INSERT INTO @BetListDetail
+	SELECT 
+		BM.refno, 
+		BM.odds, 
+		BM.stake,
+		BM.status ,
+		BM.apositiontaking, 
+		BM.bettype,
+		'' as betteam ,
+		BM.stake*e.EUR,
+		BM.stake*e.USD
+	FROM bettransm BM with (NOLOCK)
+	INNER JOIN #BetListSelRunningByDateMem B ON BM.refno = B.transid
+	INNER JOIN 
+		(SELECT * FROM Lrf_f_GetExchangeDaily(@Fromdate,@Todate))e 
+	ON  e.ExchangeDate = B.winlostdate AND e.exchangeid = b.currency
+	WHERE B.Bettype =1233
 END
 
 IF @ShowLC = 1

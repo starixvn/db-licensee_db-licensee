@@ -743,7 +743,7 @@ BEGIN
 				ISNULL(b.BetID,0),
 				CONVERT(varchar(50),o.RacerNum) as matchcode, 
 				o.Orid as matchid,
-				'' AS Race, 
+				b.oddsid AS Race, 
 				o.RacerID as homeID,
 				0 as awayID,
 				CONVERT(FLOAT, b.hdp1) AS hdp1, 
