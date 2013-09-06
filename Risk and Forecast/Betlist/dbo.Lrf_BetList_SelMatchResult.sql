@@ -27,6 +27,7 @@ Revisions:
 */
 
 SET NOCOUNT ON
+
 IF(@RaceNo is NULL )
 BEGIN
 	IF exists(SELECT 1 FROM match WITH(NOLOCK) WHERE matchid = @matchid)
@@ -140,14 +141,16 @@ BEGIN
 END
 ELSE
 BEGIN
+	CREATE TABLE  #tmpresult (horseNo varchar(50),KickoffTime datetime ,racename varchar(50),place tinyint,sporttype INT,horseid INT, odds smallmoney,PlaceOdds smallmoney,meetingid int,oddsstatus varchar(10),IsFavor varchar(10),IsSCR bit,FOddsStatus varchar(10))
 	DECLARE	@leagueid INT, @eventdate DATETIME 
 	IF exists(select 1 from outright WITH(NOLOCK) where orid = @matchid)
 	BEGIN
 		SELECT	@leagueid = leagueid , @eventdate = eventdate 
 		FROM	Outright WITH (NOLOCK)
 		WHERE	orid = @matchid 
-
+		insert into #tmpresult 
 		SELECT	matchcode AS horseNo, 
+				NULL,
 				CAST(o.groupmatch AS INT) 
 				AS racename,
 				CASE WHEN o.placing = 0 THEN 5 ELSE isnull(placing,5) END place, 
@@ -157,7 +160,7 @@ BEGIN
 				o.placeodds,
 				o.leagueid AS meetingid,
 				o.oddsstatus status,
-				o.IsFavor,
+				convert(varchar(10),o.IsFavor),
 				o.IsSCR,
 				o.FOddsStatus
 		FROM	Outright o WITH (NOLOCK)	
@@ -174,8 +177,9 @@ BEGIN
 		SELECT	@leagueid = leagueid , @eventdate = eventdate 
 		FROM	Outright14 WITH (NOLOCK)
 		WHERE	orid = @matchid 
-
+		insert into #tmpresult 
 		SELECT	matchcode AS horseNo, 
+				NULL,
 				CAST(o.groupmatch AS INT) AS racename,
 				CASE WHEN o.placing = 0 THEN 5 ELSE isnull(placing,5) END place, 
 				l.sporttype, 
@@ -184,7 +188,7 @@ BEGIN
 				o.placeodds,
 				o.leagueid AS meetingid,
 				o.oddsstatus status,
-				o.IsFavor,
+				convert(varchar(10),o.IsFavor),
 				o.IsSCR,
 				o.FOddsStatus
 		FROM	Outright14 o WITH (NOLOCK)
@@ -200,8 +204,9 @@ BEGIN
 		SELECT	@leagueid = leagueid , @eventdate = eventdate 
 		FROM	DB06.bodb_Archive.dbo.Outright_bk WITH (NOLOCK)
 		WHERE	orid = @matchid 
-
+		insert into #tmpresult 
 		SELECT	matchcode AS horseNo, 
+				NULL,
 				CAST(bk.groupmatch AS INT) AS racename,
 				CASE WHEN placing = 0 THEN 5 ELSE isnull(placing,5) END place, 
 				l.sporttype, 
@@ -210,7 +215,7 @@ BEGIN
 				bk.placeodds,
 				bk.leagueid AS meetingid,
 				bk.oddsstatus status,
-				bk.IsFavor,
+				convert(varchar(10),IsFavor),
 				bk.IsSCR,
 				bk.FOddsStatus
 		FROM	DB06.bodb_Archive.dbo.Outright_bk bk WITH (NOLOCK)
@@ -221,74 +226,83 @@ BEGIN
 				AND (ISNULL(placing,0)<> 0  OR isScr = 1)
 		ORDER BY placing	
 	END 
-	
-END
---------------------------------------------------Virtual Horse Racing
+	--------------------------------------------------Virtual Horse Racing
 
-IF exists( SELECT TOP 1 1 FROM bettrans WITH(NOLOCK) WHERE oddsid=@MatchID)
-	BEGIN
-		-- Virtual HR 
-		SELECT	RacerNum AS horseNo, 
-				r.EventTime AS racename,
-				placing AS place, 
-				r.SportType,
-				o.RacerID horseid,
-				o.WinOdds odds,
-				o.placeodds,
-				'' AS meetingid,
-				o.EventStatus status,
-				o.IsFavor,
-				'' IsSCR,
-				'' FOddsStatus
-		FROM	VSOutright o WITH (NOLOCK)
-				INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
-		WHERE	o.Orid = @MatchID
-				AND (ISNULL(placing,0) <> 0)
-		ORDER BY placing
-	END
-	ELSE IF exists(SELECT TOP 1 1 FROM bettrans14 WITH(NOLOCK) WHERE oddsid=@MatchID)
-	BEGIN
-		-- Virtual HR 
-		SELECT	RacerNum AS horseNo, 
-				r.EventTime AS racename,
-				placing AS place, 
-				r.SportType,
-				o.RacerID horseid,
-				o.WinOdds odds,
-				o.placeodds,
-				'' AS meetingid,
-				o.EventStatus status,
-				o.IsFavor,
-				'' IsSCR,
-				'' FOddsStatus
-		FROM	VSOutright14 o WITH (NOLOCK)
-				INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
-		WHERE	o.Orid = @MatchID
-				AND (ISNULL(placing,0) <> 0)
-		ORDER BY placing
-	END
-	ELSE 
-	BEGIN
-		-- Virtual HR 
-		SELECT	RacerNum AS horseNo, 
-				r.EventTime AS racename,
-				placing AS place, 
-				r.SportType,
-				o.RacerID horseid,
-				o.WinOdds odds,
-				o.placeodds,
-				'' AS meetingid,
-				o.EventStatus status,
-				o.IsFavor,
-				'' IsSCR,
-				'' FOddsStatus
-		FROM	DBARC.bodb_Archive.dbo.VSOutright_bk o WITH (NOLOCK)
-				INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
-		WHERE	o.Orid = @MatchID
-				AND (ISNULL(placing,0) <> 0)
-		ORDER BY placing
-	END
+	IF exists( SELECT TOP 1 1 FROM bettrans WITH(NOLOCK) WHERE oddsid=@MatchID)
+		BEGIN
+			-- Virtual HR 
+			insert into #tmpresult 
+			SELECT	RacerNum AS horseNo, 
+					o.KickoffTime,
+					NULL AS racename,
+					placing AS place, 
+					r.SportType,
+					o.RacerID horseid,
+					o.WinOdds odds,
+					o.placeodds,
+					'' AS meetingid,
+					o.EventStatus status,
+					o.IsFavor,
+					'' IsSCR,
+					'' FOddsStatus
+			FROM	VSOutright o WITH (NOLOCK)
+					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
+			WHERE	o.Orid = @MatchID
+					AND (ISNULL(placing,0) <> 0)
+			ORDER BY placing
+			
+		END
+		ELSE IF exists(SELECT TOP 1 1 FROM bettrans14 WITH(NOLOCK) WHERE oddsid=@MatchID)
+		BEGIN
+			-- Virtual HR 
+			insert into #tmpresult 
+			SELECT	RacerNum AS horseNo, 
+					o.KickoffTime,
+					NULL AS racename,
+					placing AS place, 
+					r.SportType,
+					o.RacerID horseid,
+					o.WinOdds odds,
+					o.placeodds,
+					'' AS meetingid,
+					o.EventStatus status,
+					o.IsFavor,
+					'' IsSCR,
+					'' FOddsStatus
+			FROM	VSOutright14 o WITH (NOLOCK)
+					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
+			WHERE	o.Orid = @MatchID
+					AND (ISNULL(placing,0) <> 0)
+			ORDER BY placing
+			
+		END
+		ELSE 
+		BEGIN
+			-- Virtual HR 
+			insert into #tmpresult 
+			SELECT	RacerNum AS horseNo, 
+					o.KickoffTime,
+					NULL AS racename,
+					placing AS place, 
+					r.SportType,
+					o.RacerID horseid,
+					o.WinOdds odds,
+					o.placeodds,
+					'' AS meetingid,
+					o.EventStatus status,
+					o.IsFavor,
+					'' IsSCR,
+					'' FOddsStatus
+			FROM	DBARC.bodb_Archive.dbo.VSOutright_bk o WITH (NOLOCK)
+					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
+			WHERE	o.Orid = @MatchID
+					AND (ISNULL(placing,0) <> 0)
+			ORDER BY placing
+			
+		END
 	--------------------------------------------------End Virtual Horse Racing
+	select * from #tmpresult 
+END
 
 DECLARE @Today SMALLDATETIME 
 SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
