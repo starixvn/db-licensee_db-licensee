@@ -221,7 +221,9 @@ BEGIN
 				AND (ISNULL(placing,0)<> 0  OR isScr = 1)
 		ORDER BY placing	
 	END 
-	--------------------------------------------------Virtual Horse Racing
+	
+END
+--------------------------------------------------Virtual Horse Racing
 
 IF exists( SELECT TOP 1 1 FROM bettrans WITH(NOLOCK) WHERE oddsid=@MatchID)
 	BEGIN
@@ -287,8 +289,6 @@ IF exists( SELECT TOP 1 1 FROM bettrans WITH(NOLOCK) WHERE oddsid=@MatchID)
 		ORDER BY placing
 	END
 	--------------------------------------------------End Virtual Horse Racing
-
-END
 
 DECLARE @Today SMALLDATETIME 
 SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
