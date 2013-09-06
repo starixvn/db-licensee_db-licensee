@@ -742,7 +742,7 @@ BEGIN
 				b.transid,
 				ISNULL(b.BetID,0),
 				CONVERT(varchar(50),o.RacerNum) as matchcode, 
-				b.matchid,
+				b.oddsid matchid,
 				b.oddsid AS Race, 
 				o.RacerID as homeID,
 				0 as awayID,
