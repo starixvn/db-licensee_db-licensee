@@ -126,6 +126,27 @@ BEGIN
 									 ELSE @leagueid END 
 					AND placing<5
 					AND ISNULL( placing,0)<>0
+			UNION ALL 
+			SELECT vsr.leagueid,
+				   bk.RacerID teamid,
+				   bk.EventDate,
+				   bk.KickoffTime,
+				   NULL groupmatch,
+				   CONVERT(VARCHAR(20),bk.RacerNum) matchcode,
+				   bk.placing,
+				   vsr.EventStatus  oddsstatus,
+				   bk.Winodds odds,
+				   bk.PlaceOdds,
+				   CONVERT(VARCHAR(20),bk.IsFavor) IsFavor,
+				   NULL IsSCR,
+				   '' FOddsStatus
+			FROM DBARC.bodb_Archive.dbo.VSOutright_bk bk (NOLOCK)
+			INNER JOIN dbo.VSRaceInfo vsr with (nolock) ON bk.EventID=vsr.EventID	
+				WHERE eventdate = @FromDate 
+					AND leagueid = CASE WHEN @leagueid =0 THEN leagueid 
+									 ELSE @leagueid END 
+					AND placing<5
+					AND ISNULL( placing,0)<>0		
 			 ) o 
 			INNER JOIN dbo.league l WITH (NOLOCK) ON o.leagueid = l.leagueid 
 			INNER JOIN dbo.HRCode c WITH (NOLOCK) ON c.CodeID=o.teamid

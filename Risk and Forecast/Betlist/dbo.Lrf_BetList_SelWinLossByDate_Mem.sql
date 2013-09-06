@@ -2121,7 +2121,54 @@ BEGIN
 				) AND
 			b.ruben = 1
 			
-			
+		UNION ALL 
+			SELECT
+			r.Sporttype, 
+			@Username, 
+			b.TransID,
+			ISNULL(b.BetID,0),
+			b.Bettype,
+			CONVERT(FLOAT, b.hdp1) AS hdp1, 
+			CONVERT(FLOAT, b.hdp2) AS hdp2,
+			b.Oddstype,			
+			b.Odds,
+			b.modds,
+			b.stake,
+			b.actual_stake, 
+			b.betteam,
+			b.status AS Status,				
+			b.refno,
+			b.Transdate,	
+			b.winlostdate,			
+			(b.winlost-actual_stake),
+			- (b.winlost-b.actual_stake) AS LicenseeWL ,
+			b.comm,
+			b.playercomm ,				
+			b.Liveindicator,
+			b.Livehomescore,
+			b.Liveawayscore,
+			b.IP AS IP,
+			r.LeagueID,
+			b.matchid,	
+			CONVERT(VARCHAR(50),o.RacerNum) MatchCode,
+			b.oddsid  AS Race,	
+			o.RacerID HomeID,
+			0 AwayID, 		
+			r.Betstatus,
+			CONVERT(BIT,0) AS IsNeutral	,
+			b.currency,
+			r.EventTime AS  ShowTime 	
+		FROM
+			bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)		
+			INNER JOIN DBARC.bodb_Archive.dbo.VSOutright_bk o with (nolock) ON b.oddsid=o.Orid
+			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
+		WHERE
+			b.winlostdate BETWEEN @TempFromDate AND @todate AND
+			b.recommend = @Recommend AND --to improve performance
+			b.custid=@CustID AND
+			((@ShowVS=1 AND b.bettype IN (1231, 1232, 1233, 1237, 1238))
+				)  AND
+			b.ruben = 1 		
 	END
 	IF @ShowCS=1
 	BEGIN	
