@@ -2007,6 +2007,51 @@ BEGIN
 			b.bettype BETWEEN 1201 AND 1299 AND
 			b.ruben = 1 AND
 			b.status NOT IN ('VOID', 'REJECT', 'REFUND')
+		UNION ALL
+		SELECT 
+			r.sporttype,
+			b.transid,
+			ISNULL(b.BetID,0),
+			b.Bettype,
+			b.hdp1 AS hdp1, 
+			b.hdp2 AS hdp2,
+			modds,
+			b.oddstype,
+			b.Odds,
+			b.stake,
+			b.actual_stake, 
+			b.betteam,
+			b.status AS Status,				
+			b.refno,
+			b.Transdate,	
+			b.winlostdate,			
+			(b.winlost-actual_stake),
+			- (b.winlost-actual_stake) ,
+			b.comm ,
+			b.playercomm,
+			b.Liveindicator,
+			b.Livehomescore,
+			b.Liveawayscore,
+			b.IP AS IP,
+			r.LeagueID,
+			b.matchID MatchID,	
+			convert(varchar(50),o.RacerNum) MatchCode,
+			b.oddsid AS Race,	
+			o.RacerID HomeID,
+			0 as AwayID, 		
+			r.Betstatus,
+			ISNULL(0, CONVERT(BIT,0)) AS IsNeutral,
+			0,0,
+			b.currency,
+			r.EventTime as showtime
+		FROM bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)	
+			INNER JOIN DBARC.bodb_Archive.dbo.VSOutright_bk o with (nolock) ON b.oddsid=o.Orid
+			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
+		WHERE
+			b.winlostdate BETWEEN @BalanceUpDay AND @tdate AND
+			b.custid=@custid AND
+			b.bettype BETWEEN 1201 AND 1299 AND
+			b.statusID IN (111,112,113)		
 	END
 	---- RNG Casino
 	
