@@ -340,7 +340,7 @@ BEGIN
 					b.liveindicator,
 					b.livehomescore,
 					b.liveawayscore,
-					b.oddsid matchid, 
+					o.EventID matchid, 
 					r.betstatus,
 					ISNULL(0, CONVERT(BIT,0)) AS IsNeutral,
 					b.OddsType,
@@ -355,7 +355,7 @@ BEGIN
 					INNER JOIN @TempBettype bt ON b.bettype = bt.bettype
 				WHERE
 					(
-					b.matchid=@matchid 
+					b.oddsid=@matchid 
 					OR (b.bettype IN(1231, 1232, 1233, 1237, 1238) AND b.oddsid=@matchid)
 					)
 					AND
@@ -561,7 +561,7 @@ BEGIN
 					b.liveindicator,
 					b.livehomescore,
 					b.liveawayscore,
-					b.oddsid matchid, 
+					r.EventID matchid, 
 					r.betstatus,
 					ISNULL(0, CONVERT(BIT,0)) AS IsNeutral,
 					b.OddsType,
@@ -575,7 +575,7 @@ BEGIN
 					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
 					INNER JOIN @TempBettype bt ON b.bettype = bt.bettype
 				WHERE
-					(b.matchid=@matchid 
+					(b.oddsid=@matchid 
 					OR (b.bettype IN(1231, 1232, 1233, 1237, 1238) AND b.oddsid=@matchid)
 					)
 					AND

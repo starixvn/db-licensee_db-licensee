@@ -372,7 +372,7 @@ BEGIN
    m.isNeutral,  
    b.liveindicator    
     
-	IF EXISTS (SELECT 1 FROM @bettype WHERE bettype IN (1231, 1232, 1233, 1237, 1238))
+	IF EXISTS (SELECT 1 FROM #TempBetList WHERE bettype IN (1231, 1232, 1233, 1237, 1238))
 	BEGIN 
 		INSERT  INTO @AgMatchWLDetails  
 			SELECT    
@@ -689,7 +689,7 @@ BEGIN
    m.isNeutral,  
    b.liveindicator  
    -- VHR
-	IF EXISTS (SELECT 1 FROM @bettype WHERE bettype IN (1231, 1232, 1233, 1237, 1238))
+	IF EXISTS (SELECT 1 FROM #TempBetList WHERE bettype IN (1231, 1232, 1233, 1237, 1238))
 	BEGIN 
 		INSERT  INTO @AgMatchWLDetails  
 			SELECT    

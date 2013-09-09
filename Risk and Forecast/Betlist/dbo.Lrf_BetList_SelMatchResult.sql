@@ -228,7 +228,7 @@ BEGIN
 	END 
 	--------------------------------------------------Virtual Horse Racing
 
-	IF exists( SELECT TOP 1 1 FROM bettrans WITH(NOLOCK) WHERE oddsid=@MatchID)
+	IF exists( SELECT TOP 1 1 FROM VSOutright WITH(NOLOCK) WHERE EventID=@MatchID)
 		BEGIN
 			-- Virtual HR 
 			insert into #tmpresult 
@@ -247,12 +247,12 @@ BEGIN
 					'' FOddsStatus
 			FROM	VSOutright o WITH (NOLOCK)
 					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
-			WHERE	o.Orid = @MatchID
+			WHERE	o.EventID = @MatchID
 					AND (ISNULL(placing,0) <> 0)
 			ORDER BY placing
 			
 		END
-		ELSE IF exists(SELECT TOP 1 1 FROM bettrans14 WITH(NOLOCK) WHERE oddsid=@MatchID)
+		ELSE IF exists(SELECT TOP 1 1 FROM VSOutright14 WITH(NOLOCK) WHERE EventID=@MatchID)
 		BEGIN
 			-- Virtual HR 
 			insert into #tmpresult 
@@ -271,7 +271,7 @@ BEGIN
 					'' FOddsStatus
 			FROM	VSOutright14 o WITH (NOLOCK)
 					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
-			WHERE	o.Orid = @MatchID
+			WHERE	o.EventID = @MatchID
 					AND (ISNULL(placing,0) <> 0)
 			ORDER BY placing
 			
@@ -295,7 +295,7 @@ BEGIN
 					'' FOddsStatus
 			FROM	DBARC.bodb_Archive.dbo.VSOutright_bk o WITH (NOLOCK)
 					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
-			WHERE	o.Orid = @MatchID
+			WHERE	o.EventID = @MatchID
 					AND (ISNULL(placing,0) <> 0)
 			ORDER BY placing
 			
