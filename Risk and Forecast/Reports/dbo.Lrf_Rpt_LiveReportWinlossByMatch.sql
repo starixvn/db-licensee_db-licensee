@@ -26,6 +26,7 @@ Revisions:
 	- 20121115@Henry: Only Sportsbook needs to exclude BA
 	- 20130618@Jim:  Restrict permission of Licensee Users by currency
 	- 20130625@Jim: support to view currency UUS 
+	- 20130903@Jim: offer VHR	
 Return 3 tables:
 WinlostBySport
 WinlostByCurrency
@@ -209,7 +210,37 @@ BEGIN
 			m.sporttype = @SportId
 		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype,
 					CASE WHEN b.bettype BETWEEN 1101 AND 1199  THEN ISNULL(m.showtime,'') ELSE '' END 
-				
+		IF (@SportId=181)
+			BEGIN 
+					INSERT INTO #tmpWinloss			
+					SELECT
+						b.winlostdate,  
+						b.currency,
+						o.EventID matchid, 		
+						o.RacerID as homeID , 
+						0 as awayid,
+						SUM(stake) turnover, 
+						SUM(b.winlost - b.actual_stake) AS Winlost,  	
+						SUM(-1 * (b.winlost - b.actual_stake)) AS LicenseeWL,
+						SUM (comm ) as Comm,
+						SUM (  b.playercomm  ) as PlayerComm,
+						- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,
+						COUNT(b.transid) BetCount,
+						b.bettype, 
+						r.EventTime  AS ShowTime 
+					FROM bettrans b  WITH (NOLOCK) 
+						INNER JOIN @TempAg t ON b.recommend = t.custid
+						INNER JOIN @bettype bt ON b.bettype = bt.bettype
+						INNER JOIN VSOutright o with (nolock) ON b.oddsid=o.Orid
+						INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
+					WHERE
+						b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
+						b.matchid > 0 AND
+						b.statusID IN (111,112,113) AND
+						r.sporttype = @SportId
+					GROUP BY  b.winlostdate, b.currency,o.EventID,  o.RacerID,b.bettype,r.EventTime
+										
+			END
 	END
 	
 	
@@ -319,6 +350,37 @@ BEGIN
 			m.sporttype = @SportId
 		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype, 
 				CASE WHEN b.bettype BETWEEN 1101 AND 1199  THEN ISNULL(m.showtime,'') ELSE '' END
+		IF (@SportId=181)
+			BEGIN 
+					INSERT INTO #tmpWinloss			
+					SELECT
+						b.winlostdate,  
+						b.currency,
+						o.EventID matchid, 		
+						o.RacerID as homeID , 
+						0 as awayid,
+						SUM(stake) turnover, 
+						SUM(b.winlost - b.actual_stake) AS Winlost,  	
+						SUM(-1 * (b.winlost - b.actual_stake)) AS LicenseeWL,
+						SUM (comm ) as Comm,
+						SUM (  b.playercomm  ) as PlayerComm,
+						- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,
+						COUNT(b.transid) BetCount,
+						b.bettype, 
+						r.EventTime  AS ShowTime 
+					FROM bettrans14 b  WITH (NOLOCK) 
+						INNER JOIN @TempAg t ON b.recommend = t.custid
+						INNER JOIN @bettype bt ON b.bettype = bt.bettype
+						INNER JOIN VSOutright14 o with (nolock) ON b.oddsid=o.Orid
+						INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
+					WHERE
+						b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
+						b.matchid > 0 AND
+						b.statusID IN (111,112,113) AND
+						r.sporttype = @SportId
+					GROUP BY  b.winlostdate, b.currency,o.EventID,  o.RacerID,b.bettype,r.EventTime
+										
+			END
 	END		
 	
 	

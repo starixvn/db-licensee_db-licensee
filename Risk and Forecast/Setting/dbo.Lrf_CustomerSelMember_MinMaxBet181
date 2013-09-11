@@ -1,7 +1,6 @@
 CREATE PROCEDURE dbo.Lrf_CustomerSelMember_MinMaxBet181
 	@custid INT
 AS
-
 /*
 Created: 20130911@Jim
 Task : support Virtual Horse Racing
