@@ -145,7 +145,9 @@ BEGIN
 END 
 
 
-IF EXISTS(SELECT TOP 1 1 FROM Match WITH(NOLOCK) WHERE MatchID=@MatchID)
+IF EXISTS(SELECT TOP 1 1 FROM Match WITH(NOLOCK) WHERE MatchID=@MatchID
+		  UNION ALL
+		  SELECT TOP 1 1 FROM VSOutright WITH(NOLOCK) WHERE EventID=@MatchID)
 BEGIN	
 	
 	IF @ShowBA = 1
@@ -345,7 +347,7 @@ BEGIN
 					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
 					INNER JOIN @TempBettype bt ON b.bettype = bt.bettype
 				WHERE
-					b.matchid=@matchid AND
+					o.EventID=@matchid AND
 					(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
 					b.recommend IN (SELECT custid FROM @TempAg)	AND
 					b.statusID IN (111,112,113) AND
@@ -563,7 +565,7 @@ BEGIN
 					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
 					INNER JOIN @TempBettype bt ON b.bettype = bt.bettype
 				WHERE
-					b.matchid=@matchid AND
+					o.EventID=@matchid AND
 					(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
 					b.recommend IN (SELECT custid FROM @TempAg)	AND
 					b.statusID IN (111,112,113) AND

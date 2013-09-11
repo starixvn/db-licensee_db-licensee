@@ -286,7 +286,7 @@ BEGIN
 					b.liveindicator,
 					b.livehomescore,
 					b.liveawayscore,
-					b.oddsid matchid, 
+					o.EventID matchid, 
 					b.IP AS IP,
 					r.betstatus,
 					ISNULL(0, CONVERT(BIT,0)) AS IsNeutral,
@@ -301,7 +301,7 @@ BEGIN
 					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
 					INNER JOIN @bettype bt ON b.bettype = bt.bettype   
 				WHERE
-					b.matchid=@matchid AND			
+					o.EventID=@matchid AND			
 					b.recommend IN (SELECT custid FROM @TempAg)	AND	
 					b.statusID IN (111,112,113)	
 				ORDER BY
@@ -491,7 +491,7 @@ BEGIN
 					b.liveindicator,
 					b.livehomescore,
 					b.liveawayscore,
-					b.oddsid matchid, 
+					o.EventID matchid, 
 					b.IP AS IP,
 					r.betstatus,
 					ISNULL(0, CONVERT(BIT,0)) AS IsNeutral,
@@ -506,7 +506,7 @@ BEGIN
 					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
 					INNER JOIN @bettype bt ON b.bettype = bt.bettype   
 				WHERE
-					b.matchid=@matchid AND			
+					o.EventID=@matchid AND			
 					b.recommend IN (SELECT custid FROM @TempAg)	AND	
 					b.statusID IN (111,112,113)	
 				ORDER BY

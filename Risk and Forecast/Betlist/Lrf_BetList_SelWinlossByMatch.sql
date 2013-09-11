@@ -113,10 +113,10 @@ CREATE TABLE #Data
 	showtime NVARCHAR(50) -- table - shoe - hand of Live Casino
 )
 
-
-
-
-IF EXISTS(SELECT TOP 1 1 FROM Match WITH(NOLOCK) WHERE MatchID=@MatchID)
+IF EXISTS(SELECT TOP 1 1 FROM Match WITH(NOLOCK) WHERE MatchID=@MatchID
+		  UNION 
+		  SELECT TOP 1 1 FROM VSOutright WITH(NOLOCK) WHERE EventID=@MatchID
+		)
 BEGIN	
 	IF @ShowBA = 1
 	BEGIN
@@ -316,7 +316,7 @@ BEGIN
 				INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
 				INNER JOIN @bettype bt ON b.bettype = bt.bettype
 			WHERE
-				b.matchid=@matchid AND			
+				o.EventID=@matchid AND			
 				b.recommend IN (SELECT custid FROM @TempAg)	AND
 				b.ruben=1 AND 			
 				b.statusID NOT IN (101, 102, 103)
@@ -526,7 +526,7 @@ BEGIN
 				INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
 				INNER JOIN @bettype bt ON b.bettype = bt.bettype
 			WHERE
-				b.matchid=@matchid AND			
+				o.EventID=@matchid AND			
 				b.recommend IN (SELECT custid FROM @TempAg)	AND
 				b.ruben=1 AND 			
 				b.statusID NOT IN (101, 102, 103)

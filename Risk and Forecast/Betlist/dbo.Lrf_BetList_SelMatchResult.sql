@@ -233,7 +233,7 @@ BEGIN
 			-- Virtual HR 
 			insert into #tmpresult 
 			SELECT	RacerNum AS horseNo, 
-					o.KickoffTime,
+					r.EventTime,
 					NULL AS racename,
 					placing AS place, 
 					r.SportType,
@@ -257,7 +257,7 @@ BEGIN
 			-- Virtual HR 
 			insert into #tmpresult 
 			SELECT	RacerNum AS horseNo, 
-					o.KickoffTime,
+					r.EventTime,
 					NULL AS racename,
 					placing AS place, 
 					r.SportType,
@@ -281,7 +281,7 @@ BEGIN
 			-- Virtual HR 
 			insert into #tmpresult 
 			SELECT	RacerNum AS horseNo, 
-					o.KickoffTime,
+					r.EventTime,
 					NULL AS racename,
 					placing AS place, 
 					r.SportType,

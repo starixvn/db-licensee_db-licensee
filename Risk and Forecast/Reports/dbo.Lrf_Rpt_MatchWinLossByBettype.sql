@@ -372,20 +372,20 @@ BEGIN
    m.isNeutral,  
    b.liveindicator    
     
-	IF EXISTS (SELECT 1 FROM #TempBetList WHERE bettype IN (1231, 1232, 1233, 1237, 1238))
+	IF EXISTS (SELECT 1 FROM @bettype WHERE bettype IN (1231, 1232, 1233, 1237, 1238))
 	BEGIN 
 		INSERT  INTO @AgMatchWLDetails  
 			SELECT    
 			b.Winlostdate,  
 			b.currency,  
-			b.oddsid matchid,  
+			o.EventID matchid,  
 			o.RacerID as homeID,  
 			0 as awayid,  
 			b.bettype,  
 			r.leagueid,  
 			SUM(b.stake),  
-			SUM(b.winlost),  
-			-SUM(b.winlost) AS LicenseeWL,  
+			SUM(b.winlost - b.actual_stake),  
+			-SUM(b.winlost - b.actual_stake) AS LicenseeWL,  
 			0 AS WinlossRB,  
 			0 AS AmountDueToBA,  
 			0 AS AmountDueToRB,  
@@ -397,21 +397,24 @@ BEGIN
 			ISNULL(0, CONVERT(BIT, 0)) AS IsNeutral,  
 			b.liveindicator AS liveindicator  
 			FROM      
-			#TempBetList b  
+			dbo.bettrans b WITH (NOLOCK) 
 			INNER JOIN VSOutright o with (nolock) ON b.oddsid=o.Orid
 			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
-			INNER JOIN @bettype bt ON b.bettype = bt.bettype  
+			WHERE 
+				b.recommend IN (SELECT custid FROM @TempAg)
+				AND b.winlostdate = @_Date  
+				AND b.statusID IN (111,112,113)  
+				AND b.bettype IN (1231, 1232, 1233, 1237, 1238)
+				AND o.EventID=@MatchID		
 			GROUP BY  
 			b.Winlostdate,  
 			b.currency,  
-			b.oddsid, 
+			o.EventID, 
 			o.RacerID,  
 			b.bettype, 
 			b.liveindicator,	
 			r.leagueid,  
-			o.RacerNum,  
-			r.sporttype,  
-			r.EventTime
+			o.RacerNum
 	END		
  END  
    
@@ -695,40 +698,43 @@ BEGIN
 			SELECT    
 			b.Winlostdate,  
 			b.currency,  
-			b.oddsid matchid,  
+			o.EventID matchid,  
 			o.RacerID as homeID,  
 			0 as awayid,  
 			b.bettype,  
 			r.leagueid,  
 			SUM(b.stake),  
-			SUM(b.winlost),  
-			-SUM(b.winlost) AS LicenseeWL,  
+			SUM(b.winlost - b.actual_stake),  
+			-SUM(b.winlost - b.actual_stake) AS LicenseeWL,  
 			0 AS WinlossRB,  
 			0 AS AmountDueToBA,  
 			0 AS AmountDueToRB,  
 			0 AS CommBA,  
 			0 as CommRB,  
 			SUM(b.playercomm)  as PlayerComm,  
-			b.oddsid race,  
+			'',  
 			o.RacerNum as matchcode,  
 			ISNULL(0, CONVERT(BIT, 0)) AS IsNeutral,  
 			b.liveindicator AS liveindicator  
 			FROM      
-			#TempBetList b  
+			dbo.bettrans14 b WITH (NOLOCK) 
 			INNER JOIN VSOutright14 o with (nolock) ON b.oddsid=o.Orid
 			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
-			INNER JOIN @bettype bt ON b.bettype = bt.bettype  
+			WHERE 
+				b.recommend IN (SELECT custid FROM @TempAg)
+				AND b.winlostdate = @_Date  
+				AND b.statusID IN (111,112,113)  
+				AND b.bettype IN (1231, 1232, 1233, 1237, 1238)
+				AND o.EventID=@MatchID		
 			GROUP BY  
 			b.Winlostdate,  
 			b.currency,  
-			b.oddsid,  
+			o.EventID, 
 			o.RacerID,  
-			b.bettype,  
+			b.bettype, 
+			b.liveindicator,	
 			r.leagueid,  
-			o.RacerNum,
-			b.liveindicator,		
-			r.sporttype,  
-			r.EventTime
+			o.RacerNum
 	END			
  END      
   
