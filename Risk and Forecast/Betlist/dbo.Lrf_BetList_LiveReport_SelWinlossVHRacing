@@ -208,7 +208,7 @@ BEGIN
 	  INNER JOIN dbo.VSOutright o WITH (NOLOCK) ON b.oddsid=o.Orid
 	  INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID		  
 	 WHERE  	 	  
-	  b.Winlostdate BETWEEN @FromDate AND @TempToDate AND 	  
+	  b.Winlostdate BETWEEN @FromDate AND @TempFromDate AND 	  
 	  r.SportType= @SportType AND
 	  b.bettype IN (1231,1232,1233,1237,1238) AND 
 	  b.statusID IN (111,112,113)	
@@ -222,7 +222,7 @@ BEGIN
 	FROM  
 		bettrans b WITH (NOLOCK)   
 		INNER JOIN @TempAg t  ON b.recommend =t.custid  
-		INNER JOIN dbo.VSOutright14 o WITH (NOLOCK) ON b.oddsid=o.Orid
+		INNER JOIN dbo.VSOutright o WITH (NOLOCK) ON b.oddsid=o.Orid
 		INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID 	  
 	WHERE  	    	  
 		b.Winlostdate BETWEEN @TempFromDate AND @ToDate AND  
