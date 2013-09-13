@@ -1,4 +1,8 @@
-﻿CREATE PROCEDURE [dbo].[Lrf_Rpt_MatchWinLossByBettype]  
+﻿set ANSI_NULLS ON
+set QUOTED_IDENTIFIER ON
+go
+
+ALTER  PROCEDURE [dbo].[Lrf_Rpt_MatchWinLossByBettype]  
 	@LicenseeID INT,  
 	@UserID		INT,
 	@LicenseeType VARCHAR(100) = NULL,  
@@ -235,11 +239,8 @@ BEGIN
             b.recommend IN (SELECT custid FROM @TempAg)  
          AND b.winlostdate = @_Date  
          AND b.statusID IN (111,112,113)  
-         AND 
-		 (
-		 b.matchid = @MatchID 
-		OR (b.oddsid= @MatchID AND b.bettype IN (1231, 1232, 1233, 1237, 1238))
-		)	
+         AND  b.matchid = @MatchID 
+		
         GROUP BY  
          b.Winlostdate,  
          b.currency,
@@ -372,7 +373,7 @@ BEGIN
    m.isNeutral,  
    b.liveindicator    
     
-	IF EXISTS (SELECT 1 FROM @bettype WHERE bettype IN (1231, 1232, 1233, 1237, 1238))
+	IF EXISTS (SELECT 1 FROM #TempBetList WHERE bettype IN (1231, 1232, 1233, 1237, 1238))
 	BEGIN 
 		INSERT  INTO @AgMatchWLDetails  
 			SELECT    
@@ -384,37 +385,38 @@ BEGIN
 			b.bettype,  
 			r.leagueid,  
 			SUM(b.stake),  
-			SUM(b.winlost - b.actual_stake),  
-			-SUM(b.winlost - b.actual_stake) AS LicenseeWL,  
+			SUM(b.winlost),  
+			-SUM(b.winlost) AS LicenseeWL,  
 			0 AS WinlossRB,  
 			0 AS AmountDueToBA,  
 			0 AS AmountDueToRB,  
 			0 AS CommBA,  
 			0 as CommRB,  
 			SUM(b.playercomm)  as PlayerComm,  
-			'',  
+			b.oddsid Race,  
 			o.RacerNum as matchcode,  
 			ISNULL(0, CONVERT(BIT, 0)) AS IsNeutral,  
-			b.liveindicator AS liveindicator  
+			0 AS liveindicator  
 			FROM      
-			dbo.bettrans b WITH (NOLOCK) 
+			dbo.bettrans b  WITH (NOLOCK)
 			INNER JOIN VSOutright o with (nolock) ON b.oddsid=o.Orid
 			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
-			WHERE 
-				b.recommend IN (SELECT custid FROM @TempAg)
-				AND b.winlostdate = @_Date  
-				AND b.statusID IN (111,112,113)  
-				AND b.bettype IN (1231, 1232, 1233, 1237, 1238)
-				AND o.EventID=@MatchID		
+			INNER JOIN @bettype bt ON b.bettype = bt.bettype  
+			WHERE b.recommend IN (SELECT custID FROM @TempAg)
+				AND o.EventID=@MatchID
+				AND b.winlostdate=@_Date
+				AND b.statusID IN (111,112,113)			
 			GROUP BY  
 			b.Winlostdate,  
-			b.currency,  
+			b.currency, 
+			b.oddsid,	
 			o.EventID, 
 			o.RacerID,  
 			b.bettype, 
-			b.liveindicator,	
 			r.leagueid,  
-			o.RacerNum
+			o.RacerNum,  
+			r.sporttype,  
+			r.EventTime
 	END		
  END  
    
@@ -557,10 +559,8 @@ BEGIN
       INNER JOIN @TempAg ag ON b.recommend = ag.custid  
      WHERE           b.winlostdate = @_Date  
       AND b.statusID NOT IN ( 101, 102, 103 )  
-      AND 
-	  (b.matchid = @MatchID  
-	  OR (b.oddsid= @MatchID  AND b.bettype IN  (1231, 1232, 1233, 1237, 1238))
-	  )
+      AND b.matchid = @MatchID  
+	  
      GROUP BY  
       b.Winlostdate,  
       b.currency,
@@ -704,37 +704,39 @@ BEGIN
 			b.bettype,  
 			r.leagueid,  
 			SUM(b.stake),  
-			SUM(b.winlost - b.actual_stake),  
-			-SUM(b.winlost - b.actual_stake) AS LicenseeWL,  
+			SUM(b.winlost),  
+			-SUM(b.winlost) AS LicenseeWL,  
 			0 AS WinlossRB,  
 			0 AS AmountDueToBA,  
 			0 AS AmountDueToRB,  
 			0 AS CommBA,  
 			0 as CommRB,  
 			SUM(b.playercomm)  as PlayerComm,  
-			'',  
+			b.oddsid race,  
 			o.RacerNum as matchcode,  
 			ISNULL(0, CONVERT(BIT, 0)) AS IsNeutral,  
 			b.liveindicator AS liveindicator  
 			FROM      
-			dbo.bettrans14 b WITH (NOLOCK) 
+			dbo.bettrans14 b  WITH (NOLOCK)
 			INNER JOIN VSOutright14 o with (nolock) ON b.oddsid=o.Orid
 			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
-			WHERE 
-				b.recommend IN (SELECT custid FROM @TempAg)
-				AND b.winlostdate = @_Date  
-				AND b.statusID IN (111,112,113)  
-				AND b.bettype IN (1231, 1232, 1233, 1237, 1238)
-				AND o.EventID=@MatchID		
+			INNER JOIN @bettype bt ON b.bettype = bt.bettype  
+			WHERE b.recommend IN (SELECT custID FROM @TempAg)
+				AND o.EventID=@MatchID
+				AND b.winlostdate=@_Date
+				AND b.statusID IN (111,112,113)			
 			GROUP BY  
 			b.Winlostdate,  
-			b.currency,  
-			o.EventID, 
+			b.currency,
+			o.EventID,	
+			b.oddsid,  
 			o.RacerID,  
-			b.bettype, 
-			b.liveindicator,	
+			b.bettype,  
 			r.leagueid,  
-			o.RacerNum
+			o.RacerNum,
+			b.liveindicator,		
+			r.sporttype,  
+			r.EventTime
 	END			
  END      
   
@@ -839,8 +841,8 @@ GROUP BY
 DROP TABLE #TempBetList      
 
    
-
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_MatchWinLossByBettype] TO [bodbLicenseeNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_MatchWinLossByBettype] TO vnteam
+
