@@ -715,7 +715,7 @@ BEGIN
 			b.oddsid race,  
 			o.RacerNum as matchcode,  
 			ISNULL(0, CONVERT(BIT, 0)) AS IsNeutral,  
-			b.liveindicator AS liveindicator  
+			0 AS liveindicator  
 			FROM      
 			dbo.bettrans14 b  WITH (NOLOCK)
 			INNER JOIN VSOutright14 o with (nolock) ON b.oddsid=o.Orid
@@ -734,7 +734,6 @@ BEGIN
 			b.bettype,  
 			r.leagueid,  
 			o.RacerNum,
-			b.liveindicator,		
 			r.sporttype,  
 			r.EventTime
 	END			

@@ -19,7 +19,7 @@ Revisions:
 Param's Explanation:
 @dataXML Format :
 	'<settings>
-	 <setting sporttype=''181'' minbet=''1'' maxbet=''2'' maxpermatch=''7'' > 
+	 <setting sporttype=''180'' minbet=''1'' maxbet=''2'' maxpermatch=''7'' > 
 	</setting>
 	<setting sporttype=''181'' minbet=''2'' maxbet=''3'' maxpermatch=''8'' > 
 	</setting>
