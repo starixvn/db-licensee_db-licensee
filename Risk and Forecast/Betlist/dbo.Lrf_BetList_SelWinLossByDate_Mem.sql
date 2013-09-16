@@ -2463,7 +2463,46 @@ IF @ShowLC=1
 		
 		END
 	END 
-	SELECT * FROM @BettransDetail ORDER BY RefNo,Bettype
+IF @ShowVS=1
+	BEGIN 
+		IF @Todate > @MoveBetsDay 
+		BEGIN
+			INSERT INTO @BettransDetail
+			SELECT 
+				BG.refno, 
+				BG.odds, 
+				BG.stake,
+				BG.status, 
+				BG.apositiontaking, 
+				BG.bettype  ,
+				BG.Betteam,
+				BG.stake*e.EUR,
+				BG.stake*e.USD
+			FROM bettransm BG WITH (NOLOCK)
+			INNER JOIN #BetListByDateMem B ON BG.refno = B.transID
+			INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
+			WHERE B.Bettype=1233
+		END
+		IF @FromDate < @BalanceUpDay
+		BEGIN
+			INSERT INTO @BettransDetail
+			SELECT 
+				BG.refno, 
+				BG.odds, 
+				BG.stake,
+				BG.status, 
+				BG.apositiontaking, 
+				BG.bettype  ,
+				BG.Betteam,
+				BG.stake*e.EUR,
+				BG.stake*e.USD
+			FROM bettransm14 BG WITH (NOLOCK)
+			INNER JOIN #BetListByDateMem B ON BG.refno = B.transID
+			INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
+			WHERE B.Bettype=1233
+		END
+	END
+SELECT * FROM @BettransDetail ORDER BY RefNo,Bettype
 	
 
 DROP TABLE #TempExchange

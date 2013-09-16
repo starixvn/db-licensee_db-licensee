@@ -699,6 +699,45 @@ BEGIN
 		WHERE B.Bettype BETWEEN 1101 AND 1199
 	END	
 END
+IF @ShowVS=1
+	BEGIN 
+		IF EXISTS(SELECT TOP 1 1 FROM Vsoutright WITH(NOLOCK) WHERE EventID=@MatchID)
+		BEGIN
+			INSERT INTO @BettransDetail
+			SELECT 
+				BG.refno, 
+				BG.odds, 
+				BG.stake,
+				BG.status, 
+				BG.apositiontaking, 
+				BG.bettype  ,
+				BG.Betteam,
+				BG.stake*e.EUR,
+				BG.stake*e.USD
+			FROM bettransm BG WITH (NOLOCK)
+			INNER JOIN #Data B ON BG.refno = B.transID and BG.custid = B.custid
+			INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
+			WHERE B.Bettype=1233
+		END
+		IF EXISTS(SELECT TOP 1 1 FROM Vsoutright14 WITH(NOLOCK) WHERE EventID=@MatchID)
+		BEGIN
+			INSERT INTO @BettransDetail
+			SELECT 
+				BG.refno, 
+				BG.odds, 
+				BG.stake,
+				BG.status, 
+				BG.apositiontaking, 
+				BG.bettype  ,
+				BG.Betteam,
+				BG.stake*e.EUR,
+				BG.stake*e.USD
+			FROM bettransm14 BG WITH (NOLOCK)
+			INNER JOIN #Data B ON BG.refno = B.Transid and BG.custid = B.custid
+			INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
+			WHERE B.Bettype=1233
+		END
+	END
 
 
 SELECT * FROM @BettransDetail ORDER BY RefNo,Bettype

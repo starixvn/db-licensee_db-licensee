@@ -1001,6 +1001,25 @@ BEGIN
 	INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
 	WHERE B.Bettype BETWEEN 1101 AND 1199	
 END 
+IF @ShowVS=1
+	BEGIN
+		INSERT INTO @BettransDetail
+		SELECT 
+			BG.refno, 
+			BG.odds, 
+			BG.stake,
+			BG.status, 
+			BG.apositiontaking, 
+			BG.bettype  ,
+			BG.Betteam,
+			BG.stake*e.EUR,
+			BG.stake*e.USD
+		FROM bettransm BG WITH (NOLOCK)
+		INNER JOIN #BetListSelAllByDateMem B ON BG.transID = B.refno 
+		INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
+		WHERE B.Bettype=1233
+	END
+		
 SELECT * FROM @BettransDetail 
 ORDER BY RefNo,Bettype 
 
