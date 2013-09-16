@@ -54,6 +54,7 @@ AS
 		- 20130414@Jim: support USD base currency 
 		- 20130514@Jim: Restrict permission of Licensee Users by currency
 		- 20130809@Jim: offer Virtual Horse Racing
+		- 20130916@Jim: offer Virtual Tennis
 	Param's Explanation:  
 	  + @CustID: SuperID  
 	  + @BaseCurrency (input currencyID): 2-MYR ; 3-USD; 6-EUR
@@ -236,6 +237,8 @@ BEGIN
     SELECT 180
 	UNION ALL
 	SELECT 181
+	UNION ALL 
+	SELECT 186
 	INSERT INTO @bettype(bettype)
 	SELECT typeid FROM bettype (NOLOCK)
 	WHERE (typeid BETWEEN 1201 AND 1299)
@@ -1008,7 +1011,7 @@ BEGIN
 						ELSE 1 END
 					ELSE 1 END
 			ELSE 0 END) AS turnoverLC,
-			SUM(CASE WHEN b.sporttype IN (180,181) THEN 
+			SUM(CASE WHEN b.sporttype IN (180,181,186) THEN 
 				b.turnover
 				*
 					CASE WHEN @drawfilter IN (2,3) THEN
@@ -1042,7 +1045,7 @@ BEGIN
 			- SUM(CASE WHEN b.sporttype=161 THEN b.winlost ELSE 0 END ) AS LicenseeWLNG,
 			SUM(CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS LicenseeWLRB,
 			- SUM(CASE WHEN b.sporttype=162 THEN b.winlost ELSE 0 END ) AS LicenseeWLLC,
-			- SUM(CASE WHEN b.sporttype IN (180,181) THEN b.winlost ELSE 0 END ) AS LicenseeWLVS,
+			- SUM(CASE WHEN b.sporttype IN (180,181,186) THEN b.winlost ELSE 0 END ) AS LicenseeWLVS,
 			- SUM(CASE WHEN b.sporttype=251 THEN b.winlost ELSE 0 END ) AS LicenseeWLCS,
 			- SUM(CASE WHEN b.sporttype=252 THEN b.winlost ELSE 0 END ) AS LicenseeWLBG,
 			--SUM(CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS WinlossRB,
@@ -1095,7 +1098,7 @@ BEGIN
 					ELSE 1 END
 				* e.EUR		
 			ELSE 0 END) AS turnoverLCEUR,
-			SUM(CASE WHEN b.sporttype IN (180,181) THEN 
+			SUM(CASE WHEN b.sporttype IN (180,181,186) THEN 
 				b.turnover
 				*
 					CASE WHEN @drawfilter IN (2,3) THEN
@@ -1132,7 +1135,7 @@ BEGIN
 			- SUM(CASE WHEN b.sporttype=161 THEN b.winlost ELSE 0 END * e.EUR) AS LicenseeWLNGEUR,
 			SUM(CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END * e.EUR) AS LicenseeWLRBEUR,
 			- SUM(CASE WHEN b.sporttype=162 THEN b.winlost ELSE 0 END * e.EUR) AS LicenseeWLLCEUR,
-			- SUM(CASE WHEN b.sporttype IN (180,181) THEN b.winlost ELSE 0 END * e.EUR) AS LicenseeWLVSEUR,
+			- SUM(CASE WHEN b.sporttype IN (180,181,186) THEN b.winlost ELSE 0 END * e.EUR) AS LicenseeWLVSEUR,
 			- SUM(CASE WHEN b.sporttype=251 THEN b.winlost ELSE 0 END * e.EUR) AS LicenseeWLCSEUR,
 			- SUM(CASE WHEN b.sporttype=252 THEN b.winlost ELSE 0 END * e.EUR) AS LicenseeWLBGEUR,
 			--SUM(CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS WinlossRB,
@@ -1185,7 +1188,7 @@ BEGIN
 					ELSE 1 END
 				* e.USD		
 			ELSE 0 END) AS turnoverLCUSD,
-			SUM(CASE WHEN b.sporttype IN (180,181) THEN 
+			SUM(CASE WHEN b.sporttype IN (180,181,186) THEN 
 				b.turnover
 				*
 					CASE WHEN @drawfilter IN (2,3) THEN
@@ -1222,7 +1225,7 @@ BEGIN
 			- SUM(CASE WHEN b.sporttype=161 THEN b.winlost ELSE 0 END * e.USD) AS LicenseeWLNGUSD,
 			SUM(CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END * e.USD) AS LicenseeWLRBUSD,
 			- SUM(CASE WHEN b.sporttype=162 THEN b.winlost ELSE 0 END * e.USD) AS LicenseeWLLCUSD,
-			- SUM(CASE WHEN b.sporttype IN (180,181) THEN b.winlost ELSE 0 END * e.USD) AS LicenseeWLVSUSD,
+			- SUM(CASE WHEN b.sporttype IN (180,181,186) THEN b.winlost ELSE 0 END * e.USD) AS LicenseeWLVSUSD,
 			- SUM(CASE WHEN b.sporttype=251 THEN b.winlost ELSE 0 END * e.USD) AS LicenseeWLCSUSD,
 			- SUM(CASE WHEN b.sporttype=252 THEN b.winlost ELSE 0 END * e.USD) AS LicenseeWLBGUSD,
 			--SUM(CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS WinlossRB,
@@ -1429,7 +1432,7 @@ BEGIN
 						ELSE 1 END
 					ELSE 1 END
 			ELSE 0 END) AS turnoverLC,
-			SUM(CASE WHEN b.sporttype IN (180,181) THEN 
+			SUM(CASE WHEN b.sporttype IN (180,181,186) THEN 
 				b.turnover
 				*
 					CASE WHEN @drawfilter IN (2,3) THEN
@@ -1463,7 +1466,7 @@ BEGIN
 			- SUM(CASE WHEN b.sporttype=161 THEN b.winlost ELSE 0 END ) AS LicenseeWLNG,
 			SUM(CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS LicenseeWLRB,
 			- SUM(CASE WHEN b.sporttype=162 THEN b.winlost ELSE 0 END ) AS LicenseeWLLC,
-			- SUM(CASE WHEN b.sporttype IN (180,181) THEN b.winlost ELSE 0 END ) AS LicenseeWLVS,
+			- SUM(CASE WHEN b.sporttype IN (180,181,186) THEN b.winlost ELSE 0 END ) AS LicenseeWLVS,
 			- SUM(CASE WHEN b.sporttype=251 THEN b.winlost ELSE 0 END ) AS LicenseeWLCS,
 			- SUM(CASE WHEN b.sporttype=252 THEN b.winlost ELSE 0 END ) AS LicenseeWLBG,
 			--SUM(CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS WinlossRB,
@@ -1516,7 +1519,7 @@ BEGIN
 					ELSE 1 END
 				* e.EUR		
 			ELSE 0 END) AS turnoverLCEUR,
-			SUM(CASE WHEN b.sporttype IN (180,181) THEN 
+			SUM(CASE WHEN b.sporttype IN (180,181,186) THEN 
 				b.turnover
 				*
 					CASE WHEN @drawfilter IN (2,3) THEN
@@ -1553,7 +1556,7 @@ BEGIN
 			- SUM(CASE WHEN b.sporttype=161 THEN b.winlost ELSE 0 END * e.EUR) AS LicenseeWLNGEUR,
 			SUM(CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END * e.EUR) AS LicenseeWLRBEUR,
 			- SUM(CASE WHEN b.sporttype=162 THEN b.winlost ELSE 0 END * e.EUR) AS LicenseeWLLCEUR,
-			- SUM(CASE WHEN b.sporttype IN (180,181) THEN b.winlost ELSE 0 END * e.EUR) AS LicenseeWLVSEUR,
+			- SUM(CASE WHEN b.sporttype IN (180,181,186) THEN b.winlost ELSE 0 END * e.EUR) AS LicenseeWLVSEUR,
 			- SUM(CASE WHEN b.sporttype=251 THEN b.winlost ELSE 0 END * e.EUR) AS LicenseeWLCSEUR,
 			- SUM(CASE WHEN b.sporttype=252 THEN b.winlost ELSE 0 END * e.EUR) AS LicenseeWLBGEUR,
 			--SUM(CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS WinlossRB,
@@ -1605,7 +1608,7 @@ BEGIN
 					ELSE 1 END
 				* e.USD		
 			ELSE 0 END) AS turnoverLCUSD,
-			SUM(CASE WHEN b.sporttype IN (180,181) THEN 
+			SUM(CASE WHEN b.sporttype IN (180,181,186 THEN 
 				b.turnover
 				*
 					CASE WHEN @drawfilter IN (2,3) THEN
@@ -1642,7 +1645,7 @@ BEGIN
 			- SUM(CASE WHEN b.sporttype=161 THEN b.winlost ELSE 0 END * e.USD) AS LicenseeWLNGUSD,
 			SUM(CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END * e.USD) AS LicenseeWLRBUSD,
 			- SUM(CASE WHEN b.sporttype=162 THEN b.winlost ELSE 0 END * e.USD) AS LicenseeWLLCUSD,
-			- SUM(CASE WHEN b.sporttype IN (180,181) THEN b.winlost ELSE 0 END * e.USD) AS LicenseeWLVSUSD,
+			- SUM(CASE WHEN b.sporttype IN (180,181,186) THEN b.winlost ELSE 0 END * e.USD) AS LicenseeWLVSUSD,
 			- SUM(CASE WHEN b.sporttype=251 THEN b.winlost ELSE 0 END * e.USD) AS LicenseeWLCSUSD,
 			- SUM(CASE WHEN b.sporttype=252 THEN b.winlost ELSE 0 END * e.USD) AS LicenseeWLBGUSD,
 			--SUM(CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS WinlossRB,

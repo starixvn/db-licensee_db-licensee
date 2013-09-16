@@ -16,6 +16,7 @@ Revisions:
 	20120815@Jim: add live casino
 	20120906@Jim: add virtual sport
 	20130722@Jim: add Virtual Horse Racing (Sporttype=181)
+	20130916@Jim: add Virtual Tennis (sporttype=186)
 */
 
 SET NOCOUNT ON
@@ -48,7 +49,7 @@ WHERE
 			OR ( mr.IsPending=1 AND match.eventstatus IN ('running','closed') )
 			OR ( mr.IsHTCal = 1 AND match.eventstatus ='running')
 		 )
-	AND (sports.sporttype <= 99 OR sports.sporttype IN( 161,162,180,181))
+	AND (sports.sporttype <= 99 OR sports.sporttype IN( 161,162,180,181,186))
 UNION ALL 
 SELECT s.sporttype, s.sportname  
 FROM (  
