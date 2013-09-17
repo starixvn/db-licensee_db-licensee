@@ -141,7 +141,7 @@ SELECT
 	b.Transdate,   
 	b.winlostdate,  
 	b.refno, 
-	m.HomeID,  
+	CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN vhr.HomeID ELSE m.HomeID END ,  
 	0 AS AwayID,  
 	'' AS Betteam,    
 	Bettype, 
@@ -155,11 +155,11 @@ SELECT
 	0 AS Liveindicator, 
 	0 AS Livehomescore, 
 	0 AS Liveawayscore,  
-	m.LeagueID,
-	m.orid AS matchid,
-	m.matchcode,
-	groupmatch AS Race,
-	eventdate,
+	CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN  vhr.HomeID ELSE m.LeagueID END,
+	CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN vhr.orid ELSE b.matchID END AS matchid,
+	CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN vhr.matchcode ELSE m.matchcode END,
+	CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN vhr.groupmatch ELSE m.groupmatch END AS Race,
+	CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN vhr.eventdate ELSE m.eventdate END ,
 	b.IP AS IP,
 	CONVERT(BIT,0) AS IsNeutral,
 	b.betid,
@@ -169,7 +169,9 @@ FROM
 	bettrans AS b WITH (NOLOCK)
 	INNER JOIN (SELECT teamid AS homeid, leagueid, orid, matchcode, groupmatch, eventdate
 				FROM outright (NOLOCK) WHERE eventdate > DATEADD(DAY,-3,CURRENT_TIMESTAMP)
-				UNION ALL 
+				) AS m ON b.matchid = m.orid
+	INNER JOIN league l WITH (NOLOCK) ON m.leagueid = l.leagueid
+	INNER JOIN (
 				SELECT vso.RacerID as homeid,
 						vsr.LeagueID,
 						vso.Orid,
@@ -179,10 +181,10 @@ FROM
 				FROM dbo.VSOutright vso (NOLOCK) 
 				INNER JOIN dbo.VSRaceInfo vsr with (nolock) ON vso.EventID=vsr.EventID
 				WHERE 	vso.eventdate > DATEADD(DAY,-3,CURRENT_TIMESTAMP)
-				) AS m ON b.matchid = m.orid
-	INNER JOIN league l WITH (NOLOCK) ON m.leagueid = l.leagueid
+				) as vhr ON b.oddsid=vhr.Orid
+				
 WHERE		
-	b.bettype in (10,31,32,33,41,42,43,1231,1232,1233 )
+	b.bettype in (10,31,32,33,41,42,43,1231, 1232, 1233, 1237, 1238 )
 	AND b.recommend = @recommend
 	AND b.custid = @CustID
 	AND b.statusID IN (101,102)
