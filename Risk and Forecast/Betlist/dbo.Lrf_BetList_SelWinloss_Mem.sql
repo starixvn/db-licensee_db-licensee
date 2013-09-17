@@ -2383,7 +2383,7 @@ BEGIN
 			BM.stake * e.EUR,
 			BM.stake * e.USD
 		FROM bettransm BM WITH (NOLOCK)
-		INNER JOIN @BetListByDateMem B ON BM.refno = B.transid
+		INNER JOIN @BetListByDateMem B ON BM.refno = B.refno
 		INNER JOIN #TempExchange e ON e.ExchangeDate = b.winlostdate   AND e.exchangeid = b.currency
 		WHERE B.Bettype=1233
 	END
@@ -2401,7 +2401,25 @@ BEGIN
 			BM.stake * e.EUR,  
 			BM.stake * e.USD
 		FROM bettransm14 BM WITH (NOLOCK)
-		INNER JOIN @BetListByDateMem B ON BM.refno = B.transid
+		INNER JOIN @BetListByDateMem B ON BM.refno = B.refno
+		INNER JOIN #TempExchange e ON e.ExchangeDate = b.winlostdate   AND e.exchangeid = b.currency
+		WHERE B.Bettype=1233
+	END	
+	IF @fdate < @BalanceUpDay
+	BEGIN
+		INSERT INTO @BettransDetail
+		SELECT 
+			BM.refno, 
+			BM.odds, 
+			BM.stake,
+			BM.status, 
+			BM.apositiontaking, 
+			BM.bettype  ,
+			BM.Betteam,
+			BM.stake * e.EUR,  
+			BM.stake * e.USD
+		FROM bodb_archive.dbo.bettransm BM WITH (NOLOCK)
+		INNER JOIN @BetListByDateMem B ON BM.refno = B.refno
 		INNER JOIN #TempExchange e ON e.ExchangeDate = b.winlostdate   AND e.exchangeid = b.currency
 		WHERE B.Bettype=1233
 	END	
@@ -2423,7 +2441,7 @@ BEGIN
 			BG.stake * e.EUR,
 			BG.stake * e.USD
 		FROM bettransg BG WITH (NOLOCK)
-		INNER JOIN @BetListByDateMem B ON BG.refno = B.refno and BG.custid = @CustID
+		INNER JOIN @BetListByDateMem B ON BG.transID = B.refno and BG.custid = @CustID
 		INNER JOIN #TempExchange e ON e.ExchangeDate = b.winlostdate   AND e.exchangeid = b.currency
 		WHERE B.Bettype BETWEEN 1101 AND 1199
 	END

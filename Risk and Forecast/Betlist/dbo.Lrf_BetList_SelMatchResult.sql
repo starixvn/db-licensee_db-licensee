@@ -330,8 +330,27 @@ BEGIN
 	WHERE	b.bettype between 1101 and 1199 and
 			b.statusID in (0,1)
 			AND m.matchid=@matchID
+	SELECT 
+			BG.refno, 
+			BG.odds, 
+			BG.stake,
+			BG.status, 
+			BG.apositiontaking, 
+			BG.bettype  ,
+			BG.Betteam,
+			BG.stake*e.EUR,
+			BG.stake*e.USD
+		FROM bettransm BG WITH (NOLOCK)
+		INNER JOIN bettrans B ON BG.refno = B.refno 
+		INNER JOIN 
+		(SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
+		ON e.exchangeid = b.currency AND  e.ExchangeDate = B.winlostdate
+		INNER JOIN #currency c ON c.CurrencyID=b.currency
+		WHERE B.Bettype=1233
+			
 	---------------------------------------		
 	DROP TABLE #Currency
+	DROP TABLE #tmpresult 
 	---------------------------------------
 END
 GO

@@ -613,7 +613,7 @@ IF @ShowVS=1
 			BG.stake*e.EUR,
 			BG.stake*e.USD
 		FROM bettransm BG WITH (NOLOCK)
-		INNER JOIN #Data B ON BG.refno = B.transID and BG.custid = B.CustID
+		INNER JOIN #Data B ON BG.refno = B.refno and BG.custid = B.CustID
 		INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
 		WHERE B.Bettype=1233
 	END

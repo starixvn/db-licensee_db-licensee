@@ -253,6 +253,25 @@ BEGIN
 	WHERE B.Bettype BETWEEN 1101 AND 1199	
 END 
 
+IF EXISTS (SELECT TOP 1 1 FROM #Data WHERE Bettype=1233)
+BEGIN 
+	INSERT INTO @BettransDetail
+	SELECT 
+		BG.refno, 
+		BG.odds, 
+		BG.stake,
+		BG.status, 
+		BG.apositiontaking, 
+		BG.bettype,
+		BG.betteam,
+		BG.stake*e.EUR,	
+		BG.stake*e.USD
+	FROM bettransm BG WITH (NOLOCK)
+	INNER JOIN #Data B ON BG.refno = B.refno and BG.custid = b.custid
+	INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
+	WHERE B.Bettype=1233
+END 
+
 SELECT * FROM @BettransDetail 
 ORDER BY RefNo,Bettype 
 

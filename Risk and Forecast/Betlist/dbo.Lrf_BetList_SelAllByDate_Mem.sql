@@ -1015,7 +1015,7 @@ IF @ShowVS=1
 			BG.stake*e.EUR,
 			BG.stake*e.USD
 		FROM bettransm BG WITH (NOLOCK)
-		INNER JOIN #BetListSelAllByDateMem B ON BG.transID = B.refno 
+		INNER JOIN #BetListSelAllByDateMem B ON BG.refno = B.refno 
 		INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
 		WHERE B.Bettype=1233
 	END

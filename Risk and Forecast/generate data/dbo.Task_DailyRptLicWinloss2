@@ -62,7 +62,7 @@ SELECT @winlostdate,customer.username,customer.username2,customer.custid, 1, cus
 		WHEN bettype BETWEEN 81 AND 120 THEN 161 --Number Game 
 		WHEN bettype BETWEEN 1101 AND 1199 THEN 162 -- Live casino
 		WHEN (bettype BETWEEN 1201 AND 1299 AND bettype NOT IN (1231,1232,1233,1237,1238)) THEN 180  --Virtual Sport
-		WHEN bettype NOT IN (1231,1232,1233,1237,1238) THEN 181 --VHR 
+		WHEN bettype  IN (1231,1232,1233,1237,1238) THEN 181 --VHR 
 		WHEN bettype BETWEEN 51 AND 69 THEN 201
 		WHEN bettype IN (31,32,33,41,42,43) THEN 151
 		ELSE 0 END sporttype,
@@ -102,7 +102,7 @@ GROUP BY
 		WHEN bettype BETWEEN 81 AND 120 THEN 161 --Number Game 
 		WHEN bettype BETWEEN 1101 AND 1199 THEN 162 -- Live casino
 		WHEN (bettype BETWEEN 1201 AND 1299 AND bettype NOT IN (1231,1232,1233,1237,1238)) THEN 180  --Virtual Sport
-		WHEN bettype NOT IN (1231,1232,1233,1237,1238) THEN 181 --VHR 
+		WHEN bettype  IN (1231,1232,1233,1237,1238) THEN 181 --VHR 
 		WHEN bettype BETWEEN 51 AND 69 THEN 201
 		WHEN bettype IN (31,32,33,41,42,43) THEN 151
 		ELSE 0 END,

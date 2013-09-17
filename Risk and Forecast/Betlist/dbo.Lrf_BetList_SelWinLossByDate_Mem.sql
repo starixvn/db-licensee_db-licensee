@@ -769,7 +769,7 @@ BEGIN
 			b.Liveawayscore,
 			b.IP AS IP,
 			r.LeagueID,
-			b.oddsid matchid,	
+			o.EventID matchid,	
 			CONVERT(VARCHAR(50),o.RacerNum) MatchCode,
 			b.oddsid AS Race,	
 			o.RacerID HomeID,
@@ -1460,7 +1460,7 @@ BEGIN
 			b.Liveawayscore,
 			b.IP AS IP,
 			r.LeagueID,
-			b.oddsid matchid,	
+			o.EventID matchid,	
 			CONVERT(VARCHAR(50),o.RacerNum) MatchCode,
 			b.oddsid  AS Race,	
 			o.RacerID HomeID,
@@ -2149,7 +2149,7 @@ BEGIN
 			b.Liveawayscore,
 			b.IP AS IP,
 			r.LeagueID,
-			b.oddsid matchid,	
+			o.EventID matchid,	
 			CONVERT(VARCHAR(50),o.RacerNum) MatchCode,
 			b.oddsid  AS Race,	
 			o.RacerID HomeID,
@@ -2479,7 +2479,7 @@ IF @ShowVS=1
 				BG.stake*e.EUR,
 				BG.stake*e.USD
 			FROM bettransm BG WITH (NOLOCK)
-			INNER JOIN #BetListByDateMem B ON BG.refno = B.transID
+			INNER JOIN #BetListByDateMem B ON BG.refno = B.refno
 			INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
 			WHERE B.Bettype=1233
 		END
@@ -2497,9 +2497,28 @@ IF @ShowVS=1
 				BG.stake*e.EUR,
 				BG.stake*e.USD
 			FROM bettransm14 BG WITH (NOLOCK)
-			INNER JOIN #BetListByDateMem B ON BG.refno = B.transID
+			INNER JOIN #BetListByDateMem B ON BG.refno = B.refno
 			INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
 			WHERE B.Bettype=1233
+		END
+		IF @FromDate < @BalanceUpDay
+		BEGIN
+			INSERT INTO @BettransDetail
+			SELECT 
+				BM.refno, 
+				BM.odds, 
+				BM.stake,
+				BM.status, 
+				BM.apositiontaking, 
+				BM.bettype,
+				BM.betteam,
+				BM.stake*e.EUR,	
+				BM.stake*e.USD
+			FROM bodb_archive.dbo.bettransm BM WITH (NOLOCK)
+			INNER JOIN #BetListByDateMem B ON BM.refno = B.refno
+			INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
+			WHERE B.Bettype=1233
+		
 		END
 	END
 SELECT * FROM @BettransDetail ORDER BY RefNo,Bettype

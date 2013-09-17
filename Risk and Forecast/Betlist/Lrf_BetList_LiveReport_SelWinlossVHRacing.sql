@@ -71,7 +71,8 @@ CREATE TABLE #Data
 	isNeutral BIT ,
 	winlostdate DATETIME,
 	currency SMALLINT,
-	playercomm MONEY
+	playercomm MONEY,
+	kickofftime DATETIME
 )
 SELECT  currencyID,LicenseeID into #currency
 FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
@@ -110,7 +111,7 @@ BEGIN
 	  b.status,  
 	  b.stake,  
 	  (b.winlost-actual_stake),  
-	  b.awinlost,
+	  -(b.winlost-actual_stake),
 	  b.comm AS Comm, 
 	  b.adiscount AS discount,
 	  b.playerdiscount AS playerdiscount,
@@ -127,7 +128,8 @@ BEGIN
 	  CONVERT(BIT,0) AS IsNeutral,
 	  b.winlostdate,
 	  b.currency,
-	  b.playercomm 
+	  b.playercomm,
+	  r.EventTime	
 	 FROM  
 	  bettrans14 b WITH (NOLOCK)
 	  INNER JOIN @TempAg t  ON b.recommend =t.custid     
@@ -185,7 +187,7 @@ BEGIN
 	  b.status,  
 	  b.stake,  
 	  (b.winlost-actual_stake),  
-	  b.awinlost,
+	  -(b.winlost-actual_stake),
 	  b.comm AS Comm, 
 	  b.adiscount AS discount,
 	  b.playerdiscount AS playerdiscount,
@@ -202,7 +204,8 @@ BEGIN
 	  CONVERT(BIT,0) AS IsNeutral,
 	  b.winlostdate,
 	  b.currency,
-	  b.playercomm 
+	  b.playercomm ,
+	  r.EventTime
 	 FROM  
 	  bettrans b WITH (NOLOCK)
 	  INNER JOIN @TempAg t  ON b.recommend =t.custid     
@@ -290,7 +293,7 @@ BEGIN
 		BM.apositiontaking, 
 		BM.bettype  
 	FROM bettransm BM WITH (NOLOCK)
-	INNER JOIN #Data B ON BM.refno = B.transid	
+	INNER JOIN #Data B ON BM.refno = B.refno	
 	WHERE b.bettype=1233
 END
 	
@@ -305,7 +308,7 @@ BEGIN
 		BM.apositiontaking, 
 		BM.bettype  
 	FROM bettransm14 BM WITH (NOLOCK)
-	INNER JOIN #Data B ON BM.refno = B.transid
+	INNER JOIN #Data B ON BM.refno = B.refno
 	WHERE b.bettype=1233	
 END	
 

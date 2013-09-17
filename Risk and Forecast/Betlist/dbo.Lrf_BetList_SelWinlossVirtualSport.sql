@@ -321,8 +321,56 @@ FROM
 	INNER JOIN #TempExchange e ON b.currency=e.exchangeID AND b.winlostdate=e.exchangeDate
 ) A WHERE A.RowNum BETWEEN @RowStart AND @RowEnd
 
+CREATE TABLE #DetailTicket
+(
+refno bigint,
+odds smallmoney,
+stake money,
+apositiontaking smallmoney,
+bettype INT,
+Betteam nvarchar,
+stakeEUR  money,
+stakeUSD money,
+)
+IF @Todate > @MoveBetsDay
+	BEGIN
+		INSERT INTO #DetailTicket
+		SELECT 
+				BG.refno, 
+				BG.odds, 
+				BG.stake,
+				BG.status, 
+				BG.apositiontaking, 
+				BG.bettype  ,
+				BG.Betteam,
+				BG.stake*e.EUR,
+				BG.stake*e.USD
+			FROM bettransm BG WITH (NOLOCK)
+			INNER JOIN #Data B ON BG.refno = B.refno and BG.custid = B.custid
+			INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
+			WHERE B.Bettype=1233
+	END
+IF @Fromdate <= @MoveBetsDay 
+	BEGIN 
+		INSERT INTO #DetailTicket
+		SELECT 
+				BG.refno, 
+				BG.odds, 
+				BG.stake,
+				BG.status, 
+				BG.apositiontaking, 
+				BG.bettype  ,
+				BG.Betteam,
+				BG.stake*e.EUR,
+				BG.stake*e.USD
+			FROM bettransm14 BG WITH (NOLOCK)
+			INNER JOIN #Data B ON BG.refno = B.refno and BG.custid = B.custid
+			INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
+			WHERE B.Bettype=1233
+	END
+SELECT * FROM #DetailTicket
 
-
+DROP TABLE 	#DetailTicket
 DROP TABLE #Data	
 DROP TABLE #TempExchange 
 

@@ -883,7 +883,7 @@ begin
 		BM.stake*e.EUR,
 		BM.stake*e.USD
 	FROM bettransm BM with (NOLOCK)
-	INNER JOIN #BetListSelRunningByDateMem B ON BM.refno = B.transid
+	INNER JOIN #BetListSelRunningByDateMem B ON BM.refno = B.refno
 	INNER JOIN 
 		(SELECT * FROM Lrf_f_GetExchangeDaily(@Fromdate,@Todate))e 
 	ON  e.ExchangeDate = B.winlostdate AND e.exchangeid = b.currency
