@@ -669,7 +669,7 @@ BEGIN
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @tdate AND
 			b.custid=@custid AND
-			b.bettype BETWEEN 1201 AND 1299 AND
+			b.bettype IN (1231, 1232, 1233, 1237, 1238) AND
 			b.statusID IN (111,112,113)	
 
 				
@@ -1358,7 +1358,7 @@ BEGIN
 		WHERE
 			b.winlostdate BETWEEN @BalanceUpDay AND @tdate AND
 			b.custid=@custid AND
-			b.bettype BETWEEN 1201 AND 1299 AND
+			b.bettype IN (1231,1232,1233,1237,1238) AND 
 			b.statusID IN (111,112,113)	
 		
 	END
@@ -2050,7 +2050,7 @@ BEGIN
 		WHERE
 			b.winlostdate BETWEEN @BalanceUpDay AND @tdate AND
 			b.custid=@custid AND
-			b.bettype BETWEEN 1201 AND 1299 AND
+			b.bettype IN (1231,1232,1233,1237,1238) AND
 			b.statusID IN (111,112,113)		
 	END
 	---- RNG Casino
