@@ -73,7 +73,7 @@ CREATE TABLE #Data
 	winlostdate DATETIME,
 	currency SMALLINT,
 	playercomm MONEY,
-	kickofftime DATETIME
+	showtime  	DATETIME
 )
 SELECT  currencyID,LicenseeID into #currency
 FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)

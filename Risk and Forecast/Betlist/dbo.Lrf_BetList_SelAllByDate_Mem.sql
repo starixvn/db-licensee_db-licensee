@@ -738,7 +738,7 @@ BEGIN
 				@UserName AS UserName,
 				r.sporttype,
 				b.bettype,
-				CASE WHEN b.bettype BETWEEN 1101 AND 1199 THEN CONVERT(NVARCHAR(20),b.refno)  ELSE '' END AS refno,		
+				CONVERT(NVARCHAR(20),b.refno) AS refno,		
 				b.transid,
 				ISNULL(b.BetID,0),
 				CONVERT(varchar(50),o.RacerNum) as matchcode, 
