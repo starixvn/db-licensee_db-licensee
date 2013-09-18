@@ -326,6 +326,7 @@ CREATE TABLE #DetailTicket
 refno bigint,
 odds smallmoney,
 stake money,
+status NVARCHAR(10),
 apositiontaking smallmoney,
 bettype INT,
 Betteam nvarchar,

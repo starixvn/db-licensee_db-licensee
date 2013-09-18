@@ -2483,7 +2483,7 @@ IF @ShowVS=1
 			INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
 			WHERE B.Bettype=1233
 		END
-		IF @FromDate < @BalanceUpDay
+		IF @FromDate <= @MoveBetsDay
 		BEGIN
 			INSERT INTO @BettransDetail
 			SELECT 

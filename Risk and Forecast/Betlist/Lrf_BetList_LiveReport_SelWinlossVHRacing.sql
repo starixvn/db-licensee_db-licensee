@@ -40,6 +40,7 @@ CREATE TABLE #Data
 (
 	sporttype TINYINT,  
 	Custid INT,
+	refno BIGINT,
 	username nvarchar(50),  	 
 	bettype SMALLINT,    	 
 	transid BIGINT PRIMARY KEY,  
@@ -97,6 +98,7 @@ BEGIN
 	 SELECT TOP (@RowEnd)
 	  @SportType,  
 	  b.custid,
+	  b.refno,
 	  b.username,  	  
 	  b.bettype,    	    
 	  b.transid,  
@@ -173,6 +175,7 @@ BEGIN
 	 SELECT TOP (@RowEnd)
 	  @SportType,  
 	  b.custid,
+	  b.refno,
 	  b.username,  	  
 	  b.bettype,    	    
 	  b.transid,  
