@@ -155,8 +155,8 @@ SELECT
 	0 AS Liveindicator, 
 	0 AS Livehomescore, 
 	0 AS Liveawayscore,  
-	CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN  vhr.HomeID ELSE m.LeagueID END,
-	CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN vhr.orid ELSE b.matchID END AS matchid,
+	CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN  vhr.LeagueID ELSE m.LeagueID END,
+	CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN vhr.EventID ELSE b.matchID END AS matchid,
 	CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN vhr.matchcode ELSE m.matchcode END,
 	CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN vhr.groupmatch ELSE m.groupmatch END AS Race,
 	CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN vhr.eventdate ELSE m.eventdate END ,
@@ -174,6 +174,7 @@ FROM
 	INNER JOIN (
 				SELECT vso.RacerID as homeid,
 						vsr.LeagueID,
+						vsr.EventID,
 						vso.Orid,
 						CONVERT(VARCHAR(20),vso.RacerNum) as matchcode,
 						'' groupmatch,
