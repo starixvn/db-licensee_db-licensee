@@ -2048,7 +2048,7 @@ BEGIN
 			INNER JOIN DBARC.bodb_Archive.dbo.VSOutright_bk o with (nolock) ON b.oddsid=o.Orid
 			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
 		WHERE
-			b.winlostdate BETWEEN @BalanceUpDay AND @tdate AND
+			b.winlostdate BETWEEN @fdate AND @TempToDate AND
 			b.custid=@custid AND
 			b.bettype IN (1231,1232,1233,1237,1238) AND
 			b.statusID IN (111,112,113)		
