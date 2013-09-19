@@ -1474,7 +1474,7 @@ BEGIN
 			INNER JOIN VSOutright14 o with (nolock) ON b.oddsid=o.Orid
 			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
 		WHERE
-			b.winlostdate BETWEEN @TempFromDate AND @todate AND
+			b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate AND
 			b.recommend = @Recommend AND --to improve performance
 			b.custid=@CustID AND
 			((@ShowVS=1 AND b.bettype IN (1231, 1232, 1233, 1237, 1238))
@@ -2163,7 +2163,7 @@ BEGIN
 			INNER JOIN DBARC.bodb_Archive.dbo.VSOutright_bk o with (nolock) ON b.oddsid=o.Orid
 			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
 		WHERE
-			b.winlostdate BETWEEN @TempFromDate AND @todate AND
+			b.winlostdate BETWEEN @fromdate AND @TempToDate AND
 			b.recommend = @Recommend AND --to improve performance
 			b.custid=@CustID AND
 			((@ShowVS=1 AND b.bettype IN (1231, 1232, 1233, 1237, 1238))
