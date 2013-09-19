@@ -210,7 +210,59 @@ ELSE
 				--AND b.winlostdate=@fromdate AND b.bettype<=19000: old condition 
 				AND b.winlostdate=@fromdate AND b.bettype<=1299
 				AND b.statusID IN (SELECT [statusID] FROM @tmpStatus)
-
+			-------VHR
+			INSERT INTO @Data 
+			SELECT
+				r.sporttype, 
+				r.leagueid,
+				o.RacerID homeID,
+				0 awayID,
+				b.bettype,
+				CONVERT (VARCHAR(50),o.RacerNum) matchcode,
+				'' AS race,
+				o.EventID matchid, 
+				b.transid, 
+				b.transdate, 
+				b.winlostdate,
+				b.refno, 
+				b.betid,
+				b.oddsid, 
+				b.hdp1, 
+				b.hdp2,
+				modds, 
+				b.Oddstype,
+				b.odds,
+				b.betteam,
+				b.status AS status,
+				r.betstatus, 
+				b.stake,
+				b.actual_stake,
+				(b.winlost-b.actual_stake) AS winlost, 
+				- (b.winlost-b.actual_stake) AS LicenseeWL ,
+				b.comm,
+				b.playercomm ,
+				b.discount,
+				b.livehomescore, 
+				b.liveawayscore, 
+				b.liveindicator, 
+				0 as finalhomescore, 
+				0 as finalawayscore,
+				0 as hthomescore, 
+				0 as htawayscore,
+				--b.username, 
+				b.IP AS IP,
+				b.Username,
+				CONVERT(BIT,0) AS IsNeutral,
+				b.currency,
+				r.eventTime AS ShowTime
+			FROM 
+				dbo.bettrans14 b WITH (NOLOCK)
+				INNER JOIN VSOutright14 o with (nolock) ON b.oddsid=o.Orid
+				INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
+			WHERE
+				b.custid=@custid 		
+				AND b.winlostdate=@fromdate AND b.bettype IN (1231, 1232, 1233, 1237, 1238)
+				AND b.statusID IN (SELECT [statusID] FROM @tmpStatus)
 			
 			-- mix parlay
 			INSERT INTO @Data 
@@ -441,6 +493,59 @@ ELSE
 				AND b.winlostdate=@fromdate AND b.bettype<=1299
 				AND b.statusID IN (SELECT [statusID] FROM @tmpStatus)
 
+			-------VHR
+			INSERT INTO @Data 
+			SELECT
+				r.sporttype, 
+				r.leagueid,
+				o.RacerID homeID,
+				0 awayID,
+				b.bettype,
+				CONVERT (VARCHAR(50),o.RacerNum) matchcode,
+				'' AS race,
+				o.EventID matchid, 
+				b.transid, 
+				b.transdate, 
+				b.winlostdate,
+				b.refno, 
+				b.betid,
+				b.oddsid, 
+				b.hdp1, 
+				b.hdp2,
+				modds, 
+				b.Oddstype,
+				b.odds,
+				b.betteam,
+				b.status AS status,
+				r.betstatus, 
+				b.stake,
+				b.actual_stake,
+				(b.winlost-b.actual_stake) AS winlost, 
+				- (b.winlost-b.actual_stake) AS LicenseeWL ,
+				b.comm,
+				b.playercomm ,
+				b.discount,
+				b.livehomescore, 
+				b.liveawayscore, 
+				b.liveindicator, 
+				0 as finalhomescore, 
+				0 as finalawayscore,
+				0 as hthomescore, 
+				0 as htawayscore,
+				--b.username, 
+				b.IP AS IP,
+				b.Username,
+				CONVERT(BIT,0) AS IsNeutral,
+				b.currency,
+				r.eventTime AS ShowTime
+			FROM 
+				dbo.bettrans b WITH (NOLOCK)
+				INNER JOIN VSOutright o with (nolock) ON b.oddsid=o.Orid
+				INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
+			WHERE
+				b.custid=@custid 		
+				AND b.winlostdate=@fromdate AND b.bettype IN (1231, 1232, 1233, 1237, 1238)
+				AND b.statusID IN (SELECT [statusID] FROM @tmpStatus)
 				
 			-- mixed parlay
 			INSERT INTO @Data 
@@ -717,6 +822,22 @@ ELSE
 			INNER JOIN @Data B ON BM.refno = B.transid
 			INNER JOIN #TempExchange e ON  e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
 			WHERE B.Bettype IN (33,43)
+			UNION ALL
+			--get data from bettransm14 for bettype 1233
+			SELECT 
+				BM.refno,
+				BM.odds,		
+				BM.Stake,
+				BM.status,
+				BM.apositiontaking,
+				BM.bettype,
+				BM.Betteam,
+				BM.stake*e.EUR,	
+				BM.stake*e.USD		
+			FROM bettransm14 BM with (NOLOCK, INDEX =IX_bettransm14 )
+			INNER JOIN @Data B ON BM.refno = B.refno
+			INNER JOIN #TempExchange e ON  e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
+			WHERE B.Bettype = 1233
 			UNION 
 			SELECT 
 				BG.refno, 
@@ -751,6 +872,23 @@ ELSE
 			INNER JOIN @Data B ON BM.refno = B.transid
 			INNER JOIN #TempExchange e ON  e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
 			WHERE B.Bettype IN (33,43)
+			UNION ALL
+			--get data from bettransm14 for bettype 1233
+			SELECT 
+				BM.refno,
+				BM.odds,		
+				BM.Stake,
+				BM.status,
+				BM.apositiontaking,
+				BM.bettype,
+				BM.Betteam,
+				BM.stake*e.EUR,	
+				BM.stake*e.USD		
+			FROM bettransm BM with (NOLOCK, INDEX =IX_bettransm14 )
+			INNER JOIN @Data B ON BM.refno = B.refno
+			INNER JOIN #TempExchange e ON  e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
+			WHERE B.Bettype = 1233
+			
 			UNION
 			SELECT 
 				BG.refno, 
