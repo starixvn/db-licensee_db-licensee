@@ -65,7 +65,7 @@ SELECT isnull(@minminbet181,0) minminbet,
 		isnull(@maxmaxbet181,0) maxmaxbet,
 		isnull(@maxmaxpermatch181,0) maxmaxpermatch,
 		0 AS maxpermatch_min,
-		ci.maxpermatch180 maxpermatch,
+		ci.maxpermatch181 maxpermatch,
 		cs.minbet,
 		cs.maxbet,
 		cs.sporttype	
