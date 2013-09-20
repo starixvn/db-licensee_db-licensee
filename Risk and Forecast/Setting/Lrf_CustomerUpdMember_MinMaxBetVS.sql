@@ -126,7 +126,7 @@ BEGIN
 			
 	IF (@MinMinBet>0 AND @MinBet>0 AND @MinBet<@MinMinBet)
 	BEGIN
-		SELECT @ErrMsg =	'Virtual Sport' + ': ' +
+		SELECT @ErrMsg =	'Virtual Soccer' + ': ' +
 						CASE @Language 
 							WHEN 'E' THEN 'The Min Bet must be equal to or greater than the value '
 							WHEN 'CS' THEN N'?????????????????'
@@ -143,7 +143,7 @@ BEGIN
 			
 	IF (@MaxMaxBet>0 AND @MaxBet>0 AND @MaxBet>@MaxMaxBet)
 	BEGIN
-		SELECT @ErrMsg =	'Virtual Sport' + ': '+
+		SELECT @ErrMsg =	'Virtual Soccer' + ': '+
 						CASE @Language 
 							WHEN 'E' THEN 'The Max Bet must be equal to or less than the value '
 							WHEN 'CS' THEN N'?????????????????'
@@ -160,7 +160,7 @@ BEGIN
 			
 	IF (@MaxMaxPerMatch>0 AND @MaxPerMatch>0 AND @MaxPerMatch>@MaxMaxPerMatch)
 	BEGIN
-		SELECT @ErrMsg =	'Virtual Sport' + ': '+
+		SELECT @ErrMsg =	'Virtual Soccer' + ': '+
 						CASE @Language 
 							WHEN 'E' THEN 'The Max Per Match must be equal to or less than the value '
 							WHEN 'CS' THEN N'?????????????????????'
@@ -225,6 +225,40 @@ BEGIN
 			RETURN
 		END
 	END
+DECLARE @TrackingValue VARCHAR(5000)
+SELECT @TrackingValue ='<Lrf_CustomerUpdMember_MinMaxBetVS custid="'+ COALESCE(CAST(@custid as VARCHAR(50)),SPACE(1)) + '" ' +
+'Sporttype="'+ COALESCE(CAST(180 as VARCHAR(50)),SPACE(1)) + '" ' +
+'MinB="'+ COALESCE(CAST(@minbet as VARCHAR(50)),SPACE(1)) + '" ' +
+'MaxB="'+ COALESCE(CAST(@maxbet as VARCHAR(50)),SPACE(1)) + '" ' +
+'MPM="'+ COALESCE(CAST(@maxpermatch as VARCHAR(50)),SPACE(1)) + '" ' +
+'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
+'Language="'+ COALESCE(CAST(@Language as VARCHAR(2)),SPACE(1)) + '" ' +
+'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +
+'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
+'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(5000)),SPACE(1)) + '" />'
+
+DECLARE @TrackingValue2 VARCHAR(5000)
+SELECT @TrackingValue2 ='<Lrf_CustomerUpdMember_MinMaxBetVS custid="'+ COALESCE(CAST(@custid as VARCHAR(50)),SPACE(1)) + '" ' +
+'MinB="'+ COALESCE(CAST(@minbet_old as VARCHAR(50)),SPACE(1)) + '" ' +
+'MaxB="'+ COALESCE(CAST(@maxbet_old as VARCHAR(50)),SPACE(1)) + '" ' +
+'MPM="'+ COALESCE(CAST(@maxpermatch_old as VARCHAR(50)),SPACE(1)) + '" ' +
+'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
+'Language="'+ COALESCE(CAST(@Language as VARCHAR(2)),SPACE(1)) + '" ' +
+'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +
+'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
+'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(5000)),SPACE(1)) + '" />'
+
+SET @endRun = GETDATE()
+SET @duration  = datediff (millisecond,@startRun,@endRun)
+
+EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP 
+	@UserID = @UserID,
+	@CustID = @CustID,
+	@ActionID = 2014,
+	@TrackingValue = @TrackingValue,
+	@TrackingValue2 = @TrackingValue2,
+	@duration = @duration
+	
 END
 --- Virtual Horse Racing
 IF EXISTS (SELECT 1 FROM #Setting WHERE sporttype=181)
@@ -266,7 +300,7 @@ BEGIN
 		
 	IF (@MinMinBet>0 AND @MinBet>0 AND @MinBet<@MinMinBet)
 	BEGIN
-		SELECT @ErrMsg =	'Virtual Sport' + ': ' +
+		SELECT @ErrMsg =	'Virtual Horse Racing' + ': ' +
 						CASE @Language 
 							WHEN 'E' THEN 'The Min Bet must be equal to or greater than the value '
 							WHEN 'CS' THEN N'?????????????????'
@@ -283,7 +317,7 @@ BEGIN
 		
 	IF (@MaxMaxBet>0 AND @MaxBet>0 AND @MaxBet>@MaxMaxBet)
 	BEGIN
-		SELECT @ErrMsg =	'Virtual Sport' + ': '+
+		SELECT @ErrMsg =	'Virtual Horse Racing' + ': '+
 						CASE @Language 
 							WHEN 'E' THEN 'The Max Bet must be equal to or less than the value '
 							WHEN 'CS' THEN N'?????????????????'
@@ -300,7 +334,7 @@ BEGIN
 		
 	IF (@MaxMaxPerMatch>0 AND @MaxPerMatch>0 AND @MaxPerMatch>@MaxMaxPerMatch)
 	BEGIN
-		SELECT @ErrMsg =	'Virtual Sport' + ': '+
+		SELECT @ErrMsg =	'Virtual Horse Racing' + ': '+
 						CASE @Language 
 							WHEN 'E' THEN 'The Max Per Match must be equal to or less than the value '
 							WHEN 'CS' THEN N'?????????????????????'
@@ -366,11 +400,9 @@ BEGIN
 			RETURN
 		END
 	END
-END
-DROP TABLE #setting
--------------------------------------------------------------------------------------------------------------------
 DECLARE @TrackingValue VARCHAR(5000)
 SELECT @TrackingValue ='<Lrf_CustomerUpdMember_MinMaxBetVS custid="'+ COALESCE(CAST(@custid as VARCHAR(50)),SPACE(1)) + '" ' +
+'Sporttype="'+ COALESCE(CAST(181 as VARCHAR(50)),SPACE(1)) + '" ' +
 'MinB="'+ COALESCE(CAST(@minbet as VARCHAR(50)),SPACE(1)) + '" ' +
 'MaxB="'+ COALESCE(CAST(@maxbet as VARCHAR(50)),SPACE(1)) + '" ' +
 'MPM="'+ COALESCE(CAST(@maxpermatch as VARCHAR(50)),SPACE(1)) + '" ' +
@@ -400,10 +432,9 @@ EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
 	@ActionID = 2014,
 	@TrackingValue = @TrackingValue,
 	@TrackingValue2 = @TrackingValue2,
-	@duration = @duration
-
----------------------------------------------------------
-
+	@duration = @duration	
+END
+DROP TABLE #setting
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMember_MinMaxBetVS] TO [bodbLicenseeNet]
