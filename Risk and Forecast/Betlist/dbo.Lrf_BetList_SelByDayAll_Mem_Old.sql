@@ -497,7 +497,7 @@ BEGIN
 		BM.Betteam,
 		BM.stake*e.EUR,	
 		BM.stake*e.USD		
-	FROM bodb_Archive.dbo.bettransm BM with (NOLOCK, INDEX =IX_bettransm14 )
+	FROM bodb_Archive.dbo.bettransm BM with (NOLOCK)
 	INNER JOIN @Data B ON BM.refno = B.refno
 	INNER JOIN #TempExchange e ON  e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
 	WHERE B.Bettype = 1233
