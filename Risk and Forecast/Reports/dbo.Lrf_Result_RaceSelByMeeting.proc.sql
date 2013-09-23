@@ -20,7 +20,7 @@ BEGIN
 	CREATE TABLE #Data (meetingid INT
 							,eventdate DATETIME
 							,kickofftime DATETIME
-							,lcolor nvarchar(20)
+							,lcolor nvarchar(50)
 							,racename varchar(20)
 							,place INT
 							,horseNo VARCHAR(20)
@@ -72,7 +72,7 @@ BEGIN
 	BEGIN 
 		INSERT INTO #Data	
 		SELECT  o.leagueid meetingid, o.eventdate, o.kickofftime, 
-				l.lcolor,
+				o.lcolor,
 				o.groupmatch AS racename, 
 				CASE WHEN CONVERT(INT,o.placing) = 0 THEN 5 ELSE isnull(CONVERT(INT,placing),5) END place, 
 				o.matchcode horseNo, 
@@ -87,6 +87,7 @@ BEGIN
 			(
 			SELECT vsr.leagueid,
 				  vso.RacerID  teamid,
+				  vso.Colours lcolor,
 				   vso.EventDate,
 				   vsr.EventTime kickofftime,
 				   NULL groupmatch,
@@ -105,9 +106,12 @@ BEGIN
 									 ELSE @leagueid END 
 					AND placing<5
 					AND ISNULL(placing,0)<>0
+					AND vsr.SportType=@Sporttype
+					AND vsr.EventStatus ='completed'
 			UNION ALL 
 			SELECT vsr.leagueid,
 				   vso14.RacerID teamid,
+				   vso14.Colours lcolor,
 				   vso14.EventDate,
 				   vsr.EventTime kickofftime,
 				   NULL groupmatch,
@@ -126,9 +130,12 @@ BEGIN
 									 ELSE @leagueid END 
 					AND placing<5
 					AND ISNULL( placing,0)<>0
+					AND vsr.SportType=@Sporttype
+					AND vsr.EventStatus ='completed'
 			UNION ALL 
 			SELECT vsr.leagueid,
 				   bk.RacerID teamid,
+				   bk.Colours lcolor,
 				   bk.EventDate,
 				   vsr.EventTime kickofftime,
 				   NULL groupmatch,
@@ -146,14 +153,12 @@ BEGIN
 					AND leagueid = CASE WHEN @leagueid =0 THEN leagueid 
 									 ELSE @leagueid END 
 					AND placing<5
-					AND ISNULL( placing,0)<>0		
+					AND ISNULL( placing,0)<>0	
+					AND vsr.SportType=@Sporttype
+					AND vsr.EventStatus ='completed'	
 			 ) o 
-			INNER JOIN dbo.league l WITH (NOLOCK) ON o.leagueid = l.leagueid 
 			INNER JOIN dbo.HRCode c WITH (NOLOCK) ON c.CodeID=o.teamid
 			WHERE	c.CodeType=11
-					AND l.sporttype =  @Sporttype
-					AND (oddsstatus ='completed' OR FoddsStatus='completed')
-					AND l.isTest = isnull(@isShowAll, l.isTest)
 			ORDER BY o.leagueid, o.kickofftime
 			
 	END
