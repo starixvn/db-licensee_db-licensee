@@ -275,8 +275,8 @@ BEGIN
 			b.refno,
 			b.custid,
 			CASE WHEN b.bettype BETWEEN 1101 AND 1199 THEN  ISNULL(m.showtime,'')
-				 WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN vr.showtime
-				 ELSE '' END AS ShowTime
+				 WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN convert(varchar(120),vr.showtime)
+				 ELSE NULL END AS ShowTime
 		FROM
 			bettrans b WITH (nolock) 
 			LEFT JOIN match m WITH (nolock) ON b.matchid=m.matchid	
@@ -372,8 +372,8 @@ BEGIN
 			b.refno,
 			b.custid,
 			CASE WHEN b.bettype BETWEEN 1101 AND 1199 THEN  ISNULL(m.showtime,'') 
-				 WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN vr.showtime
-				 ELSE '' END AS ShowTime
+				 WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN convert(varchar(120),vr.showtime)
+				 ELSE NULL END AS ShowTime
 		FROM
 			bettrans14 b WITH (NOLOCK)	
 			LEFT JOIN match14 m WITH (nolock) ON b.matchid=m.matchid 	
