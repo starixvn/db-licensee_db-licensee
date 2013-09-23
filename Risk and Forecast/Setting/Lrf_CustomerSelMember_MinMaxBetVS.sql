@@ -28,19 +28,34 @@ from customer with (NOLOCK)
 WHERE roleid = 1 AND CustID = @CustID
 
 IF (@username = NULL) RETURN
-
-SELECT
-	@MinMinBet180 = CASE WHEN cs.bettype=1201 AND cs.sporttype=180 THEN   Max(CASE WHEN MinBet = 0 THEN NULL ELSE MinBet END) ELSE 0 END, 
-	@MaxMaxBet180 = CASE WHEN cs.bettype=1201 AND cs.sporttype=180 THEN Min(CASE WHEN MaxBet = 0 THEN NULL ELSE MaxBet END) ELSE 0 END,
-	@MinMinBet181 = CASE WHEN cs.bettype IN (1231,1232,1233,1237,1238) AND cs.sporttype=181 THEN   Max(CASE WHEN MinBet = 0 THEN NULL ELSE MinBet END) ELSE 0 END, 
-	@MaxMaxBet181 = CASE WHEN cs.bettype IN (1231,1232,1233,1237,1238) AND cs.sporttype=181 THEN Min(CASE WHEN MaxBet = 0 THEN NULL ELSE MaxBet END) ELSE 0 END
+SELECT cs.sporttype,
+	   cs.bettype,
+	   MinBet,
+	   MaxBet		
+	INTO #tempMinMax
 from 
 	Dep_CustSetting3rd as cs WITH (NOLOCK)
 	INNER JOIN custinfo as ci WITH (NOLOCK) on (cs.CustID = ci.Recommend or cs.CustID = ci.MRecommend or cs.CustID = ci.SRecommend)
 	AND cs.bettype IN(1201,1231,1232,1233,1237,1238) AND cs.sporttype IN (180,181)
 WHERE ci.custid = @recommend
-GROUP BY cs.bettype,
-		cs.sporttype
+		
+SELECT
+	@MinMinBet180 =  Max(CASE WHEN MinBet = 0 THEN NULL ELSE MinBet END), 
+	@MaxMaxBet180 =  Min(CASE WHEN MaxBet = 0 THEN NULL ELSE MaxBet END)
+FROM #tempMinMax
+WHERE 
+	bettype=1201
+	AND sporttype=180
+
+SELECT
+	@MinMinBet181 =Max(CASE WHEN MinBet = 0 THEN NULL ELSE MinBet END), 
+	@MaxMaxBet181 = Min(CASE WHEN MaxBet = 0 THEN NULL ELSE MaxBet END)
+FROM #tempMinMax
+WHERE 
+	bettype IN (1231,1232,1233,1237,1238)
+	AND sporttype=181
+	
+DROP TABLE #tempMinMax
 
 SELECT @MaxMaxperMatch180 = Min(CASE WHEN cs.maxpermatch180 = 0 THEN NULL ELSE cs.maxpermatch180 END)
 	   ,@MaxMaxperMatch181 = Min(CASE WHEN cs.maxpermatch181 = 0 THEN NULL ELSE cs.maxpermatch181 END)	

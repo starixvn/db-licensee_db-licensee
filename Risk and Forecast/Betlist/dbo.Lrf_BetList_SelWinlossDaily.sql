@@ -210,7 +210,7 @@ BEGIN
 		,r.EventTime   ShowTime
 	FROM VSOutright o with (nolock) 
 	INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
-	--WHERE  o.EventDate =@wldate
+	WHERE  o.EventDate =@wldate
 
 		
 	INSERT INTO @DataSum
@@ -330,7 +330,7 @@ BEGIN
 		,r.EventTime   ShowTime
 	FROM VSOutright14 o with (nolock) 
 	INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
-	--WHERE  o.EventDate =@wldate
+	WHERE  o.EventDate =@wldate
 	
 	INSERT INTO #Data
 	SELECT A.* 
