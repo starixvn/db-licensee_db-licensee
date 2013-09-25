@@ -45,6 +45,7 @@ Revisions:
 	- 20130410@Jim: return betteam,modd value for Parlay ticket (Mix parlay & system parlay)
 	- 20130411@Jim: support base currency USD
 	- 20130514@Jim: Restrict permission of Licensee Users by currency
+	- 20130905@Jim: support VHR
 	
 Param's Explanation: 
 

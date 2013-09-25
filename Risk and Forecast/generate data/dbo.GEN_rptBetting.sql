@@ -6,6 +6,8 @@ ALTER PROCEDURE [dbo].[GEN_rptBetting]
     @date datetime, 
     @date2 datetime = null
 AS
+
+
 /*
 Created: 20110517@Elly
 Task: Generate data into rpt_Betting 
@@ -83,7 +85,7 @@ INSERT INTO dbo.rpt_Betting
 	    LEFT JOIN dbo.view_site_list [site] (NOLOCK) ON ibcsite.siteid=site.IbcSiteID	
 	    LEFT JOIN dbo.match m (NOLOCK) ON b.matchid = m.matchid
 	    LEFT JOIN dbo.outright o (NOLOCK) ON b.matchid = o.matchid
-	    LEFT JOIN DB06.bodb02.dbo.VSRaceInfo RaceInfo WITH (NOLOCK) ON b.matchid = RaceInfo.EventID AND b.bettype IN(1231,1232,1233,1237,1238)
+	    LEFT JOIN DBRPT.bodb02.dbo.VSRaceInfo RaceInfo WITH (NOLOCK) ON b.matchid = RaceInfo.EventID AND b.bettype IN(1231,1232,1233,1237,1238)
     WHERE isBA=0
     GROUP BY
 	    b.winlostdate,

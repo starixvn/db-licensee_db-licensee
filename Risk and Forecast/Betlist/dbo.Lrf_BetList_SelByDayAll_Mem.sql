@@ -51,6 +51,7 @@ Revisions:
 	- 20120913@Jim: add virtual sport 
 	- 20130410@Jim: return betteam value for Parlay (mix parlay & system parlay) ticket
 	- 20130514@Jim: Restrict permission of Licensee Users by currency
+	- 20130905@Jim: support VHR
 Param's Explanation: 
 	+ @transtype: 1-Betting Statement; 2-VOID/Cancelled Bet; 3-Outstanding Bet 
 	
