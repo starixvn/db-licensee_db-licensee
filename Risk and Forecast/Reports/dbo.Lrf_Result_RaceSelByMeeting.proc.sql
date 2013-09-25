@@ -135,7 +135,7 @@ BEGIN
 			UNION ALL 
 			SELECT vsr.leagueid,
 				   bk.RacerID teamid,
-				   bk.Colours lcolor,
+				   '' as  lcolor,
 				   bk.EventDate,
 				   vsr.EventTime kickofftime,
 				   NULL groupmatch,
