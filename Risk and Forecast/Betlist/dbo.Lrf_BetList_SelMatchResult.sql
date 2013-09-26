@@ -302,6 +302,7 @@ BEGIN
 		END
 	--------------------------------------------------End Virtual Horse Racing
 	select * from #tmpresult 
+	DROP TABLE #tmpresult 
 END
 
 DECLARE @Today SMALLDATETIME 
@@ -350,7 +351,6 @@ BEGIN
 			
 	---------------------------------------		
 	DROP TABLE #Currency
-	DROP TABLE #tmpresult 
 	---------------------------------------
 END
 GO
