@@ -50,6 +50,7 @@ BEGIN
 				CONVERT(VARCHAR(20),o.IsFavor),
 				o.IsSCR,
 				o.FOddsStatus
+				
 		FROM 
 			(	SELECT	leagueid, teamid, eventdate, kickofftime, groupmatch, matchcode, placing, oddsstatus, odds, placeodds, IsFavor, IsSCR, FOddsStatus FROM outright o with (nolock)
 				UNION ALL
@@ -71,7 +72,9 @@ BEGIN
 	IF (@Sporttype=181)
 	BEGIN 
 		INSERT INTO #Data	
-		SELECT  o.leagueid meetingid, o.eventdate, o.kickofftime, 
+		SELECT  o.leagueid meetingid,
+				o.eventdate,
+				o.kickofftime, 
 				o.lcolor,
 				o.groupmatch AS racename, 
 				CASE WHEN CONVERT(INT,o.placing) = 0 THEN 5 ELSE isnull(CONVERT(INT,placing),5) END place, 
@@ -162,8 +165,27 @@ BEGIN
 			ORDER BY o.leagueid, o.kickofftime
 			
 	END
-SELECT DISTINCT * FROm #Data
-DROP TABLE #Data
+	DECLARE @str1 VARCHAR(40)
+	DECLARE @str2 VARCHAR(40)
+	SELECT @str1='',@str2=''
+	SELECT @str2=@str2+horseNo+','
+	FROM #Data
+	WHERE isSCR=1
+	
+	SELECT @str1=horseNo+','	
+	FROM #Data
+	WHERE isFavor=1
+	
+	SELECT kickofftime,COUNT(place) rc INTO #DataSUM
+	FROM #Data
+	GROUP BY  kickofftime
+
+	SELECT d.*,LEFT(@str1,LEN(@str1)-1)  AS TF ,LEFT(@str1,LEN(@str2)-1)  AS SCR ,d2.rc as [RowCount]  
+	FROm #Data d
+	INNER JOIN #DataSum d2 ON d.kickofftime=d2.kickofftime 
+	DROP TABLE #DataSum 
+	DROP TABLE #Data
+
  END
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Result_RaceSelByMeeting] TO [bodbLicenseeNet]

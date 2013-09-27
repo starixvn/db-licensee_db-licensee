@@ -500,6 +500,7 @@ IF EXISTS(SELECT TOP 1 1 FROM #Data WHERE Bettype =1233)
 BEGIN 
 	IF @wldate > @MoveBetsDay 
 	BEGIN
+		INSERT INTO @BettransDetail
 		SELECT 
 			BG.refno, 
 			BG.odds, 
@@ -517,6 +518,7 @@ BEGIN
 	END
 	IF @wldate <= @MoveBetsDay
 	BEGIN 
+		INSERT INTO @BettransDetail
 		SELECT 
 			BG.refno, 
 			BG.odds, 

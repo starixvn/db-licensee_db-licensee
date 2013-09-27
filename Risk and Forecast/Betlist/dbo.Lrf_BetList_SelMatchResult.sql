@@ -323,7 +323,7 @@ BEGIN
 		bg.stake*e.USD AS stakeUSD	
 	FROM bettransg bg with (NOLOCK)
 	INNER JOIN match m with (NOLOCK) ON bg.matchid=m.matchid 
-	INNER JOIN bettrans B ON bg.refno = B.refno
+	INNER JOIN bettrans B with (NOLOCK)ON bg.refno = B.refno
 	INNER JOIN 
 		(SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
 	ON e.exchangeid = b.currency AND  e.ExchangeDate = B.winlostdate
@@ -342,7 +342,7 @@ BEGIN
 			BG.stake*e.EUR,
 			BG.stake*e.USD
 		FROM bettransm BG WITH (NOLOCK)
-		INNER JOIN bettrans B ON BG.refno = B.refno 
+		INNER JOIN bettrans   B WITH (NOLOCK) ON BG.refno = B.refno 
 		INNER JOIN 
 		(SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
 		ON e.exchangeid = b.currency AND  e.ExchangeDate = B.winlostdate
