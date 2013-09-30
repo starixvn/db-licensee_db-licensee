@@ -1,4 +1,8 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_Result_RaceSelByMeeting]
+﻿set ANSI_NULLS ON
+set QUOTED_IDENTIFIER ON
+go
+
+ALTER PROCEDURE [dbo].[Lrf_Result_RaceSelByMeeting_xtest]
 	@FromDate DATETIME,
 	@LeagueID INT=0,
 	@Sporttype SMALLINT = 151,
@@ -68,6 +72,42 @@ BEGIN
 				AND o.placing<5
 				AND ISNULL( o.placing,0)<>0
 		ORDER BY o.leagueid, CAST(o.groupmatch AS INT), o.placing
+		
+		SELECT kickofftime,COUNT(place) rc INTO #DataSUM
+		FROM #Data
+		GROUP BY  kickofftime
+		
+		SELECT d.*
+				,temp.results as TF
+				,temp2.results2 as SCR
+				, d2.rc as [RowCount]  
+		FROm #Data d
+		INNER JOIN #DataSum d2 ON d.kickofftime=d2.kickofftime 
+		CROSS APPLY  (
+					  SELECT STUFF (
+									(
+									SELECT ','+CASE WHEN d.IsFavor<>'0' THEN  horseNo ELSE '0' END 
+												
+									FROM #Data d
+									WHERE d.kickofftime=d2.kickofftime 
+									for xml path(''), type).value('.','varchar(max)')
+									,1,1,''
+									)
+					  )temp(results)	
+		
+		CROSS APPLY  (
+					  SELECT STUFF (
+									(
+									SELECT ','+CASE WHEN d.IsSCR<>0 THEN  horseNo ELSE '0' END 
+									FROM #Data d
+									WHERE d.kickofftime=d2.kickofftime 
+									for xml path(''), type).value('.','varchar(max)')
+									,1,1,''
+									)
+					  )temp2(results2)	
+		
+		DROP TABLE #DataSum 
+		
 	END
 	IF (@Sporttype=181)
 	BEGIN 
@@ -102,7 +142,7 @@ BEGIN
 				  CONVERT(VARCHAR(20),vso.IsFavor) IsFavor,
 				   NULL IsSCR,
 				   '' FOddsStatus
-			FROM dbo.VSOutright vso (NOLOCK)
+			FROM dbo.VSOutright vso WITH (NOLOCK)
 				INNER JOIN dbo.VSRaceInfo vsr with (nolock) ON vso.EventID=vsr.EventID
 				WHERE eventdate = @FromDate 
 					AND leagueid = CASE WHEN @leagueid =0 THEN leagueid 
@@ -126,7 +166,7 @@ BEGIN
 				   CONVERT(VARCHAR(20),vso14.IsFavor) IsFavor,
 				   NULL IsSCR,
 				   '' FOddsStatus
-			FROM dbo.VSOutright14 vso14 (NOLOCK)
+			FROM dbo.VSOutright14 vso14 WITH (NOLOCK)
 			INNER JOIN dbo.VSRaceInfo vsr with (nolock) ON vso14.EventID=vsr.EventID	
 				WHERE eventdate = @FromDate 
 					AND leagueid = CASE WHEN @leagueid =0 THEN leagueid 
@@ -150,7 +190,7 @@ BEGIN
 				   CONVERT(VARCHAR(20),bk.IsFavor) IsFavor,
 				   NULL IsSCR,
 				   '' FOddsStatus
-			FROM DBARC.bodb_Archive.dbo.VSOutright_bk bk (NOLOCK)
+			FROM DBARC.bodb_Archive.dbo.VSOutright_bk bk WITH (NOLOCK)
 			INNER JOIN dbo.VSRaceInfo vsr with (nolock) ON bk.EventID=vsr.EventID	
 				WHERE eventdate = @FromDate 
 					AND leagueid = CASE WHEN @leagueid =0 THEN leagueid 
@@ -163,30 +203,22 @@ BEGIN
 			INNER JOIN dbo.HRCode c WITH (NOLOCK) ON c.CodeID=o.teamid
 			WHERE	c.CodeType=11
 			ORDER BY o.leagueid, o.kickofftime
-			
-	END
-	DECLARE @str1 VARCHAR(40)
-	DECLARE @str2 VARCHAR(40)
-	SELECT @str1='',@str2=''
-	SELECT @str2=@str2+horseNo+','
-	FROM #Data
-	WHERE isSCR=1
-	
-	SELECT @str1=horseNo+','	
-	FROM #Data
-	WHERE isFavor=1
-	
-	SELECT kickofftime,COUNT(place) rc INTO #DataSUM
+				
+	SELECT kickofftime,COUNT(place) rc INTO #DataSUMVHR
 	FROM #Data
 	GROUP BY  kickofftime
 
-	SELECT d.*,LEFT(@str1,LEN(@str1)-1)  AS TF ,LEFT(@str1,LEN(@str2)-1)  AS SCR ,d2.rc as [RowCount]  
+	SELECT d.*,'' TF,'' SCR , d2.rc as [RowCount]  
 	FROm #Data d
-	INNER JOIN #DataSum d2 ON d.kickofftime=d2.kickofftime 
-	DROP TABLE #DataSum 
+	INNER JOIN #DataSumVHR d2 ON d.kickofftime=d2.kickofftime 
+	DROP TABLE #DataSumVHR 
+			
+	END
+	
 	DROP TABLE #Data
 
  END
+
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Result_RaceSelByMeeting] TO [bodbLicenseeNet]
 GO
