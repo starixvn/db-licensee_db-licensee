@@ -2,7 +2,10 @@
 set QUOTED_IDENTIFIER ON
 go
 
-ALTER PROCEDURE [dbo].[Lrf_Result_RaceSelByMeeting_xtest]
+
+
+
+ALTER PROCEDURE [dbo].[Lrf_Result_RaceSelByMeeting]
 	@FromDate DATETIME,
 	@LeagueID INT=0,
 	@Sporttype SMALLINT = 151,
@@ -37,10 +40,10 @@ BEGIN
 							,FOddsStatus VARCHAR(20)
 							)
 	SELECT @isShowAll = CASE @isShowAll WHEN 1 THEN NULL ELSE 0 END
-	IF (@Sporttype=151)
+	IF (@Sporttype IN (151,152,153))
 	BEGIN
 		INSERT INTO #Data
-		SELECT  o.leagueid meetingid,
+		SELECT   o.leagueid meetingid,
 				o.eventdate,
 				o.kickofftime,
 				l.lcolor,
@@ -56,40 +59,39 @@ BEGIN
 				o.FOddsStatus
 				
 		FROM 
-			(	SELECT	leagueid, teamid, eventdate, kickofftime, groupmatch, matchcode, placing, oddsstatus, odds, placeodds, IsFavor, IsSCR, FOddsStatus FROM outright o with (nolock)
+			(	SELECT	leagueid, teamid, eventdate, kickofftime, groupmatch, matchcode, placing, oddsstatus, odds, placeodds, IsFavor, IsSCR, FOddsStatus FROM outright o with (nolock) WHERE eventdate=@FromDate
 				UNION ALL
-				SELECT	leagueid, teamid, eventdate, kickofftime, groupmatch, matchcode, placing, oddsstatus, odds, placeodds, IsFavor, IsSCR, 'completed' FOddsStatus FROM outright14 o with (nolock)
+				SELECT	leagueid, teamid, eventdate, kickofftime, groupmatch, matchcode, placing, oddsstatus, odds, placeodds, IsFavor, IsSCR, 'completed' FOddsStatus FROM outright14 o with (nolock) WHERE eventdate=@FromDate
 				UNION ALL
-				SELECT	leagueid, teamid, eventdate, kickofftime, groupmatch, matchcode, placing, oddsstatus, odds, placeodds, IsFavor, IsSCR, 'completed' FOddsStatus FROM DB06.bodb_Archive.dbo.outright_bk o with (nolock)
+				SELECT	leagueid, teamid, eventdate, kickofftime, groupmatch, matchcode, placing, oddsstatus, odds, placeodds, IsFavor, IsSCR, 'completed' FOddsStatus FROM DB06.bodb_Archive.dbo.outright_bk o with (nolock) WHERE eventdate=@FromDate
 			 ) o 
 			INNER JOIN league l WITH (NOLOCK) ON o.leagueid = l.leagueid 
-		WHERE	o.eventdate = @FromDate 
-				AND l.sporttype =  @Sporttype
+		WHERE	 l.sporttype =  @Sporttype
 				AND o.leagueid = CASE WHEN @leagueid =0 THEN o.leagueid 
 								 ELSE @leagueid END 
-				AND (oddsstatus ='completed' OR FoddsStatus='completed')
+				AND (oddsstatus ='completed'  OR FoddsStatus='completed')
 				AND l.isTest = isnull(@isShowAll, l.isTest)
 				AND o.placing<5
 				AND ISNULL( o.placing,0)<>0
 		ORDER BY o.leagueid, CAST(o.groupmatch AS INT), o.placing
 		
-		SELECT kickofftime,COUNT(place) rc INTO #DataSUM
+		SELECT meetingid,racename,COUNT(place) rc INTO #DataSUM
 		FROM #Data
-		GROUP BY  kickofftime
+		GROUP BY   meetingid,racename
 		
 		SELECT d.*
 				,temp.results as TF
 				,temp2.results2 as SCR
 				, d2.rc as [RowCount]  
 		FROm #Data d
-		INNER JOIN #DataSum d2 ON d.kickofftime=d2.kickofftime 
+		INNER JOIN #DataSum d2 ON d.meetingid=d2.meetingid AND  d.racename=d2.racename
 		CROSS APPLY  (
 					  SELECT STUFF (
 									(
-									SELECT ','+CASE WHEN d.IsFavor<>'0' THEN  horseNo ELSE '0' END 
+									SELECT  CAST(horseNo AS VARCHAR(10))+ ',' 
 												
 									FROM #Data d
-									WHERE d.kickofftime=d2.kickofftime 
+									WHERE d.meetingid=d2.meetingid AND  d.racename=d2.racename  AND d.IsFavor<>'0' 
 									for xml path(''), type).value('.','varchar(max)')
 									,1,1,''
 									)
@@ -98,14 +100,14 @@ BEGIN
 		CROSS APPLY  (
 					  SELECT STUFF (
 									(
-									SELECT ','+CASE WHEN d.IsSCR<>0 THEN  horseNo ELSE '0' END 
+									SELECT CAST(horseNo AS VARCHAR(10))+ ',' 
 									FROM #Data d
-									WHERE d.kickofftime=d2.kickofftime 
+									WHERE d.meetingid=d2.meetingid AND  d.racename=d2.racename  AND d.IsSCR<>0
 									for xml path(''), type).value('.','varchar(max)')
 									,1,1,''
 									)
 					  )temp2(results2)	
-		
+		ORDER BY racename, place
 		DROP TABLE #DataSum 
 		
 	END
@@ -223,3 +225,5 @@ GO
 GRANT EXECUTE ON [dbo].[Lrf_Result_RaceSelByMeeting] TO [bodbLicenseeNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_Result_RaceSelByMeeting] TO [vnteam]
+
+
