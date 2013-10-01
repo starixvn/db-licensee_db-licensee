@@ -301,7 +301,59 @@ BEGIN
 			
 		END
 	--------------------------------------------------End Virtual Horse Racing
-	select * from #tmpresult 
+	IF EXISTS (SELECT 1 FROM #tmpresult  WHERE sporttype=180)
+		BEGIN 
+				SELECT meetingid,racename,COUNT(place) rc INTO #DataSUM
+				FROM #tmpresult
+				GROUP BY   meetingid,racename
+				
+				SELECT d.*
+				,temp.results as TF
+				,temp2.results2 as SCR
+				, d2.rc as [RowCount]  
+				FROm #tmpresult d
+				INNER JOIN #DataSum d2 ON d.meetingid=d2.meetingid AND  d.racename=d2.racename
+				CROSS APPLY  (
+							  SELECT STUFF (
+											(
+											SELECT  CAST(horseNo AS VARCHAR(10))+ ',' 
+												
+											FROM #tmpresult d
+											WHERE d.meetingid=d2.meetingid AND  d.racename=d2.racename  AND d.IsFavor<>'0' 
+											for xml path(''), type).value('.','varchar(max)')
+											,1,1,''
+											)
+							  )temp(results)	
+		
+				CROSS APPLY  (
+							  SELECT STUFF (
+											(
+											SELECT CAST(horseNo AS VARCHAR(10))+ ',' 
+											FROM #tmpresult d
+											WHERE d.meetingid=d2.meetingid AND  d.racename=d2.racename  AND d.IsSCR<>0
+											for xml path(''), type).value('.','varchar(max)')
+											,1,1,''
+											)
+							  )temp2(results2)	
+				ORDER BY racename--, place
+				DROP TABLE #DataSum 
+		END--
+	ELSE IF EXISTS (SELECT 1 FROM  #tmpresult  WHERE sporttype=181)
+		BEGIN 
+			SELECT kickofftime,COUNT(place) rc INTO #DataSUMVHR
+			FROM #tmpresult
+			GROUP BY  kickofftime
+
+			SELECT d.*,'' TF,'' SCR , d2.rc as [RowCount]  
+			FROm #tmpresult d
+			INNER JOIN #DataSumVHR d2 ON d.kickofftime=d2.kickofftime 
+			ORDER BY meetingid, kickofftime,place
+			DROP TABLE #DataSumVHR 
+		END --
+	ELSE 
+		BEGIN 
+			SELECT * FROM #tmpresult 
+		END 	
 	DROP TABLE #tmpresult 
 END
 
