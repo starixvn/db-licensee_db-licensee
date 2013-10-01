@@ -8,7 +8,7 @@ ALTER  PROCEDURE [dbo].[Lrf_BetList_SelMatchResult]
 	@MatchID INT,
 	@RaceNo VARCHAR(50)=NULL
 AS
-
+ 
 /*
 Created: Henry@20101210
 Task: Get Result of match
@@ -23,7 +23,9 @@ Revisions:
 	- 20130403@Jim: support base currency USD 
 	- 20130514@Jim:Restrict permission of Licensee Users by currency
 	- 20130722@Jim: support Virtual Horse Racing
-	
+	*******************
+	sample test case:
+		exec Lrf_BetList_SelMatchResult_xtest @licenseeid=1,@matchid=2715481,@raceno=N'3',@userid=68
 */
 
 SET NOCOUNT ON
@@ -301,7 +303,7 @@ BEGIN
 			
 		END
 	--------------------------------------------------End Virtual Horse Racing
-	IF EXISTS (SELECT 1 FROM #tmpresult  WHERE sporttype=151)
+	IF EXISTS (SELECT 1 FROM #tmpresult  WHERE sporttype in (151,152,153))
 		BEGIN 
 				SELECT meetingid,racename,COUNT(place) rc INTO #DataSUM
 				FROM #tmpresult
@@ -321,7 +323,7 @@ BEGIN
 											FROM #tmpresult d
 											WHERE d.meetingid=d2.meetingid AND  d.racename=d2.racename  AND d.IsFavor<>'0' 
 											for xml path(''), type).value('.','varchar(max)')
-											,1,1,''
+											,1,2,''
 											)
 							  )temp(results)	
 		
@@ -332,7 +334,7 @@ BEGIN
 											FROM #tmpresult d
 											WHERE d.meetingid=d2.meetingid AND  d.racename=d2.racename  AND d.IsSCR<>0
 											for xml path(''), type).value('.','varchar(max)')
-											,1,1,''
+											,1,2,''
 											)
 							  )temp2(results2)	
 				ORDER BY racename--, place
@@ -356,7 +358,7 @@ BEGIN
 		END 	
 	DROP TABLE #tmpresult 
 END
-
+/*
 DECLARE @Today SMALLDATETIME 
 SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
 BEGIN
@@ -388,7 +390,9 @@ BEGIN
 	---------------------------------------		
 	DROP TABLE #Currency
 	---------------------------------------
+
 END
+*/
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelMatchResult] TO [bodbLicenseeNet]
 GO
