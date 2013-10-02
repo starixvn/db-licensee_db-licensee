@@ -309,7 +309,7 @@ BEGIN
 				b.betid,
 				b.refno,
 				b.currency,
-				r.EventTime  AS ShowTime
+				CONVERT(VARCHAR(20),r.EventTime)  AS ShowTime
 			FROM
 				bettrans b WITH (NOLOCK) 
 				INNER JOIN VSOutright o with (nolock) ON b.oddsid=o.Orid
@@ -519,7 +519,7 @@ BEGIN
 				b.betid,
 				b.refno,
 				b.currency,
-				r.EventTime  AS ShowTime
+				CONVERT(VARCHAR(20),r.EventTime)  AS ShowTime
 			FROM
 				bettrans14 b WITH (NOLOCK) 
 				INNER JOIN VSOutright14 o with (nolock) ON b.oddsid=o.Orid

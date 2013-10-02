@@ -699,7 +699,7 @@ CREATE TABLE #TempBetList
 			b.winlostdate,
 			b.currency,
 			b.playercomm, 
-			r.EventTime as ShowTime
+			CONVERT(VARCHAR(20),r.EventTime) as ShowTime
 		FROM 
 			bettrans b WITH (NOLOCK)			
 			INNER JOIN VSOutright o with (nolock) ON b.oddsid=o.Orid

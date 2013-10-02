@@ -772,7 +772,7 @@ BEGIN
 				CONVERT(BIT,0) AS IsNeutral,
 				b.Oddstype,
 				b.currency,
-				r.EventTime  AS ShowTime 
+				CONVERT(VARCHAR(20),r.EventTime)  AS ShowTime 
 			FROM bettrans b WITH (NOLOCK)
 				INNER JOIN VSOutright o with (nolock) ON b.oddsid=o.Orid
 				INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID

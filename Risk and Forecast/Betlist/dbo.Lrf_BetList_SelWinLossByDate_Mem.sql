@@ -777,7 +777,7 @@ BEGIN
 			r.Betstatus,
 			CONVERT(BIT,0) AS IsNeutral	,
 			b.currency,
-			r.EventTime AS  ShowTime 	
+			CONVERT(VARCHAR(20),r.EventTime) AS  ShowTime 	
 		FROM
 			dbo.bettrans AS b WITH (NOLOCK)		
 			INNER JOIN VSOutright o with (nolock) ON b.oddsid=o.Orid
@@ -1468,7 +1468,7 @@ BEGIN
 			r.Betstatus,
 			CONVERT(BIT,0) AS IsNeutral	,
 			b.currency,
-			r.EventTime AS  ShowTime 	
+			CONVERT(VARCHAR(20),r.EventTime) AS  ShowTime 	
 		FROM
 			dbo.bettrans14 AS b WITH (NOLOCK)		
 			INNER JOIN VSOutright14 o with (nolock) ON b.oddsid=o.Orid
@@ -2157,7 +2157,7 @@ BEGIN
 			r.Betstatus,
 			CONVERT(BIT,0) AS IsNeutral	,
 			b.currency,
-			r.EventTime AS  ShowTime 	
+			CONVERT(VARCHAR(20),r.EventTime) AS  ShowTime 	
 		FROM
 			bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)		
 			INNER JOIN DBARC.bodb_Archive.dbo.VSOutright_bk o with (nolock) ON b.oddsid=o.Orid

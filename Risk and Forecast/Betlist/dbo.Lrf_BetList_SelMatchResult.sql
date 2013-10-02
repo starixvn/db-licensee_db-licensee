@@ -307,26 +307,28 @@ BEGIN
 		BEGIN 
 				SELECT meetingid,racename,COUNT(place) rc INTO #DataSUM
 				FROM #tmpresult
+				WHERE place<5
 				GROUP BY   meetingid,racename
 				
-				SELECT d.*
+				SELECT 	d.meetingid
+				,d.racename
 				,temp.results as TF
 				,temp2.results2 as SCR
-				, d2.rc as [RowCount]  
+				INTO #tmp	
 				FROm #tmpresult d
 				INNER JOIN #DataSum d2 ON d.meetingid=d2.meetingid AND  d.racename=d2.racename
 				CROSS APPLY  (
 							  SELECT STUFF (
 											(
 											SELECT  CAST(horseNo AS VARCHAR(10))+ ',' 
-												
+														
 											FROM #tmpresult d
 											WHERE d.meetingid=d2.meetingid AND  d.racename=d2.racename  AND d.IsFavor<>'0' 
 											for xml path(''), type).value('.','varchar(max)')
 											,1,2,''
 											)
 							  )temp(results)	
-		
+				
 				CROSS APPLY  (
 							  SELECT STUFF (
 											(
@@ -337,8 +339,21 @@ BEGIN
 											,1,2,''
 											)
 							  )temp2(results2)	
-				ORDER BY racename--, place
+				ORDER BY d.meetingid,d.racename,d.place
+			
+				SELECT DISTINCT
+				 d.*
+				,d3.TF
+				,d3.SCR		
+				,d2.rc as [RowCount]  
+				FROm #tmpresult d
+				INNER JOIN #DataSum d2 ON d.meetingid=d2.meetingid AND  d.racename=d2.racename
+				INNER JOIN #tmp d3 ON d.meetingid=d3.meetingid AND  d.racename=d3.racename
+				WHERE d.place<5 
+				ORDER BY d.meetingid,d.racename,d.place
+		
 				DROP TABLE #DataSum 
+				DROP TABLE #tmp
 		END--
 	ELSE IF EXISTS (SELECT 1 FROM  #tmpresult  WHERE sporttype=181)
 		BEGIN 
@@ -349,6 +364,7 @@ BEGIN
 			SELECT d.*,'' TF,'' SCR , d2.rc as [RowCount]  
 			FROm #tmpresult d
 			INNER JOIN #DataSumVHR d2 ON d.kickofftime=d2.kickofftime 
+			WHERE d.place<5
 			ORDER BY meetingid, kickofftime,place
 			DROP TABLE #DataSumVHR 
 		END --

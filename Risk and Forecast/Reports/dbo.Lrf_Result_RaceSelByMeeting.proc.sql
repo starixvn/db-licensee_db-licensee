@@ -71,18 +71,19 @@ BEGIN
 								 ELSE @leagueid END 
 				AND (oddsstatus ='completed'  OR FoddsStatus='completed')
 				AND l.isTest = isnull(@isShowAll, l.isTest)
-				AND o.placing<5
-				AND ISNULL( o.placing,0)<>0
+				--AND o.placing<5
+				--AND ISNULL( o.placing,0)<>0
 		ORDER BY o.leagueid, CAST(o.groupmatch AS INT), o.placing
 		
 		SELECT meetingid,racename,COUNT(place) rc INTO #DataSUM
 		FROM #Data
 		GROUP BY   meetingid,racename
 		
-		SELECT d.*
+		SELECT 	d.meetingid
+				,d.racename
 				,temp.results as TF
 				,temp2.results2 as SCR
-				, d2.rc as [RowCount]  
+			INTO #tmp	
 		FROm #Data d
 		INNER JOIN #DataSum d2 ON d.meetingid=d2.meetingid AND  d.racename=d2.racename
 		CROSS APPLY  (
@@ -93,7 +94,7 @@ BEGIN
 									FROM #Data d
 									WHERE d.meetingid=d2.meetingid AND  d.racename=d2.racename  AND d.IsFavor<>'0' 
 									for xml path(''), type).value('.','varchar(max)')
-									,1,1,''
+									,1,2,''
 									)
 					  )temp(results)	
 		
@@ -104,11 +105,23 @@ BEGIN
 									FROM #Data d
 									WHERE d.meetingid=d2.meetingid AND  d.racename=d2.racename  AND d.IsSCR<>0
 									for xml path(''), type).value('.','varchar(max)')
-									,1,1,''
+									,1,2,''
 									)
 					  )temp2(results2)	
-		ORDER BY racename, place
+		ORDER BY d.meetingid,d.racename,d.place
+		
+		SELECT d.*
+				,d3.TF
+				,d3.SCR		
+				,d2.rc as [RowCount]  
+		FROm #Data d
+		INNER JOIN #DataSum d2 ON d.meetingid=d2.meetingid AND  d.racename=d2.racename
+		INNER JOIN #tmp d3 ON d.meetingid=d3.meetingid AND  d.racename=d3.racename
+		WHERE d.place<5 
+		ORDER BY d.meetingid,d.racename,d.place
+		
 		DROP TABLE #DataSum 
+		DROP TABLE #tmp
 		
 	END
 	IF (@Sporttype=181)
@@ -213,6 +226,7 @@ BEGIN
 	SELECT d.*,'' TF,'' SCR , d2.rc as [RowCount]  
 	FROm #Data d
 	INNER JOIN #DataSumVHR d2 ON d.kickofftime=d2.kickofftime 
+	ORDER BY meetingid, kickofftime,place
 	DROP TABLE #DataSumVHR 
 			
 	END

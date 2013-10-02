@@ -255,7 +255,7 @@ ELSE
 				b.Username,
 				CONVERT(BIT,0) AS IsNeutral,
 				b.currency,
-				r.eventTime AS ShowTime
+				CONVERT(VARCHAR(20),r.eventTime) AS ShowTime
 			FROM 
 				dbo.bettrans14 b WITH (NOLOCK)
 				INNER JOIN VSOutright14 o with (nolock) ON b.oddsid=o.Orid
@@ -538,7 +538,7 @@ ELSE
 				b.Username,
 				CONVERT(BIT,0) AS IsNeutral,
 				b.currency,
-				r.eventTime AS ShowTime
+				CONVERT(VARCHAR(20),r.eventTime) AS ShowTime
 			FROM 
 				dbo.bettrans b WITH (NOLOCK)
 				INNER JOIN VSOutright o with (nolock) ON b.oddsid=o.Orid

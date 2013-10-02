@@ -205,7 +205,7 @@ SELECT
 	@Username,
 	CONVERT(BIT,0) AS IsNeutral,
 	b.currency,
-	r.eventTime  AS ShowTime 
+	CONVERT(VARCHAR(20),r.eventTime)  AS ShowTime 
 FROM	bodb_Archive.dbo.bettrans_bk b WITH (NOLOCK)
 		INNER JOIN DBARC.bodb_Archive.dbo.VSOutright_bk o WITH (nolock) ON b.oddsid=o.Orid
 		INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
