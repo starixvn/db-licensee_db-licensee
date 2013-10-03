@@ -2,9 +2,6 @@
 set QUOTED_IDENTIFIER ON
 go
 
-
-
-
 ALTER PROCEDURE [dbo].[Lrf_Result_RaceSelByMeeting]
 	@FromDate DATETIME,
 	@LeagueID INT=0,
@@ -60,9 +57,9 @@ BEGIN
 				
 		FROM 
 			(	SELECT	leagueid, teamid, eventdate, kickofftime, groupmatch, matchcode, placing, oddsstatus, odds, placeodds, IsFavor, IsSCR, FOddsStatus FROM outright o with (nolock) WHERE eventdate=@FromDate
-				UNION ALL
+				UNION 
 				SELECT	leagueid, teamid, eventdate, kickofftime, groupmatch, matchcode, placing, oddsstatus, odds, placeodds, IsFavor, IsSCR, 'completed' FOddsStatus FROM outright14 o with (nolock) WHERE eventdate=@FromDate
-				UNION ALL
+				UNION 
 				SELECT	leagueid, teamid, eventdate, kickofftime, groupmatch, matchcode, placing, oddsstatus, odds, placeodds, IsFavor, IsSCR, 'completed' FOddsStatus FROM DB06.bodb_Archive.dbo.outright_bk o with (nolock) WHERE eventdate=@FromDate
 			 ) o 
 			INNER JOIN league l WITH (NOLOCK) ON o.leagueid = l.leagueid 
@@ -77,6 +74,7 @@ BEGIN
 		
 		SELECT meetingid,racename,COUNT(place) rc INTO #DataSUM
 		FROM #Data
+		WHERE place<5
 		GROUP BY   meetingid,racename
 		
 		SELECT 	d.meetingid
@@ -110,7 +108,8 @@ BEGIN
 					  )temp2(results2)	
 		ORDER BY d.meetingid,d.racename,d.place
 		
-		SELECT d.*
+		SELECT  DISTINCT
+				d.*
 				,d3.TF
 				,d3.SCR		
 				,d2.rc as [RowCount]  

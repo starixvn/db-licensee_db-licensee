@@ -2441,7 +2441,7 @@ BEGIN
 			BG.stake * e.EUR,
 			BG.stake * e.USD
 		FROM bettransg BG WITH (NOLOCK)
-		INNER JOIN @BetListByDateMem B ON BG.transID = B.refno and BG.custid = @CustID
+		INNER JOIN @BetListByDateMem B ON BG.refno = B.refno and BG.custid = @CustID
 		INNER JOIN #TempExchange e ON e.ExchangeDate = b.winlostdate   AND e.exchangeid = b.currency
 		WHERE B.Bettype BETWEEN 1101 AND 1199
 	END
