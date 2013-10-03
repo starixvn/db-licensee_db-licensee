@@ -32,6 +32,7 @@ Revisions:
 	- 20120816@Henry: add ShowLiveCasino 
 	- 20130411@Jim: support base currency
 	- 20130514@Jim:Restrict permission of Licensee Users by currency
+	- 20130809@Jim: offer Virtual Horse Racing
 Param's Explanation:
 + @CustID: AgentID
 */
@@ -123,7 +124,8 @@ SELECT
 	CASE WHEN b.bettype BETWEEN 1101 AND 1199 THEN ISNULL(m.showtime,'') ELSE '' END AS ShowTime
 FROM 
 	bettrans AS b WITH (NOLOCK)
-	INNER JOIN (SELECT sporttype, homeid, awayid, leagueid, matchid, matchcode, eventdate, isneutral,showtime FROM match (NOLOCK) WHERE eventdate > DATEADD(DAY,-3,CURRENT_TIMESTAMP)) AS m ON b.matchid = m.matchid
+	INNER JOIN (SELECT sporttype, homeid, awayid, leagueid, matchid, matchcode, eventdate, isneutral,showtime FROM match (NOLOCK) WHERE eventdate > DATEADD(DAY,-3,CURRENT_TIMESTAMP)
+				) AS m ON b.matchid = m.matchid
 WHERE
 	b.custid = @CustID
 	AND b.recommend = @recommend
@@ -139,7 +141,7 @@ SELECT
 	b.Transdate,   
 	b.winlostdate,  
 	b.refno, 
-	m.HomeID,  
+	CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN vhr.HomeID ELSE m.HomeID END ,  
 	0 AS AwayID,  
 	'' AS Betteam,    
 	Bettype, 
@@ -153,11 +155,11 @@ SELECT
 	0 AS Liveindicator, 
 	0 AS Livehomescore, 
 	0 AS Liveawayscore,  
-	m.LeagueID,
-	m.orid AS matchid,
-	m.matchcode,
-	groupmatch AS Race,
-	eventdate,
+	CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN  vhr.LeagueID ELSE m.LeagueID END,
+	CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN vhr.EventID ELSE b.matchID END AS matchid,
+	CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN vhr.matchcode ELSE m.matchcode END,
+	CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN vhr.groupmatch ELSE m.groupmatch END AS Race,
+	CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN vhr.eventdate ELSE m.eventdate END ,
 	b.IP AS IP,
 	CONVERT(BIT,0) AS IsNeutral,
 	b.betid,
@@ -165,10 +167,25 @@ SELECT
 	'' AS ShowTime
 FROM 
 	bettrans AS b WITH (NOLOCK)
-	INNER JOIN (SELECT teamid AS homeid, leagueid, orid, matchcode, groupmatch, eventdate FROM outright (NOLOCK) WHERE eventdate > DATEADD(DAY,-3,CURRENT_TIMESTAMP)) AS m ON b.matchid = m.orid
+	INNER JOIN (SELECT teamid AS homeid, leagueid, orid, matchcode, groupmatch, eventdate
+				FROM outright (NOLOCK) WHERE eventdate > DATEADD(DAY,-3,CURRENT_TIMESTAMP)
+				) AS m ON b.matchid = m.orid
 	INNER JOIN league l WITH (NOLOCK) ON m.leagueid = l.leagueid
+	INNER JOIN (
+				SELECT vso.RacerID as homeid,
+						vsr.LeagueID,
+						vsr.EventID,
+						vso.Orid,
+						CONVERT(VARCHAR(20),vso.RacerNum) as matchcode,
+						'' groupmatch,
+						vso.EventDate
+				FROM dbo.VSOutright vso (NOLOCK) 
+				INNER JOIN dbo.VSRaceInfo vsr with (nolock) ON vso.EventID=vsr.EventID
+				WHERE 	vso.eventdate > DATEADD(DAY,-3,CURRENT_TIMESTAMP)
+				) as vhr ON b.oddsid=vhr.Orid
+				
 WHERE		
-	b.bettype in (10,31,32,33,41,42,43)
+	b.bettype in (10,31,32,33,41,42,43,1231, 1232, 1233, 1237, 1238 )
 	AND b.recommend = @recommend
 	AND b.custid = @CustID
 	AND b.statusID IN (101,102)
@@ -237,6 +254,25 @@ BEGIN
 	INNER JOIN #Data B ON BG.refno = B.refno and BG.custid = b.custid
 	INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
 	WHERE B.Bettype BETWEEN 1101 AND 1199	
+END 
+
+IF EXISTS (SELECT TOP 1 1 FROM #Data WHERE Bettype=1233)
+BEGIN 
+	INSERT INTO @BettransDetail
+	SELECT 
+		BG.refno, 
+		BG.odds, 
+		BG.stake,
+		BG.status, 
+		BG.apositiontaking, 
+		BG.bettype,
+		BG.betteam,
+		BG.stake*e.EUR,	
+		BG.stake*e.USD
+	FROM bettransm BG WITH (NOLOCK)
+	INNER JOIN #Data B ON BG.refno = B.refno and BG.custid = b.custid
+	INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
+	WHERE B.Bettype=1233
 END 
 
 SELECT * FROM @BettransDetail 

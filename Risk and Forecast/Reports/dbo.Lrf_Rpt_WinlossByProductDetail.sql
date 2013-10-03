@@ -567,6 +567,7 @@ BEGIN
 				WHEN b.sporttype=161 THEN 'NG'
 				WHEN b.sporttype=162 THEN 'LC' 
 				WHEN b.sporttype=180 THEN 'VS'
+				WHEN b.sporttype=181 THEN 'VS'
 				WHEN b.sporttype=251 THEN 'CS'
 				WHEN b.sporttype=252 THEN 'BG'
 			END AS ProductCode,
@@ -576,6 +577,7 @@ BEGIN
 				WHEN b.sporttype=161 THEN 'Number Game'
 				WHEN b.sporttype=162 THEN 'Live Casino' 
 				WHEN b.sporttype=180 THEN 'Virtual Sports'
+				WHEN b.sporttype=181 THEN 'Virtual Sports'
 				WHEN b.sporttype=251 THEN 'RNG Casino'
 				WHEN b.sporttype=252 THEN 'Bingo'
 			END AS ProductName,	
@@ -649,6 +651,7 @@ BEGIN
 				WHEN b.sporttype=161 THEN 'NG'
 				WHEN b.sporttype=162 THEN 'LC' 
 				WHEN b.sporttype=180 THEN 'VS'
+				WHEN b.sporttype=181 THEN 'VS'
 				WHEN b.sporttype=251 THEN 'CS'
 				WHEN b.sporttype=252 THEN 'BG'
 			END,
@@ -658,6 +661,7 @@ BEGIN
 				WHEN b.sporttype=161 THEN 'Number Game'
 				WHEN b.sporttype=162 THEN 'Live Casino' 
 				WHEN b.sporttype=180 THEN 'Virtual Sports'
+				WHEN b.sporttype=181 THEN 'Virtual Sports'
 				WHEN b.sporttype=251 THEN 'RNG Casino'
 				WHEN b.sporttype=252 THEN 'Bingo'
 			END
@@ -756,6 +760,7 @@ BEGIN
 				WHEN b.sporttype=161 THEN 'NG'
 				WHEN b.sporttype=162 THEN 'LC' 
 				WHEN b.sporttype=180 THEN 'VS'
+				WHEN b.sporttype=181 THEN 'VS'
 				WHEN b.sporttype=251 THEN 'CS'
 				WHEN b.sporttype=252 THEN 'BG'
 			END AS ProductCode, 
@@ -765,6 +770,7 @@ BEGIN
 				WHEN b.sporttype=161 THEN 'Number Game'
 				WHEN b.sporttype=162 THEN 'Live Casino' 
 				WHEN b.sporttype=180 THEN 'Virtual Sports'
+				WHEN b.sporttype=181 THEN 'Virtual Sports'
 				WHEN b.sporttype=251 THEN 'RNG Casino'
 				WHEN b.sporttype=252 THEN 'Bingo'
 			END AS ProductName,	
@@ -838,6 +844,7 @@ BEGIN
 				WHEN b.sporttype=161 THEN 'NG'
 				WHEN b.sporttype=162 THEN 'LC' 
 				WHEN b.sporttype=180 THEN 'VS'
+				WHEN b.sporttype=181 THEN 'VS'
 				WHEN b.sporttype=251 THEN 'CS'
 				WHEN b.sporttype=252 THEN 'BG'
 			END,
@@ -847,6 +854,7 @@ BEGIN
 				WHEN b.sporttype=161 THEN 'Number Game'
 				WHEN b.sporttype=162 THEN 'Live Casino' 
 				WHEN b.sporttype=180 THEN 'Virtual Sports'
+				WHEN b.sporttype=181 THEN 'Virtual Sports'
 				WHEN b.sporttype=251 THEN 'RNG Casino'
 				WHEN b.sporttype=252 THEN 'Bingo'
 			END

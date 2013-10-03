@@ -109,7 +109,8 @@ CREATE TABLE #Data
 	showtime NVARCHAR(50) -- table - shoe - hand of Live Casino
 )
 
-IF EXISTS(SELECT TOP 1 1 FROM Match WITH(NOLOCK) WHERE MatchID=@MatchID)
+IF EXISTS(SELECT TOP 1 1 FROM Match WITH(NOLOCK) WHERE MatchID=@MatchID
+		 )
 BEGIN	
 	IF @ShowBA = 1
 	BEGIN

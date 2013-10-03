@@ -8,7 +8,7 @@ ALTER  PROCEDURE [dbo].[Lrf_BetList_SelMatchResult]
 	@MatchID INT,
 	@RaceNo VARCHAR(50)=NULL
 AS
-
+ 
 /*
 Created: Henry@20101210
 Task: Get Result of match
@@ -23,10 +23,13 @@ Revisions:
 	- 20130403@Jim: support base currency USD 
 	- 20130514@Jim:Restrict permission of Licensee Users by currency
 	- 20130722@Jim: support Virtual Horse Racing
-	
+	*******************
+	sample test case:
+		exec Lrf_BetList_SelMatchResult_xtest @licenseeid=1,@matchid=2715481,@raceno=N'3',@userid=68
 */
 
 SET NOCOUNT ON
+
 IF(@RaceNo is NULL )
 BEGIN
 	IF exists(SELECT 1 FROM match WITH(NOLOCK) WHERE matchid = @matchid)
@@ -65,7 +68,8 @@ BEGIN
 		ORDER BY m.eventdate,m.matchcode
 		RETURN
 	END
-	IF exists(SELECT 1 FROM match14 WITH(NOLOCK) WHERE matchid = @matchid)	
+	IF exists(SELECT 1 FROM match14 WITH(NOLOCK) WHERE matchid = @matchid)
+			 	
 	BEGIN
 		SELECT 
 			m.sporttype, 
@@ -139,14 +143,16 @@ BEGIN
 END
 ELSE
 BEGIN
+	CREATE TABLE  #tmpresult (horseNo varchar(50),KickoffTime datetime ,racename varchar(50),place tinyint,sporttype INT,horseid INT, odds smallmoney,PlaceOdds smallmoney,meetingid int,oddsstatus varchar(10),IsFavor varchar(10),IsSCR bit,FOddsStatus varchar(10))
 	DECLARE	@leagueid INT, @eventdate DATETIME 
 	IF exists(select 1 from outright WITH(NOLOCK) where orid = @matchid)
 	BEGIN
 		SELECT	@leagueid = leagueid , @eventdate = eventdate 
 		FROM	Outright WITH (NOLOCK)
 		WHERE	orid = @matchid 
-
+		insert into #tmpresult 
 		SELECT	matchcode AS horseNo, 
+				NULL,
 				CAST(o.groupmatch AS INT) 
 				AS racename,
 				CASE WHEN o.placing = 0 THEN 5 ELSE isnull(placing,5) END place, 
@@ -156,7 +162,7 @@ BEGIN
 				o.placeodds,
 				o.leagueid AS meetingid,
 				o.oddsstatus status,
-				o.IsFavor,
+				convert(varchar(10),o.IsFavor),
 				o.IsSCR,
 				o.FOddsStatus
 		FROM	Outright o WITH (NOLOCK)	
@@ -173,8 +179,9 @@ BEGIN
 		SELECT	@leagueid = leagueid , @eventdate = eventdate 
 		FROM	Outright14 WITH (NOLOCK)
 		WHERE	orid = @matchid 
-
+		insert into #tmpresult 
 		SELECT	matchcode AS horseNo, 
+				NULL,
 				CAST(o.groupmatch AS INT) AS racename,
 				CASE WHEN o.placing = 0 THEN 5 ELSE isnull(placing,5) END place, 
 				l.sporttype, 
@@ -183,7 +190,7 @@ BEGIN
 				o.placeodds,
 				o.leagueid AS meetingid,
 				o.oddsstatus status,
-				o.IsFavor,
+				convert(varchar(10),o.IsFavor),
 				o.IsSCR,
 				o.FOddsStatus
 		FROM	Outright14 o WITH (NOLOCK)
@@ -199,8 +206,9 @@ BEGIN
 		SELECT	@leagueid = leagueid , @eventdate = eventdate 
 		FROM	DB06.bodb_Archive.dbo.Outright_bk WITH (NOLOCK)
 		WHERE	orid = @matchid 
-
+		insert into #tmpresult 
 		SELECT	matchcode AS horseNo, 
+				NULL,
 				CAST(bk.groupmatch AS INT) AS racename,
 				CASE WHEN placing = 0 THEN 5 ELSE isnull(placing,5) END place, 
 				l.sporttype, 
@@ -209,7 +217,7 @@ BEGIN
 				bk.placeodds,
 				bk.leagueid AS meetingid,
 				bk.oddsstatus status,
-				bk.IsFavor,
+				convert(varchar(10),IsFavor),
 				bk.IsSCR,
 				bk.FOddsStatus
 		FROM	DB06.bodb_Archive.dbo.Outright_bk bk WITH (NOLOCK)
@@ -222,11 +230,13 @@ BEGIN
 	END 
 	--------------------------------------------------Virtual Horse Racing
 
-	ELSE IF exists(select 1 from VSOutright WITH(NOLOCK) where orid = @RaceNo)
+	IF exists( SELECT TOP 1 1 FROM VSOutright WITH(NOLOCK) WHERE EventID=@MatchID)
 		BEGIN
 			-- Virtual HR 
+			insert into #tmpresult 
 			SELECT	RacerNum AS horseNo, 
-					r.EventTime AS racename,
+					r.EventTime,
+					NULL AS racename,
 					placing AS place, 
 					r.SportType,
 					o.RacerID horseid,
@@ -242,12 +252,15 @@ BEGIN
 			WHERE	o.EventID = @MatchID
 					AND (ISNULL(placing,0) <> 0)
 			ORDER BY placing
+			
 		END
-		ELSE IF exists(select 1 from VSOutright14 WITH(NOLOCK) where orid = @RaceNo)
+		ELSE IF exists(SELECT TOP 1 1 FROM VSOutright14 WITH(NOLOCK) WHERE EventID=@MatchID)
 		BEGIN
 			-- Virtual HR 
+			insert into #tmpresult 
 			SELECT	RacerNum AS horseNo, 
-					r.EventTime AS racename,
+					r.EventTime,
+					NULL AS racename,
 					placing AS place, 
 					r.SportType,
 					o.RacerID horseid,
@@ -263,12 +276,15 @@ BEGIN
 			WHERE	o.EventID = @MatchID
 					AND (ISNULL(placing,0) <> 0)
 			ORDER BY placing
+			
 		END
 		ELSE 
 		BEGIN
 			-- Virtual HR 
+			insert into #tmpresult 
 			SELECT	RacerNum AS horseNo, 
-					r.EventTime AS racename,
+					r.EventTime,
+					NULL AS racename,
 					placing AS place, 
 					r.SportType,
 					o.RacerID horseid,
@@ -284,11 +300,81 @@ BEGIN
 			WHERE	o.EventID = @MatchID
 					AND (ISNULL(placing,0) <> 0)
 			ORDER BY placing
+			
 		END
 	--------------------------------------------------End Virtual Horse Racing
+	IF EXISTS (SELECT 1 FROM #tmpresult  WHERE sporttype in (151,152,153))
+		BEGIN 
+				SELECT meetingid,racename,COUNT(place) rc INTO #DataSUM
+				FROM #tmpresult
+				WHERE place<5
+				GROUP BY   meetingid,racename
+				
+				SELECT 	d.meetingid
+				,d.racename
+				,temp.results as TF
+				,temp2.results2 as SCR
+				INTO #tmp	
+				FROm #tmpresult d
+				INNER JOIN #DataSum d2 ON d.meetingid=d2.meetingid AND  d.racename=d2.racename
+				CROSS APPLY  (
+							  SELECT STUFF (
+											(
+											SELECT  CAST(horseNo AS VARCHAR(10))+ ',' 
+														
+											FROM #tmpresult d
+											WHERE d.meetingid=d2.meetingid AND  d.racename=d2.racename  AND d.IsFavor<>'0' 
+											for xml path(''), type).value('.','varchar(max)')
+											,1,2,''
+											)
+							  )temp(results)	
+				
+				CROSS APPLY  (
+							  SELECT STUFF (
+											(
+											SELECT CAST(horseNo AS VARCHAR(10))+ ',' 
+											FROM #tmpresult d
+											WHERE d.meetingid=d2.meetingid AND  d.racename=d2.racename  AND d.IsSCR<>0
+											for xml path(''), type).value('.','varchar(max)')
+											,1,2,''
+											)
+							  )temp2(results2)	
+				ORDER BY d.meetingid,d.racename,d.place
+			
+				SELECT DISTINCT
+				 d.*
+				,d3.TF
+				,d3.SCR		
+				,d2.rc as [RowCount]  
+				FROm #tmpresult d
+				INNER JOIN #DataSum d2 ON d.meetingid=d2.meetingid AND  d.racename=d2.racename
+				INNER JOIN #tmp d3 ON d.meetingid=d3.meetingid AND  d.racename=d3.racename
+				WHERE d.place<5 
+				ORDER BY d.meetingid,d.racename,d.place
+		
+				DROP TABLE #DataSum 
+				DROP TABLE #tmp
+		END--
+	ELSE IF EXISTS (SELECT 1 FROM  #tmpresult  WHERE sporttype=181)
+		BEGIN 
+			SELECT kickofftime,COUNT(place) rc INTO #DataSUMVHR
+			FROM #tmpresult
+			GROUP BY  kickofftime
 
+			SELECT d.*,'' TF,'' SCR , d2.rc as [RowCount]  
+			FROm #tmpresult d
+			INNER JOIN #DataSumVHR d2 ON d.kickofftime=d2.kickofftime 
+			WHERE d.place<5
+			ORDER BY meetingid, kickofftime,place
+			DROP TABLE #DataSumVHR 
+		END --
+	ELSE 
+		BEGIN 
+			SELECT * FROM #tmpresult 
+		END 	
+	DROP TABLE #tmpresult 
 END
-
+/*
 DECLARE @Today SMALLDATETIME 
 SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
 BEGIN
@@ -307,7 +393,7 @@ BEGIN
 		bg.stake*e.USD AS stakeUSD	
 	FROM bettransg bg with (NOLOCK)
 	INNER JOIN match m with (NOLOCK) ON bg.matchid=m.matchid 
-	INNER JOIN bettrans B ON bg.refno = B.refno
+	INNER JOIN bettrans B with (NOLOCK)ON bg.refno = B.refno
 	INNER JOIN 
 		(SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
 	ON e.exchangeid = b.currency AND  e.ExchangeDate = B.winlostdate
@@ -315,10 +401,14 @@ BEGIN
 	WHERE	b.bettype between 1101 and 1199 and
 			b.statusID in (0,1)
 			AND m.matchid=@matchID
+	
+			
 	---------------------------------------		
 	DROP TABLE #Currency
 	---------------------------------------
+
 END
+*/
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelMatchResult] TO [bodbLicenseeNet]
 GO

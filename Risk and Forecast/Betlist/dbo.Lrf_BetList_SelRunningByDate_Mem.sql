@@ -50,6 +50,7 @@ Revisions:
    - 20130326@Jim: remove input parameter @GetAll
    - 20130514@Jim: Restrict permission of Licensee Users by currency
    - 20130716@Jim: update matchid for RNG Casino and Bingo
+   - 20130903@Jim: support Virtual Horse Racing
 */
 
 SET NOCOUNT ON
@@ -661,8 +662,53 @@ CREATE TABLE #TempBetList
 			AND b.statusID IN (0,1) 
 			AND ((@ShowNG=1 AND b.bettype BETWEEN 81 AND 120)
 				OR (@ShowLC=1 AND b.bettype BETWEEN 1101 AND 1199)
-				OR (@ShowVS=1 AND b.bettype BETWEEN 1201 AND 1299)
+				OR (@ShowVS=1 AND b.bettype BETWEEN 1201 AND 1299 AND b.bettype NOT IN  (1231, 1232, 1233, 1237, 1238))
 				)
+		UNION ALL
+			SELECT
+			r.sporttype,
+			@Username AS UserName,
+			b.bettype,
+			r.leagueID,	
+			b.refno,					
+			b.transid,
+			ISNULL(b.BetID,0),
+			CONVERT(VARCHAR(50),o.RacerNum) as matchcode,
+			b.oddsid AS Race,
+			o.RacerID as homeID,
+			0 as awayID,
+			b.hdp1 AS hdp1, 
+			b.hdp2 AS hdp2,
+			b.odds,
+			b.modds,
+			--b.status,
+			CASE WHEN b.status = 'running' AND IsNull(b.SecAcceptFlag, 0) = 1 and IsNull(b.checktime, CURRENT_TIMESTAMP) > CURRENT_TIMESTAMP THEN 'waiting'  
+			ELSE b.status   
+			END as status,
+			b.stake,
+			b.actual_stake, 
+			b.transdate,		
+			b.betteam,
+			b.discount,
+			b.liveindicator, 
+			b.livehomescore, 
+			b.liveawayscore,
+			b.IP AS IP,
+			CONVERT(BIT,0) AS IsNeutral,
+			b.oddstype,
+			b.winlostdate,
+			b.currency,
+			b.playercomm, 
+			CONVERT(VARCHAR(20),r.EventTime) as ShowTime
+		FROM 
+			bettrans b WITH (NOLOCK)			
+			INNER JOIN VSOutright o with (nolock) ON b.oddsid=o.Orid
+			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
+		WHERE
+			b.transdate>= @FromDate AND b.transdate<= @ToDate AND 
+			b.custid=@CustID 
+			AND b.statusID IN (0,1) 
+			AND b.bettype IN  (1231, 1232, 1233, 1237, 1238)
 	END
 	--- RNG Casino
 	IF @ShowCS=1 
@@ -821,6 +867,27 @@ begin
 		(SELECT * FROM Lrf_f_GetExchangeDaily(@Fromdate,@Todate))e 
 	ON  e.ExchangeDate = B.winlostdate AND e.exchangeid = b.currency
 	WHERE B.Bettype IN (33,43)
+END
+IF @ShowVS = 1
+begin
+	--get data FROM bettransm for bettype 1233
+	INSERT INTO @BetListDetail
+	SELECT 
+		BM.refno, 
+		BM.odds, 
+		BM.stake,
+		BM.status ,
+		BM.apositiontaking, 
+		BM.bettype,
+		'' as betteam ,
+		BM.stake*e.EUR,
+		BM.stake*e.USD
+	FROM bettransm BM with (NOLOCK)
+	INNER JOIN #BetListSelRunningByDateMem B ON BM.refno = B.refno
+	INNER JOIN 
+		(SELECT * FROM Lrf_f_GetExchangeDaily(@Fromdate,@Todate))e 
+	ON  e.ExchangeDate = B.winlostdate AND e.exchangeid = b.currency
+	WHERE B.Bettype =1233
 END
 
 IF @ShowLC = 1

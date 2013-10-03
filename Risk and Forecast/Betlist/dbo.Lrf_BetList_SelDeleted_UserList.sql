@@ -60,7 +60,7 @@ INSERT INTO @bc (custid, betcount)
 SELECT b.custid, SUM(1) AS betcount
 FROM 
 	bettrans AS b WITH (nolock)
-	INNER JOIN (SELECT orid,eventdate FROM dbo.VSOutright WITH (nolock) WHERE eventdate > DATEADD(day,-3,CURRENT_TIMESTAMP))  AS m ON b.matchid = m.orid
+	INNER JOIN (SELECT orid,eventdate FROM dbo.VSOutright WITH (nolock) WHERE eventdate > DATEADD(day,-3,CURRENT_TIMESTAMP))  AS m ON b.oddsid = m.orid
 WHERE 
 	b.recommend IN (SELECT custid FROM @TempAg) 
 	AND b.statusID IN (101, 102)

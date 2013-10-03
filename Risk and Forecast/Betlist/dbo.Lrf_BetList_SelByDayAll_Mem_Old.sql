@@ -45,6 +45,7 @@ Revisions:
 	- 20130410@Jim: return betteam,modd value for Parlay ticket (Mix parlay & system parlay)
 	- 20130411@Jim: support base currency USD
 	- 20130514@Jim: Restrict permission of Licensee Users by currency
+	- 20130905@Jim: support VHR
 	
 Param's Explanation: 
 
@@ -161,7 +162,55 @@ FROM	bodb_Archive.dbo.bettrans_bk b WITH (NOLOCK)
 		LEFT JOIN DBLIC.bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
 WHERE	b.custid=@custid 		
 		AND b.winlostdate = @fromdate 
-		
+-- VHR
+INSERT INTO @Data 
+SELECT
+	r.sporttype, 
+	r.leagueid,
+	o.RacerID homeID,
+	0 awayID,
+	b.bettype,
+	CONVERT (VARCHAR(50),o.RacerNum) matchcode,
+	'' AS race,
+	o.EventID matchid, 
+	b.transid, 
+	b.transdate, 
+	b.winlostdate,
+	b.refno, 
+	--CASE WHEN b.bettype = 87 THEN b.betid ELSE 0 END, --- 87- High Low for NG: Current Live Ball 
+	b.betid,
+	b.oddsid, 
+	b.hdp1, 
+	b.hdp2,
+	modds, 
+	b.Oddstype,
+	b.Odds,	
+	b.betteam,
+	b.status AS status,
+	r.betstatus, 
+	b.stake,
+	b.actual_stake, 
+	(b.winlost-b.actual_stake) AS winlost, 
+	 - (b.winlost-b.actual_stake)  AS LicenseeWL ,
+	b.comm,
+	b.playercomm,
+	b.livehomescore, 
+	b.liveawayscore, 
+	b.liveindicator, 
+	0 as finalhomescore, 
+	0 as finalawayscore,
+	0 as hthomescore, 
+	0 as htawayscore,
+	b.IP AS IP,
+	@Username,
+	CONVERT(BIT,0) AS IsNeutral,
+	b.currency,
+	CONVERT(VARCHAR(20),r.eventTime)  AS ShowTime 
+FROM	bodb_Archive.dbo.bettrans_bk b WITH (NOLOCK)
+		INNER JOIN DBARC.bodb_Archive.dbo.VSOutright_bk o WITH (nolock) ON b.oddsid=o.Orid
+		INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
+WHERE	b.custid=@custid 		
+		AND b.winlostdate = @fromdate 			
 
 -- mix parlay
 INSERT INTO @Data 
@@ -433,8 +482,27 @@ BEGIN
 			INNER JOIN #TempExchange e
 			ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 	WHERE	B.Bettype IN (33,43)
+	
 END
-	 
+IF EXISTS (SELECT TOP 1 1 FROM @Data WHERE Bettype =1233)
+BEGIN
+	 --get data from bettransm14 for bettype 1233
+	INSERT INTO @BettransDetail 
+	SELECT 
+		BM.refno,
+		BM.odds,		
+		BM.Stake,
+		BM.status,
+		BM.apositiontaking,
+		BM.bettype,
+		BM.Betteam,
+		BM.stake*e.EUR,	
+		BM.stake*e.USD		
+	FROM bodb_Archive.dbo.bettransm BM with (NOLOCK)
+	INNER JOIN @Data B ON BM.refno = B.refno
+	INNER JOIN #TempExchange e ON  e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
+	WHERE B.Bettype = 1233
+END			
 		
 SELECT * FROM @BettransDetail		
 ORDER BY refno, bettype

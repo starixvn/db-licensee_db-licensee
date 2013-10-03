@@ -26,6 +26,7 @@ Revisions:
 	- 20121115@Henry: Only Sportsbook needs to exclude BA
 	- 20130618@Jim:  Restrict permission of Licensee Users by currency
 	- 20130625@Jim: support to view currency UUS 
+	
 Return 3 tables:
 WinlostBySport
 WinlostByCurrency
@@ -209,7 +210,6 @@ BEGIN
 			m.sporttype = @SportId
 		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype,
 					CASE WHEN b.bettype BETWEEN 1101 AND 1199  THEN ISNULL(m.showtime,'') ELSE '' END 
-				
 	END
 	
 	

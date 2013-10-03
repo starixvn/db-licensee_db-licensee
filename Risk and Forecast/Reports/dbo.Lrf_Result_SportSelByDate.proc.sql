@@ -16,6 +16,7 @@ Revisions:
 	20120815@Jim: add live casino
 	20120906@Jim: add virtual sport
 	20130722@Jim: add Virtual Horse Racing (Sporttype=181)
+	20130916@Jim: add Virtual Tennis (sporttype=186)
 */
 
 SET NOCOUNT ON
@@ -31,6 +32,14 @@ SELECT distinct sports.sporttype, sportname from sports with (nolock)
 	UNION ALL
 	SELECT matchid, eventdate, eventstatus, sporttype 
 	from match14 (nolock)	
+	UNION ALL 
+	SELECT vso.EventID as matchid,vso.EventDate,vso.EventStatus,vsr.Sporttype
+	FROM dbo.VSOutright vso WITH (NOLOCK)
+		INNER JOIN dbo.VSRaceInfo vsr with (nolock) ON vso.EventID=vsr.EventID
+	UNION ALL 
+	SELECT vso14.EventID as matchid,vso14.EventDate,vso14.EventStatus,vsr.Sporttype
+	FROM dbo.VSOutright14 vso14 WITH (NOLOCK)
+		INNER JOIN dbo.VSRaceInfo vsr with (nolock) ON vso14.EventID=vsr.EventID
 	) match on match.sporttype = sports.sporttype
 LEFT JOIN match_remark mr ON match.matchid = mr.matchid
 WHERE
@@ -40,7 +49,7 @@ WHERE
 			OR ( mr.IsPending=1 AND match.eventstatus IN ('running','closed') )
 			OR ( mr.IsHTCal = 1 AND match.eventstatus ='running')
 		 )
-	AND (sports.sporttype <= 99 OR sports.sporttype IN( 161,162,180,181))
+	AND (sports.sporttype <= 99 OR sports.sporttype IN( 161,162,180,181,186))
 UNION ALL 
 SELECT s.sporttype, s.sportname  
 FROM (  
