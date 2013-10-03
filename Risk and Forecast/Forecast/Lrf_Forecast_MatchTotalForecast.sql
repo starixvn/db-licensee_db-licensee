@@ -21,6 +21,7 @@ Task : Forecast
 DB: DB052.bodb02
 Original: [Lrf_Forecast_MatchTotalForecast]
 Revisions:    
+	20130930@Victor: Revert back formular for HDP tickets
 
 */
 
@@ -78,7 +79,7 @@ BEGIN
 		CASE WHEN bettype IN (3,8) THEN hdp1
 			ELSE hdp2 - hdp1
 		END AS hdp,
-		bettype, stake, odds, betteam, currency
+		bettype, stake, odds, betteam, currency, ISNULL(livehomescore,0) AS livehomescore, ISNULL(liveawayscore,0) AS liveawayscore
 	INTO #Data
 	FROM bodb02.dbo.bettrans b (NOLOCK)
 	WHERE	b.recommend IN ( SELECT custid FROM   @TempAg )
@@ -88,7 +89,67 @@ BEGIN
 			AND b.ruben = 0
 			AND b.tpositiontaking <> 0
 	
-	-- Get detail resultset
+	-- Get Handicap detail resultset
+	;WITH ScoreDiff AS
+	(
+		SELECT  
+			b.[Type],b.hdp,bettype, stake, odds, betteam, currency,
+			CASE
+				WHEN betteam LIKE 'h' THEN hdp
+				ELSE -hdp
+			END	+
+			CASE
+				WHEN betteam LIKE 'h' THEN (@HomeScore - livehomescore) - (@AwayScore - liveawayscore)
+				ELSE (@AwayScore - liveawayscore) - (@HomeScore - livehomescore)
+			END AS ScoreDiff
+	
+		FROM #Data b
+		WHERE b.bettype IN (1,7) -- Handicap only
+	)
+	, HomeAwayWL AS
+	(
+		SELECT d.*,
+			CASE 
+				WHEN ((ScoreDiff > 0 AND betteam = 'h') OR (ScoreDiff<0 AND betteam = 'a') OR (ScoreDiff = 0 AND betteam = 'h')) THEN -- LCLose
+					(CASE 
+						WHEN ScoreDiff = -0.25 THEN (CASE WHEN odds < 0 THEN ABS(odds)-1 ELSE 1-odds END)* stake * 0.5 -- Half Lose
+						ELSE -((CASE WHEN odds < 0 THEN 1 ELSE odds END) * stake) 
+					END)
+				ELSE -- LCWin 
+					(CASE 
+						WHEN ScoreDiff = -0.25 THEN (CASE WHEN odds < 0 THEN ABS(odds)-1 ELSE 1-odds END)* stake * 0.5 -- Half Lose
+						ELSE ((CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END) * stake) 
+					END)
+			END AS HomeWL,
+			CASE 
+				WHEN ((ScoreDiff > 0 AND betteam = 'h') OR (ScoreDiff<0 AND betteam = 'a') OR (ScoreDiff = 0 AND betteam = 'h')) THEN -- LCWin
+					(CASE 
+						WHEN ScoreDiff = -0.25 THEN (CASE WHEN odds < 0 THEN ABS(odds)-1 ELSE 1-odds END)* stake * 0.5 -- Half Lose 
+						ELSE ((CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END) * stake) 
+					END)
+				ELSE -- LCLose
+					(CASE 
+						WHEN ScoreDiff = -0.25 THEN (CASE WHEN odds < 0 THEN ABS(odds)-1 ELSE 1-odds END)* stake * 0.5 -- Half Lose
+						ELSE -((CASE WHEN odds < 0 THEN 1 ELSE odds END) * stake) 
+					END)
+			END AS AwayWL
+		FROM ScoreDiff d
+	)
+	INSERT INTO #SecondRS
+	SELECT bettype, 
+		hdp, 
+		SUM(HomeWL) AS HomeWinloss,
+		SUM(HomeWL*e.USD) AS HomeWinlossUSD,
+		SUM(HomeWL*e.EUR) AS HomeWinlossEUR,
+		SUM(AwayWL) AS AwayWinloss,
+		SUM(AwayWL * e.USD) AS AwayWinlossUSD,
+		SUM(AwayWL * e.EUR) AS AwayWinlossEUR
+	FROM HomeAwayWL lc
+		INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today)) e ON e.exchangeid = lc.currency
+	GROUP BY bettype, hdp
+	ORDER BY 2
+
+	-- Get Over/Under detail resultset
 	;WITH LCWinloss AS
 	(
 		SELECT d.bettype, d.hdp, d.currency,
@@ -103,6 +164,7 @@ BEGIN
 				ELSE 0
 			END AS AWinLCWinloss
 		FROM #Data d
+		WHERE d.bettype IN (3,8)
 	)
 
 	INSERT INTO #SecondRS
