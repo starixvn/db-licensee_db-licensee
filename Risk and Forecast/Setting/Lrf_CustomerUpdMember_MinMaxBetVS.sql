@@ -225,39 +225,39 @@ BEGIN
 			RETURN
 		END
 	END
-DECLARE @TrackingValue VARCHAR(5000)
-SELECT @TrackingValue ='<Lrf_CustomerUpdMember_MinMaxBetVS custid="'+ COALESCE(CAST(@custid as VARCHAR(50)),SPACE(1)) + '" ' +
-'Sporttype="'+ COALESCE(CAST(180 as VARCHAR(50)),SPACE(1)) + '" ' +
-'MinB="'+ COALESCE(CAST(@minbet as VARCHAR(50)),SPACE(1)) + '" ' +
-'MaxB="'+ COALESCE(CAST(@maxbet as VARCHAR(50)),SPACE(1)) + '" ' +
-'MPM="'+ COALESCE(CAST(@maxpermatch as VARCHAR(50)),SPACE(1)) + '" ' +
-'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
-'Language="'+ COALESCE(CAST(@Language as VARCHAR(2)),SPACE(1)) + '" ' +
-'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +
-'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
-'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(5000)),SPACE(1)) + '" />'
+	DECLARE @TrackingValue VARCHAR(5000)
+	SELECT @TrackingValue ='<Lrf_CustomerUpdMember_MinMaxBetVS custid="'+ COALESCE(CAST(@custid as VARCHAR(50)),SPACE(1)) + '" ' +
+	'Sporttype="'+ COALESCE(CAST(180 as VARCHAR(50)),SPACE(1)) + '" ' +
+	'MinB="'+ COALESCE(CAST(@minbet as VARCHAR(50)),SPACE(1)) + '" ' +
+	'MaxB="'+ COALESCE(CAST(@maxbet as VARCHAR(50)),SPACE(1)) + '" ' +
+	'MPM="'+ COALESCE(CAST(@maxpermatch as VARCHAR(50)),SPACE(1)) + '" ' +
+	'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
+	'Language="'+ COALESCE(CAST(@Language as VARCHAR(2)),SPACE(1)) + '" ' +
+	'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +
+	'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
+	'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(5000)),SPACE(1)) + '" />'
 
-DECLARE @TrackingValue2 VARCHAR(5000)
-SELECT @TrackingValue2 ='<Lrf_CustomerUpdMember_MinMaxBetVS custid="'+ COALESCE(CAST(@custid as VARCHAR(50)),SPACE(1)) + '" ' +
-'MinB="'+ COALESCE(CAST(@minbet_old as VARCHAR(50)),SPACE(1)) + '" ' +
-'MaxB="'+ COALESCE(CAST(@maxbet_old as VARCHAR(50)),SPACE(1)) + '" ' +
-'MPM="'+ COALESCE(CAST(@maxpermatch_old as VARCHAR(50)),SPACE(1)) + '" ' +
-'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
-'Language="'+ COALESCE(CAST(@Language as VARCHAR(2)),SPACE(1)) + '" ' +
-'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +
-'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
-'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(5000)),SPACE(1)) + '" />'
+	DECLARE @TrackingValue2 VARCHAR(5000)
+	SELECT @TrackingValue2 ='<Lrf_CustomerUpdMember_MinMaxBetVS custid="'+ COALESCE(CAST(@custid as VARCHAR(50)),SPACE(1)) + '" ' +
+	'MinB="'+ COALESCE(CAST(@minbet_old as VARCHAR(50)),SPACE(1)) + '" ' +
+	'MaxB="'+ COALESCE(CAST(@maxbet_old as VARCHAR(50)),SPACE(1)) + '" ' +
+	'MPM="'+ COALESCE(CAST(@maxpermatch_old as VARCHAR(50)),SPACE(1)) + '" ' +
+	'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
+	'Language="'+ COALESCE(CAST(@Language as VARCHAR(2)),SPACE(1)) + '" ' +
+	'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +
+	'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
+	'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(5000)),SPACE(1)) + '" />'
 
-SET @endRun = GETDATE()
-SET @duration  = datediff (millisecond,@startRun,@endRun)
+	SET @endRun = GETDATE()
+	SET @duration  = datediff (millisecond,@startRun,@endRun)
 
-EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP 
-	@UserID = @UserID,
-	@CustID = @CustID,
-	@ActionID = 2014,
-	@TrackingValue = @TrackingValue,
-	@TrackingValue2 = @TrackingValue2,
-	@duration = @duration
+	EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP 
+		@UserID = @UserID,
+		@CustID = @CustID,
+		@ActionID = 2014,
+		@TrackingValue = @TrackingValue,
+		@TrackingValue2 = @TrackingValue2,
+		@duration = @duration
 	
 END
 --- Virtual Horse Racing
@@ -400,40 +400,217 @@ BEGIN
 			RETURN
 		END
 	END
-DECLARE @TrackingValue VARCHAR(5000)
-SELECT @TrackingValue ='<Lrf_CustomerUpdMember_MinMaxBetVS custid="'+ COALESCE(CAST(@custid as VARCHAR(50)),SPACE(1)) + '" ' +
-'Sporttype="'+ COALESCE(CAST(181 as VARCHAR(50)),SPACE(1)) + '" ' +
-'MinB="'+ COALESCE(CAST(@minbet as VARCHAR(50)),SPACE(1)) + '" ' +
-'MaxB="'+ COALESCE(CAST(@maxbet as VARCHAR(50)),SPACE(1)) + '" ' +
-'MPM="'+ COALESCE(CAST(@maxpermatch as VARCHAR(50)),SPACE(1)) + '" ' +
-'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
-'Language="'+ COALESCE(CAST(@Language as VARCHAR(2)),SPACE(1)) + '" ' +
-'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +
-'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
-'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(5000)),SPACE(1)) + '" />'
+	--DECLARE @TrackingValue VARCHAR(5000)
+	SELECT @TrackingValue ='<Lrf_CustomerUpdMember_MinMaxBetVS custid="'+ COALESCE(CAST(@custid as VARCHAR(50)),SPACE(1)) + '" ' +
+	'Sporttype="'+ COALESCE(CAST(181 as VARCHAR(50)),SPACE(1)) + '" ' +
+	'MinB="'+ COALESCE(CAST(@minbet as VARCHAR(50)),SPACE(1)) + '" ' +
+	'MaxB="'+ COALESCE(CAST(@maxbet as VARCHAR(50)),SPACE(1)) + '" ' +
+	'MPM="'+ COALESCE(CAST(@maxpermatch as VARCHAR(50)),SPACE(1)) + '" ' +
+	'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
+	'Language="'+ COALESCE(CAST(@Language as VARCHAR(2)),SPACE(1)) + '" ' +
+	'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +
+	'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
+	'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(5000)),SPACE(1)) + '" />'
 
-DECLARE @TrackingValue2 VARCHAR(5000)
-SELECT @TrackingValue2 ='<Lrf_CustomerUpdMember_MinMaxBetVS custid="'+ COALESCE(CAST(@custid as VARCHAR(50)),SPACE(1)) + '" ' +
-'MinB="'+ COALESCE(CAST(@minbet_old as VARCHAR(50)),SPACE(1)) + '" ' +
-'MaxB="'+ COALESCE(CAST(@maxbet_old as VARCHAR(50)),SPACE(1)) + '" ' +
-'MPM="'+ COALESCE(CAST(@maxpermatch_old as VARCHAR(50)),SPACE(1)) + '" ' +
-'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
-'Language="'+ COALESCE(CAST(@Language as VARCHAR(2)),SPACE(1)) + '" ' +
-'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +
-'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
-'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(5000)),SPACE(1)) + '" />'
+	--DECLARE @TrackingValue2 VARCHAR(5000)
+	SELECT @TrackingValue2 ='<Lrf_CustomerUpdMember_MinMaxBetVS custid="'+ COALESCE(CAST(@custid as VARCHAR(50)),SPACE(1)) + '" ' +
+	'MinB="'+ COALESCE(CAST(@minbet_old as VARCHAR(50)),SPACE(1)) + '" ' +
+	'MaxB="'+ COALESCE(CAST(@maxbet_old as VARCHAR(50)),SPACE(1)) + '" ' +
+	'MPM="'+ COALESCE(CAST(@maxpermatch_old as VARCHAR(50)),SPACE(1)) + '" ' +
+	'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
+	'Language="'+ COALESCE(CAST(@Language as VARCHAR(2)),SPACE(1)) + '" ' +
+	'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +
+	'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
+	'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(5000)),SPACE(1)) + '" />'
 
-SET @endRun = GETDATE()
-SET @duration  = datediff (millisecond,@startRun,@endRun)
+	SET @endRun = GETDATE()
+	SET @duration  = datediff (millisecond,@startRun,@endRun)
 
-EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP 
-	@UserID = @UserID,
-	@CustID = @CustID,
-	@ActionID = 2014,
-	@TrackingValue = @TrackingValue,
-	@TrackingValue2 = @TrackingValue2,
-	@duration = @duration	
+	EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP 
+		@UserID = @UserID,
+		@CustID = @CustID,
+		@ActionID = 2014,
+		@TrackingValue = @TrackingValue,
+		@TrackingValue2 = @TrackingValue2,
+		@duration = @duration	
 END
+-- Virtual Tennis
+IF EXISTS (SELECT 1 FROM #Setting WHERE sporttype=186)
+BEGIN 
+
+	SELECT @minbet=minbet,@maxbet=maxbet,@maxpermatch=maxpermatch
+	FROM  #Setting WHERE sporttype=186
+		
+	SELECT
+		@MinMinBet = Max(CASE WHEN MinBet = 0 THEN NULL ELSE MinBet END), 
+		@MaxMaxBet = Min(CASE WHEN MaxBet = 0 THEN NULL ELSE MaxBet END)
+	FROM 
+		Dep_CustSetting3rd as cs WITH (NOLOCK)
+		INNER JOIN custinfo as ci WITH (NOLOCK) on (cs.CustID = ci.Recommend or cs.CustID = ci.MRecommend or cs.CustID = ci.SRecommend)
+		AND cs.bettype=1220 AND cs.sporttype=186
+	WHERE ci.custid = @recommend
+
+	SELECT @MaxMaxperMatch = Min(CASE WHEN cs.maxpermatch186 = 0 THEN NULL ELSE cs.maxpermatch186 END)
+	FROM 
+		custinfo as cs WITH (NOLOCK) 
+		INNER JOIN custinfo as ci WITH (NOLOCK) on (cs.CustID = ci.Recommend or cs.CustID = ci.MRecommend or cs.CustID = ci.SRecommend)
+	WHERE ci.custid = @recommend
+
+	IF (@MinBet<>0 AND  @MinBet>@MaxBet) or (@MaxBet<> 0 AND @MaxBet>@MaxPerMatch) 
+		BEGIN
+			SELECT @ErrMsg =	@UserName + ': '+
+							CASE @Language 
+								WHEN 'E' THEN 'Min Bet must be less than max bet AND max bet must be less than max bet per match!!!'
+								WHEN 'CS' THEN N'????????????,????????????????!!!'
+								WHEN 'CT' THEN N'????????????,????????????????!!!'
+								WHEN 'TH' THEN N'?????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????.'
+								WHEN 'J' THEN N'min bet must be less than max bet AND max bet must be less than max bet per match!!!'
+								WHEN 'KO' THEN N'?? ??? ?? ?? ????? ?? ?? ??? ??? ?? ???? ??? ???.'
+								ELSE N'min bet must be less than max bet AND max bet must be less than max bet per match!!!'
+							END						
+							+ char(13) + char(10) + convert(VARCHAR(20), @MinBet) + '-' + convert(VARCHAR(20), @MaxBet) + '-' + convert(VARCHAR(20), @MaxPerMatch), @ErrCode = 108
+				
+			RETURN
+			
+		END
+			
+	IF (@MinMinBet>0 AND @MinBet>0 AND @MinBet<@MinMinBet)
+	BEGIN
+		SELECT @ErrMsg =	'Virtual Tennis' + ': ' +
+						CASE @Language 
+							WHEN 'E' THEN 'The Min Bet must be equal to or greater than the value '
+							WHEN 'CS' THEN N'?????????????????'
+							WHEN 'CT' THEN N'?????????????????'
+							WHEN 'TH' THEN N'???????????????????????????????????????????????????????????????????????????????????????????'
+							WHEN 'J' THEN N'min bet must be equal to or greater than Agent min bet'
+							WHEN 'KO' THEN N'?? ??? ????? ?? ?? ????? ???'
+							ELSE N'min bet must be equal to or greater than Agent min bet'
+						END						
+						+' (' + CONVERT(VARCHAR(20), @MinMinBet) + ').', @ErrCode = 109
+				
+		RETURN
+	END
+			
+	IF (@MaxMaxBet>0 AND @MaxBet>0 AND @MaxBet>@MaxMaxBet)
+	BEGIN
+		SELECT @ErrMsg =	'Virtual Soccer' + ': '+
+						CASE @Language 
+							WHEN 'E' THEN 'The Max Bet must be equal to or less than the value '
+							WHEN 'CS' THEN N'?????????????????'
+							WHEN 'CT' THEN N'?????????????????'
+							WHEN 'TH' THEN N'??????????????????????????????????? ???? ?????????????????????????????????? '
+							WHEN 'J' THEN N'max bet must be equal to or less than Agent max bet'
+							WHEN 'KO' THEN N'?? ??? ????? ?? ?? ????? ???'
+							ELSE N'max bet must be equal to or less than Agent max bet'
+						END						
+						+'(' + CONVERT(VARCHAR(20), @MaxMaxBet) + ').', @ErrCode = 110
+				
+		RETURN
+	END
+			
+	IF (@MaxMaxPerMatch>0 AND @MaxPerMatch>0 AND @MaxPerMatch>@MaxMaxPerMatch)
+	BEGIN
+		SELECT @ErrMsg =	'Virtual Soccer' + ': '+
+						CASE @Language 
+							WHEN 'E' THEN 'The Max Per Match must be equal to or less than the value '
+							WHEN 'CS' THEN N'?????????????????????'
+							WHEN 'CT' THEN N'?????????????????????'
+							WHEN 'TH' THEN N'????????????????????????????????????????????????????????????????????????????????????????????????????  '
+							WHEN 'J' THEN N'Max Per Match must be equal to or less than Agent Max Per Match'
+							WHEN 'KO' THEN N'?? ??? ????? ?? ???? ??? ???'
+							ELSE N'Max Per Match must be equal to or less than Agent Max Per Match'
+						END						
+						+'(' + CONVERT(VARCHAR(20), @MaxMaxPerMatch) + ').', @ErrCode = 110
+				
+		RETURN
+	END
+
+	SELECT @minbet_old = MinBet, @maxbet_old = MaxBet
+	FROM Dep_CustSetting3rd WITH(NOLOCK)
+	WHERE custid = @custid AND sporttype = 186 AND bettype =1220
+
+	SELECT @maxpermatch_old = maxpermatch180 FROM custinfo WITH(NOLOCK) WHERE custid = @custid
+
+	IF @MinBet <> @minbet_old OR @MaxBet <> @maxbet_old
+	BEGIN
+		UPDATE Dep_CustSetting3rd WITH (ROWLOCK, UPDLOCK)
+		SET
+			MinBet= @MinBet,
+			MaxBet= @MaxBet
+		WHERE custid=@custid AND sporttype = 186 AND bettype=1220
+		IF (@@error <> 0)
+		BEGIN
+			SELECT @ErrMsg = @UserName + ': '+
+							CASE @Language 
+								WHEN 'E' THEN 'Update process is unsuccessful !'
+								WHEN 'CS' THEN N'??????? !'
+								WHEN 'CT' THEN N'??????? !'
+								WHEN 'TH' THEN N'????????????????????????????????????????????!'
+								WHEN 'J' THEN N'????????????'
+								WHEN 'KO' THEN N'????? ??????.'
+								ELSE N'Update process is unsuccessful !'
+							END, @ErrCode = 115
+			RETURN
+		END
+	END
+
+	IF @MaxPerMatch <> @maxpermatch_old
+	BEGIN
+		UPDATE custInfo
+		SET	maxpermatch186 = @maxpermatch
+		WHERE custid = @custid
+		
+		IF (@@error <> 0)
+		BEGIN
+			SELECT @ErrMsg = @UserName + ': '+
+							CASE @Language 
+								WHEN 'E' THEN 'Update process is unsuccessful !'
+								WHEN 'CS' THEN N'??????? !'
+								WHEN 'CT' THEN N'??????? !'
+								WHEN 'TH' THEN N'????????????????????????????????????????????!'
+								WHEN 'J' THEN N'????????????'
+								WHEN 'KO' THEN N'????? ??????.'
+								ELSE N'Update process is unsuccessful !'
+							END, @ErrCode = 115
+			RETURN
+		END
+	END
+	--DECLARE @TrackingValue VARCHAR(5000)
+	SELECT @TrackingValue ='<Lrf_CustomerUpdMember_MinMaxBetVS custid="'+ COALESCE(CAST(@custid as VARCHAR(50)),SPACE(1)) + '" ' +
+	'Sporttype="'+ COALESCE(CAST(180 as VARCHAR(50)),SPACE(1)) + '" ' +
+	'MinB="'+ COALESCE(CAST(@minbet as VARCHAR(50)),SPACE(1)) + '" ' +
+	'MaxB="'+ COALESCE(CAST(@maxbet as VARCHAR(50)),SPACE(1)) + '" ' +
+	'MPM="'+ COALESCE(CAST(@maxpermatch as VARCHAR(50)),SPACE(1)) + '" ' +
+	'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
+	'Language="'+ COALESCE(CAST(@Language as VARCHAR(2)),SPACE(1)) + '" ' +
+	'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +
+	'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
+	'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(5000)),SPACE(1)) + '" />'
+
+	--DECLARE @TrackingValue2 VARCHAR(5000)
+	SELECT @TrackingValue2 ='<Lrf_CustomerUpdMember_MinMaxBetVS custid="'+ COALESCE(CAST(@custid as VARCHAR(50)),SPACE(1)) + '" ' +
+	'MinB="'+ COALESCE(CAST(@minbet_old as VARCHAR(50)),SPACE(1)) + '" ' +
+	'MaxB="'+ COALESCE(CAST(@maxbet_old as VARCHAR(50)),SPACE(1)) + '" ' +
+	'MPM="'+ COALESCE(CAST(@maxpermatch_old as VARCHAR(50)),SPACE(1)) + '" ' +
+	'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
+	'Language="'+ COALESCE(CAST(@Language as VARCHAR(2)),SPACE(1)) + '" ' +
+	'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +
+	'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
+	'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(5000)),SPACE(1)) + '" />'
+
+	SET @endRun = GETDATE()
+	SET @duration  = datediff (millisecond,@startRun,@endRun)
+
+	EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP 
+		@UserID = @UserID,
+		@CustID = @CustID,
+		@ActionID = 2014,
+		@TrackingValue = @TrackingValue,
+		@TrackingValue2 = @TrackingValue2,
+		@duration = @duration
+	
+END
+
 DROP TABLE #setting
 
 GO
