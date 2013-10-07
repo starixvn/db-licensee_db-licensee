@@ -42,6 +42,7 @@ AS
 	- 20130417@Jim: add more product code value in the result 
 	- 20130514@Jim: Restrict permission of Licensee Users by currency
 	- 20130809@Jim: offer Virtual Horse Racing
+	- 20131007@Jim: offer Virtual Tennis
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -141,6 +142,8 @@ BEGIN
     SELECT  180
 	UNION ALL 
 	SELECT 181 
+	UNION ALL
+	SELECT 186
     
     INSERT INTO @bettype(bettype)
 	SELECT typeid FROM bettype (NOLOCK)
@@ -427,6 +430,7 @@ BEGIN
 				WHEN 162 THEN 'LC'
 				WHEN 180 THEN 'VS'
 				WHEN 181 THEN 'VS'
+				WHEN 186 THEN 'VS'
 				WHEN 251 THEN 'CS'
 				WHEN 252 THEN 'BG'
 			END AS ProductCode,
@@ -437,6 +441,7 @@ BEGIN
 				WHEN 162 THEN 'Live Casino'
 				WHEN 180 THEN 'Virtual Sports'
 				WHEN 181 THEN 'Virtual Sports'
+				WHEN 186 THEN 'Virtual Sports'
 				WHEN 251 THEN 'RNG Casino'
 				WHEN 252 THEN 'Bingo'
 			END AS ProductName,	
@@ -449,7 +454,7 @@ BEGIN
 				ELSE 1 END
 			),     
 			SUM(b.winlost),  
-			SUM(CASE WHEN (b.sporttype in(0,161,162,180,181,251,252))  THEN -1 * b.winlost 
+			SUM(CASE WHEN (b.sporttype in(0,161,162,180,181,186,251,252))  THEN -1 * b.winlost 
 					WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END
 				) AS LicenseeWL,
 			SUM(comm ) as Comm,
@@ -479,6 +484,7 @@ BEGIN
 				WHEN 162 THEN 'LC'
 				WHEN 180 THEN 'VS'
 				WHEN 181 THEN 'VS'
+				WHEN 186 THEN 'VS'
 				WHEN 251 THEN 'CS'
 				WHEN 252 THEN 'BG'
 			END,		
@@ -489,6 +495,7 @@ BEGIN
 				WHEN 162 THEN 'Live Casino'
 				WHEN 180 THEN 'Virtual Sports'
 				WHEN 181 THEN 'Virtual Sports'
+				WHEN 186 THEN 'Virtual Sports'
 				WHEN 251 THEN 'RNG Casino'
 				WHEN 252 THEN 'Bingo'
 			END
@@ -553,6 +560,7 @@ BEGIN
 				WHEN 162 THEN 'LC'
 				WHEN 180 THEN 'VS'
 				WHEN 181 THEN 'VS'
+				WHEN 186 THEN 'VS'
 				WHEN 251 THEN 'CS'
 				WHEN 252 THEN 'BG'
 			END AS ProductCode,
@@ -563,6 +571,7 @@ BEGIN
 				WHEN 162 THEN 'Live Casino'
 				WHEN 180 THEN 'Virtual Sports'
 				WHEN 181 THEN 'Virtual Sports'
+				WHEN 186 THEN 'Virtual Sports'
 				WHEN 251 THEN 'RNG Casino'
 				WHEN 252 THEN 'Bingo'
 			END AS ProductName,	
@@ -576,7 +585,7 @@ BEGIN
 				ELSE 1 END
 			),     
 			SUM(b.winlost),  
-			SUM(CASE WHEN (b.sporttype in(0,161,162,180,181,251,252))  THEN -1 * b.winlost WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS LicenseeWL ,
+			SUM(CASE WHEN (b.sporttype in(0,161,162,180,181,186,251,252))  THEN -1 * b.winlost WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS LicenseeWL ,
 			SUM(comm) as Comm,
 			SUM( playerComm  ) AS PlayerComm,
 			- SUM (b.awinlost + b.winlost + b.comm) as AmountDueTo3rd,
@@ -604,6 +613,7 @@ BEGIN
 				WHEN 162 THEN 'LC'
 				WHEN 180 THEN 'VS'
 				WHEN 181 THEN 'VS'
+				WHEN 186 THEN 'VS'
 				WHEN 251 THEN 'CS'
 				WHEN 252 THEN 'BG'
 			END,
@@ -614,6 +624,7 @@ BEGIN
 				WHEN 162 THEN 'Live Casino'
 				WHEN 180 THEN 'Virtual Sports'
 				WHEN 181 THEN 'Virtual Sports'
+				WHEN 186 THEN 'Virtual Sports'
 				WHEN 251 THEN 'RNG Casino'
 				WHEN 252 THEN 'Bingo'
 			END

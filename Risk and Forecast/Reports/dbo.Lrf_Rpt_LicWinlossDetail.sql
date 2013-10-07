@@ -1608,7 +1608,7 @@ BEGIN
 					ELSE 1 END
 				* e.USD		
 			ELSE 0 END) AS turnoverLCUSD,
-			SUM(CASE WHEN b.sporttype IN (180,181,186 THEN 
+			SUM(CASE WHEN b.sporttype IN (180,181,186) THEN 
 				b.turnover
 				*
 					CASE WHEN @drawfilter IN (2,3) THEN

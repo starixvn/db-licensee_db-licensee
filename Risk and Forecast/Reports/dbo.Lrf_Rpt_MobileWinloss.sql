@@ -43,6 +43,7 @@ AS
 		- 20130516@Tom.Vo: Allow viewing customer list
 		- 20130618@Jim: Restrict permission of Licensee Users by currency
 		- 20130809@Jim: offer Virtual Horse Racing
+		- 20131007@Jim: offer Virtual Tennis
 	Param's Explanation:  
 	  + @SiteType: 1-WAP; 2-Smartphone; 3: Others;0-All  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -178,6 +179,8 @@ BEGIN
 	SELECT 180
 	UNION ALL 
 	SELECT 181 
+	UNION ALL 
+	SELECT 186 
 	
 	INSERT INTO @bettype(bettype)
 	SELECT typeid FROM bettype (NOLOCK)

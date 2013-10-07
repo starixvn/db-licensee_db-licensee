@@ -32,6 +32,7 @@ Revisions:
    -20130225@Scott: support RNG Casino ,Bingo     
    -20130618@Jim:  Restrict permission of Licensee Users by currency
    -20130809@Jim: offer Virtual Horse Racing
+   -20131007@Jim: offer Virtual Tennis
 Param's Explanation:  
  + @excludeTest: remove currency UUS  
  + @TopCount:   
@@ -70,6 +71,9 @@ IF @ShowVS = 1 INSERT INTO @sporttype(sporttype)
 				SELECT 180
 				UNION ALL 
 				SELECT 181 
+				UNION ALL
+				SELECT 186
+				
 				
 IF @ShowCS = 1 INSERT INTO @sporttype(sporttype) VALUES(251) -- RNG Casino  
 IF @ShowBG = 1 INSERT INTO @sporttype(sporttype) VALUES(252) -- Bingo    

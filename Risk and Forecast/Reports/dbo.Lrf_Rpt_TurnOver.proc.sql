@@ -39,6 +39,7 @@ Revisions:
    - 20130625@Jim: fix bug missing filter currency condition
    - 20130709@Jim: change formula to sum Transfer3rd value
    - 20130809@Jim: offer Virtual Horse Racing
+   - 20131007@Jim: offer Virtual Tennis
 Param's Explanation:
 	+ @excludeTest: remove currency UUS
 	+ @CurrencyID = 0: get all currency
@@ -82,6 +83,8 @@ IF @ShowVS = 1
 	SELECT 180
 	UNION ALL 
 	SELECT 181 -- VHR
+	UNION ALL
+	SELECT 186 -- virtual tennis
 
 IF @ShowCS = 1 INSERT INTO @sporttype(sporttype) VALUES(251)
 IF @ShowBG = 1 INSERT INTO @sporttype(sporttype) VALUES(252)
