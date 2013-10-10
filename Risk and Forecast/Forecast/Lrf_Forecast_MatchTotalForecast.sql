@@ -23,6 +23,7 @@ Original: [Lrf_Forecast_MatchTotalForecast]
 Revisions:    
 	20130930@Victor: Revert back formular for HDP tickets
 	20131010@Victor: Update forecast business logic for handicap tickets
+	20131010@Victor: Fix @IsLive parameter issue
 */
 
 BEGIN
@@ -69,7 +70,7 @@ BEGIN
 								WHEN eventstatus =  'running' AND kickofftime <= GETDATE() THEN NULL
 								ELSE NULL
 							END,
-			@IsLive = CASE WHEN eventstatus = 'running' AND kickofftime > GETDATE() THEN 1 ELSE 0 END
+			@IsLive = CASE WHEN eventstatus = 'running' AND kickofftime <= GETDATE() THEN 1 ELSE 0 END
 	FROM bodb02.dbo.match (NOLOCK)	
 	WHERE matchid = @MatchID
 
