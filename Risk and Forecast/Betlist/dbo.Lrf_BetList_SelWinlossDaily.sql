@@ -22,7 +22,7 @@ ALTER  PROCEDURE [dbo].[Lrf_BetList_SelWinlossDaily]
 	@BalanceUpDay SMALLDATETIME,
 	@PageSize INT=1000,
 	@PageIndex INT=1,
-	@debug	   BIT=1,	
+	@debug	   BIT=0,	
 	@TotalRows INT=0 OUTPUT,
 	@SumWinlost MONEY = 0 OUTPUT,
 	@SumLicenseeWL MONEY = 0 OUTPUT,
@@ -290,61 +290,77 @@ SELECT @sql=@sql+'
 				'+char(13)+
 			CASE @checktime WHEN 1 THEN 'dbo.bettrans b WITH (nolock)
 										' ELSE 'dbo.bettrans14 b WITH (nolock)' END+char(13)
-				IF (@Product<>'VS' AND @Product<>'BA')
-				BEGIN 
-					SELECT @sql=@sql+ CASE WHEN @checktime=1 
-										 THEN 'INNER JOIN match m WITH (nolock) ON b.matchid=m.matchid 
-											  INNER JOIN customer c WITH (nolock) ON b.custid = c.custid 	
-											  INNER JOIN @TmpCondBettype bt ON b.bettype = bt.bettype' 	
-										 ELSE 'INNER JOIN match14 m WITH (nolock) ON b.matchid=m.matchid 
-											  INNER JOIN customer c WITH (nolock) ON b.custid = c.custid 	
-											  INNER JOIN @TmpCondBettype bt ON b.bettype = bt.bettype'
-									END
-				END 					
-			    IF @Product='BA' 
-				BEGIN
-						SELECT @sql=@sql+CASE WHEN @checktime=1 
-							 THEN 'INNER JOIN match m WITH (nolock) ON b.matchid=m.matchid 
-								  INNER JOIN customer c WITH (nolock) ON b.custid = c.custid 	
-								  INNER JOIN @TmpCondBettype bt ON b.bettype = bt.bettype
-								  INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
-								  ' 	
-							 ELSE 'INNER JOIN match14 m WITH (nolock) ON b.matchid=m.matchid 
-								  INNER JOIN customer c WITH (nolock) ON b.custid = c.custid 	
-								  INNER JOIN @TmpCondBettype bt ON b.bettype = bt.bettype
-								  INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
-								  '
-						END	
-				END		
-				IF @Product='VS' 
-				BEGIN 
-						SELECT @sql=@sql+ 
-						CASE WHEN (@checktime=1 AND @checkVHR<>1)
-							 THEN 'INNER JOIN match m WITH (nolock) ON b.matchid=m.matchid 
-								  INNER JOIN customer c WITH (nolock) ON b.custid = c.custid 	
-								  INNER JOIN @TmpCondBettype bt ON b.bettype = bt.bettype
-								  ' 	
-							 WHEN (@checktime=0 AND @checkVHR<>1)
-							 THEN 'INNER JOIN match14 m WITH (nolock) ON b.matchid=m.matchid 
-								  INNER JOIN customer c WITH (nolock) ON b.custid = c.custid 	
-								  INNER JOIN @TmpCondBettype bt ON b.bettype = bt.bettype
-								  '
-							WHEN (@checkVHR=1)
-							THEN 'INNER JOIN #vhr m ON b.oddsid=m.Orid
-								  INNER JOIN customer c WITH (nolock) ON b.custid = c.custid 	
-								  INNER JOIN @TmpCondBettype bt ON b.bettype = bt.bettype
-								  '+char(13)
-						END		  
-					SELECT @sql=@sql+'DROP TABLE #vhr'		
-				END	  
-			SELECT @sql=@sql+ 	
+IF (@Product<>'VS' AND @Product<>'BA' AND ISNULL(@Product,'')<>'')
+BEGIN 
+	SELECT @sql=@sql+ CASE WHEN @checktime=1 
+						 THEN 'INNER JOIN match m WITH (nolock) ON b.matchid=m.matchid 
+							  INNER JOIN customer c WITH (nolock) ON b.custid = c.custid 	
+							  INNER JOIN @TmpCondBettype bt ON b.bettype = bt.bettype' 	
+						 ELSE 'INNER JOIN match14 m WITH (nolock) ON b.matchid=m.matchid 
+							  INNER JOIN customer c WITH (nolock) ON b.custid = c.custid 	
+							  INNER JOIN @TmpCondBettype bt ON b.bettype = bt.bettype'
+					END
+END 		
+
+IF (ISNULL(@Product,'')='')
+BEGIN 
+	SELECT @sql=@sql+ CASE WHEN @checktime=1 
+						 THEN 'INNER JOIN match m WITH (nolock) ON b.matchid=m.matchid 
+							  INNER JOIN customer c WITH (nolock) ON b.custid = c.custid 	
+							  INNER JOIN @TmpCondBettype bt ON b.bettype = bt.bettype
+							  LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid' 	
+						 ELSE 'INNER JOIN match14 m WITH (nolock) ON b.matchid=m.matchid 
+							  INNER JOIN customer c WITH (nolock) ON b.custid = c.custid 	
+							  INNER JOIN @TmpCondBettype bt ON b.bettype = bt.bettype
+							  LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid'
+					END
+END 
+			
+IF @Product='BA' 
+BEGIN
+		SELECT @sql=@sql+CASE WHEN @checktime=1 
+			 THEN 'INNER JOIN match m WITH (nolock) ON b.matchid=m.matchid 
+				  INNER JOIN customer c WITH (nolock) ON b.custid = c.custid 	
+				  INNER JOIN @TmpCondBettype bt ON b.bettype = bt.bettype
+				  INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
+				  ' 	
+			 ELSE 'INNER JOIN match14 m WITH (nolock) ON b.matchid=m.matchid 
+				  INNER JOIN customer c WITH (nolock) ON b.custid = c.custid 	
+				  INNER JOIN @TmpCondBettype bt ON b.bettype = bt.bettype
+				  INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
+				  '
+		END	
+END		
+IF @Product='VS' 
+BEGIN 
+		SELECT @sql=@sql+ 
+		CASE WHEN (@checktime=1 AND @checkVHR<>1)
+			 THEN 'INNER JOIN match m WITH (nolock) ON b.matchid=m.matchid 
+				  INNER JOIN customer c WITH (nolock) ON b.custid = c.custid 	
+				  INNER JOIN @TmpCondBettype bt ON b.bettype = bt.bettype
+				  ' 	
+			 WHEN (@checktime=0 AND @checkVHR<>1)
+			 THEN 'INNER JOIN match14 m WITH (nolock) ON b.matchid=m.matchid 
+				  INNER JOIN customer c WITH (nolock) ON b.custid = c.custid 	
+				  INNER JOIN @TmpCondBettype bt ON b.bettype = bt.bettype
+				  '
+			WHEN (@checkVHR=1)
+			THEN 'INNER JOIN #vhr m ON b.oddsid=m.Orid
+				  INNER JOIN customer c WITH (nolock) ON b.custid = c.custid 	
+				  INNER JOIN @TmpCondBettype bt ON b.bettype = bt.bettype
+				  '+char(13)
+		END		  
+	SELECT @sql=@sql+'DROP TABLE #vhr'		
+END	  
+SELECT @sql=@sql+ 	
 			'
 			WHERE
 				b.winlostdate = '''+CONVERT(VARCHAR(20),@wldate,120)+'''
 				AND b.bettype NOT IN (9,29,10)
-				AND b.recommend IN (SELECT custid FROM @TempAg)
-				AND b.status='''+CONVERT(VARCHAR(20),@Status)+'''
-			'+char(13)
+				AND b.recommend IN (SELECT custid FROM @TempAg)'+char(13)+
+				CASE WHEN ISNULL(@Status,'')<>'' THEN 'AND b.status='''+CONVERT(VARCHAR(20),@Status)+'''
+													'
+												ELSE '' END +char(13)
 SELECT @sql=@sql+'INSERT INTO #Data
 				  SELECT A.* 
 				  FROM #result A
@@ -450,9 +466,9 @@ SELECT @sql=@sql+'DROP TABLE #Data
 				DROP TABLE #TempExchange
 				'+char(13)		
 IF (@debug = 1) 
-	PRINT @sql
+	PRINT (@sql)
 ELSE
-	EXEC @sql
+	EXEC (@sql)
 		
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinlossDaily] TO [bodbLicenseeNet]
