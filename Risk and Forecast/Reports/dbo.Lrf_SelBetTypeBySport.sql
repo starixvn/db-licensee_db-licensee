@@ -1,10 +1,11 @@
 ALTER PROCEDURE [dbo].[Lrf_SelBetTypeBySport]
 	@LicenseeID int
 	,@SportList nvarchar(4000)
+	,@Langkey nvarchar(20) ='en-US'
 AS 
 /*
 Created: 20131010@Don
-Task : Get list of bettype by sports
+Task : Add more products to Customer Turnover Report
 DB: DBLIC/bodb_Licensee
 
 Revisions:
@@ -26,6 +27,9 @@ N'
 </products>'*/
 
 DECLARE @iDoc int
+DECLARE @checkVS bit
+DECLARE @checkNG bit 
+SELECT @checkVS=0,@checkNG=0
 
 EXEC sp_xml_preparedocument @iDoc OUTPUT, @SportList
 
@@ -36,7 +40,7 @@ FROM OPENXML (@iDoc, '/products/product',1) WITH(ID tinyint, Sport nvarchar(128)
 EXEC sp_xml_removedocument @iDoc
 
 DECLARE @Bettype TABLE (
-	BettypeID tinyint
+	BettypeID smallint
 	,BettypeName nvarchar(50)
 )
 
@@ -52,11 +56,21 @@ END
 
 IF EXISTS(SELECT * FROM #input WHERE ID > 0)
 BEGIN
-
+	IF EXISTS (SELECT 1 FROM #input WHERE ID=161)
+		SET @checkNG=1
+	IF EXISTS (SELECT 1 FROM #input WHERE ID=180)
+		SET @checkVS=1
+		
 	INSERT INTO @Bettype
-		SELECT typeid, N'NG - ' + typenamee
+		SELECT typeid,
+			CASE WHEN typeid BETWEEN 81 AND 120 THEN  N'NG - ' + typenamee
+				 WHEN (typeid BETWEEN 1201 AND 1299 AND typeid NOT IN (1220,1235,1236,1231,1232,1233,1237,1238)) THEN  N'V.'+typenamee
+			END as 	typenamee 
 		FROM bodb02.dbo.bettype WITH(NOLOCK)
-		WHERE (typeid BETWEEN 81 AND 120)
+		WHERE (
+				(typeid BETWEEN 81 AND 120 AND @checkNG=1)
+				OR (typeid BETWEEN 1201 AND 1299 AND typeid NOT IN (1220,1235,1236,1231,1232,1233,1237,1238) AND @checkVS=1)
+				)
 
 END
 

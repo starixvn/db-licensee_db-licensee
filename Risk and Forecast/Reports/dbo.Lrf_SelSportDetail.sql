@@ -1,9 +1,10 @@
 ALTER PROCEDURE [dbo].[Lrf_SelSportDetail]
-	@LicenseeID int
+	@LicenseeID int,
+	@langkey VARCHAR(20)='en-US'
 AS 
 /*
 Created: 20131010@Don
-Task : Get detail of all sports
+Task : Add more products to Customer Turnover Report
 DB: DBLIC/bodb_Licensee
 
 Revisions:
@@ -11,8 +12,13 @@ Revisions:
 Param's Explanation:
 	
 */
+/* sample test case:
+	[Lrf_SelSportDetail]
+	@LicenseeID=1
+
+*/
 DECLARE @ProductSport TABLE (
-	ID tinyint
+	ID smallint
 	,Name varchar(50)
 	,ParentID tinyint
 )
@@ -24,11 +30,18 @@ INSERT INTO @ProductSport(ID, Name, ParentID)
 	FROM bodb02.dbo.Sports WITH(NOLOCK)
 	WHERE SportType <= 99
 	UNION ALL
-	SELECT p1.ProductID, p1.ProductName, NULL
+	SELECT CASE p1.ProductID WHEN 2 THEN 161
+										 WHEN 5 THEN 180	
+				END 
+			,CASE  p1.Productid WHEN 5 THEN 'Virtual Soccer' ELSE  p1.ProductName END
+			, NULL
 	FROM dbo.Product3rd p1 WITH(NOLOCK)
-	WHERE EXISTS(SELECT * FROM dbo.LicenseeProduct3rd p2 WITH(NOLOCK) WHERE p2.LicenseeID = @LicenseeID AND p2.ProductID = p1.ProductID AND p2.ProductID <> 3)
-
+		INNER JOIN dbo.LicenseeProduct3rd p2 WITH (NOLOCK) ON p1.ProductID=p2.ProductID
+	WHERE  p2.LicenseeID=@LicenseeID
+		AND p1.ProductID  IN (2,5)
+	
 SELECT * FROM @ProductSport
+ORDER BY ID ASC 
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_SelSportDetail] TO [bodbLicenseeNet] 
