@@ -10,7 +10,7 @@ exec Lrf_BetList_SelWinlossDaily
 @BalanceUpDay='2012-09-01 00:00:00:000'
 */
 
-ALTER  PROCEDURE [dbo].[Lrf_BetList_SelWinlossDaily]
+ALTER   PROCEDURE [dbo].[Lrf_BetList_SelWinlossDaily]
 	@date SMALLDATETIME,
 	@LicenseeID INT,
 	@UserID		INT,
@@ -23,19 +23,19 @@ ALTER  PROCEDURE [dbo].[Lrf_BetList_SelWinlossDaily]
 	@PageSize INT=1000,
 	@PageIndex INT=1,
 	@debug	   BIT=0,	
-	@TotalRows INT=0 OUTPUT,
-	@SumWinlost MONEY = 0 OUTPUT,
-	@SumLicenseeWL MONEY = 0 OUTPUT,
-	@SumComm MONEY = 0 OUTPUT,
-	@SumPlayerComm MONEY=0 OUTPUT,
-	@SumWinlostUSD MONEY = 0 OUTPUT,
-	@SumLicenseeWLUSD MONEY = 0 OUTPUT,
-	@SumCommUSD MONEY = 0 OUTPUT,
-	@SumPlayerCommUSD MONEY=0 OUTPUT,
-	@SumWinlostEUR MONEY = 0 OUTPUT,
-	@SumLicenseeWLEUR MONEY = 0 OUTPUT,
-	@SumCommEUR MONEY = 0 OUTPUT,
-	@SumPlayerCommEUR MONEY=0 OUTPUT
+	@TotalRows INT  OUTPUT,
+	@SumWinlost MONEY OUTPUT,
+	@SumLicenseeWL MONEY  OUTPUT,
+	@SumComm MONEY OUTPUT,
+	@SumPlayerComm MONEY OUTPUT,
+	@SumWinlostUSD MONEY OUTPUT,
+	@SumLicenseeWLUSD MONEY OUTPUT,
+	@SumCommUSD MONEY OUTPUT,
+	@SumPlayerCommUSD MONEY OUTPUT,
+	@SumWinlostEUR MONEY OUTPUT,
+	@SumLicenseeWLEUR MONEY OUTPUT,
+	@SumCommEUR MONEY OUTPUT,
+	@SumPlayerCommEUR MONEY OUTPUT
 AS
 
 /*
@@ -69,6 +69,22 @@ Param's Explanation:
 */
 DECLARE @sql VARCHAR(MAX)
 DECLARE @wldate SMALLDATETIME
+CREATE TABLE #sumresult 
+			(
+			TotalRows INT,
+			SumWinlost MONEY,
+			SumLicenseeWL MONEY,
+			SumComm MONEY,
+			SumPlayerComm  MONEY,
+			SumWinlostUSD MONEY,
+			SumLicenseeWLUSD MONEY,
+			SumCommUSD MONEY,
+			SumPlayerCommUSD MONEY,
+			SumWinlostEUR MONEY,
+			SumLicenseeWLEUR MONEY,
+			SumCommEUR MONEY,
+			SumPlayerCommEUR MONEY
+			)
 SELECT @sql='SET NOCOUNT ON '+char(13)
 SELECT @sql=@sql+'----DECLARE VARIABLE---- '+char(13)
 SELECT @sql=@sql+'CREATE TABLE #Data(RowNum INT,
@@ -115,41 +131,7 @@ SELECT @sql=@sql+'CREATE TABLE #DataSum (currency INT,
 										SumComm MONEY,
 										SumPlayerComm MONEY
 										)'+char(13)
-/*										
-SELECT @sql=@sql+'CREATE TABLE #result (RowNum INT,
-										sporttype INT,
-										username nvarchar(100),
-										nickname nvarchar(100),
-										bettype INT,
-										leagueID INT,
-										transid  INT,
-										matchcode INT,
-										homeID	  INT,
-										awayID    INT,
-										hdp1 	  FLOAT,
-										hdp2 	  FLOAT,
-										odds	  smallmoney,
-										status	  nvarchar(20),
-										stake	  money,
-										winlost   money,
-										LicenseeWL money,
-										comm	   money,
-										transdate datetime,
-										winlostdate datetime,
-										betteam   nvarchar(20),
-										liveindicator  bit,
-										livehomescore smallint,
-										liveawayscore smallint,
-										matchid  	  int,
-										betstatus	nvarchar(100),
-										IsNeutral 	bit,
-										OddsType  tinyint,
-										betid 	bigint,
-										currency tinyint,
-										refno  bigint,
-										custid int,
-										ShowTime nvarchar(100)		
-										)'+char(13) */
+
 SELECT @sql=@sql+'										
 				DECLARE @BettransDetail TABLE(  
 						refno BIGINT,  
@@ -216,14 +198,16 @@ BEGIN
 					,r.LeagueID
 					,CONVERT (VARCHAR(50),o.RacerNum) matchcode
 					,o.RacerID homeID 
-					,r.BetStatus 
+					,r.BetStatus BetStatus
 					,r.EventTime   ShowTime
+					,NULL as AwayID
+					,NULL as IsNeutral
 					INTO #vhr'+char(13)+
 					CASE @checktime
 					WHEN 1 THEN ' FROM VSOutright o with (nolock) '
 						ELSE  'FROM VSOutright14 o with (nolock)' END +char(13)+
 					'INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID'+char(13)+
-					'WHERE  o.EventDate ='''+CONVERT(varchar(10),@wldate,120)+char(13)	
+					'WHERE  o.EventDate ='''+CONVERT(varchar(10),@wldate,120)+''''+char(13)	
 END
 SELECT @sql=@sql+'INSERT INTO #DataSum'+char(13)+
 				'SELECT 
@@ -232,9 +216,14 @@ SELECT @sql=@sql+'INSERT INTO #DataSum'+char(13)+
 				SUM(ISNULL(b.winlost-b.actual_stake,0)),
 				SUM(ISNULL('+CASE WHEN @Product<>'BA' THEN '- (b.winlost-b.actual_stake)' ELSE '0' END+',0)),
 				SUM(ISNULL(b.comm,0)),
-				SUM(b.playercomm )  AS  SumPlayerComm
-			FROM bettrans b WITH (nolock)'+char(13)+
-			'LEFT JOIN match m WITH (nolock) ON b.matchid=m.matchid'+char(13)+
+				SUM(b.playercomm )  AS  SumPlayerComm'+char(13)+
+			CASE @checktime WHEN 1 THEN 
+									'FROM bettrans b WITH (nolock)'+char(13)+
+									'LEFT JOIN match m WITH (nolock) ON b.matchid=m.matchid'+char(13)
+									ELSE 
+									'FROM bettrans14 b WITH (nolock)'+char(13)+
+									'LEFT JOIN match14 m WITH (nolock) ON b.matchid=m.matchid'+char(13)
+									END+char(13)+
 			CASE @Product
 				WHEN 'ALL' THEN ''
 				WHEN 'BA'  THEN 'INNER JOIN @TmpCondBettype bt ON b.bettype = bt.bettype
@@ -278,7 +267,7 @@ SELECT @sql=@sql+'
 					b.liveawayscore,
 					b.matchid, 
 					m.betstatus,
-					ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral,
+					ISNULL(m.isNeutral, CONVERT(BIT,0)) isNeutral,
 					b.OddsType,
 					b.betid,
 					b.currency,
@@ -290,7 +279,8 @@ SELECT @sql=@sql+'
 				'+char(13)+
 			CASE @checktime WHEN 1 THEN 'dbo.bettrans b WITH (nolock)
 										' ELSE 'dbo.bettrans14 b WITH (nolock)' END+char(13)
-IF (@Product<>'VS' AND @Product<>'BA' AND ISNULL(@Product,'')<>'')
+
+IF (@Product<>'VS' AND @Product<>'BA' AND ISNULL(@Product,'')<>'') 
 BEGIN 
 	SELECT @sql=@sql+ CASE WHEN @checktime=1 
 						 THEN 'INNER JOIN match m WITH (nolock) ON b.matchid=m.matchid 
@@ -349,8 +339,12 @@ BEGIN
 				  INNER JOIN customer c WITH (nolock) ON b.custid = c.custid 	
 				  INNER JOIN @TmpCondBettype bt ON b.bettype = bt.bettype
 				  '+char(13)
+			ELSE 
+				'INNER JOIN match14 m WITH (nolock) ON b.matchid=m.matchid 
+				  INNER JOIN customer c WITH (nolock) ON b.custid = c.custid 	
+				  INNER JOIN @TmpCondBettype bt ON b.bettype = bt.bettype'
 		END		  
-	SELECT @sql=@sql+'DROP TABLE #vhr'		
+	
 END	  
 SELECT @sql=@sql+ 	
 			'
@@ -361,6 +355,11 @@ SELECT @sql=@sql+
 				CASE WHEN ISNULL(@Status,'')<>'' THEN 'AND b.status='''+CONVERT(VARCHAR(20),@Status)+'''
 													'
 												ELSE '' END +char(13)
+IF @Product='VS'  AND @checkVHR=1
+BEGIN 
+	SELECT @sql=@sql+'DROP TABLE #vhr'	+char(13)	
+END 
+
 SELECT @sql=@sql+'INSERT INTO #Data
 				  SELECT A.* 
 				  FROM #result A
@@ -391,37 +390,37 @@ SELECT @sql=@sql+'
 		ON  e.exchangeid = b.currency
 				'+char(13)
 	
-IF (@Product='LC' OR @Product='VS')
+IF (@Product='LC' OR @Product='VS' OR @Product='ALL') AND @checktime IN (0,1)
 	BEGIN 
 		--- SUM
 		SELECT @sql=@sql+'
 					SELECT * INTO #TempExchangeSum 
-					FROM Lrf_f_GetExchangeDaily('''+CONVERT(VARCHAR(20),@wldate,120)+''','''+CONVERT(VARCHAR(20),@wldate,120)+'''
-					WHERE exchangeid IN (SELECT DISTINCT Currency FROM #DataSum)
+					FROM Lrf_f_GetExchangeDaily('''+CONVERT(VARCHAR(20),@wldate,120)+''','''+CONVERT(VARCHAR(20),@wldate,120)+''')'+ char(13)+
+					'WHERE exchangeid IN (SELECT DISTINCT Currency FROM #DataSum)
 					'+char(13)
-					
-		SELECT @sql=@sql+'
-						SELECT 
-						@TotalRows = SUM(TotalRows),
-						@SumWinlost = SUM(SumWinlost),
-						@SumLicenseeWL = SUM(SumLicenseeWL),
-						@SumComm = SUM(SumComm),
-						@SumPlayerComm=SUM(ISNULL(SumPlayerComm,0)),
-						--USD
-						@SumWinlostUSD = SUM(SumWinlost*e.USD),
-						@SumLicenseeWLUSD = SUM(SumLicenseeWL*e.USD),
-						@SumCommUSD = SUM(SumComm * e.USD),
-						@SumPlayerCommUSD=SUM(ISNULL(SumPlayerComm,0)*e.USD),
-						--EUR
-						@SumWinlostEUR = SUM(SumWinlost*e.EUR),
-						@SumLicenseeWLEUR = SUM(SumLicenseeWL*e.EUR),
-						@SumCommEUR = SUM(SumComm * e.EUR),
-						@SumPlayerCommEUR=SUM(ISNULL(SumPlayerComm,0)*e.EUR)
-					FROM #DataSum b 
-					INNER JOIN #TempExchangeSum e 
-					ON b.currency = e.exchangeid
-						'+char(13)
-				
+		
+		SELECT @sql=@sql+' INSERT INTO #sumresult	
+						SELECT
+						 SUM(TotalRows) TotalRows,
+						 SUM(SumWinlost) SumWinlost,
+						 SUM(SumLicenseeWL) SumLicenseeWL,
+						 SUM(SumComm) SumComm ,
+						 SUM(ISNULL(SumPlayerComm,0)) SumPlayerComm,
+						 SUM(SumWinlost*e.USD) SumWinlostUSD,
+						 SUM(SumLicenseeWL*e.USD) SumLicenseeWLUSD,
+						 SUM(SumComm * e.USD) SumCommUSD,
+						 SUM(ISNULL(SumPlayerComm,0)*e.USD) SumPlayerCommUSD,
+						 SUM(SumWinlost*e.EUR) SumWinlostEUR,
+						 SUM(SumLicenseeWL*e.EUR) SumLicenseeWLEUR,
+						 SUM(SumComm * e.EUR) SumCommEUR,
+						 SUM(ISNULL(SumPlayerComm,0)*e.EUR) SumPlayerCommEUR
+						
+						FROM #DataSum b 
+						INNER JOIN #TempExchangeSum e 
+						ON b.currency = e.exchangeid
+						 '+char(13)	
+		
+	
 		SELECT @sql=@sql+'INSERT INTO @BettransDetail
 						SELECT 
 							BG.refno, 
@@ -433,30 +432,36 @@ IF (@Product='LC' OR @Product='VS')
 							BG.Betteam  ,
 							BG.stake * e.EUR AS stakeEUR,
 							BG.stake * e.USD AS stakeUSD'+char(13)+
-					CASE WHEN @Product='LC' AND @checktime=1 THEN
+					CASE WHEN (@Product='LC' OR @Product='ALL')   AND @checktime=1 THEN
 							'
 							FROM bettransg BG WITH (NOLOCK)
+							INNER JOIN #Data B ON BG.refno = B.refno and BG.custid = B.CustID
+							INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
+							WHERE B.Bettype BETWEEN 1101 AND 1199
 							'
-						WHEN @Product='LC' AND @checktime=0 THEN
+						WHEN (@Product='LC' OR @Product='ALL' ) AND @checktime=0 THEN
 							'
 							FROM bettransg14 BG WITH (NOLOCK)
+							INNER JOIN #Data B ON BG.refno = B.refno and BG.custid = B.CustID
+							INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
+							WHERE B.Bettype BETWEEN 1101 AND 1199
 							'
-						WHEN @Product='VS' AND @checktime=1 AND @checkVHR=1 THEN
+						WHEN (@Product='VS' OR @Product='ALL') AND @checktime=1 AND @checkVHR=1 THEN
 							'
 							FROM bettransm BG WITH (NOLOCK)
+							INNER JOIN #Data B ON BG.refno = B.refno and BG.custid = B.CustID
+							INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
+							WHERE B.Bettype=1233
 							'
-						WHEN @Product='VS' AND @checktime=0 AND @checkVHR=1 THEN
+						WHEN (@Product='VS' OR @Product='ALL' ) AND @checktime=0 AND @checkVHR=1 THEN
 							'
-							FROM bettransm BG WITH (NOLOCK)
+							FROM bettransm14 BG WITH (NOLOCK)
+							INNER JOIN #Data B ON BG.refno = B.refno and BG.custid = B.CustID
+							INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
+							WHERE B.Bettype=1233
 							'
-						ELSE ''
-						END +char(13)+
-				'INNER JOIN #Data B ON BG.refno = B.refno and BG.custid = B.CustID
-				INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency'+char(13)+
-				CASE WHEN @Product='LC' THEN 'WHERE B.Bettype BETWEEN 1101 AND 1199' 
-					 WHEN @Product='VS' THEN 'WHERE B.Bettype=1233'	
-					 END+char(13)
-		SELECT @sql=@sql+'SELECT * FROM @BettransDetail ORDER BY RefNo,Bettype'	
+						ELSE '' END +char(13)
+		SELECT @sql=@sql+'SELECT * FROM @BettransDetail ORDER BY RefNo,Bettype'	+char(13)
 		SELECT @sql=@sql+'DROP TABLE #TempExchangeSum '+char(13)
 	END			
 SELECT @sql=@sql+'DROP TABLE #Data
@@ -468,8 +473,32 @@ SELECT @sql=@sql+'DROP TABLE #Data
 IF (@debug = 1) 
 	PRINT (@sql)
 ELSE
-	EXEC (@sql)
+	BEGIN
+		EXEC (@sql)
 		
+		IF (@Product='LC' OR @Product='VS' OR @Product='ALL') 
+		BEGIN	
+			
+			SELECT  @TotalRows=TotalRows,
+						@SumWinlost=SumWinlost,
+						@SumLicenseeWL=SumLicenseeWL,
+						@SumComm=SumComm, 
+						@SumPlayerComm=SumPlayerComm,
+						@SumWinlostUSD=SumWinlostUSD,
+						@SumLicenseeWLUSD=SumLicenseeWLUSD,
+						@SumCommUSD=SumCommUSD,
+						@SumPlayerCommUSD=SumPlayerCommUSD,
+						@SumWinlostEUR=SumWinlostEUR,
+						@SumLicenseeWLEUR=SumLicenseeWLEUR,
+						@SumCommEUR=SumCommEUR,
+						@SumPlayerCommEUR=SumPlayerCommEUR
+			FROM #sumresult	
+			
+		END 
+	END	
+
+DROP TABLE  #sumresult	
+
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinlossDaily] TO [bodbLicenseeNet]
 GO
