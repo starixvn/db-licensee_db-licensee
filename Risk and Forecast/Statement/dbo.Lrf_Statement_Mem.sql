@@ -30,7 +30,7 @@ Revisions:
  -- 20120706@Henry: Fix bug due to exchange rate, should get exchange rate from balanceup date instead of @FromDate
  -- 20120710@Henry: When get min winlostdate from @Data, should get only date (remove time)
  -- 20121207@Henry: Comment transdesc for bettype>19999
- -- 20131010@winnie: if @ToDate-@FromDate> 3 months => just get data report in 3 last months.
+ -- 20131010@winnie: if @ToDate-@FromDate> 3 months => just get data report in 3 last months+ current month.
    
 Param's Explanation:   
 • @ErrCode:  
@@ -41,7 +41,7 @@ Param's Explanation:
 */  
     SET NOCOUNT ON  
 IF(SELECT DATEDIFF(mm,@FromDate,@ToDate))>3
-SET @FromDate= DATEADD(mm, -3, @ToDate)
+SET @FromDate= DATEADD(MONTH, DATEDIFF(MONTH, 0, @ToDate) - 3, 0) -- GET
   
 declare @fdate datetime, @tdate datetime
 declare @CutDate datetime
