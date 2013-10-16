@@ -31,7 +31,6 @@ Revisions:
  -- 20120710@Henry: When get min winlostdate from @Data, should get only date (remove time)
  -- 20121207@Henry: Comment transdesc for bettype>19999
  -- 20131010@winnie: if @ToDate-@FromDate> 3 months => just get data report in 3 last months.
---
    
 Param's Explanation:   
 • @ErrCode:  
