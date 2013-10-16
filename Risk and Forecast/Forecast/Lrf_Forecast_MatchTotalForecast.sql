@@ -21,7 +21,9 @@ Task : Forecast
 DB: DB052.bodb02
 Original: [Lrf_Forecast_MatchTotalForecast]
 Revisions:    
-
+	20130930@Victor: Revert back formular for HDP tickets
+	20131010@Victor: Update forecast business logic for handicap tickets
+	20131010@Victor: Fix @IsLive parameter issue
 */
 
 BEGIN
@@ -58,6 +60,8 @@ BEGIN
 
 	DROP TABLE #currency
 
+	DECLARE @IsLive BIT
+
 	-- Update Output values
 	SELECT  @HomeScore = ISNULL(livehomescore,0), 
 			@AwayScore = ISNULL(liveawayscore,0),
@@ -65,7 +69,8 @@ BEGIN
 								WHEN eventstatus =  'running' AND kickofftime > GETDATE() THEN kickofftime
 								WHEN eventstatus =  'running' AND kickofftime <= GETDATE() THEN NULL
 								ELSE NULL
-							END
+							END,
+			@IsLive = CASE WHEN eventstatus = 'running' AND kickofftime <= GETDATE() THEN 1 ELSE 0 END
 	FROM bodb02.dbo.match (NOLOCK)	
 	WHERE matchid = @MatchID
 
@@ -78,7 +83,7 @@ BEGIN
 		CASE WHEN bettype IN (3,8) THEN hdp1
 			ELSE hdp2 - hdp1
 		END AS hdp,
-		bettype, stake, odds, betteam, currency
+		bettype, stake, odds, betteam, currency, ISNULL(livehomescore,0) AS livehomescore, ISNULL(liveawayscore,0) AS liveawayscore
 	INTO #Data
 	FROM bodb02.dbo.bettrans b (NOLOCK)
 	WHERE	b.recommend IN ( SELECT custid FROM   @TempAg )
@@ -88,7 +93,97 @@ BEGIN
 			AND b.ruben = 0
 			AND b.tpositiontaking <> 0
 	
-	-- Get detail resultset
+	-- Get Handicap detail resultset
+	IF (@IsLive = 0) -- Non-Live match: forecast with WIN - WIN method
+	BEGIN
+		;WITH LCWinloss AS
+		(
+			SELECT d.bettype, d.hdp, d.currency,
+				CASE d.betteam
+					WHEN 'h' THEN -((CASE WHEN odds < 0 THEN 1 ELSE odds END) * stake)
+					WHEN 'a' THEN (CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END) * stake
+					ELSE 0
+				END AS HWinLCWinloss,
+				CASE d.betteam
+					WHEN 'h' THEN (CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END) * stake
+					WHEN 'a' THEN -((CASE WHEN odds < 0 THEN 1 ELSE odds END) * stake)
+					ELSE 0
+				END AS AWinLCWinloss
+			FROM #Data d
+			WHERE d.bettype IN (1,7) -- Handicap only
+		)
+
+		INSERT INTO #SecondRS
+		SELECT bettype, 
+			hdp, 
+			SUM(HWinLCWinloss) AS HomeWinloss,
+			SUM(HWinLCWinloss*e.USD) AS HomeWinlossUSD,
+			SUM(HWinLCWinloss*e.EUR) AS HomeWinlossEUR,
+			SUM(AWinLCWinloss) AS AwayWinloss,
+			SUM(AWinLCWinloss*e.USD) AS AwayWinlossUSD,
+			SUM(AWinLCWinloss*e.EUR) AS AwayWinlossEUR
+		FROM LCWinloss lc
+			INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today)) e ON e.exchangeid = lc.currency
+		GROUP BY bettype, hdp
+		ORDER BY 2
+
+	END
+	ELSE -- Live match: forecast with real time settlement method
+	BEGIN
+		;WITH ScoreDiff AS
+		(
+			SELECT  
+				b.[Type],b.hdp,bettype, stake, odds, betteam, currency,
+				CASE
+					WHEN betteam LIKE 'h' THEN hdp
+					ELSE -hdp
+				END	+
+				CASE
+					WHEN betteam LIKE 'h' THEN (@HomeScore - livehomescore) - (@AwayScore - liveawayscore)
+					ELSE (@AwayScore - liveawayscore) - (@HomeScore - livehomescore)
+				END AS ScoreDiff
+	
+			FROM #Data b
+			WHERE b.bettype IN (1,7) -- Handicap only
+		)
+		, LCWinloss AS
+		(
+			SELECT  d.*,
+					(CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END) * stake * (CASE WHEN ABS(ScoreDiff) = 0.25 THEN 0.5 ELSE 1 END) AS LCWin,
+					-((CASE WHEN odds < 0 THEN 1 ELSE odds END) * stake * (CASE WHEN ABS(ScoreDiff) = 0.25 THEN 0.5 ELSE 1 END)) AS LCLose
+			FROM ScoreDiff d
+		)
+		, HomeAwayWL AS
+		(
+			SELECT d.*,
+				CASE 
+					WHEN (ScoreDiff = 0) THEN 0
+					WHEN ((ScoreDiff < 0 AND betteam LIKE 'h') OR (ScoreDiff > 0 AND betteam LIKE 'a')) THEN LCWin
+					ELSE LCLose
+				END AS HomeWL,
+				CASE 
+					WHEN (ScoreDiff = 0) THEN 0
+					WHEN ((ScoreDiff < 0 AND betteam LIKE 'h') OR (ScoreDiff > 0 AND betteam LIKE 'a')) THEN LCLose
+					ELSE LCWin
+				END AS AwayWL
+			FROM LCWinloss d
+		)
+		INSERT INTO #SecondRS
+		SELECT bettype, 
+			hdp, 
+			SUM(HomeWL) AS HomeWinloss,
+			SUM(HomeWL*e.USD) AS HomeWinlossUSD,
+			SUM(HomeWL*e.EUR) AS HomeWinlossEUR,
+			SUM(AwayWL) AS AwayWinloss,
+			SUM(AwayWL * e.USD) AS AwayWinlossUSD,
+			SUM(AwayWL * e.EUR) AS AwayWinlossEUR
+		FROM HomeAwayWL lc
+			INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today)) e ON e.exchangeid = lc.currency
+		GROUP BY bettype, hdp
+		ORDER BY 2
+	END
+
+	-- Get Over/Under detail resultset
 	;WITH LCWinloss AS
 	(
 		SELECT d.bettype, d.hdp, d.currency,
@@ -103,6 +198,7 @@ BEGIN
 				ELSE 0
 			END AS AWinLCWinloss
 		FROM #Data d
+		WHERE d.bettype IN (3,8)
 	)
 
 	INSERT INTO #SecondRS

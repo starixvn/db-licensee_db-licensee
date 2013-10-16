@@ -65,6 +65,7 @@ Revisions:
    - 20130225@Jim: support RNG Casino, Bingo 
    - 20130514@Jim:Restrict permission of Licensee Users by currency
    - 20130716@Jim: update matchid for RNG Casino and Bingo
+   - 20130903@Jim: support Virtual Horse Racing
    */
 
 SET NOCOUNT ON
@@ -740,6 +741,54 @@ BEGIN
 				)  AND
 			--((b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 1101 AND 1199) ) AND
 			b.ruben = 1 
+		UNION ALL 
+			SELECT
+			r.Sporttype, 
+			@Username, 
+			b.TransID,
+			ISNULL(b.BetID,0),
+			b.Bettype,
+			CONVERT(FLOAT, b.hdp1) AS hdp1, 
+			CONVERT(FLOAT, b.hdp2) AS hdp2,
+			b.Oddstype,			
+			b.Odds,
+			b.modds,
+			b.stake,
+			b.actual_stake, 
+			b.betteam,
+			b.status AS Status,				
+			b.refno,
+			b.Transdate,	
+			b.winlostdate,			
+			(b.winlost-actual_stake),
+			- (b.winlost-b.actual_stake) AS LicenseeWL ,
+			b.comm,
+			b.playercomm ,				
+			b.Liveindicator,
+			b.Livehomescore,
+			b.Liveawayscore,
+			b.IP AS IP,
+			r.LeagueID,
+			o.EventID matchid,	
+			CONVERT(VARCHAR(50),o.RacerNum) MatchCode,
+			b.oddsid AS Race,	
+			o.RacerID HomeID,
+			0 AwayID, 		
+			r.Betstatus,
+			CONVERT(BIT,0) AS IsNeutral	,
+			b.currency,
+			CONVERT(VARCHAR(20),r.EventTime) AS  ShowTime 	
+		FROM
+			dbo.bettrans AS b WITH (NOLOCK)		
+			INNER JOIN VSOutright o with (nolock) ON b.oddsid=o.Orid
+			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
+		WHERE
+			b.winlostdate BETWEEN @TempFromDate AND @todate AND
+			b.recommend = @Recommend AND --to improve performance
+			b.custid=@CustID AND
+			((@ShowVS=1 AND b.bettype IN (1231, 1232, 1233, 1237, 1238))
+				)  AND
+			b.ruben = 1 
 			
 	END
 	IF @ShowCS=1
@@ -1382,6 +1431,55 @@ BEGIN
 				OR (@ShowVS=1 AND b.bettype BETWEEN 1201 AND 1299 )
 				) AND
 			b.ruben = 1
+			
+		UNION ALL 
+			SELECT
+			r.Sporttype, 
+			@Username, 
+			b.TransID,
+			ISNULL(b.BetID,0),
+			b.Bettype,
+			CONVERT(FLOAT, b.hdp1) AS hdp1, 
+			CONVERT(FLOAT, b.hdp2) AS hdp2,
+			b.Oddstype,			
+			b.Odds,
+			b.modds,
+			b.stake,
+			b.actual_stake, 
+			b.betteam,
+			b.status AS Status,				
+			b.refno,
+			b.Transdate,	
+			b.winlostdate,			
+			(b.winlost-actual_stake),
+			- (b.winlost-b.actual_stake) AS LicenseeWL ,
+			b.comm,
+			b.playercomm ,				
+			b.Liveindicator,
+			b.Livehomescore,
+			b.Liveawayscore,
+			b.IP AS IP,
+			r.LeagueID,
+			o.EventID matchid,	
+			CONVERT(VARCHAR(50),o.RacerNum) MatchCode,
+			b.oddsid  AS Race,	
+			o.RacerID HomeID,
+			0 AwayID, 		
+			r.Betstatus,
+			CONVERT(BIT,0) AS IsNeutral	,
+			b.currency,
+			CONVERT(VARCHAR(20),r.EventTime) AS  ShowTime 	
+		FROM
+			dbo.bettrans14 AS b WITH (NOLOCK)		
+			INNER JOIN VSOutright14 o with (nolock) ON b.oddsid=o.Orid
+			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
+		WHERE
+			b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate AND
+			b.recommend = @Recommend AND --to improve performance
+			b.custid=@CustID AND
+			((@ShowVS=1 AND b.bettype IN (1231, 1232, 1233, 1237, 1238))
+				)  AND
+			b.ruben = 1 	
 	END
 	-- RNG Casino
 	IF @ShowCS=1 
@@ -2023,7 +2121,54 @@ BEGIN
 				) AND
 			b.ruben = 1
 			
-			
+		UNION ALL 
+			SELECT
+			r.Sporttype, 
+			@Username, 
+			b.TransID,
+			ISNULL(b.BetID,0),
+			b.Bettype,
+			CONVERT(FLOAT, b.hdp1) AS hdp1, 
+			CONVERT(FLOAT, b.hdp2) AS hdp2,
+			b.Oddstype,			
+			b.Odds,
+			b.modds,
+			b.stake,
+			b.actual_stake, 
+			b.betteam,
+			b.status AS Status,				
+			b.refno,
+			b.Transdate,	
+			b.winlostdate,			
+			(b.winlost-actual_stake),
+			- (b.winlost-b.actual_stake) AS LicenseeWL ,
+			b.comm,
+			b.playercomm ,				
+			b.Liveindicator,
+			b.Livehomescore,
+			b.Liveawayscore,
+			b.IP AS IP,
+			r.LeagueID,
+			o.EventID matchid,	
+			CONVERT(VARCHAR(50),o.RacerNum) MatchCode,
+			b.oddsid  AS Race,	
+			o.RacerID HomeID,
+			0 AwayID, 		
+			r.Betstatus,
+			CONVERT(BIT,0) AS IsNeutral	,
+			b.currency,
+			CONVERT(VARCHAR(20),r.EventTime) AS  ShowTime 	
+		FROM
+			bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)		
+			INNER JOIN DBARC.bodb_Archive.dbo.VSOutright_bk o with (nolock) ON b.oddsid=o.Orid
+			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
+		WHERE
+			b.winlostdate BETWEEN @fromdate AND @TempToDate AND
+			b.recommend = @Recommend AND --to improve performance
+			b.custid=@CustID AND
+			((@ShowVS=1 AND b.bettype IN (1231, 1232, 1233, 1237, 1238))
+				)  AND
+			b.ruben = 1 		
 	END
 	IF @ShowCS=1
 	BEGIN	
@@ -2318,7 +2463,65 @@ IF @ShowLC=1
 		
 		END
 	END 
-	SELECT * FROM @BettransDetail ORDER BY RefNo,Bettype
+IF @ShowVS=1
+	BEGIN 
+		IF @Todate > @MoveBetsDay 
+		BEGIN
+			INSERT INTO @BettransDetail
+			SELECT 
+				BG.refno, 
+				BG.odds, 
+				BG.stake,
+				BG.status, 
+				BG.apositiontaking, 
+				BG.bettype  ,
+				BG.Betteam,
+				BG.stake*e.EUR,
+				BG.stake*e.USD
+			FROM bettransm BG WITH (NOLOCK)
+			INNER JOIN #BetListByDateMem B ON BG.refno = B.refno
+			INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
+			WHERE B.Bettype=1233
+		END
+		IF @FromDate <= @MoveBetsDay
+		BEGIN
+			INSERT INTO @BettransDetail
+			SELECT 
+				BG.refno, 
+				BG.odds, 
+				BG.stake,
+				BG.status, 
+				BG.apositiontaking, 
+				BG.bettype  ,
+				BG.Betteam,
+				BG.stake*e.EUR,
+				BG.stake*e.USD
+			FROM bettransm14 BG WITH (NOLOCK)
+			INNER JOIN #BetListByDateMem B ON BG.refno = B.refno
+			INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
+			WHERE B.Bettype=1233
+		END
+		IF @FromDate < @BalanceUpDay
+		BEGIN
+			INSERT INTO @BettransDetail
+			SELECT 
+				BM.refno, 
+				BM.odds, 
+				BM.stake,
+				BM.status, 
+				BM.apositiontaking, 
+				BM.bettype,
+				BM.betteam,
+				BM.stake*e.EUR,	
+				BM.stake*e.USD
+			FROM bodb_archive.dbo.bettransm BM WITH (NOLOCK)
+			INNER JOIN #BetListByDateMem B ON BM.refno = B.refno
+			INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
+			WHERE B.Bettype=1233
+		
+		END
+	END
+SELECT * FROM @BettransDetail ORDER BY RefNo,Bettype
 	
 
 DROP TABLE #TempExchange

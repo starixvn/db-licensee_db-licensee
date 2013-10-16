@@ -13,6 +13,7 @@ ALTER   PROCEDURE [dbo].[Lrf_BetList_Forecast_SelByMatch]
 	@Langkey VARCHAR(10) = 'en-US',
 	@betteam VARCHAR(20) = NULL,
 	@liveindicator INT = -1,
+	@handicap SMALLMONEY = NULL,
 	@PageSize INT=1000,
 	@PageIndex INT=1,
 	@BetChoice VARCHAR(10) = 'All',
@@ -25,10 +26,11 @@ Task : Forecast
 DB: DB052.bodb02
 Original: [Lrf_BetList_Forecast_SelByMatch]
 Revisions:
+	20131010@Victor: add handicap parameter to show betlist of a specific handicap line
 Param's explanation:
  - BetChoice: one of the following list: 'All','Home', 'Away', 'Over', 'Under'
 	+ Full: List all tickets bet on FT Handicap or FT Over/Under (@bettype must be 0)
-	+ Half: List all tickets bet on HT Handicap or HT Over/Under (bettype must be 0)
+	+ Half: List all tickets bet on HT Handicap or HT Over/Under (@bettype must be 0)
 	+ Home: List all Tickets bet on Home team
 	+ Away: List all tickets bet on Away team
 	+ Over: List all tickets bet on 'Over' 
@@ -170,6 +172,12 @@ BEGIN
 	ELSE
 	BEGIN
 		DELETE FROM #Data
+	END
+
+	-- Filter data by Handicap
+	IF (@BetChoice IN ('Home','Away') AND @handicap IS NOT NULL)
+	BEGIN
+		DELETE FROM #Data WHERE hdp2-hdp1 != @handicap
 	END
 
 	IF @TotalRows = 0  

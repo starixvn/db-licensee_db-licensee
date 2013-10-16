@@ -33,6 +33,7 @@ AS
 		- 20130204@Jim: support RNG Casino and Bingo product
 		- 20130514@Jim: Restrict permission of Licensee Users by currency
 		- 20130809@Jim: offer Virtual Horse Racing
+		- 20131007@Jim: offer Virtual Tennis
 	Param's Explanation:  
 	  + @CustID: SuperID  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -149,6 +150,8 @@ BEGIN
     SELECT 180 
 	UNION ALL 
 	SELECT 181
+	UNION ALL 
+	SELECT 186 
 	
 	INSERT INTO @bettype(bettype)
 	SELECT typeid FROM bettype (NOLOCK)
@@ -387,7 +390,7 @@ BEGIN
 			INNER JOIN @Super s ON b.srecommend = s.custid
 			INNER JOIN @TempAg a ON b.recommend = a.custid
 			INNER JOIN @bettype bt ON b.bettype = bt.bettype
-			LEFT JOIN dbo.VSRaceInfo r WITH(NOLOCK) ON b.matchid = r.eventid  AND b.bettype IN  (111, 112, 113)
+			
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
 			b.statusID  IN (111, 112, 113)
@@ -559,7 +562,7 @@ BEGIN
 						ELSE 1 END
 					ELSE 1 END
 			ELSE 0 END) AS turnoverLC,
-			SUM(CASE WHEN b.sporttype=180 THEN 
+			SUM(CASE WHEN b.sporttype IN (180,181,186) THEN 
 				b.turnover
 				*
 					CASE WHEN @drawfilter IN (2,3) THEN
@@ -593,7 +596,7 @@ BEGIN
 			- SUM(CASE WHEN b.sporttype=161 THEN b.winlost ELSE 0 END) AS LicenseeWLNG,
 			SUM(CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS LicenseeWLRB,
 			- SUM(CASE WHEN b.sporttype=162 THEN b.winlost ELSE 0 END) AS LicenseeWLLC,
-			- SUM(CASE WHEN b.sporttype=180 THEN b.winlost ELSE 0 END) AS LicenseeWLVS,
+			- SUM(CASE WHEN b.sporttype IN (180,181,186) THEN b.winlost ELSE 0 END) AS LicenseeWLVS,
 			-SUM(CASE WHEN b.sporttype=251 THEN b.winlost ELSE 0 END) AS LicenseeWLCS,
 			-SUM(CASE WHEN b.sporttype=252 THEN b.winlost ELSE 0 END) AS LicenseeWLBG,
 			--SUM(CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS WinlossRB,
@@ -730,7 +733,7 @@ BEGIN
 						ELSE 1 END
 					ELSE 1 END
 			ELSE 0 END) AS turnoverLC,
-			SUM(CASE WHEN b.sporttype=180 THEN 
+			SUM(CASE WHEN b.sporttype IN (180,181,186) THEN 
 				b.turnover
 				*
 					CASE WHEN @drawfilter IN (2,3) THEN
@@ -764,7 +767,7 @@ BEGIN
 			- SUM(CASE WHEN b.sporttype=161 THEN b.winlost ELSE 0 END) AS LicenseeWLNG,
 			SUM(CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS LicenseeWLRB,
 			- SUM(CASE WHEN b.sporttype=162 THEN b.winlost ELSE 0 END) AS LicenseeWLLC,
-			- SUM(CASE WHEN b.sporttype=180 THEN b.winlost ELSE 0 END) AS LicenseeWLVS,
+			- SUM(CASE WHEN b.sporttype IN (180,181,186) THEN b.winlost ELSE 0 END) AS LicenseeWLVS,
 			-SUM(CASE WHEN b.sporttype=251 THEN b.winlost ELSE 0 END) AS LicenseeWLCS,
 			-SUM(CASE WHEN b.sporttype=252 THEN b.winlost ELSE 0 END) AS LicenseeWLBG,
 			--SUM(CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS WinlossRB,

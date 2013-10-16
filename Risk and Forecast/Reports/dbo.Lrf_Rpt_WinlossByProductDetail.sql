@@ -44,6 +44,7 @@ AS
 	- 20130402@Jim: support base currency USD 
 	- 20130514@Jim: Restrict permission of Licensee Users by currency
 	- 20130809@Jim: offer Virtual Horse Racing
+	- 20131007@Jim: offer Virtual Tennis
 	Param's Explanation:  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
 	  + @IsOld: 0 - query in table rptLicWinloss, 1 - query in table rptLicWinloss_old. 
@@ -170,7 +171,9 @@ BEGIN
     SELECT 180
 	UNION ALL 
 	SELECT 181 
-    
+    UNION ALL 
+	SELECT 186
+	
     INSERT INTO @bettype(bettype)
 	SELECT typeid FROM bettype (NOLOCK)
 	WHERE (typeid BETWEEN 1201 AND 1299)
@@ -567,6 +570,8 @@ BEGIN
 				WHEN b.sporttype=161 THEN 'NG'
 				WHEN b.sporttype=162 THEN 'LC' 
 				WHEN b.sporttype=180 THEN 'VS'
+				WHEN b.sporttype=181 THEN 'VS'
+				WHEN b.sporttype=186 THEN 'VS'
 				WHEN b.sporttype=251 THEN 'CS'
 				WHEN b.sporttype=252 THEN 'BG'
 			END AS ProductCode,
@@ -576,6 +581,8 @@ BEGIN
 				WHEN b.sporttype=161 THEN 'Number Game'
 				WHEN b.sporttype=162 THEN 'Live Casino' 
 				WHEN b.sporttype=180 THEN 'Virtual Sports'
+				WHEN b.sporttype=181 THEN 'Virtual Sports'
+				WHEN b.sporttype=186 THEN 'Virtual Sports'
 				WHEN b.sporttype=251 THEN 'RNG Casino'
 				WHEN b.sporttype=252 THEN 'Bingo'
 			END AS ProductName,	
@@ -649,6 +656,8 @@ BEGIN
 				WHEN b.sporttype=161 THEN 'NG'
 				WHEN b.sporttype=162 THEN 'LC' 
 				WHEN b.sporttype=180 THEN 'VS'
+				WHEN b.sporttype=181 THEN 'VS'
+				WHEN b.sporttype=186 THEN 'VS'
 				WHEN b.sporttype=251 THEN 'CS'
 				WHEN b.sporttype=252 THEN 'BG'
 			END,
@@ -658,6 +667,8 @@ BEGIN
 				WHEN b.sporttype=161 THEN 'Number Game'
 				WHEN b.sporttype=162 THEN 'Live Casino' 
 				WHEN b.sporttype=180 THEN 'Virtual Sports'
+				WHEN b.sporttype=181 THEN 'Virtual Sports'
+				WHEN b.sporttype=186 THEN 'Virtual Sports'
 				WHEN b.sporttype=251 THEN 'RNG Casino'
 				WHEN b.sporttype=252 THEN 'Bingo'
 			END
@@ -756,6 +767,8 @@ BEGIN
 				WHEN b.sporttype=161 THEN 'NG'
 				WHEN b.sporttype=162 THEN 'LC' 
 				WHEN b.sporttype=180 THEN 'VS'
+				WHEN b.sporttype=181 THEN 'VS'
+				WHEN b.sporttype=186 THEN 'VS'
 				WHEN b.sporttype=251 THEN 'CS'
 				WHEN b.sporttype=252 THEN 'BG'
 			END AS ProductCode, 
@@ -765,6 +778,8 @@ BEGIN
 				WHEN b.sporttype=161 THEN 'Number Game'
 				WHEN b.sporttype=162 THEN 'Live Casino' 
 				WHEN b.sporttype=180 THEN 'Virtual Sports'
+				WHEN b.sporttype=181 THEN 'Virtual Sports'
+				WHEN b.sporttype=186 THEN 'Virtual Sports'
 				WHEN b.sporttype=251 THEN 'RNG Casino'
 				WHEN b.sporttype=252 THEN 'Bingo'
 			END AS ProductName,	
@@ -838,6 +853,8 @@ BEGIN
 				WHEN b.sporttype=161 THEN 'NG'
 				WHEN b.sporttype=162 THEN 'LC' 
 				WHEN b.sporttype=180 THEN 'VS'
+				WHEN b.sporttype=181 THEN 'VS'
+				WHEN b.sporttype=186 THEN 'VS'
 				WHEN b.sporttype=251 THEN 'CS'
 				WHEN b.sporttype=252 THEN 'BG'
 			END,
@@ -847,6 +864,8 @@ BEGIN
 				WHEN b.sporttype=161 THEN 'Number Game'
 				WHEN b.sporttype=162 THEN 'Live Casino' 
 				WHEN b.sporttype=180 THEN 'Virtual Sports'
+				WHEN b.sporttype=181 THEN 'Virtual Sports'
+				WHEN b.sporttype=186 THEN 'Virtual Sports'
 				WHEN b.sporttype=251 THEN 'RNG Casino'
 				WHEN b.sporttype=252 THEN 'Bingo'
 			END

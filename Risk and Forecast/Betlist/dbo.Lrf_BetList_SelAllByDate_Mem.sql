@@ -50,7 +50,7 @@ Revisions:
 					Show odds value AND odds type for Number game
 	- 20110712@Henry: Add column LicenseeWL
 	- 20110729@Henry: offer 3 new bettypes for Number Game + Combination Mix Parlay
-	- 20111128@Henry: Compare Checktime and CURRENT_TIMESTAMP to show waiting or running status
+	- 20111128@Henry: Compare Checktime and CURRENT_TIMESTAMP to shDow waiting or running status
 	- 20111208@Jim: Chang condition  bettype < 31
 	- 20111229@Jim: change the way to get odds/oddstype/betteam to web dev
 	- 20120214@Jim: change table ExchangeDaily by function Lrf_f_GetExchangeDaily
@@ -65,6 +65,7 @@ Revisions:
 	- 201300426@Scott: Support RNG Casino and Bingo
 	- 20130514@Jim: Restrict permission of Licensee Users by currency
 	- 20130716@Jim: update matchid for RNG Casino and Bingo
+	- 20130903@Jim: offer VHR
 */
 
 
@@ -730,6 +731,58 @@ BEGIN
 		b.recommend=@Recommend  
 		AND b.bettype NOT IN (71,73)
 		AND b.transdate>=@FROMDate AND b.transdate<=@ToDate
+	IF EXISTS (SELECT 1 FROM @TempBettype WHERE bettype IN (1231, 1232, 1233, 1237, 1238) )	
+		BEGIN 
+			INSERT INTO #BetListSelAllByDateMem
+			SELECT 
+				@UserName AS UserName,
+				r.sporttype,
+				b.bettype,
+				CONVERT(NVARCHAR(20),b.refno) AS refno,		
+				b.transid,
+				ISNULL(b.BetID,0),
+				CONVERT(varchar(50),o.RacerNum) as matchcode, 
+				o.EventID matchid,
+				b.oddsid AS Race, 
+				o.RacerID as homeID,
+				0 as awayID,
+				CONVERT(FLOAT, b.hdp1) AS hdp1, 
+				CONVERT(FLOAT, b.hdp2) AS hdp2,  
+				b.odds,
+				b.modds,
+				CASE WHEN b.status = 'running' AND IsNull(b.SecAcceptFlag, 0) = 1 and IsNull(b.checktime, CURRENT_TIMESTAMP) > CURRENT_TIMESTAMP THEN 'waiting'  
+				ELSE b.status   
+				END as status,
+				b.stake,
+				b.actual_stake,
+				(winlost-actual_stake) winlost,
+				- (b.winlost-b.actual_stake) AS LicenseeWL ,
+				b.comm ,
+				b.playercomm  AS PlayerComm ,
+				b.discount,
+				b.transdate,
+				b.winlostdate,
+				b.betteam,
+				r.leagueID,
+				b.liveindicator, 
+				b.livehomescore, 
+				b.liveawayscore,
+				b.IP AS IP,
+				r.betstatus,
+				CONVERT(BIT,0) AS IsNeutral,
+				b.Oddstype,
+				b.currency,
+				CONVERT(VARCHAR(20),r.EventTime)  AS ShowTime 
+			FROM bettrans b WITH (NOLOCK)
+				INNER JOIN VSOutright o with (nolock) ON b.oddsid=o.Orid
+				INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
+				INNER JOIN @TempBettype bt ON b.bettype = bt.bettype	
+			WHERE
+				b.CustID = @CustID AND
+				b.recommend=@Recommend  
+				AND b.bettype NOT IN (71,73)
+				AND b.transdate>=@FROMDate AND b.transdate<=@ToDate
+		END	
 END
 
 IF @ShowCS=1 
@@ -948,6 +1001,25 @@ BEGIN
 	INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
 	WHERE B.Bettype BETWEEN 1101 AND 1199	
 END 
+IF @ShowVS=1
+	BEGIN
+		INSERT INTO @BettransDetail
+		SELECT 
+			BG.refno, 
+			BG.odds, 
+			BG.stake,
+			BG.status, 
+			BG.apositiontaking, 
+			BG.bettype  ,
+			BG.Betteam,
+			BG.stake*e.EUR,
+			BG.stake*e.USD
+		FROM bettransm BG WITH (NOLOCK)
+		INNER JOIN #BetListSelAllByDateMem B ON BG.refno = B.refno 
+		INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
+		WHERE B.Bettype=1233
+	END
+		
 SELECT * FROM @BettransDetail 
 ORDER BY RefNo,Bettype 
 

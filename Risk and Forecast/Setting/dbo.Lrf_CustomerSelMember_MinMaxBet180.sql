@@ -32,7 +32,7 @@ SELECT
 from 
 	Dep_CustSetting3rd as cs WITH (NOLOCK)
 	INNER JOIN custinfo as ci WITH (NOLOCK) on (cs.CustID = ci.Recommend or cs.CustID = ci.MRecommend or cs.CustID = ci.SRecommend)
-	AND cs.bettype = 1201 AND cs.sporttype=180
+	AND cs.bettype IN(1201,1231,1232,1233,1237,1238) AND cs.sporttype IN (180,181)
 WHERE ci.custid = @recommend
 
 SELECT @MaxMaxperMatch = Min(CASE WHEN cs.maxpermatch180 = 0 THEN NULL ELSE cs.maxpermatch180 END)
@@ -50,7 +50,7 @@ SELECT isnull(@minminbet,0) minminbet,
 		cs.maxbet
 FROM custinfo ci WITH(NOLOCK)
 INNER JOIN Dep_CustSetting3rd cs ON ci.custid = cs.custid
-WHERE ci.custid = @custid AND cs.sporttype = 180 AND cs.bettype = 1201
+WHERE ci.custid = @custid AND cs.bettype IN(1201,1231,1232,1233,1237,1238) AND cs.sporttype IN (180,181)
 GO
 
 GRANT EXECUTE ON [dbo].[Lrf_CustomerSelMember_MinMaxBet180] TO [bodbLicenseeNet]

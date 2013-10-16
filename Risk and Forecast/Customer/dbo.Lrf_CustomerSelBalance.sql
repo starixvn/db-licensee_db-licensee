@@ -40,6 +40,7 @@ Revisions:
 	- 20130620@Jim: fix bug wrong value Licensee Winloss of Racing
 	- 20130718@Jim: remove status Suspended
 	- 20130809@Jim: offer Virtual Horse Racing
+	- 20131007@Jim: offer Virtual Tennis
 */
 SET NOCOUNT ON
 
@@ -399,7 +400,7 @@ BEGIN
 	INSERT INTO @SumTemp 
 	SELECT 
 		currency,
-		ISNULL(- SUM(CASE WHEN ISNULL(b.isBA,0) = 0 AND (b.sporttype IN (0,161,162,180,181,251,252))  THEN b.winlost ELSE 0 END),0) AS SelectedMonthLicenseeWL,
+		ISNULL(- SUM(CASE WHEN ISNULL(b.isBA,0) = 0 AND (b.sporttype IN (0,161,162,180,181,186,251,252))  THEN b.winlost ELSE 0 END),0) AS SelectedMonthLicenseeWL,
 		ISNULL(- SUM ( CASE WHEN ISNULL(b.isBA,0) = 1 THEN  (b.winlost+b.awinlost+b.comm) ELSE 0 END),0) AS SelectedMonthAmtDuetoBA,
 		ISNULL(- SUM ( CASE WHEN b.sporttype = 151 THEN (b.winlost+b.awinlost+b.comm) ELSE 0 END),0) AS SelectedMonthAmtDuetoRB,
 		ISNULL(SUM (CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END),0) AS SelectedMonthWinlossRB,
@@ -422,7 +423,7 @@ BEGIN
 	INSERT INTO @SumTemp
 	SELECT 
 		currency,
-		ISNULL(- SUM(CASE WHEN ISNULL(b.isBA,0) = 0 AND ( b.sporttype IN (0,161,162,180,181,251,252))  THEN b.winlost ELSE 0 END),0) AS SelectedMonthLicenseeWL,
+		ISNULL(- SUM(CASE WHEN ISNULL(b.isBA,0) = 0 AND ( b.sporttype IN (0,161,162,180,181,186,251,252))  THEN b.winlost ELSE 0 END),0) AS SelectedMonthLicenseeWL,
 		ISNULL(- SUM ( CASE WHEN ISNULL(b.isBA,0) = 1 THEN  (b.winlost+b.awinlost+b.comm) ELSE 0 END),0) AS SelectedMonthAmtDuetoBA,
 		ISNULL(- SUM ( CASE WHEN b.sporttype = 151 THEN (b.winlost+b.awinlost+b.comm) ELSE 0 END),0) AS SelectedMonthAmtDuetoRB,
 		ISNULL(SUM (CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END),0) AS SelectedMonthWinlossRB,

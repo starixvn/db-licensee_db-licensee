@@ -26,6 +26,7 @@ Revisions:
 	-20130618@Jim:  Restrict permission of Licensee Users by currency
 	-20130625@Jim: support to view currency UUS
 	-20130809@Jim: offer Virtual Horse Racing
+	-20131007@Jim: support Virtual Tennis
 Param's Explanation:  
   
 Example:  
@@ -132,8 +133,9 @@ BEGIN
 							'WHEN b.bettype BETWEEN 31 AND 33 THEN l.Sporttype' + char(13) +
 							'WHEN b.bettype BETWEEN 81 AND 120 THEN 161 --NG' + char(13) +
 							'WHEN b.bettype BETWEEN 1101 AND 1199 THEN 162 --LC' + char(13) +
-							'WHEN (b.bettype BETWEEN 1201 AND 1299) AND b.bettype NOT IN (1231,1232,1233) THEN 180 --VS' + char(13) +
-							'WHEN b.bettype IN (1231,1232,1233) THEN 181 --VHS' + char(13) +
+							'WHEN (b.bettype BETWEEN 1201 AND 1299) AND b.bettype NOT IN (1231,1232,1233,1237,1238,1220,1235,1236) THEN 180 --VS' + char(13) +
+							'WHEN b.bettype IN (1231,1232,1233,1237,1238) THEN 181 ' + char(13) + --VHS
+							'WHEN b.bettype IN (1220,1235,1236) THEN 186 ' + char(13) + --Virtual Tennis
 							'WHEN b.bettype = 9 THEN 101 --Mix Parlay' + char(13) +
 							'WHEN b.bettype = 29 THEN 102 --System Parlay' + char(13) +
 							'WHEN b.bettype = 10 THEN 103 -- Outright' + char(13) +
@@ -172,8 +174,9 @@ BEGIN
 							'WHEN b.bettype BETWEEN 31 AND 33 THEN l.Sporttype' + char(13) +
 							'WHEN b.bettype BETWEEN 81 AND 120 THEN 161 --NG' + char(13) +
 							'WHEN b.bettype BETWEEN 1101 AND 1199 THEN 162 --LC' + char(13) +
-							'WHEN (b.bettype BETWEEN 1201 AND 1299) AND b.bettype NOT IN (1231,1232,1233) THEN 180 --VS' + char(13) +
-							'WHEN b.bettype IN (1231,1232,1233) THEN 181 --VHS'+char(13)+
+							'WHEN (b.bettype BETWEEN 1201 AND 1299) AND b.bettype NOT IN (1231,1232,1233,1237,1238,1220,1235,1236) THEN 180 --VS' + char(13) +
+							'WHEN b.bettype IN (1231,1232,1233,1237,1238) THEN 181 '+char(13)+ --VHS
+							'WHEN b.bettype IN (1220,1235,1236) THEN 186 ' +char(13) + --Virtual Tennis
 							'WHEN b.bettype = 9 THEN 101 --Mix Parlay' + char(13) +
 							'WHEN b.bettype = 29 THEN 102 --System Parlay' + char(13) +
 							'WHEN b.bettype = 10 THEN 103 -- Outright' + char(13) +
@@ -242,8 +245,9 @@ BEGIN
 							'WHEN b.bettype BETWEEN 31 AND 33 THEN l.Sporttype' + char(13) +
 							'WHEN b.bettype BETWEEN 81 AND 120 THEN 161 --NG' + char(13) +
 							'WHEN b.bettype BETWEEN 1101 AND 1199 THEN 162 --LC' + char(13) +
-							'WHEN (b.bettype BETWEEN 1201 AND 1299) AND b.bettype NOT IN (1231,1232,1233) THEN 180 --VS' + char(13) +
-							'WHEN b.bettype BETWEEN 1231 AND 1233 THEN 181 --VHR' + char(13) +
+							'WHEN (b.bettype BETWEEN 1201 AND 1299) AND b.bettype NOT IN (1231,1232,1233,1237,1238,1220,1235,1236) THEN 180 --VS' + char(13) +
+							'WHEN b.bettype IN (1231,1232,1233,1237,1238) THEN 181 --VHR' + char(13) +
+							'WHEN b.bettype IN (1220,1235,1236) THEN 186 --V Tennis' + char(13) +
 							'WHEN b.bettype = 9 THEN 101 --Mix Parlay' + char(13) +
 							'WHEN b.bettype = 29 THEN 102 --System Parlay' + char(13) +
 							'WHEN b.bettype = 10 THEN 103 -- Outright' + char(13) +
@@ -279,8 +283,9 @@ BEGIN
 							'WHEN b.bettype BETWEEN 31 AND 33 THEN l.Sporttype' + char(13) +
 							'WHEN b.bettype BETWEEN 81 AND 120 THEN 161 --NG' + char(13) +
 							'WHEN b.bettype BETWEEN 1101 AND 1199 THEN 162 --LC' + char(13) +
-							'WHEN (b.bettype BETWEEN 1201 AND 1299) AND b.bettype NOT IN (1231,1232,1233) THEN 180 --VS' + char(13) +
-							'WHEN b.bettype BETWEEN 1231 AND 1233 THEN 181'+char(13)+
+							'WHEN (b.bettype BETWEEN 1201 AND 1299) AND b.bettype NOT IN (1231,1232,1233,1237,1238,1220,1235,1236) THEN 180 --VS' + char(13) +
+							'WHEN b.bettype IN (1231,1232,1233,1237,1238) THEN 181'+char(13)+
+							'WHEN b.bettype IN (1220,1235,1236) THEN 186 --V Tennis' + char(13) +
 							'WHEN b.bettype = 9 THEN 101 --Mix Parlay' + char(13) +
 							'WHEN b.bettype = 29 THEN 102 --System Parlay' + char(13) +
 							'WHEN b.bettype = 10 THEN 103 -- Outright' + char(13) +
