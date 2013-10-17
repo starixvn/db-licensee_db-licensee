@@ -1,5 +1,6 @@
 ﻿ALTER PROCEDURE Lrf_Result_SportSelByDate
-	@EventDate DATETIME
+	@EventDate DATETIME,
+	@LicenseeID INT
 AS
 /*
 Created: 20101201@Jacob
@@ -18,6 +19,10 @@ Revisions:
 	20130722@Jim: add Virtual Horse Racing (Sporttype=181)
 	20130916@Jim: add Virtual Tennis (sporttype=186)
 */
+/* sample test case:
+	exec Lrf_Result_SportSelByDate @EventDate='2013-10-06 00:00:00',@licenseeid=1
+
+*/
 
 SET NOCOUNT ON
 
@@ -25,6 +30,57 @@ DECLARE @toDate		DATETIME,
 		@matchcode	VARCHAR(10) --HRDummy
 SELECT  @toDate = dateadd(s,-1, dateadd(d, 1, @EventDate))
 
+SELECT DISTINCT ProductID INTO #LicenseeProduct
+FROM bodb_licensee.dbo.LicenseeProduct3rd WITH (NOLOCK)
+WHERE licenseeID=@LicenseeID
+DECLARE @LicenseeProduct AS TABLE (SportID INT)
+IF EXISTS (SELECT TOP 1 1 FROM #LicenseeProduct WHERE ProductID=1) -- Racing
+	BEGIN 
+		INSERT INTO @LicenseeProduct
+		SELECT 151
+	END
+	
+IF EXISTS (SELECT TOP 1 1 FROM #LicenseeProduct WHERE ProductID=2) -- Number Game
+	BEGIN 
+		INSERT INTO @LicenseeProduct
+		SELECT 161
+	END
+
+IF EXISTS (SELECT TOP 1 1 FROM #LicenseeProduct WHERE ProductID=3)--- BA
+	BEGIN 
+		INSERT INTO @LicenseeProduct
+		SELECT SportType
+		FROM dbo.sports  (NOLOCK)
+		WHERE SportType<100
+	END
+IF EXISTS (SELECT TOP 1 1 FROM #LicenseeProduct WHERE ProductID=4) -- LIve Casino
+	BEGIN 
+		INSERT INTO @LicenseeProduct
+		SELECT 162
+	END	
+IF EXISTS (SELECT TOP 1 1 FROM #LicenseeProduct WHERE ProductID=5) -- Virtual Sports
+	BEGIN 
+	
+		INSERT INTO @LicenseeProduct
+		SELECT 180
+		UNION ALL 
+		SELECT 181
+		UNION ALL 
+		SELECT 186
+		
+	END	
+
+IF EXISTS (SELECT TOP 1 1 FROM #LicenseeProduct WHERE ProductID=6) -- RNG Casino
+	BEGIN 
+		INSERT INTO @LicenseeProduct
+		SELECT 251
+	END	
+IF EXISTS (SELECT TOP 1 1 FROM #LicenseeProduct WHERE ProductID=7) -- Bingo
+	BEGIN 
+		INSERT INTO @LicenseeProduct
+		SELECT 252
+	END		
+	
 SELECT distinct sports.sporttype, sportname from sports with (nolock)
 	inner join (
 	SELECT matchid, eventdate, eventstatus, sporttype 
@@ -45,6 +101,7 @@ LEFT JOIN match_remark mr ON match.matchid = mr.matchid
 WHERE
 	match.eventdate >= @EventDate
 	AND match.eventdate <= @toDate
+	AND (match.sporttype<100 OR match.sporttype IN (SELECT SportID FROM @LicenseeProduct))
 	AND ( match.eventstatus NOT IN ('internal','closed','running')
 			OR ( mr.IsPending=1 AND match.eventstatus IN ('running','closed') )
 			OR ( mr.IsHTCal = 1 AND match.eventstatus ='running')
@@ -64,7 +121,10 @@ FROM (
 			 WHERE eventdate >= @EventDate AND eventdate <= @toDate  
 			) o ON o.leagueid = l.leagueid   
 	  WHERE l.sporttype BETWEEN 151 AND 153 AND o.oddsstatus='completed'  
-	) t INNER JOIN sports s WITH(NOLOCK) ON t.sporttype = s.sporttype  
+	) t 
+	 INNER JOIN sports s WITH(NOLOCK) ON t.sporttype = s.sporttype 	
+	INNER JOIN @LicenseeProduct lp  ON lp.sportID = s.sporttype  
+	
 WHERE t.RowNumber < 2  
 
 ORDER BY sports.sporttype, sports.sportname
