@@ -493,7 +493,7 @@ BEGIN
 			
 	IF (@MaxMaxBet>0 AND @MaxBet>0 AND @MaxBet>@MaxMaxBet)
 	BEGIN
-		SELECT @ErrMsg =	'Virtual Soccer' + ': '+
+		SELECT @ErrMsg =	'Virtual Tennis' + ': '+
 						CASE @Language 
 							WHEN 'E' THEN 'The Max Bet must be equal to or less than the value '
 							WHEN 'CS' THEN N'?????????????????'
@@ -510,7 +510,7 @@ BEGIN
 			
 	IF (@MaxMaxPerMatch>0 AND @MaxPerMatch>0 AND @MaxPerMatch>@MaxMaxPerMatch)
 	BEGIN
-		SELECT @ErrMsg =	'Virtual Soccer' + ': '+
+		SELECT @ErrMsg =	'Virtual Tennis' + ': '+
 						CASE @Language 
 							WHEN 'E' THEN 'The Max Per Match must be equal to or less than the value '
 							WHEN 'CS' THEN N'?????????????????????'
@@ -529,7 +529,7 @@ BEGIN
 	FROM Dep_CustSetting3rd WITH(NOLOCK)
 	WHERE custid = @custid AND sporttype = 186 AND bettype =1220
 
-	SELECT @maxpermatch_old = maxpermatch180 FROM custinfo WITH(NOLOCK) WHERE custid = @custid
+	SELECT @maxpermatch_old = maxpermatch186 FROM custinfo WITH(NOLOCK) WHERE custid = @custid
 
 	IF @MinBet <> @minbet_old OR @MaxBet <> @maxbet_old
 	BEGIN
@@ -577,7 +577,7 @@ BEGIN
 	END
 	--DECLARE @TrackingValue VARCHAR(5000)
 	SELECT @TrackingValue ='<Lrf_CustomerUpdMember_MinMaxBetVS custid="'+ COALESCE(CAST(@custid as VARCHAR(50)),SPACE(1)) + '" ' +
-	'Sporttype="'+ COALESCE(CAST(180 as VARCHAR(50)),SPACE(1)) + '" ' +
+	'Sporttype="'+ COALESCE(CAST(186 as VARCHAR(50)),SPACE(1)) + '" ' +
 	'MinB="'+ COALESCE(CAST(@minbet as VARCHAR(50)),SPACE(1)) + '" ' +
 	'MaxB="'+ COALESCE(CAST(@maxbet as VARCHAR(50)),SPACE(1)) + '" ' +
 	'MPM="'+ COALESCE(CAST(@maxpermatch as VARCHAR(50)),SPACE(1)) + '" ' +
