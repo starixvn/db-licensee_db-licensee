@@ -41,13 +41,19 @@ BEGIN
 			m.betstatus, 
 			hthomescore,
 			htawayscore,
-			datediff(minute,GlobalShowTime,CURRENT_TIMESTAMP) playtime,
+			CASE WHEN m.sporttype NOT IN (162,161)
+				 THEN datediff(minute,GlobalShowTime,CURRENT_TIMESTAMP)
+				 ELSE datediff(minute,kickofftime,CURRENT_TIMESTAMP)
+				 END playtime,
 			m.LeagueID,
 			m.matchid, 
 			m.homeID,
 			m.awayID,
 			m.matchcode,
-			m.GlobalShowTime kickofftime,
+			CASE WHEN m.sporttype NOT IN (162,161)
+				THEN m.GlobalShowTime
+				ELSE m.kickofftime
+				END kickofftime,
 			m.eventdate,
 			m.finalhomescore,
 			m.finalawayscore,
@@ -78,13 +84,19 @@ BEGIN
 			m.betstatus, 
 			hthomescore,
 			htawayscore,
-			datediff(minute,GlobalShowTime,CURRENT_TIMESTAMP) playtime,
+			CASE WHEN m.sporttype NOT IN (162,161)
+				 THEN datediff(minute,GlobalShowTime,CURRENT_TIMESTAMP)
+				 ELSE datediff(minute,kickofftime,CURRENT_TIMESTAMP)
+				 END playtime,
 			m.LeagueID,
 			m.matchid, 
 			m.homeID,
 			m.awayID,
 			m.matchcode,
-			m.GlobalShowTime kickofftime,
+			CASE WHEN m.sporttype NOT IN (162,161)
+				THEN m.GlobalShowTime
+				ELSE m.kickofftime
+				END kickofftime,
 			m.eventdate,
 			m.finalhomescore,
 			m.finalawayscore,
@@ -114,14 +126,20 @@ BEGIN
 			m.betstatus, 
 			hthomescore,
 			htawayscore,
-			datediff(minute,GlobalShowTime,CURRENT_TIMESTAMP) playtime,
+			CASE WHEN m.sporttype NOT IN (162,161)
+				 THEN datediff(minute,GlobalShowTime,CURRENT_TIMESTAMP)
+				 ELSE datediff(minute,kickofftime,CURRENT_TIMESTAMP)
+				 END playtime,
 			m.LeagueID,
 			m.matchid, 
 			m.homeID,
 			m.awayID,
 			m.matchcode,
 			m.eventdate,
-			m.GlobalShowTime kickofftime,
+			CASE WHEN m.sporttype NOT IN (162,161)
+				THEN m.GlobalShowTime
+				ELSE m.kickofftime
+				END kickofftime,
 			m.finalhomescore,
 			m.finalawayscore,
 			case when m.betstatus like 'Refund FT%' then 'Refund FT' 
