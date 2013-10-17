@@ -9,6 +9,7 @@ Original: Age_BetList_SelMatchResultParlay
 Revisions:
     - 20110907@Sophia: Add column IsHTCal, calculate for Pending result.
     - 20110927@Henry: add more columns
+	- 20131017@Jim: Turn to use GlobalShowTime for display the Kick-off-Time
 */
 BEGIN
 	SET NOCOUNT ON
@@ -69,7 +70,7 @@ BEGIN
 						htawayscore,		
 						m.finalhomescore,
 						m.finalawayscore,
-						m.kickofftime,
+						m.GlobalShowTime kickofftime,
 						m.eventdate,
 						m.isNeutral,
 						m.betstatus, 	
@@ -123,7 +124,7 @@ BEGIN
 				htawayscore,		
 				m.finalhomescore,
 				m.finalawayscore,
-				m.kickofftime,
+				m.GlobalShowTime kickofftime,
 				m.eventdate,
 				m.isNeutral,
 				m.betstatus, 	
@@ -176,7 +177,7 @@ BEGIN
 				htawayscore,		
 				m.finalhomescore,
 				m.finalawayscore,
-				m.kickofftime,
+				m.GlobalShowTime kickofftime,
 				m.eventdate,
 				m.isNeutral,
 				m.betstatus, 	

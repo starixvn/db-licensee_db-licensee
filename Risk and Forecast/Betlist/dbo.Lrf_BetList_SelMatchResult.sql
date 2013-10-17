@@ -23,6 +23,8 @@ Revisions:
 	- 20130403@Jim: support base currency USD 
 	- 20130514@Jim:Restrict permission of Licensee Users by currency
 	- 20130722@Jim: support Virtual Horse Racing
+	- 20131017@Jim: Turn to use GlobalShowTime for display the Kick-off-Time
+	
 	*******************
 	sample test case:
 		exec Lrf_BetList_SelMatchResult_xtest @licenseeid=1,@matchid=2715481,@raceno=N'3',@userid=68
@@ -39,13 +41,13 @@ BEGIN
 			m.betstatus, 
 			hthomescore,
 			htawayscore,
-			datediff(minute,kickofftime,CURRENT_TIMESTAMP) playtime,
+			datediff(minute,GlobalShowTime,CURRENT_TIMESTAMP) playtime,
 			m.LeagueID,
 			m.matchid, 
 			m.homeID,
 			m.awayID,
 			m.matchcode,
-			m.kickofftime,
+			m.GlobalShowTime kickofftime,
 			m.eventdate,
 			m.finalhomescore,
 			m.finalawayscore,
@@ -76,13 +78,13 @@ BEGIN
 			m.betstatus, 
 			hthomescore,
 			htawayscore,
-			datediff(minute,kickofftime,CURRENT_TIMESTAMP) playtime,
+			datediff(minute,GlobalShowTime,CURRENT_TIMESTAMP) playtime,
 			m.LeagueID,
 			m.matchid, 
 			m.homeID,
 			m.awayID,
 			m.matchcode,
-			m.kickofftime,
+			m.GlobalShowTime kickofftime,
 			m.eventdate,
 			m.finalhomescore,
 			m.finalawayscore,
@@ -112,14 +114,14 @@ BEGIN
 			m.betstatus, 
 			hthomescore,
 			htawayscore,
-			datediff(minute,kickofftime,CURRENT_TIMESTAMP) playtime,
+			datediff(minute,GlobalShowTime,CURRENT_TIMESTAMP) playtime,
 			m.LeagueID,
 			m.matchid, 
 			m.homeID,
 			m.awayID,
 			m.matchcode,
 			m.eventdate,
-			m.kickofftime,
+			m.GlobalShowTime kickofftime,
 			m.finalhomescore,
 			m.finalawayscore,
 			case when m.betstatus like 'Refund FT%' then 'Refund FT' 

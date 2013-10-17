@@ -1,6 +1,11 @@
-﻿set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
+﻿USE [bodb02]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_Result_RaceSelByMeeting]    Script Date: 10/17/2013 00:11:27 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+/****** Object:  Stored Procedure dbo.Lrf_Result_RaceSelByMeeting    Script Date: 10/3/2013 2:52:10 PM ******/
 
 ALTER PROCEDURE [dbo].[Lrf_Result_RaceSelByMeeting]
 	@FromDate DATETIME,
@@ -233,10 +238,9 @@ BEGIN
 	DROP TABLE #Data
 
  END
-
 GO
-GRANT EXECUTE ON [dbo].[Lrf_Result_RaceSelByMeeting] TO [bodbLicenseeNet]
+GRANT EXECUTE ON [dbo].[Lrf_Result_RaceSelByMeeting] TO [bodbLicenseeNet] AS [dbo]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Result_RaceSelByMeeting] TO [vnteam]
-
-
+GRANT EXECUTE ON [dbo].[Lrf_Result_RaceSelByMeeting] TO [vnteam] AS [dbo]
+GO
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Result_RaceSelByMeeting] TO [vnteam] AS [dbo]
