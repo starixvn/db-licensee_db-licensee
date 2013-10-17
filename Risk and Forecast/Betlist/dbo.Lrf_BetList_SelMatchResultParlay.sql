@@ -62,29 +62,32 @@ BEGIN
 			isPending
 		)
 		SELECT	m.sporttype, 	
-						m.LeagueID,
-						m.matchid, 	
-						m.homeID,
-						m.awayID,
-						hthomescore,
-						htawayscore,		
-						m.finalhomescore,
-						m.finalawayscore,
-						m.GlobalShowTime kickofftime,
-						m.eventdate,
-						m.isNeutral,
-						m.betstatus, 	
-						case when m.betstatus like 'Refund FT%' then 'Refund FT' 
-							 when m.betstatus like 'Refund HT%' then 'Refund HT'
-							 when m.betstatus like 'Refund%' then 'Refund' 
-							else m.eventstatus end as eventstatus, 
-						isnull(mr.refund,0) IsRefund ,
-						isnull(mr.calrefund,0) IsCalRefund,
-						m.goalrecord,
-						m.matchcode,
-						ISNULL(mr.isHTCal,0) as isHTCal,
-						ISNULL(mr.calculate,0) as calculate,
-						isnull(mr.IsPending,0) as IsPending	
+				m.LeagueID,
+				m.matchid, 	
+				m.homeID,
+				m.awayID,
+				hthomescore,
+				htawayscore,		
+				m.finalhomescore,
+				m.finalawayscore,
+				CASE WHEN m.sporttype NOT IN (162,161)
+					THEN m.GlobalShowTime
+					ELSE m.kickofftime
+					END kickofftime,
+				m.eventdate,
+				m.isNeutral,
+				m.betstatus, 	
+				case when m.betstatus like 'Refund FT%' then 'Refund FT' 
+					 when m.betstatus like 'Refund HT%' then 'Refund HT'
+					 when m.betstatus like 'Refund%' then 'Refund' 
+					else m.eventstatus end as eventstatus, 
+				isnull(mr.refund,0) IsRefund ,
+				isnull(mr.calrefund,0) IsCalRefund,
+				m.goalrecord,
+				m.matchcode,
+				ISNULL(mr.isHTCal,0) as isHTCal,
+				ISNULL(mr.calculate,0) as calculate,
+				isnull(mr.IsPending,0) as IsPending	
 		FROM(	SELECT b.matchId FROM BettransM b WITH (NOLOCK) WHERE b.refno = @refno ) bM
 				INNER JOIN match m WITH(NOLOCK) ON bM.matchid = m.matchid
 				LEFT OUTER JOIN match_remark mr WITH(NOLOCK) ON m.matchid = mr.matchid
@@ -124,7 +127,10 @@ BEGIN
 				htawayscore,		
 				m.finalhomescore,
 				m.finalawayscore,
-				m.GlobalShowTime kickofftime,
+				CASE WHEN m.sporttype NOT IN (162,161)
+				THEN m.GlobalShowTime
+				ELSE m.kickofftime
+				END kickofftime,
 				m.eventdate,
 				m.isNeutral,
 				m.betstatus, 	
@@ -177,7 +183,10 @@ BEGIN
 				htawayscore,		
 				m.finalhomescore,
 				m.finalawayscore,
-				m.GlobalShowTime kickofftime,
+				CASE WHEN m.sporttype NOT IN (162,161)
+					THEN m.GlobalShowTime
+					ELSE m.kickofftime
+					END kickofftime,
 				m.eventdate,
 				m.isNeutral,
 				m.betstatus, 	
