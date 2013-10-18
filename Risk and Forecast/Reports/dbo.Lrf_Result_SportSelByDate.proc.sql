@@ -46,13 +46,6 @@ IF EXISTS (SELECT TOP 1 1 FROM #LicenseeProduct WHERE ProductID=2) -- Number Gam
 		SELECT 161
 	END
 
-IF EXISTS (SELECT TOP 1 1 FROM #LicenseeProduct WHERE ProductID=3)--- BA
-	BEGIN 
-		INSERT INTO @LicenseeProduct
-		SELECT SportType
-		FROM dbo.sports  (NOLOCK)
-		WHERE SportType<100
-	END
 IF EXISTS (SELECT TOP 1 1 FROM #LicenseeProduct WHERE ProductID=4) -- LIve Casino
 	BEGIN 
 		INSERT INTO @LicenseeProduct
