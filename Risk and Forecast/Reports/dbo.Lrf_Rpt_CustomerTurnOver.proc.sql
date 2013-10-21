@@ -3,6 +3,7 @@ set QUOTED_IDENTIFIER ON
 go
 
 
+
 ALTER   PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
 	 @LicenseeID INT,
 	 @UserID  INT,
@@ -71,15 +72,6 @@ CREATE TABLE #Data
 DECLARE @Status AS TABLE
 (
 	StatusID INT
-)
-
-CREATE TABLE #DataSum
-(
-	totaltransaction			 INT,
-	SumTurnover				 MONEY,
-	SumWinlost 				 MONEY,
-	SumComm					MONEY,
-	Total							MONEY
 )
 
 DECLARE @RowStart INT ,
@@ -162,25 +154,6 @@ ELSE
 				SET @TempFromDate =  DATEADD(DAY,1,@MoveBetsDay)
 			ELSE
 				SET @TempFromDate = @FromDate
-			
-			INSERT INTO #DataSum
-			SELECT 
-					COUNT(currency) totaltransaction,
-					SUM(stake)	sumTurnover,
-					SUM(b.winlost-b.actual_stake) SumWinlost,
-					Sum(b.PlayerComm)  SumComm,
-					sum(b.winlost-b.actual_stake+b.PlayerComm) Total
-			FROM bettrans b WITH (NOLOCK)
-			INNER JOIN #BettypeID bet  ON b.bettype=bet.bettypeID
-			LEFT JOIN match m WITH (NOLOCK) ON b.matchid = m.matchid
-			LEFT JOIN outright o with(nolock) ON b.matchid = o.orid 
-			LEFT JOIN league l with(nolock) ON o.leagueid = l.leagueid
-			WHERE 
-					b.winlostdate BETWEEN @TempFromDate AND @todate
-					AND (b.CustID = @CustID OR ISNULL(@CustID,'')='')
-					AND ((m.sporttype<100 AND @checkSB=1) OR (m.sporttype IN (SELECT sportID FROM #ProductID)))
-					AND b.statusID IN (SELECT StatusID FROM @Status)
-			
 					
 			INSERT INTO #Data
 			SELECT 
@@ -214,24 +187,6 @@ ELSE
 				
 			IF @BalanceUpDay < @FromDate 
 				SELECT @BalanceUpDay=@FromDate
-			
-			INSERT INTO #DataSum
-			SELECT 
-					COUNT(currency) totaltransaction,
-					SUM(stake)	sumTurnover,
-					SUM(b.winlost-b.actual_stake) SumWinlost,
-					Sum(b.PlayerComm)  SumComm,
-					sum(b.winlost-b.actual_stake+b.PlayerComm) Total
-			FROM bettrans14 b WITH (NOLOCK)
-			INNER JOIN #BettypeID bet  ON b.bettype=bet.bettypeID
-			LEFT JOIN match14 m WITH (NOLOCK) ON b.matchid = m.matchid
-			LEFT JOIN outright14 o with(nolock) ON b.matchid = o.orid 
-			LEFT JOIN league l with(nolock) ON o.leagueid = l.leagueid
-			WHERE 
-					b.winlostdate BETWEEN @TempFromDate AND @todate
-					AND (b.CustID = @CustID OR ISNULL(@CustID,'')='')
-					AND ((m.sporttype<100 AND @checkSB=1) OR (m.sporttype IN (SELECT sportID FROM #ProductID)))
-					AND b.statusID IN (SELECT StatusID FROM @Status)	
 			
 			INSERT INTO #Data
 			SELECT 
@@ -287,20 +242,6 @@ ELSE
 							bk.winlostdate BETWEEN @fromdate AND @TempToDate
 							AND (bk.CustID = @CustID OR ISNULL(@CustID,'')='')
 							AND bk.statusID IN (SELECT StatusID FROM @Status)
-							
-			INSERT INTO #DataSum
-			SELECT 
-					COUNT(b.currency) totaltransaction,
-					SUM(b.turnover)	sumTurnover,
-					SUM(b.winlost) SumWinlost,
-					Sum(b.PlayerComm)  SumComm,
-					sum(b.winlost+b.PlayerComm) Total
-			FROM #temp_bk  b
-			LEFT JOIN bodb_archive.dbo.MATCH_BK m WITH (NOLOCK) ON b.matchid = m.matchid
-			WHERE 
-					((m.sporttype<100 AND @checkSB=1) OR (m.sporttype IN (SELECT sportID FROM #ProductID)))
-					
-	
 			INSERT INTO #Data
 			SELECT 
 				b.CustID,
@@ -345,6 +286,7 @@ ELSE
 				WHEN @ReportBy = 2 THEN CONVERT(VARCHAR(6),winlostdate,112)  
 				ELSE '0' END ReportBy,  
 				A.*
+				INTO #result 
 		FROM 
 		(	
 		SELECT   
@@ -388,19 +330,24 @@ ELSE
 			CASE WHEN @ReportBy = 1 THEN CONVERT(VARCHAR(8),winlostdate,112)  
 				WHEN @ReportBy = 2 THEN CONVERT(VARCHAR(6),winlostdate,112)  
 				ELSE '0' END
-		SELECT SUM(totaltransaction) totaltransaction,
-				   sum(SumTurnover) SumTurnover,
-				  sum(SumWinlost) SumWinlost ,
-				  sum(SumComm) SumComm,
-				  sum(Total) Total			 	
-		FROM #DataSum
-				
+	--- Data Detail 
+		 SELECT * FROM #result 	
+	--- Data Sum 	
+		
+		SELECT  count(currency) Sumbetcount,
+				   sum(Turnover) SumTurnover,
+				   sum(Winlost) SumWinlost ,
+				   sum(PlayerComm) SumComm,
+				  MAX(RowNum) TotalRows
+		FROM #result 	
+		
 		DROP TABLE #Data	
-		DROP TABLE #DataSum	
+		DROP TABLE #result	
 	END
 		
 DROP TABLE #ProductID
 DROP TABLE #BettypeID
+
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [bodbLicenseeNet]
