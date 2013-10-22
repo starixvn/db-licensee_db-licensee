@@ -100,35 +100,34 @@ ELSE
 	BEGIN 
 
 		SELECT lc.CustID INTO #Currency
-		FROM DBLIC.bodb_licensee.dbo.LicenseeCust lc WITH (NOLOCK) 
+		FROM DBLIC.bodb_licensee.dbo.LicenseeCustInfo lc WITH (NOLOCK) 
+			INNER JOIN DBLIC.bodb_licensee.dbo.LicenseeCust lcu WITH (NOLOCK)  ON lc.recommend=lcu.CustID
 			INNER JOIN DBLIC.bodb_licensee.dbo.CurrencyUser c WITH (NOLOCK)
-			ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID	
-		WHERE lc.LicenseeID=@LicenseeID 
-		AND lc.RoleID=2
-		AND lc.Currency=@CurrencyID
+			ON lcu.LicenseeID=c.LicenseeID AND lcu.Currency=c.CurrencyID	
+		WHERE lcu.LicenseeID=@LicenseeID 
+		AND lcu.RoleID=2
+		AND lcu.Currency=@CurrencyID
 		AND c.usrID=@userID 
 		AND c.SystemID=1 -- System is default=1 (LRF)	
 		AND c.isActive=1
-
+		
 		SELECT @Username = ltrim(rtrim(@Username))
 		IF ISNULL(@Username,'')<>''
 		BEGIN 
 
 			SELECT @CustID = cr.CustID 
 			FROM Customer cr (NOLOCK)
-				INNER JOIN #Currency c ON cr.recommend=c.CustID
+				INNER JOIN #Currency c ON cr.CustID=c.CustID
 			WHERE username2 LIKE '%$' + @Username
 
 			IF ISNULL(@CustID,0) = 0
 			BEGIN
 				SELECT @CustID = cr.CustID 
 				FROM Customer cr(NOLOCK)
-					INNER JOIN #Currency c ON cr.recommend=c.CustID
+					INNER JOIN #Currency c ON cr.CustID=c.CustID
 				WHERE username = @Username
 			END
 		END
-
-		DROP TABLE #Currency 
 
 		IF @ShowWin =1
 		BEGIN
@@ -173,8 +172,9 @@ ELSE
 			LEFT JOIN outright o with(nolock) ON b.matchid = o.orid 
 			LEFT JOIN league l with(nolock) ON o.leagueid = l.leagueid
 			WHERE 
-				b.winlostdate BETWEEN @TempFromDate AND @todate
-				AND (b.CustID = @CustID OR ISNULL(@CustID,'')='')
+				b.CustID IN (SELECT CustID FROM #Currency) AND 
+				 b.winlostdate BETWEEN @TempFromDate AND @todate
+				AND (b.CustID = @CustID OR ISNULL(@CustID,0)=0)
 				AND ((m.sporttype<100 AND @checkSB=1) OR (m.sporttype IN (SELECT sportID FROM #ProductID)))
 				AND b.statusID IN (SELECT StatusID FROM @Status)
 		END
@@ -206,8 +206,9 @@ ELSE
 			LEFT JOIN outright14 o with(nolock) ON b.matchid = o.orid 
 			LEFT JOIN league l with(nolock) ON o.leagueid = l.leagueid
 			WHERE 
-				b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
-				AND (b.CustID = @CustID OR ISNULL(@CustID,'')='')
+				--b.CustID IN (SELECT CustID FROM #Currency) AND 
+				 b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
+				AND (b.CustID = @CustID OR ISNULL(@CustID,0)=0)
 				AND ((m.sporttype<100 AND @checkSB=1) OR (m.sporttype IN (SELECT sportID FROM #ProductID)))
 				AND b.statusID IN (SELECT StatusID FROM @Status)
 		END
@@ -239,8 +240,9 @@ ELSE
 					LEFT JOIN bodb_archive.dbo.Outright_BK o with(nolock) ON bk.matchid = o.orid 
 					--LEFT JOIN league l with(nolock) ON o.leagueid = l.leagueid	
 					WHERE
-							bk.winlostdate BETWEEN @fromdate AND @TempToDate
-							AND (bk.CustID = @CustID OR ISNULL(@CustID,'')='')
+							bk.CustID IN (SELECT CustID FROM #Currency)
+							AND bk.winlostdate BETWEEN @fromdate AND @TempToDate
+							AND (bk.CustID = @CustID OR ISNULL(@CustID,0)=0)
 							AND bk.statusID IN (SELECT StatusID FROM @Status)
 			INSERT INTO #Data
 			SELECT 
@@ -325,7 +327,7 @@ ELSE
 				 ELSE bt.typenamee END
 		
 			)A
-		WHERE ( A.RowNum between @RowStart AND @RowEnd	AND  @IsExportExcel=0) OR @IsExportExcel=1
+		WHERE ( A.RowNum between @RowStart AND @RowEnd	AND  @IsExportExcel=0) OR (@IsExportExcel=1 AND A.RowNum<65001)
 		ORDER BY
 			CASE WHEN @ReportBy = 1 THEN CONVERT(VARCHAR(8),winlostdate,112)  
 				WHEN @ReportBy = 2 THEN CONVERT(VARCHAR(6),winlostdate,112)  
@@ -343,13 +345,14 @@ ELSE
 		
 		DROP TABLE #Data	
 		DROP TABLE #result	
+		DROP TABLE #Currency 
 	END
 		
 DROP TABLE #ProductID
 DROP TABLE #BettypeID
 
-
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [bodbLicenseeNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [vnteam] 
+
