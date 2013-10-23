@@ -241,7 +241,7 @@ ELSE
 					bodb_archive.dbo.bettrans_bk bk WITH (NOLOCK,INDEX=IX_custid)
 					INNER JOIN #BettypeID bet  ON bk.bettype=bet.bettypeID
 					LEFT JOIN bodb_archive.dbo.Outright_BK o with(nolock) ON bk.matchid = o.orid 
-					--LEFT JOIN league l with(nolock) ON o.leagueid = l.leagueid	
+					LEFT JOIN league l with(nolock) ON o.leagueid = l.leagueid	
 					WHERE
 							bk.CustID IN (SELECT CustID FROM #Currency)
 							AND bk.winlostdate BETWEEN @fromdate AND @TempToDate
@@ -299,7 +299,6 @@ ELSE
 			ROW_NUMBER() over(order by username, sporttype) AS RowNum,
 			b.winlostdate,
 			ISNULL(substring(c.username2,charindex ('$',c.username2,1)+1,len(c.username2)),username) as 	username,
-			--ISNULL(substring(charindex (c.username2,'$',c.username2),len(c.username2)),username) as 	username,
 			CASE 
 				WHEN e.exchangeid = 20 THEN 'UUS'
 				WHEN e.exchangeid = 51 THEN e.currency
@@ -350,6 +349,7 @@ ELSE
 				   sum(PlayerComm) SumComm,
 				  @TotalRow  TotalRows
 		FROM #result 	
+		WHERE ( RowNum between @RowStart AND @RowEnd AND  @IsExportExcel=0) OR (@IsExportExcel=1 AND RowNum<65001)
 		
 		DROP TABLE #Data	
 		DROP TABLE #result	
