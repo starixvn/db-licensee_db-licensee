@@ -1,4 +1,4 @@
-﻿CREATE PROCEDURE [dbo].[Lrf_CustomerSelStatus]
+﻿ALTER  PROCEDURE [dbo].[Lrf_CustomerSelStatus]
 	@CustID INT,
 	@AdminID INT = 0
 AS 
@@ -10,6 +10,7 @@ Original: Acc_CustomerSelStatus
 
 Revisions:
    - 20130719@Jim: remove suspended status 
+   - 20131023@Jim: Allow users to enable/ disable Casino games for specific players	
 Param's Explanation:
 • @CustID: customer id.   
 */
@@ -36,20 +37,22 @@ BEGIN
 END
 
 SELECT --ISNULL(reject,0) AS Suspend,
-	   ISNULL (closed,0) As Closed,
-	   ISNULL (autosuspend,0) As AutoSuspend,	
-	   ISNULL (cm.DisableAutoMPT ,0) As DisableAutoMPT,	
-	   ISNULL(DisableHorseracing,0) AS DisableHorseracing,
-	   ISNULL(DisableOpenTote,0) AS DisableOpenTote,
-	   ISNULL(DisableFinancial,0) AS DisableFI,
-	   ISNULL(SyncCasino,0) AS SyncCasino,
-	   ISNULL(DisableCasino,0) AS DisableCasino,
-	   ISNULL(DisableOutright,0) AS DisableOutright,
-	   ISNULL(srecommend, 0) AS SRecommend,
-	   ISNULL(mrecommend, 0) AS MRecommend,
-	   ISNULL(recommend, 0) as ARecommend,
-	   ISNULL(@IsAdminCanViewVNIP,1) AS IsAdminCanViewVNIP,
-	   @IsInternal AS IsInternal
+		ISNULL (closed,0) As Closed,
+		ISNULL (autosuspend,0) As AutoSuspend,	
+		ISNULL (cm.DisableAutoMPT ,0) As DisableAutoMPT,	
+		ISNULL(DisableHorseracing,0) AS DisableHorseracing,
+		ISNULL(DisableOpenTote,0) AS DisableOpenTote,
+		ISNULL(DisableFinancial,0) AS DisableFI,
+		ISNULL(SyncCasino,0) AS SyncCasino,
+		ISNULL(DisableCasino,0) AS DisableCasino,
+		ISNULL(SyncLiveCasino,0) AS SyncLiveCasino,
+		ISNULL(DisableLiveCasino,0) AS DisableLiveCasino,
+		ISNULL(DisableOutright,0) AS DisableOutright,
+		ISNULL(srecommend, 0) AS SRecommend,
+		ISNULL(mrecommend, 0) AS MRecommend,
+		ISNULL(recommend, 0) as ARecommend,
+		ISNULL(@IsAdminCanViewVNIP,1) AS IsAdminCanViewVNIP,
+		@IsInternal AS IsInternal
 FROM custinfo AS ci WITH (nolock)
 	LEFT JOIN CustMaster AS cm WITH (NOLOCK) ON ci.CustID = cm.custid
 WHERE ci.CustID = @CustID
