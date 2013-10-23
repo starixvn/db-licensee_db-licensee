@@ -2,7 +2,9 @@
 set QUOTED_IDENTIFIER ON
 go
 
-ALTER   PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
+
+
+ALTER    PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
 	 @LicenseeID INT,
 	 @UserID  INT,
 	 @Username VARCHAR(50)='', 
@@ -96,7 +98,7 @@ IF  NOT EXISTS (SELECT TOP 1 1  FROM #ProductID )
 	END 
 ELSE 
 	BEGIN 
-
+		
 		SELECT lc.CustID INTO #Currency
 		FROM DBLIC.bodb_licensee.dbo.LicenseeCustInfo lc WITH (NOLOCK) 
 			INNER JOIN DBLIC.bodb_licensee.dbo.LicenseeCust lcu WITH (NOLOCK)  ON lc.recommend=lcu.CustID
@@ -116,7 +118,7 @@ ELSE
 				SELECT @CustID = cr.CustID 
 				FROM Customer cr (NOLOCK)
 					INNER JOIN #Currency c ON cr.CustID=c.CustID
-				WHERE username2 LIKE '%$' + @Username
+				WHERE username2 LIKE '%$' + @Username+'%'
 
 				IF ISNULL(@CustID,0) = 0
 				BEGIN
@@ -285,12 +287,35 @@ ELSE
 			bettype IN (1,2,3,7,12,8,20)	
 			OR bettype BETWEEN 81 AND 88
 			OR bettype BETWEEN 90 AND 120
-			
+		
+		SELECT 
+				b.typeID,
+				CASE @Langkey
+										WHEN 'zh-CN'	THEN typenamcn
+										WHEN 'zh-TW'	THEN typenamecn
+										WHEN 'th-TH'	THEN typenameth
+										WHEN 'ja-JP'	THEN typenamej
+										WHEN 'ko-KR'	THEN typenameko
+										WHEN 'es'  	    THEN typenameES
+										WHEN 'vi-VN'	THEN typenamee
+										ELSE typenamee END typenamee
+		INTO #bettype		
+		FROM 
+				dbo.bettype  b WITH (NOLOCK)
+				INNER JOIN #BettypeID bt ON b.typeid=bt.bettypeID
 		SELECT 
 			CASE WHEN @ReportBy = 1 THEN CONVERT(VARCHAR(8),winlostdate,112)  
 				WHEN @ReportBy = 2 THEN CONVERT(VARCHAR(6),winlostdate,112)  
 				ELSE '0' END ReportBy,  
-				A.*
+				A.RowNum,
+				A.username,
+				A.sporttype,
+				A.Currency,
+				A.bettype,
+				A.Betcount,
+				A.Turnover,
+				A.Winlost,
+				A.PlayerComm
 				INTO #result 
 		FROM 
 		(	
@@ -314,7 +339,7 @@ ELSE
 			
 		FROM #Data b
 			INNER JOIN dbo.Customer c WITH (NOLOCK) ON b.CustID=c.CustID 
-			INNER JOIN bettype bt WITH (NOLOCK) ON b.bettype = bt.typeid
+			INNER JOIN #bettype bt WITH (NOLOCK) ON b.bettype = bt.typeid
 			INNER JOIN exchange e WITH (NOLOCK) ON b.currency = e.exchangeid
 		WHERE b.Odds >= @Odds
 			 AND c.RoleID=1
@@ -337,8 +362,23 @@ ELSE
 				WHEN @ReportBy = 2 THEN CONVERT(VARCHAR(6),winlostdate,112)  
 				ELSE '0' END
 	--- Data Detail 
-		 SELECT * FROM #result 	
+		 SELECT  ReportBy,  
+					username,
+					Currency,
+				    sporttype,
+				    bettype,
+					SUM(Betcount) Betcount ,
+					SUM(Turnover) Turnover,
+					SUM(Winlost) Winlost,
+					SUM(PlayerComm) PlayerComm
+		 FROM #result 	
 		WHERE ( RowNum between @RowStart AND @RowEnd	AND  @IsExportExcel=0) OR (@IsExportExcel=1 AND RowNum<65001)
+		GROUP BY 
+					ReportBy,  
+					username,
+					Currency,
+					sporttype,
+					bettype
 	--- Data Sum 	
 		SELECT @TotalRow=count(1)
 		FROM #result 
@@ -349,11 +389,12 @@ ELSE
 				   sum(PlayerComm) SumComm,
 				  @TotalRow  TotalRows
 		FROM #result 	
-		WHERE ( RowNum between @RowStart AND @RowEnd AND  @IsExportExcel=0) OR (@IsExportExcel=1 AND RowNum<65001)
+		WHERE ( RowNum between @RowStart AND @RowEnd	AND  @IsExportExcel=0) OR (@IsExportExcel=1 AND RowNum<65001)
 		
 		DROP TABLE #Data	
 		DROP TABLE #result	
 		DROP TABLE #Currency 
+		DROP TABLE #bettype
 	END
 		
 DROP TABLE #ProductID
@@ -363,7 +404,5 @@ GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [bodbLicenseeNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [vnteam] 
-
-
 
 
