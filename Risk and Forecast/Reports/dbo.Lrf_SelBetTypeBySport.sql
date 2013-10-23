@@ -43,13 +43,27 @@ DECLARE @Bettype TABLE (
 	BettypeID smallint
 	,BettypeName nvarchar(50)
 )
-
+SELECT 
+	b.typeID,
+	CASE @Langkey
+							WHEN 'zh-CN'	THEN typenamcn
+							WHEN 'zh-TW'	THEN typenamecn
+							WHEN 'th-TH'	THEN typenameth
+							WHEN 'ja-JP'	THEN typenamej
+							WHEN 'ko-KR'	THEN typenameko
+							WHEN 'es'  	    THEN typenameES
+							WHEN 'vi-VN'	THEN typenamee
+							ELSE typenamee END typenamee
+INTO #bettype		
+FROM 
+	bodb02.dbo.bettype  b WITH (NOLOCK)
+	
 IF EXISTS(SELECT * FROM #input WHERE ID = 0 AND ISNULL(Sport,'') <> '')
 BEGIN
 
 	INSERT INTO @Bettype
 		SELECT typeid, typenamee
-		FROM bodb02.dbo.bettype WITH(NOLOCK)
+		FROM #bettype
 		WHERE (typeid < 31 OR (typeid BETWEEN 121 AND 999))
 
 END
@@ -66,7 +80,7 @@ BEGIN
 			CASE WHEN typeid BETWEEN 81 AND 120 THEN  N'NG - ' + typenamee
 				 WHEN (typeid BETWEEN 1201 AND 1299 AND typeid NOT IN (1220,1235,1236,1231,1232,1233,1237,1238)) THEN  N'V.'+typenamee
 			END as 	typenamee 
-		FROM bodb02.dbo.bettype WITH(NOLOCK)
+		FROM #bettype
 		WHERE (
 				(typeid BETWEEN 81 AND 120 AND @checkNG=1)
 				OR (typeid BETWEEN 1201 AND 1299 AND typeid NOT IN (1220,1235,1236,1231,1232,1233,1237,1238) AND @checkVS=1)
@@ -75,6 +89,7 @@ BEGIN
 END
 
 DROP TABLE #input
+DROP TABLE #bettype
 
 SELECT * FROM @Bettype
 
