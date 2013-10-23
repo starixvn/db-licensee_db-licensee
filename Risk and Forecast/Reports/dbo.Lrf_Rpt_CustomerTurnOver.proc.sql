@@ -2,8 +2,6 @@
 set QUOTED_IDENTIFIER ON
 go
 
-
-
 ALTER   PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
 	 @LicenseeID INT,
 	 @UserID  INT,
@@ -75,8 +73,8 @@ DECLARE @Status AS TABLE
 )
 
 DECLARE @RowStart INT ,
-        @RowEnd INT 
-		
+          @RowEnd INT ,
+		  @TotalRow INT		
 SELECT VAL sportID INTO #ProductID FROM strSplit(@Product,',')
 SELECT VAL bettypeID INTO #BettypeID FROM strSplit(@Bettype,',')
 
@@ -113,22 +111,27 @@ ELSE
 		
 		SELECT @Username = ltrim(rtrim(@Username))
 		IF ISNULL(@Username,'')<>''
-		BEGIN 
+			BEGIN 
 
-			SELECT @CustID = cr.CustID 
-			FROM Customer cr (NOLOCK)
-				INNER JOIN #Currency c ON cr.CustID=c.CustID
-			WHERE username2 LIKE '%$' + @Username
-
-			IF ISNULL(@CustID,0) = 0
-			BEGIN
 				SELECT @CustID = cr.CustID 
-				FROM Customer cr(NOLOCK)
+				FROM Customer cr (NOLOCK)
 					INNER JOIN #Currency c ON cr.CustID=c.CustID
-				WHERE username = @Username
-			END
-		END
+				WHERE username2 LIKE '%$' + @Username
 
+				IF ISNULL(@CustID,0) = 0
+				BEGIN
+					SELECT @CustID = cr.CustID 
+					FROM Customer cr(NOLOCK)
+						INNER JOIN #Currency c ON cr.CustID=c.CustID
+					WHERE username = @Username
+				END
+			END
+		ELSE 
+			IF ISNULL(@Username,'')=''
+				BEGIN 
+					SELECT @CustID=0
+				END		
+			
 		IF @ShowWin =1
 		BEGIN
 			INSERT INTO @Status
@@ -174,7 +177,7 @@ ELSE
 			WHERE 
 				b.CustID IN (SELECT CustID FROM #Currency) AND 
 				 b.winlostdate BETWEEN @TempFromDate AND @todate
-				AND (b.CustID = @CustID OR ISNULL(@CustID,0)=0)
+				AND (b.CustID = @CustID OR @CustID=0)
 				AND ((m.sporttype<100 AND @checkSB=1) OR (m.sporttype IN (SELECT sportID FROM #ProductID)))
 				AND b.statusID IN (SELECT StatusID FROM @Status)
 		END
@@ -206,9 +209,9 @@ ELSE
 			LEFT JOIN outright14 o with(nolock) ON b.matchid = o.orid 
 			LEFT JOIN league l with(nolock) ON o.leagueid = l.leagueid
 			WHERE 
-				--b.CustID IN (SELECT CustID FROM #Currency) AND 
+				b.CustID IN (SELECT CustID FROM #Currency) AND 
 				 b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
-				AND (b.CustID = @CustID OR ISNULL(@CustID,0)=0)
+				AND (b.CustID = @CustID OR @CustID=0)
 				AND ((m.sporttype<100 AND @checkSB=1) OR (m.sporttype IN (SELECT sportID FROM #ProductID)))
 				AND b.statusID IN (SELECT StatusID FROM @Status)
 		END
@@ -242,7 +245,7 @@ ELSE
 					WHERE
 							bk.CustID IN (SELECT CustID FROM #Currency)
 							AND bk.winlostdate BETWEEN @fromdate AND @TempToDate
-							AND (bk.CustID = @CustID OR ISNULL(@CustID,0)=0)
+							AND (bk.CustID = @CustID OR @CustID=0)
 							AND bk.statusID IN (SELECT StatusID FROM @Status)
 			INSERT INTO #Data
 			SELECT 
@@ -292,9 +295,11 @@ ELSE
 		FROM 
 		(	
 		SELECT   
+			
 			ROW_NUMBER() over(order by username, sporttype) AS RowNum,
 			b.winlostdate,
-			ISNULL(right(charindex ('$',c.username2),len(c.username2)),username) as 	username,
+			ISNULL(substring(c.username2,charindex ('$',c.username2,1)+1,len(c.username2)),username) as 	username,
+			--ISNULL(substring(charindex (c.username2,'$',c.username2),len(c.username2)),username) as 	username,
 			CASE 
 				WHEN e.exchangeid = 20 THEN 'UUS'
 				WHEN e.exchangeid = 51 THEN e.currency
@@ -316,7 +321,7 @@ ELSE
 			 AND c.RoleID=1
 		GROUP BY 
 			b.winlostdate,	
-			ISNULL(right(charindex ('$',c.username2),len(c.username2)),username) ,
+			ISNULL(substring(c.username2,charindex ('$',c.username2,1)+1,len(c.username2)),username),
 			CASE 
 				WHEN e.exchangeid = 20 THEN 'UUS'
 				WHEN e.exchangeid = 51 THEN e.currency
@@ -327,20 +332,23 @@ ELSE
 				 ELSE bt.typenamee END
 		
 			)A
-		WHERE ( A.RowNum between @RowStart AND @RowEnd	AND  @IsExportExcel=0) OR (@IsExportExcel=1 AND A.RowNum<65001)
+		
 		ORDER BY
 			CASE WHEN @ReportBy = 1 THEN CONVERT(VARCHAR(8),winlostdate,112)  
 				WHEN @ReportBy = 2 THEN CONVERT(VARCHAR(6),winlostdate,112)  
 				ELSE '0' END
 	--- Data Detail 
 		 SELECT * FROM #result 	
+		WHERE ( RowNum between @RowStart AND @RowEnd	AND  @IsExportExcel=0) OR (@IsExportExcel=1 AND RowNum<65001)
 	--- Data Sum 	
-		
-		SELECT  count(currency) Sumbetcount,
+		SELECT @TotalRow=count(1)
+		FROM #result 
+	
+		SELECT  sum(betcount) Sumbetcount,
 				   sum(Turnover) SumTurnover,
 				   sum(Winlost) SumWinlost ,
 				   sum(PlayerComm) SumComm,
-				  MAX(RowNum) TotalRows
+				  @TotalRow  TotalRows
 		FROM #result 	
 		
 		DROP TABLE #Data	
@@ -355,4 +363,7 @@ GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [bodbLicenseeNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [vnteam] 
+
+
+
 
