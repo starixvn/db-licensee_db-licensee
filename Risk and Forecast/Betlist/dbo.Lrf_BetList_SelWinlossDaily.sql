@@ -127,7 +127,7 @@ OriD INT
 ,LeagueID INT
 ,matchcode VARCHAR (20)
 ,RacerID INT
-,BetStatus VARCHAR
+,BetStatus VARCHAR (100)
 ,ShowTime DATETIME
 ,AwayID INT
 ,IsNeutral INT
