@@ -78,7 +78,7 @@ BEGIN
 	INSERT INTO @Bettype
 		SELECT typeid,
 			CASE WHEN typeid BETWEEN 81 AND 120 THEN  N'NG - ' + typenamee
-				 WHEN (typeid BETWEEN 1201 AND 1299 AND typeid NOT IN (1220,1235,1236,1231,1232,1233,1237,1238)) THEN  N'V.Soccer-'+typenamee
+				 WHEN (typeid BETWEEN 1201 AND 1299 AND typeid NOT IN (1220,1235,1236,1231,1232,1233,1237,1238)) THEN  N'V.Soccer - '+typenamee
 			END as 	typenamee 
 		FROM #bettype
 		WHERE (

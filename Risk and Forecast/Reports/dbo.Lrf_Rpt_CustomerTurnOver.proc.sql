@@ -330,7 +330,7 @@ ELSE
 				ELSE e.Code END AS Currency,
 			b.sporttype,	
 			CASE WHEN  b.bettype BETWEEN 81 AND 120 THEN N'NG - ' + bt.typenamee 
-				 WHEN (b.bettype BETWEEN 1201 AND 1299 AND typeid NOT IN (1220,1235,1236,1231,1232,1233,1237,1238)) THEN N'V.Soccer-'+bt.typenamee 
+				 WHEN (b.bettype BETWEEN 1201 AND 1299 AND typeid NOT IN (1220,1235,1236,1231,1232,1233,1237,1238)) THEN N'V.Soccer - '+bt.typenamee 
 				 ELSE bt.typenamee END AS bettype,
 			count(b.currency) AS Betcount,
 			sum(b.turnover) AS Turnover,
@@ -352,7 +352,7 @@ ELSE
 				ELSE e.Code END,
 			b.sporttype,	
 			CASE WHEN  b.bettype BETWEEN 81 AND 120 THEN N'NG - ' + bt.typenamee 
-				 WHEN (b.bettype BETWEEN 1201 AND 1299 AND typeid NOT IN (1220,1235,1236,1231,1232,1233,1237,1238)) THEN N'V.Soccer-'+bt.typenamee 
+				 WHEN (b.bettype BETWEEN 1201 AND 1299 AND typeid NOT IN (1220,1235,1236,1231,1232,1233,1237,1238)) THEN N'V.Soccer - '+bt.typenamee 
 				 ELSE bt.typenamee END
 		
 			)A
