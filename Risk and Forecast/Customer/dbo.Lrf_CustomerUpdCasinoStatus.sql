@@ -16,7 +16,7 @@ AS
 /*
 Created: 20131021@Jim
 Task : LRF - Allow users to enable/ disable Casino games for specific players
-DB: DB052.bodb02
+DB: DBTXN.bodb02
 Original: 
 Revisions:
     
