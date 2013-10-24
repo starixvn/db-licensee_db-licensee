@@ -53,7 +53,6 @@ SET NOCOUNT ON
 DECLARE @TempFromDate SMALLDATETIME
 DECLARE @TempToDate SMALLDATETIME
 DECLARE @CustID INT
-DECLARE @checkSB BIT 
 
 CREATE TABLE #Data
 (
@@ -83,15 +82,6 @@ SELECT VAL bettypeID INTO #BettypeID FROM strSplit(@Bettype,',')
 SELECT  @PageIndex = @PageIndex - 1 ,
             @RowStart = @PageSize * @PageIndex + 1 ,
             @RowEnd = @RowStart + @PageSize - 1 
-			
-IF EXISTS (SELECT 1 FROM #ProductID WHERE SportID=0)
-	BEGIN 
-		SET @checkSB=1
-	END 
-ELSE 
-	BEGIN 
-		SET @checkSB=0
-	END	
 IF  NOT EXISTS (SELECT TOP 1 1  FROM #ProductID )
 	BEGIN 
 		RETURN
@@ -180,7 +170,7 @@ ELSE
 				b.CustID IN (SELECT CustID FROM #Currency) AND 
 				 b.winlostdate BETWEEN @TempFromDate AND @todate
 				AND (b.CustID = @CustID OR @CustID=0)
-				AND ((m.sporttype<100 AND @checkSB=1) OR (m.sporttype IN (SELECT sportID FROM #ProductID)))
+				AND m.sporttype IN (SELECT sportID FROM #ProductID)
 				AND b.statusID IN (SELECT StatusID FROM @Status)
 		END
 		IF @Fromdate <= @MoveBetsDay
@@ -214,7 +204,7 @@ ELSE
 				b.CustID IN (SELECT CustID FROM #Currency) AND 
 				 b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
 				AND (b.CustID = @CustID OR @CustID=0)
-				AND ((m.sporttype<100 AND @checkSB=1) OR (m.sporttype IN (SELECT sportID FROM #ProductID)))
+				AND m.sporttype IN (SELECT sportID FROM #ProductID)
 				AND b.statusID IN (SELECT StatusID FROM @Status)
 		END
 
@@ -264,7 +254,7 @@ ELSE
 			FROM #temp_bk  b
 			LEFT JOIN bodb_archive.dbo.MATCH_BK m WITH (NOLOCK) ON b.matchid = m.matchid
 			WHERE 
-				 ((m.sporttype<100 AND @checkSB=1) OR (m.sporttype IN (SELECT sportID FROM #ProductID)))
+				 m.sporttype IN (SELECT sportID FROM #ProductID)
 			DROP TABLE #temp_bk
 				
 		END
