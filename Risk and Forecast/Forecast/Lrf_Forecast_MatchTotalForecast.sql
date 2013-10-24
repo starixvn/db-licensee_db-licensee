@@ -24,6 +24,7 @@ Revisions:
 	20130930@Victor: Revert back formular for HDP tickets
 	20131010@Victor: Update forecast business logic for handicap tickets
 	20131010@Victor: Fix @IsLive parameter issue
+	20131024@Victor: Basketball and Baseball dont use Live score in formular
 */
 
 BEGIN
@@ -74,6 +75,10 @@ BEGIN
 	FROM bodb02.dbo.match (NOLOCK)	
 	WHERE matchid = @MatchID
 
+	
+	DECLARE @MatchSportType INT
+	SELECT @MatchSportType = sporttype FROM match where matchid = @MatchId
+
 	-- hdp, bettype, stake, odds
 	SELECT 
 		CASE 
@@ -83,7 +88,9 @@ BEGIN
 		CASE WHEN bettype IN (3,8) THEN hdp1
 			ELSE hdp2 - hdp1
 		END AS hdp,
-		bettype, stake, odds, betteam, currency, ISNULL(livehomescore,0) AS livehomescore, ISNULL(liveawayscore,0) AS liveawayscore
+		bettype, stake, odds, betteam, currency, 
+		ISNULL(CASE WHEN @MatchSportType IN (2,8) THEN 0 ELSE livehomescore END,0) AS livehomescore,  
+		ISNULL(CASE WHEN @MatchSportType IN (2,8) THEN 0 ELSE liveawayscore END,0) AS liveawayscore
 	INTO #Data
 	FROM bodb02.dbo.bettrans b (NOLOCK)
 	WHERE	b.recommend IN ( SELECT custid FROM   @TempAg )
