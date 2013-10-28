@@ -25,6 +25,7 @@ Revisions:
 	20131010@Victor: Update forecast business logic for handicap tickets
 	20131010@Victor: Fix @IsLive parameter issue
 	20131024@Victor: Basketball and Baseball dont use Live score in formular
+	20131028@Victor: Update list of Sports that use Live score in formular
 */
 
 BEGIN
@@ -89,8 +90,8 @@ BEGIN
 			ELSE hdp2 - hdp1
 		END AS hdp,
 		bettype, stake, odds, betteam, currency, 
-		ISNULL(CASE WHEN @MatchSportType IN (2,8) THEN 0 ELSE livehomescore END,0) AS livehomescore,  
-		ISNULL(CASE WHEN @MatchSportType IN (2,8) THEN 0 ELSE liveawayscore END,0) AS liveawayscore
+		ISNULL(livehomescore,0) AS livehomescore,  
+		ISNULL(liveawayscore,0) AS liveawayscore
 	INTO #Data
 	FROM bodb02.dbo.bettrans b (NOLOCK)
 	WHERE	b.recommend IN ( SELECT custid FROM   @TempAg )
@@ -101,7 +102,7 @@ BEGIN
 			AND b.tpositiontaking <> 0
 	
 	-- Get Handicap detail resultset
-	IF (@IsLive = 0) -- Non-Live match: forecast with WIN - WIN method
+	IF (@IsLive = 0 OR @MatchSportType NOT IN (1,3,4,8,24,26,28)) -- Non-Live match OR not a Live handicap Sporttype: forecast with WIN - WIN method
 	BEGIN
 		;WITH LCWinloss AS
 		(
