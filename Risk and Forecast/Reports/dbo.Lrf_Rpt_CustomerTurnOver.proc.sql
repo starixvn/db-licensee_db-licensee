@@ -2,8 +2,6 @@
 set QUOTED_IDENTIFIER ON
 go
 
-
-
 ALTER    PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
 	 @LicenseeID INT,
 	 @UserID  INT,
@@ -53,7 +51,6 @@ SET NOCOUNT ON
 DECLARE @TempFromDate SMALLDATETIME
 DECLARE @TempToDate SMALLDATETIME
 DECLARE @CustID INT
-DECLARE @checkSB BIT 
 
 CREATE TABLE #Data
 (
@@ -83,15 +80,6 @@ SELECT VAL bettypeID INTO #BettypeID FROM strSplit(@Bettype,',')
 SELECT  @PageIndex = @PageIndex - 1 ,
             @RowStart = @PageSize * @PageIndex + 1 ,
             @RowEnd = @RowStart + @PageSize - 1 
-			
-IF EXISTS (SELECT 1 FROM #ProductID WHERE SportID=0)
-	BEGIN 
-		SET @checkSB=1
-	END 
-ELSE 
-	BEGIN 
-		SET @checkSB=0
-	END	
 IF  NOT EXISTS (SELECT TOP 1 1  FROM #ProductID )
 	BEGIN 
 		RETURN
@@ -180,7 +168,7 @@ ELSE
 				b.CustID IN (SELECT CustID FROM #Currency) AND 
 				 b.winlostdate BETWEEN @TempFromDate AND @todate
 				AND (b.CustID = @CustID OR @CustID=0)
-				AND ((m.sporttype<100 AND @checkSB=1) OR (m.sporttype IN (SELECT sportID FROM #ProductID)))
+				AND m.sporttype IN (SELECT sportID FROM #ProductID)
 				AND b.statusID IN (SELECT StatusID FROM @Status)
 		END
 		IF @Fromdate <= @MoveBetsDay
@@ -214,7 +202,7 @@ ELSE
 				b.CustID IN (SELECT CustID FROM #Currency) AND 
 				 b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
 				AND (b.CustID = @CustID OR @CustID=0)
-				AND ((m.sporttype<100 AND @checkSB=1) OR (m.sporttype IN (SELECT sportID FROM #ProductID)))
+				AND m.sporttype IN (SELECT sportID FROM #ProductID)
 				AND b.statusID IN (SELECT StatusID FROM @Status)
 		END
 
@@ -264,7 +252,7 @@ ELSE
 			FROM #temp_bk  b
 			LEFT JOIN bodb_archive.dbo.MATCH_BK m WITH (NOLOCK) ON b.matchid = m.matchid
 			WHERE 
-				 ((m.sporttype<100 AND @checkSB=1) OR (m.sporttype IN (SELECT sportID FROM #ProductID)))
+				 m.sporttype IN (SELECT sportID FROM #ProductID)
 			DROP TABLE #temp_bk
 				
 		END
@@ -291,14 +279,14 @@ ELSE
 		SELECT 
 				b.typeID,
 				CASE @Langkey
-										WHEN 'zh-CN'	THEN typenamcn
-										WHEN 'zh-TW'	THEN typenamecn
-										WHEN 'th-TH'	THEN typenameth
-										WHEN 'ja-JP'	THEN typenamej
-										WHEN 'ko-KR'	THEN typenameko
-										WHEN 'es'  	    THEN typenameES
-										WHEN 'vi-VN'	THEN typenamee
-										ELSE typenamee END typenamee
+							WHEN 'zh-CN'	THEN typenamcn
+							WHEN 'zh-TW'	THEN typenamecn
+							WHEN 'th-TH'	THEN typenameth
+							WHEN 'ja-JP'	THEN typenamej
+							WHEN 'ko-KR'	THEN typenameko
+							WHEN 'es'  	    THEN typenameES
+							WHEN 'vi-VN'	THEN typenamee
+							ELSE typenamee END typenamee
 		INTO #bettype		
 		FROM 
 				dbo.bettype  b WITH (NOLOCK)
@@ -306,8 +294,8 @@ ELSE
 		SELECT 
 			CASE WHEN @ReportBy = 1 THEN CONVERT(VARCHAR(8),winlostdate,112)  
 				WHEN @ReportBy = 2 THEN CONVERT(VARCHAR(6),winlostdate,112)  
-				ELSE '0' END ReportBy,  
-				A.RowNum,
+				ELSE '0' END ReportBy, 
+				A.RowNum,		
 				A.username,
 				A.sporttype,
 				A.Currency,
@@ -320,17 +308,16 @@ ELSE
 		FROM 
 		(	
 		SELECT   
-			
-			ROW_NUMBER() over(order by username, sporttype) AS RowNum,
+			ROW_NUMBER() over(order by c.username,b.sporttype ASC) AS RowNum,
 			b.winlostdate,
-			ISNULL(substring(c.username2,charindex ('$',c.username2,1)+1,len(c.username2)),username) as 	username,
+			ISNULL(substring(c.username2,charindex ('$',c.username2,1)+1,len(c.username2)),c.username) as username,
 			CASE 
 				WHEN e.exchangeid = 20 THEN 'UUS'
 				WHEN e.exchangeid = 51 THEN e.currency
 				ELSE e.Code END AS Currency,
 			b.sporttype,	
 			CASE WHEN  b.bettype BETWEEN 81 AND 120 THEN N'NG - ' + bt.typenamee 
-				 WHEN (b.bettype BETWEEN 1201 AND 1299 AND typeid NOT IN (1220,1235,1236,1231,1232,1233,1237,1238)) THEN N'V.'+bt.typenamee 
+				 WHEN (b.bettype BETWEEN 1201 AND 1299 AND bt.typeid NOT IN (1220,1235,1236,1231,1232,1233,1237,1238)) THEN N'V.Soccer - '+bt.typenamee 
 				 ELSE bt.typenamee END AS bettype,
 			count(b.currency) AS Betcount,
 			sum(b.turnover) AS Turnover,
@@ -345,14 +332,15 @@ ELSE
 			 AND c.RoleID=1
 		GROUP BY 
 			b.winlostdate,	
-			ISNULL(substring(c.username2,charindex ('$',c.username2,1)+1,len(c.username2)),username),
+			ISNULL(substring(c.username2,charindex ('$',c.username2,1)+1,len(c.username2)),c.username),
 			CASE 
 				WHEN e.exchangeid = 20 THEN 'UUS'
 				WHEN e.exchangeid = 51 THEN e.currency
 				ELSE e.Code END,
+			c.username,	
 			b.sporttype,	
 			CASE WHEN  b.bettype BETWEEN 81 AND 120 THEN N'NG - ' + bt.typenamee 
-				 WHEN (b.bettype BETWEEN 1201 AND 1299 AND typeid NOT IN (1220,1235,1236,1231,1232,1233,1237,1238)) THEN N'V.'+bt.typenamee 
+				 WHEN (b.bettype BETWEEN 1201 AND 1299 AND bt.typeid NOT IN (1220,1235,1236,1231,1232,1233,1237,1238)) THEN N'V.Soccer - '+bt.typenamee 
 				 ELSE bt.typenamee END
 		
 			)A
@@ -362,35 +350,46 @@ ELSE
 				WHEN @ReportBy = 2 THEN CONVERT(VARCHAR(6),winlostdate,112)  
 				ELSE '0' END
 	--- Data Detail 
-		 SELECT  ReportBy,  
-					username,
-					Currency,
-				    sporttype,
-				    bettype,
-					SUM(Betcount) Betcount ,
-					SUM(Turnover) Turnover,
-					SUM(Winlost) Winlost,
-					SUM(PlayerComm) PlayerComm
-		 FROM #result 	
-		WHERE ( RowNum between @RowStart AND @RowEnd	AND  @IsExportExcel=0) OR (@IsExportExcel=1 AND RowNum<65001)
+		SELECT *
+		INTO #return
+		FROM
+		(
+		SELECT  
+			ROW_NUMBER() over(order by ReportBy,username,sporttype,bettype ASC) AS RowNo,
+			ReportBy,  
+			username,
+			Currency,
+			sporttype,
+			bettype,
+			SUM(Betcount) Betcount ,
+			SUM(Turnover) Turnover,
+			SUM(Winlost) Winlost,
+			SUM(PlayerComm) PlayerComm
+		FROM #result 	
 		GROUP BY 
 					ReportBy,  
-					username,
-					Currency,
-					sporttype,
-					bettype
-	--- Data Sum 	
-		SELECT @TotalRow=count(1)
-		FROM #result 
-	
-		SELECT  sum(betcount) Sumbetcount,
-				   sum(Turnover) SumTurnover,
-				   sum(Winlost) SumWinlost ,
-				   sum(PlayerComm) SumComm,
-				  @TotalRow  TotalRows
-		FROM #result 	
-		WHERE ( RowNum between @RowStart AND @RowEnd	AND  @IsExportExcel=0) OR (@IsExportExcel=1 AND RowNum<65001)
+			username,
+			Currency,
+			sporttype,
+			bettype
+		) B
 		
+		WHERE ( B.RowNo between @RowStart AND @RowEnd	AND  @IsExportExcel=0) OR (@IsExportExcel=1 AND B.RowNo<65000)
+		
+		SELECT * FROM #return	
+	--- Data Sum 	
+		SELECT @TotalRow=COUNT(1)
+		FROM #return 
+				
+		SELECT sum(betcount) Sumbetcount,
+			   sum(Turnover) SumTurnover,
+			   sum(Winlost) SumWinlost ,
+			   sum(PlayerComm) SumComm,
+			   @TotalRow  TotalRows
+		FROM #result  	
+		WHERE (@IsExportExcel=0) OR (@IsExportExcel=1 AND RowNum<65000)
+		
+		DROP TABLE #return	
 		DROP TABLE #Data	
 		DROP TABLE #result	
 		DROP TABLE #Currency 
