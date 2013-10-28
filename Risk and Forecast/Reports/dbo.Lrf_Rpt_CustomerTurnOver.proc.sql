@@ -386,8 +386,8 @@ ELSE
 			   sum(Winlost) SumWinlost ,
 			   sum(PlayerComm) SumComm,
 			   @TotalRow  TotalRows
-		FROM #return  	
-		WHERE (@IsExportExcel=0) OR (@IsExportExcel=1 AND RowNo<65000)
+		FROM #result  	
+		WHERE (@IsExportExcel=0) OR (@IsExportExcel=1 AND RowNum<65000)
 		
 		DROP TABLE #return	
 		DROP TABLE #Data	
