@@ -20,6 +20,7 @@
 	 @SumLicenseeWLEUR MONEY=0 OUTPUT,
 	 @SumCommEUR MONEY=0 OUTPUT,
 	 @SumPlayerCommEUR MONEY=0 OUTPUT
+	 
 AS 
 
 /*
