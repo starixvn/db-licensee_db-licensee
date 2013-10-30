@@ -139,9 +139,7 @@ WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 DECLARE @TempAg AS TABLE (custid INT)
 DECLARE @TmpCondBettype AS TABLE (bettype INT primary key)
-DECLARE @wldate SMALLDATETIME, @ShowNG BIT, @ShowLC BIT, @ShowVS BIT, @ShowBG BIT, @ShowCS BIT
-
-SELECT @ShowNG=0,@ShowLC=0,@ShowVS=0,@ShowBG=0,@ShowCS=0
+DECLARE @wldate SMALLDATETIME
 
 --Sports Book
 IF @Product='SB'
@@ -160,6 +158,14 @@ BEGIN
 	SELECT typeid
 	FROM bettype   
 	WHERE typeid BETWEEN 81 AND 120;  
+END
+--Horse Racing
+IF @Product='RB'
+BEGIN 
+	INSERT INTO @TmpCondBettype
+	SELECT typeid
+	FROM bettype   
+	WHERE typeid BETWEEN 31 AND 33;  
 END
 --Live Casino
 IF @Product='LC'
