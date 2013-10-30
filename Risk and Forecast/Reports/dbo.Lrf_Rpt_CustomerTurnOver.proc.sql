@@ -379,7 +379,7 @@ ELSE
 		SELECT * FROM #return	
 	--- Data Sum 	
 		SELECT @TotalRow=COUNT(1)
-		FROM #return 
+		FROM #result 
 				
 		SELECT sum(betcount) Sumbetcount,
 			   sum(Turnover) SumTurnover,
