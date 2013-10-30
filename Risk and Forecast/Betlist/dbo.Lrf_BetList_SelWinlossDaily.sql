@@ -142,7 +142,7 @@ DECLARE @TmpCondBettype AS TABLE (bettype INT primary key)
 DECLARE @wldate SMALLDATETIME
 
 --Sports Book
-IF @Product='SB'
+IF ( @Product='SB' OR @Product='BA' )
 BEGIN
 INSERT INTO @TmpCondBettype
 	SELECT typeid
