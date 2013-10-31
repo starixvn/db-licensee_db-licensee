@@ -45,7 +45,7 @@ AS
 		- @BalanceUpDay: The day we move tickets to bettrans_bk
 		
 			
-*/ 
+*/
 SET NOCOUNT ON
 
 DECLARE @TempFromDate SMALLDATETIME
@@ -86,19 +86,34 @@ IF  NOT EXISTS (SELECT TOP 1 1  FROM #ProductID )
 	END 
 ELSE 
 	BEGIN 
+		;with cte_recommend
+		as
+		(
+		SELECT LicenseeID
+			  ,CustID
+			  ,Currency
+		FROM DBLIC.bodb_licensee.dbo.LicenseeCust  WITH (NOLOCK)
+		WHERE
+			LicenseeID=@LicenseeID
+			AND Currency=@CurrencyID
+			AND RoleID=2
+		)
 		
+		SELECT  re.CustID
+		INTO #recommend
+		FROM cte_recommend re
+			INNER JOIN DBLIC.bodb_licensee.dbo.CurrencyUser c WITH (NOLOCK) ON re.LicenseeID=c.LicenseeID AND re.Currency=c.CurrencyID
+		WHERE 
+			c.usrID=@userID 
+			AND c.SystemID=1 -- System is default=1 (LRF)	
+			AND c.isActive=1
+			
+			
 		SELECT lc.CustID INTO #Currency
 		FROM DBLIC.bodb_licensee.dbo.LicenseeCustInfo lc WITH (NOLOCK) 
-			INNER JOIN DBLIC.bodb_licensee.dbo.LicenseeCust lcu WITH (NOLOCK)  ON lc.recommend=lcu.CustID
-			INNER JOIN DBLIC.bodb_licensee.dbo.CurrencyUser c WITH (NOLOCK)
-			ON lcu.LicenseeID=c.LicenseeID AND lcu.Currency=c.CurrencyID	
-		WHERE lcu.LicenseeID=@LicenseeID 
-		AND lcu.RoleID=2
-		AND lcu.Currency=@CurrencyID
-		AND c.usrID=@userID 
-		AND c.SystemID=1 -- System is default=1 (LRF)	
-		AND c.isActive=1
-		
+		WHERE
+			recommend IN (SELECT CustID FROM #recommend)
+		DROP TABLE 	#recommend
 		SELECT @Username = ltrim(rtrim(@Username))
 		IF ISNULL(@Username,'')<>''
 			BEGIN 
@@ -151,7 +166,7 @@ ELSE
 			SELECT 
 				b.CustID,
 				winlostdate,
-				m.sporttype,
+				CASE WHEN b.bettype NOT IN (9,10,29) THEN m.sporttype ELSE 1  END sporttype,
 				b.bettype,
 				currency,
 				stake as turnover,
@@ -168,7 +183,6 @@ ELSE
 				b.CustID IN (SELECT CustID FROM #Currency) AND 
 				 b.winlostdate BETWEEN @TempFromDate AND @todate
 				AND (b.CustID = @CustID OR @CustID=0)
-				AND m.sporttype IN (SELECT sportID FROM #ProductID)
 				AND b.statusID IN (SELECT StatusID FROM @Status)
 		END
 		IF @Fromdate <= @MoveBetsDay
@@ -185,7 +199,7 @@ ELSE
 			SELECT 
 				b.CustID,
 				winlostdate,
-				m.sporttype,
+				CASE WHEN b.bettype NOT IN (9,10,29) THEN m.sporttype ELSE 1 END sporttype,
 				b.bettype,
 				currency,
 				stake as turnover,
@@ -202,7 +216,6 @@ ELSE
 				b.CustID IN (SELECT CustID FROM #Currency) AND 
 				 b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
 				AND (b.CustID = @CustID OR @CustID=0)
-				AND m.sporttype IN (SELECT sportID FROM #ProductID)
 				AND b.statusID IN (SELECT StatusID FROM @Status)
 		END
 
@@ -213,10 +226,13 @@ ELSE
 			ELSE
 				SET @TempToDate = @todate
 			
-			
+			;WITH cte_temp_bk
+			AS
+			(
 			SELECT 
 					bk.winlostdate,
 					bk.CustID,
+					CASE WHEN bk.bettype NOT IN (9,10,29) THEN m.sporttype ELSE 1 END sporttype,
 					bk.bettype,
 					bk.matchid,
 					bk.currency,
@@ -226,22 +242,21 @@ ELSE
 					bk.Odds,
 					bk.oddstype,
 					bk.statusID
-			INTO #temp_bk
 			FROM 
 					bodb_archive.dbo.bettrans_bk bk WITH (NOLOCK,INDEX=IX_custid)
-					INNER JOIN #BettypeID bet  ON bk.bettype=bet.bettypeID
+					LEFT JOIN bodb_archive.dbo.MATCH_BK m WITH (NOLOCK) ON bk.matchid = m.matchid
 					LEFT JOIN bodb_archive.dbo.Outright_BK o with(nolock) ON bk.matchid = o.orid 
 					LEFT JOIN league l with(nolock) ON o.leagueid = l.leagueid	
 					WHERE
 							bk.CustID IN (SELECT CustID FROM #Currency)
 							AND bk.winlostdate BETWEEN @fromdate AND @TempToDate
-							AND (bk.CustID = @CustID OR @CustID=0)
-							AND bk.statusID IN (SELECT StatusID FROM @Status)
+							
+			)				
 			INSERT INTO #Data
 			SELECT 
 				b.CustID,
 				b.winlostdate,
-				m.sporttype,
+				b.sporttype,
 				b.bettype,
 				currency,
 				b.turnover,
@@ -249,11 +264,15 @@ ELSE
 				b.PlayerComm,
 				b.Odds,
 				b.Oddstype
-			FROM #temp_bk  b
+			FROM cte_temp_bk  b
+			INNER JOIN #BettypeID bet  ON b.bettype=bet.bettypeID
 			LEFT JOIN bodb_archive.dbo.MATCH_BK m WITH (NOLOCK) ON b.matchid = m.matchid
+			LEFT JOIN bodb_archive.dbo.Outright_BK o with(nolock) ON b.matchid = o.orid 
+			LEFT JOIN league l with(nolock) ON o.leagueid = l.leagueid	
 			WHERE 
-				 m.sporttype IN (SELECT sportID FROM #ProductID)
-			DROP TABLE #temp_bk
+				  b.statusID IN (SELECT StatusID FROM @Status)
+				  AND (b.CustID = @CustID OR @CustID=0)
+			--DROP TABLE #temp_bk
 				
 		END
 
@@ -328,8 +347,11 @@ ELSE
 			INNER JOIN dbo.Customer c WITH (NOLOCK) ON b.CustID=c.CustID 
 			INNER JOIN #bettype bt WITH (NOLOCK) ON b.bettype = bt.typeid
 			INNER JOIN exchange e WITH (NOLOCK) ON b.currency = e.exchangeid
-		WHERE b.Odds >= @Odds
-			 AND c.RoleID=1
+		WHERE 
+			b.Sporttype IN (SELECT sportID FROM #ProductID)
+			AND b.Odds >= @Odds
+			AND c.RoleID=1
+			 
 		GROUP BY 
 			b.winlostdate,	
 			ISNULL(substring(c.username2,charindex ('$',c.username2,1)+1,len(c.username2)),c.username),
@@ -398,10 +420,11 @@ ELSE
 		
 DROP TABLE #ProductID
 DROP TABLE #BettypeID
-
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [bodbLicenseeNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [vnteam] 
+
+
 
 
