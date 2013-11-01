@@ -397,7 +397,7 @@ END
 
 IF @wldate <= @MoveBetsDay AND @wldate >=@BalanceUpDay
 BEGIN
-	IF @Product='VS'
+	IF (@Product='VS' OR @Product='ALL')
 	BEGIN 
 		INSERT INTO @Vhr
 			SELECT 
@@ -414,7 +414,7 @@ BEGIN
 			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
 			WHERE  o.EventDate =@wldate
 	END 	
-	IF @Product='RB'
+	IF (@Product='RB' OR @Product='ALL')
 	BEGIN 
 		INSERT INTO @hr
 		SELECT 
@@ -639,7 +639,7 @@ BEGIN
 END	 
 
 
-IF EXISTS(SELECT TOP 1 1 FROM #Data WHERE Bettype=1233)
+IF EXISTS(SELECT TOP 1 1 FROM #Data WHERE Bettype IN (33,43,1233))
 BEGIN 	
 		IF @wldate > @MoveBetsDay 
 		BEGIN
@@ -657,7 +657,7 @@ BEGIN
 			FROM bettransm BG WITH (NOLOCK)
 			INNER JOIN #Data B ON BG.refno = B.refno and BG.custid = B.custid
 			INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
-			WHERE B.Bettype=1233
+			WHERE B.Bettype IN (33,43,1233)
 		END
 		IF @wldate <= @MoveBetsDay
 		BEGIN
@@ -675,9 +675,10 @@ BEGIN
 			FROM bettransm14 BG WITH (NOLOCK)
 			INNER JOIN #Data B ON BG.refno = B.refno and BG.custid = B.custid
 			INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
-			WHERE B.Bettype=1233
+			WHERE B.Bettype IN (33,43,1233)
 		END
 END
+
 SELECT * FROM @BettransDetail ORDER BY RefNo,Bettype
 
 DROP TABLE #Currency

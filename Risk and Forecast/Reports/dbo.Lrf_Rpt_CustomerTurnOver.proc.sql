@@ -103,18 +103,19 @@ IF  NOT EXISTS (SELECT TOP 1 1  FROM #ProductID )
 ELSE 
 	BEGIN 
 		;with cte_recommend
-		as
-		(
-		SELECT LicenseeID
-			  ,CustID
-			  ,Currency
-		FROM DBLIC.bodb_licensee.dbo.LicenseeCust  WITH (NOLOCK)
-		WHERE
-			LicenseeID=@LicenseeID
-			AND Currency=@CurrencyID
-			AND RoleID=2
-		)
-		
+			as
+			(
+			SELECT LicenseeID
+				  ,CustID
+				  ,Currency
+			FROM DBLIC.bodb_licensee.dbo.LicenseeCust  WITH (NOLOCK)
+			WHERE
+				LicenseeID=@LicenseeID
+				AND (Currency=@CurrencyID OR (@CurrencyID=0))
+				AND RoleID=2
+			)
+			
+			
 		SELECT  re.CustID
 		INTO #recommend
 		FROM cte_recommend re
@@ -130,14 +131,16 @@ ELSE
 		WHERE
 			recommend IN (SELECT CustID FROM #recommend)
 		DROP TABLE 	#recommend
+		
 		SELECT @Username = ltrim(rtrim(@Username))
 		IF ISNULL(@Username,'')<>''
 			BEGIN 
-
+				
 				SELECT @CustID = cr.CustID 
 				FROM Customer cr (NOLOCK)
 					INNER JOIN #Currency c ON cr.CustID=c.CustID
-				WHERE username2 LIKE '%$' + @Username+'%'
+				WHERE (username2 LIKE '%$' + @Username+'%' AND @LicenseeID=8)
+					  OR (username2 LIKE '%$' + @Username)	
 
 				IF ISNULL(@CustID,0) = 0
 				BEGIN
@@ -265,6 +268,7 @@ ELSE
 							bk.CustID IN (SELECT CustID FROM #Currency)
 							 AND bk.winlostdate BETWEEN @fromdate AND @TempToDate
 							 and bk.bettype IN (SELECT typeid from #bettype)
+							 AND (bk.CustID = @CustID OR @CustID=0)
 							
 			)				
 			INSERT INTO #Data
@@ -280,13 +284,8 @@ ELSE
 				b.Odds,
 				b.Oddstype
 			FROM cte_temp_bk  b
-			INNER JOIN #BettypeID bet  ON b.bettype=bet.bettypeID
 			WHERE 
 				  b.statusID IN (SELECT StatusID FROM @Status)
-				  AND (b.CustID = @CustID OR @CustID=0)
-				 
-			--DROP TABLE #temp_bk
-				
 		END
 
 		
