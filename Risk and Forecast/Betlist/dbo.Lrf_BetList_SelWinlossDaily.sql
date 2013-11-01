@@ -81,6 +81,7 @@ CREATE TABLE #Data
 	LeagueID INT,
 	Transid BIGINT,
 	Matchcode VARCHAR(50),
+	Race NVARCHAR(20),
 	HomeID INT,
 	AwayID INT,
 	hdp1 SMALLMONEY,
@@ -136,10 +137,11 @@ OriD INT
 
 DECLARE @hr TABLE 
 (
-OriD INT
+ OriD INT
  ,Sporttype INT
 ,LeagueID INT
 ,matchcode VARCHAR (20)
+,Race NVARCHAR(20)
 ,RacerID INT
 ,BetStatus VARCHAR (100)
 ,ShowTime DATETIME
@@ -278,7 +280,8 @@ BEGIN
 			m.OrId,
 			l.sporttype,
 			m.LeagueID,
-			m.MatchCode,	
+			m.MatchCode,
+			m.GroupMatch,	
 			m.TeamID ,
 			0 BetStatus,
 			'' ShowTime,
@@ -300,7 +303,7 @@ BEGIN
 	FROM bettrans b WITH (nolock) 
 		LEFT JOIN match m WITH (nolock) ON b.matchid=m.matchid	
 		LEFT JOIN @vhr  vs  ON b.oddsid=vs.Orid
-		LEFT JOIN @hr	v   ON b.oddsid=v.Orid
+		LEFT JOIN @hr	r   ON b.oddsid=r.Orid
 		INNER JOIN @TmpCondBettype bt ON b.bettype = bt.bettype
 		LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
 	WHERE
@@ -320,23 +323,25 @@ BEGIN
 		SELECT
 			ROW_NUMBER() over(ORDER BY b.transid) AS RowNum,
 			CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN v.sporttype 
-				 WHEN b.bettype IN (31,32,33) THEN vr.sporttype		
+				 WHEN b.bettype IN (31,32,33) THEN r.sporttype		
 						ELSE m.sporttype END sporttype,
 			b.username,
 			SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, len(c.username2)-CHARINDEX('$',c.username2)) AS nickname,
 			b.bettype,
 			CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN v.leagueID 
-				WHEN b.bettype IN (31,32,33) THEN vr.leagueID		
+				WHEN b.bettype IN (31,32,33) THEN r.leagueID		
 				ELSE m.leagueID END leagueID,			
 			b.transid,
 			CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN v.matchcode 
-				 WHEN b.bettype IN (31,32,33) THEN vr.matchcode
+				 WHEN b.bettype IN (31,32,33) THEN r.matchcode
 				 ELSE m.matchcode END matchcode,
+			CASE WHEN b.bettype IN (31,32,33) THEN r.Race 
+				 ELSE '' END Race,	
 			CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN v.RacerID 
-				 WHEN b.bettype IN (31,32,33) THEN vr.RacerID
+				 WHEN b.bettype IN (31,32,33) THEN r.RacerID
 				 ELSE m.homeID END homeID,
 			CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN v.awayID 
-				 WHEN b.bettype IN (31,32,33) THEN vr.awayID
+				 WHEN b.bettype IN (31,32,33) THEN r.awayID
 				 ELSE m.awayID END awayID,
 			CONVERT(FLOAT, b.hdp1) AS hdp1, 
 			CONVERT(FLOAT, b.hdp2) AS hdp2, 
@@ -344,7 +349,12 @@ BEGIN
 			b.status,
 			b.stake,
 			(b.winlost-actual_stake) winlost,
-			CASE WHEN BA.transid IS NULL THEN - (b.winlost-b.actual_stake) ELSE 0 END AS LicenseeWL ,
+			CASE WHEN BA.transid IS NULL 
+				THEN CASE  WHEN b.bettype NOT IN (31,32,33) THEN - (b.winlost-b.actual_stake) 
+							ELSE awinlost END 
+				ELSE 0					
+				END 
+				AS LicenseeWL ,
 			b.comm as comm,
 			b.playercomm as PlayerComm,
 			b.transdate,
@@ -356,7 +366,7 @@ BEGIN
 			b.matchid, 
 			--b.IP AS IP,
 			CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN v.betstatus 
-				 WHEN b.bettype IN (31,32,33) THEN vr.betstatus
+				 WHEN b.bettype IN (31,32,33) THEN r.betstatus
 				 ELSE m.betstatus END betstatus,
 			ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral,
 			b.OddsType,
@@ -369,12 +379,13 @@ BEGIN
 			bettrans b WITH (nolock) 
 			LEFT JOIN match m WITH (nolock) ON b.matchid=m.matchid
 			LEFT JOIN @vhr  v ON b.oddsid=v.OrID
-			LEFT JOIN @hr  vr ON b.oddsid=vr.OrID
+			LEFT JOIN @hr  r ON b.oddsid=r.OrID
 			INNER JOIN customer c WITH (nolock) ON b.custid = c.custid
 			INNER JOIN @TmpCondBettype bt ON b.bettype = bt.bettype
 			LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
 		WHERE
 			b.winlostdate = @wldate
+			AND ((b.tpositiontaking=0 AND @Product='BA') OR @Product<>'BA')
 			--AND b.matchid > 0
 			AND b.status=@status
 			AND b.bettype NOT IN (9,29,10)
@@ -410,7 +421,8 @@ BEGIN
 			m.OrId,
 			l.sporttype,
 			m.LeagueID,
-			m.MatchCode,	
+			m.MatchCode,
+			m.GroupMatch,		
 			m.TeamID ,
 			0 BetStatus,
 			'' ShowTime,
@@ -432,7 +444,7 @@ BEGIN
 	FROM bettrans14 b WITH (NOLOCK)	
 		LEFT JOIN match14 m WITH (nolock) ON b.matchid=m.matchid 
 		LEFT JOIN @vhr vs  ON b.oddsid=vs.Orid
-		LEFT JOIN @hr vr   ON b.oddsid=vs.Orid
+		LEFT JOIN @hr r   ON b.oddsid=r.Orid
 		INNER JOIN @TmpCondBettype bt ON b.bettype = bt.bettype
 		LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
 	WHERE
@@ -449,23 +461,25 @@ BEGIN
 		SELECT
 			ROW_NUMBER() over(ORDER BY b.transid) AS RowNum,
 			CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN v.sporttype 
-				 WHEN b.bettype IN (31,32,33) THEN vr.sporttype		
+				 WHEN b.bettype IN (31,32,33) THEN r.sporttype		
 						ELSE m.sporttype END sporttype,
 			b.username,
 			SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, len(c.username2)-CHARINDEX('$',c.username2)) AS nickname,
 			b.bettype,
 			CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN v.leagueID 
-				WHEN b.bettype IN (31,32,33) THEN vr.leagueID		
+				WHEN b.bettype IN (31,32,33) THEN r.leagueID		
 				ELSE m.leagueID END leagueID,			
 			b.transid,
 			CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN v.matchcode 
-				 WHEN b.bettype IN (31,32,33) THEN vr.matchcode
+				 WHEN b.bettype IN (31,32,33) THEN r.matchcode
 				 ELSE m.matchcode END matchcode,
+			CASE WHEN b.bettype IN (31,32,33) THEN r.Race 
+				 ELSE '' END Race,	 
 			CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN v.RacerID 
-				 WHEN b.bettype IN (31,32,33) THEN vr.RacerID
+				 WHEN b.bettype IN (31,32,33) THEN r.RacerID
 				 ELSE m.homeID END homeID,
 			CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN v.awayID 
-				 WHEN b.bettype IN (31,32,33) THEN vr.awayID
+				 WHEN b.bettype IN (31,32,33) THEN r.awayID
 				 ELSE m.awayID END awayID,
 			CONVERT(FLOAT, b.hdp1) AS hdp1, 
 			CONVERT(FLOAT, b.hdp2) AS hdp2, 
@@ -473,7 +487,12 @@ BEGIN
 			b.status,
 			b.stake,
 			(b.winlost-actual_stake) winlost,
-			CASE WHEN BA.transid IS NULL THEN - (b.winlost-b.actual_stake) ELSE 0 END AS LicenseeWL ,
+			CASE WHEN BA.transid IS NULL 
+				THEN CASE  WHEN b.bettype NOT IN (31,32,33) THEN - (b.winlost-b.actual_stake) 
+							ELSE awinlost END 
+				ELSE 0					
+				END 
+				AS LicenseeWL ,
 			b.comm as comm,
 			b.playercomm as PlayerComm,
 			b.transdate,
@@ -485,7 +504,7 @@ BEGIN
 			b.matchid, 
 			--b.IP AS IP,
 			CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN v.betstatus 
-				 WHEN b.bettype IN (31,32,33) THEN vr.betstatus
+				 WHEN b.bettype IN (31,32,33) THEN r.betstatus
 				 ELSE m.betstatus END betstatus,
 			ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral,
 			b.OddsType,
@@ -498,12 +517,13 @@ BEGIN
 			bettrans14 b WITH (NOLOCK)	
 			LEFT JOIN match14 m WITH (nolock) ON b.matchid=m.matchid 
 			LEFT JOIN @vhr  v ON b.oddsid=v.OrID		
-			LEFT JOIN @hr   vr ON b.oddsid=vr.OrID
+			LEFT JOIN @hr   r ON b.oddsid=r.OrID
 			INNER JOIN customer c WITH (nolock) ON b.custid = c.custid 	
 			INNER JOIN @TmpCondBettype bt ON b.bettype = bt.bettype
 			LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
 		WHERE
 			b.winlostdate = @wldate
+			AND ((b.tpositiontaking=0 AND @Product='BA') OR @Product<>'BA')
 			AND b.bettype NOT IN (9,29,10)
 			AND b.recommend IN (SELECT custid FROM @TempAg)
 			AND b.status=@status
