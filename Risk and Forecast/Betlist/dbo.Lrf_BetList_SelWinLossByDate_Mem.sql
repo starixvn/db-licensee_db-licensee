@@ -66,6 +66,7 @@ Revisions:
    - 20130514@Jim:Restrict permission of Licensee Users by currency
    - 20130716@Jim: update matchid for RNG Casino and Bingo
    - 20130903@Jim: support Virtual Horse Racing
+   - 20131101@Victor: enhance performance
    */
 
 SET NOCOUNT ON
@@ -2159,8 +2160,8 @@ BEGIN
 			b.currency,
 			CONVERT(VARCHAR(20),r.EventTime) AS  ShowTime 	
 		FROM
-			bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)		
-			INNER JOIN DBARC.bodb_Archive.dbo.VSOutright_bk o with (nolock) ON b.oddsid=o.Orid
+			bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK,INDEX(IX_custid))		
+			INNER JOIN bodb_Archive.dbo.VSOutright_bk o with (nolock) ON b.oddsid=o.Orid
 			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
 		WHERE
 			b.winlostdate BETWEEN @fromdate AND @TempToDate AND
