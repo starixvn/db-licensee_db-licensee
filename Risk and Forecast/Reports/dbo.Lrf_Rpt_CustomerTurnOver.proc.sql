@@ -77,6 +77,22 @@ DECLARE @RowStart INT ,
 SELECT VAL sportID INTO #ProductID FROM strSplit(@Product,',')
 SELECT VAL bettypeID INTO #BettypeID FROM strSplit(@Bettype,',')
 
+SELECT 
+		b.typeID,
+		CASE @Langkey
+					WHEN 'zh-CN'	THEN typenamcn
+					WHEN 'zh-TW'	THEN typenamecn
+					WHEN 'th-TH'	THEN typenameth
+					WHEN 'ja-JP'	THEN typenamej
+					WHEN 'ko-KR'	THEN typenameko
+					WHEN 'es'  	    THEN typenameES
+					WHEN 'vi-VN'	THEN typenamee
+					ELSE typenamee END typenamee
+INTO #bettype		
+FROM 
+		dbo.bettype  b WITH (NOLOCK)
+		INNER JOIN #BettypeID bt ON b.typeid=bt.bettypeID
+				
 SELECT  @PageIndex = @PageIndex - 1 ,
             @RowStart = @PageSize * @PageIndex + 1 ,
             @RowEnd = @RowStart + @PageSize - 1 
@@ -175,7 +191,7 @@ ELSE
 				b.Odds,
 				b.Oddstype
 			FROM bettrans b WITH (NOLOCK)
-			INNER JOIN #BettypeID bet  ON b.bettype=bet.bettypeID
+			INNER JOIN #bettype bet  ON b.bettype=bet.typeID
 			LEFT JOIN match m WITH (NOLOCK) ON b.matchid = m.matchid
 			LEFT JOIN outright o with(nolock) ON b.matchid = o.orid 
 			LEFT JOIN league l with(nolock) ON o.leagueid = l.leagueid
@@ -208,7 +224,7 @@ ELSE
 				b.Odds,
 				b.Oddstype
 			FROM bettrans14 b WITH (NOLOCK)
-			INNER JOIN #BettypeID bet  ON b.bettype=bet.bettypeID
+			INNER JOIN #bettype bet  ON b.bettype=bet.typeID
 			LEFT JOIN match14 m WITH (NOLOCK) ON b.matchid = m.matchid
 			LEFT JOIN outright14 o with(nolock) ON b.matchid = o.orid 
 			LEFT JOIN league l with(nolock) ON o.leagueid = l.leagueid
@@ -245,11 +261,10 @@ ELSE
 			FROM 
 					bodb_archive.dbo.bettrans_bk bk WITH (NOLOCK,INDEX=IX_custid)
 					LEFT JOIN bodb_archive.dbo.MATCH_BK m WITH (NOLOCK) ON bk.matchid = m.matchid
-					LEFT JOIN bodb_archive.dbo.Outright_BK o with(nolock) ON bk.matchid = o.orid 
-					LEFT JOIN league l with(nolock) ON o.leagueid = l.leagueid	
 					WHERE
 							bk.CustID IN (SELECT CustID FROM #Currency)
-							AND bk.winlostdate BETWEEN @fromdate AND @TempToDate
+							 AND bk.winlostdate BETWEEN @fromdate AND @TempToDate
+							 and bk.bettype IN (SELECT typeid from #bettype)
 							
 			)				
 			INSERT INTO #Data
@@ -266,17 +281,15 @@ ELSE
 				b.Oddstype
 			FROM cte_temp_bk  b
 			INNER JOIN #BettypeID bet  ON b.bettype=bet.bettypeID
-			LEFT JOIN bodb_archive.dbo.MATCH_BK m WITH (NOLOCK) ON b.matchid = m.matchid
-			LEFT JOIN bodb_archive.dbo.Outright_BK o with(nolock) ON b.matchid = o.orid 
-			LEFT JOIN league l with(nolock) ON o.leagueid = l.leagueid	
 			WHERE 
 				  b.statusID IN (SELECT StatusID FROM @Status)
 				  AND (b.CustID = @CustID OR @CustID=0)
+				 
 			--DROP TABLE #temp_bk
 				
 		END
 
-
+		
 		UPDATE #Data
 		SET odds = CASE WHEN OddsType = 1 THEN odds + 1 --decimal
 						WHEN OddsType = 2 THEN Odds + 1 --hongkong to decimal
@@ -295,21 +308,7 @@ ELSE
 			OR bettype BETWEEN 81 AND 88
 			OR bettype BETWEEN 90 AND 120
 		
-		SELECT 
-				b.typeID,
-				CASE @Langkey
-							WHEN 'zh-CN'	THEN typenamcn
-							WHEN 'zh-TW'	THEN typenamecn
-							WHEN 'th-TH'	THEN typenameth
-							WHEN 'ja-JP'	THEN typenamej
-							WHEN 'ko-KR'	THEN typenameko
-							WHEN 'es'  	    THEN typenameES
-							WHEN 'vi-VN'	THEN typenamee
-							ELSE typenamee END typenamee
-		INTO #bettype		
-		FROM 
-				dbo.bettype  b WITH (NOLOCK)
-				INNER JOIN #BettypeID bt ON b.typeid=bt.bettypeID
+	
 		SELECT 
 			CASE WHEN @ReportBy = 1 THEN CONVERT(VARCHAR(8),winlostdate,112)  
 				WHEN @ReportBy = 2 THEN CONVERT(VARCHAR(6),winlostdate,112)  
