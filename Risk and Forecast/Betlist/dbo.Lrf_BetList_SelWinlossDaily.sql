@@ -1,17 +1,22 @@
-﻿set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
+﻿USE [bodb02]
+GO
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
 
 
 /*
-exec Lrf_BetList_SelWinlossDaily
+exec Lrf_BetList_SelWinlossDaily_xtest
 @date='2012-09-04 00:00:00:000',
 @LicenseeID=1,
 @MoveBetsDay='2012-09-03 00:00:00:000',
 @BalanceUpDay='2012-09-01 00:00:00:000'
 */
 
-ALTER    PROCEDURE [dbo].[Lrf_BetList_SelWinlossDaily]
+ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinlossDaily]
 	@date SMALLDATETIME,
 	@LicenseeID INT,
 	@UserID		INT,
@@ -70,7 +75,17 @@ Param's Explanation:
 
 
 SET NOCOUNT ON
+--- to Deal With Parameter Sniffing
 
+DECLARE 
+		@wldate SMALLDATETIME,
+		@MoveBetsDay_  SMALLDATETIME,
+		@BalanceUpDay_ SMALLDATETIME
+SELECT 
+		@wldate = @date,
+		@MoveBetsDay_ =@MoveBetsDay,
+		@BalanceUpDay_=@BalanceUpDay
+		
 CREATE TABLE #Data
 (
 	RowNum INT,
@@ -155,7 +170,7 @@ WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 DECLARE @TempAg AS TABLE (custid INT)
 DECLARE @TmpCondBettype AS TABLE (bettype INT primary key)
-DECLARE @wldate SMALLDATETIME
+
 
 --Sports Book
 IF ( @Product='SB' OR @Product='BA' )
@@ -242,7 +257,7 @@ BEGIN
 			)
 END
 
-SELECT @wldate = @date
+
 
 INSERT INTO @TempAg (custid)
 SELECT  CustID  
@@ -253,7 +268,7 @@ DECLARE @RowStart INT, @RowEnd INT
 SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1
 
 
-IF @wldate > @MoveBetsDay
+IF @wldate > @MoveBetsDay_
 BEGIN
 	IF (@Product='VS' OR @Product='ALL')
 	BEGIN 
@@ -395,7 +410,7 @@ BEGIN
 	
 END
 
-IF @wldate <= @MoveBetsDay AND @wldate >=@BalanceUpDay
+IF @wldate <= @MoveBetsDay_ AND @wldate >=@BalanceUpDay_
 BEGIN
 	IF (@Product='VS' OR @Product='ALL')
 	BEGIN 
@@ -599,7 +614,7 @@ DECLARE @BettransDetail TABLE(
 	 
 IF EXISTS(SELECT TOP 1 1 FROM #Data WHERE Bettype BETWEEN 1101 AND 1199)
 BEGIN
-	IF @wldate > @MoveBetsDay 
+	IF @wldate > @MoveBetsDay_ 
 	BEGIN
 		INSERT INTO @BettransDetail
 		SELECT 
@@ -618,7 +633,7 @@ BEGIN
 		WHERE B.Bettype BETWEEN 1101 AND 1199
 	END
 		
-	IF @wldate <= @MoveBetsDay
+	IF @wldate <= @MoveBetsDay_
 	BEGIN
 		INSERT INTO @BettransDetail
 		SELECT 
@@ -641,7 +656,7 @@ END
 
 IF EXISTS(SELECT TOP 1 1 FROM #Data WHERE Bettype IN (33,43,1233))
 BEGIN 	
-		IF @wldate > @MoveBetsDay 
+		IF @wldate > @MoveBetsDay_ 
 		BEGIN
 			INSERT INTO @BettransDetail
 			SELECT 
@@ -659,7 +674,7 @@ BEGIN
 			INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
 			WHERE B.Bettype IN (33,43,1233)
 		END
-		IF @wldate <= @MoveBetsDay
+		IF @wldate <= @MoveBetsDay_
 		BEGIN
 			INSERT INTO @BettransDetail
 			SELECT 
@@ -685,9 +700,7 @@ DROP TABLE #Currency
 DROP TABLE #TempExchange
 DROP TABLE #TempExchangeSum
 DROP TABLE #Data
-
 GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinlossDaily] TO [bodbLicenseeNet]
+GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinlossDaily] TO [bodbLicenseeNet] AS [dbo]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelWinlossDaily] TO vnteam
-
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelWinlossDaily] TO [vnteam] AS [dbo]
