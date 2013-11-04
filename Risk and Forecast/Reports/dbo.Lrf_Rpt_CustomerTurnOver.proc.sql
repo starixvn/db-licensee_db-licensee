@@ -7,12 +7,13 @@ SET QUOTED_IDENTIFIER ON
 GO
 
 
+
 ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
 	 @LicenseeID INT,
 	 @UserID  INT,
 	 @Username VARCHAR(50)='', 
-	 @Product  VARCHAR(50), 
-	 @Bettype  VARCHAR(200), 
+	 @Product  VARCHAR(MAX), 
+	 @Bettype  VARCHAR(MAX), 
 	 @CurrencyID INT,
 	 @FromDate SMALLDATETIME,
 	 @ToDate SMALLDATETIME,
