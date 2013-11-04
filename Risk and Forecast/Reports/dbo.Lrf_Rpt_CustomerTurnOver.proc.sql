@@ -1,8 +1,13 @@
-﻿set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
+﻿USE [bodb02]
+GO
 
-ALTER    PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
 	 @LicenseeID INT,
 	 @UserID  INT,
 	 @Username VARCHAR(50)='', 
@@ -51,6 +56,13 @@ SET NOCOUNT ON
 DECLARE @TempFromDate SMALLDATETIME
 DECLARE @TempToDate SMALLDATETIME
 DECLARE @CustID INT
+/* in case Licensee is Sungame, user cannot search in all of currency.
+ Other case, when input search by username , this mean search in all of currency
+*/
+IF (@LicenseeID<>8) -- SunGame
+BEGIN 
+	SET @CurrencyID=0
+END
 
 CREATE TABLE #Data
 (
@@ -419,10 +431,6 @@ ELSE
 DROP TABLE #ProductID
 DROP TABLE #BettypeID
 GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [bodbLicenseeNet]
+GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [bodbLicenseeNet] AS [dbo]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [vnteam] 
-
-
-
-
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [vnteam] AS [dbo]
