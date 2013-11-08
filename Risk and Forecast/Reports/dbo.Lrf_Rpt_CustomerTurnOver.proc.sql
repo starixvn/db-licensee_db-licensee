@@ -1,9 +1,12 @@
 ﻿USE [bodb02]
 GO
+/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_CustomerTurnOver]    Script Date: 11/07/2013 22:22:53 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
+/****** Object:  Stored Procedure dbo.Lrf_Rpt_CustomerTurnOver    Script Date: 11/7/2013 4:54:23 AM ******/
+/****** Object:  Stored Procedure dbo.Lrf_Rpt_CustomerTurnOver    Script Date: 11/7/2013 3:31:51 PM ******/
 
 ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
 	 @LicenseeID INT,
@@ -405,9 +408,10 @@ ELSE
 			bettype
 		) B
 		
-		WHERE ( B.RowNo between @RowStart AND @RowEnd	AND  @IsExportExcel=0) OR (@IsExportExcel=1 AND B.RowNo<65000)
+		
 		
 		SELECT * FROM #return	
+		WHERE ( RowNo between @RowStart AND @RowEnd	AND  @IsExportExcel=0) OR (@IsExportExcel=1 AND RowNo<65000)
 	--- Data Sum 	
 		SELECT @TotalRow=COUNT(1)
 		FROM #return
@@ -433,5 +437,3 @@ GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [bodbLicenseeNet] AS [dbo]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [vnteam] AS [dbo]
-
-
