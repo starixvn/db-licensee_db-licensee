@@ -217,6 +217,7 @@ select @fdate = @FromDate, @tdate = @ToDate
 			declare @recommend int
 			SELECT @recommend = recommend FROM Customer (nolock) WHERE custID = @custid
 
+			INSERT INTO @DepWL(winlostdate,turnover)
 			SELECT winlostdate,SUM(turnover) as turnover
 			FROM bodb_Licensee.dbo.rptLicWinloss2 (nolock)
 			WHERE recommend = @recommend 
