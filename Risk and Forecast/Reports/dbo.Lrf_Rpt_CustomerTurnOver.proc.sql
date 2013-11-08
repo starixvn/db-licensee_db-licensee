@@ -1,12 +1,12 @@
 ﻿USE [bodb02]
 GO
-
+/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_CustomerTurnOver]    Script Date: 11/07/2013 22:22:53 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-
-
+/****** Object:  Stored Procedure dbo.Lrf_Rpt_CustomerTurnOver    Script Date: 11/7/2013 4:54:23 AM ******/
+/****** Object:  Stored Procedure dbo.Lrf_Rpt_CustomerTurnOver    Script Date: 11/7/2013 3:31:51 PM ******/
 
 ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
 	 @LicenseeID INT,
@@ -338,7 +338,7 @@ ELSE
 		FROM 
 		(	
 		SELECT   
-			ROW_NUMBER() over(order by c.username,b.sporttype ASC) AS RowNum,
+			ROW_NUMBER() over(order by username,sporttype,bettype ASC) AS RowNum,
 			b.winlostdate,
 			ISNULL(substring(c.username2,charindex ('$',c.username2,1)+1,len(c.username2)),c.username) as username,
 			CASE 
@@ -372,6 +372,7 @@ ELSE
 				ELSE e.Code END,
 			c.username,	
 			b.sporttype,	
+			b.bettype,
 			CASE WHEN  b.bettype BETWEEN 81 AND 120 THEN N'NG - ' + bt.typenamee 
 				 WHEN (b.bettype BETWEEN 1201 AND 1299 AND bt.typeid NOT IN (1220,1235,1236,1231,1232,1233,1237,1238)) THEN N'V.Soccer - '+bt.typenamee 
 				 ELSE bt.typenamee END
@@ -407,12 +408,13 @@ ELSE
 			bettype
 		) B
 		
-		WHERE ( B.RowNo between @RowStart AND @RowEnd	AND  @IsExportExcel=0) OR (@IsExportExcel=1 AND B.RowNo<65000)
+		
 		
 		SELECT * FROM #return	
+		WHERE ( RowNo between @RowStart AND @RowEnd	AND  @IsExportExcel=0) OR (@IsExportExcel=1 AND RowNo<65000)
 	--- Data Sum 	
 		SELECT @TotalRow=COUNT(1)
-		FROM #result 
+		FROM #return
 				
 		SELECT sum(betcount) Sumbetcount,
 			   sum(Turnover) SumTurnover,

@@ -1,13 +1,4 @@
-﻿USE [bodb02]
-GO
-/****** Object:  StoredProcedure [dbo].[Lrf_Statement_Mem]    Script Date: 04/16/2012 14:34:03 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-/****** Object:  Stored Procedure dbo.Lrf_Statement_Mem    Script Date: 2/22/2012 9:22:02 AM ******/
-/****** Object:  Stored Procedure dbo.Lrf_Statement_Mem    Script Date: 7/25/2011 5:30:38 PM ******/
-ALTER PROCEDURE [dbo].[Lrf_Statement_Mem]  
+﻿ALTER PROCEDURE [dbo].[Lrf_Statement_Mem]  
     @CustID INT ,  
     @FromDate DATETIME ,  
     @ToDate DATETIME ,  
@@ -19,7 +10,7 @@ ALTER PROCEDURE [dbo].[Lrf_Statement_Mem]
 AS /*  
 Created:   
 Task : Daily Statement  
-DB: DB052.bodb02  
+DB: DBEXT.bodb02 (DB052.bodb02)
 Original: [Age_Statement_Mem]  
 Revisions:  
  -- 20110304@Henry: suppport based currency  
@@ -31,6 +22,7 @@ Revisions:
  -- 20120710@Henry: When get min winlostdate from @Data, should get only date (remove time)
  -- 20121207@Henry: Comment transdesc for bettype>19999
  -- 20131010@winnie: if @ToDate-@FromDate> 3 months => just get data report in 3 last months+ current month.
+ -- 20131016@Don: Use the right server alias name
    
 Param's Explanation:   
 • @ErrCode:  
@@ -47,7 +39,7 @@ declare @fdate datetime, @tdate datetime
 declare @CutDate datetime
 
 select @fdate = @FromDate, @tdate = @ToDate
-SELECT @CutDate =  min(winlostdate) from DB06.bodb_report.dbo.rptdepwinlost with(nolock) 
+SELECT @CutDate =  min(winlostdate) from DBRPT.bodb_report.dbo.rptdepwinlost with(nolock) 
 
     DECLARE @bet TABLE  
         (  
@@ -215,7 +207,7 @@ SELECT @CutDate =  min(winlostdate) from DB06.bodb_report.dbo.rptdepwinlost with
                 SELECT  @tdate = DATEADD(dd, -1, @BalanceUpDay) + ' 23:59:59'  
             SELECT TOP 1  
                     @PreBalanceUpDay = accdate  
-            FROM    DB06.bodb_Report.dbo.Statement WITH ( NOLOCK )  
+            FROM    DBRPT.bodb_report.dbo.Statement WITH ( NOLOCK )  
             WHERE   custid = @custid  
                     AND accdate <= @fdate  
                     AND transdesc = 'OPENING BALANCE'  
@@ -226,7 +218,7 @@ SELECT @CutDate =  min(winlostdate) from DB06.bodb_report.dbo.rptdepwinlost with
 			IF @fdate < @CutDate
 			BEGIN
 				INSERT INTO @DepWL(winlostdate,turnover)
-				SELECT winlostdate,turnover FROM db06.bodb_report.dbo.rptDepwinlost_bk with (nolock)
+				SELECT winlostdate,turnover FROM DBRPT.bodb_report.dbo.rptDepwinlost_bk with (nolock)
 				WHERE 
 					winlostdate BETWEEN @fdate AND @tdate
 					AND custid = @custid
@@ -236,7 +228,7 @@ SELECT @CutDate =  min(winlostdate) from DB06.bodb_report.dbo.rptdepwinlost with
 			IF @fdate >= @CutDate OR @tdate >= @CutDate
 			BEGIN
 				INSERT INTO @DepWL(winlostdate,turnover)
-				SELECT winlostdate,turnover FROM db06.bodb_report.dbo.rptDepwinlost with (nolock)
+				SELECT winlostdate,turnover FROM DBRPT.bodb_report.dbo.rptDepwinlost with (nolock)
 				WHERE 
 					winlostdate BETWEEN @fdate AND @tdate
 					AND custid = @custid
@@ -256,7 +248,7 @@ SELECT @CutDate =  min(winlostdate) from DB06.bodb_report.dbo.rptdepwinlost with
                                   WHEN 'COM' THEN a.totalamt  
                                   ELSE 0  
                                 END)  
-                    FROM    DB06.bodb_Report.dbo.Statement a WITH ( NOLOCK )  
+                    FROM    DBRPT.bodb_report.dbo.Statement a WITH ( NOLOCK )  
 						INNER JOIN @DepWL b ON a.AccDate = b.winlostdate
                     WHERE   a.custid = @custid  
                             AND a.accdate BETWEEN @fdate AND @tdate  
@@ -274,7 +266,7 @@ SELECT @CutDate =  min(winlostdate) from DB06.bodb_report.dbo.rptdepwinlost with
                             0 ,  
                             totalAmt ,  
                             0  
-                    FROM    DB06.bodb_Report.dbo.Statement WITH ( NOLOCK )  
+                    FROM    DBRPT.bodb_report.dbo.Statement WITH ( NOLOCK )  
                     WHERE   custid = @custid  
                             AND accdate BETWEEN @fdate AND @tdate  
                             AND transtype NOT IN ( 'BET', 'COM' )  
@@ -327,10 +319,9 @@ WHERE exchangeid = @currency
     WHERE   c.RowNum BETWEEN @RowStart AND @RowEnd
     
    DROP TABLE #TempExchange
-    
 GO
-GRANT  EXECUTE  ON [dbo].[Lrf_Statement_Mem]  TO [bodbLicenseeNet]
+GRANT EXECUTE ON [dbo].[Lrf_Statement_Mem] TO [bodbDownlineNet] AS [dbo]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Statement_Mem] TO [VNTeam]
+GRANT EXECUTE ON [dbo].[Lrf_Statement_Mem] TO [bodbLicenseeNet] AS [dbo]
 GO
-
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Statement_Mem] TO [vnteam] AS [dbo]
