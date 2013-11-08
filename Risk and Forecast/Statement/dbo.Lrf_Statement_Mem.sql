@@ -23,6 +23,7 @@ Revisions:
  -- 20121207@Henry: Comment transdesc for bettype>19999
  -- 20131010@winnie: if @ToDate-@FromDate> 3 months => just get data report in 3 last months+ current month.
  -- 20131016@Don: Use the right server alias name
+ -- 20131108@Victor: Enhance performance, use rptlicwinloss2 instead of rptDepwinlost
    
 Param's Explanation:   
 • @ErrCode:  
@@ -36,10 +37,8 @@ IF(SELECT DATEDIFF(mm,@FromDate,@ToDate))>3
 SET @FromDate= DATEADD(MONTH, DATEDIFF(MONTH, 0, @ToDate) - 3, 0) -- GET
   
 declare @fdate datetime, @tdate datetime
-declare @CutDate datetime
 
 select @fdate = @FromDate, @tdate = @ToDate
-SELECT @CutDate =  min(winlostdate) from DBRPT.bodb_report.dbo.rptdepwinlost with(nolock) 
 
     DECLARE @bet TABLE  
         (  
@@ -215,31 +214,23 @@ SELECT @CutDate =  min(winlostdate) from DBRPT.bodb_report.dbo.rptdepwinlost wit
    
             SELECT  @fdate = ISNULL(@PreBalanceUpDay, @fdate)  
 
-			IF @fdate < @CutDate
-			BEGIN
-				INSERT INTO @DepWL(winlostdate,turnover)
-				SELECT winlostdate,turnover FROM DBRPT.bodb_report.dbo.rptDepwinlost_bk with (nolock)
-				WHERE 
-					winlostdate BETWEEN @fdate AND @tdate
-					AND custid = @custid
-					
-			END
-			
-			IF @fdate >= @CutDate OR @tdate >= @CutDate
-			BEGIN
-				INSERT INTO @DepWL(winlostdate,turnover)
-				SELECT winlostdate,turnover FROM DBRPT.bodb_report.dbo.rptDepwinlost with (nolock)
-				WHERE 
-					winlostdate BETWEEN @fdate AND @tdate
-					AND custid = @custid
-			END
+			declare @recommend int
+			SELECT @recommend = recommend FROM Customer (nolock) WHERE custID = @custid
+
+			SELECT winlostdate,SUM(turnover) as turnover
+			FROM bodb_Licensee.dbo.rptLicWinloss2 (nolock)
+			WHERE recommend = @recommend 
+				AND custid = @custid
+				AND statusID NOT IN (101,102,103) 
+				AND winlostdate between @fdate and @tdate
+			GROUP BY winlostdate
   
             INSERT  INTO @Data  
                     SELECT  1 ,  
                             a.AccDate ,  
                             'BET' ,  
                             'Betting Statement' ,  
-                            SUM(b.turnover) ,  
+                            ISNULL(SUM(b.turnover),0) AS turnover ,  
                             SUM(CASE a.transtype  
                                   WHEN 'BET' THEN a.totalamt  
                                   ELSE 0  
@@ -249,7 +240,7 @@ SELECT @CutDate =  min(winlostdate) from DBRPT.bodb_report.dbo.rptdepwinlost wit
                                   ELSE 0  
                                 END)  
                     FROM    DBRPT.bodb_report.dbo.Statement a WITH ( NOLOCK )  
-						INNER JOIN @DepWL b ON a.AccDate = b.winlostdate
+						LEFT JOIN @DepWL b ON a.AccDate = b.winlostdate
                     WHERE   a.custid = @custid  
                             AND a.accdate BETWEEN @fdate AND @tdate  
                             AND a.transtype IN ( 'BET', 'COM' )  
