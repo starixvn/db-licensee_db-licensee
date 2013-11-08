@@ -69,6 +69,8 @@ Revisions:
 	- 20130619@Jim: fix bug missing RNG Casino data 
 	- 20130716@Jim: update matchid for RNG Casino and Bingo
 	- 20131007@Jim: Enhance the usability of Daily Bet List report and offer Virtual Horse Racing & Virtual Tennis
+	- 20131108@Don: Improve performance temporarily
+
 Param's Explanation: 
 	
 */
@@ -316,9 +318,9 @@ BEGIN
 		SUM(ISNULL(b.comm,0)),
 		SUM(b.playercomm )  AS  SumPlayerComm
 	FROM bettrans b WITH (nolock) 
-		LEFT JOIN match m WITH (nolock) ON b.matchid=m.matchid	
+		/*LEFT JOIN match m WITH (nolock) ON b.matchid=m.matchid	
 		LEFT JOIN @vhr  vs  ON b.oddsid=vs.Orid
-		LEFT JOIN @hr	r   ON b.oddsid=r.Orid
+		LEFT JOIN @hr	r   ON b.oddsid=r.Orid*/
 		INNER JOIN @TmpCondBettype bt ON b.bettype = bt.bettype
 		LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
 	WHERE
@@ -457,9 +459,9 @@ BEGIN
 		SUM(ISNULL(b.comm ,0)),
 		SUM(b.playercomm )  AS  SumPlayerComm
 	FROM bettrans14 b WITH (NOLOCK)	
-		LEFT JOIN match14 m WITH (nolock) ON b.matchid=m.matchid 
+		/*LEFT JOIN match14 m WITH (nolock) ON b.matchid=m.matchid 
 		LEFT JOIN @vhr vs  ON b.oddsid=vs.Orid
-		LEFT JOIN @hr r   ON b.oddsid=r.Orid
+		LEFT JOIN @hr r   ON b.oddsid=r.Orid*/
 		INNER JOIN @TmpCondBettype bt ON b.bettype = bt.bettype
 		LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
 	WHERE
