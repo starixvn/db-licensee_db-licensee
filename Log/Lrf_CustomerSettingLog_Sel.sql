@@ -1,8 +1,4 @@
-﻿set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
-
-ALTER   PROCEDURE  [dbo].[Lrf_CustomerSettingLog_Sel]    
+﻿ALTER   PROCEDURE  [Lrf_CustomerSettingLog_Sel]    
 	@LicenseeID INT ,
 	@UserName AS VARCHAR(50),     
 	@FilterBy SMALLINT=0,     
@@ -16,7 +12,7 @@ DB: bodb_CustomerLog
       
 Revisions:      
 	20130411Scott : Check Customer belong Licensee
-	20131114@Jim: add more actionID (2611 - Lrf_LicenseeGroupCommDel)
+
        
 Param's Explaination:          
  - @UserName: customer name type in textbox to search      
@@ -25,7 +21,7 @@ Param's Explaination:
       2 - View by Status    
       3 - View by Commission    
       4 - View by Special Level.
-	 
+	  5	- View by Currency
            
  - @FromDate: date range to view log      
  - @ToDate: date range to view log 
@@ -73,7 +69,6 @@ INSERT INTO @RowFilter VALUES (2401)
 INSERT INTO @RowFilter VALUES (2403)    
 INSERT INTO @RowFilter VALUES (2200)    
 INSERT INTO @RowFilter VALUES (2201)    
-INSERT INTO @RowFilter VALUES (2611)
 INSERT INTO @RowFilter VALUES (2612)    
 INSERT INTO @RowFilter VALUES (2407)    
 
@@ -84,7 +79,7 @@ IF @filterby=1
 IF @filterby=2    
 	DELETE @RowFilter WHERE actionid not in (2200,2201)    
 IF @filterby=3    
-	DELETE @RowFilter WHERE actionid not in (2611,2612)    
+	DELETE @RowFilter WHERE actionid not in (2612)    
 IF @filterby=4    
 	DELETE @RowFilter WHERE actionid not in (2407)    
    
@@ -104,10 +99,10 @@ ORDER BY logdate
   
 
 END    
+
 GO
 GRANT EXECUTE ON [dbo].[Lrf_CustomerSettingLog_Sel] TO [bodbLicenseeNet]
 GO
 GRANT EXECUTE ON [dbo].[Lrf_CustomerSettingLog_Sel] TO [bodbAdminNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerSettingLog_Sel] TO [vnteam] 
-
