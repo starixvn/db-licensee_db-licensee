@@ -1,4 +1,8 @@
-﻿ALTER   PROCEDURE  [Lrf_CustomerSettingLog_Sel]    
+﻿set ANSI_NULLS ON
+set QUOTED_IDENTIFIER ON
+go
+
+ALTER   PROCEDURE  [dbo].[Lrf_CustomerSettingLog_Sel]    
 	@LicenseeID INT ,
 	@UserName AS VARCHAR(50),     
 	@FilterBy SMALLINT=0,     
@@ -69,6 +73,7 @@ INSERT INTO @RowFilter VALUES (2401)
 INSERT INTO @RowFilter VALUES (2403)    
 INSERT INTO @RowFilter VALUES (2200)    
 INSERT INTO @RowFilter VALUES (2201)    
+INSERT INTO @RowFilter VALUES (2611)
 INSERT INTO @RowFilter VALUES (2612)    
 INSERT INTO @RowFilter VALUES (2407)    
 
@@ -99,10 +104,10 @@ ORDER BY logdate
   
 
 END    
-
 GO
 GRANT EXECUTE ON [dbo].[Lrf_CustomerSettingLog_Sel] TO [bodbLicenseeNet]
 GO
 GRANT EXECUTE ON [dbo].[Lrf_CustomerSettingLog_Sel] TO [bodbAdminNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerSettingLog_Sel] TO [vnteam] 
+
