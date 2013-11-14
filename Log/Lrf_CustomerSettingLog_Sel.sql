@@ -12,7 +12,7 @@ DB: bodb_CustomerLog
       
 Revisions:      
 	20130411Scott : Check Customer belong Licensee
-
+	20131114@Jim: add more actionID (2611 - Lrf_LicenseeGroupCommDel)
        
 Param's Explaination:          
  - @UserName: customer name type in textbox to search      
@@ -21,7 +21,7 @@ Param's Explaination:
       2 - View by Status    
       3 - View by Commission    
       4 - View by Special Level.
-	  5	- View by Currency
+	 
            
  - @FromDate: date range to view log      
  - @ToDate: date range to view log 
@@ -79,7 +79,7 @@ IF @filterby=1
 IF @filterby=2    
 	DELETE @RowFilter WHERE actionid not in (2200,2201)    
 IF @filterby=3    
-	DELETE @RowFilter WHERE actionid not in (2612)    
+	DELETE @RowFilter WHERE actionid not in (2611,2612)    
 IF @filterby=4    
 	DELETE @RowFilter WHERE actionid not in (2407)    
    
