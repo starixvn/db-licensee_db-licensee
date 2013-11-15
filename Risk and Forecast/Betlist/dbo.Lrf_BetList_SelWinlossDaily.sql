@@ -785,9 +785,12 @@ BEGIN
 				BG.stake*e.EUR,
 				BG.stake*e.USD
 			FROM bettransm BG WITH (NOLOCK)
-			INNER JOIN #Data B ON BG.refno = B.Transid and BG.custid = B.custid
+			INNER JOIN #Data B ON  BG.custid = B.custid
 			INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
-			WHERE B.Bettype IN (33,43,1233)
+			WHERE 
+			(B.bettype=1233 AND ( BG.refno = B.Refno))
+			OR (B.bettype IN (33,43) AND ( BG.refno = B.Transid))
+		
 		END
 		IF @wldate <= @MoveBetsDay_
 		BEGIN
@@ -803,9 +806,11 @@ BEGIN
 				BG.stake*e.EUR,
 				BG.stake*e.USD
 			FROM bettransm14 BG WITH (NOLOCK)
-			INNER JOIN #Data B ON BG.refno = B.Transid and BG.custid = B.custid
+			INNER JOIN #Data B ON  BG.custid = B.custid
 			INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
-			WHERE B.Bettype IN (33,43,1233)
+			WHERE
+			(B.bettype=1233 AND ( BG.refno = B.Refno))
+			OR (B.bettype IN (33,43) AND ( BG.refno = B.Transid))
 		END
 END
 
