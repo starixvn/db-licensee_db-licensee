@@ -71,6 +71,7 @@ Revisions:
 	- 20131007@Jim: Enhance the usability of Daily Bet List report and offer Virtual Horse Racing & Virtual Tennis
 	- 20131108@Don: Improve performance temporarily
 	- 20131112@Victor: Enhance performance
+	- 20131115@Jim: correct showtime value in Live Casino and Horse Racing Product
 
 Param's Explanation: 
 	
@@ -422,7 +423,7 @@ BEGIN
 					END,
 		IsNeutral = m.IsNeutral,
 		showtime = CASE 
-						WHEN (b.bettype BETWEEN 1101 AND 1199 AND b.bettype IN (1231, 1232, 1233, 1237, 1238)) 
+						WHEN (b.bettype BETWEEN 1101 AND 1199 ) 
 						THEN  ISNULL(m.showtime,'') 
 						ELSE '' 
 					END
@@ -435,7 +436,8 @@ BEGIN
 		matchcode = v.matchcode,
 		homeID = v.RacerID,
 		awayID = v.AwayID,
-		betstatus = v.BetStatus
+		betstatus = v.BetStatus,
+		showtime=v.showtime
 	FROM #BetData1 b
 		INNER JOIN @vhr  v ON b.oddsid=v.OrID
 	WHERE b.bettype IN (1231, 1232, 1233, 1237, 1238)
@@ -614,7 +616,7 @@ BEGIN
 					END,
 		IsNeutral = m.IsNeutral,
 		showtime = CASE 
-						WHEN (b.bettype BETWEEN 1101 AND 1199 AND b.bettype IN (1231, 1232, 1233, 1237, 1238)) 
+						WHEN (b.bettype BETWEEN 1101 AND 1199 ) 
 						THEN  ISNULL(m.showtime,'') 
 						ELSE '' 
 					END
@@ -627,7 +629,8 @@ BEGIN
 		matchcode = v.matchcode,
 		homeID = v.RacerID,
 		awayID = v.AwayID,
-		betstatus = v.BetStatus
+		betstatus = v.BetStatus,
+		showtime=v.showtime
 	FROM #BetData14 b
 		INNER JOIN @vhr  v ON b.oddsid=v.OrID
 	WHERE b.bettype IN (1231, 1232, 1233, 1237, 1238)
@@ -782,7 +785,7 @@ BEGIN
 				BG.stake*e.EUR,
 				BG.stake*e.USD
 			FROM bettransm BG WITH (NOLOCK)
-			INNER JOIN #Data B ON BG.refno = B.refno and BG.custid = B.custid
+			INNER JOIN #Data B ON BG.refno = B.Transid and BG.custid = B.custid
 			INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
 			WHERE B.Bettype IN (33,43,1233)
 		END
@@ -800,7 +803,7 @@ BEGIN
 				BG.stake*e.EUR,
 				BG.stake*e.USD
 			FROM bettransm14 BG WITH (NOLOCK)
-			INNER JOIN #Data B ON BG.refno = B.refno and BG.custid = B.custid
+			INNER JOIN #Data B ON BG.refno = B.Transid and BG.custid = B.custid
 			INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
 			WHERE B.Bettype IN (33,43,1233)
 		END
