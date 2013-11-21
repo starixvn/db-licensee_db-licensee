@@ -8,7 +8,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 /*	
-	Created	: Florent
+	Created	: Florent Nguyen
 	Task: Customer Performance Report
 	Date: 2013-11-21
 	DB: DBARC.bodb_licensee
