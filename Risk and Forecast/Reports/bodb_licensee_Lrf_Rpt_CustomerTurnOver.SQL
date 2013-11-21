@@ -42,7 +42,7 @@ AS
     - 20130124@Daniel: Change link server alias
 	- 20130618@Jim:  Restrict permission of Licensee Users by currency
 	- 20131021@Jim: Add more products to Customer Turnover Report
-	- 20131121@Florent : improve performance 
+	- 20131121@Florent : improve performance .
 	
 	Parameter's Explanation:
 		- @ReportBy:  1: daily, 2: monthly
