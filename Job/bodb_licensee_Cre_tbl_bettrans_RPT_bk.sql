@@ -36,6 +36,23 @@ CREATE TABLE [dbo].[bettrans_RPT_bk](
 ) ON [PRIMARY]
 
 GO
+GO
+SET ANSI_PADDING OFF
+GO
+ALTER AUTHORIZATION ON [dbo].[bettrans_RPT_bk] TO  SCHEMA OWNER 
+GO
+GRANT SELECT ON [dbo].[bettrans_RPT_bk] TO [bodbAdminNet] AS [dbo]
+GO
+GRANT SELECT ON [dbo].[bettrans_RPT_bk] TO [bodbDownlineNet] AS [dbo]
+GO
+GRANT SELECT ON [dbo].[bettrans_RPT_bk] TO [bodbDownlineNetView] AS [dbo]
+GO
+GRANT SELECT ON [dbo].[bettrans_RPT_bk] TO [bodbExtAccNet] AS [dbo]
+GO
+GRANT SELECT ON [dbo].[bettrans_RPT_bk] TO [bodbLicenseeNet] AS [dbo]
+GO
+GRANT SELECT ON [dbo].[bettrans_RPT_bk] TO [bodbRMSNet] AS [dbo]
+GO
 
 /****** Object:  Index [IX_CUSTID]    Script Date: 21/11/2013 3:09:12 PM ******/
 CREATE NONCLUSTERED INDEX [IX_CUSTID] ON [dbo].[bettrans_RPT_bk]

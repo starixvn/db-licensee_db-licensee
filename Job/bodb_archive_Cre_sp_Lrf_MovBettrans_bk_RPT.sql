@@ -121,5 +121,10 @@ WHILE (1=1)
 DROP TABLE  #datatemp
 
 GO
-
-
+GO
+ALTER AUTHORIZATION ON [dbo].[Lrf_MovBettrans_bk_RPT] TO  SCHEMA OWNER 
+GO
+GRANT EXECUTE ON [dbo].[Lrf_MovBettrans_bk_RPT] TO [bodbLicenseeNet] AS [dbo]
+GO
+GRANT VIEW DEFINITION ON [dbo].[Lrf_MovBettrans_bk_RPT] TO [vnteam] AS [dbo]
+GO
