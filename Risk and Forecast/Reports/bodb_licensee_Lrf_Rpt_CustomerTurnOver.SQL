@@ -42,7 +42,7 @@ AS
     - 20130124@Daniel: Change link server alias
 	- 20130618@Jim:  Restrict permission of Licensee Users by currency
 	- 20131021@Jim: Add more products to Customer Turnover Report
-	- 20131121@Florent : improve performance .
+	- 20131121@Florent : improve performance 
 	
 	Parameter's Explanation:
 		- @ReportBy:  1: daily, 2: monthly
@@ -104,7 +104,7 @@ SELECT
 					WHEN 'vi-VN'	THEN typenamee
 					ELSE typenamee END typenamee
 INTO #bettype		
-FROM dbo.bettype  b WITH (NOLOCK)
+FROM bodb02.dbo.bettype  b WITH (NOLOCK)
 INNER JOIN #BettypeID bt ON b.typeid=bt.bettypeID
 				
 SELECT  @PageIndex = @PageIndex - 1 ,
@@ -122,7 +122,7 @@ ELSE
 			SELECT LicenseeID
 				  ,CustID
 				  ,Currency
-			FROM bodb_licensee.dbo.LicenseeCust  WITH (NOLOCK)
+			FROM dbo.LicenseeCust  WITH (NOLOCK)
 			WHERE
 				LicenseeID=@LicenseeID
 				AND (Currency=@CurrencyID OR (@CurrencyID=0))
@@ -133,7 +133,7 @@ ELSE
 		SELECT  re.CustID
 		INTO #recommend
 		FROM cte_recommend re
-			INNER JOIN bodb_licensee.dbo.CurrencyUser c WITH (NOLOCK) ON re.LicenseeID=c.LicenseeID AND re.Currency=c.CurrencyID
+			INNER JOIN dbo.CurrencyUser c WITH (NOLOCK) ON re.LicenseeID=c.LicenseeID AND re.Currency=c.CurrencyID
 		WHERE 
 			c.usrID=@userID 
 			AND c.SystemID=1 -- System is default=1 (LRF)	
@@ -141,7 +141,7 @@ ELSE
 			
 			
 		SELECT lc.CustID INTO #Currency
-		FROM bodb_licensee.dbo.LicenseeCustInfo lc WITH (NOLOCK) 
+		FROM dbo.LicenseeCustInfo lc WITH (NOLOCK) 
 		WHERE
 			recommend IN (SELECT CustID FROM #recommend)
 		DROP TABLE 	#recommend
@@ -151,7 +151,7 @@ ELSE
 			BEGIN 
 				
 				SELECT @CustID = cr.CustID 
-				FROM dbo.Customer cr (NOLOCK)
+				FROM bodb02.dbo.Customer cr (NOLOCK)
 					INNER JOIN #Currency c ON cr.CustID=c.CustID
 				WHERE (username2 LIKE '%$' + @Username+'%' AND @LicenseeID=8)
 					  OR (username2 LIKE '%$' + @Username)	
@@ -159,7 +159,7 @@ ELSE
 				IF ISNULL(@CustID,0) = 0
 				BEGIN
 					SELECT @CustID = cr.CustID 
-					FROM dbo.Customer cr(NOLOCK)
+					FROM bodb02.dbo.Customer cr(NOLOCK)
 						INNER JOIN #Currency c ON cr.CustID=c.CustID
 					WHERE username = @Username
 				END
@@ -207,9 +207,9 @@ ELSE
 				b.PlayerComm ,
 				b.Odds,
 				b.Oddstype
-			FROM dbo.bettrans b WITH (NOLOCK)
+			FROM bodb02.dbo.bettrans b WITH (NOLOCK)
 			INNER JOIN #bettype bet  ON b.bettype=bet.typeID
-			LEFT JOIN dbo.match m WITH (NOLOCK) ON b.matchid = m.matchid
+			LEFT JOIN bodb02.dbo.match m WITH (NOLOCK) ON b.matchid = m.matchid
 			WHERE 
 				b.CustID IN (SELECT CustID FROM #Currency) AND 
 				 b.winlostdate BETWEEN @TempFromDate AND @todate
@@ -240,7 +240,7 @@ ELSE
 				b.Oddstype
 			FROM bodb02.dbo.bettrans14 b WITH (NOLOCK)
 			INNER JOIN #bettype bet  ON b.bettype=bet.typeID
-			LEFT JOIN dbo.match14 m WITH (NOLOCK) ON b.matchid = m.matchid
+			LEFT JOIN bodb02.dbo.match14 m WITH (NOLOCK) ON b.matchid = m.matchid
 			WHERE 
 				b.CustID IN (SELECT CustID FROM #Currency) AND 
 				 b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
@@ -271,7 +271,7 @@ ELSE
 					bk.oddstype,
 					bk.statusID
 			FROM					
-					bodb_licensee.dbo.bettrans_RPT_bk bk WITH (NOLOCK,INDEX=IX_custid)
+					dbo.bettrans_RPT_bk bk WITH (NOLOCK,INDEX=IX_custid)
 					WHERE
 							bk.CustID IN (SELECT CustID FROM #Currency)
 							 AND bk.winlostdate BETWEEN @fromdate AND @TempToDate
@@ -348,9 +348,9 @@ ELSE
 			SUM(PlayerComm) AS PlayerComm
 			
 		FROM #Data b
-			INNER JOIN dbo.Customer c WITH (NOLOCK) ON b.CustID=c.CustID 
+			INNER JOIN bodb02.dbo.Customer c WITH (NOLOCK) ON b.CustID=c.CustID 
 			INNER JOIN #bettype bt WITH (NOLOCK) ON b.bettype = bt.typeid
-			INNER JOIN dbo.exchange e WITH (NOLOCK) ON b.currency = e.exchangeid
+			INNER JOIN bodb02.dbo.exchange e WITH (NOLOCK) ON b.currency = e.exchangeid
 		WHERE 
 			b.Sporttype IN (SELECT sportID FROM #ProductID)
 			AND b.Odds >= @Odds
@@ -426,3 +426,12 @@ ELSE
 		
 DROP TABLE #ProductID
 DROP TABLE #BettypeID
+
+
+GO
+ALTER AUTHORIZATION ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO  SCHEMA OWNER 
+GO
+GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [bodbLicenseeNet] AS [dbo]
+GO
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [vnteam] AS [dbo]
+GO
