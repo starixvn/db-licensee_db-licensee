@@ -13,7 +13,7 @@ CREATE PROCEDURE [dbo].[Lrf_MovBettrans_bk_RPT]
 	@Todate smalldatetime
 AS
 /*	
-	Created	: Florent
+	Created	: Florent Nguyen
 	Task: Customer Performance Report
 	Date: 2013-11-21
 	DB: DBARC.bodb_Archive
