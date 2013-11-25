@@ -7,7 +7,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 
 
-ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
+CREATE PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
 	 @LicenseeID INT,
 	 @UserID  INT,
 	 @Username VARCHAR(50)='', 
