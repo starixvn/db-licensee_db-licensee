@@ -1,13 +1,13 @@
-﻿USE [bodb_licensee]
+﻿USE [bodb02]
 GO
-
+/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_CustomerTurnOver]    Script Date: 25/11/2013 5:44:54 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 
 
-CREATE PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
+ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
 	 @LicenseeID INT,
 	 @UserID  INT,
 	 @Username VARCHAR(50)='', 
@@ -104,7 +104,7 @@ SELECT
 					WHEN 'vi-VN'	THEN typenamee
 					ELSE typenamee END typenamee
 INTO #bettype		
-FROM bodb02.dbo.bettype  b WITH (NOLOCK)
+FROM dbo.bettype  b WITH (NOLOCK)
 INNER JOIN #BettypeID bt ON b.typeid=bt.bettypeID
 				
 SELECT  @PageIndex = @PageIndex - 1 ,
@@ -122,7 +122,7 @@ ELSE
 			SELECT LicenseeID
 				  ,CustID
 				  ,Currency
-			FROM dbo.LicenseeCust  WITH (NOLOCK)
+			FROM bodb_licensee.dbo.LicenseeCust  WITH (NOLOCK)
 			WHERE
 				LicenseeID=@LicenseeID
 				AND (Currency=@CurrencyID OR (@CurrencyID=0))
@@ -133,7 +133,7 @@ ELSE
 		SELECT  re.CustID
 		INTO #recommend
 		FROM cte_recommend re
-			INNER JOIN dbo.CurrencyUser c WITH (NOLOCK) ON re.LicenseeID=c.LicenseeID AND re.Currency=c.CurrencyID
+			INNER JOIN bodb_licensee.dbo.CurrencyUser c WITH (NOLOCK) ON re.LicenseeID=c.LicenseeID AND re.Currency=c.CurrencyID
 		WHERE 
 			c.usrID=@userID 
 			AND c.SystemID=1 -- System is default=1 (LRF)	
@@ -141,7 +141,7 @@ ELSE
 			
 			
 		SELECT lc.CustID INTO #Currency
-		FROM dbo.LicenseeCustInfo lc WITH (NOLOCK) 
+		FROM bodb_licensee.dbo.LicenseeCustInfo lc WITH (NOLOCK) 
 		WHERE
 			recommend IN (SELECT CustID FROM #recommend)
 		DROP TABLE 	#recommend
@@ -151,7 +151,7 @@ ELSE
 			BEGIN 
 				
 				SELECT @CustID = cr.CustID 
-				FROM bodb02.dbo.Customer cr (NOLOCK)
+				FROM dbo.Customer cr (NOLOCK)
 					INNER JOIN #Currency c ON cr.CustID=c.CustID
 				WHERE (username2 LIKE '%$' + @Username+'%' AND @LicenseeID=8)
 					  OR (username2 LIKE '%$' + @Username)	
@@ -159,7 +159,7 @@ ELSE
 				IF ISNULL(@CustID,0) = 0
 				BEGIN
 					SELECT @CustID = cr.CustID 
-					FROM bodb02.dbo.Customer cr(NOLOCK)
+					FROM dbo.Customer cr(NOLOCK)
 						INNER JOIN #Currency c ON cr.CustID=c.CustID
 					WHERE username = @Username
 				END
@@ -207,9 +207,9 @@ ELSE
 				b.PlayerComm ,
 				b.Odds,
 				b.Oddstype
-			FROM bodb02.dbo.bettrans b WITH (NOLOCK)
+			FROM dbo.bettrans b WITH (NOLOCK)
 			INNER JOIN #bettype bet  ON b.bettype=bet.typeID
-			LEFT JOIN bodb02.dbo.match m WITH (NOLOCK) ON b.matchid = m.matchid
+			LEFT JOIN dbo.match m WITH (NOLOCK) ON b.matchid = m.matchid
 			WHERE 
 				b.CustID IN (SELECT CustID FROM #Currency) AND 
 				 b.winlostdate BETWEEN @TempFromDate AND @todate
@@ -238,9 +238,9 @@ ELSE
 				b.PlayerComm,
 				b.Odds,
 				b.Oddstype
-			FROM bodb02.dbo.bettrans14 b WITH (NOLOCK)
+			FROM dbo.bettrans14 b WITH (NOLOCK)
 			INNER JOIN #bettype bet  ON b.bettype=bet.typeID
-			LEFT JOIN bodb02.dbo.match14 m WITH (NOLOCK) ON b.matchid = m.matchid
+			LEFT JOIN dbo.match14 m WITH (NOLOCK) ON b.matchid = m.matchid
 			WHERE 
 				b.CustID IN (SELECT CustID FROM #Currency) AND 
 				 b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
@@ -271,7 +271,7 @@ ELSE
 					bk.oddstype,
 					bk.statusID
 			FROM					
-					dbo.bettrans_RPT_bk bk WITH (NOLOCK,INDEX=IX_custid)
+					bodb_LicenseeReport.dbo.rptcustomerturnOver bk WITH (NOLOCK,INDEX=IX_custid)
 					WHERE
 							bk.CustID IN (SELECT CustID FROM #Currency)
 							 AND bk.winlostdate BETWEEN @fromdate AND @TempToDate
@@ -348,9 +348,9 @@ ELSE
 			SUM(PlayerComm) AS PlayerComm
 			
 		FROM #Data b
-			INNER JOIN bodb02.dbo.Customer c WITH (NOLOCK) ON b.CustID=c.CustID 
+			INNER JOIN dbo.Customer c WITH (NOLOCK) ON b.CustID=c.CustID 
 			INNER JOIN #bettype bt WITH (NOLOCK) ON b.bettype = bt.typeid
-			INNER JOIN bodb02.dbo.exchange e WITH (NOLOCK) ON b.currency = e.exchangeid
+			INNER JOIN dbo.exchange e WITH (NOLOCK) ON b.currency = e.exchangeid
 		WHERE 
 			b.Sporttype IN (SELECT sportID FROM #ProductID)
 			AND b.Odds >= @Odds
@@ -426,7 +426,6 @@ ELSE
 		
 DROP TABLE #ProductID
 DROP TABLE #BettypeID
-
 
 GO
 ALTER AUTHORIZATION ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO  SCHEMA OWNER 
