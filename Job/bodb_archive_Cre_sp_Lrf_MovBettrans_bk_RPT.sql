@@ -62,7 +62,7 @@ AS
 	(
 		SELECT  a.*,LC.currency
 		FROM TEMPS a with (nolock)
-		INNER JOIN DBLIC.bodb_licensee.dbo.LicenseeCust lc WITH (NOLOCK) 
+		INNER JOIN bodb_licensee.dbo.LicenseeCust lc WITH (NOLOCK) 
 		ON a.recommend=lc.custid
 	)
 , cte_raceinfo
