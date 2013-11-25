@@ -115,7 +115,7 @@ WHILE (1=1)
 	--WAITFOR DELAY '00:00';
 		delete top(10000) from #DATATEMP 
 		output deleted.*
-		into bodb_licensee.dbo.bettrans_RPT_bk
+		into bodb_LicenseeReport.dbo.rptCustomerTurnOver
 		if @@rowcount=0 break
 	END
 DROP TABLE  #datatemp
