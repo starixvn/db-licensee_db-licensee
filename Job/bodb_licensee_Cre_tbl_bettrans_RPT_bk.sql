@@ -226,7 +226,7 @@ CREATE TABLE [dbo].[bettrans_RPT_bk](
 	[STATUSID] [tinyint] NULL,
 	[Recommend] [int] NULL,
 	[WinLostDate] [datetime] NULL
-) ON [PRIMARY]
+)  ON ps_bettrans_RPT_bk_monthly(WinLostDate)
 
 GO
 GO
