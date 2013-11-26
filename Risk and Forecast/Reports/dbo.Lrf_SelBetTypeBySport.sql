@@ -1,3 +1,11 @@
+USE [bodb_Licensee]
+GO
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
 ALTER PROCEDURE [dbo].[Lrf_SelBetTypeBySport]
 	@LicenseeID int
 	,@SportList nvarchar(4000)
@@ -9,7 +17,7 @@ Task : Add more products to Customer Turnover Report
 DB: DBLIC/bodb_Licensee
 
 Revisions:
-   
+   20131126@Jim: return English Name when Korean Name is NULL or not ready
 Param's Explanation:
 	
 */
@@ -50,7 +58,9 @@ SELECT
 							WHEN 'zh-TW'	THEN typenamecn
 							WHEN 'th-TH'	THEN typenameth
 							WHEN 'ja-JP'	THEN typenamej
-							WHEN 'ko-KR'	THEN typenameko
+							WHEN 'ko-KR'	THEN 
+											CASE  WHEN (ISNULL(typenameko,'')='' OR len(typenameko)=0) THEN typenamee 
+												   ELSE typenameko END
 							WHEN 'es'  	    THEN typenameES
 							WHEN 'vi-VN'	THEN typenamee
 							ELSE typenamee END typenamee
@@ -92,8 +102,7 @@ DROP TABLE #input
 DROP TABLE #bettype
 
 SELECT * FROM @Bettype
-
 GO
-GRANT EXECUTE ON [dbo].[Lrf_SelBetTypeBySport] TO [bodbLicenseeNet] 
+GRANT EXECUTE ON [dbo].[Lrf_SelBetTypeBySport] TO [bodbLicenseeNet] AS [dbo]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_SelBetTypeBySport] TO [vnteam] 
+GRANT VIEW DEFINITION ON [dbo].[Lrf_SelBetTypeBySport] TO [vnteam] AS [dbo]
