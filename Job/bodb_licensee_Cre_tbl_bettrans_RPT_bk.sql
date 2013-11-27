@@ -246,8 +246,8 @@ ALTER AUTHORIZATION ON [dbo].[rptCustomerTurnOver] TO  SCHEMA OWNER
 GO
 GRANT SELECT ON [dbo].[rptCustomerTurnOver] TO [bodbAdminNet] AS [dbo]
 GO 
---GRANT SELECT ON [dbo].[rptCustomerTurnOver] TO [bodbExtAccNet] AS [dbo]
---GO
+GRANT SELECT ON [dbo].[rptCustomerTurnOver] TO [bodbExtAccNet] AS [dbo]
+GO
 GRANT SELECT ON [dbo].[rptCustomerTurnOver] TO [bodbLicenseeNet] AS [dbo]
 GO 
 
