@@ -13,7 +13,7 @@ AS
 /*
 Created: 20110606@Henry
 Task : Update Bet Aggregator ON/OFF for member
-DB: DBTXN/bodb02
+DB: DBTXN/CustDB
 
 
 Revisions:
@@ -42,7 +42,7 @@ Revisions:
 	- 20121119@Henry: not allowed insert null value to column ugroup when turn-on BA
     - 20130123@Daniel: Change link server alias
 	- 20130429@Jim: support base currency USD
-
+	- 20131113@winnie: remove bodb02.
 	
 Param's Explanation:
 
@@ -88,7 +88,7 @@ IF @isBA = 1 --enable BA
 		@OtherComm decimal (9,8)
 
 			-- store current group and danger level of member for restore after
-		SELECT @currency=currency FROM  bodb02.dbo.custinfo with (nolock) WHERE custid=@custid
+		SELECT @currency=currency FROM  custinfo with (nolock) WHERE custid=@custid
 		SELECT @CurrencyUgroup=ugroup FROM DBLIC.bodb_licensee.dbo.LicenseeCurrencyBAGroup with (nolock) WHERE LicenseeID=@LicenseeID AND Currency=@Currency
 
 		SELECT @ugroup = ugroup FROM customer WITH (NOLOCK) WHERE custid = @custid
@@ -101,7 +101,7 @@ IF @isBA = 1 --enable BA
 		BEGIN
 			SELECT @ErrMsg = CASE @Langkey 
 							WHEN 'en-US' THEN 'This currency is not offered to operate BA yet !'
-							ELSE  bodb02.dbo.Lrf_f_Get_MsgNamebyMsgID(200033,@Langkey)
+							ELSE  dbo.Lrf_f_Get_MsgNamebyMsgID(200033,@Langkey)
 					END, @ErrCode = 104
 			RETURN
 		END
@@ -144,7 +144,7 @@ IF @isBA = 1 --enable BA
 			BEGIN
 				SELECT @ErrMsg = 	CASE @Langkey 
 							WHEN 'en-US' THEN 'This licensee is not allowed BA !'
-							ELSE  bodb02.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200037,@Langkey)
+							ELSE  [dbo].[Lrf_f_Get_MsgNamebyMsgID](200037,@Langkey)
 					END, @ErrCode = 100
 				RETURN
 			END
@@ -158,7 +158,7 @@ IF @isBA = 1 --enable BA
 					
 				SELECT @ErrMsg = 	CASE @Langkey 
 										WHEN 'en-US' THEN 'This currency is not allowed BA !'
-										ELSE  [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200034,@Langkey)
+										ELSE  [dbo].[Lrf_f_Get_MsgNamebyMsgID](200034,@Langkey)
 									END, @ErrCode = 101
 					RETURN
 				END
@@ -180,7 +180,7 @@ IF @isBA = 1 --enable BA
 			BEGIN
 				SELECT @ErrMsg = 	CASE @Langkey 
 							WHEN 'en-US' THEN 'This member has already enabled BA !'
-							ELSE  [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200035,@Langkey)
+							ELSE  [dbo].[Lrf_f_Get_MsgNamebyMsgID](200035,@Langkey)
 					END, @ErrCode = 102
 				RETURN
 			END
@@ -204,7 +204,7 @@ IF @isBA = 1 --enable BA
 			BEGIN
 				SELECT @ErrMsg = 	CASE @Langkey 
 							WHEN 'en-US' THEN 'You are not allowed to change BA status !'
-							ELSE  [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200036,@Langkey)
+							ELSE  [dbo].[Lrf_f_Get_MsgNamebyMsgID](200036,@Langkey)
 					END, @ErrCode = 103
 				RETURN
 			END
@@ -217,7 +217,7 @@ IF @isBA = 1 --enable BA
 				@ModifyBy = @ModifyBy,
 				@IsBA = @IsBA,
 				@IsAdmin = @IsAdmin,
-				@Language = @langkey,
+				@langkey = @langkey,
 				@IP = @IP,
 				@ErrCode = @ErrCode OUTPUT,
 				@ErrMsg = @ErrMsg OUTPUT
@@ -327,7 +327,7 @@ IF @isBA = 1 --enable BA
 		@Comm1x2 = @Comm1x2,
 		@OtherComm = @OtherComm,
 		@ugroup = @ugroup,
-		@Language = @langkey,
+		@langkey = @langkey,
 		@IP = @IP,
 		@ErrCode = @ErrCode OUTPUT,
 		@ErrMsg = @ErrMsg OUTPUT
@@ -355,7 +355,7 @@ ELSE --disable BA
 			BEGIN
 				SELECT @ErrMsg = 	CASE @Langkey 
 							WHEN 'en-US' THEN 'You are not allowed to change BA status !'
-							ELSE  [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200036,@Langkey)
+							ELSE  [dbo].[Lrf_f_Get_MsgNamebyMsgID](200036,@Langkey)
 					END, @ErrCode = 103
 				RETURN
 			END
@@ -375,7 +375,7 @@ ELSE --disable BA
 				BEGIN
 					SELECT @ErrMsg = 	CASE @Langkey 
 							WHEN 'en-US' THEN 'This member has already disabled BA ! !'
-							ELSE  [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200038,@Langkey)
+							ELSE  [dbo].[Lrf_f_Get_MsgNamebyMsgID](200038,@Langkey)
 					END, @ErrCode = 106
 					RETURN
 				END	
@@ -390,7 +390,7 @@ ELSE --disable BA
 							@CustID = @CustID,
 							@ModifyBy = @ModifyBy,
 							@IsBA = @IsBA,
-							@Language = @langkey,
+							@langkey = @langkey,
 							@IsAdmin = @IsAdmin,
 							@IP = @IP,
 							@ErrCode = @ErrCode OUTPUT,
@@ -627,13 +627,15 @@ ELSE --disable BA
 					@LicenseeID = @LicenseeID,
 					@CustID = @CustID,
 					@ModifyBy = @ModifyBy,
-					@Language = @langkey,
+					@langkey = @langkey,
 					@IP = @IP,
 					@ErrCode = @ErrCode OUTPUT,
 					@ErrMsg = @ErrMsg OUTPUT
 				END
 		END
 	END
+
+
 GO
 GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMemberBAStatus] TO [bodbAdminNet] AS [dbo]
 GO
