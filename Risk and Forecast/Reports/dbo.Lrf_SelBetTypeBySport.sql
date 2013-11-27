@@ -1,10 +1,7 @@
-USE [bodb_Licensee]
-GO
+set ANSI_NULLS ON
+set QUOTED_IDENTIFIER ON
+go
 
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
 
 ALTER PROCEDURE [dbo].[Lrf_SelBetTypeBySport]
 	@LicenseeID int
@@ -17,7 +14,7 @@ Task : Add more products to Customer Turnover Report
 DB: DBLIC/bodb_Licensee
 
 Revisions:
-   20131126@Jim: return English Name when Korean Name is NULL or not ready
+   20131126@Jim: return English Name when Other Language Name is NULL or not ready
 Param's Explanation:
 	
 */
@@ -54,16 +51,22 @@ DECLARE @Bettype TABLE (
 SELECT 
 	b.typeID,
 	CASE @Langkey
-							WHEN 'zh-CN'	THEN typenamcn
-							WHEN 'zh-TW'	THEN typenamecn
-							WHEN 'th-TH'	THEN typenameth
-							WHEN 'ja-JP'	THEN typenamej
-							WHEN 'ko-KR'	THEN 
-											CASE  WHEN (ISNULL(typenameko,'')='' OR len(typenameko)=0) THEN typenamee 
+							WHEN 'zh-CN'	THEN CASE  WHEN (ISNULL(typenamecn,'')='' OR len(typenamecn)=0) THEN typenamee 
+												   ELSE typenamecn END
+							WHEN 'zh-TW'	THEN CASE  WHEN (ISNULL(typenamecn,'')='' OR len(typenamecn)=0) THEN typenamee 
+												   ELSE typenamecn END
+							WHEN 'th-TH'	THEN CASE  WHEN (ISNULL(typenameth,'')='' OR len(typenameth)=0) THEN typenamee 
+												   ELSE typenameth END
+							WHEN 'ja-JP'	THEN CASE  WHEN (ISNULL(typenamej,'')='' OR len(typenamej)=0) THEN typenamee 
+												   ELSE typenamej END
+							WHEN 'ko-KR'	THEN CASE  WHEN (ISNULL(typenameko,'')='' OR len(typenameko)=0) THEN typenamee 
 												   ELSE typenameko END
-							WHEN 'es'  	    THEN typenameES
-							WHEN 'vi-VN'	THEN typenamee
+							WHEN 'es'  	    THEN CASE  WHEN (ISNULL(typenameES,'')='' OR len(typenameES)=0) THEN typenamee 
+												   ELSE typenameES END
+							WHEN 'vi-VN'	THEN CASE  WHEN (ISNULL(typenamee,'')='' OR len(typenamee)=0) THEN typenamee 
+												   ELSE typenamee END
 							ELSE typenamee END typenamee
+							
 INTO #bettype		
 FROM 
 	bodb02.dbo.bettype  b WITH (NOLOCK)
@@ -102,6 +105,7 @@ DROP TABLE #input
 DROP TABLE #bettype
 
 SELECT * FROM @Bettype
+
 GO
 GRANT EXECUTE ON [dbo].[Lrf_SelBetTypeBySport] TO [bodbLicenseeNet] AS [dbo]
 GO
