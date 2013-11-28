@@ -272,11 +272,20 @@ ELSE
 					bk.statusID
 			FROM					
 					bodb_LicenseeReport.dbo.rptcustomerturnOver bk WITH (NOLOCK,INDEX=IX_custid)
+					INNER JOIN bodb_licensee.dbo.LicenseeCust lc ON bk.Recommend=lc.CustID
+					INNER JOIN #Currency c ON bk.CUSTID=c.custid
 					WHERE
-							bk.CustID IN (SELECT CustID FROM #Currency)
-							 AND bk.winlostdate BETWEEN @fromdate AND @TempToDate
+							 exists (SELECT CustID FROM #Currency c WHERE c.custid=bk.CUSTID)
+							 AND 
+							 bk.winlostdate BETWEEN @fromdate AND @TempToDate
 							 and bk.bettype IN (SELECT typeid from #bettype)
 							 AND (bk.CustID = @CustID OR @CustID=0)
+							 AND bodb_LicenseeReport.$partition.pf_rptcustomerturnOver_monthly(winlostdate)
+							  IN 
+							 (select bodb_LicenseeReport.$PARTITION.pf_rptcustomerturnOver_monthly(@fromDate)
+							 UNION 
+							 select bodb_LicenseeReport.$PARTITION.pf_rptcustomerturnOver_monthly(@ToDate)
+							 )
 			)							
 			INSERT INTO #Data
 			SELECT 
