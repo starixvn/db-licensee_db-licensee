@@ -15,7 +15,7 @@ AS
 /*	
 	Created	: Florent Nguyen
 	Task: Customer Performance Report
-	Date: 2013-11-21
+	Date: 2013-11-29
 	DB: DBARC.bodb_Archive
 	Original: 
 	Revision:
