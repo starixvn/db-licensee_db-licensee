@@ -122,7 +122,7 @@ GROUP BY
 INSERT INTO bodb_LicenseeReport.dbo.rptCustomerTurnOver  
 SELECT *
 FROM #DATATEMP
-DROP TABLE  #datatemp
+DROP TABLE  #DATATEMP
 
 GO
 GO
