@@ -74,6 +74,7 @@ AS
 	WHERE EventTime BETWEEN @fromdate AND @todate
 )
 
+INSERT INTO DB052.bodb_LicenseeReport.dbo.rptCustomerTurnOver  
 SELECT 
 	  a.CustID, 
 	  a.bettype,
@@ -90,7 +91,7 @@ SELECT
 	  statusID,
 	  a.recommend,
 	  winlostdate
-INTO #DATATEMP 
+--INTO #DATATEMP 
 FROM  cte_bettrans a
 LEFT JOIN
 		dbo.MATCH_BK b WITH (NOLOCK) ON a.matchid = b.matchid
@@ -119,10 +120,11 @@ GROUP BY
 		if @@rowcount=0 break
 	END
 */
-INSERT INTO bodb_LicenseeReport.dbo.rptCustomerTurnOver  
+/*INSERT INTO DB052.bodb_LicenseeReport.dbo.rptCustomerTurnOver  
 SELECT *
 FROM #DATATEMP
-DROP TABLE  #datatemp
+*/
+DROP TABLE  #DATATEMP
 
 GO
 GO
