@@ -18,6 +18,9 @@ Revisions:
 	20120906@Jim: add virtual sport
 	20130722@Jim: add Virtual Horse Racing (Sporttype=181)
 	20130916@Jim: add Virtual Tennis (sporttype=186)
+	20131159@Jim:support :
+			+ 182 – Virtual Greyhounds
+			+ 184 – Virtual Motor Racing
 */
 /* sample test case:
 	exec Lrf_Result_SportSelByDate @EventDate='2013-10-06 00:00:00',@licenseeid=1
@@ -53,14 +56,16 @@ IF EXISTS (SELECT TOP 1 1 FROM #LicenseeProduct WHERE ProductID=4) -- LIve Casin
 	END	
 IF EXISTS (SELECT TOP 1 1 FROM #LicenseeProduct WHERE ProductID=5) -- Virtual Sports
 	BEGIN 
-	
 		INSERT INTO @LicenseeProduct
 		SELECT 180
 		UNION ALL 
 		SELECT 181
 		UNION ALL 
 		SELECT 186
-		
+		UNION ALL 
+		SELECT 182
+		UNION ALL 
+		SELECT 184
 	END	
 
 IF EXISTS (SELECT TOP 1 1 FROM #LicenseeProduct WHERE ProductID=6) -- RNG Casino
@@ -99,7 +104,6 @@ WHERE
 			OR ( mr.IsPending=1 AND match.eventstatus IN ('running','closed') )
 			OR ( mr.IsHTCal = 1 AND match.eventstatus ='running')
 		 )
-	AND (sports.sporttype <= 99 OR sports.sporttype IN( 161,162,180,181,186))
 UNION ALL 
 SELECT s.sporttype, s.sportname  
 FROM (  
