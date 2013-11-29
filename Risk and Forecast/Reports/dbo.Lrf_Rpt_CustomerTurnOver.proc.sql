@@ -1,7 +1,10 @@
-﻿set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
-
+﻿USE [bodb02]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_CustomerTurnOver]    Script Date: 25/11/2013 5:44:54 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
 
 
 ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
@@ -30,7 +33,8 @@ AS
 	Created	: Henry
 	Task: Customer Performance Report
 	Date: 2011-12-28
-	DB: DBRPT/BODB02
+	DB: DBLIC.BODB_LICENSEE
+	
 	Original: Lrf_Rpt_CustomerPerformance
 	Revision:
 	- 20120214@Henry: Seperate 3 options: Win/Loss/Draw (and all)
@@ -38,7 +42,8 @@ AS
     - 20130124@Daniel: Change link server alias
 	- 20130618@Jim:  Restrict permission of Licensee Users by currency
 	- 20131021@Jim: Add more products to Customer Turnover Report
-	- 20131127@Jim: support to return English Name for bettype when other language not ready 
+	- 20131121@Florent : improve performance.
+	
 	Parameter's Explanation:
 		- @ReportBy:  1: daily, 2: monthly
 		- @FilterBy:  1: Win, 2: Loss, 3: Draw
@@ -90,25 +95,17 @@ SELECT VAL bettypeID INTO #BettypeID FROM strSplit(@Bettype,',')
 SELECT 
 		b.typeID,
 		CASE @Langkey
-					WHEN 'zh-CN'	THEN CASE  WHEN (ISNULL(typenamecn,'')='' OR len(typenamecn)=0) THEN typenamee 
-												   ELSE typenamecn END
-							WHEN 'zh-TW'	THEN CASE  WHEN (ISNULL(typenamecn,'')='' OR len(typenamecn)=0) THEN typenamee 
-												   ELSE typenamecn END
-							WHEN 'th-TH'	THEN CASE  WHEN (ISNULL(typenameth,'')='' OR len(typenameth)=0) THEN typenamee 
-												   ELSE typenameth END
-							WHEN 'ja-JP'	THEN CASE  WHEN (ISNULL(typenamej,'')='' OR len(typenamej)=0) THEN typenamee 
-												   ELSE typenamej END
-							WHEN 'ko-KR'	THEN CASE  WHEN (ISNULL(typenameko,'')='' OR len(typenameko)=0) THEN typenamee 
-												   ELSE typenameko END
-							WHEN 'es'  	    THEN CASE  WHEN (ISNULL(typenameES,'')='' OR len(typenameES)=0) THEN typenamee 
-												   ELSE typenameES END
-							WHEN 'vi-VN'	THEN CASE  WHEN (ISNULL(typenamee,'')='' OR len(typenamee)=0) THEN typenamee 
-												   ELSE typenamee END
-							ELSE typenamee END typenamee
+					WHEN 'zh-CN'	THEN typenamcn
+					WHEN 'zh-TW'	THEN typenamecn
+					WHEN 'th-TH'	THEN typenameth
+					WHEN 'ja-JP'	THEN typenamej
+					WHEN 'ko-KR'	THEN typenameko
+					WHEN 'es'  	    THEN typenameES
+					WHEN 'vi-VN'	THEN typenamee
+					ELSE typenamee END typenamee
 INTO #bettype		
-FROM 
-		dbo.bettype  b WITH (NOLOCK)
-		INNER JOIN #BettypeID bt ON b.typeid=bt.bettypeID
+FROM dbo.bettype  b WITH (NOLOCK)
+INNER JOIN #BettypeID bt ON b.typeid=bt.bettypeID
 				
 SELECT  @PageIndex = @PageIndex - 1 ,
             @RowStart = @PageSize * @PageIndex + 1 ,
@@ -125,7 +122,7 @@ ELSE
 			SELECT LicenseeID
 				  ,CustID
 				  ,Currency
-			FROM DBLIC.bodb_licensee.dbo.LicenseeCust  WITH (NOLOCK)
+			FROM bodb_licensee.dbo.LicenseeCust  WITH (NOLOCK)
 			WHERE
 				LicenseeID=@LicenseeID
 				AND (Currency=@CurrencyID OR (@CurrencyID=0))
@@ -136,7 +133,7 @@ ELSE
 		SELECT  re.CustID
 		INTO #recommend
 		FROM cte_recommend re
-			INNER JOIN DBLIC.bodb_licensee.dbo.CurrencyUser c WITH (NOLOCK) ON re.LicenseeID=c.LicenseeID AND re.Currency=c.CurrencyID
+			INNER JOIN bodb_licensee.dbo.CurrencyUser c WITH (NOLOCK) ON re.LicenseeID=c.LicenseeID AND re.Currency=c.CurrencyID
 		WHERE 
 			c.usrID=@userID 
 			AND c.SystemID=1 -- System is default=1 (LRF)	
@@ -144,7 +141,7 @@ ELSE
 			
 			
 		SELECT lc.CustID INTO #Currency
-		FROM DBLIC.bodb_licensee.dbo.LicenseeCustInfo lc WITH (NOLOCK) 
+		FROM bodb_licensee.dbo.LicenseeCustInfo lc WITH (NOLOCK) 
 		WHERE
 			recommend IN (SELECT CustID FROM #recommend)
 		DROP TABLE 	#recommend
@@ -154,7 +151,7 @@ ELSE
 			BEGIN 
 				
 				SELECT @CustID = cr.CustID 
-				FROM Customer cr (NOLOCK)
+				FROM dbo.Customer cr (NOLOCK)
 					INNER JOIN #Currency c ON cr.CustID=c.CustID
 				WHERE (username2 LIKE '%$' + @Username+'%' AND @LicenseeID=8)
 					  OR (username2 LIKE '%$' + @Username)	
@@ -162,7 +159,7 @@ ELSE
 				IF ISNULL(@CustID,0) = 0
 				BEGIN
 					SELECT @CustID = cr.CustID 
-					FROM Customer cr(NOLOCK)
+					FROM dbo.Customer cr(NOLOCK)
 						INNER JOIN #Currency c ON cr.CustID=c.CustID
 					WHERE username = @Username
 				END
@@ -210,11 +207,9 @@ ELSE
 				b.PlayerComm ,
 				b.Odds,
 				b.Oddstype
-			FROM bettrans b WITH (NOLOCK)
+			FROM dbo.bettrans b WITH (NOLOCK)
 			INNER JOIN #bettype bet  ON b.bettype=bet.typeID
-			LEFT JOIN match m WITH (NOLOCK) ON b.matchid = m.matchid
-			LEFT JOIN outright o with(nolock) ON b.matchid = o.orid 
-			LEFT JOIN league l with(nolock) ON o.leagueid = l.leagueid
+			LEFT JOIN dbo.match m WITH (NOLOCK) ON b.matchid = m.matchid
 			WHERE 
 				b.CustID IN (SELECT CustID FROM #Currency) AND 
 				 b.winlostdate BETWEEN @TempFromDate AND @todate
@@ -243,11 +238,9 @@ ELSE
 				b.PlayerComm,
 				b.Odds,
 				b.Oddstype
-			FROM bettrans14 b WITH (NOLOCK)
+			FROM dbo.bettrans14 b WITH (NOLOCK)
 			INNER JOIN #bettype bet  ON b.bettype=bet.typeID
-			LEFT JOIN match14 m WITH (NOLOCK) ON b.matchid = m.matchid
-			LEFT JOIN outright14 o with(nolock) ON b.matchid = o.orid 
-			LEFT JOIN league l with(nolock) ON o.leagueid = l.leagueid
+			LEFT JOIN dbo.match14 m WITH (NOLOCK) ON b.matchid = m.matchid
 			WHERE 
 				b.CustID IN (SELECT CustID FROM #Currency) AND 
 				 b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
@@ -262,15 +255,14 @@ ELSE
 			ELSE
 				SET @TempToDate = @todate
 			
-			;WITH cte_temp_bk
+			;with cte_temp_bk
 			AS
 			(
 			SELECT 
 					bk.winlostdate,
 					bk.CustID,
-					CASE WHEN bk.bettype NOT IN (9,10,29) THEN m.sporttype ELSE 1 END sporttype,
+					bk.sporttype sporttype,
 					bk.bettype,
-					bk.matchid,
 					bk.currency,
 					bk.stake as turnover,
 					bk.winlost - bk.actual_stake as winlost,
@@ -278,16 +270,23 @@ ELSE
 					bk.Odds,
 					bk.oddstype,
 					bk.statusID
-			FROM 
-					bodb_archive.dbo.bettrans_bk bk WITH (NOLOCK,INDEX=IX_custid)
-					LEFT JOIN bodb_archive.dbo.MATCH_BK m WITH (NOLOCK) ON bk.matchid = m.matchid
+			FROM					
+					bodb_LicenseeReport.dbo.rptcustomerturnOver bk WITH (NOLOCK,INDEX=IX_custid)
+					INNER JOIN bodb_licensee.dbo.LicenseeCust lc ON bk.Recommend=lc.CustID
+					INNER JOIN #Currency c ON bk.CUSTID=c.custid
 					WHERE
-							bk.CustID IN (SELECT CustID FROM #Currency)
-							 AND bk.winlostdate BETWEEN @fromdate AND @TempToDate
+							 exists (SELECT CustID FROM #Currency c WHERE c.custid=bk.CUSTID)
+							 AND 
+							 bk.winlostdate BETWEEN @fromdate AND @TempToDate
 							 and bk.bettype IN (SELECT typeid from #bettype)
 							 AND (bk.CustID = @CustID OR @CustID=0)
-							
-			)				
+							 AND bodb_LicenseeReport.$partition.pf_rptcustomerturnOver_monthly(winlostdate)
+							  IN 
+							 (select bodb_LicenseeReport.$PARTITION.pf_rptcustomerturnOver_monthly(@fromDate)
+							 UNION 
+							 select bodb_LicenseeReport.$PARTITION.pf_rptcustomerturnOver_monthly(@ToDate)
+							 )
+			)							
 			INSERT INTO #Data
 			SELECT 
 				b.CustID,
@@ -307,8 +306,7 @@ ELSE
 
 		
 		UPDATE #Data
-		SET odds = CASE WHEN OddsType = 1 THEN odds + 1 --decimal
-						WHEN OddsType = 2 THEN Odds + 1 --hongkong to decimal
+		SET odds = CASE WHEN OddsType IN (1,2) THEN odds + 1 
 						WHEN OddsType IN (3,4) THEN --malay and indo to decimal
 												CASE 
 													WHEN odds < 0 THEN (1 -  cast(1 as float) / cast(odds AS float))
@@ -361,7 +359,7 @@ ELSE
 		FROM #Data b
 			INNER JOIN dbo.Customer c WITH (NOLOCK) ON b.CustID=c.CustID 
 			INNER JOIN #bettype bt WITH (NOLOCK) ON b.bettype = bt.typeid
-			INNER JOIN exchange e WITH (NOLOCK) ON b.currency = e.exchangeid
+			INNER JOIN dbo.exchange e WITH (NOLOCK) ON b.currency = e.exchangeid
 		WHERE 
 			b.Sporttype IN (SELECT sportID FROM #ProductID)
 			AND b.Odds >= @Odds

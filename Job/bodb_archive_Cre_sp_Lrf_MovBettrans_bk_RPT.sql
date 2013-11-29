@@ -15,7 +15,7 @@ AS
 /*	
 	Created	: Florent Nguyen
 	Task: Customer Performance Report
-	Date: 2013-11-21
+	Date: 2013-11-30
 	DB: DBARC.bodb_Archive
 	Original: 
 	Revision:
@@ -115,7 +115,7 @@ WHILE (1=1)
 	--WAITFOR DELAY '00:00';
 		delete top(10000) from #DATATEMP 
 		output deleted.*
-		into bodb_LicenseeReport.dbo.rptCustomerTurnOver
+		into DB052.bodb_LicenseeReport.dbo.rptCustomerTurnOver
 		if @@rowcount=0 break
 	END
 DROP TABLE  #datatemp
