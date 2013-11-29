@@ -160,7 +160,7 @@ ALTER DATABASE bodb_LicenseeReport ADD FILE (NAME = N'FN_After14M12', FILENAME =
 /****** Object:  Table [dbo].[rptCustomerTurnOver]    Script Date: 21/11/2013 3:09:12 PM ******/
 
 IF NOT EXISTS (SELECT * FROM sys.partition_functions WHERE name = N'pf_rptCustomerTurnOver_monthly')
-CREATE PARTITION FUNCTION pf_rptCustomerTurnOver_monthly (datetime) AS RANGE LEFT 
+CREATE PARTITION FUNCTION pf_rptCustomerTurnOver_monthly (SMALLDATETIME) AS RANGE LEFT 
 FOR VALUES (N'2008-12-01T00:00:00.000',
 N'2009-01-01T00:00:00.000', N'2009-02-01T00:00:00.000', N'2009-03-01T00:00:00.000', N'2009-04-01T00:00:00.000', 
 N'2009-05-01T00:00:00.000', N'2009-06-01T00:00:00.000', N'2009-07-01T00:00:00.000', N'2009-08-01T00:00:00.000', 
@@ -238,7 +238,7 @@ CREATE TABLE [dbo].[rptCustomerTurnOver](
 	[ODDSTYPE] [tinyint] NULL,
 	[STATUSID] [tinyint] NULL,
 	[Recommend] [int] NULL,
-	[WinLostDate] [datetime] NULL
+	[WinLostDate] [SMALLDATETIME] NULL
 )
  ON ps_rptCustomerTurnOver_monthly(WinLostDate)
 
