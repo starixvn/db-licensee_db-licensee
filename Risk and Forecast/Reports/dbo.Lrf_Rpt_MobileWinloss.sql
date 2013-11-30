@@ -177,10 +177,6 @@ IF @ShowVS = 1
 BEGIN
 	INSERT  INTO @sporttype( Sporttype) 
 	SELECT 180
-	UNION ALL 
-	SELECT 181 
-	UNION ALL 
-	SELECT 186 
 	
 	INSERT INTO @bettype(bettype)
 	SELECT typeid FROM bettype (NOLOCK)

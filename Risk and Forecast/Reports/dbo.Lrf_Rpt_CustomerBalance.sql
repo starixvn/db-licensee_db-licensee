@@ -69,11 +69,6 @@ IF @ShowNG = 1 INSERT INTO @sporttype(sporttype) VALUES(161)
 IF @ShowLC = 1 INSERT INTO @sporttype(sporttype) VALUES(162)  
 IF @ShowVS = 1 INSERT INTO @sporttype(sporttype)
 				SELECT 180
-				UNION ALL 
-				SELECT 181 
-				UNION ALL
-				SELECT 186
-				
 				
 IF @ShowCS = 1 INSERT INTO @sporttype(sporttype) VALUES(251) -- RNG Casino  
 IF @ShowBG = 1 INSERT INTO @sporttype(sporttype) VALUES(252) -- Bingo    

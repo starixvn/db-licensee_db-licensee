@@ -10,6 +10,9 @@ Original: Lrf_CustomerSelMember_MinMaxBet181
 
 Revisions:
    -20131007@Jim: offer Virtual Tennis
+   - 20131129@Jim: support :
+			182 – Virtual Greyhounds
+			184 – Virtual Motor Racing
 Param's Explanation:
 • @CustID: customer id.   
 */
@@ -17,14 +20,20 @@ Param's Explanation:
 DECLARE	@UserName VARCHAR(30), @recommend INT
 
 DECLARE @minminbet180 MONEY,
-			@maxmaxbet180 MONEY,
-			@maxmaxpermatch180 MONEY,
-			@minminbet181 MONEY,
-			@maxmaxbet181 MONEY,
-			@maxmaxpermatch181 MONEY,
-			@minminbet186 MONEY,
-			@maxmaxbet186 MONEY,
-			@maxmaxpermatch186 MONEY
+		@maxmaxbet180 MONEY,
+		@maxmaxpermatch180 MONEY,
+		@minminbet181 MONEY,
+		@maxmaxbet181 MONEY,
+		@maxmaxpermatch181 MONEY,
+		@minminbet182 MONEY,
+		@maxmaxbet182 MONEY,
+		@maxmaxpermatch182 MONEY,
+		@minminbet184 MONEY,
+		@maxmaxbet184 MONEY,
+		@maxmaxpermatch184 MONEY,
+		@minminbet186 MONEY,
+		@maxmaxbet186 MONEY,
+		@maxmaxpermatch186 MONEY
 			
 SELECT @UserName = username, @recommend = recommend
 from customer with (NOLOCK)
@@ -39,7 +48,7 @@ SELECT cs.sporttype,
 from 
 	Dep_CustSetting3rd as cs WITH (NOLOCK)
 	INNER JOIN custinfo as ci WITH (NOLOCK) on (cs.CustID = ci.Recommend or cs.CustID = ci.MRecommend or cs.CustID = ci.SRecommend)
-	AND cs.bettype IN(1201,1231,1232,1233,1237,1238,1220) AND cs.sporttype IN (180,181,186)
+	AND cs.bettype IN(1201,1231,1232,1233,1237,1238,1220) AND cs.sporttype IN (180,181,182,184,186)
 WHERE ci.custid = @recommend
 		
 SELECT
@@ -57,7 +66,23 @@ FROM #tempMinMax
 WHERE 
 	bettype IN (1231,1232,1233,1237,1238)
 	AND sporttype=181
+	
+SELECT
+	@MinMinBet182 =Max(CASE WHEN MinBet = 0 THEN NULL ELSE MinBet END), 
+	@MaxMaxBet182 = Min(CASE WHEN MaxBet = 0 THEN NULL ELSE MaxBet END)
+FROM #tempMinMax
+WHERE 
+	bettype IN (1231,1232,1233,1237,1238)
+	AND sporttype=182
 
+SELECT
+	@MinMinBet184 =Max(CASE WHEN MinBet = 0 THEN NULL ELSE MinBet END), 
+	@MaxMaxBet184 = Min(CASE WHEN MaxBet = 0 THEN NULL ELSE MaxBet END)
+FROM #tempMinMax
+WHERE 
+	bettype IN (1231,1232,1233,1237,1238)
+	AND sporttype=184
+	
 SELECT
 	@MinMinBet186 =Max(CASE WHEN MinBet = 0 THEN NULL ELSE MinBet END), 
 	@MaxMaxBet186 = Min(CASE WHEN MaxBet = 0 THEN NULL ELSE MaxBet END)
@@ -70,6 +95,8 @@ DROP TABLE #tempMinMax
 
 SELECT @MaxMaxperMatch180 = Min(CASE WHEN cs.maxpermatch180 = 0 THEN NULL ELSE cs.maxpermatch180 END)
 	   ,@MaxMaxperMatch181 = Min(CASE WHEN cs.maxpermatch181 = 0 THEN NULL ELSE cs.maxpermatch181 END)	
+	   ,@MaxMaxperMatch182 = Min(CASE WHEN cs.maxpermatch182 = 0 THEN NULL ELSE cs.maxpermatch182 END)	
+	   ,@MaxMaxperMatch184 = Min(CASE WHEN cs.maxpermatch184 = 0 THEN NULL ELSE cs.maxpermatch184 END)	
 	   ,@MaxMaxperMatch186 = Min(CASE WHEN cs.maxpermatch186 = 0 THEN NULL ELSE cs.maxpermatch186 END)	
 from 
 	custinfo as cs WITH (NOLOCK) 
@@ -99,6 +126,33 @@ SELECT isnull(@minminbet181,0) minminbet,
 FROM custinfo ci WITH(NOLOCK)
 INNER JOIN Dep_CustSetting3rd cs ON ci.custid = cs.custid
 WHERE ci.custid = @custid AND cs.bettype IN(1231,1232,1233,1237,1238) AND cs.sporttype =181
+
+UNION ALL
+SELECT isnull(@minminbet182,0) minminbet,
+		isnull(@maxmaxbet182,0) maxmaxbet,
+		isnull(@maxmaxpermatch182,0) maxmaxpermatch,
+		0 AS maxpermatch_min,
+		ci.maxpermatch182 maxpermatch,
+		cs.minbet,
+		cs.maxbet,
+		cs.sporttype	
+FROM custinfo ci WITH(NOLOCK)
+INNER JOIN Dep_CustSetting3rd cs ON ci.custid = cs.custid
+WHERE ci.custid = @custid AND cs.bettype IN(1231,1232,1233,1237,1238) AND cs.sporttype =182
+
+UNION ALL
+SELECT isnull(@minminbet184,0) minminbet,
+		isnull(@maxmaxbet184,0) maxmaxbet,
+		isnull(@maxmaxpermatch184,0) maxmaxpermatch,
+		0 AS maxpermatch_min,
+		ci.maxpermatch184 maxpermatch,
+		cs.minbet,
+		cs.maxbet,
+		cs.sporttype	
+FROM custinfo ci WITH(NOLOCK)
+INNER JOIN Dep_CustSetting3rd cs ON ci.custid = cs.custid
+WHERE ci.custid = @custid AND cs.bettype IN(1231,1232,1233,1237,1238) AND cs.sporttype =184
+
 UNION ALL
 SELECT isnull(@minminbet186,0) minminbet,
 		isnull(@maxmaxbet186,0) maxmaxbet,
