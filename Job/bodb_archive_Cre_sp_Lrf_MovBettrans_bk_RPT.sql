@@ -15,7 +15,7 @@ AS
 /*	
 	Created	: Florent Nguyen
 	Task: Customer Performance Report
-	Date: 2013-11-21
+	Date: 2013-11-30
 	DB: DBARC.bodb_Archive
 	Original: 
 	Revision:
@@ -93,7 +93,7 @@ SELECT
 INTO #DATATEMP 
 FROM  cte_bettrans a
 LEFT JOIN
-		dbo.MATCH_BK b WITH (NOLOCK,index=pk_match_bk) ON a.matchid = b.matchid
+		dbo.MATCH_BK b WITH (NOLOCK) ON a.matchid = b.matchid
 LEFT JOIN 
 		cte_raceinfo result ON  a.oddsid=result.Orid
 
@@ -109,16 +109,20 @@ GROUP BY
 	 oddstype,
 	 statusID,
 	winlostdate
-WHILE (1=1)
+/*WHILE (1=1)
 	BEGIN
 	--delay 1minute?
 	--WAITFOR DELAY '00:00';
 		delete top(10000) from #DATATEMP 
 		output deleted.*
-		into bodb_LicenseeReport.dbo.rptCustomerTurnOver
+		into DB052.bodb_LicenseeReport.dbo.rptCustomerTurnOver
 		if @@rowcount=0 break
 	END
-DROP TABLE  #datatemp
+*/
+INSERT INTO bodb_LicenseeReport.dbo.rptCustomerTurnOver  
+SELECT *
+FROM #DATATEMP
+DROP TABLE  #DATATEMP
 
 GO
 GO
