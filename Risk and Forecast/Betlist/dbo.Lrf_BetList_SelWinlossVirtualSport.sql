@@ -19,6 +19,9 @@ Revisions:
      - 20121004@Jim: replace @currencyname input param by @currencyID
 	 - 20130514@Jim: Restrict permission of Licensee Users by currency
 	 - 20130904@Jim: support Virtual Horse Racing
+	 - 20131129@Jim: support :
+				182 – Virtual Greyhounds
+				184 – Virtual Motor Racing
 */
 
 
@@ -139,7 +142,7 @@ BEGIN
 	-- VHR
 	UNION ALL 
 	 SELECT TOP (@RowEnd)
-	  181,  
+	  180,  
 	  b.custid,
 	  b.username,  	  
 	  b.bettype,    	    
@@ -244,7 +247,7 @@ BEGIN
 	 -- VHR
 	UNION ALL 
 	 SELECT TOP (@RowEnd)
-	  181,  
+	  180,  
 	  b.custid,
 	  b.username,  	  
 	  b.bettype,    	    

@@ -400,7 +400,7 @@ BEGIN
 	INSERT INTO @SumTemp 
 	SELECT 
 		currency,
-		ISNULL(- SUM(CASE WHEN ISNULL(b.isBA,0) = 0 AND (b.sporttype IN (0,161,162,180,181,186,251,252))  THEN b.winlost ELSE 0 END),0) AS SelectedMonthLicenseeWL,
+		ISNULL(- SUM(CASE WHEN ISNULL(b.isBA,0) = 0 AND (b.sporttype IN (0,161,162,180,251,252))  THEN b.winlost ELSE 0 END),0) AS SelectedMonthLicenseeWL,
 		ISNULL(- SUM ( CASE WHEN ISNULL(b.isBA,0) = 1 THEN  (b.winlost+b.awinlost+b.comm) ELSE 0 END),0) AS SelectedMonthAmtDuetoBA,
 		ISNULL(- SUM ( CASE WHEN b.sporttype = 151 THEN (b.winlost+b.awinlost+b.comm) ELSE 0 END),0) AS SelectedMonthAmtDuetoRB,
 		ISNULL(SUM (CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END),0) AS SelectedMonthWinlossRB,
@@ -423,7 +423,7 @@ BEGIN
 	INSERT INTO @SumTemp
 	SELECT 
 		currency,
-		ISNULL(- SUM(CASE WHEN ISNULL(b.isBA,0) = 0 AND ( b.sporttype IN (0,161,162,180,181,186,251,252))  THEN b.winlost ELSE 0 END),0) AS SelectedMonthLicenseeWL,
+		ISNULL(- SUM(CASE WHEN ISNULL(b.isBA,0) = 0 AND ( b.sporttype IN (0,161,162,180,251,252))  THEN b.winlost ELSE 0 END),0) AS SelectedMonthLicenseeWL,
 		ISNULL(- SUM ( CASE WHEN ISNULL(b.isBA,0) = 1 THEN  (b.winlost+b.awinlost+b.comm) ELSE 0 END),0) AS SelectedMonthAmtDuetoBA,
 		ISNULL(- SUM ( CASE WHEN b.sporttype = 151 THEN (b.winlost+b.awinlost+b.comm) ELSE 0 END),0) AS SelectedMonthAmtDuetoRB,
 		ISNULL(SUM (CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END),0) AS SelectedMonthWinlossRB,

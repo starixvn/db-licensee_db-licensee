@@ -123,7 +123,10 @@ GROUP BY
 /*INSERT INTO DB052.bodb_LicenseeReport.dbo.rptCustomerTurnOver  
 SELECT *
 FROM #DATATEMP
+<<<<<<< HEAD
 */
+=======
+>>>>>>> 0ca1058ba31292124994d6b2f36df06f814e91eb
 DROP TABLE  #DATATEMP
 
 GO

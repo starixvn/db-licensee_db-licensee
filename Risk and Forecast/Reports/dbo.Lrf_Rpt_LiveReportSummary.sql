@@ -231,8 +231,6 @@ BEGIN
 				WHEN 161 THEN 'NG'
 				WHEN 162 THEN 'LC'
 				WHEN 180 THEN 'VS'
-				WHEN 181 THEN 'VS'
-				WHEN 186 THEN 'VS'
 				WHEN 251 THEN 'CS'
 				WHEN 252 THEN 'BG'
 			END 
@@ -241,7 +239,7 @@ BEGIN
 		SUM(b.winlost),  
 		SUM(CASE WHEN ISNULL(b.isBA,0) = 1 THEN 0 
 			ELSE 
-				CASE WHEN b.sporttype IN (0,161,162,180,181,186,251,252)  THEN -1 * b.winlost 
+				CASE WHEN b.sporttype IN (0,161,162,180,251,252)  THEN -1 * b.winlost 
 					WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END
 			END) AS LicenseeWL ,
 		SUM (comm ) as Comm,
