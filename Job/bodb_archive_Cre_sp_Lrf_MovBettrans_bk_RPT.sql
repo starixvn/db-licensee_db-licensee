@@ -90,6 +90,7 @@ SELECT
 	  oddstype,
 	  statusID,
 	  a.recommend,
+	  b.Leagueid,
 	  winlostdate
 --INTO #DATATEMP 
 FROM  cte_bettrans a
@@ -109,6 +110,7 @@ GROUP BY
 	 Odds,
 	 oddstype,
 	 statusID,
+	 b.Leagueid,
 	winlostdate
 /*WHILE (1=1)
 	BEGIN

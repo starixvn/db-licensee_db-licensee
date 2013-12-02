@@ -238,6 +238,7 @@ CREATE TABLE [dbo].[rptCustomerTurnOver](
 	[ODDSTYPE] [tinyint] NULL,
 	[STATUSID] [tinyint] NULL,
 	[Recommend] [int] NULL,
+	Leagueid INT NULL,
 	[WinLostDate] [SMALLDATETIME] NULL
 )
  ON ps_rptCustomerTurnOver_monthly(WinLostDate)
@@ -272,6 +273,11 @@ CREATE NONCLUSTERED INDEX [IX_WLDATE] ON [dbo].[rptCustomerTurnOver]
 ON ps_rptCustomerTurnOver_monthly(WinLostDate)
 
 GO
+
+CREATE NONCLUSTERED INDEX [IX_Leagueid] ON [dbo].[rptCustomerTurnOver]
+(
+	[Leagueid] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) 
 
 /* 
 DROP TABLE [rptCustomerTurnOver]
