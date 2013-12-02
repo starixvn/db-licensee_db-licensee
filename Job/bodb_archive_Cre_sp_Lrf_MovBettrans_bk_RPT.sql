@@ -90,15 +90,7 @@ SELECT
 	  oddstype,
 	  statusID,
 	  a.recommend,
-<<<<<<< HEAD
-	  b.leagueid,
-=======
-<<<<<<< HEAD
-	  b.leagueid,
-=======
 	  b.Leagueid,
->>>>>>> 23cb208c23d3e6c87b0345387d8056c3afd58d38
->>>>>>> df186d79381a41cf806227b4749219a2eec6b33f
 	  winlostdate
 --INTO #DATATEMP 
 FROM  cte_bettrans a
