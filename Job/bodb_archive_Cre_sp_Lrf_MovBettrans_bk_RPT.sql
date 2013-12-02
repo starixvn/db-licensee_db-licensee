@@ -90,6 +90,7 @@ SELECT
 	  oddstype,
 	  statusID,
 	  a.recommend,
+	  b.leagueid,
 	  winlostdate
 --INTO #DATATEMP 
 FROM  cte_bettrans a
@@ -108,6 +109,7 @@ GROUP BY
 	  a.Currency,
 	 Odds,
 	 oddstype,
+	 b.leagueid,
 	 statusID,
 	winlostdate
 /*WHILE (1=1)
@@ -123,13 +125,7 @@ GROUP BY
 /*INSERT INTO DB052.bodb_LicenseeReport.dbo.rptCustomerTurnOver  
 SELECT *
 FROM #DATATEMP
-<<<<<<< HEAD
 */
-<<<<<<< HEAD
-=======
-=======
->>>>>>> 0ca1058ba31292124994d6b2f36df06f814e91eb
->>>>>>> 741c0435e5c5ee8a518bc1e43da8a1fd1d1d17c3
 DROP TABLE  #DATATEMP
 
 GO
