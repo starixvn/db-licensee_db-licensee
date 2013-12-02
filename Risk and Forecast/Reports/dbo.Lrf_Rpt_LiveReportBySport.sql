@@ -27,6 +27,9 @@ Revisions:
 	-20130625@Jim: support to view currency UUS
 	-20130809@Jim: offer Virtual Horse Racing
 	-20131007@Jim: support Virtual Tennis
+	- 20131129@Jim: support :
+				182 – Virtual Greyhounds
+				184 – Virtual Motor Racing
 Param's Explanation:  
   
 Example:  
@@ -124,7 +127,17 @@ BEGIN
 	IF @ProductCode = '' OR @ProductCode = 'RB' OR @ProductCode = 'NG' OR @ProductCode = 'SB' OR @ProductCode = 'LC' OR @ProductCode = 'VS' OR @ProductCode = 'CS' OR @ProductCode = 'BG'
 	BEGIN  
 		SELECT @sql = @sql + '--Get data from bettrans for non-BA' + char(13)
-		
+	 
+		SELECT @sql = @sql + '--Get data for Virtual Horse Racing,Virtual Greyhounds,Virtual Motor Racing ' + char(13)
+		SELECT @sql = @sql +'SELECT 
+							DISTINCT
+							o.Orid,	
+							r.SportType
+							INTO #tmpVS	
+							 FROM VSOutright o with (nolock)
+							 INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
+							 WHERE EventDate BETWEEN ''' + convert(varchar(10),@TempFromDate, 120) + ''' AND ''' + convert(varchar(10),@TDate, 120) + '''' + char(13) 
+	
 		SELECT @sql = @sql + 'INSERT INTO #tmpWinloss' + char(13) +
 					'SELECT ' + char(13) +
 						'b.winlostdate,' + char(13) +
@@ -134,7 +147,7 @@ BEGIN
 							'WHEN b.bettype BETWEEN 81 AND 120 THEN 161 --NG' + char(13) +
 							'WHEN b.bettype BETWEEN 1101 AND 1199 THEN 162 --LC' + char(13) +
 							'WHEN (b.bettype BETWEEN 1201 AND 1299) AND b.bettype NOT IN (1231,1232,1233,1237,1238,1220,1235,1236) THEN 180 --VS' + char(13) +
-							'WHEN b.bettype IN (1231,1232,1233,1237,1238) THEN 181 ' + char(13) + --VHS
+							'WHEN b.bettype IN (1231,1232,1233,1237,1238) THEN vs.SportType ' + char(13) + --VHR+V.Greyhounds+V.Motor Racing
 							'WHEN b.bettype IN (1220,1235,1236) THEN 186 ' + char(13) + --Virtual Tennis
 							'WHEN b.bettype = 9 THEN 101 --Mix Parlay' + char(13) +
 							'WHEN b.bettype = 29 THEN 102 --System Parlay' + char(13) +
@@ -155,8 +168,8 @@ BEGIN
 						'LEFT JOIN outright o with(nolock) ON b.matchid = o.orid' + char(13) +
 						'LEFT JOIN league l with(nolock) ON o.leagueid = l.leagueid' + char(13) +
 						'LEFT JOIN [match] m with(nolock) ON b.matchid = m.matchid' + char(13) +
+						'LEFT JOIN #tmpVS vs ON b.oddsid=vs.Orid AND b.bettype IN (1231,1232,1233,1237,1238,1220,1235,1236)'+char(13)+	
 					'WHERE b.winlostdate BETWEEN ''' + convert(varchar(10),@TempFromDate, 120) + ''' AND ''' + convert(varchar(10),@TDate, 120) + '''' + char(13) +
-						'AND b.Bettype <= 1299' + char(13) +
 						'AND b.statusID IN (111,112,113)' + char(13) +
 						'AND BA.transid IS NULL' + char(13) +
 						CASE 
@@ -175,7 +188,7 @@ BEGIN
 							'WHEN b.bettype BETWEEN 81 AND 120 THEN 161 --NG' + char(13) +
 							'WHEN b.bettype BETWEEN 1101 AND 1199 THEN 162 --LC' + char(13) +
 							'WHEN (b.bettype BETWEEN 1201 AND 1299) AND b.bettype NOT IN (1231,1232,1233,1237,1238,1220,1235,1236) THEN 180 --VS' + char(13) +
-							'WHEN b.bettype IN (1231,1232,1233,1237,1238) THEN 181 '+char(13)+ --VHS
+							'WHEN b.bettype IN (1231,1232,1233,1237,1238) THEN vs.SportType '+char(13)+  --VHR+V.Greyhounds+V.Motor Racing
 							'WHEN b.bettype IN (1220,1235,1236) THEN 186 ' +char(13) + --Virtual Tennis
 							'WHEN b.bettype = 9 THEN 101 --Mix Parlay' + char(13) +
 							'WHEN b.bettype = 29 THEN 102 --System Parlay' + char(13) +
@@ -183,6 +196,8 @@ BEGIN
 							'WHEN b.bettype = 71 THEN 251 -- RNG Casino' + char(13) +
 							'WHEN b.bettype = 73 THEN 252 -- Bingo' + char(13) +
 							'ELSE m.SportType END ' + char(13) 
+		
+				SELECT @sql = @sql + 'DROP TABLE #tmpVS' + char(13)
 	END  
   
 END  
@@ -236,7 +251,7 @@ BEGIN
 	IF @ProductCode = '' OR @ProductCode='RB' OR @ProductCode='NG' OR @ProductCode='SB' OR @ProductCode = 'LC' OR @ProductCode = 'VS' OR @ProductCode = 'CS' OR @ProductCode = 'BG'
 	BEGIN
 		SELECT @sql = @sql + '--Get data from rpt_Betting for non-BA' + char(13)
-		
+	
 		SELECT @sql = @sql + 'INSERT INTO #tmpWinloss' + char(13) +
 					'SELECT ' + char(13) +
 						'b.rptDate,' + char(13) +
@@ -246,7 +261,7 @@ BEGIN
 							'WHEN b.bettype BETWEEN 81 AND 120 THEN 161 --NG' + char(13) +
 							'WHEN b.bettype BETWEEN 1101 AND 1199 THEN 162 --LC' + char(13) +
 							'WHEN (b.bettype BETWEEN 1201 AND 1299) AND b.bettype NOT IN (1231,1232,1233,1237,1238,1220,1235,1236) THEN 180 --VS' + char(13) +
-							'WHEN b.bettype IN (1231,1232,1233,1237,1238) THEN 181 --VHR' + char(13) +
+							'WHEN b.bettype IN (1231,1232,1233,1237,1238) THEN r.SportType' + char(13) +
 							'WHEN b.bettype IN (1220,1235,1236) THEN 186 --V Tennis' + char(13) +
 							'WHEN b.bettype = 9 THEN 101 --Mix Parlay' + char(13) +
 							'WHEN b.bettype = 29 THEN 102 --System Parlay' + char(13) +
@@ -264,6 +279,7 @@ BEGIN
 					'FROM bodb_Licensee.dbo.rpt_Betting b WITH ( NOLOCK )' 	+ char(13) +
 						'INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID'+char(13)+
 						'LEFT JOIN league l WITH (NOLOCK) ON b.LeagueID = l.LeagueID' 	+ char(13) +
+						'LEFT JOIN vsraceinfo r WITH (NOLOCK) ON b.LeagueID = r.LeagueID AND b.bettype IN (1231,1232,1233,1237,1238,1220,1235,1236)'+char(13)+	
 					'WHERE b.rptDate BETWEEN ''' + convert(varchar(10),@FDate, 120) + ''' AND ''' + convert(varchar(10),@TempToDate, 120) + '''' + char(13) + 
 						'AND b.status NOT IN (-1,103)' + char(13) +
 						'AND b.siteID ='  + convert(varchar(10), @LicenseeID ) + char(13) +
@@ -284,7 +300,7 @@ BEGIN
 							'WHEN b.bettype BETWEEN 81 AND 120 THEN 161 --NG' + char(13) +
 							'WHEN b.bettype BETWEEN 1101 AND 1199 THEN 162 --LC' + char(13) +
 							'WHEN (b.bettype BETWEEN 1201 AND 1299) AND b.bettype NOT IN (1231,1232,1233,1237,1238,1220,1235,1236) THEN 180 --VS' + char(13) +
-							'WHEN b.bettype IN (1231,1232,1233,1237,1238) THEN 181'+char(13)+
+							'WHEN b.bettype IN (1231,1232,1233,1237,1238) THEN r.SportType'+char(13)+
 							'WHEN b.bettype IN (1220,1235,1236) THEN 186 --V Tennis' + char(13) +
 							'WHEN b.bettype = 9 THEN 101 --Mix Parlay' + char(13) +
 							'WHEN b.bettype = 29 THEN 102 --System Parlay' + char(13) +
