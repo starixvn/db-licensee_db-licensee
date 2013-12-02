@@ -111,6 +111,7 @@ GROUP BY
 	 oddstype,
 	 b.leagueid,
 	 statusID,
+	 b.Leagueid,
 	winlostdate
 /*WHILE (1=1)
 	BEGIN
