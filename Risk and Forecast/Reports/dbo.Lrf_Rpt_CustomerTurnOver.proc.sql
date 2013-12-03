@@ -88,7 +88,7 @@ DECLARE @Status AS TABLE
 
 DECLARE @RowStart INT ,
           @RowEnd INT ,
-		  @TotalRow INT		
+		  @TotalRow INT	,@i INT 	
 SELECT VAL sportID INTO #ProductID FROM strSplit(@Product,',')
 SELECT VAL bettypeID INTO #BettypeID FROM strSplit(@Bettype,',')
 
@@ -255,53 +255,117 @@ ELSE
 			ELSE
 				SET @TempToDate = @todate
 			
-			;with cte_temp_bk
-			AS
-			(
-			SELECT 
-					bk.winlostdate,
-					bk.CustID,
-					bk.sporttype sporttype,
-					bk.bettype,
-					bk.currency,
-					bk.stake as turnover,
-					bk.winlost - bk.actual_stake as winlost,
-					bk.PlayerComm,
-					bk.Odds,
-					bk.oddstype,
-					bk.statusID
-			FROM					
-					bodb_LicenseeReport.dbo.rptcustomerturnOver bk WITH (NOLOCK,INDEX=IX_custid)
-					INNER JOIN bodb_licensee.dbo.LicenseeCust lc ON bk.Recommend=lc.CustID
-					INNER JOIN #Currency c ON bk.CUSTID=c.custid
-					WHERE
-							 exists (SELECT CustID FROM #Currency c WHERE c.custid=bk.CUSTID)
-							 AND 
-							 bk.winlostdate BETWEEN @fromdate AND @TempToDate
-							 and bk.bettype IN (SELECT typeid from #bettype)
-							 AND (bk.CustID = @CustID OR @CustID=0)
-							 AND bodb_LicenseeReport.$partition.pf_rptcustomerturnOver_monthly(winlostdate)
-							  IN 
-							 (select bodb_LicenseeReport.$PARTITION.pf_rptcustomerturnOver_monthly(@fromDate)
-							 UNION 
-							 select bodb_LicenseeReport.$PARTITION.pf_rptcustomerturnOver_monthly(@ToDate)
-							 )
-			)							
+			IF YEAR(@fromDate) <>2013 --case when in this year then use old code.
+		BEGIN		
+
+			WITH cte_temp_bk
+			AS (
+				SELECT bk.winlostdate
+					,bk.CustID
+					,CASE 
+						WHEN bk.bettype NOT IN (9, 10, 29)
+							THEN m.sporttype
+						ELSE 1
+						END sporttype
+					,bk.bettype
+					,bk.matchid
+					,bk.currency
+					,bk.stake AS turnover
+					,bk.winlost - bk.actual_stake AS winlost
+					,bk.PlayerComm
+					,bk.Odds
+					,bk.oddstype
+					,bk.statusID
+				FROM bodb_archive.dbo.bettrans_bk bk WITH (
+						NOLOCK
+						,INDEX = IX_custid
+						)
+				LEFT JOIN bodb_archive.dbo.MATCH_BK m WITH (NOLOCK) ON bk.matchid = m.matchid
+				WHERE bk.CustID IN (
+						SELECT CustID
+						FROM #Currency
+						)
+					AND bk.winlostdate BETWEEN @fromdate AND @TempToDate
+					AND bk.bettype IN (
+						SELECT typeid
+						FROM #bettype
+						)
+					AND (
+						bk.CustID = @CustID
+						OR @CustID = 0
+					)					
+				)
 			INSERT INTO #Data
-			SELECT 
-				b.CustID,
-				b.winlostdate,
-				b.sporttype,
-				b.bettype,
-				currency,
-				b.turnover,
-				b.winlost,
-				b.PlayerComm,
-				b.Odds,
-				b.Oddstype
-			FROM cte_temp_bk  b
-			WHERE 
-				  b.statusID IN (SELECT StatusID FROM @Status)
+			SELECT b.CustID
+				,b.winlostdate
+				,b.sporttype
+				,b.bettype
+				,currency
+				,b.turnover
+				,b.winlost
+				,b.PlayerComm
+				,b.Odds
+				,b.Oddstype
+			FROM cte_temp_bk b
+			WHERE b.statusID IN (
+					SELECT StatusID
+					FROM @Status
+			)
+			
+		END
+		ELSE
+		BEGIN
+
+			SELECT @i = bodb_LicenseeReport.$PARTITION.pf_rptcustomerturnOver_monthly(@fromDate);
+
+			WITH cte_temp_bk
+			AS (
+				SELECT bk.winlostdate
+					,bk.CustID
+					,bk.sporttype sporttype
+					,bk.bettype
+					,bk.currency
+					,bk.stake AS turnover
+					,bk.winlost - bk.actual_stake AS winlost
+					,bk.PlayerComm
+					,bk.Odds
+					,bk.oddstype
+					,bk.statusID
+				FROM bodb_LicenseeReport.dbo.rptcustomerturnOver bk WITH (NOLOCK)
+				--INNER JOIN bodb_licensee.dbo.LicenseeCust lc ON bk.Recommend=lc.CustID				
+				WHERE bk.custid IN (
+						SELECT CustID FROM #Currency
+						)
+					AND bk.winlostdate BETWEEN @fromdate AND @TempToDate
+					AND bk.bettype IN (
+						SELECT b.typeid
+						FROM #bettype b
+							--WHERE  bk.bettype=b.typeid 
+						)
+					AND (
+						bk.CustID = @CustID
+						OR @CustID = 0
+						)
+					AND bodb_LicenseeReport.$PARTITION.pf_rptcustomerturnOver_monthly(winlostdate) IN (@i,@i+1)
+					AND bk.STATUSID IN ( SELECT statusid FROM @Status)
+				)
+			INSERT INTO #Data
+			SELECT b.CustID
+				,b.winlostdate
+				,b.sporttype
+				,b.bettype
+				,currency
+				,b.turnover
+				,b.winlost
+				,b.PlayerComm
+				,b.Odds
+				,b.Oddstype
+			FROM cte_temp_bk b
+			/*WHERE b.statusID IN (
+					SELECT StatusID
+					FROM @Status
+					)*/
+		END
 		END
 
 		

@@ -68,7 +68,7 @@ AS
 , cte_raceinfo
 AS 
 (
-	SELECT  o.Orid,r.SportType
+	SELECT  o.Orid,r.SportType,r.LeagueID
 	FROM dbo.VSOutright_bk  o WITH (NOLOCK)
 	INNER JOIN bodb02.dbo.VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID  
 	WHERE EventTime BETWEEN @fromdate AND @todate
@@ -90,7 +90,9 @@ SELECT
 	  oddstype,
 	  statusID,
 	  a.recommend,
-	  b.Leagueid,
+	  CASE 
+		WHEN a.bettype IN (1231,1232,1233,1237,1238) THEN result.LeagueID 
+		ELSE b.LeagueID END LeagueID,
 	  winlostdate
 --INTO #DATATEMP 
 FROM  cte_bettrans a
@@ -111,7 +113,8 @@ GROUP BY
 	 oddstype,
 	 b.leagueid,
 	 statusID,
-	 b.Leagueid,
+	 CASE  WHEN a.bettype IN (1231,1232,1233,1237,1238) THEN result.LeagueID 
+		ELSE b.LeagueID END,
 	winlostdate
 /*WHILE (1=1)
 	BEGIN
