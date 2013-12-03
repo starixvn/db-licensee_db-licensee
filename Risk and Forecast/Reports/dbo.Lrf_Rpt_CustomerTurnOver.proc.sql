@@ -255,7 +255,7 @@ ELSE
 			ELSE
 				SET @TempToDate = @todate
 			
-			IF YEAR(@fromDate) <>2013
+			IF YEAR(@fromDate) <>2013 --case when in this year then use old code.
 		BEGIN		
 
 			WITH cte_temp_bk
@@ -315,7 +315,6 @@ ELSE
 		END
 		ELSE
 		BEGIN
-			PRINT '222222222222222222';
 
 			SELECT @i = bodb_LicenseeReport.$PARTITION.pf_rptcustomerturnOver_monthly(@fromDate);
 
