@@ -2,6 +2,7 @@
 set QUOTED_IDENTIFIER ON
 go
 
+
 ALTER  PROCEDURE [dbo].[Lrf_Rpt_MatchWinLossByBettype]  
 	@LicenseeID INT,  
 	@UserID		INT,
@@ -797,7 +798,7 @@ FROM Lrf_f_GetExchangeDaily(@_Date,@_Date)
 -- Result  
 SELECT      
 	matchid,  
-	homeid,  
+	CASE WHEN b.sporttype IN (180,181,182,184) THEN 0 ELSE homeid END homeid,  
 	awayid,  
 	bettype,
 	sporttype,	
@@ -830,8 +831,8 @@ SELECT
 	CAST(SUM(AmtDuetoRB) AS MONEY) AS AmtDuetoRB,  
 	CAST(SUM((AmtDuetoRB) * e.USD) AS MONEY) AS AmtDuetoRBUSD,  
 	CAST(SUM((AmtDuetoRB) * e.EUR) AS MONEY) AS AmtDuetoRBEUR,  
-	race,  
-	matchcode,  
+	 CASE WHEN b.sporttype IN (181,182,184) THEN '' ELSE race END race,  
+	CASE WHEN b.sporttype IN (180,181,182,184) THEN 0 ELSE matchcode END matchcode ,  
 	isNeutral,  
 	liveindicator  
 FROM    
@@ -840,21 +841,21 @@ FROM
  INNER JOIN @ExchangeDaily e ON b.winlostdate = e.ExchangeDate AND b.currency = e.ExchangeId  
 GROUP BY    
     matchid,  
-    homeid,  
+    CASE WHEN b.sporttype IN (180,181,182,184) THEN 0 ELSE homeid END,  
     awayid,  
     bettype,
 	sporttype,	
-    matchcode,  
+    CASE WHEN b.sporttype IN (180,181,182,184) THEN 0 ELSE matchcode END ,  
     leagueid,  
     isNeutral,  
-    race,  
+    CASE WHEN b.sporttype IN (181,182,184) THEN '' ELSE race END ,  
     liveindicator  
       
 DROP TABLE #TempBetList      
 
    
+   
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_MatchWinLossByBettype] TO [bodbLicenseeNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_MatchWinLossByBettype] TO vnteam
-
