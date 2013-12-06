@@ -832,7 +832,7 @@ SELECT
 	CAST(SUM((AmtDuetoRB) * e.USD) AS MONEY) AS AmtDuetoRBUSD,  
 	CAST(SUM((AmtDuetoRB) * e.EUR) AS MONEY) AS AmtDuetoRBEUR,  
 	 CASE WHEN b.sporttype IN (181,182,184) THEN '' ELSE race END race,  
-	CASE WHEN b.sporttype IN (180,181,182,184) THEN 0 ELSE matchcode END matchcode ,  
+	CASE WHEN b.sporttype IN (180,181,182,184) THEN '' ELSE matchcode END matchcode ,  
 	isNeutral,  
 	liveindicator  
 FROM    
@@ -845,7 +845,7 @@ GROUP BY
     awayid,  
     bettype,
 	sporttype,	
-    CASE WHEN b.sporttype IN (180,181,182,184) THEN 0 ELSE matchcode END ,  
+    CASE WHEN b.sporttype IN (180,181,182,184) THEN '' ELSE matchcode END ,  
     leagueid,  
     isNeutral,  
     CASE WHEN b.sporttype IN (181,182,184) THEN '' ELSE race END ,  
