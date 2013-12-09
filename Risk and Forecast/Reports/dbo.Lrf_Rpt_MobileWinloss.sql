@@ -2,6 +2,7 @@
 set QUOTED_IDENTIFIER ON
 go
 
+
 ALTER PROCEDURE [dbo].[Lrf_Rpt_MobileWinloss]  
  @LicenseeID	INT,
  @UserID		INT,
