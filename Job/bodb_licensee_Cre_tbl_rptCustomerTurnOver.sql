@@ -157,7 +157,7 @@ ALTER DATABASE bodb_LicenseeReport ADD FILE (NAME = N'FN_After14M12', FILENAME =
 
 
 ---
-/****** Object:  Table [dbo].[rptCustomerTurnOver]    Script Date: 21/11/2013 3:09:12 PM ******/
+/****** Object:  Table dbo.rptCustomerTurnOver    Script Date: 21/11/2013 3:09:12 PM ******/
 
 IF NOT EXISTS (SELECT * FROM sys.partition_functions WHERE name = N'pf_rptCustomerTurnOver_monthly')
 CREATE PARTITION FUNCTION pf_rptCustomerTurnOver_monthly (SMALLDATETIME) AS RANGE RIGHT  
@@ -225,63 +225,54 @@ GO
 
 			
 */
-CREATE TABLE [dbo].[rptCustomerTurnOver](
-	[CUSTID] [int] NOT NULL,
-	[BETTYPE] [smallint] NULL,
-	[SPORTTYPE] [smallint] NULL,
-	[CURRENCY] [tinyint] NULL,
-	[STAKE] [money] NOT NULL,
-	[WINLOST] [money] NULL,
-	[ACTUAL_STAKE] [money] NULL,
-	[PLAYERCOMM] [money] NULL,
-	[ODDS] [money] NULL,
-	[ODDSTYPE] [tinyint] NULL,
-	[STATUSID] [tinyint] NULL,
-	[Recommend] [int] NULL,
-	[Leagueid] INT NULL,
-	[WinLostDate] [SMALLDATETIME] NULL
+CREATE TABLE dbo.rptCustomerTurnover(
+	custid int NOT NULL,
+	bettype smallint NULL,
+	sporttype smallint NULL,
+	currency tinyint NULL,
+	stake money NOT NULL,
+	winlost money NULL,
+	actual_stake money NULL,
+	playercomm money NULL,
+	odds money NULL,
+	oddstype tinyint NULL,
+	statusid tinyint NULL,
+	recommend int NULL,
+	leagueid INT NULL,
+	winlostdate SMALLDATETIME NULL
 )
- ON ps_rptCustomerTurnOver_monthly(WinLostDate)
+--ON ps_rptCustomerTurnOver_monthly(WinLostDate)
 
-GO
 GO
 SET ANSI_PADDING OFF
-GO
-ALTER AUTHORIZATION ON [dbo].[rptCustomerTurnOver] TO  SCHEMA OWNER 
-GO
-GRANT SELECT ON [dbo].[rptCustomerTurnOver] TO [bodbAdminNet] AS [dbo]
 GO 
-GRANT SELECT ON [dbo].[rptCustomerTurnOver] TO [bodbExtAccNet] AS [dbo]
-GO
-GRANT SELECT ON [dbo].[rptCustomerTurnOver] TO [bodbLicenseeNet] AS [dbo]
+GRANT SELECT ON dbo.rptCustomerTurnover TO bodbLicenseeNet AS dbo
 GO 
-
-/****** Object:  Index [IX_CUSTID]    Script Date: 21/11/2013 3:09:12 PM ******/
-CREATE NONCLUSTERED INDEX [IX_CUSTID] ON [dbo].[rptCustomerTurnOver]
-(
-	[CUSTID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) 
-
-
-GO
-
-/****** Object:  Index [IX_WLDATE]    Script Date: 21/11/2013 3:09:12 PM ******/
-CREATE CLUSTERED INDEX [IX_WLDATE] ON [dbo].[rptCustomerTurnOver]
-(
-	[WinLostDate] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON)
-ON ps_rptCustomerTurnOver_monthly(WinLostDate)
+GRANT VIEW DEFINITION ON dbo.rptCustomerTurnover TO vnteam AS dbo
 GO
 
 
-CREATE NONCLUSTERED INDEX IX_leagueidID ON bodb_LicenseeReport.dbo.rptCustomerTurnOver
+CREATE CLUSTERED INDEX CIX_winlostdate ON dbo.rptCustomerTurnover
 (
-	leagueid ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) 
+	winlostdate ASC
+) --ON ps_rptCustomerTurnOver_monthly(WinLostDate)
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON rptCustomerTurnOverData
+GO
 
+/****** Object:  Index IX_custid    Script Date: 10/12/2013 11:31:50 AM ******/
+CREATE NONCLUSTERED INDEX IX_custid ON dbo.rptCustomerTurnover
+(
+	custid ASC,
+	leagueID ASC,
+	bettype ASC,
+	recommend ASC
+)
+INCLUDE ( 	odds,
+	statusID) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON rptCustomerTurnOverIndex
+GO
 
 /* 
-DROP TABLE [rptCustomerTurnOver]
+DROP TABLE rptCustomerTurnOver
 DROP PARTITION SCHEME  ps_rptCustomerTurnOver_monthly
 DROP PARTITION FUNCTION pf_rptCustomerTurnOver_monthly
 */
