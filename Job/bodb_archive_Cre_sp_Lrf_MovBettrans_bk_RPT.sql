@@ -1,14 +1,13 @@
 USE [bodb_archive]
 GO
 
-/****** Object:  StoredProcedure [dbo].[Lrf_MovBettrans_bk_RPT]    Script Date: 21/11/2013 3:10:57 PM ******/
 SET ANSI_NULLS ON
 GO
 
 SET QUOTED_IDENTIFIER ON
 GO
 
-CREATE PROCEDURE [dbo].[Lrf_MovBettrans_bk_RPT]
+CREATE PROCEDURE [dbo].[Task_rptLicMoveSumBettrans_bk]
     @Fromdate smalldatetime,
 	@Todate smalldatetime
 AS
@@ -131,12 +130,6 @@ SELECT *
 FROM #DATATEMP
 */
 --DROP TABLE  #DATATEMP
-
-GO
-GO
-ALTER AUTHORIZATION ON [dbo].[Lrf_MovBettrans_bk_RPT] TO  SCHEMA OWNER 
-GO
-GRANT EXECUTE ON [dbo].[Lrf_MovBettrans_bk_RPT] TO [bodbLicenseeNet] AS [dbo]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_MovBettrans_bk_RPT] TO [vnteam] AS [dbo]
 GO
