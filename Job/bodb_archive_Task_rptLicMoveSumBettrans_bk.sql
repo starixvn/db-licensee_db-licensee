@@ -32,7 +32,6 @@ AS
 	  a.recommend,
 		a.matchid,	
 	  a.bettype,
-	  --lc.currency,
 	  sum(a.stake)stake,
 	  sum(a.winlost)winlost,
 	  sum(a.actual_stake) actual_stake,
@@ -49,19 +48,25 @@ AS
 	  a.recommend,
 	  a.matchid,	
 	  a.bettype,
-	  --lc.currency,
 	  a.Odds,
 	  a.oddsid,
 	  a.oddstype,
 	  a.statusID,
 	  a.winlostdate
 	)
-, cte_bettrans
+,cte_tempLicenseeCust
+AS 
+	(
+		SELECT currency,custid
+		FROM DBLIC.bodb_licensee.dbo.LicenseeCust lc WITH (NOLOCK)
+	)
+
+,cte_bettrans
 AS 
 	(
 		SELECT  a.*,LC.currency
 		FROM TEMPS a with (nolock)
-		INNER JOIN bodb_licensee.dbo.LicenseeCust lc WITH (NOLOCK) 
+		INNER JOIN cte_tempLicenseeCust lc WITH (NOLOCK) 
 		ON a.recommend=lc.custid
 	)
 , cte_raceinfo
@@ -93,7 +98,6 @@ SELECT
 		WHEN a.bettype IN (1231,1232,1233,1237,1238) THEN result.LeagueID 
 		ELSE b.LeagueID END LeagueID,
 	  winlostdate
---INTO #DATATEMP 
 FROM  cte_bettrans a
 LEFT JOIN
 		dbo.MATCH_BK b WITH (NOLOCK) ON a.matchid = b.matchid
