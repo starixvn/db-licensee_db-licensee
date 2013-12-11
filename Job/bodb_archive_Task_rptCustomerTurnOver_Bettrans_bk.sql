@@ -7,7 +7,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-CREATE PROCEDURE [dbo].[Task_rptLicMoveSumBettrans_bk]
+CREATE PROCEDURE [dbo].[Task_rptCustomerTurnOver_Bettrans_bk]
     @Fromdate smalldatetime,
 	@Todate smalldatetime
 AS
@@ -32,7 +32,6 @@ AS
 	  a.recommend,
 		a.matchid,	
 	  a.bettype,
-	  --lc.currency,
 	  sum(a.stake)stake,
 	  sum(a.winlost)winlost,
 	  sum(a.actual_stake) actual_stake,
@@ -49,19 +48,25 @@ AS
 	  a.recommend,
 	  a.matchid,	
 	  a.bettype,
-	  --lc.currency,
 	  a.Odds,
 	  a.oddsid,
 	  a.oddstype,
 	  a.statusID,
 	  a.winlostdate
 	)
-, cte_bettrans
+,cte_tempLicenseeCust
+AS 
+	(
+		SELECT currency,custid
+		FROM DBLIC.bodb_licensee.dbo.LicenseeCust lc WITH (NOLOCK)
+	)
+
+,cte_bettrans
 AS 
 	(
 		SELECT  a.*,LC.currency
 		FROM TEMPS a with (nolock)
-		INNER JOIN bodb_licensee.dbo.LicenseeCust lc WITH (NOLOCK) 
+		INNER JOIN cte_tempLicenseeCust lc WITH (NOLOCK) 
 		ON a.recommend=lc.custid
 	)
 , cte_raceinfo
@@ -93,7 +98,6 @@ SELECT
 		WHEN a.bettype IN (1231,1232,1233,1237,1238) THEN result.LeagueID 
 		ELSE b.LeagueID END LeagueID,
 	  winlostdate
---INTO #DATATEMP 
 FROM  cte_bettrans a
 LEFT JOIN
 		dbo.MATCH_BK b WITH (NOLOCK) ON a.matchid = b.matchid
@@ -115,21 +119,7 @@ GROUP BY
 	 CASE  WHEN a.bettype IN (1231,1232,1233,1237,1238) THEN result.LeagueID 
 		ELSE b.LeagueID END,
 	winlostdate
-/*WHILE (1=1)
-	BEGIN
-	--delay 1minute?
-	--WAITFOR DELAY '00:00';
-		delete top(10000) from #DATATEMP 
-		output deleted.*
-		into DB052.bodb_LicenseeReport.dbo.rptCustomerTurnOver
-		if @@rowcount=0 break
-	END
-*/
-/*INSERT INTO DB052.bodb_LicenseeReport.dbo.rptCustomerTurnOver  
-SELECT *
-FROM #DATATEMP
-*/
---DROP TABLE  #DATATEMP
+
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_MovBettrans_bk_RPT] TO [vnteam] AS [dbo]
+GRANT VIEW DEFINITION ON [dbo].[Task_rptCustomerTurnOver_Bettrans_bk] TO [vnteam] AS [dbo]
 GO
