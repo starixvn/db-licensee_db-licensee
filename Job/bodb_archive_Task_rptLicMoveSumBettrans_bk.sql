@@ -115,21 +115,7 @@ GROUP BY
 	 CASE  WHEN a.bettype IN (1231,1232,1233,1237,1238) THEN result.LeagueID 
 		ELSE b.LeagueID END,
 	winlostdate
-/*WHILE (1=1)
-	BEGIN
-	--delay 1minute?
-	--WAITFOR DELAY '00:00';
-		delete top(10000) from #DATATEMP 
-		output deleted.*
-		into DB052.bodb_LicenseeReport.dbo.rptCustomerTurnOver
-		if @@rowcount=0 break
-	END
-*/
-/*INSERT INTO DB052.bodb_LicenseeReport.dbo.rptCustomerTurnOver  
-SELECT *
-FROM #DATATEMP
-*/
---DROP TABLE  #DATATEMP
+
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_MovBettrans_bk_RPT] TO [vnteam] AS [dbo]
 GO
