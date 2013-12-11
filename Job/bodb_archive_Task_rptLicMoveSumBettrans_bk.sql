@@ -117,5 +117,5 @@ GROUP BY
 	winlostdate
 
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_MovBettrans_bk_RPT] TO [vnteam] AS [dbo]
+GRANT VIEW DEFINITION ON [dbo].[Task_rptCustomerTurnOver_Bettrans_bk] TO [vnteam] AS [dbo]
 GO
