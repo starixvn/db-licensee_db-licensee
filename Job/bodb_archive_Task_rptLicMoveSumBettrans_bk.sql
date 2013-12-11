@@ -7,7 +7,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-CREATE PROCEDURE [dbo].[Task_rptLicMoveSumBettrans_bk]
+CREATE PROCEDURE [dbo].[Task_rptCustomerTurnOver_Bettrans_bk]
     @Fromdate smalldatetime,
 	@Todate smalldatetime
 AS
