@@ -1,4 +1,12 @@
-﻿
+﻿USE [bodb02]
+GO
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
 
 ALTER  PROCEDURE [dbo].[Lrf_Rpt_LiveReportSummaryDetail]      
 	@LicenseeID INT , 
@@ -232,21 +240,13 @@ BEGIN
 	--Not BA
 	IF @ProductCode = '' OR @ProductCode='RB' OR @ProductCode='NG' OR @ProductCode='SB' OR @ProductCode='LC' OR @ProductCode='VS' OR @ProductCode='CS' OR @ProductCode='BG'
 	BEGIN
-		SELECT @sql = @sql + '--Get data from rpt_Betting for non-BA' + char(13)
-		SELECT @sql = @sql + 'SELECT
-							r.LeagueID,
-							r.sporttype
-						INTO #tmpVS14
-						FROM
-							dbo.VsRaceinfo r WITH (NOLOCK)' +char(13)
+	
 		SELECT @sql = @sql + 'INSERT INTO #tmpWinloss' + char(13) +
 					'SELECT ' + char(13) +
 						'b.rptDate,' + char(13) +
 						'b.currencyID,' + char(13) +
 						'b.bettype,' + char(13) +
-						'CASE WHEN b.bettype IN (1231,1232,1233,1237,1238) THEN vs.sporttype 
-								 ELSE ISNULL(m.sporttype,1) 
-								 END sporttype,'  + char(13) +
+						'l.sporttype,'  + char(13) +
 						'SUM(b.turnover * CASE WHEN b.bettype=33 AND b.status IN (114,115) THEN 0.5 ELSE 1 END) turnover,' + char(13) + 	
 						'sum(b.winloss) winlost,' + char(13) +
 						'SUM(CASE WHEN bettype BETWEEN 31 AND 33 THEN b.WinlossA ELSE  -1 * b.winloss END) AS LicenseeWL,' + char(13) + 
@@ -256,8 +256,7 @@ BEGIN
 						'sum(b.betcount) BetCount' + char(13) + 
 					'FROM bodb_Licensee.dbo.rpt_Betting b WITH ( NOLOCK )' + char(13) +	
 					'INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID'+char(13)+
-					'LEFT JOIN #tmpVS14 vs ON  b.leagueID=vs.leagueID' + char(13) +  ----here
-					'LEFT JOIN dbo.match14 m WITH (NOLOCK) ON b.LeagueID=m.LeagueID' + char(13) +
+					'INNER JOIN dbo.League l WITH (NOLOCK) ON b.leagueID=l.leagueID'+char(13)+
 					'WHERE b.rptDate BETWEEN ''' + convert(varchar(10),@FDate, 120) + ''' AND ''' + convert(varchar(10),@TempToDate, 120) + '''' + char(13) + 
 						'AND b.status NOT IN (-1,103)' + char(13) +
 						'AND b.siteID ='  + convert(varchar(10), @LicenseeID ) + char(13) +
@@ -272,10 +271,8 @@ BEGIN
 							WHEN @ProductCode='CS' THEN 'AND b.bettype = 71'
 							WHEN @ProductCode='BG' THEN 'AND b.bettype = 73'
 							ELSE '' END + char(13) +
-					'GROUP BY b.rptDate, b.currencyID, b.bettype,CASE WHEN b.bettype IN (1231,1232,1233,1237,1238) THEN vs.sporttype 
-								 ELSE ISNULL(m.sporttype,1) 
-								 END' + char(13)  	
-		SELECT @sql = @sql + 'DROP TABLE #tmpVS14' + char(13)				
+					'GROUP BY b.rptDate, b.currencyID, b.bettype,l.sporttype' + char(13)  	
+			
 	END
 
 END   
@@ -357,15 +354,7 @@ SELECT @sql = @sql + 'SELECT b.bettype,' + char(13) +
 			
 IF (@debug = 1) PRINT @sql
 ELSE EXEC(@sql)
- 
-
 GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_LiveReportSummaryDetail] TO [bodbLicenseeNet]
+GRANT EXECUTE ON [dbo].[Lrf_Rpt_LiveReportSummaryDetail] TO [bodbLicenseeNet] AS [dbo]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LiveReportSummaryDetail] TO [vnteam]    
-
-/*
-exec Lrf_Rpt_LiveReportSummaryDetail_878 @LicenseeID=2,@userID=1,@CurrencyID=0,@ProductCode='BA',
-@FromDate='Jul  1 2012 12:00:00:000AM',@ToDate='Jul 27 2012 12:00:00:000AM',
-@MoveBetsDay='Jul 16 2012 12:00:00:000AM',@Debug=1
-*/
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LiveReportSummaryDetail] TO [vnteam] AS [dbo]
