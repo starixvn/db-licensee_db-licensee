@@ -1,6 +1,10 @@
-﻿set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
+﻿USE [bodb02]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_LiveReportBySport]    Script Date: 12/12/2013 3:01:11 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
 
 
 ALTER   PROCEDURE [dbo].[Lrf_Rpt_LiveReportBySport]      
@@ -261,7 +265,12 @@ BEGIN
 					'SELECT ' + char(13) +
 						'b.rptDate,' + char(13) +
 						'b.currencyID,' + char(13) +
-						'l.SportType,' + char(13) +
+						'CASE WHEN b.bettype = 9    THEN 101
+							  WHEN b.bettype  = 29   THEN 102
+							  WHEN b.bettype  = 10 	 THEN 103
+							  ELSE ISNULL(l.sporttype,0) 
+							END		
+						SportType,' + char(13) +
 						'SUM(b.turnover * CASE WHEN b.bettype=33 AND b.status IN (114,115) THEN 0.5 ELSE 1 END) turnover,' 	+ char(13) +
 						'sum(b.winloss) winlost,' 	+ char(13) +
 						'SUM(CASE WHEN bettype BETWEEN 31 AND 33 THEN b.WinlossA ELSE  -1 * b.winloss END) AS LicenseeWL,' 	+ char(13) +
@@ -271,7 +280,7 @@ BEGIN
 						'sum(b.betcount) BetCount' 	+ char(13) +
 					'FROM bodb_Licensee.dbo.rpt_Betting b WITH ( NOLOCK )' 	+ char(13) +
 						'INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID'+char(13)+
-						'INNER JOIN league l WITH (NOLOCK) ON b.LeagueID = l.LeagueID' 	+ char(13) +
+						'LEFT JOIN league l WITH (NOLOCK) ON b.LeagueID = l.LeagueID' 	+ char(13) +
 					'WHERE b.rptDate BETWEEN ''' + convert(varchar(10),@FDate, 120) + ''' AND ''' + convert(varchar(10),@TempToDate, 120) + '''' + char(13) + 
 						'AND b.status NOT IN (-1,103)' + char(13) +
 						'AND b.siteID ='  + convert(varchar(10), @LicenseeID ) + char(13) +
@@ -287,7 +296,11 @@ BEGIN
 							WHEN @ProductCode='BG' THEN 'AND b.bettype = 73'
 							ELSE '' END + char(13) +
 					'GROUP BY b.rptDate, b.currencyID, ' 	+ char(13) +
-						'l.sporttype' + char(13) 
+						'CASE WHEN b.bettype = 9    THEN 101
+							  WHEN b.bettype  = 29   THEN 102
+							  WHEN b.bettype  = 10 	 THEN 103
+							  ELSE ISNULL(l.sporttype,0)  
+							END' + char(13) 
 		
 	END
 END   
@@ -324,9 +337,9 @@ SELECT @sql = @sql + 'select b.SportType, ' + char(13) +
 						'CAST(SUM(Comm * e.USD) AS MONEY) AS CommUSD, ' + char(13) + 
 						'CAST(SUM(Playercomm * e.USD) AS MONEY) AS PlayerCommUSD, ' + char(13) + 
 						'CAST(SUM(AmtDueto3rd*e.USD) AS MONEY) AS AmtDueto3rdUSD ' + char(13) + 
-					'from #tmpWinloss b  WITH (NOLOCK)  ' + char(13) + 
-						'INNER JOIN #TempExchange e '+char(13)+
-						'ON e.ExchangeDate = b.winlostdate   AND e.exchangeid = b.currency ' + char(13) + 
+					'FROM #tmpWinloss b ' + char(13) + 
+					'INNER JOIN #TempExchange e '+char(13)+
+					'ON e.ExchangeDate = b.winlostdate   AND e.exchangeid = b.currency ' + char(13) + 
 					'group by b.SportType' + char(13) + 
 			
 'DROP TABLE #tmpWinloss' + char(13)+
@@ -342,5 +355,4 @@ GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_LiveReportBySport] TO [bodbLicenseeNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LiveReportBySport] TO [vnteam] 
-
 
