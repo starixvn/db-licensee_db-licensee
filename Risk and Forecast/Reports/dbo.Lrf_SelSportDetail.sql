@@ -134,7 +134,7 @@ INSERT INTO @ProductSport(ID, Name, ParentID)
 		AND p1.ProductID  IN (5)
 		
 	UNION ALL
-	SELECT CASE p1.ProductID WHEN 5 THEN 181 END 
+	SELECT CASE p1.ProductID WHEN 5 THEN 184 END 
 			,CASE  p1.Productid WHEN 5 THEN 
 											CASE @Langkey												
 												WHEN 'es'  	    THEN N'Virtual Motor Racing'
@@ -147,7 +147,7 @@ INSERT INTO @ProductSport(ID, Name, ParentID)
 		AND p1.ProductID  IN (5)
 		
 	UNION ALL
-	SELECT CASE p1.ProductID WHEN 5 THEN 182 END 
+	SELECT CASE p1.ProductID WHEN 5 THEN 181 END 
 			,CASE  p1.Productid WHEN 5 THEN 
 											CASE @Langkey												
 												WHEN 'es'  	    THEN N'Virtual Horse Racing'
@@ -160,7 +160,7 @@ INSERT INTO @ProductSport(ID, Name, ParentID)
 		AND p1.ProductID  IN (5)
 		
 	UNION ALL
-	SELECT CASE p1.ProductID WHEN 5 THEN 184 END 
+	SELECT CASE p1.ProductID WHEN 5 THEN 182 END 
 			,CASE  p1.Productid WHEN 5 THEN 
 											CASE @Langkey												
 												WHEN 'es'  	    THEN N'Virtual Greyhounds'
