@@ -41,7 +41,7 @@ AS
 	- 20130618@Jim:  Restrict permission of Licensee Users by currency
 	- 20131021@Jim: Add more products to Customer Turnover Report
 	- 20131130@Florent: turning SP
-	- 20131205@Florent: add more product and search LIKE customer
+	- 20131205@Florent: add more product and search LIKE customer..
 	Parameter's Explanation:
 		- @ReportBy:  1: daily, 2: monthly
 		- @FilterBy:  1: Win, 2: Loss, 3: Draw
