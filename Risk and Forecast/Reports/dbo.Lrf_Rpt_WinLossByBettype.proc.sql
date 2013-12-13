@@ -1,4 +1,11 @@
-﻿CREATE  PROCEDURE [dbo].[Lrf_Rpt_WinLossByBettype]
+﻿USE [bodb02]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_WinLossByBettype]    Script Date: 12/12/2013 3:02:11 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER   PROCEDURE [dbo].[Lrf_Rpt_WinLossByBettype]
     @LicenseeID INT ,
 	@UserID		INT,
     @LicenseeType VARCHAR(100) = NULL ,
@@ -69,7 +76,6 @@ DROP TABLE #Currency
 CREATE TABLE #AgWinLoss
 (
 	bettype 		INT ,
-	sporttype		INT,
 	liveindicator 	BIT,
 	--winlostdate 	SMALLDATETIME,
 	--currency 		INT,
@@ -122,20 +128,9 @@ BEGIN
 		SET @TempFromDate =  DATEADD(DAY,1,@MoveBetsDay)
 	ELSE
 		SET @TempFromDate = @FDate
-	SELECT
-		v.Orid,
-		r.sporttype
-	INTO #tmpVS
-	FROM dbo.VsOutright v WITH (NOLOCK)	
-		INNER JOIN dbo.VsRaceinfo r WITH (NOLOCK) ON v.EventID=r.EventID
-	WHERE v.EventDate BETWEEN @TempFromDate AND @TDate
-	
 	INSERT  INTO #AgWinLoss
         SELECT  
 			bettype ,
-			CASE WHEN b.bettype IN (1231,1232,1233,1237,1238) THEN vs.sporttype 
-				 ELSE m.sporttype 
-				 END sporttype,
 			CASE WHEN b.bettype BETWEEN 81 AND 120 THEN b.liveindicator ELSE 0 END AS liveindicator,
 			--b.winlostdate,
 			--b.currency,
@@ -173,9 +168,7 @@ BEGIN
 			dbo.bettrans b WITH ( NOLOCK,index=CIX_recommend_matchid_bettype) 
 			LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON b.recommend=BA.recommend AND b.transid = BA.transid
 			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
-			LEFT JOIN dbo.match m WITH (NOLOCK) ON b.matchID=m.matchID
-			LEFT JOIN #tmpVS vs ON b.oddsid=vs.Orid
-        WHERE   
+		WHERE   
 			b.recommend in (SELECT custid from @TempAg) 
 			AND b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND bettype <= 1299
@@ -183,11 +176,8 @@ BEGIN
             AND b.ruben = 1
             AND statusID NOT IN ( 101, 102, 103 )
         GROUP BY bettype,
-				CASE WHEN b.bettype IN (1231,1232,1233,1237,1238) THEN vs.sporttype 
-				 ELSE m.sporttype 
-				 END,
 				 CASE WHEN b.bettype BETWEEN 81 AND 120 THEN b.liveindicator ELSE 0 END
-	DROP TABLE #tmpVS	
+	
 END
 
 IF @FDate <= @MoveBetsDay
@@ -200,20 +190,9 @@ BEGIN
 	IF @BalanceUpDay < @FDate 
 	SELECT @BalanceUpDay=@FDate	
 	
-	SELECT
-		v.Orid,
-		r.sporttype
-	INTO #tmpVS14
-	FROM dbo.VsOutright14 v WITH (NOLOCK)	
-		INNER JOIN dbo.VsRaceinfo r WITH (NOLOCK) ON v.EventID=r.EventID
-	WHERE v.EventDate BETWEEN  @BalanceUpDay AND @TempToDate
-	
 	INSERT  INTO #AgWinLoss
         SELECT  
 			bettype ,
-			CASE WHEN b.bettype IN (1231,1232,1233,1237,1238) THEN vs.sporttype 
-				 ELSE m.sporttype 
-				 END sporttype,
 			CASE WHEN b.bettype BETWEEN 81 AND 120 THEN b.liveindicator ELSE 0 END AS liveindicator,
 			--b.winlostdate,
 			--b.currency,
@@ -255,19 +234,13 @@ BEGIN
 			INNER JOIN @TempAg a ON b.recommend = a.custid
 			LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_bk BA WITH (NOLOCK) ON b.recommend=BA.recommend AND b.transid = BA.transid
 			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
-			LEFT JOIN dbo.match14 m WITH (NOLOCK) ON b.matchID=m.matchID
-			LEFT JOIN #tmpVS14 vs ON b.oddsid=vs.Orid
-        WHERE   
+		WHERE   
 			b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
             AND statusID NOT IN ( 101, 102, 103 )
             AND bettype <= 1299
             AND bettype not in (71,73)
         GROUP BY bettype,
-			CASE WHEN b.bettype IN (1231,1232,1233,1237,1238) THEN vs.sporttype 
-				 ELSE m.sporttype 
-				 END ,
 			CASE WHEN b.bettype BETWEEN 81 AND 120 THEN b.liveindicator ELSE 0 END--, b.winlostdate, b.currency	
-	DROP TABLE #tmpVS14		
 END
 
 
@@ -279,7 +252,6 @@ FROM    #AgWinLoss
 SELECT  wl.*
 FROM ( SELECT    
 				bettype ,
-				sporttype,
 				liveindicator,
                 SUM(TurnOver) 								 AS TurnOver ,
                 CAST(SUM(TurnOverEUR) 	   AS MONEY)	 AS TurnOverEUR ,
@@ -311,7 +283,7 @@ FROM ( SELECT
                 ROW_NUMBER() OVER ( ORDER BY bettype ) AS RowNum
           FROM      
 			#AgWinLoss b
-          GROUP BY  bettype,sporttype,liveindicator
+          GROUP BY  bettype,liveindicator
         ) wl
 WHERE   wl.RowNum BETWEEN @RowStart AND @RowEnd
 
@@ -348,11 +320,10 @@ FROM
 	
     
 DROP TABLE #AgWinLoss
-
-
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinLossByBettype] TO [bodbLicenseeNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_WinLossByBettype] TO [vnteam]
 GO
+
 

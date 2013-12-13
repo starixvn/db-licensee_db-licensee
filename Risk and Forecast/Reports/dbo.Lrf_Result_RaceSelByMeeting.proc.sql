@@ -224,7 +224,7 @@ BEGIN
 					AND vsr.EventStatus ='completed'	
 			 ) o 
 			INNER JOIN dbo.HRCode c WITH (NOLOCK) ON c.CodeID=o.teamid
-			WHERE	c.CodeType=11
+			--WHERE	c.CodeType=11
 			ORDER BY o.leagueid, o.kickofftime
 				
 	SELECT kickofftime,COUNT(place) rc INTO #DataSUMVHR
