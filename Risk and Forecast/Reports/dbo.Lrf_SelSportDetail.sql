@@ -13,6 +13,7 @@ DB: DBLIC/bodb_Licensee
 
 Revisions:
 	- 20131127@Jim: support multi language
+	- 20131205@Florent: add more bettype for V.Tennis, V.Racing
 Param's Explanation:
 	
 */
@@ -22,26 +23,26 @@ Param's Explanation:
 
 */
 DECLARE @ProductSport TABLE (
-	ID smallint
+	ID INT 
 	,Name nvarchar(50)
-	,ParentID tinyint
+	,ParentID smallint
 )
 
 INSERT INTO @ProductSport(ID, Name, ParentID)
-	SELECT 0
+	SELECT 0--cast(0 AS VARCHAR)
 			,
 			CASE @Langkey
-							WHEN 'zh-CN'	THEN N'????'
-							WHEN 'zh-TW'	THEN N'????'
-							WHEN 'th-TH'	THEN N'?????????????????????????'
-							WHEN 'ja-JP'	THEN N'??????? '
-							WHEN 'ko-KR'	THEN N'???? '
+							WHEN 'zh-CN'	THEN N'体育博彩'
+							WHEN 'zh-TW'	THEN N'體育博彩'
+							WHEN 'th-TH'	THEN N'อัตราค่าตอบแทนจากหน้ากีฬา'
+							WHEN 'ja-JP'	THEN N'スポーツベット '
+							WHEN 'ko-KR'	THEN N'스포츠북 '
 							WHEN 'es'  	    THEN N'Sportsbook'
-							WHEN 'vi-VN'	THEN N'Th? thao'
+							WHEN 'vi-VN'	THEN N'Thể thao'
 							ELSE N'Sportbook' END 
 			, NULL
 	UNION ALL
-	SELECT SportType
+	SELECT SportType--cast (SportType AS VARCHAR)
 			,CASE @Langkey
 			WHEN 'zh-CN'	THEN CASE  WHEN (ISNULL(SportNameCh,'')='' OR len(SportNameCh)=0) THEN SportName 
 												   ELSE SportNameCh END
@@ -62,43 +63,118 @@ INSERT INTO @ProductSport(ID, Name, ParentID)
 			, 0
 	FROM bodb02.dbo.Sports WITH(NOLOCK)
 	WHERE SportType <= 99
+	
+	/*
+	 * add more product
+	 */
+	 UNION ALL
+	 SELECT 999--cast(0 AS VARCHAR)
+			,
+			CASE @Langkey
+							/*WHEN 'zh-CN'	THEN N'体育博彩'
+							WHEN 'zh-TW'	THEN N'體育博彩'
+							WHEN 'th-TH'	THEN N'อัตราค่าตอบแทนจากหน้ากีฬา'
+							WHEN 'ja-JP'	THEN N'スポーツベット '
+							WHEN 'ko-KR'	THEN N'스포츠북 '*/
+							WHEN 'es'  	    THEN N'Virtual Sports'
+							WHEN 'vi-VN'	THEN N'Virtual Sports'
+							ELSE N'Virtual Sports' END 
+			, NULL
+	/*
+	* 	end 
+	*/
 	UNION ALL
-	SELECT CASE p1.ProductID WHEN 2 THEN 161
-										 WHEN 5 THEN 180	
+	SELECT CASE p1.ProductID WHEN 2 THEN 161--'161'
+										 WHEN 5 THEN 180--'180'	
 				END 
 			,CASE  p1.Productid WHEN 5 THEN 
 											CASE @Langkey
-												WHEN 'zh-CN'	THEN N'????'
-												WHEN 'zh-TW'	THEN N'????'
-												WHEN 'th-TH'	THEN N'???????????????'
+												WHEN 'zh-CN'	THEN N'虛擬足球'
+												WHEN 'zh-TW'	THEN N'虚拟足球'
+												WHEN 'th-TH'	THEN N'ฟุตบอลอนิเมชั่น'
 												WHEN 'ja-JP'	THEN N'Virtual Soccer'
-												WHEN 'ko-KR'	THEN N'?? ??'
+												WHEN 'ko-KR'	THEN N'가상 축구'
 												WHEN 'es'  	    THEN N'Virtual Soccer'
 												WHEN 'vi-VN'	THEN N'Virtual Soccer'
 												ELSE N'Virtual Soccer' END 
 									WHEN 2 THEN 
 											CASE @Langkey
-												WHEN 'zh-CN'	THEN N'???'
-												WHEN 'zh-TW'	THEN N'???'
-												WHEN 'th-TH'	THEN N'??????????'
-												WHEN 'ja-JP'	THEN N'?????'
-												WHEN 'ko-KR'	THEN N'?????'
+												WHEN 'zh-CN'	THEN N'百練賽'
+												WHEN 'zh-TW'	THEN N'百练赛'
+												WHEN 'th-TH'	THEN N'เกมหมายเลข'
+												WHEN 'ja-JP'	THEN N'番号ゲーム'
+												WHEN 'ko-KR'	THEN N'라이브빙고'
 												WHEN 'es'  	    THEN N'Number Game'
 												WHEN 'vi-VN'	THEN N'Number Game'
 												ELSE N'Number Game' END 
 													
 								
 								END
-			, NULL
+			, CASE WHEN p1.Productid =5 THEN 999 END 
 	FROM dbo.Product3rd p1 WITH(NOLOCK)
 		INNER JOIN dbo.LicenseeProduct3rd p2 WITH (NOLOCK) ON p1.ProductID=p2.ProductID
 	WHERE  p2.LicenseeID=@LicenseeID
-		AND p1.ProductID  IN (2,5)
-	
+		AND p1.ProductID  IN (2,5)	
+	/*
+	 * add more sproduct
+	 */
+	 
+	UNION ALL
+	SELECT CASE p1.ProductID WHEN 5 THEN 186--'186'
+			  END 
+			,CASE  p1.Productid WHEN 5 THEN 
+											CASE @Langkey												
+												WHEN 'es'  	    THEN N'Virtual Tennis'
+												WHEN 'vi-VN'	THEN N'Virtual Tennis'
+												ELSE N'Virtual Tennis' END END
+			, 999
+	FROM dbo.Product3rd p1 WITH(NOLOCK)
+		INNER JOIN dbo.LicenseeProduct3rd p2 WITH (NOLOCK) ON p1.ProductID=p2.ProductID
+	WHERE  p2.LicenseeID=@LicenseeID
+		AND p1.ProductID  IN (5)
+		
+	UNION ALL
+	SELECT CASE p1.ProductID WHEN 5 THEN 181 END 
+			,CASE  p1.Productid WHEN 5 THEN 
+											CASE @Langkey												
+												WHEN 'es'  	    THEN N'Virtual Motor Racing'
+												WHEN 'vi-VN'	THEN N'Virtual Motor Racing'
+												ELSE N'Virtual Motor Racing' END END
+			, 999
+	FROM dbo.Product3rd p1 WITH(NOLOCK)
+		INNER JOIN dbo.LicenseeProduct3rd p2 WITH (NOLOCK) ON p1.ProductID=p2.ProductID
+	WHERE  p2.LicenseeID=@LicenseeID
+		AND p1.ProductID  IN (5)
+		
+	UNION ALL
+	SELECT CASE p1.ProductID WHEN 5 THEN 182 END 
+			,CASE  p1.Productid WHEN 5 THEN 
+											CASE @Langkey												
+												WHEN 'es'  	    THEN N'Virtual Horse Racing'
+												WHEN 'vi-VN'	THEN N'Virtual Horse Racing'
+												ELSE N'Virtual Horse Racing' END END
+			, 999
+	FROM dbo.Product3rd p1 WITH(NOLOCK)
+		INNER JOIN dbo.LicenseeProduct3rd p2 WITH (NOLOCK) ON p1.ProductID=p2.ProductID
+	WHERE  p2.LicenseeID=@LicenseeID
+		AND p1.ProductID  IN (5)
+		
+	UNION ALL
+	SELECT CASE p1.ProductID WHEN 5 THEN 184 END 
+			,CASE  p1.Productid WHEN 5 THEN 
+											CASE @Langkey												
+												WHEN 'es'  	    THEN N'Virtual Greyhounds'
+												WHEN 'vi-VN'	THEN N'Virtual Greyhounds'
+												ELSE N'Virtual Greyhounds' END END
+			, 999
+	FROM dbo.Product3rd p1 WITH(NOLOCK)
+		INNER JOIN dbo.LicenseeProduct3rd p2 WITH (NOLOCK) ON p1.ProductID=p2.ProductID
+	WHERE  p2.LicenseeID=@LicenseeID
+		AND p1.ProductID  IN (5)	
+	/*
+	 * end add more
+	 */
+	 
 SELECT * FROM @ProductSport
-ORDER BY ID ASC 
+--ORDER BY ID ASC 
 
-Go
-GRANT EXECUTE ON [dbo].[Lrf_SelSportDetail] TO [bodbLicenseeNet] 
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_SelSportDetail] TO [vnteam] 

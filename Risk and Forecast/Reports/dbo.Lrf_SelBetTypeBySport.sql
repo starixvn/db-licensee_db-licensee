@@ -15,6 +15,7 @@ DB: DBLIC/bodb_Licensee
 
 Revisions:
    20131126@Jim: return English Name when Other Language Name is NULL or not ready
+   20131205@Florent: Add more product ( V.Tennis, V.Racing)
 Param's Explanation:
 	
 */
@@ -33,14 +34,17 @@ N'
 
 DECLARE @iDoc int
 DECLARE @checkVS bit
-DECLARE @checkNG bit 
-SELECT @checkVS=0,@checkNG=0
+DECLARE @checkNG BIT
+DECLARE @checkVTennis BIT
+DECLARE @checkVR bit 
+SELECT @checkVS=0,@checkNG=0,@checkVTennis=0,@checkVR=0
+
 
 EXEC sp_xml_preparedocument @iDoc OUTPUT, @SportList
 
 SELECT *
 INTO #input
-FROM OPENXML (@iDoc, '/products/product',1) WITH(ID tinyint, Sport nvarchar(128))
+FROM OPENXML (@iDoc, '/products/product',1) WITH(ID smallint, Sport nvarchar(128))
 
 EXEC sp_xml_removedocument @iDoc
 
@@ -85,18 +89,38 @@ IF EXISTS(SELECT * FROM #input WHERE ID > 0)
 BEGIN
 	IF EXISTS (SELECT 1 FROM #input WHERE ID=161)
 		SET @checkNG=1
-	IF EXISTS (SELECT 1 FROM #input WHERE ID=180)
+	/*IF EXISTS (SELECT 1 FROM #input WHERE ID=180)
 		SET @checkVS=1
-		
+	
+	IF EXISTS (SELECT 1 FROM #input WHERE ID=186)
+		SET @checkVtennis=1
+	IF EXISTS (SELECT 1 FROM #input WHERE ID in (181,182,184))
+		SET @checkVR=1
+		*/
+	IF EXISTS (SELECT 1 FROM #input WHERE ID=999 AND Sport LIKE '%180%')
+		SET @checkVS=1	
+	IF EXISTS (SELECT 1 FROM #input WHERE ID=999 and sport like '%186%')
+		SET @checkVtennis=1
+	IF EXISTS (SELECT 1 FROM #input 
+	           WHERE ID=999 
+	           and (sport like '%181%'
+				OR sport like '%182%'
+				OR sport like '%184%'))
+		SET @checkVR=1
+	
 	INSERT INTO @Bettype
 		SELECT typeid,
 			CASE WHEN typeid BETWEEN 81 AND 120 THEN  N'NG - ' + typenamee
 				 WHEN (typeid BETWEEN 1201 AND 1299 AND typeid NOT IN (1220,1235,1236,1231,1232,1233,1237,1238)) THEN  N'V.Soccer - '+typenamee
+				 WHEN (typeid BETWEEN 1201 AND 1299 AND typeid IN (1231,1232,1233)) THEN  N'V.Racing - '+typenamee
+				 WHEN (typeid BETWEEN 1201 AND 1299 AND typeid IN (1220,1235,1236)) THEN  N'V.Tennis - '+typenamee
 			END as 	typenamee 
 		FROM #bettype
 		WHERE (
 				(typeid BETWEEN 81 AND 120 AND @checkNG=1)
 				OR (typeid BETWEEN 1201 AND 1299 AND typeid NOT IN (1220,1235,1236,1231,1232,1233,1237,1238) AND @checkVS=1)
+				OR (typeid BETWEEN 1201 AND 1299 AND typeid IN (1231,1232,1233) AND @checkVR=1)
+				OR (typeid BETWEEN 1201 AND 1299 AND typeid IN (1220,1235,1236) AND @checkVTennis=1)
 				)
 
 END
@@ -104,9 +128,5 @@ END
 DROP TABLE #input
 DROP TABLE #bettype
 
-SELECT * FROM @Bettype
-
-GO
-GRANT EXECUTE ON [dbo].[Lrf_SelBetTypeBySport] TO [bodbLicenseeNet] AS [dbo]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_SelBetTypeBySport] TO [vnteam] AS [dbo]
+SELECT * FROM @Bettype 
+ORDER BY BettypeName
