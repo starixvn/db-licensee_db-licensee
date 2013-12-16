@@ -97,7 +97,7 @@ SELECT a.CustID
 			THEN 201
 		WHEN a.bettype IN (31, 32, 33, 41, 42, 43)
 			THEN 151
-		ELSE b.sporttype
+		ELSE isNULL(b.sporttype,0)
 		END sporttype
 	,
 	a.Currency
