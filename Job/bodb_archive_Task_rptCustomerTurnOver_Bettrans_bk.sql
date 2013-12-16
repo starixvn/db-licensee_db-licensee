@@ -97,14 +97,18 @@ SELECT a.CustID
 			THEN 201
 		WHEN a.bettype IN (31, 32, 33, 41, 42, 43)
 			THEN 151
-		ELSE 0
+		ELSE b.sporttype
 		END sporttype
 	,
 	a.Currency
-	,sum(stake) stake
-	,sum(winlost) winlost
-	,sum(actual_stake) actual_stake
-	,sum(PlayerComm) PlayerComm
+	--,sum(stake) stake
+	--,sum(winlost) winlost
+	--,sum(actual_stake) actual_stake
+	--,sum(PlayerComm) PlayerComm
+	,stake
+	,winlost 
+	,actual_stake 
+	,playercomm
 	,a.Odds
 	,oddstype
 	,CASE 
@@ -138,46 +142,7 @@ FROM cte_bettrans a
 LEFT JOIN dbo.MATCH_BK b WITH (NOLOCK) ON a.matchid = b.matchid
 LEFT JOIN cte_raceinfo result ON a.oddsid = result.Orid
 LEFT JOIN dbo.outright_bk AS ob WITH (NOLOCK) ON a.matchid = ob.orid
-GROUP BY a.CustID
-	,a.recommend
-	,a.bettype
-	,CASE 
-		WHEN a.bettype IN (9, 10, 29)
-			THEN 1
-		WHEN a.bettype IN (1231, 1232, 1233, 1237, 1238)
-			THEN result.SportType
-		ELSE b.sporttype
-		END
-	,a.Currency
-	,a.Odds
-	,oddstype
-	,b.leagueid
-	,CASE 
-		WHEN a.statusID = 112
-			AND a.bettype IN (1, 3, 7, 8, 17, 18)
-			AND ABS(modds) = 0.25
-			THEN 114
-		WHEN a.statusID = 113
-			AND a.bettype IN (1, 3, 7, 8, 17, 18)
-			AND ABS(modds) = 0.25
-			THEN 115
-		ELSE a.statusID
-		END
-	,CASE 
-		WHEN a.bettype IN (9, 29)
-			THEN - 9
-		WHEN a.bettype = 10
-			OR (
-				a.bettype > 30
-				AND a.bettype < 50
-				)
-			THEN ISNULL(ob.leagueid, - 1)
-		WHEN a.bettype IN (1231, 1232, 1233, 1237, 1238)
-			THEN result.LeagueID
-		ELSE isnull(b.LeagueID, - 1)
-		END
-	,winlostdate
-	,a.betcount
+
 GO
 GRANT VIEW DEFINITION ON [dbo].[Task_rptCustomerTurnOver_Bettrans_bk] TO [vnteam] AS [dbo]
 GO
