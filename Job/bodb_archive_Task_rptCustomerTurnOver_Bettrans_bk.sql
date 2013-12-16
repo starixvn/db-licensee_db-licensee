@@ -79,7 +79,7 @@ AS (
 	WHERE EventTime BETWEEN @fromdate AND @todate
 	)
 
-INSERT INTO bodb_LicenseeReport.dbo.rptCustomerTurnOver  
+INSERT INTO DB052.bodb_LicenseeReport.dbo.rptCustomerTurnOver  
 SELECT a.CustID
 	,a.bettype
 	,CASE 
