@@ -2,7 +2,7 @@
 set QUOTED_IDENTIFIER ON
 go
 
-ALTER  PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail_Ag]  
+ALTER   PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail_Ag]  
  @LicenseeID	INT,
  @UserID		INT,
  @CurrencyID	INT = 0,
@@ -41,6 +41,7 @@ AS
 	- 20130514@Jim: Restrict permission of Licensee Users by currency
 	- 20130809@Jim: offer Virtual Horse Racing
 	- 20131007@Jim: offer Virtual Tennis
+	- 20131213@Jim: support to Display win loss of individual sports with Virtual Sports
 	Param's Explanation:  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
 	  + @IsOld: 0 - query in table rptLicWinloss, 1 - query in table rptLicWinloss_old. 
@@ -61,7 +62,6 @@ CREATE TABLE #SAgWinLoss(
 	CustID			INT,   
 	Currency		INT,
 	ProductCode 	VARCHAR(10),
-	ProductName		VARCHAR(50),  
 	TurnOver		MONEY,   	
 	Winlost			MONEY,  
 	LicenseeWL		MONEY, 
@@ -183,7 +183,6 @@ BEGIN
 			b.recommend,
 			s.currency,
 			'BA' AS ProductCode,
-			'BA' AS ProductName,   
 			SUM( stake
 				*
 				CASE WHEN @drawfilter IN (2,3) THEN
@@ -223,7 +222,6 @@ BEGIN
 			b.recommend,
 			s.currency,
 			'SB' AS ProductCode,
-			'Sportsbook' AS ProductName,
 			SUM(stake
 				*
 				CASE WHEN @drawfilter IN (2,3) THEN
@@ -260,25 +258,30 @@ BEGIN
 	--SB + NG+LC+VS+CS+BG
 	IF (@ShowNG=1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1)
 	BEGIN
+		SELECT 
+			DISTINCT
+			o.Orid,	
+			r.SportType
+		INTO #tmpVS	
+		FROM VSOutright o with (nolock)
+		INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
+		WHERE EventDate BETWEEN @TempFromDate AND @TDate 
+		
 		INSERT INTO #SAgWinLoss
 		SELECT   
 			b.winlostdate,  
 			b.recommend,
 			s.currency,
 			CASE 
-				WHEN b.bettype BETWEEN 1101 AND 1199 THEN 'LC' 
+				WHEN b.bettype BETWEEN 1101 AND 1199 THEN 'LC'
 				WHEN b.Bettype BETWEEN 81 AND 120 THEN 'NG' 
-				WHEN b.bettype BETWEEN 1201 AND 1299 THEN 'VS' 
+				WHEN b.bettype BETWEEN 1201 AND 1299 THEN
+													 CASE WHEN ISNULL(vs.sporttype,0)=0  THEN 'VS'+convert(varchar(10),ISNULL(m.sporttype,-1))
+																	   ELSE   'VS' +convert(varchar(10),vs.sporttype)
+																	   END
 				WHEN b.bettype =71 THEN 'CS'
 				WHEN b.bettype =73 THEN 'BG'
 				END AS ProductCode,
-			CASE 
-				WHEN b.bettype BETWEEN 1101 AND 1199 THEN 'Live Casino' 
-				WHEN b.Bettype BETWEEN 81 AND 120 THEN 'Number Game' 
-				WHEN b.bettype BETWEEN 1201 AND 1299 THEN 'Virtual Sports' 
-				WHEN b.bettype =71 THEN 'RNG Casino'
-				WHEN b.bettype =73 THEN 'Bingo'
-				END AS ProductName,
 			SUM(stake
 				*
 				CASE WHEN @drawfilter IN (2,3) THEN
@@ -303,27 +306,25 @@ BEGIN
 			INNER JOIN @Super s ON b.srecommend = s.custid
 			INNER JOIN @TempAg tma ON b.recommend = tma.custid
 			INNER JOIN @bettype bt ON b.bettype = bt.bettype
+			LEFT JOIN [match] m with(nolock) ON b.matchid = m.matchid
+			LEFT JOIN #tmpVS vs ON b.oddsid=vs.Orid AND b.bettype IN (1231,1232,1233,1237,1238,1220,1235,1236)	
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
 			b.statusID  IN (111, 112, 113)
 		GROUP BY   
 			b.winlostdate,b.recommend, s.currency ,
 			CASE 
-				WHEN b.bettype BETWEEN 1101 AND 1199 THEN 'LC' 
+				WHEN b.bettype BETWEEN 1101 AND 1199 THEN 'LC'
 				WHEN b.Bettype BETWEEN 81 AND 120 THEN 'NG' 
-				WHEN b.bettype BETWEEN 1201 AND 1299 THEN 'VS' 
+				WHEN b.bettype BETWEEN 1201 AND 1299 THEN
+													 CASE WHEN ISNULL(vs.sporttype,0)=0  THEN 'VS'+convert(varchar(10),ISNULL(m.sporttype,-1))
+																	   ELSE   'VS' +convert(varchar(10),vs.sporttype)
+																	   END 
 				WHEN b.bettype =71 THEN 'CS'
 				WHEN b.bettype =73 THEN 'BG'
-				END,
-			CASE 
-				WHEN b.bettype BETWEEN 1101 AND 1199 THEN 'Live Casino' 
-				WHEN b.Bettype BETWEEN 81 AND 120 THEN 'Number Game' 
-				WHEN b.bettype BETWEEN 1201 AND 1299  THEN 'Virtual Sports' 
-				WHEN b.bettype =71 THEN 'RNG Casino'
-				WHEN b.bettype =73 THEN 'Bingo'
-				END
+				END 
 			, statusID
-			
+		DROP TABLE #tmpVS			
 	END
 	
 	
@@ -335,7 +336,6 @@ BEGIN
 			b.recommend,
 			s.currency,
 			'RB' AS ProductCode,
-			'Racing' AS ProductName,
 			SUM(CASE WHEN b.bettype in (33, 43) AND liveawayscore = 0 THEN stake/2 ELSE stake END 
 				*
 				CASE WHEN @drawfilter IN (2,3) THEN
@@ -386,7 +386,6 @@ BEGIN
 			b.recommend,
 			b.currency,
 			'BA' ProductCode,
-			'BA' AS ProductName,
 			SUM(b.turnover
 			*
 				CASE WHEN @drawfilter IN (2,3) THEN
@@ -417,7 +416,7 @@ BEGIN
 	END
 	
 	--exclude BA tickets
-	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1)
+	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR @ShowLC=1  OR @ShowCS=1 OR @ShowBG=1)
 	BEGIN
 		INSERT INTO #SAgWinLoss  
 		SELECT 
@@ -429,20 +428,9 @@ BEGIN
 				WHEN b.sporttype=151 THEN 'RB'
 				WHEN b.sporttype=161 THEN 'NG'
 				WHEN b.sporttype=162 THEN 'LC'
-				WHEN b.sporttype=180 THEN 'VS'
 				WHEN b.sporttype=251 THEN 'CS'
 				WHEN b.sporttype=252 THEN 'BG'
 			END,
-			CASE  
-				WHEN b.sporttype=0   THEN 'Sportsbook'
-				WHEN b.sporttype=151 THEN 'Racing'
-				WHEN b.sporttype=161 THEN 'Number Game'
-				WHEN b.sporttype=162 THEN 'Live Casino'
-				WHEN b.sporttype=180 THEN 'Virtual Sports'
-				WHEN b.sporttype=251 THEN 'RNG Casino'
-				WHEN b.sporttype=252 THEN 'Bingo'
-			END AS ProductName,	
-			
 			SUM(b.turnover
 			*
 				CASE WHEN @drawfilter IN (2,3) THEN
@@ -452,7 +440,7 @@ BEGIN
 				ELSE 1 END
 			),     
 			SUM(b.winlost),  
-			SUM(CASE WHEN ( b.sporttype IN(0,161,162,180,251,252))  THEN -1 * b.winlost WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS LicenseeWL ,
+			SUM(CASE WHEN ( b.sporttype IN(0,161,162,251,252))  THEN -1 * b.winlost WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS LicenseeWL ,
 			SUM(comm ) as Comm,
 			SUM( PlayerComm  ) AS PlayerComm,
 			- SUM (b.awinlost + b.winlost + b.comm) as AmountDueTo3rd,
@@ -468,6 +456,7 @@ BEGIN
 		WHERE  
 			b.Winlostdate BETWEEN @FDate AND @TempToDate  
 			AND b.roleid = 2
+			AND b.sporttype<>180
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 0
 		GROUP BY  
@@ -477,21 +466,85 @@ BEGIN
 				WHEN b.sporttype=151 THEN 'RB'
 				WHEN b.sporttype=161 THEN 'NG'
 				WHEN b.sporttype=162 THEN 'LC'
-				WHEN b.sporttype=180 THEN 'VS'
 				WHEN b.sporttype=251 THEN 'CS'
 				WHEN b.sporttype=252 THEN 'BG'
 			END,
-			CASE  
-				WHEN b.sporttype=0   THEN 'Sportsbook'
-				WHEN b.sporttype=151 THEN 'Racing'
-				WHEN b.sporttype=161 THEN 'Number Game'
-				WHEN b.sporttype=162 THEN 'Live Casino'
-				WHEN b.sporttype=180 THEN 'Virtual Sports'
-				WHEN b.sporttype=251 THEN 'RNG Casino'
-				WHEN b.sporttype=252 THEN 'Bingo'
-			END
-			, b.statusID
+			 b.statusID
 	END
+	IF (@ShowVS=1)
+	BEGIN 
+		DECLARE  @tblVS AS TABLE 
+							(rptdate    datetime
+							,sportID	 int
+							,recommend   int
+							,currency	 int
+							,status 	 MONEY
+							,turnoverIBC MONEY
+							,winlossIBC  MONEY
+							,commissionA MONEY
+							,commissionP MONEY
+							,WinlossA  	MONEY
+							,betcount INT )
+		INSERT INTO @tblVS (rptdate    
+							,sportID	
+							,recommend   
+							,currency	 
+							,status 	 
+							,turnoverIBC 
+							,winlossIBC  
+							,commissionA 
+							,commissionP 
+							,WinlossA  	
+							,betcount  )
+		SELECT 
+			 rptdate    
+			,sportID	
+			,recommend   
+			,currency	 
+			,status 	 
+			,turnoverIBC 
+			,winlossIBC  
+			,commissionA 
+			,commissionP 
+			,WinlossA  	
+			,betcount  
+		FROM DBDW2.bodb_Account.dbo.mcCustVirtualSport  WITH ( NOLOCK )   	
+		WHERE rptdate BETWEEN @FDate AND @TempToDate  
+			 AND status <> 9 
+		INSERT INTO #SAgWinLoss
+		SELECT 
+			b.rptdate winlostdate,  
+			b.recommend ,
+			b.currency,
+			'VS'+convert(varchar(10),sportID) ProductCode,
+			SUM(b.turnoverIBC
+			*
+			CASE WHEN @drawfilter IN (2,3) THEN
+				CASE WHEN b.status = 3  THEN 0
+				WHEN b.status IN (13,12) THEN 0.5
+				ELSE 1 END
+			ELSE 1 END
+			),     
+			SUM(b.winlossIBC),  
+			-SUM(b.winlossIBC) AS LicenseeWL ,
+			SUM(commissionA ) as Comm, 
+			SUM( commissionP ) AS PlayerComm,
+			- SUM (b.WinlossA + b.WinlossIBC + b.commissionA) as AmountDueTo3rd,
+			SUM(b.betcount)
+			* CASE WHEN @drawfilter = 2 THEN
+				CASE WHEN b.status = 3 THEN 0
+				ELSE 1 END
+			ELSE 1 END
+		FROM  @tblVS  b
+		INNER JOIN @TempAg ag ON ag.CustID = b.recommend
+		GROUP BY  
+			b.rptdate,
+			b.status,  
+			b.recommend ,
+			b.currency,
+			'VS'+convert(varchar(10),sportID)	
+		
+	END 
 END 
 IF @IsOld = 1 
 BEGIN
@@ -509,7 +562,6 @@ BEGIN
 			b.recommend,
 			b.currency,
 			'BA' AS ProductCode, 
-			'BA' AS ProductName,
 			SUM(b.turnover
 			*
 				CASE WHEN @drawfilter IN (2,3) THEN
@@ -556,16 +608,6 @@ BEGIN
 				WHEN b.sporttype=251 THEN 'CS'
 				WHEN b.sporttype=252 THEN 'BG'
 			END,
-			CASE  
-				WHEN b.sporttype=0   THEN 'Sportsbook'
-				WHEN b.sporttype=151 THEN 'Racing'
-				WHEN b.sporttype=161 THEN 'Number Game'
-				WHEN b.sporttype=162 THEN 'Live Casino'
-				WHEN b.sporttype=180 THEN 'Virtual Sports'
-				WHEN b.sporttype=251 THEN 'RNG Casino'
-				WHEN b.sporttype=252 THEN 'Bingo'
-			END AS ProductName,	
-			
 			SUM(b.turnover
 			*
 				CASE WHEN @drawfilter IN (2,3) THEN
@@ -603,15 +645,6 @@ BEGIN
 				WHEN b.sporttype=180 THEN 'VS'
 				WHEN b.sporttype=251 THEN 'CS'
 				WHEN b.sporttype=252 THEN 'BG'
-			END,
-			CASE  
-				WHEN b.sporttype=0   THEN 'Sportsbook'
-				WHEN b.sporttype=151 THEN 'Racing'
-				WHEN b.sporttype=161 THEN 'Number Game'
-				WHEN b.sporttype=162 THEN 'Live Casino'
-				WHEN b.sporttype=180 THEN 'Virtual Sports'
-				WHEN b.sporttype=251 THEN 'RNG Casino'
-				WHEN b.sporttype=252 THEN 'Bingo'
 			END
 			, b.statusID
 	END
@@ -630,7 +663,6 @@ SELECT
 		CASE WHEN w.Currency = 51 THEN @VNDCurrencyName 
 			ELSE e.Code END currencyName,
 	ProductCode, 		
-	ProductName,
 	SUM(TurnOver)	AS Turnover,   
 	SUM(Winlost)		AS Winlost,  
 	SUM(LicenseeWL)   AS LicenseeWL,
@@ -672,7 +704,6 @@ GROUP BY
 	w.custid, c.username, 
 	w.Currency,
 	ProductCode,
-	ProductName,
 	CASE WHEN w.Currency = 51 THEN @VNDCurrencyName 
 			ELSE e.Code END
 ORDER BY w.currency
