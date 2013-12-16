@@ -239,7 +239,8 @@ CREATE TABLE dbo.rptCustomerTurnover(
 	statusid tinyint NULL,
 	recommend int NULL,
 	leagueid INT NULL,
-	winlostdate SMALLDATETIME NULL
+	winlostdate SMALLDATETIME NULL,
+	betcount TINYINT
 )
 --ON ps_rptCustomerTurnOver_monthly(WinLostDate)
 
