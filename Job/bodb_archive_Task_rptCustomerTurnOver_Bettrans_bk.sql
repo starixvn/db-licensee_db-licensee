@@ -153,6 +153,7 @@ begin
   if @@rowcount=0 break
 END
 
+DROP TABLE #datatemp
 GO
 GRANT VIEW DEFINITION ON dbo.Task_rptCustomerTurnOver_Bettrans_bk TO vnteam AS dbo
 GO
