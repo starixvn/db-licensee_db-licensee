@@ -133,7 +133,7 @@ SELECT a.CustID
 				)
 			THEN ISNULL(ob.leagueid, - 1)
 		WHEN a.bettype IN (1231, 1232, 1233, 1237, 1238)
-			THEN result.LeagueID
+			THEN isnull(result.LeagueID,-1)
 		ELSE isnull(b.LeagueID, - 1)
 		END LeagueID
 	,winlostdate
