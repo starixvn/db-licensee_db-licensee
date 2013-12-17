@@ -1,4 +1,4 @@
-USE [bodb_archive]
+USE bodb02 
 GO
 
 SET ANSI_NULLS ON
@@ -7,7 +7,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-CREATE PROCEDURE [dbo].[Task_rptCustomerTurnOver_Bettrans_bk]
+CREATE PROCEDURE dbo.Task_rptCustomerTurnOver_Bettrans_bk
     @Fromdate smalldatetime,
 	@Todate smalldatetime
 AS
@@ -42,7 +42,7 @@ AS (
 		,a.statusID
 		,a.winlostdate
 		,COUNT(custid) betcount
-	FROM dbo.bettrans_bk a WITH (NOLOCK)
+	FROM bodb_archive.dbo.bettrans_bk a WITH (NOLOCK)
 	WHERE a.winlostdate BETWEEN @fromdate AND @todate
 	GROUP BY a.matchid
 		,a.CustID
@@ -74,12 +74,12 @@ AS (
 	SELECT o.Orid
 		,r.SportType
 		,r.LeagueID
-	FROM dbo.VSOutright_bk o WITH (NOLOCK)
-	INNER JOIN bodb02.dbo.VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
+	FROM bodb_archive.dbo.VSOutright_bk o WITH (NOLOCK)
+	INNER JOIN dbo.VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
 	WHERE EventTime BETWEEN @fromdate AND @todate
 	)
 
-INSERT INTO DB052.bodb_LicenseeReport.dbo.rptCustomerTurnOver  
+--INSERT INTO DB052.bodb_LicenseeReport.dbo.rptCustomerTurnOver  
 SELECT a.CustID
 	,a.bettype
 	,CASE 
@@ -139,10 +139,19 @@ SELECT a.CustID
 	,winlostdate
 	,a.betcount
 FROM cte_bettrans a
-LEFT JOIN dbo.MATCH_BK b WITH (NOLOCK) ON a.matchid = b.matchid
+LEFT JOIN bodb_archive.dbo.MATCH_BK b WITH (NOLOCK) ON a.matchid = b.matchid
 LEFT JOIN cte_raceinfo result ON a.oddsid = result.Orid
-LEFT JOIN dbo.outright_bk AS ob WITH (NOLOCK) ON a.matchid = ob.orid
+LEFT JOIN bodb_archive.dbo.outright_bk AS ob WITH (NOLOCK) ON a.matchid = ob.orid
+
+--INSERT INTO DB052.bodb_LicenseeReport.dbo.rptCustomerTurnOver  
+while (1=1)
+begin
+  delete top(20000) from #datatemp
+  output deleted.*
+   into DB052.bodb_LicenseeReport.dbo.rptCustomerTurnOver  
+  if @@rowcount=0 break
+END
 
 GO
-GRANT VIEW DEFINITION ON [dbo].[Task_rptCustomerTurnOver_Bettrans_bk] TO [vnteam] AS [dbo]
+GRANT VIEW DEFINITION ON dbo.Task_rptCustomerTurnOver_Bettrans_bk TO vnteam AS dbo
 GO
