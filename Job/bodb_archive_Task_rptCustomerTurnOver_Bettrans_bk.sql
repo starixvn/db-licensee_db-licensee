@@ -138,6 +138,7 @@ SELECT a.CustID
 		END LeagueID
 	,winlostdate
 	,a.betcount
+INTO #datatemp
 FROM cte_bettrans a
 LEFT JOIN bodb_archive.dbo.MATCH_BK b WITH (NOLOCK) ON a.matchid = b.matchid
 LEFT JOIN cte_raceinfo result ON a.oddsid = result.Orid
