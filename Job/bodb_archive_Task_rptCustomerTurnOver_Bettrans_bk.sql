@@ -76,8 +76,10 @@ AS (
 	WHERE EventTime BETWEEN @fromdate AND @todate
 	)
 
-INSERT INTO DB052.bodb_LicenseeReport.dbo.rptCustomerTurnOver  
-SELECT a.CustID
+--INSERT INTO DB052.bodb_LicenseeReport.dbo.rptCustomerTurnOver  
+SELECT
+	ROW_NUMBER() OVER (ORDER BY a.custid ) num 
+    ,a.CustID
 	,a.bettype
 	,CASE 
 		WHEN a.bettype IN (71, 72)
@@ -131,11 +133,40 @@ SELECT a.CustID
 		END LeagueID
 	,winlostdate
 	,a.betcount
---INTO #datatemp
+INTO #datatemp
 FROM cte_bettrans a
 LEFT JOIN bodb_archive.dbo.MATCH_BK b WITH (NOLOCK) ON a.matchid = b.matchid
 LEFT JOIN cte_raceinfo result ON a.oddsid = result.Orid
 LEFT JOIN bodb_archive.dbo.outright_bk AS ob WITH (NOLOCK) ON a.matchid = ob.orid
+
+
+DECLARE @i INT,@step int
+SET @i=1  
+SET @step=20000
+WHILE (1=1)
+BEGIN 
+	INSERT INTO DBLIC.bodb_LicenseeReport.dbo.rptCustomerTurnOver
+	SELECT CustID,bettype
+	,sporttype
+	,Currency
+	,stake
+	,winlost 
+	,actual_stake 
+	,playercomm
+	,Odds
+	,oddstype
+	,statusID
+	,recommend
+	,LeagueID
+	,winlostdate
+	,betcount FROM #datatemp WHERE num BETWEEN @i AND @i+@step
+	delete #datatemp WHERE num BETWEEN @i AND @i+@step
+	SET @i=@i+@step
+	IF not EXISTS (SELECT 1 FROM #datatemp )
+	BREAK
+END 
+
+DROP TABLE #datatemp
 
 GO
 GRANT VIEW DEFINITION ON dbo.Task_rptCustomerTurnOver_Bettrans_bk TO vnteam AS dbo
