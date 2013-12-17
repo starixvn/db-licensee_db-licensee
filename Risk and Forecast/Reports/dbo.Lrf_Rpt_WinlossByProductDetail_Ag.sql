@@ -276,7 +276,7 @@ BEGIN
 				WHEN b.bettype BETWEEN 1101 AND 1199 THEN 'LC'
 				WHEN b.Bettype BETWEEN 81 AND 120 THEN 'NG' 
 				WHEN b.bettype BETWEEN 1201 AND 1299 THEN
-													 CASE WHEN ISNULL(vs.sporttype,0)=0  THEN 'VS'+convert(varchar(10),ISNULL(m.sporttype,-1))
+													 CASE WHEN ISNULL(vs.sporttype,0)=0  THEN 'VS'+convert(varchar(10),ISNULL(m.sporttype,0))
 																	   ELSE   'VS' +convert(varchar(10),vs.sporttype)
 																	   END
 				WHEN b.bettype =71 THEN 'CS'
@@ -317,7 +317,7 @@ BEGIN
 				WHEN b.bettype BETWEEN 1101 AND 1199 THEN 'LC'
 				WHEN b.Bettype BETWEEN 81 AND 120 THEN 'NG' 
 				WHEN b.bettype BETWEEN 1201 AND 1299 THEN
-													 CASE WHEN ISNULL(vs.sporttype,0)=0  THEN 'VS'+convert(varchar(10),ISNULL(m.sporttype,-1))
+													 CASE WHEN ISNULL(vs.sporttype,0)=0  THEN 'VS'+convert(varchar(10),ISNULL(m.sporttype,0))
 																	   ELSE   'VS' +convert(varchar(10),vs.sporttype)
 																	   END 
 				WHEN b.bettype =71 THEN 'CS'
@@ -502,8 +502,8 @@ BEGIN
 			,recommend   
 			,currency	 
 			,status 	 
-			,turnoverIBC 
-			,winlossIBC  
+			,stake 
+			,winlossp  
 			,commissionA 
 			,commissionP 
 			,WinlossA  	

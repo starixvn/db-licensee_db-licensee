@@ -40,6 +40,7 @@ AS
 	- 20130809@Jim: offer Virtual Horse Racing
 	- 20131007@Jim: offer Virtual Tennis
 	- 20131213@Jim: support to Display win loss of individual sports with Virtual Sports
+
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -181,7 +182,7 @@ BEGIN
 			b.winlostdate,  
 			s.currency,
 			'BA' ProductCode,
-			'BA' AS ProductName,   
+			--'BA' AS ProductName,   
 			SUM( stake
 				*
 				CASE WHEN @drawfilter IN (2,3) THEN
@@ -220,7 +221,7 @@ BEGIN
 			b.winlostdate,  
 			s.currency,
 			'SB' AS ProductCode,
-			'Sportsbook' AS ProductName,
+			--'Sportsbook' AS ProductName,
 			SUM(stake
 				*
 				CASE WHEN @drawfilter IN (2,3) THEN
@@ -275,7 +276,7 @@ BEGIN
 				WHEN b.bettype BETWEEN 1101 AND 1199 THEN 'LC'
 				WHEN b.Bettype BETWEEN 81 AND 120 THEN 'NG' 
 				WHEN b.bettype BETWEEN 1201 AND 1299 THEN
-													 CASE WHEN ISNULL(vs.sporttype,0)=0  THEN 'VS'+convert(varchar(10),ISNULL(m.sporttype,-1))
+													 CASE WHEN ISNULL(vs.sporttype,0)=0  THEN 'VS'+convert(varchar(10),ISNULL(m.sporttype,0))
 																	   ELSE   'VS' +convert(varchar(10),vs.sporttype)
 																	   END
 				WHEN b.bettype =71 THEN 'CS'
@@ -316,7 +317,7 @@ BEGIN
 				WHEN b.bettype BETWEEN 1101 AND 1199 THEN 'LC'
 				WHEN b.Bettype BETWEEN 81 AND 120 THEN 'NG' 
 				WHEN b.bettype BETWEEN 1201 AND 1299 THEN
-													 CASE WHEN ISNULL(vs.sporttype,0)=0  THEN 'VS'+convert(varchar(10),ISNULL(m.sporttype,-1))
+													 CASE WHEN ISNULL(vs.sporttype,0)=0  THEN 'VS'+convert(varchar(10),ISNULL(m.sporttype,0))
 																	   ELSE   'VS' +convert(varchar(10),vs.sporttype)
 																	   END 
 				WHEN b.bettype =71 THEN 'CS'
@@ -454,6 +455,7 @@ BEGIN
 			AND b.roleid = 2   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 0
+			and t.sporttype <>180
 		GROUP BY  
 			b.winlostdate,   
 			b.currency,
@@ -497,11 +499,13 @@ BEGIN
 		FROM 
 			bodb_licensee.dbo.rpt_Betting b WITH ( NOLOCK )  
 			INNER  JOIN dbo.league l WITH (NOLOCK) ON b.leagueID=l.leagueID 
+			INNER JOIN @tempAg t ON b.currencyID=t.Currency
 		WHERE 
 			b.bettype BETWEEN 1201 AND 1299
 			AND b.siteID=@LicenseeId 
 			AND b.rptdate BETWEEN @FDate AND @TempToDate  
 			AND b.[status] <> 101 --exclude REJECT bets
+			AND b.CurrencyID IN (SELECT currency FROM @tempAg )
 		GROUP BY  
 			b.rptdate,   
 			b.currencyID,
@@ -677,6 +681,7 @@ DROP TABLE #SAgWinLoss
 DROP TABLE #TempExchange
  
 END   
+
 
 GO
 GO
