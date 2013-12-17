@@ -18,10 +18,7 @@ AS
 	DB: DBARC.bodb_Archive
 	Original: 
 	Revision:
-
-	Parameter's Explanation:
-
-			
+	Parameter's Explanation:			
 */
 SET NOCOUNT ON;
 
@@ -79,7 +76,7 @@ AS (
 	WHERE EventTime BETWEEN @fromdate AND @todate
 	)
 
---INSERT INTO DB052.bodb_LicenseeReport.dbo.rptCustomerTurnOver  
+INSERT INTO DB052.bodb_LicenseeReport.dbo.rptCustomerTurnOver  
 SELECT a.CustID
 	,a.bettype
 	,CASE 
@@ -101,10 +98,6 @@ SELECT a.CustID
 		END sporttype
 	,
 	a.Currency
-	--,sum(stake) stake
-	--,sum(winlost) winlost
-	--,sum(actual_stake) actual_stake
-	--,sum(PlayerComm) PlayerComm
 	,stake
 	,winlost 
 	,actual_stake 
@@ -138,22 +131,12 @@ SELECT a.CustID
 		END LeagueID
 	,winlostdate
 	,a.betcount
-INTO #datatemp
+--INTO #datatemp
 FROM cte_bettrans a
 LEFT JOIN bodb_archive.dbo.MATCH_BK b WITH (NOLOCK) ON a.matchid = b.matchid
 LEFT JOIN cte_raceinfo result ON a.oddsid = result.Orid
 LEFT JOIN bodb_archive.dbo.outright_bk AS ob WITH (NOLOCK) ON a.matchid = ob.orid
 
---INSERT INTO DB052.bodb_LicenseeReport.dbo.rptCustomerTurnOver  
-while (1=1)
-begin
-  delete top(20000) from #datatemp
-  output deleted.*
-   into DB052.bodb_LicenseeReport.dbo.rptCustomerTurnOver  
-  if @@rowcount=0 break
-END
-
-DROP TABLE #datatemp
 GO
 GRANT VIEW DEFINITION ON dbo.Task_rptCustomerTurnOver_Bettrans_bk TO vnteam AS dbo
 GO
