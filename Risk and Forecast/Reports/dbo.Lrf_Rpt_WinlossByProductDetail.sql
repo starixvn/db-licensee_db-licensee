@@ -3,7 +3,7 @@ set QUOTED_IDENTIFIER ON
 go
 
 
-ALTER    PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail]  
+ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail]  
  @LicenseeID	INT,
  @UserID		INT,
  @CurrencyID	INT = 0,
@@ -685,7 +685,7 @@ BEGIN
 		,betcount
 	FROM DBDW2.bodb_Account.dbo.mcCustVirtualSport  WITH ( NOLOCK )   	
 	WHERE rptdate BETWEEN @FDate AND @TempToDate  
-		 AND status <> 9 
+		 AND status in (8,3,4)
 			 
 	INSERT INTO #SAgWinLoss  
 		SELECT 
@@ -965,9 +965,7 @@ ORDER BY c.username
 DROP TABLE #SAgWinLoss
 
  
-END   
-
-
+END
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinlossByProductDetail] TO [bodbLicenseeNet]

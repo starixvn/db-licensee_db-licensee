@@ -1,4 +1,4 @@
-﻿ALTER  PROCEDURE [dbo].[Lrf_Rpt_WinlossByProduct]  
+﻿ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProduct]  
  @LicenseeID	INT,
  @UserID		INT,
  @CurrencyID	INT = 0,
@@ -471,47 +471,77 @@ BEGIN
 	END		
 	IF (@ShowVS=1)
 	BEGIN
-		INSERT INTO #SAgWinLoss  
+		
+		DECLARE  @tblVS AS TABLE 
+			(rptdate    datetime
+			,sportID	 int
+			,recommend   int
+			,currency	 int
+			,status 	 MONEY
+			,turnover MONEY
+			,winloss  MONEY
+			,commissionA MONEY
+			,commissionP MONEY
+			,WinlossA  	MONEY
+			,betcount INT )
+		INSERT INTO @tblVS 
+			(rptdate    
+			,sportID	
+			,recommend   
+			,currency	 
+			,status 	 
+			,turnover 
+			,winloss  
+			,commissionA 
+			,commissionP 
+			,WinlossA  	
+			,betcount)
 		SELECT 
-			b.rptdate,  
-			b.currencyID,
-			'VS'+convert(varchar(10),ISNULL(l.sporttype,0)) AS ProductCode,
-			SUM(b.turnover
-			*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE WHEN b.[status] = 111  THEN 0
-					WHEN b.[Status] IN (114,115) THEN 0.5
+			 rptdate    
+			,sportID	
+			,recommend   
+			,currency	 
+			,status 	 
+			,stake 
+			,winlossp  
+			,commissionA 
+			,commissionP 
+			,WinlossA  	
+			,betcount  
+		FROM DBDW2.bodb_Account.dbo.mcCustVirtualSport  WITH ( NOLOCK )   	
+		WHERE rptdate BETWEEN @FDate AND @TempToDate  
+			 AND status  in (8,3,4)
+		 
+		INSERT INTO #SAgWinLoss  
+		SELECT 	b.rptdate
+				,b.currency
+				,'VS'+convert(varchar(10),ISNULL(b.sportID,0)) AS ProductCode
+				,SUM(b.turnover
+					*
+						CASE WHEN @drawfilter IN (2,3) THEN
+							CASE WHEN b.[status] = 3  THEN 0
+							WHEN b.[Status] IN (13,12) THEN 0.5
+							ELSE 1 END
+						ELSE 1 END
+					)
+				,SUM(b.winloss)
+				,-SUM(b.winloss) AS LicenseeWL
+				,SUM(commissionA) AS Comm
+				,SUM( commissionP ) AS PlayerComm,
+				- SUM (b.WinlossA + b.Winloss + b.commissionA) as AmountDueTo3rd,
+				SUM(b.betcount)
+				* CASE WHEN @drawfilter = 2 THEN
+					CASE WHEN b.status = 3 THEN 0
 					ELSE 1 END
 				ELSE 1 END
-			),     
-			SUM(b.winloss),  
-			SUM(CASE WHEN (l.sporttype in(0,161,162,180,251,252))  THEN -1 * b.winloss 
-					WHEN l.sporttype = 151 THEN b.winlossA ELSE 0 END
-				) AS LicenseeWL,
-			SUM(CommissionA ) as Comm,
-			SUM( CommissionP  ) AS PlayerComm, 
-			- SUM (b.WinLossA + b.winloss + b.CommissionP) as AmountDueTo3rd,
-			SUM(b.betcount)
-			* CASE WHEN @drawfilter = 2 THEN
-					CASE WHEN b.[status] = 111 THEN 0
-					ELSE 1 END
-				ELSE 1 END
-		FROM 
-			bodb_licensee.dbo.rpt_Betting b WITH ( NOLOCK )  
-			INNER  JOIN dbo.league l WITH (NOLOCK) ON b.leagueID=l.leagueID 
-			INNER JOIN @tempAg t ON b.currencyID=t.Currency
-		WHERE 
-			b.bettype BETWEEN 1201 AND 1299
-			AND b.siteID=@LicenseeId 
-			AND b.rptdate BETWEEN @FDate AND @TempToDate  
-			AND b.[status] <> 101 --exclude REJECT bets
-			AND b.CurrencyID IN (SELECT currency FROM @tempAg )
-		GROUP BY  
-			b.rptdate,   
-			b.currencyID,
-			'VS'+convert(varchar(10),ISNULL(l.sporttype,0))
-			, b.[status]
-	END
+		FROM @tblVS b
+			INNER JOIN @tempAg t ON  t.CustID = b.recommend	
+		GROUP BY 
+				b.rptdate
+				,b.currency
+				,b.status
+				,'VS'+convert(varchar(10),ISNULL(b.sportID,0))	
+	END	
 END 
 IF @IsOld = 1 
 BEGIN
@@ -680,8 +710,7 @@ ORDER BY ReportType,  Currency,ProductCode
 DROP TABLE #SAgWinLoss
 DROP TABLE #TempExchange
  
-END   
-
+END
 
 GO
 GO
