@@ -91,7 +91,7 @@ SELECT
 		WHEN a.bettype BETWEEN 1101 AND 1199
 			THEN 162 -- Live casino
 		WHEN a.bettype BETWEEN 1201 AND 1299
-			THEN 180 --Virtual Sport
+			THEN isnull(result.sporttype,180)  --Virtual Sport
 		WHEN a.bettype BETWEEN 51 AND 69
 			THEN 201
 		WHEN a.bettype IN (31, 32, 33, 41, 42, 43)
