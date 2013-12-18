@@ -744,7 +744,7 @@ BEGIN
 				ELSE 1 END
 		FROM 
 			@tblVS b
-			INNER JOIN @sporttype t ON b.sportID = t.sporttype
+			--INNER JOIN @sporttype t ON b.sportID = t.sporttype
 			INNER JOIN @TempAg ag ON ag.custid = b.recommend
 			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.rptdate AND e.exchangeid = b.currency
 		GROUP BY  
