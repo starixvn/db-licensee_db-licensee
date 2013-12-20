@@ -180,12 +180,16 @@ ELSE
 		BEGIN
 			INSERT INTO @Status
 			SELECT 112
+			INSERT INTO @Status
+			SELECT 114
 		END
 
 		IF @ShowLoss=1
 		BEGIN
 			INSERT INTO @Status
 			SELECT 113
+			INSERT INTO @Status
+			SELECT 115
 		END
 
 		IF  @ShowDraw=1
@@ -298,7 +302,7 @@ ELSE
 					,bk.bettype
 					,bk.currency
 					,bk.stake AS turnover
-					,bk.winlost - bk.actual_stake AS winlost
+					,bk.winlost AS winlost
 					,bk.PlayerComm
 					,bk.Odds
 					,bk.oddstype
@@ -411,7 +415,7 @@ ELSE
 			INNER JOIN #bettype bt WITH (NOLOCK) ON b.bettype = bt.typeid
 			INNER JOIN exchange e WITH (NOLOCK) ON b.currency = e.exchangeid
 		WHERE 
-			(b.Sporttype IN (SELECT sportID FROM #ProductID)) --OR b.sporttype IS NULL)
+			(b.Sporttype IN (SELECT sportID FROM #ProductID)OR b.sporttype =0)
 			AND b.Odds >= @Odds
 			AND c.RoleID=1
 
