@@ -7,11 +7,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-<<<<<<< HEAD
 alter  PROCEDURE dbo.Task_rptCustomerTurnOver_Bettrans_bk
-=======
-CREATE PROCEDURE dbo.Task_rptCustomerTurnOver_Bettrans_bk
->>>>>>> c545fa117c43e5cf6be18b48ea47b9d2b333eec5
     @Fromdate smalldatetime,
 	@Todate smalldatetime
 AS
@@ -25,7 +21,6 @@ AS
 	Parameter's Explanation:			
 */
 SET NOCOUNT ON;
-<<<<<<< HEAD
 --DECLARE @Fromdate DATETIME,
 --	@Todate DATETIME
 --SELECT @Fromdate='2013-10-17',@todate='2013-10-17'
@@ -38,22 +33,13 @@ AS
 	WHERE Transdate BETWEEN @fromdate and DATEADD(DAY,2,@Todate)
 )
  ,TEMPS
-=======
-
-WITH TEMPS
->>>>>>> c545fa117c43e5cf6be18b48ea47b9d2b333eec5
 AS (
 	SELECT a.CustID
 		,a.recommend
 		,a.matchid
 		,a.bettype
 		,sum(a.stake) stake
-<<<<<<< HEAD
 		,sum(a.winlost- a.actual_stake) winlost
-=======
-		,sum(a.winlost) winlost
-		,sum(a.actual_stake) actual_stake
->>>>>>> c545fa117c43e5cf6be18b48ea47b9d2b333eec5
 		,sum(a.PlayerComm) PlayerComm
 		,a.Odds
 		,a.modds
@@ -62,15 +48,11 @@ AS (
 		,a.statusID
 		,a.winlostdate
 		,COUNT(custid) betcount
-<<<<<<< HEAD
 		,CASE 
 		WHEN BA.transid IS NULL THEN 0
 		WHEN BA.transid IS NOT NULL THEN 1 END AS isBA
 	FROM bodb_archive.dbo.bettrans_bk a WITH (NOLOCK)
 	LEFT JOIN cte_isBATrans AS BA ON a.transid=ba.transid
-=======
-	FROM bodb_archive.dbo.bettrans_bk a WITH (NOLOCK)
->>>>>>> c545fa117c43e5cf6be18b48ea47b9d2b333eec5
 	WHERE a.winlostdate BETWEEN @fromdate AND @todate
 	GROUP BY a.matchid
 		,a.CustID
@@ -82,12 +64,9 @@ AS (
 		,a.oddstype
 		,a.statusID
 		,a.winlostdate
-<<<<<<< HEAD
 		,CASE 
 		WHEN BA.transid IS NULL THEN 0
 		WHEN BA.transid IS NOT NULL THEN 1 END
-=======
->>>>>>> c545fa117c43e5cf6be18b48ea47b9d2b333eec5
 	)
 	,cte_tempLicenseeCust
 AS (
@@ -111,12 +90,8 @@ AS (
 	FROM bodb_archive.dbo.VSOutright_bk o WITH (NOLOCK)
 	INNER JOIN dbo.VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
 	WHERE EventTime BETWEEN @fromdate AND @todate
-<<<<<<< HEAD
 )
 --SELECT * FROM cte_bettrans
-=======
-	)
->>>>>>> c545fa117c43e5cf6be18b48ea47b9d2b333eec5
 
 --INSERT INTO DB052.bodb_LicenseeReport.dbo.rptCustomerTurnOver  
 SELECT
@@ -133,29 +108,16 @@ SELECT
 		WHEN a.bettype BETWEEN 1101 AND 1199
 			THEN 162 -- Live casino
 		WHEN a.bettype BETWEEN 1201 AND 1299
-<<<<<<< HEAD
 			THEN isnull(result.sporttype,isNULL(b.sporttype,180))  --Virtual Sport
-=======
-			THEN isnull(result.sporttype,180)  --Virtual Sport
->>>>>>> c545fa117c43e5cf6be18b48ea47b9d2b333eec5
 		WHEN a.bettype BETWEEN 51 AND 69
 			THEN 201
 		WHEN a.bettype IN (31, 32, 33, 41, 42, 43)
 			THEN 151
 		ELSE isNULL(b.sporttype,0)
-<<<<<<< HEAD
 		END sporttype,
 	a.Currency
 	,stake
 	,winlost 
-=======
-		END sporttype
-	,
-	a.Currency
-	,stake
-	,winlost 
-	,actual_stake 
->>>>>>> c545fa117c43e5cf6be18b48ea47b9d2b333eec5
 	,playercomm
 	,a.Odds
 	,oddstype
@@ -186,10 +148,7 @@ SELECT
 		END LeagueID
 	,winlostdate
 	,a.betcount
-<<<<<<< HEAD
 	,a.isba	
-=======
->>>>>>> c545fa117c43e5cf6be18b48ea47b9d2b333eec5
 INTO #datatemp
 FROM cte_bettrans a
 LEFT JOIN bodb_archive.dbo.MATCH_BK b WITH (NOLOCK) ON a.matchid = b.matchid
@@ -208,10 +167,6 @@ BEGIN
 	,Currency
 	,stake
 	,winlost 
-<<<<<<< HEAD
-=======
-	,actual_stake 
->>>>>>> c545fa117c43e5cf6be18b48ea47b9d2b333eec5
 	,playercomm
 	,Odds
 	,oddstype
@@ -219,13 +174,9 @@ BEGIN
 	,recommend
 	,LeagueID
 	,winlostdate
-<<<<<<< HEAD
 	,betcount
 	,isba 
 	FROM #datatemp WHERE num BETWEEN @i AND @i+@step
-=======
-	,betcount FROM #datatemp WHERE num BETWEEN @i AND @i+@step
->>>>>>> c545fa117c43e5cf6be18b48ea47b9d2b333eec5
 	delete #datatemp WHERE num BETWEEN @i AND @i+@step
 	SET @i=@i+@step
 	IF not EXISTS (SELECT 1 FROM #datatemp )
