@@ -232,7 +232,6 @@ CREATE TABLE dbo.rptCustomerTurnover(
 	currency tinyint NULL,
 	stake money NOT NULL,
 	winlost money NULL,
-	actual_stake money NULL,
 	playercomm money NULL,
 	odds money NULL,
 	oddstype tinyint NULL,
@@ -240,7 +239,8 @@ CREATE TABLE dbo.rptCustomerTurnover(
 	recommend int NULL,
 	leagueid INT NULL,
 	winlostdate SMALLDATETIME NULL,
-	betcount TINYINT
+	betcount TINYINT,
+	isBA TINYINT
 )
 --ON ps_rptCustomerTurnOver_monthly(WinLostDate)
 
@@ -255,19 +255,21 @@ GO
 
 CREATE CLUSTERED INDEX CIX_winlostdate ON dbo.rptCustomerTurnover
 (
-	winlostdate DESC
+	winlostdate ASC, 
+	recommend ASC,
+	sporttype ASC, 
+	bettype ASC,
+	custid ASC 
 ) --ON ps_rptCustomerTurnOver_monthly(WinLostDate)
 WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON)
 --ON rptCustomerTurnOverData
 GO
 
 /****** Object:  Index IX_custid    Script Date: 10/12/2013 11:31:50 AM ******/
-CREATE NONCLUSTERED INDEX IX_custid ON dbo.rptCustomerTurnover
+CREATE NONCLUSTERED INDEX IX_recommend ON dbo.rptCustomerTurnover
 (
-	custid ASC,
-	leagueID ASC,
-	bettype ASC,
-	recommend ASC
+	recommend ASC,
+	leagueID ASC	
 )
 INCLUDE (odds,statusID) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON)
 --ON rptCustomerTurnOverIndex
