@@ -967,6 +967,7 @@ DROP TABLE #SAgWinLoss
  
 END
 
+
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinlossByProductDetail] TO [bodbLicenseeNet]
 GO
