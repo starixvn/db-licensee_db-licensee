@@ -80,10 +80,48 @@ INSERT INTO @ProductSport(ID, Name, ParentID)
 							WHEN 'vi-VN'	THEN N'Virtual Sports'
 							ELSE N'Virtual Sports' END 
 			, NULL
+	 FROM dbo.Product3rd p1 WITH(NOLOCK)
+		INNER JOIN dbo.LicenseeProduct3rd p2 WITH (NOLOCK) ON p1.ProductID=p2.ProductID
+	WHERE  p2.LicenseeID=@LicenseeID
+		AND p1.ProductID  IN (5)	
 	/*
 	* 	end 
 	*/
+	
 	UNION ALL
+	SELECT 161,
+		CASE @Langkey
+			WHEN 'zh-CN'	THEN N'百練賽'
+			WHEN 'zh-TW'	THEN N'百练赛'
+			WHEN 'th-TH'	THEN N'เกมหมายเลข'
+			WHEN 'ja-JP'	THEN N'番号ゲーム'
+			WHEN 'ko-KR'	THEN N'라이브빙고'
+			WHEN 'es'  	    THEN N'Number Game'
+			WHEN 'vi-VN'	THEN N'Number Game'
+			ELSE N'Number Game' END  
+			, NULL 
+	FROM dbo.Product3rd p1 WITH(NOLOCK)
+		INNER JOIN dbo.LicenseeProduct3rd p2 WITH (NOLOCK) ON p1.ProductID=p2.ProductID
+	WHERE  p2.LicenseeID=@LicenseeID
+		AND p1.ProductID  IN (2)
+		
+	UNION ALL
+	SELECT 180,
+		CASE @Langkey
+		WHEN 'zh-CN'	THEN N'虛擬足球'
+		WHEN 'zh-TW'	THEN N'虚拟足球'
+		WHEN 'th-TH'	THEN N'ฟุตบอลอนิเมชั่น'
+		WHEN 'ja-JP'	THEN N'Virtual Soccer'
+		WHEN 'ko-KR'	THEN N'가상 축구'
+		WHEN 'es'  	    THEN N'Virtual Soccer'
+		WHEN 'vi-VN'	THEN N'Virtual Soccer'
+		ELSE N'Virtual Soccer' END  
+			, 999 
+	FROM dbo.Product3rd p1 WITH(NOLOCK)
+		INNER JOIN dbo.LicenseeProduct3rd p2 WITH (NOLOCK) ON p1.ProductID=p2.ProductID
+	WHERE  p2.LicenseeID=@LicenseeID
+		AND p1.ProductID  IN (5)
+	/*UNION ALL
 	SELECT CASE p1.ProductID WHEN 2 THEN 161--'161'
 										 WHEN 5 THEN 180--'180'	
 				END 
@@ -115,6 +153,7 @@ INSERT INTO @ProductSport(ID, Name, ParentID)
 		INNER JOIN dbo.LicenseeProduct3rd p2 WITH (NOLOCK) ON p1.ProductID=p2.ProductID
 	WHERE  p2.LicenseeID=@LicenseeID
 		AND p1.ProductID  IN (2,5)	
+	*/
 	/*
 	 * add more sproduct
 	 */
