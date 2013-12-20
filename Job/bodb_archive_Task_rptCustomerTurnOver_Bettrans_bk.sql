@@ -1,13 +1,12 @@
-USE bodb02 
+USE [bodb02]
 GO
-
+/****** Object:  StoredProcedure [dbo].[Task_rptCustomerTurnOver_Bettrans_bk]    Script Date: 20/12/2013 3:23:18 PM ******/
 SET ANSI_NULLS ON
 GO
-
 SET QUOTED_IDENTIFIER ON
 GO
 
-alter  PROCEDURE dbo.Task_rptCustomerTurnOver_Bettrans_bk
+ALTER  PROCEDURE [dbo].[Task_rptCustomerTurnOver_Bettrans_bk]
     @Fromdate smalldatetime,
 	@Todate smalldatetime
 AS
@@ -21,15 +20,13 @@ AS
 	Parameter's Explanation:			
 */
 SET NOCOUNT ON;
---DECLARE @Fromdate DATETIME,
---	@Todate DATETIME
---SELECT @Fromdate='2013-10-17',@todate='2013-10-17'
+
 
 
 ;WITH cte_isBATrans
 AS 
 (
-	SELECT * FROM DBLIC.bodb_licensee.dbo.LicenseeBATransaction
+	SELECT * FROM bodb_licensee.dbo.LicenseeBATransaction
 	WHERE Transdate BETWEEN @fromdate and DATEADD(DAY,2,@Todate)
 )
  ,TEMPS
@@ -38,14 +35,28 @@ AS (
 		,a.recommend
 		,a.matchid
 		,a.bettype
-		,sum(a.stake) stake
+		,SUM(		
+		case when a.liveawayscore = 0 and a.bettype IN(33,43) 
+		then ABS(a.stake/2) else ABS(a.stake) END 	 
+		) as stake
 		,sum(a.winlost- a.actual_stake) winlost
 		,sum(a.PlayerComm) PlayerComm
 		,a.Odds
-		,a.modds
+		--,a.modds
 		,a.oddsid
 		,a.oddstype
-		,a.statusID
+		--,a.statusID
+		,CASE 
+		WHEN a.statusID = 112
+			AND a.bettype IN (1, 3, 7, 8, 17, 18)
+			AND ABS(modds) = 0.25
+			THEN 114
+		WHEN a.statusID = 113
+			AND a.bettype IN (1, 3, 7, 8, 17, 18)
+			AND ABS(modds) = 0.25
+			THEN 115
+		ELSE a.statusID
+		END AS statusID
 		,a.winlostdate
 		,COUNT(custid) betcount
 		,CASE 
@@ -54,6 +65,8 @@ AS (
 	FROM bodb_archive.dbo.bettrans_bk a WITH (NOLOCK)
 	LEFT JOIN cte_isBATrans AS BA ON a.transid=ba.transid
 	WHERE a.winlostdate BETWEEN @fromdate AND @todate
+	AND a.statusID IN (101,111,112,113) 
+	AND a.bettype<=19999
 	GROUP BY a.matchid
 		,a.CustID
 		,a.recommend
@@ -72,7 +85,7 @@ AS (
 AS (
 	SELECT DISTINCT currency
 		,custid
-	FROM DBLIC.bodb_licensee.dbo.LicenseeCust lc WITH (NOLOCK)
+	FROM bodb_licensee.dbo.LicenseeCust lc WITH (NOLOCK)
 	)
 	,cte_bettrans
 AS (
@@ -121,17 +134,7 @@ SELECT
 	,playercomm
 	,a.Odds
 	,oddstype
-	,CASE 
-		WHEN a.statusID = 112
-			AND a.bettype IN (1, 3, 7, 8, 17, 18)
-			AND ABS(modds) = 0.25
-			THEN 114
-		WHEN a.statusID = 113
-			AND a.bettype IN (1, 3, 7, 8, 17, 18)
-			AND ABS(modds) = 0.25
-			THEN 115
-		ELSE a.statusID
-		END AS statusID
+	,a.statusID
 	,a.recommend
 	,CASE 
 		WHEN a.bettype IN (9, 29)
@@ -161,7 +164,7 @@ SET @i=1
 SET @step=20000
 WHILE (1=1)
 BEGIN 
-	INSERT INTO DBLIC.bodb_LicenseeReport.dbo.rptCustomerTurnOver
+	INSERT INTO bodb_LicenseeReport.dbo.rptCustomerTurnOver
 	SELECT CustID,bettype
 	,sporttype
 	,Currency
@@ -184,7 +187,3 @@ BEGIN
 END 
 
 DROP TABLE #datatemp
-
-GO
-GRANT VIEW DEFINITION ON dbo.Task_rptCustomerTurnOver_Bettrans_bk TO vnteam AS dbo
-GO
