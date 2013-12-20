@@ -26,7 +26,7 @@ SET NOCOUNT ON;
 ;WITH cte_isBATrans
 AS 
 (
-	SELECT * FROM bodb_licensee.dbo.LicenseeBATransaction
+	SELECT * FROM DBLIC.bodb_licensee.dbo.LicenseeBATransaction
 	WHERE Transdate BETWEEN @fromdate and DATEADD(DAY,2,@Todate)
 )
  ,TEMPS
@@ -65,7 +65,7 @@ AS (
 	FROM bodb_archive.dbo.bettrans_bk a WITH (NOLOCK)
 	LEFT JOIN cte_isBATrans AS BA ON a.transid=ba.transid
 	WHERE a.winlostdate BETWEEN @fromdate AND @todate
-	AND a.statusID IN (101,111,112,113) 
+	AND a.statusID IN (111,112,113) 
 	AND a.bettype<=19999
 	GROUP BY a.matchid
 		,a.CustID
@@ -85,7 +85,7 @@ AS (
 AS (
 	SELECT DISTINCT currency
 		,custid
-	FROM bodb_licensee.dbo.LicenseeCust lc WITH (NOLOCK)
+	FROM DBLIC.bodb_licensee.dbo.LicenseeCust lc WITH (NOLOCK)
 	)
 	,cte_bettrans
 AS (
@@ -164,7 +164,7 @@ SET @i=1
 SET @step=20000
 WHILE (1=1)
 BEGIN 
-	INSERT INTO bodb_LicenseeReport.dbo.rptCustomerTurnOver
+	INSERT INTO DBLIC.bodb_LicenseeReport.dbo.rptCustomerTurnOver
 	SELECT CustID,bettype
 	,sporttype
 	,Currency
