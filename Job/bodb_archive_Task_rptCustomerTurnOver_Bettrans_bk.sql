@@ -35,10 +35,7 @@ AS (
 		,a.recommend
 		,a.matchid
 		,a.bettype
-		,SUM(		
-		case when a.liveawayscore = 0 and a.bettype IN(33,43) 
-		then ABS(a.stake/2) else ABS(a.stake) END 	 
-		) as stake
+		,SUM(ABS(a.stake)) as stake
 		,sum(a.winlost- a.actual_stake) winlost
 		,sum(a.PlayerComm) PlayerComm
 		,a.Odds
@@ -51,9 +48,17 @@ AS (
 			AND a.bettype IN (1, 3, 7, 8, 17, 18)
 			AND ABS(modds) = 0.25
 			THEN 114
+		WHEN a.statusID = 112
+			AND a.liveawayscore = 0 
+			AND a.bettype IN(33,43) 
+			THEN 114
 		WHEN a.statusID = 113
 			AND a.bettype IN (1, 3, 7, 8, 17, 18)
 			AND ABS(modds) = 0.25
+			THEN 115
+		WHEN a.statusID = 113
+			AND a.liveawayscore = 0 
+			AND a.bettype IN(33,43)
 			THEN 115
 		ELSE a.statusID
 		END AS statusID
@@ -77,6 +82,7 @@ AS (
 		,a.oddstype
 		,a.statusID
 		,a.winlostdate
+		,a.liveawayscore
 		,CASE 
 		WHEN BA.transid IS NULL THEN 0
 		WHEN BA.transid IS NOT NULL THEN 1 END
@@ -121,7 +127,13 @@ SELECT
 		WHEN a.bettype BETWEEN 1101 AND 1199
 			THEN 162 -- Live casino
 		WHEN a.bettype BETWEEN 1201 AND 1299
-			THEN isnull(result.sporttype,isNULL(b.sporttype,180))  --Virtual Sport
+			THEN 
+				CASE 
+					WHEN result.sporttype IS NOT NULL THEN result.sporttype
+					WHEN b.sporttype IS NOT NULL THEN b.sporttype
+					ELSE 180 --Virtual Sport
+				END   --Virtual Sport
+				 --isnull(result.sporttype,isNULL(b.sporttype,180))  --Virtual Sport
 		WHEN a.bettype BETWEEN 51 AND 69
 			THEN 201
 		WHEN a.bettype IN (31, 32, 33, 41, 42, 43)
