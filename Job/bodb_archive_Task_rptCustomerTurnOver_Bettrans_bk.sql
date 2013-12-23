@@ -71,7 +71,7 @@ AS (
 	LEFT JOIN cte_isBATrans AS BA ON a.transid=ba.transid
 	WHERE a.winlostdate BETWEEN @fromdate AND @todate
 	AND a.statusID IN (111,112,113) 
-	AND a.bettype<=19999
+	--AND a.bettype<=19999
 	GROUP BY a.matchid
 		,a.CustID
 		,a.recommend
@@ -199,3 +199,5 @@ BEGIN
 END 
 
 DROP TABLE #datatemp
+
+GO
