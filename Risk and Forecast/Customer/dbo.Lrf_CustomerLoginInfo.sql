@@ -11,7 +11,7 @@ AS
 	Revisions:
 		- 20120203@Henry: get SpecialLevelUpdateBy and SpecialLevelUpdateDate
 		- 20120718@Henry: fix bug display wrong TnxDate
-	
+		- 20131218@winnie: change from db06 to DBARC Alias
 	Param's Explanation:
 	
 	
@@ -84,7 +84,7 @@ END
 
 IF 	ISNULL(@LastTransferDate,'') = ''
 BEGIN
-	SELECT @LastTransferDate = MAX(transdate) FROM DB06.bodb_archive.dbo.bettrans_bk WITH (NOLOCK)
+	SELECT @LastTransferDate = MAX(transdate) FROM DBARC.bodb_archive.dbo.bettrans_bk WITH (NOLOCK)
 	WHERE custid = @CustID
 END
 
@@ -112,6 +112,7 @@ FROM
 WHERE 
 	c.CustID = @CustID
 	
+
 
 
 GO
