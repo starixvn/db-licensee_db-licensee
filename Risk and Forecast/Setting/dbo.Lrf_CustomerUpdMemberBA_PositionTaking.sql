@@ -1258,12 +1258,6 @@ BEGIN
 	@TrackingValue2 = @TrackingValue2,
 	@duration = @duration
 END
-
-
-
-
-
-
 GO
 GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMemberBA_PositionTaking] TO [bodbLicenseeNet]
 GO

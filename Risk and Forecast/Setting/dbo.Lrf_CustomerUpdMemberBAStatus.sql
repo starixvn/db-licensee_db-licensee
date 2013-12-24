@@ -211,7 +211,7 @@ IF @isBA = 1 --enable BA
 		END
 
 		--apply commission
-		EXEC [Lrf_CustomerUpdMemberBAComm]
+				EXEC [Lrf_CustomerUpdMemberBAComm]
 				@LicenseeID = @LicenseeID,
 				@CustID = @CustID,
 				@ModifyBy = @ModifyBy,
@@ -228,7 +228,7 @@ IF @isBA = 1 --enable BA
 		SET @ErrCode=0
 		SET @ErrMsg= ''
 		--apply PT
-		EXEC [Lrf_CustomerUpdMemberBA_PositionTaking]
+				EXEC [Lrf_CustomerUpdMemberBA_PositionTaking]
 		@custid = @CustID,
 		@apositiontaking_1 = 0 ,
 		@apositiontaking_2 = 0 ,
@@ -337,7 +337,7 @@ IF @isBA = 1 --enable BA
 
 		SET @ErrCode=0
 		SET @ErrMsg= ''
-		EXEC [Lrf_CustomerUpdDanger]
+				EXEC [Lrf_CustomerUpdDanger]
 		@CustID = @CustID,
 		@UserID = @ModifyBy,
 		@Danger = @danger,
@@ -385,7 +385,7 @@ ELSE --disable BA
 					SET @ErrCode=0
 					SET @ErrMsg= ''
 					--apply commission
-					EXEC [Lrf_CustomerUpdMemberBAComm]
+										EXEC [Lrf_CustomerUpdMemberBAComm]
 							@LicenseeID = @LicenseeID,
 							@CustID = @CustID,
 							@ModifyBy = @ModifyBy,
@@ -519,7 +519,7 @@ ELSE --disable BA
 
 					SET @ErrCode=0
 					SET @ErrMsg= ''
-					EXEC [Lrf_CustomerUpdMemberBA_PositionTaking]
+										EXEC [Lrf_CustomerUpdMemberBA_PositionTaking]
 					@custid = @CustID,
 					@apositiontaking_1 = @apositiontaking_1 ,
 					@apositiontaking_2 = @apositiontaking_2 ,
@@ -590,7 +590,7 @@ ELSE --disable BA
 						END
 					SET @ErrCode=0
 					SET @ErrMsg= ''
-					EXEC [Lrf_CustomerUpdDanger]
+										EXEC [Lrf_CustomerUpdDanger]
 					@CustID = @CustID,
 					@UserID = @ModifyBy,
 					@Danger = @Danger,
@@ -634,8 +634,6 @@ ELSE --disable BA
 				END
 		END
 	END
-
-
 GO
 GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMemberBAStatus] TO [bodbAdminNet] AS [dbo]
 GO
