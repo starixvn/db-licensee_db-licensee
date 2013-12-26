@@ -81,10 +81,6 @@ IF @ShowLC = 1 INSERT INTO @sporttype(sporttype) VALUES(162)
 IF @ShowVS = 1 
 	INSERT INTO @sporttype(sporttype) 
 	SELECT 180
-	UNION ALL 
-	SELECT 181 -- VHR
-	UNION ALL
-	SELECT 186 -- virtual tennis
 
 IF @ShowCS = 1 INSERT INTO @sporttype(sporttype) VALUES(251)
 IF @ShowBG = 1 INSERT INTO @sporttype(sporttype) VALUES(252)

@@ -1,8 +1,14 @@
-﻿set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
+﻿USE [bodb02]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_BetList_SelMatchResult]    Script Date: 11/30/2013 03:02:28 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+/****** Object:  Stored Procedure dbo.Lrf_BetList_SelMatchResult    Script Date: 10/22/2013 10:25:56 PM ******/
+/****** Object:  Stored Procedure dbo.Lrf_BetList_SelMatchResult    Script Date: 10/21/2013 2:57:35 PM ******/
 
-ALTER  PROCEDURE [dbo].[Lrf_BetList_SelMatchResult]
+ALTER PROCEDURE [dbo].[Lrf_BetList_SelMatchResult]
 	@LicenseeID INT ,
 	@UserID		INT,	
 	@MatchID INT,
@@ -24,10 +30,14 @@ Revisions:
 	- 20130514@Jim:Restrict permission of Licensee Users by currency
 	- 20130722@Jim: support Virtual Horse Racing
 	- 20131017@Jim: Turn to use GlobalShowTime for display the Kick-off-Time
+	- 20131129@Jim: support :
+				182 – Virtual Greyhounds
+				184 – Virtual Motor Racing
+
 	
 	*******************
 	sample test case:
-		exec Lrf_BetList_SelMatchResult_xtest @licenseeid=1,@matchid=2715481,@raceno=N'3',@userid=68
+				exec Lrf_BetList_SelMatchResult @licenseeid=1,@matchid=2715481,@raceno=N'3',@userid=68
 */
 
 SET NOCOUNT ON
@@ -375,7 +385,7 @@ BEGIN
 				DROP TABLE #DataSum 
 				DROP TABLE #tmp
 		END--
-	ELSE IF EXISTS (SELECT 1 FROM  #tmpresult  WHERE sporttype=181)
+	ELSE IF EXISTS (SELECT 1 FROM  #tmpresult  WHERE sporttype IN (181,182,184))
 		BEGIN 
 			SELECT kickofftime,COUNT(place) rc INTO #DataSUMVHR
 			FROM #tmpresult
@@ -430,7 +440,6 @@ BEGIN
 END
 */
 GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_SelMatchResult] TO [bodbLicenseeNet]
+GRANT EXECUTE ON [dbo].[Lrf_BetList_SelMatchResult] TO [bodbLicenseeNet] AS [dbo]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelMatchResult] TO [vnteam]
-
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelMatchResult] TO [vnteam] AS [dbo]

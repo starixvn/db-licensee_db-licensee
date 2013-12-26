@@ -12,7 +12,7 @@ DB: bodb_CustomerLog
       
 Revisions:      
 	20130411Scott : Check Customer belong Licensee
-
+	20131126@Jim: return result-table with NULL value if search condition are not match
        
 Param's Explaination:          
  - @UserName: customer name type in textbox to search      
@@ -56,10 +56,10 @@ FROM bodb02.dbo.customer c WITH(NOLOCK)
 	INNER JOIN bodb_Licensee.dbo.LicenseeCust l WITH(NOLOCK) on c.recommend = l.custid         
 WHERE   ( username = @Username or username2 = @Username2 ) 	AND 
 		l.licenseeid = @LicenseeID  and c.roleid = 1
-
+/*
 IF @Custid IS NULL
 	Return;
-	
+*/	
  
 --### set actionid by @rowfilter    
     

@@ -1,11 +1,11 @@
 ﻿USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_Result_RaceSelByMeeting]    Script Date: 10/17/2013 00:11:27 ******/
+
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-/****** Object:  Stored Procedure dbo.Lrf_Result_RaceSelByMeeting    Script Date: 10/3/2013 2:52:10 PM ******/
+
 
 ALTER PROCEDURE [dbo].[Lrf_Result_RaceSelByMeeting]
 	@FromDate DATETIME,
@@ -23,6 +23,10 @@ AS
 		- 20110308@Henry: include Greyhound, Harness racing sports (152,153) - add param @sporttype 
 		- 20110524@Henry: fix Show All/is not show test.
 		- 20130722@Jim: support Virtual Horse Racing
+		- 20131129@Jim: support :
+				182 – Virtual Greyhounds
+				184 – Virtual Motor Racing
+
 */
 BEGIN
 	SET NOCOUNT ON 
@@ -128,7 +132,7 @@ BEGIN
 		DROP TABLE #tmp
 		
 	END
-	IF (@Sporttype=181)
+	IF (@Sporttype IN (181,182,184))
 	BEGIN 
 		INSERT INTO #Data	
 		SELECT  o.leagueid meetingid,
@@ -220,7 +224,7 @@ BEGIN
 					AND vsr.EventStatus ='completed'	
 			 ) o 
 			INNER JOIN dbo.HRCode c WITH (NOLOCK) ON c.CodeID=o.teamid
-			WHERE	c.CodeType=11
+			--WHERE	c.CodeType=11
 			ORDER BY o.leagueid, o.kickofftime
 				
 	SELECT kickofftime,COUNT(place) rc INTO #DataSUMVHR

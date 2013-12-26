@@ -1,4 +1,12 @@
-﻿
+﻿USE [bodb02]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_LiveReportSummaryDetail]    Script Date: 12/12/2013 3:00:07 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
 
 ALTER  PROCEDURE [dbo].[Lrf_Rpt_LiveReportSummaryDetail]      
 	@LicenseeID INT , 
@@ -17,10 +25,11 @@ DB: DB052.bodb02
   
 Revisions:  
   
-Return 3 tables:  
-WinlostBySport  
-WinlostByCurrency  
-WinlostByBetType  
+	Return 3 tables:  
+	WinlostBySport  
+	WinlostByCurrency  
+	WinlostByBetType  
+	
 -20111208@Jim: change bettype condition 
 -20120110@Henry: remove Licensee Type + Get data from rpt_Betting + remove currency UUS
 -20120214@Jim: change table ExchangeDaily by function Lrf_f_GetExchangeDaily  
@@ -32,7 +41,7 @@ WinlostByBetType
 -20130328@Scott: Support RNG Casino and Bingo
 -20130618@Jim:  Restrict permission of Licensee Users by currency
 -20130625@Jim: support to view Currency UUS
-
+-20131203@Jim: offer Virtual Greyhound, Virtual Motor Racing
      
 Param's Explanation:  
   
@@ -73,7 +82,7 @@ SELECT @sql = 'SET NOCOUNT ON  ' + char(13)
 SELECT @sql = @sql + '--Declare variable:' + char(13)
 
 SELECT @sql = @sql + 'DECLARE @TempAg AS TABLE ( CustId INT )' + char(13) +
-			'CREATE TABLE #tmpWinloss (winlostdate  DATETIME,Currency  INT,BetType   INT,TurnOver  MONEY,Winlost   MONEY,LicenseeWL  MONEY,Comm   MONEY,PlayerComm MONEY,AmtDueTo3rd  MONEY,Betcount  INT ) '+ char(13)
+			'CREATE TABLE #tmpWinloss (winlostdate  DATETIME,Currency  INT,BetType INT,TurnOver  MONEY,Winlost   MONEY,LicenseeWL  MONEY,Comm   MONEY,PlayerComm MONEY,AmtDueTo3rd  MONEY,Betcount  INT ) '+ char(13)
 			
 SELECT @sql = @sql + 
 			'SELECT  currencyID,LicenseeID into #currency'+char(13)+
@@ -154,6 +163,7 @@ BEGIN
 					'FROM bettrans b  WITH (NOLOCK,INDEX=IX_srecommend)'  + char(13) +
 						'INNER JOIN @TempAg t  ON b.recommend =t.custid'  + char(13) +
 						'INNER JOIN @Super s ON b.srecommend = s.custid' + char(13) +
+						'LEFT JOIN dbo.match m WITH (NOLOCK) ON b.matchID=m.matchID' + char(13) +
 						'LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON s.custid=ba.srecommend and  b.transid = BA.transid' + char(13) +
 					'WHERE b.winlostdate BETWEEN ''' + convert(varchar(10),@TempFromDate, 120) + ''' AND ''' + convert(varchar(10),@TDate, 120) + '''' + char(13) +
 						'AND b.Bettype <= 19999' + char(13) +
@@ -169,7 +179,9 @@ BEGIN
 							WHEN @ProductCode='BG' THEN 'AND b.bettype = 73'
 							
 							ELSE '' END + char(13) +
-					'GROUP BY  b.winlostdate, s.currency, b.bettype' + char(13)
+					'GROUP BY  b.winlostdate, s.currency, b.bettype
+								' + char(13)
+					 
 	END
 	
      
@@ -213,8 +225,7 @@ BEGIN
 	--Not BA
 	IF @ProductCode = '' OR @ProductCode='RB' OR @ProductCode='NG' OR @ProductCode='SB' OR @ProductCode='LC' OR @ProductCode='VS' OR @ProductCode='CS' OR @ProductCode='BG'
 	BEGIN
-		SELECT @sql = @sql + '--Get data from rpt_Betting for non-BA' + char(13)
-		
+	
 		SELECT @sql = @sql + 'INSERT INTO #tmpWinloss' + char(13) +
 					'SELECT ' + char(13) +
 						'b.rptDate,' + char(13) +
@@ -244,6 +255,7 @@ BEGIN
 							WHEN @ProductCode='BG' THEN 'AND b.bettype = 73'
 							ELSE '' END + char(13) +
 					'GROUP BY b.rptDate, b.currencyID, b.bettype' + char(13)  	
+			
 	END
 
 END   
@@ -324,15 +336,7 @@ SELECT @sql = @sql + 'SELECT b.bettype,' + char(13) +
 			
 IF (@debug = 1) PRINT @sql
 ELSE EXEC(@sql)
- 
-
 GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_LiveReportSummaryDetail] TO [bodbLicenseeNet]
+GRANT EXECUTE ON [dbo].[Lrf_Rpt_LiveReportSummaryDetail] TO [bodbLicenseeNet] AS [dbo]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LiveReportSummaryDetail] TO [vnteam]    
-
-/*
-exec Lrf_Rpt_LiveReportSummaryDetail_878 @LicenseeID=2,@userID=1,@CurrencyID=0,@ProductCode='BA',
-@FromDate='Jul  1 2012 12:00:00:000AM',@ToDate='Jul 27 2012 12:00:00:000AM',
-@MoveBetsDay='Jul 16 2012 12:00:00:000AM',@Debug=1
-*/
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LiveReportSummaryDetail] TO [vnteam] AS [dbo]

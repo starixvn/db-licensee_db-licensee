@@ -1,4 +1,11 @@
-﻿CREATE  PROCEDURE [dbo].[Lrf_Rpt_WinLossByBettype]
+﻿USE [bodb02]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_WinLossByBettype]    Script Date: 12/12/2013 3:02:11 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER   PROCEDURE [dbo].[Lrf_Rpt_WinLossByBettype]
     @LicenseeID INT ,
 	@UserID		INT,
     @LicenseeType VARCHAR(100) = NULL ,
@@ -34,6 +41,7 @@ Revisions:
 	- 20130402@Jim: add support for base currency USD
 	- 20130426@Scott: Doesn't support RNG casino and Bingo (bettype : 71,73)
 	- 20130618@Jim: Restrict permission of Licensee Users by currency
+	- 20131203@Jim: offer Virtual Greyhound, Virtual Motor Racing
 	
 Param's Explanation: 
 */
@@ -120,14 +128,13 @@ BEGIN
 		SET @TempFromDate =  DATEADD(DAY,1,@MoveBetsDay)
 	ELSE
 		SET @TempFromDate = @FDate
-	
 	INSERT  INTO #AgWinLoss
         SELECT  
 			bettype ,
 			CASE WHEN b.bettype BETWEEN 81 AND 120 THEN b.liveindicator ELSE 0 END AS liveindicator,
 			--b.winlostdate,
 			--b.currency,
-            SUM(CASE WHEN liveawayscore = 0 AND bettype IN ( 33, 43 ) THEN stake / 2 ELSE stake END) ,
+            SUM(CASE WHEN b.liveawayscore = 0 AND bettype IN ( 33, 43 ) THEN stake / 2 ELSE stake END) ,
             SUM(winlost - actual_stake) ,
             - SUM(CASE WHEN ISNULL(BA.transid,0)=0 AND ((b.bettype < 31 OR (b.bettype BETWEEN 121 AND 999)) OR b.bettype BETWEEN 81 AND 120  OR b.bettype BETWEEN 1101 AND 1199 OR  b.bettype BETWEEN 1201 AND 1299) THEN (b.winlost - b.actual_stake)  ELSE 0 END ) AS LicenseeWL,
 			SUM (CASE WHEN b.bettype IN (31,32,33) THEN b.awinlost ELSE 0 END) AS WinlossRB,
@@ -137,7 +144,7 @@ BEGIN
 			SUM ( CASE WHEN b.bettype IN (31,32,33)   THEN comm ELSE 0 END) as CommRB,
 			SUM (   playercomm ) as PlayerComm,
 			---- EUR
-			SUM(CASE WHEN liveawayscore = 0 AND bettype IN ( 33, 43 ) THEN stake / 2 ELSE stake END * e.EUR) ,
+			SUM(CASE WHEN b.liveawayscore = 0 AND bettype IN ( 33, 43 ) THEN stake / 2 ELSE stake END * e.EUR) ,
             SUM((winlost - actual_stake) * e.EUR) ,
             - SUM(CASE WHEN ISNULL(BA.transid,0)=0 AND ((b.bettype < 31 OR (b.bettype BETWEEN 121 AND 999)) OR b.bettype BETWEEN 81 AND 120  OR b.bettype BETWEEN 1101 AND 1199 OR  b.bettype BETWEEN 1201 AND 1299) THEN (b.winlost - b.actual_stake)  ELSE 0 END * e.EUR) AS LicenseeWLEUR,
 			SUM (CASE WHEN b.bettype IN (31,32,33) THEN b.awinlost ELSE 0 END * e.EUR) AS WinlossRBEUR,
@@ -147,7 +154,7 @@ BEGIN
 			SUM ( CASE WHEN b.bettype IN (31,32,33)   THEN comm ELSE 0 END * e.EUR) as CommRBEUR,
 			SUM (   playercomm * e.EUR) as PlayerCommEUR,
 			--- USD
-			SUM(CASE WHEN liveawayscore = 0 AND bettype IN ( 33, 43 ) THEN stake / 2 ELSE stake END * e.USD) ,
+			SUM(CASE WHEN b.liveawayscore = 0 AND bettype IN ( 33, 43 ) THEN stake / 2 ELSE stake END * e.USD) ,
             SUM((winlost - actual_stake) * e.USD) ,
             - SUM(CASE WHEN ISNULL(BA.transid,0)=0 AND ((b.bettype < 31 OR (b.bettype BETWEEN 121 AND 999)) OR b.bettype BETWEEN 81 AND 120  OR b.bettype BETWEEN 1101 AND 1199 OR  b.bettype BETWEEN 1201 AND 1299) THEN (b.winlost - b.actual_stake)  ELSE 0 END * e.USD) AS LicenseeWLUSD,
 			SUM (CASE WHEN b.bettype IN (31,32,33) THEN b.awinlost ELSE 0 END * e.USD) AS WinlossRBUSD,
@@ -161,15 +168,16 @@ BEGIN
 			dbo.bettrans b WITH ( NOLOCK,index=CIX_recommend_matchid_bettype) 
 			LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON b.recommend=BA.recommend AND b.transid = BA.transid
 			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
-        WHERE   
+		WHERE   
 			b.recommend in (SELECT custid from @TempAg) 
 			AND b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND bettype <= 1299
 			AND bettype not in (71,73)
-            AND ruben = 1
+            AND b.ruben = 1
             AND statusID NOT IN ( 101, 102, 103 )
-        GROUP BY bettype,CASE WHEN b.bettype BETWEEN 81 AND 120 THEN b.liveindicator ELSE 0 END
-		
+        GROUP BY bettype,
+				 CASE WHEN b.bettype BETWEEN 81 AND 120 THEN b.liveindicator ELSE 0 END
+	
 END
 
 IF @FDate <= @MoveBetsDay
@@ -181,17 +189,17 @@ BEGIN
 		
 	IF @BalanceUpDay < @FDate 
 	SELECT @BalanceUpDay=@FDate	
-		
+	
 	INSERT  INTO #AgWinLoss
         SELECT  
 			bettype ,
 			CASE WHEN b.bettype BETWEEN 81 AND 120 THEN b.liveindicator ELSE 0 END AS liveindicator,
 			--b.winlostdate,
 			--b.currency,
-            SUM(CASE WHEN liveawayscore = 0 AND bettype IN ( 33, 43 ) THEN stake / 2 ELSE stake END) ,
+            SUM(CASE WHEN b.liveawayscore = 0 AND bettype IN ( 33, 43 ) THEN stake / 2 ELSE stake END) ,
             SUM(winlost - actual_stake) ,
             - SUM( CASE WHEN ISNULL(BA.transid,0)=0 AND ((b.bettype < 31 OR (b.bettype BETWEEN 121 AND 999) ) OR b.bettype BETWEEN 81 AND 120 OR b.bettype BETWEEN 1101 AND 1199 OR b.bettype BETWEEN 1201 AND 1299  ) THEN (b.winlost - b.actual_stake)  ELSE 
-0 END ) AS LicenseeWL,
+				0 END ) AS LicenseeWL,
 			SUM (CASE WHEN b.bettype IN (31,32,33) THEN b.awinlost ELSE 0 END) AS WinlossRB,
             - SUM ( CASE WHEN ISNULL(BA.transid,0) <> 0 THEN  (b.winlost - b.actual_stake + awinlost + comm) ELSE 0 END) as AmountDueToBA,
 			- SUM ( CASE WHEN b.bettype IN (31,32,33) THEN (b.winlost - b.actual_stake + awinlost + comm) ELSE 0 END) AS AmountDueToRB,
@@ -199,10 +207,10 @@ BEGIN
 			SUM ( CASE WHEN b.bettype IN (31,32,33) THEN    comm  ELSE 0 END) as CommRB,
 			SUM (  playercomm ) as PlayerComm,
 			--- EUR
-			SUM(CASE WHEN liveawayscore = 0 AND bettype IN ( 33, 43 ) THEN stake / 2 ELSE stake END * e.EUR) ,
+			SUM(CASE WHEN b.liveawayscore = 0 AND bettype IN ( 33, 43 ) THEN stake / 2 ELSE stake END * e.EUR) ,
             SUM((winlost - actual_stake)* e.EUR) ,
             - SUM( CASE WHEN ISNULL(BA.transid,0)=0 AND ((b.bettype < 31 OR (b.bettype BETWEEN 121 AND 999) ) OR b.bettype BETWEEN 81 AND 120 OR b.bettype BETWEEN 1101 AND 1199 OR b.bettype BETWEEN 1201 AND 1299  ) THEN (b.winlost - b.actual_stake)  ELSE 
-0 END * e.EUR) AS LicenseeWLEUR,
+					0 END * e.EUR) AS LicenseeWLEUR,
 			SUM (CASE WHEN b.bettype IN (31,32,33) THEN b.awinlost ELSE 0 END * e.EUR) AS WinlossRBEUR,
             - SUM ( CASE WHEN ISNULL(BA.transid,0) <> 0 THEN  (b.winlost - b.actual_stake + awinlost + comm) ELSE 0 END * e.EUR) as AmountDueToBAEUR,
 			- SUM ( CASE WHEN b.bettype IN (31,32,33) THEN (b.winlost - b.actual_stake + awinlost + comm) ELSE 0 END * e.EUR) AS AmountDueToRBEUR,
@@ -210,10 +218,10 @@ BEGIN
 			SUM ( CASE WHEN b.bettype IN (31,32,33) THEN    comm  ELSE 0 END * e.EUR) as CommRBEUR,
 			SUM (  playercomm * e.EUR) as PlayerCommEUR,
 			--- USD
-			SUM(CASE WHEN liveawayscore = 0 AND bettype IN ( 33, 43 ) THEN stake / 2 ELSE stake END * e.USD) ,
+			SUM(CASE WHEN b.liveawayscore = 0 AND bettype IN ( 33, 43 ) THEN stake / 2 ELSE stake END * e.USD) ,
             SUM((winlost - actual_stake)* e.USD) ,
             - SUM( CASE WHEN ISNULL(BA.transid,0)=0 AND ((b.bettype < 31 OR (b.bettype BETWEEN 121 AND 999) ) OR b.bettype BETWEEN 81 AND 120 OR b.bettype BETWEEN 1101 AND 1199 OR b.bettype BETWEEN 1201 AND 1299  ) THEN (b.winlost - b.actual_stake)  ELSE 
-0 END * e.USD) AS LicenseeWLUSD,
+				0 END * e.USD) AS LicenseeWLUSD,
 			SUM (CASE WHEN b.bettype IN (31,32,33) THEN b.awinlost ELSE 0 END * e.USD) AS WinlossRBUSD,
             - SUM ( CASE WHEN ISNULL(BA.transid,0) <> 0 THEN  (b.winlost - b.actual_stake + awinlost + comm) ELSE 0 END * e.USD) as AmountDueToBAUSD,
 			- SUM ( CASE WHEN b.bettype IN (31,32,33) THEN (b.winlost - b.actual_stake + awinlost + comm) ELSE 0 END * e.USD) AS AmountDueToRBUSD,
@@ -226,12 +234,13 @@ BEGIN
 			INNER JOIN @TempAg a ON b.recommend = a.custid
 			LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_bk BA WITH (NOLOCK) ON b.recommend=BA.recommend AND b.transid = BA.transid
 			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
-        WHERE   
+		WHERE   
 			b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
             AND statusID NOT IN ( 101, 102, 103 )
             AND bettype <= 1299
             AND bettype not in (71,73)
-        GROUP BY bettype,CASE WHEN b.bettype BETWEEN 81 AND 120 THEN b.liveindicator ELSE 0 END--, b.winlostdate, b.currency	
+        GROUP BY bettype,
+			CASE WHEN b.bettype BETWEEN 81 AND 120 THEN b.liveindicator ELSE 0 END--, b.winlostdate, b.currency	
 END
 
 
@@ -311,11 +320,10 @@ FROM
 	
     
 DROP TABLE #AgWinLoss
-
-
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinLossByBettype] TO [bodbLicenseeNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_WinLossByBettype] TO [vnteam]
 GO
+
 
