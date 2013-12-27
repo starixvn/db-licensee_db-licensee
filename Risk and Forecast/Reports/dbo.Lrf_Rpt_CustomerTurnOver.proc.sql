@@ -1,13 +1,12 @@
 ﻿USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_CustomerTurnOver]    Script Date: 25/11/2013 5:44:54 PM ******/
+/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_CustomerTurnOver]    Script Date: 27/12/2013 2:20:19 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-
-ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
+ALTER  PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
 	 @LicenseeID INT,
 	 @UserID  INT,
 	 @Username VARCHAR(50)='', 
@@ -28,11 +27,12 @@ ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
 	 @ShowLoss bit=1,
 	 @ShowDraw bit=1
 AS
+
 /*	
 	Created	: Henry
 	Task: Customer Performance Report
 	Date: 2011-12-28
-	DB: DBRPT/BODB02
+	DB: DBEXT/BODB02
 	Original: Lrf_Rpt_CustomerPerformance
 	Revision:
 	- 20120214@Henry: Seperate 3 options: Win/Loss/Draw (and all)
@@ -41,7 +41,8 @@ AS
 	- 20130618@Jim:  Restrict permission of Licensee Users by currency
 	- 20131021@Jim: Add more products to Customer Turnover Report
 	- 20131130@Florent: turning SP
-	- 20131205@Florent: add more product and search LIKE customer.....
+	- 20131205@Florent: add more product and search LIKE customer
+	- 20131225@Florent: Remove using bettrans14, use only bettrans and rptCustomerturnover
 	Parameter's Explanation:
 		- @ReportBy:  1: daily, 2: monthly
 		- @FilterBy:  1: Win, 2: Loss, 3: Draw
@@ -77,7 +78,8 @@ CREATE TABLE #Data
 	Winlost		MONEY,
 	PlayerComm  MONEY,
 	Odds SMALLMONEY,
-	OddsType SMALLINT
+	OddsType SMALLINT,
+	betcount SMALLINT
 )
 
 DECLARE @Status AS TABLE
@@ -148,7 +150,7 @@ ELSE
 		FROM DBLIC.bodb_licensee.dbo.LicenseeCustInfo lc WITH (NOLOCK) 
 		WHERE
 			recommend IN (SELECT CustID FROM #recommend)
-		DROP TABLE 	#recommend
+		--DROP TABLE 	#recommend
 		
 		SELECT @Username = ltrim(rtrim(@Username))
 		IF ISNULL(@Username,'')<>''
@@ -182,8 +184,8 @@ ELSE
 			SELECT 112
 			INSERT INTO @Status
 			SELECT 114
-		END
-
+			
+		END 
 		IF @ShowLoss=1
 		BEGIN
 			INSERT INTO @Status
@@ -226,7 +228,8 @@ ELSE
 				b.winlost - b.actual_stake as winlost,
 				b.PlayerComm ,
 				b.Odds,
-				b.Oddstype
+				b.Oddstype,
+				1 betcount
 			FROM bettrans b WITH (NOLOCK)
 			INNER JOIN #bettype bet  ON b.bettype=bet.typeID
 			LEFT JOIN match m WITH (NOLOCK) ON b.matchid = m.matchid
@@ -240,17 +243,94 @@ ELSE
 				AND (b.custid IN (SELECT * FROM #custID) OR @CustID=0)
 				AND b.statusID IN (SELECT StatusID FROM @Status)
 		END
+		
 		IF @Fromdate <= @MoveBetsDay
 		BEGIN
 			IF @ToDate >= @MoveBetsDay
 				SET @TempToDate = @MoveBetsDay
 			ELSE
 				SET  @TempToDate = @ToDate
-				
+			;WITH cte_raceinfo
+				AS 
+				(
+					SELECT  o.Orid,r.SportType,r.LeagueID,o.EventDate
+					FROM bodb_archive.dbo.VSOutright_bk o WITH (NOLOCK)
+					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID  
+					WHERE EventTime BETWEEN @fromDate AND @TempToDate
+					UNION ALL
+					SELECT  o.Orid,r.SportType,r.LeagueID,o.EventDate
+					FROM dbo.VSOutright14 o WITH (NOLOCK)
+					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID  
+					WHERE EventTime BETWEEN @fromDate AND @TempToDate					
+				)
+			,cte_temp_bk
+			AS (
+				SELECT bk.winlostdate
+					,bk.CustID
+					--,bk.sporttype sporttype
+					,CASE WHEN bk.bettype IN (1220,1235,1236) THEN 186 
+						  WHEN bk.bettype IN (9,10,29) THEN 1
+						ELSE bk.sporttype 
+						END sporttype  
+					,bk.bettype
+					,bk.currency
+					,bk.stake AS turnover
+					,bk.winlost 
+					,bk.PlayerComm
+					,bk.Odds
+					,bk.oddstype
+					,bk.statusID
+					,bk.betcount
+				FROM bodb_LicenseeReport.dbo.rptcustomerturnOver bk WITH (NOLOCK)
+				INNER JOIN #recommend re ON bk.recommend=re.custid				 
+				WHERE /*bk.custid IN (
+						SELECT CustID
+						FROM #Currency
+						)
+						*/
+						
+					/*bk.recommend IN (SELECT custid FROM #recommend)
+					AND
+					*/ bk.winlostdate BETWEEN @fromdate AND @TempToDate
+					AND bk.bettype IN (
+						SELECT b.typeid
+						FROM #bettype b
+					)					
+					AND (
+						--bk.CustID IN (SELECT * FROM #Custid)
+						EXISTS (SELECT 1 FROM #Custid WHERE bk.custid=#CustID.Custid)
+						OR @CustID = 0
+					)
+					--OR @CustID = 0
+					
+					--AND bodb_LicenseeReport.$PARTITION.pf_rptcustomerturnOver_monthly(winlostdate) in (@i,@i+1)
+					AND bk.STATUSID IN (
+						SELECT statusid
+						FROM @Status
+						)
+				)
+			INSERT INTO #Data
+			SELECT b.CustID
+				,b.winlostdate
+				,b.sporttype
+				,b.bettype
+				,currency
+				,b.turnover
+				,b.winlost
+				,b.PlayerComm
+				,b.Odds
+				,b.Oddstype
+				,b.betcount
+			FROM cte_temp_bk b
+				/*WHERE b.statusID IN (
+					SELECT StatusID
+					FROM @Status
+					)*/
+		/*		
 			IF @BalanceUpDay < @FromDate 
 				SELECT @BalanceUpDay=@FromDate
 				
-			;WITH cte_raceinfo
+				;WITH cte_raceinfo
 				AS 
 				(
 					SELECT  o.Orid,r.SportType,r.LeagueID,o.EventDate
@@ -272,7 +352,8 @@ ELSE
 				b.winlost - b.actual_stake as winlost,
 				b.PlayerComm,
 				b.Odds,
-				b.Oddstype
+				b.Oddstype,
+				1 betcount
 			FROM bettrans14 b WITH (NOLOCK)
 			INNER JOIN #bettype bet  ON b.bettype=bet.typeID
 			LEFT JOIN match14 m WITH (NOLOCK) ON b.matchid = m.matchid
@@ -285,8 +366,10 @@ ELSE
 				--AND (b.CustID = @CustID OR @CustID=0)
 				AND (b.custid IN (SELECT * FROM #custID) OR @CustID=0)
 				AND b.statusID IN (SELECT StatusID FROM @Status)
+		*/
 		END
-
+		
+		/*
 		IF @FromDate < @BalanceUpDay
 		BEGIN
 			IF @todate >= DATEADD(dd, -1, @BalanceUpDay)
@@ -294,19 +377,32 @@ ELSE
 			ELSE
 				SET @TempToDate = @todate
 				
-			;WITH cte_temp_bk
+			;WITH cte_raceinfo
+				AS 
+				(
+					SELECT  o.Orid,r.SportType,r.LeagueID,o.EventDate
+					FROM bodb_archive.dbo.VSOutright_bk o WITH (NOLOCK)
+					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID  
+					WHERE EventTime BETWEEN @fromDate AND @TempToDate
+				)
+			,cte_temp_bk
 			AS (
 				SELECT bk.winlostdate
 					,bk.CustID
-					,bk.sporttype sporttype
+					--,bk.sporttype sporttype
+					,CASE WHEN bk.bettype IN (1220,1235,1236) THEN 186 
+						  WHEN bk.bettype IN (9,10,29) THEN 1
+						ELSE bk.sporttype 
+						END sporttype  
 					,bk.bettype
 					,bk.currency
 					,bk.stake AS turnover
-					,bk.winlost AS winlost
+					,bk.winlost 
 					,bk.PlayerComm
 					,bk.Odds
 					,bk.oddstype
 					,bk.statusID
+					,bk.betcount
 				FROM bodb_LicenseeReport.dbo.rptcustomerturnOver bk WITH (NOLOCK)
 			
 				WHERE bk.custid IN (
@@ -339,6 +435,7 @@ ELSE
 				,b.PlayerComm
 				,b.Odds
 				,b.Oddstype
+				,b.betcount
 			FROM cte_temp_bk b
 				/*WHERE b.statusID IN (
 					SELECT StatusID
@@ -346,8 +443,8 @@ ELSE
 					)*/
 				
 		END
-
-
+		*/
+		
 		
 		UPDATE #Data
 		SET odds = CASE WHEN OddsType = 1 THEN odds + 1 --decimal
@@ -405,7 +502,7 @@ ELSE
 				 WHEN (typeid BETWEEN 1201 AND 1299 AND bt.typeid IN (1220,1235,1236)) THEN  N'V.Tennis - '+bt.typenamee
 				 ELSE  bt.typenamee
 			END AS bettype,
-			count(b.currency) AS Betcount,
+			sum(b.betcount) AS Betcount,
 			sum(b.turnover) AS Turnover,
 			sum(b.winlost) AS Winlost,
 			SUM(PlayerComm) AS PlayerComm
@@ -492,14 +589,7 @@ ELSE
 		DROP TABLE #Currency 
 		DROP TABLE #bettype
 		DROP TABLE #custID
+		DROP TABLE 	#recommend
 	END
 DROP TABLE #ProductID
 DROP TABLE #BettypeID
-
-GO
-ALTER AUTHORIZATION ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO  SCHEMA OWNER 
-GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [bodbLicenseeNet] AS [dbo]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [vnteam] AS [dbo]
-GO
