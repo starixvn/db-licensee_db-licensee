@@ -29,9 +29,15 @@ AS
 	SELECT transid FROM DBLIC.bodb_licensee.dbo.LicenseeBATransaction WITH(NOLOCK)
 	WHERE Transdate BETWEEN @fromdate and DATEADD(DAY,2,@Todate)
 )
- ,TEMPS
+,cte_tempLicenseeCust
+AS (
+	SELECT currency,custid
+	FROM DBLIC.bodb_licensee.dbo.LicenseeCust lc WITH (NOLOCK)
+	)
+,cte_bettrans
 AS (
 	SELECT a.CustID
+		,lc.currency
 		,a.recommend
 		,a.matchid
 		,a.bettype
@@ -39,10 +45,8 @@ AS (
 		,sum(a.winlost- a.actual_stake) winlost
 		,sum(a.PlayerComm) PlayerComm
 		,a.Odds
-		--,a.modds
 		,a.oddsid
 		,a.oddstype
-		--,a.statusID
 		,CASE 
 		WHEN a.statusID = 112
 			AND a.bettype IN (1, 3, 7, 8, 17, 18)
@@ -68,54 +72,55 @@ AS (
 		WHEN BA.transid IS NULL THEN 0
 		WHEN BA.transid IS NOT NULL THEN 1 END AS isBA
 	FROM bodb_archive.dbo.bettrans_bk a WITH (NOLOCK)
+	INNER JOIN cte_tempLicenseeCust lc ON a.recommend = lc.custid
 	LEFT JOIN cte_isBATrans AS BA ON a.transid=ba.transid
 	WHERE a.winlostdate BETWEEN @fromdate AND @todate
 	AND a.statusID IN (111,112,113) 
-	--AND a.bettype<=19999
 	GROUP BY a.matchid
 		,a.CustID
+		,lc.currency
 		,a.recommend
 		,a.bettype
 		,a.Odds
-		,a.modds
 		,a.oddsid
 		,a.oddstype
-		,a.statusID
+		,CASE 
+			WHEN a.statusID = 112
+				AND a.bettype IN (1, 3, 7, 8, 17, 18)
+				AND ABS(modds) = 0.25
+				THEN 114
+			WHEN a.statusID = 112
+				AND a.liveawayscore = 0 
+				AND a.bettype IN(33,43) 
+				THEN 114
+			WHEN a.statusID = 113
+				AND a.bettype IN (1, 3, 7, 8, 17, 18)
+				AND ABS(modds) = 0.25
+				THEN 115
+			WHEN a.statusID = 113
+				AND a.liveawayscore = 0 
+				AND a.bettype IN(33,43)
+				THEN 115
+			ELSE a.statusID
+		END
 		,a.winlostdate
-		,a.liveawayscore
 		,CASE 
 		WHEN BA.transid IS NULL THEN 0
 		WHEN BA.transid IS NOT NULL THEN 1 END
 	)
-	,cte_tempLicenseeCust
-AS (
-	SELECT DISTINCT currency
-		,custid
-	FROM DBLIC.bodb_licensee.dbo.LicenseeCust lc WITH (NOLOCK)
-	)
-	,cte_bettrans
-AS (
-	SELECT a.*
-		,LC.currency
-	FROM TEMPS a WITH (NOLOCK)
-		,cte_tempLicenseeCust lc WITH (NOLOCK)
-	WHERE a.recommend = lc.custid
-	)
-	,cte_raceinfo
+,cte_raceinfo
 AS (
 	SELECT o.Orid
 		,r.SportType
 		,r.LeagueID
 	FROM bodb_archive.dbo.VSOutright_bk o WITH (NOLOCK)
 	INNER JOIN dbo.VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
-	WHERE EventTime BETWEEN @fromdate AND @todate
+	WHERE EventDate BETWEEN @fromdate AND @todate
 )
---SELECT * FROM cte_bettrans
 
---INSERT INTO DB052.bodb_LicenseeReport.dbo.rptCustomerTurnOver  
 SELECT
-	ROW_NUMBER() OVER (ORDER BY a.custid ) num 
-    ,a.CustID
+	--ROW_NUMBER() OVER (ORDER BY a.custid ) num 
+    a.CustID
 	,a.bettype
 	,CASE 
 		WHEN a.bettype IN (71, 72)
@@ -133,7 +138,6 @@ SELECT
 					WHEN b.sporttype IS NOT NULL THEN b.sporttype
 					ELSE 180 --Virtual Sport
 				END   --Virtual Sport
-				 --isnull(result.sporttype,isNULL(b.sporttype,180))  --Virtual Sport
 		WHEN a.bettype BETWEEN 51 AND 69
 			THEN 201
 		WHEN a.bettype IN (31, 32, 33, 41, 42, 43)

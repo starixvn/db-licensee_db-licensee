@@ -21,9 +21,9 @@ SET NOCOUNT ON;
 WHILE (@fromdate<=@todate)
 BEGIN
 	PRINT @Fromdate
-	EXEC Task_rptCustomerTurnOver_Bettrans_bk
+	EXEC dbo.Task_rptCustomerTurnOver_Bettrans_bk
 		@Fromdate,@Fromdate		
 	SELECT @fromdate =DATEADD(DAY,1,@fromdate)
-	--wait for 5s
-	WAITFOR DELAY '00:00:05';
+	--wait for 2s
+	WAITFOR DELAY '00:00:02';
 END
