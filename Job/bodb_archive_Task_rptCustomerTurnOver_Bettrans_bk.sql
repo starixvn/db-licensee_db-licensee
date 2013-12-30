@@ -26,7 +26,7 @@ SET NOCOUNT ON;
 ;WITH cte_isBATrans
 AS 
 (
-	SELECT * FROM DBLIC.bodb_licensee.dbo.LicenseeBATransaction
+	SELECT * FROM DBLIC.bodb_licensee.dbo.LicenseeBATransaction WITH(NOLOCK)
 	WHERE Transdate BETWEEN @fromdate and DATEADD(DAY,2,@Todate)
 )
  ,TEMPS
