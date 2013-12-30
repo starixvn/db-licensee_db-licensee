@@ -118,62 +118,124 @@ AS (
 	WHERE EventDate BETWEEN @fromdate AND @todate
 )
 
-SELECT
-	--ROW_NUMBER() OVER (ORDER BY a.custid ) num 
-    a.CustID
-	,a.bettype
-	,CASE 
-		WHEN a.bettype IN (71, 72)
-			THEN 251 --casino
-		WHEN a.bettype = 1000
-			THEN 253 --games
-		WHEN a.bettype BETWEEN 81 AND 120
-			THEN 161 --Number Game 
-		WHEN a.bettype BETWEEN 1101 AND 1199
-			THEN 162 -- Live casino
-		WHEN a.bettype BETWEEN 1201 AND 1299
-			THEN 
-				CASE 
-					WHEN result.sporttype IS NOT NULL THEN result.sporttype
-					WHEN b.sporttype IS NOT NULL THEN b.sporttype
-					ELSE 180 --Virtual Sport
-				END   --Virtual Sport
-		WHEN a.bettype BETWEEN 51 AND 69
-			THEN 201
-		WHEN a.bettype IN (31, 32, 33, 41, 42, 43)
-			THEN 151
-		ELSE isNULL(b.sporttype,0)
-		END sporttype,
-	a.Currency
+SELECT  ROW_NUMBER() OVER (ORDER BY a.custid ) num 
+	,CustID
+	,bettype
+	,sporttype,
+	Currency
 	,stake
-	,winlost 
+	,winlost  
 	,playercomm
-	,a.Odds
+	,Odds
 	,oddstype
-	,a.statusID
-	,a.recommend
-	,CASE 
-		WHEN a.bettype IN (9, 29)
-			THEN - 9
-		WHEN a.bettype = 10
-			OR (
-				a.bettype > 30
-				AND a.bettype < 50
-				)
-			THEN ISNULL(ob.leagueid, - 1)
-		WHEN a.bettype IN (1231, 1232, 1233, 1237, 1238)
-			THEN isnull(result.LeagueID,-1)
-		ELSE isnull(b.LeagueID, - 1)
-		END LeagueID
+	,statusID
+	,recommend
+	,LeagueID
 	,winlostdate
-	,a.betcount
-	,a.isba	
-INTO #datatemp
-FROM cte_bettrans a
-LEFT JOIN bodb_archive.dbo.MATCH_BK b WITH (NOLOCK) ON a.matchid = b.matchid
-LEFT JOIN cte_raceinfo result ON a.oddsid = result.Orid
-LEFT JOIN bodb_archive.dbo.outright_bk AS ob WITH (NOLOCK) ON a.matchid = ob.orid
+	,betcount
+	,isba
+	INTO #datatemp
+	FROM (
+			SELECT
 
+				a.CustID
+				,a.bettype
+				,CASE 
+					WHEN a.bettype IN (71, 72)
+						THEN 251 --casino
+					WHEN a.bettype = 1000
+						THEN 253 --games
+					WHEN a.bettype BETWEEN 81 AND 120
+						THEN 161 --Number Game 
+					WHEN a.bettype BETWEEN 1101 AND 1199
+						THEN 162 -- Live casino
+					WHEN a.bettype BETWEEN 1201 AND 1299
+						THEN 
+							CASE 
+								WHEN result.sporttype IS NOT NULL THEN result.sporttype
+								WHEN b.sporttype IS NOT NULL THEN b.sporttype
+								ELSE 180 --Virtual Sport
+							END   --Virtual Sport
+					WHEN a.bettype BETWEEN 51 AND 69
+						THEN 201
+					WHEN a.bettype IN (31, 32, 33, 41, 42, 43)
+						THEN 151
+					ELSE isNULL(b.sporttype,0)
+					END sporttype,
+				a.Currency
+				,sum(stake)stake
+				,sum(winlost) winlost  
+				,sum(playercomm)playercomm
+				,a.Odds
+				,oddstype
+				,a.statusID
+				,a.recommend
+				,CASE 
+					WHEN a.bettype IN (9, 29)
+						THEN - 9
+					WHEN a.bettype = 10
+						OR (
+							a.bettype > 30
+							AND a.bettype < 50
+							)
+						THEN ISNULL(ob.leagueid, - 1)
+					WHEN a.bettype IN (1231, 1232, 1233, 1237, 1238)
+						THEN isnull(result.LeagueID,-1)
+					ELSE isnull(b.LeagueID, - 1)
+					END LeagueID
+				,winlostdate
+				,sum(a.betcount) betcount
+				,a.isba	
+			FROM cte_bettrans a
+			LEFT JOIN bodb_archive.dbo.MATCH_BK b WITH (NOLOCK) ON a.matchid = b.matchid
+			LEFT JOIN cte_raceinfo result ON a.oddsid = result.Orid
+			LEFT JOIN bodb_archive.dbo.outright_bk AS ob WITH (NOLOCK) ON a.matchid = ob.orid
+			GROUP BY
+				 a.CustID
+				,a.bettype
+				,CASE 
+					WHEN a.bettype IN (71, 72)
+						THEN 251 --casino
+					WHEN a.bettype = 1000
+						THEN 253 --games
+					WHEN a.bettype BETWEEN 81 AND 120
+						THEN 161 --Number Game 
+					WHEN a.bettype BETWEEN 1101 AND 1199
+						THEN 162 -- Live casino
+					WHEN a.bettype BETWEEN 1201 AND 1299
+						THEN 
+							CASE 
+								WHEN result.sporttype IS NOT NULL THEN result.sporttype
+								WHEN b.sporttype IS NOT NULL THEN b.sporttype
+								ELSE 180 --Virtual Sport
+							END   --Virtual Sport
+					WHEN a.bettype BETWEEN 51 AND 69
+						THEN 201
+					WHEN a.bettype IN (31, 32, 33, 41, 42, 43)
+						THEN 151
+					ELSE isNULL(b.sporttype,0)
+					END,
+				a.Currency
+				,a.Odds
+				,oddstype
+				,a.statusID
+				,a.recommend
+				,CASE 
+					WHEN a.bettype IN (9, 29)
+						THEN - 9
+					WHEN a.bettype = 10
+						OR (
+							a.bettype > 30
+							AND a.bettype < 50
+							)
+						THEN ISNULL(ob.leagueid, - 1)
+					WHEN a.bettype IN (1231, 1232, 1233, 1237, 1238)
+						THEN isnull(result.LeagueID,-1)
+					ELSE isnull(b.LeagueID, - 1)
+					END 
+				,winlostdate
+				,a.isba	
+) a
 
 DECLARE @i INT,@step int
 SET @i=1  
