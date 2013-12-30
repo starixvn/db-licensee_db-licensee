@@ -159,19 +159,14 @@ ELSE
 				SELECT cr.custid
 				FROM Customer cr (NOLOCK)
 					INNER JOIN #Currency c ON cr.CustID=c.CustID
-				WHERE (username2 LIKE '%$' +'%'+ @Username+'%' AND @LicenseeID=8)
-					  OR (username2 LIKE '%$' +'%'+ @Username+'%')
+				WHERE username2 LIKE '%$%' + @Username+'%'
 				
-				--IF ISNULL(@CustID,0) = 0
-				--IF NOT EXISTS ( SELECT 1 FROM #CustID)
-				--BEGIN
+
 				INSERT INTO #CustID
 					SELECT cr.CustID 
 					FROM Customer cr(NOLOCK)
 						INNER JOIN #Currency c ON cr.CustID=c.CustID
 					WHERE username  like '%'+@Username+'%'
-					AND cr.custid NOT IN (SELECT custid FROM #CustID)
-				--END
 			END
 		ELSE 
 			IF ISNULL(@Username,'')=''
@@ -283,26 +278,16 @@ ELSE
 					,bk.betcount
 				FROM bodb_LicenseeReport.dbo.rptcustomerturnOver bk WITH (NOLOCK)
 				INNER JOIN #recommend re ON bk.recommend=re.custid				 
-				WHERE /*bk.custid IN (
-						SELECT CustID
-						FROM #Currency
-						)
-						*/
-						
-					/*bk.recommend IN (SELECT custid FROM #recommend)
-					AND
-					*/ bk.winlostdate BETWEEN @fromdate AND @TempToDate
+				WHERE bk.winlostdate BETWEEN @fromdate AND @TempToDate
 					AND bk.bettype IN (
 						SELECT b.typeid
 						FROM #bettype b
 					)					
-					AND (
-						--bk.CustID IN (SELECT * FROM #Custid)
+					AND (						
 						EXISTS (SELECT 1 FROM #Custid WHERE bk.custid=#CustID.Custid)
 						OR @CustID = 0
 					)
-					--OR @CustID = 0
-					
+									
 					--AND bodb_LicenseeReport.$PARTITION.pf_rptcustomerturnOver_monthly(winlostdate) in (@i,@i+1)
 					AND bk.STATUSID IN (
 						SELECT statusid
@@ -321,127 +306,9 @@ ELSE
 				,b.Odds
 				,b.Oddstype
 				,b.betcount
-			FROM cte_temp_bk b
-				/*WHERE b.statusID IN (
-					SELECT StatusID
-					FROM @Status
-					)*/
-		/*		
-			IF @BalanceUpDay < @FromDate 
-				SELECT @BalanceUpDay=@FromDate
-				
-				;WITH cte_raceinfo
-				AS 
-				(
-					SELECT  o.Orid,r.SportType,r.LeagueID,o.EventDate
-					FROM dbo.VSOutright14  o WITH (NOLOCK)
-					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID  
-					WHERE EventTime BETWEEN @BalanceUpDay AND @ToDate
-				)
-			INSERT INTO #Data
-			SELECT 
-				b.CustID,
-				winlostdate,
-				CASE 
-					WHEN b.bettype NOT IN (9,10,29,1231,1232,1233,1237,1238) THEN m.sporttype
-					WHEN b.bettype IN (1231,1232,1233,1237,1238) THEN cr.SportType
-					ELSE 1 END sporttype,
-				b.bettype,
-				currency,
-				stake as turnover,
-				b.winlost - b.actual_stake as winlost,
-				b.PlayerComm,
-				b.Odds,
-				b.Oddstype,
-				1 betcount
-			FROM bettrans14 b WITH (NOLOCK)
-			INNER JOIN #bettype bet  ON b.bettype=bet.typeID
-			LEFT JOIN match14 m WITH (NOLOCK) ON b.matchid = m.matchid
-			LEFT JOIN outright14 o with(nolock) ON b.matchid = o.orid 
-			LEFT JOIN league l with(nolock) ON o.leagueid = l.leagueid
-			LEFT JOIN cte_raceinfo AS cr ON cr.orid =b.oddsid
-			WHERE 
-				b.CustID IN (SELECT CustID FROM #Currency) AND 
-				 b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
-				--AND (b.CustID = @CustID OR @CustID=0)
-				AND (b.custid IN (SELECT * FROM #custID) OR @CustID=0)
-				AND b.statusID IN (SELECT StatusID FROM @Status)
-		*/
+			FROM cte_temp_bk b	
 		END
 		
-		/*
-		IF @FromDate < @BalanceUpDay
-		BEGIN
-			IF @todate >= DATEADD(dd, -1, @BalanceUpDay)
-				SET @TempToDate = DATEADD(dd, -1, @BalanceUpDay)
-			ELSE
-				SET @TempToDate = @todate
-				
-			;WITH cte_raceinfo
-				AS 
-				(
-					SELECT  o.Orid,r.SportType,r.LeagueID,o.EventDate
-					FROM bodb_archive.dbo.VSOutright_bk o WITH (NOLOCK)
-					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID  
-					WHERE EventTime BETWEEN @fromDate AND @TempToDate
-				)
-			,cte_temp_bk
-			AS (
-				SELECT bk.winlostdate
-					,bk.CustID
-					--,bk.sporttype sporttype
-					,CASE WHEN bk.bettype IN (1220,1235,1236) THEN 186 
-						  WHEN bk.bettype IN (9,10,29) THEN 1
-						ELSE bk.sporttype 
-						END sporttype  
-					,bk.bettype
-					,bk.currency
-					,bk.stake AS turnover
-					,bk.winlost 
-					,bk.PlayerComm
-					,bk.Odds
-					,bk.oddstype
-					,bk.statusID
-					,bk.betcount
-				FROM bodb_LicenseeReport.dbo.rptcustomerturnOver bk WITH (NOLOCK)
-			
-				WHERE bk.custid IN (
-						SELECT CustID
-						FROM #Currency
-						)
-					AND bk.winlostdate BETWEEN @fromdate AND @TempToDate
-					AND bk.bettype IN (
-						SELECT b.typeid
-						FROM #bettype b
-						)
-					AND (
-						bk.CustID IN (SELECT * FROM #Custid)
-						OR @CustID = 0
-						)
-					--AND bodb_LicenseeReport.$PARTITION.pf_rptcustomerturnOver_monthly(winlostdate) in (@i,@i+1)
-					AND bk.STATUSID IN (
-						SELECT statusid
-						FROM @Status
-						)
-				)
-			INSERT INTO #Data
-			SELECT b.CustID
-				,b.winlostdate
-				,b.sporttype
-				,b.bettype
-				,currency
-				,b.turnover
-				,b.winlost
-				,b.PlayerComm
-				,b.Odds
-				,b.Oddstype
-				,b.betcount
-			FROM cte_temp_bk b
-				/*WHERE b.statusID IN (
-					SELECT StatusID
-					FROM @Status
-					)*/
-				
 		END
 		*/
 		
@@ -488,14 +355,7 @@ ELSE
 				WHEN e.exchangeid = 20 THEN 'UUS'
 				WHEN e.exchangeid = 51 THEN e.currency
 				ELSE e.Code END AS Currency,
-			b.sporttype,	
-			/*
-				CASE WHEN  b.bettype BETWEEN 81 AND 120 THEN N'NG - ' + bt.typenamee 
-			
-				 WHEN (b.bettype BETWEEN 1201 AND 1299 AND bt.typeid NOT IN (1220,1235,1236,1231,1232,1233,1237,1238)) THEN N'V.Soccer - '+bt.typenamee
-				  
-				 ELSE bt.typenamee END
-			*/
+			b.sporttype,		
 			CASE WHEN typeid BETWEEN 81 AND 120 THEN  N'NG - ' + bt.typenamee
 				 WHEN (typeid BETWEEN 1201 AND 1299 AND bt.typeid NOT IN (1220,1235,1236,1231,1232,1233,1237,1238)) THEN  N'V.Soccer - '+bt.typenamee
 				 WHEN (typeid BETWEEN 1201 AND 1299 AND bt.typeid IN (1231,1232,1233)) THEN  N'V.Racing - '+bt.typenamee
@@ -527,10 +387,6 @@ ELSE
 			c.username,	
 			b.sporttype,	
 			b.bettype,
-			/*CASE WHEN  b.bettype BETWEEN 81 AND 120 THEN N'NG - ' + bt.typenamee 
-				 WHEN (b.bettype BETWEEN 1201 AND 1299 AND bt.typeid NOT IN (1220,1235,1236,1231,1232,1233,1237,1238)) THEN N'V.Soccer - '+bt.typenamee 
-				 ELSE bt.typenamee END
-			*/
 			CASE WHEN typeid BETWEEN 81 AND 120 THEN  N'NG - ' + bt.typenamee
 				 WHEN (typeid BETWEEN 1201 AND 1299 AND bt.typeid NOT IN (1220,1235,1236,1231,1232,1233,1237,1238)) THEN  N'V.Soccer - '+bt.typenamee
 				 WHEN (typeid BETWEEN 1201 AND 1299 AND bt.typeid IN (1231,1232,1233)) THEN  N'V.Racing - '+bt.typenamee
@@ -561,15 +417,12 @@ ELSE
 			SUM(PlayerComm) PlayerComm
 		FROM #result 	
 		GROUP BY 
-					ReportBy,  
+			ReportBy,  
 			username,
 			Currency,
 			sporttype,
 			bettype
 		) B
-		
-		
-		
 		SELECT * FROM #return	
 		WHERE ( RowNo between @RowStart AND @RowEnd	AND  @IsExportExcel=0) OR (@IsExportExcel=1 AND RowNo<65000)
 	--- Data Sum 	
