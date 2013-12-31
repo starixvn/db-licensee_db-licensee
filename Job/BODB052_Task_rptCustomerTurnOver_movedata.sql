@@ -33,8 +33,8 @@ DECLARE @sql NVARCHAR(MAX)
 			,statusID ,recommend ,LeagueID
 			,winlostdate ,betcount ,isba 
 			FROM bodb_report.dbo.rptCustomerTurnover rpt
-			WHERE rpt.winlostdate BETWEEN '+ CONVERT (CHAR(10),@fromdate,126)+' AND '+CONVERT (CHAR(10),@todate,126)+''')'
+			WHERE rpt.winlostdate BETWEEN '''''+ CAST (@fromdate AS VARCHAR)+''''' AND '''''+ CAST (@todate AS VARCHAR)+''''''')'
 	PRINT @sql
 
-	EXEC sp_ExecuteSQL @Sql;
+	EXEC (@Sql)
 END 
