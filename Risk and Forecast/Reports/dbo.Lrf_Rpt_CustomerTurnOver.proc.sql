@@ -277,12 +277,13 @@ ELSE
 					,bk.statusID
 					,bk.betcount
 				FROM bodb_LicenseeReport.dbo.rptcustomerturnOver bk WITH (NOLOCK)
-				INNER JOIN #recommend re ON bk.recommend=re.custid				 
+				INNER JOIN #recommend re ON bk.recommend=re.custid
+				INNER JOIN #bettype	bt ON bk.bettype=bt.typeid 
 				WHERE bk.winlostdate BETWEEN @fromdate AND @TempToDate
-					AND bk.bettype IN (
+					/*AND bk.bettype IN (
 						SELECT b.typeid
 						FROM #bettype b
-					)					
+					)*/					
 					AND (						
 						EXISTS (SELECT 1 FROM #Custid WHERE bk.custid=#CustID.Custid)
 						OR @CustID = 0
