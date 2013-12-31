@@ -306,9 +306,9 @@ ELSE
 						,bk.betcount
 					FROM bodb_LicenseeReport.dbo.rptcustomerturnOver bk WITH (NOLOCK)
 					INNER JOIN #recommend re ON bk.recommend=re.custid				
-					INNER JOIN #bettype bt ON bk.bettype=bt.typeid 
-					WHERE bk.winlostdate BETWEEN @fromdate AND @TempToDate				
-						AND EXISTS (SELECT 1 FROM #Custid WHERE bk.custid=#CustID.Custid)							
+					INNER JOIN #bettype bt ON bk.bettype=bt.typeid
+					INNER JOIN #Custid cus ON cus.custid = bk.custid
+					WHERE bk.winlostdate BETWEEN @fromdate AND @TempToDate
 						--AND bodb_LicenseeReport.$PARTITION.pf_rptcustomerturnOver_monthly(winlostdate) in (@i,@i+1)
 						AND bk.STATUSID IN (
 							SELECT statusid
