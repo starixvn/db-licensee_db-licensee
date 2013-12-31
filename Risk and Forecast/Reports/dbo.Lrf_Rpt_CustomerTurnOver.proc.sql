@@ -222,7 +222,25 @@ ELSE
 				stake as turnover,
 				b.winlost - b.actual_stake as winlost,
 				b.PlayerComm ,
-				b.Odds,
+				--b.Odds,
+				CASE WHEN (b.bettype IN (1,2,3,7,12,8,20)	
+									OR b.bettype BETWEEN 81 AND 88
+									OR b.bettype BETWEEN 90 AND 120)
+									THEN 
+											CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
+												 WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
+												 WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
+																		CASE 
+																			WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
+																			WHEN b.odds >=0 THEN (1 + b.odds) END
+												 WHEN OddsType = 5 THEN --american odds to decimal
+																	CASE
+																	WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
+																	WHEN (b.odds * 100) % 2 = 0 THEN 2
+																	WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
+											 END 
+							  ELSE b.Odds
+						 END Odds,
 				b.Oddstype,
 				1 betcount
 			FROM bettrans b WITH (NOLOCK)
@@ -260,9 +278,27 @@ ELSE
 						,sum(bk.stake) AS turnover
 						,sum(bk.winlost)  winlost
 						,sum(bk.PlayerComm) PlayerComm
-						,bk.Odds
+						--,bk.Odds
+						,CASE WHEN (bettype IN (1,2,3,7,12,8,20)	
+									OR bettype BETWEEN 81 AND 88
+									OR bettype BETWEEN 90 AND 120)
+									THEN 
+											CASE WHEN OddsType = 1 THEN odds + 1 --decimal
+												 WHEN OddsType = 2 THEN Odds + 1 --hongkong to decimal
+												 WHEN OddsType IN (3,4) THEN --malay and indo to decimal
+																		CASE 
+																			WHEN odds < 0 THEN (1 -  cast(1 as float) / cast(odds AS float))
+																			WHEN odds >=0 THEN (1 + odds) END
+												 WHEN OddsType = 5 THEN --american odds to decimal
+																	CASE
+																	WHEN (odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (odds AS float))
+																	WHEN (odds * 100) % 2 = 0 THEN 2
+																	WHEN (odds * 100) > 0 THEN (1 + odds) END 
+											 END 
+							  ELSE bk.Odds
+						 END odds
 						,bk.oddstype
-						,bk.betcount
+						,sum(bk.betcount) betcount
 					FROM bodb_LicenseeReport.dbo.rptcustomerturnOver bk WITH (NOLOCK)
 					INNER JOIN #recommend re ON bk.recommend=re.custid				
 					INNER JOIN #bettype bt ON bk.bettype=bt.typeid					
@@ -282,9 +318,26 @@ ELSE
 							END   
 						,bk.bettype
 						,bk.currency
-						,bk.Odds
+						--,bk.Odds
+						,CASE WHEN (bettype IN (1,2,3,7,12,8,20)	
+									OR bettype BETWEEN 81 AND 88
+									OR bettype BETWEEN 90 AND 120)
+									THEN 
+											CASE WHEN OddsType = 1 THEN odds + 1 --decimal
+												 WHEN OddsType = 2 THEN Odds + 1 --hongkong to decimal
+												 WHEN OddsType IN (3,4) THEN --malay and indo to decimal
+																		CASE 
+																			WHEN odds < 0 THEN (1 -  cast(1 as float) / cast(odds AS float))
+																			WHEN odds >=0 THEN (1 + odds) END
+												 WHEN OddsType = 5 THEN --american odds to decimal
+																	CASE
+																	WHEN (odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (odds AS float))
+																	WHEN (odds * 100) % 2 = 0 THEN 2
+																	WHEN (odds * 100) > 0 THEN (1 + odds) END 
+											 END 
+							  ELSE bk.Odds
+						 END						
 						,bk.oddstype
-						,bk.betcount
 				END
 			IF ISNULL(@Username,'')<>''
 			BEGIN
@@ -301,9 +354,27 @@ ELSE
 						,sum(bk.stake) AS turnover
 						,sum(bk.winlost)  winlost
 						,sum(bk.PlayerComm) PlayerComm
-						,bk.Odds
+						--,bk.Odds
+						,CASE WHEN (bettype IN (1,2,3,7,12,8,20)	
+								OR bettype BETWEEN 81 AND 88
+								OR bettype BETWEEN 90 AND 120)
+								THEN 
+										CASE WHEN OddsType = 1 THEN odds + 1 --decimal
+												WHEN OddsType = 2 THEN Odds + 1 --hongkong to decimal
+												WHEN OddsType IN (3,4) THEN --malay and indo to decimal
+																	CASE 
+																		WHEN odds < 0 THEN (1 -  cast(1 as float) / cast(odds AS float))
+																		WHEN odds >=0 THEN (1 + odds) END
+												WHEN OddsType = 5 THEN --american odds to decimal
+																CASE
+																WHEN (odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (odds AS float))
+																WHEN (odds * 100) % 2 = 0 THEN 2
+																WHEN (odds * 100) > 0 THEN (1 + odds) END 
+											END 
+							ELSE bk.Odds
+						END odds
 						,bk.oddstype
-						,bk.betcount
+						,sum(bk.betcount) betcount
 					FROM bodb_LicenseeReport.dbo.rptcustomerturnOver bk WITH (NOLOCK)
 					INNER JOIN #recommend re ON bk.recommend=re.custid				
 					INNER JOIN #bettype bt ON bk.bettype=bt.typeid
@@ -323,11 +394,29 @@ ELSE
 							END   
 						,bk.bettype
 						,bk.currency
-						,bk.Odds
+						--,bk.Odds
+						,CASE WHEN (bettype IN (1,2,3,7,12,8,20)	
+								OR bettype BETWEEN 81 AND 88
+								OR bettype BETWEEN 90 AND 120)
+								THEN 
+										CASE WHEN OddsType = 1 THEN odds + 1 --decimal
+												WHEN OddsType = 2 THEN Odds + 1 --hongkong to decimal
+												WHEN OddsType IN (3,4) THEN --malay and indo to decimal
+																	CASE 
+																		WHEN odds < 0 THEN (1 -  cast(1 as float) / cast(odds AS float))
+																		WHEN odds >=0 THEN (1 + odds) END
+												WHEN OddsType = 5 THEN --american odds to decimal
+																CASE
+																WHEN (odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (odds AS float))
+																WHEN (odds * 100) % 2 = 0 THEN 2
+																WHEN (odds * 100) > 0 THEN (1 + odds) END 
+											END 
+							ELSE bk.Odds
+						END
 						,bk.oddstype
-						,bk.betcount
 			END
 		END
+		/*
 		BEGIN TRAN
 		UPDATE #Data
 		SET odds = CASE WHEN OddsType = 1 THEN odds + 1 --decimal
@@ -347,6 +436,7 @@ ELSE
 			OR bettype BETWEEN 81 AND 88
 			OR bettype BETWEEN 90 AND 120
 		COMMIT TRAN 
+		*/
 		SELECT 
 			CASE WHEN @ReportBy = 1 THEN CONVERT(VARCHAR(8),winlostdate,112)  
 				WHEN @ReportBy = 2 THEN CONVERT(VARCHAR(6),winlostdate,112)  
@@ -384,13 +474,14 @@ ELSE
 			SUM(PlayerComm) AS PlayerComm
 			
 		FROM #Data b
-			INNER JOIN dbo.Customer c WITH (NOLOCK) ON b.CustID=c.CustID 
+			--INNER JOIN dbo.Customer c WITH (NOLOCK) ON b.CustID=c.CustID 
+			INNER JOIN bodb_licensee.dbo.LicenseeCustinfo  AS c with (nolock) ON b.CustID=c.CustID  
 			INNER JOIN #bettype bt WITH (NOLOCK) ON b.bettype = bt.typeid
 			INNER JOIN exchange e WITH (NOLOCK) ON b.currency = e.exchangeid
 		WHERE 
 			(b.Sporttype IN (SELECT sportID FROM #ProductID)OR b.sporttype =0)
 			AND b.Odds >= @Odds
-			AND c.RoleID=1
+			--AND c.RoleID=1
 
 			 
 		GROUP BY 
