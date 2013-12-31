@@ -207,7 +207,7 @@ ELSE
 					SELECT  o.Orid,r.SportType,r.LeagueID,o.EventDate
 					FROM dbo.VSOutright  o WITH (NOLOCK)
 					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID  
-					WHERE EventTime BETWEEN @TempFromDate AND @ToDate
+					WHERE o.EventDate BETWEEN @TempFromDate AND @ToDate
 				)
 			INSERT INTO #Data
 			SELECT 
@@ -251,12 +251,12 @@ ELSE
 					SELECT  o.Orid,r.SportType,r.LeagueID,o.EventDate
 					FROM bodb_archive.dbo.VSOutright_bk o WITH (NOLOCK)
 					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID  
-					WHERE EventTime BETWEEN @fromDate AND @TempToDate
+					WHERE o.EventDate BETWEEN @fromDate AND @TempToDate
 					UNION ALL
 					SELECT  o.Orid,r.SportType,r.LeagueID,o.EventDate
 					FROM dbo.VSOutright14 o WITH (NOLOCK)
 					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID  
-					WHERE EventTime BETWEEN @fromDate AND @TempToDate					
+					WHERE o.EventDate BETWEEN @fromDate AND @TempToDate					
 				)
 				INSERT INTO #Data
 				SELECT 
