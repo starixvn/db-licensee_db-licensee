@@ -258,11 +258,10 @@ ELSE
 					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID  
 					WHERE EventTime BETWEEN @fromDate AND @TempToDate					
 				)
-			,cte_temp_bk
-			AS (
-				SELECT bk.winlostdate
-					,bk.CustID
-					--,bk.sporttype sporttype
+				INSERT INTO #Data
+				SELECT 
+				bk.CustID,
+				bk.winlostdate
 					,CASE WHEN bk.bettype IN (1220,1235,1236) THEN 186 
 						  WHEN bk.bettype IN (9,10,29) THEN 1
 						ELSE bk.sporttype 
@@ -274,46 +273,21 @@ ELSE
 					,bk.PlayerComm
 					,bk.Odds
 					,bk.oddstype
-					,bk.statusID
 					,bk.betcount
 				FROM bodb_LicenseeReport.dbo.rptcustomerturnOver bk WITH (NOLOCK)
-				INNER JOIN #recommend re ON bk.recommend=re.custid
-				INNER JOIN #bettype	bt ON bk.bettype=bt.typeid 
-				WHERE bk.winlostdate BETWEEN @fromdate AND @TempToDate
-					/*AND bk.bettype IN (
-						SELECT b.typeid
-						FROM #bettype b
-					)*/					
+				INNER JOIN #recommend re ON bk.recommend=re.custid				
+				INNER JOIN #bettype bt ON bk.bettype=bt.typeid 
+				WHERE bk.winlostdate BETWEEN @fromdate AND @TempToDate				
 					AND (						
 						EXISTS (SELECT 1 FROM #Custid WHERE bk.custid=#CustID.Custid)
 						OR @CustID = 0
 					)
-									
 					--AND bodb_LicenseeReport.$PARTITION.pf_rptcustomerturnOver_monthly(winlostdate) in (@i,@i+1)
 					AND bk.STATUSID IN (
 						SELECT statusid
 						FROM @Status
 						)
-				)
-			INSERT INTO #Data
-			SELECT b.CustID
-				,b.winlostdate
-				,b.sporttype
-				,b.bettype
-				,currency
-				,b.turnover
-				,b.winlost
-				,b.PlayerComm
-				,b.Odds
-				,b.Oddstype
-				,b.betcount
-			FROM cte_temp_bk b	
 		END
-		
-		END
-		*/
-		
-		
 		UPDATE #Data
 		SET odds = CASE WHEN OddsType = 1 THEN odds + 1 --decimal
 						WHEN OddsType = 2 THEN Odds + 1 --hongkong to decimal
