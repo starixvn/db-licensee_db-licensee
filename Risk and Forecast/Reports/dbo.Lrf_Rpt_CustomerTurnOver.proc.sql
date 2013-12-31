@@ -328,6 +328,7 @@ ELSE
 						,bk.betcount
 			END
 		END
+		BEGIN TRAN
 		UPDATE #Data
 		SET odds = CASE WHEN OddsType = 1 THEN odds + 1 --decimal
 						WHEN OddsType = 2 THEN Odds + 1 --hongkong to decimal
@@ -345,7 +346,7 @@ ELSE
 			bettype IN (1,2,3,7,12,8,20)	
 			OR bettype BETWEEN 81 AND 88
 			OR bettype BETWEEN 90 AND 120
-
+		COMMIT TRAN 
 		SELECT 
 			CASE WHEN @ReportBy = 1 THEN CONVERT(VARCHAR(8),winlostdate,112)  
 				WHEN @ReportBy = 2 THEN CONVERT(VARCHAR(6),winlostdate,112)  
