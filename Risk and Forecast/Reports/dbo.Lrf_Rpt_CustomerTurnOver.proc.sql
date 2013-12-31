@@ -245,48 +245,88 @@ ELSE
 				SET @TempToDate = @MoveBetsDay
 			ELSE
 				SET  @TempToDate = @ToDate
-			;WITH cte_raceinfo
-				AS 
-				(
-					SELECT  o.Orid,r.SportType,r.LeagueID,o.EventDate
-					FROM bodb_archive.dbo.VSOutright_bk o WITH (NOLOCK)
-					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID  
-					WHERE o.EventDate BETWEEN @fromDate AND @TempToDate
-					UNION ALL
-					SELECT  o.Orid,r.SportType,r.LeagueID,o.EventDate
-					FROM dbo.VSOutright14 o WITH (NOLOCK)
-					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID  
-					WHERE o.EventDate BETWEEN @fromDate AND @TempToDate					
-				)
-				INSERT INTO #Data
-				SELECT 
-				bk.CustID,
-				bk.winlostdate
-					,CASE WHEN bk.bettype IN (1220,1235,1236) THEN 186 
-						  WHEN bk.bettype IN (9,10,29) THEN 1
-						ELSE bk.sporttype 
-						END sporttype  
-					,bk.bettype
-					,bk.currency
-					,bk.stake AS turnover
-					,bk.winlost 
-					,bk.PlayerComm
-					,bk.Odds
-					,bk.oddstype
-					,bk.betcount
-				FROM bodb_LicenseeReport.dbo.rptcustomerturnOver bk WITH (NOLOCK)
-				INNER JOIN #recommend re ON bk.recommend=re.custid				
-				INNER JOIN #bettype bt ON bk.bettype=bt.typeid 
-				WHERE bk.winlostdate BETWEEN @fromdate AND @TempToDate				
-					AND (						
-						EXISTS (SELECT 1 FROM #Custid WHERE bk.custid=#CustID.Custid)
-						OR @CustID = 0
-					)
-					--AND bodb_LicenseeReport.$PARTITION.pf_rptcustomerturnOver_monthly(winlostdate) in (@i,@i+1)
-					AND bk.STATUSID IN (
-						SELECT statusid
-						FROM @Status
+			IF isnull(@Username,'')=''
+				BEGIN
+					INSERT INTO #Data
+					SELECT 
+					bk.CustID,
+					bk.winlostdate
+						,CASE WHEN bk.bettype IN (1220,1235,1236) THEN 186 
+							  WHEN bk.bettype IN (9,10,29) THEN 1
+							ELSE bk.sporttype 
+							END sporttype  
+						,bk.bettype
+						,bk.currency
+						,sum(bk.stake) AS turnover
+						,sum(bk.winlost)  winlost
+						,sum(bk.PlayerComm) PlayerComm
+						,bk.Odds
+						,bk.oddstype
+						,bk.betcount
+					FROM bodb_LicenseeReport.dbo.rptcustomerturnOver bk WITH (NOLOCK)
+					INNER JOIN #recommend re ON bk.recommend=re.custid				
+					INNER JOIN #bettype bt ON bk.bettype=bt.typeid					
+					WHERE bk.winlostdate BETWEEN @fromdate AND @TempToDate				
+
+						--AND bodb_LicenseeReport.$PARTITION.pf_rptcustomerturnOver_monthly(winlostdate) in (@i,@i+1)
+						AND bk.STATUSID IN (
+							SELECT statusid
+							FROM @Status
 						)
+						GROUP BY  
+						bk.CustID,
+						bk.winlostdate
+						,CASE WHEN bk.bettype IN (1220,1235,1236) THEN 186 
+							  WHEN bk.bettype IN (9,10,29) THEN 1
+							ELSE bk.sporttype 
+							END   
+						,bk.bettype
+						,bk.currency
+						,bk.Odds
+						,bk.oddstype
+						,bk.betcount
+				END
+			IF ISNULL(@Username,'')<>''
+			BEGIN
+				INSERT INTO #Data
+					SELECT 
+					bk.CustID,
+					bk.winlostdate
+						,CASE WHEN bk.bettype IN (1220,1235,1236) THEN 186 
+							  WHEN bk.bettype IN (9,10,29) THEN 1
+							ELSE bk.sporttype 
+							END sporttype  
+						,bk.bettype
+						,bk.currency
+						,sum(bk.stake) AS turnover
+						,sum(bk.winlost)  winlost
+						,sum(bk.PlayerComm) PlayerComm
+						,bk.Odds
+						,bk.oddstype
+						,bk.betcount
+					FROM bodb_LicenseeReport.dbo.rptcustomerturnOver bk WITH (NOLOCK)
+					INNER JOIN #recommend re ON bk.recommend=re.custid				
+					INNER JOIN #bettype bt ON bk.bettype=bt.typeid 
+					WHERE bk.winlostdate BETWEEN @fromdate AND @TempToDate				
+						AND EXISTS (SELECT 1 FROM #Custid WHERE bk.custid=#CustID.Custid)							
+						--AND bodb_LicenseeReport.$PARTITION.pf_rptcustomerturnOver_monthly(winlostdate) in (@i,@i+1)
+						AND bk.STATUSID IN (
+							SELECT statusid
+							FROM @Status
+						)
+					GROUP BY  
+						bk.CustID,
+						bk.winlostdate
+						,CASE WHEN bk.bettype IN (1220,1235,1236) THEN 186 
+							  WHEN bk.bettype IN (9,10,29) THEN 1
+							ELSE bk.sporttype 
+							END   
+						,bk.bettype
+						,bk.currency
+						,bk.Odds
+						,bk.oddstype
+						,bk.betcount
+			END
 		END
 		UPDATE #Data
 		SET odds = CASE WHEN OddsType = 1 THEN odds + 1 --decimal
