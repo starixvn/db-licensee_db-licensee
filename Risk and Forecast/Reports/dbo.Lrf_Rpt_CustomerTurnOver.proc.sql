@@ -437,6 +437,9 @@ ELSE
 			OR bettype BETWEEN 90 AND 120
 		COMMIT TRAN 
 		*/
+		
+		CREATE INDEX IDX_CustID ON #Data(CustID)
+		
 		SELECT 
 			CASE WHEN @ReportBy = 1 THEN CONVERT(VARCHAR(8),winlostdate,112)  
 				WHEN @ReportBy = 2 THEN CONVERT(VARCHAR(6),winlostdate,112)  
