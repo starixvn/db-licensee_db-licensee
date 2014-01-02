@@ -8,8 +8,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-ALTER PROCEDURE [dbo].[Task_rptCustomerTurnOver_Bettrans_14] @Fromdate SMALLDATETIME
-	,@Todate SMALLDATETIME
+ALTER PROCEDURE [dbo].[Task_rptCustomerTurnOver_Bettrans_14] @Date SMALLDATETIME
 AS
 /*	
 	Created	: Florent Nguyen
@@ -24,13 +23,15 @@ SET NOCOUNT ON;
 	--DECLARE @Fromdate DATETIME,
 	--	@Todate DATETIME
 	--SELECT @Fromdate='2013-10-17',@todate='2013-10-17'
-	;
-
-WITH cte_isBATrans
+IF exists(SELECT TOP 1 1 FROM bodb_LicenseeReport.dbo.rptCustomerTurnover AS rct WHERE rct.winlostdate=@date)
+	BEGIN
+		DELETE bodb_LicenseeReport.dbo.rptCustomerTurnover WHERE winlostdate=@Date
+	END 	
+;WITH cte_isBATrans
 AS (
 	SELECT transid
 	FROM DBLIC.bodb_licensee.dbo.LicenseeBATransaction WITH (NOLOCK)
-	WHERE Transdate BETWEEN @fromdate AND DATEADD(DAY, 2, @Todate)
+	WHERE Transdate=@Date	
 	)
 	,cte_tempLicenseeCust
 AS (
@@ -81,8 +82,8 @@ AS (
 	FROM dbo.bettrans14 a WITH (NOLOCK)
 	INNER JOIN cte_tempLicenseeCust lc ON a.recommend = lc.custid
 	LEFT JOIN cte_isBATrans AS BA ON a.transid = ba.transid
-	WHERE a.winlostdate BETWEEN @fromdate AND @todate
-		AND a.statusID IN (111, 112, 113)
+	WHERE a.winlostdate =@date 
+			AND a.statusID IN (111, 112, 113)
 	GROUP BY a.matchid
 		,a.CustID
 		,lc.currency
@@ -125,9 +126,9 @@ AS (
 		,r.LeagueID
 	FROM dbo.VSOutright14 o WITH (NOLOCK)
 	INNER JOIN dbo.VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
-	WHERE EventDate BETWEEN @fromdate AND @todate
+	WHERE EventDate =@Date
 	)
-INSERT INTO bodb_report.dbo.rptCustomerTurnover
+INSERT INTO bodb_LicenseeReport.dbo.rptCustomerTurnover
 SELECT a.CustID
 	,a.bettype
 	,CASE 
