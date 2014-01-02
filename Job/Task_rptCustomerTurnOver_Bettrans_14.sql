@@ -23,21 +23,21 @@ SET NOCOUNT ON;
 	--DECLARE @Fromdate DATETIME,
 	--	@Todate DATETIME
 	--SELECT @Fromdate='2013-10-17',@todate='2013-10-17'
-IF exists(SELECT TOP 1 1 FROM bodb_LicenseeReport.dbo.rptCustomerTurnover AS rct WHERE rct.winlostdate=@date)
+IF exists(SELECT TOP 1 1 FROM bodb_LicenseeReport.dbo.rptCustomerTurnover WITH(NOLOCK) AS rct WHERE rct.winlostdate=@date)
 	BEGIN
 		DELETE bodb_LicenseeReport.dbo.rptCustomerTurnover WHERE winlostdate=@Date
 	END 	
 ;WITH cte_isBATrans
 AS (
 	SELECT transid
-	FROM DBLIC.bodb_licensee.dbo.LicenseeBATransaction WITH (NOLOCK)
+	FROM bodb_licensee.dbo.LicenseeBATransaction WITH (NOLOCK)
 	WHERE Transdate=@Date	
 	)
 	,cte_tempLicenseeCust
 AS (
 	SELECT currency
 		,custid
-	FROM DBLIC.bodb_licensee.dbo.LicenseeCust lc WITH (NOLOCK)
+	FROM bodb_licensee.dbo.LicenseeCust lc WITH (NOLOCK)
 	)
 	,cte_bettrans
 AS (
