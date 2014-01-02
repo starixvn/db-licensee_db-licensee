@@ -1,13 +1,12 @@
 ﻿USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_CustomerTurnOver]    Script Date: 25/11/2013 5:44:54 PM ******/
+/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_CustomerTurnOver]    Script Date: 27/12/2013 2:20:19 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-
-ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
+ALTER  PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
 	 @LicenseeID INT,
 	 @UserID  INT,
 	 @Username VARCHAR(50)='', 
@@ -28,11 +27,12 @@ ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
 	 @ShowLoss bit=1,
 	 @ShowDraw bit=1
 AS
+
 /*	
 	Created	: Henry
 	Task: Customer Performance Report
 	Date: 2011-12-28
-	DB: DBRPT/BODB02
+	DB: DBEXT/BODB02
 	Original: Lrf_Rpt_CustomerPerformance
 	Revision:
 	- 20120214@Henry: Seperate 3 options: Win/Loss/Draw (and all)
@@ -41,7 +41,8 @@ AS
 	- 20130618@Jim:  Restrict permission of Licensee Users by currency
 	- 20131021@Jim: Add more products to Customer Turnover Report
 	- 20131130@Florent: turning SP
-	- 20131205@Florent: add more product and search LIKE customer.....
+	- 20131205@Florent: add more product and search LIKE customer
+	- 20131225@Florent: Remove using bettrans14, use only bettrans and rptCustomerturnover
 	Parameter's Explanation:
 		- @ReportBy:  1: daily, 2: monthly
 		- @FilterBy:  1: Win, 2: Loss, 3: Draw
@@ -77,7 +78,8 @@ CREATE TABLE #Data
 	Winlost		MONEY,
 	PlayerComm  MONEY,
 	Odds SMALLMONEY,
-	OddsType SMALLINT
+	OddsType SMALLINT,
+	betcount SMALLINT
 )
 
 DECLARE @Status AS TABLE
@@ -148,7 +150,7 @@ ELSE
 		FROM DBLIC.bodb_licensee.dbo.LicenseeCustInfo lc WITH (NOLOCK) 
 		WHERE
 			recommend IN (SELECT CustID FROM #recommend)
-		DROP TABLE 	#recommend
+		--DROP TABLE 	#recommend
 		
 		SELECT @Username = ltrim(rtrim(@Username))
 		IF ISNULL(@Username,'')<>''
@@ -157,19 +159,14 @@ ELSE
 				SELECT cr.custid
 				FROM Customer cr (NOLOCK)
 					INNER JOIN #Currency c ON cr.CustID=c.CustID
-				WHERE (username2 LIKE '%$' +'%'+ @Username+'%' AND @LicenseeID=8)
-					  OR (username2 LIKE '%$' +'%'+ @Username+'%')
+				WHERE username2 LIKE '%$%' + @Username+'%'
 				
-				--IF ISNULL(@CustID,0) = 0
-				--IF NOT EXISTS ( SELECT 1 FROM #CustID)
-				--BEGIN
+
 				INSERT INTO #CustID
 					SELECT cr.CustID 
 					FROM Customer cr(NOLOCK)
 						INNER JOIN #Currency c ON cr.CustID=c.CustID
 					WHERE username  like '%'+@Username+'%'
-					AND cr.custid NOT IN (SELECT custid FROM #CustID)
-				--END
 			END
 		ELSE 
 			IF ISNULL(@Username,'')=''
@@ -182,8 +179,8 @@ ELSE
 			SELECT 112
 			INSERT INTO @Status
 			SELECT 114
-		END
-
+			
+		END 
 		IF @ShowLoss=1
 		BEGIN
 			INSERT INTO @Status
@@ -210,7 +207,7 @@ ELSE
 					SELECT  o.Orid,r.SportType,r.LeagueID,o.EventDate
 					FROM dbo.VSOutright  o WITH (NOLOCK)
 					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID  
-					WHERE EventTime BETWEEN @TempFromDate AND @ToDate
+					WHERE o.EventDate BETWEEN @TempFromDate AND @ToDate
 				)
 			INSERT INTO #Data
 			SELECT 
@@ -225,8 +222,27 @@ ELSE
 				stake as turnover,
 				b.winlost - b.actual_stake as winlost,
 				b.PlayerComm ,
-				b.Odds,
-				b.Oddstype
+				--b.Odds,
+				CASE WHEN (b.bettype IN (1,2,3,7,12,8,20)	
+									OR b.bettype BETWEEN 81 AND 88
+									OR b.bettype BETWEEN 90 AND 120)
+									THEN 
+											CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
+												 WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
+												 WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
+																		CASE 
+																			WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
+																			WHEN b.odds >=0 THEN (1 + b.odds) END
+												 WHEN OddsType = 5 THEN --american odds to decimal
+																	CASE
+																	WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
+																	WHEN (b.odds * 100) % 2 = 0 THEN 2
+																	WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
+											 END 
+							  ELSE b.Odds
+						 END Odds,
+				b.Oddstype,
+				1 betcount
 			FROM bettrans b WITH (NOLOCK)
 			INNER JOIN #bettype bet  ON b.bettype=bet.typeID
 			LEFT JOIN match m WITH (NOLOCK) ON b.matchid = m.matchid
@@ -240,115 +256,168 @@ ELSE
 				AND (b.custid IN (SELECT * FROM #custID) OR @CustID=0)
 				AND b.statusID IN (SELECT StatusID FROM @Status)
 		END
+		
 		IF @Fromdate <= @MoveBetsDay
 		BEGIN
 			IF @ToDate >= @MoveBetsDay
 				SET @TempToDate = @MoveBetsDay
 			ELSE
 				SET  @TempToDate = @ToDate
-				
-			IF @BalanceUpDay < @FromDate 
-				SELECT @BalanceUpDay=@FromDate
-				
-			;WITH cte_raceinfo
-				AS 
-				(
-					SELECT  o.Orid,r.SportType,r.LeagueID,o.EventDate
-					FROM dbo.VSOutright14  o WITH (NOLOCK)
-					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID  
-					WHERE EventTime BETWEEN @BalanceUpDay AND @ToDate
-				)
-			INSERT INTO #Data
-			SELECT 
-				b.CustID,
-				winlostdate,
-				CASE 
-					WHEN b.bettype NOT IN (9,10,29,1231,1232,1233,1237,1238) THEN m.sporttype
-					WHEN b.bettype IN (1231,1232,1233,1237,1238) THEN cr.SportType
-					ELSE 1 END sporttype,
-				b.bettype,
-				currency,
-				stake as turnover,
-				b.winlost - b.actual_stake as winlost,
-				b.PlayerComm,
-				b.Odds,
-				b.Oddstype
-			FROM bettrans14 b WITH (NOLOCK)
-			INNER JOIN #bettype bet  ON b.bettype=bet.typeID
-			LEFT JOIN match14 m WITH (NOLOCK) ON b.matchid = m.matchid
-			LEFT JOIN outright14 o with(nolock) ON b.matchid = o.orid 
-			LEFT JOIN league l with(nolock) ON o.leagueid = l.leagueid
-			LEFT JOIN cte_raceinfo AS cr ON cr.orid =b.oddsid
-			WHERE 
-				b.CustID IN (SELECT CustID FROM #Currency) AND 
-				 b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
-				--AND (b.CustID = @CustID OR @CustID=0)
-				AND (b.custid IN (SELECT * FROM #custID) OR @CustID=0)
-				AND b.statusID IN (SELECT StatusID FROM @Status)
+			IF isnull(@Username,'')=''
+				BEGIN
+					INSERT INTO #Data
+					SELECT 
+					bk.CustID,
+					bk.winlostdate
+						,CASE WHEN bk.bettype IN (1220,1235,1236) THEN 186 
+							  WHEN bk.bettype IN (9,10,29) THEN 1
+							ELSE bk.sporttype 
+							END sporttype  
+						,bk.bettype
+						,bk.currency
+						,sum(bk.stake) AS turnover
+						,sum(bk.winlost)  winlost
+						,sum(bk.PlayerComm) PlayerComm
+						--,bk.Odds
+						,CASE WHEN (bettype IN (1,2,3,7,12,8,20)	
+									OR bettype BETWEEN 81 AND 88
+									OR bettype BETWEEN 90 AND 120)
+									THEN 
+											CASE WHEN OddsType = 1 THEN odds + 1 --decimal
+												 WHEN OddsType = 2 THEN Odds + 1 --hongkong to decimal
+												 WHEN OddsType IN (3,4) THEN --malay and indo to decimal
+																		CASE 
+																			WHEN odds < 0 THEN (1 -  cast(1 as float) / cast(odds AS float))
+																			WHEN odds >=0 THEN (1 + odds) END
+												 WHEN OddsType = 5 THEN --american odds to decimal
+																	CASE
+																	WHEN (odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (odds AS float))
+																	WHEN (odds * 100) % 2 = 0 THEN 2
+																	WHEN (odds * 100) > 0 THEN (1 + odds) END 
+											 END 
+							  ELSE bk.Odds
+						 END odds
+						,bk.oddstype
+						,sum(bk.betcount) betcount
+					FROM bodb_LicenseeReport.dbo.rptcustomerturnOver bk WITH (NOLOCK)
+					INNER JOIN #recommend re ON bk.recommend=re.custid				
+					INNER JOIN #bettype bt ON bk.bettype=bt.typeid					
+					WHERE bk.winlostdate BETWEEN @fromdate AND @TempToDate				
+
+						--AND bodb_LicenseeReport.$PARTITION.pf_rptcustomerturnOver_monthly(winlostdate) in (@i,@i+1)
+						AND bk.STATUSID IN (
+							SELECT statusid
+							FROM @Status
+						)
+						GROUP BY  
+						bk.CustID,
+						bk.winlostdate
+						,CASE WHEN bk.bettype IN (1220,1235,1236) THEN 186 
+							  WHEN bk.bettype IN (9,10,29) THEN 1
+							ELSE bk.sporttype 
+							END   
+						,bk.bettype
+						,bk.currency
+						--,bk.Odds
+						,CASE WHEN (bettype IN (1,2,3,7,12,8,20)	
+									OR bettype BETWEEN 81 AND 88
+									OR bettype BETWEEN 90 AND 120)
+									THEN 
+											CASE WHEN OddsType = 1 THEN odds + 1 --decimal
+												 WHEN OddsType = 2 THEN Odds + 1 --hongkong to decimal
+												 WHEN OddsType IN (3,4) THEN --malay and indo to decimal
+																		CASE 
+																			WHEN odds < 0 THEN (1 -  cast(1 as float) / cast(odds AS float))
+																			WHEN odds >=0 THEN (1 + odds) END
+												 WHEN OddsType = 5 THEN --american odds to decimal
+																	CASE
+																	WHEN (odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (odds AS float))
+																	WHEN (odds * 100) % 2 = 0 THEN 2
+																	WHEN (odds * 100) > 0 THEN (1 + odds) END 
+											 END 
+							  ELSE bk.Odds
+						 END						
+						,bk.oddstype
+				END
+			IF ISNULL(@Username,'')<>''
+			BEGIN
+				INSERT INTO #Data
+					SELECT 
+					bk.CustID,
+					bk.winlostdate
+						,CASE WHEN bk.bettype IN (1220,1235,1236) THEN 186 
+							  WHEN bk.bettype IN (9,10,29) THEN 1
+							ELSE bk.sporttype 
+							END sporttype  
+						,bk.bettype
+						,bk.currency
+						,sum(bk.stake) AS turnover
+						,sum(bk.winlost)  winlost
+						,sum(bk.PlayerComm) PlayerComm
+						--,bk.Odds
+						,CASE WHEN (bettype IN (1,2,3,7,12,8,20)	
+								OR bettype BETWEEN 81 AND 88
+								OR bettype BETWEEN 90 AND 120)
+								THEN 
+										CASE WHEN OddsType = 1 THEN odds + 1 --decimal
+												WHEN OddsType = 2 THEN Odds + 1 --hongkong to decimal
+												WHEN OddsType IN (3,4) THEN --malay and indo to decimal
+																	CASE 
+																		WHEN odds < 0 THEN (1 -  cast(1 as float) / cast(odds AS float))
+																		WHEN odds >=0 THEN (1 + odds) END
+												WHEN OddsType = 5 THEN --american odds to decimal
+																CASE
+																WHEN (odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (odds AS float))
+																WHEN (odds * 100) % 2 = 0 THEN 2
+																WHEN (odds * 100) > 0 THEN (1 + odds) END 
+											END 
+							ELSE bk.Odds
+						END odds
+						,bk.oddstype
+						,sum(bk.betcount) betcount
+					FROM bodb_LicenseeReport.dbo.rptcustomerturnOver bk WITH (NOLOCK)
+					INNER JOIN #recommend re ON bk.recommend=re.custid				
+					INNER JOIN #bettype bt ON bk.bettype=bt.typeid
+					INNER JOIN #Custid cus ON cus.custid = bk.custid
+					WHERE bk.winlostdate BETWEEN @fromdate AND @TempToDate
+						--AND bodb_LicenseeReport.$PARTITION.pf_rptcustomerturnOver_monthly(winlostdate) in (@i,@i+1)
+						AND bk.STATUSID IN (
+							SELECT statusid
+							FROM @Status
+						)
+					GROUP BY  
+						bk.CustID,
+						bk.winlostdate
+						,CASE WHEN bk.bettype IN (1220,1235,1236) THEN 186 
+							  WHEN bk.bettype IN (9,10,29) THEN 1
+							ELSE bk.sporttype 
+							END   
+						,bk.bettype
+						,bk.currency
+						--,bk.Odds
+						,CASE WHEN (bettype IN (1,2,3,7,12,8,20)	
+								OR bettype BETWEEN 81 AND 88
+								OR bettype BETWEEN 90 AND 120)
+								THEN 
+										CASE WHEN OddsType = 1 THEN odds + 1 --decimal
+												WHEN OddsType = 2 THEN Odds + 1 --hongkong to decimal
+												WHEN OddsType IN (3,4) THEN --malay and indo to decimal
+																	CASE 
+																		WHEN odds < 0 THEN (1 -  cast(1 as float) / cast(odds AS float))
+																		WHEN odds >=0 THEN (1 + odds) END
+												WHEN OddsType = 5 THEN --american odds to decimal
+																CASE
+																WHEN (odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (odds AS float))
+																WHEN (odds * 100) % 2 = 0 THEN 2
+																WHEN (odds * 100) > 0 THEN (1 + odds) END 
+											END 
+							ELSE bk.Odds
+						END
+						,bk.oddstype
+			END
 		END
-
-		IF @FromDate < @BalanceUpDay
-		BEGIN
-			IF @todate >= DATEADD(dd, -1, @BalanceUpDay)
-				SET @TempToDate = DATEADD(dd, -1, @BalanceUpDay)
-			ELSE
-				SET @TempToDate = @todate
-				
-			;WITH cte_temp_bk
-			AS (
-				SELECT bk.winlostdate
-					,bk.CustID
-					,bk.sporttype sporttype
-					,bk.bettype
-					,bk.currency
-					,bk.stake AS turnover
-					,bk.winlost AS winlost
-					,bk.PlayerComm
-					,bk.Odds
-					,bk.oddstype
-					,bk.statusID
-				FROM bodb_LicenseeReport.dbo.rptcustomerturnOver bk WITH (NOLOCK)
-			
-				WHERE bk.custid IN (
-						SELECT CustID
-						FROM #Currency
-						)
-					AND bk.winlostdate BETWEEN @fromdate AND @TempToDate
-					AND bk.bettype IN (
-						SELECT b.typeid
-						FROM #bettype b
-						)
-					AND (
-						bk.CustID IN (SELECT * FROM #Custid)
-						OR @CustID = 0
-						)
-					--AND bodb_LicenseeReport.$PARTITION.pf_rptcustomerturnOver_monthly(winlostdate) in (@i,@i+1)
-					AND bk.STATUSID IN (
-						SELECT statusid
-						FROM @Status
-						)
-				)
-			INSERT INTO #Data
-			SELECT b.CustID
-				,b.winlostdate
-				,b.sporttype
-				,b.bettype
-				,currency
-				,b.turnover
-				,b.winlost
-				,b.PlayerComm
-				,b.Odds
-				,b.Oddstype
-			FROM cte_temp_bk b
-				/*WHERE b.statusID IN (
-					SELECT StatusID
-					FROM @Status
-					)*/
-				
-		END
-
-
-		
+		/*
+		BEGIN TRAN
 		UPDATE #Data
 		SET odds = CASE WHEN OddsType = 1 THEN odds + 1 --decimal
 						WHEN OddsType = 2 THEN Odds + 1 --hongkong to decimal
@@ -366,7 +435,11 @@ ELSE
 			bettype IN (1,2,3,7,12,8,20)	
 			OR bettype BETWEEN 81 AND 88
 			OR bettype BETWEEN 90 AND 120
-
+		COMMIT TRAN 
+		*/
+		
+		CREATE INDEX IDX_CustID ON #Data(CustID)
+		
 		SELECT 
 			CASE WHEN @ReportBy = 1 THEN CONVERT(VARCHAR(8),winlostdate,112)  
 				WHEN @ReportBy = 2 THEN CONVERT(VARCHAR(6),winlostdate,112)  
@@ -391,33 +464,27 @@ ELSE
 				WHEN e.exchangeid = 20 THEN 'UUS'
 				WHEN e.exchangeid = 51 THEN e.currency
 				ELSE e.Code END AS Currency,
-			b.sporttype,	
-			/*
-				CASE WHEN  b.bettype BETWEEN 81 AND 120 THEN N'NG - ' + bt.typenamee 
-			
-				 WHEN (b.bettype BETWEEN 1201 AND 1299 AND bt.typeid NOT IN (1220,1235,1236,1231,1232,1233,1237,1238)) THEN N'V.Soccer - '+bt.typenamee
-				  
-				 ELSE bt.typenamee END
-			*/
+			b.sporttype,		
 			CASE WHEN typeid BETWEEN 81 AND 120 THEN  N'NG - ' + bt.typenamee
 				 WHEN (typeid BETWEEN 1201 AND 1299 AND bt.typeid NOT IN (1220,1235,1236,1231,1232,1233,1237,1238)) THEN  N'V.Soccer - '+bt.typenamee
 				 WHEN (typeid BETWEEN 1201 AND 1299 AND bt.typeid IN (1231,1232,1233)) THEN  N'V.Racing - '+bt.typenamee
 				 WHEN (typeid BETWEEN 1201 AND 1299 AND bt.typeid IN (1220,1235,1236)) THEN  N'V.Tennis - '+bt.typenamee
 				 ELSE  bt.typenamee
 			END AS bettype,
-			count(b.currency) AS Betcount,
+			sum(b.betcount) AS Betcount,
 			sum(b.turnover) AS Turnover,
 			sum(b.winlost) AS Winlost,
 			SUM(PlayerComm) AS PlayerComm
 			
 		FROM #Data b
-			INNER JOIN dbo.Customer c WITH (NOLOCK) ON b.CustID=c.CustID 
+			--INNER JOIN dbo.Customer c WITH (NOLOCK) ON b.CustID=c.CustID 
+			INNER JOIN bodb_licensee.dbo.LicenseeCustinfo  AS c with (nolock) ON b.CustID=c.CustID  
 			INNER JOIN #bettype bt WITH (NOLOCK) ON b.bettype = bt.typeid
 			INNER JOIN exchange e WITH (NOLOCK) ON b.currency = e.exchangeid
 		WHERE 
 			(b.Sporttype IN (SELECT sportID FROM #ProductID)OR b.sporttype =0)
 			AND b.Odds >= @Odds
-			AND c.RoleID=1
+			--AND c.RoleID=1
 
 			 
 		GROUP BY 
@@ -430,10 +497,6 @@ ELSE
 			c.username,	
 			b.sporttype,	
 			b.bettype,
-			/*CASE WHEN  b.bettype BETWEEN 81 AND 120 THEN N'NG - ' + bt.typenamee 
-				 WHEN (b.bettype BETWEEN 1201 AND 1299 AND bt.typeid NOT IN (1220,1235,1236,1231,1232,1233,1237,1238)) THEN N'V.Soccer - '+bt.typenamee 
-				 ELSE bt.typenamee END
-			*/
 			CASE WHEN typeid BETWEEN 81 AND 120 THEN  N'NG - ' + bt.typenamee
 				 WHEN (typeid BETWEEN 1201 AND 1299 AND bt.typeid NOT IN (1220,1235,1236,1231,1232,1233,1237,1238)) THEN  N'V.Soccer - '+bt.typenamee
 				 WHEN (typeid BETWEEN 1201 AND 1299 AND bt.typeid IN (1231,1232,1233)) THEN  N'V.Racing - '+bt.typenamee
@@ -464,15 +527,12 @@ ELSE
 			SUM(PlayerComm) PlayerComm
 		FROM #result 	
 		GROUP BY 
-					ReportBy,  
+			ReportBy,  
 			username,
 			Currency,
 			sporttype,
 			bettype
 		) B
-		
-		
-		
 		SELECT * FROM #return	
 		WHERE ( RowNo between @RowStart AND @RowEnd	AND  @IsExportExcel=0) OR (@IsExportExcel=1 AND RowNo<65000)
 	--- Data Sum 	
@@ -492,6 +552,7 @@ ELSE
 		DROP TABLE #Currency 
 		DROP TABLE #bettype
 		DROP TABLE #custID
+		DROP TABLE 	#recommend
 	END
 DROP TABLE #ProductID
 DROP TABLE #BettypeID
