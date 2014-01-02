@@ -96,7 +96,7 @@ CREATE TABLE #CustID (Custid INT)
 SELECT 
 		b.typeID,
 		CASE @Langkey
-					WHEN 'zh-CN'	THEN typenamcn
+					WHEN 'zh-CN'	THEN typenamecn
 					WHEN 'zh-TW'	THEN typenamecn
 					WHEN 'th-TH'	THEN typenameth
 					WHEN 'ja-JP'	THEN typenamej
