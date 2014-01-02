@@ -20,6 +20,9 @@ AS
 	Parameter's Explanation:			
 */
 SET NOCOUNT ON;
+	--DECLARE @Fromdate DATETIME,
+	--	@Todate DATETIME
+	--SELECT @Fromdate='2013-10-17',@todate='2013-10-17'
 IF exists(SELECT TOP 1 1 FROM bodb_LicenseeReport.dbo.rptCustomerTurnover AS rct WITH (NOLOCK) WHERE rct.winlostdate=@date)
 	BEGIN
 		DELETE bodb_LicenseeReport.dbo.rptCustomerTurnover WHERE winlostdate=@Date
