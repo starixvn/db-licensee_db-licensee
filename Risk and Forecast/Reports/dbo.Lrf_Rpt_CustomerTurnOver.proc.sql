@@ -558,8 +558,6 @@ DROP TABLE #ProductID
 DROP TABLE #BettypeID
 
 GO
-ALTER AUTHORIZATION ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO  SCHEMA OWNER 
-GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [bodbLicenseeNet] AS [dbo]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [vnteam] AS [dbo]
