@@ -32,9 +32,10 @@ DECLARE @sql NVARCHAR(MAX)
 			,playercomm ,Odds ,oddstype
 			,statusID ,recommend ,LeagueID
 			,winlostdate ,betcount ,isba 
-			FROM bodb_report.dbo.rptCustomerTurnover rpt
+			FROM bodb_report.dbo.rptCustomerTurnover rpt with (nolock)
 			WHERE rpt.winlostdate BETWEEN '''''+ CAST (@fromdate AS VARCHAR)+''''' AND '''''+ CAST (@todate AS VARCHAR)+''''''')'
 	PRINT @sql
 
 	EXEC (@Sql)
+	DELETE TABLE DBRPT.bodb_report.dbo.rptCustomerTurnover WHERE winlostdate BETWEEN @Fromdate AND @Todate
 END 
