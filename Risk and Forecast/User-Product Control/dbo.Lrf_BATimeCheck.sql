@@ -1,4 +1,12 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_BATimeCheck]   
+﻿USE [bodb_Licensee]
+GO
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+ALTER PROCEDURE [dbo].[Lrf_BATimeCheck]   
 	@IsAllow BIT = 0 OUTPUT,
 	@LicenseeID INT,
 	@Langkey VARCHAR(10) = 'en-US',
@@ -19,10 +27,11 @@ AS
 	- 20111213@Henry: Full allow for Zzun88
 	- 20120831@Henry: Zzun88 only allowed to turn-on BA on monday
 	- 20130405@Jim: support multiple language
+	- 20140102@Jim: Full allow for Asiabet88 
 */
 SET NOCOUNT ON
 SELECT @Langkey=ltrim(rtrim(@Langkey))
-IF @LicenseeID=5 OR @LicenseeID = 7  --Spondemo and Dela
+IF @LicenseeID IN (2,5,7)  --asiabet88,Spondemo , Dela
 BEGIN
 	SELECT @IsAllow = 1
 	RETURN
@@ -60,10 +69,9 @@ BEGIN
 			RETURN
 	END
 END
-
-
 GO
-GRANT EXECUTE ON [dbo].[Lrf_BATimeCheck] TO [bodbLicenseeNet] 
+GRANT EXECUTE ON [dbo].[Lrf_BATimeCheck] TO [bodbLicenseeNet] AS [dbo]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BATimeCheck] TO [vnteam] 	
- 
+GRANT EXECUTE ON [dbo].[Lrf_BATimeCheck] TO [Dot_Member] AS [dbo]
+GO
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BATimeCheck] TO [vnteam] AS [dbo]
