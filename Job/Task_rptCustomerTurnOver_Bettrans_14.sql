@@ -8,7 +8,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-ALTER PROCEDURE [dbo].[Task_rptCustomerTurnOver_Bettrans_14] @Date SMALLDATETIME
+ALTER PROCEDURE [dbo].[Task_rptCustomerTurnOver_Bettrans14] @Date SMALLDATETIME
 AS
 /*	
 	Created	: Florent Nguyen
@@ -227,3 +227,6 @@ GROUP BY a.CustID
 		END
 	,winlostdate
 	,a.isba
+
+GO
+GRANT VIEW DEFINITION ON [dbo].[Task_rptCustomerTurnOver_Bettrans14] TO [vnteam] AS [dbo]
