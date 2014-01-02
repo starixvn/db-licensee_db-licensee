@@ -1,7 +1,7 @@
 USE [bodb02]
 GO
 
-/****** Object:  StoredProcedure [dbo].[Task_rptCustomerTurnOver_Bettrans_14]    Script Date: 27/12/2013 2:12:22 PM ******/
+/****** Object:  StoredProcedure [dbo].[Task_rptCustomerTurnOver_Bettrans14]    Script Date: 27/12/2013 2:12:22 PM ******/
 SET ANSI_NULLS ON
 GO
 
@@ -20,10 +20,14 @@ AS
 	Parameter's Explanation:			
 */
 SET NOCOUNT ON;
+<<<<<<< HEAD
 	--DECLARE @Fromdate DATETIME,
 	--	@Todate DATETIME
 	--SELECT @Fromdate='2013-10-17',@todate='2013-10-17'
 IF exists(SELECT TOP 1 1 FROM bodb_LicenseeReport.dbo.rptCustomerTurnover WITH(NOLOCK) AS rct WHERE rct.winlostdate=@date)
+=======
+IF exists(SELECT TOP 1 1 FROM bodb_LicenseeReport.dbo.rptCustomerTurnover AS rct WITH (NOLOCK) WHERE rct.winlostdate=@date)
+>>>>>>> 52cb62afab9bff91a26079464e063e445e9c1d2c
 	BEGIN
 		DELETE bodb_LicenseeReport.dbo.rptCustomerTurnover WHERE winlostdate=@Date
 	END 	
