@@ -1,14 +1,16 @@
-﻿USE [bodb_Licensee]
+﻿USE [bodb_licensee]
 GO
-
+/****** Object:  StoredProcedure [dbo].[Lrf_BATimeCheck]    Script Date: 1/3/2014 10:15:05 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-
+/****** Object:  Stored Procedure dbo.Lrf_BATimeCheck    Script Date: 5/8/2013 3:14:49 AM ******/
+/****** Object:  Stored Procedure dbo.Lrf_BATimeCheck    Script Date: 5/6/2013 1:42:14 PM ******/
 ALTER PROCEDURE [dbo].[Lrf_BATimeCheck]   
 	@IsAllow BIT = 0 OUTPUT,
 	@LicenseeID INT,
+	@CurrencyID	INT=0,
 	@Langkey VARCHAR(10) = 'en-US',
 	@ErrCode INT = 0 OUTPUT,
 	@ErrMsg nvarchar(4000) = '' OUTPUT
@@ -31,7 +33,7 @@ AS
 */
 SET NOCOUNT ON
 SELECT @Langkey=ltrim(rtrim(@Langkey))
-IF @LicenseeID IN (2,5,7)  --asiabet88,Spondemo , Dela
+IF (@LicenseeID IN (5,7) OR (@CurrencyID IN (3,6) AND @LicenseeID=2))  --Spondemo , Dela OR (asiabet88 and currency is EUR,USD)
 BEGIN
 	SELECT @IsAllow = 1
 	RETURN
