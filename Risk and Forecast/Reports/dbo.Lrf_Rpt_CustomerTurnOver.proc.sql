@@ -82,6 +82,7 @@ CREATE TABLE #Data
 	OddsType SMALLINT,
 	betcount SMALLINT
 )
+CREATE INDEX IDX_CustID ON #Data(CustID)
 
 /*DECLARE @Status AS TABLE
 (
@@ -440,7 +441,7 @@ ELSE
 		COMMIT TRAN 
 		*/
 		
-		CREATE INDEX IDX_CustID ON #Data(CustID)
+		--CREATE INDEX IDX_CustID ON #Data(CustID)
 		
 		SELECT 
 			CASE WHEN @ReportBy = 1 THEN CONVERT(VARCHAR(8),winlostdate,112)  
