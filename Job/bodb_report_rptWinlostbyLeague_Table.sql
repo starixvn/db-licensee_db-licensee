@@ -10,7 +10,7 @@ GO
 	Created	: Florent Nguyen
 	Task: rptWinlostbyLeague
 	Date: 2013-11-25
-	DB: DBACC.bodb02
+	DB: DB06.bodb_report
 	Original: 
 	Revision:
 	Parameter's Explanation:			

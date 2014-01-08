@@ -7,7 +7,15 @@ GO
 
 SET QUOTED_IDENTIFIER ON
 GO
-
+/*	
+	Created	: Florent Nguyen
+	Task: rptWinlostbyLeague
+	Date: 2013-11-25
+	DB: DB052.bodb_LicenseeReport
+	Original: 
+	Revision:
+	Parameter's Explanation:			
+*/
 CREATE TABLE dbo.rptWinlostbyLeague(
 	winlostdate smalldatetime NULL,
 	matchid int NOT NULL,
