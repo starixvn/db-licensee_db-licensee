@@ -13,6 +13,7 @@ CREATE TABLE dbo.rptWinlostbyLeague(
 	matchid int NOT NULL,
 	oddsid int NULL,
 	odds smallmoney NOT NULL,
+	oddstype SMALLINT ,
 	bettype smallint NULL,
 	stake money NOT NULL,
 	winlost money NULL,
