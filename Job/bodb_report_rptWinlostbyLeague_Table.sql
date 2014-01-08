@@ -1,13 +1,20 @@
 USE bodb_report
 GO
 
-/****** Object:  Table  dbo . rptWinlostbyLeague     Script Date: 31/12/2013 3:57:22 PM ******/
 SET ANSI_NULLS ON
 GO
 
 SET QUOTED_IDENTIFIER ON
 GO
-
+/*	
+	Created	: Florent Nguyen
+	Task: rptWinlostbyLeague
+	Date: 2013-11-25
+	DB: DBACC.bodb02
+	Original: 
+	Revision:
+	Parameter's Explanation:			
+*/
 CREATE TABLE dbo.rptWinlostbyLeague (
 	winlostdate SMALLDATETIME NULL
 	,matchid INT NOT NULL
