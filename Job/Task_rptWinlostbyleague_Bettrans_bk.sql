@@ -43,6 +43,7 @@ AS (
 		,isnull(a.matchid, ISNULL(a.oddsid, 0)) matchid
 		,a.oddsid
 		,a.Odds
+		,a.oddstype
 		,a.bettype
 		,SUM(ABS(a.stake)) stake
 		,sum(a.winlost - a.actual_stake) winlost
@@ -85,6 +86,7 @@ AS (
 		,a.recommend
 		,a.bettype
 		,a.Odds
+		,a.oddstype
 		,a.oddsid
 		,CASE 
 			WHEN a.statusID = 112
@@ -131,6 +133,7 @@ SELECT a.winlostdate
 	,a.matchid
 	,a.oddsid
 	,a.Odds
+	,a.oddstype
 	,bettype
 	,sum(stake) stake
 	,sum(winlost) winlost
@@ -162,6 +165,7 @@ GROUP BY a.winlostdate
 	,a.matchid
 	,a.oddsid
 	,a.Odds
+	,a.oddstype
 	,a.recommend
 	,CASE 
 		WHEN a.bettype IN (9, 29)
