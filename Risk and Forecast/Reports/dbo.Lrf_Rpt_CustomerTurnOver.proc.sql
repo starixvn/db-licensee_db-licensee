@@ -43,6 +43,7 @@ AS
 	- 20131130@Florent: turning SP
 	- 20131205@Florent: add more product and search LIKE customer
 	- 20131225@Florent: Remove using bettrans14, use only bettrans and rptCustomerturnover
+	- 20140104@Don: Improve performance -> Replacing table @Status with #Status
 	Parameter's Explanation:
 		- @ReportBy:  1: daily, 2: monthly
 		- @FilterBy:  1: Win, 2: Loss, 3: Draw
@@ -82,10 +83,11 @@ CREATE TABLE #Data
 	betcount SMALLINT
 )
 
-DECLARE @Status AS TABLE
+/*DECLARE @Status AS TABLE
 (
 	StatusID INT
-)
+)*/
+CREATE TABLE #Status(StatusID INT)
 
 DECLARE @RowStart INT ,
           @RowEnd INT ,
@@ -175,23 +177,23 @@ ELSE
 				END		
 		IF @ShowWin =1
 		BEGIN
-			INSERT INTO @Status
+			INSERT INTO #Status
 			SELECT 112
-			INSERT INTO @Status
+			INSERT INTO #Status
 			SELECT 114
 			
 		END 
 		IF @ShowLoss=1
 		BEGIN
-			INSERT INTO @Status
+			INSERT INTO #Status
 			SELECT 113
-			INSERT INTO @Status
+			INSERT INTO #Status
 			SELECT 115
 		END
 
 		IF  @ShowDraw=1
 		BEGIN
-			INSERT INTO @Status
+			INSERT INTO #Status
 			SELECT 111
 		END
 
@@ -254,7 +256,7 @@ ELSE
 				 b.winlostdate BETWEEN @TempFromDate AND @todate
 				--AND (b.CustID = @CustID OR @CustID=0)
 				AND (b.custid IN (SELECT * FROM #custID) OR @CustID=0)
-				AND b.statusID IN (SELECT StatusID FROM @Status)
+				AND b.statusID IN (SELECT StatusID FROM #Status)
 		END
 		
 		IF @Fromdate <= @MoveBetsDay
@@ -307,7 +309,7 @@ ELSE
 						--AND bodb_LicenseeReport.$PARTITION.pf_rptcustomerturnOver_monthly(winlostdate) in (@i,@i+1)
 						AND bk.STATUSID IN (
 							SELECT statusid
-							FROM @Status
+							FROM #Status
 						)
 						GROUP BY  
 						bk.CustID,
@@ -383,7 +385,7 @@ ELSE
 						--AND bodb_LicenseeReport.$PARTITION.pf_rptcustomerturnOver_monthly(winlostdate) in (@i,@i+1)
 						AND bk.STATUSID IN (
 							SELECT statusid
-							FROM @Status
+							FROM #Status
 						)
 					GROUP BY  
 						bk.CustID,
