@@ -27,11 +27,28 @@ DECLARE @sql NVARCHAR(MAX)
 	'INSERT INTO bodb_LicenseeReport.dbo.rptWinlostbyLeague
 	 SELECT * FROM 
 	OPENQUERY (DBRPT,
-			''SELECT * FROM  bodb_report.dbo.rptWinlostbyLeague rpt
+			''SELECT 
+				winlostdate ,
+				matchid ,
+				oddsid ,
+				odds ,
+				oddstype,
+				bettype ,
+				stake ,
+				winlost ,
+				awinlost,
+				comm ,
+				playercomm ,
+				recommend,
+				leagueid,
+				statusID,
+				betcount,
+				isBA
+			 FROM  bodb_report.dbo.rptWinlostbyLeague rpt
 			WHERE rpt.winlostdate BETWEEN '''''+ CAST (@fromdate AS VARCHAR)+''''' AND '''''+ CAST (@todate AS VARCHAR)+''''''')'
 	PRINT @sql
 	EXEC (@Sql)
 END 
 
-exec Task_rptWinLostbyLeague_movedata  '2013-10-01','2013-12-31'
+--exec Task_rptWinLostbyLeague_movedata  '2013-10-01','2013-12-31'
 
