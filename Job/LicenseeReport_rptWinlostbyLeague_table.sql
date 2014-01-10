@@ -33,7 +33,7 @@ CREATE TABLE dbo.rptWinlostbyLeague(
 	statusID tinyint NULL,
 	betcount smallint NULL,
 	isBA tinyint NULL
-)
+) ON rptCustomerTurnOverData
 
 GO
 
@@ -41,17 +41,19 @@ GO
 CREATE CLUSTERED INDEX CIX_winlostdate ON dbo.rptWinlostbyLeague
 (
 	winlostdate DESC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) 
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON)
+ON rptCustomerTurnOverData
 GO
 
 /****** Object:  Index IX_recommend    Script Date: 08/01/2014 3:00:56 PM ******/
 CREATE NONCLUSTERED INDEX IX_recommend ON dbo.rptWinlostbyLeague
-(
+(	
+	recommend DESC,
 	winlostdate DESC,
-	recommend ASC
+	matchid DESC
 )
-INCLUDE ( 	matchid,
-	leagueid) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON)
+INCLUDE (leagueid) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON)
+ON rptCustomerTurnOverIndex
 GO
 
 
