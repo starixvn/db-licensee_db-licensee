@@ -16,6 +16,16 @@ GO
 	Revision:
 	Parameter's Explanation:			
 */
+ALTER DATABASE bodb_LicenseeReport ADD FILEGROUP rptWinlostbyLeagueData
+ALTER DATABASE bodb_LicenseeReport ADD FILEGROUP rptWinlostbyLeagueIndex
+go
+ALTER DATABASE bodb_LicenseeReport
+ADD FILE (NAME =N'rptWinlostbyLeagueData', FILENAME =N'E:\IBC_DB\bodb_LicenseeReport\rptWinlostbyLeagueData.ndf', SIZE =100MB,MAXSIZE=UNLIMITED,FILEGROWTH=50MB)
+TO FILEGROUP rptWinlostbyLeagueData
+ALTER DATABASE bodb_LicenseeReport
+ADD FILE (NAME =N'rptWinlostbyLeagueIndex', FILENAME =N'E:\IBC_DB\bodb_LicenseeReport\rptWinlostbyLeagueIndex.ndf', SIZE =50MB,MAXSIZE=UNLIMITED,FILEGROWTH=30MB)
+TO FILEGROUP rptWinlostbyLeagueIndex
+go
 CREATE TABLE dbo.rptWinlostbyLeague(
 	winlostdate smalldatetime NULL,
 	matchid int NOT NULL,
@@ -33,7 +43,7 @@ CREATE TABLE dbo.rptWinlostbyLeague(
 	statusID tinyint NULL,
 	betcount smallint NULL,
 	isBA tinyint NULL
-) ON rptCustomerTurnOverData
+) ON rptWinlostbyLeagueData
 
 GO
 
@@ -42,7 +52,7 @@ CREATE CLUSTERED INDEX CIX_winlostdate ON dbo.rptWinlostbyLeague
 (
 	winlostdate DESC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON)
-ON rptCustomerTurnOverData
+ON rptWinlostbyLeagueData
 GO
 
 /****** Object:  Index IX_recommend    Script Date: 08/01/2014 3:00:56 PM ******/
@@ -53,7 +63,7 @@ CREATE NONCLUSTERED INDEX IX_recommend ON dbo.rptWinlostbyLeague
 	matchid DESC
 )
 INCLUDE (leagueid) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON)
-ON rptCustomerTurnOverIndex
+ON rptWinlostbyLeagueIndex
 GO
 
 
