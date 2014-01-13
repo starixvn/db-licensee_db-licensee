@@ -10,12 +10,18 @@
  *	•
  *  
  */
+USE bodb_licensee
+GO 
+
+SET IDENTITY_INSERT dbo.LicenseeFunctions ON
+ 
 DECLARE @FuntionID INT, @LicenseeID INT,@DisplayOrder INT  
 SELECT  @FuntionID=59,@LicenseeID=8,@DisplayOrder=33
 BEGIN 
 BEGIN TRANSACTION
 --add Functions 
-INSERT INTO functions VALUES (@funtionID,N'WinLoss By League','',3,N'Report/WinLossByLeague',1,1,@displayOrder,0)
+INSERT INTO functions (FunctionId,NAME,Description,ParentId,Url,IsMenu,IsActive,DisplayOrder,IsNew)
+ VALUES (@funtionID,N'WinLoss By League','',3,N'Report/WinLossByLeague',1,1,@DisplayOrder,0)
 --add LicenseeFunctions
 IF NOT  EXISTS (SELECT TOP 1 1 FROM LicenseeFunctions  WHERE licenseeid =@LicenseeID AND FunctionId=@funtionID) 
 INSERT INTO LicenseeFunctions (LicenseeId,FunctionId) VALUES (@licenseeID,@FuntionID)
@@ -25,3 +31,5 @@ SELECT distinct UserId,@funtionID,a.LicenseeId from LicenseeUserFunctions a WHER
 
 COMMIT
 END 
+
+SET IDENTITY_INSERT dbo.LicenseeFunctions OFF
