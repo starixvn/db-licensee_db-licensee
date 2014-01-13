@@ -460,9 +460,9 @@ ORDER BY CASE ProductName
 DROP TABLE @AgMatchWLDetails
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [bodbLicenseeNet] AS [dbo]
+GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinlostByLeague] TO [bodbLicenseeNet] AS [dbo]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [vnteam] AS [dbo]
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_WinlostByLeague] TO [vnteam] AS [dbo]
 GO
 
 
