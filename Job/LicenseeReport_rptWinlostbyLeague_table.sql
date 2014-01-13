@@ -65,3 +65,9 @@ CREATE NONCLUSTERED INDEX IX_recommend ON dbo.rptWinlostbyLeague
 INCLUDE (leagueid) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON)
 ON rptWinlostbyLeagueIndex
 GO
+
+GRANT SELECT ON dbo.rptWinlostbyLeague TO bodblicenseeNet
+GRANT VIEW DEFINITION ON dbo.rptWinlostbyLeague TO bodblicenseeNet
+
+GRANT SELECT ON dbo.rptWinlostbyLeague TO vnteam
+GRANT VIEW DEFINITION ON dbo.rptWinlostbyLeague TO vnteam
