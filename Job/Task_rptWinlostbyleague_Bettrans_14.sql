@@ -21,9 +21,11 @@ AS
 */
 SET NOCOUNT ON;
 
+IF EXISTS (SELECT TOP 1 1 FROM bodb_LicenseeReport.dbo.rptWinlostbyLeague WHERE winlostdate =@Date)
+BEGIN 
 DELETE bodb_LicenseeReport.dbo.rptWinlostbyLeague
-WHERE winlostdate =@Date;
-
+WHERE winlostdate =@Date
+END ;
 WITH cte_isBATrans
 AS (
 	SELECT transid
