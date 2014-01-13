@@ -185,3 +185,7 @@ GROUP BY a.winlostdate
 	,statusID
 	,bettype
 	,isba
+
+GO 
+GRANT EXECUTE ON dbo.Task_rptWinlostbyleague_Bettrans14 TO bodblicenseeNet
+GRANT VIEW DEFINITION ON dbo.Task_rptWinlostbyleague_Bettrans14 TO vnteam
