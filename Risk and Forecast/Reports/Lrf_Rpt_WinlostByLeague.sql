@@ -13,14 +13,14 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlostByLeague]
 	,@CurrencyID INT
 	,@FromDate SMALLDATETIME
 	,@ToDate SMALLDATETIME
-	,@Odds INT
+	,@Odds INT=0
 	,@LeagueID INT 
 	,@MatchID INT 
 	,@MoveBetsDay SMALLDATETIME
 	,@BalanceUpDay SMALLDATETIME
-	,@ShowWin BIT
-	,@ShowLoss BIT
-	,@ShowDraw BIT
+	,@ShowWin BIT=1
+	,@ShowLoss BIT=1
+	,@ShowDraw BIT=1
 	AS 
 /*
 	Created	: Florent
@@ -54,12 +54,6 @@ DECLARE @bettype AS TABLE (bettype INT)
 
 DECLARE @TempFromDate SMALLDATETIME
 DECLARE @TempToDate SMALLDATETIME
-
---xu ly products
-
---SELECT VAL leagueid
---INTO #LeagueID
---FROM strSplit(@League, ',')
 
 --
 DECLARE @Status AS TABLE (StatusID INT)
@@ -148,90 +142,15 @@ DECLARE @AgMatchWLDetails TABLE (
 	,betcount INT 
 	)
 
-CREATE TABLE #TempBetList (
-	Winlostdate DATETIME
-	,KickoffTime DATETIME
-	,currency INT
-	,Bettype INT
-	,Stake MONEY
-	,Winlost MONEY
-	,awinlost MONEY
-	,comm MONEY
-	,odds SMALLMONEY
-	,oddsid INT
-	,playercomm MONEY
-	,MatchID INT
-	,Liveawayscore SMALLINT
-	,OddsType SMALLINT 
-	,statusid INT 
-	,betcount int
-	,isba BIT
-	)
-
-DECLARE @showBA BIT
-
-SET @showBA = 0
-
---IF @_Date > @MoveBetsDay
 IF @Todate > @MoveBetsDay
 BEGIN
 	IF @FromDate <= @MoveBetsDay
 		SET @TempFromDate = DATEADD(DAY, 1, @MoveBetsDay)
 	ELSE
 		SET @TempFromDate = @FromDate
-	--IF ISNULL(@Matchid, '') = ''
 	BEGIN 
-	--Get general data  
-	TRUNCATE TABLE #TempBetList
-	INSERT INTO #TempBetList
-	SELECT
-		b.Winlostdate
-		,NULL
-		,b.currency
-		,b.bettype
-		,SUM(stake) AS Stake
-		,SUM(winlost - actual_stake) AS Winlost
-		,sum (CASE WHEN b.tpositiontaking<>0 then b.awinlost
-					ELSE 0
-			 END)  AS awinlost
-		,SUM(b.comm) AS comm
-		,b.odds
-		,b.oddsid
-		,SUM(b.playercomm) AS playercomm
-		,b.matchid
-		,CASE WHEN b.tpositiontaking<>0 then b.Liveawayscore
-			  ELSE 0
-		 END AS Liveawayscore
-		 ,b.oddstype
-		 ,b.statusID
-		 ,COUNT(1) betcount
-		,CASE WHEN b.tpositiontaking<>0 THEN  0 
-				else 1
-		 END AS isba 
-	FROM bettrans b WITH (NOLOCK)
-	--INNER JOIN #matchid m ON b.matchid = m.matchid
-	INNER JOIN @TempAg ta ON b.recommend=ta.CustId
-	WHERE 
-		b.winlostdate BETWEEN @TempFromDate AND @ToDate
-		AND b.statusID IN (
-			SELECT statusid
-			FROM @status
-		)	
-		--AND b.tpositiontaking <> 0
-	GROUP BY b.Winlostdate
-		,b.currency
-		,b.bettype
-		,b.odds
-		,b.oddsid
-		,b.matchid
-		,b.Liveawayscore
-		,b.tpositiontaking
-		,b.statusid
-		,b.oddstype
-		,b.statusID
-	--IF ISNULL(@Products,0)=0 -- get soccer
-	BEGIN
-		--exclude BA tickets  
+	--Get general data  	
+	BEGIN		
 		INSERT INTO @AgMatchWLDetails
 		SELECT 
 		    b.Winlostdate
@@ -242,9 +161,7 @@ BEGIN
 			,m.awayid
 			,b.bettype
 			,'SB'
-			,--b.bettype,  
-			m.leagueid
-			--,odds 
+			,m.leagueid
 			,CASE WHEN OddsType = 1 THEN odds + 1 --decimal
 					WHEN OddsType = 2 THEN Odds + 1 --hongkong to decimal
 					WHEN OddsType IN (3,4) THEN --malay and indo to decimal
@@ -260,18 +177,18 @@ BEGIN
 			,SUM(stake)
 			,SUM(winlost)
 			,- SUM(
-			CASE WHEN isba=0 THEN b.winlost 
+			CASE WHEN b.tpositiontaking<>0 THEN b.winlost 
 				 ELSE 0
 			END ) AS LicenseeWL
 			,0 AS WinlossRB
 			,SUM(
-			CASE WHEN isba=1 THEN Winlost + awinlost + comm
-				 ELSE 0
+			CASE WHEN b.tpositiontaking<>0 THEN 0 
+				 ELSE Winlost + awinlost + comm
 			END ) AS AmountDueToBA
 			,0 AS AmountDueToRB
 			,SUM(
-			CASE WHEN isba=1 THEN comm
-				 ELSE 0
+			CASE WHEN b.tpositiontaking<>0 THEN 0
+				 ELSE comm
 			END ) AS CommBA
 			,0 AS CommRB
 			,SUM(b.playercomm) AS PlayerComm
@@ -279,18 +196,17 @@ BEGIN
 			,m.matchcode
 			,ISNULL(m.isNeutral, CONVERT(BIT, 0)) AS IsNeutral
 			,m.sporttype
-			,CASE WHEN isba=1 THEN ''
-				 ELSE m.showtime
+			,CASE WHEN b.tpositiontaking<>0 THEN m.showtime 
+				 ELSE ''
 			END AS ShowTime
-			,b.betcount					
-		FROM #TempBetList b
+			,count(1) betcount					
+		FROM bettrans as b with (nolock) 
 		INNER JOIN match m WITH (NOLOCK) ON m.matchid = b.matchid
+		INNER JOIN @TempAg ta ON b.recommend=ta.CustId
 		WHERE (
 				b.bettype < 31
 				OR (b.bettype BETWEEN 121 AND 999)
 				)
-			--AND b.tpositiontaking <> 0
-			--AND b.isba = 0
 			AND (@MatchID=0 OR m.matchid=@MatchID)
 			AND m.leagueid=@leagueID
 			AND b.statusid IN (SELECT * FROM @Status)
@@ -304,12 +220,9 @@ BEGIN
 			,m.matchcode
 			,m.isNeutral
 			,m.sporttype
-			,b.isba
-			,CASE WHEN isba=1 THEN ''
-				 ELSE m.showtime
-			 END
-			 ,b.betcount
-			 --,b.odds
+			,CASE WHEN b.tpositiontaking<>0 THEN m.showtime 
+				 ELSE ''
+			END
 			 ,CASE WHEN OddsType = 1 THEN odds + 1 --decimal
 					WHEN OddsType = 2 THEN Odds + 1 --hongkong to decimal
 					WHEN OddsType IN (3,4) THEN --malay and indo to decimal
@@ -325,151 +238,6 @@ BEGIN
 	END
 	END 
 END
---IF @Fromdate <= @MoveBetsDay
---BEGIN
---	IF @ToDate >= @MoveBetsDay
---		SET @TempToDate = @MoveBetsDay
---	ELSE
---		SET @TempToDate = @ToDate
-			
---	--Get general data  
---	TRUNCATE TABLE #TempBetList
---	INSERT INTO #TempBetList
---	SELECT b.Winlostdate
---		,NULL
---		,b.currency
---		,b.bettype
---		,SUM(stake) AS Stake
---		,SUM(winlost - actual_stake) AS Winlost
---		,SUM(CASE WHEN b.tpositiontaking<>0 THEN  b.awinlost
---				  ELSE 0 
---		      END ) AS awinlost
---		,SUM(b.comm) AS comm
---		,odds
---		,b.oddsid
---		,SUM(b.playercomm) AS playercomm
---		,b.matchid
---		,CASE WHEN b.tpositiontaking<>0 THEN  b.Liveawayscore
---				  ELSE 0 
---		      END Liveawayscore
---		 ,b.oddstype
---		 ,b.statusID
---		,COUNT(1) betcount
---		,CASE WHEN b.tpositiontaking<>0 THEN  0
---				  ELSE 1
---		      END AS isba
---	FROM bettrans14 b WITH (
---			NOLOCK)
---	INNER JOIN @TempAg ag ON b.recommend = ag.custid
---	WHERE b.winlostdate BETWEEN @fromdate AND @TempToDate	
---		AND b.statusID IN (
---			SELECT statusid
---			FROM @status
---			)
---		AND (
---			b.matchid =@MatchID
---			OR @MatchID = 0
---			)
---		AND b.statusid IN (SELECT * FROM @Status)
---	GROUP BY b.Winlostdate
---		,b.currency
---		,b.bettype
---		,b.oddsid
---		,b.odds
---		,b.oddstype
---		,b.statusID
---		,b.matchid
---		,b.Liveawayscore
---		,b.tpositiontaking
---		,CASE WHEN b.tpositiontaking<>0 THEN  0
---				  ELSE 1
---		      END
-
---	--IF @products=0 -- get soccer
---	BEGIN
---		INSERT INTO @AgMatchWLDetails
---		SELECT b.Winlostdate
---			,NULL
---			,b.currency
---			,m.matchid
---			,m.homeid
---			,m.awayid
---			,b.bettype
---			,'SB'
---			,m.leagueid
---			--,odds 
---			,CASE WHEN OddsType = 1 THEN odds + 1 --decimal
---					WHEN OddsType = 2 THEN Odds + 1 --hongkong to decimal
---					WHEN OddsType IN (3,4) THEN --malay and indo to decimal
---											CASE 
---												WHEN odds < 0 THEN (1 -  cast(1 as float) / cast(odds AS float))
---												WHEN odds >=0 THEN (1 + odds) END
---					WHEN OddsType = 5 THEN --american odds to decimal
---										CASE
---										WHEN (odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (odds AS float))
---										WHEN (odds * 100) % 2 = 0 THEN 2
---										WHEN (odds * 100) > 0 THEN (1 + odds) END 
---					ELSE odds END odds2
---			,SUM(stake)
---			,SUM(winlost)
---			,- SUM(
---				CASE WHEN isba=0 THEN  b.winlost
---				  ELSE 0 
---		      END 
---				) AS LicenseeWL
---			,0 AS WinlossRB
---			,-SUM (CASE WHEN isba=1 THEN Winlost + awinlost + comm
---				  ELSE 0 
---				   END )  AS AmountDueToBA
---			,0 AS AmountDueToRB
---			,sum(CASE WHEN isba=0 THEN comm
---				  ELSE 0 
---				  END) AS CommBA
---			,0 AS CommRB
---			,SUM(b.playercomm) AS playercomm
---			,'' AS race
---			,m.matchcode
---			,ISNULL(m.isNeutral, CONVERT(BIT, 0)) AS IsNeutral
---			,m.sporttype
---			,CASE WHEN isba =0 THEN m.showtime ELSE '' END  AS showtime
---			,SUM(b.betcount) betcount
---		FROM #TempBetList b
---		INNER JOIN match14 m WITH (NOLOCK) ON m.matchid = b.matchid
---		WHERE (
---				b.bettype < 31
---				OR (b.bettype BETWEEN 121 AND 999)
---				)
---			--AND isba = 0
---			AND m.leagueid=@leagueID
---		GROUP BY b.Winlostdate
---			,b.currency
---			,m.matchid
---			,m.homeid
---			,m.awayid
---			,b.bettype
---			,m.leagueid
---			,m.matchcode
---			,m.isNeutral
---			,b.bettype
---			,m.sporttype
---			,betcount
---			--,odds
---			,CASE WHEN isba =0 THEN m.showtime ELSE '' END
---			,CASE WHEN OddsType = 1 THEN odds + 1 --decimal
---					WHEN OddsType = 2 THEN Odds + 1 --hongkong to decimal
---					WHEN OddsType IN (3,4) THEN --malay and indo to decimal
---											CASE 
---												WHEN odds < 0 THEN (1 -  cast(1 as float) / cast(odds AS float))
---												WHEN odds >=0 THEN (1 + odds) END
---					WHEN OddsType = 5 THEN --american odds to decimal
---										CASE
---										WHEN (odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (odds AS float))
---										WHEN (odds * 100) % 2 = 0 THEN 2
---										WHEN (odds * 100) > 0 THEN (1 + odds) END 
---					ELSE odds END
---	END
---END
-
 IF @Fromdate <= @MoveBetsDay
 		BEGIN
 			IF @ToDate >= @MoveBetsDay
@@ -501,9 +269,7 @@ IF @Fromdate <= @MoveBetsDay
 			,m.awayid
 			,b.bettype
 			,'SB'
-			,--b.bettype,  
-			m.leagueid
-			--,odds 
+			,m.leagueid
 			,CASE WHEN OddsType = 1 THEN odds + 1 --decimal
 					WHEN OddsType = 2 THEN Odds + 1 --hongkong to decimal
 					WHEN OddsType IN (3,4) THEN --malay and indo to decimal
@@ -537,15 +303,14 @@ IF @Fromdate <= @MoveBetsDay
 			,m.sporttype
 			,m.showtime AS showtime
 			,sum(b.betcount) betcount
-		FROM bodb_LicenseeReport.dbo.rptWinlostbyLeague b WITH (NOLOCK)
-		INNER JOIN @TempAg ag ON b.recommend = ag.custid
+		FROM bodb_LicenseeReport.dbo.rptWinlostbyLeague b WITH (NOLOCK)		
 		INNER JOIN cte_match AS m WITH (NOLOCK) ON m.matchid = b.matchid
+		INNER JOIN @TempAg ag ON b.recommend = ag.custid
 		WHERE winlostdate BETWEEN  @fromdate AND @TempToDate	
 		AND  (
 				b.bettype < 31
 				OR (b.bettype BETWEEN 121 AND 999)
 				)
-			--AND b.tpositiontaking <> 0
 		AND b.leagueid=@LeagueID
 		AND (m.matchid =@MatchID OR @MatchID=0)
 		AND b.statusID IN (SELECT * FROM @status)
@@ -692,7 +457,8 @@ ORDER BY CASE ProductName
 		ELSE 3
 		END
 
-DROP TABLE #TempBetList
+DROP TABLE @AgMatchWLDetails
+
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [bodbLicenseeNet] AS [dbo]
 GO
@@ -705,4 +471,3 @@ GO
 --@BalanceUpDay='2013-12-28 00:00:00',@ShowDraw=1,@ShowLoss=1,@Odds=0,
 --@ToDate='2013-12-28 00:00:00',
 --@MoveBetsDay='2013-12-30 00:00:00',@MatchID=0
-
