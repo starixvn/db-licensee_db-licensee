@@ -481,13 +481,13 @@ IF @Fromdate <= @MoveBetsDay
 		AS 
 		(
 			SELECT m.matchid,m.homeid,m.awayid,m.leagueid,m.matchcode,m.sporttype,m.showtime,m.isNeutral
-			FROM match14 AS m 
+			FROM match14 AS m WITH (NOLOCK)
 			WHERE m.eventdate BETWEEN @fromdate AND @TempToDate	
 			AND m.leagueid=@LeagueID
 			AND (m.matchid =@MatchID OR @MatchID=0)
 			UNION ALL 
 			SELECT m.matchid,m.homeid,m.awayid,m.leagueid,m.matchcode,m.sporttype,m.showtime,m.isNeutral
-			FROM DBARC.bodb_archive.dbo.match_bk AS m 
+			FROM DBARC.bodb_archive.dbo.match_bk AS m WITH (NOLOCK) 
 			WHERE m.eventdate BETWEEN @fromdate AND @TempToDate
 			AND m.leagueid=@LeagueID
 			AND (m.matchid =@MatchID OR @MatchID=0)	
