@@ -25,7 +25,8 @@ IF EXISTS (SELECT TOP 1 1 FROM bodb_LicenseeReport.dbo.rptWinlostbyLeague WHERE 
 BEGIN 
 DELETE bodb_LicenseeReport.dbo.rptWinlostbyLeague
 WHERE winlostdate =@Date
-END ;
+END;
+
 WITH cte_isBATrans
 AS (
 	SELECT transid
