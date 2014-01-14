@@ -22,37 +22,59 @@ Revisions:
 Param's Explanation:	
 */
 
-DECLARE @sport INT
-
 SET NOCOUNT ON
-CREATE TABLE #tblReturn (leagueid INT, leaguename VARCHAR(100),sportid SMALLINT) 
-
-
 BEGIN
-INSERT INTO #tblReturn 
-	SELECT DISTINCT l.leagueid, leaguename, l.sporttype
-	FROM 
-		(
-			SELECT DISTINCT m.leagueid
-			  FROM bodb02.dbo.match AS m WITH (NOLOCK) WHERE m.eventdate BETWEEN @Fromdate AND @Todate
-			UNION
-			SELECT DISTINCT m.leagueid
-			 FROM bodb02.dbo.match14 AS m WITH (NOLOCK) WHERE m.eventdate BETWEEN @Fromdate AND @Todate
-			UNION
-			SELECT DISTINCT leagueid
-			 FROM bodb_LicenseeReport.dbo.rptWinlostbyLeague AS rwl WITH (NOLOCK) WHERE rwl.winlostdate BETWEEN @Fromdate AND @Todate
-		)MATCH
-		INNER JOIN bodb02.dbo.League AS l WITH (NOLOCK) ON match.leagueid = l.leagueid
-	WHERE ((@sportId='0') OR (l.sporttype =@sportId))
-		AND l.sporttype<100
-	ORDER BY leaguename
+	SET NOCOUNT ON
+
+	CREATE TABLE #tblLeagueid (leagueid INT)
+	CREATE TABLE #tblReturn (leagueid INT, sportid SMALLINT) 
+ 
+	DECLARE @f DATETIME, @t DATETIME,@TempFromDate DATETIME ,@TempToDate DATETIME,@MoveBetsDay DATETIME
+	
+	SELECT @MoveBetsDay = MAX(eventdate)  
+	FROM bodb02.dbo.match14 WITH(NOLOCK) 
+
+	SET @f = @Fromdate
+	SET @t = @Todate
+	
+	IF @t > @MoveBetsDay
+		BEGIN
+			IF @FromDate <= @MoveBetsDay 
+				SET @TempFromDate =  DATEADD(DAY,1,@MoveBetsDay)
+			ELSE
+				SET @TempFromDate = @f
+				
+			INSERT INTO #tblLeagueid
+			SELECT m.leagueid
+			FROM bodb02.dbo.match AS m WITH (NOLOCK)
+			WHERE m.eventdate BETWEEN @TempFromDate AND @t 			
+		END 
+	IF @f <= @MoveBetsDay
+		BEGIN
+			IF @t >= @MoveBetsDay
+				SET @TempToDate = @MoveBetsDay
+			ELSE
+				SET  @TempToDate = @t				
+		INSERT INTO #tblLeagueid		
+		SELECT leagueid
+		FROM bodb_LicenseeReport.dbo.rptWinlostbyLeague AS rwl WITH (NOLOCK)
+		WHERE rwl.winlostdate BETWEEN @f AND @TempToDate
+		END 
+		
+	INSERT INTO #tblReturn
+	SELECT DISTINCT l.leagueid,l.sporttype
+	FROM #tblLeagueid m
+		INNER JOIN bodb02.dbo.League AS l WITH (NOLOCK) ON m.leagueid = l.leagueid
+	WHERE ((@sportId = 0) OR (l.sporttype = @sportId) )
+		AND l.sporttype < 100
+
+	SELECT leagueid,sportid
+	FROM #tblReturn 
+	WHERE leagueid>0
+		
+	DROP TABLE #tblReturn
+	DROP TABLE #tblLeagueid
 END 
-SELECT DISTINCT leagueid,leaguename,sportid
-FROM #tblReturn 
-ORDER BY leaguename
-
-DROP TABLE #tblReturn 
-
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_SelLeagueBySport] TO [bodbLicenseeNet] AS [dbo]

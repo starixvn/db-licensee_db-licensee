@@ -20,34 +20,96 @@ Revisions:
 Param's Explanation:
 	
 */
+DECLARE @BalanceUpDay DATETIME
+	,@MoveBetsDay DATETIME
+	,@TempFromDate DATETIME
+	,@TempToDate DATETIME
 
-DECLARE @match TABLE (
-	MatchID smallint
-	,matchName nvarchar(100)
-	,SportID SMALLINT 
-)
+SELECT TOP 1 @BalanceUpDay = winlostdate
+FROM bodb02.dbo.Bettrans WITH (NOLOCK)
+WHERE bettype = 20000
+	AND matchid = 0
+	AND custid = 3
 
---SELECT val into #league FROM bodb02.dbo.strSplit(@LeagueList,',') 
+SELECT @MoveBetsDay = MAX(eventdate)
+FROM bodb02.dbo.match14 WITH (NOLOCK)
 
-;WITH cte_match
-as (
-	SELECT DISTINCT m.matchid,m.homeid,m.awayid,m.leagueid
-	  FROM bodb02.dbo.match AS m WITH (NOLOCK) WHERE m.eventdate BETWEEN @Fromdate AND @Todate
-	  AND m.leagueid =@LeagueID
-	UNION
-	SELECT DISTINCT m.matchid,m.homeid,m.awayid,m.leagueid
-	 FROM bodb02.dbo.match14 AS m WITH (NOLOCK) WHERE m.eventdate BETWEEN @Fromdate AND @Todate
-	 AND m.leagueid =@LeagueID
-	 UNION
-	SELECT DISTINCT m.matchid,m.homeid,m.awayid,m.leagueid
-	 FROM DBARC.bodb_archive.dbo.match_bk AS m WITH (NOLOCK) WHERE m.eventdate BETWEEN @Fromdate AND @Todate
-	 AND m.leagueid =@LeagueID
-)
+CREATE TABLE #match (
+	matchid INT
+	,homeid INT
+	,awayid INT
+	,leagueid INT
+	)
 
-SELECT DISTINCT m.matchid,m.homeid,m.awayid,m.leagueid
-FROM cte_match AS m
-ORDER BY m.leagueid 
+IF @Todate > @MoveBetsDay
+BEGIN
+	IF @FromDate <= @MoveBetsDay
+		SET @TempFromDate = DATEADD(DAY, 1, @MoveBetsDay)
+	ELSE
+		SET @TempFromDate = @FromDate
 
+	INSERT INTO #match
+	SELECT DISTINCT m.matchid
+		,m.homeid
+		,m.awayid
+		,m.leagueid
+	FROM bodb02.dbo.match AS m WITH (NOLOCK)
+	WHERE m.eventdate BETWEEN @Fromdate AND @Todate
+		AND m.leagueid = @LeagueID
+		AND m.matchcode NOT LIKE 'hedge%'
+END
+
+IF @Fromdate <= @MoveBetsDay
+BEGIN
+	IF @ToDate >= @MoveBetsDay
+		SET @TempToDate = @MoveBetsDay
+	ELSE
+		SET @TempToDate = @ToDate
+
+	IF @BalanceUpDay < @FromDate
+		SELECT @BalanceUpDay = @FromDate
+
+	INSERT INTO #match
+	SELECT DISTINCT m.matchid
+		,m.homeid
+		,m.awayid
+		,m.leagueid
+	FROM bodb02.dbo.match14 AS m WITH (NOLOCK)
+	WHERE m.eventdate BETWEEN @Fromdate AND @Todate
+		AND m.leagueid = @LeagueID
+		AND m.matchcode NOT LIKE 'hedge%'
+END
+
+IF @FromDate < @BalanceUpDay
+BEGIN
+	IF @todate >= DATEADD(dd, - 1, @BalanceUpDay)
+		SET @TempToDate = DATEADD(dd, - 1, @BalanceUpDay)
+	ELSE
+		SET @TempToDate = @todate
+
+	INSERT INTO #match
+	SELECT DISTINCT m.matchid
+		,m.homeid
+		,m.awayid
+		,m.leagueid
+	FROM DBARC.bodb_archive.dbo.match_bk AS m WITH (NOLOCK)
+	WHERE m.eventdate BETWEEN @Fromdate AND @Todate
+		AND m.leagueid = @LeagueID
+		AND m.matchcode NOT LIKE 'hedge%'
+END
+
+SELECT DISTINCT m.matchid
+	,m.homeid
+	,m.awayid
+	,m.leagueid
+FROM #match AS m
+ORDER BY m.matchid DESC
+	,m.homeid
+	,m.awayid --m.leagueid,m.eventdate
+
+DROP TABLE #match
+
+GO
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_SelMatchByleague] TO [bodbLicenseeNet] AS [dbo]
