@@ -29,7 +29,8 @@ DECLARE @sql NVARCHAR(MAX)
 			''SELECT CustID
 			,bettype,sporttype
 			,Currency ,stake ,winlost 
-			,playercomm ,Odds ,oddstype
+			,playercomm , comm,awinlost,
+			Odds ,oddstype
 			,statusID ,recommend ,LeagueID
 			,winlostdate ,betcount ,isba 
 			FROM bodb_report.dbo.rptCustomerTurnover rpt with (nolock)
