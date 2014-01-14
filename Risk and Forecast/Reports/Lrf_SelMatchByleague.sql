@@ -21,19 +21,23 @@ Param's Explanation:
 	
 */
 SET NOCOUNT ON
+
 DECLARE @BalanceUpDay DATETIME
 	,@MoveBetsDay DATETIME
 	,@TempFromDate DATETIME
 	,@TempToDate DATETIME
 
-SELECT TOP 1 @BalanceUpDay = winlostdate
-FROM bodb02.dbo.Bettrans WITH (NOLOCK)
-WHERE bettype = 20000
-	AND matchid = 0
-	AND custid = 3
+CREATE TABLE #tblBalanceDate (
+	MoveBetsDay DATETIME
+	,BalanceUpDay DATETIME
+	)
 
-SELECT @MoveBetsDay = MAX(eventdate)
-FROM bodb02.dbo.match14 WITH (NOLOCK)
+INSERT INTO #tblBalanceDate
+EXEC bodb02.dbo.Lrf_SelBalanceUpDay
+
+SELECT @MoveBetsDay = MoveBetsDay
+	,@BalanceUpDay = BalanceUpDay
+FROM #tblBalanceDate
 
 CREATE TABLE #match (
 	matchid INT
@@ -109,11 +113,19 @@ ORDER BY m.matchid DESC
 	,m.awayid --m.leagueid,m.eventdate
 
 DROP TABLE #match
+GO
+
 
 GO
 
+GRANT EXECUTE
+	ON [dbo].[Lrf_SelMatchByleague]
+	TO [bodbLicenseeNet] AS [dbo]
 GO
-GRANT EXECUTE ON [dbo].[Lrf_SelMatchByleague] TO [bodbLicenseeNet] AS [dbo]
+
+GRANT VIEW DEFINITION
+	ON [dbo].[Lrf_SelMatchByleague]
+	TO [vnteam] AS [dbo]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_SelMatchByleague] TO [vnteam] AS [dbo]
-GO
+
+
