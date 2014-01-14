@@ -115,9 +115,6 @@ ORDER BY m.matchid DESC
 DROP TABLE #match
 GO
 
-
-GO
-
 GRANT EXECUTE
 	ON [dbo].[Lrf_SelMatchByleague]
 	TO [bodbLicenseeNet] AS [dbo]
