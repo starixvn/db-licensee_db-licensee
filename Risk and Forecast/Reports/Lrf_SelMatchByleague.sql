@@ -20,6 +20,7 @@ Revisions:
 Param's Explanation:
 	
 */
+SET NOCOUNT ON
 DECLARE @BalanceUpDay DATETIME
 	,@MoveBetsDay DATETIME
 	,@TempFromDate DATETIME

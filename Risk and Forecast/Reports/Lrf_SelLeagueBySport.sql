@@ -24,8 +24,6 @@ Param's Explanation:
 
 SET NOCOUNT ON
 BEGIN
-	SET NOCOUNT ON
-
 	CREATE TABLE #tblLeagueid (leagueid INT)
 	CREATE TABLE #tblReturn (leagueid INT, sportid SMALLINT) 
  
