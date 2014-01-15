@@ -308,10 +308,11 @@ ELSE
 					WHERE bk.winlostdate BETWEEN @fromdate AND @TempToDate				
 
 						--AND bodb_LicenseeReport.$PARTITION.pf_rptcustomerturnOver_monthly(winlostdate) in (@i,@i+1)
-						AND bk.STATUSID IN (
+						/*AND bk.STATUSID IN (
 							SELECT statusid
 							FROM #Status
-						)
+						)*/
+						AND EXISTS(SELECT * FROM #Status s WHERE s.StatusID = bk.statusID)
 						GROUP BY  
 						bk.CustID,
 						bk.winlostdate
