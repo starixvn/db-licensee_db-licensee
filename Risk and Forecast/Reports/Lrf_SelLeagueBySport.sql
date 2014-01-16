@@ -25,17 +25,10 @@ SET NOCOUNT ON
 
 BEGIN
 	CREATE TABLE #tblLeagueid (leagueid INT)
-
-	CREATE TABLE #tblReturn (
-		leagueid INT
-		,sportid SMALLINT
-		)
-
 	CREATE TABLE #tblBalanceDate (
 		MoveBetsDay DATETIME
 		,BalanceUpDay DATETIME
 		)
-
 	DECLARE @f DATETIME
 		,@t DATETIME
 		,@TempFromDate DATETIME
@@ -47,7 +40,20 @@ BEGIN
 
 	SELECT @MoveBetsDay = MoveBetsDay
 	FROM #tblBalanceDate
+	--------
+	SELECT  currencyID,LicenseeID into #currency
+	FROM  bodb02.dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+	WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+	-------
 
+	DECLARE @TempAg AS TABLE (custid INT)
+	INSERT INTO @TempAg (custid)
+	SELECT  CustID  
+					FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+							INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
+					--WHERE   [Description] = COALESCE(@LicenseeType,  
+					--                                     [Description])
+	--------
 	SET @f = @Fromdate
 	SET @t = @Todate
 
@@ -62,6 +68,7 @@ BEGIN
 		SELECT m.leagueid
 		FROM bodb02.dbo.match AS m WITH (NOLOCK)
 		WHERE m.eventdate BETWEEN @TempFromDate AND @t
+		GROUP BY leagueid
 	END
 
 	IF @f <= @MoveBetsDay
@@ -74,12 +81,13 @@ BEGIN
 		INSERT INTO #tblLeagueid
 		SELECT leagueid
 		FROM bodb_LicenseeReport.dbo.rptWinlostbyLeague AS rwl WITH (NOLOCK)
+		INNER JOIN @TempAg ta on rwl.recommend=ta.custid
 		WHERE rwl.winlostdate BETWEEN @f AND @TempToDate
+		GROUP BY leagueid
 	END
 
-	INSERT INTO #tblReturn
-	SELECT DISTINCT l.leagueid
-		,l.sporttype
+	SELECT l.leagueid
+		,l.sporttype sportid
 	FROM #tblLeagueid m
 	INNER JOIN bodb02.dbo.League AS l WITH (NOLOCK) ON m.leagueid = l.leagueid
 	WHERE (
@@ -87,19 +95,11 @@ BEGIN
 			OR (l.sporttype = @sportId)
 			)
 		AND l.sporttype < 100
-
-	SELECT leagueid
-		,sportid
-	FROM #tblReturn
-	WHERE leagueid > 0
-
-	DROP TABLE #tblReturn
-
+		and l.leagueid>0
+	group by l.leagueid	,l.sporttype
 	DROP TABLE #tblLeagueid
-
 	DROP TABLE #tblBalanceDate
 END
-GO
 
 GRANT EXECUTE
 	ON [dbo].[Lrf_SelLeagueBySport]
