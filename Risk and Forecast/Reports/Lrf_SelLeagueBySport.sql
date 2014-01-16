@@ -26,8 +26,8 @@ SET NOCOUNT ON
 BEGIN
 	CREATE TABLE #tblLeagueid (leagueid INT)
 	CREATE TABLE #tblBalanceDate (
-		MoveBetsDay DATETIME
-		,BalanceUpDay DATETIME
+		BalanceUpDay DATETIME
+		,MoveBetsDay DATETIME
 		)
 	DECLARE @f DATETIME
 		,@t DATETIME
@@ -99,8 +99,8 @@ BEGIN
 	group by l.leagueid	,l.sporttype
 	DROP TABLE #tblLeagueid
 	DROP TABLE #tblBalanceDate
+	DROP TABLE #currency
 END
-
 GRANT EXECUTE
 	ON [dbo].[Lrf_SelLeagueBySport]
 	TO [bodbLicenseeNet] AS [dbo]
