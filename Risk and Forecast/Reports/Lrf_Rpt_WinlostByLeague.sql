@@ -7,13 +7,12 @@ SET QUOTED_IDENTIFIER ON
 GO
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlostByLeague] 
---DECLARE 
 	 @LicenseeID INT
 	,@UserID INT
 	,@CurrencyID INT
 	,@FromDate SMALLDATETIME
 	,@ToDate SMALLDATETIME
-	,@Odds INT=0
+	,@Odds FLOAT =0
 	,@LeagueID INT 
 	,@MatchID INT 
 	,@MoveBetsDay SMALLDATETIME
@@ -30,9 +29,17 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlostByLeague]
 	Original: 
 	Revision:
 	Parameter's Explanation:
-		- @FilterBy:  1: Win, 2: Loss, 3: Draw
-		- @SportID   : Sport type ID  
-		- @bettype   : Bet type ID  
+		- @LicenseeID : Licensee ID
+		- @UserID : UserID who run this report
+		- @CurrencyID : Curenncy in Filter, default=0
+		- @FromDate : From date, in range time
+		- @ToDate : To date, in range time
+		- @Odds : Decimals odds >=0
+		- @LeagueID : LeagueID of sportbook
+		- @MatchID :match ID on League
+		- @ShowWin : Filter show only Win bet
+		- @ShowLoss :Filter show only Loss bet
+		- @ShowDraw :Filter show only Draw bet		
 		- @MoveBetsDay: The day we move tickets to bettrans14
 		- @BalanceUpDay: The day we move tickets to bettrans_bk		
 			
@@ -175,15 +182,15 @@ BEGIN
 										WHEN (odds * 100) > 0 THEN (1 + odds) END 
 					ELSE odds END odds2
 			,SUM(stake)
-			,SUM(winlost)
+			,SUM(winlost - b.actual_stake)
 			,- SUM(
-			CASE WHEN b.tpositiontaking<>0 THEN b.winlost 
+			CASE WHEN b.tpositiontaking<>0 THEN winlost - b.actual_stake
 				 ELSE 0
 			END ) AS LicenseeWL
 			,0 AS WinlossRB
 			,SUM(
 			CASE WHEN b.tpositiontaking<>0 THEN 0 
-				 ELSE Winlost + awinlost + comm
+				 ELSE winlost - b.actual_stake + awinlost + comm
 			END ) AS AmountDueToBA
 			,0 AS AmountDueToRB
 			,SUM(
@@ -203,7 +210,9 @@ BEGIN
 		FROM bettrans as b with (nolock) 
 		INNER JOIN match m WITH (NOLOCK) ON m.matchid = b.matchid
 		INNER JOIN @TempAg ta ON b.recommend=ta.CustId
-		WHERE (
+		WHERE  b.winlostdate between @TempFromDate and @todate
+		and 
+		(
 				b.bettype < 31
 				OR (b.bettype BETWEEN 121 AND 999)
 				)
@@ -332,7 +341,6 @@ IF @Fromdate <= @MoveBetsDay
 END
 
 ---
-
 INSERT INTO @ExchangeDaily
 SELECT ExchangeDate
 	,ExchangeId
@@ -407,7 +415,7 @@ FROM @AgMatchWLDetails b
 --INNER JOIN (SELECT *  FROM Lrf_f_GetExchangeDaily(@_FromDate,@_ToDate))e   
 INNER JOIN @ExchangeDaily e ON b.winlostdate = e.ExchangeDate
 	AND b.currency = e.ExchangeId
-WHERE b.odds2>@Odds
+WHERE b.odds2>=@Odds
 GROUP BY matchid
 	,CASE 
 		WHEN b.sporttype IN (181, 182, 184)

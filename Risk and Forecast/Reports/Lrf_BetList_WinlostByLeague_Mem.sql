@@ -5,12 +5,9 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-
-
-
 ALTER PROCEDURE [dbo].[Lrf_BetList_WinlostByLeague_Mem]
 	@CustID INT,
-	@Odds SMALLMONEY,
+	@Odds FLOAT=0,
 	@LeagueID INT,
 	@LicenseeID INT,
 	@UserID	 INT,
@@ -22,9 +19,9 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_WinlostByLeague_Mem]
 	@ToDate SMALLDATETIME = NULL,
 	@MoveBetsDay SMALLDATETIME,
 	@BalanceUpDay SMALLDATETIME
-	,@ShowWin BIT
-	,@ShowLoss BIT
-	,@ShowDraw BIT
+	,@ShowWin BIT =1
+	,@ShowLoss BIT =1
+	,@ShowDraw BIT=1
 AS
 
 /*
@@ -35,6 +32,22 @@ Original:[Lrf_BetList_MatchWL_Bettype_8828]
 Revisions:
    
 Param's Explanation: 
+	- @CustID : Customer Number
+	- @Odds : decimals odds, default >=0
+	- @LeagueID : LeagueID, Number
+	- @LicenseeID :Licensee ID
+	- @UserID	 : User ID who run this report
+	- @CurrencyID : Filter Currency . defaul=0 (All)
+	- @PageSize : Number rows of one fage, for faging
+	- @PageIndex : Index of paging
+	- @TotalRows : Number rows of output
+	- @FromDate : time range
+	- @ToDate :time range
+	- @MoveBetsDay : that day we use bettrans14
+	- @BalanceUpDay : that day we use bettrans_bk
+	- @ShowWin : show only win bet ,default =1
+	- @ShowLoss: show only loss bet,default =1
+	- @ShowDraw : show only draw bet,default =1
 	
 */
 
@@ -395,13 +408,14 @@ FROM
 	INNER JOIN Customer c (NOLOCK) ON b.custid = c.custid
 	INNER JOIN #TempExchange e
 	ON e.ExchangeDate = (CASE WHEN b.winlostdate <= @Today THEN  b.winlostdate ELSE @Today END)   AND e.exchangeid = b.currency
-	WHERE b.odds>@Odds
+	WHERE b.odds>=@Odds
 	AND b.StatusID IN (SELECT * FROM @Status)
 ) A WHERE A.RowNum BETWEEN @RowStart AND @RowEnd
 --WHERE b.odds>@odds
 
 DROP TABLE #TempExchange
 DROP TABLE #Data
+
 
 
 GO

@@ -6,12 +6,10 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-
-
 ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByLeagueDetail]  
 	@LicenseeID INT
 	,@UserID INT
-	,@Odds SMALLMONEY
+	,@Odds FLOAT=0 
 	,@CurrencyID INT=0
 	,@LeagueID INT
 	,@PageSize INT=1000
@@ -263,11 +261,12 @@ BEGIN
 			,0 AS liveindicator
 			,SUM(b.betcount) betcount
 		FROM bodb_LicenseeReport.dbo.rptCustomerTurnover b WITH (NOLOCK)
-		WHERE (
+		INNER JOIN @TempAg ta ON b.recommend = ta.CustId
+		WHERE b.winlostdate BETWEEN @FromDate AND @TempToDate
+		and (
 				b.bettype < 31
 				OR (b.bettype BETWEEN 121 AND 999)
 		)
-		and b.winlostdate BETWEEN @FromDate AND @TempToDate
 		AND b.leagueid=@LeagueID
 		AND b.statusID IN (SELECT * FROM @status )
 		GROUP BY b.custid
@@ -338,17 +337,17 @@ SELECT A.* FROM
 		,CAST(SUM(CommBA * e.USD) AS MONEY) AS CommBAUSD
 		,CAST(SUM(CommBA * e.EUR) AS MONEY) AS CommBAEUR
 		,CAST(SUM(PlayerComm) AS MONEY) AS PlayerComm
-		--,CAST(SUM(PlayerComm * e.USD) AS MONEY) AS PlayerCommUSD
-		--,CAST(SUM(PlayerComm * e.EUR) AS MONEY) AS PlayerCommEUR
+		,CAST(SUM(PlayerComm * e.USD) AS MONEY) AS PlayerCommUSD
+		,CAST(SUM(PlayerComm * e.EUR) AS MONEY) AS PlayerCommEUR
 		,CAST(SUM(AmtDuetoBA) AS MONEY) AS AmtDuetoBA
-		--,CAST(SUM((AmtDuetoBA) * e.USD) AS MONEY) AS AmtDuetoBAUSD
-		--,CAST(SUM((AmtDuetoBA) * e.EUR) AS MONEY) AS AmtDuetoBAEUR
+		,CAST(SUM((AmtDuetoBA) * e.USD) AS MONEY) AS AmtDuetoBAUSD
+		,CAST(SUM((AmtDuetoBA) * e.EUR) AS MONEY) AS AmtDuetoBAEUR
 		,sum(b.betcount) betcount
 	FROM @AgMatchWLDetails b
 	INNER JOIN Customer c (NOLOCK) ON b.custid = c.custid
 	INNER JOIN @ExchangeDaily e ON b.winlostdate = e.ExchangeDate
 		AND b.currency = e.ExchangeId
-	WHERE odds>@odds
+	WHERE odds>=@odds
 	GROUP BY b.custid,
 	username
 	,SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, len(c.username2)-CHARINDEX('$',c.username2))
@@ -357,7 +356,7 @@ SELECT A.* FROM
 	--ORDER BY b.custid
 	) A WHERE A.RowNum BETWEEN @RowStart AND @RowEnd
 
-
+DROP TABLE @AgMatchWLDetails
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinlossByLeagueDetail] TO [bodbLicenseeNet] AS [dbo]
