@@ -21,22 +21,18 @@ Param's Explanation:
 	
 */
 SET NOCOUNT ON
-
 DECLARE @BalanceUpDay DATETIME
 	,@MoveBetsDay DATETIME
 	,@TempFromDate DATETIME
 	,@TempToDate DATETIME
 
-CREATE TABLE #tblBalanceDate (
-	MoveBetsDay DATETIME
-	,BalanceUpDay DATETIME
-	)
+CREATE TABLE #tblBalanceDate (BalanceUpDay DATETIME, MoveBetsDay DATETIME)
+	insert into #tblBalanceDate 
+	exec bodb02.dbo.Lrf_SelBalanceUpDay
 
-INSERT INTO #tblBalanceDate
-EXEC bodb02.dbo.Lrf_SelBalanceUpDay
 
-SELECT @MoveBetsDay = MoveBetsDay
-	,@BalanceUpDay = BalanceUpDay
+
+SELECT @MoveBetsDay = MoveBetsDay,@BalanceUpDay=BalanceUpDay
 FROM #tblBalanceDate
 
 CREATE TABLE #match (
@@ -59,12 +55,12 @@ BEGIN
 		,m.awayid
 		,m.leagueid
 	FROM bodb02.dbo.match AS m WITH (NOLOCK)
-	WHERE m.eventdate BETWEEN @Fromdate AND @Todate
+	WHERE m.eventdate BETWEEN @TempFromDate AND @Todate
 		AND m.leagueid = @LeagueID
 		AND m.matchcode NOT LIKE 'hedge%'
 END
 
-IF @Fromdate <= @MoveBetsDay
+IF @Fromdate <= @MoveBetsDay 
 BEGIN
 	IF @ToDate >= @MoveBetsDay
 		SET @TempToDate = @MoveBetsDay
@@ -73,14 +69,13 @@ BEGIN
 
 	IF @BalanceUpDay < @FromDate
 		SELECT @BalanceUpDay = @FromDate
-
 	INSERT INTO #match
 	SELECT DISTINCT m.matchid
 		,m.homeid
 		,m.awayid
 		,m.leagueid
 	FROM bodb02.dbo.match14 AS m WITH (NOLOCK)
-	WHERE m.eventdate BETWEEN @Fromdate AND @Todate
+	WHERE m.eventdate BETWEEN @BalanceUpDay AND @TempToDate
 		AND m.leagueid = @LeagueID
 		AND m.matchcode NOT LIKE 'hedge%'
 END
@@ -92,15 +87,25 @@ BEGIN
 	ELSE
 		SET @TempToDate = @todate
 
-	INSERT INTO #match
-	SELECT DISTINCT m.matchid
-		,m.homeid
-		,m.awayid
-		,m.leagueid
-	FROM DBARC.bodb_archive.dbo.match_bk AS m WITH (NOLOCK)
-	WHERE m.eventdate BETWEEN @Fromdate AND @Todate
-		AND m.leagueid = @LeagueID
-		AND m.matchcode NOT LIKE 'hedge%'
+	DECLARE @sql NVARCHAR(MAX)				
+		
+		 
+		DECLARE @OPENQUERY nvarchar(4000), @TSQL nvarchar(4000), @LinkedServer nvarchar(4000)				
+		SET @LinkedServer = 'DBARC'
+		SET @OPENQUERY = 'SELECT * FROM OPENQUERY('+ @LinkedServer + ','''
+		SET @TSQL = '	SELECT DISTINCT m.matchid
+						,m.homeid
+						,m.awayid
+						,m.leagueid
+						FROM bodb_archive.dbo.match_bk AS m WITH (NOLOCK)
+						WHERE m.eventdate between '''''+CAST(@fromdate AS VARCHAR)+''''''+' AND '''''+ CAST( @TempToDate AS VARCHAR)+'''''
+						AND m.leagueid = '+CAST(@leagueid AS VARCHAR)+'
+						AND m.matchcode NOT LIKE ''''hedge%''''					
+						'')' 	
+		SELECT @sql=@OPENQUERY+@TSQL
+		INSERT INTO #match
+		EXEC (@sql)	
+		
 END
 
 SELECT DISTINCT m.matchid
