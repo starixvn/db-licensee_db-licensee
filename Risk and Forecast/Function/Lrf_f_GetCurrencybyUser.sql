@@ -17,7 +17,7 @@ AS
 	Task : Restrict permission of Licensee Users by currency
 	DB: DB052.bodb02, DB06.bodb02
 	Revisions:	
-	
+	20140117@Victor: Grant Select permission for bodbAdminNet
 */
 BEGIN 
 	INSERT INTO @tmp
@@ -36,5 +36,7 @@ GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_f_GetCurrencybyUser] TO [vnteam]
 GO
 GRANT SELECT ON [dbo].[Lrf_f_GetCurrencybyUser] TO [bodbLicenseeNet]
+GO
+GRANT SELECT ON [dbo].[Lrf_f_GetCurrencybyUser] TO [bodbAdminNet]
 GO
 
