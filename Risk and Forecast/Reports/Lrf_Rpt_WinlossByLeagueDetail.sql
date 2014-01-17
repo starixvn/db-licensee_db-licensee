@@ -142,18 +142,23 @@ BEGIN
 		SELECT b.custid
 			,b.Winlostdate
 			,b.currency
-			,CASE WHEN OddsType = 1 THEN odds + 1 --decimal
-					WHEN OddsType = 2 THEN Odds + 1 --hongkong to decimal
-					WHEN OddsType IN (3,4) THEN --malay and indo to decimal
-											CASE 
-												WHEN odds < 0 THEN (1 -  cast(1 as float) / cast(odds AS float))
-												WHEN odds >=0 THEN (1 + odds) END
-					WHEN OddsType = 5 THEN --american odds to decimal
-										CASE
-										WHEN (odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (odds AS float))
-										WHEN (odds * 100) % 2 = 0 THEN 2
-										WHEN (odds * 100) > 0 THEN (1 + odds) END 
-					ELSE odds END odds
+			,CASE WHEN (b.bettype IN (1,2,3,7,12,8,20)	
+									OR b.bettype BETWEEN 81 AND 88
+									OR b.bettype BETWEEN 90 AND 120)
+									THEN 
+											CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
+												 WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
+												 WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
+																		CASE 
+																			WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
+																			WHEN b.odds >=0 THEN (1 + b.odds) END
+												 WHEN OddsType = 5 THEN --american odds to decimal
+																	CASE
+																	WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
+																	WHEN (b.odds * 100) % 2 = 0 THEN 2
+																	WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
+											 END 
+							  ELSE b.Odds END odds
 			,0 sporttype
 			,m.leagueid
 			,SUM(stake)
@@ -195,18 +200,23 @@ BEGIN
 			,m.isNeutral
 			,b.liveindicator
 			,b.tpositiontaking
-			,CASE WHEN OddsType = 1 THEN odds + 1 --decimal
-					WHEN OddsType = 2 THEN Odds + 1 --hongkong to decimal
-					WHEN OddsType IN (3,4) THEN --malay and indo to decimal
-											CASE 
-												WHEN odds < 0 THEN (1 -  cast(1 as float) / cast(odds AS float))
-												WHEN odds >=0 THEN (1 + odds) END
-					WHEN OddsType = 5 THEN --american odds to decimal
-										CASE
-										WHEN (odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (odds AS float))
-										WHEN (odds * 100) % 2 = 0 THEN 2
-										WHEN (odds * 100) > 0 THEN (1 + odds) END 
-					ELSE odds END 
+			,CASE WHEN (b.bettype IN (1,2,3,7,12,8,20)	
+									OR b.bettype BETWEEN 81 AND 88
+									OR b.bettype BETWEEN 90 AND 120)
+									THEN 
+											CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
+												 WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
+												 WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
+																		CASE 
+																			WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
+																			WHEN b.odds >=0 THEN (1 + b.odds) END
+												 WHEN OddsType = 5 THEN --american odds to decimal
+																	CASE
+																	WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
+																	WHEN (b.odds * 100) % 2 = 0 THEN 2
+																	WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
+											 END 
+							  ELSE b.Odds END 
 		ORDER BY b.winlostdate DESC
 	END
 	--SELECT * FROM @agMatchWLDetails
@@ -227,18 +237,23 @@ BEGIN
 		SELECT b.custid
 			,b.Winlostdate
 			,b.currency
-			,CASE WHEN OddsType = 1 THEN odds + 1 --decimal
-					WHEN OddsType = 2 THEN Odds + 1 --hongkong to decimal
-					WHEN OddsType IN (3,4) THEN --malay and indo to decimal
-											CASE 
-												WHEN odds < 0 THEN (1 -  cast(1 as float) / cast(odds AS float))
-												WHEN odds >=0 THEN (1 + odds) END
-					WHEN OddsType = 5 THEN --american odds to decimal
-										CASE
-										WHEN (odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (odds AS float))
-										WHEN (odds * 100) % 2 = 0 THEN 2
-										WHEN (odds * 100) > 0 THEN (1 + odds) END 
-					ELSE odds END odds
+			,CASE WHEN (b.bettype IN (1,2,3,7,12,8,20)	
+									OR b.bettype BETWEEN 81 AND 88
+									OR b.bettype BETWEEN 90 AND 120)
+									THEN 
+											CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
+												 WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
+												 WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
+																		CASE 
+																			WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
+																			WHEN b.odds >=0 THEN (1 + b.odds) END
+												 WHEN OddsType = 5 THEN --american odds to decimal
+																	CASE
+																	WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
+																	WHEN (b.odds * 100) % 2 = 0 THEN 2
+																	WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
+											 END 
+							  ELSE b.Odds END odds
 			,0 AS sporttype
 			,b.leagueid
 			,SUM(stake)
@@ -274,18 +289,23 @@ BEGIN
 			,b.currency
 			,b.leagueid
 			,b.isBA
-			,CASE WHEN OddsType = 1 THEN odds + 1 --decimal
-					WHEN OddsType = 2 THEN Odds + 1 --hongkong to decimal
-					WHEN OddsType IN (3,4) THEN --malay and indo to decimal
-											CASE 
-												WHEN odds < 0 THEN (1 -  cast(1 as float) / cast(odds AS float))
-												WHEN odds >=0 THEN (1 + odds) END
-					WHEN OddsType = 5 THEN --american odds to decimal
-										CASE
-										WHEN (odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (odds AS float))
-										WHEN (odds * 100) % 2 = 0 THEN 2
-										WHEN (odds * 100) > 0 THEN (1 + odds) END 
-					ELSE odds END 
+			,CASE WHEN (b.bettype IN (1,2,3,7,12,8,20)	
+									OR b.bettype BETWEEN 81 AND 88
+									OR b.bettype BETWEEN 90 AND 120)
+									THEN 
+											CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
+												 WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
+												 WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
+																		CASE 
+																			WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
+																			WHEN b.odds >=0 THEN (1 + b.odds) END
+												 WHEN OddsType = 5 THEN --american odds to decimal
+																	CASE
+																	WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
+																	WHEN (b.odds * 100) % 2 = 0 THEN 2
+																	WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
+											 END 
+							  ELSE b.Odds END 
 	END
 END 
 
