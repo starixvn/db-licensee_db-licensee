@@ -260,7 +260,7 @@ BEGIN
 			,0 AS IsNeutral
 			,0 AS liveindicator
 			,SUM(b.betcount) betcount
-		FROM bodb_LicenseeReport.dbo.rptCustomerTurnover b WITH (NOLOCK)
+		FROM bodb_LicenseeReport.dbo.rptCustomerTurnover b WITH (NOLOCK,INDEX=IX_recommend)
 		INNER JOIN @TempAg ta ON b.recommend = ta.CustId
 		WHERE b.winlostdate BETWEEN @FromDate AND @TempToDate
 		and (

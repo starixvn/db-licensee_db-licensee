@@ -81,7 +81,7 @@ BEGIN
 		INSERT INTO #tblLeagueid
 		SELECT leagueid
 		FROM bodb_LicenseeReport.dbo.rptWinlostbyLeague AS rwl WITH (NOLOCK)
-		INNER JOIN @TempAg ta on rwl.recommend=ta.custid
+		LEFT JOIN @TempAg ta on rwl.recommend=ta.custid
 		WHERE rwl.winlostdate BETWEEN @f AND @TempToDate
 		GROUP BY leagueid
 	END
