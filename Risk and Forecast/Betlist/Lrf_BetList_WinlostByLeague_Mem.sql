@@ -316,7 +316,7 @@ IF @FromDate < @BalanceUpDay
 						as (
 						SELECT m.matchid,m.sporttype,m.leagueID,m.matchcode,m.homeID,m.awayID,m.betstatus,
 						m.ShowTime,m.isNeutral
-						FROM DBARC.bodb_archive.dbo.match_bk m
+						FROM bodb_archive.dbo.match_bk m
 						WHERE m.leagueid ='+CAST(@leagueid AS VARCHAR)+'
 						AND EventDate between '''''+CAST(@fromdate AS VARCHAR)+''''''+' AND '''''+ CAST(@todate AS VARCHAR)+'''''
 						)
