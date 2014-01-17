@@ -95,6 +95,7 @@ CREATE TABLE #Data
 	hdp1 SMALLMONEY,
 	hdp2 SMALLMONEY,
 	odds SMALLMONEY,
+	odds2 SMALLMONEY,
 	status NVARCHAR(50),
 	stake MONEY,
 	Winlost MONEY,
@@ -164,6 +165,7 @@ BEGIN
 			m.awayID,
 			CONVERT(FLOAT, b.hdp1) AS hdp1, 
 			CONVERT(FLOAT, b.hdp2) AS hdp2, 
+			b.Odds,
 			CASE WHEN (b.bettype IN (1,2,3,7,12,8,20)	
 									OR b.bettype BETWEEN 81 AND 88
 									OR b.bettype BETWEEN 90 AND 120)
@@ -180,7 +182,7 @@ BEGIN
 																	WHEN (b.odds * 100) % 2 = 0 THEN 2
 																	WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
 											 END 
-							  ELSE b.Odds END odds,
+							  ELSE b.Odds END odds2,
 			b.status,
 			b.stake,
 			(b.winlost-actual_stake) winlost,
@@ -212,7 +214,8 @@ BEGIN
 		WHERE
 			m.leagueid=@LeagueID AND 
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
-			b.statusID IN (111,112,113) AND			
+			b.statusID IN (select * from @status) 
+			AND			
 			b.winlostdate BETWEEN @FromDate AND @ToDate
 			AND b.custid=@CustID
 		ORDER BY
@@ -239,6 +242,7 @@ BEGIN
 			m.awayID,
 			CONVERT(FLOAT, b.hdp1) AS hdp1, 
 			CONVERT(FLOAT, b.hdp2) AS hdp2, 
+			b.Odds,
 			CASE WHEN (b.bettype IN (1,2,3,7,12,8,20)	
 									OR b.bettype BETWEEN 81 AND 88
 									OR b.bettype BETWEEN 90 AND 120)
@@ -255,7 +259,7 @@ BEGIN
 																	WHEN (b.odds * 100) % 2 = 0 THEN 2
 																	WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
 											 END 
-							  ELSE b.Odds END odds,
+							  ELSE b.Odds END odds2,
 			b.status,
 			b.stake,
 			(b.winlost-actual_stake) winlost,
@@ -288,7 +292,7 @@ BEGIN
 		WHERE
 			m.leagueid=@leagueID AND
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
-			b.statusID IN (111,112,113) AND
+			b.statusID IN (select * from @status) AND
 			b.winlostdate BETWEEN @FromDate AND @ToDate
 			AND b.custid=@CustID
 		ORDER BY
@@ -326,7 +330,8 @@ IF @FromDate < @BalanceUpDay
 						m.homeID,
 						m.awayID,
 						CONVERT(FLOAT, b.hdp1) AS hdp1, 
-						CONVERT(FLOAT, b.hdp2) AS hdp2, 
+						CONVERT(FLOAT, b.hdp2) AS hdp2,
+						b.Odds,
 						CASE WHEN (b.bettype IN (1,2,3,7,12,8,20)	
 									OR b.bettype BETWEEN 81 AND 88
 									OR b.bettype BETWEEN 90 AND 120)
@@ -343,7 +348,7 @@ IF @FromDate < @BalanceUpDay
 																	WHEN (b.odds * 100) % 2 = 0 THEN 2
 																	WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
 											 END 
-							  ELSE b.Odds END odds,
+							  ELSE b.Odds END odds2,
 						b.status,
 						b.stake,
 						(b.winlost-actual_stake) winlost,
@@ -373,13 +378,14 @@ IF @FromDate < @BalanceUpDay
 						INNER JOIN cte_match m ON b.matchid=m.matchid
 					 where b.winlostdate between '''''+CAST(@fromdate AS VARCHAR)+''''''+' AND '''''+ CAST( @TempToDate AS VARCHAR)+'''''
 					 AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
-					 b.statusID IN (111,112,113)
+					 b.statusID IN (111,112,113,114,115)
 					 AND b.Custid ='+CAST(@custid AS VARCHAR)+'
 						'')' 	
 		SELECT @sql=@OPENQUERY+@TSQL
 		--EXEC (@sql)
 		INSERT INTO #Data
-		EXEC (@sql)	
+		EXEC (@sql)
+
 END 
 
 DECLARE @RowStart INT, @RowEnd INT , @TotalRow INT		
@@ -423,14 +429,13 @@ FROM
 	INNER JOIN Customer c (NOLOCK) ON b.custid = c.custid
 	INNER JOIN #TempExchange e
 	ON e.ExchangeDate = (CASE WHEN b.winlostdate <= @Today THEN  b.winlostdate ELSE @Today END)   AND e.exchangeid = b.currency
-	WHERE b.odds>=@Odds
+	WHERE b.odds2>=@Odds
 	AND b.StatusID IN (SELECT * FROM @Status)
 ) A WHERE A.RowNum BETWEEN @RowStart AND @RowEnd
 --WHERE b.odds>@odds
 
 DROP TABLE #TempExchange
 DROP TABLE #Data
-
 
 
 GO
