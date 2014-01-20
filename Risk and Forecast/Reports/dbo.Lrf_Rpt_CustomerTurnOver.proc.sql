@@ -44,6 +44,7 @@ AS
 	- 20131205@Florent: add more product and search LIKE customer
 	- 20131225@Florent: Remove using bettrans14, use only bettrans and rptCustomerturnover
 	- 20140104@Don: Improve performance -> Replacing table @Status with #Status
+	- 20140120@Florent: using index Non clusered IX_recommend for table rptCustomerturnover
 	Parameter's Explanation:
 		- @ReportBy:  1: daily, 2: monthly
 		- @FilterBy:  1: Win, 2: Loss, 3: Draw
@@ -302,7 +303,7 @@ ELSE
 						 END odds
 						,bk.oddstype
 						,sum(bk.betcount) betcount
-					FROM bodb_LicenseeReport.dbo.rptcustomerturnOver bk WITH (NOLOCK)
+					FROM bodb_LicenseeReport.dbo.rptcustomerturnOver bk WITH (NOLOCK,INDEX=IX_recommend)
 					INNER JOIN #recommend re ON bk.recommend=re.custid				
 					INNER JOIN #bettype bt ON bk.bettype=bt.typeid					
 					WHERE bk.winlostdate BETWEEN @fromdate AND @TempToDate				
@@ -379,7 +380,7 @@ ELSE
 						END odds
 						,bk.oddstype
 						,sum(bk.betcount) betcount
-					FROM bodb_LicenseeReport.dbo.rptcustomerturnOver bk WITH (NOLOCK)
+					FROM bodb_LicenseeReport.dbo.rptcustomerturnOver bk WITH (NOLOCK,INDEX=IX_recommend)
 					INNER JOIN #recommend re ON bk.recommend=re.custid				
 					INNER JOIN #bettype bt ON bk.bettype=bt.typeid
 					INNER JOIN #Custid cus ON cus.custid = bk.custid
