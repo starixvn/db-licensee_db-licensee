@@ -49,8 +49,6 @@ AS (
 		,SUM(ABS(a.stake)) AS stake
 		,sum(a.winlost - a.actual_stake) winlost
 		,sum(a.PlayerComm) PlayerComm
-		,sum(comm) comm
-		,sum(awinlost) awinlost
 		,a.Odds
 		,a.oddsid
 		,a.oddstype
@@ -160,8 +158,6 @@ SELECT a.CustID
 	,sum(stake) stake
 	,sum(winlost) winlost
 	,sum(playercomm) playercomm
-	,sum(comm) comm
-	,sum(awinlost) awinlost
 	,a.Odds
 	,oddstype
 	,a.statusID

@@ -16,8 +16,6 @@ CREATE TABLE dbo.rptCustomerTurnover(
 	stake money NOT NULL,
 	winlost money NULL,
 	playercomm money NULL,
-	comm money null,
-	awinlost money null,
 	odds money NULL,
 	oddstype tinyint NULL,
 	statusid tinyint NULL,

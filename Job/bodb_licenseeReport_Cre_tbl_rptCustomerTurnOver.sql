@@ -27,8 +27,6 @@ CREATE TABLE dbo.rptCustomerTurnover(
 	stake money NOT NULL,
 	winlost money NULL,
 	playercomm money NULL,
-	comm money NULL,
-	awinlost money NULL,
 	odds money NULL,
 	oddstype tinyint NULL,
 	statusid tinyint NULL,
@@ -51,11 +49,7 @@ GO
 
 CREATE CLUSTERED INDEX CIX_winlostdate ON dbo.rptCustomerTurnover
 (
-	winlostdate ASC, 
-	recommend ASC,
-	sporttype ASC, 
-	bettype ASC,
-	custid ASC 
+	winlostdate ASC, 	
 ) --ON ps_rptCustomerTurnOver_monthly(WinLostDate)
 WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON)
 ON rptCustomerTurnOverData
@@ -65,7 +59,10 @@ GO
 CREATE NONCLUSTERED INDEX IX_recommend ON dbo.rptCustomerTurnover
 (
 	recommend ASC,
-	leagueID ASC	
+	leagueID ASC,
+	sporttype ASC, 
+	bettype ASC,
+	custid ASC 
 )
 INCLUDE (odds,statusID) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON)
 ON rptCustomerTurnOverIndex

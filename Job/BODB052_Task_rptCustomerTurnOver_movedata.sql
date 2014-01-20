@@ -29,7 +29,7 @@ DECLARE @sql NVARCHAR(MAX)
 			''SELECT CustID
 			,bettype,sporttype
 			,Currency ,stake ,winlost 
-			,playercomm , comm,awinlost,
+			,playercomm ,
 			Odds ,oddstype
 			,statusID ,recommend ,LeagueID
 			,winlostdate ,betcount ,isba 
