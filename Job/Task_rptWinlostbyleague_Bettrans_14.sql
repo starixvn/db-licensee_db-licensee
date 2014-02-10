@@ -28,10 +28,11 @@ WHERE winlostdate =@Date
 END;
 
 WITH cte_isBATrans
-AS (
-	SELECT transid
-	FROM bodb_licensee.dbo.LicenseeBATransaction WITH (NOLOCK)
-	WHERE Transdate BETWEEN @Date AND DATEADD(DAY, 2, @Date)
+AS (	
+	select transid from dbo.bettrans14with (nolock) 
+	WHERE Winlostdate =@Date
+	and ( bettype < 31 OR (bettype BETWEEN 121 AND 999))
+	and tpositiontaking=0
 	)
 	,cte_tempLicenseeCust
 AS (
