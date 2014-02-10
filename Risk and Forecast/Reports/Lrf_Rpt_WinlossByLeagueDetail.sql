@@ -667,6 +667,7 @@ WHERE A.RowNum BETWEEN @RowStart AND @RowEnd
 			--@MoveBetsDay='2013-12-28',@odds=2.5,@TotalRows=0,@SHOWWIN=1,@SHOWLOSS=1,@ShowDraw=1
 			--SELECT @TotalRows
 
+
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinlossByLeagueDetail] TO [bodbLicenseeNet] AS [dbo]
 GO
