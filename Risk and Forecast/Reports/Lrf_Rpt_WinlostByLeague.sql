@@ -185,7 +185,7 @@ BEGIN
 																	WHEN (b.odds * 100) % 2 = 0 THEN 2
 																	WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
 											 END 
-							  ELSE b.Odds END odds2
+							  ELSE b.Odds end  odds2
 			,SUM(stake)
 			,SUM(winlost - b.actual_stake)
 			,- SUM(
@@ -377,6 +377,8 @@ SELECT ExchangeDate
 	,USD
 	,EUR
 FROM Lrf_f_GetExchangeDaily(@fromDate, @toDate)
+
+
 
 -- Result  
 SELECT matchid
