@@ -14,7 +14,7 @@ AS
 	Created	: Florent Nguyen
 	Task: Gen data for table bodb_report.dbo.rptWinlostbyLeague
 	Date: 2013-11-30
-	DB: DBACC.bodb02
+	DB: DBEXT.bodb02
 	Original: 
 	Revision:
 	Parameter's Explanation:			
