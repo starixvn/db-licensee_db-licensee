@@ -23,7 +23,7 @@ SET NOCOUNT ON
 
 DECLARE @sql NVARCHAR(MAX)
  SELECT @sql=
-	'INSERT INTO bodb_LicenseeReport.dbo.rptCustomerTurnOver
+	'INSERT INTO bodb_LicenseeReport.dbo.rptCustomerTurnover_temp
 	 SELECT * FROM 
 	OPENQUERY (DBRPT,
 			''SELECT CustID
@@ -33,7 +33,7 @@ DECLARE @sql NVARCHAR(MAX)
 			Odds ,oddstype
 			,statusID ,recommend ,LeagueID
 			,winlostdate ,betcount ,isba , awinlost, comm
-			FROM bodb_report.dbo.rptCustomerTurnover rpt with (nolock)
+			FROM bodb_report.dbo.rptCustomerTurnover_temp rpt with (nolock)
 			WHERE rpt.winlostdate BETWEEN '''''+ CAST (@fromdate AS VARCHAR)+''''' AND '''''+ CAST (@todate AS VARCHAR)+''''''')'
 	PRINT @sql
 

@@ -118,7 +118,7 @@ AS (
 	WHERE EventDate BETWEEN @fromdate AND @todate
 )
 
-INSERT INTO bodb_report.dbo.rptCustomerTurnover
+INSERT INTO bodb_report.dbo.rptCustomerTurnover_temp
 SELECT
 	a.CustID
 	,a.bettype
