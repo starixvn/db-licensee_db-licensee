@@ -32,7 +32,7 @@ DECLARE @sql NVARCHAR(MAX)
 			,playercomm ,
 			Odds ,oddstype
 			,statusID ,recommend ,LeagueID
-			,winlostdate ,betcount ,isba 
+			,winlostdate ,betcount ,isba , awinlost, comm
 			FROM bodb_report.dbo.rptCustomerTurnover rpt with (nolock)
 			WHERE rpt.winlostdate BETWEEN '''''+ CAST (@fromdate AS VARCHAR)+''''' AND '''''+ CAST (@todate AS VARCHAR)+''''''')'
 	PRINT @sql

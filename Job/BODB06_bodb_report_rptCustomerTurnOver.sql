@@ -7,7 +7,17 @@ GO
 
 SET QUOTED_IDENTIFIER ON
 GO
-
+/*	
+	Created	: Florent Nguyen
+	Task: Customer Performance Report
+	Date: 2013-11-29
+	DB: DBRPT.bodb_report
+	Original: 
+	Revision:
+	2014-01-14: Add 2 column Comm and Awinlost
+	Parameter's Explanation:
+			
+*/
 CREATE TABLE dbo.rptCustomerTurnover(
 	custid int NOT NULL,
 	bettype smallint NULL,
@@ -23,7 +33,9 @@ CREATE TABLE dbo.rptCustomerTurnover(
 	leagueid int NULL,
 	winlostdate smalldatetime NULL,
 	betcount int NULL,
-	isBA tinyint NULL
+	isBA tinyint NULL,
+	awinlost money null,
+	comm money null
 )
 
 GO

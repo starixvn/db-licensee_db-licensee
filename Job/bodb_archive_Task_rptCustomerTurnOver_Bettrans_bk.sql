@@ -69,6 +69,8 @@ AS (
 		,CASE 
 		WHEN BA.transid IS NULL THEN 0
 		WHEN BA.transid IS NOT NULL THEN 1 END AS isBA
+		,sum(awinlost) awinlost
+		,sum(comm) comm
 	FROM bodb_archive.dbo.bettrans_bk a WITH (NOLOCK)
 	INNER JOIN cte_tempLicenseeCust lc ON a.recommend = lc.custid
 	LEFT JOIN cte_isBATrans AS BA ON a.transid=ba.transid
@@ -166,6 +168,8 @@ SELECT
 	,winlostdate
 	,sum(a.betcount) betcount
 	,a.isba	
+	,sum(awinlost) awinlost
+	,sum(comm) comm
 FROM cte_bettrans a
 LEFT JOIN bodb_archive.dbo.MATCH_BK b WITH (NOLOCK) ON a.matchid = b.matchid
 LEFT JOIN cte_raceinfo result ON a.oddsid = result.Orid

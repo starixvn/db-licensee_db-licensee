@@ -34,7 +34,9 @@ CREATE TABLE dbo.rptCustomerTurnover(
 	leagueid INT NULL,
 	winlostdate SMALLDATETIME NULL,
 	betcount TINYINT,
-	isBA TINYINT
+	isBA TINYINT,
+	awinlost money NULL,
+	comm money NULL
 )
 ON rptCustomerTurnOverData
 
