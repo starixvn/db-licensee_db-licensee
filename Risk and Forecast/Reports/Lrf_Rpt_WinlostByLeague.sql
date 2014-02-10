@@ -30,7 +30,7 @@ AS
 	DB: DBEXT/BODB02
 	Original: 
 	Revision:
-		- 20140207@Florent: Add filter ShowSB , ShowBA
+		- 20140207@Florent: Add filter ShowSB , ShowBA  
 	Parameter's Explanation:
 		- @LicenseeID : Licensee ID
 		- @UserID : UserID who run this report

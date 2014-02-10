@@ -672,4 +672,4 @@ GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinlossByLeagueDetail] TO [bodbLicenseeNet] AS [dbo]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_WinlossByLeagueDetail] TO [vnteam] AS [dbo]
-GO
+GO  
