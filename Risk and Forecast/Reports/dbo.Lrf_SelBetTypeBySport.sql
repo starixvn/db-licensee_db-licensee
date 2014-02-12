@@ -1,6 +1,10 @@
-set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
+USE [bodb_licensee]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_SelBetTypeBySport]    Script Date: 12/02/2014 10:11:24 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
 
 
 ALTER PROCEDURE [dbo].[Lrf_SelBetTypeBySport]
@@ -16,6 +20,7 @@ DB: DBLIC/bodb_Licensee
 Revisions:
    20131126@Jim: return English Name when Other Language Name is NULL or not ready
    20131205@Florent: Add more product ( V.Tennis, V.Racing)
+   20140210@Florent: add new sport Horse racing fix odds 154
 Param's Explanation:
 	
 */
@@ -46,6 +51,7 @@ SELECT *
 INTO #input
 FROM OPENXML (@iDoc, '/products/product',1) WITH(ID smallint, Sport nvarchar(128))
 
+
 EXEC sp_xml_removedocument @iDoc
 
 DECLARE @Bettype TABLE (
@@ -74,7 +80,21 @@ SELECT
 INTO #bettype		
 FROM 
 	bodb02.dbo.bettype  b WITH (NOLOCK)
-	
+
+IF EXISTS(SELECT * FROM #input WHERE ID = 0 AND ISNULL(Sport,'') <> '' and  sport like '%154%' )
+BEGIN
+	INSERT INTO @Bettype
+		SELECT typeid, typenamee
+		FROM #bettype
+		WHERE typeid =20	
+END
+
+declare @strTemp nvarchar(128)
+
+select @strTemp=REPLACE(sport,'154',' ') from #input where id=0
+
+update #input set Sport=@strTemp where id=0
+
 IF EXISTS(SELECT * FROM #input WHERE ID = 0 AND ISNULL(Sport,'') <> '')
 BEGIN
 
@@ -84,6 +104,8 @@ BEGIN
 		WHERE (typeid < 31 OR (typeid BETWEEN 121 AND 999))
 
 END
+
+
 
 IF EXISTS(SELECT * FROM #input WHERE ID > 0)
 BEGIN
@@ -130,3 +152,8 @@ DROP TABLE #bettype
 
 SELECT * FROM @Bettype 
 ORDER BY BettypeName
+
+GO
+GRANT EXECUTE ON [dbo].[Lrf_SelBetTypeBySport] TO [bodbLicenseeNet] 
+GO
+GRANT VIEW DEFINITION ON [dbo].[Lrf_SelBetTypeBySport] TO [vnteam]    

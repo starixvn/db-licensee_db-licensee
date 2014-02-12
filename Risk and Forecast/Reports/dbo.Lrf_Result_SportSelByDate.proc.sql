@@ -1,4 +1,12 @@
-﻿ALTER PROCEDURE Lrf_Result_SportSelByDate
+﻿USE [bodb02]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_Result_SportSelByDate]    Script Date: 12/02/2014 10:07:48 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+ALTER PROCEDURE [dbo].[Lrf_Result_SportSelByDate]
 	@EventDate DATETIME,
 	@LicenseeID INT
 AS
@@ -18,9 +26,7 @@ Revisions:
 	20120906@Jim: add virtual sport
 	20130722@Jim: add Virtual Horse Racing (Sporttype=181)
 	20130916@Jim: add Virtual Tennis (sporttype=186)
-	20131159@Jim:support :
-			+ 182 – Virtual Greyhounds
-			+ 184 – Virtual Motor Racing
+	20140117@Florent: add new sport 154
 */
 /* sample test case:
 	exec Lrf_Result_SportSelByDate @EventDate='2013-10-06 00:00:00',@licenseeid=1
@@ -56,16 +62,14 @@ IF EXISTS (SELECT TOP 1 1 FROM #LicenseeProduct WHERE ProductID=4) -- LIve Casin
 	END	
 IF EXISTS (SELECT TOP 1 1 FROM #LicenseeProduct WHERE ProductID=5) -- Virtual Sports
 	BEGIN 
+	
 		INSERT INTO @LicenseeProduct
 		SELECT 180
 		UNION ALL 
 		SELECT 181
 		UNION ALL 
 		SELECT 186
-		UNION ALL 
-		SELECT 182
-		UNION ALL 
-		SELECT 184
+		
 	END	
 
 IF EXISTS (SELECT TOP 1 1 FROM #LicenseeProduct WHERE ProductID=6) -- RNG Casino
@@ -99,11 +103,11 @@ LEFT JOIN match_remark mr ON match.matchid = mr.matchid
 WHERE
 	match.eventdate >= @EventDate
 	AND match.eventdate <= @toDate
-	AND (match.sporttype<100 OR match.sporttype IN (SELECT SportID FROM @LicenseeProduct))
+	AND (match.sporttype<100 OR match.sporttype IN (SELECT SportID FROM @LicenseeProduct) OR match.sporttype=154)
 	AND ( match.eventstatus NOT IN ('internal','closed','running')
 			OR ( mr.IsPending=1 AND match.eventstatus IN ('running','closed') )
 			OR ( mr.IsHTCal = 1 AND match.eventstatus ='running')
-		 )
+		 )	
 UNION ALL 
 SELECT s.sporttype, s.sportname  
 FROM (  
@@ -125,6 +129,7 @@ FROM (
 WHERE t.RowNumber < 2  
 
 ORDER BY sports.sporttype, sports.sportname
+
 GO
 GRANT EXECUTE ON [dbo].Lrf_Result_SportSelByDate TO [bodbLicenseeNet]
 GO

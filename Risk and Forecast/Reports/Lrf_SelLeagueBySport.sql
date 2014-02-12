@@ -1,24 +1,26 @@
 USE [bodb_licensee]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_SelLeagueBySport_8828]    Script Date: 10/01/2014 9:09:43 AM ******/
+/****** Object:  StoredProcedure [dbo].[Lrf_SelLeagueBySport]    Script Date: 12/02/2014 10:10:23 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-
-ALTER PROCEDURE [dbo].[Lrf_SelLeagueBySport]
-	@LicenseeID int,
-	@sportId INT 
+ALTER PROCEDURE [dbo].[Lrf_SelLeagueBySport] 
+	 @LicenseeID INT
+	,@CurrencyID INT=0
+	,@userID INT
+	,@sportId INT
 	,@Fromdate SMALLDATETIME
 	,@Todate SMALLDATETIME
-AS 
+AS
 /*
 Created: 20140102@Florent
 Task : Get LeagueID from sport type
 DB: DBLIC/bodb_Licensee
 
 Revisions:
+	- 20140117@Florent: add new sport 154
 Param's Explanation:	
 */
 SET NOCOUNT ON
@@ -94,13 +96,16 @@ BEGIN
 			(@sportId = 0)
 			OR (l.sporttype = @sportId)
 			)
-		AND l.sporttype < 100
+		AND (l.sporttype < 100 or l.sporttype=154)
 		and l.leagueid>0
 	group by l.leagueid	,l.sporttype
+	order by l.sporttype
 	DROP TABLE #tblLeagueid
 	DROP TABLE #tblBalanceDate
 	DROP TABLE #currency
 END
+
+GO
 GRANT EXECUTE
 	ON [dbo].[Lrf_SelLeagueBySport]
 	TO [bodbLicenseeNet] AS [dbo]

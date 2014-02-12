@@ -1,6 +1,10 @@
-set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
+USE [bodb_licensee]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_SelSportDetail]    Script Date: 12/02/2014 10:09:10 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
 
 ALTER PROCEDURE [dbo].[Lrf_SelSportDetail]
 	@LicenseeID int,
@@ -14,6 +18,7 @@ DB: DBLIC/bodb_Licensee
 Revisions:
 	- 20131127@Jim: support multi language
 	- 20131205@Florent: add more bettype for V.Tennis, V.Racing
+	- 20140117@Florent: add new sport 154
 Param's Explanation:
 	
 */
@@ -62,7 +67,7 @@ INSERT INTO @ProductSport(ID, Name, ParentID)
 			SportName
 			, 0
 	FROM bodb02.dbo.Sports WITH(NOLOCK)
-	WHERE SportType <= 99
+	WHERE SportType <= 99 OR SportType =154
 	
 	/*
 	 * add more product
@@ -216,4 +221,7 @@ INSERT INTO @ProductSport(ID, Name, ParentID)
 	 
 SELECT * FROM @ProductSport
 --ORDER BY ID ASC 
-
+GO
+GRANT EXECUTE ON [dbo].[Lrf_SelSportDetail] TO [bodbLicenseeNet] 
+GO
+GRANT VIEW DEFINITION ON [dbo].[Lrf_SelSportDetail] TO [vnteam]    

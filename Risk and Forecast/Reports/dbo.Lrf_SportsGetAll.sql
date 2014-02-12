@@ -9,16 +9,17 @@ AS
     Revisions:        
     - 20120823@henry: remove Live Casino and virtual soccer  
     - 20130418@Scott: remove order by Sportname
+	- 20140117@Florent: add new sport 154
 */    
   
-BEGIN    
- SET NOCOUNT ON     
-  
- SELECT Sporttype,SportName    
- FROM Sports WITH (NOLOCK)    
- WHERE sporttype <= 99  
- --ORDER BY SportName     
-END    
+BEGIN
+	SET NOCOUNT ON
+	SELECT Sporttype
+		,SportName
+	FROM Sports WITH (NOLOCK)
+	WHERE sporttype <= 99 
+	or sporttype=154
+END
   
   
 
