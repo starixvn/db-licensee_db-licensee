@@ -520,7 +520,7 @@ ELSE
 		FROM
 		(
 		SELECT  
-			ROW_NUMBER() over(order by ReportBy,username,sporttype,bettype ASC) AS RowNo,
+			ROW_NUMBER() over(order by ReportBy DESC) AS RowNo,
 			ReportBy,  
 			username,
 			Currency,
@@ -561,6 +561,7 @@ ELSE
 	END
 DROP TABLE #ProductID
 DROP TABLE #BettypeID
+DROP TABLE #Status
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [bodbLicenseeNet] AS [dbo]
