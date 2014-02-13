@@ -1,4 +1,13 @@
-﻿ALTER PROC [dbo].[Lrf_CustomerUpdMember_All]  
+﻿USE [CustDB]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_CustomerUpdMember_All]    Script Date: 2/13/2014 9:35:22 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+ALTER PROC [dbo].[Lrf_CustomerUpdMember_All]  
  @LicenseeID INT,	
  @custid INT,--memberid  
  @UserID INT,      
@@ -33,6 +42,10 @@
  @MaxBetv11 MONEY,  
  @MaxPerMatchv11 MONEY,  
   
+ @MinBetv154 MONEY,  
+ @MaxBetv154 MONEY,  
+ @MaxPerMatchv154 MONEY,
+ 
  @MinBetv99 MONEY,  
  @MaxBetv99 MONEY,  
  @MaxPerMatchv99 MONEY,  
@@ -49,6 +62,7 @@
  @UpdateMinMaxBetv8 BIT = 1,   
  @UpdateMinMaxBetv10 BIT = 1,  
  @UpdateMinMaxBetv11 BIT = 1,  
+ @UpdateMinMaxBetv154 BIT = 1, 
  @UpdateMinMaxBetv99 BIT = 1,  
  @UpdateMinMaxBetv99MP BIT = 1,  
  
@@ -58,13 +72,14 @@ as
 /*  
 Created: 20101216@Henry
 Task : Update member  
-DB: DBTXN/bodb02  
+DB: DBCUST/CustDB  
 Original: Acc_CustomerUpdMember_All  
   
 Revisions:  
     - 20110520@Henry: remove @UpdateMultiple
     - 20130123@Daniel: Change link server alias & failover writelog to DBTXN
-
+	- 20140207@Jim: support to offer HorseRacingFixedOdds
+	
 Param's Explanation:  
 • @ErrCode:  
     = 0: Update successfully.  
@@ -104,11 +119,12 @@ if  @UpdateMinMaxBet  = 1 or
  @UpdateMinMaxBetv8  = 1 or  
  @UpdateMinMaxBetv10  = 1 or  
  @UpdateMinMaxBetv11  = 1 or  
+ @UpdateMinMaxBetv154  = 1 or 
  @UpdateMinMaxBetv99  = 1 or  
  @UpdateMinMaxBetv99MP = 1
 BEGIN  
  Select @ErrCode_Cur = 0, @ErrMsg_Cur = ''  
-  EXEC dbo.Lrf_CustomerUpdMember_MinMaxBet   
+    EXEC dbo.Lrf_CustomerUpdMember_MinMaxBet  
   @custid = @custid,  
   @minbet = @minbet,  
   @maxbet = @maxbet,  
@@ -130,7 +146,10 @@ BEGIN
   @maxpermatchv10 = @maxpermatchv10,  
   @minbetv11 = @minbetv11,  
   @maxbetv11 = @maxbetv11,  
-  @maxpermatchv11 = @maxpermatchv11,  
+  @maxpermatchv11 = @maxpermatchv11,
+  @minbetv154 = @minbetv154,  
+  @maxbetv154 = @maxbetv154,  
+  @maxpermatchv154 = @maxpermatchv154,	
   @minbetv99 = @minbetv99,  
   @maxbetv99 = @maxbetv99,  
   @maxpermatchv99 = @maxpermatchv99,  
@@ -143,7 +162,8 @@ BEGIN
   @UpdateMinMaxBetv5 = @UpdateMinMaxBetv5,  
   @UpdateMinMaxBetv8 = @UpdateMinMaxBetv8,  
   @UpdateMinMaxBetv10 = @UpdateMinMaxBetv10,  
-  @UpdateMinMaxBetv11 = @UpdateMinMaxBetv11,  
+  @UpdateMinMaxBetv11 = @UpdateMinMaxBetv11, 
+  @UpdateMinMaxBetv154=@UpdateMinMaxBetv154,	
   @UpdateMinMaxBetv99 = @UpdateMinMaxBetv99,  
   @UpdateMinMaxBetv99MP = @UpdateMinMaxBetv99MP,  
   @UserID = @UserID,  
@@ -162,6 +182,7 @@ BEGIN
 	Select @ErrCode = 0, @ErrMsg=''
  END  
 END
+
 GO
 GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMember_All] TO [bodbLicenseeNet] AS [dbo]
 GO

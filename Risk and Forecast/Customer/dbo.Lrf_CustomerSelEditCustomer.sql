@@ -1,4 +1,11 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_CustomerSelEditCustomer]
+﻿USE [bodb02]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_CustomerSelEditCustomer]    Script Date: 2/13/2014 9:33:28 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[Lrf_CustomerSelEditCustomer]
 	@CustID INT
 AS
 
@@ -11,6 +18,7 @@ Original: Acc_CustomerSelEditCustomer
 Revisions:
     - 20110519@Henry: Remove Number Game (use Number game in SP: Lrf_CustomerSelEditNG)
 	- 20120326@Dom: Change CustSetting to Dep_CustSetting, CustSetting3rd to Dep_CustSetting3rd
+	- 20140212@Jim: support HorseRacingFixedOdds
 Param's Explanation:
 • @CustID: member ID
 */
@@ -23,6 +31,7 @@ DECLARE @MinBet_Max MONEY, @MaxBet_Min MONEY, @MaxPerMatch_Min MONEY, @MaxPerMat
 		@MinBetv8_Max MONEY, @MaxBetv8_Min MONEY, @MaxPerMatchv8_Min MONEY, @MaxPerMatchv8_Max MONEY,
 		@MinBetv10_Max MONEY, @MaxBetv10_Min MONEY, @MaxPerMatchv10_Min MONEY, @MaxPerMatchv10_Max MONEY,
 		@MinBetv11_Max MONEY, @MaxBetv11_Min MONEY, @MaxPerMatchv11_Min MONEY, @MaxPerMatchv11_Max MONEY,
+		@MinBetv154_Max MONEY, @MaxBetv154_Min MONEY, @MaxPerMatchv154_Min MONEY, @MaxPerMatchv154_Max MONEY,
 		@MinBetv99_Max MONEY, @MaxBetv99_Min MONEY, @MaxPerMatchv99_Min MONEY, @MaxPerMatchv99_Max MONEY,
 		@MinBetv99MP_Max MONEY, @MaxBetv99MP_Min MONEY, @MaxPerMatchv99MP_Min MONEY, @MaxPerMatchv99MP_Max MONEY
 		
@@ -102,6 +111,15 @@ from
 WHERE ci.custid = @CustID
 
 SELECT 
+	@MinBetv154_Max = Max(CASE WHEN MinBet = 0 THEN NULL ELSE MinBet END), 
+	@MaxBetv154_Min = Min(CASE WHEN MaxBet = 0 THEN NULL ELSE MaxBet END)
+from 
+	Dep_CustSetting as cs WITH (NOLOCK)
+	INNER JOIN custinfo as ci WITH (NOLOCK) on (cs.CustID = ci.Recommend or cs.CustID = ci.MRecommend or cs.CustID = ci.SRecommend)
+	AND cs.bettype = 20 AND cs.sporttype=154
+WHERE ci.custid = @CustID
+
+SELECT 
 	@MinBetv99_Max = Max(CASE WHEN MinBet = 0 THEN NULL ELSE MinBet END), 
 	@MaxBetv99_Min = Min(CASE WHEN MaxBet = 0 THEN NULL ELSE MaxBet END)
 from 
@@ -142,7 +160,10 @@ SELECT
 	
 	@MaxPerMatchv11_Min = 0,
 	@MaxPerMatchv11_Max = Min(CASE WHEN cs.MaxPerMatch11 = 0 THEN NULL ELSE cs.MaxPerMatch11 END), 
-
+	
+	@MaxPerMatchv154_Min = 0,
+	@MaxPerMatchv154_Max = Min(CASE WHEN cs.MaxPerMatch154 = 0 THEN NULL ELSE cs.MaxPerMatch154 END), 
+	
 	@MaxPerMatchv99_Min = 0,
 	@MaxPerMatchv99_Max = Min(CASE WHEN cs.MaxPerMatch99 = 0 THEN NULL ELSE cs.MaxPerMatch99 END),
 	
@@ -168,6 +189,7 @@ SELECT
 	isnull(ci.maxpermatch8, 0) as maxpermatchv8,
 	isnull(ci.maxpermatch10, 0) as maxpermatchv10,
 	isnull(ci.maxpermatch11, 0) as maxpermatchv11,
+	isnull(ci.maxpermatch154, 0) as maxpermatchv154,
 	isnull(ci.maxpermatch99, 0) as maxpermatchv99,
 	isnull(ci.maxpermatch99MP, 0) as maxpermatchv99MP,
 	
@@ -194,7 +216,10 @@ SELECT
 
 	isnull(max(CASE WHEN cs.bettype = 1 AND cs.sporttype=11 THEN cs.minbet ELSE 0 END), 0) as MinBetv11,
 	isnull(max(CASE WHEN cs.bettype = 1 AND cs.sporttype=11 THEN cs.maxbet ELSE 0 END), 0) as MaxBetv11,
-
+	
+	isnull(max(CASE WHEN cs.bettype = 20 AND cs.sporttype=154 THEN cs.minbet ELSE 0 END), 0) as MinBetv154,
+	isnull(max(CASE WHEN cs.bettype = 20 AND cs.sporttype=154 THEN cs.maxbet ELSE 0 END), 0) as MaxBetv154,
+	
 	isnull(max(CASE WHEN cs.bettype = 1 AND cs.sporttype=99 THEN cs.minbet ELSE 0 END), 0) as MinBetv99,
 	isnull(max(CASE WHEN cs.bettype = 1 AND cs.sporttype=99 THEN cs.maxbet ELSE 0 END), 0) as MaxBetv99,
 	
@@ -236,7 +261,12 @@ SELECT
 	IsNull(@MaxBetv11_Min, 0) as MaxBetv11_Min,	
 	IsNull(@MaxPerMatchv11_Min, 0) as MaxPerMatchv11_Min,	
 	IsNull(@MaxPerMatchv11_Max, 0) as MaxPerMatchv11_Max,
-
+	
+	IsNull(@MinBetv154_Max, 0) as MinBetv154_Max,	
+	IsNull(@MaxBetv154_Min, 0) as MaxBetv154_Min,	
+	IsNull(@MaxPerMatchv154_Min, 0) as MaxPerMatchv154_Min,	
+	IsNull(@MaxPerMatchv154_Max, 0) as MaxPerMatchv154_Max,
+	
 	IsNull(@MinBetv99_Max, 0) as MinBetv99_Max,	
 	IsNull(@MaxBetv99_Min, 0) as MaxBetv99_Min,	
 	IsNull(@MaxPerMatchv99_Min, 0) as MaxPerMatchv99_Min,	
@@ -265,10 +295,12 @@ group by
 	ci.maxpermatch8,
 	ci.maxpermatch10, 
 	ci.maxpermatch11,
+	ci.maxpermatch154,
 	ci.maxpermatch99,
 	ci.maxpermatch99MP,
 	exchange.minbet
 
+	
 GO 
 GRANT EXECUTE ON [dbo].[Lrf_CustomerSelEditCustomer] TO [bodbLicenseeNet]
 GO 
