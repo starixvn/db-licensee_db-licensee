@@ -1,6 +1,6 @@
 USE [bodb_licensee]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_SelBetTypeBySport]    Script Date: 12/02/2014 10:11:24 AM ******/
+/****** Object:  StoredProcedure [dbo].[Lrf_SelBetTypeBySport]    Script Date: 13/02/2014 4:38:54 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -20,7 +20,7 @@ DB: DBLIC/bodb_Licensee
 Revisions:
    20131126@Jim: return English Name when Other Language Name is NULL or not ready
    20131205@Florent: Add more product ( V.Tennis, V.Racing)
-   20140210@Florent: add new sport Horse racing fix odds 154
+   20140210@Florent: add new sport Horse racing fix odds
 Param's Explanation:
 	
 */
@@ -150,8 +150,11 @@ END
 DROP TABLE #input
 DROP TABLE #bettype
 
-SELECT * FROM @Bettype 
+SELECT BettypeID,BettypeName
+FROM @Bettype
+GROUP BY BettypeID,BettypeName
 ORDER BY BettypeName
+
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_SelBetTypeBySport] TO [bodbLicenseeNet] 

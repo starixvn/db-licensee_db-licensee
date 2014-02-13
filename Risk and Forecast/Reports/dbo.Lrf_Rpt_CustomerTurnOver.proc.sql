@@ -1,6 +1,6 @@
 ﻿USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_CustomerTurnOver]    Script Date: 27/12/2013 2:20:19 PM ******/
+/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_CustomerTurnOver]    Script Date: 13/02/2014 4:38:03 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -45,6 +45,7 @@ AS
 	- 20131225@Florent: Remove using bettrans14, use only bettrans and rptCustomerturnover
 	- 20140104@Don: Improve performance -> Replacing table @Status with #Status
 	- 20140120@Florent: using index Non clusered IX_recommend for table rptCustomerturnover
+	- 20140212@Florent : Sorting DESC
 	Parameter's Explanation:
 		- @ReportBy:  1: daily, 2: monthly
 		- @FilterBy:  1: Win, 2: Loss, 3: Draw
@@ -462,7 +463,9 @@ ELSE
 		FROM 
 		(	
 		SELECT   
-			ROW_NUMBER() over(order by username,sporttype,bettype ASC) AS RowNum,
+			--ROW_NUMBER() over(order by username,sporttype,bettype ASC) AS RowNum,
+			ROW_NUMBER() over(order by B.WINLOSTDATE desc ,ISNULL(substring(c.username2,charindex ('$',c.username2,1)+1,len(c.username2)),c.username) asc
+			) AS RowNum,
 			b.winlostdate,
 			ISNULL(substring(c.username2,charindex ('$',c.username2,1)+1,len(c.username2)),c.username) as username,
 			CASE 
@@ -520,7 +523,8 @@ ELSE
 		FROM
 		(
 		SELECT  
-			ROW_NUMBER() over(order by ReportBy DESC) AS RowNo,
+			--ROW_NUMBER() over(order by ReportBy DESC) AS RowNo,
+			ROW_NUMBER() over(order by ReportBy desc,username asc) AS RowNo,
 			ReportBy,  
 			username,
 			Currency,
@@ -551,7 +555,9 @@ ELSE
 			   @TotalRow  TotalRows
 		FROM #result  	
 		WHERE (@IsExportExcel=0) OR (@IsExportExcel=1 AND RowNum<65000)
-				DROP TABLE #return	
+		
+		
+		DROP TABLE #return	
 		DROP TABLE #Data	
 		DROP TABLE #result	
 		DROP TABLE #Currency 
