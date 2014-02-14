@@ -9,6 +9,7 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_WinlostByLeague_Mem]
 	@CustID INT
 	,@Odds FLOAT = 0
 	,@LeagueID INT
+	,@MatchID INT=0
 	,@LicenseeID INT
 	,@UserID INT
 	,@CurrencyID INT = 0
@@ -157,7 +158,7 @@ BEGIN
 		SET @TempFromDate = DATEADD(DAY, 1, @MoveBetsDay)
 	ELSE
 		SET @TempFromDate = @FromDate
-
+		select '1111111'
 	BEGIN
 		IF @ShowBA = 1
 		BEGIN
@@ -242,6 +243,7 @@ BEGIN
 				AND b.winlostdate BETWEEN @FromDate AND @ToDate
 				AND b.custid = @CustID
 				AND tpositiontaking = 0 --getBA
+				and (@matchid=0 or m.matchid=@matchid)
 			ORDER BY b.STATUS
 				,b.transid
 		END
@@ -333,6 +335,7 @@ BEGIN
 				AND b.winlostdate BETWEEN @FromDate AND @ToDate
 				AND b.custid = @CustID
 				AND tpositiontaking <> 0
+				and (@matchid=0 or m.matchid=@matchid)
 			ORDER BY b.STATUS
 				,b.transid
 		END
@@ -345,7 +348,7 @@ BEGIN
 		SET @TempToDate = @MoveBetsDay
 	ELSE
 		SET @TempToDate = @ToDate
-
+	
 	BEGIN
 		IF @ShowBA = 1
 		BEGIN
@@ -434,6 +437,7 @@ BEGIN
 				AND b.winlostdate BETWEEN @FromDate AND @ToDate
 				AND b.custid = @CustID
 				AND b.tpositiontaking = 0
+				and (@matchid=0 or m.matchid=@matchid)
 			ORDER BY b.STATUS
 				,b.transid
 		END
@@ -529,6 +533,7 @@ BEGIN
 				AND b.winlostdate BETWEEN @FromDate AND @ToDate
 				AND b.custid = @CustID
 				AND b.tpositiontaking <> 0
+				and (@matchid=0 or m.matchid=@matchid)
 			ORDER BY b.STATUS
 				,b.transid
 		END
@@ -621,6 +626,7 @@ BEGIN
 					 b.statusID IN (111,112,113,114,115)
 					 AND b.Custid =' + CAST(@custid AS VARCHAR) + '
 					 and b.tpositiontaking=0
+					 and (' + CAST(@matchid AS VARCHAR) + '=0 or m.matchid=' + CAST(@matchid AS VARCHAR) + ')
 						'')'
 
 		SELECT @sql = @OPENQUERY + @TSQL
@@ -704,6 +710,7 @@ BEGIN
 					 b.statusID IN (111,112,113,114,115)
 					 AND b.Custid =' + CAST(@custid AS VARCHAR) + '
 					 and b.tpositiontaking<>0
+					 and (' + CAST(@matchid AS VARCHAR) + '=0 or m.matchid=' + CAST(@matchid AS VARCHAR) + ')
 						'')'
 
 		SELECT @sql = @OPENQUERY + @TSQL
