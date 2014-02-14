@@ -1,0 +1,187 @@
+USE [bodb02]
+GO
+/****** Object:  StoredProcedure [dbo].[Task_rptListCustomerMatch_Bettrans_bk]    Script Date: 14/02/2014 11:31:03 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+ALTER  PROCEDURE [dbo].[Task_rptListCustomerMatch_Bettrans_bk]
+    @Fromdate smalldatetime,
+	@Todate smalldatetime
+AS
+/*	
+	Created	: Florent Nguyen
+	Task: Winloss By League
+	Date: 2013-11-25
+	DB: DBACC.bodb02
+	Original: 
+	Revision:
+	Parameter's Explanation:			
+*/
+SET NOCOUNT ON;
+
+;WITH cte_isBATrans
+AS 
+(
+	--SELECT transid FROM DBLIC.bodb_licensee.dbo.LicenseeBATransaction WITH(NOLOCK)
+	--WHERE Transdate BETWEEN @fromdate and DATEADD(DAY,2,@Todate)
+	select transid from bodb_archive.dbo.bettrans_bk with (nolock) 
+	WHERE winlostdate BETWEEN @fromdate and DATEADD(DAY,1,@Todate)
+	and ( bettype < 31 OR (bettype BETWEEN 121 AND 999))
+	and tpositiontaking=0
+)
+,cte_tempLicenseeCust
+AS (
+	SELECT currency,custid
+	FROM DBLIC.bodb_licensee.dbo.LicenseeCust lc WITH (NOLOCK)
+	)
+,cte_bettrans
+AS (
+	SELECT a.CustID		
+		,a.recommend
+		,a.matchid
+		,a.oddsid
+		,a.bettype
+		,SUM(ABS(a.stake)) as stake
+		,sum(a.winlost- a.actual_stake) winlost		
+		,a.Odds
+		,a.oddstype
+		,CASE 
+		WHEN a.statusID = 112
+			AND a.bettype IN (1, 3, 7, 8, 17, 18)
+			AND ABS(modds) = 0.25
+			THEN 114
+		WHEN a.statusID = 112
+			AND a.liveawayscore = 0 
+			AND a.bettype IN(33,43) 
+			THEN 114
+		WHEN a.statusID = 113
+			AND a.bettype IN (1, 3, 7, 8, 17, 18)
+			AND ABS(modds) = 0.25
+			THEN 115
+		WHEN a.statusID = 113
+			AND a.liveawayscore = 0 
+			AND a.bettype IN(33,43)
+			THEN 115
+		ELSE a.statusID
+		END AS statusID
+		,a.winlostdate
+		,COUNT(a.custid) betcount
+		,CASE 
+		WHEN BA.transid IS NULL THEN 0
+		WHEN BA.transid IS NOT NULL THEN 1 END AS isBA
+		,sum(awinlost) awinlost
+		,sum(comm) comm
+	FROM bodb_archive.dbo.bettrans_bk a WITH (NOLOCK)
+	INNER JOIN cte_tempLicenseeCust lc ON a.recommend = lc.custid
+	LEFT JOIN cte_isBATrans AS BA ON a.transid=ba.transid
+	WHERE a.winlostdate BETWEEN @fromdate AND @todate
+	AND a.statusID IN (111,112,113) 
+	GROUP BY 
+		a.CustID		
+		,a.recommend
+		,a.matchid
+		,a.oddsid
+		,a.bettype
+		,a.Odds
+		,a.oddstype
+		,CASE 
+		WHEN a.statusID = 112
+			AND a.bettype IN (1, 3, 7, 8, 17, 18)
+			AND ABS(modds) = 0.25
+			THEN 114
+		WHEN a.statusID = 112
+			AND a.liveawayscore = 0 
+			AND a.bettype IN(33,43) 
+			THEN 114
+		WHEN a.statusID = 113
+			AND a.bettype IN (1, 3, 7, 8, 17, 18)
+			AND ABS(modds) = 0.25
+			THEN 115
+		WHEN a.statusID = 113
+			AND a.liveawayscore = 0 
+			AND a.bettype IN(33,43)
+			THEN 115
+		ELSE a.statusID
+		END
+		,a.winlostdate
+		,CASE 
+		WHEN BA.transid IS NULL THEN 0
+		WHEN BA.transid IS NOT NULL THEN 1 END
+	)
+,cte_raceinfo
+AS (
+	SELECT o.Orid
+		,r.SportType
+		,r.LeagueID
+	FROM bodb_archive.dbo.VSOutright_bk o WITH (NOLOCK)
+	INNER JOIN dbo.VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
+	WHERE EventDate BETWEEN @fromdate AND @todate
+)
+
+INSERT INTO bodb_report.dbo.rptListCustomerMatch
+SELECT
+	a.CustID
+	,a.matchid
+	,CASE 
+		WHEN a.bettype IN (9, 29)
+			THEN - 9
+		WHEN a.bettype = 10
+			OR (
+				a.bettype > 30
+				AND a.bettype < 50
+				)
+			THEN ISNULL(ob.leagueid, - 1)
+		WHEN a.bettype IN (1231, 1232, 1233, 1237, 1238)
+			THEN isnull(result.LeagueID,-1)
+		ELSE isnull(b.LeagueID, - 1)
+		END LeagueID
+	,a.bettype
+	,a.Odds
+	,a.oddstype
+	,a.statusID
+	,sum(stake)stake
+	,sum(winlost) winlost  
+	,winlostdate	
+	,sum(CASE 
+			WHEN a.isBA = 1
+				THEN Winlost + awinlost + comm
+			ELSE 0
+			END) AS AmountDueToBA
+	,sum(CASE 
+			WHEN a.isBA = 1
+				THEN comm
+			ELSE 0
+			END) AS CommBA
+	,a.recommend
+	,a.isba		
+	,sum(a.betcount) betcount
+	
+FROM cte_bettrans a
+LEFT JOIN bodb_archive.dbo.MATCH_BK b WITH (NOLOCK) ON a.matchid = b.matchid
+LEFT JOIN cte_raceinfo result ON a.oddsid = result.Orid
+LEFT JOIN bodb_archive.dbo.outright_bk AS ob WITH (NOLOCK) ON a.matchid = ob.orid
+GROUP BY
+	a.CustID
+	,a.matchid
+	,a.bettype
+	,a.Odds
+	,a.oddstype
+	,a.statusID
+	,winlostdate	
+	,a.recommend
+	,a.isba
+	,CASE 
+		WHEN a.bettype IN (9, 29)
+			THEN - 9
+		WHEN a.bettype = 10
+			OR (
+				a.bettype > 30
+				AND a.bettype < 50
+				)
+			THEN ISNULL(ob.leagueid, - 1)
+		WHEN a.bettype IN (1231, 1232, 1233, 1237, 1238)
+			THEN isnull(result.LeagueID,-1)
+		ELSE isnull(b.LeagueID, - 1)
+		END 
