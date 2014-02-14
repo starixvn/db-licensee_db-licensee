@@ -158,7 +158,6 @@ BEGIN
 		SET @TempFromDate = DATEADD(DAY, 1, @MoveBetsDay)
 	ELSE
 		SET @TempFromDate = @FromDate
-		select '1111111'
 	BEGIN
 		IF @ShowBA = 1
 		BEGIN
