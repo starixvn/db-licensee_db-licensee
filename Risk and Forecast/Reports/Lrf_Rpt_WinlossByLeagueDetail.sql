@@ -12,6 +12,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByLeagueDetail]
 	,@Odds FLOAT = 0
 	,@CurrencyID INT = 0
 	,@LeagueID INT
+	,@MatchID INT =0
 	,@PageSize INT = 1000
 	,@PageIndex INT = 1
 	,@TotalRows INT = 0 OUTPUT
@@ -66,17 +67,17 @@ WHERE (
 			)
 		)
 
-DECLARE @TempAg AS TABLE (CustId INT)
+DECLARE @TempAg AS TABLE (CustId INT,Currency int)
 
-INSERT INTO @TempAg (CustId)
-SELECT CustID
+INSERT INTO @TempAg (CustId,lc.currency)
+SELECT CustID,lc.Currency
 FROM bodb_Licensee.dbo.LicenseeCust lc WITH (NOLOCK)
 INNER JOIN #Currency c ON lc.LicenseeID = c.LicenseeID
 	AND lc.Currency = c.CurrencyID
 
 --WHERE [Description] = COALESCE(@LicenseeType, [Description])
 -----------------------------------    
-DROP TABLE #currency
+
 
 -----------------------------------
 DECLARE @AgMatchWLDetails TABLE (
@@ -371,217 +372,430 @@ BEGIN
 
 	--Get general data  
 	--SELECT '222222222'
-	IF @ShowBA=1 
-	BEGIN
-		INSERT INTO @AgMatchWLDetails
-		SELECT b.custid
-			,b.Winlostdate
-			,b.currency
-			,CASE 
-				WHEN (
-						b.bettype IN (1, 2, 3, 7, 12, 8, 20)
-						OR b.bettype BETWEEN 81 AND 88
-						OR b.bettype BETWEEN 90 AND 120
-						)
-					THEN CASE 
-							WHEN b.OddsType = 1
-								THEN b.odds + 1 --decimal
-							WHEN b.OddsType = 2
-								THEN b.Odds + 1 --hongkong to decimal
-							WHEN b.OddsType IN (3, 4)
-								THEN --malay and indo to decimal
-									CASE 
-										WHEN b.odds < 0
-											THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
-										WHEN b.odds >= 0
-											THEN (1 + b.odds)
-										END
-							WHEN OddsType = 5
-								THEN --american odds to decimal
-									CASE 
-										WHEN (b.odds * 100) < 0
-											THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
-										WHEN (b.odds * 100) % 2 = 0
-											THEN 2
-										WHEN (b.odds * 100) > 0
-											THEN (1 + b.odds)
-										END
-							END
-				ELSE b.Odds
-				END odds
-			,0 AS sporttype
-			,b.leagueid
-			,SUM(stake)
-			,SUM(winlost)
-			,0 AS LicenseeWL
-			,sum(Winlost +  awinlost + comm) AS AmountDueToBA
-			--0 AS AmountDueToBA,
-			,SUM (comm ) AS CommBA
-			--0 AS CommBA
-			,SUM(b.playercomm) AS PlayerComm
-			,0 matchcode
-			,0 AS IsNeutral
-			,0 AS liveindicator
-			,SUM(b.betcount) betcount
-		FROM bodb_LicenseeReport.dbo.rptCustomerTurnover b WITH (
-				NOLOCK
-				,INDEX = IX_recommend
-				)
-		INNER JOIN @TempAg ta ON b.recommend = ta.CustId
-		WHERE b.winlostdate BETWEEN @FromDate AND @TempToDate
-			AND (
-				b.bettype < 31
-				OR (b.bettype BETWEEN 121 AND 999)
-				)
-			AND b.leagueid = @LeagueID
-			AND b.statusID IN (
-				SELECT *
-				FROM @status
-				)
-			And b.isBA=1
-		GROUP BY b.custid
-			,b.Winlostdate
-			,b.currency
-			,b.leagueid
-			,b.isBA
-			,CASE 
-				WHEN (
-						b.bettype IN (1, 2, 3, 7, 12, 8, 20)
-						OR b.bettype BETWEEN 81 AND 88
-						OR b.bettype BETWEEN 90 AND 120
-						)
-					THEN CASE 
-							WHEN b.OddsType = 1
-								THEN b.odds + 1 --decimal
-							WHEN b.OddsType = 2
-								THEN b.Odds + 1 --hongkong to decimal
-							WHEN b.OddsType IN (3, 4)
-								THEN --malay and indo to decimal
-									CASE 
-										WHEN b.odds < 0
-											THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
-										WHEN b.odds >= 0
-											THEN (1 + b.odds)
-										END
-							WHEN OddsType = 5
-								THEN --american odds to decimal
-									CASE 
-										WHEN (b.odds * 100) < 0
-											THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
-										WHEN (b.odds * 100) % 2 = 0
-											THEN 2
-										WHEN (b.odds * 100) > 0
-											THEN (1 + b.odds)
-										END
-							END
-				ELSE b.Odds
-				END
-	END
-	IF @ShowSB=1 
-	BEGIN
-		INSERT INTO @AgMatchWLDetails
-		SELECT b.custid
-			,b.Winlostdate
-			,b.currency
-			,CASE 
-				WHEN (
-						b.bettype IN (1, 2, 3, 7, 12, 8, 20)
-						OR b.bettype BETWEEN 81 AND 88
-						OR b.bettype BETWEEN 90 AND 120
-						)
-					THEN CASE 
-							WHEN b.OddsType = 1
-								THEN b.odds + 1 --decimal
-							WHEN b.OddsType = 2
-								THEN b.Odds + 1 --hongkong to decimal
-							WHEN b.OddsType IN (3, 4)
-								THEN --malay and indo to decimal
-									CASE 
-										WHEN b.odds < 0
-											THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
-										WHEN b.odds >= 0
-											THEN (1 + b.odds)
-										END
-							WHEN OddsType = 5
-								THEN --american odds to decimal
-									CASE 
-										WHEN (b.odds * 100) < 0
-											THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
-										WHEN (b.odds * 100) % 2 = 0
-											THEN 2
-										WHEN (b.odds * 100) > 0
-											THEN (1 + b.odds)
-										END
-							END
-				ELSE b.Odds
-				END odds
-			,0 AS sporttype
-			,b.leagueid
-			,SUM(stake)
-			,SUM(winlost)
-			,- SUM(b.winlost) AS LicenseeWL
-			,0 AmountDueToBA
-			,0 AS CommBA			
-			,SUM(b.playercomm) AS PlayerComm
-			,0 matchcode
-			,0 AS IsNeutral
-			,0 AS liveindicator
-			,SUM(b.betcount) betcount
-		FROM bodb_LicenseeReport.dbo.rptCustomerTurnover b WITH (
-				NOLOCK
-				,INDEX = IX_recommend
-				)
-		INNER JOIN @TempAg ta ON b.recommend = ta.CustId
-		WHERE b.winlostdate BETWEEN @FromDate AND @TempToDate
-			AND (
-				b.bettype < 31
-				OR (b.bettype BETWEEN 121 AND 999)
-				)
-			AND b.leagueid = @LeagueID
-			AND b.statusID IN (
-				SELECT *
-				FROM @status
-				)
-			AND b.isBA=0
-		GROUP BY b.custid
-			,b.Winlostdate
-			,b.currency
-			,b.leagueid
-			,b.isBA
-			,CASE 
-				WHEN (
-						b.bettype IN (1, 2, 3, 7, 12, 8, 20)
-						OR b.bettype BETWEEN 81 AND 88
-						OR b.bettype BETWEEN 90 AND 120
-						)
-					THEN CASE 
-							WHEN b.OddsType = 1
-								THEN b.odds + 1 --decimal
-							WHEN b.OddsType = 2
-								THEN b.Odds + 1 --hongkong to decimal
-							WHEN b.OddsType IN (3, 4)
-								THEN --malay and indo to decimal
-									CASE 
-										WHEN b.odds < 0
-											THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
-										WHEN b.odds >= 0
-											THEN (1 + b.odds)
-										END
-							WHEN OddsType = 5
-								THEN --american odds to decimal
-									CASE 
-										WHEN (b.odds * 100) < 0
-											THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
-										WHEN (b.odds * 100) % 2 = 0
-											THEN 2
-										WHEN (b.odds * 100) > 0
-											THEN (1 + b.odds)
-										END
-							END
-				ELSE b.Odds
-				END
-	END
-	
+	IF isnull(@MatchID,'')=''
+	begin 
+		IF @ShowBA=1 
+		BEGIN
+			INSERT INTO @AgMatchWLDetails
+			SELECT b.custid
+				,b.Winlostdate
+				,b.currency
+				,CASE 
+					WHEN (
+							b.bettype IN (1, 2, 3, 7, 12, 8, 20)
+							OR b.bettype BETWEEN 81 AND 88
+							OR b.bettype BETWEEN 90 AND 120
+							)
+						THEN CASE 
+								WHEN b.OddsType = 1
+									THEN b.odds + 1 --decimal
+								WHEN b.OddsType = 2
+									THEN b.Odds + 1 --hongkong to decimal
+								WHEN b.OddsType IN (3, 4)
+									THEN --malay and indo to decimal
+										CASE 
+											WHEN b.odds < 0
+												THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
+											WHEN b.odds >= 0
+												THEN (1 + b.odds)
+											END
+								WHEN OddsType = 5
+									THEN --american odds to decimal
+										CASE 
+											WHEN (b.odds * 100) < 0
+												THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
+											WHEN (b.odds * 100) % 2 = 0
+												THEN 2
+											WHEN (b.odds * 100) > 0
+												THEN (1 + b.odds)
+											END
+								END
+					ELSE b.Odds
+					END odds
+				,0 AS sporttype
+				,b.leagueid
+				,SUM(stake)
+				,SUM(winlost)
+				,0 AS LicenseeWL
+				,sum(Winlost +  awinlost + comm) AS AmountDueToBA
+				--0 AS AmountDueToBA,
+				,SUM (comm ) AS CommBA
+				--0 AS CommBA
+				,SUM(b.playercomm) AS PlayerComm
+				,0 matchcode
+				,0 AS IsNeutral
+				,0 AS liveindicator
+				,SUM(b.betcount) betcount
+			FROM bodb_LicenseeReport.dbo.rptCustomerTurnover b WITH (
+					NOLOCK
+					,INDEX = IX_recommend
+					)
+			INNER JOIN @TempAg ta ON b.recommend = ta.CustId
+			WHERE b.winlostdate BETWEEN @FromDate AND @TempToDate
+				AND (
+					b.bettype < 31
+					OR (b.bettype BETWEEN 121 AND 999)
+					)
+				AND b.leagueid = @LeagueID
+				AND b.statusID IN (
+					SELECT *
+					FROM @status
+					)
+				And b.isBA=1
+			GROUP BY b.custid
+				,b.Winlostdate
+				,b.currency
+				,b.leagueid
+				,b.isBA
+				,CASE 
+					WHEN (
+							b.bettype IN (1, 2, 3, 7, 12, 8, 20)
+							OR b.bettype BETWEEN 81 AND 88
+							OR b.bettype BETWEEN 90 AND 120
+							)
+						THEN CASE 
+								WHEN b.OddsType = 1
+									THEN b.odds + 1 --decimal
+								WHEN b.OddsType = 2
+									THEN b.Odds + 1 --hongkong to decimal
+								WHEN b.OddsType IN (3, 4)
+									THEN --malay and indo to decimal
+										CASE 
+											WHEN b.odds < 0
+												THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
+											WHEN b.odds >= 0
+												THEN (1 + b.odds)
+											END
+								WHEN OddsType = 5
+									THEN --american odds to decimal
+										CASE 
+											WHEN (b.odds * 100) < 0
+												THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
+											WHEN (b.odds * 100) % 2 = 0
+												THEN 2
+											WHEN (b.odds * 100) > 0
+												THEN (1 + b.odds)
+											END
+								END
+					ELSE b.Odds
+					END
+		END
+		IF @ShowSB=1 
+		BEGIN
+			INSERT INTO @AgMatchWLDetails
+			SELECT b.custid
+				,b.Winlostdate
+				,b.currency
+				,CASE 
+					WHEN (
+							b.bettype IN (1, 2, 3, 7, 12, 8, 20)
+							OR b.bettype BETWEEN 81 AND 88
+							OR b.bettype BETWEEN 90 AND 120
+							)
+						THEN CASE 
+								WHEN b.OddsType = 1
+									THEN b.odds + 1 --decimal
+								WHEN b.OddsType = 2
+									THEN b.Odds + 1 --hongkong to decimal
+								WHEN b.OddsType IN (3, 4)
+									THEN --malay and indo to decimal
+										CASE 
+											WHEN b.odds < 0
+												THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
+											WHEN b.odds >= 0
+												THEN (1 + b.odds)
+											END
+								WHEN OddsType = 5
+									THEN --american odds to decimal
+										CASE 
+											WHEN (b.odds * 100) < 0
+												THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
+											WHEN (b.odds * 100) % 2 = 0
+												THEN 2
+											WHEN (b.odds * 100) > 0
+												THEN (1 + b.odds)
+											END
+								END
+					ELSE b.Odds
+					END odds
+				,0 AS sporttype
+				,b.leagueid
+				,SUM(stake)
+				,SUM(winlost)
+				,- SUM(b.winlost) AS LicenseeWL
+				,0 AmountDueToBA
+				,0 AS CommBA			
+				,SUM(b.playercomm) AS PlayerComm
+				,0 matchcode
+				,0 AS IsNeutral
+				,0 AS liveindicator
+				,SUM(b.betcount) betcount
+			FROM bodb_LicenseeReport.dbo.rptCustomerTurnover b WITH (
+					NOLOCK
+					,INDEX = IX_recommend
+					)
+			INNER JOIN @TempAg ta ON b.recommend = ta.CustId
+			WHERE b.winlostdate BETWEEN @FromDate AND @TempToDate
+				AND (
+					b.bettype < 31
+					OR (b.bettype BETWEEN 121 AND 999)
+					)
+				AND b.leagueid = @LeagueID
+				AND b.statusID IN (
+					SELECT *
+					FROM @status
+					)
+				AND b.isBA=0
+			GROUP BY b.custid
+				,b.Winlostdate
+				,b.currency
+				,b.leagueid
+				,b.isBA
+				,CASE 
+					WHEN (
+							b.bettype IN (1, 2, 3, 7, 12, 8, 20)
+							OR b.bettype BETWEEN 81 AND 88
+							OR b.bettype BETWEEN 90 AND 120
+							)
+						THEN CASE 
+								WHEN b.OddsType = 1
+									THEN b.odds + 1 --decimal
+								WHEN b.OddsType = 2
+									THEN b.Odds + 1 --hongkong to decimal
+								WHEN b.OddsType IN (3, 4)
+									THEN --malay and indo to decimal
+										CASE 
+											WHEN b.odds < 0
+												THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
+											WHEN b.odds >= 0
+												THEN (1 + b.odds)
+											END
+								WHEN OddsType = 5
+									THEN --american odds to decimal
+										CASE 
+											WHEN (b.odds * 100) < 0
+												THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
+											WHEN (b.odds * 100) % 2 = 0
+												THEN 2
+											WHEN (b.odds * 100) > 0
+												THEN (1 + b.odds)
+											END
+								END
+					ELSE b.Odds
+					END
+		END
+	end 
+	IF isnull(@MatchID,'')<>''
+	begin
+		IF @ShowBA=1 
+		BEGIN
+			INSERT INTO @AgMatchWLDetails
+			SELECT b.custid
+				,b.Winlostdate
+				,ta.currency
+				,CASE 
+					WHEN (
+							b.bettype IN (1, 2, 3, 7, 12, 8, 20)
+							OR b.bettype BETWEEN 81 AND 88
+							OR b.bettype BETWEEN 90 AND 120
+							)
+						THEN CASE 
+								WHEN b.OddsType = 1
+									THEN b.odds + 1 --decimal
+								WHEN b.OddsType = 2
+									THEN b.Odds + 1 --hongkong to decimal
+								WHEN b.OddsType IN (3, 4)
+									THEN --malay and indo to decimal
+										CASE 
+											WHEN b.odds < 0
+												THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
+											WHEN b.odds >= 0
+												THEN (1 + b.odds)
+											END
+								WHEN OddsType = 5
+									THEN --american odds to decimal
+										CASE 
+											WHEN (b.odds * 100) < 0
+												THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
+											WHEN (b.odds * 100) % 2 = 0
+												THEN 2
+											WHEN (b.odds * 100) > 0
+												THEN (1 + b.odds)
+											END
+								END
+					ELSE b.Odds
+					END odds
+				,0 AS sporttype
+				,@LeagueID leagueid
+				,SUM(stake)
+				,SUM(winlost)
+				,0 AS LicenseeWL
+				,sum(AmtDueToBA) AS AmountDueToBA
+				--0 AS AmountDueToBA,
+				,SUM (BAComm ) AS CommBA
+				--0 AS CommBA
+				,0 PlayerComm
+				,0 matchcode
+				,0 AS IsNeutral
+				,0 AS liveindicator
+				,SUM(b.betcount) betcount
+			FROM bodb_LicenseeReport.dbo.rptListCustomerMatch b WITH (
+					NOLOCK
+					,INDEX = IX_recommend
+					)
+			INNER JOIN @TempAg ta ON b.recommend = ta.CustId
+			WHERE b.winlostdate BETWEEN @FromDate AND @TempToDate
+				AND (
+					b.bettype < 31
+					OR (b.bettype BETWEEN 121 AND 999)
+					)
+				AND b.matchid = @MatchID
+				AND b.statusID IN (
+					SELECT *
+					FROM @status
+					)
+				And b.isBA=1
+			GROUP BY b.custid
+				,b.Winlostdate
+				,ta.Currency
+				,b.isBA
+				,CASE 
+					WHEN (
+							b.bettype IN (1, 2, 3, 7, 12, 8, 20)
+							OR b.bettype BETWEEN 81 AND 88
+							OR b.bettype BETWEEN 90 AND 120
+							)
+						THEN CASE 
+								WHEN b.OddsType = 1
+									THEN b.odds + 1 --decimal
+								WHEN b.OddsType = 2
+									THEN b.Odds + 1 --hongkong to decimal
+								WHEN b.OddsType IN (3, 4)
+									THEN --malay and indo to decimal
+										CASE 
+											WHEN b.odds < 0
+												THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
+											WHEN b.odds >= 0
+												THEN (1 + b.odds)
+											END
+								WHEN OddsType = 5
+									THEN --american odds to decimal
+										CASE 
+											WHEN (b.odds * 100) < 0
+												THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
+											WHEN (b.odds * 100) % 2 = 0
+												THEN 2
+											WHEN (b.odds * 100) > 0
+												THEN (1 + b.odds)
+											END
+								END
+					ELSE b.Odds
+					END
+		END
+			IF @ShowSB=1 
+		BEGIN
+			INSERT INTO @AgMatchWLDetails
+			SELECT b.custid
+				,b.Winlostdate
+				,ta.currency
+				,CASE 
+					WHEN (
+							b.bettype IN (1, 2, 3, 7, 12, 8, 20)
+							OR b.bettype BETWEEN 81 AND 88
+							OR b.bettype BETWEEN 90 AND 120
+							)
+						THEN CASE 
+								WHEN b.OddsType = 1
+									THEN b.odds + 1 --decimal
+								WHEN b.OddsType = 2
+									THEN b.Odds + 1 --hongkong to decimal
+								WHEN b.OddsType IN (3, 4)
+									THEN --malay and indo to decimal
+										CASE 
+											WHEN b.odds < 0
+												THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
+											WHEN b.odds >= 0
+												THEN (1 + b.odds)
+											END
+								WHEN OddsType = 5
+									THEN --american odds to decimal
+										CASE 
+											WHEN (b.odds * 100) < 0
+												THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
+											WHEN (b.odds * 100) % 2 = 0
+												THEN 2
+											WHEN (b.odds * 100) > 0
+												THEN (1 + b.odds)
+											END
+								END
+					ELSE b.Odds
+					END odds
+				,0 AS sporttype
+				,@LeagueID leagueid
+				,SUM(stake)
+				,SUM(winlost)
+				,- SUM(b.winlost) AS LicenseeWL
+				,0 AmountDueToBA
+				,0 AS CommBA			
+				,0 AS PlayerComm
+				,0 matchcode
+				,0 AS IsNeutral
+				,0 AS liveindicator
+				,SUM(b.betcount) betcount
+			FROM bodb_LicenseeReport.dbo.rptListCustomerMatch b WITH (
+					NOLOCK
+					,INDEX = IX_recommend
+					)
+			INNER JOIN @TempAg ta ON b.recommend = ta.CustId
+			WHERE b.winlostdate BETWEEN @FromDate AND @TempToDate
+				AND (
+					b.bettype < 31
+					OR (b.bettype BETWEEN 121 AND 999)
+					)
+				AND b.matchid = @MatchID
+				AND b.statusID IN (
+					SELECT *
+					FROM @status
+					)
+				AND b.isBA=0
+			GROUP BY b.custid
+				,b.Winlostdate
+				,ta.currency				
+				,b.isBA
+				,CASE 
+					WHEN (
+							b.bettype IN (1, 2, 3, 7, 12, 8, 20)
+							OR b.bettype BETWEEN 81 AND 88
+							OR b.bettype BETWEEN 90 AND 120
+							)
+						THEN CASE 
+								WHEN b.OddsType = 1
+									THEN b.odds + 1 --decimal
+								WHEN b.OddsType = 2
+									THEN b.Odds + 1 --hongkong to decimal
+								WHEN b.OddsType IN (3, 4)
+									THEN --malay and indo to decimal
+										CASE 
+											WHEN b.odds < 0
+												THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
+											WHEN b.odds >= 0
+												THEN (1 + b.odds)
+											END
+								WHEN OddsType = 5
+									THEN --american odds to decimal
+										CASE 
+											WHEN (b.odds * 100) < 0
+												THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
+											WHEN (b.odds * 100) % 2 = 0
+												THEN 2
+											WHEN (b.odds * 100) > 0
+												THEN (1 + b.odds)
+											END
+								END
+					ELSE b.Odds
+					END
+		END
+	end
 END
 
 INSERT INTO @ExchangeDaily
@@ -657,6 +871,37 @@ FROM (
 		--ORDER BY b.custid
 	) A
 WHERE A.RowNum BETWEEN @RowStart AND @RowEnd
+
+SELECT  CAST(SUM(turnover) AS MONEY) AS turnover
+		,CAST(SUM(turnover * e.USD) AS MONEY) AS turnoverUSD
+		,CAST(SUM(turnover * e.EUR) AS MONEY) AS turnoverEUR
+		,CAST(SUM(MemberWinLost) AS MONEY) AS MemberWinLost
+		,CAST(SUM(MemberWinLost * e.USD) AS MONEY) AS MemberWinLostUSD
+		,CAST(SUM(MemberWinLost * e.EUR) AS MONEY) AS MemberWinLostEUR
+		,
+		--- licenseeWL  
+		CAST(SUM(LicenseeWL) AS MONEY) AS LicenseeWL
+		,CAST(SUM(LicenseeWL * e.USD) AS MONEY) AS LicenseeWLUSD
+		,CAST(SUM(LicenseeWL * e.EUR) AS MONEY) AS LicenseeWLEUR
+		,CAST(SUM(CommBA) AS MONEY) AS CommBA
+		,CAST(SUM(CommBA * e.USD) AS MONEY) AS CommBAUSD
+		,CAST(SUM(CommBA * e.EUR) AS MONEY) AS CommBAEUR
+		,CAST(SUM(PlayerComm) AS MONEY) AS PlayerComm
+		,CAST(SUM(PlayerComm * e.USD) AS MONEY) AS PlayerCommUSD
+		,CAST(SUM(PlayerComm * e.EUR) AS MONEY) AS PlayerCommEUR
+		,CAST(SUM(AmtDuetoBA) AS MONEY) AS AmtDuetoBA
+		,CAST(SUM((AmtDuetoBA) * e.USD) AS MONEY) AS AmtDuetoBAUSD
+		,CAST(SUM((AmtDuetoBA) * e.EUR) AS MONEY) AS AmtDuetoBAEUR
+		,sum(b.betcount) betcount
+	FROM @AgMatchWLDetails b
+	INNER JOIN Customer c(NOLOCK) ON b.custid = c.custid
+	INNER JOIN @ExchangeDaily e ON b.winlostdate = e.ExchangeDate
+		AND b.currency = e.ExchangeId
+	WHERE odds >= @odds
+
+DROP TABLE #currency
+		--ORDER BY b.custid
+
 			--SELECT TOP 100 * FROM bodb_LicenseeReport.dbo.rptCustomerTurnover AS rct WHERE rct.leagueid=3 
 			--AND rct.winlostdate BETWEEN 'Nov 10 2013' AND 'Nov 15 2013' 
 			--SELECT MIN(b.winlostdate),MAX(b.winlostdate) FROM dbo.bettrans14 AS b
