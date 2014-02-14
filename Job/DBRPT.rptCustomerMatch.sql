@@ -19,7 +19,7 @@ GO
 			
 */
 
-CREATE TABLE dbo.rptListCustomerMatch(
+CREATE TABLE dbo.rptCustomerMatch(
 	custid int NOT NULL,	
 	matchid INT null,
 	Leagueid INT NULL,
@@ -41,14 +41,14 @@ CREATE TABLE dbo.rptListCustomerMatch(
 GO
 SET ANSI_PADDING OFF
 GO 
-GRANT SELECT ON dbo.rptListCustomerMatch TO bodbLicenseeNet AS dbo
+GRANT SELECT ON dbo.rptCustomerMatch TO bodbLicenseeNet AS dbo
 GO 
-GRANT VIEW DEFINITION ON dbo.rptListCustomerMatch TO vnteam AS dbo
+GRANT VIEW DEFINITION ON dbo.rptCustomerMatch TO vnteam AS dbo
 GO
 
-CREATE CLUSTERED INDEX CIX_winlostdate ON dbo.rptListCustomerMatch
+CREATE CLUSTERED INDEX CIX_winlostdate ON dbo.rptCustomerMatch
 (
 	winlostdate desc
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON)
 GO
---drop table rptListCustomerMatch
+--drop table rptCustomerMatch

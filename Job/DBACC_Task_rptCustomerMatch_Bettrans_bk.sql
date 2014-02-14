@@ -1,12 +1,12 @@
 USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Task_rptListCustomerMatch_Bettrans_bk]    Script Date: 14/02/2014 11:31:03 AM ******/
+/****** Object:  StoredProcedure [dbo].[Task_rptCustomerMatch_Bettrans_bk]    Script Date: 14/02/2014 11:31:03 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-ALTER  PROCEDURE [dbo].[Task_rptListCustomerMatch_Bettrans_bk]
+ALTER  PROCEDURE [dbo].[Task_rptCustomerMatch_Bettrans_bk]
     @Fromdate smalldatetime,
 	@Todate smalldatetime
 AS
@@ -120,7 +120,7 @@ AS (
 	WHERE EventDate BETWEEN @fromdate AND @todate
 )
 
-INSERT INTO bodb_report.dbo.rptListCustomerMatch
+INSERT INTO bodb_report.dbo.rptCustomerMatch
 SELECT
 	a.CustID
 	,a.matchid

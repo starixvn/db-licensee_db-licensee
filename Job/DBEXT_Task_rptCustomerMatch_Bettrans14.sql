@@ -1,12 +1,12 @@
 USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Task_rptListCustomerMatch_Bettrans14]    Script Date: 14/02/2014 11:32:54 AM ******/
+/****** Object:  StoredProcedure [dbo].[Task_rptCustomerMatch_Bettrans14]    Script Date: 14/02/2014 11:32:54 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-ALTER  PROCEDURE [dbo].[Task_rptListCustomerMatch_Bettrans14] @Date SMALLDATETIME
+ALTER  PROCEDURE [dbo].[Task_rptCustomerMatch_Bettrans14] @Date SMALLDATETIME
 AS
 /*	
 	Created	: Florent Nguyen
@@ -21,9 +21,9 @@ SET NOCOUNT ON;
 	--DECLARE @Fromdate DATETIME,
 	--	@Todate DATETIME
 	--SELECT @Fromdate='2013-10-17',@todate='2013-10-17'
-IF exists(SELECT TOP 1 1 FROM bodb_LicenseeReport.dbo.rptListCustomerMatch AS rct WITH (NOLOCK) WHERE rct.winlostdate=@date)
+IF exists(SELECT TOP 1 1 FROM bodb_LicenseeReport.dbo.rptCustomerMatch AS rct WITH (NOLOCK) WHERE rct.winlostdate=@date)
 	BEGIN
-		DELETE bodb_LicenseeReport.dbo.rptListCustomerMatch WHERE winlostdate=@Date
+		DELETE bodb_LicenseeReport.dbo.rptCustomerMatch WHERE winlostdate=@Date
 	END 	
 ;WITH cte_isBATrans
 AS (
@@ -123,7 +123,7 @@ AS (
 	INNER JOIN dbo.VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
 	WHERE EventDate =@Date
 	)
-INSERT INTO bodb_LicenseeReport.dbo.rptListCustomerMatch
+INSERT INTO bodb_LicenseeReport.dbo.rptCustomerMatch
 SELECT a.CustID
 	,a.matchid
 	,CASE 

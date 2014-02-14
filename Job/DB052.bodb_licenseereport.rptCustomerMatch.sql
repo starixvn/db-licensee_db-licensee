@@ -10,7 +10,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 /*	
 	Created	: Florent Nguyen
-	Task: List Customer in Match
+	Task: Customer in Match
 	Date: 2014-02-12
 	DB: DB052.bodb_licenseereport
 	Original: 
@@ -18,19 +18,19 @@ GO
 	Parameter's Explanation:
 			
 */
-ALTER DATABASE bodb_LicenseeReport ADD FILEGROUP rptListCustomerMatchData
-ALTER DATABASE bodb_LicenseeReport ADD FILEGROUP rptListCustomerMatchIndex
+ALTER DATABASE bodb_LicenseeReport ADD FILEGROUP rptCustomerMatchData
+ALTER DATABASE bodb_LicenseeReport ADD FILEGROUP rptCustomerMatchIndex
 go
 ALTER DATABASE bodb_LicenseeReport
-ADD FILE (NAME =N'rptListCustomerMatchData', FILENAME =N'E:\IBC_DB\bodb_LicenseeReport\rptListCustomerMatchData.ndf', SIZE =100MB,MAXSIZE=UNLIMITED,FILEGROWTH=50MB)
-TO FILEGROUP rptListCustomerMatchData
+ADD FILE (NAME =N'rptCustomerMatchData', FILENAME =N'E:\IBC_DB\bodb_LicenseeReport\rptCustomerMatchData.ndf', SIZE =100MB,MAXSIZE=UNLIMITED,FILEGROWTH=50MB)
+TO FILEGROUP rptCustomerMatchData
 ALTER DATABASE bodb_LicenseeReport
-ADD FILE (NAME =N'rptListCustomerMatchIndex', FILENAME =N'E:\IBC_DB\bodb_LicenseeReport\rptListCustomerMatchIndex.ndf', SIZE =50MB,MAXSIZE=UNLIMITED,FILEGROWTH=30MB)
-TO FILEGROUP rptListCustomerMatchIndex
+ADD FILE (NAME =N'rptCustomerMatchIndex', FILENAME =N'E:\IBC_DB\bodb_LicenseeReport\rptCustomerMatchIndex.ndf', SIZE =50MB,MAXSIZE=UNLIMITED,FILEGROWTH=30MB)
+TO FILEGROUP rptCustomerMatchIndex
 go
 
 
-CREATE TABLE dbo.rptListCustomerMatch(
+CREATE TABLE dbo.rptCustomerMatch(
 	custid int NOT NULL,	
 	matchid INT null,
 	leagueid int null,
@@ -47,29 +47,30 @@ CREATE TABLE dbo.rptListCustomerMatch(
 	isBA bit null,
 	betcount smallint null
 )
-ON rptListCustomerMatchData
+ON rptCustomerMatchData
 
 GO
 SET ANSI_PADDING OFF
 GO 
-GRANT SELECT ON dbo.rptListCustomerMatch TO bodbLicenseeNet AS dbo
+GRANT SELECT ON dbo.rptCustomerMatch TO bodbLicenseeNet AS dbo
 GO 
-GRANT VIEW DEFINITION ON dbo.rptListCustomerMatch TO vnteam AS dbo
+GRANT VIEW DEFINITION ON dbo.rptCustomerMatch TO vnteam AS dbo
 GO
 
-CREATE CLUSTERED INDEX CIX_winlostdate ON dbo.rptListCustomerMatch
+CREATE CLUSTERED INDEX CIX_winlostdate ON dbo.rptCustomerMatch
 (
 	winlostdate desc
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON)
 GO
 
-CREATE NONCLUSTERED INDEX IX_recommend ON dbo.rptListCustomerMatch
+CREATE NONCLUSTERED INDEX IX_recommend ON dbo.rptCustomerMatch
 (
 	recommend asc,
 	custid asc,
-	matchid ASC	
+	matchid ASC,
+	LeagueID DESC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON)
-on rptListCustomerMatchIndex
+on rptCustomerMatchIndex
 GO
 
---drop table bodb_licenseereport.dbo.rptListCustomerMatch
+--drop table bodb_licenseereport.dbo.rptCustomerMatch

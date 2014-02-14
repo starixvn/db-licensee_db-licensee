@@ -6,7 +6,7 @@
 
 --run in DB052.bodb02
 BEGIN
-	--move from DBRPT.bodb_report.dbo.rptCustomerTurnover to bodb_licenseeReport.dbo.rptCustomerTurnover_temp
+	--move from DBRPT.bodb_report.dbo.rptListCustomerMatch to bodb_licenseeReport.dbo.rptListCustomerMatch
 	DECLARE @fromdate DATETIME
 		,@todate DATETIME
 
@@ -14,7 +14,7 @@ BEGIN
 		,@todate = max(winlostdate)
 	FROM DBRPT.bodb_report.dbo.rptListCustomerMatch WITH (NOLOCK)
 
-	--DELETE bodb_LicenseeReport.dbo.rptCustomerTurnover
+	--DELETE bodb_LicenseeReport.dbo.rptListCustomerMatch
 	--WHERE winlostdate BETWEEN @fromdate AND @todate
 
 	EXEC Task_rptListCustomerMatch_movedata @fromdate
@@ -25,7 +25,7 @@ BEGIN
 	SELECT @fromdate = min(winlostdate)
 		,@todate = max(winlostdate)
 	FROM bettrans14(NOLOCK)
-	--bettrans14 to bodb_licenseeReport.dbo.rptCustomerTurnover_temp
+	--bettrans14 to bodb_licenseeReport.dbo.rptListCustomerMatch
 	WHILE (@fromdate <= @todate)
 	BEGIN
 		PRINT @Fromdate
