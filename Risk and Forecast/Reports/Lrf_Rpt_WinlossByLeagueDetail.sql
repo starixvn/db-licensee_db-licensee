@@ -6,7 +6,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByLeagueDetail_11594] @LicenseeID INT
+ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByLeagueDetail] @LicenseeID INT
 	,@UserID INT
 	,@Odds FLOAT = 0
 	,@CurrencyID INT = 0
