@@ -19,25 +19,28 @@ AS
 	Parameter's Explanation:			
 */
 SET NOCOUNT ON;
-
+/*
 IF EXISTS (SELECT TOP 1 1 FROM bodb_LicenseeReport.dbo.rptWinlostbyLeague WHERE winlostdate =@Date)
 BEGIN 
 DELETE bodb_LicenseeReport.dbo.rptWinlostbyLeague
 WHERE winlostdate =@Date
 END;
-
+*/
 WITH cte_isBATrans
 AS (
-	select transid from DBARC.bodb_archive.dbo.bettrans_bk with (nolock) 
+	SELECT transid FROM DBLIC.bodb_licensee.dbo.LicenseeBATransaction WITH(NOLOCK)
+	WHERE Transdate BETWEEN @Date and DATEADD(DAY,2,@date)
+	/*select transid from DBARC.bodb_archive.dbo.bettrans_bk with (nolock) 
 	WHERE Winlostdate =@Date
 	and ( bettype < 31 OR (bettype BETWEEN 121 AND 999))
 	and tpositiontaking=0
+	*/
 	)
 	,cte_tempLicenseeCust
 AS (
 	SELECT DISTINCT currency
 		,custid
-	FROM bodb_licensee.dbo.LicenseeCust lc WITH (NOLOCK)
+	FROM DBLIC.bodb_licensee.dbo.LicenseeCust lc WITH (NOLOCK)
 	)
 	,cte_bettrans
 AS (
@@ -79,7 +82,7 @@ AS (
 			WHEN BA.transid IS NOT NULL
 				THEN 1
 			END AS isBA
-	FROM DBARC.bodb_archive.dbo.bettrans_bk a WITH (NOLOCK)
+	FROM bodb_archive.dbo.bettrans_bk a WITH (NOLOCK)
 	INNER JOIN cte_tempLicenseeCust lc ON a.recommend = lc.custid
 	LEFT JOIN cte_isBATrans AS BA ON a.transid = ba.transid
 	WHERE a.winlostdate =@Date
@@ -130,7 +133,7 @@ AS (
 	WHERE o.EventDate BETWEEN @Date AND DATEADD(DAY, 1, @Date)
 )
 
-INSERT INTO bodb_LicenseeReport.dbo.rptWinlostbyLeague
+INSERT INTO bodb_Report.dbo.rptWinlostbyLeague
 SELECT a.winlostdate
 	,a.matchid
 	,a.oddsid
@@ -160,9 +163,9 @@ SELECT a.winlostdate
 	,sum(betcount) betcount
 	,isba
 FROM cte_bettrans a
-LEFT JOIN DBARC.bodb_archive.dbo.match_bk b WITH (NOLOCK) ON a.matchid = b.matchid
+LEFT JOIN bodb_archive.dbo.match_bk b WITH (NOLOCK) ON a.matchid = b.matchid
 LEFT JOIN cte_raceinfo result ON a.oddsid = result.Orid
-LEFT JOIN DBARC.bodb_archive.dbo.outright_bk AS ob WITH (NOLOCK) ON a.matchid = ob.orid
+LEFT JOIN bodb_archive.dbo.outright_bk AS ob WITH (NOLOCK) ON a.matchid = ob.orid
 GROUP BY a.winlostdate
 	,a.matchid
 	,a.oddsid

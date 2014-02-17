@@ -1,10 +1,23 @@
 --Step :1 rptWinlostbyleague
 --SP : DBACC_Task_rptWinlostbyleague_bk.sql
---run data from DBARC.bodb_archive.dbo.bettrans_bk ---> DB052.bodb_licenseeReport.dbo.rptWinlostbyLeague
-exec Task_rptWinlostbyleague_bk '2014-01-01'
+--run data IN DB06.BODB02
 
-exec Task_rptWinlostbyleague_bk '2014-01-02'
+DECLARE @FROMDATE DATETIME, @TODATE DATETIME
+SELECT @FROMDATE='2014-01-01',@TODATE='2014-01-03'
 
-exec Task_rptWinlostbyleague_bk '2014-01-03'
+WHILE (@FROMDATE<=@TODATE)
+BEGIN 
+	print @fromdate
+	exec Task_rptWinlostbyleague_bk @FROMDATE
+	SELECT @FROMDATE=DATEADD(DAY, 1, @FROMDATE)
+	
+	--WAIT
+	WAITFOR DELAY '00:00:02';
+END
+
+
+
+
+
 
 
