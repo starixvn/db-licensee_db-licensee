@@ -32,6 +32,7 @@ DB: DB052.bodb02
 Original:   
 Revisions:  
 	- 20140207@Florent: Add filter ShowBA and ShowSB
+	- 20140214@Florent: use new sum table rptCustomerMatch
 Param's Explanation:   
    
 */
@@ -415,16 +416,17 @@ BEGIN
 				,SUM(stake)
 				,SUM(winlost)
 				,0 AS LicenseeWL
-				,sum(AmtDueToBA) AS AmountDueToBA
+				--,sum(AmtDueToBA) AS AmountDueToBA
+				,sum(Winlost +  awinlost + comm) AS AmountDueToBA
 				--0 AS AmountDueToBA,
-				,SUM (BAComm ) AS CommBA
+				,SUM (comm ) AS CommBA
 				--0 AS CommBA
 				,0 PlayerComm
 				,0 matchcode
 				,0 AS IsNeutral
 				,0 AS liveindicator
 				,SUM(b.betcount) betcount
-			FROM bodb_LicenseeReport.dbo.rptListCustomerMatch b WITH (
+			FROM bodb_LicenseeReport.dbo.rptCustomerMatch b WITH (
 					NOLOCK
 					,INDEX = IX_recommend
 					)
@@ -528,7 +530,7 @@ BEGIN
 				,0 AS IsNeutral
 				,0 AS liveindicator
 				,SUM(b.betcount) betcount
-			FROM bodb_LicenseeReport.dbo.rptListCustomerMatch b WITH (
+			FROM bodb_LicenseeReport.dbo.rptCustomerMatch b WITH (
 					NOLOCK
 					,INDEX = IX_recommend
 					)
@@ -688,7 +690,6 @@ SELECT  CAST(SUM(turnover) AS MONEY) AS turnover
 	WHERE odds >= @odds
 
 DROP TABLE #currency
-
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinlossByLeagueDetail] TO [bodbLicenseeNet] AS [dbo]
 GO
