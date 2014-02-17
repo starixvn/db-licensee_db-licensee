@@ -38,3 +38,5 @@ DECLARE @sql NVARCHAR(MAX)
 	PRINT @sql
 	EXEC (@Sql)
 END 
+
+GO

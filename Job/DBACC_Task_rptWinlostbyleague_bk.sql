@@ -188,3 +188,4 @@ GROUP BY a.winlostdate
 	,statusID
 	,bettype
 	,isba
+GO
