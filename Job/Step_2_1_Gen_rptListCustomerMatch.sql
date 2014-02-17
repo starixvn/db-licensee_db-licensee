@@ -14,9 +14,10 @@ BEGIN
 	SELECT @todate = max(winlostdate)
 	FROM bodb_archive.dbo.bettrans_bk with (NOLOCK)
 
-	DELETE bodb_report.dbo.rptCustomerTurnover
+	DELETE bodb_report.dbo.rptListCustomerMatch
 	WHERE winlostdate BETWEEN @fromdate AND @todate
-	
-	EXEC Task_rptListCustomerMatch_Bettrans_bk @fromdate
+	Declare @_fromdate datetime,@_todate datetime
+	select @_fromdate
+	EXEC Task_rptCustomerMatch_Bettrans_bk @fromdate
 		,@todate
 END
