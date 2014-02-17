@@ -20,7 +20,7 @@ BEGIN
 	--WHERE winlostdate BETWEEN @fromdate AND @todate
 	WHILE (@fromdate <= @todate)
 	BEGIN
-		EXEC Task_rptCustomerMatch_movedata @fromdate,@todate
+		EXEC Task_rptCustomerMatch_movedata @fromdate,@fromdate
 		SELECT @fromdate = DATEADD(DAY, 1, @fromdate)
 
 		--wait for 2s

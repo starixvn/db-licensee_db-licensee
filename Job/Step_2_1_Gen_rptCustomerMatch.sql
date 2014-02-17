@@ -18,18 +18,17 @@ BEGIN
 	WHERE winlostdate BETWEEN @fromdate AND @todate
 	
 	Declare @_fromdate datetime,@_todate datetime
-	select @_fromdate=@fromdate,@_todate=@_fromdate
+	select @_fromdate=@fromdate
 
 	
-	WHILE (@_fromdate <= @_todate)
+	WHILE (@_fromdate <= @todate)
 	BEGIN
 		PRINT @_fromdate
 
 		EXEC Task_rptCustomerMatch_Bettrans_bk @_fromdate
 		,@_fromdate
 
-		SELECT @fromdate = DATEADD(DAY, 1, @fromdate)
-		SELECT @todate = @Fromdate
+		SELECT @_fromdate = DATEADD(DAY, 1, @_fromdate)
 		--wait for 2s
 		WAITFOR DELAY '00:00:02';
 	END
