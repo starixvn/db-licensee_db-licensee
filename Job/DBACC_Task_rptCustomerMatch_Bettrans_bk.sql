@@ -1,6 +1,6 @@
 USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Task_rptCustomerMatch_Bettrans_bk]    Script Date: 14/02/2014 11:31:03 AM ******/
+/****** Object:  StoredProcedure [dbo].[Task_rptCustomerMatch_Bettrans_bk]    Script Date: 17/02/2014 10:34:42 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -73,6 +73,7 @@ AS (
 		WHEN BA.transid IS NOT NULL THEN 1 END AS isBA
 		,sum(awinlost) awinlost
 		,sum(comm) comm
+		,sum(playercomm) playercomm
 	FROM bodb_archive.dbo.bettrans_bk a WITH (NOLOCK)
 	INNER JOIN cte_tempLicenseeCust lc ON a.recommend = lc.custid
 	LEFT JOIN cte_isBATrans AS BA ON a.transid=ba.transid
@@ -124,6 +125,7 @@ INSERT INTO bodb_report.dbo.rptCustomerMatch
 SELECT
 	a.CustID
 	,a.matchid
+	,a.oddsid
 	,CASE 
 		WHEN a.bettype IN (9, 29)
 			THEN - 9
@@ -144,16 +146,9 @@ SELECT
 	,sum(stake)stake
 	,sum(winlost) winlost  
 	,winlostdate	
-	,sum(CASE 
-			WHEN a.isBA = 1
-				THEN Winlost + awinlost + comm
-			ELSE 0
-			END) AS AmountDueToBA
-	,sum(CASE 
-			WHEN a.isBA = 1
-				THEN comm
-			ELSE 0
-			END) AS CommBA
+	,sum(awinlost) awinlost
+	,sum(comm) Comm
+	,sum(playercomm) playercomm
 	,a.recommend
 	,a.isba		
 	,sum(a.betcount) betcount
@@ -165,6 +160,7 @@ LEFT JOIN bodb_archive.dbo.outright_bk AS ob WITH (NOLOCK) ON a.matchid = ob.ori
 GROUP BY
 	a.CustID
 	,a.matchid
+	,a.oddsid
 	,a.bettype
 	,a.Odds
 	,a.oddstype

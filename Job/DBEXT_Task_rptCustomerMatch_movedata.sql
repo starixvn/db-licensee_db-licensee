@@ -28,9 +28,9 @@ DECLARE @sql NVARCHAR(MAX)
 	 SELECT * FROM 
 	OPENQUERY (DBRPT,
 			''SELECT 
-			custid ,matchid ,leagueid,bettype ,odds ,oddstype,
-			statusid,stake,	winlost,winlostdate,AmtDueToBA,
-			BAComm,recommend,isBA,betcount
+			custid ,matchid ,oddsid,leagueid,bettype ,odds ,oddstype,
+			statusid,stake,	winlost,winlostdate,awinlost,comm,playercomm,
+			recommend,isBA,betcount
 			FROM bodb_report.dbo.rptCustomerMatch rpt with (nolock)
 			WHERE rpt.winlostdate BETWEEN '''''+ CAST (@fromdate AS VARCHAR)+''''' AND '''''+ CAST (@todate AS VARCHAR)+''''''')'
 	PRINT @sql

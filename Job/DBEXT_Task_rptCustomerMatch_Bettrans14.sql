@@ -78,6 +78,7 @@ AS (
 		WHEN BA.transid IS NOT NULL THEN 1 END AS isBA
 		,sum(awinlost) awinlost
 		,sum(comm) comm
+		,sum(playercomm) playercomm
 	FROM dbo.bettrans14 a WITH (NOLOCK)
 	INNER JOIN cte_tempLicenseeCust lc ON a.recommend = lc.custid
 	LEFT JOIN cte_isBATrans AS BA ON a.transid = ba.transid
@@ -126,6 +127,7 @@ AS (
 INSERT INTO bodb_LicenseeReport.dbo.rptCustomerMatch
 SELECT a.CustID
 	,a.matchid
+	,a.oddsid
 	,CASE 
 		WHEN a.bettype IN (9, 29)
 			THEN - 9
@@ -146,16 +148,9 @@ SELECT a.CustID
 	,sum(stake)stake
 	,sum(winlost) winlost  
 	,winlostdate	
-	,sum(CASE 
-			WHEN a.isBA = 1
-				THEN Winlost + awinlost + comm
-			ELSE 0
-			END) AS AmountDueToBA
-	,sum(CASE 
-			WHEN a.isBA = 1
-				THEN comm
-			ELSE 0
-			END) AS CommBA
+	,sum(awinlost) awinlost
+	,sum(comm) Comm
+	,sum(playercomm) playercomm
 	,a.recommend
 	,a.isba		
 	,sum(a.betcount) betcount
@@ -165,6 +160,7 @@ LEFT JOIN cte_raceinfo result ON a.oddsid = result.Orid
 LEFT JOIN dbo.outright14 AS ob WITH (NOLOCK) ON a.matchid = ob.orid
 GROUP BY a.CustID
 	,a.matchid
+	,a.oddsid
 	,a.bettype
 	,a.Odds
 	,a.oddstype

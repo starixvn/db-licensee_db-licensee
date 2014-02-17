@@ -33,7 +33,8 @@ go
 CREATE TABLE dbo.rptCustomerMatch(
 	custid int NOT NULL,	
 	matchid INT null,
-	leagueid int null,
+	oddsid int null,
+	Leagueid INT NULL,
 	bettype smallint null,
 	odds money NULL,
 	oddstype tinyint NULL,
@@ -41,8 +42,9 @@ CREATE TABLE dbo.rptCustomerMatch(
 	stake money null,
 	winlost	money null,	
 	winlostdate datetime null,
-	AmtDueToBA money null,
-	BAComm money null,
+	awinlost money null,
+	comm money NULL,
+	playercomm money NULL,
 	recommend int NULL,
 	isBA bit null,
 	betcount smallint null
