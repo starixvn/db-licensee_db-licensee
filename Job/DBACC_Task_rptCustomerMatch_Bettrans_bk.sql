@@ -24,12 +24,13 @@ SET NOCOUNT ON;
 ;WITH cte_isBATrans
 AS 
 (
-	--SELECT transid FROM DBLIC.bodb_licensee.dbo.LicenseeBATransaction WITH(NOLOCK)
-	--WHERE Transdate BETWEEN @fromdate and DATEADD(DAY,2,@Todate)
-	select transid from bodb_archive.dbo.bettrans_bk with (nolock) 
-	WHERE winlostdate BETWEEN @fromdate and DATEADD(DAY,1,@Todate)
-	and ( bettype < 31 OR (bettype BETWEEN 121 AND 999))
-	and tpositiontaking=0
+	SELECT transid FROM DBLIC.bodb_licensee.dbo.LicenseeBATransaction WITH(NOLOCK)
+	WHERE Transdate BETWEEN @fromdate and DATEADD(DAY,2,@Todate)
+	
+	--select transid from bodb_archive.dbo.bettrans_bk with (nolock) 
+	--WHERE winlostdate BETWEEN @fromdate and DATEADD(DAY,1,@Todate)
+	--and ( bettype < 31 OR (bettype BETWEEN 121 AND 999))
+	--and tpositiontaking=0
 )
 ,cte_tempLicenseeCust
 AS (

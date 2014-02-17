@@ -27,13 +27,14 @@ IF exists(SELECT TOP 1 1 FROM bodb_LicenseeReport.dbo.rptCustomerMatch AS rct WI
 	END 	
 ;WITH cte_isBATrans
 AS (
-	--SELECT transid
-	--FROM bodb_licensee.dbo.LicenseeBATransaction WITH (NOLOCK)
-	--WHERE Transdate=@Date	
-	select transid from dbo.bettrans14 with (nolock) 
-	WHERE winlostdate =@Date
-	and ( bettype < 31 OR (bettype BETWEEN 121 AND 999))
-	and tpositiontaking=0
+	SELECT transid
+	FROM bodb_licensee.dbo.LicenseeBATransaction WITH (NOLOCK)
+	WHERE Transdate=@Date	
+	
+	--select transid from dbo.bettrans14 with (nolock) 
+	--WHERE winlostdate =@Date
+	--and ( bettype < 31 OR (bettype BETWEEN 121 AND 999))
+	--and tpositiontaking=0
 	)
 	,cte_tempLicenseeCust
 AS (
