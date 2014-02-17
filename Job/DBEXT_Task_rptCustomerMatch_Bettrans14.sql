@@ -10,7 +10,7 @@ ALTER  PROCEDURE [dbo].[Task_rptCustomerMatch_Bettrans14] @Date SMALLDATETIME
 AS
 /*	
 	Created	: Florent Nguyen
-	Task: Customer Performance Report
+	Task: Customer Performance Report  
 	Date: 2013-11-25
 	DB: DBEXT.bodb02
 	Original: 
