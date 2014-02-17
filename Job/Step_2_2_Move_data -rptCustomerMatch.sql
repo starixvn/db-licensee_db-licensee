@@ -9,18 +9,29 @@ BEGIN
 	--move from DBRPT.bodb_report.dbo.rptCustomerMatch to bodb_licenseeReport.dbo.rptCustomerMatch
 	DECLARE @fromdate DATETIME
 		,@todate DATETIME
-
-	SELECT @fromdate = min(winlostdate)
-		,@todate = max(winlostdate)
-	FROM DBRPT.bodb_report.dbo.rptCustomerMatch WITH (NOLOCK)
+	
+	SELECT  @fromdate ='2014-01-01'
+			,@todate ='2014-01-01'
+	--SELECT @fromdate = min(winlostdate)
+	--	,@todate = max(winlostdate)
+	--FROM DBRPT.bodb_report.dbo.rptCustomerMatch WITH (NOLOCK)
 
 	--DELETE bodb_LicenseeReport.dbo.rptCustomerMatch
 	--WHERE winlostdate BETWEEN @fromdate AND @todate
+	WHILE (@fromdate <= @todate)
+	BEGIN
+		EXEC Task_rptCustomerMatch_movedata @fromdate,@todate
+		SELECT @fromdate = DATEADD(DAY, 1, @fromdate)
 
-	EXEC Task_rptCustomerMatch_movedata @fromdate
-		,@todate
+		--wait for 2s
+		WAITFOR DELAY '00:00:02';
+	END 
 
-
+	
+	
+	
+	
+	
 	--Bettrans14
 	SELECT @fromdate = min(winlostdate)
 		,@todate = max(winlostdate)
