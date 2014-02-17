@@ -12,7 +12,7 @@ GO
 	Created	: Florent Nguyen
 	Task: Customer in Match
 	Date: 2014-02-12
-	DB: DB052.bodb_licenseereport
+	DB: DB052.bodb_licenseereport  
 	Original: 
 	Revision:	
 	Parameter's Explanation:

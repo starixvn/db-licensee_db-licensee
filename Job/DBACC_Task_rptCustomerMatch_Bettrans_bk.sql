@@ -15,7 +15,7 @@ AS
 	Task: Winloss By League
 	Date: 2013-11-25
 	DB: DBACC.bodb02
-	Original: 
+	Original:   
 	Revision:
 	Parameter's Explanation:			
 */

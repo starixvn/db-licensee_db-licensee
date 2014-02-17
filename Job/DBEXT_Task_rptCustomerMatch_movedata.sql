@@ -14,7 +14,7 @@ AS
 	Created	: Florent Nguyen
 	Task: Pull data from table DBRPT.bodb_report.dbo.rptCustomerMatch
 	Date: 2013-12-31
-	DB: DB052.bodb02
+	DB: DB052.bodb02  
 	Original: 
 	Revision:
 	Parameter's Explanation:			

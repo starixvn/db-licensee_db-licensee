@@ -10,7 +10,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 /*	
 	Created	: Florent Nguyen
-	Task: List Customer in Match
+	Task: List Customer in Match  
 	Date: 2014-02-12
 	DB: DBARC.bodb_report
 	Original: 
