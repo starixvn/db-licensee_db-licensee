@@ -1,8 +1,8 @@
 --Step 2- Move data to rptCustomerMatch
 
 --check create table DB052.bodb_licenseereport.rptCustomerMatch.sql
---check DBEXT_Task_rptListCustomerMatch_movedata
---check DBEXT_Task_rptListCustomerMatch_Bettrans14
+--check DBEXT_Task_rptCustomerMatch_movedata
+--check DBEXT_Task_rptCustomerMatch_Bettrans14
 
 --run in DB052.bodb02
 BEGIN
