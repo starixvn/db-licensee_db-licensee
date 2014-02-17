@@ -165,4 +165,5 @@ Begin
 	select @fromdate,@todate
 	SELECT @fromdate = DATEADD(DAY, 1, @fromdate)
 	SELECT @todate = @Fromdate
+	WAITFOR DELAY '00:00:02';
 end
