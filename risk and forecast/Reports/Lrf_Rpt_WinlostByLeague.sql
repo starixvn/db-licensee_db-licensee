@@ -742,7 +742,7 @@ SELECT matchid
 			THEN b.bettype
 		ELSE 0
 		END AS bettype
-	,ProductName
+	--,ProductName
 	,--bettype,  
 	leagueid
 	,CAST(SUM(turnover) AS MONEY) AS turnover
@@ -809,7 +809,7 @@ GROUP BY matchid
 			THEN b.bettype
 		ELSE 0
 		END
-	,ProductName
+	--,ProductName
 	,--bettype,  
 	CASE 
 		WHEN b.sporttype IN (181, 182, 184)
@@ -826,7 +826,7 @@ GROUP BY matchid
 		END
 --,b.odds2
 --,b.betcount
-ORDER BY CASE ProductName
+/*ORDER BY CASE ProductName
 		WHEN 'SB'
 			THEN 0
 		WHEN 'NG'
@@ -835,7 +835,7 @@ ORDER BY CASE ProductName
 			THEN 2
 		ELSE 3
 		END
-
+*/
 DROP TABLE #match
 
 
