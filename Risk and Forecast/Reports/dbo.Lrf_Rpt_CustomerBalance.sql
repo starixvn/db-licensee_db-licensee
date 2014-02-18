@@ -33,7 +33,6 @@ Revisions:
    -20130618@Jim:  Restrict permission of Licensee Users by currency
    -20130809@Jim: offer Virtual Horse Racing
    -20131007@Jim: offer Virtual Tennis
-   -20140214@Hannah: add condition for @LicenseeType
 Param's Explanation:  
  + @excludeTest: remove currency UUS  
  + @TopCount:   
@@ -50,9 +49,6 @@ Param's Explanation:
    
 */  
 SET NOCOUNT ON  
-
-IF ISNULL(@LicenseeType,0) = 0
-	SELECT @LicenseeType = NULL
 
 DECLARE @CutDate datetime  
 DECLARE @tmpAg TABLE(custID INT)  
