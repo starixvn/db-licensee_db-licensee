@@ -43,7 +43,7 @@ AS
 		- @ShowLoss :Filter show only Loss bet
 		- @ShowDraw :Filter show only Draw bet		
 		- @MoveBetsDay: The day we move tickets to bettrans14
-		- @BalanceUpDay: The day we move tickets to bettrans_bk		
+		- @BalanceUpDay: The day we move tickets to bettrans_bk	  
 			
 */
 SET NOCOUNT ON
