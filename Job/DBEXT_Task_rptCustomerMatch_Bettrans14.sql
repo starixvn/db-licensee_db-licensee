@@ -29,7 +29,7 @@ IF exists(SELECT TOP 1 1 FROM bodb_LicenseeReport.dbo.rptCustomerMatch AS rct WI
 AS (
 	SELECT transid
 	FROM bodb_licensee.dbo.LicenseeBATransaction WITH (NOLOCK)
-	WHERE Transdate=@Date	
+	WHERE Transdate >= @date and Transdate<DATEADD(DAY,2,@date)	 
 	
 	--select transid from dbo.bettrans14 with (nolock) 
 	--WHERE winlostdate =@Date
