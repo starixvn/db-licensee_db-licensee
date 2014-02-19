@@ -43,7 +43,7 @@ AS
 		- @ShowLoss :Filter show only Loss bet
 		- @ShowDraw :Filter show only Draw bet		
 		- @MoveBetsDay: The day we move tickets to bettrans14
-		- @BalanceUpDay: The day we move tickets to bettrans_bk		
+		- @BalanceUpDay: The day we move tickets to bettrans_bk	  
 			
 */
 SET NOCOUNT ON
@@ -208,7 +208,7 @@ BEGIN
 				,SUM(winlost - b.actual_stake)
 				,0 AS LicenseeWL
 				,0 AS WinlossRB
-				,SUM(winlost - b.actual_stake + awinlost + comm) AS AmountDueToBA
+				,-SUM(winlost - b.actual_stake + awinlost + comm) AS AmountDueToBA
 				,0 AS AmountDueToRB
 				,SUM(comm) AS CommBA
 				,0 AS CommRB
@@ -742,7 +742,7 @@ SELECT matchid
 			THEN b.bettype
 		ELSE 0
 		END AS bettype
-	,ProductName
+	--,ProductName
 	,--bettype,  
 	leagueid
 	,CAST(SUM(turnover) AS MONEY) AS turnover
@@ -809,7 +809,7 @@ GROUP BY matchid
 			THEN b.bettype
 		ELSE 0
 		END
-	,ProductName
+	--,ProductName
 	,--bettype,  
 	CASE 
 		WHEN b.sporttype IN (181, 182, 184)
@@ -826,7 +826,7 @@ GROUP BY matchid
 		END
 --,b.odds2
 --,b.betcount
-ORDER BY CASE ProductName
+/*ORDER BY CASE ProductName
 		WHEN 'SB'
 			THEN 0
 		WHEN 'NG'
@@ -835,7 +835,7 @@ ORDER BY CASE ProductName
 			THEN 2
 		ELSE 3
 		END
-
+*/
 DROP TABLE #match
 
 

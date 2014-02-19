@@ -179,16 +179,8 @@ BEGIN
 			,SUM(stake)
 			,SUM(winlost - b.actual_stake)
 			,0 AS LicenseeWL
-			,CASE 
-				WHEN b.tpositiontaking = 0
-					THEN - SUM(winlost - b.actual_stake + awinlost + comm)
-				ELSE 0
-				END AmountDueToBA
-			,CASE 
-				WHEN b.tpositiontaking = 0
-					THEN - SUM(comm)
-				ELSE 0
-				END AS CommBA
+			,- SUM(winlost - b.actual_stake + awinlost + comm) AS AmountDueToBA
+			,SUM(comm) AS CommBA
 			,SUM(b.playercomm) AS PlayerComm
 			,m.matchcode
 			,ISNULL(m.isNeutral, CONVERT(BIT, 0)) AS IsNeutral
@@ -417,7 +409,7 @@ BEGIN
 				,SUM(winlost)
 				,0 AS LicenseeWL
 				--,sum(AmtDueToBA) AS AmountDueToBA
-				,sum(Winlost +  awinlost + comm) AS AmountDueToBA
+				,-sum(Winlost +  awinlost + comm) AS AmountDueToBA
 				--0 AS AmountDueToBA,
 				,SUM (comm ) AS CommBA
 				--0 AS CommBA
@@ -606,6 +598,7 @@ SELECT @TotalRows = count(a.custid)
 FROM (
 	SELECT custid
 	FROM @AgMatchWLDetails
+	WHERE odds >= @odds
 	GROUP BY custid
 		,sporttype
 		,leagueid

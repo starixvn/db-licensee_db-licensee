@@ -757,6 +757,11 @@ WHERE exchangeid IN (
 
 SELECT @TotalRows = COUNT(1)
 FROM #Data
+WHERE odds2 >= @Odds
+		AND StatusID IN (
+			SELECT *
+			FROM @Status
+			)
 
 SELECT A.*
 FROM (

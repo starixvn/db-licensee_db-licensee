@@ -65,14 +65,14 @@ CREATE CLUSTERED INDEX CIX_winlostdate ON dbo.rptCustomerMatch
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON)
 GO
 
-CREATE NONCLUSTERED INDEX IX_recommend ON dbo.rptCustomerMatch
+CREATE NONCLUSTERED INDEX IX_recommend ON [dbo].[rptCustomerMatch]
 (
-	recommend asc,
-	custid asc,
-	matchid ASC,
-	LeagueID DESC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON)
-on rptCustomerMatchIndex
+	recommend ASC,
+	matchid DESC
+)
+INCLUDE ( 	custid,Leagueid)
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON)
+ON rptCustomerMatchIndex
 GO
 
 --drop table bodb_licenseereport.dbo.rptCustomerMatch
