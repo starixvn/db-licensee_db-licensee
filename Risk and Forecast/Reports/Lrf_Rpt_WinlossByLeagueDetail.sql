@@ -598,6 +598,7 @@ SELECT @TotalRows = count(a.custid)
 FROM (
 	SELECT custid
 	FROM @AgMatchWLDetails
+	WHERE odds >= @odds
 	GROUP BY custid
 		,sporttype
 		,leagueid
