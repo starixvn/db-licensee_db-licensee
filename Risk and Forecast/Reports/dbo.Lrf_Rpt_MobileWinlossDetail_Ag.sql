@@ -1,8 +1,15 @@
-﻿set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
+﻿USE [bodb02]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_MobileWinlossDetail_Ag]    Script Date: 02/19/2014 02:30:21 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+/****** Object:  Stored Procedure dbo.Lrf_Rpt_MobileWinlossDetail_Ag    Script Date: 7/5/2013 1:09:58 AM ******/
+/****** Object:  Stored Procedure dbo.Lrf_Rpt_MobileWinlossDetail_Ag    Script Date: 6/26/2013 5:25:20 PM ******/
 
-ALTER  PROCEDURE [dbo].[Lrf_Rpt_MobileWinlossDetail_Ag]  
+
+ALTER PROCEDURE [dbo].[Lrf_Rpt_MobileWinlossDetail_Ag]  
  @LicenseeID	INT,
  @UserID		INT,
  @CurrencyID	INT = 0,
@@ -31,7 +38,6 @@ AS
 			- 20130225@Jim: add RNG Casino,Bingo
 			- 20140414@Jim: support USD base currency 
 			- 20130618@Jim: Restrict permission of Licensee Users by currency
-			- 20130809@Jim: offer Virtual Horse Racing
 	Param's Explanation:  
 	  + @SiteType: 1-WAP; 2-Smartphone; 3: Others;0-All  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -131,10 +137,7 @@ END
 
 IF @ShowVS = 1	
 BEGIN
-	INSERT  INTO @sporttype( Sporttype) 
-	SELECT 180
-	UNION ALL 
-	SELECT 181 
+	INSERT  INTO @sporttype( Sporttype) VALUES  (180)
 	
 	INSERT INTO @bettype(bettype)
 	SELECT typeid FROM bettype (NOLOCK)
@@ -477,9 +480,4 @@ DROP TABLE #Exchange
 DROP TABLE #WinLoss
 		
 	
-END	
-GO
-
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_MobileWinlossDetail_Ag] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_MobileWinlossDetail_Ag] TO [vnteam] 
+END
