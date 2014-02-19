@@ -208,7 +208,7 @@ BEGIN
 				,SUM(winlost - b.actual_stake)
 				,0 AS LicenseeWL
 				,0 AS WinlossRB
-				,SUM(winlost - b.actual_stake + awinlost + comm) AS AmountDueToBA
+				,-SUM(winlost - b.actual_stake + awinlost + comm) AS AmountDueToBA
 				,0 AS AmountDueToRB
 				,SUM(comm) AS CommBA
 				,0 AS CommRB
