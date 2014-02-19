@@ -1,6 +1,6 @@
 USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Task_rptCustomerMatch_Bettrans14]    Script Date: 14/02/2014 11:32:54 AM ******/
+/****** Object:  StoredProcedure [dbo].[Task_rptCustomerMatch_Bettrans14]    Script Date: 19/02/2014 9:58:27 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -25,24 +25,7 @@ IF exists(SELECT TOP 1 1 FROM bodb_LicenseeReport.dbo.rptCustomerMatch AS rct WI
 	BEGIN
 		DELETE bodb_LicenseeReport.dbo.rptCustomerMatch WHERE winlostdate=@Date
 	END 	
-;WITH cte_isBATrans
-AS (
-	SELECT transid
-	FROM bodb_licensee.dbo.LicenseeBATransaction WITH (NOLOCK)
-	WHERE Transdate >= @date and Transdate<DATEADD(DAY,2,@date)	 
-	
-	--select transid from dbo.bettrans14 with (nolock) 
-	--WHERE winlostdate =@Date
-	--and ( bettype < 31 OR (bettype BETWEEN 121 AND 999))
-	--and tpositiontaking=0
-	)
-	,cte_tempLicenseeCust
-AS (
-	SELECT currency
-		,custid
-	FROM bodb_licensee.dbo.LicenseeCust lc WITH (NOLOCK)
-	)
-	,cte_bettrans
+;WITH cte_bettrans
 AS (
 	SELECT a.CustID		
 		,a.recommend
@@ -81,8 +64,8 @@ AS (
 		,sum(comm) comm
 		,sum(playercomm) playercomm
 	FROM dbo.bettrans14 a WITH (NOLOCK)
-	INNER JOIN cte_tempLicenseeCust lc ON a.recommend = lc.custid
-	LEFT JOIN cte_isBATrans AS BA ON a.transid = ba.transid
+	INNER JOIN bodb_licensee.dbo.LicenseeCust lc WITH (NOLOCK) ON a.recommend = lc.custid
+	LEFT JOIN bodb_licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON a.transid = ba.transid
 	WHERE a.winlostdate =@date 
 			AND a.statusID IN (111, 112, 113)
 	GROUP BY a.CustID		
@@ -182,3 +165,4 @@ GROUP BY a.CustID
 			THEN isnull(result.LeagueID,-1)
 		ELSE isnull(b.LeagueID, - 1)
 		END 
+GO
