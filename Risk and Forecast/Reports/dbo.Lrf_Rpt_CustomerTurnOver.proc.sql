@@ -567,27 +567,14 @@ ELSE
 			Betcount ,
 			Turnover,
 			Winlost,
-			PlayerComm,	count(RowNo) TotalRow_page
+			PlayerComm
 		FROM #return	
 		WHERE ( RowNo between @RowStart AND @RowEnd	AND  @IsExportExcel=0) OR (@IsExportExcel=1 AND RowNo<65000)
-		group by RowNo,			
-			ReportBy,  
-			username,
-			Currency,
-			sporttype,
-			bettype,
-			Betcount ,
-			Turnover,
-			Winlost,
-			PlayerComm
-
-
-	--- Data Sum 	
+		
+		--- Data Sum 	
+		--SELECT @TotalRow=COUNT(1)
+		--FROM #return
 		SELECT @TotalRow=COUNT(1)
-		FROM #return
-
-		--test
-			SELECT @TotalRow=COUNT(1)
 		FROM #Row_num
 				
 				
