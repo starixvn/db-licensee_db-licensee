@@ -517,6 +517,17 @@ ELSE
 			CASE WHEN @ReportBy = 1 THEN CONVERT(VARCHAR(8),winlostdate,112)  
 				WHEN @ReportBy = 2 THEN CONVERT(VARCHAR(6),winlostdate,112)  
 				ELSE '0' END
+		--
+		select Row_number () over (order by ReportBy desc,Username asc) as rownum
+				,ReportBy,  
+				username
+		into #Row_num
+		FROM #result 	
+		GROUP BY 
+			ReportBy,  
+			username
+		--
+
 	--- Data Detail 
 		SELECT *
 		INTO #return
@@ -524,9 +535,10 @@ ELSE
 		(
 		SELECT  
 			--ROW_NUMBER() over(order by ReportBy DESC) AS RowNo,
-			ROW_NUMBER() over(order by ReportBy desc,username asc) AS RowNo,
-			ReportBy,  
-			username,
+			--ROW_NUMBER() over(order by ReportBy desc,username asc) AS RowNo,
+			b.rownum RowNo,
+			a.ReportBy,  
+			a.username,
 			Currency,
 			sporttype,
 			bettype,
@@ -534,19 +546,37 @@ ELSE
 			SUM(Turnover) Turnover,
 			SUM(Winlost) Winlost,
 			SUM(PlayerComm) PlayerComm
-		FROM #result 	
+		FROM #result a 
+		inner join #Row_num b on a.ReportBy=b.ReportBy and a.username=b.username
 		GROUP BY 
-			ReportBy,  
-			username,
+			b.rownum,
+			a.ReportBy,  
+			a.username,
 			Currency,
 			sporttype,
 			bettype
 		) B
-		SELECT * FROM #return	
+
+
+		SELECT RowNo,			
+			ReportBy,  
+			username,
+			Currency,
+			sporttype,
+			bettype,
+			Betcount ,
+			Turnover,
+			Winlost,
+			PlayerComm
+		FROM #return	
 		WHERE ( RowNo between @RowStart AND @RowEnd	AND  @IsExportExcel=0) OR (@IsExportExcel=1 AND RowNo<65000)
-	--- Data Sum 	
+		
+		--- Data Sum 	
+		--SELECT @TotalRow=COUNT(1)
+		--FROM #return
 		SELECT @TotalRow=COUNT(1)
-		FROM #return
+		FROM #Row_num
+				
 				
 		SELECT sum(betcount) Sumbetcount,
 			   sum(Turnover) SumTurnover,
@@ -563,7 +593,8 @@ ELSE
 		DROP TABLE #Currency 
 		DROP TABLE #bettype
 		DROP TABLE #custID
-		DROP TABLE 	#recommend
+		DROP TABLE #recommend
+		DROP TABLE #Row_num
 	END
 DROP TABLE #ProductID
 DROP TABLE #BettypeID
