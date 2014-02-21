@@ -1,4 +1,12 @@
-﻿ ALTER  PROCEDURE [dbo].[Lrf_BetList_SelWinlossVirtualSport]	 
+﻿USE [bodb02]
+GO
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+ ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinlossVirtualSport]	 
 	 @LicenseeID INT ,
 	 @UserID	 INT,
      @LicenseeType VARCHAR(100) = NULL ,
@@ -376,11 +384,9 @@ SELECT * FROM #DetailTicket
 
 DROP TABLE 	#DetailTicket
 DROP TABLE #Data	
-DROP TABLE #TempExchange 
+DROP TABLE #TempExchange
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinlossVirtualSport] TO [bodbLicenseeNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelWinlossVirtualSport] TO [vnteam] 
-
- 

@@ -1,4 +1,12 @@
-﻿ALTER  PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossByMatch]
+﻿USE [bodb02]
+GO
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+ALTER PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossByMatch]
 	@MatchID INT,
 	@LicenseeID INT,
 	@UserID		INT,
@@ -109,8 +117,7 @@ CREATE TABLE #Data
 	showtime NVARCHAR(50) -- table - shoe - hand of Live Casino
 )
 
-IF EXISTS(SELECT TOP 1 1 FROM Match WITH(NOLOCK) WHERE MatchID=@MatchID
-		 )
+IF EXISTS(SELECT TOP 1 1 FROM Match WITH(NOLOCK) WHERE MatchID=@MatchID)
 BEGIN	
 	IF @ShowBA = 1
 	BEGIN
@@ -509,10 +516,9 @@ SELECT * FROM @BettransDetail ORDER BY RefNo,Bettype
 
 
 DROP TABLE #Data
-DROP TABLE #TempExchange 
+DROP TABLE #TempExchange
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_LiveReport_SelWinlossByMatch] TO [bodbLicenseeNet]
 
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_LiveReport_SelWinlossByMatch] TO vnteam
- 

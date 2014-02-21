@@ -1,11 +1,14 @@
 USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_BetList_WinlostByLeague_Mem]    Script Date: 13/01/2014 10:11:15 AM ******/
+/****** Object:  StoredProcedure [dbo].[Lrf_BetList_WinlostByLeague_Mem]    Script Date: 02/21/2014 00:19:34 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-ALTER PROCEDURE [dbo].[Lrf_BetList_WinlostByLeague_Mem]
+/****** Object:  Stored Procedure dbo.Lrf_BetList_WinlostByLeague_Mem    Script Date: 2/18/2014 10:35:57 PM ******/
+/****** Object:  Stored Procedure dbo.Lrf_BetList_WinlostByLeague_Mem    Script Date: 19/02/2014 11:25:01 AM ******/
+
+ALTER PROCEDURE [dbo].[Lrf_BetList_WinlostByLeague_Mem] 
 	@CustID INT
 	,@Odds FLOAT = 0
 	,@LeagueID INT
@@ -32,7 +35,8 @@ Task : Betlist
 DB: DB052.bodb02
 Original:[Lrf_BetList_MatchWL_Bettype_8828]
 Revisions:
-	20140207@Florent: add filter ShowBA and ShowSB
+	- 20140207@Florent: add filter ShowBA and ShowSB
+	- 20140214@Florent: add filter by match
    
 Param's Explanation: 
 	- @CustID : Customer Number
@@ -803,12 +807,4 @@ WHERE A.RowNum BETWEEN @RowStart AND @RowEnd
 
 --WHERE b.odds>@odds
 DROP TABLE #TempExchange
-
 DROP TABLE #Data
-
-
-GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_WinlostByLeague_Mem] TO [bodbLicenseeNet] AS [dbo]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_WinlostByLeague_Mem] TO [vnteam] AS [dbo]
-GO

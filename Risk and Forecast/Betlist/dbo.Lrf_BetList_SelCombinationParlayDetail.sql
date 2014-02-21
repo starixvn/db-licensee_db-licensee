@@ -1,14 +1,17 @@
 ﻿USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_BetList_SelCombinationParlayDetail]    Script Date: 04/03/2013 22:53:10 ******/
+/****** Object:  StoredProcedure [dbo].[Lrf_BetList_SelCombinationParlayDetail]    Script Date: 02/20/2014 23:18:17 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
+/****** Object:  Stored Procedure dbo.Lrf_BetList_SelCombinationParlayDetail    Script Date: 7/5/2013 1:09:53 AM ******/
+/****** Object:  Stored Procedure dbo.Lrf_BetList_SelCombinationParlayDetail    Script Date: 6/26/2013 5:25:19 PM ******/
 
-/****** Object:  Stored Procedure dbo.Lrf_BetList_SelCombinationParlayDetail_xtest    Script Date: 8/29/2012 9:32:11 PM ******/
+
+/****** Object:  Stored Procedure dbo.Lrf_BetList_SelCombinationParlayDetail    Script Date: 8/29/2012 9:32:11 PM ******/
 /****** Object:  Stored Procedure dbo.Lrf_BetList_SelCombinationParlayDetail    Script Date: 8/27/2012 3:45:13 PM ******/
-ALTER PROC [dbo].[Lrf_BetList_SelCombinationParlayDetail]
+ALTER PROCEDURE [dbo].[Lrf_BetList_SelCombinationParlayDetail]
 	@LicenseeID INT ,
 	@UserID		INT,
 	@transid		BIGINT = 0,

@@ -1,10 +1,14 @@
-﻿set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
+﻿USE [bodb02]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_BettransSelBetSlip]    Script Date: 02/21/2014 00:14:12 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+/****** Object:  Stored Procedure dbo.Lrf_BettransSelBetSlip    Script Date: 5/8/2013 3:14:43 AM ******/
+/****** Object:  Stored Procedure dbo.Lrf_BettransSelBetSlip    Script Date: 4/29/2013 9:54:25 AM ******/
 
 ALTER PROCEDURE [dbo].[Lrf_BettransSelBetSlip]
-	@LicenseeID INT=0,
-	@UserID	 INT=0,
 	@transid bigint,
 	@Langkey VARCHAR(10) = 'en-US'
 AS
@@ -140,8 +144,6 @@ BEGIN
 		b.transid= @transid
 	RETURN
 END
-
-
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BettransSelBetSlip] TO [bodbLicenseeNet]
 GO

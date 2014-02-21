@@ -6,6 +6,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
+
 ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinlossByMatch]
 	@MatchID INT,
 	@LicenseeID INT,
@@ -622,7 +623,3 @@ ORDER BY RefNo,Bettype
  
 DROP TABLE #Data
 DROP TABLE #TempExchange
-GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinlossByMatch] TO [bodbLicenseeNet] AS [dbo]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelWinlossByMatch] TO [vnteam] AS [dbo]

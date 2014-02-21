@@ -1,6 +1,17 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel25] 
+﻿USE [bodb02]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_TotalBets_Sel25]    Script Date: 02/20/2014 18:35:51 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+/****** Object:  Stored Procedure dbo.Lrf_TotalBets_Sel25    Script Date: 6/26/2013 10:58:33 PM ******/
+/****** Object:  Stored Procedure dbo.Lrf_TotalBets_Sel25    Script Date: 5/31/2013 2:41:29 PM ******/
+
+ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel25] 
 	@LicenseeID INT,
 	@CurrencyID INT=0,
+	@UserID		INT,
 	@licenseetype VARCHAR(100) = NULL,
 	@PageSize INT=50,
 	@PageIndex INT=0,
@@ -10,7 +21,7 @@
 /*
 Created: 20101201@Henry
 Task : Retrieve Total bets for bettype 25
-DB: DB05.bodb02
+DB: DB052.bodb02
 Original:[Age_TotalBets_Sel25_Ag]
 Revisions:
 	- 201133@Alex:Allow to choose all type of licensee AND all currency + suppport based currency
@@ -18,7 +29,7 @@ Revisions:
 	- 20120214@Jim: change to use  table ExchangeDaily by use function Lrf_f_GetExchangeDaily  
 	- 20120703@Henry: Add new bettype 123 for Draw/No Draw
 	- 20121004@Jim: replace @currencyname input param by @currencyID
-	 
+	- 20130514@Jim:Restrict permission of Licensee Users by currency
 
 Param's Explanation:
 • @CustID: AgentID
@@ -28,15 +39,20 @@ SET NOCOUNT ON
 DECLARE @Today SMALLDATETIME 
 SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
 
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+
 DECLARE @TempAg AS TABLE (CustID INT)
 INSERT INTO @TempAg (CustID)
 SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust WITH ( NOLOCK )  
-                WHERE   LicenseeID = @LicenseeID  
-                        AND  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID))
-                        AND [Description] = COALESCE(@LicenseeType,  
+                FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK ) 
+				INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID		
+                WHERE  [Description] = COALESCE(@LicenseeType,  
                                                      [Description])
-
+-------------------
+DROP TABLE #currency
+-------------------
 DECLARE @RowCount INT, @RowStart INT, @RowEnd INT  
 SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
 
@@ -216,4 +232,3 @@ GRANT EXECUTE ON [dbo].[Lrf_TotalBets_Sel25] TO [bodbLicenseeNet]
 
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_TotalBets_Sel25] TO [vnteam]
-
