@@ -45,7 +45,7 @@ AS
 	- 20131225@Florent: Remove using bettrans14, use only bettrans and rptCustomerturnover
 	- 20140104@Don: Improve performance -> Replacing table @Status with #Status
 	- 20140120@Florent: using index Non clusered IX_recommend for table rptCustomerturnover
-	- 20140212@Florent : Sorting DESC
+	- 20140212@Florent : Sorting DESC and improve performance
 	Parameter's Explanation:
 		- @ReportBy:  1: daily, 2: monthly
 		- @FilterBy:  1: Win, 2: Loss, 3: Draw
@@ -135,9 +135,10 @@ ELSE
 				  ,Currency
 			FROM DBLIC.bodb_licensee.dbo.LicenseeCust  WITH (NOLOCK)
 			WHERE
-				LicenseeID=@LicenseeID
-				AND (Currency=@CurrencyID)-- OR (@CurrencyID=0))
-				AND RoleID=2
+				LicenseeID=@LicenseeID AND 
+				(Currency=@CurrencyID)-- OR (@CurrencyID=0))
+				AND 
+				RoleID=2
 			)
 			
 			
@@ -200,6 +201,7 @@ ELSE
 			SELECT 111
 		END
 
+
 		IF @Todate > @MoveBetsDay
 		BEGIN
 			IF @FromDate <= @MoveBetsDay 
@@ -250,12 +252,13 @@ ELSE
 				1 betcount
 			FROM bettrans b WITH (NOLOCK)
 			INNER JOIN #bettype bet  ON b.bettype=bet.typeID
+			INNER join #recommend re on b.recommend=re.CustID
 			LEFT JOIN match m WITH (NOLOCK) ON b.matchid = m.matchid
 			LEFT JOIN outright o with(nolock) ON b.matchid = o.orid 
 			LEFT JOIN league l with(nolock) ON o.leagueid = l.leagueid
 			LEFT JOIN cte_raceinfo AS cr ON cr.orid=b.oddsid 
 			WHERE 
-				b.CustID IN (SELECT CustID FROM #Currency) AND 
+				--b.CustID IN (SELECT CustID FROM #Currency) AND 
 				 b.winlostdate BETWEEN @TempFromDate AND @todate
 				--AND (b.CustID = @CustID OR @CustID=0)
 				AND (b.custid IN (SELECT * FROM #custID) OR @CustID=0)
@@ -517,6 +520,7 @@ ELSE
 			CASE WHEN @ReportBy = 1 THEN CONVERT(VARCHAR(8),winlostdate,112)  
 				WHEN @ReportBy = 2 THEN CONVERT(VARCHAR(6),winlostdate,112)  
 				ELSE '0' END
+
 		--
 		select Row_number () over (order by ReportBy desc,Username asc) as rownum
 				,ReportBy,  
@@ -535,7 +539,7 @@ ELSE
 		(
 		SELECT  
 			--ROW_NUMBER() over(order by ReportBy DESC) AS RowNo,
-			--ROW_NUMBER() over(order by ReportBy desc,username asc) AS RowNo,
+			--ROW_NUMBER() over(order by a.ReportBy desc,a.username asc) AS RowNo2,
 			b.rownum RowNo,
 			a.ReportBy,  
 			a.username,
@@ -569,7 +573,7 @@ ELSE
 			Winlost,
 			PlayerComm
 		FROM #return	
-		WHERE ( RowNo between @RowStart AND @RowEnd	AND  @IsExportExcel=0) OR (@IsExportExcel=1 AND RowNo<65000)
+		WHERE ( RowNo between @RowStart AND @RowEnd	AND  @IsExportExcel=0) OR (@IsExportExcel=1 )--AND RowNo2<65000)	
 		
 		--- Data Sum 	
 		--SELECT @TotalRow=COUNT(1)
@@ -584,7 +588,7 @@ ELSE
 			   sum(PlayerComm) SumComm,
 			   @TotalRow  TotalRows
 		FROM #result  	
-		WHERE (@IsExportExcel=0) OR (@IsExportExcel=1 AND RowNum<65000)
+		--WHERE (@IsExportExcel=0) OR (@IsExportExcel=1 AND RowNum<65000)
 		
 		
 		DROP TABLE #return	
