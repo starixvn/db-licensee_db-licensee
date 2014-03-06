@@ -604,7 +604,7 @@ BEGIN
 	END
 
 	--exclude BA tickets
-	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1  or @ShowLC=1 or @ShowVS=1 or @ShowCS=1 or @ShowBG=1)
+	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1  or @ShowLC=1 or @ShowVS=1 or @ShowCS=1 or @ShowBG=1OR @ShowKN=1)
 	BEGIN
 		INSERT INTO #SAgWinLoss  
 		SELECT 
