@@ -2,7 +2,7 @@
 set QUOTED_IDENTIFIER ON
 go
 
-ALTER  PROCEDURE [dbo].[Lrf_BetList_SelWinloss_Mem]
+CREATE  PROCEDURE [dbo].[Lrf_BetList_SelWinloss_Mem]
 	@LicenseeID 	INT,
 	@UserID			INT,
 	@CustID			INT,
@@ -58,6 +58,7 @@ Revisions:
 	 - 20130514@Jim:Restrict permission of Licensee Users by currency
 	 - 20130716@Jim: update matchid for RNG Casino and Bingo
 	 - 20130809@Jim: offer Virtual Horse Racing 	
+	 
 	
 Param's Explanation:
 	+ @drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -2509,6 +2510,6 @@ DROP TABLE #TempExchange
 */
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinloss_Mem] TO [bodbLicenseeNet] AS [dbo]
+GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinloss_Mem_12750] TO [bodbLicenseeNet] AS [dbo]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelWinloss_Mem] TO [vnteam] AS [dbo]
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelWinloss_Mem_12750] TO [vnteam] AS [dbo]
