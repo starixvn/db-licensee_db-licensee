@@ -973,7 +973,8 @@ SELECT
 	CAST(SUM(AmtDueto3rdUSD) 		AS MONEY)	AS AmtDueto3rdUSD
 FROM	
 	#SAgWinLoss w   
-	INNER JOIN bodb_licensee.dbo.licenseecustinfo c WITH (NOLOCK) ON w.custid = c.custid
+	--INNER JOIN bodb_licensee.dbo.licenseecustinfo c WITH (NOLOCK) ON w.custid = c.custid
+	INNER JOIN Customer c WITH (NOLOCK) ON w.custid = c.custid
 GROUP BY   
 	w.custid, c.username,c.username2  , 
 	w.Currency,
