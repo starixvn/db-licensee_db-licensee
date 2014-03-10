@@ -18,6 +18,7 @@ CREATE  PROCEDURE [dbo].[Lrf_BetList_SelWinloss_Mem]
 	@ShowVS			BIT = 0,
 	@ShowCS   		BIT=0, -- RNG Casino
 	@ShowBG   		BIT=0, -- Bingo 
+	@ShowKN   		BIT=0, -- Keno
 	@PageSize INT=1000,
 	@PageIndex INT=1,
 	@TotalRows INT=0 OUTPUT,
@@ -58,7 +59,8 @@ Revisions:
 	 - 20130514@Jim:Restrict permission of Licensee Users by currency
 	 - 20130716@Jim: update matchid for RNG Casino and Bingo
 	 - 20130809@Jim: offer Virtual Horse Racing 	
-	 
+	 - 20140307@Hannah: offer Keno
+
 	
 Param's Explanation:
 	+ @drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -824,6 +826,55 @@ BEGIN
 				b.statusID IN (111,112,113)
 				
 	END
+	-- Keno
+	IF @ShowKN=1 -- 1
+	BEGIN
+		INSERT INTO @BetListByDateMem
+		SELECT
+			m.Sporttype, 
+			b.Refno as transid,
+			ISNULL(b.BetID,0),
+			b.Bettype,
+			b.hdp1 AS hdp1, 
+			b.hdp2 AS hdp2,
+			modds,
+			b.oddstype,
+			b.Odds,
+			b.stake,
+			b.actual_stake, 
+			(left((right(b.transdesc, len(b.transdesc) - (charindex(',',b.transdesc)))),(charindex(';', (right(b.transdesc, len(b.transdesc) - (charindex(',', b.transdesc)))))) - 1))  as betteam,
+			b.status AS Status,				
+			b.refno,
+			b.Transdate,	
+			b.winlostdate,			
+			(b.winlost-actual_stake),
+			- (b.winlost-actual_stake) ,
+			b.comm ,
+			b.playercomm,
+			b.Liveindicator,
+			b.Livehomescore,
+			b.Liveawayscore,
+			b.IP AS IP,
+			m.LeagueID,
+			m.MatchID,	
+			m.MatchCode,
+			'' AS Race,	
+			m.HomeID,
+			m.AwayID, 		
+			m.Betstatus,
+			ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral,
+			0,0,
+			b.currency,
+			isnull(m.showtime,'') as showtime
+		FROM
+			dbo.bettrans AS b WITH (NOLOCK)		
+			INNER JOIN dbo.match AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
+		WHERE
+			b.winlostdate BETWEEN @TempFromDate AND @tdate AND
+			b.custid=@custid AND
+			b.bettype BETWEEN 1501 AND 1599 AND
+			b.statusID IN (111,112,113)
+	END
 END
 
 IF @fdate <= @MoveBetsDay
@@ -1512,6 +1563,55 @@ BEGIN
 				b.bettype IN (31, 32, 33) AND
 				b.statusID IN (111,112,113)
 				
+	END
+	-- Keno -- 2
+	IF @ShowKN = 1
+	BEGIN
+		INSERT INTO @BetListByDateMem
+		SELECT
+			m.Sporttype, 
+			b.refno as transid,
+			ISNULL(b.BetID,0),
+			b.Bettype,
+			b.hdp1 AS hdp1, 
+			b.hdp2 AS hdp2,
+			modds,
+			b.Oddstype,
+			b.Odds,
+			b.stake,
+			b.actual_stake,   		
+			(left((right(b.transdesc, len(b.transdesc) - (charindex(',',b.transdesc)))),(charindex(';', (right(b.transdesc, len(b.transdesc) - (charindex(',', b.transdesc)))))) - 1)) as betteam,
+			b.status AS Status,				
+			b.refno,
+			b.Transdate,	
+			b.winlostdate,			
+			(b.winlost-actual_stake),
+			- (b.winlost-actual_stake),
+			b.comm,
+			b.playercomm,
+			b.Liveindicator,
+			b.Livehomescore,
+			b.Liveawayscore,
+			b.IP AS IP,
+			m.LeagueID,
+			m.MatchID,	
+			m.MatchCode,
+			'' AS Race,	
+			m.HomeID,
+			m.AwayID, 		
+			m.Betstatus,
+			ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral,
+			0,0,
+			b.currency,
+			isnull(m.showtime,'') as showtime
+		FROM
+			dbo.bettrans14 AS b WITH (NOLOCK)		
+			INNER JOIN dbo.match14 AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
+		WHERE
+			b.winlostdate BETWEEN @BalanceUpDay AND @tdate AND
+			b.custid=@custid AND
+			b.bettype BETWEEN 1501 AND 1599 AND
+			b.statusID IN (111,112,113)
 	END
 END		
 IF @fdate < @BalanceUpDay
@@ -2208,6 +2308,56 @@ BEGIN
 			b.status NOT IN ('VOID','REJECT','REFUND') AND
 			b.bettype IN (31, 32, 33)
 	END	
+	-- Keno
+	IF @ShowKN = 1
+	BEGIN
+		INSERT INTO @BetListByDateMem
+		SELECT
+			m.Sporttype, 
+			b.refno AS transid,
+			ISNULL(b.BetID,0),
+			b.Bettype,
+			b.hdp1 AS hdp1, 
+			b.hdp2 AS hdp2,
+			modds,
+			b.Oddstype,
+			b.Odds,
+			b.stake,
+			b.actual_stake,  		
+			(left((right(b.transdesc, len(b.transdesc) - (charindex(',',b.transdesc)))),(charindex(';', (right(b.transdesc, len(b.transdesc) - (charindex(',', b.transdesc)))))) - 1))  as betteam,
+			b.status AS Status,				
+			b.refno,
+			b.Transdate,	
+			b.winlostdate,			
+			(b.winlost-actual_stake),
+			- (b.winlost-actual_stake),
+			b.comm,
+			b.playercomm,
+			b.Liveindicator,
+			b.Livehomescore,
+			b.Liveawayscore,
+			b.IP AS IP,
+			m.LeagueID,
+			m.MatchID,	
+			m.MatchCode,
+			'' AS Race,	
+			m.HomeID,
+			m.AwayID, 		
+			m.Betstatus,
+			ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral,
+			0,0,
+			b.currency,
+			isnull(m.showtime,'') as showtime
+		FROM
+			bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)		
+			INNER JOIN bodb_archive.dbo.match_BK AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
+		WHERE
+			b.winlostdate BETWEEN @fdate AND @TempToDate AND
+			b.custid=@custid AND
+			b.bettype BETWEEN 1501 AND 1599 AND
+			b.ruben = 1 AND
+			b.status NOT IN ('VOID', 'REJECT', 'REFUND')
+	END
 END
 
 
@@ -2510,6 +2660,6 @@ DROP TABLE #TempExchange
 */
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinloss_Mem_12750] TO [bodbLicenseeNet] AS [dbo]
+GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinloss_Mem] TO [bodbLicenseeNet] AS [dbo]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelWinloss_Mem_12750] TO [vnteam] AS [dbo]
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelWinloss_Mem] TO [vnteam] AS [dbo]
