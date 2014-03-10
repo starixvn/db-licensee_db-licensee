@@ -1,4 +1,4 @@
-﻿ALTER  PROCEDURE [dbo].[Lrf_BetList_SelByDayAll_Mem_Old]
+﻿CREATE PROCEDURE [dbo].[Lrf_BetList_SelByDayAll_Mem_Old]
 	@LicenseeID INT ,
 	@UserID		INT,
 	@custid		INT,
@@ -46,6 +46,7 @@ Revisions:
 	- 20130411@Jim: support base currency USD
 	- 20130514@Jim: Restrict permission of Licensee Users by currency
 	- 20130905@Jim: support VHR
+	- 20140310@Hannah: offer Keno
 	
 Param's Explanation: 
 
@@ -162,6 +163,58 @@ FROM	bodb_Archive.dbo.bettrans_bk b WITH (NOLOCK)
 		LEFT JOIN DBLIC.bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
 WHERE	b.custid=@custid 		
 		AND b.winlostdate = @fromdate 
+		AND b.bettype NOT BETWEEN 1501 AND 1599
+-- Keno 
+INSERT INTO @Data 
+SELECT
+	202 as sporttype, 
+	0 as leagueid,
+	0 as homeID,
+	0 as awayID,
+	b.bettype,
+	'' as matchcode,
+	'' AS race,
+	m.matchid, 
+	b.refno as transid, 
+	b.transdate, 
+	b.winlostdate,
+	b.refno, 
+	--CASE WHEN b.bettype = 87 THEN b.betid ELSE 0 END, --- 87- High Low for NG: Current Live Ball 
+	0 as betid,
+	0 as oddsid, 
+	0 as hdp1, 
+	0 as hdp2,
+	0 as modds, 
+	0 as Oddstype,
+	b.Odds,	
+	(left((right(b.transdesc, len(b.transdesc) - (charindex(',',b.transdesc)))),(charindex(';', (right(b.transdesc, len(b.transdesc) - (charindex(',', b.transdesc)))))) - 1)) as betteam,
+	b.status AS status,
+	m.betstatus, 
+	b.stake,
+	b.actual_stake, 
+	(b.winlost-b.actual_stake) AS winlost, 
+	CASE WHEN BA.transid IS NULL THEN - (b.winlost-b.actual_stake) ELSE 0 END AS LicenseeWL ,
+	0 as comm,
+	0 as playercomm,
+	0 as livehomescore, 
+	0 as liveawayscore, 
+	0 as liveindicator, 
+	0 as finalhomescore, 
+	0 as finalawayscore,
+	0 as hthomescore, 
+	0 as htawayscore,
+	b.IP AS IP,
+	@Username,
+	ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral,
+	b.currency,
+	'' as ShowTime 
+FROM	bodb_Archive.dbo.bettrans_bk b WITH (NOLOCK)
+		INNER JOIN bodb_Archive.dbo.match_bk m WITH (NOLOCK) ON b.matchid = m.matchid		
+		LEFT JOIN DBLIC.bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
+WHERE	b.custid=@custid 		
+		AND b.winlostdate = @fromdate 
+		AND b.bettype BETWEEN 1501 AND 1599
+
 -- VHR
 INSERT INTO @Data 
 SELECT
