@@ -3,7 +3,7 @@
 	@Custid=5754258,
 	@FromDate='2012-08-04 00:00:00:000'
 */
-ALTER PROCEDURE [dbo].[Lrf_BetList_SelByDayAll_Mem]
+CREATE PROCEDURE [dbo].[Lrf_BetList_SelByDayAll_Mem]
 	@LicenseeID INT ,
 	@UserID		INT,
 	@custid		INT,
@@ -52,6 +52,7 @@ Revisions:
 	- 20130410@Jim: return betteam value for Parlay (mix parlay & system parlay) ticket
 	- 20130514@Jim: Restrict permission of Licensee Users by currency
 	- 20130905@Jim: support VHR
+	- 20140310@Hannah: offer Keno
 Param's Explanation: 
 	+ @transtype: 1-Betting Statement; 2-VOID/Cancelled Bet; 3-Outstanding Bet 
 	
@@ -171,7 +172,7 @@ ELSE
 				b.transid, 
 				b.transdate, 
 				b.winlostdate,
-				b.refno, 
+				b.refno as transid, 
 				b.betid,
 				b.oddsid, 
 				b.hdp1, 
@@ -210,6 +211,60 @@ ELSE
 				b.custid=@custid 		
 				--AND b.winlostdate=@fromdate AND b.bettype<=19000: old condition 
 				AND b.winlostdate=@fromdate AND b.bettype<=1299
+				AND b.statusID IN (SELECT [statusID] FROM @tmpStatus)
+			-- Keno
+			INSERT INTO @Data 
+			SELECT
+				202 as sporttype, 
+				0 as leagueid,
+				0 as homeID,
+				0 as awayID,
+				b.bettype,
+				'' as matchcode,
+				'' AS race,
+				m.matchid as matchid, 
+				b.refno as transid, 
+				b.transdate, 
+				b.winlostdate,
+				b.refno, 
+				0 as betid,
+				0 as oddsid, 
+				0 as hdp1, 
+				0 as hdp2,
+				0 as modds, 
+				0 as Oddstype,
+				b.odds,
+				(left((right(b.transdesc, len(b.transdesc) - (charindex(',',b.transdesc)))),(charindex(';', (right(b.transdesc, len(b.transdesc) - (charindex(',', b.transdesc)))))) - 1)) as betteam,
+				b.status AS status,
+				m.betstatus, 
+				b.stake,
+				b.actual_stake,
+				(b.winlost-b.actual_stake) AS winlost, 
+				CASE WHEN BA.transid IS NULL THEN - (b.winlost-b.actual_stake) ELSE 0 END AS LicenseeWL ,
+				0 as comm,
+				0 as playercomm ,
+				b.discount,
+				0 as livehomescore, 
+				0 as liveawayscore, 
+				0 as liveindicator, 
+				0 as finalhomescore, 
+				0 as finalawayscore,
+				0 as hthomescore, 
+				0 as htawayscore,
+				--b.username, 
+				b.IP AS IP,
+				b.Username,
+				ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral,
+				b.currency,
+				CASE WHEN b.bettype BETWEEN 1101 AND 1199 THEN ISNULL(m.showtime,'') ELSE '' END AS ShowTime
+			FROM 
+				dbo.bettrans14 b WITH (NOLOCK)
+				INNER JOIN dbo.match14 m WITH (NOLOCK) ON b.matchid = m.matchid		
+				LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
+			WHERE
+				b.custid=@custid 		
+				--AND b.winlostdate=@fromdate AND b.bettype<=19000: old condition 
+				AND b.winlostdate=@fromdate AND b.bettype BETWEEN 1501 AND 1599
 				AND b.statusID IN (SELECT [statusID] FROM @tmpStatus)
 			-------VHR
 			INSERT INTO @Data 
@@ -454,7 +509,7 @@ ELSE
 				b.oddsid, 
 				b.hdp1, 
 				b.hdp2, 
-				modds,
+				b.modds,
 				b.OddsType,
 				b.odds,
 				b.betteam,
@@ -491,8 +546,62 @@ ELSE
 			WHERE
 				b.custid=@custid 		
 				--AND b.winlostdate=@fromdate AND b.bettype<=19000 : old condition 
-				AND b.winlostdate=@fromdate AND b.bettype<=1299
+				AND b.winlostdate=@fromdate AND ((b.bettype<=1299) OR (b.bettype BETWEEN 1501 AND 1599))
 				AND b.statusID IN (SELECT [statusID] FROM @tmpStatus)
+				
+			 IF(@transtype = 3)
+			 BEGIN			 
+				SELECT
+					202  sporttype, 
+					m.leagueid,
+					0 as homeID,
+					0 as awayID,
+					gameID as bettype,
+					'' as matchcode, 
+					'' AS race,
+					m.matchid, 
+					t.translogid, 
+					t.transdate, 
+					t.winlostdate,
+					t.translogid, 
+					0 as betid,
+					0 as oddsid, 
+					0 as hdp1, 
+					0 as hdp2, 
+					0 as modds,
+					0 as OddsType,
+					t.odds,
+					(left((right(t.transdesc, len(t.transdesc) - (charindex(',',t.transdesc)))),(charindex(';', (right(t.transdesc, len(t.transdesc) - (charindex(',', t.transdesc)))))) - 1)) as betteam,
+					t.status,
+					m.betstatus, 
+					t.stake,
+					t.actual_stake,
+					0 as winlost,
+					0 as LicenseeWL ,				
+					0 as comm,
+					0 as playercomm , 
+					0 as discount,
+					0 as livehomescore, 
+					0 as liveawayscore, 
+					0 as liveindicator, 
+					0 as finalhomescore, 
+					0 as finalawayscore,
+					0 as hthomescore, 
+					0 as htawayscore,
+					t.IP AS IP,
+					t.Username,
+					ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral,
+					t.currency,
+					'' as ShowTime 
+				FROM 
+					dbo.translog t WITH (NOLOCK)
+					INNER JOIN dbo.match m WITH (NOLOCK) ON t.eventid = m.matchid		
+					LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON t.eventid = BA.transid
+				WHERE
+					t.custid=@custid 		
+					--AND b.winlostdate=@fromdate AND b.bettype<=19000 : old condition 
+					AND t.winlostdate=@fromdate AND (t.gameID BETWEEN 1501 AND 1599)
+			 END
 
 			-------VHR
 			INSERT INTO @Data 
