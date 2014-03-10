@@ -20,7 +20,9 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_SelRunningByDate_Mem]
 	@ShowLC	BIT = 0,
 	@ShowVS BIT = 0,
 	@ShowCS BIT = 0, -- RNG Casino
-	@ShowBG BIT = 0  -- Bingo
+	@ShowBG BIT = 0,  -- Bingo
+	@ShowKN BIT = 0  -- Keno
+
 	
 AS
 
@@ -51,6 +53,8 @@ Revisions:
    - 20130514@Jim: Restrict permission of Licensee Users by currency
    - 20130716@Jim: update matchid for RNG Casino and Bingo
    - 20130903@Jim: support Virtual Horse Racing
+   - 20140310@Hannah: offer Keno
+
 */
 
 SET NOCOUNT ON
@@ -168,12 +172,45 @@ CREATE TABLE #TempBetList
 		b.transdate>=@FromDate AND b.transdate<=@ToDate
 		AND b.custid=@CustID 
 		AND b.statusID IN (0,1) 
-		
+
+	INSERT INTO #TempBetList
+	SELECT
+		t.gameid as bettype,
+		t.translogid as refno,					
+		t.translogid as transid,
+		0 as BetID,
+		0 as  hdp1, 
+		0 as hdp2, 
+		t.odds,
+		0 as modds,
+		--b.status,
+		t.status as status,  
+		t.stake,
+		t.actual_stake, 
+		t.transdate,		
+		(left((right(t.transdesc, len(t.transdesc) - (charindex(',',t.transdesc)))),(charindex(';', (right(t.transdesc, len(t.transdesc) - (charindex(',', t.transdesc)))))) - 1)) as betteam,
+		t.discount,
+		0 as liveindicator, 
+		0 as livehomescore, 
+		0 as liveawayscore, 
+		t.IP AS IP,			
+		0 as oddstype,
+		t.winlostdate,
+		t.currency,
+		t.eventid,
+		0 as playercomm 
+	FROM 
+		translog t WITH (NOLOCK)			
+		INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON t.eventid = BA.transid
+	WHERE
+		t.transdate>=@FromDate AND t.transdate<=@ToDate
+		AND t.custid=@CustID 
+
 	IF @ShowBA = 1
 	BEGIN
 		
 			
-		--Sportbook
+		--Sportbook and Keno
 		INSERT INTO #BetListSelRunningByDateMem
 		SELECT
 			m.sporttype,
@@ -211,9 +248,9 @@ CREATE TABLE #TempBetList
 			#TempBetList b 
 			INNER JOIN match m WITH (NOLOCK) ON b.matchid=m.matchid		
 		WHERE
-			(b.bettype < 31 or (b.bettype BETWEEN 121 AND 999))
+			(b.bettype < 31 or (b.bettype BETWEEN 121 AND 999) or (b.bettype BETWEEN 1501 AND 1599) )
 			AND b.bettype <>10
-			
+
 		--Outright	
 		INSERT INTO #BetListSelRunningByDateMem
 		SELECT
@@ -804,6 +841,52 @@ CREATE TABLE #TempBetList
 			AND b.statusID IN (0,1) 
 			AND b.bettype=73
 	END
+	IF @ShowKN = 1
+	BEGIN
+		INSERT INTO #BetListSelRunningByDateMem
+		SELECT
+			202 AS sporttype,
+			@Username AS UserName,
+			t.gameid AS bettype,
+			m.leagueID,	
+			t.translogid AS refno,					
+			t.translogid AS transid,
+			0 AS BetID,
+			'' AS matchcode,
+			'' AS Race,--VinhTrinh Add for Horseracing
+			0 AS homeID,
+			0 AS awayID,
+			0 AS hdp1, 
+			0 AS hdp2, 
+			t.odds,
+			0 AS modds,
+			--b.status,
+			t.status,
+			t.stake,
+			t.actual_stake, 
+			t.transdate,		
+			(left((right(t.transdesc, len(t.transdesc) - (charindex(',',t.transdesc)))),(charindex(';', (right(t.transdesc, len(t.transdesc) - (charindex(',', t.transdesc)))))) - 1)) as betteam,
+			t.discount,
+			0 AS liveindicator, 
+			0 AS livehomescore, 
+			0 AS liveawayscore, 
+			tIP AS IP,
+			ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral,
+			0 AS oddstype,
+			t.winlostdate,
+			t.currency,
+			0 ASplayercomm,
+			'' AS ShowTime
+		FROM 
+			translog t WITH (NOLOCK)			
+			INNER JOIN match m WITH (NOLOCK) ON t.eventid=m.matchid		
+		WHERE
+			t.transdate>=@FromDate AND t.transdate<=@ToDate AND 
+			t.custid=@CustID 
+			AND t.statusID IN ('running') 
+			AND (t.gameid BETWEEN 1501 AND 1599)
+			AND t.translogid NOT IN (SELECT transid FROM #TempBetList)
+		END
 	
 DECLARE @RowStart INT, @RowEnd INT  
 SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1
