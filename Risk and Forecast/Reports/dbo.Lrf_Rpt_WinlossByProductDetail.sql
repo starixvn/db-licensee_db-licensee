@@ -983,7 +983,6 @@ ORDER BY c.username
 
 DROP TABLE #SAgWinLoss
 
- 
 END
 
 
