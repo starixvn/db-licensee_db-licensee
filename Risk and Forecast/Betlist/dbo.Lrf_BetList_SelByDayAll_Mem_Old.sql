@@ -1,4 +1,11 @@
-﻿CREATE PROCEDURE [dbo].[Lrf_BetList_SelByDayAll_Mem_Old]
+﻿USE [bodb02]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_BetList_SelByDayAll_Mem_Old]    Script Date: 3/11/2014 7:52:16 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[Lrf_BetList_SelByDayAll_Mem_Old]
 	@LicenseeID INT ,
 	@UserID		INT,
 	@custid		INT,
@@ -137,7 +144,9 @@ SELECT
 	modds, 
 	b.Oddstype,
 	b.Odds,	
-	b.betteam,
+	CASE WHEN b.bettype BETWEEN 1501 AND 1599 THEN 
+	(left((right(b.transdesc, len(b.transdesc) - (charindex(',',b.transdesc)))),(charindex(';', (right(b.transdesc, len(b.transdesc) - (charindex(',', b.transdesc)))))) - 1))
+	ELSE b.betteam END AS betteam,
 	b.status AS status,
 	m.betstatus, 
 	b.stake,
@@ -163,57 +172,34 @@ FROM	bodb_Archive.dbo.bettrans_bk b WITH (NOLOCK)
 		LEFT JOIN DBLIC.bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
 WHERE	b.custid=@custid 		
 		AND b.winlostdate = @fromdate 
-		AND b.bettype NOT BETWEEN 1501 AND 1599
+
 -- Keno 
-INSERT INTO @Data 
-SELECT
-	202 as sporttype, 
-	0 as leagueid,
-	0 as homeID,
-	0 as awayID,
-	b.bettype,
-	'' as matchcode,
-	'' AS race,
-	m.matchid, 
-	b.refno as transid, 
-	b.transdate, 
-	b.winlostdate,
-	b.refno, 
-	--CASE WHEN b.bettype = 87 THEN b.betid ELSE 0 END, --- 87- High Low for NG: Current Live Ball 
-	0 as betid,
-	0 as oddsid, 
-	0 as hdp1, 
-	0 as hdp2,
-	0 as modds, 
-	0 as Oddstype,
-	b.Odds,	
-	(left((right(b.transdesc, len(b.transdesc) - (charindex(',',b.transdesc)))),(charindex(';', (right(b.transdesc, len(b.transdesc) - (charindex(',', b.transdesc)))))) - 1)) as betteam,
-	b.status AS status,
-	m.betstatus, 
-	b.stake,
-	b.actual_stake, 
-	(b.winlost-b.actual_stake) AS winlost, 
-	CASE WHEN BA.transid IS NULL THEN - (b.winlost-b.actual_stake) ELSE 0 END AS LicenseeWL ,
-	0 as comm,
-	0 as playercomm,
-	0 as livehomescore, 
-	0 as liveawayscore, 
-	0 as liveindicator, 
-	0 as finalhomescore, 
-	0 as finalawayscore,
-	0 as hthomescore, 
-	0 as htawayscore,
-	b.IP AS IP,
-	@Username,
-	ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral,
-	b.currency,
-	'' as ShowTime 
-FROM	bodb_Archive.dbo.bettrans_bk b WITH (NOLOCK)
-		INNER JOIN bodb_Archive.dbo.match_bk m WITH (NOLOCK) ON b.matchid = m.matchid		
-		LEFT JOIN DBLIC.bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
-WHERE	b.custid=@custid 		
-		AND b.winlostdate = @fromdate 
-		AND b.bettype BETWEEN 1501 AND 1599
+UPDATE @Data 
+SET
+	sporttype=202, 
+	leagueid=0,
+	homeID=0,
+	awayID=0,
+	matchcode='',
+	race='',
+	transid = refno, 
+	betid=0,
+	oddsid=0, 
+	hdp1=0, 
+	hdp2=0,
+	modds=0, 
+	Oddstype=0,
+	comm=0,
+	playercomm=0,
+	livehomescore=0, 
+	liveawayscore=0, 
+	liveindicator=0, 
+	finalhomescore=0, 
+	finalawayscore=0,
+	hthomescore=0, 
+	htawayscore=0
+WHERE
+	bettype BETWEEN 1501 AND 1599
 
 -- VHR
 INSERT INTO @Data 
@@ -559,7 +545,3 @@ END
 		
 SELECT * FROM @BettransDetail		
 ORDER BY refno, bettype
-GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_SelByDayAll_Mem_Old] TO [bodbLicenseeNet] AS [dbo]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelByDayAll_Mem_Old] TO [vnteam] AS [dbo]

@@ -3,7 +3,7 @@
 	@Custid=5754258,
 	@FromDate='2012-08-04 00:00:00:000'
 */
-CREATE PROCEDURE [dbo].[Lrf_BetList_SelByDayAll_Mem]
+ALTER PROCEDURE [dbo].[Lrf_BetList_SelByDayAll_Mem]
 	@LicenseeID INT ,
 	@UserID		INT,
 	@custid		INT,
@@ -172,7 +172,7 @@ ELSE
 				b.transid, 
 				b.transdate, 
 				b.winlostdate,
-				b.refno as transid, 
+				b.refno, 
 				b.betid,
 				b.oddsid, 
 				b.hdp1, 
@@ -222,8 +222,8 @@ ELSE
 				b.bettype,
 				'' as matchcode,
 				'' AS race,
-				m.matchid as matchid, 
-				b.refno as transid, 
+				b.refno as matchid, 
+				b.refno, 
 				b.transdate, 
 				b.winlostdate,
 				b.refno, 
@@ -240,7 +240,7 @@ ELSE
 				b.stake,
 				b.actual_stake,
 				(b.winlost-b.actual_stake) AS winlost, 
-				CASE WHEN BA.transid IS NULL THEN - (b.winlost-b.actual_stake) ELSE 0 END AS LicenseeWL ,
+				- (b.winlost-b.actual_stake) AS LicenseeWL ,
 				0 as comm,
 				0 as playercomm ,
 				b.discount,
@@ -260,7 +260,6 @@ ELSE
 			FROM 
 				dbo.bettrans14 b WITH (NOLOCK)
 				INNER JOIN dbo.match14 m WITH (NOLOCK) ON b.matchid = m.matchid		
-				LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
 			WHERE
 				b.custid=@custid 		
 				--AND b.winlostdate=@fromdate AND b.bettype<=19000: old condition 
@@ -550,7 +549,8 @@ ELSE
 				AND b.statusID IN (SELECT [statusID] FROM @tmpStatus)
 				
 			 IF(@transtype = 3)
-			 BEGIN			 
+			 BEGIN		
+			    INSERT INTO @Data	 
 				SELECT
 					202  sporttype, 
 					m.leagueid,
@@ -596,7 +596,6 @@ ELSE
 				FROM 
 					dbo.translog t WITH (NOLOCK)
 					INNER JOIN dbo.match m WITH (NOLOCK) ON t.eventid = m.matchid		
-					LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON t.eventid = BA.transid
 				WHERE
 					t.custid=@custid 		
 					--AND b.winlostdate=@fromdate AND b.bettype<=19000 : old condition 

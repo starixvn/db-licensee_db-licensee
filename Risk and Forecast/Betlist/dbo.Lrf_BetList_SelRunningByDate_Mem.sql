@@ -1,6 +1,7 @@
-﻿set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
+﻿SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
 
 ALTER PROCEDURE [dbo].[Lrf_BetList_SelRunningByDate_Mem]
 	@LicenseeID INT ,
@@ -201,7 +202,7 @@ CREATE TABLE #TempBetList
 		0 as playercomm 
 	FROM 
 		translog t WITH (NOLOCK)			
-		INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON t.eventid = BA.transid
+		INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON t.translogid = BA.transid
 	WHERE
 		t.transdate>=@FromDate AND t.transdate<=@ToDate
 		AND t.custid=@CustID 
@@ -870,12 +871,12 @@ CREATE TABLE #TempBetList
 			0 AS liveindicator, 
 			0 AS livehomescore, 
 			0 AS liveawayscore, 
-			tIP AS IP,
+			t.IP AS IP,
 			ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral,
 			0 AS oddstype,
 			t.winlostdate,
 			t.currency,
-			0 ASplayercomm,
+			0 AS playercomm,
 			'' AS ShowTime
 		FROM 
 			translog t WITH (NOLOCK)			
@@ -883,10 +884,10 @@ CREATE TABLE #TempBetList
 		WHERE
 			t.transdate>=@FromDate AND t.transdate<=@ToDate AND 
 			t.custid=@CustID 
-			AND t.statusID IN ('running') 
+			AND t.status IN ('running') 
 			AND (t.gameid BETWEEN 1501 AND 1599)
 			AND t.translogid NOT IN (SELECT transid FROM #TempBetList)
-		END
+	END
 	
 DECLARE @RowStart INT, @RowEnd INT  
 SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1

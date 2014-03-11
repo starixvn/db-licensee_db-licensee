@@ -1,8 +1,9 @@
-﻿set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
+﻿SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
 
-CREATE  PROCEDURE [dbo].[Lrf_BetList_SelWinloss_Mem]
+ALTER  PROCEDURE [dbo].[Lrf_BetList_SelWinloss_Mem]
 	@LicenseeID 	INT,
 	@UserID			INT,
 	@CustID			INT,

@@ -1,8 +1,9 @@
-﻿set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
+﻿SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
 
-CREATE  PROCEDURE [dbo].[Lrf_BetList_SelAllByDate_Mem]
+ALTER  PROCEDURE [dbo].[Lrf_BetList_SelAllByDate_Mem]
 	@LicenseeID INT ,
 	@UserID		INT,
 	@custid INT=NULL,
@@ -930,7 +931,7 @@ BEGIN
 		b.discount,
 		b.transdate,
 		b.winlostdate,
-		b.betteam,
+		(left((right(b.transdesc, len(b.transdesc) - (charindex(',',b.transdesc)))),(charindex(';', (right(b.transdesc, len(b.transdesc) - (charindex(',', b.transdesc)))))) - 1)) as betteam,
 		m.leagueID,
 		b.liveindicator, 
 		b.livehomescore, 
