@@ -740,7 +740,7 @@ BEGIN
 	WHERE
 		b.CustID = @CustID AND
 		b.recommend=@Recommend  
-		AND b.bettype NOT IN (71,73)
+		AND b.bettype NOT IN (71,73) AND b.bettype NOT BETWEEN 1501 AND 1599
 		AND b.transdate>=@FROMDate AND b.transdate<=@ToDate
 	IF EXISTS (SELECT 1 FROM @TempBettype WHERE bettype IN (1231, 1232, 1233, 1237, 1238) )	
 		BEGIN 
@@ -905,18 +905,18 @@ BEGIN
 	INSERT INTO #BetListSelAllByDateMem
 	SELECT 
 		@UserName AS UserName,
-		m.sporttype,
+		202 AS sporttype,
 		b.bettype,
 		b.refno,		
-		b.refno,
+		b.refno AS transid,
 		ISNULL(b.BetID,0),
-		m.matchcode, 
-		m.matchid,
+		'' AS matchcode, 
+		t.GameId AS matchid,
 		'' AS Race, 
-		m.homeID,
-		m.awayID,
-		CONVERT(FLOAT, b.hdp1) AS hdp1, 
-		CONVERT(FLOAT, b.hdp2) AS hdp2,  
+		0 AS homeID,
+		0 AS awayID,
+		0 AS hdp1, 
+		0 AS hdp2,  
 		b.odds,
 		b.modds,
 		CASE WHEN b.status = 'running' AND IsNull(b.SecAcceptFlag, 0) = 1 and IsNull(b.checktime, CURRENT_TIMESTAMP) > CURRENT_TIMESTAMP THEN 'waiting'  
@@ -931,21 +931,21 @@ BEGIN
 		b.discount,
 		b.transdate,
 		b.winlostdate,
-		(left((right(b.transdesc, len(b.transdesc) - (charindex(',',b.transdesc)))),(charindex(';', (right(b.transdesc, len(b.transdesc) - (charindex(',', b.transdesc)))))) - 1)) as betteam,
-		m.leagueID,
-		b.liveindicator, 
-		b.livehomescore, 
-		b.liveawayscore,
+		t.ChoiceId as betteam,
+		0 as leagueID,
+		0 as liveindicator, 
+		0 as livehomescore, 
+		0 as liveawayscore,
 		b.IP AS IP,
-		m.betstatus,
+		0 as betstatus,
 		CONVERT(BIT,0) AS IsNeutral,
 		b.Oddstype,
 		b.currency,
 		''  AS ShowTime 
 	FROM 
 		bettrans b WITH (NOLOCK)
-		INNER JOIN match m WITH (NOLOCK) ON b.matchid=m.matchid		
 		INNER JOIN @TempBettype bt ON b.bettype = bt.bettype	
+		OUTER APPLY dbo.[f_ParseTransDesc](b.TransDesc, b.bettype) t
 	WHERE
 		b.CustID = @CustID AND
 		b.recommend=@Recommend  
@@ -959,11 +959,11 @@ BEGIN
 		t.translogid,		
 		t.translogid,
 		0 as BetID, 
-		m.matchcode, 
-		m.matchid,
+		'' AS matchcode, 
+		k.GameId AS matchid,
 		'' AS Race, 
-		m.homeID,
-		m.awayID,
+		0 AS homeID,
+		0 AS awayID,
 		0 AS hdp1, 
 		0 AS hdp2,  
 		t.odds ,
@@ -978,19 +978,19 @@ BEGIN
 		t.discount,
 		t.transdate,
 		t.winlostdate,
-		(left((right(t.transdesc, len(t.transdesc) - (charindex(',',t.transdesc)))),(charindex(';', (right(t.transdesc, len(t.transdesc) - (charindex(',', t.transdesc)))))) - 1)) as betteam,
-		m.leagueID,
-		0 as liveindicator, 
-		0 as livehomescore, 
-		0 as liveawayscore,
+		k.ChoiceId AS betteam,
+		0 AS leagueID,
+		0 AS liveindicator, 
+		0 AS livehomescore, 
+		0 AS liveawayscore,
 		t.IP AS IP,
-		m.betstatus,
+		0 AS betstatus,
 		CONVERT(BIT,0) AS IsNeutral,
 		0 as Oddstype,
 		t.currency,
 		''  AS ShowTime 
 	FROM dbo.translog AS t WITH (NOLOCK)	
-		INNER JOIN match m with (nolock) ON m.matchid=t.eventid
+			OUTER APPLY dbo.[f_ParseTransDesc](t.TransDesc, t.gameid) k
 	WHERE
 		t.CustID = @CustID AND
 		t.recommend=@Recommend  
