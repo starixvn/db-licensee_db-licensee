@@ -832,21 +832,21 @@ BEGIN
 	BEGIN
 		INSERT INTO @BetListByDateMem
 		SELECT
-			m.Sporttype, 
-			b.Refno as transid,
+			202 AS Sporttype, 
+			b.refno AS transid,
 			ISNULL(b.BetID,0),
 			b.Bettype,
 			b.hdp1 AS hdp1, 
 			b.hdp2 AS hdp2,
-			modds,
+			b.modds,
 			b.oddstype,
 			b.Odds,
 			b.stake,
 			b.actual_stake, 
-			(left((right(b.transdesc, len(b.transdesc) - (charindex(',',b.transdesc)))),(charindex(';', (right(b.transdesc, len(b.transdesc) - (charindex(',', b.transdesc)))))) - 1))  as betteam,
+			ChoiceId AS betteam,
 			b.status AS Status,				
 			b.refno,
-			b.Transdate,	
+			b.transdate,	
 			b.winlostdate,			
 			(b.winlost-actual_stake),
 			- (b.winlost-actual_stake) ,
@@ -856,20 +856,20 @@ BEGIN
 			b.Livehomescore,
 			b.Liveawayscore,
 			b.IP AS IP,
-			m.LeagueID,
-			m.MatchID,	
-			m.MatchCode,
+			0 AS LeagueID,
+			GameId AS MatchID,	
+			'' AS MatchCode,
 			'' AS Race,	
-			m.HomeID,
-			m.AwayID, 		
-			m.Betstatus,
-			ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral,
+			0 AS HomeID,
+			0 AS AwayID, 		
+			0 AS Betstatus,
+			CONVERT(BIT, 0) AS IsNeutral,
 			0,0,
 			b.currency,
-			isnull(m.showtime,'') as showtime
+			'' AS showtime
 		FROM
 			dbo.bettrans AS b WITH (NOLOCK)		
-			INNER JOIN dbo.match AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
+			CROSS APPLY dbo.f_ParseTransDesc(b.transdesc, b.bettype)		
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @tdate AND
 			b.custid=@custid AND
@@ -1565,23 +1565,23 @@ BEGIN
 				b.statusID IN (111,112,113)
 				
 	END
-	-- Keno -- 2
+	-- Keno 
 	IF @ShowKN = 1
 	BEGIN
 		INSERT INTO @BetListByDateMem
 		SELECT
-			m.Sporttype, 
+			202 AS Sporttype, 
 			b.refno as transid,
 			ISNULL(b.BetID,0),
 			b.Bettype,
-			b.hdp1 AS hdp1, 
-			b.hdp2 AS hdp2,
-			modds,
+			0 AS hdp1, 
+			0 AS hdp2,
+			b.modds,
 			b.Oddstype,
 			b.Odds,
 			b.stake,
 			b.actual_stake,   		
-			(left((right(b.transdesc, len(b.transdesc) - (charindex(',',b.transdesc)))),(charindex(';', (right(b.transdesc, len(b.transdesc) - (charindex(',', b.transdesc)))))) - 1)) as betteam,
+			ChoiceID AS betteam,
 			b.status AS Status,				
 			b.refno,
 			b.Transdate,	
@@ -1594,20 +1594,20 @@ BEGIN
 			b.Livehomescore,
 			b.Liveawayscore,
 			b.IP AS IP,
-			m.LeagueID,
-			m.MatchID,	
-			m.MatchCode,
+			0 AS LeagueID,
+			GameId AS MatchID,	
+			'' AS MatchCode,
 			'' AS Race,	
-			m.HomeID,
-			m.AwayID, 		
-			m.Betstatus,
-			ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral,
+			0 AS HomeID,
+			0 AS AwayID, 		
+			0 AS Betstatus,
+			CONVERT(BIT,0) AS IsNeutral,
 			0,0,
 			b.currency,
-			isnull(m.showtime,'') as showtime
+			'' AS showtime
 		FROM
 			dbo.bettrans14 AS b WITH (NOLOCK)		
-			INNER JOIN dbo.match14 AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
+			CROSS APPLY dbo.f_ParseTransDesc(b.transdesc, b.bettype)
 		WHERE
 			b.winlostdate BETWEEN @BalanceUpDay AND @tdate AND
 			b.custid=@custid AND
@@ -2314,18 +2314,18 @@ BEGIN
 	BEGIN
 		INSERT INTO @BetListByDateMem
 		SELECT
-			m.Sporttype, 
+			0 AS Sporttype, 
 			b.refno AS transid,
 			ISNULL(b.BetID,0),
 			b.Bettype,
-			b.hdp1 AS hdp1, 
-			b.hdp2 AS hdp2,
-			modds,
+			0 AS hdp1, 
+			0 AS hdp2,
+			b.modds,
 			b.Oddstype,
 			b.Odds,
 			b.stake,
 			b.actual_stake,  		
-			(left((right(b.transdesc, len(b.transdesc) - (charindex(',',b.transdesc)))),(charindex(';', (right(b.transdesc, len(b.transdesc) - (charindex(',', b.transdesc)))))) - 1))  as betteam,
+			ChoiceID AS betteam,
 			b.status AS Status,				
 			b.refno,
 			b.Transdate,	
@@ -2338,20 +2338,20 @@ BEGIN
 			b.Livehomescore,
 			b.Liveawayscore,
 			b.IP AS IP,
-			m.LeagueID,
-			m.MatchID,	
-			m.MatchCode,
+			0 AS LeagueID,
+			GameId AS MatchID,	
+			'' AS MatchCode,
 			'' AS Race,	
-			m.HomeID,
-			m.AwayID, 		
-			m.Betstatus,
-			ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral,
+			0 AS HomeID,
+			0 AS AwayID, 		
+			0 AS Betstatus,
+			CONVERT(BIT,0) AS IsNeutral,
 			0,0,
 			b.currency,
-			isnull(m.showtime,'') as showtime
+			'' AS showtime
 		FROM
 			bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)		
-			INNER JOIN bodb_archive.dbo.match_BK AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
+			CROSS APPLY dbo.f_ParseTransDesc(b.transdesc, b.bettype)
 		WHERE
 			b.winlostdate BETWEEN @fdate AND @TempToDate AND
 			b.custid=@custid AND
