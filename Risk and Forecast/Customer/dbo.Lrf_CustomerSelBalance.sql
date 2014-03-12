@@ -236,8 +236,9 @@ INSERT INTO @SumOutstanding (currency,outstanding)
         INNER JOIN @Super s ON b.srecommend = s.custid
         INNER JOIN @TempAg a ON b.recommend = a.custid
     WHERE 
-	    b.productid =202--Keno 
-	    AND b.statusid in (0,1) -- running, waiting
+	    --b.productid =202--Keno 
+	    --AND 
+		b.statusid =0 -- running
     GROUP BY s.currency
 	
 SELECT 
