@@ -128,7 +128,7 @@ select @fdate = @FromDate, @tdate = @ToDate
                     FROM    bodb02.dbo.translog t with(nolock)  
                     WHERE   custid = @custid  
                             AND winlostdate BETWEEN @fdate AND @tdate                              
-							and statusID IN (0,1) -- get only running game _ Keno
+							and statusID =0 -- get only running game _ Keno
 							--and t.productID=202 --Keno
                     GROUP BY winlostdate ,gameid 
    IF @fdate <= @MoveBetsDay  
