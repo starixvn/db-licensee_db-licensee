@@ -129,7 +129,7 @@ select @fdate = @FromDate, @tdate = @ToDate
                     WHERE   custid = @custid  
                             AND winlostdate BETWEEN @fdate AND @tdate                              
 							and statusID IN (0,1) -- get only running game _ Keno
-							and t.productID=202 --Keno
+							--and t.productID=202 --Keno
                     GROUP BY winlostdate ,gameid 
    IF @fdate <= @MoveBetsDay  
    INSERT INTO @bet  
@@ -195,9 +195,7 @@ select @fdate = @FromDate, @tdate = @ToDate
                             0  
                     FROM    @bet  
                     WHERE   statusID = 0 
-					and bettype not in (23201,--Transfer to Casino Bingo
-										23202--Casino Bingo Pending
-										)
+					and bettype not in (23001,23002,23101,23102,23201,23202)
                     GROUP BY winlostdate    
      
             INSERT  INTO @Data  
@@ -211,7 +209,7 @@ select @fdate = @FromDate, @tdate = @ToDate
                     FROM    @bet AS B  
                             INNER JOIN dbo.bettype (NOLOCK) ON B.bettype = bettype.typeid  
                     WHERE   bettype > 20000  
-                            AND bettype NOT IN (23001, 23002, 23101)  
+                            AND bettype NOT IN (23001,23002,23101,23102,23201,23202)
                             AND ( winlost - actual_stake ) <> 0   
      
         END   
@@ -327,6 +325,7 @@ WHERE exchangeid = @currency
     WHERE   c.RowNum BETWEEN @RowStart AND @RowEnd
     
    DROP TABLE #TempExchange
+
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Statement_Mem] TO [bodbDownlineNet] AS [dbo]
 GO
