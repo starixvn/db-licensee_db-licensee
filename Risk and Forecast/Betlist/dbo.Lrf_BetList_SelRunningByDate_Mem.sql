@@ -174,44 +174,10 @@ CREATE TABLE #TempBetList
 		AND b.custid=@CustID 
 		AND b.statusID IN (0,1) 
 
-	INSERT INTO #TempBetList
-	SELECT
-		t.gameid as bettype,
-		t.translogid as refno,					
-		t.translogid as transid,
-		0 as BetID,
-		0 as  hdp1, 
-		0 as hdp2, 
-		t.odds,
-		0 as modds,
-		--b.status,
-		t.status as status,  
-		t.stake,
-		t.actual_stake, 
-		t.transdate,		
-		(left((right(t.transdesc, len(t.transdesc) - (charindex(',',t.transdesc)))),(charindex(';', (right(t.transdesc, len(t.transdesc) - (charindex(',', t.transdesc)))))) - 1)) as betteam,
-		t.discount,
-		0 as liveindicator, 
-		0 as livehomescore, 
-		0 as liveawayscore, 
-		t.IP AS IP,			
-		0 as oddstype,
-		t.winlostdate,
-		t.currency,
-		t.eventid,
-		0 as playercomm 
-	FROM 
-		translog t WITH (NOLOCK)			
-		INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON t.translogid = BA.transid
-	WHERE
-		t.transdate>=@FromDate AND t.transdate<=@ToDate
-		AND t.custid=@CustID 
-
 	IF @ShowBA = 1
-	BEGIN
-		
+	BEGIN		
 			
-		--Sportbook and Keno
+		--Sportbook 
 		INSERT INTO #BetListSelRunningByDateMem
 		SELECT
 			m.sporttype,
@@ -249,7 +215,7 @@ CREATE TABLE #TempBetList
 			#TempBetList b 
 			INNER JOIN match m WITH (NOLOCK) ON b.matchid=m.matchid		
 		WHERE
-			(b.bettype < 31 or (b.bettype BETWEEN 121 AND 999) or (b.bettype BETWEEN 1501 AND 1599) )
+			b.bettype < 31 or (b.bettype BETWEEN 121 AND 999)  
 			AND b.bettype <>10
 
 		--Outright	
@@ -849,7 +815,7 @@ CREATE TABLE #TempBetList
 			202 AS sporttype,
 			@Username AS UserName,
 			t.gameid AS bettype,
-			m.leagueID,	
+			0 AS leagueID,	
 			t.translogid AS refno,					
 			t.translogid AS transid,
 			0 AS BetID,
@@ -866,13 +832,13 @@ CREATE TABLE #TempBetList
 			t.stake,
 			t.actual_stake, 
 			t.transdate,		
-			(left((right(t.transdesc, len(t.transdesc) - (charindex(',',t.transdesc)))),(charindex(';', (right(t.transdesc, len(t.transdesc) - (charindex(',', t.transdesc)))))) - 1)) as betteam,
+			fnc.ChoiceId AS betteam,
 			t.discount,
 			0 AS liveindicator, 
 			0 AS livehomescore, 
 			0 AS liveawayscore, 
 			t.IP AS IP,
-			ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral,
+			CONVERT(BIT,0) AS IsNeutral,
 			0 AS oddstype,
 			t.winlostdate,
 			t.currency,
@@ -880,13 +846,12 @@ CREATE TABLE #TempBetList
 			'' AS ShowTime
 		FROM 
 			translog t WITH (NOLOCK)			
-			INNER JOIN match m WITH (NOLOCK) ON t.eventid=m.matchid		
+			CROSS APPLY dbo.f_ParseTransDesc(t.transdesc, t.gameid) fnc	
 		WHERE
 			t.transdate>=@FromDate AND t.transdate<=@ToDate AND 
 			t.custid=@CustID 
-			AND t.status IN ('running') 
+			AND t.statusID IN (0,1) 
 			AND (t.gameid BETWEEN 1501 AND 1599)
-			AND t.translogid NOT IN (SELECT transid FROM #TempBetList)
 	END
 	
 DECLARE @RowStart INT, @RowEnd INT  
