@@ -144,9 +144,7 @@ SELECT
 	modds, 
 	b.Oddstype,
 	b.Odds,	
-	CASE WHEN b.bettype BETWEEN 1501 AND 1599 THEN 
-	(left((right(b.transdesc, len(b.transdesc) - (charindex(',',b.transdesc)))),(charindex(';', (right(b.transdesc, len(b.transdesc) - (charindex(',', b.transdesc)))))) - 1))
-	ELSE b.betteam END AS betteam,
+	b.betteam,
 	b.status AS status,
 	m.betstatus, 
 	b.stake,
@@ -171,36 +169,57 @@ FROM	bodb_Archive.dbo.bettrans_bk b WITH (NOLOCK)
 		INNER JOIN bodb_Archive.dbo.match_bk m WITH (NOLOCK) ON b.matchid = m.matchid		
 		LEFT JOIN DBLIC.bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
 WHERE	b.custid=@custid 		
-		AND b.winlostdate = @fromdate 
+		AND b.winlostdate = @fromdate AND b.bettype NOT BETWEEN 1501 AND 1599 -- exclude Keno
 
 -- Keno 
-UPDATE @Data 
-SET
-	sporttype=202, 
-	leagueid=0,
-	homeID=0,
-	awayID=0,
-	matchcode='',
-	race='',
-	transid = refno, 
-	betid=0,
-	oddsid=0, 
-	hdp1=0, 
-	hdp2=0,
-	modds=0, 
-	Oddstype=0,
-	comm=0,
-	playercomm=0,
-	livehomescore=0, 
-	liveawayscore=0, 
-	liveindicator=0, 
-	finalhomescore=0, 
-	finalawayscore=0,
-	hthomescore=0, 
-	htawayscore=0
-WHERE
-	bettype BETWEEN 1501 AND 1599
-
+INSERT INTO @Data 
+SELECT
+	202 AS sporttype, 
+	0 AS leagueid,
+	0 AS homeID,
+	0 AS awayID,
+	b.bettype,
+	'' AS matchcode,
+	'' AS race,
+	fnc.GameId AS matchid, 
+	b.transid, 
+	b.transdate, 
+	b.winlostdate,
+	b.refno, 
+	--CASE WHEN b.bettype = 87 THEN b.betid ELSE 0 END, --- 87- High Low for NG: Current Live Ball 
+	b.betid,
+	b.oddsid, 
+	b.hdp1, 
+	b.hdp2,
+	0 AS modds, 
+	0 AS Oddstype,
+	b.Odds,	
+	fnc.ChoiceId AS betteam,
+	b.status AS status,
+	'' AS betstatus, 
+	b.stake,
+	b.actual_stake, 
+	(b.winlost-b.actual_stake) AS winlost, 
+	- (b.winlost-b.actual_stake) AS LicenseeWL ,
+	b.comm,
+	b.playercomm,
+	b.livehomescore, 
+	b.liveawayscore, 
+	b.liveindicator, 
+	0 AS finalhomescore, 
+	0 AS finalawayscore,
+	0 AS hthomescore, 
+	0 AS htawayscore,
+	b.IP AS IP,
+	@Username,
+	CONVERT(BIT,0) AS IsNeutral,
+	b.currency,
+	'' AS ShowTime 
+FROM	bodb_Archive.dbo.bettrans_bk b WITH (NOLOCK)
+		CROSS APPLY dbo.f_ParseTransDesc(b.transdesc, b.bettype) AS fnc
+WHERE	b.custid=@custid 		
+		AND b.winlostdate = @fromdate AND b.bettype BETWEEN 1501 AND 1599 
+		
 -- VHR
 INSERT INTO @Data 
 SELECT
