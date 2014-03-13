@@ -213,58 +213,59 @@ ELSE
 				AND b.winlostdate=@fromdate AND b.bettype<=1299
 				AND b.statusID IN (SELECT [statusID] FROM @tmpStatus)
 			-- Keno
-			INSERT INTO @Data 
-			SELECT
-				202 as sporttype, 
-				0 as leagueid,
-				0 as homeID,
-				0 as awayID,
-				b.bettype,
-				'' as matchcode,
-				'' AS race,
-				b.refno as matchid, 
-				b.refno, 
-				b.transdate, 
-				b.winlostdate,
-				b.refno, 
-				0 as betid,
-				0 as oddsid, 
-				0 as hdp1, 
-				0 as hdp2,
-				0 as modds, 
-				0 as Oddstype,
-				b.odds,
-				(left((right(b.transdesc, len(b.transdesc) - (charindex(',',b.transdesc)))),(charindex(';', (right(b.transdesc, len(b.transdesc) - (charindex(',', b.transdesc)))))) - 1)) as betteam,
-				b.status AS status,
-				m.betstatus, 
-				b.stake,
-				b.actual_stake,
-				(b.winlost-b.actual_stake) AS winlost, 
-				- (b.winlost-b.actual_stake) AS LicenseeWL ,
-				0 as comm,
-				0 as playercomm ,
-				b.discount,
-				0 as livehomescore, 
-				0 as liveawayscore, 
-				0 as liveindicator, 
-				0 as finalhomescore, 
-				0 as finalawayscore,
-				0 as hthomescore, 
-				0 as htawayscore,
-				--b.username, 
-				b.IP AS IP,
-				b.Username,
-				ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral,
-				b.currency,
-				CASE WHEN b.bettype BETWEEN 1101 AND 1199 THEN ISNULL(m.showtime,'') ELSE '' END AS ShowTime
-			FROM 
-				dbo.bettrans14 b WITH (NOLOCK)
-				INNER JOIN dbo.match14 m WITH (NOLOCK) ON b.matchid = m.matchid		
-			WHERE
-				b.custid=@custid 		
-				--AND b.winlostdate=@fromdate AND b.bettype<=19000: old condition 
-				AND b.winlostdate=@fromdate AND b.bettype BETWEEN 1501 AND 1599
-				AND b.statusID IN (SELECT [statusID] FROM @tmpStatus)
+			IF(@transtype = 1 or @transtype = 2)
+				INSERT INTO @Data 
+				SELECT
+					202 AS sporttype, 
+					0 AS leagueid,
+					0 AS homeID,
+					0 AS awayID,
+					b.bettype,
+					'' AS matchcode,
+					'' AS race,
+					t.gameid AS matchid, 
+					b.transid AS transid, 
+					b.transdate, 
+					b.winlostdate,
+					b.refno, 
+					0 AS betid,
+					0 AS oddsid, 
+					0 AS hdp1, 
+					0 AS hdp2,
+					0 AS modds, 
+					0 AS Oddstype,
+					b.odds,
+					t.choiceid AS betteam,
+					b.status AS status,
+					0 AS betstatus, 
+					b.stake,
+					b.actual_stake,
+					(b.winlost-b.actual_stake) AS winlost, 
+					- (b.winlost-b.actual_stake) AS LicenseeWL ,
+					b.comm AS comm,
+					b.playercomm ,
+					b.discount,
+					0 AS livehomescore, 
+					0 AS liveawayscore, 
+					0 AS liveindicator, 
+					0 AS finalhomescore, 
+					0 AS finalawayscore,
+					0 AS hthomescore, 
+					0 AS htawayscore,
+					--b.username, 
+					b.IP AS IP,
+					b.Username,
+					CONVERT(BIT,0) AS IsNeutral,
+					b.currency,
+					'' AS ShowTime
+				FROM 
+					dbo.bettrans14 b WITH (NOLOCK)
+					OUTER APPLY dbo.[f_ParseTransDesc](b.TransDesc, b.bettype) t
+				WHERE
+					b.custid=@custid 		
+					--AND b.winlostdate=@fromdate AND b.bettype<=19000: old condition 
+					AND b.winlostdate=@fromdate AND b.bettype BETWEEN 1501 AND 1599
+					AND b.statusID IN (SELECT [statusID] FROM @tmpStatus)
 			-------VHR
 			INSERT INTO @Data 
 			SELECT
@@ -545,62 +546,112 @@ ELSE
 			WHERE
 				b.custid=@custid 		
 				--AND b.winlostdate=@fromdate AND b.bettype<=19000 : old condition 
-				AND b.winlostdate=@fromdate AND ((b.bettype<=1299) OR (b.bettype BETWEEN 1501 AND 1599))
+				AND b.winlostdate=@fromdate AND (b.bettype<=1299) 
 				AND b.statusID IN (SELECT [statusID] FROM @tmpStatus)
-				
-			 IF(@transtype = 3)
-			 BEGIN		
+			IF(@transtype = 1 or @transtype = 2)
+				INSERT INTO @Data 
+				SELECT
+					202 AS sporttype, 
+					0 AS leagueid,
+					0 AS homeID,
+					0 AS awayID,
+					b.bettype,
+					'' AS matchcode,
+					'' AS race,
+					t.gameid AS matchid, 
+					b.transid AS transid, 
+					b.transdate, 
+					b.winlostdate,
+					b.refno, 
+					0 AS betid,
+					0 AS oddsid, 
+					0 AS hdp1, 
+					0 AS hdp2,
+					0 AS modds, 
+					0 AS Oddstype,
+					b.odds,
+					t.choiceid AS betteam,
+					b.status AS status,
+					0 AS betstatus, 
+					b.stake,
+					b.actual_stake,
+					(b.winlost-b.actual_stake) AS winlost, 
+					- (b.winlost-b.actual_stake) AS LicenseeWL ,
+					b.comm AS comm,
+					b.playercomm ,
+					b.discount,
+					0 AS livehomescore, 
+					0 AS liveawayscore, 
+					0 AS liveindicator, 
+					0 AS finalhomescore, 
+					0 AS finalawayscore,
+					0 AS hthomescore, 
+					0 AS htawayscore,
+					--b.username, 
+					b.IP AS IP,
+					b.Username,
+					CONVERT(BIT,0) AS IsNeutral,
+					b.currency,
+					'' AS ShowTime
+				FROM 
+					dbo.bettrans b WITH (NOLOCK)
+					OUTER APPLY dbo.[f_ParseTransDesc](b.TransDesc, b.bettype) t
+				WHERE
+					b.custid=@custid 		
+					--AND b.winlostdate=@fromdate AND b.bettype<=19000: old condition 
+					AND b.winlostdate=@fromdate AND b.bettype BETWEEN 1501 AND 1599
+					AND b.statusID IN (SELECT [statusID] FROM @tmpStatus)	
+			ELSE
 			    INSERT INTO @Data	 
 				SELECT
-					202  sporttype, 
-					m.leagueid,
-					0 as homeID,
-					0 as awayID,
-					gameID as bettype,
-					'' as matchcode, 
+					202 AS sporttype, 
+					0 AS leagueid,
+					0 AS homeID,
+					0 AS awayID,
+					t.gameID AS bettype,
+					'' AS matchcode, 
 					'' AS race,
-					m.matchid, 
+					k.GameId AS matchid, 
 					t.translogid, 
 					t.transdate, 
 					t.winlostdate,
 					t.translogid, 
 					0 as betid,
 					0 as oddsid, 
-					0 as hdp1, 
-					0 as hdp2, 
-					0 as modds,
-					0 as OddsType,
+					0 AS hdp1, 
+					0 AS hdp2, 
+					0 AS modds,
+					0 AS OddsType,
 					t.odds,
-					(left((right(t.transdesc, len(t.transdesc) - (charindex(',',t.transdesc)))),(charindex(';', (right(t.transdesc, len(t.transdesc) - (charindex(',', t.transdesc)))))) - 1)) as betteam,
+					k.ChoiceId AS betteam,
 					t.status,
-					m.betstatus, 
+					0 AS betstatus, 
 					t.stake,
 					t.actual_stake,
-					0 as winlost,
-					0 as LicenseeWL ,				
-					0 as comm,
-					0 as playercomm , 
-					0 as discount,
-					0 as livehomescore, 
-					0 as liveawayscore, 
-					0 as liveindicator, 
-					0 as finalhomescore, 
-					0 as finalawayscore,
-					0 as hthomescore, 
-					0 as htawayscore,
+					0 AS winlost,
+					0 AS LicenseeWL ,				
+					0 AS comm,
+					0 AS playercomm , 
+					t.discount,
+					0 AS livehomescore, 
+					0 AS liveawayscore, 
+					0 AS liveindicator, 
+					0 AS finalhomescore, 
+					0 AS finalawayscore,
+					0 AS hthomescore, 
+					0 AS htawayscore,
 					t.IP AS IP,
 					t.Username,
-					ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral,
+					CONVERT(BIT,0) AS IsNeutral,
 					t.currency,
-					'' as ShowTime 
+					'' AS ShowTime 
 				FROM 
 					dbo.translog t WITH (NOLOCK)
-					INNER JOIN dbo.match m WITH (NOLOCK) ON t.eventid = m.matchid		
+					OUTER APPLY dbo.[f_ParseTransDesc](t.TransDesc, t.gameID) k
 				WHERE
 					t.custid=@custid 		
 					--AND b.winlostdate=@fromdate AND b.bettype<=19000 : old condition 
 					AND t.winlostdate=@fromdate AND (t.gameID BETWEEN 1501 AND 1599)
-			 END
 
 			-------VHR
 			INSERT INTO @Data 
