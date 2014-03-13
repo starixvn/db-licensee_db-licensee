@@ -740,7 +740,7 @@ BEGIN
 	WHERE
 		b.CustID = @CustID AND
 		b.recommend=@Recommend  
-		AND b.bettype NOT IN (71,73) AND b.bettype NOT BETWEEN 1501 AND 1599
+		AND b.bettype NOT IN (71,73) 
 		AND b.transdate>=@FROMDate AND b.transdate<=@ToDate
 	IF EXISTS (SELECT 1 FROM @TempBettype WHERE bettype IN (1231, 1232, 1233, 1237, 1238) )	
 		BEGIN 
@@ -908,7 +908,7 @@ BEGIN
 		202 AS sporttype,
 		b.bettype,
 		b.refno,		
-		b.refno AS transid,
+		b.transid AS transid,
 		ISNULL(b.BetID,0),
 		'' AS matchcode, 
 		t.GameId AS matchid,
@@ -919,15 +919,13 @@ BEGIN
 		0 AS hdp2,  
 		b.odds,
 		b.modds,
-		CASE WHEN b.status = 'running' AND IsNull(b.SecAcceptFlag, 0) = 1 and IsNull(b.checktime, CURRENT_TIMESTAMP) > CURRENT_TIMESTAMP THEN 'waiting'  
-		ELSE b.status   
-		END as status,
+		b.status,
 		b.stake,
 		b.actual_stake,
 		(winlost-actual_stake) winlost,
 		- (b.winlost-b.actual_stake) AS LicenseeWL ,
 		b.comm ,
-		b.playercomm  AS PlayerComm ,
+		b.playercomm,
 		b.discount,
 		b.transdate,
 		b.winlostdate,
@@ -945,19 +943,19 @@ BEGIN
 	FROM 
 		bettrans b WITH (NOLOCK)
 		INNER JOIN @TempBettype bt ON b.bettype = bt.bettype	
-		OUTER APPLY dbo.[f_ParseTransDesc](b.TransDesc, b.bettype) t
+		CROSS APPLY dbo.[f_ParseTransDesc](b.TransDesc, b.bettype) t
 	WHERE
 		b.CustID = @CustID AND
-		b.recommend=@Recommend  
-		AND b.bettype BETWEEN 1501 AND 1599
-		AND b.transdate>=@FROMDate AND b.transdate<=@ToDate
+		b.recommend=@Recommend  AND
+		b.transdate>=@FROMDate AND b.transdate<=@ToDate AND
+		b.statusID NOT IN (0,1)	
 	UNION ALL
 	SELECT 
 		@UserName AS UserName,
-		t.productID as sporttype,
+		202 as sporttype,
 		t.gameid as bettype,
-		t.translogid,		
-		t.translogid,
+		t.translogid AS refno,		
+		t.translogid AS transid,
 		0 as BetID, 
 		'' AS matchcode, 
 		k.GameId AS matchid,
@@ -989,12 +987,15 @@ BEGIN
 		0 as Oddstype,
 		t.currency,
 		''  AS ShowTime 
-	FROM dbo.translog AS t WITH (NOLOCK)	
-			OUTER APPLY dbo.[f_ParseTransDesc](t.TransDesc, t.gameid) k
+	FROM 
+		dbo.translog AS t WITH (NOLOCK)	
+		CROSS APPLY dbo.[f_ParseTransDesc](t.TransDesc, t.gameid) k
 	WHERE
 		t.CustID = @CustID AND
-		t.recommend=@Recommend  
-		AND t.transdate>=@FROMDate AND t.transdate<=@ToDate
+		t.recommend=@Recommend AND
+		t.transdate>=@FROMDate AND t.transdate<=@ToDate AND
+		t.gameID BETWEEN 1501 AND 1599 AND
+		t.statusID IN (0,1)	
 END
 
 DECLARE @RowStart INT, @RowEnd INT  
