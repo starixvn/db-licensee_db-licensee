@@ -21,18 +21,7 @@ AS
 */
 SET NOCOUNT ON;
 
-;WITH cte_isBATrans
-AS 
-(
-	SELECT transid FROM DBLIC.bodb_licensee.dbo.LicenseeBATransaction WITH(NOLOCK)
-	WHERE Transdate BETWEEN @fromdate and DATEADD(DAY,2,@Todate)
-)
-,cte_tempLicenseeCust
-AS (
-	SELECT currency,custid
-	FROM DBLIC.bodb_licensee.dbo.LicenseeCust lc WITH (NOLOCK)
-	)
-,cte_bettrans
+;WITH cte_bettrans
 AS (
 	SELECT a.CustID
 		,lc.currency
@@ -72,8 +61,8 @@ AS (
 		,sum(awinlost) awinlost
 		,sum(comm) comm
 	FROM bodb_archive.dbo.bettrans_bk a WITH (NOLOCK)
-	INNER JOIN cte_tempLicenseeCust lc ON a.recommend = lc.custid
-	LEFT JOIN cte_isBATrans AS BA ON a.transid=ba.transid
+	INNER JOIN DBLIC.bodb_licensee.dbo.LicenseeCust LC WITH (NOLOCK) ON a.recommend = lc.custid
+	LEFT JOIN DBLIC.bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON a.transid=ba.transid
 	WHERE a.winlostdate BETWEEN @fromdate AND @todate
 	AND a.statusID IN (111,112,113) 
 	GROUP BY a.matchid
