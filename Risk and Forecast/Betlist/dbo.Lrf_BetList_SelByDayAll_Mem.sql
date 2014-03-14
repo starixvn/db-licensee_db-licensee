@@ -232,12 +232,12 @@ ELSE
 					0 AS oddsid, 
 					0 AS hdp1, 
 					0 AS hdp2,
-					0 AS modds, 
+					b.modds, 
 					0 AS Oddstype,
 					b.odds,
 					t.choiceid AS betteam,
 					b.status AS status,
-					0 AS betstatus, 
+					'' AS betstatus, 
 					b.stake,
 					b.actual_stake,
 					(b.winlost-b.actual_stake) AS winlost, 
@@ -567,7 +567,7 @@ ELSE
 					0 AS oddsid, 
 					0 AS hdp1, 
 					0 AS hdp2,
-					0 AS modds, 
+					b.modds, 
 					0 AS Oddstype,
 					b.odds,
 					t.choiceid AS betteam,
@@ -652,6 +652,7 @@ ELSE
 					t.custid=@custid 		
 					--AND b.winlostdate=@fromdate AND b.bettype<=19000 : old condition 
 					AND t.winlostdate=@fromdate AND (t.gameID BETWEEN 1501 AND 1599)
+					AND t.statusID IN (SELECT [statusID] FROM @tmpStatus)
 
 			-------VHR
 			INSERT INTO @Data 

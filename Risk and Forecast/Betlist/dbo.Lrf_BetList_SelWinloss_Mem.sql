@@ -833,7 +833,7 @@ BEGIN
 		INSERT INTO @BetListByDateMem
 		SELECT
 			202 AS Sporttype, 
-			b.refno AS transid,
+			b.transid AS transid,
 			ISNULL(b.BetID,0),
 			b.Bettype,
 			b.hdp1 AS hdp1, 
@@ -1571,7 +1571,7 @@ BEGIN
 		INSERT INTO @BetListByDateMem
 		SELECT
 			202 AS Sporttype, 
-			b.refno as transid,
+			b.transid as transid,
 			ISNULL(b.BetID,0),
 			b.Bettype,
 			0 AS hdp1, 
@@ -2314,8 +2314,8 @@ BEGIN
 	BEGIN
 		INSERT INTO @BetListByDateMem
 		SELECT
-			0 AS Sporttype, 
-			b.refno AS transid,
+			202 AS Sporttype, 
+			b.transid AS transid,
 			ISNULL(b.BetID,0),
 			b.Bettype,
 			0 AS hdp1, 
