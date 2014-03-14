@@ -10,7 +10,7 @@ GO
 
 ALTER PROCEDURE [dbo].[Task_rptCustomerTurnOver_Bettrans14] @Date SMALLDATETIME
 AS
-/*	
+/*	  
 	Created	: Florent Nguyen
 	Task: Customer Performance Report
 	Date: 2013-11-25

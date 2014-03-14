@@ -192,7 +192,7 @@ GROUP BY
 	,a.Odds
 	,oddstype
 	,a.statusID
-	,a.recommend
+	,a.recommend  
 	,CASE 
 		WHEN a.bettype IN (9, 29)
 			THEN - 9

@@ -10,7 +10,7 @@ GO
 Alter PROCEDURE [dbo].[Task_rptWinlostbyleague_Bettrans14] 
 	 @Date SMALLDATETIME
 AS
-/*	
+/*	  
 	Created	: Florent Nguyen
 	Task: Gen data for table bodb_report.dbo.rptWinlostbyLeague
 	Date: 2013-11-30
