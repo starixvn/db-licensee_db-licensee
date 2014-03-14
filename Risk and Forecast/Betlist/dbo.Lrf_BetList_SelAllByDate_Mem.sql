@@ -688,7 +688,6 @@ BEGIN
 END
 
 
-
 --NUMBER GAME
 
 IF (@ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1  )
