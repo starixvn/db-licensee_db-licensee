@@ -41,6 +41,7 @@ Revisions:
 	- 20130718@Jim: remove status Suspended
 	- 20130809@Jim: offer Virtual Horse Racing
 	- 20131007@Jim: offer Virtual Tennis
+	- 20140207@Florent: Offer Keno
 */
 SET NOCOUNT ON
 
@@ -164,6 +165,9 @@ DECLARE @LicenseeWL as table
 
 DECLARE @Today SMALLDATETIME, @Yesterday SMALLDATETIME
 DECLARE @LicenseeName VARCHAR(50)
+DECLARE @Exchange TABLE(ExchangeDate SMALLDATETIME, ExchangeId INT, USD FLOAT, EUR FLOAT,MYR FLOAT,Code VARCHAR(10), PRIMARY KEY(ExchangeDate,ExchangeId))
+
+
 
 SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
 SET @Yesterday = CONVERT(VARCHAR(10), DATEADD(DAY,-1,@Today), 120) 
@@ -173,12 +177,17 @@ SELECT  currencyID,LicenseeID into #currency
 FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
 WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
-DECLARE @TempAg AS TABLE (custid INT primary key)
-INSERT INTO @TempAg (custid)
-SELECT CustID 
+DECLARE @TempAg AS TABLE (custid INT primary key,Currency int)
+INSERT INTO @TempAg (custid,currency)
+SELECT CustID ,lc.Currency
 		FROM bodb_Licensee.dbo.LicenseeCust lc(NOLOCK)
 		INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID 
 		WHERE [Description] = COALESCE(@LicenseeType,[Description])
+
+INSERT INTO @Exchange (exchangedate,exchangeid,usd,eur,myr,code)
+SELECT exchangedate,exchangeid,usd,eur,myr,code
+FROM Lrf_f_GetExchangeDaily(@Today,@Today)
+WHERE exchangeid IN (SELECT Currency FROM @TempAg)
 
 IF (SELECT COUNT(*) FROM @TempAg) = 1
 BEGIN
@@ -218,6 +227,19 @@ INSERT INTO @SumOutstanding (currency,outstanding)
 	    b.bettype <= 1299 
 	    AND b.statusid IN (0,1)
     GROUP BY s.currency
+
+--Keno sport
+INSERT INTO @SumOutstanding (currency,outstanding)
+    SELECT s.currency,ISNULL(SUM(b.actual_stake),0)
+    FROM 
+	    DBTXN.bodb02.dbo.Translog b WITH(NOLOCK) 
+        INNER JOIN @Super s ON b.srecommend = s.custid
+        INNER JOIN @TempAg a ON b.recommend = a.custid
+    WHERE 
+	    --b.productid =202--Keno 
+	    --AND 
+		b.statusid =0 -- running
+    GROUP BY s.currency
 	
 SELECT 
 	@MemberOutstanding=ISNULL(SUM(outstanding),0),
@@ -225,7 +247,8 @@ SELECT
 	@MemberOutstandingEUR=ISNULL(SUM(outstanding*e.EUR),0)
 FROM 
 	@SumOutstanding b 
-	INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
+	--INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
+	INNER JOIN @Exchange e
 	ON e.exchangeid = b.currency	
 	
 	
@@ -250,7 +273,8 @@ FROM dbo.bettrans b WITH(NOLOCK,INDEX=IX_srecommend)
 WHERE 
 	srecommend IN (SELECT CustID FROM @Super)
 	AND b.winlostdate BETWEEN @MoveBetsDay AND @Today
-	AND b.bettype <= 1299 
+	--AND b.bettype <= 1299 
+	AND b.bettype <= 1599 
 	AND b.statusID IN (111,112,113)	
 )
 INSERT INTO @LicenseeWL (winlostdate,currency,LicenseeWL,AmtDuetoBA,AmtDuetoRB,WinlossRB,CommBA,CommRB,PlayerComm)
@@ -268,6 +292,7 @@ SELECT
 				b.bettype BETWEEN 81 AND 120 
 				OR b.bettype BETWEEN 1101 AND 1199 
 				OR b.bettype BETWEEN 1201 AND 1299 
+				OR b.bettype BETWEEN 1501 AND 1599 --Keno
 				OR b.bettype IN (71,73)
 			)
 		  )  
@@ -312,7 +337,8 @@ SELECT
 	
 FROM 
 	@LicenseeWL b 
-	INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Yesterday,@Yesterday))e 
+	--INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Yesterday,@Yesterday))e 
+	INNER JOIN @Exchange e 
 	    ON e.exchangeid = b.currency AND b.winlostdate = @Yesterday
 
 
@@ -345,7 +371,8 @@ SELECT
 	
 FROM 
 	@LicenseeWL b 
-	INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
+	--INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
+	INNER JOIN @Exchange e 
 	    ON  e.exchangeid = b.currency AND b.winlostdate = @Today
 	    	
  --****End For Yesterday and Today Winloss Part***	
@@ -468,7 +495,8 @@ SELECT
 
 FROM 
 	@SumTemp b 
-	INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@_FromDate,@_FromDate))e 
+	--INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@_FromDate,@_FromDate))e 
+	INNER JOIN @Exchange e
 	ON e.exchangeid = b.currency
 --****End for Selected Month Winloss part*******			
 
@@ -556,6 +584,7 @@ SELECT
 	ISNULL(@TotalMemberActive,0) TotalMemberActive,
 	ISNULL(@TotalMemberClosed,0) TotalMemberClosed
 	,ISNULL(@TotalMemberSuspended,0) TotalMemberSuspended
+
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_CustomerSelBalance] TO [bodbDownlineNet] AS [dbo]

@@ -1,5 +1,5 @@
 ﻿ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProduct]  
- @LicenseeID	INT,
+  @LicenseeID	INT,
  @UserID		INT,
  @CurrencyID	INT = 0,
  @FromDate		SMALLDATETIME,  
@@ -12,6 +12,7 @@
  @ShowVS		BIT=0,
  @ShowCS  		BIT=0, -- RNG Casino
  @ShowBG   		BIT=0, -- Bingo 
+ @ShowKN   		BIT=0, -- Keno 
  @ReportType	TINYINT=1,  
  @MoveBetsDay SMALLDATETIME,
  @IsOld BIT = 0,
@@ -38,8 +39,9 @@ AS
 	- 20130417@Jim: add more product code value in the result 
 	- 20130514@Jim: Restrict permission of Licensee Users by currency
 	- 20130809@Jim: offer Virtual Horse Racing
-	- 20131007@Jim: offer Virtual Tennis
+	- 20131007@Jim: offer Virtual Tennis	
 	- 20131213@Jim: support to Display win loss of individual sports with Virtual Sports
+	- 20140304@Florent: offer Keno
 
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -159,6 +161,16 @@ BEGIN
 	VALUES(73)
 END 
 
+IF @ShowKN=1 -- keno
+BEGIN 
+	INSERT INTO @sporttype (sporttype)
+	VALUES(202)
+
+	INSERT INTO @bettype(bettype)
+	SELECT typeid FROM bettype (NOLOCK)
+	WHERE (typeid BETWEEN 1501 AND 1599)
+END 
+
 DECLARE @TempFromDate DATETIME 
 DECLARE @TempToDate DATETIME 
 DECLARE @MaxOldDate DATETIME
@@ -256,7 +268,7 @@ BEGIN
 	END
 	
 	--SB + RB + LC
-	IF (@ShowNG=1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1)
+	IF (@ShowNG=1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1)
 	BEGIN
 		SELECT 
 			DISTINCT
@@ -281,6 +293,7 @@ BEGIN
 																	   END
 				WHEN b.bettype =71 THEN 'CS'
 				WHEN b.bettype =73 THEN 'BG'
+				WHEN b.bettype BETWEEN 1501 AND 1599  THEN 'KN'
 				END AS ProductCode,
 			SUM(stake
 				*
@@ -322,6 +335,7 @@ BEGIN
 																	   END 
 				WHEN b.bettype =71 THEN 'CS'
 				WHEN b.bettype =73 THEN 'BG'
+				WHEN b.bettype BETWEEN 1501 AND 1599  THEN 'KN'
 				END 
 			,b.statusID
 		DROP TABLE #tmpVS	
@@ -412,7 +426,7 @@ BEGIN
 		GROUP BY  b.winlostdate,  b.currency, b.statusID
 	END
 	
-	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 or @ShowLC=1  OR @ShowCS=1 OR @ShowBG=1)
+	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 or @ShowLC=1  OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1)
 	BEGIN
 		INSERT INTO #SAgWinLoss  
 		SELECT 
@@ -425,6 +439,7 @@ BEGIN
 				WHEN 162 THEN 'LC'
 				WHEN 251 THEN 'CS'
 				WHEN 252 THEN 'BG'
+				WHEN 202 THEN 'KN'
 			END AS ProductCode,
 			SUM(b.turnover
 			*
@@ -435,7 +450,7 @@ BEGIN
 				ELSE 1 END
 			),     
 			SUM(b.winlost),  
-			SUM(CASE WHEN (b.sporttype in(0,161,162,251,252))  THEN -1 * b.winlost 
+			SUM(CASE WHEN (b.sporttype in(0,161,162,251,252,202))  THEN -1 * b.winlost 
 					WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END
 				) AS LicenseeWL,
 			SUM(comm ) as Comm,
@@ -466,6 +481,7 @@ BEGIN
 				WHEN 162 THEN 'LC'
 				WHEN 251 THEN 'CS'
 				WHEN 252 THEN 'BG'
+				WHEN 202 THEN 'KN'
 			END
 			, b.statusID
 	END		
@@ -588,7 +604,7 @@ BEGIN
 	END
 
 	--exclude BA tickets
-	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1  or @ShowLC=1 or @ShowVS=1 or @ShowCS=1 or @ShowBG=1)
+	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1  or @ShowLC=1 or @ShowVS=1 or @ShowCS=1 or @ShowBG=1OR @ShowKN=1)
 	BEGIN
 		INSERT INTO #SAgWinLoss  
 		SELECT 
@@ -602,6 +618,7 @@ BEGIN
 				WHEN 180 THEN 'VS'
 				WHEN 251 THEN 'CS'
 				WHEN 252 THEN 'BG'
+				WHEN 202 THEN 'KN'
 			END AS ProductCode,
 			SUM(b.turnover
 			*
@@ -612,7 +629,7 @@ BEGIN
 				ELSE 1 END
 			),     
 			SUM(b.winlost),  
-			SUM(CASE WHEN (b.sporttype in(0,161,162,180,251,252))  THEN -1 * b.winlost WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS LicenseeWL ,
+			SUM(CASE WHEN (b.sporttype in(0,161,162,180,251,252,202))  THEN -1 * b.winlost WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS LicenseeWL ,
 			SUM(comm) as Comm,
 			SUM( playerComm  ) AS PlayerComm,
 			- SUM (b.awinlost + b.winlost + b.comm) as AmountDueTo3rd,
@@ -641,6 +658,7 @@ BEGIN
 				WHEN 180 THEN 'VS'
 				WHEN 251 THEN 'CS'
 				WHEN 252 THEN 'BG'
+				WHEN 202 THEN 'KN'
 			END,
 			b.statusID
 	END
@@ -711,6 +729,7 @@ DROP TABLE #SAgWinLoss
 DROP TABLE #TempExchange
  
 END
+
 
 GO
 GO
