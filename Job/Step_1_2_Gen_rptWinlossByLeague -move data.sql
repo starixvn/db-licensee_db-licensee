@@ -1,23 +1,17 @@
 --Step :1_2 rptWinlostbyleague
 
 --run data IN DB052.BODB02
-
+use bodb02
+GO
 DECLARE @FROMDATE DATETIME, @TODATE DATETIME
-SELECT @FROMDATE='2014-01-01',@TODATE='2014-01-03'
+SELECT @FROMDATE='',@TODATE=''
 
 WHILE (@FROMDATE<=@TODATE)
 BEGIN 
 	print @fromdate
-	exec Task_rptWinLostbyLeague_movedata @FROMDATE,@FROMDATE
+	exec dbo.Task_rptWinLostbyLeague_movedata @FROMDATE,@FROMDATE
 	SELECT @FROMDATE=DATEADD(DAY, 1, @FROMDATE)
 	
 	--WAIT
 	WAITFOR DELAY '00:00:02';
 END
-
-
-
-
-
-
-

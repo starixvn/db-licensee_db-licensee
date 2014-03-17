@@ -1,23 +1,17 @@
 --Step :1 rptWinlostbyleague
 --SP : DBACC_Task_rptWinlostbyleague_bk.sql
 --run data IN DB06.BODB02
-
+USE bodb02
+GO
 DECLARE @FROMDATE DATETIME, @TODATE DATETIME
-SELECT @FROMDATE='2014-01-01',@TODATE='2014-01-03'
+SELECT @FROMDATE='',@TODATE=''
 
-WHILE (@FROMDATE<=@TODATE)
 BEGIN 
-	print @fromdate
-	exec Task_rptWinlostbyleague_bk @FROMDATE
-	SELECT @FROMDATE=DATEADD(DAY, 1, @FROMDATE)
-	
+	IF exists ( SELECT TOP 1 1 FROM bodb_report.dbo.rptWinlostbyLeague WHERE winlostdate >=@FROMDATE AND winlostdate<=@TODATE)
+		DELETE BODB_REPORT.DBO.rptWinlostbyLeague WHERE winlostdate >=@FROMDATE AND winlostdate<=@TODATE
+
+	EXEC dbo.Task_rptWinlostbyleague_bk @FROMDATE, @TODATE
+		
 	--WAIT
-	WAITFOR DELAY '00:00:02';
+	--WAITFOR DELAY '00:00:02';
 END
-
-
-
-
-
-
-
