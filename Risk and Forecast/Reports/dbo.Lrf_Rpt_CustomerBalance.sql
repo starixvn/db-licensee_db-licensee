@@ -16,8 +16,7 @@
 	@ShowLC  BIT=0,  
 	@ShowVS  BIT=0,
 	@ShowCS  BIT=0, -- RNG Casino  
-	@ShowBG  BIT=0,  -- Bingo     
-	@ShowKN  BIT = 0 -- Keno 
+	@ShowBG  BIT=0  -- Bingo     
   
 AS /*  
 Created: 20120917@Henry  
@@ -74,11 +73,11 @@ IF @ShowSB = 1 INSERT INTO @sporttype(sporttype) VALUES(0)
 IF @ShowRB = 1 INSERT INTO @sporttype(sporttype) VALUES(151)   
 IF @ShowNG = 1 INSERT INTO @sporttype(sporttype) VALUES(161)  
 IF @ShowLC = 1 INSERT INTO @sporttype(sporttype) VALUES(162)  
-IF @ShowVS = 1 INSERT INTO @sporttype(sporttype) VALUES(180)
+IF @ShowVS = 1 INSERT INTO @sporttype(sporttype)
+				SELECT 180
 				
 IF @ShowCS = 1 INSERT INTO @sporttype(sporttype) VALUES(251) -- RNG Casino  
-IF @ShowBG = 1 INSERT INTO @sporttype(sporttype) VALUES(252) -- Bingo  
-IF @ShowKN = 1 INSERT INTO @sporttype(sporttype) VALUES(202) -- Keno      
+IF @ShowBG = 1 INSERT INTO @sporttype(sporttype) VALUES(252) -- Bingo    
 
 
 SELECT CurrencyID,LicenseeID

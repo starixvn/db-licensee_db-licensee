@@ -1,4 +1,4 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_Statement_Mem_12750]  
+﻿ALTER PROCEDURE [dbo].[Lrf_Statement_Mem]  
     @CustID INT ,  
     @FromDate DATETIME ,  
     @ToDate DATETIME ,  
@@ -24,8 +24,6 @@ Revisions:
  -- 20131010@winnie: if @ToDate-@FromDate> 3 months => just get data report in 3 last months+ current month.
  -- 20131016@Don: Use the right server alias name
  -- 20131108@Victor: Enhance performance, use rptlicwinloss2 instead of rptDepwinlost
- -- 20140310@Florent: Add Keno product
- -- 20140310@Florent: remove  Bingo & RNG Casino Transfer and Outstanding 
    
 Param's Explanation:   
 • @ErrCode:  
@@ -104,7 +102,7 @@ select @fdate = @FromDate, @tdate = @ToDate
                     FROM    bettrans with(nolock)  
                     WHERE   custid = @custid  
                             AND winlostdate BETWEEN @fdate AND @tdate  
-                            
+                            --AND statusID <> 103  
                     GROUP BY winlostdate ,  
                             bettype ,  
                             CASE WHEN statusID IN (101,102) THEN 102  
@@ -114,23 +112,12 @@ select @fdate = @FromDate, @tdate = @ToDate
                             CASE WHEN bettype <= 19999 THEN NULL  
                                  ELSE transdate  
                             END 
-	--include running Keno bet
-	   INSERT  INTO @bet  
-                    SELECT  winlostdate ,  
-                            gameid ,  
-                            0 ,   --running bet
-                            NULL ,  
-                            '' as transdesc, 
-                            SUM(t.stake ) ,  
-                            SUM(actual_stake) ,  
-                            0 ,  --winlost
-                            0  --playcomm
-                    FROM    bodb02.dbo.translog t with(nolock)  
-                    WHERE   custid = @custid  
-                            AND winlostdate BETWEEN @fdate AND @tdate                              
-							and statusID =0 -- get only running game _ Keno
-							--and t.productID=202 --Keno
-                    GROUP BY winlostdate ,gameid 
+                             /*
+                            ,  
+                            CASE WHEN bettype <= 19999 THEN ''  
+                                 ELSE transdesc  
+                            END    
+                            */
    IF @fdate <= @MoveBetsDay  
    INSERT INTO @bet  
    select distinct   
@@ -194,8 +181,7 @@ select @fdate = @FromDate, @tdate = @ToDate
                             0 ,  
                             0  
                     FROM    @bet  
-                    WHERE   statusID = 0 
-					and bettype not in (23001,23002,23101,23102,23201,23202)
+                    WHERE   statusID = 0  
                     GROUP BY winlostdate    
      
             INSERT  INTO @Data  
@@ -209,7 +195,7 @@ select @fdate = @FromDate, @tdate = @ToDate
                     FROM    @bet AS B  
                             INNER JOIN dbo.bettype (NOLOCK) ON B.bettype = bettype.typeid  
                     WHERE   bettype > 20000  
-                            AND bettype NOT IN (23001,23002,23101,23102,23201,23202)
+                            AND bettype NOT IN ( 23001, 23002, 23101 )  
                             AND ( winlost - actual_stake ) <> 0   
      
         END   
@@ -325,7 +311,6 @@ WHERE exchangeid = @currency
     WHERE   c.RowNum BETWEEN @RowStart AND @RowEnd
     
    DROP TABLE #TempExchange
-
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Statement_Mem] TO [bodbDownlineNet] AS [dbo]
 GO

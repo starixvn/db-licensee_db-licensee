@@ -1,7 +1,6 @@
-﻿SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿set ANSI_NULLS ON
+set QUOTED_IDENTIFIER ON
+go
 
 ALTER  PROCEDURE [dbo].[Lrf_BetList_SelAllByDate_Mem]
 	@LicenseeID INT ,
@@ -33,8 +32,7 @@ ALTER  PROCEDURE [dbo].[Lrf_BetList_SelAllByDate_Mem]
 	@ShowLC	BIT = 0,
 	@ShowVS BIT = 0,
 	@ShowCS   BIT=0, -- RNG Casino
-	@ShowBG   BIT=0, -- Bingo 
-	@ShowKN   BIT=0 -- Keno
+	@ShowBG   BIT=0 -- Bingo 
 
 AS
 SET NOCOUNT ON
@@ -68,8 +66,6 @@ Revisions:
 	- 20130514@Jim: Restrict permission of Licensee Users by currency
 	- 20130716@Jim: update matchid for RNG Casino and Bingo
 	- 20130903@Jim: offer VHR
-	- 20140305@Hannah: offer Keno
-
 */
 
 
@@ -189,13 +185,6 @@ BEGIN
 	INSERT INTO @TempBettype(bettype)
 	VALUES (73)
 END 
-IF @ShowKN = 1
-BEGIN
-    INSERT INTO @TempBettype(bettype)
-	SELECT typeid FROM bettype (NOLOCK)
-	WHERE (typeid BETWEEN 1501 AND 1599)
-END
-
 
 
 IF @ShowBA = 1
@@ -739,7 +728,7 @@ BEGIN
 	WHERE
 		b.CustID = @CustID AND
 		b.recommend=@Recommend  
-		AND b.bettype NOT IN (71,73) 
+		AND b.bettype NOT IN (71,73)
 		AND b.transdate>=@FROMDate AND b.transdate<=@ToDate
 	IF EXISTS (SELECT 1 FROM @TempBettype WHERE bettype IN (1231, 1232, 1233, 1237, 1238) )	
 		BEGIN 
@@ -899,103 +888,6 @@ BEGIN
 		AND b.transdate>=@FROMDate AND b.transdate<=@ToDate
 END
 
-IF @ShowKN=1 
-BEGIN
-	INSERT INTO #BetListSelAllByDateMem
-	SELECT 
-		@UserName AS UserName,
-		202 AS sporttype,
-		b.bettype,
-		b.refno,		
-		b.transid AS transid,
-		ISNULL(b.BetID,0),
-		'' AS matchcode, 
-		t.GameId AS matchid,
-		'' AS Race, 
-		0 AS homeID,
-		0 AS awayID,
-		0 AS hdp1, 
-		0 AS hdp2,  
-		b.odds,
-		b.modds,
-		b.status,
-		b.stake,
-		b.actual_stake,
-		(winlost-actual_stake) winlost,
-		- (b.winlost-b.actual_stake) AS LicenseeWL ,
-		b.comm ,
-		b.playercomm,
-		b.discount,
-		b.transdate,
-		b.winlostdate,
-		t.ChoiceId as betteam,
-		0 as leagueID,
-		0 as liveindicator, 
-		0 as livehomescore, 
-		0 as liveawayscore,
-		b.IP AS IP,
-		0 as betstatus,
-		CONVERT(BIT,0) AS IsNeutral,
-		b.Oddstype,
-		b.currency,
-		''  AS ShowTime 
-	FROM 
-		bettrans b WITH (NOLOCK)
-		INNER JOIN @TempBettype bt ON b.bettype = bt.bettype	
-		CROSS APPLY dbo.[f_ParseTransDesc](b.TransDesc, b.bettype) t
-	WHERE
-		b.CustID = @CustID AND
-		b.recommend=@Recommend  AND
-		b.transdate>=@FROMDate AND b.transdate<=@ToDate AND
-		b.statusID NOT IN (0,1)	
-	UNION ALL
-	SELECT 
-		@UserName AS UserName,
-		202 as sporttype,
-		t.gameid as bettype,
-		t.translogid AS refno,		
-		t.translogid AS transid,
-		0 as BetID, 
-		'' AS matchcode, 
-		k.GameId AS matchid,
-		'' AS Race, 
-		0 AS homeID,
-		0 AS awayID,
-		0 AS hdp1, 
-		0 AS hdp2,  
-		t.odds ,
-		0 as modds,
-		t.status,
-		t.stake,
-		t.actual_stake,
-		(0-actual_stake) winlost,
-		- (0-t.actual_stake) AS LicenseeWL ,
-		0 as comm,
-		0 AS PlayerComm,
-		t.discount,
-		t.transdate,
-		t.winlostdate,
-		k.ChoiceId AS betteam,
-		0 AS leagueID,
-		0 AS liveindicator, 
-		0 AS livehomescore, 
-		0 AS liveawayscore,
-		t.IP AS IP,
-		0 AS betstatus,
-		CONVERT(BIT,0) AS IsNeutral,
-		0 as Oddstype,
-		t.currency,
-		''  AS ShowTime 
-	FROM 
-		dbo.translog AS t WITH (NOLOCK)	
-		CROSS APPLY dbo.[f_ParseTransDesc](t.TransDesc, t.gameid) k
-	WHERE
-		t.CustID = @CustID AND
-		t.recommend=@Recommend AND
-		t.transdate>=@FROMDate AND t.transdate<=@ToDate AND
-		t.gameID BETWEEN 1501 AND 1599 AND
-		t.statusID IN (0,1)	
-END
 
 DECLARE @RowStart INT, @RowEnd INT  
 SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1
@@ -1138,3 +1030,6 @@ GRANT  EXECUTE  ON [dbo].[Lrf_BetList_SelAllByDate_Mem]  TO [bodbLicenseeNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelAllByDate_Mem] TO [vnteam]
 GO
+
+
+

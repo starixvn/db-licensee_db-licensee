@@ -1,11 +1,4 @@
-﻿USE [bodb02]
-GO
-/****** Object:  StoredProcedure [dbo].[Lrf_BetList_SelByDayAll_Mem_Old]    Script Date: 3/11/2014 7:52:16 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-ALTER PROCEDURE [dbo].[Lrf_BetList_SelByDayAll_Mem_Old]
+﻿ALTER  PROCEDURE [dbo].[Lrf_BetList_SelByDayAll_Mem_Old]
 	@LicenseeID INT ,
 	@UserID		INT,
 	@custid		INT,
@@ -53,7 +46,6 @@ Revisions:
 	- 20130411@Jim: support base currency USD
 	- 20130514@Jim: Restrict permission of Licensee Users by currency
 	- 20130905@Jim: support VHR
-	- 20140310@Hannah: offer Keno
 	
 Param's Explanation: 
 
@@ -169,57 +161,7 @@ FROM	bodb_Archive.dbo.bettrans_bk b WITH (NOLOCK)
 		INNER JOIN bodb_Archive.dbo.match_bk m WITH (NOLOCK) ON b.matchid = m.matchid		
 		LEFT JOIN DBLIC.bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
 WHERE	b.custid=@custid 		
-		AND b.winlostdate = @fromdate AND b.bettype NOT BETWEEN 1501 AND 1599 -- exclude Keno
-
--- Keno 
-INSERT INTO @Data 
-SELECT
-	202 AS sporttype, 
-	0 AS leagueid,
-	0 AS homeID,
-	0 AS awayID,
-	b.bettype,
-	'' AS matchcode,
-	'' AS race,
-	fnc.GameId AS matchid, 
-	b.transid, 
-	b.transdate, 
-	b.winlostdate,
-	b.refno, 
-	--CASE WHEN b.bettype = 87 THEN b.betid ELSE 0 END, --- 87- High Low for NG: Current Live Ball 
-	b.betid,
-	b.oddsid, 
-	b.hdp1, 
-	b.hdp2,
-	0 AS modds, 
-	0 AS Oddstype,
-	b.Odds,	
-	fnc.ChoiceId AS betteam,
-	b.status AS status,
-	'' AS betstatus, 
-	b.stake,
-	b.actual_stake, 
-	(b.winlost-b.actual_stake) AS winlost, 
-	- (b.winlost-b.actual_stake) AS LicenseeWL ,
-	b.comm,
-	b.playercomm,
-	b.livehomescore, 
-	b.liveawayscore, 
-	b.liveindicator, 
-	0 AS finalhomescore, 
-	0 AS finalawayscore,
-	0 AS hthomescore, 
-	0 AS htawayscore,
-	b.IP AS IP,
-	@Username,
-	CONVERT(BIT,0) AS IsNeutral,
-	b.currency,
-	'' AS ShowTime 
-FROM	bodb_Archive.dbo.bettrans_bk b WITH (NOLOCK)
-		CROSS APPLY dbo.f_ParseTransDesc(b.transdesc, b.bettype) AS fnc
-WHERE	b.custid=@custid 		
-		AND b.winlostdate = @fromdate AND b.bettype BETWEEN 1501 AND 1599 
-		
+		AND b.winlostdate = @fromdate 
 -- VHR
 INSERT INTO @Data 
 SELECT
@@ -564,3 +506,7 @@ END
 		
 SELECT * FROM @BettransDetail		
 ORDER BY refno, bettype
+GO
+GRANT EXECUTE ON [dbo].[Lrf_BetList_SelByDayAll_Mem_Old] TO [bodbLicenseeNet] AS [dbo]
+GO
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelByDayAll_Mem_Old] TO [vnteam] AS [dbo]

@@ -17,7 +17,6 @@ ALTER PROC [dbo].[Lrf_Rpt_CustomerPerformance]
 	@BalanceUpDay SMALLDATETIME
 AS
 
-
 BEGIN
 /*	
 	Created	: Henry

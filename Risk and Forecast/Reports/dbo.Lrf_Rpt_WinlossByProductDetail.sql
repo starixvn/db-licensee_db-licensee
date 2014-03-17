@@ -4,7 +4,7 @@ go
 
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail]  
-@LicenseeID	INT,
+ @LicenseeID	INT,
  @UserID		INT,
  @CurrencyID	INT = 0,
  @CustID		INT = 0, --AgentID
@@ -18,7 +18,6 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail]
  @ShowVS		BIT=0,
  @ShowCS 		BIT=0,-- RNG Casino
  @ShowBG		BIT=0,-- Bingo
- @ShowKN   		BIT=0, -- Keno 
  @MoveBetsDay SMALLDATETIME,
  @IsOld BIT = 0,
  @drawfilter SMALLINT = 1  ,
@@ -47,8 +46,6 @@ AS
 	- 20130809@Jim: offer Virtual Horse Racing
 	- 20131007@Jim: offer Virtual Tennis
 	- 20131213@Jim: support to Display win loss of individual sports with Virtual Sports
-	- 20140304@Florent: offer Keno
-
 
 	Param's Explanation:  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -193,16 +190,6 @@ BEGIN
 	VALUES(252)
 	INSERT INTO @bettype(bettype)
 	VALUES(73)
-END 
-
-
-IF @ShowKN=1 -- Keno
-BEGIN 
-	INSERT INTO @sporttype (sporttype)
-	VALUES(202)
-	INSERT INTO @bettype(bettype)
-	SELECT typeid FROM bettype (NOLOCK)
-	WHERE (typeid BETWEEN 1501 AND 1599)
 END 
 
 DECLARE @TempFromDate DATETIME 
@@ -373,8 +360,8 @@ BEGIN
 			s.currency , statusID
 	END
 	
-	--NG+LC+VS+RB + KN
-	IF (@ShowNG=1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowRB=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1)
+	--NG+LC+VS+RB
+	IF (@ShowNG=1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowRB=1 OR @ShowCS=1 OR @ShowBG=1)
 	BEGIN
 		SELECT 
 			DISTINCT
@@ -400,7 +387,6 @@ BEGIN
 																	   END  
 				WHEN b.bettype=71 THEN 'CS'
 				WHEN b.bettype=73 THEN 'BG'
-				WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN' 
 			END AS ProductCode,
 			SUM(
 				CASE WHEN b.bettype = 33 AND b.liveawayscore = 0 THEN stake/2 ELSE stake END 
@@ -478,7 +464,6 @@ BEGIN
 																	   END 
 				WHEN b.bettype=71 THEN 'CS'
 				WHEN b.bettype=73 THEN 'BG'
-				WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN' 
 			END
 			, statusID
 	DROP TABLE #tmpVS		
@@ -565,7 +550,7 @@ BEGIN
 	END
 	
 	--exclude BA tickets
-	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR @ShowLC=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1)
+	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR @ShowLC=1 OR @ShowCS=1 OR @ShowBG=1)
 	BEGIN
 		INSERT INTO #SAgWinLoss  
 		SELECT 
@@ -579,7 +564,6 @@ BEGIN
 				WHEN b.sporttype=162 THEN 'LC' 
 				WHEN b.sporttype=251 THEN 'CS'
 				WHEN b.sporttype=252 THEN 'BG'
-				WHEN b.sporttype=202 THEN 'KN'
 			END AS ProductCode,
 			SUM(b.turnover
 			*
@@ -652,7 +636,6 @@ BEGIN
 				WHEN b.sporttype=162 THEN 'LC' 
 				WHEN b.sporttype=251 THEN 'CS'
 				WHEN b.sporttype=252 THEN 'BG'
-				WHEN b.sporttype=202 THEN 'KN'
 			END
 			, b.statusID
 	END
@@ -849,7 +832,7 @@ BEGIN
 	END
 
 	--exclude BA tickets
-	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1)
+	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1)
 	BEGIN
 		INSERT INTO #SAgWinLoss  
 		SELECT 
@@ -863,7 +846,6 @@ BEGIN
 				WHEN b.sporttype=180 THEN 'VS'
 				WHEN b.sporttype=251 THEN 'CS'
 				WHEN b.sporttype=252 THEN 'BG'
-				WHEN b.sporttype=202 THEN 'KN'
 			END AS ProductCode,
 			SUM(b.turnover
 			*
@@ -936,7 +918,6 @@ BEGIN
 				WHEN b.sporttype=180 THEN 'VS'
 				WHEN b.sporttype=251 THEN 'CS'
 				WHEN b.sporttype=252 THEN 'BG'
-				WHEN b.sporttype=202 THEN 'KN'
 			END
 			, b.statusID
 	END
@@ -973,7 +954,7 @@ SELECT
 	CAST(SUM(AmtDueto3rdUSD) 		AS MONEY)	AS AmtDueto3rdUSD
 FROM	
 	#SAgWinLoss w   
-	INNER JOIN bodb_licensee.dbo.licenseecustinfo c WITH (NOLOCK) ON w.custid = c.custid	
+	INNER JOIN bodb_licensee.dbo.licenseecustinfo c WITH (NOLOCK) ON w.custid = c.custid
 GROUP BY   
 	w.custid, c.username,c.username2  , 
 	w.Currency,
@@ -983,8 +964,8 @@ ORDER BY c.username
 
 DROP TABLE #SAgWinLoss
 
+ 
 END
-
 
 
 GO
