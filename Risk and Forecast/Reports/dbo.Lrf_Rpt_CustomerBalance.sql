@@ -52,7 +52,7 @@ Param's Explanation:
 */  
 SET NOCOUNT ON  
 
-IF ISNULL(@LicenseeType,0) = 0
+IF ISNULL(@LicenseeType,'') = ''
 	SELECT @LicenseeType = NULL
 
 DECLARE @CutDate datetime  
