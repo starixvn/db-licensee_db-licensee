@@ -55,6 +55,7 @@ Revisions:
    - 20130716@Jim: update matchid for RNG Casino and Bingo
    - 20130903@Jim: support Virtual Horse Racing
    - 20140310@Hannah: offer Keno
+   - 20140319@Hannah: offer Keno 2
 
 */
 
@@ -107,7 +108,8 @@ CREATE TABLE #BetListSelRunningByDateMem
 	winlostdate 	DATETIME,
 	currency 		SMALLINT,
 	playercomm 		MONEY,
-	showtime NVARCHAR(50) -- table - shoe - hand of Live Casino
+	showtime NVARCHAR(50), -- table - shoe - hand of Live Casino
+	MatchID 		INT
 )
 
 CREATE TABLE #TempBetList
@@ -210,7 +212,8 @@ CREATE TABLE #TempBetList
 			b.winlostdate,
 			b.currency,
 			b.playercomm,
-			'' as ShowTime
+			'' as ShowTime,
+			m.matchid
 		FROM 
 			#TempBetList b 
 			INNER JOIN match m WITH (NOLOCK) ON b.matchid=m.matchid		
@@ -251,7 +254,8 @@ CREATE TABLE #TempBetList
 			b.winlostdate,
 			b.currency,
 			b.playercomm,
-			'' as ShowTime
+			'' as ShowTime,
+			0 as matchid
 		FROM
 			#TempBetList b 
 			INNER JOIN outright m WITH (NOLOCK) ON b.matchid=m.orid 
@@ -292,7 +296,8 @@ CREATE TABLE #TempBetList
 			b.winlostdate,
 			b.currency,
 			b.playercomm,
-			'' As ShowTime
+			'' As ShowTime,
+			0 as matchid
 		FROM 
 			#TempBetList b 
 		WHERE
@@ -332,7 +337,8 @@ CREATE TABLE #TempBetList
 			b.winlostdate,
 			b.currency,
 			b.playercomm,
-			'' as ShowTime
+			'' as ShowTime,
+			0 as matchid
 		FROM 
 			#TempBetList b 
 		WHERE
@@ -373,7 +379,8 @@ CREATE TABLE #TempBetList
 			b.winlostdate,
 			b.currency,
 			b.playercomm,
-			'' As ShowTime
+			'' As ShowTime,
+			m.matchid
 		FROM 
 			#TempBetList b 
 			INNER JOIN MATCH m WITH (NOLOCK) ON b.matchid = m.matchid		
@@ -418,7 +425,8 @@ CREATE TABLE #TempBetList
 			b.winlostdate,
 			b.currency,
 			b.playercomm,
-			'' as ShowTime
+			'' as ShowTime,
+			m.matchid
 		FROM 
 			bettrans b WITH (NOLOCK)			
 			INNER JOIN match m WITH (NOLOCK) ON b.matchid=m.matchid		
@@ -463,7 +471,8 @@ CREATE TABLE #TempBetList
 			b.winlostdate,
 			b.currency,
 			b.playercomm,
-			'' as ShowTime
+			'' as ShowTime,
+			0 as matchid
 		FROM
 			bettrans b WITH (NOLOCK)		
 			INNER JOIN outright m WITH (NOLOCK) ON b.matchid=m.orid 
@@ -509,7 +518,8 @@ CREATE TABLE #TempBetList
 			b.winlostdate,
 			b.currency,
 			b.playercomm,
-			'' as ShowTime
+			'' as ShowTime,
+			0 as matchid
 		FROM 
 			bettrans b WITH (NOLOCK)
 		WHERE
@@ -553,7 +563,8 @@ CREATE TABLE #TempBetList
 			b.winlostdate,
 			b.currency,
 			b.playercomm,
-			'' as ShowTime
+			'' as ShowTime,
+			0 as matchid
 		FROM 
 			bettrans b WITH (NOLOCK)
 		WHERE
@@ -606,7 +617,8 @@ CREATE TABLE #TempBetList
 			b.winlostdate,
 			b.currency,
 			b.playercomm,
-			'' as ShowTime
+			'' as ShowTime,
+			0 as matchid
 		FROM
 			bettrans b WITH (NOLOCK)		
 			INNER JOIN outright m WITH (NOLOCK) ON b.matchid=m.orid 				
@@ -656,7 +668,8 @@ CREATE TABLE #TempBetList
 			b.winlostdate,
 			b.currency,
 			b.playercomm,
-			CASE WHEN @ShowLC=1 THEN isnull(m.showtime,'') ELSE '' END as ShowTime
+			CASE WHEN @ShowLC=1 THEN isnull(m.showtime,'') ELSE '' END as ShowTime,
+			m.matchid 
 		FROM 
 			bettrans b WITH (NOLOCK)			
 			INNER JOIN MATCH m WITH (NOLOCK) ON b.matchid = m.matchid		
@@ -703,7 +716,8 @@ CREATE TABLE #TempBetList
 			b.winlostdate,
 			b.currency,
 			b.playercomm, 
-			CONVERT(VARCHAR(20),r.EventTime) as ShowTime
+			CONVERT(VARCHAR(20),r.EventTime) as ShowTime,
+			0 as matchid
 		FROM 
 			bettrans b WITH (NOLOCK)			
 			INNER JOIN VSOutright o with (nolock) ON b.oddsid=o.Orid
@@ -752,7 +766,8 @@ CREATE TABLE #TempBetList
 			b.winlostdate,
 			b.currency,
 			b.playercomm,
-			 '' as ShowTime
+			 '' as ShowTime,
+			 71 as MatchID
 		FROM 
 			bettrans b WITH (NOLOCK)			
 		WHERE
@@ -799,7 +814,8 @@ CREATE TABLE #TempBetList
 			b.winlostdate,
 			b.currency,
 			b.playercomm,
-			 '' as ShowTime
+			 '' as ShowTime,
+			 73 as matchid
 		FROM 
 			bettrans b WITH (NOLOCK)			
 		WHERE
@@ -843,7 +859,8 @@ CREATE TABLE #TempBetList
 			t.winlostdate,
 			t.currency,
 			0 AS playercomm,
-			'' AS ShowTime
+			'' AS ShowTime,
+			fnc.GameId AS matchid
 		FROM 
 			translog t WITH (NOLOCK)			
 			CROSS APPLY dbo.f_ParseTransDesc(t.transdesc, t.gameid) fnc	
@@ -971,3 +988,4 @@ GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelRunningByDate_Mem] TO [bodbLicenseeNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelRunningByDate_Mem] TO vnteam
+
