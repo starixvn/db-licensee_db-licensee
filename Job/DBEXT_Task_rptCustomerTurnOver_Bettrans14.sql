@@ -23,30 +23,22 @@ SET NOCOUNT ON;
 	--DECLARE @Fromdate DATETIME,
 	--	@Todate DATETIME
 	--SELECT @Fromdate='2013-10-17',@todate='2013-10-17'
-IF exists(SELECT TOP 1 1 FROM bodb_LicenseeReport.dbo.rptCustomerTurnover_temp AS rct WITH (NOLOCK) WHERE rct.winlostdate=@date)
+IF exists(SELECT TOP 1 1 FROM bodb_LicenseeReport.dbo.rptCustomerTurnover AS rct WITH (NOLOCK) WHERE rct.winlostdate=@date)
 	BEGIN
-		DELETE bodb_LicenseeReport.dbo.rptCustomerTurnover_temp WHERE winlostdate=@Date
+		DELETE bodb_LicenseeReport.dbo.rptCustomerTurnover WHERE winlostdate=@Date
 	END 	
-;WITH cte_isBATrans
-AS (
-	SELECT transid
-	FROM bodb_licensee.dbo.LicenseeBATransaction WITH (NOLOCK)
-	WHERE Transdate=@Date	
-	)
-	,cte_tempLicenseeCust
-AS (
-	SELECT currency
-		,custid
-	FROM bodb_licensee.dbo.LicenseeCust lc WITH (NOLOCK)
-	)
-	,cte_bettrans
+;WITH cte_bettrans
 AS (
 	SELECT a.CustID
 		,lc.currency
 		,a.recommend
 		,a.matchid
 		,a.bettype
-		,SUM(ABS(a.stake)) AS stake
+		,SUM(CASE 
+				WHEN a.liveawayscore = 0 AND a.bettype IN(33,43) 
+					THEN ABS(a.stake/2) 
+				ELSE ABS(a.stake) 
+				END) AS stake
 		,sum(a.winlost - a.actual_stake) winlost
 		,sum(a.PlayerComm) PlayerComm
 		,a.Odds
@@ -56,19 +48,11 @@ AS (
 			WHEN a.statusID = 112
 				AND a.bettype IN (1, 3, 7, 8, 17, 18)
 				AND ABS(modds) = 0.25
-				THEN 114
-			WHEN a.statusID = 112
-				AND a.liveawayscore = 0
-				AND a.bettype IN (33, 43)
-				THEN 114
+				THEN 114			
 			WHEN a.statusID = 113
 				AND a.bettype IN (1, 3, 7, 8, 17, 18)
 				AND ABS(modds) = 0.25
-				THEN 115
-			WHEN a.statusID = 113
-				AND a.liveawayscore = 0
-				AND a.bettype IN (33, 43)
-				THEN 115
+				THEN 115			
 			ELSE a.statusID
 			END AS statusID
 		,a.winlostdate
@@ -82,8 +66,8 @@ AS (
 		,sum(awinlost) awinlost
 		,sum(comm) comm
 	FROM dbo.bettrans14 a WITH (NOLOCK)
-	INNER JOIN cte_tempLicenseeCust lc ON a.recommend = lc.custid
-	LEFT JOIN cte_isBATrans AS BA ON a.transid = ba.transid
+	INNER JOIN bodb_licensee.dbo.LicenseeCust lc ON a.recommend = lc.custid
+	LEFT JOIN bodb_licensee.dbo.LicenseeBATransaction AS BA ON a.transid = ba.transid
 	WHERE a.winlostdate =@date 
 			AND a.statusID IN (111, 112, 113)
 	GROUP BY a.matchid
@@ -98,19 +82,11 @@ AS (
 			WHEN a.statusID = 112
 				AND a.bettype IN (1, 3, 7, 8, 17, 18)
 				AND ABS(modds) = 0.25
-				THEN 114
-			WHEN a.statusID = 112
-				AND a.liveawayscore = 0
-				AND a.bettype IN (33, 43)
-				THEN 114
+				THEN 114		
 			WHEN a.statusID = 113
 				AND a.bettype IN (1, 3, 7, 8, 17, 18)
 				AND ABS(modds) = 0.25
-				THEN 115
-			WHEN a.statusID = 113
-				AND a.liveawayscore = 0
-				AND a.bettype IN (33, 43)
-				THEN 115
+				THEN 115			
 			ELSE a.statusID
 			END
 		,a.winlostdate
@@ -130,7 +106,7 @@ AS (
 	INNER JOIN dbo.VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
 	WHERE EventDate =@Date
 	)
-INSERT INTO bodb_LicenseeReport.dbo.rptCustomerTurnover_temp
+INSERT INTO bodb_LicenseeReport.dbo.rptCustomerTurnover
 SELECT a.CustID
 	,a.bettype
 	,CASE 
@@ -152,6 +128,8 @@ SELECT a.CustID
 					END --Virtual Sport
 		WHEN a.bettype BETWEEN 51 AND 69
 			THEN 201
+		WHEN a.bettype BETWEEN 1501 AND 1599
+			THEN 202-- Keno
 		WHEN a.bettype IN (31, 32, 33, 41, 42, 43)
 			THEN 151
 		ELSE isNULL(b.sporttype, 0)
@@ -207,6 +185,8 @@ GROUP BY a.CustID
 					END --Virtual Sport
 		WHEN a.bettype BETWEEN 51 AND 69
 			THEN 201
+		WHEN a.bettype BETWEEN 1501 AND 1599
+			THEN 202-- Keno
 		WHEN a.bettype IN (31, 32, 33, 41, 42, 43)
 			THEN 151
 		ELSE isNULL(b.sporttype, 0)
@@ -231,6 +211,5 @@ GROUP BY a.CustID
 		END
 	,winlostdate
 	,a.isba
-
 GO
 GRANT VIEW DEFINITION ON [dbo].[Task_rptCustomerTurnOver_Bettrans14] TO [vnteam] AS [dbo]

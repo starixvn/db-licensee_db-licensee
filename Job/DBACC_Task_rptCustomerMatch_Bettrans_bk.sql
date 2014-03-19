@@ -1,6 +1,6 @@
 USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Task_rptCustomerMatch_Bettrans_bk]    Script Date: 17/02/2014 10:34:42 AM ******/
+/****** Object:  StoredProcedure [dbo].[Task_rptCustomerMatch_Bettrans_bk]    Script Date: 19/03/2014 11:23:02 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -15,36 +15,24 @@ AS
 	Task: Winloss By League
 	Date: 2013-11-25
 	DB: DBACC.bodb02
-	Original:   
-	Revision:
+	Original: 
+	Revision: 
 	Parameter's Explanation:			
 */
 SET NOCOUNT ON;
 
-;WITH cte_isBATrans
-AS 
-(
-	SELECT transid FROM DBLIC.bodb_licensee.dbo.LicenseeBATransaction WITH(NOLOCK)
-	WHERE Transdate BETWEEN @fromdate and DATEADD(DAY,2,@Todate)
-	
-	--select transid from bodb_archive.dbo.bettrans_bk with (nolock) 
-	--WHERE winlostdate BETWEEN @fromdate and DATEADD(DAY,1,@Todate)
-	--and ( bettype < 31 OR (bettype BETWEEN 121 AND 999))
-	--and tpositiontaking=0
-)
-,cte_tempLicenseeCust
-AS (
-	SELECT currency,custid
-	FROM DBLIC.bodb_licensee.dbo.LicenseeCust lc WITH (NOLOCK)
-	)
-,cte_bettrans
+;WITH cte_bettrans
 AS (
 	SELECT a.CustID		
 		,a.recommend
 		,a.matchid
 		,a.oddsid
 		,a.bettype
-		,SUM(ABS(a.stake)) as stake
+		,SUM(CASE 
+				WHEN a.liveawayscore = 0 AND a.bettype IN(33,43) 
+					THEN ABS(a.stake/2) 
+				ELSE ABS(a.stake) 
+				END) AS stake
 		,sum(a.winlost- a.actual_stake) winlost		
 		,a.Odds
 		,a.oddstype
@@ -52,19 +40,11 @@ AS (
 		WHEN a.statusID = 112
 			AND a.bettype IN (1, 3, 7, 8, 17, 18)
 			AND ABS(modds) = 0.25
-			THEN 114
-		WHEN a.statusID = 112
-			AND a.liveawayscore = 0 
-			AND a.bettype IN(33,43) 
-			THEN 114
+			THEN 114		
 		WHEN a.statusID = 113
 			AND a.bettype IN (1, 3, 7, 8, 17, 18)
 			AND ABS(modds) = 0.25
-			THEN 115
-		WHEN a.statusID = 113
-			AND a.liveawayscore = 0 
-			AND a.bettype IN(33,43)
-			THEN 115
+			THEN 115		
 		ELSE a.statusID
 		END AS statusID
 		,a.winlostdate
@@ -76,8 +56,8 @@ AS (
 		,sum(comm) comm
 		,sum(playercomm) playercomm
 	FROM bodb_archive.dbo.bettrans_bk a WITH (NOLOCK)
-	INNER JOIN cte_tempLicenseeCust lc ON a.recommend = lc.custid
-	LEFT JOIN cte_isBATrans AS BA ON a.transid=ba.transid
+	INNER JOIN DBLIC.bodb_licensee.dbo.LicenseeCust LC WITH (NOLOCK)  ON a.recommend = lc.custid
+	LEFT JOIN DBLIC.bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON a.transid=ba.transid
 	WHERE a.winlostdate BETWEEN @fromdate AND @todate
 	AND a.statusID IN (111,112,113) 
 	GROUP BY 
@@ -92,19 +72,11 @@ AS (
 		WHEN a.statusID = 112
 			AND a.bettype IN (1, 3, 7, 8, 17, 18)
 			AND ABS(modds) = 0.25
-			THEN 114
-		WHEN a.statusID = 112
-			AND a.liveawayscore = 0 
-			AND a.bettype IN(33,43) 
-			THEN 114
+			THEN 114		
 		WHEN a.statusID = 113
 			AND a.bettype IN (1, 3, 7, 8, 17, 18)
 			AND ABS(modds) = 0.25
-			THEN 115
-		WHEN a.statusID = 113
-			AND a.liveawayscore = 0 
-			AND a.bettype IN(33,43)
-			THEN 115
+			THEN 115	
 		ELSE a.statusID
 		END
 		,a.winlostdate
@@ -182,3 +154,4 @@ GROUP BY
 			THEN isnull(result.LeagueID,-1)
 		ELSE isnull(b.LeagueID, - 1)
 		END 
+GO

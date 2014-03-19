@@ -1,6 +1,6 @@
 USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Task_rptCustomerMatch_Bettrans14]    Script Date: 19/02/2014 9:58:27 AM ******/
+/****** Object:  StoredProcedure [dbo].[Task_rptCustomerMatch_Bettrans14]    Script Date: 19/03/2014 12:54:55 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -10,21 +10,20 @@ ALTER  PROCEDURE [dbo].[Task_rptCustomerMatch_Bettrans14] @Date SMALLDATETIME
 AS
 /*	
 	Created	: Florent Nguyen
-	Task: Customer Performance Report  
+	Task: Customer match
 	Date: 2013-11-25
 	DB: DBEXT.bodb02
 	Original:   
 	Revision:
 	Parameter's Explanation:			
 */
-SET NOCOUNT ON;
-	--DECLARE @Fromdate DATETIME,
-	--	@Todate DATETIME
-	--SELECT @Fromdate='2013-10-17',@todate='2013-10-17'
+SET NOCOUNT ON; 
+
 IF exists(SELECT TOP 1 1 FROM bodb_LicenseeReport.dbo.rptCustomerMatch AS rct WITH (NOLOCK) WHERE rct.winlostdate=@date)
 	BEGIN
 		DELETE bodb_LicenseeReport.dbo.rptCustomerMatch WHERE winlostdate=@Date
-	END 	
+	END 
+		
 ;WITH cte_bettrans
 AS (
 	SELECT a.CustID		
@@ -32,7 +31,11 @@ AS (
 		,a.matchid
 		,a.oddsid
 		,a.bettype
-		,SUM(ABS(a.stake)) as stake
+		,SUM(CASE 
+				WHEN a.liveawayscore = 0 AND a.bettype IN(33,43) 
+					THEN ABS(a.stake/2) 
+				ELSE ABS(a.stake) 
+				END) AS stake
 		,sum(a.winlost- a.actual_stake) winlost		
 		,a.Odds
 		,a.oddstype
@@ -40,18 +43,10 @@ AS (
 		WHEN a.statusID = 112
 			AND a.bettype IN (1, 3, 7, 8, 17, 18)
 			AND ABS(modds) = 0.25
-			THEN 114
-		WHEN a.statusID = 112
-			AND a.liveawayscore = 0 
-			AND a.bettype IN(33,43) 
-			THEN 114
+			THEN 114		
 		WHEN a.statusID = 113
 			AND a.bettype IN (1, 3, 7, 8, 17, 18)
 			AND ABS(modds) = 0.25
-			THEN 115
-		WHEN a.statusID = 113
-			AND a.liveawayscore = 0 
-			AND a.bettype IN(33,43)
 			THEN 115
 		ELSE a.statusID
 		END AS statusID
@@ -80,17 +75,9 @@ AS (
 			AND a.bettype IN (1, 3, 7, 8, 17, 18)
 			AND ABS(modds) = 0.25
 			THEN 114
-		WHEN a.statusID = 112
-			AND a.liveawayscore = 0 
-			AND a.bettype IN(33,43) 
-			THEN 114
 		WHEN a.statusID = 113
 			AND a.bettype IN (1, 3, 7, 8, 17, 18)
 			AND ABS(modds) = 0.25
-			THEN 115
-		WHEN a.statusID = 113
-			AND a.liveawayscore = 0 
-			AND a.bettype IN(33,43)
 			THEN 115
 		ELSE a.statusID
 		END
@@ -165,4 +152,3 @@ GROUP BY a.CustID
 			THEN isnull(result.LeagueID,-1)
 		ELSE isnull(b.LeagueID, - 1)
 		END 
-GO

@@ -1,46 +1,33 @@
 USE [bodb02]
 GO
-
+/****** Object:  StoredProcedure [dbo].[Task_rptWinlostbyleague_Bettrans14]    Script Date: 19/03/2014 11:09:32 AM ******/
 SET ANSI_NULLS ON
 GO
-
 SET QUOTED_IDENTIFIER ON
 GO
 
-Alter PROCEDURE [dbo].[Task_rptWinlostbyleague_Bettrans14] 
+ALTER PROCEDURE [dbo].[Task_rptWinlostbyleague_Bettrans14] 
 	 @Date SMALLDATETIME
 AS
 /*	
 	Created	: Florent Nguyen
-	Task: Gen data for table bodb_report.dbo.rptWinlostbyLeague
+	Task: Gen data for table bodb_LicenseeReport.dbo.rptWinlostbyLeague
 	Date: 2013-11-30
 	DB: DBEXT.bodb02
 	Original: 
 	Revision:
+		-20140315@Florent: Offer Keno Sport
 	Parameter's Explanation:			
 */
 SET NOCOUNT ON;
 
 IF EXISTS (SELECT TOP 1 1 FROM bodb_LicenseeReport.dbo.rptWinlostbyLeague WHERE winlostdate =@Date)
 BEGIN 
-DELETE bodb_LicenseeReport.dbo.rptWinlostbyLeague
-WHERE winlostdate =@Date
+	DELETE bodb_LicenseeReport.dbo.rptWinlostbyLeague
+	WHERE winlostdate =@Date
 END;
 
-WITH cte_isBATrans
-AS (	
-	select transid from dbo.bettrans14with (nolock) 
-	WHERE Winlostdate =@Date
-	and ( bettype < 31 OR (bettype BETWEEN 121 AND 999))
-	and tpositiontaking=0
-	)
-	,cte_tempLicenseeCust
-AS (
-	SELECT DISTINCT currency
-		,custid
-	FROM bodb_licensee.dbo.LicenseeCust lc WITH (NOLOCK)
-	)
-	,cte_bettrans
+WITH cte_bettrans
 AS (
 	SELECT a.winlostdate
 		,isnull(a.matchid, ISNULL(a.oddsid, 0)) matchid
@@ -48,7 +35,11 @@ AS (
 		,a.Odds
 		,a.oddstype
 		,a.bettype
-		,SUM(ABS(a.stake)) stake
+		,SUM(CASE 
+				WHEN a.liveawayscore = 0 AND a.bettype IN(33,43) 
+					THEN ABS(a.stake/2) 
+				ELSE ABS(a.stake) 
+				END) AS stake
 		,sum(a.winlost - a.actual_stake) winlost
 		,SUM(a.awinlost) awinlost
 		,SUM(a.comm) comm
@@ -59,17 +50,9 @@ AS (
 				AND a.bettype IN (1, 3, 7, 8, 17, 18)
 				AND ABS(modds) = 0.25
 				THEN 114
-			WHEN a.statusID = 112
-				AND a.liveawayscore = 0
-				AND a.bettype IN (33, 43)
-				THEN 114
 			WHEN a.statusID = 113
 				AND a.bettype IN (1, 3, 7, 8, 17, 18)
 				AND ABS(modds) = 0.25
-				THEN 115
-			WHEN a.statusID = 113
-				AND a.liveawayscore = 0
-				AND a.bettype IN (33, 43)
 				THEN 115
 			ELSE a.statusID
 			END AS statusID
@@ -81,8 +64,8 @@ AS (
 				THEN 1
 			END AS isBA
 	FROM dbo.bettrans14 a WITH (NOLOCK)
-	INNER JOIN cte_tempLicenseeCust lc ON a.recommend = lc.custid
-	LEFT JOIN cte_isBATrans AS BA ON a.transid = ba.transid
+	INNER JOIN bodb_licensee.dbo.LicenseeCust LC WITH (NOLOCK)  ON a.recommend = lc.custid
+	LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON a.transid=ba.transid
 	WHERE a.winlostdate =@Date
 		AND a.statusID IN (111, 112, 113) -- win lost draw
 	GROUP BY a.matchid
@@ -96,17 +79,9 @@ AS (
 				AND a.bettype IN (1, 3, 7, 8, 17, 18)
 				AND ABS(modds) = 0.25
 				THEN 114
-			WHEN a.statusID = 112
-				AND a.liveawayscore = 0
-				AND a.bettype IN (33, 43)
-				THEN 114
 			WHEN a.statusID = 113
 				AND a.bettype IN (1, 3, 7, 8, 17, 18)
 				AND ABS(modds) = 0.25
-				THEN 115
-			WHEN a.statusID = 113
-				AND a.liveawayscore = 0
-				AND a.bettype IN (33, 43)
 				THEN 115
 			ELSE a.statusID
 			END
@@ -186,7 +161,4 @@ GROUP BY a.winlostdate
 	,statusID
 	,bettype
 	,isba
-
-GO 
-GRANT EXECUTE ON dbo.Task_rptWinlostbyleague_Bettrans14 TO bodblicenseeNet
-GRANT VIEW DEFINITION ON dbo.Task_rptWinlostbyleague_Bettrans14 TO vnteam
+GO
