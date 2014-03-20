@@ -1,10 +1,10 @@
 
-CREATE PROCEDURE [dbo].[Task_Archive_rptCustomerMatch]
+ALTER PROCEDURE [dbo].[Task_Archive_rptCustomerMatch]
 AS
 
 /*	Creator: Victor
 	Task : Archive old data in table rptCustomerMatch
-	DB: DB052.bodb_LicenseeReport
+	DB: DBLIC.bodb_Licensee
 	Date: 2014-03-20
 		             
 	Param's Explanation:
@@ -28,7 +28,7 @@ DECLARE @ArchiveDate DATE
 SELECT @ArchiveDate = DATEADD(MONTH,-3,CONVERT(VARCHAR(8),CURRENT_TIMESTAMP,120) + '01')
 
 DECLARE @WinlostDate DATE
-SELECT @WinlostDate = MIN(Winlostdate) FROM rptCustomerMatch (NOLOCK)
+SELECT @WinlostDate = MIN(Winlostdate) FROM bodb_LicenseeReport.dbo.rptCustomerMatch (NOLOCK)
 
 IF (@WinlostDate >= @ArchiveDate)
 BEGIN
@@ -68,18 +68,18 @@ BEGIN
 	TRUNCATE TABLE #tmpDeleted
 
 	DELETE TOP (@BatchRecord) 
-	FROM rptCustomerMatch
+	FROM bodb_LicenseeReport.dbo.rptCustomerMatch
 	OUTPUT DELETED.custid, DELETED.matchid, DELETED.oddsid, DELETED.Leagueid, DELETED.bettype, DELETED.odds, 
 			DELETED.oddstype, DELETED.statusid, DELETED.stake, DELETED.winlost, DELETED.winlostdate, DELETED.awinlost,
 			DELETED.comm, DELETED.playercomm, DELETED.recommend, DELETED.isBA, DELETED.betcount INTO #tmpDeleted
 	WHERE winlostdate = @WinlostDate
 
-	INSERT INTO rptCustomerMatch_bk
+	INSERT INTO bodb_LicenseeReport.dbo.rptCustomerMatch_bk
 	SELECT * FROM #tmpDeleted
 
 	IF (@@RowCount = 0)
 	BEGIN
-		SELECT @WinlostDate = MIN(Winlostdate) FROM rptCustomerMatch (NOLOCK)
+		SELECT @WinlostDate = MIN(Winlostdate) FROM bodb_LicenseeReport.dbo.rptCustomerMatch (NOLOCK)
 	END
 	ELSE
 	BEGIN

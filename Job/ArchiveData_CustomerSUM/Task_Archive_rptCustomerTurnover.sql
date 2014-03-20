@@ -4,7 +4,7 @@ AS
 
 /*	Creator: Victor
 	Task : Archive old data in table rptCustomerTurnover
-	DB: DB052.bodb_LicenseeReport
+	DB: DBLIC.bodb_Licensee
 	Date: 2014-03-20
 		             
 	Param's Explanation:
@@ -28,7 +28,7 @@ DECLARE @ArchiveDate DATE
 SELECT @ArchiveDate = DATEADD(MONTH,-3,CONVERT(VARCHAR(8),CURRENT_TIMESTAMP,120) + '01')
 
 DECLARE @WinlostDate DATE
-SELECT @WinlostDate = MIN(Winlostdate) FROM rptCustomerTurnover (NOLOCK)
+SELECT @WinlostDate = MIN(Winlostdate) FROM bodb_LicenseeReport.dbo.rptCustomerTurnover (NOLOCK)
 
 IF (@WinlostDate >= @ArchiveDate)
 BEGIN
@@ -68,18 +68,18 @@ BEGIN
 	TRUNCATE TABLE #tmpDeleted
 
 	DELETE TOP (@BatchRecord) 
-	FROM rptCustomerTurnOver
+	FROM bodb_LicenseeReport.dbo.rptCustomerTurnOver
 	OUTPUT DELETED.custid, DELETED.bettype ,DELETED.sporttype, DELETED.currency, DELETED.stake,DELETED.winlost, 
 			DELETED.playercomm, DELETED.odds, DELETED.oddstype,DELETED.statusID,DELETED.recommend,DELETED.leagueID,
 			DELETED.winlostdate,DELETED.betcount,DELETED.isBA/*,DELETED.awinlost,DELETED.comm*/ INTO #tmpDeleted
 	WHERE winlostdate = @WinlostDate
 
-	INSERT INTO rptCustomerTurnover_bk
+	INSERT INTO bodb_LicenseeReport.dbo.rptCustomerTurnover_bk
 	SELECT * FROM #tmpDeleted
 
 	IF (@@RowCount = 0)
 	BEGIN
-		SELECT @WinlostDate = MIN(Winlostdate) FROM rptCustomerTurnover (NOLOCK)
+		SELECT @WinlostDate = MIN(Winlostdate) FROM bodb_LicenseeReport.dbo.rptCustomerTurnover (NOLOCK)
 	END
 	ELSE
 	BEGIN
