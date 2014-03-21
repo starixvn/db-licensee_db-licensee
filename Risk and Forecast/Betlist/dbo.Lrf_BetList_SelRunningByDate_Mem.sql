@@ -55,7 +55,7 @@ Revisions:
    - 20130716@Jim: update matchid for RNG Casino and Bingo
    - 20130903@Jim: support Virtual Horse Racing
    - 20140310@Hannah: offer Keno
-   - 20140319@Hannah: offer Keno 2
+   - 20140319@Hannah: fix bug for showing DrawID 
 
 */
 
