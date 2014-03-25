@@ -1,4 +1,12 @@
-﻿/*
+USE [bodb02]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_BetList_SelByDayAll_Mem]    Script Date: 03/25/2014 00:38:49 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+/****** Object:  Stored Procedure dbo.Lrf_BetList_SelByDayAll_Mem    Script Date: 10/3/2013 2:52:12 PM ******/
+/*
 	Lrf_BetList_SelByDayAll_Mem
 	@Custid=5754258,
 	@FromDate='2012-08-04 00:00:00:000'
@@ -52,6 +60,7 @@ Revisions:
 	- 20130410@Jim: return betteam value for Parlay (mix parlay & system parlay) ticket
 	- 20130514@Jim: Restrict permission of Licensee Users by currency
 	- 20130905@Jim: support VHR
+	- 20140324@Daniel: fix show RNG Casino / Bingo bets due to matchid = 0
 Param's Explanation: 
 	+ @transtype: 1-Betting Statement; 2-VOID/Cancelled Bet; 3-Outstanding Bet 
 	
@@ -211,6 +220,58 @@ ELSE
 				--AND b.winlostdate=@fromdate AND b.bettype<=19000: old condition 
 				AND b.winlostdate=@fromdate AND b.bettype<=1299
 				AND b.statusID IN (SELECT [statusID] FROM @tmpStatus)
+				
+			--RNG Casino & Bingo		
+			INSERT INTO @Data 
+			SELECT
+				case bettype when 71 then 251 else 252 end sporttype, 
+				0 leagueid,
+				0 homeID,
+				0 awayID,
+				b.bettype,
+				'' matchcode,
+				'' AS race,
+				b.bettype matchid, 
+				b.transid, 
+				b.transdate, 
+				b.winlostdate,
+				b.refno, 
+				b.betid,
+				b.oddsid, 
+				b.hdp1, 
+				b.hdp2,
+				modds, 
+				b.Oddstype,
+				b.odds,
+				b.betteam,
+				b.status AS status,
+				'' betstatus, 
+				b.stake,
+				b.actual_stake,
+				(b.winlost-b.actual_stake) AS winlost, 
+				- (b.winlost-b.actual_stake) AS LicenseeWL ,
+				b.comm,
+				b.playercomm ,
+				b.discount,
+				b.livehomescore, 
+				b.liveawayscore, 
+				b.liveindicator, 
+				0 finalhomescore, 
+				0 finalawayscore,
+				0 hthomescore, 
+				0 htawayscore,
+				--b.username, 
+				b.IP AS IP,
+				b.Username,
+				0 AS IsNeutral,
+				b.currency,
+				'' ShowTime
+			FROM	dbo.bettrans14 b WITH (NOLOCK)
+			WHERE	b.custid=@custid 
+					AND bettype IN(71,73)
+					AND b.winlostdate = @fromdate
+					AND b.statusID IN (SELECT [statusID] FROM @tmpStatus)					
+										
 			-------VHR
 			INSERT INTO @Data 
 			SELECT
@@ -493,6 +554,57 @@ ELSE
 				--AND b.winlostdate=@fromdate AND b.bettype<=19000 : old condition 
 				AND b.winlostdate=@fromdate AND b.bettype<=1299
 				AND b.statusID IN (SELECT [statusID] FROM @tmpStatus)
+
+			--RNG Casino & Bingo		
+			INSERT INTO @Data 
+			SELECT
+				case bettype when 71 then 251 else 252 end sporttype, 
+				0 leagueid,
+				0 homeID,
+				0 awayID,
+				b.bettype,
+				'' matchcode,
+				'' AS race,
+				b.bettype matchid, 
+				b.transid, 
+				b.transdate, 
+				b.winlostdate,
+				b.refno, 
+				b.betid,
+				b.oddsid, 
+				b.hdp1, 
+				b.hdp2,
+				modds, 
+				b.Oddstype,
+				b.odds,
+				b.betteam,
+				b.status AS status,
+				'' betstatus, 
+				b.stake,
+				b.actual_stake,
+				(b.winlost-b.actual_stake) AS winlost, 
+				- (b.winlost-b.actual_stake) AS LicenseeWL ,
+				b.comm,
+				b.playercomm ,
+				b.discount,
+				b.livehomescore, 
+				b.liveawayscore, 
+				b.liveindicator, 
+				0 finalhomescore, 
+				0 finalawayscore,
+				0 hthomescore, 
+				0 htawayscore,
+				--b.username, 
+				b.IP AS IP,
+				b.Username,
+				0 AS IsNeutral,
+				b.currency,
+				'' ShowTime
+			FROM	dbo.bettrans b WITH (NOLOCK)
+			WHERE	b.custid=@custid 
+					AND bettype IN(71,73)
+					AND b.winlostdate = @fromdate
+					AND b.statusID IN (SELECT [statusID] FROM @tmpStatus)	
 
 			-------VHR
 			INSERT INTO @Data 
@@ -909,7 +1021,3 @@ ELSE
 		SELECT * FROM @BettransDetail ORDER BY refno,bettype 
 		DROP TABLE #TempExchange
 	END
-GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_SelByDayAll_Mem] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelByDayAll_Mem] TO [vnteam]
