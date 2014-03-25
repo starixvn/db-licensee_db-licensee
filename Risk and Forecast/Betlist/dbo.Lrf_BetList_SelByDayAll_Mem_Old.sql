@@ -5,6 +5,7 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
+
 ALTER PROCEDURE [dbo].[Lrf_BetList_SelByDayAll_Mem_Old]
 	@LicenseeID INT ,
 	@UserID		INT,
@@ -54,7 +55,9 @@ Revisions:
 	- 20130514@Jim: Restrict permission of Licensee Users by currency
 	- 20130905@Jim: support VHR
 	- 20140310@Hannah: offer Keno
+	- 20140324@Daniel: fix show RNG Casino / Bingo bets due to matchid = 0
 	
+
 Param's Explanation: 
 
 */
@@ -171,6 +174,57 @@ FROM	bodb_Archive.dbo.bettrans_bk b WITH (NOLOCK)
 WHERE	b.custid=@custid 		
 		AND b.winlostdate = @fromdate AND b.bettype NOT BETWEEN 1501 AND 1599 -- exclude Keno
 
+
+--RNG Casino & Bingo		
+INSERT INTO @Data 
+SELECT
+	case bettype when 71 then 251 else 252 end sporttype, 
+	0 leagueid,
+	0 homeID,
+	0 awayID,
+	b.bettype,
+	'' matchcode,
+	'' AS race,
+	b.bettype matchid, 
+	b.transid, 
+	b.transdate, 
+	b.winlostdate,
+	b.refno, 
+	--CASE WHEN b.bettype = 87 THEN b.betid ELSE 0 END, --- 87- High Low for NG: Current Live Ball 
+	b.betid,
+	b.oddsid, 
+	b.hdp1, 
+	b.hdp2,
+	modds, 
+	b.Oddstype,
+	b.Odds,	
+	b.betteam,
+	b.status AS status,
+	'' betstatus, 
+	b.stake,
+	b.actual_stake, 
+	(b.winlost-b.actual_stake) AS winlost, 
+	- (b.winlost-b.actual_stake) AS LicenseeWL ,
+	b.comm,
+	b.playercomm,
+	b.livehomescore, 
+	b.liveawayscore, 
+	b.liveindicator, 
+	0 finalhomescore, 
+	0 finalawayscore,
+	0 hthomescore, 
+	0 htawayscore,
+	b.IP AS IP,
+	@Username,
+	0 AS IsNeutral,
+	b.currency,
+	'' ShowTime 
+FROM	bodb_Archive.dbo.bettrans_bk b WITH (NOLOCK)
+
+WHERE	b.custid=@custid 
+		AND bettype IN(71,73)
+		AND b.winlostdate = @fromdate 		
+
 -- Keno 
 INSERT INTO @Data 
 SELECT
@@ -218,6 +272,7 @@ SELECT
 FROM	bodb_Archive.dbo.bettrans_bk b WITH (NOLOCK)
 		CROSS APPLY dbo.f_ParseTransDesc(b.transdesc, b.bettype) AS fnc
 WHERE	b.custid=@custid 		
+
 		AND b.winlostdate = @fromdate AND b.bettype BETWEEN 1501 AND 1599 
 		
 -- VHR
