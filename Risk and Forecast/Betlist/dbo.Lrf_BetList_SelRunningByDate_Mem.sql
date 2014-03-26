@@ -1,6 +1,7 @@
-﻿set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
+﻿SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
 
 ALTER PROCEDURE [dbo].[Lrf_BetList_SelRunningByDate_Mem]
 	@LicenseeID INT ,
@@ -20,7 +21,9 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_SelRunningByDate_Mem]
 	@ShowLC	BIT = 0,
 	@ShowVS BIT = 0,
 	@ShowCS BIT = 0, -- RNG Casino
-	@ShowBG BIT = 0  -- Bingo
+	@ShowBG BIT = 0,  -- Bingo
+	@ShowKN BIT = 0  -- Keno
+
 	
 AS
 
@@ -51,6 +54,9 @@ Revisions:
    - 20130514@Jim: Restrict permission of Licensee Users by currency
    - 20130716@Jim: update matchid for RNG Casino and Bingo
    - 20130903@Jim: support Virtual Horse Racing
+   - 20140310@Hannah: offer Keno
+   - 20140319@Hannah: fix bug for showing DrawID 
+
 */
 
 SET NOCOUNT ON
@@ -102,7 +108,8 @@ CREATE TABLE #BetListSelRunningByDateMem
 	winlostdate 	DATETIME,
 	currency 		SMALLINT,
 	playercomm 		MONEY,
-	showtime NVARCHAR(50) -- table - shoe - hand of Live Casino
+	showtime NVARCHAR(50), -- table - shoe - hand of Live Casino
+	MatchID 		INT
 )
 
 CREATE TABLE #TempBetList
@@ -168,12 +175,11 @@ CREATE TABLE #TempBetList
 		b.transdate>=@FromDate AND b.transdate<=@ToDate
 		AND b.custid=@CustID 
 		AND b.statusID IN (0,1) 
-		
+
 	IF @ShowBA = 1
-	BEGIN
-		
+	BEGIN		
 			
-		--Sportbook
+		--Sportbook 
 		INSERT INTO #BetListSelRunningByDateMem
 		SELECT
 			m.sporttype,
@@ -206,7 +212,8 @@ CREATE TABLE #TempBetList
 			b.winlostdate,
 			b.currency,
 			b.playercomm,
-			'' as ShowTime
+			'' as ShowTime,
+			m.matchid
 		FROM 
 			#TempBetList b 
 			INNER JOIN match m WITH (NOLOCK) ON b.matchid=m.matchid		
@@ -247,7 +254,8 @@ CREATE TABLE #TempBetList
 			b.winlostdate,
 			b.currency,
 			b.playercomm,
-			'' as ShowTime
+			'' as ShowTime,
+			0 as matchid
 		FROM
 			#TempBetList b 
 			INNER JOIN outright m WITH (NOLOCK) ON b.matchid=m.orid 
@@ -288,7 +296,8 @@ CREATE TABLE #TempBetList
 			b.winlostdate,
 			b.currency,
 			b.playercomm,
-			'' As ShowTime
+			'' As ShowTime,
+			0 as matchid
 		FROM 
 			#TempBetList b 
 		WHERE
@@ -328,7 +337,8 @@ CREATE TABLE #TempBetList
 			b.winlostdate,
 			b.currency,
 			b.playercomm,
-			'' as ShowTime
+			'' as ShowTime,
+			0 as matchid
 		FROM 
 			#TempBetList b 
 		WHERE
@@ -369,7 +379,8 @@ CREATE TABLE #TempBetList
 			b.winlostdate,
 			b.currency,
 			b.playercomm,
-			'' As ShowTime
+			'' As ShowTime,
+			m.matchid
 		FROM 
 			#TempBetList b 
 			INNER JOIN MATCH m WITH (NOLOCK) ON b.matchid = m.matchid		
@@ -414,7 +425,8 @@ CREATE TABLE #TempBetList
 			b.winlostdate,
 			b.currency,
 			b.playercomm,
-			'' as ShowTime
+			'' as ShowTime,
+			m.matchid
 		FROM 
 			bettrans b WITH (NOLOCK)			
 			INNER JOIN match m WITH (NOLOCK) ON b.matchid=m.matchid		
@@ -459,7 +471,8 @@ CREATE TABLE #TempBetList
 			b.winlostdate,
 			b.currency,
 			b.playercomm,
-			'' as ShowTime
+			'' as ShowTime,
+			0 as matchid
 		FROM
 			bettrans b WITH (NOLOCK)		
 			INNER JOIN outright m WITH (NOLOCK) ON b.matchid=m.orid 
@@ -505,7 +518,8 @@ CREATE TABLE #TempBetList
 			b.winlostdate,
 			b.currency,
 			b.playercomm,
-			'' as ShowTime
+			'' as ShowTime,
+			0 as matchid
 		FROM 
 			bettrans b WITH (NOLOCK)
 		WHERE
@@ -549,7 +563,8 @@ CREATE TABLE #TempBetList
 			b.winlostdate,
 			b.currency,
 			b.playercomm,
-			'' as ShowTime
+			'' as ShowTime,
+			0 as matchid
 		FROM 
 			bettrans b WITH (NOLOCK)
 		WHERE
@@ -602,7 +617,8 @@ CREATE TABLE #TempBetList
 			b.winlostdate,
 			b.currency,
 			b.playercomm,
-			'' as ShowTime
+			'' as ShowTime,
+			0 as matchid
 		FROM
 			bettrans b WITH (NOLOCK)		
 			INNER JOIN outright m WITH (NOLOCK) ON b.matchid=m.orid 				
@@ -652,7 +668,8 @@ CREATE TABLE #TempBetList
 			b.winlostdate,
 			b.currency,
 			b.playercomm,
-			CASE WHEN @ShowLC=1 THEN isnull(m.showtime,'') ELSE '' END as ShowTime
+			CASE WHEN @ShowLC=1 THEN isnull(m.showtime,'') ELSE '' END as ShowTime,
+			m.matchid 
 		FROM 
 			bettrans b WITH (NOLOCK)			
 			INNER JOIN MATCH m WITH (NOLOCK) ON b.matchid = m.matchid		
@@ -699,7 +716,8 @@ CREATE TABLE #TempBetList
 			b.winlostdate,
 			b.currency,
 			b.playercomm, 
-			CONVERT(VARCHAR(20),r.EventTime) as ShowTime
+			CONVERT(VARCHAR(20),r.EventTime) as ShowTime,
+			0 as matchid
 		FROM 
 			bettrans b WITH (NOLOCK)			
 			INNER JOIN VSOutright o with (nolock) ON b.oddsid=o.Orid
@@ -748,7 +766,8 @@ CREATE TABLE #TempBetList
 			b.winlostdate,
 			b.currency,
 			b.playercomm,
-			 '' as ShowTime
+			 '' as ShowTime,
+			 71 as MatchID
 		FROM 
 			bettrans b WITH (NOLOCK)			
 		WHERE
@@ -795,7 +814,8 @@ CREATE TABLE #TempBetList
 			b.winlostdate,
 			b.currency,
 			b.playercomm,
-			 '' as ShowTime
+			 '' as ShowTime,
+			 73 as matchid
 		FROM 
 			bettrans b WITH (NOLOCK)			
 		WHERE
@@ -803,6 +823,52 @@ CREATE TABLE #TempBetList
 			b.custid=@CustID 
 			AND b.statusID IN (0,1) 
 			AND b.bettype=73
+	END
+	IF @ShowKN = 1
+	BEGIN
+		INSERT INTO #BetListSelRunningByDateMem
+		SELECT
+			202 AS sporttype,
+			@Username AS UserName,
+			t.gameid AS bettype,
+			0 AS leagueID,	
+			t.translogid AS refno,					
+			t.translogid AS transid,
+			0 AS BetID,
+			'' AS matchcode,
+			'' AS Race,--VinhTrinh Add for Horseracing
+			0 AS homeID,
+			0 AS awayID,
+			0 AS hdp1, 
+			0 AS hdp2, 
+			t.odds,
+			0 AS modds,
+			--b.status,
+			t.status,
+			t.stake,
+			t.actual_stake, 
+			t.transdate,		
+			fnc.ChoiceId AS betteam,
+			t.discount,
+			0 AS liveindicator, 
+			0 AS livehomescore, 
+			0 AS liveawayscore, 
+			t.IP AS IP,
+			CONVERT(BIT,0) AS IsNeutral,
+			0 AS oddstype,
+			t.winlostdate,
+			t.currency,
+			0 AS playercomm,
+			'' AS ShowTime,
+			fnc.GameId AS matchid
+		FROM 
+			translog t WITH (NOLOCK)			
+			CROSS APPLY dbo.f_ParseTransDesc(t.transdesc, t.gameid) fnc	
+		WHERE
+			t.transdate>=@FromDate AND t.transdate<=@ToDate AND 
+			t.custid=@CustID 
+			AND t.statusID IN (0,1) 
+			AND (t.gameid BETWEEN 1501 AND 1599)
 	END
 	
 DECLARE @RowStart INT, @RowEnd INT  
@@ -922,3 +988,4 @@ GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelRunningByDate_Mem] TO [bodbLicenseeNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelRunningByDate_Mem] TO vnteam
+
