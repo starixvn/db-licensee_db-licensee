@@ -1,6 +1,12 @@
-﻿set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
+﻿USE [bodb02]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_BetList_SelWinLossByDate_Mem]    Script Date: 03/26/2014 02:09:08 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+/****** Object:  Stored Procedure dbo.Lrf_BetList_SelWinLossByDate_Mem    Script Date: 11/1/2013 12:28:43 AM ******/
+/****** Object:  Stored Procedure dbo.Lrf_BetList_SelWinLossByDate_Mem    Script Date: 11/1/2013 10:33:33 AM ******/
 
 ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinLossByDate_Mem]
 	@LicenseeID 	INT,
@@ -33,8 +39,7 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinLossByDate_Mem]
 	@ShowLC BIT = 0,
 	@ShowVS BIT = 0,
 	@ShowCS BIT = 0,-- RNG Casino
-	@ShowBG BIT = 0,
-	@ShowKN BIT = 0
+	@ShowBG BIT = 0
 	
 AS
 
@@ -68,7 +73,6 @@ Revisions:
    - 20130716@Jim: update matchid for RNG Casino and Bingo
    - 20130903@Jim: support Virtual Horse Racing
    - 20131101@Victor: enhance performance
-   - 20140326@Jim: offer Keno
    */
 
 SET NOCOUNT ON
@@ -893,58 +897,6 @@ BEGIN
 			b.ruben = 1 
 			
 	END
-	-- show Keno
-	IF @ShowKN=1
-	BEGIN
-		INSERT INTO #BetListByDateMem
-			SELECT
-			202 Sporttype, 
-			@Username, 
-			b.TransID,
-			ISNULL(b.BetID,0),
-			b.Bettype,
-			CONVERT(FLOAT, b.hdp1) AS hdp1, 
-			CONVERT(FLOAT, b.hdp2) AS hdp2,
-			b.Oddstype,			
-			b.Odds,
-			b.modds,
-			b.stake,
-			b.actual_stake, 
-			ChoiceId betteam,
-			b.status AS Status,				
-			b.refno,
-			b.Transdate,	
-			b.winlostdate,			
-			(b.winlost-actual_stake),
-			- (b.winlost-b.actual_stake) AS LicenseeWL ,
-			b.comm,
-			b.playercomm ,				
-			b.Liveindicator,
-			b.Livehomescore,
-			b.Liveawayscore,
-			b.IP AS IP,
-			0  AS  LeagueID,
-			GameId  AS MatchID,	
-			'' AS  MatchCode,
-			'' AS  Race,	
-			0  AS HomeID,
-			0  AS AwayID, 		
-			0  AS Betstatus,
-			CONVERT(BIT,0) AS IsNeutral	,
-			b.currency,-- here 
-			'' AS  ShowTime 	
-		FROM
-			dbo.bettrans AS b WITH (NOLOCK)		
-			CROSS APPLY dbo.f_ParseTransDesc(b.transdesc, b.bettype)
-		WHERE
-			b.winlostdate BETWEEN @TempFromDate AND @todate AND
-			b.recommend = @Recommend AND --to improve performance
-			b.custid=@CustID AND
-			b.bettype BETWEEN 1501 AND 1599 AND
-			b.ruben = 1 
-			
-	END
-	
 END
 
 IF @Fromdate <= @MoveBetsDay
@@ -1634,56 +1586,6 @@ BEGIN
 			b.bettype=73 AND 
 			b.ruben = 1
 	END	
-	--- Show Keno
-	IF @ShowKN=1 
-	BEGIN	
-		INSERT INTO #BetListByDateMem
-		SELECT
-			202 Sporttype, 
-			@Username, 
-			b.TransID,
-			ISNULL(b.BetID,0),
-			b.Bettype,
-			0 AS hdp1, 
-			0 AS hdp2,
-			b.Oddstype,
-			b.odds,
-			b.modds,
-			b.stake,
-			b.actual_stake, 
-			ChoiceID betteam,
-			b.status AS Status,				
-			b.refno,
-			b.Transdate,	
-			b.winlostdate,			
-			(b.winlost-actual_stake),
-			- (b.winlost-b.actual_stake) AS LicenseeWL ,
-			b.comm,
-			b.playercomm  ,
-			b.Liveindicator,
-			b.Livehomescore,
-			b.Liveawayscore,
-			b.IP AS IP,
-			0  AS  LeagueID,
-			GameId  AS  MatchID,	
-			'' AS  MatchCode,
-			'' AS Race,	
-			0  AS HomeID,
-			0  AS AwayID, 		
-			0  AS Betstatus,
-			CONVERT(BIT,0) AS IsNeutral	,
-			b.currency,
-			''  AS ShowTime 	
-		FROM
-			dbo.bettrans14 AS b WITH (NOLOCK, INDEX=bettrans1423)	
-			CROSS APPLY dbo.f_ParseTransDesc(b.transdesc, b.bettype)	
-		WHERE
-			b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate AND
-			b.recommend = @Recommend AND --to improve performance
-			b.custid=@CustID AND
-			b.bettype BETWEEN 1501 AND 1599 AND
-			b.ruben = 1
-	END
 END	
 
 IF @FromDate < @BalanceUpDay
@@ -2375,59 +2277,6 @@ BEGIN
 			
 			
 	END
-	--- Show Keno
-	IF @ShowKN=1
-	BEGIN	
-		INSERT INTO #BetListByDateMem
-		SELECT			
-			202 Sporttype, 
-			@Username, 
-			b.TransID,
-			ISNULL(b.BetID,0),
-			b.Bettype,
-			0 AS hdp1, 
-			0 AS hdp2,
-			b.OddsType,
-			b.Odds,
-			b.modds,
-			b.stake,
-			b.actual_stake, 
-			ChoiceID Betteam,
-			b.status AS Status,				
-			b.refno,
-			b.Transdate,	
-			b.winlostdate,			
-			(b.winlost-actual_stake),
-			- (b.winlost-b.actual_stake) AS LicenseeWL ,
-			b.comm,
-			b.playercomm  AS PlayerComm,				
-			b.Liveindicator,
-			b.Livehomescore,
-			b.Liveawayscore,
-			b.IP AS IP,
-			0    AS  LeagueID,
-			GameId  AS  MatchID,	
-			'' AS MatchCode,
-			'' AS Race,	
-			0  AS  HomeID,
-			0  AS  AwayID, 		
-			0  AS  Betstatus,
-			CONVERT(BIT,0) AS IsNeutral	,
-			b.currency,
-			'' AS ShowTime 	
-		FROM
-			bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK, index=IX_custid)
-			CROSS APPLY dbo.f_ParseTransDesc(b.transdesc, b.bettype)	
-		WHERE
-			b.winlostdate BETWEEN @fromdate AND @TempToDate AND			
-			b.custid=@CustID AND
-			b.recommend = @Recommend AND	
-			b.bettype BETWEEN 1501 AND 1599 AND
-			b.ruben = 1
-			
-			
-	END
-	
 END
 
 DECLARE @RowStart INT, @RowEnd INT  
@@ -2685,7 +2534,3 @@ SELECT * FROM @BettransDetail ORDER BY RefNo,Bettype
 DROP TABLE #TempExchange
 DROP TABLE #BetListByDateMem
 DROP TABLE #TempBetList
-GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinLossByDate_Mem] TO [bodbLicenseeNet] AS [dbo]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelWinLossByDate_Mem] TO [vnteam] AS [dbo]
