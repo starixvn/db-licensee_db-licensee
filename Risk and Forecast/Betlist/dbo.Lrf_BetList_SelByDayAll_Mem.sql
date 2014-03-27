@@ -60,7 +60,7 @@ Revisions:
 	- 20130410@Jim: return betteam value for Parlay (mix parlay & system parlay) ticket
 	- 20130514@Jim: Restrict permission of Licensee Users by currency
 	- 20130905@Jim: support VHR
-	- 20140324@Daniel: fix show RNG Casino / Bingo bets due to matchid = 0
+	- 20140310@Hannah: offer Keno
 	- 20140324@Daniel: fix show RNG Casino / Bingo bets due to matchid = 0
 Param's Explanation: 
 	+ @transtype: 1-Betting Statement; 2-VOID/Cancelled Bet; 3-Outstanding Bet 
@@ -608,7 +608,7 @@ ELSE
 			WHERE
 				b.custid=@custid 		
 				--AND b.winlostdate=@fromdate AND b.bettype<=19000 : old condition 
-				AND b.winlostdate=@fromdate AND b.bettype<=1299
+				AND b.winlostdate=@fromdate AND (b.bettype<=1299) 
 				AND b.statusID IN (SELECT [statusID] FROM @tmpStatus)
 
 			--RNG Casino & Bingo		
