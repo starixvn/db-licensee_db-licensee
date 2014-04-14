@@ -43,7 +43,7 @@ Revisions:
 	-20130618@Jim:  Restrict permission of Licensee Users by currency
 	-20130625@Jim: support to view Currency UUS
 	-20131203@Jim: offer Virtual Greyhound, Virtual Motor Racing
-	-20140404@Florent: offer Keno product	
+	
      
 Param's Explanation:  
   
@@ -133,8 +133,7 @@ BEGIN
 		OR @ProductCode = 'LC'
 		OR @ProductCode = 'VS'
 		OR @ProductCode = 'CS'
-		OR @ProductCode = 'BG'
-		OR @ProductCode = 'KN' --Keno
+		OR @ProductCode = 'BG'		
 	BEGIN
 		SELECT @sql = @sql + '--Get data from bettrans for non - BA' + CHAR(13)
 
@@ -153,9 +152,7 @@ BEGIN
 				WHEN @ProductCode = 'CS'
 					THEN 'AND b.bettype = 71'
 				WHEN @ProductCode = 'BG'
-					THEN 'AND b.bettype = 73'
-				WHEN @ProductCode = 'KN' --Keno's bettype
-					THEN 'AND b.bettype BETWEEN 1501 AND 1599'
+					THEN 'AND b.bettype = 73'				
 				ELSE ''
 				END + CHAR(13) + 'GROUP BY  b.winlostdate, s.currency, b.bettype
 								' + CHAR(13)
@@ -192,8 +189,7 @@ BEGIN
 		OR @ProductCode = 'LC'
 		OR @ProductCode = 'VS'
 		OR @ProductCode = 'CS'
-		OR @ProductCode = 'BG'
-		OR @ProductCode = 'KN'
+		OR @ProductCode = 'BG'		
 	BEGIN
 		SELECT @sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13) + 'SELECT ' + CHAR(13) + 'b.rptDate,' + CHAR(13) + 'b.currencyID,' + CHAR(13) + 'b.bettype,' + CHAR(13) + 'SUM(b.turnover * CASE WHEN b.bettype=33 AND b.status IN (114,115) THEN 0.5 ELSE 1 END) turnover,' + CHAR(13) + 'sum(b.winloss) winlost,' + CHAR(13) + 'SUM(CASE WHEN bettype BETWEEN 31 AND 33 THEN b.WinlossA ELSE  -1 * b.winloss END) AS LicenseeWL,' + CHAR(13) + 'sum(b.CommissionA) Comm,' + CHAR(13) + 'sum( b.CommissionP ) PlayerComm,' + CHAR(13) + '- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13) + 'sum(b.betcount) BetCount' + CHAR(13) + 'FROM bodb_Licensee.dbo.rpt_Betting b WITH ( NOLOCK )' + CHAR(13) + 'INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID' + CHAR(13) + 'WHERE b.rptDate BETWEEN ''' + convert(VARCHAR(10), @FDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13) + 'AND b.status NOT IN (-1,103)' + CHAR(13) + 'AND b.siteID =' + convert(VARCHAR(10), @LicenseeID) + CHAR(13) +
 			---'AND b.CurrencyID <> 20 '  + char(13) +
@@ -216,8 +212,6 @@ BEGIN
 					THEN 'AND b.bettype = 71'
 				WHEN @ProductCode = 'BG'
 					THEN 'AND b.bettype = 73'
-				WHEN @ProductCode = 'KN' --keno's bettype
-					THEN 'AND b.bettype BETWEEN 1501 AND 1599'
 				ELSE ''
 				END + CHAR(13) + 'GROUP BY b.rptDate, b.currencyID, b.bettype' + CHAR(13)
 	END
