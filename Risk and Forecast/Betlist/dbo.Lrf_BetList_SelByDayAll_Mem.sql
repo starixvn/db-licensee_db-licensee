@@ -1,11 +1,10 @@
-USE [bodb02]
+SET QUOTED_IDENTIFIER ON 
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_BetList_SelByDayAll_Mem]    Script Date: 03/25/2014 00:38:49 ******/
-SET ANSI_NULLS ON
+SET ANSI_NULLS ON 
 GO
-SET QUOTED_IDENTIFIER ON
-GO
-/****** Object:  Stored Procedure dbo.Lrf_BetList_SelByDayAll_Mem    Script Date: 10/3/2013 2:52:12 PM ******/
+
+/****** Object:  Stored Procedure dbo.Lrf_BetList_SelByDayAll_Mem    Script Date: 4/11/2014 16:25:25  ******/
+
 /*
 	Lrf_BetList_SelByDayAll_Mem
 	@Custid=5754258,
@@ -62,6 +61,7 @@ Revisions:
 	- 20130905@Jim: support VHR
 	- 20140310@Hannah: offer Keno
 	- 20140324@Daniel: fix show RNG Casino / Bingo bets due to matchid = 0
+	- 20140411@Francis: fix incorrect sporttypes showing for VHR, Racing
 Param's Explanation: 
 	+ @transtype: 1-Betting Statement; 2-VOID/Cancelled Bet; 3-Outstanding Bet 
 	
@@ -220,6 +220,7 @@ ELSE
 				b.custid=@custid 		
 				--AND b.winlostdate=@fromdate AND b.bettype<=19000: old condition 
 				AND b.winlostdate=@fromdate AND b.bettype<=1299
+				AND b.bettype NOT IN (10,31,32,33,1231,1232,1233,1237,1238) --exclude Racing and VHS
 				AND b.statusID IN (SELECT [statusID] FROM @tmpStatus)
 
 			--RNG Casino & Bingo		
@@ -492,8 +493,7 @@ ELSE
 				AND b.bettype=29
 				AND b.matchid = 29
 				AND b.statusID IN (SELECT [statusID] FROM @tmpStatus)
-			
-
+		
 			-- outright
 			INSERT INTO @Data 
 			SELECT
@@ -609,10 +609,10 @@ ELSE
 				b.custid=@custid 		
 				--AND b.winlostdate=@fromdate AND b.bettype<=19000 : old condition 
 				AND b.winlostdate=@fromdate AND (b.bettype<=1299) 
+				AND b.bettype NOT IN (10,31,32,33,1231,1232,1233,1237,1238) --exclude Racing and VHS
 				AND b.statusID IN (SELECT [statusID] FROM @tmpStatus)
 
 			--RNG Casino & Bingo		
-
 			INSERT INTO @Data 
 			SELECT
 				case bettype when 71 then 251 else 252 end sporttype, 
@@ -1184,7 +1184,17 @@ ELSE
 		SELECT * FROM @BettransDetail ORDER BY refno,bettype 
 		DROP TABLE #TempExchange
 	END
+
 GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_SelByDayAll_Mem] TO [bodbLicenseeNet]
+
+SET QUOTED_IDENTIFIER OFF 
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelByDayAll_Mem] TO [vnteam]
+SET ANSI_NULLS ON 
+GO
+
+
+GO 
+ GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelByDayAll_Mem] TO [vnteam]
+GO 
+ GRANT EXECUTE ON [dbo].[Lrf_BetList_SelByDayAll_Mem] TO [bodbLicenseeNet]
+GO 
