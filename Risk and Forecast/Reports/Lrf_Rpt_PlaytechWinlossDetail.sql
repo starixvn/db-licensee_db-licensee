@@ -68,7 +68,7 @@ BEGIN
 
 	INSERT INTO @Super(custid, currency)  
 	SELECT CustID, currency 
-	FROM Dep_CustSuper dc WITH (NOLOCK)  
+	FROM bodb02.dbo.Dep_CustSuper dc WITH (NOLOCK)  
 		INNER JOIN #Currency c ON dc.Currency = c.CurrencyID
 	WHERE site = @site
 
@@ -186,6 +186,3 @@ GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_PlaytechWinlossDetail] TO [bodbLicenseeNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_PlaytechWinlossDetail] TO [vnteam]  
-
-
-

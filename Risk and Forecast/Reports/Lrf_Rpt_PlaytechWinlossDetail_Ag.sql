@@ -63,7 +63,7 @@ BEGIN
 
 	INSERT INTO @Super(custid, currency)  
 	SELECT CustID,currency
-	FROM Dep_CustSuper dc WITH (NOLOCK)  
+	FROM bodb02.dbo.Dep_CustSuper dc WITH (NOLOCK)  
 		INNER JOIN #Currency c ON dc.Currency = c.CurrencyID 
 	WHERE  site = @LicenseeName	
 	  
