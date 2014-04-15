@@ -1,0 +1,196 @@
+ALTER PROCEDURE [dbo].[Lrf_Rpt_PlaytechWinloss]  
+ @LicenseeID	INT,
+ @UserID		INT,
+ @CurrencyID	INT = 0,
+ @FromDate		SMALLDATETIME,  
+ @ToDate		SMALLDATETIME,
+ @ReportType	TINYINT=1  
+
+AS  
+/*  Created: Hannah
+	Date: 2014-04-10
+    Task : Playtech Casino Win Loss report 
+    DB: DB06.bodb02  
+   
+    Revisions:  
+	Param's Explanation:  
+	  + @ReportType: 1-Daily; 2-Monthly;  
+	  + @BackupDay: The day we move tickets to rptDepWinlostByProduct_bk
+*/  
+BEGIN
+	SET NOCOUNT ON  
+
+	CREATE TABLE #SAgWinLoss 
+	(  
+		winlostdate		DATETIME,  
+		Currency		INT,
+		Turnover		MONEY,	
+		Winlost			MONEY,  
+		LicenseeWL		MONEY, 
+		PlayerComm		MONEY, 
+		BetCount		BIGINT
+	)  
+
+	DECLARE @BackupDay SMALLDATETIME
+	DECLARE @sql NVARCHAR(1000)
+
+	SELECT @BackupDay = MIN(winlostdate)
+	FROM [bodb_report].[dbo].[rptDepWinlostByProduct] (NOLOCK) 
+
+	DECLARE @tempAg	TABLE( custID INT, currency INT)  
+	DECLARE @VNDCurrencyName VARCHAR(20)
+	DECLARE @LicenseeName VARCHAR(50)
+
+	DECLARE @_FromDate SMALLDATETIME, @_ToDate SMALLDATETIME
+	SELECT @_FromDate = @FromDate, @_ToDate = @ToDate
+
+	SELECT @LicenseeName = LicenseeName 
+	FROM DBLIC.bodb_Licensee.dbo.Licensees WITH (NOLOCK) 
+	WHERE LicenseeID = @LicenseeID	
+
+	SELECT @VNDCurrencyName = currency 
+	FROM exchange (NOLOCK) 
+	WHERE ExchangeId = 51
+
+	SET @sql = 'SELECT currencyID, LicenseeID 
+			FROM dbo.Lrf_f_GetCurrencybyUser(' + CAST(@LicenseeID AS VARCHAR) + ', '+ CAST(@LicenseeID AS VARCHAR) + +', 1)
+			WHERE ('+ CAST(@currencyID AS VARCHAR) +' = 0  OR ('+ CAST(@currencyID AS VARCHAR) +' <> 0 AND CurrencyID = '+ CAST(@currencyID AS VARCHAR) +'));'
+
+	CREATE TABLE #currency(currencyID INT, LicenseeID INT)
+
+	INSERT INTO #currency(currencyID, LicenseeID)
+	EXEC DBEXT.bodb02.dbo.sp_executesql @sql
+
+	INSERT INTO @tempAg (custID, currency) 
+	SELECT custID, currency 
+	FROM  DBLIC.bodb_Licensee.dbo.LicenseeCust lc WITH (NOLOCK) 
+		INNER JOIN #Currency c ON lc.LicenseeID = c.LicenseeID AND lc.Currency = c.CurrencyID 
+	
+	DECLARE @Super AS TABLE (custid INT PRIMARY KEY, currency INT)
+	
+	INSERT INTO @Super(custid, currency)  
+	SELECT CustID, currency 
+	FROM Dep_CustSuper dc WITH (NOLOCK)  
+		INNER JOIN #Currency c ON dc.Currency = c.CurrencyID
+	WHERE  dc.site = @LicenseeName	
+
+	DROP TABLE #Currency
+
+	DECLARE @TempFromDate DATETIME 
+	DECLARE @TempToDate DATETIME 
+	DECLARE @MaxOldDate DATETIME
+
+	IF @_ToDate >= @BackupDay
+	BEGIN
+		IF @_FromDate < @BackupDay 
+			SET @TempFromDate =  @BackupDay
+		ELSE
+			SET @TempFromDate = @_FromDate
+	
+		INSERT INTO #SAgWinLoss
+		SELECT   
+			r.winlostdate,  
+			s.currency,			
+			SUM(r.turnover) AS Turnover, 
+			SUM(r.winlost) AS Winlost,  
+			-SUM(r.winlost) AS LicenseeWL,
+			SUM(r.playerComm) AS PlayerComm,
+			SUM(r.BetCount) AS BetCount	
+		FROM 
+			bodb_report.dbo.rptDepWinlostByProduct r WITH ( NOLOCK)
+			INNER JOIN bodb02.dbo.custInfo ci WITH ( NOLOCK) ON ci.CustID = r.CustID
+			INNER JOIN @TempAg a ON ci.recommend = a.custid
+			INNER JOIN @Super s ON ci.srecommend = s.custid
+		WHERE 
+			r.winlostdate BETWEEN @TempFromDate AND @_ToDate 
+			AND r.sporttype = 254 			
+		GROUP BY   
+			r.winlostdate,s.currency
+	END  
+
+	IF @_FromDate < @BackupDay 
+	BEGIN
+		IF @_ToDate >= @BackupDay
+				SET @TempToDate = DATEADD(DAY, -1, @BackupDay)
+			ELSE
+				SET  @TempToDate = @_ToDate
+
+		INSERT INTO #SAgWinLoss
+		SELECT   
+			r.winlostdate,  
+			s.currency,			
+			SUM(r.turnover) AS Turnover, 
+			SUM(r.winlost) AS Winlost,  
+			-SUM(r.winlost) AS LicenseeWL,
+			SUM(r.playerComm) AS PlayerComm,
+			SUM(r.BetCount)  AS BetCount	
+		FROM 
+			bodb_report.dbo.rptDepWinlostByProduct_bk r WITH ( NOLOCK)
+			INNER JOIN bodb02.dbo.custInfo ci WITH ( NOLOCK) ON ci.CustID = r.CustID
+			INNER JOIN @TempAg a ON ci.recommend = a.custid
+			INNER JOIN @Super s ON ci.srecommend = s.custid
+		WHERE 
+			r.winlostdate BETWEEN @_FromDate AND @TempToDate AND  
+			r.sporttype = 254 			
+		GROUP BY   
+			r.winlostdate,s.currency	
+	END 
+
+	CREATE NONCLUSTERED INDEX IDX_Index_SA ON #SAgWinLoss(Currency)
+
+	SELECT * 
+	INTO #TempExchange 
+	FROM Lrf_f_GetExchangeDaily(@_FromDate, @_ToDate)
+	WHERE exchangeid IN (SELECT DISTINCT Currency FROM #SAgWinLoss)
+
+	SELECT   
+	   CASE WHEN @ReportType = 1 THEN CONVERT(VARCHAR(8), w.winlostdate, 112)  
+			WHEN @ReportType = 2 THEN CONVERT(VARCHAR(6), w.winlostdate, 112)  
+			ELSE '0' END ReportType,  
+	   Currency ,   
+			CASE WHEN Currency = 51 THEN @VNDCurrencyName 
+				ELSE e.Code END currencyName,
+	   SUM(Turnover)       AS Turnover,   
+	   SUM(Winlost)        AS Winlost,  
+	   SUM(LicenseeWL)     AS LicenseeWL,
+	   SUM(playerComm)     AS PlayerComm,
+	   SUM(BetCount)	   AS BetCount,
+   
+	   --BaseRM  
+	   CAST(SUM(Turnover*e.MYR)    AS MONEY)     AS TurnoverMYR,   
+	   CAST(SUM(Winlost*e.MYR)	   AS MONEY)     AS WinlostMYR,  
+	   CAST(SUM(LicenseeWL*e.MYR)  AS MONEY)     AS LicenseeWLMYR,
+	   CAST(SUM(PlayerComm*e.MYR)  AS MONEY) 	 AS PlayerCommMYR,
+   
+	   --BaseUSD  
+	   CAST(SUM(Turnover*e.USD)    AS MONEY)     AS TurnoverUSD,   
+	   CAST(SUM(Winlost*e.USD)	   AS MONEY)	 AS WinlostUSD,  
+	   CAST(SUM(LicenseeWL*e.USD)  AS MONEY) 	 AS LicenseeWLUSD,
+	   CAST(SUM(PlayerComm*e.USD)  AS MONEY)	 AS PlayerCommUSD,
+   
+		--BaseEUR  
+	   CAST(SUM(Turnover*e.EUR)    AS MONEY)     AS TurnoverEUR,   
+	   CAST(SUM(Winlost*e.EUR)	   AS MONEY)	 AS WinlostEUR,  
+	   CAST(SUM(LicenseeWL*e.EUR)  AS MONEY)	 AS LicenseeWLEUR,
+	   CAST(SUM(PlayerComm*e.EUR)  AS MONEY)	 AS PlayerCommEUR
+	FROM	
+		#SAgWinLoss w   
+		INNER JOIN 	#TempExchange e ON w.winlostdate = e.ExchangeDate AND w.currency = e.ExchangeId
+	GROUP BY   
+		Currency
+		,CASE WHEN @ReportType = 1 THEN CONVERT(VARCHAR(8),w.winlostdate,112)  
+			  WHEN @ReportType = 2 THEN CONVERT(VARCHAR(6),w.winlostdate,112)  
+			  ELSE '0' END   
+		, CASE WHEN Currency = 51 THEN @VNDCurrencyName 
+				ELSE e.Code END
+	ORDER BY ReportType  
+
+	DROP TABLE #SAgWinLoss
+	DROP TABLE #TempExchange 
+ 
+END   
+
+GO
+GRANT EXECUTE ON [dbo].[Lrf_Rpt_PlaytechWinloss] TO [bodbLicenseeNet]
+GO
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_PlaytechWinloss] TO [vnteam]
