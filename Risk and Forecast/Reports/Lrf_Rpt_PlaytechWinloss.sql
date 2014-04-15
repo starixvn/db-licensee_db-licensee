@@ -78,7 +78,6 @@ BEGIN
 
 	DECLARE @TempFromDate DATETIME 
 	DECLARE @TempToDate DATETIME 
-	DECLARE @MaxOldDate DATETIME
 
 	IF @_ToDate >= @BackupDay
 	BEGIN
