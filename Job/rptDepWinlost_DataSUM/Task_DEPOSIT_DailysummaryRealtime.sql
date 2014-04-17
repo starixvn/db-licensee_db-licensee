@@ -9,6 +9,7 @@ AS
   - 20130626@Don: Add one table rptDepWinlost_Transfer3rdOthers
   - 20140310@Francis: support Keno product
   - 20140320@Francis: change db06.bodb02 link server name to alias name dbacc.bodb02
+  - 20140417@Victor: support Playtech Casino procduct
                  
  Param's Explanation:  
  • @winlostdate: The date need to summary  
@@ -196,6 +197,32 @@ USING (SELECT s.winlostdate, s.custid, s.sporttype, s.turnover, s.betcount, s.ou
 	    VALUES (source.winlostdate, source.custid, source.sporttype, source.turnover, 0, 0, 0, source.betcount, source.outstanding);
 
 DROP TABLE #tempDepWinlostByProduct_staging
+
+-- Insert Playtech Casino SUM data to rptDepWinlostByProduct_staging
+DECLARE @_tstamp BINARY(8),
+		@new_tstamp BINARY(8)
+
+SELECT @_tstamp = CAST(CAST(ISNULL(vvalue,0) AS BIGINT) AS BINARY(8))
+FROM dbo.systemsettings2 WITH(ROWLOCK) 
+WHERE vname = 'Task_PlaytechCS_tstamp'
+
+SELECT @new_tstamp = MAX(tstamp) FROM DBPTCS.bodb_playtechCS.dbo.bettrans_PlaytechCS
+
+INSERT INTO rptDepWinlostByProduct_staging (custid, winlostdate, sporttype, turnover, winlost, BetCount, drawTO, playercomm, Outstanding)
+SELECT b.CustID, b.Winlostdate,
+	254 AS SportType,
+	ISNULL(SUM(b.Stake),0) AS Turnover,
+	ISNULL(SUM(b.Winlost - b.Actual_Stake),0) AS Winlost,
+	ISNULL(COUNT(*),0) AS Betcount,
+	0,0,0
+FROM DBPTCS.bodb_PlaytechCS.dbo.bettrans_PlaytechCS b WITH (ROWLOCK)
+WHERE tstamp > @_tstamp AND tstamp <= @new_tstamp
+GROUP BY b.CustID, b.Winlostdate
+
+UPDATE dbo.systemsettings2 WITH(ROWLOCK, UPDLOCK)
+SET vvalue = CAST(CAST(@new_tstamp as bigint) as varchar(200))
+WHERE vname = 'Task_PlaytechCS_tstamp'
+
 
 INSERT INTO dbo.rptDepWinlost_Transfer3rdOthers_Staging (winlostdate,CustId,Currency,Recommend,MRecommend,SRecommend,PartnerId,TransferAmount)
 SELECT @date, 
