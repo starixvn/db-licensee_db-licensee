@@ -199,7 +199,7 @@ BEGIN
 	,tl.recommend
 	,tl.mrecommend
 	,tl.srecommend
-    ,-SUM(CASE WHEN winlostdate < @date AND tl.statusID IN (0,1) THEN actual_stake ELSE 0 END) AS OpeningBalance --there is not winlost column in translog table
+    ,0
 	,SUM(CASE WHEN winlostdate = @date AND tl.statusID IN (0,1) then stake ELSE 0 END) AS turnover
 	,SUM(CASE WHEN winlostdate = @date AND tl.statusID IN (0,1) then actual_stake ELSE 0 END) AS outstanding 
     FROM translog tl with (rowlock)
