@@ -23,7 +23,7 @@ AS
   - 20131014@Jim: support Virtual Tennis	 
   - 20131128@Jim: revert code to Group by All Virtual Sport into sporttypeID=180	
   - 20140310@Francis: support Keno product
-  - 20140416@Victor: support Playtech Casino procduct
+  - 20140417@Victor: exclude running transfer tickets from Opening Balance formula
  Param's Explanation:  
 
  • @winlostdate: The date need to summary  
@@ -164,7 +164,7 @@ BEGIN
 			WHEN bettype in (22010,22011) THEN 2 --OPus
 			ELSE -1 
 		END PartnerId,
-		SUM(CASE WHEN winlostdate < @date THEN winlost - actual_stake + playercomm ELSE 0 END), --openingbalance  
+		SUM(CASE WHEN winlostdate < @date AND b.ruben = 1 THEN winlost - actual_stake + playercomm ELSE 0 END), --openingbalance  
 		SUM( CASE WHEN winlostdate = @date AND bettype = 22001 then winlost-actual_stake ELSE 0 END), --Deposit  
 		SUM( CASE WHEN winlostdate = @date AND bettype = 21006 then winlost-actual_stake ELSE 0 END), --Aff2MemTransfer  
 		-SUM(CASE WHEN winlostdate = @date AND bettype in (22002,22003) then winlost-actual_stake ELSE 0 END),--Withdrawal  
@@ -366,35 +366,6 @@ USING (SELECT s.winlostdate, s.custid, s.currency, s.recommend, s.mrecommend, s.
 				source.recommend, source.mrecommend, source.srecommend, source.OpeningBalance - source.Outstanding,
 				source.actualrate,
 				0, 0, 0, 0, 0);
-
--- Insert Playtech Casino summary data to rptDepWinlostByProduct
-DECLARE @BackupDay DATE
-SELECT @BackupDay = ISNULL(MIN(Winlostdate),'') FROM DBPTCS.bodb_PlaytechCS.dbo.bettrans_PlaytechCS
-
-IF @date >= @BackupDay -- Get data in bettrans_PlaytechCS table
-BEGIN
-	INSERT INTO #DataByProduct(custid, sporttype, turnover, winlost, betcount)
-	SELECT b.CustID, 
-		254 AS SportType,
-		ISNULL(SUM(b.Stake),0) AS Turnover,
-		ISNULL(SUM(b.Winlost - b.Actual_Stake),0) AS Winlost,
-		ISNULL(COUNT(*),0) AS Betcount
-	FROM DBPTCS.bodb_PlaytechCS.dbo.bettrans_PlaytechCS b WITH (ROWLOCK)
-	WHERE Winlostdate = @date
-	GROUP BY b.CustID
-END
-ELSE -- Get data in bettrans_PlaytechCS_bk table
-BEGIN
-	INSERT INTO #DataByProduct(custid, sporttype, turnover, winlost, betcount)
-	SELECT b.CustID, 
-		254 AS SportType,
-		ISNULL(SUM(b.Stake),0) AS Turnover,
-		ISNULL(SUM(b.Winlost - b.Actual_Stake),0) AS Winlost,
-		ISNULL(COUNT(*),0) AS Betcount
-	FROM DBPTCSARC.bodb_PlaytechCS_archive.dbo.bettrans_PlaytechCS_bk b WITH (ROWLOCK)
-	WHERE Winlostdate = @date
-	GROUP BY b.CustID
-END
 
 DELETE bodb_Report.dbo.rptDepWinlostByProduct WHERE Winlostdate = @date 
 
