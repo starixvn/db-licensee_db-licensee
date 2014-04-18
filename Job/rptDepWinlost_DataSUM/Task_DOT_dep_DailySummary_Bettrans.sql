@@ -23,7 +23,7 @@ AS
   - 20131014@Jim: support Virtual Tennis	 
   - 20131128@Jim: revert code to Group by All Virtual Sport into sporttypeID=180	
   - 20140310@Francis: support Keno product
-  - 20140417@Victor: exclude running transfer tickets from Opening Balance formula
+  - 20140418@Victor: include RNG Casino 23002 tickets to Outstanding formula
  Param's Explanation:  
 
  • @winlostdate: The date need to summary  
@@ -88,7 +88,7 @@ BEGIN
 		SUM( CASE WHEN winlostdate = @date AND bettype in (22006,22007) then winlost-actual_stake ELSE 0 END),--Transfer3rd  
 		SUM( CASE WHEN winlostdate = @date AND bettype < 19999 and [status] not in ('VOID', 'REJECT', 'Refund') then stake ELSE 0 END),--Turnover  
 		SUM( CASE WHEN winlostdate = @date AND bettype < 19999 and [status] = 'DRAW' then stake ELSE 0 END), --DrawGame  
-		SUM( CASE WHEN bettype < 19999 and ruben=0 then actual_stake ELSE 0 END),	--Outstanding 
+		SUM( CASE WHEN (bettype < 19999 OR bettype = 23002) and ruben=0 then actual_stake ELSE 0 END),	--Outstanding 
 		SUM( CASE WHEN winlostdate = @date AND bettype < 19999 and ruben=1 then winlost-actual_stake ELSE 0 END), --Winloss      
 		SUM( CASE WHEN winlostdate = @date AND bettype < 19999 and ruben=1 then playercomm ELSE 0 END), --Playercomm      
 		SUM( CASE WHEN winlostdate = @date AND bettype in (22008,22009) then winlost-actual_stake ELSE 0 END), --Transfer3rdOthers_Hogaming
@@ -164,7 +164,7 @@ BEGIN
 			WHEN bettype in (22010,22011) THEN 2 --OPus
 			ELSE -1 
 		END PartnerId,
-		SUM(CASE WHEN winlostdate < @date AND b.ruben = 1 THEN winlost - actual_stake + playercomm ELSE 0 END), --openingbalance  
+		SUM(CASE WHEN winlostdate < @date THEN winlost - actual_stake + playercomm ELSE 0 END), --openingbalance  
 		SUM( CASE WHEN winlostdate = @date AND bettype = 22001 then winlost-actual_stake ELSE 0 END), --Deposit  
 		SUM( CASE WHEN winlostdate = @date AND bettype = 21006 then winlost-actual_stake ELSE 0 END), --Aff2MemTransfer  
 		-SUM(CASE WHEN winlostdate = @date AND bettype in (22002,22003) then winlost-actual_stake ELSE 0 END),--Withdrawal  
@@ -173,7 +173,7 @@ BEGIN
 		SUM( CASE WHEN winlostdate = @date AND bettype in (22006,22007) then winlost-actual_stake ELSE 0 END),--Transfer3rd  
 		SUM( CASE WHEN winlostdate = @date AND bettype < 19999 and [status] not in ('VOID', 'REJECT', 'Refund') then stake ELSE 0 END),--Turnover  
 		SUM( CASE WHEN winlostdate = @date AND bettype < 19999 and [status] = 'DRAW' then stake ELSE 0 END), --DrawGame  
-		SUM( CASE WHEN winlostdate = @date AND bettype < 19999 and ruben=0 then actual_stake ELSE 0 END),	--Outstanding 
+		SUM( CASE WHEN winlostdate = @date AND (bettype < 19999 OR bettype = 23002) and ruben=0 then actual_stake ELSE 0 END),	--Outstanding 
 		SUM( CASE WHEN winlostdate = @date AND bettype < 19999 and ruben=1 then winlost-actual_stake ELSE 0 END), --Winloss      
 		SUM( CASE WHEN winlostdate = @date AND bettype < 19999 and ruben=1 then playercomm ELSE 0 END), --Playercomm      
 		SUM( CASE WHEN winlostdate = @date AND bettype in (22008,22009) then winlost-actual_stake ELSE 0 END), --Transfer3rdOthers_Hogaming
@@ -199,7 +199,7 @@ BEGIN
 	,tl.recommend
 	,tl.mrecommend
 	,tl.srecommend
-    ,0
+    ,-SUM(CASE WHEN winlostdate < @date AND tl.statusID IN (0,1) THEN actual_stake ELSE 0 END) AS OpeningBalance --there is not winlost column in translog table
 	,SUM(CASE WHEN winlostdate = @date AND tl.statusID IN (0,1) then stake ELSE 0 END) AS turnover
 	,SUM(CASE WHEN winlostdate = @date AND tl.statusID IN (0,1) then actual_stake ELSE 0 END) AS outstanding 
     FROM translog tl with (rowlock)

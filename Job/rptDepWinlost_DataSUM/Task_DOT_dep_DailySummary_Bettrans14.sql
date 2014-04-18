@@ -32,7 +32,6 @@ AS
 		- 20131014@Jim: support Virtual Tennis
 		- 20131128@Jim: revert code to Group by All Virtual Sport into sporttypeID=180
 		- 20140310@Francis: support Keno product
-		- 20140417@Victor: exclude running transfer tickets from Opening Balance formula
 	Param's Explanation:
 	• @date: The date need to summary
 */
@@ -66,7 +65,7 @@ SELECT
 	END PartnerId,
 	SUM(CASE @date WHEN @BalanceUpDay 
 			THEN CASE WHEN bettype = 20000 THEN winlost - actual_stake + playercomm ELSE 0 END 
-			ELSE CASE WHEN winlostdate < @date AND b.ruben = 1 THEN winlost - actual_stake + playercomm ELSE 0 END 
+			ELSE CASE WHEN winlostdate < @date THEN winlost - actual_stake + playercomm ELSE 0 END 
 		END), -- openingbalance
 	SUM( CASE WHEN winlostdate = @date AND bettype = 22001 then winlost-actual_stake ELSE 0 END), --Deposit
 	SUM( CASE WHEN winlostdate = @date AND bettype = 21006 then winlost-actual_stake ELSE 0 END), --Aff2MemTransfer

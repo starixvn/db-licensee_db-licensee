@@ -9,6 +9,7 @@ AS
   - 20130626@Don: Add one table rptDepWinlost_Transfer3rdOthers
   - 20140310@Francis: support Keno product
   - 20140320@Francis: change db06.bodb02 link server name to alias name dbacc.bodb02
+  - 20140418@Victor: include RNG Casino 23002 tickets to Outstanding formula
                  
  Param's Explanation:  
  • @winlostdate: The date need to summary  
@@ -55,7 +56,7 @@ SELECT @date,
 	SUM( CASE WHEN winlostdate = @date AND bettype < 19999 and [status] not in ('VOID', 'REJECT', 'Refund') then stake ELSE 0 END),--Turnover  
 	SUM( CASE WHEN winlostdate = @date AND bettype < 19999 and [status] = 'DRAW' then stake ELSE 0 END), --DrawGame  
 	SUM(CASE WHEN @date = @today THEN CASE WHEN bettype < 19999 and ruben=0 then actual_stake ELSE 0 END
-		ELSE CASE WHEN winlostdate = @date AND bettype < 19999 and ruben=0 then actual_stake ELSE 0 END END),	--Outstanding 
+		ELSE CASE WHEN winlostdate = @date AND (bettype < 19999 OR bettype = 23002) and ruben=0 then actual_stake ELSE 0 END END),	--Outstanding 
 	SUM( CASE WHEN winlostdate = @date AND bettype < 19999 and ruben=1 then winlost-actual_stake ELSE 0 END), --Winloss      
 	SUM( CASE WHEN winlostdate = @date AND bettype < 19999 and ruben=1 then playercomm ELSE 0 END), --Playercomm  	
 	SUM(CASE WHEN winlostdate=@date and isBA=1 and ruben=1 and statusid not in (101,102,103) THEN stake ELSE 0 END),-- turnover_ba
