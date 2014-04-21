@@ -6,8 +6,6 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-
-
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportBySport]      
 	@LicenseeID INT ,  
 	@UserID		INT,
@@ -52,7 +50,7 @@ SELECT @FromDate = DATEADD(DAY, -15, GETDATE())
 SELECT @ToDate = GETDATE()  
 SELECT @MoveBetsDay = MAX(eventdate) FROM match14 WITH(NOLOCK)
   
-EXEC [Lrf_Rpt_LiveReportBySport_xtest]  @LicenseeId = 1,  @CurrencyID = 0, @FromDate=@FromDate, @ProductCode= NULL, @ToDate=@ToDate, @MoveBetsDay = @MoveBetsDay  
+EXEC [Lrf_Rpt_LiveReportBySport]  @LicenseeId = 1,  @CurrencyID = 0, @FromDate=@FromDate, @ProductCode= NULL, @ToDate=@ToDate, @MoveBetsDay = @MoveBetsDay  
   
 */  
  
