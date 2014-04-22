@@ -151,18 +151,18 @@ GROUP BY b.custid,
 INSERT INTO dbo.rptDepWinlostByProduct_staging(winlostdate, custid, sporttype, turnover, drawTO, winlost, playercomm, betcount, outstanding)
 SELECT  
 	@date, b.custid, 251, -- casino 	
-	SUM(CASE WHEN winlostdate = @date AND [status] not in ('VOID', 'REJECT', 'Refund') then stake ELSE 0 END),--Turnover  
+	SUM(CASE WHEN winlostdate = @date AND [status] not in ('VOID', 'REJECT', 'Refund') AND bettype != 23002 then stake ELSE 0 END),--Turnover  
 	SUM(case when winlostdate = @date AND [status] = 'DRAW' then stake else 0 end), -- Draw game TO			
 	SUM(CASE WHEN winlostdate = @date AND ruben=1 then b.winlost-b.actual_stake ELSE 0 END), --Winloss      
 	SUM(CASE WHEN winlostdate = @date AND ruben=1 then b.playercomm ELSE 0 END), --Playercomm      
-	SUM(CASE WHEN winlostdate = @date AND [status] not in ('VOID', 'REJECT', 'Refund') then 1 ELSE 0 END), --betcount
+	SUM(CASE WHEN winlostdate = @date AND [status] not in ('VOID', 'REJECT', 'Refund') AND bettype != 23002 then 1 ELSE 0 END), --betcount
 	SUM(CASE WHEN @date = @today THEN CASE WHEN ruben=0 then actual_stake ELSE 0 END
 		ELSE CASE WHEN winlostdate = @date AND ruben=0 then actual_stake ELSE 0 END END)	--Outstanding 
 FROM bettransDEP b with(nolock)   	
 WHERE custid in (select custid from @TempCustID)
 	and winlostdate >= @date
 	and matchid = 0
-	and bettype IN (71,72)
+	and bettype IN (71,72,23002)
 GROUP BY b.custid
 
 --Keno product's turnover, betcount, Outstanding
