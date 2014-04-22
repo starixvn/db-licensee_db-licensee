@@ -10,7 +10,7 @@ AS
   - 20140310@Francis: support Keno product
   - 20140320@Francis: change db06.bodb02 link server name to alias name dbacc.bodb02
   - 20140418@Victor: include RNG Casino 23002 tickets to Outstanding formula
-  - 20140417@Victor: support Playtech Casino procduct
+  - 20140422@Victor: support Playtech Casino procduct
                  
  Param's Explanation:  
  • @winlostdate: The date need to summary  

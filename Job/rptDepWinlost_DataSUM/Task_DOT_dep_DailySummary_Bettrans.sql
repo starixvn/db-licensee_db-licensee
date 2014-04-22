@@ -24,6 +24,7 @@ AS
   - 20131128@Jim: revert code to Group by All Virtual Sport into sporttypeID=180	
   - 20140310@Francis: support Keno product
   - 20140418@Victor: include RNG Casino 23002 tickets to Outstanding formula
+  - 20140422@Victor: support Playtech Casino procduct
  Param's Explanation:  
 
  • @winlostdate: The date need to summary  
@@ -366,6 +367,35 @@ USING (SELECT s.winlostdate, s.custid, s.currency, s.recommend, s.mrecommend, s.
 				source.recommend, source.mrecommend, source.srecommend, source.OpeningBalance - source.Outstanding,
 				source.actualrate,
 				0, 0, 0, 0, 0);
+
+-- Insert Playtech Casino summary data to rptDepWinlostByProduct
+DECLARE @BackupDay DATE
+SELECT @BackupDay = ISNULL(MIN(Winlostdate),'') FROM DBPTCS.bodb_PlaytechCS.dbo.bettrans_PlaytechCS
+
+IF @date >= @BackupDay -- Get data in bettrans_PlaytechCS table
+BEGIN
+	INSERT INTO #DataByProduct(custid, sporttype, turnover, winlost, betcount)
+	SELECT b.CustID, 
+		254 AS SportType,
+		ISNULL(SUM(b.Stake),0) AS Turnover,
+		ISNULL(SUM(b.Winlost - b.Actual_Stake),0) AS Winlost,
+		ISNULL(COUNT(*),0) AS Betcount
+	FROM DBPTCS.bodb_PlaytechCS.dbo.bettrans_PlaytechCS b WITH (ROWLOCK)
+	WHERE Winlostdate = @date
+	GROUP BY b.CustID
+END
+ELSE -- Get data in bettrans_PlaytechCS_bk table
+BEGIN
+	INSERT INTO #DataByProduct(custid, sporttype, turnover, winlost, betcount)
+	SELECT b.CustID, 
+		254 AS SportType,
+		ISNULL(SUM(b.Stake),0) AS Turnover,
+		ISNULL(SUM(b.Winlost - b.Actual_Stake),0) AS Winlost,
+		ISNULL(COUNT(*),0) AS Betcount
+	FROM DBPTCSARC.bodb_PlaytechCS_archive.dbo.bettrans_PlaytechCS_bk b WITH (ROWLOCK)
+	WHERE Winlostdate = @date
+	GROUP BY b.CustID
+END
 
 DELETE bodb_Report.dbo.rptDepWinlostByProduct WHERE Winlostdate = @date 
 
