@@ -27,7 +27,6 @@ BEGIN
 		Turnover		MONEY,	
 		Winlost			MONEY,  
 		LicenseeWL		MONEY, 
-		PlayerComm		MONEY, 
 		BetCount		BIGINT
 	)  
 
@@ -93,7 +92,6 @@ BEGIN
 			SUM(r.turnover) AS Turnover, 
 			SUM(r.winlost) AS Winlost,  
 			-SUM(r.winlost) AS LicenseeWL,
-			SUM(r.playerComm) AS PlayerComm,
 			SUM(r.BetCount) AS BetCount	
 		FROM 
 			bodb_report.dbo.rptDepWinlostByProduct r WITH ( NOLOCK)
@@ -121,7 +119,6 @@ BEGIN
 			SUM(r.turnover) AS Turnover, 
 			SUM(r.winlost) AS Winlost,  
 			-SUM(r.winlost) AS LicenseeWL,
-			SUM(r.playerComm) AS PlayerComm,
 			SUM(r.BetCount)  AS BetCount	
 		FROM 
 			bodb_report.dbo.rptDepWinlostByProduct_bk r WITH ( NOLOCK)
@@ -152,26 +149,22 @@ BEGIN
 	   SUM(Turnover)       AS Turnover,   
 	   SUM(Winlost)        AS Winlost,  
 	   SUM(LicenseeWL)     AS LicenseeWL,
-	   SUM(playerComm)     AS PlayerComm,
 	   SUM(BetCount)	   AS BetCount,
    
 	   --BaseRM  
 	   CAST(SUM(Turnover*e.MYR)    AS MONEY)     AS TurnoverMYR,   
 	   CAST(SUM(Winlost*e.MYR)	   AS MONEY)     AS WinlostMYR,  
 	   CAST(SUM(LicenseeWL*e.MYR)  AS MONEY)     AS LicenseeWLMYR,
-	   CAST(SUM(PlayerComm*e.MYR)  AS MONEY) 	 AS PlayerCommMYR,
    
 	   --BaseUSD  
 	   CAST(SUM(Turnover*e.USD)    AS MONEY)     AS TurnoverUSD,   
 	   CAST(SUM(Winlost*e.USD)	   AS MONEY)	 AS WinlostUSD,  
 	   CAST(SUM(LicenseeWL*e.USD)  AS MONEY) 	 AS LicenseeWLUSD,
-	   CAST(SUM(PlayerComm*e.USD)  AS MONEY)	 AS PlayerCommUSD,
    
 		--BaseEUR  
 	   CAST(SUM(Turnover*e.EUR)    AS MONEY)     AS TurnoverEUR,   
 	   CAST(SUM(Winlost*e.EUR)	   AS MONEY)	 AS WinlostEUR,  
-	   CAST(SUM(LicenseeWL*e.EUR)  AS MONEY)	 AS LicenseeWLEUR,
-	   CAST(SUM(PlayerComm*e.EUR)  AS MONEY)	 AS PlayerCommEUR
+	   CAST(SUM(LicenseeWL*e.EUR)  AS MONEY)	 AS LicenseeWLEUR
 	FROM	
 		#SAgWinLoss w   
 		INNER JOIN 	#TempExchange e ON w.winlostdate = e.ExchangeDate AND w.currency = e.ExchangeId

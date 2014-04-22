@@ -31,7 +31,6 @@ BEGIN
 		Turnover		MONEY,
 		Winlost			MONEY,  
 		LicenseeWL		MONEY,
-		PlayerComm  	MONEY,
 		BetCount		BIGINT
 	)  
 
@@ -111,7 +110,6 @@ BEGIN
 			SUM(r.turnover) AS Turnover, 
 			SUM(r.winlost) AS Winlost,  
 			-SUM(r.winlost) AS LicenseeWL,
-			SUM(r.playerComm) AS PlayerComm,
 			SUM(r.BetCount) AS BetCount	
 		FROM 
 			bodb_report.dbo.rptDepWinlostByProduct r WITH ( NOLOCK)
@@ -139,7 +137,6 @@ BEGIN
 			SUM(r.turnover) AS Turnover, 
 			SUM(r.winlost) AS Winlost,  
 			-SUM(r.winlost) AS LicenseeWL,
-			SUM(r.playerComm) AS PlayerComm,
 			SUM(r.BetCount) AS BetCount	
 		FROM 
 			bodb_report.dbo.rptDepWinlostByProduct_bk r WITH ( NOLOCK)
@@ -162,19 +159,16 @@ BEGIN
 		SUM(Turnover)	AS Turnover,   
 		SUM(Winlost)	AS Winlost,  
 		SUM(LicenseeWL)	AS LicenseeWL,
-		SUM(PlayerComm)	AS PlayerComm,
 		SUM(Betcount)	AS BetCount,	  
 	  
 		--BaseEUR  
 		CAST(SUM(Turnover)*@eEUR	AS MONEY)   AS TurnoverEUR,   
 		CAST(SUM(Winlost)*@eEUR		AS MONEY)   AS WinlostEUR,  
 		CAST(SUM(LicenseeWL)*@eEUR	AS MONEY)   AS LicenseeWLEUR,
-		CAST(SUM(PlayerComm)*@eEUR	AS MONEY)   AS PlayerCommEUR,
 		--BaseUSD  
 		CAST(SUM(Turnover)*@eUSD    AS MONEY)   AS TurnoverUSD,   
 		CAST(SUM(Winlost)*@eUSD	    AS MONEY)   AS WinlostUSD,  
-		CAST(SUM(LicenseeWL)*@eUSD  AS MONEY)   AS LicenseeWLUSD,
-		CAST(SUM(PlayerComm)*@eUSD  AS MONEY)   AS PlayerCommUSD
+		CAST(SUM(LicenseeWL)*@eUSD  AS MONEY)   AS LicenseeWLUSD
 	FROM	#SAgWinLoss w   
 		INNER JOIN DBLIC.bodb_licensee.dbo.licenseecustinfo c WITH (NOLOCK) ON w.custid = c.custid
 	GROUP BY w.custid, c.username,c.username2,w.currency
