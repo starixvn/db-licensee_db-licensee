@@ -23,7 +23,7 @@ AS
   - 20131014@Jim: support Virtual Tennis	 
   - 20131128@Jim: revert code to Group by All Virtual Sport into sporttypeID=180	
   - 20140310@Francis: support Keno product
-  - 20140416@Victor: support Playtech Casino procduct
+  - 20140418@Victor: include RNG Casino 23002 tickets to Outstanding formula
  Param's Explanation:  
 
  • @winlostdate: The date need to summary  
@@ -88,7 +88,7 @@ BEGIN
 		SUM( CASE WHEN winlostdate = @date AND bettype in (22006,22007) then winlost-actual_stake ELSE 0 END),--Transfer3rd  
 		SUM( CASE WHEN winlostdate = @date AND bettype < 19999 and [status] not in ('VOID', 'REJECT', 'Refund') then stake ELSE 0 END),--Turnover  
 		SUM( CASE WHEN winlostdate = @date AND bettype < 19999 and [status] = 'DRAW' then stake ELSE 0 END), --DrawGame  
-		SUM( CASE WHEN bettype < 19999 and ruben=0 then actual_stake ELSE 0 END),	--Outstanding 
+		SUM( CASE WHEN (bettype < 19999 OR bettype = 23002) and ruben=0 then actual_stake ELSE 0 END),	--Outstanding 
 		SUM( CASE WHEN winlostdate = @date AND bettype < 19999 and ruben=1 then winlost-actual_stake ELSE 0 END), --Winloss      
 		SUM( CASE WHEN winlostdate = @date AND bettype < 19999 and ruben=1 then playercomm ELSE 0 END), --Playercomm      
 		SUM( CASE WHEN winlostdate = @date AND bettype in (22008,22009) then winlost-actual_stake ELSE 0 END), --Transfer3rdOthers_Hogaming
@@ -173,7 +173,7 @@ BEGIN
 		SUM( CASE WHEN winlostdate = @date AND bettype in (22006,22007) then winlost-actual_stake ELSE 0 END),--Transfer3rd  
 		SUM( CASE WHEN winlostdate = @date AND bettype < 19999 and [status] not in ('VOID', 'REJECT', 'Refund') then stake ELSE 0 END),--Turnover  
 		SUM( CASE WHEN winlostdate = @date AND bettype < 19999 and [status] = 'DRAW' then stake ELSE 0 END), --DrawGame  
-		SUM( CASE WHEN winlostdate = @date AND bettype < 19999 and ruben=0 then actual_stake ELSE 0 END),	--Outstanding 
+		SUM( CASE WHEN winlostdate = @date AND (bettype < 19999 OR bettype = 23002) and ruben=0 then actual_stake ELSE 0 END),	--Outstanding 
 		SUM( CASE WHEN winlostdate = @date AND bettype < 19999 and ruben=1 then winlost-actual_stake ELSE 0 END), --Winloss      
 		SUM( CASE WHEN winlostdate = @date AND bettype < 19999 and ruben=1 then playercomm ELSE 0 END), --Playercomm      
 		SUM( CASE WHEN winlostdate = @date AND bettype in (22008,22009) then winlost-actual_stake ELSE 0 END), --Transfer3rdOthers_Hogaming
@@ -292,18 +292,18 @@ GROUP BY b.custid,
 
 INSERT INTO #DataByProduct(custid, sporttype, turnover, drawTO, winlost, playercomm, betcount, outstanding)
 SELECT b.custid, 251, --casino 
-	SUM(CASE WHEN winlostdate = @date AND [status] not in ('VOID', 'REJECT', 'Refund') then stake ELSE 0 END),--Turnover  
+	SUM(CASE WHEN winlostdate = @date AND [status] not in ('VOID', 'REJECT', 'Refund') AND bettype != 23002 then stake ELSE 0 END),--Turnover  
 	SUM(case when winlostdate = @date AND [status] = 'DRAW' then stake else 0 end), -- Draw game TO			
 	SUM(CASE WHEN winlostdate = @date AND ruben=1 then b.winlost-b.actual_stake ELSE 0 END), --Winloss      
 	SUM(CASE WHEN winlostdate = @date AND ruben=1 then b.playercomm ELSE 0 END), --Playercomm      
-	SUM(CASE WHEN winlostdate = @date AND [status] not in ('VOID', 'REJECT', 'Refund') then 1 ELSE 0 END), --betcount
+	SUM(CASE WHEN winlostdate = @date AND [status] not in ('VOID', 'REJECT', 'Refund') AND bettype != 23002 then 1 ELSE 0 END), --betcount
 	SUM(CASE WHEN @date = @today THEN CASE WHEN ruben=0 then actual_stake ELSE 0 END
 		ELSE CASE WHEN winlostdate = @date AND ruben=0 then actual_stake ELSE 0 END END)	--Outstanding 
 FROM bettrans b with(rowlock)   
 	inner join ( SELECT DISTINCT custid FROM #data ) d on b.custid = d.custid  
 WHERE winlostdate >= @date
 	and matchid = 0
-	and bettype in (71,72)
+	and bettype in (71,72,23002)
 GROUP BY b.custid
 
 --Keno product's turnover, betcount, Outstanding
@@ -366,35 +366,6 @@ USING (SELECT s.winlostdate, s.custid, s.currency, s.recommend, s.mrecommend, s.
 				source.recommend, source.mrecommend, source.srecommend, source.OpeningBalance - source.Outstanding,
 				source.actualrate,
 				0, 0, 0, 0, 0);
-
--- Insert Playtech Casino summary data to rptDepWinlostByProduct
-DECLARE @BackupDay DATE
-SELECT @BackupDay = ISNULL(MIN(Winlostdate),'') FROM DBPTCS.bodb_PlaytechCS.dbo.bettrans_PlaytechCS
-
-IF @date >= @BackupDay -- Get data in bettrans_PlaytechCS table
-BEGIN
-	INSERT INTO #DataByProduct(custid, sporttype, turnover, winlost, betcount)
-	SELECT b.CustID, 
-		254 AS SportType,
-		ISNULL(SUM(b.Stake),0) AS Turnover,
-		ISNULL(SUM(b.Winlost - b.Actual_Stake),0) AS Winlost,
-		ISNULL(COUNT(*),0) AS Betcount
-	FROM DBPTCS.bodb_PlaytechCS.dbo.bettrans_PlaytechCS b WITH (ROWLOCK)
-	WHERE Winlostdate = @date
-	GROUP BY b.CustID
-END
-ELSE -- Get data in bettrans_PlaytechCS_bk table
-BEGIN
-	INSERT INTO #DataByProduct(custid, sporttype, turnover, winlost, betcount)
-	SELECT b.CustID, 
-		254 AS SportType,
-		ISNULL(SUM(b.Stake),0) AS Turnover,
-		ISNULL(SUM(b.Winlost - b.Actual_Stake),0) AS Winlost,
-		ISNULL(COUNT(*),0) AS Betcount
-	FROM DBPTCSARC.bodb_PlaytechCS_archive.dbo.bettrans_PlaytechCS_bk b WITH (ROWLOCK)
-	WHERE Winlostdate = @date
-	GROUP BY b.CustID
-END
 
 DELETE bodb_Report.dbo.rptDepWinlostByProduct WHERE Winlostdate = @date 
 

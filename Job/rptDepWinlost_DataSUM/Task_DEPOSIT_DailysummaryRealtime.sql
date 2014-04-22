@@ -9,6 +9,7 @@ AS
   - 20130626@Don: Add one table rptDepWinlost_Transfer3rdOthers
   - 20140310@Francis: support Keno product
   - 20140320@Francis: change db06.bodb02 link server name to alias name dbacc.bodb02
+  - 20140418@Victor: include RNG Casino 23002 tickets to Outstanding formula
   - 20140417@Victor: support Playtech Casino procduct
                  
  Param's Explanation:  
@@ -56,7 +57,7 @@ SELECT @date,
 	SUM( CASE WHEN winlostdate = @date AND bettype < 19999 and [status] not in ('VOID', 'REJECT', 'Refund') then stake ELSE 0 END),--Turnover  
 	SUM( CASE WHEN winlostdate = @date AND bettype < 19999 and [status] = 'DRAW' then stake ELSE 0 END), --DrawGame  
 	SUM(CASE WHEN @date = @today THEN CASE WHEN bettype < 19999 and ruben=0 then actual_stake ELSE 0 END
-		ELSE CASE WHEN winlostdate = @date AND bettype < 19999 and ruben=0 then actual_stake ELSE 0 END END),	--Outstanding 
+		ELSE CASE WHEN winlostdate = @date AND (bettype < 19999 OR bettype = 23002) and ruben=0 then actual_stake ELSE 0 END END),	--Outstanding 
 	SUM( CASE WHEN winlostdate = @date AND bettype < 19999 and ruben=1 then winlost-actual_stake ELSE 0 END), --Winloss      
 	SUM( CASE WHEN winlostdate = @date AND bettype < 19999 and ruben=1 then playercomm ELSE 0 END), --Playercomm  	
 	SUM(CASE WHEN winlostdate=@date and isBA=1 and ruben=1 and statusid not in (101,102,103) THEN stake ELSE 0 END),-- turnover_ba
@@ -151,18 +152,18 @@ GROUP BY b.custid,
 INSERT INTO dbo.rptDepWinlostByProduct_staging(winlostdate, custid, sporttype, turnover, drawTO, winlost, playercomm, betcount, outstanding)
 SELECT  
 	@date, b.custid, 251, -- casino 	
-	SUM(CASE WHEN winlostdate = @date AND [status] not in ('VOID', 'REJECT', 'Refund') then stake ELSE 0 END),--Turnover  
+	SUM(CASE WHEN winlostdate = @date AND [status] not in ('VOID', 'REJECT', 'Refund') AND bettype != 23002 then stake ELSE 0 END),--Turnover  
 	SUM(case when winlostdate = @date AND [status] = 'DRAW' then stake else 0 end), -- Draw game TO			
 	SUM(CASE WHEN winlostdate = @date AND ruben=1 then b.winlost-b.actual_stake ELSE 0 END), --Winloss      
 	SUM(CASE WHEN winlostdate = @date AND ruben=1 then b.playercomm ELSE 0 END), --Playercomm      
-	SUM(CASE WHEN winlostdate = @date AND [status] not in ('VOID', 'REJECT', 'Refund') then 1 ELSE 0 END), --betcount
+	SUM(CASE WHEN winlostdate = @date AND [status] not in ('VOID', 'REJECT', 'Refund') AND bettype != 23002 then 1 ELSE 0 END), --betcount
 	SUM(CASE WHEN @date = @today THEN CASE WHEN ruben=0 then actual_stake ELSE 0 END
 		ELSE CASE WHEN winlostdate = @date AND ruben=0 then actual_stake ELSE 0 END END)	--Outstanding 
 FROM bettransDEP b with(nolock)   	
 WHERE custid in (select custid from @TempCustID)
 	and winlostdate >= @date
 	and matchid = 0
-	and bettype IN (71,72)
+	and bettype IN (71,72,23002)
 GROUP BY b.custid
 
 --Keno product's turnover, betcount, Outstanding
