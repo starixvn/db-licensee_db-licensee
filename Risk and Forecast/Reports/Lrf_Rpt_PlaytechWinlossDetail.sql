@@ -46,7 +46,7 @@ BEGIN
 	FROM [bodb_report].[dbo].[rptDepWinlostByProduct] WITH (NOLOCK) 
 
 	SET @sql = 'SELECT currencyID, LicenseeID 
-				FROM dbo.Lrf_f_GetCurrencybyUser(' + CAST(@LicenseeID AS VARCHAR) + ', '+ CAST(@LicenseeID AS VARCHAR) + +', 1)
+				FROM dbo.Lrf_f_GetCurrencybyUser(' + CAST(@LicenseeID AS VARCHAR) + ', '+ CAST(@UserID AS VARCHAR) + +', 1)
 				WHERE ('+ CAST(@currencyID AS VARCHAR) +' = 0  OR ('+ CAST(@currencyID AS VARCHAR) +' <> 0 AND CurrencyID = '+ CAST(@currencyID AS VARCHAR) +'));'
 
 	CREATE TABLE #currency(currencyID INT, LicenseeID INT)
