@@ -7,9 +7,6 @@ SET QUOTED_IDENTIFIER ON
 GO
 /****** Object:  Stored Procedure dbo.Lrf_BetList_SelWinlossDaily    Script Date: 11/18/2013 10:59:36 PM ******/
 /****** Object:  Stored Procedure dbo.Lrf_BetList_SelWinlossDaily    Script Date: 11/15/2013 12:33:11 PM ******/
-
-
-
 /*
 exec Lrf_BetList_SelWinlossDaily
 @date='2012-09-04 00:00:00:000',
@@ -74,11 +71,11 @@ Revisions:
 	- 20131108@Don: Improve performance temporarily
 	- 20131112@Victor: Enhance performance
 	- 20131115@Jim: correct showtime value in Live Casino and Horse Racing Product
+	- 20140403@Hannah: offer Keno
+	- 20140421@Hannah: fix bug, add sporttype for Keno
 
-Param's Explanation: 
-	
+Param's Explanation: 	
 */
-
 
 SET NOCOUNT ON
 --- to Deal With Parameter Sniffing
@@ -116,7 +113,7 @@ CREATE TABLE #Data
 	PlayerComm MONEY,
 	transdate DATETIME,
 	Winlostdate DATETIME,
-	betteam VARCHAR (50),
+	betteam VARCHAR (300),
 	liveindicator INT,
 	livehomescore SMALLINT,
 	liveawayscore SMALLINT,
@@ -132,8 +129,6 @@ CREATE TABLE #Data
 	showtime NVARCHAR(50) -- table - shoe - hand of Live Casino
 )
 
-
-
 DECLARE @DataSum TABLE
 (
 	currency INT,
@@ -143,6 +138,7 @@ DECLARE @DataSum TABLE
 	SumComm MONEY,
 	SumPlayerComm MONEY
 )
+
 DECLARE @Vhr TABLE 
 (
 OriD INT
@@ -176,7 +172,6 @@ WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 DECLARE @TempAg AS TABLE (custid INT)
 DECLARE @TmpCondBettype AS TABLE (bettype INT primary key)
-
 
 --Sports Book
 IF ( @Product='SB' OR @Product='BA' )
@@ -236,6 +231,14 @@ BEGIN
 	FROM bettype   
 	WHERE typeid = 73;
 END
+--Keno
+IF @Product='KN'
+BEGIN	
+	INSERT INTO @TmpCondBettype
+	SELECT typeid
+	FROM bettype   
+	WHERE typeid BETWEEN 1501 AND 1599;
+END
 IF @Product='ALL'
 BEGIN
 	INSERT INTO @TmpCondBettype
@@ -261,9 +264,10 @@ BEGIN
 		OR (
 			typeid BETWEEN 1201 AND 1299
 			)
+		OR (
+			typeid BETWEEN 1501 AND 1599
+			)
 END
-
-
 
 INSERT INTO @TempAg (custid)
 SELECT  CustID  
@@ -272,7 +276,6 @@ FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )
 
 DECLARE @RowStart INT, @RowEnd INT  
 SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1
-
 
 IF @wldate > @MoveBetsDay_
 BEGIN
@@ -331,8 +334,7 @@ BEGIN
 		AND b.recommend IN (SELECT custid FROM @TempAg)	
 		AND b.status=@status
 		AND b.ruben = 1
-	GROUP BY currency
-	
+	GROUP BY currency	
 	
 	-- Get Betdata from bettrans and filter by row number
 	
@@ -343,7 +345,8 @@ BEGIN
 		b.oddsid,
 		CAST(NULL AS INT) AS sporttype,
 		b.username,
-		SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, len(c.username2)-CHARINDEX('$',c.username2)) AS nickname,
+		SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, 
+		len(c.username2)-CHARINDEX('$',c.username2)) AS nickname,
 		b.bettype,
 		CAST(NULL AS INT) AS leagueID,
 		b.transid,
@@ -365,14 +368,16 @@ BEGIN
 		b.playercomm as PlayerComm,
 		b.transdate,
 		b.winlostdate,
-		b.betteam,
+		CASE  
+			WHEN b.bettype BETWEEN 1501 AND 1599 THEN b.transdesc
+			ELSE b.betteam 
+		END AS betteam,		
 		b.liveindicator,
 		b.livehomescore,
 		b.liveawayscore,
 		b.matchid, 
 		CAST(NULL AS NVARCHAR(50)) AS betstatus,
-		CONVERT(BIT,0) AS IsNeutral,
-		
+		CONVERT(BIT,0) AS IsNeutral,		
 		b.OddsType,
 		b.betid,
 		b.currency,
@@ -389,7 +394,7 @@ BEGIN
 		AND b.status=@status
 		AND b.bettype NOT IN (9,29,10)
 		AND b.recommend IN (SELECT custid FROM @TempAg)	
-		AND b.ruben = 1
+		AND b.ruben = 1		
 	) A WHERE A.RowNum BETWEEN @RowStart AND @RowEnd 
 
 	-- Update LicenseeWL with LicenseeBATransaction table
@@ -397,6 +402,12 @@ BEGIN
 	SET LicenseeWL = 0
 	FROM #BetData1 b
 		INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
+
+	UPDATE b
+	SET betteam = t.ChoiceId,matchid = t.GameId,b.sporttype = 202
+	FROM #BetData1 b
+		CROSS APPLY dbo.[f_ParseTransDesc](b.betteam, b.bettype) t
+	WHERE b.bettype BETWEEN 1501 AND 1599
 	-- Update data with match table
 	UPDATE b
 	SET sporttype = CASE 
@@ -431,6 +442,7 @@ BEGIN
 					END
 	FROM #BetData1 b
 		INNER JOIN match m WITH (nolock) ON b.matchid=m.matchid
+	WHERE b.bettype NOT BETWEEN 1501 AND 1599 -- exclude Keno
 	-- Update data with @vhr table
 	UPDATE b
 	SET sporttype = v.sporttype,
@@ -467,8 +479,8 @@ BEGIN
 		betteam,liveindicator,livehomescore,liveawayscore,matchid, 
 		betstatus,IsNeutral,OddsType,betid,currency,refno,custid,showtime
 	FROM #BetData1
-	DROP TABLE #BetData1
-	
+
+	DROP TABLE #BetData1	
 END
 
 IF @wldate <= @MoveBetsDay_ AND @wldate >=@BalanceUpDay_
@@ -558,7 +570,10 @@ BEGIN
 		b.playercomm as PlayerComm,
 		b.transdate,
 		b.winlostdate,
-		b.betteam,
+		CASE  
+			WHEN b.bettype BETWEEN 1501 AND 1599 THEN b.transdesc
+			ELSE b.betteam 
+		END AS betteam,		
 		b.liveindicator,
 		b.livehomescore,
 		b.liveawayscore,
@@ -590,6 +605,13 @@ BEGIN
 	SET LicenseeWL = 0
 	FROM #BetData14 b
 		INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
+
+	UPDATE b
+	SET betteam = t.ChoiceId,matchid = t.GameId, b.sporttype = 202
+	FROM #BetData14 b
+		CROSS APPLY dbo.[f_ParseTransDesc](b.betteam, b.bettype) t
+	WHERE b.bettype BETWEEN 1501 AND 1599
+
 	-- Update data with match14 table
 	UPDATE b
 	SET sporttype = CASE 
@@ -624,6 +646,8 @@ BEGIN
 					END
 	FROM #BetData14 b
 		INNER JOIN match14 m WITH (nolock) ON b.matchid=m.matchid
+	WHERE b.bettype NOT BETWEEN 1501 AND 1599 -- exclude Keno
+
 	-- Update data with @vhr table
 	UPDATE b
 	SET sporttype = v.sporttype,
@@ -688,8 +712,6 @@ FROM #Data b
 	INNER JOIN #TempExchange e 
 ON  e.exchangeid = b.currency
 
-
-
 --SUM
 SELECT * INTO #TempExchangeSum 
 FROM Lrf_f_GetExchangeDaily(@wldate,@wldate)
@@ -715,7 +737,6 @@ FROM @DataSum b
 INNER JOIN #TempExchangeSum e 
 ON b.currency = e.exchangeid
 
-
 DECLARE @BettransDetail TABLE(  
 	refno BIGINT,  
 	odds SMALLMONEY,  
@@ -726,9 +747,8 @@ DECLARE @BettransDetail TABLE(
 	Betteam nvarchar (10),
 	stakeEUR MONEY,
 	stakeUSD MONEY
-	 )   
-	 
-	 
+	 )  
+	 	 
 IF EXISTS(SELECT TOP 1 1 FROM #Data WHERE Bettype BETWEEN 1101 AND 1199)
 BEGIN
 	IF @wldate > @MoveBetsDay_ 
@@ -768,8 +788,7 @@ BEGIN
 		INNER JOIN #TempExchange e ON B.currency = e.exchangeid
 		WHERE B.Bettype BETWEEN 1101 AND 1199
 	END	
-END	 
-
+END
 
 IF EXISTS(SELECT TOP 1 1 FROM #Data WHERE Bettype IN (33,43,1233))
 BEGIN 	
@@ -791,8 +810,7 @@ BEGIN
 			INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
 			WHERE 
 			(B.bettype=1233 AND ( BG.refno = B.Refno))
-			OR (B.bettype IN (33,43) AND ( BG.refno = B.Transid))
-		
+			OR (B.bettype IN (33,43) AND ( BG.refno = B.Transid))		
 		END
 		IF @wldate <= @MoveBetsDay_
 		BEGIN

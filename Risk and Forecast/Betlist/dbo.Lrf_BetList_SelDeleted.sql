@@ -9,8 +9,7 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_SelDeleted]
 	@Langkey NVARCHAR(10)='en-US'	,
 	@PageSize INT=1000,
 	@PageIndex INT=1,
-	@TotalRows INT=0 OUTPUT 
-	
+	@TotalRows INT=0 OUTPUT	
 AS
 
 /*
@@ -33,6 +32,7 @@ Revisions:
 	- 20130411@Jim: support base currency
 	- 20130514@Jim:Restrict permission of Licensee Users by currency
 	- 20130809@Jim: offer Virtual Horse Racing
+	- 20140403@Hannah: offer Keno
 Param's Explanation:
 + @CustID: AgentID
 */
@@ -88,6 +88,51 @@ CREATE TABLE #Data
 	showtime NVARCHAR(50) -- table - shoe - hand of Live Casino
 )
 
+-- Keno
+INSERT INTO #Data
+SELECT 
+	202 AS Sporttype,
+	b.Username,   
+	b.CustID, 
+	b.TransID,     
+	b.Transdate,   
+	b.winlostdate,  
+	b.refno,  
+	0 AS HomeID,  
+	0 AS AwayID,  
+	t.ChoiceId AS betteam,
+	Bettype, 
+	0 AS Hdp1,    
+	0 AS Hdp2,    
+	b.modds,
+	b.OddsType,
+	b.odds,
+	b.Stake,  
+	b.Status,
+	b.Liveindicator, 
+	b.Livehomescore, 
+	b.Liveawayscore, 		 
+	0 AS LeagueID,
+	t.GameId AS matchid,
+	'' AS matchcode,
+	'' AS Race,
+	winlostdate AS eventdate,
+	b.IP AS IP,
+	CONVERT(BIT,0) AS IsNeutral,
+	b.betid,
+	b.currency,
+	'' AS ShowTime
+FROM 
+	bettrans AS b WITH (NOLOCK)
+	CROSS APPLY dbo.[f_ParseTransDesc](b.TransDesc, b.bettype) t
+	
+WHERE
+	b.custid = @CustID
+	AND b.recommend = @recommend
+	AND b.statusID IN (101,102)
+	AND b.winlostdate > DATEADD(DAY,-3,CURRENT_TIMESTAMP)
+	AND b.bettype BETWEEN 1501 AND 1599
+	AND b.ruben = 1
 
 INSERT INTO #Data
 SELECT 
@@ -130,7 +175,7 @@ WHERE
 	b.custid = @CustID
 	AND b.recommend = @recommend
 	AND b.statusID IN (101,102)
-	
+	AND b.bettype NOT BETWEEN 1501 AND 1599	
 	
 UNION ALL
 SELECT 
@@ -205,8 +250,7 @@ CREATE NONCLUSTERED INDEX IDX_Index_Data ON #Data (Currency)
 
 SELECT * INTO #TempExchange 
 FROM Lrf_f_GetExchangeDaily(@FromDate,@ToDate)
-WHERE exchangeid IN (SELECT DISTINCT Currency FROM #Data)
-		
+WHERE exchangeid IN (SELECT DISTINCT Currency FROM #Data)	
 
 		
 SELECT A.* 
@@ -277,7 +321,6 @@ END
 
 SELECT * FROM @BettransDetail 
 ORDER BY RefNo,Bettype 
-
 
 DROP TABLE #TempExchange 
 DROP TABLE #Data 
