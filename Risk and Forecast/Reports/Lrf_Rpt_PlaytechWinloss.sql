@@ -10,7 +10,7 @@ AS
 /*  Created: Hannah
 	Date: 2014-04-10
     Task : Playtech Casino Win Loss report 
-    DB: DB06.bodb02  
+    DB: DBACC.bodb02  
    
     Revisions:  
 	Param's Explanation:  

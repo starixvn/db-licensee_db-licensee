@@ -9,7 +9,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_PlaytechWinlossDetail_Ag]
 /*  Created: Hannah
 	Date: 2014-04-11  
     Task : Playtech Casino Win Loss report Agent Level
-    DB: DB06.bodb02  
+    DB: DBACC.bodb02  
    
     Revisions: 
 	Param's Explanation:  
