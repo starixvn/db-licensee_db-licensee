@@ -207,7 +207,10 @@ SELECT @_tstamp = CAST(CAST(ISNULL(vvalue,0) AS BIGINT) AS BINARY(8))
 FROM dbo.systemsettings2 WITH(ROWLOCK) 
 WHERE vname = 'Task_PlaytechCS_tstamp'
 
-SELECT @new_tstamp = MAX(tstamp) FROM DBPTCS.bodb_playtechCS.dbo.bettrans_PlaytechCS
+SELECT @new_tstamp = MAX(tstamp)
+FROM (	SELECT TOP (1000) tstamp 
+		FROM DBPTCS.bodb_playtechCS.dbo.bettrans_PlaytechCS 
+		WHERE tstamp > @_tstamp ORDER BY tstamp) a
 
 INSERT INTO rptDepWinlostByProduct_staging (custid, winlostdate, sporttype, turnover, winlost, BetCount, drawTO, playercomm, Outstanding)
 SELECT b.CustID, b.Winlostdate,
