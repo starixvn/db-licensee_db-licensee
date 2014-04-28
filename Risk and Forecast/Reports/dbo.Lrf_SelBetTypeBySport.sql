@@ -21,28 +21,18 @@ Revisions:
    20131126@Jim: return English Name when Other Language Name is NULL or not ready
    20131205@Florent: Add more product ( V.Tennis, V.Racing)
    20140210@Florent: add new sport Horse racing fix odds
+   20140424@Florent: add new sport Virtual Speedway & Virtual Cycling
 Param's Explanation:
 	
 */
-/*SET @LicenseeID = 1
-DECLARE @SportList nvarchar(4000)
-SET @SportList = 
-N'
-<products>
-<product ID="0" Sport="1,2,3,4"> 
-</product>
-<product ID="2" Sport=""> 
-</product>
-<product ID="3" Sport=""> 
-</product>
-</products>'*/
 
 DECLARE @iDoc int
 DECLARE @checkVS bit
 DECLARE @checkNG BIT
 DECLARE @checkVTennis BIT
 DECLARE @checkVR bit 
-SELECT @checkVS=0,@checkNG=0,@checkVTennis=0,@checkVR=0
+DECLARE @checkVSW bit --Virtual Speedway
+SELECT @checkVS=0,@checkNG=0,@checkVTennis=0,@checkVR=0,@checkVSW=0
 
 
 EXEC sp_xml_preparedocument @iDoc OUTPUT, @SportList
@@ -81,7 +71,8 @@ INTO #bettype
 FROM 
 	bodb02.dbo.bettype  b WITH (NOLOCK)
 
-IF EXISTS(SELECT * FROM #input WHERE ID = 0 AND ISNULL(Sport,'') <> '' and  sport like '%154%' )
+--IF EXISTS(SELECT * FROM #input WHERE ID = 0 AND ISNULL(Sport,'') <> '' and  sport like '%154%' )
+IF EXISTS(SELECT * FROM #input WHERE ID = 0 AND ISNULL(Sport,'') <> '' and  CHARINDEX('154',sport)<>0)
 BEGIN
 	INSERT INTO @Bettype
 		SELECT typeid, typenamee
@@ -111,31 +102,28 @@ IF EXISTS(SELECT * FROM #input WHERE ID > 0)
 BEGIN
 	IF EXISTS (SELECT 1 FROM #input WHERE ID=161)
 		SET @checkNG=1
-	/*IF EXISTS (SELECT 1 FROM #input WHERE ID=180)
-		SET @checkVS=1
-	
-	IF EXISTS (SELECT 1 FROM #input WHERE ID=186)
-		SET @checkVtennis=1
-	IF EXISTS (SELECT 1 FROM #input WHERE ID in (181,182,184))
-		SET @checkVR=1
-		*/
-	IF EXISTS (SELECT 1 FROM #input WHERE ID=999 AND Sport LIKE '%180%')
+	IF EXISTS (SELECT 1 FROM #input WHERE ID=999 AND charindex('180',Sport)<>0)
 		SET @checkVS=1	
-	IF EXISTS (SELECT 1 FROM #input WHERE ID=999 and sport like '%186%')
+	IF EXISTS (SELECT 1 FROM #input WHERE ID=999 AND charindex('186',Sport)<>0)
 		SET @checkVtennis=1
 	IF EXISTS (SELECT 1 FROM #input 
 	           WHERE ID=999 
-	           and (sport like '%181%'
-				OR sport like '%182%'
-				OR sport like '%184%'))
+	          and (charindex('181',sport)<>0
+				OR charindex('182',sport)<>0
+				OR charindex('184',sport)<>0
+				OR charindex('185',sport)<>0
+				))
 		SET @checkVR=1
+	IF EXISTS (SELECT 1 FROM #input WHERE ID=999 and charindex('183',sport)<>0)
+		SET @checkVSW=1
 	
 	INSERT INTO @Bettype
 		SELECT typeid,
 			CASE WHEN typeid BETWEEN 81 AND 120 THEN  N'NG - ' + typenamee
-				 WHEN (typeid BETWEEN 1201 AND 1299 AND typeid NOT IN (1220,1235,1236,1231,1232,1233,1237,1238)) THEN  N'V.Soccer - '+typenamee
-				 WHEN (typeid BETWEEN 1201 AND 1299 AND typeid IN (1231,1232,1233)) THEN  N'V.Racing - '+typenamee
-				 WHEN (typeid BETWEEN 1201 AND 1299 AND typeid IN (1220,1235,1236)) THEN  N'V.Tennis - '+typenamee
+				 WHEN (typeid BETWEEN 1201 AND 1299) THEN  N'VS - '+typenamee + CASE WHEN typeid = 1204 THEN '(Soccer)'
+																					WHEN typeid = 1235 THEN '(Tennis)'
+																					ELSE ''
+																				END
 			END as 	typenamee 
 		FROM #bettype
 		WHERE (
@@ -143,6 +131,7 @@ BEGIN
 				OR (typeid BETWEEN 1201 AND 1299 AND typeid NOT IN (1220,1235,1236,1231,1232,1233,1237,1238) AND @checkVS=1)
 				OR (typeid BETWEEN 1201 AND 1299 AND typeid IN (1231,1232,1233) AND @checkVR=1)
 				OR (typeid BETWEEN 1201 AND 1299 AND typeid IN (1220,1235,1236) AND @checkVTennis=1)
+				OR (typeid BETWEEN 1201 AND 1299 AND typeid IN (1231) AND @checkVSW=1)
 				)
 
 END
@@ -153,7 +142,7 @@ DROP TABLE #bettype
 SELECT BettypeID,BettypeName
 FROM @Bettype
 GROUP BY BettypeID,BettypeName
-ORDER BY BettypeName
+ORDER BY BettypeID
 
 
 GO

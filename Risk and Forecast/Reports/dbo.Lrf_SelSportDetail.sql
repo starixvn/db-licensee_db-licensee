@@ -19,6 +19,9 @@ Revisions:
 	- 20131127@Jim: support multi language
 	- 20131205@Florent: add more bettype for V.Tennis, V.Racing
 	- 20140117@Florent: add new sport 154
+	- 20140425@Florent: add new sport 
+						+ 183 Virtual Speedway
+						+ 185 Virtual Cycling 
 Param's Explanation:
 	
 */
@@ -214,13 +217,38 @@ INSERT INTO @ProductSport(ID, Name, ParentID)
 	FROM dbo.Product3rd p1 WITH(NOLOCK)
 		INNER JOIN dbo.LicenseeProduct3rd p2 WITH (NOLOCK) ON p1.ProductID=p2.ProductID
 	WHERE  p2.LicenseeID=@LicenseeID
+		AND p1.ProductID  IN (5)
+	UNION ALL
+	SELECT CASE p1.ProductID WHEN 5 THEN 183 END 
+			,CASE  p1.Productid WHEN 5 THEN 
+											CASE @Langkey												
+												WHEN 'es'  	    THEN N'Virtual Speedway'
+												WHEN 'vi-VN'	THEN N'Virtual Speedway'
+												ELSE N'Virtual Speedway' END END
+			, 999
+	FROM dbo.Product3rd p1 WITH(NOLOCK)
+		INNER JOIN dbo.LicenseeProduct3rd p2 WITH (NOLOCK) ON p1.ProductID=p2.ProductID
+	WHERE  p2.LicenseeID=@LicenseeID
 		AND p1.ProductID  IN (5)	
+	UNION ALL
+	SELECT CASE p1.ProductID WHEN 5 THEN 185 END 
+			,CASE  p1.Productid WHEN 5 THEN 
+											CASE @Langkey												
+												WHEN 'es'  	    THEN N'Virtual Cycling'
+												WHEN 'vi-VN'	THEN N'Virtual Cycling'
+												ELSE N'Virtual Cycling' END END
+			, 999
+	FROM dbo.Product3rd p1 WITH(NOLOCK)
+		INNER JOIN dbo.LicenseeProduct3rd p2 WITH (NOLOCK) ON p1.ProductID=p2.ProductID
+	WHERE  p2.LicenseeID=@LicenseeID
+		AND p1.ProductID  IN (5)
 	/*
 	 * end add more
 	 */
 	 
 SELECT * FROM @ProductSport
 --ORDER BY ID ASC 
+
 GO
 GRANT EXECUTE ON [dbo].[Lrf_SelSportDetail] TO [bodbLicenseeNet] 
 GO

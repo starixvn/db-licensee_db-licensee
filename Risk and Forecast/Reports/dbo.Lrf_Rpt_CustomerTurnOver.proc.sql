@@ -45,7 +45,7 @@ AS
 	- 20131225@Florent: Remove using bettrans14, use only bettrans and rptCustomerturnover
 	- 20140104@Don: Improve performance -> Replacing table @Status with #Status
 	- 20140120@Florent: using index Non clusered IX_recommend for table rptCustomerturnover
-	- 20140212@Florent : Sorting DESC and improve performance
+	- 20140212@Florent : Sorting DESC
 	Parameter's Explanation:
 		- @ReportBy:  1: daily, 2: monthly
 		- @FilterBy:  1: Win, 2: Loss, 3: Draw
@@ -136,9 +136,8 @@ ELSE
 			FROM DBLIC.bodb_licensee.dbo.LicenseeCust  WITH (NOLOCK)
 			WHERE
 				LicenseeID=@LicenseeID AND 
-				(Currency=@CurrencyID)-- OR (@CurrencyID=0))
-				AND 
-				RoleID=2
+				(Currency=@CurrencyID)-- OR (@CurrencyID=0))		
+				AND RoleID=2
 			)
 			
 			
@@ -257,10 +256,7 @@ ELSE
 			LEFT JOIN outright o with(nolock) ON b.matchid = o.orid 
 			LEFT JOIN league l with(nolock) ON o.leagueid = l.leagueid
 			LEFT JOIN cte_raceinfo AS cr ON cr.orid=b.oddsid 
-			WHERE 
-				--b.CustID IN (SELECT CustID FROM #Currency) AND 
-				 b.winlostdate BETWEEN @TempFromDate AND @todate
-				--AND (b.CustID = @CustID OR @CustID=0)
+			WHERE b.winlostdate BETWEEN @TempFromDate AND @todate
 				AND (b.custid IN (SELECT * FROM #custID) OR @CustID=0)
 				AND b.statusID IN (SELECT StatusID FROM #Status)
 		END
@@ -477,9 +473,13 @@ ELSE
 				ELSE e.Code END AS Currency,
 			b.sporttype,		
 			CASE WHEN typeid BETWEEN 81 AND 120 THEN  N'NG - ' + bt.typenamee
-				 WHEN (typeid BETWEEN 1201 AND 1299 AND bt.typeid NOT IN (1220,1235,1236,1231,1232,1233,1237,1238)) THEN  N'V.Soccer - '+bt.typenamee
-				 WHEN (typeid BETWEEN 1201 AND 1299 AND bt.typeid IN (1231,1232,1233)) THEN  N'V.Racing - '+bt.typenamee
-				 WHEN (typeid BETWEEN 1201 AND 1299 AND bt.typeid IN (1220,1235,1236)) THEN  N'V.Tennis - '+bt.typenamee
+				 --WHEN (typeid BETWEEN 1201 AND 1299 AND bt.typeid NOT IN (1220,1235,1236,1231,1232,1233,1237,1238)) THEN  N'V.Soccer - '+bt.typenamee
+				 --WHEN (typeid BETWEEN 1201 AND 1299 AND bt.typeid IN (1231,1232,1233)) THEN  N'V.Racing - '+bt.typenamee
+				 --WHEN (typeid BETWEEN 1201 AND 1299 AND bt.typeid IN (1220,1235,1236)) THEN  N'V.Tennis - '+bt.typenamee
+				  WHEN (typeid BETWEEN 1201 AND 1299) THEN  N'VS - '+typenamee + CASE WHEN typeid = 1204 THEN '(Soccer)'
+																					WHEN typeid = 1235 THEN '(Tennis)'
+																					ELSE ''
+																				END
 				 ELSE  bt.typenamee
 			END AS bettype,
 			sum(b.betcount) AS Betcount,
@@ -509,9 +509,13 @@ ELSE
 			b.sporttype,	
 			b.bettype,
 			CASE WHEN typeid BETWEEN 81 AND 120 THEN  N'NG - ' + bt.typenamee
-				 WHEN (typeid BETWEEN 1201 AND 1299 AND bt.typeid NOT IN (1220,1235,1236,1231,1232,1233,1237,1238)) THEN  N'V.Soccer - '+bt.typenamee
-				 WHEN (typeid BETWEEN 1201 AND 1299 AND bt.typeid IN (1231,1232,1233)) THEN  N'V.Racing - '+bt.typenamee
-				 WHEN (typeid BETWEEN 1201 AND 1299 AND bt.typeid IN (1220,1235,1236)) THEN  N'V.Tennis - '+bt.typenamee
+				 --WHEN (typeid BETWEEN 1201 AND 1299 AND bt.typeid NOT IN (1220,1235,1236,1231,1232,1233,1237,1238)) THEN  N'V.Soccer - '+bt.typenamee
+				 --WHEN (typeid BETWEEN 1201 AND 1299 AND bt.typeid IN (1231,1232,1233)) THEN  N'V.Racing - '+bt.typenamee
+				 --WHEN (typeid BETWEEN 1201 AND 1299 AND bt.typeid IN (1220,1235,1236)) THEN  N'V.Tennis - '+bt.typenamee
+				  WHEN (typeid BETWEEN 1201 AND 1299) THEN  N'VS - '+typenamee + CASE WHEN typeid = 1204 THEN '(Soccer)'
+																					WHEN typeid = 1235 THEN '(Tennis)'
+																					ELSE ''
+																				END
 				 ELSE  bt.typenamee
 			END
 			)A
@@ -573,7 +577,7 @@ ELSE
 			Winlost,
 			PlayerComm
 		FROM #return	
-		WHERE ( RowNo between @RowStart AND @RowEnd	AND  @IsExportExcel=0) OR (@IsExportExcel=1 )--AND RowNo2<65000)	
+		WHERE ( RowNo between @RowStart AND @RowEnd	AND  @IsExportExcel=0) OR (@IsExportExcel=1 AND RowNo<65000)	
 		
 		--- Data Sum 	
 		--SELECT @TotalRow=COUNT(1)
@@ -588,7 +592,7 @@ ELSE
 			   sum(PlayerComm) SumComm,
 			   @TotalRow  TotalRows
 		FROM #result  	
-		--WHERE (@IsExportExcel=0) OR (@IsExportExcel=1 AND RowNum<65000)
+		WHERE (@IsExportExcel=0) OR (@IsExportExcel=1 AND RowNum<65000)
 		
 		
 		DROP TABLE #return	
