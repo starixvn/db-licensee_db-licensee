@@ -46,14 +46,15 @@ BEGIN
 	FROM DBLIC.bodb_Licensee.dbo.Licensees WITH (NOLOCK) 
 	WHERE LicenseeID = @LicenseeID
 
-	SET @sql = 'SELECT currencyID, LicenseeID 
-				FROM dbo.Lrf_f_GetCurrencybyUser(' + CAST(@LicenseeID AS VARCHAR) + ', '+ CAST(@UserID AS VARCHAR) + +', 1)
-				WHERE ('+ CAST(@currencyID AS VARCHAR) +' = 0  OR ('+ CAST(@currencyID AS VARCHAR) +' <> 0 AND CurrencyID = '+ CAST(@currencyID AS VARCHAR) +'));'
-
 	CREATE TABLE #currency(currencyID INT, LicenseeID INT)
 
+	SET @sql = 'SELECT currencyID, LicenseeID
+				FROM openquery( DB052,''SELECT * 
+				FROM bodb02.dbo.Lrf_f_GetCurrencybyUser(' + CAST(@LicenseeID AS VARCHAR) + ', '+ CAST(@UserID AS VARCHAR) + +', 1)
+						WHERE ('+ CAST(@currencyID AS VARCHAR) +' = 0  OR ('+ CAST(@currencyID AS VARCHAR) +' <> 0 AND CurrencyID = '+ CAST(@currencyID AS VARCHAR) +'))'')'
+
 	INSERT INTO #currency(currencyID, LicenseeID)
-	EXEC DBEXT.bodb02.dbo.sp_executesql @sql
+	EXEC (@sql)
   
 	INSERT INTO @TempAg (custID, currency) 
 	SELECT custID, currency 
