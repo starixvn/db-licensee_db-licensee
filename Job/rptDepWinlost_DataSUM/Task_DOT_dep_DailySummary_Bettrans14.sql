@@ -226,7 +226,7 @@ BEGIN
 		ISNULL(SUM(b.Winlost - b.Actual_Stake),0) AS Winlost,
 		ISNULL(COUNT(*),0) AS Betcount,
 		ISNULL(SUM(CASE WHEN b.StatusID = 111 THEN b.Stake ELSE 0 END),0) AS DrawTO
-	FROM DBPTCSARC.bodb_PlaytechCS_archive.dbo.bettrans_PlaytechCS_bk b WITH (ROWLOCK)
+	FROM bodb_PlaytechCS_archive.dbo.bettrans_PlaytechCS_bk b WITH (ROWLOCK)
 	WHERE Winlostdate = @date
 	GROUP BY b.CustID
 END
