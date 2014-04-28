@@ -218,7 +218,8 @@ SELECT b.CustID, b.Winlostdate,
 	ISNULL(SUM(b.Stake),0) AS Turnover,
 	ISNULL(SUM(b.Winlost - b.Actual_Stake),0) AS Winlost,
 	ISNULL(COUNT(*),0) AS Betcount,
-	0,0,0
+	ISNULL(SUM(CASE WHEN b.StatusID = 111 THEN b.Stake ELSE 0 END),0) AS DrawTO,
+	0,0
 FROM DBPTCS.bodb_PlaytechCS.dbo.bettrans_PlaytechCS b WITH (ROWLOCK)
 WHERE tstamp > @_tstamp AND tstamp <= @new_tstamp
 GROUP BY b.CustID, b.Winlostdate

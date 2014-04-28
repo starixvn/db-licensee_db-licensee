@@ -374,24 +374,26 @@ SELECT @BackupDay = ISNULL(MIN(Winlostdate),'') FROM DBPTCS.bodb_PlaytechCS.dbo.
 
 IF @date >= @BackupDay -- Get data in bettrans_PlaytechCS table
 BEGIN
-	INSERT INTO #DataByProduct(custid, sporttype, turnover, winlost, betcount)
+	INSERT INTO #DataByProduct(custid, sporttype, turnover, winlost, betcount, drawTO)
 	SELECT b.CustID, 
 		254 AS SportType,
 		ISNULL(SUM(b.Stake),0) AS Turnover,
 		ISNULL(SUM(b.Winlost - b.Actual_Stake),0) AS Winlost,
-		ISNULL(COUNT(*),0) AS Betcount
+		ISNULL(COUNT(*),0) AS Betcount,
+		ISNULL(SUM(CASE WHEN b.StatusID = 111 THEN b.Stake ELSE 0 END),0) AS DrawTO
 	FROM DBPTCS.bodb_PlaytechCS.dbo.bettrans_PlaytechCS b WITH (ROWLOCK)
 	WHERE Winlostdate = @date
 	GROUP BY b.CustID
 END
 ELSE -- Get data in bettrans_PlaytechCS_bk table
 BEGIN
-	INSERT INTO #DataByProduct(custid, sporttype, turnover, winlost, betcount)
+	INSERT INTO #DataByProduct(custid, sporttype, turnover, winlost, betcount, drawTO)
 	SELECT b.CustID, 
 		254 AS SportType,
 		ISNULL(SUM(b.Stake),0) AS Turnover,
 		ISNULL(SUM(b.Winlost - b.Actual_Stake),0) AS Winlost,
-		ISNULL(COUNT(*),0) AS Betcount
+		ISNULL(COUNT(*),0) AS Betcount,
+		ISNULL(SUM(CASE WHEN b.StatusID = 111 THEN b.Stake ELSE 0 END),0) AS DrawTO
 	FROM DBPTCSARC.bodb_PlaytechCS_archive.dbo.bettrans_PlaytechCS_bk b WITH (ROWLOCK)
 	WHERE Winlostdate = @date
 	GROUP BY b.CustID
