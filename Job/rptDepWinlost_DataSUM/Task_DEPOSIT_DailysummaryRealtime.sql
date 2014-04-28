@@ -212,21 +212,24 @@ FROM (	SELECT TOP (1000) tstamp
 		FROM DBPTCS.bodb_playtechCS.dbo.bettrans_PlaytechCS 
 		WHERE tstamp > @_tstamp ORDER BY tstamp) a
 
-INSERT INTO rptDepWinlostByProduct_staging (custid, winlostdate, sporttype, turnover, winlost, BetCount, drawTO, playercomm, Outstanding)
-SELECT b.CustID, b.Winlostdate,
-	254 AS SportType,
-	ISNULL(SUM(b.Stake),0) AS Turnover,
-	ISNULL(SUM(b.Winlost - b.Actual_Stake),0) AS Winlost,
-	ISNULL(COUNT(*),0) AS Betcount,
-	ISNULL(SUM(CASE WHEN b.StatusID = 111 THEN b.Stake ELSE 0 END),0) AS DrawTO,
-	0,0
-FROM DBPTCS.bodb_PlaytechCS.dbo.bettrans_PlaytechCS b WITH (ROWLOCK)
-WHERE tstamp > @_tstamp AND tstamp <= @new_tstamp
-GROUP BY b.CustID, b.Winlostdate
+IF (@new_tstamp IS NOT NULL AND @new_tstamp != 0)
+BEGIN
+	INSERT INTO rptDepWinlostByProduct_staging (custid, winlostdate, sporttype, turnover, winlost, BetCount, drawTO, playercomm, Outstanding)
+	SELECT b.CustID, b.Winlostdate,
+		254 AS SportType,
+		ISNULL(SUM(b.Stake),0) AS Turnover,
+		ISNULL(SUM(b.Winlost - b.Actual_Stake),0) AS Winlost,
+		ISNULL(COUNT(*),0) AS Betcount,
+		ISNULL(SUM(CASE WHEN b.StatusID = 111 THEN b.Stake ELSE 0 END),0) AS DrawTO,
+		0,0
+	FROM DBPTCS.bodb_PlaytechCS.dbo.bettrans_PlaytechCS b WITH (ROWLOCK)
+	WHERE tstamp > @_tstamp AND tstamp <= @new_tstamp
+	GROUP BY b.CustID, b.Winlostdate
 
-UPDATE dbo.systemsettings2 WITH(ROWLOCK, UPDLOCK)
-SET vvalue = CAST(CAST(@new_tstamp as bigint) as varchar(200))
-WHERE vname = 'Task_PlaytechCS_tstamp'
+	UPDATE dbo.systemsettings2 WITH(ROWLOCK, UPDLOCK)
+	SET vvalue = CAST(CAST(@new_tstamp as bigint) as varchar(200))
+	WHERE vname = 'Task_PlaytechCS_tstamp'
+END
 
 
 INSERT INTO dbo.rptDepWinlost_Transfer3rdOthers_Staging (winlostdate,CustId,Currency,Recommend,MRecommend,SRecommend,PartnerId,TransferAmount)
