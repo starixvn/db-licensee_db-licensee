@@ -1,9 +1,4 @@
-﻿SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
-ALTER PROCEDURE [dbo].[Lrf_BetList_SelRunningByDate_Mem]
+﻿ALTER PROCEDURE [dbo].[Lrf_BetList_SelRunningByDate_Mem]
 	@LicenseeID INT ,
 	@UserID		INT,
 	@CustID INT=NULL,
@@ -218,9 +213,9 @@ CREATE TABLE #TempBetList
 			#TempBetList b 
 			INNER JOIN match m WITH (NOLOCK) ON b.matchid=m.matchid		
 		WHERE
-			(b.bettype < 31 or (b.bettype BETWEEN 121 AND 999))
+			b.bettype < 31 or (b.bettype BETWEEN 121 AND 999)  
 			AND b.bettype <>10
-			
+
 		--Outright	
 		INSERT INTO #BetListSelRunningByDateMem
 		SELECT

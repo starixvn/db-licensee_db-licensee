@@ -1,9 +1,4 @@
-﻿SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
-ALTER  PROCEDURE [dbo].[Lrf_BetList_SelWinloss_Mem]
+﻿ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinloss_Mem]
 	@LicenseeID 	INT,
 	@UserID			INT,
 	@CustID			INT,
@@ -2644,7 +2639,7 @@ SELECT * FROM @BettransDetail ORDER BY RefNo,Bettype
 
 DROP TABLE #TempExchange
 /*
-	[Lrf_BetList_SelWinloss_Mem_xtest]
+	[Lrf_BetList_SelWinloss_Mem]
 	@CustID			=1265745,
 	@FromDate		='2012-09-01',
 	@ToDate			='2012-09-10',

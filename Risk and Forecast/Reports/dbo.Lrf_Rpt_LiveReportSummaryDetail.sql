@@ -6,18 +6,14 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-
-
-ALTER  PROCEDURE [dbo].[Lrf_Rpt_LiveReportSummaryDetail]      
-	@LicenseeID INT , 
-	@UserID		INT,	
-	@CurrencyID INT = NULL ,  
-	@ProductCode VARCHAR(20) = NULL,  
-	@FromDate  SMALLDATETIME,    
-	@ToDate  SMALLDATETIME,  
-	@MoveBetsDay SMALLDATETIME ,
-	@Debug		BIT = 0
-	 
+ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportSummaryDetail] @LicenseeID INT
+	, @UserID INT
+	, @CurrencyID INT = NULL
+	, @ProductCode VARCHAR(20) = NULL
+	, @FromDate SMALLDATETIME
+	, @ToDate SMALLDATETIME
+	, @MoveBetsDay SMALLDATETIME
+	, @Debug BIT = 0
 AS 
 /*  
 Created: 20111115@Henry  
@@ -43,7 +39,7 @@ Revisions:
 	-20130618@Jim:  Restrict permission of Licensee Users by currency
 	-20130625@Jim: support to view Currency UUS
 	-20131203@Jim: offer Virtual Greyhound, Virtual Motor Racing
-	
+	-20140404@Florent: offer Keno product	
      
 Param's Explanation:  
   
@@ -133,12 +129,32 @@ BEGIN
 		OR @ProductCode = 'LC'
 		OR @ProductCode = 'VS'
 		OR @ProductCode = 'CS'
-		OR @ProductCode = 'BG'		
+		OR @ProductCode = 'BG'
+		OR @ProductCode = 'KN' --Keno
 	BEGIN
 		SELECT @sql = @sql + '--Get data from bettrans for non - BA' + CHAR(13)
 
-		SELECT @sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13) + 'SELECT ' + CHAR(13) + 'b.winlostdate, ' + CHAR(13) + 's.currency,' + CHAR(13) + 'b.bettype,' + CHAR(13) + 'SUM(CASE WHEN b.bettype = 33 AND b.liveawayscore = 0 THEN stake/2 ELSE stake END) turnover,' + CHAR(13) + 'SUM(b.winlost - b.actual_stake) AS Winlost,' + CHAR(13) + 'SUM(CASE WHEN bettype BETWEEN 31 AND 33 THEN b.awinlost ELSE  -1 * (b.winlost - b.actual_stake) END) AS LicenseeWL,' + CHAR(13) + 'SUM (comm ) AS Comm,' + CHAR(13) + 'SUM ( b.playercomm  ) AS PlayerComm,' + CHAR(13) + '- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,  ' + CHAR(13) + 'COUNT(b.transid) BetCount' + CHAR(13) + 'FROM bettrans b  WITH (NOLOCK,INDEX=IX_srecommend)' + CHAR(13) + 'INNER JOIN @TempAg t  ON b.recommend =t.custid' + CHAR(13) + 'INNER JOIN @Super s ON b.srecommend = s.custid' + CHAR(13) + 'LEFT JOIN dbo.match m WITH (NOLOCK) ON b.matchID=m.matchID' + CHAR(13) + 
-			'LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON s.custid=ba.srecommend and  b.transid = BA.transid' + CHAR(13) + 'WHERE b.winlostdate BETWEEN ''' + convert(VARCHAR(10), @TempFromDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TDate, 120) + '''' + CHAR(13) + 'AND b.Bettype <= 19999' + CHAR(13) + 'AND b.statusID IN (111,112,113)' + CHAR(13) + 'AND BA.transid IS NULL' + CHAR(13) + CASE 
+		SELECT @sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13) + 
+			'SELECT ' + CHAR(13) + 'b.winlostdate, ' + CHAR(13) + 
+			's.currency,' + CHAR(13) + 
+			'b.bettype,' + CHAR(13) + 
+			'SUM(CASE WHEN b.bettype = 33 AND b.liveawayscore = 0 THEN stake/2 ELSE stake END) turnover,' + CHAR(13) + 
+			'SUM(b.winlost - b.actual_stake) AS Winlost,' + CHAR(13) + 
+			'SUM(CASE WHEN bettype BETWEEN 31 AND 33 THEN b.awinlost ELSE  -1 * (b.winlost - b.actual_stake) END) AS LicenseeWL,' + CHAR(13) + 
+			'SUM (comm ) AS Comm,' + CHAR(13) + 
+			'SUM ( b.playercomm  ) AS PlayerComm,' + CHAR(13) + 
+			'- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,  ' + CHAR(13) + 
+			'COUNT(b.transid) BetCount' + CHAR(13) + 
+			'FROM bettrans b  WITH (NOLOCK,INDEX=IX_srecommend)' + CHAR(13) + 
+			'INNER JOIN @TempAg t  ON b.recommend =t.custid' + CHAR(13) + 
+			'INNER JOIN @Super s ON b.srecommend = s.custid' + CHAR(13) + 
+			'LEFT JOIN dbo.match m WITH (NOLOCK) ON b.matchID=m.matchID' + CHAR(13) + 
+			'LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON s.custid=ba.srecommend and  b.transid = BA.transid' + CHAR(13) + 
+			'WHERE b.winlostdate BETWEEN ''' + convert(VARCHAR(10), @TempFromDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TDate, 120) + '''' + CHAR(13) + 
+			'AND b.Bettype <= 19999' + CHAR(13) +
+			'AND b.statusID IN (111,112,113)' + CHAR(13) + 
+			'AND BA.transid IS NULL' + CHAR(13) + 
+			CASE 
 				WHEN @ProductCode = 'NG'
 					THEN 'AND b.bettype BETWEEN 81 AND 120 '
 				WHEN @ProductCode = 'SB'
@@ -152,7 +168,9 @@ BEGIN
 				WHEN @ProductCode = 'CS'
 					THEN 'AND b.bettype = 71'
 				WHEN @ProductCode = 'BG'
-					THEN 'AND b.bettype = 73'				
+					THEN 'AND b.bettype = 73'
+				WHEN @ProductCode = 'KN' --Keno's bettype
+					THEN 'AND b.bettype BETWEEN 1501 AND 1599'
 				ELSE ''
 				END + CHAR(13) + 'GROUP BY  b.winlostdate, s.currency, b.bettype
 								' + CHAR(13)
@@ -189,9 +207,23 @@ BEGIN
 		OR @ProductCode = 'LC'
 		OR @ProductCode = 'VS'
 		OR @ProductCode = 'CS'
-		OR @ProductCode = 'BG'		
+		OR @ProductCode = 'BG'
+		OR @ProductCode = 'KN'
 	BEGIN
-		SELECT @sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13) + 'SELECT ' + CHAR(13) + 'b.rptDate,' + CHAR(13) + 'b.currencyID,' + CHAR(13) + 'b.bettype,' + CHAR(13) + 'SUM(b.turnover * CASE WHEN b.bettype=33 AND b.status IN (114,115) THEN 0.5 ELSE 1 END) turnover,' + CHAR(13) + 'sum(b.winloss) winlost,' + CHAR(13) + 'SUM(CASE WHEN bettype BETWEEN 31 AND 33 THEN b.WinlossA ELSE  -1 * b.winloss END) AS LicenseeWL,' + CHAR(13) + 'sum(b.CommissionA) Comm,' + CHAR(13) + 'sum( b.CommissionP ) PlayerComm,' + CHAR(13) + '- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13) + 'sum(b.betcount) BetCount' + CHAR(13) + 'FROM bodb_Licensee.dbo.rpt_Betting b WITH ( NOLOCK )' + CHAR(13) + 'INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID' + CHAR(13) + 'WHERE b.rptDate BETWEEN ''' + convert(VARCHAR(10), @FDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13) + 'AND b.status NOT IN (-1,103)' + CHAR(13) + 'AND b.siteID =' + convert(VARCHAR(10), @LicenseeID) + CHAR(13) +
+		SELECT @sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13) + 
+		'SELECT ' + CHAR(13) + 'b.rptDate,' + CHAR(13) + 
+		'b.currencyID,' + CHAR(13) + 'b.bettype,' + CHAR(13) +
+		'SUM(b.turnover * CASE WHEN b.bettype=33 AND b.status IN (114,115) THEN 0.5 ELSE 1 END) turnover,' + CHAR(13) + 
+		'sum(b.winloss) winlost,' + CHAR(13) + 
+		'SUM(CASE WHEN bettype BETWEEN 31 AND 33 THEN b.WinlossA ELSE  -1 * b.winloss END) AS LicenseeWL,' + CHAR(13) + 
+		'sum(b.CommissionA) Comm,' + CHAR(13) + 'sum( b.CommissionP ) PlayerComm,' + CHAR(13) + 
+		'- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13) + 
+		'sum(b.betcount) BetCount' + CHAR(13) + 
+		'FROM bodb_Licensee.dbo.rpt_Betting b WITH ( NOLOCK )' + CHAR(13) + 
+		'INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID' + CHAR(13) + 
+		'WHERE b.rptDate BETWEEN ''' + convert(VARCHAR(10), @FDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13) + 
+		'AND b.status NOT IN (-1,103)' + CHAR(13) + 
+		'AND b.siteID =' + convert(VARCHAR(10), @LicenseeID) + CHAR(13) +
 			---'AND b.CurrencyID <> 20 '  + char(13) +
 			CASE 
 				WHEN @CurrencyID <> 0
@@ -212,6 +244,8 @@ BEGIN
 					THEN 'AND b.bettype = 71'
 				WHEN @ProductCode = 'BG'
 					THEN 'AND b.bettype = 73'
+				WHEN @ProductCode = 'KN' --keno's bettype
+					THEN 'AND b.bettype BETWEEN 1501 AND 1599'
 				ELSE ''
 				END + CHAR(13) + 'GROUP BY b.rptDate, b.currencyID, b.bettype' + CHAR(13)
 	END

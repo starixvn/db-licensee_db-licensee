@@ -5,17 +5,16 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-ALTER   PROCEDURE [dbo].[Lrf_Rpt_WinLossByBettype]
-    @LicenseeID INT ,
-	@UserID		INT,
-    @LicenseeType VARCHAR(100) = NULL ,
-    @CurrencyID	INT=0,
-    @FromDate SMALLDATETIME ,
-    @ToDate SMALLDATETIME ,
-    @MoveBetsDay SMALLDATETIME,
-    @BalanceUpDay SMALLDATETIME ,
-    @PageSize INT = 1000 ,
-    @PageIndex INT = 1
+ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLossByBettype] @LicenseeID INT
+	, @UserID INT
+	, @LicenseeType VARCHAR(100) = NULL
+	, @CurrencyID INT = 0
+	, @FromDate SMALLDATETIME
+	, @ToDate SMALLDATETIME
+	, @MoveBetsDay SMALLDATETIME
+	, @BalanceUpDay SMALLDATETIME
+	, @PageSize INT = 1000
+	, @PageIndex INT = 1
 AS
 /*
 Created: 20101201@Jacob
@@ -40,7 +39,8 @@ Revisions:
 	- 20130402@Jim: add support for base currency USD
 	- 20130426@Scott: Doesn't support RNG casino and Bingo (bettype : 71,73)
 	- 20130618@Jim: Restrict permission of Licensee Users by currency
-	- 20131203@Jim: offer Virtual Greyhound, Virtual Motor Racing	
+	- 20131203@Jim: offer Virtual Greyhound, Virtual Motor Racing
+	- 20140404@Florent: offer Keno products
 	
 Param's Explanation: 
 */
@@ -195,7 +195,7 @@ BEGIN
 						OR b.bettype BETWEEN 81 AND 120
 						OR b.bettype BETWEEN 1101 AND 1199
 						OR b.bettype BETWEEN 1201 AND 1299
-						--OR b.bettype BETWEEN 1501 AND 1599--Keno
+						OR b.bettype BETWEEN 1501 AND 1599--Keno
 						)
 					THEN (b.winlost - b.actual_stake)
 				ELSE 0
@@ -245,7 +245,7 @@ BEGIN
 						OR b.bettype BETWEEN 81 AND 120
 						OR b.bettype BETWEEN 1101 AND 1199
 						OR b.bettype BETWEEN 1201 AND 1299
-						--OR b.bettype BETWEEN 1501 AND 1599--Keno
+						OR b.bettype BETWEEN 1501 AND 1599--Keno
 						)
 					THEN (b.winlost - b.actual_stake)
 				ELSE 0
@@ -295,7 +295,7 @@ BEGIN
 						OR b.bettype BETWEEN 81 AND 120
 						OR b.bettype BETWEEN 1101 AND 1199
 						OR b.bettype BETWEEN 1201 AND 1299
-						--OR b.bettype BETWEEN 1501 AND 1599 --Keno
+						OR b.bettype BETWEEN 1501 AND 1599 --Keno
 						)
 					THEN (b.winlost - b.actual_stake)
 				ELSE 0
@@ -339,7 +339,7 @@ BEGIN
 			FROM @TempAg
 			)
 		AND b.winlostdate BETWEEN @TempFromDate AND @TDate
-		AND bettype <= 1299 --include Keno product
+		AND bettype <= 1599 --include Keno product
 		AND bettype NOT IN (71, 73)
 		AND b.ruben = 1
 		AND statusID NOT IN (101, 102, 103)
@@ -388,7 +388,7 @@ BEGIN
 						OR b.bettype BETWEEN 81 AND 120
 						OR b.bettype BETWEEN 1101 AND 1199
 						OR b.bettype BETWEEN 1201 AND 1299
-						--OR b.bettype BETWEEN 1501 AND 1599 --Keno products
+						OR b.bettype BETWEEN 1501 AND 1599 --Keno products
 						)
 					THEN (b.winlost - b.actual_stake)
 				ELSE 0
@@ -438,7 +438,7 @@ BEGIN
 						OR b.bettype BETWEEN 81 AND 120
 						OR b.bettype BETWEEN 1101 AND 1199
 						OR b.bettype BETWEEN 1201 AND 1299
-						--OR b.bettype BETWEEN 1501 AND 1599--Keno
+						OR b.bettype BETWEEN 1501 AND 1599--Keno
 						)
 					THEN (b.winlost - b.actual_stake)
 				ELSE 0
@@ -488,7 +488,7 @@ BEGIN
 						OR b.bettype BETWEEN 81 AND 120
 						OR b.bettype BETWEEN 1101 AND 1199
 						OR b.bettype BETWEEN 1201 AND 1299
-						--OR b.bettype BETWEEN 1501 AND 1599--Keno
+						OR b.bettype BETWEEN 1501 AND 1599--Keno
 						)
 					THEN (b.winlost - b.actual_stake)
 				ELSE 0
@@ -530,7 +530,7 @@ BEGIN
 		AND e.exchangeid = b.currency
 	WHERE b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
 		AND statusID NOT IN (101, 102, 103)
-		AND bettype <= 1299 
+		AND bettype <= 1599 --Include Keno
 		AND bettype NOT IN (71, 73)
 	GROUP BY bettype
 		, CASE 

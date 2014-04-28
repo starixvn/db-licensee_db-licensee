@@ -1,11 +1,9 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportSummary]
-    @LicenseeID INT ,
-	@UserID		INT,	
-    @CurrencyID INT = NULL ,  
-    @FromDate		SMALLDATETIME,  
-	@ToDate		SMALLDATETIME,
-	@MoveBetsDay SMALLDATETIME
-	
+﻿ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportSummary] @LicenseeID INT
+	, @UserID INT
+	, @CurrencyID INT = NULL
+	, @FromDate SMALLDATETIME
+	, @ToDate SMALLDATETIME
+	, @MoveBetsDay SMALLDATETIME
 AS 
 /*
 Created: 20111031@Henry
@@ -29,6 +27,7 @@ Revisions:
 	-20130625@Jim: support to view currency UUS
 	-20130809@Jim: offer Virtual Horse Racing
 	-20131007@Jim: support Virtual Tennis
+	-20140404@Florent: support Keno product
 	
 	
 Param's Explanation:
@@ -225,6 +224,8 @@ BEGIN
 				THEN 'CS'
 			WHEN b.bettype = 73
 				THEN 'BG'
+			WHEN b.bettype BETWEEN 1501 AND 1599 --Keno
+				THEN 'KN'
 			END AS ProductCode
 		, SUM(stake) turnover
 		, SUM(b.winlost - b.actual_stake) AS Winlost
@@ -247,6 +248,7 @@ BEGIN
 			OR b.bettype BETWEEN 1101 AND 1199
 			OR b.bettype BETWEEN 1201 AND 1299
 			OR b.bettype IN (71, 73) --RNG CASINO & BINGO
+			OR b.bettype BETWEEN 1501 AND 1599 --Keno
 			)
 	GROUP BY b.winlostdate
 		, s.currency
@@ -281,6 +283,8 @@ BEGIN
 						THEN 'CS'
 					WHEN 252
 						THEN 'BG'
+					WHEN 202    --Keno's sportid
+						THEN 'KN'
 					END
 			END AS ProductCode
 		, SUM(b.turnover)
@@ -289,7 +293,7 @@ BEGIN
 				WHEN ISNULL(b.isBA, 0) = 1
 					THEN 0
 				ELSE CASE 
-						WHEN b.sporttype IN (0, 161, 162, 180, 251, 252)
+						WHEN b.sporttype IN (0, 161, 162, 180, 251, 252,202)
 							THEN - 1 * b.winlost
 						WHEN b.sporttype = 151
 							THEN b.awinlost
@@ -337,6 +341,8 @@ SELECT ProductCode
 			THEN 'RNG Casino'
 		WHEN 'BG'
 			THEN 'Bingo'
+		WHEN 'KN'
+			THEN 'Keno'
 		ELSE 'Sportsbook'
 		END AS ProductName
 	, SUM(TurnOver) AS Turnover
@@ -363,6 +369,7 @@ SELECT ProductCode
 FROM #tmpWinloss b
 INNER JOIN #TempExchange e ON e.ExchangeDate = b.winlostdate
 	AND e.exchangeid = b.currency
+WHERE b.ProductCode IS NOT NULL
 GROUP BY ProductCode
 ORDER BY ProductName
 

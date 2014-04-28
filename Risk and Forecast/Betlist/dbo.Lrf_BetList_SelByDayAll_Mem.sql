@@ -1,15 +1,3 @@
-SET QUOTED_IDENTIFIER ON 
-GO
-SET ANSI_NULLS ON 
-GO
-
-/****** Object:  Stored Procedure dbo.Lrf_BetList_SelByDayAll_Mem    Script Date: 4/11/2014 16:25:25  ******/
-
-/*
-	Lrf_BetList_SelByDayAll_Mem
-	@Custid=5754258,
-	@FromDate='2012-08-04 00:00:00:000'
-*/
 ALTER PROCEDURE [dbo].[Lrf_BetList_SelByDayAll_Mem]
 	@LicenseeID INT ,
 	@UserID		INT,
@@ -1184,14 +1172,6 @@ ELSE
 		SELECT * FROM @BettransDetail ORDER BY refno,bettype 
 		DROP TABLE #TempExchange
 	END
-
-GO
-
-SET QUOTED_IDENTIFIER OFF 
-GO
-SET ANSI_NULLS ON 
-GO
-
 
 GO 
  GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelByDayAll_Mem] TO [vnteam]

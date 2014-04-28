@@ -1,11 +1,4 @@
-SET QUOTED_IDENTIFIER ON 
-GO
-SET ANSI_NULLS ON 
-GO
-
-/****** Object:  Stored Procedure dbo.Lrf_BetList_SelByDayAll_Mem_Old    Script Date: 4/11/2014 16:25:24  ******/
-
-CREATE PROCEDURE [dbo].[Lrf_BetList_SelByDayAll_Mem_Old]
+ALTER PROCEDURE [dbo].[Lrf_BetList_SelByDayAll_Mem_Old]
 	@LicenseeID INT ,
 	@UserID		INT,
 	@custid		INT,
@@ -620,14 +613,6 @@ END
 		
 SELECT * FROM @BettransDetail		
 ORDER BY refno, bettype
-
-GO
-
-SET QUOTED_IDENTIFIER OFF 
-GO
-SET ANSI_NULLS ON 
-GO
-
 
 GO 
  GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelByDayAll_Mem_Old] TO [vnteam]

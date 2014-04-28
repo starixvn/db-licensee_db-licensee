@@ -1,9 +1,4 @@
-﻿SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
-ALTER  PROCEDURE [dbo].[Lrf_BetList_SelAllByDate_Mem]
+﻿ALTER PROCEDURE [dbo].[Lrf_BetList_SelAllByDate_Mem]
 	@LicenseeID INT ,
 	@UserID		INT,
 	@custid INT=NULL,
@@ -1134,6 +1129,7 @@ ORDER BY RefNo,Bettype
 DROP TABLE #TempExchange 
 DROP TABLE #BetListSelAllByDateMem
 DROP TABLE #TempBetList
+
 GO
 GRANT  EXECUTE  ON [dbo].[Lrf_BetList_SelAllByDate_Mem]  TO [bodbLicenseeNet]
 GO

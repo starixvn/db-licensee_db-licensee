@@ -42,7 +42,8 @@ Revisions:
 	- 20121119@Henry: not allowed insert null value to column ugroup when turn-on BA
     - 20130123@Daniel: Change link server alias
 	- 20130429@Jim: support base currency USD
-	- 20131113@winnie: remove bodb02.
+	- 20131113@winnie: remove bodb02.dbo
+	- 20140425@Francis: add HR Fixed Odds
 	
 Param's Explanation:
 
@@ -281,6 +282,10 @@ IF @isBA = 1 --enable BA
 		@v99apositiontaking_9 = 0 ,
 		@v99apositiontaking_20 = 0 ,
 
+		--HR Fixed Odds
+		@v154apositiontaking_20 = 0 ,
+
+
 		@UserID = @ModifyBy,
 		@IP = @IP,
 		@ErrCode = @ErrCode OUTPUT,
@@ -450,6 +455,9 @@ ELSE --disable BA
 					@v99apositiontaking_3 SMALLMONEY,
 					@v99apositiontaking_9 SMALLMONEY,
 					@v99apositiontaking_20 SMALLMONEY,
+					
+					--HR Fixed Odds
+					@v154apositiontaking_20 SMALLMONEY,
 
 					@recommend INT
 
@@ -508,7 +516,10 @@ ELSE --disable BA
 						@v99apositiontaking_2 =	ISNULL(MAX(CASE WHEN cs.bettype = 2 AND cs.sporttype=99 THEN cs.apositiontaking ELSE 0 END), 0),
 						@v99apositiontaking_3 = ISNULL(MAX(CASE WHEN cs.bettype = 3 AND cs.sporttype=99 THEN cs.apositiontaking ELSE 0 END), 0),
 						@v99apositiontaking_9 = ISNULL(MAX(CASE WHEN cs.bettype = 9 AND cs.sporttype=99 THEN cs.apositiontaking ELSE 0 END), 0),
-						@v99apositiontaking_20 = ISNULL(MAX(CASE WHEN cs.bettype = 20 AND cs.sporttype=99 THEN cs.apositiontaking ELSE 0 END), 0)
+						@v99apositiontaking_20 = ISNULL(MAX(CASE WHEN cs.bettype = 20 AND cs.sporttype=99 THEN cs.apositiontaking ELSE 0 END), 0),
+
+						--HR Fixed Odds
+						@v154apositiontaking_20 = ISNULL(MAX(CASE WHEN cs.bettype = 20 AND cs.sporttype=154 THEN cs.apositiontaking ELSE 0 END), 0)
 
 					FROM
 						CustInfo AS c WITH (NOLOCK)
@@ -571,6 +582,8 @@ ELSE --disable BA
 					@v99apositiontaking_3 = @v99apositiontaking_3 ,
 					@v99apositiontaking_9 = @v99apositiontaking_9 ,
 					@v99apositiontaking_20 = @v99apositiontaking_20 ,
+
+					@v154apositiontaking_20 = @v154apositiontaking_20 ,
 
 					@UserID = @ModifyBy,
 					@IsAdmin = @IsAdmin,
