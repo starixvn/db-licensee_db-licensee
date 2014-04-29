@@ -2,6 +2,7 @@ ALTER   PROCEDURE dbo.Lrf_CustomerSelMember_MinMaxBetVS
 	@custid INT
 AS
 
+
 /*
 Created: 20130912@Jim
 Task : SELECT customer's bet setting of virtual sport
