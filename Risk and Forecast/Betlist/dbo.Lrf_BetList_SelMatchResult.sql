@@ -33,7 +33,7 @@ Revisions:
 	- 20131129@Jim: support :
 				182 – Virtual Greyhounds
 				184 – Virtual Motor Racing
-	- 20140428@Hannah: support				
+	- 20140428@Hannah: support :				
 				183 - Virtual Speedway
 				185 - Virtual Cycling
 	

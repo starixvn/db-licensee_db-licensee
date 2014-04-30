@@ -399,7 +399,6 @@ BEGIN
 	
 	SET @sql = 
 	'SELECT A.* 
-	--INTO #BetData1
 	FROM (SELECT
 		ROW_NUMBER() over(ORDER BY '+ @SortTemp + ') AS RowNum,
 		b.oddsid,
@@ -652,7 +651,6 @@ BEGIN
 	-- Get Betdata from bettrans14 and filter by row number	
 	SET @sql = 
 	'SELECT A.* 
-	--INTO #BetData14
 	FROM (SELECT
 		ROW_NUMBER() over(ORDER BY ' + @SortTemp +' )AS RowNum,
 		b.oddsid,
