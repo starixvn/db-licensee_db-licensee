@@ -33,7 +33,9 @@ Revisions:
 	- 20131129@Jim: support :
 				182 – Virtual Greyhounds
 				184 – Virtual Motor Racing
-
+	- 20140428@Hannah: support				
+				183 - Virtual Speedway
+				185 - Virtual Cycling
 	
 	*******************
 	sample test case:
@@ -385,7 +387,7 @@ BEGIN
 				DROP TABLE #DataSum 
 				DROP TABLE #tmp
 		END--
-	ELSE IF EXISTS (SELECT 1 FROM  #tmpresult  WHERE sporttype IN (181,182,184))
+	ELSE IF EXISTS (SELECT 1 FROM  #tmpresult  WHERE sporttype IN (181,182,183,184,185))
 		BEGIN 
 			SELECT kickofftime,COUNT(place) rc INTO #DataSUMVHR
 			FROM #tmpresult

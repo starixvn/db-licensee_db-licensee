@@ -28,7 +28,8 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_MatchWL_Parlay]
 	@SumWinlostEUR MONEY=0 OUTPUT,
 	@SumLicenseeWLEUR MONEY=0 OUTPUT,
 	@SumCommEUR MONEY=0 OUTPUT,
-	@SumPlayerCommEUR MONEY=0 OUTPUT
+	@SumPlayerCommEUR MONEY=0 OUTPUT,
+	@Sort VARCHAR(100) = 'TransID ASC'
 AS
 /*
 Created: Henry@20120111
@@ -42,8 +43,9 @@ Revisions:
 		- 20120724@Jim: add playercomm value 
 		- 20121004@Jim: replace @currency input param by @currencyID
 		- 20130514@Jim: Restrict permission of Licensee Users by currency
-Param's Explanation: 
+		- 20140428@Hannah: Sort betlist
 
+Param's Explanation: 
 
 */
 SET NOCOUNT ON
@@ -54,13 +56,12 @@ SELECT  currencyID,LicenseeID into #currency
 FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
 WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
-
 INSERT  INTO @TempAg ( CustId)
 SELECT  CustID  
 FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
 		INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
-WHERE  [Description] = COALESCE(@LicenseeType,  
-                                                     [Description])
+WHERE  [Description] = COALESCE(@LicenseeType,[Description])
+
 DROP TABLE #Currency
 
 CREATE TABLE #AgWinlossMP
@@ -93,7 +94,6 @@ CREATE TABLE #AgWinlossMP
 	currency SMALLINT,
 	isBA INT
 )
-
 
 IF @Todate > @MoveBetsDay
 BEGIN
@@ -139,9 +139,7 @@ BEGIN
 			b.Bettype=@BetType AND
 			b.matchid = @BetType AND
 			b.tpositiontaking=0 AND
-			b.statusID IN (111,112,113)
-			
-		
+			b.statusID IN (111,112,113)		
 	END
 
 	IF @ShowSB = 1
@@ -186,12 +184,8 @@ BEGIN
 			b.Bettype = @Bettype AND
 			b.matchid = @Bettype AND
 			b.tpositiontaking<>0 AND
-			b.statusID IN (111,112,113)
-			
-	END
-	
-	
-	
+			b.statusID IN (111,112,113)		
+	END	
 END
 
 IF @Fromdate <= @MoveBetsDay
@@ -239,8 +233,7 @@ BEGIN
 			b.matchid = @BetType AND
 			b.tpositiontaking=0 AND
 			b.statusID IN (111,112,113)	
-	END
-	
+	END	
 
 	IF @ShowSB = 1
 	BEGIN
@@ -284,14 +277,8 @@ BEGIN
 			b.Bettype = @Bettype AND
 			b.matchid = @Bettype AND
 			b.tpositiontaking<>0 AND
-			b.statusID IN (111,112,113) 
-			
-	END
-	
-	
-	
-	
-		
+			b.statusID IN (111,112,113) 			
+	END		
 END
 
 
@@ -324,32 +311,36 @@ FROM #AgWinlossMP b
 INNER JOIN #TempExchange e ON b.currency=e.exchangeID AND b.winlostdate=e.exchangeDate
 INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid
 
-SELECT A.* ,'' betstatus, '' matchcode, 0 homeid, 0 awayid, 0 leagueid, 0 matchid, 0 sporttype
-FROM
-(
-	SELECT  
-			ROW_NUMBER() over(ORDER BY Transid) AS RowNum,
-			b.* ,
-			SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, len(c.username2)-CHARINDEX('$',c.username2)) AS nickname,
-			--USD
-			stake * e.USD stakeUSD,
-			actual_stake * e.USD actual_stakeUSD,
-			winlost * e.USD winlostUSD,
-			LicenseeWL * e.USD LicenseeWLUSD,
-			comm * e.USD commUSD,
-			playercomm*e.USD PlayerCommUSD,
-			--EUR
-			stake * e.EUR stakeEUR,
-			actual_stake * e.EUR actual_stakeEUR,
-			winlost * e.EUR winlostEUR,
-			LicenseeWL * e.EUR LicenseeWLEUR,
-			comm * e.EUR commEUR,
-			playercomm*e.EUR playercommEUR
+DECLARE @sql NVARCHAR(2000)
+SET @sql = 
+	   'SELECT A.* ,'''' betstatus, '''' matchcode, 0 homeid, 0 awayid, 0 leagueid, 0 matchid, 0 sporttype
+		FROM
+		(
+			SELECT  
+					ROW_NUMBER() over(ORDER BY b.'+@Sort +' ) AS RowNum,
+					b.* ,
+					SUBSTRING(c.username2,  CHARINDEX(''$'',c.username2)+1, len(c.username2)-CHARINDEX(''$'',c.username2)) AS nickname,
+					--USD
+					stake * e.USD stakeUSD,
+					actual_stake * e.USD actual_stakeUSD,
+					winlost * e.USD winlostUSD,
+					LicenseeWL * e.USD LicenseeWLUSD,
+					comm * e.USD commUSD,
+					playercomm*e.USD PlayerCommUSD,
+					--EUR
+					stake * e.EUR stakeEUR,
+					actual_stake * e.EUR actual_stakeEUR,
+					winlost * e.EUR winlostEUR,
+					LicenseeWL * e.EUR LicenseeWLEUR,
+					comm * e.EUR commEUR,
+					playercomm*e.EUR playercommEUR
 			
-	FROM #AgWinlossMP b
-		INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid
-		INNER JOIN #TempExchange e ON b.currency=e.exchangeID AND b.winlostdate=e.exchangeDate
-) A WHERE A.RowNum BETWEEN @RowStart AND @RowEnd
+			FROM #AgWinlossMP b
+				INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid
+				INNER JOIN #TempExchange e ON b.currency=e.exchangeID AND b.winlostdate=e.exchangeDate
+		) A WHERE A.RowNum BETWEEN '+ cast(@RowStart as varchar(50))+' AND '+cast(@RowEnd as varchar(50))
+			+' ORDER BY A.' +@Sort 
+EXEC (@sql)
 
 DROP TABLE #AgWinlossMP
 DROP TABLE #TempExchange 
