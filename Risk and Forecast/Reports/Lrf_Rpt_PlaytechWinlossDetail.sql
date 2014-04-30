@@ -9,7 +9,8 @@ ALTER  PROCEDURE [dbo].[Lrf_Rpt_PlaytechWinlossDetail]
 	@CurrencyID	INT = 0,
 	@CustID		INT = 0, --AgentID			
 	@FromDate	SMALLDATETIME,  
-	@ToDate		SMALLDATETIME 
+	@ToDate		SMALLDATETIME,
+	@excludeTest BIT = 0
 AS  
 /*  Created: Hannah  
 	Date: 2014-04-11 
@@ -61,6 +62,7 @@ BEGIN
 		INNER JOIN #Currency c ON lc.LicenseeID = c.LicenseeID AND lc.Currency = c.CurrencyID 
 	WHERE 
 		(@CustID = 0 OR (@CustID <> 0 AND CustID = @CustID))
+		AND (@excludeTest=0 OR (@excludeTest=1 AND Currency <> 20))
 	
 	SELECT @site = LicenseeName 
 	FROM DBLIC.bodb_licensee.dbo.Licensees WITH (NOLOCK) 

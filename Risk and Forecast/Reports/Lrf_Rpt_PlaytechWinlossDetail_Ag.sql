@@ -3,7 +3,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_PlaytechWinlossDetail_Ag]
  @UserID		INT,
  @CurrencyID	INT = 0,
  @FromDate		SMALLDATETIME,  
- @ToDate		SMALLDATETIME
+ @ToDate		SMALLDATETIME,
+ @excludeTest BIT = 0
  
  AS  
 /*  Created: Hannah
@@ -60,6 +61,8 @@ BEGIN
 	SELECT custID, currency 
 	FROM DBLIC.bodb_Licensee.dbo.LicenseeCust lc (NOLOCK) 
 		INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID   
+	WHERE 
+	 (@excludeTest=0 OR (@excludeTest=1 AND Currency <> 20))
 
 	INSERT INTO @Super(custid, currency)  
 	SELECT CustID,currency
