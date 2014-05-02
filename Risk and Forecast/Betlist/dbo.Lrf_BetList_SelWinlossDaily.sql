@@ -15,7 +15,7 @@ exec Lrf_BetList_SelWinlossDaily
 @BalanceUpDay='2012-09-01 00:00:00:000'
 */
 
-ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinlossDaily_14877]
+ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinlossDaily]
 	@date SMALLDATETIME,
 	@LicenseeID INT,
 	@UserID		INT,
@@ -296,7 +296,6 @@ SET @LicenseeWL =
 					ELSE awinlost 
 				 END'
 
-SElect @LicenseeWL
 IF (@Sort LIKE '%USD%') OR (@Sort LIKE '%EUR%')
 BEGIN
 	DECLARE @charindex INT
@@ -317,18 +316,11 @@ END
 ELSE
 BEGIN
 	SET @SortTemp = @Sort
-	SELECT @SortTemp
 END
---SELECT @SortTemp as '1'
-/*
-CREATE TABLE #TempExchange
-(exchangedate DATETIME,ExchangeId INT,Code VARCHAR(5),MYR FLOAT, USD FLOAT, EUR FLOAT)
-*/
 
 SELECT * INTO #TempExchange 
 FROM Lrf_f_GetExchangeDaily(@wldate,@wldate)
 
---select * from #TempExchange 
 IF @wldate > @MoveBetsDay_
 BEGIN
 	IF (@Product='VS' OR @Product='ALL')
@@ -437,8 +429,8 @@ BEGIN
 		commEUR MONEY,
 		PlayerCommEUR MONEY
 	)
+
 	-- Get Betdata from bettrans and filter by row number
-	--SELECT @SortTemp as '3'
 	SET @sql = 
 	'SELECT A.* 
 	FROM (SELECT
@@ -516,12 +508,7 @@ BEGIN
 	odds,status,stake,Winlost,LicenseeWL,comm,PlayerComm,transdate,Winlostdate,betteam,liveindicator,livehomescore,
 	liveawayscore,MatchID,Betstatus ,IsNeutral,oddstype,betid,currency,RefNO,CustID,showtime,stakeUSD,WinlostUSD,LicenseeWLUSD,commUSD,PlayerCommUSD,
 	stakeEUR,WinlostEUR,LicenseeWLEUR,commEUR,PlayerCommEUR)
-
-
 	EXEC (@sql)	
-	--SELECT * FROM #betdata1
-	select '#betdata1'
-	select @sql
 
 	-- Update LicenseeWL with LicenseeBATransaction table
 	UPDATE b
@@ -610,8 +597,7 @@ BEGIN
 		stakeUSD,WinlostUSD,LicenseeWLUSD,commUSD,PlayerCommUSD,
 		stakeEUR,WinlostEUR,LicenseeWLEUR,commEUR,PlayerCommEUR
 	FROM #BetData1
-	--select '#data'
-	--select * from #Data
+
 	DROP TABLE #BetData1	
 END
 
@@ -721,7 +707,7 @@ BEGIN
 		commEUR MONEY,
 		PlayerCommEUR MONEY 
 	)	
-	SELECT @SortTemp as '3'
+
 	-- Get Betdata from bettrans14 and filter by row number	
 	SET @sql = 
 	'SELECT A.* 
@@ -798,12 +784,9 @@ BEGIN
 	INSERT INTO #BetData14
 	(RowNum,Oddsid,Sporttype,Username,NickName,Bettype,LeagueID,Transid,Matchcode,Race,HomeID,AwayID,hdp1,hdp2,
 	odds,status,stake,Winlost,LicenseeWL,comm,PlayerComm,transdate,Winlostdate,betteam,liveindicator,livehomescore,
-	liveawayscore,MatchID,Betstatus ,IsNeutral,oddstype,betid,currency,RefNO,CustID,showtime,stakeUSD,WinlostUSD,LicenseeWLUSD,commUSD,PlayerCommUSD,
-stakeEUR,WinlostEUR,LicenseeWLEUR,commEUR,PlayerCommEUR)
-
+	liveawayscore,MatchID,Betstatus ,IsNeutral,oddstype,betid,currency,RefNO,CustID,showtime,stakeUSD,WinlostUSD,
+	LicenseeWLUSD,commUSD,PlayerCommUSD,stakeEUR,WinlostEUR,LicenseeWLEUR,commEUR,PlayerCommEUR)
 	EXEC (@sql)	
-	select @sql as 'bet14'
-	--select * from #BetData14
 
 	-- Update LicenseeWL with LicenseeBATransaction table
 	UPDATE b
@@ -878,7 +861,7 @@ stakeEUR,WinlostEUR,LicenseeWLEUR,commEUR,PlayerCommEUR)
 	FROM #BetData14 b
 		INNER JOIN @hr  r ON b.oddsid=r.OrID
 	WHERE b.bettype IN (31, 32, 33)	
-	select '#data'
+
 	-- Insert and drop temp table
 	INSERT INTO #Data
 	SELECT RowNum,
@@ -893,38 +876,12 @@ stakeEUR,WinlostEUR,LicenseeWLEUR,commEUR,PlayerCommEUR)
 		stakeEUR,WinlostEUR,LicenseeWLEUR,commEUR,PlayerCommEUR
 	FROM #BetData14
 	
-	--select * from  #Data
 	DROP TABLE #BetData14
 END
 
 CREATE NONCLUSTERED INDEX IDX_Currency ON #Data(Currency)
 
---SELECT @SortTemp as '4'
---select * from #Data
-
-SET @sql = 
-'SELECT ROW_NUMBER() over(ORDER BY '+@SortTemp+') AS RowNum, 
-		b.* ,
-		--USD
-		stake*e.USD stakeUSD,
-		Winlost*e.USD WinlostUSD,
-		LicenseeWL*e.USD LicenseeWLUSD,
-		comm*e.USD commUSD,
-		playercomm*e.USD as PlayerCommUSD,
-		--EUR
-		stake*e.EUR stakeEUR,
-		Winlost*e.EUR WinlostEUR,
-		LicenseeWL*e.EUR LicenseeWLEUR,
-		comm*e.EUR commEUR,
-		playercomm*e.EUR as PlayerCommEUR
-FROM #Data b
-	INNER JOIN #TempExchange e 
-ON  e.exchangeid = b.currency'+' 
-ORDER BY ' +@SortTemp 
---EXEC (@sql) 
---SELECT @sql
-select * from #Data
-
+SELECT * FROM #Data
 --SUM
 SELECT * INTO #TempExchangeSum 
 FROM Lrf_f_GetExchangeDaily(@wldate,@wldate)
@@ -1054,7 +1011,7 @@ DROP TABLE #TempExchange
 DROP TABLE #TempExchangeSum
 DROP TABLE #Data
 GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinlossDaily_14877] TO [bodbLicenseeNet] AS [dbo]
+GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinlossDaily] TO [bodbLicenseeNet] AS [dbo]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelWinlossDaily_14877] TO [vnteam] AS [dbo]
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelWinlossDaily] TO [vnteam] AS [dbo]
 

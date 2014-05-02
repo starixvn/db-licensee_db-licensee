@@ -92,7 +92,8 @@ CREATE TABLE #AgWinlossMP
 	IP VARCHAR(30),
 	isNeutral BIT,
 	currency SMALLINT,
-	isBA INT
+	isBA INT,
+	awinlost MONEY
 )
 
 IF @Todate > @MoveBetsDay
@@ -129,7 +130,8 @@ BEGIN
 			b.IP AS IP,
 			CONVERT(BIT,0) AS IsNeutral,
 			b.currency,
-			1 AS isBA
+			1 AS isBA,
+			b.awinlost
 		FROM
 			bettrans b WITH (nolock) 
 		WHERE
@@ -174,7 +176,8 @@ BEGIN
 			b.IP AS IP,
 			CONVERT(BIT,0) AS IsNeutral,
 			b.currency,
-			0 AS isBA
+			0 AS isBA,
+			b.awinlost
 		FROM
 			bettrans b WITH (nolock) 				
 		WHERE
@@ -222,7 +225,8 @@ BEGIN
 			b.IP AS IP,
 			CONVERT(BIT,0) AS IsNeutral,
 			b.currency,
-			1 AS IsBA
+			1 AS IsBA,
+			b.awinlost
 		FROM
 			bettrans14 b WITH (nolock) 
 		WHERE
@@ -267,7 +271,8 @@ BEGIN
 			b.IP AS IP,
 			CONVERT(BIT,0) AS IsNeutral,
 			b.currency,
-			0 AS IsBA
+			0 AS IsBA,
+			b.awinlost
 		FROM
 			bettrans14 b WITH (nolock) 		
 		WHERE
@@ -312,26 +317,56 @@ INNER JOIN #TempExchange e ON b.currency=e.exchangeID AND b.winlostdate=e.exchan
 INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid
 
 DECLARE @sql NVARCHAR(2000)
+DECLARE @SortTemp VARCHAR(250) 
+DECLARE @LicenseeWL VARCHAR(150) 
+SET @LicenseeWL =				
+				'CASE  
+					WHEN b.bettype NOT IN (31,32,33) THEN - (b.winlost-b.actual_stake) 
+					ELSE awinlost 
+				 END'
+
+IF (@Sort LIKE '%USD%') OR (@Sort LIKE '%EUR%')
+BEGIN
+	DECLARE @charindex INT
+	SELECT @charindex = CHARINDEX( ' ', @Sort, 1)
+	IF @Sort LIKE '%LicenseeWL%'
+	BEGIN
+		SELECT @SortTemp = ' CASE  
+								WHEN b.bettype NOT IN (31,32,33) THEN - (b.winlost-b.actual_stake) 
+								ELSE awinlost 
+							 END'
+	 + '*e.'+SUBSTRING(@Sort, @charindex - 3,4) + SUBSTRING(@Sort, @charindex + 1, LEN(@Sort))
+	END
+	ELSE
+	BEGIN
+		SELECT @SortTemp = substring (@Sort, 1, @charindex - 4) + '*e.'+SUBSTRING(@Sort, @charindex - 3,4) + SUBSTRING(@Sort, @charindex + 1, LEN(@Sort))
+	END	
+END
+ELSE
+BEGIN
+	SET @SortTemp = @Sort
+END
+
 SET @sql = 
 	   'SELECT A.* ,'''' betstatus, '''' matchcode, 0 homeid, 0 awayid, 0 leagueid, 0 matchid, 0 sporttype
 		FROM
 		(
 			SELECT  
-					ROW_NUMBER() over(ORDER BY b.'+@Sort +' ) AS RowNum,
+					ROW_NUMBER() over(ORDER BY '+@SortTemp +' ) AS RowNum,
 					b.* ,
 					SUBSTRING(c.username2,  CHARINDEX(''$'',c.username2)+1, len(c.username2)-CHARINDEX(''$'',c.username2)) AS nickname,
 					--USD
 					stake * e.USD stakeUSD,
 					actual_stake * e.USD actual_stakeUSD,
-					winlost * e.USD winlostUSD,
-					LicenseeWL * e.USD LicenseeWLUSD,
+					winlost * e.USD winlostUSD,'
+					+@LicenseeWL+ '* e.USD LicenseeWLUSD,
 					comm * e.USD commUSD,
 					playercomm*e.USD PlayerCommUSD,
 					--EUR
 					stake * e.EUR stakeEUR,
 					actual_stake * e.EUR actual_stakeEUR,
-					winlost * e.EUR winlostEUR,
-					LicenseeWL * e.EUR LicenseeWLEUR,
+					winlost * e.EUR winlostEUR,'
+					+@LicenseeWL+ '* e.EUR LicenseeWLEUR,
 					comm * e.EUR commEUR,
 					playercomm*e.EUR playercommEUR
 			
@@ -339,7 +374,7 @@ SET @sql =
 				INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid
 				INNER JOIN #TempExchange e ON b.currency=e.exchangeID AND b.winlostdate=e.exchangeDate
 		) A WHERE A.RowNum BETWEEN '+ cast(@RowStart as varchar(50))+' AND '+cast(@RowEnd as varchar(50))
-			+' ORDER BY A.' +@Sort 
+			+' ORDER BY A.' +@Sort
 EXEC (@sql)
 
 DROP TABLE #AgWinlossMP
