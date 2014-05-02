@@ -9,7 +9,7 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMember_MinMaxBetVS]
 	@userID INT,
 	@custid INT,
 	@dataXML VARCHAR(max),
-	@Language VARCHAR(2) = 'E',
+	@Language VARCHAR(10) = 'en-us',
 	@IP VARCHAR(40)='',
 	@ErrCode INT = 0 OUTPUT,
 	@ErrMsg nvarchar(4000) = '' OUTPUT
