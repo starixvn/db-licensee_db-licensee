@@ -32,6 +32,7 @@ AS
 		- 20131014@Jim: support Virtual Tennis
 		- 20131128@Jim: revert code to Group by All Virtual Sport into sporttypeID=180
 		- 20140310@Francis: support Keno product
+		- 20140422@Victor: support Playtech Casino procduct
 	Param's Explanation:
 	• @date: The date need to summary
 */
@@ -198,6 +199,37 @@ from #Data d
 	inner join exchangedailyoanda e with(nolock) on d.currency = e.exchangeid
 where exchangedate = @date
 group by custid, currency, recommend, mrecommend, srecommend
+
+-- Insert Playtech Casino summary data to rptDepWinlostByProduct
+DECLARE @BackupDay DATE
+SELECT @BackupDay = ISNULL(MIN(Winlostdate),'') FROM DBPTCS.bodb_PlaytechCS.dbo.bettrans_PlaytechCS
+
+IF @date >= @BackupDay -- Get data in bettrans_PlaytechCS table
+BEGIN
+	INSERT INTO #DataByProduct(custid, sporttype, turnover, winlost, betcount, drawTO)
+	SELECT b.CustID, 
+		254 AS SportType,
+		ISNULL(SUM(b.Stake),0) AS Turnover,
+		ISNULL(SUM(b.Winlost - b.Actual_Stake),0) AS Winlost,
+		ISNULL(COUNT(*),0) AS Betcount,
+		ISNULL(SUM(CASE WHEN b.StatusID = 111 THEN b.Stake ELSE 0 END),0) AS DrawTO
+	FROM DBPTCS.bodb_PlaytechCS.dbo.bettrans_PlaytechCS b WITH (ROWLOCK)
+	WHERE Winlostdate = @date
+	GROUP BY b.CustID
+END
+ELSE -- Get data in bettrans_PlaytechCS_bk table
+BEGIN
+	INSERT INTO #DataByProduct(custid, sporttype, turnover, winlost, betcount, drawTO)
+	SELECT b.CustID, 
+		254 AS SportType,
+		ISNULL(SUM(b.Stake),0) AS Turnover,
+		ISNULL(SUM(b.Winlost - b.Actual_Stake),0) AS Winlost,
+		ISNULL(COUNT(*),0) AS Betcount,
+		ISNULL(SUM(CASE WHEN b.StatusID = 111 THEN b.Stake ELSE 0 END),0) AS DrawTO
+	FROM bodb_PlaytechCS_archive.dbo.bettrans_PlaytechCS_bk b WITH (ROWLOCK)
+	WHERE Winlostdate = @date
+	GROUP BY b.CustID
+END
 
 -----
 DELETE bodb_Report.dbo.rptDepWinlostByProduct WHERE Winlostdate = @date 
