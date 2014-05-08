@@ -9,7 +9,7 @@ GO
 /****** Object:  Stored Procedure dbo.Lrf_Result_RaceSelByMeeting    Script Date: 12/10/2013 4:57:39 PM ******/
 
 
-ALTER PROCEDURE [dbo].[Lrf_Result_RaceSelByMeeting]
+CREATE PROCEDURE [dbo].[Lrf_Result_RaceSelByMeeting_15189]
 	@FromDate DATETIME,
 	@LeagueID INT=0,
 	@Sporttype SMALLINT = 151,
@@ -28,6 +28,9 @@ AS
 		- 20131129@Jim: support :
 				182 – Virtual Greyhounds
 				184 – Virtual Motor Racing
+		- 20140506@Hannah: support :				
+				183 - Virtual Speedway
+				185 - Virtual Cycling
 
 */
 BEGIN
@@ -134,7 +137,7 @@ BEGIN
 		DROP TABLE #tmp
 		
 	END
-	IF (@Sporttype IN (181,182,184))
+	IF (@Sporttype IN (181,182,183,184,185))
 	BEGIN 
 		INSERT INTO #Data	
 		SELECT  o.leagueid meetingid,
@@ -244,3 +247,12 @@ BEGIN
 	DROP TABLE #Data
 
  END
+
+ 
+GO 
+ GRANT EXECUTE ON [dbo].[Lrf_Result_RaceSelByMeeting_15189] TO [vnteam]
+GO 
+ GRANT VIEW DEFINITION ON [dbo].[Lrf_Result_RaceSelByMeeting_15189] TO [vnteam]
+GO 
+ GRANT EXECUTE ON [dbo].[Lrf_Result_RaceSelByMeeting_15189] TO [bodbLicenseeNet]
+GO 

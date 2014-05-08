@@ -1,4 +1,4 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossParlay]
+﻿ALTER PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossParlay_14877]
 	@LicenseeID INT ,
 	@UserID		INT,
 	@CurrencyID INT = 0,
@@ -9,7 +9,8 @@
 	@ToDate SMALLDATETIME,
 	@MoveBetsDay SMALLDATETIME,
 	@PageSize INT=1000,
-	@PageIndex INT=1
+	@PageIndex INT=1,
+	@Sort VARCHAR(20) = 'Transid DESC'
 	
 AS
 /*
@@ -26,9 +27,9 @@ Revisions:
 		- 20130305@Jim: remove Grand total row in the result data
 		- 20130404@Jim: set default @ShowBA=0
 		- 20130514@Jim:Restrict permission of Licensee Users by currency
-		- 20130625@Jim: Support to view currency UUS 
+		- 20130625@Jim: Support to view currency UUS
+		- 20140507@Hannah: Sort betlist
 Param's Explanation: 
-
 
 */
 SET NOCOUNT ON
@@ -76,7 +77,7 @@ CREATE TABLE #AgWinlossMP
 	IP VARCHAR(30),
 	isNeutral BIT,
 	currency SMALLINT,
-	isBA INT
+	isBA INT	
 )
 
 
@@ -124,9 +125,7 @@ BEGIN
 			b.Bettype=@BetType AND
 			b.matchid = @BetType AND
 			b.tpositiontaking=0 AND
-			b.statusID IN (111,112,113)
-			
-		
+			b.statusID IN (111,112,113)		
 	END
 
 	IF @ShowSB = 1
@@ -172,11 +171,7 @@ BEGIN
 			b.matchid = @Bettype AND
 			b.tpositiontaking<>0 AND
 			b.statusID IN (111,112,113)
-			
-	END
-	
-	
-	
+	END	
 END
 
 IF @Fromdate <= @MoveBetsDay
@@ -224,8 +219,7 @@ BEGIN
 			b.matchid = @BetType AND
 			b.tpositiontaking=0 AND
 			b.statusID IN (111,112,113)	
-	END
-	
+	END	
 
 	IF @ShowSB = 1
 	BEGIN
@@ -270,11 +264,8 @@ BEGIN
 			b.matchid = @Bettype AND
 			b.tpositiontaking<>0 AND
 			b.statusID IN (111,112,113) 
-			
-	END
-		
+	END		
 END
-
 
 DECLARE @RowStart INT, @RowEnd INT  
 SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1
@@ -285,37 +276,70 @@ SELECT * INTO #TempExchange
 FROM Lrf_f_GetExchangeDaily(@FromDate,@ToDate)
 WHERE exchangeid IN (SELECT DISTINCT Currency FROM #AgWinlossMP)
 
-SELECT A.* ,'' betstatus, '' matchcode, 0 homeid, 0 awayid, 0 leagueid, 0 matchid, 0 sporttype
+DECLARE @sql NVARCHAR(2500)
+DECLARE @SortTemp VARCHAR(250) 
+DECLARE @LicenseeWL VARCHAR(150) 
+SET @LicenseeWL ='-(b.winlost-b.actual_stake)'
+
+IF (@Sort LIKE '%USD%') OR (@Sort LIKE '%EUR%')
+BEGIN
+	DECLARE @charindex INT
+	SELECT @charindex = CHARINDEX( ' ', @Sort, 1)
+	IF @Sort LIKE '%LicenseeWL%'
+	BEGIN
+		SELECT @SortTemp = @LicenseeWL
+	 + '*e.'+SUBSTRING(@Sort, @charindex - 3,4) + SUBSTRING(@Sort, @charindex + 1, LEN(@Sort))
+	END
+	ELSE
+	BEGIN
+		SELECT @SortTemp = substring (@Sort, 1, @charindex - 4) + '*e.'+SUBSTRING(@Sort, @charindex - 3,4) + SUBSTRING(@Sort, @charindex + 1, LEN(@Sort))
+	END	
+END
+ELSE
+BEGIN
+	SET @SortTemp = @Sort
+END
+
+SELECT @sql = 
+'SELECT A.* ,'''' betstatus, '''' matchcode, 0 homeid, 0 awayid, 0 leagueid, 0 matchid, 0 sporttype
 FROM
 (
 	SELECT  
-			ROW_NUMBER() over(ORDER BY Transid) AS RowNum,
+			ROW_NUMBER() over(ORDER BY '+@SortTemp +') AS RowNum,
 			b.* ,
-			SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, len(c.username2)-CHARINDEX('$',c.username2)) AS nickname,
+			SUBSTRING(c.username2,  CHARINDEX(''$'',c.username2)+1, len(c.username2)-CHARINDEX(''$'',c.username2)) AS nickname,
 			--USD
 			stake * e.USD stakeUSD,
 			actual_stake * e.USD actual_stakeUSD,
-			winlost * e.USD winlostUSD,
-			LicenseeWL * e.USD LicenseeWLUSD,
+			winlost * e.USD winlostUSD,'
+			+@LicenseeWL+ ' * e.USD LicenseeWLUSD,
 			comm * e.USD commUSD,
 			playercomm*e.USD PlayerCommUSD,
 			--EUR
 			stake * e.EUR stakeEUR,
 			actual_stake * e.EUR actual_stakeEUR,
-			winlost * e.EUR winlostEUR,
-			LicenseeWL * e.EUR LicenseeWLEUR,
+			winlost * e.EUR winlostEUR,'
+			+@LicenseeWL+ ' * e.EUR LicenseeWLEUR,
 			comm * e.EUR commEUR,
 			playercomm*e.EUR playercommEUR
 			
 	FROM #AgWinlossMP b
 		INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid
 		INNER JOIN #TempExchange e ON b.currency=e.exchangeID AND b.winlostdate=e.exchangeDate
-) A WHERE A.RowNum BETWEEN @RowStart AND @RowEnd
+) A WHERE A.RowNum BETWEEN '+CAST(@RowStart AS VARCHAR(50))+' AND '+CAST(@RowEnd AS VARCHAR(50))
++' ORDER BY A.' +@Sort
+
+EXEC (@sql)
 
 DROP TABLE #AgWinlossMP
 DROP TABLE #TempExchange 
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_LiveReport_SelWinlossParlay] TO [bodbLicenseeNet]
+GRANT EXECUTE ON [dbo].[Lrf_BetList_LiveReport_SelWinlossParlay_14877] TO [bodbLicenseeNet]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_LiveReport_SelWinlossParlay] TO [vnteam] 
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_LiveReport_SelWinlossParlay_14877] TO [vnteam] 
+
+
+
+
+

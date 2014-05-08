@@ -6,7 +6,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-ALTER PROCEDURE [dbo].[Lrf_Result_SportSelByDate]
+CREATE PROCEDURE [dbo].[Lrf_Result_SportSelByDate_15189]  
 	@EventDate DATETIME,
 	@LicenseeID INT
 AS
@@ -27,6 +27,10 @@ Revisions:
 	20130722@Jim: add Virtual Horse Racing (Sporttype=181)
 	20130916@Jim: add Virtual Tennis (sporttype=186)
 	20140117@Florent: add new sport 154
+	20140506@Hannah: support :				
+				183 - Virtual Speedway
+				185 - Virtual Cycling
+
 */
 /* sample test case:
 	exec Lrf_Result_SportSelByDate @EventDate='2013-10-06 00:00:00',@licenseeid=1
@@ -67,6 +71,10 @@ IF EXISTS (SELECT TOP 1 1 FROM #LicenseeProduct WHERE ProductID=5) -- Virtual Sp
 		SELECT 180
 		UNION ALL 
 		SELECT 181
+		UNION ALL 
+		SELECT 183
+		UNION ALL 
+		SELECT 185
 		UNION ALL 
 		SELECT 186
 		
@@ -131,9 +139,9 @@ WHERE t.RowNumber < 2
 ORDER BY sports.sporttype, sports.sportname
 
 GO
-GRANT EXECUTE ON [dbo].Lrf_Result_SportSelByDate TO [bodbLicenseeNet]
+GRANT EXECUTE ON [dbo].Lrf_Result_SportSelByDate_15189 TO [bodbLicenseeNet]
 GO
-GRANT VIEW DEFINITION ON [dbo].Lrf_Result_SportSelByDate TO [vnteam]
+GRANT VIEW DEFINITION ON [dbo].Lrf_Result_SportSelByDate_15189 TO [vnteam]
 GO
 
 

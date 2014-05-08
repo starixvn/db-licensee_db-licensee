@@ -75,7 +75,7 @@ Revisions:
 	- 20140403@Hannah: offer Keno
 	- 20140421@Hannah: fix bug, add sporttype for Keno
 	- 20140428@Hannah: Sort betlist
-
+	- 20140508@Hannah: Fix bug Sort betlist
 Param's Explanation: 	
 */
 SET NOCOUNT ON
@@ -293,19 +293,25 @@ DECLARE @LicenseeWL VARCHAR(150)
 SET @LicenseeWL =				
 				'CASE  
 					WHEN b.bettype NOT IN (31,32,33) THEN - (b.winlost-b.actual_stake) 
-					ELSE awinlost 
+					ELSE b.awinlost 
 				 END'
+DECLARE @Winlost VARCHAR(150) 
+SET @Winlost = '(b.winlost-b.actual_stake)'
 
 IF (@Sort LIKE '%USD%') OR (@Sort LIKE '%EUR%')
 BEGIN
 	DECLARE @charindex INT
 	SELECT @charindex = CHARINDEX( ' ', @Sort, 1)
+	
+	IF @Sort LIKE '%Winlost%'
+	BEGIN
+		SELECT @SortTemp = @Winlost
+	 + '*e.'+SUBSTRING(@Sort, @charindex - 3,4) + SUBSTRING(@Sort, @charindex + 1, LEN(@Sort))
+	END
+	ELSE
 	IF @Sort LIKE '%LicenseeWL%'
 	BEGIN
-		SELECT @SortTemp = ' CASE  
-								WHEN b.bettype NOT IN (31,32,33) THEN - (b.winlost-b.actual_stake) 
-								ELSE awinlost 
-							 END'
+		SELECT @SortTemp = @LicenseeWL
 	 + '*e.'+SUBSTRING(@Sort, @charindex - 3,4) + SUBSTRING(@Sort, @charindex + 1, LEN(@Sort))
 	END
 	ELSE
@@ -478,14 +484,14 @@ BEGIN
 		b.custid,
 		CAST('''' AS NVARCHAR(50)) AS showtime,
 		--USD
-		b.stake*e.USD stakeUSD,
-		b.Winlost*e.USD WinlostUSD,'
+		b.stake*e.USD stakeUSD,'
+		+@Winlost+'*e.USD WinlostUSD,'
 		+@LicenseeWL+'*e.USD LicenseeWLUSD,
 		b.comm*e.USD commUSD,
 		b.playercomm*e.USD as PlayerCommUSD,
 		--EUR
-		b.stake*e.EUR stakeEUR,
-		b.Winlost*e.EUR WinlostEUR,'
+		b.stake*e.EUR stakeEUR,'
+		+@Winlost+'*e.EUR WinlostEUR,'
 		+@LicenseeWL+'*e.EUR LicenseeWLEUR,
 		b.comm*e.EUR commEUR,
 		b.playercomm*e.EUR as PlayerCommEUR
@@ -756,14 +762,14 @@ BEGIN
 		b.custid,
 		CAST('''' AS NVARCHAR(50)) AS showtime,
 		--USD
-		b.stake*e.USD stakeUSD,
-		b.Winlost*e.USD WinlostUSD,'
+		b.stake*e.USD stakeUSD,'
+		+@Winlost+'*e.USD WinlostUSD,'
 		+ @LicenseeWL+'*e.USD LicenseeWLUSD,
 		b.comm*e.USD commUSD,
 		b.playercomm*e.USD as PlayerCommUSD,
 		--EUR
-		b.stake*e.EUR stakeEUR,
-		b.Winlost*e.EUR WinlostEUR,'
+		b.stake*e.EUR stakeEUR,'
+		+@Winlost+'*e.EUR WinlostEUR,'
 		+ @LicenseeWL+'*e.EUR LicenseeWLEUR,
 		b.comm*e.EUR commEUR,
 		b.playercomm*e.EUR as PlayerCommEUR
@@ -1014,4 +1020,3 @@ GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinlossDaily] TO [bodbLicenseeNet] AS [dbo]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelWinlossDaily] TO [vnteam] AS [dbo]
-
