@@ -1,4 +1,4 @@
-ALTER   PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossVHRacing_14877]	 
+ALTER   PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossVHRacing]	 
 	@LicenseeID INT ,
 	@UserID		INT,
 	@CurrencyID INT = 0 , 
@@ -13,7 +13,8 @@ ALTER   PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossVHRacing_14877]
 	@SUMWLEUR MONEY=0 OUTPUT,
 	@SUMLicenseeWLEUR MONEY=0 OUTPUT,
 	@PageSize INT=1000,
-	@PageIndex INT=1
+	@PageIndex INT=1,
+	@Sort VARCHAR(20) = 'Transid DESC'	 
 AS  
 
 /*
@@ -21,13 +22,13 @@ Created: Jim@20130912
 Task : Betlist VHR for Live Report
 DB: DB052.bodb02
 Original: 
-Revisions:        
-    
+Revisions:   
+	- 20140507@Hannah: Sort betlist    
 */
 
 SET NOCOUNT ON  
 
-DECLARE @TempAg AS TABLE (custid INT)
+CREATE TABLE #TempAg (custid INT)
 DECLARE @TempFromDate DATETIME 
 DECLARE @TempToDate DATETIME
 DECLARE @TempCount INT
@@ -73,20 +74,66 @@ CREATE TABLE #Data
 	winlostdate DATETIME,
 	currency SMALLINT,
 	playercomm MONEY,
-	showtime  	DATETIME
+	showtime  	DATETIME,
+	--USD
+	stakeUSD MONEY,
+	winlostUSD MONEY,
+	LicenseeWLUSD MONEY,
+	commUSD MONEY,
+	playercommUSD MONEY,
+	--EUR
+	stakeEUR MONEY,
+	winlostEUR MONEY,
+	LicenseeWLEUR MONEY,
+	commEUR MONEY,
+	playercommEUR MONEY
 )
 SELECT  currencyID,LicenseeID into #currency
 FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
 WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
-INSERT  INTO @TempAg ( CustId)
+INSERT  INTO #TempAg ( CustId)
 SELECT  lc.CustID  
 FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
 		INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
-
 --------------------------------------------------------		
 DROP TABLE #Currency 
 --------------------------------------------------------  
+DECLARE @sql NVARCHAR(2500)
+DECLARE @SortTemp VARCHAR(250) 
+DECLARE @LicenseeWL VARCHAR(150) 
+SET @LicenseeWL = '(-(b.winlost-b.actual_stake))'		
+DECLARE @Winlost VARCHAR(150) 
+SET @Winlost = '(b.winlost-b.actual_stake)'
+
+IF (@Sort LIKE '%USD%') OR (@Sort LIKE '%EUR%')
+BEGIN
+	DECLARE @charindex INT
+	SELECT @charindex = CHARINDEX( ' ', @Sort, 1)
+	IF @Sort LIKE '%Winlost%'
+	BEGIN
+		SELECT @SortTemp = @Winlost
+	 + '*e.'+SUBSTRING(@Sort, @charindex - 3,4) + SUBSTRING(@Sort, @charindex + 1, LEN(@Sort))
+	END
+	ELSE
+	IF @Sort LIKE '%LicenseeWL%'
+	BEGIN
+		SELECT @SortTemp = @LicenseeWL
+	 + '*e.'+SUBSTRING(@Sort, @charindex - 3,4) + SUBSTRING(@Sort, @charindex + 1, LEN(@Sort))
+	END
+	ELSE
+	BEGIN
+		SELECT @SortTemp = substring (@Sort, 1, @charindex - 4) + '*e.'+SUBSTRING(@Sort, @charindex - 3,4) + SUBSTRING(@Sort, @charindex + 1, LEN(@Sort))
+	END	
+END
+ELSE
+BEGIN
+	SET @SortTemp = @Sort
+END
+
+SELECT * INTO #TempExchange 
+FROM Lrf_f_GetExchangeDaily(@FromDate,@ToDate)
+
 IF @Fromdate <= @MoveBetsDay  
 BEGIN  
 	IF @ToDate >= @MoveBetsDay
@@ -94,9 +141,10 @@ BEGIN
 	ELSE
 		SET  @TempToDate = @ToDate
 	 	
-	 INSERT INTO #Data 
-	 SELECT TOP (@RowEnd)
-	  @SportType,  
+	 --INSERT INTO #Data 
+	 SELECT @sql =
+	 'SELECT TOP ('+CAST(@RowEnd AS VARCHAR(50))+')
+	  '+CAST(@SportType AS VARCHAR(15))+',  
 	  b.custid,
 	  b.refno,
 	  b.username,  	  
@@ -118,7 +166,7 @@ BEGIN
 	  b.adiscount AS discount,
 	  b.playerdiscount AS playerdiscount,
 	  b.transdate,  
-	  '',  
+	  '''',  
 	  b.apositiontaking,
 	  0,
 	  b.livehomescore,
@@ -131,36 +179,58 @@ BEGIN
 	  b.winlostdate,
 	  b.currency,
 	  b.playercomm,
-	  r.EventTime	
+	  r.EventTime,
+	  --USD
+	  stake*e.USD stakeUSD,
+	  '+@winlost+'*e.USD winlostUSD,
+	  '+@LicenseeWL+'*e.USD LicenseeWLUSD,
+	  comm*e.USD commUSD,
+	  (b.playercomm * e.USD) AS playercommUSD,
+	  --EUR
+	  stake*e.EUR stakeEUR,
+	  '+@winlost+'*e.EUR winlostEUR,
+	  '+@LicenseeWL+'*e.EUR LicenseeWLEUR,
+	  comm*e.EUR commEUR,
+	  (b.playercomm * e.EUR) AS playercommEUR
 	 FROM  
 	  bettrans14 b WITH (NOLOCK)
-	  INNER JOIN @TempAg t  ON b.recommend =t.custid     
+	  INNER JOIN #TempAg t  ON b.recommend =t.custid     
 	  INNER JOIN dbo.VSOutright14 o WITH (NOLOCK) ON b.oddsid=o.Orid
-	  INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID		  
+	  INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
+   	  INNER JOIN #TempExchange e ON b.currency=e.exchangeID AND b.winlostdate=e.exchangeDate
 	 WHERE  	 	  
-	  b.Winlostdate BETWEEN @FromDate AND @TempToDate AND 	  
-	  r.SportType= @SportType AND
+	  b.Winlostdate BETWEEN '''+CAST(@FromDate AS VARCHAR(50))+''' AND '''+CAST(@TempToDate AS VARCHAR(50))+''' AND 	  
+	  r.SportType= '+CAST(@SportType AS VARCHAR(15))+' AND
 	  b.bettype IN (1231,1232,1233,1237,1238) AND 
-	  b.statusID IN (111,112,113)	
-	 
-	 INSERT INTO @DataSum
-		SELECT SUM(b.winlost-actual_stake+playercomm),
-			   SUM(b.awinlost+comm),
-				b.Winlostdate,
-				b.Currency
-		FROM
-			bettrans14 b WITH (NOLOCK)
-			INNER JOIN @TempAg t  ON b.recommend =t.custid     
-			INNER JOIN dbo.VSOutright14 o WITH (NOLOCK) ON b.oddsid=o.Orid
-			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID  
-		WHERE  	 	  
-			b.Winlostdate BETWEEN @FromDate AND @TempToDate AND 	  
-			r.SportType= @SportType AND
-			b.bettype IN (1231,1232,1233,1237,1238) AND 
-			b.statusID IN (111,112,113)	
-		GROUP BY b.Winlostdate,b.Currency 	
+	  b.statusID IN (111,112,113)
+	 ORDER  BY '+ @SortTemp 
+	  
+	INSERT INTO #Data
+	(sporttype,Custid,refno,username,bettype,transid,race,matchcode,homeID,awayID,hdp1,  
+	hdp2,Modds,odds,status,stake,winlost,licenseeWL,comm,discount,playerdiscount,transdate,  
+	betteam,apositiontaking,liveindicator,livehomescore,liveawayscore,leagueID,matchid,   
+	IP,betstatus,isNeutral,winlostdate,currency,playercomm,showtime,
+	stakeUSD,winlostUSD,LicenseeWLUSD,commUSD,playercommUSD,
+	stakeEUR,winlostEUR,LicenseeWLEUR,commEUR,playercommEUR)
+	EXEC (@sql)
+	
+	INSERT INTO @DataSum
+	SELECT SUM(b.winlost-actual_stake+playercomm),
+			SUM(b.awinlost+comm),
+			b.Winlostdate,
+			b.Currency
+	FROM
+		bettrans14 b WITH (NOLOCK)
+		INNER JOIN #TempAg t  ON b.recommend =t.custid     
+		INNER JOIN dbo.VSOutright14 o WITH (NOLOCK) ON b.oddsid=o.Orid
+		INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID  
+	WHERE  	 	  
+		b.Winlostdate BETWEEN @FromDate AND @TempToDate AND 	  
+		r.SportType= @SportType AND
+		b.bettype IN (1231,1232,1233,1237,1238) AND 
+		b.statusID IN (111,112,113)	
+	GROUP BY b.Winlostdate,b.Currency 	
 END  
-  
 
 SELECT @TempCount = COUNT(1) FROM #Data
 
@@ -171,9 +241,10 @@ BEGIN
 	ELSE
 		SET @TempFromDate = @FromDate
 		
-	 INSERT INTO #Data 
-	 SELECT TOP (@RowEnd)
-	  @SportType,  
+	 --INSERT INTO #Data 
+	 SELECT @sql =
+	 'SELECT TOP ('+CAST(@RowEnd AS VARCHAR(50))+')
+	  '+CAST(@SportType AS VARCHAR(15))+',  
 	  b.custid,
 	  b.refno,
 	  b.username,  	  
@@ -195,7 +266,7 @@ BEGIN
 	  b.adiscount AS discount,
 	  b.playerdiscount AS playerdiscount,
 	  b.transdate,  
-	  '',  
+	  '''',  
 	  b.apositiontaking,
 	  0,
 	  b.livehomescore,
@@ -208,73 +279,91 @@ BEGIN
 	  b.winlostdate,
 	  b.currency,
 	  b.playercomm ,
-	  r.EventTime
+	  r.EventTime,
+	  --USD
+	  stake*e.USD stakeUSD,
+	  '+@winlost+'*e.USD winlostUSD,
+	  '+@LicenseeWL+'*e.USD LicenseeWLUSD,
+	  comm*e.USD commUSD,
+	  (b.playercomm * e.USD) AS playercommUSD,
+	  --EUR
+	  stake*e.EUR stakeEUR,
+	  '+@winlost+'*e.EUR winlostEUR,
+	  '+@LicenseeWL+'*e.EUR LicenseeWLEUR,
+	  comm*e.EUR commEUR,
+	  (b.playercomm * e.EUR) AS playercommEUR
 	 FROM  
 	  bettrans b WITH (NOLOCK)
-	  INNER JOIN @TempAg t  ON b.recommend =t.custid     
+	  INNER JOIN #TempAg t  ON b.recommend =t.custid     
 	  INNER JOIN dbo.VSOutright o WITH (NOLOCK) ON b.oddsid=o.Orid
-	  INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID		  
+	  INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
+	  INNER JOIN #TempExchange e ON b.currency=e.exchangeID AND b.winlostdate=e.exchangeDate	  
 	 WHERE  	 	  
-	  b.Winlostdate BETWEEN @TempFromDate AND @ToDate AND 	  
-	  r.SportType= @SportType AND
+	  b.Winlostdate BETWEEN '''+CAST(@TempFromDate AS VARCHAR(50))+''' AND '''+CAST(@ToDate AS VARCHAR(50))+''' AND 	  
+	  r.SportType= '+CAST(@SportType AS VARCHAR(15))+' AND
 	  b.bettype IN (1231,1232,1233,1237,1238) AND 
-	  b.statusID IN (111,112,113)	
-	  
-	 INSERT INTO @DataSum 
+	  b.statusID IN (111,112,113)
+	 ORDER  BY '+ @SortTemp 
+
+	INSERT INTO #Data
+	(sporttype,Custid,refno,username,bettype,transid,race,matchcode,homeID,awayID,hdp1,  
+	hdp2,Modds,odds,status,stake,winlost,licenseeWL,comm,discount,playerdiscount,transdate,  
+	betteam,apositiontaking,liveindicator,livehomescore,liveawayscore,leagueID,matchid,   
+	IP,betstatus,isNeutral,winlostdate,currency,playercomm,showtime,
+	stakeUSD,winlostUSD,LicenseeWLUSD,commUSD,playercommUSD,
+	stakeEUR,winlostEUR,LicenseeWLEUR,commEUR,playercommEUR)
+	EXEC (@sql)
+	
+	INSERT INTO @DataSum 
 	SELECT SUM(b.winlost-actual_stake),
-		   SUM(	b.awinlost),
-			b.Winlostdate,
-			b.Currency
+		SUM(	b.awinlost),
+		b.Winlostdate,
+		b.Currency
 		   
 	FROM  
-		bettrans b WITH (NOLOCK)   
-		INNER JOIN @TempAg t  ON b.recommend =t.custid  
-		INNER JOIN dbo.VSOutright o WITH (NOLOCK) ON b.oddsid=o.Orid
-		INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID 	  
+	bettrans b WITH (NOLOCK)   
+	INNER JOIN #TempAg t  ON b.recommend =t.custid  
+	INNER JOIN dbo.VSOutright o WITH (NOLOCK) ON b.oddsid=o.Orid
+	INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID 	  
 	WHERE  	    	  
-		b.Winlostdate BETWEEN @TempFromDate AND @ToDate AND  
-		r.SportType= @SportType AND
-		b.bettype IN (1231,1232,1233,1237,1238) AND 
-		b.statusID IN (111,112,113)		
+	b.Winlostdate BETWEEN @TempFromDate AND @ToDate AND  
+	r.SportType= @SportType AND
+	b.bettype IN (1231,1232,1233,1237,1238) AND 
+	b.statusID IN (111,112,113)		
 	GROUP BY b.winlostdate,b.Currency 	
 END  
 
 CREATE NONCLUSTERED INDEX IDX_Index_Data ON #Data (Currency)
 
-SELECT * INTO #TempExchange 
-FROM Lrf_f_GetExchangeDaily(@FromDate,@ToDate)
-WHERE exchangeid IN (SELECT DISTINCT Currency FROM #Data)
-
-
-
-SELECT A.* 
+SELECT @sql = 
+'SELECT A.* 
 FROM
 (
 	SELECT  
-			ROW_NUMBER() over(ORDER BY Transid) AS RowNum,
-			b.* ,
-			SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, len(c.username2)-CHARINDEX('$',c.username2)) AS nickname,   		
+			ROW_NUMBER() over(ORDER BY '+ @Sort+') AS RowNum,
+			b.sporttype,b.Custid,b.refno,b.username,b.bettype,b.transid,b.race,b.matchcode,b.homeID,b.awayID,b.hdp1,  
+			b.hdp2,b.Modds,b.odds,b.status,b.stake,b.winlost,b.licenseeWL,b.comm,b.discount,b.playerdiscount,b.transdate,  
+			b.betteam,b.apositiontaking,b.liveindicator,b.livehomescore,b.liveawayscore,b.leagueID,b.matchid,   
+			b.IP,b.betstatus,b.isNeutral,b.winlostdate,b.currency,b.playercomm,b.showtime,
+			SUBSTRING(c.username2,  CHARINDEX(''$'',c.username2)+1, len(c.username2)-CHARINDEX(''$'',c.username2)) AS nickname,   		
 			--USD
-			stake*e.USD stakeUSD,
-			winlost*e.USD winlostUSD,
-			LicenseeWL*e.USD LicenseeWLUSD,
-			comm*e.USD commUSD,
-			(b.playercomm * e.USD) AS playercommUSD,
+			b.stakeUSD,
+			b.winlostUSD,
+			b.LicenseeWLUSD,
+			b.commUSD,
+			b.playercommUSD,
 			--EUR
-			stake*e.EUR stakeEUR,
-			winlost*e.EUR winlostEUR,
-			LicenseeWL*e.EUR LicenseeWLEUR,
-			comm*e.EUR commEUR,
-			(b.playercomm * e.EUR) AS playercommEUR
-			
-			
+			b.stakeEUR,
+			b.winlostEUR,
+			b.LicenseeWLEUR,
+			b.commEUR,
+			b.playercommEUR			
 	FROM #Data b
 	INNER JOIN Customer c (NOLOCK) ON b.custid = c.custid
-	INNER JOIN #TempExchange e ON b.currency=e.exchangeID AND b.winlostdate=e.exchangeDate
-) A WHERE A.RowNum between @RowStart AND @RowEnd
+) A WHERE A.RowNum between '+CAST(@RowStart AS VARCHAR(50))+' AND '+CAST(@RowEnd AS VARCHAR(50))
+EXEC (@sql)
 
 --get data from bettransm for bettype 1233
-
 DECLARE @Bettransm TABLE(  
  refno BIGINT,  
  finalodds SMALLMONEY,
@@ -283,7 +372,6 @@ DECLARE @Bettransm TABLE(
  apositiontaking SMALLMONEY,  
  bettype SMALLINT
  )   
-
 
 IF @Todate > @MoveBetsDay 
 BEGIN
@@ -321,6 +409,6 @@ DROP TABLE #Data
 DROP TABLE #TempExchange 
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_LiveReport_SelWinlossVHRacing_14877] TO [bodbLicenseeNet]
+GRANT EXECUTE ON [dbo].[Lrf_BetList_LiveReport_SelWinlossVHRacing] TO [bodbLicenseeNet]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_LiveReport_SelWinlossVHRacing_14877] TO [vnteam] 
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_LiveReport_SelWinlossVHRacing] TO [vnteam] 
