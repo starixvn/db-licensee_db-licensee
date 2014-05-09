@@ -95,7 +95,6 @@ SELECT  currencyID,LicenseeID into #currency
 FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
 WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
-
 INSERT  INTO #TempAg ( CustId)
 SELECT  CustID  
 FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
@@ -107,11 +106,19 @@ DECLARE @sql NVARCHAR(2500)
 DECLARE @SortTemp VARCHAR(250) 
 DECLARE @LicenseeWL VARCHAR(150) 
 SET @LicenseeWL = '(-1 * (b.winlost - b.actual_stake))'		
+DECLARE @Winlost VARCHAR(150) 
+SET @Winlost = '(b.winlost-b.actual_stake)'
 
 IF (@Sort LIKE '%USD%') OR (@Sort LIKE '%EUR%')
 BEGIN
 	DECLARE @charindex INT
 	SELECT @charindex = CHARINDEX( ' ', @Sort, 1)
+	IF @Sort LIKE '%Winlost%'
+	BEGIN
+		SELECT @SortTemp = @Winlost
+	 + '*e.'+SUBSTRING(@Sort, @charindex - 3,4) + SUBSTRING(@Sort, @charindex + 1, LEN(@Sort))
+	END
+	ELSE
 	IF @Sort LIKE '%LicenseeWL%'
 	BEGIN
 		SELECT @SortTemp = @LicenseeWL
@@ -158,7 +165,7 @@ BEGIN
 	  b.status,  
 	  b.stake,  
 	  (b.winlost-actual_stake),  
-	  '+@LicenseeWL+'  AS LicenseeWL,    
+	  (-1 * (b.winlost - b.actual_stake))  AS LicenseeWL,    
       comm , 
 	  playercomm,
 	  b.adiscount,
@@ -177,12 +184,12 @@ BEGIN
 	  b.currency,
 	 --USD
 	 stake*e.USD stakeUSD,
-	 winlost*e.USD winlostUSD,
+	 '+@Winlost+'*e.USD winlostUSD,
 	 '+@LicenseeWL+'*e.USD LicenseeWLUSD,
  	 comm*e.USD commUSD,
 	 --EUR
 	 stake*e.EUR stakeEUR,
-	 winlost*e.EUR winlostEUR,
+	 '+@Winlost+'*e.EUR winlostEUR,
 	 '+@LicenseeWL+'*e.EUR LicenseeWLEUR,
 	 comm*e.EUR commEUR
 	 FROM  
@@ -236,7 +243,7 @@ BEGIN
 	  b.status,  
 	  b.stake,  
 	  (b.winlost-actual_stake),  
-	 '+@LicenseeWL+' AS LicenseeWL,    
+	  (-1 * (b.winlost - b.actual_stake))  AS LicenseeWL,    
       comm , 
 	  playercomm,
 	  b.adiscount,
@@ -255,15 +262,14 @@ BEGIN
 	  b.currency,
 	  --USD
 	  stake*e.USD stakeUSD,
-	  winlost*e.USD winlostUSD,
+	  '+@Winlost+'*e.USD winlostUSD,
 	  '+@LicenseeWL+'*e.USD LicenseeWLUSD,
  	  comm*e.USD commUSD,
 	  --EUR
 	  stake*e.EUR stakeEUR,
-	  winlost*e.EUR winlostEUR,
+	  '+@Winlost+'*e.EUR winlostEUR,
 	  '+@LicenseeWL+'*e.EUR LicenseeWLEUR,
 	  comm*e.EUR commEUR
-
 	 FROM  
 	  bettrans b WITH (NOLOCK) 
 	  INNER JOIN #TempAg t  ON b.recommend =t.custid  
@@ -281,10 +287,8 @@ BEGIN
 	 transdate,betteam,apositiontaking,liveindicator,livehomescore,liveawayscore,  
 	 leagueID,matchid,IP,betstatus,isNeutral,winlostdate,currency,
 	 stakeUSD,winlostUSD,LicenseeWLUSD,commUSD,stakeEUR,winlostEUR,LicenseeWLEUR,commEUR)
-	 EXEC (@sql)
-	 
-END  
-
+	 EXEC (@sql)	 
+END 
 
 CREATE NONCLUSTERED INDEX IDX_Index_data ON #Data(Currency)
 

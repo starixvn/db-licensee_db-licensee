@@ -80,7 +80,6 @@ CREATE TABLE #AgWinlossMP
 	isBA INT	
 )
 
-
 IF @Todate > @MoveBetsDay
 BEGIN
 	IF @ShowBA = 1
@@ -278,22 +277,13 @@ WHERE exchangeid IN (SELECT DISTINCT Currency FROM #AgWinlossMP)
 
 DECLARE @sql NVARCHAR(2500)
 DECLARE @SortTemp VARCHAR(250) 
-DECLARE @LicenseeWL VARCHAR(150) 
-SET @LicenseeWL ='-(b.winlost-b.actual_stake)'
 
 IF (@Sort LIKE '%USD%') OR (@Sort LIKE '%EUR%')
 BEGIN
 	DECLARE @charindex INT
 	SELECT @charindex = CHARINDEX( ' ', @Sort, 1)
-	IF @Sort LIKE '%LicenseeWL%'
-	BEGIN
-		SELECT @SortTemp = @LicenseeWL
-	 + '*e.'+SUBSTRING(@Sort, @charindex - 3,4) + SUBSTRING(@Sort, @charindex + 1, LEN(@Sort))
-	END
-	ELSE
-	BEGIN
-		SELECT @SortTemp = substring (@Sort, 1, @charindex - 4) + '*e.'+SUBSTRING(@Sort, @charindex - 3,4) + SUBSTRING(@Sort, @charindex + 1, LEN(@Sort))
-	END	
+	
+	SELECT @SortTemp = substring (@Sort, 1, @charindex - 4) + '*e.'+SUBSTRING(@Sort, @charindex - 3,4) + SUBSTRING(@Sort, @charindex + 1, LEN(@Sort))
 END
 ELSE
 BEGIN
@@ -311,15 +301,15 @@ FROM
 			--USD
 			stake * e.USD stakeUSD,
 			actual_stake * e.USD actual_stakeUSD,
-			winlost * e.USD winlostUSD,'
-			+@LicenseeWL+ ' * e.USD LicenseeWLUSD,
+			winlost * e.USD winlostUSD,
+			LicenseeWL* e.USD LicenseeWLUSD,
 			comm * e.USD commUSD,
 			playercomm*e.USD PlayerCommUSD,
 			--EUR
 			stake * e.EUR stakeEUR,
 			actual_stake * e.EUR actual_stakeEUR,
-			winlost * e.EUR winlostEUR,'
-			+@LicenseeWL+ ' * e.EUR LicenseeWLEUR,
+			winlost * e.EUR winlostEUR,
+			@LicenseeWL * e.EUR LicenseeWLEUR,
 			comm * e.EUR commEUR,
 			playercomm*e.EUR playercommEUR
 			
