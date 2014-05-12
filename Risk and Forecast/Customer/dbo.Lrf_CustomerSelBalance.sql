@@ -37,6 +37,7 @@ Revisions:
 	- 20130809@Jim: offer Virtual Horse Racing
 	- 20131007@Jim: offer Virtual Tennis
 	- 20140207@Florent: Offer Keno
+	- 20140509@Florent: Fix bug get wrong currency rate
 */
 SET NOCOUNT ON
 
@@ -332,8 +333,7 @@ SELECT
 	
 FROM 
 	@LicenseeWL b 
-	--INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Yesterday,@Yesterday))e 
-	INNER JOIN @Exchange e 
+	INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Yesterday,@Yesterday))e 	
 	    ON e.exchangeid = b.currency AND b.winlostdate = @Yesterday
 
 
@@ -366,8 +366,7 @@ SELECT
 	
 FROM 
 	@LicenseeWL b 
-	--INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
-	INNER JOIN @Exchange e 
+	INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 	
 	    ON  e.exchangeid = b.currency AND b.winlostdate = @Today
 	    	
  --****End For Yesterday and Today Winloss Part***	
@@ -422,7 +421,7 @@ BEGIN
 	INSERT INTO @SumTemp 
 	SELECT 
 		currency,
-		ISNULL(- SUM(CASE WHEN ISNULL(b.isBA,0) = 0 AND (b.sporttype IN (0,161,162,180,251,252))  THEN b.winlost ELSE 0 END),0) AS SelectedMonthLicenseeWL,
+		ISNULL(- SUM(CASE WHEN ISNULL(b.isBA,0) = 0 AND (b.sporttype IN (0,161,162,180,251,252,202))  THEN b.winlost ELSE 0 END),0) AS SelectedMonthLicenseeWL,
 		ISNULL(- SUM ( CASE WHEN ISNULL(b.isBA,0) = 1 THEN  (b.winlost+b.awinlost+b.comm) ELSE 0 END),0) AS SelectedMonthAmtDuetoBA,
 		ISNULL(- SUM ( CASE WHEN b.sporttype = 151 THEN (b.winlost+b.awinlost+b.comm) ELSE 0 END),0) AS SelectedMonthAmtDuetoRB,
 		ISNULL(SUM (CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END),0) AS SelectedMonthWinlossRB,
@@ -445,7 +444,7 @@ BEGIN
 	INSERT INTO @SumTemp
 	SELECT 
 		currency,
-		ISNULL(- SUM(CASE WHEN ISNULL(b.isBA,0) = 0 AND ( b.sporttype IN (0,161,162,180,251,252))  THEN b.winlost ELSE 0 END),0) AS SelectedMonthLicenseeWL,
+		ISNULL(- SUM(CASE WHEN ISNULL(b.isBA,0) = 0 AND ( b.sporttype IN (0,161,162,180,251,252,202))  THEN b.winlost ELSE 0 END),0) AS SelectedMonthLicenseeWL,
 		ISNULL(- SUM ( CASE WHEN ISNULL(b.isBA,0) = 1 THEN  (b.winlost+b.awinlost+b.comm) ELSE 0 END),0) AS SelectedMonthAmtDuetoBA,
 		ISNULL(- SUM ( CASE WHEN b.sporttype = 151 THEN (b.winlost+b.awinlost+b.comm) ELSE 0 END),0) AS SelectedMonthAmtDuetoRB,
 		ISNULL(SUM (CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END),0) AS SelectedMonthWinlossRB,
@@ -490,8 +489,7 @@ SELECT
 
 FROM 
 	@SumTemp b 
-	--INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@_FromDate,@_FromDate))e 
-	INNER JOIN @Exchange e
+	INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@_FromDate,@_FromDate))e 	
 	ON e.exchangeid = b.currency
 --****End for Selected Month Winloss part*******			
 
