@@ -6,7 +6,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-CREATE PROCEDURE [dbo].[Lrf_Result_SportSelByDate_15189]  
+CREATE PROCEDURE [dbo].[Lrf_Result_SportSelByDate]  
 	@EventDate DATETIME,
 	@LicenseeID INT
 AS
@@ -30,7 +30,6 @@ Revisions:
 	20140506@Hannah: support :				
 				183 - Virtual Speedway
 				185 - Virtual Cycling
-
 */
 /* sample test case:
 	exec Lrf_Result_SportSelByDate @EventDate='2013-10-06 00:00:00',@licenseeid=1
@@ -139,10 +138,7 @@ WHERE t.RowNumber < 2
 ORDER BY sports.sporttype, sports.sportname
 
 GO
-GRANT EXECUTE ON [dbo].Lrf_Result_SportSelByDate_15189 TO [bodbLicenseeNet]
+GRANT EXECUTE ON [dbo].Lrf_Result_SportSelByDate TO [bodbLicenseeNet]
 GO
-GRANT VIEW DEFINITION ON [dbo].Lrf_Result_SportSelByDate_15189 TO [vnteam]
+GRANT VIEW DEFINITION ON [dbo].Lrf_Result_SportSelByDate TO [vnteam]
 GO
-
-
-
