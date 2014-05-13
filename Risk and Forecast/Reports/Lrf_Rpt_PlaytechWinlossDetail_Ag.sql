@@ -1,4 +1,4 @@
-ALTER PROCEDURE [dbo].[Lrf_Rpt_PlaytechWinlossDetail_Ag]  
+ALTER PROCEDURE [dbo].[Lrf_Rpt_PlaytechWinlossDetail_Ag_15876]  
  @LicenseeID	INT,
  @UserID		INT,
  @CurrencyID	INT = 0,
@@ -12,6 +12,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_PlaytechWinlossDetail_Ag]
     DB: DBACC.bodb02  
    
     Revisions: 
+		- 20140513@Hannah: Add Progressive share and win values
 	Param's Explanation:  
 	  + @BackupDay: The day we move tickets to rptDepWinlostByProduct_bk  
 */  
@@ -25,7 +26,11 @@ BEGIN
 		Turnover		MONEY,
 		Winlost			MONEY,
 		LicenseeWL		MONEY, 
-		BetCount		BIGINT
+		BetCount		BIGINT,
+		PShare			MONEY,
+		PWin			MONEY,
+		NetGaming		MONEY		
+
 	)  
 
 	DECLARE @Super AS TABLE (custid INT PRIMARY KEY, currency INT)
@@ -91,7 +96,10 @@ BEGIN
 			SUM(r.turnover) AS Turnover, 
 			SUM(r.winlost) AS Winlost,  
 			-SUM(r.winlost) AS LicenseeWL,
-			SUM(r.BetCount) AS BetCount	
+			SUM(r.BetCount) AS BetCount,
+			0 AS PShare,
+			0 AS PWin,
+			0 AS NetGaming	
 		FROM 
 			bodb_report.dbo.rptDepWinlostByProduct r WITH ( NOLOCK)
 			INNER JOIN bodb02.dbo.custInfo ci WITH ( NOLOCK) ON ci.CustID = r.CustID
@@ -120,7 +128,11 @@ BEGIN
 			SUM(r.turnover) as turnover, 
 			SUM(r.winlost) AS Winlost,  
 			-SUM(r.winlost) AS LicenseeWL,
-			SUM(r.BetCount) AS BetCount	
+			SUM(r.BetCount) AS BetCount,
+			0 AS PShare,
+			0 AS PWin,
+			0 AS NetGaming
+	
 		FROM 
 			bodb_report.dbo.rptDepWinlostByProduct_bk r WITH ( NOLOCK)
 			INNER JOIN bodb02.dbo.custInfo ci WITH ( NOLOCK) ON ci.CustID = r.CustID
@@ -151,6 +163,10 @@ BEGIN
 		SUM(Winlost)		 AS Winlost,  
 		SUM(LicenseeWL)		 AS LicenseeWL,
 		SUM(Betcount)	 	 AS BetCount,
+	    PShare,
+	    PWin,
+	    NetGaming,
+
 		--BaseRM  
 		CAST(SUM(Turnover*e.MYR)	 AS MONEY)     AS TurnoverMYR,   
 		CAST(SUM(Winlost*e.MYR)	     AS MONEY)     AS WinlostMYR,  
@@ -176,6 +192,6 @@ BEGIN
 END 
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_PlaytechWinlossDetail_Ag] TO [bodbLicenseeNet]
+GRANT EXECUTE ON [dbo].[Lrf_Rpt_PlaytechWinlossDetail_Ag_15876] TO [bodbLicenseeNet]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_PlaytechWinlossDetail_Ag] TO [vnteam]  
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_PlaytechWinlossDetail_Ag_15876] TO [vnteam]  
