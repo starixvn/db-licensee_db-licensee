@@ -98,9 +98,9 @@ BEGIN
 			SUM(r.winlost) AS Winlost,  
 			-SUM(r.winlost) AS LicenseeWL,
 			SUM(r.BetCount) AS BetCount,	
-			0 AS PShare,
-			0 AS PWin,
-			0 AS NetGaming
+			SUM(0) AS PShare,
+			SUM(0) AS PWin,
+			SUM(0) AS NetGaming
 		FROM 
 			bodb_report.dbo.rptDepWinlostByProduct r WITH ( NOLOCK)
 			INNER JOIN bodb02.dbo.custInfo ci WITH ( NOLOCK) ON ci.CustID = r.CustID
@@ -128,9 +128,9 @@ BEGIN
 			SUM(r.winlost) AS Winlost,  
 			-SUM(r.winlost) AS LicenseeWL,
 			SUM(r.BetCount)  AS BetCount,
-			0 AS PShare,
-			0 AS PWin,
-			0 AS NetGaming	
+			SUM(0) AS PShare,
+			SUM(0) AS PWin,
+			SUM(0) AS NetGaming	
 		FROM 
 			bodb_report.dbo.rptDepWinlostByProduct_bk r WITH ( NOLOCK)
 			INNER JOIN bodb02.dbo.custInfo ci WITH ( NOLOCK) ON ci.CustID = r.CustID
@@ -161,9 +161,9 @@ BEGIN
 	   SUM(Winlost)        AS Winlost,  
 	   SUM(LicenseeWL)     AS LicenseeWL,
 	   SUM(BetCount)	   AS BetCount,
-	   PShare,
-	   PWin,
-	   NetGaming,
+	   SUM(0)			   AS PShare,
+	   SUM(0)			   AS PWin,
+	   SUM(0)			   AS NetGaming,
    
 	   --BaseRM  
 	   CAST(SUM(Turnover*e.MYR)    AS MONEY)     AS TurnoverMYR,   

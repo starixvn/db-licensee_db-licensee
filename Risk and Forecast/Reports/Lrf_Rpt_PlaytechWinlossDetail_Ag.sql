@@ -163,9 +163,9 @@ BEGIN
 		SUM(Winlost)		 AS Winlost,  
 		SUM(LicenseeWL)		 AS LicenseeWL,
 		SUM(Betcount)	 	 AS BetCount,
-	    PShare,
-	    PWin,
-	    NetGaming,
+	    SUM(0)			     AS PShare,
+	    SUM(0)			     AS PWin,
+	    SUM(0)			     AS NetGaming,
 
 		--BaseRM  
 		CAST(SUM(Turnover*e.MYR)	 AS MONEY)     AS TurnoverMYR,   
