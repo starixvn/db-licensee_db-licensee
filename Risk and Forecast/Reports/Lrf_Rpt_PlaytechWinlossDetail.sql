@@ -101,11 +101,11 @@ BEGIN
 		SUM(r.winlost) AS Winlost,  
 		-SUM(r.winlost) AS LicenseeWL,
 		SUM(r.BetCount) AS BetCount,
-		SUM(1) AS PShare,
-		SUM(1) AS PWin,
-		SUM(1) AS NetGaming	
+		SUM(ProgressiveShare) AS PShare,
+		SUM(ProgressiveWin) AS PWin,
+		SUM(NetGaming) AS NetGaming	
 	FROM 
-		bodb_report.dbo.rptDepWinlostByProduct_bk r WITH ( NOLOCK)
+		bodb_report.dbo.rptDepWinlost_PlaytechCS r WITH ( NOLOCK)
 		INNER JOIN bodb02.dbo.custInfo ci WITH ( NOLOCK) ON ci.CustID = r.CustID
 		INNER JOIN @Super s ON ci.srecommend = s.custid
 		INNER JOIN @TempAg a ON ci.recommend = a.custid
