@@ -8,7 +8,7 @@ GO
 /****** Object:  Stored Procedure dbo.Lrf_BetList_SelMatchResult    Script Date: 10/22/2013 10:25:56 PM ******/
 /****** Object:  Stored Procedure dbo.Lrf_BetList_SelMatchResult    Script Date: 10/21/2013 2:57:35 PM ******/
 
-ALTER PROCEDURE [dbo].[Lrf_BetList_SelMatchResult]
+ALTER PROCEDURE [dbo].[Lrf_BetList_SelMatchResult_15189]
 	@LicenseeID INT ,
 	@UserID		INT,	
 	@MatchID INT,
@@ -393,11 +393,24 @@ BEGIN
 			FROM #tmpresult
 			GROUP BY  kickofftime
 
-			SELECT d.*,'' TF,'' SCR , d2.rc as [RowCount]  
+			SELECT  d.horseNo,d.KickoffTime ,d.racename,d.place,d.sporttype,
+					d.horseid,CASE d.sporttype*d.place --check whether the sport is Virtual Cycling & get the place
+									WHEN 0 THEN 0   --0*185
+									WHEN 370 THEN 0	-- 2* 185
+									WHEN 555 THEN 0 -- 3*185
+									WHEN 740 THEN 0 -- 4*185
+								    ELSE d.odds
+								END AS odds,
+					CASE d.sporttype --check whether the sport is Virtual Speedway or not
+									WHEN 183 THEN 0  									
+								    ELSE d.PlaceOdds
+								END AS PlaceOdds,d.meetingid,
+					d.oddsstatus,d.IsFavor,d.IsSCR,d.FOddsStatus,'' TF,'' SCR , d2.rc AS [RowCount]  
 			FROm #tmpresult d
 			INNER JOIN #DataSumVHR d2 ON d.kickofftime=d2.kickofftime 
-			WHERE d.place<5
+			WHERE (d.place<5 AND d.sporttype <> 183) OR (d.place <2 AND d.sporttype = 183)
 			ORDER BY meetingid, kickofftime,place
+
 			DROP TABLE #DataSumVHR 
 		END --
 	ELSE 
@@ -442,6 +455,6 @@ BEGIN
 END
 */
 GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_SelMatchResult] TO [bodbLicenseeNet] AS [dbo]
+GRANT EXECUTE ON [dbo].[Lrf_BetList_SelMatchResult_15189] TO [bodbLicenseeNet] AS [dbo]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelMatchResult] TO [vnteam] AS [dbo]
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelMatchResult_15189] TO [vnteam] AS [dbo]
