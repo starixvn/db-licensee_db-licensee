@@ -11,6 +11,7 @@ AS
   - 20140320@Francis: change db06.bodb02 link server name to alias name dbacc.bodb02
   - 20140418@Victor: include RNG Casino 23002 tickets to Outstanding formula
   - 20140422@Victor: support Playtech Casino procduct
+  - 20140515@Victor: Change Playtech Casino summary data process
                  
  Param's Explanation:  
  • @winlostdate: The date need to summary  
@@ -34,6 +35,7 @@ BEGIN
 	TRUNCATE TABLE rptDepwinlost_staging
 	TRUNCATE TABLE rptDepWinlostByProduct_staging
 	TRUNCATE TABLE rptDepWinlost_Transfer3rdOthers_Staging
+	TRUNCATE TABLE rptDepwinlost_PlaytechCS_staging
 END
   
 declare @TempCustID as table (custid bigint)  
@@ -112,7 +114,7 @@ USING (SELECT s.winlostdate, s.custid, s.currency, s.recommend, s.mrecommend, s.
 				source.Outstanding,
 				0, 0, 0, 0, 0, 0);
 
-DROP TABLE dbo.#tempDepWinlost_staging
+DROP TABLE #tempDepWinlost_staging
 
 INSERT INTO dbo.rptDepWinlostByProduct_staging(winlostdate, custid, sporttype, turnover, drawTO, winlost, playercomm, betcount, outstanding)
 SELECT  
@@ -199,38 +201,8 @@ USING (SELECT s.winlostdate, s.custid, s.sporttype, s.turnover, s.betcount, s.ou
 
 DROP TABLE #tempDepWinlostByProduct_staging
 
--- Insert Playtech Casino SUM data to rptDepWinlostByProduct_staging
-DECLARE @_tstamp BINARY(8),
-		@new_tstamp BINARY(8)
-
-SELECT @_tstamp = CAST(CAST(ISNULL(vvalue,0) AS BIGINT) AS BINARY(8))
-FROM dbo.systemsettings2 WITH(ROWLOCK) 
-WHERE vname = 'Task_PlaytechCS_tstamp'
-
-SELECT @new_tstamp = MAX(tstamp)
-FROM (	SELECT TOP (1000) tstamp 
-		FROM DBPTCS.bodb_playtechCS.dbo.bettrans_PlaytechCS 
-		WHERE tstamp > @_tstamp ORDER BY tstamp) a
-
-IF (@new_tstamp IS NOT NULL AND @new_tstamp != 0)
-BEGIN
-	INSERT INTO rptDepWinlostByProduct_staging (custid, winlostdate, sporttype, turnover, winlost, BetCount, drawTO, playercomm, Outstanding)
-	SELECT b.CustID, b.Winlostdate,
-		254 AS SportType,
-		ISNULL(SUM(b.Stake),0) AS Turnover,
-		ISNULL(SUM(b.Winlost - b.Actual_Stake),0) AS Winlost,
-		ISNULL(COUNT(*),0) AS Betcount,
-		ISNULL(SUM(CASE WHEN b.StatusID = 111 THEN b.Stake ELSE 0 END),0) AS DrawTO,
-		0,0
-	FROM DBPTCS.bodb_PlaytechCS.dbo.bettrans_PlaytechCS b WITH (ROWLOCK)
-	WHERE tstamp > @_tstamp AND tstamp <= @new_tstamp
-	GROUP BY b.CustID, b.Winlostdate
-
-	UPDATE dbo.systemsettings2 WITH(ROWLOCK, UPDLOCK)
-	SET vvalue = CAST(CAST(@new_tstamp as bigint) as varchar(200))
-	WHERE vname = 'Task_PlaytechCS_tstamp'
-END
-
+-- Execute SP to insert Playtech Casino data to staging tables
+EXEC Task_DEPOSIT_PlaytechCS_DailySummaryRealtime
 
 INSERT INTO dbo.rptDepWinlost_Transfer3rdOthers_Staging (winlostdate,CustId,Currency,Recommend,MRecommend,SRecommend,PartnerId,TransferAmount)
 SELECT @date, 

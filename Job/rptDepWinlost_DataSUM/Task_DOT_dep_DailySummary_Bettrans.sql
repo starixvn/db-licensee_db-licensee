@@ -25,6 +25,7 @@ AS
   - 20140310@Francis: support Keno product
   - 20140418@Victor: include RNG Casino 23002 tickets to Outstanding formula
   - 20140422@Victor: support Playtech Casino procduct
+  - 20140515@Victor: Change Playtech Casino summary data process
  Param's Explanation:  
 
  • @winlostdate: The date need to summary  
@@ -368,37 +369,6 @@ USING (SELECT s.winlostdate, s.custid, s.currency, s.recommend, s.mrecommend, s.
 				source.actualrate,
 				0, 0, 0, 0, 0);
 
--- Insert Playtech Casino summary data to rptDepWinlostByProduct
-DECLARE @BackupDay DATE
-SELECT @BackupDay = ISNULL(MIN(Winlostdate),'') FROM DBPTCS.bodb_PlaytechCS.dbo.bettrans_PlaytechCS
-
-IF @date >= @BackupDay -- Get data in bettrans_PlaytechCS table
-BEGIN
-	INSERT INTO #DataByProduct(custid, sporttype, turnover, winlost, betcount, drawTO)
-	SELECT b.CustID, 
-		254 AS SportType,
-		ISNULL(SUM(b.Stake),0) AS Turnover,
-		ISNULL(SUM(b.Winlost - b.Actual_Stake),0) AS Winlost,
-		ISNULL(COUNT(*),0) AS Betcount,
-		ISNULL(SUM(CASE WHEN b.StatusID = 111 THEN b.Stake ELSE 0 END),0) AS DrawTO
-	FROM DBPTCS.bodb_PlaytechCS.dbo.bettrans_PlaytechCS b WITH (ROWLOCK)
-	WHERE Winlostdate = @date
-	GROUP BY b.CustID
-END
-ELSE -- Get data in bettrans_PlaytechCS_bk table
-BEGIN
-	INSERT INTO #DataByProduct(custid, sporttype, turnover, winlost, betcount, drawTO)
-	SELECT b.CustID, 
-		254 AS SportType,
-		ISNULL(SUM(b.Stake),0) AS Turnover,
-		ISNULL(SUM(b.Winlost - b.Actual_Stake),0) AS Winlost,
-		ISNULL(COUNT(*),0) AS Betcount,
-		ISNULL(SUM(CASE WHEN b.StatusID = 111 THEN b.Stake ELSE 0 END),0) AS DrawTO
-	FROM bodb_PlaytechCS_archive.dbo.bettrans_PlaytechCS_bk b WITH (ROWLOCK)
-	WHERE Winlostdate = @date
-	GROUP BY b.CustID
-END
-
 DELETE bodb_Report.dbo.rptDepWinlostByProduct WHERE Winlostdate = @date 
 
 insert into bodb_Report.dbo.rptDepWinlostByProduct (
@@ -421,6 +391,9 @@ USING (SELECT s.winlostdate, s.custid, s.sporttype, s.turnover, s.betcount, s.ou
 
 DROP TABLE #tempDepWinlostByProduct		
 DROP TABLE #DataByProduct
+
+-- Execute SP to insert data for Playtech Casino
+EXEC Task_DOT_PlaytechCS_DailySummary @winlostdate = @date
 
 /* Fill data to rptDepWinlost_Transfer3rdOthers */
 CREATE TABLE #rptDepWinlost_Transfer3rdOthers (
