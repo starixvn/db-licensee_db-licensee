@@ -75,7 +75,7 @@ Revisions:
 	- 20140403@Hannah: offer Keno
 	- 20140421@Hannah: fix bug, add sporttype for Keno
 	- 20140428@Hannah: Sort betlist
-	- 20140508@Hannah: Fix bug Sort betlist
+	- 20140516@Hannah: Fix bug Sort betlist
 Param's Explanation: 	
 */
 SET NOCOUNT ON

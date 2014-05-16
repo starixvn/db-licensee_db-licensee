@@ -44,7 +44,7 @@ Revisions:
 		- 20121004@Jim: replace @currency input param by @currencyID
 		- 20130514@Jim: Restrict permission of Licensee Users by currency
 		- 20140428@Hannah: Sort betlist
-		- 20140508@Hannah: Fix bug Sort betlist
+		- 20140516@Hannah: Fix bug Sort betlist
 
 Param's Explanation: 
 
@@ -358,7 +358,7 @@ SET @sql =
 				INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid
 				INNER JOIN #TempExchange e ON b.currency=e.exchangeID AND b.winlostdate=e.exchangeDate
 		) A WHERE A.RowNum BETWEEN '+ cast(@RowStart as varchar(50))+' AND '+cast(@RowEnd as varchar(50))
-			+' ORDER BY A.' +@Sort
+		--	+' ORDER BY A.' +@Sort
 EXEC (@sql)
 
 DROP TABLE #AgWinlossMP

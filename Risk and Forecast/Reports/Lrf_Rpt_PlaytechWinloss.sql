@@ -1,4 +1,4 @@
-ALTER PROCEDURE [dbo].[Lrf_Rpt_PlaytechWinloss_15876]  
+ALTER PROCEDURE [dbo].[Lrf_Rpt_PlaytechWinloss]  
  @LicenseeID	INT,
  @UserID		INT,
  @CurrencyID	INT = 0,
@@ -165,6 +165,6 @@ BEGIN
 END   
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_PlaytechWinloss_15876] TO [bodbLicenseeNet]
+GRANT EXECUTE ON [dbo].[Lrf_Rpt_PlaytechWinloss] TO [bodbLicenseeNet]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_PlaytechWinloss_15876] TO [vnteam]
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_PlaytechWinloss] TO [vnteam]
