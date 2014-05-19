@@ -5,6 +5,7 @@ AS
  DB: DB054/bodb02  
  Revisions:   
 	- 20140515@Victor: create SP
+	- 20140519@Victor: update NetGaming formula
  Param's Explanation:  
 
  - @winlostdate: The date need to summary
@@ -52,7 +53,7 @@ BEGIN TRY
 			0 AS Outstanding,
 			ISNULL(SUM(b.ProgressiveShare),0) AS ProgressiveShare,
 			ISNULL(SUM(b.ProgressiveWin),0) AS ProgressiveWin,
-			ISNULL(SUM(b.Winlost - b.Actual_Stake - b.ProgressiveShare + b.ProgressiveWin),0) AS NetGaming
+			ISNULL(SUM(-b.Winlost + b.Actual_Stake - b.ProgressiveShare + b.ProgressiveWin),0) AS NetGaming
 		FROM DBPTCS.bodb_PlaytechCS.dbo.bettrans_PlaytechCS b WITH (ROWLOCK)
 		WHERE tstamp > @_tstamp AND tstamp <= @new_tstamp
 		GROUP BY b.CustID, b.Winlostdate
