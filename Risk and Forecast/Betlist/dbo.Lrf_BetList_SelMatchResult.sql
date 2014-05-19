@@ -8,7 +8,7 @@ GO
 /****** Object:  Stored Procedure dbo.Lrf_BetList_SelMatchResult    Script Date: 10/22/2013 10:25:56 PM ******/
 /****** Object:  Stored Procedure dbo.Lrf_BetList_SelMatchResult    Script Date: 10/21/2013 2:57:35 PM ******/
 
-ALTER PROCEDURE [dbo].[Lrf_BetList_SelMatchResult_15189]
+ALTER PROCEDURE [dbo].[Lrf_BetList_SelMatchResult]
 	@LicenseeID INT ,
 	@UserID		INT,	
 	@MatchID INT,
@@ -455,6 +455,6 @@ BEGIN
 END
 */
 GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_SelMatchResult_15189] TO [bodbLicenseeNet] AS [dbo]
+GRANT EXECUTE ON [dbo].[Lrf_BetList_SelMatchResult] TO [bodbLicenseeNet] AS [dbo]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelMatchResult_15189] TO [vnteam] AS [dbo]
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelMatchResult] TO [vnteam] AS [dbo]

@@ -9,7 +9,7 @@ GO
 /****** Object:  Stored Procedure dbo.Lrf_Result_RaceSelByMeeting    Script Date: 12/10/2013 4:57:39 PM ******/
 
 
-ALTER PROCEDURE [dbo].[Lrf_Result_RaceSelByMeeting_15189]
+ALTER PROCEDURE [dbo].[Lrf_Result_RaceSelByMeeting]
 	@FromDate DATETIME,
 	@LeagueID INT=0,
 	@Sporttype SMALLINT = 151,
@@ -265,9 +265,9 @@ BEGIN
  END
  
 GO 
- GRANT EXECUTE ON [dbo].[Lrf_Result_RaceSelByMeeting_15189] TO [vnteam]
+ GRANT EXECUTE ON [dbo].[Lrf_Result_RaceSelByMeeting] TO [vnteam]
 GO 
- GRANT VIEW DEFINITION ON [dbo].[Lrf_Result_RaceSelByMeeting_15189] TO [vnteam]
+ GRANT VIEW DEFINITION ON [dbo].[Lrf_Result_RaceSelByMeeting] TO [vnteam]
 GO 
- GRANT EXECUTE ON [dbo].[Lrf_Result_RaceSelByMeeting_15189] TO [bodbLicenseeNet]
+ GRANT EXECUTE ON [dbo].[Lrf_Result_RaceSelByMeeting] TO [bodbLicenseeNet]
 GO

@@ -6,7 +6,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-CREATE PROCEDURE [dbo].[Lrf_Result_SportSelByDate]  
+ALTER PROCEDURE [dbo].[Lrf_Result_SportSelByDate]  
 	@EventDate DATETIME,
 	@LicenseeID INT
 AS
