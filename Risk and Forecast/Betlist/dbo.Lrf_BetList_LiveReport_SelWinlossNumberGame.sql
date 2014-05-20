@@ -4,7 +4,7 @@ set ANSI_NULLS ON
 set QUOTED_IDENTIFIER ON
 go
 
-ALTER PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossNumberGame]	 
+ALTER PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossNumberGame_14877]	 
 	 @LicenseeID INT ,
 	 @UserID	 INT,
      @CurrencyID INT = 0 ,     
@@ -321,7 +321,9 @@ EXEC (@sql)
 
 DROP TABLE #Data	
 DROP TABLE #TempExchange 
+DROP TABLE #TempAg
+
 GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_LiveReport_SelWinlossNumberGame] TO [bodbLicenseeNet]
+GRANT EXECUTE ON [dbo].[Lrf_BetList_LiveReport_SelWinlossNumberGame_14877] TO [bodbLicenseeNet]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_LiveReport_SelWinlossNumberGame] TO [vnteam] 
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_LiveReport_SelWinlossNumberGame_14877] TO [vnteam] 

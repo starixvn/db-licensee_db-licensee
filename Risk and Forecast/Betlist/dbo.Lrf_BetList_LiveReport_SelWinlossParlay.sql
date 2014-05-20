@@ -1,4 +1,4 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossParlay]
+﻿ALTER PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossParlay_14877]
 	@LicenseeID INT ,
 	@UserID		INT,
 	@CurrencyID INT = 0,
@@ -325,6 +325,6 @@ DROP TABLE #AgWinlossMP
 DROP TABLE #TempExchange 
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_LiveReport_SelWinlossParlay] TO [bodbLicenseeNet]
+GRANT EXECUTE ON [dbo].[Lrf_BetList_LiveReport_SelWinlossParlay_14877] TO [bodbLicenseeNet]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_LiveReport_SelWinlossParlay] TO [vnteam] 
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_LiveReport_SelWinlossParlay_14877] TO [vnteam] 

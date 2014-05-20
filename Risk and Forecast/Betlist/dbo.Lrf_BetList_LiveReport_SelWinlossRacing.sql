@@ -1,4 +1,4 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossRacing]	 
+﻿ALTER PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossRacing_14877]	 
 	@LicenseeID INT ,
 	@UserID		INT,
 	@CurrencyID INT = 0 , 
@@ -430,8 +430,9 @@ SELECT * FROM @Bettransm ORDER BY RefNo,Bettype
 */
 DROP TABLE #Data
 DROP TABLE #TempExchange 
+DROP TABLE #TempAg
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_LiveReport_SelWinlossRacing] TO [bodbLicenseeNet]
+GRANT EXECUTE ON [dbo].[Lrf_BetList_LiveReport_SelWinlossRacing_14877] TO [bodbLicenseeNet]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_LiveReport_SelWinlossRacing] TO [vnteam] 
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_LiveReport_SelWinlossRacing_14877] TO [vnteam] 
