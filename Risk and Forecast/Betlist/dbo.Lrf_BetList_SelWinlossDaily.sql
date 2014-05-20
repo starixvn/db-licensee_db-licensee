@@ -15,7 +15,7 @@ exec Lrf_BetList_SelWinlossDaily
 @BalanceUpDay='2012-09-01 00:00:00:000'
 */
 
-ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinlossDaily_14877]
+ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinlossDaily]
 	@date SMALLDATETIME,
 	@LicenseeID INT,
 	@UserID		INT,
@@ -1024,6 +1024,6 @@ DROP TABLE #TmpCondBettype
 DROP TABLE #TempAg
 DROP TABLE #BettransDetail
 GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinlossDaily_14877] TO [bodbLicenseeNet] AS [dbo]
+GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinlossDaily] TO [bodbLicenseeNet] AS [dbo]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelWinlossDaily_14877] TO [vnteam] AS [dbo]
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelWinlossDaily] TO [vnteam] AS [dbo]
