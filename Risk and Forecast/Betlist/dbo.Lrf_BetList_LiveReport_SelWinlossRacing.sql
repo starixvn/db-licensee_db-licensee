@@ -1,4 +1,4 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossRacing]	 
+﻿ALTER PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossRacing_14877]	 
 	@LicenseeID INT ,
 	@UserID		INT,
 	@CurrencyID INT = 0 , 
@@ -373,6 +373,7 @@ FROM
 	INNER JOIN Customer c (NOLOCK) ON b.custid = c.custid
 	INNER JOIN #TempExchange e ON b.currency=e.exchangeID AND b.winlostdate=e.exchangeDate
 ) A WHERE A.RowNum between '+CAST(@RowStart AS VARCHAR(50))+' AND '+CAST(@RowEnd AS VARCHAR(50))
++' ORDER BY A.RowNum'
 
 EXEC (@sql)
 --get data from bettransm for bettype 33,43
@@ -433,6 +434,6 @@ DROP TABLE #TempExchange
 DROP TABLE #TempAg
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_LiveReport_SelWinlossRacing] TO [bodbLicenseeNet]
+GRANT EXECUTE ON [dbo].[Lrf_BetList_LiveReport_SelWinlossRacing_14877] TO [bodbLicenseeNet]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_LiveReport_SelWinlossRacing] TO [vnteam] 
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_LiveReport_SelWinlossRacing_14877] TO [vnteam] 

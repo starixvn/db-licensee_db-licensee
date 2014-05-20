@@ -4,7 +4,7 @@ set ANSI_NULLS ON
 set QUOTED_IDENTIFIER ON
 go
 
-ALTER PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossNumberGame]	 
+ALTER PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossNumberGame_14877]	 
 	 @LicenseeID INT ,
 	 @UserID	 INT,
      @CurrencyID INT = 0 ,     
@@ -316,6 +316,7 @@ FROM
 	FROM #Data b
 	INNER JOIN Customer c (NOLOCK) ON b.custid = c.custid
 ) A WHERE A.RowNum BETWEEN '+CAST(@RowStart AS VARCHAR(50))+' AND '+CAST(@RowEnd AS VARCHAR(50))
++' ORDER BY A.RowNum'
 
 EXEC (@sql)
 
@@ -324,6 +325,6 @@ DROP TABLE #TempExchange
 DROP TABLE #TempAg
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_LiveReport_SelWinlossNumberGame] TO [bodbLicenseeNet]
+GRANT EXECUTE ON [dbo].[Lrf_BetList_LiveReport_SelWinlossNumberGame_14877] TO [bodbLicenseeNet]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_LiveReport_SelWinlossNumberGame] TO [vnteam] 
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_LiveReport_SelWinlossNumberGame_14877] TO [vnteam] 

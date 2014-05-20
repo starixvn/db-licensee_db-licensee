@@ -1,4 +1,4 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossParlay]
+﻿ALTER PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossParlay_14877]
 	@LicenseeID INT ,
 	@UserID		INT,
 	@CurrencyID INT = 0,
@@ -28,7 +28,7 @@ Revisions:
 		- 20130404@Jim: set default @ShowBA=0
 		- 20130514@Jim:Restrict permission of Licensee Users by currency
 		- 20130625@Jim: Support to view currency UUS
-		- 20140507@Hannah: Sort betlist
+		- 20140520@Hannah: Sort betlist
 Param's Explanation: 
 
 */
@@ -317,7 +317,7 @@ FROM
 		INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid
 		INNER JOIN #TempExchange e ON b.currency=e.exchangeID AND b.winlostdate=e.exchangeDate
 ) A WHERE A.RowNum BETWEEN '+CAST(@RowStart AS VARCHAR(50))+' AND '+CAST(@RowEnd AS VARCHAR(50))
-+' ORDER BY A.' +@Sort
++' ORDER BY A.RowNum'
 
 EXEC (@sql)
 
@@ -325,6 +325,6 @@ DROP TABLE #AgWinlossMP
 DROP TABLE #TempExchange 
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_LiveReport_SelWinlossParlay] TO [bodbLicenseeNet]
+GRANT EXECUTE ON [dbo].[Lrf_BetList_LiveReport_SelWinlossParlay_14877] TO [bodbLicenseeNet]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_LiveReport_SelWinlossParlay] TO [vnteam] 
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_LiveReport_SelWinlossParlay_14877] TO [vnteam] 
