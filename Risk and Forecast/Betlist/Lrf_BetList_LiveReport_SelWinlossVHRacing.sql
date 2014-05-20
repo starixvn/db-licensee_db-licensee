@@ -23,7 +23,7 @@ Task : Betlist VHR for Live Report
 DB: DB052.bodb02
 Original: 
 Revisions:   
-	- 20140507@Hannah: Sort betlist    
+	- 20140520@Hannah: Sort betlist    
 */
 
 SET NOCOUNT ON  

@@ -30,7 +30,7 @@ Revisions:
 	-20130403@Jim: fix bug page index and liveindicator value 
 	-20130514@Jim: Restrict permission of Licensee Users by currency
 	-20130625@Jim: Support to view currency UUS
-	-20140507@Hannah: Sort betlist
+	-20140520@Hannah: Sort betlist
 */
 
 SET NOCOUNT ON  
