@@ -8,15 +8,15 @@ GO
 ALTER PROCEDURE [dbo].[TASK_PopulateRptdepwinlost]
 AS
 /*   
- Task : transfer rptDepwinlost_staging / rptDepwinlostbyproduct_staging to DB06.bodb_report
+ Task : transfer rptDepwinlost_staging / rptDepwinlostbyproduct_staging to DBACC.bodb_report
  DB: DB054.bodb02  
  Revisions:   
   - 20121001@viet: create SP   
   - 20130626@Don: Add one table rptDepWinlost_Transfer3rdOthers
-
+  - 20140515@Victor: Add one table rptDepWinlost_PlaytechCS and change server Alias name (DB06 -> DBACC)
 */  
 SET NOCOUNT ON	
-	declare @cnt int, @strXML1 varchar(max), @strXML2 varchar(max), @strXML3 varchar(max)
+	declare @cnt int, @strXML1 varchar(max), @strXML2 varchar(max), @strXML3 varchar(max), @strXML4 varchar(max)
 	
 	select @cnt = COUNT(1) from dbo.rptDepwinlost_staging WITH(NOLOCK)	
 	declare @_xml XML
@@ -50,7 +50,7 @@ SET NOCOUNT ON
 	SET @strXML1 = CONVERT(varchar(max), @_xml)
 
 	IF @strXML1 is NULL RETURN	
-	EXEC DB06.bodb_report.dbo.Task_rptDepwinlost_MERGE @cnt = @cnt, @strXML = @strXML1	
+	EXEC DBACC.bodb_report.dbo.Task_rptDepwinlost_MERGE @cnt = @cnt, @strXML = @strXML1	
 	
 	--rptdepwinlostByProduct
 	SET @strXML2 = (		
@@ -67,8 +67,8 @@ SET NOCOUNT ON
 		FOR XML PATH('r'), ROOT ('root')
 	)
 	
-	IF @strXML2 IS NULL RETURN
-	EXEC DB06.bodb_report.dbo.Task_rptDepwinlostbyproduct_MERGE @strXML = @strXML2
+	IF @strXML2 IS NOT NULL
+		EXEC DBACC.bodb_report.dbo.Task_rptDepwinlostbyproduct_MERGE @strXML = @strXML2
 
 	--rptDepWinlost_Transfer3rdOthers
 	SET @strXML3 = (		
@@ -84,8 +84,28 @@ SET NOCOUNT ON
 		FOR XML PATH('r'), ROOT ('root')
 	)
 	
-	IF @strXML3 IS NULL RETURN
-	EXEC DB06.bodb_report.dbo.Task_rptDepWinlost_Transfer3rdOthers_MERGE @strXML = @strXML3
+	IF @strXML3 IS NOT NULL
+		EXEC DBACC.bodb_report.dbo.Task_rptDepWinlost_Transfer3rdOthers_MERGE @strXML = @strXML3
 	
+	--rptdepwinlost_PlaytechCS
+	SET @strXML4 = (		
+		SELECT winlostdate '@d8'
+			,custid '@d9'
+			,sporttype '@e0'
+			,turnover '@e1'
+			,drawTO '@e2'
+			,winlost '@e3'
+			,playercomm '@e4'
+			,BetCount '@e5'
+			,drawBetCount '@e6'
+			,Outstanding '@e7'
+			,ProgressiveShare '@e8'
+			,ProgressiveWin '@e9'
+			,NetGaming '@f0'
+		FROM dbo.rptDepWinlost_PlaytechCS_staging WITH(NOLOCK)
+		FOR XML PATH('r'), ROOT ('root')
+	)
+	IF @strXML4 IS NOT NULL
+		EXEC DBACC.bodb_report.dbo.Task_rptDepWinlost_PlaytechCS_MERGE @strXML = @strXML4
 SET NOCOUNT OFF
 
