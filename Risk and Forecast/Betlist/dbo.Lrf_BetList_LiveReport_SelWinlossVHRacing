@@ -14,6 +14,7 @@ ALTER   PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossVHRacing]
 	@SUMLicenseeWLEUR MONEY=0 OUTPUT,
 	@PageSize INT=1000,
 	@PageIndex INT=1
+	
 AS  
 /*
 Created: Jim@20130912
