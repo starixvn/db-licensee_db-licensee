@@ -24,7 +24,7 @@ Original:
 Revisions:        
     
 */
-
+-- 
 SET NOCOUNT ON  
 
 DECLARE @TempAg AS TABLE (custid INT)
