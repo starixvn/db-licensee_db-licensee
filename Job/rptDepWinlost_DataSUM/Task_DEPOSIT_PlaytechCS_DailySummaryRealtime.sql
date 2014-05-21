@@ -6,14 +6,14 @@ AS
  Revisions:   
 	- 20140515@Victor: create SP
 	- 20140519@Victor: update NetGaming formula
+	- 20140521@Victor: Get customer WL in a whole day instead of new tickets only
  Param's Explanation:  
 
  - @winlostdate: The date need to summary
 */  
 SET NOCOUNT ON
 BEGIN TRY
-	CREATE TABLE #PlaytechData (winlostdate DATETIME,
-								custid INT,
+	CREATE TABLE #PlaytechData (custid INT,
 								sporttype SMALLINT,
 								turnover MONEY,
 								drawTO MONEY,
@@ -26,8 +26,13 @@ BEGIN TRY
 								PWin MONEY,
 								NetGaming MONEY)
 
+	CREATE TABLE #CustList (custid INT)
+
 	DECLARE @_tstamp BINARY(8),
 			@new_tstamp BINARY(8)
+
+	DECLARE @Today DATE
+	SELECT @Today = GETDATE()
 
 	SELECT @_tstamp = CAST(CAST(ISNULL(vvalue,0) AS BIGINT) AS BINARY(8))
 	FROM dbo.systemsettings2 WITH(ROWLOCK) 
@@ -40,8 +45,12 @@ BEGIN TRY
 
 	IF (@new_tstamp IS NOT NULL AND @new_tstamp != 0)
 	BEGIN
-		INSERT INTO #PlaytechData (winlostdate, custid, sporttype, turnover, drawTO, winlost, playercomm, BetCount, drawBetCount, Outstanding, PShare, PWin, NetGaming)
-		SELECT b.winlostdate,
+		
+		INSERT INTO #CustList (CustID)
+		SELECT DISTINCT CustId FROM DBPTCS.bodb_PlaytechCS.dbo.bettrans_PlaytechCS b WITH (NOLOCK) WHERE tstamp > @_tstamp AND tstamp <= @new_tstamp AND Winlostdate = @Today
+
+		INSERT INTO #PlaytechData (custid, sporttype, turnover, drawTO, winlost, playercomm, BetCount, drawBetCount, Outstanding, PShare, PWin, NetGaming)
+		SELECT 
 			b.CustID, 
 			254 AS SportType,
 			ISNULL(SUM(b.Stake),0) AS Turnover,
@@ -55,18 +64,38 @@ BEGIN TRY
 			ISNULL(SUM(b.ProgressiveWin),0) AS ProgressiveWin,
 			ISNULL(SUM(-b.Winlost + b.Actual_Stake - b.ProgressiveShare + b.ProgressiveWin),0) AS NetGaming
 		FROM DBPTCS.bodb_PlaytechCS.dbo.bettrans_PlaytechCS b WITH (ROWLOCK)
-		WHERE tstamp > @_tstamp AND tstamp <= @new_tstamp
-		GROUP BY b.CustID, b.Winlostdate
+		WHERE b.CustID IN (SELECT custid FROM #CustList) AND Winlostdate = @Today
+		GROUP BY b.CustID
 
-		INSERT INTO dbo.rptDepWinlost_PlaytechCS_staging (winlostdate,custid,sporttype,turnover,drawTO,winlost,playercomm,BetCount,
-															drawBetCount,Outstanding,ProgressiveShare,ProgressiveWin,NetGaming)
-		SELECT winlostdate, custid, sporttype, turnover, drawTO, winlost, playercomm, BetCount, 
-			drawBetCount, Outstanding, PShare, PWin, NetGaming
-		FROM #PlaytechData
+		MERGE dbo.rptDepWinlost_PlaytechCS_staging AS target
+		USING (SELECT @Today AS Winlostdate,custid, sporttype, turnover, drawTO, winlost, playercomm, 
+					BetCount, drawBetCount, Outstanding, PShare, PWin, NetGaming
+				FROM #PlaytechData) 
+			   AS source (Winlostdate, custid, sporttype, turnover, drawTO, winlost, playercomm, 
+					BetCount, drawBetCount, Outstanding, PShare, PWin, NetGaming)
+
+				ON (target.winlostdate = source.winlostdate AND target.custid = source.custid)
+			WHEN MATCHED THEN 
+				 UPDATE SET	target.sporttype = source.sporttype,
+							target.turnover = source.turnover,
+							target.drawTO = source.drawTO,
+							target.winlost = source.winlost,
+							target.playercomm = source.playercomm,
+							target.BetCount = source.BetCount,
+							target.drawBetCount = source.drawBetCount,
+							target.Outstanding = source.Outstanding,
+							target.ProgressiveShare = source.PShare,
+							target.ProgressiveWin = source.PWin,
+							target.NetGaming = source.NetGaming
+			WHEN NOT MATCHED THEN	
+				INSERT ( Winlostdate,custid, sporttype, turnover, drawTO, winlost, playercomm, 
+						BetCount, drawBetCount, Outstanding, ProgressiveShare, ProgressiveWin, NetGaming)
+				VALUES (source.winlostdate, source.custid, source.sporttype, source.turnover, source.drawTO, source.winlost, source.playercomm,
+						source.betcount, source.drawBetCount, source.Outstanding, source.PShare, source.PWin, source.NetGaming);
 
 		INSERT INTO dbo.rptDepWinlostByProduct_staging (winlostdate, custid, sporttype, turnover, 
 														drawTO, winlost, playercomm, BetCount, Outstanding)
-		SELECT winlostdate, custid, sporttype, turnover, 
+		SELECT @Today, custid, sporttype, turnover, 
 			drawTO, winlost, playercomm, BetCount, Outstanding
 		FROM #PlaytechData
 
@@ -76,6 +105,7 @@ BEGIN TRY
 	END
 
 	DROP TABLE #PlaytechData
+	DROP TABLE #CustList
 END TRY
 BEGIN CATCH
 	-- This SPs called from another SP in rptDepwinlost Summary process, failure of this SP should not affect to that process
