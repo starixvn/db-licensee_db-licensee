@@ -24,6 +24,7 @@ DB: DB052.bodb02
 Original: 
 Revisions:   
 	- 20140520@Hannah: Sort betlist    
+	- 20140522@Hannah: fix bug Sort betlist
 */
 
 SET NOCOUNT ON  
@@ -160,8 +161,8 @@ BEGIN
 	  b.odds,  
 	  b.status,  
 	  b.stake,  
-	  (b.winlost-actual_stake),  
-	  -(b.winlost-actual_stake),
+	  (b.winlost-actual_stake) AS winlost,  
+	  (-(b.winlost-actual_stake)) AS licenseeWL,
 	  b.comm AS Comm, 
 	  b.adiscount AS discount,
 	  b.playerdiscount AS playerdiscount,
@@ -260,8 +261,8 @@ BEGIN
 	  b.odds,  
 	  b.status,  
 	  b.stake,  
-	  (b.winlost-actual_stake),  
-	  -(b.winlost-actual_stake),
+	  (b.winlost-actual_stake) AS winlost,  
+	  (-(b.winlost-actual_stake)) AS licenseeWL,
 	  b.comm AS Comm, 
 	  b.adiscount AS discount,
 	  b.playerdiscount AS playerdiscount,

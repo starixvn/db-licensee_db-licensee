@@ -31,6 +31,7 @@ Revisions:
 	-20130514@Jim: Restrict permission of Licensee Users by currency
 	-20130625@Jim: Support to view currency UUS
 	-20140520@Hannah: Sort betlist
+	-20140522@Hannah: fix bug Sort betlist
 */
 
 SET NOCOUNT ON  
@@ -164,8 +165,8 @@ BEGIN
 	  b.odds,  
 	  b.status,  
 	  b.stake,  
-	  (b.winlost-actual_stake),  
-	  (-1 * (b.winlost - b.actual_stake))  AS LicenseeWL,    
+	  (b.winlost-actual_stake) AS winlost,  
+	  (-1 * (b.winlost - b.actual_stake))  AS licenseeWL,    
       comm , 
 	  playercomm,
 	  b.adiscount,
@@ -242,8 +243,8 @@ BEGIN
 	  b.odds,  
 	  b.status,  
 	  b.stake,  
-	  (b.winlost-actual_stake),  
-	  (-1 * (b.winlost - b.actual_stake))  AS LicenseeWL,    
+	  (b.winlost-actual_stake) AS winlost,  
+	  (-1 * (b.winlost - b.actual_stake))  AS licenseeWL,    
       comm , 
 	  playercomm,
 	  b.adiscount,
