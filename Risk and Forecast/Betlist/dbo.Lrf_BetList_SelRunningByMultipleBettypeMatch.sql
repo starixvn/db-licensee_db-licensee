@@ -1,20 +1,18 @@
 USE [bodb02]
 GO
 
-
 SET ANSI_NULLS ON
 GO
-
 SET QUOTED_IDENTIFIER ON
 GO
 
-CREATE PROCEDURE [dbo].[Lrf_BetList_SelRunningByMultipleBettypeMatch]
+ALTER PROCEDURE [dbo].[Lrf_BetList_SelRunningByMultipleBettypeMatch]
 	@MatchID INT,
 	@LicenseeID INT,
 	@CurrencyID INT=0,
 	@UserID		INT,
 	@LicenseeType VARCHAR(100) = NULL,
-	@Bettype VARCHAR(200),
+	@Bettype VARCHAR(300),
 	@Langkey VARCHAR(10) = 'en-US',
 	@betteam VARCHAR(20) = NULL,
 	@liveindicator INT = -1,
@@ -29,10 +27,14 @@ Task : Betlist
 DB: DB052.bodb02
 Original: [Lrf_BetList_SelRunningByBettypeMatch]
 Revisions:    
-	-20140522@Jim: clone from Lrf_BetList_SelRunningByBettypeMatch to support muilti bettype
+	-20140522@Jim: clone from Lrf_BetList_SelRunningByBettypeMatch to support muilti bettype.
+	
 */
 
 SET NOCOUNT ON
+
+IF ISNULL(@Bettype,'')=''
+SET @Bettype=''
 
 SELECT  currencyID,LicenseeID into #currency
 FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
@@ -255,10 +257,3 @@ END
 DROP TABLE #Currency
 DROP TABLE #Data
 ------------------------
-GO
-GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_SelRunningByMultipleBettypeMatch] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelRunningByMultipleBettypeMatch] TO [vnteam] 
-
-
