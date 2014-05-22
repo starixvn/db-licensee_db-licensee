@@ -1,4 +1,4 @@
-ALTER   PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossVHRacing]	 
+ALTER   PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossVHRacing_14877]	 
 	@LicenseeID INT ,
 	@UserID		INT,
 	@CurrencyID INT = 0 , 
@@ -160,8 +160,8 @@ BEGIN
 	  b.odds,  
 	  b.status,  
 	  b.stake,  
-	  (b.winlost-actual_stake),  
-	  -(b.winlost-actual_stake),
+	  (b.winlost-actual_stake) AS Winlost,  
+	  (-(b.winlost-actual_stake)) AS licenseeWL,
 	  b.comm AS Comm, 
 	  b.adiscount AS discount,
 	  b.playerdiscount AS playerdiscount,
@@ -260,8 +260,8 @@ BEGIN
 	  b.odds,  
 	  b.status,  
 	  b.stake,  
-	  (b.winlost-actual_stake),  
-	  -(b.winlost-actual_stake),
+	  (b.winlost-actual_stake) AS winlost,  
+	  (-(b.winlost-actual_stake)) AS licenseeWL,
 	  b.comm AS Comm, 
 	  b.adiscount AS discount,
 	  b.playerdiscount AS playerdiscount,
@@ -411,6 +411,6 @@ DROP TABLE #TempExchange
 DROP TABLE #TempAg
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_LiveReport_SelWinlossVHRacing] TO [bodbLicenseeNet]
+GRANT EXECUTE ON [dbo].[Lrf_BetList_LiveReport_SelWinlossVHRacing_14877] TO [bodbLicenseeNet]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_LiveReport_SelWinlossVHRacing] TO [vnteam] 
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_LiveReport_SelWinlossVHRacing_14877] TO [vnteam] 
