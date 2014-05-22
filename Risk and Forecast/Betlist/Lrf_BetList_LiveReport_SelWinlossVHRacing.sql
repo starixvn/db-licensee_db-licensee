@@ -1,4 +1,4 @@
-ALTER   PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossVHRacing_14877]	 
+ALTER   PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossVHRacing]	 
 	@LicenseeID INT ,
 	@UserID		INT,
 	@CurrencyID INT = 0 , 
@@ -24,6 +24,7 @@ DB: DB052.bodb02
 Original: 
 Revisions:   
 	- 20140520@Hannah: Sort betlist    
+	- 20140522@Hannah: fix bug Sort betlist
 */
 
 SET NOCOUNT ON  
@@ -411,6 +412,6 @@ DROP TABLE #TempExchange
 DROP TABLE #TempAg
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_LiveReport_SelWinlossVHRacing_14877] TO [bodbLicenseeNet]
+GRANT EXECUTE ON [dbo].[Lrf_BetList_LiveReport_SelWinlossVHRacing] TO [bodbLicenseeNet]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_LiveReport_SelWinlossVHRacing_14877] TO [vnteam] 
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_LiveReport_SelWinlossVHRacing] TO [vnteam] 
