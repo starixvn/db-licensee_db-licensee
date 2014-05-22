@@ -161,7 +161,7 @@ BEGIN
 	  b.odds,  
 	  b.status,  
 	  b.stake,  
-	  (b.winlost-actual_stake) AS Winlost,  
+	  (b.winlost-actual_stake) AS winlost,  
 	  (-(b.winlost-actual_stake)) AS licenseeWL,
 	  b.comm AS Comm, 
 	  b.adiscount AS discount,
