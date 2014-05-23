@@ -1,4 +1,12 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel6]
+﻿USE [bodb02]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_TotalBets_Sel6]    Script Date: 05/23/2014 10:17:40 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel6]
 	@LicenseeID INT,
 	@CurrencyID INT=0,
 	@UserID		INT,
@@ -17,11 +25,12 @@ Revisions:
 	- 20110801@Henry: Remove PT + exclude BA ticket
 	- 20120214@Jim: change to use  table ExchangeDaily by use function Lrf_f_GetExchangeDaily 
 	- 20121004@Jim: replace @currencyname input param by @currencyID
-	- 20130514@Jim:Restrict permission of Licensee Users by currency	
+	- 20130514@Jim:Restrict permission of Licensee Users by currency
+	- 20140508@Kyan: Add new bettype 1HTotalGoal 126
 */					 
 SET NOCOUNT ON
 DECLARE @Today SMALLDATETIME 
-SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
+SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120)
 
 SELECT  currencyID,LicenseeID into #currency
 FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
@@ -62,6 +71,19 @@ DECLARE @Data AS TABLE
 	total7over MONEY,
 	total7overUSD MONEY,
 	total7overEUR MONEY,
+	
+	fhtotal01 MONEY,
+	fhtotal01USD MONEY,
+	fhtotal01EUR MONEY,
+
+	fhtotal23 MONEY,
+	fhtotal23USD MONEY,
+	fhtotal23EUR MONEY,
+	
+	fhtotal4over MONEY,
+	fhtotal4overUSD MONEY,
+	fhtotal4overEUR MONEY,
+	
 	isNeutral BIT
 )
 
@@ -72,21 +94,35 @@ SELECT
 		m.awayid,
 		matchcode,
 		
-		SUM((CASE betteam WHEN '0-1'  THEN (stake*odds)-stake ELSE -stake END )) AS total01,
-		SUM((CASE betteam WHEN '0-1'  THEN (stake*odds)-stake ELSE -stake END )*e.USD) AS total01USD,
-		SUM((CASE betteam WHEN '0-1'  THEN (stake*odds)-stake ELSE -stake END )*e.EUR) AS total01EUR,
+		-- FT Total Goals
+		SUM((CASE bettype WHEN 6 THEN CASE betteam WHEN '0-1'  THEN (stake*odds)-stake ELSE -stake END END))  AS total01,
+		SUM((CASE bettype WHEN 6 THEN CASE betteam WHEN '0-1'  THEN (stake*odds)-stake ELSE -stake END END)*e.USD)  AS total01USD,
+		SUM((CASE bettype WHEN 6 THEN CASE betteam WHEN '0-1'  THEN (stake*odds)-stake ELSE -stake END END)*e.EUR)  AS total01EUR,
 		
-		SUM((CASE betteam WHEN '2-3'  THEN (stake*odds)-stake ELSE -stake END )) AS total23,
-		SUM((CASE betteam WHEN '2-3'  THEN (stake*odds)-stake ELSE -stake END )*e.USD) AS total23USD,
-		SUM((CASE betteam WHEN '2-3'  THEN (stake*odds)-stake ELSE -stake END )*e.EUR) AS total23EUR,
+		SUM((CASE bettype WHEN 6 THEN CASE betteam WHEN '2-3'  THEN (stake*odds)-stake ELSE -stake END END))  AS total23,
+		SUM((CASE bettype WHEN 6 THEN CASE betteam WHEN '2-3'  THEN (stake*odds)-stake ELSE -stake END END)*e.USD)  AS total23USD,
+		SUM((CASE bettype WHEN 6 THEN CASE betteam WHEN '2-3'  THEN (stake*odds)-stake ELSE -stake END END)*e.EUR)  AS total23EUR,
 		
-		SUM((CASE betteam WHEN '4-6'  THEN (stake*odds)-stake ELSE -stake END )) AS total46,
-		SUM((CASE betteam WHEN '4-6'  THEN (stake*odds)-stake ELSE -stake END )*e.USD) AS total46USD,
-		SUM((CASE betteam WHEN '4-6'  THEN (stake*odds)-stake ELSE -stake END )*e.EUR) AS total46EUR,
+		SUM((CASE bettype WHEN 6 THEN CASE betteam WHEN '4-6'  THEN (stake*odds)-stake ELSE -stake END END))  AS total46,
+		SUM((CASE bettype WHEN 6 THEN CASE betteam WHEN '4-6'  THEN (stake*odds)-stake ELSE -stake END END)*e.USD)  AS total46USD,
+		SUM((CASE bettype WHEN 6 THEN CASE betteam WHEN '4-6'  THEN (stake*odds)-stake ELSE -stake END END)*e.EUR)  AS total46EUR,
 		
-		SUM((CASE betteam WHEN '7-over'  THEN (stake*odds)-stake ELSE -stake END )) AS total7over,
-		SUM((CASE betteam WHEN '7-over'  THEN (stake*odds)-stake ELSE -stake END )*e.USD) AS total7overUSD,
-		SUM((CASE betteam WHEN '7-over'  THEN (stake*odds)-stake ELSE -stake END )*e.EUR) AS total7overEUR,
+		SUM((CASE bettype WHEN 6 THEN CASE betteam WHEN '7-over'  THEN (stake*odds)-stake ELSE -stake END END))  AS total7over,
+		SUM((CASE bettype WHEN 6 THEN CASE betteam WHEN '7-over'  THEN (stake*odds)-stake ELSE -stake END END)*e.USD)  AS total7overUSD,
+		SUM((CASE bettype WHEN 6 THEN CASE betteam WHEN '7-over'  THEN (stake*odds)-stake ELSE -stake END END)*e.EUR)  AS total7overEUR,
+		
+		--1H Total Goals
+		SUM((CASE bettype WHEN 126 THEN CASE betteam WHEN '0-1'  THEN (stake*odds)-stake ELSE -stake END END)) AS FHtotal01,
+		SUM((CASE bettype WHEN 126 THEN CASE betteam WHEN '0-1'  THEN (stake*odds)-stake ELSE -stake END END)*e.USD)  AS FHtotal01USD,
+		SUM((CASE bettype WHEN 126 THEN CASE betteam WHEN '0-1'  THEN (stake*odds)-stake ELSE -stake END END)*e.EUR)  AS FHtotal01EUR,
+		
+		SUM((CASE bettype WHEN 126 THEN CASE betteam WHEN '2-3'  THEN (stake*odds)-stake ELSE -stake END END))  AS FHtotal23,
+		SUM((CASE bettype WHEN 126 THEN CASE betteam WHEN '2-3'  THEN (stake*odds)-stake ELSE -stake END END)*e.USD)  AS FHtotal23USD,
+		SUM((CASE bettype WHEN 126 THEN CASE betteam WHEN '2-3'  THEN (stake*odds)-stake ELSE -stake END END)*e.EUR)  AS FHtotal23EUR,
+		
+		SUM((CASE bettype WHEN 126 THEN CASE betteam WHEN '4-over'  THEN (stake*odds)-stake ELSE -stake END END))  AS FHtotal4over,
+		SUM((CASE bettype WHEN 126 THEN CASE betteam WHEN '4-over'  THEN (stake*odds)-stake ELSE -stake END END)*e.USD)  AS FHtotal4overUSD,
+		SUM((CASE bettype WHEN 126 THEN CASE betteam WHEN '4-over'  THEN (stake*odds)-stake ELSE -stake END END)*e.EUR)  AS FHtotal4overEUR,
 		
 		ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral
 		
@@ -96,7 +132,8 @@ SELECT
 		ON e.exchangeid = bettrans.currency
 	WHERE    
 		bettrans.recommend IN (SELECT CustID FROM @TempAg)
-		AND bettrans.bettype =6 
+		--AND bettrans.bettype =6 
+		AND bettrans.bettype in (6, 126) -- 6: Total Goal, 126: 1H Total Goal
 		AND bettrans.statusID = 0
 		AND bettrans.ruben = 0
 		AND m.eventstatus = 'running'
@@ -108,7 +145,7 @@ SELECT
 		matchcode,
 		m.isNeutral
 	ORDER BY m.matchcode
-
+	
 IF @TotalRows = 0  
 BEGIN  
 	SELECT @TotalRows = count(matchid) FROM @Data

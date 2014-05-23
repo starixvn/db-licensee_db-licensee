@@ -1,4 +1,12 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel14]
+﻿USE [bodb02]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_TotalBets_Sel14]    Script Date: 05/23/2014 10:18:23 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+ALTER  PROCEDURE [dbo].[Lrf_TotalBets_Sel14]
 	@LicenseeID INT,
 	@CurrencyID INT=0,
 	@UserID		INT,
@@ -18,6 +26,7 @@ Revisions:
 	- 20120214@Jim: change to use  table ExchangeDaily by use function Lrf_f_GetExchangeDaily  
 	- 20121004@Jim: replace @currencyname input param by @currencyID.
 	- 20130514@Jim:Restrict permission of Licensee Users by currency
+	- 20140508@Kyan: add new bettype 1H FG/LG (127)
 */
 
 SET NOCOUNT ON
@@ -35,6 +44,7 @@ SELECT  CustID
 						INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
                 WHERE   [Description] = COALESCE(@LicenseeType,  
                                                      [Description])
+                                                    
 -------------------------
 DROP TABLE #currency
 -------------------------
@@ -74,7 +84,27 @@ DECLARE @Data AS Table
 	WinLost_NoGoalUSD MONEY,
 	WinLost_NoGoalEUR MONEY,
 	
-isNeutral BIT
+	WinLost_1HHomeFG MONEY,
+	WinLost_1HHomeFGUSD MONEY,
+	WinLost_1HHomeFGEUR MONEY,
+
+	WinLost_1HHomeLG MONEY,
+	WinLost_1HHomeLGUSD MONEY,
+	WinLost_1HHomeLGEUR MONEY,
+
+	WinLost_1HAwayFG MONEY,
+	WinLost_1HAwayFGUSD MONEY,
+	WinLost_1HAwayFGEUR MONEY,
+
+	WinLost_1HAwayLG MONEY,
+	WinLost_1HAwayLGUSD MONEY,
+	WinLost_1HAwayLGEUR MONEY,
+
+	WinLost_1HNoGoal MONEY,
+	WinLost_1HNoGoalUSD MONEY,
+	WinLost_1HNoGoalEUR MONEY,
+	
+	isNeutral BIT
 )
 
 INSERT INTO @Data
@@ -88,26 +118,49 @@ SELECT
 		m.awayid,
 		a.livehomescore,
 		a.liveawayscore,	
-		SUM(CASE WHEN hdp1 = 1 AND hdp2 = 1 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END) ELSE -actual_stake END) AS WinLost_HomeFG,
-		SUM(CASE WHEN hdp1 = 1 AND hdp2 = 1 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END)*e.USD ELSE -actual_stake*e.USD END) AS WinLost_HomeFGUSD,
-		SUM(CASE WHEN hdp1 = 1 AND hdp2 = 1 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END)*e.EUR ELSE -actual_stake*e.EUR END) AS WinLost_HomeFGEUR,
+		
+		-- FG/LG
+		SUM(CASE WHEN a.bettype = 14 THEN CASE WHEN hdp1 = 1 AND hdp2 = 1 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END) ELSE -actual_stake END END) AS WinLost_HomeFG,
+		SUM(CASE WHEN a.bettype = 14 THEN CASE WHEN hdp1 = 1 AND hdp2 = 1 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END)*e.USD ELSE -actual_stake*e.USD END END) AS WinLost_HomeFGUSD,
+		SUM(CASE WHEN a.bettype = 14 THEN CASE WHEN hdp1 = 1 AND hdp2 = 1 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END)*e.EUR ELSE -actual_stake*e.EUR END END) AS WinLost_HomeFGEUR,
 
-		SUM(CASE WHEN hdp1 = 1 AND hdp2 = 2 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END) ELSE -actual_stake END) AS WinLost_HomeLG,
-		SUM(CASE WHEN hdp1 = 1 AND hdp2 = 2 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END)*e.USD ELSE -actual_stake*e.USD END) AS WinLost_HomeLGUSD,
-		SUM(CASE WHEN hdp1 = 1 AND hdp2 = 2 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END)*e.EUR ELSE -actual_stake*e.EUR END) AS WinLost_HomeLGEUR,
+		SUM(CASE WHEN a.bettype = 14 THEN CASE WHEN hdp1 = 1 AND hdp2 = 2 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END) ELSE -actual_stake END END) AS WinLost_HomeLG,
+		SUM(CASE WHEN a.bettype = 14 THEN CASE WHEN hdp1 = 1 AND hdp2 = 2 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END)*e.USD ELSE -actual_stake*e.USD END END) AS WinLost_HomeLGUSD,
+		SUM(CASE WHEN a.bettype = 14 THEN CASE WHEN hdp1 = 1 AND hdp2 = 2 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END)*e.EUR ELSE -actual_stake*e.EUR END END) AS WinLost_HomeLGEUR,
 
-		SUM(CASE WHEN hdp1 = 2 AND hdp2 = 1 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END) ELSE -actual_stake END) AS WinLost_AwayFG,
-		SUM(CASE WHEN hdp1 = 2 AND hdp2 = 1 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END)*e.USD ELSE -actual_stake*e.USD END) AS WinLost_AwayFGUSD,
-		SUM(CASE WHEN hdp1 = 2 AND hdp2 = 1 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END)*e.EUR ELSE -actual_stake*e.EUR END) AS WinLost_AwayFGEUR,
+		SUM(CASE WHEN a.bettype = 14 THEN CASE WHEN hdp1 = 2 AND hdp2 = 1 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END) ELSE -actual_stake END END) AS WinLost_AwayFG,
+		SUM(CASE WHEN a.bettype = 14 THEN CASE WHEN hdp1 = 2 AND hdp2 = 1 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END)*e.USD ELSE -actual_stake*e.USD END END) AS WinLost_AwayFGUSD,
+		SUM(CASE WHEN a.bettype = 14 THEN CASE WHEN hdp1 = 2 AND hdp2 = 1 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END)*e.EUR ELSE -actual_stake*e.EUR END END) AS WinLost_AwayFGEUR,
 
-		SUM(CASE WHEN hdp1 = 2 AND hdp2 = 2 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END) ELSE -actual_stake END) AS WinLost_AwayLG,
-		SUM(CASE WHEN hdp1 = 2 AND hdp2 = 2 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END)*e.USD ELSE -actual_stake*e.USD END) AS WinLost_AwayLGUSD,
-		SUM(CASE WHEN hdp1 = 2 AND hdp2 = 2 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END)*e.EUR ELSE -actual_stake*e.EUR END) AS WinLost_AwayLGEUR,
+		SUM(CASE WHEN a.bettype = 14 THEN CASE WHEN hdp1 = 2 AND hdp2 = 2 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END) ELSE -actual_stake END END) AS WinLost_AwayLG,
+		SUM(CASE WHEN a.bettype = 14 THEN CASE WHEN hdp1 = 2 AND hdp2 = 2 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END)*e.USD ELSE -actual_stake*e.USD END END) AS WinLost_AwayLGUSD,
+		SUM(CASE WHEN a.bettype = 14 THEN CASE WHEN hdp1 = 2 AND hdp2 = 2 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END)*e.EUR ELSE -actual_stake*e.EUR END END) AS WinLost_AwayLGEUR,
 
-		SUM(CASE WHEN hdp1 = 0 AND hdp2 = 0 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END) ELSE -actual_stake END) AS WinLost_NoGoal,
-		SUM(CASE WHEN hdp1 = 0 AND hdp2 = 0 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END)*e.USD ELSE -actual_stake*e.USD END) AS WinLost_NoGoalUSD,
-		SUM(CASE WHEN hdp1 = 0 AND hdp2 = 0 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END)*e.EUR ELSE -actual_stake*e.EUR END) AS WinLost_NoGoalEUR,
+		SUM(CASE WHEN a.bettype = 14 THEN CASE WHEN hdp1 = 0 AND hdp2 = 0 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END) ELSE -actual_stake END END) AS WinLost_NoGoal,
+		SUM(CASE WHEN a.bettype = 14 THEN CASE WHEN hdp1 = 0 AND hdp2 = 0 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END)*e.USD ELSE -actual_stake*e.USD END END) AS WinLost_NoGoalUSD,
+		SUM(CASE WHEN a.bettype = 14 THEN CASE WHEN hdp1 = 0 AND hdp2 = 0 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END)*e.EUR ELSE -actual_stake*e.EUR END END) AS WinLost_NoGoalEUR,
+		
+		--1H Total FG/LG
+		SUM(CASE WHEN a.bettype = 127 THEN CASE WHEN hdp1 = 1 AND hdp2 = 1 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END) ELSE -actual_stake END END) AS WinLost_1HHomeFG,
+		SUM(CASE WHEN a.bettype = 127 THEN CASE WHEN hdp1 = 1 AND hdp2 = 1 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END)*e.USD ELSE -actual_stake*e.USD END END) AS WinLost_1HHomeFGUSD,
+		SUM(CASE WHEN a.bettype = 127 THEN CASE WHEN hdp1 = 1 AND hdp2 = 1 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END)*e.EUR ELSE -actual_stake*e.EUR END END) AS WinLost_1HHomeFGEUR,
 
+		SUM(CASE WHEN a.bettype = 127 THEN CASE WHEN hdp1 = 1 AND hdp2 = 2 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END) ELSE -actual_stake END END) AS WinLost_1HHomeLG,
+		SUM(CASE WHEN a.bettype = 127 THEN CASE WHEN hdp1 = 1 AND hdp2 = 2 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END)*e.USD ELSE -actual_stake*e.USD END END) AS WinLost_1HHomeLGUSD,
+		SUM(CASE WHEN a.bettype = 127 THEN CASE WHEN hdp1 = 1 AND hdp2 = 2 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END)*e.EUR ELSE -actual_stake*e.EUR END END) AS WinLost_1HHomeLGEUR,
+
+		SUM(CASE WHEN a.bettype = 127 THEN CASE WHEN hdp1 = 2 AND hdp2 = 1 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END) ELSE -actual_stake END END) AS WinLost_1HAwayFG,
+		SUM(CASE WHEN a.bettype = 127 THEN CASE WHEN hdp1 = 2 AND hdp2 = 1 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END)*e.USD ELSE -actual_stake*e.USD END END) AS WinLost_1HAwayFGUSD,
+		SUM(CASE WHEN a.bettype = 127 THEN CASE WHEN hdp1 = 2 AND hdp2 = 1 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END)*e.EUR ELSE -actual_stake*e.EUR END END) AS WinLost_1HAwayFGEUR,
+
+		SUM(CASE WHEN a.bettype = 127 THEN CASE WHEN hdp1 = 2 AND hdp2 = 2 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END) ELSE -actual_stake END END) AS WinLost_1HAwayLG,
+		SUM(CASE WHEN a.bettype = 127 THEN CASE WHEN hdp1 = 2 AND hdp2 = 2 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END)*e.USD ELSE -actual_stake*e.USD END END) AS WinLost_1HAwayLGUSD,
+		SUM(CASE WHEN a.bettype = 127 THEN CASE WHEN hdp1 = 2 AND hdp2 = 2 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END)*e.EUR ELSE -actual_stake*e.EUR END END) AS WinLost_1HAwayLGEUR,
+
+		SUM(CASE WHEN a.bettype = 127 THEN CASE WHEN hdp1 = 0 AND hdp2 = 0 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END) ELSE -actual_stake END END) AS WinLost_1HNoGoal,
+		SUM(CASE WHEN a.bettype = 127 THEN CASE WHEN hdp1 = 0 AND hdp2 = 0 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END)*e.USD ELSE -actual_stake*e.USD END END) AS WinLost_1HNoGoalUSD,
+		SUM(CASE WHEN a.bettype = 127 THEN CASE WHEN hdp1 = 0 AND hdp2 = 0 THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds-1 END)*e.EUR ELSE -actual_stake*e.EUR END END) AS WinLost_1HNoGoalEUR,
+		
 		ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral
 	FROM
 		bettrans 		a  WITH (NOLOCK)
@@ -116,7 +169,8 @@ SELECT
 		ON e.exchangeid=a.currency
 	WHERE 
 		a.recommend in (SELECT custid FROM @TempAg) AND
-		a.bettype = 14 AND
+		--a.bettype = 14 AND
+		a.bettype in (14,127) AND -- FG/LG: 14, 1H FG/LG: 127
 		a.ruben=0 AND
 		a.statusID = 0 AND
 		m.eventstatus = 'running'  AND
@@ -135,7 +189,6 @@ SELECT
 		m.isNeutral
 	ORDER BY
 	m.matchcode, a.liveindicator DESC
-
 
 IF @TotalRows = 0  
 BEGIN  
