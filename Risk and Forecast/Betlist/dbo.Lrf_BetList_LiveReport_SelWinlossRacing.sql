@@ -30,7 +30,8 @@ Revisions:
 		- 20121004@Jim: replace @currency input param by @currencyID
 		- 20130514@Jim:Restrict permission of Licensee Users by currency
 		- 20130625@Jim: Support to view currency UUS 
-		- 20140508@Hannah: Sort betlist
+		- 20140520@Hannah: Sort betlist
+		- 20140522@Hannah: fix bug Sort betlist
 */
 
 SET NOCOUNT ON  
@@ -170,8 +171,8 @@ BEGIN
 	  b.odds,  
 	  b.status,  
 	  b.stake,  
-	  (b.winlost-b.actual_stake),  
-	  b.awinlost,
+	  (b.winlost-b.actual_stake) AS winlost,  
+	  b.awinlost AS licenseeWL,
 	  b.comm AS Comm, 
 	  b.adiscount AS discount,
 	  b.playerdiscount AS playerdiscount,
@@ -270,8 +271,8 @@ BEGIN
 	  b.odds,  
 	  b.status,  
 	  b.stake,  
-	  (b.winlost-actual_stake),  
-	  b.awinlost,
+	  (b.winlost-actual_stake) AS winlost,  
+	  b.awinlost AS licenseeWL,
 	  b.comm  AS Comm, 
 	  b.adiscount,
 	  b.playerdiscount AS playerdiscount,
@@ -373,6 +374,7 @@ FROM
 	INNER JOIN Customer c (NOLOCK) ON b.custid = c.custid
 	INNER JOIN #TempExchange e ON b.currency=e.exchangeID AND b.winlostdate=e.exchangeDate
 ) A WHERE A.RowNum between '+CAST(@RowStart AS VARCHAR(50))+' AND '+CAST(@RowEnd AS VARCHAR(50))
++' ORDER BY A.RowNum'
 
 EXEC (@sql)
 --get data from bettransm for bettype 33,43
@@ -430,6 +432,7 @@ SELECT * FROM @Bettransm ORDER BY RefNo,Bettype
 */
 DROP TABLE #Data
 DROP TABLE #TempExchange 
+DROP TABLE #TempAg
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_LiveReport_SelWinlossRacing] TO [bodbLicenseeNet]

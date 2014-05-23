@@ -3,7 +3,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_PlaytechWinlossDetail_Ag]
  @UserID		INT,
  @CurrencyID	INT = 0,
  @FromDate		SMALLDATETIME,  
- @ToDate		SMALLDATETIME
+ @ToDate		SMALLDATETIME,
+ @excludeTest BIT = 0
  
  AS  
 /*  Created: Hannah
@@ -12,8 +13,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_PlaytechWinlossDetail_Ag]
     DB: DBACC.bodb02  
    
     Revisions: 
+		- 20140513@Hannah: Add Progressive share and win values
 	Param's Explanation:  
-	  + @BackupDay: The day we move tickets to rptDepWinlostByProduct_bk  
 */  
 BEGIN  
 	SET NOCOUNT ON  
@@ -25,18 +26,17 @@ BEGIN
 		Turnover		MONEY,
 		Winlost			MONEY,
 		LicenseeWL		MONEY, 
-		BetCount		BIGINT
+		BetCount		BIGINT,
+		PShare			MONEY,
+		PWin			MONEY,
+		NetGaming		MONEY		
 	)  
 
 	DECLARE @Super AS TABLE (custid INT PRIMARY KEY, currency INT)
 	DECLARE @TempAg	TABLE( custID INT, currency INT)  
 	DECLARE @LicenseeName VARCHAR(50)
 	DECLARE @VNDCurrencyName VARCHAR(20)
-	DECLARE @BackupDay SMALLDATETIME
 	DECLARE @sql NVARCHAR(1000)
-
-	SELECT @BackupDay = MIN(winlostdate)
-	FROM [bodb_report].[dbo].[rptDepWinlostByProduct] WITH (NOLOCK) 
 
 	SELECT @VNDCurrencyName = currency 
 	FROM exchange (NOLOCK) 
@@ -60,6 +60,8 @@ BEGIN
 	SELECT custID, currency 
 	FROM DBLIC.bodb_Licensee.dbo.LicenseeCust lc (NOLOCK) 
 		INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID   
+	WHERE 
+	 (@excludeTest=0 OR (@excludeTest=1 AND Currency <> 20))
 
 	INSERT INTO @Super(custid, currency)  
 	SELECT CustID,currency
@@ -68,77 +70,36 @@ BEGIN
 	WHERE  site = @LicenseeName	
 	  
 	DROP TABLE #Currency
-
-	DECLARE @TempFromDate DATETIME 
-	DECLARE @TempToDate DATETIME 
-	DECLARE @FDate DATETIME 
-	DECLARE @TDate DATETIME 
-	--to Deal With Parameter Sniffing
-	SELECT @FDate = @FromDate, @TDate = @ToDate 
   
-	IF @TDate >= @BackupDay
-	BEGIN
-		IF @FDate < @BackupDay 
-			SET @TempFromDate =  @BackupDay
-		ELSE
-			SET @TempFromDate = @FDate
-	
-		INSERT INTO #SAgWinLoss
-		SELECT   
-			r.winlostdate,  
-			ci.recommend AS custID,
-			s.currency,			
-			SUM(r.turnover) AS Turnover, 
-			SUM(r.winlost) AS Winlost,  
-			-SUM(r.winlost) AS LicenseeWL,
-			SUM(r.BetCount) AS BetCount	
-		FROM 
-			bodb_report.dbo.rptDepWinlostByProduct r WITH ( NOLOCK)
-			INNER JOIN bodb02.dbo.custInfo ci WITH ( NOLOCK) ON ci.CustID = r.CustID
-			INNER JOIN @Super s ON ci.srecommend = s.custid
-			INNER JOIN @TempAg a ON ci.recommend = a.custid
-		WHERE 
-			r.winlostdate BETWEEN @TempFromDate AND @TDate 
-			AND ci.roleid = 1  
-			AND r.sporttype = 254
-		GROUP BY   
-			r.winlostdate,s.currency,ci.recommend
-	END  
- 
-	IF @FDate < @BackupDay 
-	BEGIN
-		IF @TDate >= @BackupDay
-				SET @TempToDate = DATEADD(DAY, -1, @BackupDay)
-			ELSE
-				SET  @TempToDate = @TDate
-	
-		INSERT INTO #SAgWinLoss
-		SELECT   
-			r.winlostdate, 
-			ci.recommend AS custID,
-			s.currency,		
-			SUM(r.turnover) as turnover, 
-			SUM(r.winlost) AS Winlost,  
-			-SUM(r.winlost) AS LicenseeWL,
-			SUM(r.BetCount) AS BetCount	
-		FROM 
-			bodb_report.dbo.rptDepWinlostByProduct_bk r WITH ( NOLOCK)
-			INNER JOIN bodb02.dbo.custInfo ci WITH ( NOLOCK) ON ci.CustID = r.CustID
-			INNER JOIN @TempAg ag ON ag.custid = ci.recommend
-			INNER JOIN @Super s ON ci.srecommend = s.custid
-
-		WHERE  
-			r.Winlostdate BETWEEN @FDate AND @TempToDate  
-			AND ci.roleid = 1 
-			AND r.sporttype = 254
-		GROUP BY  r.winlostdate,s.currency, ci.recommend
-	END 
+	INSERT INTO #SAgWinLoss
+	SELECT   
+		r.winlostdate,  
+		ci.recommend AS custID,
+		s.currency,			
+		SUM(r.turnover) AS Turnover, 
+		SUM(r.winlost) AS Winlost,  
+		-SUM(r.winlost) AS LicenseeWL,
+		SUM(r.BetCount) AS BetCount,
+		SUM(ProgressiveShare) AS PShare,
+		SUM(ProgressiveWin) AS PWin,
+		SUM(NetGaming) AS NetGaming	
+	FROM 
+		bodb_report.dbo.rptDepWinlost_PlaytechCS r WITH ( NOLOCK)
+		INNER JOIN bodb02.dbo.custInfo ci WITH ( NOLOCK) ON ci.CustID = r.CustID
+		INNER JOIN @Super s ON ci.srecommend = s.custid
+		INNER JOIN @TempAg a ON ci.recommend = a.custid
+	WHERE 
+		r.winlostdate BETWEEN @FromDate AND @ToDate
+		AND ci.roleid = 1  
+		AND r.sporttype = 254
+	GROUP BY   
+		r.winlostdate,s.currency,ci.recommend
  
 	CREATE NONCLUSTERED INDEX IDX_Index_SA ON #SAgWinLoss(Currency)
 
 	SELECT * 
 	INTO #TempExchange 
-	FROM Lrf_f_GetExchangeDaily(@FDate,@TDate)
+	FROM Lrf_f_GetExchangeDaily(@FromDate,@ToDate)
 	WHERE exchangeid IN (SELECT DISTINCT Currency FROM #SAgWinLoss)
  
 	SELECT   
@@ -151,18 +112,33 @@ BEGIN
 		SUM(Winlost)		 AS Winlost,  
 		SUM(LicenseeWL)		 AS LicenseeWL,
 		SUM(Betcount)	 	 AS BetCount,
+		SUM(PShare)			 AS PShare,
+	    SUM(PWin)			 AS PWin,
+	    SUM(NetGaming)		 AS NetGaming,
 		--BaseRM  
 		CAST(SUM(Turnover*e.MYR)	 AS MONEY)     AS TurnoverMYR,   
 		CAST(SUM(Winlost*e.MYR)	     AS MONEY)     AS WinlostMYR,  
 		CAST(SUM(LicenseeWL*e.MYR)   AS MONEY)     AS LicenseeWLMYR,
+		CAST(SUM(PShare*e.MYR)	 AS MONEY)		   AS PShareMYR,   
+		CAST(SUM(PWin*e.MYR)	 AS MONEY)		   AS PWinMYR,   
+		CAST(SUM(NetGaming*e.MYR)	 AS MONEY)     AS NetGamingMYR,   
+
 		--BaseUSD  
 		CAST(SUM(Turnover*e.USD)     AS MONEY)     AS TurnoverUSD,   
 		CAST(SUM(Winlost*e.USD)	     AS MONEY)     AS WinlostUSD,  
 		CAST(SUM(LicenseeWL*e.USD)   AS MONEY)     AS LicenseeWLUSD,
+		CAST(SUM(PShare*e.USD)	 AS MONEY)         AS PShareUSD,   
+		CAST(SUM(PWin*e.USD)	 AS MONEY)         AS PWinUSD,   
+		CAST(SUM(NetGaming*e.USD)	 AS MONEY)     AS NetGamingUSD,   
+
 		--BaseEUR  
 		CAST(SUM(Turnover*e.EUR)     AS MONEY)     AS TurnoverEUR,   
 		CAST(SUM(Winlost*e.EUR)	     AS MONEY)     AS WinlostEUR,  
-		CAST(SUM(LicenseeWL*e.EUR)   AS MONEY)     AS LicenseeWLEUR
+		CAST(SUM(LicenseeWL*e.EUR)   AS MONEY)     AS LicenseeWLEUR,
+		CAST(SUM(PShare*e.EUR)	 AS MONEY)         AS PShareEUR,   
+		CAST(SUM(PWin*e.EUR)	 AS MONEY)         AS PWinEUR,   
+		CAST(SUM(NetGaming*e.EUR)	 AS MONEY)     AS NetGamingEUR   
+
 	FROM	#SAgWinLoss w   
 		INNER JOIN #TempExchange e	ON w.winlostdate = e.ExchangeDate AND w.currency = e.ExchangeId
 		INNER JOIN CustInfo c WITH(NOLOCK) ON w.custid = c.custid

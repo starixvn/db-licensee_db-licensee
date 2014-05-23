@@ -6,14 +6,14 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-CREATE PROCEDURE [dbo].[Lrf_Result_SportSelByDate]  
+ALTER PROCEDURE [dbo].[Lrf_Result_SportSelByDate]  
 	@EventDate DATETIME,
 	@LicenseeID INT
 AS
 /*
 Created: 20101201@Jacob
 Task:
-DB: DB053.bodb02
+DB: DB052.bodb02
 Original: Age_Result_SportSelByDate
 Revisions:
 	20101201@Jacob: Copy source code from Age_Result_SportSelByDate

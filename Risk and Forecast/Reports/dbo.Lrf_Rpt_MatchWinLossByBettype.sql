@@ -1,9 +1,15 @@
-﻿set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
+﻿USE [bodb02]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_MatchWinLossByBettype]    Script Date: 05/23/2014 10:21:12 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+/****** Object:  Stored Procedure dbo.Lrf_Rpt_MatchWinLossByBettype    Script Date: 12/12/2013 3:38:58 AM ******/
+/****** Object:  Stored Procedure dbo.Lrf_Rpt_MatchWinLossByBettype    Script Date: 12/9/2013 6:21:28 PM ******/
 
 
-ALTER  PROCEDURE [dbo].[Lrf_Rpt_MatchWinLossByBettype]  
+ALTER PROCEDURE [dbo].[Lrf_Rpt_MatchWinLossByBettype]  
 	@LicenseeID INT,  
 	@UserID		INT,
 	@LicenseeType VARCHAR(100) = NULL,  
@@ -37,12 +43,13 @@ Revisions:
 	- 20130514@Jim: Restrict permission of Licensee Users by currency
 	- 20130809@Jim: offer Virtual Horse Racing
 	- 20131203@Jim: offer Virtual Greyhound, Virtual Motor Racing
+	- 20130423@Kyan: offer Virtual Speedway, Virtual Cycling 
 Param's Explanation:   
    
 */  
   
 /* demo script  
-exec [Lrf_Rpt_MatchWinLossByBettype_xtest] @LicenseeID=3,@LicenseeType=default,@MatchID=1700257,@Date='May 19 2012 12:00:00:000AM',@MoveBetsDay='May 21 2012 12:00:00:000AM',@showSB=1,@showRB=1,@showNG=0,@showBA=0  
+exec [Lrf_Rpt_MatchWinLossByBettype] @LicenseeID=3,@LicenseeType=default,@MatchID=1700257,@Date='May 19 2012 12:00:00:000AM',@MoveBetsDay='May 21 2012 12:00:00:000AM',@showSB=1,@showRB=1,@showNG=0,@showBA=0  
 */  
 SET NOCOUNT ON  
   
@@ -798,7 +805,7 @@ FROM Lrf_f_GetExchangeDaily(@_Date,@_Date)
 -- Result  
 SELECT      
 	matchid,  
-	CASE WHEN b.sporttype IN (180,181,182,184) THEN 0 ELSE homeid END homeid,  
+	CASE WHEN b.sporttype IN (180,181,182,183,184,185) THEN 0 ELSE homeid END homeid,  
 	awayid,  
 	bettype,
 	sporttype,	
@@ -831,8 +838,8 @@ SELECT
 	CAST(SUM(AmtDuetoRB) AS MONEY) AS AmtDuetoRB,  
 	CAST(SUM((AmtDuetoRB) * e.USD) AS MONEY) AS AmtDuetoRBUSD,  
 	CAST(SUM((AmtDuetoRB) * e.EUR) AS MONEY) AS AmtDuetoRBEUR,  
-	 CASE WHEN b.sporttype IN (181,182,184) THEN '' ELSE race END race,  
-	CASE WHEN b.sporttype IN (180,181,182,184) THEN '' ELSE matchcode END matchcode ,  
+	 CASE WHEN b.sporttype IN (181,182,183,184,185) THEN '' ELSE race END race,  
+	CASE WHEN b.sporttype IN (180,181,182,183,184,185) THEN '' ELSE matchcode END matchcode ,  
 	isNeutral,  
 	liveindicator  
 FROM    
@@ -841,19 +848,17 @@ FROM
  INNER JOIN @ExchangeDaily e ON b.winlostdate = e.ExchangeDate AND b.currency = e.ExchangeId  
 GROUP BY    
     matchid,  
-    CASE WHEN b.sporttype IN (180,181,182,184) THEN 0 ELSE homeid END,  
+    CASE WHEN b.sporttype IN (180,181,182,183,184,185) THEN 0 ELSE homeid END,  
     awayid,  
     bettype,
 	sporttype,	
-    CASE WHEN b.sporttype IN (180,181,182,184) THEN '' ELSE matchcode END ,  
+    CASE WHEN b.sporttype IN (180,181,182,183,184,185) THEN '' ELSE matchcode END ,  
     leagueid,  
     isNeutral,  
-    CASE WHEN b.sporttype IN (181,182,184) THEN '' ELSE race END ,  
+    CASE WHEN b.sporttype IN (181,182,183,184,185) THEN '' ELSE race END ,  
     liveindicator  
       
-DROP TABLE #TempBetList      
-
-   
+DROP TABLE #TempBetList
    
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_MatchWinLossByBettype] TO [bodbLicenseeNet]

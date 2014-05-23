@@ -23,7 +23,8 @@ Task : Betlist VHR for Live Report
 DB: DB052.bodb02
 Original: 
 Revisions:   
-	- 20140507@Hannah: Sort betlist    
+	- 20140520@Hannah: Sort betlist    
+	- 20140522@Hannah: fix bug Sort betlist
 */
 
 SET NOCOUNT ON  
@@ -160,8 +161,8 @@ BEGIN
 	  b.odds,  
 	  b.status,  
 	  b.stake,  
-	  (b.winlost-actual_stake),  
-	  -(b.winlost-actual_stake),
+	  (b.winlost-actual_stake) AS winlost,  
+	  (-(b.winlost-actual_stake)) AS licenseeWL,
 	  b.comm AS Comm, 
 	  b.adiscount AS discount,
 	  b.playerdiscount AS playerdiscount,
@@ -260,8 +261,8 @@ BEGIN
 	  b.odds,  
 	  b.status,  
 	  b.stake,  
-	  (b.winlost-actual_stake),  
-	  -(b.winlost-actual_stake),
+	  (b.winlost-actual_stake) AS winlost,  
+	  (-(b.winlost-actual_stake)) AS licenseeWL,
 	  b.comm AS Comm, 
 	  b.adiscount AS discount,
 	  b.playerdiscount AS playerdiscount,
@@ -361,6 +362,7 @@ FROM
 	FROM #Data b
 	INNER JOIN Customer c (NOLOCK) ON b.custid = c.custid
 ) A WHERE A.RowNum between '+CAST(@RowStart AS VARCHAR(50))+' AND '+CAST(@RowEnd AS VARCHAR(50))
++' ORDER BY A.RowNum'
 EXEC (@sql)
 
 --get data from bettransm for bettype 1233
@@ -407,6 +409,7 @@ SELECT * FROM @Bettransm ORDER BY RefNo,Bettype
 
 DROP TABLE #Data
 DROP TABLE #TempExchange 
+DROP TABLE #TempAg
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_LiveReport_SelWinlossVHRacing] TO [bodbLicenseeNet]

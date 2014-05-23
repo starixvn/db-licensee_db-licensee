@@ -75,7 +75,7 @@ Revisions:
 	- 20140403@Hannah: offer Keno
 	- 20140421@Hannah: fix bug, add sporttype for Keno
 	- 20140428@Hannah: Sort betlist
-	- 20140508@Hannah: Fix bug Sort betlist
+	- 20140520@Hannah: Fix bug Sort betlist
 Param's Explanation: 	
 */
 SET NOCOUNT ON
@@ -92,7 +92,6 @@ SELECT
 		
 CREATE TABLE #Data
 (
-	RowNum INT,
 	Sporttype INT,
 	Username nvarchar(50),
 	NickName NVARCHAR(50),
@@ -387,7 +386,6 @@ BEGIN
 	
 	CREATE TABLE #BetData1
 	(
-		RowNum INT,
 		oddsid INT,
 		Sporttype INT,		
 		Username nvarchar(50),
@@ -438,9 +436,7 @@ BEGIN
 
 	-- Get Betdata from bettrans and filter by row number
 	SET @sql = 
-	'SELECT A.* 
-	FROM (SELECT
-		ROW_NUMBER() over(ORDER BY '+ @SortTemp + ') AS RowNum,
+	'SELECT
 		b.oddsid,
 		CAST(NULL AS INT) AS sporttype,
 		b.username,
@@ -506,11 +502,10 @@ BEGIN
 		AND b.status='''+CAST(@status AS VARCHAR(15))+
 		''' AND b.bettype NOT IN (9,29,10)
 		AND b.recommend IN (SELECT custid FROM #TempAg)	
-		AND b.ruben = 1		
-	) A WHERE A.RowNum BETWEEN '+CAST(@RowStart AS VARCHAR(50))+' AND '+ CAST(@RowEnd AS VARCHAR(50))
+		AND b.ruben = 1'	
 	
 	INSERT INTO #BetData1
-	(RowNum,Oddsid,Sporttype,Username,NickName,Bettype,LeagueID,Transid,Matchcode,Race,HomeID,AwayID,hdp1,hdp2,
+	(Oddsid,Sporttype,Username,NickName,Bettype,LeagueID,Transid,Matchcode,Race,HomeID,AwayID,hdp1,hdp2,
 	odds,status,stake,Winlost,LicenseeWL,comm,PlayerComm,transdate,Winlostdate,betteam,liveindicator,livehomescore,
 	liveawayscore,MatchID,Betstatus ,IsNeutral,oddstype,betid,currency,RefNO,CustID,showtime,stakeUSD,WinlostUSD,LicenseeWLUSD,commUSD,PlayerCommUSD,
 	stakeEUR,WinlostEUR,LicenseeWLEUR,commEUR,PlayerCommEUR)
@@ -592,7 +587,7 @@ BEGIN
 	
 	-- Insert and drop temp table
 	INSERT INTO #Data
-	SELECT RowNum,
+	SELECT 
 		sporttype,username,nickname,
 		bettype,leagueID,transid,matchcode,
 		Race,homeID,awayID,hdp1, hdp2, 
@@ -665,7 +660,6 @@ BEGIN
 	
 	CREATE TABLE #BetData14
 	(
-		RowNum INT,
 		oddsid INT,
 		Sporttype INT,
 		Username nvarchar(50),
@@ -716,9 +710,7 @@ BEGIN
 
 	-- Get Betdata from bettrans14 and filter by row number	
 	SET @sql = 
-	'SELECT A.* 
-	FROM (SELECT
-		ROW_NUMBER() over(ORDER BY '+ @SortTemp + ')AS RowNum,
+	'SELECT
 		b.oddsid,
 		CAST(NULL AS INT) AS sporttype,
 		b.username,
@@ -784,11 +776,10 @@ BEGIN
 		AND b.status='''+CAST(@status AS VARCHAR(15))+
 		''' AND b.bettype NOT IN (9,29,10)
 		AND b.recommend IN (SELECT custid FROM #TempAg)	
-		AND b.ruben = 1
-	) A WHERE A.RowNum BETWEEN '+CAST(@RowStart AS VARCHAR(50))+' AND '+ CAST(@RowEnd AS VARCHAR(50))
+		AND b.ruben = 1'
 	
 	INSERT INTO #BetData14
-	(RowNum,Oddsid,Sporttype,Username,NickName,Bettype,LeagueID,Transid,Matchcode,Race,HomeID,AwayID,hdp1,hdp2,
+	(Oddsid,Sporttype,Username,NickName,Bettype,LeagueID,Transid,Matchcode,Race,HomeID,AwayID,hdp1,hdp2,
 	odds,status,stake,Winlost,LicenseeWL,comm,PlayerComm,transdate,Winlostdate,betteam,liveindicator,livehomescore,
 	liveawayscore,MatchID,Betstatus ,IsNeutral,oddstype,betid,currency,RefNO,CustID,showtime,stakeUSD,WinlostUSD,
 	LicenseeWLUSD,commUSD,PlayerCommUSD,stakeEUR,WinlostEUR,LicenseeWLEUR,commEUR,PlayerCommEUR)
@@ -870,7 +861,7 @@ BEGIN
 
 	-- Insert and drop temp table
 	INSERT INTO #Data
-	SELECT RowNum,
+	SELECT 
 		sporttype,username,nickname,
 		bettype,leagueID,transid,matchcode,
 		Race,homeID,awayID,hdp1, hdp2, 
@@ -887,7 +878,20 @@ END
 
 CREATE NONCLUSTERED INDEX IDX_Currency ON #Data(Currency)
 
-SELECT * FROM #Data
+SET @sql = 
+'SELECT A.*
+FROM
+(
+	SELECT
+		ROW_NUMBER() over(ORDER BY '+ @Sort + ') AS RowNum,
+		d.* 
+	FROM #Data d
+) A 
+WHERE A.RowNum BETWEEN '+CAST(@RowStart AS VARCHAR(50))+' AND '+ CAST(@RowEnd AS VARCHAR(50))
++' ORDER BY A.RowNum'
+EXEC (@sql)	
+
+
 --SUM
 SELECT * INTO #TempExchangeSum 
 FROM Lrf_f_GetExchangeDaily(@wldate,@wldate)
@@ -1016,6 +1020,9 @@ DROP TABLE #Currency
 DROP TABLE #TempExchange
 DROP TABLE #TempExchangeSum
 DROP TABLE #Data
+DROP TABLE #TmpCondBettype
+DROP TABLE #TempAg
+DROP TABLE #BettransDetail
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinlossDaily] TO [bodbLicenseeNet] AS [dbo]
 GO

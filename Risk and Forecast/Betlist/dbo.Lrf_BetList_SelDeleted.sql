@@ -1,4 +1,13 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_BetList_SelDeleted]
+﻿USE [bodb02]
+GO
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+ALTER PROCEDURE [dbo].[Lrf_BetList_SelDeleted]
 	@LicenseeID INT ,
 	@UserID		INT,
 	@CustID INT,
@@ -29,6 +38,7 @@ Revisions:
 	- 20130514@Jim:Restrict permission of Licensee Users by currency
 	- 20130809@Jim: offer Virtual Horse Racing
 	- 20140403@Hannah: offer Keno
+	- 20140521@Jim: fix bug not show outright tikect  (bug #16525)
 Param's Explanation:
 + @CustID: AgentID
 */
@@ -172,7 +182,7 @@ WHERE
 	AND b.recommend = @recommend
 	AND b.statusID IN (101,102)
 	AND b.bettype NOT BETWEEN 1501 AND 1599	
-	
+----  Outright/Horse Racing
 UNION ALL
 SELECT 
 	l.Sporttype,
@@ -182,7 +192,7 @@ SELECT
 	b.Transdate,   
 	b.winlostdate,  
 	b.refno, 
-	CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN vhr.HomeID ELSE m.HomeID END ,  
+	m.HomeID,  
 	0 AS AwayID,  
 	'' AS Betteam,    
 	Bettype, 
@@ -196,11 +206,11 @@ SELECT
 	0 AS Liveindicator, 
 	0 AS Livehomescore, 
 	0 AS Liveawayscore,  
-	CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN  vhr.LeagueID ELSE m.LeagueID END,
-	CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN vhr.EventID ELSE b.matchID END AS matchid,
-	CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN vhr.matchcode ELSE m.matchcode END,
-	CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN vhr.groupmatch ELSE m.groupmatch END AS Race,
-	CASE WHEN b.bettype IN (1231, 1232, 1233, 1237, 1238) THEN vhr.eventdate ELSE m.eventdate END ,
+	m.LeagueID ,
+	b.matchID,
+	m.matchcode,
+	m.groupmatch AS Race,
+	m.eventdate ,
 	b.IP AS IP,
 	CONVERT(BIT,0) AS IsNeutral,
 	b.betid,
@@ -212,8 +222,51 @@ FROM
 				FROM outright (NOLOCK) WHERE eventdate > DATEADD(DAY,-3,CURRENT_TIMESTAMP)
 				) AS m ON b.matchid = m.orid
 	INNER JOIN league l WITH (NOLOCK) ON m.leagueid = l.leagueid
+WHERE		
+	b.bettype in (10,31,32,33,41,42,43)
+	AND b.recommend = @recommend
+	AND b.custid = @CustID
+	AND b.statusID IN (101,102)	
+--- end Outright/Horse Racing	
+--- virtual horse racing
+UNION ALL
+SELECT 
+	vhr.Sporttype,
+	b.Username,  
+	b.CustID, 
+	b.TransID,     
+	b.Transdate,   
+	b.winlostdate,  
+	b.refno, 
+	vhr.HomeID  ,  
+	0 AS AwayID,  
+	'' AS Betteam,    
+	Bettype, 
+	0 AS Hdp1,    
+	0 AS Hdp2, 
+	modds,   
+	0 AS OddsType, 
+	b.odds AS odds,
+	b.Stake,  
+	b.status,
+	0 AS Liveindicator, 
+	0 AS Livehomescore, 
+	0 AS Liveawayscore,  
+	vhr.LeagueID,
+	vhr.EventID AS matchid,
+	vhr.matchcode ,
+	vhr.groupmatch AS Race,
+	vhr.eventdate ,
+	b.IP AS IP,
+	CONVERT(BIT,0) AS IsNeutral,
+	b.betid,
+	b.currency,
+	'' AS ShowTime
+FROM 
+	bettrans AS b WITH (NOLOCK)
 	INNER JOIN (
-				SELECT vso.RacerID as homeid,
+				SELECT  vsr.SportType,
+						vso.RacerID as homeid,
 						vsr.LeagueID,
 						vsr.EventID,
 						vso.Orid,
@@ -226,7 +279,7 @@ FROM
 				) as vhr ON b.oddsid=vhr.Orid
 				
 WHERE		
-	b.bettype in (10,31,32,33,41,42,43,1231, 1232, 1233, 1237, 1238 )
+	b.bettype in (1231, 1232, 1233, 1237, 1238 )
 	AND b.recommend = @recommend
 	AND b.custid = @CustID
 	AND b.statusID IN (101,102)
@@ -319,11 +372,9 @@ SELECT * FROM @BettransDetail
 ORDER BY RefNo,Bettype 
 
 DROP TABLE #TempExchange 
-DROP TABLE #Data 
-
+DROP TABLE #Data
 GO
 
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelDeleted] TO [bodbLicenseeNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelDeleted] TO [vnteam]
-
