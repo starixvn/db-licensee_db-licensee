@@ -10,6 +10,8 @@ AS
   - 20140310@Francis: support Keno product
   - 20140320@Francis: change db06.bodb02 link server name to alias name dbacc.bodb02
   - 20140418@Victor: include RNG Casino 23002 tickets to Outstanding formula
+  - 20140422@Victor: support Playtech Casino procduct
+  - 20140515@Victor: Change Playtech Casino summary data process
                  
  Param's Explanation:  
  • @winlostdate: The date need to summary  
@@ -33,6 +35,7 @@ BEGIN
 	TRUNCATE TABLE rptDepwinlost_staging
 	TRUNCATE TABLE rptDepWinlostByProduct_staging
 	TRUNCATE TABLE rptDepWinlost_Transfer3rdOthers_Staging
+	TRUNCATE TABLE rptDepwinlost_PlaytechCS_staging
 END
   
 declare @TempCustID as table (custid bigint)  
@@ -111,7 +114,7 @@ USING (SELECT s.winlostdate, s.custid, s.currency, s.recommend, s.mrecommend, s.
 				source.Outstanding,
 				0, 0, 0, 0, 0, 0);
 
-DROP TABLE dbo.#tempDepWinlost_staging
+DROP TABLE #tempDepWinlost_staging
 
 INSERT INTO dbo.rptDepWinlostByProduct_staging(winlostdate, custid, sporttype, turnover, drawTO, winlost, playercomm, betcount, outstanding)
 SELECT  
@@ -197,6 +200,9 @@ USING (SELECT s.winlostdate, s.custid, s.sporttype, s.turnover, s.betcount, s.ou
 	    VALUES (source.winlostdate, source.custid, source.sporttype, source.turnover, 0, 0, 0, source.betcount, source.outstanding);
 
 DROP TABLE #tempDepWinlostByProduct_staging
+
+-- Execute SP to insert Playtech Casino data to staging tables
+EXEC Task_DEPOSIT_PlaytechCS_DailySummaryRealtime
 
 INSERT INTO dbo.rptDepWinlost_Transfer3rdOthers_Staging (winlostdate,CustId,Currency,Recommend,MRecommend,SRecommend,PartnerId,TransferAmount)
 SELECT @date, 

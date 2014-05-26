@@ -32,6 +32,8 @@ AS
 		- 20131014@Jim: support Virtual Tennis
 		- 20131128@Jim: revert code to Group by All Virtual Sport into sporttypeID=180
 		- 20140310@Francis: support Keno product
+		- 20140422@Victor: support Playtech Casino procduct
+		- 20140515@Victor: Change Playtech Casino summary data process
 	Param's Explanation:
 	• @date: The date need to summary
 */
@@ -208,6 +210,9 @@ select @date, custid, sporttype, turnover, drawTO, winlost, playercomm, betcount
 from #DataByProduct
 
 DROP TABLE #DataByProduct
+
+-- Execute SP to insert data for Playtech Casino
+EXEC Task_DOT_PlaytechCS_DailySummary @winlostdate = @date
 
 /* Fill data to rptDepWinlost_Transfer3rdOthers */
 CREATE TABLE #rptDepWinlost_Transfer3rdOthers (
