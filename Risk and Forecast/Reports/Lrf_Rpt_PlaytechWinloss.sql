@@ -15,6 +15,7 @@ AS
    
     Revisions:  
 		- 20140513@Hannah: Add Progressive share and win values
+		- 20140527@Hannah: Modify NetGaming values
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
 	  + @BackupDay: The day we move tickets to rptDepWinlostByProduct_bk
@@ -89,7 +90,7 @@ BEGIN
 		SUM(r.BetCount) AS BetCount,
 		SUM(ProgressiveShare) AS PShare,
 		SUM(ProgressiveWin) AS PWin,
-		SUM(NetGaming) AS NetGaming
+		(-SUM(r.winlost) - SUM(ProgressiveShare))AS NetGaming
 	
 	FROM 
 		bodb_report.dbo.rptDepWinlost_PlaytechCS r WITH ( NOLOCK)

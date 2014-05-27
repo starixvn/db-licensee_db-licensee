@@ -19,6 +19,7 @@ AS
    
     Revisions:  
 		- 20140513@Hannah: Add Progressive share and win values
+		- 20140527@Hannah: Modify NetGaming values
 	Param's Explanation:  
 	  + @CustID: AgentID  
 	  + @BaseCurrency (input currencyID): 2-MYR ; 3-USD; 6-EUR
@@ -103,7 +104,7 @@ BEGIN
 		SUM(r.BetCount) AS BetCount,
 		SUM(ProgressiveShare) AS PShare,
 		SUM(ProgressiveWin) AS PWin,
-		SUM(NetGaming) AS NetGaming	
+		(-SUM(r.winlost) - SUM(ProgressiveShare)) AS NetGaming	
 	FROM 
 		bodb_report.dbo.rptDepWinlost_PlaytechCS r WITH ( NOLOCK)
 		INNER JOIN bodb02.dbo.custInfo ci WITH ( NOLOCK) ON ci.CustID = r.CustID
