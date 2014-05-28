@@ -12,7 +12,8 @@ AS
  Task : Summary data for deposit member  
  DB: DBRPT.bodb_report
  Revisions:   
-  - 20140514@Victor: create SP   
+  - 20140514@Victor: create SP  
+  - 20140528@Victor: remove NetGaming column 
                  
  Param's Explanation:  
 */  
@@ -39,7 +40,6 @@ SELECT winlostdate
 	,Outstanding
 	,PShare
 	,PWin
-	,NetGaming
 INTO #TEMP	
 FROM OPENXML(@_hdoc,'/root/r',2) 
 WITH (
@@ -55,7 +55,6 @@ WITH (
 	,Outstanding money '@e7'
 	,PShare money '@e8'
 	,PWin money '@e9'
-	,NetGaming money '@f0'
  ) 
  
 exec sp_xml_removedocument @_hdoc	
@@ -71,7 +70,6 @@ UPDATE d
 		,Outstanding = s.Outstanding
 		,ProgressiveShare = s.PShare
 		,ProgressiveWin = s.PWin
-		,NetGaming = s.NetGaming
 OUTPUT inserted.custid, inserted.winlostdate, inserted.sporttype into @updated_list		
 FROM dbo.rptDepwinlost_PlaytechCS d WITH(ROWLOCK, UPDLOCK)
 	INNER JOIN #TEMP s on d.custid = s.custid and d.winlostdate = s.winlostdate and d.sporttype = s.sporttype
@@ -81,9 +79,9 @@ FROM #TEMP D
 	INNER JOIN @updated_list s on d.custid = s.custid and d.winlostdate = s.winlostdate and d.sporttype = s.sporttype
 
 INSERT INTO dbo.rptDepwinlost_PlaytechCS (
-	winlostdate, custid, sporttype, turnover, drawTO, winlost, playercomm, BetCount, drawBetCount , Outstanding, ProgressiveShare, ProgressiveWin, NetGaming
+	winlostdate, custid, sporttype, turnover, drawTO, winlost, playercomm, BetCount, drawBetCount , Outstanding, ProgressiveShare, ProgressiveWin
 )
-SELECT winlostdate, custid, sporttype, turnover, drawTO, winlost, playercomm, BetCount, drawBetCount, Outstanding, PShare, PWin, NetGaming
+SELECT winlostdate, custid, sporttype, turnover, drawTO, winlost, playercomm, BetCount, drawBetCount, Outstanding, PShare, PWin
 FROM #TEMP
 
 DROP TABLE #TEMP

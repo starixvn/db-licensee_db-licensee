@@ -7,6 +7,7 @@ AS
 	- 20140515@Victor: create SP
 	- 20140519@Victor: update NetGaming formula
 	- 20140521@Victor: Get customer WL in a whole day instead of new tickets only
+	- 20140528@Victor: Remove NetGaming column
  Param's Explanation:  
 
  - @winlostdate: The date need to summary
@@ -23,8 +24,7 @@ BEGIN TRY
 								drawBetCount INT,
 								Outstanding MONEY,
 								PShare MONEY,
-								PWin MONEY,
-								NetGaming MONEY)
+								PWin MONEY)
 
 	CREATE TABLE #CustList (custid INT)
 
@@ -49,7 +49,7 @@ BEGIN TRY
 		INSERT INTO #CustList (CustID)
 		SELECT DISTINCT CustId FROM DBPTCS.bodb_PlaytechCS.dbo.bettrans_PlaytechCS b WITH (NOLOCK) WHERE tstamp > @_tstamp AND tstamp <= @new_tstamp AND Winlostdate = @Today
 
-		INSERT INTO #PlaytechData (custid, sporttype, turnover, drawTO, winlost, playercomm, BetCount, drawBetCount, Outstanding, PShare, PWin, NetGaming)
+		INSERT INTO #PlaytechData (custid, sporttype, turnover, drawTO, winlost, playercomm, BetCount, drawBetCount, Outstanding, PShare, PWin)
 		SELECT 
 			b.CustID, 
 			254 AS SportType,
@@ -61,18 +61,17 @@ BEGIN TRY
 			ISNULL(SUM(CASE WHEN b.StatusID = 111 THEN 1 ELSE 0 END),0) AS DrawBetCount,
 			0 AS Outstanding,
 			ISNULL(SUM(b.ProgressiveShare),0) AS ProgressiveShare,
-			ISNULL(SUM(b.ProgressiveWin),0) AS ProgressiveWin,
-			ISNULL(SUM(-b.Winlost + b.Actual_Stake - b.ProgressiveShare + b.ProgressiveWin),0) AS NetGaming
+			ISNULL(SUM(b.ProgressiveWin),0) AS ProgressiveWin
 		FROM DBPTCS.bodb_PlaytechCS.dbo.bettrans_PlaytechCS b WITH (ROWLOCK)
 		WHERE b.CustID IN (SELECT custid FROM #CustList) AND Winlostdate = @Today
 		GROUP BY b.CustID
 
 		MERGE dbo.rptDepWinlost_PlaytechCS_staging AS target
 		USING (SELECT @Today AS Winlostdate,custid, sporttype, turnover, drawTO, winlost, playercomm, 
-					BetCount, drawBetCount, Outstanding, PShare, PWin, NetGaming
+					BetCount, drawBetCount, Outstanding, PShare, PWin
 				FROM #PlaytechData) 
 			   AS source (Winlostdate, custid, sporttype, turnover, drawTO, winlost, playercomm, 
-					BetCount, drawBetCount, Outstanding, PShare, PWin, NetGaming)
+					BetCount, drawBetCount, Outstanding, PShare, PWin)
 
 				ON (target.winlostdate = source.winlostdate AND target.custid = source.custid)
 			WHEN MATCHED THEN 
@@ -85,13 +84,12 @@ BEGIN TRY
 							target.drawBetCount = source.drawBetCount,
 							target.Outstanding = source.Outstanding,
 							target.ProgressiveShare = source.PShare,
-							target.ProgressiveWin = source.PWin,
-							target.NetGaming = source.NetGaming
+							target.ProgressiveWin = source.PWin
 			WHEN NOT MATCHED THEN	
 				INSERT ( Winlostdate,custid, sporttype, turnover, drawTO, winlost, playercomm, 
-						BetCount, drawBetCount, Outstanding, ProgressiveShare, ProgressiveWin, NetGaming)
+						BetCount, drawBetCount, Outstanding, ProgressiveShare, ProgressiveWin)
 				VALUES (source.winlostdate, source.custid, source.sporttype, source.turnover, source.drawTO, source.winlost, source.playercomm,
-						source.betcount, source.drawBetCount, source.Outstanding, source.PShare, source.PWin, source.NetGaming);
+						source.betcount, source.drawBetCount, source.Outstanding, source.PShare, source.PWin);
 
 		INSERT INTO dbo.rptDepWinlostByProduct_staging (winlostdate, custid, sporttype, turnover, 
 														drawTO, winlost, playercomm, BetCount, Outstanding)

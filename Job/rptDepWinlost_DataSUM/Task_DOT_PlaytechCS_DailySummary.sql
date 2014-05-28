@@ -7,6 +7,7 @@ AS
  Revisions:   
 	- 20140514@Victor: create SP
 	- 20140519@Victor: update NetGaming formula
+	- 20140528@Victor: remove NetGaming column
  Param's Explanation:  
 
  - @winlostdate: The date need to summary
@@ -27,12 +28,11 @@ BEGIN TRY
 								drawBetCount INT,
 								Outstanding MONEY,
 								PShare MONEY,
-								PWin MONEY,
-								NetGaming MONEY)
+								PWin MONEY)
 
 	IF @winlostdate >= @BackupDay -- Get data in bettrans_PlaytechCS table
 	BEGIN
-		INSERT INTO #PlaytechData (custid, sporttype, turnover, drawTO, winlost, playercomm, BetCount, drawBetCount, Outstanding, PShare, PWin, NetGaming)
+		INSERT INTO #PlaytechData (custid, sporttype, turnover, drawTO, winlost, playercomm, BetCount, drawBetCount, Outstanding, PShare, PWin)
 		SELECT b.CustID, 
 			254 AS SportType,
 			ISNULL(SUM(b.Stake),0) AS Turnover,
@@ -43,15 +43,14 @@ BEGIN TRY
 			ISNULL(SUM(CASE WHEN b.StatusID = 111 THEN 1 ELSE 0 END),0) AS DrawBetCount,
 			0 AS Outstanding,
 			ISNULL(SUM(b.ProgressiveShare),0) AS ProgressiveShare,
-			ISNULL(SUM(b.ProgressiveWin),0) AS ProgressiveWin,
-			ISNULL(SUM(-b.Winlost + b.Actual_Stake - b.ProgressiveShare + b.ProgressiveWin),0) AS NetGaming
+			ISNULL(SUM(b.ProgressiveWin),0) AS ProgressiveWin
 		FROM DBPTCS.bodb_PlaytechCS.dbo.bettrans_PlaytechCS b WITH (ROWLOCK)
 		WHERE Winlostdate = @winlostdate
 		GROUP BY b.CustID
 	END
 	ELSE -- Get data in bettrans_PlaytechCS_bk table
 	BEGIN
-		INSERT INTO #PlaytechData (custid, sporttype, turnover, drawTO, winlost, playercomm, BetCount, drawBetCount, Outstanding, PShare, PWin, NetGaming)
+		INSERT INTO #PlaytechData (custid, sporttype, turnover, drawTO, winlost, playercomm, BetCount, drawBetCount, Outstanding, PShare, PWin)
 		SELECT b.CustID, 
 			254 AS SportType,
 			ISNULL(SUM(b.Stake),0) AS Turnover,
@@ -62,8 +61,7 @@ BEGIN TRY
 			ISNULL(SUM(CASE WHEN b.StatusID = 111 THEN 1 ELSE 0 END),0) AS DrawBetCount,
 			0 AS Outstanding,
 			ISNULL(SUM(b.ProgressiveShare),0) AS ProgressiveShare,
-			ISNULL(SUM(b.ProgressiveWin),0) AS ProgressiveWin,
-			ISNULL(SUM(-b.Winlost + b.Actual_Stake - b.ProgressiveShare + b.ProgressiveWin),0) AS NetGaming
+			ISNULL(SUM(b.ProgressiveWin),0) AS ProgressiveWin
 		FROM bodb_archive.dbo.bettrans_PlaytechCS_bk b WITH (ROWLOCK)
 		WHERE Winlostdate = @winlostdate
 		GROUP BY b.CustID
@@ -73,9 +71,9 @@ BEGIN TRY
 	DELETE FROM bodb_report.dbo.rptDepWinlost_PlaytechCS WHERE Winlostdate = @Winlostdate
 
 	INSERT INTO bodb_report.dbo.rptDepWinlost_PlaytechCS (winlostdate,custid,sporttype,turnover,drawTO,winlost,playercomm,BetCount,
-															drawBetCount,Outstanding,ProgressiveShare,ProgressiveWin,NetGaming)
+															drawBetCount,Outstanding,ProgressiveShare,ProgressiveWin)
 	SELECT @winlostdate, custid, sporttype, turnover, drawTO, winlost, playercomm, BetCount, 
-		drawBetCount, Outstanding, PShare, PWin, NetGaming
+		drawBetCount, Outstanding, PShare, PWin
 	FROM #PlaytechData
 
 	-- Insert data to rptDepWinlostByProduct

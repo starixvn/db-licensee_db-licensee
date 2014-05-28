@@ -14,6 +14,7 @@ AS
   - 20121001@viet: create SP   
   - 20130626@Don: Add one table rptDepWinlost_Transfer3rdOthers
   - 20140515@Victor: Add one table rptDepWinlost_PlaytechCS and change server Alias name (DB06 -> DBACC)
+  - 20140528@Victor: Remove NetGaming column
 */  
 SET NOCOUNT ON	
 	declare @cnt int, @strXML1 varchar(max), @strXML2 varchar(max), @strXML3 varchar(max), @strXML4 varchar(max)
@@ -101,7 +102,6 @@ SET NOCOUNT ON
 			,Outstanding '@e7'
 			,ProgressiveShare '@e8'
 			,ProgressiveWin '@e9'
-			,NetGaming '@f0'
 		FROM dbo.rptDepWinlost_PlaytechCS_staging WITH(NOLOCK)
 		FOR XML PATH('r'), ROOT ('root')
 	)
