@@ -44,7 +44,8 @@ BEGIN
 				SystemID = 1 
 				AND LicenseeID IN (SELECT LicenseeID FROM @TempData)
 
-			INSERT INTO bodb_Licensee.dbo.CurrencyUser(usrID,LicenseeID,CurrencyID,SystemID,isActive)				SELECT usrID,LicenseeID,CurrencyID,SystemID,isActive 
+			INSERT INTO bodb_Licensee.dbo.CurrencyUser(usrID,LicenseeID,CurrencyID,SystemID,isActive)
+				SELECT usrID,LicenseeID,CurrencyID,SystemID,isActive 
 				FROM DBLIC.bodb_Licensee.dbo.CurrencyUser WITH(NOLOCK)
 				WHERE 
 					SystemID = 1 

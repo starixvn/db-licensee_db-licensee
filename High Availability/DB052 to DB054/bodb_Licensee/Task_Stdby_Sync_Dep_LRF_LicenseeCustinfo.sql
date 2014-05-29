@@ -42,7 +42,8 @@ BEGIN
 			DELETE bodb_Licensee.dbo.LicenseeCustinfo 
 			WHERE recommend IN (SELECT recommend FROM @TempData)
 
-			INSERT INTO bodb_Licensee.dbo.LicenseeCustinfo(Custid,recommend,username,username2,currency,SpecialLevel)				SELECT Custid,recommend,username,username2,currency,SpecialLevel 
+			INSERT INTO bodb_Licensee.dbo.LicenseeCustinfo(Custid,recommend,username,username2,currency,SpecialLevel)
+				SELECT Custid,recommend,username,username2,currency,SpecialLevel 
 				FROM DBLIC.bodb_Licensee.dbo.LicenseeCustinfo WITH(NOLOCK)
 				WHERE recommend IN (SELECT recommend FROM @TempData)
 
