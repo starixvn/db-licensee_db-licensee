@@ -58,10 +58,13 @@ BEGIN
 	SELECT LicenseeID,Currency,ugroup,ModifyBy,ModifyDate FROM DBLIC.bodb_Licensee.dbo.LicenseeCurrencyBAGroup WITH(NOLOCK)
 
 	---------------------------
-	TRUNCATE TABLE bodb_Licensee.dbo.LicenseeCust
+	DECLARE @MAX_Backup_CustID INT
+	SELECT @MAX_Backup_CustID = ISNULL(MAX(CustID), 0) FROM bodb_Licensee.dbo.LicenseeCust WITH(NOLOCK) WHERE RoleID = 2
 
 	INSERT INTO bodb_Licensee.dbo.LicenseeCust(LicenseeID,CustID,RoleID,Currency,CurrencyName,Description)
-	SELECT LicenseeID,CustID,RoleID,Currency,CurrencyName,Description FROM DBLIC.bodb_Licensee.dbo.LicenseeCust WITH(NOLOCK)
+		SELECT LicenseeID,CustID,RoleID,Currency,CurrencyName,Description 
+		FROM DBLIC.bodb_Licensee.dbo.LicenseeCust WITH(NOLOCK)
+		WHERE CustID > @MAX_Backup_CustID
 
 	---------------------------
 	TRUNCATE TABLE bodb_Licensee.dbo.LicenseeCustComm
