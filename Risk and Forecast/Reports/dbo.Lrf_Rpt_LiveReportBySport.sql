@@ -359,6 +359,6 @@ ELSE
 	EXEC (@sql)
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_LiveReportSummary] TO [bodbLicenseeNet]
+GRANT EXECUTE ON [dbo].[Lrf_Rpt_LiveReportBySport] TO [bodbLicenseeNet]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LiveReportSummary] TO [vnteam] 
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LiveReportBySport] TO [vnteam] 
