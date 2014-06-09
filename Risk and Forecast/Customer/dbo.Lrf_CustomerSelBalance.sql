@@ -38,6 +38,7 @@ Revisions:
 	- 20131007@Jim: offer Virtual Tennis
 	- 20140207@Florent: Offer Keno
 	- 20140509@Florent: Fix bug get wrong currency rate
+	- 20140530@Francis: Enhance performance
 */
 SET NOCOUNT ON
 
@@ -234,7 +235,7 @@ INSERT INTO @SumOutstanding (currency,outstanding)
     WHERE 
 	    --b.productid =202--Keno 
 	    --AND 
-		b.statusid =0 -- running
+		b.statusid = 0 -- running
     GROUP BY s.currency
 	
 SELECT 
@@ -250,9 +251,32 @@ FROM
 	
 --****Begin For Yesterday and Today Winloss Part***	
 --Yesterday/Today Licensee WL
-;WITH cte_bettrans
-AS 
-(
+CREATE TABLE #Temp_Bettrans
+		     ( srecommend int
+			   ,winlostdate smalldatetime
+			   ,bettype smallint
+			   ,statusID tinyint
+			   ,recommend int
+			   ,winlost money
+			   ,tpositiontaking smallmoney
+			   ,comm money
+		       ,playercomm money
+			   ,awinlost money
+		       ,actual_stake money
+			 )
+
+INSERT INTO #Temp_Bettrans (srecommend
+							,winlostdate
+							,bettype
+							,statusID
+							,recommend
+							,winlost
+							,tpositiontaking
+							,comm
+							,playercomm
+							,awinlost
+							,actual_stake
+							)
 SELECT srecommend
 	  ,winlostdate
 	  ,bettype
@@ -264,18 +288,16 @@ SELECT srecommend
 	  ,playercomm
 	  ,awinlost
 	  ,actual_stake
-	  ,b.currency
 FROM dbo.bettrans b WITH(NOLOCK,INDEX=IX_srecommend) 
 WHERE 
 	srecommend IN (SELECT CustID FROM @Super)
-	AND b.winlostdate BETWEEN @MoveBetsDay AND @Today
-	--AND b.bettype <= 1299 
+	AND b.winlostdate BETWEEN @MoveBetsDay AND @Today 
 	AND b.bettype <= 1599 
 	AND b.statusID IN (111,112,113)	
-)
+
 INSERT INTO @LicenseeWL (winlostdate,currency,LicenseeWL,AmtDuetoBA,AmtDuetoRB,WinlossRB,CommBA,CommRB,PlayerComm)
 SELECT
-	b.winlostdate,b.currency,
+	b.winlostdate,a.currency,
 	
 	ISNULL(- SUM(
 			CASE WHEN (
@@ -302,9 +324,9 @@ SELECT
 	ISNULL(SUM ( CASE WHEN b.bettype IN (31,32,33) THEN comm  ELSE 0 END),0) AS CommRB,
 	ISNULL(SUM (  playercomm ),0) AS PlayerComm
 	
-FROM cte_bettrans b 
+FROM #Temp_Bettrans b 
 	INNER JOIN @TempAg a ON b.recommend = a.custid
-GROUP BY b.winlostdate,b.currency
+GROUP BY b.winlostdate,a.currency
 
 
 SELECT   
@@ -577,6 +599,8 @@ SELECT
 	ISNULL(@TotalMemberActive,0) TotalMemberActive,
 	ISNULL(@TotalMemberClosed,0) TotalMemberClosed
 	,ISNULL(@TotalMemberSuspended,0) TotalMemberSuspended
+
+DROP TABLE #Temp_Bettrans
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_CustomerSelBalance] TO [bodbDownlineNet] AS [dbo]
