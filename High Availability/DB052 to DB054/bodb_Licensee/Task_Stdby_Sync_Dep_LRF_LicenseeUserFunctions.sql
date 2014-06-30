@@ -34,7 +34,7 @@ BEGIN
 	)
 		DELETE ia
 		FROM bodb_Licensee.dbo.LicenseeUserFunctions ia
-			INNER JOIN #temp a ON ia.LicenseeId = a.LicenseeId AND ia.UserId = a.LicenseeId AND ia.FunctionId = a.FunctionId
+			INNER JOIN #temp a ON ia.LicenseeId = a.LicenseeId AND ia.UserId = a.UserId AND ia.FunctionId = a.FunctionId
 	
 	INSERT INTO bodb_Licensee.dbo.LicenseeUserFunctions(UserFuncionId,UserId,FunctionId,LicenseeId)
 		SELECT UserFuncionId,UserId,FunctionId,LicenseeId 
