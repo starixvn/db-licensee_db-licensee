@@ -30,7 +30,7 @@ BEGIN
 	IF EXISTS(
 		SELECT * 
 		FROM bodb_Licensee.dbo.LicenseeUserFunctions ia WITH(NOLOCK) 
-			INNER JOIN #temp a ON ia.LicenseeId = a.LicenseeId AND ia.UserId = a.LicenseeId AND ia.FunctionId = a.FunctionId
+			INNER JOIN #temp a ON ia.LicenseeId = a.LicenseeId AND ia.UserId = a.UserId AND ia.FunctionId = a.FunctionId
 	)
 		DELETE ia
 		FROM bodb_Licensee.dbo.LicenseeUserFunctions ia
@@ -41,6 +41,8 @@ BEGIN
 		FROM #temp
 
 	SET IDENTITY_INSERT bodb_Licensee.dbo.LicenseeUserFunctions OFF
+	
+	DROP TABLE #temp
 END
 
 
