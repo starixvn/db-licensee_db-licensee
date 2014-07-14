@@ -1,15 +1,13 @@
-USE [CustDB]
+﻿USE [CustDB]
 GO
-
 
 SET ANSI_NULLS ON
 GO
-
 SET QUOTED_IDENTIFIER ON
 GO
 
 
-CREATE PROCEDURE [dbo].[Lrf_CustomerUpdMember_MinMaxBetKN]
+ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMember_MinMaxBetKN]
 	@UserID INT =0,
 	@Custid INT,
 	@DataXML VARCHAR(max),
@@ -25,8 +23,10 @@ DB: DBTXN.CustDB
 Original :
 
 Revisions:
-		
-			
+		- 20140605@Jim: use table DBAGE.bodb02.dbo.gametype_tmp instead of bodb02.dbo.Gametype for testing on UAT env
+		- 20140606@Jim: exclude bettype 1511,1513 in temporarity 
+		- 20140606@Jim: fix bug wrong when get value for parameter  @minbet_old
+		- 20140714@Jim: support to active bettype 	1511,1513 (Kentucky,Michigan : #redmineID :17215)
 Param's Explanation:
 @dataXML Format :
 	 '<settings>
@@ -88,15 +88,19 @@ IF EXISTS ( SELECT 1 FROM #Setting
 		SELECT @ErrCode = 2
 		SELECT @ErrMsg = 	CASE @Language 
 							WHEN 'en-us' THEN 'Wrong Min bet/ Max bet/ Max per match .'
-							WHEN 'zh-cn' THEN N'????/????/?????????.'
-							WHEN 'zh-tw' THEN N'????/????/?????????.'
-							WHEN 'th-TH' THEN N'??????????????????????????????????????????/ ??????/???????????????????????? .'
+							WHEN 'zh-cn' THEN N'最低投注/最高投注/单场最高投注不正确.'
+							WHEN 'zh-tw' THEN N'最低投注/最高投注/單場最高投注不正確.'
+							WHEN 'th-TH' THEN N'การกำหนดจำนวนเงินสำหรับการวางเดิมพันต่ำสุด/ สูงสุด/สูงสดต่อรายการไม่ถูกต้อง .'
 							WHEN 'ja-JP' THEN N'Wrong Min bet/ Max bet/ Max per match.'
-							WHEN 'ko-KR' THEN N'??? ?? ??/?? ??/??? ?? .'
+							WHEN 'ko-KR' THEN N'잘못된 최소 배팅/최대 배팅/경기당 최대 .'
 							ELSE N'Wrong Min bet/ Max bet/ Max per match .'
 					END
 		RETURN
 	END
+/*
+DELETE #Setting -- for temporarity (waiting confirmation from 12bet)
+WHERE GameTypeID IN (11,13)
+*/
 SELECT @i=MIN(ID)
 	   ,@maxID=MAX(ID)		
 FROM   #Setting
@@ -112,14 +116,16 @@ BEGIN
 	WHERE ID=@i
 
 	SELECT @GametypeName=GametypeName
-	FROM bodb02.dbo.GameType WITH (NOLOCK)
+	---FROM DBAGE.bodb02.dbo.gametype_tmp WITH (NOLOCK) -- for UAT  env
+	FROM bodb02.dbo.GameType WITH (NOLOCK)        -- for Prod env
 	WHERE GameTypeID=@GameTypeID
 
 	SELECT
 			@MinMinBet = Max(CASE WHEN MinBet = 0 THEN 0 ELSE MinBet END), 
 			@MaxMaxBet = Min(CASE WHEN MaxBet = 0 THEN 0 ELSE MaxBet END)
 	FROM CustGameType cg WITH (NOLOCK)
-		INNER JOIN bodb02.dbo.GameType gt WITH (NOLOCK) ON cg.GameTypeID = gt.GameTypeID
+		--INNER JOIN DBAGE.bodb02.dbo.gametype_tmp gt WITH (NOLOCK) ON cg.GameTypeID = gt.GameTypeID  -- for UAT  env
+		INNER JOIN bodb02.dbo.GameType gt WITH (NOLOCK) ON cg.GameTypeID = gt.GameTypeID         -- for Prod env
 		INNER JOIN custinfo AS ci WITH (NOLOCK) ON (cg.custid = ci.recommend OR cg.custid = ci.mrecommend OR cg.custid = ci.srecommend)
 	WHERE ci.custid = @recommend  
 		AND cg.GameTypeID=@GameTypeID
@@ -128,7 +134,8 @@ BEGIN
 	FROM 
 		CustGameType AS cg WITH (NOLOCK)
 		INNER JOIN custinfo AS ci WITH (NOLOCK) ON  (cg.custid = ci.recommend OR cg.custid = ci.mrecommend OR cg.custid = ci.srecommend)
-		INNER JOIN bodb02.dbo.GameType gt WITH (NOLOCK) ON cg.GameTypeID = gt.GameTypeID
+		--INNER JOIN DBAGE.bodb02.dbo.gametype_tmp gt WITH (NOLOCK) ON cg.GameTypeID = gt.GameTypeID   -- for UAT  env
+		INNER JOIN bodb02.dbo.GameType gt WITH (NOLOCK) ON cg.GameTypeID = gt.GameTypeID           -- for Prod env
 	WHERE ci.custid = @recommend 
 		AND cg.GameTypeID=@GameTypeID
 
@@ -139,11 +146,11 @@ BEGIN
 			SELECT @ErrMsg =	@UserName + ': '+
 							CASE @Language 
 								WHEN 'en-us' THEN 'min bet must be less than max bet AND max bet must be less than max bet per match'
-								WHEN 'zh-cn' THEN N'????????????,????????????????'
-								WHEN 'zh-tw' THEN N'????????????,????????????????'
-								WHEN 'th-TH' THEN N'?????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????.'
+								WHEN 'zh-cn' THEN N'最低投注不能高于最高投注，最高投注不能高于单场最高投注设定'
+								WHEN 'zh-tw' THEN N'最低投注不能高於最高投注,最高投注不能高於單場最高投注設定'
+								WHEN 'th-TH' THEN N'จำนวนเงินต่ำสุดที่วางเดิมพันได้ต้องน้อยกว่าจำนวนเงินสูงสุดในการวางเดิมพันและจำนวนเงินสูงสุดในการวางเดิมพันต้องน้อยกว่าจำนวนเงินสูงสุดของเงินเดิมพันต่อเกม.'
 								WHEN 'ja-JP' THEN N'min bet must be less than max bet AND max bet must be less than max bet per match'
-								WHEN 'ko-KR' THEN N'?? ??? ?? ?? ????? ?? ?? ??? ??? ?? ???? ??? ???.'
+								WHEN 'ko-KR' THEN N'최소 배팅은 최대 배팅 이하이여야 하고 최대 배팅은 경기당 최대 배팅보다 작아야 합니다.'
 								ELSE N'min bet must be less than max bet AND max bet must be less than max bet per match'
 							END						
 							+ char(13) + char(10) + convert(VARCHAR(20), @MinBet) + '-' + convert(VARCHAR(20), @MaxBet) + '-' + convert(VARCHAR(20), @MaxPerMatch), @ErrCode = 108
@@ -159,11 +166,11 @@ BEGIN
 		SELECT @ErrMsg =	@GametypeName + ': ' +
 						CASE @Language 
 							WHEN 'en-us' THEN 'max bet must be equal to or less than Agent max bet'
-							WHEN 'zh-cn' THEN N'?????????????????'
-							WHEN 'zh-tw' THEN N'?????????????????'
-							WHEN 'th-TH' THEN N'??????????????????????????????????? ???? ?????????????????????????????????? '
+							WHEN 'zh-cn' THEN N'最高投注需相等于或少于代理最高投注'
+							WHEN 'zh-tw' THEN N'最高投注需相等於或少於代理最高投注'
+							WHEN 'th-TH' THEN N'จำนวนการวางเดิมพันสูงสุดต้องเท่ากับ หรือ น้อยกว่าราคาเดิมพันสูงสุดของตัวแทน '
 							WHEN 'ja-JP' THEN N'max bet must be equal to or less than Agent max bet'
-							WHEN 'ko-KR' THEN N'?? ??? ????? ?? ?? ????? ???.'
+							WHEN 'ko-KR' THEN N'최대 배팅은 에이전트의 최대 배팅 이하이여야 합니다.'
 							ELSE N'max bet must be equal to or less than Agent max bet'
 						END						
 						+' (' + CONVERT(VARCHAR(20), @MinMinBet) + ').', @ErrCode = 109
@@ -178,11 +185,11 @@ BEGIN
 			SELECT @ErrMsg = @GametypeName+ ': '+
 							CASE @Language 
 								WHEN 'en-us' THEN 'The Max Bet must be equal to or less than the value '
-								WHEN 'zh-cn' THEN N'?????????????????'
-								WHEN 'zh-tw' THEN N'?????????????????'
-								WHEN 'th-TH' THEN N'??????????????????????????????????? ???? ?????????????????????????????????? '
+								WHEN 'zh-cn' THEN N'最高投注需相等于或少于代理最高投注'
+								WHEN 'zh-tw' THEN N'最高投注需相等於或少於代理最高投注'
+								WHEN 'th-TH' THEN N'จำนวนการวางเดิมพันสูงสุดต้องเท่ากับ หรือ น้อยกว่าราคาเดิมพันสูงสุดของตัวแทน '
 								WHEN 'ja-JP' THEN N'max bet must be equal to or less than Agent max bet'
-								WHEN 'ko-KR' THEN N'?? ??? ????? ?? ?? ????? ???'
+								WHEN 'ko-KR' THEN N'최대 배팅은 에이전트의 최대 배팅 이하이여야 합니다'
 								ELSE N'max bet must be equal to or less than Agent max bet'
 							END						
 							+'(' + CONVERT(VARCHAR(20), @MaxMaxBet) + ').', @ErrCode = 110
@@ -197,26 +204,27 @@ BEGIN
 			SELECT @ErrMsg =	@GametypeName + ': '+
 							CASE @Language 
 								WHEN 'en-us' THEN 'The Max Per Match must be equal to or less than the value '
-								WHEN 'zh-cn' THEN N'?????????????????????'
-								WHEN 'zh-tw' THEN N'?????????????????????'
-								WHEN 'th-TH' THEN N'????????????????????????????????????????????????????????????????????????????????????????????????????  '
+								WHEN 'zh-cn' THEN N'单场最高投注需相等于或少于代理单场最高投注'
+								WHEN 'zh-tw' THEN N'單場最高投注需相等於或少於代理單場最高投注'
+								WHEN 'th-TH' THEN N'จำนวนเงินสูงสุดในการเล่นต่อรายการต้องเท่ากับหรือน้อยกว่าจำนวนเงินสูงสุดต่อรายการที่กำหนดไว้ของตัวแทน  '
 								WHEN 'ja-JP' THEN N'Max Per Match must be equal to or less than Agent Max Per Match'
-								WHEN 'ko-KR' THEN N'?? ??? ????? ?? ???? ??? ???'
+								WHEN 'ko-KR' THEN N'최대 경기는 에이전트의 최대 경기보다 작아야 합니다'
 								ELSE N'Max Per Match must be equal to or less than Agent Max Per Match'
 							END						
 							+'(' + CONVERT(VARCHAR(20), @MaxMaxPerMatch) + ').', @ErrCode = 110
 					
 			RETURN
 		END
-
-	SELECT @minbet_old =MIN(ISNULL(minbet,0))
+		
+	SELECT @minbet_old =MAX(ISNULL(minbet,0))
 		   ,@maxbet_old =MAX(ISNULL(maxbet,0))
 		   ,@maxpermatch_old=MAX(ISNULL(MaxPerGameType,0))
 	FROM 
 		CustGameType AS cg WITH (NOLOCK)
 		INNER JOIN custinfo AS ci WITH (NOLOCK)  ON (cg.custid = ci.recommend OR cg.custid = ci.mrecommend OR cg.custid = ci.srecommend)
-		INNER JOIN bodb02.dbo.GameType gt WITH (NOLOCK) ON cg.GameTypeID = gt.GameTypeID
-	WHERE ci.custid = @recommend 
+		--- INNER JOIN DBAGE.bodb02.dbo.gametype_tmp gt WITH (NOLOCK) ON cg.GameTypeID = gt.GameTypeID  -- for UAT  env
+		INNER JOIN bodb02.dbo.GameType gt WITH (NOLOCK) ON cg.GameTypeID = gt.GameTypeID		-- for Prod env
+	WHERE ci.custid =@Custid 
 		AND cg.GameTypeID=@GameTypeID
 
 	IF @MinBet <> @minbet_old OR @MaxBet <> @maxbet_old OR @MaxPerMatch <> @maxpermatch_old
@@ -228,8 +236,9 @@ BEGIN
 				MaxPerGameType =@maxpermatch
 			FROM CustGameType cg WITH (ROWLOCK, UPDLOCK)
 				INNER JOIN custinfo AS ci WITH (NOLOCK) ON cg.CustID = ci.CustID
-				INNER JOIN bodb02.dbo.GameType gt WITH (NOLOCK) ON cg.GameTypeID = gt.GameTypeID
-			WHERE ci.custid = 	@Custid
+				--- INNER JOIN DBAGE.bodb02.dbo.gametype_tmp gt WITH (NOLOCK) ON cg.GameTypeID = gt.GameTypeID  -- for UAT  env
+				INNER JOIN bodb02.dbo.GameType gt WITH (NOLOCK) ON cg.GameTypeID = gt.GameTypeID          -- for Prod env   
+			WHERE ci.custid =@Custid
 				AND cg.GameTypeID=@GameTypeID
 				AND cg.IsDisabled=0
 			IF (@@error <> 0)
@@ -237,11 +246,11 @@ BEGIN
 				SELECT @ErrMsg = @UserName + ': '+
 								CASE @Language 
 									WHEN 'en-us' THEN 'Update process is unsuccessful !'
-									WHEN 'zh-cn' THEN N'??????? !'
-									WHEN 'zh-tw' THEN N'??????? !'
-									WHEN 'th-TH' THEN N'????????????????????????????????????????????!'
-									WHEN 'ja-JP' THEN N'????????????'
-									WHEN 'ko-KR' THEN N'????? ??????.'
+									WHEN 'zh-cn' THEN N'更新程序不成功 !'
+									WHEN 'zh-tw' THEN N'更新程序不成功 !'
+									WHEN 'th-TH' THEN N'ขั้นตอนหรือกระบวนการในการปรับยอดไม่เสร็จสิ้น!'
+									WHEN 'ja-JP' THEN N'アップデート出来ません。'
+									WHEN 'ko-KR' THEN N'업데이트에 실패했습니다.'
 									ELSE N'Update process is unsuccessful !'
 								END, @ErrCode = 115
 				RETURN
@@ -285,10 +294,8 @@ BEGIN
 END	
 
 DROP TABLE #setting
+
 GO
-
-GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMember_MinMaxBetKN] TO [bodbLicenseeNet] AS [dbo]
+GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMember_MinMaxBetKN] TO [bodbLicenseeNet]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerUpdMember_MinMaxBetKN] TO [vnteam] AS [dbo]
-
-
+GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerUpdMember_MinMaxBetKN] TO [vnteam]
