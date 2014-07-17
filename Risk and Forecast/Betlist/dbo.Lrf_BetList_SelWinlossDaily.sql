@@ -76,6 +76,7 @@ Revisions:
 	- 20140421@Hannah: fix bug, add sporttype for Keno
 	- 20140428@Hannah: Sort betlist
 	- 20140520@Hannah: Fix bug Sort betlist
+	- 20140717@Hannah: HotFix for Exporting excel file
 Param's Explanation: 	
 */
 SET NOCOUNT ON
@@ -285,7 +286,10 @@ FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )
 		INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
 
 DECLARE @RowStart INT, @RowEnd INT  
-SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1
+SELECT @PageIndex = @PageIndex - 1
+SELECT @RowStart = @PageSize * @PageIndex + 1
+SELECT @RowEnd = (@RowStart -1)  + @PageSize
+
 DECLARE @sql NVARCHAR(2500)
 DECLARE @SortTemp VARCHAR(250) 
 DECLARE @LicenseeWL VARCHAR(150) 
