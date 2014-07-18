@@ -24,7 +24,6 @@ Param's Explanation:
 
 /*
 	Lrf_CustomerSelEditKN @custid=1368168
-
 */
 SET NOCOUNT ON
 
@@ -33,7 +32,12 @@ DECLARE @MinBet_Max MONEY
 		, @MaxPerMatch_Min MONEY
 		, @MaxPerMatch_Max MONEY
 		, @MaxPerBallv161_Max MONEY
-				
+		,@recommend 		 INT
+SELECT @recommend=recommend
+FROM dbo.Customer WITH (NOLOCK)
+WHERE roleid=1 
+	AND CustID=@custid		
+	
 SELECT 
 	@MinBet_Max = Max(CASE WHEN MinBet = 0 THEN NULL ELSE MinBet END), 
 	@MaxBet_Min = Min(CASE WHEN MaxBet = 0 THEN NULL ELSE MaxBet END),
@@ -42,10 +46,10 @@ SELECT
 	
 FROM 
 	CustGameType AS cg WITH (NOLOCK)
-	INNER JOIN custinfo as ci WITH (NOLOCK) on (cg.CustID = ci.Recommend or cg.CustID = ci.MRecommend or cg.CustID = ci.SRecommend)
+	INNER JOIN custinfo as ci WITH (NOLOCK) on cg.CustID=ci.custid
 	---  INNER JOIN DBAGE.bodb02.dbo.gametype_tmp gt WITH (NOLOCK) ON cg.GameTypeID = gt.GameTypeID	 -- for UAT env
 	INNER JOIN bodb02.dbo.GameType gt WITH (NOLOCK) ON cg.GameTypeID = gt.GameTypeID        -- for Prod env
-WHERE ci.custid = @CustID		
+WHERE ci.custid = @recommend		
 	AND gt.IBCBetTypeID BETWEEN 1501 AND 1599
 	--AND gt.IBCBetTypeID NOT IN (1511,1513)  -- for temporarity 
 SELECT 
@@ -69,7 +73,6 @@ WHERE ci.custid = @custid
 	AND gt.IBCBetTypeID BETWEEN 1501 AND 1599
 	--AND gt.IBCBetTypeID NOT IN (1511,1513)  -- for temporarity 
 GROUP BY ci.UserName,cg.GameTypeID,gt.IBCBetTypeID,gt.GameTypeName
-
 GO
 GRANT EXECUTE ON [dbo].[Lrf_CustomerSelEditKN] TO [bodbLicenseeNet]
 GO
