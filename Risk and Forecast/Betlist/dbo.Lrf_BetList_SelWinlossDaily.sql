@@ -1,12 +1,10 @@
 ﻿USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_BetList_SelWinlossDaily]    Script Date: 11/30/2013 00:24:49 ******/
+
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-/****** Object:  Stored Procedure dbo.Lrf_BetList_SelWinlossDaily    Script Date: 11/18/2013 10:59:36 PM ******/
-/****** Object:  Stored Procedure dbo.Lrf_BetList_SelWinlossDaily    Script Date: 11/15/2013 12:33:11 PM ******/
 /*
 exec Lrf_BetList_SelWinlossDaily
 @date='2012-09-04 00:00:00:000',
@@ -77,6 +75,7 @@ Revisions:
 	- 20140428@Hannah: Sort betlist
 	- 20140520@Hannah: Fix bug Sort betlist
 	- 20140717@Hannah: HotFix for Exporting excel file
+	- 20140718@Jim: fix bug 'wrong to get licensee winloss/comm for Horse Racing' (#19165)
 Param's Explanation: 	
 */
 SET NOCOUNT ON
@@ -373,7 +372,12 @@ BEGIN
 		currency,
 		COUNT(b.transid),
 		SUM(ISNULL(b.winlost-b.actual_stake,0)),
-		SUM(ISNULL(CASE WHEN ISNULL(BA.transid,0)=0 THEN - (b.winlost-b.actual_stake) ELSE 0 END,0)),
+		-SUM(ISNULL(CASE WHEN BA.transid IS NULL 
+							THEN  CASE WHEN  b.bettype IN (31,32,33) THEN awinlost
+										ELSE (b.winlost-b.actual_stake) 
+										END	
+						ELSE 0 END,0)
+			),
 		SUM(ISNULL(b.comm,0)),
 		SUM(b.playercomm )  AS  SumPlayerComm
 	FROM bettrans b WITH (nolock) 
@@ -529,30 +533,14 @@ BEGIN
 
 	-- Update data with match table
 	UPDATE b
-	SET sporttype = CASE 
-						WHEN b.bettype NOT IN (1231, 1232, 1233, 1237, 1238, 31, 32, 33) THEN m.sporttype 
-						ELSE NULL
-					END,
-		leagueID = 	CASE 
-						WHEN b.bettype NOT IN (1231, 1232, 1233, 1237, 1238, 31, 32, 33) THEN m.leagueid 
-						ELSE NULL
-					END,
-		matchcode = CASE 
-						WHEN b.bettype NOT IN (1231, 1232, 1233, 1237, 1238, 31, 32, 33) THEN m.matchcode 
-						ELSE NULL
-					END,
-		homeID = 	CASE 
-						WHEN b.bettype NOT IN (1231, 1232, 1233, 1237, 1238, 31, 32, 33) THEN m.homeid 
-						ELSE NULL
-					END,	
-		awayID = 	CASE 
-						WHEN b.bettype NOT IN (1231, 1232, 1233, 1237, 1238, 31, 32, 33) THEN m.awayid 
-						ELSE NULL
-					END,
-		betstatus = CASE 
-						WHEN b.bettype NOT IN (1231, 1232, 1233, 1237, 1238, 31, 32, 33) THEN m.betstatus 
-						ELSE NULL
-					END,
+	SET sporttype = m.sporttype, 
+		leagueID = 	m.leagueid, 
+		matchcode = m.matchcode, 
+		homeID = 	m.homeid, 
+		awayID = 	m.awayid, 
+					
+		betstatus = m.betstatus, 
+					
 		IsNeutral = m.IsNeutral,
 		showtime = CASE 
 						WHEN (b.bettype BETWEEN 1101 AND 1199 ) 
@@ -649,7 +637,12 @@ BEGIN
 		b.currency,
 		COUNT(b.transid),
 		SUM(ISNULL(b.winlost - b.actual_stake,0)),
-		-SUM(ISNULL(CASE WHEN BA.transid IS NULL THEN  (b.winlost-b.actual_stake) ELSE 0 END,0)),
+		-SUM(ISNULL(CASE WHEN BA.transid IS NULL 
+							THEN  CASE WHEN  b.bettype IN (31,32,33) THEN awinlost
+										ELSE (b.winlost-b.actual_stake) 
+										END	
+						ELSE 0 END,0)
+			),
 		SUM(ISNULL(b.comm ,0)),
 		SUM(b.playercomm )  AS  SumPlayerComm
 	FROM bettrans14 b WITH (NOLOCK)	
@@ -803,30 +796,12 @@ BEGIN
 
 	-- Update data with match14 table
 	UPDATE b
-	SET sporttype = CASE 
-						WHEN b.bettype NOT IN (1231, 1232, 1233, 1237, 1238, 31, 32, 33) THEN m.sporttype 
-						ELSE NULL
-					END,
-		leagueID = 	CASE 
-						WHEN b.bettype NOT IN (1231, 1232, 1233, 1237, 1238, 31, 32, 33) THEN m.leagueid 
-						ELSE NULL
-					END,
-		matchcode = CASE 
-						WHEN b.bettype NOT IN (1231, 1232, 1233, 1237, 1238, 31, 32, 33) THEN m.matchcode 
-						ELSE NULL
-					END,
-		homeID = 	CASE 
-						WHEN b.bettype NOT IN (1231, 1232, 1233, 1237, 1238, 31, 32, 33) THEN m.homeid 
-						ELSE NULL
-					END,	
-		awayID = 	CASE 
-						WHEN b.bettype NOT IN (1231, 1232, 1233, 1237, 1238, 31, 32, 33) THEN m.awayid 
-						ELSE NULL
-					END,
-		betstatus = CASE 
-						WHEN b.bettype NOT IN (1231, 1232, 1233, 1237, 1238, 31, 32, 33) THEN m.betstatus 
-						ELSE NULL
-					END,
+	SET sporttype = m.sporttype, 
+		leagueID = 	m.leagueid, 
+		matchcode = m.matchcode, 
+		homeID = 	m.homeid, 
+		awayID = 	m.awayid ,
+		betstatus = m.betstatus, 
 		IsNeutral = m.IsNeutral,
 		showtime = CASE 
 						WHEN (b.bettype BETWEEN 1101 AND 1199 ) 
@@ -1027,7 +1002,8 @@ DROP TABLE #Data
 DROP TABLE #TmpCondBettype
 DROP TABLE #TempAg
 DROP TABLE #BettransDetail
+
 GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinlossDaily] TO [bodbLicenseeNet] AS [dbo]
+GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinlossDaily] TO [bodbLicenseeNet]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelWinlossDaily] TO [vnteam] AS [dbo]
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelWinlossDaily] TO [vnteam]
