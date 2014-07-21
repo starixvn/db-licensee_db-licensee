@@ -340,6 +340,7 @@ ELSE
 					,bk.bettype
 					,bk.currency
 					,sum(bk.stake) AS turnover
+					,0 as oddsid
 					,sum(bk.winlost)  winlost
 					,sum(bk.PlayerComm) PlayerComm
 					--,bk.Odds
@@ -552,9 +553,9 @@ ELSE
 DROP TABLE #ProductID
 DROP TABLE #BettypeID
 DROP TABLE #Status
-
-
+GO
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [bodbLicenseeNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [vnteam] 
+
