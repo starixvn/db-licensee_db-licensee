@@ -76,11 +76,11 @@ Revisions:
 	- 20140520@Hannah: Fix bug Sort betlist
 	- 20140717@Hannah: HotFix for Exporting excel file
 	- 20140718@Jim: fix bug 'wrong to get licensee winloss/comm for Horse Racing' (#19165)
+	- 20140718@Jim: fix bug 'Win loss and Licensee WL showed on web are incorrect when product is BA' (#19261)
 Param's Explanation: 	
 */
 SET NOCOUNT ON
 --- to Deal With Parameter Sniffing
-
 DECLARE 
 		@wldate SMALLDATETIME,
 		@MoveBetsDay_  SMALLDATETIME,
@@ -176,12 +176,31 @@ DECLARE @hr TABLE
 	,IsNeutral INT
 )	
 
+CREATE TABLE #TempAg (custid INT)
+CREATE TABLE #TmpCondBettype(bettype INT primary key)
+
+DECLARE @RowStart INT, @RowEnd INT  
+SELECT @PageIndex = @PageIndex - 1
+SELECT @RowStart = @PageSize * @PageIndex + 1
+SELECT @RowEnd = (@RowStart -1)  + @PageSize
+
+DECLARE @sql NVARCHAR(2500)
+DECLARE @SortTemp VARCHAR(250) 
+DECLARE @LicenseeWL VARCHAR(150) 
+DECLARE @Winlost VARCHAR(150) 
+
 SELECT  currencyID,LicenseeID into #currency
 FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
 WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
-CREATE TABLE #TempAg (custid INT)
-CREATE TABLE #TmpCondBettype(bettype INT primary key)
+INSERT INTO #TempAg (custid)
+SELECT  CustID  
+FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
+
+SELECT * INTO #TempExchange 
+FROM Lrf_f_GetExchangeDaily(@wldate,@wldate)
+
 
 --Sports Book
 IF ( @Product='SB' OR @Product='BA' )
@@ -249,89 +268,45 @@ BEGIN
 	FROM bettype   
 	WHERE typeid BETWEEN 1501 AND 1599;
 END
-IF @Product='ALL'
-BEGIN
-	INSERT INTO #TmpCondBettype
-	SELECT typeid
-	FROM bettype   
-	WHERE typeid IN (71,73)
-		OR (typeid < 31 OR   
-		    typeid BETWEEN 121 AND 999 OR   
-		    typeid BETWEEN 1301 AND 1334
-			)
-		OR 
-			(
-			typeid BETWEEN 31 AND 33
-			)
-		OR 
-			(
-			typeid BETWEEN 81 AND 120
-			)
-		OR (
-			typeid BETWEEN 1101 AND 1199
-			
-			)
-		OR (
-			typeid BETWEEN 1201 AND 1299
-			)
-		OR (
-			typeid BETWEEN 1501 AND 1599
-			)
-END
 
-INSERT INTO #TempAg (custid)
-SELECT  CustID  
-FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
-		INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
-
-DECLARE @RowStart INT, @RowEnd INT  
-SELECT @PageIndex = @PageIndex - 1
-SELECT @RowStart = @PageSize * @PageIndex + 1
-SELECT @RowEnd = (@RowStart -1)  + @PageSize
-
-DECLARE @sql NVARCHAR(2500)
-DECLARE @SortTemp VARCHAR(250) 
-DECLARE @LicenseeWL VARCHAR(150) 
 SET @LicenseeWL =				
 				'CASE  
 					WHEN b.bettype NOT IN (31,32,33) THEN - (b.winlost-b.actual_stake) 
 					ELSE b.awinlost 
 				 END'
-DECLARE @Winlost VARCHAR(150) 
+
 SET @Winlost = '(b.winlost-b.actual_stake)'
 
 IF (@Sort LIKE '%USD%') OR (@Sort LIKE '%EUR%')
-BEGIN
-	DECLARE @charindex INT
-	SELECT @charindex = CHARINDEX( ' ', @Sort, 1)
-	
-	IF @Sort LIKE '%Winlost%'
 	BEGIN
-		SELECT @SortTemp = @Winlost
-	 + '*e.'+SUBSTRING(@Sort, @charindex - 3,4) + SUBSTRING(@Sort, @charindex + 1, LEN(@Sort))
+		DECLARE @charindex INT
+		SELECT @charindex = CHARINDEX( ' ', @Sort, 1)
+		
+		IF @Sort LIKE '%Winlost%'
+		BEGIN
+			SELECT @SortTemp = @Winlost
+		 + '*e.'+SUBSTRING(@Sort, @charindex - 3,4) + SUBSTRING(@Sort, @charindex + 1, LEN(@Sort))
+		END
+		ELSE
+		IF @Sort LIKE '%LicenseeWL%'
+		BEGIN
+			SELECT @SortTemp = @LicenseeWL
+		 + '*e.'+SUBSTRING(@Sort, @charindex - 3,4) + SUBSTRING(@Sort, @charindex + 1, LEN(@Sort))
+		END
+		ELSE
+		BEGIN
+			SELECT @SortTemp = substring (@Sort, 1, @charindex - 4) + '*e.'+SUBSTRING(@Sort, @charindex - 3,4) + SUBSTRING(@Sort, @charindex + 1, LEN(@Sort))
+		END	
 	END
-	ELSE
-	IF @Sort LIKE '%LicenseeWL%'
-	BEGIN
-		SELECT @SortTemp = @LicenseeWL
-	 + '*e.'+SUBSTRING(@Sort, @charindex - 3,4) + SUBSTRING(@Sort, @charindex + 1, LEN(@Sort))
-	END
-	ELSE
-	BEGIN
-		SELECT @SortTemp = substring (@Sort, 1, @charindex - 4) + '*e.'+SUBSTRING(@Sort, @charindex - 3,4) + SUBSTRING(@Sort, @charindex + 1, LEN(@Sort))
-	END	
-END
 ELSE
-BEGIN
-	SET @SortTemp = @Sort
-END
+	BEGIN
+		SET @SortTemp = @Sort
+	END
 
-SELECT * INTO #TempExchange 
-FROM Lrf_f_GetExchangeDaily(@wldate,@wldate)
 
 IF @wldate > @MoveBetsDay_
 BEGIN
-	IF (@Product='VS' OR @Product='ALL')
+	IF (@Product='VS' )
 	BEGIN 
 		INSERT INTO @Vhr
 		SELECT 
@@ -348,7 +323,7 @@ BEGIN
 		INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
 		WHERE  o.EventDate =@wldate
 	END 	
-	IF (@Product='RB' OR @Product='ALL')
+	IF (@Product='RB' )
 	BEGIN 
 		INSERT INTO @hr
 		SELECT 
@@ -372,7 +347,7 @@ BEGIN
 		currency,
 		COUNT(b.transid),
 		SUM(ISNULL(b.winlost-b.actual_stake,0)),
-		-SUM(ISNULL(CASE WHEN BA.transid IS NULL 
+		-SUM(ISNULL(CASE WHEN b.tpositiontaking<>0
 							THEN  CASE WHEN  b.bettype IN (31,32,33) THEN awinlost
 										ELSE (b.winlost-b.actual_stake) 
 										END	
@@ -382,16 +357,15 @@ BEGIN
 		SUM(b.playercomm )  AS  SumPlayerComm
 	FROM bettrans b WITH (nolock) 
 		INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
-		LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
 	WHERE
 		b.winlostdate = @wldate
-		--AND b.matchid > 0
 		AND b.bettype NOT IN (9,29,10)
 		AND b.recommend IN (SELECT custid FROM #TempAg)	
 		AND b.status=@status
 		AND b.ruben = 1
+		AND ((@product='BA' AND b.tpositiontaking=0) OR (@product<>'BA' AND b.tpositiontaking<>0 ))
 	GROUP BY currency	
-	
+		
 	CREATE TABLE #BetData1
 	(
 		oddsid INT,
@@ -505,10 +479,11 @@ BEGIN
 		INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
 		INNER JOIN #TempExchange e ON  e.exchangeid = b.currency
 	WHERE
-		b.winlostdate = '''+CAST(@wldate AS VARCHAR(50))+
-		''' AND ((b.tpositiontaking=0 AND '''+CAST(@Product AS VARCHAR(3)) +'''=''BA'') OR '''+CAST(@Product AS VARCHAR(3))+'''<>''BA'')
-		AND b.status='''+CAST(@status AS VARCHAR(15))+
-		''' AND b.bettype NOT IN (9,29,10)
+		b.winlostdate = '''+CAST(@wldate AS VARCHAR(50))+''''+char(13)+
+		CASE  WHEN @Product='BA' THEN 'AND b.tpositiontaking=0' 
+				   ELSE  'AND b.tpositiontaking<>0'  END +char(13)+ 	 
+		'AND b.status='''+CAST(@status AS VARCHAR(15))+''''+
+		' AND b.bettype NOT IN (9,29,10)
 		AND b.recommend IN (SELECT custid FROM #TempAg)	
 		AND b.ruben = 1'	
 	
@@ -522,6 +497,8 @@ BEGIN
 	-- Update LicenseeWL with LicenseeBATransaction table
 	UPDATE b
 	SET LicenseeWL = 0
+		,LicenseeWLUSD=0
+		,LicenseeWLEUR=0
 	FROM #BetData1 b
 		INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
 
@@ -538,9 +515,7 @@ BEGIN
 		matchcode = m.matchcode, 
 		homeID = 	m.homeid, 
 		awayID = 	m.awayid, 
-					
 		betstatus = m.betstatus, 
-					
 		IsNeutral = m.IsNeutral,
 		showtime = CASE 
 						WHEN (b.bettype BETWEEN 1101 AND 1199 ) 
@@ -596,7 +571,7 @@ END
 
 IF @wldate <= @MoveBetsDay_ AND @wldate >=@BalanceUpDay_
 BEGIN
-	IF (@Product='VS' OR @Product='ALL')
+	IF (@Product='VS' )
 	BEGIN 
 		INSERT INTO @Vhr
 			SELECT 
@@ -613,7 +588,7 @@ BEGIN
 			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
 			WHERE  o.EventDate =@wldate
 	END 	
-	IF (@Product='RB' OR @Product='ALL')
+	IF (@Product='RB' )
 	BEGIN 
 		INSERT INTO @hr
 		SELECT 
@@ -637,7 +612,7 @@ BEGIN
 		b.currency,
 		COUNT(b.transid),
 		SUM(ISNULL(b.winlost - b.actual_stake,0)),
-		-SUM(ISNULL(CASE WHEN BA.transid IS NULL 
+		-SUM(ISNULL(CASE WHEN b.tpositiontaking<>0
 							THEN  CASE WHEN  b.bettype IN (31,32,33) THEN awinlost
 										ELSE (b.winlost-b.actual_stake) 
 										END	
@@ -647,12 +622,12 @@ BEGIN
 		SUM(b.playercomm )  AS  SumPlayerComm
 	FROM bettrans14 b WITH (NOLOCK)	
 		INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
-		LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
 	WHERE
 		b.winlostdate = @wldate
 		AND b.bettype NOT IN (9,29,10)
 		AND b.status=@status
 		AND b.recommend IN (SELECT custid FROM #TempAg)
+		AND ((@product='BA' AND b.tpositiontaking=0) OR (@product<>'BA' AND b.tpositiontaking<>0))
 	GROUP BY b.currency	
 	
 	CREATE TABLE #BetData14
@@ -768,10 +743,11 @@ BEGIN
 		INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
 		INNER JOIN #TempExchange e ON  e.exchangeid = b.currency
 	WHERE
-		b.winlostdate = '''+ CAST(@wldate AS VARCHAR(50))+
-		''' AND ((b.tpositiontaking=0 AND '''+CAST(@Product AS VARCHAR(3))+'''=''BA'') OR '''+CAST(@Product AS VARCHAR(3))+'''<>''BA'')
-		AND b.status='''+CAST(@status AS VARCHAR(15))+
-		''' AND b.bettype NOT IN (9,29,10)
+		b.winlostdate = '''+ CAST(@wldate AS VARCHAR(50))+''''+char(13)+
+		CASE  WHEN @Product ='BA' THEN 'AND b.tpositiontaking=0'
+			   ELSE  'AND b.tpositiontaking<>0' END +char(13)+
+		'AND b.status='''+CAST(@status AS VARCHAR(15))+''''+
+		' AND b.bettype NOT IN (9,29,10)
 		AND b.recommend IN (SELECT custid FROM #TempAg)	
 		AND b.ruben = 1'
 	
@@ -785,6 +761,8 @@ BEGIN
 	-- Update LicenseeWL with LicenseeBATransaction table
 	UPDATE b
 	SET LicenseeWL = 0
+		,LicenseeWLUSD=0
+		,LicenseeWLEUR=0
 	FROM #BetData14 b
 		INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
 
@@ -870,14 +848,13 @@ WHERE A.RowNum BETWEEN '+CAST(@RowStart AS VARCHAR(50))+' AND '+ CAST(@RowEnd AS
 +' ORDER BY A.RowNum'
 EXEC (@sql)	
 
-
 --SUM
 SELECT * INTO #TempExchangeSum 
 FROM Lrf_f_GetExchangeDaily(@wldate,@wldate)
 WHERE exchangeid IN (SELECT DISTINCT Currency FROM @DataSum)
 
 SELECT 
-	@TotalRows = SUM(TotalRows),
+	@TotalRows = SUM(totalrows) ,
 	@SumWinlost = SUM(SumWinlost),
 	@SumLicenseeWL = SUM(SumLicenseeWL),
 	@SumComm = SUM(SumComm),
@@ -893,8 +870,7 @@ SELECT
 	@SumCommEUR = SUM(SumComm * e.EUR),
 	@SumPlayerCommEUR=SUM(ISNULL(SumPlayerComm,0)*e.EUR)
 FROM @DataSum b 
-INNER JOIN #TempExchangeSum e 
-ON b.currency = e.exchangeid
+INNER JOIN #TempExchangeSum e ON b.currency = e.exchangeid
 
 CREATE TABLE #BettransDetail(  
 	refno BIGINT,  
