@@ -341,31 +341,57 @@ BEGIN
 			 INNER JOIN dbo.League AS l WITH (NOLOCK) ON m.leagueID = l.leagueID
 		WHERE m.eventdate=@wldate	 
 	END 
-	
-	INSERT INTO @DataSum
-	SELECT 
-		currency,
-		COUNT(b.transid),
-		SUM(ISNULL(b.winlost-b.actual_stake,0)),
-		-SUM(ISNULL(CASE WHEN b.tpositiontaking<>0
-							THEN  CASE WHEN  b.bettype IN (31,32,33) THEN awinlost
-										ELSE (b.winlost-b.actual_stake) 
-										END	
-						ELSE 0 END,0)
-			),
-		SUM(ISNULL(b.comm,0)),
-		SUM(b.playercomm )  AS  SumPlayerComm
-	FROM bettrans b WITH (nolock) 
-		INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
-	WHERE
-		b.winlostdate = @wldate
-		AND b.bettype NOT IN (9,29,10)
-		AND b.recommend IN (SELECT custid FROM #TempAg)	
-		AND b.status=@status
-		AND b.ruben = 1
-		AND ((@product='BA' AND b.tpositiontaking=0) OR (@product<>'BA' AND b.tpositiontaking<>0 ))
-	GROUP BY currency	
-		
+	IF (@Product='BA' )
+		BEGIN
+			INSERT INTO @DataSum
+			SELECT 
+				currency,
+				COUNT(b.transid),
+				SUM(ISNULL(b.winlost-b.actual_stake,0)),
+				0,
+				SUM(ISNULL(b.comm,0)),
+				SUM(b.playercomm )  AS  SumPlayerComm
+			FROM bettrans b WITH (nolock) 
+				INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
+				INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
+			WHERE
+				b.winlostdate = @wldate
+				AND b.bettype NOT IN (9,29,10)
+				AND b.recommend IN (SELECT custid FROM #TempAg)	
+				AND b.status=@status
+				AND b.ruben = 1
+				AND b.tpositiontaking=0
+			GROUP BY currency	
+		END
+	IF (@Product<>'BA' )	
+		BEGIN
+			INSERT INTO @DataSum
+			SELECT 
+				currency,
+				COUNT(b.transid),
+				SUM(ISNULL(b.winlost-b.actual_stake,0)),
+				-SUM(ISNULL(CASE WHEN b.tpositiontaking<>0
+									THEN  CASE WHEN  b.bettype IN (31,32,33) THEN awinlost
+												ELSE (b.winlost-b.actual_stake) 
+												END	
+								ELSE 0 END,0)
+					),
+				SUM(ISNULL(b.comm,0)),
+				SUM(b.playercomm )  AS  SumPlayerComm
+			FROM bettrans b WITH (nolock) 
+				INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
+			WHERE
+				b.winlostdate = @wldate
+				AND b.bettype NOT IN (9,29,10)
+				AND b.recommend IN (SELECT custid FROM #TempAg)	
+				AND b.status=@status
+				AND b.ruben = 1
+				AND (
+					(@Product='SB' AND b.tpositiontaking<>0)
+					OR @Product<>'SB'
+					)
+			GROUP BY currency	
+		END	
 	CREATE TABLE #BetData1
 	(
 		oddsid INT,
@@ -477,15 +503,19 @@ BEGIN
 		bettrans b WITH (nolock) 
 		INNER JOIN customer c WITH (nolock) ON b.custid = c.custid
 		INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
-		INNER JOIN #TempExchange e ON  e.exchangeid = b.currency
-	WHERE
+		INNER JOIN #TempExchange e ON  e.exchangeid = b.currency'+char(13)+
+	CASE WHEN @Product='BA' THEN 'INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid'	
+							ELSE ''
+							END+char(13)+
+	'WHERE
 		b.winlostdate = '''+CAST(@wldate AS VARCHAR(50))+''''+char(13)+
-		CASE  WHEN @Product='BA' THEN 'AND b.tpositiontaking=0' 
-				   ELSE  'AND b.tpositiontaking<>0'  END +char(13)+ 	 
-		'AND b.status='''+CAST(@status AS VARCHAR(15))+''''+
-		' AND b.bettype NOT IN (9,29,10)
+		'AND b.status='''+CAST(@status AS VARCHAR(15))+''''+char(13)+
+		'AND b.bettype NOT IN (9,29,10)
 		AND b.recommend IN (SELECT custid FROM #TempAg)	
-		AND b.ruben = 1'	
+		AND b.ruben = 1'+char(13)+
+		CASE WHEN @Product='SB' THEN 'AND b.tpositiontaking<>0'	
+								ELSE ''
+								END+char(13)			
 	
 	INSERT INTO #BetData1
 	(Oddsid,Sporttype,Username,NickName,Bettype,LeagueID,Transid,Matchcode,Race,HomeID,AwayID,hdp1,hdp2,
@@ -606,30 +636,59 @@ BEGIN
 			 INNER JOIN dbo.League AS l WITH (NOLOCK) ON m.leagueID = l.leagueID
 		WHERE m.eventdate=@wldate	 
 	END 
-	
-	INSERT INTO @DataSum
-	SELECT 
-		b.currency,
-		COUNT(b.transid),
-		SUM(ISNULL(b.winlost - b.actual_stake,0)),
-		-SUM(ISNULL(CASE WHEN b.tpositiontaking<>0
-							THEN  CASE WHEN  b.bettype IN (31,32,33) THEN awinlost
-										ELSE (b.winlost-b.actual_stake) 
-										END	
-						ELSE 0 END,0)
-			),
-		SUM(ISNULL(b.comm ,0)),
-		SUM(b.playercomm )  AS  SumPlayerComm
-	FROM bettrans14 b WITH (NOLOCK)	
-		INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
-	WHERE
-		b.winlostdate = @wldate
-		AND b.bettype NOT IN (9,29,10)
-		AND b.status=@status
-		AND b.recommend IN (SELECT custid FROM #TempAg)
-		AND ((@product='BA' AND b.tpositiontaking=0) OR (@product<>'BA' AND b.tpositiontaking<>0))
-	GROUP BY b.currency	
-	
+	IF (@Product='BA' )
+		BEGIN
+			INSERT INTO @DataSum
+			SELECT 
+				b.currency,
+				COUNT(b.transid),
+				SUM(ISNULL(b.winlost - b.actual_stake,0)),
+				-SUM(ISNULL(CASE WHEN b.tpositiontaking<>0
+									THEN  CASE WHEN  b.bettype IN (31,32,33) THEN awinlost
+												ELSE (b.winlost-b.actual_stake) 
+												END	
+								ELSE 0 END,0)
+					),
+				SUM(ISNULL(b.comm ,0)),
+				SUM(b.playercomm )  AS  SumPlayerComm
+			FROM bettrans14 b WITH (NOLOCK)	
+				INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
+				INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
+			WHERE
+				b.winlostdate = @wldate
+				AND b.bettype NOT IN (9,29,10)
+				AND b.status=@status
+				AND b.recommend IN (SELECT custid FROM #TempAg)
+			GROUP BY b.currency	
+		END
+	IF (@Product<>'BA' )	
+		BEGIN
+			INSERT INTO @DataSum
+			SELECT 
+				b.currency,
+				COUNT(b.transid),
+				SUM(ISNULL(b.winlost - b.actual_stake,0)),
+				-SUM(ISNULL(CASE WHEN b.tpositiontaking<>0
+									THEN  CASE WHEN  b.bettype IN (31,32,33) THEN awinlost
+												ELSE (b.winlost-b.actual_stake) 
+												END	
+								ELSE 0 END,0)
+					),
+				SUM(ISNULL(b.comm ,0)),
+				SUM(b.playercomm )  AS  SumPlayerComm
+			FROM bettrans14 b WITH (NOLOCK)	
+				INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
+			WHERE
+				b.winlostdate = @wldate
+				AND b.bettype NOT IN (9,29,10)
+				AND b.status=@status
+				AND b.recommend IN (SELECT custid FROM #TempAg)
+				AND (
+					(@Product='SB' AND b.tpositiontaking<>0)
+					OR (@Product<>'SB')
+					)
+			GROUP BY b.currency	
+		END
 	CREATE TABLE #BetData14
 	(
 		oddsid INT,
@@ -741,15 +800,19 @@ BEGIN
 		bettrans14 b WITH (nolock) 
 		INNER JOIN customer c WITH (nolock) ON b.custid = c.custid
 		INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
-		INNER JOIN #TempExchange e ON  e.exchangeid = b.currency
-	WHERE
+		INNER JOIN #TempExchange e ON  e.exchangeid = b.currency'+char(13)+
+	CASE WHEN @Product='BA' THEN 'INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid'	
+							ELSE ''
+							END+char(13)+
+	'WHERE
 		b.winlostdate = '''+ CAST(@wldate AS VARCHAR(50))+''''+char(13)+
-		CASE  WHEN @Product ='BA' THEN 'AND b.tpositiontaking=0'
-			   ELSE  'AND b.tpositiontaking<>0' END +char(13)+
-		'AND b.status='''+CAST(@status AS VARCHAR(15))+''''+
+		'AND b.status='''+CAST(@status AS VARCHAR(15))+''''+char(13)+
 		' AND b.bettype NOT IN (9,29,10)
 		AND b.recommend IN (SELECT custid FROM #TempAg)	
-		AND b.ruben = 1'
+		AND b.ruben = 1'+char(13)+
+		CASE WHEN @Product='SB' THEN 'AND b.tpositiontaking<>0'
+								ELSE ''
+								END+char(13)		
 	
 	INSERT INTO #BetData14
 	(Oddsid,Sporttype,Username,NickName,Bettype,LeagueID,Transid,Matchcode,Race,HomeID,AwayID,hdp1,hdp2,
