@@ -28,6 +28,7 @@ Revisions:
 	- 20120214@Jim: change to use  table ExchangeDaily by use function Lrf_f_GetExchangeDaily  
 	- 20121004@Jim: replace @currencyname input param by @currencyID
 	- 20130514@Jim:Restrict permission of Licensee Users by currency
+	- 20140718@Hannah: Change liveindicator datatype to INT to fix running live matches are not being showed at the top list (RedmineID:19136)
 */
 SET NOCOUNT ON
 
@@ -56,7 +57,7 @@ DECLARE @Data as TABLE
 	showtime nvarchar (50),
 	leagueid INT,
 	matchcode nvarchar(50),
-	liveindicator BIT,
+	liveindicator INT,
 	matchid INT,
 	homeID INT,
 	awayID INT,
@@ -169,7 +170,7 @@ SELECT
 		m.showtime,
 		m.isNeutral
 	ORDER BY
-	m.matchcode, a.liveindicator desc
+	m.matchcode
 
 IF @TotalRows = 0  
 BEGIN  
@@ -179,7 +180,7 @@ END
 SELECT c.* FROM
 (
 	SELECT
-		ROW_NUMBER() over (order by matchcode, liveindicator desc) as RowNum ,
+		ROW_NUMBER() over (order by matchcode) as RowNum ,
 		*
 	FROM @Data
 ) c WHERE c.RowNum between @RowStart AND @RowEnd
