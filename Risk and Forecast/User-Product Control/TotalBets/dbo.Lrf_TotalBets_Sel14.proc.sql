@@ -27,6 +27,7 @@ Revisions:
 	- 20121004@Jim: replace @currencyname input param by @currencyID.
 	- 20130514@Jim:Restrict permission of Licensee Users by currency
 	- 20140508@Kyan: add new bettype 1H FG/LG (127)
+	- 20140718@Hannah: Change liveindicator datatype to INT to fix running live matches are not being showed at the top list (RedmineID:19136)
 */
 
 SET NOCOUNT ON
@@ -57,7 +58,7 @@ DECLARE @Data AS Table
 	showtime NVARCHAR (50),
 	leagueid INT,
 	matchcode NVARCHAR(50),
-	liveindicator BIT,
+	liveindicator INT,
 	matchid INT,
 	homeID INT,
 	awayID INT,
@@ -188,7 +189,7 @@ SELECT
 		m.showtime,
 		m.isNeutral
 	ORDER BY
-	m.matchcode, a.liveindicator DESC
+	m.matchcode
 
 IF @TotalRows = 0  
 BEGIN  
@@ -200,11 +201,11 @@ SELECT
 FROM
 (
 	SELECT
-		ROW_NUMBER() over (ORDER BY matchcode, liveindicator DESC) AS RowNum ,
+		ROW_NUMBER() over (ORDER BY matchcode) AS RowNum ,
 		* FROM @Data
 ) c WHERE c.RowNum BETWEEN @RowStart AND @RowEnd
 	
 GO
 GRANT EXECUTE ON [dbo].[Lrf_TotalBets_Sel14] TO [bodbLicenseeNet]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Age_TotalBets_Sel14_Ag] TO [vnteam]
+GRANT VIEW DEFINITION ON [dbo].[Lrf_TotalBets_Sel14] TO [vnteam]

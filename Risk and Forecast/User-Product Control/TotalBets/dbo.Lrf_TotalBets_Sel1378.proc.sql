@@ -20,6 +20,8 @@ Revisions:
  - 20120214@Jim: change to use  table ExchangeDaily by use function Lrf_f_GetExchangeDaily  
  - 20121004@Jim: replace @currencyname input param by @currencyID
  - 20130514@Jim:Restrict permission of Licensee Users by currency 
+ - 20140717@Francis: Change liveindicator datatype to INT to fix running live matches are not being showed at the top list (RedmineID:19136)
+ - 20130718@Hannah: Group each match for Bodog (#19163)
 
 Param's Explanation:
 • @custid: agent ID
@@ -52,7 +54,7 @@ DECLARE @Data AS TABLE
 	showtime NVARCHAR (50),
 	leagueid INT,
 	matchcode NVARCHAR(50),
-	liveindicator BIT,
+	liveindicator INT,
 	matchid INT,
 	homeID INT,
 	awayID INT,
@@ -98,7 +100,6 @@ DECLARE @Data AS TABLE
 	isNeutral BIT
 )
 
-
 INSERT INTO @Data
 SELECT
 		m.showtime, 
@@ -136,8 +137,8 @@ SELECT
 
 
 		SUM(CASE WHEN bettype=8 AND betteam = 'h' THEN Stake ELSE 0 END) AS home_odds_HTOU,
-		SUM(CASE WHEN bettype=8 AND betteam = 'h' THEN StakeUSD ELSE 0 END) AS home_odds_HTOU,
-		SUM(CASE WHEN bettype=8 AND betteam = 'h' THEN StakeEUR ELSE 0 END) AS home_odds_HTOU,
+		SUM(CASE WHEN bettype=8 AND betteam = 'h' THEN StakeUSD ELSE 0 END) AS home_odds_HTOUUSD,
+		SUM(CASE WHEN bettype=8 AND betteam = 'h' THEN StakeEUR ELSE 0 END) AS home_odds_HTOUEUR,
 
 		SUM(CASE WHEN bettype=8 AND betteam = 'a' THEN Stake ELSE 0 END) AS away_odds_HTOU,
 		SUM(CASE WHEN bettype=8 AND betteam = 'a' THEN StakeUSD ELSE 0 END) AS away_odds_HTOUUSD,
@@ -182,20 +183,119 @@ SELECT
 		m.isNeutral
 	ORDER BY b.liveindicator desc, m.matchcode
 
-IF @TotalRows = 0  
-BEGIN  
-	SELECT @TotalRows = COUNT(matchid) FROM @Data
-END
+DECLARE @LicenseeID_temp INT
 
-SELECT 
-	c.*
-FROM
-(
-	SELECT
-		ROW_NUMBER() over (ORDER BY liveindicator desc, matchcode) AS RowNum ,
-		* 
-	FROM @Data
-) c WHERE c.RowNum between @RowStart AND @RowEnd
+SELECT @LicenseeID_temp = LicenseeID 
+FROM bodb_licensee.dbo.licensees WITH (NOLOCK)
+WHERE LicenseeName = 'Bodog'
+
+IF (@licenseeID_temp <> @LicenseeID)
+BEGIN
+	IF @TotalRows = 0  
+	BEGIN  
+		SELECT @TotalRows = COUNT(matchid) FROM @Data
+	END
+
+	SELECT 
+		c.*
+	FROM
+	(
+		SELECT
+			ROW_NUMBER() over (ORDER BY matchcode) AS RowNum ,
+			* 
+		FROM @Data
+	) c WHERE c.RowNum between @RowStart AND @RowEnd
+END
+ELSE
+BEGIN
+	UPDATE b
+	SET 
+		b.livehomescore = m.livehomescore,
+		b.liveawayscore = m.liveawayscore,
+		b.liveindicator = 1
+	FROM @Data b
+		INNER JOIN bodb02.dbo.match m WITH (NOLOCK)	ON m.matchid = b.matchid 
+	WHERE b.matchid IN 
+	(
+		SELECT DISTINCT(matchid)
+		FROM @Data
+		WHERE liveindicator = 1
+	)
+
+	IF @TotalRows = 0  
+	BEGIN  
+		SELECT @TotalRows = COUNT(DISTINCT matchid) FROM @Data
+	END
+
+	SELECT 
+		c.*
+	FROM
+	(
+		SELECT
+			ROW_NUMBER() over (ORDER BY m.matchcode) AS RowNum ,
+			m.showtime, 
+			m.leagueID,
+			m.matchcode,
+			b.liveindicator,
+			m.matchid,
+			m.homeID,
+			m.awayID,
+			b.livehomescore,
+			b.liveawayscore,
+			SUM(home_odds_HDP) AS home_odds_HDP,
+			SUM(home_odds_HDPUSD) AS home_odds_HDPUSD,
+			SUM(home_odds_HDPEUR) AS home_odds_HDPEUR,
+
+			SUM(away_odds_HDP) AS away_odds_HDP,
+			SUM(away_odds_HDPUSD) AS away_odds_HDPUSD,
+			SUM(away_odds_HDPEUR) AS away_odds_HDPEUR,
+
+			SUM(home_odds_HTHDP) AS home_odds_HTHDP,
+			SUM(home_odds_HTHDPUSD) AS home_odds_HTHDPUSD,
+			SUM(home_odds_HTHDPEUR) AS home_odds_HTHDPEUR,
+
+			SUM(away_odds_HTHDP) AS away_odds_HTHDP,
+			SUM(away_odds_HTHDPUSD) AS away_odds_HTHDPUSD,
+			SUM(away_odds_HTHDPEUR) AS away_odds_HTHDPEUR,
+		
+			SUM(home_odds_OU) AS home_odds_OU,
+			SUM(home_odds_OUUSD) AS home_odds_OUUSD,
+			SUM(home_odds_OUEUR) AS home_odds_OUEUR,
+		
+			SUM(away_odds_OU) AS away_odds_OU,
+			SUM(away_odds_OUUSD) AS away_odds_OUUSD,
+			SUM(away_odds_OUEUR) AS away_odds_OUEUR,
+
+
+			SUM(home_odds_HTOU) AS home_odds_HTOU,
+			SUM(home_odds_HTOUUSD) AS home_odds_HTOUUSD,
+			SUM(home_odds_HTOUEUR) AS home_odds_HTOUEUR,
+
+			SUM(away_odds_HTOU) AS away_odds_HTOU,
+			SUM(away_odds_HTOUUSD) AS away_odds_HTOUUSD,
+			SUM(away_odds_HTOUEUR) AS away_odds_HTOUEUR,
+		
+			SUM(BetCount_HDP) AS BetCount_HDP,
+			SUM(BetCount_HTHDP) AS BetCount_HTHDP,
+			SUM(BetCount_OU) AS BetCount_OU,
+			SUM(BetCount_HTOU) AS BetCount_HTOU,
+			ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral
+		FROM @Data AS b
+			INNER JOIN match m  WITH (NOLOCK) ON m.matchid = b.matchid 	
+		GROUP BY
+			m.showtime, 
+			m.leagueID,
+			m.matchcode,
+			b.liveindicator,
+			m.matchid,
+			m.homeID,
+			m.awayID,
+			b.livehomescore,
+			b.liveawayscore,
+			m.isNeutral
+	) c WHERE c.RowNum between @RowStart AND @RowEnd
+
+END
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_TotalBets_Sel1378] TO [bodbLicenseeNet]

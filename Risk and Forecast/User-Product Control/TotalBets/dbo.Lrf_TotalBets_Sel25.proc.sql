@@ -30,6 +30,7 @@ Revisions:
 	- 20120703@Henry: Add new bettype 123 for Draw/No Draw
 	- 20121004@Jim: replace @currencyname input param by @currencyID
 	- 20130514@Jim:Restrict permission of Licensee Users by currency
+	- 20140718@Hannah: Change liveindicator datatype to INT to fix running live matches are not being showed at the top list (RedmineID:19136)
 
 Param's Explanation:
 • @CustID: AgentID
@@ -61,7 +62,7 @@ DECLARE @Data AS Table
 	showtime NVARCHAR (50),
 	leagueid INT,
 	matchcode NVARCHAR(50),
-	liveindicator BIT,
+	liveindicator INT,
 	livehomescore INT,
 	liveawayscore INT,
 	matchid INT,
@@ -212,7 +213,7 @@ SELECT
 		m.leagueid,
 		m.showtime,
 		m.isNeutral
-	ORDER BY a.liveindicator DESC, m.matchcode
+	ORDER BY m.matchcode
 
 IF @TotalRows = 0  
 BEGIN  
@@ -222,7 +223,7 @@ END
 SELECT c.* FROM
 (
 	SELECT 
-		ROW_NUMBER() over (ORDER BY liveindicator DESC, matchcode) AS RowNum ,
+		ROW_NUMBER() over (ORDER BY matchcode) AS RowNum ,
 		*
 	FROM @Data
 ) c WHERE c.RowNum BETWEEN @RowStart AND @RowEnd
