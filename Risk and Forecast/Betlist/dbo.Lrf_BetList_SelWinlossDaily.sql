@@ -207,7 +207,7 @@ IF ( @Product='SB' OR @Product='BA' )
 BEGIN
 INSERT INTO #TmpCondBettype
 	SELECT typeid
-	 FROM bettype   
+	 FROM bettype  WITH (NOLOCK) 
 	 WHERE typeid < 31 OR   
 	   typeid BETWEEN 121 AND 999 OR   
 	   typeid BETWEEN 1301 AND 1334;
@@ -217,7 +217,7 @@ IF @Product='NG'
 BEGIN 
 	INSERT INTO #TmpCondBettype
 	SELECT typeid
-	FROM bettype   
+	FROM bettype   WITH(NOLOCK)
 	WHERE typeid BETWEEN 81 AND 120;  
 END
 --Horse Racing
@@ -225,7 +225,7 @@ IF @Product='RB'
 BEGIN 
 	INSERT INTO #TmpCondBettype
 	SELECT typeid
-	FROM bettype   
+	FROM bettype  WITH(NOLOCK) 
 	WHERE typeid BETWEEN 31 AND 33;  
 END
 --Live Casino
@@ -233,7 +233,7 @@ IF @Product='LC'
 BEGIN	
 	INSERT INTO #TmpCondBettype
 	SELECT typeid
-	FROM bettype   
+	FROM bettype  WITH (NOLOCK) 
 	WHERE typeid BETWEEN 1101 AND 1199;
 END
 --Virtual Sports
@@ -241,7 +241,7 @@ IF @Product='VS'
 BEGIN	
 	INSERT INTO #TmpCondBettype
 	SELECT typeid
-	FROM bettype   
+	FROM bettype  WITH(NOLOCK) 
 	WHERE typeid BETWEEN 1201 AND 1299;
 END
 --RNG Casino
@@ -249,7 +249,7 @@ IF @Product='CS'
 BEGIN	
 	INSERT INTO #TmpCondBettype
 	SELECT typeid
-	FROM bettype   
+	FROM bettype WITH(NOLOCK)  
 	WHERE typeid =71;
 END
 --Bingo
@@ -257,7 +257,7 @@ IF @Product='BG'
 BEGIN
 	INSERT INTO #TmpCondBettype
 	SELECT typeid
-	FROM bettype   
+	FROM bettype WITH(NOLOCK)  
 	WHERE typeid = 73;
 END
 --Keno
@@ -265,7 +265,7 @@ IF @Product='KN'
 BEGIN	
 	INSERT INTO #TmpCondBettype
 	SELECT typeid
-	FROM bettype   
+	FROM bettype WITH(NOLOCK)  
 	WHERE typeid BETWEEN 1501 AND 1599;
 END
 
@@ -370,11 +370,10 @@ BEGIN
 				currency,
 				COUNT(b.transid),
 				SUM(ISNULL(b.winlost-b.actual_stake,0)),
-				-SUM(ISNULL(CASE WHEN b.tpositiontaking<>0
-									THEN  CASE WHEN  b.bettype IN (31,32,33) THEN awinlost
+				-SUM(ISNULL(CASE WHEN  b.bettype IN (31,32,33) THEN awinlost
 												ELSE (b.winlost-b.actual_stake) 
 												END	
-								ELSE 0 END,0)
+								,0)
 					),
 				SUM(ISNULL(b.comm,0)),
 				SUM(b.playercomm )  AS  SumPlayerComm
@@ -643,12 +642,7 @@ BEGIN
 				b.currency,
 				COUNT(b.transid),
 				SUM(ISNULL(b.winlost - b.actual_stake,0)),
-				-SUM(ISNULL(CASE WHEN b.tpositiontaking<>0
-									THEN  CASE WHEN  b.bettype IN (31,32,33) THEN awinlost
-												ELSE (b.winlost-b.actual_stake) 
-												END	
-								ELSE 0 END,0)
-					),
+				0,
 				SUM(ISNULL(b.comm ,0)),
 				SUM(b.playercomm )  AS  SumPlayerComm
 			FROM bettrans14 b WITH (NOLOCK)	
@@ -668,11 +662,10 @@ BEGIN
 				b.currency,
 				COUNT(b.transid),
 				SUM(ISNULL(b.winlost - b.actual_stake,0)),
-				-SUM(ISNULL(CASE WHEN b.tpositiontaking<>0
-									THEN  CASE WHEN  b.bettype IN (31,32,33) THEN awinlost
+				-SUM(ISNULL(CASE WHEN  b.bettype IN (31,32,33) THEN awinlost
 												ELSE (b.winlost-b.actual_stake) 
 												END	
-								ELSE 0 END,0)
+								,0)
 					),
 				SUM(ISNULL(b.comm ,0)),
 				SUM(b.playercomm )  AS  SumPlayerComm
