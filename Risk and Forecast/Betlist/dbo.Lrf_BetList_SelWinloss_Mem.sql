@@ -56,7 +56,7 @@ Revisions:
 	 - 20130716@Jim: update matchid for RNG Casino and Bingo
 	 - 20130809@Jim: offer Virtual Horse Racing 	
 	 - 20140307@Hannah: offer Keno
-
+	 - 20140806@Jim: add  bodb_archive 
 	
 Param's Explanation:
 	+ @drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -1648,7 +1648,7 @@ BEGIN
 		b.currency,
 		b.matchid
 	FROM
-		bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)		
+		DBARC.bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)		
 		INNER JOIN DBLIC.bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
 	WHERE
 		b.winlostdate BETWEEN @fdate AND @TempToDate AND
@@ -1839,7 +1839,7 @@ BEGIN
 				b.currency,
 				'' As ShowTime
 			FROM
-				bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)		
+				DBARC.bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)		
 				INNER JOIN bodb_archive.dbo.match_BK AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
 			WHERE
 				b.winlostdate BETWEEN @fdate AND @TempToDate AND
@@ -1890,7 +1890,7 @@ BEGIN
 				b.currency,
 				'' As ShowTime
 			FROM
-				bodb_archive.dbo.bettrans_bk  AS b WITH (NOLOCK)		
+				DBARC.bodb_archive.dbo.bettrans_bk  AS b WITH (NOLOCK)		
 				INNER JOIN bodb_archive.dbo.Outright_bk AS m WITH (NOLOCK) ON b.matchid=m.orid
 				INNER JOIN dbo.League AS l WITH (NOLOCK) ON m.leagueID = l.leagueID
 			WHERE
@@ -1942,7 +1942,7 @@ BEGIN
 				b.currency,
 				'' As ShowTime
 			FROM
-				bodb_archive.dbo.bettrans_bk b WITH (NOLOCK)	
+				DBARC.bodb_archive.dbo.bettrans_bk b WITH (NOLOCK)	
 			WHERE
 				b.winlostdate BETWEEN @fdate AND @TempToDate AND
 				b.custid=@custid AND
@@ -1995,7 +1995,7 @@ BEGIN
 		b.currency,
 		'' As ShowTime
 	FROM
-		bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)		
+		DBARC.bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)		
 		INNER JOIN bodb_archive.dbo.match_BK AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
 	WHERE
 		b.winlostdate BETWEEN @fdate AND @TempToDate AND
@@ -2046,7 +2046,7 @@ BEGIN
 			b.currency,
 			isnull(m.showtime,'') as showtime
 		FROM
-			bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)		
+			DBARC.bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)		
 			INNER JOIN bodb_archive.dbo.match_BK AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
 		WHERE
 			b.winlostdate BETWEEN @fdate AND @TempToDate AND
@@ -2096,7 +2096,7 @@ BEGIN
 			b.currency,
 			'' as showtime
 		FROM
-			bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)		
+			DBARC.bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)		
 			INNER JOIN bodb_archive.dbo.match_BK AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
 		WHERE
 			b.winlostdate BETWEEN @fdate AND @TempToDate AND
@@ -2141,7 +2141,7 @@ BEGIN
 			0,0,
 			b.currency,
 			CONVERT(VARCHAR(20),r.EventTime) as showtime
-		FROM bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)	
+		FROM DBARC.bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)	
 			INNER JOIN DBARC.bodb_Archive.dbo.VSOutright_bk o with (nolock) ON b.oddsid=o.Orid
 			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
 		WHERE
@@ -2192,7 +2192,7 @@ BEGIN
 			b.currency,
 			'' as showtime
 		FROM
-			bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)		
+			DBARC.bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)		
 				
 		WHERE
 			b.winlostdate BETWEEN @fdate AND @TempToDate AND
@@ -2242,7 +2242,7 @@ BEGIN
 			b.currency,
 			'' as showtime
 		FROM
-			bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)		
+			DBARC.bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)		
 				
 		WHERE
 			b.winlostdate BETWEEN @fdate AND @TempToDate AND
@@ -2294,7 +2294,7 @@ BEGIN
 			b.currency,
 			'' As ShowTime
 		FROM
-			bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)		
+			DBARC.bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)		
 			INNER JOIN bodb_archive.dbo.Outright_bk AS m WITH (NOLOCK) ON b.matchid=m.orid
 			INNER JOIN dbo.League AS l WITH (NOLOCK) ON m.leagueID = l.leagueID
 		WHERE
@@ -2345,7 +2345,7 @@ BEGIN
 			b.currency,
 			'' AS showtime
 		FROM
-			bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)		
+			DBARC.bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)		
 			CROSS APPLY dbo.f_ParseTransDesc(b.transdesc, b.bettype)
 		WHERE
 			b.winlostdate BETWEEN @fdate AND @TempToDate AND

@@ -1729,7 +1729,7 @@ BEGIN
 			b.currency,
 			b.matchid
 		FROM
-			bodb_archive.dbo.bettrans_bk AS b WITH (nolock, index=IX_custid)		
+			DBARC.bodb_archive.dbo.bettrans_bk AS b WITH (nolock, index=IX_custid)		
 			INNER JOIN DBLIC.bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid				
 		WHERE
 			b.winlostdate BETWEEN @fromdate AND @TempToDate AND
@@ -1781,7 +1781,7 @@ BEGIN
 			'' AS ShowTime 
 		FROM
 			#TempBetList b
-			INNER JOIN bodb_archive.dbo.MATCH_BK AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
+			INNER JOIN DBARC.bodb_archive.dbo.MATCH_BK AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
 		WHERE
 			(b.bettype < 31 OR (b.Bettype BETWEEN 121 AND 999)) AND
 			b.bettype <>10
@@ -1826,7 +1826,7 @@ BEGIN
 			'' AS ShowTime 
 		FROM
 			#TempBetList b
-			INNER JOIN bodb_archive.dbo.Outright_BK AS m WITH (NOLOCK) ON b.matchid=m.orid
+			INNER JOIN DBARC.bodb_archive.dbo.Outright_BK AS m WITH (NOLOCK) ON b.matchid=m.orid
 			INNER JOIN dbo.League AS l WITH (NOLOCK) ON m.leagueID = l.leagueID
 		WHERE
 			b.bettype = 10
@@ -1963,8 +1963,8 @@ BEGIN
 				b.currency,
 				'' AS ShowTime 
 			FROM
-				bodb_archive.dbo.bettrans_bk AS b WITH (nolock, index=IX_custid)		
-				INNER JOIN bodb_archive.dbo.match_BK AS m WITH (nolock) ON b.matchid=m.matchid 					
+				DBARC.bodb_archive.dbo.bettrans_bk AS b WITH (nolock, index=IX_custid)		
+				INNER JOIN DBARC.bodb_archive.dbo.match_BK AS m WITH (nolock) ON b.matchid=m.matchid 					
 			WHERE
 				b.winlostdate BETWEEN @fromdate AND @TempToDate AND
 				b.custid=@custid AND
@@ -2014,7 +2014,7 @@ BEGIN
 				b.currency,
 				'' AS ShowTime 
 			FROM
-				bodb_archive.dbo.bettrans_bk AS b WITH (nolock, index=IX_custid)
+				DBARC.bodb_archive.dbo.bettrans_bk AS b WITH (nolock, index=IX_custid)
 			WHERE
 				b.winlostdate BETWEEN @fromdate AND @TempToDate AND
 				b.custid=@custid AND	
@@ -2063,7 +2063,7 @@ BEGIN
 				b.currency,
 				'' AS ShowTime 
 			FROM
-				bodb_archive.dbo.bettrans_bk AS b WITH (nolock, index=IX_custid)
+				DBARC.bodb_archive.dbo.bettrans_bk AS b WITH (nolock, index=IX_custid)
 			WHERE
 				b.winlostdate BETWEEN @fromdate AND @TempToDate AND
 				b.custid=@custid AND
@@ -2112,8 +2112,8 @@ BEGIN
 				b.currency,
 				'' AS ShowTime 
 			FROM
-				bodb_archive.dbo.bettrans_bk AS b WITH (nolock, index=IX_custid)		
-				INNER JOIN bodb_archive.dbo.Outright_bk AS m WITH (nolock) ON b.matchid=m.orid 
+				DBARC.bodb_archive.dbo.bettrans_bk AS b WITH (nolock, index=IX_custid)		
+				INNER JOIN DBARC.bodb_archive.dbo.Outright_bk AS m WITH (nolock) ON b.matchid=m.orid 
 				INNER JOIN dbo.League AS l WITH (nolock) ON m.leagueID = l.leagueID
 			WHERE
 				b.winlostdate BETWEEN @fromdate AND @TempToDate AND
@@ -2166,8 +2166,8 @@ BEGIN
 				b.currency,
 				'' AS ShowTime 
 			FROM
-				bodb_archive.dbo.bettrans_bk AS b WITH (nolock, index=IX_custid)		
-				INNER JOIN bodb_archive.dbo.Outright_bk AS m WITH (nolock) ON b.matchid=m.orid 
+				DBARC.bodb_archive.dbo.bettrans_bk AS b WITH (nolock, index=IX_custid)		
+				INNER JOIN DBARC.bodb_archive.dbo.Outright_bk AS m WITH (nolock) ON b.matchid=m.orid 
 				INNER JOIN dbo.League AS l WITH (nolock) ON m.leagueID = l.leagueID
 			WHERE
 				b.winlostdate BETWEEN @fromdate AND @TempToDate AND
@@ -2219,8 +2219,8 @@ BEGIN
 			b.currency,
 			CASE WHEN b.bettype BETWEEN 1101 AND 1199 THEN ISNULL(m.showtime,'') ELSE '' END AS ShowTime 	
 		FROM
-			bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK, index=IX_custid)		
-			INNER JOIN bodb_archive.dbo.match_bk AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
+			DBARC.bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK, index=IX_custid)		
+			INNER JOIN DBARC.bodb_archive.dbo.match_bk AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
 		WHERE
 			b.winlostdate BETWEEN @fromdate AND @TempToDate AND			
 			b.custid=@CustID AND
@@ -2269,8 +2269,8 @@ BEGIN
 			b.currency,
 			CONVERT(VARCHAR(20),r.EventTime) AS  ShowTime 	
 		FROM
-			bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK,INDEX(IX_custid))		
-			INNER JOIN bodb_Archive.dbo.VSOutright_bk o with (nolock) ON b.oddsid=o.Orid
+			DBARC.bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK,INDEX(IX_custid))		
+			INNER JOIN DBARC.bodb_archive.dbo.VSOutright_bk o with (nolock) ON b.oddsid=o.Orid
 			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
 		WHERE
 			b.winlostdate BETWEEN @fromdate AND @TempToDate AND
@@ -2320,7 +2320,7 @@ BEGIN
 			b.currency,
 			'' AS ShowTime 	
 		FROM
-			bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK, index=IX_custid)		
+			DBARC.bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK, index=IX_custid)		
 		WHERE
 			b.winlostdate BETWEEN @fromdate AND @TempToDate AND			
 			b.custid=@CustID AND
@@ -2370,7 +2370,7 @@ BEGIN
 			b.currency,
 			'' AS ShowTime 	
 		FROM
-			bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK, index=IX_custid)		
+			DBARC.bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK, index=IX_custid)		
 		WHERE
 			b.winlostdate BETWEEN @fromdate AND @TempToDate AND			
 			b.custid=@CustID AND
@@ -2421,7 +2421,7 @@ BEGIN
 			b.currency,
 			'' AS ShowTime 	
 		FROM
-			bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK, index=IX_custid)
+			DBARC.bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK, index=IX_custid)
 			CROSS APPLY dbo.f_ParseTransDesc(b.transdesc, b.bettype)	
 		WHERE
 			b.winlostdate BETWEEN @fromdate AND @TempToDate AND			
@@ -2560,7 +2560,7 @@ IF @ShowRB = 1
 			BM.betteam,
 			BM.stake*e.EUR,	
 			BM.stake*e.USD
-		FROM bodb_archive.dbo.bettransm BM WITH (NOLOCK)
+		FROM DBARC.bodb_archive.dbo.bettransm BM WITH (NOLOCK)
 		INNER JOIN #BetListByDateMem B ON BM.refno = B.transid
 		INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
 		WHERE B.Bettype IN (33,43)
@@ -2619,7 +2619,7 @@ IF @ShowLC=1
 				BG.betteam,
 				BG.stake*e.EUR,
 				BG.stake*e.USD	
-			FROM bodb_archive.dbo.bettransg BG WITH (NOLOCK)
+			FROM DBARC.bodb_archive.dbo.bettransg BG WITH (NOLOCK)
 			INNER JOIN #BetListByDateMem B ON BG.refno = B.refno AND BG.CustID=@CustID
 			INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency	
 			WHERE B.Bettype BETWEEN 1101 AND 1199
@@ -2677,7 +2677,7 @@ IF @ShowVS=1
 				BM.betteam,
 				BM.stake*e.EUR,	
 				BM.stake*e.USD
-			FROM bodb_archive.dbo.bettransm BM WITH (NOLOCK)
+			FROM DBARC.bodb_archive.dbo.bettransm BM WITH (NOLOCK)
 			INNER JOIN #BetListByDateMem B ON BM.refno = B.refno
 			INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
 			WHERE B.Bettype=1233
