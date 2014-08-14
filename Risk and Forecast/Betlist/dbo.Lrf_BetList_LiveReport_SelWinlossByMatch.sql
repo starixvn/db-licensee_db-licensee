@@ -37,6 +37,7 @@ Revisions:
    - 20130514@Jim: Restrict permission of Licensee Users by currency
    - 20130625@Jim: support to view currency UUS 
    - 20140602@Hannah: Separate Live/ Non - Live data in Live Report
+   - 20140630@Hannah: offer BetRadar and Sporting Solution 
 
 Param's Explanation: 
 	@Liveindicator : indicate that whether the report will get live data or not
@@ -267,7 +268,7 @@ BEGIN
 			INNER JOIN match m WITH (NOLOCK) ON b.matchid=m.matchid
 		WHERE
 			b.matchid=@matchid AND			
-			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
+			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)) AND
 			b.bettype NOT IN (9,29) AND
 			b.recommend IN (SELECT custid FROM @TempAg)	AND	
 			b.tpositiontaking<>0 AND
@@ -431,7 +432,7 @@ BEGIN
 			b.matchid=@matchid AND						
 			b.statusID IN (111,112,113)	
 			AND tpositiontaking = 0
-			AND (b.bettype < 31 OR (b.Bettype BETWEEN 121 AND 999)) AND
+			AND (b.bettype < 31 OR (b.Bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)) AND
 			b.bettype NOT IN (9,29) AND
 			((@Liveindicator = 0 and b.liveindicator = 0)
 			OR (@Liveindicator = 1 and b.liveindicator = 1)
@@ -535,7 +536,7 @@ BEGIN
 			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid
 		WHERE
 			b.matchid=@matchid AND						
-			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
+			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)) AND
 			b.bettype NOT IN (9,29) AND
 			b.tpositiontaking<>0 AND
 			b.statusID IN (111,112,113) AND

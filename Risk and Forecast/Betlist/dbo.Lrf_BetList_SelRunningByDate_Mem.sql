@@ -17,9 +17,7 @@
 	@ShowVS BIT = 0,
 	@ShowCS BIT = 0, -- RNG Casino
 	@ShowBG BIT = 0,  -- Bingo
-	@ShowKN BIT = 0  -- Keno
-
-	
+	@ShowKN BIT = 0  -- Keno	
 AS
 
 /*
@@ -51,7 +49,7 @@ Revisions:
    - 20130903@Jim: support Virtual Horse Racing
    - 20140310@Hannah: offer Keno
    - 20140319@Hannah: fix bug for showing DrawID 
-
+   - 20140630@Hannah: offer BetRadar and Sporting Solution 
 */
 
 SET NOCOUNT ON
@@ -213,7 +211,7 @@ CREATE TABLE #TempBetList
 			#TempBetList b 
 			INNER JOIN match m WITH (NOLOCK) ON b.matchid=m.matchid		
 		WHERE
-			b.bettype < 31 or (b.bettype BETWEEN 121 AND 999)  
+			(b.bettype < 31 or (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399))  
 			AND b.bettype <>10
 
 		--Outright	
@@ -430,7 +428,7 @@ CREATE TABLE #TempBetList
 			b.custid=@CustID 
 			AND b.matchid > 0
 			AND b.statusID IN (0,1) 
-			AND (b.bettype < 31 OR (b.bettype BETWEEN 121 AND 999))
+			AND (b.bettype < 31 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399))
 			AND b.bettype NOT IN (9,29,10)
 			AND b.transid NOT IN (SELECT transid FROM #TempBetList)
 				
@@ -568,9 +566,7 @@ CREATE TABLE #TempBetList
 			AND b.bettype = 29	
 			AND b.matchid = 29
 			AND b.statusID IN (0,1)
-			AND b.transid NOT IN (SELECT transid FROM #TempBetList)
-			
-			
+			AND b.transid NOT IN (SELECT transid FROM #TempBetList)			
 	END
 
 	--Horse Racing

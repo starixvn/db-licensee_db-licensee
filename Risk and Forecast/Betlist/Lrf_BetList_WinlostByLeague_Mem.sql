@@ -37,7 +37,8 @@ Original:[Lrf_BetList_MatchWL_Bettype_8828]
 Revisions:
 	- 20140207@Florent: add filter ShowBA and ShowSB
 	- 20140214@Florent: add filter by match
-   
+    - 20140630@Hannah: offer BetRadar and Sporting Solution
+
 Param's Explanation: 
 	- @CustID : Customer Number
 	- @Odds : decimals odds, default >=0
@@ -54,8 +55,7 @@ Param's Explanation:
 	- @BalanceUpDay : that day we use bettrans_bk
 	- @ShowWin : show only win bet ,default =1
 	- @ShowLoss: show only loss bet,default =1
-	- @ShowDraw : show only draw bet,default =1
-	
+	- @ShowDraw : show only draw bet,default =1	
 */
 SET NOCOUNT ON
 
@@ -237,7 +237,7 @@ BEGIN
 			WHERE m.leagueid = @LeagueID
 				AND (
 					b.bettype < 31
-					OR (b.bettype BETWEEN 121 AND 999)
+					OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)
 					)
 				AND b.statusID IN (
 					SELECT *
@@ -329,7 +329,7 @@ BEGIN
 			WHERE m.leagueid = @LeagueID
 				AND (
 					b.bettype < 31
-					OR (b.bettype BETWEEN 121 AND 999)
+					OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)
 					)
 				AND b.statusID IN (
 					SELECT *
@@ -431,7 +431,7 @@ BEGIN
 			WHERE m.leagueid = @leagueID
 				AND (
 					b.bettype < 31
-					OR (b.bettype BETWEEN 121 AND 999)
+					OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)
 					)
 				AND b.statusID IN (
 					SELECT *
@@ -527,7 +527,7 @@ BEGIN
 			WHERE m.leagueid = @leagueID
 				AND (
 					b.bettype < 31
-					OR (b.bettype BETWEEN 121 AND 999)
+					OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)
 					)
 				AND b.statusID IN (
 					SELECT *
@@ -625,7 +625,7 @@ BEGIN
 						INNER JOIN cte_match m ON b.matchid=m.matchid
 					 where b.winlostdate between ''''' 
 			+ CAST(@fromdate AS VARCHAR) + '''''' + ' AND ''''' + CAST(@TempToDate AS VARCHAR) + '''''
-					 AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
+					 AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)) AND
 					 b.statusID IN (111,112,113,114,115)
 					 AND b.Custid =' + CAST(@custid AS VARCHAR) + '
 					 and b.tpositiontaking=0
@@ -709,7 +709,7 @@ BEGIN
 						INNER JOIN cte_match m ON b.matchid=m.matchid
 					 where b.winlostdate between ''''' 
 			+ CAST(@fromdate AS VARCHAR) + '''''' + ' AND ''''' + CAST(@TempToDate AS VARCHAR) + '''''
-					 AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
+					 AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)) AND
 					 b.statusID IN (111,112,113,114,115)
 					 AND b.Custid =' + CAST(@custid AS VARCHAR) + '
 					 and b.tpositiontaking<>0
@@ -808,3 +808,15 @@ WHERE A.RowNum BETWEEN @RowStart AND @RowEnd
 --WHERE b.odds>@odds
 DROP TABLE #TempExchange
 DROP TABLE #Data
+GO
+SET QUOTED_IDENTIFIER OFF 
+GO
+SET ANSI_NULLS ON 
+GO
+
+
+GO 
+ GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_WinlostByLeague_Mem] TO [vnteam]
+GO 
+ GRANT EXECUTE ON [dbo].[Lrf_BetList_WinlostByLeague_Mem] TO [bodbLicenseeNet]
+GO 

@@ -74,6 +74,7 @@ Revisions:
 	- 20140421@Hannah: fix bug, add sporttype for Keno
 	- 20140428@Hannah: Sort betlist
 	- 20140520@Hannah: Fix bug Sort betlist
+	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 	- 20140717@Hannah: HotFix for Exporting excel file
 	- 20140718@Jim: fix bug 'wrong to get licensee winloss/comm for Horse Racing' (#19165)
 	- 20140718@Jim: fix bug 'Win loss and Licensee WL showed on web are incorrect when product is BA' (#19261)
@@ -210,7 +211,7 @@ INSERT INTO #TmpCondBettype
 	 FROM bettype  WITH (NOLOCK) 
 	 WHERE typeid < 31 OR   
 	   typeid BETWEEN 121 AND 999 OR   
-	   typeid BETWEEN 1301 AND 1334;
+	   typeid BETWEEN 1301 AND 1399;
 END   
 --Number Game
 IF @Product='NG'

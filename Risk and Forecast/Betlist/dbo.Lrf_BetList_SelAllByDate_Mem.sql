@@ -64,7 +64,7 @@ Revisions:
 	- 20130716@Jim: update matchid for RNG Casino and Bingo
 	- 20130903@Jim: offer VHR
 	- 20140305@Hannah: offer Keno
-
+	- 20140630@Hannah: offer BetRadar and Sporting Solution
 */
 
 
@@ -278,7 +278,7 @@ BEGIN
 		#TempBetList b
 		INNER JOIN match m WITH (NOLOCK) ON b.matchid=m.matchid	
 	WHERE
-		(b.bettype < 31 OR (b.Bettype BETWEEN 121 AND 999))
+		(b.bettype < 31 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399))
 		AND b.bettype <> 10
 		
 	--Outright
@@ -472,7 +472,7 @@ BEGIN
 		b.recommend=@Recommend  AND
 		b.matchid > 0
 		AND b.transdate>=@FROMDate AND b.transdate<=@ToDate
-		AND (b.bettype < 31 OR (b.bettype BETWEEN 121 AND 999))
+		AND (b.bettype < 31 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399))
 		AND b.bettype NOT IN (9,29,10)
 		AND b.tpositiontaking <>0 --exclude BA tickets
 		
@@ -623,10 +623,7 @@ BEGIN
 		AND b.transdate>=@FROMDate AND b.transdate<=@ToDate
 		AND b.bettype=29
 		AND b.matchid = 29
-		AND b.tpositiontaking <>0 --exclude BA tickets
-		
-		
-			
+		AND b.tpositiontaking <>0 --exclude BA tickets			
 END
 
 --Horse Racing
@@ -681,8 +678,6 @@ BEGIN
 		AND b.transdate>=@FROMDate AND b.transdate<=@ToDate	
 		AND b.bettype IN (31, 32, 33)
 END
-
-
 
 --NUMBER GAME
 
