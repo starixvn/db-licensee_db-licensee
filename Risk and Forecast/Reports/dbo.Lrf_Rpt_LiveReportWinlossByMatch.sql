@@ -9,8 +9,10 @@
     @SportId		INT = 0,
     @FromDate		SMALLDATETIME,  
 	@ToDate			SMALLDATETIME,
-	@MoveBetsDay	SMALLDATETIME
-AS /*
+	@MoveBetsDay	SMALLDATETIME,
+	@Liveindicator	INT = 1
+AS 
+/*
 Created: 20111031@
 Task : Live Report Summary by Sport
 DB: DB052.bodb02
@@ -26,13 +28,18 @@ Revisions:
 	- 20121115@Henry: Only Sportsbook needs to exclude BA
 	- 20130618@Jim:  Restrict permission of Licensee Users by currency
 	- 20130625@Jim: support to view currency UUS 
-	
+	- 20140602@Hannah: Separate Live/ Non - Live data in Live Report
+
 Return 3 tables:
 WinlostBySport
 WinlostByCurrency
 WinlostByBetType
 Param's Explanation:
 	@SportId: Not includes mixparlay, outright, numbergame, horseracing
+	@Liveindicator : indicate that whether the report will get live data or not
+		+ 0: Non - Live data only
+		+ 1: Live data only
+		+ 2: All
 Example:
 
 DECLARE @FromDate DATETIME
@@ -73,14 +80,12 @@ DROP TABLE #Currency
     
 DECLARE @bettype AS TABLE (bettype INT PRIMARY KEY)
 
-
 IF @ShowLC = 1
 BEGIN
     INSERT INTO @bettype(bettype)
 	SELECT typeid FROM bettype (NOLOCK)
 	WHERE (typeid BETWEEN 1101 AND 1199)
 END
-
 
 IF @ShowVS = 1
 BEGIN
@@ -111,13 +116,10 @@ BEGIN
 	IF @FDate <= @MoveBetsDay 
 		SET @TempFromDate =  DATEADD(DAY,1,@MoveBetsDay)
 	ELSE
-		SET @TempFromDate = @FDate
-
-	
+		SET @TempFromDate = @FDate	
 
 	IF @ShowBA = 1 
-	BEGIN
-		
+	BEGIN		
 		INSERT INTO #tmpWinloss			
 		SELECT
 			b.winlostdate,  
@@ -142,11 +144,47 @@ BEGIN
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  			
 			b.matchid > 0 AND
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
+			b.bettype NOT IN (9,29) AND
 			b.statusID IN (111,112,113) AND
 			b.tpositiontaking=0 AND
-			m.sporttype = @SportId 
+			m.sporttype = @SportId AND
+			((@Liveindicator = 0 and b.liveindicator = 0)
+			OR (@Liveindicator = 1 and b.liveindicator = 1)
+			OR (@Liveindicator = 2))
+		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype				
+
+		-- BA for parlay
+		INSERT INTO #tmpWinloss			
+		SELECT
+			b.winlostdate,  
+			b.currency,
+			m.matchid, 		
+			m.homeid, 
+			m.awayid,
+			SUM(stake) turnover, 
+			SUM(b.winlost - b.actual_stake) AS Winlost,  		
+			0 AS LicenseeWL,
+			SUM (comm ) as Comm,
+			SUM (  b.playercomm  ) as PlayerComm,
+			- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,
+			COUNT(b.transid) BetCount,
+			b.bettype,
+			'' AS ShowTime 
+		FROM bettrans b  WITH (NOLOCK) 
+			--INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
+			INNER JOIN @TempAg t  ON b.recommend =t.custid  
+			INNER JOIN [match] m WITH(NOLOCK) ON b.matchid=m.matchid				
+		WHERE
+			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  			
+			b.matchid > 0 AND
+			b.bettype IN (9,29) AND
+			b.statusID IN (111,112,113) AND
+			b.tpositiontaking=0 AND
+			m.sporttype = @SportId AND
+			((@Liveindicator = 0 and b.livehomescore = 0)
+			OR (@Liveindicator = 1 and b.livehomescore = 1)
+			OR (@Liveindicator = 2))
 		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
-				
 	END
 	
 	IF (@ShowSB=1)
@@ -169,15 +207,50 @@ BEGIN
 			'' AS ShowTime 
 		FROM bettrans b  WITH (NOLOCK) 
 			INNER JOIN [match] m WITH(NOLOCK) ON b.matchid=m.matchid				
-			INNER JOIN @TempAg t ON b.recommend = t.custid
-			
+			INNER JOIN @TempAg t ON b.recommend = t.custid			
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
+			b.bettype NOT IN (9,29) AND
 			b.matchid > 0 AND
 			b.statusID IN (111,112,113) AND
 			m.sporttype = @SportId AND
-			b.tpositiontaking<>0
+			b.tpositiontaking<>0 AND
+			((@Liveindicator = 0 and b.liveindicator = 0)
+			OR (@Liveindicator = 1 and b.liveindicator = 1)
+			OR (@Liveindicator = 2))
+		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
+
+		-- SB for parlay
+		INSERT INTO #tmpWinloss			
+		SELECT
+			b.winlostdate,  
+			b.currency,
+			m.matchid, 		
+			m.homeid, 
+			m.awayid,
+			SUM(stake) turnover, 
+			SUM(b.winlost - b.actual_stake) AS Winlost,  	
+			SUM(-1 * (b.winlost - b.actual_stake)) AS LicenseeWL,
+			SUM (comm ) as Comm,
+			SUM (  b.playercomm  ) as PlayerComm,
+			- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,
+			COUNT(b.transid) BetCount,
+			b.bettype, 
+			'' AS ShowTime 
+		FROM bettrans b  WITH (NOLOCK) 
+			INNER JOIN [match] m WITH(NOLOCK) ON b.matchid=m.matchid				
+			INNER JOIN @TempAg t ON b.recommend = t.custid			
+		WHERE
+			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
+			b.bettype IN (9,29) AND
+			b.matchid > 0 AND
+			b.statusID IN (111,112,113) AND
+			m.sporttype = @SportId AND
+			b.tpositiontaking<>0 AND
+			((@Liveindicator = 0 and b.livehomescore = 0)
+			OR (@Liveindicator = 1 and b.livehomescore = 1)
+			OR (@Liveindicator = 2))
 		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
 	END
 
@@ -207,12 +280,13 @@ BEGIN
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
 			b.matchid > 0 AND
 			b.statusID IN (111,112,113) AND
-			m.sporttype = @SportId
+			m.sporttype = @SportId AND
+			((@Liveindicator = 0 and b.liveindicator = 0)
+			OR (@Liveindicator = 1 and b.liveindicator = 1)
+			OR (@Liveindicator = 2))
 		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype,
 					CASE WHEN b.bettype BETWEEN 1101 AND 1199  THEN ISNULL(m.showtime,'') ELSE '' END 
-	END
-	
-	
+	END	
 END
 
 	
@@ -224,8 +298,7 @@ BEGIN
 			SET  @TempToDate = @TDate
 			
 	IF @ShowBA = 1
-	BEGIN
-		
+	BEGIN		
 		INSERT INTO #tmpWinloss			
 		SELECT
 			b.winlostdate,  
@@ -249,10 +322,47 @@ BEGIN
 			b.winlostdate BETWEEN @FDate AND @TempToDate  AND
 			b.Recommend IN ( SELECT custid FROM @TempAg)  AND    
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
+			b.bettype NOT IN (9,29) AND
 			b.tpositiontaking=0 AND
 			b.statusID IN (111,112,113) AND
-			m.sporttype = @SportId 	
+			m.sporttype = @SportId 	AND
+			((@Liveindicator = 0 and b.liveindicator = 0)
+			OR (@Liveindicator = 1 and b.liveindicator = 1)
+			OR (@Liveindicator = 2))
 		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
+		
+		-- BA for parlay
+		INSERT INTO #tmpWinloss			
+		SELECT
+			b.winlostdate,  
+			b.currency,
+			m.matchid, 		
+			m.homeid, 
+			m.awayid,	
+			SUM(stake) turnover, 
+			SUM(b.winlost - b.actual_stake) AS Winlost,  		
+			0 AS LicenseeWL,
+			SUM (comm ) as Comm,
+			SUM (  playercomm  ) as PlayerComm,
+			- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,
+			COUNT(b.transid) BetCount,
+			b.bettype,
+			'' AS ShowTime 
+		FROM bettrans14 b  WITH (NOLOCK) 
+			--INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
+			INNER JOIN [match14] m WITH(NOLOCK) ON b.matchid = m.matchid
+		WHERE
+			b.winlostdate BETWEEN @FDate AND @TempToDate  AND
+			b.Recommend IN ( SELECT custid FROM @TempAg)  AND    
+			b.bettype IN (9,29) AND
+			b.tpositiontaking=0 AND
+			b.statusID IN (111,112,113) AND
+			m.sporttype = @SportId 	AND
+			((@Liveindicator = 0 and b.livehomescore = 0)
+			OR (@Liveindicator = 1 and b.livehomescore = 1)
+			OR (@Liveindicator = 2))
+		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
+
 	END			
 			
 	IF (@ShowSB=1)
@@ -275,23 +385,53 @@ BEGIN
 			'' AS ShowTime 
 		FROM bettrans14 b  WITH (NOLOCK) 
 			INNER JOIN @TempAg t ON b.recommend = t.custid
-			INNER JOIN [match14] m WITH(NOLOCK) ON b.matchid = m.matchid
-			
-			
+			INNER JOIN [match14] m WITH(NOLOCK) ON b.matchid = m.matchid			
 		WHERE
 			b.winlostdate BETWEEN @FDate AND @TempToDate  AND
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
+			b.bettype NOT IN (9,29) AND
 			b.tpositiontaking<>0 AND
 			b.statusID IN (111,112,113) AND
-			m.sporttype = @SportId 
-			
+			m.sporttype = @SportId AND
+			((@Liveindicator = 0 and b.liveindicator = 0)
+			OR (@Liveindicator = 1 and b.liveindicator = 1)
+			OR (@Liveindicator = 2))			
+		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype				
+
+		-- SB for parlay
+		INSERT INTO #tmpWinloss			
+		SELECT
+			b.winlostdate,  
+			b.currency,
+			m.matchid, 		
+			m.homeid, 
+			m.awayid,	
+			SUM(stake) turnover, 
+			SUM(b.winlost - b.actual_stake) AS Winlost,  		
+			SUM(-1 * (b.winlost - b.actual_stake)) AS LicenseeWL,
+			SUM (comm ) as Comm,
+			SUM (playercomm  ) as PlayerComm,
+			- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,
+			COUNT(b.transid) BetCount,
+			b.bettype,
+			'' AS ShowTime 
+		FROM bettrans14 b  WITH (NOLOCK) 
+			INNER JOIN @TempAg t ON b.recommend = t.custid
+			INNER JOIN [match14] m WITH(NOLOCK) ON b.matchid = m.matchid			
+		WHERE
+			b.winlostdate BETWEEN @FDate AND @TempToDate  AND
+			b.bettype IN (9,29) AND
+			b.tpositiontaking<>0 AND
+			b.statusID IN (111,112,113) AND
+			m.sporttype = @SportId AND
+			((@Liveindicator = 0 and b.livehomescore = 0)
+			OR (@Liveindicator = 1 and b.livehomescore = 1)
+			OR (@Liveindicator = 2))			
 		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
-				
 	END		
 			
 	IF (@ShowLC = 1 OR @ShowVS = 1)
-	BEGIN
-		
+	BEGIN		
 		INSERT INTO #tmpWinloss			
 		SELECT
 			b.winlostdate,  
@@ -311,17 +451,17 @@ BEGIN
 		FROM bettrans14 b  WITH (NOLOCK) 
 			INNER JOIN @TempAg t ON b.recommend = t.custid
 			INNER JOIN [match14] m WITH(NOLOCK) ON b.matchid = m.matchid
-			INNER JOIN @bettype bt ON b.bettype = bt.bettype
-			
+			INNER JOIN @bettype bt ON b.bettype = bt.bettype			
 		WHERE
 			b.winlostdate BETWEEN @FDate AND @TempToDate  AND
 			b.statusID IN (111,112,113) AND
-			m.sporttype = @SportId
+			m.sporttype = @SportId AND
+			((@Liveindicator = 0 and b.liveindicator = 0)
+			OR (@Liveindicator = 1 and b.liveindicator = 1)
+			OR (@Liveindicator = 2))
 		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype, 
 				CASE WHEN b.bettype BETWEEN 1101 AND 1199  THEN ISNULL(m.showtime,'') ELSE '' END
 	END		
-	
-	
 	
 END	
 -- Get winlost by match 
