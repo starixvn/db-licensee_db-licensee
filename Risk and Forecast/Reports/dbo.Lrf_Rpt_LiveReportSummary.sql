@@ -1,4 +1,11 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportSummary]
+﻿USE [bodb02]
+GO
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportSummary]
 	  @LicenseeID INT
 	, @UserID INT
 	, @CurrencyID INT = NULL
@@ -31,6 +38,7 @@ Revisions:
 	-20131007@Jim: support Virtual Tennis
 	-20140404@Florent: support Keno product
 	-20140602@Hannah: Separate Live/ Non - Live data in Live Report
+	-20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 	
 Param's Explanation:
 	@IsLive : indicate that whether the report will get live data or not
@@ -239,6 +247,7 @@ BEGIN
 		AND (
 			b.bettype < 31
 			OR (b.bettype BETWEEN 121 AND 999)
+			OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 			)
 		AND (b.bettype NOT IN (9,29))
 		AND b.tpositiontaking <> 0
@@ -394,7 +403,7 @@ BEGIN
 		CASE 
 			WHEN b.bettype BETWEEN 81 AND 120
 				THEN 'NG'
-			WHEN (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999))
+			WHEN (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 and 1399))
 				THEN 'SB'
 			WHEN b.bettype BETWEEN 31 AND 33 
 				THEN 'RB'
@@ -431,7 +440,7 @@ BEGIN
 		CASE 
 			WHEN b.bettype BETWEEN 81 AND 120
 				THEN 'NG'
-			WHEN (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999))
+			WHEN (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999)OR (b.Bettype BETWEEN 1301 and 1399) )
 				THEN 'SB'
 			WHEN b.bettype BETWEEN 31 AND 33 
 				THEN 'RB'
@@ -536,6 +545,7 @@ DROP TABLE #Currency
 DROP TABLE #tmpWinloss
 
 DROP TABLE #TempExchange
+
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_LiveReportSummary] TO [bodbLicenseeNet]

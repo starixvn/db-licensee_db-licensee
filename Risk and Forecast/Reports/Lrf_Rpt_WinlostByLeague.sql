@@ -1,19 +1,20 @@
 USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_WinlostByLeague_11594]    Script Date: 14/02/2014 11:11:05 AM ******/
+
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlostByLeague] @LicenseeID INT
+ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlostByLeague] 
+	@LicenseeID INT
 	,@UserID INT
 	,@CurrencyID INT
 	,@FromDate SMALLDATETIME
 	,@ToDate SMALLDATETIME
 	,@Odds FLOAT = 0
 	,@LeagueID INT
-	,@MatchID INT
+	,@MatchID INT =0
 	,@MoveBetsDay SMALLDATETIME
 	,@BalanceUpDay SMALLDATETIME
 	,@ShowWin BIT = 1
@@ -30,6 +31,7 @@ AS
 	Original: 
 	Revision:
 		- 20140207@Florent: Add filter ShowSB , ShowBA
+		- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 	Parameter's Explanation:
 		- @LicenseeID : Licensee ID
 		- @UserID : UserID who run this report
@@ -43,7 +45,7 @@ AS
 		- @ShowLoss :Filter show only Loss bet
 		- @ShowDraw :Filter show only Draw bet		
 		- @MoveBetsDay: The day we move tickets to bettrans14
-		- @BalanceUpDay: The day we move tickets to bettrans_bk	  
+		- @BalanceUpDay: The day we move tickets to bettrans_bk		
 			
 */
 SET NOCOUNT ON
@@ -225,7 +227,8 @@ BEGIN
 			WHERE b.winlostdate BETWEEN @TempFromDate AND @todate
 				AND (
 					b.bettype < 31
-					OR (b.bettype BETWEEN 121 AND 999)
+					OR (b.bettype BETWEEN 121 AND 999)		
+					OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes		
 					)
 				AND (
 					@MatchID = 0
@@ -352,7 +355,8 @@ BEGIN
 			WHERE b.winlostdate BETWEEN @TempFromDate AND @todate
 				AND (
 					b.bettype < 31
-					OR (b.bettype BETWEEN 121 AND 999)
+					OR (b.bettype BETWEEN 121 AND 999)	
+					OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes			
 					)
 				AND (
 					@MatchID = 0
@@ -410,7 +414,6 @@ BEGIN
 		END
 	END
 END
-
 CREATE TABLE #match (
 	matchid INT
 	,homeid INT
@@ -512,7 +515,7 @@ BEGIN
 				,SUM(winlost)
 				,0 AS LicenseeWL
 				,0 AS WinlossRB
-				,- sum(Winlost + awinlost + comm) AS AmountDueToBA
+				,-sum(Winlost + awinlost + comm) AS AmountDueToBA
 				,0 AS AmountDueToRB
 				,sum(comm) AS CommBA
 				,0 AS CommRB
@@ -523,13 +526,14 @@ BEGIN
 				,m.sporttype
 				,m.showtime AS showtime
 				,sum(b.betcount) betcount
-			FROM bodb_LicenseeReport.dbo.rptWinlostbyLeague b WITH (NOLOCK)
+			FROM bodb_LicenseeReport.dbo.rptWinlostbyLeague b WITH (NOLOCK, INDEX = IX_recommend)
 			INNER JOIN #match AS m WITH (NOLOCK) ON m.matchid = b.matchid
 			INNER JOIN @TempAg ag ON b.recommend = ag.custid
 			WHERE winlostdate BETWEEN @fromdate AND @TempToDate
 				AND (
 					b.bettype < 31
-					OR (b.bettype BETWEEN 121 AND 999)
+					OR (b.bettype BETWEEN 121 AND 999)			
+					OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes		
 					)
 				AND b.leagueid = @LeagueID
 				AND (
@@ -646,13 +650,14 @@ BEGIN
 				,m.sporttype
 				,m.showtime AS showtime
 				,sum(b.betcount) betcount
-			FROM bodb_LicenseeReport.dbo.rptWinlostbyLeague b WITH (NOLOCK)
+			FROM bodb_LicenseeReport.dbo.rptWinlostbyLeague b WITH (NOLOCK, INDEX = IX_recommend)
 			INNER JOIN #match AS m WITH (NOLOCK) ON m.matchid = b.matchid
 			INNER JOIN @TempAg ag ON b.recommend = ag.custid
 			WHERE winlostdate BETWEEN @fromdate AND @TempToDate
 				AND (
 					b.bettype < 31
-					OR (b.bettype BETWEEN 121 AND 999)
+					OR (b.bettype BETWEEN 121 AND 999)	
+					OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes			
 					)
 				AND b.leagueid = @LeagueID
 				AND (
@@ -838,9 +843,7 @@ GROUP BY matchid
 */
 DROP TABLE #match
 
-
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinlostByLeague] TO [bodbLicenseeNet] AS [dbo]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_WinlostByLeague] TO [vnteam] AS [dbo]
-GO  

@@ -1,14 +1,10 @@
 ﻿USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_MatchWinLossByBettype]    Script Date: 05/23/2014 10:21:12 ******/
+
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-/****** Object:  Stored Procedure dbo.Lrf_Rpt_MatchWinLossByBettype    Script Date: 12/12/2013 3:38:58 AM ******/
-/****** Object:  Stored Procedure dbo.Lrf_Rpt_MatchWinLossByBettype    Script Date: 12/9/2013 6:21:28 PM ******/
-
-
 ALTER PROCEDURE [dbo].[Lrf_Rpt_MatchWinLossByBettype]  
 	@LicenseeID INT,  
 	@UserID		INT,
@@ -44,6 +40,7 @@ Revisions:
 	- 20130809@Jim: offer Virtual Horse Racing
 	- 20131203@Jim: offer Virtual Greyhound, Virtual Motor Racing
 	- 20130423@Kyan: offer Virtual Speedway, Virtual Cycling 
+	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes), column Betcount
 Param's Explanation:   
    
 */  
@@ -101,7 +98,8 @@ DECLARE @AgMatchWLDetails TABLE
  race NVARCHAR(20),  
  matchcode NVARCHAR(50),  
  isNeutral BIT,  
- liveindicator BIT  
+ liveindicator BIT,
+ betcount int
 )  
   
 CREATE TABLE #TempBetList(  
@@ -117,7 +115,8 @@ CREATE TABLE #TempBetList(
  MatchID         INT,  
  Liveawayscore SMALLINT,  
  liveindicator   BIT,  
- tpositiontaking SMALLMONEY  
+ tpositiontaking SMALLMONEY ,
+ betcount int
 )  
   
   
@@ -165,7 +164,8 @@ BEGIN
 	   b.matchid,  
 	   0 AS Liveawayscore,  
 	   0 AS liveindicator,  
-	   0 AS tpositiontaking  
+	   0 AS tpositiontaking,
+	   count(1) betcount 
 	  FROM      
 	   bettrans b WITH(NOLOCK)  
 	   INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON b.recommend=BA.recommend AND b.transid = BA.transid     
@@ -204,7 +204,8 @@ BEGIN
 	   '',  
 	   m.matchcode,  
 	   ISNULL(m.isNeutral, CONVERT(BIT, 0)) AS IsNeutral,  
-	   0 AS liveindicator  
+	   0 AS liveindicator ,
+	   sum(b.betcount) betcount
 		 
 	  FROM      
 	   #TempBetList b  
@@ -242,7 +243,8 @@ BEGIN
          b.matchid,  
          b.Liveawayscore,  
          CASE WHEN b.bettype BETWEEN 81 AND 120 THEN b.liveindicator ELSE 0 END AS liveindicator,  
-         b.tpositiontaking  
+         b.tpositiontaking ,
+		 count(1) betcount
         FROM      
          bettrans b WITH(NOLOCK)  
         WHERE     
@@ -277,7 +279,8 @@ BEGIN
          b.matchid,  
          b.Liveawayscore,  
          CASE WHEN b.bettype BETWEEN 81 AND 120 THEN b.liveindicator ELSE 0 END AS liveindicator,  
-         b.tpositiontaking  
+         b.tpositiontaking ,
+		 count(1) betcount
         FROM      
          bettrans b WITH(NOLOCK)  
             LEFT JOIN outright o (NOLOCK) ON b.matchid = o.orid  
@@ -323,12 +326,15 @@ BEGIN
 	   '',  
 	   m.matchcode,  
 	   ISNULL(m.isNeutral, CONVERT(BIT, 0)) AS IsNeutral,  
-	   b.liveindicator AS liveindicator  
+	   b.liveindicator AS liveindicator, 
+	   sum(b.betcount) betcount
 	  FROM      
 	   #TempBetList b  
 	   INNER JOIN match m WITH ( NOLOCK ) ON m.matchid = b.matchid  
 	  WHERE  
-	   (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND  
+	   (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
+					 OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+	   ) AND  
 	   b.tpositiontaking <> 0  
 	  GROUP BY  
 	   b.Winlostdate,  
@@ -368,7 +374,8 @@ BEGIN
 	   '',  
 	   m.matchcode,  
 	   ISNULL(m.isNeutral, CONVERT(BIT, 0)) AS IsNeutral,  
-	   b.liveindicator AS liveindicator  
+	   b.liveindicator AS liveindicator,
+	   sum(b.betcount) betcount 
 	  FROM      
 	   #TempBetList b  
 	   INNER JOIN match m WITH ( NOLOCK ) ON m.matchid = b.matchid  
@@ -410,7 +417,8 @@ BEGIN
 				b.oddsid Race,  
 				o.RacerNum as matchcode,  
 				ISNULL(0, CONVERT(BIT, 0)) AS IsNeutral,  
-				0 AS liveindicator  
+				0 AS liveindicator ,
+				count(1) betcount 
 				FROM      
 				dbo.bettrans b  WITH (NOLOCK)
 				INNER JOIN VSOutright o with (nolock) ON b.oddsid=o.Orid
@@ -459,7 +467,8 @@ BEGIN
 	   m.groupmatch AS race,  
 	   'ZZZZ' AS matchcode,  
 	   CONVERT(BIT, 0) AS IsNeutral,  
-	   0 as liveindicator  
+	   0 as liveindicator ,
+	   sum(b.betcount) betcount 
 	  FROM      
 	   #TempBetList b  
 	   INNER JOIN outright m WITH ( NOLOCK ) ON m.orid = b.matchid  
@@ -492,7 +501,8 @@ BEGIN
 	   b.matchid,  
 	   0 AS Liveawayscore,  
 	   0 AS liveindicator,  
-	   0 AS tpositiontaking  
+	   0 AS tpositiontaking, 
+	   count(1) betcount
 	  FROM      
 	   bettrans14 b WITH(NOLOCK)  
 	   INNER JOIN @TempAg ag ON b.recommend = ag.custid  
@@ -502,7 +512,9 @@ BEGIN
 	   AND b.statusID IN (111,112,113)  
 	   AND b.matchid = @MatchID  
 	   AND tpositiontaking = 0  
-	   AND (b.bettype < 31 OR (b.Bettype BETWEEN 121 AND 999))  
+	   AND (b.bettype < 31 OR (b.Bettype BETWEEN 121 AND 999)
+						   OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+	   )  
 	  GROUP BY  
 	   b.Winlostdate,  
 	   b.currency,
@@ -533,7 +545,8 @@ BEGIN
 	   '' AS race,  
 	   m.matchcode,  
 	   ISNULL(m.isNeutral, CONVERT(BIT, 0)) AS IsNeutral,  
-	   0 AS liveindicator  
+	   0 AS liveindicator,
+	   sum(b.betcount) betcount  
 	  FROM     
 	   #TempBetList b  
 	   INNER JOIN match14 m WITH ( NOLOCK ) ON m.matchid = b.matchid  
@@ -571,7 +584,8 @@ BEGIN
 		b.matchid,  
 		b.Liveawayscore ,  
 		CASE WHEN b.bettype BETWEEN 81 AND 120 THEN b.liveindicator ELSE 0 END AS liveindicator,  
-		b.tpositiontaking  
+		b.tpositiontaking,
+		count(1) betcount  
 	FROM      
 		bettrans14 b WITH(NOLOCK)  
 		INNER JOIN @TempAg ag ON b.recommend = ag.custid  
@@ -601,7 +615,8 @@ ELSE -- @showRB = 1, Racing
 		SUM(b.playercomm ) AS playercomm,  
 		b.matchid,  
 		b.Liveawayscore ,  
-		CASE WHEN b.bettype BETWEEN 81 AND 120 THEN b.liveindicator ELSE 0 END AS liveindicator,b.tpositiontaking  
+		CASE WHEN b.bettype BETWEEN 81 AND 120 THEN b.liveindicator ELSE 0 END AS liveindicator,b.tpositiontaking  ,
+		count(1) betcount
 	FROM      
 		bettrans14 b WITH(NOLOCK)  
 		INNER JOIN @TempAg ag ON b.recommend = ag.custid  
@@ -646,12 +661,15 @@ ELSE -- @showRB = 1, Racing
 			m.matchcode,  
 			ISNULL(m.isNeutral,   
 			CONVERT(BIT, 0)) AS IsNeutral,  
-			b.liveindicator AS liveindicator  
+			b.liveindicator AS liveindicator,
+			sum(b.betcount) betcount 
 		FROM     
 			#TempBetList b  
 			INNER JOIN match14 m WITH ( NOLOCK ) ON m.matchid = b.matchid  
 		WHERE     
-			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND  
+			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
+						  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+			) AND  
 			b.tpositiontaking <> 0   
 		GROUP BY  
 			b.Winlostdate,  
@@ -691,7 +709,8 @@ ELSE -- @showRB = 1, Racing
 		m.matchcode,  
 		ISNULL(m.isNeutral,   
 		CONVERT(BIT, 0)) AS IsNeutral,  
-		b.liveindicator AS liveindicator  
+		b.liveindicator AS liveindicator,
+		sum(b.betcount) betcount  
 	FROM     
 		#TempBetList b  
 		INNER JOIN match14 m WITH ( NOLOCK ) ON m.matchid = b.matchid  
@@ -733,7 +752,8 @@ ELSE -- @showRB = 1, Racing
 			b.oddsid race,  
 			o.RacerNum as matchcode,  
 			ISNULL(0, CONVERT(BIT, 0)) AS IsNeutral,  
-			0 AS liveindicator  
+			0 AS liveindicator,
+			count(1) betcount  
 		FROM      
 			dbo.bettrans14 b  WITH (NOLOCK)
 			INNER JOIN VSOutright14 o with (nolock) ON b.oddsid=o.Orid
@@ -782,7 +802,8 @@ ELSE -- @showRB = 1, Racing
 		m.groupmatch AS race,  
 		'ZZZZ' AS matchcode,  
 		CONVERT(BIT, 0) AS IsNeutral,  
-		0 AS liveindicator  
+		0 AS liveindicator,
+		sum(b.betcount) betcount 
 	FROM      
 		#TempBetList b  
 		INNER JOIN outright14 m WITH ( NOLOCK ) ON m.orid = b.matchid  
@@ -804,7 +825,8 @@ FROM Lrf_f_GetExchangeDaily(@_Date,@_Date)
       
 -- Result  
 SELECT      
-	matchid,  
+	matchid,
+	sum(b.betcount) betcount,  
 	CASE WHEN b.sporttype IN (180,181,182,183,184,185) THEN 0 ELSE homeid END homeid,  
 	awayid,  
 	bettype,

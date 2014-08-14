@@ -24,26 +24,27 @@ Task : Live Report Summary BY Sport
 DB: DB052.bodb02  
   
 Revisions:  
-	-20111208@Jim: change bettype condition
-	-20120110@Henry: remove Licensee Type + Get data from rpt_Betting + remove currency UUS
-	-20120214@Jim: change table ExchangeDaily by function Lrf_f_GetExchangeDaily  
-    -20120614@Jim: optimize code  
-	-20120726@Jim: add playercomm value 
-	-20120814@Henry: add live casino
-	-20120830@Henry: add Virtual Sports ...
-	-20121004@Jim: replace @currency input param by @currencyID
-	-20121128@Henry: use new table LicenseeBATransaction_active to get bettrans BA tickets
-	-20130328@Scott: Support RNG Casino and Bingo
-	-20130618@Jim:  Restrict permission of Licensee Users by currency
-	-20130625@Jim: support to view currency UUS
-	-20130809@Jim: offer Virtual Horse Racing
-	-20131007@Jim: support Virtual Tennis
+	- 20111208@Jim: change bettype condition
+	- 20120110@Henry: remove Licensee Type + Get data from rpt_Betting + remove currency UUS
+	- 20120214@Jim: change table ExchangeDaily by function Lrf_f_GetExchangeDaily  
+    - 20120614@Jim: optimize code  
+	- 20120726@Jim: add playercomm value 
+	- 20120814@Henry: add live casino
+	- 20120830@Henry: add Virtual Sports ...
+	- 20121004@Jim: replace @currency input param by @currencyID
+	- 20121128@Henry: use new table LicenseeBATransaction_active to get bettrans BA tickets
+	- 20130328@Scott: Support RNG Casino and Bingo
+	- 20130618@Jim:  Restrict permission of Licensee Users by currency
+	- 20130625@Jim: support to view currency UUS
+	- 20130809@Jim: offer Virtual Horse Racing
+	- 20131007@Jim: support Virtual Tennis
 	- 20131129@Jim: support :
 				182 – Virtual Greyhounds
 				184 – Virtual Motor Racing
 	- 20140404@Florent: offer 202 Keno
 	- 20140410@Jim: fix bug #14715 (wrong RNG Casino sporttype)	
 	- 20140602@Hannah: Separate Live/ Non - Live data in Live Report	
+	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 Param's Explanation:  
 	@Liveindicator : indicate that whether the report will get live data or not
 		+ 0: Non - Live data only
@@ -232,7 +233,7 @@ BEGIN
 				WHEN @ProductCode = 'NG'
 					THEN 'AND b.bettype BETWEEN 81 AND 120 '
 				WHEN @ProductCode = 'SB'
-					THEN 'AND (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999))'
+					THEN 'AND (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 and 1399))'
 				WHEN @ProductCode = 'RB'
 					THEN 'AND b.bettype BETWEEN 31 AND 33'
 				WHEN @ProductCode = 'LC'
@@ -289,7 +290,7 @@ BEGIN
 				WHEN @ProductCode = 'NG'
 					THEN 'AND b.bettype BETWEEN 81 AND 120 '
 				WHEN @ProductCode = 'SB'
-					THEN 'AND (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999))'
+					THEN 'AND (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 and 1399))'
 				WHEN @ProductCode = 'RB'
 					THEN 'AND b.bettype BETWEEN 31 AND 33'
 				WHEN @ProductCode = 'LC'
@@ -404,7 +405,7 @@ BEGIN
 					WHEN @ProductCode = 'NG'
 						THEN 'AND b.bettype BETWEEN 81 AND 120 '
 					WHEN @ProductCode = 'SB'
-						THEN 'AND (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999))'
+						THEN 'AND (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 and 1399))'
 					WHEN @ProductCode = 'RB'
 						THEN 'AND b.bettype BETWEEN 31 AND 33'
 					WHEN @ProductCode = 'LC'
@@ -518,7 +519,7 @@ SELECT @sql = @sql + 'select b.SportType, ' + CHAR(13) +
 					'DROP TABLE #Currency' + CHAR(13)
 
 IF (@debug = 1)
-	PRINT @sql
+	SELECT @sql
 ELSE
 	EXEC (@sql)
 

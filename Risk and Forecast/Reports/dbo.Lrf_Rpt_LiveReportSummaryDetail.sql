@@ -1,6 +1,6 @@
 ﻿USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_LiveReportSummaryDetail]    Script Date: 12/12/2013 3:00:07 PM ******/
+
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -43,6 +43,8 @@ Revisions:
 	-20131203@Jim: offer Virtual Greyhound, Virtual Motor Racing
 	-20140404@Florent: offer Keno product	
 	-20140602@Hannah: Separate Live/ Non - Live data in Live Report
+	-20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
+
      
 Param's Explanation:  
 	@Liveindicator : indicate that whether the report will get live data or not
@@ -182,7 +184,7 @@ BEGIN
 				WHEN @ProductCode = 'NG'
 					THEN 'AND b.bettype BETWEEN 81 AND 120 '
 				WHEN @ProductCode = 'SB'
-					THEN 'AND (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999))'
+					THEN 'AND (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399))'
 				WHEN @ProductCode = 'RB'
 					THEN 'AND b.bettype BETWEEN 31 AND 33'
 				WHEN @ProductCode = 'LC'
@@ -331,7 +333,7 @@ BEGIN
 				WHEN @ProductCode = 'NG'
 					THEN 'AND b.bettype BETWEEN 81 AND 120 '
 				WHEN @ProductCode = 'SB'
-					THEN 'AND (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999))'
+					THEN 'AND (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399))'
 				WHEN @ProductCode = 'RB'
 					THEN 'AND b.bettype BETWEEN 31 AND 33'
 				WHEN @ProductCode = 'LC'
@@ -380,7 +382,7 @@ BEGIN
 				WHEN @ProductCode = 'NG'
 					THEN 'AND b.bettype BETWEEN 81 AND 120 '
 				WHEN @ProductCode = 'SB'
-					THEN 'AND (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999))'
+					THEN 'AND (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399))'
 				WHEN @ProductCode = 'RB'
 					THEN 'AND b.bettype BETWEEN 31 AND 33'
 				WHEN @ProductCode = 'LC'
@@ -429,4 +431,4 @@ ELSE
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_LiveReportSummaryDetail] TO [bodbLicenseeNet] AS [dbo]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LiveReportSummaryDetail] TO [vnteam] AS [dbo]
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LiveReportSummaryDetail] TO [vnteam] AS [dbo

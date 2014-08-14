@@ -1,13 +1,12 @@
 USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_WinlossByLeagueDetail]    Script Date: 13/01/2014 10:09:46 AM ******/
+
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByLeagueDetail]  
-	@LicenseeID INT
+ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByLeagueDetail] @LicenseeID INT
 	,@UserID INT
 	,@Odds FLOAT = 0
 	,@CurrencyID INT = 0
@@ -33,6 +32,7 @@ Original:
 Revisions:  
 	- 20140207@Florent: Add filter ShowBA and ShowSB
 	- 20140214@Florent: use new sum table rptCustomerMatch
+	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 Param's Explanation:   
    
 */
@@ -179,7 +179,7 @@ BEGIN
 			,SUM(stake)
 			,SUM(winlost - b.actual_stake)
 			,0 AS LicenseeWL
-			,- SUM(winlost - b.actual_stake + awinlost + comm) AS AmountDueToBA
+			, - SUM(winlost - b.actual_stake + awinlost + comm)AS AmountDueToBA
 			,SUM(comm) AS CommBA
 			,SUM(b.playercomm) AS PlayerComm
 			,m.matchcode
@@ -194,6 +194,7 @@ BEGIN
 		WHERE (--SportBook
 				b.bettype < 31
 				OR (b.bettype BETWEEN 121 AND 999)
+				OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 				)
 			-- --AND b.tpositiontaking <> 0  
 			AND b.winlostdate BETWEEN @TempFromDate AND @todate
@@ -203,6 +204,7 @@ BEGIN
 				)
 			AND m.leagueid = @LeagueID
 			and b.tpositiontaking=0--GetBA
+			AND (@matchid=0 or b.matchid = @MatchID)
 		GROUP BY b.custid
 			,b.Winlostdate
 			,b.currency
@@ -304,6 +306,7 @@ BEGIN
 		WHERE (
 				b.bettype < 31
 				OR (b.bettype BETWEEN 121 AND 999)
+				OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 				)			
 			AND b.winlostdate BETWEEN @TempFromDate AND @todate
 			AND b.statusID IN (
@@ -312,6 +315,7 @@ BEGIN
 				)
 			AND m.leagueid = @LeagueID
 			AND b.tpositiontaking <> 0  
+			AND (@matchid=0 or b.matchid = @MatchID)
 		GROUP BY b.custid
 			,b.Winlostdate
 			,b.currency
@@ -427,6 +431,7 @@ BEGIN
 				AND (
 					b.bettype < 31
 					OR (b.bettype BETWEEN 121 AND 999)
+					OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 					)
 				AND (@matchid=0 or b.matchid = @MatchID)
 				AND b.statusID IN (
@@ -531,6 +536,7 @@ BEGIN
 				AND (
 					b.bettype < 31
 					OR (b.bettype BETWEEN 121 AND 999)
+					OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 					)
 				--AND b.matchid = @MatchID
 				AND (@matchid=0 or b.matchid = @MatchID)
@@ -687,4 +693,3 @@ GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinlossByLeagueDetail] TO [bodbLicenseeNet] AS [dbo]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_WinlossByLeagueDetail] TO [vnteam] AS [dbo]
-GO  

@@ -1,4 +1,11 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProduct]  
+﻿USE [bodb02]
+GO
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProduct]  
  @LicenseeID	INT,
  @UserID		INT,
  @CurrencyID	INT = 0,
@@ -42,6 +49,7 @@ AS
 	- 20131007@Jim: offer Virtual Tennis	
 	- 20131213@Jim: support to Display win loss of individual sports with Virtual Sports
 	- 20140304@Florent: offer Keno
+	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -259,7 +267,9 @@ BEGIN
 			INNER JOIN @TempAg a ON b.recommend = a.custid
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
-			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
+			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
+						  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+			) AND
 			b.statusID  IN (111, 112, 113) AND
 			b.tpositiontaking<>0
 			
@@ -730,7 +740,6 @@ DROP TABLE #TempExchange
  
 END
 
-GO
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinlossByProduct] TO [bodbLicenseeNet]
 GO

@@ -1,4 +1,11 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportWinlossByMatch]    
+﻿USE [bodb02]
+GO
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportWinlossByMatch]    
 	@LicenseeID		INT ,
 	@UserID			INT,
     @CurrencyID		INT = NULL , 
@@ -29,6 +36,7 @@ Revisions:
 	- 20130618@Jim:  Restrict permission of Licensee Users by currency
 	- 20130625@Jim: support to view currency UUS 
 	- 20140602@Hannah: Separate Live/ Non - Live data in Live Report
+	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 
 Return 3 tables:
 WinlostBySport
@@ -143,7 +151,9 @@ BEGIN
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  			
 			b.matchid > 0 AND
-			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
+			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
+						  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+			) AND
 			b.bettype NOT IN (9,29) AND
 			b.statusID IN (111,112,113) AND
 			b.tpositiontaking=0 AND
@@ -210,7 +220,9 @@ BEGIN
 			INNER JOIN @TempAg t ON b.recommend = t.custid			
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
-			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
+			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
+							OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+			) AND
 			b.bettype NOT IN (9,29) AND
 			b.matchid > 0 AND
 			b.statusID IN (111,112,113) AND
@@ -321,7 +333,9 @@ BEGIN
 		WHERE
 			b.winlostdate BETWEEN @FDate AND @TempToDate  AND
 			b.Recommend IN ( SELECT custid FROM @TempAg)  AND    
-			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
+			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
+						  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+			) AND
 			b.bettype NOT IN (9,29) AND
 			b.tpositiontaking=0 AND
 			b.statusID IN (111,112,113) AND
@@ -388,7 +402,9 @@ BEGIN
 			INNER JOIN [match14] m WITH(NOLOCK) ON b.matchid = m.matchid			
 		WHERE
 			b.winlostdate BETWEEN @FDate AND @TempToDate  AND
-			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
+			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
+			    	 	  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+			) AND
 			b.bettype NOT IN (9,29) AND
 			b.tpositiontaking<>0 AND
 			b.statusID IN (111,112,113) AND

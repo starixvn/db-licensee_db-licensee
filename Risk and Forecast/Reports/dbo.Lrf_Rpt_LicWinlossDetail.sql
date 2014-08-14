@@ -1,4 +1,12 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinlossDetail]  
+﻿USE [bodb02]
+GO
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinlossDetail]  
 	@LicenseeID	INT,
 	@UserID		INT,
 	@CurrencyID	INT = 0,
@@ -41,6 +49,7 @@ AS
 		- 20130916@Jim: offer Virtual Tennis
 		- 20131120@Victor: Enhance performance
 		- 20140305@Florent: support Keno
+		- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 	Param's Explanation:  
 	  + @CustID: SuperID  
 	  + @BaseCurrency (input currencyID): 2-MYR ; 3-USD; 6-EUR
@@ -341,7 +350,9 @@ BEGIN
 			INNER JOIN @TempAg a ON b.recommend = a.custid
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
-			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
+			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
+						  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+			) AND
 			b.statusID  IN (111, 112, 113) AND
 			b.tpositiontaking <>0
 		GROUP BY   
@@ -919,7 +930,7 @@ BEGIN
 	   CAST(SUM(AmtDuetoRB)*@eUSD    AS MONEY)   AS AmtDuetoRBUSD,
 	   CAST(SUM(Company)*@eUSD     AS MONEY)   AS CompanyUSD      
  FROM	#SAgWinLoss w   
-		INNER JOIN bodb_licensee.dbo.licenseecustinfo c WITH (NOLOCK) ON w.custid = c.custid
+		INNER JOIN bodb_licensee.dbo.licenseecustinfo c WITH (NOLOCK) ON w.custid = c.custid		
  GROUP BY w.custid, c.username,c.username2,w.currency
   
 
@@ -932,6 +943,3 @@ GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_LicWinlossDetail] TO [bodbLicenseeNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LicWinlossDetail] TO [vnteam]  
-
-
-
