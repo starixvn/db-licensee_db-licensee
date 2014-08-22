@@ -31,3 +31,6 @@ BEGIN
 END
 
 GO
+
+GRANT EXECUTE ON dbo.[Dot_Dep_SelCustSetting_AGC] TO [Dot_Member]
+GO
