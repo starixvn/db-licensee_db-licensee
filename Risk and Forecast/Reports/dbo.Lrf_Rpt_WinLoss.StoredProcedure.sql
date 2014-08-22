@@ -27,7 +27,6 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
     @PageIndex INT = 1,
     @IsOld BIT = 0
     
-    
 AS /*
     Created: 20101201@Jacob
     TASk : 

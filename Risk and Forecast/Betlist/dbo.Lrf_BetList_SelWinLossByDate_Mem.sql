@@ -5,8 +5,6 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-
-
 ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinLossByDate_Mem]
 	@LicenseeID 	INT,
 	@UserID			INT,
