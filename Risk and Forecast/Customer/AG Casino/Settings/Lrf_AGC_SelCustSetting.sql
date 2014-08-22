@@ -2,8 +2,9 @@ ALTER PROCEDURE	dbo.Lrf_AGC_SelCustSetting
 	@CustID			INT,
 	@Currency		INT				OUTPUT,
 	@AGGroup		VARCHAR(20)		OUTPUT,
+	@IsEnabled		BIT				OUTPUT,
 	@CheckedGroups	VARCHAR(500)	OUTPUT,
-	@IsEnabled		BIT				OUTPUT
+	@IsLineEnabled	BIT		 		OUTPUT
 AS
 /*
 	Created: 20140818@Victor
@@ -17,7 +18,6 @@ BEGIN
 	SET NOCOUNT ON
 	
 	DECLARE @Srecommend INT
-			,@SEnabled INT = 0
 
 	SELECT @Currency = Currency,
 		@Srecommend = srecommend 
@@ -30,13 +30,13 @@ BEGIN
 	FROM DBTXN.CustDB.dbo.Dep_CustSetting_AGC WITH (NOLOCK)
 	WHERE CustID = @CustId
 
-	SET @CheckedGroups = ''
-	SELECT @SEnabled = ISNULL(IsEnabled, 0) 
+	SELECT @CheckedGroups = '', @IsLineEnabled = 0
+	SELECT @IsLineEnabled = ISNULL(IsEnabled, 0) 
 		,@CheckedGroups = ISNULL(CheckedGroup, '')
 	FROM DBTXN.CustDB.dbo.Dep_SuperSetting_AGC WITH (NOLOCK) 
 	WHERE CustID = @Srecommend
 
-	IF (@SEnabled = 0)
+	IF (@IsLineEnabled = 0)
 		SELECT @IsEnabled = 0
 END
 
