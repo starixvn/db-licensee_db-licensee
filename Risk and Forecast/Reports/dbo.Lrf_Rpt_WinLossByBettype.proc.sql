@@ -1,11 +1,13 @@
 ﻿USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_WinLossByBettype]    Script Date: 12/12/2013 3:02:11 PM ******/
+
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLossByBettype] @LicenseeID INT
+
+ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLossByBettype] 
+	@LicenseeID INT
 	, @UserID INT
 	, @LicenseeType VARCHAR(100) = NULL
 	, @CurrencyID INT = 0
@@ -41,7 +43,7 @@ Revisions:
 	- 20130618@Jim: Restrict permission of Licensee Users by currency
 	- 20131203@Jim: offer Virtual Greyhound, Virtual Motor Racing
 	- 20140404@Florent: offer Keno products
-	
+	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 Param's Explanation: 
 */
 SET NOCOUNT ON
@@ -191,6 +193,7 @@ BEGIN
 						(
 							b.bettype < 31
 							OR (b.bettype BETWEEN 121 AND 999)
+							OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 							)
 						OR b.bettype BETWEEN 81 AND 120
 						OR b.bettype BETWEEN 1101 AND 1199
@@ -241,6 +244,7 @@ BEGIN
 						(
 							b.bettype < 31
 							OR (b.bettype BETWEEN 121 AND 999)
+							OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 							)
 						OR b.bettype BETWEEN 81 AND 120
 						OR b.bettype BETWEEN 1101 AND 1199
@@ -291,6 +295,7 @@ BEGIN
 						(
 							b.bettype < 31
 							OR (b.bettype BETWEEN 121 AND 999)
+							OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 							)
 						OR b.bettype BETWEEN 81 AND 120
 						OR b.bettype BETWEEN 1101 AND 1199
@@ -384,6 +389,7 @@ BEGIN
 						(
 							b.bettype < 31
 							OR (b.bettype BETWEEN 121 AND 999)
+							OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 							)
 						OR b.bettype BETWEEN 81 AND 120
 						OR b.bettype BETWEEN 1101 AND 1199
@@ -434,6 +440,7 @@ BEGIN
 						(
 							b.bettype < 31
 							OR (b.bettype BETWEEN 121 AND 999)
+							OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 							)
 						OR b.bettype BETWEEN 81 AND 120
 						OR b.bettype BETWEEN 1101 AND 1199
@@ -484,6 +491,7 @@ BEGIN
 						(
 							b.bettype < 31
 							OR (b.bettype BETWEEN 121 AND 999)
+							OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 							)
 						OR b.bettype BETWEEN 81 AND 120
 						OR b.bettype BETWEEN 1101 AND 1199
@@ -619,5 +627,3 @@ GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinLossByBettype] TO [bodbLicenseeNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_WinLossByBettype] TO [vnteam]
 GO
-
-

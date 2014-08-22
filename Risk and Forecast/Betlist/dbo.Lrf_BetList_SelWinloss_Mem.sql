@@ -56,7 +56,7 @@ Revisions:
 	 - 20130716@Jim: update matchid for RNG Casino and Bingo
 	 - 20130809@Jim: offer Virtual Horse Racing 	
 	 - 20140307@Hannah: offer Keno
-
+	 - 20140630@Hannah: offer BetRadar and Sporting Solution
 	
 Param's Explanation:
 	+ @drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -227,7 +227,7 @@ BEGIN
 			@TempBetList b
 			INNER JOIN dbo.match AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
 		WHERE
-			(b.bettype < 31 OR (b.Bettype BETWEEN 121 AND 999)) AND
+			(b.bettype < 31 OR (b.Bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 AND 1399)) AND
 			b.bettype <>10
 			
 		--	Outright
@@ -369,7 +369,7 @@ BEGIN
 			WHERE
 				b.winlostdate BETWEEN @TempFromDate AND @tdate AND
 				b.custid=@custid AND
-				(b.bettype < 31 OR (b.bettype BETWEEN 121 AND 999 ))  AND
+				(b.bettype < 31 OR (b.bettype BETWEEN 121 AND 999 ) OR (b.Bettype BETWEEN 1301 AND 1399))  AND
 				b.bettype NOT IN (9,29,10)	AND
 				b.matchid > 0 AND
 				b.statusID IN (111,112,113) AND
@@ -966,7 +966,7 @@ BEGIN
 			@TempBetList b
 			INNER JOIN dbo.match14 AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
 		WHERE
-			(b.bettype < 31 OR (b.Bettype BETWEEN 121 AND 999 )) AND
+			(b.bettype < 31 OR (b.Bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 AND 1399)) AND
 			b.bettype <>10
 			
 		--	Outright
@@ -1108,7 +1108,7 @@ BEGIN
 			WHERE
 				b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate AND
 				b.custid=@custid AND
-				(b.bettype < 31 OR (b.bettype BETWEEN 121 AND 999 )) AND
+				(b.bettype < 31 OR (b.bettype BETWEEN 121 AND 999 ) OR (b.Bettype BETWEEN 1301 AND 1399)) AND
 				b.bettype NOT IN (9,29,10) AND
 				b.matchid>0 AND
 				b.statusID IN (111,112,113) AND
@@ -1700,7 +1700,7 @@ BEGIN
 			@TempBetList b
 			INNER JOIN bodb_archive.dbo.match_bk AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
 		WHERE
-			(b.bettype < 31 OR (b.Bettype BETWEEN 121 AND 999 )) AND
+			(b.bettype < 31 OR (b.Bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 AND 1399)) AND
 			b.bettype NOT IN (9,29,10)
 			
 		--	Outright
@@ -1744,8 +1744,7 @@ BEGIN
 		FROM
 			@TempBetList b		
 			INNER JOIN bodb_archive.dbo.Outright_bk AS m WITH (NOLOCK) ON b.matchid=m.orid
-			INNER JOIN dbo.League AS l WITH (NOLOCK) ON m.leagueID = l.leagueID
-			
+			INNER JOIN dbo.League AS l WITH (NOLOCK) ON m.leagueID = l.leagueID			
 		WHERE
 			b.bettype = 10
 			
@@ -1793,9 +1792,7 @@ BEGIN
 			@TempBetList b
 		WHERE
 			b.bettype IN (9,29) AND
-			b.matchid IN (9,29)
-		
-		
+			b.matchid IN (9,29)		
 	END
 		
 	--Sport Book
@@ -1846,7 +1843,7 @@ BEGIN
 				b.custid=@custid AND
 				b.ruben = 1 AND
 				b.status NOT IN ('VOID', 'REJECT', 'REFUND') AND 
-				(b.bettype < 31 OR (b.bettype BETWEEN 121 AND 999 )) AND
+				(b.bettype < 31 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 AND 1399)) AND
 				b.bettype NOT IN (9,29, 10) AND
 				b.transid NOT IN (SELECT Transid FROM @TempBetList) --exclude BA tickets
 				

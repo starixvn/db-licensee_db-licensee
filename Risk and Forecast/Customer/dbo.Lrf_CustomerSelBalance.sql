@@ -1,4 +1,13 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_CustomerSelBalance]
+﻿USE [bodb02]
+GO
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+ALTER PROCEDURE [dbo].[Lrf_CustomerSelBalance]
 	@LicenseeID INT,
 	@UserID	INT,
 	@CurrencyID INT=0,
@@ -39,6 +48,7 @@ Revisions:
 	- 20140207@Florent: Offer Keno
 	- 20140509@Florent: Fix bug get wrong currency rate
 	- 20140530@Francis: Enhance performance
+	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 */
 SET NOCOUNT ON
 
@@ -221,7 +231,8 @@ INSERT INTO @SumOutstanding (currency,outstanding)
         INNER JOIN @Super s ON b.srecommend = s.custid
         INNER JOIN @TempAg a ON b.recommend = a.custid
     WHERE 
-	    b.bettype <= 1299 
+	    --b.bettype <= 1299 
+		b.bettype <= 1399 
 	    AND b.statusid IN (0,1)
     GROUP BY s.currency
 
@@ -302,7 +313,7 @@ SELECT
 	ISNULL(- SUM(
 			CASE WHEN (
 			(
-				(bettype < 31 OR bettype BETWEEN 121 AND 999) 
+				(bettype < 31 OR bettype BETWEEN 121 AND 999 OR (bettype BETWEEN 1301 AND 1399)) 
 				AND b.tpositiontaking<>0
 			) 
 			OR 
@@ -317,10 +328,10 @@ SELECT
 			THEN (b.winlost - b.actual_stake)  
 			WHEN b.bettype BETWEEN 31 AND 33 THEN awinlost
 			ELSE 0 END),0) as LicenseeWL,	--20130619@Daniel: Fix more bug regconize BA tickets
-	ISNULL(- SUM ( CASE WHEN b.tpositiontaking=0 AND (b.bettype NOT BETWEEN 31 AND 120 AND b.bettype<=999) THEN (b.winlost - b.actual_stake + awinlost + comm) ELSE 0 END),0) AS AmtDuetoBA,
+	ISNULL(- SUM ( CASE WHEN b.tpositiontaking=0 AND ((b.bettype NOT BETWEEN 31 AND 120 AND b.bettype<=999) OR (b.bettype BETWEEN 1301 and 1399)) THEN (b.winlost - b.actual_stake + awinlost + comm) ELSE 0 END),0) AS AmtDuetoBA,
 	ISNULL(- SUM ( CASE WHEN b.bettype IN (31,32,33) THEN (b.winlost - b.actual_stake + awinlost + comm) ELSE 0 END),0)AS AmtDuetoRB,
 	ISNULL(SUM (CASE WHEN b.bettype IN (31,32,33) THEN b.awinlost ELSE 0 END),0) AS WinlossRB,
-	ISNULL(SUM ( CASE WHEN b.tpositiontaking=0 AND (b.bettype NOT BETWEEN 31 AND 120 AND b.bettype<=999) THEN  comm  ELSE 0 END),0) AS CommBA,
+	ISNULL(SUM ( CASE WHEN b.tpositiontaking=0 AND ((b.bettype NOT BETWEEN 31 AND 120 AND b.bettype<=999) OR (b.bettype BETWEEN 1301 and 1399)) THEN  comm  ELSE 0 END),0) AS CommBA,
 	ISNULL(SUM ( CASE WHEN b.bettype IN (31,32,33) THEN comm  ELSE 0 END),0) AS CommRB,
 	ISNULL(SUM (  playercomm ),0) AS PlayerComm
 	
@@ -601,7 +612,6 @@ SELECT
 	,ISNULL(@TotalMemberSuspended,0) TotalMemberSuspended
 
 DROP TABLE #Temp_Bettrans
-
 GO
 GRANT EXECUTE ON [dbo].[Lrf_CustomerSelBalance] TO [bodbDownlineNet] AS [dbo]
 GO

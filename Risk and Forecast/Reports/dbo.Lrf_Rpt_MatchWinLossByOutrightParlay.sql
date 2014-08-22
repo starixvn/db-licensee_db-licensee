@@ -1,4 +1,12 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_Rpt_MatchWinLossByOutrightParlay]
+﻿USE [bodb02]
+GO
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+ALTER PROCEDURE [dbo].[Lrf_Rpt_MatchWinLossByOutrightParlay]
     @LicenseeID INT,
 	@UserID		INT,
     @LicenseeType VARCHAR(100) = NULL,
@@ -15,13 +23,13 @@ Task :
 DB: DB052.bodb02
 Original: Lrf_Rpt_MatchWinLossDetail
 Revisions:
-    20120725@Henry: if bettype 29 then show actual_stake else stake
-	20120803@Jim: add PlayerComm value ( for give commission to member)
-	20120913@Jim: Split column LicenseeWL to separate product
-	20121004@Jim: replace @currencyname input param by @currencyID
-	20130404@Jim: set default @ShowSB=0
-	20130514@Jim: Restrict permission of Licensee Users by currency
-	
+    - 20120725@Henry: if bettype 29 then show actual_stake else stake
+	- 20120803@Jim: add PlayerComm value ( for give commission to member)
+	- 20120913@Jim: Split column LicenseeWL to separate product
+	- 20121004@Jim: replace @currencyname input param by @currencyID
+	- 20130404@Jim: set default @ShowSB=0
+	- 20130514@Jim: Restrict permission of Licensee Users by currency
+	- 20140620@Florent: add column betcount
 Param's Explanation: 
 	
 */
@@ -75,7 +83,8 @@ DECLARE @AgMatchWLDetails TABLE
 	PlayerComm  MONEY,	
 	race NVARCHAR(20),
 	matchcode NVARCHAR(50),
-	isNeutral BIT
+	isNeutral BIT,
+	betcount INT
 )
 
 DECLARE @TempBetList AS TABLE(
@@ -89,7 +98,8 @@ DECLARE @TempBetList AS TABLE(
 	playercomm		MONEY,
 	MatchID         INT,
 	Liveawayscore	SMALLINT,
-	tpositiontaking	SMALLMONEY
+	tpositiontaking	SMALLMONEY,
+	betcount int
 )
 
 IF @_Date > @MoveBetsDay 
@@ -110,7 +120,8 @@ BEGIN
 			SUM(playercomm  ) AS PlayerComm,
 			b.matchid,
 			0 AS Liveawayscore,
-			0 AS tpositiontaking
+			0 AS tpositiontaking,
+			count(1) betcount
 		FROM    
 			bettrans b WITH(NOLOCK)
 			INNER JOIN @TempAg ag ON b.recommend = ag.custid
@@ -148,7 +159,8 @@ BEGIN
 			SUM(playercomm) AS PlayerComm,
 			'' AS race,
 			'' AS matchcode,
-			CONVERT(BIT, 0) AS IsNeutral
+			CONVERT(BIT, 0) AS IsNeutral,
+			sum(b.betcount) betcount
 		FROM @TempBetList b
 		WHERE   
 			b.bettype IN (9,29) --AND b.matchid IN (9,29)
@@ -178,7 +190,8 @@ BEGIN
 			SUM(playercomm) AS PlayerComm,
 			m.groupmatch AS race,
 			'ZZZZ' AS matchcode,
-			CONVERT(BIT, 0) AS IsNeutral
+			CONVERT(BIT, 0) AS IsNeutral,
+			sum(b.betcount) betcount
 		FROM    
 			@TempBetList b
 			INNER JOIN outright m WITH ( NOLOCK ) ON m.orid = b.matchid
@@ -205,7 +218,8 @@ BEGIN
 		SUM(b.playercomm  ) AS playercomm,
 		b.matchid,
 		b.Liveawayscore,
-		b.tpositiontaking
+		b.tpositiontaking,
+		count(1) betcount
 	FROM    
 		bettrans b WITH(NOLOCK)
 		INNER JOIN @TempAg ag ON b.recommend = ag.custid
@@ -245,7 +259,8 @@ BEGIN
 			SUM(playercomm) AS PlayerComm,
 			'' AS race,
 			'' AS matchcode ,
-			CONVERT(BIT, 0) AS IsNeutral
+			CONVERT(BIT, 0) AS IsNeutral,
+			sum(b.betcount) betcount
 		FROM    
 			@TempBetList b
 		WHERE   
@@ -277,7 +292,8 @@ BEGIN
 			SUM(playercomm) AS PlayerComm,
 			m.groupmatch AS race,
 			'ZZZZ' AS matchcode,
-			CONVERT(BIT, 0) AS IsNeutral
+			CONVERT(BIT, 0) AS IsNeutral,
+			sum(b.betcount) betcount
 		FROM    
 			@TempBetList b
 			INNER JOIN outright m WITH ( NOLOCK ) ON m.orid = b.matchid
@@ -309,7 +325,8 @@ BEGIN
 			SUM( b.playercomm) AS PlayerComm,
 			b.matchid,
 			0 AS Liveawayscore,
-			0 as tpositiontaking
+			0 as tpositiontaking,
+			count(1) betcount
 		FROM    
 			bettrans14 b WITH(NOLOCK)
 			INNER JOIN @TempAg ag ON b.recommend = ag.custid
@@ -346,7 +363,8 @@ BEGIN
 			SUM(playercomm) AS PlayerComm,
 			'' AS race,
 			'' AS matchcode,
-			CONVERT(BIT, 0) AS IsNeutral
+			CONVERT(BIT, 0) AS IsNeutral,
+			sum(b.betcount) betcount
 		FROM @TempBetList b	
 		WHERE b.bettype IN (9,29) --AND b.matchid IN (9,29)
 		GROUP BY
@@ -375,7 +393,8 @@ BEGIN
 			SUM(playercomm) AS PlayerComm,
 			m.groupmatch AS race,
 			'ZZZZ' AS matchcode,
-			CONVERT(BIT, 0) AS IsNeutral
+			CONVERT(BIT, 0) AS IsNeutral,
+			sum(b.betcount) betcount
 		FROM    
 			@TempBetList b
 			INNER JOIN outright14 m WITH ( NOLOCK ) ON m.orid = b.matchid
@@ -402,7 +421,8 @@ BEGIN
 		SUM(b.playercomm ) AS playercomm,
 		b.matchid,
 		b.Liveawayscore,
-		b.tpositiontaking
+		b.tpositiontaking,
+		count(1) betcount
 	FROM    
 		bettrans14 b WITH(NOLOCK)
 		INNER JOIN @TempAg ag ON b.recommend = ag.custid
@@ -441,7 +461,8 @@ BEGIN
 			SUM(playercomm) AS PlayerComm,
 			'' AS race,
 			'' AS matchcode,
-			CONVERT(BIT, 0) AS IsNeutral
+			CONVERT(BIT, 0) AS IsNeutral,
+			sum(b.betcount) betcount
 		FROM    
 			@TempBetList b
 		WHERE   
@@ -473,7 +494,8 @@ BEGIN
 			SUM(playercomm) AS PlayerComm,
 			m.groupmatch AS race,
 			'ZZZZ' AS matchcode,
-			CONVERT(BIT, 0) AS IsNeutral
+			CONVERT(BIT, 0) AS IsNeutral,
+			sum(b.betcount) betcount
 		FROM    
 			@TempBetList b
 			INNER JOIN outright14 m WITH ( NOLOCK ) ON m.orid = b.matchid
@@ -528,7 +550,8 @@ SELECT
     CAST(SUM((AmtDuetoRB) * e.EUR) AS MONEY) AS AmtDuetoRBEUR,
     race,
     matchcode,
-    isNeutral
+    isNeutral,
+	sum(b.betcount) betcount
 FROM  
 	@AgMatchWLDetails b
 	--INNER JOIN (SELECT *  FROM Lrf_f_GetExchangeDaily(@_FromDate,@_ToDate))e 

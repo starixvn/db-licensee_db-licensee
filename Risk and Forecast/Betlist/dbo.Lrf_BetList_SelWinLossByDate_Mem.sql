@@ -74,6 +74,7 @@ Revisions:
    - 20130903@Jim: support Virtual Horse Racing
    - 20131101@Victor: enhance performance
    - 20140326@Jim: offer Keno
+   - 20140630@Hannah: offer BetRadar and Sporting Solution 
    */
 
 SET NOCOUNT ON
@@ -253,7 +254,7 @@ BEGIN
 			#TempBetList b
 			INNER JOIN dbo.MATCH AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
 		WHERE
-			(b.bettype < 31 OR (b.Bettype BETWEEN 121 AND 999)) AND 
+			(b.bettype < 31 OR (b.Bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 AND 1399)) AND 
 			b.bettype <>10
 		
 		--Outright
@@ -438,7 +439,7 @@ BEGIN
 			b.recommend = @Recommend AND --to improve performance
 			b.matchid > 0 AND
 			b.custid=@custid AND
-			(b.bettype < 31 OR (b.bettype BETWEEN 121 AND 999 )) AND
+			(b.bettype < 31 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 AND 1399)) AND
 			b.bettype NOT IN (9,29,10) AND
 			b.ruben = 1 AND
 			b.transid NOT IN (SELECT Transid FROM #TempBetList) 
@@ -1047,7 +1048,7 @@ BEGIN
 			#TempBetList b
 			INNER JOIN dbo.MATCH14 AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
 		WHERE
-			(b.bettype < 31 OR (b.Bettype BETWEEN 121 AND  999 )) AND
+			(b.bettype < 31 OR (b.Bettype BETWEEN 121 AND  999) OR (b.Bettype BETWEEN 1301 AND 1399)) AND
 			b.bettype <>10
 		
 		--Outright
@@ -1232,7 +1233,7 @@ BEGIN
 				b.recommend = @Recommend AND
 				b.custid=@custid AND
 				b.matchid > 0 AND
-				(b.bettype < 31 OR (b.bettype BETWEEN 121 AND 999)) AND
+				(b.bettype < 31 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 AND 1399)) AND
 				b.bettype NOT IN (9,29,10) AND
 				b.ruben = 1 AND 
 				b.transid NOT IN (SELECT Transid FROM #TempBetList) 
@@ -1383,9 +1384,7 @@ BEGIN
 				b.custid=@custid AND
 				b.bettype = 10 AND
 				b.ruben = 1 AND 
-				b.transid NOT IN (SELECT Transid FROM #TempBetList)
-				
-				
+				b.transid NOT IN (SELECT Transid FROM #TempBetList)				
 	END	
 	--Horse Racing
 	IF @ShowRB = 1
@@ -1739,8 +1738,6 @@ BEGIN
 
 	IF @ShowBA = 1
 	BEGIN
-		
-
 		--sport book		
 		INSERT INTO #BetListByDateMem
 		SELECT
@@ -1783,7 +1780,7 @@ BEGIN
 			#TempBetList b
 			INNER JOIN bodb_archive.dbo.MATCH_BK AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
 		WHERE
-			(b.bettype < 31 OR (b.Bettype BETWEEN 121 AND 999)) AND
+			(b.bettype < 31 OR (b.Bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 AND 1399)) AND
 			b.bettype <>10
 		
 		--Outright
@@ -1917,8 +1914,6 @@ BEGIN
 		WHERE
 			b.bettype = 29
 			AND b.matchid = 29
-			
-
 	END
 	
 
@@ -1970,7 +1965,7 @@ BEGIN
 				b.custid=@custid AND
 				b.recommend = @Recommend AND 
 				b.ruben = 1 AND
-				(b.bettype < 31 OR (b.bettype BETWEEN 121 AND 999 ) ) AND
+				(b.bettype < 31 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 AND 1399)) AND
 				b.bettype <> 10 AND
 				b.transid NOT IN (SELECT Transid FROM #TempBetList) 
 
@@ -2428,9 +2423,7 @@ BEGIN
 			b.custid=@CustID AND
 			b.recommend = @Recommend AND	
 			b.bettype BETWEEN 1501 AND 1599 AND
-			b.ruben = 1
-			
-			
+			b.ruben = 1			
 	END
 	
 END

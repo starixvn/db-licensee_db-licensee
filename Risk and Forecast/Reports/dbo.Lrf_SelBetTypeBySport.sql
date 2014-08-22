@@ -1,6 +1,6 @@
 USE [bodb_licensee]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_SelBetTypeBySport]    Script Date: 13/02/2014 4:38:54 PM ******/
+
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -18,10 +18,11 @@ Task : Add more products to Customer Turnover Report
 DB: DBLIC/bodb_Licensee
 
 Revisions:
-   20131126@Jim: return English Name when Other Language Name is NULL or not ready
-   20131205@Florent: Add more product ( V.Tennis, V.Racing)
-   20140210@Florent: add new sport Horse racing fix odds
-   20140424@Florent: add new sport Virtual Speedway & Virtual Cycling
+   - 20131126@Jim: return English Name when Other Language Name is NULL or not ready
+   - 20131205@Florent: Add more product ( V.Tennis, V.Racing)
+   - 20140210@Florent: add new sport Horse racing fix odds
+   - 20140424@Florent: add new sport Virtual Speedway & Virtual Cycling
+   - 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 Param's Explanation:
 	
 */
@@ -45,6 +46,7 @@ FROM OPENXML (@iDoc, '/products/product',1) WITH(ID smallint, Sport nvarchar(128
 EXEC sp_xml_removedocument @iDoc
 
 DECLARE @Bettype TABLE (
+	sporttype smallint,
 	BettypeID smallint
 	,BettypeName nvarchar(50)
 )
@@ -75,7 +77,7 @@ FROM
 IF EXISTS(SELECT * FROM #input WHERE ID = 0 AND ISNULL(Sport,'') <> '' and  CHARINDEX('154',sport)<>0)
 BEGIN
 	INSERT INTO @Bettype
-		SELECT typeid, typenamee
+		SELECT 0,typeid, typenamee
 		FROM #bettype
 		WHERE typeid =20	
 END
@@ -90,9 +92,11 @@ IF EXISTS(SELECT * FROM #input WHERE ID = 0 AND ISNULL(Sport,'') <> '')
 BEGIN
 
 	INSERT INTO @Bettype
-		SELECT typeid, typenamee
+		SELECT 0,typeid, typenamee
 		FROM #bettype
-		WHERE (typeid < 31 OR (typeid BETWEEN 121 AND 999))
+		WHERE (typeid < 31 OR (typeid BETWEEN 121 AND 999)
+						   OR (typeid BETWEEN 1301 and 1399) --new tennis's bettypes
+		)
 
 END
 
@@ -118,7 +122,10 @@ BEGIN
 		SET @checkVSW=1
 	
 	INSERT INTO @Bettype
-		SELECT typeid,
+		SELECT CASE WHEN typeid BETWEEN 81 AND 120 THEN  161 --NG
+				 WHEN (typeid BETWEEN 1201 AND 1299) THEN  180
+			END as 	sporttype
+			,typeid,
 			CASE WHEN typeid BETWEEN 81 AND 120 THEN  N'NG - ' + typenamee
 				 WHEN (typeid BETWEEN 1201 AND 1299) THEN  N'VS - '+typenamee + CASE WHEN typeid = 1204 THEN '(Soccer)'
 																					WHEN typeid = 1235 THEN '(Tennis)'
@@ -141,11 +148,9 @@ DROP TABLE #bettype
 
 SELECT BettypeID,BettypeName
 FROM @Bettype
-GROUP BY BettypeID,BettypeName
-ORDER BY BettypeID
-
-
+GROUP BY sporttype,BettypeID,BettypeName
+ORDER BY sporttype
 GO
 GRANT EXECUTE ON [dbo].[Lrf_SelBetTypeBySport] TO [bodbLicenseeNet] 
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_SelBetTypeBySport] TO [vnteam]    
+GRANT VIEW DEFINITION ON [dbo].[Lrf_SelBetTypeBySport] TO [vnteam] 

@@ -1,3 +1,11 @@
+USE [bodb_licensee]
+GO
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
 ALTER PROC [dbo].[Lrf_rpt_DWTopCustomerSel]
     @FromDate		SMALLDATETIME ,
     @ToDate			SMALLDATETIME ,
@@ -16,7 +24,10 @@ AS
 Created: 20140402@Winnie
 Task : 
 
-DB: DBLIC.bodb_licenseeReport
+DB: DBLIC.bodb_licensee
+
+Revison:
+	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 
 Param's Explanation:
     @sortingid: (0: order by best winloss member, 1: order by worst winloss member)
@@ -120,7 +131,7 @@ BEGIN
 
 		WHERE   
 			b.winlostdate BETWEEN @FromDate AND @ToDate
-			AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999))			
+			AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399))			
 			AND (@sportid=0 OR(@sportid<>0 AND b.sporttype=@sportid))
 			AND (@customer='' OR (@customer<>'' AND c.username=@customer))				
 		GROUP BY c.UserName,e.Code
@@ -214,7 +225,7 @@ BEGIN
 			
 		WHERE   
 			b.winlostdate BETWEEN @FromDate AND @ToDate
-			AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) )	
+			AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399))	
 			AND (@sportid=0 OR(@sportid<>0 AND b.sporttype=@sportid))
 			AND (@customer='' OR (@customer<>'' AND c.username=@customer))	
 				
@@ -300,7 +311,7 @@ BEGIN
 
 		WHERE   
 			b.winlostdate BETWEEN @FromDate AND @ToDate
-			AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999))			
+			AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399))			
 			AND (@sportid=0 OR(@sportid<>0 AND b.sporttype=@sportid))
 			AND (@customer='' OR (@customer<>'' AND c.username=@customer))			
 		GROUP BY c.UserName,e.Code
@@ -396,7 +407,7 @@ BEGIN
 			
 		WHERE   
 			b.winlostdate BETWEEN @FromDate AND @ToDate
-			AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) )	
+			AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399))	
 			AND (@sportid=0 OR(@sportid<>0 AND b.sporttype=@sportid))
 			AND (@customer='' OR (@customer<>'' AND c.username=@customer))	
 				
@@ -434,6 +445,5 @@ BEGIN
 		END
 END		 
 		DROP TABLE #TempCust
-		
 GO
 GRANT EXECUTE ON [dbo].[Lrf_rpt_DWTopCustomerSel] TO [bodbLicenseeNet]

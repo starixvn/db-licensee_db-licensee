@@ -13,7 +13,8 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossNumberGame]
 	 @MoveBetsDay SMALLDATETIME ,
 	 @PageSize INT=1000,
 	 @PageIndex INT=1,
-	 @Sort VARCHAR(20) = 'Transid DESC'	 
+	 @Sort VARCHAR(20) = 'Transid DESC', 
+	 @Liveindicator	INT = 1
 AS  
 
 /*
@@ -32,6 +33,13 @@ Revisions:
 	-20130625@Jim: Support to view currency UUS
 	-20140520@Hannah: Sort betlist
 	-20140522@Hannah: fix bug Sort betlist
+	-20140602@Hannah: Separate Live/ Non - Live data in Live Report
+
+Param's Explanation:
+	@Liveindicator : indicate that whether the report will get live data or not
+		+ 0: Non - Live data only
+		+ 1: Live data only
+		+ 2: All
 */
 
 SET NOCOUNT ON  
@@ -201,7 +209,10 @@ BEGIN
 	 WHERE  		  
 	  b.bettype BETWEEN 81 AND 120 AND
 	  b.Winlostdate BETWEEN '''+CAST(@FromDate AS VARCHAR(50))+''' AND '''+CAST(@TempToDate AS VARCHAR(50))+''' AND
-	  b.statusID IN (111,112,113)	
+	  b.statusID IN (111,112,113) AND
+	  (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.liveindicator = 0)
+	  OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.liveindicator = 1)
+	  OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))	
 	 ORDER  BY '+ @SortTemp 
 	 
 	 INSERT INTO #Data
@@ -279,7 +290,10 @@ BEGIN
 	 WHERE  	  	  
 	  b.bettype BETWEEN 81 AND 120 AND
 	  b.Winlostdate BETWEEN '''+CAST(@TempFromDate AS VARCHAR(50))+''' AND '''+CAST(@ToDate AS VARCHAR(50))+''' AND  	  
-	  b.statusID IN (111,112,113)
+	  b.statusID IN (111,112,113) AND
+	  (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.liveindicator = 0)
+	  OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.liveindicator = 1)
+	  OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))	
 	 ORDER  BY '+ @SortTemp 
 	 
 	 INSERT INTO #Data

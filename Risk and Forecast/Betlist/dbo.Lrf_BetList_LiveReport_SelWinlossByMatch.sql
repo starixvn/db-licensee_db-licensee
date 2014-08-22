@@ -14,11 +14,11 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossByMatch]
 	@PageSize INT=1000,
 	@PageIndex INT=1,	
 	@ShowSB BIT = 0,	
-	@ShowBA BIT = 0	,
-	@ShowLC BIT = 0 ,
-	@ShowVS BIT = 0
+	@ShowBA BIT = 0,
+	@ShowLC BIT = 0,
+	@ShowVS BIT = 0,
+	@Liveindicator	INT = 1
 AS
-
 /*
 Created: 20120111@Henry
 Task : Betlist
@@ -36,18 +36,22 @@ Revisions:
    - 20130411@Jim: support base currency USD
    - 20130514@Jim: Restrict permission of Licensee Users by currency
    - 20130625@Jim: support to view currency UUS 
-Param's Explanation: 
-	
-*/
+   - 20140602@Hannah: Separate Live/ Non - Live data in Live Report
+   - 20140630@Hannah: offer BetRadar and Sporting Solution 
 
+Param's Explanation: 
+	@Liveindicator : indicate that whether the report will get live data or not
+		+ 0: Non - Live data only
+		+ 1: Live data only
+		+ 2: All	
+*/
 
 SET NOCOUNT ON
 
 DECLARE @bettype AS TABLE (bettype INT)   
 
 IF @ShowLC = 1
-BEGIN
-	
+BEGIN	
     INSERT INTO @bettype(bettype)
 	SELECT typeid FROM bettype (NOLOCK)
 	WHERE (typeid BETWEEN 1101 AND 1199)
@@ -76,7 +80,6 @@ DROP TABLE 	#currency
 DECLARE @Fromdate DATETIME
 DECLARE @Todate DATETIME
 DECLARE @RowStart INT, @RowEnd INT  
-
 
 SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1
 
@@ -163,10 +166,64 @@ BEGIN
 		WHERE
 			b.matchid=@matchid AND			
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
-			b.statusID IN (111,112,113)	
+			b.bettype NOT IN (9,29) AND
+			b.statusID IN (111,112,113) AND
+			((@Liveindicator = 0 and b.liveindicator = 0)
+			OR (@Liveindicator = 1 and b.liveindicator = 1)
+			OR (@Liveindicator = 2))
+		ORDER BY
+			b.status, b.transid		
+		
+		--BA for parlay
+		INSERT INTO #Data	
+		SELECT TOP(@RowEnd)
+			m.sporttype,
+			b.username,
+			b.custid,
+			b.bettype,
+			m.leagueID,			
+			b.transid,
+			m.matchcode,
+			m.homeID,
+			m.awayID,
+			CONVERT(FLOAT, b.hdp1) AS hdp1, 
+			CONVERT(FLOAT, b.hdp2) AS hdp2, 
+			b.odds,
+			b.status,
+			b.stake,
+			(b.winlost-actual_stake) winlost,
+			0 AS LicenseeWL ,
+			b.comm,
+			b.playercomm ,
+			b.transdate,
+			b.winlostdate,
+			b.betteam,
+			b.liveindicator,
+			b.livehomescore,
+			b.liveawayscore,
+			b.matchid, 
+			b.IP AS IP,
+			m.betstatus,
+			ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral,
+			b.OddsType,
+			b.betid,
+			b.currency,
+			b.refno,
+			'' AS ShowTime
+		FROM
+			bettrans b WITH (NOLOCK,INDEX=IXU_transid) 
+			INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid 	 		
+			INNER JOIN match m WITH (NOLOCK) ON b.matchid=m.matchid
+		WHERE
+			b.matchid=@matchid AND			
+			b.recommend IN (SELECT custid FROM @TempAg)	AND
+			b.bettype IN (9,29) AND
+			b.statusID IN (111,112,113) AND
+			((@Liveindicator = 0 and b.livehomescore = 0)
+			OR (@Liveindicator = 1 and b.livehomescore = 1)
+			OR (@Liveindicator = 2))
 		ORDER BY
 			b.status, b.transid
-		
 	END
 
 	IF (@ShowSB=1)
@@ -211,10 +268,65 @@ BEGIN
 			INNER JOIN match m WITH (NOLOCK) ON b.matchid=m.matchid
 		WHERE
 			b.matchid=@matchid AND			
-			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
+			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)) AND
+			b.bettype NOT IN (9,29) AND
 			b.recommend IN (SELECT custid FROM @TempAg)	AND	
 			b.tpositiontaking<>0 AND
-			b.statusID IN (111,112,113)	
+			b.statusID IN (111,112,113) AND
+			((@Liveindicator = 0 and b.liveindicator = 0)
+			OR (@Liveindicator = 1 and b.liveindicator = 1)
+			OR (@Liveindicator = 2))
+		ORDER BY
+			b.status, b.transid
+
+		--SB for parlay
+		INSERT INTO #Data	
+		SELECT TOP(@RowEnd)
+			m.sporttype,
+			b.username,
+			b.custid,
+			b.bettype,
+			m.leagueID,			
+			b.transid,
+			m.matchcode,
+			m.homeID,
+			m.awayID,
+			CONVERT(FLOAT, b.hdp1) AS hdp1, 
+			CONVERT(FLOAT, b.hdp2) AS hdp2, 
+			b.odds,
+			b.status,
+			b.stake,
+			(b.winlost-actual_stake) winlost,
+			- (b.winlost-b.actual_stake) AS LicenseeWL ,
+			b.comm,
+			b.playercomm,
+			b.transdate,
+			b.winlostdate,
+			b.betteam,
+			b.liveindicator,
+			b.livehomescore,
+			b.liveawayscore,
+			b.matchid, 
+			b.IP AS IP,
+			m.betstatus,
+			ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral,
+			b.OddsType,
+			b.betid,
+			b.currency,
+			b.refno,
+			'' AS ShowTime 
+		FROM
+			bettrans b WITH (NOLOCK) 
+			INNER JOIN match m WITH (NOLOCK) ON b.matchid=m.matchid
+		WHERE
+			b.matchid=@matchid AND			
+			b.bettype IN (9,29) AND
+			b.recommend IN (SELECT custid FROM @TempAg)	AND	
+			b.tpositiontaking<>0 AND
+			b.statusID IN (111,112,113) AND
+			((@Liveindicator = 0 and b.livehomescore = 0)
+			OR (@Liveindicator = 1 and b.livehomescore = 1)
+			OR (@Liveindicator = 2))
 		ORDER BY
 			b.status, b.transid
 	END
@@ -263,17 +375,17 @@ BEGIN
 		WHERE
 			b.matchid=@matchid AND			
 			b.recommend IN (SELECT custid FROM @TempAg)	AND	
-			b.statusID IN (111,112,113)	
+			b.statusID IN (111,112,113)	AND
+			((@Liveindicator = 0 and b.liveindicator = 0)
+			OR (@Liveindicator = 1 and b.liveindicator = 1)
+			OR (@Liveindicator = 2))
+
 		ORDER BY
 			b.status, b.transid
-	END
-	
-	
+	END	
 END
 ELSE
-BEGIN
-	
-	
+BEGIN	
 	IF @ShowBA = 1
 	BEGIN
 		INSERT INTO #Data	
@@ -320,7 +432,63 @@ BEGIN
 			b.matchid=@matchid AND						
 			b.statusID IN (111,112,113)	
 			AND tpositiontaking = 0
-			AND (b.bettype < 31 OR (b.Bettype BETWEEN 121 AND 999))
+			AND (b.bettype < 31 OR (b.Bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)) AND
+			b.bettype NOT IN (9,29) AND
+			((@Liveindicator = 0 and b.liveindicator = 0)
+			OR (@Liveindicator = 1 and b.liveindicator = 1)
+			OR (@Liveindicator = 2))
+		ORDER BY
+			b.status, b.transid
+
+		--BA for parlay
+		INSERT INTO #Data	
+		SELECT TOP(@RowEnd)
+			m.sporttype,
+			b.username,
+			b.custid,
+			b.bettype,
+			m.leagueID,			
+			b.transid,
+			m.matchcode,
+			m.homeID,
+			m.awayID,
+			CONVERT(FLOAT, b.hdp1) AS hdp1, 
+			CONVERT(FLOAT, b.hdp2) AS hdp2, 
+			b.odds,
+			b.status,
+			b.stake,
+			(b.winlost-actual_stake) winlost,
+			0 AS LicenseeWL ,
+			b.comm,
+			b.playercomm,
+			b.transdate,
+			b.winlostdate,
+			b.betteam,
+			b.liveindicator,
+			b.livehomescore,
+			b.liveawayscore,
+			b.matchid, 
+			b.IP AS IP,
+			m.betstatus,
+			ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral,
+			b.OddsType,
+			b.betid,
+			b.currency,
+			b.refno,
+			'' AS ShowTime
+		FROM
+			bettrans14 b WITH (NOLOCK) 			
+			--INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid 	 		
+			INNER JOIN @TempAg t  ON b.recommend =t.custid  
+			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid
+		WHERE
+			b.matchid=@matchid AND						
+			b.statusID IN (111,112,113)	
+			AND tpositiontaking = 0	AND 
+			b.bettype IN (9,29) AND
+			((@Liveindicator = 0 and b.livehomescore = 0)
+			OR (@Liveindicator = 1 and b.livehomescore = 1)
+			OR (@Liveindicator = 2))
 		ORDER BY
 			b.status, b.transid
 	END
@@ -368,9 +536,64 @@ BEGIN
 			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid
 		WHERE
 			b.matchid=@matchid AND						
-			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
+			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)) AND
+			b.bettype NOT IN (9,29) AND
 			b.tpositiontaking<>0 AND
-			b.statusID IN (111,112,113)	
+			b.statusID IN (111,112,113) AND
+			((@Liveindicator = 0 and b.liveindicator = 0)
+			OR (@Liveindicator = 1 and b.liveindicator = 1)
+			OR (@Liveindicator = 2))
+		ORDER BY
+			b.status, b.transid
+
+		--SB for parlay
+		INSERT INTO #Data	
+		SELECT TOP(@RowEnd)
+			m.sporttype,
+			b.username,
+			b.custid,
+			b.bettype,
+			m.leagueID,			
+			b.transid,
+			m.matchcode,
+			m.homeID,
+			m.awayID,
+			CONVERT(FLOAT, b.hdp1) AS hdp1, 
+			CONVERT(FLOAT, b.hdp2) AS hdp2, 
+			b.odds,
+			b.status,
+			b.stake,
+			(b.winlost-actual_stake) winlost,
+			- (b.winlost-b.actual_stake) AS LicenseeWL ,
+			b.comm,
+			b.playercomm,
+			b.transdate,
+			b.winlostdate,
+			b.betteam,
+			b.liveindicator,
+			b.livehomescore,
+			b.liveawayscore,
+			b.matchid, 
+			b.IP AS IP,
+			m.betstatus,
+			ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral,
+			b.OddsType,
+			b.betid,
+			b.currency,
+			b.refno,
+			'' AS ShowTime 
+		FROM
+			bettrans14 b WITH (NOLOCK) 
+			INNER JOIN @TempAg t  ON b.recommend =t.custid  
+			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid
+		WHERE
+			b.matchid=@matchid AND						
+			b.bettype IN (9,29) AND
+			b.tpositiontaking<>0 AND
+			b.statusID IN (111,112,113) AND
+			((@Liveindicator = 0 and b.livehomescore = 0)
+			OR (@Liveindicator = 1 and b.livehomescore = 1)
+			OR (@Liveindicator = 2))
 		ORDER BY
 			b.status, b.transid
 	END
@@ -419,11 +642,14 @@ BEGIN
 			INNER JOIN @bettype bt ON b.bettype = bt.bettype
 		WHERE
 			b.matchid=@matchid AND						
-			b.statusID IN (111,112,113)	
+			b.statusID IN (111,112,113)	AND
+			((@Liveindicator = 0 and b.liveindicator = 0)
+			OR (@Liveindicator = 1 and b.liveindicator = 1)
+			OR (@Liveindicator = 2))
+
 		ORDER BY
 			b.status, b.transid
-	END
-	
+	END	
 END
 
 SELECT @Fromdate=MIN(winlostdate),@Todate=MAX(winlostdate) 
@@ -511,9 +737,7 @@ BEGIN
 	END	
 END
 
-
 SELECT * FROM @BettransDetail ORDER BY RefNo,Bettype
-
 
 DROP TABLE #Data
 DROP TABLE #TempExchange

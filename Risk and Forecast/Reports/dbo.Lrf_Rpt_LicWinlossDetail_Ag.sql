@@ -1,4 +1,11 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinlossDetail_Ag]  
+﻿USE [bodb02]
+GO
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinlossDetail_Ag]  
  @LicenseeID	INT,
  @UserID		INT,
  @CurrencyID	INT = 0, 
@@ -36,6 +43,7 @@ AS
 		- 20130809@Jim: offer Virtual Horse Racing
 		- 20131007@Jim: offer Virtual Tennis
 		- 20140305@Florent: support Keno
+		- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 	Param's Explanation:  
 	  + @CustID: SuperID  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -309,7 +317,9 @@ BEGIN
 			INNER JOIN @TempAg a ON b.recommend = a.custid
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
-			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
+			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
+						  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+			) AND
 			b.statusID  IN (111, 112, 113) AND
 			b.tpositiontaking <>0
 		GROUP BY   
@@ -981,7 +991,8 @@ WHERE exchangeid IN (SELECT DISTINCT Currency FROM #SAgWinLoss)
 DROP TABLE #SAgWinLoss
 DROP TABLE #TempExchange
 
-END
+END 
+
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_LicWinlossDetail_Ag] TO [bodbLicenseeNet]
 GO

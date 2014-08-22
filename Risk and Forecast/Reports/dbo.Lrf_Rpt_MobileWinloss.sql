@@ -1,8 +1,10 @@
-﻿set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
+﻿USE [bodb02]
+GO
 
-
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_MobileWinloss]  
  @LicenseeID	INT,
@@ -46,6 +48,7 @@ AS
 		- 20130618@Jim: Restrict permission of Licensee Users by currency
 		- 20130809@Jim: offer Virtual Horse Racing
 		- 20131007@Jim: offer Virtual Tennis
+		- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 	Param's Explanation:  
 	  + @SiteType: 1-WAP; 2-Smartphone; 3: Others;0-All  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -393,7 +396,9 @@ BEGIN
 		WHERE
 			b.statusID  IN (111, 112, 113)
 			AND b.winlostdate BETWEEN @TempFromDate AND @TDate
-			AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) 
+			AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
+							  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+			) 
 			AND b.tpositiontaking <>0
 			AND 1= CASE @SiteType 
 				WHEN 1 THEN CASE WHEN b.betfrom = 'm' THEN 1 ELSE 0 END
@@ -750,8 +755,7 @@ DROP TABLE #WinLoss
 		
 	
 END	
-
+GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_MobileWinloss] TO [bodbLicenseeNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_MobileWinloss] TO [vnteam]  
-	

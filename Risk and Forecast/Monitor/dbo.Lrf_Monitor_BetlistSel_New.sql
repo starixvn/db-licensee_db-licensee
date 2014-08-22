@@ -1,4 +1,11 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_Monitor_BetlistSel_New]                
+﻿USE [bodb02]
+GO
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[Lrf_Monitor_BetlistSel_New]                
  @LicenseeID INT,
  @UserID	 INT,	
  @bettype VARCHAR(50) = NULL,                
@@ -26,8 +33,9 @@ AS
  DB: DB052.BODB02                
  Original: [Lrf_Monitor_BetlistSel]                
  Revision:                
-    -20130618@Jim:  Restrict permission of Licensee Users by currency 
-	-20130806@Jim:  Add betting platform to Last bets monitoring 	
+    - 20130618@Jim:  Restrict permission of Licensee Users by currency 
+	- 20130806@Jim:  Add betting platform to Last bets monitoring 	
+	- 20140620@Florent: offer Sporting Solution (36 new bettypes)
  Parameter's Explanation:                
   - @bettypes:                 
    + HDP: 1,7                
@@ -202,12 +210,12 @@ CASE WHEN @betfrom=1 THEN 'AND betfrom=''d'''
   CASE 
 	WHEN @SportID>0 AND @SportID < 999 AND @Liveindicator IN (0,1) THEN 'AND Liveindicator = '+convert(varchar(10),@Liveindicator) 
 	WHEN @SportID>0 AND @SportID < 999 AND @Liveindicator = 2 THEN 'AND b.bettype=9 and b.Livehomescore=' + convert(varchar(10),@Liveindicator)
-	WHEN @SportID>0 and @Sportid <> 999 and @Liveindicator = 3 THEN'AND ( b.bettype < 31 OR b.bettype BETWEEN 121 AND 999 )'
+	WHEN @SportID>0 and @Sportid <> 999 and @Liveindicator = 3 THEN'AND ( b.bettype < 31 OR b.bettype BETWEEN 121 AND 999 OR (b.Bettype BETWEEN 1301 and 1399) )'
 	ELSE ' ' END + CHAR(13) +
   CASE 
 		WHEN @SportID=0 THEN 
 			CASE
-				WHEN @Liveindicator = 3 THEN 'AND ( b.bettype < 31 OR b.bettype BETWEEN 121 AND 999)' 
+				WHEN @Liveindicator = 3 THEN 'AND ( b.bettype < 31 OR b.bettype BETWEEN 121 AND 999 OR (b.Bettype BETWEEN 1301 and 1399))' 
 				WHEN @Liveindicator = 2 THEN 'AND b.bettype=9 and b.Livehomescore=' + convert(varchar(10),@Liveindicator) + ' '
 				WHEN @Liveindicator IN (0,1) THEN 
 					'AND 
@@ -217,6 +225,7 @@ CASE WHEN @betfrom=1 THEN 'AND betfrom=''d'''
 									(
 										(b.bettype < 31 AND b.bettype NOT IN (9,29)) 
 										OR b.bettype BETWEEN 121 AND 999
+										OR (b.Bettype BETWEEN 1301 and 1399)
 									)
 							) ' +
 							'OR 
@@ -249,8 +258,6 @@ IF (@debug = 1)
  PRINT @sql                
 ELSE               
  EXEC(@sql)   
-
-
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Monitor_BetlistSel_New] TO [bodbLicenseeNet] AS [dbo]

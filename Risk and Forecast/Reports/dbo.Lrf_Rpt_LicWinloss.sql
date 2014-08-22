@@ -1,4 +1,12 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]  
+﻿USE [bodb02]
+GO
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]  
  @LicenseeID	INT,
  @UserID		INT,
  @CurrencyID	INT = 0,
@@ -37,6 +45,7 @@ AS
 	- 20130514@Jim: Restrict permission of Licensee Users by currency
 	- 20130809@Jim: offer Virtual Horse Racing
 	- 20130916@Jim: offer Virtual Tennis
+	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -309,7 +318,9 @@ BEGIN
 			INNER JOIN @Super s ON b.srecommend = s.custid
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @_ToDate AND  
-			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
+			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
+						  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+			) AND
 			b.statusID  IN (111, 112, 113) AND
 			b.tpositiontaking <>0
 		GROUP BY   
@@ -1014,4 +1025,4 @@ END
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_LicWinloss] TO [bodbLicenseeNet]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LicWinloss] TO [vnteam]  
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LicWinloss] TO [vnteam] 

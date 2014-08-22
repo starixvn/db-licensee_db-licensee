@@ -10,8 +10,8 @@
 	@MoveBetsDay SMALLDATETIME,
 	@PageSize INT=1000,
 	@PageIndex INT=1,
-	@Sort VARCHAR(20) = 'Transid DESC'
-	
+	@Sort VARCHAR(20) = 'Transid DESC',
+	@Liveindicator	INT = 1	
 AS
 /*
 Created: Henry@20120111
@@ -29,8 +29,13 @@ Revisions:
 		- 20130514@Jim:Restrict permission of Licensee Users by currency
 		- 20130625@Jim: Support to view currency UUS
 		- 20140520@Hannah: Sort betlist
-Param's Explanation: 
+		- 20140602@Hannah: Separate Live/ Non - Live data in Live Report
 
+Param's Explanation: 
+	@Liveindicator : indicate that whether the report will get live data or not
+		+ 0: Non - Live data only
+		+ 1: Live data only
+		+ 2: All
 */
 SET NOCOUNT ON
 
@@ -124,7 +129,10 @@ BEGIN
 			b.Bettype=@BetType AND
 			b.matchid = @BetType AND
 			b.tpositiontaking=0 AND
-			b.statusID IN (111,112,113)		
+			b.statusID IN (111,112,113) AND
+			((@Liveindicator = 0 AND b.livehomescore = 0)
+			OR (@Liveindicator = 1 AND b.livehomescore = 1)
+			OR (@Liveindicator = 2))		
 	END
 
 	IF @ShowSB = 1
@@ -169,7 +177,10 @@ BEGIN
 			b.Bettype = @Bettype AND
 			b.matchid = @Bettype AND
 			b.tpositiontaking<>0 AND
-			b.statusID IN (111,112,113)
+			b.statusID IN (111,112,113) AND
+			((@Liveindicator = 0 AND b.livehomescore = 0)
+			OR (@Liveindicator = 1 AND b.livehomescore = 1)
+			OR (@Liveindicator = 2))		
 	END	
 END
 
@@ -217,7 +228,10 @@ BEGIN
 			b.Bettype=@BetType AND
 			b.matchid = @BetType AND
 			b.tpositiontaking=0 AND
-			b.statusID IN (111,112,113)	
+			b.statusID IN (111,112,113) AND
+			((@Liveindicator = 0 AND b.livehomescore = 0)
+			OR (@Liveindicator = 1 AND b.livehomescore = 1)
+			OR (@Liveindicator = 2))		
 	END	
 
 	IF @ShowSB = 1
@@ -262,7 +276,10 @@ BEGIN
 			b.Bettype = @Bettype AND
 			b.matchid = @Bettype AND
 			b.tpositiontaking<>0 AND
-			b.statusID IN (111,112,113) 
+			b.statusID IN (111,112,113) AND
+			((@Liveindicator = 0 AND b.livehomescore = 0)
+			OR (@Liveindicator = 1 AND b.livehomescore = 1)
+			OR (@Liveindicator = 2))		
 	END		
 END
 

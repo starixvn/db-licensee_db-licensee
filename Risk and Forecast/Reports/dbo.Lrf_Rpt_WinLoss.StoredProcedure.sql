@@ -40,32 +40,33 @@ AS /*
 					 3 - Filter No Draw For turnover only: include betcount, exclude stake 
 	  
     Revisions:
-        20101201@Jacob: Copy code FROM Age_Rpt_WinLoss, remove redundant column
-        2011216@Alex:Add UserName2
-        20110303@Jacob: Allow to choose all type of licensee AND all currency + suppport bASed currency
-        20110519@Henry: Allow number game
-        20110609@Henry: change rptLicWinlost to rptLicWinloss
-        20110616@Henry: Add column Comm, add param @BAFilter
-        20110707@Henry: show Comm, Amt Due to for each 3rd party product: BA, Racing
-        20110729@Henry: offer 3 new bettypes for Number Game
-        20111013@Henry: change to use rptLicWinloss2
-        20111208@Jim: change bettype condition
-        20120214@Jim: change to use  table ExchangeDaily by use function Lrf_f_GetExchangeDaily 
-        20120403@Henry: enhance performance
-        20120731@Jim: add playercomm value 
-        20120815@Jim: add live casino 
-		20120905@Jim: add virtual sport 
-		20121004@Jim: replace @CurrencyName input param by @CurrencyID
-		-20121115@Henry: Only Sportsbook needs to exclude BA
-		-20121128@Henry: use new table LicenseeBATransaction_active to get bettrans BA tickets
-		-20130225@Jim: support RNG Casino, Bingo 
-		-20130618@Jim: Restrict permission of Licensee Users by currency
-		-20130729@Viet: enhance sp
-		-20130809@Jim: offer Virtual Horse Racing
-		-20131007@Jim: offer Virtual Tennis
-		-20140225@Florent: add filter Show Draw for betcount, stake
-		-20140326@Jim: offer Keno
-		-20140604@Victor: Enhance performance
+        - 20101201@Jacob: Copy code FROM Age_Rpt_WinLoss, remove redundant column
+        - 2011216@Alex:Add UserName2
+        - 20110303@Jacob: Allow to choose all type of licensee AND all currency + suppport bASed currency
+        - 20110519@Henry: Allow number game
+        - 20110609@Henry: change rptLicWinlost to rptLicWinloss
+        - 20110616@Henry: Add column Comm, add param @BAFilter
+        - 20110707@Henry: show Comm, Amt Due to for each 3rd party product: BA, Racing
+        - 20110729@Henry: offer 3 new bettypes for Number Game
+        - 20111013@Henry: change to use rptLicWinloss2
+        - 20111208@Jim: change bettype condition
+        - 20120214@Jim: change to use  table ExchangeDaily by use function Lrf_f_GetExchangeDaily 
+        - 20120403@Henry: enhance performance
+        - 20120731@Jim: add playercomm value 
+        - 20120815@Jim: add live casino 
+		- 20120905@Jim: add virtual sport 
+		- 20121004@Jim: replace @CurrencyName input param by @CurrencyID
+		- 20121115@Henry: Only Sportsbook needs to exclude BA
+		- 20121128@Henry: use new table LicenseeBATransaction_active to get bettrans BA tickets
+		- 20130225@Jim: support RNG Casino, Bingo 
+		- 20130618@Jim: Restrict permission of Licensee Users by currency
+		- 20130729@Viet: enhance sp
+		- 20130809@Jim: offer Virtual Horse Racing
+		- 20131007@Jim: offer Virtual Tennis
+		- 20140225@Florent: add filter Show Draw for betcount, stake
+		- 20140326@Jim: offer Keno
+		- 20140604@Victor: Enhance performance
+		- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 */
     
 
@@ -371,7 +372,9 @@ BEGIN
 			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = a.currency
 		WHERE   
 			winlostdate BETWEEN @TempFromDate AND @_ToDate
-			AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999))
+			AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
+							  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+			)
 			AND b.statusID  IN (111, 112, 113)
 			AND b.tpositiontaking <>0
 		GROUP BY b.CustID 
@@ -790,7 +793,6 @@ INNER JOIN bodb_Licensee.dbo.licenseecustinfo c WITH ( NOLOCK ) ON b.CustID = c.
 DROP TABLE #TempData    
 DROP TABLE #TempCustID
 DROP TABLE #TempCustIDFull
-
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinLoss] TO [bodbLicenseeNet] AS [dbo]
 GO

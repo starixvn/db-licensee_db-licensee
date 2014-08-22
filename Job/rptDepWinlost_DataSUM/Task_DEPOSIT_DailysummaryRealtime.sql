@@ -12,6 +12,7 @@ AS
   - 20140418@Victor: include RNG Casino 23002 tickets to Outstanding formula
   - 20140422@Victor: support Playtech Casino procduct
   - 20140515@Victor: Change Playtech Casino summary data process
+  - 20140814@Don: Add AG Casino
                  
  Param's Explanation:  
  • @winlostdate: The date need to summary  
@@ -65,7 +66,7 @@ SELECT @date,
 	SUM(CASE WHEN winlostdate=@date and isBA=1 and ruben=1 and statusid not in (101,102,103) THEN stake ELSE 0 END),-- turnover_ba
 	SUM(CASE WHEN winlostdate=@date and isBA=1 and ruben=1 and statusid not in (101,102,103) THEN comm ELSE 0 END),-- comm_ba
 	SUM(CASE WHEN winlostdate=@date and isBA=1 and ruben=1 and statusid not in (101,102,103) THEN winlost-actual_stake+awinlost+comm ELSE 0 END),-- Amountdueto_ba
-	SUM( CASE WHEN winlostdate = @date AND bettype in (22008,22009,22010,22011) then winlost-actual_stake ELSE 0 END)--Transfer3rdOthers  
+	SUM( CASE WHEN winlostdate = @date AND bettype in (22008,22009,22010,22011,22014,22015) then winlost-actual_stake ELSE 0 END)--Transfer3rdOthers  
 FROM bettransDEP b with(nolock)   	
 WHERE winlostdate >= @date
 	and custid in (select custid from @TempCustID)
@@ -210,6 +211,7 @@ SELECT @date,
 	CASE 
 		WHEN b.bettype in (22008,22009) THEN 1 --Hogaming
 		WHEN b.bettype in (22010,22011) THEN 2 --OPus
+		WHEN b.bettype in (22014,22015) THEN 3 --AG
 		ELSE -1 
 	END PartnerId,
 	SUM(winlost-actual_stake)--Transfer3rdOthers  
@@ -217,11 +219,12 @@ FROM bettransDEP b with(nolock)
 WHERE winlostdate >= @date
 	and custid in (select custid from @TempCustID)
 	and custid <> 0	
-	and bettype in (22008,22009,22010,22011)
+	and bettype in (22008,22009,22010,22011,22014,22015)
 GROUP BY b.custid,currency, recommend, mrecommend, srecommend,
 	CASE 
 		WHEN b.bettype in (22008,22009) THEN 1 --Hogaming
 		WHEN b.bettype in (22010,22011) THEN 2 --OPus
+		WHEN b.bettype in (22014,22015) THEN 3 --AG
 		ELSE -1 
 	END
 SET NOCOUNT OFF

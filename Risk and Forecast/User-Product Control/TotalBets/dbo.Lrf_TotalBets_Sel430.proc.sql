@@ -1,8 +1,13 @@
-﻿set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
+﻿USE [bodb02]
+GO
 
-ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel430]
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+ALTER  PROCEDURE [dbo].[Lrf_TotalBets_Sel430]
 	@LicenseeID INT,
 	@CurrencyID INT=0,
 	@UserID		INT,
@@ -23,6 +28,7 @@ Revisions:
     --20120214@Jim: change to use  table ExchangeDaily by use function Lrf_f_GetExchangeDaily  
 	--20121004@Jim: replace @currencyname input param by @currencyID
 	--20130514@Jim:Restrict permission of Licensee Users by currency
+	--20140620@Florent: offer new bettypes 152 - Half Time/Full Time Correct Score
 */
 
 SET NOCOUNT ON
@@ -106,7 +112,7 @@ INSERT INTO @Data
 		INNER JOIN match m WITH (NOLOCK) ON  b.matchid=m.matchid 				
 	WHERE 
 		b.Recommend IN (SELECT custid FROM @TempAg)
-		AND b.bettype IN (4,30)
+		AND b.bettype IN (4,30,152)
 		AND b.statusID IN (0,1)
 		AND b.tpositiontaking <> 0 
 	ORDER BY b.status, b.transid
@@ -141,7 +147,6 @@ FROM
 		INNER JOIN (SELECT *  FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
 		ON e.exchangeid = b.currency
 ) A WHERE A.RowNum BETWEEN @RowStart AND @RowEnd
-
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_TotalBets_Sel430] TO [bodbLicenseeNet]

@@ -162,8 +162,8 @@ SELECT
 	ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral,
 	b.currency,
 	CASE WHEN b.bettype BETWEEN 1101 AND 1199 THEN ISNULL(m.showtime,'') ELSE '' END AS ShowTime 
-FROM	bodb_Archive.dbo.bettrans_bk b WITH (NOLOCK)
-		INNER JOIN bodb_Archive.dbo.match_bk m WITH (NOLOCK) ON b.matchid = m.matchid		
+FROM	DBARC.bodb_archive.dbo.bettrans_bk b WITH (NOLOCK)
+		INNER JOIN DBARC.bodb_archive.dbo.match_bk m WITH (NOLOCK) ON b.matchid = m.matchid		
 		LEFT JOIN DBLIC.bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
 WHERE	b.custid=@custid 		
 		AND b.winlostdate = @fromdate AND b.bettype NOT BETWEEN 1501 AND 1599 --exclude Keno
@@ -214,7 +214,7 @@ SELECT
 	0 AS IsNeutral,
 	b.currency,
 	'' ShowTime 
-FROM	bodb_Archive.dbo.bettrans_bk b WITH (NOLOCK)
+FROM	DBARC.bodb_archive.dbo.bettrans_bk b WITH (NOLOCK)
 
 WHERE	b.custid=@custid 
 		AND bettype IN(71,73)
@@ -264,7 +264,7 @@ SELECT
 	CONVERT(BIT,0) AS IsNeutral,
 	b.currency,
 	'' AS ShowTime 
-FROM	bodb_Archive.dbo.bettrans_bk b WITH (NOLOCK)
+FROM	DBARC.bodb_archive.dbo.bettrans_bk b WITH (NOLOCK)
 		CROSS APPLY dbo.f_ParseTransDesc(b.transdesc, b.bettype) AS fnc
 WHERE	b.custid=@custid 		
 
@@ -314,7 +314,7 @@ SELECT
 	CONVERT(BIT,0) AS IsNeutral,
 	b.currency,
 	CONVERT(VARCHAR(20),r.eventTime)  AS ShowTime 
-FROM	bodb_Archive.dbo.bettrans_bk b WITH (NOLOCK)
+FROM	DBARC.bodb_archive.dbo.bettrans_bk b WITH (NOLOCK)
 		INNER JOIN DBARC.bodb_Archive.dbo.VSOutright_bk o WITH (nolock) ON b.oddsid=o.Orid
 		INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
 WHERE	b.custid=@custid
@@ -365,7 +365,7 @@ SELECT
 	b.currency,
 	'' AS ShowTime 
 FROM
-	bodb_Archive.dbo.bettrans_bk b WITH (NOLOCK)	
+	DBARC.bodb_archive.dbo.bettrans_bk b WITH (NOLOCK)	
 	LEFT JOIN DBLIC.bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid	
 WHERE
 	b.custid=@custid
@@ -418,7 +418,7 @@ SELECT
 	b.currency,
 	'' AS ShowTime 
 FROM
-	bodb_Archive.dbo.bettrans_bk b WITH (NOLOCK)	
+	DBARC.bodb_archive.dbo.bettrans_bk b WITH (NOLOCK)	
 	LEFT JOIN DBLIC.bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid	
 WHERE
 	b.custid=@custid
@@ -471,8 +471,8 @@ SELECT
 	b.currency,
 	'' AS ShowTime 
 from 
-	bodb_Archive.dbo.bettrans_bk b WITH (NOLOCK)
-	inner join bodb_Archive.dbo.outright_bk m WITH (NOLOCK) on b.matchid = m.orid	
+	DBARC.bodb_archive.dbo.bettrans_bk b WITH (NOLOCK)
+	inner join DBARC.bodb_archive.dbo.outright_bk m WITH (NOLOCK) on b.matchid = m.orid	
 	inner join dbo.league l WITH (NOLOCK) on m.leagueid = l.leagueid
 	LEFT JOIN DBLIC.bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid	
 WHERE
@@ -564,7 +564,7 @@ BEGIN
 		BG.betteam ,
 		BG.stake*e.EUR,	
 		BG.stake*e.USD
-	FROM 	bodb_archive.dbo.bettransG BG WITH (NOLOCK)
+	FROM 	DBARC.bodb_archive.dbo.bettransG BG WITH (NOLOCK)
 			INNER JOIN @Data B ON BG.refno=b.refno AND BG.custID=@CustID 
 			INNER JOIN #TempExchange e
 			ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency	
@@ -584,7 +584,7 @@ BEGIN
 			BM.betteam ,
 			BM.stake*e.EUR,
 			BM.stake*e.USD
-	FROM	bodb_Archive.dbo.bettransm BM WITH (NOLOCK)
+	FROM	DBARC.bodb_archive.dbo.bettransm BM WITH (NOLOCK)
 			INNER JOIN @Data B ON BM.refno = B.transid
 			INNER JOIN #TempExchange e
 			ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
@@ -605,7 +605,7 @@ BEGIN
 		BM.Betteam,
 		BM.stake*e.EUR,	
 		BM.stake*e.USD		
-	FROM bodb_Archive.dbo.bettransm BM with (NOLOCK)
+	FROM DBARC.bodb_archive.dbo.bettransm BM with (NOLOCK)
 	INNER JOIN @Data B ON BM.refno = B.refno
 	INNER JOIN #TempExchange e ON  e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
 	WHERE B.Bettype = 1233

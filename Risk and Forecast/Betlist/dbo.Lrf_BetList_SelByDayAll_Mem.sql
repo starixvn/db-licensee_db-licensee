@@ -50,6 +50,7 @@ Revisions:
 	- 20140310@Hannah: offer Keno
 	- 20140324@Daniel: fix show RNG Casino / Bingo bets due to matchid = 0
 	- 20140411@Francis: fix incorrect sporttypes showing for VHR, Racing
+	- 20140630@Hannah: offer BetRadar and Sporting Solution
 Param's Explanation: 
 	+ @transtype: 1-Betting Statement; 2-VOID/Cancelled Bet; 3-Outstanding Bet 
 	
@@ -207,7 +208,7 @@ ELSE
 			WHERE
 				b.custid=@custid 		
 				--AND b.winlostdate=@fromdate AND b.bettype<=19000: old condition 
-				AND b.winlostdate=@fromdate AND b.bettype<=1299
+				AND b.winlostdate=@fromdate AND (b.bettype<=1299 OR (b.bettype BETWEEN 1301 AND 1399))
 				AND b.bettype NOT IN (10,31,32,33,1231,1232,1233,1237,1238) --exclude Racing and VHS
 				AND b.statusID IN (SELECT [statusID] FROM @tmpStatus)
 
@@ -596,7 +597,7 @@ ELSE
 			WHERE
 				b.custid=@custid 		
 				--AND b.winlostdate=@fromdate AND b.bettype<=19000 : old condition 
-				AND b.winlostdate=@fromdate AND (b.bettype<=1299) 
+				AND b.winlostdate=@fromdate AND (b.bettype<=1299 OR (b.bettype BETWEEN 1301 AND 1399)) 
 				AND b.bettype NOT IN (10,31,32,33,1231,1232,1233,1237,1238) --exclude Racing and VHS
 				AND b.statusID IN (SELECT [statusID] FROM @tmpStatus)
 
@@ -926,7 +927,6 @@ ELSE
 				AND b.bettype=29
 				AND b.statusID IN (SELECT [statusID] FROM @tmpStatus)	
 
-
 			-- outright
 			INSERT INTO @Data 
 			SELECT
@@ -983,7 +983,6 @@ ELSE
 				b.custid=@custid AND b.bettype IN (10,31,32,33)
 				AND b.winlostdate = @fromdate
 				AND b.statusID IN (SELECT [statusID] FROM @tmpStatus)
-
 		END
 
 		DECLARE @RowStart INT, @RowEnd INT  

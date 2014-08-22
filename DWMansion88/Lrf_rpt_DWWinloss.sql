@@ -1,10 +1,8 @@
 USE [bodb_licensee]
 GO
 
-/****** Object:  StoredProcedure [dbo].[Lrf_rpt_DWWinloss]    Script Date: 4/2/2014 10:26:54 AM ******/
 SET ANSI_NULLS ON
 GO
-
 SET QUOTED_IDENTIFIER ON
 GO
 
@@ -24,6 +22,7 @@ DB: DB052.bodb02
 Original:DBDW2.bodb_dwrs
 
 Revisions:	
+	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 Param's Explanation:
     @groupingid: used to group data for summarizing (1:by day, 2:month, 3:currency, 4:bettype, 5:league)    
     @drawfilter: 'No Draw' filter is supported (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -127,7 +126,9 @@ CREATE TABLE #TempData
 		WHERE   
 			b.rptDate BETWEEN @FromDate AND @ToDate
 			AND Status <>103		
-			AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999))				
+			AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
+							  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+				)				
 		GROUP BY b.rptDate,	e.Code,b.Bettype,b.LeagueID
 
 		
@@ -205,10 +206,7 @@ DROP TABLE #Currency
 DROP TABLE #TempData
 
 
-
 GO
-
-
 GRANT EXECUTE ON [Lrf_rpt_DWWinloss] TO [bodbLicenseeNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_rpt_DWWinloss] TO [vnteam]
