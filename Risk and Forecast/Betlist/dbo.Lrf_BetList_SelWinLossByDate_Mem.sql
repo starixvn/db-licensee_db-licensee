@@ -20,14 +20,17 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinLossByDate_Mem]
 	@PageIndex INT=1,
 	@TotalRows INT=0 OUTPUT,
 	@SumWinlost MONEY=0 OUTPUT,
+	@SumBetEffective MONEY=0 OUTPUT,
 	@SumLicenseeWL	 MONEY=0 OUTPUT,
 	@SumComm MONEY=0 OUTPUT,
 	@SumPlayerComm MONEY=0 OUTPUT,
 	@SumWinlostUSD MONEY=0 OUTPUT,
+	@SumBetEffectiveUSD MONEY=0 OUTPUT,
 	@SumLicenseeWLUSD 	MONEY=0 OUTPUT,
 	@SumCommUSD MONEY=0 OUTPUT,
 	@SumPlayerCommUSD MONEY=0 OUTPUT,
 	@SumWinlostEUR MONEY=0 OUTPUT,
+	@SumBetEffectiveEUR MONEY=0 OUTPUT,
 	@SumLicenseeWLEUR   MONEY=0 OUTPUT,
 	@SumCommEUR MONEY=0 OUTPUT,
 	@SumPlayerCommEUR MONEY=0 OUTPUT,
@@ -75,11 +78,14 @@ Revisions:
    - 20131101@Victor: enhance performance
    - 20140326@Jim: offer Keno
    - 20140630@Hannah: offer BetRadar and Sporting Solution 
+   - 20140819@Jim: add more output @SumBetEffective  
    */
 
 SET NOCOUNT ON
 
-DECLARE @UserName NVARCHAR(20), @Recommend INT
+DECLARE @UserName NVARCHAR(20)
+		,@Recommend INT
+		,@BetEffectiveDate SMALLDATETIME
 
 	SELECT CurrencyID
 		  ,LicenseeID
@@ -89,6 +95,7 @@ DECLARE @UserName NVARCHAR(20), @Recommend INT
 		AND LicenseeID=@LicenseeID 
 		AND SystemID=1
 		AND isActive=1
+SELECT @BetEffectiveDate='2014-08-01'
 
 SELECT @UserName =UserName, @Recommend = Recommend 
 FROM custinfo c WITH(NOLOCK) 
@@ -116,6 +123,7 @@ CREATE TABLE #BetListByDateMem (
 	Transdate DATETIME,
 	Winlostdate DATETIME,
 	Winlost MONEY,
+	BetEffective MONEY,
 	licenseeWL MONEY,
 	comm MONEY,
 	playercomm MONEY,
@@ -152,6 +160,7 @@ CREATE TABLE  #TempBetList (
 	Transdate		DATETIME,
 	Winlostdate		DATETIME,
 	Winlost			MONEY,
+	BetEffective	MONEY,
 	LicenseeWL		MONEY,
 	comm			MONEY,
 	playercomm 		MONEY,
@@ -192,6 +201,7 @@ BEGIN
 		b.Transdate,	
 		b.winlostdate,			
 		(b.winlost-actual_stake),
+		ABS(b.winlost-actual_stake),
 		0 AS LicenseeWL ,
 		b.comm,
 		b.playercomm ,
@@ -233,6 +243,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,			
 			b.winlost,
+			b.BetEffective,
 			b.LicenseeWL,
 			b.comm,
 			b.playercomm,
@@ -278,6 +289,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,						
 			b.winlost,
+			b.BetEffective,
 			b.LicenseeWL ,
 			b.comm,
 			b.playercomm,
@@ -322,6 +334,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,						
 			b.winlost,
+			b.BetEffective,
 			b.LicenseeWL ,
 			b.comm,
 			b.playercomm,
@@ -366,6 +379,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,						
 			b.winlost,
+			b.BetEffective,
 			b.LicenseeWL ,
 			b.comm,
 			b.playercomm,
@@ -414,6 +428,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,			
 			(b.winlost-actual_stake),
+			ABS(b.winlost-actual_stake),
 			- (b.winlost-b.actual_stake) AS LicenseeWL ,
 			b.comm,
 			b.playercomm  ,
@@ -465,6 +480,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,						
 			(b.winlost-actual_stake),
+			ABS(b.winlost-actual_stake),
 			- (b.winlost-b.actual_stake) AS LicenseeWL ,
 			b.comm,
 			b.playercomm  ,
@@ -516,6 +532,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,						
 			(b.winlost-actual_stake),
+			ABS(b.winlost-actual_stake),
 			- (b.winlost-b.actual_stake) AS LicenseeWL ,
 			b.comm,
 			b.playercomm ,
@@ -565,6 +582,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,						
 			(b.winlost-actual_stake),
+			ABS(b.winlost-actual_stake),
 			- (b.winlost-b.actual_stake) AS LicenseeWL ,
 			b.comm,
 			b.playercomm  ,
@@ -618,6 +636,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,						
 			(b.winlost-actual_stake),
+			ABS(b.winlost-actual_stake),
 			b.awinlost,
 			b.comm,
 			b.playercomm ,	
@@ -671,6 +690,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,			
 			(b.winlost-actual_stake),
+			ABS(b.winlost-actual_stake),
 			- (b.winlost-b.actual_stake) AS LicenseeWL ,
 			b.comm,
 			b.playercomm ,				
@@ -721,6 +741,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,			
 			(b.winlost-actual_stake),
+			ABS(b.winlost-actual_stake),
 			- (b.winlost-b.actual_stake) AS LicenseeWL ,
 			b.comm,
 			b.playercomm ,				
@@ -770,6 +791,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,			
 			(b.winlost-actual_stake),
+			ABS(b.winlost-actual_stake),
 			- (b.winlost-b.actual_stake) AS LicenseeWL ,
 			b.comm,
 			b.playercomm ,				
@@ -822,6 +844,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,			
 			(b.winlost-actual_stake),
+			ABS(b.winlost-actual_stake),
 			- (b.winlost-b.actual_stake) AS LicenseeWL ,
 			b.comm,
 			b.playercomm ,				
@@ -872,6 +895,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,			
 			(b.winlost-actual_stake),
+			ABS(b.winlost-actual_stake),
 			- (b.winlost-b.actual_stake) AS LicenseeWL ,
 			b.comm,
 			b.playercomm ,				
@@ -922,6 +946,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,			
 			(b.winlost-actual_stake),
+			ABS(b.winlost-actual_stake),
 			- (b.winlost-b.actual_stake) AS LicenseeWL ,
 			b.comm,
 			b.playercomm ,				
@@ -937,7 +962,7 @@ BEGIN
 			0  AS AwayID, 		
 			0  AS Betstatus,
 			CONVERT(BIT,0) AS IsNeutral	,
-			b.currency,-- here 
+			b.currency,
 			'' AS  ShowTime 	
 		FROM
 			dbo.bettrans AS b WITH (NOLOCK)		
@@ -984,6 +1009,7 @@ BEGIN
 		b.Transdate,	
 		b.winlostdate,						
 		(b.winlost-actual_stake),
+		ABS(b.winlost-actual_stake),
 		0 AS LicenseeWL ,			
 		b.comm,
 		b.playercomm  ,
@@ -1027,6 +1053,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,			
 			b.winlost,
+			b.BetEffective,
 			b.LicenseeWL,
 			b.comm,
 			b.playercomm,
@@ -1072,6 +1099,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,						
 			b.winlost,
+			b.BetEffective,
 			b.LicenseeWL ,
 			b.comm,
 			b.playercomm,
@@ -1116,6 +1144,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,						
 			b.winlost,
+			b.BetEffective,
 			b.LicenseeWL ,
 			b.comm,
 			b.playercomm,
@@ -1160,6 +1189,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,						
 			b.winlost,
+			b.BetEffective,
 			b.LicenseeWL ,
 			b.comm,
 			b.playercomm,
@@ -1208,6 +1238,7 @@ BEGIN
 				b.Transdate,	
 				b.winlostdate,						
 				(b.winlost-actual_stake),
+				ABS(b.winlost-actual_stake),
 				- (b.winlost-b.actual_stake) AS LicenseeWL ,
 				b.comm,
 				b.playercomm ,
@@ -1259,6 +1290,7 @@ BEGIN
 				b.Transdate,	
 				b.winlostdate,						
 				(b.winlost-actual_stake),
+				ABS(b.winlost-actual_stake),
 				- (b.winlost-b.actual_stake) AS LicenseeWL ,
 				b.comm,
 				b.playercomm ,
@@ -1308,6 +1340,7 @@ BEGIN
 				b.Transdate,	
 				b.winlostdate,						
 				(b.winlost-actual_stake),
+				ABS(b.winlost-actual_stake),
 				- (b.winlost-b.actual_stake) AS LicenseeWL ,
 				b.comm,
 				b.playercomm  ,
@@ -1357,6 +1390,7 @@ BEGIN
 				b.Transdate,	
 				b.winlostdate,						
 				(b.winlost-actual_stake),
+				ABS(b.winlost-actual_stake),
 				- (b.winlost-b.actual_stake)  AS LicenseeWL ,
 				b.comm,
 				b.playercomm  ,		
@@ -1409,6 +1443,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,						
 			(b.winlost-actual_stake),
+			ABS(b.winlost-actual_stake),
 			b.awinlost,
 			b.comm,
 			b.playercomm  ,
@@ -1461,6 +1496,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,			
 			(b.winlost-actual_stake),
+			ABS(b.winlost-actual_stake),
 			- (b.winlost-b.actual_stake) AS LicenseeWL ,
 			b.comm,
 			b.playercomm  ,
@@ -1511,6 +1547,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,			
 			(b.winlost-actual_stake),
+			ABS(b.winlost-actual_stake),
 			- (b.winlost-b.actual_stake) AS LicenseeWL ,
 			b.comm,
 			b.playercomm ,				
@@ -1563,6 +1600,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,			
 			(b.winlost-actual_stake),
+			ABS(b.winlost-actual_stake),
 			- (b.winlost-b.actual_stake) AS LicenseeWL ,
 			b.comm,
 			b.playercomm  ,
@@ -1612,6 +1650,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,			
 			(b.winlost-actual_stake),
+			ABS(b.winlost-actual_stake),
 			- (b.winlost-b.actual_stake) AS LicenseeWL ,
 			b.comm,
 			b.playercomm  ,
@@ -1661,6 +1700,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,			
 			(b.winlost-actual_stake),
+			ABS(b.winlost-actual_stake),
 			- (b.winlost-b.actual_stake) AS LicenseeWL ,
 			b.comm,
 			b.playercomm  ,
@@ -1718,6 +1758,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,			
 			(b.winlost-actual_stake),
+			ABS(b.winlost-actual_stake),
 			0 AS LicenseeWL ,			
 			b.comm,
 			b.playercomm ,
@@ -1759,6 +1800,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,			
 			b.winlost,
+			b.BetEffective,
 			b.LicenseeWL,
 			b.comm,
 			b.playercomm,
@@ -1804,6 +1846,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,						
 			b.winlost,
+			b.BetEffective,
 			b.LicenseeWL ,
 			b.comm,
 			b.playercomm,
@@ -1848,6 +1891,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,						
 			b.winlost,
+			b.BetEffective,
 			b.LicenseeWL ,
 			b.comm,
 			b.playercomm,
@@ -1892,6 +1936,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,						
 			b.winlost,
+			b.BetEffective,
 			b.LicenseeWL ,
 			b.comm,
 			b.playercomm,
@@ -1940,6 +1985,7 @@ BEGIN
 				b.Transdate,	
 				b.winlostdate,			
 				(b.winlost-actual_stake),
+				ABS(b.winlost-actual_stake),
 				- (b.winlost-b.actual_stake) AS LicenseeWL ,
 				b.comm,
 				b.playercomm AS PlayerComm,
@@ -1991,6 +2037,7 @@ BEGIN
 				b.Transdate,	
 				b.winlostdate,						
 				(b.winlost-actual_stake),
+				ABS(b.winlost-actual_stake),
 				- (b.winlost-b.actual_stake)  AS LicenseeWL ,
 				b.comm,
 				b.playercomm  AS PlayerComm,
@@ -2040,6 +2087,7 @@ BEGIN
 				b.Transdate,	
 				b.winlostdate,						
 				(b.winlost-actual_stake),
+				ABS(b.winlost-actual_stake),
 				- (b.winlost-b.actual_stake)  AS LicenseeWL ,
 				b.comm,
 				b.playercomm AS PlayerComm,
@@ -2089,6 +2137,7 @@ BEGIN
 				b.Transdate,	
 				b.winlostdate,						
 				(b.winlost-actual_stake),
+				ABS(b.winlost-actual_stake),
 				- (b.winlost-b.actual_stake) AS LicenseeWL ,
 				b.comm,
 				b.playercomm  AS PlayerComm,
@@ -2143,6 +2192,7 @@ BEGIN
 				b.Transdate,	
 				b.winlostdate,						
 				(b.winlost-actual_stake),
+				ABS(b.winlost-actual_stake),
 				b.awinlost,
 				b.comm,
 				b.playercomm AS PlayerComm,
@@ -2196,6 +2246,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,			
 			(b.winlost-actual_stake),
+			ABS(b.winlost-actual_stake),
 			- (b.winlost-b.actual_stake) AS LicenseeWL ,
 			b.comm,
 			b.playercomm  AS PlayerComm,				
@@ -2246,6 +2297,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,			
 			(b.winlost-actual_stake),
+			ABS(b.winlost-actual_stake),
 			- (b.winlost-b.actual_stake) AS LicenseeWL ,
 			b.comm,
 			b.playercomm ,				
@@ -2297,6 +2349,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,			
 			(b.winlost-actual_stake),
+			ABS(b.winlost-actual_stake),
 			- (b.winlost-b.actual_stake) AS LicenseeWL ,
 			b.comm,
 			b.playercomm  AS PlayerComm,				
@@ -2347,6 +2400,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,			
 			(b.winlost-actual_stake),
+			ABS(b.winlost-actual_stake),
 			- (b.winlost-b.actual_stake) AS LicenseeWL ,
 			b.comm,
 			b.playercomm  AS PlayerComm,				
@@ -2398,6 +2452,7 @@ BEGIN
 			b.Transdate,	
 			b.winlostdate,			
 			(b.winlost-actual_stake),
+			ABS(b.winlost-actual_stake),
 			- (b.winlost-b.actual_stake) AS LicenseeWL ,
 			b.comm,
 			b.playercomm  AS PlayerComm,				
@@ -2441,20 +2496,29 @@ SELECT * INTO #TempExchange
 FROM Lrf_f_GetExchangeDaily(@FromDate,@ToDate)
 WHERE exchangeid IN (SELECT DISTINCT Currency FROM #BetListByDateMem)
 
+--- 
+UPDATE #BetListByDateMem 
+SET BetEffective=0
+WHERE  (winlostdate < @BetEffectiveDate
+		OR  status NOT IN ('LOSE','WON')
+		)
 
 SELECT 
 	@TotalRows = COUNT(transid),
 	@SumWinlost=SUM(ISNULL(winlost,0)),
+	@SumBetEffective=SUM(ISNULL(BetEffective,0)),
 	@SumLicenseeWL=SUM(ISNULL(licenseeWL,0)),
 	@SumComm=SUM(ISNULL(comm,0)) ,
 	@SumPlayerComm=SUM(ISNULL(playercomm,0)),
 	--USD
 	@SumWinlostUSD=SUM(ISNULL(winlost*e.USD,0)),
+	@SumBetEffectiveUSD=SUM(ISNULL(BetEffective*e.USD,0)),
 	@SumLicenseeWLUSD=SUM(ISNULL(LicenseeWL*e.USD,0)),
 	@SumCommUSD=SUM(ISNULL(comm*e.USD,0)) ,
 	@SumPlayerCommUSD=SUM(ISNULL(playercomm*e.USD,0)),
 	--EUR
 	@SumWinlostEUR=SUM(ISNULL(winlost*e.EUR,0)),
+	@SumBetEffectiveEUR=SUM(ISNULL(BetEffective*e.EUR,0)),
 	@SumLicenseeWLEUR=SUM(ISNULL(LicenseeWL*e.EUR,0)),
 	@SumCommEUR=SUM(ISNULL(comm*e.EUR,0)) ,
 	@SumPlayerCommEUR=SUM(ISNULL(playercomm*e.EUR,0))
@@ -2473,6 +2537,7 @@ FROM
 			Stake*e.USD StakeUSD,
 			Actual_Stake*e.USD Actual_StakeUSD,
 			Winlost*e.USD WinlostUSD,
+			BetEffective*e.USD BetEffectiveUSD,
 			licenseeWL*e.USD licenseeWLUSD,
 			comm*e.USD commUSD,
 			playercomm*e.USD PlayerCommUSD,
@@ -2480,6 +2545,7 @@ FROM
 			Stake*e.EUR StakeEUR,
 			Actual_Stake*e.EUR Actual_StakeEUR,
 			Winlost*e.EUR WinlostEUR,
+			BetEffective*e.EUR BetEffectiveEUR,
 			licenseeWL*e.EUR licenseeWLEUR,
 			comm*e.EUR commEUR,
 			playercomm*e.EUR PlayerCommEUR
