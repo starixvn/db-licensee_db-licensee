@@ -21,19 +21,25 @@ BEGIN
 			,@LogSPData			VARCHAR(MAX)
 			,@TrackingValue2	VARCHAR(MAX)
 			,@AGGroup			VARCHAR(20)		= ''
+			,@SIsEnabled		BIT				= 0
 			,@Srecommend		INT
 
 	SET @startRun = GETDATE()
 	SELECT @Srecommend = srecommend FROM bodb02.dbo.Customer c WITH (NOLOCK) WHERE c.CustID = @CustID
 
 	SELECT @AGGroup = ISNULL(DefaultGroup,'')
+		,@SIsEnabled = ISNULL(IsEnabled,0)
 	FROM DBTXN.CustDB.dbo.Dep_SuperSetting_AGC WITH (NOLOCK) 
 	WHERE CustID = @Srecommend
 
 	DECLARE @CustIDs VARCHAR(20)
 	SELECT @CustIDs = CONVERT(VARCHAR(20), @CustID)
 
+	IF (LEN(@AGGroup) = 0)
+		RETURN
+
 	EXEC DBTXN.CustDB.dbo.Dep_UpdCustSetting_AGC @CustIDs = @CustIDs, @AGGroup = @AGGroup
+	EXEC DBTXN.CustDB.dbo.Dep_UpdCustStatus_AGC @CustIDs = @CustIDs, @IsEnabled = @SIsEnabled
 
 	-- Write log
 	SET @endRun = GETDATE()
