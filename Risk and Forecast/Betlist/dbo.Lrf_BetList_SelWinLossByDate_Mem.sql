@@ -93,7 +93,7 @@ DECLARE @UserName NVARCHAR(20)
 		AND LicenseeID=@LicenseeID 
 		AND SystemID=1
 		AND isActive=1
-SELECT @BetEffectiveDate='2014-08-01'
+SELECT @BetEffectiveDate='2014-09-01'
 
 SELECT @UserName =UserName, @Recommend = Recommend 
 FROM custinfo c WITH(NOLOCK) 
