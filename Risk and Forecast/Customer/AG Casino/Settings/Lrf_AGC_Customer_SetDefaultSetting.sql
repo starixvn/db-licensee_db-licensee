@@ -77,3 +77,6 @@ BEGIN
 END
 
 GO
+
+GRANT EXECUTE ON dbo.Lrf_AGC_SelCustSetting TO Dot_Member
+GO
