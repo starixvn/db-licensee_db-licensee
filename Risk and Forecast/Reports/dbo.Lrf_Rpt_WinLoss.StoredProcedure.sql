@@ -97,7 +97,7 @@ DECLARE @Exchange AS TABLE (
 SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WHERE LicenseeID = @LicenseeID
 SELECT @_FromDate = @FromDate
 	   ,@_ToDate = @ToDate
-	   ,@BetEffectiveDate = '2014-08-01'
+	   ,@BetEffectiveDate = '2014-09-01'
 SELECT  @PageIndex = @PageIndex - 1 
         ,@RowStart = @PageSize * @PageIndex + 1 
         ,@RowEnd = @RowStart + @PageSize - 1
