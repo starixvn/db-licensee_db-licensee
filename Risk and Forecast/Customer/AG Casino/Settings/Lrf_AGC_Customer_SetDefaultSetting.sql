@@ -78,5 +78,5 @@ END
 
 GO
 
-GRANT EXECUTE ON dbo.Lrf_AGC_SelCustSetting TO Dot_Member
+GRANT EXECUTE ON dbo.Lrf_AGC_Customer_SetDefaultSetting TO Dot_Member
 GO
