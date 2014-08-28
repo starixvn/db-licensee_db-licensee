@@ -32,10 +32,10 @@ BEGIN
 	SELECT @Srecommend = srecommend FROM bodb02.dbo.Customer c WITH (NOLOCK) WHERE c.CustID = @CustID
 
 	SELECT @IsEnableAG_Old = ISNULL(IsEnabled,0)
-	FROM DBTXN.CustDB.dbo.Dep_CustSetting_AGC WITH (NOLOCK)
+	FROM DBTXN.CustDB.dbo.Dep_CustSetting_AGCasino WITH (NOLOCK)
 	WHERE CustID = @CustId
 
-	SELECT @SEnabled = ISNULL(IsEnabled,0) FROM DBTXN.CustDB.dbo.Dep_SuperSetting_AGC WITH (NOLOCK) WHERE CustID = @Srecommend
+	SELECT @SEnabled = ISNULL(IsEnabled,0) FROM DBTXN.CustDB.dbo.Dep_SuperSetting_AGCasino WITH (NOLOCK) WHERE CustID = @Srecommend
 
 	IF (@SEnabled = 0)
 		SELECT @IsEnableAG_Old = 0

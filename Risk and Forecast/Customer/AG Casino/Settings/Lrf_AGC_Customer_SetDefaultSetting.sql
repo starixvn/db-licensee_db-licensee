@@ -29,7 +29,7 @@ BEGIN
 
 	SELECT @AGGroup = ISNULL(DefaultGroup,'')
 		,@SIsEnabled = ISNULL(IsEnabled,0)
-	FROM DBTXN.CustDB.dbo.Dep_SuperSetting_AGC WITH (NOLOCK) 
+	FROM DBTXN.CustDB.dbo.Dep_SuperSetting_AGCasino WITH (NOLOCK) 
 	WHERE CustID = @Srecommend
 
 	DECLARE @CustIDs VARCHAR(20)

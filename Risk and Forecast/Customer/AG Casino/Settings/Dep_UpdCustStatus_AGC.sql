@@ -1,4 +1,4 @@
-CREATE PROCEDURE	dbo.Dep_UpdCustStatus_AGC
+ALTER PROCEDURE	dbo.Dep_UpdCustStatus_AGC
 	@CustIDs	VARCHAR(MAX),
 	@IsEnabled	BIT
 AS
@@ -18,14 +18,14 @@ BEGIN
 	INSERT INTO #CustList (CustID)
 	SELECT val FROM dbo.strSplit(@CustIDs,',')
 
-	UPDATE dbo.Dep_CustSetting_AGC WITH (ROWLOCK, UPDLOCK)
+	UPDATE dbo.Dep_CustSetting_AGCasino WITH (ROWLOCK, UPDLOCK)
 	SET IsEnabled = @IsEnabled
 	WHERE CustID IN (SELECT CustID FROM #CustList)
 
-	INSERT INTO dbo.Dep_CustSetting_AGC (CustID, AGGroup, IsEnabled)
+	INSERT INTO dbo.Dep_CustSetting_AGCasino (CustID, AGGroup, IsEnabled)
 	SELECT c.CustID, '', @IsEnabled
 	FROM #CustList c
-	WHERE NOT EXISTS(SELECT 1 FROM dbo.Dep_CustSetting_AGC cs WITH (NOLOCK) WHERE cs.CustID = c.CustID)
+	WHERE NOT EXISTS(SELECT 1 FROM dbo.Dep_CustSetting_AGCasino cs WITH (NOLOCK) WHERE cs.CustID = c.CustID)
 
 	DROP TABLE #CustList
 END

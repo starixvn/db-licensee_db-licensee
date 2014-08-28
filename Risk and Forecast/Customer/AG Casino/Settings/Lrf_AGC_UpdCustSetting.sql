@@ -27,7 +27,7 @@ BEGIN
 	SET @startRun = GETDATE()
 
 	SELECT @AGGroup_Old = ISNULL(AGGroup,'')
-	FROM DBTXN.CustDB.dbo.Dep_CustSetting_AGC WITH (NOLOCK)
+	FROM DBTXN.CustDB.dbo.Dep_CustSetting_AGCasino WITH (NOLOCK)
 	WHERE CustID = @CustId
 
 	DECLARE @CustIDs VARCHAR(20)

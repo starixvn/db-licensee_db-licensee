@@ -1,4 +1,4 @@
-CREATE PROCEDURE	dbo.Dot_Dep_SelCustSetting_AGC
+ALTER PROCEDURE	dbo.Dot_Dep_SelCustSetting_AGC
 	@CustID		INT,
 	@AGGroup	VARCHAR(20)		OUTPUT,
 	@IsEnabled	BIT				OUTPUT
@@ -21,10 +21,10 @@ BEGIN
 	SELECT @AGGroup = '', @IsEnabled = 0
 	SELECT @AGGroup = ISNULL(AGGroup,''), 
 		@IsEnabled = ISNULL(IsEnabled,0)
-	FROM dbo.Dep_CustSetting_AGC WITH (NOLOCK)
+	FROM dbo.Dep_CustSetting_AGCasino WITH (NOLOCK)
 	WHERE CustID = @CustId
 
-	SELECT @SEnabled = ISNULL(IsEnabled,0) FROM dbo.Dep_SuperSetting_AGC WITH (NOLOCK) WHERE CustID = @Srecommend
+	SELECT @SEnabled = ISNULL(IsEnabled,0) FROM dbo.Dep_SuperSetting_AGCasino WITH (NOLOCK) WHERE CustID = @Srecommend
 
 	IF (@SEnabled = 0)
 		SELECT @IsEnabled = 0

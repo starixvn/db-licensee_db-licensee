@@ -27,13 +27,13 @@ BEGIN
 	SELECT @AGGroup = '', @IsEnabled = 0
 	SELECT @AGGroup = ISNULL(AGGroup,''), 
 		@IsEnabled = ISNULL(IsEnabled,0)
-	FROM DBTXN.CustDB.dbo.Dep_CustSetting_AGC WITH (NOLOCK)
+	FROM DBTXN.CustDB.dbo.Dep_CustSetting_AGCasino WITH (NOLOCK)
 	WHERE CustID = @CustId
 
 	SELECT @CheckedGroups = '', @IsLineEnabled = 0
 	SELECT @IsLineEnabled = ISNULL(IsEnabled, 0) 
 		,@CheckedGroups = ISNULL(CheckedGroup, '')
-	FROM DBTXN.CustDB.dbo.Dep_SuperSetting_AGC WITH (NOLOCK) 
+	FROM DBTXN.CustDB.dbo.Dep_SuperSetting_AGCasino WITH (NOLOCK) 
 	WHERE CustID = @Srecommend
 
 	IF (@IsLineEnabled = 0)
