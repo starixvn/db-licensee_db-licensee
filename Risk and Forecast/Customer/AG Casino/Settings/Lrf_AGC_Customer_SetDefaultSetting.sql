@@ -1,5 +1,6 @@
 ALTER PROCEDURE	dbo.Lrf_AGC_Customer_SetDefaultSetting
 	@CustID		INT,
+	@SuperID	INT,
 	@Language	VARCHAR(10)		= 'en-US',
 	@ErrCode	INT				= 0		OUTPUT,
 	@ErrMsg		VARCHAR(8000)	= ''	OUTPUT
@@ -22,15 +23,13 @@ BEGIN
 			,@TrackingValue2	VARCHAR(MAX)
 			,@AGGroup			VARCHAR(20)		= ''
 			,@SIsEnabled		BIT				= 0
-			,@Srecommend		INT
 
 	SET @startRun = GETDATE()
-	SELECT @Srecommend = srecommend FROM bodb02.dbo.Customer c WITH (NOLOCK) WHERE c.CustID = @CustID
 
 	SELECT @AGGroup = ISNULL(DefaultGroup,'')
 		,@SIsEnabled = ISNULL(IsEnabled,0)
 	FROM DBTXN.CustDB.dbo.Dep_SuperSetting_AGCasino WITH (NOLOCK) 
-	WHERE CustID = @Srecommend
+	WHERE CustID = @SuperID
 
 	DECLARE @CustIDs VARCHAR(20)
 	SELECT @CustIDs = CONVERT(VARCHAR(20), @CustID)
