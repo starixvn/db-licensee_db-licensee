@@ -30,6 +30,7 @@ AS
   - 20140814@Don: 
 		+ Remove [20140708@Don]
 		+ Add AG Casino
+  - 20140901@Don: Delete on batches of data in table rptDepWinlost for one day instead
  Param's Explanation:  
 
  • @winlostdate: The date need to summary  
@@ -340,7 +341,15 @@ BEGIN
 	   GROUP BY tl.custid, tl.productID
 
 	
-	DELETE bodb_Report.dbo.rptDepWinlost WHERE Winlostdate = @date
+	WHILE (1 = 1)
+	BEGIN
+		DELETE tmp FROM (SELECT TOP 50000 * FROM bodb_Report.dbo.rptDepWinlost WITH(NOLOCK) WHERE Winlostdate = @date)tmp
+		
+		IF (@@ROWCOUNT < 50000)
+			BREAK
+			
+		WAITFOR DELAY '00:00:00.280'
+	END
   
 	INSERT INTO bodb_Report.dbo.rptDepWinlost   
 		(winlostdate, custid, currency, OpeningBalance, Deposit, Aff2MemTransfer, Withdrawal, Bonus, Adjustment, Transfer3rd,  
