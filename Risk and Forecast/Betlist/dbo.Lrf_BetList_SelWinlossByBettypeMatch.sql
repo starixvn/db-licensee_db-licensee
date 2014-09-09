@@ -57,6 +57,8 @@ Revisions:
    - 20130422@Scott: Add more parameter @ShowCS, @ShowBG
    - 20130514@Jim:Restrict permission of Licensee Users by currency
    - 20130903@Jim: support VHR
+   - 20140630@Hannah: offer BetRadar and Sporting Solution 
+   - 20140908@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
 Param's Explanation: 
 	
 */
@@ -195,13 +197,11 @@ BEGIN
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
 			b.statusID IN (111,112,113) AND
 			b.tpositiontaking=0 AND
-			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
+			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)) AND
 			((@Liveindicator=-1) OR (@Liveindicator=0 AND b.Liveindicator = 0) OR (@Liveindicator=1 AND b.Liveindicator = 1))	AND
 			(@_Date IS NULL OR (@_Date IS NOT NULL AND b.winlostdate=@_Date))
 		ORDER BY
-			b.status, b.transid
-			
-		
+			b.status, b.transid		
 	END
 
 	IF (@ShowSB=1)
@@ -246,7 +246,7 @@ BEGIN
 		WHERE
 			b.matchid=@matchid AND
 			(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
-			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
+			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)) AND
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
 			b.statusID IN (111,112,113) AND
 			b.tpositiontaking<>0 AND
@@ -299,6 +299,7 @@ BEGIN
 		WHERE
 			b.matchid=@matchid AND
 			(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
+			b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
 			b.statusID IN (111,112,113) AND
 			((@Liveindicator=-1) OR (@Liveindicator=0 AND b.Liveindicator = 0) OR (@Liveindicator=1 AND b.Liveindicator = 1)) AND
@@ -408,7 +409,7 @@ BEGIN
 			(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
 			b.recommend IN (SELECT custid FROM @TempAg) AND
 			b.statusID IN (111,112,113) AND
-			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
+			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)) AND
 			b.tpositiontaking=0 AND
 			(@_Date IS NULL OR (@_Date IS NOT NULL AND b.winlostdate=@_Date)) AND
 			1= CASE @Liveindicator 
@@ -417,9 +418,7 @@ BEGIN
 				ELSE 1 
 				END
 		ORDER BY
-			b.status, b.transid
-			
-		
+			b.status, b.transid		
 	END
 
 	IF (@ShowSB=1)
@@ -464,7 +463,7 @@ BEGIN
 		WHERE
 			b.matchid=@matchid AND
 			(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
-			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
+			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)) AND
 			b.recommend IN (SELECT custid FROM @TempAg) AND
 			b.tpositiontaking <>0 AND
 			b.statusID IN (111,112,113) AND
@@ -517,6 +516,7 @@ BEGIN
 		WHERE
 			b.matchid=@matchid AND
 			(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
+			b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
 			b.recommend IN (SELECT custid FROM @TempAg) AND
 			b.statusID IN (111,112,113) AND
 			((@Liveindicator=-1) OR (@Liveindicator=0 AND b.Liveindicator = 0) OR (@Liveindicator=1 AND b.Liveindicator = 1)) AND
