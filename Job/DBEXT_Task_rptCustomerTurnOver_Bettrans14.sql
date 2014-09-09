@@ -1,14 +1,15 @@
 USE [bodb02]
 GO
 
-/****** Object:  StoredProcedure [dbo].[Task_rptCustomerTurnOver_Bettrans14]    Script Date: 27/12/2013 2:12:22 PM ******/
+
 SET ANSI_NULLS ON
 GO
 
 SET QUOTED_IDENTIFIER ON
 GO
 
-ALTER PROCEDURE [dbo].[Task_rptCustomerTurnOver_Bettrans14] @Date SMALLDATETIME
+ALTER PROCEDURE [dbo].[Task_rptCustomerTurnOver_Bettrans14] 
+	@Date SMALLDATETIME
 AS
 /*	
 	Created	: Florent Nguyen
@@ -133,9 +134,9 @@ SELECT a.CustID
 			THEN 162 -- Live casino
 		WHEN a.bettype BETWEEN 1201 AND 1299
 			THEN CASE 
-					WHEN result.sporttype IS NOT NULL
+					WHEN a.bettype IN (1231, 1232, 1233, 1237, 1238)
 						THEN result.sporttype
-					WHEN b.sporttype IS NOT NULL
+					WHEN a.bettype NOT IN (1231, 1232, 1233, 1237, 1238)
 						THEN b.sporttype
 					ELSE 180 --Virtual Sport
 					END --Virtual Sport
@@ -190,9 +191,9 @@ GROUP BY a.CustID
 			THEN 162 -- Live casino
 		WHEN a.bettype BETWEEN 1201 AND 1299
 			THEN CASE 
-					WHEN result.sporttype IS NOT NULL
+					WHEN a.bettype IN (1231, 1232, 1233, 1237, 1238)
 						THEN result.sporttype
-					WHEN b.sporttype IS NOT NULL
+					WHEN a.bettype NOT IN (1231, 1232, 1233, 1237, 1238)
 						THEN b.sporttype
 					ELSE 180 --Virtual Sport
 					END --Virtual Sport
