@@ -77,6 +77,7 @@ Revisions:
    - 20140326@Jim: offer Keno
    - 20140630@Hannah: offer BetRadar and Sporting Solution 
    - 20140819@Jim: add more output @SumBetEffective  
+   - 20140908@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
    */
 
 SET NOCOUNT ON
@@ -765,7 +766,9 @@ BEGIN
 			b.recommend = @Recommend AND --to improve performance
 			b.custid=@CustID AND
 			((@ShowLC=1 AND b.bettype BETWEEN 1101 AND 1199) 
-				OR (@ShowVS=1 AND b.bettype BETWEEN 1201 AND 1299)
+				OR (@ShowVS=1 AND b.bettype BETWEEN 1201 AND 1299
+					AND b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) 	
+					)
 				)  AND
 			--((b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 1101 AND 1199) ) AND
 			b.ruben = 1 
@@ -815,7 +818,7 @@ BEGIN
 			b.winlostdate BETWEEN @TempFromDate AND @todate AND
 			b.recommend = @Recommend AND --to improve performance
 			b.custid=@CustID AND
-			((@ShowVS=1 AND b.bettype IN (1231, 1232, 1233, 1237, 1238))
+			((@ShowVS=1 AND b.bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()))
 				)  AND
 			b.ruben = 1 
 			
@@ -1521,7 +1524,9 @@ BEGIN
 			b.custid=@CustID AND
 			((@ShowNG=1 AND b.bettype BETWEEN 81 AND 120) 
 				OR (@ShowLC=1 AND b.bettype BETWEEN 1101 AND 1199 )
-				OR (@ShowVS=1 AND b.bettype BETWEEN 1201 AND 1299 )
+				OR (@ShowVS=1 AND b.bettype BETWEEN 1201 AND 1299 
+					AND b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) 
+					)
 				) AND
 			b.ruben = 1
 			
@@ -1571,7 +1576,7 @@ BEGIN
 			b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate AND
 			b.recommend = @Recommend AND --to improve performance
 			b.custid=@CustID AND
-			((@ShowVS=1 AND b.bettype IN (1231, 1232, 1233, 1237, 1238))
+			((@ShowVS=1 AND b.bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()))
 				)  AND
 			b.ruben = 1 	
 	END
@@ -2271,7 +2276,9 @@ BEGIN
 			b.recommend = @Recommend  AND
 			((@ShowNG=1 AND b.bettype BETWEEN 81 AND 120) 
 				OR (@ShowLC=1 AND b.bettype BETWEEN 1101 AND 1199 )
-				OR (@ShowVS=1 AND b.bettype BETWEEN 1201 AND 1299 )
+				OR (@ShowVS=1 AND b.bettype BETWEEN 1201 AND 1299 
+					AND b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) 
+					)
 				) AND
 			b.ruben = 1
 			
@@ -2321,7 +2328,7 @@ BEGIN
 			b.winlostdate BETWEEN @fromdate AND @TempToDate AND
 			b.recommend = @Recommend AND --to improve performance
 			b.custid=@CustID AND
-			((@ShowVS=1 AND b.bettype IN (1231, 1232, 1233, 1237, 1238))
+			((@ShowVS=1 AND b.bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()))
 				)  AND
 			b.ruben = 1 		
 	END

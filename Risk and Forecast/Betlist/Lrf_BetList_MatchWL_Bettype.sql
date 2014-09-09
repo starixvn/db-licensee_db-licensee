@@ -61,6 +61,7 @@ Revisions:
    - 20130514@Jim: Restrict permission of Licensee Users by currency
    - 20130904@Jim: support Virtual Horse Racing
    - 20140630@Hannah: offer BetRadar and Sporting Solution 
+   - 20140908@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
 
 Param's Explanation: 
 	
@@ -304,13 +305,14 @@ BEGIN
 		WHERE
 			b.matchid=@matchid AND
 			(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
+			b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
 			b.statusID IN (111,112,113) AND
 			((@Liveindicator=-1) OR (@Liveindicator=0 AND b.Liveindicator = 0) OR (@Liveindicator=1 AND b.Liveindicator = 1)) AND
 			(@_Date IS NULL OR (@_Date IS NOT NULL AND b.winlostdate=@_Date))
 		ORDER BY
 			b.status, b.transid
-		IF EXISTS (SELECT 1 FROM @TempBettype WHERE bettype IN (1231, 1232, 1233, 1237, 1238))	
+		IF EXISTS (SELECT 1 FROM @TempBettype WHERE bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()))	
 			BEGIN 
 				INSERT INTO #Data	
 				SELECT
@@ -522,13 +524,14 @@ BEGIN
 		WHERE
 			b.matchid=@matchid AND
 			(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
+			b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
 			b.recommend IN (SELECT custid FROM @TempAg) AND
 			b.statusID IN (111,112,113) AND
 			((@Liveindicator=-1) OR (@Liveindicator=0 AND b.Liveindicator = 0) OR (@Liveindicator=1 AND b.Liveindicator = 1)) AND
 			(@_Date IS NULL OR (@_Date IS NOT NULL AND b.winlostdate=@_Date))
 		ORDER BY
 			b.status, b.transid
-		IF EXISTS (SELECT 1 FROM @TempBettype WHERE bettype IN (1231, 1232, 1233, 1237, 1238))	
+		IF EXISTS (SELECT 1 FROM @TempBettype WHERE bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()))	
 			BEGIN 
 				INSERT INTO #Data	
 				SELECT

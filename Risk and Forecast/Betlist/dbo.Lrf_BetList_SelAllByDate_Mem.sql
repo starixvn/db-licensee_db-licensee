@@ -65,6 +65,7 @@ Revisions:
 	- 20130903@Jim: offer VHR
 	- 20140305@Hannah: offer Keno
 	- 20140630@Hannah: offer BetRadar and Sporting Solution
+	- 20140908@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
 */
 
 
@@ -731,8 +732,9 @@ BEGIN
 		b.CustID = @CustID AND
 		b.recommend=@Recommend  
 		AND b.bettype NOT IN (71,73) 
+		AND b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) 
 		AND b.transdate>=@FROMDate AND b.transdate<=@ToDate
-	IF EXISTS (SELECT 1 FROM @TempBettype WHERE bettype IN (1231, 1232, 1233, 1237, 1238) )	
+	IF EXISTS (SELECT 1 FROM @TempBettype WHERE bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) )	
 		BEGIN 
 			INSERT INTO #BetListSelAllByDateMem
 			SELECT 

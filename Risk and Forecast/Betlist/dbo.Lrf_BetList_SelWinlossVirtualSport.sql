@@ -30,6 +30,7 @@ Revisions:
 	 - 20131129@Jim: support :
 				182 – Virtual Greyhounds
 				184 – Virtual Motor Racing
+	- 20140908@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)			
 */
 
 
@@ -145,6 +146,7 @@ BEGIN
 		INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid   	  
 	 WHERE  		  
 	  b.bettype BETWEEN 1201 AND 1299 AND
+	  b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
 	  b.Winlostdate BETWEEN @FromDate AND @TempToDate AND
 	  b.statusID IN (111,112,113)	
 	-- VHR
@@ -191,7 +193,7 @@ BEGIN
 		INNER JOIN VSOutright14 o with (nolock) ON b.oddsid=o.Orid
 		INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	 	  
 	 WHERE  		  
-	  b.bettype BETWEEN 1201 AND 1299 AND
+	  b.bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
 	  b.Winlostdate BETWEEN @FromDate AND @TempToDate AND
 	  b.statusID IN (111,112,113)		
 	 ORDER BY transid
@@ -250,6 +252,7 @@ BEGIN
 	  INNER JOIN [match] m WITH (NOLOCK) ON b.matchid=m.matchid   	  
 	 WHERE  	  	  
 	  b.bettype BETWEEN 1201 AND 1299 AND
+	  b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
 	  b.Winlostdate BETWEEN @TempFromDate AND @ToDate AND  	  
 	  b.statusID IN (111,112,113)
 	 -- VHR
@@ -296,7 +299,7 @@ BEGIN
 		INNER JOIN VSOutright o with (nolock) ON b.oddsid=o.Orid
 		INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	 	  
 	 WHERE  		  
-	  b.bettype BETWEEN 1201 AND 1299 AND
+	  b.bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
 	  b.Winlostdate BETWEEN @FromDate AND @TempToDate AND
 	  b.statusID IN (111,112,113)		
 	 ORDER BY transid 
