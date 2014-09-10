@@ -57,6 +57,7 @@ Revisions:
 	 - 20130809@Jim: offer Virtual Horse Racing 	
 	 - 20140307@Hannah: offer Keno
 	 - 20140630@Hannah: offer BetRadar and Sporting Solution
+	 - 20140908@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
 	
 Param's Explanation:
 	+ @drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -624,6 +625,7 @@ BEGIN
 			b.winlostdate BETWEEN @TempFromDate AND @tdate AND
 			b.custid=@custid AND
 			b.bettype BETWEEN 1201 AND 1299 AND
+			b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
 			b.statusID IN (111,112,113)
 		UNION ALL
 		SELECT 
@@ -668,7 +670,7 @@ BEGIN
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @tdate AND
 			b.custid=@custid AND
-			b.bettype IN (1231, 1232, 1233, 1237, 1238) AND
+			b.bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
 			b.statusID IN (111,112,113)	
 
 				
@@ -1362,6 +1364,7 @@ BEGIN
 			b.winlostdate BETWEEN @BalanceUpDay AND @tdate AND
 			b.custid=@custid AND
 			b.bettype BETWEEN 1201 AND 1299 AND
+			b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
 			b.statusID IN (111,112,113)
 	 UNION ALL
 		SELECT 
@@ -1406,7 +1409,7 @@ BEGIN
 		WHERE
 			b.winlostdate BETWEEN @BalanceUpDay AND @tdate AND
 			b.custid=@custid AND
-			b.bettype IN (1231,1232,1233,1237,1238) AND 
+			b.bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND 
 			b.statusID IN (111,112,113)	
 		
 	END
@@ -2099,6 +2102,7 @@ BEGIN
 			b.winlostdate BETWEEN @fdate AND @TempToDate AND
 			b.custid=@custid AND
 			b.bettype BETWEEN 1201 AND 1299 AND
+			b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
 			b.ruben = 1 AND
 			b.status NOT IN ('VOID', 'REJECT', 'REFUND')
 		UNION ALL
@@ -2144,7 +2148,7 @@ BEGIN
 		WHERE
 			b.winlostdate BETWEEN @fdate AND @TempToDate AND
 			b.custid=@custid AND
-			b.bettype IN (1231,1232,1233,1237,1238) AND
+			b.bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
 			b.statusID IN (111,112,113)		
 	END
 	---- RNG Casino

@@ -1,14 +1,15 @@
 USE [bodb02]
 GO
 
-/****** Object:  StoredProcedure [dbo].[Task_rptCustomerTurnOver_Bettrans14]    Script Date: 27/12/2013 2:12:22 PM ******/
+
 SET ANSI_NULLS ON
 GO
 
 SET QUOTED_IDENTIFIER ON
 GO
 
-ALTER PROCEDURE [dbo].[Task_rptCustomerTurnOver_Bettrans14] @Date SMALLDATETIME
+ALTER PROCEDURE [dbo].[Task_rptCustomerTurnOver_Bettrans14] 
+	@Date SMALLDATETIME
 AS
 /*	
 	Created	: Florent Nguyen
@@ -17,16 +18,17 @@ AS
 	DB: DBEXT.bodb02
 	Original: 
 	Revision:
+		-20140305@Florent: Change way to get BA tickets
+		-20140315@Florent: Offer Keno sport		
 	Parameter's Explanation:			
 */
 SET NOCOUNT ON;
-	--DECLARE @Fromdate DATETIME,
-	--	@Todate DATETIME
-	--SELECT @Fromdate='2013-10-17',@todate='2013-10-17'
+
 IF exists(SELECT TOP 1 1 FROM bodb_LicenseeReport.dbo.rptCustomerTurnover AS rct WITH (NOLOCK) WHERE rct.winlostdate=@date)
 	BEGIN
 		DELETE bodb_LicenseeReport.dbo.rptCustomerTurnover WHERE winlostdate=@Date
 	END 	
+	
 ;WITH cte_bettrans
 AS (
 	SELECT a.CustID
@@ -34,17 +36,21 @@ AS (
 		,a.recommend
 		,a.matchid
 		,a.bettype
-		,SUM(CASE 
-				WHEN a.liveawayscore = 0 AND a.bettype IN(33,43) 
-					THEN ABS(a.stake/2) 
-				ELSE ABS(a.stake) 
-				END) AS stake
+		,SUM(ABS(a.stake)) AS stake
 		,sum(a.winlost - a.actual_stake) winlost
 		,sum(a.PlayerComm) PlayerComm
 		,a.Odds
 		,a.oddsid
 		,a.oddstype
-		,CASE 
+		,CASE
+			WHEN a.statusID = 112
+				AND a.bettype IN (33, 43)
+				AND a.liveawayscore = 0
+				THEN 114			
+			WHEN a.statusID = 113
+				AND a.bettype IN (33, 43)
+				AND a.liveawayscore = 0
+				THEN 115
 			WHEN a.statusID = 112
 				AND a.bettype IN (1, 3, 7, 8, 17, 18)
 				AND ABS(modds) = 0.25
@@ -63,8 +69,8 @@ AS (
 			WHEN BA.transid IS NOT NULL
 				THEN 1
 			END AS isBA
-		,sum(awinlost) awinlost
-		,sum(comm) comm
+		--,sum(awinlost) awinlost
+		--,sum(comm) comm
 	FROM dbo.bettrans14 a WITH (NOLOCK)
 	INNER JOIN bodb_licensee.dbo.LicenseeCust lc ON a.recommend = lc.custid
 	LEFT JOIN bodb_licensee.dbo.LicenseeBATransaction AS BA ON a.transid = ba.transid
@@ -78,11 +84,19 @@ AS (
 		,a.Odds
 		,a.oddsid
 		,a.oddstype
-		,CASE 
+		,CASE
+			WHEN a.statusID = 112
+				AND a.bettype IN (33, 43)
+				AND a.liveawayscore = 0
+				THEN 114			
+			WHEN a.statusID = 113
+				AND a.bettype IN (33, 43)
+				AND a.liveawayscore = 0
+				THEN 115
 			WHEN a.statusID = 112
 				AND a.bettype IN (1, 3, 7, 8, 17, 18)
 				AND ABS(modds) = 0.25
-				THEN 114		
+				THEN 114			
 			WHEN a.statusID = 113
 				AND a.bettype IN (1, 3, 7, 8, 17, 18)
 				AND ABS(modds) = 0.25
@@ -120,9 +134,9 @@ SELECT a.CustID
 			THEN 162 -- Live casino
 		WHEN a.bettype BETWEEN 1201 AND 1299
 			THEN CASE 
-					WHEN result.sporttype IS NOT NULL
+					WHEN a.bettype IN (1231, 1232, 1233, 1237, 1238)
 						THEN result.sporttype
-					WHEN b.sporttype IS NOT NULL
+					WHEN a.bettype NOT IN (1231, 1232, 1233, 1237, 1238)
 						THEN b.sporttype
 					ELSE 180 --Virtual Sport
 					END --Virtual Sport
@@ -158,8 +172,8 @@ SELECT a.CustID
 	,winlostdate
 	,sum(a.betcount) betcount
 	,a.isba
-	,sum(awinlost) awinlost
-	,sum(comm) comm
+	--,sum(awinlost) awinlost
+	--,sum(comm) comm
 FROM cte_bettrans a
 LEFT JOIN dbo.match14 b WITH (NOLOCK) ON a.matchid = b.matchid
 LEFT JOIN cte_raceinfo result ON a.oddsid = result.Orid
@@ -177,9 +191,9 @@ GROUP BY a.CustID
 			THEN 162 -- Live casino
 		WHEN a.bettype BETWEEN 1201 AND 1299
 			THEN CASE 
-					WHEN result.sporttype IS NOT NULL
+					WHEN a.bettype IN (1231, 1232, 1233, 1237, 1238)
 						THEN result.sporttype
-					WHEN b.sporttype IS NOT NULL
+					WHEN a.bettype NOT IN (1231, 1232, 1233, 1237, 1238)
 						THEN b.sporttype
 					ELSE 180 --Virtual Sport
 					END --Virtual Sport
