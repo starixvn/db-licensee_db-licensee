@@ -5,6 +5,7 @@ GO
 
 CREATE PROCEDURE Task_AGCasino_ImportDataToDB
 	@XmlData XML,
+	@LicenseeName VARCHAR(50),
 	@ErrCode INT = 0 OUTPUT,
 	@ErrMsg NVARCHAR(500) = '' OUTPUT
 AS 
@@ -99,13 +100,14 @@ END CATCH
 -- Update VersionKey value
 BEGIN TRY
 
-	UPDATE dbo.SystemSetting
-	SET VValue = @NewVersionKey
-	WHERE VName LIKE 'AGCasino_VersionKey'
+	UPDATE dbo.LicIntegrationSetting
+	SET SettingValue = @NewVersionKey
+	WHERE LicenseeName LIKE @LicenseeName
+		AND SettingName LIKE 'AGCasino_VersionKey'
 
 	IF (@@ROWCOUNT = 0)  -- Can not update NewVersionKey
 	BEGIN
-		SELECT @ErrCode = 1, @ErrMsg = 'Could not update New VersionKey. Import failed.'
+		SELECT @ErrCode = 1, @ErrMsg = 'Could not update New VersionKey for selected licensee. Import failed.'
 		DELETE FROM dbo.bettrans_AGCasino WHERE TicketID IN (SELECT TicketID FROM #TmpData)
 		DROP TABLE #TmpData
 		RETURN
