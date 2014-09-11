@@ -23,72 +23,83 @@ Revisions:
    - 20140210@Florent: add new sport Horse racing fix odds
    - 20140424@Florent: add new sport Virtual Speedway & Virtual Cycling
    - 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
+   - 20140911@Jim: add new sport Esport
 Param's Explanation:
 	
 */
 
-DECLARE @iDoc int
-DECLARE @checkVS bit
-DECLARE @checkNG BIT
+DECLARE @iDoc     	  INT  
+DECLARE @checkVS  	  BIT
+DECLARE @checkNG  	  BIT
 DECLARE @checkVTennis BIT
-DECLARE @checkVR bit 
-DECLARE @checkVSW bit --Virtual Speedway
-SELECT @checkVS=0,@checkNG=0,@checkVTennis=0,@checkVR=0,@checkVSW=0
+DECLARE @checkVR 	  BIT 
+DECLARE @checkVSW 	  BIT --Virtual Speedway
+DECLARE @strSport 	  VARCHAR(5000)
 
+SELECT @checkVS = 0
+	  ,@checkNG = 0
+	  ,@checkVTennis = 0
+	  ,@checkVR = 0
+	  ,@checkVSW = 0
 
 EXEC sp_xml_preparedocument @iDoc OUTPUT, @SportList
 
 SELECT *
-INTO #input
-FROM OPENXML (@iDoc, '/products/product',1) WITH(ID smallint, Sport nvarchar(128))
-
-
+INTO #INPUT
+FROM OPENXML (@iDoc, '/products/product',1) WITH(ID SMALLINT, Sport nvarchar(128))
 EXEC sp_xml_removedocument @iDoc
+SELECT @strSport=Sport
+FROM #INPUT
+WHERE ID=0
+
+SELECT VAL AS SportID
+	INTO #SBsport
+FROM bodb02.dbo.strSplit(@strSport,',')
 
 DECLARE @Bettype TABLE (
-	sporttype smallint,
-	BettypeID smallint
-	,BettypeName nvarchar(50)
+		sporttype SMALLINT
+		,BettypeID SMALLINT
+	    ,BettypeName nvarchar(50)
 )
 SELECT 
 	b.typeID,
 	CASE @Langkey
-							WHEN 'zh-CN'	THEN CASE  WHEN (ISNULL(typenamecn,'')='' OR len(typenamecn)=0) THEN typenamee 
-												   ELSE typenamecn END
-							WHEN 'zh-TW'	THEN CASE  WHEN (ISNULL(typenamecn,'')='' OR len(typenamecn)=0) THEN typenamee 
-												   ELSE typenamecn END
-							WHEN 'th-TH'	THEN CASE  WHEN (ISNULL(typenameth,'')='' OR len(typenameth)=0) THEN typenamee 
-												   ELSE typenameth END
-							WHEN 'ja-JP'	THEN CASE  WHEN (ISNULL(typenamej,'')='' OR len(typenamej)=0) THEN typenamee 
-												   ELSE typenamej END
-							WHEN 'ko-KR'	THEN CASE  WHEN (ISNULL(typenameko,'')='' OR len(typenameko)=0) THEN typenamee 
-												   ELSE typenameko END
-							WHEN 'es'  	    THEN CASE  WHEN (ISNULL(typenameES,'')='' OR len(typenameES)=0) THEN typenamee 
-												   ELSE typenameES END
-							WHEN 'vi-VN'	THEN CASE  WHEN (ISNULL(typenamee,'')='' OR len(typenamee)=0) THEN typenamee 
-												   ELSE typenamee END
-							ELSE typenamee END typenamee
-							
+				WHEN 'zh-CN'	THEN CASE  WHEN (ISNULL(typenamecn,'')='' OR LEN(typenamecn)=0) THEN typenamee 
+									   ELSE typenamecn END
+				WHEN 'zh-TW'	THEN CASE  WHEN (ISNULL(typenamecn,'')='' OR LEN(typenamecn)=0) THEN typenamee 
+									   ELSE typenamecn END
+				WHEN 'th-TH'	THEN CASE  WHEN (ISNULL(typenameth,'')='' OR LEN(typenameth)=0) THEN typenamee 
+									   ELSE typenameth END
+				WHEN 'ja-JP'	THEN CASE  WHEN (ISNULL(typenamej,'')='' OR LEN(typenamej)=0) THEN typenamee 
+									   ELSE typenamej END
+				WHEN 'ko-KR'	THEN CASE  WHEN (ISNULL(typenameko,'')='' OR LEN(typenameko)=0) THEN typenamee 
+									   ELSE typenameko END
+				WHEN 'es'  	    THEN CASE  WHEN (ISNULL(typenameES,'')='' OR LEN(typenameES)=0) THEN typenamee 
+									   ELSE typenameES END
+				WHEN 'vi-VN'	THEN CASE  WHEN (ISNULL(typenamee,'')='' OR LEN(typenamee)=0) THEN typenamee 
+									   ELSE typenamee END
+				ELSE typenamee END typenamee
+				
 INTO #bettype		
-FROM 
-	bodb02.dbo.bettype  b WITH (NOLOCK)
+FROM bodb02.dbo.bettype  b WITH (NOLOCK)
 
---IF EXISTS(SELECT * FROM #input WHERE ID = 0 AND ISNULL(Sport,'') <> '' and  sport like '%154%' )
-IF EXISTS(SELECT * FROM #input WHERE ID = 0 AND ISNULL(Sport,'') <> '' and  CHARINDEX('154',sport)<>0)
+IF EXISTS (SELECT 1 FROM #SBsport WHERE SportID=154)
 BEGIN
 	INSERT INTO @Bettype
-		SELECT 0,typeid, typenamee
-		FROM #bettype
-		WHERE typeid =20	
+	SELECT 0,typeid, typenamee
+	FROM #bettype
+	WHERE typeid = 20	
+END
+IF EXISTS (SELECT 1 FROM #SBsport WHERE SportID=43)
+BEGIN
+	INSERT INTO @Bettype
+	SELECT 0,typeid, typenamee
+	FROM #bettype
+	WHERE typeid IN (1,3,20)	
 END
 
-declare @strTemp nvarchar(128)
 
-select @strTemp=REPLACE(sport,'154',' ') from #input where id=0
-
-update #input set Sport=@strTemp where id=0
-
-IF EXISTS(SELECT * FROM #input WHERE ID = 0 AND ISNULL(Sport,'') <> '')
+IF EXISTS(SELECT * FROM #SBsport WHERE  SportID NOT IN (43,154))
 BEGIN
 
 	INSERT INTO @Bettype
@@ -97,12 +108,9 @@ BEGIN
 		WHERE (typeid < 31 OR (typeid BETWEEN 121 AND 999)
 						   OR (typeid BETWEEN 1301 and 1399) --new tennis's bettypes
 		)
-
 END
 
-
-
-IF EXISTS(SELECT * FROM #input WHERE ID > 0)
+IF EXISTS(SELECT * FROM #input WHERE ID > 0 AND sport<>',')
 BEGIN
 	IF EXISTS (SELECT 1 FROM #input WHERE ID=161)
 		SET @checkNG=1
@@ -112,7 +120,7 @@ BEGIN
 		SET @checkVtennis=1
 	IF EXISTS (SELECT 1 FROM #input 
 	           WHERE ID=999 
-	          and (charindex('181',sport)<>0
+	           AND (charindex('181',sport)<>0
 				OR charindex('182',sport)<>0
 				OR charindex('184',sport)<>0
 				OR charindex('185',sport)<>0
@@ -145,8 +153,9 @@ END
 
 DROP TABLE #input
 DROP TABLE #bettype
-
-SELECT BettypeID,BettypeName
+DROP TABLE #SBsport
+SELECT  BettypeID
+	   ,BettypeName
 FROM @Bettype
 GROUP BY sporttype,BettypeID,BettypeName
 ORDER BY sporttype
