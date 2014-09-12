@@ -31,6 +31,7 @@ AS
 		+ Remove [20140708@Don]
 		+ Add AG Casino
   - 20140901@Don: Delete on batches of data in table rptDepWinlost for one day instead
+  - 20140912@Victor: support AG Casino 3rd party product
  Param's Explanation:  
 
  • @winlostdate: The date need to summary  
@@ -417,6 +418,9 @@ BEGIN
 
 	-- Execute SP to insert data for Playtech Casino
 	EXEC Task_DOT_PlaytechCS_DailySummary @winlostdate = @date
+
+	-- Execute SP to insert data for AG Casino
+	EXEC Task_DOT_AGCasino_DailySummary @winlostdate = @date
 
 	/* Fill data to rptDepWinlost_Transfer3rdOthers */
 	CREATE TABLE #rptDepWinlost_Transfer3rdOthers (

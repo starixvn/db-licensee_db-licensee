@@ -35,6 +35,7 @@ AS
 		- 20140422@Victor: support Playtech Casino procduct
 		- 20140515@Victor: Change Playtech Casino summary data process
 		- 20140814@Don: Add AG Casino
+		- 20140912@Victor: support AG Casino 3rd party product
 	Param's Explanation:
 	• @date: The date need to summary
 */
@@ -218,6 +219,9 @@ DROP TABLE #DataByProduct
 
 -- Execute SP to insert data for Playtech Casino
 EXEC Task_DOT_PlaytechCS_DailySummary @winlostdate = @date
+
+-- Execute SP to insert data for AG Casino
+EXEC Task_DOT_AGCasino_DailySummary @winlostdate = @date
 
 /* Fill data to rptDepWinlost_Transfer3rdOthers */
 CREATE TABLE #rptDepWinlost_Transfer3rdOthers (
