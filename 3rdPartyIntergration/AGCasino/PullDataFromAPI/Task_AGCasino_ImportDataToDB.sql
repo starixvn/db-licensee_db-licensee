@@ -25,7 +25,7 @@ Param explanation:
 
 SET NOCOUNT ON
 
-DECLARE @NewVersionKey BIGINT
+DECLARE @NewVersionKey BIGINT, @OldVersionKey BIGINT
 
 CREATE TABLE #TmpData (
 	BillNo		BIGINT,
@@ -39,57 +39,28 @@ CREATE TABLE #TmpData (
 	Currency	TINYINT,
 )
 
+-- Parse XML data
 BEGIN TRY
+	SELECT @NewVersionKey = x.v.value('NEWVERSIONKEY[1]', 'BIGINT')
+	FROM @XmlData.nodes('/TransList') x(v)
 
-SELECT @NewVersionKey = x.v.value('NEWVERSIONKEY[1]', 'BIGINT')
-FROM @XmlData.nodes('/TransList') x(v)
-
-INSERT INTO #TmpData(BillNo, IBCCustID, BetTime, GameType, BetAmount, NetAmount, PlayType, LoginIP, Currency)
-SELECT 
-	x.v.value('BILLNO[1]', 'BIGINT') AS BillNo,
-	x.v.value('IBCCUSTID[1]', 'INT') AS IBCCustID,
-	x.v.value('BETTIME[1]', 'DATETIME') AS BetTime,	
-	x.v.value('GAMETYPE[1]', 'VARCHAR(10)') AS GameType,	
-	x.v.value('BETAMOUNT[1]', 'MONEY') AS BetAmount,	
-	x.v.value('NETAMOUNT[1]', 'MONEY') AS NetAmount,	
-	x.v.value('PLAYTYPE[1]', 'SMALLINT') AS PlayType,
-	x.v.value('LOGINIP[1]', 'VARCHAR(20)') AS LoginIP,	
-	x.v.value('CURRENCY[1]', 'TINYINT') AS Currency
-FROM    @XmlData.nodes('/TransList/TRANSACTION') x(v)
-
--- Remove tickets that are already exists in bettrans_AGCasino
-DELETE d
-FROM #TmpData d 
-WHERE EXISTS (SELECT 1 FROM dbo.bettrans_AGCasino b (NOLOCK) WHERE b.TicketID = d.BillNo)
-
-INSERT INTO dbo.bettrans_AGCasino(	TicketID, CustID, Transdate, GameType, Stake, Actual_Stake, 
-									Winlost, [Status], StatusID, PlayType, Winlostdate,  Username, 
-									IP, recommend, mrecommend, srecommend, Currency, IsVIPGame)
-SELECT d.BillNo, 
-	d.IBCCustID, 
-	DATEADD(HOUR, -12, d.BetTime), -- Convert time from GMT+8 to GMT-4
-	d.GameType, -- GameType
-	d.betAmount, -- Stake
-	d.betAmount, -- Actual_Stake
-	d.betAmount + d.NetAmount, -- Winlost 
-	CASE 
-		WHEN d.NetAmount > 0 THEN 'WON'
-		WHEN d.NetAmount < 0 THEN 'LOSE'
-		ELSE 'DRAW'
-	END, -- Status
-	CASE 
-		WHEN d.NetAmount > 0 THEN '112'
-		WHEN d.NetAmount < 0 THEN '113'
-		ELSE '111'
-	END, -- StatusID
-	d.PlayType, -- PlayType
-	CONVERT(VARCHAR(10),DATEADD(HOUR, -12, d.BetTime),120), -- Winlostdate
-	c.username, -- Username
-	d.LoginIP, -- IP
-	c.recommend, c.mrecommend, c.srecommend, c.currency,
-	CASE WHEN GameType LIKE 'CBAC' THEN 1 ELSE 0 END -- IsVIPGame
-FROM #TmpData d
-	INNER JOIN bodb02.dbo.Customer c WITH(NOLOCK) ON c.custid = d.IBCCustID
+	INSERT INTO #TmpData(BillNo, IBCCustID, BetTime, GameType, BetAmount, NetAmount, PlayType, LoginIP, Currency)
+	SELECT 
+		x.v.value('BILLNO[1]', 'BIGINT') AS BillNo,
+		x.v.value('IBCCUSTID[1]', 'INT') AS IBCCustID,
+		x.v.value('BETTIME[1]', 'DATETIME') AS BetTime,	
+		x.v.value('GAMETYPE[1]', 'VARCHAR(10)') AS GameType,	
+		x.v.value('BETAMOUNT[1]', 'MONEY') AS BetAmount,	
+		x.v.value('NETAMOUNT[1]', 'MONEY') AS NetAmount,	
+		x.v.value('PLAYTYPE[1]', 'SMALLINT') AS PlayType,
+		x.v.value('LOGINIP[1]', 'VARCHAR(20)') AS LoginIP,	
+		x.v.value('CURRENCY[1]', 'TINYINT') AS Currency
+	FROM    @XmlData.nodes('/TransList/TRANSACTION') x(v)
+	
+	SELECT @OldVersionKey = SettingValue
+	FROM dbo.LicIntegrationSetting 
+	WHERE LicenseeName LIKE @LicenseeName
+		AND SettingName LIKE 'AGCasino_VersionKey'
 END TRY
 BEGIN CATCH
 	SELECT @ErrCode = ERROR_NUMBER(), @ErrMsg = ERROR_MESSAGE()
@@ -97,10 +68,10 @@ BEGIN CATCH
 	RETURN
 END CATCH
 
--- Update VersionKey value
+-- Import data to DB
 BEGIN TRY
-
-	UPDATE dbo.LicIntegrationSetting
+	-- Update VersionKey value
+	UPDATE dbo.LicIntegrationSetting WITH (ROWLOCK, UPDLOCK)
 	SET SettingValue = @NewVersionKey
 	WHERE LicenseeName LIKE @LicenseeName
 		AND SettingName LIKE 'AGCasino_VersionKey'
@@ -108,15 +79,75 @@ BEGIN TRY
 	IF (@@ROWCOUNT = 0)  -- Can not update NewVersionKey
 	BEGIN
 		SELECT @ErrCode = 1, @ErrMsg = 'Could not update New VersionKey for selected licensee. Import failed.'
-		DELETE FROM dbo.bettrans_AGCasino WHERE TicketID IN (SELECT TicketID FROM #TmpData)
 		DROP TABLE #TmpData
 		RETURN
 	END
 
+	-- Insert / Update data to bettrans_AGCasino
+	MERGE dbo.bettrans_AGCasino AS dest
+	USING (	SELECT d.BillNo, 
+				d.IBCCustID, 
+				DATEADD(HOUR, -12, d.BetTime), -- Convert time from GMT+8 to GMT-4
+				d.GameType, -- GameType
+				d.betAmount, -- Stake
+				d.betAmount, -- Actual_Stake
+				d.betAmount + d.NetAmount, -- Winlost 
+				CASE 
+					WHEN d.NetAmount > 0 THEN 'WON'
+					WHEN d.NetAmount < 0 THEN 'LOSE'
+					ELSE 'DRAW'
+				END, -- Status
+				CASE 
+					WHEN d.NetAmount > 0 THEN '112'
+					WHEN d.NetAmount < 0 THEN '113'
+					ELSE '111'
+				END, -- StatusID
+				d.PlayType, -- PlayType
+				CONVERT(VARCHAR(10),DATEADD(HOUR, -12, d.BetTime),120), -- Winlostdate
+				c.username, -- Username
+				d.LoginIP, -- IP
+				c.recommend, c.mrecommend, c.srecommend, c.currency,
+				CASE WHEN GameType LIKE 'CBAC' THEN 1 ELSE 0 END -- IsVIPGame
+			FROM #TmpData d
+				INNER JOIN bodb02.dbo.Customer c WITH(NOLOCK) ON c.custid = d.IBCCustID)
+	AS src (BillNo, IBCCustID, Transdate, GameType, Stake, Actual_Stake, Winlost, [Status], StatusID, 
+			PlayType, Winlostdate, Username, LoginIP, recommend, mrecommend, srecommend, currency, IsVIPGame)
+	ON (dest.TicketID = src.BillNo)
+	WHEN MATCHED THEN
+		UPDATE	SET dest.CustID = src.IBCCustID
+					,dest.Transdate = src.Transdate
+					,dest.GameType = src.GameType
+					,dest.Stake = src.Stake
+					,dest.Actual_Stake = src.Actual_Stake
+					,dest.Winlost = src.Winlost
+					,dest.[Status] = src.[Status]
+					,dest.StatusID = src.StatusID
+					,dest.PlayType = src.PlayType
+					,dest.Winlostdate = src.Winlostdate
+					,dest.Username = src.Username
+					,dest.IP = src.LoginIP
+					,dest.recommend = src.recommend
+					,dest.mrecommend = src.mrecommend
+					,dest.srecommend = src.srecommend
+					,dest.currency = src.currency
+					,dest.IsVIPGame = src.IsVIPGame
+	WHEN NOT MATCHED THEN
+		INSERT (TicketID, CustID, Transdate, GameType, Stake, Actual_Stake, Winlost, 
+				[Status], StatusID, PlayType, Winlostdate,  Username, IP, 
+				recommend, mrecommend, srecommend, Currency, IsVIPGame)
+		VALUES (src.BillNo, src.IBCCustID, src.Transdate, src.GameType, src.Stake, src.Actual_Stake, src.Winlost, 
+				src.[Status], src.StatusID, src.PlayType, src.Winlostdate, src.Username, src.LoginIP, 
+				src.recommend, src.mrecommend, src.srecommend, src.currency, src.IsVIPGame);
+	
 END TRY 
-BEGIN CATCH -- Delete data inserted on step 1
+BEGIN CATCH
 	SELECT @ErrCode = ERROR_NUMBER(), @ErrMsg = ERROR_MESSAGE()
-	DELETE FROM dbo.bettrans_AGCasino WHERE TicketID IN (SELECT TicketID FROM #TmpData)
+
+	-- Update VersionKey value to old value
+	UPDATE dbo.LicIntegrationSetting WITH (ROWLOCK, UPDLOCK)
+	SET SettingValue = @OldVersionKey
+	WHERE LicenseeName LIKE @LicenseeName
+		AND SettingName LIKE 'AGCasino_VersionKey'
 END CATCH
 
 DROP TABLE #TmpData
