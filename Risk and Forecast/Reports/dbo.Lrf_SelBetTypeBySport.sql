@@ -54,7 +54,7 @@ WHERE ID=0
 
 SELECT VAL AS SportID
 	INTO #SBsport
-FROM bodb02.dbo.strSplit(@strSport,',')
+FROM bodb02.dbo.strSplit(ISNULL(@strSport,''),',')
 
 DECLARE @Bettype TABLE (
 		sporttype SMALLINT
