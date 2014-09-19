@@ -128,12 +128,10 @@ BEGIN
 		   ,SUM(r.LicenseeWinlost) AS LicenseeWinlost
 		---USD
 			,SUM(r.TurnOver*e.USD)   	 	AS TurnOverUSD
-			,SUM(r.TotalTrans*e.USD) 	 	AS TotalTransUSD
 			,SUM(r.Winlost*e.USD)		 	AS WinlostUSD
 			,SUM(r.LicenseeWinlost*e.USD) AS LicenseeWinlostUSD
 		---EUR
 			,SUM(r.TurnOver*e.EUR)   	 	AS TurnOverEUR
-			,SUM(r.TotalTrans*e.EUR) 	 	AS TotalTransEUR
 			,SUM(r.Winlost*e.EUR)		 	AS WinlostEUR
 			,SUM(r.LicenseeWinlost*e.EUR) AS LicenseeWinlostEUR
 	FROM #tmpResult r
