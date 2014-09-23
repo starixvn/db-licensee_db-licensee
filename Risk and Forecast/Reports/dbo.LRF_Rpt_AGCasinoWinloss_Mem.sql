@@ -32,7 +32,7 @@ AS
     Task : AG Win Loss report 
     DB: DBACC.bodb02  
     Revisions:  
-		
+			- 20140923@Jim: use table customer instead of licenseecustinfo
 	Param's Explanation:  
 	  + @excludeTest: remove currency UUS
 */  
@@ -120,7 +120,8 @@ BEGIN
 			,SUM(r.LicenseeWinlost*e.EUR) AS LicenseeWinlostEUR
 	FROM #tmpResult r
 		INNER JOIN #TempExchange e ON r.Winlostdate = e.ExchangeDate AND r.currency = e.ExchangeId
-		INNER JOIN DBLIC.bodb_licensee.dbo.licenseecustinfo c WITH (NOLOCK) ON r.CustID = c.CustID
+		--INNER JOIN DBLIC.bodb_licensee.dbo.licenseecustinfo c WITH (NOLOCK) ON r.CustID = c.CustID
+		INNER JOIN dbo.customer c WITH  (NOLOCK) ON c.CustID = r.CustID
 	GROUP BY SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2))
 			 ,c.Username
 			 ,r.Currency
