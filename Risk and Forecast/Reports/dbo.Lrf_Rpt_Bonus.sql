@@ -4,6 +4,7 @@
 	@BeginDate DATETIME,
 	@EndDate DATETIME
 AS
+
 BEGIN
 /*
 Created: 20111121@Dave
