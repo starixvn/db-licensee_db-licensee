@@ -4,7 +4,7 @@ GO
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
-GO
+GO --- not yet
 ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProduct]  
  @LicenseeID	INT,
  @UserID		INT,
@@ -50,7 +50,8 @@ AS
 	- 20131213@Jim: support to Display win loss of individual sports with Virtual Sports
 	- 20140304@Florent: offer Keno
 	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
-
+	- 20140915@Florent: hotfix duplicated VS bettype
+	
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -298,9 +299,9 @@ BEGIN
 				WHEN b.bettype BETWEEN 1101 AND 1199 THEN 'LC'
 				WHEN b.Bettype BETWEEN 81 AND 120 THEN 'NG' 
 				WHEN b.bettype BETWEEN 1201 AND 1299 THEN
-													 CASE WHEN ISNULL(vs.sporttype,0)=0  THEN 'VS'+convert(varchar(10),ISNULL(m.sporttype,0))
-																	   ELSE   'VS' +convert(varchar(10),vs.sporttype)
-																	   END
+							 CASE WHEN ISNULL(vs.sporttype,0)=0  THEN 'VS'+convert(varchar(10),ISNULL(m.sporttype,0))
+											 ELSE   'VS' +convert(varchar(10),vs.sporttype)
+											 END
 				WHEN b.bettype =71 THEN 'CS'
 				WHEN b.bettype =73 THEN 'BG'
 				WHEN b.bettype BETWEEN 1501 AND 1599  THEN 'KN'
@@ -328,7 +329,7 @@ BEGIN
 			INNER JOIN @Super s ON b.srecommend = s.custid  
 			INNER JOIN @TempAg a ON b.recommend = a.custid
 			INNER JOIN @bettype bt ON b.bettype = bt.bettype
-			LEFT JOIN [match] m with(nolock) ON b.matchid = m.matchid
+			LEFT JOIN [match] m with(nolock) ON b.matchid = m.matchid AND b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype())
 			LEFT JOIN #tmpVS vs ON b.oddsid=vs.Orid AND b.bettype IN (1231,1232,1233,1237,1238,1220,1235,1236)	
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
