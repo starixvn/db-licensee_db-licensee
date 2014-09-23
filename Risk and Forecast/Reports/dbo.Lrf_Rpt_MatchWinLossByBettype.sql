@@ -41,6 +41,7 @@ Revisions:
 	- 20131203@Jim: offer Virtual Greyhound, Virtual Motor Racing
 	- 20130423@Kyan: offer Virtual Speedway, Virtual Cycling 
 	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes), column Betcount
+	- 20140915@Florent: hotfix duplicated VS bettype
 Param's Explanation:   
    
 */  
@@ -380,6 +381,7 @@ BEGIN
 	   #TempBetList b  
 	   INNER JOIN match m WITH ( NOLOCK ) ON m.matchid = b.matchid  
 	   INNER JOIN @bettype bt ON b.bettype = bt.bettype
+       WHERE b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype())
 	  GROUP BY  
 	   b.Winlostdate,  
 	   b.currency,  
@@ -393,7 +395,7 @@ BEGIN
 	   m.isNeutral,  
 	   b.liveindicator    
     
-		IF EXISTS (SELECT 1 FROM @bettype WHERE bettype IN (1231, 1232, 1233, 1237, 1238))
+		IF EXISTS (SELECT 1 FROM @bettype WHERE bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()))
 		BEGIN 
 			INSERT  INTO @AgMatchWLDetails  
 				SELECT    
@@ -407,7 +409,7 @@ BEGIN
 				r.leagueid,  
 				SUM(b.stake),  
 				SUM(winlost - actual_stake) as Winlost ,  
-			   -SUM(winlost - actual_stake) AS LicenseeWL,  
+			     -SUM(winlost - actual_stake) AS LicenseeWL,  
 				0 AS WinlossRB,  
 				0 AS AmountDueToBA,  
 				0 AS AmountDueToRB,  
@@ -427,7 +429,8 @@ BEGIN
 				WHERE b.recommend IN (SELECT custID FROM @TempAg)
 					AND o.EventID=@MatchID
 					AND b.winlostdate=@_Date
-					AND b.statusID IN (111,112,113)			
+					AND b.statusID IN (111,112,113)
+					AND b.bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype())			
 				GROUP BY  
 				b.Winlostdate,  
 				b.currency, 
@@ -714,7 +717,8 @@ ELSE -- @showRB = 1, Racing
 	FROM     
 		#TempBetList b  
 		INNER JOIN match14 m WITH ( NOLOCK ) ON m.matchid = b.matchid  
-		INNER JOIN @bettype bt ON b.bettype = bt.bettype 
+		INNER JOIN @bettype bt ON b.bettype = bt.bettype
+		WHERE b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype())
 	GROUP BY  
 		b.Winlostdate,  
 		b.currency,   
@@ -728,7 +732,7 @@ ELSE -- @showRB = 1, Racing
 		m.isNeutral,  
 		b.liveindicator  
    -- VHR
-	IF EXISTS (SELECT 1 FROM @bettype WHERE bettype IN (1231, 1232, 1233, 1237, 1238))
+	IF EXISTS (SELECT 1 FROM @bettype WHERE bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()))
 	BEGIN 
 		INSERT  INTO @AgMatchWLDetails  
 		SELECT    
@@ -762,7 +766,8 @@ ELSE -- @showRB = 1, Racing
 		WHERE b.recommend IN (SELECT custID FROM @TempAg)
 			AND o.EventID=@MatchID
 			AND b.winlostdate=@_Date
-			AND b.statusID IN (111,112,113)			
+			AND b.statusID IN (111,112,113)	
+			AND b.bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype())		
 		GROUP BY  
 			b.Winlostdate,  
 			b.currency,
@@ -881,6 +886,7 @@ GROUP BY
     liveindicator  
       
 DROP TABLE #TempBetList
+
    
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_MatchWinLossByBettype] TO [bodbLicenseeNet]

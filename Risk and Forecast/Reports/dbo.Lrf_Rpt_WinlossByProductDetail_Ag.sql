@@ -49,7 +49,7 @@ AS
 	- 20131213@Jim: support to Display win loss of individual sports with Virtual Sports
 	- 20140304@Florent: offer Keno
 	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
-
+	- 20140915@Florent: hotfix duplicated VS bettype
 	Param's Explanation:  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
 	  + @IsOld: 0 - query in table rptLicWinloss, 1 - query in table rptLicWinloss_old. 
@@ -326,7 +326,7 @@ BEGIN
 			INNER JOIN @Super s ON b.srecommend = s.custid
 			INNER JOIN @TempAg tma ON b.recommend = tma.custid
 			INNER JOIN @bettype bt ON b.bettype = bt.bettype
-			LEFT JOIN [match] m with(nolock) ON b.matchid = m.matchid
+			LEFT JOIN [match] m with(nolock) ON b.matchid = m.matchid AND b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype())
 			LEFT JOIN #tmpVS vs ON b.oddsid=vs.Orid AND b.bettype IN (1231,1232,1233,1237,1238,1220,1235,1236)	
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  

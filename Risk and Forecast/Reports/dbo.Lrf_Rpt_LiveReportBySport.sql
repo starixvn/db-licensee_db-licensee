@@ -45,6 +45,7 @@ Revisions:
 	- 20140410@Jim: fix bug #14715 (wrong RNG Casino sporttype)	
 	- 20140602@Hannah: Separate Live/ Non - Live data in Live Report	
 	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
+	- 20140915@Florent: hotfix duplicated VS bettype
 Param's Explanation:  
 	@Liveindicator : indicate that whether the report will get live data or not
 		+ 0: Non - Live data only
@@ -76,6 +77,10 @@ DECLARE @sql VARCHAR(MAX)
 
 IF @CurrencyID IS NULL
 	SET @CurrencyID = 0
+
+DECLARE @strbettypeVHR VARCHAR(100) =''
+SELECT @strbettypeVHR = @strbettypeVHR + cast(bettype as varchar) + ',' FROM dbo.f_VSHorseRacingByBettype()
+SELECT @strbettypeVHR = SUBSTRING (@strbettypeVHR,0,len(@strbettypeVHR))
 
 SELECT @sql = 'SET NOCOUNT ON  ' + CHAR(13)
 
@@ -204,7 +209,7 @@ BEGIN
 			'WHEN b.bettype BETWEEN 1101 AND 1199 THEN 162 --LC' + CHAR(13) + 
 			'WHEN b.bettype BETWEEN 1501 AND 1599 THEN 202 --Keno''s bettype' + CHAR(13) + --Keno's bettype
 			'WHEN (b.bettype BETWEEN 1201 AND 1299) AND b.bettype NOT IN (1231,1232,1233,1237,1238,1220,1235,1236) THEN 180 --VS' + CHAR(13) + 
-			'WHEN b.bettype IN (1231,1232,1233,1237,1238) THEN vs.SportType ' + CHAR(13) + --VHR+V.Greyhounds+V.Motor Racing
+			'WHEN b.bettype IN ('+@strbettypeVHR+') THEN vs.SportType ' + CHAR(13) + --VHR+V.Greyhounds+V.Motor Racing
 			'WHEN b.bettype IN (1220,1235,1236) THEN 186 ' + CHAR(13) + --Virtual Tennis
 			'WHEN b.bettype = 9 THEN 101 --Mix Parlay' + CHAR(13) + 'WHEN b.bettype = 29 THEN 102 --System Parlay' + CHAR(13) + 
 			'WHEN b.bettype = 10 THEN 103 -- Outright' + CHAR(13) +
@@ -222,7 +227,7 @@ BEGIN
 			'LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON b.recommend=BA.recommend AND b.transid = BA.transid' + CHAR(13) + 
 			'LEFT JOIN outright o with(nolock) ON b.matchid = o.orid' + CHAR(13) + 
 			'LEFT JOIN league l with(nolock) ON o.leagueid = l.leagueid' + CHAR(13) + 
-			'LEFT JOIN [match] m with(nolock) ON b.matchid = m.matchid' + CHAR(13) + 
+			'LEFT JOIN [match] m with(nolock) ON b.matchid = m.matchid AND b.bettype NOT IN ('+@strbettypeVHR+') ' + CHAR(13) + 
 			'LEFT JOIN #tmpVS vs ON b.oddsid=vs.Orid AND b.bettype IN (1231,1232,1233,1237,1238,1220,1235,1236)' + CHAR(13) + 
 			'WHERE b.winlostdate BETWEEN ''' + convert(VARCHAR(10), @TempFromDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TDate, 120) + '''' + CHAR(13) + 
 			'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.liveindicator = 0)' + CHAR(13) + 
