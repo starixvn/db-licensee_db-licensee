@@ -36,21 +36,21 @@ BEGIN
 	
 	IF (@RecommendId <> @CurrentRecommendID)
 		 BEGIN 
-			
-			WAITFOR DELAY '00:00:00.5'	 			
-			
-			SELECT  @CurrentRecommendID = recommend
-			FROM dbo.bettrans WITH (NOLOCK)
-			WHERE CustId = @CustId
-			
-			SET @Count = @Count+1
-			
-			IF @Count = 6
-			BEGIN 	
-				SELECT @ErrorCode = 101	
-				RETURN
-			END
-			 
+			WHILE (@Count<6)
+			BEGIN
+				WAITFOR DELAY '00:00:00.5'	 			
+				
+				SELECT  @CurrentRecommendID = recommend
+				FROM dbo.bettrans WITH (NOLOCK)
+				WHERE CustId = @CustId
+				
+				SET @Count = @Count+1
+				IF @Count = 6
+				BEGIN 	
+					SELECT @ErrorCode = 101	
+					RETURN
+				END
+			END 
 		END
 	ELSE
 	WHILE (@minDate<=@maxDate)

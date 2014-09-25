@@ -265,7 +265,7 @@ BEGIN
 	MERGE bodb_Report.dbo.rptDepWinlost AS target
 	USING (SELECT s.winlostdate, s.custid, s.currency, s.recommend, s.mrecommend, s.srecommend,
 				  s.OpeningBalance, s.turnover, s.outstanding, MIN(e.ActualRate) FROM #tempDepWinlost s
-				  INNER JOIN dbo.exchangedailyoanda e WITH(nolock) on s.currency = e.ExchangeId AND e.ExchangeDate = s.winlostdate
+				  INNER JOIN dbo.exchangedailyoanda e WITH(NOLOCK) on s.currency = e.ExchangeId AND e.ExchangeDate = s.winlostdate
 		   GROUP BY s.winlostdate, s.custid, s.currency, s.recommend, s.mrecommend, s.srecommend,
 				  s.OpeningBalance, s.turnover, s.outstanding) 
 		   AS source (winlostdate, custid, currency, recommend, mrecommend, srecommend, OpeningBalance, turnover, outstanding, actualrate)
@@ -290,7 +290,12 @@ BEGIN
 					0, 0, 0, 0, 0);
 
 	-----rptDepwinlost_SUM
-	 DELETE FROM bodb_Report.dbo.rptDepwinlost_SUM WHERE winlostdate = @RunDate  AND CustID = @CustID
+	DECLARE @recommendId INT
+	SELECT @recommendId = recommend
+	FROM  bodb_Report.dbo.rptDepWinlost  WITH(NOLOCK) 
+	WHERE CustId = @CustID 
+	
+	 DELETE FROM bodb_Report.dbo.rptDepwinlost_SUM WHERE winlostdate = @RunDate  AND CustID = @recommendId
 				
 	INSERT INTO bodb_Report.dbo.rptDepwinlost_SUM (  
 									  winlostdate  
@@ -338,7 +343,7 @@ BEGIN
 			  ,SUM(ISNULL(Comm_BA,0))  
 			  ,SUM(ISNULL(AmountDueTo_BA,0))  
 			  ,SUM(ISNULL(playercomm,0))  
-	 FROM bodb_Report.dbo.rptDepWinlost  WITH(nolock)  
+	 FROM bodb_Report.dbo.rptDepWinlost  WITH(NOLOCK)  
 	 WHERE winlostdate = @Rundate 
 		   AND CustID = @CustId 
 	 GROUP BY winlostdate, recommend, currency, srecommend  
