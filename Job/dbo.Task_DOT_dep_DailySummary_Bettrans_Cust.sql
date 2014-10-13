@@ -23,7 +23,7 @@ BEGIN
 	SET recommend = @RecommendId
 	WHERE CustID = @CustId
 		AND winlostdate = @RunDate
-	UPDATE dbo.rptDepWinlost_Transfer3rdOthers WITH (ROWLOCK,UPDLOCK)	
+	UPDATE bodb_report.dbo.dbo.rptDepWinlost_Transfer3rdOthers WITH (ROWLOCK,UPDLOCK)	
 	SET recommend = @RecommendId
 	WHERE CustID = @CustId
 		AND winlostdate = @RunDate
