@@ -14,12 +14,12 @@ AS
  
 */
 BEGIN
-	UPDATE dbo.rptDepWinlost WITH (ROWLOCK,UPDLOCK)
+	UPDATE bodb_report.dbo.rptDepWinlost WITH (ROWLOCK,UPDLOCK)
 	SET recommend = @RecommendId
 	WHERE CustID = @CustId
 		AND winlostdate = @RunDate
 
-	UPDATE 	dbo.rptDepwinlost_SUM WITH (ROWLOCK,UPDLOCK)
+	UPDATE 	bodb_report.dbo.rptDepwinlost_SUM WITH (ROWLOCK,UPDLOCK)
 	SET recommend = @RecommendId
 	WHERE CustID = @CustId
 		AND winlostdate = @RunDate
@@ -31,3 +31,5 @@ END
 	
 GO 
 GRANT VIEW DEFINITION ON [dbo].[Task_DOT_dep_DailySummary_Bettrans_Cust] TO [vnteam]
+GO
+GRANT EXECUTE ON [dbo].[Task_DOT_dep_DailySummary_Bettrans_Cust] TO [bodbLicenseeNet]

@@ -66,3 +66,5 @@ BEGIN
 END
 GO 
 GRANT VIEW DEFINITION ON [dbo].[Task_DOT_dep_Summary_Bettrans_Cust] TO [vnteam]
+GO
+GRANT EXECUTE ON [dbo].[Task_DOT_dep_Summary_Bettrans_Cust] TO [bodbLicenseeNet]
