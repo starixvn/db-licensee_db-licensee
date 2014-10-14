@@ -1,8 +1,10 @@
-set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
+USE [bodb02]
+GO
 
-
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
 ALTER   PROCEDURE [dbo].[Lrf_BetList_SelRunningByBettypeMatch]
 	@MatchID INT,
 	@LicenseeID INT,
@@ -42,6 +44,7 @@ Revisions:
    - 20121004@Jim: replace @currencyname input param by @currencyID
    - 20130411@Jim: support base currency USD
    - 20130514@Jim:Restrict permission of Licensee Users by currency
+   - 20140925@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
 */
 
 SET NOCOUNT ON
@@ -187,6 +190,7 @@ BEGIN
 		b.bettype=@bettype AND
 		b.recommend IN (SELECT custid FROM @TempAg) AND
 		b.statusID IN (0,1) AND
+		b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
 		((@Liveindicator=-1) OR (@Liveindicator=0 AND b.Liveindicator = 0) OR (@Liveindicator=1 AND b.Liveindicator = 1)) AND
 		((@betteam='') OR (@betteam<>'' AND b.betteam = @betteam))
 			
@@ -262,6 +266,5 @@ GO
 
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelRunningByBettypeMatch] TO [bodbLicenseeNet]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelRunningByBettypeMatch] TO vnteam
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelRunningByBettypeMatch] TO [vnteam]
 GO
-

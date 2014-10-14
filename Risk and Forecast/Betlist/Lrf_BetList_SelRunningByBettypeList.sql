@@ -1,8 +1,10 @@
-use bodb02
-go
-set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
+USE [bodb02]
+GO
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
 
 ALTER PROCEDURE [dbo].[Lrf_BetList_SelRunningByBettypeList]
 	@LicenseeID INT,
@@ -23,6 +25,7 @@ DB: DB052.bodb02
 Original:[Lrf_BetList_SelRunningByBettype]
 Revisions:
 	- 20140708@Hannah: clone from Lrf_BetList_SelRunningByBettype to support muilti bettype.
+	- 20140925@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
 */
 
 SET NOCOUNT ON
@@ -225,6 +228,7 @@ BEGIN
 		b.Recommend IN (SELECT custid FROM @TempAg)
 		AND b.bettype <= 19000
 		AND b.statusID IN (0,1)
+		AND b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype())
 	ORDER BY b.status, b.transid
 END
 

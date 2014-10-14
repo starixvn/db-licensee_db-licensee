@@ -39,6 +39,7 @@ Revisions:
 	- 20130809@Jim: offer Virtual Horse Racing
 	- 20140403@Hannah: offer Keno
 	- 20140521@Jim: fix bug not show outright tikect  (bug #16525)
+	- 20140925@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
 Param's Explanation:
 + @CustID: AgentID
 */
@@ -182,6 +183,7 @@ WHERE
 	AND b.recommend = @recommend
 	AND b.statusID IN (101,102)
 	AND b.bettype NOT BETWEEN 1501 AND 1599	
+	AND b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) 
 ----  Outright/Horse Racing
 UNION ALL
 SELECT 
@@ -279,7 +281,7 @@ FROM
 				) as vhr ON b.oddsid=vhr.Orid
 				
 WHERE		
-	b.bettype in (1231, 1232, 1233, 1237, 1238 )
+	b.bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) 
 	AND b.recommend = @recommend
 	AND b.custid = @CustID
 	AND b.statusID IN (101,102)
@@ -374,7 +376,6 @@ ORDER BY RefNo,Bettype
 DROP TABLE #TempExchange 
 DROP TABLE #Data
 GO
-
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelDeleted] TO [bodbLicenseeNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelDeleted] TO [vnteam]

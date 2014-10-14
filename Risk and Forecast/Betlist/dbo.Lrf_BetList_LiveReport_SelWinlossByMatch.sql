@@ -38,6 +38,7 @@ Revisions:
    - 20130625@Jim: support to view currency UUS 
    - 20140602@Hannah: Separate Live/ Non - Live data in Live Report
    - 20140630@Hannah: offer BetRadar and Sporting Solution 
+   - 20140925@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
 
 Param's Explanation: 
 	@Liveindicator : indicate that whether the report will get live data or not
@@ -376,6 +377,7 @@ BEGIN
 			b.matchid=@matchid AND			
 			b.recommend IN (SELECT custid FROM @TempAg)	AND	
 			b.statusID IN (111,112,113)	AND
+			b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
 			((@Liveindicator = 0 and b.liveindicator = 0)
 			OR (@Liveindicator = 1 and b.liveindicator = 1)
 			OR (@Liveindicator = 2))
@@ -643,6 +645,7 @@ BEGIN
 		WHERE
 			b.matchid=@matchid AND						
 			b.statusID IN (111,112,113)	AND
+			b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
 			((@Liveindicator = 0 and b.liveindicator = 0)
 			OR (@Liveindicator = 1 and b.liveindicator = 1)
 			OR (@Liveindicator = 2))
@@ -741,8 +744,8 @@ SELECT * FROM @BettransDetail ORDER BY RefNo,Bettype
 
 DROP TABLE #Data
 DROP TABLE #TempExchange
-GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_LiveReport_SelWinlossByMatch] TO [bodbLicenseeNet]
 
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_LiveReport_SelWinlossByMatch] TO vnteam
+GRANT EXECUTE ON [dbo].[Lrf_BetList_LiveReport_SelWinlossByMatch] TO [bodbLicenseeNet]
+GO
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_LiveReport_SelWinlossByMatch] TO [vnteam]

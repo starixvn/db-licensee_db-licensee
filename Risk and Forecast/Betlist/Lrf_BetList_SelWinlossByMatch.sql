@@ -6,7 +6,6 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-
 ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinlossByMatch]
 	@MatchID INT,
 	@LicenseeID INT,
@@ -35,6 +34,7 @@ Revisions:
 	- 20121115@Henry: Only Sportsbook needs to exclude BA
 	- 20130411@Jim: support base currency USD
 	- 20130904@Jim: support Virtual Horse Racing
+	- 20140925@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
 	
    Get all tickets for a match
 Param's Explanation: 
@@ -271,11 +271,12 @@ BEGIN
 		WHERE
 			b.matchid=@matchid AND			
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
-			b.ruben=1 AND 			
+			b.ruben=1 AND
+			b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND 			
 			b.statusID NOT IN (101, 102, 103)
 		ORDER BY
 			b.status, b.transid
-		IF EXISTS (SELECT 1 FROM @bettype WHERE bettype IN (1231, 1232, 1233, 1237, 1238))	
+		IF EXISTS (SELECT 1 FROM @bettype WHERE bettype  IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()))	
 			BEGIN 
 				SELECT TOP(@RowEnd)
 				r.sporttype,
@@ -478,6 +479,7 @@ BEGIN
 			INNER JOIN @TempAg t  ON b.recommend =t.custid  
 			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid
 			INNER JOIN @bettype bt ON b.bettype = bt.bettype
+			AND b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype())
 		WHERE
 			b.matchid=@matchid AND						
 			b.ruben=1 AND 			
@@ -485,7 +487,7 @@ BEGIN
 		ORDER BY
 			b.status, b.transid
 			
-		IF EXISTS (SELECT 1 FROM @bettype WHERE bettype IN (1231, 1232, 1233, 1237, 1238))	
+		IF EXISTS (SELECT 1 FROM @bettype WHERE bettype  IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()))	
 			BEGIN 
 				SELECT TOP(@RowEnd)
 				r.sporttype,

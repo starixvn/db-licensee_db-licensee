@@ -6,7 +6,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-ALTER PROCEDURE [dbo].[Lrf_BetList_SelRunningByMultipleBettypeMatch]
+ALTER  PROCEDURE [dbo].[Lrf_BetList_SelRunningByMultipleBettypeMatch]
 	@MatchID INT,
 	@LicenseeID INT,
 	@CurrencyID INT=0,
@@ -28,7 +28,7 @@ DB: DB052.bodb02
 Original: [Lrf_BetList_SelRunningByBettypeMatch]
 Revisions:    
 	-20140522@Jim: clone from Lrf_BetList_SelRunningByBettypeMatch to support muilti bettype.
-	
+	-20140925@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
 */
 
 SET NOCOUNT ON
@@ -185,6 +185,7 @@ BEGIN
 		bt.bettype<=19000 AND
 		b.recommend IN (SELECT custid FROM @TempAg) AND
 		b.statusID IN (0,1) AND
+		b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
 		((@Liveindicator=-1) OR (@Liveindicator=0 AND b.Liveindicator = 0) OR (@Liveindicator=1 AND b.Liveindicator = 1)) AND
 		((@betteam='') OR (@betteam<>'' AND b.betteam = @betteam))
 			

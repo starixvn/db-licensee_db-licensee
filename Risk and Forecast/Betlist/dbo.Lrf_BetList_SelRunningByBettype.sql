@@ -1,6 +1,10 @@
-﻿set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
+﻿USE [bodb02]
+GO
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
 
 ALTER PROCEDURE [dbo].[Lrf_BetList_SelRunningByBettype]
 	@LicenseeID INT,
@@ -40,6 +44,7 @@ Revisions:
 	- 20120817@Henry: add live casino
 	- 20121004@Jim: replace @currencyname input param by @currencyID
 	- 20130514@Jim:Restrict permission of Licensee Users by currency
+	- 20140925@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
 */
 
 SET NOCOUNT ON
@@ -93,7 +98,7 @@ SELECT  CustID
                                                      [Description]) 
 
 
-if @bettype IN(9 , 29)
+if @bettype IN(9,29)
 BEGIN
 	INSERT INTO #Data
 	SELECT 
@@ -235,6 +240,7 @@ BEGIN
 		b.Recommend IN (SELECT custid FROM @TempAg)
 		AND b.bettype= @bettype 
 		AND b.statusID IN (0,1)
+		AND b.bettype  NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype())
 	ORDER BY b.status, b.transid
 END
 
@@ -304,4 +310,4 @@ DROP TABLE #Data
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelRunningByBettype] TO [bodbLicenseeNet]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelRunningByBettype] TO vnteam
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelRunningByBettype] TO [vnteam]
