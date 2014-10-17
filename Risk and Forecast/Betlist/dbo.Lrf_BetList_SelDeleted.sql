@@ -17,6 +17,7 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_SelDeleted]
 	@TotalRows INT=0 OUTPUT	
 AS
 
+
 /*
 Create: Henry@20101210
 Task : 
