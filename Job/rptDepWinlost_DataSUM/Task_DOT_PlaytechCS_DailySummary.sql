@@ -91,6 +91,6 @@ END TRY
 BEGIN CATCH
 	-- This SPs called from another SP in rptDepwinlost Summary process, failure of this SP should not affect to that process
 	--RAISERROR(15000,1,1,'Error occured in summarizing Playtech Casino data.')
-	PRINT 'Error occured in PlaytechCasino summary data process: ERR_CODE: '+ ERROR_NUMBER() + ', ERR_MSG: ' + ERROR_MESSAGE()
+	PRINT 'Error occured in PlaytechCasino summary data process: ERR_CODE: '+ CAST(ERROR_NUMBER() AS VARCHAR(20)) + ', ERR_MSG: ' + ERROR_MESSAGE()
 	RETURN
 END CATCH
