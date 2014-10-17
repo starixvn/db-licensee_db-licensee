@@ -18,6 +18,7 @@ DB: DBPTCS.bodb_PlaytechCS
 Original:
 
 Revisions:
+	- 20141017@Victor: remove time convertion, input data have GMT -4 timezone already
 
 Param explanation:
 
@@ -87,7 +88,7 @@ BEGIN TRY
 	MERGE dbo.bettrans_AGCasino AS dest
 	USING (	SELECT d.BillNo, 
 				d.IBCCustID, 
-				DATEADD(HOUR, -12, d.BetTime), -- Convert time from GMT+8 to GMT-4
+				d.BetTime,
 				d.GameType, -- GameType
 				d.betAmount, -- Stake
 				d.betAmount, -- Actual_Stake
@@ -103,7 +104,7 @@ BEGIN TRY
 					ELSE '111'
 				END, -- StatusID
 				d.PlayType, -- PlayType
-				CONVERT(VARCHAR(10),DATEADD(HOUR, -12, d.BetTime),120), -- Winlostdate
+				CONVERT(VARCHAR(10), d.BetTime, 120), -- Winlostdate
 				c.username, -- Username
 				d.LoginIP, -- IP
 				c.recommend, c.mrecommend, c.srecommend, c.currency,
