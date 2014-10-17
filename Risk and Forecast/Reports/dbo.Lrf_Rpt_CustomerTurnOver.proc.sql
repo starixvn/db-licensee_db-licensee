@@ -46,6 +46,7 @@ AS
 	- 20140120@Florent: using index Non clusered IX_recommend for table rptCustomerturnover
 	- 20140212@Florent : Sorting DESC
 	- 20140716@Jim: fix bug Total row in excel file is incorrect (hotfix #19101)
+	- 20141017@Jim : Apply for the change in Sporting Solution structure (#24478)
 	Parameter's Explanation:
 		- @ReportBy:  1: daily, 2: monthly
 		- @FilterBy:  1: Win, 2: Loss, 3: Draw
@@ -112,6 +113,11 @@ FROM #bettype
 INNER JOIN bettype ON #bettype.typeid=bettype.typeid 
 WHERE #bettype.typenamee IS NULL 
 
+UPDATE b
+	SET typeID = ss.typeId
+FROM #bettype b
+	INNER JOIN LRF_view_bettype_SS ss ON b.typeId =  ss.bettypeID 
+	
 SELECT  @PageIndex = @PageIndex - 1 ,
 		@RowStart = @PageSize * @PageIndex + 1 ,
 		@RowEnd = @RowStart + @PageSize - 1 
@@ -511,7 +517,7 @@ ELSE
 			a.username,
 			Currency,
 			sporttype,
-			bettype
+			bettype 
 		) B
 		
 		SELECT RowNo,			

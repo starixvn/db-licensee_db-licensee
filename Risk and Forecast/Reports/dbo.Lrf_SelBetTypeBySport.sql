@@ -24,6 +24,7 @@ Revisions:
    - 20140424@Florent: add new sport Virtual Speedway & Virtual Cycling
    - 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
    - 20140911@Jim: add new sport Esport
+   - 20141017@Jim : Apply for the change in Sporting Solution structure (#24478)
 Param's Explanation:
 	
 */
@@ -105,9 +106,9 @@ BEGIN
 	INSERT INTO @Bettype
 		SELECT 0,typeid, typenamee
 		FROM #bettype
-		WHERE (typeid < 31 OR (typeid BETWEEN 121 AND 999)
-						   OR (typeid BETWEEN 1301 and 1399) --new tennis's bettypes
-		)
+		WHERE ((typeid < 31 OR (typeid BETWEEN 121 AND 999))
+				 OR typeid IN (SELECT bettypeId FROM bodb02.dbo.LRF_view_bettype_SS )
+				)
 END
 
 IF EXISTS(SELECT * FROM #input WHERE ID > 0 AND sport<>',')

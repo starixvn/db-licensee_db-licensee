@@ -44,6 +44,7 @@ Revisions:
 	- 20131203@Jim: offer Virtual Greyhound, Virtual Motor Racing
 	- 20140404@Florent: offer Keno products
 	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
+	- 20141017@Jim : Apply for the change in Sporting Solution structure (#24478)
 Param's Explanation: 
 */
 SET NOCOUNT ON
@@ -554,7 +555,9 @@ FROM #AgWinLoss
 
 SELECT wl.*
 FROM (
-	SELECT bettype
+	SELECT CASE WHEN ISNULL(ss.bettypeID,0) <> 0 THEN ss.typeid
+				ELSE b.bettype 
+				END bettype
 		, liveindicator
 		, SUM(TurnOver) AS TurnOver
 		, CAST(SUM(TurnOverEUR) AS MONEY) AS TurnOverEUR
@@ -587,8 +590,11 @@ FROM (
 			ORDER BY bettype
 			) AS RowNum
 	FROM #AgWinLoss b
-	GROUP BY bettype
-		, liveindicator
+		LEFT JOIN LRF_view_bettype_SS ss ON b.bettype = ss.bettypeID 	
+	GROUP BY CASE WHEN ISNULL(ss.bettypeID,0) <> 0 THEN ss.typeid
+				ELSE b.bettype 
+				END
+			, liveindicator
 	) wl
 WHERE wl.RowNum BETWEEN @RowStart AND @RowEnd
 
