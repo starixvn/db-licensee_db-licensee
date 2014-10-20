@@ -33,7 +33,7 @@ BEGIN
 		   ,@Count   = 1 
 	FROM dbo.bettrans WITH (NOLOCK)
 	WHERE CustId = @CustId
-	
+		AND winlostdate <= DATEADD(DAY,-2,GETDATE())
 	WHILE (@RecommendId <> @CurrentRecommendID)
 	BEGIN
 		WAITFOR DELAY '00:00:00.5'	 			
