@@ -1,18 +1,18 @@
 ﻿USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_BetList_SelMatchResult]    Script Date: 11/30/2013 03:02:28 ******/
+ 
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-/****** Object:  Stored Procedure dbo.Lrf_BetList_SelMatchResult    Script Date: 10/22/2013 10:25:56 PM ******/
-/****** Object:  Stored Procedure dbo.Lrf_BetList_SelMatchResult    Script Date: 10/21/2013 2:57:35 PM ******/
-
+ 
 ALTER PROCEDURE [dbo].[Lrf_BetList_SelMatchResult]
 	@LicenseeID INT ,
 	@UserID		INT,	
 	@MatchID INT,
-	@RaceNo VARCHAR(50)=NULL
+	@RaceNo VARCHAR(50)=NULL,
+	@Bettype SMALLINT = NULL,
+	@BetId	 BIGINT = NULL
 AS
  
 /*
@@ -36,18 +36,23 @@ Revisions:
 	- 20140428@Hannah: support :				
 				183 - Virtual Speedway
 				185 - Virtual Cycling
-	
+	-20141021@Jim : support to show Sportting Solution data detail 
 	*******************
 	sample test case:
-				exec Lrf_BetList_SelMatchResult @licenseeid=1,@matchid=2715481,@raceno=N'3',@userid=68
+				exec Lrf_BetList_SelMatchResult_xtest @MatchID=10514601,@RaceNo=default ,@Bettype  = 1324
+														,@Betid='801',@LicenseeID=1,@UserID=10
+	 
 */
 
 SET NOCOUNT ON
 
 IF(@RaceNo is NULL )
 BEGIN
-	IF exists(SELECT 1 FROM match WITH(NOLOCK) WHERE matchid = @matchid)
-	BEGIN	
+	IF EXISTS(SELECT 1 FROM match WITH(NOLOCK) WHERE matchid = @matchid)
+	BEGIN
+		DECLARE @ResourceId VARCHAR(20) 
+		SELECT @ResourceId = LEFT(REPLACE(CONVERT(VARCHAR(20),@BetId), '8', '' ),2)
+		
 		SELECT 
 			m.sporttype, 
 			m.betstatus, 
@@ -86,10 +91,23 @@ BEGIN
 			LEFT OUTER JOIN match_remark mr WITH(NOLOCK) ON m.matchid = mr.matchid
 		WHERE m.matchid = @matchid
 		ORDER BY m.eventdate,m.matchcode
+		
+		SELECT	D.MatchId,
+				D.ResourceId,
+				D.HomeValue,
+				D.AwayValue,
+				D.ResultStatusID,
+				D.SettlementStatusID
+		FROM	dbo.ResultDetail D WITH (NOLOCK)			
+		WHERE	D.MatchId = @MatchId					
+				AND CASE WHEN @Bettype NOT IN (1324) THEN 2 ELSE 
+						CASE WHEN @Bettype IN (1324) AND LEFT(D.ResourceId,2) = @ResourceId THEN 4 
+							ELSE 0 END END = LEN(D.ResourceId)
+
+		ORDER BY ResourceId
 		RETURN
 	END
-	IF exists(SELECT 1 FROM match14 WITH(NOLOCK) WHERE matchid = @matchid)
-			 	
+	IF EXISTS(SELECT 1 FROM match14 WITH(NOLOCK) WHERE matchid = @matchid)
 	BEGIN
 		SELECT 
 			m.sporttype, 
@@ -129,6 +147,21 @@ BEGIN
 			LEFT OUTER JOIN match_remark mr WITH(NOLOCK) ON m.matchid = mr.matchid
 		WHERE m.matchid = @matchid
 		ORDER BY m.eventdate,m.matchcode
+		
+		SELECT	D.MatchId,
+				D.ResourceId,
+				D.HomeValue,
+				D.AwayValue,
+				D.ResultStatusID,
+				D.SettlementStatusID
+		FROM	dbo.ResultDetail14 D WITH (NOLOCK)			
+		WHERE	D.MatchId = @MatchId					
+				AND CASE WHEN @Bettype NOT IN (1324) THEN 2 ELSE 
+						CASE WHEN @Bettype IN (1324) AND LEFT(D.ResourceId,2) = @ResourceId THEN 4 
+							ELSE 0 END END = LEN(D.ResourceId)
+
+		ORDER BY ResourceId
+		
 		RETURN
 	END
 	ELSE
@@ -167,10 +200,25 @@ BEGIN
 			ISNULL(mr.IsPending,0) as IsPending,
 			ISNULL(m.showtime,'') AS showtime,
 			m.homeid2
-		FROM DB06.bodb_archive.dbo.Match_BK m WITH(NOLOCK)		
+		FROM DBARC.bodb_archive.dbo.Match_BK m WITH(NOLOCK)		
 			LEFT OUTER JOIN match_remark mr WITH(NOLOCK) ON m.matchid = mr.matchid
 		WHERE m.matchid = @matchid
 		ORDER BY m.eventdate,m.matchcode
+		
+		SELECT	D.MatchId,
+				D.ResourceId,
+				D.HomeValue,
+				D.AwayValue,
+				D.ResultStatusID,
+				D.SettlementStatusID
+		FROM	DBARC.bodb_archive.dbo.ResultDetail_BK D WITH (NOLOCK)			
+		WHERE	D.MatchId = @MatchId					
+				AND CASE WHEN @Bettype NOT IN (1324) THEN 2 ELSE 
+						CASE WHEN @Bettype IN (1324) AND LEFT(D.ResourceId,2) = @ResourceId THEN 4 
+							ELSE 0 END END = LEN(D.ResourceId)
+
+		ORDER BY ResourceId
+		
 	END
 END
 ELSE
