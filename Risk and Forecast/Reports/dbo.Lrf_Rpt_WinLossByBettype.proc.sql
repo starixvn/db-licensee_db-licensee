@@ -590,7 +590,7 @@ FROM (
 			ORDER BY bettype
 			) AS RowNum
 	FROM #AgWinLoss b
-		LEFT JOIN LRF_view_bettype_SS ss ON b.bettype = ss.bettypeID 	
+		LEFT JOIN dbo.LRF_view_bettype_SS ss ON b.bettype = ss.bettypeID 	
 	GROUP BY CASE WHEN ISNULL(ss.bettypeID,0) <> 0 THEN ss.typeid
 				ELSE b.bettype 
 				END

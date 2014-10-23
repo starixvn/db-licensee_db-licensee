@@ -1,10 +1,5 @@
 ﻿USE [bodb02]
 GO
-
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
 ALTER PROCEDURE [dbo].[Lrf_Rpt_MatchWinLossByBettype]  
 	@LicenseeID   INT,  
 	@UserID		  INT,
@@ -855,9 +850,8 @@ GROUP BY
     liveindicator  
       
 DROP TABLE #TempBetList
-
-   
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_MatchWinLossByBettype] TO [bodbLicenseeNet]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_MatchWinLossByBettype] TO vnteam
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_MatchWinLossByBettype] TO [vnteam]
+   

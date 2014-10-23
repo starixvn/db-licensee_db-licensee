@@ -1,4 +1,11 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_BetList_SelMatchResultParlay]
+﻿USE [bodb02]
+GO
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[Lrf_BetList_SelMatchResultParlay]
 	@refno			BIGINT
 AS
 /*
@@ -12,6 +19,7 @@ Revisions:
 	- 20131017@Jim: Turn to use GlobalShowTime for display the Kick-off-Time
 	- 20141021@Jim : support to show Sportting Solution data detail 
 */
+-- Lrf_BetList_SelMatchResultParlay_xtest @refno=100525448833
 BEGIN
 	SET NOCOUNT ON
 	DECLARE	@tmpParlay TABLE(
@@ -105,7 +113,7 @@ BEGIN
 				ISNULL(mr.IsPending,0) as IsPending,	
 				bm.Bettype, 
 				bm.Betcheck 
-		FROM(	SELECT b.matchId, b.Bettype, REPLACE (ISNULL(b.Betcheck,''),'8','') AS Betcheck FROM BettransM b WITH (NOLOCK) WHERE b.refno = @refno ) bM
+		FROM(	SELECT b.matchId, b.Bettype, b.Betcheck  FROM BettransM b WITH (NOLOCK) WHERE b.refno = @refno ) bM
 				INNER JOIN match m WITH(NOLOCK) ON bM.matchid = m.matchid
 				LEFT OUTER JOIN match_remark mr WITH(NOLOCK) ON m.matchid = mr.matchid
 				
@@ -180,7 +188,7 @@ BEGIN
 				ISNULL(mr.IsPending,0) as IsPending,
 				bm.Bettype, 
 				bm.Betcheck 
-		FROM(	SELECT b.matchId, b.Bettype, REPLACE (ISNULL(b.Betcheck,''),'8','') AS Betcheck FROM BettransM14 b WITH (NOLOCK) WHERE b.refno = @refno ) bM
+		FROM(	SELECT b.matchId, b.Bettype,  Betcheck FROM BettransM14 b WITH (NOLOCK) WHERE b.refno = @refno ) bM
 				INNER JOIN match14 m WITH(NOLOCK) ON bM.matchid = m.matchid
 				LEFT OUTER JOIN match_remark mr WITH(NOLOCK) ON m.matchid = mr.matchid
 		INSERT INTO @tmpResultDetail
@@ -254,7 +262,7 @@ BEGIN
 				ISNULL(mr.IsPending,0) as IsPending,
 				bm.Bettype, 
 				bm.Betcheck 
-		FROM(	SELECT b.matchId, b.Bettype,REPLACE (ISNULL(b.Betcheck,''),'8','') AS Betcheck FROM DBARC.bodb_archive.dbo.BettransM b (NOLOCK) WHERE b.refno = @refno ) bM
+		FROM(	SELECT b.matchId, b.Bettype, Betcheck FROM DBARC.bodb_archive.dbo.BettransM b (NOLOCK) WHERE b.refno = @refno ) bM
 				INNER JOIN DBARC.bodb_archive.dbo.match_BK m WITH(NOLOCK) ON bM.matchid = m.matchid
 				LEFT OUTER JOIN match_remark mr WITH(NOLOCK) ON m.matchid = mr.matchid
 		

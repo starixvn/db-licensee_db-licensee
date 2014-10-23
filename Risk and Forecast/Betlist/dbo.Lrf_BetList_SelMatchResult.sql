@@ -1,6 +1,6 @@
 ﻿USE [bodb02]
 GO
- 
+
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -467,42 +467,7 @@ BEGIN
 		END 	
 	DROP TABLE #tmpresult 
 END
-/*
-DECLARE @Today SMALLDATETIME 
-SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
-BEGIN
-	SELECT  currencyID,LicenseeID into #currency
-	FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
-	--get data from bettransg for bettype 1101
-	
-	SELECT 
-		bg.refno, 
-		bg.odds, 
-		bg.stake,
-		bg.status ,
-		bg.apositiontaking, 
-		bg.betteam ,
-		bg.stake*e.EUR AS stakeEUR,
-		bg.stake*e.USD AS stakeUSD	
-	FROM bettransg bg with (NOLOCK)
-	INNER JOIN match m with (NOLOCK) ON bg.matchid=m.matchid 
-	INNER JOIN bettrans B with (NOLOCK)ON bg.refno = B.refno
-	INNER JOIN 
-		(SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
-	ON e.exchangeid = b.currency AND  e.ExchangeDate = B.winlostdate
-	INNER JOIN #currency c ON c.CurrencyID=b.currency
-	WHERE	b.bettype between 1101 and 1199 and
-			b.statusID in (0,1)
-			AND m.matchid=@matchID
-	
-			
-	---------------------------------------		
-	DROP TABLE #Currency
-	---------------------------------------
-
-END
-*/
 GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_SelMatchResult] TO [bodbLicenseeNet] AS [dbo]
+GRANT EXECUTE ON [dbo].[Lrf_BetList_SelMatchResult] TO [bodbLicenseeNet]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelMatchResult] TO [vnteam] AS [dbo]
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelMatchResult] TO [vnteam] 

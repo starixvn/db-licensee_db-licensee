@@ -5,7 +5,7 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-ALTER PROCEDURE [dbo].Lrf_Result_MatchSelByLeague_Detail 
+ALTER PROCEDURE [dbo].[Lrf_Result_MatchSelByLeague_Detail]
 (	
 	@MatchId INT
 )
@@ -16,7 +16,9 @@ Task: 	Retrieve detail a  matches
 DB:  DBEXT/bodb02
 Original: [Age_Result_MatchSelResultDetail]
 Revisions: 
-
+-------
+EXEC Lrf_Result_MatchSelByLeague_Detail_xtest
+	@MatchId = 10860032
 */
 BEGIN 
 	SET NOCOUNT ON 	 
