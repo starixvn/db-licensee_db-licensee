@@ -126,9 +126,9 @@ BEGIN
 					D.SettlementStatusID
 		FROM	dbo.ResultDetail D WITH (NOLOCK)
 			    INNER JOIN @tmpParlay P ON D.MatchId = P.MatchId		
-		WHERE	CASE WHEN P.Bettype NOT IN (1324) THEN 2 ELSE 
-					CASE WHEN P.Bettype IN (1324) AND LEFT(D.ResourceId,2) = LEFT(P.BetCheck,2) THEN 4 
-						ELSE 0 END END = LEN(D.ResourceId)
+		--WHERE	CASE WHEN P.Bettype NOT IN (1324) THEN 2 ELSE 
+		--			CASE WHEN P.Bettype IN (1324) AND LEFT(D.ResourceId,2) = LEFT(P.BetCheck,2) THEN 4 
+		--				ELSE 0 END END = LEN(D.ResourceId)
 		
 	END
 	IF EXISTS (SELECT 1 FROM bettransm14 WITH (NOLOCK) WHERE  refno = @refno)

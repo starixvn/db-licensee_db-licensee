@@ -12,7 +12,7 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_SelMatchResult]
 	@MatchID INT,
 	@RaceNo VARCHAR(50)=NULL,
 	@Bettype SMALLINT = NULL,
-	@BetId	 BIGINT = NULL
+	@BetId	 BIGINT   = NULL
 AS
  
 /*
@@ -93,18 +93,19 @@ BEGIN
 		ORDER BY m.eventdate,m.matchcode
 		
 		SELECT	D.MatchId,
-				D.ResourceId,
-				D.HomeValue,
-				D.AwayValue,
-				D.ResultStatusID,
-				D.SettlementStatusID
+					D.ResourceId,
+					D.HomeValue,
+					D.AwayValue,
+					D.ResultStatusID,
+					D.SettlementStatusID
 		FROM	dbo.ResultDetail D WITH (NOLOCK)			
 		WHERE	D.MatchId = @MatchId					
 				AND CASE WHEN @Bettype NOT IN (1324) THEN 2 ELSE 
-						CASE WHEN @Bettype IN (1324) AND LEFT(D.ResourceId,2) = @ResourceId THEN 4 
+						CASE WHEN @Bettype IN (1324) AND (LEFT(D.ResourceId,2) = @ResourceId OR ISNULL(@ResourceId,0)=0) THEN 4 
 							ELSE 0 END END = LEN(D.ResourceId)
 
 		ORDER BY ResourceId
+
 		RETURN
 	END
 	IF EXISTS(SELECT 1 FROM match14 WITH(NOLOCK) WHERE matchid = @matchid)
@@ -149,19 +150,18 @@ BEGIN
 		ORDER BY m.eventdate,m.matchcode
 		
 		SELECT	D.MatchId,
-				D.ResourceId,
-				D.HomeValue,
-				D.AwayValue,
-				D.ResultStatusID,
-				D.SettlementStatusID
+					D.ResourceId,
+					D.HomeValue,
+					D.AwayValue,
+					D.ResultStatusID,
+					D.SettlementStatusID
 		FROM	dbo.ResultDetail14 D WITH (NOLOCK)			
-		WHERE	D.MatchId = @MatchId					
+		WHERE	D.MatchId = @MatchId	
 				AND CASE WHEN @Bettype NOT IN (1324) THEN 2 ELSE 
-						CASE WHEN @Bettype IN (1324) AND LEFT(D.ResourceId,2) = @ResourceId THEN 4 
+						CASE WHEN @Bettype IN (1324) AND (LEFT(D.ResourceId,2) = @ResourceId OR ISNULL(@ResourceId,0)=0)THEN 4 
 							ELSE 0 END END = LEN(D.ResourceId)
-
 		ORDER BY ResourceId
-		
+
 		RETURN
 	END
 	ELSE
@@ -206,19 +206,17 @@ BEGIN
 		ORDER BY m.eventdate,m.matchcode
 		
 		SELECT	D.MatchId,
-				D.ResourceId,
-				D.HomeValue,
-				D.AwayValue,
-				D.ResultStatusID,
-				D.SettlementStatusID
+					D.ResourceId,
+					D.HomeValue,
+					D.AwayValue,
+					D.ResultStatusID,
+					D.SettlementStatusID
 		FROM	DBARC.bodb_archive.dbo.ResultDetail_BK D WITH (NOLOCK)			
-		WHERE	D.MatchId = @MatchId					
+		WHERE	D.MatchId = @MatchId	
 				AND CASE WHEN @Bettype NOT IN (1324) THEN 2 ELSE 
-						CASE WHEN @Bettype IN (1324) AND LEFT(D.ResourceId,2) = @ResourceId THEN 4 
+						CASE WHEN @Bettype IN (1324) AND (LEFT(D.ResourceId,2) = @ResourceId OR ISNULL (@ResourceId,0)=0) THEN 4 
 							ELSE 0 END END = LEN(D.ResourceId)
-
 		ORDER BY ResourceId
-		
 	END
 END
 ELSE
@@ -467,7 +465,8 @@ BEGIN
 		END 	
 	DROP TABLE #tmpresult 
 END
+ 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelMatchResult] TO [bodbLicenseeNet]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelMatchResult] TO [vnteam] 
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelMatchResult] TO [vnteam]

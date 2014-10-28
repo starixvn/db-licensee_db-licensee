@@ -98,4 +98,4 @@ END
 GO
 GRANT EXECUTE ON [dbo].Lrf_Result_MatchSelByLeague_Detail  TO bodbLicenseeNet 
 GO
-GRANT EXECUTE ON [dbo].Lrf_Result_MatchSelByLeague_Detail  TO vnteam  
+GRANT EXECUTE ON [dbo].Lrf_Result_MatchSelByLeague_Detail  TO vnteam 
