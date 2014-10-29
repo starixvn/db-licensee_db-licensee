@@ -47,21 +47,19 @@ EXEC sp_xml_preparedocument @iDoc OUTPUT, @SportList
 
 SELECT *
 INTO #INPUT
-FROM OPENXML (@iDoc, '/products/product',1) WITH(ID SMALLINT, Sport nvarchar(128))
+FROM OPENXML (@iDoc, '/products/product',1) WITH(ID SMALLINT, Sport NVARCHAR(128))
+
 EXEC sp_xml_removedocument @iDoc
-SELECT @strSport=Sport
+
+SELECT @strSport =  Sport 
 FROM #INPUT
 WHERE ID=0
 
-SELECT VAL AS SportID
-	INTO #SBsport
-FROM bodb02.dbo.strSplit(@strSport,',')
-
 DECLARE @Bettype TABLE (
-		sporttype SMALLINT
-		,BettypeID SMALLINT
-	    ,BettypeName nvarchar(50)
-)
+						sporttype SMALLINT
+						,BettypeID SMALLINT
+						,BettypeName NVARCHAR(50)
+						)
 SELECT 
 	b.typeID,
 	CASE @Langkey
@@ -84,31 +82,42 @@ SELECT
 INTO #bettype		
 FROM bodb02.dbo.bettype  b WITH (NOLOCK)
 
-IF EXISTS (SELECT 1 FROM #SBsport WHERE SportID=154)
-BEGIN
-	INSERT INTO @Bettype
-	SELECT 0,typeid, typenamee
-	FROM #bettype
-	WHERE typeid = 20	
-END
-IF EXISTS (SELECT 1 FROM #SBsport WHERE SportID=43)
-BEGIN
-	INSERT INTO @Bettype
-	SELECT 0,typeid, typenamee
-	FROM #bettype
-	WHERE typeid IN (1,3,20)	
-END
-
-
-IF EXISTS(SELECT * FROM #SBsport WHERE  SportID NOT IN (43,154))
+IF ISNULL(@strSport,'')<>''
 BEGIN
 
-	INSERT INTO @Bettype
+	SET @strSport = ISNULL(@strSport,'')
+	SELECT VAL  AS SportID
+	INTO #SBsport
+	FROM bodb02.dbo.strSplit(@strSport,',')
+
+
+	IF EXISTS (SELECT 1 FROM #SBsport WHERE SportID=154)
+	BEGIN
+		INSERT INTO @Bettype
 		SELECT 0,typeid, typenamee
 		FROM #bettype
-		WHERE ((typeid < 31 OR (typeid BETWEEN 121 AND 999))
-				 OR typeid IN (SELECT bettypeId FROM bodb02.dbo.LRF_view_bettype_SS )
-				)
+		WHERE typeid = 20	
+	END
+	IF EXISTS (SELECT 1 FROM #SBsport WHERE SportID=43)
+	BEGIN
+		INSERT INTO @Bettype
+		SELECT 0,typeid, typenamee
+		FROM #bettype
+		WHERE typeid IN (1,3,20)	
+	END
+
+
+	IF EXISTS(SELECT 1 FROM #SBsport WHERE  SportID NOT IN (43,154))
+	BEGIN
+
+		INSERT INTO @Bettype
+			SELECT 0,typeid, typenamee
+			FROM #bettype
+			WHERE (typeid < 31 OR (typeid BETWEEN 121 AND 999)
+							   OR (typeid IN (SELECT bettypeId FROM bodb02.dbo.LRF_view_bettype_SS )) --new tennis's bettypes
+			)
+	END
+	DROP TABLE #SBsport
 END
 
 IF EXISTS(SELECT * FROM #input WHERE ID > 0 AND sport<>',')
@@ -154,7 +163,7 @@ END
 
 DROP TABLE #input
 DROP TABLE #bettype
-DROP TABLE #SBsport
+
 SELECT  BettypeID
 	   ,BettypeName
 FROM @Bettype
