@@ -1,6 +1,6 @@
 ﻿USE [bodb02]
 GO
- 
+
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -127,7 +127,7 @@ BEGIN
 		FROM	dbo.ResultDetail D WITH (NOLOCK)
 			    INNER JOIN @tmpParlay P ON D.MatchId = P.MatchId		
 		WHERE	CASE WHEN P.Bettype NOT IN (1324) THEN 2 ELSE 
-					CASE WHEN P.Bettype IN (1324) AND LEFT(D.ResourceId,2) = LEFT(P.BetCheck,3) THEN 4 
+					CASE WHEN P.Bettype IN (1324) AND LEFT(D.ResourceId,2) = LEFT(REPLACE (ISNULL(p.Betcheck,''),'8',''),2) THEN 4 
 						ELSE 0 END END = LEN(D.ResourceId)
 		
 	END
@@ -188,7 +188,7 @@ BEGIN
 				ISNULL(mr.IsPending,0) as IsPending,
 				bm.Bettype, 
 				bm.Betcheck 
-		FROM(	SELECT b.matchId, b.Bettype,  Betcheck FROM BettransM14 b WITH (NOLOCK) WHERE b.refno = @refno ) bM
+		FROM(	SELECT b.matchId, b.Bettype,Betcheck FROM BettransM14 b WITH (NOLOCK) WHERE b.refno = @refno ) bM
 				INNER JOIN match14 m WITH(NOLOCK) ON bM.matchid = m.matchid
 				LEFT OUTER JOIN match_remark mr WITH(NOLOCK) ON m.matchid = mr.matchid
 		INSERT INTO @tmpResultDetail
@@ -202,7 +202,7 @@ BEGIN
 			   INNER JOIN @tmpParlay P 
 				ON D.MatchId = P.MatchId		
 		WHERE	CASE WHEN P.Bettype NOT IN (1324) THEN 2 ELSE 
-					CASE WHEN P.Bettype IN (1324) AND LEFT(D.ResourceId,2) = LEFT(P.BetCheck,2) THEN 4 
+					CASE WHEN P.Bettype IN (1324) AND LEFT(D.ResourceId,2) = LEFT(REPLACE (ISNULL(p.Betcheck,''),'8',''),2) THEN 4 
 						ELSE 0 END END = LEN(D.ResourceId)
 							
 	END
@@ -277,7 +277,7 @@ BEGIN
 			INNER JOIN @tmpParlay P 
 				ON D.MatchId = P.MatchId		
 		WHERE	CASE WHEN P.Bettype NOT IN (1324) THEN 2 ELSE 
-					CASE WHEN P.Bettype IN (1324) AND LEFT(D.ResourceId,2) = LEFT(P.BetCheck,2) THEN 4 
+					CASE WHEN P.Bettype IN (1324) AND LEFT(D.ResourceId,2) = LEFT(REPLACE (ISNULL(p.Betcheck,''),'8',''),2) THEN 4 
 						ELSE 0 END END = LEN(D.ResourceId)
 							
 	END
