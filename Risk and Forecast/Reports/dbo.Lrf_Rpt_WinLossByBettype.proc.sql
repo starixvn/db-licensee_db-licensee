@@ -595,6 +595,7 @@ FROM (
 				ELSE b.bettype 
 				END
 			, liveindicator
+			,bettype
 	) wl
 WHERE wl.RowNum BETWEEN @RowStart AND @RowEnd
 
