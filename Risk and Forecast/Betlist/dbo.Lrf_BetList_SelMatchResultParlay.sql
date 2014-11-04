@@ -286,6 +286,7 @@ BEGIN
 	SELECT DISTINCT * FROM @tmpResultDetail
 	ORDER BY MatchID, ResourceId
 END
+
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelMatchResultParlay] TO [bodbLicenseeNet]
 GO

@@ -587,7 +587,9 @@ FROM (
 		, CAST(SUM(AmtDuetoRBEUR) AS MONEY) AS AmtDuetoRBEUR
 		, CAST(SUM(AmtDuetoRBUSD) AS MONEY) AS AmtDuetoRBUSD
 		, ROW_NUMBER() OVER (
-			ORDER BY bettype
+			ORDER BY CASE WHEN ISNULL(ss.bettypeID,0) <> 0 THEN ss.typeid
+				ELSE b.bettype 
+				END
 			) AS RowNum
 	FROM #AgWinLoss b
 		LEFT JOIN dbo.LRF_view_bettype_SS ss ON b.bettype = ss.bettypeID 	
@@ -595,9 +597,10 @@ FROM (
 				ELSE b.bettype 
 				END
 			, liveindicator
-			,bettype
+			 
 	) wl
 WHERE wl.RowNum BETWEEN @RowStart AND @RowEnd
+
 
 SELECT SUM(TurnOver) AS SumTurnOver
 	, CAST(SUM(TurnOverEUR) AS MONEY) AS SumTurnOverEUR
