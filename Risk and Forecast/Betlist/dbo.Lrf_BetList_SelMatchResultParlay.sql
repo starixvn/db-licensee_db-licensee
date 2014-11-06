@@ -1,6 +1,6 @@
 ﻿USE [bodb02]
 GO
-
+ 
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -129,6 +129,7 @@ BEGIN
 		WHERE	CASE WHEN P.Bettype NOT IN (1324) THEN 2 ELSE 
 					CASE WHEN P.Bettype IN (1324) AND LEFT(D.ResourceId,2) = LEFT(REPLACE (ISNULL(p.Betcheck,''),'8',''),2) THEN 4 
 						ELSE 0 END END = LEN(D.ResourceId)
+				AND D.SettlementStatusID > 0
 		
 	END
 	IF EXISTS (SELECT 1 FROM bettransm14 WITH (NOLOCK) WHERE  refno = @refno)
@@ -204,6 +205,7 @@ BEGIN
 		WHERE	CASE WHEN P.Bettype NOT IN (1324) THEN 2 ELSE 
 					CASE WHEN P.Bettype IN (1324) AND LEFT(D.ResourceId,2) = LEFT(REPLACE (ISNULL(p.Betcheck,''),'8',''),2) THEN 4 
 						ELSE 0 END END = LEN(D.ResourceId)
+				AND D.SettlementStatusID > 0
 							
 	END
 	IF EXISTS (SELECT 1 FROM DBARC.bodb_archive.dbo.BettransM  WITH (NOLOCK) WHERE  refno = @refno)
@@ -279,10 +281,12 @@ BEGIN
 		WHERE	CASE WHEN P.Bettype NOT IN (1324) THEN 2 ELSE 
 					CASE WHEN P.Bettype IN (1324) AND LEFT(D.ResourceId,2) = LEFT(REPLACE (ISNULL(p.Betcheck,''),'8',''),2) THEN 4 
 						ELSE 0 END END = LEN(D.ResourceId)
+				AND D.SettlementStatusID > 0
 							
 	END
 	SELECT * FROM @tmpParlay
-	ORDER BY LeagueID, eventdate, matchcode	
+	ORDER BY LeagueID,bettype, eventdate, matchcode	
+	
 	SELECT DISTINCT * FROM @tmpResultDetail
 	ORDER BY MatchID, ResourceId
 END

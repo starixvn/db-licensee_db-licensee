@@ -1,5 +1,6 @@
 ﻿USE [bodb02]
 GO
+ 
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -98,7 +99,7 @@ BEGIN
 					D.ResultStatusID,
 					D.SettlementStatusID
 		FROM	dbo.ResultDetail D WITH (NOLOCK)			
-		WHERE	D.MatchId = @MatchId					
+		WHERE	D.MatchId = @MatchId AND D.SettlementStatusID > 0					
 				AND CASE WHEN @Bettype NOT IN (1324) THEN 2 ELSE 
 						CASE WHEN @Bettype IN (1324) AND (LEFT(D.ResourceId,2) = @ResourceId OR ISNULL(@ResourceId,0)=0) THEN 4 
 							ELSE 0 END END = LEN(D.ResourceId)
@@ -155,7 +156,7 @@ BEGIN
 					D.ResultStatusID,
 					D.SettlementStatusID
 		FROM	dbo.ResultDetail14 D WITH (NOLOCK)			
-		WHERE	D.MatchId = @MatchId	
+		WHERE	D.MatchId = @MatchId AND D.SettlementStatusID > 0	
 				AND CASE WHEN @Bettype NOT IN (1324) THEN 2 ELSE 
 						CASE WHEN @Bettype IN (1324) AND (LEFT(D.ResourceId,2) = @ResourceId OR ISNULL(@ResourceId,0)=0)THEN 4 
 							ELSE 0 END END = LEN(D.ResourceId)
@@ -211,7 +212,7 @@ BEGIN
 					D.ResultStatusID,
 					D.SettlementStatusID
 		FROM	DBARC.bodb_archive.dbo.ResultDetail_BK D WITH (NOLOCK)			
-		WHERE	D.MatchId = @MatchId	
+		WHERE	D.MatchId = @MatchId AND D.SettlementStatusID > 0	
 				AND CASE WHEN @Bettype NOT IN (1324) THEN 2 ELSE 
 						CASE WHEN @Bettype IN (1324) AND (LEFT(D.ResourceId,2) = @ResourceId OR ISNULL (@ResourceId,0)=0) THEN 4 
 							ELSE 0 END END = LEN(D.ResourceId)

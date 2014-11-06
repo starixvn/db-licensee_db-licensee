@@ -37,7 +37,10 @@ BEGIN
 		m.htawayscore, 
 		m.finalhomescore,
 		m.finalawayscore,
-		m.eventstatus,
+		CASE WHEN m.betstatus like 'Refund FT%' THEN 'Refund FT' 
+             WHEN m.betstatus like 'Refund HT%' THEN 'Refund HT'
+             WHEN m.betstatus like 'Refund%' THEN 'Refund' 
+        ELSE m.eventstatus END as eventstatus,
 		m.showtime,
 		isnull(m.isNeutral, CONVERT(BIT,0)) as IsNeutral,
 		m.goalrecord,
@@ -63,7 +66,10 @@ BEGIN
 		m.htawayscore, 
 		m.finalhomescore,
 		m.finalawayscore,
-		m.eventstatus,
+		CASE WHEN m.betstatus like 'Refund FT%' THEN 'Refund FT' 
+             WHEN m.betstatus like 'Refund HT%' THEN 'Refund HT'
+             WHEN m.betstatus like 'Refund%'    THEN 'Refund' 
+        ELSE m.eventstatus END as eventstatus,
 		m.showtime,
 		isnull(m.isNeutral, CONVERT(BIT,0)) as IsNeutral,
 		m.goalrecord,
@@ -83,7 +89,7 @@ BEGIN
 			,ResultStatusID
 			,SettlementStatusID
 	FROM	dbo.ResultDetail WITH (NOLOCK)
-	WHERE	MatchId = @MatchId
+	WHERE	MatchId = @MatchId AND SettlementStatusID > 0
 	UNION ALL
 	SELECT	MatchId
 			,ResourceId
@@ -92,7 +98,7 @@ BEGIN
 			,ResultStatusID
 			,SettlementStatusID
 	FROM	dbo.ResultDetail14 WITH (NOLOCK)
-	WHERE	MatchId = @MatchId
+	WHERE	MatchId = @MatchId AND SettlementStatusID > 0
 	
 END
 GO
