@@ -90,6 +90,13 @@ INSERT INTO #ProductID (sportId) SELECT 0
 
 SELECT VAL bettypeID INTO #BettypeID FROM strSplit(@Bettype,',')
 
+INSERT INTO #BettypeID (bettypeID )
+SELECT ss.bettypeID
+FROM dbo.LRF_view_bettype_SS ss
+	INNER JOIN #BettypeID b ON b.bettypeID = ss.Typeid
+WHERE ss.bettypeID NOT IN (SELECT bettypeID FROM #BettypeID)	
+	
+	
 CREATE TABLE #CustID (Custid INT)
 SELECT 
 	b.typeID,
@@ -112,11 +119,7 @@ SET #bettype.typenamee=bettype.typenamee
 FROM #bettype 
 INNER JOIN bettype ON #bettype.typeid=bettype.typeid 
 WHERE #bettype.typenamee IS NULL 
-
-UPDATE b
-	SET typeID = ss.typeId
-FROM #bettype b
-	INNER JOIN LRF_view_bettype_SS ss ON b.typeId =  ss.bettypeID 
+ 
 	
 SELECT  @PageIndex = @PageIndex - 1 ,
 		@RowStart = @PageSize * @PageIndex + 1 ,
@@ -414,6 +417,11 @@ ELSE
 		FROM exchange e WITH (NOLOCK)
 		WHERE e.exchangeid IN (SELECT CurrencyId FROM #recommend)
 		
+		UPDATE d
+		SET bettype =ss.typeid
+		FROM #Data d 
+			INNER JOIN LRF_view_bettype_SS ss ON d.bettype = ss.bettypeID
+			
 		CREATE NONCLUSTERED INDEX IDX_Index_Data ON #Data(CustID,bettype,currency,Sporttype,Odds)
 		
 		SELECT 
@@ -504,20 +512,22 @@ ELSE
 			a.username,
 			Currency,
 			sporttype,
-			bettype,
+			a.bettype,
 			SUM(Betcount) Betcount ,
 			SUM(Turnover) Turnover,
 			SUM(Winlost) Winlost,
 			SUM(PlayerComm) PlayerComm
 		FROM #result a 
 		inner join #Row_num b on a.ReportBy=b.ReportBy and a.username=b.username
+		
 		GROUP BY 
 			b.rownum,
 			a.ReportBy,  
 			a.username,
 			Currency,
 			sporttype,
-			bettype 
+			a.bettype 
+			
 		) B
 		
 		SELECT RowNo,			

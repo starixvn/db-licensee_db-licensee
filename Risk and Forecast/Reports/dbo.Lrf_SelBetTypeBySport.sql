@@ -111,7 +111,7 @@ BEGIN
 		INSERT INTO @Bettype
 		SELECT 0,b.typeid, b.typenamee
 		FROM #bettype b
-			INNER JOIN bodb02.dbo.LRF_view_bettype_SS ss ON b.typeid=ss.bettypeID
+			INNER JOIN bodb02.dbo.LRF_view_bettype_SS ss ON b.typeid=ss.typeid
 		
 	END
 	
