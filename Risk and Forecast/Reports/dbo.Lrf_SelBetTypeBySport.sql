@@ -106,8 +106,16 @@ BEGIN
 		WHERE typeid IN (1,3,20)	
 	END
 
-
-	IF EXISTS(SELECT 1 FROM #SBsport WHERE  SportID NOT IN (43,154))
+	IF EXISTS (SELECT 1 FROM #SBsport WHERE SportID=5)
+	BEGIN
+		INSERT INTO @Bettype
+		SELECT 0,b.typeid, b.typenamee
+		FROM #bettype b
+			INNER JOIN bodb02.dbo.LRF_view_bettype_SS ss ON b.typeid=ss.bettypeID
+		
+	END
+	
+	IF EXISTS(SELECT 1 FROM #SBsport WHERE  SportID NOT IN (43,5,154))
 	BEGIN
 
 		INSERT INTO @Bettype
