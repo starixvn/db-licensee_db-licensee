@@ -1,6 +1,6 @@
 ﻿USE [bodb02]
 GO
-
+ 
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -118,7 +118,7 @@ UPDATE #bettype
 SET #bettype.typenamee=bettype.typenamee 
 FROM #bettype 
 INNER JOIN bettype ON #bettype.typeid=bettype.typeid 
-WHERE #bettype.typenamee IS NULL 
+WHERE ISNULL(#bettype.typenamee,'') = ''
  
 	
 SELECT  @PageIndex = @PageIndex - 1 ,
