@@ -178,6 +178,7 @@ FROM @Bettype
 GROUP BY sporttype,BettypeID,BettypeName
 ORDER BY sporttype
 GO
+
 GRANT EXECUTE ON [dbo].[Lrf_SelBetTypeBySport] TO [bodbLicenseeNet] 
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_SelBetTypeBySport] TO [vnteam] 
