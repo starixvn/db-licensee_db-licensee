@@ -26,6 +26,7 @@ Revisions:
  -- 20131108@Victor: Enhance performance, use rptlicwinloss2 instead of rptDepwinlost
  -- 20140310@Florent: Add Keno product
  -- 20140310@Florent: remove  Bingo & RNG Casino Transfer and Outstanding 
+ -- 20141002@Don: Fixed bug (Redmine ID #23380), if cannot get BU date of a specific customer in table Statement, the error will be happened
    
 Param's Explanation:   
 • @ErrCode:  
@@ -226,7 +227,13 @@ select @fdate = @FromDate, @tdate = @ToDate
                     AND transdesc = 'OPENING BALANCE'  
             ORDER BY accdate DESC  
    
-            SELECT  @fdate = ISNULL(@PreBalanceUpDay, @fdate)  
+			-- If cannot find any old BU row, get BUDate from last BUDate before @fdate
+			IF (@PreBalanceUpDay IS NULL) 
+			BEGIN
+				SET @PreBalanceUpDay = @fdate
+				WHILE(DATEPART(WEEKDAY, @PreBalanceUpDay) <> 7) SET @PreBalanceUpDay = DATEADD(dd, -1, @PreBalanceUpDay)  
+			END
+			SELECT @fdate = @PreBalanceUpDay
 
 			declare @recommend int
 			SELECT @recommend = recommend FROM Customer (nolock) WHERE custID = @custid
