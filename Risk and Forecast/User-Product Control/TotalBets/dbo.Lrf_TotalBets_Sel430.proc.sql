@@ -29,6 +29,7 @@ Revisions:
 	--20121004@Jim: replace @currencyname input param by @currencyID
 	--20130514@Jim:Restrict permission of Licensee Users by currency
 	--20140620@Florent: offer new bettypes 152 - Half Time/Full Time Correct Score
+	- 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
 */
 
 SET NOCOUNT ON
@@ -70,8 +71,8 @@ WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 DECLARE @TempAg AS TABLE (custid INT)
 INSERT INTO @TempAg (custid)
-SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+SELECT DISTINCT CustID  
+                FROM    bodb_Licensee.dbo.[f_SelLicenseeCust](0) lc --WITH ( NOLOCK )
 				INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
                 WHERE   [Description] = COALESCE(@LicenseeType,[Description])  
 ------------------------

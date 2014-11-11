@@ -26,6 +26,7 @@ Original:[Lrf_BetList_SelRunningByBettype]
 Revisions:
 	- 20140708@Hannah: clone from Lrf_BetList_SelRunningByBettype to support muilti bettype.
 	- 20140925@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
+	- 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
 */
 
 SET NOCOUNT ON
@@ -80,8 +81,8 @@ FROM strSplit(@Bettype,',')
 
 DECLARE @TempAg AS TABLE (custid INT)
 INSERT INTO @TempAg (custid)
-SELECT  CustID  
-                FROM  bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+SELECT DISTINCT CustID  
+                FROM    bodb_Licensee.dbo.[f_SelLicenseeCust](0) lc-- WITH ( NOLOCK )  
 				INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
                 WHERE    [Description] = COALESCE(@LicenseeType,  
                                                      [Description]) 

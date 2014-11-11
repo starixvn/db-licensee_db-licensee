@@ -1,11 +1,14 @@
 USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Task_DOT_dep_DailySummary_TST_NEW]    Script Date: 04/09/2014 20:21:43 ******/
+
+/****** Object:  StoredProcedure [dbo].[Task_DOT_dep_DailySummary_TST_NEW]    Script Date: 11/04/2014 03:49:00 ******/
 SET ANSI_NULLS ON
 GO
+
 SET QUOTED_IDENTIFIER ON
 GO
-ALTER PROCEDURE [dbo].[Task_DOT_dep_DailySummary_TST_NEW] 
+
+CREATE PROCEDURE [dbo].[Task_DOT_dep_DailySummary_TST_NEW] 
 	@winlostdate datetime
 AS
 /*	
@@ -15,6 +18,7 @@ AS
 	Revisions:	
 		- 20111007@Daniel: remove redundant rows		
 		- 20121006@Viet: enhance SP to save server's resources
+		- 20141104@Don: Delete on batches of data in table rptDepWinlostTST for one day instead
 		             
 	Param's Explanation:
 	• @winlostdate: The date need to summary
@@ -118,7 +122,15 @@ FROM #DATA data
 	LEFT JOIN bodb_Report.dbo.rptDepWinlost r with(nolock) on data.custid = r.custid
 WHERE r.winlostdate = @date	
 
-DELETE bodb_Report.dbo.rptDepWinlostTST WHERE Winlostdate = @date
+WHILE (1 = 1)
+BEGIN
+	DELETE tmp FROM (SELECT TOP 100000 * FROM bodb_Report.dbo.rptDepWinlostTST WITH(NOLOCK) WHERE Winlostdate = @date)tmp
+	
+	IF (@@ROWCOUNT < 100000)
+		BREAK
+		
+	WAITFOR DELAY '00:00:00.280'
+END
 
 insert into bodb_Report.dbo.rptDepWinlostTST (winlostdate, custid, currency, Turnover, recommend, mrecommend, srecommend, OpeningBalance, Outstanding, ReturnAmt, ClosingBalance)
 select @date, custid, currency, Turnover, recommend, mrecommend, srecommend, OpeningBalance, Outstanding, ReturnAmt, ClosingBalance
@@ -126,4 +138,8 @@ from #DATA
 
 DROP TABLE #DATA
 DROP TABLE #bettrans_TEMP
+
+
+GO
+
 
