@@ -22,7 +22,7 @@ Revisions:
  - 20130514@Jim:Restrict permission of Licensee Users by currency 
  - 20140717@Francis: Change liveindicator datatype to INT to fix running live matches are not being showed at the top list (RedmineID:19136)
  - 20130718@Hannah: Group each match for Bodog (#19163)
-
+ - 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
 Param's Explanation:
 • @custid: agent ID
 */
@@ -37,8 +37,8 @@ WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 DECLARE @TempAg AS TABLE (CustID INT)
 INSERT INTO @TempAg (CustID)
-SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+SELECT DISTINCT CustID  
+                FROM    bodb_Licensee.dbo.[f_SelLicenseeCust](0) lc --WITH ( NOLOCK )
 						INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
                 WHERE   lc.Description = COALESCE(@LicenseeType,  
                                                      lc.[Description])
