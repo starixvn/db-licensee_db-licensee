@@ -23,6 +23,7 @@ BEGIN
 	Revision:
 		20130315@Scott : Change index hint (IX_matchid_bettype)
 		20130618@Jim:  Restrict permission of Licensee Users by currency
+		20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	Parameter's Explanation:
 		- @bettypes: 
 			+ HDP: 1,7
@@ -135,7 +136,7 @@ BEGIN
 							''''' as currencyname,'+CHAR(13)+
 							'lc.SpecialLevel'+CHAR(13)+
 						'FROM dbo.bettrans b WITH(NOLOCK,INDEX(IX_matchid_bettype))'+CHAR(13)+
-							'INNER JOIN bodb_Licensee.dbo.LicenseeCust t ON b.recommend=t.custid'+CHAR(13)+
+							'INNER JOIN bodb_Licensee.dbo.f_SelLicenseeCust(0) t ON b.recommend=t.custid AND b.Currency = t.Currency'+CHAR(13)+
 							'INNER JOIN #Currency c ON t.LicenseeID=c.LicenseeID AND t.Currency=c.CurrencyID'+char(13)+
 							CASE 
 								WHEN @SpecialLevel <> '' AND (CHARINDEX('0', @SpecialLevel)>1 OR CHARINDEX('0', @SpecialLevel)=0)
