@@ -115,7 +115,7 @@ FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (
 WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 INSERT INTO @tempAg (custID,currency) 
-SELECT custID,currency 
+SELECT lc.custID,lc.currency 
 FROM bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc 
 	INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID 
 WHERE 
@@ -257,7 +257,7 @@ BEGIN
 		FROM 
 			dbo.bettrans b WITH ( NOLOCK)    
 			INNER JOIN @TempAg tma ON tma.CustID=b.recommend AND b.currency = tma.currency
-			INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON s.custid=BA.srecommend and b.transid = BA.transid 	 
+			INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON tma.custid=BA.srecommend and b.transid = BA.transid 	 
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @_ToDate AND  
 			b.statusID  IN (111, 112, 113) 
