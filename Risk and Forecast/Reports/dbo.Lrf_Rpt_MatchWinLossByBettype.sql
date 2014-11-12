@@ -42,6 +42,7 @@ Revisions:
 	- 20130423@Kyan: offer Virtual Speedway, Virtual Cycling 
 	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes), column Betcount
 	- 20140915@Florent: hotfix duplicated VS bettype
+	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 Param's Explanation:   
    
 */  
@@ -67,8 +68,8 @@ WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
   
 DECLARE @TempAg AS TABLE ( CustId INT )  
 INSERT  INTO @TempAg ( CustId)  
-SELECT  CustID    
-FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )    
+SELECT  DISTINCT CustID    
+FROM bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc   
 		INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
 WHERE   [Description] = COALESCE(@LicenseeType,    
 									 [Description])   

@@ -30,6 +30,7 @@ Revisions:
 	- 20130404@Jim: set default @ShowSB=0
 	- 20130514@Jim: Restrict permission of Licensee Users by currency
 	- 20140620@Florent: add column betcount
+   - 20141111@Jim: changing currency for KeenOcean member  (#Redmine 25673)
 Param's Explanation: 
 	
 */
@@ -54,7 +55,7 @@ WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 DECLARE @TempAg AS TABLE ( CustId INT )
 INSERT  INTO @TempAg ( CustId)
-SELECT  CustID  
+SELECT  DISTINCT CustID  
                 FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
 						INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID 	
                 WHERE  [Description] = COALESCE(@LicenseeType,  

@@ -24,6 +24,7 @@ Revisions:
 	- 20121004@Jim: replace @currencyname input param by @currencyID
 	-20121115@Henry: Only Sportsbook needs to exclude BA
 	-20130426@Scott : Add more parameter @showCS,@showBG
+	-20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 Param's Explanation: 
 	
 */
@@ -42,13 +43,14 @@ DECLARE @Today SMALLDATETIME
 SELECT @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
 
 DECLARE @TempAg AS TABLE ( CustId INT )
+
 INSERT  INTO @TempAg ( CustId)
-SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust WITH ( NOLOCK )  
-                WHERE   LicenseeID = @LicenseeID  
-                        AND  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID))
-                        AND [Description] = COALESCE(@LicenseeType,  
-                                                     [Description]) 
+SELECT  DISTINCT CustID  
+FROM bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc 
+WHERE   LicenseeID = @LicenseeID  
+	AND  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID))
+	AND [Description] = COALESCE(@LicenseeType,  
+								 [Description]) 
 
 DECLARE @AgMatchWLDetails TABLE
 (
