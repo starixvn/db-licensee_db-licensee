@@ -121,7 +121,7 @@ FROM bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc
 INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID 
 WHERE 
 	(@CustID=0 OR (@CustID<>0 AND lc.CustiD=@CustID))
-	AND (@excludeTest=0 OR (@excludeTest=1 AND c.Currency <> 20))	
+	AND (@excludeTest=0 OR (@excludeTest=1 AND lc.Currency <> 20))	
 /*
 DECLARE @site VARCHAR(50)
 SELECT @site=LicenseeName FROM bodb_licensee.dbo.Licensees (NOLOCK) 

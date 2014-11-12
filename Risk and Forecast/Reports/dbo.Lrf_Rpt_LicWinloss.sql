@@ -257,7 +257,7 @@ BEGIN
 		FROM 
 			dbo.bettrans b WITH ( NOLOCK)    
 			INNER JOIN @TempAg tma ON tma.CustID=b.recommend AND b.currency = tma.currency
-			INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON tma.custid=BA.srecommend and b.transid = BA.transid 	 
+			INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON tma.custid=BA.recommend and b.transid = BA.transid 	 
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @_ToDate AND  
 			b.statusID  IN (111, 112, 113) 
