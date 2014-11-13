@@ -78,6 +78,7 @@ Revisions:
 	- 20140717@Hannah: HotFix for Exporting excel file
 	- 20140718@Jim: fix bug 'wrong to get licensee winloss/comm for Horse Racing' (#19165)
 	- 20140718@Jim: fix bug 'Win loss and Licensee WL showed on web are incorrect when product is BA' (#19261)
+	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 Param's Explanation: 	
 */
 SET NOCOUNT ON
@@ -195,8 +196,8 @@ FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (
 WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 INSERT INTO #TempAg (custid)
-SELECT  CustID  
-FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+SELECT  DISTINCT lc.CustID  
+FROM    bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc  
 INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
 
 SELECT * INTO #TempExchange 

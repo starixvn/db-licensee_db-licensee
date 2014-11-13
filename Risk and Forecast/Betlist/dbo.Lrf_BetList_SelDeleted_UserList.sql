@@ -1,6 +1,6 @@
 ﻿USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_BetList_SelDeleted_UserList]    Script Date: 4/8/2014 4:41:58 PM ******/
+
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -24,6 +24,7 @@ AS
 		 - 20130809@Jim: offer Virtual Horse Racing
 		 - 20140403@Hannah: offer Keno
 		 - 20140408@Florent: add more condition for keno
+		 - 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	
 */
 SET NOCOUNT ON
@@ -34,11 +35,12 @@ WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 DECLARE @TempAg AS TABLE (custid INT)
 INSERT INTO @TempAg (custid)
-    SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust lc  WITH ( NOLOCK )  
-						INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
-                WHERE    [Description] = COALESCE(@LicenseeType,  
-                                                     [Description]) 
+SELECT  CustID  
+FROM    bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc
+		INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
+WHERE    [Description] = COALESCE(@LicenseeType,  
+									 [Description]) 
+									 
 DROP TABLE #Currency
 DECLARE @bc TABLE (custid INT, betcount INT)
 INSERT INTO @bc (custid, betcount)

@@ -22,6 +22,7 @@ AS
          -- 20130124@Daniel: Change link server alias		 
 		 -- 20130403@Jim: support base currency USD
 		 -- 20130618@Jim: Restrict permission of Licensee Users by currency	
+		 -- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	Param's Explanation:
 		
 */
@@ -44,18 +45,22 @@ BEGIN
 		AND SystemID=1
 		AND isActive=1
 		AND (@CurrencyID =0 OR (CurrencyID=@CurrencyID ))
+	
+	DECLARE @Temp   AS TABLE (LicenseeId INT,CustId INT,Currency INT,Description VARCHAR(100) )	
 	DECLARE @TempAg AS TABLE ( CustId INT )
+	DECLARE @sql VARCHAR(500)
+	SELECT  @sql =  'SELECT LicenseeId,CustID,Currency,Description FROM  OPENQUERY(DBLIC, ''SELECT * FROM bodb_licensee.dbo.f_SelLicenseeCust('+CAST(@LicenseeID AS VARCHAR(10))+')'')'
+	
+	INSERT INTO @Temp  (LicenseeId  ,CustId  ,Currency  ,Description )
+	EXEC (@sql)
+	
 	INSERT  INTO @TempAg(CustId)
-	SELECT    CustId  
-      FROM      custInfo WITH ( NOLOCK )  
-      WHERE     CustID IN (  
-                SELECT  CustID  
-                FROM    DBLIC.bodb_Licensee.dbo.LicenseeCust lc  WITH ( NOLOCK )  
-						INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
-                WHERE   (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID))
-                         AND [Description] = COALESCE(@LicenseeType,  
-                                                     [Description]) )  
-                AND RoleId = 2  
+	SELECT  DISTINCT CustID  
+	FROM     @Temp lc
+			INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
+	WHERE   (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID))
+			 AND [Description] = COALESCE(@LicenseeType,  
+										 [Description])  
 ---------------------------
 DROP TABLE #Currency
 ---------------------------

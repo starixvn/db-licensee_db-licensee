@@ -24,6 +24,7 @@ Revisions:
 	  - 20120727@Jim: add playercomm value 
 	  - 20121004@Jim: replace @currencyname input param by @currencyID
 	  - 20130618@Jim: Restrict permission of Licensee Users by currency	
+	  - 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 */  
    	SELECT  currencyID,LicenseeID into #currency
 	FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
@@ -31,11 +32,11 @@ Revisions:
 	
     DECLARE @TempAg AS TABLE ( CustId INT )
     INSERT  INTO @TempAg( CustId)
-    SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
-						INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
-                WHERE   [Description] = COALESCE(@LicenseeType,  
-                                                     [Description])  
+    SELECT  lc.CustID  
+	FROM    bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc  
+			INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
+	WHERE   [Description] = COALESCE(@LicenseeType,  
+										 [Description])  
     DROP TABLE #Currency                
   
 	CREATE TABLE #Data 
