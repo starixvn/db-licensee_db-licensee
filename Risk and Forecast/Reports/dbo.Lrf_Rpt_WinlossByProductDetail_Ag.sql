@@ -50,6 +50,7 @@ AS
 	- 20140304@Florent: offer Keno
 	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 	- 20140915@Florent: hotfix duplicated VS bettype
+	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	Param's Explanation:  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
 	  + @IsOld: 0 - query in table rptLicWinloss, 1 - query in table rptLicWinloss_old. 
@@ -80,7 +81,7 @@ CREATE TABLE #SAgWinLoss(
 )  
 
 
-DECLARE @tempAg	TABLE( custID INT PRIMARY KEY,currency INT)   
+DECLARE @tempAg	TABLE( custID INT ,currency INT)   
 DECLARE @VNDCurrencyName VARCHAR(20)
 DECLARE @bettype AS TABLE (bettype INT PRIMARY KEY)
 DECLARE @sporttype TABLE(sporttype INT)
@@ -93,11 +94,11 @@ WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 INSERT INTO @tempAg (custID,currency) 
 SELECT custID,currency 
-	FROM bodb_Licensee.dbo.LicenseeCust lc (NOLOCK) 
+	FROM bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc
 	INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID	
 WHERE 
 	 (@excludeTest=0 OR (@excludeTest=1 AND Currency <> 20))
-	
+/*	
 DECLARE @site VARCHAR(50)
 SELECT @site=LicenseeName FROM bodb_licensee.dbo.Licensees (NOLOCK) 
 WHERE LicenseeID=@LicenseeID
@@ -108,8 +109,9 @@ SELECT CustID,currency
 FROM Dep_CustSuper dc WITH (NOLOCK)  
 	INNER JOIN #Currency c ON dc.Currency=c.CurrencyID
 WHERE  site = @site	
+*/
 ------------------------------------
-DROP TABLE #Currency 
+DROP TABLE #Currency   
 ------------------------------------
 IF @ShowSB = 1  
 BEGIN  
@@ -198,7 +200,7 @@ BEGIN
 		SELECT   
 			b.winlostdate,  
 			b.recommend,
-			s.currency,
+			tma.currency,
 			'BA' AS ProductCode,
 			SUM( stake
 				*
@@ -221,14 +223,13 @@ BEGIN
 			   BetCount	
 		FROM 
 			dbo.bettrans b WITH ( NOLOCK,INDEX=IX_srecommend) 
-			INNER JOIN @TempAg tma ON tma.CustID=b.recommend 
-			INNER JOIN @Super s ON b.srecommend = s.custid
-			INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON s.custid=BA.srecommend and b.transid = BA.transid 	 	
+			INNER JOIN @TempAg tma ON tma.CustID=b.recommend AND b.Currency = tma.Currency 
+			INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON tma.custid = BA.recommend and b.transid = BA.transid 	 	
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
 			b.statusID IN (111, 112, 113) 
 		GROUP BY   
-			b.winlostdate,b.recommend,s.currency, b.statusID
+			b.winlostdate,b.recommend,tma.currency, b.statusID
 	END
 	
 	IF (@ShowSB=1)
@@ -237,7 +238,7 @@ BEGIN
 		SELECT   
 			b.winlostdate,  
 			b.recommend,
-			s.currency,
+			tma.currency,
 			'SB' AS ProductCode,
 			SUM(stake
 				*
@@ -260,8 +261,7 @@ BEGIN
 			   BetCount	
 		FROM 
 			dbo.bettrans b WITH ( NOLOCK,INDEX=IX_srecommend )  
-			INNER JOIN @Super s ON b.srecommend = s.custid
-			INNER JOIN @TempAg tma ON b.recommend = tma.custid
+			INNER JOIN @TempAg tma ON b.recommend = tma.custid AND b.Currency = tma.Currency
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
@@ -271,7 +271,7 @@ BEGIN
 			b.tpositiontaking<>0
 			
 		GROUP BY   
-			b.winlostdate,b.recommend, s.currency ,statusID
+			b.winlostdate,b.recommend, tma.currency ,statusID
 	END
 	
 	--SB + NG+LC+VS+CS+BG+ KN
@@ -290,7 +290,7 @@ BEGIN
 		SELECT   
 			b.winlostdate,  
 			b.recommend,
-			s.currency,
+			tma.currency,
 			CASE 
 				WHEN b.bettype BETWEEN 1101 AND 1199 THEN 'LC'
 				WHEN b.Bettype BETWEEN 81 AND 120 THEN 'NG' 
@@ -323,8 +323,7 @@ BEGIN
 			   BetCount	
 		FROM 
 			dbo.bettrans b WITH ( NOLOCK,INDEX=IX_srecommend )  
-			INNER JOIN @Super s ON b.srecommend = s.custid
-			INNER JOIN @TempAg tma ON b.recommend = tma.custid
+			INNER JOIN @TempAg tma ON b.recommend = tma.custid AND b.Currency = tma.Currency 
 			INNER JOIN @bettype bt ON b.bettype = bt.bettype
 			LEFT JOIN [match] m with(nolock) ON b.matchid = m.matchid AND b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype())
 			LEFT JOIN #tmpVS vs ON b.oddsid=vs.Orid AND b.bettype IN (1231,1232,1233,1237,1238,1220,1235,1236)	
@@ -332,7 +331,7 @@ BEGIN
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
 			b.statusID  IN (111, 112, 113)
 		GROUP BY   
-			b.winlostdate,b.recommend, s.currency ,
+			b.winlostdate,b.recommend, tma.currency ,
 			CASE 
 				WHEN b.bettype BETWEEN 1101 AND 1199 THEN 'LC'
 				WHEN b.Bettype BETWEEN 81 AND 120 THEN 'NG' 
@@ -355,7 +354,7 @@ BEGIN
 		SELECT   
 			b.winlostdate,  
 			b.recommend,
-			s.currency,
+			tma.currency,
 			'RB' AS ProductCode,
 			SUM(CASE WHEN b.bettype in (33, 43) AND liveawayscore = 0 THEN stake/2 ELSE stake END 
 				*
@@ -377,15 +376,14 @@ BEGIN
 			   BetCount	
 		FROM 
 			dbo.bettrans b WITH ( NOLOCK,INDEX=IX_srecommend )  
-			INNER JOIN @Super s ON b.srecommend = s.custid
-			INNER JOIN @TempAg tma ON b.recommend = tma.custid
+			INNER JOIN @TempAg tma ON b.recommend = tma.custid AND b.Currency = tma.Currency 
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
 			(bettype BETWEEN 31 AND 33) AND 
 			b.statusID  IN (111, 112, 113)
 			
 		GROUP BY   
-			b.winlostdate,b.recommend,s.currency,statusID	
+			b.winlostdate,b.recommend,tma.currency,statusID	
 	END
 	
 	
@@ -427,9 +425,9 @@ BEGIN
 				ELSE 1 END
 		FROM 
 			bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
-			INNER JOIN @TempAg ag ON ag.custid = b.recommend
 		WHERE  
-			b.Winlostdate BETWEEN @FDate AND @TempToDate  
+			b.recommend IN (SELECT DISTINCT CustId FROM @TempAg) 
+			AND b.Winlostdate BETWEEN @FDate AND @TempToDate  
 			AND b.roleid = 2   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 1
@@ -474,9 +472,9 @@ BEGIN
 		FROM 
 			bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
 			INNER JOIN @sporttype t ON b.sporttype = t.sporttype
-			INNER JOIN @TempAg ag ON ag.custid = b.recommend
 		WHERE  
-			b.Winlostdate BETWEEN @FDate AND @TempToDate  
+			b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
+			AND b.Winlostdate BETWEEN @FDate AND @TempToDate  
 			AND b.roleid = 2
 			AND b.sporttype<>180
 			AND b.statusID <> 101 --exclude REJECT bets
@@ -559,7 +557,7 @@ BEGIN
 				ELSE 1 END
 			ELSE 1 END
 		FROM  @tblVS  b
-		INNER JOIN @TempAg ag ON ag.CustID = b.recommend
+		INNER JOIN @TempAg ag ON ag.CustID = b.recommend AND b.Currency  = ag.Currency 
 		GROUP BY  
 			b.rptdate,
 			b.status,  
@@ -605,9 +603,9 @@ BEGIN
 				ELSE 1 END
 		FROM 
 			bodb_Licensee.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
-			INNER JOIN @TempAg ag ON ag.custid = b.recommend
 		WHERE  
-			b.Winlostdate BETWEEN @FDate AND @TempToDate  
+			b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
+			AND b.Winlostdate BETWEEN @FDate AND @TempToDate  
 			AND b.roleid = 2  
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 1
@@ -652,10 +650,10 @@ BEGIN
 				ELSE 1 END
 		FROM 
 			bodb_Licensee.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
-			INNER JOIN @TempAg ag ON ag.custid = b.recommend
 			INNER JOIN @sporttype t ON b.sporttype = t.sporttype
 		WHERE  
-			b.Winlostdate BETWEEN @FDate AND @TempToDate  
+			b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
+			AND b.Winlostdate BETWEEN @FDate AND @TempToDate  
 			AND b.roleid = 2  
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 0

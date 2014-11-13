@@ -4,7 +4,7 @@ GO
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
-GO --- not yet
+GO  
 ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProduct]  
  @LicenseeID	INT,
  @UserID		INT,
