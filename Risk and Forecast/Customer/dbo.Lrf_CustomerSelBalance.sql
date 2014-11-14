@@ -49,6 +49,7 @@ Revisions:
 	- 20140509@Florent: Fix bug get wrong currency rate
 	- 20140530@Francis: Enhance performance
 	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
+	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 */
 SET NOCOUNT ON
 
@@ -171,23 +172,21 @@ DECLARE @LicenseeWL as table
 
 
 DECLARE @Today SMALLDATETIME, @Yesterday SMALLDATETIME
-DECLARE @LicenseeName VARCHAR(50)
 DECLARE @Exchange TABLE(ExchangeDate SMALLDATETIME, ExchangeId INT, USD FLOAT, EUR FLOAT,MYR FLOAT,Code VARCHAR(10), PRIMARY KEY(ExchangeDate,ExchangeId))
 
 
 
 SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
 SET @Yesterday = CONVERT(VARCHAR(10), DATEADD(DAY,-1,@Today), 120) 
-SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WHERE LicenseeID = @LicenseeID
 
 SELECT  currencyID,LicenseeID into #currency
 FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
 WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
-DECLARE @TempAg AS TABLE (custid INT primary key,Currency int)
+DECLARE @TempAg AS TABLE (custid INT ,Currency int)
 INSERT INTO @TempAg (custid,currency)
 SELECT CustID ,lc.Currency
-		FROM bodb_Licensee.dbo.LicenseeCust lc(NOLOCK)
+		FROM bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc
 		INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID 
 		WHERE [Description] = COALESCE(@LicenseeType,[Description])
 
@@ -208,9 +207,9 @@ SELECT
 	,@TotalMemberSuspended = ISNULL(SUM(CASE WHEN ISNULL(reject,0) = 1 AND closed = 0 THEN 1 ELSE 0 END), 0)
 FROM CustInfo WITH (NOLOCK)
 WHERE 
-	Recommend IN (SELECT CustID FROM @TempAg)
+	Recommend IN (SELECT DISTINCT CustID FROM @TempAg)
 AND RoleID=1
-
+/*
 DECLARE @Super AS TABLE (custid int primary key, currency int)
 
 INSERT INTO @Super (Custid,currency)
@@ -219,35 +218,34 @@ FROM Dep_Custsuper dc(NOLOCK)
 	INNER JOIN #Currency c ON dc.Currency=c.CurrencyID
 WHERE
 dc.site = @LicenseeName 
+*/
 -----------------------
 DROP TABLE #Currency
 -----------------------
 
 --outstanding then get today rate
 INSERT INTO @SumOutstanding (currency,outstanding)
-    SELECT s.currency,ISNULL(SUM(b.actual_stake),0)
+    SELECT a.currency,ISNULL(SUM(b.actual_stake),0)
     FROM 
-	    dbo.bettrans b WITH(NOLOCK,INDEX=IX_srecommend) 
-        INNER JOIN @Super s ON b.srecommend = s.custid
-        INNER JOIN @TempAg a ON b.recommend = a.custid
+	    dbo.bettrans b WITH(NOLOCK) 
+        INNER JOIN @TempAg a ON b.recommend = a.custid AND b.currency = a.currency
     WHERE 
 	    --b.bettype <= 1299 
 		b.bettype <= 1399 
 	    AND b.statusid IN (0,1)
-    GROUP BY s.currency
+    GROUP BY a.currency
 
 --Keno sport
 INSERT INTO @SumOutstanding (currency,outstanding)
-    SELECT s.currency,ISNULL(SUM(b.actual_stake),0)
+    SELECT a.currency,ISNULL(SUM(b.actual_stake),0)
     FROM 
 	    bodb02.dbo.Translog b WITH(NOLOCK) 
-        INNER JOIN @Super s ON b.srecommend = s.custid
-        INNER JOIN @TempAg a ON b.recommend = a.custid
+        INNER JOIN @TempAg a ON b.recommend = a.custid AND b.currency = a.currency
     WHERE 
 	    --b.productid =202--Keno 
 	    --AND 
 		b.statusid = 0 -- running
-    GROUP BY s.currency
+    GROUP BY a.currency
 	
 SELECT 
 	@MemberOutstanding=ISNULL(SUM(outstanding),0),
@@ -266,6 +264,7 @@ CREATE TABLE #Temp_Bettrans
 		     ( srecommend int
 			   ,winlostdate smalldatetime
 			   ,bettype smallint
+			   ,currency int
 			   ,statusID tinyint
 			   ,recommend int
 			   ,winlost money
@@ -279,6 +278,7 @@ CREATE TABLE #Temp_Bettrans
 INSERT INTO #Temp_Bettrans (srecommend
 							,winlostdate
 							,bettype
+							,currency 
 							,statusID
 							,recommend
 							,winlost
@@ -291,6 +291,7 @@ INSERT INTO #Temp_Bettrans (srecommend
 SELECT srecommend
 	  ,winlostdate
 	  ,bettype
+	  ,currency
 	  ,statusID
 	  ,recommend
 	  ,winlost
@@ -299,9 +300,9 @@ SELECT srecommend
 	  ,playercomm
 	  ,awinlost
 	  ,actual_stake
-FROM dbo.bettrans b WITH(NOLOCK,INDEX=IX_srecommend) 
+FROM dbo.bettrans b WITH(NOLOCK) 
 WHERE 
-	srecommend IN (SELECT CustID FROM @Super)
+	recommend IN (SELECT DISTINCT  CustID FROM @TempAg)
 	AND b.winlostdate BETWEEN @MoveBetsDay AND @Today 
 	AND b.bettype <= 1599 
 	AND b.statusID IN (111,112,113)	
@@ -336,7 +337,7 @@ SELECT
 	ISNULL(SUM (  playercomm ),0) AS PlayerComm
 	
 FROM #Temp_Bettrans b 
-	INNER JOIN @TempAg a ON b.recommend = a.custid
+	INNER JOIN @TempAg a ON b.recommend = a.custid AND b.currency = a.currency
 GROUP BY b.winlostdate,a.currency
 
 
