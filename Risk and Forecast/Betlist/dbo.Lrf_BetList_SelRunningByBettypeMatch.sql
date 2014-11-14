@@ -45,6 +45,7 @@ Revisions:
    - 20130411@Jim: support base currency USD
    - 20130514@Jim:Restrict permission of Licensee Users by currency
    - 20140925@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
+   - 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
 */
 
 SET NOCOUNT ON
@@ -55,8 +56,8 @@ WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 DECLARE @TempAg AS TABLE (custid INT)
 INSERT INTO @TempAg (custid)
-SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )
+SELECT DISTINCT CustID  
+                FROM    bodb_Licensee.dbo.f_SelLicenseeCust(0) lc --WITH ( NOLOCK )
 				INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID		
                 WHERE   [Description] = COALESCE(@LicenseeType,  
                                                      [Description]) 
