@@ -26,6 +26,7 @@ Original:
 Revisions:    
 	- 20121004@Jim: replace @currencyname input param by @currencyID	
 	- 20130411@Jim: support base currency USD
+	- 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
     
 */
 
@@ -81,8 +82,8 @@ CREATE TABLE #Data (
 CREATE INDEX IX_Data on #Data (Winlostdate, Currency)
 
 INSERT INTO @TempAg (custid)
-SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust WITH ( NOLOCK )  
+SELECT DISTINCT CustID  
+                FROM    bodb_Licensee.dbo.f_SelLicenseeCust(0) --WITH ( NOLOCK )  
                 WHERE   LicenseeID = @LicenseeID  
                         AND  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID))
                         AND [Description] = COALESCE(@LicenseeType,  

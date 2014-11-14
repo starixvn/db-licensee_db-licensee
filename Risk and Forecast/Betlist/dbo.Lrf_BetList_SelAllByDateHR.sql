@@ -38,6 +38,7 @@ Revisions:
    - 20120724@Jim: add player commision value 	
    - 20121004@Jim: replace @currencyname input param by @currencyID
    - 20130514@Jim: Restrict permission of Licensee Users by currency
+   - 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
 */
  
 SET NOCOUNT ON  
@@ -48,8 +49,8 @@ WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 DECLARE @TempAg AS TABLE ( CustId INT )
     INSERT  INTO @TempAg( CustId)
-    SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+    SELECT DISTINCT CustID  
+                FROM    bodb_Licensee.dbo.f_SelLicenseeCust(0) lc --WITH ( NOLOCK )  
 						INNER JOIN #Currency c ON lc.licenseeID=c.licenseeID AND lc.Currency=c.CurrencyID
                 WHERE   [Description] = COALESCE(@LicenseeType,  
                                                      [Description]) 

@@ -29,6 +29,7 @@ Original: [Lrf_BetList_SelRunningByBettypeMatch]
 Revisions:    
 	-20140522@Jim: clone from Lrf_BetList_SelRunningByBettypeMatch to support muilti bettype.
 	-20140925@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
+	- 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
 */
 
 SET NOCOUNT ON
@@ -48,7 +49,7 @@ FROM strSplit(@Bettype,',')
 DECLARE @TempAg AS TABLE (custid INT)
 INSERT INTO @TempAg (custid)
 SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )
+                FROM    bodb_Licensee.dbo.f_SelLicenseeCust(0) lc --WITH ( NOLOCK )
 				INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID		
                 WHERE   [Description] = COALESCE(@LicenseeType,  
                                                      [Description]) 
@@ -258,3 +259,10 @@ END
 DROP TABLE #Currency
 DROP TABLE #Data
 ------------------------
+
+
+
+GO
+GRANT EXECUTE ON [dbo].[Lrf_BetList_SelRunningByMultipleBettypeMatch] TO [bodbLicenseeNet]
+GO
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelRunningByMultipleBettypeMatch] TO [vnteam]

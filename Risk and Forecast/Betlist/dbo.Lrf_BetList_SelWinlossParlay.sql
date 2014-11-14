@@ -51,6 +51,7 @@ Revisions:
    - 20120726@Jim: add playercomm value 
    - 20121004@Jim: replace @currencyname input param by @currencyID
    - 20130514@Jim:Restrict permission of Licensee Users by currency
+   - 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
 Param's Explanation: 
 	
 Example	
@@ -98,8 +99,8 @@ WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 CREATE  TABLE #TempAg  (custid INT)
 INSERT INTO #TempAg (custid)
-SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+SELECT  DISTINCT CustID  
+                FROM    bodb_Licensee.dbo.f_SelLicenseeCust(0) lc --WITH ( NOLOCK )  
 				INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
                 WHERE  [Description] = COALESCE(@LicenseeType,  
                                                      [Description])
@@ -407,6 +408,6 @@ DROP TABLE #TempExchange
 
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinlossParlay] TO [bodbLicenseeNet]
+GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinlossParlayt] TO [bodbLicenseeNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelWinlossParlay] TO [vnteam]

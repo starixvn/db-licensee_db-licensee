@@ -26,6 +26,7 @@ Revisions:
 		-20130404@Jim: set default @ShowBA=0
 		-20130514@Jim: Restrict permission of Licensee Users by currency
 		-20130625@Jim: support to view currency UUS
+		-20141111@Winnie: Change from LicenseeCust to f_SelLicenseeCust
 */
 
 SET NOCOUNT ON
@@ -37,8 +38,8 @@ WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 DECLARE @TempAg AS TABLE (custid INT)
 
 INSERT  INTO @TempAg ( CustId)
-SELECT  lc.CustID  
-FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+SELECT  DISTINCT lc.CustID  
+FROM    bodb_Licensee.dbo.f_SelLicenseeCust(0) lc --WITH ( NOLOCK )  
 		INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID 
 -- WHERE   lc.Currency <> 20
 		

@@ -25,6 +25,7 @@ Original:
 Revisions:   
 	- 20140520@Hannah: Sort betlist    
 	- 20140522@Hannah: fix bug Sort betlist
+	- 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
 */
 
 SET NOCOUNT ON  
@@ -94,8 +95,8 @@ FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (
 WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 INSERT  INTO #TempAg ( CustId)
-SELECT  lc.CustID  
-FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+SELECT  DISTINCT lc.CustID  
+FROM    bodb_Licensee.dbo.f_SelLicenseeCust(0) lc --WITH ( NOLOCK )  
 		INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
 --------------------------------------------------------		
 DROP TABLE #Currency 
