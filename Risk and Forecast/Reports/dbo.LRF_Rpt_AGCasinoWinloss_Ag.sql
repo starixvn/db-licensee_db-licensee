@@ -30,7 +30,7 @@ AS
     Task : AG Win Loss report 
     DB: DBACC.bodb02  
     Revisions:  
-		
+		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	Param's Explanation:  
 	  + @excludeTest: remove currency UUS
 */  
@@ -49,7 +49,6 @@ BEGIN
 						  ,LicenseeID INT
 						  )
 	CREATE TABLE #tmpAg (CustId INT
-						,Currency INT
 						)
 		
 	DECLARE @VNDCurrencyName VARCHAR(20)
@@ -66,10 +65,16 @@ BEGIN
 								)'
 	INSERT INTO #Currency (CurrencyID,LicenseeID)						
 	EXEC (@sql)
-
-	INSERT INTO #tmpAg (CustID,Currency)	
-	SELECT CustID,Currency
-	FROM DBLIC.bodb_Licensee.dbo.LicenseeCust lc WITH (NOLOCK)
+	
+	DECLARE @Temp AS TABLE ( LicenseeId INT,CustId INT,Currency INT )
+	DECLARE @sql1 VARCHAR(500)
+	SELECT  @sql1 =  'SELECT LicenseeId,CustID,Currency   FROM  OPENQUERY(DBLIC, ''SELECT LicenseeId,CustID,Currency  FROM bodb_licensee.dbo.f_SelLicenseeCust('+CAST(@LicenseeID AS VARCHAR(10))+')'')'
+	INSERT INTO @Temp (LicenseeId ,CustId ,Currency)
+	EXEC (@sql1)
+	
+	INSERT INTO #tmpAg (CustID)	
+	SELECT DISTINCT lc.CustID
+	FROM @Temp lc 
 		INNER JOIN #Currency c ON lc.LicenseeID = c.LicenseeID AND lc.Currency = c.CurrencyID 
 	WHERE  (@excludeTest=0 OR (@excludeTest=1 AND Currency <> 20))	
 	
@@ -140,3 +145,7 @@ BEGIN
 	DROP TABLE #TempExchange 
 	
 END
+GO
+GRANT EXECUTE ON [dbo].[LRF_Rpt_AGCasinoWinloss_Ag] TO [bodbLicenseeNet]  
+GO
+GRANT VIEW DEFINITION ON [dbo].[LRF_Rpt_AGCasinoWinloss_Ag] TO [vnteam] 

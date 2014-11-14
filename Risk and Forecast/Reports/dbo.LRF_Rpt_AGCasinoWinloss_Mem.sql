@@ -32,7 +32,7 @@ AS
     Task : AG Win Loss report 
     DB: DBACC.bodb02  
     Revisions:  
-			- 20140923@Jim: use table customer instead of licenseecustinfo
+ 
 	Param's Explanation:  
 	  + @excludeTest: remove currency UUS
 */  

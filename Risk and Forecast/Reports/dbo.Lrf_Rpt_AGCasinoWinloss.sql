@@ -16,10 +16,10 @@ AS
 
 /*  Created: Jim
 	Date: 2014-09-18
-    Task : PAG Win Loss report 
+    Task : AG Win Loss report 
     DB: DBACC.bodb02  
     Revisions:  
-		
+		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	Param's Explanation:  
 	  + @TableType:  0-all
 					 1-normal ticket
@@ -54,7 +54,7 @@ BEGIN
 						  ,LicenseeID INT
 						  )
 	CREATE TABLE #tmpAg (CustId INT
-						,Currency INT
+					 
 						)
 		
 	DECLARE @IsVIPGame TINYINT
@@ -79,10 +79,16 @@ BEGIN
 								)'
 	INSERT INTO #Currency (CurrencyID,LicenseeID)						
 	EXEC (@sql)
-
-	INSERT INTO #tmpAg (CustID,Currency)	
-	SELECT CustID,Currency
-	FROM DBLIC.bodb_Licensee.dbo.LicenseeCust lc WITH (NOLOCK)
+	
+	DECLARE @Temp AS TABLE ( LicenseeId INT,CustId INT,Currency INT )
+	DECLARE @sql1 VARCHAR(500)
+	SELECT  @sql1 =  'SELECT LicenseeId,CustID,Currency   FROM  OPENQUERY(DBLIC, ''SELECT LicenseeId,CustID,Currency  FROM bodb_licensee.dbo.f_SelLicenseeCust('+CAST(@LicenseeID AS VARCHAR(10))+')'')'
+	INSERT INTO @Temp (LicenseeId ,CustId ,Currency)
+	EXEC (@sql1)
+	
+	INSERT INTO #tmpAg (CustID)	
+	SELECT DISTINCT lc.CustID 
+	FROM @Temp lc  
 		INNER JOIN #Currency c ON lc.LicenseeID = c.LicenseeID AND lc.Currency = c.CurrencyID 
 	WHERE  (@excludeTest=0 OR (@excludeTest=1 AND Currency <> 20))	
 	
@@ -150,3 +156,7 @@ BEGIN
 	DROP TABLE #TempExchange 
 	
 END
+GO
+GRANT EXECUTE ON [dbo].[Lrf_Rpt_AGCasinoWinloss] TO [bodbLicenseeNet]  
+GO
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_AGCasinoWinloss] TO [vnteam] 
