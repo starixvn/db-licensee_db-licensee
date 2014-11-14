@@ -46,7 +46,7 @@ AS
 	- 20130305@Jim: change input param @winlostdate by @date 
 	- 20130402@Jim: support base currency by USD
 	- 20130514@Jim:Restrict permission of Licensee Users by currency
-
+	- 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
 	Param's Explanation:
 		
 */
@@ -75,8 +75,8 @@ BEGIN
 	SELECT    CustId  
       FROM      custInfo WITH ( NOLOCK )  
       WHERE     CustID IN (  
-                SELECT  CustID  
-                FROM    DBLIC.bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+                SELECT  DISTINCT CustID   
+				FROM  OPENQUERY(DBLIC, 'SELECT * FROM bodb_licensee.dbo.f_SelLicenseeCust(0)') lc
 						INNER JOIN  #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID 
                 WHERE   [Description] = COALESCE(@LicenseeType,  
                                                      [Description]) )  

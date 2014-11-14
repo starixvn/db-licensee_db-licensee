@@ -38,7 +38,7 @@ Revisions:
 	- 20140207@Florent: add filter ShowBA and ShowSB
 	- 20140214@Florent: add filter by match
     - 20140630@Hannah: offer BetRadar and Sporting Solution
-
+	- 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
 Param's Explanation: 
 	- @CustID : Customer Number
 	- @Odds : decimals odds, default >=0
@@ -78,8 +78,8 @@ DECLARE @TempToDate SMALLDATETIME
 DECLARE @TempAg AS TABLE (custid INT)
 
 INSERT INTO @TempAg (custid)
-SELECT CustID
-FROM bodb_Licensee.dbo.LicenseeCust lc WITH (NOLOCK)
+SELECT DISTINCT CustID
+FROM bodb_Licensee.dbo.f_SelLicenseeCust(0) lc --WITH (NOLOCK)
 INNER JOIN #currency c ON lc.LicenseeID = c.LicenseeID
 	AND lc.Currency = c.CurrencyID
 

@@ -39,7 +39,7 @@ Revisions:
    - 20140602@Hannah: Separate Live/ Non - Live data in Live Report
    - 20140630@Hannah: offer BetRadar and Sporting Solution 
    - 20140925@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
-
+   - 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
 Param's Explanation: 
 	@Liveindicator : indicate that whether the report will get live data or not
 		+ 0: Non - Live data only
@@ -71,8 +71,8 @@ WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 DECLARE @TempAg AS TABLE (custid INT)
 INSERT  INTO @TempAg ( CustId)
-SELECT  CustID  
-FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+SELECT DISTINCT CustID  
+FROM    bodb_Licensee.dbo.f_SelLicenseeCust(0) lc --WITH ( NOLOCK )  
 		INNER JOIN #currency c ON lc.Currency=c.CurrencyID AND lc.LicenseeID=c.LicenseeID
 --WHERE   lc.Currency <> 20
 ---------------------
