@@ -5,9 +5,9 @@ AS
 /*  
  * Created by :20120521@Jim 
  * Task  : OANDA Exchange Rate Report
- * DB   : DB052.bodb_Licensee  
+ * DB   : DBLIC.bodb_Licensee  
  * Revisions :  
- *  
+ *  - 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 
  * Param's Explanation:    
 
@@ -29,7 +29,7 @@ SELECT
 FROM bodb02.dbo.ExchangeDailyOanda edo (NOLOCK)
 WHERE 
 	edo.ExchangeDate>=@fromdate AND edo.ExchangeDate<=@todate 
-	AND edo.exchangeid in (select distinct currency from Licenseecust with (NOLOCK))
+	AND edo.exchangeid in (select distinct currency   FROM  dbo.f_SelLicenseeCust(0) lc )
 	AND exchangeid <> 20
 ORDER BY edo.ExchangeDate,edo.Code ASC 
 

@@ -36,6 +36,7 @@ Revisions:
    -20131007@Jim: offer Virtual Tennis
    -20140217@Hannah: add condition for @LicenseeType
    -20140305@Florent: support Keno
+   -20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 
 Param's Explanation:  
  + @excludeTest: remove currency UUS  
@@ -89,14 +90,20 @@ WHERE  usrID=@userID
 AND LicenseeID=@LicenseeID 
 AND SystemID=1 -- System is default=1 (LRF)
 AND (@CurrencyID=0 OR (CurrencyID=@CurrencyID))
-  
-INSERT INTO @tmpAg  
-SELECT CustID   
-FROM DBLIC.bodb_Licensee.dbo.LicenseeCust lc WITH( NOLOCK )  
+
+DECLARE @Temp AS TABLE ( CustId INT )
+DECLARE @sql VARCHAR(500)
+SELECT  @sql =  'SELECT LicenseeId,CustID,Currency,Description  FROM  OPENQUERY(DBLIC, ''SELECT LicenseeId,CustID,Currency,Description FROM bodb_licensee.dbo.f_SelLicenseeCust('+CAST(@LicenseeID AS VARCHAR(10))+')'')'
+INSERT INTO @Temp (CustId)	
+EXEC (@sql)	
+
+INSERT INTO @tmpAg (CustID) 
+SELECT DISTINCT CustID   
+FROM @Temp lc
 	INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
 WHERE  [Description] = COALESCE(@LicenseeType,[Description])   
- AND (@CurrencyID=0 OR (@CurrencyID<>0 AND Currency = @CurrencyID))  
- AND (@excludeTest = 0 OR (@excludeTest=1 AND Currency<>20))  
+	 AND (@CurrencyID=0 OR (@CurrencyID<>0 AND Currency = @CurrencyID))  
+	 AND (@excludeTest = 0 OR (@excludeTest=1 AND Currency<>20))  
  
  DROP TABLE #Currency 
   

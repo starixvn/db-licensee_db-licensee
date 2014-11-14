@@ -46,6 +46,7 @@ AS
 	- 20140120@Florent: using index Non clusered IX_recommend for table rptCustomerturnover
 	- 20140212@Florent : Sorting DESC
 	- 20140716@Jim: fix bug Total row in excel file is incorrect (hotfix #19101)
+	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	Parameter's Explanation:
 		- @ReportBy:  1: daily, 2: monthly
 		- @FilterBy:  1: Win, 2: Loss, 3: Draw
@@ -116,16 +117,15 @@ SELECT  @PageIndex = @PageIndex - 1 ,
 		@RowStart = @PageSize * @PageIndex + 1 ,
 		@RowEnd = @RowStart + @PageSize - 1 
 
-SELECT lc.LicenseeID
-	  ,lc.CustID
-	  ,lc.Currency AS CurrencyID
+ 
+SELECT  DISTINCT lc.CustID
 INTO #recommend
-FROM DBLIC.bodb_licensee.dbo.LicenseeCust lc WITH (NOLOCK)
-	INNER JOIN DBLIC.bodb_licensee.dbo.CurrencyUser c WITH (NOLOCK) ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
+FROM bodb_licensee.dbo.f_SelLicenseeCust (@LicenseeID) lc  
+	INNER JOIN  bodb_licensee.dbo.CurrencyUser c WITH (NOLOCK) ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
 WHERE
 	lc.LicenseeID=@LicenseeID AND 
-	(Currency=@CurrencyID)-- OR (@CurrencyID=0))		
-	AND RoleID=2
+	(lc.Currency=@CurrencyID)-- OR (@CurrencyID=0))		
+	AND lc.RoleID=2
 	AND c.usrID=@userID 
 	AND c.SystemID=1 -- System is default=1 (LRF)	
 	AND c.isActive=1
@@ -225,7 +225,7 @@ ELSE
 				1 betcount
 			FROM bettrans b WITH (NOLOCK)
 			INNER JOIN #bettype bet  ON b.bettype=bet.typeID
-			INNER join #recommend re on b.recommend=re.CustID
+			INNER JOIN #recommend re on b.recommend=re.CustID
 			LEFT JOIN match m WITH (NOLOCK) ON b.matchid = m.matchid
 			LEFT JOIN outright o with(nolock) ON b.matchid = o.orid 
 			LEFT JOIN league l with(nolock) ON o.leagueid = l.leagueid
@@ -406,7 +406,7 @@ ELSE
 			,e.Code
 			INTO #exchange
 		FROM exchange e WITH (NOLOCK)
-		WHERE e.exchangeid IN (SELECT CurrencyId FROM #recommend)
+		WHERE e.exchangeid IN (SELECT CurrencyId FROM #Data)
 		
 		CREATE NONCLUSTERED INDEX IDX_Index_Data ON #Data(CustID,bettype,currency,Sporttype,Odds)
 		

@@ -5,11 +5,11 @@ AS
 /*
 Created: 20110315@Henry
 Task : Get all the currency by a licensee
-DB: DB052.bodb_Licensee
+DB: DBLIC.bodb_Licensee
 
 
 Revisions:
-    
+		 - 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 Param's Explanation:
 @LicenseeID = 0: SELECT all currency
 */
@@ -21,8 +21,8 @@ BEGIN
 		IF @LicenseeID=1--12BET 
 		BEGIN
 			SELECT 
-				distinct Currency, CurrencyName 
-			FROM LicenseeCust (nolock)
+				DISTINCT Currency, CurrencyName 
+			FROM    dbo.f_SelLicenseeCust(0)
 			WHERE 
 				LicenseeID = @LicenseeID
 				AND CurrencyName <> 'EUR_GR'
@@ -30,8 +30,8 @@ BEGIN
 		ELSE
 		BEGIN
 			SELECT 
-				distinct Currency, CurrencyName 
-			FROM LicenseeCust (nolock)
+				DISTINCT Currency, CurrencyName 
+			FROM    dbo.f_SelLicenseeCust(0)
 			WHERE 
 				LicenseeID = @LicenseeID
 		END
@@ -40,8 +40,8 @@ BEGIN
 	BEGIN
 	
 		SELECT 
-				distinct lc.Currency, lc.CurrencyName 
-			FROM LicenseeCust lc (nolock)
+				DISTINCT lc.Currency, lc.CurrencyName 
+			FROM    dbo.f_SelLicenseeCust(0) lc
 			INNER JOIN LicenseeUser lu (nolock)
 			ON lc.LicenseeID = lu.LicenseeID
 			WHERE 
