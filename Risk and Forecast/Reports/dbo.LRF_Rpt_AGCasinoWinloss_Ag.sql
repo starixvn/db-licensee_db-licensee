@@ -46,10 +46,11 @@ BEGIN
 							)
 						
 	CREATE TABLE #Currency(currencyID INT
-						  ,LicenseeID INT
 						  )
-	CREATE TABLE #tmpAg (CustId INT
-						)
+	CREATE TABLE #tmpCust (  Recommend INT
+							,CustId INT
+							,Currency INT	
+							)
 		
 	DECLARE @VNDCurrencyName VARCHAR(20)
 	DECLARE @sql NVARCHAR(1000)
@@ -58,25 +59,29 @@ BEGIN
 	FROM  dbo.Exchange WITH (NOLOCK) 
 	WHERE ExchangeId = 51
 
-	SET @sql = 'SELECT CurrencyID, LicenseeID
-					FROM OPENQUERY( DBLIC,''SELECT CurrencyID, LicenseeID
+	SET @sql = 'SELECT CurrencyID
+					FROM OPENQUERY( DBLIC,''SELECT CurrencyID
 											FROM bodb02.dbo.Lrf_f_GetCurrencybyUser(' + CAST(@LicenseeID AS VARCHAR) + ', '+ CAST(@UserID AS VARCHAR) + +', 1)
 							WHERE ('+ CAST(@Currency AS VARCHAR) +' = 0  OR ('+ CAST(@currency AS VARCHAR) +' <> 0 AND CurrencyID = '+ CAST(@currency AS VARCHAR) +'))''
 								)'
-	INSERT INTO #Currency (CurrencyID,LicenseeID)						
+	INSERT INTO #Currency (CurrencyID)						
 	EXEC (@sql)
 	
-	DECLARE @Temp AS TABLE ( LicenseeId INT,CustId INT,Currency INT )
+	DECLARE @Temp AS TABLE (CustId INT,Currency INT )
 	DECLARE @sql1 VARCHAR(500)
-	SELECT  @sql1 =  'SELECT LicenseeId,CustID,Currency   FROM  OPENQUERY(DBLIC, ''SELECT LicenseeId,CustID,Currency  FROM bodb_licensee.dbo.f_SelLicenseeCust('+CAST(@LicenseeID AS VARCHAR(10))+')'')'
-	INSERT INTO @Temp (LicenseeId ,CustId ,Currency)
+	SELECT  @sql1 =  'SELECT CustID,Currency   FROM  OPENQUERY(DBLIC, ''SELECT CustID,Currency  FROM bodb_licensee.dbo.f_SelLicenseeCust('+CAST(@LicenseeID AS VARCHAR(10))+')'')'
+	INSERT INTO @Temp (CustId ,Currency)
 	EXEC (@sql1)
 	
-	INSERT INTO #tmpAg (CustID)	
-	SELECT DISTINCT lc.CustID
-	FROM @Temp lc 
-		INNER JOIN #Currency c ON lc.LicenseeID = c.LicenseeID AND lc.Currency = c.CurrencyID 
-	WHERE  (@excludeTest=0 OR (@excludeTest=1 AND Currency <> 20))	
+	INSERT INTO #tmpCust (Recommend,CustID,Currency)	
+	SELECT   lc.CustId AS Recommend
+			 ,co.CustID
+			 ,lc.Currency
+	FROM 
+		dbo.CustInfo co WITH (NOLOCK)
+		INNER JOIN @Temp lc ON lc.CustId = co.Recommend
+		INNER JOIN #Currency c ON  lc.Currency = c.CurrencyID 
+	WHERE  (@excludeTest=0 OR (@excludeTest=1 AND lc.Currency <> 20))	
 	
 	INSERT INTO #tmpResult (CustId 
 							 ,Winlostdate
@@ -87,20 +92,19 @@ BEGIN
 							 ,LicenseeWinlost 
 							)
 
-	SELECT ag.CustID
+	SELECT ag.recommend AS CustID
 		   ,c.Winlostdate		
-		   ,co.Currency
+		   ,ag.Currency
 		   ,SUM(c.TurnOver) AS TurnOver
 		   ,SUM(c.BetCount) AS TotalTrans
 		   ,SUM(c.Winlost)  AS Winlost
 		   ,-SUM(c.Winlost) AS LicenseeWinlost
 	FROM  bodb_report.dbo.rptDepWinlost_AGCasino c  WITH (NOLOCK)
-		INNER JOIN dbo.Custinfo co WITH  (NOLOCK) ON c.CustID = co.CustID
-		INNER JOIN #tmpAg ag ON co.recommend = ag.CustID
+		  INNER JOIN #tmpCust ag ON c.CustID = ag.CustID AND c.Currency = ag.Currency
 	WHERE c.Winlostdate BETWEEN @FromDate AND @ToDate 
-	GROUP BY ag.CustID
+	GROUP BY ag.recommend
 			,c.Winlostdate
-		    ,co.Currency
+		    ,ag.Currency
 	
 	SELECT ExchangeDate
 		   ,ExchangeId
@@ -141,7 +145,7 @@ BEGIN
 	---------
 	DROP TABLE #tmpResult
 	DROP TABLE #Currency
-	DROP TABLE #tmpAg
+	DROP TABLE #tmpCust
 	DROP TABLE #TempExchange 
 	
 END

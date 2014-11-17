@@ -32,7 +32,7 @@ AS
     Task : AG Win Loss report 
     DB: DBACC.bodb02  
     Revisions:  
- 
+			- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	Param's Explanation:  
 	  + @excludeTest: remove currency UUS
 */  
@@ -51,6 +51,12 @@ BEGIN
 						  ,LicenseeID INT
 						  )
 	
+	CREATE TABLE #tmpCust (  Recommend INT
+							,CustId INT
+							,Currency INT	
+							)
+		
+		
 	DECLARE @VNDCurrencyName VARCHAR(20)
 	DECLARE @sql NVARCHAR(1000)
 	 
@@ -65,7 +71,23 @@ BEGIN
 								)'
 	INSERT INTO #Currency (CurrencyID,LicenseeID)						
 	EXEC (@sql)
-
+	
+	DECLARE @Temp AS TABLE (CustId INT,Currency INT )
+	DECLARE @sql1 VARCHAR(500)
+	SELECT  @sql1 =  'SELECT CustID,Currency   FROM  OPENQUERY(DBLIC, ''SELECT CustID,Currency  FROM bodb_licensee.dbo.f_SelLicenseeCust('+CAST(@LicenseeID AS VARCHAR(10))+')'')'
+	INSERT INTO @Temp (CustId ,Currency)
+	EXEC (@sql1)
+	
+	INSERT INTO #tmpCust (Recommend,CustID,Currency)	
+	SELECT   lc.CustId AS Recommend
+			 ,co.CustID
+			 ,lc.Currency
+	FROM 
+		dbo.CustInfo co WITH (NOLOCK)
+		INNER JOIN @Temp lc ON lc.CustId = co.Recommend
+		INNER JOIN #Currency c ON  lc.Currency = c.CurrencyID 
+	WHERE  (@excludeTest=0 OR (@excludeTest=1 AND lc.Currency <> 20))	
+	
 	INSERT INTO #tmpResult (CustId 
 							 ,Winlostdate
 							 ,Currency 	
@@ -77,19 +99,19 @@ BEGIN
 
 	SELECT c.CustID
 		   ,c.Winlostdate		
-		   ,co.Currency
+		   ,ag.Currency
 		   ,SUM(c.TurnOver) AS TurnOver
 		   ,SUM(c.BetCount) AS TotalTrans
 		   ,SUM(c.Winlost)  AS Winlost
 		   ,-SUM(c.Winlost) AS LicenseeWinlost
 	FROM  bodb_report.dbo.rptDepWinlost_AGCasino c  WITH (NOLOCK)
-		INNER JOIN dbo.Custinfo co WITH  (NOLOCK) ON c.CustID = co.CustID
+		INNER JOIN #tmpCust ag ON c.CustID = ag.CustID AND c.Currency = ag.Currency 	
 	WHERE c.Winlostdate BETWEEN @FromDate AND @ToDate 
-		  AND co.recommend =  @CustID
-		  AND (@excludeTest=0 OR (@excludeTest=1 AND Currency <> 20))		
+		  AND ag.recommend =  @CustID
+		  AND (@excludeTest=0 OR (@excludeTest=1 AND ag.Currency <> 20))		
 	GROUP BY c.CustID
 			,c.Winlostdate
-		    ,co.Currency
+		    ,ag.Currency
 	
 	SELECT ExchangeDate
 		   ,ExchangeId
@@ -131,8 +153,10 @@ BEGIN
 	ORDER BY c.Username
 	
 	---------
+	DROP TABLE #tmpCust
 	DROP TABLE #tmpResult
 	DROP TABLE #Currency
 	DROP TABLE #TempExchange 
+	
 	
 END
