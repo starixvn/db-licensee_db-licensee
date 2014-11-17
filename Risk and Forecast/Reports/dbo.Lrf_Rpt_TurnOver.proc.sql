@@ -38,6 +38,7 @@ Revisions:
    - 20130809@Jim: offer Virtual Horse Racing
    - 20131007@Jim: offer Virtual Tennis
    - 20140305@Florent: support Keno
+   - 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 Param's Explanation:
     + @excludeTest: remove currency UUS
     + @CurrencyID = 0: get all currency
@@ -45,10 +46,10 @@ Param's Explanation:
 */
 SET NOCOUNT ON
    
-DECLARE @tmpAg TABLE( custID INT PRIMARY KEY,currency int)
+DECLARE @tmpAg TABLE( custID INT ,currency int)
 DECLARE @fdate smalldatetime, @tdate smalldatetime, @tmpdate smalldatetime, @CustID INT
 DECLARE @sporttype AS TABLE(sporttype INT)
-
+ 
 SELECT @CustID = 0
     ,@username = LTRIM(RTRIM(ISNULL(@username,'')))
     ,@fdate = @fromdate
@@ -63,9 +64,15 @@ AND SystemID=1 -- System is default=1 (LRF)
 AND isActive=1
 AND (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
+DECLARE @Temp AS TABLE ( LicenseeId INT,CustId INT,Currency INT,Description VARCHAR(100) )
+DECLARE @sql1 VARCHAR(500)
+SELECT  @sql1 =  'SELECT LicenseeId,CustID,Currency,Description   FROM  OPENQUERY(DBLIC, ''SELECT LicenseeId,CustID,Currency,Description  FROM bodb_licensee.dbo.f_SelLicenseeCust('+CAST(@LicenseeID AS VARCHAR(10))+')'')'
+INSERT INTO @Temp (LicenseeId ,CustId ,Currency,Description)
+EXEC (@sql1)
+	
 INSERT INTO @tmpAg
 SELECT CustID,currency 
-FROM DBLIC.bodb_Licensee.dbo.LicenseeCust lc WITH( NOLOCK )
+FROM @Temp lc
     INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID 
 WHERE 
     [Description] = COALESCE(@LicenseeType,[Description]) 
@@ -334,7 +341,7 @@ BEGIN
                 ,SUM(isnull(p.drawTO,0)) as DrawGame
                 ,SUM(isnull(p.playercomm,0)) as PlayerComm
             FROM bodb_Report.dbo.rptdepwinlostbyproduct_SUM p WITH(NOLOCK)    
-                INNER JOIN @tmpAg c on p.custid = c.custid
+                INNER JOIN @tmpAg c on p.custid = c.custid AND p.Currency = c.Currency
             WHERE p.winlostdate BETWEEN @fdate and @tmpdate                    
                 AND p.sporttype in (SELECT sporttype FROM @sporttype)                    
             GROUP BY p.winlostdate,c.currency
