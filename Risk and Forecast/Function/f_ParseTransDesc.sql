@@ -57,4 +57,4 @@ BEGIN
 	RETURN
 END
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_f_GetCustId] TO [vnteam] AS [dbo]
+GRANT VIEW DEFINITION ON [dbo].[f_ParseTransDesc] TO [vnteam] AS [dbo]
