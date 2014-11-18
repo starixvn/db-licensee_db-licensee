@@ -26,8 +26,8 @@ RETURN
 	( SELECT    CustId
 		FROM      custInfo WITH ( NOLOCK )
 		WHERE     CustID IN (
-				SELECT	CustID 
-				FROM OPENQUERY(DBLIC, 'SELECT * FROM bodb_licensee.dbo.f_SelLicenseeCust(0)')
+				SELECT	DISTINCT CustID 
+				FROM	OPENQUERY(DBLIC, 'SELECT * FROM bodb_licensee.dbo.f_SelLicenseeCust(0)')
 				WHERE   LicenseeID = @LicenseeID
 						AND CurrencyName = COALESCE(@CurrencyName,
 													CurrencyName)
