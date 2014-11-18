@@ -1,4 +1,11 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerBalance]  
+﻿USE [bodb02]
+GO
+ 
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerBalance_xtest]  
 	@LicenseeID INT ,  
 	@LicenseeType VARCHAR(100) = NULL,
 	@UserID		INT,	
@@ -91,13 +98,13 @@ AND LicenseeID=@LicenseeID
 AND SystemID=1 -- System is default=1 (LRF)
 AND (@CurrencyID=0 OR (CurrencyID=@CurrencyID))
 
-DECLARE @Temp AS TABLE ( CustId INT )
+DECLARE @Temp AS TABLE ( LicenseeId INT,CustId INT,Currency INT, Description VARCHAR(200) )
 DECLARE @sql VARCHAR(500)
 SELECT  @sql =  'SELECT LicenseeId,CustID,Currency,Description  FROM  OPENQUERY(DBLIC, ''SELECT LicenseeId,CustID,Currency,Description FROM bodb_licensee.dbo.f_SelLicenseeCust('+CAST(@LicenseeID AS VARCHAR(10))+')'')'
-INSERT INTO @Temp (CustId)	
+INSERT INTO @Temp (LicenseeId  ,CustId ,Currency  , Description)	
 EXEC (@sql)	
 
-INSERT INTO @tmpAg (CustID) 
+INSERT INTO @tmpAg (CustId) 
 SELECT DISTINCT CustID   
 FROM @Temp lc
 	INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
@@ -491,6 +498,6 @@ END
   
 DROP TABLE #SumWinlost 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerBalance] TO [bodbLicenseeNet] AS [dbo]
+GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerBalance] TO [bodbLicenseeNet]  
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CustomerBalance] TO [vnteam] AS [dbo]
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CustomerBalance] TO [vnteam]  
