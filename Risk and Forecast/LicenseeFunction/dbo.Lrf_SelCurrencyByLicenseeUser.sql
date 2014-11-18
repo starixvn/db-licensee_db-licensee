@@ -13,10 +13,8 @@ AS
 Created: 20130509@Jim
 Task :  Restrict permission of Licensee Users by currency
 DB: DB052.bodb02
-
-
 Revisions:
-    
+- 20141118@winnie: Change from LicenseeCust table to f_SelLicenseeCust   
 Param's Explanation:
 */
 
@@ -30,7 +28,7 @@ BEGIN
 		SELECT 
 			distinct Currency,
 			CASE WHEN ISNULL(c.CurrencyID,0)=0 THEN 0 ELSE 1 END isActive
-		FROM bodb_Licensee.dbo.LicenseeCust lc (nolock)
+		FROM bodb_Licensee.dbo.f_SelLicenseeCust(0) lc --(nolock)
 		LEFT JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
 		WHERE 
 			(@LicenseeID = 0 OR lc.LicenseeID = @LicenseeID)
