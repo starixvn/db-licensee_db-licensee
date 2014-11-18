@@ -14,7 +14,7 @@ AS
 /*
 	Created by: [20110704@Henry]
 	Task: Create Licensee User thru Internal site
-	DB: DB052.bodb_Licensee
+	DB: DB052/bodb_Licensee
 	Param's Explanation:
 	@UserRole: value=Licensee/Admin
 	
@@ -25,6 +25,7 @@ AS
 	- 20120417@Minzy: Define New Category "Admin"
 	- 20130625@Jim: set default currency permission for new licensee user
 	- 20130725@Jim: restrict permission for DW function 
+	- 20141112@Victor: use f_SelLicenseeCust instead of licenseecust (#Redmine 25864)
 */
 
 SET NOCOUNT ON
@@ -50,9 +51,7 @@ BEGIN
 
 	INSERT INTO @Currency 
 	SELECT DISTINCT  Currency as CurrencyID
-	FROM dbo.LicenseeCust with (NOLOCK)
-	WHERE LicenseeID=@LicenseeID
-		
+	FROM dbo.f_SelLicenseeCust(@LicenseeID)		
 END
 
 

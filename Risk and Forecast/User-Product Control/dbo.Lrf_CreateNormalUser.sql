@@ -17,7 +17,7 @@ AS
 /*
 	Created by: [20110127@Henry]
 	Task: Create Licensee User
-	DB: DB052.bodb_Licensee
+	DB: DBLIC/bodb_Licensee
 	Param's Explanation:
 	
 	
@@ -25,6 +25,7 @@ AS
 	- 20111004@Henry: check only LRF pure users (isInternal=0)
 	- 20130405@Jim: support multiple language
 	- 20130625@Jim: set default currency permission for new licensee's user
+	- 20141118@Victor: use f_SelLicenseeCust instead of licenseecust (#Redmine 25864)
 */
 
 SET NOCOUNT ON
@@ -69,8 +70,7 @@ begin
 	
 	INSERT INTO @Currency 
 	SELECT DISTINCT  Currency as CurrencyID
-	FROM dbo.LicenseeCust with (NOLOCK)
-	WHERE LicenseeID=@LicenseeID
+	FROM dbo.f_SelLicenseeCust(@LicenseeID)
 	
 	INSERT INTO dbo.CurrencyUser (usrID,LicenseeID,CurrencyID,SystemID,isActive)
 	select @UserID,@LicenseeID,CurrencyID,1,1 -- systemID=1 is default from Lrf

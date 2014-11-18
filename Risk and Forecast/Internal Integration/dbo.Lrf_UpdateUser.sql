@@ -9,7 +9,7 @@ AS
 /*
 	Created by: [20110704@Henry]
 	Task: Update Licensee User thru Internal site
-	DB: DB052.bodb_Licensee
+	DB: DBLIC/bodb_Licensee
 	Param's Explanation:
 	- @LicenseeName: if not blank then update to new licensee if different from current
 	- @Username: if not blank then update to new username if different from current
@@ -18,6 +18,7 @@ AS
 	
 	Revisions:
 	- 20130625@Jim: set default currency permission for new licensee's user
+	- 20141112@Victor: use f_SelLicenseeCust instead of licenseecust (#Redmine 25864)
 */
 
 SET NOCOUNT ON
@@ -101,8 +102,7 @@ BEGIN
 				
 				INSERT INTO @Currency 
 				SELECT DISTINCT  Currency as CurrencyID
-				FROM dbo.LicenseeCust with (NOLOCK)
-				WHERE LicenseeID=@LicenseeID
+				FROM dbo.f_SelLicenseeCust(@LicenseeID)
 				
 				-- Currency User
 				INSERT INTO dbo.CurrencyUser (usrID,LicenseeID,CurrencyID,SystemID,isActive)
