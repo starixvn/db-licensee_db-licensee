@@ -1,10 +1,5 @@
 USE [bodb02]
 GO
- 
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
 ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByLeagueDetail]
 	 @LicenseeID INT
 	,@UserID INT
@@ -33,6 +28,7 @@ Revisions:
 	- 20140207@Florent: Add filter ShowBA and ShowSB
 	- 20140214@Florent: use new sum table rptCustomerMatch
 	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
+	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 Param's Explanation:   
    
 */
@@ -71,8 +67,8 @@ WHERE (
 DECLARE @TempAg AS TABLE (CustId INT,Currency int)
 
 INSERT INTO @TempAg (CustId,lc.currency)
-SELECT CustID,lc.Currency
-FROM bodb_Licensee.dbo.LicenseeCust lc WITH (NOLOCK)
+SELECT lc.CustID,lc.Currency
+FROM   bodb_licensee.dbo.f_SelLicenseeCust(@LicenseeId) lc 
 INNER JOIN #Currency c ON lc.LicenseeID = c.LicenseeID
 	AND lc.Currency = c.CurrencyID
 
@@ -190,7 +186,7 @@ BEGIN
 			--#TempBetList b  
 			bettrans AS b WITH (NOLOCK)
 		INNER JOIN match m WITH (NOLOCK) ON m.matchid = b.matchid
-		INNER JOIN @TempAg ta ON b.recommend = ta.CustId
+		INNER JOIN @TempAg ta ON b.recommend = ta.CustId AND b.Currency = ta.Currency
 		WHERE (--SportBook
 				b.bettype < 31
 				OR (b.bettype BETWEEN 121 AND 999)
@@ -203,7 +199,7 @@ BEGIN
 				FROM @status
 				)
 			AND m.leagueid = @LeagueID
-			and b.tpositiontaking=0--GetBA
+			and b.tpositiontaking=0 --GetBA
 			AND (@matchid=0 or b.matchid = @MatchID)
 		GROUP BY b.custid
 			,b.Winlostdate
@@ -302,7 +298,7 @@ BEGIN
 			--#TempBetList b  
 			bettrans AS b WITH (NOLOCK)
 		INNER JOIN match m WITH (NOLOCK) ON m.matchid = b.matchid
-		INNER JOIN @TempAg ta ON b.recommend = ta.CustId
+		INNER JOIN @TempAg ta ON b.recommend = ta.CustId AND b.Currency = ta.Currency
 		WHERE (
 				b.bettype < 31
 				OR (b.bettype BETWEEN 121 AND 999)
@@ -424,9 +420,8 @@ BEGIN
 				,SUM(b.betcount) betcount
 			FROM bodb_LicenseeReport.dbo.rptCustomerMatch b WITH (
 					NOLOCK
-					,INDEX = IX_recommend
 					)
-			INNER JOIN @TempAg ta ON b.recommend = ta.CustId
+			INNER JOIN @TempAg ta ON b.recommend = ta.CustId AND b.Currency = ta.Currency
 			WHERE b.winlostdate BETWEEN @FromDate AND @TempToDate
 				AND (
 					b.bettype < 31
@@ -529,9 +524,8 @@ BEGIN
 				,SUM(b.betcount) betcount
 			FROM bodb_LicenseeReport.dbo.rptCustomerMatch b WITH (
 					NOLOCK
-					,INDEX = IX_recommend
 					)
-			INNER JOIN @TempAg ta ON b.recommend = ta.CustId
+			INNER JOIN @TempAg ta ON b.recommend = ta.CustId AND b.Currency = ta.Currency
 			WHERE b.winlostdate BETWEEN @FromDate AND @TempToDate
 				AND (
 					b.bettype < 31
