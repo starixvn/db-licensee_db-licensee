@@ -13,7 +13,7 @@ AS
 Created: 20130509@Jim
 Task :  Restrict permission of Licensee Users by currency
 DB: DB052.bodb02
-Revisions: 
+Revisions:  
 - 20141118@winnie: Change from LicenseeCust table to f_SelLicenseeCust   
 Param's Explanation:
 */
