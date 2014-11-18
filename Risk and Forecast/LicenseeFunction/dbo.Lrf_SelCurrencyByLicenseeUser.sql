@@ -5,7 +5,7 @@ go
 
 
 ALTER  PROCEDURE  [dbo].[Lrf_SelCurrencyByLicenseeUser]		
-	@LicenseeID int = 0,
+	@LicenseeID int = 0, 
 	@UserID 	INT,
 	@excludeTest BIT=0
 AS	
