@@ -48,7 +48,7 @@ SELECT DISTINCT CustID
                                                      [Description])
                                                     
 -------------------------
-DROP TABLE #currency
+
 -------------------------
 
 DECLARE @RowCount INT, @RowStart INT, @RowEnd INT  
@@ -171,6 +171,7 @@ SELECT
 		ON e.exchangeid=a.currency
 	WHERE 
 		a.recommend in (SELECT custid FROM @TempAg) AND
+		((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 		--a.bettype = 14 AND
 		a.bettype in (14,127) AND -- FG/LG: 14, 1H FG/LG: 127
 		a.ruben=0 AND
@@ -205,7 +206,8 @@ FROM
 		ROW_NUMBER() over (ORDER BY matchcode) AS RowNum ,
 		* FROM @Data
 ) c WHERE c.RowNum BETWEEN @RowStart AND @RowEnd
-	
+	DROP TABLE #currency
+
 GO
 GRANT EXECUTE ON [dbo].[Lrf_TotalBets_Sel14] TO [bodbLicenseeNet]
 GO
