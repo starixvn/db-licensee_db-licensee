@@ -11,7 +11,7 @@ AS
 /*  Created: Hannah
 	Date: 2014-04-10
     Task : Playtech Casino Win Loss report 
-    DB: DBACC.bodb02  
+    DB: DBACC/bodb02  
    
     Revisions:  
 		- 20140513@Hannah: Add Progressive share and win values
@@ -19,7 +19,6 @@ AS
 		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
-	  + @BackupDay: The day we move tickets to rptDepWinlostByProduct_bk
 */  
 BEGIN
 	SET NOCOUNT ON  
