@@ -165,7 +165,7 @@ SELECT
 		m.awayid,	
 		m.matchid,
 		m.matchcode,
-		m.leagueid,	
+		m.leagueid,	 
 		a.livehomescore,
 		a.liveawayscore,
 		m.showtime,
