@@ -5,7 +5,6 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-
 ALTER PROCEDURE [dbo].[Lrf_BetList_SelRunningByBettypeList]
 	@LicenseeID INT,
 	@UserID		INT,
@@ -129,6 +128,7 @@ BEGIN
 		INNER JOIN @tblbettype bt ON b.bettype=bt.bettype
 	WHERE
 		b.Recommend IN (SELECT custid FROM @TempAg) AND
+		((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 		b.bettype IN (9,29) AND
 		b.matchid = bt.bettype AND 
 		b.statusID IN (0,1) AND
@@ -178,6 +178,7 @@ BEGIN
 		INNER JOIN league   AS l WITH (NOLOCK) ON m.leagueID=l.leagueID
 	WHERE 
 		b.Recommend IN (SELECT custid FROM @TempAg)
+		AND ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID))
 		AND b.bettype = 10
 		AND b.statusID = 0
 	ORDER BY b.status, b.transid
@@ -227,6 +228,7 @@ BEGIN
 		INNER JOIN @tblbettype bt ON b.bettype=bt.bettype
 	WHERE 
 		b.Recommend IN (SELECT custid FROM @TempAg)
+		AND ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID))
 		AND b.bettype <= 19000
 		AND b.statusID IN (0,1)
 		AND b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype())
@@ -285,7 +287,8 @@ WHERE exchangeid IN (SELECT DISTINCT CurrencyID FROM #currency)
 	INNER JOIN @tblbettype tb ON b.bettype=tb.bettype
 	INNER JOIN #TempExchange e 
 	ON e.exchangeid = b.currency AND  e.ExchangeDate = B.winlostdate
-	WHERE	b.Recommend IN (SELECT custid FROM @TempAg) and 	
+	WHERE	b.Recommend IN (SELECT custid FROM @TempAg) and 
+			((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND 	
 			tb.bettype BETWEEN 1101 AND 1199 and
 			b.statusID in (0,1)
 

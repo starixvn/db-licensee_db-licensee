@@ -100,7 +100,7 @@ SELECT DISTINCT lc.CustID
 						INNER JOIN #Currency c ON c.LicenseeID=lc.LicenseeID AND lc.Currency=c.CurrencyID
                 WHERE   [Description] = COALESCE(@LicenseeType,  
                                                      [Description])
- DROP TABLE #Currency
+
 CREATE TABLE #AgWinlossOutright
 (
 	sporttype INT,
@@ -182,6 +182,7 @@ BEGIN
 			--INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid	   	 	
 		WHERE
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
+			((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 			b.Winlostdate>=@FromDate AND
 			b.Winlostdate<=@ToDate AND
 			b.Bettype=10 AND
@@ -235,6 +236,7 @@ BEGIN
 			--INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid	   	 				
 		WHERE
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
+			((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 			b.Winlostdate>=@FromDate AND
 			b.Winlostdate<=@ToDate AND
 			b.Bettype=10 AND
@@ -291,6 +293,7 @@ BEGIN
 			--INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid	   	 		
 		WHERE
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
+			((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 			b.Winlostdate>=@FromDate AND
 			b.Winlostdate<=@ToDate AND
 			b.Bettype=10 AND
@@ -343,6 +346,7 @@ BEGIN
 			--INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid	   	 				
 		WHERE
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
+			((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 			b.Winlostdate>=@FromDate AND
 			b.Winlostdate<=@ToDate AND
 			b.Bettype=10 AND
@@ -418,6 +422,8 @@ FROM
 
 DROP TABLE #AgWinlossOutright
 DROP TABLE #TempExchange 
+ DROP TABLE #Currency
+
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinlossOutright] TO [bodbLicenseeNet]

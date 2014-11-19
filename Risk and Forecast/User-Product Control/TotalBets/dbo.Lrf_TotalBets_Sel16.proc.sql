@@ -39,7 +39,7 @@ SELECT  DISTINCT CustID
                 WHERE   [Description] = COALESCE(@LicenseeType,  
                                                      [Description])
 -------------------------
-DROP TABLE #currency
+
 -----------------------
 
 DECLARE @RowCount INT, @RowStart INT, @RowEnd INT  
@@ -141,6 +141,7 @@ SELECT
 		ON e.exchangeid = b.currency
 	WHERE    
 		b.recommend IN (SELECT CustID FROM @TempAg) AND 
+		 ((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))    OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 		b.bettype = 16 AND
 		b.statusID =0 AND
 		m.matchid>0 AND
@@ -171,6 +172,7 @@ FROM
 	
 ) c WHERE c.RowNum BETWEEN @RowStart AND @RowEnd
 
+DROP TABLE #currency
 GO
 GRANT EXECUTE ON [dbo].[Lrf_TotalBets_Sel16] TO [bodbLicenseeNet]
 

@@ -45,7 +45,7 @@ SELECT DISTINCT CustID
                 WHERE   [Description] = COALESCE(@LicenseeType,  
                                                      [Description])
 --------------------
-DROP TABLE #currency
+
 --------------------
 
 DECLARE @RowCount INT, @RowStart INT, @RowEnd INT  
@@ -134,6 +134,7 @@ SELECT
 	WHERE    
 		bettrans.recommend IN (SELECT CustID FROM @TempAg)
 		--AND bettrans.bettype =6 
+		AND ((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency)) OR (@CurrencyID<>0 AND Currency=@CurrencyID))
 		AND bettrans.bettype in (6, 126) -- 6: Total Goal, 126: 1H Total Goal
 		AND bettrans.statusID = 0
 		AND bettrans.ruben = 0
@@ -160,6 +161,7 @@ SELECT c.* FROM
 		* 
 	FROM @Data
 ) c WHERE c.RowNum BETWEEN @RowStart AND @RowEnd
+DROP TABLE #currency
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_TotalBets_Sel6] TO [bodbLicenseeNet]

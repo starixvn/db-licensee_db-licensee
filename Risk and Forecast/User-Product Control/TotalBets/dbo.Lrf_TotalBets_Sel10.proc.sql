@@ -8,6 +8,7 @@ GO
 /****** Object:  Stored Procedure dbo.Lrf_TotalBets_Sel10    Script Date: 6/26/2013 10:58:41 PM ******/
 /****** Object:  Stored Procedure dbo.Lrf_TotalBets_Sel10    Script Date: 5/31/2013 2:41:29 PM ******/
 
+
 ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel10]
 @LicenseeID INT,
 @UserID		INT,
@@ -54,7 +55,7 @@ INSERT INTO @TempAg (custid)
                 WHERE   [Description] = COALESCE(@LicenseeType,  
                                                      [Description])
 -----------------
-DROP TABLE #currency
+
 -----------------
 DECLARE @RowCount INT, @RowStart INT, @RowEnd INT  
 SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1  
@@ -117,6 +118,7 @@ SELECT
 		ON e.exchangeid = a.currency
 	WHERE  	
 --		a.recommend IN (SELECT custid FROM @TempAg) AND
+		((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 		a.bettype = 10 AND
 		a.statusID=0 AND
 		a.tpositiontaking <>0
@@ -148,6 +150,7 @@ SELECT
 						INNER JOIN 	@TempAg t ON a.recommend=t.custid
 						INNER JOIN #TempExchange e ON e.exchangeid = a.currency
 					WHERE  	
+						((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 						a.bettype = 10 AND
 						 a.statusID = 0 AND
 						a.tpositiontaking <>0
@@ -181,7 +184,7 @@ FROM
 		* FROM @Data
 ) as c
 WHERE RowNum BETWEEN @RowStart AND @RowEnd
-
+DROP TABLE #currency
 GO
 GRANT EXECUTE ON [dbo].[Lrf_TotalBets_Sel10] TO [bodbLicenseeNet]
 GO

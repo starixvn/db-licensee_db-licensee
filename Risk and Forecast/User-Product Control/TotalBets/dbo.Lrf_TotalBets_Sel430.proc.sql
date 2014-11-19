@@ -6,7 +6,6 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-
 ALTER  PROCEDURE [dbo].[Lrf_TotalBets_Sel430]
 	@LicenseeID INT,
 	@CurrencyID INT=0,
@@ -76,7 +75,7 @@ SELECT DISTINCT CustID
 				INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
                 WHERE   [Description] = COALESCE(@LicenseeType,[Description])  
 ------------------------
-DROP TABLE #currency
+
 -------------------------                                                   
 INSERT INTO @Data
 	SELECT
@@ -113,6 +112,7 @@ INSERT INTO @Data
 		INNER JOIN match m WITH (NOLOCK) ON  b.matchid=m.matchid 				
 	WHERE 
 		b.Recommend IN (SELECT custid FROM @TempAg)
+		AND((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID))
 		AND b.bettype IN (4,30,152)
 		AND b.statusID IN (0,1)
 		AND b.tpositiontaking <> 0 
@@ -148,7 +148,7 @@ FROM
 		INNER JOIN (SELECT *  FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
 		ON e.exchangeid = b.currency
 ) A WHERE A.RowNum BETWEEN @RowStart AND @RowEnd
-
+DROP TABLE #currency
 GO
 GRANT EXECUTE ON [dbo].[Lrf_TotalBets_Sel430] TO [bodbLicenseeNet]
 GO

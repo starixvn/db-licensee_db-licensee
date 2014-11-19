@@ -100,8 +100,7 @@ SELECT DISTINCT CustID
 						INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID 
                 WHERE    [Description] = COALESCE(@LicenseeType,  
                                                      [Description])
-DROP TABLE #Currency 
-  
+
 IF @Todate > @MoveBetsDay  
 BEGIN  
 	 INSERT INTO #AgWinlossHR SELECT  
@@ -146,6 +145,7 @@ BEGIN
 	 WHERE  
 	  --b.Recommend=@CustID AND  
 	  b.recommend in (SELECT custid from @TempAg) AND
+	  ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
 	  b.Winlostdate>=@FromDate AND  
 	  b.Winlostdate<=@ToDate AND  
 	  l.leagueid = @LeagueId AND  
@@ -198,6 +198,7 @@ BEGIN
 	 WHERE  
 	  --b.Recommend=@CustID AND  
 	  b.recommend in (SELECT custid from @TempAg) AND
+	  ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
 	  b.Winlostdate>=@FromDate AND  
 	  b.Winlostdate<=@ToDate AND  
 	  l.leagueid = @LeagueId AND  
@@ -313,6 +314,8 @@ END
 	
 DROP TABLE #TempExchange 
 DROP TABLE #AgWinlossHR
+DROP TABLE #Currency 
+  
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_MatchWL_Racing] TO [bodbLicenseeNet]

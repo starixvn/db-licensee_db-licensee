@@ -5,7 +5,6 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-
 ALTER  PROCEDURE [dbo].[Lrf_BetList_SelRunningByMultipleBettypeMatch]
 	@MatchID INT,
 	@LicenseeID INT,
@@ -134,6 +133,7 @@ BEGIN
 		b.matchid=@matchid AND 
 		b.bettype=10 AND
 		b.recommend IN (SELECT custid FROM @TempAg) AND
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 		b.statusID = 0
 	ORDER BY
 		b.status, b.transid
@@ -185,6 +185,7 @@ BEGIN
 		b.matchid=@matchid AND 
 		bt.bettype<=19000 AND
 		b.recommend IN (SELECT custid FROM @TempAg) AND
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 		b.statusID IN (0,1) AND
 		b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
 		((@Liveindicator=-1) OR (@Liveindicator=0 AND b.Liveindicator = 0) OR (@Liveindicator=1 AND b.Liveindicator = 1)) AND
@@ -247,6 +248,7 @@ BEGIN
 	INNER JOIN #TempExchange e ON e.exchangeid = b.currency AND  e.ExchangeDate = B.winlostdate
 	WHERE	bg.matchid=@matchid and 
 			b.recommend IN (SELECT custid FROM @TempAg) AND
+				((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 			b.statusID in (0,1) and 		
 			tb.bettype BETWEEN 1101 AND 1199
 			

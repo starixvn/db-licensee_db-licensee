@@ -109,7 +109,7 @@ FROM    bodb_Licensee.dbo.f_SelLicenseeCust(0) lc --WITH ( NOLOCK )
 		INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
 --WHERE   lc.Currency <> 20
 --------------------------------------------------------		
-DROP TABLE #Currency 
+
 
 SELECT * INTO #TempExchange 
 FROM Lrf_f_GetExchangeDaily(@FromDate,@ToDate)
@@ -227,6 +227,10 @@ BEGIN
 	 leagueID,matchid,IP,betstatus,isNeutral,winlostdate,currency,playercomm,b.actual_stake,b.awinlost,
 	 stakeUSD,winlostUSD,LicenseeWLUSD,commUSD,playercommUSD,stakeEUR,winlostEUR,LicenseeWLEUR,commEUR,playercommEUR)
 	 EXEC (@sql)
+	IF(@CurrencyID<>0)
+	 DELETE FROM #Data WHERE currency!=@CurrencyID
+	 IF(@CurrencyID=0)
+	 DELETE FROM #Data WHERE currency NOT IN (SELECT CurrencyId FROM #Currency)
 	 
 	 INSERT INTO @DataSum
 		SELECT SUM(b.winlost-actual_stake+playercomm),
@@ -240,6 +244,7 @@ BEGIN
 			INNER JOIN League l WITH (NOLOCK) ON m.leagueID=l.leagueID  	  
 		WHERE  	 	  
 			b.Winlostdate BETWEEN @FromDate AND @TempToDate AND 	  
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND  
 			l.SportType= @SportType AND
 			b.bettype BETWEEN 31 AND 33 AND
 			b.statusID IN (111,112,113)	
@@ -326,7 +331,11 @@ BEGIN
 	 leagueID,matchid,IP,betstatus,isNeutral,winlostdate,currency,playercomm,b.actual_stake,b.awinlost,
 	 stakeUSD,winlostUSD,LicenseeWLUSD,commUSD,playercommUSD,stakeEUR,winlostEUR,LicenseeWLEUR,commEUR,playercommEUR)
 	 EXEC (@sql)
-	 
+	 IF(@CurrencyID<>0)
+	 DELETE FROM #Data WHERE currency!=@CurrencyID
+	 IF(@CurrencyID=0)
+	 DELETE FROM #Data WHERE currency NOT IN (SELECT CurrencyId FROM #Currency)
+
 	INSERT INTO @DataSum 
 	SELECT SUM(b.winlost-actual_stake),
 		   SUM(	b.awinlost),
@@ -338,7 +347,8 @@ BEGIN
 		INNER JOIN outright m WITH (NOLOCK) ON b.matchid=m.orid   
 		INNER JOIN League l WITH (NOLOCK) ON m.leagueID=l.leagueID   	  
 	WHERE  	    	  
-		b.Winlostdate BETWEEN @TempFromDate AND @ToDate AND  
+		b.Winlostdate BETWEEN @TempFromDate AND @ToDate AND 
+		((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND   
 		l.SportType= @SportType AND
 		b.bettype BETWEEN 31 AND 33 AND
 		b.statusID IN (111,112,113)		
@@ -435,6 +445,7 @@ SELECT * FROM @Bettransm ORDER BY RefNo,Bettype
 DROP TABLE #Data
 DROP TABLE #TempExchange 
 DROP TABLE #TempAg
+DROP TABLE #Currency 
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_LiveReport_SelWinlossRacing] TO [bodbLicenseeNet]

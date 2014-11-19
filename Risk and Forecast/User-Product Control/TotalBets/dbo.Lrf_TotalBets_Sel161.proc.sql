@@ -51,7 +51,7 @@ SELECT DISTINCT CustID
                 WHERE   [Description] = COALESCE(@LicenseeType,  
                                                      [Description])
 -------------------------
-DROP TABLE #currency
+
 -------------------------
 
 DECLARE @RowCount INT, @RowStart INT, @RowEnd INT  
@@ -160,6 +160,7 @@ SELECT
 		WHERE
 				bettype BETWEEN 81 AND 120
 				AND recommend  IN (SELECT custid FROM @TempAg)
+				AND ((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID))
 				AND statusID IN (0,1)
 				AND ruben = 0
 		GROUP BY winlostdate,matchid,currency, bettype, betteam, liveindicator) AS b
@@ -238,6 +239,7 @@ SELECT c.* FROM
 	INNER JOIN (SELECT *  FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
 	ON e.exchangeid = d.currency
 ) c WHERE c.RowNum BETWEEN @RowStart AND @RowEnd
+DROP TABLE #currency
 GO
 GRANT EXECUTE ON [dbo].[Lrf_TotalBets_Sel161] TO [bodbLicenseeNet]
 GO

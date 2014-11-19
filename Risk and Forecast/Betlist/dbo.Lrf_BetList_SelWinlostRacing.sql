@@ -1,7 +1,6 @@
 ﻿set ANSI_NULLS ON
 set QUOTED_IDENTIFIER ON
 go
-
 ALTER  PROCEDURE [dbo].[Lrf_BetList_SelWinlostRacing]
 	@LicenseeID INT ,
 	@UserID		INT,
@@ -82,7 +81,7 @@ BEGIN
                                                      [Description]) )  
                 AND RoleId = 2  
 	------------
-	DROP TABLE #currency 
+
 	------------
 	DECLARE @LicenseeName VARCHAR(50)
 	SELECT @LicenseeName = LicenseeName FROM DBLIC.bodb_Licensee.dbo.Licensees WITH (NOLOCK)
@@ -165,6 +164,7 @@ BEGIN
 			AND o.leagueid = @leagueid 
 			AND o.groupmatch = @raceNo
 			AND b.recommend IN (SELECT custid FROM @TempAg)
+			AND ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID))
 	ORDER BY b.username
 END
 ELSE
@@ -207,6 +207,7 @@ BEGIN
 			AND o.leagueid = @leagueid 
 			AND o.groupmatch = @raceNo
 			AND b.recommend IN (SELECT custid FROM @TempAg)
+			AND ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID))
 	ORDER BY b.username
 END
 
@@ -327,7 +328,7 @@ SELECT * FROM @BettransDetail ORDER BY RefNo,Bettype
 -------------------------------------
 DROP TABLE #DataTmp
 DROP TABLE #TempExchange	
-	
+DROP TABLE #currency 	
 END
 
 
