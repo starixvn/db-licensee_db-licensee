@@ -9,6 +9,7 @@ GO
 ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinlossByMatch]
 	@MatchID INT,
 	@LicenseeID INT,
+	@UserID	 INT,
 	@CurrencyID INT=0,
 	@LicenseeType VARCHAR(100) = NULL,	
 	@PageSize INT=1000,
@@ -33,8 +34,8 @@ Revisions:
 	-20121004@Jim: replace @currencyname input param by @currencyID
 	- 20121115@Henry: Only Sportsbook needs to exclude BA
 	- 20130411@Jim: support base currency USD
+	- 20130514@Jim: Restrict permission of Licensee Users by currency
 	- 20130904@Jim: support Virtual Horse Racing
-	- 20140925@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
 	- 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
    Get all tickets for a match
 Param's Explanation: 
@@ -44,13 +45,17 @@ Param's Explanation:
 
 SET NOCOUNT ON
 
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+
 DECLARE @TempAg AS TABLE (custid INT)
 INSERT INTO @TempAg (custid)
 SELECT DISTINCT CustID 
-FROM bodb_Licensee.dbo.f_SelLicenseeCust(0) --WITH ( NOLOCK )
-WHERE   LicenseeID = @LicenseeID  
-		AND  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID))
-		AND [Description] = COALESCE(@LicenseeType,[Description])    
+FROM bodb_Licensee.dbo.f_SelLicenseeCust(0) lc --WITH ( NOLOCK )
+	INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID  AND lc.Currency=c.CurrencyID
+WHERE    [Description] = COALESCE(@LicenseeType,[Description])    
+
 
 
 
@@ -114,10 +119,10 @@ CREATE TABLE #Data
 	showtime NVARCHAR(50) -- table - shoe - hand of Live Casino
 )
 
-IF EXISTS(SELECT TOP 1 1 FROM Match WITH(NOLOCK) WHERE MatchID=@MatchID
-		  UNION 
-		  SELECT TOP 1 1 FROM VSOutright WITH(NOLOCK) WHERE EventID=@MatchID
-		)
+
+
+
+IF EXISTS(SELECT TOP 1 1 FROM Match WITH(NOLOCK) WHERE MatchID=@MatchID)
 BEGIN	
 	IF @ShowBA = 1
 	BEGIN
@@ -164,6 +169,7 @@ BEGIN
 			b.matchid=@matchid AND			
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 			b.ruben=1 AND 			
 			b.tpositiontaking=0 AND
 			b.statusID NOT IN (101, 102, 103)
@@ -218,6 +224,7 @@ BEGIN
 		WHERE
 			b.matchid=@matchid AND			
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
 			b.ruben=1 AND 			
 			b.tpositiontaking<>0 AND
@@ -271,60 +278,62 @@ BEGIN
 		WHERE
 			b.matchid=@matchid AND			
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
-			b.ruben=1 AND
-			b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND 			
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
+			b.ruben=1 AND 			
 			b.statusID NOT IN (101, 102, 103)
 		ORDER BY
 			b.status, b.transid
-		IF EXISTS (SELECT 1 FROM @bettype WHERE bettype  IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()))	
+		IF EXISTS (SELECT 1 FROM @bettype WHERE bettype IN (1231, 1232, 1233, 1237, 1238))
 			BEGIN 
+				INSERT INTO #Data	
 				SELECT TOP(@RowEnd)
-				r.sporttype,
-				b.username,
-				b.custid,
-				b.bettype,
-				r.leagueID,			
-				b.transid,
-				CONVERT (VARCHAR(50),o.RacerNum) matchcode,
-				o.RacerID homeID,
-				0 awayID,
-				CONVERT(FLOAT, b.hdp1) AS hdp1, 
-				CONVERT(FLOAT, b.hdp2) AS hdp2, 
-				b.odds,
-				b.status,
-				b.stake,
-				(b.winlost-actual_stake) winlost,
-				- (b.winlost-b.actual_stake) AS LicenseeWL ,
-				b.comm,
-				b.playercomm  AS PlayerComm,
-				b.transdate,
-				b.winlostdate,
-				b.betteam,
-				b.liveindicator,
-				b.livehomescore,
-				b.liveawayscore,
-				o.EventID	 matchid, 
-				b.IP AS IP,
-				r.betstatus,
-				ISNULL(0, CONVERT(BIT,0)) AS IsNeutral,
-				b.OddsType,
-				b.betid,
-				b.refno,
-				b.currency,
-				CONVERT(VARCHAR(20),r.EventTime)  AS ShowTime
-			FROM
-				bettrans b WITH (NOLOCK) 
-				INNER JOIN VSOutright o with (nolock) ON b.oddsid=o.Orid
-				INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
-				INNER JOIN @bettype bt ON b.bettype = bt.bettype
-			WHERE
-				o.EventID=@matchid AND			
-				b.recommend IN (SELECT custid FROM @TempAg)	AND
-				b.ruben=1 AND 			
-				b.statusID NOT IN (101, 102, 103)
-			ORDER BY
-				b.status, b.transid
-			END	
+					r.sporttype,
+					b.username,
+					b.custid,
+					b.bettype,
+					r.leagueID,			
+					b.transid,
+					CONVERT (VARCHAR(50),o.RacerNum) matchcode,
+					o.RacerID homeID,
+					0 awayID,
+					CONVERT(FLOAT, b.hdp1) AS hdp1, 
+					CONVERT(FLOAT, b.hdp2) AS hdp2, 
+					b.odds,
+					b.status,
+					b.stake,
+					(b.winlost-actual_stake) winlost,
+					- (b.winlost-b.actual_stake) AS LicenseeWL ,
+					b.comm,
+					b.playercomm  AS PlayerComm,
+					b.transdate,
+					b.winlostdate,
+					b.betteam,
+					b.liveindicator,
+					b.livehomescore,
+					b.liveawayscore,
+					b.matchid, 
+					b.IP AS IP,
+					r.betstatus,
+					ISNULL(0, CONVERT(BIT,0)) AS IsNeutral,
+					b.OddsType,
+					b.betid,
+					b.refno,
+					b.currency,
+					r.EventTime AS ShowTime
+				FROM
+					bettrans b WITH (NOLOCK) 
+					INNER JOIN VSOutright o with (nolock) ON b.oddsid=o.Orid
+					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
+					INNER JOIN @bettype bt ON b.bettype = bt.bettype
+				WHERE
+					b.matchid=@matchid AND			
+					b.recommend IN (SELECT custid FROM @TempAg)	AND
+					((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
+					b.ruben=1 AND 			
+					b.statusID NOT IN (101, 102, 103)
+				ORDER BY
+					b.status, b.transid
+			END
 	END
 	
 	
@@ -374,7 +383,8 @@ BEGIN
 			INNER JOIN @TempAg t  ON b.recommend =t.custid  
 			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid
 		WHERE
-			b.matchid=@matchid AND						
+			b.matchid=@matchid AND
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND					
 			b.ruben=1 AND 
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
 			b.tpositiontaking=0 AND
@@ -428,7 +438,8 @@ BEGIN
 			INNER JOIN @TempAg t  ON b.recommend =t.custid  
 			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid
 		WHERE
-			b.matchid=@matchid AND						
+			b.matchid=@matchid AND				
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 			b.ruben=1 AND 			
 			b.tpositiontaking<>0 AND
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
@@ -479,63 +490,64 @@ BEGIN
 			INNER JOIN @TempAg t  ON b.recommend =t.custid  
 			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid
 			INNER JOIN @bettype bt ON b.bettype = bt.bettype
-			AND b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype())
 		WHERE
-			b.matchid=@matchid AND						
+			b.matchid=@matchid AND	
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND				
 			b.ruben=1 AND 			
 			b.statusID NOT IN (101, 102, 103)
 		ORDER BY
 			b.status, b.transid
-			
-		IF EXISTS (SELECT 1 FROM @bettype WHERE bettype  IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()))	
+		IF EXISTS (SELECT 1 FROM @bettype WHERE bettype IN (1231, 1232, 1233, 1237, 1238))
 			BEGIN 
+				INSERT INTO #Data	
 				SELECT TOP(@RowEnd)
-				r.sporttype,
-				b.username,
-				b.custid,
-				b.bettype,
-				r.leagueID,			
-				b.transid,
-				CONVERT (VARCHAR(50),o.RacerNum) matchcode,
-				o.RacerID homeID,
-				0 awayID,
-				CONVERT(FLOAT, b.hdp1) AS hdp1, 
-				CONVERT(FLOAT, b.hdp2) AS hdp2, 
-				b.odds,
-				b.status,
-				b.stake,
-				(b.winlost-actual_stake) winlost,
-				- (b.winlost-b.actual_stake) AS LicenseeWL ,
-				b.comm,
-				b.playercomm  AS PlayerComm,
-				b.transdate,
-				b.winlostdate,
-				b.betteam,
-				b.liveindicator,
-				b.livehomescore,
-				b.liveawayscore,
-				o.EventID matchid, 
-				b.IP AS IP,
-				r.betstatus,
-				ISNULL(0, CONVERT(BIT,0)) AS IsNeutral,
-				b.OddsType,
-				b.betid,
-				b.refno,
-				b.currency,
-				CONVERT(VARCHAR(20),r.EventTime)  AS ShowTime
-			FROM
-				bettrans14 b WITH (NOLOCK) 
-				INNER JOIN VSOutright14 o with (nolock) ON b.oddsid=o.Orid
-				INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
-				INNER JOIN @bettype bt ON b.bettype = bt.bettype
-			WHERE
-				o.EventID=@matchid AND			
-				b.recommend IN (SELECT custid FROM @TempAg)	AND
-				b.ruben=1 AND 			
-				b.statusID NOT IN (101, 102, 103)
-			ORDER BY
-				b.status, b.transid
-			END		
+					r.sporttype,
+					b.username,
+					b.custid,
+					b.bettype,
+					r.leagueID,			
+					b.transid,
+					CONVERT (VARCHAR(50),o.RacerNum) matchcode,
+					o.RacerID homeID,
+					0 awayID,
+					CONVERT(FLOAT, b.hdp1) AS hdp1, 
+					CONVERT(FLOAT, b.hdp2) AS hdp2, 
+					b.odds,
+					b.status,
+					b.stake,
+					(b.winlost-actual_stake) winlost,
+					- (b.winlost-b.actual_stake) AS LicenseeWL ,
+					b.comm,
+					b.playercomm  AS PlayerComm,
+					b.transdate,
+					b.winlostdate,
+					b.betteam,
+					b.liveindicator,
+					b.livehomescore,
+					b.liveawayscore,
+					b.matchid, 
+					b.IP AS IP,
+					r.betstatus,
+					ISNULL(0, CONVERT(BIT,0)) AS IsNeutral,
+					b.OddsType,
+					b.betid,
+					b.refno,
+					b.currency,
+					r.EventTime AS ShowTime
+				FROM
+					bettrans14 b WITH (NOLOCK) 
+					INNER JOIN VSOutright14 o with (nolock) ON b.oddsid=o.Orid
+					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
+					INNER JOIN @bettype bt ON b.bettype = bt.bettype
+				WHERE
+					b.matchid=@matchid AND			
+					b.recommend IN (SELECT custid FROM @TempAg)	AND
+					((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
+					b.ruben=1 AND 			
+					b.statusID NOT IN (101, 102, 103)
+				ORDER BY
+					b.status, b.transid
+			END	
 	END
 	
 END
@@ -602,29 +614,13 @@ INNER JOIN #Data B ON BG.refno = B.refno and BG.custid = B.CustID
 INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
 WHERE B.Bettype BETWEEN 1101 AND 1199	
 END
-IF @ShowVS=1
-	BEGIN
-		INSERT INTO @BettransDetail
-		SELECT 
-			BG.refno, 
-			BG.odds, 
-			BG.stake,
-			BG.status, 
-			BG.apositiontaking, 
-			BG.bettype  ,
-			BG.Betteam,
-			BG.stake*e.EUR,
-			BG.stake*e.USD
-		FROM bettransm BG WITH (NOLOCK)
-		INNER JOIN #Data B ON BG.refno = B.refno and BG.custid = B.CustID
-		INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
-		WHERE B.Bettype=1233
-	END
+
 SELECT * FROM  @BettransDetail
 ORDER BY RefNo,Bettype
  
 DROP TABLE #Data
 DROP TABLE #TempExchange
+DROP TABLE #Currency 
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinlossByMatch] TO [bodbLicenseeNet] AS [dbo]

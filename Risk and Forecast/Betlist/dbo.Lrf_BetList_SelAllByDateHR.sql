@@ -54,7 +54,7 @@ DECLARE @TempAg AS TABLE ( CustId INT )
 						INNER JOIN #Currency c ON lc.licenseeID=c.licenseeID AND lc.Currency=c.CurrencyID
                 WHERE   [Description] = COALESCE(@LicenseeType,  
                                                      [Description]) 
-DROP TABLE #Currency 
+
 
 DECLARE @FromDate DATETIME, @ToDate DATETIME
 SELECT @ToDate = CONVERT(DATETIME,CONVERT(NVARCHAR(20), GETDATE(), 101))
@@ -143,6 +143,7 @@ SELECT
 	  b.MatchId= @MatchID
 	  AND b.Bettype= @Bettype  
 	  AND b.Recommend IN (SELECT * from @TempAg)
+	  AND ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID))
 	  AND m.eventdate BETWEEN @FromDate AND @ToDate
 	  
 	ORDER BY b.transid DESC  
@@ -217,6 +218,7 @@ BEGIN
 	WHERE B.Bettype = @Bettype
 
 END
+DROP TABLE #Currency 
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelAllByDateHR] TO [bodbLicenseeNet]
