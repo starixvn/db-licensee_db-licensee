@@ -99,7 +99,7 @@ SELECT  DISTINCT lc.CustID
 FROM    bodb_Licensee.dbo.f_SelLicenseeCust(0) lc --WITH ( NOLOCK )  
 		INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
 --------------------------------------------------------		
-DROP TABLE #Currency 
+
 --------------------------------------------------------  
 DECLARE @sql NVARCHAR(2500)
 DECLARE @SortTemp VARCHAR(250) 
@@ -215,7 +215,11 @@ BEGIN
 	stakeUSD,winlostUSD,LicenseeWLUSD,commUSD,playercommUSD,
 	stakeEUR,winlostEUR,LicenseeWLEUR,commEUR,playercommEUR)
 	EXEC (@sql)
-	
+	IF(@CurrencyID<>0)
+	 DELETE FROM #Data WHERE currency!=@CurrencyID
+	 IF(@CurrencyID=0)
+	 DELETE FROM #Data WHERE currency NOT IN (SELECT CurrencyId FROM #Currency)
+
 	INSERT INTO @DataSum
 	SELECT SUM(b.winlost-actual_stake+playercomm),
 			SUM(b.awinlost+comm),
@@ -227,7 +231,8 @@ BEGIN
 		INNER JOIN dbo.VSOutright14 o WITH (NOLOCK) ON b.oddsid=o.Orid
 		INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID  
 	WHERE  	 	  
-		b.Winlostdate BETWEEN @FromDate AND @TempToDate AND 	  
+		b.Winlostdate BETWEEN @FromDate AND @TempToDate AND 	
+		((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND  
 		r.SportType= @SportType AND
 		b.bettype IN (1231,1232,1233,1237,1238) AND 
 		b.statusID IN (111,112,113)	
@@ -316,6 +321,11 @@ BEGIN
 	stakeEUR,winlostEUR,LicenseeWLEUR,commEUR,playercommEUR)
 	EXEC (@sql)
 	
+	IF(@CurrencyID<>0)
+	 DELETE FROM #Data WHERE currency!=@CurrencyID
+	 IF(@CurrencyID=0)
+	 DELETE FROM #Data WHERE currency NOT IN (SELECT CurrencyId FROM #Currency)
+
 	INSERT INTO @DataSum 
 	SELECT SUM(b.winlost-actual_stake),
 		SUM(	b.awinlost),
@@ -329,6 +339,7 @@ BEGIN
 	INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID 	  
 	WHERE  	    	  
 	b.Winlostdate BETWEEN @TempFromDate AND @ToDate AND  
+	((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND  
 	r.SportType= @SportType AND
 	b.bettype IN (1231,1232,1233,1237,1238) AND 
 	b.statusID IN (111,112,113)		
@@ -411,7 +422,7 @@ SELECT * FROM @Bettransm ORDER BY RefNo,Bettype
 DROP TABLE #Data
 DROP TABLE #TempExchange 
 DROP TABLE #TempAg
-
+DROP TABLE #Currency 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_LiveReport_SelWinlossVHRacing] TO [bodbLicenseeNet]
 GO

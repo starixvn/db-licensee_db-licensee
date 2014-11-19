@@ -76,7 +76,7 @@ FROM    bodb_Licensee.dbo.f_SelLicenseeCust(0) lc --WITH ( NOLOCK )
 		INNER JOIN #currency c ON lc.Currency=c.CurrencyID AND lc.LicenseeID=c.LicenseeID
 --WHERE   lc.Currency <> 20
 ---------------------
-DROP TABLE 	#currency	
+
 ---------------------
 DECLARE @Fromdate DATETIME
 DECLARE @Todate DATETIME
@@ -167,6 +167,7 @@ BEGIN
 		WHERE
 			b.matchid=@matchid AND			
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 			b.bettype NOT IN (9,29) AND
 			b.statusID IN (111,112,113) AND
 			((@Liveindicator = 0 and b.liveindicator = 0)
@@ -218,6 +219,7 @@ BEGIN
 		WHERE
 			b.matchid=@matchid AND			
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 			b.bettype IN (9,29) AND
 			b.statusID IN (111,112,113) AND
 			((@Liveindicator = 0 and b.livehomescore = 0)
@@ -272,6 +274,7 @@ BEGIN
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)) AND
 			b.bettype NOT IN (9,29) AND
 			b.recommend IN (SELECT custid FROM @TempAg)	AND	
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 			b.tpositiontaking<>0 AND
 			b.statusID IN (111,112,113) AND
 			((@Liveindicator = 0 and b.liveindicator = 0)
@@ -323,6 +326,7 @@ BEGIN
 			b.matchid=@matchid AND			
 			b.bettype IN (9,29) AND
 			b.recommend IN (SELECT custid FROM @TempAg)	AND	
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 			b.tpositiontaking<>0 AND
 			b.statusID IN (111,112,113) AND
 			((@Liveindicator = 0 and b.livehomescore = 0)
@@ -376,6 +380,7 @@ BEGIN
 		WHERE
 			b.matchid=@matchid AND			
 			b.recommend IN (SELECT custid FROM @TempAg)	AND	
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 			b.statusID IN (111,112,113)	AND
 			b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
 			((@Liveindicator = 0 and b.liveindicator = 0)
@@ -431,6 +436,7 @@ BEGIN
 			INNER JOIN @TempAg t  ON b.recommend =t.custid  
 			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid
 		WHERE
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 			b.matchid=@matchid AND						
 			b.statusID IN (111,112,113)	
 			AND tpositiontaking = 0
@@ -484,6 +490,7 @@ BEGIN
 			INNER JOIN @TempAg t  ON b.recommend =t.custid  
 			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid
 		WHERE
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 			b.matchid=@matchid AND						
 			b.statusID IN (111,112,113)	
 			AND tpositiontaking = 0	AND 
@@ -537,6 +544,7 @@ BEGIN
 			INNER JOIN @TempAg t  ON b.recommend =t.custid  
 			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid
 		WHERE
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 			b.matchid=@matchid AND						
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)) AND
 			b.bettype NOT IN (9,29) AND
@@ -589,6 +597,7 @@ BEGIN
 			INNER JOIN @TempAg t  ON b.recommend =t.custid  
 			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid
 		WHERE
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 			b.matchid=@matchid AND						
 			b.bettype IN (9,29) AND
 			b.tpositiontaking<>0 AND
@@ -643,6 +652,7 @@ BEGIN
 			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid
 			INNER JOIN @bettype bt ON b.bettype = bt.bettype
 		WHERE
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) and
 			b.matchid=@matchid AND						
 			b.statusID IN (111,112,113)	AND
 			b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
@@ -744,6 +754,7 @@ SELECT * FROM @BettransDetail ORDER BY RefNo,Bettype
 
 DROP TABLE #Data
 DROP TABLE #TempExchange
+DROP TABLE 	#currency	
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_LiveReport_SelWinlossByMatch] TO [bodbLicenseeNet]
