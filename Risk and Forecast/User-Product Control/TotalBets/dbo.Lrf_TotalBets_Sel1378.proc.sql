@@ -44,7 +44,7 @@ SELECT DISTINCT CustID
                                                      lc.[Description])
 
 ---------------------
-DROP TABLE #currency
+
 ---------------------
 DECLARE @RowCount INT, @RowStart INT, @RowEnd INT  
 SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
@@ -162,6 +162,7 @@ SELECT
        	INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e ON e.exchangeid = b.currency
 		WHERE
 				recommend IN (SELECT CustID FROM @TempAg)
+				AND  ((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID))
 				AND bettype IN (1,3,7,8)
 				AND statusID IN (0,1)
 				AND ruben = 0
@@ -297,6 +298,7 @@ BEGIN
 
 END
 
+DROP TABLE #currency
 GO
 GRANT EXECUTE ON [dbo].[Lrf_TotalBets_Sel1378] TO [bodbLicenseeNet]
 GO
