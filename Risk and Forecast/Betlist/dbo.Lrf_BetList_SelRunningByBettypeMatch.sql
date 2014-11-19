@@ -140,7 +140,8 @@ BEGIN
 	WHERE
 		b.matchid=@matchid AND 
 		b.bettype=@bettype AND
-		b.recommend IN (SELECT custid FROM @TempAg) AND
+		((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
+		b.recommend IN (SELECT custid FROM @TempAg) AND		
 		b.statusID = 0
 	ORDER BY
 		b.status, b.transid
@@ -189,6 +190,7 @@ BEGIN
 	WHERE
 		b.matchid=@matchid AND 
 		b.bettype=@bettype AND
+		((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 		b.recommend IN (SELECT custid FROM @TempAg) AND
 		b.statusID IN (0,1) AND
 		b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
@@ -250,6 +252,7 @@ BEGIN
 	INNER JOIN bettrans B with (NOLOCK) ON bg.refno = B.refno
 	INNER JOIN #TempExchange e ON e.exchangeid = b.currency AND  e.ExchangeDate = B.winlostdate
 	WHERE	bg.matchid=@matchid and 
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 			b.recommend IN (SELECT custid FROM @TempAg) AND
 			b.statusID in (0,1) and 		
 			b.bettype=@bettype 
@@ -263,6 +266,7 @@ END
 DROP TABLE #Currency
 DROP TABLE #Data
 ------------------------
+
 GO
 
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelRunningByBettypeMatch] TO [bodbLicenseeNet]
