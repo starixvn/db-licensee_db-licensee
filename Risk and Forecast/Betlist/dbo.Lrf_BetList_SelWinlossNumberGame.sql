@@ -13,6 +13,7 @@ GO
 
 
 
+
 ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinlossNumberGame]     
      @LicenseeID INT ,
      @LicenseeType VARCHAR(100) = NULL ,
@@ -149,6 +150,7 @@ BEGIN
         INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid         
      WHERE            
       b.bettype BETWEEN 81 AND 120 AND
+	  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID)) AND
       b.Winlostdate BETWEEN @FromDate AND @TempToDate AND
       b.statusID NOT IN (101, 102, 103)
      ORDER  BY b.transid
@@ -208,6 +210,7 @@ BEGIN
       INNER JOIN [match] m WITH (NOLOCK) ON b.matchid=m.matchid         
      WHERE              
       b.bettype BETWEEN 81 AND 120 AND
+	  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID)) AND
       b.Winlostdate BETWEEN @TempFromDate AND @ToDate AND        
       b.Ruben=1  AND
       b.statusID NOT IN (101, 102, 103)      

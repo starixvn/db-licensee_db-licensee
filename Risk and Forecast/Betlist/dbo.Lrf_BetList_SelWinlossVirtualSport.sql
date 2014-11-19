@@ -94,7 +94,7 @@ SELECT DISTINCT CustID
 						INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
                 WHERE    [Description] = COALESCE(@LicenseeType,  
                                                      [Description])
-DROP TABLE #Currency
+
 
 IF @Fromdate <= @MoveBetsDay 
 BEGIN  
@@ -147,6 +147,7 @@ BEGIN
 		INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid   	  
 	 WHERE  		  
 	  b.bettype BETWEEN 1201 AND 1299 AND
+	    ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 	  b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
 	  b.Winlostdate BETWEEN @FromDate AND @TempToDate AND
 	  b.statusID IN (111,112,113)	
@@ -195,6 +196,7 @@ BEGIN
 		INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	 	  
 	 WHERE  		  
 	  b.bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
+	    ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 	  b.Winlostdate BETWEEN @FromDate AND @TempToDate AND
 	  b.statusID IN (111,112,113)		
 	 ORDER BY transid
@@ -253,6 +255,7 @@ BEGIN
 	  INNER JOIN [match] m WITH (NOLOCK) ON b.matchid=m.matchid   	  
 	 WHERE  	  	  
 	  b.bettype BETWEEN 1201 AND 1299 AND
+	    ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 	  b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
 	  b.Winlostdate BETWEEN @TempFromDate AND @ToDate AND  	  
 	  b.statusID IN (111,112,113)
@@ -301,6 +304,7 @@ BEGIN
 		INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	 	  
 	 WHERE  		  
 	  b.bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
+	    ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency)) OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 	  b.Winlostdate BETWEEN @FromDate AND @TempToDate AND
 	  b.statusID IN (111,112,113)		
 	 ORDER BY transid 
@@ -389,6 +393,7 @@ SELECT * FROM #DetailTicket
 DROP TABLE 	#DetailTicket
 DROP TABLE #Data	
 DROP TABLE #TempExchange
+DROP TABLE #Currency
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinlossVirtualSport] TO [bodbLicenseeNet]

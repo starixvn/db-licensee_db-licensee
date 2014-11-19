@@ -141,6 +141,7 @@ BEGIN
 		INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid   	  
 	 WHERE  		  
 	  b.bettype BETWEEN 1101 AND 1199 AND
+	   (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID)) AND
 	  b.Winlostdate BETWEEN @FromDate AND @TempToDate AND
 	  b.statusID IN (111,112,113)	
 	 ORDER  BY b.transid
@@ -201,6 +202,7 @@ BEGIN
 	  INNER JOIN [match] m WITH (NOLOCK) ON b.matchid=m.matchid   	  
 	 WHERE  	  	  
 	  b.bettype BETWEEN 1101 AND 1199 AND
+	   (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID)) AND
 	  b.Winlostdate BETWEEN @TempFromDate AND @ToDate AND  	  
 	  b.statusID IN (111,112,113)
 	 ORDER  BY b.transid
@@ -291,6 +293,7 @@ SELECT * FROM @BettransDetail ORDER BY RefNo,Bettype
 
 DROP TABLE #Data	
 DROP TABLE #TempExchange
+
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinlossLiveCasino] TO [bodbLicenseeNet]
 GO
