@@ -63,7 +63,7 @@ CREATE TABLE #WinLoss (
 	)
 DECLARE @sporttype TABLE(sporttype INT)
 DECLARE @bettype AS TABLE (bettype INT PRIMARY KEY)
-DECLARE @tempAg	TABLE( custID INT PRIMARY KEY, Currency INT)
+DECLARE @tempAg	TABLE( custID INT  , Currency INT)
 DECLARE @TempFromDate DATETIME 
 DECLARE @TempToDate DATETIME 
 DECLARE @MaxOldDate DATETIME

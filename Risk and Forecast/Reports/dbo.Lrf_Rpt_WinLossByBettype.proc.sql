@@ -341,7 +341,7 @@ BEGIN
 	LEFT JOIN @Exchange e ON e.ExchangeDate = b.winlostdate
 		AND e.exchangeid = b.currency
 	WHERE b.recommend IN (
-			SELECT custid
+			SELECT DISTINCT custid
 			FROM @TempAg
 			)
 		AND b.winlostdate BETWEEN @TempFromDate AND @TDate

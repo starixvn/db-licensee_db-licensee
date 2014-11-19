@@ -104,7 +104,7 @@ BEGIN
         SELECT @CustID = CustID
         FROM Customer WITH(NOLOCK)
         WHERE username = @username
-            AND recommend IN (SELECT custid FROM @tmpAg)
+            AND recommend IN (SELECT DISTINCT custid FROM @tmpAg)
             AND roleid = 1
             AND (@CurrencyID=0 OR (@CurrencyID<>0 AND  currency=@CurrencyID))
     END
@@ -385,7 +385,7 @@ BEGIN
             ,SUM(isnull(b.AmountDueTo_BA,0))
         FROM bodb_report.dbo.rptdepwinlost b with(nolock)            
         WHERE b.winlostdate between @tmpdate and @tdate    
-            AND b.recommend in (SELECT custid from @tmpAg)
+            AND b.recommend in (SELECT DISTINCT custid FROM @tmpAg)
         GROUP BY b.winlostdate, currency
         
         ;WITH sourceDATA as (
@@ -400,7 +400,7 @@ BEGIN
                 INNER JOIN dbo.Customer c WITH(NOLOCK) on p.custid = c.custid
             WHERE p.winlostdate BETWEEN @tmpdate and @tdate    
                 AND c.roleid = 1
-                AND c.recommend in (SELECT custid from @tmpAg)
+                AND c.recommend in (SELECT DISTINCT custid FROM @tmpAg)
                 AND p.sporttype in (SELECT sporttype FROM @sporttype)                    
             GROUP BY p.winlostdate,c.currency
         )

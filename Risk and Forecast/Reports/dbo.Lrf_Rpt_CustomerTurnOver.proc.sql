@@ -406,7 +406,7 @@ ELSE
 			,e.Code
 			INTO #exchange
 		FROM exchange e WITH (NOLOCK)
-		WHERE e.exchangeid IN (SELECT CurrencyId FROM #Data)
+		WHERE e.exchangeid IN (SELECT Currency FROM #Data)
 		
 		CREATE NONCLUSTERED INDEX IDX_Index_Data ON #Data(CustID,bettype,currency,Sporttype,Odds)
 		
