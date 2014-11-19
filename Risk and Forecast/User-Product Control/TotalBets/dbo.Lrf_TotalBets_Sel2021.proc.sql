@@ -7,7 +7,6 @@ SET QUOTED_IDENTIFIER ON
 GO
 /****** Object:  Stored Procedure dbo.Lrf_TotalBets_Sel2021    Script Date: 6/26/2013 10:58:31 PM ******/
 /****** Object:  Stored Procedure dbo.Lrf_TotalBets_Sel2021    Script Date: 5/31/2013 2:41:29 PM ******/
-
 ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel2021]
 	@LicenseeID INT,
 	@CurrencyID INT=0,
@@ -48,7 +47,7 @@ SELECT DISTINCT CustID
                 WHERE   [Description] = COALESCE(@LicenseeType,  
                                                      [Description])
 -------------------------
-DROP TABLE #currency
+
 -----------------------
 DECLARE @RowCount INT, @RowStart INT, @RowEnd INT  
 SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
@@ -154,6 +153,7 @@ SELECT
 		ON e.exchangeid = a.currency
 	WHERE 
 		a.recommend  IN (SELECT CustID FROM @TempAg) AND
+		((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 		a.bettype IN (20,21) AND
 		a.statusID = 0 AND
 		m.eventstatus = 'running' AND
@@ -185,6 +185,7 @@ SELECT c.* FROM
 		*
 	FROM @Data
 ) c WHERE c.RowNum between @RowStart AND @RowEnd
+DROP TABLE #currency
 GO
 GRANT EXECUTE ON [dbo].[Lrf_TotalBets_Sel2021] TO [bodbLicenseeNet]
 
