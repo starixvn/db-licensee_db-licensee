@@ -82,7 +82,7 @@ SELECT DISTINCT CustID
                 WHERE   [Description] = COALESCE(@LicenseeType,  
                                                      [Description])
 													 
-DECLARE @Fromdate DATETIME
+DECLARE @Fromdate DATETIME 
 DECLARE @Todate  DATETIME
 
 DECLARE @TempBettype AS TABLE (bettype INT PRIMARY KEY)
