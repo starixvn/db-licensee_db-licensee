@@ -166,7 +166,7 @@ BEGIN
 			--INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid 	 		
 			INNER JOIN match m WITH (NOLOCK) ON b.matchid=m.matchid
 		WHERE
-			b.matchid=@matchid AND			
+			b.matchid=@matchid AND			 
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
 			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
