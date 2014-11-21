@@ -47,15 +47,16 @@ BEGIN
 		AND (@CurrencyID =0 OR (CurrencyID=@CurrencyID ))
 	
 	DECLARE @Temp   AS TABLE (LicenseeId INT,CustId INT,Currency INT,Description VARCHAR(100) )	
-	DECLARE @TempAg AS TABLE ( CustId INT )
+	DECLARE @TempAg AS TABLE ( CustId INT, Currency INT )
 	DECLARE @sql VARCHAR(500)
 	SELECT  @sql =  'SELECT LicenseeId,CustID,Currency,Description FROM  OPENQUERY(DBLIC, ''SELECT * FROM bodb_licensee.dbo.f_SelLicenseeCust('+CAST(@LicenseeID AS VARCHAR(10))+')'')'
 	
 	INSERT INTO @Temp  (LicenseeId  ,CustId  ,Currency  ,Description )
 	EXEC (@sql)
 	
-	INSERT  INTO @TempAg(CustId)
-	SELECT  DISTINCT CustID  
+	INSERT  INTO @TempAg(CustId,Currency )
+	SELECT    CustID  
+			,Currency
 	FROM     @Temp lc
 			INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
 	WHERE   (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID))
@@ -212,11 +213,11 @@ BEGIN
 					SUM((b.awinlost + b.mwinlost + b.swinlost)*b.actualrate) PTWLLicenseeMYR
 			FROM	bettrans b WITH (NOLOCK,index=CIX_matchid_bettype) 
 					INNER JOIN Outright o WITH (NOLOCK) ON b.matchid = o.orid 
+					INNER JOIN @TempAg ag ON b.recommend = ag.custid AND b.currency = ag.currency
 			WHERE	b.winlostdate = @wldate 
 					AND b.bettype in (31,32,33)
 					AND b.statusID NOT IN (101,102,103,121)
 					AND b.ruben = 1
-					AND recommend IN (SELECT custid FROM @TempAg)
 					AND b.matchid > 0
 			GROUP BY o.leagueid, o.groupmatch, b.currency
 	)hr
@@ -373,10 +374,11 @@ BEGIN
 					SUM((b.awinlost + b.mwinlost + b.swinlost)*b.actualrate) PTWLLicenseeMYR	
 			FROM	bettrans14 b WITH (NOLOCK) 
 					INNER JOIN Outright14 o WITH (NOLOCK) ON b.matchid = o.orid 
+					INNER JOIN @TempAg ag ON b.recommend = ag.custId AND b.currency = ag.currency
 			WHERE	b.winlostdate = @wldate 
 					AND b.bettype in (31,32,33)
 					AND b.statusID NOT IN (101,102,103,121)
-					AND recommend IN (SELECT custid FROM @TempAg)
+					 
 			GROUP BY o.leagueid, o.groupmatch, b.currency
 	)hr
 	INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@wldate,@wldate))e 

@@ -49,9 +49,10 @@ BEGIN
 	WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 	-------
 
-	DECLARE @TempAg AS TABLE (custid INT)
-	INSERT INTO @TempAg (custid)
-	SELECT  DISTINCT lc.CustID  
+	DECLARE @TempAg AS TABLE (custid INT ,currency INT)
+	INSERT INTO @TempAg (custid,currency)
+	SELECT    lc.CustID  
+			 ,lc.Currency
 	FROM    bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc
 			INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
  
@@ -82,8 +83,8 @@ BEGIN
 
 		INSERT INTO #tblLeagueid
 		SELECT leagueid
-		FROM bodb_LicenseeReport.dbo.rptWinlostbyLeague AS rwl WITH (NOLOCK)
-		INNER JOIN @TempAg ta on rwl.recommend=ta.custid
+	 FROM bodb_LicenseeReport.dbo.rptWinlostbyLeague AS rwl WITH (NOLOCK)
+		INNER JOIN @TempAg ta on rwl.recommend=ta.custid AND rwl.currency = ta.currency
 		WHERE   rwl.winlostdate BETWEEN @f AND @TempToDate
 		GROUP BY leagueid
 	END
