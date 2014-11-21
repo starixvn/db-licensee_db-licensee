@@ -33,6 +33,7 @@ AS
     DB: DBACC.bodb02  
     Revisions:  
 			- 20140923@Jim: use table customer instead of licenseecustinfo
+			- 20141121@Jim: as more table alias 
 	Param's Explanation:  
 	  + @excludeTest: remove currency UUS
 */  
@@ -86,7 +87,7 @@ BEGIN
 		INNER JOIN dbo.Custinfo co WITH  (NOLOCK) ON c.CustID = co.CustID
 	WHERE c.Winlostdate BETWEEN @FromDate AND @ToDate 
 		  AND co.recommend =  @CustID
-		  AND (@excludeTest=0 OR (@excludeTest=1 AND Currency <> 20))		
+		  AND (@excludeTest=0 OR (@excludeTest=1 AND co.Currency <> 20))		
 	GROUP BY c.CustID
 			,c.Winlostdate
 		    ,co.Currency
