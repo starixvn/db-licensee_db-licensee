@@ -1,6 +1,6 @@
 ﻿USE [bodb02]
 GO
-
+ 
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -549,10 +549,10 @@ BEGIN
 					ELSE 1 END
 				ELSE 1 END
 		FROM 
-			bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
+			  bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
+			  INNER JOIN @TempAg ag ON b.recommend = ag.custID AND b.Currency = ag.currency
 		WHERE  
-			b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
-			AND b.Winlostdate BETWEEN @_FromDate AND @TempToDate  
+			 b.Winlostdate BETWEEN @_FromDate AND @TempToDate  
 			AND b.roleid = 2   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 1
@@ -665,10 +665,10 @@ BEGIN
 				ELSE 1 END
 		FROM 
 			bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
+			INNER JOIN @TempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
 			INNER JOIN @sporttype t ON b.sporttype = t.sporttype
 		WHERE  
-			b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
-			AND b.Winlostdate BETWEEN @_FromDate AND @TempToDate  
+			b.Winlostdate BETWEEN @_FromDate AND @TempToDate  
 			AND b.roleid = 2   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 0
@@ -731,10 +731,9 @@ BEGIN
 				ELSE 1 END
 		FROM  
 			bodb_Licensee.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
-			
+			INNER JOIN @TempAg ag ON b.recommend=ag.custID AND b.Currency = ag.currency
 		WHERE  
-			b.recommend IN (SELECT CustId FROM @TempAg)
-			AND b.Winlostdate BETWEEN @_FromDate AND @TempToDate  
+			 b.Winlostdate BETWEEN @_FromDate AND @TempToDate  
 			AND b.roleid = 2   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 1
@@ -848,10 +847,11 @@ BEGIN
 				ELSE 1 END
 		FROM 
 			bodb_Licensee.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
+			INNER JOIN @TempAg ag ON b.recommend = ag.custID AND b.Currency = ag.currency
 			INNER JOIN @sporttype t ON b.sporttype = t.sporttype
+			
 		WHERE  
-			b.recommend IN (SELECT CustId FROM @TempAg)
-			AND b.Winlostdate BETWEEN @_FromDate AND @TempToDate  
+			b.Winlostdate BETWEEN @_FromDate AND @TempToDate  
 			AND b.roleid = 2   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 0

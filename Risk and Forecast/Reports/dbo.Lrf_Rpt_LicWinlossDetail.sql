@@ -1,10 +1,6 @@
 ﻿USE [bodb02]
 GO
-
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+ 
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinlossDetail]  
 	@LicenseeID	INT,
@@ -526,9 +522,9 @@ BEGIN
 				ELSE 1 END
 		FROM 
 			bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
+				INNER JOIN @TempAg  a ON b.recommend = a.custID AND b.Currency = a.Currency
 		WHERE  
-			b.recommend IN (SELECT DISTINCT CustID FROM @TempAg)
-			AND b.Winlostdate BETWEEN @FDate AND @TempToDate  
+			 b.Winlostdate BETWEEN @FDate AND @TempToDate  
 			AND b.roleid = 1
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 1
@@ -641,10 +637,10 @@ BEGIN
 					ELSE 1 END
 				ELSE 1 END
 		FROM bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
+			INNER JOIN @TempAg a ON b.recommend= a.custID AND b.Currency = a.Currency
 			INNER JOIN @sporttype t ON b.sporttype = t.sporttype
 		WHERE  
-			b.recommend IN (SELECT DISTINCT custid FROM @TempAg)
-			AND b.Winlostdate BETWEEN @FDate AND @TempToDate  
+			b.Winlostdate BETWEEN @FDate AND @TempToDate  
 			AND b.roleid = 1
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 0
@@ -709,9 +705,9 @@ BEGIN
 					ELSE 1 END
 				ELSE 1 END
 		FROM bodb_Licensee.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
+			INNER JOIN @TempAg a ON b.recommend = a.custID AND b.Currency = a.Currency
 		WHERE  
-			b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
-			AND b.Winlostdate BETWEEN @FDate AND @TempToDate  
+			b.Winlostdate BETWEEN @FDate AND @TempToDate  
 			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 1
@@ -824,10 +820,10 @@ BEGIN
 				ELSE 1 END
 		
 		FROM bodb_Licensee.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
+			INNER JOIN @TempAg a ON b.recommend = a.custID AND b.Currency = a.Currency
 			INNER JOIN @sporttype t ON b.sporttype = t.sporttype
 		WHERE  
-			b.recommend IN (SELECT CustId FROM @TempAg)
-			AND b.Winlostdate BETWEEN @FDate AND @TempToDate  
+			b.Winlostdate BETWEEN @FDate AND @TempToDate  
 			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 0

@@ -1,4 +1,11 @@
-﻿CREATE PROCEDURE [dbo].[Lrf_Monitor_BetlistSel_ByLeague]
+﻿USE [bodb02]
+GO
+ 
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[Lrf_Monitor_BetlistSel_ByLeague]
 	@LicenseeID INT,
 	@UserID	 INT,
 	@bettype VARCHAR(50) = NULL,
@@ -172,8 +179,8 @@ BEGIN
 END
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_Monitor_BetlistSel_ByLeague] TO [bodbLicenseeNet] AS [dbo]
+GRANT EXECUTE ON [dbo].[Lrf_Monitor_BetlistSel_ByLeague] TO [bodbLicenseeNet]  
 GO
-GRANT EXECUTE ON [dbo].[Lrf_Monitor_BetlistSel_ByLeague] TO [bodbAdminNet] AS [dbo]
+GRANT EXECUTE ON [dbo].[Lrf_Monitor_BetlistSel_ByLeague] TO [bodbAdminNet]  
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Monitor_BetlistSel_ByLeague] TO [vnteam] AS [dbo]
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Monitor_BetlistSel_ByLeague] TO [vnteam]  

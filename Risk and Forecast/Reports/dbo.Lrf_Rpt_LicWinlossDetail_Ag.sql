@@ -545,9 +545,9 @@ BEGIN
 					ELSE 1 END
 				ELSE 1 END
 		FROM bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
+			INNER JOIN @TempAg a ON b.recommend = a.custID AND b.Currency = a.currency
 		WHERE  
-			b.recommend IN (SELECT DISTINCT Custid FROM @TempAg)
-			AND b.Winlostdate BETWEEN @FDate AND @TempToDate  
+			 b.Winlostdate BETWEEN @FDate AND @TempToDate  
 			AND b.roleid = 2   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 1
@@ -660,10 +660,10 @@ BEGIN
 				ELSE 1 END
 		FROM 
 			bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
+			INNER JOIN @TempAg a ON b.recommend = a.custID AND b.Currency = a.currency
 			INNER JOIN @sporttype t ON b.sporttype = t.sporttype
 		WHERE  
-			b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
-			AND b.Winlostdate BETWEEN @FDate AND @TempToDate  
+			 b.Winlostdate BETWEEN @FDate AND @TempToDate  
 			AND b.roleid = 2   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 0
@@ -727,9 +727,9 @@ BEGIN
 				ELSE 1 END
 		FROM 
 			bodb_Licensee.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
+				INNER JOIN @TempAg a ON b.recommend = a.custID AND b.Currency = a.currency
 		WHERE  
-			b.recommend IN (SELECT DISTINCT CustID FROM @TempAg)
-			AND b.Winlostdate BETWEEN @FDate AND @TempToDate  
+			b.Winlostdate BETWEEN @FDate AND @TempToDate  
 			AND b.roleid = 2   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 1
@@ -839,10 +839,10 @@ BEGIN
 					ELSE 1 END
 				ELSE 1 END
 		FROM bodb_Licensee.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
+			INNER JOIN @TempAg a ON b.recommend = a.custID AND b.Currency = a.currency
 			INNER JOIN @sporttype t ON b.sporttype = t.sporttype
 		WHERE  
-			b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
-			AND b.Winlostdate BETWEEN @FDate AND @TempToDate  
+			  b.Winlostdate BETWEEN @FDate AND @TempToDate  
 			AND b.roleid = 2   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 0
@@ -993,4 +993,4 @@ END
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_LicWinlossDetail_Ag] TO [bodbLicenseeNet]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LicWinlossDetail_Ag] TO [vnteam]  
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LicWinlossDetail_Ag] TO [vnteam] 
