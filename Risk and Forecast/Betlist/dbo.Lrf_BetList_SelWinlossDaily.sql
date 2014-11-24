@@ -1,6 +1,6 @@
 ﻿USE [bodb02]
 GO
-
+ 
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -348,7 +348,7 @@ BEGIN
 		BEGIN
 			INSERT INTO @DataSum
 			SELECT 
-				currency,
+				b.currency,
 				COUNT(b.transid),
 				SUM(ISNULL(b.winlost-b.actual_stake,0)),
 				0,
@@ -364,13 +364,13 @@ BEGIN
 				AND b.status=@status
 				AND b.ruben = 1
 				AND b.tpositiontaking=0
-			GROUP BY currency	
+			GROUP BY b.currency	
 		END
 	IF (@Product<>'BA' )	
 		BEGIN
 			INSERT INTO @DataSum
 			SELECT 
-				currency,
+				b.currency,
 				COUNT(b.transid),
 				SUM(ISNULL(b.winlost-b.actual_stake,0)),
 				-SUM(ISNULL(CASE WHEN  b.bettype IN (31,32,33) THEN awinlost
@@ -392,7 +392,7 @@ BEGIN
 					(@Product='SB' AND b.tpositiontaking<>0)
 					OR @Product<>'SB'
 					)
-			GROUP BY currency	
+			GROUP BY b.currency	
 		END	
 	CREATE TABLE #BetData1
 	(
