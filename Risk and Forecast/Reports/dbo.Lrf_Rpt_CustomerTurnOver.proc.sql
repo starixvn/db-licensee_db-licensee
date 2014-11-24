@@ -1,6 +1,6 @@
 ﻿USE [bodb02]
 GO
-
+ 
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -198,7 +198,7 @@ ELSE
 					WHEN b.bettype NOT IN (9,10,29) THEN m.sporttype
 					ELSE 1 END sporttype,
 				b.bettype,
-				currency,
+				b.currency,
 				stake as turnover,
 				oddsid,
 				b.winlost - b.actual_stake as winlost,
@@ -555,8 +555,6 @@ DROP TABLE #ProductID
 DROP TABLE #BettypeID
 DROP TABLE #Status
 GO
-GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [bodbLicenseeNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [vnteam] 
-
