@@ -18,8 +18,8 @@ ALTER PROCEDURE [dbo].[Lrf_rpt_DWWinloss]
  /*
 Created: 20140331@Winnie
 Task : 
-DB: DB052.bodb02
-Original:DBLIC.bodb_licensee
+DB: DBLIC.bodb_licensee
+Original:
 
 Revisions:	
 	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
