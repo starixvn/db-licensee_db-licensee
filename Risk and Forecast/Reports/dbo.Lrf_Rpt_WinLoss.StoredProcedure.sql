@@ -81,7 +81,7 @@ DECLARE @_FromDate SMALLDATETIME
 		,@Today SMALLDATETIME 
 		,@TempFromDate DATETIME 
 		,@TempToDate DATETIME
-DECLARE @TempAg AS TABLE ( CustId INT)
+DECLARE @TempAg AS TABLE ( CustId INT,Currency INT)
  
 DECLARE @bettype AS TABLE (bettype INT PRIMARY KEY)
 DECLARE @sporttype TABLE(sporttype INT)
@@ -107,8 +107,9 @@ SELECT  currencyID,LicenseeID
 FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
 WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
-INSERT  INTO @TempAg(CustId)
-SELECT DISTINCT CustID
+INSERT  INTO @TempAg(CustId,Currency)
+SELECT  CustID
+		,Currency
 FROM bodb_licensee.dbo.f_SelLicenseeCust (@LicenseeID) lc  
 	INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
 /*
@@ -319,8 +320,9 @@ BEGIN
 				END) AS betcount
 		FROM    
 			bettrans b WITH ( NOLOCK)   
+			INNER JOIN  @TempAg ag ON  b.recommend = ag.CustId AND b.Currency = ag.Currency 
 			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
-		WHERE transid IN (SELECT transid FROM bodb_Licensee.dbo.LicenseeBATransaction_active WITH (NOLOCK) WHERE recommend IN (SELECT custid FROM @TempAg))
+		WHERE transid IN (SELECT transid FROM bodb_Licensee.dbo.LicenseeBATransaction_active WITH (NOLOCK) )
 			AND winlostdate BETWEEN @TempFromDate AND @_ToDate
 			AND b.statusID  IN (111, 112, 113)
 			and bettype < 19999
@@ -378,7 +380,7 @@ BEGIN
 				END) AS betcount
 		FROM    
 			Bettrans b WITH ( NOLOCK)
-			INNER JOIN @TempAg a ON b.recommend = a.custid
+			INNER JOIN @TempAg a ON b.recommend = a.custid AND b.Currency = a.Currency
 			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 		WHERE   
 			winlostdate BETWEEN @TempFromDate AND @_ToDate
@@ -444,7 +446,7 @@ BEGIN
 				END) AS betcount
 		FROM    
 			Bettrans b WITH ( NOLOCK )
-			INNER JOIN @TempAg a  ON b.recommend = a.custid
+			INNER JOIN @TempAg a  ON b.recommend = a.custid AND b.Currency = a.Currency
 			INNER JOIN @bettype bt ON b.bettype = bt.bettype
 			LEFT JOIN  @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 		WHERE   
@@ -513,7 +515,7 @@ BEGIN
 					 END) AS betcount
 		FROM    
 			bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )
-			INNER JOIN @TempAg ag ON ag.custid = b.recommend
+			INNER JOIN @TempAg ag ON ag.custid = b.recommend AND b.Currency = ag.Currency
 			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 		WHERE   
 			Winlostdate BETWEEN @_FromDate AND @TempToDate
@@ -577,7 +579,7 @@ BEGIN
 					 END) as betcount
 		FROM    
 			bodb_Licensee.dbo.rptLicWinloss2 b WITH (NOLOCK)
-			INNER JOIN @TempAg ag ON ag.custid = b.recommend
+			INNER JOIN @TempAg ag ON ag.custid = b.recommend AND b.Currency = ag.Currency
 			INNER JOIN @sporttype t ON b.sporttype = t.sporttype
 			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 		WHERE   
@@ -642,7 +644,7 @@ BEGIN
 					 END) AS betcount
 		FROM    
 			bodb_Licensee.dbo.rptLicWinloss_Old b WITH ( NOLOCK )
-			INNER JOIN @TempAg ag ON ag.custid = b.recommend
+			INNER JOIN @TempAg ag ON ag.custid = b.recommend AND b.Currency = ag.Currency
 			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 		WHERE   
 			b.Winlostdate BETWEEN @_FromDate AND @_ToDate
@@ -703,7 +705,7 @@ BEGIN
 				    END) AS betcount
 		FROM    
 			bodb_Licensee.dbo.rptLicWinloss_Old b WITH ( NOLOCK )
-			INNER JOIN @TempAg ag ON ag.custid = b.recommend
+			INNER JOIN @TempAg ag ON ag.custid = b.recommend AND b.Currency = ag.Currency
 			INNER JOIN @sporttype t ON b.sporttype = t.sporttype
 			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 		WHERE   

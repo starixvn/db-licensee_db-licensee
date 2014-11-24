@@ -84,7 +84,7 @@ BEGIN
 			 ,lc.Currency
 	FROM 
 		dbo.CustInfo co WITH (NOLOCK)
-		INNER JOIN @Temp lc ON lc.CustId = co.Recommend
+		INNER JOIN @Temp lc ON lc.CustId = co.Recommend AND co.Currency = lc.Currency
 		INNER JOIN #Currency c ON  lc.Currency = c.CurrencyID 
 	WHERE  (@excludeTest=0 OR (@excludeTest=1 AND lc.Currency <> 20))	
 	

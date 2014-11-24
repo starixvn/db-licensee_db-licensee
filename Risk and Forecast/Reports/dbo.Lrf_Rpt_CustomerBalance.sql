@@ -5,7 +5,7 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerBalance_xtest]  
+ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerBalance]  
 	@LicenseeID INT ,  
 	@LicenseeType VARCHAR(100) = NULL,
 	@UserID		INT,	
@@ -66,7 +66,7 @@ IF ISNULL(@LicenseeType,'') = ''
 	SELECT @LicenseeType = NULL
 
 DECLARE @CutDate datetime  
-DECLARE @tmpAg TABLE(custID INT)  
+DECLARE @tmpAg TABLE(custID INT, Currency INT)  
 DECLARE @RowStart INT, @RowEnd INT  
 DECLARE @sporttype TABLE(sporttype INT)  
 DECLARE @tmpdate smalldatetime, @fdate smalldatetime, @tdate smalldatetime  
@@ -104,8 +104,9 @@ SELECT  @sql =  'SELECT LicenseeId,CustID,Currency,Description  FROM  OPENQUERY(
 INSERT INTO @Temp (LicenseeId  ,CustId ,Currency  , Description)	
 EXEC (@sql)	
 
-INSERT INTO @tmpAg (CustId) 
-SELECT DISTINCT CustID   
+INSERT INTO @tmpAg (CustId, Currency) 
+SELECT  CustID   
+		,Currency
 FROM @Temp lc
 	INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
 WHERE  [Description] = COALESCE(@LicenseeType,[Description])   
@@ -153,9 +154,10 @@ BEGIN
    CASE WHEN @showSB=1 THEN sum(isnull(Comm_BA,0)) ELSE 0 END CommBA,  
    0 as PlayerComm,  
    CASE WHEN @showSB=1 THEN sum(isnull(AmountDueTo_BA,0)) ELSE 0 END AmountDueToBA   
- FROM bodb_Report.dbo.rptDepWinlost_bk b with(nolock)  
+ FROM bodb_Report.dbo.rptDepWinlost_bk b with(nolock) 
+		INNER JOIN @tmpAg a ON b.recommend = a.CustId AND b.Currency = a.Currency
  WHERE b.winlostdate between @fdate AND @tmpdate  
-   and b.recommend in (select custid from @tmpAg)  
+   
  group by b.custid  
   
  ;WITH sourceDATA as (  
@@ -201,8 +203,9 @@ BEGIN
    CASE WHEN @showSB=1 THEN sum(isnull(AmountDueTo_BA,0)) ELSE 0 END AmountDueToBA  
  INTO #SumWinlost2  
  FROM   bodb_Report.dbo.rptDepWinlost b with (nolock)  
+		INNER JOIN  @tmpAg a ON  b.recommend = a.CustId AND b.Currency = a.Currency
  WHERE b.winlostdate between @tmpdate AND @tdate  
-   and b.recommend in (select custid from @tmpAg)  
+   
  group by b.custid   
   
  ;WITH sourceDATA as (  

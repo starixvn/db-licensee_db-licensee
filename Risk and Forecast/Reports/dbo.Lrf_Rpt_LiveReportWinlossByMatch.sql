@@ -37,7 +37,7 @@ Revisions:
 	- 20130625@Jim: support to view currency UUS 
 	- 20140602@Hannah: Separate Live/ Non - Live data in Live Report
 	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
-	 - 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 Return 3 tables:
 WinlostBySport
 WinlostByCurrency
@@ -77,9 +77,10 @@ SELECT  currencyID,LicenseeID into #currency
 FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
 WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
-DECLARE @TempAg AS TABLE ( CustId INT )
-INSERT  INTO @TempAg ( CustId)
-SELECT  DISTINCT CustID  
+DECLARE @TempAg AS TABLE ( CustId INT , Currency INT )
+INSERT  INTO @TempAg ( CustId, Currency)
+SELECT  CustID  
+		,Currency
 FROM    bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc  
 		INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
 --WHERE   Currency <> 20
@@ -145,10 +146,10 @@ BEGIN
 			b.bettype,
 			'' AS ShowTime 
 		FROM bettrans b  WITH (NOLOCK) 
-			INNER JOIN [match] m WITH(NOLOCK) ON b.matchid=m.matchid				
+			INNER JOIN [match] m WITH(NOLOCK) ON b.matchid=m.matchid	
+			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency 
 		WHERE
-			b.recommend IN (SELECT CustId FROM @TempAg) AND
-			AND b.winlostdate BETWEEN @TempFromDate AND @TDate AND  			
+			 b.winlostdate BETWEEN @TempFromDate AND @TDate AND  			
 			b.matchid > 0 AND
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
 						  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
@@ -180,9 +181,9 @@ BEGIN
 			b.bettype,
 			'' AS ShowTime 
 		FROM bettrans b  WITH (NOLOCK) 
-			INNER JOIN [match] m WITH(NOLOCK) ON b.matchid=m.matchid				
+			INNER JOIN [match] m WITH(NOLOCK) ON b.matchid=m.matchid	
+			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency		
 		WHERE
-			b.recommend IN (SELECT CustId FROM @TempAg) AND
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  			
 			b.matchid > 0 AND
 			b.bettype IN (9,29) AND
@@ -214,9 +215,9 @@ BEGIN
 			b.bettype, 
 			'' AS ShowTime 
 		FROM bettrans b  WITH (NOLOCK) 
-			INNER JOIN [match] m WITH(NOLOCK) ON b.matchid=m.matchid				
+			INNER JOIN [match] m WITH(NOLOCK) ON b.matchid=m.matchid	
+			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency	
 		WHERE
-			b.recommend IN (SELECT CustId FROM @TempAg) AND 
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
 							OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
@@ -249,9 +250,9 @@ BEGIN
 			b.bettype, 
 			'' AS ShowTime 
 		FROM bettrans b  WITH (NOLOCK) 
-			INNER JOIN [match] m WITH(NOLOCK) ON b.matchid=m.matchid				
+			INNER JOIN [match] m WITH(NOLOCK) ON b.matchid=m.matchid
+			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency	
 		WHERE
-			b.recommend IN (SELECT CustId FROM @TempAg) AND 
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
 			b.bettype IN (9,29) AND
 			b.matchid > 0 AND
@@ -285,8 +286,8 @@ BEGIN
 		FROM bettrans b  WITH (NOLOCK) 
 			INNER JOIN [match] m WITH(NOLOCK) ON b.matchid=m.matchid				
 			INNER JOIN @bettype bt ON b.bettype = bt.bettype
+			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
 		WHERE
-			b.recommend IN (SELECT CustId FROM @TempAg) AND
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
 			b.matchid > 0 AND
 			b.statusID IN (111,112,113) AND
@@ -328,9 +329,9 @@ BEGIN
 		FROM bettrans14 b  WITH (NOLOCK) 
 			--INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
 			INNER JOIN [match14] m WITH(NOLOCK) ON b.matchid = m.matchid
+			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
 		WHERE
 			b.winlostdate BETWEEN @FDate AND @TempToDate  AND
-			b.Recommend IN ( SELECT custid FROM @TempAg)  AND    
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
 						  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 			) AND
@@ -363,9 +364,9 @@ BEGIN
 		FROM bettrans14 b  WITH (NOLOCK) 
 			--INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
 			INNER JOIN [match14] m WITH(NOLOCK) ON b.matchid = m.matchid
+			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
 		WHERE
 			b.winlostdate BETWEEN @FDate AND @TempToDate  AND
-			b.Recommend IN ( SELECT custid FROM @TempAg)  AND    
 			b.bettype IN (9,29) AND
 			b.tpositiontaking=0 AND
 			b.statusID IN (111,112,113) AND
@@ -396,9 +397,9 @@ BEGIN
 			b.bettype,
 			'' AS ShowTime 
 		FROM bettrans14 b  WITH (NOLOCK) 
-			INNER JOIN [match14] m WITH(NOLOCK) ON b.matchid = m.matchid			
+			INNER JOIN [match14] m WITH(NOLOCK) ON b.matchid = m.matchid
+			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency	
 		WHERE
-			b.recommend IN (SELECT CustId FROM @TempAg)
 			b.winlostdate BETWEEN @FDate AND @TempToDate  AND
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
 			    	 	  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
@@ -430,9 +431,9 @@ BEGIN
 			b.bettype,
 			'' AS ShowTime 
 		FROM bettrans14 b  WITH (NOLOCK) 
-			INNER JOIN [match14] m WITH(NOLOCK) ON b.matchid = m.matchid			
+			INNER JOIN [match14] m WITH(NOLOCK) ON b.matchid = m.matchid
+			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency	
 		WHERE
-			b.recommend IN (SELECT CustId FROM @TempAg) AND
 			b.winlostdate BETWEEN @FDate AND @TempToDate  AND
 			b.bettype IN (9,29) AND
 			b.tpositiontaking<>0 AND
@@ -464,9 +465,9 @@ BEGIN
 			CASE WHEN b.bettype BETWEEN 1101 AND 1199  THEN ISNULL(m.showtime,'') ELSE '' END AS ShowTime 
 		FROM bettrans14 b  WITH (NOLOCK) 
 			INNER JOIN [match14] m WITH(NOLOCK) ON b.matchid = m.matchid
-			INNER JOIN @bettype bt ON b.bettype = bt.bettype			
+			INNER JOIN @bettype bt ON b.bettype = bt.bettype	
+			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency	
 		WHERE
-			b.recommend IN (SELECT CustId FROM @TempAg ) AND 
 			b.winlostdate BETWEEN @FDate AND @TempToDate  AND
 			b.statusID IN (111,112,113) AND
 			m.sporttype = @SportId AND

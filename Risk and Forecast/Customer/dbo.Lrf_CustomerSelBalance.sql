@@ -291,7 +291,7 @@ INSERT INTO #Temp_Bettrans (srecommend
 SELECT srecommend
 	  ,winlostdate
 	  ,bettype
-	  ,currency
+	  ,ag.currency
 	  ,statusID
 	  ,recommend
 	  ,winlost
@@ -301,9 +301,9 @@ SELECT srecommend
 	  ,awinlost
 	  ,actual_stake
 FROM dbo.bettrans b WITH(NOLOCK) 
+	INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
 WHERE 
-	recommend IN (SELECT DISTINCT  CustID FROM @TempAg)
-	AND b.winlostdate BETWEEN @MoveBetsDay AND @Today 
+     b.winlostdate BETWEEN @MoveBetsDay AND @Today 
 	AND b.bettype <= 1599 
 	AND b.statusID IN (111,112,113)	
 
@@ -454,7 +454,7 @@ BEGIN
 
 	INSERT INTO @SumTemp 
 	SELECT 
-		currency,
+		ag.currency,
 		ISNULL(- SUM(CASE WHEN ISNULL(b.isBA,0) = 0 AND (b.sporttype IN (0,161,162,180,251,252,202))  THEN b.winlost ELSE 0 END),0) AS SelectedMonthLicenseeWL,
 		ISNULL(- SUM ( CASE WHEN ISNULL(b.isBA,0) = 1 THEN  (b.winlost+b.awinlost+b.comm) ELSE 0 END),0) AS SelectedMonthAmtDuetoBA,
 		ISNULL(- SUM ( CASE WHEN b.sporttype = 151 THEN (b.winlost+b.awinlost+b.comm) ELSE 0 END),0) AS SelectedMonthAmtDuetoRB,
@@ -465,19 +465,19 @@ BEGIN
 		
 	FROM 
 		bodb_Licensee.dbo.rptLicWinloss2 b WITH(NOLOCK) 
+		INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
 	WHERE
 		b.Winlostdate BETWEEN @_FromDate AND @TempToDate AND	
-		recommend IN (SELECT custid FROM @TempAg) AND
 		roleID = 2 AND 
 		b.statusID <> 101 --exclude REJECT bets
-	GROUP BY currency
+	GROUP BY ag.currency
 	
 END	
 ELSE IF @IsOld = 1
 BEGIN
 	INSERT INTO @SumTemp
 	SELECT 
-		currency,
+		ag.currency,
 		ISNULL(- SUM(CASE WHEN ISNULL(b.isBA,0) = 0 AND ( b.sporttype IN (0,161,162,180,251,252,202))  THEN b.winlost ELSE 0 END),0) AS SelectedMonthLicenseeWL,
 		ISNULL(- SUM ( CASE WHEN ISNULL(b.isBA,0) = 1 THEN  (b.winlost+b.awinlost+b.comm) ELSE 0 END),0) AS SelectedMonthAmtDuetoBA,
 		ISNULL(- SUM ( CASE WHEN b.sporttype = 151 THEN (b.winlost+b.awinlost+b.comm) ELSE 0 END),0) AS SelectedMonthAmtDuetoRB,
@@ -486,14 +486,14 @@ BEGIN
 		ISNULL(SUM ( CASE WHEN b.sporttype = 151 THEN comm  ELSE 0 END),0)  AS SelectedMonthCommRB,
 		ISNULL(SUM ( playercomm ),0) AS SelectedMonthPlayerComm
 	FROM 
-		bodb_Licensee.dbo.rptLicWinloss_old b WITH(NOLOCK) 
+		bodb_Licensee.dbo.rptLicWinloss_old b WITH(NOLOCK)
+		INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency	
 	WHERE
 		b.Winlostdate BETWEEN @_FromDate AND @_ToDate AND	
-		recommend IN (SELECT custid FROM @TempAg) AND
 		roleID = 2 AND 
 		b.statusID <> 101 --exclude REJECT bets
 	--GROUP BY winlostdate,currency
-	GROUP BY currency
+	GROUP BY ag.currency
 END
 
 

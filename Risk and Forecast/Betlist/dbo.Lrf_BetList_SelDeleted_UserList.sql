@@ -33,9 +33,10 @@ SELECT  currencyID,LicenseeID into #currency
 FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
 WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
-DECLARE @TempAg AS TABLE (custid INT)
-INSERT INTO @TempAg (custid)
-SELECT  CustID  
+DECLARE @TempAg AS TABLE (custid INT,Currency INT)
+INSERT INTO @TempAg (custid,Currency)
+SELECT  CustID 
+		,Currency
 FROM    bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc
 		INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
 WHERE    [Description] = COALESCE(@LicenseeType,  
@@ -50,9 +51,9 @@ FROM
 	INNER JOIN (SELECT matchid,eventdate 
 				FROM match WITH (nolock) 
 				WHERE eventdate > DATEADD(day,-3,CURRENT_TIMESTAMP))  AS m ON b.matchid = m.matchid
+	INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency		
 WHERE 
-	b.recommend IN (SELECT custid FROM @TempAg) 
-	AND b.statusID IN (101, 102)
+	b.statusID IN (101, 102)
 	and b.bettype not in (10,31,32,33,41,42,43,1231,1232,1233,1237,1238) --20140408@Florent: exclude outright, HR from sportbook
 	and b.bettype not between 1501 and 1599 -- exclude Keno from sportbook
 GROUP BY b.custid
@@ -64,9 +65,9 @@ FROM
 	INNER JOIN (SELECT orid,eventdate 
 				FROM outright WITH (nolock)	
 				WHERE eventdate > DATEADD(day,-3,CURRENT_TIMESTAMP))  AS m ON b.matchid = m.orid
+	INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency				
 WHERE 
 	b.bettype in (10,31,32,33,41,42,43)
-	AND	b.recommend IN (SELECT custid FROM @TempAg) 
 	AND b.statusID IN (101, 102)
 GROUP BY b.custid
 
@@ -77,9 +78,9 @@ FROM
 	INNER JOIN (SELECT orid,eventdate 
 				FROM dbo.VSOutright WITH (nolock) 
 				WHERE eventdate > DATEADD(day,-3,CURRENT_TIMESTAMP))  AS m ON b.oddsid = m.orid
+	INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency			
 WHERE 
 	b.bettype in (1231, 1232, 1233, 1237, 1238)
-	AND	b.recommend IN (SELECT custid FROM @TempAg) 
 	AND b.statusID IN (101, 102)
 GROUP BY b.custid
 
@@ -88,9 +89,9 @@ INSERT INTO @bc (custid, betcount)
 SELECT  b.custid, SUM(1) AS betcount
 FROM 
 	bettrans AS b WITH (nolock)
+	INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
 WHERE 
-	b.recommend IN (SELECT custid FROM @TempAg) 
-	AND b.statusID IN (101, 102)
+	b.statusID IN (101, 102)
 	AND b.winlostdate > DATEADD(day,-3,CURRENT_TIMESTAMP)
 	AND b.bettype BETWEEN 1501 AND 1599
 	--AND b.ruben = 1

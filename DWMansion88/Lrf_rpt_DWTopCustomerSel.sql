@@ -128,11 +128,11 @@ BEGIN
 		
 		FROM    
 			bodb_LicenseeReport.[dbo].[rptCustomerTurnover] b WITH ( NOLOCK)
-			INNER JOIN bodb02.dbo.Customer c WITH ( NOLOCK) ON b.custid=c.custid			
+			INNER JOIN bodb02.dbo.Customer c WITH ( NOLOCK) ON b.custid=c.custid	
+			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
 			LEFT  JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 		WHERE   
 			b.winlostdate BETWEEN @FromDate AND @ToDate
-			AND b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
 			AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399))			
 			AND (@sportid=0 OR(@sportid<>0 AND b.sporttype=@sportid))
 			AND (@customer='' OR (@customer<>'' AND c.username=@customer))				
@@ -221,11 +221,11 @@ BEGIN
 		FROM    
 			bodb_LicenseeReport.[dbo].[rptCustomerTurnover] b WITH ( NOLOCK)
 			INNER JOIN #TempCust aa ON b.custid=aa.CustId	
-			INNER JOIN bodb02.dbo.Customer c WITH ( NOLOCK) ON b.custid=c.custid					
+			INNER JOIN bodb02.dbo.Customer c WITH ( NOLOCK) ON b.custid=c.custid	
+			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustID AND b.Currency = ag.Currency
 			LEFT  JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 		WHERE   
-			b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
-			AND b.winlostdate BETWEEN @FromDate AND @ToDate
+			  b.winlostdate BETWEEN @FromDate AND @ToDate
 			AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399))	
 			AND (@sportid=0 OR(@sportid<>0 AND b.sporttype=@sportid))
 			AND (@customer='' OR (@customer<>'' AND c.username=@customer))	
@@ -306,11 +306,11 @@ BEGIN
 		
 		FROM    
 			bodb_LicenseeReport.[dbo].[rptCustomerTurnover] b WITH ( NOLOCK)
-			INNER JOIN bodb02.dbo.Customer c WITH ( NOLOCK) ON b.custid=c.custid			
+			INNER JOIN bodb02.dbo.Customer c WITH ( NOLOCK) ON b.custid=c.custid	
+			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustID AND b.Currency = ag.Currency	
 			LEFT  JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 		WHERE   
-			b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
-			AND b.winlostdate BETWEEN @FromDate AND @ToDate
+			 b.winlostdate BETWEEN @FromDate AND @ToDate
 			AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399))			
 			AND (@sportid=0 OR(@sportid<>0 AND b.sporttype=@sportid))
 			AND (@customer='' OR (@customer<>'' AND c.username=@customer))			
@@ -401,12 +401,12 @@ BEGIN
 		FROM    
 			bodb_LicenseeReport.[dbo].[rptCustomerTurnover] b WITH ( NOLOCK)
 			INNER JOIN #TempCust aa ON b.custid=aa.CustId	
-			INNER JOIN bodb02.dbo.Customer c WITH ( NOLOCK) ON b.custid=c.custid					
+			INNER JOIN bodb02.dbo.Customer c WITH ( NOLOCK) ON b.custid=c.custid	
+			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustID AND b.Currency = ag.Currency	
 			LEFT  JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 			
 		WHERE   
-			b.recommend IN (SELECT CustId FROM @TempAg)
-			AND b.winlostdate BETWEEN @FromDate AND @ToDate
+			 b.winlostdate BETWEEN @FromDate AND @ToDate
 			AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399))	
 			AND (@sportid=0 OR(@sportid<>0 AND b.sporttype=@sportid))
 			AND (@customer='' OR (@customer<>'' AND c.username=@customer))	

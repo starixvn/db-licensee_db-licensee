@@ -118,7 +118,8 @@ SELECT  @PageIndex = @PageIndex - 1 ,
 		@RowEnd = @RowStart + @PageSize - 1 
 
  
-SELECT  DISTINCT lc.CustID
+SELECT  lc.CustID
+		,lc.Currency
 INTO #recommend
 FROM bodb_licensee.dbo.f_SelLicenseeCust (@LicenseeID) lc  
 	INNER JOIN  bodb_licensee.dbo.CurrencyUser c WITH (NOLOCK) ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
@@ -145,13 +146,13 @@ ELSE
 				INSERT INTO #CustID
 				SELECT cr.custid
 				FROM Customer cr (NOLOCK)
-					INNER JOIN #recommend re ON cr.Recommend=re.CustID
+					INNER JOIN #recommend re ON cr.Recommend=re.CustID AND cr.Currency = re.Currency
 				WHERE username2 LIKE '%$%' + @Username+'%'
 				
 				INSERT INTO #CustID
 					SELECT cr.CustID 
 					FROM Customer cr(NOLOCK)
-						INNER JOIN #recommend re ON cr.Recommend=re.CustID
+						INNER JOIN #recommend re ON cr.Recommend=re.CustID AND cr.Currency = re.Currency
 					WHERE username  like '%'+@Username+'%'
 			END
 			ELSE 
@@ -225,7 +226,7 @@ ELSE
 				1 betcount
 			FROM bettrans b WITH (NOLOCK)
 			INNER JOIN #bettype bet  ON b.bettype=bet.typeID
-			INNER JOIN #recommend re on b.recommend=re.CustID
+			INNER JOIN #recommend re on b.recommend=re.CustID AND b.Currency = re.Currency
 			LEFT JOIN match m WITH (NOLOCK) ON b.matchid = m.matchid
 			LEFT JOIN outright o with(nolock) ON b.matchid = o.orid 
 			LEFT JOIN league l with(nolock) ON o.leagueid = l.leagueid
@@ -293,7 +294,7 @@ ELSE
 						,bk.oddstype
 						,sum(bk.betcount) betcount
 					FROM bodb_LicenseeReport.dbo.rptcustomerturnOver bk WITH (NOLOCK,INDEX=CIX_winlostdate) 
-					INNER JOIN #recommend re ON bk.recommend=re.custid				
+					INNER JOIN #recommend re ON bk.recommend=re.custid	AND bk.Currency = re.Currency			
 					INNER JOIN #bettype bt ON bk.bettype=bt.typeid	
 					INNER JOIN #Status s ON bk.statusID=s.StatusID		
 					WHERE bk.winlostdate BETWEEN @fromdate AND @TempToDate				
@@ -365,7 +366,7 @@ ELSE
 					,bk.oddstype
 					,sum(bk.betcount) betcount
 				FROM bodb_LicenseeReport.dbo.rptcustomerturnOver bk WITH (NOLOCK,INDEX=IX_recommend)
-				INNER JOIN #recommend re ON bk.recommend=re.custid				
+				INNER JOIN #recommend re ON bk.recommend=re.custid	AND bk.Currency = re.Currency			
 				INNER JOIN #bettype bt ON bk.bettype=bt.typeid
 				INNER JOIN #Custid cus ON cus.custid = bk.custid
 				INNER JOIN #Status s ON bk.StatusID=s.statusid

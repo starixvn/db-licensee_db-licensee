@@ -71,7 +71,7 @@ BEGIN
 			 ,lc.Currency
 	FROM 
 		dbo.CustInfo co WITH (NOLOCK)
-		INNER JOIN @Temp lc ON lc.CustId = co.Recommend
+		INNER JOIN @Temp lc ON lc.CustId = co.Recommend AND co.Currency = lc.Currency
 		INNER JOIN #Currency c ON  lc.Currency = c.CurrencyID 
 	WHERE  
 		(@CustID = 0 OR (@CustID <> 0 AND lc.CustID = @CustID))

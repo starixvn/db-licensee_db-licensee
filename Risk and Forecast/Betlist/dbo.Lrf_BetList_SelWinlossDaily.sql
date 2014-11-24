@@ -178,7 +178,7 @@ DECLARE @hr TABLE
 	,IsNeutral INT
 )	
 
-CREATE TABLE #TempAg (custid INT)
+CREATE TABLE #TempAg (custid INT, Currency INT)
 CREATE TABLE #TmpCondBettype(bettype INT primary key)
 
 DECLARE @RowStart INT, @RowEnd INT  
@@ -195,8 +195,9 @@ SELECT  currencyID,LicenseeID into #currency
 FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
 WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
-INSERT INTO #TempAg (custid)
-SELECT  DISTINCT lc.CustID  
+INSERT INTO #TempAg (custid,currency)
+SELECT   lc.CustID  
+		,lc.currency
 FROM    bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc  
 INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
 
@@ -356,10 +357,10 @@ BEGIN
 			FROM bettrans b WITH (nolock) 
 				INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
 				INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
+				INNER JOIN #TempAg ag ON b.recommend = ag.custid AND b.currency = ag.Currency
 			WHERE
 				b.winlostdate = @wldate
 				AND b.bettype NOT IN (9,29,10)
-				AND b.recommend IN (SELECT custid FROM #TempAg)	
 				AND b.status=@status
 				AND b.ruben = 1
 				AND b.tpositiontaking=0
@@ -381,10 +382,10 @@ BEGIN
 				SUM(b.playercomm )  AS  SumPlayerComm
 			FROM bettrans b WITH (nolock) 
 				INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
+				INNER JOIN #TempAg ag ON b.recommend = ag.custid AND b.currency = ag.Currency
 			WHERE
 				b.winlostdate = @wldate
 				AND b.bettype NOT IN (9,29,10)
-				AND b.recommend IN (SELECT custid FROM #TempAg)	
 				AND b.status=@status
 				AND b.ruben = 1
 				AND (
@@ -503,6 +504,7 @@ BEGIN
 	FROM
 		bettrans b WITH (nolock) 
 		INNER JOIN customer c WITH (nolock) ON b.custid = c.custid
+		INNER JOIN #TempAg ag ON b.recommend = ag.custid AND b.currency = ag.Currency
 		INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
 		INNER JOIN #TempExchange e ON  e.exchangeid = b.currency'+char(13)+
 	CASE WHEN @Product='BA' THEN 'INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid'	
@@ -512,7 +514,6 @@ BEGIN
 		b.winlostdate = '''+CAST(@wldate AS VARCHAR(50))+''''+char(13)+
 		'AND b.status='''+CAST(@status AS VARCHAR(15))+''''+char(13)+
 		'AND b.bettype NOT IN (9,29,10)
-		AND b.recommend IN (SELECT custid FROM #TempAg)	
 		AND b.ruben = 1'+char(13)+
 		CASE WHEN @Product='SB' THEN 'AND b.tpositiontaking<>0'	
 								ELSE ''
@@ -650,11 +651,12 @@ BEGIN
 			FROM bettrans14 b WITH (NOLOCK)	
 				INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
 				INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
+				INNER JOIN #TempAg ag ON b.recommend = ag.custid AND b.currency = ag.Currency
 			WHERE
 				b.winlostdate = @wldate
 				AND b.bettype NOT IN (9,29,10)
 				AND b.status=@status
-				AND b.recommend IN (SELECT custid FROM #TempAg)
+				 
 			GROUP BY b.currency	
 		END
 	IF (@Product<>'BA' )	
@@ -673,11 +675,11 @@ BEGIN
 				SUM(b.playercomm )  AS  SumPlayerComm
 			FROM bettrans14 b WITH (NOLOCK)	
 				INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
+				INNER JOIN #TempAg ag ON b.recommend = ag.custid AND b.currency = ag.Currency
 			WHERE
 				b.winlostdate = @wldate
 				AND b.bettype NOT IN (9,29,10)
 				AND b.status=@status
-				AND b.recommend IN (SELECT custid FROM #TempAg)
 				AND (
 					(@Product='SB' AND b.tpositiontaking<>0)
 					OR (@Product<>'SB')
@@ -794,6 +796,7 @@ BEGIN
 	FROM
 		bettrans14 b WITH (nolock) 
 		INNER JOIN customer c WITH (nolock) ON b.custid = c.custid
+		INNER JOIN #TempAg ag ON b.recommend = ag.custid AND b.currency = ag.Currency
 		INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
 		INNER JOIN #TempExchange e ON  e.exchangeid = b.currency'+char(13)+
 	CASE WHEN @Product='BA' THEN 'INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid'	
@@ -803,7 +806,6 @@ BEGIN
 		b.winlostdate = '''+ CAST(@wldate AS VARCHAR(50))+''''+char(13)+
 		'AND b.status='''+CAST(@status AS VARCHAR(15))+''''+char(13)+
 		' AND b.bettype NOT IN (9,29,10)
-		AND b.recommend IN (SELECT custid FROM #TempAg)	
 		AND b.ruben = 1'+char(13)+
 		CASE WHEN @Product='SB' THEN 'AND b.tpositiontaking<>0'
 								ELSE ''

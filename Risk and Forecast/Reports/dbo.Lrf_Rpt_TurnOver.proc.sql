@@ -327,10 +327,10 @@ BEGIN
             ,SUM(isnull(b.Comm_BA,0))
             ,0 as PlayerComm
             ,SUM(isnull(b.AmountDueTo_BA,0))
-        FROM bodb_report.dbo.rptdepwinlost_SUM b with(nolock)            
+        FROM bodb_report.dbo.rptdepwinlost_SUM b with(nolock) 
+			INNER JOIN 	@tmpAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency	
         WHERE b.winlostdate between @fdate and @tmpdate    
-            AND b.custid in (SELECT custid from @tmpAg)
-        GROUP BY b.winlostdate, currency
+        GROUP BY b.winlostdate, b.currency
         
         ;WITH sourceDATA as (
             SELECT p.winlostdate
