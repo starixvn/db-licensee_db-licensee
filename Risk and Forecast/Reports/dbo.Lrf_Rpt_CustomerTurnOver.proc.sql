@@ -1,6 +1,5 @@
 ﻿USE [bodb02]
 GO
-
  
 SET ANSI_NULLS ON
 GO

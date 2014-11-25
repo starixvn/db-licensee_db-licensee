@@ -1,5 +1,6 @@
 USE [bodb02]
 GO
+ 
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -89,7 +90,7 @@ BEGIN
 	SELECT  co.CustID 
 			,lc.Currency 
 	FROM dbo.Custinfo co WITH (NOLOCK)
-		INNER JOIN #Currency c ON  lc.Currency = c.CurrencyID 
+		INNER JOIN #Currency c ON  co.Currency = c.CurrencyID 
 		INNER JOIN 	@Temp lc   ON co.recommend = lc.CustId AND lc.Currency = co.Currency
 	WHERE  (@excludeTest=0 OR (@excludeTest=1 AND lc.Currency <> 20))	
 	
