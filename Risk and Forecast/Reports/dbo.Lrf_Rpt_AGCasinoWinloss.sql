@@ -21,10 +21,6 @@ AS
     Revisions:  
 		
 	Param's Explanation:  
-	  + @TableType:  0-all
-					 1-normal ticket
-					 2-vip ticket
-					
 	  + @excludeTest: remove currency UUS
 */  
 
@@ -57,16 +53,8 @@ BEGIN
 						,Currency INT
 						)
 		
-	DECLARE @IsVIPGame TINYINT
 	DECLARE @VNDCurrencyName VARCHAR(20)
 	DECLARE @sql NVARCHAR(1000)
-
-	SELECT @IsVIPGame= CASE @TableType WHEN 1 -- normal ticker
-									   THEN 0
-									   WHEN 2 -- vip ticket
-									   THEN 1
-									   ELSE NULL
-						END
 	
 	SELECT @VNDCurrencyName = currency 
 	FROM  dbo.Exchange WITH (NOLOCK) 
@@ -104,7 +92,6 @@ BEGIN
 		INNER JOIN dbo.Custinfo co WITH  (NOLOCK) ON c.CustID = co.CustID
 		INNER JOIN #tmpAg ag ON co.recommend = ag.CustID
 	WHERE c.Winlostdate BETWEEN @FromDate AND @ToDate 
-		  AND (@TableType = 0 OR (@TableType  <> 0 AND IsVIPGame = @IsVIPGame))
 	GROUP BY c.Winlostdate
 		    ,co.Currency
 	
