@@ -115,7 +115,8 @@ BEGIN
 	FROM Lrf_f_GetExchangeDaily(@FromDate, @ToDate)
 	WHERE exchangeid IN (SELECT DISTINCT Currency FROM #tmpResult)
 	
-	SELECT c.Username
+	SELECT r.CustID
+		   ,c.Username
 		   ,r.Currency
 		   ,CASE WHEN r.Currency=51  THEN  @VNDCurrencyName
 				 ELSE e.Code 
@@ -136,11 +137,13 @@ BEGIN
 		INNER JOIN #TempExchange e ON r.Winlostdate = e.ExchangeDate AND r.currency = e.ExchangeId
 		INNER JOIN dbo.CustInfo c WITH (NOLOCK) ON r.CustID = c.CustID
 	GROUP BY  c.Username
+			 ,r.CustID
 			 ,r.Currency
 			 ,CASE WHEN r.Currency=51  THEN  @VNDCurrencyName
 				 ELSE e.Code 
 				 END 		
 	ORDER BY c.Username
+			
 	
 	---------
 	DROP TABLE #tmpResult

@@ -13,7 +13,6 @@ ALTER  PROCEDURE [dbo].[LRF_Rpt_AGCasinoWinloss_Mem]
  @UserID		INT,
  @FromDate		SMALLDATETIME,  
  @ToDate		SMALLDATETIME,   
- @TableType 	TINYINT = 1,
  @excludeTest BIT = 0
 AS  
 /*
@@ -51,8 +50,7 @@ BEGIN
 						  ,LicenseeID INT
 						  )
 	
-	CREATE TABLE #tmpCust (  Recommend INT
-							,CustId INT
+	CREATE TABLE #tmpCust (  CustId INT
 							,Currency INT	
 							)
 		
@@ -78,16 +76,16 @@ BEGIN
 	INSERT INTO @Temp (CustId ,Currency)
 	EXEC (@sql1)
 	
-	INSERT INTO #tmpCust (Recommend,CustID,Currency)	
-	SELECT   lc.CustId AS Recommend
-			 ,co.CustID
+	INSERT INTO #tmpCust (CustID,Currency)	
+	SELECT   co.CustID
 			 ,lc.Currency
 	FROM 
 		dbo.CustInfo co WITH (NOLOCK)
 		INNER JOIN @Temp lc ON lc.CustId = co.Recommend AND co.Currency = lc.Currency
 		INNER JOIN #Currency c ON  lc.Currency = c.CurrencyID 
 	WHERE  (@excludeTest=0 OR (@excludeTest=1 AND lc.Currency <> 20))	
-	
+		    AND lc.CustId =  @CustID
+			
 	INSERT INTO #tmpResult (CustId 
 							 ,Winlostdate
 							 ,Currency 	
@@ -107,8 +105,7 @@ BEGIN
 	FROM  bodb_report.dbo.rptDepWinlost_AGCasino c  WITH (NOLOCK)
 		INNER JOIN #tmpCust ag ON c.CustID = ag.CustID AND c.Currency = ag.Currency 	
 	WHERE c.Winlostdate BETWEEN @FromDate AND @ToDate 
-		  AND ag.recommend =  @CustID
-		  AND (@excludeTest=0 OR (@excludeTest=1 AND ag.Currency <> 20))		
+		 AND (@excludeTest=0 OR (@excludeTest=1 AND ag.Currency <> 20))		
 	GROUP BY c.CustID
 			,c.Winlostdate
 		    ,ag.Currency

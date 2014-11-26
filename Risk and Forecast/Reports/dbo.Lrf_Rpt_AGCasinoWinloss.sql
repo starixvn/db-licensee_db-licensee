@@ -11,7 +11,6 @@ ALTER   PROCEDURE [dbo].[Lrf_Rpt_AGCasinoWinloss]
  @UserID		INT,
  @FromDate		SMALLDATETIME,  
  @ToDate		SMALLDATETIME,   
- @TableType 	TINYINT = 1,
  @excludeTest   BIT = 0
 AS  
 
@@ -22,10 +21,7 @@ AS
     Revisions:  
 		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	Param's Explanation:  
-	  + @TableType:  0-all
-					 1-normal ticket
-					 2-vip ticket
-					
+	  
 	  + @excludeTest: remove currency UUS
 */  
 
@@ -34,7 +30,6 @@ AS
  exec Lrf_Rpt_AGCasinoWinloss 
  @LicenseeID=1
 ,@Currency=0
-,@TableType=1
 ,@FromDate='2014-04-01 00:00:00'
 ,@ToDate='2014-09-30 00:00:00'
 ,@excludeTest=0
@@ -57,16 +52,8 @@ BEGIN
 						,Currency INT
 						)
 		
-	DECLARE @IsVIPGame TINYINT
 	DECLARE @VNDCurrencyName VARCHAR(20)
 	DECLARE @sql NVARCHAR(1000)
-
-	SELECT @IsVIPGame= CASE @TableType WHEN 1 -- normal ticker
-									   THEN 0
-									   WHEN 2 -- vip ticket
-									   THEN 1
-									   ELSE NULL
-						END
 	
 	SELECT @VNDCurrencyName = currency 
 	FROM  dbo.Exchange WITH (NOLOCK) 
@@ -111,7 +98,6 @@ BEGIN
 	FROM  bodb_report.dbo.rptDepWinlost_AGCasino c  WITH (NOLOCK)
 		INNER JOIN #tmpCust ct ON c.CustID = ct.CustID AND c.Currency = ct.Currency
 	WHERE c.Winlostdate BETWEEN @FromDate AND @ToDate 
-		  AND (@TableType = 0 OR (@TableType  <> 0 AND IsVIPGame = @IsVIPGame))
 	GROUP BY c.Winlostdate
 		    ,ct.Currency
 	
