@@ -74,10 +74,14 @@ BEGIN
 			m.eventdate,
 			m.finalhomescore,
 			m.finalawayscore,
-			case when m.betstatus like 'Refund FT%' then 'Refund FT' 
-						 when m.betstatus like 'Refund HT%' then 'Refund HT'
-						 when m.betstatus like 'Refund%' then 'Refund' 
-						else m.eventstatus end as eventstatus,
+			case m.sporttype when 5 then m.eventstatus
+							else 
+								case when m.betstatus like 'Refund FT%' then 'Refund FT' 
+									 when m.betstatus like 'Refund HT%' then 'Refund HT'
+									 when m.betstatus like 'Refund%'    then 'Refund' 
+									 else m.eventstatus end 
+							end as eventstatus,
+			
 			isnull(mr.refund,0) IsRefund, 
 			isnull(mr.calrefund,0) IsCalRefund,
 			isnull(m.isNeutral, CONVERT(BIT,0)) as IsNeutral,
@@ -131,10 +135,13 @@ BEGIN
 			m.eventdate,
 			m.finalhomescore,
 			m.finalawayscore,
-			case when m.betstatus like 'Refund FT%' then 'Refund FT' 
-						 when m.betstatus like 'Refund HT%' then 'Refund HT'
-						 when m.betstatus like 'Refund%' then 'Refund' 
-						else m.eventstatus end as eventstatus,
+				case m.sporttype when 5 then m.eventstatus
+							else 
+								case when m.betstatus like 'Refund FT%' then 'Refund FT' 
+									 when m.betstatus like 'Refund HT%' then 'Refund HT'
+									 when m.betstatus like 'Refund%'    then 'Refund' 
+									 else m.eventstatus end 
+							end as eventstatus,
 			isnull(mr.refund,0) IsRefund, 
 			isnull(mr.calrefund,0) IsCalRefund,
 			isnull(m.isNeutral, CONVERT(BIT,0)) as IsNeutral,
@@ -187,10 +194,13 @@ BEGIN
 				END kickofftime,
 			m.finalhomescore,
 			m.finalawayscore,
-			case when m.betstatus like 'Refund FT%' then 'Refund FT' 
-						 when m.betstatus like 'Refund HT%' then 'Refund HT'
-						 when m.betstatus like 'Refund%' then 'Refund' 
-						else m.eventstatus end as eventstatus,
+				case m.sporttype when 5 then m.eventstatus
+							else 
+								case when m.betstatus like 'Refund FT%' then 'Refund FT' 
+									 when m.betstatus like 'Refund HT%' then 'Refund HT'
+									 when m.betstatus like 'Refund%'    then 'Refund' 
+									 else m.eventstatus end 
+							end as eventstatus,
 			isnull(mr.refund,0) IsRefund,  
 			isnull(mr.calrefund,0) IsCalRefund,
 			isnull(m.isNeutral, CONVERT(BIT,0)) as IsNeutral,
