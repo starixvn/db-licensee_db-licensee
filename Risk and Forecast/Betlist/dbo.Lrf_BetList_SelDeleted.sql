@@ -11,6 +11,7 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_SelDeleted]
 	@LicenseeID INT ,
 	@UserID		INT,
 	@CustID INT,
+	@CurrencyID INT = 0,
 	@Langkey NVARCHAR(10)='en-US'	,
 	@PageSize INT=1000,
 	@PageIndex INT=1,
@@ -57,9 +58,7 @@ SELECT @recommend = recommend
 from customer c WITH(NOLOCK)
 inner join 	#currency cy ON c.currency=cy.currencyID						
  WHERE custid=@custid
-------------------------------------------
-DROP TABLE #Currency 
------------------------------------------
+
 CREATE TABLE #Data 
 (
 	Sporttype SMALLINT,
@@ -299,9 +298,15 @@ END
 
 CREATE NONCLUSTERED INDEX IDX_Index_Data ON #Data (Currency)
 
+ IF @CurrencyID <> 0
+ BEGIN 
+	DELETE #Data
+	WHERE Currency <> @CurrencyID
+ END
 SELECT * INTO #TempExchange 
 FROM Lrf_f_GetExchangeDaily(@FromDate,@ToDate)
 WHERE exchangeid IN (SELECT DISTINCT Currency FROM #Data)	
+
 
 		
 SELECT A.* 
@@ -373,6 +378,8 @@ END
 SELECT * FROM @BettransDetail 
 ORDER BY RefNo,Bettype 
 
+
+DROP TABLE #Currency 
 DROP TABLE #TempExchange 
 DROP TABLE #Data
 GO
