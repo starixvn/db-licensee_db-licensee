@@ -1,4 +1,11 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinloss_Mem]
+﻿USE [bodb02]
+GO
+ 
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinloss_Mem]
 	@LicenseeID 	INT,
 	@UserID			INT,
 	@CustID			INT,
@@ -31,7 +38,8 @@
 	@SumPlayerCommUSD MONEY=0 OUTPUT,
 	@SumPLayerCommEUR MONEY=0 OUTPUT,
 	@drawfilter SMALLINT = 1,
-	@Langkey VARCHAR(10) = 'en-US'  
+	@Langkey VARCHAR(10) = 'en-US'  ,
+	@currencyID INT =0
 
 AS
 
@@ -58,7 +66,7 @@ Revisions:
 	 - 20140307@Hannah: offer Keno
 	 - 20140630@Hannah: offer BetRadar and Sporting Solution
 	 - 20140908@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
-	
+	 - 20141128@winnie: change currency keenocean
 Param's Explanation:
 	+ @drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
 
@@ -181,7 +189,7 @@ BEGIN
 		INNER JOIN DBLIC.bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
 	WHERE
 		b.winlostdate BETWEEN @TempFromDate AND @tdate AND
-		b.custid=@custid AND
+		b.custid=@custid AND (@currencyID=0 OR b.currency= @currencyID ) AND
 		b.statusID IN (111,112,113)
 
 	IF @ShowBA = 1
@@ -369,7 +377,7 @@ BEGIN
 				INNER JOIN dbo.match AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
 			WHERE
 				b.winlostdate BETWEEN @TempFromDate AND @tdate AND
-				b.custid=@custid AND
+				b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 				(b.bettype < 31 OR (b.bettype BETWEEN 121 AND 999 ) OR (b.Bettype BETWEEN 1301 AND 1399))  AND
 				b.bettype NOT IN (9,29,10)	AND
 				b.matchid > 0 AND
@@ -420,7 +428,7 @@ BEGIN
 				INNER JOIN dbo.League AS l WITH (NOLOCK) ON m.leagueID = l.leagueID
 			WHERE
 				b.winlostdate BETWEEN @TempFromDate AND @tdate AND
-				b.custid=@custid AND
+				b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 				b.bettype = 10 AND
 				b.statusID IN (111,112,113) AND
 				b.transid NOT IN (SELECT Transid FROM @TempBetList) --exclude BA tickets
@@ -470,7 +478,7 @@ BEGIN
 				dbo.bettrans b WITH (NOLOCK)	
 			WHERE
 				b.winlostdate BETWEEN @TempFromDate AND @tdate AND
-				b.custid=@custid AND
+				b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 				b.bettype IN (9,29) AND
 				b.matchid IN (9,29) AND
 				b.statusID IN (111,112,113) AND
@@ -523,7 +531,7 @@ BEGIN
 			INNER JOIN dbo.match AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @tdate AND
-			b.custid=@custid AND
+			b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 			b.bettype BETWEEN 81 AND 120 AND
 			b.statusID IN (111,112,113)
 		
@@ -574,7 +582,7 @@ BEGIN
 			INNER JOIN dbo.match AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @tdate AND
-			b.custid=@custid AND
+			b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 			b.bettype BETWEEN 1101 AND 1199 AND
 			b.statusID IN (111,112,113)
 	END
@@ -623,7 +631,7 @@ BEGIN
 			INNER JOIN dbo.match AS m WITH (NOLOCK) ON b.matchid=m.matchid
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @tdate AND
-			b.custid=@custid AND
+			b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 			b.bettype BETWEEN 1201 AND 1299 AND
 			b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
 			b.statusID IN (111,112,113)
@@ -669,7 +677,7 @@ BEGIN
 			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @tdate AND
-			b.custid=@custid AND
+			b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 			b.bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
 			b.statusID IN (111,112,113)	
 
@@ -720,7 +728,7 @@ BEGIN
 			dbo.bettrans AS b WITH (NOLOCK)		
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @tdate AND
-			b.custid=@custid AND
+			b.custid=@custid AND (@currencyID=0 OR b.currency= @currencyID ) AND
 			b.bettype =71 AND
 			b.statusID IN (111,112,113)
 	END
@@ -768,7 +776,7 @@ BEGIN
 			dbo.bettrans AS b WITH (NOLOCK)		
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @tdate AND
-			b.custid=@custid AND
+			b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 			b.bettype =73 AND
 			b.statusID IN (111,112,113)
 	END
@@ -819,7 +827,7 @@ BEGIN
 				INNER JOIN dbo.League AS l WITH (NOLOCK) ON m.leagueID = l.leagueID
 			WHERE
 				b.winlostdate BETWEEN @TempFromDate AND @tdate AND
-				b.custid=@custid AND
+				b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 				b.bettype IN (31, 32, 33) AND
 				b.statusID IN (111,112,113)
 				
@@ -869,7 +877,7 @@ BEGIN
 			CROSS APPLY dbo.f_ParseTransDesc(b.transdesc, b.bettype)		
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @tdate AND
-			b.custid=@custid AND
+			b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 			b.bettype BETWEEN 1501 AND 1599 AND
 			b.statusID IN (111,112,113)
 	END
@@ -920,7 +928,7 @@ BEGIN
 		INNER JOIN DBLIC.bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
 	WHERE
 		b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate AND
-		b.custid=@custid AND
+		b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 		b.statusID IN (111,112,113)
 	
 
@@ -1109,7 +1117,7 @@ BEGIN
 				INNER JOIN dbo.match14 AS m WITH (NOLOCK) ON b.matchid=m.matchid 					
 			WHERE
 				b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate AND
-				b.custid=@custid AND
+				b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 				(b.bettype < 31 OR (b.bettype BETWEEN 121 AND 999 ) OR (b.Bettype BETWEEN 1301 AND 1399)) AND
 				b.bettype NOT IN (9,29,10) AND
 				b.matchid>0 AND
@@ -1161,7 +1169,7 @@ BEGIN
 				dbo.bettrans14 AS b WITH (NOLOCK)	
 			WHERE
 				b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate AND
-				b.custid=@custid AND
+				b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 				b.bettype IN (9,29) AND
 				b.matchid IN (9,29) AND
 				b.statusID IN (111,112,113) AND
@@ -1211,7 +1219,7 @@ BEGIN
 				INNER JOIN dbo.League AS l WITH (NOLOCK) ON m.leagueID = l.leagueID
 			WHERE
 				b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate AND
-				b.custid=@custid AND
+				b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 				b.bettype = 10 AND
 				b.statusID IN (111,112,113) AND
 				b.transid NOT IN (SELECT Transid FROM @TempBetList) --exclude BA tickets
@@ -1263,7 +1271,7 @@ BEGIN
 			INNER JOIN dbo.match14 AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
 		WHERE
 			b.winlostdate BETWEEN @BalanceUpDay AND @tdate AND
-			b.custid=@custid AND
+			b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 			(b.bettype BETWEEN 81 AND 120) AND
 			b.statusID IN (111,112,113)
 	END
@@ -1313,7 +1321,7 @@ BEGIN
 			INNER JOIN dbo.match14 AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
 		WHERE
 			b.winlostdate BETWEEN @BalanceUpDay AND @tdate AND
-			b.custid=@custid AND
+			b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 			b.bettype BETWEEN 1101 AND 1199 AND
 			b.statusID IN (111,112,113)
 	END
@@ -1362,7 +1370,7 @@ BEGIN
 			INNER JOIN dbo.match14 AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
 		WHERE
 			b.winlostdate BETWEEN @BalanceUpDay AND @tdate AND
-			b.custid=@custid AND
+			b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 			b.bettype BETWEEN 1201 AND 1299 AND
 			b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
 			b.statusID IN (111,112,113)
@@ -1408,7 +1416,7 @@ BEGIN
 			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
 		WHERE
 			b.winlostdate BETWEEN @BalanceUpDay AND @tdate AND
-			b.custid=@custid AND
+			b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 			b.bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND 
 			b.statusID IN (111,112,113)	
 		
@@ -1458,7 +1466,7 @@ BEGIN
 				
 		WHERE
 			b.winlostdate BETWEEN @BalanceUpDay AND @tdate AND
-			b.custid=@custid AND
+			b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 			b.bettype =71 AND
 			b.statusID IN (111,112,113)
 	END
@@ -1507,7 +1515,7 @@ BEGIN
 				
 		WHERE
 			b.winlostdate BETWEEN @BalanceUpDay AND @tdate AND
-			b.custid=@custid AND
+			b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 			b.bettype =73 AND
 			b.statusID IN (111,112,113)
 	END
@@ -1558,7 +1566,7 @@ BEGIN
 				INNER JOIN dbo.League AS l WITH (NOLOCK) ON m.leagueID = l.leagueID
 			WHERE
 				b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate AND
-				b.custid=@custid AND
+				b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 				b.bettype IN (31, 32, 33) AND
 				b.statusID IN (111,112,113)
 				
@@ -1608,7 +1616,7 @@ BEGIN
 			CROSS APPLY dbo.f_ParseTransDesc(b.transdesc, b.bettype)
 		WHERE
 			b.winlostdate BETWEEN @BalanceUpDay AND @tdate AND
-			b.custid=@custid AND
+			b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 			b.bettype BETWEEN 1501 AND 1599 AND
 			b.statusID IN (111,112,113)
 	END
@@ -1655,7 +1663,7 @@ BEGIN
 		INNER JOIN DBLIC.bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
 	WHERE
 		b.winlostdate BETWEEN @fdate AND @TempToDate AND
-		b.custid=@custid AND
+		b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 		b.ruben = 1 AND
 		b.status NOT IN ('VOID','REJECT','REFUND')
 	
@@ -1843,7 +1851,7 @@ BEGIN
 				INNER JOIN bodb_archive.dbo.match_BK AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
 			WHERE
 				b.winlostdate BETWEEN @fdate AND @TempToDate AND
-				b.custid=@custid AND
+				b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 				b.ruben = 1 AND
 				b.status NOT IN ('VOID', 'REJECT', 'REFUND') AND 
 				(b.bettype < 31 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 AND 1399)) AND
@@ -1895,7 +1903,7 @@ BEGIN
 				INNER JOIN dbo.League AS l WITH (NOLOCK) ON m.leagueID = l.leagueID
 			WHERE
 				b.winlostdate BETWEEN @fdate AND @TempToDate AND
-				b.custid=@custid AND
+				b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 				b.ruben = 1 AND
 				b.status NOT IN ('VOID', 'REJECT', 'REFUND') AND 
 				b.bettype = 10 AND
@@ -1945,7 +1953,7 @@ BEGIN
 				bodb_archive.dbo.bettrans_bk b WITH (NOLOCK)	
 			WHERE
 				b.winlostdate BETWEEN @fdate AND @TempToDate AND
-				b.custid=@custid AND
+				b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 				b.ruben = 1 AND 
 				b.status NOT IN ('VOID', 'REJECT','REFUND') AND
 				b.bettype IN (9,29) AND
@@ -1999,7 +2007,7 @@ BEGIN
 		INNER JOIN bodb_archive.dbo.match_BK AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
 	WHERE
 		b.winlostdate BETWEEN @fdate AND @TempToDate AND
-		b.custid=@custid AND
+		b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 		b.bettype BETWEEN 81 AND 120 AND
 		b.ruben = 1 AND
 		b.status NOT IN ('VOID', 'REJECT', 'REFUND')
@@ -2050,7 +2058,7 @@ BEGIN
 			INNER JOIN bodb_archive.dbo.match_BK AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
 		WHERE
 			b.winlostdate BETWEEN @fdate AND @TempToDate AND
-			b.custid=@custid AND
+			b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 			b.bettype BETWEEN 1101 AND 1199 AND
 			b.ruben = 1 AND
 			b.status NOT IN ('VOID', 'REJECT', 'REFUND')
@@ -2100,7 +2108,7 @@ BEGIN
 			INNER JOIN bodb_archive.dbo.match_BK AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
 		WHERE
 			b.winlostdate BETWEEN @fdate AND @TempToDate AND
-			b.custid=@custid AND
+			b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 			b.bettype BETWEEN 1201 AND 1299 AND
 			b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
 			b.ruben = 1 AND
@@ -2147,7 +2155,7 @@ BEGIN
 			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
 		WHERE
 			b.winlostdate BETWEEN @fdate AND @TempToDate AND
-			b.custid=@custid AND
+			b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 			b.bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
 			b.statusID IN (111,112,113)		
 	END
@@ -2197,7 +2205,7 @@ BEGIN
 				
 		WHERE
 			b.winlostdate BETWEEN @fdate AND @TempToDate AND
-			b.custid=@custid AND
+			b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 			b.bettype =71  AND
 			b.ruben = 1 AND
 			b.status NOT IN ('VOID', 'REJECT', 'REFUND')
@@ -2247,7 +2255,7 @@ BEGIN
 				
 		WHERE
 			b.winlostdate BETWEEN @fdate AND @TempToDate AND
-			b.custid=@custid AND
+			b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 			b.bettype =73  AND
 			b.ruben = 1 AND
 			b.status NOT IN ('VOID', 'REJECT', 'REFUND')
@@ -2300,7 +2308,7 @@ BEGIN
 			INNER JOIN dbo.League AS l WITH (NOLOCK) ON m.leagueID = l.leagueID
 		WHERE
 			b.winlostdate BETWEEN @fdate AND @TempToDate AND
-			b.custid=@custid AND
+			b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 			b.ruben = 1 AND 
 			b.status NOT IN ('VOID','REJECT','REFUND') AND
 			b.bettype IN (31, 32, 33)
@@ -2350,7 +2358,7 @@ BEGIN
 			CROSS APPLY dbo.f_ParseTransDesc(b.transdesc, b.bettype)
 		WHERE
 			b.winlostdate BETWEEN @fdate AND @TempToDate AND
-			b.custid=@custid AND
+			b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 			b.bettype BETWEEN 1501 AND 1599 AND
 			b.ruben = 1 AND
 			b.status NOT IN ('VOID', 'REJECT', 'REFUND')
@@ -2369,19 +2377,27 @@ WHERE  usrID=@userID
 	AND isActive=1
 	
 	
-DECLARE	@currency INT 
-SELECT	@currency = currency 
-FROM custinfo c (NOLOCK) 
-INNER JOIN 	#currency cy ON c.currency=cy.currencyID
-WHERE custid = @custid
+--DECLARE	@currency INT 
+--SELECT	@currency = currency 
+--FROM custinfo c (NOLOCK) 
+--INNER JOIN 	#currency cy ON c.currency=cy.currencyID
+--WHERE custid = @custid
+
+
+--FROM  OPENQUERY(DBLIC, 'SELECT * FROM bodb_licensee.dbo.f_SelLicenseeCust(0)') lc
 ---------------------------------------
-DROP TABLE #currency
+--DROP TABLE #currency
 ---------------------------------------
 
 
 SELECT * INTO #TempExchange 
 FROM Lrf_f_GetExchangeDaily(@FDate,@TDate)
-WHERE exchangeid = @currency
+WHERE exchangeid IN 
+(
+SELECT  DISTINCT lc.Currency   
+				FROM  OPENQUERY(DBLIC, 'SELECT * FROM bodb_licensee.dbo.f_SelLicenseeCust(0)') lc
+						INNER JOIN  #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID 
+)
 
 --exclude draw for no draw option (2)
 DELETE FROM @BetListByDateMem
@@ -2657,6 +2673,6 @@ DROP TABLE #TempExchange
 */
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinloss_Mem] TO [bodbLicenseeNet] AS [dbo]
+GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinloss_Mem] TO [bodbLicenseeNet]  
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelWinloss_Mem] TO [vnteam] AS [dbo]
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelWinloss_Mem] TO [vnteam]  
