@@ -2398,6 +2398,9 @@ SELECT  DISTINCT lc.Currency
 				FROM  OPENQUERY(DBLIC, 'SELECT * FROM bodb_licensee.dbo.f_SelLicenseeCust(0)') lc
 						INNER JOIN  #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID 
 )
+---------------------------------------
+DROP TABLE #currency
+---------------------------------------
 
 --exclude draw for no draw option (2)
 DELETE FROM @BetListByDateMem

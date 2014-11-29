@@ -1,6 +1,6 @@
 ﻿USE [bodb02]
 GO
-
+/****** Object:  StoredProcedure [dbo].[Lrf_BetList_SelDeleted_xtest]    Script Date: 11/29/2014 09:42:23 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -41,6 +41,7 @@ Revisions:
 	- 20140403@Hannah: offer Keno
 	- 20140521@Jim: fix bug not show outright tikect  (bug #16525)
 	- 20140925@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
+	- 20141129@Jim: add more param @CurrencyID
 Param's Explanation:
 + @CustID: AgentID
 */
