@@ -20,6 +20,8 @@ AS
 	Revision:
 		-20140305@Florent: Change way to get BA tickets
 		-20140315@Florent: Offer Keno sport		
+		-20141129@Jim : change the way to retrieve Currency Column
+		
 	Parameter's Explanation:			
 */
 SET NOCOUNT ON;
@@ -32,7 +34,7 @@ IF exists(SELECT TOP 1 1 FROM bodb_LicenseeReport.dbo.rptCustomerTurnover AS rct
 ;WITH cte_bettrans
 AS (
 	SELECT a.CustID
-		,lc.currency
+		,a.currency
 		,a.recommend
 		,a.matchid
 		,a.bettype
@@ -78,7 +80,7 @@ AS (
 			AND a.statusID IN (111, 112, 113)
 	GROUP BY a.matchid
 		,a.CustID
-		,lc.currency
+		,a.currency
 		,a.recommend
 		,a.bettype
 		,a.Odds
