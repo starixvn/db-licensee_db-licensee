@@ -2,14 +2,8 @@ USE [bodb02]
 GO
 
 
-SET ANSI_NULLS ON
-GO
-
-SET QUOTED_IDENTIFIER ON
-GO
-
 ALTER PROCEDURE [dbo].[Task_rptCustomerTurnOver_Bettrans14] 
-	@Date SMALLDATETIME
+	@Date DATETIME
 AS
 /*	
 	Created	: Florent Nguyen
@@ -19,7 +13,8 @@ AS
 	Original: 
 	Revision:
 		-20140305@Florent: Change way to get BA tickets
-		-20140315@Florent: Offer Keno sport		
+		-20140315@Florent: Offer Keno sport	
+		-20141130@Jim: change the way to retrieve currency value		
 	Parameter's Explanation:			
 */
 SET NOCOUNT ON;
@@ -32,7 +27,7 @@ IF exists(SELECT TOP 1 1 FROM bodb_LicenseeReport.dbo.rptCustomerTurnover AS rct
 ;WITH cte_bettrans
 AS (
 	SELECT a.CustID
-		,lc.currency
+		,a.currency
 		,a.recommend
 		,a.matchid
 		,a.bettype
@@ -78,7 +73,7 @@ AS (
 			AND a.statusID IN (111, 112, 113)
 	GROUP BY a.matchid
 		,a.CustID
-		,lc.currency
+		,a.currency
 		,a.recommend
 		,a.bettype
 		,a.Odds
@@ -134,9 +129,9 @@ SELECT a.CustID
 			THEN 162 -- Live casino
 		WHEN a.bettype BETWEEN 1201 AND 1299
 			THEN CASE 
-					WHEN a.bettype IN (1231, 1232, 1233, 1237, 1238)
+					WHEN result.sporttype IS NOT NULL
 						THEN result.sporttype
-					WHEN a.bettype NOT IN (1231, 1232, 1233, 1237, 1238)
+					WHEN b.sporttype IS NOT NULL
 						THEN b.sporttype
 					ELSE 180 --Virtual Sport
 					END --Virtual Sport
@@ -191,9 +186,9 @@ GROUP BY a.CustID
 			THEN 162 -- Live casino
 		WHEN a.bettype BETWEEN 1201 AND 1299
 			THEN CASE 
-					WHEN a.bettype IN (1231, 1232, 1233, 1237, 1238)
+					WHEN result.sporttype IS NOT NULL
 						THEN result.sporttype
-					WHEN a.bettype NOT IN (1231, 1232, 1233, 1237, 1238)
+					WHEN b.sporttype IS NOT NULL
 						THEN b.sporttype
 					ELSE 180 --Virtual Sport
 					END --Virtual Sport
@@ -226,4 +221,8 @@ GROUP BY a.CustID
 	,winlostdate
 	,a.isba
 GO
+
+
+
 GRANT VIEW DEFINITION ON [dbo].[Task_rptCustomerTurnOver_Bettrans14] TO [vnteam] AS [dbo]
+GO
