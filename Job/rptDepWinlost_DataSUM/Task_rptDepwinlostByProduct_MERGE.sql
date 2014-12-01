@@ -1,10 +1,7 @@
 USE [bodb_Report]
 GO
-/****** Object:  StoredProcedure [dbo].[Task_rptDepwinlostByProduct_MERGE]    Script Date: 04/09/2014 21:14:50 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+
+
 ALTER PROCEDURE [dbo].[Task_rptDepwinlostByProduct_MERGE] 		
 	@strXML varchar(max)
 AS
@@ -13,6 +10,7 @@ AS
  DB: DB06.bodb_report
  Revisions:   
   - 20120930@viet: create SP   
+  - 20141120@Don: Adjustment to serve to change KeenOcean's currency RMB to HK$
                  
  Param's Explanation:  
  • @winlostdate: The date need to summary  
@@ -37,6 +35,7 @@ SELECT winlostdate
 	,playercomm
 	,BetCount
 	,Outstanding
+	,currency
 INTO #TEMP	
 FROM OPENXML(@_hdoc,'/root/r',2) 
 WITH (
@@ -49,6 +48,7 @@ WITH (
 	,playercomm money '@c7'
 	,BetCount int '@c8'
 	,Outstanding money '@c9'
+	,currency int '@d0'
  ) 
  
 exec sp_xml_removedocument @_hdoc	
@@ -70,10 +70,10 @@ FROM #TEMP D
 	INNER JOIN @updated_list s on d.custid = s.custid and d.winlostdate = s.winlostdate and d.sporttype = s.sporttype
 
 INSERT INTO dbo.rptDepWinlostbyproduct (
-	winlostdate, custid, sporttype, turnover, drawTO, winlost, playercomm, BetCount, Outstanding
+	winlostdate, custid, sporttype, currency, turnover, drawTO, winlost, playercomm, BetCount, Outstanding
 )
-SELECT winlostdate, custid, sporttype, turnover, drawTO, winlost, playercomm, BetCount, Outstanding
+SELECT winlostdate, custid, sporttype, currency, turnover, drawTO, winlost, playercomm, BetCount, Outstanding
 FROM #TEMP
 
 DROP TABLE #TEMP
-SET NOCOUNT OFF
+--SET NOCOUNT OFF

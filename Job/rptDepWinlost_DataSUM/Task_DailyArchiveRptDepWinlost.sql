@@ -1,6 +1,7 @@
 USE [bodb02]
 GO
 
+
 ALTER PROCEDURE [dbo].[Task_DailyArchiveRptDepWinlost]
 AS
 
@@ -12,6 +13,7 @@ Revisions:
 	-- 20120824@Viet
 	-- 20120911@Viet: add new product by bettype
 	-- 20130705@Don: add table rptDepWinlost_Transfer3rdOthers
+	-- 20141120@Don: Adjustment to serve to change KeenOcean's currency RMB to HK$
 */  
 
 DECLARE @winlostdate SMALLDATETIME, @todate SMALLDATETIME
@@ -53,9 +55,9 @@ BEGIN
 	--rptDepWinlostByProduct
 	BEGIN TRANSACTION
 		INSERT INTO bodb_report.dbo.rptDepWinlostByProduct_bk (
-			winlostdate, custid, sporttype, turnover, drawTO, winlost, playercomm, BetCount, outstanding
+			winlostdate, custid, sporttype, currency, turnover, drawTO, winlost, playercomm, BetCount, outstanding
 		)
-		SELECT winlostdate, custid, sporttype, turnover, drawTO, winlost, playercomm, BetCount, outstanding
+		SELECT winlostdate, custid, sporttype, currency, turnover, drawTO, winlost, playercomm, BetCount, outstanding
 		FROM bodb_report.dbo.rptDepWinlostByProduct with(nolock)
 		WHERE winlostdate = @winlostdate 
 		

@@ -8,6 +8,7 @@ DB: DBACC/bodb02
 Original:
 Revisions:
 	- 20141017@Victor: remove RAISEERROR statement to avoid affection to rptDepWinlost Summary job
+	- 20141121@Don: Adjustment to serve to change KeenOcean's currency RMB to HK$
 Param's Explanation:
 	- @winlostdate: The date need to summary
 */  
@@ -19,6 +20,7 @@ BEGIN TRY
 
 	CREATE TABLE #TicketData (	custid			INT,
 								sporttype		SMALLINT,
+								currency		INT,
 								isVipGame		INT,
 								turnover		MONEY,
 								drawTO			MONEY,
@@ -29,9 +31,10 @@ BEGIN TRY
 
 	IF @winlostdate >= @BackupDay -- Get data in bettrans_AGCasino table
 	BEGIN
-		INSERT INTO #TicketData (custid, sporttype, isVipGame, turnover, drawTO, winlost, playercomm, betCount, drawBetCount)
+		INSERT INTO #TicketData (custid, sporttype, currency, isVipGame, turnover, drawTO, winlost, playercomm, betCount, drawBetCount)
 		SELECT b.CustID, 
 			250 AS SportType,
+			b.currency,
 			isVIPGame,
 			ISNULL(SUM(b.Stake),0) AS Turnover,
 			ISNULL(SUM(CASE WHEN b.StatusID = 111 THEN b.Stake ELSE 0 END),0) AS DrawTO,
@@ -41,13 +44,14 @@ BEGIN TRY
 			ISNULL(SUM(CASE WHEN b.StatusID = 111 THEN 1 ELSE 0 END),0) AS DrawBetCount
 		FROM DBPTCS.bodb_PlaytechCS.dbo.bettrans_AGCasino b WITH (ROWLOCK)
 		WHERE Winlostdate = @winlostdate
-		GROUP BY b.CustID, isVIPGame
+		GROUP BY b.CustID, b.currency, isVIPGame
 	END
 	ELSE -- Get data in bettrans_AGCasino_bk table
 	BEGIN
-		INSERT INTO #TicketData (custid, sporttype, isVipGame, turnover, drawTO, winlost, playercomm, BetCount, drawBetCount)
+		INSERT INTO #TicketData (custid, sporttype, currency, isVipGame, turnover, drawTO, winlost, playercomm, BetCount, drawBetCount)
 		SELECT b.CustID, 
 			250 AS SportType,
+			b.currency,
 			isVIPGame,
 			ISNULL(SUM(b.Stake),0) AS Turnover,
 			ISNULL(SUM(CASE WHEN b.StatusID = 111 THEN b.Stake ELSE 0 END),0) AS DrawTO,
@@ -57,15 +61,15 @@ BEGIN TRY
 			ISNULL(SUM(CASE WHEN b.StatusID = 111 THEN 1 ELSE 0 END),0) AS DrawBetCount
 		FROM bodb_archive.dbo.bettrans_AGCasino_bk b WITH (ROWLOCK)
 		WHERE Winlostdate = @winlostdate
-		GROUP BY b.CustID, isVIPGame
+		GROUP BY b.CustID, b.currency, isVIPGame
 	END
 
 	-- Insert data to rptDepWinlost_AGCasino
 	DELETE FROM bodb_report.dbo.rptDepWinlost_AGCasino WHERE Winlostdate = @Winlostdate
 
-	INSERT INTO bodb_report.dbo.rptDepWinlost_AGCasino (winlostdate, custid, sporttype, turnover, drawTO, 
+	INSERT INTO bodb_report.dbo.rptDepWinlost_AGCasino (winlostdate, custid, sporttype, currency, turnover, drawTO, 
 														winlost, playercomm, BetCount, drawBetCount, IsVIPGame)
-	SELECT @winlostdate, custid, sporttype, turnover, drawTO, 
+	SELECT @winlostdate, custid, sporttype, currency, turnover, drawTO, 
 		winlost, playercomm, BetCount, drawBetCount, IsVIPGame
 	FROM #TicketData
 
