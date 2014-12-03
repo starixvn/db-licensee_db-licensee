@@ -47,6 +47,7 @@ AS
 	- 20140212@Florent : Sorting DESC
 	- 20140716@Jim: fix bug Total row in excel file is incorrect (hotfix #19101)
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+	- 20141203@Jim : fix issue cannot query data when pass a User belong to CNY Currency (hot fix #27017)
 	Parameter's Explanation:
 		- @ReportBy:  1: daily, 2: monthly
 		- @FilterBy:  1: Win, 2: Loss, 3: Draw
@@ -124,8 +125,7 @@ INTO #recommend
 FROM bodb_licensee.dbo.f_SelLicenseeCust (@LicenseeID) lc  
 	INNER JOIN  bodb_licensee.dbo.CurrencyUser c WITH (NOLOCK) ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
 WHERE
-	lc.LicenseeID=@LicenseeID AND 
-	(lc.Currency=@CurrencyID)-- OR (@CurrencyID=0))		
+	(lc.Currency=@CurrencyID OR @CurrencyID IN (13,66))-- OR (@CurrencyID=0))		
 	AND lc.RoleID=2
 	AND c.usrID=@userID 
 	AND c.SystemID=1 -- System is default=1 (LRF)	
@@ -148,6 +148,7 @@ ELSE
 				FROM Customer cr (NOLOCK)
 					INNER JOIN #recommend re ON cr.Recommend=re.CustID AND cr.Currency = re.Currency
 				WHERE username2 LIKE '%$%' + @Username+'%'
+					
 				
 				INSERT INTO #CustID
 					SELECT cr.CustID 
