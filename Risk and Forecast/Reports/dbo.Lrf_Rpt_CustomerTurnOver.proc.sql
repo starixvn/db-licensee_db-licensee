@@ -1,10 +1,12 @@
 ﻿USE [bodb02]
 GO
- 
+
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
+
+ 
 ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
 	 @LicenseeID INT,
 	 @UserID  INT,
@@ -130,7 +132,6 @@ WHERE
 	AND c.usrID=@userID 
 	AND c.SystemID=1 -- System is default=1 (LRF)	
 	AND c.isActive=1
-		
 		
 IF  NOT EXISTS (SELECT TOP 1 1  FROM #ProductID )
 	BEGIN 
@@ -480,6 +481,9 @@ ELSE
 			CASE WHEN @ReportBy = 1 THEN CONVERT(VARCHAR(8),winlostdate,112)  
 				WHEN @ReportBy = 2 THEN CONVERT(VARCHAR(6),winlostdate,112)  
 				ELSE '0' END
+		--- jim
+		DELETE #result 
+		WHERE Currency NOT IN  (SELECT  Code FROM dbo.Exchange WHERE  exchangeId = @CurrencyID)
 		
 		select Row_number () over (order by ReportBy desc,Username asc) as rownum
 				,ReportBy,  
@@ -489,6 +493,9 @@ ELSE
 		GROUP BY 
 			ReportBy,  
 			username
+			
+ 
+	
 	--- Data Detail 
 		SELECT *
 		INTO #return
@@ -528,6 +535,7 @@ ELSE
 			PlayerComm
 		FROM #return	
 		WHERE ( RowNo between @RowStart AND @RowEnd	AND  @IsExportExcel=0) OR (@IsExportExcel=1 AND RowNo<65000)	
+		 
 		ORDER BY RowNo
 		
 		SELECT @TotalRow=COUNT(1)
@@ -555,6 +563,7 @@ ELSE
 DROP TABLE #ProductID
 DROP TABLE #BettypeID
 DROP TABLE #Status
+
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [bodbLicenseeNet]
 GO
