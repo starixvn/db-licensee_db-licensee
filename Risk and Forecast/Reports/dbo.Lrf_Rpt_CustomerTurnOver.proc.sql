@@ -1,6 +1,6 @@
 ﻿USE [bodb02]
 GO
-
+ 
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -50,6 +50,7 @@ AS
 	- 20140716@Jim: fix bug Total row in excel file is incorrect (hotfix #19101)
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	- 20141203@Jim : fix issue cannot query data when pass a User belong to CNY Currency (hot fix #27017)
+	- 20141204@Jim : hot fix #27063
 	Parameter's Explanation:
 		- @ReportBy:  1: daily, 2: monthly
 		- @FilterBy:  1: Win, 2: Loss, 3: Draw
@@ -127,12 +128,14 @@ INTO #recommend
 FROM bodb_licensee.dbo.f_SelLicenseeCust (@LicenseeID) lc  
 	INNER JOIN  bodb_licensee.dbo.CurrencyUser c WITH (NOLOCK) ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
 WHERE
-	(lc.Currency=@CurrencyID OR @CurrencyID IN (13,66))-- OR (@CurrencyID=0))		
+	lc.Currency=@CurrencyID		
 	AND lc.RoleID=2
 	AND c.usrID=@userID 
 	AND c.SystemID=1 -- System is default=1 (LRF)	
 	AND c.isActive=1
-		
+
+
+
 IF  NOT EXISTS (SELECT TOP 1 1  FROM #ProductID )
 	BEGIN 
 		RETURN
@@ -143,25 +146,40 @@ ELSE
 		SELECT @Username = ltrim(rtrim(@Username))
 		IF ISNULL(@Username,'')<>''
 			BEGIN 
-				
-				INSERT INTO #CustID
-				SELECT cr.custid
-				FROM Customer cr (NOLOCK)
-					INNER JOIN #recommend re ON cr.Recommend=re.CustID AND cr.Currency = re.Currency
-				WHERE username2 LIKE '%$%' + @Username+'%'
+				IF (@LicenseeID = 96 AND @FromDate < '2014-11-28' AND @CurrencyID = 13)	--- hard-code to support KeeanOcean
+				BEGIN 
+					INSERT INTO #CustID
+						SELECT cr.custid
+						FROM Customer cr (NOLOCK)
+							INNER JOIN #recommend re ON cr.Recommend=re.CustID AND cr.Currency = 66
+						WHERE username2 LIKE '%$%' + @Username+'%'
 					
-				
-				INSERT INTO #CustID
-					SELECT cr.CustID 
-					FROM Customer cr(NOLOCK)
-						INNER JOIN #recommend re ON cr.Recommend=re.CustID AND cr.Currency = re.Currency
-					WHERE username  like '%'+@Username+'%'
+					INSERT INTO #CustID
+						SELECT cr.CustID 
+						FROM Customer cr(NOLOCK)
+							INNER JOIN #recommend re ON cr.Recommend=re.CustID AND cr.Currency = 66
+						WHERE username  like '%'+@Username+'%'
+				END
+				ELSE 
+				BEGIN 
+					INSERT INTO #CustID
+						SELECT cr.custid
+						FROM Customer cr (NOLOCK)
+							INNER JOIN #recommend re ON cr.Recommend=re.CustID AND cr.Currency = re.Currency
+						WHERE username2 LIKE '%$%' + @Username+'%'
+					
+					INSERT INTO #CustID
+						SELECT cr.CustID 
+						FROM Customer cr(NOLOCK)
+							INNER JOIN #recommend re ON cr.Recommend=re.CustID AND cr.Currency = re.Currency
+						WHERE username  like '%'+@Username+'%'
+				END				
 			END
 			ELSE 
-			IF ISNULL(@Username,'')=''
-				BEGIN 
-					SELECT @CustID=0
-				END		
+		IF ISNULL(@Username,'')=''
+			BEGIN 
+				SELECT @CustID=0
+			END		
 		IF @ShowWin =1
 			BEGIN
 				INSERT INTO #Status
@@ -481,9 +499,6 @@ ELSE
 			CASE WHEN @ReportBy = 1 THEN CONVERT(VARCHAR(8),winlostdate,112)  
 				WHEN @ReportBy = 2 THEN CONVERT(VARCHAR(6),winlostdate,112)  
 				ELSE '0' END
-		--- jim
-		DELETE #result 
-		WHERE Currency NOT IN  (SELECT  Code FROM dbo.Exchange WHERE  exchangeId = @CurrencyID)
 		
 		select Row_number () over (order by ReportBy desc,Username asc) as rownum
 				,ReportBy,  
