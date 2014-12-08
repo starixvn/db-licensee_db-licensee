@@ -30,6 +30,7 @@ Revisions:
 	- 20130404@Jim: set default @ShowSB=0
 	- 20130514@Jim: Restrict permission of Licensee Users by currency
 	- 20140620@Florent: add column betcount
+   - 20141111@Jim: changing currency for KeenOcean member  (#Redmine 25673)
 Param's Explanation: 
 	
 */
@@ -52,13 +53,13 @@ SELECT  currencyID,LicenseeID into #currency
 FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
 WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
-DECLARE @TempAg AS TABLE ( CustId INT )
-INSERT  INTO @TempAg ( CustId)
-SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
-						INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID 	
-                WHERE  [Description] = COALESCE(@LicenseeType,  
-                                                     [Description]) 
+DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
+INSERT  INTO @TempAg ( CustId,Currency)
+SELECT   CustID,Currency  
+FROM    bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc 
+		INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID 	
+WHERE  [Description] = COALESCE(@LicenseeType,  
+									 [Description]) 
 -----------------------
 DROP TABLE #Currency
 -----------------------
@@ -124,7 +125,7 @@ BEGIN
 			count(1) betcount
 		FROM    
 			bettrans b WITH(NOLOCK)
-			INNER JOIN @TempAg ag ON b.recommend = ag.custid
+			INNER JOIN @TempAg ag ON b.recommend = ag.custid AND b.Currency = ag.Currency
 			--INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid 	 		
 		WHERE
              b.winlostdate = @_Date
@@ -222,7 +223,7 @@ BEGIN
 		count(1) betcount
 	FROM    
 		bettrans b WITH(NOLOCK)
-		INNER JOIN @TempAg ag ON b.recommend = ag.custid
+		INNER JOIN @TempAg ag ON b.recommend = ag.custid AND b.Currency = ag.Currency
 	WHERE   
 		b.winlostdate = @_Date
 		AND b.statusID IN (111,112,113)
@@ -329,7 +330,7 @@ BEGIN
 			count(1) betcount
 		FROM    
 			bettrans14 b WITH(NOLOCK)
-			INNER JOIN @TempAg ag ON b.recommend = ag.custid
+			INNER JOIN @TempAg ag ON b.recommend = ag.custid AND b.Currency = ag.Currency
 		--	INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid 
 		WHERE   
 			 b.winlostdate = @_Date
@@ -425,7 +426,7 @@ BEGIN
 		count(1) betcount
 	FROM    
 		bettrans14 b WITH(NOLOCK)
-		INNER JOIN @TempAg ag ON b.recommend = ag.custid
+		INNER JOIN @TempAg ag ON b.recommend = ag.custid AND b.Currency = ag.Currency
 	WHERE
 		b.winlostdate = @_Date
 		AND b.statusID NOT IN ( 101, 102, 103 )

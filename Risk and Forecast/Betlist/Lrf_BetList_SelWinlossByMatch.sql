@@ -35,11 +35,11 @@ Revisions:
 	- 20130411@Jim: support base currency USD
 	- 20130904@Jim: support Virtual Horse Racing
 	- 20140925@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
-	
+	- 20141120@Winnie: change from LicenseeCust to f_SelLicenseeCust 
    Get all tickets for a match
 Param's Explanation: 
 	
-*/
+*/ 
 
 
 SET NOCOUNT ON
@@ -47,7 +47,7 @@ SET NOCOUNT ON
 DECLARE @TempAg AS TABLE (custid INT)
 INSERT INTO @TempAg (custid)
 SELECT CustID 
-FROM bodb_Licensee.dbo.LicenseeCust WITH ( NOLOCK )
+FROM bodb_Licensee.dbo.f_SelLicenseeCust(0) lc --WITH ( NOLOCK )
 WHERE   LicenseeID = @LicenseeID  
 		AND  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID))
 		AND [Description] = COALESCE(@LicenseeType,[Description])    
@@ -164,6 +164,7 @@ BEGIN
 			b.matchid=@matchid AND			
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
+			(@CurrencyID=0   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 			b.ruben=1 AND 			
 			b.tpositiontaking=0 AND
 			b.statusID NOT IN (101, 102, 103)
@@ -218,6 +219,7 @@ BEGIN
 		WHERE
 			b.matchid=@matchid AND			
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
+			(@CurrencyID=0   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
 			b.ruben=1 AND 			
 			b.tpositiontaking<>0 AND
@@ -271,6 +273,7 @@ BEGIN
 		WHERE
 			b.matchid=@matchid AND			
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
+			(@CurrencyID=0   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 			b.ruben=1 AND
 			b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND 			
 			b.statusID NOT IN (101, 102, 103)
@@ -320,6 +323,7 @@ BEGIN
 			WHERE
 				o.EventID=@matchid AND			
 				b.recommend IN (SELECT custid FROM @TempAg)	AND
+				(@CurrencyID=0   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 				b.ruben=1 AND 			
 				b.statusID NOT IN (101, 102, 103)
 			ORDER BY
@@ -374,7 +378,8 @@ BEGIN
 			INNER JOIN @TempAg t  ON b.recommend =t.custid  
 			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid
 		WHERE
-			b.matchid=@matchid AND						
+			b.matchid=@matchid AND				
+			(@CurrencyID=0   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND		
 			b.ruben=1 AND 
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
 			b.tpositiontaking=0 AND
@@ -428,7 +433,8 @@ BEGIN
 			INNER JOIN @TempAg t  ON b.recommend =t.custid  
 			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid
 		WHERE
-			b.matchid=@matchid AND						
+			b.matchid=@matchid AND				
+			(@CurrencyID=0   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND		
 			b.ruben=1 AND 			
 			b.tpositiontaking<>0 AND
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
@@ -481,7 +487,8 @@ BEGIN
 			INNER JOIN @bettype bt ON b.bettype = bt.bettype
 			AND b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype())
 		WHERE
-			b.matchid=@matchid AND						
+			b.matchid=@matchid AND	
+			(@CurrencyID=0   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND					
 			b.ruben=1 AND 			
 			b.statusID NOT IN (101, 102, 103)
 		ORDER BY
@@ -531,6 +538,7 @@ BEGIN
 			WHERE
 				o.EventID=@matchid AND			
 				b.recommend IN (SELECT custid FROM @TempAg)	AND
+				(@CurrencyID=0   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 				b.ruben=1 AND 			
 				b.statusID NOT IN (101, 102, 103)
 			ORDER BY
@@ -625,3 +633,9 @@ ORDER BY RefNo,Bettype
  
 DROP TABLE #Data
 DROP TABLE #TempExchange
+
+
+GO
+GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinlossByMatch] TO [bodbLicenseeNet] AS [dbo]
+GO
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelWinlossByMatch] TO [vnteam] AS [dbo]

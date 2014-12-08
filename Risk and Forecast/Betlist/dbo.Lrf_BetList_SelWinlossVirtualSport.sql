@@ -30,7 +30,8 @@ Revisions:
 	 - 20131129@Jim: support :
 				182 – Virtual Greyhounds
 				184 – Virtual Motor Racing
-	- 20140908@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)			
+	- 20140908@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)		
+	- 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 	
 */
 
 
@@ -88,12 +89,12 @@ FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (
 WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 INSERT INTO @TempAg (custid)
-SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+SELECT DISTINCT CustID  
+                FROM    bodb_Licensee.dbo.f_SelLicenseeCust(0) lc --WITH ( NOLOCK )  
 						INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
                 WHERE    [Description] = COALESCE(@LicenseeType,  
                                                      [Description])
-DROP TABLE #Currency
+
 
 IF @Fromdate <= @MoveBetsDay 
 BEGIN  
@@ -146,6 +147,7 @@ BEGIN
 		INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid   	  
 	 WHERE  		  
 	  b.bettype BETWEEN 1201 AND 1299 AND
+	    ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 	  b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
 	  b.Winlostdate BETWEEN @FromDate AND @TempToDate AND
 	  b.statusID IN (111,112,113)	
@@ -194,6 +196,7 @@ BEGIN
 		INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	 	  
 	 WHERE  		  
 	  b.bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
+	    ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 	  b.Winlostdate BETWEEN @FromDate AND @TempToDate AND
 	  b.statusID IN (111,112,113)		
 	 ORDER BY transid
@@ -252,6 +255,7 @@ BEGIN
 	  INNER JOIN [match] m WITH (NOLOCK) ON b.matchid=m.matchid   	  
 	 WHERE  	  	  
 	  b.bettype BETWEEN 1201 AND 1299 AND
+	    ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 	  b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
 	  b.Winlostdate BETWEEN @TempFromDate AND @ToDate AND  	  
 	  b.statusID IN (111,112,113)
@@ -300,6 +304,7 @@ BEGIN
 		INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	 	  
 	 WHERE  		  
 	  b.bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
+	    ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency)) OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 	  b.Winlostdate BETWEEN @FromDate AND @TempToDate AND
 	  b.statusID IN (111,112,113)		
 	 ORDER BY transid 
@@ -388,6 +393,7 @@ SELECT * FROM #DetailTicket
 DROP TABLE 	#DetailTicket
 DROP TABLE #Data	
 DROP TABLE #TempExchange
+DROP TABLE #Currency
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinlossVirtualSport] TO [bodbLicenseeNet]

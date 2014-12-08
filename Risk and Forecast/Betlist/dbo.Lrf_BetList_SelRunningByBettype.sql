@@ -45,6 +45,7 @@ Revisions:
 	- 20121004@Jim: replace @currencyname input param by @currencyID
 	- 20130514@Jim:Restrict permission of Licensee Users by currency
 	- 20140925@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
+	- 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
 */
 
 SET NOCOUNT ON
@@ -91,8 +92,8 @@ WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 DECLARE @TempAg AS TABLE (custid INT)
 INSERT INTO @TempAg (custid)
-SELECT  CustID  
-                FROM  bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+SELECT DISTINCT CustID  
+                FROM    bodb_Licensee.dbo.[f_SelLicenseeCust](0) lc
 				INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
                 WHERE    [Description] = COALESCE(@LicenseeType,  
                                                      [Description]) 
@@ -139,6 +140,7 @@ BEGIN
 	FROM bettrans b WITH (NOLOCK)
 	WHERE
 		b.Recommend IN (SELECT custid FROM @TempAg) AND
+		((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) and
 		b.bettype = @bettype AND
 		b.matchid = @bettype AND
 		b.statusID IN (0,1) AND
@@ -189,6 +191,7 @@ BEGIN
 		INNER JOIN league   AS l WITH (NOLOCK) ON m.leagueID=l.leagueID
 	WHERE 
 		b.Recommend IN (SELECT custid FROM @TempAg)
+		AND ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID))
 		AND b.bettype=@bettype
 		AND b.statusID=0
 	ORDER BY b.status, b.transid
@@ -238,6 +241,7 @@ BEGIN
 		INNER JOIN match m WITH (NOLOCK) ON  b.matchid=m.matchid 				
 	WHERE 
 		b.Recommend IN (SELECT custid FROM @TempAg)
+		AND ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID))
 		AND b.bettype= @bettype 
 		AND b.statusID IN (0,1)
 		AND b.bettype  NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype())
@@ -295,7 +299,8 @@ WHERE exchangeid IN (SELECT DISTINCT CurrencyID FROM #currency)
 	INNER JOIN bettrans B ON bg.refno = B.refno
 	INNER JOIN #TempExchange e 
 	ON e.exchangeid = b.currency AND  e.ExchangeDate = B.winlostdate
-	WHERE	b.Recommend IN (SELECT custid FROM @TempAg) and 		
+	WHERE	b.Recommend IN (SELECT custid FROM @TempAg) and 
+			 ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID))		and
 			b.bettype=@bettype and
 			b.statusID in (0,1)
 	------------------------

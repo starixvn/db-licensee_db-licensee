@@ -21,6 +21,7 @@ Revisions:
 	 - 20120703@Henry: Number Group support Live Game and Pre-game
 	 - 20121004@Jim: replace @currencyname input param by @currencyID
 	 - 20130514@Jim:Restrict permission of Licensee Users by currency
+	 - 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
 Param's Explanation:
 • @custid: agent ID
 • Bettype AND betteam explanation:
@@ -44,13 +45,13 @@ WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 DECLARE @TempAg AS TABLE (custid INT)
 INSERT INTO @TempAg (custid)
-SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+SELECT DISTINCT CustID  
+                FROM    bodb_Licensee.dbo.[f_SelLicenseeCust](0) lc --WITH ( NOLOCK )
 				INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
                 WHERE   [Description] = COALESCE(@LicenseeType,  
                                                      [Description])
 -------------------------
-DROP TABLE #currency
+
 -------------------------
 
 DECLARE @RowCount INT, @RowStart INT, @RowEnd INT  
@@ -159,6 +160,7 @@ SELECT
 		WHERE
 				bettype BETWEEN 81 AND 120
 				AND recommend  IN (SELECT custid FROM @TempAg)
+				AND ((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID))
 				AND statusID IN (0,1)
 				AND ruben = 0
 		GROUP BY winlostdate,matchid,currency, bettype, betteam, liveindicator) AS b
@@ -237,6 +239,7 @@ SELECT c.* FROM
 	INNER JOIN (SELECT *  FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
 	ON e.exchangeid = d.currency
 ) c WHERE c.RowNum BETWEEN @RowStart AND @RowEnd
+DROP TABLE #currency
 GO
 GRANT EXECUTE ON [dbo].[Lrf_TotalBets_Sel161] TO [bodbLicenseeNet]
 GO

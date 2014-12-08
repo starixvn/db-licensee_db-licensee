@@ -30,6 +30,7 @@ Revisions:
 		- 20130625@Jim: Support to view currency UUS
 		- 20140520@Hannah: Sort betlist
 		- 20140602@Hannah: Separate Live/ Non - Live data in Live Report
+		- 20141111@Winnie: Change from LicenseeCust to f_SelLicenseeCust
 
 Param's Explanation: 
 	@Liveindicator : indicate that whether the report will get live data or not
@@ -46,12 +47,12 @@ WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 DECLARE @TempAg AS TABLE (custid INT)
 
 INSERT  INTO @TempAg ( CustId)
-SELECT  CustID  
-FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+SELECT  DISTINCT CustID  
+FROM    bodb_Licensee.dbo.f_SelLicenseeCust(0) lc --WITH ( NOLOCK )  
 		INNER JOIN #currency c ON c.LicenseeID=lc.LicenseeID AND c.CurrencyID=lc.Currency
 -- WHERE   lc.Currency <> 20
 ------------------------------
-DROP TABLE #currency 
+
 ------------------------------
 
 CREATE TABLE #AgWinlossMP
@@ -124,6 +125,7 @@ BEGIN
 			bettrans b WITH (nolock) 
 		WHERE
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND  
 			b.Winlostdate>=@FromDate AND
 			b.Winlostdate<=@ToDate AND
 			b.Bettype=@BetType AND
@@ -172,6 +174,7 @@ BEGIN
 			bettrans b WITH (nolock) 				
 		WHERE
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
+				((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 			b.Winlostdate>=@FromDate AND
 			b.Winlostdate<=@ToDate AND
 			b.Bettype = @Bettype AND
@@ -223,6 +226,7 @@ BEGIN
 			bettrans14 b WITH (nolock) 
 		WHERE
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND  
 			b.Winlostdate>=@FromDate AND
 			b.Winlostdate<=@ToDate AND
 			b.Bettype=@BetType AND
@@ -271,6 +275,7 @@ BEGIN
 			bettrans14 b WITH (nolock) 		
 		WHERE
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 			b.Winlostdate>=@FromDate AND
 			b.Winlostdate<=@ToDate AND
 			b.Bettype = @Bettype AND
@@ -340,7 +345,7 @@ EXEC (@sql)
 
 DROP TABLE #AgWinlossMP
 DROP TABLE #TempExchange 
-
+DROP TABLE #currency 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_LiveReport_SelWinlossParlay] TO [bodbLicenseeNet]
 GO

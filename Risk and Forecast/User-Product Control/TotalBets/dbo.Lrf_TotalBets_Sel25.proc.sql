@@ -31,7 +31,7 @@ Revisions:
 	- 20121004@Jim: replace @currencyname input param by @currencyID
 	- 20130514@Jim:Restrict permission of Licensee Users by currency
 	- 20140718@Hannah: Change liveindicator datatype to INT to fix running live matches are not being showed at the top list (RedmineID:19136)
-
+	- 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
 Param's Explanation:
 • @CustID: AgentID
 */
@@ -46,13 +46,13 @@ WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 DECLARE @TempAg AS TABLE (CustID INT)
 INSERT INTO @TempAg (CustID)
-SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK ) 
+SELECT  DISTINCT CustID  
+                FROM    bodb_Licensee.dbo.[f_SelLicenseeCust](0) lc --WITH ( NOLOCK )
 				INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID		
                 WHERE  [Description] = COALESCE(@LicenseeType,  
                                                      [Description])
 -------------------
-DROP TABLE #currency
+
 -------------------
 DECLARE @RowCount INT, @RowStart INT, @RowEnd INT  
 SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
@@ -198,6 +198,7 @@ SELECT
 		ON e.exchangeid = a.currency
 	WHERE  	
 		a.recommend IN (SELECT CustID FROM @TempAg) AND
+		 ((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 		a.bettype in (2, 12, 5, 15,123)
 		AND a.statusID in (0,1)
 		AND a.ruben = 0
@@ -227,6 +228,7 @@ SELECT c.* FROM
 		*
 	FROM @Data
 ) c WHERE c.RowNum BETWEEN @RowStart AND @RowEnd
+DROP TABLE #currency
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_TotalBets_Sel25] TO [bodbLicenseeNet]

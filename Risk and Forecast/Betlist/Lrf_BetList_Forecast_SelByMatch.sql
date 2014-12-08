@@ -2,7 +2,6 @@ set ANSI_NULLS ON
 set QUOTED_IDENTIFIER ON
 go
 
-
 ALTER   PROCEDURE [dbo].[Lrf_BetList_Forecast_SelByMatch]
 	@MatchID INT,
 	@LicenseeID INT,
@@ -27,6 +26,7 @@ DB: DB052.bodb02
 Original: [Lrf_BetList_Forecast_SelByMatch]
 Revisions:
 	20131010@Victor: add handicap parameter to show betlist of a specific handicap line
+	20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function 
 Param's explanation:
  - BetChoice: one of the following list: 'All','Home', 'Away', 'Over', 'Under'
 	+ Full: List all tickets bet on FT Handicap or FT Over/Under (@bettype must be 0)
@@ -45,8 +45,8 @@ BEGIN
 
 	DECLARE @TempAg AS TABLE (custid INT)
 	INSERT INTO @TempAg (custid)
-	SELECT  CustID  
-					FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )
+	SELECT DISTINCT CustID  
+					FROM    bodb_Licensee.dbo.[f_SelLicenseeCust](0) lc --WITH ( NOLOCK )
 					INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID		
 					WHERE   [Description] = COALESCE(@LicenseeType,  
 														 [Description]) 
@@ -130,6 +130,7 @@ BEGIN
 		b.matchid=@matchid AND 
 		((@bettype=0 AND b.bettype IN (1,3,7,8)) OR (@bettype!=0 AND b.bettype=@bettype)) AND
 		b.recommend IN (SELECT custid FROM @TempAg) AND
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 		b.statusID IN (0,1) AND
 		((@Liveindicator=-1) OR (@Liveindicator=0 AND b.Liveindicator = 0) OR (@Liveindicator=1 AND b.Liveindicator = 1)) AND
 		((@betteam='') OR (@betteam<>'' AND b.betteam = @betteam))

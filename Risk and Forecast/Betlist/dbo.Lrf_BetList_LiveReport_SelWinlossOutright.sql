@@ -26,6 +26,7 @@ Revisions:
 		-20130404@Jim: set default @ShowBA=0
 		-20130514@Jim: Restrict permission of Licensee Users by currency
 		-20130625@Jim: support to view currency UUS
+		-20141111@Winnie: Change from LicenseeCust to f_SelLicenseeCust
 */
 
 SET NOCOUNT ON
@@ -37,13 +38,13 @@ WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 DECLARE @TempAg AS TABLE (custid INT)
 
 INSERT  INTO @TempAg ( CustId)
-SELECT  lc.CustID  
-FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+SELECT  DISTINCT lc.CustID  
+FROM    bodb_Licensee.dbo.f_SelLicenseeCust(0) lc --WITH ( NOLOCK )  
 		INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID 
 -- WHERE   lc.Currency <> 20
 		
 ----------------------------------
-DROP TABLE #currency
+
 ----------------------------------
 CREATE TABLE #AgWinlossOutright
 (
@@ -121,6 +122,7 @@ BEGIN
 			--INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid 	
 		WHERE
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND  
 			b.Winlostdate>=@FromDate AND
 			b.Winlostdate<=@ToDate AND
 			b.Bettype=10 AND
@@ -168,6 +170,7 @@ BEGIN
 			
 		WHERE
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND  
 			b.Winlostdate>=@FromDate AND
 			b.Winlostdate<=@ToDate AND
 			b.Bettype=10 AND
@@ -222,6 +225,7 @@ BEGIN
 			--INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid	 	
 		WHERE
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND  
 			b.Winlostdate>=@FromDate AND
 			b.Winlostdate<=@ToDate AND
 			b.Bettype=10 AND
@@ -270,6 +274,7 @@ BEGIN
 			INNER JOIN League l WITH (NOLOCK) ON m.leagueID=l.leagueID	  	 	
 		WHERE
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND  
 			b.Winlostdate>=@FromDate AND
 			b.Winlostdate<=@ToDate AND
 			b.Bettype=10 AND
@@ -324,6 +329,7 @@ FROM
 
 DROP TABLE #AgWinlossOutright
 DROP TABLE #TempExchange 
+DROP TABLE #currency
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_LiveReport_SelWinlossOutright] TO [bodbLicenseeNet]
 GO

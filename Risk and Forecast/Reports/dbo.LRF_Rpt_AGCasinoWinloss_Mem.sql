@@ -13,7 +13,6 @@ ALTER  PROCEDURE [dbo].[LRF_Rpt_AGCasinoWinloss_Mem]
  @UserID		INT,
  @FromDate		SMALLDATETIME,  
  @ToDate		SMALLDATETIME,   
- @TableType 	TINYINT = 1,
  @excludeTest BIT = 0
 AS  
 /*
@@ -32,7 +31,7 @@ AS
     Task : AG Win Loss report 
     DB: DBACC.bodb02  
     Revisions:  
-			- 20140923@Jim: use table customer instead of licenseecustinfo
+			- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 			- 20141121@Jim: as more table alias 
 	Param's Explanation:  
 	  + @excludeTest: remove currency UUS
@@ -52,6 +51,11 @@ BEGIN
 						  ,LicenseeID INT
 						  )
 	
+	CREATE TABLE #tmpCust (  CustId INT
+							,Currency INT	
+							)
+		
+		
 	DECLARE @VNDCurrencyName VARCHAR(20)
 	DECLARE @sql NVARCHAR(1000)
 	 
@@ -66,7 +70,23 @@ BEGIN
 								)'
 	INSERT INTO #Currency (CurrencyID,LicenseeID)						
 	EXEC (@sql)
-
+	
+	DECLARE @Temp AS TABLE (CustId INT,Currency INT )
+	DECLARE @sql1 VARCHAR(500)
+	SELECT  @sql1 =  'SELECT CustID,Currency   FROM  OPENQUERY(DBLIC, ''SELECT CustID,Currency  FROM bodb_licensee.dbo.f_SelLicenseeCust('+CAST(@LicenseeID AS VARCHAR(10))+')'')'
+	INSERT INTO @Temp (CustId ,Currency)
+	EXEC (@sql1)
+	
+	INSERT INTO #tmpCust (CustID,Currency)	
+	SELECT   co.CustID
+			 ,lc.Currency
+	FROM 
+		dbo.CustInfo co WITH (NOLOCK)
+		INNER JOIN @Temp lc ON lc.CustId = co.Recommend AND co.Currency = lc.Currency
+		INNER JOIN #Currency c ON  lc.Currency = c.CurrencyID 
+	WHERE  (@excludeTest=0 OR (@excludeTest=1 AND lc.Currency <> 20))	
+		    AND lc.CustId =  @CustID
+			
 	INSERT INTO #tmpResult (CustId 
 							 ,Winlostdate
 							 ,Currency 	
@@ -78,19 +98,18 @@ BEGIN
 
 	SELECT c.CustID
 		   ,c.Winlostdate		
-		   ,co.Currency
+		   ,ag.Currency
 		   ,SUM(c.TurnOver) AS TurnOver
 		   ,SUM(c.BetCount) AS TotalTrans
 		   ,SUM(c.Winlost)  AS Winlost
 		   ,-SUM(c.Winlost) AS LicenseeWinlost
 	FROM  bodb_report.dbo.rptDepWinlost_AGCasino c  WITH (NOLOCK)
-		INNER JOIN dbo.Custinfo co WITH  (NOLOCK) ON c.CustID = co.CustID
+		INNER JOIN #tmpCust ag ON c.CustID = ag.CustID AND c.Currency = ag.Currency 	
 	WHERE c.Winlostdate BETWEEN @FromDate AND @ToDate 
-		  AND co.recommend =  @CustID
-		  AND (@excludeTest=0 OR (@excludeTest=1 AND co.Currency <> 20))		
+		 AND (@excludeTest=0 OR (@excludeTest=1 AND ag.Currency <> 20))		
 	GROUP BY c.CustID
 			,c.Winlostdate
-		    ,co.Currency
+		    ,ag.Currency
 	
 	SELECT ExchangeDate
 		   ,ExchangeId
@@ -132,8 +151,10 @@ BEGIN
 	ORDER BY c.Username
 	
 	---------
+	DROP TABLE #tmpCust
 	DROP TABLE #tmpResult
 	DROP TABLE #Currency
 	DROP TABLE #TempExchange 
+	
 	
 END

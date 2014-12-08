@@ -13,6 +13,7 @@ GO
 
 
 
+
 ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinlossNumberGame]     
      @LicenseeID INT ,
      @LicenseeType VARCHAR(100) = NULL ,
@@ -37,6 +38,7 @@ Revisions:
     -20120724@Jim: add playercomm value
     -20120813@Jim: get bettrans.liveindicator value and add more oddstype column in the result     
     -20121004@Jim: replace @currencyname input param by @currencyID
+	- 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
 */
 
 
@@ -90,8 +92,8 @@ CREATE TABLE #Data (
 )  
 
 INSERT INTO @TempAg (custid)
-SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust WITH ( NOLOCK )  
+SELECT DISTINCT CustID  
+                FROM    bodb_Licensee.dbo.f_SelLicenseeCust(0) --WITH ( NOLOCK )  
                 WHERE   LicenseeID = @LicenseeID  
                         AND  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID))
                         AND [Description] = COALESCE(@LicenseeType,  
@@ -148,6 +150,7 @@ BEGIN
         INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid         
      WHERE            
       b.bettype BETWEEN 81 AND 120 AND
+	  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID)) AND
       b.Winlostdate BETWEEN @FromDate AND @TempToDate AND
       b.statusID NOT IN (101, 102, 103)
      ORDER  BY b.transid
@@ -207,6 +210,7 @@ BEGIN
       INNER JOIN [match] m WITH (NOLOCK) ON b.matchid=m.matchid         
      WHERE              
       b.bettype BETWEEN 81 AND 120 AND
+	  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID)) AND
       b.Winlostdate BETWEEN @TempFromDate AND @ToDate AND        
       b.Ruben=1  AND
       b.statusID NOT IN (101, 102, 103)      

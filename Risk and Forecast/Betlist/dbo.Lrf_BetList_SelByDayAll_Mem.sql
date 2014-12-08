@@ -51,6 +51,7 @@ Revisions:
 	- 20140324@Daniel: fix show RNG Casino / Bingo bets due to matchid = 0
 	- 20140411@Francis: fix incorrect sporttypes showing for VHR, Racing
 	- 20140630@Hannah: offer BetRadar and Sporting Solution
+	- 20141121@Jim: support multiple currency per one member
 Param's Explanation: 
 	+ @transtype: 1-Betting Statement; 2-VOID/Cancelled Bet; 3-Outstanding Bet 
 	
@@ -87,12 +88,20 @@ END
 SELECT  currencyID,LicenseeID into #currency
 FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
 
+DECLARE @recommend INT
+SELECT @recommend = recommend
+FROM bodb_licensee.dbo.licenseeCustInfo WITH (NOLOCK)
+WHERE CustId = @custID 
 
-IF NOT EXISTS (SELECT	c.Currency 
-FROM Custinfo c WITH (NOLOCK) 
-	INNER JOIN #Currency cy ON c.currency=cy.CurrencyID
-WHERE c.custid = @CustID 
-		)
+DECLARE @TempAg	TABLE( custID INT,currency INT)  
+INSERT INTO @TempAg (custID,currency) 
+SELECT lc.custID,lc.currency 
+FROM bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc
+INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID 
+WHERE lc.CustID = @recommend 
+	 
+IF NOT EXISTS ( SELECT 1 FROM @TempAg 
+				)
 BEGIN 
 	DROP TABLE #Currency
 	SELECT @ErrCode = 101, @ErrMsg = 'You have not permission to view this CustID,please check again'
@@ -991,14 +1000,9 @@ ELSE
 		DECLARE @Today SMALLDATETIME 
 		SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
 
-		DECLARE @currency INT
-
-		SELECT @currency = Currency FROM Custinfo c WITH (NOLOCK)
-		WHERE Custid = @CustID
-
 		SELECT * INTO #TempExchange 
 		FROM Lrf_f_GetExchangeDaily(@FromDate,@Today)
-		WHERE exchangeid = @currency
+		WHERE exchangeid  IN (SELECT DISTINCT Currency FROM @TempAg)
 
 
 		SELECT 

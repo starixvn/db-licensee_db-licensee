@@ -38,7 +38,7 @@ Revisions:
 	- 20140207@Florent: add filter ShowBA and ShowSB
 	- 20140214@Florent: add filter by match
     - 20140630@Hannah: offer BetRadar and Sporting Solution
-
+	- 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
 Param's Explanation: 
 	- @CustID : Customer Number
 	- @Odds : decimals odds, default >=0
@@ -78,14 +78,13 @@ DECLARE @TempToDate SMALLDATETIME
 DECLARE @TempAg AS TABLE (custid INT)
 
 INSERT INTO @TempAg (custid)
-SELECT CustID
-FROM bodb_Licensee.dbo.LicenseeCust lc WITH (NOLOCK)
+SELECT DISTINCT CustID
+FROM bodb_Licensee.dbo.f_SelLicenseeCust(0) lc --WITH (NOLOCK)
 INNER JOIN #currency c ON lc.LicenseeID = c.LicenseeID
 	AND lc.Currency = c.CurrencyID
 
 --WHERE   [Description] = COALESCE(@LicenseeType,  
 --                                     [Description])
-DROP TABLE #Currency
 
 DECLARE @IFromdate DATETIME
 DECLARE @ITodate DATETIME
@@ -235,6 +234,7 @@ BEGIN
 			INNER JOIN match m WITH (NOLOCK) ON b.matchid = m.matchid
 			INNER JOIN @TempAg ta ON b.recommend = ta.custid
 			WHERE m.leagueid = @LeagueID
+				AND ((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID))
 				AND (
 					b.bettype < 31
 					OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)
@@ -327,6 +327,7 @@ BEGIN
 			INNER JOIN match m WITH (NOLOCK) ON b.matchid = m.matchid
 			INNER JOIN @TempAg ta ON b.recommend = ta.custid
 			WHERE m.leagueid = @LeagueID
+				and ((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID))
 				AND (
 					b.bettype < 31
 					OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)
@@ -429,6 +430,7 @@ BEGIN
 			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid = m.matchid
 			INNER JOIN @TempAg ta ON b.recommend = ta.custid
 			WHERE m.leagueid = @leagueID
+				and ((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID))
 				AND (
 					b.bettype < 31
 					OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)
@@ -525,6 +527,7 @@ BEGIN
 			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid = m.matchid
 			INNER JOIN @TempAg ta ON b.recommend = ta.custid
 			WHERE m.leagueid = @leagueID
+				and ((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID))
 				AND (
 					b.bettype < 31
 					OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)
@@ -804,10 +807,12 @@ FROM (
 			)
 	) A
 WHERE A.RowNum BETWEEN @RowStart AND @RowEnd
+DROP TABLE #Currency
 
 --WHERE b.odds>@odds
 DROP TABLE #TempExchange
 DROP TABLE #Data
+
 GO
 SET QUOTED_IDENTIFIER OFF 
 GO

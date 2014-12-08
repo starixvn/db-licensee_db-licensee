@@ -49,6 +49,7 @@ Revisions:
 - 20120726@Jim: add player comm value 
 - 20121004@Jim: replace @currencyname input param by @currencyID
 - 20130514@Jim: Restrict permission of Licensee Users by currency
+- 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
 Example:
 
 declare @p12 int
@@ -95,12 +96,12 @@ WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 DECLARE @TempAg AS TABLE (custid INT)
 INSERT INTO @TempAg (custid)
-SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+SELECT DISTINCT CustID  
+                FROM    bodb_Licensee.dbo.f_SelLicenseeCust(0) lc --WITH ( NOLOCK )  
 						INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
                 WHERE    [Description] = COALESCE(@LicenseeType,  
                                                      [Description])
-DROP TABLE #currency
+
 
 CREATE TABLE #AgWinlossOutright
 (
@@ -183,6 +184,7 @@ BEGIN
 			--INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid	   	 	
 		WHERE
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
+			 ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
 			b.Winlostdate>=@FromDate AND
 			b.Winlostdate<=@ToDate AND
 			b.Bettype=10 AND
@@ -236,6 +238,7 @@ BEGIN
 			--INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid	   	 				
 		WHERE
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
+			 ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
 			b.Winlostdate>=@FromDate AND
 			b.Winlostdate<=@ToDate AND
 			b.Bettype=10 AND
@@ -296,6 +299,7 @@ BEGIN
 			--INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid	   	 		
 		WHERE
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
+			 ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
 			b.Winlostdate>=@FromDate AND
 			b.Winlostdate<=@ToDate AND
 			b.Bettype=10 AND
@@ -348,6 +352,7 @@ BEGIN
 			--INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid	   	 				
 		WHERE
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
+			 ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
 			b.Winlostdate>=@FromDate AND
 			b.Winlostdate<=@ToDate AND
 			b.Bettype=10 AND
@@ -423,6 +428,7 @@ FROM
 
 DROP TABLE #AgWinlossOutright
 DROP TABLE #TempExchange 
+DROP TABLE #currency
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_MatchWL_Outright] TO [bodbLicenseeNet]

@@ -20,6 +20,7 @@ AS
     Revisions:  
 		- 20140513@Hannah: Add Progressive share and win values
 		- 20140527@Hannah: Modify NetGaming values
+		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	Param's Explanation:  
 	  + @CustID: AgentID  
 	  + @BaseCurrency (input currencyID): 2-MYR ; 3-USD; 6-EUR
@@ -39,11 +40,13 @@ BEGIN
 		NetGaming		MONEY	
 	)  
 
-	DECLARE @tempAg	TABLE( custID INT PRIMARY KEY, Currency INT)  
+	CREATE TABLE #tmpCust (  Recommend INT
+							,CustId INT
+							,Currency INT	
+							)
+							
 	DECLARE @Code VARCHAR(20), @TempCurrencyID INT
-	DECLARE @site VARCHAR(50)
 	DECLARE @Exchange TABLE(ExchangeDate SMALLDATETIME, ExchangeId INT, USD FLOAT, EUR FLOAT,MYR FLOAT,Code VARCHAR(10), PRIMARY KEY(ExchangeDate, ExchangeId))
-	DECLARE @Super AS TABLE (custid INT PRIMARY KEY, currency INT)
 	DECLARE @sql NVARCHAR(1000)
 
 	CREATE TABLE #currency(currencyID INT, LicenseeID INT)
@@ -55,28 +58,28 @@ BEGIN
 
 	INSERT INTO #currency(currencyID, LicenseeID)
 	EXEC (@sql)
-
-	INSERT INTO @tempAg (custID, currency) 
-	SELECT custID, currency 
-	FROM DBLIC.bodb_Licensee.dbo.LicenseeCust lc WITH (NOLOCK) 
-		INNER JOIN #Currency c ON lc.LicenseeID = c.LicenseeID AND lc.Currency = c.CurrencyID 
-	WHERE 
-		(@CustID = 0 OR (@CustID <> 0 AND CustID = @CustID))
-		AND (@excludeTest=0 OR (@excludeTest=1 AND Currency <> 20))
 	
-	SELECT @site = LicenseeName 
-	FROM DBLIC.bodb_licensee.dbo.Licensees WITH (NOLOCK) 
-	WHERE LicenseeID = @LicenseeID
-
-	INSERT INTO @Super(custid, currency)  
-	SELECT CustID, currency 
-	FROM bodb02.dbo.Dep_CustSuper dc WITH (NOLOCK)  
-		INNER JOIN #Currency c ON dc.Currency = c.CurrencyID
-	WHERE site = @site
-
+	DECLARE @Temp AS TABLE (CustId INT,Currency INT )
+	DECLARE @sql1 VARCHAR(500)
+	SELECT  @sql1 =  'SELECT CustID,Currency   FROM  OPENQUERY(DBLIC, ''SELECT CustID,Currency  FROM bodb_licensee.dbo.f_SelLicenseeCust('+CAST(@LicenseeID AS VARCHAR(10))+')'')'
+	INSERT INTO @Temp (CustId ,Currency)
+	EXEC (@sql1)
+	
+	INSERT INTO #tmpCust (Recommend,CustID,Currency)	
+	SELECT   lc.CustId AS Recommend
+			 ,co.CustID
+			 ,lc.Currency
+	FROM 
+		dbo.CustInfo co WITH (NOLOCK)
+		INNER JOIN @Temp lc ON lc.CustId = co.Recommend AND co.Currency = lc.Currency
+		INNER JOIN #Currency c ON  lc.Currency = c.CurrencyID 
+	WHERE  
+		(@CustID = 0 OR (@CustID <> 0 AND lc.CustID = @CustID))
+		AND (@excludeTest=0 OR (@excludeTest=1 AND lc.Currency <> 20))	
+	
 	DROP TABLE #Currency
 
-	SELECT TOP 1 @TempCurrencyID=currency FROM @tempAg 
+	SELECT TOP 1 @TempCurrencyID=currency FROM #tmpCust 
 
 	IF @TempCurrencyID in (51, 20)
 		SELECT @Code = currency FROM exchange (nolock) WHERE ExchangeId = @TempCurrencyID
@@ -88,7 +91,7 @@ BEGIN
 	INSERT INTO @Exchange (exchangedate, exchangeid, usd, eur, myr, code)
 	SELECT exchangedate, exchangeid, usd, eur, myr, code
 	FROM Lrf_f_GetExchangeDaily(@FromDate, @ToDate)
-	WHERE exchangeid IN (SELECT Currency FROM @TempAg)
+	WHERE exchangeid IN (SELECT Currency FROM #tmpCust)
 
 	DECLARE @eEUR FLOAT
 	DECLARE @eUSD FLOAT
@@ -97,7 +100,7 @@ BEGIN
 	INSERT INTO #SAgWinLoss
 	SELECT   
 		r.custID,
-		s.currency,			
+		a.currency,			
 		SUM(r.turnover) AS Turnover, 
 		SUM(r.winlost) AS Winlost,  
 		-SUM(r.winlost) AS LicenseeWL,
@@ -107,14 +110,11 @@ BEGIN
 		(-SUM(r.winlost) - SUM(ProgressiveShare)) AS NetGaming	
 	FROM 
 		bodb_report.dbo.rptDepWinlost_PlaytechCS r WITH ( NOLOCK)
-		INNER JOIN bodb02.dbo.custInfo ci WITH ( NOLOCK) ON ci.CustID = r.CustID
-		INNER JOIN @Super s ON ci.srecommend = s.custid
-		INNER JOIN @TempAg a ON ci.recommend = a.custid
+		INNER JOIN #tmpCust a ON r.custID = a.custid AND r.currency = a.currency
 	WHERE 
 		r.winlostdate BETWEEN @FromDate AND @ToDate
-		AND ci.roleid = 1
 		AND r.sporttype = 254
-	GROUP BY r.custid, r.winlostdate,s.currency 
+	GROUP BY r.custid, r.winlostdate,a.currency 
   
 	SELECT 
 		c.username,  
@@ -151,6 +151,7 @@ BEGIN
 	GROUP BY w.custid, c.username,c.username2,w.currency
 
 	DROP TABLE #SAgWinLoss 
+	DROP TABLE #tmpCust
 END   
 
 GO

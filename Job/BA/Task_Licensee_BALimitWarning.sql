@@ -16,7 +16,7 @@ Revisions:
 	--20110920@Elly: Turning performance	
 	--20110922@Henry: add more info to the alert message
 	--20120705@Henry: map to new exchange rate table (ExchangeDailyOanda)
-	
+	--20141112@Victor: use f_SelLicenseeCust instead of licenseecust (#Redmine 25864)
 Param's Explanation:
 */
 BEGIN
@@ -39,7 +39,7 @@ BEGIN
 		SELECT @WinlostAmt=-SUM((b.winlost+b.awinlost+b.comm)*EUR)
 		FROM dbo.rptLicWinloss2 AS b WITH(NOLOCK)
 			INNER JOIN bodb02.dbo.ExchangeDailyOanda AS e WITH(NOLOCK) ON b.Currency=e.ExchangeID AND e.ExchangeDate=b.winlostdate
-			INNER JOIN dbo.LicenseeCust AS lc WITH(NOLOCK) ON b.recommend=lc.custid AND lc.LicenseeID=@LicenseeID AND lc.RoleID=2
+			INNER JOIN dbo.f_SelLicenseeCust(@LicenseeID) lc ON b.recommend=lc.custid AND lc.RoleID=2 AND b.Currency = lc.Currency
 		WHERE winlostdate BETWEEN @FirstDayOfMonth AND @MovingBetDay
 			AND isBA=1
 			AND b.roleid = 2
@@ -52,7 +52,7 @@ BEGIN
 		FROM bodb02.dbo.bettrans AS b WITH(NOLOCK)
 			INNER JOIN dbo.LicenseeBATransaction AS BA WITH(NOLOCK) ON b.transid=BA.transID
 				AND winlostdate between @MovingBetDay AND @Today
-			INNER JOIN dbo.LicenseeCust AS lc WITH(NOLOCK) ON b.recommend=lc.custid AND lc.LicenseeID=@LicenseeID AND lc.RoleID=2
+			INNER JOIN dbo.f_SelLicenseeCust(@LicenseeID) lc ON b.recommend=lc.custid AND lc.RoleID=2 AND b.Currency = lc.Currency
 		WHERE b.ruben=1
 			AND b.statusID NOT IN (101, 102, 103) 
 		GROUP BY b.winlostdate, b.currency		

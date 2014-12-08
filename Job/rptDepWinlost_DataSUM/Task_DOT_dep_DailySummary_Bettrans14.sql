@@ -1,12 +1,8 @@
 USE [bodb02]
 GO
 
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
 
-ALTER PROCEDURE [dbo].[Task_DOT_dep_DailySummary_Bettrans14]
+CREATE PROCEDURE [dbo].[Task_DOT_dep_DailySummary_Bettrans14]
 	@winlostdate datetime
 AS
 /*	
@@ -36,6 +32,8 @@ AS
 		- 20140515@Victor: Change Playtech Casino summary data process
 		- 20140814@Don: Add AG Casino
 		- 20140912@Victor: support AG Casino 3rd party product
+		- 20141120@Don: Adjustment to serve to change KeenOcean's currency RMB to HK$
+		- 20141129@Don: Fixed bug cause rptDepWinlost not to get data in November 29, 2014 (Redmine ID: 26866 related to revision 20141120@Don)
 	Param's Explanation:
 	• @date: The date need to summary
 */
@@ -58,10 +56,25 @@ SELECT @BalanceUpDay = winlostdate
 FROM Bettrans WITH(NOLOCK)
 WHERE bettype = 20000 and matchid = 0 and custid = 3
 
+CREATE TABLE #DepositCustSuper(CustID INT, Currency INT)
+DECLARE @Sql VARCHAR(500)
+SET @Sql = 
+    'INSERT INTO #DepositCustSuper(CustID, Currency)
+    SELECT CustID, Currency
+    FROM OPENQUERY(DBLIC,''SELECT CustID, Currency FROM bodb_licensee.dbo.f_SelDepCustSuper('''''''')'')'
+EXEC(@Sql)
+
 INSERT INTO #Data (custid,currency, recommend, mrecommend, srecommend, PartnerId, OpeningBalance, Deposit,Aff2MemTransfer,
 		Withdrawal, Bonus, Adjustment, Transfer3rd, Transfer3rdOthers_Hogaming, Transfer3rdOthers_OPus, Transfer3rdOthers_AG)
 SELECT
-	b.custid, b.currency, b.recommend, b.mrecommend, b.srecommend,
+	b.custid, 
+	--b.currency, 
+	CASE 
+		WHEN b.recommend IN (14373731, 14373733) AND @date < '20141128' THEN 13
+		WHEN b.recommend IN (14373731, 14373733) AND @date >= '20141128' THEN 66 
+		ELSE b.currency 
+	END,
+	b.recommend, b.mrecommend, b.srecommend,
 	CASE 
 		WHEN bettype in (22008,22009) THEN 1 --Hogaming
 		WHEN bettype in (22010,22011) THEN 2 --OPus
@@ -81,11 +94,19 @@ SELECT
 	SUM( CASE WHEN winlostdate = @date AND bettype in (22008,22009) then winlost-actual_stake ELSE 0 END),--Transfer3rdOthers_Hogaming
 	SUM( CASE WHEN winlostdate = @date AND bettype in (22010,22011) then winlost-actual_stake ELSE 0 END),--Transfer3rdOthers_OPus
 	SUM( CASE WHEN winlostdate = @date AND bettype in (22014,22015) then winlost-actual_stake ELSE 0 END)--Transfer3rdOthers_AG
-FROM bettrans b	with(readpast)
-	inner join dep_custsuper s with(nolock) on s.custid = b.srecommend	
+FROM dbo.bettrans b	with(readpast)
+	--inner join dep_custsuper s with(nolock) on s.custid = b.srecommend
+	INNER JOIN #DepositCustSuper s WITH(NOLOCK) ON s.custid = b.srecommend AND s.Currency = b.currency
 WHERE winlostdate <= @date
 	and b.custid <> recommend and b.custid <> mrecommend and b.custid <> srecommend	
-GROUP BY b.custid, b.currency, b.recommend, b.mrecommend, b.srecommend,
+GROUP BY b.custid, 
+	--b.currency, 
+	CASE 
+		WHEN b.recommend IN (14373731, 14373733) AND @date < '20141128' THEN 13
+		WHEN b.recommend IN (14373731, 14373733) AND @date >= '20141128' THEN 66 
+		ELSE b.currency 
+	END,
+	b.recommend, b.mrecommend, b.srecommend,
 	CASE 
 		WHEN bettype in (22008,22009) THEN 1 --Hogaming
 		WHEN bettype in (22010,22011) THEN 2 --OPus
@@ -156,11 +177,11 @@ FROM B
 WHERE #data.custid = b.custid
 
 CREATE TABLE #DataByProduct (
-	custid int, sporttype smallint, turnover money default(0), drawTO money default(0), 
+	custid int, sporttype smallint, currency int, turnover money default(0), drawTO money default(0), 
 	winlost money default(0), playercomm money default(0), betcount int default(0)
 )  
 
-INSERT INTO #DataByProduct(custid, sporttype, turnover, drawTO, winlost, playercomm, betcount)
+INSERT INTO #DataByProduct(custid, sporttype, currency, turnover, drawTO, winlost, playercomm, betcount)
 SELECT  
 	b.custid, 
 	CASE
@@ -172,6 +193,7 @@ SELECT
 		WHEN bettype BETWEEN 1201 AND 1299 THEN 180 --Virtual Sport
 		WHEN bettype BETWEEN 1501 AND 1599 THEN 202 --Keno
 	ELSE 0 END, -- sporttype
+	b.currency,
 	SUM(CASE WHEN [status] not in ('VOID', 'REJECT', 'Refund') then stake ELSE 0 END),--Turnover  
 	SUM(case when [status] = 'DRAW' then stake else 0 end), -- Draw game TO			
 	SUM(CASE WHEN ruben=1 then b.winlost-b.actual_stake ELSE 0 END), --Winloss      
@@ -189,7 +211,8 @@ GROUP BY b.custid,
 		WHEN bettype BETWEEN 1101 AND 1199 THEN 162 -- Live Casino
 		WHEN bettype BETWEEN 1201 AND 1299  THEN 180 --Virtual Sport
 		WHEN bettype BETWEEN 1501 AND 1599 THEN 202 --Keno
-	ELSE 0 END
+	ELSE 0 END,
+	b.currency
 
 ------
 DELETE bodb_Report.dbo.rptDepWinlost WHERE Winlostdate = @date
@@ -211,8 +234,8 @@ group by custid, currency, recommend, mrecommend, srecommend
 DELETE bodb_Report.dbo.rptDepWinlostByProduct WHERE Winlostdate = @date 
 
 insert into bodb_Report.dbo.rptDepWinlostByProduct (
-	winlostdate, custid, sporttype, turnover, drawTO, winlost, playercomm, betcount, outstanding)
-select @date, custid, sporttype, turnover, drawTO, winlost, playercomm, betcount, 0
+	winlostdate, custid, sporttype, currency, turnover, drawTO, winlost, playercomm, betcount, outstanding)
+select @date, custid, sporttype, currency, turnover, drawTO, winlost, playercomm, betcount, 0
 from #DataByProduct
 
 DROP TABLE #DataByProduct
@@ -261,5 +284,15 @@ DROP TABLE #rptDepWinlost_Transfer3rdOthers
 /* End -- Fill data to rptDepWinlost_Transfer3rdOthers */
 
 DROP TABLE #Data
+DROP TABLE #DepositCustSuper
 
 SET NOCOUNT OFF
+GO
+
+
+
+GRANT EXECUTE ON [dbo].[Task_DOT_dep_DailySummary_Bettrans14] TO [Dot_Admin] AS [dbo]
+GO
+
+GRANT VIEW DEFINITION ON [dbo].[Task_DOT_dep_DailySummary_Bettrans14] TO [vnteam] AS [dbo]
+GO

@@ -46,6 +46,7 @@ Revisions:
 	- 20140602@Hannah: Separate Live/ Non - Live data in Live Report	
 	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 	- 20140915@Florent: hotfix duplicated VS bettype
+	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 Param's Explanation:  
 	@Liveindicator : indicate that whether the report will get live data or not
 		+ 0: Non - Live data only
@@ -87,7 +88,7 @@ SELECT @sql = 'SET NOCOUNT ON  ' + CHAR(13)
 --declare
 SELECT @sql = @sql + '--Declare variable:' + CHAR(13)
 
-SELECT @sql = @sql + 'DECLARE @TempAg AS TABLE ( CustId INT )' + CHAR(13) + 
+SELECT @sql = @sql + 'DECLARE @TempAg AS TABLE ( CustId INT, Currency INT  )' + CHAR(13) + 
 'CREATE TABLE #tmpWinloss (winlostdate  DATETIME,Currency  INT,SportType  INT,TurnOver  MONEY,Winlost   MONEY,LicenseeWL  MONEY,Comm   MONEY,PlayerComm MONEY,AmtDueTo3rd  MONEY,Betcount  INT)' + CHAR(13)
 
 SELECT @sql = @sql + 
@@ -96,7 +97,8 @@ SELECT @sql = @sql +
 	'WHERE (' + convert(VARCHAR(10), @CurrencyID) + '=0  OR (' + convert(VARCHAR(10), @CurrencyID) + '<>0 AND CurrencyID=' + convert(VARCHAR(20), @CurrencyID) + '))' + CHAR(13)
 
 --insert agentIds to temp table
-SELECT @sql = @sql + 'INSERT  INTO @TempAg ( CustId)' + CHAR(13) + 'SELECT  CustID  FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK ) ' + CHAR(13) + 'INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID' + CHAR(13) + 'WHERE lc.LicenseeID =' + convert(VARCHAR(10), @LicenseeID) + CHAR(13) +
+SELECT @sql = @sql + 'INSERT  INTO @TempAg ( CustId, Currency )' + CHAR(13) + 'SELECT  CustID, Currency   FROM    bodb_Licensee.dbo.f_SelLicenseeCust('+CONVERT(VARCHAR(20),@licenseeID)+') lc ' + CHAR(13) 
+				+ 'INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID' + CHAR(13) + 'WHERE lc.LicenseeID =' + convert(VARCHAR(20), @LicenseeID) + CHAR(13) +
 	--'AND lc.currency <> 20 ' + char(13) +
 	CASE 
 		WHEN @CurrencyID <> 0
@@ -134,7 +136,7 @@ BEGIN
 					'COUNT(b.transid) BetCount' + CHAR(13) + 
 					'FROM bettrans b  WITH (NOLOCK) ' + CHAR(13) + 
 					'INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active ba WITH (NOLOCK) ON b.recommend=ba.recommend and b.transid = ba.transid' + CHAR(13) + 
-					'INNER JOIN @TempAg t  ON b.recommend =t.custid' + CHAR(13) + 
+					'INNER JOIN @TempAg t  ON b.recommend =t.custid AND b.Currency = t.Currency ' + CHAR(13) + 
 					'LEFT JOIN [match] m with(nolock) ON b.matchid = m.matchid' + CHAR(13) + 
 					'WHERE b.winlostdate BETWEEN ''' + convert(VARCHAR(10), @TempFromDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TDate, 120) + '''' + CHAR(13) + 
 					'AND b.statusID IN (111,112,113)' + CHAR(13) + 
@@ -163,7 +165,7 @@ BEGIN
 					'COUNT(b.transid) BetCount' + CHAR(13) + 
 					'FROM bettrans b  WITH (NOLOCK) ' + CHAR(13) + 
 					'INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active ba WITH (NOLOCK) ON b.recommend=ba.recommend and b.transid = ba.transid' + CHAR(13) + 
-					'INNER JOIN @TempAg t  ON b.recommend =t.custid' + CHAR(13) + 
+					'INNER JOIN @TempAg t  ON b.recommend =t.custid AND b.currency = t.currency ' + CHAR(13) + 
 					'LEFT JOIN [match] m with(nolock) ON b.matchid = m.matchid' + CHAR(13) + 
 					'WHERE b.winlostdate BETWEEN ''' + convert(VARCHAR(10), @TempFromDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TDate, 120) + '''' + CHAR(13) + 
 					'AND b.statusID IN (111,112,113)' + CHAR(13) + 
@@ -223,7 +225,7 @@ BEGIN
 			'- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,' + CHAR(13) + 
 			'COUNT(b.transid) BetCount' + CHAR(13) + 
 			'FROM bettrans b  WITH (NOLOCK)' + CHAR(13) + 
-			'INNER JOIN @TempAg t  ON b.recommend =t.custid' + CHAR(13) + 
+			'INNER JOIN @TempAg t  ON b.recommend =t.custid AND b.Currency = t.Currency' + CHAR(13) + 
 			'LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON b.recommend=BA.recommend AND b.transid = BA.transid' + CHAR(13) + 
 			'LEFT JOIN outright o with(nolock) ON b.matchid = o.orid' + CHAR(13) + 
 			'LEFT JOIN league l with(nolock) ON o.leagueid = l.leagueid' + CHAR(13) + 
@@ -281,7 +283,7 @@ BEGIN
 			'- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,' + CHAR(13) + 
 			'COUNT(b.transid) BetCount' + CHAR(13) + 
 			'FROM bettrans b  WITH (NOLOCK)' + CHAR(13) + 
-			'INNER JOIN @TempAg t  ON b.recommend =t.custid' + CHAR(13) + 
+			'INNER JOIN @TempAg t  ON b.recommend =t.custid AND b.Currency = t.Currency' + CHAR(13) + 
 			'LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON b.recommend=BA.recommend AND b.transid = BA.transid' + CHAR(13) + 
 			'LEFT JOIN outright o with(nolock) ON b.matchid = o.orid' + CHAR(13) + 
 			'LEFT JOIN league l with(nolock) ON o.leagueid = l.leagueid' + CHAR(13) + 

@@ -1,4 +1,11 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerBalance]  
+﻿USE [bodb02]
+GO
+ 
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerBalance]  
 	@LicenseeID INT ,  
 	@LicenseeType VARCHAR(100) = NULL,
 	@UserID		INT,	
@@ -36,6 +43,7 @@ Revisions:
    -20131007@Jim: offer Virtual Tennis
    -20140217@Hannah: add condition for @LicenseeType
    -20140305@Florent: support Keno
+   -20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 
 Param's Explanation:  
  + @excludeTest: remove currency UUS  
@@ -58,7 +66,7 @@ IF ISNULL(@LicenseeType,'') = ''
 	SELECT @LicenseeType = NULL
 
 DECLARE @CutDate datetime  
-DECLARE @tmpAg TABLE(custID INT)  
+DECLARE @tmpAg TABLE(custID INT, Currency INT)  
 DECLARE @RowStart INT, @RowEnd INT  
 DECLARE @sporttype TABLE(sporttype INT)  
 DECLARE @tmpdate smalldatetime, @fdate smalldatetime, @tdate smalldatetime  
@@ -89,14 +97,21 @@ WHERE  usrID=@userID
 AND LicenseeID=@LicenseeID 
 AND SystemID=1 -- System is default=1 (LRF)
 AND (@CurrencyID=0 OR (CurrencyID=@CurrencyID))
-  
-INSERT INTO @tmpAg  
-SELECT CustID   
-FROM DBLIC.bodb_Licensee.dbo.LicenseeCust lc WITH( NOLOCK )  
+
+DECLARE @Temp AS TABLE ( LicenseeId INT,CustId INT,Currency INT, Description VARCHAR(200) )
+DECLARE @sql VARCHAR(500)
+SELECT  @sql =  'SELECT LicenseeId,CustID,Currency,Description  FROM  OPENQUERY(DBLIC, ''SELECT LicenseeId,CustID,Currency,Description FROM bodb_licensee.dbo.f_SelLicenseeCust('+CAST(@LicenseeID AS VARCHAR(10))+')'')'
+INSERT INTO @Temp (LicenseeId  ,CustId ,Currency  , Description)	
+EXEC (@sql)	
+
+INSERT INTO @tmpAg (CustId, Currency) 
+SELECT  CustID   
+		,Currency
+FROM @Temp lc
 	INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
 WHERE  [Description] = COALESCE(@LicenseeType,[Description])   
- AND (@CurrencyID=0 OR (@CurrencyID<>0 AND Currency = @CurrencyID))  
- AND (@excludeTest = 0 OR (@excludeTest=1 AND Currency<>20))  
+	 AND (@CurrencyID=0 OR (@CurrencyID<>0 AND Currency = @CurrencyID))  
+	 AND (@excludeTest = 0 OR (@excludeTest=1 AND Currency<>20))  
  
  DROP TABLE #Currency 
   
@@ -139,9 +154,10 @@ BEGIN
    CASE WHEN @showSB=1 THEN sum(isnull(Comm_BA,0)) ELSE 0 END CommBA,  
    0 as PlayerComm,  
    CASE WHEN @showSB=1 THEN sum(isnull(AmountDueTo_BA,0)) ELSE 0 END AmountDueToBA   
- FROM bodb_Report.dbo.rptDepWinlost_bk b with(nolock)  
+ FROM bodb_Report.dbo.rptDepWinlost_bk b with(nolock) 
+		INNER JOIN @tmpAg a ON b.recommend = a.CustId AND b.Currency = a.Currency
  WHERE b.winlostdate between @fdate AND @tmpdate  
-   and b.recommend in (select custid from @tmpAg)  
+   
  group by b.custid  
   
  ;WITH sourceDATA as (  
@@ -187,8 +203,9 @@ BEGIN
    CASE WHEN @showSB=1 THEN sum(isnull(AmountDueTo_BA,0)) ELSE 0 END AmountDueToBA  
  INTO #SumWinlost2  
  FROM   bodb_Report.dbo.rptDepWinlost b with (nolock)  
+		INNER JOIN  @tmpAg a ON  b.recommend = a.CustId AND b.Currency = a.Currency
  WHERE b.winlostdate between @tmpdate AND @tdate  
-   and b.recommend in (select custid from @tmpAg)  
+   
  group by b.custid   
   
  ;WITH sourceDATA as (  
@@ -484,6 +501,6 @@ END
   
 DROP TABLE #SumWinlost 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerBalance] TO [bodbLicenseeNet] AS [dbo]
+GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerBalance] TO [bodbLicenseeNet]  
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CustomerBalance] TO [vnteam] AS [dbo]
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CustomerBalance] TO [vnteam]  
