@@ -1,6 +1,6 @@
 ﻿USE [bodb02]
 GO
-
+/****** Object:  StoredProcedure [dbo].[Lrf_Monitor_BetlistSel_New]    Script Date: 11/21/2014 13:45:10 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -37,6 +37,7 @@ AS
 	- 20130806@Jim:  Add betting platform to Last bets monitoring 	
 	- 20140620@Florent: offer Sporting Solution (36 new bettypes)
 	- 20141021@Florent: Apply for the change in Sporting Solution structure (#24478)
+	- 20141120@Jim: expand data range for @transid param to covert big datatype
  Parameter's Explanation:                
   - @bettypes:                 
    + HDP: 1,7, 1303 (Set Handicap)                
@@ -173,7 +174,7 @@ SELECT @SQL = @SQL + 'SELECT TOP ('+CONVERT(VARCHAR(10),@LimitRowCount)+')'+CHAR
    'AND cr.isActive=1'+char(13)+
    'AND cr.UsrID='+convert(varchar(20),@UserID)+''+char(13)+
    'AND cr.SystemID=1'+char(13)+
-   'AND Transid >'+convert(varchar(10),@transid)+'  '+CHAR(13)+              
+   'AND Transid >'+convert(varchar(20),@transid)+'  '+CHAR(13)+              
     'AND Statusid = 0   '+CHAR(13)+
 CASE WHEN @betfrom=1 THEN 'AND betfrom=''d'''
 		 WHEN @betfrom=2 THEN 'AND betfrom=''m'''
@@ -261,6 +262,6 @@ ELSE
  EXEC(@sql)   
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_Monitor_BetlistSel_New] TO [bodbLicenseeNet] AS [dbo]
+GRANT EXECUTE ON [dbo].[Lrf_Monitor_BetlistSel_New] TO [bodbLicenseeNet]  
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Monitor_BetlistSel_New] TO [vnteam] AS [dbo]
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Monitor_BetlistSel_New] TO [vnteam]  

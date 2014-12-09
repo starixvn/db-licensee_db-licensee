@@ -1,6 +1,6 @@
 USE [bodb02]
 GO
-
+/****** Object:  StoredProcedure [dbo].[Task_DOT_dep_Summary_Bettrans_Cust]    Script Date: 10/21/2014 17:08:06 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -26,14 +26,14 @@ BEGIN
 			,@maxDate			 DATETIME
 			,@CurrentRecommendID INT
 			,@Count				 INT
-			
+					
 	SELECT @minDate  = MIN(winlostdate)
 		   ,@maxDate = MAX(winlostdate)
 		   ,@CurrentRecommendID = MIN(recommend)
 		   ,@Count   = 1 
 	FROM dbo.bettrans WITH (NOLOCK)
 	WHERE CustId = @CustId
-		AND winlostdate <= DATEADD(DAY,-2,GETDATE())
+		  AND winlostdate <= DATEADD(DAY,-3,GETDATE())
 	WHILE (@RecommendId <> @CurrentRecommendID)
 	BEGIN
 		WAITFOR DELAY '00:00:00.5'	 			

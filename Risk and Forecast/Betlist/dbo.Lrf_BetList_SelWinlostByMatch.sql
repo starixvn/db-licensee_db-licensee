@@ -28,7 +28,7 @@ Revisions:
 	- 20130411@Jim: support base currency USD
 	- 20130514@Jim: Restrict permission of Licensee Users by currency
 	- 20130904@Jim: support Virtual Horse Racing
-	
+	- 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
    Get all tickets for a match
 Param's Explanation: 
 	
@@ -43,13 +43,13 @@ WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 DECLARE @TempAg AS TABLE (custid INT)
 INSERT INTO @TempAg (custid)
-SELECT CustID 
-FROM bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )
+SELECT DISTINCT CustID 
+FROM bodb_Licensee.dbo.f_SelLicenseeCust(0) lc --WITH ( NOLOCK )
 	INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID  AND lc.Currency=c.CurrencyID
 WHERE    [Description] = COALESCE(@LicenseeType,[Description])    
 
 
-DROP TABLE #Currency 
+
 
 DECLARE @RowStart INT, @RowEnd INT  
 SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1
@@ -161,6 +161,7 @@ BEGIN
 			b.matchid=@matchid AND			
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 			b.ruben=1 AND 			
 			b.tpositiontaking=0 AND
 			b.statusID NOT IN (101, 102, 103)
@@ -215,6 +216,7 @@ BEGIN
 		WHERE
 			b.matchid=@matchid AND			
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
 			b.ruben=1 AND 			
 			b.tpositiontaking<>0 AND
@@ -268,6 +270,7 @@ BEGIN
 		WHERE
 			b.matchid=@matchid AND			
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 			b.ruben=1 AND 			
 			b.statusID NOT IN (101, 102, 103)
 		ORDER BY
@@ -317,6 +320,7 @@ BEGIN
 				WHERE
 					b.matchid=@matchid AND			
 					b.recommend IN (SELECT custid FROM @TempAg)	AND
+					((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 					b.ruben=1 AND 			
 					b.statusID NOT IN (101, 102, 103)
 				ORDER BY
@@ -371,7 +375,8 @@ BEGIN
 			INNER JOIN @TempAg t  ON b.recommend =t.custid  
 			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid
 		WHERE
-			b.matchid=@matchid AND						
+			b.matchid=@matchid AND
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND					
 			b.ruben=1 AND 
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
 			b.tpositiontaking=0 AND
@@ -425,7 +430,8 @@ BEGIN
 			INNER JOIN @TempAg t  ON b.recommend =t.custid  
 			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid
 		WHERE
-			b.matchid=@matchid AND						
+			b.matchid=@matchid AND				
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 			b.ruben=1 AND 			
 			b.tpositiontaking<>0 AND
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) AND
@@ -477,7 +483,8 @@ BEGIN
 			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid
 			INNER JOIN @bettype bt ON b.bettype = bt.bettype
 		WHERE
-			b.matchid=@matchid AND						
+			b.matchid=@matchid AND	
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND				
 			b.ruben=1 AND 			
 			b.statusID NOT IN (101, 102, 103)
 		ORDER BY
@@ -527,6 +534,7 @@ BEGIN
 				WHERE
 					b.matchid=@matchid AND			
 					b.recommend IN (SELECT custid FROM @TempAg)	AND
+					((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 					b.ruben=1 AND 			
 					b.statusID NOT IN (101, 102, 103)
 				ORDER BY
@@ -604,6 +612,7 @@ ORDER BY RefNo,Bettype
  
 DROP TABLE #Data
 DROP TABLE #TempExchange
+DROP TABLE #Currency 
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinlossByMatch] TO [bodbLicenseeNet]

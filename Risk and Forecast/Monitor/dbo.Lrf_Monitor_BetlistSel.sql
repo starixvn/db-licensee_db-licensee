@@ -29,7 +29,8 @@ BEGIN
 		- 20120906@Jim : add virtual sport bettype
 		- 20130219@Daniel : remove support virtual sport 
 		- 20130402@Jim: re-filter bettype condition 
-		-20130618@Jim:  Restrict permission of Licensee Users by currency
+		- 20130618@Jim:  Restrict permission of Licensee Users by currency
+		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 		Parameter's Explanation:
 			- @bettypes: 
 				+ HDP: 1,7
@@ -68,8 +69,8 @@ BEGIN
 
 	SELECT @SQL = @SQL + 'DECLARE @TempAg AS TABLE ( Recommend INT PRIMARY KEY, currency int )'+CHAR(13)+
 				'INSERT INTO @TempAg'+CHAR(13)+
-				'SELECT  lc.CustID, currency'+CHAR(13)+	
-				'FROM    bodb_Licensee.dbo.LicenseeCust lc WITH  ( NOLOCK )'+CHAR(13)+
+				'SELECT  lc.CustID, lc.currency'+CHAR(13)+	
+				'FROM    (SELECT LicenseeID,CustID,Currency,RoleId  FROM bodb_Licensee.dbo.f_SelLicenseeCust(0))lc WITH  ( NOLOCK )'+CHAR(13)+
 							'INNER JOIN bodb_licensee.dbo.CurrencyUser c WITH (NOLOCK) ON  lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID'+char(13)+
 				'WHERE   lc.LicenseeID = '+convert(varchar(10),@LicenseeID)+CHAR(13)+
 					'AND c.usrID='+convert(VARCHAR(20),@userID)+char(13)+

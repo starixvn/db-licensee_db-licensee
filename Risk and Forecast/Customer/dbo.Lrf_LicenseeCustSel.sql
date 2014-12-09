@@ -17,6 +17,7 @@ AS
 	- Replace VND by INH
 	- 20130416@Jim: support multi language
 	- 20130507@Jim: hard-code to just show licensee description for licensee :1,5,7
+	- 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function 
 */
 
 SET NOCOUNT ON
@@ -29,11 +30,13 @@ SET NOCOUNT ON
 		,CASE WHEN l.CurrencyName = 'VND' THEN 'INH' ELSE l.CurrencyName END as CurrencyName
 		,CASE WHEN l.licenseeID IN (1,5,7) THEN l.Description ELSE '' END AS Description
 		,m.MsgID
-	FROM 
-		LicenseeCust l with (NOLOCK) 
+	--FROM 
+		--LicenseeCust l with (NOLOCK) 
+		FROM    bodb_Licensee.dbo.[f_SelLicenseeCust](@LicenseeID) l
 		INNER JOIN bodb02.dbo.CustInfo c with (NOLOCK) ON l.CustID = c.CustID AND l.RoleID = c.RoleID
-		INNER JOIN bodb02.dbo.MsgError m WITH (NOLOCK) ON l.Description=m.MsgNameEN
+		LEFT JOIN bodb02.dbo.MsgError m WITH (NOLOCK) ON l.Description=m.MsgNameEN
 	WHERE LicenseeID = @LicenseeID
+
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_LicenseeCustSel] TO [bodbLicenseeNet]

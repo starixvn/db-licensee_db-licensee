@@ -17,7 +17,7 @@ Param's Explanation:
 	20110322@Henry: support 2 kinds of search (inside & outside)
 	20120326@Henry: replace "where username like '%' + @username + '%'" (index scan) by "where username like @username + '%'" (index seek).
 	20130619@Jim: Restrict permission of Licensee Users by currency	
-
+	20141112@Victor: use f_SelLicenseeCust instead of licenseecust (#Redmine 25864)
 */
 
 SET NOCOUNT ON
@@ -31,7 +31,7 @@ BEGIN
 	DECLARE @TempAg as TABLE (custid INT)
 	
 	INSERT INTO @TempAg (custid)
-	SELECT custID FROM bodb_Licensee.dbo.LicenseeCust lc (NOLOCK) 
+	SELECT DISTINCT custID FROM dbo.f_SelLicenseeCust(0) lc
 			INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
 	WHERE 
 		 [Description] = COALESCE(@LicenseeType,[Description])
@@ -39,11 +39,11 @@ BEGIN
 	SELECT TOP 10 
 				SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, LEN(c.username2)-CHARINDEX('$',c.username2)) AS Username,
 				c.custid
-		FROM LicenseeCustinfo c WITH (NOLOCK)
-			INNER JOIN @TempAg t ON c.recommend = t.custid
-		WHERE 
-			 c.username2 LIKE + '%$' + @Username + '%' OR c.username LIKE @Username + '%'
-		ORDER BY username
+	FROM LicenseeCustinfo c WITH (NOLOCK)
+		INNER JOIN @TempAg t ON c.recommend = t.custid
+	WHERE 
+			c.username2 LIKE + '%$' + @Username + '%' OR c.username LIKE @Username + '%'
+	ORDER BY username
 END
 ELSE
 BEGIN --this for quick search
@@ -62,7 +62,7 @@ BEGIN --this for quick search
 				SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, LEN(c.username2)-CHARINDEX('$',c.username2)), 
 				-1 AS searchcount
 		FROM LicenseeCustinfo c WITH (NOLOCK)
-			INNER JOIN licenseecust lc (NOLOCK) ON c.recommend = lc.custid
+			INNER JOIN bodb_Licensee.dbo.f_SelLicenseeCust(0) lc ON c.recommend = lc.custid AND c.currency = lc.Currency
 			INNER JOIN #Currency cy ON lc.LicenseeID=cy.LicenseeID AND lc.Currency=cy.CurrencyID
 		WHERE 
 			lc.licenseeid = @LicenseeID

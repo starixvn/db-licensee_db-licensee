@@ -15,6 +15,7 @@ Revisions:
 	- 20120214@Jim: change to use  table ExchangeDaily by use function Lrf_f_GetExchangeDaily  
 	- 20121004@Jim: replace @currencyname input param by @currencyID
 	- 20130514@Jim:Restrict permission of Licensee Users by currency
+	- 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
 */
     SET NOCOUNT ON
 
@@ -27,8 +28,8 @@ Revisions:
 
     DECLARE @TempAg AS TABLE ( CustId INT )
     INSERT  INTO @TempAg ( CustId)
-	SELECT  lc.CustID  
-	FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+	SELECT  DISTINCT lc.CustID  
+	FROM    bodb_Licensee.dbo.[f_SelLicenseeCust](0) lc --WITH ( NOLOCK )  
 	INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
 	WHERE   lc.[Description] = COALESCE(@LicenseeType,  
 										 [Description])

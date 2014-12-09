@@ -1,4 +1,4 @@
-﻿ CREATE PROCEDURE [dbo].[Lrf_Rpt_MatchWinLoss_ExportExcel]
+﻿ ALTER  PROCEDURE [dbo].[Lrf_Rpt_MatchWinLoss_ExportExcel]
     @LicenseeID INT,
     @LicenseeType VARCHAR(100) = NULL,
     @CurrencyID	  INT=0,
@@ -24,6 +24,7 @@ Revisions:
 	- 20121004@Jim: replace @currencyname input param by @currencyID
 	-20121115@Henry: Only Sportsbook needs to exclude BA
 	-20130426@Scott : Add more parameter @showCS,@showBG
+	-20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 Param's Explanation: 
 	
 */
@@ -41,14 +42,16 @@ SET @_Date = @Date
 DECLARE @Today SMALLDATETIME 
 SELECT @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
 
-DECLARE @TempAg AS TABLE ( CustId INT )
-INSERT  INTO @TempAg ( CustId)
-SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust WITH ( NOLOCK )  
-                WHERE   LicenseeID = @LicenseeID  
-                        AND  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID))
-                        AND [Description] = COALESCE(@LicenseeType,  
-                                                     [Description]) 
+DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
+
+INSERT  INTO @TempAg ( CustId, Currency  )
+SELECT    CustID 
+		,Currency 
+FROM bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc 
+WHERE   LicenseeID = @LicenseeID  
+	AND  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID))
+	AND [Description] = COALESCE(@LicenseeType,  
+								 [Description]) 
 
 DECLARE @AgMatchWLDetails TABLE
 (
@@ -137,11 +140,11 @@ BEGIN
 			0 AS tpositiontaking,
 			0 As liveindicator
 		FROM    
-			bettrans b WITH(NOLOCK,index=PK_bettrans)
+			bettrans b WITH(NOLOCK )
+			INNER JOIN @TempAg t ON b.recommend = t.CustId AND b.currency = t.Currency
 			INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid 	 				
 		WHERE
-		    b.recommend IN (SELECT custid FROM @TempAg)
-		    AND b.winlostdate = @_Date
+		    b.winlostdate = @_Date
 			AND b.statusID IN (111,112,113)
 		GROUP BY
 			b.Winlostdate,
@@ -209,9 +212,9 @@ BEGIN
 		CASE WHEN b.bettype BETWEEN 81 AND 120 THEN b.liveindicator ELSE 0 END AS liveindicator
 	FROM    
 		bettrans b WITH(NOLOCK,INDEX (CIX_recommend_matchid_bettype))
+		INNER JOIN @TempAg t ON b.recommend = t.CustId AND b.currency = t.Currency
 	WHERE   
-	    b.recommend IN (SELECT custid FROM @TempAg)
-		AND b.winlostdate = @_Date
+		 b.winlostdate = @_Date
 		AND b.statusID IN (111,112,113)
 		AND b.matchid>0
 	GROUP BY
@@ -377,7 +380,7 @@ BEGIN
 		FROM    
 			--bettrans14 b WITH(NOLOCK,INDEX (PK_bettrans14))
 			bettrans14 b WITH(NOLOCK)
-			INNER JOIN @TempAg ag ON b.recommend = ag.custid
+			INNER JOIN @TempAg ag ON b.recommend = ag.custid AND b.currency = ag.Currency
 			--INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
 		WHERE   
 			b.winlostdate = @_Date
@@ -449,7 +452,7 @@ BEGIN
 		CASE WHEN b.bettype BETWEEN 81 AND 120 THEN b.liveindicator ELSE 0 END AS liveindicator
 	FROM    
 		bettrans14 b WITH(NOLOCK,INDEX (bettrans143))
-		INNER JOIN @TempAg ag ON b.recommend = ag.custid
+		INNER JOIN @TempAg ag ON b.recommend = ag.custid AND b.currency = ag.Currency
 	WHERE   
 		b.winlostdate = @_Date
 		AND b.statusID IN (111,112,113)

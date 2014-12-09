@@ -1,11 +1,8 @@
 USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[TASK_PopulateRptdepwinlost]    Script Date: 04/09/2014 21:09:34 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-ALTER PROCEDURE [dbo].[TASK_PopulateRptdepwinlost]
+
+
+CREATE PROCEDURE [dbo].[TASK_PopulateRptdepwinlost]
 AS
 /*   
  Task : transfer rptDepwinlost_staging / rptDepwinlostbyproduct_staging to DBACC.bodb_report
@@ -15,6 +12,7 @@ AS
   - 20130626@Don: Add one table rptDepWinlost_Transfer3rdOthers
   - 20140515@Victor: Add one table rptDepWinlost_PlaytechCS and change server Alias name (DB06 -> DBACC)
   - 20140528@Victor: Remove NetGaming column
+  - 20141120@Don: Adjustment to serve to change KeenOcean's currency RMB to HK$
 */  
 SET NOCOUNT ON	
 	declare @cnt int, @strXML1 varchar(max), @strXML2 varchar(max), @strXML3 varchar(max), @strXML4 varchar(max)
@@ -63,7 +61,8 @@ SET NOCOUNT ON
 			,winlost '@c6'
 			,playercomm '@c7'
 			,BetCount '@c8'
-			,Outstanding '@c9'			
+			,Outstanding '@c9'
+			,currency '@d0'
 		FROM dbo.rptDepwinlostbyproduct_staging WITH(NOLOCK)
 		FOR XML PATH('r'), ROOT ('root')
 	)
@@ -108,4 +107,4 @@ SET NOCOUNT ON
 	IF @strXML4 IS NOT NULL
 		EXEC DBACC.bodb_report.dbo.Task_rptDepWinlost_PlaytechCS_MERGE @strXML = @strXML4
 SET NOCOUNT OFF
-
+GO

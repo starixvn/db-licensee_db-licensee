@@ -8,6 +8,7 @@ AS
 	- 20140514@Victor: create SP
 	- 20140519@Victor: update NetGaming formula
 	- 20140528@Victor: remove NetGaming column
+	- 20141017@Victor: remove RAISEERROR statement to avoid affection to rptDepWinlost Summary job
  Param's Explanation:  
 
  - @winlostdate: The date need to summary
@@ -89,6 +90,7 @@ BEGIN TRY
 END TRY
 BEGIN CATCH
 	-- This SPs called from another SP in rptDepwinlost Summary process, failure of this SP should not affect to that process
-	RAISERROR(15000,1,1,'Error occured in summarizing Playtech Casino data.')
+	--RAISERROR(15000,1,1,'Error occured in summarizing Playtech Casino data.')
+	PRINT 'Error occured in PlaytechCasino summary data process: ERR_CODE: '+ CAST(ERROR_NUMBER() AS VARCHAR(20)) + ', ERR_MSG: ' + ERROR_MESSAGE()
 	RETURN
 END CATCH

@@ -22,7 +22,7 @@ Revisions:
  - 20130514@Jim:Restrict permission of Licensee Users by currency 
  - 20140717@Francis: Change liveindicator datatype to INT to fix running live matches are not being showed at the top list (RedmineID:19136)
  - 20130718@Hannah: Group each match for Bodog (#19163)
-
+ - 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
 Param's Explanation:
 • @custid: agent ID
 */
@@ -37,14 +37,14 @@ WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 DECLARE @TempAg AS TABLE (CustID INT)
 INSERT INTO @TempAg (CustID)
-SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+SELECT DISTINCT CustID  
+                FROM    bodb_Licensee.dbo.[f_SelLicenseeCust](0) lc --WITH ( NOLOCK )
 						INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
                 WHERE   lc.Description = COALESCE(@LicenseeType,  
                                                      lc.[Description])
 
 ---------------------
-DROP TABLE #currency
+
 ---------------------
 DECLARE @RowCount INT, @RowStart INT, @RowEnd INT  
 SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
@@ -162,6 +162,7 @@ SELECT
        	INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e ON e.exchangeid = b.currency
 		WHERE
 				recommend IN (SELECT CustID FROM @TempAg)
+				AND  ((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID))
 				AND bettype IN (1,3,7,8)
 				AND statusID IN (0,1)
 				AND ruben = 0
@@ -297,6 +298,7 @@ BEGIN
 
 END
 
+DROP TABLE #currency
 GO
 GRANT EXECUTE ON [dbo].[Lrf_TotalBets_Sel1378] TO [bodbLicenseeNet]
 GO

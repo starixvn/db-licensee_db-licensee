@@ -27,6 +27,7 @@ Revisions:
 	- 20121004@Jim: replace @currencyname input param by @currencyID
 	- 20130514@Jim:Restrict permission of Licensee Users by currency
 	- 20140508@Kyan: Add new bettype 1HTotalGoal 126
+	- 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
 */					 
 SET NOCOUNT ON
 DECLARE @Today SMALLDATETIME 
@@ -38,13 +39,13 @@ WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 DECLARE @TempAg AS TABLE (CustID INT)
 INSERT INTO @TempAg (CustID)
-SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+SELECT DISTINCT CustID  
+                FROM    bodb_Licensee.dbo.[f_SelLicenseeCust](0) lc --WITH ( NOLOCK )
 				INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
                 WHERE   [Description] = COALESCE(@LicenseeType,  
                                                      [Description])
 --------------------
-DROP TABLE #currency
+
 --------------------
 
 DECLARE @RowCount INT, @RowStart INT, @RowEnd INT  
@@ -133,6 +134,7 @@ SELECT
 	WHERE    
 		bettrans.recommend IN (SELECT CustID FROM @TempAg)
 		--AND bettrans.bettype =6 
+		AND ((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency)) OR (@CurrencyID<>0 AND Currency=@CurrencyID))
 		AND bettrans.bettype in (6, 126) -- 6: Total Goal, 126: 1H Total Goal
 		AND bettrans.statusID = 0
 		AND bettrans.ruben = 0
@@ -159,6 +161,7 @@ SELECT c.* FROM
 		* 
 	FROM @Data
 ) c WHERE c.RowNum BETWEEN @RowStart AND @RowEnd
+DROP TABLE #currency
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_TotalBets_Sel6] TO [bodbLicenseeNet]

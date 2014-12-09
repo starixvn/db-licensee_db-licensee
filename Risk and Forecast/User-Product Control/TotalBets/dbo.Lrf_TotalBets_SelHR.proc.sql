@@ -20,6 +20,7 @@ Revisions:
 	- 20120214@Jim: change to use  table ExchangeDaily by use function Lrf_f_GetExchangeDaily  
 	- 20121004@Jim: replace @currencyname input param by @currencyID
 	- 20130514@Jim:Restrict permission of Licensee Users by currency	
+	- 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
 Param's Explanation:  
 • @CustID: agentID  
 */  
@@ -33,13 +34,13 @@ WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 DECLARE @TempAg as TABLE (CustID INT)
 INSERT INTO @TempAg (CustID)
-SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+SELECT  DISTINCT CustID  
+                FROM    bodb_Licensee.dbo.[f_SelLicenseeCust](0) lc --WITH ( NOLOCK )  
 						INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
                 WHERE   [Description] = COALESCE(@LicenseeType,  
                                                      [Description])
 -------------------------
-DROP TABLE #currency
+
 -------------------------
 
 DECLARE @FromDate DATETIME  
@@ -100,6 +101,7 @@ INSERT INTO @TotalBets(     transid, bettype, matchid, stake,  discount, apositi
 		bettrans b1 (NOLOCK) INNER JOIN outright m1 (NOLOCK) ON b1.matchid = m1.orid   
 	WHERE   
 	  b1.recommend  IN (SELECT CustID FROM @TempAg) AND   
+	  ((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 	  b1.bettype IN (31,32,33) AND   
 	  b1.statusID NOT IN (101,102,103)  AND
 	  m1.eventdate = @fromdate 
@@ -241,7 +243,7 @@ FROM
 	@Data  b
 	INNER JOIN (SELECT *  FROM Lrf_f_GetExchangeDaily(@FromDate,@FromDate))e 
 	ON e.exchangeid = b.currency
-
+	DROP TABLE #currency
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_TotalBets_SelHR] TO [bodbLicenseeNet]

@@ -24,18 +24,20 @@ Revisions:
 	  - 20120727@Jim: add playercomm value 
 	  - 20121004@Jim: replace @currencyname input param by @currencyID
 	  - 20130618@Jim: Restrict permission of Licensee Users by currency	
+	  - 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 */  
    	SELECT  currencyID,LicenseeID into #currency
 	FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
 	WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 	
-    DECLARE @TempAg AS TABLE ( CustId INT )
-    INSERT  INTO @TempAg( CustId)
-    SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
-						INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
-                WHERE   [Description] = COALESCE(@LicenseeType,  
-                                                     [Description])  
+    DECLARE @TempAg AS TABLE ( CustId INT, Currency INT )
+    INSERT  INTO @TempAg( CustId, Currency )
+    SELECT  lc.CustID  
+			,lc.Currency
+	FROM    bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc  
+			INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
+	WHERE   [Description] = COALESCE(@LicenseeType,  
+										 [Description])  
     DROP TABLE #Currency                
   
 	CREATE TABLE #Data 
@@ -98,10 +100,9 @@ Revisions:
 							SUM( ISNULL(b.playercomm,0)) tote_playercomm
                             
                     FROM    bettrans b WITH ( NOLOCK )
-                           
+							INNER JOIN @TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
                     WHERE  
-							b.recommend IN (SELECT custid FROM @TempAg)
-                            AND b.winlostdate BETWEEN @TempFromDate AND @Todate
+							  b.winlostdate BETWEEN @TempFromDate AND @Todate
                             AND b.bettype IN ( 31, 32, 33 )
                             AND b.matchid > 0
                             AND b.ruben = 1
@@ -146,9 +147,9 @@ Revisions:
                                 END) tote_winplace,--
 							SUM(  ISNULL(b.playercomm, 0)) tote_PlayerComm
                     FROM    bettrans14 b WITH ( NOLOCK )
+							INNER JOIN @TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
                     WHERE   
-							b.recommend IN (SELECT custid FROM @TempAg)
-                            AND b.winlostdate BETWEEN @FromDate AND @TempToDate
+						    b.winlostdate BETWEEN @FromDate AND @TempToDate
                             AND b.bettype IN ( 31, 32, 33 )
                             AND b.ruben = 1
 					GROUP BY b.winlostdate,b.custid,b.currency

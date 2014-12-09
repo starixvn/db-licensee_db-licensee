@@ -38,6 +38,7 @@ Revisions:
 	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes), column Betcount
 	- 20140915@Florent: hotfix duplicated VS bettype
     - 20141017@Jim : Apply for the change in Sporting Solution structure (#24478)
+	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 Param's Explanation:   
    
 */  
@@ -61,10 +62,11 @@ SELECT  currencyID,LicenseeID into #currency
 FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
 WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
   
-DECLARE @TempAg AS TABLE ( CustId INT )  
-INSERT  INTO @TempAg ( CustId)  
-SELECT  CustID    
-FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )    
+DECLARE @TempAg AS TABLE ( CustId INT, Currency INT )  
+INSERT  INTO @TempAg ( CustId,Currency)  
+SELECT    CustID   
+		  ,Currency 
+FROM bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc   
 		INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
 WHERE   [Description] = COALESCE(@LicenseeType,    
 									 [Description])   
@@ -149,27 +151,28 @@ BEGIN
  BEGIN  
 	  INSERT INTO #TempBetList   
 	  SELECT    
-		   b.Winlostdate,  
-		   b.currency,  
-		   b.bettype,  
-		   SUM(stake) as Stake,  
-		   SUM(winlost - actual_stake) as Winlost,  
-		   0 AS awinlost,  
-		   SUM(comm), 
-		   b.oddsid,
-		   SUM(playercomm ) AS PlayerComm,  
-		   b.matchid,  
-		   0 AS Liveawayscore,  
-		   0 AS liveindicator,  
-		   0 AS tpositiontaking,
-		   COUNT(1) betcount 
-	  FROM  dbo.bettrans b WITH(NOLOCK)  
-			INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON b.recommend=BA.recommend AND b.transid = BA.transid     
+	   b.Winlostdate,  
+	   b.currency,  
+	   b.bettype,  
+	   SUM(stake) as Stake,  
+	   SUM(winlost - actual_stake) as Winlost,  
+	   0 AS awinlost,  
+	   SUM(comm), 
+	   b.oddsid,
+	   SUM(playercomm ) AS PlayerComm,  
+	   b.matchid,  
+	   0 AS Liveawayscore,  
+	   0 AS liveindicator,  
+	   0 AS tpositiontaking,
+	   count(1) betcount 
+	  FROM      
+	   bettrans b WITH(NOLOCK)  
+	   INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON b.recommend=BA.recommend AND b.transid = BA.transid  
+	   INNER JOIN @TempAg t ON b.recommend = t.CustId AND b.Currency = t.Currency	
 	  WHERE     
-		   b.recommend IN (SELECT custid FROM @TempAg)  
-		   AND b.winlostdate = @_Date  
-		   AND b.statusID IN (111,112,113)  
-		   AND b.matchid = @MatchID  
+	    b.winlostdate = @_Date  
+	   AND b.statusID IN (111,112,113)  
+	   AND b.matchid = @MatchID  
 	  GROUP BY  
 			   b.Winlostdate,  
 			   b.currency,
@@ -238,20 +241,21 @@ BEGIN
 			 b.tpositiontaking ,
 			 COUNT(1) betcount
         FROM  dbo.bettrans b WITH(NOLOCK)  
+			INNER JOIN @TempAg t ON b.recommend = t.CustId AND b.Currency = t.Currency
         WHERE     
-			 b.recommend IN (SELECT custid FROM @TempAg)  
-			 AND b.winlostdate = @_Date  
-			 AND b.statusID IN (111,112,113)  
-			 AND  b.matchid = @MatchID 
-		GROUP BY  
-			 b.Winlostdate,  
-			 b.currency,
-			 b.oddsid,		 
-			 b.bettype,  
-			 b.matchid,  
-			 b.Liveawayscore,  
-			 CASE WHEN b.bettype BETWEEN 81 AND 120 THEN b.liveindicator ELSE 0 END,  
-			 b.tpositiontaking  
+         b.winlostdate = @_Date  
+         AND b.statusID IN (111,112,113)  
+         AND  b.matchid = @MatchID 
+		
+        GROUP BY  
+         b.Winlostdate,  
+         b.currency,
+         b.oddsid,		 
+         b.bettype,  
+         b.matchid,  
+         b.Liveawayscore,  
+         CASE WHEN b.bettype BETWEEN 81 AND 120 THEN b.liveindicator ELSE 0 END,  
+         b.tpositiontaking  
     ELSE  
     BEGIN  
         -- @showRB = 1, Racing  
@@ -271,13 +275,13 @@ BEGIN
 				b.tpositiontaking ,
 				COUNT(1) betcount
         FROM dbo.bettrans b WITH(NOLOCK)  
+		 INNER JOIN @TempAg t ON b.recommend = t.CustId AND b.Currency = t.Currency
             LEFT JOIN outright o (NOLOCK) ON b.matchid = o.orid  
         WHERE     
-            b.recommend IN (SELECT custid FROM @TempAg)  
-			 AND b.winlostdate = @_Date  
-			 AND b.statusID IN (111,112,113)  
-			 AND o.leagueid = @LeagueID  
-			 AND o.groupmatch = @MatchID  
+            b.winlostdate = @_Date   
+         AND b.statusID IN (111,112,113)  
+         AND o.leagueid = @LeagueID  
+         AND o.groupmatch = @MatchID  
         GROUP BY  
 				 b.Winlostdate,  
 				 b.currency,
@@ -406,15 +410,15 @@ BEGIN
 					0 AS liveindicator ,
 					count(1) betcount 
 			FROM  dbo.bettrans b  WITH (NOLOCK)
+				INNER JOIN @TempAg t ON b.recommend = t.custid AND b.currency = t.currency
 				INNER JOIN VSOutright o with (nolock) ON b.oddsid=o.Orid
 				INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
 				INNER JOIN @bettype bt ON b.bettype = bt.bettype  
-			WHERE b.recommend IN (SELECT custID FROM @TempAg)
-				AND o.EventID=@MatchID
-				AND b.winlostdate=@_Date
-				AND b.statusID IN (111,112,113)
-				AND b.bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype())			
-			GROUP BY  
+				WHERE   o.EventID=@MatchID
+					AND b.winlostdate=@_Date
+					AND b.statusID IN (111,112,113)
+					AND b.bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype())			
+				GROUP BY  
 				b.Winlostdate,  
 				b.currency, 
 				b.oddsid,	
@@ -540,6 +544,89 @@ BEGIN
 			   m.isNeutral  
 	 END  
   
+ IF @ShowBA = 1  
+ BEGIN  
+	  TRUNCATE TABLE #TempBetList  
+		
+	  INSERT INTO #TempBetList   
+	  SELECT    
+	   b.Winlostdate,  
+	   b.currency,  
+	   b.bettype,  
+	   SUM(stake) as Stake,  
+	   SUM(winlost - actual_stake) as Winlost,  
+	   0 AS awinlost,  
+	   SUM(comm),
+	   b.oddsid,	
+	   SUM(playercomm  ),  
+	   b.matchid,  
+	   0 AS Liveawayscore,  
+	   0 AS liveindicator,  
+	   0 AS tpositiontaking, 
+	   count(1) betcount
+	  FROM      
+	   bettrans14 b WITH(NOLOCK)  
+	   INNER JOIN @TempAg ag ON b.recommend = ag.custid  AND b.Currency = ag.Currency
+	   --INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid   
+	  WHERE     
+	   b.winlostdate = @_Date  
+	   AND b.statusID IN (111,112,113)  
+	   AND b.matchid = @MatchID  
+	   AND tpositiontaking = 0  
+	   AND (b.bettype < 31 OR (b.Bettype BETWEEN 121 AND 999)
+						   OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+	   )  
+	  GROUP BY  
+	   b.Winlostdate,  
+	   b.currency,
+	   b.oddsid	,
+	   b.bettype,  
+	   b.matchid  
+  
+	  --SB  
+	  INSERT INTO @AgMatchWLDetails  
+	  SELECT    
+	   b.Winlostdate,  
+	   b.currency,  
+	   m.matchid,  
+	   m.homeid,  
+	   m.awayid,  
+	   b.bettype,
+	   m.sporttype, 	
+	   m.leagueid,  
+	   SUM(stake),  
+	   SUM(Winlost),  
+	   0 AS LicenseeWL,  
+	   0 AS WinlossRB,  
+	   -SUM (Winlost +  awinlost + comm) AS AmtDueToBA,  
+	   0 AS AmountDueToRB,  
+	   SUM (comm ) as CommBA,  
+	   0 as CommRB,  
+	   SUM(PlayerComm)  as PlayerComm,   
+	   '' AS race,  
+	   m.matchcode,  
+	   ISNULL(m.isNeutral, CONVERT(BIT, 0)) AS IsNeutral,  
+	   0 AS liveindicator,
+	   sum(b.betcount) betcount  
+	  FROM     
+	   #TempBetList b  
+	   INNER JOIN match14 m WITH ( NOLOCK ) ON m.matchid = b.matchid  
+	  /*WHERE     
+	   b.bettype < 31 OR (b.Bettype BETWEEN 121 AND 999)*/  
+	  GROUP BY  
+	   b.Winlostdate,  
+	   b.currency,   
+	   m.matchid,  
+	   m.homeid,  
+	   m.awayid,  
+	   b.bettype,
+	   m.sporttype,	
+	   m.leagueid,  
+	   m.matchcode,  
+	   m.isNeutral  
+      
+ END  
+  
  --Get general data  
  TRUNCATE TABLE #TempBetList  
    
@@ -560,7 +647,7 @@ BEGIN
 			b.tpositiontaking,
 			COUNT(1) betcount  
 	FROM dbo.bettrans14 b WITH(NOLOCK)  
-		INNER JOIN @TempAg ag ON b.recommend = ag.custid  
+		INNER JOIN @TempAg ag ON b.recommend = ag.custid  AND b.Currency = ag.Currency
 	WHERE b.winlostdate = @_Date  
 		AND b.statusID NOT IN ( 101, 102, 103 )  
 		AND b.matchid = @MatchID  
@@ -589,7 +676,7 @@ ELSE -- @showRB = 1, Racing
 			CASE WHEN b.bettype BETWEEN 81 AND 120 THEN b.liveindicator ELSE 0 END AS liveindicator,b.tpositiontaking  ,
 			count(1) betcount
 	FROM  dbo.bettrans14 b WITH(NOLOCK)  
-		INNER JOIN @TempAg ag ON b.recommend = ag.custid  
+		INNER JOIN @TempAg ag ON b.recommend = ag.custid  AND b.currency = ag.Currency
 		LEFT JOIN outright14 o (NOLOCK) ON b.matchid = o.orid  
 	WHERE     
 		b.winlostdate = @_Date  
@@ -723,11 +810,11 @@ ELSE -- @showRB = 1, Racing
 			count(1) betcount  
 		FROM      
 			dbo.bettrans14 b  WITH (NOLOCK)
+			INNER JOIN @TempAg t ON b.recommend = t.custid AND b.currency = t.currency
 			INNER JOIN VSOutright14 o with (nolock) ON b.oddsid=o.Orid
 			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
 			INNER JOIN @bettype bt ON b.bettype = bt.bettype  
-		WHERE b.recommend IN (SELECT custID FROM @TempAg)
-			AND o.EventID=@MatchID
+		WHERE  o.EventID=@MatchID
 			AND b.winlostdate=@_Date
 			AND b.statusID IN (111,112,113)	
 			AND b.bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype())		

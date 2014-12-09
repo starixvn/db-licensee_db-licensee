@@ -2,6 +2,7 @@
 	@LicenseeID INT ,
 	@UserID		INT,
 	@CustID INT=NULL,
+	@CurrencyId INT = 0,
 	@FromDate DATETIME = '',
 	@ToDate DATETIME  = '',
 	@Langkey VARCHAR(10) = 'en-US',
@@ -50,6 +51,7 @@ Revisions:
    - 20140310@Hannah: offer Keno
    - 20140319@Hannah: fix bug for showing DrawID 
    - 20140630@Hannah: offer BetRadar and Sporting Solution 
+   - 20141128@Jim: add more input param @CurrencyID
 */
 
 SET NOCOUNT ON
@@ -868,6 +870,11 @@ SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @Row
 DECLARE @Today smalldatetime 
 SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120)
 
+IF @CurrencyID <> 0 
+BEGIN 
+	DELETE #BetListSelRunningByDateMem
+	WHERE Currency <> @CurrencyID
+END
 IF @TotalRows = 0  
 BEGIN 
 	 SELECT @TotalRows = count(transid) FROM #BetListSelRunningByDateMem

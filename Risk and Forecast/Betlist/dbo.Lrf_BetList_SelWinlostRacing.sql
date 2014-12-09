@@ -1,7 +1,6 @@
 ﻿set ANSI_NULLS ON
 set QUOTED_IDENTIFIER ON
 go
-
 ALTER  PROCEDURE [dbo].[Lrf_BetList_SelWinlostRacing]
 	@LicenseeID INT ,
 	@UserID		INT,
@@ -46,7 +45,7 @@ AS
 	- 20130305@Jim: change input param @winlostdate by @date 
 	- 20130402@Jim: support base currency by USD
 	- 20130514@Jim:Restrict permission of Licensee Users by currency
-
+	- 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
 	Param's Explanation:
 		
 */
@@ -75,14 +74,14 @@ BEGIN
 	SELECT    CustId  
       FROM      custInfo WITH ( NOLOCK )  
       WHERE     CustID IN (  
-                SELECT  CustID  
-                FROM    DBLIC.bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+                SELECT  DISTINCT CustID   
+				FROM  OPENQUERY(DBLIC, 'SELECT * FROM bodb_licensee.dbo.f_SelLicenseeCust(0)') lc
 						INNER JOIN  #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID 
                 WHERE   [Description] = COALESCE(@LicenseeType,  
                                                      [Description]) )  
                 AND RoleId = 2  
 	------------
-	DROP TABLE #currency 
+
 	------------
 	DECLARE @LicenseeName VARCHAR(50)
 	SELECT @LicenseeName = LicenseeName FROM DBLIC.bodb_Licensee.dbo.Licensees WITH (NOLOCK)
@@ -165,6 +164,7 @@ BEGIN
 			AND o.leagueid = @leagueid 
 			AND o.groupmatch = @raceNo
 			AND b.recommend IN (SELECT custid FROM @TempAg)
+			AND ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID))
 	ORDER BY b.username
 END
 ELSE
@@ -207,6 +207,7 @@ BEGIN
 			AND o.leagueid = @leagueid 
 			AND o.groupmatch = @raceNo
 			AND b.recommend IN (SELECT custid FROM @TempAg)
+			AND ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID))
 	ORDER BY b.username
 END
 
@@ -327,7 +328,7 @@ SELECT * FROM @BettransDetail ORDER BY RefNo,Bettype
 -------------------------------------
 DROP TABLE #DataTmp
 DROP TABLE #TempExchange	
-	
+DROP TABLE #currency 	
 END
 
 

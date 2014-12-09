@@ -5,6 +5,8 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
+
+ 
 ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
 	 @LicenseeID INT,
 	 @UserID  INT,
@@ -47,6 +49,9 @@ AS
 	- 20140212@Florent : Sorting DESC
 	- 20140716@Jim: fix bug Total row in excel file is incorrect (hotfix #19101)
 	- 20141017@Jim : Apply for the change in Sporting Solution structure (#24478)
+	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+	- 20141203@Jim : fix issue cannot query data when pass a User belong to CNY Currency (hot fix #27017)
+	- 20141204@Jim : hot fix #27063
 	Parameter's Explanation:
 		- @ReportBy:  1: daily, 2: monthly
 		- @FilterBy:  1: Win, 2: Loss, 3: Draw
@@ -125,21 +130,21 @@ SELECT  @PageIndex = @PageIndex - 1 ,
 		@RowStart = @PageSize * @PageIndex + 1 ,
 		@RowEnd = @RowStart + @PageSize - 1 
 
-SELECT lc.LicenseeID
-	  ,lc.CustID
-	  ,lc.Currency AS CurrencyID
+ 
+SELECT  lc.CustID
+		,lc.Currency
 INTO #recommend
-FROM DBLIC.bodb_licensee.dbo.LicenseeCust lc WITH (NOLOCK)
-	INNER JOIN DBLIC.bodb_licensee.dbo.CurrencyUser c WITH (NOLOCK) ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
+FROM bodb_licensee.dbo.f_SelLicenseeCust (@LicenseeID) lc  
+	INNER JOIN  bodb_licensee.dbo.CurrencyUser c WITH (NOLOCK) ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
 WHERE
-	lc.LicenseeID=@LicenseeID AND 
-	(Currency=@CurrencyID)-- OR (@CurrencyID=0))		
-	AND RoleID=2
+	lc.Currency=@CurrencyID		
+	AND lc.RoleID=2
 	AND c.usrID=@userID 
 	AND c.SystemID=1 -- System is default=1 (LRF)	
 	AND c.isActive=1
-		
-		
+
+
+
 IF  NOT EXISTS (SELECT TOP 1 1  FROM #ProductID )
 	BEGIN 
 		RETURN
@@ -150,24 +155,40 @@ ELSE
 		SELECT @Username = ltrim(rtrim(@Username))
 		IF ISNULL(@Username,'')<>''
 			BEGIN 
-				
-				INSERT INTO #CustID
-				SELECT cr.custid
-				FROM Customer cr (NOLOCK)
-					INNER JOIN #recommend re ON cr.Recommend=re.CustID
-				WHERE username2 LIKE '%$%' + @Username+'%'
-				
-				INSERT INTO #CustID
-					SELECT cr.CustID 
-					FROM Customer cr(NOLOCK)
-						INNER JOIN #recommend re ON cr.Recommend=re.CustID
-					WHERE username  like '%'+@Username+'%'
+				IF (@LicenseeID = 96 AND @FromDate < '2014-11-28' AND @CurrencyID = 13)	--- hard-code to support KeeanOcean
+				BEGIN 
+					INSERT INTO #CustID
+						SELECT cr.custid
+						FROM Customer cr (NOLOCK)
+							INNER JOIN #recommend re ON cr.Recommend=re.CustID AND cr.Currency = 66
+						WHERE username2 LIKE '%$%' + @Username+'%'
+					
+					INSERT INTO #CustID
+						SELECT cr.CustID 
+						FROM Customer cr(NOLOCK)
+							INNER JOIN #recommend re ON cr.Recommend=re.CustID AND cr.Currency = 66
+						WHERE username  like '%'+@Username+'%'
+				END
+				ELSE 
+				BEGIN 
+					INSERT INTO #CustID
+						SELECT cr.custid
+						FROM Customer cr (NOLOCK)
+							INNER JOIN #recommend re ON cr.Recommend=re.CustID AND cr.Currency = re.Currency
+						WHERE username2 LIKE '%$%' + @Username+'%'
+					
+					INSERT INTO #CustID
+						SELECT cr.CustID 
+						FROM Customer cr(NOLOCK)
+							INNER JOIN #recommend re ON cr.Recommend=re.CustID AND cr.Currency = re.Currency
+						WHERE username  like '%'+@Username+'%'
+				END				
 			END
 			ELSE 
-			IF ISNULL(@Username,'')=''
-				BEGIN 
-					SELECT @CustID=0
-				END		
+		IF ISNULL(@Username,'')=''
+			BEGIN 
+				SELECT @CustID=0
+			END		
 		IF @ShowWin =1
 			BEGIN
 				INSERT INTO #Status
@@ -206,7 +227,7 @@ ELSE
 					WHEN b.bettype NOT IN (9,10,29) THEN m.sporttype
 					ELSE 1 END sporttype,
 				b.bettype,
-				currency,
+				b.currency,
 				stake as turnover,
 				oddsid,
 				b.winlost - b.actual_stake as winlost,
@@ -234,7 +255,7 @@ ELSE
 				1 betcount
 			FROM bettrans b WITH (NOLOCK)
 			INNER JOIN #bettype bet  ON b.bettype=bet.typeID
-			INNER join #recommend re on b.recommend=re.CustID
+			INNER JOIN #recommend re on b.recommend=re.CustID AND b.Currency = re.Currency
 			LEFT JOIN match m WITH (NOLOCK) ON b.matchid = m.matchid
 			LEFT JOIN outright o with(nolock) ON b.matchid = o.orid 
 			LEFT JOIN league l with(nolock) ON o.leagueid = l.leagueid
@@ -302,7 +323,7 @@ ELSE
 						,bk.oddstype
 						,sum(bk.betcount) betcount
 					FROM bodb_LicenseeReport.dbo.rptcustomerturnOver bk WITH (NOLOCK,INDEX=CIX_winlostdate) 
-					INNER JOIN #recommend re ON bk.recommend=re.custid				
+					INNER JOIN #recommend re ON bk.recommend=re.custid	AND bk.Currency = re.Currency			
 					INNER JOIN #bettype bt ON bk.bettype=bt.typeid	
 					INNER JOIN #Status s ON bk.statusID=s.StatusID		
 					WHERE bk.winlostdate BETWEEN @fromdate AND @TempToDate				
@@ -374,7 +395,7 @@ ELSE
 					,bk.oddstype
 					,sum(bk.betcount) betcount
 				FROM bodb_LicenseeReport.dbo.rptcustomerturnOver bk WITH (NOLOCK,INDEX=IX_recommend)
-				INNER JOIN #recommend re ON bk.recommend=re.custid				
+				INNER JOIN #recommend re ON bk.recommend=re.custid	AND bk.Currency = re.Currency			
 				INNER JOIN #bettype bt ON bk.bettype=bt.typeid
 				INNER JOIN #Custid cus ON cus.custid = bk.custid
 				INNER JOIN #Status s ON bk.StatusID=s.statusid
@@ -415,7 +436,7 @@ ELSE
 			,e.Code
 			INTO #exchange
 		FROM exchange e WITH (NOLOCK)
-		WHERE e.exchangeid IN (SELECT CurrencyId FROM #recommend)
+		WHERE e.exchangeid IN (SELECT Currency FROM #Data)
 		
 		UPDATE d
 		SET bettype =ss.typeid
@@ -501,6 +522,9 @@ ELSE
 		GROUP BY 
 			ReportBy,  
 			username
+			
+ 
+	
 	--- Data Detail 
 		SELECT *
 		INTO #return
@@ -542,6 +566,7 @@ ELSE
 			PlayerComm
 		FROM #return	
 		WHERE ( RowNo between @RowStart AND @RowEnd	AND  @IsExportExcel=0) OR (@IsExportExcel=1 AND RowNo<65000)	
+		 
 		ORDER BY RowNo
 		
 		SELECT @TotalRow=COUNT(1)
@@ -569,6 +594,7 @@ ELSE
 DROP TABLE #ProductID
 DROP TABLE #BettypeID
 DROP TABLE #Status
+
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [bodbLicenseeNet]
 GO

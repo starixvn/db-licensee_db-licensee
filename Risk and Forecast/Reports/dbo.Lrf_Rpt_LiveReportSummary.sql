@@ -39,7 +39,7 @@ Revisions:
 	-20140404@Florent: support Keno product
 	-20140602@Hannah: Separate Live/ Non - Live data in Live Report
 	-20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
-	
+	-20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 Param's Explanation:
 	@IsLive : indicate that whether the report will get live data or not
 			+ 0: Non - Live data only
@@ -97,18 +97,18 @@ WHERE (
 			)
 		)
 
-DECLARE @TempAg AS TABLE (CustId INT)
+DECLARE @TempAg AS TABLE (CustId INT, Currency INT)
 
-INSERT INTO @TempAg (CustId)
-SELECT CustID
-FROM bodb_Licensee.dbo.LicenseeCust lc WITH (NOLOCK)
+INSERT INTO @TempAg (CustId,Currency)
+SELECT lc.CustID, lc.Currency 
+FROM bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc
 INNER JOIN #Currency c ON lc.LicenseeID = c.LicenseeID
 	AND lc.Currency = c.CurrencyID
 WHERE (
 		@CurrencyID = 0
 		OR (Currency = @CurrencyID)
 		)
-
+/*
 DECLARE @site VARCHAR(50)
 
 SELECT @site = LicenseeName
@@ -129,7 +129,7 @@ SELECT CustID
 FROM Dep_CustSuper dc WITH (NOLOCK)
 INNER JOIN #Currency c ON dc.Currency = c.CurrencyID
 WHERE site = @site
-
+*/
 IF @TDate > @MoveBetsDay
 BEGIN
 	IF @FDate <= @MoveBetsDay
@@ -140,7 +140,7 @@ BEGIN
 	--BA
 	INSERT INTO #tmpWinloss
 	SELECT b.winlostdate
-		, s.currency
+		, t.currency
 		, 'BA' AS ProductCode
 		, SUM(stake) turnover
 		, SUM(b.winlost - b.actual_stake) AS Winlost
@@ -153,9 +153,8 @@ BEGIN
 			NOLOCK
 			, INDEX = IX_srecommend
 			)
-	INNER JOIN @TempAg t ON b.recommend = t.custid
-	INNER JOIN @Super s ON b.srecommend = s.custid
-	INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON s.custid = BA.srecommend
+	INNER JOIN @TempAg t ON b.recommend = t.custid AND b.Currency = t.Currency 
+	INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON t.custid = BA.recommend
 		AND b.transid = BA.transid
 	WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
 		AND b.statusID IN (111, 112, 113)
@@ -163,12 +162,12 @@ BEGIN
 			OR @Liveindicator = 2)
 		AND (b.bettype NOT IN (9,29))
 	GROUP BY b.winlostdate
-		, s.currency
+		, t.currency
 
 	--BA for Parlay
 	INSERT INTO #tmpWinloss
 	SELECT b.winlostdate
-		, s.currency
+		, t.currency
 		, 'BA' AS ProductCode
 		, SUM(stake) turnover
 		, SUM(b.winlost - b.actual_stake) AS Winlost
@@ -181,9 +180,8 @@ BEGIN
 			NOLOCK
 			, INDEX = IX_srecommend
 			)
-	INNER JOIN @TempAg t ON b.recommend = t.custid
-	INNER JOIN @Super s ON b.srecommend = s.custid
-	INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON s.custid = BA.srecommend
+	INNER JOIN @TempAg t ON b.recommend = t.custid AND b.currency = t.currency
+	INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON t.custid = BA.recommend
 		AND b.transid = BA.transid
 	WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
 		AND b.statusID IN (111, 112, 113)
@@ -191,12 +189,12 @@ BEGIN
 			OR @Liveindicator = 2)
 		AND (b.bettype IN (9,29))
 	GROUP BY b.winlostdate
-		, s.currency
+		, t.currency
 
 	--RB
 	INSERT INTO #tmpWinloss
 	SELECT b.winlostdate
-		, s.currency
+		, t.currency
 		, 'RB' AS ProductCode
 		, SUM(CASE 
 				WHEN b.bettype IN (33, 43)
@@ -214,21 +212,20 @@ BEGIN
 			NOLOCK
 			, INDEX = IX_srecommend
 			)
-	INNER JOIN @TempAg t ON b.recommend = t.custid
-	INNER JOIN @Super s ON b.srecommend = s.custid
+	INNER JOIN @TempAg t ON b.recommend = t.custid AND t.Currency = b.Currency
 	WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
 		AND b.bettype BETWEEN 31 AND 33
 		AND b.statusID IN (111, 112, 113)
 		AND (b.liveindicator = @Liveindicator
 			OR @Liveindicator = 2)
 	GROUP BY b.winlostdate
-		, s.currency
+		, t.currency
 		, b.bettype
 
 	--SB
 	INSERT INTO #tmpWinloss
 	SELECT b.winlostdate
-		, s.currency
+		, t.currency
 		, 'SB' AS ProductCode
 		, SUM(stake) turnover
 		, SUM(b.winlost - b.actual_stake) AS Winlost
@@ -241,8 +238,7 @@ BEGIN
 			NOLOCK
 			, INDEX = IX_srecommend
 			)
-	INNER JOIN @TempAg t ON b.recommend = t.custid
-	INNER JOIN @Super s ON b.srecommend = s.custid
+	INNER JOIN @TempAg t ON b.recommend = t.custid AND b.Currency = t.Currency
 	WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
 		AND (
 			b.bettype < 31
@@ -255,13 +251,13 @@ BEGIN
 		AND (b.liveindicator = @Liveindicator
 			OR @Liveindicator = 2)
 	GROUP BY b.winlostdate
-		, s.currency
+		, t.currency
 		, b.bettype
 
 	--parlay for SB
 	INSERT INTO #tmpWinloss
 	SELECT b.winlostdate
-		, s.currency
+		, t.currency
 		, 'SB' AS ProductCode
 		, SUM(stake) turnover
 		, SUM(b.winlost - b.actual_stake) AS Winlost
@@ -274,8 +270,7 @@ BEGIN
 			NOLOCK
 			, INDEX = IX_srecommend
 			)
-	INNER JOIN @TempAg t ON b.recommend = t.custid
-	INNER JOIN @Super s ON b.srecommend = s.custid
+	INNER JOIN @TempAg t ON b.recommend = t.custid AND t.Currency = b.Currency
 	WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
 		AND (
 			b.bettype IN (9,29)
@@ -285,13 +280,13 @@ BEGIN
 		AND (b.livehomescore = @Liveindicator
 			OR @Liveindicator = 2)
 	GROUP BY b.winlostdate
-		, s.currency
+		, t.currency
 		, b.bettype
 
 	--Others
 	INSERT INTO #tmpWinloss
 	SELECT b.winlostdate
-		, s.currency
+		, t.currency
 		, CASE 
 			WHEN bettype BETWEEN 81 AND 120
 				THEN 'NG'
@@ -317,8 +312,7 @@ BEGIN
 			NOLOCK
 			, INDEX = IX_srecommend
 			)
-	INNER JOIN @TempAg t ON b.recommend = t.custid
-	INNER JOIN @Super s ON b.srecommend = s.custid
+	INNER JOIN @TempAg t ON b.recommend = t.custid AND t.Currency = b.Currency
 	WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
 		AND b.bettype NOT IN (31, 32, 33)
 		AND b.statusID IN (111, 112, 113)
@@ -334,7 +328,7 @@ BEGIN
 			OR @Liveindicator = 2)
 			)
 	GROUP BY b.winlostdate
-		, s.currency
+		, t.currency
 		, b.bettype
 END
 

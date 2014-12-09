@@ -1,4 +1,11 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_Rpt_TurnOver]
+﻿USE [bodb02]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_TurnOver]    Script Date: 11/29/2014 12:38:45 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[Lrf_Rpt_TurnOver]
     @LicenseeID INT,
     @UserID        INT,
     @LicenseeType VARCHAR(100) = NULL,
@@ -38,6 +45,7 @@ Revisions:
    - 20130809@Jim: offer Virtual Horse Racing
    - 20131007@Jim: offer Virtual Tennis
    - 20140305@Florent: support Keno
+   - 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 Param's Explanation:
     + @excludeTest: remove currency UUS
     + @CurrencyID = 0: get all currency
@@ -45,10 +53,10 @@ Param's Explanation:
 */
 SET NOCOUNT ON
    
-DECLARE @tmpAg TABLE( custID INT PRIMARY KEY,currency int)
+DECLARE @tmpAg TABLE( custID INT ,currency int)
 DECLARE @fdate smalldatetime, @tdate smalldatetime, @tmpdate smalldatetime, @CustID INT
 DECLARE @sporttype AS TABLE(sporttype INT)
-
+ 
 SELECT @CustID = 0
     ,@username = LTRIM(RTRIM(ISNULL(@username,'')))
     ,@fdate = @fromdate
@@ -63,9 +71,15 @@ AND SystemID=1 -- System is default=1 (LRF)
 AND isActive=1
 AND (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
+DECLARE @Temp AS TABLE ( LicenseeId INT,CustId INT,Currency INT,Description VARCHAR(100) )
+DECLARE @sql1 VARCHAR(500)
+SELECT  @sql1 =  'SELECT LicenseeId,CustID,Currency,Description   FROM  OPENQUERY(DBLIC, ''SELECT LicenseeId,CustID,Currency,Description  FROM bodb_licensee.dbo.f_SelLicenseeCust('+CAST(@LicenseeID AS VARCHAR(10))+')'')'
+INSERT INTO @Temp (LicenseeId ,CustId ,Currency,Description)
+EXEC (@sql1)
+	
 INSERT INTO @tmpAg
 SELECT CustID,currency 
-FROM DBLIC.bodb_Licensee.dbo.LicenseeCust lc WITH( NOLOCK )
+FROM @Temp lc
     INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID 
 WHERE 
     [Description] = COALESCE(@LicenseeType,[Description]) 
@@ -97,7 +111,7 @@ BEGIN
         SELECT @CustID = CustID
         FROM Customer WITH(NOLOCK)
         WHERE username = @username
-            AND recommend IN (SELECT custid FROM @tmpAg)
+            AND recommend IN (SELECT DISTINCT custid FROM @tmpAg)
             AND roleid = 1
             AND (@CurrencyID=0 OR (@CurrencyID<>0 AND  currency=@CurrencyID))
     END
@@ -202,10 +216,11 @@ BEGIN
             ,SUM(isnull(b.Comm_BA,0))
             ,0 as PlayerComm
             ,SUM(isnull(b.AmountDueTo_BA,0))
-        FROM bodb_report.dbo.rptdepwinlost_bk b with(nolock)            
+        FROM bodb_report.dbo.rptdepwinlost_bk b with(nolock) 
+			 INNER JOIN @tmpAg a ON b.recommend = a.CustId AND b.Currency = a.Currency
         WHERE b.winlostdate between @fdate AND @tmpdate
             AND b.custid = @custid
-        GROUP BY b.winlostdate, currency
+        GROUP BY b.winlostdate, b.currency
         
         ;WITH sourceDATA as (
             SELECT p.winlostdate
@@ -259,9 +274,10 @@ BEGIN
             ,0 as PlayerComm
             ,SUM(isnull(b.AmountDueTo_BA,0))
         FROM bodb_report.dbo.rptdepwinlost b with(nolock)            
+			INNER JOIN @tmpAg a ON b.recommend = a.CustId AND b.Currency = a.Currency
         WHERE b.winlostdate between @tmpdate AND @tdate
             AND b.custid = @custid
-        GROUP BY b.winlostdate, currency
+        GROUP BY b.winlostdate, b.currency
         
         ;WITH sourceDATA as (
             SELECT p.winlostdate
@@ -320,10 +336,10 @@ BEGIN
             ,SUM(isnull(b.Comm_BA,0))
             ,0 as PlayerComm
             ,SUM(isnull(b.AmountDueTo_BA,0))
-        FROM bodb_report.dbo.rptdepwinlost_SUM b with(nolock)            
+        FROM bodb_report.dbo.rptdepwinlost_SUM b with(nolock) 
+			INNER JOIN 	@tmpAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency	
         WHERE b.winlostdate between @fdate and @tmpdate    
-            AND b.custid in (SELECT custid from @tmpAg)
-        GROUP BY b.winlostdate, currency
+        GROUP BY b.winlostdate, b.currency
         
         ;WITH sourceDATA as (
             SELECT p.winlostdate
@@ -334,7 +350,7 @@ BEGIN
                 ,SUM(isnull(p.drawTO,0)) as DrawGame
                 ,SUM(isnull(p.playercomm,0)) as PlayerComm
             FROM bodb_Report.dbo.rptdepwinlostbyproduct_SUM p WITH(NOLOCK)    
-                INNER JOIN @tmpAg c on p.custid = c.custid
+                INNER JOIN @tmpAg c on p.custid = c.custid AND p.Currency = c.Currency
             WHERE p.winlostdate BETWEEN @fdate and @tmpdate                    
                 AND p.sporttype in (SELECT sporttype FROM @sporttype)                    
             GROUP BY p.winlostdate,c.currency
@@ -376,10 +392,11 @@ BEGIN
             ,SUM(isnull(b.Comm_BA,0))
             ,0 as PlayerComm
             ,SUM(isnull(b.AmountDueTo_BA,0))
-        FROM bodb_report.dbo.rptdepwinlost b with(nolock)            
+        FROM bodb_report.dbo.rptdepwinlost b with(nolock)  
+			INNER JOIN @tmpAg a ON b.recommend = a.CustId AND b.Currency = a.Currency	
         WHERE b.winlostdate between @tmpdate and @tdate    
-            AND b.recommend in (SELECT custid from @tmpAg)
-        GROUP BY b.winlostdate, currency
+            
+        GROUP BY b.winlostdate, b.currency
         
         ;WITH sourceDATA as (
             SELECT p.winlostdate
@@ -391,9 +408,10 @@ BEGIN
                 ,SUM(isnull(p.playercomm,0)) as PlayerComm
             FROM bodb_Report.dbo.rptDepWinlostByProduct p WITH(NOLOCK)    
                 INNER JOIN dbo.Customer c WITH(NOLOCK) on p.custid = c.custid
+				INNER JOIN @tmpAg a ON  p.Currency = a.Currency
             WHERE p.winlostdate BETWEEN @tmpdate and @tdate    
                 AND c.roleid = 1
-                AND c.recommend in (SELECT custid from @tmpAg)
+                AND c.recommend in (SELECT DISTINCT custid FROM @tmpAg)
                 AND p.sporttype in (SELECT sporttype FROM @sporttype)                    
             GROUP BY p.winlostdate,c.currency
         )

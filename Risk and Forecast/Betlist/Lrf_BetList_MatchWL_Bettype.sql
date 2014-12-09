@@ -64,6 +64,7 @@ Revisions:
    - 20140908@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
    - 20141021@Florent: Apply for the change in Sporting Solution structure (#24478)
 
+   - 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
 Param's Explanation: 
 	
 */
@@ -81,12 +82,12 @@ WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 DECLARE @TempAg AS TABLE (custid INT)
 INSERT INTO @TempAg (custid)
-SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+SELECT  DISTINCT CustID  
+                FROM    bodb_Licensee.dbo.f_SelLicenseeCust(0) lc --WITH ( NOLOCK )  
 						INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
                 WHERE   [Description] = COALESCE(@LicenseeType,  
                                                      [Description])
-DROP TABLE #Currency 
+
 													 
 DECLARE @Fromdate DATETIME
 DECLARE @Todate  DATETIME
@@ -203,6 +204,7 @@ BEGIN
 			b.matchid=@matchid AND
 			(@bettype=0 OR (@bettype<>0 AND CASE WHEN ISNULL(ss.bettypeid,0) = 0 THEN b.bettype ELSE ss.typeid END = @bettype)) AND
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
+			((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
 			b.statusID IN (111,112,113) AND
 			b.tpositiontaking=0 AND
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 AND 1399)) AND
@@ -258,6 +260,7 @@ BEGIN
 			(@bettype=0 OR (@bettype<>0 AND CASE WHEN ISNULL(ss.bettypeid,0) = 0 THEN b.bettype ELSE ss.typeid END = @bettype)) AND
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 AND 1399)) AND
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
+			 ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
 			b.statusID IN (111,112,113) AND
 			b.tpositiontaking<>0 AND
 			((@Liveindicator=-1) OR (@Liveindicator=0 AND b.Liveindicator = 0) OR (@Liveindicator=1 AND b.Liveindicator = 1)) AND
@@ -311,6 +314,7 @@ BEGIN
 			(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
 			b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
+			  ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
 			b.statusID IN (111,112,113) AND
 			((@Liveindicator=-1) OR (@Liveindicator=0 AND b.Liveindicator = 0) OR (@Liveindicator=1 AND b.Liveindicator = 1)) AND
 			(@_Date IS NULL OR (@_Date IS NOT NULL AND b.winlostdate=@_Date))
@@ -362,6 +366,7 @@ BEGIN
 					AND
 					(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
 					b.recommend IN (SELECT custid FROM @TempAg)	AND
+					  ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
 					b.statusID IN (111,112,113) AND
 					((@Liveindicator=-1) OR (@Liveindicator=0 AND b.Liveindicator = 0) OR (@Liveindicator=1 AND b.Liveindicator = 1)) AND
 					(@_Date IS NULL OR (@_Date IS NOT NULL AND b.winlostdate=@_Date))
@@ -420,6 +425,7 @@ BEGIN
 			--(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
 			(@bettype=0 OR (@bettype<>0 AND CASE WHEN ISNULL(ss.bettypeid,0) = 0 THEN b.bettype ELSE ss.typeid END = @bettype)) AND
 			b.recommend IN (SELECT custid FROM @TempAg) AND
+			  ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
 			b.statusID IN (111,112,113) AND
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 AND 1399)) AND
 			b.tpositiontaking=0 AND
@@ -481,6 +487,7 @@ BEGIN
 			(@bettype=0 OR (@bettype<>0 AND CASE WHEN ISNULL(ss.bettypeid,0) = 0 THEN b.bettype ELSE ss.typeid END = @bettype)) AND
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 AND 1399)) AND
 			b.recommend IN (SELECT custid FROM @TempAg) AND
+			 ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
 			b.tpositiontaking <>0 AND
 			b.statusID IN (111,112,113) AND
 			((@Liveindicator=-1) OR (@Liveindicator=0 AND b.Liveindicator = 0) OR (@Liveindicator=1 AND b.Liveindicator = 1)) AND
@@ -533,7 +540,8 @@ BEGIN
 			b.matchid=@matchid AND
 			(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
 			b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
-			b.recommend IN (SELECT custid FROM @TempAg) AND
+			b.recommend IN (SELECT custid FROM @TempAg) AND			 
+			  ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
 			b.statusID IN (111,112,113) AND
 			((@Liveindicator=-1) OR (@Liveindicator=0 AND b.Liveindicator = 0) OR (@Liveindicator=1 AND b.Liveindicator = 1)) AND
 			(@_Date IS NULL OR (@_Date IS NOT NULL AND b.winlostdate=@_Date))
@@ -585,6 +593,7 @@ BEGIN
 					AND
 					(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
 					b.recommend IN (SELECT custid FROM @TempAg)	AND
+					  ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
 					b.statusID IN (111,112,113) AND
 					((@Liveindicator=-1) OR (@Liveindicator=0 AND b.Liveindicator = 0) OR (@Liveindicator=1 AND b.Liveindicator = 1)) AND
 					(@_Date IS NULL OR (@_Date IS NOT NULL AND b.winlostdate=@_Date))
@@ -753,6 +762,7 @@ SELECT * FROM @BettransDetail ORDER BY RefNo,Bettype
 
 DROP TABLE #TempExchange
 DROP TABLE #Data
+DROP TABLE #Currency 
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_MatchWL_Bettype] TO [bodbLicenseeNet]

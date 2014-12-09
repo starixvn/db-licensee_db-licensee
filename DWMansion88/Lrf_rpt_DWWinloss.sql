@@ -18,11 +18,12 @@ ALTER PROCEDURE [dbo].[Lrf_rpt_DWWinloss]
  /*
 Created: 20140331@Winnie
 Task : 
-DB: DB052.bodb02
-Original:DBDW2.bodb_dwrs
+DB: DBLIC.bodb_licensee
+Original:
 
 Revisions:	
 	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
+	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 Param's Explanation:
     @groupingid: used to group data for summarizing (1:by day, 2:month, 3:currency, 4:bettype, 5:league)    
     @drawfilter: 'No Draw' filter is supported (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -33,11 +34,14 @@ SET @LicenseeID=3
 SELECT  currencyID,LicenseeID into #currency
 FROM  bodb02.dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
 WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+
 DELETE FROM #currency WHERE CurrencyID=20
+
 DECLARE @TempAg AS TABLE ( Currency INT, CurrencyName VARCHAR(20) )
+ 		
 INSERT  INTO @TempAg(Currency,CurrencyName)
-SELECT Distinct Currency,CurrencyName 
-FROM bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )
+SELECT Distinct lc.Currency,lc.CurrencyName 
+FROM dbo.f_SelLicenseeCust(0) lc
 INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
 
 

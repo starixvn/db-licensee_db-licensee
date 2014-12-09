@@ -11,7 +11,7 @@ ALTER PROC [dbo].[Lrf_rpt_DWTopCustomerSel]
     @ToDate			SMALLDATETIME ,
     @sortingid		BIT				= 0 ,
     @currencyid		INT				= 0 ,
-    @customer		VARCHAR(150)	= '' ,
+    @customer		VARCHAR(150)	= '',
     @activemin		INT				= 0 ,
     @wlmtotalmin	MONEY			= 0 ,
     @betcountmin	INT				= 0 ,
@@ -28,7 +28,7 @@ DB: DBLIC.bodb_licensee
 
 Revison:
 	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
-
+	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 Param's Explanation:
     @sortingid: (0: order by best winloss member, 1: order by worst winloss member)
 	@basedcurrency: convert to currency USD or EURO (-2:USD -1:EURO)
@@ -48,12 +48,15 @@ SET @ActiveDate		=CONVERT(VARCHAR(10), DATEADD(day,
 SELECT  currencyID,LicenseeID into #currency
 FROM  bodb02.dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
 WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+
 DELETE FROM #currency WHERE CurrencyID=20
+
 DECLARE @TempAg AS TABLE ( CustId INT,Currency INT,CurrencyName VARCHAR(20) )
+
 INSERT  INTO @TempAg(CustId,Currency,CurrencyName)
-SELECT CustID,Currency,CurrencyName
-FROM bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )
-	INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
+SELECT lc.CustID,lc.Currency,lc.CurrencyName
+FROM  dbo.f_SelLicenseeCust(0) lc
+INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
 
 DROP TABLE #Currency 
 
@@ -125,10 +128,9 @@ BEGIN
 		
 		FROM    
 			bodb_LicenseeReport.[dbo].[rptCustomerTurnover] b WITH ( NOLOCK)
-			INNER JOIN @TempAg ag  ON ag.custid = b.recommend
-			INNER JOIN bodb02.dbo.Customer c WITH ( NOLOCK) ON b.custid=c.custid			
+			INNER JOIN bodb02.dbo.Customer c WITH ( NOLOCK) ON b.custid=c.custid	
+			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
 			LEFT  JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
-
 		WHERE   
 			b.winlostdate BETWEEN @FromDate AND @ToDate
 			AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399))			
@@ -218,13 +220,12 @@ BEGIN
 			
 		FROM    
 			bodb_LicenseeReport.[dbo].[rptCustomerTurnover] b WITH ( NOLOCK)
-			INNER JOIN @TempAg ag  ON ag.custid = b.recommend
 			INNER JOIN #TempCust aa ON b.custid=aa.CustId	
-			INNER JOIN bodb02.dbo.Customer c WITH ( NOLOCK) ON b.custid=c.custid					
+			INNER JOIN bodb02.dbo.Customer c WITH ( NOLOCK) ON b.custid=c.custid	
+			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustID AND b.Currency = ag.Currency
 			LEFT  JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
-			
 		WHERE   
-			b.winlostdate BETWEEN @FromDate AND @ToDate
+			  b.winlostdate BETWEEN @FromDate AND @ToDate
 			AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399))	
 			AND (@sportid=0 OR(@sportid<>0 AND b.sporttype=@sportid))
 			AND (@customer='' OR (@customer<>'' AND c.username=@customer))	
@@ -305,12 +306,11 @@ BEGIN
 		
 		FROM    
 			bodb_LicenseeReport.[dbo].[rptCustomerTurnover] b WITH ( NOLOCK)
-			INNER JOIN @TempAg ag  ON ag.custid = b.recommend			
-			INNER JOIN bodb02.dbo.Customer c WITH ( NOLOCK) ON b.custid=c.custid			
+			INNER JOIN bodb02.dbo.Customer c WITH ( NOLOCK) ON b.custid=c.custid	
+			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustID AND b.Currency = ag.Currency	
 			LEFT  JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
-
 		WHERE   
-			b.winlostdate BETWEEN @FromDate AND @ToDate
+			 b.winlostdate BETWEEN @FromDate AND @ToDate
 			AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399))			
 			AND (@sportid=0 OR(@sportid<>0 AND b.sporttype=@sportid))
 			AND (@customer='' OR (@customer<>'' AND c.username=@customer))			
@@ -400,13 +400,13 @@ BEGIN
 			
 		FROM    
 			bodb_LicenseeReport.[dbo].[rptCustomerTurnover] b WITH ( NOLOCK)
-			INNER JOIN @TempAg ag  ON ag.custid = b.recommend
 			INNER JOIN #TempCust aa ON b.custid=aa.CustId	
-			INNER JOIN bodb02.dbo.Customer c WITH ( NOLOCK) ON b.custid=c.custid					
+			INNER JOIN bodb02.dbo.Customer c WITH ( NOLOCK) ON b.custid=c.custid	
+			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustID AND b.Currency = ag.Currency	
 			LEFT  JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 			
 		WHERE   
-			b.winlostdate BETWEEN @FromDate AND @ToDate
+			 b.winlostdate BETWEEN @FromDate AND @ToDate
 			AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399))	
 			AND (@sportid=0 OR(@sportid<>0 AND b.sporttype=@sportid))
 			AND (@customer='' OR (@customer<>'' AND c.username=@customer))	

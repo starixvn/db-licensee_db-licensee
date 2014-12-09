@@ -1,10 +1,7 @@
 USE [bodb_Report]
 GO
-/****** Object:  StoredProcedure [dbo].[Task_DepWinlostSUM]    Script Date: 04/09/2014 21:01:24 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+
+
 ALTER PROCEDURE [dbo].[Task_DepWinlostSUM]
 	@date smalldatetime
 AS
@@ -14,6 +11,7 @@ AS
  Revisions:   
   - 20121010@viet: create SP   
   - 20130628@Don: Adding one column to rptDepWinlost_SUM (Transfer3rdOthers)
+  - 20141120@Don: Adjustment to serve to change KeenOcean's currency RMB to HK$
                  
  Param's Explanation:  
  • @winlostdate: The date need to summary  
@@ -30,6 +28,7 @@ SET NOCOUNT ON
 		winlostdate
 		,custid
 		,sporttype
+		,currency
 		,turnover 
 		,drawTO
 		,winlost
@@ -41,6 +40,7 @@ SET NOCOUNT ON
 		p.winlostdate
 		,d.recommend
 		,p.sporttype
+		,d.currency
 		,sum(isnull(p.turnover,0))-- as turnover
 		,sum(isnull(p.drawTO,0))-- as drawTO
 		,sum(isnull(p.winlost,0))-- as winlost
@@ -64,7 +64,7 @@ SET NOCOUNT ON
 			GROUP BY winlostdate, custid, sporttype
 		) p on d.custid = p.custid and d.winlostdate = p.winlostdate
 	WHERE d.winlostdate = @date
-	GROUP BY p.winlostdate ,d.recommend ,p.sporttype	
+	GROUP BY p.winlostdate, d.recommend, p.sporttype, d.currency
 	
 	INSERT INTO dbo.rptDepwinlost_SUM (
 		winlostdate

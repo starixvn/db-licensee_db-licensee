@@ -45,6 +45,7 @@ Revisions:
 	- 20140404@Florent: offer Keno products
 	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 	- 20141017@Jim : Apply for the change in Sporting Solution structure (#24478)
+	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 Param's Explanation: 
 */
 SET NOCOUNT ON
@@ -92,7 +93,7 @@ INSERT INTO @TempAg (
 	)
 SELECT CustID
 	, currency
-FROM bodb_Licensee.dbo.LicenseeCust lc WITH (NOLOCK)
+FROM bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc
 INNER JOIN #Currency c ON lc.LicenseeID = c.LicenseeID
 	AND lc.Currency = c.CurrencyID
 WHERE [Description] = COALESCE(@LicenseeType, [Description])
@@ -341,7 +342,7 @@ BEGIN
 	LEFT JOIN @Exchange e ON e.ExchangeDate = b.winlostdate
 		AND e.exchangeid = b.currency
 	WHERE b.recommend IN (
-			SELECT custid
+			SELECT DISTINCT custid
 			FROM @TempAg
 			)
 		AND b.winlostdate BETWEEN @TempFromDate AND @TDate
@@ -532,12 +533,12 @@ BEGIN
 			NOLOCK
 			, INDEX = bettrans143
 			)
-	INNER JOIN @TempAg a ON b.recommend = a.custid
 	LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_bk BA WITH (NOLOCK) ON b.recommend = BA.recommend
 		AND b.transid = BA.transid
 	LEFT JOIN @Exchange e ON e.ExchangeDate = b.winlostdate
 		AND e.exchangeid = b.currency
-	WHERE b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
+	WHERE b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
+		AND b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
 		AND statusID NOT IN (101, 102, 103)
 		AND bettype <= 1599 --Include Keno
 		AND bettype NOT IN (71, 73)

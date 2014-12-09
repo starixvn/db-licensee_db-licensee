@@ -1,6 +1,6 @@
 USE [bodb_licensee]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_SelLeagueBySport]    Script Date: 12/02/2014 10:10:23 AM ******/
+ 
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -21,6 +21,7 @@ DB: DBLIC/bodb_Licensee
 
 Revisions:
 	- 20140117@Florent: add new sport 154
+	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 Param's Explanation:	
 */
 SET NOCOUNT ON
@@ -48,13 +49,13 @@ BEGIN
 	WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 	-------
 
-	DECLARE @TempAg AS TABLE (custid INT)
-	INSERT INTO @TempAg (custid)
-	SELECT  CustID  
-					FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
-							INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
-					--WHERE   [Description] = COALESCE(@LicenseeType,  
-					--                                     [Description])
+	DECLARE @TempAg AS TABLE (custid INT ,currency INT)
+	INSERT INTO @TempAg (custid,currency)
+	SELECT    lc.CustID  
+			 ,lc.Currency
+	FROM    bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc
+			INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
+ 
 	--------
 	SET @f = @Fromdate
 	SET @t = @Todate
@@ -82,9 +83,9 @@ BEGIN
 
 		INSERT INTO #tblLeagueid
 		SELECT leagueid
-		FROM bodb_LicenseeReport.dbo.rptWinlostbyLeague AS rwl WITH (NOLOCK)
-		LEFT JOIN @TempAg ta on rwl.recommend=ta.custid
-		WHERE rwl.winlostdate BETWEEN @f AND @TempToDate
+	 FROM bodb_LicenseeReport.dbo.rptWinlostbyLeague AS rwl WITH (NOLOCK)
+		INNER JOIN @TempAg ta on rwl.recommend=ta.custid AND rwl.currency = ta.currency
+		WHERE   rwl.winlostdate BETWEEN @f AND @TempToDate
 		GROUP BY leagueid
 	END
 

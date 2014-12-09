@@ -9,6 +9,7 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinLossByDate_Mem]
 	@LicenseeID 	INT,
 	@UserID			INT,
 	@CustID INT,
+	@CurrencyID INT =0,
 	@FromDate SMALLDATETIME,
 	@ToDate SMALLDATETIME,
 	@Langkey VARCHAR(20) = 'en-US',
@@ -78,6 +79,7 @@ Revisions:
    - 20140630@Hannah: offer BetRadar and Sporting Solution 
    - 20140819@Jim: add more output @SumBetEffective  
    - 20140908@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
+   - 20141128@Jim: add more input param @CurrencyID
    */
 
 SET NOCOUNT ON
@@ -2497,9 +2499,16 @@ SET @Today = convert(VARCHAR(10), CURRENT_TIMESTAMP, 120)
 CREATE NONCLUSTERED INDEX IDX_Index_betlist ON #BetListByDateMem (Currency)
 
 
+IF @CurrencyID <> 0
+BEGIN 
+	DELETE #BetListByDateMem
+	WHERE Currency <> @CurrencyID
+END
+
 SELECT * INTO #TempExchange 
 FROM Lrf_f_GetExchangeDaily(@FromDate,@ToDate)
 WHERE exchangeid IN (SELECT DISTINCT Currency FROM #BetListByDateMem)
+
 
 --- 
 UPDATE #BetListByDateMem 
@@ -2756,6 +2765,6 @@ DROP TABLE #BetListByDateMem
 DROP TABLE #TempBetList
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinLossByDate_Mem] TO [bodbLicenseeNet] AS [dbo]
+GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinLossByDate_Mem] TO [bodbLicenseeNet]  
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelWinLossByDate_Mem] TO [vnteam] AS [dbo]
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelWinLossByDate_Mem] TO [vnteam]  

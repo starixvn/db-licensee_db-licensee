@@ -45,6 +45,7 @@ Revisions:
    - 20130411@Jim: support base currency USD
    - 20130514@Jim:Restrict permission of Licensee Users by currency
    - 20140925@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
+   - 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
 */
 
 SET NOCOUNT ON
@@ -55,8 +56,8 @@ WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 DECLARE @TempAg AS TABLE (custid INT)
 INSERT INTO @TempAg (custid)
-SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )
+SELECT DISTINCT CustID  
+                FROM    bodb_Licensee.dbo.f_SelLicenseeCust(0) lc --WITH ( NOLOCK )
 				INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID		
                 WHERE   [Description] = COALESCE(@LicenseeType,  
                                                      [Description]) 
@@ -139,7 +140,8 @@ BEGIN
 	WHERE
 		b.matchid=@matchid AND 
 		b.bettype=@bettype AND
-		b.recommend IN (SELECT custid FROM @TempAg) AND
+		((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
+		b.recommend IN (SELECT custid FROM @TempAg) AND		
 		b.statusID = 0
 	ORDER BY
 		b.status, b.transid
@@ -188,6 +190,7 @@ BEGIN
 	WHERE
 		b.matchid=@matchid AND 
 		b.bettype=@bettype AND
+		((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 		b.recommend IN (SELECT custid FROM @TempAg) AND
 		b.statusID IN (0,1) AND
 		b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
@@ -249,6 +252,7 @@ BEGIN
 	INNER JOIN bettrans B with (NOLOCK) ON bg.refno = B.refno
 	INNER JOIN #TempExchange e ON e.exchangeid = b.currency AND  e.ExchangeDate = B.winlostdate
 	WHERE	bg.matchid=@matchid and 
+			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 			b.recommend IN (SELECT custid FROM @TempAg) AND
 			b.statusID in (0,1) and 		
 			b.bettype=@bettype 
@@ -262,6 +266,7 @@ END
 DROP TABLE #Currency
 DROP TABLE #Data
 ------------------------
+
 GO
 
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelRunningByBettypeMatch] TO [bodbLicenseeNet]

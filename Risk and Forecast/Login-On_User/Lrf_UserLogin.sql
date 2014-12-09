@@ -5,7 +5,7 @@ go
 
 ALTER   PROCEDURE [dbo].[Lrf_UserLogin]
 	@UserName VARCHAR(50),
-	@UserPwd VARCHAR(50),	
+	@UserPwd VARCHAR(50) = '',	
 	@LoginIP VARCHAR(20),
 	@ServerID INT = 0 OUTPUT,	
 	@LoginDomain NVARCHAR(253) = NULL,
@@ -28,6 +28,8 @@ AS
 	- 20111005@Henry: return 1 more column : IsInternal
 	- 20120724@HEnry: return 1 more column: IsAllowedMemberComm
 	- 20130413@Jim: support multi language 
+	- 20141028@Florent: support new way to check User Login 
+
 */
 SET NOCOUNT ON
 
@@ -51,7 +53,8 @@ FROM
 	Users WITH (NOLOCK)
 WHERE 
 	Username = @UserName AND 
-	UserPwd = @UserPwd AND
+	--UserPwd = @UserPwd AND
+	(ISNULL(@UserPwd,'') = '' OR (ISNULL(@UserPwd,'') <> '' AND UserPwd = @UserPwd)) AND
 	IsInternal = 0
 
 IF (@UserID IS NULL)

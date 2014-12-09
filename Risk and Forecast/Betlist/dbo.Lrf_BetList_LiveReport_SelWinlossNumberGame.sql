@@ -34,7 +34,7 @@ Revisions:
 	-20140520@Hannah: Sort betlist
 	-20140522@Hannah: fix bug Sort betlist
 	-20140602@Hannah: Separate Live/ Non - Live data in Live Report
-
+	-20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust
 Param's Explanation:
 	@Liveindicator : indicate that whether the report will get live data or not
 		+ 0: Non - Live data only
@@ -105,12 +105,12 @@ FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (
 WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 INSERT  INTO #TempAg ( CustId)
-SELECT  CustID  
-FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+SELECT DISTINCT CustID  
+FROM    bodb_Licensee.dbo.f_SelLicenseeCust(0) lc --WITH ( NOLOCK )  
 		INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID 
 -- WHERE    Currency <> 20
 		
-DROP TABLE #Currency
+
 DECLARE @sql NVARCHAR(2500)
 DECLARE @SortTemp VARCHAR(250) 
 DECLARE @LicenseeWL VARCHAR(150) 
@@ -206,7 +206,8 @@ BEGIN
 		INNER JOIN #TempAg t  ON b.recommend =t.custid 
 		INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid   	
 		INNER JOIN #TempExchange e ON b.currency=e.exchangeID AND b.winlostdate=e.exchangeDate 
-	 WHERE  		  
+	 WHERE 	  
+
 	  b.bettype BETWEEN 81 AND 120 AND
 	  b.Winlostdate BETWEEN '''+CAST(@FromDate AS VARCHAR(50))+''' AND '''+CAST(@TempToDate AS VARCHAR(50))+''' AND
 	  b.statusID IN (111,112,113) AND
@@ -222,7 +223,10 @@ BEGIN
 	 leagueID,matchid,IP,betstatus,isNeutral,winlostdate,currency,
 	 stakeUSD,winlostUSD,LicenseeWLUSD,commUSD,stakeEUR,winlostEUR,LicenseeWLEUR,commEUR)
 	 EXEC (@sql)
-	 
+	 IF( @CurrencyID<>0)
+	 DELETE FROM #Data WHERE currency != @CurrencyID
+	  IF( @CurrencyID=0)
+	 DELETE FROM #Data WHERE currency NOT IN (SELECT currencyID from #Currency)
 END  
 
 SELECT @TempCount = COUNT(1) FROM #Data
@@ -302,7 +306,12 @@ BEGIN
 	 transdate,betteam,apositiontaking,liveindicator,livehomescore,liveawayscore,  
 	 leagueID,matchid,IP,betstatus,isNeutral,winlostdate,currency,
 	 stakeUSD,winlostUSD,LicenseeWLUSD,commUSD,stakeEUR,winlostEUR,LicenseeWLEUR,commEUR)
-	 EXEC (@sql)	 
+	 EXEC (@sql)	
+	
+	 IF( @CurrencyID<>0)
+	 DELETE FROM #Data WHERE currency != @CurrencyID
+	  IF( @CurrencyID=0)
+	 DELETE FROM #Data WHERE currency NOT IN (SELECT currencyID from #Currency)
 END 
 
 CREATE NONCLUSTERED INDEX IDX_Index_data ON #Data(Currency)
@@ -338,6 +347,8 @@ EXEC (@sql)
 DROP TABLE #Data	
 DROP TABLE #TempExchange 
 DROP TABLE #TempAg
+DROP TABLE #Currency
+
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_LiveReport_SelWinlossNumberGame] TO [bodbLicenseeNet]

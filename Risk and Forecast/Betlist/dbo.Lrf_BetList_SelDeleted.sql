@@ -1,6 +1,6 @@
 ﻿USE [bodb02]
 GO
-
+/****** Object:  StoredProcedure [dbo].[Lrf_BetList_SelDeleted_xtest]    Script Date: 11/29/2014 09:42:23 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -11,6 +11,7 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_SelDeleted]
 	@LicenseeID INT ,
 	@UserID		INT,
 	@CustID INT,
+	@CurrencyID INT = 0,
 	@Langkey NVARCHAR(10)='en-US'	,
 	@PageSize INT=1000,
 	@PageIndex INT=1,
@@ -41,6 +42,7 @@ Revisions:
 	- 20140403@Hannah: offer Keno
 	- 20140521@Jim: fix bug not show outright tikect  (bug #16525)
 	- 20140925@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
+	- 20141129@Jim: add more param @CurrencyID
 Param's Explanation:
 + @CustID: AgentID
 */
@@ -58,9 +60,7 @@ SELECT @recommend = recommend
 from customer c WITH(NOLOCK)
 inner join 	#currency cy ON c.currency=cy.currencyID						
  WHERE custid=@custid
-------------------------------------------
-DROP TABLE #Currency 
------------------------------------------
+
 CREATE TABLE #Data 
 (
 	Sporttype SMALLINT,
@@ -300,9 +300,15 @@ END
 
 CREATE NONCLUSTERED INDEX IDX_Index_Data ON #Data (Currency)
 
+ IF @CurrencyID <> 0
+ BEGIN 
+	DELETE #Data
+	WHERE Currency <> @CurrencyID
+ END
 SELECT * INTO #TempExchange 
 FROM Lrf_f_GetExchangeDaily(@FromDate,@ToDate)
 WHERE exchangeid IN (SELECT DISTINCT Currency FROM #Data)	
+
 
 		
 SELECT A.* 
@@ -374,6 +380,8 @@ END
 SELECT * FROM @BettransDetail 
 ORDER BY RefNo,Bettype 
 
+
+DROP TABLE #Currency 
 DROP TABLE #TempExchange 
 DROP TABLE #Data
 GO

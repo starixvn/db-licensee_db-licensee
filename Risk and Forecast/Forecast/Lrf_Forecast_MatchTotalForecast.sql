@@ -55,8 +55,8 @@ BEGIN
 	
 	DECLARE @TempAg AS TABLE ( CustId INT )
     INSERT  INTO @TempAg ( CustId)
-	SELECT  CustID  
-	FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK )  
+	SELECT  DISTINCT CustID  
+	FROM    bodb_Licensee.dbo.[f_SelLicenseeCust](0) lc --WITH ( NOLOCK )  
 			INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
 	WHERE   [Description] = COALESCE(@LicenseeType,[Description])
 

@@ -26,6 +26,7 @@ Original:
 Revisions:    
 	- 20121004@Jim: replace @currencyname input param by @currencyID	
 	- 20130411@Jim: support base currency USD
+	- 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
     
 */
 
@@ -81,8 +82,8 @@ CREATE TABLE #Data (
 CREATE INDEX IX_Data on #Data (Winlostdate, Currency)
 
 INSERT INTO @TempAg (custid)
-SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust WITH ( NOLOCK )  
+SELECT DISTINCT CustID  
+                FROM    bodb_Licensee.dbo.f_SelLicenseeCust(0) --WITH ( NOLOCK )  
                 WHERE   LicenseeID = @LicenseeID  
                         AND  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID))
                         AND [Description] = COALESCE(@LicenseeType,  
@@ -140,6 +141,7 @@ BEGIN
 		INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid   	  
 	 WHERE  		  
 	  b.bettype BETWEEN 1101 AND 1199 AND
+	   (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID)) AND
 	  b.Winlostdate BETWEEN @FromDate AND @TempToDate AND
 	  b.statusID IN (111,112,113)	
 	 ORDER  BY b.transid
@@ -200,6 +202,7 @@ BEGIN
 	  INNER JOIN [match] m WITH (NOLOCK) ON b.matchid=m.matchid   	  
 	 WHERE  	  	  
 	  b.bettype BETWEEN 1101 AND 1199 AND
+	   (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID)) AND
 	  b.Winlostdate BETWEEN @TempFromDate AND @ToDate AND  	  
 	  b.statusID IN (111,112,113)
 	 ORDER  BY b.transid
@@ -290,6 +293,7 @@ SELECT * FROM @BettransDetail ORDER BY RefNo,Bettype
 
 DROP TABLE #Data	
 DROP TABLE #TempExchange
+
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinlossLiveCasino] TO [bodbLicenseeNet]
 GO

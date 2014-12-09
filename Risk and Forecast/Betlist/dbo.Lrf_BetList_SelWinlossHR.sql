@@ -43,6 +43,7 @@ Revisions:
 	-- 20121004@Jim: replace @currencyname input param by @currencyID
 	-- 20130305@Jim: change  input param @Race by @RaceNo
 	-- 20130514@Jim: Restrict permission of Licensee Users by currency
+	- 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
 */
 
 SET NOCOUNT ON  
@@ -89,12 +90,12 @@ FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (
 WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
 INSERT INTO @TempAg (custid)
-SELECT  CustID  
-                FROM    bodb_Licensee.dbo.LicenseeCust lc WITH ( NOLOCK ) 
+SELECT DISTINCT  CustID  
+                FROM    bodb_Licensee.dbo.f_SelLicenseeCust(0) lc --WITH ( NOLOCK ) 
 						INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID 
                 WHERE  [Description] = COALESCE(@LicenseeType,  
                                                      [Description])
-DROP TABLE #Currency 
+
 
 IF @Todate > @MoveBetsDay  
 BEGIN  
@@ -140,6 +141,7 @@ BEGIN
 	 WHERE  
 	  --b.Recommend=@CustID AND  
 	  b.recommend in (SELECT custid from @TempAg) AND
+	  ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency)) OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
 	  b.Winlostdate>=@FromDate AND  
 	  b.Winlostdate<=@ToDate AND  
 	  l.leagueid = @LeagueId AND  
@@ -192,6 +194,7 @@ BEGIN
 	 WHERE  
 	  --b.Recommend=@CustID AND  
 	  b.recommend in (SELECT custid from @TempAg) AND
+	  ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
 	  b.Winlostdate>=@FromDate AND  
 	  b.Winlostdate<=@ToDate AND  
 	  l.leagueid = @LeagueId AND  
@@ -307,6 +310,7 @@ END
 	
 DROP TABLE #TempExchange 
 DROP TABLE #AgWinlossHR
+DROP TABLE #Currency 
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinlossHR] TO [bodbLicenseeNet]
