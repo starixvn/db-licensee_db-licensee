@@ -16,6 +16,7 @@ Revisions:
 	- 20110930@Henry: Add column statusID
 	- 20111229@Henry: change the way to get odds/oddstype/betteam to web dev
 	- 20141106@Florent: fix show SS bettype, get betcheck
+	- 20141212@Florent: fix when betcheck = '' will return NULL
 */
 SET NOCOUNT ON
 
@@ -107,7 +108,7 @@ BEGIN
 		,b.statusID
 	FROM (
 		SELECT transid
-			,betcheck
+			,CASE WHEN betcheck = '' THEN NULL ELSE betcheck END AS betcheck
 			,matchid
 			,Bettype
 			,hdp1
@@ -170,7 +171,7 @@ BEGIN
 		,b.statusID
 	FROM (
 		SELECT transid
-			 ,betcheck
+			 ,CASE WHEN betcheck = '' THEN NULL ELSE betcheck END AS betcheck
 			,matchid
 			,Bettype
 			,hdp1
@@ -232,7 +233,7 @@ BEGIN
 		,b.statusID
 	FROM (
 		SELECT transid
-			 ,betcheck
+			 ,CASE WHEN betcheck = '' THEN NULL ELSE betcheck END AS betcheck
 			,matchid
 			,Bettype
 			,hdp1
