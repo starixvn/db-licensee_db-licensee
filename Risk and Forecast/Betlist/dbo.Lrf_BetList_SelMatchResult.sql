@@ -1,18 +1,18 @@
 ﻿USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_BetList_SelMatchResult]    Script Date: 11/30/2013 03:02:28 ******/
+ 
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-/****** Object:  Stored Procedure dbo.Lrf_BetList_SelMatchResult    Script Date: 10/22/2013 10:25:56 PM ******/
-/****** Object:  Stored Procedure dbo.Lrf_BetList_SelMatchResult    Script Date: 10/21/2013 2:57:35 PM ******/
-
+ 
 ALTER PROCEDURE [dbo].[Lrf_BetList_SelMatchResult]
 	@LicenseeID INT ,
 	@UserID		INT,	
 	@MatchID INT,
-	@RaceNo VARCHAR(50)=NULL
+	@RaceNo VARCHAR(50)=NULL,
+	@Bettype SMALLINT = NULL,
+	@BetId	 BIGINT   = NULL
 AS
  
 /*
@@ -36,18 +36,23 @@ Revisions:
 	- 20140428@Hannah: support :				
 				183 - Virtual Speedway
 				185 - Virtual Cycling
-	
+	-20141021@Jim : support to show Sportting Solution data detail 
 	*******************
 	sample test case:
-				exec Lrf_BetList_SelMatchResult @licenseeid=1,@matchid=2715481,@raceno=N'3',@userid=68
+				exec Lrf_BetList_SelMatchResult_xtest @MatchID=10514601,@RaceNo=default ,@Bettype  = 1324
+														,@Betid='801',@LicenseeID=1,@UserID=10
+	 
 */
 
 SET NOCOUNT ON
 
 IF(@RaceNo is NULL )
 BEGIN
-	IF exists(SELECT 1 FROM match WITH(NOLOCK) WHERE matchid = @matchid)
-	BEGIN	
+	IF EXISTS(SELECT 1 FROM match WITH(NOLOCK) WHERE matchid = @matchid)
+	BEGIN
+		DECLARE @ResourceId VARCHAR(20) 
+		SELECT @ResourceId = LEFT(REPLACE(CONVERT(VARCHAR(20),@BetId), '8', '' ),2)
+		
 		SELECT 
 			m.sporttype, 
 			m.betstatus, 
@@ -69,10 +74,14 @@ BEGIN
 			m.eventdate,
 			m.finalhomescore,
 			m.finalawayscore,
-			case when m.betstatus like 'Refund FT%' then 'Refund FT' 
-						 when m.betstatus like 'Refund HT%' then 'Refund HT'
-						 when m.betstatus like 'Refund%' then 'Refund' 
-						else m.eventstatus end as eventstatus,
+			case m.sporttype when 5 then m.eventstatus
+							else 
+								case when m.betstatus like 'Refund FT%' then 'Refund FT' 
+									 when m.betstatus like 'Refund HT%' then 'Refund HT'
+									 when m.betstatus like 'Refund%'    then 'Refund' 
+									 else m.eventstatus end 
+							end as eventstatus,
+			
 			isnull(mr.refund,0) IsRefund, 
 			isnull(mr.calrefund,0) IsCalRefund,
 			isnull(m.isNeutral, CONVERT(BIT,0)) as IsNeutral,
@@ -86,10 +95,24 @@ BEGIN
 			LEFT OUTER JOIN match_remark mr WITH(NOLOCK) ON m.matchid = mr.matchid
 		WHERE m.matchid = @matchid
 		ORDER BY m.eventdate,m.matchcode
+		
+		SELECT	D.MatchId,
+					D.ResourceId,
+					D.HomeValue,
+					D.AwayValue,
+					D.ResultStatusID,
+					D.SettlementStatusID
+		FROM	dbo.ResultDetail D WITH (NOLOCK)			
+		WHERE	D.MatchId = @MatchId AND D.SettlementStatusID > 0					
+				AND CASE WHEN @Bettype NOT IN (1324) THEN 2 ELSE 
+						CASE WHEN @Bettype IN (1324) AND (LEFT(D.ResourceId,2) = @ResourceId OR ISNULL(@ResourceId,0)=0) THEN 4 
+							ELSE 0 END END = LEN(D.ResourceId)
+
+		ORDER BY ResourceId
+
 		RETURN
 	END
-	IF exists(SELECT 1 FROM match14 WITH(NOLOCK) WHERE matchid = @matchid)
-			 	
+	IF EXISTS(SELECT 1 FROM match14 WITH(NOLOCK) WHERE matchid = @matchid)
 	BEGIN
 		SELECT 
 			m.sporttype, 
@@ -112,10 +135,13 @@ BEGIN
 			m.eventdate,
 			m.finalhomescore,
 			m.finalawayscore,
-			case when m.betstatus like 'Refund FT%' then 'Refund FT' 
-						 when m.betstatus like 'Refund HT%' then 'Refund HT'
-						 when m.betstatus like 'Refund%' then 'Refund' 
-						else m.eventstatus end as eventstatus,
+				case m.sporttype when 5 then m.eventstatus
+							else 
+								case when m.betstatus like 'Refund FT%' then 'Refund FT' 
+									 when m.betstatus like 'Refund HT%' then 'Refund HT'
+									 when m.betstatus like 'Refund%'    then 'Refund' 
+									 else m.eventstatus end 
+							end as eventstatus,
 			isnull(mr.refund,0) IsRefund, 
 			isnull(mr.calrefund,0) IsCalRefund,
 			isnull(m.isNeutral, CONVERT(BIT,0)) as IsNeutral,
@@ -129,6 +155,20 @@ BEGIN
 			LEFT OUTER JOIN match_remark mr WITH(NOLOCK) ON m.matchid = mr.matchid
 		WHERE m.matchid = @matchid
 		ORDER BY m.eventdate,m.matchcode
+		
+		SELECT	D.MatchId,
+					D.ResourceId,
+					D.HomeValue,
+					D.AwayValue,
+					D.ResultStatusID,
+					D.SettlementStatusID
+		FROM	dbo.ResultDetail14 D WITH (NOLOCK)			
+		WHERE	D.MatchId = @MatchId AND D.SettlementStatusID > 0	
+				AND CASE WHEN @Bettype NOT IN (1324) THEN 2 ELSE 
+						CASE WHEN @Bettype IN (1324) AND (LEFT(D.ResourceId,2) = @ResourceId OR ISNULL(@ResourceId,0)=0)THEN 4 
+							ELSE 0 END END = LEN(D.ResourceId)
+		ORDER BY ResourceId
+
 		RETURN
 	END
 	ELSE
@@ -154,10 +194,13 @@ BEGIN
 				END kickofftime,
 			m.finalhomescore,
 			m.finalawayscore,
-			case when m.betstatus like 'Refund FT%' then 'Refund FT' 
-						 when m.betstatus like 'Refund HT%' then 'Refund HT'
-						 when m.betstatus like 'Refund%' then 'Refund' 
-						else m.eventstatus end as eventstatus,
+				case m.sporttype when 5 then m.eventstatus
+							else 
+								case when m.betstatus like 'Refund FT%' then 'Refund FT' 
+									 when m.betstatus like 'Refund HT%' then 'Refund HT'
+									 when m.betstatus like 'Refund%'    then 'Refund' 
+									 else m.eventstatus end 
+							end as eventstatus,
 			isnull(mr.refund,0) IsRefund,  
 			isnull(mr.calrefund,0) IsCalRefund,
 			isnull(m.isNeutral, CONVERT(BIT,0)) as IsNeutral,
@@ -167,10 +210,23 @@ BEGIN
 			ISNULL(mr.IsPending,0) as IsPending,
 			ISNULL(m.showtime,'') AS showtime,
 			m.homeid2
-		FROM DB06.bodb_archive.dbo.Match_BK m WITH(NOLOCK)		
+		FROM DBARC.bodb_archive.dbo.Match_BK m WITH(NOLOCK)		
 			LEFT OUTER JOIN match_remark mr WITH(NOLOCK) ON m.matchid = mr.matchid
 		WHERE m.matchid = @matchid
 		ORDER BY m.eventdate,m.matchcode
+		
+		SELECT	D.MatchId,
+					D.ResourceId,
+					D.HomeValue,
+					D.AwayValue,
+					D.ResultStatusID,
+					D.SettlementStatusID
+		FROM	DBARC.bodb_archive.dbo.ResultDetail_BK D WITH (NOLOCK)			
+		WHERE	D.MatchId = @MatchId AND D.SettlementStatusID > 0	
+				AND CASE WHEN @Bettype NOT IN (1324) THEN 2 ELSE 
+						CASE WHEN @Bettype IN (1324) AND (LEFT(D.ResourceId,2) = @ResourceId OR ISNULL (@ResourceId,0)=0) THEN 4 
+							ELSE 0 END END = LEN(D.ResourceId)
+		ORDER BY ResourceId
 	END
 END
 ELSE
@@ -419,42 +475,8 @@ BEGIN
 		END 	
 	DROP TABLE #tmpresult 
 END
-/*
-DECLARE @Today SMALLDATETIME 
-SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
-BEGIN
-	SELECT  currencyID,LicenseeID into #currency
-	FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
-	--get data from bettransg for bettype 1101
-	
-	SELECT 
-		bg.refno, 
-		bg.odds, 
-		bg.stake,
-		bg.status ,
-		bg.apositiontaking, 
-		bg.betteam ,
-		bg.stake*e.EUR AS stakeEUR,
-		bg.stake*e.USD AS stakeUSD	
-	FROM bettransg bg with (NOLOCK)
-	INNER JOIN match m with (NOLOCK) ON bg.matchid=m.matchid 
-	INNER JOIN bettrans B with (NOLOCK)ON bg.refno = B.refno
-	INNER JOIN 
-		(SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
-	ON e.exchangeid = b.currency AND  e.ExchangeDate = B.winlostdate
-	INNER JOIN #currency c ON c.CurrencyID=b.currency
-	WHERE	b.bettype between 1101 and 1199 and
-			b.statusID in (0,1)
-			AND m.matchid=@matchID
-	
-			
-	---------------------------------------		
-	DROP TABLE #Currency
-	---------------------------------------
-
-END
-*/
+ 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_SelMatchResult] TO [bodbLicenseeNet] AS [dbo]
+GRANT EXECUTE ON [dbo].[Lrf_BetList_SelMatchResult] TO [bodbLicenseeNet]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelMatchResult] TO [vnteam] AS [dbo]
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelMatchResult] TO [vnteam]

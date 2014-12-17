@@ -62,6 +62,8 @@ Revisions:
    - 20130904@Jim: support Virtual Horse Racing
    - 20140630@Hannah: offer BetRadar and Sporting Solution 
    - 20140908@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
+   - 20141021@Florent: Apply for the change in Sporting Solution structure (#24478)
+
    - 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
 Param's Explanation: 
 	
@@ -197,9 +199,10 @@ BEGIN
 		FROM
 			bettrans b WITH (NOLOCK) 
 			INNER JOIN match m WITH (NOLOCK) ON b.matchid=m.matchid
+			LEFT JOIN dbo.LRF_view_bettype_SS ss ON b.bettype = ss.bettypeID
 		WHERE
 			b.matchid=@matchid AND
-			(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
+			(@bettype=0 OR (@bettype<>0 AND CASE WHEN ISNULL(ss.bettypeid,0) = 0 THEN b.bettype ELSE ss.typeid END = @bettype)) AND
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
 			((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
 			b.statusID IN (111,112,113) AND
@@ -250,9 +253,11 @@ BEGIN
 		FROM
 			bettrans b WITH (NOLOCK) 
 			INNER JOIN match m WITH (NOLOCK) ON b.matchid=m.matchid
+			LEFT JOIN dbo.LRF_view_bettype_SS ss ON b.bettype = ss.bettypeID
 		WHERE
 			b.matchid=@matchid AND
-			(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
+			--(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
+			(@bettype=0 OR (@bettype<>0 AND CASE WHEN ISNULL(ss.bettypeid,0) = 0 THEN b.bettype ELSE ss.typeid END = @bettype)) AND
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 AND 1399)) AND
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
 			 ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
@@ -413,10 +418,12 @@ BEGIN
 		FROM
 			bettrans14 b WITH (NOLOCK) 
 			--INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid 
-			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid 				
+			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid 	
+			LEFT JOIN dbo.LRF_view_bettype_SS ss ON b.bettype = ss.bettypeID			
 		WHERE
 			b.matchid=@matchid AND
-			(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
+			--(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
+			(@bettype=0 OR (@bettype<>0 AND CASE WHEN ISNULL(ss.bettypeid,0) = 0 THEN b.bettype ELSE ss.typeid END = @bettype)) AND
 			b.recommend IN (SELECT custid FROM @TempAg) AND
 			  ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
 			b.statusID IN (111,112,113) AND
@@ -472,10 +479,12 @@ BEGIN
 			CASE WHEN b.bettype BETWEEN 1101 AND 1199 THEN ISNULL(m.showtime,'') ELSE '' END AS ShowTime 
 		FROM
 			bettrans14 b WITH (NOLOCK) 
-			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid 		
+			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid 	
+			LEFT JOIN dbo.LRF_view_bettype_SS ss ON b.bettype = ss.bettypeID	
 		WHERE
 			b.matchid=@matchid AND
-			(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
+			--(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
+			(@bettype=0 OR (@bettype<>0 AND CASE WHEN ISNULL(ss.bettypeid,0) = 0 THEN b.bettype ELSE ss.typeid END = @bettype)) AND
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 AND 1399)) AND
 			b.recommend IN (SELECT custid FROM @TempAg) AND
 			 ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
