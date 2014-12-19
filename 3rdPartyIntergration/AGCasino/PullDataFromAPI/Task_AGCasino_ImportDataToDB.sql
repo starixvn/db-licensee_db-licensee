@@ -1,9 +1,5 @@
-IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Task_AGCasino_ImportDataToDB]') AND type in (N'P', N'PC'))
-	DROP PROCEDURE [dbo].Task_AGCasino_ImportDataToDB
-GO
 
-
-CREATE PROCEDURE Task_AGCasino_ImportDataToDB
+ALTER PROCEDURE [dbo].[Task_AGCasino_ImportDataToDB]
 	@XmlData XML,
 	@LicenseeName VARCHAR(50),
 	@ErrCode INT = 0 OUTPUT,
@@ -19,6 +15,7 @@ Original:
 
 Revisions:
 	- 20141017@Victor: remove time convertion, input data have GMT -4 timezone already
+	- 20141218@Winnie: DBA- Modify sp to Fix the issue of missing AG Casino's data(Task #27842)
 
 Param explanation:
 
@@ -26,7 +23,7 @@ Param explanation:
 
 SET NOCOUNT ON
 
-DECLARE @NewVersionKey BIGINT, @OldVersionKey BIGINT
+DECLARE @NewVersionKey BIGINT, @ErrorVar INT,@RowCountVar INT
 
 CREATE TABLE #TmpData (
 	BillNo		BIGINT,
@@ -58,31 +55,16 @@ BEGIN TRY
 		x.v.value('CURRENCY[1]', 'TINYINT') AS Currency
 	FROM    @XmlData.nodes('/TransList/TRANSACTION') x(v)
 	
-	SELECT @OldVersionKey = SettingValue
-	FROM dbo.LicIntegrationSetting 
-	WHERE LicenseeName LIKE @LicenseeName
-		AND SettingName LIKE 'AGCasino_VersionKey'
+
 END TRY
 BEGIN CATCH
+
 	SELECT @ErrCode = ERROR_NUMBER(), @ErrMsg = ERROR_MESSAGE()
 	DROP TABLE #TmpData
 	RETURN
 END CATCH
 
 -- Import data to DB
-BEGIN TRY
-	-- Update VersionKey value
-	UPDATE dbo.LicIntegrationSetting WITH (ROWLOCK, UPDLOCK)
-	SET SettingValue = @NewVersionKey
-	WHERE LicenseeName LIKE @LicenseeName
-		AND SettingName LIKE 'AGCasino_VersionKey'
-
-	IF (@@ROWCOUNT = 0)  -- Can not update NewVersionKey
-	BEGIN
-		SELECT @ErrCode = 1, @ErrMsg = 'Could not update New VersionKey for selected licensee. Import failed.'
-		DROP TABLE #TmpData
-		RETURN
-	END
 
 	-- Insert / Update data to bettrans_AGCasino
 	MERGE dbo.bettrans_AGCasino AS dest
@@ -139,21 +121,28 @@ BEGIN TRY
 		VALUES (src.BillNo, src.IBCCustID, src.Transdate, src.GameType, src.Stake, src.Actual_Stake, src.Winlost, 
 				src.[Status], src.StatusID, src.PlayType, src.Winlostdate, src.Username, src.LoginIP, 
 				src.recommend, src.mrecommend, src.srecommend, src.currency, src.IsVIPGame);
-	
-END TRY 
-BEGIN CATCH
-	SELECT @ErrCode = ERROR_NUMBER(), @ErrMsg = ERROR_MESSAGE()
 
-	-- Update VersionKey value to old value
-	UPDATE dbo.LicIntegrationSetting WITH (ROWLOCK, UPDLOCK)
-	SET SettingValue = @OldVersionKey
-	WHERE LicenseeName LIKE @LicenseeName
-		AND SettingName LIKE 'AGCasino_VersionKey'
-END CATCH
+	SELECT @ErrorVar=@@Error,@RowCountVar=@@ROWCOUNT
+	IF (@RowCountVar <> 0)
+	BEGIN
+
+				UPDATE dbo.LicIntegrationSetting WITH (ROWLOCK, UPDLOCK)
+				SET SettingValue = @NewVersionKey
+				WHERE LicenseeName LIKE @LicenseeName
+					AND SettingName LIKE 'AGCasino_VersionKey'		
+
+				IF (@@ROWCOUNT = 0)  -- Can not update NewVersionKey
+				BEGIN
+					SELECT @ErrCode = 1, @ErrMsg = 'Could not update New VersionKey for selected licensee.'	
+					DROP TABLE #TmpData
+					RETURN
+				END
+	END
+
+	IF(@ErrorVar<>0)
+	BEGIN	
+	SELECT @ErrCode = @ErrorVar, @ErrMsg = 'Could not import data.'	
+	END
 
 DROP TABLE #TmpData
-
-GO
-
-GRANT  EXECUTE  ON [dbo].Task_AGCasino_ImportDataToDB  TO [bodbLicenseeNet]
 GO
