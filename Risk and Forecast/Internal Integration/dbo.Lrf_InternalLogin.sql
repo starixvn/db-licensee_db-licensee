@@ -23,6 +23,7 @@ AS
 	Revisions:
 	- 20111004@Henry: check only Internal user (IsInternal = 1)
 	- 20120724@HEnry: return 1 more column: IsAllowedMemberComm
+	- 20141217@Jim: correct error code 
 */
 
 SET NOCOUNT ON
@@ -110,7 +111,7 @@ BEGIN
 			 WHEN 'TH' THEN N'This user has too many licensees.' 
 			 WHEN 'KO' THEN N'This user has too many licensees.' 
 			 ELSE N'This user has too many licensees.' 
-			END ,@ErrCode=102   
+			END ,@ErrCode=103   
 			SET @LogData = 'User: ' + @UserName +  ' - ' + 'Failed(User_Too_Many_Licensees)'      
 		END
 		ELSE
@@ -127,7 +128,7 @@ BEGIN
 					 WHEN 'TH' THEN N'This user has no licensee.'
 					 WHEN 'KO' THEN N'This user has no licensee.'
 					 ELSE N'This user has no licensee.'
-					END ,@ErrCode=103   
+					END ,@ErrCode=104   
 					SET @LogData = 'User: ' + @UserName + ' - ' + 'Failed(User_Not_Found_Licensee)'     
 			END
 			ELSE

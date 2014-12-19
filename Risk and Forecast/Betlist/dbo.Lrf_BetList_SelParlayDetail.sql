@@ -15,201 +15,244 @@ Original: [Age_BetList_SelParlayDetail]
 Revisions:    
 	- 20110930@Henry: Add column statusID
 	- 20111229@Henry: change the way to get odds/oddstype/betteam to web dev
+	- 20141106@Florent: fix show SS bettype, get betcheck
+	- 20141212@Florent: fix when betcheck = '' will return NULL
 */
 SET NOCOUNT ON
-DECLARE	@tmpParlay	TABLE(
-	transid		BIGINT,
-	sporttype	INT,
-	leagueid	INT,
-	bettype		INT,
-	homeid		INT,
-	awayid		INT,
-	hdp1		FLOAT,
-	hdp2		FLOAT,
-	odds		SMALLMONEY,
-	betteam		NVARCHAR(50),
-	livehomescore	SMALLINT,
-	liveawayscore	SMALLINT,
-	liveindicator	BIT,
-	betstatus	NVARCHAR(50),
-	isNeutral	BIT,
-	statusID INT
-)	
 
-DECLARE @refno bigint, @custID INT
+DECLARE @tmpParlay TABLE (
+	transid BIGINT
+	,betID NVARCHAR(50)
+	,sporttype INT
+	,leagueid INT
+	,bettype INT
+	,homeid INT
+	,awayid INT
+	,hdp1 FLOAT
+	,hdp2 FLOAT
+	,odds SMALLMONEY
+	,betteam NVARCHAR(50)
+	,livehomescore SMALLINT
+	,liveawayscore SMALLINT
+	,liveindicator BIT
+	,betstatus NVARCHAR(50)
+	,isNeutral BIT
+	,statusID INT
+	)
+DECLARE @refno BIGINT
+	,@custID INT
 
-SELECT @refno = refno, @custID = custid from bettrans with (NOLOCK) WHERE TransID = @TransID
-IF @refno IS NULL 	
+SELECT @refno = refno
+	,@custID = custid
+FROM bettrans WITH (NOLOCK)
+WHERE TransID = @TransID
+
+IF @refno IS NULL
 BEGIN
-	SELECT @refno = refno, @custID = custid from bettrans14 with (NOLOCK) WHERE TransID = @TransID
-	IF @refno IS NULL 
+	SELECT @refno = refno
+		,@custID = custid
+	FROM bettrans14 WITH (NOLOCK)
+	WHERE TransID = @TransID
+
+	IF @refno IS NULL
 	BEGIN
-		SELECT @refno = refno, @custID = custid from DB06.bodb_archive.dbo.bettrans_BK with (NOLOCK) WHERE TransID = @TransID
+		SELECT @refno = refno
+			,@custID = custid
+		FROM DB06.bodb_archive.dbo.bettrans_BK WITH (NOLOCK)
+		WHERE TransID = @TransID
 	END
 END
-IF EXISTS (SELECT 1 FROM bettransm WITH (NOLOCK) WHERE refno = @refno AND custid = @custid)
+
+IF EXISTS (
+		SELECT 1
+		FROM bettransm WITH (NOLOCK)
+		WHERE refno = @refno
+			AND custid = @custid
+		)
 BEGIN
 	INSERT INTO @tmpParlay (
-		transid,
-		sporttype,
-		leagueid,
-		bettype,
-		homeid,
-		awayid,
-		hdp1,
-		hdp2,
-		odds,
-		betteam,
-		livehomescore,
-		liveawayscore,
-		liveindicator,
-		betstatus,
-		isNeutral,
-		statusID
-	)
-	SELECT
-		b.transid,
-		m.Sporttype,
-		m.LeagueID,		
-		b.Bettype ,
-		m.homeID,
-		m.awayID,
-		convert(float, b.hdp1) as Hdp1, 
-		convert(float, b.hdp2) as Hdp2, 
-		b.odds,
-		b.betteam,
-		b.livehomescore,
-		b.liveawayscore,
-		b.liveindicator,
-		m.betstatus,
-		m.isNeutral,
-		b.statusID
-	FROM(	SELECT 
-					transid,
-					matchid,  
-					Bettype, 
-					hdp1, 
-					hdp2, 
-					odds, 
-					betteam, 
-					livehomescore,
-					liveawayscore,
-					liveindicator,
-					statusID
-			FROM	BettransM with (nolock)
-					WHERE refno=@refno AND custID = @custID              
-		) AS b		
-			inner join match as m with (nolock) on b.matchid=m.matchid
+		transid
+		,betID
+		,sporttype
+		,leagueid
+		,bettype
+		,homeid
+		,awayid
+		,hdp1
+		,hdp2
+		,odds
+		,betteam
+		,livehomescore
+		,liveawayscore
+		,liveindicator
+		,betstatus
+		,isNeutral
+		,statusID
+		)
+	SELECT b.transid
+	     ,b.betcheck
+		,m.Sporttype
+		,m.LeagueID
+		,b.Bettype
+		,m.homeID
+		,m.awayID
+		,convert(FLOAT, b.hdp1) AS Hdp1
+		,convert(FLOAT, b.hdp2) AS Hdp2
+		,b.odds
+		,b.betteam
+		,b.livehomescore
+		,b.liveawayscore
+		,b.liveindicator
+		,m.betstatus
+		,m.isNeutral
+		,b.statusID
+	FROM (
+		SELECT transid
+			,CASE WHEN betcheck = '' THEN NULL ELSE betcheck END AS betcheck
+			,matchid
+			,Bettype
+			,hdp1
+			,hdp2
+			,odds
+			,betteam
+			,livehomescore
+			,liveawayscore
+			,liveindicator
+			,statusID
+		FROM BettransM WITH (NOLOCK)
+		WHERE refno = @refno
+			AND custID = @custID
+		) AS b
+	INNER JOIN match AS m WITH (NOLOCK) ON b.matchid = m.matchid
 END
-IF EXISTS (SELECT 1 FROM bettransm14 WITH (NOLOCK) WHERE refno = @refno AND custid = @custid)
+
+IF EXISTS (
+		SELECT 1
+		FROM bettransm14 WITH (NOLOCK)
+		WHERE refno = @refno
+			AND custid = @custid
+		)
 BEGIN
 	INSERT INTO @tmpParlay (
-		transid,
-		sporttype,
-		leagueid,
-		bettype,
-		homeid,
-		awayid,
-		hdp1,
-		hdp2,
-		odds,
-		betteam,
-		livehomescore,
-		liveawayscore,
-		liveindicator,
-		betstatus,
-		isNeutral,
-		statusID
-	)
-	SELECT
-		b.transid,
-		m.Sporttype,
-		m.LeagueID,		
-		b.Bettype ,
-		m.homeID,
-		m.awayID,
-		convert(float, b.hdp1) as Hdp1, 
-		convert(float, b.hdp2) as Hdp2, 
-		b.odds,
-		b.betteam,
-		b.livehomescore,
-		b.liveawayscore,
-		b.liveindicator,
-		m.betstatus,
-		m.isNeutral,
-		b.statusID
-	FROM(	SELECT 
-					transid,
-					matchid,  
-					Bettype, 
-					hdp1, 
-					hdp2, 
-					odds, 
-					betteam, 
-					livehomescore,
-					liveawayscore,
-					liveindicator,
-					statusID
-			FROM	BettransM14 with (nolock)
-					WHERE refno=@refno AND custID = @custID              
-		) AS b		
-			inner join match14 as m with (nolock) on b.matchid=m.matchid
+		transid
+		,betID
+		,sporttype
+		,leagueid
+		,bettype
+		,homeid
+		,awayid
+		,hdp1
+		,hdp2
+		,odds
+		,betteam
+		,livehomescore
+		,liveawayscore
+		,liveindicator
+		,betstatus
+		,isNeutral
+		,statusID
+		)
+	SELECT b.transid
+		 ,b.betcheck
+		,m.Sporttype
+		,m.LeagueID
+		,b.Bettype
+		,m.homeID
+		,m.awayID
+		,convert(FLOAT, b.hdp1) AS Hdp1
+		,convert(FLOAT, b.hdp2) AS Hdp2
+		,b.odds
+		,b.betteam
+		,b.livehomescore
+		,b.liveawayscore
+		,b.liveindicator
+		,m.betstatus
+		,m.isNeutral
+		,b.statusID
+	FROM (
+		SELECT transid
+			 ,CASE WHEN betcheck = '' THEN NULL ELSE betcheck END AS betcheck
+			,matchid
+			,Bettype
+			,hdp1
+			,hdp2
+			,odds
+			,betteam
+			,livehomescore
+			,liveawayscore
+			,liveindicator
+			,statusID
+		FROM BettransM14 WITH (NOLOCK)
+		WHERE refno = @refno
+			AND custID = @custID
+		) AS b
+	INNER JOIN match14 AS m WITH (NOLOCK) ON b.matchid = m.matchid
 END
-IF EXISTS (SELECT 1 FROM DB06.bodb_archive.dbo.BettransM WITH (NOLOCK) WHERE refno = @refno)
+
+IF EXISTS (
+		SELECT 1
+		FROM DB06.bodb_archive.dbo.BettransM WITH (NOLOCK)
+		WHERE refno = @refno
+		)
 BEGIN
 	INSERT INTO @tmpParlay (
-		transid,
-		sporttype,
-		leagueid,
-		bettype,
-		homeid,
-		awayid,
-		hdp1,
-		hdp2,
-		odds,
-		betteam,
-		livehomescore,
-		liveawayscore,
-		liveindicator,
-		betstatus,
-		isNeutral,
-		statusID
-	)
-	SELECT
-		b.transid,
-		m.Sporttype,
-		m.LeagueID,		
-		b.Bettype ,
-		m.homeID,
-		m.awayID,
-		convert(float, b.hdp1) as Hdp1, 
-		convert(float, b.hdp2) as Hdp2, 
-		b.odds,
-		b.betteam,
-		b.livehomescore,
-		b.liveawayscore,
-		b.liveindicator,
-		m.betstatus,
-		m.isNeutral,
-		b.statusID
-	FROM(	SELECT 
-					transid,
-					matchid,  
-					Bettype, 
-					hdp1, 
-					hdp2, 
-					odds, 
-					betteam, 
-					livehomescore,
-					liveawayscore,
-					liveindicator,
-					statusID
-			FROM	DB06.bodb_archive.dbo.BettransM with (nolock)
-					WHERE refno=@refno  AND custID = @custID          
-		) AS b		
-			inner join DB06.bodb_archive.dbo.match_bk as m with (nolock) on b.matchid=m.matchid	
+		transid
+		,betID
+		,sporttype
+		,leagueid
+		,bettype
+		,homeid
+		,awayid
+		,hdp1
+		,hdp2
+		,odds
+		,betteam
+		,livehomescore
+		,liveawayscore
+		,liveindicator
+		,betstatus
+		,isNeutral
+		,statusID
+		)
+	SELECT b.transid
+		 ,b.betcheck
+		,m.Sporttype
+		,m.LeagueID
+		,b.Bettype
+		,m.homeID
+		,m.awayID
+		,convert(FLOAT, b.hdp1) AS Hdp1
+		,convert(FLOAT, b.hdp2) AS Hdp2
+		,b.odds
+		,b.betteam
+		,b.livehomescore
+		,b.liveawayscore
+		,b.liveindicator
+		,m.betstatus
+		,m.isNeutral
+		,b.statusID
+	FROM (
+		SELECT transid
+			 ,CASE WHEN betcheck = '' THEN NULL ELSE betcheck END AS betcheck
+			,matchid
+			,Bettype
+			,hdp1
+			,hdp2
+			,odds
+			,betteam
+			,livehomescore
+			,liveawayscore
+			,liveindicator
+			,statusID
+		FROM DB06.bodb_archive.dbo.BettransM WITH (NOLOCK)
+		WHERE refno = @refno
+			AND custID = @custID
+		) AS b
+	INNER JOIN DB06.bodb_archive.dbo.match_bk AS m WITH (NOLOCK) ON b.matchid = m.matchid
 END
-SELECT * FROM @tmpParlay
+
+SELECT *
+FROM @tmpParlay
 ORDER BY transID DESC 
 
 GO

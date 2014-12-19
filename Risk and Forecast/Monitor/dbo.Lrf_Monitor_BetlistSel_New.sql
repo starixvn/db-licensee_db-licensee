@@ -33,15 +33,16 @@ AS
  DB: DB052.BODB02                
  Original: [Lrf_Monitor_BetlistSel]                
  Revision:                
-    - 20130618@Jim:  Restrict permission of Licensee Users by currency 
+     - 20130618@Jim:  Restrict permission of Licensee Users by currency 
 	- 20130806@Jim:  Add betting platform to Last bets monitoring 	
 	- 20140620@Florent: offer Sporting Solution (36 new bettypes)
+	- 20141021@Florent: Apply for the change in Sporting Solution structure (#24478)
 	- 20141120@Jim: expand data range for @transid param to covert big datatype
  Parameter's Explanation:                
   - @bettypes:                 
-   + HDP: 1,7                
-   + Others: NOT IN 1,3,7,8                
-   + OU: 3,8                
+   + HDP: 1,7, 1303 (Set Handicap)                
+   + Others: NOT IN 1,3,7,8, 1303, 1306                
+   + OU: 3,8, 1306 (Match Total Games Over/Under)                
    + ALL: <=19000                
   - @transid: lastest transid                 
   - @LimitRowCount: max record return (10,20,30)                
@@ -238,9 +239,9 @@ CASE WHEN @betfrom=1 THEN 'AND betfrom=''d'''
 	END +CHAR(13)+
   
   CASE                
-   WHEN @bettype = 'HDP' AND @SportID<>999 THEN 'AND  b.bettype IN (1,7)  '                
-   WHEN @bettype = 'OU' AND @SportID<>999 THEN ' AND b.bettype IN (3,8)  '                 
-   WHEN @bettype = 'Others' AND @SportID<>999 THEN ' AND b.bettype NOT IN (1,3,7,8)  '                
+   WHEN @bettype = 'HDP' AND @SportID<>999 THEN 'AND  b.bettype IN (1,7,1303)  '                
+   WHEN @bettype = 'OU' AND @SportID<>999 THEN ' AND b.bettype IN (3,8,1306)  '                 
+   WHEN @bettype = 'Others' AND @SportID<>999 THEN ' AND b.bettype NOT IN (1,3,7,8,1303,1306)  '                
   ELSE ' ' END + CHAR(13)+
   
   CASE @SportID
