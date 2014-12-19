@@ -139,7 +139,7 @@ END CATCH
 				END
 	END
 
-	IF(@ErrorVar<>0)
+	IF(@ErrorVar<>0) 
 	BEGIN	
 	SELECT @ErrCode = @ErrorVar, @ErrMsg = 'Could not import data.'	
 	END
