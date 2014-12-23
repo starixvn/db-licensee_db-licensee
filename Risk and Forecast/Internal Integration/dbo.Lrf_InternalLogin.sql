@@ -1,10 +1,6 @@
 ﻿USE [bodb_licensee]
 GO
-/****** Object:  StoredProcedure [dbo].[LRF_InternalLogin]    Script Date: 12/23/2014 09:05:59 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+
 ALTER  PROCEDURE [dbo].[LRF_InternalLogin]
 	@LicenseeName VARCHAR (50),
 	@Username VARCHAR(50),
@@ -60,8 +56,28 @@ BEGIN
          WHEN 'TH' THEN N'The link has been expired!' 
          WHEN 'KO' THEN N'The link has been expired!'   
          ELSE N'The link has been expired!'  
-        END ,@ErrCode=101     
+        END ,@ErrCode=100     
     SET @LogData = 'User: ' + @UserName +  ' - ' + 'Failed(User_Not_Found)' 
+	
+	SET @UserID = ISNULL(@UserID,0)
+	SET @ServerID = 200
+	SET @END = GETDATE()
+	SET @Duration = DATEDIFF(millisecond,@Begin,@END)
+
+	EXEC WriteLog_UserLog_Login
+			 @UserID = @UserID,
+			 @ServerID = @ServerID,
+			 @LoginIP = @LoginIP,
+			 @DomainName = @LoginDomain,	
+			 @ActionID = 2301,
+			 @Doing = @LogData,
+			 @BrowserName = @BrowserName,
+			 @Platform = @Platform,
+			 @CountryCode = @CountryCode,
+			 @Duration = @Duration
+		 
+    RETURN;
+    
 END
 
 SELECT 
@@ -85,6 +101,25 @@ BEGIN
          ELSE N'Wrong username or password.'  
         END ,@ErrCode=101     
     SET @LogData = 'User: ' + @UserName +  ' - ' + 'Failed(User_Not_Found)'  
+	
+	SET @UserID = ISNULL(@UserID,0)
+	SET @ServerID = 200
+	SET @END = GETDATE()
+	SET @Duration = DATEDIFF(millisecond,@Begin,@END)
+
+	EXEC WriteLog_UserLog_Login
+			 @UserID = @UserID,
+			 @ServerID = @ServerID,
+			 @LoginIP = @LoginIP,
+			 @DomainName = @LoginDomain,	
+			 @ActionID = 2301,
+			 @Doing = @LogData,
+			 @BrowserName = @BrowserName,
+			 @Platform = @Platform,
+			 @CountryCode = @CountryCode,
+			 @Duration = @Duration
+			 
+    RETURN;
 END
 ELSE IF (@Status <> 'Open')
 BEGIN
@@ -96,7 +131,26 @@ BEGIN
          WHEN 'KO' THEN N'This user is not active.'  
          ELSE N'This user is not active.'  
         END ,@ErrCode=102     
-    SET @LogData = 'User: ' + @UserName + ' - ' + 'Failed(User_Not_Active)'  
+    SET @LogData = 'User: ' + @UserName + ' - ' + 'Failed(User_Not_Active)' 
+	
+	SET @UserID = ISNULL(@UserID,0)
+	SET @ServerID = 200
+	SET @END = GETDATE()
+	SET @Duration = DATEDIFF(millisecond,@Begin,@END)
+
+	EXEC WriteLog_UserLog_Login
+			 @UserID = @UserID,
+			 @ServerID = @ServerID,
+			 @LoginIP = @LoginIP,
+			 @DomainName = @LoginDomain,	
+			 @ActionID = 2301,
+			 @Doing = @LogData,
+			 @BrowserName = @BrowserName,
+			 @Platform = @Platform,
+			 @CountryCode = @CountryCode,
+			 @Duration = @Duration
+			 
+    RETURN; 
 END
 ELSE
 BEGIN
@@ -119,8 +173,28 @@ BEGIN
 			 WHEN 'KO' THEN N'This user has too many licensees.' 
 			 ELSE N'This user has too many licensees.' 
 			END ,@ErrCode=103   
-			SET @LogData = 'User: ' + @UserName +  ' - ' + 'Failed(User_Too_Many_Licensees)'      
-		END
+			SET @LogData = 'User: ' + @UserName +  ' - ' + 'Failed(User_Too_Many_Licensees)'
+			
+			SET @UserID = ISNULL(@UserID,0)
+			SET @ServerID = 200
+			SET @END = GETDATE()
+			SET @Duration = DATEDIFF(millisecond,@Begin,@END)
+
+			EXEC WriteLog_UserLog_Login
+					 @UserID = @UserID,
+					 @ServerID = @ServerID,
+					 @LoginIP = @LoginIP,
+					 @DomainName = @LoginDomain,	
+					 @ActionID = 2301,
+					 @Doing = @LogData,
+					 @BrowserName = @BrowserName,
+					 @Platform = @Platform,
+					 @CountryCode = @CountryCode,
+					 @Duration = @Duration
+					 
+			RETURN; 
+	
+		END	
 		ELSE
 		BEGIN
 			SELECT @LicenseeID = LicenseeID FROM LicenseeUser WITH (NOLOCK)
@@ -136,7 +210,26 @@ BEGIN
 					 WHEN 'KO' THEN N'This user has no licensee.'
 					 ELSE N'This user has no licensee.'
 					END ,@ErrCode=104   
-					SET @LogData = 'User: ' + @UserName + ' - ' + 'Failed(User_Not_Found_Licensee)'     
+					SET @LogData = 'User: ' + @UserName + ' - ' + 'Failed(User_Not_Found_Licensee)'
+					
+					SET @UserID = ISNULL(@UserID,0)
+					SET @ServerID = 200
+					SET @END = GETDATE()
+					SET @Duration = DATEDIFF(millisecond,@Begin,@END)
+
+					EXEC WriteLog_UserLog_Login
+							 @UserID = @UserID,
+							 @ServerID = @ServerID,
+							 @LoginIP = @LoginIP,
+							 @DomainName = @LoginDomain,	
+							 @ActionID = 2301,
+							 @Doing = @LogData,
+							 @BrowserName = @BrowserName,
+							 @Platform = @Platform,
+							 @CountryCode = @CountryCode,
+							 @Duration = @Duration
+					 
+					RETURN; 	     
 			END
 			ELSE
 			BEGIN
@@ -174,3 +267,4 @@ GO
 GRANT EXECUTE ON [Lrf_InternalLogin] TO [bodbLicenseeNet] 
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_InternalLogin] TO [vnteam]  
+
