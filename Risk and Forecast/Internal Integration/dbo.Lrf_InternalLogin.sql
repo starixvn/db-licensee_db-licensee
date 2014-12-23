@@ -1,4 +1,11 @@
-﻿ALTER  PROCEDURE [dbo].[Lrf_InternalLogin]
+﻿USE [bodb_licensee]
+GO
+/****** Object:  StoredProcedure [dbo].[LRF_InternalLogin]    Script Date: 12/23/2014 09:05:59 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER  PROCEDURE [dbo].[LRF_InternalLogin]
 	@LicenseeName VARCHAR (50),
 	@Username VARCHAR(50),
 	@EncryptedPassword VARCHAR (50),
@@ -160,7 +167,6 @@ EXEC WriteLog_UserLog_Login
 		 @Platform = @Platform,
 		 @CountryCode = @CountryCode,
 		 @Duration = @Duration
-
 
 
 
