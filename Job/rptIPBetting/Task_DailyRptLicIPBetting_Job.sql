@@ -1,4 +1,12 @@
-﻿ALTER PROCEDURE [dbo].[Task_DailyRptLicIPBetting_Job] 
+﻿USE [bodb02]
+GO
+/****** Object:  StoredProcedure [dbo].[Task_DailyRptLicIPBetting_Job]    Script Date: 12/26/2014 03:26:11 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+/****** Object:  Stored Procedure dbo.Task_DailyRptLicIPBetting_Job    Script Date: 6/19/2012 11:25:07 AM ******/
+ALTER PROCEDURE [dbo].[Task_DailyRptLicIPBetting_Job_xtest] 
 AS
 /*	Created by: Henry 
 	Date: 2012-05-30
@@ -6,6 +14,7 @@ AS
 	DB: DB052.bodb02
 
 	Revision: 
+		20141226@Daniel: Optimal data gen range to reduce server load
 		
 		
 
@@ -13,28 +22,21 @@ AS
 BEGIN
 	SET NOCOUNT ON 
 	
-	DECLARE @DATA AS  TABLE (id INT  IDENTITY,winlostdate SMALLDATETIME)
-	DECLARE @winlostdate SMALLDATETIME
+	DECLARE @MaxDateBet14 SMALLDATETIME, @MinDateBet14 SMALLDATETIME, @MaxDate SMALLDATETIME
 	
-	INSERT INTO @DATA (winlostdate)
-	SELECT DISTINCT winlostdate FROM bettrans14 (NOLOCK)
+	SELECT @MaxDateBet14 = MAX(winlostdate), @MinDateBet14 = MIN(winlostdate)
+	FROM bettrans14 WITH(NOLOCK)
 	
-	DECLARE @i INT, @MAX INT
-	SET @i = 0
+	SELECT @MaxDate = MAX(winlostdate) FROM bodb_Licensee.dbo.rptLicIPBetting WITH(NOLOCK)
 
-	SELECT @MAX = MAX(id) FROM @DATA
-	
-	WHILE @i < @MAX
-	BEGIN
-		SET @i = @i + 1
-		SELECT @winlostdate = winlostdate FROM @DATA WHERE id = @i
-		
-		EXEC [Task_DailyRptLicIPBetting] @winlostdate = @winlostdate
+	IF(@MaxDate < @MinDateBet14 OR @MaxDate IS NULL) SELECT @MaxDate = DATEADD(dd, -1, @MinDateBet14)
+				
+	WHILE @MaxDate < @MaxDateBet14
+	BEGIN	
+		SELECT @MaxDate = DATEADD(dd, 1, @MaxDate)
+		EXEC [Task_DailyRptLicIPBetting] @winlostdate = @MaxDate
 	END
 	
-END  
-	
-
-GO 
-GRANT VIEW DEFINITION ON [dbo].[Task_DailyRptLicIPBetting_Job] TO [VNTeam]
-GO   
+END
+GO
+GRANT VIEW DEFINITION ON [dbo].[Task_DailyRptLicIPBetting_Job] TO [vnteam] AS [dbo]
