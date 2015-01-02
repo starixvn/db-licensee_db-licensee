@@ -26,6 +26,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]
  @IsOld BIT = 0,
  @drawfilter SMALLINT = 1  ,
  @excludeTest BIT = 0
+ 
 AS  
 /*  Created: Henry  
 	Date: 2012-01-09
