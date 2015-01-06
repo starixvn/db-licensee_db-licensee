@@ -68,9 +68,9 @@ AS /*
 		- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 		- 20140819@Jim: add more column BetEffective in the result
 		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+		- 20141225@Jim: improve performance
 */
     
-
 SET NOCOUNT ON
 
 DECLARE @_FromDate SMALLDATETIME
@@ -112,14 +112,6 @@ SELECT  CustID
 		,Currency
 FROM bodb_licensee.dbo.f_SelLicenseeCust (@LicenseeID) lc  
 	INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
-/*
-INSERT  INTO @TempSAg(CustId,Currency)
-SELECT CustID,Currency 
-FROM dbo.Dep_CustSuper lc WITH ( NOLOCK )
-	INNER JOIN #Currency c ON lc.Currency=c.CurrencyID
-WHERE lc.site = @LicenseeName
-*/
-
 
 INSERT INTO @Exchange (ExchangeDate,ExchangeId,MYR,USD,EUR)
 SELECT 
@@ -209,52 +201,24 @@ CREATE TABLE #TempData
 (
 	CustID INT 
 	,rptDate DATETIME
-	,StatusId INT
 	,TurnOver MONEY 
-	,TurnOverUSD MONEY
-	,TurnOverEUR MONEY
-	
 	,MemberWinLost MONEY 
-	,MemberWinLostUSD MONEY
-	,MemberWinLostEUR MONEY
-	
 	,BetEffective	 MONEY
-	,BetEffectiveUSD  MONEY
-	,BetEffectiveEUR	 MONEY
-	
 	,LicenseeWL		MONEY
-	,LicenseeWLUSD MONEY
-	,LicenseeWLEUR MONEY
-	
 	,WinlossRB		MONEY
-	,WinlossRBUSD	MONEY
-	,WinlossRBEUR MONEY
-	
 	,AmtDueToBA	MONEY
-	,AmtDuetoBAUSD MONEY
-	,AmtDuetoBAEUR MONEY
-	  
 	,AmtDueToRB	MONEY
-	,AmtDuetoRBUSD MONEY
-	,AmtDuetoRBEUR MONEY
-	
 	,CommBA		MONEY
-	,CommBAUSD MONEY
-	,CommBAEUR MONEY
-	 
 	,CommRB		MONEY
-	,commRBUSD MONEY
-	,commRBEUR MONEY
-	
 	,PlayerComm  MONEY 
-	,PlayerCommUSD MONEY
-	,PlayerCommEUR MONEY
-
-	,betcount int		
+	,betcount int	
+	,currency int	
 )
 CREATE TABLE #TempCustID
 (
 	CustID INT PRIMARY KEY
+	,UserName VARCHAR(50)
+	,UserName2 VARCHAR(50)
 )
 CREATE TABLE #TempCustIDFull
 (
@@ -274,59 +238,32 @@ BEGIN
 		SELECT  
 			b.CustID ,
 			b.winlostdate AS rptDate,
-			b.statusId,
 			SUM(CASE WHEN (@DrawFilter IN (2,3) AND b.statusid=111) THEN 0
 					 ELSE stake
 				END
 			) AS Turnover ,
-			SUM(CASE WHEN(@DrawFilter IN (2,3) AND b.statusid=111) THEN 0
-					 ELSE b.stake*e.USD
-				END
-			) AS TurnoverUSD ,
-			SUM(CASE WHEN (@DrawFilter in (2,3) AND b.statusid=111) THEN 0
-					 ELSE stake*e.EUR
-				END
-			) AS TurnoverEUR ,
-			
 			SUM(winlost - actual_stake) AS MemberWinlost ,
-			SUM((winlost - actual_stake)*e.USD) MemberWinlostUSD ,
-			SUM((winlost - actual_stake)*e.EUR) MemberWinlostEUR ,
 			SUM(ABS(winlost - actual_stake)) AS BetEffective ,
-			SUM(ABS(winlost - actual_stake)*e.USD) AS BetEffectiveUSD ,
-			SUM(ABS(winlost - actual_stake)*e.EUR) AS BetEffectiveEUR ,
 			0 AS LicenseeWL,
-			0 AS LicenseeWLUSD,
-			0 AS LicenseeWLEUR,
 			0 AS WinlossRB,
-			0 AS WinlossRBUSD,
-			0 AS WinlossRBEUR,
 			- SUM (b.winlost - b.actual_stake + awinlost + comm ) AS AmountDueToBA,
-			- SUM ((b.winlost - b.actual_stake + awinlost + comm )*e.USD) AS AmountDueToBAUSD,
-			- SUM ((b.winlost - b.actual_stake + awinlost + comm )*e.EUR) AS AmountDueToBAEUR,
 			0 AS AmountDueToRB,
-			0 AS AmountDueToRBUSD,
-			0 AS AmountDueToRBEUR,
 			SUM (comm) AS CommBA,
-			SUM (comm*e.USD) AS CommBAUSD,
-			SUM (comm*e.EUR) AS CommBAEUR,
 			0 AS CommRB,
-			0 AS CommRBUSD,
-			0 AS CommRBEUR,
 			SUM(PlayerComm  ) AS PlayerComm ,
-			SUM(PlayerComm *e.USD ) AS PlayerCommUSD ,
-			SUM(PlayerComm *e.EUR ) AS PlayerCommEUR,
 			SUM(CASE WHEN (@DrawFilter =2 AND b.statusid=111) THEN 0
 					 ELSE 1
-				END) AS betcount
+				END) AS betcount,
+			b.currency	
 		FROM    
-			bettrans b WITH ( NOLOCK)   
-			INNER JOIN  @TempAg ag ON  b.recommend = ag.CustId AND b.Currency = ag.Currency 
-			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
+			bettrans b WITH (NOLOCK)   
+			INNER JOIN  @TempAg ag ON  b.recommend = ag.CustId 
 		WHERE transid IN (SELECT transid FROM bodb_Licensee.dbo.LicenseeBATransaction_active WITH (NOLOCK) )
 			AND winlostdate BETWEEN @TempFromDate AND @_ToDate
+			AND b.currency IN (SELECT Currency FROM @TempAg)
 			AND b.statusID  IN (111, 112, 113)
 			and bettype < 19999
-		GROUP BY b.CustID,b.winlostdate,b.statusId 
+		GROUP BY b.CustID,b.winlostdate,b.currency	
 	END
 
 	IF (@ShowSB=1)
@@ -335,61 +272,35 @@ BEGIN
 		SELECT  
 			b.CustID ,
 			b.winlostdate,
-			b.statusId,
 			SUM(CASE WHEN (@DrawFilter IN (2,3) AND b.statusid=111) THEN 0
 					 ELSE stake
 				END
 			) AS Turnover,
-			SUM(CASE WHEN (@DrawFilter IN (2,3) AND b.statusid=111) THEN 0
-					 ELSE stake*e.USD
-				END
-			) AS TurnoverUSD,
-			SUM(CASE WHEN (@DrawFilter IN (2,3) AND b.statusid=111) THEN 0
-					 ELSE stake*e.EUR
-				END
-			) AS TurnoverEUR,
 			SUM(winlost - actual_stake) AS MemberWinlost ,
-			SUM((winlost - actual_stake)*e.USD) MemberWinlostUSD ,
-			SUM((winlost - actual_stake)*e.EUR) MemberWinlostEUR ,
 			SUM(ABS(winlost - actual_stake)) AS BetEffective,
-			SUM(ABS(winlost - actual_stake)*e.USD) AS BetEffectiveUSD,
-			SUM(ABS(winlost - actual_stake)*e.EUR) AS BetEffectiveEUR,
 			- SUM(b.winlost - b.actual_stake) AS LicenseeWL,
-			- SUM((b.winlost - b.actual_stake)*e.USD) AS LicenseeWLUSD,
-			- SUM((b.winlost - b.actual_stake)*e.EUR) AS LicenseeWLEUR,
 			0 AS WinlossRB,
-			0 AS WinlossRBUSD,
-			0 AS WinlossRBEUR,
 			0 AS AmountDueToBA,
-			0 AS AmountDueToBAUSD,
-			0 AS AmountDueToBAEUR,
 			0 AS AmountDueToRB,
-			0 AS AmountDueToRBUSD,
-			0 AS AmountDueToRBEUR,
 			0 AS CommBA,
-			0 AS CommBAUSD,
-			0 AS CommBAEUR,
 			0 AS CommRB,
-			0 AS CommRBUSD,
-			0 AS CommRBEUR,
 			SUM( b.PlayerComm )  AS PlayerComm ,
-			SUM(PlayerComm *e.USD ) AS PlayerCommUSD ,
-			SUM(PlayerComm *e.EUR ) AS PlayerCommEUR,
 			SUM(CASE WHEN (@DrawFilter =2 AND b.statusid=111) THEN 0					 
 				ELSE 1
-				END) AS betcount
+				END) AS betcount,
+			b.currency	
 		FROM    
 			Bettrans b WITH ( NOLOCK)
-			INNER JOIN @TempAg a ON b.recommend = a.custid AND b.Currency = a.Currency
-			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
+			INNER JOIN @TempAg a ON b.recommend = a.custid  
 		WHERE   
 			winlostdate BETWEEN @TempFromDate AND @_ToDate
 			AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
 							  OR (b.Bettype BETWEEN 1301 AND 1399) 
 			)
+			AND b.currency IN (SELECT Currency FROM @TempAg)
 			AND b.statusID  IN (111, 112, 113)
 			AND b.tpositiontaking <>0
-		GROUP BY b.CustID,b.winlostdate,b.StatusId 
+		GROUP BY b.CustID,b.winlostdate,b.currency	 
 	END
 
 	IF (@ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowRB=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1)
@@ -398,61 +309,34 @@ BEGIN
 		SELECT  
 			b.CustID ,
 			b.winlostdate,
-			b.statusId,
 			SUM(CASE WHEN (@DrawFilter IN (2,3) AND b.statusid=111) THEN 0
 					 ELSE 
 					 CASE WHEN b.liveawayscore = 0 AND b.bettype IN ( 33, 43 ) THEN b.stake / 2 ELSE b.stake END
 				END
 			) AS Turnover ,
-			SUM(CASE WHEN (@DrawFilter IN (2,3) AND b.statusid=111) THEN 0
-					 ELSE 
-					 CASE WHEN b.liveawayscore = 0 AND b.bettype IN ( 33, 43 ) THEN b.stake / 2 ELSE b.stake END
-				END * e.USD
-			) AS TurnoverUSD ,
-			SUM(CASE WHEN (@DrawFilter IN (2,3) AND b.statusid=111) THEN 0
-					 ELSE 
-					 CASE WHEN b.liveawayscore = 0 AND b.bettype IN ( 33, 43 ) THEN b.stake / 2 ELSE b.stake END
-				END* e.EUR
-			) AS TurnoverEUR ,
 			SUM(winlost - actual_stake) AS MemberWinlost ,
-			SUM((winlost - actual_stake)*e.USD) MemberWinlostUSD ,
-			SUM((winlost - actual_stake)*e.EUR) MemberWinlostEUR ,
 			SUM(ABS(winlost - actual_stake)) AS BetEffective,
-			SUM(ABS(winlost - actual_stake)*e.USD) AS BetEffectiveUSD,
-			SUM(ABS(winlost - actual_stake)*e.EUR) AS BetEffectiveEUR,
 			- SUM(CASE WHEN b.bettype NOT BETWEEN 31 AND 33 THEN b.winlost - b.actual_stake ELSE 0 END) AS LicenseeWL,
-			- SUM(CASE WHEN b.bettype NOT BETWEEN 31 AND 33 THEN b.winlost - b.actual_stake ELSE 0 END * e.USD) AS LicenseeWLUSD,
-			- SUM(CASE WHEN b.bettype NOT BETWEEN 31 AND 33 THEN b.winlost - b.actual_stake ELSE 0 END * e.EUR) AS LicenseeWLEUR,
 			SUM (CASE WHEN b.bettype BETWEEN 31 AND 33 THEN b.awinlost ELSE 0 END) AS WinlossRB,
-			SUM (CASE WHEN b.bettype BETWEEN 31 AND 33 THEN b.awinlost ELSE 0 END * e.USD) AS WinlossRBUSD,
-			SUM (CASE WHEN b.bettype BETWEEN 31 AND 33 THEN b.awinlost ELSE 0 END * e.EUR) AS WinlossRBEUR,
 			0 AS AmountDueToBA,
-			0 AS AmountDueToBAUSD,
-			0 AS AmountDueToBAEUR,
 			- SUM (CASE WHEN b.bettype BETWEEN 31 AND 33 THEN b.winlost - b.actual_stake + awinlost + comm ELSE 0 END) AS AmountDueToRB,
-			- SUM (CASE WHEN b.bettype BETWEEN 31 AND 33 THEN b.winlost - b.actual_stake + awinlost + comm ELSE 0 END * e.USD) AS AmountDueToRBUSD,
-			- SUM (CASE WHEN b.bettype BETWEEN 31 AND 33 THEN b.winlost - b.actual_stake + awinlost + comm ELSE 0 END * e.EUR) AS AmountDueToRBEUR,
 			0 AS CommBA,
-			0 AS CommBAUSD,
-			0 AS CommBAEUR,
 			SUM (CASE WHEN b.bettype BETWEEN 31 AND 33 THEN b.comm ELSE 0 END ) AS CommRB,
-			SUM (CASE WHEN b.bettype BETWEEN 31 AND 33 THEN b.comm ELSE 0 END * e.USD) AS CommRBUSD,
-			SUM (CASE WHEN b.bettype BETWEEN 31 AND 33 THEN b.comm ELSE 0 END * e.EUR) AS CommRBEUR,
 			SUM( b.PlayerComm )  AS PlayerComm ,
-			SUM(PlayerComm *e.USD ) AS PlayerCommUSD ,
-			SUM(PlayerComm *e.EUR ) AS PlayerCommEUR,
 			SUM(CASE WHEN (@DrawFilter=2 AND b.statusid=111) THEN 0
 				ELSE 1
-				END) AS betcount
+				END) AS betcount,
+			b.currency	
 		FROM    
 			Bettrans b WITH ( NOLOCK )
-			INNER JOIN @TempAg a  ON b.recommend = a.custid AND b.Currency = a.Currency
+			INNER JOIN @TempAg a  ON b.recommend = a.custid  
 			INNER JOIN @bettype bt ON b.bettype = bt.bettype
-			LEFT JOIN  @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
+			 
 		WHERE   
 			winlostdate BETWEEN @TempFromDate AND @_ToDate
+			AND b.currency IN (SELECT Currency FROM @TempAg)
 			AND b.statusID  IN (111, 112, 113)
-		GROUP BY b.CustID,b.winlostdate,b.statusId
+		GROUP BY b.CustID,b.winlostdate,b.currency	
 	END
 	
 	
@@ -470,59 +354,31 @@ BEGIN
 		SELECT  
 			b.CustID ,
 			b.winlostdate AS rptDate,
-			b.statusId,
 			SUM(CASE WHEN (@DrawFilter IN (2,3) AND b.statusid=111) THEN 0
 				    ELSE b.turnover
 					END
 			) AS Turnover,
-			SUM(CASE WHEN (@DrawFilter IN (2,3) AND b.statusid=111) THEN 0
-					 ELSE b.turnover
-					 END* e.USD
-			) AS TurnoverUSD,
-			SUM(CASE WHEN  (@DrawFilter in (2,3) AND b.statusid=111) THEN 0
-					 ELSE b.turnover
-					 END* e.EUR
-			) AS TurnoverEUR,
 			SUM(winlost) MemberWinlost,
-			SUM(winlost * e.USD) MemberWinlostUSD,
-			SUM(winlost * e.EUR) MemberWinlostEUR,
-			SUM(ISNULL(BetEffective,0))  		AS BetEffective,
-			SUM(ISNULL(BetEffective* e.USD,0))  AS BetEffectiveUSD,
-			SUM(ISNULL(BetEffective* e.EUR,0))  AS BetEffectiveEUR,
+			CASE WHEN winlostdate < @BetEffectiveDate  THEN  SUM(ISNULL(BetEffective,0))  ELSE 0 END    AS BetEffective,
 			0 AS LicenseeWL,
-			0 AS LicenseeWLUSD,
-			0 AS LicenseeWLEUR,
 			0 AS WinlossRB,
-			0 AS WinlossRBUSD,
-			0 AS WinlossRBEUR,
 			- SUM (b.winlost+b.awinlost+b.comm) AS AmountDueToBA,
-			- SUM ((b.winlost+b.awinlost+b.comm)*e.USD) AS AmountDueToBAUSD,
-			- SUM ((b.winlost+b.awinlost+b.comm)*e.EUR) AS AmountDueToBAEUR,
 			0 AS AmountDueToRB,
-			0 AS AmountDueToRBUSD,
-			0 AS AmountDueToRBEUR,
 			SUM (comm ) AS CommBA,
-			SUM (comm * e.USD) AS CommBAUSD,
-			SUM (comm * e.EUR) AS CommBAEUR,
 			0 AS CommRB,
-			0 AS CommRBUSD,
-			0 AS CommRBEUR,
 			SUM( b.PlayerComm )  AS PlayerComm ,
-			SUM(PlayerComm *e.USD ) AS PlayerCommUSD ,
-			SUM(PlayerComm *e.EUR ) AS PlayerCommEUR,
 			SUM(CASE WHEN (@DrawFilter IN (2) AND b.statusid=111) THEN 0
 					 ELSE b.BetCount
-					 END) AS betcount
+					 END) AS betcount,
+			b.currency		 
 		FROM    
-			bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )
-			INNER JOIN @TempAg ag ON ag.custid = b.recommend AND b.Currency = ag.Currency
-			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
+			bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK)
+			INNER JOIN @TempAg ag ON ag.custid = b.recommend   AND b.Currency = ag.Currency
 		WHERE   
 			Winlostdate BETWEEN @_FromDate AND @TempToDate
 			AND roleID = 1
-			AND b.statusID <> 101
 			AND ISNULL(b.isBA,0) = 1
-		GROUP BY b.CustID,b.winlostdate,b.statusId
+		GROUP BY b.CustID,b.winlostdate,b.currency	
 	END
 	
 	
@@ -534,60 +390,33 @@ BEGIN
 		SELECT
 			b.CustID ,
 			b.winlostdate AS rptdate,
-			b.statusId,
 			SUM(CASE WHEN (@DrawFilter IN (2,3) AND b.statusid=111) THEN 0
 					 ELSE b.turnover
 					 END
 			) AS Turnover,
-			SUM(CASE WHEN (@DrawFilter IN (2,3) AND b.statusid=111) THEN 0
-					 ELSE b.turnover
-					 END* e.USD
-			) AS TurnoverUSD,
-			SUM(CASE WHEN (@DrawFilter IN (2,3) AND b.statusid=111) THEN 0
-					ELSE b.turnover
-					END* e.EUR
-			) AS TurnoverEUR,
 			SUM(winlost) MemberWinlost,
-			SUM(winlost * e.USD) MemberWinlostUSD,
-			SUM(winlost * e.EUR) MemberWinlostEUR,
-			SUM(ISNULL(BetEffective,0))         AS BetEffective,
-			SUM(ISNULL(BetEffective* e.USD,0))  AS BetEffectiveUSD,
-			SUM(ISNULL(BetEffective* e.EUR,0))  AS BetEffectiveEUR,
+			CASE WHEN winlostdate < @BetEffectiveDate  THEN  SUM(ISNULL(BetEffective,0))  ELSE 0 END    AS BetEffective,
 			- SUM(CASE WHEN (b.sporttype <> 151)  THEN b.winlost ELSE 0 END) AS LicenseeWL ,
-			- SUM((CASE WHEN (b.sporttype <> 151)  THEN b.winlost ELSE 0 END) * e.USD) AS LicenseeWLUSD ,
-			- SUM((CASE WHEN (b.sporttype <> 151)  THEN b.winlost ELSE 0 END) * e.EUR) AS LicenseeWLEUR ,
 			SUM(CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS WinlossRB,
-			SUM((CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END)*e.USD) AS WinlossRBUSD,
-			SUM((CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END)*e.EUR) AS WinlossRBEUR,
 			0 AS AmountDueToBA,
-			0 AS AmountDueToBAUSD,
-			0 AS AmountDueToBAEUR,
 			- SUM ( CASE WHEN b.sporttype = 151 THEN (b.winlost+b.awinlost+b.comm) ELSE 0 END) AS AmountDueToRB,
-			- SUM (( CASE WHEN b.sporttype = 151 THEN (b.winlost+b.awinlost+b.comm) ELSE 0 END)*e.USD) AS AmountDueToRBUSD,
-			- SUM (( CASE WHEN b.sporttype = 151 THEN (b.winlost+b.awinlost+b.comm) ELSE 0 END)*e.EUR) AS AmountDueToRBEUR,
 			0 AS CommBA,
-			0 AS CommBAUSD,
-			0 AS CommBAEUR,
 			SUM ( CASE WHEN b.sporttype = 151 THEN b.comm   ELSE 0 END) AS CommRB,
-			SUM (( CASE WHEN b.sporttype = 151 THEN b.comm  ELSE 0 END)* e.USD) AS CommRBUSD,
-			SUM (( CASE WHEN b.sporttype = 151 THEN b.comm  ELSE 0 END)* e.EUR) AS CommRBEUR,
 			SUM( b.PlayerComm )  AS PlayerComm ,
-			SUM(PlayerComm *e.USD ) AS PlayerCommUSD ,
-			SUM(PlayerComm *e.EUR ) AS PlayerCommEUR,
 			SUM(CASE WHEN (@DrawFilter IN (2) AND b.statusid=111) THEN 0
 					 ELSE b.BetCount
-					 END) as betcount
+					 END) as betcount,
+			b.currency		 
 		FROM    
 			bodb_Licensee.dbo.rptLicWinloss2 b WITH (NOLOCK)
-			INNER JOIN @TempAg ag ON ag.custid = b.recommend AND b.Currency = ag.Currency
+			INNER JOIN @TempAg ag ON ag.custid = b.recommend  AND b.Currency = ag.Currency
 			INNER JOIN @sporttype t ON b.sporttype = t.sporttype
-			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 		WHERE   
 			Winlostdate BETWEEN @_FromDate AND @TempToDate
 			AND roleID = 1
 			AND ISNULL(b.isBA,0) = 0
 			AND b.statusID <> 101 
-		GROUP BY b.CustID,b.winlostdate,b.statusId
+		GROUP BY b.CustID,b.winlostdate,b.currency	
 	END 
               
 END    
@@ -599,59 +428,34 @@ BEGIN
 		SELECT  
 			b.CustID ,
 			b.winlostdate AS rptdate,
-			b.statusId,
 			SUM(CASE WHEN (@DrawFilter IN (2,3) AND b.statusid=111) THEN 0
 					 ELSE b.turnover
 					 END
 			) AS Turnover,
-			SUM(CASE WHEN (@DrawFilter IN (2,3) AND b.statusid=111) THEN 0
-				ELSE b.turnover
-				END*e.USD
-			) AS TurnoverUSD,
-			SUM(CASE WHEN (@DrawFilter IN (2,3) AND b.statusid=111) THEN 0
-				ELSE b.turnover
-				END*e.EUR
-			) AS TurnoverEUR,
 			SUM(winlost) MemberWinlost,
-			SUM(winlost * e.USD) MemberWinlostUSD,
-			SUM(winlost * e.EUR) MemberWinlostEUR,
 			0 AS BetEffective,
-			0 AS BetEffectiveUSD,
-			0 AS BetEffectiveEUR,
 			0 AS LicenseeWL,
-			0 AS LicenseeWLUSD,
-			0 AS LicenseeWLEUR,
 			0 AS WinlossRB,
-			0 AS WinlossRBUSD,
-			0 AS WinlossRBEUR,
 			- SUM (b.winlost+b.awinlost+b.comm) AS AmountDueToBA,
-			- SUM ((b.winlost+b.awinlost+b.comm)*e.USD) AS AmountDueToBAUSD,
-			- SUM ((b.winlost+b.awinlost+b.comm)*e.EUR) AS AmountDueToBAEUR,
 			0 AS AmountDueToRB,
-			0 AS AmountDueToRBUSD,
-			0 AS AmountDueToRBEUR,
 			SUM (comm ) AS CommBA,
-			SUM (comm * e.USD) AS CommBAUSD,
-			SUM (comm * e.EUR) AS CommBAEUR,
 			0 AS CommRB,
-			0 AS CommRBUSD,
-			0 AS CommRBEUR,
 			SUM( b.PlayerComm )  AS PlayerComm ,
-			SUM(PlayerComm *e.USD ) AS PlayerCommUSD ,
-			SUM(PlayerComm *e.EUR ) AS PlayerCommEUR,
 			SUM(CASE WHEN (@DrawFilter IN (2) AND b.statusid=111) THEN 0
 					 ELSE b.BetCount
-					 END) AS betcount
+					 END) AS betcount,
+			b.currency			 
 		FROM    
 			bodb_Licensee.dbo.rptLicWinloss_Old b WITH ( NOLOCK )
-			INNER JOIN @TempAg ag ON ag.custid = b.recommend AND b.Currency = ag.Currency
-			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
+			INNER JOIN @TempAg ag ON ag.custid = b.recommend  
+			 
 		WHERE   
 			b.Winlostdate BETWEEN @_FromDate AND @_ToDate
 			AND roleID = 1
 			AND b.statusID <> 101 
 			AND ISNULL(b.isBA,0) = 1
-		GROUP BY b.CustID,b.winlostdate,b.statusId
+			AND b.currency IN (SELECT Currency FROM @TempAg)
+		GROUP BY b.CustID,b.winlostdate,b.currency	
 	END
 	
 	IF (@showSB = 1 OR @ShowRB = 1 OR @ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1)
@@ -660,177 +464,156 @@ BEGIN
 		SELECT  
 			b.CustID ,
 			b.winlostdate AS rptdate,
-			b.statusId,
 			SUM(CASE WHEN (@DrawFilter IN (2,3) AND b.statusid=111) THEN  0
 					 ELSE b.turnover
 					END
 			) AS Turnover,
-			SUM(CASE WHEN (@DrawFilter IN (2,3) AND b.statusid=111) THEN 0
-					 ELSE b.turnover
-					END*e.USD
-			) AS TurnoverUSD,
-			SUM(CASE WHEN (@DrawFilter IN (2,3) AND b.statusid=111) THEN 0
-					 ELSE b.turnover
-					 END*e.EUR
-			) AS TurnoverEUR,
 			SUM(winlost) MemberWinlost,
-			SUM(winlost * e.USD) MemberWinlostUSD,
-			SUM(winlost * e.EUR) MemberWinlostEUR,
 			0 AS BetEffective,
-			0 AS BetEffectiveUSD,
-			0 AS BetEffectiveEUR,
 			- SUM(CASE WHEN (b.sporttype <> 151)   THEN b.winlost ELSE 0 END) AS LicenseeWL ,
-			- SUM((CASE WHEN (b.sporttype <> 151)  THEN b.winlost ELSE 0 END) * e.USD) AS LicenseeWLUSD ,
-			- SUM((CASE WHEN (b.sporttype <> 151)  THEN b.winlost ELSE 0 END) * e.EUR) AS LicenseeWLEUR ,
 			SUM(CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS WinlossRB,
-			SUM((CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END)*e.USD) AS WinlossRBUSD,
-			SUM((CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END)*e.EUR) AS WinlossRBEUR,
 			0 AS AmountDueToBA,
-			0 AS AmountDueToBAUSD,
-			0 AS AmountDueToBAEUR,
 			- SUM ( CASE WHEN b.sporttype = 151 THEN (b.winlost+b.awinlost+b.comm) ELSE 0 END) AS AmountDueToRB,
-			- SUM (( CASE WHEN b.sporttype = 151 THEN (b.winlost+b.awinlost+b.comm) ELSE 0 END)*e.USD) AS AmountDueToRBUSD,
-			- SUM (( CASE WHEN b.sporttype = 151 THEN (b.winlost+b.awinlost+b.comm) ELSE 0 END)*e.EUR) AS AmountDueToRBEUR,
 			0 AS CommBA,
-			0 AS CommBAUSD,
-			0 AS CommBAEUR,
 			SUM ( CASE WHEN b.sporttype = 151 THEN b.comm  ELSE 0 END) AS CommRB,
-			SUM (( CASE WHEN b.sporttype = 151 THEN b.comm  ELSE 0 END)* e.USD) AS CommRBUSD,
-			SUM (( CASE WHEN b.sporttype = 151 THEN b.comm  ELSE 0 END)* e.EUR) AS CommRBEUR,
 			SUM( b.PlayerComm )  AS PlayerComm ,
-			SUM(PlayerComm *e.USD ) AS PlayerCommUSD ,
-			SUM(PlayerComm *e.EUR ) AS PlayerCommEUR,
 			SUM(CASE WHEN (@DrawFilter IN (2) AND b.statusid=111) THEN 0
 					ELSE b.BetCount
-				    END) AS betcount
+				    END) AS betcount,
+			b.currency			
 		FROM    
 			bodb_Licensee.dbo.rptLicWinloss_Old b WITH ( NOLOCK )
 			INNER JOIN @TempAg ag ON ag.custid = b.recommend AND b.Currency = ag.Currency
 			INNER JOIN @sporttype t ON b.sporttype = t.sporttype
-			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 		WHERE   
 			Winlostdate BETWEEN @_FromDate AND @_ToDate
 			AND roleID = 1
 			AND ISNULL(b.isBA,0) = 0
 			AND b.statusID <> 101 
-		GROUP BY b.CustID,b.winlostdate,b.statusId
+		GROUP BY b.CustID,b.winlostdate,b.currency	
 	END
 END
 
-UPDATE #TempData
-SET BetEffective = 0
-	,BetEffectiveUSD = 0
-	,BetEffectiveEUR = 0
-WHERE (rptDate < @BetEffectiveDate 
-	  OR statusID NOT IN (112,113,114,115)
-	  )
-
 INSERT INTO #TempCustIDFull (CustID)
-SELECT DISTINCT b.CustID FROM #TempData b
-INNER JOIN bodb_Licensee.dbo.licenseecustinfo c WITH ( NOLOCK ) ON b.CustID = c.CustID
+SELECT DISTINCT b.CustID 
+FROM #TempData b
 
-INSERT INTO #TempCustID(CustID)
-SELECT wl.CustID
+INSERT INTO #TempCustID(CustID,UserName,UserName2)
+SELECT wl.CustID,
+	  wl.username,
+      wl.nickname
 FROM
 (
 		SELECT    
 			w.CustID ,
+			c.username,
+			SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS nickname ,
 			ROW_NUMBER() OVER ( ORDER BY w.CustID ) AS RowNum
 		FROM      
 			#TempCustIDFull w
+			INNER JOIN bodb_Licensee.dbo.licenseecustinfo c WITH ( NOLOCK ) ON w.CustID = c.CustID
 		
 ) wl
-WHERE wl.RowNum 	BETWEEN @RowStart AND @RowEnd 		
-
-
+WHERE wl.RowNum 	BETWEEN @RowStart AND @RowEnd 
+		
+ SELECT w.*
+		,t.username
+		,t.UserName2
+ INTO #tmpDataDetail
+ FROM #TempData w
+	  INNER JOIN #TempCustID t ON w.CustID = t.CustID
+ 
+CREATE NONCLUSTERED INDEX IDX_Index_Data ON #tmpDataDetail(rptdate,currency)
 SELECT 
 		w.CustID, 
-		c.username,
-		SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS nickname ,
+		w.username,
+		w.UserName2 as nickname ,
 		SUM(TurnOver)         AS TurnOver ,  
-        SUM(TurnOverUSD)      AS TurnOverUSD ,  
-        SUM(TurnOverEUR)      AS TurnOverEUR ,  
+        SUM(TurnOver*e.USD)      AS TurnOverUSD ,  
+        SUM(TurnOver*e.EUR)      AS TurnOverEUR ,  
         SUM(MemberWinLost)    AS MemberWinLost ,
-		SUM(MemberWinLostUSD) AS MemberWinLostUSD ,  
-        SUM(MemberWinLostEUR) AS MemberWinLostEUR , 
+		SUM(MemberWinLost*e.USD) AS MemberWinLostUSD ,  
+        SUM(MemberWinLost*e.EUR) AS MemberWinLostEUR , 
 		SUM(BetEffective)	  AS BetEffective,
-		SUM(BetEffectiveUSD)  AS BetEffectiveUSD,
-		SUM(BetEffectiveEUR)  AS BetEffectiveEUR,
+		SUM(BetEffective*e.USD)  AS BetEffectiveUSD,
+		SUM(BetEffective*e.EUR)  AS BetEffectiveEUR,
         SUM(LicenseeWL)       AS LicenseeWL,  
-        SUM(LicenseeWLUSD) 	  AS LicenseeWLUSD,  
-        SUM(LicenseeWLEUR)    AS LicenseeWLEUR,  
+        SUM(LicenseeWL*e.USD) 	  AS LicenseeWLUSD,  
+        SUM(LicenseeWL*e.EUR)    AS LicenseeWLEUR,  
         SUM(WinlossRB)        AS WinlossRB,  
-        SUM(WinlossRBUSD)     AS WinlossRBUSD,  
-        SUM(WinlossRBEUR)     AS WinlossRBEUR,  
+        SUM(WinlossRB*e.USD)     AS WinlossRBUSD,  
+        SUM(WinlossRB*e.EUR)     AS WinlossRBEUR,  
         SUM(CommBA)           AS CommBA,  
-        SUM(CommBAUSD)        AS CommBAUSD,  
-        SUM(CommBAEUR)        AS CommBAEUR,  
+        SUM(CommBA*e.USD)        AS CommBAUSD,  
+        SUM(CommBA*e.EUR)        AS CommBAEUR,  
         SUM(commRB)           AS commRB,  
-        SUM(commRBUSD)        AS commRBUSD,  
-        SUM(commRBEUR)        AS commRBEUR,  
+        SUM(commRB*e.USD)        AS commRBUSD,  
+        SUM(commRB*e.EUR)        AS commRBEUR,  
 		SUM(playerComm)       AS PlayerComm,  
-		SUM(playerCommUSD)    AS PlayerCommUSD,  
-		SUM(playerCommEUR)    AS PlayerCommEUR,  
+		SUM(playerComm*e.USD)    AS PlayerCommUSD,  
+		SUM(playerComm*e.EUR)    AS PlayerCommEUR,  
         SUM(AmtDuetoBA)       AS AmtDuetoBA,  
-        SUM(AmtDuetoBAUSD)    AS AmtDuetoBAUSD,  
-        SUM(AmtDuetoBAEUR)    AS AmtDuetoBAEUR,  
+        SUM(AmtDuetoBA*e.USD)    AS AmtDuetoBAUSD,  
+        SUM(AmtDuetoBA*e.EUR)    AS AmtDuetoBAEUR,  
         SUM(AmtDuetoRB)       AS AmtDuetoRB,  
-        SUM(AmtDuetoRBUSD)    AS AmtDuetoRBUSD,  
-        SUM(AmtDuetoRBEUR)    AS AmtDuetoRBEUR,
+        SUM(AmtDuetoRB*e.USD)    AS AmtDuetoRBUSD,  
+        SUM(AmtDuetoRB*e.EUR)    AS AmtDuetoRBEUR,
 		SUM(w.betcount)       AS BetCount
 FROM		
-		#TempData w
-		INNER JOIN #TempCustID t ON w.CustID = t.CustID
-		INNER JOIN bodb_Licensee.dbo.licenseecustinfo c WITH ( NOLOCK ) ON t.CustID = c.CustID
-GROUP BY w.CustID, c.username, c.username2  
+		#tmpDataDetail w
+		LEFT JOIN @Exchange e  ON e.ExchangeDate = w.rptdate AND e.exchangeid = w.currency
+GROUP BY w.CustID,w.username,w.UserName2
 		
 DECLARE @TotalRow  INT 
 SELECT @TotalRow= COUNT(DISTINCT b.custid)
 FROM #TempData b
-INNER JOIN bodb_Licensee.dbo.licenseecustinfo c WITH ( NOLOCK ) ON b.CustID = c.CustID
-
+ 
 --- return data
 SELECT  
 	SUM(TurnOver) 								 AS SumTurnOver ,
-    CAST(SUM(TurnOverUSD)		    AS MONEY)	 AS SumTurnOverUSD ,
-    CAST(SUM(TurnOverEUR)           AS MONEY)	 AS SumTurnOverEUR ,
+    CAST(SUM(TurnOver*e.USD)		    AS MONEY)	 AS SumTurnOverUSD ,
+    CAST(SUM(TurnOver*e.EUR)           AS MONEY)	 AS SumTurnOverEUR ,
     SUM(MemberWinLost) 							 AS SumMemberWinLost ,
 	SUM(BetEffective)						     AS SumBetEffective,
-    CAST(SUM(MemberWinLostUSD)      AS MONEY)	 AS SumMemberWinLostUSD ,
-	CAST(SUM(BetEffectiveUSD)       AS MONEY)	 AS SumBetEffectiveUSD ,
-	CAST(SUM(MemberWinLostEUR)      AS MONEY)	 AS SumMemberWinLostEUR,
-	CAST(SUM(BetEffectiveEUR) 		AS MONEY)	 AS SumBetEffectiveEUR  ,
+    CAST(SUM(MemberWinLost*e.USD)      AS MONEY)	 AS SumMemberWinLostUSD ,
+	CAST(SUM(BetEffective*e.USD)       AS MONEY)	 AS SumBetEffectiveUSD ,
+	CAST(SUM(MemberWinLost*e.EUR)      AS MONEY)	 AS SumMemberWinLostEUR,
+	CAST(SUM(BetEffective*e.EUR) 		AS MONEY)	 AS SumBetEffectiveEUR  ,
     SUM(LicenseeWL) 							 AS SumLicenseeWL,
-    CAST(SUM(LicenseeWLUSD) 	    AS MONEY)	 AS SumLicenseeWLUSD,
-    CAST(SUM(LicenseeWLEUR)         AS MONEY)	 AS SumLicenseeWLEUR,
+    CAST(SUM(LicenseeWL*e.USD) 	    AS MONEY)	 AS SumLicenseeWLUSD,
+    CAST(SUM(LicenseeWL*e.EUR)         AS MONEY)	 AS SumLicenseeWLEUR,
 	SUM(WinlossRB) 								 AS SumWinlossRB,
-    CAST(SUM(WinlossRBUSD) 	        AS MONEY)	 AS SumWinlossRBUSD,
-    CAST(SUM(WinlossRBEUR)          AS MONEY)	 AS SumWinlossRBEUR,
+    CAST(SUM(WinlossRB*e.USD) 	        AS MONEY)	 AS SumWinlossRBUSD,
+    CAST(SUM(WinlossRB*e.EUR)          AS MONEY)	 AS SumWinlossRBEUR,
     SUM(CommBA) 								 AS SumCommBA,
-    CAST(SUM(CommBAUSD) 		    AS MONEY)	 AS SumCommBAUSD,
-    CAST(SUM(CommBAEUR) 		    AS MONEY)	 AS SumCommBAEUR,
+    CAST(SUM(CommBA*e.USD) 		    AS MONEY)	 AS SumCommBAUSD,
+    CAST(SUM(CommBA*e.EUR) 		    AS MONEY)	 AS SumCommBAEUR,
     SUM(commRB) 								 AS SumcommRB,
-    CAST(SUM(commRBUSD) 		    AS MONEY)	 AS SumcommRBUSD,
-    CAST(SUM(commRBEUR) 		    AS MONEY)	 AS SumcommRBEUR,
+    CAST(SUM(commRB*e.USD) 		    AS MONEY)	 AS SumcommRBUSD,
+    CAST(SUM(commRB*e.EUR) 		    AS MONEY)	 AS SumcommRBEUR,
 	SUM(PlayerComm)       						 AS SumPlayerComm,
-	CAST(SUM(PlayerCommUSD)         AS MONEY)	 AS SumPlayerCommUSD,
-	CAST(SUM(PlayerCommEUR)      	AS MONEY)	 AS SumPlayerCommEUR,
+	CAST(SUM(PlayerComm*e.USD)         AS MONEY)	 AS SumPlayerCommUSD,
+	CAST(SUM(PlayerComm*e.EUR)      	AS MONEY)	 AS SumPlayerCommEUR,
     SUM(AmtDuetoBA) 				    		 AS SumAmtDuetoBA,
-    CAST(SUM(AmtDuetoBAUSD)         AS MONEY)	 AS SumAmtDuetoBAUSD,
-    CAST(SUM(AmtDuetoBAEUR)         AS MONEY)	 AS SumAmtDuetoBAEUR,
+    CAST(SUM(AmtDuetoBA*e.USD)         AS MONEY)	 AS SumAmtDuetoBAUSD,
+    CAST(SUM(AmtDuetoBA*e.EUR)         AS MONEY)	 AS SumAmtDuetoBAEUR,
     SUM(AmtDuetoRB)		 						 AS SumAmtDuetoRB,
-    CAST(SUM(AmtDuetoRBUSD)         AS MONEY)	 AS SumAmtDuetoRBUSD,
-    CAST(SUM(AmtDuetoRBEUR)         AS MONEY)	 AS SumAmtDuetoRBEUR,
+    CAST(SUM(AmtDuetoRB*e.USD)         AS MONEY)	 AS SumAmtDuetoRBUSD,
+    CAST(SUM(AmtDuetoRB*e.EUR)         AS MONEY)	 AS SumAmtDuetoRBEUR,
     @TotalRow 									 AS TotalRows,
 	SUM(b.betcount) 							 AS SumBetCount
 	
 FROM  #TempData b
-	INNER JOIN bodb_Licensee.dbo.licenseecustinfo c WITH ( NOLOCK ) ON b.CustID = c.CustID
+	LEFT JOIN @Exchange e  ON e.ExchangeDate = b.rptdate AND e.exchangeid = b.currency
 --DROP TABLE #tmpreturn
 DROP TABLE #TempData    
+DROP TABLE #tmpDataDetail
 DROP TABLE #TempCustID
 DROP TABLE #TempCustIDFull
+ 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinLoss] TO [bodbLicenseeNet] AS [dbo]
+GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinLoss] TO [bodbLicenseeNet]  
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_WinLoss] TO [vnteam] AS [dbo]
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_WinLoss] TO [vnteam]  
+
+ 
