@@ -119,18 +119,7 @@ INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyI
 WHERE 
 	(@CustID=0 OR (@CustID<>0 AND lc.CustiD=@CustID))
 	AND (@excludeTest=0 OR (@excludeTest=1 AND lc.Currency <> 20))	
-/*
-DECLARE @site VARCHAR(50)
-SELECT @site=LicenseeName FROM bodb_licensee.dbo.Licensees (NOLOCK) 
-WHERE LicenseeID=@LicenseeID
 
-DECLARE @Super AS TABLE (custid int primary key, currency int)
-INSERT INTO @Super(custid,currency)  
-SELECT CustID,currency 
-FROM Dep_CustSuper dc WITH (NOLOCK)  
-INNER JOIN #Currency c ON dc.Currency=c.CurrencyID
-WHERE  site = @site
-*/
 ------------------
 DROP TABLE #Currency
 ------------------
