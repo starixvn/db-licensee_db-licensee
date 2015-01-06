@@ -53,7 +53,7 @@ AS
 	- 20140915@Florent: hotfix duplicated VS bettype
 	- 20141111@Jim: changing currency for KeenOcean member  (#Redmine 25673)
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
-	- 20141229@Winnie: optimize performance
+	- 20141229@Winnie: optimize performance 
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
