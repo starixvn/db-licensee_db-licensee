@@ -47,6 +47,7 @@ AS
 		- 20140305@Florent: support Keno
 		- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+		- 20141225@Jim: improve performance
 	Param's Explanation:  
 	  + @CustID: SuperID  
 	  + @BaseCurrency (input currencyID): 2-MYR ; 3-USD; 6-EUR
@@ -94,20 +95,20 @@ CREATE TABLE #SAgWinLoss (
 	CommRB			MONEY,
 	PlayerComm  	MONEY,
 	Company			MONEY,
-	
 	---------------
 	Betcount		BIGINT
 )  
 
 
 DECLARE @tempAg	TABLE( custID INT , Currency INT)  
-DECLARE @Code VARCHAR(20), @TempCurrencyID INT
+DECLARE @Code VARCHAR(20)
 DECLARE @bettype AS TABLE (bettype INT PRIMARY KEY)
 DECLARE @sporttype TABLE(sporttype INT)
 DECLARE @Exchange TABLE(ExchangeDate SMALLDATETIME, ExchangeId INT, USD FLOAT, EUR FLOAT,MYR FLOAT,Code VARCHAR(10), PRIMARY KEY(ExchangeDate,ExchangeId))
 
 
-SELECT  currencyID,LicenseeID into #currency
+SELECT  currencyID,LicenseeID 
+	   INTO  #currency
 FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
 WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
@@ -133,12 +134,11 @@ WHERE  site = @site
 ------------------
 DROP TABLE #Currency
 ------------------
-SELECT TOP 1 @TempCurrencyID=currency FROM @tempAg 
 
-IF @TempCurrencyID in (51,20)
-	SELECT @Code = currency FROM exchange (nolock) WHERE ExchangeId = @TempCurrencyID
+IF @CurrencyID in (51,20)
+	SELECT @Code = currency FROM exchange (nolock) WHERE ExchangeId = @CurrencyID
 ELSE
-	SELECT @Code = code FROM exchange (nolock) WHERE exchangeid=@TempCurrencyID
+	SELECT @Code = code FROM exchange (nolock) WHERE exchangeid= @CurrencyID
 
 IF @ShowSB = 1  
 BEGIN  
@@ -216,16 +216,13 @@ DECLARE @MaxOldDate DATETIME
 DECLARE @FDate DATETIME   
 DECLARE @TDate DATETIME   
 --to Deal With Parameter Sniffing
-	SELECT @FDate=@FromDate,@TDate=@ToDate 
-	
-INSERT INTO @Exchange (exchangedate,exchangeid,usd,eur,myr,code)
-SELECT exchangedate,exchangeid,usd,eur,myr,code
-FROM Lrf_f_GetExchangeDaily(@FDate,@TDate)
-WHERE exchangeid IN (SELECT Currency FROM @TempAg)
-
+SELECT @FDate=@FromDate,@TDate=@ToDate 
 DECLARE @eEUR FLOAT
 DECLARE @eUSD FLOAT
-SELECT TOP 1 @eEUR = eur, @eUSD = usd FROM @Exchange	
+
+SELECT TOP 1 @eEUR = eur, @eUSD = usd 
+FROM Lrf_f_GetExchangeDaily(@FDate,@TDate)
+WHERE exchangeid  = @CurrencyID	
 	
 IF @TDate > @MoveBetsDay
 BEGIN
@@ -240,7 +237,6 @@ BEGIN
 		SELECT   
 			b.custid,
 			@CurrencyID, 
-			
 			0 AS turnoverSB,
 			SUM( stake
 				*
@@ -281,12 +277,13 @@ BEGIN
 				ELSE 1 END
 			   BetCount
 		FROM 
-			dbo.bettrans b WITH ( NOLOCK,INDEX=IX_srecommend) 
-			INNER JOIN @TempAg tma ON tma.CustID=b.recommend AND b.currency = tma.Currency
+			dbo.bettrans b WITH ( NOLOCK) 
+			INNER JOIN @TempAg tma ON tma.CustID=b.recommend 
 			INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON tma.custid=BA.recommend and b.transid = BA.transid 	 	
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
-			b.statusID IN (111, 112, 113)
+			b.statusID IN (111, 112, 113) AND
+			b.currency = @CurrencyID
 		GROUP BY   
 			b.custid, b.statusID
 	END		
@@ -457,11 +454,12 @@ BEGIN
 			   BetCount
 		FROM 	
 			Bettrans b WITH ( NOLOCK)
-			INNER JOIN @TempAg a ON b.recommend = a.custid AND b.currency = a.currency
+			INNER JOIN @TempAg a ON b.recommend = a.custid  
 			INNER JOIN @bettype bt ON b.bettype = bt.bettype
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
-			b.statusID  IN (111, 112, 113)
+			b.statusID  IN (111, 112, 113) AND
+			b.Currency = @CurrencyID
 		GROUP BY   
 			b.custid,b.statusID
 	END
@@ -522,9 +520,10 @@ BEGIN
 				ELSE 1 END
 		FROM 
 			bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
-				INNER JOIN @TempAg  a ON b.recommend = a.custID AND b.Currency = a.Currency
+				INNER JOIN @TempAg a ON b.recommend= a.custID  AND b.Currency = a.Currency 
 		WHERE  
 			 b.Winlostdate BETWEEN @FDate AND @TempToDate  
+			 
 			AND b.roleid = 1
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 1
@@ -637,7 +636,7 @@ BEGIN
 					ELSE 1 END
 				ELSE 1 END
 		FROM bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
-			INNER JOIN @TempAg a ON b.recommend= a.custID AND b.Currency = a.Currency
+			INNER JOIN @TempAg a ON b.recommend= a.custID  AND b.Currency = a.Currency 
 			INNER JOIN @sporttype t ON b.sporttype = t.sporttype
 		WHERE  
 			b.Winlostdate BETWEEN @FDate AND @TempToDate  
@@ -664,7 +663,6 @@ BEGIN
 		SELECT
 			b.custid,
 			@CurrencyID,
-			  
 			0 AS turnoverSB,
 			SUM(b.turnover
 			*
@@ -705,9 +703,10 @@ BEGIN
 					ELSE 1 END
 				ELSE 1 END
 		FROM bodb_Licensee.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
-			INNER JOIN @TempAg a ON b.recommend = a.custID AND b.Currency = a.Currency
+			INNER JOIN @TempAg a ON b.recommend= a.custID  AND b.Currency = a.Currency 
 		WHERE  
 			b.Winlostdate BETWEEN @FDate AND @TempToDate  
+			 
 			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 1
@@ -820,10 +819,11 @@ BEGIN
 				ELSE 1 END
 		
 		FROM bodb_Licensee.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
-			INNER JOIN @TempAg a ON b.recommend = a.custID AND b.Currency = a.Currency
+			INNER JOIN @TempAg a ON b.recommend= a.custID  AND b.Currency = a.Currency 
 			INNER JOIN @sporttype t ON b.sporttype = t.sporttype
 		WHERE  
 			b.Winlostdate BETWEEN @FDate AND @TempToDate  
+			 
 			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 0
@@ -929,7 +929,6 @@ BEGIN
 DROP TABLE #SAgWinLoss
  
 END   
-
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_LicWinlossDetail] TO [bodbLicenseeNet]
 GO
