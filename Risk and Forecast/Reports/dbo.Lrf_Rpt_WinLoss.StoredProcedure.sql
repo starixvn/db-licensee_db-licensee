@@ -378,6 +378,7 @@ BEGIN
 			Winlostdate BETWEEN @_FromDate AND @TempToDate
 			AND roleID = 1
 			AND ISNULL(b.isBA,0) = 1
+			AND b.statusID <> 101 
 		GROUP BY b.CustID,b.winlostdate,b.currency	
 	END
 	
