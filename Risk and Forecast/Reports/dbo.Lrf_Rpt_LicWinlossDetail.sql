@@ -104,7 +104,7 @@ DECLARE @tempAg	TABLE( custID INT , Currency INT)
 DECLARE @Code VARCHAR(20)
 DECLARE @bettype AS TABLE (bettype INT PRIMARY KEY)
 DECLARE @sporttype TABLE(sporttype INT)
-DECLARE @Exchange TABLE(ExchangeDate SMALLDATETIME, ExchangeId INT, USD FLOAT, EUR FLOAT,MYR FLOAT,Code VARCHAR(10), PRIMARY KEY(ExchangeDate,ExchangeId))
+ 
 
 
 SELECT  currencyID,LicenseeID 
