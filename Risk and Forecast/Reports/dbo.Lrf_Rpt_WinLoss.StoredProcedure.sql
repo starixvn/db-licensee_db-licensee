@@ -1,9 +1,7 @@
-USE [bodb02]
-GO
 
-SET ANSI_NULLS ON
+SET QUOTED_IDENTIFIER ON 
 GO
-SET QUOTED_IDENTIFIER ON
+SET ANSI_NULLS ON 
 GO
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
@@ -359,7 +357,7 @@ BEGIN
 					END
 			) AS Turnover,
 			SUM(winlost) MemberWinlost,
-			CASE WHEN winlostdate < @BetEffectiveDate  THEN  SUM(ISNULL(BetEffective,0))  ELSE 0 END    AS BetEffective,
+			CASE WHEN winlostdate > @BetEffectiveDate  THEN  SUM(ISNULL(BetEffective,0))  ELSE 0 END    AS BetEffective,
 			0 AS LicenseeWL,
 			0 AS WinlossRB,
 			- SUM (b.winlost+b.awinlost+b.comm) AS AmountDueToBA,
@@ -377,8 +375,8 @@ BEGIN
 		WHERE   
 			Winlostdate BETWEEN @_FromDate AND @TempToDate
 			AND roleID = 1
+			AND b.statusID <> 101
 			AND ISNULL(b.isBA,0) = 1
-			AND b.statusID <> 101 
 		GROUP BY b.CustID,b.winlostdate,b.currency	
 	END
 	
@@ -396,7 +394,7 @@ BEGIN
 					 END
 			) AS Turnover,
 			SUM(winlost) MemberWinlost,
-			CASE WHEN winlostdate < @BetEffectiveDate  THEN  SUM(ISNULL(BetEffective,0))  ELSE 0 END    AS BetEffective,
+			CASE WHEN winlostdate > @BetEffectiveDate  THEN  SUM(ISNULL(BetEffective,0))  ELSE 0 END    AS BetEffective,
 			- SUM(CASE WHEN (b.sporttype <> 151)  THEN b.winlost ELSE 0 END) AS LicenseeWL ,
 			SUM(CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS WinlossRB,
 			0 AS AmountDueToBA,
@@ -612,9 +610,19 @@ DROP TABLE #tmpDataDetail
 DROP TABLE #TempCustID
 DROP TABLE #TempCustIDFull
  
-GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinLoss] TO [bodbLicenseeNet]  
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_WinLoss] TO [vnteam]  
 
- 
+GO
+
+SET QUOTED_IDENTIFIER OFF 
+GO
+SET ANSI_NULLS ON 
+GO
+
+
+GO 
+ GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinLoss] TO [vnteam]
+GO 
+ GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_WinLoss] TO [vnteam]
+GO 
+ GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinLoss] TO [bodbLicenseeNet]
+GO 
