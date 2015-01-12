@@ -357,7 +357,7 @@ BEGIN
 					END
 			) AS Turnover,
 			SUM(winlost) MemberWinlost,
-			CASE WHEN winlostdate > @BetEffectiveDate  THEN  SUM(ISNULL(BetEffective,0))  ELSE 0 END    AS BetEffective,
+			CASE WHEN winlostdate < @BetEffectiveDate  THEN  0 ELSE SUM(ISNULL(BetEffective,0))  END    AS BetEffective,
 			0 AS LicenseeWL,
 			0 AS WinlossRB,
 			- SUM (b.winlost+b.awinlost+b.comm) AS AmountDueToBA,
@@ -394,7 +394,7 @@ BEGIN
 					 END
 			) AS Turnover,
 			SUM(winlost) MemberWinlost,
-			CASE WHEN winlostdate > @BetEffectiveDate  THEN  SUM(ISNULL(BetEffective,0))  ELSE 0 END    AS BetEffective,
+			CASE WHEN winlostdate < @BetEffectiveDate  THEN 0 ELSE  SUM(ISNULL(BetEffective,0)) END    AS BetEffective,
 			- SUM(CASE WHEN (b.sporttype <> 151)  THEN b.winlost ELSE 0 END) AS LicenseeWL ,
 			SUM(CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS WinlossRB,
 			0 AS AmountDueToBA,
