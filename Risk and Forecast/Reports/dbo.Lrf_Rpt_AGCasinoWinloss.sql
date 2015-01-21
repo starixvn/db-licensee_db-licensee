@@ -22,7 +22,7 @@ AS
     DB: DBACC.bodb02  
     Revisions:  
 		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
-		- 20150112@Florent: add filter ReportType
+		- 20150112@Florent: add filter ReportType 
 	Param's Explanation:  
 	  
 	  + @excludeTest: remove currency UUS
