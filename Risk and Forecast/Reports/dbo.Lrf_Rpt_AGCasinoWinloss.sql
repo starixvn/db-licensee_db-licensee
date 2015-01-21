@@ -1,17 +1,19 @@
 USE [bodb02]
 GO
- 
+/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_AGCasinoWinloss_xtest]    Script Date: 21/01/2015 12:44:33 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-ALTER   PROCEDURE [dbo].[Lrf_Rpt_AGCasinoWinloss] 
- @LicenseeID	INT,
- @Currency		INT = 0,
- @UserID		INT,
- @FromDate		SMALLDATETIME,  
- @ToDate		SMALLDATETIME,   
- @excludeTest   BIT = 0
+ALTER PROCEDURE [dbo].[Lrf_Rpt_AGCasinoWinloss]
+	  @LicenseeID	INT
+	, @Currency		INT				= 0
+	, @UserID		INT
+	, @FromDate		SMALLDATETIME
+	, @ToDate		SMALLDATETIME
+	, @excludeTest	BIT				= 0
+	, @ReportType	TINYINT			= 1
+WITH RECOMPILE
 AS  
 
 /*  Created: Jim
@@ -20,9 +22,11 @@ AS
     DB: DBACC.bodb02  
     Revisions:  
 		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+		- 20150112@Florent: add filter ReportType
 	Param's Explanation:  
 	  
 	  + @excludeTest: remove currency UUS
+	  + @ReportType : 1 Daily, 2 Monthly
 */  
 
 
@@ -35,22 +39,12 @@ AS
 ,@excludeTest=0
 ,@UserId=10
 */
-
-
+SET NOCOUNT ON
 BEGIN
-	CREATE TABLE #tmpResult (Winlostdate DATETIME
-							 ,Currency 		  INT
-							 ,TurnOver 		  MONEY
-							 ,TotalTrans	  INT	
-							 ,Winlost  		  MONEY
-							 ,LicenseeWinlost MONEY
-							)
-						
-	CREATE TABLE #Currency(currencyID INT
-						  )
-	CREATE TABLE #tmpCust (CustId INT
-						,Currency INT
-						)
+	CREATE TABLE #tmpResult (Winlostdate DATETIME, Currency INT,TurnOver MONEY,TotalTrans INT,Winlost MONEY,LicenseeWinlost MONEY)						
+	CREATE TABLE #Currency(currencyID INT)
+	CREATE TABLE #tmpCust (CustId INT, Currency INT)
+	CREATE TABLE #TempExchange(ExchangeDate DATETIME, ExchangeId INT, Code NVARCHAR(5), USD FLOAT, EUR FLOAT)
 		
 	DECLARE @VNDCurrencyName VARCHAR(20)
 	DECLARE @sql NVARCHAR(1000)
@@ -60,82 +54,99 @@ BEGIN
 	WHERE ExchangeId = 51
 
 	SET @sql = 'SELECT CurrencyID 
-					FROM OPENQUERY( DBLIC,''SELECT CurrencyID 
-											FROM bodb02.dbo.Lrf_f_GetCurrencybyUser(' + CAST(@LicenseeID AS VARCHAR) + ', '+ CAST(@UserID AS VARCHAR) + +', 1)
-							WHERE ('+ CAST(@Currency AS VARCHAR) +' = 0  OR ('+ CAST(@currency AS VARCHAR) +' <> 0 AND CurrencyID = '+ CAST(@currency AS VARCHAR) +'))''
-								)'
-	INSERT INTO #Currency (CurrencyID )						
+				FROM OPENQUERY( DBLIC,''SELECT CurrencyID 
+										FROM bodb02.dbo.Lrf_f_GetCurrencybyUser(' + CAST(@LicenseeID AS VARCHAR) + ', '+ CAST(@UserID AS VARCHAR) + +', 1)
+										WHERE ('+ CAST(@Currency AS VARCHAR) +' = 0  OR ('+ CAST(@currency AS VARCHAR) +' <> 0 
+											AND CurrencyID = '+ CAST(@currency AS VARCHAR) +'))''
+											)'
+	INSERT INTO #Currency (CurrencyID)						
 	EXEC (@sql)
 	
-	DECLARE @Temp AS TABLE ( CustId INT,Currency INT )
+	DECLARE @Temp AS TABLE ( CustId INT, Currency INT )
 	DECLARE @sql1 VARCHAR(500)
-	SELECT  @sql1 =  'SELECT CustID,Currency   FROM  OPENQUERY(DBLIC, ''SELECT CustID,Currency  FROM bodb_licensee.dbo.f_SelLicenseeCust('+CAST(@LicenseeID AS VARCHAR(10))+')'')'
-	INSERT INTO @Temp ( CustId ,Currency)
+	SELECT  @sql1 = 'SELECT CustID, Currency 
+					FROM OPENQUERY(DBLIC, ''SELECT CustID, Currency 
+											FROM bodb_licensee.dbo.f_SelLicenseeCust('+CAST(@LicenseeID AS VARCHAR(10))+')'')'
+	INSERT INTO @Temp (CustId, Currency)
 	EXEC (@sql1)
 	
-	INSERT INTO #tmpCust (CustID,Currency)	
-	SELECT  co.CustID 
-			,lc.Currency 
-	FROM dbo.Custinfo co WITH (NOLOCK)
-		INNER JOIN #Currency c ON  co.Currency = c.CurrencyID 
-		INNER JOIN 	@Temp lc   ON co.recommend = lc.CustId AND lc.Currency = co.Currency
-	WHERE  (@excludeTest=0 OR (@excludeTest=1 AND lc.Currency <> 20))	
+	INSERT INTO #tmpCust (CustID, Currency)	
+	SELECT co.CustID, lc.Currency 
+	FROM dbo.custInfo co WITH (NOLOCK)
+		INNER JOIN #Currency c ON co.Currency = c.CurrencyID 
+		INNER JOIN @Temp lc ON co.recommend = lc.CustId AND lc.Currency = co.Currency
+	WHERE (@excludeTest = 0 OR (@excludeTest = 1 AND lc.Currency <> 20))	
 	
-	INSERT INTO #tmpResult (Winlostdate 
-							 ,Currency 	
-							 ,TurnOver 	
-							 ,TotalTrans
-							 ,Winlost  	
-							 ,LicenseeWinlost 
-							)
+	INSERT INTO #tmpResult (Winlostdate, Currency, TurnOver, TotalTrans, Winlost, LicenseeWinlost)
+		(
+			SELECT c.Winlostdate, ct.Currency
+					, SUM(c.TurnOver) AS TurnOver
+					, SUM(c.BetCount) AS TotalTrans
+					, SUM(c.Winlost)  AS Winlost
+					, -SUM(c.Winlost) AS LicenseeWinlost
+			FROM bodb_report.dbo.rptDepWinlost_AGCasino c WITH (NOLOCK)
+				INNER JOIN #tmpCust ct ON c.Custid = ct.CustId AND c.Currency = ct.Currency
+			WHERE c.Winlostdate BETWEEN @FromDate AND @ToDate 
+			GROUP BY c.Winlostdate, ct.Currency
+		)
 
-	SELECT c.Winlostdate
-		   ,ct.Currency
-		   ,SUM(c.TurnOver) AS TurnOver
-		   ,SUM(c.BetCount) AS TotalTrans
-		   ,SUM(c.Winlost)  AS Winlost
-		   ,-SUM(c.Winlost) AS LicenseeWinlost
-	FROM  bodb_report.dbo.rptDepWinlost_AGCasino c  WITH (NOLOCK)
-		INNER JOIN #tmpCust ct ON c.CustID = ct.CustID AND c.Currency = ct.Currency
-	WHERE c.Winlostdate BETWEEN @FromDate AND @ToDate 
-	GROUP BY c.Winlostdate
-		    ,ct.Currency
+	INSERT INTO #TempExchange(ExchangeDate, ExchangeId, Code, USD, EUR)
+		(
+			SELECT ExchangeDate, ExchangeId, Code, USD, EUR	 
+			FROM dbo.Lrf_f_GetExchangeDaily(@FromDate, @ToDate)
+			WHERE ExchangeId IN (SELECT DISTINCT Currency FROM #tmpResult)
+		)
 	
-	SELECT ExchangeDate
-		   ,ExchangeId
-		   ,Code
-		   ,USD
-		   ,EUR
-	INTO #TempExchange 
-	FROM Lrf_f_GetExchangeDaily(@FromDate, @ToDate)
-	WHERE exchangeid IN (SELECT DISTINCT Currency FROM #tmpResult)
-	
-	SELECT r.Winlostdate
-		   ,r.Currency
-		   ,CASE WHEN Currency=51  THEN  @VNDCurrencyName
-				 ELSE e.Code 
-				 END CurrencyName		
-		   ,SUM(r.TurnOver)   	 AS TurnOver
-		   ,SUM(r.TotalTrans) 	 AS TotalTrans
-		   ,SUM(r.Winlost)		 AS Winlost
-		   ,SUM(r.LicenseeWinlost) AS LicenseeWinlost
+	SELECT --r.Winlostdate
+		   CASE 
+				WHEN @ReportType = 1
+					THEN r.winlostdate
+				WHEN @ReportType = 2					
+					THEN DATEADD(DAY, 1 - DATEPART(DAY, r.Winlostdate), r.Winlostdate)
+				ELSE '0'
+			END AS Winlostdate
+		, r.Currency
+		, CASE 
+		 	WHEN Currency = 51
+		 		THEN @VNDCurrencyName
+		 	ELSE e.Code
+		 	END						AS CurrencyName
+		, SUM(r.TurnOver)			AS TurnOver
+		, SUM(r.TotalTrans)			AS TotalTrans
+		, SUM(r.Winlost)			AS Winlost
+		, SUM(r.LicenseeWinlost)	AS LicenseeWinlost
 		---USD
-			,SUM(r.TurnOver*e.USD)   	 	AS TurnOverUSD
-			,SUM(r.Winlost*e.USD)		 	AS WinlostUSD
-			,SUM(r.LicenseeWinlost*e.USD) AS LicenseeWinlostUSD
+		, SUM(r.TurnOver * e.USD)	AS TurnOverUSD
+		, SUM(r.Winlost * e.USD)	AS WinlostUSD
+		, SUM(r.LicenseeWinlost * e.USD) AS LicenseeWinlostUSD
 		---EUR
-			,SUM(r.TurnOver*e.EUR)   	 	AS TurnOverEUR
-			,SUM(r.Winlost*e.EUR)		 	AS WinlostEUR
-			,SUM(r.LicenseeWinlost*e.EUR) AS LicenseeWinlostEUR
+		, SUM(r.TurnOver * e.EUR)	AS TurnOverEUR
+		, SUM(r.Winlost * e.EUR)	AS WinlostEUR
+		, SUM(r.LicenseeWinlost * e.EUR) AS LicenseeWinlostEUR
 	FROM #tmpResult r
-		INNER JOIN #TempExchange e ON r.Winlostdate = e.ExchangeDate AND r.currency = e.ExchangeId
-	GROUP BY r.Winlostdate
-			 ,r.Currency
-			 ,CASE WHEN Currency=51  THEN  @VNDCurrencyName
-				 ELSE e.Code 
-				 END 		
-	ORDER BY r.Winlostdate
-	
+	INNER JOIN #TempExchange e ON r.Winlostdate = e.ExchangeDate AND r.Currency = e.ExchangeId
+	GROUP BY --r.Winlostdate
+		 CASE 
+				WHEN @ReportType = 1
+					THEN r.winlostdate
+				WHEN @ReportType = 2					
+					THEN DATEADD(DAY, 1 - DATEPART(DAY, r.Winlostdate), r.Winlostdate)
+				ELSE '0'
+			 END
+		, r.Currency
+		, CASE 
+			WHEN Currency = 51
+				THEN @VNDCurrencyName
+			ELSE e.Code
+			END
+	--ORDER BY r.Winlostdate
+	ORDER BY CASE 
+				WHEN @ReportType = 1
+					THEN r.winlostdate
+				WHEN @ReportType = 2					
+					THEN DATEADD(DAY, 1 - DATEPART(DAY, r.Winlostdate), r.Winlostdate)
+				ELSE '0'
+			 END
 	---------
 	DROP TABLE #tmpResult
 	DROP TABLE #Currency
@@ -143,7 +154,3 @@ BEGIN
 	DROP TABLE #TempExchange 
 	
 END
-GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_AGCasinoWinloss] TO [bodbLicenseeNet]  
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_AGCasinoWinloss] TO [vnteam] 
