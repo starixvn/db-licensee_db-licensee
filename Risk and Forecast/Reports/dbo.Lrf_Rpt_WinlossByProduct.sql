@@ -30,6 +30,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProduct]
  @SystemName VARCHAR(50)='' OUTPUT,
  @ErrCode  TINYINT = 0OUTPUT,
  @ErrMsg   VARCHAR(400)='' OUTPUT
+ WITH RECOMPILE
 AS    
 /*  Created: Henry  
 	Date: 2011-07-06

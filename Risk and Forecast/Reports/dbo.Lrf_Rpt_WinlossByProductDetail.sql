@@ -22,6 +22,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail]
  @IsOld BIT = 0,
  @drawfilter SMALLINT = 1  ,
  @excludeTest BIT = 0
+ WITH RECOMPILE
 AS  
 /*  Created: Henry  
 	Date: 2011-07-06
