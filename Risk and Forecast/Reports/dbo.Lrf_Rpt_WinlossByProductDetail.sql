@@ -1,17 +1,12 @@
 ﻿USE [bodb02]
 GO
-
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
-
+ 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail]  
  @LicenseeID	INT,
  @UserID		INT,
  @CurrencyID	INT = 0,
  @CustID		INT = 0, --AgentID
+ @MemberID		INT = 0, --memberID
  @FromDate		SMALLDATETIME,  
  @ToDate		SMALLDATETIME,   
  @showSB		BIT=0,  
@@ -55,6 +50,7 @@ AS
 	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 	- 20140915@Florent: hotfix duplicated VS bettype
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+	- 20150107@Jim: add more input param @CustID
 	
 	Param's Explanation:  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -295,6 +291,7 @@ BEGIN
 			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
+			(@MemberID = 0 OR (@MemberID <> 0 AND b.CustId = @MemberID)) AND
 			b.statusID IN (111, 112, 113) 
 		GROUP BY   
 			b.custid,tma.currency, b.statusID
@@ -365,6 +362,7 @@ BEGIN
 			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
+			(@MemberID = 0 OR (@MemberID <> 0 AND b.CustId = @MemberID)) AND
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
 						  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 			) AND
@@ -467,6 +465,7 @@ BEGIN
 			LEFT JOIN #tmpVS vs ON b.oddsid=vs.Orid AND b.bettype IN (1231,1232,1233,1237,1238,1220,1235,1236)	
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
+			(@MemberID = 0 OR (@MemberID <> 0 AND b.CustId = @MemberID)) AND
 			b.statusID  IN (111, 112, 113)
 		GROUP BY   
 			b.custid,
@@ -560,6 +559,7 @@ BEGIN
 			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 		WHERE  
 			b.Winlostdate BETWEEN @FDate AND @TempToDate  
+			AND (@MemberID = 0 OR (@MemberID <> 0 AND b.CustId = @MemberID)) 
 			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 1
@@ -640,6 +640,7 @@ BEGIN
 			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 		WHERE  
 			  b.Winlostdate BETWEEN @FDate AND @TempToDate  
+			AND (@MemberID = 0 OR (@MemberID <> 0 AND b.CustId = @MemberID))  
 			AND b.roleid = 1
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND t.sporttype<>180
@@ -696,16 +697,24 @@ BEGIN
 		,sportID	
 		,currency	
 		,status 	
-		,stake 
-		,winlossp  
-		,commissionA 
-		,commissionP 
-		,WinlossA  	
-		,betcount
+		,SUM(stake) 
+		,SUM(winlossp)
+		,SUM(commissionA) 
+		,SUM(commissionP)
+		,SUM(WinlossA)
+		,SUM(betcount)
 	FROM DBDW2.bodb_Account.dbo.mcCustVirtualSport  WITH ( NOLOCK )   	
 	WHERE rptdate BETWEEN @FDate AND @TempToDate  
 		 AND status in (8,3,4)
-			 
+		 AND (@MemberID = 0 OR (@MemberID <> 0 AND CustId = @MemberID))	 
+	GROUP BY 
+		 rptdate    
+		,CustID	
+		,recommend 	
+		,sportID	
+		,currency	
+		,status 	
+		
 	INSERT INTO #SAgWinLoss  
 		SELECT 
 			b.custid,
@@ -841,7 +850,8 @@ BEGIN
 			INNER JOIN @TempAg ag ON b.recommend = ag.custID AND b.Currency = ag.currency
 			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 		WHERE  
-			  b.Winlostdate BETWEEN @FDate AND @TempToDate  
+			b.Winlostdate BETWEEN @FDate AND @TempToDate  
+			AND (@MemberID = 0 OR (@MemberID <> 0 AND b.CustId = @MemberID))
 			AND b.roleid = 1  
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 1
@@ -923,6 +933,7 @@ BEGIN
 			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 		WHERE  
 			b.Winlostdate BETWEEN @FDate AND @TempToDate  
+			AND (@MemberID = 0 OR (@MemberID <> 0 AND b.CustId = @MemberID))
 			AND b.roleid = 1  
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 0

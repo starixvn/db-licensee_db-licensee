@@ -1,15 +1,11 @@
 ﻿USE [bodb02]
 GO
-
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
+ 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail_Ag]  
  @LicenseeID	INT,
  @UserID		INT,
  @CurrencyID	INT = 0,
+ @CustID		INT = 0, --memberID
  @FromDate		SMALLDATETIME,  
  @ToDate		SMALLDATETIME,   
  @showSB		BIT=0,  
@@ -51,6 +47,7 @@ AS
 	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 	- 20140915@Florent: hotfix duplicated VS bettype
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+	- 20150107@Jim: add more input param @CustID
 	Param's Explanation:  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
 	  + @IsOld: 0 - query in table rptLicWinloss, 1 - query in table rptLicWinloss_old. 
@@ -85,6 +82,14 @@ DECLARE @tempAg	TABLE( custID INT ,currency INT)
 DECLARE @VNDCurrencyName VARCHAR(20)
 DECLARE @bettype AS TABLE (bettype INT PRIMARY KEY)
 DECLARE @sporttype TABLE(sporttype INT)
+DECLARE @RecommendID INT
+SET @RecommendID = 0 
+IF (@CustID<>0) 
+	BEGIN 
+		SELECT @RecommendID = recommend
+		FROM dbo.Custinfo WITH (NOLOCK) 
+		WHERE CustId = @CustID
+	END
 
 SELECT @VNDCurrencyName = currency FROM exchange (NOLOCK) WHERE ExchangeId = 51
 
@@ -97,7 +102,8 @@ SELECT custID,currency
 	FROM bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc
 	INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID	
 WHERE 
-	 (@excludeTest=0 OR (@excludeTest=1 AND Currency <> 20))
+	 (@excludeTest=0 OR (@excludeTest=1 AND Currency <> 20)) AND
+	 (@RecommendID = 0 OR (@RecommendID <> 0 AND lc.CustID = @RecommendID ))
 /*	
 DECLARE @site VARCHAR(50)
 SELECT @site=LicenseeName FROM bodb_licensee.dbo.Licensees (NOLOCK) 
@@ -378,7 +384,7 @@ BEGIN
 			dbo.bettrans b WITH ( NOLOCK )  
 			INNER JOIN @TempAg tma ON b.recommend = tma.custid AND b.Currency = tma.Currency 
 		WHERE 
-			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
+			b.winlostdate BETWEEN @TempFromDate AND @TDate AND 
 			(bettype BETWEEN 31 AND 33) AND 
 			b.statusID  IN (111, 112, 113)
 			
@@ -427,7 +433,7 @@ BEGIN
 			bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
 			INNER JOIN @TempAg ag ON b.recommend = ag.CustID AND b.Currency = ag.Currency
 		WHERE  
-			  b.Winlostdate BETWEEN @FDate AND @TempToDate  
+			 b.Winlostdate BETWEEN @FDate AND @TempToDate  
 			AND b.roleid = 2   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 1

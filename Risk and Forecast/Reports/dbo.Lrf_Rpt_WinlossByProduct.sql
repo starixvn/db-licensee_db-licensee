@@ -1,13 +1,14 @@
 ﻿USE [bodb02]
 GO
-
+ 
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
-GO  
+GO
 ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProduct]  
  @LicenseeID	INT,
  @UserID		INT,
+ @UserName		VARCHAR(50) = NULL,
  @CurrencyID	INT = 0,
  @FromDate		SMALLDATETIME,  
  @ToDate		SMALLDATETIME,   
@@ -24,8 +25,12 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProduct]
  @MoveBetsDay SMALLDATETIME,
  @IsOld BIT = 0,
  @drawfilter SMALLINT = 1  ,
- @excludeTest BIT = 0
-AS  
+ @excludeTest BIT = 0,
+ @CustID	  INT =0 OUTPUT,
+ @SystemName VARCHAR(50)='' OUTPUT,
+ @ErrCode  TINYINT = 0OUTPUT,
+ @ErrMsg   VARCHAR(400)='' OUTPUT
+AS    
 /*  Created: Henry  
 	Date: 2011-07-06
     Task : Winloss By Product Report for Licensee 
@@ -54,6 +59,7 @@ AS
 	- 20141111@Jim: changing currency for KeenOcean member  (#Redmine 25673)
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	- 20141229@Winnie: optimize performance 
+	- 20150106@Jim: add more UserName filter
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -90,6 +96,8 @@ DECLARE @bettype AS TABLE (bettype INT PRIMARY KEY)
 DECLARE @sporttype TABLE(sporttype INT)
 DECLARE @sumTurnOver BIT
 DECLARE @sumBetCount BIT
+DECLARE  @RCount INT
+		
 SET @sumTurnOver=1
 SET @sumBetCount=1
 IF(@drawfilter=2)
@@ -114,6 +122,41 @@ FROM bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc
 	INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
 WHERE (@excludeTest=0 OR (@excludeTest=1 AND Currency <> 20))	
 
+SET @UserName = ISNULL(@UserName,'')
+IF LEN(@UserName)= 0
+	SET @CustID = 0
+ELSE 
+	BEGIN 
+		SET @UserName = LTRIM(RTRIM(@UserName))
+		
+		SELECT c.CustID
+			   ,c.username		
+			INTO #tblCust
+		FROM bodb_Licensee.dbo.LicenseeCustinfo c WITH (NOLOCK) 
+			INNER JOIN @TempAg t ON c.recommend = t.custid
+		WHERE 
+			(c.username2 LIKE + '%$' + @Username  OR c.username = @Username)
+		SELECT @RCount = @@ROWCOUNT
+		
+		IF @RCount < 1
+			BEGIN
+				SELECT @ErrCode = 100
+						   ,@ErrMsg = 'No customer found'	
+					RETURN;	   
+			END
+		ELSE IF	@RCount > 1
+				BEGIN
+				IF (SELECT COUNT(1) FROM #tblCust) <> 1	
+					SELECT @ErrCode = 101
+						   ,@ErrMsg = 'More than 1 customer found. Please search for 1 customer only'	
+					RETURN;	   
+				END
+			ELSE 
+				SELECT @CustID = CustID
+					   ,@SystemName = username
+				FROM #tblCust
+		DROP TABLE 	#tblCust	
+	END
 --------------------------------------------
 DROP TABLE #Currency	
 --------------------------------------------
@@ -233,6 +276,7 @@ BEGIN
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
 			b.statusID IN (111, 112, 113) 
+			AND (@CustId = 0 OR (@CustId <> 0 AND b.CustId = @CustID))
 		GROUP BY   
 			b.winlostdate,tma.currency, b.statusID
 	END
@@ -268,6 +312,7 @@ BEGIN
 			INNER JOIN @TempAg a ON b.recommend = a.custid AND b.Currency = a.Currency 
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
+			(@CustId = 0 OR (@CustId <> 0 AND b.CustId = @CustID)) AND
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
 						  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 			) AND
@@ -330,6 +375,7 @@ BEGIN
 			LEFT JOIN #tmpVS vs ON b.oddsid=vs.Orid AND b.bettype IN (1231,1232,1233,1237,1238,1220,1235,1236)	
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
+			(@CustId = 0 OR (@CustId <> 0 AND b.CustId = @CustID)) AND
 			b.statusID  IN (111, 112, 113)
 		GROUP BY   
 			b.winlostdate
@@ -378,6 +424,7 @@ BEGIN
 			INNER JOIN @TempAg a ON b.recommend = a.custid AND b.Currency = a.Currency
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
+			(@CustId = 0 OR (@CustId <> 0 AND b.CustId = @CustID)) AND
 			(bettype BETWEEN 31 AND 33) AND 
 			b.statusID  IN (111, 112, 113)
 		GROUP BY   
@@ -422,7 +469,8 @@ BEGIN
 			INNER JOIN @TempAg ag ON b.Currency = ag.Currency AND b.recommend= ag.custID
 		WHERE  
 			  b.Winlostdate BETWEEN @FDate AND @TempToDate  
-			AND b.roleid = 2   
+			AND (@CustId = 0 OR (@CustId <> 0 AND b.CustId = @CustID))  
+			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 1
 		GROUP BY  b.winlostdate,  b.currency, b.statusID
@@ -467,7 +515,8 @@ BEGIN
 			INNER JOIN @TempAg ag ON b.recommend = ag.custID AND b.Currency = ag.Currency
 		WHERE  
 			 b.Winlostdate BETWEEN @FDate AND @TempToDate  
-			AND b.roleid = 2   
+			 AND (@CustId = 0 OR (@CustId <> 0 AND b.CustId = @CustID))
+			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 0
 			and t.sporttype <>180
@@ -527,6 +576,7 @@ BEGIN
 		FROM DBDW2.bodb_Account.dbo.mcCustVirtualSport  WITH ( NOLOCK )   	
 		WHERE rptdate BETWEEN @FDate AND @TempToDate  
 			 AND status=8--  in (8,3,4)
+			 AND (@CustId = 0 OR (@CustId <> 0 AND CustId = @CustID))
 		GROUP BY 
 		rptdate    
 		,sportID	
@@ -559,6 +609,7 @@ BEGIN
 			,SUM(betcount)  
 		FROM DBDW2.bodb_Account.dbo.mcCustVirtualSport  WITH ( NOLOCK )   	
 		WHERE rptdate BETWEEN @FDate AND @TempToDate  
+			AND (@CustId = 0 OR (@CustId <> 0 AND CustId = @CustID))
 			 AND status=3  
 		GROUP BY 
 		rptdate    
@@ -593,6 +644,7 @@ BEGIN
 		FROM DBDW2.bodb_Account.dbo.mcCustVirtualSport  WITH ( NOLOCK )   	
 		WHERE rptdate BETWEEN @FDate AND @TempToDate  
 			 AND status=4
+			 AND (@CustId = 0 OR (@CustId <> 0 AND CustId = @CustID))
 		GROUP BY 
 		rptdate    
 		,sportID	
@@ -667,7 +719,8 @@ BEGIN
 			INNER JOIN @TempAg ag ON b.recommend = ag.custID AND ag.Currency = b.Currency
 		WHERE  
 		    b.Winlostdate BETWEEN @FDate AND @TempToDate  
-			AND b.roleid = 2   
+			AND (@CustId = 0 OR (@CustId <> 0 AND b.CustId = @CustID))
+			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 1
 		GROUP BY  b.winlostdate,  b.currency, b.statusID
@@ -713,7 +766,8 @@ BEGIN
 			INNER JOIN @sporttype t ON b.sporttype = t.sporttype
 		WHERE  
 			  b.Winlostdate BETWEEN @FDate AND @TempToDate  
-			AND b.roleid = 2   
+			AND (@CustId = 0 OR (@CustId <> 0 AND b.CustId = @CustID))  
+			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 0
 		GROUP BY  
