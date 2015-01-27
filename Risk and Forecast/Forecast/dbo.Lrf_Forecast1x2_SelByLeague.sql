@@ -363,6 +363,7 @@ Revisions:
               WHERE     
 						b.recommend IN ( SELECT custid
                                              FROM   @TempAg )
+						AND (@CurrencyID=0  OR (@CurrencyID<>0 AND Currency=@CurrencyID))
 						AND b.bettype IN ( @Bettype1x2, @BettypeHT1x2 )
                         
                         AND LeagueID = @LeagueID
