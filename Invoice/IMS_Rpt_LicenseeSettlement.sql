@@ -1,7 +1,7 @@
 USE [bodb02]
 GO
 
-CREATE PROCEDURE [dbo].[IMS_Rpt_LicenseeSettlement]
+ALTER PROCEDURE [dbo].[IMS_Rpt_LicenseeSettlement]
 	@licenseeId INT,
 	@licenseeName VARCHAR(50),
 	@fromDate SMALLDATETIME,
@@ -17,7 +17,7 @@ AS
 			2013-Aug-23@Victor: Support NG and LC product
 			2013-Sep-05@Victor: Support VS product
 			2014-May-05@Victor: Exclude PlayerComm on Winloss column for BA product
-			20150202@Patrick: Add more GBP currency
+			20150202@Patrick: Add more GBP currency & Sporting Solution
 
 		Param's Explanation:  	
 			+ @licenseeId:
@@ -138,7 +138,7 @@ AS
 			WHERE 											  
 				b.winlostdate BETWEEN @TempFromDate AND @TDate AND 	
 				b.statusID  IN (111, 112, 113) AND				   
-				(b.bettype < 31 OR (b.bettype BETWEEN 121 AND 999)) AND 
+				(b.bettype < 31 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)) AND 
 				b.tpositiontaking <> 0	 
 			GROUP BY   						  
 				b.winlostdate, s.currency 
