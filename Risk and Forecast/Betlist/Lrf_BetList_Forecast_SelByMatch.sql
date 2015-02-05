@@ -27,6 +27,7 @@ Original: [Lrf_BetList_Forecast_SelByMatch]
 Revisions:
 	20131010@Victor: add handicap parameter to show betlist of a specific handicap line
 	20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function 
+	20150123@Jim: support base on Currency GBP
 Param's explanation:
  - BetChoice: one of the following list: 'All','Home', 'Away', 'Over', 'Under'
 	+ Full: List all tickets bet on FT Handicap or FT Over/Under (@bettype must be 0)
@@ -195,8 +196,10 @@ BEGIN
 				b.* ,
 				stake*e.USD stakeUSD,
 				stake*e.EUR stakeEUR,
+				stake*e.GBP stakeGBP,
 				b.playercomm*e.USD PlayerCommUSD,
-				b.playercomm*e.EUR PlayerCommEUR
+				b.playercomm*e.EUR PlayerCommEUR,
+				b.playercomm*e.GBP PlayerCommGBP
 		FROM #Data b
 		INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid 
 		INNER JOIN 

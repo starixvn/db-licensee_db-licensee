@@ -39,7 +39,8 @@ Revisions:
    - 20140602@Hannah: Separate Live/ Non - Live data in Live Report
    - 20140630@Hannah: offer BetRadar and Sporting Solution 
    - 20140925@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
-   - 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
+   - 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust
+   - 20150124@Winnie: add base currency GBP 
 Param's Explanation: 
 	@Liveindicator : indicate that whether the report will get live data or not
 		+ 0: Non - Live data only
@@ -682,16 +683,23 @@ FROM
 			b.* ,
 			SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, len(c.username2)-CHARINDEX('$',c.username2)) AS nickname,   		
 			--USD
-			stake*e.USD stakeUSD,
-			Winlost*e.USD WinlostUSD,
-			LicenseeWL*e.USD LicenseeWLUSD,
-			comm*e.USD commUSD,
-			playercomm*e.USD playerCommUSD,
-			stake*e.EUR stakeEUR,
-			Winlost*e.EUR WinlostEUR,
-			LicenseeWL*e.EUR LicenseeWLEUR,
-			comm*e.EUR commEUR,
-			playercomm*e.EUR playerCommEUR
+			stake*e.USD			stakeUSD,
+			Winlost*e.USD		WinlostUSD,
+			LicenseeWL*e.USD	LicenseeWLUSD,
+			comm*e.USD			commUSD,
+			playercomm*e.USD	playerCommUSD,
+
+			stake*e.EUR			stakeEUR,
+			Winlost*e.EUR		WinlostEUR,
+			LicenseeWL*e.EUR	LicenseeWLEUR,
+			comm*e.EUR			commEUR,
+			playercomm*e.EUR	playerCommEUR,
+
+			stake*e.GBP			stakeGBP,
+			Winlost*e.GBP		WinlostGBP,
+			LicenseeWL*e.GBP	LicenseeWLGBP,
+			comm*e.GBP			commGBP,
+			playercomm*e.GBP	playerCommGBP
 	FROM #Data b
 	INNER JOIN Customer c (NOLOCK) ON b.custid = c.custid
 	INNER JOIN #TempExchange e ON b.currency=e.exchangeID AND b.winlostdate=e.exchangeDate
@@ -706,7 +714,8 @@ DECLARE @BettransDetail TABLE(
 	bettype SMALLINT,
 	Betteam nvarchar (10),
 	stakeEUR MONEY,
-	stakeUSD MONEY
+	stakeUSD MONEY,
+	stakeGBP MONEY
 	 )   
 
 IF @ShowLC=1
@@ -723,7 +732,9 @@ BEGIN
 			BG.bettype  ,
 			BG.Betteam,
 			BG.stake*e.EUR,
-			BG.stake*e.USD
+			BG.stake*e.USD,
+			BG.stake*e.GBP
+	
 		FROM bettransg BG WITH (NOLOCK)
 		INNER JOIN #Data B ON BG.refno = B.refno and BG.custid = B.custid
 		INNER JOIN #TempExchange e ON b.currency=e.exchangeID AND b.winlostdate=e.exchangeDate
@@ -742,7 +753,8 @@ BEGIN
 			BG.bettype  ,
 			BG.Betteam ,
 			BG.stake*e.EUR,	
-			BG.stake*e.USD
+			BG.stake*e.USD,
+			BG.stake*e.GBP
 		FROM bettransg14 BG WITH (NOLOCK)
 		INNER JOIN #Data B ON BG.refno = B.refno and BG.custid = B.custid
 		INNER JOIN #TempExchange e ON b.currency=e.exchangeID AND b.winlostdate=e.exchangeDate

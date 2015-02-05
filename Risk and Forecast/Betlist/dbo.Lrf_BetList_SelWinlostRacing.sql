@@ -26,14 +26,19 @@ ALTER  PROCEDURE [dbo].[Lrf_BetList_SelWinlostRacing]
 	@SumStakeUSD  MONEY=0 OUTPUT,
 	@SumLicenseeWLUSD MONEY=0 OUTPUT,
 	@SumCommUSD MONEY=0 OUTPUT,
-	@SumPlayerCommUSD MONEY=0 OUTPUT 
+	@SumPlayerCommUSD MONEY=0 OUTPUT,
+	@SumWinlostGBP MONEY=0 OUTPUT,
+	@SumStakeGBP  MONEY=0 OUTPUT,
+	@SumLicenseeWLGBP MONEY=0 OUTPUT,
+	@SumCommGBP MONEY=0 OUTPUT,
+	@SumPlayerCommGBP MONEY=0 OUTPUT 
 	
 AS
 /*
 	Created by: Henry
 	Date: 2011-09-21
 	Task: Racing Detailed Bet List
-	DB: DBRPT/BODB02
+	DB: DBRPT/BODB02 
 
 	Revisions:
 	- 20111010@Henry: Change column name
@@ -46,6 +51,7 @@ AS
 	- 20130402@Jim: support base currency by USD
 	- 20130514@Jim:Restrict permission of Licensee Users by currency
 	- 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
+	- 20150127@Winnie: add base currency GBP
 	Param's Explanation:
 		
 */
@@ -239,7 +245,13 @@ SELECT
 	@SumStakeUSD = sum(isnull(stake * e.USD,0)),
 	@SumLicenseeWLUSD=SUM(isnull(LicenseeWL*e.USD,0)),
 	@SumCommUSD=SUM(isnull(comm*e.USD,0)),
-	@SumPlayerCommUSD=SUM(ISNULL(Playercomm*e.USD,0))
+	@SumPlayerCommUSD=SUM(ISNULL(Playercomm*e.USD,0)),
+	--GBP
+	@SumWinlostGBP=SUM(isnull(winlost*e.GBP,0)),
+	@SumStakeGBP = sum(isnull(stake * e.GBP,0)),
+	@SumLicenseeWLGBP=SUM(isnull(LicenseeWL*e.GBP,0)),
+	@SumCommGBP=SUM(isnull(comm*e.GBP,0)),
+	@SumPlayerCommGBP=SUM(ISNULL(Playercomm*e.GBP,0))
 	
 FROM #DataTmp b
 	INNER JOIN  #TempExchange e
@@ -263,7 +275,13 @@ FROM
 			winlost*e.USD winlostUSD,
 			LicenseeWL*e.USD LicenseeWLUSD,
 			comm*e.USD commUSD,
-			playercomm*e.USD PlayerCommUSD
+			playercomm*e.USD PlayerCommUSD,
+			--GBP
+			stake*e.GBP stakeGBP,
+			winlost*e.GBP winlostGBP,
+			LicenseeWL*e.GBP LicenseeWLGBP,
+			comm*e.GBP commGBP,
+			playercomm*e.GBP PlayerCommGBP
 			
 	FROM #DataTmp b
 		INNER JOIN  #TempExchange e
@@ -281,7 +299,8 @@ DECLARE @BettransDetail TABLE(
 	bettype SMALLINT,
 	Betteam nvarchar (10),
 	stakeEUR MONEY,
-	stakeUSD MONEY
+	stakeUSD MONEY,
+	stakeGBP MONEY
 
 	 )   
 
@@ -297,7 +316,8 @@ DECLARE @BettransDetail TABLE(
 				BM.bettype,
 				BM.betteam,
 				BM.stake*e.EUR,
-				BM.stake*e.USD		
+				BM.stake*e.USD,
+				BM.stake*e.GBP		
 			FROM bettransm BM WITH (NOLOCK)
 			INNER JOIN #DataTmp B ON BM.refno = B.transid
 			INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
@@ -316,7 +336,8 @@ DECLARE @BettransDetail TABLE(
 				BM.bettype,
 				BM.betteam,
 				BM.stake*e.EUR,
-				BM.stake*e.USD 	
+				BM.stake*e.USD,
+				BM.stake*e.GBP 	
 			FROM bettransm14 BM WITH (NOLOCK)
 			INNER JOIN #DataTmp B ON BM.refno = B.transid
 			INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
@@ -330,6 +351,7 @@ DROP TABLE #DataTmp
 DROP TABLE #TempExchange	
 DROP TABLE #currency 	
 END
+
 
 
 GO

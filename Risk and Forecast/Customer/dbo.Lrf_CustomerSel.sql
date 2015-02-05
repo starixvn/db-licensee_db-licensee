@@ -45,7 +45,7 @@ AS
 	- 20140421@Florent: Fix bug oustanding of Keno sport
 	- 20140604@Don: Improve performance in case of input param @username with value NULL (Redmine ID: 17190)
 	- 20141112@Victor: use f_SelLicenseeCust instead of licenseecust (#Redmine 25864)
-
+	- 20150130@Winnie Add base currency GBP
 	Param's Explanation:
 	  + @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 	  + @SpecialLevel: default value = -1 (all)
@@ -399,6 +399,7 @@ SELECT
 	,ISNULL(SUM(ISNULL(b.winlost-b.actual_stake + b.playercomm,0)),0)  AS TotalBalance
 	,CAST(ISNULL(SUM(e.USD*ISNULL(b.winlost-b.actual_stake + b.playercomm,0)),0) AS MONEY) AS TotalBalanceUSD
 	,CAST(ISNULL(SUM(e.EUR*ISNULL(b.winlost-b.actual_stake + b.playercomm,0)),0) AS MONEY) AS TotalBalanceEUR
+	,CAST(ISNULL(SUM(e.GBP*ISNULL(b.winlost-b.actual_stake + b.playercomm,0)),0) AS MONEY) AS TotalBalanceGBP
 	,ISNULL(SUM(CASE 
 					WHEN ruben = 0 
 						THEN ISNULL(b.actual_stake, 0)
@@ -414,6 +415,11 @@ SELECT
 						THEN ISNULL(b.actual_stake, 0)
 					ELSE 0
 					END), 0) AS MONEY) AS OutstandingEUR
+		, CAST(ISNULL(SUM(e.GBP * CASE 
+					WHEN ruben = 0
+						THEN ISNULL(b.actual_stake, 0)
+					ELSE 0
+					END), 0) AS MONEY) AS OutstandingGBP
 	,ISNULL(lg.color,'') AS GroupColor
 	,ISNULL(lg.GroupName,'') AS GroupName
 	,ISNULL(lc.SBComm,0) AS SBComm
@@ -443,8 +449,10 @@ SELECT d.custid ,
 	CAST((d.TotalBalance	- isnULL(tl.actual_stake,0))					 AS MONEY) AS TotalBalance ,
 	CAST((d.TotalBalanceUSD - isnULL(tl.actual_stake,0) * ISNULL(e.USD,0))	 AS MONEY) AS TotalBalanceUSD ,	
 	CAST((d.TotalBalanceEUR - isnULL(tl.actual_stake,0) * ISNULL(e.EUR,0))	 AS MONEY) AS TotalBalanceEUR,
+	CAST((d.TotalBalanceGBP - isnULL(tl.actual_stake,0) * ISNULL(e.GBP,0))	 AS MONEY) AS TotalBalanceGBP,
 	CAST((d.Outstanding		+ ISNULL(tl.actual_stake,0))					 AS MONEY) AS Outstanding,
 	CAST((d.OutstandingEUR	+ ISNULL(tl.actual_stake,0) * ISNULL(e.EUR,0))	 AS MONEY) AS OutstandingEUR,
+	CAST((d.OutstandingGBP	+ ISNULL(tl.actual_stake,0) * ISNULL(e.GBP,0))	 AS MONEY) AS OutstandingGBP,
 	CAST((d.OutstandingUSD	+ ISNULL(tl.actual_stake,0) * ISNULL(e.USD,0))	 AS MONEY) AS OutstandingUSD
 	,GroupColor
 	,GroupName

@@ -31,6 +31,7 @@ Revisions:
 		- 20140520@Hannah: Sort betlist
 		- 20140602@Hannah: Separate Live/ Non - Live data in Live Report
 		- 20141111@Winnie: Change from LicenseeCust to f_SelLicenseeCust
+		- 20150126@Winnie: Add base currency GBP 
 
 Param's Explanation: 
 	@Liveindicator : indicate that whether the report will get live data or not
@@ -300,7 +301,7 @@ WHERE exchangeid IN (SELECT DISTINCT Currency FROM #AgWinlossMP)
 DECLARE @sql NVARCHAR(2500)
 DECLARE @SortTemp VARCHAR(250) 
 
-IF (@Sort LIKE '%USD%') OR (@Sort LIKE '%EUR%')
+IF (@Sort LIKE '%USD%') OR (@Sort LIKE '%EUR%') OR (@Sort LIKE '%GBP%')
 BEGIN
 	DECLARE @charindex INT
 	SELECT @charindex = CHARINDEX( ' ', @Sort, 1)
@@ -333,7 +334,14 @@ FROM
 			winlost * e.EUR winlostEUR,
 			LicenseeWL * e.EUR LicenseeWLEUR,
 			comm * e.EUR commEUR,
-			playercomm*e.EUR playercommEUR
+			playercomm*e.EUR playercommEUR,
+			--GBP
+			stake * e.GBP stakeGBP,
+			actual_stake * e.GBP actual_stakeGBP,
+			winlost * e.GBP winlostGBP,
+			LicenseeWL * e.GBP LicenseeWLGBP,
+			comm * e.GBP commGBP,
+			playercomm*e.GBP playercommGBP
 			
 	FROM #AgWinlossMP b
 		INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid

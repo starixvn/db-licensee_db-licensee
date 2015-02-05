@@ -29,6 +29,7 @@ Revisions:
 	- 20130514@Jim:Restrict permission of Licensee Users by currency
 	- 20140718@Hannah: Change liveindicator datatype to INT to fix running live matches are not being showed at the top list (RedmineID:19136)
 	- 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
+	- 20150124@Winnie: Add base currency GBP 
 */
 SET NOCOUNT ON
 
@@ -67,34 +68,42 @@ DECLARE @Data as TABLE
 	home_odds MONEY,
 	home_oddsUSD MONEY,
 	home_oddsEUR MONEY,
+	home_oddsGBP MONEY,
 
 	away_odds MONEY,
 	away_oddsUSD MONEY,
 	away_oddsEUR MONEY,
+	away_oddsGBP MONEY,
 	
 	WinLost_home MONEY,
 	WinLost_homeUSD MONEY,
 	WinLost_homeEUR MONEY,
+	WinLost_homeGBP MONEY,
 
 	WinLost_away MONEY,
 	WinLost_awayUSD MONEY,
 	WinLost_awayEUR MONEY,
+	WinLost_awayGBP MONEY,
 	
 	home_odds_HT MONEY,
 	home_odds_HTUSD MONEY,
 	home_odds_HTEUR MONEY,
+	home_odds_HTGBP MONEY,
 
 	away_odds_HT MONEY,
 	away_odds_HTUSD MONEY,
 	away_odds_HTEUR MONEY,
+	away_odds_HTGBP MONEY,
 	
 	WinLost_home_HT MONEY,
 	WinLost_home_HTUSD MONEY,
 	WinLost_home_HTEUR MONEY,
+	WinLost_home_HTGBP MONEY,
 
 	WinLost_away_HT MONEY,
 	WinLost_away_HTUSD MONEY,
 	WinLost_away_HTEUR MONEY,
+	WinLost_away_HTGBP MONEY,
 	
 	isNeutral BIT
 )
@@ -114,35 +123,43 @@ SELECT
 		sum((CASE WHEN bettype = 20 THEN (CASE WHEN betteam = 'h' THEN stake ELSE 0 END)*(CASE WHEN abs(odds) <1 THEN 1 ELSE abs(odds) END) ELSE 0 END)) AS home_odds,
 		sum((CASE WHEN bettype = 20 THEN (CASE WHEN betteam = 'h' THEN stake*e.USD ELSE 0 END)*(CASE WHEN abs(odds) <1 THEN 1 ELSE abs(odds) END) ELSE 0 END)) AS home_oddsUSD,
 		sum((CASE WHEN bettype = 20 THEN (CASE WHEN betteam = 'h' THEN stake*e.EUR ELSE 0 END)*(CASE WHEN abs(odds) <1 THEN 1 ELSE abs(odds) END) ELSE 0 END)) AS home_oddsEUR,
+		sum((CASE WHEN bettype = 20 THEN (CASE WHEN betteam = 'h' THEN stake*e.GBP ELSE 0 END)*(CASE WHEN abs(odds) <1 THEN 1 ELSE abs(odds) END) ELSE 0 END)) AS home_oddsGBP,
 
 		sum((CASE WHEN bettype = 20 THEN (CASE WHEN betteam = 'a' THEN stake ELSE 0 END)*(CASE WHEN abs(odds) <1 THEN 1 ELSE abs(odds) END) ELSE 0 END)) AS away_odds,
 		sum((CASE WHEN bettype = 20 THEN (CASE WHEN betteam = 'a' THEN stake*e.USD ELSE 0 END)*(CASE WHEN abs(odds) <1 THEN 1 ELSE abs(odds) END) ELSE 0 END)) AS away_oddsUSD,
 		sum((CASE WHEN bettype = 20 THEN (CASE WHEN betteam = 'a' THEN stake*e.EUR ELSE 0 END)*(CASE WHEN abs(odds) <1 THEN 1 ELSE abs(odds) END) ELSE 0 END)) AS away_oddsEUR,
+		sum((CASE WHEN bettype = 20 THEN (CASE WHEN betteam = 'a' THEN stake*e.GBP ELSE 0 END)*(CASE WHEN abs(odds) <1 THEN 1 ELSE abs(odds) END) ELSE 0 END)) AS away_oddsGBP,
 
 		sum(CASE WHEN bettype = 20 THEN (CASE WHEN betteam = 'h' THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds END) ELSE -actual_stake END) ELSE 0 END ) AS WinLost_home,
 		sum(CASE WHEN bettype = 20 THEN (CASE WHEN betteam = 'h' THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds END)*e.USD ELSE -actual_stake*e.USD END) ELSE 0 END ) AS WinLost_homeUSD,
 		sum(CASE WHEN bettype = 20 THEN (CASE WHEN betteam = 'h' THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds END)*e.EUR ELSE -actual_stake*e.EUR END) ELSE 0 END ) AS WinLost_homeEUR,
+		sum(CASE WHEN bettype = 20 THEN (CASE WHEN betteam = 'h' THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds END)*e.GBP ELSE -actual_stake*e.GBP END) ELSE 0 END ) AS WinLost_homeGBP,
 		
 		sum(CASE WHEN bettype = 20 THEN (CASE WHEN betteam = 'a' THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds END) ELSE -actual_stake END) ELSE 0 END) AS WinLost_away,
 		sum(CASE WHEN bettype = 20 THEN (CASE WHEN betteam = 'a' THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds END)*e.USD ELSE -actual_stake*e.USD END) ELSE 0 END) AS WinLost_awayUSD,
 		sum(CASE WHEN bettype = 20 THEN (CASE WHEN betteam = 'a' THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds END)*e.EUR ELSE -actual_stake*e.EUR END) ELSE 0 END) AS WinLost_awayEUR,
+		sum(CASE WHEN bettype = 20 THEN (CASE WHEN betteam = 'a' THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds END)*e.GBP ELSE -actual_stake*e.GBP END) ELSE 0 END) AS WinLost_awayGBP,
 
 		sum((CASE WHEN bettype = 21 THEN (CASE WHEN betteam = 'h' THEN stake ELSE 0 END)*(CASE WHEN abs(odds) <1 THEN 1 ELSE abs(odds) END) ELSE 0 END)) AS home_odds_HT,
 		sum((CASE WHEN bettype = 21 THEN (CASE WHEN betteam = 'h' THEN stake*e.USD ELSE 0 END)*(CASE WHEN abs(odds) <1 THEN 1 ELSE abs(odds) END) ELSE 0 END)) AS home_odds_HTUSD,
 		sum((CASE WHEN bettype = 21 THEN (CASE WHEN betteam = 'h' THEN stake*e.EUR ELSE 0 END)*(CASE WHEN abs(odds) <1 THEN 1 ELSE abs(odds) END) ELSE 0 END)) AS home_odds_HTEUR,
+		sum((CASE WHEN bettype = 21 THEN (CASE WHEN betteam = 'h' THEN stake*e.GBP ELSE 0 END)*(CASE WHEN abs(odds) <1 THEN 1 ELSE abs(odds) END) ELSE 0 END)) AS home_odds_HTGBP,
 
 		sum((CASE WHEN bettype = 21 THEN (CASE WHEN betteam = 'a' THEN stake ELSE 0 END)*(CASE WHEN abs(odds) <1 THEN 1 ELSE abs(odds) END) ELSE 0 END)) AS away_odds_HT,
 		sum((CASE WHEN bettype = 21 THEN (CASE WHEN betteam = 'a' THEN stake*e.USD ELSE 0 END)*(CASE WHEN abs(odds) <1 THEN 1 ELSE abs(odds) END) ELSE 0 END)) AS away_odds_HTUSD,
 		sum((CASE WHEN bettype = 21 THEN (CASE WHEN betteam = 'a' THEN stake*e.EUR ELSE 0 END)*(CASE WHEN abs(odds) <1 THEN 1 ELSE abs(odds) END) ELSE 0 END)) AS away_odds_HTEUR,
+		sum((CASE WHEN bettype = 21 THEN (CASE WHEN betteam = 'a' THEN stake*e.GBP ELSE 0 END)*(CASE WHEN abs(odds) <1 THEN 1 ELSE abs(odds) END) ELSE 0 END)) AS away_odds_HTGBP,
 
 
 		sum(CASE WHEN bettype = 21 THEN (CASE WHEN betteam = 'h' THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds END) ELSE -actual_stake END) ELSE 0 END) AS WinLost_home_HT,
 		sum(CASE WHEN bettype = 21 THEN (CASE WHEN betteam = 'h' THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds END)*e.USD ELSE -actual_stake*e.USD END) ELSE 0 END) AS WinLost_home_HTUSD,	
-		sum(CASE WHEN bettype = 21 THEN (CASE WHEN betteam = 'h' THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds END)*e.EUR ELSE -actual_stake*e.EUR END) ELSE 0 END) AS WinLost_home_HTEUR,	
+		sum(CASE WHEN bettype = 21 THEN (CASE WHEN betteam = 'h' THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds END)*e.EUR ELSE -actual_stake*e.EUR END) ELSE 0 END) AS WinLost_home_HTEUR,
+		sum(CASE WHEN bettype = 21 THEN (CASE WHEN betteam = 'h' THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds END)*e.GBP ELSE -actual_stake*e.GBP END) ELSE 0 END) AS WinLost_home_HTGBP,		
 
 		sum(CASE WHEN bettype = 21 THEN (CASE WHEN betteam = 'a' THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds END) ELSE -actual_stake END) ELSE 0 END) AS WinLost_away_HT,
 		sum(CASE WHEN bettype = 21 THEN (CASE WHEN betteam = 'a' THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds END)*e.USD ELSE -actual_stake*e.USD END) ELSE 0 END) AS WinLost_away_HTUSD,
 		sum(CASE WHEN bettype = 21 THEN (CASE WHEN betteam = 'a' THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds END)*e.EUR ELSE -actual_stake*e.EUR END) ELSE 0 END) AS WinLost_away_HTEUR,
+		sum(CASE WHEN bettype = 21 THEN (CASE WHEN betteam = 'a' THEN stake*(CASE WHEN odds<0 THEN 1 ELSE odds END)*e.GBP ELSE -actual_stake*e.GBP END) ELSE 0 END) AS WinLost_away_HTGBP,
 
 		isnull(m.isNeutral, CONVERT(BIT,0)) as IsNeutral
 			

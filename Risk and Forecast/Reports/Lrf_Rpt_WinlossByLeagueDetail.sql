@@ -1,5 +1,6 @@
 USE [bodb02]
 GO
+ 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByLeagueDetail]
 	 @LicenseeID INT
 	,@UserID INT
@@ -29,6 +30,7 @@ Revisions:
 	- 20140214@Florent: use new sum table rptCustomerMatch
 	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+	- 20150127@Jim: support base on GBP Currency
 Param's Explanation:   
    
 */
@@ -42,6 +44,7 @@ DECLARE @ExchangeDaily TABLE (
 	,ExchangeId INT
 	,USD FLOAT
 	,EUR FLOAT
+	,GBP FLOAT
 	,PRIMARY KEY (
 		ExchangeDate
 		,ExchangeId
@@ -585,6 +588,7 @@ SELECT ExchangeDate
 	,ExchangeId
 	,USD
 	,EUR
+	,GBP
 FROM Lrf_f_GetExchangeDaily(@fromDate, @ToDate)
 
 DECLARE @RowStart INT
@@ -623,23 +627,33 @@ FROM (
 		,CAST(SUM(turnover) AS MONEY) AS turnover
 		,CAST(SUM(turnover * e.USD) AS MONEY) AS turnoverUSD
 		,CAST(SUM(turnover * e.EUR) AS MONEY) AS turnoverEUR
+		,CAST(SUM(turnover * e.GBP) AS MONEY) AS turnoverGBP
+		
 		,CAST(SUM(MemberWinLost) AS MONEY) AS MemberWinLost
 		,CAST(SUM(MemberWinLost * e.USD) AS MONEY) AS MemberWinLostUSD
 		,CAST(SUM(MemberWinLost * e.EUR) AS MONEY) AS MemberWinLostEUR
+		,CAST(SUM(MemberWinLost * e.GBP) AS MONEY) AS MemberWinLostGBP
 		,
 		--- licenseeWL  
 		CAST(SUM(LicenseeWL) AS MONEY) AS LicenseeWL
 		,CAST(SUM(LicenseeWL * e.USD) AS MONEY) AS LicenseeWLUSD
 		,CAST(SUM(LicenseeWL * e.EUR) AS MONEY) AS LicenseeWLEUR
+		,CAST(SUM(LicenseeWL * e.GBP) AS MONEY) AS LicenseeWLGBP
+		
 		,CAST(SUM(CommBA) AS MONEY) AS CommBA
 		,CAST(SUM(CommBA * e.USD) AS MONEY) AS CommBAUSD
 		,CAST(SUM(CommBA * e.EUR) AS MONEY) AS CommBAEUR
+		,CAST(SUM(CommBA * e.GBP) AS MONEY) AS CommBAGBP
+		
 		,CAST(SUM(PlayerComm) AS MONEY) AS PlayerComm
 		,CAST(SUM(PlayerComm * e.USD) AS MONEY) AS PlayerCommUSD
 		,CAST(SUM(PlayerComm * e.EUR) AS MONEY) AS PlayerCommEUR
+		,CAST(SUM(PlayerComm * e.GBP) AS MONEY) AS PlayerCommGBP
+		
 		,CAST(SUM(AmtDuetoBA) AS MONEY) AS AmtDuetoBA
 		,CAST(SUM((AmtDuetoBA) * e.USD) AS MONEY) AS AmtDuetoBAUSD
 		,CAST(SUM((AmtDuetoBA) * e.EUR) AS MONEY) AS AmtDuetoBAEUR
+		,CAST(SUM((AmtDuetoBA) * e.GBP) AS MONEY) AS AmtDuetoBAGBP
 		,sum(b.betcount) betcount
 	FROM @AgMatchWLDetails b
 	INNER JOIN Customer c(NOLOCK) ON b.custid = c.custid
@@ -658,23 +672,32 @@ WHERE A.RowNum BETWEEN @RowStart AND @RowEnd
 SELECT  CAST(SUM(turnover) AS MONEY) AS turnover
 		,CAST(SUM(turnover * e.USD) AS MONEY) AS turnoverUSD
 		,CAST(SUM(turnover * e.EUR) AS MONEY) AS turnoverEUR
+		,CAST(SUM(turnover * e.GBP) AS MONEY) AS turnoverGBP
 		,CAST(SUM(MemberWinLost) AS MONEY) AS MemberWinLost
 		,CAST(SUM(MemberWinLost * e.USD) AS MONEY) AS MemberWinLostUSD
 		,CAST(SUM(MemberWinLost * e.EUR) AS MONEY) AS MemberWinLostEUR
+		,CAST(SUM(MemberWinLost * e.GBP) AS MONEY) AS MemberWinLostGBP
 		,
 		--- licenseeWL  
 		CAST(SUM(LicenseeWL) AS MONEY) AS LicenseeWL
 		,CAST(SUM(LicenseeWL * e.USD) AS MONEY) AS LicenseeWLUSD
 		,CAST(SUM(LicenseeWL * e.EUR) AS MONEY) AS LicenseeWLEUR
+		,CAST(SUM(LicenseeWL * e.GBP) AS MONEY) AS LicenseeWLGBP
+		
 		,CAST(SUM(CommBA) AS MONEY) AS CommBA
 		,CAST(SUM(CommBA * e.USD) AS MONEY) AS CommBAUSD
 		,CAST(SUM(CommBA * e.EUR) AS MONEY) AS CommBAEUR
+		,CAST(SUM(CommBA * e.GBP) AS MONEY) AS CommBAGBP
+		
 		,CAST(SUM(PlayerComm) AS MONEY) AS PlayerComm
 		,CAST(SUM(PlayerComm * e.USD) AS MONEY) AS PlayerCommUSD
 		,CAST(SUM(PlayerComm * e.EUR) AS MONEY) AS PlayerCommEUR
+		,CAST(SUM(PlayerComm * e.GBP) AS MONEY) AS PlayerCommGBP
+		
 		,CAST(SUM(AmtDuetoBA) AS MONEY) AS AmtDuetoBA
 		,CAST(SUM((AmtDuetoBA) * e.USD) AS MONEY) AS AmtDuetoBAUSD
 		,CAST(SUM((AmtDuetoBA) * e.EUR) AS MONEY) AS AmtDuetoBAEUR
+		,CAST(SUM((AmtDuetoBA) * e.GBP) AS MONEY) AS AmtDuetoBAGBP
 		,sum(b.betcount) betcount
 	FROM @AgMatchWLDetails b
 	INNER JOIN Customer c(NOLOCK) ON b.custid = c.custid

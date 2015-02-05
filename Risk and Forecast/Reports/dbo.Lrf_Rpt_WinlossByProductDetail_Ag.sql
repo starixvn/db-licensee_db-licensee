@@ -1,6 +1,5 @@
 ﻿USE [bodb02]
 GO
- 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail_Ag]  
  @LicenseeID	INT,
  @UserID		INT,
@@ -49,6 +48,7 @@ AS
 	- 20140915@Florent: hotfix duplicated VS bettype
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	- 20150107@Jim: add more input param @CustID
+	- 20150123@Jim: support base on Currency GBP
 	Param's Explanation:  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
 	  + @IsOld: 0 - query in table rptLicWinloss, 1 - query in table rptLicWinloss_old. 
@@ -708,8 +708,7 @@ SELECT
 	CAST(SUM(Comm * e.MYR) 				AS MONEY)	AS CommMYR,
     CAST(SUM(PlayerComm* e.MYR) 		AS MONEY)	AS PlayerCommMYR,
     CAST(SUM(AmtDueto3rd*e.MYR) 		AS MONEY)	AS AmtDueto3rdMYR,
-
-
+	
 	--BaseUSD  
 	CAST(SUM(TurnOver*e.USD)			AS MONEY)	AS TurnoverUSD,   
 	CAST(SUM(Winlost*e.USD)				AS MONEY)	AS WinlostUSD,  
@@ -724,7 +723,14 @@ SELECT
 	CAST(SUM(LicenseeWL*e.EUR) 			AS MONEY)	AS LicenseeWLEUR,
 	CAST(SUM(Comm * e.EUR) 				AS MONEY)	AS CommEUR,
 	CAST(SUM(PlayerComm*e.EUR) 			AS MONEY)	AS PlayerCommEUR,
-	CAST(SUM(AmtDueto3rd*e.EUR) 		AS MONEY)	AS AmtDueto3rdEUR
+	CAST(SUM(AmtDueto3rd*e.EUR) 		AS MONEY)	AS AmtDueto3rdEUR,
+	--BaseGBP  
+	CAST(SUM(TurnOver*e.GBP)			AS MONEY)	AS TurnoverGBP,   
+	CAST(SUM(Winlost*e.GBP)				AS MONEY)	AS WinlostGBP,  
+	CAST(SUM(LicenseeWL*e.GBP) 			AS MONEY)	AS LicenseeWLGBP,
+	CAST(SUM(Comm * e.GBP) 				AS MONEY)	AS CommGBP,
+	CAST(SUM(PlayerComm*e.GBP) 			AS MONEY)	AS PlayerCommGBP,
+	CAST(SUM(AmtDueto3rd*e.GBP) 		AS MONEY)	AS AmtDueto3rdGBP
 FROM	
 	#SAgWinLoss w   
 	INNER JOIN Customer c WITH (NOLOCK) ON w.custid = c.custid

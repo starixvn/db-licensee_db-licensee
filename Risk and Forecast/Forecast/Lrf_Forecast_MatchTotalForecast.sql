@@ -26,6 +26,7 @@ Revisions:
 	20131010@Victor: Fix @IsLive parameter issue
 	20131024@Victor: Basketball and Baseball dont use Live score in formular
 	20131028@Victor: Update list of Sports that use Live score in formular
+	20150123@Jim: support base on Currency GBP
 */
 
 BEGIN
@@ -39,9 +40,11 @@ BEGIN
 		HomeWinloss MONEY,
 		HomeWinlossUSD MONEY,
 		HomeWinlossEUR MONEY,
+		HomeWinlossGBP MONEY,
 		AwayWinloss MONEY,
 		AwayWinlossUSD MONEY,
-		AwayWinlossEUR MONEY
+		AwayWinlossEUR MONEY,
+		AwayWinlossGBP MONEY,
 	)
 	DECLARE @Today SMALLDATETIME 
 	DECLARE @CurScore INT
@@ -127,9 +130,11 @@ BEGIN
 			SUM(HWinLCWinloss) AS HomeWinloss,
 			SUM(HWinLCWinloss*e.USD) AS HomeWinlossUSD,
 			SUM(HWinLCWinloss*e.EUR) AS HomeWinlossEUR,
+			SUM(HWinLCWinloss*e.GBP) AS HomeWinlossGBP,
 			SUM(AWinLCWinloss) AS AwayWinloss,
 			SUM(AWinLCWinloss*e.USD) AS AwayWinlossUSD,
-			SUM(AWinLCWinloss*e.EUR) AS AwayWinlossEUR
+			SUM(AWinLCWinloss*e.EUR) AS AwayWinlossEUR,
+			SUM(AWinLCWinloss*e.GBP) AS AwayWinlossGBP
 		FROM LCWinloss lc
 			INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today)) e ON e.exchangeid = lc.currency
 		GROUP BY bettype, hdp
@@ -182,9 +187,11 @@ BEGIN
 			SUM(HomeWL) AS HomeWinloss,
 			SUM(HomeWL*e.USD) AS HomeWinlossUSD,
 			SUM(HomeWL*e.EUR) AS HomeWinlossEUR,
+			SUM(HomeWL*e.GBP) AS HomeWinlossGBP,
 			SUM(AwayWL) AS AwayWinloss,
 			SUM(AwayWL * e.USD) AS AwayWinlossUSD,
-			SUM(AwayWL * e.EUR) AS AwayWinlossEUR
+			SUM(AwayWL * e.EUR) AS AwayWinlossEUR,
+			SUM(AwayWL * e.GBP) AS AwayWinlossGBP
 		FROM HomeAwayWL lc
 			INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today)) e ON e.exchangeid = lc.currency
 		GROUP BY bettype, hdp
@@ -215,9 +222,11 @@ BEGIN
 		SUM(HWinLCWinloss) AS HomeWinloss,
 		SUM(HWinLCWinloss*e.USD) AS HomeWinlossUSD,
 		SUM(HWinLCWinloss*e.EUR) AS HomeWinlossEUR,
+		SUM(HWinLCWinloss*e.GBP) AS HomeWinlossGBP,
 		SUM(AWinLCWinloss) AS AwayWinloss,
 		SUM(AWinLCWinloss*e.USD) AS AwayWinlossUSD,
-		SUM(AWinLCWinloss*e.EUR) AS AwayWinlossEUR
+		SUM(AWinLCWinloss*e.EUR) AS AwayWinlossEUR,
+		SUM(AWinLCWinloss*e.GBP) AS AwayWinlossGBP
 	FROM LCWinloss lc
 		INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today)) e ON e.exchangeid = lc.currency
 	GROUP BY bettype, hdp
@@ -230,16 +239,20 @@ BEGIN
 		SUM(CASE WHEN bettype IN (1,7) AND betteam LIKE 'h' THEN stake ELSE 0 END) AS HomeTurnover,
 		SUM(CASE WHEN bettype IN (1,7) AND betteam LIKE 'h' THEN stake*e.USD ELSE 0 END) AS HomeTurnoverUSD,
 		SUM(CASE WHEN bettype IN (1,7) AND betteam LIKE 'h' THEN stake*e.EUR ELSE 0 END) AS HomeTurnoverEUR,
+		SUM(CASE WHEN bettype IN (1,7) AND betteam LIKE 'h' THEN stake*e.GBP ELSE 0 END) AS HomeTurnoverGBP,
 		SUM(CASE WHEN bettype IN (1,7) AND betteam LIKE 'a' THEN stake ELSE 0 END) AS AwayTurnover,
 		SUM(CASE WHEN bettype IN (1,7) AND betteam LIKE 'a' THEN stake*e.USD ELSE 0 END) AS AwayTurnoverUSD,
 		SUM(CASE WHEN bettype IN (1,7) AND betteam LIKE 'a' THEN stake*e.EUR ELSE 0 END) AS AwayTurnoverEUR,
+		SUM(CASE WHEN bettype IN (1,7) AND betteam LIKE 'a' THEN stake*e.GBP ELSE 0 END) AS AwayTurnoverGBP,
 
 		SUM(CASE WHEN bettype IN (3,8) AND betteam LIKE 'h' THEN stake ELSE 0 END) AS OverTurnover,
 		SUM(CASE WHEN bettype IN (3,8) AND betteam LIKE 'h' THEN stake*e.USD ELSE 0 END) AS OverTurnoverUSD,
 		SUM(CASE WHEN bettype IN (3,8) AND betteam LIKE 'h' THEN stake*e.EUR ELSE 0 END) AS OverTurnoverEUR,
+		SUM(CASE WHEN bettype IN (3,8) AND betteam LIKE 'h' THEN stake*e.GBP ELSE 0 END) AS OverTurnoverGBP,
 		SUM(CASE WHEN bettype IN (3,8) AND betteam LIKE 'a' THEN stake ELSE 0 END) AS UnderTurnover,
 		SUM(CASE WHEN bettype IN (3,8) AND betteam LIKE 'a' THEN stake*e.USD ELSE 0 END) AS UnderTurnoverUSD,
-		SUM(CASE WHEN bettype IN (3,8) AND betteam LIKE 'a' THEN stake*e.EUR ELSE 0 END) AS UnderTurnoverEUR
+		SUM(CASE WHEN bettype IN (3,8) AND betteam LIKE 'a' THEN stake*e.EUR ELSE 0 END) AS UnderTurnoverEUR,
+		SUM(CASE WHEN bettype IN (3,8) AND betteam LIKE 'a' THEN stake*e.GBP ELSE 0 END) AS UnderTurnoverGBP
 
 		FROM #Data d
 		INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today)) e ON e.exchangeid = d.currency
@@ -260,7 +273,7 @@ BEGIN
 	)
 
 	INSERT INTO #SecondRS
-	SELECT bettype,hdp,0,0,0,0,0,0 
+	SELECT bettype,hdp,0,0,0,0,0,0,0,0 
 	FROM BetLines l
 	WHERE NOT EXISTS (SELECT 1 FROM #SecondRS s WHERE s.bettype = l.bettype AND s.hdp = l.hdp)
 

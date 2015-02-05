@@ -1,10 +1,5 @@
 ﻿USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_TurnOver]    Script Date: 11/29/2014 12:38:45 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
 ALTER PROCEDURE [dbo].[Lrf_Rpt_TurnOver]
     @LicenseeID INT,
     @UserID        INT,
@@ -46,6 +41,7 @@ Revisions:
    - 20131007@Jim: offer Virtual Tennis
    - 20140305@Florent: support Keno
    - 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+   - 20150127@Jim: support base on GBP Currency
 Param's Explanation:
     + @excludeTest: remove currency UUS
     + @CurrencyID = 0: get all currency
@@ -179,7 +175,24 @@ BEGIN
         NULL   AS TurnoverBAUSD,
         NULL  AS CommBAUSD,
         NULL  AS PlayerCommUSD,
-        NULL  AS AmountDueToBAUSD
+        NULL  AS AmountDueToBAUSD,
+		--
+		NULL OpeningBalanceGBP,
+        NULL  AS DepositGBP,
+        NULL  AS WithdrawalGBP,
+        NULL  AS AffiliateTransferGBP,
+        NULL  AS BonusGBP,
+        NULL  AS AdjustmentGBP,
+        NULL  AS TurnoverGBP,
+        NULL  AS PendingFundGBP,
+        NULL  AS WinlossGBP,
+        NULL  AS ClosingBalanceGBP,
+        NULL  AS Transfer3rdGBP,
+        NULL  AS DrawGameGBP,
+        NULL   AS TurnoverBAGBP,
+        NULL  AS CommBAGBP,
+        NULL  AS PlayerCommGBP,
+        NULL  AS AmountDueToBAGBP
     FROM #tmpRpt b
     RETURN
 END
@@ -481,7 +494,24 @@ SELECT
     CAST(SUM(b.PlayerComm * e.USD) AS MONEY) AS PlayerCommUSD,
     CASE WHEN @showSB=1 THEN CAST(SUM(b.Turnover_BA * e.USD) AS MONEY) ELSE 0 END  AS TurnoverBAUSD,
     CASE WHEN @showSB=1 THEN CAST(SUM(b.Comm_BA * e.USD) AS MONEY) ELSE 0 END AS CommBAUSD,
-    CASE WHEN @showSB=1 THEN CAST(SUM(b.AmountDueTo_BA * e.USD) AS MONEY) ELSE 0 END AS AmountDueToBAUSD
+    CASE WHEN @showSB=1 THEN CAST(SUM(b.AmountDueTo_BA * e.USD) AS MONEY) ELSE 0 END AS AmountDueToBAUSD,
+	--- GBP
+    CAST(SUM(b.OpeningBalance * e.GBP) AS MONEY) AS OpeningBalanceGBP,
+    CAST(SUM(b.Deposit * e.GBP) AS MONEY) AS DepositGBP,
+    CAST(SUM(b.Withdrawal * e.GBP) AS MONEY) AS WithdrawalGBP,
+    CAST(SUM(b.AffiliateTransfer * e.GBP) AS MONEY) AS AffiliateTransferGBP,
+    CAST(SUM(b.Bonus * e.GBP) AS MONEY) AS BonusGBP,
+    CAST(SUM(b.Adjustment * e.GBP) AS MONEY) AS AdjustmentGBP,
+    CAST(SUM(b.Turnover * e.GBP )AS MONEY) AS TurnoverGBP,
+    CAST(SUM(b.PendingFund * e.GBP) AS MONEY) AS PendingFundGBP,
+    CAST(SUM(b.Winloss * e.GBP) AS MONEY) AS WinlossGBP,
+    CAST(SUM(b.ClosingBalance * e.GBP) AS MONEY) AS ClosingBalanceGBP,
+    CAST(SUM(b.Transfer3rd * e.GBP) AS MONEY) AS Transfer3rdGBP,
+    CAST(SUM(b.DrawGame * e.GBP) AS MONEY) AS DrawGameGBP,
+    CAST(SUM(b.PlayerComm * e.GBP) AS MONEY) AS PlayerCommGBP,
+    CASE WHEN @showSB=1 THEN CAST(SUM(b.Turnover_BA * e.GBP) AS MONEY) ELSE 0 END  AS TurnoverBAGBP,
+    CASE WHEN @showSB=1 THEN CAST(SUM(b.Comm_BA * e.GBP) AS MONEY) ELSE 0 END AS CommBAGBP,
+    CASE WHEN @showSB=1 THEN CAST(SUM(b.AmountDueTo_BA * e.GBP) AS MONEY) ELSE 0 END AS AmountDueToBAGBP
     
 FROM #tmpRpt b
     INNER JOIN #TempExchange e

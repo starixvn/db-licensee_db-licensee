@@ -28,15 +28,19 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinloss_Mem]
 	@SumWinlost MONEY=0 OUTPUT,
 	@SumWinlostUSD MONEY=0 OUTPUT,
 	@SumWinlostEUR MONEY=0 OUTPUT,
+	@SumWinlostGBP MONEY=0 OUTPUT,
 	@SumLicenseeWL MONEY=0 OUTPUT,
 	@SumLicenseeWLUSD MONEY=0 OUTPUT,
 	@SumLicenseeWLEUR MONEY=0 OUTPUT,
+	@SumLicenseeWLGBP MONEY=0 OUTPUT,
 	@SumComm MONEY=0 OUTPUT,
 	@SumCommUSD MONEY=0 OUTPUT,
 	@SumCommEUR MONEY=0 OUTPUT,
+	@SumCommGBP MONEY=0 OUTPUT,
 	@SumPlayerComm MONEY=0 OUTPUT,
 	@SumPlayerCommUSD MONEY=0 OUTPUT,
 	@SumPLayerCommEUR MONEY=0 OUTPUT,
+	@SumPLayerCommGBP MONEY=0 OUTPUT,
 	@drawfilter SMALLINT = 1,
 	@Langkey VARCHAR(10) = 'en-US'  ,
 	@currencyID INT =0
@@ -67,6 +71,7 @@ Revisions:
 	 - 20140630@Hannah: offer BetRadar and Sporting Solution
 	 - 20140908@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
 	 - 20141128@winnie: change currency keenocean
+	 - 20150124@winnie: Add base currency GBP 
 Param's Explanation:
 	+ @drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
 
@@ -2425,7 +2430,12 @@ SELECT
 	@SumWinlostEUR=SUM(ISNULL(winlost*e.EUR,0)),
 	@SumLicenseeWLEUR=SUM(ISNULL(LicenseeWL*e.EUR,0)),
 	@SumCommEUR=SUM(ISNULL(comm*e.EUR,0)),
-	@SumPlayerCommEUR=SUM(ISNULL(playercomm*e.EUR,0))	
+	@SumPlayerCommEUR=SUM(ISNULL(playercomm*e.EUR,0)),	
+	--GBP
+	@SumWinlostGBP=SUM(ISNULL(winlost*e.GBP,0)),
+	@SumLicenseeWLGBP=SUM(ISNULL(LicenseeWL*e.GBP,0)),
+	@SumCommGBP=SUM(ISNULL(comm*e.GBP,0)),
+	@SumPlayerCommGBP=SUM(ISNULL(playercomm*e.GBP,0))	
 FROM @BetListByDateMem b
 INNER JOIN 
 	#TempExchange e 
@@ -2456,7 +2466,14 @@ FROM
 			d.winlost*e.EUR			AS	WinlostEUR,
 			d.LicenseeWL*e.EUR		AS	LicenseeWLEUR,
 			d.comm*e.EUR			AS	commEUR,
-			d.playercomm*e.EUR	    AS playercommEUR 
+			d.playercomm*e.EUR	    AS playercommEUR,
+			--BASEGBP
+			d.stake*e.GBP			AS	StakeGBP,
+			d.actual_stake*e.GBP	AS	actual_stakeGBP,
+			d.winlost*e.GBP			AS	WinlostGBP,
+			d.LicenseeWL*e.GBP		AS	LicenseeWLGBP,
+			d.comm*e.GBP			AS	commGBP,
+			d.playercomm*e.GBP	    AS playercommGBP 
 
 	FROM	@BetListByDateMem d 
 			INNER JOIN #TempExchange e 
@@ -2472,7 +2489,8 @@ DECLARE @BettransDetail TABLE(
 	bettype SMALLINT,
 	Betteam nvarchar (10),
 	stakeEUR MONEY,
-	stakeUSD MONEY
+	stakeUSD MONEY,
+	stakeGBP MONEY
 	 )   
 
 
@@ -2490,7 +2508,8 @@ BEGIN
 			BM.bettype  ,
 			BM.Betteam,
 			BM.stake * e.EUR,
-			BM.stake * e.USD
+			BM.stake * e.USD,
+			BM.stake * e.GBP
 		FROM bettransm BM WITH (NOLOCK)
 		INNER JOIN @BetListByDateMem B ON BM.refno = B.transid
 		INNER JOIN #TempExchange e ON e.ExchangeDate = b.winlostdate   AND e.exchangeid = b.currency
@@ -2509,7 +2528,8 @@ BEGIN
 			BM.bettype  ,
 			BM.Betteam,
 			BM.stake * e.EUR,  
-			BM.stake * e.USD
+			BM.stake * e.USD,
+			BM.stake * e.GBP
 		FROM bettransm14 BM WITH (NOLOCK)
 		INNER JOIN @BetListByDateMem B ON BM.refno = B.transid
 		INNER JOIN #TempExchange e ON e.ExchangeDate = b.winlostdate   AND e.exchangeid = b.currency
@@ -2527,7 +2547,8 @@ BEGIN
 			BM.bettype  ,
 			BM.Betteam,
 			BM.stake * e.EUR,  
-			BM.stake * e.USD
+			BM.stake * e.USD,
+			BM.stake * e.GBP
 		FROM bodb_archive.dbo.bettransm BM WITH (NOLOCK)
 		INNER JOIN @BetListByDateMem B ON BM.refno = B.transid
 		INNER JOIN #TempExchange e ON e.ExchangeDate = b.winlostdate   AND e.exchangeid = b.currency
@@ -2548,7 +2569,8 @@ BEGIN
 			BM.bettype  ,
 			BM.Betteam,
 			BM.stake * e.EUR,
-			BM.stake * e.USD
+			BM.stake * e.USD,
+			BM.stake * e.GBP
 		FROM bettransm BM WITH (NOLOCK)
 		INNER JOIN @BetListByDateMem B ON BM.refno = B.refno
 		INNER JOIN #TempExchange e ON e.ExchangeDate = b.winlostdate   AND e.exchangeid = b.currency
@@ -2566,7 +2588,8 @@ BEGIN
 			BM.bettype  ,
 			BM.Betteam,
 			BM.stake * e.EUR,  
-			BM.stake * e.USD
+			BM.stake * e.USD,
+			BM.stake * e.GBP
 		FROM bettransm14 BM WITH (NOLOCK)
 		INNER JOIN @BetListByDateMem B ON BM.refno = B.refno
 		INNER JOIN #TempExchange e ON e.ExchangeDate = b.winlostdate   AND e.exchangeid = b.currency
@@ -2584,7 +2607,8 @@ BEGIN
 			BM.bettype  ,
 			BM.Betteam,
 			BM.stake * e.EUR,  
-			BM.stake * e.USD
+			BM.stake * e.USD,
+			BM.stake * e.GBP
 		FROM bodb_archive.dbo.bettransm BM WITH (NOLOCK)
 		INNER JOIN @BetListByDateMem B ON BM.refno = B.refno
 		INNER JOIN #TempExchange e ON e.ExchangeDate = b.winlostdate   AND e.exchangeid = b.currency
@@ -2606,7 +2630,8 @@ BEGIN
 			BG.bettype  ,
 			BG.Betteam,
 			BG.stake * e.EUR,
-			BG.stake * e.USD
+			BG.stake * e.USD,
+			BG.stake * e.GBP
 		FROM bettransg BG WITH (NOLOCK)
 		INNER JOIN @BetListByDateMem B ON BG.refno = B.refno and BG.custid = @CustID
 		INNER JOIN #TempExchange e ON e.ExchangeDate = b.winlostdate   AND e.exchangeid = b.currency
@@ -2625,7 +2650,8 @@ BEGIN
 			BG.bettype  ,
 			BG.Betteam  ,
 			BG.stake * e.EUR,
-			BG.stake * e.USD
+			BG.stake * e.USD,
+			BG.stake * e.GBP
 		FROM bettransg14 BG WITH (NOLOCK)
 		INNER JOIN @BetListByDateMem B ON BG.refno = B.refno and BG.custid = @CustID
 		INNER JOIN #TempExchange e  ON e.ExchangeDate = b.winlostdate   AND e.exchangeid = b.currency
@@ -2644,7 +2670,8 @@ BEGIN
 			BG.bettype  ,
 			BG.Betteam  ,
 			BG.stake * e.EUR,
-			BG.stake * e.USD
+			BG.stake * e.USD,
+			BG.stake * e.GBP
 		FROM bodb_archive.dbo.bettransG BG WITH (NOLOCK)
 		INNER JOIN @BetListByDateMem B ON BG.refno = B.refno and BG.custid = @CustID
 		INNER JOIN #TempExchange e  ON e.ExchangeDate = b.winlostdate   AND e.exchangeid = b.currency

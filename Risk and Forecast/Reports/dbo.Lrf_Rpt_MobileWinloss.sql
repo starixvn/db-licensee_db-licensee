@@ -1,11 +1,5 @@
 ﻿USE [bodb02]
 GO
-
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
 ALTER PROCEDURE [dbo].[Lrf_Rpt_MobileWinloss]  
  @LicenseeID	INT,
  @UserID		INT,
@@ -50,6 +44,7 @@ AS
 		- 20131007@Jim: offer Virtual Tennis
 		- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+		- 20150127@Jim: support base on GBP Currency
 	Param's Explanation:  
 	  + @SiteType: 1-WAP; 2-Smartphone; 3: Others;0-All  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -108,6 +103,17 @@ CREATE TABLE #WinLoss (
 	CommRBUSD		MONEY,
 	PlayerCommUSD 	MONEY,	
 	CompanyUSD		MONEY,
+	
+	TurnOverGBP		MONEY,   	
+	WinlostGBP		MONEY,  
+	LicenseeWLGBP	MONEY,
+	WinlossRBGBP	MONEY,
+	AmtDueToBAGBP	MONEY,
+	AmtDueToRBGBP	MONEY,
+	CommBAGBP		MONEY,
+	CommRBGBP		MONEY,
+	PlayerCommGBP 	MONEY,	
+	CompanyGBP		MONEY,
 
 	BetCount	BIGINT
 	)
@@ -147,7 +153,7 @@ WHERE  site = @site
 */
 DROP TABLE #Currency 
 
-DECLARE @Exchange TABLE(ExchangeDate SMALLDATETIME, ExchangeId INT,  EUR FLOAT,USD FLOAT,Code VARCHAR(10), PRIMARY KEY(ExchangeDate,ExchangeId))
+DECLARE @Exchange TABLE(ExchangeDate SMALLDATETIME, ExchangeId INT,  EUR FLOAT,USD FLOAT,GBP FLOAT,Code VARCHAR(10), PRIMARY KEY(ExchangeDate,ExchangeId))
 
 IF @ShowSB = 1  
 	INSERT  INTO @sporttype( sporttype) VALUES  (0)	
@@ -208,8 +214,8 @@ BEGIN
 	WHERE typeid =73
 END
 
-INSERT INTO @Exchange (exchangedate,exchangeid,eur,usd,code)
-SELECT exchangedate,exchangeid,eur,usd,code
+INSERT INTO @Exchange (exchangedate,exchangeid,eur,usd,gbp,code)
+SELECT exchangedate,exchangeid,eur,usd,gbp,code
 	FROM Lrf_f_GetExchangeDaily(@FDate,@TDate)
 	WHERE exchangeid IN (SELECT Currency FROM @TempAg)	
 
@@ -227,6 +233,7 @@ BEGIN
 			Turnover, Winlost, LicenseeWL, WinlossRB, AmtDueToBA, AmtDueToRB, CommBA, CommRB, playercomm, Company, 
 			TurnOverEUR, WinlostEUR, LicenseeWLEUR, WinlossRBEUR, AmtDueToBAEUR, AmtDueToRBEUR, CommBAEUR, CommRBEUR, PlayerCommEUR, CompanyEUR, 
 			TurnOverUSD, WinlostUSD, LicenseeWLUSD, WinlossRBUSD, AmtDueToBAUSD, AmtDueToRBUSD, CommBAUSD, CommRBUSD, PlayerCommUSD, CompanyUSD, 
+			TurnOverGBP, WinlostGBP, LicenseeWLGBP, WinlossRBGBP, AmtDueToBAGBP, AmtDueToRBGBP, CommBAGBP, CommRBGBP, PlayerCommGBP, CompanyGBP, 
 			BetCount)
 
 		SELECT 
@@ -290,7 +297,26 @@ BEGIN
 			0 as CommRBUSD,
 			SUM(b.playercomm * e.USD ) as PlayerCommUSD,
 			0 as CompanyUSD,
-			---------------------------
+			--GBP
+			SUM( stake
+					*
+					CASE WHEN @drawfilter IN (2,3) THEN
+						CASE WHEN b.statusID = 111 THEN 0
+						WHEN (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
+						ELSE 1 END
+					ELSE 1 END
+					* e.GBP
+				) turnoverGBP,
+			SUM((b.winlost - b.actual_stake)*e.GBP) AS WinlostGBP,		
+			0 as LicenseeWLGBP,
+			0 as WinlossRBGBP,
+			- SUM ((b.winlost - b.actual_stake + b.awinlost + b.comm ) * e.GBP) as AmountDueToBAGBP,
+			0 as AmountDueToRBGBP,
+			SUM (b.comm * e.GBP) as CommBAGBP,
+			0 as CommRBGBP,
+			SUM(b.playercomm * e.GBP ) as PlayerCommGBP,
+			0 as CompanyGBP,
+			
 			COUNT(b.transid) 
 				* CASE WHEN @drawfilter = 2 THEN
 						CASE WHEN b.statusID = 111 THEN 0
@@ -320,6 +346,7 @@ BEGIN
 			Turnover, Winlost, LicenseeWL, WinlossRB, AmtDueToBA, AmtDueToRB, CommBA, CommRB, playercomm, Company, 
 			TurnOverEUR, WinlostEUR, LicenseeWLEUR, WinlossRBEUR, AmtDueToBAEUR, AmtDueToRBEUR, CommBAEUR, CommRBEUR, PlayerCommEUR, CompanyEUR, 
 			TurnOverUSD, WinlostUSD, LicenseeWLUSD, WinlossRBUSD, AmtDueToBAUSD, AmtDueToRBUSD, CommBAUSD, CommRBUSD, PlayerCommUSD, CompanyUSD, 
+			TurnOverGBP, WinlostGBP, LicenseeWLGBP, WinlossRBGBP, AmtDueToBAGBP, AmtDueToRBGBP, CommBAGBP, CommRBGBP, PlayerCommGBP, CompanyGBP,
 			BetCount)
 		SELECT 
 			b.custid,
@@ -382,6 +409,25 @@ BEGIN
 			SUM ( CASE WHEN b.bettype BETWEEN 31 AND 33 THEN comm  ELSE 0 END * e.USD)as CommRBUSD,
 			SUM (   b.playercomm * e.USD) as PlayerCommUSD,
 			- SUM(CASE WHEN b.bettype NOT BETWEEN 31 AND 33 THEN (b.awinlost + b.winlost - b.actual_stake + b.comm) ELSE 0 END * e.USD)  as CompanyUSD ,
+			--------------GBP
+			SUM( CASE WHEN b.bettype in (33,34) AND b.liveawayscore=0 THEN b.stake/2 ELSE b.stake END
+					*
+					CASE WHEN @drawfilter IN (2,3) THEN
+						CASE WHEN b.statusID = 111 THEN 0
+						WHEN (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
+						ELSE 1 END
+					ELSE 1 END
+					* e.GBP
+				) turnoverGBP,
+			SUM((b.winlost-b.actual_stake)*e.GBP) AS WinlostGBP,	
+			- SUM(CASE WHEN (b.bettype NOT BETWEEN 31 AND 33)  THEN (b.winlost - b.actual_stake) ELSE 0 END * e.GBP) AS LicenseeWLGBP ,
+			SUM(CASE WHEN b.bettype BETWEEN 31 AND 33 THEN b.awinlost ELSE 0 END * e.GBP) AS WinlossRBGBP,
+			0 as AmountDueToBAGBP,
+			- SUM ( CASE WHEN b.bettype BETWEEN 31 AND 33 THEN (b.winlost - b.actual_stake + awinlost + comm) ELSE 0 END * e.GBP) as AmountDueToRBGBP,
+			0 as CommBAGBP,
+			SUM ( CASE WHEN b.bettype BETWEEN 31 AND 33 THEN comm  ELSE 0 END * e.GBP)as CommRBGBP,
+			SUM (   b.playercomm * e.GBP) as PlayerCommGBP,
+			- SUM(CASE WHEN b.bettype NOT BETWEEN 31 AND 33 THEN (b.awinlost + b.winlost - b.actual_stake + b.comm) ELSE 0 END * e.GBP)  as CompanyGBP ,
 			--------BetCount-----------
 			COUNT(b.transid) 
 			* CASE WHEN @drawfilter = 2 THEN
@@ -415,7 +461,8 @@ BEGIN
 			(CustID, Currency, 
 			Turnover, Winlost, LicenseeWL, WinlossRB, AmtDueToBA, AmtDueToRB, CommBA, CommRB, playercomm, Company, 
 			TurnOverEUR, WinlostEUR, LicenseeWLEUR, WinlossRBEUR, AmtDueToBAEUR, AmtDueToRBEUR, CommBAEUR, CommRBEUR, PlayerCommEUR, CompanyEUR, 
-			TurnOverUSD, WinlostUSD, LicenseeWLUSD, WinlossRBUSD, AmtDueToBAUSD, AmtDueToRBUSD, CommBAUSD, CommRBUSD, PlayerCommUSD, CompanyUSD, 
+			TurnOverUSD, WinlostUSD, LicenseeWLUSD, WinlossRBUSD, AmtDueToBAUSD, AmtDueToRBUSD, CommBAUSD, CommRBUSD, PlayerCommUSD, CompanyUSD,
+			TurnOverGBP, WinlostGBP, LicenseeWLGBP, WinlossRBGBP, AmtDueToBAGBP, AmtDueToRBGBP, CommBAGBP, CommRBGBP, PlayerCommGBP, CompanyGBP,	
 			BetCount)
 		SELECT 
 			b.custid,
@@ -477,6 +524,25 @@ BEGIN
 			SUM ( CASE WHEN b.bettype BETWEEN 31 AND 33 THEN comm  ELSE 0 END * e.USD) as CommRBUSD,
 			SUM (   b.playercomm * e.USD) as PlayerCommUSD,
 			- SUM(CASE WHEN b.bettype NOT BETWEEN 31 AND 33 THEN (b.awinlost + b.winlost - b.actual_stake + b.comm) ELSE 0 END * e.USD)  as CompanyUSD ,
+			--GBP
+			SUM( CASE WHEN b.bettype in (33,34) AND b.liveawayscore=0 THEN b.stake/2 ELSE b.stake END
+					*
+					CASE WHEN @drawfilter IN (2,3) THEN
+						CASE WHEN b.statusID = 111 THEN 0
+						WHEN (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
+						ELSE 1 END
+					ELSE 1 END
+					* e.GBP
+				) turnoverGBP,
+			SUM((b.winlost-b.actual_stake) * e.GBP) AS WinlostGBP,	
+			- SUM(CASE WHEN (b.bettype NOT BETWEEN 31 AND 33)  THEN (b.winlost - b.actual_stake) ELSE 0 END * e.GBP) AS LicenseeWLGBP ,
+			SUM(CASE WHEN b.bettype BETWEEN 31 AND 33 THEN b.awinlost ELSE 0 END * e.GBP) AS WinlossRBGBP,
+			0 as AmountDueToBAGBP,
+			- SUM ( CASE WHEN b.bettype BETWEEN 31 AND 33 THEN (b.winlost - b.actual_stake + awinlost + comm) ELSE 0 END * e.GBP) as AmountDueToRBGBP,
+			0 as CommBAGBP,
+			SUM ( CASE WHEN b.bettype BETWEEN 31 AND 33 THEN comm  ELSE 0 END * e.GBP) as CommRBGBP,
+			SUM (   b.playercomm * e.GBP) as PlayerCommGBP,
+			- SUM(CASE WHEN b.bettype NOT BETWEEN 31 AND 33 THEN (b.awinlost + b.winlost - b.actual_stake + b.comm) ELSE 0 END * e.GBP)  as CompanyGBP ,
 			--------------------------
 			COUNT(b.transid) 
 			* CASE WHEN @drawfilter = 2 THEN
@@ -514,6 +580,7 @@ BEGIN
 			Turnover, Winlost, LicenseeWL, WinlossRB, AmtDueToBA, AmtDueToRB, CommBA, CommRB, playercomm, Company, 
 			TurnOverEUR, WinlostEUR, LicenseeWLEUR, WinlossRBEUR, AmtDueToBAEUR, AmtDueToRBEUR, CommBAEUR, CommRBEUR, PlayerCommEUR, CompanyEUR, 
 			TurnOverUSD, WinlostUSD, LicenseeWLUSD, WinlossRBUSD, AmtDueToBAUSD, AmtDueToRBUSD, CommBAUSD, CommRBUSD, PlayerCommUSD, CompanyUSD, 
+			TurnOverGBP, WinlostGBP, LicenseeWLGBP, WinlossRBGBP, AmtDueToBAGBP, AmtDueToRBGBP, CommBAGBP, CommRBGBP, PlayerCommGBP, CompanyGBP,
 			BetCount)
 		SELECT 
 			b.custid,
@@ -575,6 +642,25 @@ BEGIN
 			0 AS CommRBUSD,
 			SUM(b.playercomm * e.USD ) AS PlayerCommUSD, 
 			0 AS CompanyUSD,
+			--GBP
+			SUM(b.turnover
+			*
+				CASE WHEN @drawfilter IN (2,3) THEN
+					CASE WHEN b.statusID = 111  THEN 0
+					WHEN b.statusID IN (114,115) THEN 0.5
+					ELSE 1 END
+				ELSE 1 END
+				* e.GBP
+			),     
+			SUM(b.winlost * e.GBP),  
+			0 as LicenseeWLGBP,
+			0 as WinlossRBGBP,
+			- SUM ((b.winlost+b.awinlost+b.comm) * e.GBP) as AmountDueToBAGBP,
+			0 as AmountDueToRBGBP,
+			SUM (comm * e.GBP) AS CommBAGBP,
+			0 AS CommRBGBP,
+			SUM(b.playercomm * e.GBP ) AS PlayerCommGBP, 
+			0 AS CompanyGBP,
 			-----------------------------
 			SUM(b.betcount)
 			* CASE WHEN @drawfilter = 2 THEN
@@ -608,6 +694,7 @@ BEGIN
 			Turnover, Winlost, LicenseeWL, WinlossRB, AmtDueToBA, AmtDueToRB, CommBA, CommRB, playercomm, Company, 
 			TurnOverEUR, WinlostEUR, LicenseeWLEUR, WinlossRBEUR, AmtDueToBAEUR, AmtDueToRBEUR, CommBAEUR, CommRBEUR, PlayerCommEUR, CompanyEUR, 
 			TurnOverUSD, WinlostUSD, LicenseeWLUSD, WinlossRBUSD, AmtDueToBAUSD, AmtDueToRBUSD, CommBAUSD, CommRBUSD, PlayerCommUSD, CompanyUSD, 
+			TurnOverGBP, WinlostGBP, LicenseeWLGBP, WinlossRBGBP, AmtDueToBAGBP, AmtDueToRBGBP, CommBAGBP, CommRBGBP, PlayerCommGBP, CompanyGBP,
 			BetCount)
 		SELECT 
 			b.custid,
@@ -669,6 +756,25 @@ BEGIN
 			SUM ( CASE WHEN b.sporttype = 151 THEN b.comm  ELSE 0 END * e.USD) as CommRBUSD,
 			SUM ( b.playercomm * e.USD) as PlayerCommUSD,
 			- SUM(CASE WHEN b.sporttype <> 151 THEN b.awinlost + b.winlost + b.comm ELSE 0 END * e.USD)  as CompanyUSD,
+			--GBP
+			SUM(b.turnover
+			*
+				CASE WHEN @drawfilter IN (2,3) THEN
+					CASE WHEN b.statusID = 111  THEN 0
+					WHEN b.statusID IN (114,115) THEN 0.5
+					ELSE 1 END
+				ELSE 1 END
+				* e.GBP
+			),     
+			SUM(b.winlost * e.GBP),
+			- SUM(CASE WHEN (b.sporttype <> 151)  THEN b.winlost ELSE 0 END * e.GBP) AS LicenseeWLGBP ,
+			SUM(CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END * e.GBP) AS WinlossRBGBP,
+			0 as AmtDueToBAGBP,
+			- SUM ( CASE WHEN b.sporttype = 151 THEN (b.winlost+b.awinlost+b.comm) ELSE 0 END * e.GBP) as AmtDueToRBGBP,
+			0 as CommBAGBP,
+			SUM ( CASE WHEN b.sporttype = 151 THEN b.comm  ELSE 0 END * e.GBP) as CommRBGBP,
+			SUM ( b.playercomm * e.GBP) as PlayerCommGBP,
+			- SUM(CASE WHEN b.sporttype <> 151 THEN b.awinlost + b.winlost + b.comm ELSE 0 END * e.GBP)  as CompanyGBP,
 			------------------------------------------
 			SUM(b.betcount)
 			* CASE WHEN @drawfilter = 2 THEN
@@ -740,7 +846,18 @@ SELECT
 	SUM(PlayerCommUSD) AS PlayerCommUSD,
 	SUM(AmtDuetoBAUSD) AS AmtDuetoBAUSD,
 	SUM(AmtDuetoRBUSD) AS AmtDuetoRBUSD,
-	SUM(CompanyUSD) AS CompanyUSD
+	SUM(CompanyUSD) AS CompanyUSD,
+	--BASE GBP
+	SUM(TurnOverGBP)	AS TurnoverGBP,
+	SUM(WinlostGBP)		AS WinlostGBP,
+	SUM(LicenseeWLGBP) AS LicenseeWLGBP,
+	SUM(WinlossRBGBP)	AS WinlossRBGBP,
+	SUM(CommBAGBP) AS CommBAGBP,
+	SUM(CommRBGBP) AS CommRBGBP,	
+	SUM(PlayerCommGBP) AS PlayerCommGBP,
+	SUM(AmtDuetoBAGBP) AS AmtDuetoBAGBP,
+	SUM(AmtDuetoRBGBP) AS AmtDuetoRBGBP,
+	SUM(CompanyGBP) AS CompanyGBP
 FROM #WinLoss w 
 	INNER JOIN bodb_licensee.dbo.licenseecustinfo c WITH (NOLOCK) ON w.custid = c.custid
 	INNER JOIN Exchange e WITH (NOLOCK) on w.Currency=e.exchangeid

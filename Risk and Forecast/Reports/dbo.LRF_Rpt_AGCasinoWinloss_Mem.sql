@@ -1,11 +1,6 @@
 USE [bodb02]
 GO
-
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
+ 
 ALTER  PROCEDURE [dbo].[LRF_Rpt_AGCasinoWinloss_Mem] 
  @LicenseeID	INT,
  @CustID		INT, --- recommend
@@ -33,6 +28,7 @@ AS
     Revisions:  
 			- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 			- 20141121@Jim: as more table alias 
+			- 20150123@Jim: support base on Currency GBP
 	Param's Explanation:  
 	  + @excludeTest: remove currency UUS
 */  
@@ -116,6 +112,7 @@ BEGIN
 		   ,Code
 		   ,USD
 		   ,EUR
+		   ,GBP
 	INTO #TempExchange 
 	FROM Lrf_f_GetExchangeDaily(@FromDate, @ToDate)
 	WHERE exchangeid IN (SELECT DISTINCT Currency FROM #tmpResult)
@@ -138,6 +135,10 @@ BEGIN
 			,SUM(r.TurnOver*e.EUR)   	 	AS TurnOverEUR
 			,SUM(r.Winlost*e.EUR)		 	AS WinlostEUR
 			,SUM(r.LicenseeWinlost*e.EUR) AS LicenseeWinlostEUR
+		---GBP
+			,SUM(r.TurnOver*e.GBP)   	 	AS TurnOverGBP
+			,SUM(r.Winlost*e.GBP)		 	AS WinlostGBP
+			,SUM(r.LicenseeWinlost*e.GBP) AS LicenseeWinlostGBP
 	FROM #tmpResult r
 		INNER JOIN #TempExchange e ON r.Winlostdate = e.ExchangeDate AND r.currency = e.ExchangeId
 		--INNER JOIN DBLIC.bodb_licensee.dbo.licenseecustinfo c WITH (NOLOCK) ON r.CustID = c.CustID

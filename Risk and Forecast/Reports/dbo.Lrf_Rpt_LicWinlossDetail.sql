@@ -1,7 +1,6 @@
 ﻿USE [bodb02]
 GO
  
-
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinlossDetail]  
 	@LicenseeID	INT,
 	@UserID		INT,
@@ -48,6 +47,7 @@ AS
 		- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 		- 20141225@Jim: improve performance
+		- 20150123@Jim: support base on Currency GBP
 	Param's Explanation:  
 	  + @CustID: SuperID  
 	  + @BaseCurrency (input currencyID): 2-MYR ; 3-USD; 6-EUR
@@ -207,9 +207,10 @@ DECLARE @TDate DATETIME
 --to Deal With Parameter Sniffing
 SELECT @FDate=@FromDate,@TDate=@ToDate 
 DECLARE @eEUR FLOAT
-DECLARE @eUSD FLOAT
+		,@eUSD FLOAT
+		,@eGBP FLOAT
 
-SELECT TOP 1 @eEUR = eur, @eUSD = usd 
+SELECT TOP 1 @eEUR = eur, @eUSD = usd ,@eGBP = GBP
 FROM Lrf_f_GetExchangeDaily(@FDate,@TDate)
 WHERE exchangeid  = @CurrencyID	
 	
@@ -908,7 +909,33 @@ BEGIN
 	   CAST(SUM(PlayerComm)*@eUSD  AS MONEY)   AS PlayerCommUSD,
 	   CAST(SUM(AmtDuetoBA)*@eUSD    AS MONEY)   AS AmtDuetoBAUSD,
 	   CAST(SUM(AmtDuetoRB)*@eUSD    AS MONEY)   AS AmtDuetoRBUSD,
-	   CAST(SUM(Company)*@eUSD     AS MONEY)   AS CompanyUSD      
+	   CAST(SUM(Company)*@eUSD     AS MONEY)   AS CompanyUSD ,
+		--BaseGBP  
+	   CAST(SUM(TurnoverSB)*@eGBP    AS MONEY)     AS TurnoverSBGBP,   
+	   CAST(SUM(TurnoverBA)*@eGBP    AS MONEY)     AS TurnoverBAGBP,   
+	   CAST(SUM(TurnoverNG)*@eGBP    AS MONEY)     AS TurnoverNGGBP,   
+	   CAST(SUM(TurnoverRB)*@eGBP    AS MONEY)     AS TurnoverRBGBP,
+	   CAST(SUM(TurnoverLC)*@eGBP    AS MONEY)     AS TurnoverLCGBP,
+	   CAST(SUM(TurnoverVS)*@eGBP    AS MONEY)     AS TurnoverVSGBP,  
+	   CAST(SUM(TurnoverCS)*@eGBP    AS MONEY)     AS TurnoverCSGBP,
+	   CAST(SUM(TurnoverBG)*@eGBP    AS MONEY)     AS TurnoverBGGBP,
+	   CAST(SUM(TurnoverKN)*@eGBP    AS MONEY)     AS TurnoverKNGBP,
+	   CAST(SUM(Winlost)*@eGBP	     AS MONEY)   AS WinlostGBP,  
+	   CAST(SUM(LicenseeWLSB)*@eGBP  AS MONEY)   AS LicenseeWLSBGBP,
+	   CAST(SUM(LicenseeWLBA)*@eGBP  AS MONEY)   AS LicenseeWLBAGBP,
+	   CAST(SUM(LicenseeWLNG)*@eGBP  AS MONEY)   AS LicenseeWLNGGBP,
+	   CAST(SUM(LicenseeWLRB)*@eGBP  AS MONEY)   AS LicenseeWLRBGBP,
+	   CAST(SUM(LicenseeWLLC)*@eGBP  AS MONEY)   AS LicenseeWLLCGBP,
+	   CAST(SUM(LicenseeWLVS)*@eGBP  AS MONEY)   AS LicenseeWLVSGBP,
+	   CAST(SUM(LicenseeWLCS)*@eGBP  AS MONEY)   AS LicenseeWLCSGBP,
+	   CAST(SUM(LicenseeWLBG)*@eGBP  AS MONEY)   AS LicenseeWLBGGBP,
+	   CAST(SUM(LicenseeWLKN)*@eGBP  AS MONEY)   AS LicenseeWLKNGBP,
+	   CAST(SUM(CommBA)*@eGBP      AS MONEY)   AS CommBAGBP,
+	   CAST(SUM(CommRB)*@eGBP      AS MONEY)   AS CommRBGBP,
+	   CAST(SUM(PlayerComm)*@eGBP  AS MONEY)   AS PlayerCommGBP,
+	   CAST(SUM(AmtDuetoBA)*@eGBP    AS MONEY)   AS AmtDuetoBAGBP,
+	   CAST(SUM(AmtDuetoRB)*@eGBP    AS MONEY)   AS AmtDuetoRBGBP,
+	   CAST(SUM(Company)*@eGBP     AS MONEY)   AS CompanyGBP      
  FROM	#SAgWinLoss w   
 		INNER JOIN bodb_licensee.dbo.licenseecustinfo c WITH (NOLOCK) ON w.custid = c.custid		
  GROUP BY w.custid, c.username,c.username2,w.currency

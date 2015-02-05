@@ -29,6 +29,10 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_MatchWL_Parlay]
 	@SumLicenseeWLEUR MONEY=0 OUTPUT,
 	@SumCommEUR MONEY=0 OUTPUT,
 	@SumPlayerCommEUR MONEY=0 OUTPUT,
+	@SumWinlostGBP MONEY=0 OUTPUT,
+	@SumLicenseeWLGBP MONEY=0 OUTPUT,
+	@SumCommGBP MONEY=0 OUTPUT,
+	@SumPlayerCommGBP MONEY=0 OUTPUT,
 	@Sort VARCHAR(100) = 'TransID ASC'
 AS
 /*
@@ -46,6 +50,7 @@ Revisions:
 		- 20140428@Hannah: Sort betlist
 		- 20140516@Hannah: Fix bug Sort betlist
 		- 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
+		- 20150128@Winnie: Add base currency GBP
 Param's Explanation: 
 
 */
@@ -315,7 +320,12 @@ SELECT
 	@SumWinlostEUR=SUM(ISNULL(winlost*e.EUR,0)),
 	@SumLicenseeWLEUR=SUM(ISNULL(LicenseeWL*e.EUR,0)),
 	@SumCommEUR=SUM(ISNULL(comm*e.EUR,0)),
-	@SumPlayerCommEUR=SUM(ISNULL(playercomm*e.EUR,0))	
+	@SumPlayerCommEUR=SUM(ISNULL(playercomm*e.EUR,0)),	
+	--GBP
+	@SumWinlostGBP=SUM(ISNULL(winlost*e.GBP,0)),
+	@SumLicenseeWLGBP=SUM(ISNULL(LicenseeWL*e.GBP,0)),
+	@SumCommGBP=SUM(ISNULL(comm*e.GBP,0)),
+	@SumPlayerCommGBP=SUM(ISNULL(playercomm*e.GBP,0))	
 FROM #AgWinlossMP b
 INNER JOIN #TempExchange e ON b.currency=e.exchangeID AND b.winlostdate=e.exchangeDate
 INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid
@@ -323,7 +333,7 @@ INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid
 DECLARE @sql NVARCHAR(2000)
 DECLARE @SortTemp VARCHAR(250) 
 
-IF (@Sort LIKE '%USD%') OR (@Sort LIKE '%EUR%')
+IF (@Sort LIKE '%USD%') OR (@Sort LIKE '%EUR%')OR (@Sort LIKE '%GBP%')
 BEGIN
 	DECLARE @charindex INT
 	SELECT @charindex = CHARINDEX( ' ', @Sort, 1)
@@ -356,7 +366,14 @@ SET @sql =
 					winlost * e.EUR winlostEUR,
 					LicenseeWL* e.EUR LicenseeWLEUR,
 					comm * e.EUR commEUR,
-					playercomm*e.EUR playercommEUR
+					playercomm*e.EUR playercommEUR,				
+					--GBP
+					stake * e.GBP stakeGBP,
+					actual_stake * e.GBP actual_stakeGBP,
+					winlost * e.GBP winlostGBP,
+					LicenseeWL* e.GBP LicenseeWLGBP,
+					comm * e.GBP commGBP,
+					playercomm*e.GBP playercommGBP
 			
 			FROM #AgWinlossMP b
 				INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid

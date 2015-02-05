@@ -67,6 +67,7 @@ AS /*
 		- 20140819@Jim: add more column BetEffective in the result
 		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 		- 20141225@Jim: improve performance
+		- 20150129@Jim : add base on curreny GBP
 */
     
 SET NOCOUNT ON
@@ -89,6 +90,7 @@ DECLARE @Exchange AS TABLE (
 							,MYR FLOAT
 							,USD FLOAT
 							,EUR FLOAT
+							,GBP FLOAT
 							,PRIMARY KEY(ExchangeDate,ExchangeId)
 							)
 						
@@ -111,13 +113,14 @@ SELECT  CustID
 FROM bodb_licensee.dbo.f_SelLicenseeCust (@LicenseeID) lc  
 	INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
 
-INSERT INTO @Exchange (ExchangeDate,ExchangeId,MYR,USD,EUR)
+INSERT INTO @Exchange (ExchangeDate,ExchangeId,MYR,USD,EUR,GBP)
 SELECT 
 	ExchangeDate
 	,ExchangeId
 	,MYR
 	,USD
 	,EUR
+	,GBP
 FROM Lrf_f_GetExchangeDaily(@_FromDate,@_ToDate)
 WHERE exchangeid IN (SELECT DISTINCT CurrencyID FROM #Currency)
 
@@ -530,33 +533,43 @@ SELECT
 		SUM(TurnOver)         AS TurnOver ,  
         SUM(TurnOver*e.USD)      AS TurnOverUSD ,  
         SUM(TurnOver*e.EUR)      AS TurnOverEUR ,  
+		SUM(TurnOver*e.GBP)      AS TurnOverGBP , 
         SUM(MemberWinLost)    AS MemberWinLost ,
 		SUM(MemberWinLost*e.USD) AS MemberWinLostUSD ,  
         SUM(MemberWinLost*e.EUR) AS MemberWinLostEUR , 
+		SUM(MemberWinLost*e.GBP) AS MemberWinLostGBP , 
 		SUM(BetEffective)	  AS BetEffective,
 		SUM(BetEffective*e.USD)  AS BetEffectiveUSD,
 		SUM(BetEffective*e.EUR)  AS BetEffectiveEUR,
+		SUM(BetEffective*e.GBP)  AS BetEffectiveGBP,
         SUM(LicenseeWL)       AS LicenseeWL,  
         SUM(LicenseeWL*e.USD) 	  AS LicenseeWLUSD,  
         SUM(LicenseeWL*e.EUR)    AS LicenseeWLEUR,  
+		SUM(LicenseeWL*e.GBP)    AS LicenseeWLGBP,  
         SUM(WinlossRB)        AS WinlossRB,  
         SUM(WinlossRB*e.USD)     AS WinlossRBUSD,  
         SUM(WinlossRB*e.EUR)     AS WinlossRBEUR,  
+		SUM(WinlossRB*e.GBP)     AS WinlossRBGBP,
         SUM(CommBA)           AS CommBA,  
         SUM(CommBA*e.USD)        AS CommBAUSD,  
         SUM(CommBA*e.EUR)        AS CommBAEUR,  
+		SUM(CommBA*e.GBP)        AS CommBAGBP,
         SUM(commRB)           AS commRB,  
         SUM(commRB*e.USD)        AS commRBUSD,  
         SUM(commRB*e.EUR)        AS commRBEUR,  
+		SUM(commRB*e.GBP)        AS commRBGBP,
 		SUM(playerComm)       AS PlayerComm,  
 		SUM(playerComm*e.USD)    AS PlayerCommUSD,  
 		SUM(playerComm*e.EUR)    AS PlayerCommEUR,  
+		SUM(playerComm*e.GBP)    AS PlayerCommGBP,
         SUM(AmtDuetoBA)       AS AmtDuetoBA,  
         SUM(AmtDuetoBA*e.USD)    AS AmtDuetoBAUSD,  
         SUM(AmtDuetoBA*e.EUR)    AS AmtDuetoBAEUR,  
+		SUM(AmtDuetoBA*e.GBP)    AS AmtDuetoBAGBP,
         SUM(AmtDuetoRB)       AS AmtDuetoRB,  
         SUM(AmtDuetoRB*e.USD)    AS AmtDuetoRBUSD,  
         SUM(AmtDuetoRB*e.EUR)    AS AmtDuetoRBEUR,
+		SUM(AmtDuetoRB*e.GBP)    AS AmtDuetoRBGBP,
 		SUM(w.betcount)       AS BetCount
 FROM		
 		#tmpDataDetail w
@@ -572,33 +585,43 @@ SELECT
 	SUM(TurnOver) 								 AS SumTurnOver ,
     CAST(SUM(TurnOver*e.USD)		    AS MONEY)	 AS SumTurnOverUSD ,
     CAST(SUM(TurnOver*e.EUR)           AS MONEY)	 AS SumTurnOverEUR ,
+	CAST(SUM(TurnOver*e.GBP)           AS MONEY)	 AS SumTurnOverGBP ,
     SUM(MemberWinLost) 							 AS SumMemberWinLost ,
 	SUM(BetEffective)						     AS SumBetEffective,
     CAST(SUM(MemberWinLost*e.USD)      AS MONEY)	 AS SumMemberWinLostUSD ,
 	CAST(SUM(BetEffective*e.USD)       AS MONEY)	 AS SumBetEffectiveUSD ,
 	CAST(SUM(MemberWinLost*e.EUR)      AS MONEY)	 AS SumMemberWinLostEUR,
 	CAST(SUM(BetEffective*e.EUR) 		AS MONEY)	 AS SumBetEffectiveEUR  ,
-    SUM(LicenseeWL) 							 AS SumLicenseeWL,
+	CAST(SUM(MemberWinLost*e.GBP)      AS MONEY)	 AS SumMemberWinLostGBP,
+	CAST(SUM(BetEffective*e.GBP) 		AS MONEY)	 AS SumBetEffectiveGBP,
+	SUM(LicenseeWL) 							 AS SumLicenseeWL,
     CAST(SUM(LicenseeWL*e.USD) 	    AS MONEY)	 AS SumLicenseeWLUSD,
     CAST(SUM(LicenseeWL*e.EUR)         AS MONEY)	 AS SumLicenseeWLEUR,
+	CAST(SUM(LicenseeWL*e.GBP)         AS MONEY)	 AS SumLicenseeWLGBP,
 	SUM(WinlossRB) 								 AS SumWinlossRB,
     CAST(SUM(WinlossRB*e.USD) 	        AS MONEY)	 AS SumWinlossRBUSD,
     CAST(SUM(WinlossRB*e.EUR)          AS MONEY)	 AS SumWinlossRBEUR,
+	CAST(SUM(WinlossRB*e.GBP)          AS MONEY)	 AS SumWinlossRBGBP,
     SUM(CommBA) 								 AS SumCommBA,
     CAST(SUM(CommBA*e.USD) 		    AS MONEY)	 AS SumCommBAUSD,
     CAST(SUM(CommBA*e.EUR) 		    AS MONEY)	 AS SumCommBAEUR,
+	CAST(SUM(CommBA*e.GBP) 		    AS MONEY)	 AS SumCommBAGBP,
     SUM(commRB) 								 AS SumcommRB,
     CAST(SUM(commRB*e.USD) 		    AS MONEY)	 AS SumcommRBUSD,
     CAST(SUM(commRB*e.EUR) 		    AS MONEY)	 AS SumcommRBEUR,
+	CAST(SUM(commRB*e.GBP) 		    AS MONEY)	 AS SumcommRBGBP,
 	SUM(PlayerComm)       						 AS SumPlayerComm,
 	CAST(SUM(PlayerComm*e.USD)         AS MONEY)	 AS SumPlayerCommUSD,
 	CAST(SUM(PlayerComm*e.EUR)      	AS MONEY)	 AS SumPlayerCommEUR,
+	CAST(SUM(PlayerComm*e.GBP)      	AS MONEY)	 AS SumPlayerCommGBP,
     SUM(AmtDuetoBA) 				    		 AS SumAmtDuetoBA,
     CAST(SUM(AmtDuetoBA*e.USD)         AS MONEY)	 AS SumAmtDuetoBAUSD,
     CAST(SUM(AmtDuetoBA*e.EUR)         AS MONEY)	 AS SumAmtDuetoBAEUR,
+	CAST(SUM(AmtDuetoBA*e.GBP)         AS MONEY)	 AS SumAmtDuetoBAGBP,
     SUM(AmtDuetoRB)		 						 AS SumAmtDuetoRB,
     CAST(SUM(AmtDuetoRB*e.USD)         AS MONEY)	 AS SumAmtDuetoRBUSD,
     CAST(SUM(AmtDuetoRB*e.EUR)         AS MONEY)	 AS SumAmtDuetoRBEUR,
+	CAST(SUM(AmtDuetoRB*e.GBP)         AS MONEY)	 AS SumAmtDuetoRBGBP,
     @TotalRow 									 AS TotalRows,
 	SUM(b.betcount) 							 AS SumBetCount
 	
@@ -609,16 +632,6 @@ DROP TABLE #TempData
 DROP TABLE #tmpDataDetail
 DROP TABLE #TempCustID
 DROP TABLE #TempCustIDFull
- 
-
-GO
-
-SET QUOTED_IDENTIFIER OFF 
-GO
-SET ANSI_NULLS ON 
-GO
-
-
 GO 
  GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinLoss] TO [vnteam]
 GO 

@@ -1,11 +1,5 @@
 ﻿USE [bodb02]
-GO
-
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
+ 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_MatchWinLossByOutrightParlay]
     @LicenseeID INT,
 	@UserID		INT,
@@ -31,6 +25,7 @@ Revisions:
 	- 20130514@Jim: Restrict permission of Licensee Users by currency
 	- 20140620@Florent: add column betcount
    - 20141111@Jim: changing currency for KeenOcean member  (#Redmine 25673)
+   - 20150123@Jim: support base on Currency GBP
 Param's Explanation: 
 	
 */
@@ -40,7 +35,7 @@ exec [Lrf_Rpt_MatchWinLossByOutrightParlay] @LicenseeID=3,@LicenseeType=default,
 */
 SET NOCOUNT ON
 
-DECLARE @ExchangeDaily TABLE(ExchangeDate SMALLDATETIME, ExchangeId INT, USD FLOAT, EUR FLOAT, PRIMARY KEY(ExchangeDate,ExchangeId))
+DECLARE @ExchangeDaily TABLE(ExchangeDate SMALLDATETIME, ExchangeId INT, USD FLOAT, EUR FLOAT,GBP FLOAT, PRIMARY KEY(ExchangeDate,ExchangeId))
 	   
    
 DECLARE @_Date AS DATETIME
@@ -511,7 +506,7 @@ BEGIN
 END
 
 INSERT INTO @ExchangeDaily
-    SELECT ExchangeDate, ExchangeId, USD, EUR
+    SELECT ExchangeDate, ExchangeId, USD, EUR,GBP
     FROM Lrf_f_GetExchangeDaily(@_Date,@_Date)
     
 
@@ -525,37 +520,45 @@ SELECT
     CAST(SUM(turnover) AS MONEY) AS turnover,
     CAST(SUM(turnover * e.USD) AS MONEY) AS turnoverUSD,
     CAST(SUM(turnover * e.EUR) AS MONEY) AS turnoverEUR,
+	CAST(SUM(turnover * e.GBP) AS MONEY) AS turnoverGBP,
     CAST(SUM(MemberWinLost) AS MONEY) AS MemberWinLost,
     CAST(SUM(MemberWinLost * e.USD) AS MONEY) AS MemberWinLostUSD,
     CAST(SUM(MemberWinLost * e.EUR) AS MONEY) AS MemberWinLostEUR,
+	CAST(SUM(MemberWinLost * e.GBP) AS MONEY) AS MemberWinLostGBP,
     CAST(SUM(LicenseeWL) AS MONEY) AS LicenseeWL,
     CAST(SUM(LicenseeWL * e.USD) AS MONEY) AS LicenseeWLUSD,
     CAST(SUM(LicenseeWL * e.EUR) AS MONEY) AS LicenseeWLEUR,
+	CAST(SUM(LicenseeWL * e.GBP) AS MONEY) AS LicenseeWLGBP,
 	CAST(SUM(WinlossRB) AS MONEY) AS WinlossRB,
     CAST(SUM(WinlossRB * e.USD) AS MONEY) AS WinlossRBUSD,
     CAST(SUM(WinlossRB * e.EUR) AS MONEY) AS WinlossRBEUR,
+	CAST(SUM(WinlossRB * e.GBP) AS MONEY) AS WinlossRBGBP,
     CAST(SUM(CommBA) AS MONEY) AS CommBA,
     CAST(SUM(CommBA * e.USD) AS MONEY) AS CommBAUSD,
     CAST(SUM(CommBA * e.EUR) AS MONEY) AS CommBAEUR,
+	CAST(SUM(CommBA * e.GBP) AS MONEY) AS CommBAGBP,
     CAST(SUM(commRB) AS MONEY) AS commRB,
     CAST(SUM(commRB * e.USD) AS MONEY) AS commRBUSD,
     CAST(SUM(commRB * E.EUR) AS MONEY) AS commRBEUR,
+	CAST(SUM(commRB * E.GBP) AS MONEY) AS commRBGBP,
 	CAST(SUM(playercomm) AS MONEY) AS PlayerComm,
 	CAST(SUM(playercomm*e.USD) AS MONEY) AS PlayerCommUSD,
 	CAST(SUM(playercomm*e.EUR) AS MONEY) AS PlayerCommEUR,
+	CAST(SUM(playercomm*e.GBP) AS MONEY) AS PlayerCommGBP,
     CAST(SUM(AmtDuetoBA) AS MONEY) AS AmtDuetoBA,
     CAST(SUM((AmtDuetoBA) * e.USD) AS MONEY) AS AmtDuetoBAUSD,
     CAST(SUM((AmtDuetoBA) * e.EUR) AS MONEY) AS AmtDuetoBAEUR,
+	CAST(SUM((AmtDuetoBA) * e.GBP) AS MONEY) AS AmtDuetoBAGBP,
     CAST(SUM(AmtDuetoRB) AS MONEY) AS AmtDuetoRB,
     CAST(SUM((AmtDuetoRB) * e.USD) AS MONEY) AS AmtDuetoRBUSD,
     CAST(SUM((AmtDuetoRB) * e.EUR) AS MONEY) AS AmtDuetoRBEUR,
+	CAST(SUM((AmtDuetoRB) * e.GBP) AS MONEY) AS AmtDuetoRBGBP,
     race,
     matchcode,
     isNeutral,
 	sum(b.betcount) betcount
 FROM  
 	@AgMatchWLDetails b
-	--INNER JOIN (SELECT *  FROM Lrf_f_GetExchangeDaily(@_FromDate,@_ToDate))e 
 	INNER JOIN @ExchangeDaily e ON b.winlostdate = e.ExchangeDate AND b.currency = e.ExchangeId
 GROUP BY  
     matchid,
