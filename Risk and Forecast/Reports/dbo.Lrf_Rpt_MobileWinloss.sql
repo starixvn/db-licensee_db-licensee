@@ -45,6 +45,7 @@ AS
 		- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 		- 20150127@Jim: support base on GBP Currency
+		- 20150204@Don: remove index hint
 	Param's Explanation:  
 	  + @SiteType: 1-WAP; 2-Smartphone; 3: Others;0-All  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -323,7 +324,8 @@ BEGIN
 						ELSE 1 END
 					ELSE 1 END
 				   BetCount
-		FROM dbo.bettrans b WITH (NOLOCK,INDEX=IX_srecommend)
+		--FROM dbo.bettrans b WITH (NOLOCK,INDEX=IX_srecommend)
+		FROM dbo.bettrans b WITH (NOLOCK)
 			INNER JOIN @TempAg tma ON tma.CustID=b.recommend AND b.currency = tma.currency
 			INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON tma.custid=BA.recommend and b.transid = BA.transid 	 	
 			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
@@ -435,7 +437,8 @@ BEGIN
 					ELSE 1 END
 				ELSE 1 END
 			   BetCount
-		FROM dbo.bettrans b WITH (NOLOCK,INDEX=IX_srecommend)
+		--FROM dbo.bettrans b WITH (NOLOCK,INDEX=IX_srecommend)
+		FROM dbo.bettrans b WITH (NOLOCK)
 			INNER JOIN @tempAg tma ON tma.CustID=b.recommend  AND b.currency = tma.currency
 			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 		WHERE
@@ -550,7 +553,8 @@ BEGIN
 					ELSE 1 END
 				ELSE 1 END
 			   BetCount
-		FROM dbo.bettrans b WITH (NOLOCK,INDEX=IX_srecommend)
+		--FROM dbo.bettrans b WITH (NOLOCK,INDEX=IX_srecommend)
+		FROM dbo.bettrans b WITH (NOLOCK)
 			INNER JOIN @tempAg tma ON tma.CustID=b.recommend AND b.currency = tma.currency
 			INNER JOIN @bettype bt ON b.bettype = bt.bettype
 			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
@@ -815,6 +819,7 @@ SELECT
 	SUM(Winlost)		AS Winlost,
 	SUM(LicenseeWL) AS LicenseeWL,
 	SUM(WinlossRB)	AS WinlossRB,
+
 	SUM(CommBA) AS CommBA,
 	SUM(CommRB) AS CommRB,	
 	SUM(PlayerComm) AS PlayerComm,
@@ -869,8 +874,8 @@ ORDER BY 5,2
 DROP TABLE #WinLoss
 		
 	
-END	
+END
 GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_MobileWinloss] TO [bodbLicenseeNet]
+GRANT EXECUTE ON [dbo].[Lrf_Rpt_MobileWinloss] TO [bodbLicenseeNet] AS [dbo]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_MobileWinloss] TO [vnteam]  
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_MobileWinloss] TO [vnteam] AS [dbo]

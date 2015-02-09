@@ -42,6 +42,7 @@ Revisions:
 	-20141017@Jim : Apply for the change in Sporting Solution structure (#24478)
 	-20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	-20150127@Jim: support base on GBP Currency
+	-20150209@Don: remove index hint IX_srecommend
      
 Param's Explanation:  
 	@Liveindicator : indicate that whether the report will get live data or not
@@ -116,7 +117,8 @@ BEGIN
 				+ 'SUM (comm ) AS Comm,' + CHAR(13) + 'SUM (b.playercomm  ) AS PlayerComm,' + CHAR(13) 
 				+ '- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,  ' + CHAR(13) 
 				+ 'COUNT(b.transid) BetCount' + CHAR(13) 
-				+ 'FROM bettrans b  WITH (NOLOCK,INDEX=IX_srecommend)' + CHAR(13) 
+				--+ 'FROM bettrans b  WITH (NOLOCK,INDEX=IX_srecommend)' + CHAR(13) 
+				+ 'FROM bettrans b  WITH (NOLOCK)' + CHAR(13) 
 				+ 'INNER JOIN @TempAg t  ON b.recommend =t.custid AND b.Currency = t.Currency' + CHAR(13) 
 				+ 'INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON t.custid=ba.recommend and b.transid = ba.transid' + CHAR(13) 
 				+ 'WHERE b.winlostdate BETWEEN ''' + convert(VARCHAR(10), @TempFromDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TDate, 120) + '''' + CHAR(13) + 
@@ -130,7 +132,8 @@ BEGIN
 		--BA for parlay
 		SELECT @sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13) + 'SELECT ' + CHAR(13) + 'b.winlostdate, ' + CHAR(13) + 't.currency,' + CHAR(13) + 'b.bettype,' + CHAR(13) + 'SUM(CASE WHEN b.bettype = 33 AND b.liveawayscore = 0 THEN stake/2 ELSE stake END) turnover,' + CHAR(13) + 'SUM(b.winlost - b.actual_stake) AS Winlost,' + CHAR(13) + '0 AS LicenseeWL,' + CHAR(13) + 'SUM (comm ) AS Comm,' + CHAR(13) + 'SUM (b.playercomm  ) AS PlayerComm,' + CHAR(13) + '- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,  ' + CHAR(13) 
 				+ 'COUNT(b.transid) BetCount' + CHAR(13) 
-				+ 'FROM bettrans b  WITH (NOLOCK,INDEX=IX_srecommend)' + CHAR(13) 
+				--+ 'FROM bettrans b  WITH (NOLOCK,INDEX=IX_srecommend)' + CHAR(13) 
+				+ 'FROM bettrans b  WITH (NOLOCK)' + CHAR(13) 
 				+ 'INNER JOIN @TempAg t  ON b.recommend =t.custid AND b.Currency = t.Currency' + CHAR(13) 
 				+ 'INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON t.custid=ba.recommend and b.transid = ba.transid' + CHAR(13) 
 				+ 'WHERE b.winlostdate BETWEEN ''' + convert(VARCHAR(10), @TempFromDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TDate, 120) + '''' + CHAR(13) + 
@@ -166,7 +169,8 @@ BEGIN
 			'SUM ( b.playercomm  ) AS PlayerComm,' + CHAR(13) + 
 			'- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,  ' + CHAR(13) + 
 			'COUNT(b.transid) BetCount' + CHAR(13) + 
-			'FROM bettrans b  WITH (NOLOCK,INDEX=IX_srecommend)' + CHAR(13) + 
+			--'FROM bettrans b  WITH (NOLOCK,INDEX=IX_srecommend)' + CHAR(13) + 
+			'FROM bettrans b  WITH (NOLOCK)' + CHAR(13) + 
 			'INNER JOIN @TempAg t  ON b.recommend =t.custid AND b.Currency = t.Currency ' + CHAR(13) + 
 			'LEFT JOIN dbo.match m WITH (NOLOCK) ON b.matchID=m.matchID' + CHAR(13) + 
 			'LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON t.custid=ba.recommend and  b.transid = BA.transid' + CHAR(13) + 
@@ -211,7 +215,8 @@ BEGIN
 			'SUM ( b.playercomm  ) AS PlayerComm,' + CHAR(13) + 
 			'- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,  ' + CHAR(13) + 
 			'COUNT(b.transid) BetCount' + CHAR(13) + 
-			'FROM bettrans b  WITH (NOLOCK,INDEX=IX_srecommend)' + CHAR(13) + 
+			--'FROM bettrans b  WITH (NOLOCK,INDEX=IX_srecommend)' + CHAR(13) + 
+			'FROM bettrans b  WITH (NOLOCK)' + CHAR(13) + 
 			'INNER JOIN @TempAg t  ON b.recommend =t.custid AND b.Currency = t.Currency ' + CHAR(13) + 
 			'LEFT JOIN dbo.match m WITH (NOLOCK) ON b.matchID=m.matchID' + CHAR(13) + 
 			'LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON t.custid=ba.recommend and  b.transid = BA.transid' + CHAR(13) + 
@@ -450,6 +455,6 @@ ELSE
 	EXEC (@sql)
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_LiveReportSummaryDetail] TO [bodbLicenseeNet]  
+GRANT EXECUTE ON [dbo].[Lrf_Rpt_LiveReportSummaryDetail] TO [bodbLicenseeNet] AS [dbo]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LiveReportSummaryDetail] TO [vnteam] 
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LiveReportSummaryDetail] TO [vnteam] AS [dbo]
