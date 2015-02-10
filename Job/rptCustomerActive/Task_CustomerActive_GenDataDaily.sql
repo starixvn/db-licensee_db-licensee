@@ -1,26 +1,27 @@
 USE bodb_LicenseeReport
 GO
-ALTER PROCEDURE dbo.Task_CustomerActive_GenDataDaily @TranDate DATE
+CREATE PROCEDURE dbo.Task_CustomerActive_GenDataDaily @TransDate DATE
 AS
-/*   
- Task: Generate data for Customer Active
- DB: DBLIC/bodb_LicenseeReport
- Revisions: 
- Param's Explanation:
+/*
+	 Creator: 20150204@Patrick
+	 Task: Generate data for Customer Active
+	 DB: DBLIC/bodb_LicenseeReport
+	 Revisions: 
+	 Param's Explanation:
 */
 
 BEGIN
 	SET NOCOUNT ON
-	IF @TranDate IS NULL
+	IF @TransDate IS NULL
 		RETURN
 
-	DECLARE @TransDate DATE, @ProductCodes VARCHAR(125), @FromDate DATE, @ToDate DATE
+	DECLARE @ProductCodes VARCHAR(125), @FromDate DATE, @ToDate DATE
 	SELECT @FromDate = DATEADD(D, -1, @TransDate), @ToDate = DATEADD(D, 1, @TransDate)
 
-	--get licensee cust
-	DECLARE @TmpLicenseeCust AS TABLE ( CustId INT, Currency INT)
-	INSERT INTO @TmpLicenseeCust (CustId, Currency)
-	SELECT CustID, Currency FROM bodb_licensee.dbo.f_SelLicenseeCust(0)
+	----get licensee cust
+	--DECLARE @TmpLicenseeCust AS TABLE ( CustId INT, Currency INT)
+	--INSERT INTO @TmpLicenseeCust (CustId, Currency)
+	--SELECT CustID, Currency FROM bodb_licensee.dbo.f_SelLicenseeCust(0)
 	
 	--get product prefix
 	SELECT @ProductCodes = COALESCE(@ProductCodes + ',' + ProductPrefix, ProductPrefix)
@@ -32,6 +33,12 @@ BEGIN
     SELECT Bettype, ProductID 
 	FROM bodb_licensee.dbo.LA_f_BettypeProductMapping(0, @ProductCodes)
 
+	--get licensee who is multi currencies
+	DECLARE @MultiCurrencies TABLE(recommend INT, currency INT, fromDate SMALLDATETIME, toDate SMALLDATETIME)
+	INSERT INTO @MultiCurrencies(recommend, currency, fromDate, toDate)
+	SELECT recommend, currency, fromDate, toDate 
+	FROM bodb_licensee.dbo.f_LicenseeMultiCurrencyConfigSel()
+
 	CREATE TABLE #DataTmp (TransDate DATE, CustId INT, Recommend INT, CurrencyId INT, ProductId INT)
 
 	--For SportsBook --merge
@@ -39,9 +46,10 @@ BEGIN
 	SELECT CAST(a.transdate AS DATE) AS TransDate, a.CustID, a.recommend, a.currency
 		, CASE WHEN ba.transid IS NOT NULL THEN 3 ELSE bt.ProductID END AS ProductId
 	FROM bodb02.dbo.bettrans a WITH (NOLOCK)
-		INNER JOIN @TmpLicenseeCust c ON a.recommend = c.custid
+		INNER JOIN bodb_licensee.dbo.LicenseeCust c WITH(NOLOCK) ON a.recommend = c.custid
 		INNER JOIN #Bettype bt ON a.bettype = bt.bettype
 		LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction ba WITH (NOLOCK) ON a.transid = ba.transid
+		LEFT JOIN @MultiCurrencies l ON a.recommend = l.recommend AND @TransDate BETWEEN l.fromDate AND l.toDate --incase keennocen
 	WHERE a.bettype < 19999
 		AND a.transdate > @FromDate AND a.transdate < @ToDate
 	GROUP BY CAST(a.transdate AS DATE), a.CustID, a.recommend, a.currency
@@ -55,7 +63,7 @@ BEGIN
 		SELECT CAST(a.transdate AS DATE) AS TransDate, a.CustID, a.recommend
 			, a.currency, bt.ProductId
 		FROM bodb02.dbo.translog a WITH (NOLOCK)
-			INNER JOIN @TmpLicenseeCust lc ON a.recommend = lc.custid
+			INNER JOIN bodb_licensee.dbo.LicenseeCust lc WITH(NOLOCK) ON a.recommend = lc.custid
 			INNER JOIN #Bettype bt ON a.gameID = bt.bettype
 		WHERE a.transdate > @FromDate AND transdate < @ToDate
 		GROUP BY CAST(a.transdate AS DATE), a.CustID, a.recommend, a.currency, bt.ProductId
@@ -64,12 +72,12 @@ BEGIN
 	OPTION (MAXDOP 1)
 
 	-- For Playtech Casino --merge
-	INSERT INTO #DataTmp(TransDate, CustId, Recommend, CurrencyId, ProductId)
-	SELECT CAST(TransDate AS DATE) AS TransDate, b.CustID, b.recommend, b.currency, 9 AS ProductId
-	FROM bodb_PlaytechCS.dbo.bettrans_PlaytechCS b WITH(NOLOCK)
-	WHERE Winlostdate = @TransDate
-	GROUP BY CAST(TransDate AS DATE), b.CustID, b.recommend, b.currency
-	OPTION (RECOMPILE)
+	--INSERT INTO #DataTmp(TransDate, CustId, Recommend, CurrencyId, ProductId)
+	--SELECT CAST(TransDate AS DATE) AS TransDate, b.CustID, b.recommend, b.currency, 9 AS ProductId
+	--FROM bodb_PlaytechCS.dbo.bettrans_PlaytechCS b WITH(NOLOCK)
+	--WHERE Winlostdate = @TransDate
+	--GROUP BY CAST(TransDate AS DATE), b.CustID, b.recommend, b.currency
+	--OPTION (RECOMPILE) --> Currently, playtech cs is terminated
 
 	-- For AG Casino
 	INSERT INTO #DataTmp(TransDate, CustId, Recommend, CurrencyId, ProductId)
@@ -92,4 +100,6 @@ BEGIN
 	DROP TABLE #DataTmp
 END
 
+GO
+GRANT VIEW DEFINITION ON [dbo].[Task_CustomerActive_GenDataDaily] TO [vnteam] AS [dbo]
 GO

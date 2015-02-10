@@ -1,9 +1,10 @@
 USE bodb_report
 GO
-ALTER PROCEDURE dbo.Task_CustomerActive_GenDataFromBettransBK @FromDate DATE
+CREATE PROCEDURE dbo.Task_CustomerActive_GenDataFromBettransBK @FromDate DATE
 	, @ToDate DATE
 AS
 /*   
+ Creator: 20150204@Patrick
  Task: Gen history data from bettrans_bk
  DB: DBACC/bodb_LicenseeReport
  Revisions: 
@@ -17,17 +18,22 @@ BEGIN
 	IF @FromDate IS NULL OR @ToDate IS NULL
 		RETURN
 
+	--clean data from temp table
+	DELETE FROM dbo.rptCustomerActiveTmp WITH(ROWLOCK)
+	WHERE TransDate BETWEEN @FromDate AND @ToDate
+
 	DECLARE @WinlostDate DATE, @MinTransId BIGINT, @MaxTransId BIGINT
 	SELECT	@WinlostDate = @FromDate
 
-	--get licensee cust
-	DECLARE @TmpLicenseeCust AS TABLE ( CustId INT, Currency INT)
 	DECLARE @sql VARCHAR(1024)
-	SELECT  @sql = 'SELECT CustID, Currency 
-					FROM OPENQUERY(DBLIC, ''SELECT CustID, Currency 
-											FROM bodb_licensee.dbo.f_SelLicenseeCust(0)'')'
-	INSERT INTO @TmpLicenseeCust (CustId, Currency)
-	EXEC (@sql)
+
+	--get licensee cust
+	--DECLARE @TmpLicenseeCust AS TABLE ( CustId INT, Currency INT)
+	--SELECT  @sql = 'SELECT CustID, Currency 
+	--				FROM OPENQUERY(DBLIC, ''SELECT CustID, Currency 
+	--										FROM bodb_licensee.dbo.f_SelLicenseeCust(0)'')'
+	--INSERT INTO @TmpLicenseeCust (CustId, Currency)
+	--EXEC (@sql)
 
 	--get licensee who is multi currencies
 	DECLARE @MultiCurrencies TABLE(recommend INT, currency INT, fromDate SMALLDATETIME, toDate SMALLDATETIME)
@@ -36,7 +42,7 @@ BEGIN
 	FROM OPENQUERY(DBLIC, 'SELECT recommend, currency, fromDate, toDate FROM bodb_licensee.dbo.f_LicenseeMultiCurrencyConfigSel()')
 	
 	CREATE TABLE #LicenseeBATransaction(transid BIGINT)
-	CREATE TABLE #rptCustomerActiveTmp (TransDate DATE, CustId INT, Recommend INT, CurrencyId INT, ProductId INT)
+	--CREATE TABLE #rptCustomerActiveTmp (TransDate DATE, CustId INT, Recommend INT, CurrencyId INT, ProductId INT)
 
 	WHILE @WinlostDate <= @ToDate
 	BEGIN
@@ -57,7 +63,7 @@ BEGIN
 		EXEC (@sql)
 
 		--For SportsBook
-		INSERT INTO #rptCustomerActiveTmp(TransDate, CustId, Recommend, CurrencyId, ProductId)
+		INSERT INTO dbo.rptCustomerActiveTmp(TransDate, CustId, Recommend, CurrencyId, ProductId)
 		SELECT CAST(a.transdate AS DATE) AS TransDate, a.CustID, a.recommend, ISNULL(l.currency, a.currency) AS currency
 			, CASE  WHEN a.bettype < 31 OR (a.bettype >= 121 AND a.bettype < 1000) OR (a.bettype BETWEEN 1301 AND 1399) THEN 0 -- SB
 					WHEN a.bettype IN (31, 32, 33, 41, 42, 43) THEN 1	-- Racing
@@ -70,7 +76,8 @@ BEGIN
 					WHEN a.bettype BETWEEN 1501 AND 1599 THEN 8 -- Keno
 				ELSE - 1 END AS ProductId
 		FROM bodb_archive.dbo.bettrans_bk a WITH (NOLOCK)
-			INNER JOIN @TmpLicenseeCust c ON a.recommend = c.custid-- AND a.currency = c.Currency
+			INNER JOIN bodb02.dbo.Dep_CustSuper s WITH(NOLOCK) ON s.custid = a.srecommend
+			--INNER JOIN @TmpLicenseeCust c ON a.recommend = c.custid-- AND a.currency = c.Currency
 			LEFT JOIN #LicenseeBATransaction ba ON a.transid = ba.transid
 			LEFT JOIN @MultiCurrencies l ON a.recommend = l.recommend AND @WinlostDate BETWEEN l.fromDate AND l.toDate --incase keenocen
 		WHERE a.winlostdate = @WinlostDate
@@ -96,10 +103,13 @@ BEGIN
 	
 	END
 
-	SELECT COUNT(1) FROM #rptCustomerActiveTmp
+	SELECT COUNT(1) FROM dbo.rptCustomerActiveTmp
+	WHERE TransDate BETWEEN @FromDate AND @ToDate
 
 	DROP TABLE #LicenseeBATransaction
-	DROP TABLE #rptCustomerActiveTmp
+	--DROP TABLE #rptCustomerActiveTmp
 END
 
+GO
+GRANT VIEW DEFINITION ON [dbo].[Task_CustomerActive_GenDataFromBettransBK] TO [vnteam] AS [dbo]
 GO

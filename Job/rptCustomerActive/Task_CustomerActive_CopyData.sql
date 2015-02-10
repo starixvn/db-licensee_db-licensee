@@ -1,12 +1,13 @@
 USE bodb_LicenseeReport
 GO
-ALTER PROCEDURE dbo.Task_CustomerActive_CopyData
+CREATE PROCEDURE dbo.Task_CustomerActive_CopyData
 AS
-/*   
- Task: Copy data from staging table to main table
- DB: DBLIC/bodb_LicenseeReport
- Revisions: 
- Param's Explanation:
+/*
+	Creator: 20150204@Patrick
+	Task: Copy data from staging table to main table
+	DB: DBLIC/bodb_LicenseeReport
+	Revisions: 
+	Param's Explanation:
 
 */
 BEGIN
@@ -65,3 +66,5 @@ END
 
 GO
 
+GRANT VIEW DEFINITION ON [dbo].[Task_CustomerActive_CopyData] TO [vnteam] AS [dbo]
+GO

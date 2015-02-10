@@ -1,13 +1,14 @@
 USE bodb_LicenseeReport
 GO
-ALTER PROCEDURE dbo.Task_CustomerActive_GenDataForPlaytechCS_AGCasino @FromDate DATE
+CREATE PROCEDURE dbo.Task_CustomerActive_GenDataForPlaytechCS_AGCasino @FromDate DATE
 	, @ToDate DATE
 AS
 /*   
- Task: Generate for Playtech CS & AG Casino
- DB: DBLIC/bodb_LicenseeReport
- Revisions: 
- Param's Explanation:
+	Creator: 20150204@Patrick
+	Task: Generate for Playtech CS & AG Casino
+	DB: DBLIC/bodb_LicenseeReport
+	Revisions: 
+	Param's Explanation:
 */
 
 BEGIN
@@ -60,4 +61,6 @@ BEGIN
 	DROP TABLE #DataTmp
 END
 
+GO
+GRANT VIEW DEFINITION ON [dbo].[Task_CustomerActive_GenDataForPlaytechCS_AGCasino] TO [vnteam] AS [dbo]
 GO

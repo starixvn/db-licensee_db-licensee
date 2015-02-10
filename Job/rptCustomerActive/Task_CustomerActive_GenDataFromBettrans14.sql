@@ -1,14 +1,15 @@
 USE bodb_LicenseeReport
 GO
-ALTER PROCEDURE dbo.Task_CustomerActive_GenDataFromBettrans14 @FromDate DATE
+CREATE PROCEDURE dbo.Task_CustomerActive_GenDataFromBettrans14 @FromDate DATE
 	, @ToDate DATE
 	, @ProductCodes VARCHAR(125) = 'SB,NG,BA,LC,VS,CS,GB,KN'
 AS
 /*   
- Task: Generate for rptCustomerActive from bettrans14
- DB: DBLIC/bodb_LicenseeReport
- Revisions: 
- Param's Explanation:
+	Creator: 20150204@Patrick
+	Task: Generate for rptCustomerActive from bettrans14
+	DB: DBLIC/bodb_LicenseeReport
+	Revisions: 
+	Param's Explanation:
 	
 */
 
@@ -22,9 +23,9 @@ BEGIN
 	SELECT @FromTransDate = DATEADD(D, -1, @FromDate), @ToTransDate = DATEADD(D, 1, @FromDate)
 
 	--get licensee cust
-	DECLARE @TmpLicenseeCust AS TABLE ( CustId INT, Currency INT )
-	INSERT INTO @TmpLicenseeCust (CustId, Currency)
-	SELECT CustID, Currency FROM bodb_licensee.dbo.f_SelLicenseeCust(0)
+	--DECLARE @TmpLicenseeCust AS TABLE ( CustId INT, Currency INT )
+	--INSERT INTO @TmpLicenseeCust (CustId, Currency)
+	--SELECT CustID, Currency FROM bodb_licensee.dbo.f_SelLicenseeCust(0)
 
 	--get licensee who is multi currencies
 	DECLARE @MultiCurrencies TABLE(recommend INT, currency INT, fromDate SMALLDATETIME, toDate SMALLDATETIME)
@@ -50,7 +51,7 @@ BEGIN
 			, ISNULL(l.currency, a.currency) AS currency
 			, CASE WHEN ba.transid IS NOT NULL THEN 3 ELSE bt.ProductID END AS ProductId
 		FROM bodb02.dbo.bettrans14 a WITH (NOLOCK)
-			INNER JOIN @TmpLicenseeCust c ON a.recommend = c.custid
+			INNER JOIN bodb_licensee.dbo.LicenseeCust c WITH(NOLOCK) ON a.recommend = c.custid
 			INNER JOIN #Bettype bt ON a.bettype = bt.bettype
 			LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction ba WITH (NOLOCK) ON a.transid = ba.transid
 			LEFT JOIN @MultiCurrencies l ON a.recommend = l.recommend AND @FromTransDate BETWEEN l.fromDate AND l.toDate --incase keennocen
@@ -82,4 +83,6 @@ BEGIN
 	DROP TABLE #DataTmp
 END
 
+GO
+GRANT VIEW DEFINITION ON [dbo].[Task_CustomerActive_GenDataFromBettrans14] TO [vnteam] AS [dbo]
 GO
