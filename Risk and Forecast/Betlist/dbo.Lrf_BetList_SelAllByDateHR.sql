@@ -19,7 +19,11 @@
 	 @SumWinlostEUR MONEY=0 OUTPUT,
 	 @SumLicenseeWLEUR MONEY=0 OUTPUT,
 	 @SumCommEUR MONEY=0 OUTPUT,
-	 @SumPlayerCommEUR MONEY=0 OUTPUT
+	 @SumPlayerCommEUR MONEY=0 OUTPUT,
+	 @SumWinlostGBP MONEY=0 OUTPUT,
+	 @SumLicenseeWLGBP MONEY=0 OUTPUT,
+	 @SumCommGBP MONEY=0 OUTPUT,
+	 @SumPlayerCommGBP MONEY=0 OUTPUT
 	 
 AS 
 
@@ -39,6 +43,7 @@ Revisions:
    - 20121004@Jim: replace @currencyname input param by @currencyID
    - 20130514@Jim: Restrict permission of Licensee Users by currency
    - 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
+   - 20150127@Winnie: Add base currency GBP 
 */
  
 SET NOCOUNT ON  
@@ -171,7 +176,12 @@ SELECT
 	@SumWinlostEUR=SUM(ISNULL(winlost*e.EUR,0)),
 	@SumLicenseeWLEUR=SUM(ISNULL(LicenseeWL*e.EUR,0)),
 	@SumCommEUR=SUM(ISNULL(comm*e.EUR,0)),
-	@SumPlayerCommEUR=SUM(ISNULL(playercomm*e.EUR,0)) 	
+	@SumPlayerCommEUR=SUM(ISNULL(playercomm*e.EUR,0)),
+	--GBP
+	@SumWinlostGBP=SUM(ISNULL(winlost*e.GBP,0)),
+	@SumLicenseeWLGBP=SUM(ISNULL(LicenseeWL*e.GBP,0)),
+	@SumCommGBP=SUM(ISNULL(comm*e.GBP,0)),
+	@SumPlayerCommGBP=SUM(ISNULL(playercomm*e.GBP,0)) 	 	
 	
 FROM @Data b
 	INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@FDate,@TDate)) e  
@@ -194,7 +204,13 @@ SELECT c.* FROM
 			winlost*e.EUR winlostEUR,
 			LicenseeWL*e.EUR LicenseeWLEUR,
 			comm*e.EUR commEUR,
-			playercomm*e.EUR PlayerCommEUR
+			playercomm*e.EUR PlayerCommEUR,
+			--GBP
+			stake*e.GBP stakeGBP,
+			winlost*e.GBP winlostGBP,
+			LicenseeWL*e.GBP LicenseeWLGBP,
+			comm*e.GBP commGBP,
+			playercomm*e.GBP PlayerCommGBP
 			
 	FROM	@Data b
 		INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@FDate,@TDate)) e 

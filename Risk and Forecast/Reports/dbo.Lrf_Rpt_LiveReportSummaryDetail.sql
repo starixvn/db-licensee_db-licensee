@@ -1,11 +1,6 @@
 ﻿USE [bodb02]
 GO
 
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportSummaryDetail] 
 	@LicenseeID INT
 	, @UserID INT
@@ -46,7 +41,8 @@ Revisions:
 	-20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 	-20141017@Jim : Apply for the change in Sporting Solution structure (#24478)
 	-20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
-
+	-20150127@Jim: support base on GBP Currency
+	-20150209@Don: remove index hint IX_srecommend
      
 Param's Explanation:  
 	@Liveindicator : indicate that whether the report will get live data or not
@@ -121,7 +117,8 @@ BEGIN
 				+ 'SUM (comm ) AS Comm,' + CHAR(13) + 'SUM (b.playercomm  ) AS PlayerComm,' + CHAR(13) 
 				+ '- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,  ' + CHAR(13) 
 				+ 'COUNT(b.transid) BetCount' + CHAR(13) 
-				+ 'FROM bettrans b  WITH (NOLOCK,INDEX=IX_srecommend)' + CHAR(13) 
+				--+ 'FROM bettrans b  WITH (NOLOCK,INDEX=IX_srecommend)' + CHAR(13) 
+				+ 'FROM bettrans b  WITH (NOLOCK)' + CHAR(13) 
 				+ 'INNER JOIN @TempAg t  ON b.recommend =t.custid AND b.Currency = t.Currency' + CHAR(13) 
 				+ 'INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON t.custid=ba.recommend and b.transid = ba.transid' + CHAR(13) 
 				+ 'WHERE b.winlostdate BETWEEN ''' + convert(VARCHAR(10), @TempFromDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TDate, 120) + '''' + CHAR(13) + 
@@ -135,7 +132,8 @@ BEGIN
 		--BA for parlay
 		SELECT @sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13) + 'SELECT ' + CHAR(13) + 'b.winlostdate, ' + CHAR(13) + 't.currency,' + CHAR(13) + 'b.bettype,' + CHAR(13) + 'SUM(CASE WHEN b.bettype = 33 AND b.liveawayscore = 0 THEN stake/2 ELSE stake END) turnover,' + CHAR(13) + 'SUM(b.winlost - b.actual_stake) AS Winlost,' + CHAR(13) + '0 AS LicenseeWL,' + CHAR(13) + 'SUM (comm ) AS Comm,' + CHAR(13) + 'SUM (b.playercomm  ) AS PlayerComm,' + CHAR(13) + '- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,  ' + CHAR(13) 
 				+ 'COUNT(b.transid) BetCount' + CHAR(13) 
-				+ 'FROM bettrans b  WITH (NOLOCK,INDEX=IX_srecommend)' + CHAR(13) 
+				--+ 'FROM bettrans b  WITH (NOLOCK,INDEX=IX_srecommend)' + CHAR(13) 
+				+ 'FROM bettrans b  WITH (NOLOCK)' + CHAR(13) 
 				+ 'INNER JOIN @TempAg t  ON b.recommend =t.custid AND b.Currency = t.Currency' + CHAR(13) 
 				+ 'INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON t.custid=ba.recommend and b.transid = ba.transid' + CHAR(13) 
 				+ 'WHERE b.winlostdate BETWEEN ''' + convert(VARCHAR(10), @TempFromDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TDate, 120) + '''' + CHAR(13) + 
@@ -171,7 +169,8 @@ BEGIN
 			'SUM ( b.playercomm  ) AS PlayerComm,' + CHAR(13) + 
 			'- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,  ' + CHAR(13) + 
 			'COUNT(b.transid) BetCount' + CHAR(13) + 
-			'FROM bettrans b  WITH (NOLOCK,INDEX=IX_srecommend)' + CHAR(13) + 
+			--'FROM bettrans b  WITH (NOLOCK,INDEX=IX_srecommend)' + CHAR(13) + 
+			'FROM bettrans b  WITH (NOLOCK)' + CHAR(13) + 
 			'INNER JOIN @TempAg t  ON b.recommend =t.custid AND b.Currency = t.Currency ' + CHAR(13) + 
 			'LEFT JOIN dbo.match m WITH (NOLOCK) ON b.matchID=m.matchID' + CHAR(13) + 
 			'LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON t.custid=ba.recommend and  b.transid = BA.transid' + CHAR(13) + 
@@ -216,7 +215,8 @@ BEGIN
 			'SUM ( b.playercomm  ) AS PlayerComm,' + CHAR(13) + 
 			'- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,  ' + CHAR(13) + 
 			'COUNT(b.transid) BetCount' + CHAR(13) + 
-			'FROM bettrans b  WITH (NOLOCK,INDEX=IX_srecommend)' + CHAR(13) + 
+			--'FROM bettrans b  WITH (NOLOCK,INDEX=IX_srecommend)' + CHAR(13) + 
+			'FROM bettrans b  WITH (NOLOCK)' + CHAR(13) + 
 			'INNER JOIN @TempAg t  ON b.recommend =t.custid AND b.Currency = t.Currency ' + CHAR(13) + 
 			'LEFT JOIN dbo.match m WITH (NOLOCK) ON b.matchID=m.matchID' + CHAR(13) + 
 			'LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON t.custid=ba.recommend and  b.transid = BA.transid' + CHAR(13) + 
@@ -414,7 +414,15 @@ SELECT @sql = @sql + 'select CASE WHEN e.Code = ''VND'' THEN ''INH'' ELSE e.code
 	--BaseEUR
 	'CAST(SUM(TurnOver*e.EUR) AS MONEY) AS TurnoverEUR,' + CHAR(13) + 'CAST(SUM(Winlost*e.EUR) AS MONEY) AS WinlostEUR,' + CHAR(13) + 'CAST(SUM(LicenseeWL*e.EUR) AS MONEY) AS LicenseeWLEUR,' + CHAR(13) + 'CAST(SUM(Comm * e.EUR) AS MONEY) AS CommEUR,' + CHAR(13) + 'CAST(SUM(PlayerComm * e.EUR) AS MONEY) AS PlayerCommEUR,' + CHAR(13) + 'CAST(SUM(AmtDueto3rd*e.EUR) AS MONEY) AS AmtDueto3rdEUR,' + CHAR(13) +
 	--BaseUSD
-	'CAST(SUM(TurnOver*e.USD) AS MONEY) AS TurnoverUSD,' + CHAR(13) + 'CAST(SUM(Winlost*e.USD) AS MONEY) AS WinlostUSD,' + CHAR(13) + 'CAST(SUM(LicenseeWL*e.USD) AS MONEY) AS LicenseeWLUSD,' + CHAR(13) + 'CAST(SUM(Comm * e.USD) AS MONEY) AS CommUSD, ' + CHAR(13) + 'CAST(SUM(PlayerComm * e.USD) AS MONEY) AS PlayerCommUSD, ' + CHAR(13) + 'CAST(SUM(AmtDueto3rd*e.USD) AS MONEY) AS AmtDueto3rdUSD ' + CHAR(13) + 'from #tmpWinloss b  WITH (NOLOCK)  ' + CHAR(13) + 'INNER JOIN #TempExchange e ' + CHAR(13) + 'ON e.ExchangeDate = b.winlostdate   AND e.exchangeid = b.currency ' + CHAR(13) + 'group by CASE WHEN e.Code = ''VND'' THEN ''INH'' ELSE e.code END' + CHAR(13) + 'Order By CASE WHEN e.Code = ''VND'' THEN ''INH'' ELSE e.code END ' + CHAR(13)
+	'CAST(SUM(TurnOver*e.USD) AS MONEY) AS TurnoverUSD,' + CHAR(13) + 'CAST(SUM(Winlost*e.USD) AS MONEY) AS WinlostUSD,' + CHAR(13) + 'CAST(SUM(LicenseeWL*e.USD) AS MONEY) AS LicenseeWLUSD,' + CHAR(13) + 'CAST(SUM(Comm * e.USD) AS MONEY) AS CommUSD, ' + CHAR(13) + 'CAST(SUM(PlayerComm * e.USD) AS MONEY) AS PlayerCommUSD, ' + CHAR(13) + 'CAST(SUM(AmtDueto3rd*e.USD) AS MONEY) AS AmtDueto3rdUSD, ' + CHAR(13) +
+	--BaseGBP
+	'CAST(SUM(TurnOver*e.GBP) AS MONEY) AS TurnoverGBP,' + CHAR(13) + 'CAST(SUM(Winlost*e.GBP) AS MONEY) AS WinlostGBP,' + CHAR(13) + 'CAST(SUM(LicenseeWL*e.GBP) AS MONEY) AS LicenseeWLGBP,' + CHAR(13) + 'CAST(SUM(Comm * e.GBP) AS MONEY) AS CommGBP,' + CHAR(13) + 'CAST(SUM(PlayerComm * e.GBP) AS MONEY) AS PlayerCommGBP,' + CHAR(13) + 'CAST(SUM(AmtDueto3rd*e.GBP) AS MONEY) AS AmtDueto3rdGBP' + CHAR(13) +
+	
+	'from #tmpWinloss b  WITH (NOLOCK)  ' + CHAR(13) + 
+	'INNER JOIN #TempExchange e ' + CHAR(13) + 
+	'ON e.ExchangeDate = b.winlostdate   AND e.exchangeid = b.currency ' + CHAR(13) + 
+	'group by CASE WHEN e.Code = ''VND'' THEN ''INH'' ELSE e.code END' + CHAR(13) + 
+	'Order By CASE WHEN e.Code = ''VND'' THEN ''INH'' ELSE e.code END ' + CHAR(13)
 
 -- Get winlost by bettype   
 SELECT @sql = @sql + '-- Get winlost by bettype  ' + CHAR(13)
@@ -426,7 +434,9 @@ SELECT @sql = @sql + 'SELECT CASE WHEN ISNULL(ss.bettypeID,0) <> 0 THEN ss.typei
 	--BaseEUR
 	'CAST(SUM(TurnOver*e.EUR) AS MONEY) AS TurnoverEUR, ' + CHAR(13) + 'CAST(SUM(Winlost*e.EUR) AS MONEY) AS WinlostEUR,' + CHAR(13) + 'CAST(SUM(LicenseeWL*e.EUR) AS MONEY) AS LicenseeWLEUR,' + CHAR(13) + 'CAST(SUM(Comm * e.EUR) AS MONEY) AS CommEUR,' + CHAR(13) + 'CAST(SUM(PlayerComm * e.EUR) AS MONEY) AS PlayerCommEUR,' + CHAR(13) + 'CAST(SUM(AmtDueto3rd*e.EUR) AS MONEY) AS AmtDueto3rdEUR,' + CHAR(13) +
 	--baseUSD
-	'CAST(SUM(TurnOver*e.USD) AS MONEY) AS TurnoverUSD,' + CHAR(13) + 'CAST(SUM(Winlost*e.USD) AS MONEY) AS WinlostUSD,' + CHAR(13) + 'CAST(SUM(LicenseeWL*e.USD) AS MONEY) AS LicenseeWLUSD,' + CHAR(13) + 'CAST(SUM(Comm * e.USD) AS MONEY) AS CommUSD,' + CHAR(13) + 'CAST(SUM(PlayerComm * e.USD) AS MONEY) AS PlayerCommUSD,' + CHAR(13) + 'CAST(SUM(AmtDueto3rd*e.USD) AS MONEY) AS AmtDueto3rdUSD' + CHAR(13) + 
+	'CAST(SUM(TurnOver*e.USD) AS MONEY) AS TurnoverUSD,' + CHAR(13) + 'CAST(SUM(Winlost*e.USD) AS MONEY) AS WinlostUSD,' + CHAR(13) + 'CAST(SUM(LicenseeWL*e.USD) AS MONEY) AS LicenseeWLUSD,' + CHAR(13) + 'CAST(SUM(Comm * e.USD) AS MONEY) AS CommUSD,' + CHAR(13) + 'CAST(SUM(PlayerComm * e.USD) AS MONEY) AS PlayerCommUSD,' + CHAR(13) + 'CAST(SUM(AmtDueto3rd*e.USD) AS MONEY) AS AmtDueto3rdUSD,' + CHAR(13) + 
+	-- baseGBP
+	'CAST(SUM(TurnOver*e.GBP) AS MONEY) AS TurnoverGBP,' + CHAR(13) + 'CAST(SUM(Winlost*e.GBP) AS MONEY) AS WinlostGBP,' + CHAR(13) + 'CAST(SUM(LicenseeWL*e.GBP) AS MONEY) AS LicenseeWLGBP,' + CHAR(13) + 'CAST(SUM(Comm * e.GBP) AS MONEY) AS CommGBP,' + CHAR(13) + 'CAST(SUM(PlayerComm * e.GBP) AS MONEY) AS PlayerCommGBP,' + CHAR(13) + 'CAST(SUM(AmtDueto3rd*e.GBP) AS MONEY) AS AmtDueto3rdGBP' + CHAR(13) + 
 	'FROM #tmpWinloss b  WITH (NOLOCK) ' + CHAR(13) + 
 	'LEFT JOIN dbo.LRF_view_bettype_SS ss ON b.bettype = ss.bettypeID'+CHAR(13)+
 	'INNER JOIN bettype bt WITH (nolock) ON b.bettype = bt.typeid ' + CHAR(13) + 
@@ -445,6 +455,6 @@ ELSE
 	EXEC (@sql)
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_LiveReportSummaryDetail] TO [bodbLicenseeNet]  
+GRANT EXECUTE ON [dbo].[Lrf_Rpt_LiveReportSummaryDetail] TO [bodbLicenseeNet] AS [dbo]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LiveReportSummaryDetail] TO [vnteam] 
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LiveReportSummaryDetail] TO [vnteam] AS [dbo]

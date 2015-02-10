@@ -18,6 +18,7 @@ Revisions:
 	- 20121004@Jim: replace @currencyname input param by @currencyID
 	- 20130514@Jim:Restrict permission of Licensee Users by currency 
 	- 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function 
+	- 20150123@Jim: support base on Currency GBP
 */
     SET NOCOUNT ON
 
@@ -42,15 +43,19 @@ Revisions:
             SUM(x.hometotal * 1) 'ht' ,
             SUM(x.hometotalUSD * 1) 'htUSD' ,
             SUM(x.hometotalEUR * 1) 'htEUR' ,
+			SUM(x.hometotalGBP * 1) 'htGBP' ,
             SUM(x.awaytotal * 1) 'at' ,
             SUM(x.awaytotalUSD * 1) 'atUSD' ,
             SUM(x.awaytotalEUR * 1) 'atEUR' ,
+			SUM(x.awaytotalGBP * 1) 'atGBP' ,
             SUM(( x.homewin - x.awaylose ) * 1) 'al' ,
             SUM(( x.homewinUSD - x.awayloseUSD ) * 1) 'alUSD' ,
             SUM(( x.homewinEUR - x.awayloseEUR ) * 1) 'alEUR' ,
+			SUM(( x.homewinEUR - x.awayloseGBP ) * 1) 'alGBP' ,
             SUM(( x.awaywin - x.homelose ) * 1) 'hl' ,
             SUM(( x.awaywinUSD - x.homeloseUSD ) * 1) 'hlUSD' ,
-            SUM(( x.awaywinEUR - x.homeloseEUR ) * 1) 'hlEUR'
+            SUM(( x.awaywinEUR - x.homeloseEUR ) * 1) 'hlEUR',
+			SUM(( x.awaywinEUR - x.homeloseGBP ) * 1) 'hlGBP'
     FROM    ( SELECT    b.currency ,
                         hdp2 - hdp1 hdp ,
                         livehomescore - liveawayscore score ,
@@ -66,6 +71,11 @@ Revisions:
                                  THEN stake  * e.EUR
                                  ELSE 0
                             END) hometotalEUR ,
+						SUM(CASE WHEN betteam = 'h'
+                                 THEN stake  * e.GBP
+                                 ELSE 0
+                            END) hometotalGBP ,
+							
                         SUM(CASE WHEN betteam = 'a'
                                  THEN stake 
                                  ELSE 0
@@ -78,6 +88,11 @@ Revisions:
                                  THEN stake  * e.EUR
                                  ELSE 0
                             END) awaytotalEUR ,
+						SUM(CASE WHEN betteam = 'a'
+                                 THEN stake  * e.GBP
+                                 ELSE 0
+                            END) awaytotalGBP ,
+							
                         SUM(CASE WHEN betteam = 'h'
                                  THEN ( CASE WHEN odds < 0 THEN 1
                                              ELSE odds
@@ -98,6 +113,14 @@ Revisions:
                                       * e.EUR
                                  ELSE 0
                             END) homewinEUR ,
+						SUM(CASE WHEN betteam = 'h'
+                                 THEN ( CASE WHEN odds < 0 THEN 1
+                                             ELSE odds
+                                        END ) * stake 
+                                      * e.GBP
+                                 ELSE 0
+                            END) homewinGBP ,
+							
                         SUM(CASE WHEN betteam = 'a'
                                  THEN ( CASE WHEN odds < 0 THEN 1
                                              ELSE odds
@@ -118,7 +141,14 @@ Revisions:
                                       * e.EUR
                                  ELSE 0
                             END) awaywinEUR ,
-                        SUM(CASE WHEN betteam = 'h'
+						SUM(CASE WHEN betteam = 'a'
+                                 THEN ( CASE WHEN odds < 0 THEN 1
+                                             ELSE odds
+                                        END ) * stake 
+                                      * e.GBP
+                                 ELSE 0
+                            END) awaywinGBP ,
+						SUM(CASE WHEN betteam = 'h'
                                  THEN ( CASE WHEN odds < 0 THEN ABS(odds)
                                              ELSE 1
                                         END ) * stake 
@@ -138,6 +168,14 @@ Revisions:
                                       * e.EUR
                                  ELSE 0
                             END) homeloseEUR ,
+						SUM(CASE WHEN betteam = 'h'
+                                 THEN ( CASE WHEN odds < 0 THEN ABS(odds)
+                                             ELSE 1
+                                        END ) * stake 
+                                      * e.GBP
+                                 ELSE 0
+                            END) homeloseGBP ,
+								
                         SUM(CASE WHEN betteam = 'a'
                                  THEN ( CASE WHEN odds < 0 THEN ABS(odds)
                                              ELSE 1
@@ -157,7 +195,15 @@ Revisions:
                                         END ) * stake 
                                       * e.EUR
                                  ELSE 0
-                            END) awayloseEUR
+                            END) awayloseEUR,
+						SUM(CASE WHEN betteam = 'a'
+                                 THEN ( CASE WHEN odds < 0 THEN ABS(odds)
+                                             ELSE 1
+                                        END ) * stake 
+                                      * e.GBP
+                                 ELSE 0
+                            END) awayloseGBP
+							
               FROM      bettrans b WITH ( NOLOCK )
                         INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
 									ON e.exchangeid = b.currency

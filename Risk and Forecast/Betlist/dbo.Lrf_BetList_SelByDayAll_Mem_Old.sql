@@ -18,13 +18,17 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_SelByDayAll_Mem_Old]
 	@SumWinlostEUR MONEY=0 OUTPUT,
 	@SumLicenseeWLEUR MONEY=0 OUTPUT,
 	@SumCommEUR MONEY=0 OUTPUT,
-	@SumPlayerCommEUR MONEY=0 OUTPUT
+	@SumPlayerCommEUR MONEY=0 OUTPUT,
+	@SumWinlostGBP MONEY=0 OUTPUT,
+	@SumLicenseeWLGBP MONEY=0 OUTPUT,
+	@SumCommGBP MONEY=0 OUTPUT,
+	@SumPlayerCommGBP MONEY=0 OUTPUT
 AS
 /*
 Created: Henry
 Date: 2010-12-10 
 Task : Bet List for Daily Statement History 
-DB: DBRPT/bodb02
+DB: DBRPT/bodb02 
 Original: [Age_BetList_SelByDayAll_Mem_Old]
 
 Revisions:
@@ -50,7 +54,7 @@ Revisions:
 	- 20140324@Daniel: fix show RNG Casino / Bingo bets due to matchid = 0
 	- 20140411@Francis: fix incorrect sporttypes showing for VHR, Racing
 	- 20140411@Francis: add bettype restriction for VHR
-	
+	- 20150130@Winnie: Add base currency GBP
 
 Param's Explanation: 
 
@@ -502,7 +506,12 @@ SELECT
 	@SumWinlostEUR=SUM(ISNULL(winlost*e.EUR,0)),
 	@SumLicenseeWLEUR=SUM(ISNULL(LicenseeWL*e.EUR,0)),
 	@SumCommEUR=SUM(ISNULL(comm*e.EUR,0)) ,
-	@SumPlayerCommEUR=SUM(ISNULL(playercomm*e.EUR,0)) 
+	@SumPlayerCommEUR=SUM(ISNULL(playercomm*e.EUR,0)) ,
+	--GBP
+	@SumWinlostGBP=SUM(ISNULL(winlost*e.GBP,0)),
+	@SumLicenseeWLGBP=SUM(ISNULL(LicenseeWL*e.GBP,0)),
+	@SumCommGBP=SUM(ISNULL(comm*e.GBP,0)) ,
+	@SumPlayerCommGBP=SUM(ISNULL(playercomm*e.GBP,0)) 
 	
 FROM @Data b
 INNER JOIN #TempExchange e
@@ -529,7 +538,14 @@ FROM
 			b.winlost * e.EUR winlostEUR,
 			b.LicenseeWL   * e.EUR LicenseeWLEUR,
 			b.comm * e.EUR commEUR,
-			b.playercomm * e.EUR playercommEUR
+			b.playercomm * e.EUR playercommEUR,
+			--GBP
+			b.stake * e.GBP stakeGBP,
+			b.Actual_stake * e.GBP Actual_stakeGBP,
+			b.winlost * e.GBP winlostGBP,
+			b.LicenseeWL   * e.GBP LicenseeWLGBP,
+			b.comm * e.GBP commGBP,
+			b.playercomm * e.GBP playercommGBP
 	FROM 
 		@Data b
 		INNER JOIN #TempExchange e
@@ -548,7 +564,8 @@ DECLARE @BettransDetail TABLE(
 	bettype SMALLINT,
 	Betteam nvarchar (10),
 	stakeEUR MONEY,
-	stakeUSD MONEY
+	stakeUSD MONEY,
+	stakeGBP MONEY
 	 )
 	 
 IF EXISTS (SELECT TOP 1 1 FROM @Data WHERE Bettype BETWEEN 1101 AND 1199)
@@ -563,7 +580,8 @@ BEGIN
 		BG.bettype,
 		BG.betteam ,
 		BG.stake*e.EUR,	
-		BG.stake*e.USD
+		BG.stake*e.USD,
+		BG.stake*e.GBP
 	FROM 	DBARC.bodb_archive.dbo.bettransG BG WITH (NOLOCK)
 			INNER JOIN @Data B ON BG.refno=b.refno AND BG.custID=@CustID 
 			INNER JOIN #TempExchange e
@@ -583,7 +601,8 @@ BEGIN
 			BM.bettype,
 			BM.betteam ,
 			BM.stake*e.EUR,
-			BM.stake*e.USD
+			BM.stake*e.USD,
+			BM.stake*e.GBP
 	FROM	DBARC.bodb_archive.dbo.bettransm BM WITH (NOLOCK)
 			INNER JOIN @Data B ON BM.refno = B.transid
 			INNER JOIN #TempExchange e
@@ -604,7 +623,8 @@ BEGIN
 		BM.bettype,
 		BM.Betteam,
 		BM.stake*e.EUR,	
-		BM.stake*e.USD		
+		BM.stake*e.USD,
+		BM.stake*e.GBP	
 	FROM DBARC.bodb_archive.dbo.bettransm BM with (NOLOCK)
 	INNER JOIN @Data B ON BM.refno = B.refno
 	INNER JOIN #TempExchange e ON  e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency

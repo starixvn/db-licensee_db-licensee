@@ -11,7 +11,7 @@ AS /*
 Created:   
 Task : Daily Statement  
 DB: DBEXT.bodb02 (DB052.bodb02)
-Original: [Age_Statement_Mem]  
+Original: [Age_Statement_Mem]   
 Revisions:  
  -- 20110304@Henry: suppport based currency  
  -- 20110510@Henry: fix bug not display outright bet  
@@ -27,7 +27,7 @@ Revisions:
  -- 20140310@Florent: Add Keno product
  -- 20140310@Florent: remove  Bingo & RNG Casino Transfer and Outstanding 
  -- 20141002@Don: Fixed bug (Redmine ID #23380), if cannot get BU date of a specific customer in table Statement, the error will be happened
-   
+ -- 20150130@Winnie: Add base currency GBP  
 Param's Explanation:   
 • @ErrCode:  
     = 0: add new member successfully.  
@@ -320,12 +320,15 @@ WHERE exchangeid = @currency
                         turnover ,  
                         turnover * e.USD turnoverUSD,  
                         turnover * e.EUR turnoverEUR,  
+						turnover * e.GBP turnoverGBP,
                         totalAmt ,  
                         totalAmt * e.USD totalAmtUSD ,  
-                        totalAmt * e.EUR totalAmtEUR ,  
+                        totalAmt * e.EUR totalAmtEUR , 
+						totalAmt * e.GBP totalAmtGBP , 
                         commission,  
                         commission * e.USD commissionUSD,  
-                        commission * e.EUR commissionEUR  
+                        commission * e.EUR commissionEUR,
+						commission * e.GBP commissionGBP   
               FROM        
     @Data b INNER JOIN #TempExchange e ON e.exchangedate = convert(VARCHAR(10), b.winlostdate, 120)    
             ) c  

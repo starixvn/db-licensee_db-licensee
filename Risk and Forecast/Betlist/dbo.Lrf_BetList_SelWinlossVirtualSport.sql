@@ -31,7 +31,8 @@ Revisions:
 				182 – Virtual Greyhounds
 				184 – Virtual Motor Racing
 	- 20140908@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)		
-	- 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 	
+	- 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
+	- 2015027@Winnie: Add base currency GBP 
 */
 
 
@@ -333,7 +334,12 @@ FROM
 			stake*e.EUR stakeEUR,
 			winlost*e.EUR winlostEUR,
 			LicenseeWL*e.EUR LicenseeWLEUR,
-			comm*e.EUR commEUR
+			comm*e.EUR commEUR,
+			--GBP
+			stake*e.GBP stakeGBP,
+			winlost*e.GBP winlostGBP,
+			LicenseeWL*e.GBP LicenseeWLGBP,
+			comm*e.GBP commGBP
 			
 	FROM #Data b
 	INNER JOIN Customer c (NOLOCK) ON b.custid = c.custid
@@ -351,6 +357,7 @@ bettype INT,
 Betteam nvarchar,
 stakeEUR  money,
 stakeUSD money,
+stakeGBP money,
 )
 IF @Todate > @MoveBetsDay
 	BEGIN
@@ -364,7 +371,8 @@ IF @Todate > @MoveBetsDay
 				BG.bettype  ,
 				BG.Betteam,
 				BG.stake*e.EUR,
-				BG.stake*e.USD
+				BG.stake*e.USD,
+				BG.stake*e.GBP
 			FROM bettransm BG WITH (NOLOCK)
 			INNER JOIN #Data B ON BG.refno = B.refno and BG.custid = B.custid
 			INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
@@ -382,7 +390,8 @@ IF @Fromdate <= @MoveBetsDay
 				BG.bettype  ,
 				BG.Betteam,
 				BG.stake*e.EUR,
-				BG.stake*e.USD
+				BG.stake*e.USD,
+				BG.stake*e.GBP
 			FROM bettransm14 BG WITH (NOLOCK)
 			INNER JOIN #Data B ON BG.refno = B.refno and BG.custid = B.custid
 			INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency

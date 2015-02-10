@@ -28,7 +28,11 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinlossOutright]
 	@SumWinlostEUR MONEY=0 OUTPUT,
 	@SumLicenseeWLEUR MONEY=0 OUTPUT,
 	@SumCommEUR MONEY=0 OUTPUT,
-	@SumPlayerCommEUR MONEY=0 OUTPUT
+	@SumPlayerCommEUR MONEY=0 OUTPUT,
+	@SumWinlostGBP MONEY=0 OUTPUT,
+	@SumLicenseeWLGBP MONEY=0 OUTPUT,
+	@SumCommGBP MONEY=0 OUTPUT,
+	@SumPlayerCommGBP MONEY=0 OUTPUT
 AS
 /*
 Created: Henry@20101210
@@ -49,6 +53,7 @@ Revisions:
 - 20121004@Jim: replace @currencyname input param by @currencyID
 - 20130514@Jim: Restrict permission of Licensee Users by currency
 - 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
+- 20150126@Winnie: Add base currency GBP 
 Example:
 
 declare @p12 int
@@ -383,7 +388,12 @@ SELECT
 	@SumWinlostEUR=SUM(ISNULL(winlost*e.EUR,0)),
 	@SumLicenseeWLEUR=SUM(ISNULL(LicenseeWL*e.EUR,0)),
 	@SumCommEUR=SUM(ISNULL(comm*e.EUR,0)),
-	@SumPlayerCommEUR=SUM(ISNULL(playercomm*e.EUR,0))	
+	@SumPlayerCommEUR=SUM(ISNULL(playercomm*e.EUR,0)),	
+	--GBP
+	@SumWinlostGBP=SUM(ISNULL(winlost*e.GBP,0)),
+	@SumLicenseeWLGBP=SUM(ISNULL(LicenseeWL*e.GBP,0)),
+	@SumCommGBP=SUM(ISNULL(comm*e.GBP,0)),
+	@SumPlayerCommGBP=SUM(ISNULL(playercomm*e.GBP,0))	
 	
 FROM #AgWinlossOutright b
 	INNER JOIN  #TempExchange e
@@ -411,7 +421,13 @@ FROM
 			winlost*e.EUR winlostEUR,
 			LicenseeWL*e.EUR LicenseeWLEUR,
 			comm*e.EUR commEUR,
-			playercomm*e.EUR PlayerCommEUR
+			playercomm*e.EUR PlayerCommEUR,
+			--GBP
+			stake*e.GBP stakeGBP,
+			winlost*e.GBP winlostGBP,
+			LicenseeWL*e.GBP LicenseeWLGBP,
+			comm*e.GBP commGBP,
+			playercomm*e.GBP PlayerCommGBP
 			
 	FROM 
 		#AgWinlossOutright b

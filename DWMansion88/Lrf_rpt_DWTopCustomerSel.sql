@@ -1,11 +1,5 @@
 USE [bodb_licensee]
 GO
-
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
 ALTER PROC [dbo].[Lrf_rpt_DWTopCustomerSel]
     @FromDate		SMALLDATETIME ,
     @ToDate			SMALLDATETIME ,
@@ -29,6 +23,7 @@ DB: DBLIC.bodb_licensee
 Revison:
 	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+	- 20150127@Jim: support base on GBP Currency
 Param's Explanation:
     @sortingid: (0: order by best winloss member, 1: order by worst winloss member)
 	@basedcurrency: convert to currency USD or EURO (-2:USD -1:EURO)
@@ -66,17 +61,19 @@ DECLARE @Exchange	AS TABLE (
 	Code			VARCHAR(20) NULL,
 	MYR				FLOAT,
 	USD				FLOAT,
-	EUR				FLOAT
+	EUR				FLOAT,
+	GBP				FLOAT
 	, PRIMARY KEY(ExchangeDate,ExchangeId)
 )
-INSERT INTO @Exchange (ExchangeDate,ExchangeId,Code,MYR,USD,EUR)
+INSERT INTO @Exchange (ExchangeDate,ExchangeId,Code,MYR,USD,EUR,GBP)
 SELECT 
 	ExchangeDate,
 	ExchangeId,
 	b.CurrencyName,
 	MYR,
 	USD,
-	EUR
+	EUR,
+	GBP
 FROM bodb02.dbo.Lrf_f_GetExchangeDaily(@FromDate,@ToDate) a
 INNER JOIN @TempAg b ON a.ExchangeId=b.Currency
 
@@ -100,6 +97,9 @@ BEGIN
 			WHEN -1
 			THEN 
 			SUM(b.stake*e.EUR)
+			WHEN -3
+			THEN 
+			SUM(b.stake*e.GBP)
 			ELSE
 			SUM(b.stake)
 			END AS Turnover,
@@ -110,6 +110,9 @@ BEGIN
 			WHEN -1
 			THEN 
 			SUM(b.winlost*e.EUR)
+			WHEN -3
+			THEN 
+			SUM(b.winlost*e.GBP)
 			ELSE
 			SUM(b.winlost)
 			END AS MemberWinlost,
@@ -120,6 +123,9 @@ BEGIN
 			WHEN -1
 			THEN 
 			-SUM(b.winlost*e.EUR)
+			WHEN -3
+			THEN 
+			-SUM(b.winlost*e.GBP)
 			ELSE
 			-SUM(b.winlost)
 			END AS LicenseeWL,		
@@ -149,6 +155,9 @@ BEGIN
 		WHEN -1
 		THEN
 		SUM(b.winlost*e.EUR)
+		WHEN -3
+		THEN
+		SUM(b.winlost*e.GBP)
 		ELSE		
 		SUM(b.winlost)
 		END
@@ -161,7 +170,10 @@ BEGIN
 		SUM(b.winlost*e.USD) 
 		WHEN  @basedcurrency=-1
 		THEN
-		SUM(b.winlost*e.EUR) 	
+		SUM(b.winlost*e.EUR)
+		WHEN  @basedcurrency=-3
+		THEN
+		SUM(b.winlost*e.GBP) 		
 		ELSE
 		SUM(b.winlost) 
 		END
@@ -193,6 +205,9 @@ BEGIN
 			WHEN -1
 			THEN 
 			SUM(b.stake*e.EUR)
+			WHEN -3
+			THEN 
+			SUM(b.stake*e.GBP)
 			ELSE
 			SUM(b.stake)
 			END AS Turnover,
@@ -203,6 +218,9 @@ BEGIN
 			WHEN -1
 			THEN 
 			SUM(b.winlost*e.EUR)
+			WHEN -3
+			THEN 
+			SUM(b.winlost*e.GBP)
 			ELSE
 			SUM(b.winlost)
 			END AS MemberWinlost,
@@ -213,6 +231,9 @@ BEGIN
 			WHEN -1
 			THEN 
 			-SUM(b.winlost*e.EUR)
+			WHEN -3
+			THEN 
+			-SUM(b.winlost*e.GBP)
 			ELSE
 			-SUM(b.winlost)
 			END AS LicenseeWL,		
@@ -237,12 +258,16 @@ BEGIN
 		(@wlmtotalmin=0 OR
 		(
 		@wlmtotalmin<=
-		CASE @basedcurrency WHEN -2
+		CASE @basedcurrency 
+		WHEN -2
 		THEN
 		SUM(b.winlost*e.USD)
 		WHEN -1
 		THEN
 		SUM(b.winlost*e.EUR)
+		WHEN -3
+		THEN
+		SUM(b.winlost*e.GBP)
 		ELSE		
 		SUM(b.winlost)
 		END
@@ -255,7 +280,10 @@ BEGIN
 		SUM(b.winlost*e.USD) 
 		WHEN  @basedcurrency=-1
 		THEN
-		SUM(b.winlost*e.EUR) 	
+		SUM(b.winlost*e.EUR) 
+		WHEN  @basedcurrency=-3
+		THEN
+		SUM(b.winlost*e.GBP)	
 		ELSE
 		SUM(b.winlost) 
 		END
@@ -279,6 +307,9 @@ BEGIN
 			WHEN -1
 			THEN 
 			SUM(b.stake*e.EUR)
+			WHEN -3
+			THEN 
+			SUM(b.stake*e.GBP)
 			ELSE
 			SUM(b.stake)
 			END AS Turnover,
@@ -289,6 +320,9 @@ BEGIN
 			WHEN -1
 			THEN 
 			SUM(b.winlost*e.EUR)
+			WHEN -3
+			THEN 
+			SUM(b.winlost*e.GBP)
 			ELSE
 			SUM(b.winlost)
 			END AS MemberWinlost,
@@ -299,6 +333,9 @@ BEGIN
 			WHEN -1
 			THEN 
 			-SUM(b.winlost*e.EUR)
+			WHEN -3
+			THEN 
+			-SUM(b.winlost*e.GBP)
 			ELSE
 			-SUM(b.winlost)
 			END AS LicenseeWL,		
@@ -321,12 +358,16 @@ BEGIN
 		(@wlmtotalmin=0 OR
 		(
 		@wlmtotalmin<=
-		CASE @basedcurrency WHEN -2
+		CASE @basedcurrency 
+		WHEN -2
 		THEN
 		SUM(b.winlost*e.USD)
 		WHEN -1
 		THEN
 		SUM(b.winlost*e.EUR)
+		WHEN -3
+		THEN
+		SUM(b.winlost*e.GBP)
 		ELSE		
 		SUM(b.winlost)
 		END
@@ -339,7 +380,10 @@ BEGIN
 		SUM(b.winlost*e.USD) 
 		WHEN  @basedcurrency=-1
 		THEN
-		SUM(b.winlost*e.EUR) 	
+		SUM(b.winlost*e.EUR) 
+		WHEN  @basedcurrency=-3
+		THEN
+		SUM(b.winlost*e.GBP) 		
 		ELSE
 		SUM(b.winlost) 
 		END
@@ -373,6 +417,9 @@ BEGIN
 			WHEN -1
 			THEN 
 			SUM(b.stake*e.EUR)
+			WHEN -3
+			THEN 
+			SUM(b.stake*e.GBP)
 			ELSE
 			SUM(b.stake)
 			END AS Turnover,
@@ -383,6 +430,9 @@ BEGIN
 			WHEN -1
 			THEN 
 			SUM(b.winlost*e.EUR)
+			WHEN -3
+			THEN 
+			SUM(b.winlost*e.GBP)
 			ELSE
 			SUM(b.winlost)
 			END AS MemberWinlost,
@@ -393,6 +443,9 @@ BEGIN
 			WHEN -1
 			THEN 
 			-SUM(b.winlost*e.EUR)
+			WHEN -3
+			THEN 
+			-SUM(b.winlost*e.GBP)
 			ELSE
 			-SUM(b.winlost)
 			END AS LicenseeWL,		
@@ -424,6 +477,9 @@ BEGIN
 		WHEN -1
 		THEN
 		SUM(b.winlost*e.EUR)
+		WHEN -3
+		THEN
+		SUM(b.winlost*e.GBP)
 		ELSE		
 		SUM(b.winlost)
 		END
@@ -437,6 +493,9 @@ BEGIN
 		WHEN  @basedcurrency=-1
 		THEN
 		SUM(b.winlost*e.EUR) 	
+		WHEN  @basedcurrency=-3
+		THEN
+		SUM(b.winlost*e.GBP) 
 		ELSE
 		SUM(b.winlost) 
 		END

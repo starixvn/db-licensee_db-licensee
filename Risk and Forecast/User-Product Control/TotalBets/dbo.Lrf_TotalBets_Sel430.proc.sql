@@ -29,6 +29,7 @@ Revisions:
 	--20130514@Jim:Restrict permission of Licensee Users by currency
 	--20140620@Florent: offer new bettypes 152 - Half Time/Full Time Correct Score
 	- 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
+	- 20150124@Winnie: Add base currency GBP 
 */
 
 SET NOCOUNT ON
@@ -140,8 +141,10 @@ FROM
 			b.* ,
 			stake*e.USD stakeUSD,
 			stake*e.EUR stakeEUR,
+			stake*e.GBP stakeGBP,
 			actual_stake * e.USD actual_stakeUSD,
-			actual_stake * e.EUR actual_stakeEUR
+			actual_stake * e.EUR actual_stakeEUR,
+			actual_stake * e.GBP actual_stakeGBP
 	FROM 
 		@Data b
 		INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid	

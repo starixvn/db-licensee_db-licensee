@@ -27,7 +27,7 @@ Revisions:
 	- 20121004@Jim: replace @currencyname input param by @currencyID	
 	- 20130411@Jim: support base currency USD
 	- 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
-    
+    - 20150126@Winnie: add base currency GBP 
 */
 
 
@@ -230,7 +230,12 @@ FROM
 			stake*e.EUR stakeEUR,
 			winlost*e.EUR winlostEUR,
 			LicenseeWL*e.EUR LicenseeWLEUR,
-			comm*e.EUR commEUR
+			comm*e.EUR commEUR,
+			--GBP
+			stake*e.GBP stakeGBP,
+			winlost*e.GBP winlostGBP,
+			LicenseeWL*e.GBP LicenseeWLGBP,
+			comm*e.GBP commGBP
 			
 	FROM #Data b
 	INNER JOIN Customer c (NOLOCK) ON b.custid = c.custid
@@ -247,7 +252,8 @@ DECLARE @BettransDetail TABLE(
 	bettype SMALLINT,
 	Betteam nvarchar (10),
 	stakeEUR MONEY,
-	stakeUSD MONEY
+	stakeUSD MONEY,
+	stakeGBP MONEY
 	 ) 
 
 IF @Todate > @MoveBetsDay 
@@ -262,7 +268,8 @@ BEGIN
 		BG.bettype  ,
 		BG.Betteam,
 		BG.stake*e.EUR,
-		BG.stake*e.USD
+		BG.stake*e.USD,
+		BG.stake*e.GBP
 	FROM bettransg BG WITH (NOLOCK)
 	INNER JOIN #Data B ON BG.refno = B.refno and BG.custid = B.custid
 	INNER JOIN #TempExchange e ON b.currency=e.exchangeID AND b.winlostdate=e.exchangeDate
@@ -281,7 +288,8 @@ BEGIN
 		BG.bettype  ,
 		BG.Betteam,
 		BG.stake*e.EUR, 
-		BG.stake*e.USD
+		BG.stake*e.USD,
+		BG.stake*e.GBP
 	FROM bettransg14 BG WITH (NOLOCK)
 	INNER JOIN #Data B ON BG.refno = B.refno and BG.custid = B.custid
 	INNER JOIN #TempExchange e ON b.currency=e.exchangeID AND b.winlostdate=e.exchangeDate

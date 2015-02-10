@@ -12,6 +12,8 @@ ALTER   PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossVHRacing]
 	@SUMLicenseeWLUSD MONEY=0 OUTPUT,
 	@SUMWLEUR MONEY=0 OUTPUT,
 	@SUMLicenseeWLEUR MONEY=0 OUTPUT,
+	@SUMWLGBP MONEY=0 OUTPUT,
+	@SUMLicenseeWLGBP MONEY=0 OUTPUT,
 	@PageSize INT=1000,
 	@PageIndex INT=1,
 	@Sort VARCHAR(20) = 'Transid DESC'	 
@@ -26,6 +28,7 @@ Revisions:
 	- 20140520@Hannah: Sort betlist    
 	- 20140522@Hannah: fix bug Sort betlist
 	- 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
+	- 20150126@Winnie: Add base currency GBP 
 */
 
 SET NOCOUNT ON  
@@ -88,7 +91,13 @@ CREATE TABLE #Data
 	winlostEUR MONEY,
 	LicenseeWLEUR MONEY,
 	commEUR MONEY,
-	playercommEUR MONEY
+	playercommEUR MONEY,
+	--GBP
+	stakeGBP MONEY,
+	winlostGBP MONEY,
+	LicenseeWLGBP MONEY,
+	commGBP MONEY,
+	playercommGBP MONEY
 )
 SELECT  currencyID,LicenseeID into #currency
 FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
@@ -108,7 +117,7 @@ SET @LicenseeWL = '(-(b.winlost-b.actual_stake))'
 DECLARE @Winlost VARCHAR(150) 
 SET @Winlost = '(b.winlost-b.actual_stake)'
 
-IF (@Sort LIKE '%USD%') OR (@Sort LIKE '%EUR%')
+IF (@Sort LIKE '%USD%') OR (@Sort LIKE '%EUR%') OR (@Sort LIKE '%GBP%')
 BEGIN
 	DECLARE @charindex INT
 	SELECT @charindex = CHARINDEX( ' ', @Sort, 1)
@@ -193,7 +202,13 @@ BEGIN
 	  '+@winlost+'*e.EUR winlostEUR,
 	  '+@LicenseeWL+'*e.EUR LicenseeWLEUR,
 	  comm*e.EUR commEUR,
-	  (b.playercomm * e.EUR) AS playercommEUR
+	  (b.playercomm * e.EUR) AS playercommEUR,
+	   --GBP
+	  stake*e.GBP stakeGBP,
+	  '+@winlost+'*e.GBP winlostGBP,
+	  '+@LicenseeWL+'*e.GBP LicenseeWLGBP,
+	  comm*e.GBP commGBP,
+	  (b.playercomm * e.GBP) AS playercommGBP
 	 FROM  
 	  bettrans14 b WITH (NOLOCK)
 	  INNER JOIN #TempAg t  ON b.recommend =t.custid     
@@ -213,7 +228,8 @@ BEGIN
 	betteam,apositiontaking,liveindicator,livehomescore,liveawayscore,leagueID,matchid,   
 	IP,betstatus,isNeutral,winlostdate,currency,playercomm,showtime,
 	stakeUSD,winlostUSD,LicenseeWLUSD,commUSD,playercommUSD,
-	stakeEUR,winlostEUR,LicenseeWLEUR,commEUR,playercommEUR)
+	stakeEUR,winlostEUR,LicenseeWLEUR,commEUR,playercommEUR,
+	stakeGBP,winlostGBP,LicenseeWLGBP,commGBP,playercommGBP)
 	EXEC (@sql)
 	IF(@CurrencyID<>0)
 	 DELETE FROM #Data WHERE currency!=@CurrencyID
@@ -298,7 +314,13 @@ BEGIN
 	  '+@winlost+'*e.EUR winlostEUR,
 	  '+@LicenseeWL+'*e.EUR LicenseeWLEUR,
 	  comm*e.EUR commEUR,
-	  (b.playercomm * e.EUR) AS playercommEUR
+	  (b.playercomm * e.EUR) AS playercommEUR,
+	    --GBP
+	  stake*e.GBP stakeGBP,
+	  '+@winlost+'*e.GBP winlostGBP,
+	  '+@LicenseeWL+'*e.GBP LicenseeWLGBP,
+	  comm*e.GBP commGBP,
+	  (b.playercomm * e.GBP) AS playercommGBP
 	 FROM  
 	  bettrans b WITH (NOLOCK)
 	  INNER JOIN #TempAg t  ON b.recommend =t.custid     
@@ -318,7 +340,8 @@ BEGIN
 	betteam,apositiontaking,liveindicator,livehomescore,liveawayscore,leagueID,matchid,   
 	IP,betstatus,isNeutral,winlostdate,currency,playercomm,showtime,
 	stakeUSD,winlostUSD,LicenseeWLUSD,commUSD,playercommUSD,
-	stakeEUR,winlostEUR,LicenseeWLEUR,commEUR,playercommEUR)
+	stakeEUR,winlostEUR,LicenseeWLEUR,commEUR,playercommEUR,
+	stakeGBP,winlostGBP,LicenseeWLGBP,commGBP,playercommGBP)
 	EXEC (@sql)
 	
 	IF(@CurrencyID<>0)
@@ -370,7 +393,13 @@ FROM
 			b.winlostEUR,
 			b.LicenseeWLEUR,
 			b.commEUR,
-			b.playercommEUR			
+			b.playercommEUR,		
+			--GBP
+			b.stakeGBP,
+			b.winlostGBP,
+			b.LicenseeWLGBP,
+			b.commGBP,
+			b.playercommGBP		
 	FROM #Data b
 	INNER JOIN Customer c (NOLOCK) ON b.custid = c.custid
 ) A WHERE A.RowNum between '+CAST(@RowStart AS VARCHAR(50))+' AND '+CAST(@RowEnd AS VARCHAR(50))

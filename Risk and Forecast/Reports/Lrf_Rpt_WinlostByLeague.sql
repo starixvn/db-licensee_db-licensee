@@ -1,10 +1,6 @@
 USE [bodb02]
 GO
  
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
 ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlostByLeague]
 	@LicenseeID INT
 	,@UserID INT
@@ -32,6 +28,7 @@ AS
 		- 20140207@Florent: Add filter ShowSB , ShowBA
 		- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+		- 20150127@Jim: support base on GBP Currency
 	Parameter's Explanation:
 		- @LicenseeID : Licensee ID
 		- @UserID : UserID who run this report
@@ -55,6 +52,7 @@ DECLARE @ExchangeDaily TABLE (
 	,ExchangeId INT
 	,USD FLOAT
 	,EUR FLOAT
+	,GBP FLOAT
 	,PRIMARY KEY (
 		ExchangeDate
 		,ExchangeId
@@ -723,6 +721,7 @@ SELECT ExchangeDate
 	,ExchangeId
 	,USD
 	,EUR
+	,GBP
 FROM Lrf_f_GetExchangeDaily(@fromDate, @toDate)
 
 -- Result  
@@ -753,27 +752,36 @@ SELECT matchid
 	,CAST(SUM(turnover) AS MONEY) AS turnover
 	,CAST(SUM(turnover * e.USD) AS MONEY) AS turnoverUSD
 	,CAST(SUM(turnover * e.EUR) AS MONEY) AS turnoverEUR
+	,CAST(SUM(turnover * e.GBP) AS MONEY) AS turnoverGBP
+	
 	,CAST(SUM(MemberWinLost) AS MONEY) AS MemberWinLost
 	,CAST(SUM(MemberWinLost * e.USD) AS MONEY) AS MemberWinLostUSD
 	,CAST(SUM(MemberWinLost * e.EUR) AS MONEY) AS MemberWinLostEUR
+	,CAST(SUM(MemberWinLost * e.GBP) AS MONEY) AS MemberWinLostGBP
+	
 	,CAST(SUM(LicenseeWL) AS MONEY) AS LicenseeWL
 	,CAST(SUM(LicenseeWL * e.USD) AS MONEY) AS LicenseeWLUSD
 	,CAST(SUM(LicenseeWL * e.EUR) AS MONEY) AS LicenseeWLEUR
+	,CAST(SUM(LicenseeWL * e.GBP) AS MONEY) AS LicenseeWLGBP
 	--,CAST(SUM(WinlossRB) AS MONEY) AS WinlossRB
 	--,CAST(SUM(WinlossRB * e.USD) AS MONEY) AS WinlossRBUSD
 	--,CAST(SUM(WinlossRB * e.EUR) AS MONEY) AS WinlossRBEUR
 	,CAST(SUM(CommBA) AS MONEY) AS CommBA
 	,CAST(SUM(CommBA * e.USD) AS MONEY) AS CommBAUSD
 	,CAST(SUM(CommBA * e.EUR) AS MONEY) AS CommBAEUR
+	,CAST(SUM(CommBA * e.GBP) AS MONEY) AS CommBAGBP
 	--,CAST(SUM(commRB) AS MONEY) AS commRB
 	--,CAST(SUM(commRB * e.USD) AS MONEY) AS commRBUSD
 	--,CAST(SUM(commRB * E.EUR) AS MONEY) AS commRBEUR
 	,CAST(SUM(PlayerComm) AS MONEY) AS PlayerComm
 	,CAST(SUM(PlayerComm * e.USD) AS MONEY) AS PlayerCommUSD
 	,CAST(SUM(PlayerComm * e.EUR) AS MONEY) AS PlayerCommEUR
+	,CAST(SUM(PlayerComm * e.GBP) AS MONEY) AS PlayerCommGBP
+	
 	,CAST(SUM(AmtDuetoBA) AS MONEY) AS AmtDuetoBA
 	,CAST(SUM((AmtDuetoBA) * e.USD) AS MONEY) AS AmtDuetoBAUSD
 	,CAST(SUM((AmtDuetoBA) * e.EUR) AS MONEY) AS AmtDuetoBAEUR
+	,CAST(SUM((AmtDuetoBA) * e.GBP) AS MONEY) AS AmtDuetoBAGBP
 	,CASE 
 		WHEN b.sporttype IN (181, 182, 184)
 			THEN ''

@@ -1,4 +1,4 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel161]
+﻿CREATE PROCEDURE [dbo].[Lrf_TotalBets_Sel161]
 	@LicenseeID INT,
 	@UserID		INT,
 	@CurrencyID INT=0,
@@ -22,6 +22,7 @@ Revisions:
 	 - 20121004@Jim: replace @currencyname input param by @currencyID
 	 - 20130514@Jim:Restrict permission of Licensee Users by currency
 	 - 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
+	 - 20150123@Jim: support base on Currency GBP
 Param's Explanation:
 • @custid: agent ID
 • Bettype AND betteam explanation:
@@ -188,52 +189,99 @@ SELECT c.* FROM
 		*,
 		CAST(over_1stBall * e.usd AS MONEY)   over_1stBallusd,
 		CAST(over_1stBall * e.eur AS MONEY)   over_1stBalleur,
+		CAST(over_1stBall * e.gbp AS MONEY)   over_1stBallgbp,
+		
 		CAST(under_1stBall * e.usd AS MONEY) under_1stBallusd,
 		CAST(under_1stBall * e.eur AS MONEY) under_1stBalleur,
+		CAST(under_1stBall * e.gbp AS MONEY) under_1stBallgbp,
+		
 		CAST(over_lastBall * e.usd AS MONEY) over_lastBallusd,
 		CAST(over_lastBall * e.eur AS MONEY) over_lastBalleur,
+		CAST(over_lastBall * e.gbp AS MONEY) over_lastBallgbp,
+		
 		CAST(under_lastBall * e.usd AS MONEY) under_lastBallusd,
 		CAST(under_lastBall * e.eur AS MONEY) under_lastBalleur,
+		CAST(under_lastBall * e.gbp AS MONEY) under_lastBallgbp,
+		
 		CAST(odd_1stBall * e.usd AS MONEY) odd_1stBallusd,
 		CAST(odd_1stBall * e.eur AS MONEY) odd_1stBalleur,
+		CAST(odd_1stBall * e.gbp AS MONEY) odd_1stBallgbp,
+		
 		CAST(even_1stBall * e.usd AS MONEY) even_1stBallusd,
 		CAST(even_1stBall * e.eur AS MONEY) even_1stBalleur,
+		CAST(even_1stBall * e.gbp AS MONEY) even_1stBallgbp,
+		
 		CAST(odd_lastBall * e.usd AS MONEY) odd_lastBallusd,
 		CAST(odd_lastBall * e.eur AS MONEY) odd_lastBalleur,
+		CAST(odd_lastBall * e.gbp AS MONEY) odd_lastBallgbp,
+		
 		CAST(even_lastBall * e.usd AS MONEY) even_lastBallusd,
 		CAST(even_lastBall * e.eur AS MONEY) even_lastBalleur,
+		CAST(even_lastBall * e.gbp AS MONEY) even_lastBallgbp,
+		
 		CAST(odd_fullTime * e.usd AS MONEY) odd_fullTimeusd,
 		CAST(odd_fullTime * e.eur AS MONEY) odd_fullTimeeur,
+		CAST(odd_fullTime * e.gbp AS MONEY) odd_fullTimegbp,
+		
 		CAST(even_fullTime * e.usd AS MONEY) even_fullTimeusd,
 		CAST(even_fullTime * e.eur AS MONEY) even_fullTimeeur,
+		CAST(even_fullTime * e.gbp AS MONEY) even_fullTimegbp,
+		
 		CAST(over_next * e.usd AS MONEY) over_nextusd,
 		CAST(over_next * e.eur AS MONEY) over_nexteur,
+		CAST(over_next * e.gbp AS MONEY) over_nextgbp,
+		
 		CAST(under_next * e.usd AS MONEY) under_nextusd,
 		CAST(under_next * e.eur AS MONEY) under_nexteur,
+		CAST(under_next * e.gbp AS MONEY) under_nextgbp,
+		
 		CAST(odd_next * e.usd AS MONEY)  odd_nextusd,
 		CAST(odd_next * e.eur AS MONEY)	odd_nexteur,
+		CAST(odd_next * e.gbp AS MONEY)	odd_nextgbp,
+		
 		CAST(even_next * e.usd AS MONEY)  even_nextusd,
 		CAST(even_next * e.eur AS MONEY)	even_nexteur,
+		CAST(even_next * e.gbp AS MONEY)	even_nextgbp,
+		
 		CAST(high * e.usd AS MONEY) highusd,
 		CAST(high * e.eur AS MONEY) higheur,
+		CAST(high * e.gbp AS MONEY) highgbp,
+		
 		CAST(low * e.usd AS MONEY) lowusd,
 		CAST(low * e.eur AS MONEY) loweur,
+		CAST(low * e.gbp AS MONEY) lowgbp,
+		
 		CAST(Warrior_SecondBall * e.usd AS MONEY) Warrior_SecondBallusd,
 		CAST(Warrior_SecondBall * e.eur AS MONEY) Warrior_SecondBalleur,
+		CAST(Warrior_SecondBall * e.gbp AS MONEY) Warrior_SecondBallgbp,
+		
 		CAST(Warrior_LastBall * e.usd AS MONEY) Warrior_LastBallusd,
 		CAST(Warrior_LastBall * e.eur AS MONEY) Warrior_LastBalleur,
+		CAST(Warrior_LastBall * e.gbp AS MONEY) Warrior_LastBallgbp,
+		
 		CAST(NextCombo_OverOdd * e.usd AS MONEY) NextCombo_OverOddusd,
 		CAST(NextCombo_OverOdd * e.eur AS MONEY) NextCombo_OverOddeur,
+		CAST(NextCombo_OverOdd * e.gbp AS MONEY) NextCombo_OverOddgbp,
+		
 		CAST(NextCombo_OverEven * e.usd AS MONEY) NextCombo_OverEvenusd,
 		CAST(NextCombo_OverEven * e.eur AS MONEY) NextCombo_OverEveneur,
+		CAST(NextCombo_OverEven * e.gbp AS MONEY) NextCombo_OverEvengbp,
+		
 		CAST(NextCombo_UnderOdd * e.usd AS MONEY) NextCombo_UnderOddusd,
 		CAST(NextCombo_UnderOdd * e.eur AS MONEY) NextCombo_UnderOddeur,
+		CAST(NextCombo_UnderOdd * e.gbp AS MONEY) NextCombo_UnderOddgbp,
+		
 		CAST(NextCombo_UnderEven * e.usd AS MONEY) NextCombo_UnderEvenusd,
 		CAST(NextCombo_UnderEven * e.eur AS MONEY) NextCombo_UnderEveneur,
+		CAST(NextCombo_UnderEven * e.gbp AS MONEY) NextCombo_UnderEvengbp,
+		
 		CAST(NumberGroup_live * e.usd AS MONEY) NumberGroup_liveusd,
 		CAST(NumberGroup_live * e.eur AS MONEY) NumberGroup_liveeur,
+		CAST(NumberGroup_live * e.gbp AS MONEY) NumberGroup_livegbp,
+		
 		CAST(NumberGroup_pre * e.usd AS MONEY) NumberGroup_preusd,
-		CAST(NumberGroup_pre * e.eur AS MONEY) NumberGroup_preeur
+		CAST(NumberGroup_pre * e.eur AS MONEY) NumberGroup_preeur,
+		CAST(NumberGroup_pre * e.gbp AS MONEY) NumberGroup_pregbp
 		
 	FROM @Data d
 	INNER JOIN (SELECT *  FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 

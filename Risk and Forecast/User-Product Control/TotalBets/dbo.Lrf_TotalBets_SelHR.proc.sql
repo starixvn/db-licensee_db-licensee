@@ -21,6 +21,7 @@ Revisions:
 	- 20121004@Jim: replace @currencyname input param by @currencyID
 	- 20130514@Jim:Restrict permission of Licensee Users by currency	
 	- 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
+	- 20150123@Jim: support base on Currency GBP
 Param's Explanation:  
 • @CustID: agentID  
 */  
@@ -200,7 +201,19 @@ SELECT c.* FROM
 		
 		b.Total_WinPlace * e.EUR as Total_WinPlaceEUR, 
 		b.Total_WinPlace_Comm * e.EUR as Total_WinPlace_CommEUR,
-		b.Total_WinPlace_WL * e.EUR as Total_WinPlace_WLEUR
+		b.Total_WinPlace_WL * e.EUR as Total_WinPlace_WLEUR,
+		--GBP
+		b.Total_Win * e.GBP as Total_WinGBP,  
+		b.Total_Win_Comm * e.GBP as Total_Win_CommGBP,  
+		b.Total_Win_WL * e.GBP as Total_Win_WLGBP,
+		
+		b.Total_Place * e.GBP as Total_PlaceGBP, 
+		b.Total_Place_Comm * e.GBP as Total_Place_CommGBP,  
+		b.Total_Place_WL * e.GBP as Total_Place_WLGBP,  
+		
+		b.Total_WinPlace * e.GBP as Total_WinPlaceGBP, 
+		b.Total_WinPlace_Comm * e.GBP as Total_WinPlace_CommGBP,
+		b.Total_WinPlace_WL * e.GBP as Total_WinPlace_WLGBP
 	FROM 
 		@Data  b
 		INNER JOIN (SELECT *  FROM Lrf_f_GetExchangeDaily(@FromDate,@FromDate))e  
@@ -238,7 +251,17 @@ SELECT
 	SUM(Total_WinPlace_WL * e.EUR) SumTotal_WinPlace_WLEUR,
 	SUM(Total_Win_Comm * e.EUR) SumTotal_Win_CommEUR,
 	SUM(Total_Place_Comm * e.EUR) SumTotal_Place_CommEUR,
-	SUM(Total_WinPlace_Comm * e.EUR) SumTotal_WinPlace_CommEUR
+	SUM(Total_WinPlace_Comm * e.EUR) SumTotal_WinPlace_CommEUR,
+	--GBP
+	SUM(Total_Win * e.GBP) SumTotal_WinGBP,
+	SUM(Total_Place * e.GBP) SumTotal_PlaceGBP,
+	SUM(Total_WinPlace * e.GBP) SumTotal_WinPlaceGBP,
+	SUM(Total_Win_WL * e.GBP) SumTotal_Win_WLGBP,
+	SUM(Total_Place_WL * e.GBP) SumTotal_Place_WLGBP,
+	SUM(Total_WinPlace_WL * e.GBP) SumTotal_WinPlace_WLGBP,
+	SUM(Total_Win_Comm * e.GBP) SumTotal_Win_CommGBP,
+	SUM(Total_Place_Comm * e.GBP) SumTotal_Place_CommGBP,
+	SUM(Total_WinPlace_Comm * e.GBP) SumTotal_WinPlace_CommGBP
 FROM 
 	@Data  b
 	INNER JOIN (SELECT *  FROM Lrf_f_GetExchangeDaily(@FromDate,@FromDate))e 

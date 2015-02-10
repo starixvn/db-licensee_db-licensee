@@ -1,13 +1,5 @@
 ﻿USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_TotalBets_Sel10]    Script Date: 06/28/2013 06:23:40 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-/****** Object:  Stored Procedure dbo.Lrf_TotalBets_Sel10    Script Date: 6/26/2013 10:58:41 PM ******/
-/****** Object:  Stored Procedure dbo.Lrf_TotalBets_Sel10    Script Date: 5/31/2013 2:41:29 PM ******/
-
 
 ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel10]
 @LicenseeID INT,
@@ -33,6 +25,7 @@ Revisions:
    - 20130410@Jim: improve performance
    - 20130514@Jim:Restrict permission of Licensee Users by currency
    - 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
+   - 20150123@Jim: support base on Currency GBP
 	
 Param's Explanation:
 • @custid: agent ID
@@ -69,10 +62,12 @@ DECLARE @Data as TABLE
 	balance MONEY,
 	balanceusd MONEY,
 	balanceeur MONEY,
+	balancegbp MONEY,
 	betcount INT,
 	totalwinlost MONEY,
 	totalwinlostusd MONEY,
 	totalwinlosteur MONEY,
+	totalwinlostgbp MONEY,
 	IsNeutral BIT
 	
 )
@@ -86,10 +81,12 @@ DECLARE @Temp1 as TABLE
 	balance MONEY,
 	balanceusd MONEY,
 	balanceeur MONEY,
+	balancegbp MONEY,
 	betcount INT,
 	wl MONEY,
 	wlusd MONEY,
 	wleur MONEY,
+	wlgbp MONEY,
 	IsNeutral BIT
 )
 SELECT * INTO #TempExchange 
@@ -104,10 +101,12 @@ SELECT
 		SUM(stake) AS balance,
 		SUM(stake*e.usd) AS balanceusd,
 		SUM(stake*e.eur) AS balanceeur,
+		SUM(stake*e.gbp) AS balancegbp,
 		SUM(1) as BetCount,
 		SUM(stake*a.odds) AS wl,
 		SUM(stake*a.odds*e.usd) AS wlusd,
 		SUM(stake*a.odds*e.eur) AS wleur,
+		SUM(stake*a.odds*e.gbp) AS wlgbp,
 		CONVERT(BIT,0) as IsNeutral
 	FROM
 		bettrans AS a  WITH (NOLOCK)
@@ -136,14 +135,16 @@ DECLARE @Temp2 as TABLE
 	leagueid INT,
 	totalbalance MONEY,
 	totalbalanceusd MONEY,
-	totalbalanceeur MONEY
+	totalbalanceeur MONEY,
+	totalbalancegbp MONEY
 )
 INSERT INTO  @Temp2
 SELECT 
 						m.leagueid, 
 						SUM(stake) as totalbalance,
 						SUM(stake*e.usd) as totalbalanceusd,
-						SUM(stake*e.eur) as totalbalanceeur
+						SUM(stake*e.eur) as totalbalanceeur,
+						SUM(stake*e.gbp) as totalbalancegbp
 					FROM
 						bettrans AS a  WITH (NOLOCK)
 						INNER JOIN outright AS m  WITH (NOLOCK) ON m.orid = a.matchid  AND a.statusID = 0
@@ -168,10 +169,12 @@ A.orid,
 A.balance,
 A.balanceusd,
 A.balanceeur,
+A.balancegbp,
 A.BetCount,
 A.wl - B.totalbalance as totalwinlost,
 A.wlusd - B.totalbalanceusd as totalwinlostusd,
 A.wleur - B.totalbalanceeur as totalwinlosteur,
+A.wleur - B.totalbalancegbp as totalwinlostgbp,
 A.IsNeutral 
 FROM @Temp1 A
 INNER JOIN @Temp2 B on A.leagueid = B.leagueid

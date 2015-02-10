@@ -29,7 +29,11 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_MatchWL_Racing]
 	 @SumWinlostEUR MONEY=0 OUTPUT,
 	 @SumLicenseeWLEUR MONEY=0 OUTPUT,
 	 @SumCommEUR MONEY=0 OUTPUT,
-	 @SumPlayerCommEUR MONEY=0 OUTPUT 
+	 @SumPlayerCommEUR MONEY=0 OUTPUT ,
+	 @SumWinlostGBP MONEY=0 OUTPUT,
+	 @SumLicenseeWLGBP MONEY=0 OUTPUT,
+	 @SumCommGBP MONEY=0 OUTPUT,
+	 @SumPlayerCommGBP MONEY=0 OUTPUT 
 AS  
 
 /*
@@ -48,6 +52,7 @@ Revisions:
 	-- 20121004@Jim: replace @currencyname input param by @currencyID
 	-- 20130514@Jim: Restrict permission of Licensee Users by currency
 	-- 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
+	-- 20150128@Winnie: add base currency GBP 
 */
 
 SET NOCOUNT ON  
@@ -232,7 +237,12 @@ SELECT
 	@SumWinlostEUR=SUM(isnull(winlost*e.EUR,0)),
 	@SumLicenseeWLEUR=SUM(isnull(LicenseeWL*e.EUR,0)),
 	@SumCommEUR=SUM(isnull(comm*e.EUR,0)),
-	@SumPlayerCommEUR=SUM(ISNULL(playercomm*e.EUR,0))	
+	@SumPlayerCommEUR=SUM(ISNULL(playercomm*e.EUR,0)),
+	--GBP
+	@SumWinlostGBP=SUM(isnull(winlost*e.GBP,0)),
+	@SumLicenseeWLGBP=SUM(isnull(LicenseeWL*e.GBP,0)),
+	@SumCommGBP=SUM(isnull(comm*e.GBP,0)),
+	@SumPlayerCommGBP=SUM(ISNULL(playercomm*e.GBP,0))	
 	
 	
 FROM #AgWinlossHR b
@@ -256,7 +266,13 @@ FROM
 			winlost*e.EUR winlostEUR,
 			LicenseeWL*e.EUR LicenseeWLEUR,
 			comm*e.EUR commEUR,
-			playercomm*e.EUR PlayercommEUR
+			playercomm*e.EUR PlayercommEUR,
+			--GBP
+			stake*e.GBP stakeGBP,
+			winlost*e.GBP winlostGBP,
+			LicenseeWL*e.GBP LicenseeWLGBP,
+			comm*e.GBP commGBP,
+			playercomm*e.GBP PlayercommGBP
 			
 			
 	FROM #AgWinlossHR b

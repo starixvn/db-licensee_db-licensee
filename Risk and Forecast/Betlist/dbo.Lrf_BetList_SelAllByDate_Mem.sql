@@ -1,4 +1,11 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_BetList_SelAllByDate_Mem]
+﻿USE [bodb02]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_BetList_SelAllByDate_Mem_xpre]    Script Date: 1/30/2015 2:06:58 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[Lrf_BetList_SelAllByDate_Mem]
 	@LicenseeID INT ,
 	@UserID		INT,
 	@custid INT=NULL,
@@ -21,6 +28,10 @@
 	@SumLicenseeWLEUR MONEY=0 OUTPUT,
 	@SumCommEUR MONEY=0 OUTPUT,
 	@SumPlayerCommEUR MONEY=0 OUTPUT,
+	@SumWinlostGBP MONEY=0 OUTPUT,
+	@SumLicenseeWLGBP MONEY=0 OUTPUT,
+	@SumCommGBP MONEY=0 OUTPUT,
+	@SumPlayerCommGBP MONEY=0 OUTPUT,
 	@ShowSB BIT = 0,
 	@ShowRB BIT = 0,
 	@ShowNG BIT = 0,
@@ -66,6 +77,7 @@ Revisions:
 	- 20140305@Hannah: offer Keno
 	- 20140630@Hannah: offer BetRadar and Sporting Solution
 	- 20140908@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
+	- 20150130@Winnie: Add base currency GBP
 */
 
 
@@ -1009,15 +1021,19 @@ SELECT
 		@SumWinlost=SUM(ISNULL(winlost,0)),
 		@SumWinlostUSD=SUM(ISNULL(winlost*e.USD,0)),
 		@SumWinlostEUR=SUM(ISNULL(winlost*e.EUR,0)),
+		@SumWinlostGBP=SUM(ISNULL(winlost*e.GBP,0)),
 		@SumLicenseeWL=SUM(ISNULL(LicenseeWL,0)),
 		@SumLicenseeWLUSD=SUM(ISNULL(LicenseeWL*e.USD,0)),
 		@SumLicenseeWLEUR=SUM(ISNULL(LicenseeWL*e.EUR,0)),
+		@SumLicenseeWLGBP=SUM(ISNULL(LicenseeWL*e.GBP,0)),
 		@SumComm=SUM(ISNULL(comm,0)) ,
 		@SumCommUSD=SUM(ISNULL(comm*e.USD,0)) ,
 		@SumCommEUR=SUM(ISNULL(comm*e.EUR,0)),--
+		@SumCommGBP=SUM(ISNULL(comm*e.GBP,0)),--
 		@SumPlayerComm=SUM(ISNULL(playercomm,0)) ,
 		@SumPlayerCommUSD=SUM(ISNULL(playercomm*e.USD,0)) ,
-		@SumPlayerCommEUR=SUM(ISNULL(playercomm*e.EUR,0))		
+		@SumPlayerCommEUR=SUM(ISNULL(playercomm*e.EUR,0)),
+		@SumPlayerCommGBP=SUM(ISNULL(playercomm*e.GBP,0))			
 FROM 
 	#BetListSelAllByDateMem b
 	INNER JOIN #TempExchange e 
@@ -1042,7 +1058,14 @@ SELECT c.* FROM
 			Winlost*e.EUR AS WinlostEUR,
 			LicenseeWL * e.EUR AS LicenseeWLEUR,
 			comm*e.EUR AS commEUR,
-			playercomm*e.EUR AS PlayerCommEUR
+			playercomm*e.EUR AS PlayerCommEUR,
+			--bASe GBP currency
+			Stake*e.GBP AS StakeGBP,
+			Actual_Stake * e.GBP AS Actual_StakeGBP,
+			Winlost*e.GBP AS WinlostGBP,
+			LicenseeWL * e.GBP AS LicenseeWLGBP,
+			comm*e.GBP AS commGBP,
+			playercomm*e.GBP AS PlayerCommGBP
 			
 			
 	FROM	#BetListSelAllByDateMem b
@@ -1061,7 +1084,8 @@ DECLARE @BettransDetail TABLE(
 	bettype SMALLINT,
 	Betteam nvarchar (10),
 	stakeEUR MONEY,
-	stakeUSD MONEY
+	stakeUSD MONEY,
+	stakeGBP MONEY
 	 )   
 	 
 IF @ShowRB = 1
@@ -1077,7 +1101,8 @@ BEGIN
 		BM.bettype,
 		BM.betteam ,
 		BM.stake*e.EUR,	
-		BM.stake*e.USD	
+		BM.stake*e.USD,
+		BM.stake*e.GBP
 	FROM bettransm BM WITH (NOLOCK)
 	INNER JOIN #BetListSelAllByDateMem B ON BM.refno = B.transid
 	INNER JOIN #TempExchange e ON  e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
@@ -1095,7 +1120,8 @@ BEGIN
 		BG.bettype,
 		BG.betteam,
 		BG.stake*e.EUR,	
-		BG.stake*e.USD
+		BG.stake*e.USD,
+		BG.stake*e.GBP
 	FROM bettransg BG WITH (NOLOCK)
 	INNER JOIN #BetListSelAllByDateMem B ON BG.refno = B.refno and BG.custid = @CustID
 	INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
@@ -1113,7 +1139,8 @@ IF @ShowVS=1
 			BG.bettype  ,
 			BG.Betteam,
 			BG.stake*e.EUR,
-			BG.stake*e.USD
+			BG.stake*e.USD,
+			BG.stake*e.GBP
 		FROM bettransm BG WITH (NOLOCK)
 		INNER JOIN #BetListSelAllByDateMem B ON BG.refno = B.refno 
 		INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
@@ -1126,6 +1153,7 @@ ORDER BY RefNo,Bettype
 DROP TABLE #TempExchange 
 DROP TABLE #BetListSelAllByDateMem
 DROP TABLE #TempBetList
+
 
 GO
 GRANT  EXECUTE  ON [dbo].[Lrf_BetList_SelAllByDate_Mem]  TO [bodbLicenseeNet]

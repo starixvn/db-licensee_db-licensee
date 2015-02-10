@@ -13,6 +13,21 @@ exec Lrf_BetList_SelWinlossDaily
 @BalanceUpDay='2012-09-01 00:00:00:000'
 */
 
+USE [bodb02]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_BetList_SelWinlossDaily_xpre]    Script Date: 1/29/2015 1:11:07 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+/*
+exec Lrf_BetList_SelWinlossDaily
+@date='2012-09-04 00:00:00:000',
+@LicenseeID=1,
+@MoveBetsDay='2012-09-03 00:00:00:000',
+@BalanceUpDay='2012-09-01 00:00:00:000'
+*/
+
 ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinlossDaily]
 	@date SMALLDATETIME,
 	@LicenseeID INT,
@@ -38,6 +53,10 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinlossDaily]
 	@SumLicenseeWLEUR MONEY = 0 OUTPUT,
 	@SumCommEUR MONEY = 0 OUTPUT,
 	@SumPlayerCommEUR MONEY=0 OUTPUT,
+	@SumWinlostGBP MONEY = 0 OUTPUT,
+	@SumLicenseeWLGBP MONEY = 0 OUTPUT,
+	@SumCommGBP MONEY = 0 OUTPUT,
+	@SumPlayerCommGBP MONEY=0 OUTPUT,
 	@Sort VARCHAR(20) = 'Transid DESC'
 AS
 
@@ -79,6 +98,7 @@ Revisions:
 	- 20140718@Jim: fix bug 'wrong to get licensee winloss/comm for Horse Racing' (#19165)
 	- 20140718@Jim: fix bug 'Win loss and Licensee WL showed on web are incorrect when product is BA' (#19261)
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+	- 20150128@Winnie: Add base currency GBP 
 Param's Explanation: 	
 */
 SET NOCOUNT ON
@@ -138,7 +158,12 @@ CREATE TABLE #Data
 	WinlostEUR MONEY,
 	LicenseeWLEUR MONEY,
 	commEUR MONEY,
-	PlayerCommEUR MONEY
+	PlayerCommEUR MONEY,
+	stakeGBP MONEY,
+	WinlostGBP MONEY,
+	LicenseeWLGBP MONEY,
+	commGBP MONEY,
+	PlayerCommGBP MONEY
 )
 
 DECLARE @DataSum TABLE
@@ -280,7 +305,7 @@ SET @LicenseeWL =
 
 SET @Winlost = '(b.winlost-b.actual_stake)'
 
-IF (@Sort LIKE '%USD%') OR (@Sort LIKE '%EUR%')
+IF (@Sort LIKE '%USD%') OR (@Sort LIKE '%EUR%')OR (@Sort LIKE '%GBP%')
 	BEGIN
 		DECLARE @charindex INT
 		SELECT @charindex = CHARINDEX( ' ', @Sort, 1)
@@ -441,7 +466,12 @@ BEGIN
 		WinlostEUR MONEY,
 		LicenseeWLEUR MONEY,
 		commEUR MONEY,
-		PlayerCommEUR MONEY
+		PlayerCommEUR MONEY,
+		stakeGBP MONEY,
+		WinlostGBP MONEY,
+		LicenseeWLGBP MONEY,
+		commGBP MONEY,
+		PlayerCommGBP MONEY
 	)
 
 	-- Get Betdata from bettrans and filter by row number
@@ -500,7 +530,13 @@ BEGIN
 		+@Winlost+'*e.EUR WinlostEUR,'
 		+@LicenseeWL+'*e.EUR LicenseeWLEUR,
 		b.comm*e.EUR commEUR,
-		b.playercomm*e.EUR as PlayerCommEUR
+		b.playercomm*e.EUR as PlayerCommEUR,
+		--GBP
+		b.stake*e.GBP stakeGBP,'
+		+@Winlost+'*e.GBP WinlostGBP,'
+		+@LicenseeWL+'*e.GBP LicenseeWLGBP,
+		b.comm*e.GBP commGBP,
+		b.playercomm*e.GBP as PlayerCommGBP
 	FROM
 		bettrans b WITH (nolock) 
 		INNER JOIN customer c WITH (nolock) ON b.custid = c.custid
@@ -523,7 +559,7 @@ BEGIN
 	(Oddsid,Sporttype,Username,NickName,Bettype,LeagueID,Transid,Matchcode,Race,HomeID,AwayID,hdp1,hdp2,
 	odds,status,stake,Winlost,LicenseeWL,comm,PlayerComm,transdate,Winlostdate,betteam,liveindicator,livehomescore,
 	liveawayscore,MatchID,Betstatus ,IsNeutral,oddstype,betid,currency,RefNO,CustID,showtime,stakeUSD,WinlostUSD,LicenseeWLUSD,commUSD,PlayerCommUSD,
-	stakeEUR,WinlostEUR,LicenseeWLEUR,commEUR,PlayerCommEUR)
+	stakeEUR,WinlostEUR,LicenseeWLEUR,commEUR,PlayerCommEUR,stakeGBP,WinlostGBP,LicenseeWLGBP,commGBP,PlayerCommGBP)
 	EXEC (@sql)	
 
 	-- Update LicenseeWL with LicenseeBATransaction table
@@ -531,6 +567,7 @@ BEGIN
 	SET LicenseeWL = 0
 		,LicenseeWLUSD=0
 		,LicenseeWLEUR=0
+		,LicenseeWLGBP=0
 	FROM #BetData1 b
 		INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
 
@@ -595,7 +632,8 @@ BEGIN
 		betteam,liveindicator,livehomescore,liveawayscore,matchid, 
 		betstatus,IsNeutral,OddsType,betid,currency,refno,custid,showtime,
 		stakeUSD,WinlostUSD,LicenseeWLUSD,commUSD,PlayerCommUSD,
-		stakeEUR,WinlostEUR,LicenseeWLEUR,commEUR,PlayerCommEUR
+		stakeEUR,WinlostEUR,LicenseeWLEUR,commEUR,PlayerCommEUR,
+		stakeGBP,WinlostGBP,LicenseeWLGBP,commGBP,PlayerCommGBP
 	FROM #BetData1
 
 	DROP TABLE #BetData1	
@@ -733,7 +771,12 @@ BEGIN
 		WinlostEUR MONEY,
 		LicenseeWLEUR MONEY,
 		commEUR MONEY,
-		PlayerCommEUR MONEY 
+		PlayerCommEUR MONEY ,
+		stakeGBP MONEY,
+		WinlostGBP MONEY,
+		LicenseeWLGBP MONEY,
+		commGBP MONEY,
+		PlayerCommGBP MONEY 
 	)	
 
 	-- Get Betdata from bettrans14 and filter by row number	
@@ -792,7 +835,13 @@ BEGIN
 		+@Winlost+'*e.EUR WinlostEUR,'
 		+ @LicenseeWL+'*e.EUR LicenseeWLEUR,
 		b.comm*e.EUR commEUR,
-		b.playercomm*e.EUR as PlayerCommEUR
+		b.playercomm*e.EUR as PlayerCommEUR,
+		--GBP
+		b.stake*e.GBP stakeGBP,'
+		+@Winlost+'*e.GBP WinlostGBP,'
+		+ @LicenseeWL+'*e.GBP LicenseeWLGBP,
+		b.comm*e.GBP commGBP,
+		b.playercomm*e.GBP as PlayerCommGBP
 	FROM
 		bettrans14 b WITH (nolock) 
 		INNER JOIN customer c WITH (nolock) ON b.custid = c.custid
@@ -815,7 +864,8 @@ BEGIN
 	(Oddsid,Sporttype,Username,NickName,Bettype,LeagueID,Transid,Matchcode,Race,HomeID,AwayID,hdp1,hdp2,
 	odds,status,stake,Winlost,LicenseeWL,comm,PlayerComm,transdate,Winlostdate,betteam,liveindicator,livehomescore,
 	liveawayscore,MatchID,Betstatus ,IsNeutral,oddstype,betid,currency,RefNO,CustID,showtime,stakeUSD,WinlostUSD,
-	LicenseeWLUSD,commUSD,PlayerCommUSD,stakeEUR,WinlostEUR,LicenseeWLEUR,commEUR,PlayerCommEUR)
+	LicenseeWLUSD,commUSD,PlayerCommUSD,stakeEUR,WinlostEUR,LicenseeWLEUR,commEUR,PlayerCommEUR
+	,stakeGBP,WinlostGBP,LicenseeWLGBP,commGBP,PlayerCommGBP)
 	EXEC (@sql)	
 
 	-- Update LicenseeWL with LicenseeBATransaction table
@@ -823,6 +873,7 @@ BEGIN
 	SET LicenseeWL = 0
 		,LicenseeWLUSD=0
 		,LicenseeWLEUR=0
+		,LicenseeWLGBP=0
 	FROM #BetData14 b
 		INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
 
@@ -887,7 +938,8 @@ BEGIN
 		betteam,liveindicator,livehomescore,liveawayscore,matchid, 
 		betstatus,IsNeutral,OddsType,betid,currency,refno,custid,showtime,
 		stakeUSD,WinlostUSD,LicenseeWLUSD,commUSD,PlayerCommUSD,
-		stakeEUR,WinlostEUR,LicenseeWLEUR,commEUR,PlayerCommEUR
+		stakeEUR,WinlostEUR,LicenseeWLEUR,commEUR,PlayerCommEUR,
+		stakeGBP,WinlostGBP,LicenseeWLGBP,commGBP,PlayerCommGBP
 	FROM #BetData14
 	
 	DROP TABLE #BetData14
@@ -928,7 +980,12 @@ SELECT
 	@SumWinlostEUR = SUM(SumWinlost*e.EUR),
 	@SumLicenseeWLEUR = SUM(SumLicenseeWL*e.EUR),
 	@SumCommEUR = SUM(SumComm * e.EUR),
-	@SumPlayerCommEUR=SUM(ISNULL(SumPlayerComm,0)*e.EUR)
+	@SumPlayerCommEUR=SUM(ISNULL(SumPlayerComm,0)*e.EUR),
+	--GBP
+	@SumWinlostGBP = SUM(SumWinlost*e.GBP),
+	@SumLicenseeWLGBP = SUM(SumLicenseeWL*e.GBP),
+	@SumCommGBP = SUM(SumComm * e.GBP),
+	@SumPlayerCommGBP=SUM(ISNULL(SumPlayerComm,0)*e.GBP)
 FROM @DataSum b 
 INNER JOIN #TempExchangeSum e ON b.currency = e.exchangeid
 
@@ -941,7 +998,8 @@ CREATE TABLE #BettransDetail(
 	bettype SMALLINT,
 	Betteam nvarchar (10),
 	stakeEUR MONEY,
-	stakeUSD MONEY
+	stakeUSD MONEY,
+	stakeGBP MONEY
 	 )  
 	 	 
 IF EXISTS(SELECT TOP 1 1 FROM #Data WHERE Bettype BETWEEN 1101 AND 1199)
@@ -958,7 +1016,8 @@ BEGIN
 			BG.bettype  ,
 			BG.Betteam,
 			BG.stake * e.EUR AS stakeEUR,
-			BG.stake * e.USD AS stakeUSD
+			BG.stake * e.USD AS stakeUSD,
+			BG.stake * e.GBP AS stakeGBP
 		FROM bettransg BG WITH (NOLOCK)
 		INNER JOIN #Data B ON BG.refno = B.refno and BG.custid = B.CustID
 		INNER JOIN #TempExchange e ON B.currency = e.exchangeid
@@ -977,7 +1036,8 @@ BEGIN
 			BG.bettype  ,
 			BG.Betteam  ,
 			BG.stake * e.EUR AS stakeEUR,
-			BG.stake * e.USD AS stakeUSD
+			BG.stake * e.USD AS stakeUSD,
+			BG.stake * e.GBP AS stakeGBP
 		FROM bettransg14 BG WITH (NOLOCK)
 		INNER JOIN #Data B ON BG.refno = B.refno and BG.custid = B.CustID
 		INNER JOIN #TempExchange e ON B.currency = e.exchangeid
@@ -999,7 +1059,8 @@ BEGIN
 			BG.bettype  ,
 			BG.Betteam,
 			BG.stake*e.EUR,
-			BG.stake*e.USD
+			BG.stake*e.USD,
+			BG.stake*e.GBP
 		FROM bettransm BG WITH (NOLOCK)
 		INNER JOIN #Data B ON  BG.custid = B.custid
 		INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
@@ -1019,7 +1080,8 @@ BEGIN
 			BG.bettype  ,
 			BG.Betteam,
 			BG.stake*e.EUR,
-			BG.stake*e.USD
+			BG.stake*e.USD,
+			BG.stake*e.GBP
 		FROM bettransm14 BG WITH (NOLOCK)
 		INNER JOIN #Data B ON  BG.custid = B.custid
 		INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
@@ -1038,6 +1100,7 @@ DROP TABLE #Data
 DROP TABLE #TmpCondBettype
 DROP TABLE #TempAg
 DROP TABLE #BettransDetail
+
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinlossDaily] TO [bodbLicenseeNet]
