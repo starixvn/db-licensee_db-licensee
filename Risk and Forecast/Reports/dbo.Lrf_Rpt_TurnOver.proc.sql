@@ -42,6 +42,7 @@ Revisions:
    - 20140305@Florent: support Keno
    - 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
    - 20150127@Jim: support base on GBP Currency
+   - 20150210@Jim: fix bug wrong condition when retrieve data from rptDepWinlostByProduct
 Param's Explanation:
     + @excludeTest: remove currency UUS
     + @CurrencyID = 0: get all currency
@@ -421,7 +422,7 @@ BEGIN
                 ,SUM(isnull(p.playercomm,0)) as PlayerComm
             FROM bodb_Report.dbo.rptDepWinlostByProduct p WITH(NOLOCK)    
                 INNER JOIN dbo.Customer c WITH(NOLOCK) on p.custid = c.custid
-				INNER JOIN @tmpAg a ON  p.Currency = a.Currency
+				INNER JOIN @tmpAg a ON  p.Currency = a.Currency AND a.CustID = c.Recommend
             WHERE p.winlostdate BETWEEN @tmpdate and @tdate    
                 AND c.roleid = 1
                 AND c.recommend in (SELECT DISTINCT custid FROM @tmpAg)
