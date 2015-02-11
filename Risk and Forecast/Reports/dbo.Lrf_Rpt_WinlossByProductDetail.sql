@@ -1,6 +1,6 @@
 ﻿USE [bodb02]
 GO
- 
+
 ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail]  
  @LicenseeID	INT,
  @UserID		INT,
@@ -53,6 +53,7 @@ AS
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	- 20150107@Jim: add more input param @CustID
 	- 20150123@Jim: support base on Currency GBP
+	- 20150211@Don: remove index hint
 	
 	Param's Explanation:  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -309,7 +310,8 @@ BEGIN
 				ELSE 1 END
 			   BetCount	
 		FROM 
-			dbo.bettrans b WITH ( NOLOCK,INDEX=IX_srecommend) 
+			--dbo.bettrans b WITH ( NOLOCK,INDEX=IX_srecommend) 
+			dbo.bettrans b WITH (NOLOCK) 
 			INNER JOIN @TempAg tma ON tma.CustID=b.recommend AND b.currency = tma.currency
 			INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON tma.custid=BA.recommend and b.transid = BA.transid 	 	
 			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
@@ -398,7 +400,8 @@ BEGIN
 				ELSE 1 END
 			   BetCount	
 		FROM 
-			dbo.bettrans b WITH ( NOLOCK,INDEX=IX_srecommend )
+			--dbo.bettrans b WITH ( NOLOCK,INDEX=IX_srecommend )
+			dbo.bettrans b WITH (NOLOCK)
 			INNER JOIN @TempAg a ON b.recommend = a.custid AND b.currency = a.currency
 			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 		WHERE 
@@ -514,7 +517,8 @@ BEGIN
 				ELSE 1 END
 			   BetCount	
 		FROM 
-			dbo.bettrans b WITH ( NOLOCK,INDEX=IX_srecommend )
+			--dbo.bettrans b WITH ( NOLOCK,INDEX=IX_srecommend )
+			dbo.bettrans b WITH (NOLOCK)
 			INNER JOIN @TempAg a ON b.recommend = a.custid AND a.currency = b.currency 
 			INNER JOIN @bettype bt ON b.bettype = bt.bettype
 			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
@@ -885,6 +889,7 @@ BEGIN
 END	
 IF @IsOld = 1 
 BEGIN
+
 	SELECT @MaxOldDate = MAX(winlostdate) FROM bodb_Licensee.dbo.rptLicWinloss_old (NOLOCK)
 	IF @TDate >= @MaxOldDate
 			SET @TempToDate = @MaxOldDate
@@ -1140,6 +1145,6 @@ DROP TABLE #SAgWinLoss
 END
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinlossByProductDetail] TO [bodbLicenseeNet]
+GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinlossByProductDetail] TO [bodbLicenseeNet] AS [dbo]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_WinlossByProductDetail] TO [vnteam]   
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_WinlossByProductDetail] TO [vnteam] AS [dbo]
