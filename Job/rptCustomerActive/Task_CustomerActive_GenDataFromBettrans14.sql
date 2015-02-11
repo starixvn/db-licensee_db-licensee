@@ -1,6 +1,6 @@
 USE bodb_LicenseeReport
 GO
-CREATE PROCEDURE dbo.Task_CustomerActive_GenDataFromBettrans14 @FromDate DATE
+ALTER PROCEDURE dbo.Task_CustomerActive_GenDataFromBettrans14 @FromDate DATE
 	, @ToDate DATE
 	, @ProductCodes VARCHAR(125) = 'SB,NG,BA,LC,VS,CS,GB,KN'
 AS
@@ -56,7 +56,8 @@ BEGIN
 			LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction ba WITH (NOLOCK) ON a.transid = ba.transid
 			LEFT JOIN @MultiCurrencies l ON a.recommend = l.recommend AND @FromTransDate BETWEEN l.fromDate AND l.toDate --incase keennocen
 		WHERE a.bettype < 19999
-			AND a.transdate > @FromTransDate AND a.transdate < @ToTransDate
+			AND ((a.transdate > @FromTransDate AND a.transdate < @ToTransDate )
+				OR (a.winlostdate > @FromTransDate AND a.winlostdate < @ToTransDate))
 		GROUP BY CAST(a.transdate AS DATE), a.CustID, a.recommend
 			, ISNULL(l.currency, a.currency), CASE WHEN ba.transid IS NOT NULL THEN 3 ELSE bt.ProductID END
 		OPTION (MAXDOP 1)
