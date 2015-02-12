@@ -51,7 +51,7 @@ BEGIN
 			,maxpermatch8 = CASE WHEN @Sporttype = 8 THEN @MaxPerMatch ELSE maxpermatch8 END
 			,maxpermatch10 = CASE WHEN @Sporttype = 10 THEN @MaxPerMatch ELSE maxpermatch10 END
 			,maxpermatch11 = CASE WHEN @Sporttype = 11 THEN @MaxPerMatch ELSE maxpermatch11 END
-			,maxpermatch99 = CASE WHEN @Sporttype = 99 AND @Bettype = 0 THEN @MaxPerMatch ELSE maxpermatch99 END
+			,maxpermatch99 = CASE WHEN @Sporttype = 99 AND @Bettype = 1 THEN @MaxPerMatch ELSE maxpermatch99 END
 			,MaxPerMatch99MP = CASE WHEN @Sporttype = 99 AND @Bettype = 9 THEN @MaxPerMatch ELSE MaxPerMatch99MP END
 			,maxpermatch154	= CASE WHEN @Sporttype = 154 THEN @MaxPerMatch ELSE maxpermatch154 END						
 		WHERE custid IN (SELECT custid FROM #tblCust) 
@@ -62,7 +62,8 @@ BEGIN
 		FROM dbo.Dep_CustSetting cs
 			INNER JOIN CustInfo c ON c.custid = cs.custid
 		WHERE cs.Sporttype = @Sporttype
-			AND cs.bettype = CASE WHEN @Bettype = 0 THEN cs.bettype ELSE @Bettype END
+			AND 1 = CASE	WHEN @Sporttype = 99 AND @Bettype = 9 AND cs.bettype = 9 THEN 1 
+							WHEN @Sporttype = 99 AND @Bettype = 1 AND cs.bettype <> 9 THEN 1 ELSE 0 END
 			AND c.custid IN (SELECT custid FROM #tblCust)
 			AND 1 = CASE WHEN @ExistedMember = 0 AND roleid = 1 THEN 0 ELSE 1 END
 	END
@@ -191,10 +192,11 @@ BEGIN
 		SET	MinBet=@MinBet, 
 			MaxBet=@Maxbet, 
 			MaxPerGameType= @MaxPerMatch,
-			IsDisabled = CASE WHEN @Enable = 1 AND @EnableDownline = 1 THEN 0 ELSE IsDisabled END	
+			IsDisabled = CASE WHEN @Enable = 1 AND @EnableDownline = 1 THEN 0 ELSE cg.IsDisabled END	
 		FROM CustGameType cg 
+			INNER JOIN bodb02.dbo.GameType gt ON cg.GameTypeID = gt.GameTypeID
 			INNER JOIN CustInfo c ON c.custid = cg.custid
-		WHERE cg.GameTypeID = @Bettype - 1500
+		WHERE gt.IBCBetTypeID = @Bettype
 			AND c.custid IN (SELECT custid FROM #tblCust)			
 			AND 1 = CASE WHEN @ExistedMember = 0 AND roleid = 1 THEN 0 ELSE 1 END
 
