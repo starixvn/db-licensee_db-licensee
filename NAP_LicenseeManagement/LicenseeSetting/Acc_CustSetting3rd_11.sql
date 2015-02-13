@@ -62,10 +62,89 @@ BEGIN
 		FROM dbo.Dep_CustSetting cs
 			INNER JOIN CustInfo c ON c.custid = cs.custid
 		WHERE cs.Sporttype = @Sporttype
-			AND 1 = CASE	WHEN @Sporttype = 99 AND @Bettype = 9 AND cs.bettype = 9 THEN 1 
+			AND 1 = CASE	WHEN @Sporttype <> 99 THEN 1 
+							WHEN @Sporttype = 99 AND @Bettype = 9 AND cs.bettype = 9 THEN 1
 							WHEN @Sporttype = 99 AND @Bettype = 1 AND cs.bettype <> 9 THEN 1 ELSE 0 END
 			AND c.custid IN (SELECT custid FROM #tblCust)
 			AND 1 = CASE WHEN @ExistedMember = 0 AND roleid = 1 THEN 0 ELSE 1 END
+
+		 DELETE t 
+		 FROM #tblCust t 
+		 INNER JOIN Dep_CustSetting cs on t.custid = cs.custid AND cs.sporttype = @Sporttype AND bettype = @Bettype
+	 
+		INSERT INTO [dbo].[Dep_CustSetting]
+				   ([custid]
+				   ,[bettype]
+				   ,[sporttype]
+				   ,[islive]
+				   ,[apositiontaking]
+				   ,[mpositiontaking]
+				   ,[spositiontaking]
+				   ,[playerdiscount]
+				   ,[discount]
+				   ,[adiscount]
+				   ,[sdiscount]
+				   ,[minbet]
+				   ,[maxbet])
+		SELECT  t.custid
+			   ,bettype as [bettype]
+			   ,sporttype as [sporttype]
+			   ,islive as [islive]
+			   ,0 as [apositiontaking]
+			   ,0 as [mpositiontaking]
+			   ,0 as [spositiontaking]
+			   ,0 as [playerdiscount]
+			   ,0 as [discount]
+			   ,0 as [adiscount]
+			   ,0 as [sdiscount]
+			   ,@minbet
+			   ,@maxbet
+		FROM #tblCust t
+			CROSS JOIN (		  SELECT 1		AS sporttype, 1		AS bettype, 0	AS islive
+						UNION ALL SELECT 1		AS sporttype, 1		AS bettype, 1	AS islive
+						UNION ALL SELECT 1		AS sporttype, 2		AS bettype, 0	AS islive
+						UNION ALL SELECT 1		AS sporttype, 3		AS bettype, 0	AS islive
+						UNION ALL SELECT 1		AS sporttype, 3		AS bettype, 1	AS islive
+						UNION ALL SELECT 1		AS sporttype, 4		AS bettype, 0	AS islive
+						UNION ALL SELECT 1		AS sporttype, 5		AS bettype, 0	AS islive
+						UNION ALL SELECT 1		AS sporttype, 6		AS bettype, 0	AS islive
+						UNION ALL SELECT 1		AS sporttype, 7		AS bettype, 0	AS islive
+						UNION ALL SELECT 1		AS sporttype, 7		AS bettype, 1	AS islive
+						UNION ALL SELECT 1		AS sporttype, 8		AS bettype, 0	AS islive
+						UNION ALL SELECT 1		AS sporttype, 8		AS bettype, 1	AS islive
+						UNION ALL SELECT 1		AS sporttype, 9		AS bettype, 0	AS islive
+						UNION ALL SELECT 1		AS sporttype, 10	AS bettype, 0	AS islive
+						UNION ALL SELECT 2		AS sporttype, 1		AS bettype, 0	AS islive
+						UNION ALL SELECT 2		AS sporttype, 2		AS bettype, 0	AS islive
+						UNION ALL SELECT 2		AS sporttype, 3		AS bettype, 0	AS islive
+						UNION ALL SELECT 2		AS sporttype, 7		AS bettype, 0	AS islive
+						UNION ALL SELECT 2		AS sporttype, 8		AS bettype, 0	AS islive
+						UNION ALL SELECT 2		AS sporttype, 20	AS bettype, 0	AS islive
+						UNION ALL SELECT 3		AS sporttype, 1		AS bettype, 0	AS islive
+						UNION ALL SELECT 3		AS sporttype, 2		AS bettype, 0	AS islive
+						UNION ALL SELECT 3		AS sporttype, 3		AS bettype, 0	AS islive
+						UNION ALL SELECT 3		AS sporttype, 20	AS bettype, 0	AS islive
+						UNION ALL SELECT 5		AS sporttype, 1		AS bettype, 0	AS islive
+						UNION ALL SELECT 5		AS sporttype, 2		AS bettype, 0	AS islive
+						UNION ALL SELECT 5		AS sporttype, 3		AS bettype, 0	AS islive
+						UNION ALL SELECT 5		AS sporttype, 20	AS bettype, 0	AS islive
+						UNION ALL SELECT 8		AS sporttype, 1		AS bettype, 0	AS islive
+						UNION ALL SELECT 8		AS sporttype, 3		AS bettype, 0	AS islive
+						UNION ALL SELECT 8		AS sporttype, 20	AS bettype, 0	AS islive
+						UNION ALL SELECT 10		AS sporttype, 1		AS bettype, 0	AS islive
+						UNION ALL SELECT 10		AS sporttype, 2		AS bettype, 0	AS islive
+						UNION ALL SELECT 10		AS sporttype, 3		AS bettype, 0	AS islive
+						UNION ALL SELECT 10		AS sporttype, 20	AS bettype, 0	AS islive
+						UNION ALL SELECT 11		AS sporttype, 1		AS bettype, 0	AS islive
+						UNION ALL SELECT 11		AS sporttype, 20	AS bettype, 0	AS islive
+						UNION ALL SELECT 99		AS sporttype, 1		AS bettype, 0	AS islive
+						UNION ALL SELECT 99		AS sporttype, 2		AS bettype, 0	AS islive
+						UNION ALL SELECT 99		AS sporttype, 3		AS bettype, 0	AS islive
+						UNION ALL SELECT 99		AS sporttype, 9		AS bettype, 0	AS islive
+						UNION ALL SELECT 99		AS sporttype, 20	AS bettype, 0	AS islive
+						UNION ALL SELECT 154	AS sporttype, 20	AS bettype, 0	AS islive
+						) s
+		WHERE s.sporttype = @Sporttype		
 	END
 
 	IF @Sporttype = 161 --NumberGame
@@ -83,6 +162,49 @@ BEGIN
 		WHERE cs.Sporttype = @Sporttype
 			AND c.custid IN (SELECT custid FROM #tblCust)
 			AND 1 = CASE WHEN @ExistedMember = 0 AND roleid = 1 THEN 0 ELSE 1 END
+
+		DELETE t 
+		FROM #tblCust t 
+		INNER JOIN Dep_CustSetting3rd cs on t.custid = cs.custid AND cs.sporttype = @Sporttype
+	 
+		INSERT INTO [dbo].[Dep_CustSetting3rd]
+				   ([custid]
+				   ,[bettype]
+				   ,[sporttype]
+				   ,[islive]
+				   ,[apositiontaking]
+				   ,[mpositiontaking]
+				   ,[spositiontaking]
+				   ,[playerdiscount]
+				   ,[discount]
+				   ,[adiscount]
+				   ,[sdiscount]
+				   ,[minbet]
+				   ,[maxbet])
+		SELECT  t.custid
+			   ,bettype	as [bettype]
+			   ,161		as [sporttype]
+			   ,islive	as [islive]
+			   ,0 as [apositiontaking]
+			   ,0 as [mpositiontaking]
+			   ,0 as [spositiontaking]
+			   ,0 as [playerdiscount]
+			   ,0 as [discount]
+			   ,0 as [adiscount]
+			   ,0 as [sdiscount]
+			   ,@minbet
+			   ,@maxbet
+		FROM #tblCust t
+			CROSS JOIN (		  SELECT 81	AS bettype, 0 AS islive
+						UNION ALL SELECT 83	AS bettype, 0 AS islive
+						UNION ALL SELECT 85	AS bettype, 1 AS islive
+						UNION ALL SELECT 86	AS bettype, 0 AS islive
+						UNION ALL SELECT 86	AS bettype, 1 AS islive
+						UNION ALL SELECT 87	AS bettype, 1 AS islive
+						UNION ALL SELECT 88	AS bettype, 0 AS islive
+						UNION ALL SELECT 89	AS bettype, 1 AS islive
+						UNION ALL SELECT 90	AS bettype, 1 AS islive
+						) s			
 	END 
 
 	IF @Sporttype BETWEEN 151 AND 153 --Racing
@@ -113,6 +235,56 @@ BEGIN
 							WHEN @Bettype = 51 AND cs.bettype IN (51,52) THEN 1 ELSE 0 END
 			AND c.custid IN (SELECT custid FROM #tblCust)
 			AND 1 = CASE WHEN @ExistedMember = 0 AND roleid = 1 THEN 0 ELSE 1 END
+
+		DELETE t 
+		FROM #tblCust t 
+		INNER JOIN Dep_CustSetting3rd cs on t.custid = cs.custid AND cs.sporttype = @Sporttype AND cs.bettype = @Bettype
+	 
+		INSERT INTO [dbo].[Dep_CustSetting3rd]
+				   ([custid]
+				   ,[bettype]
+				   ,[sporttype]
+				   ,[islive]
+				   ,[apositiontaking]
+				   ,[mpositiontaking]
+				   ,[spositiontaking]
+				   ,[playerdiscount]
+				   ,[discount]
+				   ,[adiscount]
+				   ,[sdiscount]
+				   ,[minbet]
+				   ,[maxbet])
+		SELECT  t.custid
+			   ,bettype		as [bettype]
+			   ,sporttype	as [sporttype]
+			   ,0			as [islive]
+			   ,0 as [apositiontaking]
+			   ,0 as [mpositiontaking]
+			   ,0 as [spositiontaking]
+			   ,0 as [playerdiscount]
+			   ,0 as [discount]
+			   ,0 as [adiscount]
+			   ,0 as [sdiscount]
+			   ,@minbet
+			   ,@maxbet
+		FROM #tblCust t
+			CROSS JOIN (		  SELECT 151 AS sporttype, 31 AS bettype 
+						UNION ALL SELECT 151 AS sporttype, 32 AS bettype 
+						UNION ALL SELECT 151 AS sporttype, 41 AS bettype 
+						UNION ALL SELECT 151 AS sporttype, 42 AS bettype 
+						UNION ALL SELECT 151 AS sporttype, 51 AS bettype 
+						UNION ALL SELECT 151 AS sporttype, 52 AS bettype 
+						UNION ALL SELECT 152 AS sporttype, 41 AS bettype 
+						UNION ALL SELECT 152 AS sporttype, 42 AS bettype 
+						UNION ALL SELECT 152 AS sporttype, 51 AS bettype 
+						UNION ALL SELECT 152 AS sporttype, 52 AS bettype 
+						UNION ALL SELECT 153 AS sporttype, 51 AS bettype 
+						UNION ALL SELECT 153 AS sporttype, 52 AS bettype 
+						) s	
+		WHERE s.sporttype = @Sporttype 
+			AND 1 = CASE	WHEN @Bettype = 31 AND s.bettype IN (31,32) THEN 1
+							WHEN @Bettype = 41 AND s.bettype IN (41,42) THEN 1
+							WHEN @Bettype = 51 AND s.bettype IN (51,52) THEN 1 ELSE 0 END
 	END 
 
 	IF @Sporttype BETWEEN 180 AND 186 --Virtual sport
@@ -142,9 +314,9 @@ BEGIN
 			AND 1 = CASE WHEN @ExistedMember = 0 AND roleid = 1 THEN 0 ELSE 1 END
 
 		-- Remove Virtual sport that having setting in Dep_CustSetting3rd
-		 DELETE t 
-		 FROM #tblCust t 
-		 INNER JOIN Dep_CustSetting3rd cs on t.custid = cs.custid AND cs.sporttype = @Sporttype
+		DELETE t 
+		FROM #tblCust t 
+		INNER JOIN Dep_CustSetting3rd cs on t.custid = cs.custid AND cs.sporttype = @Sporttype
 	 
 		INSERT INTO [dbo].[Dep_CustSetting3rd]
 				   ([custid]
@@ -163,10 +335,10 @@ BEGIN
 		SELECT  t.custid
 			   ,bettype as [bettype]
 			   ,sporttype as [sporttype]
-			   ,0 [islive]
-			   ,case when roleid = 3  then 0 else @ptVALUE end as [apositiontaking]
-			   ,case when roleid in (4,3)  then @ptVALUE else 0 end as [mpositiontaking]
-			   ,case when roleid = 4 then @ptVALUE else 0 end as [spositiontaking]
+			   ,0 as [islive]
+			   ,0 as [apositiontaking]
+			   ,0 as [mpositiontaking]
+			   ,0 as [spositiontaking]
 			   ,0 as [playerdiscount]
 			   ,0 as [discount]
 			   ,0 as [adiscount]
@@ -174,15 +346,14 @@ BEGIN
 			   ,@minbet
 			   ,@maxbet
 		FROM #tblCust t
-			INNER JOIN CustInfo c ON t.custid = c.custid
-					CROSS JOIN (	SELECT 180 as sporttype, 1201 as bettype 
-									UNION ALL SELECT 181 as sporttype, 1231 as bettype 
-									UNION ALL SELECT 182 as sporttype, 1231 as bettype 
-									UNION ALL SELECT 183 as sporttype, 1231 as bettype 
-									UNION ALL SELECT 184 as sporttype, 1231 as bettype 
-									UNION ALL SELECT 185 as sporttype, 1231 as bettype 
-									UNION ALL SELECT 186 as sporttype, 1220 as bettype 
-								) s
+			CROSS JOIN (		  SELECT 180 as sporttype, 1201 as bettype 
+						UNION ALL SELECT 181 as sporttype, 1231 as bettype 
+						UNION ALL SELECT 182 as sporttype, 1231 as bettype 
+						UNION ALL SELECT 183 as sporttype, 1231 as bettype 
+						UNION ALL SELECT 184 as sporttype, 1231 as bettype 
+						UNION ALL SELECT 185 as sporttype, 1231 as bettype 
+						UNION ALL SELECT 186 as sporttype, 1220 as bettype 
+						) s
 		WHERE s.sporttype = @Sporttype		
 	END 
 
@@ -199,7 +370,28 @@ BEGIN
 		WHERE gt.IBCBetTypeID = @Bettype
 			AND c.custid IN (SELECT custid FROM #tblCust)			
 			AND 1 = CASE WHEN @ExistedMember = 0 AND roleid = 1 THEN 0 ELSE 1 END
-
+		
+		DELETE t 
+		FROM #tblCust t 
+		INNER JOIN CustGameType cs on t.custid = cs.custid
+		INNER JOIN bodb02.dbo.GameType gt ON cs.GameTypeID = gt.GameTypeID AND gt.IBCBetTypeID = @Bettype
+	 
+		INSERT INTO [dbo].[CustGameType]
+           ([CustID]
+           ,[GameTypeID]
+           ,[StakeLevelList]
+           ,[MaxPerGameType]
+           ,[MinBet]
+           ,[MaxBet]
+           ,[IsDisabled])
+		SELECT  t.custid
+			   ,1				as [GameTypeID]
+			   ,''				as [StakeLevelList]
+			   ,@MaxPerMatch	as [MaxPerGameType]
+			   ,@minbet			as [MinBet]
+			   ,@maxbet			as [MaxBet]
+			   ,CASE WHEN @Enable = 1 AND @EnableDownline = 1 THEN 0 ELSE 1 END	as [IsDisabled]			 
+		FROM #tblCust t			
 	END
 	DROP TABLE #tblCust
 END
