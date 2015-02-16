@@ -100,6 +100,7 @@ BEGIN
 			   ,@minbet
 			   ,@maxbet
 		FROM #tblCust t
+			INNER JOIN CustInfo c ON c.custid = t.custid
 			CROSS JOIN (		  SELECT 1		AS sporttype, 1		AS bettype, 0	AS islive
 						UNION ALL SELECT 1		AS sporttype, 1		AS bettype, 1	AS islive
 						UNION ALL SELECT 1		AS sporttype, 2		AS bettype, 0	AS islive
@@ -145,6 +146,7 @@ BEGIN
 						UNION ALL SELECT 154	AS sporttype, 20	AS bettype, 0	AS islive
 						) s
 		WHERE s.sporttype = @Sporttype		
+			AND 1 = CASE WHEN @ExistedMember = 0 AND roleid = 1 THEN 0 ELSE 1 END
 	END
 
 	IF @Sporttype = 161 --NumberGame
@@ -195,6 +197,7 @@ BEGIN
 			   ,@minbet
 			   ,@maxbet
 		FROM #tblCust t
+			INNER JOIN CustInfo c ON c.custid = t.custid
 			CROSS JOIN (		  SELECT 81	AS bettype, 0 AS islive
 						UNION ALL SELECT 83	AS bettype, 0 AS islive
 						UNION ALL SELECT 85	AS bettype, 1 AS islive
@@ -204,7 +207,8 @@ BEGIN
 						UNION ALL SELECT 88	AS bettype, 0 AS islive
 						UNION ALL SELECT 89	AS bettype, 1 AS islive
 						UNION ALL SELECT 90	AS bettype, 1 AS islive
-						) s			
+						) s		
+		WHERE 1 = CASE WHEN @ExistedMember = 0 AND roleid = 1 THEN 0 ELSE 1 END 							
 	END 
 
 	IF @Sporttype BETWEEN 151 AND 153 --Racing
@@ -268,6 +272,7 @@ BEGIN
 			   ,@minbet
 			   ,@maxbet
 		FROM #tblCust t
+			INNER JOIN CustInfo c ON c.custid = t.custid
 			CROSS JOIN (		  SELECT 151 AS sporttype, 31 AS bettype 
 						UNION ALL SELECT 151 AS sporttype, 32 AS bettype 
 						UNION ALL SELECT 151 AS sporttype, 41 AS bettype 
@@ -282,6 +287,7 @@ BEGIN
 						UNION ALL SELECT 153 AS sporttype, 52 AS bettype 
 						) s	
 		WHERE s.sporttype = @Sporttype 
+			AND 1 = CASE WHEN @ExistedMember = 0 AND roleid = 1 THEN 0 ELSE 1 END 		
 			AND 1 = CASE	WHEN @Bettype = 31 AND s.bettype IN (31,32) THEN 1
 							WHEN @Bettype = 41 AND s.bettype IN (41,42) THEN 1
 							WHEN @Bettype = 51 AND s.bettype IN (51,52) THEN 1 ELSE 0 END
@@ -346,6 +352,7 @@ BEGIN
 			   ,@minbet
 			   ,@maxbet
 		FROM #tblCust t
+			INNER JOIN CustInfo c ON c.custid = t.custid
 			CROSS JOIN (		  SELECT 180 as sporttype, 1201 as bettype 
 						UNION ALL SELECT 181 as sporttype, 1231 as bettype 
 						UNION ALL SELECT 182 as sporttype, 1231 as bettype 
@@ -355,6 +362,7 @@ BEGIN
 						UNION ALL SELECT 186 as sporttype, 1220 as bettype 
 						) s
 		WHERE s.sporttype = @Sporttype		
+			AND 1 = CASE WHEN @ExistedMember = 0 AND roleid = 1 THEN 0 ELSE 1 END 		
 	END 
 
 	IF @Sporttype = 202 --Keno
@@ -391,7 +399,9 @@ BEGIN
 			   ,@minbet			as [MinBet]
 			   ,@maxbet			as [MaxBet]
 			   ,CASE WHEN @Enable = 1 AND @EnableDownline = 1 THEN 0 ELSE 1 END	as [IsDisabled]			 
-		FROM #tblCust t			
+		FROM #tblCust t		
+			INNER JOIN CustInfo c ON c.custid = t.custid		
+		WHERE 1 = CASE WHEN @ExistedMember = 0 AND roleid = 1 THEN 0 ELSE 1 END 						
 	END
 	DROP TABLE #tblCust
 END
