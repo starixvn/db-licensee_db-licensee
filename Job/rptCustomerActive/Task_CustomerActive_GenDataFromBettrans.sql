@@ -1,6 +1,6 @@
 USE bodb_LicenseeReport
 GO
-CREATE PROCEDURE dbo.Task_CustomerActive_GenDataFromBettrans @TransDate DATE
+ALTER PROCEDURE dbo.Task_CustomerActive_GenDataFromBettrans @TransDate DATE
 AS
 /*
 	 Creator: 20150204@Patrick
@@ -66,22 +66,6 @@ BEGIN
 	)b LEFT JOIN #DataTmp tmp ON b.TransDate = tmp.TransDate AND b.custid = tmp.CustId AND b.ProductId = tmp.ProductId
 	WHERE tmp.TransDate IS NULL
 	OPTION (MAXDOP 1)
-
-	-- For Playtech Casino --merge
-	--INSERT INTO #DataTmp(TransDate, CustId, Recommend, CurrencyId, ProductId)
-	--SELECT CAST(TransDate AS DATE) AS TransDate, b.CustID, b.recommend, b.currency, 9 AS ProductId
-	--FROM bodb_PlaytechCS.dbo.bettrans_PlaytechCS b WITH(NOLOCK)
-	--WHERE Winlostdate = @TransDate
-	--GROUP BY CAST(TransDate AS DATE), b.CustID, b.recommend, b.currency
-	--OPTION (RECOMPILE) --> Currently, playtech cs is terminated
-
-	-- For AG Casino
-	INSERT INTO #DataTmp(TransDate, CustId, Recommend, CurrencyId, ProductId)
-	SELECT CAST(TransDate AS DATE) AS TransDate, b.CustID, b.recommend, b.currency, 10 AS ProductId
-	FROM bodb_PlaytechCS.dbo.bettrans_AGCasino b WITH(NOLOCK)
-	WHERE Winlostdate = @TransDate
-	GROUP BY CAST(TransDate AS DATE), b.CustID, b.recommend, b.currency
-	OPTION (RECOMPILE)
 
 	--merge to business table
 	INSERT INTO dbo.rptCustomerActive(TransDate, CustId, Recommend, CurrencyId, ProductId)
