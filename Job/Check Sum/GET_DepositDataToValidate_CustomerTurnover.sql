@@ -7,8 +7,8 @@ SET QUOTED_IDENTIFIER ON
 GO
 
 ALTER PROCEDURE [dbo].[GET_DepositDataToValidate_CustomerTurnover] 
-    @Date smalldatetime = null
-	,@DrawFilter tinyint = 1
+	@Date SMALLDATETIME		= NULL
+	, @DrawFilter TINYINT	= 1
 
 AS
 /*
@@ -19,126 +19,121 @@ DB: bodb_Licensee
 Original:
 
 Revisions:	
-	
+	- 20150211@Florent: add Sporting Solution bettype
 Param's Explanation:
     @DrawFilter, 1:Normal - 2:No Draws - 3:No Draws For Turnover Only
     
 Examples:
 */
 SET NOCOUNT ON
-DECLARE @SbTurnover MONEY
-       ,@SbCustomerWl MONEY
-       ,@SbBetCount MONEY
-       ,@RbTurnover MONEY
-       ,@RbCustomerWl MONEY
-       ,@RbBetCount MONEY
-       ,@NgTurnover MONEY
-       ,@NgCustomerWl MONEY
-       ,@NgBetCount MONEY
-       ,@BaTurnover MONEY
-       ,@BaCustomerWl MONEY
-       ,@BaBetCount MONEY
-       ,@CsTurnover MONEY
-       ,@CsCustomerWl MONEY
-       ,@CsBetCount MONEY
+DECLARE @SbTurnover			MONEY
+       , @SbCustomerWl		MONEY
+       , @SbBetCount		MONEY
+       , @RbTurnover		MONEY
+       , @RbCustomerWl		MONEY
+       , @RbBetCount		MONEY
+       , @NgTurnover		MONEY
+       , @NgCustomerWl		MONEY
+       , @NgBetCount		MONEY
+       , @BaTurnover		MONEY
+       , @BaCustomerWl		MONEY
+       , @BaBetCount		MONEY
+       , @CsTurnover		MONEY
+       , @CsCustomerWl		MONEY
+       , @CsBetCount		MONEY
 
 SELECT B.* 
 INTO #DATA
 FROM bodb_LicenseeReport.dbo.rptCustomerTurnover b WITH (NOLOCK)
-WHERE B.winlostdate=@DATE 
-	AND b.currency NOT IN (20,27,28)
+WHERE B.winlostdate = @DATE 
+	AND b.currency NOT IN (20, 27, 28)
 
 -- Sportbook
-SELECT @SbTurnover=SUM(CASE 
-                    WHEN @DrawFilter IN (2,3) THEN 
-                        CASE WHEN b.statusID = 111 THEN 0 
-							 WHEN b.statusID IN (114,115) THEN 0.5 
-						ELSE 1 END
-                    ELSE 1
+SELECT @SbTurnover = SUM(CASE 
+							WHEN @DrawFilter IN (2,3) THEN 
+								CASE WHEN b.statusID = 111 THEN 0 
+									 WHEN b.statusID IN (114, 115) THEN 0.5 
+								ELSE 1 END
+							ELSE 1
                 END * b.stake)
-    ,@SbCustomerWl=SUM(b.winlost)
-    ,@SbBetCount=SUM(CASE 
-						WHEN @DrawFilter=2 AND b.statusID = 111 THEN 0 
-						ELSE b.BetCount 
-					 END)
+    , @SbCustomerWl = SUM(b.winlost)
+    , @SbBetCount = SUM(CASE 
+							WHEN @DrawFilter=2 AND b.statusID = 111 THEN 0 
+							ELSE b.BetCount 
+						END)
 FROM  #DATA B
-WHERE ( (b.bettype<31) OR (b.bettype>=121 and b.bettype<1000) )
-    AND b.statusID IN (111,112,113,114,115)
-	--and b.isBA=0
+WHERE ((b.bettype < 31) OR (b.bettype >= 121 AND b.bettype < 1000) 
+						 OR (b.bettype >= 1301 AND b.bettype <= 1399))
+    AND b.statusID IN (111, 112, 113, 114, 115)
+	AND b.isBA = 0
 
-SELECT @SbTurnover = ISNULL (@SbTurnover, 0),
-	   @SbCustomerWl = ISNULL (@SbCustomerWl, 0),
-	   @SbBetCount = ISNULL (@SbBetCount, 0)
+SELECT @SbTurnover = ISNULL (@SbTurnover, 0)
+	  , @SbCustomerWl = ISNULL (@SbCustomerWl, 0)
+	  , @SbBetCount = ISNULL (@SbBetCount, 0)
 
 -- Racing
-SELECT @RbTurnover = SUM(CASE 
-							WHEN b.statusID IN (114,115) THEN 0.5 
+SELECT @RbTurnover = SUM(CASE WHEN b.statusID IN (114, 115) THEN 0.5 
 							ELSE 1 
 						 END * b.stake) 
-    ,@RbCustomerWl = SUM(b.winlost)
-    ,@RbBetCount = SUM(b.BetCount)
+    , @RbCustomerWl = SUM(b.winlost)
+    , @RbBetCount = SUM(b.BetCount)
 FROM  #DATA B 
-WHERE b.bettype BETWEEN 31 AND 33
-    AND b.statusID IN (111,112,113,114,115)
+WHERE b.bettype >= 31 AND b.bettype <= 43
+    AND b.statusID IN (111, 112, 113, 114, 115)
 
-SELECT @RbTurnover = ISNULL (@RbTurnover, 0),
-	   @RbCustomerWl = ISNULL (@RbCustomerWl, 0),
-	   @RbBetCount = ISNULL (@RbBetCount, 0)
+SELECT @RbTurnover = ISNULL (@RbTurnover, 0)
+	  , @RbCustomerWl = ISNULL (@RbCustomerWl, 0)
+	  , @RbBetCount = ISNULL (@RbBetCount, 0)
         
 -- Number Game
-SELECT @NgTurnover=SUM(CASE 
-							WHEN @DrawFilter IN (2,3) AND b.statusID = 111 THEN 0 
+SELECT @NgTurnover=SUM(CASE WHEN @DrawFilter IN (2, 3) AND b.statusID = 111 THEN 0 
 							ELSE b.stake 
 						END)
-    ,@NgCustomerWl=SUM(b.winlost)
-    ,@NgBetCount=SUM(CASE WHEN @DrawFilter=2 AND b.statusID = 111 THEN 0 ELSE b.BetCount END) 
+    , @NgCustomerWl = SUM(b.winlost)
+    , @NgBetCount = SUM(CASE WHEN @DrawFilter=2 AND b.statusID = 111 THEN 0 ELSE b.BetCount END) 
 FROM  #DATA B 
-WHERE b.bettype BETWEEN 81 AND 120
-    AND b.statusID IN (111,112,113,114,115)
+WHERE b.bettype >= 81 AND b.bettype <= 120
+    AND b.statusID IN (111, 112, 113, 114, 115)
 
-SELECT @NgTurnover = ISNULL (@NgTurnover, 0),
-	   @NgCustomerWl = ISNULL (@NgCustomerWl, 0),
-	   @NgBetCount = ISNULL (@NgBetCount, 0)
+SELECT @NgTurnover = ISNULL (@NgTurnover, 0)
+	   , @NgCustomerWl = ISNULL (@NgCustomerWl, 0)
+	   , @NgBetCount = ISNULL (@NgBetCount, 0)
 	   
 -- Ba
-SELECT @BaTurnover=SUM(CASE 
-                    WHEN @DrawFilter IN (2,3) THEN 
-                        CASE WHEN b.statusID = 111 THEN 0 
-							 WHEN b.statusID IN (114,115) THEN 0.5 
+SELECT @BaTurnover = SUM(CASE  WHEN @DrawFilter IN (2, 3) THEN 
+								CASE WHEN b.statusID = 111 THEN 0 
+									 WHEN b.statusID IN (114, 115) THEN 0.5 
 							 ELSE 1 
 						END
                     ELSE 1
                 END * b.stake)
-    ,@BaCustomerWl=SUM(b.winlost) 
-    ,@BaBetCount=SUM(CASE 
-						WHEN @DrawFilter=2 AND b.statusID = 111 THEN 0 
-						ELSE b.BetCount 
-					 END) 
+    , @BaCustomerWl = SUM(b.winlost) 
+    , @BaBetCount = SUM(CASE WHEN @DrawFilter=2 AND b.statusID = 111 THEN 0 
+							ELSE b.BetCount 
+						END) 
 FROM  #DATA B
-WHERE b.statusID IN (111,112,113,114,115)
-	and isba=1
+WHERE b.statusID IN (111, 112, 113, 114, 115)
+	AND isba = 1
 
 SELECT @BaTurnover = ISNULL (@BaTurnover, 0),
 	   @BaCustomerWl = ISNULL (@BaCustomerWl, 0),
 	   @BaBetCount = ISNULL (@BaBetCount, 0)
 	   
 -- Live Casino
-SELECT @CsTurnover=SUM(CASE 
-							WHEN @DrawFilter IN (2,3) AND b.statusID = 111 THEN 0 
+SELECT @CsTurnover = SUM(CASE WHEN @DrawFilter IN (2, 3) AND b.statusID = 111 THEN 0 
 							ELSE b.stake 
 						END)
-    ,@CsCustomerWl=SUM(b.winlost)
-    ,@CsBetCount=SUM(CASE 
-						WHEN @DrawFilter=2 AND b.statusID = 111 THEN 0 
+    ,@CsCustomerWl = SUM(b.winlost)
+    ,@CsBetCount = SUM(CASE WHEN @DrawFilter = 2 AND b.statusID = 111 THEN 0 
 						ELSE b.BetCount 
 					 END) 
 FROM  #DATA B
-WHERE b.bettype between 1101 and 1199
-    AND b.statusID IN (111,112,113,114,115)
+WHERE b.bettype >= 1101 AND b.bettype <= 1199
+    AND b.statusID IN (111, 112, 113, 114, 115)
 
-SELECT @CsTurnover = ISNULL (@CsTurnover, 0),
-	   @CsCustomerWl = ISNULL (@CsCustomerWl, 0),
-	   @CsBetCount = ISNULL (@CsBetCount, 0)
+SELECT @CsTurnover = ISNULL (@CsTurnover, 0)
+	   , @CsCustomerWl = ISNULL (@CsCustomerWl, 0)
+	   , @CsBetCount = ISNULL (@CsBetCount, 0)
 
 
 -- Result
@@ -150,6 +145,8 @@ SELECT 3, @SbBetCount, @RbBetCount, @NgBetCount, @BaBetCount, @CsBetCount
 
 DROP TABLE #DATA
 SET NOCOUNT OFF
+
+
 
 GO
 GRANT EXECUTE ON [dbo].[GET_DepositDataToValidate_CustomerTurnover] TO [bodbLicenseeNet] 
