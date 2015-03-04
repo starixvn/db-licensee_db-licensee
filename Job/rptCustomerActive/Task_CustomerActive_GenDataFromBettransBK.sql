@@ -1,6 +1,6 @@
 USE bodb_report
 GO
-CREATE PROCEDURE dbo.Task_CustomerActive_GenDataFromBettransBK @FromDate DATE
+ALTER PROCEDURE dbo.Task_CustomerActive_GenDataFromBettransBK @FromDate DATE
 	, @ToDate DATE
 AS
 /*   
@@ -20,7 +20,7 @@ BEGIN
 
 	--clean data from temp table
 	DELETE FROM dbo.rptCustomerActiveTmp WITH(ROWLOCK)
-	WHERE TransDate BETWEEN @FromDate AND @ToDate
+	WHERE WinLostDate BETWEEN @FromDate AND @ToDate
 
 	DECLARE @WinlostDate DATE, @MinTransId BIGINT, @MaxTransId BIGINT
 	SELECT	@WinlostDate = @FromDate
@@ -63,7 +63,7 @@ BEGIN
 		EXEC (@sql)
 
 		--For SportsBook
-		INSERT INTO dbo.rptCustomerActiveTmp(TransDate, CustId, Recommend, CurrencyId, ProductId)
+		INSERT INTO dbo.rptCustomerActiveTmp(TransDate, CustId, Recommend, CurrencyId, ProductId, WinLostDate)
 		SELECT CAST(a.transdate AS DATE) AS TransDate, a.CustID, a.recommend, ISNULL(l.currency, a.currency) AS currency
 			, CASE  WHEN a.bettype < 31 OR (a.bettype >= 121 AND a.bettype < 1000) OR (a.bettype BETWEEN 1301 AND 1399) THEN 0 -- SB
 					WHEN a.bettype IN (31, 32, 33, 41, 42, 43) THEN 1	-- Racing
@@ -75,6 +75,7 @@ BEGIN
 					WHEN a.bettype = 73 THEN 7 -- Bingo
 					WHEN a.bettype BETWEEN 1501 AND 1599 THEN 8 -- Keno
 				ELSE - 1 END AS ProductId
+			, winlostdate
 		FROM bodb_archive.dbo.bettrans_bk a WITH (NOLOCK)
 			INNER JOIN bodb02.dbo.Dep_CustSuper s WITH(NOLOCK) ON s.custid = a.srecommend
 			--INNER JOIN @TmpLicenseeCust c ON a.recommend = c.custid-- AND a.currency = c.Currency
@@ -93,6 +94,7 @@ BEGIN
 					WHEN a.bettype = 73 THEN 7 -- Bingo
 					WHEN a.bettype BETWEEN 1501 AND 1599 THEN 8 -- Keno
 				ELSE - 1 END
+			, winlostdate
 		OPTION (MAXDOP 1)
 	
 		--reset params
