@@ -4,7 +4,7 @@ ALTER PROCEDURE	dbo.NAP_3rdProductSetDefaultSetting
 	@UserID		INT,
 	@Language	VARCHAR(10)		= 'en-US',
 	@ErrCode	INT				= 0		OUTPUT,
-	@ErrMsg		VARCHAR(8000)	= ''	OUTPUT
+	@ErrMsg		VARCHAR(8000)	= ''	OUTPUT 
 AS
 /*
 	Created: 20150309@Winnie

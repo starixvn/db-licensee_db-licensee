@@ -5,7 +5,7 @@ ALTER PROCEDURE	dbo.Lrf_3rdUpdCustStatus
 	@UserID		INT,
 	@IP			VARCHAR(40),
 	@Language	VARCHAR(10)		= 'en-US',	
-	@ErrMsg		VARCHAR(100)	= ''	OUTPUT
+	@ErrMsg		VARCHAR(100)	= ''	OUTPUT 
 AS
 /*
 	Created: 20150306@Winnie

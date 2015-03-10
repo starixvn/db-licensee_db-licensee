@@ -1,4 +1,4 @@
-ALTER PROCEDURE	dbo.Lrf_3rdProductCheckAllowTab
+ALTER PROCEDURE	dbo.Lrf_3rdProductCheckAllowTab 
 	@LicenseeName	VARCHAR(50),
 	@ProductId		INT,
 	@IsAllowTab		BIT=0				OUTPUT

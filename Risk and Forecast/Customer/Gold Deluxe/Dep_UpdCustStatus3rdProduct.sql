@@ -1,4 +1,4 @@
-ALTER PROCEDURE	dbo.Dep_3rdProductUpdCustStatus
+ALTER PROCEDURE	dbo.Dep_3rdProductUpdCustStatus 
 	@CustIDs	VARCHAR(MAX),
 	@ProductId	INT,
 	@IsEnabled	BIT,
