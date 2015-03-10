@@ -21,7 +21,7 @@ BEGIN
 	  INNER JOIN DBTXN.[CustDB].[dbo].Dep_SupperProductSetting b ON a.custid=b.CustID
 	  WHERE a.site=@LicenseeName)
 	BEGIN
-	SELECT @IsAllowTab = 0
+	SELECT @IsAllowTab = 1
 	END
 END
 
