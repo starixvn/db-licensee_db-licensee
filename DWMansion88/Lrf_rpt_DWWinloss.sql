@@ -1,11 +1,6 @@
 USE [bodb_licensee]
+ 
 GO
-
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
 ALTER PROCEDURE [dbo].[Lrf_rpt_DWWinloss]
     @FromDate		SMALLDATETIME ,
     @ToDate			SMALLDATETIME ,
@@ -24,6 +19,7 @@ Original:
 Revisions:	
 	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+	- 20150127@Jim: support base on GBP Currency
 Param's Explanation:
     @groupingid: used to group data for summarizing (1:by day, 2:month, 3:currency, 4:bettype, 5:league)    
     @drawfilter: 'No Draw' filter is supported (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -51,17 +47,19 @@ DECLARE @Exchange	AS TABLE (
 	Code			VARCHAR(20) NULL,
 	MYR				FLOAT,
 	USD				FLOAT,
-	EUR				FLOAT
+	EUR				FLOAT,
+	GBP				FLOAT
 	, PRIMARY KEY(ExchangeDate,ExchangeId)
 )
-INSERT INTO @Exchange (ExchangeDate,ExchangeId,Code,MYR,USD,EUR)
+INSERT INTO @Exchange (ExchangeDate,ExchangeId,Code,MYR,USD,EUR,GBP)
 SELECT 
 	ExchangeDate,
 	ExchangeId,
 	b.CurrencyName,
 	MYR,
 	USD,
-	EUR
+	EUR,
+	GBP
 FROM bodb02.dbo.Lrf_f_GetExchangeDaily(@FromDate,@ToDate) a
 INNER JOIN @TempAg b ON a.ExchangeId=b.Currency
 
@@ -100,6 +98,13 @@ CREATE TABLE #TempData
 					 else Turnover*e.EUR
 				end
 			)
+			WHEN -3
+			THEN
+			SUM(case when (@DrawFilter in (2,3) and b.Status=111) then 0
+					when (@DrawFilter in (2,3) and b.Status IN (114,115)) then 0.5*Turnover*e.GBP					
+					 else Turnover*e.GBP
+				end
+			)
 			ELSE
 				SUM(case when (@DrawFilter in (2,3) and b.Status=111 ) then 0
 					when (@DrawFilter in (2,3) and b.Status IN (114,115)) then 0.5*Turnover
@@ -114,6 +119,9 @@ CREATE TABLE #TempData
 			WHEN -1
 			THEN
 			SUM((b.WinLoss )*e.EUR)
+			WHEN -3
+			THEN
+			SUM((b.WinLoss )*e.GBP)
 			ELSE
 				SUM(b.WinLoss)
 			END AS MemberWinLost,

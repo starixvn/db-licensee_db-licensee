@@ -1,10 +1,5 @@
 ﻿USE [bodb02]
 GO
-
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportSummary]
 	  @LicenseeID INT
 	, @UserID INT
@@ -40,6 +35,7 @@ Revisions:
 	-20140602@Hannah: Separate Live/ Non - Live data in Live Report
 	-20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 	-20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+	-20150127@Jim: support base on GBP Currency
 Param's Explanation:
 	@IsLive : indicate that whether the report will get live data or not
 			+ 0: Non - Live data only
@@ -210,7 +206,6 @@ BEGIN
 		, COUNT(b.transid) BetCount
 	FROM dbo.bettrans b WITH (
 			NOLOCK
-			, INDEX = IX_srecommend
 			)
 	INNER JOIN @TempAg t ON b.recommend = t.custid AND t.Currency = b.Currency
 	WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
@@ -236,7 +231,6 @@ BEGIN
 		, COUNT(b.transid) BetCount
 	FROM dbo.bettrans b WITH (
 			NOLOCK
-			, INDEX = IX_srecommend
 			)
 	INNER JOIN @TempAg t ON b.recommend = t.custid AND b.Currency = t.Currency
 	WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
@@ -268,7 +262,6 @@ BEGIN
 		, COUNT(b.transid) BetCount
 	FROM dbo.bettrans b WITH (
 			NOLOCK
-			, INDEX = IX_srecommend
 			)
 	INNER JOIN @TempAg t ON b.recommend = t.custid AND t.Currency = b.Currency
 	WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
@@ -310,7 +303,6 @@ BEGIN
 		, COUNT(b.transid) BetCount
 	FROM dbo.bettrans b WITH (
 			NOLOCK
-			, INDEX = IX_srecommend
 			)
 	INNER JOIN @TempAg t ON b.recommend = t.custid AND t.Currency = b.Currency
 	WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
@@ -521,12 +513,21 @@ SELECT ProductCode
 	, CAST(SUM(Comm * e.EUR) AS MONEY) AS CommEUR
 	, CAST(SUM(playercomm * e.EUR) AS MONEY) AS PlayerCommEUR
 	, CAST(SUM(AmtDueto3rd * e.EUR) AS MONEY) AS AmtDueto3rdEUR
+	-- BaseUSD
 	, CAST(SUM(TurnOver * e.USD) AS MONEY) AS TurnoverUSD
 	, CAST(SUM(Winlost * e.USD) AS MONEY) AS WinlostUSD
 	, CAST(SUM(LicenseeWL * e.USD) AS MONEY) AS LicenseeWLUSD
 	, CAST(SUM(Comm * e.USD) AS MONEY) AS CommUSD
 	, CAST(SUM(playercomm * e.USD) AS MONEY) AS PlayerCommUSD
 	, CAST(SUM(AmtDueto3rd * e.USD) AS MONEY) AS AmtDueto3rdUSD
+	-- BaseGBP
+	, CAST(SUM(TurnOver * e.GBP) AS MONEY) AS TurnoverGBP
+	, CAST(SUM(Winlost * e.GBP) AS MONEY) AS WinlostGBP
+	, CAST(SUM(LicenseeWL * e.GBP) AS MONEY) AS LicenseeWLGBP
+	, CAST(SUM(Comm * e.GBP) AS MONEY) AS CommGBP
+	, CAST(SUM(playercomm * e.GBP) AS MONEY) AS PlayerCommGBP
+	, CAST(SUM(AmtDueto3rd * e.GBP) AS MONEY) AS AmtDueto3rdGBP
+	
 FROM #tmpWinloss b
 INNER JOIN #TempExchange e ON e.ExchangeDate = b.winlostdate
 	AND e.exchangeid = b.currency
@@ -541,7 +542,8 @@ DROP TABLE #tmpWinloss
 DROP TABLE #TempExchange
 
 
+
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_LiveReportSummary] TO [bodbLicenseeNet]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LiveReportSummary] TO [vnteam] 
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LiveReportSummary] TO [vnteam]

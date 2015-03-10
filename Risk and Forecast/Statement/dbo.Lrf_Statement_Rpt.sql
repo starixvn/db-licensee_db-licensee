@@ -19,6 +19,7 @@ Revisions:
    -- 20110304@Henry: suppport based currency
    -- 20120214@Jim: change to use  table ExchangeDaily by use function Lrf_f_GetExchangeDaily  
    -- 20121004@Jim: replace @currencyname input param by @currencyID
+   -- 20150130@Winnie: Add base currency GBP 
 	No use anymore
 Param's Explanation:
 
@@ -51,7 +52,8 @@ AS
           transdesc NVARCHAR(300) ,
           totalamt MONEY ,
           totalamtUSD MONEY ,
-          totalamtEUR MONEY
+          totalamtEUR MONEY,
+		  totalamtGBP MONEY
         )
 
     DECLARE @TempTable TABLE
@@ -168,14 +170,16 @@ AS
               transdesc ,
               totalamt ,
               totalamtUSD ,
-              totalamtEUR
+              totalamtEUR,
+			  totalamtGBP
             )
             SELECT  b.accdate ,
                     b.transtype ,
                     b.transdesc ,
                     SUM(totalamt) totalamt ,
                     SUM(totalamt * e.USD) totalamtUSD ,
-                    SUM(totalamt * e.EUR) totalamtEUR
+                    SUM(totalamt * e.EUR) totalamtEUR,
+					SUM(totalamt * e.GBP) totalamtGBP
             FROM    @TempTable b
                     INNER JOIN custinfo c ( NOLOCK ) ON b.custid = c.custid
                     INNER JOIN (SELECT *  FROM Lrf_f_GetExchangeDaily(@FromDate,@ToDate))e 
@@ -189,13 +193,16 @@ AS
     DECLARE @SumOfTotalAmt MONEY
     DECLARE @SumOfTotalAmtUSD MONEY
     DECLARE @SumOfTotalAmtEUR MONEY
+	DECLARE @SumOfTotalAmtGBP MONEY
     SET @SumOfTotalAmt = 0
 	SET @SumOfTotalAmtUSD = 0
 	SET @SumOfTotalAmtEUR = 0
+	SET @SumOfTotalAmtGBP = 0
 	
 	DECLARE @TempAmt MONEY
     DECLARE @TempAmtUSD MONEY
     DECLARE @TempAmtEUR MONEY
+	DECLARE @TempAmtGBP MONEY
 
     IF ( ( @PageSize <= 0 )
          AND ( @PageIndex <= 0 )
@@ -232,7 +239,7 @@ AS
 				) A
 		WHERE   A.RowNum BETWEEN @RowStart AND @RowEnd
 		
-		SELECT @SumOfTotalAmt = sum(A.totalamt),@SumOfTotalAmtUSD=sum(A.totalamtUSD),@SumOfTotalAmtEUR=sum(A.totalamtEUR)
+		SELECT @SumOfTotalAmt = sum(A.totalamt),@SumOfTotalAmtUSD=sum(A.totalamtUSD),@SumOfTotalAmtEUR=sum(A.totalamtEUR),@SumOfTotalAmtGBP=sum(A.totalamtGBP)
 		FROM
 		(
 			SELECT 
@@ -242,7 +249,7 @@ AS
 		) A
 		WHERE A.RowNum < @RowStart AND A.transdesc not like '%opening balance%'
 		
-		SELECT TOP 1 @TempAmt = totalamt, @TempAmtUSD=totalamtUSD,@TempAmtEUR=totalamtEUR
+		SELECT TOP 1 @TempAmt = totalamt, @TempAmtUSD=totalamtUSD,@TempAmtEUR=totalamtEUR,@TempAmtGBP=totalamtGBP
 		From @StatementTable
 		WHERE transdesc like '%opening balance%'
 		Order by accdate
@@ -250,6 +257,7 @@ AS
 		SET @SumOfTotalAmt = @SumOfTotalAmt + ISNULL(@TempAmt,0)
 		SET @SumOfTotalAmtUSD = @SumOfTotalAmtUSD + ISNULL(@TempAmtUSD,0)
 		SET @SumOfTotalAmtEUR = @SumOfTotalAmtEUR + ISNULL(@TempAmtEUR,0)
+		SET @SumOfTotalAmtGBP = @SumOfTotalAmtGBP + ISNULL(@TempAmtGBP,0)
     END
     
 
@@ -257,7 +265,8 @@ AS
 		COUNT(accdate) AS TotalRows,
 		@SumOfTotalAmt as SumOfTotalAmt,
 		@SumOfTotalAmtUSD as SumOfTotalAmtUSD,
-		@SumOfTotalAmtEUR as SumOfTotalAmtEUR
+		@SumOfTotalAmtEUR as SumOfTotalAmtEUR,
+		@SumOfTotalAmtGBP as SumOfTotalAmtGBP
     FROM    @StatementTable
     
 

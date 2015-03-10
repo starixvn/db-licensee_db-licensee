@@ -1,10 +1,5 @@
 ﻿USE [bodb02]
 GO
-
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportWinlossByMatch]    
 	@LicenseeID		INT ,
 	@UserID			INT,
@@ -38,6 +33,7 @@ Revisions:
 	- 20140602@Hannah: Separate Live/ Non - Live data in Live Report
 	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+	- 20150127@Jim: support base on GBP Currency
 Return 3 tables:
 WinlostBySport
 WinlostByCurrency
@@ -508,13 +504,21 @@ SELECT
 	CAST(SUM(Comm * e.EUR) AS MONEY) AS CommEUR,
 	CAST(SUM(PlayerComm * e.EUR) AS MONEY) AS PlayerCommEUR,
 	CAST(SUM(AmtDueto3rd*e.EUR) AS MONEY) AS AmtDueto3rdEUR,
-
+	-- baseUSD
 	CAST(SUM(TurnOver*e.USD) AS MONEY)	AS TurnoverUSD,   
 	CAST(SUM(Winlost*e.USD) AS MONEY)	AS WinlostUSD,  
 	CAST(SUM(LicenseeWL*e.USD) AS MONEY) AS LicenseeWLUSD,
 	CAST(SUM(Comm * e.USD) AS MONEY) AS CommUSD,
 	CAST(SUM(PlayerComm * e.USD) AS MONEY) AS PlayerCommUSD,
-	CAST(SUM(AmtDueto3rd*e.USD) AS MONEY) AS AmtDueto3rdUSD
+	CAST(SUM(AmtDueto3rd*e.USD) AS MONEY) AS AmtDueto3rdUSD,
+	-- baseGBP
+	CAST(SUM(TurnOver*e.GBP) AS MONEY)	AS TurnoverGBP,   
+	CAST(SUM(Winlost*e.GBP) AS MONEY)	AS WinlostGBP,  
+	CAST(SUM(LicenseeWL*e.GBP) AS MONEY) AS LicenseeWLGBP,
+	CAST(SUM(Comm * e.GBP) AS MONEY) AS CommGBP,
+	CAST(SUM(PlayerComm * e.GBP) AS MONEY) AS PlayerCommGBP,
+	CAST(SUM(AmtDueto3rd*e.GBP) AS MONEY) AS AmtDueto3rdGBP
+	
 FROM #tmpWinloss b  WITH (NOLOCK) 	
 	INNER JOIN  #TempExchange e
 	ON e.ExchangeDate = b.winlostdate  AND e.exchangeid = b.currency

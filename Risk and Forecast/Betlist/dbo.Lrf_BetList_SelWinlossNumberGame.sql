@@ -39,6 +39,7 @@ Revisions:
     -20120813@Jim: get bettrans.liveindicator value and add more oddstype column in the result     
     -20121004@Jim: replace @currencyname input param by @currencyID
 	- 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
+	- 20150126@Winnie: Add base currency GBP 
 */
 
 
@@ -240,7 +241,13 @@ FROM
             winlost*e.EUR winlostEUR,
             LicenseeWL*e.EUR LicenseeWLEUR,
             comm*e.EUR commEUR,
-            playercomm*e.EUR playercommEUR
+            playercomm*e.EUR playercommEUR,
+			--GBP
+            stake*e.GBP stakeGBP,
+            winlost*e.GBP winlostGBP,
+            LicenseeWL*e.GBP LicenseeWLGBP,
+            comm*e.GBP commGBP,
+            playercomm*e.GBP playercommGBP
             
     FROM #Data b
     INNER JOIN Customer c (NOLOCK) ON b.custid = c.custid

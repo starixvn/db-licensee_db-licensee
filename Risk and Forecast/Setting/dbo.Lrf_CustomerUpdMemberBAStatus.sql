@@ -1,4 +1,5 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberBAStatus]
+﻿ 
+CREATE PROCEDURE [dbo].[Lrf_CustomerUpdMemberBAStatus]
 	@LicenseeID INT,
 	@CustID INT,
 	@ModifyBy INT,
@@ -6,6 +7,7 @@
 	@IsAdmin BIT = 0,
 	@langkey VARCHAR(10) = 'en-US',
 	@IP VARCHAR(40),
+	@OddsGroup VARCHAR(3) OUTPUT,
 	@ErrCode INT = 0 OUTPUT,
 	@ErrMsg nvarchar(4000) = '' OUTPUT
 AS
@@ -44,6 +46,7 @@ Revisions:
 	- 20130429@Jim: support base currency USD
 	- 20131113@winnie: remove bodb02.dbo
 	- 20140425@Francis: add HR Fixed Odds
+	- 20150121@Jim: return more @OddsGroup param
 	
 Param's Explanation:
 
@@ -212,7 +215,7 @@ IF @isBA = 1 --enable BA
 		END
 
 		--apply commission
-				EXEC [Lrf_CustomerUpdMemberBAComm]
+								EXEC [Lrf_CustomerUpdMemberBAComm_xtest]
 				@LicenseeID = @LicenseeID,
 				@CustID = @CustID,
 				@ModifyBy = @ModifyBy,
@@ -220,6 +223,7 @@ IF @isBA = 1 --enable BA
 				@IsAdmin = @IsAdmin,
 				@langkey = @langkey,
 				@IP = @IP,
+				@OddsGroup = @OddsGroup OUTPUT,
 				@ErrCode = @ErrCode OUTPUT,
 				@ErrMsg = @ErrMsg OUTPUT
 
@@ -390,7 +394,7 @@ ELSE --disable BA
 					SET @ErrCode=0
 					SET @ErrMsg= ''
 					--apply commission
-										EXEC [Lrf_CustomerUpdMemberBAComm]
+																				EXEC [Lrf_CustomerUpdMemberBAComm_xtest]
 							@LicenseeID = @LicenseeID,
 							@CustID = @CustID,
 							@ModifyBy = @ModifyBy,
@@ -398,6 +402,7 @@ ELSE --disable BA
 							@langkey = @langkey,
 							@IsAdmin = @IsAdmin,
 							@IP = @IP,
+							@OddsGroup = @OddsGroup OUTPUT,
 							@ErrCode = @ErrCode OUTPUT,
 							@ErrMsg = @ErrMsg OUTPUT
 
@@ -648,10 +653,19 @@ ELSE --disable BA
 		END
 	END
 GO
-GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMemberBAStatus] TO [bodbAdminNet] AS [dbo]
+
+SET QUOTED_IDENTIFIER OFF 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMemberBAStatus] TO [bodbLicenseeNet] AS [dbo]
+SET ANSI_NULLS ON 
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerUpdMemberBAStatus] TO [vnteam] AS [dbo]
 
 
+GO 
+ GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerUpdMemberBAStatus] TO [vnteam]
+GO 
+ GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMemberBAStatus] TO [bodbLicenseeNet]
+GO 
+ GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMemberBAStatus] TO [bodbAdminNet]
+GO 
+ GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerUpdMemberBAStatus] TO [bodbAdminNet]
+GO 

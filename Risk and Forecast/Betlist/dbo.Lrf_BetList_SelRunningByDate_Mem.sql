@@ -52,6 +52,7 @@ Revisions:
    - 20140319@Hannah: fix bug for showing DrawID 
    - 20140630@Hannah: offer BetRadar and Sporting Solution 
    - 20141128@Jim: add more input param @CurrencyID
+   - 20150126@Winnie: add base currency GBP 
 */
 
 SET NOCOUNT ON
@@ -888,10 +889,13 @@ FROM
 			b.* ,
 			stake*e.USD stakeUSD,
 			stake*e.EUR stakeEUR,
+			stake*e.GBP stakeGBP,
 			actual_stake*e.USD actual_stakeUSD,
 			actual_stake*e.EUR actual_stakeEUR,
+			actual_stake*e.GBP actual_stakeGBP,
 			b.playercomm*e.USD PlayerCommUSD,
-			b.playercomm*e.EUR PlayerCommEUR
+			b.playercomm*e.EUR PlayerCommEUR,
+			b.playercomm*e.GBP PlayerCommGBP
 	FROM #BetListSelRunningByDateMem b
 	INNER JOIN 
 		(SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
@@ -907,7 +911,8 @@ DECLARE @BetListDetail TABLE(
 		bettype smallint,
 		betteam nvarchar(20) ,
 		stakeEUR MONEY,
-		stakeUSD MONEY
+		stakeUSD MONEY,
+		stakeGBP MONEY
 		)
 
 
@@ -924,7 +929,8 @@ begin
 		BM.bettype,
 		'' as betteam ,
 		BM.stake*e.EUR,
-		BM.stake*e.USD
+		BM.stake*e.USD,
+		BM.stake*e.GBP
 	FROM bettransm BM with (NOLOCK)
 	INNER JOIN #BetListSelRunningByDateMem B ON BM.refno = B.transid
 	INNER JOIN 
@@ -945,7 +951,8 @@ begin
 		BM.bettype,
 		'' as betteam ,
 		BM.stake*e.EUR,
-		BM.stake*e.USD
+		BM.stake*e.USD,
+		BM.stake*e.GBP
 	FROM bettransm BM with (NOLOCK)
 	INNER JOIN #BetListSelRunningByDateMem B ON BM.refno = B.refno
 	INNER JOIN 
@@ -967,7 +974,8 @@ BEGIN
 		b.bettype,
 		bg.betteam,
 		bg.stake*e.EUR,	
-		bg.stake*e.USD
+		bg.stake*e.USD,
+		bg.stake*e.GBP
 	FROM bettransg bg with (NOLOCK)
 	INNER JOIN #BetListSelRunningByDateMem b ON bg.refno = b.refno
 	INNER JOIN 

@@ -20,6 +20,10 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_SelByDayAll_Mem]
 	@SumLicenseeWLEUR MONEY=0 OUTPUT,
 	@SumCommEUR MONEY=0 OUTPUT,
 	@SumPlayerCommEUR MONEY=0 OUTPUT,
+	@SumWinlostGBP MONEY=0 OUTPUT,
+	@SumLicenseeWLGBP MONEY=0 OUTPUT,
+	@SumCommGBP MONEY=0 OUTPUT,
+	@SumPlayerCommGBP MONEY=0 OUTPUT,
 	@ErrCode		INT = 0 OUTPUT,
 	@ErrMsg			NVARCHAR(4000) = '' OUTPUT
 AS
@@ -52,6 +56,7 @@ Revisions:
 	- 20140411@Francis: fix incorrect sporttypes showing for VHR, Racing
 	- 20140630@Hannah: offer BetRadar and Sporting Solution
 	- 20141121@Jim: support multiple currency per one member
+	- 20150128@Winnie: Add currency GBP 
 Param's Explanation: 
 	+ @transtype: 1-Betting Statement; 2-VOID/Cancelled Bet; 3-Outstanding Bet 
 	
@@ -1023,7 +1028,13 @@ ELSE
 			@SumLicenseeWLEUR=SUM(ISNULL(LicenseeWL*e.EUR,0)),
 			
 			@SumCommEUR=SUM(ISNULL(comm*e.EUR,0)) ,
-			@SumPlayerCommEUR=SUM(ISNULL(playercomm*e.EUR,0))
+			@SumPlayerCommEUR=SUM(ISNULL(playercomm*e.EUR,0)),
+			--GBP
+			@SumWinlostGBP=SUM(ISNULL(winlost*e.GBP,0)),
+			@SumLicenseeWLGBP=SUM(ISNULL(LicenseeWL*e.GBP,0)),
+			
+			@SumCommGBP=SUM(ISNULL(comm*e.GBP,0)) ,
+			@SumPlayerCommGBP=SUM(ISNULL(playercomm*e.GBP,0))
 			
 		FROM @Data b
 		INNER JOIN 
@@ -1052,7 +1063,15 @@ ELSE
 					b.LicenseeWL * e.EUR AS LicenseeWLEUR,
 					
 					b.comm*e.EUR AS commEUR,
-					b.playercomm*e.EUR AS PlayerCommEUR 	
+					b.playercomm*e.EUR AS PlayerCommEUR ,
+					--GBP
+					b.stake*e.GBP AS stakeGBP ,
+					b.Actual_Stake * e.GBP AS Actual_StakeGBP,
+					b.winlost*e.GBP AS winlostGBP ,
+					b.LicenseeWL * e.GBP AS LicenseeWLGBP,
+					
+					b.comm*e.GBP AS commGBP,
+					b.playercomm*e.GBP AS PlayerCommGBP		
 			FROM 
 				@Data b
 			INNER JOIN 
@@ -1068,7 +1087,8 @@ ELSE
 			bettype SMALLINT,
 			Betteam nvarchar (10),
 			stakeEUR MONEY,
-			stakeUSD MONEY
+			stakeUSD MONEY,
+			stakeGBP MONEY
 			 )   
 
 		IF @IsBet14 = 1
@@ -1084,7 +1104,8 @@ ELSE
 				BM.bettype,
 				BM.betteam,
 				BM.stake*e.EUR,	
-				BM.stake*e.USD
+				BM.stake*e.USD,
+				BM.stake*e.GBP
 			FROM bettransm14 BM WITH (NOLOCK)
 			INNER JOIN @Data B ON BM.refno = B.transid
 			INNER JOIN #TempExchange e ON  e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
@@ -1100,7 +1121,8 @@ ELSE
 				BM.bettype,
 				BM.Betteam,
 				BM.stake*e.EUR,	
-				BM.stake*e.USD		
+				BM.stake*e.USD,
+				BM.stake*e.GBP		
 			FROM bettransm14 BM with (NOLOCK, INDEX =IX_bettransm14 )
 			INNER JOIN @Data B ON BM.refno = B.refno
 			INNER JOIN #TempExchange e ON  e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
@@ -1115,7 +1137,8 @@ ELSE
 				BG.bettype  ,
 				BG.Betteam ,
 				BG.stake*e.EUR,
-				BG.stake*e.USD	
+				BG.stake*e.USD,
+				BG.stake*e.GBP	
 			FROM bettransg14 BG WITH (NOLOCK)
 			INNER JOIN @Data B ON BG.refno = B.refno and BG.custid = @CustID
 			INNER JOIN #TempExchange e ON  e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
@@ -1134,7 +1157,8 @@ ELSE
 				BM.bettype,
 				BM.betteam,
 				BM.stake*e.EUR,
-				BM.stake*e.USD
+				BM.stake*e.USD,
+				BM.stake*e.GBP
 			FROM bettransm BM WITH (NOLOCK)
 			INNER JOIN @Data B ON BM.refno = B.transid
 			INNER JOIN #TempExchange e ON  e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
@@ -1150,7 +1174,8 @@ ELSE
 				BM.bettype,
 				BM.Betteam,
 				BM.stake*e.EUR,	
-				BM.stake*e.USD		
+				BM.stake*e.USD,
+				BM.stake*e.GBP		
 			FROM bettransm BM with (NOLOCK)
 			INNER JOIN @Data B ON BM.refno = B.refno
 			INNER JOIN #TempExchange e ON  e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
@@ -1166,7 +1191,8 @@ ELSE
 				BG.bettype  ,
 				BG.Betteam,
 				BG.stake*e.EUR,
-				BG.stake*e.USD
+				BG.stake*e.USD,
+				BG.stake*e.GBP
 			FROM bettransg BG WITH (NOLOCK)
 			INNER JOIN @Data B ON BG.refno = B.refno and BG.custid = @CustID
 			INNER JOIN #TempExchange e ON  e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency

@@ -18,6 +18,7 @@ Revisions:
 	 - 20130514@Jim:Restrict permission of Licensee Users by currency
 	 - 20140718@Hannah: Change liveindicator datatype to INT to fix running live matches are not being showed at the top list (RedmineID:19136)
 	 - 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
+	 - 20150123@Jim: support base on Currency GBP
 Param's Explanation:
 • @CustID: AgentID
 */
@@ -135,21 +136,27 @@ SELECT c.* FROM
 		*,
 		home_odds_DNB * e.USD home_odds_DNBUSD,
 		home_odds_DNB * e.EUR home_odds_DNBEUR,
+		home_odds_DNB * e.GBP home_odds_DNBGBP,
 		
 		away_odds_DNB * e.USD away_odds_DNBUSD,
 		away_odds_DNB * e.EUR away_odds_DNBEUR,
+		away_odds_DNB * e.GBP away_odds_DNBGBP,
 		
 		home_odds_HNB * e.USD home_odds_HNBUSD,
 		home_odds_HNB * e.EUR home_odds_HNBEUR,
+		home_odds_HNB * e.GBP home_odds_HNBGBP,
 		
 		away_odds_HNB * e.USD away_odds_HNBUSD,
 		away_odds_HNB * e.EUR away_odds_HNBEUR,
+		away_odds_HNB * e.GBP away_odds_HNBGBP,
 		
 		home_odds_ANB * e.USD home_odds_ANBUSD,
 		home_odds_ANB * e.EUR home_odds_ANBEUR,
+		home_odds_ANB * e.GBP home_odds_ANBGBP,
 		
 		away_odds_ANB * e.USD away_odds_ANBUSD,
-		away_odds_ANB * e.EUR away_odds_ANBEUR
+		away_odds_ANB * e.EUR away_odds_ANBEUR,
+		away_odds_ANB * e.GBP away_odds_ANBGBP
 		
 	FROM @Data b
 	INNER JOIN #TempExchange e ON b.currency = e.exchangeid

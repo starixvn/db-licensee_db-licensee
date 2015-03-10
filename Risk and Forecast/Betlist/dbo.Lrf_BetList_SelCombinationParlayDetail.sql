@@ -1,16 +1,6 @@
 ﻿USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_BetList_SelCombinationParlayDetail]    Script Date: 02/20/2014 23:18:17 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-/****** Object:  Stored Procedure dbo.Lrf_BetList_SelCombinationParlayDetail    Script Date: 7/5/2013 1:09:53 AM ******/
-/****** Object:  Stored Procedure dbo.Lrf_BetList_SelCombinationParlayDetail    Script Date: 6/26/2013 5:25:19 PM ******/
 
-
-/****** Object:  Stored Procedure dbo.Lrf_BetList_SelCombinationParlayDetail    Script Date: 8/29/2012 9:32:11 PM ******/
-/****** Object:  Stored Procedure dbo.Lrf_BetList_SelCombinationParlayDetail    Script Date: 8/27/2012 3:45:13 PM ******/
 ALTER PROCEDURE [dbo].[Lrf_BetList_SelCombinationParlayDetail]
 	@LicenseeID INT ,
 	@UserID		INT,
@@ -23,7 +13,8 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_SelCombinationParlayDetail]
 	@Outstanding MONEY =0 OUTPUT,
 	@OutstandingUSD MONEY =0 OUTPUT,
 	@OutstandingEUR MONEY =0 OUTPUT,
-	@OutstandingMYR MONEY =0 OUTPUT
+	@OutstandingMYR MONEY =0 OUTPUT,
+	@OutstandingGBP MONEY =0 OUTPUT,
 	
  AS
 /*
@@ -39,6 +30,7 @@ Revisions:
 	- 20120724@Jim : add player commission value 
 	- 20130404@Daniel : fix bug check movebet day in case movebetday = min(matchdate) 
 	- 20130514@Jim:Restrict permission of Licensee Users by currency
+	- 20150123@Jim: support base on Currency GBP
 */
 SET NOCOUNT ON
 
@@ -48,7 +40,7 @@ DECLARE @Fromdate DATETIME
 DECLARE @Todate DATETIME 
 
 DECLARE @currency INT
-DECLARE @USD float, @EUR float, @MYR float
+DECLARE @USD float, @EUR float, @MYR float,@GBP float
 
 
 DECLARE @tmpBettrans AS TABLE(
@@ -379,7 +371,8 @@ SELECT @Outstanding = @Outstanding - ISNULL(SUM(stake),0)
 FROM @tmpResults
 WHERE statusID NOT IN (0,1)
 			
-SELECT @USD=e.USD,@EUR = e.EUR, @MYR = e.MYR FROM (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
+SELECT @USD=e.USD,@EUR = e.EUR, @MYR = e.MYR ,@GBP = e.GBP
+FROM (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
 WHERE e.ExchangeDate = @Today
 AND e.ExchangeId = @currency
 
@@ -387,6 +380,7 @@ SELECT @Outstanding = ISNULL(@Outstanding, 0)
 SELECT @OutstandingUSD = ISNULL(@Outstanding, 0)	 * @USD 
 SELECT @OutstandingEUR = ISNULL(@Outstanding, 0)	 * @EUR					
 SELECT @OutstandingMYR = ISNULL(@Outstanding, 0)	 * @MYR
+SELECT @OutstandingGBP = ISNULL(@Outstanding, 0)	 * @GBP
 			
 			
 SELECT @Fromdate=MIN(winlostdate),@Todate=MAX(winlostdate) FROM @tmpResults			
@@ -408,18 +402,22 @@ SELECT
 	CAST (stake * e.usd AS money) as stakeusd,
 	CAST (stake * e.eur AS money) as stakeeur,
 	CAST (stake * e.myr AS money) as stakemyr,
+	CAST (stake * e.gbp AS money) as stakegbp,
 	winlost - stake AS winlost,
 	cast ((winlost - stake) * e.usd AS money) as winlostusd,
 	cast ((winlost - stake) * e.eur AS money) as winlosteur,
 	cast ((winlost - stake) * e.myr AS money) as winlostmyr,
+	cast ((winlost - stake) * e.gbp AS money) as winlostgbp,
 	comm,
 	cast (comm * e.usd as money) as commusd,
 	cast (comm * e.eur as money) as commeur,
 	cast (comm * e.myr as money) as commmyr,
+	cast (comm * e.gbp as money) as commgbp,
 	playercomm,
 	cast(playercomm*e.usd as money) as playercommusd,
 	cast(playercomm*e.eur as money) as playercommeur,
-	cast(playercomm*e.myr as money) as playercommmyr
+	cast(playercomm*e.myr as money) as playercommmyr,
+	cast(playercomm*e.gbp as money) as playercommgbp
 	
 FROM @tmpResults b
 INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@FromDate,@ToDate))e 
@@ -440,18 +438,22 @@ SELECT
 	CAST(sum(stake * e.usd) AS money) as stakeusd,
 	cast(sum(stake * e.eur) as money) as stakeeur,
 	cast(sum(stake * e.myr) as money) as stakemyr,
+	cast(sum(stake * e.gbp) as money) as stakegbp,
 	SUM(winlost - stake) AS winlost,
 	cast(SUM((winlost - stake)* e.usd) as money) AS winlostusd,
 	cast(SUM((winlost - stake)* e.eur) as money) AS winlosteur,
 	cast(SUM((winlost - stake)* e.myr) as money) AS winlostmyr,
+	cast(SUM((winlost - stake)* e.gbp) as money) AS winlostgbp,
 	sum(comm) as comm,
 	cast(sum(comm*e.usd) as money) as commusd,
 	cast(sum(comm*e.eur) as money) as commeur,
 	cast(sum(comm*e.myr) as money) as commmyr,
+	cast(sum(comm*e.gbp) as money) as commgbp,
 	sum(playercomm) as playercomm,
 	cast(sum(playercomm*e.usd) as money) as playercommusd,
 	cast(sum(playercomm*e.eur) as money) as playercommeur,
-	cast(sum(playercomm*e.myr) as money) as playercommmyr
+	cast(sum(playercomm*e.myr) as money) as playercommmyr,
+	cast(sum(playercomm*e.gbp) as money) as playercommgbp
 	
 FROM @tmpResults b
 INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@FromDate,@ToDate))e 

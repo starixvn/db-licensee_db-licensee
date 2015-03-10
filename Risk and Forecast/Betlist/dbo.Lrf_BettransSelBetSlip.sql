@@ -26,7 +26,7 @@ Revisions:
     -- 20111124@Henry: Add Checktime and SecAcceptFlag to show status waiting or running
     -- 20111229@Jim: Remove function : f_ShowOddsByBettype,f_GetOddsByBettype,f_GetChoice
 	-- 20120214@Jim: change to use  table ExchangeDaily by use function Lrf_f_GetExchangeDaily  
-    
+    -- 20150130@Winnie: Add base currency GBP
 */
 SET NOCOUNT ON
 
@@ -65,6 +65,7 @@ BEGIN
 		b.stake,
 		b.stake*e.USD stakeUSD,
 		b.stake*e.EUR stakeEUR,
+		b.stake*e.GBP stakeGBP,
 		b.transdate,
 		b.betteam,
 		--dbo.Lrf_f_GetChoice(b.betteam, b.bettype,@Language) betteam,
@@ -77,6 +78,7 @@ BEGIN
 		(b.winlost-actual_stake) as winlost,
 		(b.winlost-actual_stake)*e.USD as winlostUSD,
 		(b.winlost-actual_stake)*e.EUR as winlostEUR,
+		(b.winlost-actual_stake)*e.GBP as winlostGBP,
 		b.liveindicator, 
 		IP as IP,
 		isnull(m.isNeutral, CONVERT(BIT,0)) as IsNeutral
@@ -119,6 +121,7 @@ BEGIN
 		b.stake,
 		b.stake*e.USD stakeUSD,
 		b.stake*e.EUR stakeEUR,
+		b.stake*e.GBP stakeGBP,
 		b.transdate,
 		b.betteam,
 		--dbo.Lrf_f_GetChoice(b.betteam, b.bettype,@Language) betteam,
@@ -131,6 +134,7 @@ BEGIN
 		(b.winlost-actual_stake) as winlost,
 		(b.winlost-actual_stake)*e.USD as winlostUSD,
 		(b.winlost-actual_stake)*e.EUR as winlostEUR,
+		(b.winlost-actual_stake)*e.GBP as winlostGBP,
 		b.liveindicator, 
 		IP as IP,
 		isnull(m.isNeutral, CONVERT(BIT,0)) as IsNeutral
