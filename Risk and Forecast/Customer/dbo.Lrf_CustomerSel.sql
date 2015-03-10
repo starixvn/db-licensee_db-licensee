@@ -1,7 +1,6 @@
 ﻿USE [bodb02]
 GO
-
-
+ 
 ALTER PROCEDURE [dbo].[Lrf_CustomerSel]
 	@LicenseeID INT,
 	@UserID		  INT,	
@@ -45,7 +44,9 @@ AS
 	- 20140421@Florent: Fix bug oustanding of Keno sport
 	- 20140604@Don: Improve performance in case of input param @username with value NULL (Redmine ID: 17190)
 	- 20141112@Victor: use f_SelLicenseeCust instead of licenseecust (#Redmine 25864)
+	- 20150120@Jim: add more column OddsGroup in the result
 	- 20150130@Winnie Add base currency GBP
+
 	Param's Explanation:
 	  + @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 	  + @SpecialLevel: default value = -1 (all)
@@ -85,6 +86,7 @@ CREATE TABLE #Temp
 	BAStatus BIT,
 	SpecialLevel INT,
 	IsPowerBAUserTurnoff BIT,
+	ugroup VARCHAR(3),
 	RowNumber INT
 )
 
@@ -93,6 +95,7 @@ CREATE TABLE #tmpCust
 	custid		INT PRIMARY KEY
 	,closed		BIT
 	,reject		BIT
+	,ugroup		VARCHAR(3)
 )
 
 CREATE TABLE #OutstandingTranslog
@@ -104,7 +107,7 @@ CREATE TABLE #OutstandingTranslog
 	actual_stake money
 )
 
-DECLARE @TempMember AS TABLE(CustID INT PRIMARY KEY CLUSTERED, speciallevel int, username2 varchar(50), username varchar(50))
+DECLARE @TempMember AS TABLE(CustID INT PRIMARY KEY CLUSTERED, speciallevel int, username2 varchar(50), username varchar(50),ugroup VARCHAR(3))
 
 DECLARE @TempBACust AS TABLE (ID INT IDENTITY(1,1),CustID INT)
 DECLARE @CustID INT, @i INT, @max INT,@LastOffBy INT
@@ -114,17 +117,18 @@ IF LEN(@Username)=0
 BEGIN
 	IF @BAFilter=0 
 	BEGIN
-		INSERT INTO #tmpCust(custid, closed, reject)
-			SELECT c.custid, c.closed, c.reject
+		INSERT INTO #tmpCust(custid, closed, reject,ugroup)
+			SELECT c.custid, c.closed, c.reject,RIGHT(cu.ugroup,1)
 			FROM dbo.CustInfo c WITH(NOLOCK) 
+				INNER JOIN dbo.Customer cu WITH (NOLOCK) ON c.CustID = cu.CustID
 				INNER JOIN @TempAg t ON c.recommend = t.custid
 			WHERE 
 				c.roleid=1 
 				AND ((@CustStatus='') OR (@CustStatus IN ('Open') AND closed=0) OR (@CustStatus='Closed' AND closed = 1))
 				AND ((@CustStatus IN ('','Closed')) OR (@CustStatus = 'Open' AND ISNULL(reject,0)=0) OR (@CustStatus = 'Suspended' AND ISNULL(reject,0)=1))
 
-		INSERT INTO @TempMember (CustID,speciallevel,username2,username)
-		SELECT c.CustID, lc.speciallevel, lc.username2, lc.username
+		INSERT INTO @TempMember (CustID,speciallevel,username2,username,ugroup)
+		SELECT c.CustID, lc.speciallevel, lc.username2, lc.username,c.ugroup
 		FROM #tmpCust c
 			INNER JOIN bodb_licensee.dbo.LicenseeCustInfo lc WITH(NOLOCK) ON c.custid = lc.custid
 			LEFT JOIN bodb_licensee.dbo.LicenseeCustComm cc WITH(NOLOCK) ON c.custid = cc.custid AND cc.Licenseeid=@LicenseeID
@@ -137,11 +141,11 @@ BEGIN
 			FROM @TempMember c 
 		END
 
-		INSERT INTO #Temp (custid, username, closed, suspended, nickname, BAStatus, SpecialLevel, RowNumber)
-		SELECT t.custid, t.username, t.closed, t.suspended, t.nickname, CASE WHEN lb.CustID IS NULL THEN 0 ELSE 1 END AS BAStatus, t.speciallevel, t.RowNumber  
+		INSERT INTO #Temp (custid, username, closed, suspended, nickname, BAStatus, SpecialLevel,ugroup, RowNumber)
+		SELECT t.custid, t.username, t.closed, t.suspended, t.nickname, CASE WHEN lb.CustID IS NULL THEN 0 ELSE 1 END AS BAStatus, t.speciallevel,t.ugroup, t.RowNumber  
 		FROM 
 			(
-				SELECT a.custid, a.username, a.closed, a.suspended, a.nickname, a.speciallevel, a.RowNumber  
+				SELECT a.custid, a.username, a.closed, a.suspended, a.nickname, a.speciallevel,a.ugroup, a.RowNumber  
 				FROM
 				(
 					SELECT 
@@ -151,6 +155,7 @@ BEGIN
 						ISNULL(ci.reject,0) AS suspended,
 						SUBSTRING(m.username2,  CHARINDEX('$',m.username2)+1, LEN(m.username2)-CHARINDEX('$',m.username2)) AS nickname,
 						m.SpecialLevel,
+						m.ugroup,
 						ROW_NUMBER() OVER (ORDER BY ci.custid asc) AS RowNumber 
 					FROM
 						@TempMember m 
@@ -162,10 +167,11 @@ BEGIN
 	END
 	ELSE IF @BAFilter=1
 	BEGIN
-		INSERT INTO @TempMember (CustID,speciallevel,username2)
-		SELECT ci.CustID , lc.speciallevel,lc.username2
+		INSERT INTO @TempMember (CustID,speciallevel,username2,ugroup)
+		SELECT ci.CustID , lc.speciallevel,lc.username2,RIGHT(cu.ugroup,1)
 		FROM bodb_Licensee.dbo.LicenseeBAHistory lb with (nolock)
 			INNER JOIN CustInfo ci (NOLOCK) ON lb.custid = ci.custid
+			INNER JOIN Customer cu WITH (NOLOCK) ON ci.CustID = cu.custid 
 			INNER JOIN @TempAg t ON ci.recommend = t.custid
 			INNER JOIN bodb_licensee.dbo.LicenseeCustInfo lc WITH(NOLOCK) ON ci.custid = lc.custid
 			LEFT JOIN bodb_licensee.dbo.LicenseeCustComm cc WITH(NOLOCK) ON ci.custid = cc.custid AND cc.Licenseeid=@LicenseeID
@@ -181,7 +187,7 @@ BEGIN
 			SELECT @TotalRows = COUNT(c.custid)
 			FROM @TempMember c
 		END
-		INSERT INTO #Temp (custid, username,closed, suspended,nickname, BAStatus,SpecialLevel, RowNumber)
+		INSERT INTO #Temp (custid, username,closed, suspended,nickname, BAStatus,SpecialLevel,ugroup, RowNumber)
 		SELECT * FROM 
 		(
 			SELECT 
@@ -192,6 +198,7 @@ BEGIN
 				SUBSTRING(m.username2,  CHARINDEX('$',m.username2)+1, LEN(m.username2)-CHARINDEX('$',m.username2)) AS nickname,
 				1 AS BAStatus, 
 				m.SpecialLevel, 
+				m.ugroup,
 				ROW_NUMBER() OVER (ORDER BY ci.custid asc) AS RowNumber 
 			FROM
 				@TempMember m 
@@ -203,17 +210,18 @@ BEGIN
 	END 
 	ELSE IF @BAFilter = 2
 	BEGIN
-		INSERT INTO #tmpCust(custid, closed, reject)
-			SELECT c.custid, c.closed, c.reject
+		INSERT INTO #tmpCust(custid, closed, reject,ugroup)
+			SELECT c.custid, c.closed, c.reject,RIGHT(cu.ugroup,1)
 			FROM dbo.CustInfo c WITH(NOLOCK) 
+				INNER JOIN dbo.Customer cu WITH (NOLOCK) ON c.CustId = cu.CustId
 				INNER JOIN @TempAg t ON c.recommend = t.custid
 			WHERE 
 				c.roleid=1 
 				AND ((@CustStatus='') OR (@CustStatus IN ('Open') AND closed=0) OR (@CustStatus='Closed' AND closed = 1))
 				AND ((@CustStatus IN ('','Closed')) OR (@CustStatus = 'Open' AND ISNULL(reject,0)=0) OR (@CustStatus = 'Suspended' AND ISNULL(reject,0)=1))
 
-		INSERT INTO @TempMember (CustID,speciallevel,username2,username)
-		SELECT c.CustID, lc.speciallevel, lc.username2, lc.username
+		INSERT INTO @TempMember (CustID,speciallevel,username2,username,ugroup)
+		SELECT c.CustID, lc.speciallevel, lc.username2, lc.username,c.ugroup
 		FROM #tmpCust c
 			INNER JOIN bodb_licensee.dbo.LicenseeCustInfo lc WITH(NOLOCK) ON c.custid = lc.custid
 			LEFT JOIN bodb_Licensee.dbo.LicenseeBAHistory lb WITH(NOLOCK) ON LicenseeID=@LicenseeID AND c.custid = lb.custid AND lb.Status= 'Running'
@@ -229,7 +237,7 @@ BEGIN
 			FROM @TempMember c
 		END		
 	
-		INSERT INTO #Temp (custid, username,closed,suspended,nickname, BAStatus,SpecialLevel, RowNumber)
+		INSERT INTO #Temp (custid, username,closed,suspended,nickname, BAStatus,SpecialLevel,ugroup, RowNumber)
 		SELECT * FROM 
 		(
 			SELECT 
@@ -240,6 +248,7 @@ BEGIN
 				SUBSTRING(m.username2,  CHARINDEX('$',m.username2)+1, LEN(m.username2)-CHARINDEX('$',m.username2)) AS nickname,
 				0 AS BAStatus, 
 				m.SpecialLevel, 
+				m.ugroup,
 				ROW_NUMBER() OVER (ORDER BY ci.custid asc) AS RowNumber 
 			FROM
 				@TempMember m 
@@ -298,8 +307,9 @@ BEGIN
 	
 	
 
-	INSERT INTO #Temp (custid, username,closed,suspended, nickname, BAStatus,SpecialLevel, RowNumber)
-	SELECT * FROM 
+	INSERT INTO #Temp (custid, username,closed,suspended, nickname, BAStatus,SpecialLevel, ugroup,RowNumber)
+	SELECT a.custid, a.username,a.closed,a.suspended, a.nickname, a.BAStatus,a.SpecialLevel, cu.ugroup,a.RowNumber
+	FROM 
 	(
 		SELECT 
 			ci.custid, 
@@ -309,6 +319,7 @@ BEGIN
 			SUBSTRING(lc.username2,  CHARINDEX('$',lc.username2)+1, LEN(lc.username2)-CHARINDEX('$',lc.username2)) AS nickname,
 			CASE WHEN lb.CustID is NULL THEN 0 ELSE 1 END AS BAStatus, 
 			lc.SpecialLevel, 
+			
 			ROW_NUMBER() OVER (ORDER BY ci.currency asc, ci.custid asc) AS RowNumber 
 		FROM
 			custinfo ci (nolock)  INNER JOIN @TempMember t ON ci.custid = t.custid
@@ -324,6 +335,7 @@ BEGIN
 			AND (@SpecialLevel=-1 OR (@SpecialLevel<>-1 AND lc.SpecialLevel=@SpecialLevel)  )
 			
 	) a 
+	INNER JOIN dbo.Customer cu WITH (NOLOCK) ON a.CustiD = cu.CustID
 	WHERE 
 		a.rownumber BETWEEN @rowstart AND @rowend
 
@@ -415,11 +427,11 @@ SELECT
 						THEN ISNULL(b.actual_stake, 0)
 					ELSE 0
 					END), 0) AS MONEY) AS OutstandingEUR
-		, CAST(ISNULL(SUM(e.GBP * CASE 
+	, CAST(ISNULL(SUM(e.GBP * CASE 
 					WHEN ruben = 0
 						THEN ISNULL(b.actual_stake, 0)
 					ELSE 0
-					END), 0) AS MONEY) AS OutstandingGBP
+					END), 0) AS MONEY) AS OutstandingGBP				
 	,ISNULL(lg.color,'') AS GroupColor
 	,ISNULL(lg.GroupName,'') AS GroupName
 	,ISNULL(lc.SBComm,0) AS SBComm
@@ -428,13 +440,14 @@ SELECT
 	,ISNULL(lc.LCComm,0) AS LCComm
 	,ISNULL(lc.RNGComm,0) AS RNGComm
 	,ISNULL(lg.id,0) AS GroupCommID
+	,ISNULL(RIGHT(t.ugroup,1),'') AS OddsGroup
 INTO #data
 FROM #Temp t
 	LEFT JOIN bettrans b WITH(NOLOCK,INDEX=IX_custid_matchid_bettype) ON t.custid = b.custid
 	LEFT JOIN #ExchangeRate e ON e.exchangeid = b.currency
 	LEFT JOIN bodb_Licensee.dbo.LicenseeCustComm lc WITH (NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
 	LEFT JOIN bodb_Licensee.dbo.LicenseeGroupComm lg WITH (NOLOCK) ON lc.GroupCommID = lg.id	
-GROUP BY t.custid, t.username, t.nickname, t.BAStatus, t.RowNumber,t.closed,t.suspended, t.SpecialLevel, t.IsPowerBAUserTurnoff,lg.color,lg.groupname,lc.SBComm,lc.RacingComm,lc.NGComm,lc.LCComm,lc.RNGComm,lg.id
+GROUP BY t.custid, t.username, t.nickname, t.BAStatus, t.RowNumber,t.closed,t.suspended, t.SpecialLevel, t.IsPowerBAUserTurnoff,lg.color,lg.groupname,lc.SBComm,lc.RacingComm,lc.NGComm,lc.LCComm,lc.RNGComm,lg.id,t.ugroup
 ORDER BY t.username
 
 SELECT d.custid ,
@@ -452,8 +465,8 @@ SELECT d.custid ,
 	CAST((d.TotalBalanceGBP - isnULL(tl.actual_stake,0) * ISNULL(e.GBP,0))	 AS MONEY) AS TotalBalanceGBP,
 	CAST((d.Outstanding		+ ISNULL(tl.actual_stake,0))					 AS MONEY) AS Outstanding,
 	CAST((d.OutstandingEUR	+ ISNULL(tl.actual_stake,0) * ISNULL(e.EUR,0))	 AS MONEY) AS OutstandingEUR,
-	CAST((d.OutstandingGBP	+ ISNULL(tl.actual_stake,0) * ISNULL(e.GBP,0))	 AS MONEY) AS OutstandingGBP,
-	CAST((d.OutstandingUSD	+ ISNULL(tl.actual_stake,0) * ISNULL(e.USD,0))	 AS MONEY) AS OutstandingUSD
+	CAST((d.OutstandingUSD	+ ISNULL(tl.actual_stake,0) * ISNULL(e.USD,0))	 AS MONEY) AS OutstandingUSD,
+	CAST((d.OutstandingGBP	+ ISNULL(tl.actual_stake,0) * ISNULL(e.GBP,0))	 AS MONEY) AS OutstandingGBP
 	,GroupColor
 	,GroupName
 	,SBComm
@@ -462,6 +475,7 @@ SELECT d.custid ,
 	,LCComm
 	,RNGComm
 	,GroupCommID
+	,UPPER(OddsGroup)OddsGroup
 FROM #Data d 
 LEFT JOIN #OutstandingTranslog tl ON d.custid= tl.Custid
 LEFT JOIN #ExchangeRate e ON tl.Currency=e.exchangeid
@@ -474,11 +488,10 @@ DROP TABLE #ExchangeRate
 DROP TABLE #tmpCust
 
 
-
-GO
-GRANT EXECUTE ON [dbo].[Lrf_CustomerSel] TO [bodbDownlineNet] AS [dbo]
-GO
-GRANT EXECUTE ON [dbo].[Lrf_CustomerSel] TO [bodbLicenseeNet] AS [dbo]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerSel] TO [vnteam] AS [dbo]
-GO
+GO 
+ GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerSel] TO [vnteam]
+GO 
+ GRANT EXECUTE ON [dbo].[Lrf_CustomerSel] TO [bodbLicenseeNet]
+GO 
+ GRANT EXECUTE ON [dbo].[Lrf_CustomerSel] TO [bodbDownlineNet]
+GO 
