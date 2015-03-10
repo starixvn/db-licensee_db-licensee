@@ -19,7 +19,7 @@ BEGIN
 	SELECT TOP 1 1
 	  FROM DBTXN.[CustDB].[dbo].[Dep_CustSuper] a
 	  INNER JOIN DBTXN.[CustDB].[dbo].Dep_SupperProductSetting b ON a.custid=b.CustID
-	  WHERE a.site=@LicenseeName)
+	  WHERE a.site=@LicenseeName AND b.ProductId=@ProductId)
 	BEGIN
 	SELECT @IsAllowTab = 1
 	END
