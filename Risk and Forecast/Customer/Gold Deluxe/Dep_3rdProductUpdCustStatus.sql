@@ -29,7 +29,7 @@ BEGIN
 	-- Get old status of member
 	DECLARE @Srecommend INT
 			,@SEnabled INT = 0
-	SELECT @Srecommend = srecommend FROM bodb02.dbo.Customer c WITH (NOLOCK) WHERE c.CustID = @CustID
+	SELECT @Srecommend = srecommend FROM dbo.Customer c WITH (NOLOCK) WHERE c.CustID = @CustID
 
 	SELECT @IsEnable_Old = ISNULL(IsEnabled,0)
 	FROM DBTXN.CustDB.dbo.Dep_CustProductSetting WITH (NOLOCK)
