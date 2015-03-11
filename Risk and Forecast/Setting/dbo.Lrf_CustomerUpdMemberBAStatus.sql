@@ -215,7 +215,7 @@ IF @isBA = 1 --enable BA
 		END
 
 		--apply commission
-								EXEC [Lrf_CustomerUpdMemberBAComm_xtest]
+								EXEC [Lrf_CustomerUpdMemberBAComm]
 				@LicenseeID = @LicenseeID,
 				@CustID = @CustID,
 				@ModifyBy = @ModifyBy,
