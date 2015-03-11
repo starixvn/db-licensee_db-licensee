@@ -77,14 +77,14 @@ BEGIN
 	SET @endRun = GETDATE()
 	SET @duration  = DATEDIFF(MILLISECOND,@startRun,@endRun)
 
-	SELECT @LogSPData = '<Lrf_3rdUpdCustStatus CustID="'+ COALESCE(CAST(@CustID as VARCHAR(50)),SPACE(1)) + '" ' +
+	SELECT @LogSPData = '<Dep_3rdProductUpdCustStatus CustID="'+ COALESCE(CAST(@CustID as VARCHAR(50)),SPACE(1)) + '" ' +
 						'ProductId="'+ COALESCE(CAST(@ProductId as VARCHAR(1)),SPACE(1)) + '" ' +
 						'IsEnabled="'+ COALESCE(CAST(@IsEnabled as VARCHAR(1)),SPACE(1)) + '" ' +
 						'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
 						'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +						
 						'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(8000)),SPACE(1))+ '" />'
 
-	SELECT @TrackingValue2 = '<Lrf_3rdUpdCustStatus CustID="'+ COALESCE(CAST(@CustID as VARCHAR(50)),SPACE(1)) + '" ' +
+	SELECT @TrackingValue2 = '<Dep_3rdProductUpdCustStatus CustID="'+ COALESCE(CAST(@CustID as VARCHAR(50)),SPACE(1)) + '" ' +
 						'ProductId="'+ COALESCE(CAST(@ProductId as VARCHAR(1)),SPACE(1)) + '" ' +
 						'IsEnabled="'+ COALESCE(CAST(@IsEnable_Old as VARCHAR(1)),SPACE(1)) + '" ' +
 						'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
