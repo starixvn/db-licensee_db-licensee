@@ -1,6 +1,6 @@
 USE bodb_LicenseeReport
 GO
-CREATE PROCEDURE dbo.Task_CustomerActive_CopyData
+ALTER PROCEDURE dbo.Task_CustomerActive_CopyData
 AS
 /*
 	Creator: 20150204@Patrick

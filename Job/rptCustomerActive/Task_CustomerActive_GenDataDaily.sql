@@ -1,6 +1,6 @@
 USE bodb_LicenseeReport
 GO
-CREATE PROCEDURE dbo.Task_CustomerActive_GenDataDaily @TransDate DATE
+ALTER PROCEDURE dbo.Task_CustomerActive_GenDataDaily @TransDate DATE
 AS
 /*
 	 Creator: 20150204@Patrick
