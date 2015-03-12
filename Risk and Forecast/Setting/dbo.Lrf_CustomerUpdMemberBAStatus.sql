@@ -7,7 +7,7 @@ CREATE PROCEDURE [dbo].[Lrf_CustomerUpdMemberBAStatus]
 	@IsAdmin BIT = 0,
 	@langkey VARCHAR(10) = 'en-US',
 	@IP VARCHAR(40),
-	@OddsGroup VARCHAR(3) OUTPUT,
+	@OddsGroup VARCHAR(3)='' OUTPUT,
 	@ErrCode INT = 0 OUTPUT,
 	@ErrMsg nvarchar(4000) = '' OUTPUT
 AS
@@ -215,7 +215,7 @@ IF @isBA = 1 --enable BA
 		END
 
 		--apply commission
-								EXEC [Lrf_CustomerUpdMemberBAComm_xtest]
+								EXEC [Lrf_CustomerUpdMemberBAComm]
 				@LicenseeID = @LicenseeID,
 				@CustID = @CustID,
 				@ModifyBy = @ModifyBy,
