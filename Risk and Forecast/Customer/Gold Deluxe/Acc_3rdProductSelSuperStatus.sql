@@ -1,15 +1,15 @@
 USE [CustDB]
-GO 
-/****** Object:  StoredProcedure [dbo].[Acc_AGC_UpdSuperStatus]    Script Date: 3/9/2015 2:26:22 PM ******/
+GO
+/****** Object:  StoredProcedure [dbo].[Acc_3rdProductSelSuperStatus]    Script Date: 3/16/2015 4:51:59 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-CREATE PROCEDURE	[dbo].[Acc_3rdProductSelSuperStatus]
+ALTER PROCEDURE	[dbo].[Acc_3rdProductSelSuperStatus]
 	@ProductID			INT,
 	@CustID				INT,
-	@SupperStatus		INT,
-	@DownlineStatus		INT
+	@SupperStatus		BIT=0 OUTPUT,
+	@DownlineStatus		BIT=0 OUTPUT
 AS
 /*
 	Created: 20150313@Winne
@@ -22,11 +22,19 @@ AS
 BEGIN
 	SET NOCOUNT ON
 	
-	SELECT @SupperStatus=Status FROM Dep_SupperProductSetting  WITH (NOLOCK) WHERE CustID = @CustID AND ProductId=@ProductId	
+	SELECT @SupperStatus=IsEnabled FROM Dep_SupperProductSetting  WITH (NOLOCK) WHERE CustID = @CustID AND ProductId=@ProductId	
+
+	CREATE TABLE #CustList ( CustID INT)		
+	INSERT INTO #CustList (CustID)
+	SELECT CustID FROM Customer WITH (NOLOCK) WHERE srecommend = @CustID AND roleid = 1
+
+	IF EXISTS(SELECT TOP 1 1 FROM Dep_CustProductSetting a WITH (NOLOCK) INNER JOIN #CustList b ON a.CustID=b.CustID 
+				WHERE a.ProductId=@ProductId  AND a.IsEnabled=1)
+	
+	SELECT @DownlineStatus=1
+	ELSE
+	SELECT @DownlineStatus=0
+
 	
 END
-
-GO
-GRANT EXECUTE ON dbo.[Acc_3rdProductSelSuperStatus] TO bodbAdminNet
-GO
 
