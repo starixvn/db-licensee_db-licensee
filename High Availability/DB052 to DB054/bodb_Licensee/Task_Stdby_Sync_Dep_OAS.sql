@@ -10,6 +10,7 @@ Task	: OAS - Sync data
 DB		: DB054.bodb_Licensee
 
 Revisions:
+	-20150225@Don: Modified OAS_ChargeInfo
 		
 */
 BEGIN
@@ -28,11 +29,7 @@ BEGIN
 		RETURN
 
 	/* Sync data */
-	TRUNCATE TABLE bodb_Licensee.dbo.OAS_ChargeInfo
-	SET IDENTITY_INSERT bodb_Licensee.dbo.OAS_ChargeInfo ON
-	INSERT INTO bodb_Licensee.dbo.OAS_ChargeInfo(ChargeID,ProductID,FromParty,ToParty,ParentChargeID,Rate,ChargeType,FromDate,ToDate,MinTrans,MaxTrans,MinFee,MinFeeCurrencyID)
-	SELECT ChargeID,ProductID,FromParty,ToParty,ParentChargeID,Rate,ChargeType,FromDate,ToDate,MinTrans,MaxTrans,MinFee,MinFeeCurrencyID FROM DBLIC.bodb_Licensee.dbo.OAS_ChargeInfo WITH(NOLOCK)
-	SET IDENTITY_INSERT bodb_Licensee.dbo.OAS_ChargeInfo OFF
+	TRUNCATE TABLE bodb_Licensee.dbo.OAS_ChargeInfo	SET IDENTITY_INSERT bodb_Licensee.dbo.OAS_ChargeInfo ON	INSERT INTO bodb_Licensee.dbo.OAS_ChargeInfo(ChargeID,ProductID,FromParty,ToParty,ParentChargeID,Rate,ChargeType,FromDate,ToDate,MinAmount,MaxAmount,Remark)	SELECT ChargeID,ProductID,FromParty,ToParty,ParentChargeID,Rate,ChargeType,FromDate,ToDate,MinAmount,MaxAmount,Remark FROM DBLIC.bodb_Licensee.dbo.OAS_ChargeInfo WITH(NOLOCK)	SET IDENTITY_INSERT bodb_Licensee.dbo.OAS_ChargeInfo OFF
 	---------------------------
 	TRUNCATE TABLE bodb_Licensee.dbo.OAS_LogAction
 

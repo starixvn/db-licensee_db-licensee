@@ -10,6 +10,7 @@ Task	: LRF - Sync data
 DB		: DB054.bodb_Licensee
 
 Revisions:
+	-20150225@Don: Modified LrfDomain
 		
 */
 BEGIN
@@ -123,8 +124,7 @@ BEGIN
 	---------------------------
 	TRUNCATE TABLE bodb_Licensee.dbo.LrfDomain
 
-	INSERT INTO bodb_Licensee.dbo.LrfDomain(Id,DomainName,IsActive)
-	SELECT Id,DomainName,IsActive FROM DBLIC.bodb_Licensee.dbo.LrfDomain WITH(NOLOCK)
+	INSERT INTO bodb_Licensee.dbo.LrfDomain(Id,DomainName,IsActive,Protocol)	SELECT Id,DomainName,IsActive,Protocol FROM DBLIC.bodb_Licensee.dbo.LrfDomain WITH(NOLOCK)
 
 	/* Sync data - part 2 */
 	TRUNCATE TABLE bodb_Licensee.dbo.Party
