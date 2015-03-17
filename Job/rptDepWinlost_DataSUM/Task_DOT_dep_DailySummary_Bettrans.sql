@@ -2,7 +2,7 @@ USE [bodb02]
 GO
 
 
-CREATE PROCEDURE [dbo].[Task_DOT_dep_DailySummary_Bettrans]
+ALTER PROCEDURE [dbo].[Task_DOT_dep_DailySummary_Bettrans]
 	@winlostdate datetime
 AS
 /*   
@@ -38,6 +38,7 @@ AS
   - 20140912@Victor: support AG Casino 3rd party product
   - 20141120@Don: Adjustment to serve to change KeenOcean's currency RMB to HK$
   - 20141129@Don: Fixed bug cause rptDepWinlost not to get data in November 29, 2014 (Redmine ID: 26866 related to revision 20141120@Don)
+  - 20150116@Winnie: get tranferin tranferout for AG Casino
  Param's Explanation:  
 
  • @winlostdate: The date need to summary  
@@ -74,7 +75,7 @@ BEGIN
 		recommend int, mrecommend int, srecommend int,  
 		Transfer3rd money default(0), DrawGame money default(0),   
 		turnover_ba money default (0), comm_ba money default(0), Amountdueto_ba money default(0), Playercomm money default(0), 
-		PartnerId int, Transfer3rdOthers_Hogaming money default(0), Transfer3rdOthers_OPus money default(0), Transfer3rdOthers_AG money default(0)
+		PartnerId int, Transfer3rdOthers_Hogaming money default(0), Transfer3rdOthers_OPus money default(0), Transfer3rdOthers_AG money default(0),Transfer3rdOthers_AGIn money default(0),Transfer3rdOthers_AGOut money default(0)
 		UNIQUE (custid, PartnerId, currency)  
 	)  
 
@@ -93,7 +94,7 @@ BEGIN
 	BEGIN
 		INSERT INTO #Data (custid,currency, recommend, mrecommend, srecommend, PartnerId, OpeningBalance, Deposit,Aff2MemTransfer,  
 			Withdrawal, Bonus, Adjustment, Transfer3rd, Turnover, DrawGame, Outstanding, Winloss, playercomm, 
-			Transfer3rdOthers_Hogaming, Transfer3rdOthers_OPus, Transfer3rdOthers_AG)
+			Transfer3rdOthers_Hogaming, Transfer3rdOthers_OPus, Transfer3rdOthers_AG,Transfer3rdOthers_AGIn,Transfer3rdOthers_AGOut)
 		SELECT  
 			b.custid, b.currency, b.recommend, b.mrecommend, b.srecommend,  
 			CASE 
@@ -116,7 +117,9 @@ BEGIN
 			SUM( CASE WHEN winlostdate = @date AND bettype < 19999 and ruben=1 then playercomm ELSE 0 END), --Playercomm      
 			SUM( CASE WHEN winlostdate = @date AND bettype in (22008,22009) then winlost-actual_stake ELSE 0 END), --Transfer3rdOthers_Hogaming
 			SUM( CASE WHEN winlostdate = @date AND bettype in (22010,22011) then winlost-actual_stake ELSE 0 END), --Transfer3rdOthers_OPus
-			SUM( CASE WHEN winlostdate = @date AND bettype in (22014,22015) then winlost-actual_stake ELSE 0 END) --Transfer3rdOthers_AG
+			SUM( CASE WHEN winlostdate = @date AND bettype in (22014,22015) then winlost-actual_stake ELSE 0 END), --Transfer3rdOthers_AG
+			SUM( CASE WHEN winlostdate = @date AND bettype in (22014,22015) AND (winlost-actual_stake)<0 THEN -(winlost-actual_stake) ELSE 0 END), --Transfer3rdOthers_AGIn
+			SUM( CASE WHEN winlostdate = @date AND bettype in (22014,22015) AND (winlost-actual_stake)>0 THEN -(winlost-actual_stake) ELSE 0 END) --Transfer3rdOthers_AGOut
 		FROM bettrans b with(rowlock)   
 			inner join customer c with(nolock) on b.custid = c.custid  
 			--inner join dep_custsuper s with(nolock) on s.custid = c.srecommend
@@ -191,7 +194,7 @@ BEGIN
 	BEGIN
 		INSERT INTO #Data (custid,currency, recommend, mrecommend, srecommend, PartnerId, OpeningBalance, Deposit,Aff2MemTransfer,  
 			Withdrawal, Bonus, Adjustment, Transfer3rd, Turnover, DrawGame, Outstanding, Winloss, playercomm, 
-			Transfer3rdOthers_Hogaming, Transfer3rdOthers_OPus, Transfer3rdOthers_AG)
+			Transfer3rdOthers_Hogaming, Transfer3rdOthers_OPus, Transfer3rdOthers_AG,Transfer3rdOthers_AGIn,Transfer3rdOthers_AGOut)
 		SELECT  
 			b.custid,
 			--b.currency, 
@@ -221,7 +224,9 @@ BEGIN
 			SUM( CASE WHEN winlostdate = @date AND bettype < 19999 and ruben=1 then playercomm ELSE 0 END), --Playercomm      
 			SUM( CASE WHEN winlostdate = @date AND bettype in (22008,22009) then winlost-actual_stake ELSE 0 END), --Transfer3rdOthers_Hogaming
 			SUM( CASE WHEN winlostdate = @date AND bettype in (22010,22011) then winlost-actual_stake ELSE 0 END), --Transfer3rdOthers_OPus
-			SUM( CASE WHEN winlostdate = @date AND bettype in (22014,22015) then winlost-actual_stake ELSE 0 END) --Transfer3rdOthers_AG
+			SUM( CASE WHEN winlostdate = @date AND bettype in (22014,22015) then winlost-actual_stake ELSE 0 END), --Transfer3rdOthers_AG
+			SUM( CASE WHEN winlostdate = @date AND bettype in (22014,22015) AND (winlost-actual_stake)<0 THEN -(winlost-actual_stake) ELSE 0 END), --Transfer3rdOthers_AGIn
+			SUM( CASE WHEN winlostdate = @date AND bettype in (22014,22015) AND (winlost-actual_stake)>0 THEN -(winlost-actual_stake) ELSE 0 END) --Transfer3rdOthers_AGOut
 		FROM bettrans b with(rowlock)   
 			inner join customer c with(nolock) on b.custid = c.custid  
 			--inner join dep_custsuper s with(nolock) on s.custid = c.srecommend
@@ -483,9 +488,11 @@ BEGIN
 		,MRecommend int
 		,SRecommend int
 		,TransferAmount money default(0)
+		,TransferIn money default(0)
+		,TransferOut money default(0)
 	)
 
-	INSERT INTO #rptDepWinlost_Transfer3rdOthers(CustId,Currency,PartnerId,Recommend,MRecommend,SRecommend,TransferAmount)
+	INSERT INTO #rptDepWinlost_Transfer3rdOthers(CustId,Currency,PartnerId,Recommend,MRecommend,SRecommend,TransferAmount,TransferIn,TransferOut)
 		SELECT CustId,Currency,PartnerId,Recommend,MRecommend,SRecommend
 			,SUM(
 				CASE 
@@ -495,6 +502,18 @@ BEGIN
 					ELSE 0
 				END 
 			) TransferAmount
+			,SUM(
+			CASE 				
+				WHEN PartnerId = 3 THEN Transfer3rdOthers_AGIn --AG
+				ELSE 0
+			END 
+		    ) TransferIn
+			,SUM(
+				CASE 				
+					WHEN PartnerId = 3 THEN Transfer3rdOthers_AGOut --AG
+					ELSE 0
+				END 
+			) TransferOut
 		FROM #Data
 		WHERE PartnerId > -1
 		GROUP BY CustId,Currency,PartnerId,Recommend,MRecommend,SRecommend
@@ -503,8 +522,8 @@ BEGIN
 
 	DELETE bodb_Report.dbo.rptDepWinlost_Transfer3rdOthers WHERE Winlostdate = @date
 
-	INSERT INTO bodb_Report.dbo.rptDepWinlost_Transfer3rdOthers(winlostdate,CustId,Currency,PartnerId,Recommend,MRecommend,SRecommend,TransferAmount)
-		SELECT @date,CustId,Currency,PartnerId,Recommend,MRecommend,SRecommend,TransferAmount
+	INSERT INTO bodb_Report.dbo.rptDepWinlost_Transfer3rdOthers(winlostdate,CustId,Currency,PartnerId,Recommend,MRecommend,SRecommend,TransferAmount,TransferIn,TransferOut)
+		SELECT @date,CustId,Currency,PartnerId,Recommend,MRecommend,SRecommend,TransferAmount,TransferIn,TransferOut
 		FROM #rptDepWinlost_Transfer3rdOthers
 
 	DROP TABLE #tempDepWinlost		
@@ -522,8 +541,6 @@ BEGIN
 	SET NOCOUNT OFF
 END
 GO
-
-
 
 GRANT EXECUTE ON [dbo].[Task_DOT_dep_DailySummary_Bettrans] TO [Dot_Admin] AS [dbo]
 GO

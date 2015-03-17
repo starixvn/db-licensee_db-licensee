@@ -2,7 +2,7 @@ ALTER PROCEDURE	dbo.Dep_3rdProductUpdCustStatus
 	@CustID		INT,
 	@ProductId	INT,
 	@IsEnabled	BIT,
-	@UserID		INT,
+	@UserID		INT, 
 	@IP			VARCHAR(40),
 	@Language	VARCHAR(10)		= 'en-US',	
 	@ErrMsg		VARCHAR(100)	= ''	OUTPUT 
@@ -78,14 +78,14 @@ BEGIN
 	SET @duration  = DATEDIFF(MILLISECOND,@startRun,@endRun)
 
 	SELECT @LogSPData = '<Dep_3rdProductUpdCustStatus CustID="'+ COALESCE(CAST(@CustID as VARCHAR(50)),SPACE(1)) + '" ' +
-						'ProductId="'+ COALESCE(CAST(@ProductId as VARCHAR(1)),SPACE(1)) + '" ' +
+						'ProductId="'+ COALESCE(CAST(@ProductId as VARCHAR(20)),SPACE(1)) + '" ' +
 						'IsEnabled="'+ COALESCE(CAST(@IsEnabled as VARCHAR(1)),SPACE(1)) + '" ' +
 						'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
 						'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +						
 						'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(8000)),SPACE(1))+ '" />'
 
 	SELECT @TrackingValue2 = '<Dep_3rdProductUpdCustStatus CustID="'+ COALESCE(CAST(@CustID as VARCHAR(50)),SPACE(1)) + '" ' +
-						'ProductId="'+ COALESCE(CAST(@ProductId as VARCHAR(1)),SPACE(1)) + '" ' +
+						'ProductId="'+ COALESCE(CAST(@ProductId as VARCHAR(20)),SPACE(1)) + '" ' +
 						'IsEnabled="'+ COALESCE(CAST(@IsEnable_Old as VARCHAR(1)),SPACE(1)) + '" ' +
 						'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
 						'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +						
