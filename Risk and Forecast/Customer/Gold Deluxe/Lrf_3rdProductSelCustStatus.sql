@@ -42,3 +42,6 @@ BEGIN
 	
 END
 
+GRANT EXECUTE ON [dbo].[Lrf_3rdProductSelCustStatus] TO [bodbLicenseeNet]
+GO 
+
