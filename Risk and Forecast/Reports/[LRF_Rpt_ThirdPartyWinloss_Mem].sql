@@ -1,7 +1,12 @@
 USE [bodb02]
 GO
+/****** Object:  StoredProcedure [dbo].[LRF_Rpt_ThirdPartyWinloss_Mem]    Script Date: 3/18/2015 2:21:02 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
  
-CREATE  PROCEDURE [dbo].[LRF_Rpt_ThirdPartyWinloss_Mem] 
+ALTER  PROCEDURE [dbo].[LRF_Rpt_ThirdPartyWinloss_Mem] 
  @LicenseeID	INT,
  @ProductID	    INT,
  @CustID		INT, --- recommend
@@ -79,7 +84,7 @@ BEGIN
 		INNER JOIN @Temp lc ON lc.CustId = co.Recommend AND co.Currency = lc.Currency
 		INNER JOIN #Currency c ON  lc.Currency = c.CurrencyID 
 	WHERE  (@excludeTest=0 OR (@excludeTest=1 AND lc.Currency <> 20))	
-		    AND lc.CustId =  @CustID
+		    AND ((@CustID <> 0 AND lc.CustId =  @CustID) OR @CustID = 0)
 			
 	INSERT INTO #tmpResult (CustId 
 							 ,Winlostdate
@@ -158,7 +163,3 @@ BEGIN
 	
 END
 
-GO
-GRANT EXECUTE ON [dbo].[LRF_Rpt_ThirdPartyWinloss_Mem] TO [bodbLicenseeNet]  
-GO
-GRANT VIEW DEFINITION ON [dbo].[LRF_Rpt_ThirdPartyWinloss_Mem] TO [vnteam] 
