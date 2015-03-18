@@ -3,7 +3,7 @@ GO
 /****** Object:  StoredProcedure [dbo].[Acc_3rdProductSelSuperStatus]    Script Date: 3/16/2015 4:51:59 PM ******/
 SET ANSI_NULLS ON
 GO
-SET QUOTED_IDENTIFIER ON
+SET QUOTED_IDENTIFIER ON 
 GO
 ALTER PROCEDURE	[dbo].[Acc_3rdProductSelSuperStatus]
 	@ProductID			INT,
