@@ -25,8 +25,10 @@ BEGIN
 	SELECT @SupperStatus=IsEnabled FROM Dep_SupperProductSetting  WITH (NOLOCK) WHERE CustID = @CustID AND ProductId=@ProductId	
 
 	CREATE TABLE #CustList ( CustID INT)		
-	INSERT INTO #CustList (CustID)
-	SELECT CustID FROM Customer WITH (NOLOCK) WHERE srecommend = @CustID AND roleid = 1
+		INSERT INTO #CustList (CustID)
+		SELECT rm.CustID FROM Customer rm WITH (NOLOCK) 
+		INNER JOIN Customer ag WITH (NOLOCK) ON rm.recommend=ag.Custid
+		WHERE rm.srecommend = @CustID AND rm.roleid = 1 AND ag.Username not like '%'+ag.site +'ACC%'
 
 	IF EXISTS(SELECT TOP 1 1 FROM Dep_CustProductSetting a WITH (NOLOCK) INNER JOIN #CustList b ON a.CustID=b.CustID 
 				WHERE a.ProductId=@ProductId  AND a.IsEnabled=1)
