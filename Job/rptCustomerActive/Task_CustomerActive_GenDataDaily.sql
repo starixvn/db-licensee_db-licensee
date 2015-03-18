@@ -36,6 +36,11 @@ BEGIN
     SELECT Bettype, ProductID 
 	FROM bodb_licensee.dbo.LA_f_BettypeProductMapping(0, @ProductCodes)
 
+	IF EXISTS (SELECT ProductID FROM #Bettype WHERE ProductID IN (0/*SB*/, 3/*BA*/) GROUP BY ProductID HAVING COUNT(1) > 1)
+	BEGIN
+		DELETE #Bettype WHERE ProductID = 3
+	END
+	
 	--get licensee who is multi currencies
 	DECLARE @MultiCurrencies TABLE(recommend INT, currency INT, fromDate SMALLDATETIME, toDate SMALLDATETIME)
 	INSERT INTO @MultiCurrencies(recommend, currency, fromDate, toDate)
