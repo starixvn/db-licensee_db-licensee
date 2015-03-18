@@ -39,6 +39,7 @@ AS
   - 20141120@Don: Adjustment to serve to change KeenOcean's currency RMB to HK$
   - 20141129@Don: Fixed bug cause rptDepWinlost not to get data in November 29, 2014 (Redmine ID: 26866 related to revision 20141120@Don)
   - 20150116@Winnie: get tranferin tranferout for AG Casino
+  - 20150316@Winnie: Add gen rpt winlost for GoldDeluxe
  Param's Explanation:  
 
  • @winlostdate: The date need to summary  
@@ -478,6 +479,9 @@ BEGIN
 
 	-- Execute SP to insert data for AG Casino
 	EXEC Task_DOT_AGCasino_DailySummary @winlostdate = @date
+
+	-- Execute SP to insert data for GD
+	EXEC Task_DOT_GoldDeluxe_DailySummary @winlostdate = @date
 
 	/* Fill data to rptDepWinlost_Transfer3rdOthers */
 	CREATE TABLE #rptDepWinlost_Transfer3rdOthers (
