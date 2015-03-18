@@ -1,12 +1,14 @@
 USE bodb_LicenseeReport
 GO
-CREATE PROCEDURE dbo.Task_CustomerActive_GenDataDaily @TransDate DATE
+ALTER PROCEDURE dbo.Task_CustomerActive_GenDataDaily @TransDate DATE
 AS
 /*
 	 Creator: 20150204@Patrick
 	 Task: Generate data for Customer Active
 	 DB: DBLIC/bodb_LicenseeReport
 	 Revisions: 
+		- 20150326@Patrick: Missing tickets for SB
+
 	 Param's Explanation:
 */
 
@@ -24,6 +26,7 @@ BEGIN
 	--SELECT CustID, Currency FROM bodb_licensee.dbo.f_SelLicenseeCust(0)
 	
 	--get product prefix
+	SET @ProductCodes = 'SB'
 	SELECT @ProductCodes = COALESCE(@ProductCodes + ',' + ProductPrefix, ProductPrefix)
 	FROM bodb_licensee.dbo.Product3rd WITH(NOLOCK) WHERE ProductPrefix NOT IN ('PTCS', 'AGC')
 
