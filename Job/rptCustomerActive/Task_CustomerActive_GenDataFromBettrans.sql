@@ -19,6 +19,7 @@ BEGIN
 	SELECT @FromDate = DATEADD(D, -1, @TransDate), @ToDate = DATEADD(D, 1, @TransDate)
 	
 	--get product prefix
+	SET @ProductCodes = 'SB'
 	SELECT @ProductCodes = COALESCE(@ProductCodes + ',' + ProductPrefix, ProductPrefix)
 	FROM bodb_licensee.dbo.Product3rd WITH(NOLOCK) WHERE ProductPrefix NOT IN ('PTCS', 'AGC')
 
@@ -27,6 +28,11 @@ BEGIN
     INSERT INTO #Bettype
     SELECT Bettype, ProductID 
 	FROM bodb_licensee.dbo.LA_f_BettypeProductMapping(0, @ProductCodes)
+
+	IF EXISTS (SELECT ProductID FROM #Bettype WHERE ProductID IN (0/*SB*/, 3/*BA*/) GROUP BY ProductID HAVING COUNT(1) > 1)
+	BEGIN
+		DELETE #Bettype WHERE ProductID = 3
+	END
 
 	--get licensee who is multi currencies
 	DECLARE @MultiCurrencies TABLE(recommend INT, currency INT, fromDate SMALLDATETIME, toDate SMALLDATETIME)
