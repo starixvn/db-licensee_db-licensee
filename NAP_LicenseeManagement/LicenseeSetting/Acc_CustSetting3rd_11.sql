@@ -307,7 +307,7 @@ BEGIN
 			,maxpermatch185 = CASE WHEN @Sporttype = 185 THEN @MaxPerMatch ELSE maxpermatch185 END				
 			,maxpermatch186 = CASE WHEN @Sporttype = 186 THEN @MaxPerMatch ELSE maxpermatch186 END						
 			,DisableVirtualSports = CASE WHEN @Enable = 1 AND @EnableDownline = 1 THEN 0 ELSE DisableVirtualSports END
-			,HideVirtualSports = CASE WHEN @Enable = 1 AND @EnableDownline = 1 THEN 0 ELSE HideVirtualSports END
+			,HideVirtualSports = 0
 		WHERE custid IN (SELECT custid FROM #tblCust) 
 			AND 1 = CASE WHEN @ExistedMember = 0 AND roleid = 1 THEN 0 ELSE 1 END
 		
@@ -367,6 +367,11 @@ BEGIN
 
 	IF @Sporttype = 202 --Keno
 	BEGIN
+		UPDATE Custinfo WITH(UPDLOCK,ROWLOCK)
+		SET  HideKeno = 0 
+		WHERE custid IN (SELECT custid FROM #tblCust) 
+			AND 1 = CASE WHEN @ExistedMember = 0 AND roleid = 1 THEN 0 ELSE 1 END
+
 		UPDATE cg WITH(UPDLOCK,ROWLOCK)
 		SET	MinBet=@MinBet, 
 			MaxBet=@Maxbet, 
