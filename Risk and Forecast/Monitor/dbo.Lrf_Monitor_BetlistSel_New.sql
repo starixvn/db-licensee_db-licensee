@@ -1,10 +1,6 @@
 ﻿USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_Monitor_BetlistSel_New]    Script Date: 11/21/2014 13:45:10 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+ 
 ALTER PROCEDURE [dbo].[Lrf_Monitor_BetlistSel_New]                
  @LicenseeID INT,
  @UserID	 INT,	
@@ -38,6 +34,7 @@ AS
 	- 20140620@Florent: offer Sporting Solution (36 new bettypes)
 	- 20141021@Florent: Apply for the change in Sporting Solution structure (#24478)
 	- 20141120@Jim: expand data range for @transid param to covert big datatype
+	- 20150128@Jim: base on GBP
  Parameter's Explanation:                
   - @bettypes:                 
    + HDP: 1,7, 1303 (Set Handicap)                
@@ -145,11 +142,13 @@ SELECT @SQL = @SQL + 'SELECT TOP ('+CONVERT(VARCHAR(10),@LimitRowCount)+')'+CHAR
 	CASE 
 		WHEN @BaseCurrency = 'USD' THEN 'b.actual_stake * ex.USD actual_stakeUSD,'
 		WHEN @BaseCurrency = 'EUR' THEN 'b.actual_stake * ex.EUR actual_stakeEUR,'
+		WHEN @BaseCurrency = 'GBP' THEN 'b.actual_stake * ex.GBP actual_stakeGBP,'
 		ELSE 'b.actual_stake ' + 'actual_stake' + @BaseCurrency + ',' 
 	END + CHAR(13) +
 	CASE 
 		WHEN @BaseCurrency = 'USD' THEN 'b.stake * ex.USD StakeUSD,'
 		WHEN @BaseCurrency = 'EUR' THEN 'b.stake * ex.EUR StakeEUR,'
+		WHEN @BaseCurrency = 'GBP' THEN 'b.stake * ex.GBP StakeGBP,'
 		ELSE 'b.stake ' + 'Stake' + @BaseCurrency + ',' 
 	END + CHAR(13) +
 	CASE WHEN 
@@ -198,7 +197,12 @@ CASE WHEN @betfrom=1 THEN 'AND betfrom=''d'''
 											WHEN @MinStake>0 AND @MaxStake>0 THEN 'AND b.stake * ex.EUR  between '+convert(varchar(20),@MinStake) +' and ' +convert(varchar(20),@MaxStake)               
 										ELSE ' ' END 
 		
-		
+		WHEN @BaseCurrency = 'GBP' THEN 
+										CASE               
+											WHEN @MinStake=0 AND @MaxStake>0 THEN 'AND b.stake * ex.GBP  <= '+convert(varchar(20),@MaxStake)               
+											WHEN @MinStake>0 AND @MaxStake=0 THEN 'AND b.stake * ex.GBP  >= '+convert(varchar(20),@MinStake)               
+											WHEN @MinStake>0 AND @MaxStake>0 THEN 'AND b.stake * ex.GBP  between '+convert(varchar(20),@MinStake) +' and ' +convert(varchar(20),@MaxStake)               
+										ELSE ' ' END 
 		ELSE 
 										CASE               
 											WHEN @MinStake=0 AND @MaxStake>0 THEN 'AND b.stake  <= '+convert(varchar(20),@MaxStake)               

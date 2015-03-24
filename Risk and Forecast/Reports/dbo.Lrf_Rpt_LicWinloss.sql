@@ -1,11 +1,6 @@
 ﻿USE [bodb02]
 GO
  
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]  
  @LicenseeID	INT,
  @UserID		INT,
@@ -47,6 +42,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]
 	- 20130916@Jim: offer Virtual Tennis
 	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+	- 20150123@Jim: support base on Currency GBP
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -987,7 +983,35 @@ SELECT
    CAST(SUM(PlayerComm*e.EUR)  AS MONEY)	 AS PlayerCommEUR,
    CAST(SUM(AmtDuetoBA*e.EUR)  AS MONEY)	 AS AmtDuetoBAEUR,
    CAST(SUM(AmtDuetoRB*e.EUR)  AS MONEY)	 AS AmtDuetoRBEUR,
-   CAST(SUM(Company * e.EUR)   AS MONEY)	 AS CompanyEUR
+   CAST(SUM(Company * e.EUR)   AS MONEY)	 AS CompanyEUR,
+    --BaseGBP  
+   CAST(SUM(TurnoverSB*e.GBP)    AS MONEY)     AS TurnoverSBGBP,   
+   CAST(SUM(TurnoverBA*e.GBP)    AS MONEY)     AS TurnoverBAGBP,   
+   CAST(SUM(TurnoverNG*e.GBP)    AS MONEY)     AS TurnoverNGGBP,   
+   CAST(SUM(TurnoverRB*e.GBP)    AS MONEY)     AS TurnoverRBGBP,
+   CAST(SUM(TurnoverLC*e.GBP)    AS MONEY)     AS TurnoverLCGBP,
+   CAST(SUM(TurnoverVS*e.GBP)    AS MONEY)     AS TurnoverVSGBP,  
+   CAST(SUM(TurnoverCS*e.GBP)    AS MONEY)     AS TurnoverCSGBP,
+   CAST(SUM(TurnoverBG*e.GBP)    AS MONEY)     AS TurnoverBGGBP,
+   CAST(SUM(TurnoverKN*e.GBP)    AS MONEY)     AS TurnoverKNGBP,
+   CAST(SUM(Winlost*e.GBP)	   AS MONEY)	 AS WinlostGBP,  
+   --CAST(SUM(LicenseeWL*e.GBP)  AS MONEY)	 AS LicenseeWLGBP,
+   CAST(SUM(LicenseeWLSB*e.GBP)AS MONEY)	 AS LicenseeWLSBGBP,
+   CAST(SUM(LicenseeWLBA*e.GBP)AS MONEY)	 AS LicenseeWLBAGBP,
+   CAST(SUM(LicenseeWLNG*e.GBP)AS MONEY)	 AS LicenseeWLNGGBP,
+   CAST(SUM(LicenseeWLRB*e.GBP)AS MONEY) 	 AS LicenseeWLRBGBP,
+   CAST(SUM(LicenseeWLLC*e.GBP)AS MONEY)	 AS LicenseeWLLCGBP,
+   CAST(SUM(LicenseeWLVS*e.GBP)AS MONEY)	 AS LicenseeWLVSGBP,
+   CAST(SUM(LicenseeWLCS*e.GBP)AS MONEY)	 AS LicenseeWLCSGBP,
+   CAST(SUM(LicenseeWLBG*e.GBP)AS MONEY)	 AS LicenseeWLBGGBP,
+   CAST(SUM(LicenseeWLKN*e.GBP)AS MONEY)	 AS LicenseeWLKNGBP,
+   --CAST(SUM(WinlossRB*e.GBP)   AS MONEY)	 AS WinlossRBGBP,
+   CAST(SUM(CommBA * e.GBP)    AS MONEY)	 AS CommBAGBP,
+   CAST(SUM(CommRB * e.GBP)    AS MONEY)	 AS CommRBGBP,
+   CAST(SUM(PlayerComm*e.GBP)  AS MONEY)	 AS PlayerCommGBP,
+   CAST(SUM(AmtDuetoBA*e.GBP)  AS MONEY)	 AS AmtDuetoBAGBP,
+   CAST(SUM(AmtDuetoRB*e.GBP)  AS MONEY)	 AS AmtDuetoRBGBP,
+   CAST(SUM(Company * e.GBP)   AS MONEY)	 AS CompanyGBP
 FROM	
 	#SAgWinLoss w   
 	INNER JOIN 

@@ -46,7 +46,8 @@ Revisions:
 	- 20130514@Jim:Restrict permission of Licensee Users by currency
 	- 20140925@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
 	- 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
-*/
+	- 20150124@Winnie: Add base currency GBP 
+*/ 
 
 SET NOCOUNT ON
 
@@ -268,10 +269,13 @@ FROM
 			b.* ,
 			stake*e.USD stakeUSD,
 			stake*e.EUR stakeEUR,
+			stake*e.GBP stakeGBP,
 			actual_stake * e.USD actual_stakeUSD,
 			actual_stake * e.EUR actual_stakeEUR,
+			actual_stake * e.GBP actual_stakeGBP,
 			b.playercomm*e.USD PlayerCommUSD,
-			b.playercomm*e.EUR PlayerCommEUR
+			b.playercomm*e.EUR PlayerCommEUR,
+			b.playercomm*e.GBP PlayerCommGBP
 	FROM 
 		#Data b
 		INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid	
@@ -294,7 +298,8 @@ WHERE exchangeid IN (SELECT DISTINCT CurrencyID FROM #currency)
 		bg.apositiontaking, 
 		bg.betteam ,
 		bg.stake*e.EUR AS stakeEUR,	
-		bg.stake*e.USD AS stakeUSD
+		bg.stake*e.USD AS stakeUSD,
+		bg.stake*e.GBP AS stakeGBP
 	FROM bettransg bg with (NOLOCK)
 	INNER JOIN bettrans B ON bg.refno = B.refno
 	INNER JOIN #TempExchange e 

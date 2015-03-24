@@ -1,4 +1,7 @@
-﻿ ALTER  PROCEDURE [dbo].[Lrf_Rpt_MatchWinLoss_ExportExcel]
+﻿USE [bodb02]
+
+GO
+ ALTER  PROCEDURE [dbo].[Lrf_Rpt_MatchWinLoss_ExportExcel]
     @LicenseeID INT,
     @LicenseeType VARCHAR(100) = NULL,
     @CurrencyID	  INT=0,
@@ -22,9 +25,10 @@ Revisions:
 	- 20120815@Henry: add live casino
 	- 20120831@Jim: add virtual sport
 	- 20121004@Jim: replace @currencyname input param by @currencyID
-	-20121115@Henry: Only Sportsbook needs to exclude BA
-	-20130426@Scott : Add more parameter @showCS,@showBG
-	-20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+	- 20121115@Henry: Only Sportsbook needs to exclude BA
+	- 20130426@Scott : Add more parameter @showCS,@showBG
+	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+	- 20150123@Jim: support base on Currency GBP
 Param's Explanation: 
 	
 */
@@ -32,7 +36,7 @@ Param's Explanation:
 
 SET NOCOUNT ON
 
-DECLARE @ExchangeDaily TABLE(ExchangeDate SMALLDATETIME, ExchangeId INT, USD FLOAT, EUR FLOAT, PRIMARY KEY(ExchangeDate,ExchangeId))
+DECLARE @ExchangeDaily TABLE(ExchangeDate SMALLDATETIME, ExchangeId INT, USD FLOAT, EUR FLOAT,GBP FLOAT, PRIMARY KEY(ExchangeDate,ExchangeId))
 
 DECLARE @bettype AS TABLE (bettype INT)
 
@@ -593,7 +597,7 @@ BEGIN
 END
 
 INSERT INTO @ExchangeDaily
-    SELECT ExchangeDate, ExchangeId, USD, EUR
+    SELECT ExchangeDate, ExchangeId, USD, EUR,GBP
     FROM Lrf_f_GetExchangeDaily(@_Date,@_Date)
     
 
@@ -610,22 +614,28 @@ SELECT
     CAST(SUM(MemberWinLost) AS MONEY) AS MemberWinLost,
     CAST(SUM(MemberWinLost * e.USD) AS MONEY) AS MemberWinLostUSD,
     CAST(SUM(MemberWinLost * e.EUR) AS MONEY) AS MemberWinLostEUR,
+	CAST(SUM(MemberWinLost * e.GBP) AS MONEY) AS MemberWinLostGBP,
     --licenseeWL
 	CAST(SUM(LicenseeWL) AS MONEY) AS LicenseeWL,
     CAST(SUM(LicenseeWL * e.USD) AS MONEY) AS LicenseeWLUSD,
     CAST(SUM(LicenseeWL * e.EUR) AS MONEY) AS LicenseeWLEUR,
+	CAST(SUM(LicenseeWL * e.GBP) AS MONEY) AS LicenseeWLGBP,
 	CAST(SUM(WinlossRB) AS MONEY) AS WinlossRB,
     CAST(SUM(WinlossRB * e.USD) AS MONEY) AS WinlossRBUSD,
     CAST(SUM(WinlossRB * e.EUR) AS MONEY) AS WinlossRBEUR,
+	CAST(SUM(WinlossRB * e.GBP) AS MONEY) AS WinlossRBGBP,
     CAST(SUM(CommBA) AS MONEY) AS CommBA,
     CAST(SUM(CommBA * e.USD) AS MONEY) AS CommBAUSD,
     CAST(SUM(CommBA * e.EUR) AS MONEY) AS CommBAEUR,
+	CAST(SUM(CommBA * e.GBP) AS MONEY) AS CommBAGBP,
     CAST(SUM(commRB) AS MONEY) AS commRB,
     CAST(SUM(commRB * e.USD) AS MONEY) AS commRBUSD,
     CAST(SUM(commRB * E.EUR) AS MONEY) AS commRBEUR,
+	CAST(SUM(commRB * E.GBP) AS MONEY) AS commRBGBP,
     CAST(SUM(AmtDuetoBA) AS MONEY) AS AmtDuetoBA,
     CAST(SUM((AmtDuetoBA) * e.USD) AS MONEY) AS AmtDuetoBAUSD,
     CAST(SUM((AmtDuetoBA) * e.EUR) AS MONEY) AS AmtDuetoBAEUR,
+	CAST(SUM((AmtDuetoBA) * e.GBP) AS MONEY) AS AmtDuetoBAGBP,
     CAST(SUM(AmtDuetoRB) AS MONEY) AS AmtDuetoRB,
     CAST(SUM((AmtDuetoRB) * e.USD) AS MONEY) AS AmtDuetoRBUSD,
     CAST(SUM((AmtDuetoRB) * e.EUR) AS MONEY) AS AmtDuetoRBEUR,
@@ -666,10 +676,9 @@ DROP TABLE #TempBetList
 	@showVS  = 1
 
 */	
-
-
-
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_MatchWinLoss_ExportExcel] TO [bodbLicenseeNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_MatchWinLoss_ExportExcel] TO vnteam
+
+

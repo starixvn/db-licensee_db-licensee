@@ -1,10 +1,6 @@
 USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_AGCasinoWinloss_xtest]    Script Date: 21/01/2015 12:44:33 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+ 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_AGCasinoWinloss]
 	  @LicenseeID	INT
 	, @Currency		INT				= 0
@@ -23,6 +19,7 @@ AS
     Revisions:  
 		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 		- 20150112@Florent: add filter ReportType 
+		- 20150123@Jim: support base on Currency GBP
 	Param's Explanation:  
 	  
 	  + @excludeTest: remove currency UUS
@@ -44,7 +41,7 @@ BEGIN
 	CREATE TABLE #tmpResult (Winlostdate DATETIME, Currency INT,TurnOver MONEY,TotalTrans INT,Winlost MONEY,LicenseeWinlost MONEY)						
 	CREATE TABLE #Currency(currencyID INT)
 	CREATE TABLE #tmpCust (CustId INT, Currency INT)
-	CREATE TABLE #TempExchange(ExchangeDate DATETIME, ExchangeId INT, Code NVARCHAR(5), USD FLOAT, EUR FLOAT)
+	CREATE TABLE #TempExchange(ExchangeDate DATETIME, ExchangeId INT, Code NVARCHAR(5), USD FLOAT, EUR FLOAT,GBP FLOAT)
 		
 	DECLARE @VNDCurrencyName VARCHAR(20)
 	DECLARE @sql NVARCHAR(1000)
@@ -90,9 +87,9 @@ BEGIN
 			GROUP BY c.Winlostdate, ct.Currency
 		)
 
-	INSERT INTO #TempExchange(ExchangeDate, ExchangeId, Code, USD, EUR)
+	INSERT INTO #TempExchange(ExchangeDate, ExchangeId, Code, USD, EUR,GBP)
 		(
-			SELECT ExchangeDate, ExchangeId, Code, USD, EUR	 
+			SELECT ExchangeDate, ExchangeId, Code, USD, EUR	,GBP 
 			FROM dbo.Lrf_f_GetExchangeDaily(@FromDate, @ToDate)
 			WHERE ExchangeId IN (SELECT DISTINCT Currency FROM #tmpResult)
 		)
@@ -123,6 +120,10 @@ BEGIN
 		, SUM(r.TurnOver * e.EUR)	AS TurnOverEUR
 		, SUM(r.Winlost * e.EUR)	AS WinlostEUR
 		, SUM(r.LicenseeWinlost * e.EUR) AS LicenseeWinlostEUR
+		---GBP
+		, SUM(r.TurnOver * e.GBP)	AS TurnOverGBP
+		, SUM(r.Winlost * e.GBP)	AS WinlostGBP
+		, SUM(r.LicenseeWinlost * e.GBP) AS LicenseeWinlostGBP
 	FROM #tmpResult r
 	INNER JOIN #TempExchange e ON r.Winlostdate = e.ExchangeDate AND r.Currency = e.ExchangeId
 	GROUP BY --r.Winlostdate
@@ -154,3 +155,7 @@ BEGIN
 	DROP TABLE #TempExchange 
 	
 END
+GO
+GRANT EXECUTE ON [dbo].[Lrf_Rpt_AGCasinoWinloss] TO [bodbLicenseeNet]
+GO
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_AGCasinoWinloss] TO [vnteam]  

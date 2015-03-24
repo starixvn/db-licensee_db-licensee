@@ -39,6 +39,7 @@ Revisions:
 	- 20140214@Florent: add filter by match
     - 20140630@Hannah: offer BetRadar and Sporting Solution
 	- 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
+	- 20150128@Winnie: Add base currency GBP 
 Param's Explanation: 
 	- @CustID : Customer Number
 	- @Odds : decimals odds, default >=0
@@ -790,6 +791,11 @@ FROM (
 		,LicenseeWL * e.EUR LicenseeWLEUR
 		,comm * e.EUR commEUR
 		,playercomm * e.EUR PlayerCommEUR
+		,stake * e.GBP stakeGBP
+		,Winlost * e.GBP WinlostGBP
+		,LicenseeWL * e.GBP LicenseeWLGBP
+		,comm * e.GBP commGBP
+		,playercomm * e.GBP PlayerCommGBP
 	FROM #Data b
 	INNER JOIN Customer c(NOLOCK) ON b.custid = c.custid
 	INNER JOIN #TempExchange e ON e.ExchangeDate = (

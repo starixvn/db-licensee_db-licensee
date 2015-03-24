@@ -43,6 +43,7 @@ Revisions:
 	- 20140521@Jim: fix bug not show outright tikect  (bug #16525)
 	- 20140925@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
 	- 20141129@Jim: add more param @CurrencyID
+	- 20150128@Winnie: add base currency GBP 
 Param's Explanation:
 + @CustID: AgentID
 */
@@ -319,7 +320,8 @@ FROM
 			SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, len(c.username2)-CHARINDEX('$',c.username2)) AS nickname,
 			b.* ,
 			stake*e.USD stakeUSD,
-			stake*e.EUR stakeEUR
+			stake*e.EUR stakeEUR,
+			stake*e.GBP stakeGBP
 			
 	FROM #Data b
 	INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid 
@@ -336,7 +338,8 @@ DECLARE @BettransDetail TABLE(
 	bettype SMALLINT,
 	Betteam nvarchar (10),
 	stakeEUR MONEY,
-	stakeUSD MONEY
+	stakeUSD MONEY,
+	stakeGBP MONEY
 	 )  
 
 IF EXISTS (SELECT TOP 1 1 FROM #Data WHERE Bettype BETWEEN 1101 AND 1199)
@@ -351,7 +354,8 @@ BEGIN
 		BG.bettype,
 		BG.betteam,
 		BG.stake*e.EUR,	
-		BG.stake*e.USD
+		BG.stake*e.USD,
+		BG.stake*e.GBP
 	FROM bettransg BG WITH (NOLOCK)
 	INNER JOIN #Data B ON BG.refno = B.refno and BG.custid = b.custid
 	INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
@@ -370,7 +374,8 @@ BEGIN
 		BG.bettype,
 		BG.betteam,
 		BG.stake*e.EUR,	
-		BG.stake*e.USD
+		BG.stake*e.USD,
+		BG.stake*e.GBP
 	FROM bettransm BG WITH (NOLOCK)
 	INNER JOIN #Data B ON BG.refno = B.refno and BG.custid = b.custid
 	INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency

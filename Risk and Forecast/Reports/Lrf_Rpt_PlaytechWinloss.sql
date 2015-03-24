@@ -1,3 +1,6 @@
+USE [bodb02]
+GO
+ 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_PlaytechWinloss]  
  @LicenseeID	INT,
  @UserID		INT,
@@ -17,6 +20,7 @@ AS
 		- 20140513@Hannah: Add Progressive share and win values
 		- 20140527@Hannah: Modify NetGaming values
 		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+		- 20150123@Jim: support base on Currency GBP
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
 */  
@@ -90,7 +94,7 @@ BEGIN
 	
 	FROM 
 		bodb_report.dbo.rptDepWinlost_PlaytechCS r WITH ( NOLOCK)
-		INNER JOIN @tempCust c ON r.CustID = c.CustID AND r.Currency = c.Currency
+		INNER JOIN @tempCust c ON r.CustID = c.CustID --AND r.Currency = c.Currency
 		
 	WHERE 
 		r.winlostdate BETWEEN @FromDate AND @ToDate 
@@ -142,7 +146,15 @@ BEGIN
 	   CAST(SUM(LicenseeWL*e.EUR)  AS MONEY)	 AS LicenseeWLEUR,
 	   CAST(SUM(PShare*e.EUR)    AS MONEY)       AS PShareEUR,   
 	   CAST(SUM(PWin*e.EUR)    AS MONEY)         AS PWinEUR,   
-	   CAST(SUM(NetGaming*e.EUR)    AS MONEY)    AS NetGamingEUR  
+	   CAST(SUM(NetGaming*e.EUR)    AS MONEY)    AS NetGamingEUR ,
+	  --BaseGBP  
+	   CAST(SUM(Turnover*e.GBP)    AS MONEY)     AS TurnoverGBP,   
+	   CAST(SUM(Winlost*e.GBP)	   AS MONEY)	 AS WinlostGBP,  
+	   CAST(SUM(LicenseeWL*e.GBP)  AS MONEY)	 AS LicenseeWLGBP,
+	   CAST(SUM(PShare*e.GBP)    AS MONEY)       AS PShareGBP,   
+	   CAST(SUM(PWin*e.GBP)    AS MONEY)         AS PWinGBP,   
+	   CAST(SUM(NetGaming*e.GBP)    AS MONEY)    AS NetGamingGBP  
+	   
 	FROM	
 		#SAgWinLoss w   
 		INNER JOIN 	#TempExchange e ON w.winlostdate = e.ExchangeDate AND w.currency = e.ExchangeId

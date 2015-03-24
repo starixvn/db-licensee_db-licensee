@@ -35,6 +35,7 @@ Revisions:
 	-20140522@Hannah: fix bug Sort betlist
 	-20140602@Hannah: Separate Live/ Non - Live data in Live Report
 	-20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust
+	-20150124@Winnie: add base currency GBP
 Param's Explanation:
 	@Liveindicator : indicate that whether the report will get live data or not
 		+ 0: Non - Live data only
@@ -96,7 +97,12 @@ CREATE TABLE #Data (
 	 stakeEUR MONEY,
 	 winlostEUR MONEY,
 	 LicenseeWLEUR MONEY,
-	 commEUR MONEY
+	 commEUR MONEY,
+	  --GBP
+	 stakeGBP MONEY,
+	 winlostGBP MONEY,
+	 LicenseeWLGBP MONEY,
+	 commGBP MONEY
 )  
 CREATE INDEX IX_Data on #Data (Winlostdate, Currency)
 
@@ -118,7 +124,7 @@ SET @LicenseeWL = '(-1 * (b.winlost - b.actual_stake))'
 DECLARE @Winlost VARCHAR(150) 
 SET @Winlost = '(b.winlost-b.actual_stake)'
 
-IF (@Sort LIKE '%USD%') OR (@Sort LIKE '%EUR%')
+IF (@Sort LIKE '%USD%') OR (@Sort LIKE '%EUR%')OR (@Sort LIKE '%GBP%')
 BEGIN
 	DECLARE @charindex INT
 	SELECT @charindex = CHARINDEX( ' ', @Sort, 1)
@@ -200,7 +206,12 @@ BEGIN
 	 stake*e.EUR stakeEUR,
 	 '+@Winlost+'*e.EUR winlostEUR,
 	 '+@LicenseeWL+'*e.EUR LicenseeWLEUR,
-	 comm*e.EUR commEUR
+	 comm*e.EUR commEUR,
+	 --GBP
+	 stake*e.GBP stakeGBP,
+	 '+@Winlost+'*e.GBP winlostGBP,
+	 '+@LicenseeWL+'*e.GBP LicenseeWLGBP,
+	 comm*e.GBP commGBP
 	 FROM  
 		bettrans14 b WITH (NOLOCK,INDEX(bettrans143))  
 		INNER JOIN #TempAg t  ON b.recommend =t.custid 
@@ -221,7 +232,7 @@ BEGIN
 	 hdp2,Modds,odds,status,stake,winlost,licenseeWL,comm,playercomm,discount ,
 	 transdate,betteam,apositiontaking,liveindicator,livehomescore,liveawayscore,  
 	 leagueID,matchid,IP,betstatus,isNeutral,winlostdate,currency,
-	 stakeUSD,winlostUSD,LicenseeWLUSD,commUSD,stakeEUR,winlostEUR,LicenseeWLEUR,commEUR)
+	 stakeUSD,winlostUSD,LicenseeWLUSD,commUSD,stakeEUR,winlostEUR,LicenseeWLEUR,commEUR,stakeGBP,winlostGBP,LicenseeWLGBP,commGBP)
 	 EXEC (@sql)
 	 IF( @CurrencyID<>0)
 	 DELETE FROM #Data WHERE currency != @CurrencyID
@@ -285,7 +296,12 @@ BEGIN
 	  stake*e.EUR stakeEUR,
 	  '+@Winlost+'*e.EUR winlostEUR,
 	  '+@LicenseeWL+'*e.EUR LicenseeWLEUR,
-	  comm*e.EUR commEUR
+	  comm*e.EUR commEUR,
+	  --GBP
+	  stake*e.GBP stakeGBP,
+	  '+@Winlost+'*e.GBP winlostGBP,
+	  '+@LicenseeWL+'*e.GBP LicenseeWLGBP,
+	  comm*e.GBP commGBP
 	 FROM  
 	  bettrans b WITH (NOLOCK) 
 	  INNER JOIN #TempAg t  ON b.recommend =t.custid  
@@ -305,7 +321,7 @@ BEGIN
 	 hdp2,Modds,odds,status,stake,winlost,licenseeWL,comm,playercomm,discount ,
 	 transdate,betteam,apositiontaking,liveindicator,livehomescore,liveawayscore,  
 	 leagueID,matchid,IP,betstatus,isNeutral,winlostdate,currency,
-	 stakeUSD,winlostUSD,LicenseeWLUSD,commUSD,stakeEUR,winlostEUR,LicenseeWLEUR,commEUR)
+	 stakeUSD,winlostUSD,LicenseeWLUSD,commUSD,stakeEUR,winlostEUR,LicenseeWLEUR,commEUR,stakeGBP,winlostGBP,LicenseeWLGBP,commGBP)
 	 EXEC (@sql)	
 	
 	 IF( @CurrencyID<>0)
@@ -336,7 +352,12 @@ FROM
 			b.stakeEUR,
 			b.winlostEUR,
 			b.LicenseeWLEUR,
-			b.commEUR			
+			b.commEUR,
+			--GBP
+			b.stakeGBP,
+			b.winlostGBP,
+			b.LicenseeWLGBP,
+			b.commGBP					
 	FROM #Data b
 	INNER JOIN Customer c (NOLOCK) ON b.custid = c.custid
 ) A WHERE A.RowNum BETWEEN '+CAST(@RowStart AS VARCHAR(50))+' AND '+CAST(@RowEnd AS VARCHAR(50))

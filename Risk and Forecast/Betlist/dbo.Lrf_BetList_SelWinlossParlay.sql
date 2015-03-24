@@ -29,7 +29,11 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinlossParlay]
 	@SumWinlostEUR MONEY=0 OUTPUT,
 	@SumLicenseeWLEUR MONEY=0 OUTPUT,
 	@SumCommEUR MONEY=0 OUTPUT,
-	@SumPlayerCommEUR MONEY=0 OUTPUT
+	@SumPlayerCommEUR MONEY=0 OUTPUT,
+	@SumWinlostGBP MONEY=0 OUTPUT,
+	@SumLicenseeWLGBP MONEY=0 OUTPUT,
+	@SumCommGBP MONEY=0 OUTPUT,
+	@SumPlayerCommGBP MONEY=0 OUTPUT
 AS
 /*
 Created: Henry@20101210
@@ -52,6 +56,7 @@ Revisions:
    - 20121004@Jim: replace @currencyname input param by @currencyID
    - 20130514@Jim:Restrict permission of Licensee Users by currency
    - 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
+   - 20150127@Winnie: add base currency GBP 
 Param's Explanation: 
 	
 Example	
@@ -373,7 +378,12 @@ SELECT
 	@SumWinlostEUR=SUM(ISNULL(winlost*e.EUR,0)),
 	@SumLicenseeWLEUR=SUM(ISNULL(LicenseeWL*e.EUR,0)),
 	@SumCommEUR=SUM(ISNULL(comm*e.EUR,0)),
-	@SumPlayerCommEUR=SUM(ISNULL(playercomm*e.EUR,0))	
+	@SumPlayerCommEUR=SUM(ISNULL(playercomm*e.EUR,0)),	
+	--GBP
+	@SumWinlostGBP=SUM(ISNULL(winlost*e.GBP,0)),
+	@SumLicenseeWLGBP=SUM(ISNULL(LicenseeWL*e.GBP,0)),
+	@SumCommGBP=SUM(ISNULL(comm*e.GBP,0)),
+	@SumPlayerCommGBP=SUM(ISNULL(playercomm*e.GBP,0))	
 FROM #AgWinlossMP b
 INNER JOIN  #TempExchange e
 ON e.ExchangeDate = b.winlostdate  AND e.exchangeid = b.currency
@@ -398,7 +408,14 @@ FROM
 			winlost * e.EUR winlostEUR,
 			LicenseeWL * e.EUR LicenseeWLEUR,
 			comm * e.EUR commEUR,
-			playercomm*e.EUR PlayerCommEUR 
+			playercomm*e.EUR PlayerCommEUR ,
+			--GBP
+			stake * e.GBP stakeGBP,
+			actual_stake * e.GBP actual_stakeGBP,
+			winlost * e.GBP winlostGBP,
+			LicenseeWL * e.GBP LicenseeWLGBP,
+			comm * e.GBP commGBP,
+			playercomm*e.GBP PlayerCommGBP
 			
 	FROM #AgWinlossMP b
 		INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid
@@ -413,6 +430,6 @@ DROP TABLE #currency
 
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinlossParlayt] TO [bodbLicenseeNet]
+GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinlossParlay] TO [bodbLicenseeNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelWinlossParlay] TO [vnteam]

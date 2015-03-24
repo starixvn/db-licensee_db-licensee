@@ -1,5 +1,6 @@
 ﻿USE [bodb02]
 GO
+ 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_MatchWinLossByBettype]  
 	@LicenseeID   INT,  
 	@UserID		  INT,
@@ -39,6 +40,8 @@ Revisions:
 	- 20140915@Florent: hotfix duplicated VS bettype
     - 20141017@Jim : Apply for the change in Sporting Solution structure (#24478)
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+	- 20150123@Jim: support base on Currency GBP
+	- 20150203@Jim: fix bug duplicate command when retrieve BA data from bettrans14
 Param's Explanation:   
    
 */  
@@ -48,7 +51,7 @@ exec [Lrf_Rpt_MatchWinLossByBettype] @LicenseeID=3,@LicenseeType=default,@MatchI
 */  
 SET NOCOUNT ON  
   
-DECLARE @ExchangeDaily TABLE(ExchangeDate SMALLDATETIME, ExchangeId INT, USD FLOAT, EUR FLOAT, PRIMARY KEY(ExchangeDate,ExchangeId))  
+DECLARE @ExchangeDaily TABLE(ExchangeDate SMALLDATETIME, ExchangeId INT, USD FLOAT, EUR FLOAT,GBP FLOAT, PRIMARY KEY(ExchangeDate,ExchangeId))  
   
 DECLARE @bettype AS TABLE (bettype INT)      
       
@@ -543,90 +546,7 @@ BEGIN
 			   m.matchcode,  
 			   m.isNeutral  
 	 END  
-  
- IF @ShowBA = 1  
- BEGIN  
-	  TRUNCATE TABLE #TempBetList  
-		
-	  INSERT INTO #TempBetList   
-	  SELECT    
-	   b.Winlostdate,  
-	   b.currency,  
-	   b.bettype,  
-	   SUM(stake) as Stake,  
-	   SUM(winlost - actual_stake) as Winlost,  
-	   0 AS awinlost,  
-	   SUM(comm),
-	   b.oddsid,	
-	   SUM(playercomm  ),  
-	   b.matchid,  
-	   0 AS Liveawayscore,  
-	   0 AS liveindicator,  
-	   0 AS tpositiontaking, 
-	   count(1) betcount
-	  FROM      
-	   bettrans14 b WITH(NOLOCK)  
-	   INNER JOIN @TempAg ag ON b.recommend = ag.custid  AND b.Currency = ag.Currency
-	   --INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid   
-	  WHERE     
-	   b.winlostdate = @_Date  
-	   AND b.statusID IN (111,112,113)  
-	   AND b.matchid = @MatchID  
-	   AND tpositiontaking = 0  
-	   AND (b.bettype < 31 OR (b.Bettype BETWEEN 121 AND 999)
-						   OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
-	   )  
-	  GROUP BY  
-	   b.Winlostdate,  
-	   b.currency,
-	   b.oddsid	,
-	   b.bettype,  
-	   b.matchid  
-  
-	  --SB  
-	  INSERT INTO @AgMatchWLDetails  
-	  SELECT    
-	   b.Winlostdate,  
-	   b.currency,  
-	   m.matchid,  
-	   m.homeid,  
-	   m.awayid,  
-	   b.bettype,
-	   m.sporttype, 	
-	   m.leagueid,  
-	   SUM(stake),  
-	   SUM(Winlost),  
-	   0 AS LicenseeWL,  
-	   0 AS WinlossRB,  
-	   -SUM (Winlost +  awinlost + comm) AS AmtDueToBA,  
-	   0 AS AmountDueToRB,  
-	   SUM (comm ) as CommBA,  
-	   0 as CommRB,  
-	   SUM(PlayerComm)  as PlayerComm,   
-	   '' AS race,  
-	   m.matchcode,  
-	   ISNULL(m.isNeutral, CONVERT(BIT, 0)) AS IsNeutral,  
-	   0 AS liveindicator,
-	   sum(b.betcount) betcount  
-	  FROM     
-	   #TempBetList b  
-	   INNER JOIN match14 m WITH ( NOLOCK ) ON m.matchid = b.matchid  
-	  /*WHERE     
-	   b.bettype < 31 OR (b.Bettype BETWEEN 121 AND 999)*/  
-	  GROUP BY  
-	   b.Winlostdate,  
-	   b.currency,   
-	   m.matchid,  
-	   m.homeid,  
-	   m.awayid,  
-	   b.bettype,
-	   m.sporttype,	
-	   m.leagueid,  
-	   m.matchcode,  
-	   m.isNeutral  
-      
- END  
-  
+
  --Get general data  
  TRUNCATE TABLE #TempBetList  
    
@@ -874,7 +794,7 @@ ELSE -- @showRB = 1, Racing
 END  
   
 INSERT INTO @ExchangeDaily  
-SELECT ExchangeDate, ExchangeId, USD, EUR  
+SELECT ExchangeDate, ExchangeId, USD, EUR,GBP  
 FROM Lrf_f_GetExchangeDaily(@_Date,@_Date)  
 -- Result  
 SELECT      
@@ -890,31 +810,40 @@ SELECT
 	CAST(SUM(turnover) AS MONEY) AS turnover,  
 	CAST(SUM(turnover * e.USD) AS MONEY) AS turnoverUSD,  
 	CAST(SUM(turnover * e.EUR) AS MONEY) AS turnoverEUR,  
+	CAST(SUM(turnover * e.GBP) AS MONEY) AS turnoverGBP,
 	CAST(SUM(MemberWinLost) AS MONEY) AS MemberWinLost,  
 	CAST(SUM(MemberWinLost * e.USD) AS MONEY) AS MemberWinLostUSD,  
 	CAST(SUM(MemberWinLost * e.EUR) AS MONEY) AS MemberWinLostEUR,  
+	CAST(SUM(MemberWinLost * e.GBP) AS MONEY) AS MemberWinLostGBP,
 	--- licenseeWL  
 	CAST(SUM(LicenseeWL) AS MONEY) AS LicenseeWL,  
 	CAST(SUM(LicenseeWL * e.USD) AS MONEY) AS LicenseeWLUSD,  
 	CAST(SUM(LicenseeWL * e.EUR) AS MONEY) AS LicenseeWLEUR,  
+	CAST(SUM(LicenseeWL * e.GBP) AS MONEY) AS LicenseeWLGBP,
 	CAST(SUM(WinlossRB) AS MONEY) AS WinlossRB,  
 	CAST(SUM(WinlossRB * e.USD) AS MONEY) AS WinlossRBUSD,  
 	CAST(SUM(WinlossRB * e.EUR) AS MONEY) AS WinlossRBEUR,  
+	CAST(SUM(WinlossRB * e.GBP) AS MONEY) AS WinlossRBGBP,  
 	CAST(SUM(CommBA) AS MONEY) AS CommBA,  
 	CAST(SUM(CommBA * e.USD) AS MONEY) AS CommBAUSD,  
 	CAST(SUM(CommBA * e.EUR) AS MONEY) AS CommBAEUR,  
+	CAST(SUM(CommBA * e.GBP) AS MONEY) AS CommBAGBP,
 	CAST(SUM(commRB) AS MONEY) AS commRB,  
 	CAST(SUM(commRB * e.USD) AS MONEY) AS commRBUSD,  
 	CAST(SUM(commRB * E.EUR) AS MONEY) AS commRBEUR,  
+	CAST(SUM(commRB * E.GBP) AS MONEY) AS commRBGBP,  
 	CAST(SUM(PlayerComm) AS MONEY) AS PlayerComm,  
 	CAST(SUM(PlayerComm*e.USD) AS MONEY) AS PlayerCommUSD,  
 	CAST(SUM(PlayerComm*e.EUR) AS MONEY) AS PlayerCommEUR,  
+	CAST(SUM(PlayerComm*e.GBP) AS MONEY) AS PlayerCommGBP, 
 	CAST(SUM(AmtDuetoBA) AS MONEY) AS AmtDuetoBA,  
 	CAST(SUM((AmtDuetoBA) * e.USD) AS MONEY) AS AmtDuetoBAUSD,  
 	CAST(SUM((AmtDuetoBA) * e.EUR) AS MONEY) AS AmtDuetoBAEUR,  
+	CAST(SUM((AmtDuetoBA) * e.GBP) AS MONEY) AS AmtDuetoBAGBP,  
 	CAST(SUM(AmtDuetoRB) AS MONEY) AS AmtDuetoRB,  
 	CAST(SUM((AmtDuetoRB) * e.USD) AS MONEY) AS AmtDuetoRBUSD,  
 	CAST(SUM((AmtDuetoRB) * e.EUR) AS MONEY) AS AmtDuetoRBEUR,  
+	CAST(SUM((AmtDuetoRB) * e.GBP) AS MONEY) AS AmtDuetoRBGBP,  
 	 CASE WHEN b.sporttype IN (181,182,183,184,185) THEN '' ELSE race END race,  
 	CASE WHEN b.sporttype IN (180,181,182,183,184,185) THEN '' ELSE matchcode END matchcode ,  
 	isNeutral,  

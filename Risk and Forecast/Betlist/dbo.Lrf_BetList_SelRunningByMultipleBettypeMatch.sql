@@ -29,6 +29,7 @@ Revisions:
 	-20140522@Jim: clone from Lrf_BetList_SelRunningByBettypeMatch to support muilti bettype.
 	-20140925@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
 	- 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
+	- 20150124@Winnie: Add base currency GBP  
 */
 
 SET NOCOUNT ON
@@ -217,8 +218,10 @@ FROM
 			b.* ,
 			stake*e.USD stakeUSD,
 			stake*e.EUR stakeEUR,
+			stake*e.GBP stakeGBP,
 			b.playercomm*e.USD PlayerCommUSD,
-			b.playercomm*e.EUR PlayerCommEUR
+			b.playercomm*e.EUR PlayerCommEUR,
+			b.playercomm*e.GBP PlayerCommGBP
 	FROM #Data b
 	INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid 
 	INNER JOIN 
@@ -241,7 +244,8 @@ BEGIN
 		bg.apositiontaking, 
 		bg.betteam ,
 		bg.stake*e.EUR AS stakeEUR,
-		bg.stake*e.USD AS stakeUSD	
+		bg.stake*e.USD AS stakeUSD,
+		bg.stake*e.GBP AS stakeGBP
 	FROM bettransg bg with (NOLOCK)
 	INNER JOIN bettrans B with (NOLOCK) ON bg.refno = B.refno
 	INNER JOIN @tblbettype tb ON b.bettype=tb.bettype

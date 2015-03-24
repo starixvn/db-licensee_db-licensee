@@ -27,6 +27,7 @@ Revisions:
 		-20130514@Jim: Restrict permission of Licensee Users by currency
 		-20130625@Jim: support to view currency UUS
 		-20141111@Winnie: Change from LicenseeCust to f_SelLicenseeCust
+		-20150126@Winnie: Add base currency GBP 
 */
 
 SET NOCOUNT ON
@@ -319,7 +320,14 @@ FROM
 			winlost*e.EUR winlostEUR,
 			LicenseeWL*e.EUR LicenseeWLEUR,
 			comm*e.EUR commEUR,
-			playercomm*e.EUR playercommEUR
+			playercomm*e.EUR playercommEUR,
+
+			--GBP
+			stake*e.GBP stakeGBP,
+			winlost*e.GBP winlostGBP,
+			LicenseeWL*e.GBP LicenseeWLGBP,
+			comm*e.GBP commGBP,
+			playercomm*e.GBP playercommGBP
 			
 	FROM 
 		#AgWinlossOutright b

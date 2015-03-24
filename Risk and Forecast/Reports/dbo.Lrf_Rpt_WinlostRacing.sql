@@ -1,7 +1,6 @@
-﻿set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
-
+﻿USE [bodb02]
+GO
+ 
 ALTER  PROCEDURE [dbo].[Lrf_Rpt_WinlostRacing]
 	@LicenseeID    INT ,
 	@UserID		INT,
@@ -23,6 +22,7 @@ AS
 		 -- 20130403@Jim: support base currency USD
 		 -- 20130618@Jim: Restrict permission of Licensee Users by currency	
 		 -- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+		 - 20150123@Jim: support base on Currency GBP
 	Param's Explanation:
 		
 */
@@ -76,16 +76,19 @@ BEGIN
 			ISNULL(hr.winTOMemMYR,0)				winTOMemMYR,
 			ISNULL(hr.winTOMem * e.EUR,0)				winTOMemEUR,
 			ISNULL(hr.winTOMem * e.USD,0)				winTOMemUSD,
+			ISNULL(hr.winTOMem * e.GBP,0)				winTOMemGBP,
 			
 			ISNULL(hr.placeTOMem,0)					placeTOMem,
 			ISNULL(hr.placeTOMemMYR,0)				placeTOMemMYR,
 			ISNULL(hr.placeTOMem * e.EUR,0)				placeTOMemEUR,
 			ISNULL(hr.placeTOMem * e.USD,0)				placeTOMemUSD,
+			ISNULL(hr.placeTOMem * e.GBP,0)				placeTOMemGBP,
 			
 			ISNULL(hr.winplaceTOMem,0)				winplaceTOMem,
 			ISNULL(hr.winplaceTOMemMYR,0)			winplaceTOMemMYR,
 			ISNULL(hr.winplaceTOMem * e.EUR,0)			winplaceTOMemEUR,
 			ISNULL(hr.winplaceTOMem * e.USD,0)			winplaceTOMemUSD,
+			ISNULL(hr.winplaceTOMem * e.GBP,0)			winplaceTOMemGBP,
 			
 			ISNULL(hr.winTOMem,0)
 			  + ISNULL(hr.placeTOMem,0)
@@ -102,26 +105,35 @@ BEGIN
 			  ISNULL(hr.winTOMem * e.USD,0) 
 			  + ISNULL(hr.placeTOMem * e.USD,0)
 			  + ISNULL(hr.winplaceTOMem * e.USD,0)	totalTOMemUSD,
+			 ---
+			 ---
+			  ISNULL(hr.winTOMem * e.GBP,0) 
+			  + ISNULL(hr.placeTOMem * e.GBP,0)
+			  + ISNULL(hr.winplaceTOMem * e.GBP,0)	totalTOMemGBP,	
 			  
 			ISNULL(hr.DividendWonMem,0)				DividendWonMem,	
 			ISNULL(hr.DividendWonMemMYR,0)		DividendWonMemMYR,
 			ISNULL(hr.DividendWonMem * e.EUR,0)		DividendWonMemEUR,
 			ISNULL(hr.DividendWonMem * e.USD,0)		DividendWonMemUSD,--
+			ISNULL(hr.DividendWonMem * e.GBP,0)		DividendWonMemGBP,--
 			
 			ISNULL(hr.winTOLicensee,0)				winTOLicensee,
 			ISNULL(hr.winTOLicenseeMYR,0)		winTOLicenseeMYR,
 			ISNULL(hr.winTOLicensee * e.EUR,0)		winTOLicenseeEUR,
 			ISNULL(hr.winTOLicensee * e.USD,0)		winTOLicenseeUSD,
+			ISNULL(hr.winTOLicensee * e.GBP,0)		winTOLicenseeGBP,
 			
 			ISNULL(hr.placeTOLicensee,0)			placeTOLicensee,
 			ISNULL(hr.placeTOLicenseeMYR,0)		placeTOLicenseeMYR,
 			ISNULL(hr.placeTOLicensee * e.EUR,0)		placeTOLicenseeEUR,
 			ISNULL(hr.placeTOLicensee * e.USD,0)		placeTOLicenseeUSD,
+			ISNULL(hr.placeTOLicensee * e.GBP,0)		placeTOLicenseeGBP,
 			
 			ISNULL(hr.winplaceTOLicensee,0)			winplaceTOLicensee,
 			ISNULL(hr.winplaceTOLicenseeMYR,0)	winplaceTOLicenseeMYR,
 			ISNULL(hr.winplaceTOLicensee * e.EUR,0)	winplaceTOLicenseeEUR,
 			ISNULL(hr.winplaceTOLicensee * e.USD,0)	winplaceTOLicenseeUSD,
+			ISNULL(hr.winplaceTOLicensee * e.GBP,0)	winplaceTOLicenseeGBP,
 			
 			ISNULL(hr.winTOLicensee,0)
 				+ ISNULL(hr.placeTOLicensee,0)
@@ -137,20 +149,27 @@ BEGIN
 			ISNULL(hr.winTOLicensee * e.USD,0)
 				+ ISNULL(hr.placeTOLicensee* e.USD,0)
 				+ ISNULL(hr.winplaceTOLicensee* e.USD,0) totalTOLicenseeUSD,	
-			
+				---
+			ISNULL(hr.winTOLicensee * e.GBP,0)
+				+ ISNULL(hr.placeTOLicensee* e.GBP,0)
+				+ ISNULL(hr.winplaceTOLicensee* e.GBP,0) totalTOLicenseeGBP,
+				
 			ISNULL(PTWLLicensee,0)					PTWLLicensee,	
 			ISNULL(PTWLLicenseeMYR,0)				PTWLLicenseeMYR,
 			ISNULL(PTWLLicensee * e.EUR,0)				PTWLLicenseeEUR,
 			ISNULL(PTWLLicensee * e.USD,0)				PTWLLicenseeUSD,
+			ISNULL(PTWLLicensee * e.GBP,0)				PTWLLicenseeGBP,
 			
 			ISNULL(hr.commIncomeLicensee,0)			commIncomeLicensee,
 			ISNULL(hr.commIncomeLicenseeMYR,0)	commIncomeLicenseeMYR,		
 			ISNULL(hr.commIncomeLicensee * e.EUR,0)	commIncomeLicenseeEUR,		
 			ISNULL(hr.commIncomeLicensee * e.USD,0)	commIncomeLicenseeUSD,
+			ISNULL(hr.commIncomeLicensee * e.GBP,0)	commIncomeLicenseeGBP,
 			ISNULL(hr.PlayercommIncomeLicensee,0)		PlayercommIncomeLicensee,
 			ISNULL(hr.PlayercommIncomeLicenseeMYR,0)	PlayercommIncomeLicenseeMYR,
 			ISNULL(hr.PlayercommIncomeLicensee*e.EUR,0)	PlayercommIncomeLicenseeEUR,
 			ISNULL(hr.PlayercommIncomeLicensee*e.USD,0)	PlayercommIncomeLicenseeUSD,
+			ISNULL(hr.PlayercommIncomeLicensee*e.GBP,0)	PlayercommIncomeLicenseeGBP,
  			ISNULL(hr.winTOMem,0)
 			  + ISNULL(hr.placeTOMem,0)
 			  + ISNULL(hr.winplaceTOMem,0)
@@ -174,7 +193,14 @@ BEGIN
 			  + ISNULL(hr.winplaceTOMem* e.USD,0)
 			  - ISNULL(hr.DividendWonMem* e.USD,0)
 			  - ISNULL(hr.PTWLLicensee* e.USD,0)
-			  - ISNULL(hr.commIncomeLicensee* e.USD,0)AmountDueToRBUSD	
+			  - ISNULL(hr.commIncomeLicensee* e.USD,0)AmountDueToRBUSD,
+			--
+			ISNULL(hr.winTOMem* e.GBP,0)
+			  + ISNULL(hr.placeTOMem* e.GBP,0)
+			  + ISNULL(hr.winplaceTOMem* e.GBP,0)
+			  - ISNULL(hr.DividendWonMem* e.GBP,0)
+			  - ISNULL(hr.PTWLLicensee* e.GBP,0)
+			  - ISNULL(hr.commIncomeLicensee* e.GBP,0) AmountDueToRBGBP		
 	FROM (
 			SELECT	o.leagueid,
 					o.groupmatch,
@@ -236,16 +262,19 @@ BEGIN
 			ISNULL(hr.winTOMemMYR,0)				winTOMemMYR,
 			ISNULL(hr.winTOMem * e.EUR,0)				winTOMemEUR,
 			ISNULL(hr.winTOMem * e.USD,0)				winTOMemUSD,
+			ISNULL(hr.winTOMem * e.GBP,0)				winTOMemGBP,
 			
 			ISNULL(hr.placeTOMem,0)					placeTOMem,
 			ISNULL(hr.placeTOMemMYR,0)				placeTOMemMYR,
 			ISNULL(hr.placeTOMem * e.EUR,0)				placeTOMemEUR,
 			ISNULL(hr.placeTOMem * e.USD,0)				placeTOMemUSD,
+			ISNULL(hr.placeTOMem * e.GBP,0)				placeTOMemGBP,
 			
 			ISNULL(hr.winplaceTOMem,0)				winplaceTOMem,
 			ISNULL(hr.winplaceTOMemMYR,0)			winplaceTOMemMYR,
 			ISNULL(hr.winplaceTOMem * e.EUR,0)			winplaceTOMemEUR,
 			ISNULL(hr.winplaceTOMem * e.USD,0)			winplaceTOMemUSD,
+			ISNULL(hr.winplaceTOMem * e.GBP,0)			winplaceTOMemGBP,
 			
 			ISNULL(hr.winTOMem,0)
 			  + ISNULL(hr.placeTOMem,0)
@@ -262,26 +291,34 @@ BEGIN
 			ISNULL(hr.winTOMem * e.USD,0) 
 			  + ISNULL(hr.placeTOMem * e.USD,0)
 			  + ISNULL(hr.winplaceTOMem * e.USD,0)	totalTOMemUSD,
+			 --
+			ISNULL(hr.winTOMem * e.GBP,0) 
+			  + ISNULL(hr.placeTOMem * e.GBP,0)
+			  + ISNULL(hr.winplaceTOMem * e.GBP,0)	totalTOMemGBP,
 			  
 			ISNULL(hr.DividendWonMem,0)				DividendWonMem,	
 			ISNULL(hr.DividendWonMemMYR,0)		DividendWonMemMYR,
 			ISNULL(hr.DividendWonMem * e.EUR,0)		DividendWonMemEUR,
 			ISNULL(hr.DividendWonMem * e.USD,0)		DividendWonMemUSD,
+			ISNULL(hr.DividendWonMem * e.GBP,0)		DividendWonMemGBP,
 			
 			ISNULL(hr.winTOLicensee,0)				winTOLicensee,
 			ISNULL(hr.winTOLicenseeMYR,0)		winTOLicenseeMYR,
 			ISNULL(hr.winTOLicensee * e.EUR,0)		winTOLicenseeEUR,
 			ISNULL(hr.winTOLicensee * e.USD,0)		winTOLicenseeUSD,
+			ISNULL(hr.winTOLicensee * e.GBP,0)		winTOLicenseeGBP,
 			
 			ISNULL(hr.placeTOLicensee,0)			placeTOLicensee,
 			ISNULL(hr.placeTOLicenseeMYR,0)		placeTOLicenseeMYR,
 			ISNULL(hr.placeTOLicensee * e.EUR,0)		placeTOLicenseeEUR,
 			ISNULL(hr.placeTOLicensee * e.USD,0)		placeTOLicenseeUSD,
+			ISNULL(hr.placeTOLicensee * e.GBP,0)		placeTOLicenseeGBP,
 			
 			ISNULL(hr.winplaceTOLicensee,0)			winplaceTOLicensee,
 			ISNULL(hr.winplaceTOLicenseeMYR,0)	winplaceTOLicenseeMYR,
 			ISNULL(hr.winplaceTOLicensee * e.EUR,0)	winplaceTOLicenseeEUR,
 			ISNULL(hr.winplaceTOLicensee * e.USD,0)	winplaceTOLicenseeUSD,
+			ISNULL(hr.winplaceTOLicensee * e.GBP,0)	winplaceTOLicenseeGBP,
 			
 			ISNULL(hr.winTOLicensee,0)
 				+ ISNULL(hr.placeTOLicensee,0)
@@ -297,20 +334,26 @@ BEGIN
 			ISNULL(hr.winTOLicensee * e.USD,0)
 				+ ISNULL(hr.placeTOLicensee* e.USD,0)
 				+ ISNULL(hr.winplaceTOLicensee* e.USD,0) totalTOLicenseeUSD,
+			ISNULL(hr.winTOLicensee * e.GBP,0)
+				+ ISNULL(hr.placeTOLicensee* e.GBP,0)
+				+ ISNULL(hr.winplaceTOLicensee* e.GBP,0) totalTOLicenseeGBP,
 				
 			ISNULL(PTWLLicensee,0)					PTWLLicensee,	
 			ISNULL(PTWLLicenseeMYR,0)				PTWLLicenseeMYR,
 			ISNULL(PTWLLicensee * e.EUR,0)				PTWLLicenseeEUR,
 			ISNULL(PTWLLicensee * e.USD,0)				PTWLLicenseeUSD,
+			ISNULL(PTWLLicensee * e.GBP,0)				PTWLLicenseeGBP,
 			
 			ISNULL(hr.commIncomeLicensee,0)			commIncomeLicensee,
 			ISNULL(hr.commIncomeLicenseeMYR,0)	commIncomeLicenseeMYR,		
 			ISNULL(hr.commIncomeLicensee * e.EUR,0)	commIncomeLicenseeEUR,
 			ISNULL(hr.commIncomeLicensee * e.USD,0)	commIncomeLicenseeUSD,
+			ISNULL(hr.commIncomeLicensee * e.GBP,0)	commIncomeLicenseeGBP,
 			ISNULL(hr.PlayercommIncomeLicensee,0)		PlayercommIncomeLicensee,	
 			ISNULL(hr.PlayercommIncomeLicenseeMYR,0)	PlayercommIncomeLicenseeMYR,
 			ISNULL(hr.PlayercommIncomeLicensee*e.EUR,0)	PlayercommIncomeLicenseeEUR,
 			ISNULL(hr.PlayercommIncomeLicensee*e.USD,0)	PlayercommIncomeLicenseeUSD,
+			ISNULL(hr.PlayercommIncomeLicensee*e.GBP,0)	PlayercommIncomeLicenseeGBP,
 			
  			ISNULL(hr.winTOMem,0)
 			  + ISNULL(hr.placeTOMem,0)
@@ -335,7 +378,13 @@ BEGIN
 			  + ISNULL(hr.winplaceTOMem* e.USD,0)
 			  - ISNULL(hr.DividendWonMem* e.USD,0)
 			  - ISNULL(hr.PTWLLicensee* e.USD,0)
-			  - ISNULL(hr.commIncomeLicensee* e.USD,0)AmountDueToRBUSD 
+			  - ISNULL(hr.commIncomeLicensee* e.USD,0)AmountDueToRBUSD ,
+			 ISNULL(hr.winTOMem* e.GBP,0)
+			  + ISNULL(hr.placeTOMem* e.GBP,0)
+			  + ISNULL(hr.winplaceTOMem* e.GBP,0)
+			  - ISNULL(hr.DividendWonMem* e.GBP,0)
+			  - ISNULL(hr.PTWLLicensee* e.GBP,0)
+			  - ISNULL(hr.commIncomeLicensee* e.GBP,0)AmountDueToRBGBP  
 
 	FROM (
 			SELECT	o.leagueid,
@@ -391,4 +440,3 @@ GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinlostRacing] TO [bodbLicenseeNet] AS [dbo]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_WinlostRacing] TO [vnteam] AS [dbo]
-

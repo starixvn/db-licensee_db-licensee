@@ -24,7 +24,7 @@ Revisions:
    -- 20110304@Henry: suppport based currency
    -- 20111229@Jim: remove function : Lrf_f_GetChoice
    -- 20120214@Jim: change to use  table ExchangeDaily by use function Lrf_f_GetExchangeDaily  
-
+    -- 20140130@Winnie: Add base currency GBP 
 Param's Explanation:
 
 */
@@ -55,12 +55,15 @@ Param's Explanation:
           totalbet MONEY ,
           totalbetUSD MONEY ,
           totalbetEUR MONEY ,
+		  totalbetGBP MONEY ,
           totalstake MONEY ,
           totalstakeUSD MONEY ,
           totalstakeEUR MONEY ,
+		  totalstakeGBP MONEY ,
           winning MONEY ,
           winningUSD MONEY ,
           winningEUR MONEY ,
+		  winningGBP MONEY ,
           betteam NVARCHAR(30) ,
           isneutral BIT
         )
@@ -76,6 +79,7 @@ Param's Explanation:
                     SUM(bettrans.stake) AS totalbet ,
                     SUM(bettrans.stake*e.USD) AS totalbetUSD ,
                     SUM(bettrans.stake*e.EUR) AS totalbetEUR ,
+					SUM(bettrans.stake*e.GBP) AS totalbetGBP ,
                     SUM(CASE WHEN bettrans.odds < 0
                              THEN bettrans.stake * -bettrans.odds
                              ELSE bettrans.stake
@@ -88,9 +92,14 @@ Param's Explanation:
                          THEN bettrans.stake * -bettrans.odds
                          ELSE bettrans.stake
                     END) AS totalstakeEUR ,
+					SUM(e.GBP * CASE WHEN bettrans.odds < 0
+                         THEN bettrans.stake * -bettrans.odds
+                         ELSE bettrans.stake
+                    END) AS totalstakeGBP ,
                     SUM(bettrans.winlost) AS winning ,
                     SUM(bettrans.winlost*e.USD) AS winningUSD ,
                     SUM(bettrans.winlost*e.EUR) AS winningEUR ,
+					SUM(bettrans.winlost*e.GBP) AS winningGBP ,
 					bettrans.betteam,
                   --  dbo.Lrf_f_GetChoice(bettrans.betteam, bettrans.bettype,@Language) betteam ,
                     ISNULL(match.isNeutral, CONVERT(BIT, 0)) AS IsNeutral

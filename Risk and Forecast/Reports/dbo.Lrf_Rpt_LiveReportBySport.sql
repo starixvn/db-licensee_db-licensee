@@ -1,11 +1,6 @@
 ﻿USE [bodb02]
 GO
-
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
+ 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportBySport] 
 	@LicenseeID INT
 	, @UserID INT
@@ -47,6 +42,7 @@ Revisions:
 	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 	- 20140915@Florent: hotfix duplicated VS bettype
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+	- 20150127@Jim: support base on GBP Currency
 Param's Explanation:  
 	@Liveindicator : indicate that whether the report will get live data or not
 		+ 0: Non - Live data only
@@ -517,7 +513,15 @@ SELECT @sql = @sql + 'select b.SportType, ' + CHAR(13) +
 					'CAST(SUM(LicenseeWL*e.USD) AS MONEY) AS LicenseeWLUSD,' + CHAR(13) + 
 					'CAST(SUM(Comm * e.USD) AS MONEY) AS CommUSD, ' + CHAR(13) + 
 					'CAST(SUM(Playercomm * e.USD) AS MONEY) AS PlayerCommUSD, ' + CHAR(13) + 
-					'CAST(SUM(AmtDueto3rd*e.USD) AS MONEY) AS AmtDueto3rdUSD ' + CHAR(13) + 
+					'CAST(SUM(AmtDueto3rd*e.USD) AS MONEY) AS AmtDueto3rdUSD, ' + CHAR(13) + 
+	--BaseGBP
+					'CAST(SUM(TurnOver*e.GBP) AS MONEY) AS TurnoverGBP,' + CHAR(13) + 
+					'CAST(SUM(Winlost*e.GBP) AS MONEY) AS WinlostGBP,' + CHAR(13) + 
+					'CAST(SUM(LicenseeWL*e.GBP) AS MONEY) AS LicenseeWLGBP,' + CHAR(13) + 
+					'CAST(SUM(Comm * e.GBP) AS MONEY) AS CommGBP, ' + CHAR(13) + 
+					'CAST(SUM(Playercomm * e.GBP) AS MONEY) AS PlayerCommGBP, ' + CHAR(13) + 
+					'CAST(SUM(AmtDueto3rd*e.GBP) AS MONEY) AS AmtDueto3rdGBP ' + CHAR(13) + 
+					
 					'FROM #tmpWinloss b ' + CHAR(13) + 
 					'INNER JOIN #TempExchange e ON e.ExchangeDate = b.winlostdate   AND e.exchangeid = b.currency ' + CHAR(13) + 
 					'group by b.SportType' + CHAR(13) + 
@@ -529,7 +533,6 @@ IF (@debug = 1)
 	SELECT @sql
 ELSE
 	EXEC (@sql)
-
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_LiveReportBySport] TO [bodbLicenseeNet]
 GO

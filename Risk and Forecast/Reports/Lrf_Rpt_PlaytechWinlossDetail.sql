@@ -1,8 +1,5 @@
-set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
-
-
+USE [bodb02]
+GO
 ALTER  PROCEDURE [dbo].[Lrf_Rpt_PlaytechWinlossDetail]  
 	@LicenseeID	INT,
 	@UserID		INT,
@@ -21,6 +18,7 @@ AS
 		- 20140513@Hannah: Add Progressive share and win values
 		- 20140527@Hannah: Modify NetGaming values
 		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+		- 20150123@Jim: support base on Currency GBP
 	Param's Explanation:  
 	  + @CustID: AgentID  
 	  + @BaseCurrency (input currencyID): 2-MYR ; 3-USD; 6-EUR
@@ -46,7 +44,7 @@ BEGIN
 							)
 							
 	DECLARE @Code VARCHAR(20), @TempCurrencyID INT
-	DECLARE @Exchange TABLE(ExchangeDate SMALLDATETIME, ExchangeId INT, USD FLOAT, EUR FLOAT,MYR FLOAT,Code VARCHAR(10), PRIMARY KEY(ExchangeDate, ExchangeId))
+	DECLARE @Exchange TABLE(ExchangeDate SMALLDATETIME, ExchangeId INT, USD FLOAT, EUR FLOAT,MYR FLOAT,GBP FLOAT,Code VARCHAR(10), PRIMARY KEY(ExchangeDate, ExchangeId))
 	DECLARE @sql NVARCHAR(1000)
 
 	CREATE TABLE #currency(currencyID INT, LicenseeID INT)
@@ -88,14 +86,15 @@ BEGIN
 
 	--to Deal With Parameter Sniffing
 	
-	INSERT INTO @Exchange (exchangedate, exchangeid, usd, eur, myr, code)
-	SELECT exchangedate, exchangeid, usd, eur, myr, code
+	INSERT INTO @Exchange (exchangedate, exchangeid, usd, eur, myr,gbp, code)
+	SELECT exchangedate, exchangeid, usd, eur, myr, gbp,code
 	FROM Lrf_f_GetExchangeDaily(@FromDate, @ToDate)
 	WHERE exchangeid IN (SELECT Currency FROM #tmpCust)
 
 	DECLARE @eEUR FLOAT
-	DECLARE @eUSD FLOAT
-	SELECT TOP 1 @eEUR = eur, @eUSD = usd FROM @Exchange	
+			,@eUSD FLOAT
+			,@eGBP FLOAT
+	SELECT TOP 1 @eEUR = eur, @eUSD = usd ,@eGBP = gbp FROM @Exchange	
 	
 	INSERT INTO #SAgWinLoss
 	SELECT   
@@ -110,7 +109,7 @@ BEGIN
 		(-SUM(r.winlost) - SUM(ProgressiveShare)) AS NetGaming	
 	FROM 
 		bodb_report.dbo.rptDepWinlost_PlaytechCS r WITH ( NOLOCK)
-		INNER JOIN #tmpCust a ON r.custID = a.custid AND r.currency = a.currency
+		INNER JOIN #tmpCust a ON r.custID = a.custid --AND r.currency = a.currency
 	WHERE 
 		r.winlostdate BETWEEN @FromDate AND @ToDate
 		AND r.sporttype = 254
@@ -144,7 +143,15 @@ BEGIN
 		CAST(SUM(LicenseeWL)*@eUSD  AS MONEY)   AS LicenseeWLUSD,
 		CAST(SUM(PShare)*@eUSD	    AS MONEY)   AS PShareUSD,  
 		CAST(SUM(PWin)*@eUSD	    AS MONEY)   AS PWinUSD,  
-		CAST(SUM(NetGaming)*@eUSD	AS MONEY)   AS NetGamingUSD 
+		CAST(SUM(NetGaming)*@eUSD	AS MONEY)   AS NetGamingUSD ,
+		--BaseGBP  
+		CAST(SUM(Turnover)*@eGBP    AS MONEY)   AS TurnoverGBP,   
+		CAST(SUM(Winlost)*@eGBP	    AS MONEY)   AS WinlostGBP,  
+		CAST(SUM(LicenseeWL)*@eGBP  AS MONEY)   AS LicenseeWLGBP,
+		CAST(SUM(PShare)*@eGBP	    AS MONEY)   AS PShareGBP,  
+		CAST(SUM(PWin)*@eGBP	    AS MONEY)   AS PWinGBP,  
+		CAST(SUM(NetGaming)*@eGBP	AS MONEY)   AS NetGamingGBP 
+
 
 	FROM	#SAgWinLoss w   
 		INNER JOIN DBLIC.bodb_licensee.dbo.licenseecustinfo c WITH (NOLOCK) ON w.custid = c.custid

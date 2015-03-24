@@ -14,7 +14,7 @@ ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel6]
 	@PageSize INT=50,
 	@PageIndex INT=0,
 	@TotalRows INT=0 OUTPUT
-AS
+AS 
 /*
 Created: 20101201@Henry
 DB: DB052.bodb02
@@ -28,6 +28,7 @@ Revisions:
 	- 20130514@Jim:Restrict permission of Licensee Users by currency
 	- 20140508@Kyan: Add new bettype 1HTotalGoal 126
 	- 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
+	- 20150124@Winnie: Add base currency GBP 
 */					 
 SET NOCOUNT ON
 DECLARE @Today SMALLDATETIME 
@@ -60,30 +61,37 @@ DECLARE @Data AS TABLE
 	total01 MONEY,
 	total01USD MONEY,
 	total01EUR MONEY,
+	total01GBP MONEY,
 
 	total23 MONEY,
 	total23USD MONEY,
 	total23EUR MONEY,
+	total23GBP MONEY,
 	
 	total46 MONEY,
 	total46USD MONEY,
 	total46EUR MONEY,
+	total46GBP MONEY,
 
 	total7over MONEY,
 	total7overUSD MONEY,
 	total7overEUR MONEY,
+	total7overGBP MONEY,
 	
 	fhtotal01 MONEY,
 	fhtotal01USD MONEY,
 	fhtotal01EUR MONEY,
+	fhtotal01GBP MONEY,
 
 	fhtotal23 MONEY,
 	fhtotal23USD MONEY,
 	fhtotal23EUR MONEY,
+	fhtotal23GBP MONEY,
 	
 	fhtotal4over MONEY,
 	fhtotal4overUSD MONEY,
 	fhtotal4overEUR MONEY,
+	fhtotal4overGBP MONEY,
 	
 	isNeutral BIT
 )
@@ -99,31 +107,38 @@ SELECT
 		SUM((CASE bettype WHEN 6 THEN CASE betteam WHEN '0-1'  THEN (stake*odds)-stake ELSE -stake END END))  AS total01,
 		SUM((CASE bettype WHEN 6 THEN CASE betteam WHEN '0-1'  THEN (stake*odds)-stake ELSE -stake END END)*e.USD)  AS total01USD,
 		SUM((CASE bettype WHEN 6 THEN CASE betteam WHEN '0-1'  THEN (stake*odds)-stake ELSE -stake END END)*e.EUR)  AS total01EUR,
+		SUM((CASE bettype WHEN 6 THEN CASE betteam WHEN '0-1'  THEN (stake*odds)-stake ELSE -stake END END)*e.GBP)  AS total01GBP,
 		
 		SUM((CASE bettype WHEN 6 THEN CASE betteam WHEN '2-3'  THEN (stake*odds)-stake ELSE -stake END END))  AS total23,
 		SUM((CASE bettype WHEN 6 THEN CASE betteam WHEN '2-3'  THEN (stake*odds)-stake ELSE -stake END END)*e.USD)  AS total23USD,
 		SUM((CASE bettype WHEN 6 THEN CASE betteam WHEN '2-3'  THEN (stake*odds)-stake ELSE -stake END END)*e.EUR)  AS total23EUR,
+		SUM((CASE bettype WHEN 6 THEN CASE betteam WHEN '2-3'  THEN (stake*odds)-stake ELSE -stake END END)*e.GBP)  AS total23GBP,
 		
 		SUM((CASE bettype WHEN 6 THEN CASE betteam WHEN '4-6'  THEN (stake*odds)-stake ELSE -stake END END))  AS total46,
 		SUM((CASE bettype WHEN 6 THEN CASE betteam WHEN '4-6'  THEN (stake*odds)-stake ELSE -stake END END)*e.USD)  AS total46USD,
 		SUM((CASE bettype WHEN 6 THEN CASE betteam WHEN '4-6'  THEN (stake*odds)-stake ELSE -stake END END)*e.EUR)  AS total46EUR,
+		SUM((CASE bettype WHEN 6 THEN CASE betteam WHEN '4-6'  THEN (stake*odds)-stake ELSE -stake END END)*e.GBP)  AS total46GBP,
 		
 		SUM((CASE bettype WHEN 6 THEN CASE betteam WHEN '7-over'  THEN (stake*odds)-stake ELSE -stake END END))  AS total7over,
 		SUM((CASE bettype WHEN 6 THEN CASE betteam WHEN '7-over'  THEN (stake*odds)-stake ELSE -stake END END)*e.USD)  AS total7overUSD,
 		SUM((CASE bettype WHEN 6 THEN CASE betteam WHEN '7-over'  THEN (stake*odds)-stake ELSE -stake END END)*e.EUR)  AS total7overEUR,
+		SUM((CASE bettype WHEN 6 THEN CASE betteam WHEN '7-over'  THEN (stake*odds)-stake ELSE -stake END END)*e.GBP)  AS total7overGBP,
 		
 		--1H Total Goals
 		SUM((CASE bettype WHEN 126 THEN CASE betteam WHEN '0-1'  THEN (stake*odds)-stake ELSE -stake END END)) AS FHtotal01,
 		SUM((CASE bettype WHEN 126 THEN CASE betteam WHEN '0-1'  THEN (stake*odds)-stake ELSE -stake END END)*e.USD)  AS FHtotal01USD,
 		SUM((CASE bettype WHEN 126 THEN CASE betteam WHEN '0-1'  THEN (stake*odds)-stake ELSE -stake END END)*e.EUR)  AS FHtotal01EUR,
+		SUM((CASE bettype WHEN 126 THEN CASE betteam WHEN '0-1'  THEN (stake*odds)-stake ELSE -stake END END)*e.GBP)  AS FHtotal01GBP,
 		
 		SUM((CASE bettype WHEN 126 THEN CASE betteam WHEN '2-3'  THEN (stake*odds)-stake ELSE -stake END END))  AS FHtotal23,
 		SUM((CASE bettype WHEN 126 THEN CASE betteam WHEN '2-3'  THEN (stake*odds)-stake ELSE -stake END END)*e.USD)  AS FHtotal23USD,
 		SUM((CASE bettype WHEN 126 THEN CASE betteam WHEN '2-3'  THEN (stake*odds)-stake ELSE -stake END END)*e.EUR)  AS FHtotal23EUR,
+		SUM((CASE bettype WHEN 126 THEN CASE betteam WHEN '2-3'  THEN (stake*odds)-stake ELSE -stake END END)*e.GBP)  AS FHtotal23GBP,
 		
 		SUM((CASE bettype WHEN 126 THEN CASE betteam WHEN '4-over'  THEN (stake*odds)-stake ELSE -stake END END))  AS FHtotal4over,
 		SUM((CASE bettype WHEN 126 THEN CASE betteam WHEN '4-over'  THEN (stake*odds)-stake ELSE -stake END END)*e.USD)  AS FHtotal4overUSD,
 		SUM((CASE bettype WHEN 126 THEN CASE betteam WHEN '4-over'  THEN (stake*odds)-stake ELSE -stake END END)*e.EUR)  AS FHtotal4overEUR,
+		SUM((CASE bettype WHEN 126 THEN CASE betteam WHEN '4-over'  THEN (stake*odds)-stake ELSE -stake END END)*e.GBP)  AS FHtotal4overGBP,
 		
 		ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral
 		

@@ -1,4 +1,7 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberBAStatus]
+﻿ USE CustDB
+ GO
+
+ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberBAStatus]
 	@LicenseeID INT,
 	@CustID INT,
 	@ModifyBy INT,
@@ -6,6 +9,7 @@
 	@IsAdmin BIT = 0,
 	@langkey VARCHAR(10) = 'en-US',
 	@IP VARCHAR(40),
+	@OddsGroup VARCHAR(3) = '' OUTPUT,
 	@ErrCode INT = 0 OUTPUT,
 	@ErrMsg nvarchar(4000) = '' OUTPUT
 AS
@@ -44,6 +48,8 @@ Revisions:
 	- 20130429@Jim: support base currency USD
 	- 20131113@winnie: remove bodb02.dbo
 	- 20140425@Francis: add HR Fixed Odds
+	- 20150121@Jim: return more @OddsGroup param
+	- 20150306@Patrick: Copy BA member to Dep_ActiveBAMember table [Redmine: #31720]
 	
 Param's Explanation:
 
@@ -212,7 +218,7 @@ IF @isBA = 1 --enable BA
 		END
 
 		--apply commission
-				EXEC [Lrf_CustomerUpdMemberBAComm]
+								EXEC [Lrf_CustomerUpdMemberBAComm]
 				@LicenseeID = @LicenseeID,
 				@CustID = @CustID,
 				@ModifyBy = @ModifyBy,
@@ -220,6 +226,7 @@ IF @isBA = 1 --enable BA
 				@IsAdmin = @IsAdmin,
 				@langkey = @langkey,
 				@IP = @IP,
+				@OddsGroup = @OddsGroup OUTPUT,
 				@ErrCode = @ErrCode OUTPUT,
 				@ErrMsg = @ErrMsg OUTPUT
 
@@ -350,6 +357,19 @@ IF @isBA = 1 --enable BA
 		@IP = @IP,
 		@ErrCode = @ErrCode OUTPUT,
 		@ErrMsg = @ErrMsg OUTPUT
+		
+		IF @ErrCode <> 0
+			RETURN
+		
+		SET @ErrCode=0
+		SET @ErrMsg= ''
+		EXEC dbo.Lrf_EnableDisableBAMember @CustId = @CustID
+			, @Mode = 'On'
+			, @UpdatedBy = @ModifyBy
+			, @Ip = @Ip
+
+			, @ErrCode = @ErrCode OUTPUT
+			, @ErrMsg = @ErrMsg OUTPUT
 
 
 END
@@ -390,7 +410,7 @@ ELSE --disable BA
 					SET @ErrCode=0
 					SET @ErrMsg= ''
 					--apply commission
-										EXEC [Lrf_CustomerUpdMemberBAComm]
+																				EXEC [Lrf_CustomerUpdMemberBAComm]
 							@LicenseeID = @LicenseeID,
 							@CustID = @CustID,
 							@ModifyBy = @ModifyBy,
@@ -398,6 +418,7 @@ ELSE --disable BA
 							@langkey = @langkey,
 							@IsAdmin = @IsAdmin,
 							@IP = @IP,
+							@OddsGroup = @OddsGroup OUTPUT,
 							@ErrCode = @ErrCode OUTPUT,
 							@ErrMsg = @ErrMsg OUTPUT
 
@@ -644,14 +665,36 @@ ELSE --disable BA
 					@IP = @IP,
 					@ErrCode = @ErrCode OUTPUT,
 					@ErrMsg = @ErrMsg OUTPUT
+					
+					IF @ErrCode <> 0
+						RETURN
+						
+					SET @ErrCode=0
+					SET @ErrMsg= ''
+					EXEC dbo.Lrf_EnableDisableBAMember @CustId = @CustID
+						, @Mode = 'Off'
+						, @UpdatedBy = @ModifyBy
+						, @Ip = @Ip
+
+						, @ErrCode = @ErrCode OUTPUT
+						, @ErrMsg = @ErrMsg OUTPUT
 				END
 		END
 	END
 GO
-GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMemberBAStatus] TO [bodbAdminNet] AS [dbo]
+
+SET QUOTED_IDENTIFIER OFF 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMemberBAStatus] TO [bodbLicenseeNet] AS [dbo]
+SET ANSI_NULLS ON 
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerUpdMemberBAStatus] TO [vnteam] AS [dbo]
 
 
+GO 
+ GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerUpdMemberBAStatus] TO [vnteam]
+GO 
+ GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMemberBAStatus] TO [bodbLicenseeNet]
+GO 
+ GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMemberBAStatus] TO [bodbAdminNet]
+GO 
+ GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerUpdMemberBAStatus] TO [bodbAdminNet]
+GO 

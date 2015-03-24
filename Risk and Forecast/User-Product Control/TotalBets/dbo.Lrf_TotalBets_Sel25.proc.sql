@@ -32,6 +32,7 @@ Revisions:
 	- 20130514@Jim:Restrict permission of Licensee Users by currency
 	- 20140718@Hannah: Change liveindicator datatype to INT to fix running live matches are not being showed at the top list (RedmineID:19136)
 	- 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
+	- 20150124@Winnie: Add base currency GBP 
 Param's Explanation:
 • @CustID: AgentID
 */
@@ -72,50 +73,62 @@ DECLARE @Data AS Table
 	home_odds_OE MONEY,
 	home_odds_OEUSD MONEY,
 	home_odds_OEEUR MONEY,
+	home_odds_OEGBP MONEY,
 
 	away_odds_OE MONEY,
 	away_odds_OEUSD MONEY,
 	away_odds_OEEUR MONEY,
+	away_odds_OEGBP MONEY,
 
 	home_odds_OE_1st MONEY,
 	home_odds_OE_1stUSD MONEY,
 	home_odds_OE_1stEUR MONEY,
+	home_odds_OE_1stGBP MONEY,
 
 	away_odds_OE_1st MONEY,
 	away_odds_OE_1stUSD MONEY,
 	away_odds_OE_1stEUR MONEY,
+	away_odds_OE_1stGBP MONEY,
 
 	odds_1 MONEY,
 	odds_1USD MONEY,
 	odds_1EUR MONEY,
+	odds_1GBP MONEY,
 
 	odds_x MONEY,
 	odds_xUSD MONEY,
 	odds_xEUR MONEY,
+	odds_xGBP MONEY,
 
 	odds_2 MONEY,
 	odds_2USD MONEY,
 	odds_2EUR MONEY,
+	odds_2GBP MONEY,
 
 	odds_1_1st MONEY,
 	odds_1_1stUSD MONEY,
 	odds_1_1stEUR MONEY,
+	odds_1_1stGBP MONEY,
 
 	odds_x_1st MONEY,
 	odds_x_1stUSD MONEY,
 	odds_x_1stEUR MONEY,
+	odds_x_1stGBP MONEY,
 
 	odds_2_1st MONEY,
 	odds_2_1stUSD MONEY,
 	odds_2_1stEUR MONEY,
+	odds_2_1stGBP MONEY,
 
 	home_odds_DND MONEY,
 	home_odds_DNDUSD MONEY,
 	home_odds_DNDEUR MONEY,
+	home_odds_DNDGBP MONEY,
 	
 	away_odds_DND MONEY,
 	away_odds_DNDUSD MONEY,
 	away_odds_DNDEUR MONEY,
+	away_odds_DNDGBP MONEY,
 	
 
 	BetCount_OE INT,
@@ -140,50 +153,62 @@ SELECT
 		sum((CASE WHEN bettype=2 AND betteam = 'h' THEN stake ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS home_odds_OE,
 		sum((CASE WHEN bettype=2 AND betteam = 'h' THEN stake*e.USD ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS home_odds_OEUSD,
 		sum((CASE WHEN bettype=2 AND betteam = 'h' THEN stake*e.EUR ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS home_odds_OEEUR,
+		sum((CASE WHEN bettype=2 AND betteam = 'h' THEN stake*e.GBP ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS home_odds_OEGBP,
 
 		sum((CASE WHEN bettype=2 AND betteam = 'a' THEN stake ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS away_odds_OE,
 		sum((CASE WHEN bettype=2 AND betteam = 'a' THEN stake*e.USD ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS away_odds_OEUSD,
 		sum((CASE WHEN bettype=2 AND betteam = 'a' THEN stake*e.EUR ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS away_odds_OEEUR,
+		sum((CASE WHEN bettype=2 AND betteam = 'a' THEN stake*e.GBP ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS away_odds_OEGBP,
 
 		sum((CASE WHEN bettype=12 AND betteam = 'h' THEN stake ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS home_odds_OE_1st,
 		sum((CASE WHEN bettype=12 AND betteam = 'h' THEN stake*e.USD ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS home_odds_OE_1stUSD,
 		sum((CASE WHEN bettype=12 AND betteam = 'h' THEN stake*e.EUR ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS home_odds_OE_1stEUR,
+		sum((CASE WHEN bettype=12 AND betteam = 'h' THEN stake*e.GBP ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS home_odds_OE_1stGBP,
 
 		sum((CASE WHEN bettype=12 AND betteam = 'a' THEN stake ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS away_odds_OE_1st,
 		sum((CASE WHEN bettype=12 AND betteam = 'a' THEN stake*e.USD ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS away_odds_OE_1stUSD,
 		sum((CASE WHEN bettype=12 AND betteam = 'a' THEN stake*e.EUR ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS away_odds_OE_1stEUR,
+		sum((CASE WHEN bettype=12 AND betteam = 'a' THEN stake*e.GBP ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS away_odds_OE_1stGBP,
 		--league.lcolor,
 		sum(CASE WHEN bettype=5 AND betteam = '1' THEN  stake   ELSE 0 END) AS odds_1,
 		sum(CASE WHEN bettype=5 AND betteam = '1' THEN  stake*e.USD   ELSE 0 END) AS odds_1USD,
 		sum(CASE WHEN bettype=5 AND betteam = '1' THEN  stake*e.EUR   ELSE 0 END) AS odds_1EUR,
+		sum(CASE WHEN bettype=5 AND betteam = '1' THEN  stake*e.GBP   ELSE 0 END) AS odds_1GBP,
 
 		sum(CASE WHEN bettype=5 AND betteam = 'x' THEN  stake   ELSE 0 END) AS odds_x,
 		sum(CASE WHEN bettype=5 AND betteam = 'x' THEN  stake*e.USD   ELSE 0 END) AS odds_xUSD,
 		sum(CASE WHEN bettype=5 AND betteam = 'x' THEN  stake*e.EUR   ELSE 0 END) AS odds_xEUR,
+		sum(CASE WHEN bettype=5 AND betteam = 'x' THEN  stake*e.GBP   ELSE 0 END) AS odds_xGBP,
 
 		sum(CASE WHEN bettype=5 AND betteam = '2' THEN  stake   ELSE 0 END) AS odds_2,
 		sum(CASE WHEN bettype=5 AND betteam = '2' THEN  stake*e.USD   ELSE 0 END) AS odds_2USD,
 		sum(CASE WHEN bettype=5 AND betteam = '2' THEN  stake*e.EUR   ELSE 0 END) AS odds_2EUR,
+		sum(CASE WHEN bettype=5 AND betteam = '2' THEN  stake*e.GBP   ELSE 0 END) AS odds_2GBP,
 
 		sum(CASE WHEN bettype=15 AND betteam = '1' THEN  stake   ELSE 0 END) AS odds_1_1st,
 		sum(CASE WHEN bettype=15 AND betteam = '1' THEN  stake*e.USD   ELSE 0 END) AS odds_1_1stUSD,
 		sum(CASE WHEN bettype=15 AND betteam = '1' THEN  stake*e.EUR   ELSE 0 END) AS odds_1_1stEUR,
+		sum(CASE WHEN bettype=15 AND betteam = '1' THEN  stake*e.GBP   ELSE 0 END) AS odds_1_1stGBP,
 		
 		sum(CASE WHEN bettype=15 AND betteam = 'x' THEN  stake   ELSE 0 END) AS odds_x_1st,
 		sum(CASE WHEN bettype=15 AND betteam = 'x' THEN  stake*e.USD   ELSE 0 END) AS odds_x_1stUSD,
 		sum(CASE WHEN bettype=15 AND betteam = 'x' THEN  stake*e.EUR   ELSE 0 END) AS odds_x_1stEUR,
+		sum(CASE WHEN bettype=15 AND betteam = 'x' THEN  stake*e.GBP   ELSE 0 END) AS odds_x_1stGBP,
 		
 		sum(CASE WHEN bettype=15 AND betteam = '2' THEN  stake   ELSE 0 END) AS odds_2_1st,
 		sum(CASE WHEN bettype=15 AND betteam = '2' THEN  stake*e.USD   ELSE 0 END) AS odds_2_1stUSD,
 		sum(CASE WHEN bettype=15 AND betteam = '2' THEN  stake*e.EUR   ELSE 0 END) AS odds_2_1stEUR,
+		sum(CASE WHEN bettype=15 AND betteam = '2' THEN  stake*e.GBP   ELSE 0 END) AS odds_2_1stGBP,
 
 		sum(Case when bettype=123 and betteam = 'h' then  stake   else 0 end) AS home_odds_DND,
 		sum(Case when bettype=123 and betteam = 'h' then  stake*e.USD   else 0 end) AS home_odds_DNDUSD,
 		sum(Case when bettype=123 and betteam = 'h' then  stake*e.EUR   else 0 end) AS home_odds_DNDEUR,
+		sum(Case when bettype=123 and betteam = 'h' then  stake*e.GBP   else 0 end) AS home_odds_DNDGBP,
 		
 		sum(Case when bettype=123 and betteam = 'a' then  stake   else 0 end) AS away_odds_DND,
 		sum(Case when bettype=123 and betteam = 'a' then  stake*e.USD   else 0 end) AS away_odds_DNDUSD,
 		sum(Case when bettype=123 and betteam = 'a' then  stake*e.EUR   else 0 end) AS away_odds_DNDEUR,
+		sum(Case when bettype=123 and betteam = 'a' then  stake*e.GBP   else 0 end) AS away_odds_DNDGBP,
 
 		sum(CASE WHEN bettype=2 THEN 1 ELSE 0 END) AS BetCount_OE,
 		sum(CASE WHEN bettype=12 THEN 1 ELSE 0 END) AS BetCount_OE_1st,

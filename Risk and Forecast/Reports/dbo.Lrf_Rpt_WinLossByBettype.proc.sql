@@ -1,11 +1,6 @@
 ﻿USE [bodb02]
 GO
 
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
 ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLossByBettype] 
 	@LicenseeID INT
 	, @UserID INT
@@ -46,6 +41,7 @@ Revisions:
 	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 	- 20141017@Jim : Apply for the change in Sporting Solution structure (#24478)
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+	- 20150123@Jim: support base on Currency GBP
 Param's Explanation: 
 */
 SET NOCOUNT ON
@@ -59,6 +55,7 @@ DECLARE @Exchange TABLE (
 	, ExchangeId INT
 	, EUR FLOAT
 	, USD FLOAT
+	, GBP FLOAT
 	, PRIMARY KEY (
 		ExchangeDate
 		, ExchangeId
@@ -138,6 +135,16 @@ CREATE TABLE #AgWinLoss (
 	, CommBAUSD MONEY
 	, CommRBUSD MONEY
 	, PlayerCommUSD MONEY
+	, TurnOverGBP MONEY
+	, MemberWinLostGBP MONEY
+	, LicenseeWLGBP MONEY
+	, --Sportbook and NumberGame
+	WinlossRBGBP MONEY
+	, AmtDueToBAGBP MONEY
+	, AmtDueToRBGBP MONEY
+	, CommBAGBP MONEY
+	, CommRBGBP MONEY
+	, PlayerCommGBP MONEY
 	)
 
 DECLARE @TempFromDate DATETIME
@@ -154,11 +161,13 @@ INSERT INTO @Exchange (
 	, exchangeid
 	, eur
 	, usd
+	,GBP
 	)
 SELECT exchangedate
 	, exchangeid
 	, eur
 	, usd
+	, GBP
 FROM Lrf_f_GetExchangeDaily(@FDate, @TDate)
 WHERE exchangeid IN (
 		SELECT Currency
@@ -332,7 +341,59 @@ BEGIN
 					THEN comm
 				ELSE 0
 				END * e.USD) AS CommRBUSD
-		, SUM(playercomm * e.USD) AS PlayerCommUSD
+		, SUM(playercomm * e.USD) AS PlayerCommUSD,
+		--- GBP
+		SUM(CASE 
+				WHEN b.liveawayscore = 0
+					AND bettype IN (33, 43)
+					THEN stake / 2
+				ELSE stake
+				END * e.GBP)
+		, SUM((winlost - actual_stake) * e.GBP)
+		, - SUM(CASE 
+				WHEN ISNULL(BA.transid, 0) = 0
+					AND (
+						(
+							b.bettype < 31
+							OR (b.bettype BETWEEN 121 AND 999)
+							OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+							)
+						OR b.bettype BETWEEN 81 AND 120
+						OR b.bettype BETWEEN 1101 AND 1199
+						OR b.bettype BETWEEN 1201 AND 1299
+						OR b.bettype BETWEEN 1501 AND 1599 --Keno
+						)
+					THEN (b.winlost - b.actual_stake)
+				ELSE 0
+				END * e.GBP) AS LicenseeWLGBP
+		, SUM(CASE 
+				WHEN b.bettype IN (31, 32, 33)
+					THEN b.awinlost
+				ELSE 0
+				END * e.GBP) AS WinlossRBGBP
+		, - SUM(CASE 
+				WHEN ISNULL(BA.transid, 0) <> 0
+					THEN (b.winlost - b.actual_stake + awinlost + comm)
+				ELSE 0
+				END * e.GBP) AS AmountDueToBAGBP
+		, - SUM(CASE 
+				WHEN b.bettype IN (31, 32, 33)
+					THEN (b.winlost - b.actual_stake + awinlost + comm)
+				ELSE 0
+				END * e.GBP) AS AmountDueToRBGBP
+		, SUM(CASE 
+				WHEN ISNULL(BA.transid, 0) <> 0
+					THEN comm
+				ELSE 0
+				END * e.GBP) AS CommBAGBP
+		, SUM(CASE 
+				WHEN b.bettype IN (31, 32, 33)
+					THEN comm
+				ELSE 0
+				END * e.GBP) AS CommRBGBP
+		, SUM(playercomm * e.GBP) AS PlayerCommGBP
+		
+		
 	FROM dbo.bettrans b WITH (
 			NOLOCK
 			, INDEX = CIX_recommend_matchid_bettype
@@ -528,7 +589,58 @@ BEGIN
 					THEN comm
 				ELSE 0
 				END * e.USD) AS CommRBUSD
-		, SUM(playercomm * e.USD) AS PlayerCommUSD
+		, SUM(playercomm * e.USD) AS PlayerCommUSD,
+		--- GBP
+		SUM(CASE 
+				WHEN b.liveawayscore = 0
+					AND bettype IN (33, 43)
+					THEN stake / 2
+				ELSE stake
+				END * e.GBP)
+		, SUM((winlost - actual_stake) * e.GBP)
+		, - SUM(CASE 
+				WHEN ISNULL(BA.transid, 0) = 0
+					AND (
+						(
+							b.bettype < 31
+							OR (b.bettype BETWEEN 121 AND 999)
+							OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+							)
+						OR b.bettype BETWEEN 81 AND 120
+						OR b.bettype BETWEEN 1101 AND 1199
+						OR b.bettype BETWEEN 1201 AND 1299
+						OR b.bettype BETWEEN 1501 AND 1599 --Keno
+						)
+					THEN (b.winlost - b.actual_stake)
+				ELSE 0
+				END * e.GBP) AS LicenseeWLGBP
+		, SUM(CASE 
+				WHEN b.bettype IN (31, 32, 33)
+					THEN b.awinlost
+				ELSE 0
+				END * e.GBP) AS WinlossRBGBP
+		, - SUM(CASE 
+				WHEN ISNULL(BA.transid, 0) <> 0
+					THEN (b.winlost - b.actual_stake + awinlost + comm)
+				ELSE 0
+				END * e.GBP) AS AmountDueToBAGBP
+		, - SUM(CASE 
+				WHEN b.bettype IN (31, 32, 33)
+					THEN (b.winlost - b.actual_stake + awinlost + comm)
+				ELSE 0
+				END * e.GBP) AS AmountDueToRBGBP
+		, SUM(CASE 
+				WHEN ISNULL(BA.transid, 0) <> 0
+					THEN comm
+				ELSE 0
+				END * e.GBP) AS CommBAGBP
+		, SUM(CASE 
+				WHEN b.bettype IN (31, 32, 33)
+					THEN comm
+				ELSE 0
+				END * e.GBP) AS CommRBGBP
+		, SUM(playercomm * e.GBP) AS PlayerCommGBP
+		
 	FROM Bettrans14 b WITH (
 			NOLOCK
 			, INDEX = bettrans143
@@ -563,30 +675,39 @@ FROM (
 		, SUM(TurnOver) AS TurnOver
 		, CAST(SUM(TurnOverEUR) AS MONEY) AS TurnOverEUR
 		, CAST(SUM(TurnOverUSD) AS MONEY) AS TurnOverUSD
+		, CAST(SUM(TurnOverGBP) AS MONEY) AS TurnOverGBP
 		, SUM(MemberWinLost) AS MemberWinLost
 		, CAST(SUM(MemberWinLostEUR) AS MONEY) AS MemberWinLostEUR
 		, CAST(SUM(MemberWinLostUSD) AS MONEY) AS MemberWinLostUSD
+		, CAST(SUM(MemberWinLostGBP) AS MONEY) AS MemberWinLostGBP
 		, SUM(LicenseeWL) AS LicenseeWL
 		, CAST(SUM(LicenseeWLEUR) AS MONEY) AS LicenseeWLEUR
 		, CAST(SUM(LicenseeWLUSD) AS MONEY) AS LicenseeWLUSD
+		, CAST(SUM(LicenseeWLGBP) AS MONEY) AS LicenseeWLGBP
 		, SUM(WinlossRB) AS WinlossRB
 		, CAST(SUM(WinlossRBEUR) AS MONEY) AS WinlossRBEUR
 		, CAST(SUM(WinlossRBUSD) AS MONEY) AS WinlossRBUSD
+		, CAST(SUM(WinlossRBGBP) AS MONEY) AS WinlossRBGBP
 		, SUM(CommBA) AS CommBA
 		, CAST(SUM(CommBAEUR) AS MONEY) AS CommBAEUR
 		, CAST(SUM(CommBAUSD) AS MONEY) AS CommBAUSD
+		, CAST(SUM(CommBAGBP) AS MONEY) AS CommBAGBP
 		, SUM(commRB) AS commRB
 		, CAST(SUM(commRBEUR) AS MONEY) AS commRBEUR
 		, CAST(SUM(commRBUSD) AS MONEY) AS commRBUSD
+		, CAST(SUM(commRBGBP) AS MONEY) AS commRBGBP
 		, SUM(PlayerComm) AS PlayerComm
 		, CAST(SUM(PlayerCommEUR) AS MONEY) AS PlayerCommEUR
 		, CAST(SUM(PlayerCommUSD) AS MONEY) AS PlayerCommUSD
+		, CAST(SUM(PlayerCommGBP) AS MONEY) AS PlayerCommGBP
 		, SUM(AmtDuetoBA) AS AmtDuetoBA
 		, CAST(SUM(AmtDuetoBAEUR) AS MONEY) AS AmtDuetoBAEUR
 		, CAST(SUM(AmtDuetoBAUSD) AS MONEY) AS AmtDuetoBAUSD
+		, CAST(SUM(AmtDuetoBAGBP) AS MONEY) AS AmtDuetoBAGBP
 		, SUM(AmtDuetoRB) AS AmtDuetoRB
 		, CAST(SUM(AmtDuetoRBEUR) AS MONEY) AS AmtDuetoRBEUR
 		, CAST(SUM(AmtDuetoRBUSD) AS MONEY) AS AmtDuetoRBUSD
+		, CAST(SUM(AmtDuetoRBGBP) AS MONEY) AS AmtDuetoRBGBP
 		, ROW_NUMBER() OVER (
 			ORDER BY CASE WHEN ISNULL(ss.bettypeID,0) <> 0 THEN ss.typeid
 				ELSE b.bettype 
@@ -606,29 +727,38 @@ WHERE wl.RowNum BETWEEN @RowStart AND @RowEnd
 SELECT SUM(TurnOver) AS SumTurnOver
 	, CAST(SUM(TurnOverEUR) AS MONEY) AS SumTurnOverEUR
 	, CAST(SUM(TurnOverUSD) AS MONEY) AS SumTurnOverUSD
+	, CAST(SUM(TurnOverGBP) AS MONEY) AS SumTurnOverGBP
 	, SUM(MemberWinLost) AS SumMemberWinLost
 	, CAST(SUM(MemberWinLostEUR) AS MONEY) AS SumMemberWinLostEUR
 	, CAST(SUM(MemberWinLostUSD) AS MONEY) AS SumMemberWinLostUSD
+	, CAST(SUM(MemberWinLostGBP) AS MONEY) AS SumMemberWinLostGBP
 	, SUM(LicenseeWL) AS SumLicenseeWL
 	, CAST(SUM(LicenseeWLEUR) AS MONEY) AS SumLicenseeWLEUR
 	, CAST(SUM(LicenseeWLUSD) AS MONEY) AS SumLicenseeWLUSD
+	, CAST(SUM(LicenseeWLGBP) AS MONEY) AS SumLicenseeWLGBP
 	, CAST(SUM(WinlossRBEUR) AS MONEY) AS SumWinlossRBEUR
 	, CAST(SUM(WinlossRBUSD) AS MONEY) AS SumWinlossRBUSD
+	, CAST(SUM(WinlossRBGBP) AS MONEY) AS SumWinlossRBGBP
 	, SUM(CommBA) AS SumCommBA
 	, CAST(SUM(CommBAEUR) AS MONEY) AS SumCommBAEUR
 	, CAST(SUM(CommBAUSD) AS MONEY) AS SumCommBAUSD
+	, CAST(SUM(CommBAGBP) AS MONEY) AS SumCommBAGBP
 	, SUM(commRB) AS SumcommRB
 	, CAST(SUM(commRBEUR) AS MONEY) AS SumcommRBEUR
 	, CAST(SUM(commRBUSD) AS MONEY) AS SumcommRBUSD
+	, CAST(SUM(commRBGBP) AS MONEY) AS SumcommRBGBP
 	, SUM(PlayerComm) AS SumPlayerComm
 	, CAST(SUM(PlayerCommEUR) AS MONEY) AS SumPlayerCommEUR
 	, CAST(SUM(PlayerCommUSD) AS MONEY) AS SumPlayerCommUSD
+	, CAST(SUM(PlayerCommGBP) AS MONEY) AS SumPlayerCommGBP
 	, SUM(AmtDuetoBA) AS SumAmtDuetoBA
 	, CAST(SUM(AmtDuetoBAEUR) AS MONEY) AS SumAmtDuetoBAEUR
 	, CAST(SUM(AmtDuetoBAUSD) AS MONEY) AS SumAmtDuetoBAUSD
+	, CAST(SUM(AmtDuetoBAGBP) AS MONEY) AS SumAmtDuetoBAGBP
 	, SUM(AmtDuetoRB) AS SumAmtDuetoRB
 	, CAST(SUM(AmtDuetoRBEUR) AS MONEY) AS SumAmtDuetoRBEUR
 	, CAST(SUM(AmtDuetoRBUSD) AS MONEY) AS SumAmtDuetoRBUSD
+	, CAST(SUM(AmtDuetoRBGBP) AS MONEY) AS SumAmtDuetoRBGBP
 	, ISNULL(@TotalRows, 0) AS TotalRows
 FROM #AgWinLoss b
 

@@ -1,4 +1,5 @@
-﻿ALTER PROC [dbo].[Lrf_CustomerUpdMemberBAComm]
+﻿ 
+CREATE PROC [dbo].[Lrf_CustomerUpdMemberBAComm]
 	@LicenseeID INT,
 	@CustID INT,--member
 	@ModifyBy INT,
@@ -6,6 +7,7 @@
 	@Langkey VARCHAR(10) = 'en-US',
 	@IP VARCHAR(40),
 	@IsAdmin BIT = 0,
+	@OddsGroup VARCHAR(3) OUTPUT,
 	@ErrCode INT = 0 OUTPUT,
 	@ErrMsg nvarchar(4000) = '' OUTPUT
 AS
@@ -27,7 +29,8 @@ Revisions:
 	- 20120418@Dom:replace table custsetting to dep_custsetting
     - 20130123@Daniel: Change link server alias & failover writelog to DBTXN
 	- 20130413@Jim: support multi language 
-
+	- 20150121@Jim: return more @OddsGroup param
+	
 Param's Explanation:
 
 */
@@ -206,6 +209,8 @@ UPDATE customer WITH(ROWLOCK, UPDLOCK)
 SET ugroup = @ugroup 
 WHERE custid = @custid
 
+SELECT @OddsGroup = RIGHT(@ugroup,1)
+
 IF (@@ERROR <> 0)
 	BEGIN
 		SELECT @ErrMsg = @UserName + ': '+
@@ -285,9 +290,22 @@ BEGIN
 			@duration = @duration
     END CATCH				
 END
+
+
 GO
-GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMemberBAComm] TO [bodbAdminNet] AS [dbo]
+
+SET QUOTED_IDENTIFIER OFF 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMemberBAComm] TO [bodbLicenseeNet] AS [dbo]
+SET ANSI_NULLS ON 
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerUpdMemberBAComm] TO [vnteam] AS [dbo]
+
+
+GO 
+ GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMemberBAComm] TO [vnteam]
+GO 
+ GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerUpdMemberBAComm] TO [vnteam]
+GO 
+ GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMemberBAComm] TO [bodbLicenseeNet]
+GO 
+ GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMemberBAComm] TO [bodbAdminNet]
+GO 

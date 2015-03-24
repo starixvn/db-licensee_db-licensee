@@ -1,6 +1,6 @@
 ﻿USE [bodb02]
 GO
- 
+/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_WinlossByProduct_xpre]    Script Date: 01/31/2015 09:25:31 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -61,6 +61,7 @@ AS
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	- 20141229@Winnie: optimize performance 
 	- 20150106@Jim: add more UserName filter
+	- 20150123@Jim: support base on Currency GBP
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -833,7 +834,14 @@ SELECT
    CAST(SUM(LicenseeWL*e.EUR) 			AS MONEY)	AS LicenseeWLEUR,
    CAST(SUM(Comm * e.EUR) 				AS MONEY)	AS CommEUR,
    CAST(SUM(PlayerComm*e.EUR) 			AS MONEY)	AS PlayerCommEUR,
-   CAST(SUM(AmtDueto3rd*e.EUR) 			AS MONEY)	AS AmtDueto3rdEUR
+   CAST(SUM(AmtDueto3rd*e.EUR) 			AS MONEY)	AS AmtDueto3rdEUR,
+    --BaseGBP  
+   CAST(SUM(TurnOver*e.GBP)				AS MONEY)	AS TurnoverGBP,   
+   CAST(SUM(Winlost*e.GBP)				AS MONEY)	AS WinlostGBP,  
+   CAST(SUM(LicenseeWL*e.GBP) 			AS MONEY)	AS LicenseeWLGBP,
+   CAST(SUM(Comm * e.GBP) 				AS MONEY)	AS CommGBP,
+   CAST(SUM(PlayerComm*e.GBP) 			AS MONEY)	AS PlayerCommGBP,
+   CAST(SUM(AmtDueto3rd*e.GBP) 			AS MONEY)	AS AmtDueto3rdGBP
 FROM	
 	#SAgWinLoss w   
 	INNER JOIN #TempExchange e 
@@ -852,6 +860,7 @@ DROP TABLE #SAgWinLoss
 DROP TABLE #TempExchange
  
 END
+
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinlossByProduct] TO [bodbLicenseeNet]
