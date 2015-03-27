@@ -6,7 +6,9 @@ AS
 	 Creator: 20150204@Patrick
 	 Task: Generate data for Customer Active
 	 DB: DBLIC/bodb_LicenseeReport
-	 Revisions: 
+	 Revisions:
+		- 20150318@Patrick: Duplicate data for BA tickets
+
 	 Param's Explanation:
 */
 
