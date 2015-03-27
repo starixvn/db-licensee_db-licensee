@@ -6,7 +6,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
  
-ALTER  PROCEDURE [dbo].[LRF_Rpt_ThirdPartyWinloss_Mem] 
+CREATE  PROCEDURE [dbo].[LRF_Rpt_ThirdPartyWinloss_Mem] 
  @LicenseeID	INT,
  @ProductID	    INT,
  @CustID		INT, --- recommend
@@ -102,7 +102,7 @@ BEGIN
 		   ,SUM(c.BetCount) AS TotalTrans
 		   ,SUM(c.Winlost)  AS Winlost
 		   ,-SUM(c.Winlost) AS LicenseeWinlost
-	FROM  bodb_report.dbo.rptDepWinlost_ThirdParty c  WITH (NOLOCK)
+	FROM  [bodb_LicenseeReport].dbo.rptDepWinlost_ThirdParty c  WITH (NOLOCK)
 		INNER JOIN #tmpCust ag ON c.CustID = ag.CustID AND c.Currency = ag.Currency 	
 	WHERE c.ProductId=@ProductID AND c.Winlostdate BETWEEN @FromDate AND @ToDate 
 		 AND (@excludeTest=0 OR (@excludeTest=1 AND ag.Currency <> 20))		

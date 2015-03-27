@@ -16,7 +16,7 @@ AS
 /*  Created: Winnie
 	Date: 2015-03-16
     Task : GD Win Loss report 
-    DB: DBACC.bodb02  
+    DB: DBEXT.bodb02  
     Revisions:  		
 	Param's Explanation:  
 	  
@@ -79,7 +79,7 @@ BEGIN
 					, SUM(c.BetCount) AS TotalTrans
 					, SUM(c.Winlost)  AS Winlost
 					, -SUM(c.Winlost) AS LicenseeWinlost
-			FROM bodb_report.dbo.rptDepWinlost_ThirdParty c WITH (NOLOCK)
+			FROM [bodb_LicenseeReport].dbo.rptDepWinlost_ThirdParty c WITH (NOLOCK)
 				INNER JOIN #tmpCust ct ON c.Custid = ct.CustId AND c.Currency = ct.Currency
 			WHERE c.ProductId=@ProductID AND c.Winlostdate BETWEEN @FromDate AND @ToDate 
 			GROUP BY c.Winlostdate, ct.Currency

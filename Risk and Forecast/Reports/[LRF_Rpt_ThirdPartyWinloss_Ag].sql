@@ -94,7 +94,7 @@ BEGIN
 		   ,SUM(c.BetCount) AS TotalTrans
 		   ,SUM(c.Winlost)  AS Winlost
 		   ,-SUM(c.Winlost) AS LicenseeWinlost
-	FROM  bodb_report.dbo.rptDepWinlost_ThirdParty c  WITH (NOLOCK)
+	FROM  [bodb_LicenseeReport].dbo.rptDepWinlost_ThirdParty c  WITH (NOLOCK)
 		  INNER JOIN #tmpCust ag ON c.CustID = ag.CustID AND c.Currency = ag.Currency
 	WHERE c.ProductId=@ProductId AND c.Winlostdate BETWEEN @FromDate AND @ToDate 
 	GROUP BY ag.recommend
