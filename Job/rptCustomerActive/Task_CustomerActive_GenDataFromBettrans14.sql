@@ -9,6 +9,7 @@ AS
 	Task: Generate for rptCustomerActive from bettrans14
 	DB: DBLIC/bodb_LicenseeReport
 	Revisions: 
+		- 20150318@Patrick: Duplicate data for BA tickets
 	Param's Explanation:
 	
 */
