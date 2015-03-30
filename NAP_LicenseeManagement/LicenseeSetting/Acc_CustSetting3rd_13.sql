@@ -57,6 +57,7 @@ BEGIN
 				FROM Dep_CustSetting3rd cs 
 					INNER JOIN CustInfo c ON c.custid = cs.custid
 					INNER JOIN #tblCust tmp ON c.custid = tmp.custid
+				WHERE sporttype = @Sporttype AND bettype IN (31,32,41,42,51,52)
 
 			IF @rowcnt < 10000 BREAK
 
