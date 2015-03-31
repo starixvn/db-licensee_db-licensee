@@ -29,7 +29,7 @@ AS
 /*  Created: Winnie
 	Date: 2015-03-16
     Task : GD Win Loss report 
-    DB: DBEXT.bodb02  
+    DB: DBEXT.bodb02   
     Revisions:  		
 	Param's Explanation:  
 	  + @excludeTest: remove currency UUS
