@@ -1,7 +1,12 @@
 USE [bodb02]
 GO
+/****** Object:  StoredProcedure [dbo].[LRF_Rpt_ThirdPartyWinloss_Ag]    Script Date: 3/30/2015 5:19:59 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
  
-CREATE PROCEDURE [dbo].[LRF_Rpt_ThirdPartyWinloss_Ag] 
+ALTER PROCEDURE [dbo].[LRF_Rpt_ThirdPartyWinloss_Ag] 
  @LicenseeID	INT,
  @ProductID	    INT,
  @Currency		INT = 0,
@@ -24,7 +29,7 @@ AS
 /*  Created: Winnie
 	Date: 2015-03-16
     Task : GD Win Loss report 
-    DB: DBACC.bodb02  
+    DB: DBEXT.bodb02  
     Revisions:  		
 	Param's Explanation:  
 	  + @excludeTest: remove currency UUS
@@ -153,7 +158,3 @@ BEGIN
 	DROP TABLE #TempExchange 
 	
 END
-GO
-GRANT EXECUTE ON [dbo].[LRF_Rpt_ThirdPartyWinloss_Ag] TO [bodbLicenseeNet]  
-GO
-GRANT VIEW DEFINITION ON [dbo].[LRF_Rpt_ThirdPartyWinloss_Ag] TO [vnteam] 
