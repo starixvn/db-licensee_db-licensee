@@ -5,13 +5,13 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-CREATE PROCEDURE [dbo].[Task_DOT_VoidBridge_DailySummary]
+ALTER PROCEDURE [dbo].[Task_DOT_VoidBridge_DailySummary]
 	@winlostdate DATETIME
 AS
 /*   
 Created: 20140330@Winnie
 Task: Summary Void Bridge data and insert into rptDepWinlost_ThirdParty
-DB: DBPTCS/bodb_PlaytechCS
+DB: DBLIC/bodb_3rdproduct
 Original:
 Revisions:	
 Param's Explanation:
@@ -42,7 +42,7 @@ BEGIN TRY
 				0 AS DrawBetCount,	
 			ISNULL(COUNT([TransId]),0) AS Betcount			
 
-		FROM DBLIC.[bodb_3rdProduct].dbo.[BetTrans_VoidBridge] b WITH (ROWLOCK)
+		FROM [bodb_3rdProduct].dbo.[BetTrans_VoidBridge] b WITH (ROWLOCK)
 		WHERE Winlostdate = @winlostdate AND [Status] IN ('Win','Lose')
 		GROUP BY b.CustID, b.currency
 	
@@ -61,6 +61,6 @@ END TRY
 BEGIN CATCH
 	-- This SPs called from another SP in rptDepwinlost Summary process, failure of this SP should not affect to that process
 	--RAISERROR(15000,1,1,'Error occured in summarizing AG Casino data.')
-	PRINT 'Error occured in Gold Deluxe summary data process: ERR_CODE: '+ CAST(ERROR_NUMBER() AS VARCHAR(20)) + ', ERR_MSG: ' + ERROR_MESSAGE()
+	PRINT 'Error occured in Void Bridge summary data process: ERR_CODE: '+ CAST(ERROR_NUMBER() AS VARCHAR(20)) + ', ERR_MSG: ' + ERROR_MESSAGE()
 	RETURN
 END CATCH
