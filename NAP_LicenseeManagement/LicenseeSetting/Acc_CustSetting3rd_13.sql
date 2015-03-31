@@ -45,19 +45,47 @@ BEGIN
 
 			SELECT @rowcnt = @@rowcount
 
-			--Update Commission for HR
-			UPDATE cs WITH(UPDLOCK,ROWLOCK)
-			SET sdiscount = CASE WHEN roleid IN (1,4) THEN CASE WHEN sporttype = @Sporttype AND ((@Bettype = 31 AND bettype IN (31,32)) OR (@Bettype = 41 AND bettype IN (41,42)) OR (@Bettype = 51 AND bettype IN (51,52))) THEN @Discount ELSE sdiscount END
-							ELSE 0 END,
-				adiscount = CASE WHEN roleid IN (1,3) THEN CASE WHEN sporttype = @Sporttype AND ((@Bettype = 31 AND bettype IN (31,32)) OR (@Bettype = 41 AND bettype IN (41,42)) OR (@Bettype = 51 AND bettype IN (51,52))) THEN @Discount ELSE adiscount END
-							ELSE 0 END,
-				discount  = CASE WHEN roleid IN (1,2) THEN CASE WHEN sporttype = @Sporttype AND ((@Bettype = 31 AND bettype IN (31,32)) OR (@Bettype = 41 AND bettype IN (41,42)) OR (@Bettype = 51 AND bettype IN (51,52))) THEN @Discount ELSE discount END
-							ELSE 0 END,
-				playerdiscount = 0		 
-				FROM Dep_CustSetting3rd cs 
-					INNER JOIN CustInfo c ON c.custid = cs.custid
-					INNER JOIN #tblCust tmp ON c.custid = tmp.custid
-				WHERE sporttype = @Sporttype AND bettype IN (31,32,41,42,51,52)
+			IF @Bettype = 31
+			BEGIN
+				--Update Commission for HR
+				UPDATE cs WITH(UPDLOCK,ROWLOCK)
+				SET sdiscount = CASE WHEN roleid IN (1,4) THEN @Discount ELSE 0 END,
+					adiscount = CASE WHEN roleid IN (1,3) THEN @Discount ELSE 0 END,
+					discount  = CASE WHEN roleid IN (1,2) THEN @Discount ELSE 0 END,
+					playerdiscount = 0		 
+					FROM Dep_CustSetting3rd cs 
+						INNER JOIN CustInfo c ON c.custid = cs.custid
+						INNER JOIN #tblCust tmp ON c.custid = tmp.custid
+					WHERE sporttype = @Sporttype AND bettype IN (31,32)
+			END
+
+			IF @Bettype = 41
+			BEGIN
+				--Update Commission for HR
+				UPDATE cs WITH(UPDLOCK,ROWLOCK)
+				SET sdiscount = CASE WHEN roleid IN (1,4) THEN @Discount ELSE 0 END,
+					adiscount = CASE WHEN roleid IN (1,3) THEN @Discount ELSE 0 END,
+					discount  = CASE WHEN roleid IN (1,2) THEN @Discount ELSE 0 END,
+					playerdiscount = 0		 
+					FROM Dep_CustSetting3rd cs 
+						INNER JOIN CustInfo c ON c.custid = cs.custid
+						INNER JOIN #tblCust tmp ON c.custid = tmp.custid
+					WHERE sporttype = @Sporttype AND bettype IN (41,42)
+			END
+
+			IF @Bettype = 51
+			BEGIN
+				--Update Commission for HR
+				UPDATE cs WITH(UPDLOCK,ROWLOCK)
+				SET sdiscount = CASE WHEN roleid IN (1,4) THEN @Discount ELSE 0 END,
+					adiscount = CASE WHEN roleid IN (1,3) THEN @Discount ELSE 0 END,
+					discount  = CASE WHEN roleid IN (1,2) THEN @Discount ELSE 0 END,
+					playerdiscount = 0		 
+					FROM Dep_CustSetting3rd cs 
+						INNER JOIN CustInfo c ON c.custid = cs.custid
+						INNER JOIN #tblCust tmp ON c.custid = tmp.custid
+					WHERE sporttype = @Sporttype AND bettype IN (51,52)
+			END
 
 			IF @rowcnt < 10000 BREAK
 
