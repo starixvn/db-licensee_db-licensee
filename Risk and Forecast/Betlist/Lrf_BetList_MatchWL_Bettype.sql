@@ -68,7 +68,7 @@ Revisions:
    - 20141021@Florent: Apply for the change in Sporting Solution structure (#24478)
    - 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust    
    - 20150128@Winnie: Add base currency GBP
-   - 20150406@Winnie: Apply matrix of sporttype & bettype & Add 60 bettype betradar
+   - 20150406@Winnie: Apply matrix of sporttype & bettype & Add 60 bettype betradar 
 Param's Explanation: 
 	
 */

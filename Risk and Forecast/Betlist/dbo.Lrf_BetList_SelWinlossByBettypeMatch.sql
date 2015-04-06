@@ -64,7 +64,7 @@ Revisions:
    - 20140908@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
    - 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust   
    - 20150126@Winnie: Add base currency GBP
-   - 20150406@Winnie: Apply sporttype&bettype matrix & add 60 bettypes betradar
+   - 20150406@Winnie: Apply sporttype&bettype matrix & add 60 bettypes betradar 
 Param's Explanation: 
 	
 */

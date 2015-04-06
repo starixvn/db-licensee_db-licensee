@@ -53,7 +53,7 @@ Revisions:
 - 20130514@Jim: Restrict permission of Licensee Users by currency
 - 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
 - 20150128@Winnie: Add base currency GBP 
-- 20150406@Winnie: Apply spottype bettype matrix & add 60 bettype betradar 
+- 20150406@Winnie: Apply spottype bettype matrix & add 60 bettype betradar  
 Example:
 
 declare @p12 int
