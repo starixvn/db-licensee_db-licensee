@@ -86,7 +86,7 @@ Revisions:
    - 20140908@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
    - 20141128@Jim: add more input param @CurrencyID   
    - 20150128@Winnie: Add base currency GBP
-   - 20150406@Winnie: Apply sporttype, bettype matrix and add 60 bettypes betradar
+   - 20150406@Winnie: Apply sporttype, bettype matrix and add 60 bettypes betradar 
    */
 
 SET NOCOUNT ON
