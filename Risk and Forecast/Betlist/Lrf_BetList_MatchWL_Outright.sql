@@ -1,9 +1,7 @@
-﻿set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
-
-
-ALTER PROCEDURE [dbo].[Lrf_BetList_MatchWL_Outright_xpre]
+﻿
+USE bodb02
+GO
+ALTER PROCEDURE [dbo].[Lrf_BetList_MatchWL_Outright]
 	@LicenseeID INT ,
 	@UserID	 INT,
     @LicenseeType VARCHAR(100) = NULL ,
@@ -54,7 +52,8 @@ Revisions:
 - 20121004@Jim: replace @currencyname input param by @currencyID
 - 20130514@Jim: Restrict permission of Licensee Users by currency
 - 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
-- 20150128@Winnie: Add base currency GBP  
+- 20150128@Winnie: Add base currency GBP 
+- 20150406@Winnie: Apply spottype bettype matrix & add 60 bettype betradar  
 Example:
 
 declare @p12 int
@@ -107,6 +106,11 @@ SELECT DISTINCT CustID
                 WHERE    [Description] = COALESCE(@LicenseeType,  
                                                      [Description])
 
+----Get Sport Bettype Matrix------
+DECLARE @SportBettype TABLE(ProductID INT,Bettype INT,EventType INT)
+INSERT INTO @SportBettype
+EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4,@ProductID=1
+
 
 CREATE TABLE #AgWinlossOutright
 (
@@ -141,6 +145,7 @@ CREATE TABLE #AgWinlossOutright
 	winlostdate DATETIME,
 	currency SMALLINT,
 	isBA INT
+	,betcheck NVARCHAR(50)
 )
 
 
@@ -180,11 +185,13 @@ BEGIN
 			CONVERT(BIT,0) AS IsNeutral,
 			b.winlostdate,
 			b.currency ,
-			1 AS isBA
+			1 AS isBA,
+			b.betcheck
 		FROM
 			bettrans b WITH (NOLOCK) 
 			INNER JOIN outright m WITH (NOLOCK) ON b.matchid=m.orid	
 			INNER JOIN League l WITH (NOLOCK) ON m.leagueID=l.leagueID	
+			INNER JOIN @SportBettype sbt ON sbt.Bettype=b.bettype
 			--INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid	
 			--INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid	   	 	
 		WHERE
@@ -192,7 +199,8 @@ BEGIN
 			 ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
 			b.Winlostdate>=@FromDate AND
 			b.Winlostdate<=@ToDate AND
-			b.Bettype=10 AND
+			--b.Bettype=10 AND
+			sbt.ProductID=1 AND sbt.EventType=2 AND
 			b.Ruben=1 AND
 			b.tpositiontaking=0 AND
 			(@ExcludeReject = 0 OR (@ExcludeReject=1 AND b.statusID NOT IN (101, 102, 103)))
@@ -235,18 +243,21 @@ BEGIN
 			CONVERT(BIT,0) AS IsNeutral,
 			b.winlostdate,
 			b.currency ,
-			0 AS isBA
+			0 AS isBA,
+			b.betcheck
 		FROM
 			bettrans b WITH (NOLOCK) 
 			INNER JOIN outright m WITH (NOLOCK) ON b.matchid=m.orid	
 			INNER JOIN League l WITH (NOLOCK) ON m.leagueID=l.leagueID	
+			INNER JOIN @SportBettype sbt ON sbt.Bettype=b.bettype
 			--INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid	   	 				
 		WHERE
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
 			 ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
 			b.Winlostdate>=@FromDate AND
 			b.Winlostdate<=@ToDate AND
-			b.Bettype=10 AND
+			--b.Bettype=10 AND
+			sbt.ProductID=1 AND sbt.EventType=2 AND
 			b.Ruben=1 AND
 			b.tpositiontaking<>0 AND
 			(@ExcludeReject = 0 OR (@ExcludeReject=1 AND b.statusID NOT IN (101, 102, 103))) 
@@ -295,11 +306,13 @@ BEGIN
 			CONVERT(BIT,0) AS IsNeutral,
 			b.winlostdate,
 			b.currency ,
-			1 AS isBA
+			1 AS isBA,
+			b.betcheck
 		FROM
 			bettrans14 b WITH (NOLOCK) 
 			INNER JOIN outright14 m WITH (NOLOCK) ON b.matchid=m.orid	
 			INNER JOIN League l WITH (NOLOCK) ON m.leagueID=l.leagueID	
+			INNER JOIN @SportBettype sbt ON sbt.Bettype=b.bettype
 			--INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
 			--INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid	   	 		
 		WHERE
@@ -307,7 +320,8 @@ BEGIN
 			 ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
 			b.Winlostdate>=@FromDate AND
 			b.Winlostdate<=@ToDate AND
-			b.Bettype=10 AND
+			--b.Bettype=10 AND
+			sbt.ProductID=1 AND sbt.EventType=2 AND
 			b.Ruben=1 AND
 			b.tpositiontaking=0 AND
 			(@ExcludeReject = 0 OR (@ExcludeReject=1 AND b.statusID NOT IN (101, 102, 103))) 
@@ -348,11 +362,13 @@ BEGIN
 			CONVERT(BIT,0) AS IsNeutral,
 			b.winlostdate,
 			b.currency ,
-			0 AS isBA
+			0 AS isBA,
+			b.betcheck
 		FROM
 			bettrans14 b WITH (NOLOCK) 
 			INNER JOIN outright14 m WITH (NOLOCK) ON b.matchid=m.orid	
 			INNER JOIN League l WITH (NOLOCK) ON m.leagueID=l.leagueID	
+			INNER JOIN @SportBettype sbt ON sbt.Bettype=b.bettype
 			--LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) on b.transid = BA.transid
 			--INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid	   	 				
 		WHERE
@@ -360,7 +376,8 @@ BEGIN
 			 ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
 			b.Winlostdate>=@FromDate AND
 			b.Winlostdate<=@ToDate AND
-			b.Bettype=10 AND
+			--b.Bettype=10 AND
+			sbt.ProductID=1 AND sbt.EventType=2 AND
 			b.Ruben=1 AND
 			b.tpositiontaking<>0 AND
 			(@ExcludeReject = 0 OR (@ExcludeReject=1 AND b.statusID NOT IN (101, 102, 103))) 
@@ -394,12 +411,12 @@ SELECT
 	@SumWinlostEUR=SUM(ISNULL(winlost*e.EUR,0)),
 	@SumLicenseeWLEUR=SUM(ISNULL(LicenseeWL*e.EUR,0)),
 	@SumCommEUR=SUM(ISNULL(comm*e.EUR,0)),
-	@SumPlayerCommEUR=SUM(ISNULL(playercomm*e.EUR,0)),	
+	@SumPlayerCommEUR=SUM(ISNULL(playercomm*e.EUR,0)),
 	--GBP
 	@SumWinlostGBP=SUM(ISNULL(winlost*e.GBP,0)),
 	@SumLicenseeWLGBP=SUM(ISNULL(LicenseeWL*e.GBP,0)),
 	@SumCommGBP=SUM(ISNULL(comm*e.GBP,0)),
-	@SumPlayerCommGBP=SUM(ISNULL(playercomm*e.GBP,0))	
+	@SumPlayerCommGBP=SUM(ISNULL(playercomm*e.GBP,0))		
 	
 FROM #AgWinlossOutright b
 	INNER JOIN  #TempExchange e
@@ -428,7 +445,6 @@ FROM
 			LicenseeWL*e.EUR LicenseeWLEUR,
 			comm*e.EUR commEUR,
 			playercomm*e.EUR PlayerCommEUR,
-
 			--GBP
 			stake*e.GBP stakeGBP,
 			winlost*e.GBP winlostGBP,
@@ -446,7 +462,6 @@ FROM
 DROP TABLE #AgWinlossOutright
 DROP TABLE #TempExchange 
 DROP TABLE #currency
-
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_MatchWL_Outright] TO [bodbLicenseeNet]
 GO

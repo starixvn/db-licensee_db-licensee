@@ -2,8 +2,7 @@
 set QUOTED_IDENTIFIER ON
 go
 
-
-ALTER PROCEDURE [dbo].[Lrf_BetList_MatchWL_Bettype]
+ALTER PROCEDURE [dbo].[Lrf_BetList_MatchWL_Bettype_xtest]
 	@MatchID INT,
 	@LicenseeID INT,
 	@UserID	 INT,
@@ -63,12 +62,13 @@ Revisions:
    - 20121207@Henry: fix bug 1 match got 2 different winlostdate by add param @Date
    - 20130417@Jim: support base currency USD	
    - 20130514@Jim: Restrict permission of Licensee Users by currency
-   - 20130904@Jim: support Virtual Horse Racing
+   - 20130904@Jim: support Virtual Horse Racing 
    - 20140630@Hannah: offer BetRadar and Sporting Solution 
    - 20140908@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
-   - 20141021@Florent: Apply for the change in Sporting Solution structure (#24478)   
-   - 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
-   - 20150128@Winnie: Add base currency GBP 
+   - 20141021@Florent: Apply for the change in Sporting Solution structure (#24478)
+   - 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust    
+   - 20150128@Winnie: Add base currency GBP
+   - 20150406@Winnie: Apply matrix of sporttype & bettype & Add 60 bettype betradar 
 Param's Explanation: 
 	
 */
@@ -96,9 +96,13 @@ SELECT  DISTINCT CustID
 DECLARE @Fromdate DATETIME
 DECLARE @Todate  DATETIME
 
-DECLARE @TempBettype AS TABLE (bettype INT PRIMARY KEY)
+--DECLARE @TempBettype AS TABLE (bettype INT PRIMARY KEY)
 
 SELECT @bettype = isnull(@bettype,0)
+----Get Sport Bettype Matrix------
+DECLARE @SportBettype TABLE(ProductID INT,Bettype INT,EventType INT)
+INSERT INTO @SportBettype
+EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4
 
 CREATE TABLE #Data 
 (
@@ -134,28 +138,29 @@ CREATE TABLE #Data
 	currency SMALLINT,
 	RefNO			BIGINT,	
 	showtime NVARCHAR(50) -- table - shoe - hand of Live Casino
+	,betcheck NVARCHAR(50)
 )
 
-IF @ShowNG = 1
-BEGIN
-	INSERT INTO @TempBettype(bettype)
-	SELECT typeid FROM bettype (NOLOCK)
-	WHERE (typeid BETWEEN 81 AND 120)
-END 
+--IF @ShowNG = 1
+--BEGIN
+--	INSERT INTO @TempBettype(bettype)
+--	SELECT typeid FROM bettype (NOLOCK)
+--	WHERE (typeid BETWEEN 81 AND 120)
+--END 
 
-IF @ShowLC = 1
-BEGIN
-    INSERT INTO @TempBettype(bettype)
-	SELECT typeid FROM bettype (NOLOCK)
-	WHERE (typeid BETWEEN 1101 AND 1199)
-END
+--IF @ShowLC = 1
+--BEGIN
+--    INSERT INTO @TempBettype(bettype)
+--	SELECT typeid FROM bettype (NOLOCK)
+--	WHERE (typeid BETWEEN 1101 AND 1199)
+--END
 
-IF @ShowVS = 1
-BEGIN
-	INSERT INTO @TempBettype(bettype)
-	SELECT typeid FROM bettype (NOLOCK)
-	WHERE (typeid BETWEEN 1201 AND 1299)
-END 
+--IF @ShowVS = 1
+--BEGIN
+--	INSERT INTO @TempBettype(bettype)
+--	SELECT typeid FROM bettype (NOLOCK)
+--	WHERE (typeid BETWEEN 1201 AND 1299)
+--END 
 
 
 IF EXISTS(SELECT TOP 1 1 FROM Match WITH(NOLOCK) WHERE MatchID=@MatchID
@@ -200,9 +205,11 @@ BEGIN
 			b.currency,
 			b.refno,
 			'' AS ShowTime 
+			,b.betcheck AS betcheck
 		FROM
 			bettrans b WITH (NOLOCK) 
 			INNER JOIN match m WITH (NOLOCK) ON b.matchid=m.matchid
+			INNER JOIN @SportBettype sbt ON b.bettype=sbt.Bettype
 			LEFT JOIN dbo.LRF_view_bettype_SS ss ON b.bettype = ss.bettypeID
 		WHERE
 			b.matchid=@matchid AND
@@ -211,7 +218,8 @@ BEGIN
 			((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
 			b.statusID IN (111,112,113) AND
 			b.tpositiontaking=0 AND
-			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 AND 1399)) AND
+			--(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 AND 1399)) AND
+			sbt.ProductID=1 AND
 			((@Liveindicator=-1) OR (@Liveindicator=0 AND b.Liveindicator = 0) OR (@Liveindicator=1 AND b.Liveindicator = 1))	AND
 			(@_Date IS NULL OR (@_Date IS NOT NULL AND b.winlostdate=@_Date))
 		ORDER BY
@@ -254,15 +262,18 @@ BEGIN
 			b.currency,
 			b.refno,
 			'' AS ShowTime 
+			,b.betcheck AS betcheck
 		FROM
 			bettrans b WITH (NOLOCK) 
 			INNER JOIN match m WITH (NOLOCK) ON b.matchid=m.matchid
+			INNER JOIN @SportBettype sbt ON b.bettype=sbt.Bettype
 			LEFT JOIN dbo.LRF_view_bettype_SS ss ON b.bettype = ss.bettypeID
 		WHERE
 			b.matchid=@matchid AND
 			--(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
 			(@bettype=0 OR (@bettype<>0 AND CASE WHEN ISNULL(ss.bettypeid,0) = 0 THEN b.bettype ELSE ss.typeid END = @bettype)) AND
-			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 AND 1399)) AND
+			--(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 AND 1399)) AND
+			sbt.ProductID=1 AND
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
 			 ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
 			b.statusID IN (111,112,113) AND
@@ -273,7 +284,8 @@ BEGIN
 			b.status, b.transid
 	END
 
-	IF (@ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1)
+	--IF (@ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1)
+	IF (@ShowNG = 1)
 	BEGIN
 		INSERT INTO #Data	
 		SELECT
@@ -308,15 +320,18 @@ BEGIN
 			b.betid,
 			b.currency,
 			b.refno,
-			CASE WHEN b.bettype BETWEEN 1101 AND 1199 THEN ISNULL(m.showtime,'') ELSE '' END AS ShowTime 
+			''  AS ShowTime 
+			,NULL AS betcheck
 		FROM
 			bettrans b WITH (NOLOCK) 
 			INNER JOIN match m WITH (NOLOCK) ON b.matchid=m.matchid
-			INNER JOIN @TempBettype bt ON b.bettype = bt.bettype
+			--INNER JOIN @TempBettype bt ON b.bettype = bt.bettype
+			INNER JOIN @SportBettype sbt ON b.bettype=sbt.Bettype
 		WHERE
 			b.matchid=@matchid AND
 			(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
-			b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
+			sbt.ProductID=3 AND
+			--b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
 			  ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
 			b.statusID IN (111,112,113) AND
@@ -324,7 +339,119 @@ BEGIN
 			(@_Date IS NULL OR (@_Date IS NOT NULL AND b.winlostdate=@_Date))
 		ORDER BY
 			b.status, b.transid
-		IF EXISTS (SELECT 1 FROM @TempBettype WHERE bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()))	
+		END
+	IF (@ShowLC = 1)
+	BEGIN
+		INSERT INTO #Data	
+		SELECT
+			m.sporttype,
+			b.username,
+			b.custid,
+			b.bettype,
+			m.leagueID,			
+			b.transid,
+			m.matchcode,
+			m.homeID,
+			m.awayID,
+			CONVERT(FLOAT, b.hdp1) AS hdp1, 
+			CONVERT(FLOAT, b.hdp2) AS hdp2, 
+			b.odds,
+			b.status,
+			b.stake,
+			(b.winlost-actual_stake) winlost,
+			- (b.winlost-b.actual_stake) AS LicenseeWL ,
+			b.comm,
+			b.playercomm AS PlayerComm,
+			b.transdate,
+			b.winlostdate,
+			b.betteam,
+			b.liveindicator,
+			b.livehomescore,
+			b.liveawayscore,
+			b.matchid, 
+			m.betstatus,
+			ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral,
+			b.OddsType,
+			b.betid,
+			b.currency,
+			b.refno,
+			ISNULL(m.showtime,'') AS ShowTime 
+			,NULL AS betcheck
+		FROM
+			bettrans b WITH (NOLOCK) 
+			INNER JOIN match m WITH (NOLOCK) ON b.matchid=m.matchid
+			--INNER JOIN @TempBettype bt ON b.bettype = bt.bettype
+			INNER JOIN @SportBettype sbt ON b.bettype=sbt.Bettype
+		WHERE
+			b.matchid=@matchid AND
+			(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
+			sbt.ProductID=4 AND
+			--b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
+			b.recommend IN (SELECT custid FROM @TempAg)	AND
+			  ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
+			b.statusID IN (111,112,113) AND
+			((@Liveindicator=-1) OR (@Liveindicator=0 AND b.Liveindicator = 0) OR (@Liveindicator=1 AND b.Liveindicator = 1)) AND
+			(@_Date IS NULL OR (@_Date IS NOT NULL AND b.winlostdate=@_Date))
+		ORDER BY
+			b.status, b.transid
+		END
+	IF (@ShowVS = 1)
+	BEGIN
+		INSERT INTO #Data	
+		SELECT
+			m.sporttype,
+			b.username,
+			b.custid,
+			b.bettype,
+			m.leagueID,			
+			b.transid,
+			m.matchcode,
+			m.homeID,
+			m.awayID,
+			CONVERT(FLOAT, b.hdp1) AS hdp1, 
+			CONVERT(FLOAT, b.hdp2) AS hdp2, 
+			b.odds,
+			b.status,
+			b.stake,
+			(b.winlost-actual_stake) winlost,
+			- (b.winlost-b.actual_stake) AS LicenseeWL ,
+			b.comm,
+			b.playercomm AS PlayerComm,
+			b.transdate,
+			b.winlostdate,
+			b.betteam,
+			b.liveindicator,
+			b.livehomescore,
+			b.liveawayscore,
+			b.matchid, 
+			m.betstatus,
+			ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral,
+			b.OddsType,
+			b.betid,
+			b.currency,
+			b.refno,
+			''  AS ShowTime 
+			,NULL AS betcheck
+		FROM
+			bettrans b WITH (NOLOCK) 
+			INNER JOIN match m WITH (NOLOCK) ON b.matchid=m.matchid
+			--INNER JOIN @TempBettype bt ON b.bettype = bt.bettype
+			INNER JOIN @SportBettype sbt ON b.bettype=sbt.Bettype
+		WHERE
+			b.matchid=@matchid AND
+			(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
+			sbt.ProductID=5 AND sbt.EventType=1 AND
+			--b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
+			b.recommend IN (SELECT custid FROM @TempAg)	AND
+			  ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
+			b.statusID IN (111,112,113) AND
+			((@Liveindicator=-1) OR (@Liveindicator=0 AND b.Liveindicator = 0) OR (@Liveindicator=1 AND b.Liveindicator = 1)) AND
+			(@_Date IS NULL OR (@_Date IS NOT NULL AND b.winlostdate=@_Date))
+		ORDER BY
+			b.status, b.transid
+		
+		--IF EXISTS (SELECT 1 FROM @TempBettype WHERE bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()))	
+		IF EXISTS (SELECT 1 FROM @SportBettype WHERE ProductID=5 AND EventType=3)
 			BEGIN 
 				INSERT INTO #Data	
 				SELECT
@@ -360,15 +487,18 @@ BEGIN
 					b.currency,
 					b.refno,
 					CONVERT(VARCHAR(20),r.EventTime) AS ShowTime 
+					,NULL AS betcheck
 				FROM
 					bettrans b WITH (NOLOCK) 
 					INNER JOIN VSOutright o with (nolock) ON b.oddsid=o.Orid
 					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
-					INNER JOIN @TempBettype bt ON b.bettype = bt.bettype
+					INNER JOIN @SportBettype sbt ON b.bettype=sbt.Bettype
+					--INNER JOIN @TempBettype bt ON b.bettype = bt.bettype
 				WHERE
 					o.EventID=@matchid
 					AND
 					(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
+					sbt.[ProductID]=5 AND sbt.EventType=3 AND
 					b.recommend IN (SELECT custid FROM @TempAg)	AND
 					  ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
 					b.statusID IN (111,112,113) AND
@@ -419,10 +549,12 @@ BEGIN
 			b.currency,
 			b.refno,
 			'' AS ShowTime 
+			,b.betcheck AS betcheck
 		FROM
 			bettrans14 b WITH (NOLOCK) 
 			--INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid 
 			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid 	
+			INNER JOIN @SportBettype sbt ON b.bettype=sbt.Bettype
 			LEFT JOIN dbo.LRF_view_bettype_SS ss ON b.bettype = ss.bettypeID			
 		WHERE
 			b.matchid=@matchid AND
@@ -431,7 +563,8 @@ BEGIN
 			b.recommend IN (SELECT custid FROM @TempAg) AND
 			  ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
 			b.statusID IN (111,112,113) AND
-			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 AND 1399)) AND
+			--(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 AND 1399)) AND
+			sbt.ProductID=1 AND
 			b.tpositiontaking=0 AND
 			(@_Date IS NULL OR (@_Date IS NOT NULL AND b.winlostdate=@_Date)) AND
 			1= CASE @Liveindicator 
@@ -480,16 +613,19 @@ BEGIN
 			b.betid,
 			b.currency,
 			b.refno,
-			CASE WHEN b.bettype BETWEEN 1101 AND 1199 THEN ISNULL(m.showtime,'') ELSE '' END AS ShowTime 
+			 ''  AS ShowTime 
+			 ,b.betcheck AS betcheck
 		FROM
 			bettrans14 b WITH (NOLOCK) 
-			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid 	
+			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid 
+			INNER JOIN @SportBettype sbt ON b.bettype=sbt.Bettype	
 			LEFT JOIN dbo.LRF_view_bettype_SS ss ON b.bettype = ss.bettypeID	
 		WHERE
 			b.matchid=@matchid AND
 			--(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
 			(@bettype=0 OR (@bettype<>0 AND CASE WHEN ISNULL(ss.bettypeid,0) = 0 THEN b.bettype ELSE ss.typeid END = @bettype)) AND
-			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 AND 1399)) AND
+			--(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 AND 1399)) AND
+			sbt.ProductID=1 AND
 			b.recommend IN (SELECT custid FROM @TempAg) AND
 			 ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
 			b.tpositiontaking <>0 AND
@@ -500,7 +636,8 @@ BEGIN
 			b.status, b.transid
 	END
 
-	IF (@ShowNG=1 OR @ShowLC=1 OR @ShowVS=1)
+	--IF (@ShowNG=1 OR @ShowLC=1 OR @ShowVS=1)
+	IF (@ShowNG=1 )
 	BEGIN
 		INSERT INTO #Data	
 		SELECT
@@ -535,15 +672,18 @@ BEGIN
 			b.betid,
 			b.currency,
 			b.refno,
-			CASE WHEN b.bettype BETWEEN 1101 AND 1199 THEN ISNULL(m.showtime,'') ELSE '' END AS ShowTime 
+			 ''  AS ShowTime
+			 ,NULL AS betcheck 
 		FROM
 			bettrans14 b WITH (NOLOCK) 
 			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid 		
-			INNER JOIN @TempBettype bt ON b.bettype = bt.bettype
+			--INNER JOIN @TempBettype bt ON b.bettype = bt.bettype
+			INNER JOIN @SportBettype sbt ON b.bettype=sbt.Bettype	
 		WHERE
 			b.matchid=@matchid AND
 			(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
-			b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
+			--b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
+			sbt.ProductID=3 AND
 			b.recommend IN (SELECT custid FROM @TempAg) AND			 
 			  ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
 			b.statusID IN (111,112,113) AND
@@ -551,7 +691,118 @@ BEGIN
 			(@_Date IS NULL OR (@_Date IS NOT NULL AND b.winlostdate=@_Date))
 		ORDER BY
 			b.status, b.transid
-		IF EXISTS (SELECT 1 FROM @TempBettype WHERE bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()))	
+		END
+	IF (@ShowLC=1 )
+	BEGIN
+		INSERT INTO #Data	
+		SELECT
+			m.sporttype,
+			b.username,
+			b.custid,
+			b.bettype,
+			m.leagueID,			
+			b.transid,
+			m.matchcode,
+			m.homeID,
+			m.awayID,
+			CONVERT(FLOAT, b.hdp1) AS hdp1, 
+			CONVERT(FLOAT, b.hdp2) AS hdp2, 
+			b.odds,
+			b.status,
+			b.stake,
+			(b.winlost-actual_stake) winlost,
+			- (b.winlost-b.actual_stake) AS LicenseeWL ,
+			b.comm,
+			b.playercomm AS PlayerComm,
+			b.transdate,
+			b.winlostdate,
+			b.betteam,
+			b.liveindicator,
+			b.livehomescore,
+			b.liveawayscore,
+			b.matchid, 
+			m.betstatus,
+			ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral,
+			b.OddsType,
+			b.betid,
+			b.currency,
+			b.refno,
+			 ISNULL(m.showtime,'')  AS ShowTime 
+			 ,NULL AS betcheck
+		FROM
+			bettrans14 b WITH (NOLOCK) 
+			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid 		
+			--INNER JOIN @TempBettype bt ON b.bettype = bt.bettype
+			INNER JOIN @SportBettype sbt ON b.bettype=sbt.Bettype	
+		WHERE
+			b.matchid=@matchid AND
+			(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
+			--b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
+			sbt.ProductID=4 AND
+			b.recommend IN (SELECT custid FROM @TempAg) AND			 
+			  ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
+			b.statusID IN (111,112,113) AND
+			((@Liveindicator=-1) OR (@Liveindicator=0 AND b.Liveindicator = 0) OR (@Liveindicator=1 AND b.Liveindicator = 1)) AND
+			(@_Date IS NULL OR (@_Date IS NOT NULL AND b.winlostdate=@_Date))
+		ORDER BY
+			b.status, b.transid
+		END
+	IF (@ShowVS=1 )
+	BEGIN
+		INSERT INTO #Data	
+		SELECT
+			m.sporttype,
+			b.username,
+			b.custid,
+			b.bettype,
+			m.leagueID,			
+			b.transid,
+			m.matchcode,
+			m.homeID,
+			m.awayID,
+			CONVERT(FLOAT, b.hdp1) AS hdp1, 
+			CONVERT(FLOAT, b.hdp2) AS hdp2, 
+			b.odds,
+			b.status,
+			b.stake,
+			(b.winlost-actual_stake) winlost,
+			- (b.winlost-b.actual_stake) AS LicenseeWL ,
+			b.comm,
+			b.playercomm AS PlayerComm,
+			b.transdate,
+			b.winlostdate,
+			b.betteam,
+			b.liveindicator,
+			b.livehomescore,
+			b.liveawayscore,
+			b.matchid, 
+			m.betstatus,
+			ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral,
+			b.OddsType,
+			b.betid,
+			b.currency,
+			b.refno,
+			''  AS ShowTime 
+			,NULL AS betcheck
+		FROM
+			bettrans14 b WITH (NOLOCK) 
+			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid 		
+			--INNER JOIN @TempBettype bt ON b.bettype = bt.bettype
+			INNER JOIN @SportBettype sbt ON b.bettype=sbt.Bettype	
+		WHERE
+			b.matchid=@matchid AND
+			(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
+			--b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
+			sbt.ProductID=5 AND sbt.EventType=1 AND
+			b.recommend IN (SELECT custid FROM @TempAg) AND			 
+			  ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
+			b.statusID IN (111,112,113) AND
+			((@Liveindicator=-1) OR (@Liveindicator=0 AND b.Liveindicator = 0) OR (@Liveindicator=1 AND b.Liveindicator = 1)) AND
+			(@_Date IS NULL OR (@_Date IS NOT NULL AND b.winlostdate=@_Date))
+		ORDER BY
+			b.status, b.transid
+		
+		IF EXISTS (SELECT 1 FROM @SportBettype WHERE ProductID=5 AND EventType=3)	
 			BEGIN 
 				INSERT INTO #Data	
 				SELECT
@@ -587,15 +838,18 @@ BEGIN
 					b.currency,
 					b.refno,
 					CONVERT(VARCHAR(20),r.EventTime) AS ShowTime 
+					,NULL AS betcheck
 				FROM
 					bettrans14 b WITH (NOLOCK) 
 					INNER JOIN VSOutright14 o with (nolock) ON b.oddsid=o.Orid
 					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
-					INNER JOIN @TempBettype bt ON b.bettype = bt.bettype
+					--INNER JOIN @TempBettype bt ON b.bettype = bt.bettype
+					INNER JOIN @SportBettype sbt ON b.bettype=sbt.Bettype	
 				WHERE
 					o.EventID=@matchid
 					AND
 					(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
+					sbt.ProductID=5 AND sbt.EventType=3 AND
 					b.recommend IN (SELECT custid FROM @TempAg)	AND
 					  ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
 					b.statusID IN (111,112,113) AND
@@ -689,7 +943,7 @@ DECLARE @BettransDetail TABLE(
 	Betteam nvarchar (10),
 	stakeEUR MONEY,
 	stakeUSD MONEY,
-	stakeGBP MONEY		
+	stakeGBP MONEY
 	 )   
 
 IF @ShowLC=1
@@ -711,7 +965,8 @@ BEGIN
 		FROM bettransg BG WITH (NOLOCK)
 		INNER JOIN #Data B ON BG.refno = B.refno and BG.custid = B.custid
 		INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
-		WHERE B.Bettype BETWEEN 1101 AND 1199
+		INNER JOIN @SportBettype sbt ON bg.bettype=sbt.Bettype	
+		WHERE sbt.ProductID=4--B.Bettype BETWEEN 1101 AND 1199
 	END
 		
 	IF EXISTS(SELECT TOP 1 1 FROM Match14 WITH(NOLOCK) WHERE MatchID=@MatchID)
@@ -726,12 +981,13 @@ BEGIN
 			BG.bettype  ,
 			BG.Betteam ,
 			BG.stake*e.EUR,
-			BG.stake*e.USD,
-			BG.stake*e.GBP	
+			BG.stake*e.USD,	
+			BG.stake*e.GBP
 		FROM bettransg14 BG WITH (NOLOCK)
 		INNER JOIN #Data B ON BG.refno = B.refno and BG.custid = B.custid
 		INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
-		WHERE B.Bettype BETWEEN 1101 AND 1199
+		INNER JOIN @SportBettype sbt ON bg.bettype=sbt.Bettype	
+		WHERE sbt.ProductID=4 --B.Bettype BETWEEN 1101 AND 1199
 	END	
 END
 IF @ShowVS=1
@@ -753,7 +1009,8 @@ IF @ShowVS=1
 			FROM bettransm BG WITH (NOLOCK)
 			INNER JOIN #Data B ON BG.refno = B.refno and BG.custid = B.custid
 			INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
-			WHERE B.Bettype=1233
+			INNER JOIN @SportBettype sbt ON bg.bettype=sbt.Bettype	
+			WHERE sbt.ProductID=5 AND sbt.EventType=3 --B.Bettype=1233
 		END
 		IF EXISTS(SELECT TOP 1 1 FROM Vsoutright14 WITH(NOLOCK) WHERE EventID=@MatchID)
 		BEGIN
@@ -772,7 +1029,8 @@ IF @ShowVS=1
 			FROM bettransm14 BG WITH (NOLOCK)
 			INNER JOIN #Data B ON BG.refno = B.refno and BG.custid = B.custid
 			INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
-			WHERE B.Bettype=1233
+			INNER JOIN @SportBettype sbt ON bg.bettype=sbt.Bettype	
+			WHERE sbt.ProductID=5 AND sbt.EventType=3 --B.Bettype=1233
 		END
 	END
 

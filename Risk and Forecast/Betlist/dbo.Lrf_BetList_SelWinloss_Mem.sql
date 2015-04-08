@@ -65,7 +65,7 @@ Revisions:
 	 - 20140908@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
 	 - 20141128@winnie: change currency keenocean	
 	 - 20150124@winnie: Add base currency GBP
-	 - 20150406@Winnie: Add 60 bettypes Betradar & Apply matrix of sporttype & bettype
+	 - 20150406@Winnie: Add 60 bettypes Betradar & Apply matrix of sporttype & bettype 
 Param's Explanation:
 	+ @drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
 
