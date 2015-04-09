@@ -1,7 +1,10 @@
 ﻿set ANSI_NULLS ON
 set QUOTED_IDENTIFIER ON
 go
-ALTER  PROCEDURE [dbo].[Lrf_BetList_SelWinlostRacing]
+USE bodb02
+GO
+
+ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinlostRacing]
 	@LicenseeID INT ,
 	@UserID		INT,
     @LicenseeType VARCHAR(100) = NULL ,
@@ -31,14 +34,14 @@ ALTER  PROCEDURE [dbo].[Lrf_BetList_SelWinlostRacing]
 	@SumStakeGBP  MONEY=0 OUTPUT,
 	@SumLicenseeWLGBP MONEY=0 OUTPUT,
 	@SumCommGBP MONEY=0 OUTPUT,
-	@SumPlayerCommGBP MONEY=0 OUTPUT 
+	@SumPlayerCommGBP MONEY=0 OUTPUT 	
 	
 AS
 /*
 	Created by: Henry
 	Date: 2011-09-21
 	Task: Racing Detailed Bet List
-	DB: DBRPT/BODB02 
+	DB: DBRPT/BODB02
 
 	Revisions:
 	- 20111010@Henry: Change column name
@@ -50,8 +53,9 @@ AS
 	- 20130305@Jim: change input param @winlostdate by @date 
 	- 20130402@Jim: support base currency by USD
 	- 20130514@Jim:Restrict permission of Licensee Users by currency
-	- 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
+	- 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 	
 	- 20150127@Winnie: add base currency GBP
+	- 20150409@Winnie: Apply spottype bettype matrix
 	Param's Explanation:
 		
 */
@@ -87,7 +91,9 @@ BEGIN
                                                      [Description]) )  
                 AND RoleId = 2  
 	------------
-
+	DECLARE @SportBettype TABLE(ProductID INT,Bettype INT,EventType INT)
+	INSERT INTO @SportBettype
+	EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4
 	------------
 	DECLARE @LicenseeName VARCHAR(50)
 	SELECT @LicenseeName = LicenseeName FROM DBLIC.bodb_Licensee.dbo.Licensees WITH (NOLOCK)
@@ -125,6 +131,7 @@ BEGIN
 		currency INT,
 		winlostdate SMALLDATETIME,
 		leagueid int
+		 
 	)
 
 
@@ -161,9 +168,11 @@ BEGIN
 	FROM	bettrans b (NOLOCK)
 			INNER JOIN outright o (NOLOCK) ON b.matchid = o.orid 
 			INNER JOIN customer c (NOLOCK) ON b.custid = c.custid
+			INNER JOIN @SportBettype sbt ON sbt.Bettype=b.bettype
 	WHERE	
 			b.ruben = 1 
-			AND b.bettype in (31,32,33) 
+			--AND b.bettype in (31,32,33) 
+			AND sbt.ProductID=2
 			AND b.statusID NOT IN (101,102,103,121)
 			AND b.currency = @currencyID 
 			AND b.winlostdate = @date
@@ -205,8 +214,10 @@ BEGIN
 	FROM	bettrans14 b (NOLOCK)
 			INNER JOIN outright14 o (NOLOCK) ON b.matchid = o.orid 
 			INNER JOIN customer c (NOLOCK) ON b.custid = c.custid
+			INNER JOIN @SportBettype sbt ON sbt.Bettype=b.bettype
 	WHERE	b.ruben = 1 
-			AND b.bettype in (31,32,33) 
+			--AND b.bettype in (31,32,33) 
+			AND sbt.ProductID=2
 			AND b.statusID NOT IN (101,102,103,121)
 			AND b.currency = @currencyID 
 			AND b.winlostdate = @date
@@ -321,7 +332,8 @@ DECLARE @BettransDetail TABLE(
 			FROM bettransm BM WITH (NOLOCK)
 			INNER JOIN #DataTmp B ON BM.refno = B.transid
 			INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
-			WHERE B.Bettype IN (33,43)
+			INNER JOIN @SportBettype sbt ON sbt.Bettype=b.bettype
+			WHERE sbt.ProductID=2--B.Bettype IN (33,43)
 		END
 			
 	ELSE 
@@ -336,12 +348,13 @@ DECLARE @BettransDetail TABLE(
 				BM.bettype,
 				BM.betteam,
 				BM.stake*e.EUR,
-				BM.stake*e.USD,
-				BM.stake*e.GBP 	
+				BM.stake*e.USD ,	
+				BM.stake*e.GBP
 			FROM bettransm14 BM WITH (NOLOCK)
 			INNER JOIN #DataTmp B ON BM.refno = B.transid
 			INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate   AND e.exchangeid = B.currency
-			WHERE B.Bettype IN (33,43)
+			INNER JOIN @SportBettype sbt ON sbt.Bettype=b.bettype
+			WHERE sbt.ProductID=2--B.Bettype IN (33,43)
 		END	
 	
 
@@ -351,9 +364,6 @@ DROP TABLE #DataTmp
 DROP TABLE #TempExchange	
 DROP TABLE #currency 	
 END
-
-
-
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinlostRacing] TO [bodbLicenseeNet] AS [dbo]
 GO
