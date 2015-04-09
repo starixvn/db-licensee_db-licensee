@@ -36,7 +36,7 @@
 	@SumPLayerCommGBP MONEY=0 OUTPUT,
 	@drawfilter SMALLINT = 1,
 	@Langkey VARCHAR(10) = 'en-US',
-	@currencyID INT =0
+	@currencyID INT =0 
 
 AS
 

@@ -34,7 +34,7 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinlostRacing]
 	@SumStakeGBP  MONEY=0 OUTPUT,
 	@SumLicenseeWLGBP MONEY=0 OUTPUT,
 	@SumCommGBP MONEY=0 OUTPUT,
-	@SumPlayerCommGBP MONEY=0 OUTPUT 	
+	@SumPlayerCommGBP MONEY=0 OUTPUT  	
 	
 AS
 /*

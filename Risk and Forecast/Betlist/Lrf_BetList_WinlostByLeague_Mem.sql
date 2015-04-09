@@ -29,7 +29,7 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_WinlostByLeague_Mem]
 	,@ShowBA BIT = 1
 AS
 /*
-Created: 20140102@Florent
+Created: 20140102@Florent 
 Task : Betlist
 DB: DB052.bodb02
 Original:[Lrf_BetList_MatchWL_Bettype_8828]
