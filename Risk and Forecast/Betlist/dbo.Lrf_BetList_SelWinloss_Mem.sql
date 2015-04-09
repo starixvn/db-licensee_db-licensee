@@ -1,4 +1,4 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinloss_Mem]
+﻿ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinloss_Mem_xtest]
 	@LicenseeID 	INT,
 	@UserID			INT,
 	@CustID			INT,
@@ -36,7 +36,7 @@
 	@SumPLayerCommGBP MONEY=0 OUTPUT,
 	@drawfilter SMALLINT = 1,
 	@Langkey VARCHAR(10) = 'en-US',
-	@currencyID INT =0
+	@currencyID INT =0 
 
 AS
 
@@ -494,7 +494,7 @@ BEGIN
 				0,0,
 				b.currency,
 				'' As ShowTime
-				,b.betcheck AS betcheck
+				,NULL AS betcheck
 			FROM
 				dbo.bettrans b WITH (NOLOCK)	
 				INNER JOIN @SportBettype sbt ON b.Bettype=sbt.Bettype
@@ -1170,7 +1170,7 @@ BEGIN
 				0,0,
 				b.currency,
 				'' As ShowTime
-				,NULL AS betcheck
+				,b.betcheck AS betcheck
 			FROM
 				dbo.bettrans14 AS b WITH (NOLOCK)		
 				INNER JOIN dbo.match14 AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
@@ -1945,7 +1945,7 @@ BEGIN
 				0,0,
 				b.currency,
 				'' As ShowTime
-				,NULL AS betcheck
+				,b.betcheck AS betcheck
 			FROM
 				bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)		
 				INNER JOIN bodb_archive.dbo.match_BK AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
