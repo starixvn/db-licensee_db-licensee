@@ -26,7 +26,7 @@ AS
 		 - 20140408@Florent: add more condition for keno
 		 - 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 		 - 20150409@Winnie: Apply spottype bettype matrix 
-*/
+*/ 
 SET NOCOUNT ON
 
 SELECT  currencyID,LicenseeID into #currency

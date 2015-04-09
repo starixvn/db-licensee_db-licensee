@@ -22,7 +22,7 @@ AS
 Create: Henry@20101210
 Task : 
 DB: DB052.bodb02
-Original: Age_BetList_SelDeleted
+Original: Age_BetList_SelDeleted 
 
 Revisions:
 	
