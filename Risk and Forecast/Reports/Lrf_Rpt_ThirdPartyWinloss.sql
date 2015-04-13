@@ -5,7 +5,7 @@ GO
 
 /****** Object:  Stored Procedure dbo.Lrf_Rpt_ThirdPartyWinloss    Script Date: 4/7/2015 10:01:49 AM ******/
  
-CREATE PROCEDURE [dbo].[Lrf_Rpt_ThirdPartyWinloss]
+ALTER PROCEDURE [dbo].[Lrf_Rpt_ThirdPartyWinloss]
 	  @LicenseeID	INT
 	, @ProductID	INT
 	, @Currency		INT				= 0
@@ -149,7 +149,6 @@ BEGIN
 	
 	
 END
-
 GO
 
 SET QUOTED_IDENTIFIER OFF 
