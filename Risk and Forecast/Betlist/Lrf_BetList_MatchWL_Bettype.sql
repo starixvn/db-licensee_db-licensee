@@ -4,7 +4,7 @@ go
 
 ALTER PROCEDURE [dbo].[Lrf_BetList_MatchWL_Bettype_xtest]
 	@MatchID INT,
-	@LicenseeID INT,
+	@LicenseeID INT, 
 	@UserID	 INT,
 	@LicenseeType VARCHAR(100) = NULL,
 	@CurrencyID INT=0,
