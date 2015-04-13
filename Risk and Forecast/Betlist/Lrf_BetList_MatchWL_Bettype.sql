@@ -210,10 +210,10 @@ BEGIN
 			bettrans b WITH (NOLOCK) 
 			INNER JOIN match m WITH (NOLOCK) ON b.matchid=m.matchid
 			INNER JOIN @SportBettype sbt ON b.bettype=sbt.Bettype
-			LEFT JOIN dbo.LRF_view_bettype_SS ss ON b.bettype = ss.bettypeID
+			LEFT JOIN dbo.f_GroupBettype() ss ON b.bettype = ss.bettype
 		WHERE
 			b.matchid=@matchid AND
-			(@bettype=0 OR (@bettype<>0 AND CASE WHEN ISNULL(ss.bettypeid,0) = 0 THEN b.bettype ELSE ss.typeid END = @bettype)) AND
+			(@bettype=0 OR (@bettype<>0 AND CASE WHEN ISNULL(ss.bettype,0) = 0 THEN b.bettype ELSE ss.Grouptypeid END = @bettype)) AND
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
 			((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
 			b.statusID IN (111,112,113) AND
@@ -267,11 +267,11 @@ BEGIN
 			bettrans b WITH (NOLOCK) 
 			INNER JOIN match m WITH (NOLOCK) ON b.matchid=m.matchid
 			INNER JOIN @SportBettype sbt ON b.bettype=sbt.Bettype
-			LEFT JOIN dbo.LRF_view_bettype_SS ss ON b.bettype = ss.bettypeID
+			LEFT JOIN dbo.f_GroupBettype() ss ON b.bettype = ss.bettype
 		WHERE
 			b.matchid=@matchid AND
 			--(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
-			(@bettype=0 OR (@bettype<>0 AND CASE WHEN ISNULL(ss.bettypeid,0) = 0 THEN b.bettype ELSE ss.typeid END = @bettype)) AND
+			(@bettype=0 OR (@bettype<>0 AND CASE WHEN ISNULL(ss.bettype,0) = 0 THEN b.bettype ELSE ss.Grouptypeid END = @bettype)) AND
 			--(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 AND 1399)) AND
 			sbt.ProductID=1 AND
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
@@ -555,11 +555,11 @@ BEGIN
 			--INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid 
 			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid 	
 			INNER JOIN @SportBettype sbt ON b.bettype=sbt.Bettype
-			LEFT JOIN dbo.LRF_view_bettype_SS ss ON b.bettype = ss.bettypeID			
+			LEFT JOIN dbo.f_GroupBettype() ss ON b.bettype = ss.bettype			
 		WHERE
 			b.matchid=@matchid AND
 			--(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
-			(@bettype=0 OR (@bettype<>0 AND CASE WHEN ISNULL(ss.bettypeid,0) = 0 THEN b.bettype ELSE ss.typeid END = @bettype)) AND
+			(@bettype=0 OR (@bettype<>0 AND CASE WHEN ISNULL(ss.bettype,0) = 0 THEN b.bettype ELSE ss.Grouptypeid END = @bettype)) AND
 			b.recommend IN (SELECT custid FROM @TempAg) AND
 			  ((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND b.Currency=@CurrencyID)) AND
 			b.statusID IN (111,112,113) AND
@@ -619,11 +619,11 @@ BEGIN
 			bettrans14 b WITH (NOLOCK) 
 			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid 
 			INNER JOIN @SportBettype sbt ON b.bettype=sbt.Bettype	
-			LEFT JOIN dbo.LRF_view_bettype_SS ss ON b.bettype = ss.bettypeID	
+			LEFT JOIN dbo.f_GroupBettype() ss ON b.bettype = ss.bettype
 		WHERE
 			b.matchid=@matchid AND
 			--(@bettype=0 OR (@bettype<>0 AND b.bettype=@bettype)) AND
-			(@bettype=0 OR (@bettype<>0 AND CASE WHEN ISNULL(ss.bettypeid,0) = 0 THEN b.bettype ELSE ss.typeid END = @bettype)) AND
+			(@bettype=0 OR (@bettype<>0 AND CASE WHEN ISNULL(ss.bettype,0) = 0 THEN b.bettype ELSE ss.Grouptypeid END = @bettype)) AND
 			--(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 AND 1399)) AND
 			sbt.ProductID=1 AND
 			b.recommend IN (SELECT custid FROM @TempAg) AND
