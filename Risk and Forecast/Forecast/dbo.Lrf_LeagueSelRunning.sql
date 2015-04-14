@@ -17,13 +17,14 @@ Revisions:
 	- 20121004@Jim: replace @currencyname input param by @currencyID
 	- 20130514@Jim:Restrict permission of Licensee Users by currency
 	- 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
+	- 20150414@Jim: add more bettype Extra Time 1H 1X2 (feature #32844)
 */
 
     SELECT  @Bettypes = CASE @Bettypes
                           WHEN '0' THEN '1,3,7,8,5,15'
                           WHEN '1' THEN '1,3,7,8'
-                          WHEN '5' THEN '5,15'
-                          ELSE '1,3,7,8,5,15'
+                          WHEN '5' THEN '5,15,167'
+                          ELSE '1,3,7,8,5,15,167'
                         END 
 	
 	SELECT  currencyID,LicenseeID into #currency

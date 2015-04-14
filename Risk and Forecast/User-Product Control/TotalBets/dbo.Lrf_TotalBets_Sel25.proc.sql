@@ -1,12 +1,11 @@
 ﻿USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_TotalBets_Sel25]    Script Date: 02/20/2014 18:35:51 ******/
+ 
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-/****** Object:  Stored Procedure dbo.Lrf_TotalBets_Sel25    Script Date: 6/26/2013 10:58:33 PM ******/
-/****** Object:  Stored Procedure dbo.Lrf_TotalBets_Sel25    Script Date: 5/31/2013 2:41:29 PM ******/
+ 
 
 ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel25] 
 	@LicenseeID INT,
@@ -33,6 +32,7 @@ Revisions:
 	- 20140718@Hannah: Change liveindicator datatype to INT to fix running live matches are not being showed at the top list (RedmineID:19136)
 	- 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
 	- 20150124@Winnie: Add base currency GBP 
+	- 20150413@Jim: add more bettype Odd/Even (3rd) (157)
 Param's Explanation:
 • @CustID: AgentID
 */
@@ -150,15 +150,15 @@ SELECT
 		m.matchid,
 		m.homeid,
 		m.awayid,
-		sum((CASE WHEN bettype=2 AND betteam = 'h' THEN stake ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS home_odds_OE,
-		sum((CASE WHEN bettype=2 AND betteam = 'h' THEN stake*e.USD ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS home_odds_OEUSD,
-		sum((CASE WHEN bettype=2 AND betteam = 'h' THEN stake*e.EUR ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS home_odds_OEEUR,
-		sum((CASE WHEN bettype=2 AND betteam = 'h' THEN stake*e.GBP ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS home_odds_OEGBP,
+		sum((CASE WHEN bettype in (2,157) AND betteam = 'h' THEN stake ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS home_odds_OE,
+		sum((CASE WHEN bettype in (2,157) AND betteam = 'h' THEN stake*e.USD ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS home_odds_OEUSD,
+		sum((CASE WHEN bettype in (2,157) AND betteam = 'h' THEN stake*e.EUR ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS home_odds_OEEUR,
+		sum((CASE WHEN bettype in (2,157) AND betteam = 'h' THEN stake*e.GBP ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS home_odds_OEGBP,
 
-		sum((CASE WHEN bettype=2 AND betteam = 'a' THEN stake ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS away_odds_OE,
-		sum((CASE WHEN bettype=2 AND betteam = 'a' THEN stake*e.USD ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS away_odds_OEUSD,
-		sum((CASE WHEN bettype=2 AND betteam = 'a' THEN stake*e.EUR ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS away_odds_OEEUR,
-		sum((CASE WHEN bettype=2 AND betteam = 'a' THEN stake*e.GBP ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS away_odds_OEGBP,
+		sum((CASE WHEN bettype in (2,157) AND betteam = 'a' THEN stake ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS away_odds_OE,
+		sum((CASE WHEN bettype in (2,157) AND betteam = 'a' THEN stake*e.USD ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS away_odds_OEUSD,
+		sum((CASE WHEN bettype in (2,157) AND betteam = 'a' THEN stake*e.EUR ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS away_odds_OEEUR,
+		sum((CASE WHEN bettype in (2,157) AND betteam = 'a' THEN stake*e.GBP ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS away_odds_OEGBP,
 
 		sum((CASE WHEN bettype=12 AND betteam = 'h' THEN stake ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS home_odds_OE_1st,
 		sum((CASE WHEN bettype=12 AND betteam = 'h' THEN stake*e.USD ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS home_odds_OE_1stUSD,
@@ -210,7 +210,7 @@ SELECT
 		sum(Case when bettype=123 and betteam = 'a' then  stake*e.EUR   else 0 end) AS away_odds_DNDEUR,
 		sum(Case when bettype=123 and betteam = 'a' then  stake*e.GBP   else 0 end) AS away_odds_DNDGBP,
 
-		sum(CASE WHEN bettype=2 THEN 1 ELSE 0 END) AS BetCount_OE,
+		sum(CASE WHEN bettype in (2,157)  THEN 1 ELSE 0 END) AS BetCount_OE,
 		sum(CASE WHEN bettype=12 THEN 1 ELSE 0 END) AS BetCount_OE_1st,
 		sum(CASE WHEN bettype=5 THEN 1 ELSE 0 END) AS BetCount_1x2,
 		sum(CASE WHEN bettype=15 THEN 1 ELSE 0 END) AS BetCount_1x2_1st,
@@ -224,7 +224,7 @@ SELECT
 	WHERE  	
 		a.recommend IN (SELECT CustID FROM @TempAg) AND
 		 ((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
-		a.bettype in (2, 12, 5, 15,123)
+		a.bettype in (2, 12, 5, 15,123,157)
 		AND a.statusID in (0,1)
 		AND a.ruben = 0
 		AND m.eventstatus='running'
