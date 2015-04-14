@@ -244,8 +244,8 @@ CASE WHEN @betfrom=1 THEN 'AND betfrom=''d'''
   
   CASE                
    WHEN @bettype = 'HDP' AND @SportID<>999 THEN 'AND  b.bettype IN (1,7,1303)  '                
-   WHEN @bettype = 'OU' AND @SportID<>999 THEN ' AND b.bettype IN (3,8,178,1306)  '                 
-   WHEN @bettype = 'Others' AND @SportID<>999 THEN ' AND b.bettype NOT IN (1,3,7,8,178,1303,1306)  '                
+   WHEN @bettype = 'OU' AND @SportID<>999 THEN ' AND b.bettype IN (3,18,8,178,1306)  '                 
+   WHEN @bettype = 'Others' AND @SportID<>999 THEN ' AND b.bettype NOT IN (1,3,7,8,18,178,1303,1306)  '                
   ELSE ' ' END + CHAR(13)+
   
   CASE @SportID
