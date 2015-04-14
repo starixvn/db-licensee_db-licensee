@@ -1,12 +1,12 @@
 USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[LRF_Rpt_ThirdPartyWinloss_Mem]    Script Date: 3/18/2015 2:21:02 PM ******/
+/****** Object:  StoredProcedure [dbo].[LRF_Rpt_ThirdPartyWinloss_Mem]    Script Date: 3/30/2015 5:21:42 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
  
-CREATE  PROCEDURE [dbo].[LRF_Rpt_ThirdPartyWinloss_Mem] 
+ALTER  PROCEDURE [dbo].[LRF_Rpt_ThirdPartyWinloss_Mem] 
  @LicenseeID	INT,
  @ProductID	    INT,
  @CustID		INT, --- recommend
@@ -30,7 +30,7 @@ AS
 /*  Created: Winnie
 	Date: 2015-03-16
     Task : GD Win Loss report 
-    DB: DBACC.bodb02  
+    DB: DBEXT.bodb02   
     Revisions:  			
 	Param's Explanation:  
 	  + @excludeTest: remove currency UUS

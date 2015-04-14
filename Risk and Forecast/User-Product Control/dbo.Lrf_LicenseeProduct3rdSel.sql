@@ -1,6 +1,10 @@
-﻿set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
+﻿USE [bodb_licensee]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_LicenseeProduct3rdSel]    Script Date: 4/13/2015 10:14:46 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
 
 ALTER PROCEDURE [dbo].[Lrf_LicenseeProduct3rdSel]
 	@LicenseeID INT = 0,
@@ -16,6 +20,7 @@ Original:
 	
 Revisions:
 	- 20111122@Henry: Add filter @ProductPrefix + default values
+	- 20150407@Winnie: Add ProductId
 	
 */
 SET NOCOUNT ON
@@ -27,6 +32,7 @@ SELECT
 	l.LicenseeName,
 	p.ProductName,
 	p.ProductPrefix,
+	p.Productid,
 	lp.Comm,
 	lp.Winloss 
 
@@ -42,9 +48,3 @@ WHERE
 	
 
 
-GO
-GRANT EXECUTE ON [dbo].[Lrf_LicenseeProduct3rdSel] TO [bodbLicenseeNet]
-GO
-GRANT EXECUTE ON [dbo].[Lrf_LicenseeProduct3rdSel] TO [bodbAdminNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_LicenseeProduct3rdSel] TO [vnteam]
