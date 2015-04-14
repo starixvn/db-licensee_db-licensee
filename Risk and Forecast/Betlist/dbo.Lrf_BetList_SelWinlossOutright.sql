@@ -2,7 +2,7 @@
 set QUOTED_IDENTIFIER ON
 go
 
-ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinlossOutright]
+ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinlossOutright_xtest]
 	@LicenseeID INT ,
 	@UserID		INT,
     @LicenseeType VARCHAR(100) = NULL ,
@@ -54,6 +54,7 @@ Revisions:
 - 20130514@Jim: Restrict permission of Licensee Users by currency
 - 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
 - 20150126@Winnie: Add base currency GBP 
+- 20150414@Winnie: Apply sporttype bettype matrix
 Example:
 
 declare @p12 int
@@ -105,6 +106,10 @@ SELECT DISTINCT lc.CustID
 						INNER JOIN #Currency c ON c.LicenseeID=lc.LicenseeID AND lc.Currency=c.CurrencyID
                 WHERE   [Description] = COALESCE(@LicenseeType,  
                                                      [Description])
+DECLARE @SportBettype TABLE(ProductID INT,Bettype INT,EventType INT)
+
+	INSERT INTO @SportBettype
+	EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4,@ProductID=1
 
 CREATE TABLE #AgWinlossOutright
 (
@@ -183,6 +188,7 @@ BEGIN
 			bettrans b WITH (NOLOCK) 
 			INNER JOIN outright m WITH (NOLOCK) ON b.matchid=m.orid	
 			INNER JOIN League l WITH (NOLOCK) ON m.leagueID=l.leagueID	
+			INNER JOIN @SportBettype sbt ON b.Bettype=sbt.Bettype       
 			--INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid	
 			--INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid	   	 	
 		WHERE
@@ -190,7 +196,8 @@ BEGIN
 			((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 			b.Winlostdate>=@FromDate AND
 			b.Winlostdate<=@ToDate AND
-			b.Bettype=10 AND
+			--b.Bettype=10 AND
+			sbt.EventType=2 AND
 			b.Ruben=1 AND
 			b.tpositiontaking=0 AND
 			(@ExcludeReject = 0 OR (@ExcludeReject=1 AND b.statusID NOT IN (101, 102, 103)))
@@ -238,13 +245,15 @@ BEGIN
 			bettrans b WITH (NOLOCK) 
 			INNER JOIN outright m WITH (NOLOCK) ON b.matchid=m.orid	
 			INNER JOIN League l WITH (NOLOCK) ON m.leagueID=l.leagueID	
+			INNER JOIN @SportBettype sbt ON b.Bettype=sbt.Bettype       
 			--INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid	   	 				
 		WHERE
 			b.recommend IN (SELECT custid FROM @TempAg)	AND
 			((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 			b.Winlostdate>=@FromDate AND
 			b.Winlostdate<=@ToDate AND
-			b.Bettype=10 AND
+			--b.Bettype=10 AND
+			sbt.EventType=2 AND
 			b.Ruben=1 AND
 			b.tpositiontaking<>0 AND
 			(@ExcludeReject = 0 OR (@ExcludeReject=1 AND b.statusID NOT IN (101, 102, 103))) 
@@ -294,6 +303,7 @@ BEGIN
 			bettrans14 b WITH (NOLOCK) 
 			INNER JOIN outright14 m WITH (NOLOCK) ON b.matchid=m.orid	
 			INNER JOIN League l WITH (NOLOCK) ON m.leagueID=l.leagueID	
+			INNER JOIN @SportBettype sbt ON b.Bettype=sbt.Bettype       
 			--INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
 			--INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid	   	 		
 		WHERE
@@ -301,7 +311,8 @@ BEGIN
 			((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 			b.Winlostdate>=@FromDate AND
 			b.Winlostdate<=@ToDate AND
-			b.Bettype=10 AND
+			--b.Bettype=10 AND
+			sbt.EventType=2 AND
 			b.Ruben=1 AND
 			b.tpositiontaking=0 AND
 			(@ExcludeReject = 0 OR (@ExcludeReject=1 AND b.statusID NOT IN (101, 102, 103))) 
@@ -347,6 +358,7 @@ BEGIN
 			bettrans14 b WITH (NOLOCK) 
 			INNER JOIN outright14 m WITH (NOLOCK) ON b.matchid=m.orid	
 			INNER JOIN League l WITH (NOLOCK) ON m.leagueID=l.leagueID	
+			INNER JOIN @SportBettype sbt ON b.Bettype=sbt.Bettype       
 			--LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) on b.transid = BA.transid
 			--INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid	   	 				
 		WHERE
@@ -354,7 +366,8 @@ BEGIN
 			((@CurrencyID=0 AND b.currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 			b.Winlostdate>=@FromDate AND
 			b.Winlostdate<=@ToDate AND
-			b.Bettype=10 AND
+			--b.Bettype=10 AND
+			sbt.EventType=2 AND
 			b.Ruben=1 AND
 			b.tpositiontaking<>0 AND
 			(@ExcludeReject = 0 OR (@ExcludeReject=1 AND b.statusID NOT IN (101, 102, 103))) 
