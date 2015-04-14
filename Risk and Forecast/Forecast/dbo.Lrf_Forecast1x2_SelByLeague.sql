@@ -1,4 +1,6 @@
-﻿ALTER PROCEDURE [Lrf_Forecast1x2_SelByLeague]
+﻿USE [bodb02]
+GO 
+ALTER PROCEDURE [dbo].[Lrf_Forecast1x2_SelByLeague]
     @LicenseeID INT ,
     @LicenseeType VARCHAR(100) = NULL ,
     @CurrencyID INT=0 ,
@@ -95,7 +97,9 @@ Revisions:
             ( x.x_drawwin    - x.x_awaylose	   - x.x_homelose )	   'x_dl' ,
             ( x.x_drawwinUSD - x.x_awayloseUSD - x.x_homeloseUSD ) 'x_dlUSD' ,
             ( x.x_drawwinEUR - x.x_awayloseEUR - x.x_homeloseEUR ) 'x_dlEUR' ,
-			( x.x_drawwinGBP - x.x_awayloseGBP - x.x_homeloseGBP ) 'x_dlGBP'
+			( x.x_drawwinGBP - x.x_awayloseGBP - x.x_homeloseGBP ) 'x_dlGBP',
+			CASE WHEN x.bettype =167 THEN 1 ELSE 0 END  isExtra
+			
     FROM    ( SELECT    m.MatchID ,
                         m.homeid ,
                         m.awayid ,
@@ -675,6 +679,7 @@ Revisions:
 									  * e.GBP
 								 ELSE 0
 							END) x_drawloseGBP
+							,b.bettype
 							
               FROM      bettrans b WITH ( NOLOCK )
                         INNER JOIN Match M WITH ( NOLOCK ) ON b.MatchID = M.MatchID
@@ -684,7 +689,7 @@ Revisions:
               WHERE     
 						b.recommend IN ( SELECT custid
                                              FROM   @TempAg )
-						AND b.bettype IN ( @Bettype1x2, @BettypeHT1x2 )
+						AND b.bettype IN ( @Bettype1x2, @BettypeHT1x2 ,@BetTypeExHT1x2 )
                         
                         AND LeagueID = @LeagueID
                         AND b.statusID IN ( 0, 1 )
@@ -700,11 +705,11 @@ Revisions:
                         b.LiveAwayScore ,
                         M.ShowTime ,
                         M.MatchCode ,
-                        isNeutral
+                        isNeutral,
+						b.bettype
             ) x 
 GO
 GRANT EXECUTE ON [Lrf_Forecast1x2_SelByLeague] TO [bodbLicenseeNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_Forecast1x2_SelByLeague] TO [vnteam]
 GO
-
