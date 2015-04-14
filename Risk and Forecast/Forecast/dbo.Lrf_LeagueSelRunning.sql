@@ -24,7 +24,7 @@ Revisions:
                           WHEN '0' THEN '1,3,7,8,5,15'
                           WHEN '1' THEN '1,3,7,8'
                           WHEN '5' THEN '5,15,167'
-                          ELSE '1,3,7,8,5,15'
+                          ELSE '1,3,7,8,5,15,167'
                         END 
 	
 	SELECT  currencyID,LicenseeID into #currency
