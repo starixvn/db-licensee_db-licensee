@@ -14,7 +14,7 @@ GO
 
 
 
-ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinlossNumberGame]     
+ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinlossNumberGame]      
      @LicenseeID INT ,
      @LicenseeType VARCHAR(100) = NULL ,
      @CurrencyID INT=0 ,     
@@ -40,6 +40,7 @@ Revisions:
     -20121004@Jim: replace @currencyname input param by @currencyID
 	- 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
 	- 20150126@Winnie: Add base currency GBP 
+	- 20150414@Winnie: Apply sporttype bettype matrix 
 */
 
 
@@ -53,6 +54,11 @@ DECLARE @RowStart INT, @RowEnd INT
 
 
 SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1
+
+DECLARE @SportBettype TABLE(ProductID INT,Bettype INT,EventType INT)
+
+	INSERT INTO @SportBettype
+	EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4,@ProductID=3
 
 CREATE TABLE #Data (  
      sporttype TINYINT,  
@@ -143,14 +149,15 @@ BEGIN
       NULL,  
       CONVERT(BIT,0) AS IsNeutral,
       b.winlostdate,
-      b.currency,
+      b.currency, 
       b.oddstype
      FROM  
         bettrans14 b WITH (NOLOCK,INDEX(bettrans143))  
         INNER JOIN @TempAg t  ON b.recommend =t.custid 
-        INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid         
+        INNER JOIN match14 m WITH (NOLOCK) ON b.matchid=m.matchid  
+		INNER JOIN @SportBettype sbt ON b.Bettype=sbt.Bettype       
      WHERE            
-      b.bettype BETWEEN 81 AND 120 AND
+      --b.bettype BETWEEN 81 AND 120 AND
 	  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID)) AND
       b.Winlostdate BETWEEN @FromDate AND @TempToDate AND
       b.statusID NOT IN (101, 102, 103)
@@ -208,9 +215,10 @@ BEGIN
      FROM  
       bettrans b WITH (NOLOCK) 
       INNER JOIN @TempAg t  ON b.recommend =t.custid  
-      INNER JOIN [match] m WITH (NOLOCK) ON b.matchid=m.matchid         
+      INNER JOIN [match] m WITH (NOLOCK) ON b.matchid=m.matchid    
+	  INNER JOIN @SportBettype sbt ON b.Bettype=sbt.Bettype     
      WHERE              
-      b.bettype BETWEEN 81 AND 120 AND
+      --b.bettype BETWEEN 81 AND 120 AND
 	  (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID)) AND
       b.Winlostdate BETWEEN @TempFromDate AND @ToDate AND        
       b.Ruben=1  AND
