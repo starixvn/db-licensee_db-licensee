@@ -1,4 +1,4 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinloss_Mem_xtest]
+﻿ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinloss_Mem]
 	@LicenseeID 	INT,
 	@UserID			INT,
 	@CustID			INT,
@@ -2173,7 +2173,7 @@ BEGIN
 			b.winlostdate BETWEEN @fdate AND @TempToDate AND
 			b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 			--b.bettype BETWEEN 1101 AND 1199 AND
-			sbt.ProductID=9 AND
+			sbt.ProductID=4 AND
 			b.ruben = 1 AND
 			b.status NOT IN ('VOID', 'REJECT', 'REFUND')
 	END

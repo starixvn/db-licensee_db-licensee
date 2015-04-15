@@ -5,7 +5,7 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-ALTER PROCEDURE [dbo].[Lrf_BetList_SelDeleted_UserList]
+ALTER PROCEDURE [dbo].[Lrf_BetList_SelDeleted_UserList]   
 @LicenseeID INT,
 @UserID	INT,
 @CurrencyID INT=0,
@@ -61,7 +61,7 @@ FROM
 	INNER JOIN @SportBettype sbt ON sbt.Bettype=b.bettype		
 WHERE 
 	b.statusID IN (101, 102)
-	AND ((sbt.ProductID!=2 AND sbt.ProductID!=1 AND sbt.ProductID!=5 AND sbt.ProductID!=8) OR (sbt.ProductID=1 AND sbt.EventType!=2) OR (sbt.ProductID=5 AND sbt.EventType!=3))
+	AND ((sbt.ProductID!=2 AND sbt.ProductID!=1 AND sbt.ProductID!=5) OR (sbt.ProductID=1 AND sbt.EventType!=2) OR (sbt.ProductID=5 AND sbt.EventType!=3))
 	--and b.bettype not in (10,31,32,33,41,42,43,1231,1232,1233,1237,1238) --20140408@Florent: exclude outright, HR from sportbook
 	--and b.bettype not between 1501 and 1599 -- exclude Keno from sportbook
 GROUP BY b.custid
