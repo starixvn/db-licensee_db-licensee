@@ -7,7 +7,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 
 
-ALTER PROCEDURE [dbo].[Lrf_BetList_SelDeleted] 
+ALTER PROCEDURE [dbo].[Lrf_BetList_SelDeleted]   
 	@LicenseeID INT ,
 	@UserID		INT,
 	@CustID INT,
