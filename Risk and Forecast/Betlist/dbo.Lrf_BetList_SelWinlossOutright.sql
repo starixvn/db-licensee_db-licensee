@@ -2,7 +2,7 @@
 set QUOTED_IDENTIFIER ON
 go
 
-ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinlossOutright_xtest]
+ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinlossOutright]
 	@LicenseeID INT ,
 	@UserID		INT,
     @LicenseeType VARCHAR(100) = NULL ,
@@ -437,7 +437,7 @@ FROM
 			playercomm*e.EUR PlayerCommEUR,
 			--GBP
 			stake*e.GBP stakeGBP,
-			winlost*e.GBP winlostGBP,
+			winlost*e.GBP winlostGBP, 
 			LicenseeWL*e.GBP LicenseeWLGBP,
 			comm*e.GBP commGBP,
 			playercomm*e.GBP PlayerCommGBP

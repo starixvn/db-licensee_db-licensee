@@ -14,7 +14,7 @@ GO
 
 
 
-ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinlossNumberGame_xtest]     
+ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinlossNumberGame]     
      @LicenseeID INT ,
      @LicenseeType VARCHAR(100) = NULL ,
      @CurrencyID INT=0 ,     
@@ -149,7 +149,7 @@ BEGIN
       NULL,  
       CONVERT(BIT,0) AS IsNeutral,
       b.winlostdate,
-      b.currency,
+      b.currency, 
       b.oddstype
      FROM  
         bettrans14 b WITH (NOLOCK,INDEX(bettrans143))  
