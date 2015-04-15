@@ -1,4 +1,4 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossRacing_xtest]	 
+﻿ALTER PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossRacing]	 
 	@LicenseeID INT ,
 	@UserID		INT,
 	@CurrencyID INT = 0 , 
@@ -13,7 +13,7 @@
 	@SUMWLEUR MONEY=0 OUTPUT,
 	@SUMLicenseeWLEUR MONEY=0 OUTPUT,
 	@SUMWLGBP MONEY=0 OUTPUT,
-	@SUMLicenseeWLGBP MONEY=0 OUTPUT,
+	@SUMLicenseeWLGBP MONEY=0 OUTPUT, 
 	@PageSize INT=1000,
 	@PageIndex INT=1,
 	@Sort VARCHAR(20) = 'Transid DESC'	 

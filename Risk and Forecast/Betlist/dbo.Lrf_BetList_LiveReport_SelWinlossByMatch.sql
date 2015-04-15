@@ -41,7 +41,7 @@ Revisions:
    - 20140925@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
    - 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust   
    - 20150124@Winnie: add base currency GBP
-   - 20150413@Winnie: Apply spottype bettype matrix & add 60 bettype betradar
+   - 20150413@Winnie: Apply spottype bettype matrix & add 60 bettype betradar 
 Param's Explanation: 
 	@Liveindicator : indicate that whether the report will get live data or not
 		+ 0: Non - Live data only
