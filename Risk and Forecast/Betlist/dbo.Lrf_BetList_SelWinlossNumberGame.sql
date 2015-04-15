@@ -14,7 +14,7 @@ GO
 
 
 
-ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinlossNumberGame]     
+ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinlossNumberGame]      
      @LicenseeID INT ,
      @LicenseeType VARCHAR(100) = NULL ,
      @CurrencyID INT=0 ,     

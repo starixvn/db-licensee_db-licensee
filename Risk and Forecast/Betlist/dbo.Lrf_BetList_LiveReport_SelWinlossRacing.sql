@@ -1,4 +1,4 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossRacing]	 
+﻿ALTER PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossRacing]	  
 	@LicenseeID INT ,
 	@UserID		INT,
 	@CurrencyID INT = 0 , 
