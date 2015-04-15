@@ -94,7 +94,7 @@ SET NOCOUNT ON
 ----Get Sport Bettype Matrix------
 DECLARE @SportBettype TABLE(ProductID INT,Bettype INT,EventType INT)
 INSERT INTO @SportBettype
-EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4
+EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel_xtest @mode=4
 
 DECLARE @UserName NVARCHAR(20)
 		,@Recommend INT
@@ -719,13 +719,13 @@ BEGIN
 			b.winlostdate BETWEEN @TempFromDate AND @todate AND
 			b.recommend = @Recommend AND --to improve performance
 			b.custid=@CustID AND
-			((@ShowLC=1 AND sbt.ProductID=4) 
+			(@ShowLC=0 OR (@ShowLC<>0 AND sbt.ProductID=4) )
 			--((@ShowLC=1 AND b.bettype BETWEEN 1101 AND 1199) 
-				OR (@ShowVS=1 AND sbt.ProductID=5 AND sbt.EventType=1)
+			AND (@ShowVS=0 OR (@ShowVS<>0 AND sbt.ProductID=5 AND sbt.EventType=1))
 				--(@ShowVS=1 AND b.bettype BETWEEN 1201 AND 1299
 				--	AND b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) 	
 				--	)
-				)  AND
+			  AND
 			--((b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 1101 AND 1199) ) AND
 			b.ruben = 1 
 		UNION ALL 
@@ -1427,10 +1427,10 @@ BEGIN
 			b.custid=@CustID AND
 			(
 			--(@ShowNG=1 AND b.bettype BETWEEN 81 AND 120) 
-			(@ShowNG=1 AND sbt.ProductID=3)
+			(@ShowNG=0 OR (@ShowNG<>0 AND sbt.ProductID=3))
 				--OR (@ShowLC=1 AND b.bettype BETWEEN 1101 AND 1199 )
-				OR (@ShowLC=1 AND sbt.ProductID=4)
-				OR (@ShowVS=1 AND sbt.ProductID=5 AND sbt.EventType=1)
+			AND (@ShowLC=0 OR (@ShowLC<>0 AND sbt.ProductID=4))
+			AND (@ShowVS=0 OR (@ShowVS<>0 AND sbt.ProductID=5 AND sbt.EventType=1))
 				--OR (@ShowVS=1 AND b.bettype BETWEEN 1201 AND 1299 
 				--	AND b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) 
 				--	)
@@ -2131,10 +2131,10 @@ BEGIN
 			b.recommend = @Recommend  AND
 			(
 			--(@ShowNG=1 AND b.bettype BETWEEN 81 AND 120) 
-			(@ShowNG=1 AND sbt.ProductID=3) 
+			(@ShowNG=0 OR (@ShowNG<>0 AND sbt.ProductID=3))
 				--OR (@ShowLC=1 AND b.bettype BETWEEN 1101 AND 1199 )
-				OR (@ShowLC=1 AND sbt.ProductID=4 )
-				OR (@ShowVS=1 AND sbt.ProductID=5 AND sbt.EventType=1 )
+			AND (@ShowLC=0 OR (@ShowLC<>0 AND sbt.ProductID=4))
+			AND (@ShowVS=0 OR (@ShowVS<>0 AND sbt.ProductID=5 AND sbt.EventType=1))
 				--OR (@ShowVS=1 AND b.bettype BETWEEN 1201 AND 1299 
 				--	AND b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) 
 				--	)
