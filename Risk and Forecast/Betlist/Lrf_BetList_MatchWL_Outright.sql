@@ -1,7 +1,7 @@
 ﻿
 USE bodb02
 GO
-ALTER PROCEDURE [dbo].[Lrf_BetList_MatchWL_Outright]
+ALTER PROCEDURE [dbo].[Lrf_BetList_MatchWL_Outright] 
 	@LicenseeID INT ,
 	@UserID	 INT,
     @LicenseeType VARCHAR(100) = NULL ,
@@ -53,7 +53,7 @@ Revisions:
 - 20130514@Jim: Restrict permission of Licensee Users by currency
 - 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
 - 20150128@Winnie: Add base currency GBP 
-- 20150406@Winnie: Apply spottype bettype matrix & add 60 bettype betradar  
+- 20150406@Winnie: Apply spottype bettype matrix  
 Example:
 
 declare @p12 int
@@ -145,7 +145,7 @@ CREATE TABLE #AgWinlossOutright
 	winlostdate DATETIME,
 	currency SMALLINT,
 	isBA INT
-	,betcheck NVARCHAR(50)
+	
 )
 
 
@@ -185,8 +185,8 @@ BEGIN
 			CONVERT(BIT,0) AS IsNeutral,
 			b.winlostdate,
 			b.currency ,
-			1 AS isBA,
-			b.betcheck
+			1 AS isBA
+		
 		FROM
 			bettrans b WITH (NOLOCK) 
 			INNER JOIN outright m WITH (NOLOCK) ON b.matchid=m.orid	
@@ -243,8 +243,8 @@ BEGIN
 			CONVERT(BIT,0) AS IsNeutral,
 			b.winlostdate,
 			b.currency ,
-			0 AS isBA,
-			b.betcheck
+			0 AS isBA
+			
 		FROM
 			bettrans b WITH (NOLOCK) 
 			INNER JOIN outright m WITH (NOLOCK) ON b.matchid=m.orid	
@@ -306,8 +306,8 @@ BEGIN
 			CONVERT(BIT,0) AS IsNeutral,
 			b.winlostdate,
 			b.currency ,
-			1 AS isBA,
-			b.betcheck
+			1 AS isBA
+		
 		FROM
 			bettrans14 b WITH (NOLOCK) 
 			INNER JOIN outright14 m WITH (NOLOCK) ON b.matchid=m.orid	
@@ -362,8 +362,8 @@ BEGIN
 			CONVERT(BIT,0) AS IsNeutral,
 			b.winlostdate,
 			b.currency ,
-			0 AS isBA,
-			b.betcheck
+			0 AS isBA
+			
 		FROM
 			bettrans14 b WITH (NOLOCK) 
 			INNER JOIN outright14 m WITH (NOLOCK) ON b.matchid=m.orid	
