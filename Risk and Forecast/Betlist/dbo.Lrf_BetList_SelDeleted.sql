@@ -7,7 +7,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 
 
-ALTER PROCEDURE [dbo].[Lrf_BetList_SelDeleted]
+ALTER PROCEDURE [dbo].[Lrf_BetList_SelDeleted] 
 	@LicenseeID INT ,
 	@UserID		INT,
 	@CustID INT,
@@ -184,7 +184,7 @@ SELECT
 	ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral,
 	b.betid,
 	b.currency,
-	CASE WHEN b.bettype BETWEEN 1101 AND 1199 THEN ISNULL(m.showtime,'') ELSE '' END AS ShowTime,
+	'' AS ShowTime,
 	NULL AS betcheck
 FROM 
 	bettrans AS b WITH (NOLOCK)
@@ -231,9 +231,8 @@ SELECT
 	CONVERT(BIT,0) AS IsNeutral,
 	b.betid,
 	b.currency,
-	'' AS ShowTime,
-	CASE WHEN sbt.ProductID=1 THEN b.betcheck ELSE
-	NULL END AS betcheck
+	'' AS ShowTime,	
+	NULL  AS betcheck
 FROM 
 	bettrans AS b WITH (NOLOCK)
 	INNER JOIN (SELECT teamid AS homeid, leagueid, orid, matchcode, groupmatch, eventdate
