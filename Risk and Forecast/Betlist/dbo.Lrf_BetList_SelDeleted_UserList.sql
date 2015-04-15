@@ -5,7 +5,7 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-ALTER PROCEDURE [dbo].[Lrf_BetList_SelDeleted_UserList] 
+ALTER PROCEDURE [dbo].[Lrf_BetList_SelDeleted_UserList]   
 @LicenseeID INT,
 @UserID	INT,
 @CurrencyID INT=0,
