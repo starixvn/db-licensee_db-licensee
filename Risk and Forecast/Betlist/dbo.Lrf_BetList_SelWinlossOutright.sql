@@ -2,7 +2,7 @@
 set QUOTED_IDENTIFIER ON
 go
 
-ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinlossOutright]
+ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinlossOutright] 
 	@LicenseeID INT ,
 	@UserID		INT,
     @LicenseeType VARCHAR(100) = NULL ,

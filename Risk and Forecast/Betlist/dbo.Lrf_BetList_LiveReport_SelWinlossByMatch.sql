@@ -6,7 +6,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-ALTER PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossByMatch_xtest]
+ALTER PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossByMatch]
 	@MatchID INT,
 	@LicenseeID INT,
 	@UserID		INT,
