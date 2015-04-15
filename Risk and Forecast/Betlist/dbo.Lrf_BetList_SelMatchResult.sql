@@ -182,6 +182,7 @@ BEGIN
 		WHERE m.matchid = @matchid
 		ORDER BY m.eventdate,m.matchcode
 		
+		SELECT @Sporttype = Sporttype FROM dbo.match14 m WITH(NOLOCK) WHERE m.matchid = @matchid				
 		SELECT	D.MatchId,
 					D.ResourceId,
 					D.HomeValue,
@@ -256,6 +257,8 @@ BEGIN
 			LEFT JOIN DBARC.bodb_archive.dbo.ResultDetail_BK D WITH (NOLOCK) ON D.matchID = M.MatchID AND D.ResourceId = '00'
 		WHERE m.matchid = @matchid
 		ORDER BY m.eventdate,m.matchcode
+		
+		SELECT @Sporttype = Sporttype FROM DBARC.bodb_archive.dbo.match_BK m WITH(NOLOCK) WHERE m.matchid = @matchid				
 		
 		SELECT	D.MatchId,
 					D.ResourceId,
