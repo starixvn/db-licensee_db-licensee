@@ -25,6 +25,7 @@ Revisions:
    - 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
    - 20140911@Jim: add new sport Esport
    - 20141017@Jim : Apply for the change in Sporting Solution structure (#24478)
+   - 20150415@Jim: support Betradar phase 2
 Param's Explanation:
 	
 */
@@ -109,9 +110,9 @@ BEGIN
 	IF EXISTS (SELECT 1 FROM #SBsport WHERE SportID=5)
 	BEGIN
 		INSERT INTO @Bettype
-		SELECT 0,b.typeid, b.typenamee
+		SELECT DISTINCT 0,b.typeid, b.typenamee
 		FROM #bettype b
-			INNER JOIN bodb02.dbo.LRF_view_bettype_SS ss ON b.typeid=ss.typeid
+			INNER JOIN bodb02.dbo.f_GroupBettype() ss ON b.typeid=ss.GroupTypeId
 		
 	END
 	
@@ -122,8 +123,8 @@ BEGIN
 			SELECT 0,typeid, typenamee
 			FROM #bettype
 			WHERE (typeid < 31 OR (typeid BETWEEN 121 AND 999)
-							   OR (typeid IN (SELECT bettypeId FROM bodb02.dbo.LRF_view_bettype_SS )) --new tennis's bettypes
-			)
+							   OR (typeid BETWEEN 1301 and 1399)) --new tennis's bettypes
+			 
 	END
 	DROP TABLE #SBsport
 END
