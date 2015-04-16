@@ -31,6 +31,7 @@ Revisions:
 				183 - Virtual Speedway
 				185 - Virtual Cycling
 	20150414@Sophia: Support BetRadar
+	20150416@Sophia: Condition of showing Running match different between Sporting solution and BetRadar
 */
 /* sample test case:
 	exec Lrf_Result_SportSelByDate @EventDate='2013-10-06 00:00:00',@licenseeid=1
@@ -112,8 +113,13 @@ LEFT JOIN match_remark mr ON match.matchid = mr.matchid
 LEFT JOIN ( SELECT DISTINCT MatchID FROM dbo.ResultDetail R WITH (NOLOCK) WHERE SettlementStatusID > 0
 			UNION ALL  
 			SELECT DISTINCT MatchID FROM dbo.ResultDetail14 R WITH (NOLOCK) WHERE SettlementStatusID > 0
-			) R
-		ON match.Matchid = R.MatchId 
+			) SS
+		ON match.Matchid = SS.MatchId AND Match.sporttype = 5
+LEFT JOIN ( SELECT DISTINCT MatchID FROM dbo.ResultDetail R WITH (NOLOCK) WHERE SettlementStatusID > 0 AND ResourceID NOT IN ('00','01','08')
+			UNION ALL  
+			SELECT DISTINCT MatchID FROM dbo.ResultDetail14 R WITH (NOLOCK) WHERE SettlementStatusID > 0 AND ResourceID NOT IN ('00','01','08')
+			) BR
+		ON match.Matchid = BR.MatchId AND Match.sporttype = 1		
 WHERE
 	match.eventdate >= @EventDate
 	AND match.eventdate <= @toDate
@@ -121,7 +127,8 @@ WHERE
 	AND ( match.eventstatus NOT IN ('internal','closed','running')
 			OR ( mr.IsPending=1 AND match.eventstatus IN ('running','closed') )
 			OR ( mr.IsHTCal = 1 AND match.eventstatus ='running')
-			OR ( ISNULL(R.MatchID,0) <> 0 AND match.eventstatus = 'running')
+			OR ( ISNULL(SS.MatchID,0) <> 0 AND match.eventstatus = 'running')  --- condition for Sportting Solution show running Match but settled least one type
+			OR ( ISNULL(BR.MatchID,0) <> 0 AND match.eventstatus = 'running')  --- condition for BetRadar show running Match but settled least one type
 		 )	
 UNION ALL 
 SELECT s.sporttype, s.sportname  
