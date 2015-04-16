@@ -43,7 +43,7 @@ Revisions:
 	-20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	-20150127@Jim: support base on GBP Currency
 	-20150209@Don: remove index hint IX_srecommend
-     
+    -20150415@Jim: change to use f_GroupBettype instead of LRF_view_bettype_SS
 Param's Explanation:  
 	@Liveindicator : indicate that whether the report will get live data or not
 		+ 0: Non - Live data only
@@ -427,7 +427,7 @@ SELECT @sql = @sql + 'select CASE WHEN e.Code = ''VND'' THEN ''INH'' ELSE e.code
 -- Get winlost by bettype   
 SELECT @sql = @sql + '-- Get winlost by bettype  ' + CHAR(13)
 
-SELECT @sql = @sql + 'SELECT CASE WHEN ISNULL(ss.bettypeID,0) <> 0 THEN ss.typeid
+SELECT @sql = @sql + 'SELECT CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.GroupTypeID
 					ELSE b.bettype 
 					END bettype,' + CHAR(13) +
 	'SUM(TurnOver) AS Turnover,' + CHAR(13) + 'SUM(Winlost)  AS Winlost,' + CHAR(13) + 'SUM(LicenseeWL) AS LicenseeWL,' + CHAR(13) + 'SUM(Comm) AS Comm,' + CHAR(13) + 'SUM(PlayerComm) AS PlayerComm,' + CHAR(13) + 'SUM(AmtDueto3rd) AS AmtDueto3rd,' + CHAR(13) + 'SUM(Betcount) AS Betcount,' + CHAR(13) +
@@ -438,11 +438,11 @@ SELECT @sql = @sql + 'SELECT CASE WHEN ISNULL(ss.bettypeID,0) <> 0 THEN ss.typei
 	-- baseGBP
 	'CAST(SUM(TurnOver*e.GBP) AS MONEY) AS TurnoverGBP,' + CHAR(13) + 'CAST(SUM(Winlost*e.GBP) AS MONEY) AS WinlostGBP,' + CHAR(13) + 'CAST(SUM(LicenseeWL*e.GBP) AS MONEY) AS LicenseeWLGBP,' + CHAR(13) + 'CAST(SUM(Comm * e.GBP) AS MONEY) AS CommGBP,' + CHAR(13) + 'CAST(SUM(PlayerComm * e.GBP) AS MONEY) AS PlayerCommGBP,' + CHAR(13) + 'CAST(SUM(AmtDueto3rd*e.GBP) AS MONEY) AS AmtDueto3rdGBP' + CHAR(13) + 
 	'FROM #tmpWinloss b  WITH (NOLOCK) ' + CHAR(13) + 
-	'LEFT JOIN dbo.LRF_view_bettype_SS ss ON b.bettype = ss.bettypeID'+CHAR(13)+
+	'LEFT JOIN dbo.f_GroupBettype() ss ON b.bettype = ss.bettype'+CHAR(13)+
 	'INNER JOIN bettype bt WITH (nolock) ON b.bettype = bt.typeid ' + CHAR(13) + 
 	'INNER JOIN #TempExchange e' + CHAR(13) + 
 	'ON e.ExchangeDate = b.winlostdate   AND e.exchangeid = b.currency ' + CHAR(13) + 
-	'group by CASE WHEN ISNULL(ss.bettypeID,0) <> 0 THEN ss.typeid
+	'group by CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.grouptypeId
 					ELSE b.bettype 
 					END' + CHAR(13) + 
 	'DROP TABLE #tmpWinloss' + CHAR(13) + 

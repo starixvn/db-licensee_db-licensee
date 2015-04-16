@@ -440,7 +440,7 @@ ELSE
 		WHERE e.exchangeid IN (SELECT Currency FROM #Data)
 		
 		UPDATE d
-		SET bettype =ss.typeid
+		SET bettype =ss.GroupTypeID
 		FROM #Data d 
 			INNER JOIN dbo.f_GroupBettype() ss ON d.bettype = ss.bettype
 			

@@ -50,16 +50,18 @@ Param's Explanation:
 */
 
 SET NOCOUNT ON
+DECLARE @SportBettype TABLE(ProductID INT,Bettype INT,EventType INT)
+	INSERT INTO @SportBettype
+	EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel_xtest @mode=4
 
 --DECLARE @bettype AS TABLE (bettype INT)   
-DECLARE @SportBettype TABLE(ProductID INT,Bettype INT,EventType INT)
+
 --IF @ShowLC = 1
 --BEGIN	
  --   INSERT INTO @bettype(bettype)
 	--SELECT typeid FROM bettype (NOLOCK)
 	--WHERE (typeid BETWEEN 1101 AND 1199)
-	INSERT INTO @SportBettype
-	EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4
+
 --END
  
 --IF @ShowVS = 1
@@ -401,7 +403,8 @@ BEGIN
 			b.recommend IN (SELECT custid FROM @TempAg)	AND	
 			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 			b.statusID IN (111,112,113)	AND
-			((sbt.ProductID=5 AND sbt.EventType=1) OR sbt.ProductID=4) AND
+			(@ShowVS=0 OR (@ShowVS<>0 AND sbt.ProductID=5 AND sbt.EventType=1))
+			AND(@ShowLC=0 OR (@ShowLC<>0 AND sbt.ProductID=4)) AND
 			--b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
 			((@Liveindicator = 0 and b.liveindicator = 0)
 			OR (@Liveindicator = 1 and b.liveindicator = 1)
@@ -691,7 +694,8 @@ BEGIN
 			b.matchid=@matchid AND						
 			b.statusID IN (111,112,113)	AND
 			--b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
-			((sbt.ProductID=5 AND sbt.EventType=1) OR sbt.ProductID=4) AND
+			(@ShowVS=0 OR (@ShowVS<>0 AND sbt.ProductID=5 AND sbt.EventType=1))
+			AND(@ShowLC=0 OR (@ShowLC<>0 AND sbt.ProductID=4)) AND
 			((@Liveindicator = 0 and b.liveindicator = 0)
 			OR (@Liveindicator = 1 and b.liveindicator = 1)
 			OR (@Liveindicator = 2))
