@@ -1,13 +1,16 @@
 USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_BetList_WinlostByLeague_Mem]    Script Date: 02/21/2014 00:19:34 ******/
+/****** Object:  StoredProcedure [dbo].[Lrf_BetList_WinlostByLeague_Mem]    Script Date: 4/20/2015 12:14:52 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
+/****** Object:  Stored Procedure dbo.Lrf_BetList_WinlostByLeague_Mem    Script Date: 1/30/2015 5:50:11 PM ******/
+/****** Object:  Stored Procedure dbo.Lrf_BetList_WinlostByLeague_Mem    Script Date: 1/30/2015 4:56:53 PM ******/
 /****** Object:  Stored Procedure dbo.Lrf_BetList_WinlostByLeague_Mem    Script Date: 2/18/2014 10:35:57 PM ******/
 /****** Object:  Stored Procedure dbo.Lrf_BetList_WinlostByLeague_Mem    Script Date: 19/02/2014 11:25:01 AM ******/
-ALTER PROCEDURE [dbo].[Lrf_BetList_WinlostByLeague_Mem] 
+
+ALTER PROCEDURE [dbo].[Lrf_BetList_WinlostByLeague_Mem_xtest] 
 	@CustID INT
 	,@Odds FLOAT = 0
 	,@LeagueID INT
@@ -29,7 +32,7 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_WinlostByLeague_Mem]
 	,@ShowBA BIT = 1
 AS
 /*
-Created: 20140102@Florent 
+Created: 20140102@Florent
 Task : Betlist
 DB: DB052.bodb02
 Original:[Lrf_BetList_MatchWL_Bettype_8828]
@@ -37,7 +40,7 @@ Revisions:
 	- 20140207@Florent: add filter ShowBA and ShowSB
 	- 20140214@Florent: add filter by match
     - 20140630@Hannah: offer BetRadar and Sporting Solution
-	- 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 	
+	- 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
 	- 20150128@Winnie: Add base currency GBP
 	- 20150408@Winnie: Apply spottype bettype matrix & add 60 bettypes betradar
 Param's Explanation: 
@@ -75,13 +78,12 @@ WHERE (
 ------
 DECLARE @TempFromDate SMALLDATETIME
 DECLARE @TempToDate SMALLDATETIME
--------
-DECLARE @TempAg AS TABLE (custid INT)
 ----Get Sport Bettype Matrix------
 DECLARE @SportBettype TABLE(ProductID INT,Bettype INT,EventType INT)
 INSERT INTO @SportBettype
-EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4 ,@ProductID=1
-
+EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel_xtest @mode=4 ,@ProductID=1
+-------
+DECLARE @TempAg AS TABLE (custid INT)
 
 INSERT INTO @TempAg (custid)
 SELECT DISTINCT CustID
@@ -94,7 +96,7 @@ INNER JOIN #currency c ON lc.LicenseeID = c.LicenseeID
 
 DECLARE @IFromdate DATETIME
 DECLARE @ITodate DATETIME
---DECLARE @TempBettype AS TABLE (bettype INT PRIMARY KEY)
+DECLARE @TempBettype AS TABLE (bettype INT PRIMARY KEY)
 
 --SELECT @bettype = isnull(@bettype,0)
 CREATE TABLE #Data (
@@ -187,8 +189,8 @@ BEGIN
 				,CASE 
 					WHEN (
 							b.bettype IN (1, 2, 3, 7, 12, 8, 20)
-							--OR b.bettype BETWEEN 81 AND 88
-							--OR b.bettype BETWEEN 90 AND 120
+							OR b.bettype BETWEEN 81 AND 88
+							OR b.bettype BETWEEN 90 AND 120
 							)
 						THEN CASE 
 								WHEN b.OddsType = 1
@@ -278,8 +280,8 @@ BEGIN
 				,CASE 
 					WHEN (
 							b.bettype IN (1, 2, 3, 7, 12, 8, 20)
-							--OR b.bettype BETWEEN 81 AND 88
-							--OR b.bettype BETWEEN 90 AND 120
+							OR b.bettype BETWEEN 81 AND 88
+							OR b.bettype BETWEEN 90 AND 120
 							)
 						THEN CASE 
 								WHEN b.OddsType = 1
@@ -383,8 +385,8 @@ BEGIN
 				,CASE 
 					WHEN (
 							b.bettype IN (1, 2, 3, 7, 12, 8, 20)
-							--OR b.bettype BETWEEN 81 AND 88
-							--OR b.bettype BETWEEN 90 AND 120
+							OR b.bettype BETWEEN 81 AND 88
+							OR b.bettype BETWEEN 90 AND 120
 							)
 						THEN CASE 
 								WHEN b.OddsType = 1
@@ -432,13 +434,12 @@ BEGIN
 				,b.betid
 				,b.currency
 				,b.refno
-				,'' AS ShowTime
+				,CASE 
+					WHEN b.bettype BETWEEN 1101 AND 1199
+						THEN ISNULL(m.showtime, '')
+					ELSE ''
+					END AS ShowTime
 				,b.betcheck
-				--,CASE 
-				--	WHEN b.bettype BETWEEN 1101 AND 1199
-				--		THEN ISNULL(m.showtime, '')
-				--	ELSE ''
-				--	END AS ShowTime
 			FROM bettrans14 b WITH (NOLOCK)
 			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid = m.matchid
 			INNER JOIN @TempAg ta ON b.recommend = ta.custid
@@ -479,8 +480,8 @@ BEGIN
 				,CASE 
 					WHEN (
 							b.bettype IN (1, 2, 3, 7, 12, 8, 20)
-							--OR b.bettype BETWEEN 81 AND 88
-							--OR b.bettype BETWEEN 90 AND 120
+							OR b.bettype BETWEEN 81 AND 88
+							OR b.bettype BETWEEN 90 AND 120
 							)
 						THEN CASE 
 								WHEN b.OddsType = 1
@@ -532,13 +533,12 @@ BEGIN
 				,b.betid
 				,b.currency
 				,b.refno
-				,'' AS ShowTime
+				,CASE 
+					WHEN b.bettype BETWEEN 1101 AND 1199
+						THEN ISNULL(m.showtime, '')
+					ELSE ''
+					END AS ShowTime
 				,b.betcheck
-				--,CASE 
-				--	WHEN b.bettype BETWEEN 1101 AND 1199
-				--		THEN ISNULL(m.showtime, '')
-				--	ELSE ''
-				--	END AS ShowTime
 			FROM bettrans14 b WITH (NOLOCK)
 			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid = m.matchid
 			INNER JOIN @TempAg ta ON b.recommend = ta.custid
@@ -602,8 +602,9 @@ BEGIN
 						CONVERT(FLOAT, b.hdp1) AS hdp1, 
 						CONVERT(FLOAT, b.hdp2) AS hdp2,
 						b.Odds,
-						CASE WHEN (b.bettype IN (1,2,3,7,12,8,20)										
-									)
+						CASE WHEN (b.bettype IN (1,2,3,7,12,8,20)	
+									OR b.bettype BETWEEN 81 AND 88
+									OR b.bettype BETWEEN 90 AND 120)
 									THEN 
 											CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
 												 WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
@@ -638,15 +639,14 @@ BEGIN
 						b.betid,
 						b.currency,
 						b.refno,
-						m.ShowTime AS ShowTime,
-						b.betcheck
+						m.ShowTime AS ShowTime 
+						,b.betcheck
 						FROM 
 						bodb_archive.dbo.bettrans_bk  b WITH (NOLOCK, INDEX=IX_CUSTID) 
 						INNER JOIN cte_match m ON b.matchid=m.matchid
-						INNER JOIN @SportBettype sbt ON sbt.Bettype=b.bettype
 					 where b.winlostdate between ''''' 
 			+ CAST(@fromdate AS VARCHAR) + '''''' + ' AND ''''' + CAST(@TempToDate AS VARCHAR) + '''''
-					  AND
+					 AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)) AND
 					 b.statusID IN (111,112,113,114,115)
 					 AND b.Custid =' + CAST(@custid AS VARCHAR) + '
 					 and b.tpositiontaking=0
@@ -684,8 +684,9 @@ BEGIN
 						CONVERT(FLOAT, b.hdp1) AS hdp1, 
 						CONVERT(FLOAT, b.hdp2) AS hdp2,
 						b.Odds,
-						CASE WHEN (b.bettype IN (1,2,3,7,12,8,20)										
-									)
+						CASE WHEN (b.bettype IN (1,2,3,7,12,8,20)	
+									OR b.bettype BETWEEN 81 AND 88
+									OR b.bettype BETWEEN 90 AND 120)
 									THEN 
 											CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
 												 WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
@@ -723,15 +724,14 @@ BEGIN
 						b.betid,
 						b.currency,
 						b.refno,
-						m.ShowTime AS ShowTime,
-						b.betcheck 
+						m.ShowTime AS ShowTime 
+						,b.betcheck
 						FROM 
 						bodb_archive.dbo.bettrans_bk  b WITH (NOLOCK, INDEX=IX_CUSTID) 
 						INNER JOIN cte_match m ON b.matchid=m.matchid
-						INNER JOIN @SportBettype sbt ON sbt.Bettype=b.bettype
 					 where b.winlostdate between ''''' 
 			+ CAST(@fromdate AS VARCHAR) + '''''' + ' AND ''''' + CAST(@TempToDate AS VARCHAR) + '''''
-					 AND
+					 AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)) AND
 					 b.statusID IN (111,112,113,114,115)
 					 AND b.Custid =' + CAST(@custid AS VARCHAR) + '
 					 and b.tpositiontaking<>0
@@ -836,18 +836,3 @@ DROP TABLE #Currency
 --WHERE b.odds>@odds
 DROP TABLE #TempExchange
 DROP TABLE #Data
-
-
-
-GO
-SET QUOTED_IDENTIFIER OFF 
-GO
-SET ANSI_NULLS ON 
-GO
-
-
-GO 
- GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_WinlostByLeague_Mem] TO [vnteam]
-GO 
- GRANT EXECUTE ON [dbo].[Lrf_BetList_WinlostByLeague_Mem] TO [bodbLicenseeNet]
-GO 
