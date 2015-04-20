@@ -798,7 +798,7 @@ FROM (
 		,b.*
 		,SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1, len(c.username2) - CHARINDEX('$', c.username2)) AS nickname
 		,
-		--USD
+		--USD 
 		stake * e.USD stakeUSD
 		,Winlost * e.USD WinlostUSD
 		,LicenseeWL * e.USD LicenseeWLUSD
