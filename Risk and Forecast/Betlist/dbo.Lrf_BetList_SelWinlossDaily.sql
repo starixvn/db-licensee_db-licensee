@@ -1,6 +1,6 @@
 ﻿USE [bodb02]
 GO
-
+/****** Object:  StoredProcedure [dbo].[Lrf_BetList_SelWinlossDaily_xtest]    Script Date: 04/20/2015 13:43:02 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -836,6 +836,7 @@ BEGIN
 		INNER JOIN customer c WITH (nolock) ON b.custid = c.custid
 		INNER JOIN #TempAg ag ON b.recommend = ag.custid AND b.currency = ag.Currency		
 		INNER JOIN #TempExchange e ON  e.exchangeid = b.currency'+char(13)+
+		'INNER JOIN #SportBettype sbt ON sbt.Bettype=b.bettype'+char(13)+
 	CASE WHEN @Product='BA' THEN 'INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid'	
 							ELSE ''
 							END+char(13)+

@@ -1,6 +1,6 @@
 ﻿USE [bodb02]
 GO
- 
+/****** Object:  StoredProcedure [dbo].[Lrf_TotalBets_Sel25_jim]    Script Date: 04/20/2015 16:27:15 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -32,7 +32,7 @@ Revisions:
 	- 20140718@Hannah: Change liveindicator datatype to INT to fix running live matches are not being showed at the top list (RedmineID:19136)
 	- 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
 	- 20150124@Winnie: Add base currency GBP 
-	- 20150413@Jim: add more bettype Odd/Even (3rd) (157)
+	- 20150413@Jim: add more bettype Odd/Even (3rd) (157) ,Extra Time 1H 1X2 (167)
 Param's Explanation:
 • @CustID: AgentID
 */
@@ -185,20 +185,20 @@ SELECT
 		sum(CASE WHEN bettype=5 AND betteam = '2' THEN  stake*e.EUR   ELSE 0 END) AS odds_2EUR,
 		sum(CASE WHEN bettype=5 AND betteam = '2' THEN  stake*e.GBP   ELSE 0 END) AS odds_2GBP,
 
-		sum(CASE WHEN bettype=15 AND betteam = '1' THEN  stake   ELSE 0 END) AS odds_1_1st,
-		sum(CASE WHEN bettype=15 AND betteam = '1' THEN  stake*e.USD   ELSE 0 END) AS odds_1_1stUSD,
-		sum(CASE WHEN bettype=15 AND betteam = '1' THEN  stake*e.EUR   ELSE 0 END) AS odds_1_1stEUR,
-		sum(CASE WHEN bettype=15 AND betteam = '1' THEN  stake*e.GBP   ELSE 0 END) AS odds_1_1stGBP,
+		sum(CASE WHEN bettype IN (15,167) AND betteam = '1' THEN  stake   ELSE 0 END) AS odds_1_1st,
+		sum(CASE WHEN bettype IN (15,167) AND betteam = '1' THEN  stake*e.USD   ELSE 0 END) AS odds_1_1stUSD,
+		sum(CASE WHEN bettype IN (15,167) AND betteam = '1' THEN  stake*e.EUR   ELSE 0 END) AS odds_1_1stEUR,
+		sum(CASE WHEN bettype IN (15,167) AND betteam = '1' THEN  stake*e.GBP   ELSE 0 END) AS odds_1_1stGBP,
 		
-		sum(CASE WHEN bettype=15 AND betteam = 'x' THEN  stake   ELSE 0 END) AS odds_x_1st,
-		sum(CASE WHEN bettype=15 AND betteam = 'x' THEN  stake*e.USD   ELSE 0 END) AS odds_x_1stUSD,
-		sum(CASE WHEN bettype=15 AND betteam = 'x' THEN  stake*e.EUR   ELSE 0 END) AS odds_x_1stEUR,
-		sum(CASE WHEN bettype=15 AND betteam = 'x' THEN  stake*e.GBP   ELSE 0 END) AS odds_x_1stGBP,
+		sum(CASE WHEN bettype IN (15,167) AND betteam = 'x' THEN  stake   ELSE 0 END) AS odds_x_1st,
+		sum(CASE WHEN bettype IN (15,167) AND betteam = 'x' THEN  stake*e.USD   ELSE 0 END) AS odds_x_1stUSD,
+		sum(CASE WHEN bettype IN (15,167) AND betteam = 'x' THEN  stake*e.EUR   ELSE 0 END) AS odds_x_1stEUR,
+		sum(CASE WHEN bettype IN (15,167) AND betteam = 'x' THEN  stake*e.GBP   ELSE 0 END) AS odds_x_1stGBP,
 		
-		sum(CASE WHEN bettype=15 AND betteam = '2' THEN  stake   ELSE 0 END) AS odds_2_1st,
-		sum(CASE WHEN bettype=15 AND betteam = '2' THEN  stake*e.USD   ELSE 0 END) AS odds_2_1stUSD,
-		sum(CASE WHEN bettype=15 AND betteam = '2' THEN  stake*e.EUR   ELSE 0 END) AS odds_2_1stEUR,
-		sum(CASE WHEN bettype=15 AND betteam = '2' THEN  stake*e.GBP   ELSE 0 END) AS odds_2_1stGBP,
+		sum(CASE WHEN bettype IN (15,167) AND betteam = '2' THEN  stake   ELSE 0 END) AS odds_2_1st,
+		sum(CASE WHEN bettype IN (15,167) AND betteam = '2' THEN  stake*e.USD   ELSE 0 END) AS odds_2_1stUSD,
+		sum(CASE WHEN bettype IN (15,167) AND betteam = '2' THEN  stake*e.EUR   ELSE 0 END) AS odds_2_1stEUR,
+		sum(CASE WHEN bettype IN (15,167) AND betteam = '2' THEN  stake*e.GBP   ELSE 0 END) AS odds_2_1stGBP,
 
 		sum(Case when bettype=123 and betteam = 'h' then  stake   else 0 end) AS home_odds_DND,
 		sum(Case when bettype=123 and betteam = 'h' then  stake*e.USD   else 0 end) AS home_odds_DNDUSD,
@@ -213,7 +213,7 @@ SELECT
 		sum(CASE WHEN bettype in (2,157)  THEN 1 ELSE 0 END) AS BetCount_OE,
 		sum(CASE WHEN bettype=12 THEN 1 ELSE 0 END) AS BetCount_OE_1st,
 		sum(CASE WHEN bettype=5 THEN 1 ELSE 0 END) AS BetCount_1x2,
-		sum(CASE WHEN bettype=15 THEN 1 ELSE 0 END) AS BetCount_1x2_1st,
+		sum(CASE WHEN bettype IN (15,167) THEN 1 ELSE 0 END) AS BetCount_1x2_1st,
 		sum(case when bettype=123 then 1 else 0 end) as BetCount_DND,
 		isnull(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral
 	FROM
@@ -224,7 +224,7 @@ SELECT
 	WHERE  	
 		a.recommend IN (SELECT CustID FROM @TempAg) AND
 		 ((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
-		a.bettype in (2, 12, 5, 15,123,157)
+		a.bettype in (2, 12, 5, 15,123,157,167)
 		AND a.statusID in (0,1)
 		AND a.ruben = 0
 		AND m.eventstatus='running'
