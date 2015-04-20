@@ -42,6 +42,7 @@ Revisions:
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	- 20150123@Jim: support base on Currency GBP
 	- 20150203@Jim: fix bug duplicate command when retrieve BA data from bettrans14
+	- 20150415@Jim: change to use f_GroupBettype instead of LRF_view_bettype_SS
 Param's Explanation:   
    
 */  
@@ -802,7 +803,7 @@ SELECT
 	sum(b.betcount) betcount,  
 	CASE WHEN b.sporttype IN (180,181,182,183,184,185) THEN 0 ELSE homeid END homeid,  
 	awayid,  
-	CASE WHEN ISNULL(ss.bettypeID,0) <> 0 THEN ss.typeid
+	CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.grouptypeId
 		 ELSE b.bettype 
 		END bettype,  
 	sporttype,	
@@ -850,12 +851,12 @@ SELECT
 	liveindicator  
 FROM @AgMatchWLDetails b  
 	INNER JOIN @ExchangeDaily e ON b.winlostdate = e.ExchangeDate AND b.currency = e.ExchangeId 
-	LEFT JOIN LRF_view_bettype_SS ss ON b.bettype = ss.bettypeID 		
+	LEFT JOIN dbo.f_GroupBettype() ss ON b.bettype = ss.bettype 		
 GROUP BY    
     matchid,  
     CASE WHEN b.sporttype IN (180,181,182,183,184,185) THEN 0 ELSE homeid END,  
     awayid,  
-    CASE WHEN ISNULL(ss.bettypeID,0) <> 0 THEN ss.typeid
+    CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.grouptypeId
 		 ELSE b.bettype 
 		END ,
 	sporttype,	
