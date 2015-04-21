@@ -69,7 +69,8 @@ DECLARE @Data AS Table
 	matchid INT,
 	homeID INT,
 	awayID INT,
-
+	bettype INT,
+	
 	home_odds_OE MONEY,
 	home_odds_OEUSD MONEY,
 	home_odds_OEEUR MONEY,
@@ -150,6 +151,7 @@ SELECT
 		m.matchid,
 		m.homeid,
 		m.awayid,
+		a.bettype,
 		sum((CASE WHEN bettype in (2,157) AND betteam = 'h' THEN stake ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS home_odds_OE,
 		sum((CASE WHEN bettype in (2,157) AND betteam = 'h' THEN stake*e.USD ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS home_odds_OEUSD,
 		sum((CASE WHEN bettype in (2,157) AND betteam = 'h' THEN stake*e.EUR ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS home_odds_OEEUR,
@@ -238,7 +240,8 @@ SELECT
 		m.matchcode, 
 		m.leagueid,
 		m.showtime,
-		m.isNeutral
+		m.isNeutral,
+		a.bettype
 	ORDER BY m.matchcode
 
 IF @TotalRows = 0  
