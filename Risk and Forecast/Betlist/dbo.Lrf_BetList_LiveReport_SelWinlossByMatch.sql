@@ -52,7 +52,7 @@ Param's Explanation:
 SET NOCOUNT ON
 DECLARE @SportBettype TABLE(ProductID INT,Bettype INT,EventType INT)
 	INSERT INTO @SportBettype
-	EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel_xtest @mode=4
+	EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4
 
 --DECLARE @bettype AS TABLE (bettype INT)   
 
