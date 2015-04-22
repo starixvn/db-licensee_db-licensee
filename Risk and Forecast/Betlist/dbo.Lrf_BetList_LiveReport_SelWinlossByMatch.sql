@@ -46,7 +46,7 @@ Param's Explanation:
 	@Liveindicator : indicate that whether the report will get live data or not
 		+ 0: Non - Live data only
 		+ 1: Live data only
-		+ 2: All	
+		+ 2: All 	
 */
 
 SET NOCOUNT ON
