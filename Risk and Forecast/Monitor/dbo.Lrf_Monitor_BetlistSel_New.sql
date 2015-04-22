@@ -161,7 +161,8 @@ SELECT @SQL = @SQL + 'SELECT TOP ('+CONVERT(VARCHAR(10),@LimitRowCount)+')'+CHAR
   'b.OddsType,'+CHAR(13)+                
   'b.currency as currencyid,'+CHAR(13)+                
   ''''' as currencyname,'+CHAR(13)+                
-  'b.SpecialLevel' +CHAR(13)+                
+  'b.SpecialLevel,' +CHAR(13)+                
+  'b.betcheck' +CHAR(13)+   
   'FROM bettrans_lrf_betRunning b WITH(NOLOCK)  '+CHAR(13) +   
   'INNER JOIN Lrf_f_GetExchangeDaily(CONVERT(VARCHAR(10), getdate(), 111),CONVERT(VARCHAR(10), getdate(), 111))  ex on ex.exchangeid = b.currency ' + CHAR(13) +             
   'INNER JOIN bodb_licensee.dbo.CurrencyUser cr WITH (NOLOCK) ON b.LicenseeID=cr.LicenseeID AND b.Currency=cr.CurrencyID'+char(13)+
