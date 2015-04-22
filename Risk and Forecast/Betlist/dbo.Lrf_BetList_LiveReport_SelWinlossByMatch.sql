@@ -167,7 +167,7 @@ BEGIN
 			b.currency,
 			b.refno,
 			'' AS ShowTime,
-			NULL AS betcheck
+			b.betcheck AS betcheck
 		FROM
 			bettrans b WITH (NOLOCK,INDEX=IXU_transid) 
 			INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid 	 		
@@ -453,7 +453,7 @@ BEGIN
 			b.currency,
 			b.refno,
 			'' AS ShowTime
-			,NULL AS betcheck
+			,b.betcheck AS betcheck
 		FROM
 			bettrans14 b WITH (NOLOCK) 			
 			--INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid 	 		
