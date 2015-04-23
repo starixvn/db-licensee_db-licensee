@@ -53,7 +53,7 @@ SET NOCOUNT ON
 DECLARE @recommend INT
 DECLARE @Fromdate DATETIME
 DECLARE @Todate DATETIME
-
+ 
 ------------
 DECLARE @SportBettype TABLE(ProductID INT,Bettype INT,EventType INT)
 INSERT INTO @SportBettype
