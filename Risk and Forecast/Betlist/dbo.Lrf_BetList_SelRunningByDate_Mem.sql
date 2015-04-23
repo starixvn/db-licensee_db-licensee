@@ -110,7 +110,7 @@ BEGIN
 		
 	DELETE sbt
 	FROM @SportBettype sbt
-	WHERE ProductID		= CASE WHEN @ShowSB	= 0 THEN 1 END
+	WHERE ProductID		= CASE WHEN @ShowSB	= 0 AND @ShowBA = 0 THEN 1 END
 		OR ProductID	= CASE WHEN @ShowRB	= 0 THEN 2 END
 		OR ProductID	= CASE WHEN @ShowNG	= 0 THEN 3 END
 		OR ProductID	= CASE WHEN @ShowLC	= 0 THEN 4 END
