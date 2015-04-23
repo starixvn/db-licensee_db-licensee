@@ -196,7 +196,7 @@ WHERE
 	AND b.recommend = @recommend
 	AND b.statusID IN (101,102)
 	--AND b.bettype NOT BETWEEN 1501 AND 1599	
-	AND sbt.ProductID=8
+	AND sbt.ProductID!=8
 	AND b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) 
 ----  Outright/Horse Racing
 UNION ALL
