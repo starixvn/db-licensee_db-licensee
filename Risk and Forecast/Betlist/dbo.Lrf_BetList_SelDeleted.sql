@@ -54,7 +54,7 @@ SET NOCOUNT ON
 DECLARE @recommend INT
 DECLARE @Fromdate DATETIME
 DECLARE @Todate DATETIME
-
+ 
 ------------
 DECLARE @SportBettype TABLE(ProductID INT,Bettype INT,EventType INT)
 INSERT INTO @SportBettype
@@ -197,7 +197,7 @@ WHERE
 	AND b.recommend = @recommend
 	AND b.statusID IN (101,102)
 	--AND b.bettype NOT BETWEEN 1501 AND 1599	
-	AND sbt.ProductID=8
+	AND sbt.ProductID!=8
 	AND b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) 
 ----  Outright/Horse Racing
 UNION ALL
