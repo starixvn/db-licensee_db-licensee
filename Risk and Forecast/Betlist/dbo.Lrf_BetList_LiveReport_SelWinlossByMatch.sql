@@ -46,13 +46,13 @@ Param's Explanation:
 	@Liveindicator : indicate that whether the report will get live data or not
 		+ 0: Non - Live data only
 		+ 1: Live data only
-		+ 2: All	
+		+ 2: All 	
 */
 
 SET NOCOUNT ON
 DECLARE @SportBettype TABLE(ProductID INT,Bettype INT,EventType INT)
 	INSERT INTO @SportBettype
-	EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel_xtest @mode=4
+	EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4
 
 --DECLARE @bettype AS TABLE (bettype INT)   
 
@@ -167,7 +167,7 @@ BEGIN
 			b.currency,
 			b.refno,
 			'' AS ShowTime,
-			NULL AS betcheck
+			b.betcheck AS betcheck
 		FROM
 			bettrans b WITH (NOLOCK,INDEX=IXU_transid) 
 			INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid 	 		
@@ -453,7 +453,7 @@ BEGIN
 			b.currency,
 			b.refno,
 			'' AS ShowTime
-			,NULL AS betcheck
+			,b.betcheck AS betcheck
 		FROM
 			bettrans14 b WITH (NOLOCK) 			
 			--INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid 	 		
