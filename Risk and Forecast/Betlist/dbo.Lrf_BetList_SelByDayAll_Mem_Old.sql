@@ -151,7 +151,7 @@ BEGIN
 		,Bettype
 		,EventType
 	)
-	EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel_xtest @mode = 4
+	EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode = 4
 		
 	DELETE sbt
 	FROM @SportBettype sbt
