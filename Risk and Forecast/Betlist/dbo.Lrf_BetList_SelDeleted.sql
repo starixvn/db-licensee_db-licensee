@@ -44,6 +44,7 @@ Revisions:
 	- 20141129@Jim: add more param @CurrencyID	
 	- 20150128@Winnie: add base currency GBP
 	- 20150409@Winnie: Apply spottype bettype matrix & 60 bettypes betradar
+	- 20150423@Jim: fix bug
 Param's Explanation:
 + @CustID: AgentID
 */
@@ -53,7 +54,7 @@ SET NOCOUNT ON
 DECLARE @recommend INT
 DECLARE @Fromdate DATETIME
 DECLARE @Todate DATETIME
-
+ 
 ------------
 DECLARE @SportBettype TABLE(ProductID INT,Bettype INT,EventType INT)
 INSERT INTO @SportBettype
@@ -196,7 +197,7 @@ WHERE
 	AND b.recommend = @recommend
 	AND b.statusID IN (101,102)
 	--AND b.bettype NOT BETWEEN 1501 AND 1599	
-	AND sbt.ProductID=8
+	AND sbt.ProductID!=8
 	AND b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) 
 ----  Outright/Horse Racing
 UNION ALL
@@ -241,7 +242,7 @@ FROM
 	INNER JOIN league l WITH (NOLOCK) ON m.leagueid = l.leagueid
 	INNER JOIN @SportBettype sbt ON sbt.Bettype=b.bettype	
 WHERE	
-	sbt.ProductID=2 OR (sbt.ProductID=1 AND sbt.EventType=2)	
+	(sbt.ProductID=2 OR (sbt.ProductID=1 AND sbt.EventType=2))
 	--b.bettype in (10,31,32,33,41,42,43)
 	AND b.recommend = @recommend
 	AND b.custid = @CustID
