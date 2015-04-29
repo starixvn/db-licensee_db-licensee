@@ -1,6 +1,6 @@
 ﻿USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_TotalBets_Sel25_jim]    Script Date: 04/20/2015 16:27:15 ******/
+
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -151,7 +151,9 @@ SELECT
 		m.matchid,
 		m.homeid,
 		m.awayid,
-		a.bettype,
+		CASE  WHEN a.bettype IN (2,12) THEN 2
+			  WHEN a.bettype IN (5,15) THEN 5	
+			  ELSE a.bettype END  bettype,
 		sum((CASE WHEN bettype in (2,157) AND betteam = 'h' THEN stake ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS home_odds_OE,
 		sum((CASE WHEN bettype in (2,157) AND betteam = 'h' THEN stake*e.USD ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS home_odds_OEUSD,
 		sum((CASE WHEN bettype in (2,157) AND betteam = 'h' THEN stake*e.EUR ELSE 0 END)*(CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END)) AS home_odds_OEEUR,
@@ -241,7 +243,10 @@ SELECT
 		m.leagueid,
 		m.showtime,
 		m.isNeutral,
-		a.bettype
+		CASE  WHEN a.bettype IN (2,12) THEN 2
+			  WHEN a.bettype IN (5,15) THEN 5	
+			  ELSE a.bettype END
+		
 	ORDER BY m.matchcode
 
 IF @TotalRows = 0  
