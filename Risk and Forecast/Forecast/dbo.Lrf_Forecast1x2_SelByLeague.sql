@@ -68,7 +68,7 @@ Revisions:
             SUM( x.awaywin - x.homelose - x.drawlose ) 'al' ,
             SUM( x.awaywinUSD - x.homeloseUSD - x.drawloseUSD ) 'alUSD' ,
             SUM( x.awaywinEUR - x.homeloseEUR - x.drawloseEUR ) 'alEUR' ,
-			SUM( x.awaywinEUR - x.homeloseGBP - x.drawloseGBP ) 'alGBP' ,
+			SUM( x.awaywinGBP - x.homeloseGBP - x.drawloseGBP ) 'alGBP' ,
             SUM( x.homewin - x.awaylose - x.drawlose ) 'hl' ,
             SUM( x.homewinUSD - x.awayloseUSD - x.drawloseUSD ) 'hlUSD' ,
             SUM( x.homewinEUR - x.awayloseEUR - x.drawloseEUR ) 'hlEUR' ,
