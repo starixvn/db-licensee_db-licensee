@@ -403,8 +403,10 @@ BEGIN
 			b.recommend IN (SELECT custid FROM @TempAg)	AND	
 			((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 			b.statusID IN (111,112,113)	AND
-			(@ShowVS=0 OR (@ShowVS<>0 AND sbt.ProductID=5 AND sbt.EventType=1))
-			AND(@ShowLC=0 OR (@ShowLC<>0 AND sbt.ProductID=4)) AND
+			(
+			(@ShowVS=1 AND sbt.ProductID=5 AND sbt.EventType=1)
+			OR (@ShowLC=1 AND sbt.ProductID=4)
+			) AND
 			--b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
 			((@Liveindicator = 0 and b.liveindicator = 0)
 			OR (@Liveindicator = 1 and b.liveindicator = 1)
@@ -694,8 +696,10 @@ BEGIN
 			b.matchid=@matchid AND						
 			b.statusID IN (111,112,113)	AND
 			--b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
-			(@ShowVS=0 OR (@ShowVS<>0 AND sbt.ProductID=5 AND sbt.EventType=1))
-			AND(@ShowLC=0 OR (@ShowLC<>0 AND sbt.ProductID=4)) AND
+			(
+			(@ShowVS=1 AND sbt.ProductID=5 AND sbt.EventType=1)
+			OR (@ShowLC=1 AND sbt.ProductID=4)
+			) AND
 			((@Liveindicator = 0 and b.liveindicator = 0)
 			OR (@Liveindicator = 1 and b.liveindicator = 1)
 			OR (@Liveindicator = 2))
