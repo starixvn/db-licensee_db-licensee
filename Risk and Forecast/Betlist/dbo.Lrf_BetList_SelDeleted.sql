@@ -44,6 +44,7 @@ Revisions:
 	- 20141129@Jim: add more param @CurrencyID	
 	- 20150128@Winnie: add base currency GBP
 	- 20150409@Winnie: Apply spottype bettype matrix & 60 bettypes betradar
+	- 20150423@Jim: fix bug
 Param's Explanation:
 + @CustID: AgentID
 */
@@ -241,7 +242,7 @@ FROM
 	INNER JOIN league l WITH (NOLOCK) ON m.leagueid = l.leagueid
 	INNER JOIN @SportBettype sbt ON sbt.Bettype=b.bettype	
 WHERE	
-	sbt.ProductID=2 OR (sbt.ProductID=1 AND sbt.EventType=2)	
+	(sbt.ProductID=2 OR (sbt.ProductID=1 AND sbt.EventType=2))
 	--b.bettype in (10,31,32,33,41,42,43)
 	AND b.recommend = @recommend
 	AND b.custid = @CustID

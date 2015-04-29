@@ -35,6 +35,7 @@ AS
 	- 20141021@Florent: Apply for the change in Sporting Solution structure (#24478)
 	- 20141120@Jim: expand data range for @transid param to covert big datatype
 	- 20150128@Jim: base on GBP
+	- 20150415@Jim: support betradar
  Parameter's Explanation:                
   - @bettypes:                 
    + HDP: 1,7, 1303 (Set Handicap)                

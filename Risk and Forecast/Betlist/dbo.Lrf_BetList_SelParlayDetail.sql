@@ -1,6 +1,10 @@
-﻿set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
+﻿USE [bodb02]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_BetList_SelParlayDetail]    Script Date: 04/24/2015 08:52:07 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
 
 ALTER PROCEDURE [dbo].[Lrf_BetList_SelParlayDetail]
 	@TransID	bigint,
@@ -17,12 +21,14 @@ Revisions:
 	- 20111229@Henry: change the way to get odds/oddstype/betteam to web dev
 	- 20141106@Florent: fix show SS bettype, get betcheck
 	- 20141212@Florent: fix when betcheck = '' will return NULL
+	- 20150424@Jim: support Betradar (add column betcheck in result)
 */
 SET NOCOUNT ON
 
 DECLARE @tmpParlay TABLE (
 	transid BIGINT
-	,betID NVARCHAR(50)
+	,betID TINYINT
+	,betcheck VARCHAR(100)
 	,sporttype INT
 	,leagueid INT
 	,bettype INT
@@ -73,6 +79,7 @@ BEGIN
 	INSERT INTO @tmpParlay (
 		transid
 		,betID
+		,betcheck
 		,sporttype
 		,leagueid
 		,bettype
@@ -90,7 +97,8 @@ BEGIN
 		,statusID
 		)
 	SELECT b.transid
-	     ,b.betcheck
+		,NULL 
+	    ,b.betcheck
 		,m.Sporttype
 		,m.LeagueID
 		,b.Bettype
@@ -136,6 +144,7 @@ BEGIN
 	INSERT INTO @tmpParlay (
 		transid
 		,betID
+		,betcheck
 		,sporttype
 		,leagueid
 		,bettype
@@ -153,7 +162,8 @@ BEGIN
 		,statusID
 		)
 	SELECT b.transid
-		 ,b.betcheck
+		,NULL
+		,b.betcheck
 		,m.Sporttype
 		,m.LeagueID
 		,b.Bettype
@@ -198,6 +208,7 @@ BEGIN
 	INSERT INTO @tmpParlay (
 		transid
 		,betID
+		,betcheck
 		,sporttype
 		,leagueid
 		,bettype
@@ -215,7 +226,8 @@ BEGIN
 		,statusID
 		)
 	SELECT b.transid
-		 ,b.betcheck
+		,NULL
+		,b.betcheck
 		,m.Sporttype
 		,m.LeagueID
 		,b.Bettype
