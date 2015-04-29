@@ -2663,7 +2663,7 @@ IF @ShowVS=1
 		
 		END
 	END
-SELECT * FROM @BettransDetail ORDER BY RefNo,Bettype
+SELECT * FROM @BettransDetail ORDER BY RefNo,Bettype 
 	
 
 DROP TABLE #TempExchange
