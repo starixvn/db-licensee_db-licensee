@@ -112,7 +112,7 @@ BEGIN
 		INSERT INTO @Bettype
 		SELECT DISTINCT 0,b.typeid, b.typenamee
 		FROM #bettype b
-			INNER JOIN bodb02.dbo.f_GroupBettype() ss ON b.typeid=ss.GroupTypeId
+			INNER JOIN dbo.f_GroupBettype() ss ON b.typeid=ss.GroupTypeId
 		
 	END
 	
