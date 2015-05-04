@@ -29,12 +29,12 @@ BEGIN
 	DECLARE @string VARCHAR(MAX), @splitter CHAR(1), @xml XML
 	SELECT @splitter = ',', @string = @ids
 
-	SET @xml = N'<root><r>' + REPLACE(@string, @splitter, '</r><r>') + '</r></root>'
+	SET @xml = N'<root><r i=''' + REPLACE(@string, @splitter, '''/><r i=''') + '''/></root>'
 
 	--Create temp table containing all accounts belong to super, exclude fincance account
-	CREATE TABLE #tblCust (custid INT)
+	CREATE TABLE #tblCust (custid INT)	
 	INSERT INTO #tblCust(custid)
-	SELECT r.value('.','INT')
+	SELECT r.value('./@i','INT')
 	FROM @xml.nodes('//root/r') AS RECORDS(r)
 
 	IF @Sporttype = 1 --Sportbook
