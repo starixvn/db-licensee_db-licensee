@@ -445,6 +445,9 @@ SELECT @sql = @sql + 'SELECT CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.GroupTy
 	'group by CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.grouptypeId
 					ELSE b.bettype 
 					END' + CHAR(13) + 
+	'ORDER BY CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.GroupTypeID
+					ELSE b.bettype 
+					END'	+ CHAR(13) + 			
 	'DROP TABLE #tmpWinloss' + CHAR(13) + 
 	'DROP TABLE #TempExchange' + CHAR(13) + 
 	'DROP TABLE #Currency' + CHAR(13)
