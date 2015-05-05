@@ -44,7 +44,7 @@ Revisions:
 	- 20141129@Jim: add more param @CurrencyID	
 	- 20150128@Winnie: add base currency GBP
 	- 20150409@Winnie: Apply spottype bettype matrix & 60 bettypes betradar
-	- 20150423@Jim: fix bug
+	- 20150423@Jim: fix bug 
 Param's Explanation:
 + @CustID: AgentID
 */
@@ -186,7 +186,7 @@ SELECT
 	b.betid,
 	b.currency,
 	'' AS ShowTime,
-	NULL AS betcheck
+	b.betcheck AS betcheck
 FROM 
 	bettrans AS b WITH (NOLOCK)
 	INNER JOIN (SELECT sporttype, homeid, awayid, leagueid, matchid, matchcode, eventdate, isneutral,showtime FROM match (NOLOCK) WHERE eventdate > DATEADD(DAY,-3,CURRENT_TIMESTAMP)
