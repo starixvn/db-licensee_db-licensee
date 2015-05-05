@@ -1,5 +1,10 @@
 ﻿USE [bodb02]
-GO 
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_Forecast1x2_SelByLeague]    Script Date: 04/29/2015 14:15:21 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
 ALTER PROCEDURE [dbo].[Lrf_Forecast1x2_SelByLeague]
     @LicenseeID INT ,
     @LicenseeType VARCHAR(100) = NULL ,
@@ -60,44 +65,44 @@ Revisions:
             x.MatchCode ,
             isNeutral ,
 			--FT.1X2
-            ( x.awaywin - x.homelose - x.drawlose ) 'al' ,
-            ( x.awaywinUSD - x.homeloseUSD - x.drawloseUSD ) 'alUSD' ,
-            ( x.awaywinEUR - x.homeloseEUR - x.drawloseEUR ) 'alEUR' ,
-			( x.awaywinEUR - x.homeloseGBP - x.drawloseGBP ) 'alGBP' ,
-            ( x.homewin - x.awaylose - x.drawlose ) 'hl' ,
-            ( x.homewinUSD - x.awayloseUSD - x.drawloseUSD ) 'hlUSD' ,
-            ( x.homewinEUR - x.awayloseEUR - x.drawloseEUR ) 'hlEUR' ,
-			( x.homewinGBP - x.awayloseGBP - x.drawloseGBP ) 'hlGBP' ,
-            ( x.drawwin - x.awaylose - x.homelose ) 'dl' ,
-            ( x.drawwinUSD - x.awayloseUSD - x.homeloseUSD ) 'dlUSD' ,
-            ( x.drawwinEUR - x.awayloseEUR - x.homeloseEUR ) 'dlEUR' ,
-			( x.drawwinGBP - x.awayloseGBP - x.homeloseGBP ) 'dlGBP' ,
+            SUM( x.awaywin - x.homelose - x.drawlose ) 'al' ,
+            SUM( x.awaywinUSD - x.homeloseUSD - x.drawloseUSD ) 'alUSD' ,
+            SUM( x.awaywinEUR - x.homeloseEUR - x.drawloseEUR ) 'alEUR' ,
+			SUM( x.awaywinGBP - x.homeloseGBP - x.drawloseGBP ) 'alGBP' ,
+            SUM( x.homewin - x.awaylose - x.drawlose ) 'hl' ,
+            SUM( x.homewinUSD - x.awayloseUSD - x.drawloseUSD ) 'hlUSD' ,
+            SUM( x.homewinEUR - x.awayloseEUR - x.drawloseEUR ) 'hlEUR' ,
+			SUM( x.homewinGBP - x.awayloseGBP - x.drawloseGBP ) 'hlGBP' ,
+            SUM( x.drawwin - x.awaylose - x.homelose ) 'dl' ,
+            SUM( x.drawwinUSD - x.awayloseUSD - x.homeloseUSD ) 'dlUSD' ,
+            SUM( x.drawwinEUR - x.awayloseEUR - x.homeloseEUR ) 'dlEUR' ,
+			SUM( x.drawwinGBP - x.awayloseGBP - x.homeloseGBP ) 'dlGBP' ,
 			--1H 1X2
-            ( x.ht_awaywin - x.ht_drawlose - x.ht_homelose ) 'ht_al' ,
-            ( x.ht_awaywinUSD - x.ht_drawloseUSD - x.ht_homeloseUSD ) 'ht_alUSD' ,
-            ( x.ht_awaywinEUR - x.ht_drawloseEUR - x.ht_homeloseEUR ) 'ht_alEUR' ,
-			( x.ht_awaywinGBP - x.ht_drawloseGBP - x.ht_homeloseGBP ) 'ht_alGBP' ,
-            ( x.ht_homewin - x.ht_drawlose - x.ht_awaylose ) 'ht_hl' ,
-            ( x.ht_homewinUSD - x.ht_drawloseUSD - x.ht_awayloseUSD ) 'ht_hlUSD' ,
-            ( x.ht_homewinEUR - x.ht_drawloseEUR - x.ht_awayloseEUR ) 'ht_hlEUR' ,
-			( x.ht_homewinGBP - x.ht_drawloseGBP - x.ht_awayloseGBP ) 'ht_hlGBP' ,
-            ( x.ht_drawwin - x.ht_awaylose - x.ht_homelose ) 'ht_dl' ,
-            ( x.ht_drawwinUSD - x.ht_awayloseUSD - x.ht_homeloseUSD ) 'ht_dlUSD' ,
-            ( x.ht_drawwinEUR - x.ht_awayloseEUR - x.ht_homeloseEUR ) 'ht_dlEUR' ,
-			( x.ht_drawwinGBP - x.ht_awayloseGBP - x.ht_homeloseGBP ) 'ht_dlGBP' ,
+            SUM( x.ht_awaywin - x.ht_drawlose - x.ht_homelose ) 'ht_al' ,
+            SUM( x.ht_awaywinUSD - x.ht_drawloseUSD - x.ht_homeloseUSD ) 'ht_alUSD' ,
+            SUM( x.ht_awaywinEUR - x.ht_drawloseEUR - x.ht_homeloseEUR ) 'ht_alEUR' ,
+			SUM( x.ht_awaywinGBP - x.ht_drawloseGBP - x.ht_homeloseGBP ) 'ht_alGBP' ,
+            SUM( x.ht_homewin - x.ht_drawlose - x.ht_awaylose ) 'ht_hl' ,
+            SUM( x.ht_homewinUSD - x.ht_drawloseUSD - x.ht_awayloseUSD ) 'ht_hlUSD' ,
+            SUM( x.ht_homewinEUR - x.ht_drawloseEUR - x.ht_awayloseEUR ) 'ht_hlEUR' ,
+			SUM( x.ht_homewinGBP - x.ht_drawloseGBP - x.ht_awayloseGBP ) 'ht_hlGBP' ,
+            SUM( x.ht_drawwin - x.ht_awaylose - x.ht_homelose ) 'ht_dl' ,
+            SUM( x.ht_drawwinUSD - x.ht_awayloseUSD - x.ht_homeloseUSD ) 'ht_dlUSD' ,
+            SUM( x.ht_drawwinEUR - x.ht_awayloseEUR - x.ht_homeloseEUR ) 'ht_dlEUR' ,
+			SUM( x.ht_drawwinGBP - x.ht_awayloseGBP - x.ht_homeloseGBP ) 'ht_dlGBP' ,
 			---Extra Time 1H 1X2
-			( x.x_awaywin - x.x_drawlose - x.x_homelose ) 'x_al' ,
-			( x.x_awaywinUSD - x.x_drawloseUSD - x.x_homeloseUSD ) 'x_alUSD' ,
-            ( x.x_awaywinEUR - x.x_drawloseEUR - x.x_homeloseEUR ) 'x_alEUR' ,
-			( x.x_awaywinGBP - x.x_drawloseGBP - x.x_homeloseGBP ) 'x_alGBP' ,
-            ( x.x_homewin	 - x.x_drawlose	   - x.x_awaylose )	   'x_hl' ,
-            ( x.x_homewinUSD - x.x_drawloseUSD - x.x_awayloseUSD ) 'x_hlUSD' ,
-            ( x.x_homewinEUR - x.x_drawloseEUR - x.x_awayloseEUR ) 'x_hlEUR' ,
-			( x.x_homewinGBP - x.x_drawloseGBP - x.x_awayloseGBP ) 'x_hlGBP' ,
-            ( x.x_drawwin    - x.x_awaylose	   - x.x_homelose )	   'x_dl' ,
-            ( x.x_drawwinUSD - x.x_awayloseUSD - x.x_homeloseUSD ) 'x_dlUSD' ,
-            ( x.x_drawwinEUR - x.x_awayloseEUR - x.x_homeloseEUR ) 'x_dlEUR' ,
-			( x.x_drawwinGBP - x.x_awayloseGBP - x.x_homeloseGBP ) 'x_dlGBP',
+			SUM( x.x_awaywin - x.x_drawlose - x.x_homelose ) 'x_al' ,
+			SUM( x.x_awaywinUSD - x.x_drawloseUSD - x.x_homeloseUSD ) 'x_alUSD' ,
+            SUM( x.x_awaywinEUR - x.x_drawloseEUR - x.x_homeloseEUR ) 'x_alEUR' ,
+			SUM( x.x_awaywinGBP - x.x_drawloseGBP - x.x_homeloseGBP ) 'x_alGBP' ,
+            SUM( x.x_homewin	 - x.x_drawlose	   - x.x_awaylose )	   'x_hl' ,
+            SUM( x.x_homewinUSD - x.x_drawloseUSD - x.x_awayloseUSD ) 'x_hlUSD' ,
+            SUM( x.x_homewinEUR - x.x_drawloseEUR - x.x_awayloseEUR ) 'x_hlEUR' ,
+			SUM( x.x_homewinGBP - x.x_drawloseGBP - x.x_awayloseGBP ) 'x_hlGBP' ,
+            SUM( x.x_drawwin    - x.x_awaylose	   - x.x_homelose )	   'x_dl' ,
+            SUM( x.x_drawwinUSD - x.x_awayloseUSD - x.x_homeloseUSD ) 'x_dlUSD' ,
+            SUM( x.x_drawwinEUR - x.x_awayloseEUR - x.x_homeloseEUR ) 'x_dlEUR' ,
+			SUM( x.x_drawwinGBP - x.x_awayloseGBP - x.x_homeloseGBP ) 'x_dlGBP',
 			CASE WHEN x.bettype =167 THEN 1 ELSE 0 END  isExtra
 			
     FROM    ( SELECT    m.MatchID ,
@@ -708,8 +713,18 @@ Revisions:
                         isNeutral,
 						b.bettype
             ) x 
+			GROUP By  x.MatchID ,
+					x.homeid ,
+					x.awayid ,
+					x.liveindicator ,
+					ISNULL(x.LiveHomeScore, 0)   ,
+					ISNULL(x.LiveAwayScore, 0)  ,
+					x.ShowTime ,
+					x.MatchCode ,
+					isNeutral,
+					CASE WHEN x.bettype =167 THEN 1 ELSE 0 END
 GO
 GRANT EXECUTE ON [Lrf_Forecast1x2_SelByLeague] TO [bodbLicenseeNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_Forecast1x2_SelByLeague] TO [vnteam]
-GO
+GO					
