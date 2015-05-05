@@ -62,7 +62,7 @@ EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4
 ------------
 
 SELECT  currencyID,LicenseeID into #currency
-FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF) 
 
 SELECT @recommend = recommend 
 from customer c WITH(NOLOCK)
