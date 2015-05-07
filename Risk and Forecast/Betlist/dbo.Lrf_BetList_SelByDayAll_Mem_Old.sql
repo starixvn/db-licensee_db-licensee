@@ -489,7 +489,7 @@ BEGIN
 	WHERE b.custid			= @custid 
 		AND b.winlostdate	= @fromdate
 		--AND b.bettype IN (10,31,32,33)
-		AND sbt.ProductID	= 1
+		AND (sbt.ProductID	IN (1, 2) AND sbt.EventType	= 2)
 		AND sbt.EventType	= 2
 
 	SELECT * 
