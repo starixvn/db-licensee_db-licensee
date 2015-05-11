@@ -1,4 +1,4 @@
-ALTER PROCEDURE [dbo].[Lrf_BetList_SelByDayAll_Mem_Old]
+CREATE PROCEDURE [dbo].[Lrf_BetList_SelByDayAll_Mem_Old]
 	@LicenseeID 		INT ,
 	@UserID				INT,
 	@custid				INT,
@@ -58,6 +58,7 @@ Revisions:
 	- 20140411@Francis: add bettype restriction for VHR
 	- 20150130@Winnie: Add base currency GBP
 	- 20150413@Bobby: Re-format code  & #32844 new 60 bettypes - betradar phase 2
+	- 20150511@Kiwi: Fixed the bug (RedmineID: #35562)
 
 Param's Explanation: 
 
@@ -151,7 +152,7 @@ BEGIN
 		,Bettype
 		,EventType
 	)
-	EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode = 4
+				EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode = 4
 		
 	DELETE sbt
 	FROM @SportBettype sbt
@@ -211,7 +212,7 @@ BEGIN
 			AND b.winlostdate 	= @fromdate 
 			--AND b.bettype NOT BETWEEN 1501 AND 1599 --exclude Keno
 			--AND b.bettype NOT IN (10,31,32,33,1231,1232,1233,1237,1238) --exclude Racing and VHS
-			AND sbt.ProductID 	NOT IN (2, 5, 6, 7, 8)
+			--AND sbt.ProductID 	NOT IN (2, 5, 6, 7, 8)
 			AND sbt.EventType 	= 1
 
 
@@ -490,7 +491,6 @@ BEGIN
 		AND b.winlostdate	= @fromdate
 		--AND b.bettype IN (10,31,32,33)
 		AND (sbt.ProductID	IN (1, 2) AND sbt.EventType	= 2)
-		AND sbt.EventType	= 2
 
 	SELECT * 
 	INTO #TempExchange 

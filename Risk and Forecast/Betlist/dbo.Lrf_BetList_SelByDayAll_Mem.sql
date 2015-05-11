@@ -1,4 +1,4 @@
-ALTER PROCEDURE [dbo].[Lrf_BetList_SelByDayAll_Mem]
+CREATE PROCEDURE [dbo].[Lrf_BetList_SelByDayAll_Mem]
 	@LicenseeID 		INT ,
 	@UserID				INT,
 	@custid				INT,
@@ -58,6 +58,7 @@ Revisions:
 	- 20141121@Jim: support multiple currency per one member
 	- 20150128@Winnie: Add currency GBP 
 	- 20150413@Bobby: Re-format code  & #32844 new 60 bettypes - betradar phase 2
+	- 20150511@Kiwi: Fixed the bug (RedmineID: #35562)
 
 Param's Explanation: 
 	+ @transtype: 1-Betting Statement; 2-VOID/Cancelled Bet; 3-Outstanding Bet 
@@ -182,7 +183,7 @@ BEGIN
 		,Bettype
 		,EventType
 	)
-	EXEC dbo.Acc_SportBettypeMatrix_Sel @mode = 4
+				EXEC dbo.Acc_SportBettypeMatrix_Sel @mode = 4
 
 	DELETE sbt
 	FROM @SportBettype sbt
@@ -254,7 +255,7 @@ BEGIN
 			AND b.winlostdate	= @fromdate 
 			--AND (b.bettype<=1299 OR (b.bettype BETWEEN 1301 AND 1399))
 			--AND b.bettype NOT IN (10,31,32,33,1231,1232,1233,1237,1238) --exclude Racing and VHS
-			AND sbt.ProductID	NOT IN (2, 5, 6 ,7, 8)
+			--AND sbt.ProductID	NOT IN (2, 5, 6 ,7, 8)
 			AND sbt.EventType	= 1
 			AND b.statusID		IN (SELECT [statusID] FROM @tmpStatus)
 
@@ -545,7 +546,6 @@ BEGIN
 			b.custid			= @custid 
 			AND b.winlostdate	= @fromdate
 			AND (sbt.ProductID	IN (1, 2) AND sbt.EventType	= 2)
-			AND sbt.EventType	= 2
 			AND b.statusID 		IN (SELECT [statusID] FROM @tmpStatus)
 
 	END
@@ -613,7 +613,7 @@ BEGIN
 			AND b.winlostdate	= @fromdate 
 			--AND (b.bettype<=1299 OR (b.bettype BETWEEN 1301 AND 1399)) 
 			--AND b.bettype NOT IN (10,31,32,33,1231,1232,1233,1237,1238) --exclude Racing and VHS
-			AND sbt.ProductID	NOT IN (2, 5, 6 ,7, 8)
+			--AND sbt.ProductID	NOT IN (2, 5, 6 ,7, 8)
 			AND sbt.EventType	= 1
 			AND b.statusID		IN (SELECT [statusID] FROM @tmpStatus)
 
@@ -970,7 +970,6 @@ BEGIN
 			AND b.winlostdate	= @fromdate
 			--AND b.bettype IN (10,31,32,33)
 			AND (sbt.ProductID	IN (1, 2) AND sbt.EventType	= 2)
-			AND sbt.EventType	= 2
 			AND b.statusID		IN (SELECT [statusID] FROM @tmpStatus)
 	END
 
