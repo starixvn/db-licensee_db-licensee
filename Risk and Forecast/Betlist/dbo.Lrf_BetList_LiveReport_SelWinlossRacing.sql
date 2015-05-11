@@ -37,6 +37,7 @@ Revisions:
 		- 20141111@Winnie: Change from LicenseeCust to f_SelLicenseeCust
 		- 20150126@Winnie: Add base currency GBP 
 		- 20150414@Winnie: Apply sporttype bettype matrix  
+		- 20150511@Jim: use table #SportBettype instead of @SportBettype
 
 */
 
@@ -51,9 +52,9 @@ DECLARE @DataSum AS TABLE (SUMWL MONEY,SUMLicenseeWL MONEY,Winlostdate DATETIME,
 
 SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1
 
-DECLARE @SportBettype TABLE(ProductID INT,Bettype INT,EventType INT)
+CREATE TABLE #SportBettype (ProductID INT,Bettype INT,EventType INT)
 
-	INSERT INTO @SportBettype
+	INSERT INTO #SportBettype
 	EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4,@ProductID=2
 
 CREATE TABLE #Data
@@ -233,7 +234,7 @@ BEGIN
 	  INNER JOIN outright14 m WITH (NOLOCK) ON b.matchid=m.orid   
 	  INNER JOIN League l WITH (NOLOCK) ON m.leagueID=l.leagueID  	  
       INNER JOIN #TempExchange e ON b.currency=e.exchangeID AND b.winlostdate=e.exchangeDate
-	  INNER JOIN @SportBettype sbt ON b.Bettype=sbt.Bettype
+	  INNER JOIN #SportBettype sbt ON b.Bettype=sbt.Bettype
 	 WHERE  	 	  
 	  b.Winlostdate BETWEEN '''+CAST(@FromDate AS VARCHAR(50))+''' AND '''+CAST(@TempToDate AS VARCHAR(50))+''' AND 	  
 	  l.SportType= '+CAST(@SportType AS VARCHAR(15))+' AND
@@ -345,7 +346,7 @@ BEGIN
 	  INNER JOIN outright m WITH (NOLOCK) ON b.matchid=m.orid   
 	  INNER JOIN League l WITH (NOLOCK) ON m.leagueID=l.leagueID
 	  INNER JOIN #TempExchange e ON b.currency=e.exchangeID AND b.winlostdate=e.exchangeDate   	 
-	  INNER JOIN @SportBettype sbt ON b.Bettype=sbt.Bettype 
+	  INNER JOIN #SportBettype sbt ON b.Bettype=sbt.Bettype 
 	 WHERE  	    	  
 	  b.Winlostdate BETWEEN '''+CAST(@TempFromDate AS VARCHAR(50))+''' AND '''+CAST(@ToDate AS VARCHAR(50))+''' AND  
 	  l.SportType= '+CAST(@SportType AS VARCHAR(15))+' AND
@@ -484,6 +485,8 @@ DROP TABLE #Data
 DROP TABLE #TempExchange 
 DROP TABLE #TempAg
 DROP TABLE #Currency 
+DROP TABLE #SportBettype
+
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_LiveReport_SelWinlossRacing] TO [bodbLicenseeNet]
