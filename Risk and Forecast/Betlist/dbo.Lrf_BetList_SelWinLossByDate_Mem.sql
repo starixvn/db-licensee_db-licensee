@@ -1651,7 +1651,7 @@ BEGIN
 			b.recommend = @Recommend AND --to improve performance
 			b.custid=@CustID AND
 			--b.bettype BETWEEN 1501 AND 1599 AND
-			sbt.bettype=8 AND
+			sbt.ProductID=8 AND
 			b.ruben = 1
 	END
 END	
