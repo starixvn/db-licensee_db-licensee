@@ -87,6 +87,7 @@ Revisions:
    - 20141128@Jim: add more input param @CurrencyID   
    - 20150128@Winnie: Add base currency GBP
    - 20150406@Winnie: Apply sporttype, bettype matrix and add 60 bettypes betradar 
+   - 20150406@Winnie: fix bug
    */
 
 SET NOCOUNT ON
@@ -1650,7 +1651,7 @@ BEGIN
 			b.recommend = @Recommend AND --to improve performance
 			b.custid=@CustID AND
 			--b.bettype BETWEEN 1501 AND 1599 AND
-			b.bettype=8 AND
+			sbt.bettype=8 AND
 			b.ruben = 1
 	END
 END	
