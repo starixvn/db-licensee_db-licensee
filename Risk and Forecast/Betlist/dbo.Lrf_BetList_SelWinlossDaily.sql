@@ -1,21 +1,6 @@
 ﻿USE [bodb02]
 GO
- 
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-/*
-exec Lrf_BetList_SelWinlossDaily
-@date='2012-09-04 00:00:00:000',
-@LicenseeID=1,
-@MoveBetsDay='2012-09-03 00:00:00:000',
-@BalanceUpDay='2012-09-01 00:00:00:000'
-*/
-
-USE [bodb02]
-GO
-/****** Object:  StoredProcedure [dbo].[Lrf_BetList_SelWinlossDaily_xpre]    Script Date: 1/29/2015 1:11:07 PM ******/
+/****** Object:  StoredProcedure [dbo].[Lrf_BetList_SelWinlossDaily_xtest]    Script Date: 04/20/2015 13:43:02 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -98,7 +83,9 @@ Revisions:
 	- 20140718@Jim: fix bug 'wrong to get licensee winloss/comm for Horse Racing' (#19165)
 	- 20140718@Jim: fix bug 'Win loss and Licensee WL showed on web are incorrect when product is BA' (#19261)
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+	- 20150114@Winnie: remove hardcode bettype, use spottype bettype matrix
 	- 20150128@Winnie: Add base currency GBP 
+	- 20150410@Jim: support betradar and apply report-bettype matrix
 Param's Explanation: 	
 */
 SET NOCOUNT ON
@@ -149,6 +136,7 @@ CREATE TABLE #Data
 	RefNO			BIGINT,	
 	CustID	INT,
 	showtime NVARCHAR(50), -- table - shoe - hand of Live Casino
+	betcheck NVARCHAR(100),
 	stakeUSD MONEY,
 	WinlostUSD MONEY,
 	LicenseeWLUSD MONEY,
@@ -204,8 +192,10 @@ DECLARE @hr TABLE
 )	
 
 CREATE TABLE #TempAg (custid INT, Currency INT)
-CREATE TABLE #TmpCondBettype(bettype INT primary key)
-
+--CREATE TABLE #TmpCondBettype(bettype INT primary key)
+------------
+CREATE TABLE #SportBettype  (ProductID INT,Bettype INT,EventType INT)
+------------
 DECLARE @RowStart INT, @RowEnd INT  
 SELECT @PageIndex = @PageIndex - 1
 SELECT @RowStart = @PageSize * @PageIndex + 1
@@ -233,68 +223,58 @@ FROM Lrf_f_GetExchangeDaily(@wldate,@wldate)
 --Sports Book
 IF ( @Product='SB' OR @Product='BA' )
 BEGIN
-INSERT INTO #TmpCondBettype
-	SELECT typeid
-	 FROM bettype  WITH (NOLOCK) 
-	 WHERE typeid < 31 OR   
-	   typeid BETWEEN 121 AND 999 OR   
-	   typeid BETWEEN 1301 AND 1399;
+INSERT INTO #SportBettype
+EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel  @mode=4, @ProductID=1
+ 
 END   
 --Number Game
 IF @Product='NG'
 BEGIN 
-	INSERT INTO #TmpCondBettype
-	SELECT typeid
-	FROM bettype   WITH(NOLOCK)
-	WHERE typeid BETWEEN 81 AND 120;  
+INSERT INTO #SportBettype
+EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4, @ProductID=3
+	   
 END
 --Horse Racing
 IF @Product='RB'
 BEGIN 
-	INSERT INTO #TmpCondBettype
-	SELECT typeid
-	FROM bettype  WITH(NOLOCK) 
-	WHERE typeid BETWEEN 31 AND 33;  
+INSERT INTO #SportBettype
+EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4, @ProductID=2
+	   
 END
 --Live Casino
 IF @Product='LC'
 BEGIN	
-	INSERT INTO #TmpCondBettype
-	SELECT typeid
-	FROM bettype  WITH (NOLOCK) 
-	WHERE typeid BETWEEN 1101 AND 1199;
+INSERT INTO #SportBettype
+EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4, @ProductID=4
+ 
 END
 --Virtual Sports
 IF @Product='VS'
 BEGIN	
-	INSERT INTO #TmpCondBettype
-	SELECT typeid
-	FROM bettype  WITH(NOLOCK) 
-	WHERE typeid BETWEEN 1201 AND 1299;
+INSERT INTO #SportBettype
+EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4, @ProductID=5
+	
 END
 --RNG Casino
 IF @Product='CS'
 BEGIN	
-	INSERT INTO #TmpCondBettype
-	SELECT typeid
-	FROM bettype WITH(NOLOCK)  
-	WHERE typeid =71;
+INSERT INTO #SportBettype
+EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4, @ProductID=6
+ 
 END
 --Bingo
 IF @Product='BG'
 BEGIN
-	INSERT INTO #TmpCondBettype
-	SELECT typeid
-	FROM bettype WITH(NOLOCK)  
-	WHERE typeid = 73;
+INSERT INTO #SportBettype
+EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4, @ProductID=7
+	 
 END
 --Keno
 IF @Product='KN'
 BEGIN	
-	INSERT INTO #TmpCondBettype
-	SELECT typeid
-	FROM bettype WITH(NOLOCK)  
-	WHERE typeid BETWEEN 1501 AND 1599;
+INSERT INTO #SportBettype
+EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4, @ProductID=8
+	 
 END
 
 SET @LicenseeWL =				
@@ -305,7 +285,7 @@ SET @LicenseeWL =
 
 SET @Winlost = '(b.winlost-b.actual_stake)'
 
-IF (@Sort LIKE '%USD%') OR (@Sort LIKE '%EUR%')OR (@Sort LIKE '%GBP%')
+IF (@Sort LIKE '%USD%') OR (@Sort LIKE '%EUR%') OR (@Sort LIKE '%GBP%')
 	BEGIN
 		DECLARE @charindex INT
 		SELECT @charindex = CHARINDEX( ' ', @Sort, 1)
@@ -381,7 +361,8 @@ BEGIN
 				SUM(b.playercomm )  AS  SumPlayerComm
 			FROM bettrans b WITH (nolock) 
 				INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
-				INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
+				--INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
+				INNER JOIN #SportBettype sbt ON sbt.Bettype=b.bettype
 				INNER JOIN #TempAg ag ON b.recommend = ag.custid AND b.currency = ag.Currency
 			WHERE
 				b.winlostdate = @wldate
@@ -406,7 +387,8 @@ BEGIN
 				SUM(ISNULL(b.comm,0)),
 				SUM(b.playercomm )  AS  SumPlayerComm
 			FROM bettrans b WITH (nolock) 
-				INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
+				--INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
+				INNER JOIN #SportBettype sbt ON sbt.Bettype=b.bettype
 				INNER JOIN #TempAg ag ON b.recommend = ag.custid AND b.currency = ag.Currency
 			WHERE
 				b.winlostdate = @wldate
@@ -457,6 +439,7 @@ BEGIN
 		RefNO			BIGINT,	
 		CustID	INT,
 		showtime NVARCHAR(50),
+		betcheck NVARCHAR(100),
 		stakeUSD MONEY,
 		WinlostUSD MONEY,
 		LicenseeWLUSD MONEY,
@@ -472,6 +455,7 @@ BEGIN
 		LicenseeWLGBP MONEY,
 		commGBP MONEY,
 		PlayerCommGBP MONEY
+		
 	)
 
 	-- Get Betdata from bettrans and filter by row number
@@ -519,6 +503,7 @@ BEGIN
 		b.refno,
 		b.custid,
 		CAST('''' AS NVARCHAR(50)) AS showtime,
+		b.betcheck,
 		--USD
 		b.stake*e.USD stakeUSD,'
 		+@Winlost+'*e.USD WinlostUSD,'
@@ -541,7 +526,7 @@ BEGIN
 		bettrans b WITH (nolock) 
 		INNER JOIN customer c WITH (nolock) ON b.custid = c.custid
 		INNER JOIN #TempAg ag ON b.recommend = ag.custid AND b.currency = ag.Currency
-		INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
+		INNER JOIN #SportBettype sbt ON sbt.Bettype=b.bettype
 		INNER JOIN #TempExchange e ON  e.exchangeid = b.currency'+char(13)+
 	CASE WHEN @Product='BA' THEN 'INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid'	
 							ELSE ''
@@ -558,7 +543,7 @@ BEGIN
 	INSERT INTO #BetData1
 	(Oddsid,Sporttype,Username,NickName,Bettype,LeagueID,Transid,Matchcode,Race,HomeID,AwayID,hdp1,hdp2,
 	odds,status,stake,Winlost,LicenseeWL,comm,PlayerComm,transdate,Winlostdate,betteam,liveindicator,livehomescore,
-	liveawayscore,MatchID,Betstatus ,IsNeutral,oddstype,betid,currency,RefNO,CustID,showtime,stakeUSD,WinlostUSD,LicenseeWLUSD,commUSD,PlayerCommUSD,
+	liveawayscore,MatchID,Betstatus ,IsNeutral,oddstype,betid,currency,RefNO,CustID,showtime,betcheck,stakeUSD,WinlostUSD,LicenseeWLUSD,commUSD,PlayerCommUSD,
 	stakeEUR,WinlostEUR,LicenseeWLEUR,commEUR,PlayerCommEUR,stakeGBP,WinlostGBP,LicenseeWLGBP,commGBP,PlayerCommGBP)
 	EXEC (@sql)	
 
@@ -630,7 +615,7 @@ BEGIN
 		odds,status,stake,winlost,LicenseeWL,
 		comm,PlayerComm,transdate,winlostdate,
 		betteam,liveindicator,livehomescore,liveawayscore,matchid, 
-		betstatus,IsNeutral,OddsType,betid,currency,refno,custid,showtime,
+		betstatus,IsNeutral,OddsType,betid,currency,refno,custid,showtime,betcheck ,
 		stakeUSD,WinlostUSD,LicenseeWLUSD,commUSD,PlayerCommUSD,
 		stakeEUR,WinlostEUR,LicenseeWLEUR,commEUR,PlayerCommEUR,
 		stakeGBP,WinlostGBP,LicenseeWLGBP,commGBP,PlayerCommGBP
@@ -687,7 +672,8 @@ BEGIN
 				SUM(ISNULL(b.comm ,0)),
 				SUM(b.playercomm )  AS  SumPlayerComm
 			FROM bettrans14 b WITH (NOLOCK)	
-				INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
+				--INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
+				INNER JOIN #SportBettype sbt ON sbt.Bettype=b.bettype
 				INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
 				INNER JOIN #TempAg ag ON b.recommend = ag.custid AND b.currency = ag.Currency
 			WHERE
@@ -712,7 +698,8 @@ BEGIN
 				SUM(ISNULL(b.comm ,0)),
 				SUM(b.playercomm )  AS  SumPlayerComm
 			FROM bettrans14 b WITH (NOLOCK)	
-				INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
+				--INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
+				INNER JOIN #SportBettype sbt ON sbt.Bettype=b.bettype
 				INNER JOIN #TempAg ag ON b.recommend = ag.custid AND b.currency = ag.Currency
 			WHERE
 				b.winlostdate = @wldate
@@ -762,6 +749,7 @@ BEGIN
 		RefNO			BIGINT,	
 		CustID	INT,
 		showtime NVARCHAR(50),
+		betcheck NVARCHAR(100),
 		stakeUSD MONEY,
 		WinlostUSD MONEY,
 		LicenseeWLUSD MONEY,
@@ -771,12 +759,12 @@ BEGIN
 		WinlostEUR MONEY,
 		LicenseeWLEUR MONEY,
 		commEUR MONEY,
-		PlayerCommEUR MONEY ,
+		PlayerCommEUR MONEY,
 		stakeGBP MONEY,
 		WinlostGBP MONEY,
 		LicenseeWLGBP MONEY,
 		commGBP MONEY,
-		PlayerCommGBP MONEY 
+		PlayerCommGBP MONEY 		
 	)	
 
 	-- Get Betdata from bettrans14 and filter by row number	
@@ -824,6 +812,7 @@ BEGIN
 		b.refno,
 		b.custid,
 		CAST('''' AS NVARCHAR(50)) AS showtime,
+		b.betcheck,
 		--USD
 		b.stake*e.USD stakeUSD,'
 		+@Winlost+'*e.USD WinlostUSD,'
@@ -845,9 +834,9 @@ BEGIN
 	FROM
 		bettrans14 b WITH (nolock) 
 		INNER JOIN customer c WITH (nolock) ON b.custid = c.custid
-		INNER JOIN #TempAg ag ON b.recommend = ag.custid AND b.currency = ag.Currency
-		INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
+		INNER JOIN #TempAg ag ON b.recommend = ag.custid AND b.currency = ag.Currency		
 		INNER JOIN #TempExchange e ON  e.exchangeid = b.currency'+char(13)+
+		'INNER JOIN #SportBettype sbt ON sbt.Bettype=b.bettype'+char(13)+
 	CASE WHEN @Product='BA' THEN 'INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid'	
 							ELSE ''
 							END+char(13)+
@@ -863,9 +852,8 @@ BEGIN
 	INSERT INTO #BetData14
 	(Oddsid,Sporttype,Username,NickName,Bettype,LeagueID,Transid,Matchcode,Race,HomeID,AwayID,hdp1,hdp2,
 	odds,status,stake,Winlost,LicenseeWL,comm,PlayerComm,transdate,Winlostdate,betteam,liveindicator,livehomescore,
-	liveawayscore,MatchID,Betstatus ,IsNeutral,oddstype,betid,currency,RefNO,CustID,showtime,stakeUSD,WinlostUSD,
-	LicenseeWLUSD,commUSD,PlayerCommUSD,stakeEUR,WinlostEUR,LicenseeWLEUR,commEUR,PlayerCommEUR
-	,stakeGBP,WinlostGBP,LicenseeWLGBP,commGBP,PlayerCommGBP)
+	liveawayscore,MatchID,Betstatus ,IsNeutral,oddstype,betid,currency,RefNO,CustID,showtime,betcheck,stakeUSD,WinlostUSD,
+	LicenseeWLUSD,commUSD,PlayerCommUSD,stakeEUR,WinlostEUR,LicenseeWLEUR,commEUR,PlayerCommEUR,stakeGBP,WinlostGBP,LicenseeWLGBP,commGBP,PlayerCommGBP)
 	EXEC (@sql)	
 
 	-- Update LicenseeWL with LicenseeBATransaction table
@@ -936,7 +924,7 @@ BEGIN
 		odds,status,stake,winlost,LicenseeWL,
 		comm,PlayerComm,transdate,winlostdate,
 		betteam,liveindicator,livehomescore,liveawayscore,matchid, 
-		betstatus,IsNeutral,OddsType,betid,currency,refno,custid,showtime,
+		betstatus,IsNeutral,OddsType,betid,currency,refno,custid,showtime,betcheck,
 		stakeUSD,WinlostUSD,LicenseeWLUSD,commUSD,PlayerCommUSD,
 		stakeEUR,WinlostEUR,LicenseeWLEUR,commEUR,PlayerCommEUR,
 		stakeGBP,WinlostGBP,LicenseeWLGBP,commGBP,PlayerCommGBP
@@ -1097,7 +1085,7 @@ DROP TABLE #Currency
 DROP TABLE #TempExchange
 DROP TABLE #TempExchangeSum
 DROP TABLE #Data
-DROP TABLE #TmpCondBettype
+DROP TABLE #SportBettype
 DROP TABLE #TempAg
 DROP TABLE #BettransDetail
 

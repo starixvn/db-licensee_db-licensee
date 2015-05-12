@@ -35,6 +35,7 @@ AS
 	- 20141021@Florent: Apply for the change in Sporting Solution structure (#24478)
 	- 20141120@Jim: expand data range for @transid param to covert big datatype
 	- 20150128@Jim: base on GBP
+	- 20150415@Jim: support betradar
  Parameter's Explanation:                
   - @bettypes:                 
    + HDP: 1,7, 1303 (Set Handicap)                
@@ -161,7 +162,8 @@ SELECT @SQL = @SQL + 'SELECT TOP ('+CONVERT(VARCHAR(10),@LimitRowCount)+')'+CHAR
   'b.OddsType,'+CHAR(13)+                
   'b.currency as currencyid,'+CHAR(13)+                
   ''''' as currencyname,'+CHAR(13)+                
-  'b.SpecialLevel' +CHAR(13)+                
+  'b.SpecialLevel,' +CHAR(13)+                
+  'b.betcheck' +CHAR(13)+   
   'FROM bettrans_lrf_betRunning b WITH(NOLOCK)  '+CHAR(13) +   
   'INNER JOIN Lrf_f_GetExchangeDaily(CONVERT(VARCHAR(10), getdate(), 111),CONVERT(VARCHAR(10), getdate(), 111))  ex on ex.exchangeid = b.currency ' + CHAR(13) +             
   'INNER JOIN bodb_licensee.dbo.CurrencyUser cr WITH (NOLOCK) ON b.LicenseeID=cr.LicenseeID AND b.Currency=cr.CurrencyID'+char(13)+
@@ -243,9 +245,9 @@ CASE WHEN @betfrom=1 THEN 'AND betfrom=''d'''
 	END +CHAR(13)+
   
   CASE                
-   WHEN @bettype = 'HDP' AND @SportID<>999 THEN 'AND  b.bettype IN (1,7,1303)  '                
-   WHEN @bettype = 'OU' AND @SportID<>999 THEN ' AND b.bettype IN (3,8,1306)  '                 
-   WHEN @bettype = 'Others' AND @SportID<>999 THEN ' AND b.bettype NOT IN (1,3,7,8,1303,1306)  '                
+   WHEN @bettype = 'HDP' AND @SportID<>999 THEN 'AND  b.bettype IN (1,7,1303,17,183)  '                
+   WHEN @bettype = 'OU' AND @SportID<>999 THEN ' AND b.bettype IN (3,18,8,178,1306)  '                 
+   WHEN @bettype = 'Others' AND @SportID<>999 THEN ' AND b.bettype NOT IN (1,3,7,8,17,18,178,183,1303,1306)  '                
   ELSE ' ' END + CHAR(13)+
   
   CASE @SportID

@@ -30,6 +30,7 @@ Revisions:
 	--20140620@Florent: offer new bettypes 152 - Half Time/Full Time Correct Score
 	- 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
 	- 20150124@Winnie: Add base currency GBP 
+	- 20150420@Jim: add more bettype 165, 166
 */
 
 SET NOCOUNT ON
@@ -114,7 +115,7 @@ INSERT INTO @Data
 	WHERE 
 		b.Recommend IN (SELECT custid FROM @TempAg)
 		AND((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID))
-		AND b.bettype IN (4,30,152)
+		AND b.bettype IN (4,30,152,165,166)
 		AND b.statusID IN (0,1)
 		AND b.tpositiontaking <> 0 
 	ORDER BY b.status, b.transid

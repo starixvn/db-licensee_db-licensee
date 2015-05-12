@@ -1,4 +1,4 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossRacing]	 
+﻿ALTER PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossRacing]	  
 	@LicenseeID INT ,
 	@UserID		INT,
 	@CurrencyID INT = 0 , 
@@ -13,7 +13,7 @@
 	@SUMWLEUR MONEY=0 OUTPUT,
 	@SUMLicenseeWLEUR MONEY=0 OUTPUT,
 	@SUMWLGBP MONEY=0 OUTPUT,
-	@SUMLicenseeWLGBP MONEY=0 OUTPUT,
+	@SUMLicenseeWLGBP MONEY=0 OUTPUT, 
 	@PageSize INT=1000,
 	@PageIndex INT=1,
 	@Sort VARCHAR(20) = 'Transid DESC'	 
@@ -35,7 +35,9 @@ Revisions:
 		- 20140520@Hannah: Sort betlist
 		- 20140522@Hannah: fix bug Sort betlist
 		- 20141111@Winnie: Change from LicenseeCust to f_SelLicenseeCust
-		- 20150126@Winnie: Add base currency GBP  
+		- 20150126@Winnie: Add base currency GBP 
+		- 20150414@Winnie: Apply sporttype bettype matrix  
+		- 20150511@Jim: use table #SportBettype instead of @SportBettype
 
 */
 
@@ -49,6 +51,11 @@ DECLARE @RowStart INT, @RowEnd INT
 DECLARE @DataSum AS TABLE (SUMWL MONEY,SUMLicenseeWL MONEY,Winlostdate DATETIME,Currency INT)
 
 SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1
+
+CREATE TABLE #SportBettype (ProductID INT,Bettype INT,EventType INT)
+
+	INSERT INTO #SportBettype
+	EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4,@ProductID=2
 
 CREATE TABLE #Data
 (
@@ -227,11 +234,11 @@ BEGIN
 	  INNER JOIN outright14 m WITH (NOLOCK) ON b.matchid=m.orid   
 	  INNER JOIN League l WITH (NOLOCK) ON m.leagueID=l.leagueID  	  
       INNER JOIN #TempExchange e ON b.currency=e.exchangeID AND b.winlostdate=e.exchangeDate
-
+	  INNER JOIN #SportBettype sbt ON b.Bettype=sbt.Bettype
 	 WHERE  	 	  
 	  b.Winlostdate BETWEEN '''+CAST(@FromDate AS VARCHAR(50))+''' AND '''+CAST(@TempToDate AS VARCHAR(50))+''' AND 	  
 	  l.SportType= '+CAST(@SportType AS VARCHAR(15))+' AND
-	  b.bettype BETWEEN 31 AND 33 AND
+	  
 	  b.statusID IN (111,112,113)
 	 ORDER  BY '+ @SortTemp 
 	  
@@ -338,11 +345,12 @@ BEGIN
 	  INNER JOIN #TempAg t  ON b.recommend =t.custid  
 	  INNER JOIN outright m WITH (NOLOCK) ON b.matchid=m.orid   
 	  INNER JOIN League l WITH (NOLOCK) ON m.leagueID=l.leagueID
-	  INNER JOIN #TempExchange e ON b.currency=e.exchangeID AND b.winlostdate=e.exchangeDate   	  
+	  INNER JOIN #TempExchange e ON b.currency=e.exchangeID AND b.winlostdate=e.exchangeDate   	 
+	  INNER JOIN #SportBettype sbt ON b.Bettype=sbt.Bettype 
 	 WHERE  	    	  
 	  b.Winlostdate BETWEEN '''+CAST(@TempFromDate AS VARCHAR(50))+''' AND '''+CAST(@ToDate AS VARCHAR(50))+''' AND  
 	  l.SportType= '+CAST(@SportType AS VARCHAR(15))+' AND
-	  b.bettype BETWEEN 31 AND 33 AND
+	  
 	  b.statusID IN (111,112,113)
 	 ORDER  BY '+ @SortTemp
 	  
@@ -477,6 +485,8 @@ DROP TABLE #Data
 DROP TABLE #TempExchange 
 DROP TABLE #TempAg
 DROP TABLE #Currency 
+DROP TABLE #SportBettype
+
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_LiveReport_SelWinlossRacing] TO [bodbLicenseeNet]

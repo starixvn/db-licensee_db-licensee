@@ -23,6 +23,7 @@ Revisions:
 	- 20140925@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
 	- 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
 	- 20150123@Jim: support base on Currency GBP
+	- 20150414@Jim: support betradar 
 */
 
 SET NOCOUNT ON
@@ -63,7 +64,8 @@ CREATE TABLE #Data
 	currency SMALLINT,
 	statusid INT,
 	playercomm MONEY ,
-	showtime NVARCHAR(50) -- table - shoe - hand of Live Casino
+	showtime NVARCHAR(50), -- table - shoe - hand of Live Casino
+	betcheck		NVARCHAR(50)
 )
 
 SELECT  currencyID,LicenseeID into #currency
@@ -120,7 +122,8 @@ BEGIN
 		b.currency,
 		b.statusid,
 		b.playercomm,
-		'' As ShowTime
+		'' As ShowTime,
+		NULL AS betcheck
 	FROM bettrans b WITH (NOLOCK)
 		INNER JOIN @tblbettype bt ON b.bettype=bt.bettype
 	WHERE
@@ -168,7 +171,8 @@ BEGIN
 		b.currency,
 		b.statusid,
 		b.playercomm,
-		'' As ShowTime
+		'' As ShowTime,
+		NULL AS betcheck
 	FROM 
 		bettrans b WITH (NOLOCK)
 		INNER JOIN outright AS m WITH (NOLOCK) ON  b.matchid=m.orid 		
@@ -218,7 +222,8 @@ BEGIN
 		b.currency,
 		b.statusid,
 		b.playercomm,
-		isnull(m.showtime,'') as showtime
+		isnull(m.showtime,'') as showtime,
+		b.betcheck
  	FROM 
 		bettrans b WITH (NOLOCK)
 		INNER JOIN match m WITH (NOLOCK) ON  b.matchid=m.matchid 				

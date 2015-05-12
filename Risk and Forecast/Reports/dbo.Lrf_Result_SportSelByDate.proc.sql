@@ -6,7 +6,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-ALTER PROCEDURE [dbo].[Lrf_Result_SportSelByDate]  
+ALTER PROCEDURE [dbo].[Lrf_Result_SportSelByDate]
 	@EventDate DATETIME,
 	@LicenseeID INT
 AS
@@ -30,6 +30,8 @@ Revisions:
 	20140506@Hannah: support :				
 				183 - Virtual Speedway
 				185 - Virtual Cycling
+	20150414@Sophia: Support BetRadar
+	20150416@Sophia: Condition of showing Running match different between Sporting solution and BetRadar
 */
 /* sample test case:
 	exec Lrf_Result_SportSelByDate @EventDate='2013-10-06 00:00:00',@licenseeid=1
@@ -90,7 +92,8 @@ IF EXISTS (SELECT TOP 1 1 FROM #LicenseeProduct WHERE ProductID=7) -- Bingo
 		SELECT 252
 	END		
 	
-SELECT distinct sports.sporttype, sportname from sports with (nolock)
+SELECT distinct sports.sporttype, sportname 
+from sports with (nolock)
 	inner join (
 	SELECT matchid, eventdate, eventstatus, sporttype 
 	from match (nolock)
@@ -107,6 +110,16 @@ SELECT distinct sports.sporttype, sportname from sports with (nolock)
 		INNER JOIN dbo.VSRaceInfo vsr with (nolock) ON vso14.EventID=vsr.EventID
 	) match on match.sporttype = sports.sporttype
 LEFT JOIN match_remark mr ON match.matchid = mr.matchid
+LEFT JOIN ( SELECT DISTINCT MatchID FROM dbo.ResultDetail R WITH (NOLOCK) WHERE SettlementStatusID > 0
+			UNION ALL  
+			SELECT DISTINCT MatchID FROM dbo.ResultDetail14 R WITH (NOLOCK) WHERE SettlementStatusID > 0
+			) SS
+		ON match.Matchid = SS.MatchId AND Match.sporttype = 5
+LEFT JOIN ( SELECT DISTINCT MatchID FROM dbo.ResultDetail R WITH (NOLOCK) WHERE SettlementStatusID > 0 AND ResourceID NOT IN ('00','01','08')
+			UNION ALL  
+			SELECT DISTINCT MatchID FROM dbo.ResultDetail14 R WITH (NOLOCK) WHERE SettlementStatusID > 0 AND ResourceID NOT IN ('00','01','08')
+			) BR
+		ON match.Matchid = BR.MatchId AND Match.sporttype = 1		
 WHERE
 	match.eventdate >= @EventDate
 	AND match.eventdate <= @toDate
@@ -114,6 +127,8 @@ WHERE
 	AND ( match.eventstatus NOT IN ('internal','closed','running')
 			OR ( mr.IsPending=1 AND match.eventstatus IN ('running','closed') )
 			OR ( mr.IsHTCal = 1 AND match.eventstatus ='running')
+			OR ( ISNULL(SS.MatchID,0) <> 0 AND match.eventstatus = 'running')  --- condition for Sportting Solution show running Match but settled least one type
+			OR ( ISNULL(BR.MatchID,0) <> 0 AND match.eventstatus = 'running')  --- condition for BetRadar show running Match but settled least one type
 		 )	
 UNION ALL 
 SELECT s.sporttype, s.sportname  

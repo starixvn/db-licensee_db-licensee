@@ -52,6 +52,7 @@ AS
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	- 20141203@Jim : fix issue cannot query data when pass a User belong to CNY Currency (hot fix #27017)
 	- 20141204@Jim : hot fix #27063
+	- 20150415@Jim: support betradar phase 2
 	Parameter's Explanation:
 		- @ReportBy:  1: daily, 2: monthly
 		- @FilterBy:  1: Win, 2: Loss, 3: Draw
@@ -96,10 +97,10 @@ INSERT INTO #ProductID (sportId) SELECT 0
 SELECT VAL bettypeID INTO #BettypeID FROM strSplit(@Bettype,',')
 
 INSERT INTO #BettypeID (bettypeID )
-SELECT ss.bettypeID
-FROM dbo.LRF_view_bettype_SS ss
-	INNER JOIN #BettypeID b ON b.bettypeID = ss.Typeid
-WHERE ss.bettypeID NOT IN (SELECT bettypeID FROM #BettypeID)	
+SELECT ss.bettype
+FROM dbo.f_GroupBettype() ss
+	INNER JOIN #BettypeID b ON b.bettypeID = ss.GroupTypeId
+WHERE ss.bettype NOT IN (SELECT bettypeID FROM #BettypeID)	
 	
 	
 CREATE TABLE #CustID (Custid INT)
@@ -322,7 +323,7 @@ ELSE
 						 END odds
 						,bk.oddstype
 						,sum(bk.betcount) betcount
-					FROM bodb_LicenseeReport.dbo.rptcustomerturnOver bk WITH (NOLOCK,INDEX=CIX_winlostdate) 
+					FROM bodb_LicenseeReport.dbo.rptcustomerturnOver bk WITH (NOLOCK) 
 					INNER JOIN #recommend re ON bk.recommend=re.custid	AND bk.Currency = re.Currency			
 					INNER JOIN #bettype bt ON bk.bettype=bt.typeid	
 					INNER JOIN #Status s ON bk.statusID=s.StatusID		
@@ -394,7 +395,7 @@ ELSE
 					END odds
 					,bk.oddstype
 					,sum(bk.betcount) betcount
-				FROM bodb_LicenseeReport.dbo.rptcustomerturnOver bk WITH (NOLOCK,INDEX=IX_recommend)
+				FROM bodb_LicenseeReport.dbo.rptcustomerturnOver bk WITH (NOLOCK)
 				INNER JOIN #recommend re ON bk.recommend=re.custid	AND bk.Currency = re.Currency			
 				INNER JOIN #bettype bt ON bk.bettype=bt.typeid
 				INNER JOIN #Custid cus ON cus.custid = bk.custid
@@ -439,9 +440,9 @@ ELSE
 		WHERE e.exchangeid IN (SELECT Currency FROM #Data)
 		
 		UPDATE d
-		SET bettype =ss.typeid
+		SET bettype =ss.GroupTypeID
 		FROM #Data d 
-			INNER JOIN LRF_view_bettype_SS ss ON d.bettype = ss.bettypeID
+			INNER JOIN dbo.f_GroupBettype() ss ON d.bettype = ss.bettype
 			
 		CREATE NONCLUSTERED INDEX IDX_Index_Data ON #Data(CustID,bettype,currency,Sporttype,Odds)
 		
