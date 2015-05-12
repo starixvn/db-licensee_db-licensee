@@ -35,7 +35,7 @@ BEGIN
 	SET @startRun = getdate()
 	SELECT @ErrCode = 0, @ErrMsg =''
 
-	EXEC DBAGE.bodb02.dbo.NAP_LM_CustomerSelCheckAllowedDownlines
+	EXEC DBEXT.bodb02.dbo.NAP_LM_CustomerSelCheckAllowedDownlines
 		@custid = @CustID
 		,@Sporttype = @Sporttype
 		,@isUpdatePT = 1
