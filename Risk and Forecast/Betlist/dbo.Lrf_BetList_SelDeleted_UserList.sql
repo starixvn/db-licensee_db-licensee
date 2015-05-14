@@ -12,7 +12,7 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_SelDeleted_UserList]
 @LicenseeType VARCHAR(100) = NULL
 AS
 /*
-	Created by: Henry@20101210
+	Created by: Henry@20101210 
 	DB: DB052.BODB02
 	Original: [Age_BetList_SelDeleted_UserList_Ag]
 	 
