@@ -26,12 +26,12 @@ BEGIN
 	DECLARE @string VARCHAR(MAX), @splitter CHAR(1), @xml XML
 	SELECT @splitter = ',', @string = @ids
 
-	SET @xml = N'<root><r>' + REPLACE(@string, @splitter, '</r><r>') + '</r></root>'
+	SET @xml = N'<root><r i=''' + REPLACE(@string, @splitter, '''/><r i=''') + '''/></root>'
 
 	--Create temp table containing all accounts belong to super, exclude fincance account
-	CREATE TABLE #tblCust (custid INT)
+	CREATE TABLE #tblCust (custid INT)	
 	INSERT INTO #tblCust(custid)
-	SELECT r.value('.','VARCHAR(12)')
+	SELECT r.value('./@i','INT')
 	FROM @xml.nodes('//root/r') AS RECORDS(r)
 
 	IF @Bettype = 31
@@ -47,7 +47,7 @@ BEGIN
 			WHERE sporttype = @Sporttype AND bettype IN (31,32)
 	END
 
-	IF @Bettype = 41
+	ELSE IF @Bettype = 41
 	BEGIN
 		UPDATE cs WITH(UPDLOCK,ROWLOCK)
 		SET sdiscount = CASE WHEN roleid IN (1,4) THEN @Discount ELSE 0 END,
@@ -60,7 +60,7 @@ BEGIN
 			WHERE sporttype = @Sporttype AND bettype IN (41,42)
 	END
 
-	IF @Bettype = 51
+	ELSE IF @Bettype = 51
 	BEGIN
 		UPDATE cs WITH(UPDLOCK,ROWLOCK)
 		SET sdiscount = CASE WHEN roleid IN (1,4) THEN @Discount ELSE 0 END,
