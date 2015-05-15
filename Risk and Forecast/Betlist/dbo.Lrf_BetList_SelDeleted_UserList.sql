@@ -78,7 +78,7 @@ FROM
 	INNER JOIN @SportBettype sbt ON sbt.Bettype=b.bettype			
 WHERE 
 	--b.bettype in (10,31,32,33,41,42,43)
-	sbt.ProductID=2 OR (sbt.ProductID=1 AND sbt.EventType=2)
+	(sbt.ProductID=2 OR (sbt.ProductID=1 AND sbt.EventType=2))
 	AND b.statusID IN (101, 102)
 GROUP BY b.custid
 

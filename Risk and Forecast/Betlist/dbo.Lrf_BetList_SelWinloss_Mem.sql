@@ -66,6 +66,7 @@ Revisions:
 	 - 20141128@winnie: change currency keenocean	
 	 - 20150124@winnie: Add base currency GBP
 	 - 20150406@Winnie: Add 60 bettypes Betradar & Apply matrix of sporttype & bettype 
+	 - 20150515@Winnie: fix bug
 Param's Explanation:
 	+ @drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
 
@@ -1127,7 +1128,7 @@ BEGIN
 			WHERE
 				--b.bettype IN (9,29) AND
 				b.matchid IN (9,29) 
-				AND sbt.ProductID=1 AND sbt.ProductID=0
+				AND sbt.ProductID=1 AND sbt.EventType=0
 	END
 
 	--Sport Book
