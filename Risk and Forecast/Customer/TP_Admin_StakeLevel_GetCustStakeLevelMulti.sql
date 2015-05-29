@@ -5,7 +5,7 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-ALTER PROCEDURE [dbo].[TP_Admin_StakeLevel_GetCustStakeLevelMulti]
+ALTER PROCEDURE [dbo].[TP_Admin_StakeLevel_GetCustStakeLevelMulti] 
     @CustID			int = NULL,
 	@ErrCode		varchar(5)	= '' OUTPUT,	--Return ErrCode
 	@ErrMsg			nvarchar(500)= '' OUTPUT	--Return Exception Message
