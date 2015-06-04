@@ -277,6 +277,14 @@ EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4, @ProductID=8
 	 
 END
 
+--MicroGamming
+IF @Product='MG'
+BEGIN	
+INSERT INTO #SportBettype
+EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4, @ProductID=203
+	 
+END
+
 SET @LicenseeWL =				
 				'CASE  
 					WHEN b.bettype NOT IN (31,32,33) THEN - (b.winlost-b.actual_stake) 
