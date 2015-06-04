@@ -68,6 +68,7 @@ Revisions:
 	 - 20150124@winnie: Add base currency GBP
 	 - 20150406@Winnie: Add 60 bettypes Betradar & Apply matrix of sporttype & bettype 
 	 - 20150515@Winnie: fix bug
+	 - 20150604@Edward: Support MicroGamming
 Param's Explanation:
 	+ @drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
 

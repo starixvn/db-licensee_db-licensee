@@ -1,0 +1,9 @@
+D:\GitLab\db-licensee\db-licensee\bin\Debug\Licensee.dacpac
+D:\GitLab\db-licensee\db-licensee\obj\Debug\Model.xml
+D:\GitLab\db-licensee\db-licensee\obj\Debug\refactor.xml
+D:\GitLab\db-licensee\db-licensee\obj\Debug\postdeploy.sql
+D:\GitLab\db-licensee\db-licensee\obj\Debug\predeploy.sql
+D:\GitLab\db-licensee\db-licensee\obj\Debug\dbpProjectName.dll
+D:\GitLab\db-licensee\db-licensee\obj\Debug\dbpProjectName.pdb
+D:\GitLab\db-licensee\db-licensee\bin\Debug\dbpProjectName.dll
+D:\GitLab\db-licensee\db-licensee\bin\Debug\dbpProjectName.pdb
