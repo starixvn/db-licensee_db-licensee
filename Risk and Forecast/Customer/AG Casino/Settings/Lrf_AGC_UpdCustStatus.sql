@@ -1,4 +1,11 @@
-ALTER PROCEDURE	dbo.Lrf_AGC_UpdCustStatus
+USE [CustDB]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_AGC_UpdCustStatus]    Script Date: 06/06/2015 14:25:58 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE	[dbo].[Lrf_AGC_UpdCustStatus]
 	@CustID		INT,
 	@IsEnabled	BIT,
 	@UserID		INT,
@@ -10,9 +17,12 @@ AS
 /*
 	Created: 20140818@Victor
 	Task: Update member status of AG Casino product
-	DB: DBLIC/bodb_licensee
+	DB: DBCust.CustDB
+
 	Original:
 	Revisions:
+		- 20150606@Kathy: Move SP to DBCust.custDB [Redmine:#36216]
+
 	Param's Explanation:
 */
 BEGIN
@@ -29,13 +39,13 @@ BEGIN
 	-- Get old status of member
 	DECLARE @Srecommend INT
 			,@SEnabled INT = 0
-	SELECT @Srecommend = srecommend FROM bodb02.dbo.Customer c WITH (NOLOCK) WHERE c.CustID = @CustID
+	SELECT @Srecommend = srecommend FROM dbo.Customer c WITH (NOLOCK) WHERE c.CustID = @CustID
 
 	SELECT @IsEnableAG_Old = ISNULL(IsEnabled,0)
-	FROM DBTXN.CustDB.dbo.Dep_CustSetting_AGCasino WITH (NOLOCK)
+	FROM dbo.Dep_CustSetting_AGCasino WITH (NOLOCK)
 	WHERE CustID = @CustId
 
-	SELECT @SEnabled = ISNULL(IsEnabled,0) FROM DBTXN.CustDB.dbo.Dep_SuperSetting_AGCasino WITH (NOLOCK) WHERE CustID = @Srecommend
+	SELECT @SEnabled = ISNULL(IsEnabled,0) FROM dbo.Dep_SuperSetting_AGCasino WITH (NOLOCK) WHERE CustID = @Srecommend
 
 	IF (@SEnabled = 0)
 		SELECT @IsEnableAG_Old = 0
@@ -44,7 +54,7 @@ BEGIN
 	DECLARE @CustIDs VARCHAR(20)
 	SELECT @CustIDs = CONVERT(VARCHAR(20), @CustID)
 
-	EXEC DBTXN.CustDB.dbo.Dep_UpdCustStatus_AGC @CustIDs = @CustIDs, @IsEnabled = @IsEnabled
+		EXEC dbo.Dep_UpdCustStatus_AGC @CustIDs = @CustIDs, @IsEnabled = @IsEnabled
 
 	-- Write log
 	SET @endRun = GETDATE()
@@ -84,6 +94,6 @@ BEGIN
     END CATCH
 END
 
+
 GO
-GRANT EXECUTE ON dbo.Lrf_AGC_UpdCustStatus TO bodbLicenseeNet
-GO
+GRANT EXECUTE ON [dbo].[Lrf_AGC_UpdCustStatus] TO [bodbLicenseeNet] AS [dbo]

@@ -1,4 +1,4 @@
-ALTER PROCEDURE	dbo.Lrf_AGC_SelCustSetting
+ALTER PROCEDURE	[dbo].[Lrf_AGC_SelCustSetting]
 	@CustID			INT,
 	@Currency		INT				OUTPUT,
 	@AGGroup		VARCHAR(20)		OUTPUT,
@@ -9,9 +9,10 @@ AS
 /*
 	Created: 20140818@Victor
 	Task: Get AG Casino product setting of member
-	DB: DBLIC/bodb_licensee
+	DB: DBCust.CustDB
 	Original:
 	Revisions:
+		- 20150606@Kathy: Move SP to DBCust.custDB [Redmine:#36216]
 	Param's Explanation:
 */
 BEGIN
@@ -21,19 +22,19 @@ BEGIN
 
 	SELECT @Currency = Currency,
 		@Srecommend = srecommend 
-	FROM bodb02.dbo.Customer c WITH (NOLOCK) 
+	FROM dbo.Customer c WITH (NOLOCK) 
 	WHERE c.CustID = @CustID
 
 	SELECT @AGGroup = '', @IsEnabled = 0
 	SELECT @AGGroup = ISNULL(AGGroup,''), 
 		@IsEnabled = ISNULL(IsEnabled,0)
-	FROM DBTXN.CustDB.dbo.Dep_CustSetting_AGCasino WITH (NOLOCK)
+	FROM dbo.Dep_CustSetting_AGCasino WITH (NOLOCK)
 	WHERE CustID = @CustId
 
 	SELECT @CheckedGroups = '', @IsLineEnabled = 0
 	SELECT @IsLineEnabled = ISNULL(IsEnabled, 0) 
 		,@CheckedGroups = ISNULL(CheckedGroup, '')
-	FROM DBTXN.CustDB.dbo.Dep_SuperSetting_AGCasino WITH (NOLOCK) 
+	FROM dbo.Dep_SuperSetting_AGCasino WITH (NOLOCK) 
 	WHERE CustID = @Srecommend
 
 	IF (@IsLineEnabled = 0)
@@ -41,5 +42,6 @@ BEGIN
 END
 
 GO
-GRANT EXECUTE ON dbo.Lrf_AGC_SelCustSetting TO bodbLicenseeNet
+GRANT EXECUTE ON [dbo].[Lrf_AGC_SelCustSetting] TO [bodbLicenseeNet] AS [dbo]
 GO
+GRANT EXECUTE ON [dbo].[Lrf_AGC_SelCustSetting] TO [Dot_Member] AS [dbo]
