@@ -560,7 +560,7 @@ BEGIN
 				b.bettype,
 				'' AS matchcode,
 				'' AS race,
-				t.gameid AS matchid, 
+				0 AS matchid, 
 				b.transid AS transid, 
 				b.transdate, 
 				b.winlostdate,
@@ -572,7 +572,7 @@ BEGIN
 				b.modds, 
 				0 AS Oddstype,
 				b.odds,
-				t.choiceid AS betteam,
+				'' AS betteam,
 				b.status AS status,
 				'' AS betstatus, 
 				b.stake,
@@ -599,7 +599,6 @@ BEGIN
 			FROM 
 				dbo.bettrans14 b WITH (NOLOCK)
 				INNER JOIN @SportBettype sbt ON b.bettype = sbt.bettype
-				OUTER APPLY dbo.[f_ParseTransDesc](b.TransDesc, b.bettype) t
 			WHERE
 				b.custid			= @custid
 				AND b.winlostdate	= @fromdate 
@@ -1042,7 +1041,7 @@ BEGIN
 				b.bettype,
 				'' AS matchcode,
 				'' AS race,
-				t.gameid AS matchid, 
+				0 AS matchid, 
 				b.transid AS transid, 
 				b.transdate, 
 				b.winlostdate,
@@ -1054,7 +1053,7 @@ BEGIN
 				b.modds, 
 				0 AS Oddstype,
 				b.odds,
-				t.choiceid AS betteam,
+				'' AS betteam,
 				b.status AS status,
 				0 AS betstatus, 
 				b.stake,
@@ -1081,7 +1080,6 @@ BEGIN
 			FROM 
 				dbo.bettrans b WITH (NOLOCK)
 				INNER JOIN @SportBettype sbt ON b.bettype = sbt.bettype
-				OUTER APPLY dbo.[f_ParseTransDesc](b.TransDesc, b.bettype) t
 			WHERE
 				b.custid			= @custid
 				AND b.winlostdate	= @fromdate 
@@ -1095,7 +1093,7 @@ BEGIN
 				0 AS leagueid,
 				0 AS homeID,
 				0 AS awayID,
-				t.gameID AS bettype,
+				0 AS bettype,
 				'' AS matchcode, 
 				'' AS race,
 				k.GameId AS matchid, 
@@ -1110,7 +1108,7 @@ BEGIN
 				0 AS modds,
 				0 AS OddsType,
 				t.odds,
-				k.ChoiceId AS betteam,
+				'' AS betteam,
 				t.status,
 				0 AS betstatus, 
 				t.stake,
@@ -1136,7 +1134,6 @@ BEGIN
 			FROM 
 				dbo.translog t WITH (NOLOCK)
 				INNER JOIN @SportBettype sbt ON t.gameID = sbt.bettype
-				OUTER APPLY dbo.[f_ParseTransDesc](t.TransDesc, t.gameID) k
 			WHERE
 				t.custid			= @custid
 				AND t.winlostdate	= @fromdate

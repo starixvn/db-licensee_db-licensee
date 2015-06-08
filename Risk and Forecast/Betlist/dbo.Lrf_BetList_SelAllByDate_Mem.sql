@@ -997,7 +997,7 @@ BEGIN
 			b.transid AS transid,
 			ISNULL(b.BetID,0),
 			'' AS matchcode, 
-			t.GameId AS matchid,
+			0 AS matchid,
 			'' AS Race, 
 			0 AS homeID,
 			0 AS awayID,
@@ -1015,7 +1015,7 @@ BEGIN
 			b.discount,
 			b.transdate,
 			b.winlostdate,
-			t.ChoiceId as betteam,
+			'' as betteam,
 			0 as leagueID,
 			0 as liveindicator, 
 			0 as livehomescore, 
@@ -1030,8 +1030,7 @@ BEGIN
 		FROM 
 			bettrans b WITH (NOLOCK)
 			INNER JOIN @SportBettype sbt
-			ON b.bettype = sbt.Bettype	
-			CROSS APPLY dbo.[f_ParseTransDesc](b.TransDesc, b.bettype) t
+			ON b.bettype = sbt.Bettype
 		WHERE
 			b.CustID			=	@CustID 
 			AND	b.recommend		=	@Recommend  
@@ -1049,7 +1048,7 @@ BEGIN
 			t.translogid AS transid,
 			0 as BetID, 
 			'' AS matchcode, 
-			k.GameId AS matchid,
+			0 AS matchid,
 			'' AS Race, 
 			0 AS homeID,
 			0 AS awayID,
@@ -1067,7 +1066,7 @@ BEGIN
 			t.discount,
 			t.transdate,
 			t.winlostdate,
-			k.ChoiceId AS betteam,
+			'' AS betteam,
 			0 AS leagueID,
 			0 AS liveindicator, 
 			0 AS livehomescore, 
@@ -1080,10 +1079,9 @@ BEGIN
 			''  AS ShowTime 
 			,'' AS betcheck
 		FROM 
-			dbo.translog AS t WITH (NOLOCK)	
+			dbo.translog AS t WITH (NOLOCK)
 			INNER JOIN @SportBettype sbt
-			ON t.gameID = sbt.Bettype	
-			CROSS APPLY dbo.[f_ParseTransDesc](t.TransDesc, t.gameid) k
+			ON t.gameID = sbt.Bettype
 		WHERE
 			t.CustID			=	@CustID 
 			AND	t.recommend		=	@Recommend 

@@ -883,7 +883,7 @@ BEGIN
 			t.stake,
 			t.actual_stake, 
 			t.transdate,		
-			fnc.ChoiceId AS betteam,
+			'' AS betteam,
 			t.discount,
 			0 AS liveindicator, 
 			0 AS livehomescore, 
@@ -895,13 +895,12 @@ BEGIN
 			t.currency,
 			0 AS playercomm,
 			'' AS ShowTime,
-			fnc.GameId AS matchid
+			0 AS matchid
 			,'' AS betcheck
 		FROM 
 			translog t WITH (NOLOCK)			
 			INNER JOIN @SportBettype sbt
-			ON t.gameID = sbt.Bettype	
-			CROSS APPLY dbo.f_ParseTransDesc(t.transdesc, t.gameid) fnc	
+			ON t.gameID = sbt.Bettype
 		WHERE
 			t.transdate			>= @FromDate AND t.transdate <= @ToDate 
 			AND t.custid		= @CustID 

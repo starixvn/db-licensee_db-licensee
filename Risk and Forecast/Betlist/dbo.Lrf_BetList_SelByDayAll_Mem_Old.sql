@@ -503,7 +503,7 @@ BEGIN
 		b.bettype,
 		'' AS matchcode,
 		'' AS race,
-		fnc.GameId AS matchid, 
+		0 AS matchid, 
 		b.transid, 
 		b.transdate, 
 		b.winlostdate,
@@ -516,7 +516,7 @@ BEGIN
 		0 AS modds, 
 		0 AS Oddstype,
 		b.Odds,	
-		fnc.ChoiceId AS betteam,
+		'' AS betteam,
 		b.status AS status,
 		'' AS betstatus, 
 		b.stake,
@@ -540,7 +540,6 @@ BEGIN
 		,'' AS betcheck
 	FROM	bodb_archive.dbo.bettrans_bk b WITH (NOLOCK)
 		INNER JOIN @SportBettype sbt ON b.bettype = sbt.bettype
-		CROSS APPLY dbo.f_ParseTransDesc(b.transdesc, b.bettype) AS fnc
 	WHERE	b.custid			= @custid 		
 			AND b.winlostdate	= @fromdate 
 			AND sbt.ProductID	= 203

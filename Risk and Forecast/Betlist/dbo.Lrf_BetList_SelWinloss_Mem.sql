@@ -950,7 +950,7 @@ BEGIN
 			b.Odds,
 			b.stake,
 			b.actual_stake, 
-			ChoiceId AS betteam,
+			'' AS betteam,
 			b.status AS Status,				
 			b.refno,
 			b.transdate,	
@@ -964,7 +964,7 @@ BEGIN
 			b.Liveawayscore,
 			b.IP AS IP,
 			0 AS LeagueID,
-			GameId AS MatchID,	
+			0 AS MatchID,	
 			'' AS MatchCode,
 			'' AS Race,	
 			0 AS HomeID,
@@ -976,8 +976,7 @@ BEGIN
 			'' AS showtime
 			,NULL AS betcheck
 		FROM
-			dbo.bettrans AS b WITH (NOLOCK)		
-			CROSS APPLY dbo.f_ParseTransDesc(b.transdesc, b.bettype)
+			dbo.bettrans AS b WITH (NOLOCK)
 			INNER JOIN @SportBettype sbt ON b.Bettype=sbt.Bettype
 					
 		WHERE
@@ -1782,7 +1781,7 @@ BEGIN
 			b.Odds,
 			b.stake,
 			b.actual_stake,   		
-			ChoiceID AS betteam,
+			'' AS betteam,
 			b.status AS Status,				
 			b.refno,
 			b.Transdate,	
@@ -1796,7 +1795,7 @@ BEGIN
 			b.Liveawayscore,
 			b.IP AS IP,
 			0 AS LeagueID,
-			GameId AS MatchID,	
+			0 AS MatchID,	
 			'' AS MatchCode,
 			'' AS Race,	
 			0 AS HomeID,
@@ -1809,7 +1808,6 @@ BEGIN
 			,NULL AS betcheck
 		FROM
 			dbo.bettrans14 AS b WITH (NOLOCK)		
-			CROSS APPLY dbo.f_ParseTransDesc(b.transdesc, b.bettype)
 			INNER JOIN @SportBettype sbt ON b.Bettype=sbt.Bettype
 		WHERE
 			b.winlostdate BETWEEN @BalanceUpDay AND @tdate AND
@@ -2618,7 +2616,7 @@ BEGIN
 			b.Odds,
 			b.stake,
 			b.actual_stake,  		
-			ChoiceID AS betteam,
+			'' AS betteam,
 			b.status AS Status,				
 			b.refno,
 			b.Transdate,	
@@ -2632,7 +2630,7 @@ BEGIN
 			b.Liveawayscore,
 			b.IP AS IP,
 			0 AS LeagueID,
-			GameId AS MatchID,	
+			0 AS MatchID,	
 			'' AS MatchCode,
 			'' AS Race,	
 			0 AS HomeID,
@@ -2645,7 +2643,6 @@ BEGIN
 			,NULL AS betcheck
 		FROM
 			bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)		
-			CROSS APPLY dbo.f_ParseTransDesc(b.transdesc, b.bettype)
 			 INNER JOIN @SportBettype sbt ON b.Bettype=sbt.Bettype
 		WHERE
 			b.winlostdate BETWEEN @fdate AND @TempToDate AND
