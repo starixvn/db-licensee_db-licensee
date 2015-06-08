@@ -87,6 +87,7 @@ Revisions:
 	- 20150128@Winnie: Add base currency GBP 
 	- 20150410@Jim: support betradar and apply report-bettype matrix
 	- 20150604@Edward: Support MicroGamming
+	- 20150608@Edward: Exclude 3 transactions SOLD/BOUGHT/BetTrade Commission of BetTrade
 
 Param's Explanation: 	
 */
@@ -228,6 +229,7 @@ BEGIN
 INSERT INTO #SportBettype
 EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel  @mode=4, @ProductID=1
  
+DELETE #SportBettype WHERE ProductID = 1 AND Bettype IN (901,902,903)
 END   
 --Number Game
 IF @Product='NG'
