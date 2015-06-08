@@ -60,7 +60,7 @@ Revisions:
 	- 20150413@Bobby: Re-format code  & #32844 new 60 bettypes - betradar phase 2
 	- 20150511@Kiwi: Fixed the bug (RedmineID: #35562)
 	- 20150608@Edward: Support MicroGamming
-
+	- 20150608@Edward: Support Bet Trade
 Param's Explanation: 
 	+ @transtype: 1-Betting Statement; 2-VOID/Cancelled Bet; 3-Outstanding Bet 
 	
@@ -228,7 +228,7 @@ BEGIN
 			b.actual_stake,
 			(b.winlost-b.actual_stake) AS winlost, 
 			CASE WHEN BA.transid IS NULL THEN - (b.winlost-b.actual_stake) ELSE 0 END AS LicenseeWL ,
-			b.comm,
+			CASE WHEN b.bettype = 903 THEN b.awinlost ELSE b.comm END AS comm,
 			b.playercomm ,
 			b.discount,
 			b.livehomescore, 
@@ -643,8 +643,13 @@ BEGIN
 			CASE WHEN b.statusID NOT IN (0,1) THEN 
 				CASE WHEN BA.transid IS NULL THEN - (b.winlost-b.actual_stake) ELSE 0 END 
 			ELSE 0 END	AS LicenseeWL ,
-				
-			CASE WHEN b.statusID NOT IN (0,1) THEN b.comm  ELSE 0 END as comm,
+
+			CASE 
+				WHEN b.bettype = 903 THEN b.awinlost 
+				ELSE 
+					CASE WHEN b.statusID NOT IN (0,1) THEN b.comm  ELSE 0 
+					END 
+			END as comm,
 			b.playercomm , 
 			b.discount,
 			b.livehomescore, 
@@ -1140,6 +1145,21 @@ BEGIN
 				AND sbt.ProductID	= 203
 				AND sbt.EventType	= 0
 				AND t.statusID IN (SELECT [statusID] FROM @tmpStatus)
+	END
+
+	IF @ShowBT = 1
+	BEGIN
+		UPDATE betList
+		SET betList.Odds	= originBetList.Odds
+			,betList.Stake	= originBetList.Stake
+			,betList.comm	= CASE WHEN betList.Bettype = 902 THEN commBetList.comm ELSE betList.comm END
+		FROM @Data AS betList
+			INNER JOIN @Data AS originBetList ON betList.RefNO = originBetList.TransID
+			INNER JOIN @Data AS commBetList ON betList.RefNO = commBetList.RefNO
+		WHERE betList.Sporttype = 1 AND betList.Bettype IN (901, 902)
+			AND commBetList.Bettype = 903
+
+		DELETE @Data WHERE Sporttype = 1 AND Bettype = 903
 	END
 
 	DECLARE @Today SMALLDATETIME 

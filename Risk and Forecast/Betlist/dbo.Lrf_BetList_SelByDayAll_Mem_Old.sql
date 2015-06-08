@@ -190,7 +190,7 @@ BEGIN
 		b.actual_stake, 
 		(b.winlost-b.actual_stake) AS winlost, 
 		CASE WHEN BA.transid IS NULL THEN - (b.winlost-b.actual_stake) ELSE 0 END AS LicenseeWL ,
-		b.comm,
+		CASE WHEN b.bettype = 903 THEN b.awinlost ELSE b.comm END AS comm,
 		b.playercomm,
 		b.livehomescore, 
 		b.liveawayscore, 
@@ -215,7 +215,18 @@ BEGIN
 			--AND b.bettype NOT IN (10,31,32,33,1231,1232,1233,1237,1238) --exclude Racing and VHS
 			--AND sbt.ProductID 	NOT IN (2, 5, 6, 7, 8)
 			AND sbt.EventType 	= 1
+	
+	UPDATE betList
+	SET betList.Odds	= originBetList.Odds
+		,betList.Stake	= originBetList.Stake
+		,betList.comm	= CASE WHEN betList.Bettype = 902 THEN commBetList.comm ELSE betList.comm END
+	FROM @Data AS betList
+		INNER JOIN @Data AS originBetList ON betList.RefNO = originBetList.TransID
+		INNER JOIN @Data AS commBetList ON betList.RefNO = commBetList.RefNO
+	WHERE betList.Sporttype = 1 AND betList.Bettype IN (901, 902)
+		AND commBetList.Bettype = 903
 
+	DELETE @Data WHERE Sporttype = 1 AND Bettype = 903
 
 	--RNG Casino & Bingo		
 	INSERT INTO @Data 

@@ -26,6 +26,7 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_SelAllByDate_Mem]
 	@ShowBG   			BIT = 0, -- Bingo 
 	@ShowKN   			BIT = 0, -- Keno
 	@ShowMG   			BIT = 0, -- MicroGamming
+	@ShowBT				BIT = 0, -- Bet Trade
 	-- output info
 	@SumWinlost 		MONEY=0 OUTPUT,
 	@SumLicenseeWL 		MONEY=0 OUTPUT,
@@ -84,6 +85,7 @@ Revisions:
 	- 20150130@Winnie: Add base currency GBP
 	- 20150403@Bobby: Apply sporttype matrix & #32844 new 60 bettypes - betradar phase 2
 	- 20150605@Edward: Support MicroGamming
+	- 20150608@Edward: Support Bet Trade
 */
 BEGIN
 	
@@ -209,6 +211,11 @@ BEGIN
 	)
 	EXEC dbo.Acc_SportBettypeMatrix_Sel @mode = 4
 		
+	IF @ShowBT = 0
+	BEGIN
+		DELETE @SportBettype WHERE ProductID = 1 AND Bettype IN (901, 902, 903)
+	END
+
 	DELETE sbt
 	FROM @SportBettype sbt
 	WHERE ProductID		= CASE WHEN @ShowSB	= 0 AND @ShowBA = 0 THEN 1 END
@@ -243,7 +250,7 @@ BEGIN
 			b.actual_stake,
 			(winlost-actual_stake) winlost,
 			0 AS LicenseeWL ,
-			b.comm ,
+			CASE WHEN b.bettype = 903 THEN b.awinlost ELSE b.comm END AS comm,
 			b.playercomm  AS PlayerComm,
 			b.discount,
 			b.transdate,
@@ -449,7 +456,7 @@ BEGIN
 			b.actual_stake,
 			(winlost-actual_stake) winlost,
 			- (b.winlost-b.actual_stake) AS LicenseeWL ,
-			b.comm ,
+			CASE WHEN b.bettype = 903 THEN b.awinlost ELSE b.comm END AS comm,
 			b.playercomm,
 			b.discount,
 			b.transdate,
@@ -1089,6 +1096,21 @@ BEGIN
 			AND sbt.EventType	=	0
 			AND	t.transdate		>=	@FROMDate AND t.transdate <= @ToDate 
 			AND t.statusID		IN (0,1)	
+	END
+
+	IF @ShowBT = 1
+	BEGIN
+		UPDATE betList
+		SET betList.Odds	= originBetList.Odds
+			,betList.Stake	= originBetList.Stake
+			,betList.comm	= CASE WHEN betList.Bettype = 902 THEN commBetList.comm ELSE betList.comm END
+		FROM #BetListSelAllByDateMem AS betList
+			INNER JOIN #BetListSelAllByDateMem AS originBetList ON betList.RefNO = originBetList.TransID
+			INNER JOIN #BetListSelAllByDateMem AS commBetList ON betList.RefNO = commBetList.RefNO
+		WHERE betList.Sporttype = 1 AND betList.Bettype IN (901, 902)
+			AND commBetList.Bettype = 903
+
+		DELETE #BetListSelAllByDateMem WHERE Sporttype = 1 AND Bettype = 903
 	END
 
 	CREATE NONCLUSTERED INDEX IDX_Index_betlist ON #BetListSelAllByDateMem(Currency)
