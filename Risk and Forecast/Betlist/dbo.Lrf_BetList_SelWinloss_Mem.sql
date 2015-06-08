@@ -16,6 +16,7 @@
 	@ShowBG   		BIT=0, -- Bingo 
 	@ShowKN   		BIT=0, -- Keno
 	@ShowMG			BIT=0, -- MicroGamming
+	@ShowBT			BIT=0, -- Bet Trade
 	@PageSize		INT=1000,
 	@PageIndex		INT=1,
 	@TotalRows INT=0 OUTPUT,
@@ -69,6 +70,7 @@ Revisions:
 	 - 20150406@Winnie: Add 60 bettypes Betradar & Apply matrix of sporttype & bettype 
 	 - 20150515@Winnie: fix bug
 	 - 20150604@Edward: Support MicroGamming
+	 - 20150608@Edward: Support Bet Trade
 Param's Explanation:
 	+ @drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
 
@@ -157,6 +159,12 @@ DECLARE @SportBettype TABLE(ProductID INT,Bettype INT,EventType INT)
 INSERT INTO @SportBettype
 EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4
 
+IF @ShowBT = 0
+BEGIN
+	DELETE @SportBettype WHERE ProductID = 1 AND Bettype IN (901, 902, 903)
+END
+
+
 IF @tdate > @MoveBetsDay
 BEGIN
 	IF @fdate <= @MoveBetsDay 
@@ -184,7 +192,7 @@ BEGIN
 		b.winlostdate,			
 		(b.winlost-actual_stake),
 		0,
-		b.comm ,
+		CASE WHEN b.bettype = 903 THEN b.awinlost ELSE b.comm END,
 		b.playercomm,
 		b.Liveindicator,
 		b.Livehomescore,
@@ -372,7 +380,7 @@ BEGIN
 				b.winlostdate,			
 				(b.winlost-actual_stake),
 				- (b.winlost-actual_stake) ,
-				b.comm,
+				CASE WHEN b.bettype = 903 THEN b.awinlost ELSE b.comm END,
 				b.playercomm,
 				b.Liveindicator,
 				b.Livehomescore,
@@ -1019,7 +1027,7 @@ BEGIN
 		b.winlostdate,			
 		(b.winlost-actual_stake),
 		0,
-		b.comm,
+		CASE WHEN b.bettype = 903 THEN b.awinlost ELSE b.comm END,
 		b.playercomm,
 		b.Liveindicator,
 		b.Livehomescore,
@@ -1208,7 +1216,7 @@ BEGIN
 				b.winlostdate,						
 				(b.winlost-actual_stake),
 				- (b.winlost-actual_stake),
-				b.comm,
+				CASE WHEN b.bettype = 903 THEN b.awinlost ELSE b.comm END,
 				b.playercomm,
 				b.Liveindicator,
 				b.Livehomescore,
@@ -1845,7 +1853,7 @@ BEGIN
 		b.winlostdate,			
 		(b.winlost-actual_stake),
 		0,
-		b.comm,
+		CASE WHEN b.bettype = 903 THEN b.awinlost ELSE b.comm END,
 		b.playercomm,
 		b.Liveindicator,
 		b.Livehomescore,
@@ -2034,7 +2042,7 @@ BEGIN
 				b.winlostdate,			
 				(b.winlost-actual_stake),
 				- (b.winlost-actual_stake),
-				b.comm ,
+				CASE WHEN b.bettype = 903 THEN b.awinlost ELSE b.comm END,
 			    b.playercomm,
 				b.Liveindicator,
 				b.Livehomescore,
@@ -2653,6 +2661,20 @@ BEGIN
 	END
 END
 
+IF @ShowBT = 1
+BEGIN
+	UPDATE betList
+	SET betList.Odds	= originBetList.Odds
+		,betList.Stake	= originBetList.Stake
+		,betList.comm	= CASE WHEN betList.Bettype = 902 THEN commBetList.comm ELSE betList.comm END
+	FROM @BetListByDateMem AS betList
+		INNER JOIN @BetListByDateMem AS originBetList ON betList.RefNO = originBetList.TransID
+		INNER JOIN @BetListByDateMem AS commBetList ON betList.RefNO = commBetList.RefNO
+	WHERE betList.Sporttype = 1 AND betList.Bettype IN (901, 902)
+		AND commBetList.Bettype = 903
+
+	DELETE @BetListByDateMem WHERE Sporttype = 1 AND Bettype = 903
+END
 
 --@currency
 SELECT CurrencyID
