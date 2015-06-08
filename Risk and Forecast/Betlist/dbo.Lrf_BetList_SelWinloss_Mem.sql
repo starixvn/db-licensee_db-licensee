@@ -939,21 +939,21 @@ BEGIN
 	BEGIN
 		INSERT INTO @BetListByDateMem
 		SELECT
-			m.Sporttype, 
-			b.TransID,
+			203 AS Sporttype, 
+			b.transid AS transid,
 			ISNULL(b.BetID,0),
 			b.Bettype,
 			b.hdp1 AS hdp1, 
 			b.hdp2 AS hdp2,
-			modds,
+			b.modds,
 			b.oddstype,
 			b.Odds,
 			b.stake,
 			b.actual_stake, 
-			b.betteam,
-			b.status AS Status,
+			ChoiceId AS betteam,
+			b.status AS Status,				
 			b.refno,
-			b.Transdate,	
+			b.transdate,	
 			b.winlostdate,			
 			(b.winlost-actual_stake),
 			- (b.winlost-actual_stake) ,
@@ -963,22 +963,23 @@ BEGIN
 			b.Livehomescore,
 			b.Liveawayscore,
 			b.IP AS IP,
-			m.LeagueID,
-			m.MatchID,	
-			m.MatchCode,
+			0 AS LeagueID,
+			GameId AS MatchID,	
+			'' AS MatchCode,
 			'' AS Race,	
-			m.HomeID,
-			m.AwayID, 		
-			m.Betstatus,
-			ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral,
+			0 AS HomeID,
+			0 AS AwayID, 		
+			0 AS Betstatus,
+			CONVERT(BIT, 0) AS IsNeutral,
 			0,0,
 			b.currency,
-			isnull(m.showtime,'') as showtime
+			'' AS showtime
 			,NULL AS betcheck
 		FROM
 			dbo.bettrans AS b WITH (NOLOCK)		
-			INNER JOIN dbo.match AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
+			CROSS APPLY dbo.f_ParseTransDesc(b.transdesc, b.bettype)
 			INNER JOIN @SportBettype sbt ON b.Bettype=sbt.Bettype
+					
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @tdate AND
 			b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
@@ -1770,18 +1771,18 @@ BEGIN
 	BEGIN
 		INSERT INTO @BetListByDateMem
 		SELECT
-			m.Sporttype, 
-			b.TransID,
+			203 AS Sporttype, 
+			b.transid as transid,
 			ISNULL(b.BetID,0),
 			b.Bettype,
-			b.hdp1 AS hdp1, 
-			b.hdp2 AS hdp2,
-			modds,
+			0 AS hdp1, 
+			0 AS hdp2,
+			b.modds,
 			b.Oddstype,
 			b.Odds,
 			b.stake,
 			b.actual_stake,   		
-			b.betteam,
+			ChoiceID AS betteam,
 			b.status AS Status,				
 			b.refno,
 			b.Transdate,	
@@ -1794,22 +1795,22 @@ BEGIN
 			b.Livehomescore,
 			b.Liveawayscore,
 			b.IP AS IP,
-			m.LeagueID,
-			m.MatchID,	
-			m.MatchCode,
+			0 AS LeagueID,
+			GameId AS MatchID,	
+			'' AS MatchCode,
 			'' AS Race,	
-			m.HomeID,
-			m.AwayID, 		
-			m.Betstatus,
-			ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral,
+			0 AS HomeID,
+			0 AS AwayID, 		
+			0 AS Betstatus,
+			CONVERT(BIT,0) AS IsNeutral,
 			0,0,
 			b.currency,
-			isnull(m.showtime,'') as showtime
+			'' AS showtime
 			,NULL AS betcheck
 		FROM
 			dbo.bettrans14 AS b WITH (NOLOCK)		
-			INNER JOIN dbo.match14 AS m WITH (NOLOCK) ON b.matchid=m.matchid 	
-			INNER JOIN @SportBettype sbt ON b.Bettype=sbt.Bettype		
+			CROSS APPLY dbo.f_ParseTransDesc(b.transdesc, b.bettype)
+			INNER JOIN @SportBettype sbt ON b.Bettype=sbt.Bettype
 		WHERE
 			b.winlostdate BETWEEN @BalanceUpDay AND @tdate AND
 			b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
@@ -2606,18 +2607,18 @@ BEGIN
 	BEGIN
 		INSERT INTO @BetListByDateMem
 		SELECT
-			m.Sporttype, 
-			b.TransID,
+			203 AS Sporttype, 
+			b.transid AS transid,
 			ISNULL(b.BetID,0),
 			b.Bettype,
-			b.hdp1 AS hdp1, 
-			b.hdp2 AS hdp2,
-			modds,
+			0 AS hdp1, 
+			0 AS hdp2,
+			b.modds,
 			b.Oddstype,
 			b.Odds,
 			b.stake,
 			b.actual_stake,  		
-			b.betteam,
+			ChoiceID AS betteam,
 			b.status AS Status,				
 			b.refno,
 			b.Transdate,	
@@ -2630,22 +2631,22 @@ BEGIN
 			b.Livehomescore,
 			b.Liveawayscore,
 			b.IP AS IP,
-			m.LeagueID,
-			m.MatchID,	
-			m.MatchCode,
+			0 AS LeagueID,
+			GameId AS MatchID,	
+			'' AS MatchCode,
 			'' AS Race,	
-			m.HomeID,
-			m.AwayID, 		
-			m.Betstatus,
-			ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral,
+			0 AS HomeID,
+			0 AS AwayID, 		
+			0 AS Betstatus,
+			CONVERT(BIT,0) AS IsNeutral,
 			0,0,
 			b.currency,
-			isnull(m.showtime,'') as showtime
+			'' AS showtime
 			,NULL AS betcheck
 		FROM
 			bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)		
-			INNER JOIN bodb_archive.dbo.match_BK AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
-			INNER JOIN @SportBettype sbt ON b.Bettype=sbt.Bettype
+			CROSS APPLY dbo.f_ParseTransDesc(b.transdesc, b.bettype)
+			 INNER JOIN @SportBettype sbt ON b.Bettype=sbt.Bettype
 		WHERE
 			b.winlostdate BETWEEN @fdate AND @TempToDate AND
 			b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
@@ -2971,73 +2972,6 @@ BEGIN
 		INNER JOIN #TempExchange e  ON e.ExchangeDate = b.winlostdate   AND e.exchangeid = b.currency
 		INNER JOIN @SportBettype sbt ON bg.Bettype=sbt.Bettype
 		WHERE sbt.ProductID=4--B.Bettype BETWEEN 1101 AND 1199
-	END
-END
-
--- MicorGamming
-IF @ShowMG=1
-BEGIN
-	IF @tdate > @MoveBetsDay 
-	BEGIN
-		INSERT INTO @BettransDetail
-		SELECT 
-			BG.refno, 
-			BG.odds, 
-			BG.stake,
-			BG.status, 
-			BG.apositiontaking, 
-			BG.bettype  ,
-			BG.Betteam,
-			BG.stake * e.EUR,
-			BG.stake * e.USD,
-			BG.stake * e.GBP
-		FROM bettransg BG WITH (NOLOCK)
-		INNER JOIN @BetListByDateMem B ON BG.refno = B.refno and BG.custid = @CustID
-		INNER JOIN #TempExchange e ON e.ExchangeDate = b.winlostdate   AND e.exchangeid = b.currency
-		INNER JOIN @SportBettype sbt ON bg.Bettype=sbt.Bettype
-		WHERE sbt.ProductID=203--B.Bettype BETWEEN 1101 AND 1199
-	END
-		
-	IF @fdate <= @MoveBetsDay
-	BEGIN
-		INSERT INTO @BettransDetail
-		SELECT 
-			BG.refno, 
-			BG.odds, 
-			BG.stake,
-			BG.status, 
-			BG.apositiontaking, 
-			BG.bettype  ,
-			BG.Betteam  ,
-			BG.stake * e.EUR,
-			BG.stake * e.USD,
-			BG.stake * e.GBP
-		FROM bettransg14 BG WITH (NOLOCK)
-		INNER JOIN @BetListByDateMem B ON BG.refno = B.refno and BG.custid = @CustID
-		INNER JOIN #TempExchange e  ON e.ExchangeDate = b.winlostdate   AND e.exchangeid = b.currency
-		INNER JOIN @SportBettype sbt ON bg.Bettype=sbt.Bettype
-		WHERE sbt.ProductID=203--B.Bettype BETWEEN 1101 AND 1199
-	END	
-	
-	IF @fdate < @BalanceUpDay
-	BEGIN
-		INSERT INTO @BettransDetail
-		SELECT 
-			BG.refno, 
-			BG.odds, 
-			BG.stake,
-			BG.status, 
-			BG.apositiontaking, 
-			BG.bettype  ,
-			BG.Betteam  ,
-			BG.stake * e.EUR,
-			BG.stake * e.USD,
-			BG.stake * e.GBP
-		FROM bodb_archive.dbo.bettransG BG WITH (NOLOCK)
-		INNER JOIN @BetListByDateMem B ON BG.refno = B.refno and BG.custid = @CustID
-		INNER JOIN #TempExchange e  ON e.ExchangeDate = b.winlostdate   AND e.exchangeid = b.currency
-		INNER JOIN @SportBettype sbt ON bg.Bettype=sbt.Bettype
-		WHERE sbt.ProductID=203--B.Bettype BETWEEN 1101 AND 1199
 	END
 END
 

@@ -25,6 +25,7 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_SelAllByDate_Mem]
 	@ShowCS   			BIT = 0, -- RNG Casino
 	@ShowBG   			BIT = 0, -- Bingo 
 	@ShowKN   			BIT = 0, -- Keno
+	@ShowMG   			BIT = 0, -- MicroGamming
 	-- output info
 	@SumWinlost 		MONEY=0 OUTPUT,
 	@SumLicenseeWL 		MONEY=0 OUTPUT,
@@ -82,6 +83,7 @@ Revisions:
 	- 20140908@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
 	- 20150130@Winnie: Add base currency GBP
 	- 20150403@Bobby: Apply sporttype matrix & #32844 new 60 bettypes - betradar phase 2
+	- 20150605@Edward: Support MicroGamming
 */
 BEGIN
 	
@@ -217,6 +219,7 @@ BEGIN
 		OR ProductID	= CASE WHEN @ShowCS	= 0 THEN 6 END
 		OR ProductID	= CASE WHEN @ShowBG	= 0 THEN 7 END
 		OR ProductID	= CASE WHEN @ShowKN	= 0 THEN 8 END
+		OR ProductID	= CASE WHEN @ShowMG	= 0 THEN 203 END
 		OR ProductID 	> 8 -- not suport for LIC system
 	-- end filer bettypes by sporttype
 	
@@ -977,6 +980,114 @@ BEGIN
 			t.CustID			=	@CustID 
 			AND	t.recommend		=	@Recommend 
 			AND sbt.ProductID	=	8
+			AND sbt.EventType	=	0
+			AND	t.transdate		>=	@FROMDate AND t.transdate <= @ToDate 
+			AND t.statusID		IN (0,1)	
+	END
+
+	--MicroGamming
+	IF ( @ShowMG = 1 )
+	BEGIN
+		INSERT INTO #BetListSelAllByDateMem
+		SELECT 
+			@UserName AS UserName,
+			203 AS sporttype,
+			b.bettype,
+			b.refno,		
+			b.transid AS transid,
+			ISNULL(b.BetID,0),
+			'' AS matchcode, 
+			t.GameId AS matchid,
+			'' AS Race, 
+			0 AS homeID,
+			0 AS awayID,
+			0 AS hdp1, 
+			0 AS hdp2,  
+			b.odds,
+			b.modds,
+			b.status,
+			b.stake,
+			b.actual_stake,
+			(winlost-actual_stake) winlost,
+			- (b.winlost-b.actual_stake) AS LicenseeWL ,
+			b.comm ,
+			b.playercomm,
+			b.discount,
+			b.transdate,
+			b.winlostdate,
+			t.ChoiceId as betteam,
+			0 as leagueID,
+			0 as liveindicator, 
+			0 as livehomescore, 
+			0 as liveawayscore,
+			b.IP AS IP,
+			0 as betstatus,
+			CONVERT(BIT,0) AS IsNeutral,
+			b.Oddstype,
+			b.currency,
+			''  AS ShowTime 
+			,'' AS betcheck
+		FROM 
+			bettrans b WITH (NOLOCK)
+			INNER JOIN @SportBettype sbt
+			ON b.bettype = sbt.Bettype	
+			CROSS APPLY dbo.[f_ParseTransDesc](b.TransDesc, b.bettype) t
+		WHERE
+			b.CustID			=	@CustID 
+			AND	b.recommend		=	@Recommend  
+			AND sbt.ProductID	=	203
+			AND sbt.EventType	=	0
+			AND b.transdate		>=	@FROMDate AND b.transdate <= @ToDate 
+			AND	b.statusID		NOT IN (0,1)	
+
+		UNION ALL
+		SELECT 
+			@UserName AS UserName,
+			203 as sporttype,
+			t.gameid as bettype,
+			t.translogid AS refno,		
+			t.translogid AS transid,
+			0 as BetID, 
+			'' AS matchcode, 
+			k.GameId AS matchid,
+			'' AS Race, 
+			0 AS homeID,
+			0 AS awayID,
+			0 AS hdp1, 
+			0 AS hdp2,  
+			t.odds ,
+			0 as modds,
+			t.status,
+			t.stake,
+			t.actual_stake,
+			(0-actual_stake) winlost,
+			- (0-t.actual_stake) AS LicenseeWL ,
+			0 as comm,
+			0 AS PlayerComm,
+			t.discount,
+			t.transdate,
+			t.winlostdate,
+			k.ChoiceId AS betteam,
+			0 AS leagueID,
+			0 AS liveindicator, 
+			0 AS livehomescore, 
+			0 AS liveawayscore,
+			t.IP AS IP,
+			0 AS betstatus,
+			CONVERT(BIT,0) AS IsNeutral,
+			0 as Oddstype,
+			t.currency,
+			''  AS ShowTime 
+			,'' AS betcheck
+		FROM 
+			dbo.translog AS t WITH (NOLOCK)	
+			INNER JOIN @SportBettype sbt
+			ON t.gameID = sbt.Bettype	
+			CROSS APPLY dbo.[f_ParseTransDesc](t.TransDesc, t.gameid) k
+		WHERE
+			t.CustID			=	@CustID 
+			AND	t.recommend		=	@Recommend 
+			AND sbt.ProductID	=	203
 			AND sbt.EventType	=	0
 			AND	t.transdate		>=	@FROMDate AND t.transdate <= @ToDate 
 			AND t.statusID		IN (0,1)	

@@ -46,7 +46,8 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinLossByDate_Mem]
 	@ShowVS BIT = 0,
 	@ShowCS BIT = 0,-- RNG Casino
 	@ShowBG BIT = 0,
-	@ShowKN BIT = 0
+	@ShowKN BIT = 0,
+	@ShowMG BIT = 0
 	
 AS
 
@@ -88,6 +89,7 @@ Revisions:
    - 20150128@Winnie: Add base currency GBP
    - 20150406@Winnie: Apply sporttype, bettype matrix and add 60 bettypes betradar 
    - 20150406@Winnie: fix bug
+   - 20150604@Edward: Support MicroGamming
    */
 
 SET NOCOUNT ON
@@ -949,6 +951,59 @@ BEGIN
 			
 	END
 	
+	-- show MicroGamming
+	IF @ShowMG=1
+	BEGIN
+		INSERT INTO #BetListByDateMem
+			SELECT
+			203 Sporttype, 
+			@Username, 
+			b.TransID,
+			ISNULL(b.BetID,0),
+			b.Bettype,
+			CONVERT(FLOAT, b.hdp1) AS hdp1, 
+			CONVERT(FLOAT, b.hdp2) AS hdp2,
+			b.Oddstype,			
+			b.Odds,
+			b.modds,
+			b.stake,
+			b.actual_stake, 
+			ChoiceId betteam,
+			b.status AS Status,				
+			b.refno,
+			b.Transdate,	
+			b.winlostdate,			
+			(b.winlost-actual_stake),
+			ABS(b.winlost-actual_stake),
+			- (b.winlost-b.actual_stake) AS LicenseeWL ,
+			b.comm,
+			b.playercomm ,				
+			b.Liveindicator,
+			b.Livehomescore,
+			b.Liveawayscore,
+			b.IP AS IP,
+			0  AS  LeagueID,
+			GameId  AS MatchID,	
+			'' AS  MatchCode,
+			'' AS  Race,	
+			0  AS HomeID,
+			0  AS AwayID, 		
+			0  AS Betstatus,
+			CONVERT(BIT,0) AS IsNeutral	,
+			b.currency,
+			'' AS  ShowTime 
+			,NULL AS betcheck	
+		FROM
+			dbo.bettrans AS b WITH (NOLOCK)		
+			CROSS APPLY dbo.f_ParseTransDesc(b.transdesc, b.bettype)
+			INNER JOIN @SportBettype sbt ON b.Bettype=sbt.Bettype	
+		WHERE
+			b.winlostdate BETWEEN @TempFromDate AND @todate AND
+			b.recommend = @Recommend AND --to improve performance
+			b.custid=@CustID AND
+			sbt.ProductID=203 AND
+			b.ruben = 1
+	END
 END
 
 IF @Fromdate <= @MoveBetsDay
@@ -1652,6 +1707,60 @@ BEGIN
 			b.custid=@CustID AND
 			--b.bettype BETWEEN 1501 AND 1599 AND
 			sbt.ProductID=8 AND
+			b.ruben = 1
+	END
+
+	--- Show MicroGamming
+	IF @ShowMG=1 
+	BEGIN	
+		INSERT INTO #BetListByDateMem
+		SELECT
+			203 Sporttype, 
+			@Username, 
+			b.TransID,
+			ISNULL(b.BetID,0),
+			b.Bettype,
+			0 AS hdp1, 
+			0 AS hdp2,
+			b.Oddstype,
+			b.odds,
+			b.modds,
+			b.stake,
+			b.actual_stake, 
+			ChoiceID betteam,
+			b.status AS Status,				
+			b.refno,
+			b.Transdate,	
+			b.winlostdate,			
+			(b.winlost-actual_stake),
+			ABS(b.winlost-actual_stake),
+			- (b.winlost-b.actual_stake) AS LicenseeWL ,
+			b.comm,
+			b.playercomm  ,
+			b.Liveindicator,
+			b.Livehomescore,
+			b.Liveawayscore,
+			b.IP AS IP,
+			0  AS  LeagueID,
+			GameId  AS  MatchID,	
+			'' AS  MatchCode,
+			'' AS Race,	
+			0  AS HomeID,
+			0  AS AwayID, 		
+			0  AS Betstatus,
+			CONVERT(BIT,0) AS IsNeutral	,
+			b.currency,
+			''  AS ShowTime 
+			,NULL AS betcheck	
+		FROM
+			dbo.bettrans14 AS b WITH (NOLOCK, INDEX=bettrans1423)	
+			CROSS APPLY dbo.f_ParseTransDesc(b.transdesc, b.bettype)	
+			INNER JOIN @SportBettype sbt ON b.Bettype=sbt.Bettype	
+		WHERE
+			b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate AND
+			b.recommend = @Recommend AND --to improve performance
+			b.custid=@CustID AND
+			sbt.ProductID=203 AND
 			b.ruben = 1
 	END
 END	
@@ -2361,6 +2470,59 @@ BEGIN
 			b.ruben = 1			
 	END
 	
+	--- Show MicroGamming
+	IF @ShowMG=1
+	BEGIN	
+		INSERT INTO #BetListByDateMem
+		SELECT			
+			203 Sporttype, 
+			@Username, 
+			b.TransID,
+			ISNULL(b.BetID,0),
+			b.Bettype,
+			0 AS hdp1, 
+			0 AS hdp2,
+			b.OddsType,
+			b.Odds,
+			b.modds,
+			b.stake,
+			b.actual_stake, 
+			ChoiceID Betteam,
+			b.status AS Status,				
+			b.refno,
+			b.Transdate,	
+			b.winlostdate,			
+			(b.winlost-actual_stake),
+			ABS(b.winlost-actual_stake),
+			- (b.winlost-b.actual_stake) AS LicenseeWL ,
+			b.comm,
+			b.playercomm  AS PlayerComm,				
+			b.Liveindicator,
+			b.Livehomescore,
+			b.Liveawayscore,
+			b.IP AS IP,
+			0    AS  LeagueID,
+			GameId  AS  MatchID,	
+			'' AS MatchCode,
+			'' AS Race,	
+			0  AS  HomeID,
+			0  AS  AwayID, 		
+			0  AS  Betstatus,
+			CONVERT(BIT,0) AS IsNeutral	,
+			b.currency,
+			'' AS ShowTime 	
+			,NULL AS betcheck 
+		FROM
+			bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK, index=IX_custid)
+			CROSS APPLY dbo.f_ParseTransDesc(b.transdesc, b.bettype)	
+			INNER JOIN @SportBettype sbt ON b.Bettype=sbt.Bettype
+		WHERE
+			b.winlostdate BETWEEN @fromdate AND @TempToDate AND			
+			b.custid=@CustID AND
+			b.recommend = @Recommend AND	
+			sbt.ProductID=203 AND sbt.EventType=0 AND
+			b.ruben = 1			
+	END
 END
 
 DECLARE @RowStart INT, @RowEnd INT  

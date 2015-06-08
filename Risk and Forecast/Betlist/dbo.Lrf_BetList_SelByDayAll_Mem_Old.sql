@@ -59,6 +59,7 @@ Revisions:
 	- 20150130@Winnie: Add base currency GBP
 	- 20150413@Bobby: Re-format code  & #32844 new 60 bettypes - betradar phase 2
 	- 20150511@Kiwi: Fixed the bug (RedmineID: #35562)
+	- 20150608@Edward: Support MicroGamming
 
 Param's Explanation: 
 
@@ -491,6 +492,59 @@ BEGIN
 		AND b.winlostdate	= @fromdate
 		--AND b.bettype IN (10,31,32,33)
 		AND (sbt.ProductID	IN (1, 2) AND sbt.EventType	= 2)
+
+	-- MicroGamming 
+	INSERT INTO @Data 
+	SELECT
+		203 AS sporttype, 
+		0 AS leagueid,
+		0 AS homeID,
+		0 AS awayID,
+		b.bettype,
+		'' AS matchcode,
+		'' AS race,
+		fnc.GameId AS matchid, 
+		b.transid, 
+		b.transdate, 
+		b.winlostdate,
+		b.refno, 
+		--CASE WHEN b.bettype = 87 THEN b.betid ELSE 0 END, --- 87- High Low for NG: Current Live Ball 
+		b.betid,
+		b.oddsid, 
+		b.hdp1, 
+		b.hdp2,
+		0 AS modds, 
+		0 AS Oddstype,
+		b.Odds,	
+		fnc.ChoiceId AS betteam,
+		b.status AS status,
+		'' AS betstatus, 
+		b.stake,
+		b.actual_stake, 
+		(b.winlost-b.actual_stake) AS winlost, 
+		- (b.winlost-b.actual_stake) AS LicenseeWL ,
+		b.comm,
+		b.playercomm,
+		b.livehomescore, 
+		b.liveawayscore, 
+		b.liveindicator, 
+		0 AS finalhomescore, 
+		0 AS finalawayscore,
+		0 AS hthomescore, 
+		0 AS htawayscore,
+		b.IP AS IP,
+		@Username,
+		CONVERT(BIT,0) AS IsNeutral,
+		b.currency,
+		'' AS ShowTime 
+		,'' AS betcheck
+	FROM	bodb_archive.dbo.bettrans_bk b WITH (NOLOCK)
+		INNER JOIN @SportBettype sbt ON b.bettype = sbt.bettype
+		CROSS APPLY dbo.f_ParseTransDesc(b.transdesc, b.bettype) AS fnc
+	WHERE	b.custid			= @custid 		
+			AND b.winlostdate	= @fromdate 
+			AND sbt.ProductID	= 203
+			AND sbt.EventType	= 0
 
 	SELECT * 
 	INTO #TempExchange 

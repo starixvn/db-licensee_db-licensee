@@ -59,6 +59,7 @@ Revisions:
 	- 20150128@Winnie: Add currency GBP 
 	- 20150413@Bobby: Re-format code  & #32844 new 60 bettypes - betradar phase 2
 	- 20150511@Kiwi: Fixed the bug (RedmineID: #35562)
+	- 20150608@Edward: Support MicroGamming
 
 Param's Explanation: 
 	+ @transtype: 1-Betting Statement; 2-VOID/Cancelled Bet; 3-Outstanding Bet 
@@ -548,6 +549,64 @@ BEGIN
 			AND (sbt.ProductID	IN (1, 2) AND sbt.EventType	= 2)
 			AND b.statusID 		IN (SELECT [statusID] FROM @tmpStatus)
 
+		-- MciroGamming
+		IF( @transtype = 1 OR @transtype = 2 )
+			INSERT INTO @Data 
+			SELECT
+				203 AS sporttype, 
+				0 AS leagueid,
+				0 AS homeID,
+				0 AS awayID,
+				b.bettype,
+				'' AS matchcode,
+				'' AS race,
+				t.gameid AS matchid, 
+				b.transid AS transid, 
+				b.transdate, 
+				b.winlostdate,
+				b.refno, 
+				0 AS betid,
+				0 AS oddsid, 
+				0 AS hdp1, 
+				0 AS hdp2,
+				b.modds, 
+				0 AS Oddstype,
+				b.odds,
+				t.choiceid AS betteam,
+				b.status AS status,
+				'' AS betstatus, 
+				b.stake,
+				b.actual_stake,
+				(b.winlost-b.actual_stake) AS winlost, 
+				- (b.winlost-b.actual_stake) AS LicenseeWL ,
+				b.comm AS comm,
+				b.playercomm ,
+				b.discount,
+				0 AS livehomescore, 
+				0 AS liveawayscore, 
+				0 AS liveindicator, 
+				0 AS finalhomescore, 
+				0 AS finalawayscore,
+				0 AS hthomescore, 
+				0 AS htawayscore,
+				--b.username, 
+				b.IP AS IP,
+				b.Username,
+				CONVERT(BIT,0) AS IsNeutral,
+				b.currency,
+				'' AS ShowTime
+				,'' AS betcheck
+			FROM 
+				dbo.bettrans14 b WITH (NOLOCK)
+				INNER JOIN @SportBettype sbt ON b.bettype = sbt.bettype
+				OUTER APPLY dbo.[f_ParseTransDesc](b.TransDesc, b.bettype) t
+			WHERE
+				b.custid			= @custid
+				AND b.winlostdate	= @fromdate 
+				AND sbt.ProductID	= 203
+				AND sbt.EventType	= 0
+				AND b.statusID		IN (SELECT [statusID] FROM @tmpStatus)
+
 	END
 	ELSE
 	BEGIN
@@ -971,6 +1030,119 @@ BEGIN
 			--AND b.bettype IN (10,31,32,33)
 			AND (sbt.ProductID	IN (1, 2) AND sbt.EventType	= 2)
 			AND b.statusID		IN (SELECT [statusID] FROM @tmpStatus)
+
+		-- MciroGamming
+		IF(@transtype = 1 or @transtype = 2)
+			INSERT INTO @Data 
+			SELECT
+				203 AS sporttype, 
+				0 AS leagueid,
+				0 AS homeID,
+				0 AS awayID,
+				b.bettype,
+				'' AS matchcode,
+				'' AS race,
+				t.gameid AS matchid, 
+				b.transid AS transid, 
+				b.transdate, 
+				b.winlostdate,
+				b.refno, 
+				0 AS betid,
+				0 AS oddsid, 
+				0 AS hdp1, 
+				0 AS hdp2,
+				b.modds, 
+				0 AS Oddstype,
+				b.odds,
+				t.choiceid AS betteam,
+				b.status AS status,
+				0 AS betstatus, 
+				b.stake,
+				b.actual_stake,
+				(b.winlost-b.actual_stake) AS winlost, 
+				- (b.winlost-b.actual_stake) AS LicenseeWL ,
+				b.comm AS comm,
+				b.playercomm ,
+				b.discount,
+				0 AS livehomescore, 
+				0 AS liveawayscore, 
+				0 AS liveindicator, 
+				0 AS finalhomescore, 
+				0 AS finalawayscore,
+				0 AS hthomescore, 
+				0 AS htawayscore,
+				--b.username, 
+				b.IP AS IP,
+				b.Username,
+				CONVERT(BIT,0) AS IsNeutral,
+				b.currency,
+				'' AS ShowTime
+				,'' AS betcheck
+			FROM 
+				dbo.bettrans b WITH (NOLOCK)
+				INNER JOIN @SportBettype sbt ON b.bettype = sbt.bettype
+				OUTER APPLY dbo.[f_ParseTransDesc](b.TransDesc, b.bettype) t
+			WHERE
+				b.custid			= @custid
+				AND b.winlostdate	= @fromdate 
+				AND sbt.ProductID	= 203
+				AND sbt.EventType	= 0
+				AND b.statusID		IN (SELECT [statusID] FROM @tmpStatus)	
+		ELSE
+			INSERT INTO @Data	 
+			SELECT
+				203 AS sporttype, 
+				0 AS leagueid,
+				0 AS homeID,
+				0 AS awayID,
+				t.gameID AS bettype,
+				'' AS matchcode, 
+				'' AS race,
+				k.GameId AS matchid, 
+				t.translogid, 
+				t.transdate, 
+				t.winlostdate,
+				t.translogid, 
+				0 as betid,
+				0 as oddsid, 
+				0 AS hdp1, 
+				0 AS hdp2, 
+				0 AS modds,
+				0 AS OddsType,
+				t.odds,
+				k.ChoiceId AS betteam,
+				t.status,
+				0 AS betstatus, 
+				t.stake,
+				t.actual_stake,
+				0 AS winlost,
+				0 AS LicenseeWL ,				
+				0 AS comm,
+				0 AS playercomm , 
+				t.discount,
+				0 AS livehomescore, 
+				0 AS liveawayscore, 
+				0 AS liveindicator, 
+				0 AS finalhomescore, 
+				0 AS finalawayscore,
+				0 AS hthomescore, 
+				0 AS htawayscore,
+				t.IP AS IP,
+				t.Username,
+				CONVERT(BIT,0) AS IsNeutral,
+				t.currency,
+				'' AS ShowTime 
+				,'' AS betcheck
+			FROM 
+				dbo.translog t WITH (NOLOCK)
+				INNER JOIN @SportBettype sbt ON t.gameID = sbt.bettype
+				OUTER APPLY dbo.[f_ParseTransDesc](t.TransDesc, t.gameID) k
+			WHERE
+				t.custid			= @custid
+				AND t.winlostdate	= @fromdate
+				AND sbt.ProductID	= 203
+				AND sbt.EventType	= 0
+				AND t.statusID IN (SELECT [statusID] FROM @tmpStatus)
 	END
 
 	DECLARE @Today SMALLDATETIME 

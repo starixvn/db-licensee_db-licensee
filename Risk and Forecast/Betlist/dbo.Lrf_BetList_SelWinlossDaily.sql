@@ -86,6 +86,8 @@ Revisions:
 	- 20150114@Winnie: remove hardcode bettype, use spottype bettype matrix
 	- 20150128@Winnie: Add base currency GBP 
 	- 20150410@Jim: support betradar and apply report-bettype matrix
+	- 20150604@Edward: Support MicroGamming
+
 Param's Explanation: 	
 */
 SET NOCOUNT ON
