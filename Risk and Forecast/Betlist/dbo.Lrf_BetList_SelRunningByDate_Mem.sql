@@ -60,6 +60,7 @@ Revisions:
    - 20150126@Winnie: add base currency GBP 
    - 20150402@Bobby: Apply sporttype matrix & #32844 new 60 bettypes - betradar phase 2
    - 20150608@Edward: Support MicroGamming
+   - 20150608@Edward: Exclude 3 transactions SOLD/BOUGHT/BetTrade Commission of BetTrade
 */
 BEGIN
 
@@ -109,7 +110,9 @@ BEGIN
 		,EventType
 	)
 	EXEC dbo.Acc_SportBettypeMatrix_Sel @mode = 4
-		
+	
+	DELETE @SportBettype WHERE ProductID = 1 AND Bettype IN (901,902,903)
+
 	DELETE sbt
 	FROM @SportBettype sbt
 	WHERE ProductID		= CASE WHEN @ShowSB	= 0 AND @ShowBA = 0 THEN 1 END
