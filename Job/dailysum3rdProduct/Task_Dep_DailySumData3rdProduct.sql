@@ -19,6 +19,7 @@ BEGIN
 	CREATE TABLE #3rdData (WinlostDate SMALLDATETIME, Stake MONEY, Actual_Stake MONEY, Winlost MONEY, CurrencyId TINYINT, Bettype SMALLINT)
 	CREATE TABLE #ChargeRate (PartyId INT, LicenseeId INT, ProductId INT, Rate MONEY, FromDate SMALLDATETIME, ToDate SMALLDATETIME)
 	DECLARE @LicenseeTable TABLE (RowId INT IDENTITY(1,1), LicenseeId INT, LicenseeName VARCHAR(50), CurrencyId TINYINT)
+	DECLARE @DataTmp TABLE (RowId INT IDENTITY(1,1), CurrencyId TINYINT, Bettype SMALLINT)
 	
 	DECLARE @RowId INT, @LicenseeName VARCHAR(50), @CurrencyId TINYINT, @ProductId TINYINT
 		, @SqlQueryFor3rd VARCHAR(8000), @CustDummyId INT, @SqlQueryChargeRate VARCHAR(8000)
@@ -101,7 +102,7 @@ BEGIN
 		SELECT @RowId = @RowId + 1, @RefNo = 0
 			, @ProductIds = NULL, @CustDummyId = NULL, @BettypeIds = ''
 			
-		--get currency list by @licensee & @product
+		--get product list by @licensee & @currency
 		SELECT @ProductIds = COALESCE(@ProductIds + ',' + CAST(ProductId AS VARCHAR), CAST(ProductId AS VARCHAR))
 		FROM #LicenseeProductTable
 		WHERE CurrencyId = @CurrencyId AND LicenseeName = @LicenseeName
@@ -186,7 +187,6 @@ BEGIN
 		END
 
 		--incase daily sum
-		DECLARE @DataTmp TABLE (RowId INT IDENTITY(1,1), CurrencyId TINYINT, Bettype SMALLINT)
 		INSERT @DataTmp(CurrencyId, Bettype)
 		SELECT CurrencyId, Bettype
 		FROM #3rdData WHERE WinlostDate = @WinlostDate GROUP BY CurrencyId, Bettype
@@ -391,6 +391,7 @@ BEGIN
 
 		WAITFOR DELAY '000:00:00.280'
 		DELETE @FinalData
+		DELETE @DataTmp
 		DELETE #3rdData
 	END
 	

@@ -104,7 +104,7 @@ BEGIN
 		SELECT @RowId = @RowId + 1, @RefNo = 0
 			, @ProductIds = NULL, @CustDummyId = NULL, @BettypeIds = ''
 			
-		--get currency list by @licensee & @product
+		--get product list by @licensee & @currency
 		SELECT @ProductIds = COALESCE(@ProductIds + ',' + CAST(ProductId AS VARCHAR), CAST(ProductId AS VARCHAR))
 		FROM #LicenseeProductTable
 		WHERE CurrencyId = @CurrencyId AND LicenseeName = @LicenseeName
@@ -284,8 +284,8 @@ BEGIN
 		--AGC Adjustment - Date: 2015-05-26
 		UPDATE tmp
 		SET TransDesc = CASE WHEN tmp.Bettype = 1801 THEN 'AGC' 
-														 WHEN tmp.Bettype = 1701 THEN 'GD' 
-														 WHEN tmp.Bettype = 1901 THEN 'VG' END + @AdjustmentIndicator + CONVERT(VARCHAR(10), WinlostDate, 120)
+							 WHEN tmp.Bettype = 1701 THEN 'GD' 
+							 WHEN tmp.Bettype = 1901 THEN 'VG' END + @AdjustmentIndicator + CONVERT(VARCHAR(10), WinlostDate, 120)
 			, awinlost = -(Winlost - Actual_stake) * (1 - r.Rate)
 			, apositiontaking = 1 - r.Rate
 			, Status = CASE WHEN Winlost - Actual_stake > 0 THEN 'WON'
