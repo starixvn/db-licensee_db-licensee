@@ -47,7 +47,8 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinLossByDate_Mem]
 	@ShowCS BIT = 0,-- RNG Casino
 	@ShowBG BIT = 0,
 	@ShowKN BIT = 0,
-	@ShowMG BIT = 0
+	@ShowMG BIT = 0,
+	@ShowBT	BIT = 0 -- Bet Trade
 	
 AS
 
@@ -90,6 +91,7 @@ Revisions:
    - 20150406@Winnie: Apply sporttype, bettype matrix and add 60 bettypes betradar 
    - 20150406@Winnie: fix bug
    - 20150604@Edward: Support MicroGamming
+   - 20150608@Edward: Support Bet Trade
    */
 
 SET NOCOUNT ON
@@ -98,6 +100,11 @@ SET NOCOUNT ON
 DECLARE @SportBettype TABLE(ProductID INT,Bettype INT,EventType INT)
 INSERT INTO @SportBettype
 EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4
+
+IF @ShowBT = 0
+BEGIN
+	DELETE @SportBettype WHERE ProductID = 1 AND Bettype IN (901, 902, 903)
+END
 
 DECLARE @UserName NVARCHAR(20)
 		,@Recommend INT
@@ -221,7 +228,7 @@ BEGIN
 		(b.winlost-actual_stake),
 		ABS(b.winlost-actual_stake),
 		0 AS LicenseeWL ,
-		b.comm,
+		CASE WHEN b.bettype = 903 THEN b.awinlost ELSE b.comm END,
 		b.playercomm ,
 		b.Liveindicator,
 		b.Livehomescore,
@@ -415,7 +422,7 @@ BEGIN
 			(b.winlost-actual_stake),
 			ABS(b.winlost-actual_stake),
 			- (b.winlost-b.actual_stake) AS LicenseeWL ,
-			b.comm,
+			CASE WHEN b.bettype = 903 THEN b.awinlost ELSE b.comm END,
 			b.playercomm  ,
 			b.Liveindicator,
 			b.Livehomescore,
@@ -1038,7 +1045,7 @@ BEGIN
 		(b.winlost-actual_stake),
 		ABS(b.winlost-actual_stake),
 		0 AS LicenseeWL ,			
-		b.comm,
+		CASE WHEN b.bettype = 903 THEN b.awinlost ELSE b.comm END,
 		b.playercomm  ,
 		b.Liveindicator,
 		b.Livehomescore,
@@ -1234,7 +1241,7 @@ BEGIN
 				(b.winlost-actual_stake),
 				ABS(b.winlost-actual_stake),
 				- (b.winlost-b.actual_stake) AS LicenseeWL ,
-				b.comm,
+				CASE WHEN b.bettype = 903 THEN b.awinlost ELSE b.comm END,
 				b.playercomm ,
 				b.Liveindicator,
 				b.Livehomescore,
@@ -1793,7 +1800,7 @@ BEGIN
 			(b.winlost-actual_stake),
 			ABS(b.winlost-actual_stake),
 			0 AS LicenseeWL ,			
-			b.comm,
+			CASE WHEN b.bettype = 903 THEN b.awinlost ELSE b.comm END,
 			b.playercomm ,
 			b.Liveindicator,
 			b.Livehomescore,
@@ -1988,7 +1995,7 @@ BEGIN
 				(b.winlost-actual_stake),
 				ABS(b.winlost-actual_stake),
 				- (b.winlost-b.actual_stake) AS LicenseeWL ,
-				b.comm,
+				CASE WHEN b.bettype = 903 THEN b.awinlost ELSE b.comm END,
 				b.playercomm AS PlayerComm,
 				b.Liveindicator,
 				b.Livehomescore,
@@ -2520,6 +2527,21 @@ BEGIN
 			sbt.ProductID=203 AND sbt.EventType=0 AND
 			b.ruben = 1			
 	END
+END
+
+IF @ShowBT = 1
+BEGIN
+	UPDATE betList
+	SET betList.Odds	= originBetList.Odds
+		,betList.Stake	= originBetList.Stake
+		,betList.comm	= CASE WHEN betList.Bettype = 902 THEN commBetList.comm ELSE betList.comm END
+	FROM @BetListByDateMem AS betList
+		INNER JOIN @BetListByDateMem AS originBetList ON betList.RefNO = originBetList.TransID
+		INNER JOIN @BetListByDateMem AS commBetList ON betList.RefNO = commBetList.RefNO
+	WHERE betList.Sporttype = 1 AND betList.Bettype IN (901, 902)
+		AND commBetList.Bettype = 903
+
+	DELETE @BetListByDateMem WHERE Sporttype = 1 AND Bettype = 903
 END
 
 DECLARE @RowStart INT, @RowEnd INT  
