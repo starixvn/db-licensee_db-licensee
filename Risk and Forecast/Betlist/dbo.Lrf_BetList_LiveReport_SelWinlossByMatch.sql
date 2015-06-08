@@ -42,6 +42,7 @@ Revisions:
    - 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust   
    - 20150124@Winnie: add base currency GBP
    - 20150413@Winnie: Apply spottype bettype matrix & add 60 bettype betradar 
+   - 20150608@Edward: Exclude 3 transactions SOLD/BOUGHT/BetTrade Commission of BetTrade
 Param's Explanation: 
 	@Liveindicator : indicate that whether the report will get live data or not
 		+ 0: Non - Live data only
@@ -54,6 +55,7 @@ DECLARE @SportBettype TABLE(ProductID INT,Bettype INT,EventType INT)
 	INSERT INTO @SportBettype
 	EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4
 
+DELETE @SportBettype WHERE ProductID = 1 AND Bettype IN (901,902,903)
 --DECLARE @bettype AS TABLE (bettype INT)   
 
 --IF @ShowLC = 1
