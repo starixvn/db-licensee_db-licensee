@@ -15,7 +15,7 @@
 	@ShowCS   		BIT=0, -- RNG Casino
 	@ShowBG   		BIT=0, -- Bingo 
 	@ShowKN   		BIT=0, -- Keno
-	@ShowMG			BIT=0, -- MicroGamming
+	@ShowMGC			BIT=0, -- MicroGamming
 	@ShowBT			BIT=0, -- Bet Trade
 	@PageSize		INT=1000,
 	@PageIndex		INT=1,
@@ -943,7 +943,7 @@ BEGIN
 	END
 
 	--MicroGamming
-	IF @ShowMG=1
+	IF @ShowMGC=1
 	BEGIN
 		INSERT INTO @BetListByDateMem
 		SELECT
@@ -1774,7 +1774,7 @@ BEGIN
 	END
 
 	--MicroGamming
-	IF @ShowMG = 1
+	IF @ShowMGC = 1
 	BEGIN
 		INSERT INTO @BetListByDateMem
 		SELECT
@@ -2609,7 +2609,7 @@ BEGIN
 	END
 
 	--MicroGamming
-	IF @ShowMG = 1
+	IF @ShowMGC = 1
 	BEGIN
 		INSERT INTO @BetListByDateMem
 		SELECT
@@ -3014,7 +3014,7 @@ DROP TABLE #TempExchange
 	@ShowVS			 = 1,
 	@ShowCS			 = 1,
 	@ShowBG			 = 1,
-	@ShowMG			 = 1
+	@ShowMGC			 = 1
 */
 
 GO

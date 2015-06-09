@@ -19,7 +19,7 @@
 	@ShowCS		BIT = 0, -- RNG Casino
 	@ShowBG		BIT = 0,  -- Bingo
 	@ShowKN		BIT = 0,  -- Keno
-	@ShowMG		BIT = 0  -- MicroGamming
+	@ShowMGC		BIT = 0  -- MicroGamming
 	-- output info
 	,@TotalRows INT=0 OUTPUT
 	,@ErrorCode INT=0 OUTPUT
@@ -123,7 +123,7 @@ BEGIN
 		OR ProductID	= CASE WHEN @ShowCS	= 0 THEN 6 END
 		OR ProductID	= CASE WHEN @ShowBG	= 0 THEN 7 END
 		OR ProductID	= CASE WHEN @ShowKN	= 0 THEN 8 END
-		OR ProductID	= CASE WHEN @ShowMG	= 0 THEN 203 END
+		OR ProductID	= CASE WHEN @ShowMGC	= 0 THEN 203 END
 		OR ProductID 	> 8 -- not suport for LIC system
 	-- end filer bettypes by sporttype
 
@@ -862,7 +862,7 @@ BEGIN
 	END
 
 	--MicroGamming
-	IF @ShowMG = 1
+	IF @ShowMGC = 1
 	BEGIN
 		INSERT INTO #BetListSelRunningByDateMem
 		SELECT

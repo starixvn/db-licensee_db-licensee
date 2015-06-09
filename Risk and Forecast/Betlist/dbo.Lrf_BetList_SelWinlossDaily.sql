@@ -282,7 +282,7 @@ EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4, @ProductID=8
 END
 
 --MicroGamming
-IF @Product='MG'
+IF @Product='MGC'
 BEGIN	
 INSERT INTO #SportBettype
 EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4, @ProductID=203

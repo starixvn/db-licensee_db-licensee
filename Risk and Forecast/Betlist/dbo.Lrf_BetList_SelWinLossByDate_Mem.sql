@@ -47,7 +47,7 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinLossByDate_Mem]
 	@ShowCS BIT = 0,-- RNG Casino
 	@ShowBG BIT = 0,
 	@ShowKN BIT = 0,
-	@ShowMG BIT = 0,
+	@ShowMGC BIT = 0,
 	@ShowBT	BIT = 0 -- Bet Trade
 	
 AS
@@ -959,7 +959,7 @@ BEGIN
 	END
 	
 	-- show MicroGamming
-	IF @ShowMG=1
+	IF @ShowMGC=1
 	BEGIN
 		INSERT INTO #BetListByDateMem
 			SELECT
@@ -1717,7 +1717,7 @@ BEGIN
 	END
 
 	--- Show MicroGamming
-	IF @ShowMG=1 
+	IF @ShowMGC=1 
 	BEGIN	
 		INSERT INTO #BetListByDateMem
 		SELECT
@@ -2476,7 +2476,7 @@ BEGIN
 	END
 	
 	--- Show MicroGamming
-	IF @ShowMG=1
+	IF @ShowMGC=1
 	BEGIN	
 		INSERT INTO #BetListByDateMem
 		SELECT			
