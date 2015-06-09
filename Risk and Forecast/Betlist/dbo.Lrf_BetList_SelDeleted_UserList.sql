@@ -38,6 +38,8 @@ WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 DECLARE @SportBettype TABLE(ProductID INT,Bettype INT,EventType INT)
 INSERT INTO @SportBettype
 EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4
+
+DELETE @SportBettype WHERE ProductID = 1 AND Bettype = 903
 ------------
 
 DECLARE @TempAg AS TABLE (custid INT,Currency INT)

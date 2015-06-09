@@ -44,6 +44,7 @@ Revisions:
 	- 20150128@Winnie: add base currency GBP
 	- 20150409@Winnie: Apply spottype bettype matrix & 60 bettypes betradar
 	- 20150423@Jim: fix bug 
+	- 20150609@Edward : Support BetTrade
 Param's Explanation:
 + @CustID: AgentID
 */
@@ -58,6 +59,8 @@ DECLARE @Todate DATETIME
 DECLARE @SportBettype TABLE(ProductID INT,Bettype INT,EventType INT)
 INSERT INTO @SportBettype
 EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4
+
+DELETE @SportBettype WHERE ProductID = 1 AND Bettype = 903
 ------------
 
 SELECT  currencyID,LicenseeID into #currency
