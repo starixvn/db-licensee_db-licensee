@@ -158,6 +158,7 @@ BEGIN
 	DELETE sbt
 	FROM @SportBettype sbt
 	WHERE ProductID > 8 -- not suport for affiliate system
+		AND sbt.ProductID <> 203
 	-- end filer bettypes by sporttype
 	
 	-- single bet
