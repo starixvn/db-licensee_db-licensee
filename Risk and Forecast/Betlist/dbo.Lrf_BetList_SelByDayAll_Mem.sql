@@ -549,7 +549,7 @@ BEGIN
 			AND (sbt.ProductID	IN (1, 2) AND sbt.EventType	= 2)
 			AND b.statusID 		IN (SELECT [statusID] FROM @tmpStatus)
 
-		-- MciroGamming
+		-- MicroGamming
 		IF( @transtype = 1 OR @transtype = 2 )
 			INSERT INTO @Data 
 			SELECT
@@ -1035,7 +1035,7 @@ BEGIN
 			AND (sbt.ProductID	IN (1, 2) AND sbt.EventType	= 2)
 			AND b.statusID		IN (SELECT [statusID] FROM @tmpStatus)
 
-		-- MciroGamming
+		-- MicroGamming
 		IF(@transtype = 1 or @transtype = 2)
 			INSERT INTO @Data 
 			SELECT
@@ -1146,21 +1146,20 @@ BEGIN
 				AND sbt.EventType	= 0
 				AND t.statusID IN (SELECT [statusID] FROM @tmpStatus)
 	END
+	
+	-- For BetTrade
+	UPDATE betList
+	SET betList.Odds	= originBetList.Odds
+		,betList.Stake	= originBetList.Stake
+		,betList.comm	= CASE WHEN betList.Bettype = 902 THEN commBetList.comm ELSE betList.comm END
+	FROM @Data AS betList
+		INNER JOIN @Data AS originBetList ON betList.RefNO = originBetList.TransID
+		INNER JOIN @Data AS commBetList ON betList.RefNO = commBetList.RefNO
+	WHERE betList.Sporttype = 1 AND betList.Bettype IN (901, 902)
+		AND commBetList.Bettype = 903
 
-	IF @ShowBT = 1
-	BEGIN
-		UPDATE betList
-		SET betList.Odds	= originBetList.Odds
-			,betList.Stake	= originBetList.Stake
-			,betList.comm	= CASE WHEN betList.Bettype = 902 THEN commBetList.comm ELSE betList.comm END
-		FROM @Data AS betList
-			INNER JOIN @Data AS originBetList ON betList.RefNO = originBetList.TransID
-			INNER JOIN @Data AS commBetList ON betList.RefNO = commBetList.RefNO
-		WHERE betList.Sporttype = 1 AND betList.Bettype IN (901, 902)
-			AND commBetList.Bettype = 903
-
-		DELETE @Data WHERE Sporttype = 1 AND Bettype = 903
-	END
+	DELETE @Data WHERE Sporttype = 1 AND Bettype = 903	
+	-- End Bet Trade
 
 	DECLARE @Today SMALLDATETIME 
 	SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 

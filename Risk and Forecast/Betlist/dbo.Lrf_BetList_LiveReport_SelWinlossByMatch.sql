@@ -17,6 +17,7 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossByMatch]
 	@ShowBA BIT = 0,
 	@ShowLC BIT = 0,
 	@ShowVS BIT = 0,
+	@ShowMGC BIT = 0,
 	@Liveindicator	INT = 1
 AS
 /*
@@ -43,6 +44,7 @@ Revisions:
    - 20150124@Winnie: add base currency GBP
    - 20150413@Winnie: Apply spottype bettype matrix & add 60 bettype betradar 
    - 20150608@Edward: Exclude 3 transactions SOLD/BOUGHT/BetTrade Commission of BetTrade
+   - 20150609@Edward: Support MicroGamming
 Param's Explanation: 
 	@Liveindicator : indicate that whether the report will get live data or not
 		+ 0: Non - Live data only
