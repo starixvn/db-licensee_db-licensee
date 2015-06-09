@@ -15,7 +15,7 @@
 	@ShowCS   		BIT=0, -- RNG Casino
 	@ShowBG   		BIT=0, -- Bingo 
 	@ShowKN   		BIT=0, -- Keno
-	@ShowMGC			BIT=0, -- MicroGamming
+	@ShowMGC		BIT=0, -- MicroGamming
 	@ShowBT			BIT=0, -- Bet Trade
 	@PageSize		INT=1000,
 	@PageIndex		INT=1,
