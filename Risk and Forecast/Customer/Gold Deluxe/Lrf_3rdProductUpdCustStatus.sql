@@ -1,5 +1,7 @@
-USE CustDB
-GO
+
+ 
+
+/****** Object:  Stored Procedure dbo.Lrf_3rdProductUpdCustStatus    Script Date: 6/10/2015 10:51:17 AM ******/
 CREATE PROCEDURE	dbo.Lrf_3rdProductUpdCustStatus  
 	@CustID		INT,
 	@ProductId	INT,
@@ -15,6 +17,7 @@ AS
 	DB: DBTXN.CustDB
 	Original:
 	Revisions:
+		-20150609@Jim: support product microgaming
 	Param's Explanation:
 */
 BEGIN
@@ -75,6 +78,15 @@ BEGIN
 	SELECT @ErrMsg='Could not insert'
 	RETURN
 	END
+	--- MicroGaming
+	IF (@ProductID = 14)
+		BEGIN 
+			
+			UPDATE dbo.CustInfo WITH (ROWLOCK,UPDLOCK)
+			SET DisableMicrogaming = CASE @IsEnabled WHEN 1 THEN 0 ELSE 1 END
+			WHERE CustID = @CustID	
+		END
+		
 	-- Write log
 	SET @endRun = GETDATE()
 	SET @duration  = DATEDIFF(MILLISECOND,@startRun,@endRun)
@@ -113,7 +125,15 @@ BEGIN
     END CATCH
 END
 
+
 GO
 
-GRANT EXECUTE ON dbo.Lrf_3rdProductUpdCustStatus TO bodbLicenseeNet
+SET QUOTED_IDENTIFIER OFF 
 GO
+SET ANSI_NULLS ON 
+GO
+
+
+GO 
+ GRANT EXECUTE ON [dbo].[Lrf_3rdProductUpdCustStatus] TO [bodbLicenseeNet]
+GO 
