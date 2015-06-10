@@ -27,6 +27,7 @@ AS
 		 - 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 		 - 20150409@Winnie: Apply spottype bettype matrix 
 		 - 20150514@Winnie: fix bug
+		 - 20150609@Edward : Support BetTrade
 */ 
 SET NOCOUNT ON
 

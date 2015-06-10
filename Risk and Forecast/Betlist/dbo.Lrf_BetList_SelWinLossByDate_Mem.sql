@@ -2535,13 +2535,13 @@ BEGIN
 	SET betList.Odds	= originBetList.Odds
 		,betList.Stake	= originBetList.Stake
 		,betList.comm	= CASE WHEN betList.Bettype = 902 THEN commBetList.comm ELSE betList.comm END
-	FROM @BetListByDateMem AS betList
-		INNER JOIN @BetListByDateMem AS originBetList ON betList.RefNO = originBetList.TransID
-		INNER JOIN @BetListByDateMem AS commBetList ON betList.RefNO = commBetList.RefNO
+	FROM #BetListByDateMem AS betList
+		INNER JOIN #BetListByDateMem AS originBetList ON betList.RefNO = originBetList.TransID
+		INNER JOIN #BetListByDateMem AS commBetList ON betList.RefNO = commBetList.RefNO
 	WHERE betList.Sporttype = 1 AND betList.Bettype IN (901, 902)
 		AND commBetList.Bettype = 903
 
-	DELETE @BetListByDateMem WHERE Sporttype = 1 AND Bettype = 903
+	DELETE #BetListByDateMem WHERE Sporttype = 1 AND Bettype = 903
 END
 
 DECLARE @RowStart INT, @RowEnd INT  

@@ -1101,7 +1101,7 @@ BEGIN
 				0 AS bettype,
 				'' AS matchcode, 
 				'' AS race,
-				k.GameId AS matchid, 
+				0 AS matchid, 
 				t.translogid, 
 				t.transdate, 
 				t.winlostdate,
