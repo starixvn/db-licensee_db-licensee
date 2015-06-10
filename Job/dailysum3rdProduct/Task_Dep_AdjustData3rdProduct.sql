@@ -118,15 +118,15 @@ BEGIN
 		
 		IF CHARINDEX('10', @ProductIds, 0) > 0
 		BEGIN
-			SET @BettypeIds = '1801'
+			SET @BettypeIds = '1800'
 		END	
 		IF CHARINDEX('11', @ProductIds, 0) > 0
 		BEGIN
-			SET @BettypeIds = @BettypeIds + ',1701'
+			SET @BettypeIds = @BettypeIds + ',1700'
 		END	
 		IF CHARINDEX('12', @ProductIds, 0) > 0
 		BEGIN
-			SET @BettypeIds = @BettypeIds + ',1901'
+			SET @BettypeIds = @BettypeIds + ',1900'
 		END	
 		
 		--print('get data from bk, 14 & bettrans to data adjustment')
@@ -180,7 +180,7 @@ BEGIN
 		BEGIN
 			--print ('AG Casino')
 			SELECT @SqlQueryFor3rd = ''
-			SELECT @SqlQueryFor3rd = 'SELECT WinlostDate, Currency, 1801 AS Bettype, Stake, Actual_stake, Winlost
+			SELECT @SqlQueryFor3rd = 'SELECT WinlostDate, Currency, 1800 AS Bettype, Stake, Actual_stake, Winlost
 				FROM OPENQUERY(DBLIC, ''SELECT WinlostDate, Currency, SUM(ABS(Stake)) AS Stake, SUM(ABS(Actual_stake)) AS Actual_stake, SUM(ABS(Winlost)) AS Winlost
 				FROM bodb_PlaytechCS.dbo.bettrans_AGCasino b WITH (NOLOCK) 
 				WHERE 1 = 1'
@@ -198,7 +198,7 @@ BEGIN
 		BEGIN
 			--print ('Gold Deluxe')
 			SELECT @SqlQueryFor3rd = ''
-			SELECT @SqlQueryFor3rd = 'SELECT WinlostDate, Currency, 1701 AS Bettype, Stake, Actual_stake, Winlost
+			SELECT @SqlQueryFor3rd = 'SELECT WinlostDate, Currency, 1700 AS Bettype, Stake, Actual_stake, Winlost
 				FROM OPENQUERY(DBLIC, ''SELECT WinlostDate, Currency, SUM(ABS(Stake)) AS Stake, SUM(ABS(Stake)) AS Actual_stake, SUM(ABS(Winlost)) AS Winlost
 				FROM bodb_PlaytechCS.dbo.bettrans_GoldDeluxe b WITH (NOLOCK)
 				WHERE 1 = 1'
@@ -216,7 +216,7 @@ BEGIN
 		BEGIN
 			--print ('Vegas games')
 			SELECT @SqlQueryFor3rd = ''
-			SELECT @SqlQueryFor3rd = 'SELECT WinlostDate, Currency, 1901 AS Bettype, Stake, Actual_stake, Winlost
+			SELECT @SqlQueryFor3rd = 'SELECT WinlostDate, Currency, 1900 AS Bettype, Stake, Actual_stake, Winlost
 				FROM OPENQUERY(DBLIC, ''SELECT WinlostDate, Currency, SUM(ABS(StakeAmount)) AS Stake, SUM(ABS(StakeAmount)) AS Actual_stake, SUM(ABS(WinAmount)) AS Winlost
 				FROM bodb_3rdProduct.dbo.BetTrans_VoidBridge b WITH (NOLOCK) 
 				WHERE 1 = 1'
@@ -283,9 +283,9 @@ BEGIN
 		--update some info: transdesc, awinlost, apositiontaking, status, recommend, ...
 		--AGC Adjustment - Date: 2015-05-26
 		UPDATE tmp
-		SET TransDesc = CASE WHEN tmp.Bettype = 1801 THEN 'AGC' 
-							 WHEN tmp.Bettype = 1701 THEN 'GD' 
-							 WHEN tmp.Bettype = 1901 THEN 'VG' END + @AdjustmentIndicator + CONVERT(VARCHAR(10), WinlostDate, 120)
+		SET TransDesc = CASE WHEN tmp.Bettype = 1800 THEN 'AGC' 
+							 WHEN tmp.Bettype = 1700 THEN 'GD' 
+							 WHEN tmp.Bettype = 1900 THEN 'VG' END + @AdjustmentIndicator + CONVERT(VARCHAR(10), WinlostDate, 120)
 			, awinlost = -(Winlost - Actual_stake) * (1 - r.Rate)
 			, apositiontaking = 1 - r.Rate
 			, Status = CASE WHEN Winlost - Actual_stake > 0 THEN 'WON'
@@ -302,9 +302,9 @@ BEGIN
 		FROM @FinalData tmp
 			INNER JOIN (
 				SELECT FromDate, ToDate, Rate
-					, CASE WHEN ProductId = 10 THEN 1801
-						WHEN ProductId = 11 THEN 1701
-						WHEN ProductId = 12 THEN 1901 END Bettype
+					, CASE WHEN ProductId = 10 THEN 1800
+						WHEN ProductId = 11 THEN 1700
+						WHEN ProductId = 12 THEN 1900 END Bettype
 				FROM #ChargeRate WHERE LicenseeId = @LicenseeId
 			) r ON tmp.WinlostDate BETWEEN r.FromDate AND r.ToDate AND r.Bettype = tmp.Bettype
 			INNER JOIN CustDB.dbo.Customer c WITH(NOLOCK) ON tmp.CustId = c.custid AND c.roleid = 1
@@ -455,5 +455,5 @@ BEGIN
 	DROP TABLE #ChargeRate
 END
 GO
-GRANT VIEW DEFINITION ON [dbo].[Task_Dep_DailySumData3rdProduct] TO [vnteam] AS [dbo]
+GRANT VIEW DEFINITION ON [dbo].[Task_Dep_AdjustData3rdProduct] TO [vnteam] AS [dbo]
 GO
