@@ -158,7 +158,7 @@ BEGIN
 	DELETE sbt
 	FROM @SportBettype sbt
 	WHERE ProductID > 8 -- not suport for affiliate system
-		AND sbt.ProductID <> 203
+		AND sbt.ProductID <> 13
 	-- end filer bettypes by sporttype
 	
 	-- single bet
@@ -554,7 +554,7 @@ BEGIN
 		INNER JOIN @SportBettype sbt ON b.bettype = sbt.bettype
 	WHERE	b.custid			= @custid 		
 			AND b.winlostdate	= @fromdate 
-			AND sbt.ProductID	= 203
+			AND sbt.ProductID	= 13
 			AND sbt.EventType	= 0
 
 	SELECT * 

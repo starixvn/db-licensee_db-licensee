@@ -602,7 +602,7 @@ BEGIN
 			WHERE
 				b.custid			= @custid
 				AND b.winlostdate	= @fromdate 
-				AND sbt.ProductID	= 203
+				AND sbt.ProductID	= 13
 				AND sbt.EventType	= 0
 				AND b.statusID		IN (SELECT [statusID] FROM @tmpStatus)
 
@@ -1088,7 +1088,7 @@ BEGIN
 			WHERE
 				b.custid			= @custid
 				AND b.winlostdate	= @fromdate 
-				AND sbt.ProductID	= 203
+				AND sbt.ProductID	= 13
 				AND sbt.EventType	= 0
 				AND b.statusID		IN (SELECT [statusID] FROM @tmpStatus)	
 		ELSE
@@ -1142,7 +1142,7 @@ BEGIN
 			WHERE
 				t.custid			= @custid
 				AND t.winlostdate	= @fromdate
-				AND sbt.ProductID	= 203
+				AND sbt.ProductID	= 13
 				AND sbt.EventType	= 0
 				AND t.statusID IN (SELECT [statusID] FROM @tmpStatus)
 	END

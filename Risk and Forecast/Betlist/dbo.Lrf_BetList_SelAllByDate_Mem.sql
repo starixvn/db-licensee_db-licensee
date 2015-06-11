@@ -226,7 +226,7 @@ BEGIN
 		OR ProductID	= CASE WHEN @ShowCS	= 0 THEN 6 END
 		OR ProductID	= CASE WHEN @ShowBG	= 0 THEN 7 END
 		OR ProductID	= CASE WHEN @ShowKN	= 0 THEN 8 END
-		OR ProductID	= CASE WHEN @ShowMGC	= 0 THEN 203 END
+		OR ProductID	= CASE WHEN @ShowMGC= 0 THEN 13 END
 		OR ProductID 	> 8 -- not suport for LIC system
 	-- end filer bettypes by sporttype
 	
@@ -1041,7 +1041,7 @@ BEGIN
 		WHERE
 			b.CustID			=	@CustID 
 			AND	b.recommend		=	@Recommend  
-			AND sbt.ProductID	=	203
+			AND sbt.ProductID	=	13
 			AND sbt.EventType	=	0
 			AND b.transdate		>=	@FROMDate AND b.transdate <= @ToDate 
 			AND	b.statusID		NOT IN (0,1)	
@@ -1092,7 +1092,7 @@ BEGIN
 		WHERE
 			t.CustID			=	@CustID 
 			AND	t.recommend		=	@Recommend 
-			AND sbt.ProductID	=	203
+			AND sbt.ProductID	=	13
 			AND sbt.EventType	=	0
 			AND	t.transdate		>=	@FROMDate AND t.transdate <= @ToDate 
 			AND t.statusID		IN (0,1)	

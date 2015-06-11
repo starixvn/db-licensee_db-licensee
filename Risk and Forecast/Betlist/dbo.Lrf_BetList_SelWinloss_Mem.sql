@@ -990,7 +990,7 @@ BEGIN
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @tdate AND
 			b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
-			sbt.ProductID=203 AND
+			sbt.ProductID=13 AND
 			b.statusID IN (111,112,113)
 	END
 END
@@ -1820,7 +1820,7 @@ BEGIN
 		WHERE
 			b.winlostdate BETWEEN @BalanceUpDay AND @tdate AND
 			b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
-			sbt.ProductID=203 AND
+			sbt.ProductID=13 AND
 			b.statusID IN (111,112,113)
 	END
 END		
@@ -2655,7 +2655,7 @@ BEGIN
 		WHERE
 			b.winlostdate BETWEEN @fdate AND @TempToDate AND
 			b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
-			sbt.ProductID=203 AND
+			sbt.ProductID=13 AND
 			b.ruben = 1 AND
 			b.status NOT IN ('VOID', 'REJECT', 'REFUND')
 	END

@@ -285,7 +285,7 @@ END
 IF @Product='MGC'
 BEGIN	
 INSERT INTO #SportBettype
-EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4, @ProductID=203
+EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4, @ProductID=13
 	 
 END
 

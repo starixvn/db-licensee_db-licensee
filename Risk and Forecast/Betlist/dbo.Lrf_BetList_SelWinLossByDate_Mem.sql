@@ -1007,7 +1007,7 @@ BEGIN
 			b.winlostdate BETWEEN @TempFromDate AND @todate AND
 			b.recommend = @Recommend AND --to improve performance
 			b.custid=@CustID AND
-			sbt.ProductID=203 AND
+			sbt.ProductID=13 AND
 			b.ruben = 1
 	END
 END
@@ -1765,7 +1765,7 @@ BEGIN
 			b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate AND
 			b.recommend = @Recommend AND --to improve performance
 			b.custid=@CustID AND
-			sbt.ProductID=203 AND
+			sbt.ProductID=13 AND
 			b.ruben = 1
 	END
 END	
@@ -2524,7 +2524,7 @@ BEGIN
 			b.winlostdate BETWEEN @fromdate AND @TempToDate AND			
 			b.custid=@CustID AND
 			b.recommend = @Recommend AND	
-			sbt.ProductID=203 AND sbt.EventType=0 AND
+			sbt.ProductID=13 AND sbt.EventType=0 AND
 			b.ruben = 1			
 	END
 END
