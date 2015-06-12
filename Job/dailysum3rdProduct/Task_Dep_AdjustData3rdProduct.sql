@@ -25,7 +25,7 @@ BEGIN
 	
 	DECLARE @RowId INT, @LicenseeName VARCHAR(50), @CurrencyId TINYINT, @ProductId TINYINT
 		, @Today DATE, @SqlQueryForDummny VARCHAR(8000), @SqlQueryFor3rd VARCHAR(8000), @CustDummyId INT
-		, @SqlQueryChargeRate VARCHAR(8000), @PartyList VARCHAR(8000)
+		, @SqlQueryChargeRate VARCHAR(8000), @PartyList VARCHAR(4000)
 		, @RefNo BIGINT, @SqlQuery VARCHAR(8000), @ExchangeRate FLOAT, @ProductIds VARCHAR(512)
 		, @LicenseeId INT, @BettypeIds VARCHAR(512), @FirstDateOfLastMonth SMALLDATETIME, @LastDateOfLastMonth SMALLDATETIME
 		, @AdjustmentIndicator VARCHAR(125), @BettingIndicator VARCHAR(125)
@@ -71,9 +71,13 @@ BEGIN
 
 	--get party list
 	SELECT @PartyList = COALESCE(@PartyList + ',' + CAST(FromParty AS VARCHAR), CAST(FromParty AS VARCHAR))
-	FROM DBLIC.bodb_licensee.dbo.OAS_ChargeInfo WITH(NOLOCK)
-	WHERE ProductId IN (10,11,12)
-	
+	FROM (
+		SELECT FromParty
+		FROM DBLIC.bodb_licensee.dbo.OAS_ChargeInfo WITH(NOLOCK)
+		WHERE ProductId IN (10,11,12)
+		GROUP BY FromParty
+	)tmp
+
 	--get charge rate
 	SET @SqlQueryChargeRate = ''
 	SELECT @SqlQueryChargeRate = 'SELECT PartyId, LicenseeId, ProductId, DI_Rate, Fromdate, Todate
@@ -97,7 +101,11 @@ BEGIN
 
 	WHILE EXISTS (SELECT 1 FROM @LicenseeTable WHERE RowId = @RowId)
 	BEGIN
-		
+		--clean data
+		DELETE @FinalData
+		DELETE #3rdData
+		DELETE #3rdDummnyData
+
 		SELECT @LicenseeId = ISNULL(LicenseeId, 0), @LicenseeName = ISNULL(LicenseeName, ''), @CurrencyId = ISNULL(CurrencyId, 0)
 		FROM @LicenseeTable WHERE RowId = @RowId
 		
@@ -228,6 +236,12 @@ BEGIN
 
 			INSERT INTO #3rdData(WinlostDate, CurrencyId, Bettype, Stake, Actual_stake, Winlost)
 			EXEC (@SqlQueryFor3rd)
+		END
+
+		IF NOT EXISTS (SELECT TOP 1 1 FROM #3rdData)
+		BEGIN
+			--PRINT('No data on that day. - WinlostDate: ' + CONVERT(VARCHAR(10), @WinlostDate, 112))
+			CONTINUE
 		END
 
 		--insert difference data
@@ -444,9 +458,7 @@ BEGIN
 		FROM @FinalData
 
 		WAITFOR DELAY '000:00:00.280'
-		DELETE @FinalData
-		DELETE #3rdData
-		DELETE #3rdDummnyData
+		
 	END
 	
 	DROP TABLE #LicenseeProductTable
