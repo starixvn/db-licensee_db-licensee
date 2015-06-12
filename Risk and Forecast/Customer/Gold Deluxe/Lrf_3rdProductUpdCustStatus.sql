@@ -83,7 +83,7 @@ BEGIN
 		BEGIN 
 			
 			UPDATE dbo.CustInfo WITH (ROWLOCK,UPDLOCK)
-			SET DisableMicrogaming = CASE @IsEnabled WHEN 1 THEN 0 ELSE 1 END
+			SET DisableMicrogame = CASE @IsEnabled WHEN 1 THEN 0 ELSE 1 END
 			WHERE CustID = @CustID	
 		END
 		

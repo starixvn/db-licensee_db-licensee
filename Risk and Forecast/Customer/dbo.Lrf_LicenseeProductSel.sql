@@ -73,7 +73,7 @@ BEGIN
 			END
 		IF EXISTS (SELECT 1 FROM @tblProductActive WHERE ProductID = 14)	---Microgaming
 			BEGIN 
-				IF EXISTS (SELECT 1 FROM  bodb02.dbo.CustInfo ci WITH (NOLOCK) INNER JOIN @tblSuper r ON ci.srecommend = r.SrecommendID WHERE ci.DisableMicrogaming = 0)
+				IF EXISTS (SELECT 1 FROM  bodb02.dbo.CustInfo ci WITH (NOLOCK) INNER JOIN @tblSuper r ON ci.srecommend = r.SrecommendID WHERE ci.DisableMicrogame = 0)
 				UPDATE @tblProductActive
 				SET isEnable =1
 				WHERE ProductID = 14	
