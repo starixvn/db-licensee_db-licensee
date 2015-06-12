@@ -221,6 +221,7 @@ BEGIN
 	SET betList.Odds	= originBetList.Odds
 		,betList.Stake	= originBetList.Stake
 		,betList.comm	= CASE WHEN betList.Bettype = 902 THEN commBetList.comm ELSE betList.comm END
+		,betList.BetID	= originBetList.Bettype
 	FROM @Data AS betList
 		INNER JOIN @Data AS originBetList ON betList.RefNO = originBetList.TransID
 		INNER JOIN @Data AS commBetList ON betList.RefNO = commBetList.RefNO
@@ -717,92 +718,3 @@ GO
 
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelByDayAll_Mem_Old] TO [bodbLicenseeNet]
 GO 
-
-USE [bodb02]
-GO
-
-DECLARE @RC int
-DECLARE @LicenseeID int = 1
-DECLARE @UserID int = 8
-DECLARE @custid int = 1392829
-DECLARE @fromdate smalldatetime = '2015-03-28 00:00:00'
-DECLARE @language nvarchar(10)
-DECLARE @PageSize int = 100
-DECLARE @PageIndex int = 1
-DECLARE @TotalRows int = 0
-DECLARE @SumWinlost money
-DECLARE @SumLicenseeWL money
-DECLARE @SumComm money
-DECLARE @SumPlayerComm money
-DECLARE @SumWinlostUSD money
-DECLARE @SumLicenseeWLUSD money
-DECLARE @SumCommUSD money
-DECLARE @SumPlayerCommUSD money
-DECLARE @SumWinlostEUR money
-DECLARE @SumLicenseeWLEUR money
-DECLARE @SumCommEUR money
-DECLARE @SumPlayerCommEUR money
-DECLARE @SumWinlostGBP money
-DECLARE @SumLicenseeWLGBP money
-DECLARE @SumCommGBP money
-DECLARE @SumPlayerCommGBP money
-DECLARE @ErrCode int
-DECLARE @ErrMsg nvarchar(4000)
-
--- TODO: Set parameter values here.
-
-EXECUTE @RC = [dbo].[Lrf_BetList_SelByDayAll_Mem_Old] 
-   @LicenseeID
-  ,@UserID
-  ,@custid
-  ,@fromdate
-  ,@language
-  ,@PageSize
-  ,@PageIndex
-  ,@TotalRows OUTPUT
-  ,@SumWinlost OUTPUT
-  ,@SumLicenseeWL OUTPUT
-  ,@SumComm OUTPUT
-  ,@SumPlayerComm OUTPUT
-  ,@SumWinlostUSD OUTPUT
-  ,@SumLicenseeWLUSD OUTPUT
-  ,@SumCommUSD OUTPUT
-  ,@SumPlayerCommUSD OUTPUT
-  ,@SumWinlostEUR OUTPUT
-  ,@SumLicenseeWLEUR OUTPUT
-  ,@SumCommEUR OUTPUT
-  ,@SumPlayerCommEUR OUTPUT
-  ,@SumWinlostGBP OUTPUT
-  ,@SumLicenseeWLGBP OUTPUT
-  ,@SumCommGBP OUTPUT
-  ,@SumPlayerCommGBP OUTPUT
-  ,@ErrCode OUTPUT
-  ,@ErrMsg OUTPUT
-
-select @TotalRows 
-  ,@SumWinlost 
-  ,@SumLicenseeWL 
-  ,@SumComm 
-  ,@SumPlayerComm 
-  ,@SumWinlostUSD 
-  ,@SumLicenseeWLUSD 
-  ,@SumCommUSD 
-  ,@SumPlayerCommUSD 
-  ,@SumWinlostEUR 
-  ,@SumLicenseeWLEUR 
-  ,@SumCommEUR 
-  ,@SumPlayerCommEUR 
-  ,@SumWinlostGBP 
-  ,@SumLicenseeWLGBP 
-  ,@SumCommGBP 
-  ,@SumPlayerCommGBP 
-  ,@ErrCode 
-  ,@ErrMsg
-GO
-
-
---select min(b.bettype), max(bettype)
---from bodb_archive.dbo.bettrans_bk b (nolock)
---inner join bodb_archive.dbo.match_bk m WITH (NOLOCK) ON b.matchid = m.matchid
---where custid = 1392829
---	and winlostdate = '2015-03-28 00:00:00'

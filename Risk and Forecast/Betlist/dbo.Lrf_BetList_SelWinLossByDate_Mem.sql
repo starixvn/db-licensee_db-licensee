@@ -2535,6 +2535,7 @@ BEGIN
 	SET betList.Odds	= originBetList.Odds
 		,betList.Stake	= originBetList.Stake
 		,betList.comm	= CASE WHEN betList.Bettype = 902 THEN commBetList.comm ELSE betList.comm END
+		,betList.BetID	= originBetList.Bettype
 	FROM #BetListByDateMem AS betList
 		INNER JOIN #BetListByDateMem AS originBetList ON betList.RefNO = originBetList.TransID
 		INNER JOIN #BetListByDateMem AS commBetList ON betList.RefNO = commBetList.RefNO
