@@ -39,13 +39,13 @@ BEGIN
 	
 	IF (@ProductId = 14) ---Microgaming 
 		BEGIN
-			SELECT @IsEnabled = CASE DisableMicrogaming WHEN 0 THEN 1 ELSE 0 END 
+			SELECT @IsEnabled = CASE DisableMicrogame WHEN 0 THEN 1 ELSE 0 END 
 			FROM bodb02.dbo.CustInfo WITH (NOLOCK) 
 			WHERE CustID = @CustID
 			IF @IsEnabled = 1
 				SET @IsLineEnabled =1
 			ELSE 
-				SELECT @IsLineEnabled = CASE DisableMicrogaming WHEN 0 THEN 1 ELSE 0 END 
+				SELECT @IsLineEnabled = CASE DisableMicrogame WHEN 0 THEN 1 ELSE 0 END 
 				FROM bodb02.dbo.CustInfo WITH (NOLOCK) 
 				WHERE CustID = @Srecommend
 		END
