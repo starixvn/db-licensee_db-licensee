@@ -1,3 +1,11 @@
+USE [CustDB]
+GO
+/****** Object:  StoredProcedure [dbo].[Acc_CustSetting3rd_12]    Script Date: 06/11/2015 05:54:41 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+/****** Object:  Stored Procedure dbo.Acc_CustSetting3rd_12    Script Date: 5/6/2015 2:09:16 PM ******/
 ALTER PROCEDURE [dbo].[Acc_CustSetting3rd_12]
 	@ids VARCHAR(MAX)
 	,@Sporttype INT
@@ -11,6 +19,9 @@ AS
 	Original:
 
 	Revisions:
+	     - 20150610@Daniel: 
+	      + Improve medthod check table existing in subscribers	
+	      + Separate custDB to new server DBCUST  	
 
 	Param's Explanation:
 		@Sporttype: 1 = Sportbook
@@ -23,8 +34,12 @@ BEGIN
 
 	SET NOCOUNT ON
 	
-	IF (SELECT COUNT(1) FROM sys.objects WHERE name IN ('Dep_Custsetting3rd','custinfo','Dep_CustSetting') AND type = 'U') <> 3
-		RETURN
+	if NOT(dbo.f_CheckRepTable('custinfo') = 1 
+	     AND dbo.f_CheckRepTable('Dep_Custsetting3rd') = 1 
+	     AND dbo.f_CheckRepTable('Dep_CustSetting') = 1 
+     )
+	   	RETURN              
+    			
 	
 	DECLARE @string VARCHAR(MAX), @splitter CHAR(1), @xml XML
 	SELECT @splitter = ',', @string = @ids
@@ -86,7 +101,3 @@ BEGIN
 
 	DROP TABLE #tblCust
 END
-
-
-
-
