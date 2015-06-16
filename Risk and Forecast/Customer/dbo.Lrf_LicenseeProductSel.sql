@@ -1,10 +1,7 @@
-
-SET QUOTED_IDENTIFIER ON 
-GO
-SET ANSI_NULLS ON 
+USE [bodb_licensee]
 GO
  
-CREATE PROCEDURE	dbo.Lrf_LicenseeProductSel
+ALTER PROCEDURE	[dbo].[Lrf_LicenseeProductSel]
 	@LicenseeID	INT
 AS
 /*
@@ -17,7 +14,7 @@ AS
 */
 
  /*
- dbo.Lrf_LicenseeProductSel
+ dbo.Lrf_LicenseeProductSel_xtest
 	@LicenseeID=2
  */
  
@@ -25,7 +22,7 @@ AS
 BEGIN
 	DECLARE @site VARCHAR(20)
 	DECLARE @tblSuper AS TABLE (SrecommendID INT)
-	DECLARE @tblProductActive AS TABLE (ProductID INT,ProductName VARCHAR(50),isEnable BIT)
+	DECLARE @tblProductActive AS TABLE (ProductID INT,ProductName VARCHAR(50) ,ProductCode VARCHAR(10),isEnable BIT)
 	
 	SELECT @Site = LicenseeName
 	FROM dbo.Licensees WITH (NOLOCK) 
@@ -37,10 +34,11 @@ BEGIN
 	
 	IF EXISTS(SELECT 1 FROM @tblSuper ) 
 	BEGIN
-		INSERT INTO @tblProductActive (ProductID,ProductName,isEnable)
+		INSERT INTO @tblProductActive (ProductID,ProductName,ProductCode,isEnable)
 		SELECT 
 			p.ProductId
 			,p.ProductName
+			,p.ProductPrefix AS  ProductCode
 			,CASE WHEN p.ProductID IN (10,11,12,14) THEN 0 ELSE 1 END 
 		FROM dbo.Product3rd p WITH (NOLOCK) 
 			INNER JOIN dbo.LicenseeProduct3rd lp WITH (NOLOCK) ON p.ProductId = lp.ProductId 	
@@ -48,6 +46,7 @@ BEGIN
 		UNION ALL
 		SELECT 0
 			   ,'Sportsbook'
+			   ,'SB'
 			   ,1
 			   
 		IF EXISTS (SELECT 1 FROM @tblProductActive WHERE ProductID = 10)	-- AGCasino
@@ -82,20 +81,12 @@ BEGIN
 	END
 	SELECT ProductID
 		   ,ProductName
+		   ,ProductCode
 		   ,isEnable
-	FROM @tblProductActive
+	FROM @tblProductActive t 
+		
 	ORDER BY ProductID ASC
 END
-
-
-GO
-
-SET QUOTED_IDENTIFIER OFF 
-GO
-SET ANSI_NULLS ON 
-GO
-
-
 GO 
  GRANT VIEW DEFINITION ON [dbo].[Lrf_LicenseeProductSel] TO [vnteam]
 GO 
