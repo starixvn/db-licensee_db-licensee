@@ -84,7 +84,7 @@ BEGIN
 		   ,ProductCode
 		   ,isEnable
 	FROM @tblProductActive t 
-		
+	WHERE ProductID <>3	
 	ORDER BY ProductID ASC
 END
 GO 
