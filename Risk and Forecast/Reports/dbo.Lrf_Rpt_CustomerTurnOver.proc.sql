@@ -7,7 +7,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 
  
-ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
+ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver_xpre]
 	@LicenseeID 	INT
 	,@UserID  		INT
 	,@Username 		VARCHAR(50) =  '' 
@@ -16,7 +16,7 @@ ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
 	,@CurrencyID 	INT
 	,@FromDate 		SMALLDATETIME
 	,@ToDate 		SMALLDATETIME
-	,@Odds 			DECIMAL
+	,@Odds 			FLOAT
 	,@ReportBy  	TINYINT   =  1 
 	,@MoveBetsDay 	SMALLDATETIME
 	,@BalanceUpDay 	SMALLDATETIME
@@ -177,7 +177,7 @@ BEGIN
 	FROM #BettypeID bt 
 		INNER JOIN @SportBettype sp 
 		ON bt.typeid 	=  sp.bettype
-	
+		
 	DROP TABLE #BettypeID
 		
 	SELECT 
@@ -284,24 +284,26 @@ BEGIN
 			AND p.sportID IS NOT NULL
 			AND (@Odds = 0 
 					OR (@Odds > 0 
-						AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20)	
-										OR b.bettype BETWEEN 81 AND 88
-										OR b.bettype BETWEEN 90 AND 120)
-										THEN 
-												CASE WHEN b.OddsType =  1 THEN b.odds + 1 --decimal
-														WHEN b.OddsType =  2 THEN b.Odds + 1 --hongkong to decimal
-														WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
-																			CASE 
-																				WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
-																				WHEN b.odds >=0 THEN (1 + b.odds) END
-														WHEN b.OddsType =  5 THEN --american odds to decimal
-																		CASE
-																		WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
-																		WHEN (b.odds * 100) % 2 =  0 THEN 2
-																		WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
-													END 
-							ELSE b.Odds
-						END >= @odds
+						AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
+									OR b.bettype BETWEEN 81 AND 88
+									OR b.bettype BETWEEN 90 AND 120
+									OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
+									)
+									THEN 
+											CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
+												 WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
+												 WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
+																		CASE 
+																			WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
+																			WHEN b.odds >=0 THEN (1 + b.odds) END
+												 WHEN OddsType = 5 THEN --american odds to decimal
+																	CASE
+																	WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
+																	WHEN (b.odds * 100) % 2 = 0 THEN 2
+																	WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
+											 END 
+							  ELSE b.Odds
+						 END >= @odds
 					)
 			)
 			AND (
@@ -347,24 +349,26 @@ BEGIN
 		WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
 			AND (@Odds = 0 
 					OR (@Odds > 0 
-						AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20)	
-										OR b.bettype BETWEEN 81 AND 88
-										OR b.bettype BETWEEN 90 AND 120)
-										THEN 
-												CASE WHEN b.OddsType =  1 THEN b.odds + 1 --decimal
-														WHEN b.OddsType =  2 THEN b.Odds + 1 --hongkong to decimal
-														WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
-																			CASE 
-																				WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
-																				WHEN b.odds >=0 THEN (1 + b.odds) END
-														WHEN b.OddsType =  5 THEN --american odds to decimal
-																		CASE
-																		WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
-																		WHEN (b.odds * 100) % 2 =  0 THEN 2
-																		WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
-													END 
-							ELSE b.Odds
-						END >= @odds
+						AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
+									OR b.bettype BETWEEN 81 AND 88
+									OR b.bettype BETWEEN 90 AND 120
+									OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
+									)
+									THEN 
+											CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
+												 WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
+												 WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
+																		CASE 
+																			WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
+																			WHEN b.odds >=0 THEN (1 + b.odds) END
+												 WHEN OddsType = 5 THEN --american odds to decimal
+																	CASE
+																	WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
+																	WHEN (b.odds * 100) % 2 = 0 THEN 2
+																	WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
+											 END 
+							  ELSE b.Odds
+						 END >= @odds
 					)
 			)
 			AND (
@@ -467,24 +471,26 @@ BEGIN
 				AND p.sportID IS NOT NULL
 				AND (@Odds = 0 
 						OR (@Odds > 0 
-							AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20)	
+							AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
 											OR b.bettype BETWEEN 81 AND 88
-											OR b.bettype BETWEEN 90 AND 120)
-											THEN 
-													CASE WHEN b.OddsType =  1 THEN b.odds + 1 --decimal
-															WHEN b.OddsType =  2 THEN b.Odds + 1 --hongkong to decimal
-															WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
-																				CASE 
-																					WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
-																					WHEN b.odds >=0 THEN (1 + b.odds) END
-															WHEN b.OddsType =  5 THEN --american odds to decimal
-																			CASE
-																			WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
-																			WHEN (b.odds * 100) % 2 =  0 THEN 2
-																			WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
-														END 
-								ELSE b.Odds
-							END >= @odds
+											OR b.bettype BETWEEN 90 AND 120
+											OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
+										)
+										THEN 
+											CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
+												 WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
+												 WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
+																		CASE 
+																			WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
+																			WHEN b.odds >=0 THEN (1 + b.odds) END
+												 WHEN OddsType = 5 THEN --american odds to decimal
+																	CASE
+																	WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
+																	WHEN (b.odds * 100) % 2 = 0 THEN 2
+																	WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
+											 END 
+									ELSE b.Odds
+							 END >= @odds
 						)
 				)
 				AND (
@@ -557,24 +563,26 @@ BEGIN
 			WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
 				AND (@Odds = 0 
 						OR (@Odds > 0 
-							AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20)	
-											OR b.bettype BETWEEN 81 AND 88
-											OR b.bettype BETWEEN 90 AND 120)
-											THEN 
-													CASE WHEN b.OddsType =  1 THEN b.odds + 1 --decimal
-															WHEN b.OddsType =  2 THEN b.Odds + 1 --hongkong to decimal
-															WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
-																				CASE 
-																					WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
-																					WHEN b.odds >=0 THEN (1 + b.odds) END
-															WHEN b.OddsType =  5 THEN --american odds to decimal
-																			CASE
-																			WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
-																			WHEN (b.odds * 100) % 2 =  0 THEN 2
-																			WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
-														END 
-								ELSE b.Odds
-							END >= @odds
+							AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
+										OR b.bettype BETWEEN 81 AND 88
+										OR b.bettype BETWEEN 90 AND 120
+										OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
+										)
+										THEN 
+												CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
+													 WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
+													 WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
+																			CASE 
+																				WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
+																				WHEN b.odds >=0 THEN (1 + b.odds) END
+													 WHEN OddsType = 5 THEN --american odds to decimal
+																		CASE
+																		WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
+																		WHEN (b.odds * 100) % 2 = 0 THEN 2
+																		WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
+												 END 
+								  ELSE b.Odds
+							 END >= @odds
 						)
 				)
 				AND (
@@ -654,24 +662,26 @@ BEGIN
 			AND p.sportID IS NOT NULL
 			AND (@odds = 0 
 				OR (@odds > 0 
-					AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20)	
-									OR b.bettype BETWEEN 81 AND 88
-									OR b.bettype BETWEEN 90 AND 120)
-									THEN 
-											CASE WHEN b.OddsType =  1 THEN b.odds + 1 --decimal
-													WHEN b.OddsType =  2 THEN b.Odds + 1 --hongkong to decimal
-													WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
-																		CASE 
-																			WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
-																			WHEN b.odds >=0 THEN (1 + b.odds) END
-													WHEN b.OddsType =  5 THEN --american odds to decimal
-																	CASE
-																	WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
-																	WHEN (b.odds * 100) % 2 =  0 THEN 2
-																	WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
-												END 
-						ELSE b.Odds
-					END >= @odds 
+					AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
+								OR b.bettype BETWEEN 81 AND 88
+								OR b.bettype BETWEEN 90 AND 120
+								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
+								)
+								THEN 
+										CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
+											 WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
+											 WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
+																	CASE 
+																		WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
+																		WHEN b.odds >=0 THEN (1 + b.odds) END
+											 WHEN OddsType = 5 THEN --american odds to decimal
+																CASE
+																WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
+																WHEN (b.odds * 100) % 2 = 0 THEN 2
+																WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
+										 END 
+						  ELSE b.Odds
+					 END >= @odds 
 				)
 			)
 
@@ -728,24 +738,26 @@ BEGIN
 			AND b.currency 	= @CurrencyID
 			AND (@odds = 0 
 				OR (@odds > 0 
-					AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20)	
-									OR b.bettype BETWEEN 81 AND 88
-									OR b.bettype BETWEEN 90 AND 120)
-									THEN 
-											CASE WHEN b.OddsType =  1 THEN b.odds + 1 --decimal
-													WHEN b.OddsType =  2 THEN b.Odds + 1 --hongkong to decimal
-													WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
-																		CASE 
-																			WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
-																			WHEN b.odds >=0 THEN (1 + b.odds) END
-													WHEN b.OddsType =  5 THEN --american odds to decimal
-																	CASE
-																	WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
-																	WHEN (b.odds * 100) % 2 =  0 THEN 2
-																	WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
-												END 
-						ELSE b.Odds
-					END >= @odds 
+					AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
+								OR b.bettype BETWEEN 81 AND 88
+								OR b.bettype BETWEEN 90 AND 120
+								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
+								)
+								THEN 
+										CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
+											 WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
+											 WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
+																	CASE 
+																		WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
+																		WHEN b.odds >=0 THEN (1 + b.odds) END
+											 WHEN OddsType = 5 THEN --american odds to decimal
+																CASE
+																WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
+																WHEN (b.odds * 100) % 2 = 0 THEN 2
+																WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
+										 END 
+						  ELSE b.Odds
+					 END >= @odds 
 				)
 			)
 		GROUP BY
