@@ -73,7 +73,7 @@ BEGIN
 	SELECT @SqlQueryChargeRate = 'SELECT PartyId, LicenseeId, ProductId, DI_Rate, Fromdate, Todate
 			FROM OPENQUERY(DBLIC, ''SELECT PartyId, LicenseeId, ProductId, DI_Rate, FromDate, ToDate
 			FROM bodb_licensee.dbo.LA_f_ChargeInfo(''''' + @PartyList + ''''', ''''' + CONVERT(VARCHAR(10), @Yesterday, 112) + '''''
-												 , ''''' + CONVERT(VARCHAR(10), @Yesterday, 112) + ''''', ''''AGC,GD,VG'''', ''''OA'''', 0)
+												 , ''''' + CONVERT(VARCHAR(10), @Yesterday, 112) + ''''', ''''AGC,GD,VG'''', ''''OA'''', 1)
 			WHERE DI_Rate > 0'')'
 	
 	INSERT INTO #ChargeRate(PartyId, LicenseeId, ProductId, Rate, FromDate, ToDate)

@@ -90,7 +90,7 @@ BEGIN
 	SELECT @SqlQueryChargeRate = 'SELECT PartyId, LicenseeId, ProductId, DI_Rate, Fromdate, Todate
 			FROM OPENQUERY(DBLIC, ''SELECT PartyId, LicenseeId, ProductId, DI_Rate, FromDate, ToDate
 			FROM bodb_licensee.dbo.LA_f_ChargeInfo(''''' + @PartyList + ''''', ''''' + CONVERT(VARCHAR(10), @FirstDateOfLastMonth, 112) + '''''
-												 , ''''' + CONVERT(VARCHAR(10), @WinlostDate, 112) + ''''', ''''AGC,GD,VG'''', ''''OA'''', 0)
+												 , ''''' + CONVERT(VARCHAR(10), @WinlostDate, 112) + ''''', ''''AGC,GD,VG'''', ''''OA'''', 1)
 			WHERE DI_Rate > 0'')'
 	
 	INSERT INTO #ChargeRate(PartyId, LicenseeId, ProductId, Rate, FromDate, ToDate)
@@ -267,8 +267,8 @@ BEGIN
 			, tmp.Stake - ISNULL(tmp2.Stake, 0) --Stake
 			, tmp.Actual_stake - ISNULL(tmp2.Actual_stake, 0) --Actual_Stake
 			, tmp.Winlost - ISNULL(tmp2.Winlost, 0) --Winlost
-			, (SELECT TOP 1 RefNo FROM #3rdDummnyData WHERE WinlostDate = tmp2.WinlostDate)
-			, (SELECT TOP 1 actualrate FROM #3rdDummnyData WHERE WinlostDate = tmp2.WinlostDate)
+			, (SELECT TOP 1 RefNo FROM #3rdDummnyData WHERE WinlostDate = tmp2.WinlostDate AND bettype = tmp2.bettype)
+			, (SELECT TOP 1 actualrate FROM #3rdDummnyData WHERE WinlostDate = tmp2.WinlostDate AND bettype = tmp2.bettype)
 			, tmp.CurrencyId
 			, tmp.Bettype
 		FROM (
