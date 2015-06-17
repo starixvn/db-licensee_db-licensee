@@ -20,6 +20,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
 	@ShowCS BIT = 0,-- RNG Casino
 	@ShowBG BIT = 0,-- Bingo
 	@ShowKN BIT = 0,
+	@ShowMGC BIT=0,
     @MoveBetsDay DATETIME ,
     @PageSize INT = 1000 ,
     @PageIndex INT = 1,
@@ -68,6 +69,7 @@ AS /*
 		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 		- 20141225@Jim: improve performance
 		- 20150129@Jim : add base on curreny GBP
+		- 20150612@Jim: support MicroGaming
 */
     
 SET NOCOUNT ON
@@ -198,6 +200,17 @@ BEGIN
 	WHERE (typeid BETWEEN 1501 AND 1599)
 END
 
+IF @ShowMGC=1 -- MicroGamming
+BEGIN 
+	INSERT INTO @sporttype (sporttype)
+	VALUES(203)
+
+	INSERT INTO @bettype(bettype)
+	SELECT typeid FROM bettype (NOLOCK)
+	WHERE (typeid BETWEEN 2001 AND 2007)
+END
+
+
 CREATE TABLE #TempData
 (
 	CustID INT 
@@ -304,7 +317,7 @@ BEGIN
 		GROUP BY b.CustID,b.winlostdate,b.currency	 
 	END
 
-	IF (@ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowRB=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1)
+	IF (@ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowRB=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGC=1)
 	BEGIN
 		INSERT INTO #TempData
 		SELECT  
@@ -385,7 +398,7 @@ BEGIN
 	
 	
 	--exclude BA tickets
-	IF (@ShowSB=1 OR @ShowRB = 1 OR @ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1)
+	IF (@ShowSB=1 OR @ShowRB = 1 OR @ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGC=1)
 	BEGIN
 		
 		INSERT  INTO #TempData
@@ -460,7 +473,7 @@ BEGIN
 		GROUP BY b.CustID,b.winlostdate,b.currency	
 	END
 	
-	IF (@showSB = 1 OR @ShowRB = 1 OR @ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1)
+	IF (@showSB = 1 OR @ShowRB = 1 OR @ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGC=1)
 	BEGIN
 		INSERT  INTO #TempData
 		SELECT  

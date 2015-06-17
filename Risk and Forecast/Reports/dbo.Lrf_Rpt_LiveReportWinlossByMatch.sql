@@ -8,6 +8,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportWinlossByMatch]
     @ShowBA			BIT	= 0,
 	@ShowLC 		BIT = 0,
 	@ShowVS			BIT = 0,
+	@ShowMGC 		BIT = 0,-- MicroGamming
     @SportId		INT = 0,
     @FromDate		SMALLDATETIME,  
 	@ToDate			SMALLDATETIME,
@@ -34,6 +35,7 @@ Revisions:
 	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	- 20150127@Jim: support base on GBP Currency
+	- 20150612@Jim: support MicroGaming
 Return 3 tables:
 WinlostBySport
 WinlostByCurrency
@@ -98,6 +100,14 @@ BEGIN
 	SELECT typeid FROM bettype (NOLOCK)
 	WHERE (typeid BETWEEN 1201 AND 1299)
 END  
+
+IF @ShowMGC=1 -- MicroGamming
+BEGIN 
+	 
+	INSERT INTO @bettype(bettype)
+	SELECT typeid FROM bettype (NOLOCK)
+	WHERE (typeid BETWEEN 2001 AND 2007)
+END
 
 CREATE TABLE #tmpWinloss (
 	winlostdate		DATETIME,  
@@ -261,7 +271,7 @@ BEGIN
 		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
 	END
 
-	IF ( @ShowLC=1 OR @ShowVS=1)
+	IF ( @ShowLC=1 OR @ShowVS=1 OR @ShowMGC =1)
 	BEGIN
 		INSERT INTO #tmpWinloss			
 		SELECT
@@ -441,7 +451,7 @@ BEGIN
 		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
 	END		
 			
-	IF (@ShowLC = 1 OR @ShowVS = 1)
+	IF (@ShowLC = 1 OR @ShowVS = 1 OR @ShowMGC=1)
 	BEGIN		
 		INSERT INTO #tmpWinloss			
 		SELECT

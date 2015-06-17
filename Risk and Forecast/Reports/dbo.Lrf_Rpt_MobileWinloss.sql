@@ -14,6 +14,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_MobileWinloss]
  @ShowVS		BIT=0,
  @ShowCS		BIT=0,--- RNG Casino
  @ShowBG		BIT=0,--- Bingo
+ @ShowMGC		BIT=0,
  @SiteType	TINYINT=1, 
  @MoveBetsDay SMALLDATETIME,
  @drawfilter SMALLINT = 1  ,
@@ -46,6 +47,7 @@ AS
 		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 		- 20150127@Jim: support base on GBP Currency
 		- 20150204@Don: remove index hint
+		- 20150612@Jim: support MicroGaming
 	Param's Explanation:  
 	  + @SiteType: 1-WAP; 2-Smartphone; 3: Others;0-All  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -58,6 +60,7 @@ AS
 	  + @ShowLC: Show Live casino
 	  + @ShowCS: Show RNG Casino
 	  + @ShowBG: Show Bingo
+	  + @ShowMGC: Show MicroGamming
 	  + @MoveBetsDay: The day we move tickets to bettrans14
 */
     
@@ -213,6 +216,16 @@ BEGIN
 	INSERT INTO @bettype(bettype)
 	SELECT typeid FROM bettype (NOLOCK)
 	WHERE typeid =73
+END
+
+IF @ShowMGC=1 -- MicroGamming
+BEGIN 
+	INSERT INTO @sporttype (sporttype)
+	VALUES(203)
+
+	INSERT INTO @bettype(bettype)
+	SELECT typeid FROM bettype (NOLOCK)
+	WHERE (typeid BETWEEN 2001 AND 2007)
 END
 
 INSERT INTO @Exchange (exchangedate,exchangeid,eur,usd,gbp,code)
@@ -458,7 +471,7 @@ BEGIN
 	END
 	
 	
-	IF (@ShowRB=1 or @ShowNG=1 OR @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1)
+	IF (@ShowRB=1 or @ShowNG=1 OR @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowMGC =1 )
 	BEGIN
 		INSERT INTO #WinLoss
 			(CustID, Currency, 
@@ -691,7 +704,7 @@ BEGIN
 			b.statusID	
 			
 	END
-	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR  @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1)
+	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR  @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowMGC =1)
 	BEGIN
 		INSERT INTO #WinLoss
 			(CustID, Currency, 

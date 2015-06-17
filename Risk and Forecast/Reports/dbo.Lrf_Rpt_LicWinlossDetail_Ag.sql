@@ -16,6 +16,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinlossDetail_Ag]
  @ShowCS		BIT=0, -- RNG Casino
  @ShowBG		BIT=0, -- Bingo 
  @ShowKN		BIT=0, -- keno
+ @ShowMGC 		BIT=0,-- MicroGamming
  @MoveBetsDay SMALLDATETIME,
  @IsOld BIT = 0,
  @drawfilter SMALLINT = 1,
@@ -42,6 +43,7 @@ AS
 		- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 		- 20150123@Jim: support base on Currency GBP
+		- 20150612@Jim: support MicroGaming
 	Param's Explanation:  
 	  + @CustID: SuperID  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -71,6 +73,7 @@ CREATE TABLE #SAgWinLoss (
 	TurnoverCS 		MONEY,
 	TurnoverBG		MONEY,
 	TurnoverKN		MONEY,
+	TurnoverMGC		MONEY,
 	Winlost			MONEY,
 	--LicenseeWL		MONEY, --Sportbook and NumberGame
 	LicenseeWLSB	MONEY,
@@ -82,6 +85,7 @@ CREATE TABLE #SAgWinLoss (
 	LicenseeWLCS	MONEY,
 	LicenseeWLBG	MONEY,
 	LicenseeWLKN	MONEY,
+	LicenseeWLMGC	MONEY,
 	--WinlossRB		MONEY,  
 	AmtDueToBA		MONEY,   
 	AmtDueToRB		MONEY,
@@ -187,6 +191,15 @@ BEGIN
 	SELECT typeid FROM bettype (NOLOCK)
 	WHERE (typeid BETWEEN 1501 AND 1599)
 END 
+IF @ShowMGC=1 -- MicroGamming
+BEGIN 
+	INSERT INTO @sporttype (sporttype)
+	VALUES(203)
+
+	INSERT INTO @bettype(bettype)
+	SELECT typeid FROM bettype (NOLOCK)
+	WHERE (typeid BETWEEN 2001 AND 2007)
+END 
 
 DECLARE @TempFromDate DATETIME 
 DECLARE @TempToDate DATETIME 
@@ -226,6 +239,7 @@ BEGIN
 			0 AS tunroverCS,
 			0 AS tunroverBG,
 			0 AS tunroverKN,
+			0 AS tunroverMGC,
 		SUM(b.winlost - b.actual_stake) AS Winlost,  
 		--0 AS LicenseeWL,
 		0 AS LicenseeWLSB,
@@ -237,6 +251,7 @@ BEGIN
 		0 AS LicenseeWLCS,
 		0 AS LicenseeWLBG,
 		0 AS LicenseeWLKN,
+		0 AS LicenseeWLMGC,
 		--0 AS WinlossRB,
 		- SUM (b.winlost - b.actual_stake + awinlost + comm ) AS AmountDueToBA,
 		0 AS AmountDueToRB,
@@ -285,6 +300,7 @@ BEGIN
 			0 turnoverCS,
 			0 tunroverBG,
 			0 tunroverKN,
+			0 tunroverMGC,
 			SUM(b.winlost - b.actual_stake) AS Winlost,  
 			-- - SUM(b.winlost - b.actual_stake) AS LicenseeWL,
 			- SUM (b.winlost - b.actual_stake)  AS LicenseeWLSB,
@@ -296,6 +312,7 @@ BEGIN
 			0 AS LicenseeWLCS,
 			0 AS LicenseeWLBG,
 			0 AS LicenseeWLKN,
+			0 AS LicenseeWLMGC,
 			--0 AS WinlossRB,
 			0 AS AmountDueToBA,
 			0 AS AmountDueToRB,
@@ -323,7 +340,7 @@ BEGIN
 			b.winlostdate,a.currency,b.recommend, b.statusID	
 	END
 	
-	IF (@ShowNG=1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1)
+	IF (@ShowNG=1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGC=1)
 	BEGIN
 		INSERT INTO #SAgWinLoss
 		SELECT   
@@ -393,6 +410,17 @@ BEGIN
 				ELSE 1 END
 			ELSE 0 END	
 			) turnoverKN,
+			SUM(
+			CASE WHEN b.bettype  BETWEEN 2001 AND 2007 THEN
+				stake
+				*
+				CASE WHEN @drawfilter IN (2,3) THEN
+					CASE WHEN b.statusID = 111 THEN 0
+					ELSE 1 END
+				ELSE 1 END
+			ELSE 0 END	
+			) turnoverMGC,
+			
 			SUM(b.winlost - b.actual_stake) AS Winlost,  
 			-- - SUM(b.winlost - b.actual_stake) AS LicenseeWL,
 			0  AS LicenseeWLSB,
@@ -404,6 +432,7 @@ BEGIN
 			-SUM(CASE WHEN b.bettype =71 THEN b.winlost - b.actual_stake ELSE 0 END)					AS LicenseeWLCS,
 			-SUM(CASE WHEN b.bettype =73 THEN b.winlost - b.actual_stake ELSE 0 END)					AS LicenseeWLBG,
 			-SUM(CASE WHEN b.bettype BETWEEN 1501 AND 1599  THEN b.winlost - b.actual_stake ELSE 0 END) AS LicenseeWLKN,
+			-SUM(CASE WHEN b.bettype BETWEEN 2001 AND 2007  THEN b.winlost - b.actual_stake ELSE 0 END) AS LicenseeWLMGC,
 			--0 AS WinlossRB,
 			0 AS AmountDueToBA,
 			0 AS AmountDueToRB,
@@ -453,6 +482,7 @@ BEGIN
 			0 as turnoverCS,
 			0 as turnoverBG,
 			0 as turnoverKN,
+			0 as turnoverMGC,
 			SUM(b.winlost - b.actual_stake) AS Winlost,  
 			--0 AS LicenseeWL,
 			0 AS LicenseeWLSB,
@@ -464,6 +494,7 @@ BEGIN
 			0 AS LicenseeWLCS,
 			0 AS LicenseeWLBG,
 			0 AS LicenseeWLKN,
+			0 AS LicenseeWLMGC,
 			--SUM (b.awinlost) AS WinlossRB,
 			0 AS AmountDueToBA,
 			- SUM (b.winlost - b.actual_stake + awinlost + comm) AS AmountDueToRB,
@@ -518,6 +549,7 @@ BEGIN
 			0 AS turnoverCS,
 			0 AS turnoverBG,
 			0 AS turnoverKN,
+			0 AS turnoverMGC,
 			SUM(b.winlost),  
 			--0 AS LicenseeWL,
 			0 AS LicenseeWLSB,
@@ -529,6 +561,7 @@ BEGIN
 			0 AS LicenseeWLCS,
 			0 AS LicenseeWLBG,
 			0 AS LicenseeWLKN,
+			0 AS LicenseeWLMGC,
 			--0 AS WinlossRB,
 			- SUM (b.winlost+b.awinlost+b.comm) AS AmountDueToBA,
 			0 AS AmountDueToRB,
@@ -552,7 +585,7 @@ BEGIN
 	END
 	
 	--exclude BA tickets
-	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 or @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1)
+	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 or @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGC=1)
 	BEGIN
 		INSERT INTO #SAgWinLoss  
 		SELECT 
@@ -632,6 +665,16 @@ BEGIN
 						ELSE 1 END
 					ELSE 1 END
 			ELSE 0 END) AS turnoverKN,
+			SUM(CASE WHEN b.sporttype=203 THEN 
+				b.turnover
+				*
+					CASE WHEN @drawfilter IN (2,3) THEN
+						CASE WHEN b.statusID = 111  THEN 0
+						WHEN b.statusID IN (114,115) THEN 0.5
+						ELSE 1 END
+					ELSE 1 END
+			ELSE 0 END) AS turnoverMGC,
+			
 			SUM(b.winlost),  
 			-- - SUM(CASE WHEN ( b.sporttype IN (0,161,162,180))  THEN b.winlost ELSE 0 END) AS LicenseeWL ,
 			- SUM(CASE WHEN b.sporttype=0 THEN b.winlost ELSE 0 END) AS LicenseeWLSB,
@@ -643,6 +686,7 @@ BEGIN
 			- SUM(CASE WHEN b.sporttype=251 THEN b.winlost ELSE 0 END) AS LicenseeWLCS,
 			- SUM(CASE WHEN b.sporttype=252 THEN b.winlost ELSE 0 END) AS LicenseeWLBG,
 			- SUM(CASE WHEN b.sporttype=202 THEN b.winlost ELSE 0 END) AS LicenseeWLKN,
+			- SUM(CASE WHEN b.sporttype=203 THEN b.winlost ELSE 0 END) AS LicenseeWLMGC,
 			--SUM(CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS WinlossRB,
 			0 AS AmountDueToBA,
 			- SUM ( CASE WHEN b.sporttype = 151 THEN (b.winlost+b.awinlost+b.comm) ELSE 0 END) AS AmountDueToRB,
@@ -700,6 +744,7 @@ BEGIN
 			0 AS turnoverCS,
 			0 AS turnoverBG,
 			0 AS turnoverKN,
+			0 AS turnoverMGC,
 			SUM(b.winlost),  
 			--0 AS LicenseeWL,
 			0 AS LicenseeWLSB,
@@ -711,6 +756,7 @@ BEGIN
 			0 AS LicenseeWLCS,
 			0 AS LicenseeWLBG,
 			0 AS LicenseeWLKN,
+			0 AS LicenseeWLMGC,
 			--0 AS WinlossRB,
 			- SUM (b.winlost+b.awinlost+b.comm) AS AmountDueToBA,
 			0 AS AmountDueToRB,
@@ -815,6 +861,15 @@ BEGIN
 						ELSE 1 END
 					ELSE 1 END
 			ELSE 0 END) AS turnoverKN,
+			SUM(CASE WHEN b.sporttype=203 THEN 
+				b.turnover
+				*
+					CASE WHEN @drawfilter IN (2,3) THEN
+						CASE WHEN b.statusID = 111  THEN 0
+						WHEN b.statusID IN (114,115) THEN 0.5
+						ELSE 1 END
+					ELSE 1 END
+			ELSE 0 END) AS turnoverMGC,
 			SUM(b.winlost),  
 			- SUM(CASE WHEN b.sporttype=0 THEN b.winlost ELSE 0 END) AS LicenseeWLSB,
 			0 AS LicenseeWLBA,
@@ -825,6 +880,7 @@ BEGIN
 			-SUM(CASE WHEN b.sporttype=251 THEN b.winlost ELSE 0 END) AS LicenseeWLCS,
 			-SUM(CASE WHEN b.sporttype=252 THEN b.winlost ELSE 0 END) AS LicenseeWLBG,
 			-SUM(CASE WHEN b.sporttype=202 THEN b.winlost ELSE 0 END) AS LicenseeWLKN,
+			-SUM(CASE WHEN b.sporttype=203 THEN b.winlost ELSE 0 END) AS LicenseeWLMGC,
 			0 AS AmountDueToBA,
 			- SUM ( CASE WHEN b.sporttype = 151 THEN (b.winlost+b.awinlost+b.comm) ELSE 0 END) AS AmountDueToRB,
 			0 AS CommBA,
@@ -870,6 +926,7 @@ WHERE exchangeid IN (SELECT DISTINCT Currency FROM #SAgWinLoss)
 	   SUM(TurnoverCS)       AS TurnoverCS,
 	   SUM(TurnoverBG)       AS TurnoverBG,	   
 	   SUM(TurnoverKN)       AS TurnoverKN,	
+	   SUM(TurnoverMGC)       AS TurnoverMGC,	
 	   SUM(Winlost)		 AS Winlost,  
 	   --SUM(LicenseeWL)   AS LicenseeWL,
 	   SUM(LicenseeWLSB) AS LicenseeWLSB,
@@ -881,6 +938,7 @@ WHERE exchangeid IN (SELECT DISTINCT Currency FROM #SAgWinLoss)
 	   SUM(LicenseeWLCS) AS LicenseeWLCS,
 	   SUM(LicenseeWLBG) AS LicenseeWLBG,
 	   SUM(LicenseeWLKN) AS LicenseeWLKN,
+	   SUM(LicenseeWLKN) AS LicenseeWLMGC, 
 	   --SUM(WinlossRB)	AS WinlossRB,
 	   SUM(CommBA) AS CommBA,
 	   SUM(CommRB) AS CommRB,
@@ -899,6 +957,7 @@ WHERE exchangeid IN (SELECT DISTINCT Currency FROM #SAgWinLoss)
 	   CAST(SUM(TurnoverCS*e.MYR)    AS MONEY)     AS TurnoverCSMYR,
 	   CAST(SUM(TurnoverBG*e.MYR)    AS MONEY)     AS TurnoverBGMYR,
 	   CAST(SUM(TurnoverKN*e.MYR)    AS MONEY)     AS TurnoverKNMYR,
+	   CAST(SUM(TurnoverMGC*e.MYR)    AS MONEY)     AS TurnoverMGCMYR,
 	   CAST(SUM(Winlost*e.MYR)	     AS MONEY)          AS WinlostMYR,  
 	   --CAST(SUM(LicenseeWL*e.MYR)    AS MONEY)          AS LicenseeWLMYR,
 	   CAST(SUM(LicenseeWLSB*e.MYR)  AS MONEY)          AS LicenseeWLSBMYR,
@@ -910,6 +969,7 @@ WHERE exchangeid IN (SELECT DISTINCT Currency FROM #SAgWinLoss)
 	   CAST(SUM(LicenseeWLCS*e.MYR)AS MONEY)    		AS LicenseeWLCSMYR,
 	   CAST(SUM(LicenseeWLBG*e.MYR)AS MONEY)     		AS LicenseeWLBGMYR,
 	   CAST(SUM(LicenseeWLKN*e.MYR)AS MONEY)     		AS LicenseeWLKNMYR,
+	   CAST(SUM(LicenseeWLMGC*e.MYR)AS MONEY)     		AS LicenseeWLMGCMYR,
 	   --CAST(SUM(WinlossRB*e.MYR)	 AS MONEY)          AS WinlossRBMYR,
 	   CAST(SUM(CommBA * e.MYR)      AS MONEY)          AS CommBAMYR,
 	   CAST(SUM(CommRB * e.MYR)      AS MONEY)          AS CommRBMYR,
@@ -927,6 +987,7 @@ WHERE exchangeid IN (SELECT DISTINCT Currency FROM #SAgWinLoss)
 	   CAST(SUM(TurnoverCS*e.USD)    AS MONEY)     AS TurnoverCSUSD,
 	   CAST(SUM(TurnoverBG*e.USD)    AS MONEY)     AS TurnoverBGUSD,
 	   CAST(SUM(TurnoverKN*e.USD)    AS MONEY)     AS TurnoverKNUSD,
+	   CAST(SUM(TurnoverMGC*e.USD)    AS MONEY)     AS TurnoverMGCUSD,
 	   CAST(SUM(Winlost*e.USD)	     AS MONEY)          AS WinlostUSD,  
 	   --CAST(SUM(LicenseeWL*e.USD)    AS MONEY)          AS LicenseeWLUSD,
 	   CAST(SUM(LicenseeWLSB*e.USD)  AS MONEY)          AS LicenseeWLSBUSD,
@@ -938,6 +999,7 @@ WHERE exchangeid IN (SELECT DISTINCT Currency FROM #SAgWinLoss)
 	   CAST(SUM(LicenseeWLCS*e.USD)	AS MONEY)	 		AS LicenseeWLCSUSD,
 	   CAST(SUM(LicenseeWLBG*e.USD)AS MONEY)	 		AS LicenseeWLBGUSD,
 	   CAST(SUM(LicenseeWLKN*e.USD)AS MONEY)			AS LicenseeWLKNUSD,
+	   CAST(SUM(LicenseeWLMGC*e.USD)AS MONEY)			AS LicenseeWLMGCUSD,
 	   --CAST(SUM(WinlossRB*e.USD)	 AS MONEY)          AS WinlossRBUSD,
 	   CAST(SUM(CommBA * e.USD)      AS MONEY)          AS CommBAUSD,
 	   CAST(SUM(CommRB * e.USD)      AS MONEY)          AS CommRBUSD,
@@ -955,6 +1017,7 @@ WHERE exchangeid IN (SELECT DISTINCT Currency FROM #SAgWinLoss)
 	   CAST(SUM(TurnoverCS*e.EUR)    AS MONEY)     AS TurnoverCSEUR,
 	   CAST(SUM(TurnoverBG*e.EUR)    AS MONEY)     AS TurnoverBGEUR,
 	   CAST(SUM(TurnoverKN*e.EUR)    AS MONEY)     AS TurnoverKNEUR,
+	   CAST(SUM(TurnoverMGC*e.EUR)    AS MONEY)     AS TurnoverMGCEUR,
 	   CAST(SUM(Winlost*e.EUR)	     AS MONEY)          AS WinlostEUR,  
 	   --CAST(SUM(LicenseeWL*e.EUR)    AS MONEY)          AS LicenseeWLEUR,
 	   CAST(SUM(LicenseeWLSB*e.EUR)  AS MONEY)			AS LicenseeWLSBEUR,
@@ -965,7 +1028,8 @@ WHERE exchangeid IN (SELECT DISTINCT Currency FROM #SAgWinLoss)
 	   CAST(SUM(LicenseeWLVS*e.EUR)  AS MONEY)          AS LicenseeWLVSEUR,
 	   CAST(SUM(LicenseeWLCS*e.EUR)AS MONEY)	 		AS LicenseeWLCSEUR,
 	   CAST(SUM(LicenseeWLBG*e.EUR)AS MONEY)	 		AS LicenseeWLBGEUR,
-	   CAST(SUM(LicenseeWLKN*e.EUR)AS MONEY)	 AS LicenseeWLKNEUR,
+	   CAST(SUM(LicenseeWLKN*e.EUR)AS MONEY)			AS LicenseeWLKNEUR,
+	   CAST(SUM(LicenseeWLMGC*e.EUR)AS MONEY)	 		AS LicenseeWLMGCEUR,
 	   --CAST(SUM(WinlossRB*e.EUR)	 AS MONEY)			AS WinlossRBEUR,
 	   CAST(SUM(CommBA * e.EUR)      AS MONEY)			AS CommBAEUR,
 	   CAST(SUM(CommRB * e.EUR)      AS MONEY)			AS CommRBEUR,
@@ -983,6 +1047,7 @@ WHERE exchangeid IN (SELECT DISTINCT Currency FROM #SAgWinLoss)
 	   CAST(SUM(TurnoverCS*e.GBP)    AS MONEY)     AS TurnoverCSGBP,
 	   CAST(SUM(TurnoverBG*e.GBP)    AS MONEY)     AS TurnoverBGGBP,
 	   CAST(SUM(TurnoverKN*e.GBP)    AS MONEY)     AS TurnoverKNGBP,
+	   CAST(SUM(TurnoverMGC*e.GBP)    AS MONEY)     AS TurnoverMGCGBP,
 	   CAST(SUM(Winlost*e.GBP)	     AS MONEY)          AS WinlostGBP,  
 	   --CAST(SUM(LicenseeWL*e.GBP)    AS MONEY)          AS LicenseeWLGBP,
 	   CAST(SUM(LicenseeWLSB*e.GBP)  AS MONEY)			AS LicenseeWLSBGBP,
@@ -994,6 +1059,7 @@ WHERE exchangeid IN (SELECT DISTINCT Currency FROM #SAgWinLoss)
 	   CAST(SUM(LicenseeWLCS*e.GBP)AS MONEY)	 		AS LicenseeWLCSGBP,
 	   CAST(SUM(LicenseeWLBG*e.GBP)AS MONEY)	 		AS LicenseeWLBGGBP,
 	   CAST(SUM(LicenseeWLKN*e.GBP)AS MONEY)	 AS LicenseeWLKNGBP,
+	   CAST(SUM(LicenseeWLMGC*e.GBP)AS MONEY)	 AS LicenseeWLMGCGBP,
 	   --CAST(SUM(WinlossRB*e.GBP)	 AS MONEY)			AS WinlossRBGBP,
 	   CAST(SUM(CommBA * e.GBP)      AS MONEY)			AS CommBAGBP,
 	   CAST(SUM(CommRB * e.GBP)      AS MONEY)			AS CommRBGBP,

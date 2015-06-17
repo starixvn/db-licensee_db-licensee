@@ -16,7 +16,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_TurnOver]
     @ShowVS        BIT=0,
     @ShowCS     BIT=0,--- RNG Casino
     @ShowBG        BIT=0, --- Bingo
-    @ShowKN       BIT=0 -- Keno 
+    @ShowKN       BIT=0 ,-- Keno 
+	@ShowMGC 	  BIT=0
 AS 
 /*
 Created: 20111017@Henry
@@ -43,6 +44,7 @@ Revisions:
    - 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
    - 20150127@Jim: support base on GBP Currency
    - 20150210@Jim: fix bug wrong condition when retrieve data from rptDepWinlostByProduct
+   - 20150612@Jim: support MicroGaming
 Param's Explanation:
     + @excludeTest: remove currency UUS
     + @CurrencyID = 0: get all currency
@@ -92,6 +94,7 @@ IF @ShowVS = 1 INSERT INTO @sporttype(sporttype) VALUES(180)
 IF @ShowCS = 1 INSERT INTO @sporttype(sporttype) VALUES(251)
 IF @ShowBG = 1 INSERT INTO @sporttype(sporttype) VALUES(252)
 IF @ShowKN = 1 INSERT INTO @sporttype(sporttype) VALUES(202)--Keno
+IF @ShowMGC = 1 INSERT INTO @sporttype(sporttype) VALUES(203)
     
 IF @username <> ''
 BEGIN
