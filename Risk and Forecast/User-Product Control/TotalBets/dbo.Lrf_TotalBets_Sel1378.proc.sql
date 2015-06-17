@@ -321,9 +321,56 @@ BEGIN
 			b.liveawayscore,
 			m.isNeutral
 	) c WHERE c.RowNum between @RowStart AND @RowEnd
-
+	
 END
+-- sum data 
+	SELECT 
+		    SUM(home_odds_HDP) AS home_odds_HDP,
+			SUM(home_odds_HDPUSD) AS home_odds_HDPUSD,
+			SUM(home_odds_HDPEUR) AS home_odds_HDPEUR,
+			SUM(home_odds_HDPGBP) AS home_odds_HDPGBP,
 
+			SUM(away_odds_HDP) AS away_odds_HDP,
+			SUM(away_odds_HDPUSD) AS away_odds_HDPUSD,
+			SUM(away_odds_HDPEUR) AS away_odds_HDPEUR,
+			SUM(away_odds_HDPGBP) AS away_odds_HDPGBP,
+
+			SUM(home_odds_HTHDP) AS home_odds_HTHDP,
+			SUM(home_odds_HTHDPUSD) AS home_odds_HTHDPUSD,
+			SUM(home_odds_HTHDPEUR) AS home_odds_HTHDPEUR,
+			SUM(home_odds_HTHDPGBP) AS home_odds_HTHDPGBP,
+
+			SUM(away_odds_HTHDP) AS away_odds_HTHDP,
+			SUM(away_odds_HTHDPUSD) AS away_odds_HTHDPUSD,
+			SUM(away_odds_HTHDPEUR) AS away_odds_HTHDPEUR,
+			SUM(away_odds_HTHDPGBP) AS away_odds_HTHDPGBP,
+		
+			SUM(home_odds_OU) AS home_odds_OU,
+			SUM(home_odds_OUUSD) AS home_odds_OUUSD,
+			SUM(home_odds_OUEUR) AS home_odds_OUEUR,
+			SUM(home_odds_OUGBP) AS home_odds_OUGBP,
+		
+			SUM(away_odds_OU) AS away_odds_OU,
+			SUM(away_odds_OUUSD) AS away_odds_OUUSD,
+			SUM(away_odds_OUEUR) AS away_odds_OUEUR,
+			SUM(away_odds_OUGBP) AS away_odds_OUGBP,
+
+
+			SUM(home_odds_HTOU) AS home_odds_HTOU,
+			SUM(home_odds_HTOUUSD) AS home_odds_HTOUUSD,
+			SUM(home_odds_HTOUEUR) AS home_odds_HTOUEUR,
+			SUM(home_odds_HTOUGBP) AS home_odds_HTOUGBP,
+
+			SUM(away_odds_HTOU) AS away_odds_HTOU,
+			SUM(away_odds_HTOUUSD) AS away_odds_HTOUUSD,
+			SUM(away_odds_HTOUEUR) AS away_odds_HTOUEUR,
+			SUM(away_odds_HTOUGBP) AS away_odds_HTOUGBP,
+		
+			SUM(BetCount_HDP) AS BetCount_HDP,
+			SUM(BetCount_HTHDP) AS BetCount_HTHDP,
+			SUM(BetCount_OU) AS BetCount_OU,
+			SUM(BetCount_HTOU) AS BetCount_HTOU	
+	FROM @Data
 DROP TABLE #currency
 GO
 GRANT EXECUTE ON [dbo].[Lrf_TotalBets_Sel1378] TO [bodbLicenseeNet]
