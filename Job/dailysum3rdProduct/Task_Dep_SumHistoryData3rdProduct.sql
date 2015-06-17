@@ -22,7 +22,7 @@ BEGIN
 	CREATE TABLE #3rdData (Stake MONEY, Actual_Stake MONEY, Winlost MONEY, CurrencyId TINYINT, Bettype SMALLINT)
 	CREATE TABLE #ChargeRate (PartyId INT, LicenseeId INT, ProductId INT, Rate MONEY, FromDate SMALLDATETIME, ToDate SMALLDATETIME)
 	DECLARE @LicenseeTable TABLE (RowId INT IDENTITY(1,1), LicenseeId INT, LicenseeName VARCHAR(50), CurrencyId TINYINT)
-	DECLARE @DataTmp TABLE (RowId INT IDENTITY(1,1), CurrencyId TINYINT, Bettype SMALLINT)
+	DECLARE @DataTmp TABLE (RowId INT, CurrencyId TINYINT, Bettype SMALLINT)
 	
 	DECLARE @RowId INT, @LicenseeName VARCHAR(50), @CurrencyId TINYINT, @ProductId TINYINT
 		, @SqlQueryFor3rd VARCHAR(8000), @CustDummyId INT, @SqlQueryChargeRate VARCHAR(8000)
@@ -48,6 +48,9 @@ BEGIN
 	IF NOT EXISTS (SELECT 1 FROM #LicenseeProductTable)
 	BEGIN
 		PRINT('licensee cust does not exist')
+		DROP TABLE #LicenseeProductTable
+		DROP TABLE #3rdData
+		DROP TABLE #ChargeRate
 		RETURN
 	END
 	
@@ -70,7 +73,7 @@ BEGIN
 	SELECT @SqlQueryChargeRate = 'SELECT PartyId, LicenseeId, ProductId, DI_Rate, Fromdate, Todate
 			FROM OPENQUERY(DBLIC, ''SELECT PartyId, LicenseeId, ProductId, DI_Rate, FromDate, ToDate
 			FROM bodb_licensee.dbo.LA_f_ChargeInfo(''''' + @PartyList + ''''', ''''' + CONVERT(VARCHAR(10), @Yesterday, 112) + '''''
-												 , ''''' + CONVERT(VARCHAR(10), @Yesterday, 112) + ''''', ''''AGC,GD,VG'''', ''''OA'''', 1)
+												 , ''''' + CONVERT(VARCHAR(10), @Yesterday, 112) + ''''', ''''AGC,GD,VG'''', ''''OA'''', 0)
 			WHERE DI_Rate > 0'')'
 	
 	INSERT INTO #ChargeRate(PartyId, LicenseeId, ProductId, Rate, FromDate, ToDate)
@@ -79,6 +82,9 @@ BEGIN
 	IF NOT EXISTS (SELECT TOP 1 1 FROM #ChargeRate)
 	BEGIN
 		PRINT('Charge rate does not exist')
+		DROP TABLE #LicenseeProductTable
+		DROP TABLE #3rdData
+		DROP TABLE #ChargeRate
 		RETURN
 	END
 
@@ -128,14 +134,15 @@ BEGIN
 		BEGIN
 			--print ('AG Casino')
 			SELECT @SqlQueryFor3rd = ''
-			SELECT @SqlQueryFor3rd = 'SELECT Currency, 1800 AS Bettype, Stake, Actual_stake, Winlost
-				FROM OPENQUERY(DBLIC, ''SELECT Currency, SUM(ABS(Stake)) AS Stake, SUM(ABS(Actual_stake)) AS Actual_stake, SUM(ABS(Winlost)) AS Winlost
-				FROM bodb_PlaytechCS.dbo.bettrans_AGCasino b WITH (NOLOCK) 
+			SELECT @SqlQueryFor3rd = 'SELECT WinlostDate, Currency, 1800 AS Bettype, Stake, Actual_stake, Winlost
+				FROM OPENQUERY(DBLIC, ''SELECT WinlostDate, b.Currency, SUM(ABS(Stake)) AS Stake, SUM(ABS(Actual_stake)) AS Actual_stake, SUM(ABS(Winlost)) AS Winlost
+				FROM bodb_PlaytechCS.dbo.bettrans_AGCasino b WITH (NOLOCK)
+					INNER JOIN bodb_licensee.dbo.f_SelLicenseeCust(' + CAST(@LicenseeId AS VARCHAR) + ') f ON b.recommend = f.custid AND b.currency = f.currency 
 				WHERE 1 = 1'
-					+ ' AND WinlostDate BETWEEN ''''' + CONVERT(VARCHAR(10), @FromDate, 112) + ''''' AND ''''' + CONVERT(VARCHAR(10), @ToDate, 112) + ''''''
-					+ ' AND Currency = ' + CAST(@CurrencyId AS VARCHAR)
+					+ ' AND WinlostDate BETWEEN ''''' + CONVERT(VARCHAR(10), @WinlostDate, 112) + ''''' AND ''''' + CONVERT(VARCHAR(10), @WinlostDate, 112) + ''''''
+					+ ' AND b.Currency = ' + CAST(@CurrencyId AS VARCHAR)
 					+ ' AND StatusId IN (112,113,111)'
-				+ ' GROUP BY Currency'
+				+ ' GROUP BY WinlostDate, b.Currency'
 				+ ''' )'
 			--select @SqlQueryFor3rd as '@SqlQueryFor3rd'
 			INSERT INTO #3rdData(CurrencyId, Bettype, Stake, Actual_stake, Winlost)
@@ -146,14 +153,15 @@ BEGIN
 		BEGIN
 			--print ('Gold Deluxe')
 			SELECT @SqlQueryFor3rd = ''
-			SELECT @SqlQueryFor3rd = 'SELECT Currency, 1700 AS Bettype, Stake, Actual_stake, Winlost
-				FROM OPENQUERY(DBLIC, ''SELECT Currency, SUM(ABS(Stake)) AS Stake, SUM(ABS(Stake)) AS Actual_stake, SUM(ABS(Winlost)) AS Winlost
+			SELECT @SqlQueryFor3rd = 'SELECT WinlostDate, Currency, 1700 AS Bettype, Stake, Actual_stake, Winlost
+				FROM OPENQUERY(DBLIC, ''SELECT WinlostDate, b.Currency, SUM(ABS(Stake)) AS Stake, SUM(ABS(Stake)) AS Actual_stake, SUM(ABS(Winlost)) AS Winlost
 				FROM bodb_PlaytechCS.dbo.bettrans_GoldDeluxe b WITH (NOLOCK)
+					INNER JOIN bodb_licensee.dbo.f_SelLicenseeCust(' + CAST(@LicenseeId AS VARCHAR) + ') f ON b.recommend = f.custid AND b.currency = f.currency 
 				WHERE 1 = 1'
-					+ ' AND WinlostDate BETWEEN ''''' + CONVERT(VARCHAR(10), @FromDate, 112) + ''''' AND ''''' + CONVERT(VARCHAR(10), @ToDate, 112) + ''''''
-					+ ' AND Currency = ' + CAST(@CurrencyId AS VARCHAR)
+					+ ' AND WinlostDate BETWEEN ''''' + CONVERT(VARCHAR(10), @WinlostDate, 112) + ''''' AND ''''' + CONVERT(VARCHAR(10), @WinlostDate, 112) + ''''''
+					+ ' AND b.Currency = ' + CAST(@CurrencyId AS VARCHAR)
 					+ ' AND StatusId IN (112,113,111)'
-				+ ' GROUP BY Currency'
+				+ ' GROUP BY WinlostDate, b.Currency'
 				+ ''' )'
 			
 			INSERT INTO #3rdData(CurrencyId, Bettype, Stake, Actual_stake, Winlost)
@@ -164,14 +172,15 @@ BEGIN
 		BEGIN
 			--print ('Vegas games')
 			SELECT @SqlQueryFor3rd = ''
-			SELECT @SqlQueryFor3rd = 'SELECT Currency, 1900 AS Bettype, Stake, Actual_stake, Winlost
-				FROM OPENQUERY(DBLIC, ''SELECT Currency, SUM(ABS(StakeAmount)) AS Stake, SUM(ABS(StakeAmount)) AS Actual_stake, SUM(ABS(WinAmount)) AS Winlost
+			SELECT @SqlQueryFor3rd = 'SELECT WinlostDate, Currency, 1900 AS Bettype, Stake, Actual_stake, Winlost
+				FROM OPENQUERY(DBLIC, ''SELECT WinlostDate, b.Currency, SUM(ABS(StakeAmount)) AS Stake, SUM(ABS(StakeAmount)) AS Actual_stake, SUM(ABS(WinAmount)) AS Winlost
 				FROM bodb_3rdProduct.dbo.BetTrans_VoidBridge b WITH (NOLOCK) 
+					INNER JOIN bodb_licensee.dbo.f_SelLicenseeCust(' + CAST(@LicenseeId AS VARCHAR) + ') f ON b.recommend = f.custid AND b.currency = f.currency 
 				WHERE 1 = 1'
-					+ ' AND WinlostDate BETWEEN ''''' + CONVERT(VARCHAR(10), @FromDate, 112) + ''''' AND ''''' + CONVERT(VARCHAR(10), @ToDate, 112) + ''''''
-					+ ' AND Currency = ' + CAST(@CurrencyId AS VARCHAR)
+					+ ' AND WinlostDate BETWEEN ''''' + CONVERT(VARCHAR(10), @WinlostDate, 112) + ''''' AND ''''' + CONVERT(VARCHAR(10), @WinlostDate, 112) + ''''''
+					+ ' AND b.Currency = ' + CAST(@CurrencyId AS VARCHAR)
 					+ ' AND Status IN (''''WIN'''',''''LOSE'''')'
-				+ ' GROUP BY Currency'
+				+ ' GROUP BY WinlostDate, b.Currency'
 				+ ''' )'
 			INSERT INTO #3rdData(CurrencyId, Bettype, Stake, Actual_stake, Winlost)
 			EXEC (@SqlQueryFor3rd)
@@ -184,9 +193,14 @@ BEGIN
 		END
 
 		--incase daily sum
-		INSERT @DataTmp(CurrencyId, Bettype)
-		SELECT CurrencyId, Bettype
-		FROM #3rdData GROUP BY CurrencyId, Bettype
+		INSERT @DataTmp(RowId, CurrencyId, Bettype)
+		SELECT ROW_NUMBER() OVER(ORDER BY CurrencyId) AS RowId, CurrencyId, Bettype
+		FROM (
+			SELECT CurrencyId, Bettype
+			FROM #3rdData 
+			WHERE WinlostDate = @WinlostDate 
+			GROUP BY CurrencyId, Bettype
+		)tmp
 
 		DECLARE @RowIdTmp INT, @CurrencyIdTmp TINYINT, @BettypeTmp SMALLINT
 		SELECT @RowIdTmp = 1
