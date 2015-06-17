@@ -26,6 +26,7 @@ Revisions:
  - 20150124@Winnie: Add base currency GBP 
 Param's Explanation:
 • @custid: agent ID
+
 */
 
 SET NOCOUNT ON
