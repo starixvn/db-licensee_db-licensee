@@ -1,7 +1,10 @@
-﻿ USE CustDB
- GO
+﻿
+SET QUOTED_IDENTIFIER ON 
+GO
+SET ANSI_NULLS ON 
+GO
 
- ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberBAStatus]
+ CREATE PROCEDURE [dbo].[Lrf_CustomerUpdMemberBAStatus]
 	@LicenseeID INT,
 	@CustID INT,
 	@ModifyBy INT,
@@ -50,6 +53,7 @@ Revisions:
 	- 20140425@Francis: add HR Fixed Odds
 	- 20150121@Jim: return more @OddsGroup param
 	- 20150306@Patrick: Copy BA member to Dep_ActiveBAMember table [Redmine: #31720]
+	- 20150513@Jim: set SB comm of BA member when BA status changing
 	
 Param's Explanation:
 
@@ -370,8 +374,12 @@ IF @isBA = 1 --enable BA
 
 			, @ErrCode = @ErrCode OUTPUT
 			, @ErrMsg = @ErrMsg OUTPUT
-
-
+		--- set SB comm of BAmember is zero
+		EXEC DBLIC.bodb_licensee.dbo.Lrf_LicenseeBACustUpdComm
+			@LicenseeID = @LicenseeID ,
+			@CustID     = @CustID ,
+			@IsBA		= 1
+		
 END
 ELSE --disable BA
 	BEGIN
@@ -678,9 +686,17 @@ ELSE --disable BA
 
 						, @ErrCode = @ErrCode OUTPUT
 						, @ErrMsg = @ErrMsg OUTPUT
+						
+					--- get back SB comm of BAmember 
+					EXEC DBLIC.bodb_licensee.dbo.Lrf_LicenseeBACustUpdComm
+						@LicenseeID = @LicenseeID ,
+						@CustID     = @CustID ,
+						@IsBA		= 0
+			
 				END
 		END
 	END
+
 GO
 
 SET QUOTED_IDENTIFIER OFF 

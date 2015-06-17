@@ -1,14 +1,16 @@
 USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_BetList_WinlostByLeague_Mem]    Script Date: 02/21/2014 00:19:34 ******/
+/****** Object:  StoredProcedure [dbo].[Lrf_BetList_WinlostByLeague_Mem]    Script Date: 4/20/2015 12:14:52 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
+/****** Object:  Stored Procedure dbo.Lrf_BetList_WinlostByLeague_Mem    Script Date: 1/30/2015 5:50:11 PM ******/
+/****** Object:  Stored Procedure dbo.Lrf_BetList_WinlostByLeague_Mem    Script Date: 1/30/2015 4:56:53 PM ******/
 /****** Object:  Stored Procedure dbo.Lrf_BetList_WinlostByLeague_Mem    Script Date: 2/18/2014 10:35:57 PM ******/
 /****** Object:  Stored Procedure dbo.Lrf_BetList_WinlostByLeague_Mem    Script Date: 19/02/2014 11:25:01 AM ******/
 
-ALTER PROCEDURE [dbo].[Lrf_BetList_WinlostByLeague_Mem] 
+ALTER PROCEDURE [dbo].[Lrf_BetList_WinlostByLeague_Mem_xtest] 
 	@CustID INT
 	,@Odds FLOAT = 0
 	,@LeagueID INT
@@ -39,7 +41,8 @@ Revisions:
 	- 20140214@Florent: add filter by match
     - 20140630@Hannah: offer BetRadar and Sporting Solution
 	- 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
-	- 20150128@Winnie: Add base currency GBP 
+	- 20150128@Winnie: Add base currency GBP
+	- 20150408@Winnie: Apply spottype bettype matrix & add 60 bettypes betradar
 Param's Explanation: 
 	- @CustID : Customer Number
 	- @Odds : decimals odds, default >=0
@@ -75,6 +78,10 @@ WHERE (
 ------
 DECLARE @TempFromDate SMALLDATETIME
 DECLARE @TempToDate SMALLDATETIME
+----Get Sport Bettype Matrix------
+DECLARE @SportBettype TABLE(ProductID INT,Bettype INT,EventType INT)
+INSERT INTO @SportBettype
+EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel_xtest @mode=4 ,@ProductID=1
 -------
 DECLARE @TempAg AS TABLE (custid INT)
 
@@ -127,6 +134,7 @@ CREATE TABLE #Data (
 	,currency SMALLINT
 	,RefNO BIGINT
 	,showtime NVARCHAR(50) -- table - shoe - hand of Live Casino
+	,betcheck NVARCHAR(50)
 	)
 
 --
@@ -231,15 +239,17 @@ BEGIN
 				,b.currency
 				,b.refno
 				,'' AS ShowTime
+				,b.betcheck
 			FROM bettrans b WITH (NOLOCK)
 			INNER JOIN match m WITH (NOLOCK) ON b.matchid = m.matchid
 			INNER JOIN @TempAg ta ON b.recommend = ta.custid
+			INNER JOIN @SportBettype sbt ON sbt.Bettype=b.bettype
 			WHERE m.leagueid = @LeagueID
 				AND ((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID))
-				AND (
-					b.bettype < 31
-					OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)
-					)
+				--AND (
+				--	b.bettype < 31
+				--	OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)
+				--	)
 				AND b.statusID IN (
 					SELECT *
 					FROM @status
@@ -324,15 +334,17 @@ BEGIN
 				,b.currency
 				,b.refno
 				,'' AS ShowTime
+				,b.betcheck
 			FROM bettrans b WITH (NOLOCK)
 			INNER JOIN match m WITH (NOLOCK) ON b.matchid = m.matchid
 			INNER JOIN @TempAg ta ON b.recommend = ta.custid
+			INNER JOIN @SportBettype sbt ON sbt.Bettype=b.bettype
 			WHERE m.leagueid = @LeagueID
 				and ((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID))
-				AND (
-					b.bettype < 31
-					OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)
-					)
+				--AND (
+				--	b.bettype < 31
+				--	OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)
+				--	)
 				AND b.statusID IN (
 					SELECT *
 					FROM @status
@@ -427,15 +439,17 @@ BEGIN
 						THEN ISNULL(m.showtime, '')
 					ELSE ''
 					END AS ShowTime
+				,b.betcheck
 			FROM bettrans14 b WITH (NOLOCK)
 			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid = m.matchid
 			INNER JOIN @TempAg ta ON b.recommend = ta.custid
+			INNER JOIN @SportBettype sbt ON sbt.Bettype=b.bettype
 			WHERE m.leagueid = @leagueID
 				and ((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID))
-				AND (
-					b.bettype < 31
-					OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)
-					)
+				--AND (
+				--	b.bettype < 31
+				--	OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)
+				--	)
 				AND b.statusID IN (
 					SELECT *
 					FROM @status
@@ -524,15 +538,17 @@ BEGIN
 						THEN ISNULL(m.showtime, '')
 					ELSE ''
 					END AS ShowTime
+				,b.betcheck
 			FROM bettrans14 b WITH (NOLOCK)
 			INNER JOIN match14 m WITH (NOLOCK) ON b.matchid = m.matchid
 			INNER JOIN @TempAg ta ON b.recommend = ta.custid
+			INNER JOIN @SportBettype sbt ON sbt.Bettype=b.bettype
 			WHERE m.leagueid = @leagueID
 				and ((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID))
-				AND (
-					b.bettype < 31
-					OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)
-					)
+				--AND (
+				--	b.bettype < 31
+				--	OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)
+				--	)
 				AND b.statusID IN (
 					SELECT *
 					FROM @status
@@ -624,6 +640,7 @@ BEGIN
 						b.currency,
 						b.refno,
 						m.ShowTime AS ShowTime 
+						,b.betcheck
 						FROM 
 						bodb_archive.dbo.bettrans_bk  b WITH (NOLOCK, INDEX=IX_CUSTID) 
 						INNER JOIN cte_match m ON b.matchid=m.matchid
@@ -708,6 +725,7 @@ BEGIN
 						b.currency,
 						b.refno,
 						m.ShowTime AS ShowTime 
+						,b.betcheck
 						FROM 
 						bodb_archive.dbo.bettrans_bk  b WITH (NOLOCK, INDEX=IX_CUSTID) 
 						INNER JOIN cte_match m ON b.matchid=m.matchid
@@ -780,7 +798,7 @@ FROM (
 		,b.*
 		,SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1, len(c.username2) - CHARINDEX('$', c.username2)) AS nickname
 		,
-		--USD
+		--USD 
 		stake * e.USD stakeUSD
 		,Winlost * e.USD WinlostUSD
 		,LicenseeWL * e.USD LicenseeWLUSD
@@ -818,16 +836,3 @@ DROP TABLE #Currency
 --WHERE b.odds>@odds
 DROP TABLE #TempExchange
 DROP TABLE #Data
-
-GO
-SET QUOTED_IDENTIFIER OFF 
-GO
-SET ANSI_NULLS ON 
-GO
-
-
-GO 
- GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_WinlostByLeague_Mem] TO [vnteam]
-GO 
- GRANT EXECUTE ON [dbo].[Lrf_BetList_WinlostByLeague_Mem] TO [bodbLicenseeNet]
-GO 

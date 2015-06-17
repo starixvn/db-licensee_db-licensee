@@ -42,6 +42,7 @@ Revisions:
 	- 20141017@Jim : Apply for the change in Sporting Solution structure (#24478)
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	- 20150123@Jim: support base on Currency GBP
+	- 20150415@Jim: change to use f_GroupBettype instead of LRF_view_bettype_SS
 Param's Explanation: 
 */
 SET NOCOUNT ON
@@ -668,7 +669,7 @@ FROM #AgWinLoss
 
 SELECT wl.*
 FROM (
-	SELECT CASE WHEN ISNULL(ss.bettypeID,0) <> 0 THEN ss.typeid
+	SELECT CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.grouptypeId
 				ELSE b.bettype 
 				END bettype
 		, liveindicator
@@ -709,13 +710,13 @@ FROM (
 		, CAST(SUM(AmtDuetoRBUSD) AS MONEY) AS AmtDuetoRBUSD
 		, CAST(SUM(AmtDuetoRBGBP) AS MONEY) AS AmtDuetoRBGBP
 		, ROW_NUMBER() OVER (
-			ORDER BY CASE WHEN ISNULL(ss.bettypeID,0) <> 0 THEN ss.typeid
+			ORDER BY CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.grouptypeId
 				ELSE b.bettype 
 				END
 			) AS RowNum
 	FROM #AgWinLoss b
-		LEFT JOIN dbo.LRF_view_bettype_SS ss ON b.bettype = ss.bettypeID 	
-	GROUP BY CASE WHEN ISNULL(ss.bettypeID,0) <> 0 THEN ss.typeid
+		LEFT JOIN dbo.f_GroupBettype() ss ON b.bettype = ss.bettype 	
+	GROUP BY CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.grouptypeId
 				ELSE b.bettype 
 				END
 			, liveindicator

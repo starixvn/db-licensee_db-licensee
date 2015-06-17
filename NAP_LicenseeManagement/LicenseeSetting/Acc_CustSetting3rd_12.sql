@@ -29,12 +29,12 @@ BEGIN
 	DECLARE @string VARCHAR(MAX), @splitter CHAR(1), @xml XML
 	SELECT @splitter = ',', @string = @ids
 
-	SET @xml = N'<root><r>' + REPLACE(@string, @splitter, '</r><r>') + '</r></root>'
+	SET @xml = N'<root><r i=''' + REPLACE(@string, @splitter, '''/><r i=''') + '''/></root>'
 
 	--Create temp table containing all accounts belong to super, exclude fincance account
-	CREATE TABLE #tblCust (custid INT)
+	CREATE TABLE #tblCust (custid INT)	
 	INSERT INTO #tblCust(custid)
-	SELECT r.value('.','VARCHAR(12)')
+	SELECT r.value('./@i','INT')
 	FROM @xml.nodes('//root/r') AS RECORDS(r)
 
 	IF @Sporttype = 1 --Sportbook
@@ -48,7 +48,7 @@ BEGIN
 		WHERE c.custid IN (SELECT custid FROM #tblCust)
 	END
 
-	IF @Sporttype = 161 --NumberGame
+	ELSE IF @Sporttype = 161 --NumberGame
 	BEGIN		
 		UPDATE cs WITH(UPDLOCK,ROWLOCK)
 		SET    cs.spositiontaking = case when roleid = 4 then @ptVALUE else 0 end 
@@ -60,7 +60,7 @@ BEGIN
 			AND c.custid IN (SELECT custid FROM #tblCust)
 	END 
 
-	IF @Sporttype = 180 --Virtual sport
+	ELSE IF @Sporttype = 180 --Virtual sport
 	BEGIN		
 		UPDATE cs WITH(UPDLOCK,ROWLOCK)
 		SET    cs.spositiontaking = case when roleid = 4 then @ptVALUE else 0 end 
@@ -72,7 +72,7 @@ BEGIN
 			AND c.custid IN (SELECT custid FROM #tblCust)
 	END 
 
-	IF @Sporttype = 202 OR @Sporttype = 162 --Keno, Live Casino
+	ELSE IF @Sporttype = 202 OR @Sporttype = 162 --Keno, Live Casino
 	BEGIN
 		UPDATE cs WITH(UPDLOCK,ROWLOCK)
 		SET	   cs.spositiontaking = case when roleid = 4 then @ptVALUE else 0 end 

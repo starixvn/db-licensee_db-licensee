@@ -1,4 +1,11 @@
-ALTER PROCEDURE	dbo.Lrf_AGC_Customer_SetDefaultSetting
+USE [CustDB]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_AGC_Customer_SetDefaultSetting]    Script Date: 06/06/2015 14:22:39 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE	[dbo].[Lrf_AGC_Customer_SetDefaultSetting]
 	@CustID		INT,
 	@SuperID	INT,
 	@Language	VARCHAR(10)		= 'en-US',
@@ -8,9 +15,12 @@ AS
 /*
 	Created: 20140818@Victor
 	Task: Set default setting of AG Casino product for new member
-	DB: DBLIC/bodb_licensee
+	DB: DBCust.CustDB
+	
 	Original:
 	Revisions:
+		- 20150606@Kathy: Move SP to DBCust.custDB [Redmine:#36216]
+
 	Param's Explanation:
 */
 BEGIN
@@ -28,7 +38,7 @@ BEGIN
 
 	SELECT @AGGroup = ISNULL(DefaultGroup,'')
 		,@SIsEnabled = ISNULL(IsEnabled,0)
-	FROM DBTXN.CustDB.dbo.Dep_SuperSetting_AGCasino WITH (NOLOCK) 
+	FROM dbo.Dep_SuperSetting_AGCasino WITH (NOLOCK) 
 	WHERE CustID = @SuperID
 
 	DECLARE @CustIDs VARCHAR(20)
@@ -37,8 +47,8 @@ BEGIN
 	IF (LEN(@AGGroup) = 0)
 		RETURN
 
-	EXEC DBTXN.CustDB.dbo.Dep_UpdCustSetting_AGC @CustIDs = @CustIDs, @AGGroup = @AGGroup
-	EXEC DBTXN.CustDB.dbo.Dep_UpdCustStatus_AGC @CustIDs = @CustIDs, @IsEnabled = @SIsEnabled
+		EXEC dbo.Dep_UpdCustSetting_AGC @CustIDs = @CustIDs, @AGGroup = @AGGroup
+		EXEC dbo.Dep_UpdCustStatus_AGC @CustIDs = @CustIDs, @IsEnabled = @SIsEnabled
 
 	-- Write log
 	SET @endRun = GETDATE()
@@ -75,7 +85,6 @@ BEGIN
 	
 END
 
-GO
 
-GRANT EXECUTE ON dbo.Lrf_AGC_Customer_SetDefaultSetting TO Dot_Member
 GO
+GRANT EXECUTE ON [dbo].[Lrf_AGC_Customer_SetDefaultSetting] TO [Dot_Member] AS [dbo]
