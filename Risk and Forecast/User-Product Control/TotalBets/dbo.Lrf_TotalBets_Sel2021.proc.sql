@@ -1,12 +1,11 @@
 ﻿USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_TotalBets_Sel2021]    Script Date: 02/20/2014 18:31:06 ******/
+
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-/****** Object:  Stored Procedure dbo.Lrf_TotalBets_Sel2021    Script Date: 6/26/2013 10:58:31 PM ******/
-/****** Object:  Stored Procedure dbo.Lrf_TotalBets_Sel2021    Script Date: 5/31/2013 2:41:29 PM ******/
+
 ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel2021]
 	@LicenseeID INT,
 	@CurrencyID INT=0,
@@ -30,6 +29,7 @@ Revisions:
 	- 20140718@Hannah: Change liveindicator datatype to INT to fix running live matches are not being showed at the top list (RedmineID:19136)
 	- 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
 	- 20150124@Winnie: Add base currency GBP 
+	- 20150617@Jim:  Enhance Total Bets with sum values of running stakes  (Feature #36839)
 */
 SET NOCOUNT ON
 
@@ -202,6 +202,48 @@ SELECT c.* FROM
 		*
 	FROM @Data
 ) c WHERE c.RowNum between @RowStart AND @RowEnd
+SELECT 
+		sum(home_odds) AS home_odds,
+		sum(home_oddsUSD) AS home_oddsUSD,
+		sum(home_oddsEUR) AS home_oddsEUR,
+		sum(home_oddsGBP) AS home_oddsGBP,
+
+		sum(away_odds) AS away_odds,
+		sum(away_oddsUSD) AS away_oddsUSD,
+		sum(away_oddsEUR) AS away_oddsEUR,
+		sum(away_oddsGBP) AS away_oddsGBP,
+
+		sum(WinLost_home ) AS WinLost_home,
+		sum(WinLost_homeUSD ) AS WinLost_homeUSD,
+		sum(WinLost_homeEUR ) AS WinLost_homeEUR,
+		sum(WinLost_homeGBP ) AS WinLost_homeGBP,
+		
+		sum(WinLost_away) AS WinLost_away,
+		sum(WinLost_awayUSD) AS WinLost_awayUSD,
+		sum(WinLost_awayEUR) AS WinLost_awayEUR,
+		sum(WinLost_awayGBP) AS WinLost_awayGBP,
+
+		sum(home_odds_HT) AS home_odds_HT,
+		sum(home_odds_HTUSD) AS home_odds_HTUSD,
+		sum(home_odds_HTEUR) AS home_odds_HTEUR,
+		sum(home_odds_HTGBP) AS home_odds_HTGBP,
+
+		sum(away_odds_HT) AS away_odds_HT,
+		sum(away_odds_HTUSD) AS away_odds_HTUSD,
+		sum(away_odds_HTEUR) AS away_odds_HTEUR,
+		sum(away_odds_HTGBP) AS away_odds_HTGBP,
+
+
+		sum(WinLost_home_HT) AS WinLost_home_HT,
+		sum(WinLost_home_HTUSD) AS WinLost_home_HTUSD,	
+		sum(WinLost_home_HTEUR) AS WinLost_home_HTEUR,
+		sum(WinLost_home_HTGBP) AS WinLost_home_HTGBP,		
+		sum(WinLost_away_HT) AS WinLost_away_HT,
+		sum(WinLost_away_HTUSD) AS WinLost_away_HTUSD,
+		sum(WinLost_away_HTEUR) AS WinLost_away_HTEUR,
+		sum(WinLost_away_HTGBP) AS WinLost_away_HTGBP
+FROM @Data
+
 DROP TABLE #currency
 GO
 GRANT EXECUTE ON [dbo].[Lrf_TotalBets_Sel2021] TO [bodbLicenseeNet]

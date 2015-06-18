@@ -261,6 +261,68 @@ SELECT c.* FROM
 		*
 	FROM @Data
 ) c WHERE c.RowNum BETWEEN @RowStart AND @RowEnd
+
+SELECT 
+	SUM(home_odds_OE) home_odds_OE,
+	SUM(home_odds_OEUSD) home_odds_OEUSD,
+	SUM(home_odds_OEEUR) home_odds_OEEUR,
+	SUM(home_odds_OEGBP) home_odds_OEGBP,
+
+	SUM(away_odds_OE) away_odds_OE,
+	SUM(away_odds_OEUSD) away_odds_OEUSD,
+	SUM(away_odds_OEEUR) away_odds_OEEUR,
+	SUM(away_odds_OEGBP) away_odds_OEGBP,
+
+	SUM(home_odds_OE_1st) home_odds_OE_1st,
+	SUM(home_odds_OE_1stUSD) home_odds_OE_1stUSD,
+	SUM(home_odds_OE_1stEUR) home_odds_OE_1stEUR,
+	SUM(home_odds_OE_1stGBP) home_odds_OE_1stGBP,
+
+	SUM(away_odds_OE_1st) away_odds_OE_1st,
+	away_odds_OE_1stUSD MONEY,
+	away_odds_OE_1stEUR MONEY,
+	away_odds_OE_1stGBP MONEY,
+
+	odds_1 MONEY,
+	odds_1USD MONEY,
+	odds_1EUR MONEY,
+	odds_1GBP MONEY,
+
+	odds_x MONEY,
+	odds_xUSD MONEY,
+	odds_xEUR MONEY,
+	odds_xGBP MONEY,
+
+	odds_2 MONEY,
+	odds_2USD MONEY,
+	odds_2EUR MONEY,
+	odds_2GBP MONEY,
+
+	odds_1_1st MONEY,
+	odds_1_1stUSD MONEY,
+	odds_1_1stEUR MONEY,
+	odds_1_1stGBP MONEY,
+
+	odds_x_1st MONEY,
+	odds_x_1stUSD MONEY,
+	odds_x_1stEUR MONEY,
+	odds_x_1stGBP MONEY,
+
+	odds_2_1st MONEY,
+	odds_2_1stUSD MONEY,
+	odds_2_1stEUR MONEY,
+	odds_2_1stGBP MONEY,
+
+	home_odds_DND MONEY,
+	home_odds_DNDUSD MONEY,
+	home_odds_DNDEUR MONEY,
+	home_odds_DNDGBP MONEY,
+	
+	away_odds_DND MONEY,
+	away_odds_DNDUSD MONEY,
+	away_odds_DNDEUR MONEY,
+	away_odds_DNDGBP MONEY,
+FROM @Data
 DROP TABLE #currency
 
 GO

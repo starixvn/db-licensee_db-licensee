@@ -24,6 +24,7 @@ Revisions:
  - 20130718@Hannah: Group each match for Bodog (#19163)
  - 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
  - 20150124@Winnie: Add base currency GBP 
+ - 20150617@Jim:  Enhance Total Bets with sum values of running stakes  (Feature #36839)
 Param's Explanation:
 • @custid: agent ID
 
