@@ -53,6 +53,7 @@ Revision:
 	- 20141203@Jim : fix issue cannot query data when pass a User belong to CNY Currency (hot fix #27017)
 	- 20141204@Jim : hot fix #27063
 	- 20150415@Jim: support betradar phase 2
+	- 20150528@Jim: add more bettype Betradar and Sporting solution (for support multiple oddstype)
 	- 20150603@Bobby: Revise code & improve performance
 	
 Parameter's Explanation:
