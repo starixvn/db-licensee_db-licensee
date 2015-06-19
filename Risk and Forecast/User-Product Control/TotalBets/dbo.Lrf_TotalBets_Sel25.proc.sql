@@ -1,11 +1,10 @@
 ﻿USE [bodb02]
 GO
-
+/****** Object:  StoredProcedure [dbo].[Lrf_TotalBets_Sel25_xtest]    Script Date: 06/19/2015 17:12:04 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
- 
 
 ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel25] 
 	@LicenseeID INT,
@@ -369,6 +368,7 @@ SELECT
 	SUM(away_odds_DNDGBP) away_odds_DNDGBP
 FROM @Data
 DROP TABLE #currency
+
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_TotalBets_Sel25] TO [bodbLicenseeNet]
