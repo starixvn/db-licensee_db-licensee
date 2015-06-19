@@ -308,9 +308,6 @@ BEGIN
 			WHEN bettype BETWEEN 1101 AND 1199 THEN 162 -- Live Casino
 			WHEN bettype BETWEEN 1201 AND 1299 THEN 180 -- Virtual Sport
 			WHEN bettype BETWEEN 1501 AND 1599 THEN 202 -- Keno
-			WHEN bettype BETWEEN 1800 AND 1899 THEN 250 -- AGC
-			WHEN bettype BETWEEN 1700 AND 1799 THEN 255 -- GD
-			WHEN bettype BETWEEN 1900 AND 1999 THEN 249 -- VG
 		ELSE 0 END, -- sporttype
 		--b.currency,
 		CASE 
@@ -329,7 +326,7 @@ BEGIN
 		inner join ( SELECT DISTINCT custid FROM #data ) d on b.custid = d.custid
 	WHERE winlostdate >= @date
 		and matchid > 0
-		and bettype < 19999	
+		and bettype < 19999
 	GROUP BY b.custid,
 		CASE
 			WHEN bettype IN (31,32,33,41,42,43) THEN 151 -- Horse Racing
@@ -339,9 +336,6 @@ BEGIN
 			WHEN bettype BETWEEN 1101 AND 1199 THEN 162 -- Live Casino
 			WHEN bettype BETWEEN 1201 AND 1299  THEN 180 --Virtual Sport
 			WHEN bettype BETWEEN 1501 AND 1599 THEN 202 -- Keno
-			WHEN bettype BETWEEN 1800 AND 1899 THEN 250 -- AGC
-			WHEN bettype BETWEEN 1700 AND 1799 THEN 255 -- GD
-			WHEN bettype BETWEEN 1900 AND 1999 THEN 249 -- VG
 		ELSE 0 END,
 		CASE 
 			WHEN b.recommend = 14373731 AND @date < '20141128' THEN 13
@@ -365,6 +359,36 @@ BEGIN
 		AND matchid = 0
 		AND bettype IN (71, 72, 23002)
 	GROUP BY b.custid, b.currency
+
+	--process for 3rd products
+	INSERT INTO #DataByProduct(custid, sporttype, currency, turnover, drawTO, winlost, playercomm, betcount, outstanding)
+	SELECT  
+		b.custid, 
+		CASE				
+			WHEN bettype BETWEEN 1800 AND 1899 THEN 250 -- AGC
+			WHEN bettype BETWEEN 1700 AND 1799 THEN 255 -- GD
+			WHEN bettype BETWEEN 1900 AND 1999 THEN 249 -- VG
+		ELSE -1 END, -- sporttype
+		b.currency,
+		SUM(CASE WHEN winlostdate = @date AND [status] not in ('VOID', 'REJECT', 'Refund') then stake ELSE 0 END),--Turnover  
+		SUM(case when winlostdate = @date AND [status] = 'DRAW' then stake else 0 end), -- Draw game TO			
+		SUM(CASE WHEN winlostdate = @date AND ruben=1 then b.winlost-b.actual_stake ELSE 0 END), --Winloss      
+		SUM(CASE WHEN winlostdate = @date AND ruben=1 then b.playercomm ELSE 0 END), --Playercomm      
+		SUM(CASE WHEN winlostdate = @date AND [status] not in ('VOID', 'REJECT', 'Refund') then 1 ELSE 0 END), --betcount
+		SUM(CASE WHEN @date = @today THEN CASE WHEN ruben=0 then actual_stake ELSE 0 END
+			ELSE CASE WHEN winlostdate = @date AND ruben=0 then actual_stake ELSE 0 END END)	--Outstanding 
+	FROM bettrans b with(rowlock)   
+		inner join ( SELECT DISTINCT custid FROM #data ) d on b.custid = d.custid
+	WHERE winlostdate >= @date
+		and matchid = 0
+		and bettype BETWEEN 1700 AND 1999
+	GROUP BY b.custid,
+		CASE
+			WHEN bettype BETWEEN 1800 AND 1899 THEN 250 -- AGC
+			WHEN bettype BETWEEN 1700 AND 1799 THEN 255 -- GD
+			WHEN bettype BETWEEN 1900 AND 1999 THEN 249 -- VG
+		ELSE -1 END,
+		b.currency 
 
 	--Keno product's turnover, betcount, Outstanding
 	TRUNCATE TABLE #tempDepWinlostByProduct

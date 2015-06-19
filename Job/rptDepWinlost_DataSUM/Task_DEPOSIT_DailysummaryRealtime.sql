@@ -217,6 +217,36 @@ WHERE custid in (select custid from @TempCustID)
 	and bettype IN (71,72,23002)
 GROUP BY b.custid, b.currency
 
+--processing data for 3rd products
+INSERT INTO dbo.rptDepWinlostByProduct_staging(custid, sporttype, currency, turnover, drawTO, winlost, playercomm, betcount, outstanding)
+SELECT  
+	b.custid, 
+	CASE				
+		WHEN bettype BETWEEN 1800 AND 1899 THEN 250 -- AGC
+		WHEN bettype BETWEEN 1700 AND 1799 THEN 255 -- GD
+		WHEN bettype BETWEEN 1900 AND 1999 THEN 249 -- VG
+	ELSE -1 END, -- sporttype
+	b.currency,
+	SUM(CASE WHEN winlostdate = @date AND [status] not in ('VOID', 'REJECT', 'Refund') then stake ELSE 0 END),--Turnover  
+	SUM(case when winlostdate = @date AND [status] = 'DRAW' then stake else 0 end), -- Draw game TO			
+	SUM(CASE WHEN winlostdate = @date AND ruben=1 then b.winlost-b.actual_stake ELSE 0 END), --Winloss      
+	SUM(CASE WHEN winlostdate = @date AND ruben=1 then b.playercomm ELSE 0 END), --Playercomm      
+	SUM(CASE WHEN winlostdate = @date AND [status] not in ('VOID', 'REJECT', 'Refund') then 1 ELSE 0 END), --betcount
+	SUM(CASE WHEN @date = @today THEN CASE WHEN ruben=0 then actual_stake ELSE 0 END
+		ELSE CASE WHEN winlostdate = @date AND ruben=0 then actual_stake ELSE 0 END END)	--Outstanding 
+FROM dbo.bettransDEP b with(rowlock)   
+WHERE custid in (select custid from @TempCustID)
+	and winlostdate >= @date
+	and matchid = 0
+	and bettype BETWEEN 1700 AND 1999
+GROUP BY b.custid,
+	CASE
+		WHEN bettype BETWEEN 1800 AND 1899 THEN 250 -- AGC
+		WHEN bettype BETWEEN 1700 AND 1799 THEN 255 -- GD
+		WHEN bettype BETWEEN 1900 AND 1999 THEN 249 -- VG
+	ELSE -1 END,
+	b.currency
+
 --Keno product's turnover, betcount, Outstanding
 CREATE TABLE #tempDepWinlostByProduct_staging (winlostdate datetime, custid int, sporttype int, currency int, turnover money default(0), 
 					                           betcount int default(0), outstanding money default(0))
