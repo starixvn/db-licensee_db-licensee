@@ -17,6 +17,12 @@ AS
 */
 BEGIN
 	SET NOCOUNT ON
+	--@WinlostDate > CurrentDate
+	IF @WinlostDate > GETDATE()
+	BEGIN
+		--PRINT('Can''t process data.')
+		RETURN
+	END
 
 	CREATE TABLE #LicenseeProductTable (RowId INT IDENTITY(1,1), LicenseeId INT, LicenseeName VARCHAR(50), CurrencyId TINYINT, ProductId TINYINT)
 	CREATE TABLE #3rdData (Stake MONEY, Actual_Stake MONEY, Winlost MONEY, CurrencyId TINYINT, Bettype SMALLINT)
@@ -28,8 +34,8 @@ BEGIN
 		, @SqlQueryFor3rd VARCHAR(8000), @CustDummyId INT, @SqlQueryChargeRate VARCHAR(8000)
 		, @RefNo BIGINT, @SqlQuery VARCHAR(8000), @ExchangeRate FLOAT, @ProductIds VARCHAR(512)
 		, @LicenseeId INT, @BettypeIds VARCHAR(512), @PartyList VARCHAR(4000), @AdjustmentIndicator VARCHAR(125)
-		, @Yesterday DATE
-	SELECT @RowId = 1, @Yesterday = CAST(GETDATE() - 1 AS DATE), @AdjustmentIndicator = ' Adjustment - Date: '
+		--, @Yesterday DATE
+	SELECT @RowId = 1, @AdjustmentIndicator = ' Adjustment - Date: '
 
 	--get licensee list
 	SET @SqlQuery = ''
@@ -72,8 +78,19 @@ BEGIN
 	SET @SqlQueryChargeRate = ''
 	SELECT @SqlQueryChargeRate = 'SELECT PartyId, LicenseeId, ProductId, DI_Rate, Fromdate, Todate
 			FROM OPENQUERY(DBLIC, ''SELECT PartyId, LicenseeId, ProductId, DI_Rate, FromDate, ToDate
-			FROM bodb_licensee.dbo.LA_f_ChargeInfo(''''' + @PartyList + ''''', ''''' + CONVERT(VARCHAR(10), @Yesterday, 112) + '''''
-												 , ''''' + CONVERT(VARCHAR(10), @Yesterday, 112) + ''''', ''''AGC,GD,VG'''', ''''OA'''', 1)
+			FROM bodb_licensee.dbo.LA_f_ChargeInfo(''''' + @PartyList + ''''', ''''' + CONVERT(VARCHAR(10), @WinlostDate, 112) + '''''
+												 , ''''' + CONVERT(VARCHAR(10), @WinlostDate, 112) + ''''', ''''AGC,GD,VG'''', ''''OA'''', 1)
+			WHERE DI_Rate > 0'')'
+	
+	INSERT INTO #ChargeRate(PartyId, LicenseeId, ProductId, Rate, FromDate, ToDate)
+	EXEC (@SqlQueryChargeRate)
+
+	--get more charge rate for trial time
+	SET @SqlQueryChargeRate = ''
+	SELECT @SqlQueryChargeRate = 'SELECT PartyId, LicenseeId, ProductId, DI_Rate, Fromdate, Todate
+			FROM OPENQUERY(DBLIC, ''SELECT PartyId, LicenseeId, ProductId, DI_Rate, FromDate, ToDate
+			FROM bodb_licensee.dbo.LA_f_GetChargeInfoWithTrialTime(''''' + @PartyList + ''''', ''''' + CONVERT(VARCHAR(10), @WinlostDate, 112) + '''''
+												 , ''''' + CONVERT(VARCHAR(10), @WinlostDate, 112) + ''''', ''''AGC,GD,VG'''', ''''OA'''', 1)
 			WHERE DI_Rate > 0'')'
 	
 	INSERT INTO #ChargeRate(PartyId, LicenseeId, ProductId, Rate, FromDate, ToDate)
@@ -139,7 +156,7 @@ BEGIN
 				FROM bodb_PlaytechCS.dbo.bettrans_AGCasino b WITH (NOLOCK)
 					INNER JOIN bodb_licensee.dbo.f_SelLicenseeCust(' + CAST(@LicenseeId AS VARCHAR) + ') f ON b.recommend = f.custid AND b.currency = f.currency 
 				WHERE 1 = 1'
-					+ ' AND WinlostDate BETWEEN ''''' + CONVERT(VARCHAR(10), @WinlostDate, 112) + ''''' AND ''''' + CONVERT(VARCHAR(10), @WinlostDate, 112) + ''''''
+					+ ' AND WinlostDate BETWEEN ''''' + CONVERT(VARCHAR(10), @FromDate, 112) + ''''' AND ''''' + CONVERT(VARCHAR(10), @ToDate, 112) + ''''''
 					+ ' AND b.Currency = ' + CAST(@CurrencyId AS VARCHAR)
 					+ ' AND StatusId IN (112,113,111)'
 				+ ' GROUP BY WinlostDate, b.Currency'
@@ -158,7 +175,7 @@ BEGIN
 				FROM bodb_PlaytechCS.dbo.bettrans_GoldDeluxe b WITH (NOLOCK)
 					INNER JOIN bodb_licensee.dbo.f_SelLicenseeCust(' + CAST(@LicenseeId AS VARCHAR) + ') f ON b.recommend = f.custid AND b.currency = f.currency 
 				WHERE 1 = 1'
-					+ ' AND WinlostDate BETWEEN ''''' + CONVERT(VARCHAR(10), @WinlostDate, 112) + ''''' AND ''''' + CONVERT(VARCHAR(10), @WinlostDate, 112) + ''''''
+					+ ' AND WinlostDate BETWEEN ''''' + CONVERT(VARCHAR(10), @FromDate, 112) + ''''' AND ''''' + CONVERT(VARCHAR(10), @ToDate, 112) + ''''''
 					+ ' AND b.Currency = ' + CAST(@CurrencyId AS VARCHAR)
 					+ ' AND StatusId IN (112,113,111)'
 				+ ' GROUP BY WinlostDate, b.Currency'
@@ -177,7 +194,7 @@ BEGIN
 				FROM bodb_3rdProduct.dbo.BetTrans_VoidBridge b WITH (NOLOCK) 
 					INNER JOIN bodb_licensee.dbo.f_SelLicenseeCust(' + CAST(@LicenseeId AS VARCHAR) + ') f ON b.recommend = f.custid AND b.currency = f.currency 
 				WHERE 1 = 1'
-					+ ' AND WinlostDate BETWEEN ''''' + CONVERT(VARCHAR(10), @WinlostDate, 112) + ''''' AND ''''' + CONVERT(VARCHAR(10), @WinlostDate, 112) + ''''''
+					+ ' AND WinlostDate BETWEEN ''''' + CONVERT(VARCHAR(10), @FromDate, 112) + ''''' AND ''''' + CONVERT(VARCHAR(10), @ToDate, 112) + ''''''
 					+ ' AND b.Currency = ' + CAST(@CurrencyId AS VARCHAR)
 					+ ' AND Status IN (''''WIN'''',''''LOSE'''')'
 				+ ' GROUP BY WinlostDate, b.Currency'
@@ -270,7 +287,7 @@ BEGIN
 		--select * from @FinalData
 		--delete data when charge rate did not config & avoid error a while insert into @bettrans
 		DELETE @FinalData 
-		WHERE ISNULL(awinlost, 0) = 0
+		WHERE awinlost IS NULL
 			OR ISNULL(TransDesc, '') = ''
 			OR ISNULL(RefNo, 0) = 0
 

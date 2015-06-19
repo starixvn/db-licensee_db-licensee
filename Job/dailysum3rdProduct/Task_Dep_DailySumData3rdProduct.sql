@@ -14,6 +14,12 @@ AS
 */
 BEGIN
 	SET NOCOUNT ON
+	--@WinlostDate > CurrentDate
+	IF @WinlostDate > GETDATE()
+	BEGIN
+		--PRINT('Can''t process data.')
+		RETURN
+	END
 
 	CREATE TABLE #LicenseeProductTable (RowId INT IDENTITY(1,1), LicenseeId INT, LicenseeName VARCHAR(50), CurrencyId TINYINT, ProductId TINYINT)
 	CREATE TABLE #3rdData (WinlostDate SMALLDATETIME, Stake MONEY, Actual_Stake MONEY, Winlost MONEY, CurrencyId TINYINT, Bettype SMALLINT)
@@ -90,7 +96,18 @@ BEGIN
 	SELECT @SqlQueryChargeRate = 'SELECT PartyId, LicenseeId, ProductId, DI_Rate, Fromdate, Todate
 			FROM OPENQUERY(DBLIC, ''SELECT PartyId, LicenseeId, ProductId, DI_Rate, FromDate, ToDate
 			FROM bodb_licensee.dbo.LA_f_ChargeInfo(''''' + @PartyList + ''''', ''''' + CONVERT(VARCHAR(10), @WinlostDate, 112) + '''''
-												 , ''''' + CONVERT(VARCHAR(10), @WinlostDate, 112) + ''''', ''''AGC,GD,VG'''', ''''OA'''', 0)
+												 , ''''' + CONVERT(VARCHAR(10), @WinlostDate, 112) + ''''', ''''AGC,GD,VG'''', ''''OA'''', 1)
+			WHERE DI_Rate > 0'')'
+	
+	INSERT INTO #ChargeRate(PartyId, LicenseeId, ProductId, Rate, FromDate, ToDate)
+	EXEC (@SqlQueryChargeRate)
+
+	--get more charge rate for trial time
+	SET @SqlQueryChargeRate = ''
+	SELECT @SqlQueryChargeRate = 'SELECT PartyId, LicenseeId, ProductId, DI_Rate, Fromdate, Todate
+			FROM OPENQUERY(DBLIC, ''SELECT PartyId, LicenseeId, ProductId, DI_Rate, FromDate, ToDate
+			FROM bodb_licensee.dbo.LA_f_GetChargeInfoWithTrialTime(''''' + @PartyList + ''''', ''''' + CONVERT(VARCHAR(10), @WinlostDate, 112) + '''''
+												 , ''''' + CONVERT(VARCHAR(10), @WinlostDate, 112) + ''''', ''''AGC,GD,VG'''', ''''OA'''', 1)
 			WHERE DI_Rate > 0'')'
 	
 	INSERT INTO #ChargeRate(PartyId, LicenseeId, ProductId, Rate, FromDate, ToDate)
@@ -288,7 +305,7 @@ BEGIN
 		--select * from @FinalData
 		--delete data when charge rate did not config & avoid error a while insert into @bettrans
 		DELETE @FinalData 
-		WHERE ISNULL(awinlost, 0) = 0
+		WHERE awinlost IS NULL
 			OR ISNULL(TransDesc, '') = ''
 			OR ISNULL(RefNo, 0) = 0
 

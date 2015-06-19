@@ -212,9 +212,9 @@ WHERE custid in (select custid from @TempCustID)
 GROUP BY b.custid, b.currency
 
 --processing data for 3rd products
-INSERT INTO dbo.rptDepWinlostByProduct_staging(custid, sporttype, currency, turnover, drawTO, winlost, playercomm, betcount, outstanding)
+INSERT INTO dbo.rptDepWinlostByProduct_staging(winlostdate, custid, sporttype, currency, turnover, drawTO, winlost, playercomm, betcount, outstanding)
 SELECT  
-	b.custid, 
+	@date, b.custid, 
 	CASE				
 		WHEN bettype BETWEEN 1800 AND 1899 THEN 250 -- AGC
 		WHEN bettype BETWEEN 1700 AND 1799 THEN 255 -- GD
