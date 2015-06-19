@@ -781,7 +781,7 @@ BEGIN
 	END
  
 	--exclude BA tickets
-	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1)
+	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGC=1)
 	BEGIN
 		INSERT INTO #SAgWinLoss  
 		SELECT 
@@ -938,7 +938,7 @@ WHERE exchangeid IN (SELECT DISTINCT Currency FROM #SAgWinLoss)
 	   SUM(LicenseeWLCS) AS LicenseeWLCS,
 	   SUM(LicenseeWLBG) AS LicenseeWLBG,
 	   SUM(LicenseeWLKN) AS LicenseeWLKN,
-	   SUM(LicenseeWLKN) AS LicenseeWLMGC, 
+	   SUM(LicenseeWLMGC) AS LicenseeWLMGC, 
 	   --SUM(WinlossRB)	AS WinlossRB,
 	   SUM(CommBA) AS CommBA,
 	   SUM(CommRB) AS CommRB,
