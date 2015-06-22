@@ -53,7 +53,7 @@ BEGIN
 
 	IF NOT EXISTS (SELECT 1 FROM #LicenseeProductTable)
 	BEGIN
-		PRINT('licensee cust does not exist')
+		--PRINT('licensee cust does not exist')
 		DROP TABLE #LicenseeProductTable
 		DROP TABLE #3rdData
 		DROP TABLE #ChargeRate
@@ -84,7 +84,7 @@ BEGIN
 	
 	INSERT INTO #ChargeRate(PartyId, LicenseeId, ProductId, Rate, FromDate, ToDate)
 	EXEC (@SqlQueryChargeRate)
-
+	
 	--get more charge rate for trial time
 	SET @SqlQueryChargeRate = ''
 	SELECT @SqlQueryChargeRate = 'SELECT PartyId, LicenseeId, ProductId, DI_Rate, Fromdate, Todate
@@ -98,7 +98,7 @@ BEGIN
 
 	IF NOT EXISTS (SELECT TOP 1 1 FROM #ChargeRate)
 	BEGIN
-		PRINT('Charge rate does not exist')
+		--PRINT('Charge rate does not exist')
 		DROP TABLE #LicenseeProductTable
 		DROP TABLE #3rdData
 		DROP TABLE #ChargeRate
@@ -146,13 +146,13 @@ BEGIN
 		BEGIN
 			SET @BettypeIds = @BettypeIds + ',1900'
 		END	
-
+		
 		IF CHARINDEX('10', @ProductIds, 0) > 0 --AG Casino
 		BEGIN
 			--print ('AG Casino')
 			SELECT @SqlQueryFor3rd = ''
-			SELECT @SqlQueryFor3rd = 'SELECT WinlostDate, Currency, 1800 AS Bettype, Stake, Actual_stake, Winlost
-				FROM OPENQUERY(DBLIC, ''SELECT WinlostDate, b.Currency, SUM(ABS(Stake)) AS Stake, SUM(ABS(Actual_stake)) AS Actual_stake, SUM(ABS(Winlost)) AS Winlost
+			SELECT @SqlQueryFor3rd = 'SELECT Currency, 1800 AS Bettype, Stake, Actual_stake, Winlost
+				FROM OPENQUERY(DBLIC, ''SELECT b.Currency, SUM(ABS(Stake)) AS Stake, SUM(ABS(Actual_stake)) AS Actual_stake, SUM(ABS(Winlost)) AS Winlost
 				FROM bodb_PlaytechCS.dbo.bettrans_AGCasino b WITH (NOLOCK)
 					INNER JOIN bodb_licensee.dbo.f_SelLicenseeCust(' + CAST(@LicenseeId AS VARCHAR) + ') f ON b.recommend = f.custid AND b.currency = f.currency 
 				WHERE 1 = 1'
@@ -165,13 +165,13 @@ BEGIN
 			INSERT INTO #3rdData(CurrencyId, Bettype, Stake, Actual_stake, Winlost)
 			EXEC (@SqlQueryFor3rd)
 		END
-		
+		--select 1
 		IF CHARINDEX('11', @ProductIds, 0) > 0 --Gold Deluxe
 		BEGIN
 			--print ('Gold Deluxe')
 			SELECT @SqlQueryFor3rd = ''
-			SELECT @SqlQueryFor3rd = 'SELECT WinlostDate, Currency, 1700 AS Bettype, Stake, Actual_stake, Winlost
-				FROM OPENQUERY(DBLIC, ''SELECT WinlostDate, b.Currency, SUM(ABS(Stake)) AS Stake, SUM(ABS(Stake)) AS Actual_stake, SUM(ABS(Winlost)) AS Winlost
+			SELECT @SqlQueryFor3rd = 'SELECT Currency, 1700 AS Bettype, Stake, Actual_stake, Winlost
+				FROM OPENQUERY(DBLIC, ''SELECT b.Currency, SUM(ABS(Stake)) AS Stake, SUM(ABS(Stake)) AS Actual_stake, SUM(ABS(Winlost)) AS Winlost
 				FROM bodb_PlaytechCS.dbo.bettrans_GoldDeluxe b WITH (NOLOCK)
 					INNER JOIN bodb_licensee.dbo.f_SelLicenseeCust(' + CAST(@LicenseeId AS VARCHAR) + ') f ON b.recommend = f.custid AND b.currency = f.currency 
 				WHERE 1 = 1'
@@ -189,8 +189,8 @@ BEGIN
 		BEGIN
 			--print ('Vegas games')
 			SELECT @SqlQueryFor3rd = ''
-			SELECT @SqlQueryFor3rd = 'SELECT WinlostDate, Currency, 1900 AS Bettype, Stake, Actual_stake, Winlost
-				FROM OPENQUERY(DBLIC, ''SELECT WinlostDate, b.Currency, SUM(ABS(StakeAmount)) AS Stake, SUM(ABS(StakeAmount)) AS Actual_stake, SUM(ABS(WinAmount)) AS Winlost
+			SELECT @SqlQueryFor3rd = 'SELECT Currency, 1900 AS Bettype, Stake, Actual_stake, Winlost
+				FROM OPENQUERY(DBLIC, ''SELECT b.Currency, SUM(ABS(StakeAmount)) AS Stake, SUM(ABS(StakeAmount)) AS Actual_stake, SUM(ABS(WinAmount)) AS Winlost
 				FROM bodb_3rdProduct.dbo.BetTrans_VoidBridge b WITH (NOLOCK) 
 					INNER JOIN bodb_licensee.dbo.f_SelLicenseeCust(' + CAST(@LicenseeId AS VARCHAR) + ') f ON b.recommend = f.custid AND b.currency = f.currency 
 				WHERE 1 = 1'
@@ -215,10 +215,10 @@ BEGIN
 		FROM (
 			SELECT CurrencyId, Bettype
 			FROM #3rdData 
-			WHERE WinlostDate = @WinlostDate 
+			--WHERE WinlostDate = @WinlostDate 
 			GROUP BY CurrencyId, Bettype
 		)tmp
-
+		
 		DECLARE @RowIdTmp INT, @CurrencyIdTmp TINYINT, @BettypeTmp SMALLINT
 		SELECT @RowIdTmp = 1
 		WHILE EXISTS (SELECT 1 FROM @DataTmp WHERE RowId = @RowIdTmp)

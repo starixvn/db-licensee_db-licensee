@@ -45,7 +45,7 @@ BEGIN
 	--Only run on that date @DayForAdjustment
 	IF CHARINDEX(CAST(DATEPART(DD, @Today) AS VARCHAR), @DayForAdjustment, 0) <= 0 --DATEPART(DD, @Today) NOT IN (1,2,3,4,5,6,7)
 	BEGIN
-		PRINT('Can not adjust data on that day.')
+		--PRINT('Can not adjust data on that day.')
 		DROP TABLE #LicenseeProductTable
 		DROP TABLE #3rdData
 		DROP TABLE #3rdDummnyData
@@ -69,7 +69,7 @@ BEGIN
 
 	IF NOT EXISTS (SELECT 1 FROM #LicenseeProductTable)
 	BEGIN
-		PRINT('licensee cust does not exist')
+		--PRINT('licensee cust does not exist')
 		DROP TABLE #LicenseeProductTable
 		DROP TABLE #3rdData
 		DROP TABLE #3rdDummnyData
@@ -115,7 +115,7 @@ BEGIN
 
 	IF NOT EXISTS (SELECT TOP 1 1 FROM #ChargeRate)
 	BEGIN
-		PRINT('Charge rate does not exist')
+		--PRINT('Charge rate does not exist')
 		DROP TABLE #LicenseeProductTable
 		DROP TABLE #3rdData
 		DROP TABLE #3rdDummnyData

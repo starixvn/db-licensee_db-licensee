@@ -70,7 +70,7 @@ BEGIN
 
 	IF NOT EXISTS (SELECT 1 FROM #LicenseeProductTable)
 	BEGIN
-		PRINT('licensee cust does not exist')
+		--PRINT('licensee cust does not exist')
 		DROP TABLE #LicenseeProductTable
 		DROP TABLE #3rdData
 		DROP TABLE #ChargeRate
@@ -115,7 +115,7 @@ BEGIN
 
 	IF NOT EXISTS (SELECT TOP 1 1 FROM #ChargeRate)
 	BEGIN
-		PRINT('Charge rate does not exist')
+		--PRINT('Charge rate does not exist')
 		DROP TABLE #LicenseeProductTable
 		DROP TABLE #3rdData
 		DROP TABLE #ChargeRate
