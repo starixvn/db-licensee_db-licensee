@@ -72,7 +72,7 @@ IF @CurrencyID IS NULL
 CREATE TABLE #tmpWinloss (
 	winlostdate DATETIME
 	, Currency INT
-	, ProductCode VARCHAR(2)
+	, ProductCode VARCHAR(3)
 	, TurnOver MONEY
 	, Winlost MONEY
 	, LicenseeWL MONEY
