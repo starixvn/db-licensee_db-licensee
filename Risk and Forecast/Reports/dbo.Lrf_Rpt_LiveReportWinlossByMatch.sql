@@ -17,7 +17,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportWinlossByMatch]
 AS 
 /*
 Created: 20111031@
-Task : Live Report Summary by Sport
+Task : Live Report Summary by Sport 
 DB: DB052.bodb02
 
 Revisions:

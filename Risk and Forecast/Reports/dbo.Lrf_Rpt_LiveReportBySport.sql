@@ -44,7 +44,7 @@ Revisions:
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	- 20150127@Jim: support base on GBP Currency
 	- 20150612@Jim: support MicroGaming
-	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
+	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission 
 Param's Explanation:  
 	@Liveindicator : indicate that whether the report will get live data or not
 		+ 0: Non - Live data only
