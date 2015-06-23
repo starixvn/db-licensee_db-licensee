@@ -31,6 +31,7 @@ Revisions:
 	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	- 20150127@Jim: support base on GBP Currency
+	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
 Param's Explanation:   
    
 */
@@ -195,6 +196,7 @@ BEGIN
 				OR (b.bettype BETWEEN 121 AND 999)
 				OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 				)
+			AND b.bettype NOT IN (901,902,903)
 			-- --AND b.tpositiontaking <> 0  
 			AND b.winlostdate BETWEEN @TempFromDate AND @todate
 			AND b.statusID IN (
@@ -306,7 +308,8 @@ BEGIN
 				b.bettype < 31
 				OR (b.bettype BETWEEN 121 AND 999)
 				OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
-				)			
+				)
+			AND b.bettype NOT IN (901,902,903)			
 			AND b.winlostdate BETWEEN @TempFromDate AND @todate
 			AND b.statusID IN (
 				SELECT *
@@ -431,6 +434,7 @@ BEGIN
 					OR (b.bettype BETWEEN 121 AND 999)
 					OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 					)
+				AND b.bettype NOT IN (901,902,903)
 				AND (@matchid=0 or b.matchid = @MatchID)
 				AND b.statusID IN (
 					SELECT *
@@ -535,6 +539,7 @@ BEGIN
 					OR (b.bettype BETWEEN 121 AND 999)
 					OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 					)
+				AND b.bettype NOT IN (901,902,903)
 				--AND b.matchid = @MatchID
 				AND (@matchid=0 or b.matchid = @MatchID)
 				AND b.statusID IN (

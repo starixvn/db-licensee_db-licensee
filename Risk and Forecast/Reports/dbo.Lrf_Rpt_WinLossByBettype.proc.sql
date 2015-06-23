@@ -44,6 +44,7 @@ Revisions:
 	- 20150123@Jim: support base on Currency GBP
 	- 20150415@Jim: change to use f_GroupBettype instead of LRF_view_bettype_SS
 	- 20150612@Jim: support MicroGaming
+	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission 
 Param's Explanation: 
 */
 SET NOCOUNT ON
@@ -414,7 +415,7 @@ BEGIN
 			)
 		AND b.winlostdate BETWEEN @TempFromDate AND @TDate
 		AND bettype <= 2007  
-		AND bettype NOT IN (71, 73)
+		AND bettype NOT IN (71, 73,901,902,903)
 		AND b.ruben = 1
 		AND statusID NOT IN (101, 102, 103)
 	GROUP BY bettype
@@ -663,7 +664,7 @@ BEGIN
 		AND b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
 		AND statusID NOT IN (101, 102, 103)
 		AND bettype <= 2007 
-		AND bettype NOT IN (71, 73)
+		AND bettype NOT IN (71, 73,901,902,903)
 	GROUP BY bettype
 		, CASE 
 			WHEN b.bettype BETWEEN 81 AND 120
