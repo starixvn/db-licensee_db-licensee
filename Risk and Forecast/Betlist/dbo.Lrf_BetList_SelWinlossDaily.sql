@@ -937,7 +937,7 @@ BEGIN
 	-- Update data for MicroGamming
 	UPDATE b
 	SET b.sporttype = 203
-	FROM #BetData1 b
+	FROM #BetData14 b
 	WHERE b.bettype BETWEEN 2001 AND 2009
 
 	-- Insert and drop temp table
