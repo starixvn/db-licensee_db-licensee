@@ -84,7 +84,7 @@ BEGIN
 		   ,ProductCode
 		   ,isEnable
 	FROM @tblProductActive t 
-	WHERE ProductID <>3	
+	WHERE ProductID NOT IN (3,7,9)
 	ORDER BY ProductID ASC
 END
 GO 
