@@ -36,7 +36,8 @@ Revisions:
 	-20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 	-20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	-20150127@Jim: support base on GBP Currency
-	- 20150612@Jim: support MicroGaming
+	- 20150612@Jim: support MicroGaming 
+	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
 Param's Explanation:
 	@IsLive : indicate that whether the report will get live data or not
 			+ 0: Non - Live data only
@@ -157,7 +158,7 @@ BEGIN
 		AND b.statusID IN (111, 112, 113)
 		AND (b.liveindicator = @Liveindicator
 			OR @Liveindicator = 2)
-		AND (b.bettype NOT IN (9,29))
+		AND (b.bettype NOT IN (9,29,901,902,903))
 	GROUP BY b.winlostdate
 		, t.currency
 
@@ -240,7 +241,7 @@ BEGIN
 			OR (b.bettype BETWEEN 121 AND 999)
 			OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 			)
-		AND (b.bettype NOT IN (9,29))
+		AND (b.bettype NOT IN (9,29,901,902,903))
 		AND b.tpositiontaking <> 0
 		AND b.statusID IN (111, 112, 113)
 		AND (b.liveindicator = @Liveindicator
@@ -356,7 +357,7 @@ BEGIN
 		AND ((@Liveindicator = 0 and b.IsLive = 0)
 			OR (@Liveindicator = 1 and b.IsLive = 1)
 			OR (@Liveindicator = 2))
-		AND b.bettype NOT IN (9,29)
+		AND b.bettype NOT IN (9,29,901,902,903)
 	GROUP BY 
 	b.rptdate, b.currencyID
 
@@ -377,6 +378,7 @@ BEGIN
 			INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID
 	WHERE b.rptDate BETWEEN @FDate AND @TempToDate
 		AND b.status NOT IN (-1,103)
+		AND b.Bettype NOT IN (901,902,903)
 		AND b.siteID = @LicenseeID
 		--AND ((@CurrencyID <> 0) OR (b.CurrencyID =@CurrencyID))
 		AND ((@Liveindicator = 0 and b.IsLive = 0)
@@ -427,7 +429,7 @@ BEGIN
 				OR (@Liveindicator = 1 and b.IsLive = 1)
 				OR (@Liveindicator = 2))
 			AND b.CustomerCategory = -1
-		AND b.bettype NOT IN (9,29)	
+		AND b.bettype NOT IN (9,29,901,902,903)	
 		GROUP BY b.rptDate, b.currencyID,
 		CASE 
 			WHEN b.bettype BETWEEN 81 AND 120
@@ -467,6 +469,7 @@ BEGIN
 				INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID
 		WHERE b.rptDate BETWEEN @FDate AND @TempToDate
 			AND b.status NOT IN (-1,103)
+			AND b.Bettype NOT IN (901,902,903)
 			AND b.siteID =@LicenseeID
 			--AND ((@CurrencyID <> 0) OR (b.CurrencyID =@CurrencyID))
 			AND ((@Liveindicator = 0 and b.IsLive = 0)
