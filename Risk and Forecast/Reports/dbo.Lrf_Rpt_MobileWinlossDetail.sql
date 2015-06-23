@@ -3,7 +3,7 @@ set QUOTED_IDENTIFIER ON
 go
 
 
-ALTER   PROCEDURE [dbo].[Lrf_Rpt_MobileWinlossDetail]  
+ALTER   PROCEDURE [dbo].[Lrf_Rpt_MobileWinlossDetail]   
  @LicenseeID	INT,
  @UserID		INT,
  @CurrencyID	INT = 0,

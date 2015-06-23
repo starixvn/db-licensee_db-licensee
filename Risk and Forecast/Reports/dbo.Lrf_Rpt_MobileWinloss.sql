@@ -1,6 +1,6 @@
 ﻿USE [bodb02]
 GO
-ALTER PROCEDURE [dbo].[Lrf_Rpt_MobileWinloss]  
+ALTER PROCEDURE [dbo].[Lrf_Rpt_MobileWinloss]   
  @LicenseeID	INT,
  @UserID		INT,
  @CurrencyID	INT = 0,
