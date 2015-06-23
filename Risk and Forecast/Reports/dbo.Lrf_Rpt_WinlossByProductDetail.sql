@@ -56,6 +56,7 @@ AS
 	- 20150123@Jim: support base on Currency GBP
 	- 20150211@Don: remove index hint
 	- 20150612@Jim: support MicroGaming
+	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
 	
 	Param's Explanation:  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -330,6 +331,7 @@ BEGIN
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
 			(@MemberID = 0 OR (@MemberID <> 0 AND b.CustId = @MemberID)) AND
 			b.statusID IN (111, 112, 113) 
+			AND b.bettype NOT IN (901,902,903)
 		GROUP BY   
 			b.custid,tma.currency, b.statusID
 	END
@@ -421,8 +423,9 @@ BEGIN
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
 						  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 			) AND
-			b.statusID  IN (111, 112, 113) AND
-			b.tpositiontaking <> 0
+			b.statusID  IN (111, 112, 113)
+			AND b.bettype NOT IN (901,902,903)
+			AND b.tpositiontaking <> 0
 			
 		GROUP BY   
 			b.custid,
@@ -651,7 +654,9 @@ BEGIN
 			AND (@MemberID = 0 OR (@MemberID <> 0 AND b.CustId = @MemberID)) 
 			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
+			AND b.bettype NOT IN (901,902,903)
 			AND ISNULL(b.isBA,0) = 1
+
 		GROUP BY   b.custid,
 			b.currency, b.statusID
 	END
@@ -749,6 +754,7 @@ BEGIN
 			AND b.roleid = 1
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND t.sporttype<>180
+			AND b.bettype NOT IN (901,902,903)
 			AND ISNULL(b.isBA,0) = 0
 		GROUP BY  
 			b.custid,
@@ -992,6 +998,7 @@ BEGIN
 			AND (@MemberID = 0 OR (@MemberID <> 0 AND b.CustId = @MemberID))
 			AND b.roleid = 1  
 			AND b.statusID <> 101 --exclude REJECT bets
+			AND b.bettype NOT IN (901,902,903)
 			AND ISNULL(b.isBA,0) = 1
 		GROUP BY  b.custid,
 		b.currency, b.statusID
@@ -1091,6 +1098,7 @@ BEGIN
 			AND (@MemberID = 0 OR (@MemberID <> 0 AND b.CustId = @MemberID))
 			AND b.roleid = 1  
 			AND b.statusID <> 101 --exclude REJECT bets
+			AND b.bettype NOT IN (901,902,903)
 			AND ISNULL(b.isBA,0) = 0
 		GROUP BY  
 			b.custid,

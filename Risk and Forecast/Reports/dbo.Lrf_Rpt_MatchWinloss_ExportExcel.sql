@@ -29,6 +29,7 @@ Revisions:
 	- 20130426@Scott : Add more parameter @showCS,@showBG
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	- 20150123@Jim: support base on Currency GBP
+	- 20150622@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
 Param's Explanation: 
 	
 */
@@ -150,6 +151,7 @@ BEGIN
 		WHERE
 		    b.winlostdate = @_Date
 			AND b.statusID IN (111,112,113)
+			AND b.bettype NOT IN (901,902,903)
 		GROUP BY
 			b.Winlostdate,
 			b.currency,
@@ -220,6 +222,7 @@ BEGIN
 	WHERE   
 		 b.winlostdate = @_Date
 		AND b.statusID IN (111,112,113)
+		AND b.bettype NOT IN (901,902,903)
 		AND b.matchid>0
 	GROUP BY
 		b.Winlostdate,
@@ -389,6 +392,7 @@ BEGIN
 		WHERE   
 			b.winlostdate = @_Date
 			AND b.statusID IN (111,112,113)
+			 AND b.bettype NOT IN (901,902,903)
 			AND tpositiontaking = 0
 			AND (b.bettype < 31 OR (b.Bettype BETWEEN 121 AND 999))
 		GROUP BY
@@ -460,6 +464,7 @@ BEGIN
 	WHERE   
 		b.winlostdate = @_Date
 		AND b.statusID IN (111,112,113)
+		AND b.bettype NOT IN (901,902,903)
 		AND b.matchid>0
 	GROUP BY
 		b.Winlostdate,

@@ -64,6 +64,7 @@ AS
 	- 20150106@Jim: add more UserName filter
 	- 20150123@Jim: support base on Currency GBP
 	- 20150612@Jim: support MicroGaming
+	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -289,6 +290,7 @@ BEGIN
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
 			b.statusID IN (111, 112, 113) 
+			AND b.bettype NOT IN (901,902,903)
 			AND (@CustId = 0 OR (@CustId <> 0 AND b.CustId = @CustID))
 		GROUP BY   
 			b.winlostdate,tma.currency, b.statusID
@@ -329,7 +331,9 @@ BEGIN
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
 						  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 			) AND
-			b.statusID  IN (111, 112, 113) AND
+			b.statusID  IN (111, 112, 113) 
+			AND b.bettype NOT IN (901,902,903)
+			AND
 			b.tpositiontaking<>0
 			
 		GROUP BY   
@@ -487,6 +491,7 @@ BEGIN
 			AND (@CustId = 0 OR (@CustId <> 0 AND b.CustId = @CustID))  
 			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
+			AND b.bettype NOT IN (901,902,903)
 			AND ISNULL(b.isBA,0) = 1
 		GROUP BY  b.winlostdate,  b.currency, b.statusID
 	END
@@ -534,6 +539,7 @@ BEGIN
 			 AND (@CustId = 0 OR (@CustId <> 0 AND b.CustId = @CustID))
 			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
+			AND b.bettype NOT IN (901,902,903)
 			AND ISNULL(b.isBA,0) = 0
 			and t.sporttype <>180
 		GROUP BY  
@@ -739,6 +745,7 @@ BEGIN
 			AND (@CustId = 0 OR (@CustId <> 0 AND b.CustId = @CustID))
 			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
+			AND b.bettype NOT IN (901,902,903)
 			AND ISNULL(b.isBA,0) = 1
 		GROUP BY  b.winlostdate,  b.currency, b.statusID
 	END
@@ -787,6 +794,7 @@ BEGIN
 			AND (@CustId = 0 OR (@CustId <> 0 AND b.CustId = @CustID))  
 			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
+			AND b.bettype NOT IN (901,902,903)
 			AND ISNULL(b.isBA,0) = 0
 		GROUP BY  
 			b.winlostdate,  
