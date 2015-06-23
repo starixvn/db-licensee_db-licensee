@@ -54,6 +54,7 @@ AS
 	- 20141204@Jim : hot fix #27063
 	- 20150415@Jim: support betradar phase 2
 	- 20150528@Jim: add more bettype Betradar and Sporting solution (for support multiple oddstype)
+	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
 	Parameter's Explanation:
 		- @ReportBy:  1: daily, 2: monthly
 		- @FilterBy:  1: Win, 2: Loss, 3: Draw
@@ -266,6 +267,7 @@ ELSE
 			WHERE b.winlostdate BETWEEN @TempFromDate AND @todate
 				AND (b.custid IN (SELECT * FROM #custID) OR @CustID=0)
 				AND b.statusID IN (SELECT StatusID FROM #Status)
+				AND b.bettype NOT IN (901,902,903)
 		END
 		
 		;WITH cte_raceinfo
@@ -332,7 +334,8 @@ ELSE
 					INNER JOIN #recommend re ON bk.recommend=re.custid	AND bk.Currency = re.Currency			
 					INNER JOIN #bettype bt ON bk.bettype=bt.typeid	
 					INNER JOIN #Status s ON bk.statusID=s.StatusID		
-					WHERE bk.winlostdate BETWEEN @fromdate AND @TempToDate				
+					WHERE bk.winlostdate BETWEEN @fromdate AND @TempToDate	
+					AND bk.bettype NOT IN (901,902,903)			
 					GROUP BY  
 						bk.CustID,
 						bk.winlostdate
@@ -410,6 +413,7 @@ ELSE
 				INNER JOIN #Custid cus ON cus.custid = bk.custid
 				INNER JOIN #Status s ON bk.StatusID=s.statusid
 				WHERE bk.winlostdate BETWEEN @fromdate AND @TempToDate
+				AND bk.bettype NOT IN (901,902,903)
 				GROUP BY  
 					bk.CustID,
 					bk.winlostdate
