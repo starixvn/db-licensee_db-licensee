@@ -331,7 +331,7 @@ BEGIN
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
 			(@MemberID = 0 OR (@MemberID <> 0 AND b.CustId = @MemberID)) AND
 			b.statusID IN (111, 112, 113) 
-			AND b.bettype NOT IN (901,902,903)
+			AND b.bettype NOT IN (901,902,903) 
 		GROUP BY   
 			b.custid,tma.currency, b.statusID
 	END

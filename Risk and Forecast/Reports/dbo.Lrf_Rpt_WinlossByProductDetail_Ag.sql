@@ -6,7 +6,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail_Ag]
  @CurrencyID	INT = 0,
  @CustID		INT = 0, --memberID
  @FromDate		SMALLDATETIME,  
- @ToDate		SMALLDATETIME,   
+ @ToDate		SMALLDATETIME,    
  @showSB		BIT=0,  
  @ShowRB		BIT=0,  
  @ShowNG		BIT=0, 

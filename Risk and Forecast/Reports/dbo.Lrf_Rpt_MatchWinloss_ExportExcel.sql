@@ -29,7 +29,7 @@ Revisions:
 	- 20130426@Scott : Add more parameter @showCS,@showBG
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	- 20150123@Jim: support base on Currency GBP
-	- 20150622@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
+	- 20150622@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission 
 Param's Explanation: 
 	
 */

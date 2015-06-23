@@ -43,7 +43,7 @@ Revisions:
 	- 20150123@Jim: support base on Currency GBP
 	- 20150203@Jim: fix bug duplicate command when retrieve BA data from bettrans14
 	- 20150415@Jim: change to use f_GroupBettype instead of LRF_view_bettype_SS
-	- 20150622@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
+	- 20150622@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission 
 Param's Explanation:   
    
 */  
