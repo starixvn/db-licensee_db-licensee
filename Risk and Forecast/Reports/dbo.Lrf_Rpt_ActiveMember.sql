@@ -6,7 +6,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
   
-ALTER PROCEDURE [dbo].[Lrf_Rpt_ActiveMember]   
+CREATE PROCEDURE [dbo].[Lrf_Rpt_ActiveMember]   
 	  @LicenseeID		INT  
 	, @UserID			INT  
 	, @CurrencyID		INT				= 0  
@@ -22,7 +22,7 @@ AS
     DB: DB052.bodb02    
      
     Revisions:    
-      
+     - 20150624@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission 
 	Param's Explanation:         
 	   + @excludeTest: remove currency UUS  
 	   + @Products: List all product short name, seperate by ','  
@@ -89,6 +89,7 @@ BEGIN
 			FROM bodb_licensee.dbo.LRF_f_Products3rd(@Products)  
 		END    
   
+	DELETE FROM #ProductsID WHERE ProductID=13 -- bettrade
 	INSERT INTO #Data(TransDate, CustID, ProductID, Memcount)  
 	(  
 		SELECT DATEADD(DAY, 1 - DATEPART(DAY, c.TransDate), c.TransDate) AS TransDate
