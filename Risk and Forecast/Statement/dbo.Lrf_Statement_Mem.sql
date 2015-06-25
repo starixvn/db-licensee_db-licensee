@@ -29,7 +29,7 @@ Revisions:
  -- 20141002@Don: Fixed bug (Redmine ID #23380), if cannot get BU date of a specific customer in table Statement, the error will be happened
  -- 20150130@Winnie: Add base currency GBP  
  -- 20150507@Winnie: fix bug #35365
- -- 201506125@Winnie: support BetTrade
+ -- 201506125@Winnie: support BetTrade 
 Param's Explanation:   
 • @ErrCode:  
     = 0: add new member successfully.  

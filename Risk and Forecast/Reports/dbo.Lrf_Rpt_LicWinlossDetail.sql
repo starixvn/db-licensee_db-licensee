@@ -760,7 +760,7 @@ BEGIN
 				ELSE 1 END,
 			0 AS BetTrade,
 			0 AS BetTradeComm,	
-			SUM(CASE WHEN (bt.CustId IS NOT NULL) AND t.sporttype=0 THEN b.winlost
+			SUM(CASE WHEN (bt.CustId IS NOT NULL) AND t.sporttype=0 THEN b.winlost 
 				ELSE 0 END) AS WLBetTicket,
 			0 AS WLBoughtTicket
 		FROM bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )  

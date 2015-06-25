@@ -1,7 +1,7 @@
 ﻿USE [bodb02]
 GO
  
-ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinlossDetail_Ag]  
+ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinlossDetail_Ag]   
  @LicenseeID	INT,
  @UserID		INT,
  @CurrencyID	INT = 0, 

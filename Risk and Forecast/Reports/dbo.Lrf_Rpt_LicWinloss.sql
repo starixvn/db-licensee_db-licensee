@@ -112,7 +112,7 @@ DECLARE @sporttype TABLE(sporttype INT)
 DECLARE @_FromDate SMALLDATETIME, @_ToDate SMALLDATETIME
 SELECT @_FromDate = @FromDate, @_ToDate = @ToDate
 
-SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WHERE LicenseeID = @LicenseeID
+SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WHERE LicenseeID = @LicenseeID 
 
 SELECT @VNDCurrencyName = currency FROM exchange (NOLOCK) WHERE ExchangeId = 51
 
