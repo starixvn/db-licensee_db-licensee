@@ -124,7 +124,7 @@ BEGIN
 		OR ProductID	= CASE WHEN @ShowBG	= 0 THEN 7 END
 		OR ProductID	= CASE WHEN @ShowKN	= 0 THEN 8 END
 		OR ProductID	= CASE WHEN @ShowMGC= 0 THEN 13 END
-		OR ProductID 	> 8 -- not suport for LIC system
+		OR (ProductID 	> 8 AND ProductID <> 13) -- not suport for LIC system
 	-- end filer bettypes by sporttype
 
 
