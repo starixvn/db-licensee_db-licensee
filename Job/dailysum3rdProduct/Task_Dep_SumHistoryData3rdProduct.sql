@@ -159,7 +159,7 @@ BEGIN
 					+ ' AND WinlostDate BETWEEN ''''' + CONVERT(VARCHAR(10), @FromDate, 112) + ''''' AND ''''' + CONVERT(VARCHAR(10), @ToDate, 112) + ''''''
 					+ ' AND b.Currency = ' + CAST(@CurrencyId AS VARCHAR)
 					+ ' AND StatusId IN (112,113,111)'
-				+ ' GROUP BY WinlostDate, b.Currency'
+				+ ' GROUP BY b.Currency'
 				+ ''' )'
 			--select @SqlQueryFor3rd as '@SqlQueryFor3rd'
 			INSERT INTO #3rdData(CurrencyId, Bettype, Stake, Actual_stake, Winlost)
@@ -178,7 +178,7 @@ BEGIN
 					+ ' AND WinlostDate BETWEEN ''''' + CONVERT(VARCHAR(10), @FromDate, 112) + ''''' AND ''''' + CONVERT(VARCHAR(10), @ToDate, 112) + ''''''
 					+ ' AND b.Currency = ' + CAST(@CurrencyId AS VARCHAR)
 					+ ' AND StatusId IN (112,113,111)'
-				+ ' GROUP BY WinlostDate, b.Currency'
+				+ ' GROUP BY b.Currency'
 				+ ''' )'
 			
 			INSERT INTO #3rdData(CurrencyId, Bettype, Stake, Actual_stake, Winlost)
@@ -197,7 +197,7 @@ BEGIN
 					+ ' AND WinlostDate BETWEEN ''''' + CONVERT(VARCHAR(10), @FromDate, 112) + ''''' AND ''''' + CONVERT(VARCHAR(10), @ToDate, 112) + ''''''
 					+ ' AND b.Currency = ' + CAST(@CurrencyId AS VARCHAR)
 					+ ' AND Status IN (''''WIN'''',''''LOSE'''')'
-				+ ' GROUP BY WinlostDate, b.Currency'
+				+ ' GROUP BY b.Currency'
 				+ ''' )'
 			INSERT INTO #3rdData(CurrencyId, Bettype, Stake, Actual_stake, Winlost)
 			EXEC (@SqlQueryFor3rd)

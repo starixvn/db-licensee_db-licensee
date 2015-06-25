@@ -19,7 +19,7 @@ Revisions:
    - 20130903@Jim: support Virtual Horse Racing
    - 20131128@Jim: revert code to Group by All Virtual Sport into sporttypeID=180
    - 20140310@Jim: offer KENO
-   - 20150618@Patrick: #36263: Fix super balance isue for: AGC, GD & VG
+   - 20150618@Patrick: #36263: Fix super balance issue for: AGC, GD & VG
  */
 
 SET NOCOUNT ON 
