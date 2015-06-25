@@ -45,6 +45,9 @@ BEGIN
 				ON b.Recommend	= rec.CustID
 				INNER JOIN #tempCustPaging c 
 				ON  b.custid		= c.custid 
+				AND c.winlostdate 	= CASE WHEN @ReportBy =  2 THEN DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0)
+										ELSE b.winlostdate
+									END
 				INNER JOIN #bettype bt
 				ON b.bettype 	=  bt.typeid
 				INNER JOIN #Status st
@@ -115,7 +118,10 @@ BEGIN
 				INNER JOIN #recommend rec
 				ON b.Recommend	= rec.CustID
 				INNER JOIN #tempCustPaging c 
-				ON  b.custid		= c.custid 
+				ON  b.custid		= c.custid
+				AND c.winlostdate 	= CASE WHEN @ReportBy =  2 THEN DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0)
+										ELSE b.winlostdate
+									END				
 				INNER JOIN #bettype bt
 				ON b.bettype 	=  bt.typeid
 				INNER JOIN #Status st
@@ -206,7 +212,10 @@ BEGIN
 				INNER JOIN #recommend rec
 				ON b.Recommend	= rec.CustID
 				INNER JOIN #tempCustPaging c 
-				ON  b.custid	= c.custid 
+				ON  b.custid	= c.custid
+				AND c.winlostdate 	= CASE WHEN @ReportBy =  2 THEN DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0)
+										ELSE b.winlostdate
+									END				
 				INNER JOIN #bettype bt
 				ON b.bettype 	=  bt.typeid
 				INNER JOIN #Status st
@@ -253,6 +262,9 @@ BEGIN
 				ON b.Recommend	= rec.CustID
 				INNER JOIN #tempCustPaging c 
 				ON  b.custid	= c.custid 
+				AND c.winlostdate 	= CASE WHEN @ReportBy =  2 THEN DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0)
+										ELSE b.winlostdate
+									END
 				INNER JOIN #bettype bt
 				ON b.bettype 	=  bt.typeid
 				INNER JOIN #Status st
