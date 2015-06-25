@@ -55,7 +55,7 @@ Revision:
 	- 20150415@Jim: support betradar phase 2
 	- 20150528@Jim: add more bettype Betradar and Sporting solution (for support multiple oddstype)
 	- 20150603@Bobby: Revise code & improve performance
-	- 20150618@Bobby: Apply pre-caching sumtotal from rptcustomerturnOver table
+	- 20150618@Bobby: Apply pre-caching sumtotal from rptcustomerturnOver_bobby table
 	
 Parameter's Explanation:
 	- @ReportBy:  1: daily, 2: monthly
@@ -79,7 +79,8 @@ BEGIN
 		, @totalBettrans	INT
 		, @totalSumRpt		INT
 		, @rptCode			VARCHAR(MAX)
-		, @rptHash			VARBINARY(128)
+		, @rptHash			VARBINARY(256)
+		, @rptHashSum		VARBINARY(256)
 	
 	--SET start time value
 	SET @startTime 			= GETDATE()
@@ -89,7 +90,6 @@ BEGIN
 		rowno				INT
 		, winlostdate 		DATE
 		, custid 			INT
-		, username			NVARCHAR(50)
 		, currency			INT
 		, sporttype			INT
 		, bettype			INT
@@ -97,25 +97,34 @@ BEGIN
 		, turnover			MONEY
 		, winlost			MONEY
 		, playercomm		MONEY
+		, whticket			TINYINT
 	)
 	
 	CREATE TABLE #tempCust 
 	(
 		custid			INT
+		, username		NVARCHAR(30)
 	)
 	
-	CREATE TABLE #tempCustRec 
+	CREATE TABLE #tempCustPaging 
 	(
 		rowno			INT
 		, whticket		TINYINT
 		, winlostdate	DATETIME
 		, custid		INT
-		, username		NVARCHAR(30)
+		, totalrow		INT
 	)
 	
 	-- CREATE temp caching table
-	IF ( OBJECT_ID('tempdb..##tempLRFCustTORpt') IS NULL )
+	-- DROP TABLE tempdb..##tempLRFCustTORpt
+	IF ( OBJECT_ID('tempdb..##tempLRFCustTORpt') IS NULL 
+		OR COL_LENGTH('tempdb..##tempLRFCustTORpt','rptDate') IS NULL
+	)
 	BEGIN
+		IF(OBJECT_ID('tempdb..##tempLRFCustTORpt') IS NOT NULL ) 
+			DROP TABLE ##tempLRFCustTORpt
+
+		-- CREATE new caching table	
 		CREATE TABLE ##tempLRFCustTORpt
 		(
 			whticket		TINYINT
@@ -124,7 +133,8 @@ BEGIN
 			, winlost		MONEY
 			, playercomm	MONEY
 			, totalrow		INT
-			, rptHash		VARBINARY(128)
+			, rptHash		VARBINARY(256)
+			, rptDate		DATETIME
 			, rptVer		INT IDENTITY(1,1)
 		)
 		CREATE CLUSTERED INDEX [CIX_tempCustTORpt] ON ##tempLRFCustTORpt (rptHash, whticket)
@@ -222,27 +232,11 @@ BEGIN
 		, @searchCust	= 0
 		, @Duration		= 0
 	
-	-- COMPUTE hashing rpt code
-	SELECT @rptCode =
-			'l:'+CAST(@LicenseeID AS VARCHAR(10))
-			+'a:'+CAST(@UserID AS VARCHAR(10))
-			+'u:'+ISNULL(@Username,'')
-			+'p:'+REPLACE(@Product, ',','')
-			+'b:'+REPLACE(@Bettype, ',','')
-			+'c:'+CAST(@CurrencyID AS VARCHAR(10))
-			+'f:'+REPLACE(CAST(@FromDate AS VARCHAR(12)), ' ','')
-			+'t:'+REPLACE(CAST(@tempToDate AS VARCHAR(12)), ' ','')
-			+'o:'+CAST(@Odds AS VARCHAR(10))
-			+'r:'+CAST(@ReportBy AS VARCHAR(5))
-			+'w:'+CAST(@ShowWin AS VARCHAR(5))
-			+'l:'+CAST(@ShowLoss AS VARCHAR(5))
-			+'d:'+CAST(@ShowDraw AS VARCHAR(5))
-		, @rptHash = HASHBYTES('SHA1', @rptCode)
-	
 	IF ( LEN(@Username) > 0 )
 	BEGIN 
 		INSERT INTO #tempCust
 		SELECT c.custid
+			, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS username
 		FROM bodb02.dbo.Customer c WITH (NOLOCK) -- for using indexer
 			INNER JOIN bodb_licensee.dbo.LicenseeCustinfo  lc WITH (NOLOCK) 
 			ON c.CustID		= lc.CustID  
@@ -254,565 +248,225 @@ BEGIN
 			)
 		IF(@@ROWCOUNT = 0) GOTO OutputResult;
 		
-		SET @searchCust = 1
+		SET @searchCust  	= 1
 	END
 
-	----------SUMTOTOAL--------------
-	IF(@Todate > @MoveBetsDay )
+	GET_SUMTOTAL:
 	BEGIN
+		-- COMPUTE hashing rpt code
+		SELECT @rptCode 	= 'l:'+CAST(@LicenseeID AS VARCHAR(10))
+								+'a:'+CAST(@UserID AS VARCHAR(10))
+								+'u:'+ISNULL(@Username,'')
+								+'p:'+REPLACE(@Product, ',','')
+								+'b:'+REPLACE(@Bettype, ',','')
+								+'c:'+CAST(@CurrencyID AS VARCHAR(10))
+								+'f:'+REPLACE(CAST(@FromDate AS VARCHAR(12)), ' ','')
+								+'t:'+REPLACE(CAST(@tempToDate AS VARCHAR(12)), ' ','')
+								+'o:'+CAST(@Odds AS VARCHAR(10))
+								+'r:'+CAST(@ReportBy AS VARCHAR(5))
+								+'w:'+CAST(@ShowWin AS VARCHAR(5))
+								+'l:'+CAST(@ShowLoss AS VARCHAR(5))
+								+'d:'+CAST(@ShowDraw AS VARCHAR(5))
+			, @rptHash 		= HASHBYTES('SHA1', @rptCode + 'tt:'+CONVERT(VARCHAR(13), @startTime, 120)) -- in 1hour
+			, @rptHashSum 	= HASHBYTES('SHA1', @rptCode)
+		DECLARE @isCached BIT = 0
+	
+		-- GET from temp table caching
 		INSERT INTO #tempSumTotal
-		SELECT 1				AS WhTicket
-			, SUM(1)			AS betcount
-			, SUM(stake) 		AS turnover
-			, SUM(b.winlost - b.actual_stake) AS winlost
-			, SUM(b.playercomm) AS playercomm
-			, COUNT(DISTINCT  
-					CASE WHEN @ReportBy =  2 THEN CONVERT(VARCHAR(6), b.winlostdate, 112)
-						ELSE CONVERT(VARCHAR(8), b.winlostdate, 112)
-					END 
-					+ ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username)
-				
-			) AS TotalRows
-		FROM dbo.bettrans b WITH(NOLOCK)
-			INNER JOIN #recommend rec 
-			ON b.Recommend	= rec.CustID 
-			INNER JOIN bodb_licensee.dbo.LicenseeCustinfo  c WITH (NOLOCK)
-			ON b.custid 	= c.custid
-			LEFT OUTER JOIN #tempCust  tc WITH (NOLOCK)
-			ON c.custid 	= tc.custid AND @searchCust = 1
-			INNER JOIN #bettype bt
-			ON b.bettype 	=  bt.typeid
-			INNER JOIN #Status st
-			ON b.StatusID 	=  st.StatusID
-			--EventType =  1
-			LEFT JOIN dbo.match m WITH (NOLOCK) 
-			ON b.matchid 		= m.matchid
-			AND bt.EventType 	= 1
-			--EventType =  2
-			LEFT JOIN dbo.outright o with(nolock) 
-			ON b.matchid 		= o.orid 
-			AND bt.EventType 	= 2
-			LEFT JOIN dbo.league l with(nolock) 
-			ON o.leagueid 		= l.leagueid
-			--EventType =  3
-			LEFT JOIN dbo.VSOutright  vs WITH (NOLOCK)
-			ON b.oddsid			= vs.Orid
-			AND bt.EventType 	= 3
-			LEFT JOIN dbo.VSRaceInfo r WITH (NOLOCK) 
-			ON vs.EventID  		= r.EventID
-			LEFT JOIN #ProductID p 
-			ON (
-				bt.EventType	= 1 AND m.sporttype	= p.sportID
-				OR bt.EventType = 2 AND l.sporttype	= p.sportID
-				OR bt.EventType = 3 AND r.sporttype	= p.sportID
-				OR bt.EventType = 0 AND 1			= p.sportID
-			)
-
-		WHERE b.winlostdate BETWEEN @tempFromDate AND @todate
-			AND p.sportID IS NOT NULL
-			AND (@Odds = 0 
-					OR (@Odds > 0 
-						AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-									OR b.bettype BETWEEN 81 AND 88
-									OR b.bettype BETWEEN 90 AND 120
-									OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
-									)
-									THEN 
-											CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
-												 WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
-												 WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
-																		CASE 
-																			WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
-																			WHEN b.odds >=0 THEN (1 + b.odds) END
-												 WHEN OddsType = 5 THEN --american odds to decimal
-																	CASE
-																	WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
-																	WHEN (b.odds * 100) % 2 = 0 THEN 2
-																	WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
-											 END 
-							  ELSE b.Odds
-						 END >= @odds
-					)
-			)
-			AND (
-				@searchCust 	= 0
-				OR (@searchCust = 1 AND tc.custid > 0)
-			)
-	END
-	-- GET from temp table caching
-	INSERT INTO #tempSumTotal
-	SELECT TOP 1 
-		rpt.whticket
-		, rpt.betcount
-		, rpt.turnover
-		, rpt.winlost
-		, rpt.playercomm
-		, rpt.totalrow
-	FROM ##tempLRFCustTORpt rpt
-	WHERE rpt.rptHash		= @rptHash 
-		AND rpt.whticket 	= 2
-	ORDER BY rptVer DESC
-		
-	IF(@FromDate <= @MoveBetsDay AND NOT EXISTS(SELECT TOP 1 1 FROM #tempSumTotal WHERE whticket = 2 ))
-	BEGIN
-		INSERT INTO #tempSumTotal
-		SELECT 2				AS WhTicket 
-			, SUM(b.betcount)	AS betcount
-			, SUM(b.stake) 		AS turnover
-			, SUM(b.winlost)  	AS winlost
-			, SUM(b.playercomm) AS playercomm
-			, COUNT(DISTINCT  
-						CASE WHEN @ReportBy =  2 THEN CONVERT(VARCHAR(6), b.winlostdate, 112)
-							ELSE CONVERT(VARCHAR(8), b.winlostdate, 112)
-						END 
-						+ ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username)
-				
-			) AS TotalRows
-		FROM bodb_LicenseeReport.dbo.rptcustomerturnOver_bobby b WITH(NOLOCK)--, INDEX=CIX_winlostdate)
-			INNER JOIN #recommend rec
-			ON b.Recommend	= rec.CustID
-			INNER JOIN bodb_licensee.dbo.LicenseeCustinfo  c WITH (NOLOCK)
-			ON b.custid 	= c.custid
-			LEFT OUTER JOIN #tempCust  tc WITH (NOLOCK)
-			ON c.custid 	= tc.custid AND @searchCust = 1
-			INNER JOIN #bettype bt
-			ON b.bettype 	=  bt.typeid
-			INNER JOIN #Status st
-			ON b.StatusID 	=  st.StatusID
-			INNER JOIN #ProductID p 
-			ON CASE	WHEN b.bettype IN (9, 10, 29) THEN 1
-					ELSE b.sporttype 
-				END			= p.sportID
-		WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
-			AND (@Odds = 0 
-					OR (@Odds > 0 
-						AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-									OR b.bettype BETWEEN 81 AND 88
-									OR b.bettype BETWEEN 90 AND 120
-									OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
-									)
-									THEN 
-											CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
-												 WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
-												 WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
-																		CASE 
-																			WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
-																			WHEN b.odds >=0 THEN (1 + b.odds) END
-												 WHEN OddsType = 5 THEN --american odds to decimal
-																	CASE
-																	WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
-																	WHEN (b.odds * 100) % 2 = 0 THEN 2
-																	WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
-											 END 
-							  ELSE b.Odds
-						 END >= @odds
-					)
-			)
-			AND (
-				@searchCust 	= 0
-				OR (@searchCust = 1 AND tc.custid > 0)
-			)
-			
-		--INSERT into temp caching table
-		IF(@@ROWCOUNT > 0 AND @rptHash IS NOT NULL)
-		BEGIN
-			INSERT INTO ##tempLRFCustTORpt
-			SELECT rpt.whticket
+		SELECT s.*
+		FROM (
+			SELECT TOP 1 rpt.whticket
 				, rpt.betcount
 				, rpt.turnover
 				, rpt.winlost
 				, rpt.playercomm
 				, rpt.totalrow
-				, @rptHash AS rptHash
-			FROM #tempSumTotal rpt
-			WHERE rpt.whticket 		= 2 
-				AND rpt.totalrow 	> 0
-		END
-	END
-	
-	IF(NOT EXISTS (SELECT TOP 1 1 FROM #tempSumTotal WHERE totalrow > 0 )) GOTO OutputResult;
+			FROM ##tempLRFCustTORpt rpt
+			WHERE rpt.rptHash = @rptHash AND rpt.whticket = 1
+				AND @pageIndex <> 1
 
-	SELECT @totalBettrans	= CASE WHEN s.whticket = 1 THEN ISNULL(s.totalrow,0) ELSE ISNULL(@totalBettrans, 0) END
-		, @totalSumRpt		= CASE WHEN s.whticket = 2 THEN ISNULL(s.totalrow,0) ELSE ISNULL(@totalSumRpt,0) END
-	FROM #tempSumTotal s
+			UNION ALL
+			SELECT TOP 1 rpt.whticket
+				, rpt.betcount
+				, rpt.turnover
+				, rpt.winlost
+				, rpt.playercomm
+				, rpt.totalrow
+			FROM ##tempLRFCustTORpt rpt
+			WHERE rpt.rptHash = @rptHashSum AND rpt.whticket = 2	
+		) s
+		--select * FROM #tempSumTotal
+		
+		SET @isCached = CASE WHEN @@ROWCOUNT = 2 THEN 1 ELSE 0 END
+		
+		IF( @isCached = 0 )
+		BEGIN
+			EXEC [dbo].[Lrf_Rpt_CustomerTurnOver_SumTotal]
+				@searchCust 	= @searchCust
+				,@FromDate 		= @FromDate
+				,@tempFromDate 	= @tempFromDate
+				,@ToDate 		= @toDate
+				,@tempToDate 	= @tempToDate
+				,@MoveBetsDay 	= @MoveBetsDay
+				,@Odds 			= @Odds
+				,@ReportBy  	= @ReportBy
+				
+			-- CHECK for update/insert cache
+			IF(@rptHash IS NOT NULL 
+				AND @rptHashSum IS NOT NULL 
+			)
+			BEGIN
+				MERGE INTO ##tempLRFCustTORpt c
+				USING ( 
+					SELECT *
+						, CASE 
+							WHEN  whticket = 1 THEN @rptHash
+							WHEN  whticket = 2 THEN @rptHashSum 
+							ELSE NULL
+						END AS rptHash
+						, @startTime rptDate
+					FROM  #tempSumTotal
+					WHERE betcount > 0
+				) rpt 
+				ON ( c.rptHash = rpt.rptHash AND c.whticket = rpt.whticket )
+				WHEN MATCHED THEN
+					UPDATE 
+						SET c.betcount	= rpt.betcount
+						, c.turnover	= rpt.turnover
+						, c.winlost		= rpt.winlost
+						, c.playercomm	= rpt.playercomm
+						, c.totalrow	= rpt.totalrow
+					
+				WHEN NOT MATCHED BY TARGET THEN
+					INSERT( whticket
+						, betcount
+						, turnover
+						, winlost
+						, playercomm
+						, totalrow
+						, rptHash
+						, rptDate
+					)
+					VALUES (rpt.whticket
+						, rpt.betcount
+						, rpt.turnover
+						, rpt.winlost
+						, rpt.playercomm
+						, rpt.totalrow 
+						, rpt.rptHash
+						, rpt.rptDate
+					)
+				;
+			END
+		END
+		
+	END
+
+	--SELECT * FROM #tempSumTotal
+	-- CHECK sumtotal
+	IF(NOT EXISTS (SELECT TOP 1 1 FROM #tempSumTotal WHERE betcount > 0 )) GOTO OutputResult;
 	
 	----------------------------------------
 	-----------PAGING CONFIG ---------------
 	----------------------------------------
-	DECLARE @offsetRow 	INT
-		, @maxRow		INT
-	
-	IF(@IsExportExcel =  1)
+	GET_PAGING:
 	BEGIN
-		SELECT @PageIndex	= 1
-			, @PageSize		= 65000
-	END
-
-	SELECT @offsetRow	= (((@PageIndex - 1) * @PageSize) + 1) 
-		, @maxRow		= (@PageSize * @PageIndex)
-
-	IF(@totalBettrans > 0
-		AND (@offsetRow <= @totalBettrans)
-	)
-	BEGIN
-
-		INSERT INTO #tempCustRec
-		SELECT p.RowIdx AS rowno
-			, p.WhTicket
-			, p.winlostdate
-			, p.custid
-			, p.username
-		FROM (
-			SELECT
-				ROW_NUMBER () OVER (
-					ORDER BY CASE WHEN @ReportBy =  2 THEN DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0)
-								ELSE b.winlostdate
-							END DESC
-							, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) ASC
-				) AS RowIdx
-				, 1 AS WhTicket
-				, CASE WHEN @ReportBy =  2 THEN DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0)
-						ELSE b.winlostdate
-					END AS winlostdate
-				, b.custid
-				, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS username
-				
-			FROM dbo.bettrans b WITH(NOLOCK)
-				INNER JOIN #recommend rec 
-				ON b.Recommend	= rec.CustID 
-				INNER JOIN bodb_licensee.dbo.LicenseeCustinfo  c WITH (NOLOCK)
-				ON b.custid 	= c.custid
-				LEFT OUTER JOIN #tempCust  tc WITH (NOLOCK)
-				ON c.custid 	= tc.custid
-				INNER JOIN #bettype bt
-				ON b.bettype 	=  bt.typeid
-				INNER JOIN #Status st
-				ON b.StatusID 	=  st.StatusID
-				--EventType =  1
-				LEFT JOIN dbo.match m WITH (NOLOCK) 
-				ON b.matchid 		= m.matchid
-				AND bt.EventType 	= 1
-				--EventType =  2
-				LEFT JOIN dbo.outright o with(nolock) 
-				ON b.matchid 		= o.orid 
-				AND bt.EventType 	= 2
-				LEFT JOIN dbo.league l with(nolock) 
-				ON o.leagueid 		= l.leagueid
-				--EventType =  3
-				LEFT JOIN dbo.VSOutright  vs WITH (NOLOCK)
-				ON b.oddsid			= vs.Orid
-				AND bt.EventType 	= 3
-				LEFT JOIN dbo.VSRaceInfo r WITH (NOLOCK) 
-				ON vs.EventID  		= r.EventID
-				LEFT JOIN #ProductID p 
-				ON (
-					bt.EventType	= 1 AND m.sporttype	= p.sportID
-					OR bt.EventType = 2 AND l.sporttype	= p.sportID
-					OR bt.EventType = 3 AND r.sporttype	= p.sportID
-					OR bt.EventType = 0 AND 1			= p.sportID
-				)
-
-			WHERE b.winlostdate BETWEEN @tempFromDate AND @todate
-				AND p.sportID IS NOT NULL
-				AND (@Odds = 0 
-						OR (@Odds > 0 
-							AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-											OR b.bettype BETWEEN 81 AND 88
-											OR b.bettype BETWEEN 90 AND 120
-											OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
-										)
-										THEN 
-											CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
-												 WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
-												 WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
-																		CASE 
-																			WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
-																			WHEN b.odds >=0 THEN (1 + b.odds) END
-												 WHEN OddsType = 5 THEN --american odds to decimal
-																	CASE
-																	WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
-																	WHEN (b.odds * 100) % 2 = 0 THEN 2
-																	WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
-											 END 
-									ELSE b.Odds
-							 END >= @odds
-						)
-				)
-				AND (
-					@searchCust 	= 0
-					OR (@searchCust = 1 	AND tc.custid > 0)
-				)
-			GROUP BY 
-				CASE WHEN @ReportBy =  2 THEN DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0)
-						ELSE b.winlostdate
-					END
-				, b.custid
-				, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username)
-	
-		) p
-		WHERE p.RowIdx BETWEEN @offsetRow AND @maxRow
-	END
-
-	IF(@totalSumRpt > 0
-		AND (@maxRow > @totalBettrans)
-	)
-	BEGIN
+		DECLARE @offsetRow 	INT
+			, @maxRow		INT
+			
+		SELECT @totalBettrans	= CASE WHEN s.whticket = 1 THEN ISNULL(s.totalrow,0) ELSE ISNULL(@totalBettrans, 0) END
+			, @totalSumRpt		= CASE WHEN s.whticket = 2 THEN ISNULL(s.totalrow,0) ELSE ISNULL(@totalSumRpt,0) END
+		FROM #tempSumTotal s
 		
-		INSERT INTO #tempCustRec
-		SELECT p.RowIdx AS rowno
-			, p.WhTicket
-			, p.winlostdate
-			, p.custid
-			, p.username
+		IF(@IsExportExcel =  1)
+		BEGIN
+			SELECT @PageIndex	= 1
+				, @PageSize		= 65000
+		END
+
+		SELECT @offsetRow	= (((@PageIndex - 1) * @PageSize) + 1) 
+			, @maxRow		= (@PageSize * @PageIndex)
+		
+		EXEC [dbo].[Lrf_Rpt_CustomerTurnOver_Pagination]
+			@searchCust 	= @searchCust
+			,@FromDate 		= @FromDate
+			,@tempFromDate 	= @tempFromDate
+			,@ToDate 		= @toDate
+			,@tempToDate 	= @tempToDate
+			,@MoveBetsDay 	= @MoveBetsDay
+			,@Odds 			= @Odds
+			,@ReportBy  	= @ReportBy
+			,@offsetRow 	= @offsetRow 
+			,@maxRow		= @maxRow
+			,@totalBettrans	= @totalBettrans OUTPUT
+			,@totalSumRpt	= @totalSumRpt OUTPUT
+		
+		--select @totalBettrans totalBettrans, @totalSumRpt totalSumRpt
+		IF( @totalBettrans > 0 OR @totalSumRpt > 0 )
+		BEGIN
+			--UPDATE sumtotal
+			UPDATE s
+			SET s.totalrow = CASE 	WHEN s.whticket = 1 THEN @totalBettrans
+									WHEN s.whticket = 2 THEN @totalSumRpt
+								END
+			FROM #tempSumTotal s 
+			WHERE ISNULL(s.totalrow, 0) = 0
 			
-		FROM (
-			SELECT ROW_NUMBER () OVER (
-						ORDER BY CASE WHEN @ReportBy =  2 THEN DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0)
-									ELSE b.winlostdate
-								END DESC
-								, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) ASC
-				) + @totalBettrans AS RowIdx
-				, 2 AS WhTicket 
-				, CASE WHEN @ReportBy =  2 THEN DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0)
-						ELSE b.winlostdate
-					END AS winlostdate
-				, b.custid
-				, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS username
-			
-			FROM bodb_LicenseeReport.dbo.rptcustomerturnOver_bobby b WITH(NOLOCK)--, INDEX=CIX_winlostdate)
-				INNER JOIN #recommend rec
-				ON b.Recommend	= rec.CustID
-				INNER JOIN bodb_licensee.dbo.LicenseeCustinfo  c WITH (NOLOCK)
-				ON b.custid 	= c.custid
-				LEFT OUTER JOIN #tempCust  tc WITH (NOLOCK)
-				ON b.custid 	= tc.custid AND @searchCust = 1
-				INNER JOIN #bettype bt
-				ON b.bettype 	=  bt.typeid
-				INNER JOIN #Status st
-				ON b.StatusID 	=  st.StatusID
-				INNER JOIN #ProductID p 
-				ON CASE	WHEN b.bettype IN (9, 10, 29) THEN 1
-						ELSE b.sporttype 
-					END			= p.sportID
-			WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
-				AND (@Odds = 0 
-						OR (@Odds > 0 
-							AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-										OR b.bettype BETWEEN 81 AND 88
-										OR b.bettype BETWEEN 90 AND 120
-										OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
-										)
-										THEN 
-												CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
-													 WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
-													 WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
-																			CASE 
-																				WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
-																				WHEN b.odds >=0 THEN (1 + b.odds) END
-													 WHEN OddsType = 5 THEN --american odds to decimal
-																		CASE
-																		WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
-																		WHEN (b.odds * 100) % 2 = 0 THEN 2
-																		WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
-												 END 
-								  ELSE b.Odds
-							 END >= @odds
-						)
+			--- UPDATE caching
+			IF (@rptHash IS NOT NULL 
+				AND @rptHashSum IS NOT NULL 
+			)
+			BEGIN
+				-- GET total rows on bettrans
+				;WITH CTE_Total AS (
+					SELECT s.whticket
+						, s.totalrow
+						, CASE 
+							WHEN  s.whticket = 1 THEN @rptHash
+							WHEN  s.whticket = 2 THEN @rptHashSum 
+							ELSE NULL
+						END AS rptHash
+					FROM #tempSumTotal s
 				)
-				AND (
-					@searchCust 	= 0
-					OR (@searchCust = 1 AND tc.custid > 0)
-				)
-			GROUP BY 
-				CASE WHEN @ReportBy =  2 THEN DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0)
-						ELSE b.winlostdate
-					END
-				, b.custid
-				, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username)
-			
-		) p
-		WHERE p.RowIdx BETWEEN @offsetRow AND @maxRow
+				-- totalBettrans & totalSumRpt
+				UPDATE rpt
+				SET rpt.totalrow = t.TotalRow
+				FROM ##tempLRFCustTORpt rpt
+					INNER JOIN CTE_Total t 
+					ON rpt.rptHash = t.rptHash AND rpt.whticket = t.whticket
+					
+			END
+		END
+		
 	END
 	
-	--GET sum member detial
-	IF(@totalBettrans > 0 AND EXISTS ( SELECT TOP 1 1 FROM #tempCustRec WHERE whticket= 1 ))
+	--SELECT * FROM #tempSumTotal
+	
+	GET_SUMMEMBER:
 	BEGIN
-		INSERT INTO #custData
-		SELECT c.rowno
-			, c.winlostdate 
-			, c.custid
-			, c.username
-			, rec.currency
-			, CASE 
-				WHEN m.sporttype	IS NOT NULL		AND bt.EventType  =  1	THEN m.sporttype
-				WHEN l.sporttype	IS NOT NULL		AND bt.EventType  =  2	THEN l.sporttype
-				WHEN r.sporttype 	IS NOT NULL		AND bt.EventType  =  3	THEN r.SportType
-				ELSE 1 
-			END AS sporttype
-			,b.bettype
-			,SUM(1) as betcount
-			,SUM(b.stake) as turnover 
-			,SUM(b.winlost - b.actual_stake) as winlost
-			,SUM(b.playercomm) as playercomm
-		FROM dbo.bettrans b WITH(NOLOCK)
-			INNER JOIN #recommend rec
-			ON b.Recommend	= rec.CustID
-			INNER JOIN #tempCustRec c 
-			ON  b.custid		= c.custid 
-			AND CASE WHEN @ReportBy =  2 THEN DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0)
-						ELSE b.winlostdate
-					END = c.winlostdate
-			INNER JOIN #bettype bt
-			ON b.bettype 	=  bt.typeid
-			INNER JOIN #Status st
-			ON b.StatusID 	=  st.StatusID
-			--EventType =  1
-			LEFT JOIN dbo.match m WITH (NOLOCK) 
-			ON b.matchid 		= m.matchid
-			AND bt.EventType 	= 1
-			--EventType =  2
-			LEFT JOIN dbo.outright o with(nolock) 
-			ON b.matchid 		= o.orid 
-			AND bt.EventType 	= 2
-			LEFT JOIN dbo.league l with(nolock) 
-			ON o.leagueid 		= l.leagueid
-			--EventType =  3
-			LEFT JOIN dbo.VSOutright  vs WITH (NOLOCK)
-			ON b.oddsid			= vs.Orid
-			AND bt.EventType 	= 3
-			LEFT JOIN dbo.VSRaceInfo r WITH (NOLOCK) 
-			ON vs.EventID  		= r.EventID
-			LEFT JOIN #ProductID p 
-			ON (
-				bt.EventType	= 1 AND m.sporttype	= p.sportID
-				OR bt.EventType = 2 AND l.sporttype	= p.sportID
-				OR bt.EventType = 3 AND r.sporttype	= p.sportID
-				OR bt.EventType = 0 AND 1			= p.sportID
-			)
-		WHERE c.WhTicket = 1
-			AND p.sportID IS NOT NULL
-			AND (@odds = 0 
-				OR (@odds > 0 
-					AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-								OR b.bettype BETWEEN 81 AND 88
-								OR b.bettype BETWEEN 90 AND 120
-								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
-								)
-								THEN 
-										CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
-											 WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
-											 WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
-																	CASE 
-																		WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
-																		WHEN b.odds >=0 THEN (1 + b.odds) END
-											 WHEN OddsType = 5 THEN --american odds to decimal
-																CASE
-																WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
-																WHEN (b.odds * 100) % 2 = 0 THEN 2
-																WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
-										 END 
-						  ELSE b.Odds
-					 END >= @odds 
-				)
-			)
+		DECLARE @pStartDate	DATE
+			,@pEndDate		DATE
 
+		SELECT @pStartDate	= MIN(Winlostdate)
+			, @pEndDate		= MAX(Winlostdate)
+		FROM #tempCustPaging c
 
-		GROUP BY
-			c.rowno
-			,c.winlostdate 
-			,c.custid
-			,c.username
-			,rec.currency
-			, CASE 
-				WHEN m.sporttype	IS NOT NULL		AND bt.EventType  =  1	THEN m.sporttype
-				WHEN l.sporttype	IS NOT NULL		AND bt.EventType  =  2	THEN l.sporttype
-				WHEN r.sporttype 	IS NOT NULL		AND bt.EventType  =  3	THEN r.SportType
-				ELSE 1 
-			END
-			,b.bettype
-	END
-
-	IF(@totalSumRpt > 0 AND EXISTS ( SELECT TOP 1 1 FROM #tempCustRec WHERE whticket= 2 ))
-	BEGIN
-		INSERT INTO #custData
-		SELECT 
-			c.rowno
-			, c.winlostdate 
-			, c.custid
-			, c.username
-			, rec.currency
-			, CASE	WHEN b.bettype IN (9, 10, 29) THEN 1
-					ELSE b.sporttype 
-				END AS sporttype  
-			,b.bettype
-			,SUM(b.betcount) as betcount
-			,SUM(b.stake) as turnover 
-			,SUM(b.winlost) as winlost
-			,SUM(b.playercomm) as playercomm
-		FROM bodb_LicenseeReport.dbo.rptcustomerturnOver_bobby b WITH (NOLOCK)
-			INNER JOIN #recommend rec
-			ON b.Recommend	= rec.CustID
-			INNER JOIN #tempCustRec c 
-			ON  b.custid		= c.custid 
-				AND CASE WHEN @ReportBy =  2 THEN DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0)
-						ELSE b.winlostdate
-					END = c.winlostdate
-			INNER JOIN #bettype bt
-			ON b.bettype 	=  bt.typeid
-			INNER JOIN #Status st
-			ON b.StatusID 	=  st.StatusID
-			INNER JOIN #ProductID p 
-			ON CASE	WHEN b.bettype IN (9, 10, 29) THEN 1
-					ELSE b.sporttype 
-				END			= p.sportID
-		WHERE c.whticket	= 2
-			AND (@odds = 0 
-				OR (@odds > 0 
-					AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-								OR b.bettype BETWEEN 81 AND 88
-								OR b.bettype BETWEEN 90 AND 120
-								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
-								)
-								THEN 
-										CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
-											 WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
-											 WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
-																	CASE 
-																		WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
-																		WHEN b.odds >=0 THEN (1 + b.odds) END
-											 WHEN OddsType = 5 THEN --american odds to decimal
-																CASE
-																WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
-																WHEN (b.odds * 100) % 2 = 0 THEN 2
-																WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
-										 END 
-						  ELSE b.Odds
-					 END >= @odds 
-				)
-			)
-		GROUP BY
-			c.rowno
-			, c.winlostdate 
-			, c.custid
-			, c.username
-			, rec.currency
-			, CASE	WHEN b.bettype IN (9, 10, 29) THEN 1
-					ELSE b.sporttype 
-				END
-			,b.bettype
-	END
-
+		SET @pEndDate		= CASE WHEN @reportBy = 2 THEN DATEADD(DD, -1, DATEADD(M, 1, @pEndDate)) ELSE @pEndDate END
+		
+		EXEC [dbo].[Lrf_Rpt_CustomerTurnOver_SumMember]
+			@pStartDate		= @pStartDate
+			,@pEndDate		= @pEndDate
+			,@Odds 			= @Odds
+			,@ReportBy  	= @ReportBy
+	END	
+	
+	
 	OutputResult:
 	BEGIN
-		SELECT 
-			c.RowNo
-			, CASE WHEN @ReportBy =  2 THEN CONVERT(VARCHAR(6), c.winlostdate, 112)
-				ELSE CONVERT(VARCHAR(8), c.winlostdate, 112)
-			END AS ReportBy
-			, c.username
-			, e.Code AS currency
-			, c.sporttype
-			, CASE 
+		WITH CTE_Bettype AS
+		(
+			SELECT b.bettype
+				,CASE 
 					WHEN @Langkey =  'zh-CN'	AND ISNULL(bt.typenamecn, '')	<> '' THEN bt.typenamecn
 					WHEN @Langkey =  'zh-TW'	AND ISNULL(bt.typenamecn, '')	<> '' THEN bt.typenamecn
 					WHEN @Langkey =  'th-TH'	AND ISNULL(bt.typenameth, '')	<> '' THEN bt.typenameth
@@ -821,27 +475,67 @@ BEGIN
 					WHEN @Langkey =  'es'  		AND ISNULL(bt.typenameES, '')	<> '' THEN bt.typenameES
 					WHEN @Langkey =  'vi-VN'	AND ISNULL(bt.typenamee, '')	<> '' THEN bt.typenamee
 					ELSE typenamee 
-				END AS bettype
-			, c.betcount
-			, c.turnover
-			, c.winlost
-			, c.playercomm
-		FROM #custData c
-			LEFT JOIN dbo.f_GroupBettype() ss 
-			ON c.bettype = ss.bettype
-			INNER JOIN dbo.bettype bt WITH(NOLOCK)
-			ON ISNULL(ss.GroupTypeID, c.bettype) = bt.typeid
+				END AS typenamee
+			FROM #custData b
+				LEFT JOIN dbo.f_GroupBettype() ss 
+				ON b.bettype 	= ss.bettype
+				INNER JOIN dbo.bettype bt WITH(NOLOCK)
+				ON ISNULL(ss.GroupTypeID, b.bettype) = bt.typeid
+				
+			GROUP BY 
+				b.bettype
+				,CASE 
+					WHEN @Langkey =  'zh-CN'	AND ISNULL(bt.typenamecn, '')	<> '' THEN bt.typenamecn
+					WHEN @Langkey =  'zh-TW'	AND ISNULL(bt.typenamecn, '')	<> '' THEN bt.typenamecn
+					WHEN @Langkey =  'th-TH'	AND ISNULL(bt.typenameth, '')	<> '' THEN bt.typenameth
+					WHEN @Langkey =  'ja-JP'	AND ISNULL(bt.typenamej, '')	<> '' THEN bt.typenamej
+					WHEN @Langkey =  'ko-KR'	AND ISNULL(bt.typenameko, '')	<> '' THEN bt.typenameko
+					WHEN @Langkey =  'es'  		AND ISNULL(bt.typenameES, '')	<> '' THEN bt.typenameES
+					WHEN @Langkey =  'vi-VN'	AND ISNULL(bt.typenamee, '')	<> '' THEN bt.typenamee
+					ELSE bt.typenamee 
+				END
+		)
+		SELECT 
+			b.RowNo
+			, CASE WHEN @ReportBy =  2 THEN CONVERT(VARCHAR(6), b.winlostdate, 112)
+				ELSE CONVERT(VARCHAR(8), b.winlostdate, 112)
+			END AS ReportBy
+			, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS username
+			, CASE 
+				WHEN e.exchangeid = 20 THEN 'UUS'
+				WHEN e.exchangeid = 51 THEN 'INH'
+				ELSE e.Code END AS Currency
+			, b.sporttype
+			, CASE WHEN b.bettype BETWEEN 81 AND 120 THEN  N'NG - ' + bt.typenamee
+				 WHEN (b.bettype BETWEEN 1201 AND 1299) THEN  N'VS - '+bt.typenamee + CASE WHEN b.bettype = 1204 THEN '(Soccer)'
+																					WHEN b.bettype = 1235 THEN '(Tennis)'
+																					ELSE ''
+																				END
+				 ELSE  bt.typenamee
+			END AS bettype
+			, b.betcount
+			, b.turnover
+			, b.winlost
+			, b.playercomm
+			--, b.whticket
+		FROM #custData b
+			INNER JOIN bodb_licensee.dbo.LicenseeCustinfo c WITH (NOLOCK) 
+			ON b.CustID		= c.CustID 
+			INNER JOIN CTE_Bettype bt
+			ON b.bettype = bt.bettype
 			INNER JOIN dbo.exchange e WITH (NOLOCK) 
-			ON c.currency = e.exchangeid
+			ON b.currency = e.exchangeid
 		ORDER BY 
-			c.rowno
-
+			b.rowno ASC
+			
+		-- OUTPUT sumtotal
 		SELECT 
 			SUM(ISNULL(s.betcount, 0))		AS SumBetCount
 			, SUM(ISNULL(s.turnover, 0))	AS SumTurnover
 			, SUM(ISNULL(s.winlost, 0))		AS SumWinlost
 			, SUM(ISNULL(s.playercomm, 0))	AS SumComm
 			, SUM(ISNULL(s.totalrow, 0))	AS TotalRows
+			
 		FROM #tempSumTotal s
 	END
 	
@@ -850,7 +544,7 @@ BEGIN
 	DROP TABLE #bettype 
 	DROP TABLE #Status
 	DROP TABLE #recommend
-	DROP TABLE #tempCustRec
+	DROP TABLE #tempCustPaging
 	DROP TABLE #custData
 	DROP TABLE #tempSumTotal
 	
@@ -859,7 +553,7 @@ BEGIN
 	
 	RETURN;
 END
-GO
+GO 
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [bodbLicenseeNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [vnteam] 
