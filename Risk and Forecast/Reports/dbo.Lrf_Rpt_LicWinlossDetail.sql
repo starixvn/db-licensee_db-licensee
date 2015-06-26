@@ -218,12 +218,12 @@ BEGIN
 	WHERE (typeid BETWEEN 2001 AND 2007)
 END 
 
-IF @ShowBT=1 -- Bet trade
-BEGIN 	
-	INSERT INTO @bettype(bettype)
-	SELECT typeid FROM bettype (NOLOCK)
-	WHERE (typeid BETWEEN 901 AND 903)
-END 
+--IF @ShowBT=1 -- Bet trade
+--BEGIN 	
+--	INSERT INTO @bettype(bettype)
+--	SELECT typeid FROM bettype (NOLOCK)
+--	WHERE (typeid BETWEEN 901 AND 903)
+--END 
 
 DECLARE @TempFromDate DATETIME 
 DECLARE @TempToDate DATETIME 
@@ -776,6 +776,62 @@ BEGIN
 		GROUP BY  b.custid,b.statusID
 	END
 	
+		IF ( @ShowBT=1)
+	BEGIN
+		INSERT INTO #SAgWinLoss
+		SELECT   
+			b.winlostdate,  
+			ag.currency,
+			0 turnoverSB, 
+			0 AS turnoverBA,
+			0 turnoverNG, 
+			0 AS turnoverRB,
+			0 turnoverLC, 
+			0 turnoverVS, 
+			0 turnoverCS,
+			0 tunroverBG,
+			0 tunroverKN,
+			0 turnoverMGC,
+			0 AS Winlost,  
+			0 AS LicenseeWLSB,
+			0 AS LicenseeWLBA,
+			0 AS LicenseeWLNG,
+			0 AS LicenseeWLRB,
+			0 AS LicenseeWLLC,
+			0 AS LicenseeWLVS,
+			0 AS LicenseeWLCS,
+			0 AS LicenseeWLBG,
+			0 AS LicenseeWLKN,
+			0 AS LicenseeWLMGC,			
+			0 as AmountDueToBA,
+			0 as AmountDueToRB,
+			0 as CommBA,
+			0 as CommRB,
+			0 as PlayerComm,
+			COUNT(CASE WHEN b.bettype = 903 THEN NULL	
+				ELSE b.BetCount END)
+			* CASE WHEN @drawfilter = 2  THEN
+					CASE WHEN b.statusID = 111 THEN 0
+					ELSE 1 END
+				ELSE 1 END
+			   BetCount,	
+			SUM(CASE WHEN b.bettype IN (901,902) THEN (b.awinlost)
+				ELSE 0 END) AS BetTrade,
+			SUM(CASE WHEN b.bettype =903 THEN b.awinlost
+				ELSE 0 END) AS BetTradeComm,
+			0 WLBetTicket,
+			SUM(CASE WHEN b.bettype =902 THEN (b.awinlost)
+				ELSE 0 END) AS WLBoughtTicket
+		FROM 
+			bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
+			INNER JOIN @TempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
+			
+		WHERE 
+			b.Winlostdate BETWEEN @FDate AND @TempToDate  
+			AND b.bettype IN (901,902,903)
+		GROUP BY   
+			b.winlostdate,ag.currency,statusID,b.bettype
+	END
 			
  END 
  
@@ -982,6 +1038,63 @@ BEGIN
 			AND ISNULL(b.isBA,0) = 0
 		GROUP BY  b.custid,b.statusID
 		
+	END
+
+		IF ( @ShowBT=1)
+	BEGIN
+		INSERT INTO #SAgWinLoss
+		SELECT   
+			b.winlostdate,  
+			ag.currency,
+			0 turnoverSB, 
+			0 AS turnoverBA,
+			0 turnoverNG, 
+			0 AS turnoverRB,
+			0 turnoverLC, 
+			0 turnoverVS, 
+			0 turnoverCS,
+			0 tunroverBG,
+			0 tunroverKN,
+			0 turnoverMGC,
+			0 AS Winlost,  
+			0 AS LicenseeWLSB,
+			0 AS LicenseeWLBA,
+			0 AS LicenseeWLNG,
+			0 AS LicenseeWLRB,
+			0 AS LicenseeWLLC,
+			0 AS LicenseeWLVS,
+			0 AS LicenseeWLCS,
+			0 AS LicenseeWLBG,
+			0 AS LicenseeWLKN,
+			0 AS LicenseeWLMGC,			
+			0 as AmountDueToBA,
+			0 as AmountDueToRB,
+			0 as CommBA,
+			0 as CommRB,
+			0 as PlayerComm,
+			COUNT(CASE WHEN b.bettype = 903 THEN NULL	
+				ELSE b.BetCount END)
+			* CASE WHEN @drawfilter = 2  THEN
+					CASE WHEN b.statusID = 111 THEN 0
+					ELSE 1 END
+				ELSE 1 END
+			   BetCount,	
+			SUM(CASE WHEN b.bettype IN (901,902) THEN (b.awinlost)
+				ELSE 0 END) AS BetTrade,
+			SUM(CASE WHEN b.bettype =903 THEN b.awinlost
+				ELSE 0 END) AS BetTradeComm,
+			0 WLBetTicket,
+			SUM(CASE WHEN b.bettype =902 THEN (b.awinlost)
+				ELSE 0 END) AS WLBoughtTicket
+		FROM 
+			bodb_Licensee.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
+			INNER JOIN @TempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
+			
+		WHERE 
+			b.Winlostdate BETWEEN @FDate AND @TempToDate  
+			AND b.bettype IN (901,902,903)
+		GROUP BY   
+			b.winlostdate,ag.currency,statusID,b.bettype
 	END
  END
 
