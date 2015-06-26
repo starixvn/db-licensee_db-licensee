@@ -47,6 +47,7 @@ Revisions:
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	- 20150128@JIm: base on GBP
 	- 20150612@Jim: support MicroGaming
+	- 20150626@Winnie: support bettrade
 */
 SET NOCOUNT ON
 
@@ -81,6 +82,14 @@ DECLARE
 	@SelectedMonthPlayerCommUSD MONEY,
 	@SelectedMonthPlayerCommEUR MONEY,
 	@SelectedMonthPlayerCommGBP MONEY,
+	@SelectedMonthBetTradeComm    MONEY,
+	@SelectedMonthBetTradeCommUSD MONEY,
+	@SelectedMonthBetTradeCommEUR MONEY,
+	@SelectedMonthBetTradeCommGBP MONEY,
+	@SelectedMonthAmtDueToBT	MONEY,
+	@SelectedMonthAmtDueToBTUSD MONEY,
+	@SelectedMonthAmtDueToBTEUR MONEY,
+	@SelectedMonthAmtDueToBTGBP MONEY,
 	
 	@TodayLicenseeWL MONEY,
 	@TodayLicenseeWLUSD MONEY,
@@ -110,6 +119,14 @@ DECLARE
 	@TodayPlayerCommUSD MONEY,
 	@TodayPlayerCommEUR MONEY,
 	@TodayPlayerCommGBP MONEY,
+	@TodayBetTradeComm    MONEY,
+	@TodayBetTradeCommUSD MONEY,
+	@TodayBetTradeCommEUR MONEY,
+	@TodayBetTradeCommGBP MONEY,
+	@TodayAmtDueToBT    MONEY,
+	@TodayAmtDueToBTUSD MONEY,
+	@TodayAmtDueToBTEUR MONEY,
+	@TodayAmtDueToBTGBP MONEY,
 	
 		
 	@YesterdayLicenseeWL MONEY,
@@ -140,7 +157,14 @@ DECLARE
 	@YesterdayPlayerCommUSD MONEY,
 	@YesterdayPlayerCommEUR MONEY,
 	@YesterdayPlayerCommGBP MONEY,
-	
+	@YesterdayBetTradeComm    MONEY,
+	@YesterdayBetTradeCommUSD MONEY,
+	@YesterdayBetTradeCommEUR MONEY,
+	@YesterdayBetTradeCommGBP MONEY,
+	@YesterdayAmtDueToBT    MONEY,
+	@YesterdayAmtDueToBTUSD MONEY,
+	@YesterdayAmtDueToBTEUR MONEY,
+	@YesterdayAmtDueToBTGBP MONEY,
 	
 	@MemberOutstanding MONEY,
 	@MemberOutstandingUSD MONEY,
@@ -164,10 +188,10 @@ DECLARE @SumTemp as table
 	SelectedMonthWinlossRB MONEY,
 	SelectedMonthCommBA MONEY,
 	SelectedMonthCommRB MONEY,
-	SelectedMonthPlayerComm MONEY
-	
-	
-	
+	SelectedMonthPlayerComm MONEY,
+	SelectedMonthBetTradeComm MONEY,
+	SelectedMonthWLBetTicket MONEY ,	
+	SelectedMonthWLBoughtTicket MONEY
 )
 DECLARE @SumOutstanding as table
 (
@@ -184,16 +208,17 @@ DECLARE @LicenseeWL as table
 	WinlossRB money,
 	CommBA money,
 	CommRB money,
-	PlayerComm MONEY
-	
-	
+	PlayerComm MONEY,
+	WLBetTicket MONEY,
+	BetTradeComm MONEY,
+	WLBoughtTicket	 MONEY
 )
 
 
 DECLARE @Today SMALLDATETIME, @Yesterday SMALLDATETIME
 DECLARE @Exchange TABLE(ExchangeDate SMALLDATETIME, ExchangeId INT, USD FLOAT, EUR FLOAT,MYR FLOAT,GBP FLOAT,Code VARCHAR(10), PRIMARY KEY(ExchangeDate,ExchangeId))
-
-
+DECLARE @LicenseeName VARCHAR(50)
+SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WHERE LicenseeID = @LicenseeID
 
 SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
 SET @Yesterday = CONVERT(VARCHAR(10), DATEADD(DAY,-1,@Today), 120) 
@@ -293,6 +318,7 @@ CREATE TABLE #Temp_Bettrans
 		       ,playercomm money
 			   ,awinlost money
 		       ,actual_stake money
+			   ,betdaqid bigint
 			 )
 
 INSERT INTO #Temp_Bettrans (srecommend
@@ -307,6 +333,7 @@ INSERT INTO #Temp_Bettrans (srecommend
 							,playercomm
 							,awinlost
 							,actual_stake
+							,betdaqid
 							)
 SELECT srecommend
 	  ,winlostdate
@@ -320,6 +347,7 @@ SELECT srecommend
 	  ,playercomm
 	  ,awinlost
 	  ,actual_stake
+	  ,betdaqid
 FROM dbo.bettrans b WITH(NOLOCK) 
 	INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
 WHERE 
@@ -327,7 +355,7 @@ WHERE
 	AND b.bettype <= 2007 
 	AND b.statusID IN (111,112,113)	
 
-INSERT INTO @LicenseeWL (winlostdate,currency,LicenseeWL,AmtDuetoBA,AmtDuetoRB,WinlossRB,CommBA,CommRB,PlayerComm)
+INSERT INTO @LicenseeWL (winlostdate,currency,LicenseeWL,AmtDuetoBA,AmtDuetoRB,WinlossRB,CommBA,CommRB,PlayerComm,WLBetTicket,BetTradeComm,WLBoughtTicket)
 SELECT
 	b.winlostdate,a.currency,
 	
@@ -335,7 +363,7 @@ SELECT
 			CASE WHEN (
 			(
 				(bettype < 31 OR bettype BETWEEN 121 AND 999 OR (bettype BETWEEN 1301 AND 1399)) 
-				AND b.tpositiontaking<>0
+				AND b.tpositiontaking<>0 AND bettype NOT IN(901,902,903)
 			) 
 			OR 
 			(
@@ -355,7 +383,14 @@ SELECT
 	ISNULL(SUM (CASE WHEN b.bettype IN (31,32,33) THEN b.awinlost ELSE 0 END),0) AS WinlossRB,
 	ISNULL(SUM ( CASE WHEN b.tpositiontaking=0 AND ((b.bettype NOT BETWEEN 31 AND 120 AND b.bettype<=999) OR (b.bettype BETWEEN 1301 and 1399)) THEN  comm  ELSE 0 END),0) AS CommBA,
 	ISNULL(SUM ( CASE WHEN b.bettype IN (31,32,33) THEN comm  ELSE 0 END),0) AS CommRB,
-	ISNULL(SUM (  playercomm ),0) AS PlayerComm
+	ISNULL(SUM (  playercomm ),0) AS PlayerComm,
+	SUM(CASE WHEN (bettype < 31 OR bettype BETWEEN 121 AND 999 OR (bettype BETWEEN 1301 AND 1399)) AND bettype NOT IN(901,902,903)
+					AND betdaqid =0 THEN (b.winlost-b.actual_stake)
+				ELSE 0 END) AS WLBetTicket,
+	SUM(CASE WHEN b.bettype =903 THEN b.awinlost
+				ELSE 0 END) AS BetTradeComm,		
+			SUM(CASE WHEN b.bettype =902 THEN (b.winlost-b.actual_stake)
+				ELSE 0 END) AS WLBoughtTicket
 	
 FROM #Temp_Bettrans b 
 	INNER JOIN @TempAg a ON b.recommend = a.custid AND b.currency = a.currency
@@ -390,8 +425,15 @@ SELECT
 	@YesterdayPlayerComm    = sum(PlayerComm),
 	@YesterdayPlayerCommUSD = sum(PlayerComm*e.USD),
 	@YesterdayPlayerCommEUR = sum(PlayerComm*e.EUR), -- yesterday
-	@YesterdayPlayerCommGBP = sum(PlayerComm*e.GBP) -- yesterday
-	
+	@YesterdayPlayerCommGBP = sum(PlayerComm*e.GBP), -- yesterday
+	@YesterdayBetTradeComm  = sum(BetTradeComm),
+	@YesterdayBetTradeCommUSD = sum(BetTradeComm*e.USD),
+	@YesterdayBetTradeCommEUR = sum(BetTradeComm*e.EUR),
+	@YesterdayBetTradeCommGBP = sum(BetTradeComm*e.GBP),
+	@YesterdayAmtDueToBT	  =  sum(b.WLBetTicket+b.WLBoughtTicket-b.BetTradeComm),
+	@YesterdayAmtDueToBTUSD	  =  sum((b.WLBetTicket+b.WLBoughtTicket-b.BetTradeComm)*e.USD),
+	@YesterdayAmtDueToBTEUR	  =  sum((b.WLBetTicket+b.WLBoughtTicket-b.BetTradeComm)*e.EUR),
+	@YesterdayAmtDueToBTGBP	  =  sum((b.WLBetTicket+b.WLBoughtTicket-b.BetTradeComm)*e.GBP)
 	
 FROM 
 	@LicenseeWL b 
@@ -428,7 +470,15 @@ SELECT
 	@TodayPlayerComm=ISNULL(SUM(playercomm),0),
 	@TodayPlayerCommUSD=ISNULL(SUM(Playercomm*e.USD),0),
 	@TodayPlayerCommEUR=ISNULL(SUM((Playercomm)*e.EUR),0),
-	@TodayPlayerCommGBP=ISNULL(SUM((Playercomm)*e.GBP),0)
+	@TodayPlayerCommGBP=ISNULL(SUM((Playercomm)*e.GBP),0),
+	@TodayBetTradeComm  = sum(BetTradeComm),
+	@TodayBetTradeCommUSD = sum(BetTradeComm*e.USD),
+	@TodayBetTradeCommEUR = sum(BetTradeComm*e.EUR),
+	@TodayBetTradeCommGBP = sum(BetTradeComm*e.GBP),
+	@TodayAmtDueToBT	  =  sum(b.WLBetTicket+b.WLBoughtTicket-b.BetTradeComm),
+	@TodayAmtDueToBTUSD	  =  sum((b.WLBetTicket+b.WLBoughtTicket-b.BetTradeComm)*e.USD),
+	@TodayAmtDueToBTEUR	  =  sum((b.WLBetTicket+b.WLBoughtTicket-b.BetTradeComm)*e.EUR),
+	@TodayAmtDueToBTGBP	  =  sum((b.WLBetTicket+b.WLBoughtTicket-b.BetTradeComm)*e.GBP)
 	
 FROM 
 	@LicenseeWL b 
@@ -456,7 +506,10 @@ BEGIN
 						SelectedMonthWinlossRB,
 						SelectedMonthCommBA,
 						SelectedMonthCommRB,
-						SelectedMonthPlayerComm
+						SelectedMonthPlayerComm,
+						SelectedMonthBetTradeComm,
+						SelectedMonthWLBetTicket,
+						SelectedMonthWLBoughtTicket
 						)
 						
     SELECT 
@@ -467,8 +520,10 @@ BEGIN
 	    ISNULL(SUM (WinlossRB),0),
 	    ISNULL(SUM (CommBA),0),
 	    ISNULL(SUM (CommRB),0),
-		ISNULL(SUM (playercomm),0)
-	
+		ISNULL(SUM (playercomm),0),
+		ISNULL(SUM (BetTradeComm),0),
+		ISNULL(SUM (b.WLBetTicket),0),
+		ISNULL(SUM (b.WLBoughtTicket),0)
     FROM 
 	    @LicenseeWL b
     WHERE 
@@ -493,11 +548,16 @@ BEGIN
 		ISNULL(SUM (CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END),0) AS SelectedMonthWinlossRB,
 		ISNULL(SUM ( CASE WHEN ISNULL(b.isBA,0) = 1 THEN  comm  ELSE 0 END),0) AS SelectedMonthCommBA,
 		ISNULL(SUM ( CASE WHEN b.sporttype = 151 THEN comm ELSE 0 END),0)  AS SelectedMonthCommRB,
-		ISNULL(SUM ( playercomm),0) AS SelectedMonthPlayerComm
-		
+		ISNULL(SUM ( playercomm),0) AS SelectedMonthPlayerComm,
+		SUM(CASE WHEN b.bettype =903 THEN b.awinlost
+				ELSE 0 END) AS SelectedMonthBetTradeComm,
+		ISNULL(- SUM(CASE WHEN (b.sporttype =0) AND bt.Custid IS NOT NULL THEN b.winlost ELSE 0 END),0) AS SelectedMonthWLBetTicket,			
+		SUM(CASE WHEN b.bettype =902 THEN (b.winlost)
+				ELSE 0 END) AS SelectedMonthWLBoughtTicket
 	FROM 
 		bodb_Licensee.dbo.rptLicWinloss2 b WITH(NOLOCK) 
 		INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
+		LEFT JOIN f_GetBetTradeCustList(@LicenseeName) bt ON b.custid=bt.Custid AND b.Currency = bt.currency
 	WHERE
 		b.Winlostdate BETWEEN @_FromDate AND @TempToDate AND	
 		roleID = 2 AND 
@@ -516,10 +576,16 @@ BEGIN
 		ISNULL(SUM (CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END),0) AS SelectedMonthWinlossRB,
 		ISNULL(SUM ( CASE WHEN ISNULL(b.isBA,0) = 1 THEN  comm  ELSE 0 END),0) AS SelectedMonthCommBA,
 		ISNULL(SUM ( CASE WHEN b.sporttype = 151 THEN comm  ELSE 0 END),0)  AS SelectedMonthCommRB,
-		ISNULL(SUM ( playercomm ),0) AS SelectedMonthPlayerComm
+		ISNULL(SUM ( playercomm ),0) AS SelectedMonthPlayerComm,
+		SUM(CASE WHEN b.bettype =903 THEN b.awinlost
+				ELSE 0 END) AS SelectedMonthBetTradeComm,
+		ISNULL(- SUM(CASE WHEN (b.sporttype =0) AND bt.Custid IS NOT NULL THEN b.winlost ELSE 0 END),0) AS SelectedMonthWLBetTicket,			
+		SUM(CASE WHEN b.bettype =902 THEN (b.winlost)
+				ELSE 0 END) AS SelectedMonthWLBoughtTicket
 	FROM 
 		bodb_Licensee.dbo.rptLicWinloss_old b WITH(NOLOCK)
 		INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency	
+		LEFT JOIN f_GetBetTradeCustList(@LicenseeName) bt ON b.custid=bt.Custid AND b.Currency = bt.currency
 	WHERE
 		b.Winlostdate BETWEEN @_FromDate AND @_ToDate AND	
 		roleID = 2 AND 
@@ -557,7 +623,15 @@ SELECT
 	@SelectedMonthPlayerComm = SUM(SelectedMonthPLayerComm),
 	@SelectedMonthPlayerCommUSD = SUM(SelectedMonthPlayerComm * e.USD),
 	@SelectedMonthPlayerCommEUR =  SUM(SelectedMonthPlayerComm * e.EUR),
-	@SelectedMonthPlayerCommGBP =  SUM(SelectedMonthPlayerComm * e.GBP)
+	@SelectedMonthPlayerCommGBP =  SUM(SelectedMonthPlayerComm * e.GBP),
+	@SelectedMonthBetTradeComm = SUM(SelectedMonthBetTradeComm),
+	@SelectedMonthBetTradeCommUSD = SUM(SelectedMonthBetTradeComm * e.USD),
+	@SelectedMonthBetTradeCommEUR =  SUM(SelectedMonthBetTradeComm * e.EUR),
+	@SelectedMonthBetTradeCommGBP =  SUM(SelectedMonthBetTradeComm * e.GBP),
+	@SelectedMonthAmtDueToBT	  = SUM(SelectedMonthWLBetTicket+SelectedMonthWLBoughtTicket-SelectedMonthBetTradeComm),
+	@SelectedMonthAmtDueToBTUSD = SUM((SelectedMonthWLBetTicket+SelectedMonthWLBoughtTicket-SelectedMonthBetTradeComm) * e.USD),
+	@SelectedMonthAmtDueToBTEUR =  SUM((SelectedMonthWLBetTicket+SelectedMonthWLBoughtTicket-SelectedMonthBetTradeComm) * e.EUR),
+	@SelectedMonthAmtDueToBTGBP =  SUM((SelectedMonthWLBetTicket+SelectedMonthWLBoughtTicket-SelectedMonthBetTradeComm) * e.GBP)
 	
 
 FROM 
