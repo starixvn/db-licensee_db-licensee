@@ -280,7 +280,7 @@ BEGIN
 		   BetCount,
 		0 AS BetTrade,
 		0 AS BetTradeComm,			
-		SUM(CASE WHEN b.betdaqid =0 THEN (b.awinlost-b.actual_stake)
+		SUM(CASE WHEN b.betdaqid =0 THEN (b.winlost-b.actual_stake)
 			ELSE 0 END) AS WLBetTicket,
 		0 AS WLBoughtTicket
 
@@ -348,7 +348,7 @@ BEGIN
 			   BetCount,
 			0 AS BetTrade,
 			0 AS BetTradeComm,			
-			SUM(CASE WHEN b.betdaqid =0 THEN (b.awinlost-b.actual_stake)
+			SUM(CASE WHEN b.betdaqid =0 THEN (b.winlost-b.actual_stake)
 				ELSE 0 END) AS WLBetTicket,
 			0 AS WLBoughtTicket
 		FROM 
@@ -411,12 +411,12 @@ BEGIN
 					ELSE 1 END
 				ELSE 1 END
 			   BetCount,
-			SUM(CASE WHEN b.bettype IN (901,902) THEN (b.awinlost-b.actual_stake)
+			SUM(CASE WHEN b.bettype IN (901,902) THEN (b.winlost-b.actual_stake)
 				ELSE 0 END) AS BetTrade,
 			SUM(CASE WHEN b.bettype =903 THEN b.awinlost
 				ELSE 0 END) AS BetTradeComm,
 			0 WLBetTicket,
-			SUM(CASE WHEN b.bettype =902 THEN (b.awinlost-b.actual_stake)
+			SUM(CASE WHEN b.bettype =902 THEN (b.winlost-b.actual_stake)
 				ELSE 0 END) AS WLBoughtTicket
 		FROM 
 			dbo.bettrans b WITH ( NOLOCK) 
@@ -855,12 +855,12 @@ BEGIN
 						ELSE 1 END
 					ELSE 1 END
 				   BetCount,	
-				SUM(CASE WHEN b.bettype IN (901,902) THEN (b.awinlost)
+				SUM(CASE WHEN b.bettype IN (901,902) THEN (b.winlost)
 					ELSE 0 END) AS BetTrade,
 				SUM(CASE WHEN b.bettype =903 THEN b.awinlost
 					ELSE 0 END) AS BetTradeComm,
 				0 WLBetTicket,
-				SUM(CASE WHEN b.bettype =902 THEN (b.awinlost)
+				SUM(CASE WHEN b.bettype =902 THEN (b.winlost)
 					ELSE 0 END) AS WLBoughtTicket
 			FROM 
 				bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
@@ -1119,12 +1119,12 @@ BEGIN
 						ELSE 1 END
 					ELSE 1 END
 				   BetCount,	
-				SUM(CASE WHEN b.bettype IN (901,902) THEN (b.awinlost)
+				SUM(CASE WHEN b.bettype IN (901,902) THEN (b.winlost)
 					ELSE 0 END) AS BetTrade,
 				SUM(CASE WHEN b.bettype =903 THEN b.awinlost
 					ELSE 0 END) AS BetTradeComm,
 				0 WLBetTicket,
-				SUM(CASE WHEN b.bettype =902 THEN (b.awinlost)
+				SUM(CASE WHEN b.bettype =902 THEN (b.winlost)
 					ELSE 0 END) AS WLBoughtTicket
 			FROM 
 				bodb_Licensee.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
