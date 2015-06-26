@@ -674,6 +674,16 @@ SELECT
 	ISNULL(@SelectedMonthAmtDuetoRBUSD,0) AS SelectedMonthAmtDuetoRBUSD,
 	ISNULL(@SelectedMonthAmtDuetoRBEUR,0) AS SelectedMonthAmtDuetoRBEUR,
 	ISNULL(@SelectedMonthAmtDuetoRBGBP,0) AS SelectedMonthAmtDuetoRBGBP,
+	-- Month Bettrade 
+	ISNULL(@SelectedMonthBetTradeComm,0) AS SelectedMonthBetTradeComm,
+	ISNULL(@SelectedMonthBetTradeCommUSD,0) AS SelectedMonthBetTradeCommUSD,
+	ISNULL(@SelectedMonthBetTradeCommEUR,0) AS SelectedMonthBetTradeCommEUR,
+	ISNULL(@SelectedMonthBetTradeCommGBP,0) AS SelectedMonthBetTradeCommGBP,
+	ISNULL(@SelectedMonthAmtDueToBT,0) AS SelectedMonthAmtDueToBT,
+	ISNULL(@SelectedMonthAmtDueToBTUSD,0) AS SelectedMonthAmtDueToBTUSD,
+	ISNULL(@SelectedMonthAmtDueToBTEUR,0) AS SelectedMonthAmtDueToBTEUR,
+	ISNULL(@SelectedMonthAmtDueToBTGBP,0) AS SelectedMonthAmtDueToBTGBP,
+	
 	--Yesterday WL
 	ISNULL(@YesterdayLicenseeWL,0) AS YesterdayLicenseeWL,
 	ISNULL(@YesterdayLicenseeWLUSD,0) AS YesterdayLicenseeWLUSD,
@@ -706,6 +716,17 @@ SELECT
 	ISNULL(@YesterdayAmtDuetoRBUSD,0) AS YesterdayAmtDuetoRBUSD,
 	ISNULL(@YesterdayAmtDuetoRBEUR,0) AS YesterdayAmtDuetoRBEUR,
 	ISNULL(@YesterdayAmtDuetoRBGBP,0) AS YesterdayAmtDuetoRBGBP,
+
+	-- yesterday bettrade
+	ISNULL(@YesterdayBetTradeComm,0) AS YesterdayBetTradeComm,
+	ISNULL(@YesterdayBetTradeCommUSD,0) AS YesterdayBetTradeCommUSD,
+	ISNULL(@YesterdayBetTradeCommEUR,0) AS YesterdayBetTradeCommEUR,
+	ISNULL(@YesterdayBetTradeCommGBP,0) AS YesterdayBetTradeCommGBP,
+	ISNULL(@YesterdayAmtDueToBT,0) AS YesterdayAmtDueToBT,
+	ISNULL(@YesterdayAmtDueToBTUSD,0) AS YesterdayAmtDueToBTUSD,
+	ISNULL(@YesterdayAmtDueToBTEUR,0) AS YesterdayAmtDueToBTEUR,
+	ISNULL(@YesterdayAmtDueToBTGBP,0) AS YesterdayAmtDueToBTGBP,
+
 	--TodayLicenseeWL
 	ISNULL(@TodayLicenseeWL,0) AS TodayLicenseeWL,
 	ISNULL(@TodayLicenseeWLUSD,0) AS TodayLicenseeWLUSD,
@@ -738,6 +759,16 @@ SELECT
 	ISNULL(@TodayAmtDuetoRBUSD,0) AS TodayAmtDuetoRBUSD,
 	ISNULL(@TodayAmtDuetoRBEUR,0) AS TodayAmtDuetoRBEUR,
 	ISNULL(@TodayAmtDuetoRBGBP,0) AS TodayAmtDuetoRBGBP,
+
+	-- Today bettrade
+	ISNULL(@TodayBetTradeComm,0)	AS TodayBetTradeComm,
+	ISNULL(@TodayBetTradeCommUSD,0) AS TodayBetTradeCommUSD,
+	ISNULL(@TodayBetTradeCommEUR,0) AS TodayBetTradeCommEUR,
+	ISNULL(@TodayBetTradeCommGBP,0) AS TodayBetTradeCommGBP,
+	ISNULL(@TodayAmtDueToBT,0)		AS TodayAmtDueToBT,
+	ISNULL(@TodayAmtDueToBTUSD,0) AS TodayAmtDueToBTUSD,
+	ISNULL(@TodayAmtDueToBTEUR,0) AS TodayAmtDueToBTEUR,
+	ISNULL(@TodayAmtDueToBTGBP,0) AS TodayAmtDueToBTGBP,
 	--
 	ISNULL(@MemberOutstanding,0) MemberOutstanding,
 	ISNULL(@MemberOutstandingUSD,0) MemberOutstandingUSD,
