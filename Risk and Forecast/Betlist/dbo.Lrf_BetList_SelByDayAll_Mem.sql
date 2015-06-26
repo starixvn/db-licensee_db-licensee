@@ -188,7 +188,7 @@ BEGIN
 
 	DELETE sbt
 	FROM @SportBettype sbt
-	WHERE ProductID	> 8 -- not suport for LIC system
+	WHERE (ProductID	> 8 AND ProductID <> 13) -- not suport for LIC system
 
 	-- end filer bettypes
 
