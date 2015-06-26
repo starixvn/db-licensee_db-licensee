@@ -21,6 +21,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
 	@ShowBG BIT = 0,-- Bingo
 	@ShowKN BIT = 0,
 	@ShowMGC BIT=0,
+	@ShowBT BIT=0,
     @MoveBetsDay DATETIME ,
     @PageSize INT = 1000 ,
     @PageIndex INT = 1,
@@ -70,6 +71,7 @@ AS /*
 		- 20141225@Jim: improve performance
 		- 20150129@Jim : add base on curreny GBP
 		- 20150612@Jim: support MicroGaming
+		- 20150625@Winnie: support BetTrade
 */
     
 SET NOCOUNT ON
@@ -277,6 +279,7 @@ BEGIN
 			AND b.currency IN (SELECT Currency FROM @TempAg)
 			AND b.statusID  IN (111, 112, 113)
 			and bettype < 19999
+			AND ((@ShowBT=1 AND b.bettype<>903) OR (@ShowBT=0 AND b.bettype NOT IN (901,902,903)))
 		GROUP BY b.CustID,b.winlostdate,b.currency	
 	END
 
@@ -314,6 +317,7 @@ BEGIN
 			AND b.currency IN (SELECT Currency FROM @TempAg)
 			AND b.statusID  IN (111, 112, 113)
 			AND b.tpositiontaking <>0
+			AND ((@ShowBT=1 AND b.bettype<>903) OR (@ShowBT=0 AND b.bettype NOT IN (901,902,903)))
 		GROUP BY b.CustID,b.winlostdate,b.currency	 
 	END
 
@@ -349,7 +353,7 @@ BEGIN
 		WHERE   
 			winlostdate BETWEEN @TempFromDate AND @_ToDate
 			AND b.currency IN (SELECT Currency FROM @TempAg)
-			AND b.statusID  IN (111, 112, 113)
+			AND b.statusID  IN (111, 112, 113)			
 		GROUP BY b.CustID,b.winlostdate,b.currency	
 	END
 	
@@ -393,6 +397,7 @@ BEGIN
 			AND roleID = 1
 			AND b.statusID <> 101
 			AND ISNULL(b.isBA,0) = 1
+			AND ((@ShowBT=1 AND b.bettype<>903) OR (@ShowBT=0 AND b.bettype NOT IN (901,902,903)))
 		GROUP BY b.CustID,b.winlostdate,b.currency	
 	END
 	
@@ -431,6 +436,7 @@ BEGIN
 			AND roleID = 1
 			AND ISNULL(b.isBA,0) = 0
 			AND b.statusID <> 101 
+			AND ((@ShowBT=1 AND b.bettype<>903) OR (@ShowBT=0 AND b.bettype NOT IN (901,902,903)))
 		GROUP BY b.CustID,b.winlostdate,b.currency	
 	END 
               
@@ -470,6 +476,7 @@ BEGIN
 			AND b.statusID <> 101 
 			AND ISNULL(b.isBA,0) = 1
 			AND b.currency IN (SELECT Currency FROM @TempAg)
+			AND ((@ShowBT=1 AND b.bettype<>903) OR (@ShowBT=0 AND b.bettype NOT IN (901,902,903)))
 		GROUP BY b.CustID,b.winlostdate,b.currency	
 	END
 	
@@ -505,6 +512,7 @@ BEGIN
 			AND roleID = 1
 			AND ISNULL(b.isBA,0) = 0
 			AND b.statusID <> 101 
+			AND ((@ShowBT=1 AND b.bettype<>903) OR (@ShowBT=0 AND b.bettype NOT IN (901,902,903)))
 		GROUP BY b.CustID,b.winlostdate,b.currency	
 	END
 END
