@@ -17,7 +17,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]
  @ShowBG   		BIT=0, -- Bingo 
  @ShowKN		BIT=0,--Keno
  @ShowMGC 		BIT=0,-- MicroGamming
- @ShowBT 		BIT=0,-- Bettrade
+ @ShowBT 		BIT=0,-- licenseeWLBT
  @ReportType	TINYINT=1,  
  @MoveBetsDay SMALLDATETIME,
  @IsOld BIT = 0, 
@@ -46,7 +46,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	- 20150123@Jim: support base on Currency GBP
 	- 20150612@Jim: support MicroGaming
-	- 20150624@Winnie: support bettrade
+	- 20150624@Winnie: support licenseeWLBT
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -97,7 +97,7 @@ CREATE TABLE #SAgWinLoss (
 	PlayerComm		MONEY, 	
 	--Company			MONEY,
 	Betcount		BIGINT,
-	BetTrade		MONEY,   
+	licenseeWLBT		MONEY,   
 	BetTradeComm	MONEY,  
 	WLBetTicket		MONEY, 	
 	WLBoughtTicket	MONEY 	
@@ -273,7 +273,7 @@ BEGIN
 					ELSE 1 END
 				ELSE 1 END
 			   BetCount,
-			0 AS BetTrade,
+			0 AS licenseeWLBT,
 			0 AS BetTradeComm,			
 			SUM(CASE WHEN b.betdaqid =0 THEN (b.winlost-b.actual_stake)
 				ELSE 0 END) AS WLBetTicket,
@@ -343,7 +343,7 @@ BEGIN
 					ELSE 1 END
 				ELSE 1 END
 			   BetCount,	
-			0 AS BetTrade,
+			0 AS licenseeWLBT,
 			0 AS BetTradeComm,	
 			SUM(CASE WHEN b.betdaqid =0 THEN (b.winlost-b.actual_stake)
 				ELSE 0 END) AS WLBetTicket,
@@ -403,7 +403,7 @@ BEGIN
 				ELSE 1 END
 			   BetCount,	
 			SUM(CASE WHEN b.bettype IN (901,902) THEN (b.winlost-b.actual_stake)
-				ELSE 0 END) AS BetTrade,
+				ELSE 0 END) AS licenseeWLBT,
 			SUM(CASE WHEN b.bettype =903 THEN b.awinlost
 				ELSE 0 END) AS BetTradeComm,
 			0 WLBetTicket,
@@ -527,7 +527,7 @@ BEGIN
 					ELSE 1 END
 				ELSE 1 END
 			   BetCount	,
-			0 AS BetTrade,
+			0 AS licenseeWLBT,
 			0 AS BetTradeComm,	
 			0 AS WLBetTicket,
 			0 AS WLBoughtTicket
@@ -591,7 +591,7 @@ BEGIN
 					ELSE 1 END
 				ELSE 1 END
 			   BetCount	,
-			0 AS BetTrade,
+			0 AS licenseeWLBT,
 			0 AS BetTradeComm,	
 			0 AS WLBetTicket,
 			0 AS WLBoughtTicket
@@ -664,7 +664,7 @@ BEGIN
 					CASE WHEN b.statusID = 111 THEN 0
 					ELSE 1 END
 				ELSE 1 END,
-			0 AS BetTrade,
+			0 AS licenseeWLBT,
 			0 AS BetTradeComm,	
 			SUM(CASE WHEN bt.CustId IS NOT NULL THEN b.winlost
 				ELSE 0 END) AS WLBetTicket,
@@ -795,7 +795,7 @@ BEGIN
 					CASE WHEN b.statusID = 111 THEN 0
 					ELSE 1 END
 				ELSE 1 END,
-			0 AS BetTrade,
+			0 AS licenseeWLBT,
 			0 AS BetTradeComm,	
 			SUM(CASE WHEN (bt.CustId IS NOT NULL) AND t.sporttype=0 THEN b.winlost
 				ELSE 0 END) AS WLBetTicket,
@@ -854,7 +854,7 @@ BEGIN
 				ELSE 1 END
 			   BetCount,	
 			SUM(CASE WHEN b.bettype IN (901,902) THEN (b.winlost)
-				ELSE 0 END) AS BetTrade,
+				ELSE 0 END) AS licenseeWLBT,
 			SUM(CASE WHEN b.bettype =903 THEN b.awinlost
 				ELSE 0 END) AS BetTradeComm,
 			0 WLBetTicket,
@@ -927,7 +927,7 @@ BEGIN
 					CASE WHEN b.statusID = 111 THEN 0
 					ELSE 1 END
 				ELSE 1 END,
-			0 AS BetTrade,
+			0 AS licenseeWLBT,
 			0 AS BetTradeComm,	
 			SUM(CASE WHEN bt.CustId IS NOT NULL THEN b.winlost
 				ELSE 0 END) AS WLBetTicket,
@@ -1060,7 +1060,7 @@ BEGIN
 					CASE WHEN b.statusID = 111 THEN 0
 					ELSE 1 END
 				ELSE 1 END,
-			0 AS BetTrade,
+			0 AS licenseeWLBT,
 			0 AS BetTradeComm,	
 			SUM(CASE WHEN (bt.CustId IS NOT NULL) AND t.sporttype=0 THEN b.winlost
 				ELSE 0 END) AS WLBetTicket,
@@ -1119,7 +1119,7 @@ BEGIN
 				ELSE 1 END
 			   BetCount,	
 			SUM(CASE WHEN b.bettype IN (901,902) THEN (b.winlost)
-				ELSE 0 END) AS BetTrade,
+				ELSE 0 END) AS licenseeWLBT,
 			SUM(CASE WHEN b.bettype =903 THEN b.awinlost
 				ELSE 0 END) AS BetTradeComm,
 			0 WLBetTicket,
@@ -1181,7 +1181,7 @@ SELECT
    SUM(AmtDuetoRB)     AS AmtDuetoRB,
    --SUM(Company)        AS Company,
    SUM(Betcount)	   AS Betcount,
-   SUM(BetTrade)	   AS BetTrade,
+   SUM(licenseeWLBT)	   AS licenseeWLBT,
    SUM(BetTradeComm)   AS BetTradeComm,
    SUM(WLBetTicket+WLBoughtTicket-BetTradeComm)	   AS AmtDueToBT,
 
@@ -1215,7 +1215,7 @@ SELECT
    CAST(SUM(AmtDuetoBA*e.MYR)  AS MONEY)	 AS AmtDuetoBAMYR,
    CAST(SUM(AmtDuetoRB*e.MYR)  AS MONEY)	 AS AmtDuetoRBMYR,
    --CAST(SUM(Company * e.MYR)   AS MONEY)	 AS CompanyMYR,  
-   CAST(SUM(BetTrade* e.MYR)		AS MONEY)   AS BetTradeMYR,
+   CAST(SUM(licenseeWLBT* e.MYR)		AS MONEY)   AS BetTradeMYR,
    CAST(SUM(BetTradeComm* e.MYR)	AS MONEY)	AS BetTradeCommMYR,
    CAST(SUM((WLBetTicket+WLBoughtTicket-BetTradeComm)* e.MYR) AS MONEY)	   AS AmtDueToBTMYR,
    */
@@ -1249,7 +1249,7 @@ SELECT
    CAST(SUM(AmtDuetoBA*e.USD)  AS MONEY)	 AS AmtDuetoBAUSD,
    CAST(SUM(AmtDuetoRB*e.USD)  AS MONEY)	 AS AmtDuetoRBUSD,
    --CAST(SUM(Company * e.USD)   AS MONEY)	 AS CompanyUSD, 
-   CAST(SUM(BetTrade* e.USD)		AS MONEY)   AS BetTradeUSD,
+   CAST(SUM(licenseeWLBT* e.USD)		AS MONEY)   AS BetTradeUSD,
    CAST(SUM(BetTradeComm* e.USD)	AS MONEY)	AS BetTradeCommUSD,
    CAST(SUM((WLBetTicket+WLBoughtTicket-BetTradeComm)* e.USD) AS MONEY)	   AS AmtDueToBTUSD,
 
@@ -1283,7 +1283,7 @@ SELECT
    CAST(SUM(AmtDuetoBA*e.EUR)  AS MONEY)	 AS AmtDuetoBAEUR,
    CAST(SUM(AmtDuetoRB*e.EUR)  AS MONEY)	 AS AmtDuetoRBEUR,
    --CAST(SUM(Company * e.EUR)   AS MONEY)	 AS CompanyEUR,   
-   CAST(SUM(BetTrade* e.EUR)		AS MONEY)   AS BetTradeEUR,
+   CAST(SUM(licenseeWLBT* e.EUR)		AS MONEY)   AS BetTradeEUR,
    CAST(SUM(BetTradeComm* e.EUR)	AS MONEY)	AS BetTradeCommEUR,
    CAST(SUM((WLBetTicket+WLBoughtTicket-BetTradeComm)* e.EUR) AS MONEY)	   AS AmtDueToBTEUR,
 
@@ -1317,7 +1317,7 @@ SELECT
    CAST(SUM(AmtDuetoBA*e.GBP)  AS MONEY)	 AS AmtDuetoBAGBP,
    CAST(SUM(AmtDuetoRB*e.GBP)  AS MONEY)	 AS AmtDuetoRBGBP,
    --CAST(SUM(Company * e.GBP)   AS MONEY)	 AS CompanyGBP
-   CAST(SUM(BetTrade* e.GBP)		AS MONEY)   AS BetTradeGBP,
+   CAST(SUM(licenseeWLBT* e.GBP)		AS MONEY)   AS BetTradeGBP,
    CAST(SUM(BetTradeComm* e.GBP)	AS MONEY)	AS BetTradeCommGBP,
    CAST(SUM((WLBetTicket+WLBoughtTicket-BetTradeComm)* e.GBP) AS MONEY)	   AS AmtDueToBTGBP
 FROM	
