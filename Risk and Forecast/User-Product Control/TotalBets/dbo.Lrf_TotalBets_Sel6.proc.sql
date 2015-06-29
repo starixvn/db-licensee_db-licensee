@@ -201,10 +201,10 @@ SELECT
 		SUM((CASE bettype WHEN 126 THEN CASE betteam WHEN '4-over'  THEN (stake*odds)-stake ELSE -stake END END)*e.EUR)  AS FHtotal4overEUR,
 		SUM((CASE bettype WHEN 126 THEN CASE betteam WHEN '4-over'  THEN (stake*odds)-stake ELSE -stake END END)*e.GBP)  AS FHtotal4overGBP,
 		--
-		SUM((CASE bettype WHEN 126 THEN CASE betteam WHEN '4-over'  THEN stake END END))  AS FHtotal4over,
-		SUM((CASE bettype WHEN 126 THEN CASE betteam WHEN '4-over'  THEN stake END END)*e.USD)  AS FHtotal4overUSD,
-		SUM((CASE bettype WHEN 126 THEN CASE betteam WHEN '4-over'  THEN stake END END)*e.EUR)  AS FHtotal4overEUR,
-		SUM((CASE bettype WHEN 126 THEN CASE betteam WHEN '4-over'  THEN stake END END)*e.GBP)  AS FHtotal4overGBP,
+		SUM((CASE bettype WHEN 126 THEN CASE betteam WHEN '4-over'  THEN stake END END))  AS FHtotal4over_ori,
+		SUM((CASE bettype WHEN 126 THEN CASE betteam WHEN '4-over'  THEN stake END END)*e.USD)  AS FHtotal4overUSD_ori,
+		SUM((CASE bettype WHEN 126 THEN CASE betteam WHEN '4-over'  THEN stake END END)*e.EUR)  AS FHtotal4overEUR_ori,
+		SUM((CASE bettype WHEN 126 THEN CASE betteam WHEN '4-over'  THEN stake END END)*e.GBP)  AS FHtotal4overGBP_ori,
 		
 		ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral
 		
