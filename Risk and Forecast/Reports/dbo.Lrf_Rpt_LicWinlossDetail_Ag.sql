@@ -207,13 +207,6 @@ BEGIN
 	WHERE (typeid BETWEEN 2001 AND 2007)
 END 
 
-IF @ShowBT=1 -- Bet trade
-BEGIN 	
-	INSERT INTO @bettype(bettype)
-	SELECT typeid FROM bettype (NOLOCK)
-	WHERE (typeid BETWEEN 901 AND 903)
-END 
-
 DECLARE @TempFromDate DATETIME 
 DECLARE @TempToDate DATETIME 
 DECLARE @MaxOldDate DATETIME
@@ -425,7 +418,8 @@ BEGIN
 			b.winlostdate BETWEEN @TempFromDate AND @TDate   			
 			AND b.bettype IN (901,902,903)
 		GROUP BY   
-			b.winlostdate,a.currency,b.recommend, b.statusID	
+			b.winlostdate,a.currency,b.recommend, b.statusID
+			select * from #SAgWinLoss	
 	END
 
 	IF (@ShowNG=1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGC=1)
@@ -821,7 +815,8 @@ BEGIN
 			INSERT INTO #SAgWinLoss
 			SELECT   
 				b.winlostdate,  
-				ag.currency,
+				b.recommend,
+				b.currency,
 				0 turnoverSB, 
 				0 AS turnoverBA,
 				0 turnoverNG, 
@@ -868,9 +863,8 @@ BEGIN
 			
 			WHERE 
 				b.Winlostdate BETWEEN @FDate AND @TempToDate  
-				AND b.bettype IN (901,902,903)
-			GROUP BY   
-				b.winlostdate,ag.currency,statusID,b.bettype
+				AND b.bettype IN (901,902,903)			
+				GROUP BY  b.winlostdate,b.currency, b.recommend, b.statusID
 		END
 	END
 	
@@ -1085,7 +1079,8 @@ BEGIN
 			INSERT INTO #SAgWinLoss
 			SELECT   
 				b.winlostdate,  
-				ag.currency,
+				b.recommend,
+				b.currency,
 				0 turnoverSB, 
 				0 AS turnoverBA,
 				0 turnoverNG, 
@@ -1132,9 +1127,8 @@ BEGIN
 			
 			WHERE 
 				b.Winlostdate BETWEEN @FDate AND @TempToDate  
-				AND b.bettype IN (901,902,903)
-			GROUP BY   
-				b.winlostdate,ag.currency,statusID,b.bettype
+				AND b.bettype IN (901,902,903)			
+				GROUP BY  b.winlostdate,b.currency, b.recommend, b.statusID
 		END
  END
  

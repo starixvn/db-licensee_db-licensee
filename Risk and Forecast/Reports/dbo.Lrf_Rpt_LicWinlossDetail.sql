@@ -780,8 +780,8 @@ BEGIN
 	BEGIN
 		INSERT INTO #SAgWinLoss
 		SELECT   
-			b.winlostdate,  
-			ag.currency,
+			b.custid,
+			@CurrencyID,
 			0 turnoverSB, 
 			0 AS turnoverBA,
 			0 turnoverNG, 
@@ -828,9 +828,8 @@ BEGIN
 			
 		WHERE 
 			b.Winlostdate BETWEEN @FDate AND @TempToDate  
-			AND b.bettype IN (901,902,903)
-		GROUP BY   
-			b.winlostdate,ag.currency,statusID,b.bettype
+			AND b.bettype IN (901,902,903)	
+			GROUP BY  b.custid,b.statusID
 	END
 			
  END 
@@ -1044,8 +1043,8 @@ BEGIN
 	BEGIN
 		INSERT INTO #SAgWinLoss
 		SELECT   
-			b.winlostdate,  
-			ag.currency,
+			b.custid,
+			@CurrencyID,
 			0 turnoverSB, 
 			0 AS turnoverBA,
 			0 turnoverNG, 
@@ -1093,8 +1092,8 @@ BEGIN
 		WHERE 
 			b.Winlostdate BETWEEN @FDate AND @TempToDate  
 			AND b.bettype IN (901,902,903)
-		GROUP BY   
-			b.winlostdate,ag.currency,statusID,b.bettype
+		
+			GROUP BY  b.custid,b.statusID
 	END
  END
 
