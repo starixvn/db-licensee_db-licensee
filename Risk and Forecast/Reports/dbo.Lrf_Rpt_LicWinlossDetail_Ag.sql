@@ -419,7 +419,7 @@ BEGIN
 			AND b.bettype IN (901,902,903)
 		GROUP BY   
 			b.winlostdate,a.currency,b.recommend, b.statusID
-			select * from #SAgWinLoss	
+				
 	END
 
 	IF (@ShowNG=1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGC=1)
@@ -593,7 +593,11 @@ BEGIN
 					CASE WHEN b.statusID = 111 THEN 0
 					ELSE 1 END
 				ELSE 1 END
-			   BetCount
+			   BetCount,
+			0 AS licenseeWLBT,
+			0 AS BetTradeComm,	
+			0 AS WLBetTicket,
+			0 AS WLBoughtTicket
 		FROM 
 			dbo.bettrans b WITH ( NOLOCK) 
 			INNER JOIN @TempAg a ON b.recommend = a.custid AND a.currency = b.currency
