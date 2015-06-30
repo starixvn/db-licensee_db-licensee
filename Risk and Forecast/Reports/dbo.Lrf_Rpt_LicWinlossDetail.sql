@@ -379,7 +379,7 @@ BEGIN
 			AND	b.statusID  IN (111, 112, 113) 
 			AND	b.tpositiontaking <>0
 		GROUP BY   
-			b.custid,b.statusID
+			b.custid,b.statusID 
 	END
 
 	IF (@ShowBT=1)

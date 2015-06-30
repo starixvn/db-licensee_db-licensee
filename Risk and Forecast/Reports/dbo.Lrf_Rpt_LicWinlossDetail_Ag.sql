@@ -191,7 +191,7 @@ END
 
 IF @ShowKN=1 -- Keno
 BEGIN 
-	INSERT INTO @sporttype (sporttype)
+	INSERT INTO @sporttype (sporttype) 
 	VALUES(202)
 	INSERT INTO @bettype(bettype)
 	SELECT typeid FROM bettype (NOLOCK)
