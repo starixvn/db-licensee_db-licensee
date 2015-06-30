@@ -1166,7 +1166,7 @@ BEGIN
 	   CAST(SUM(AmtDuetoBA)*@eEUR    AS MONEY)   AS AmtDuetoBAEUR,
 	   CAST(SUM(AmtDuetoRB)*@eEUR    AS MONEY)   AS AmtDuetoRBEUR,
 	   --CAST(SUM(Company)*@eEUR     AS MONEY)   AS CompanyEUR,
-	   CAST(SUM(licenseeWLBT)*@eEUR 	 AS MONEY)  AS BetTradeEUR,
+	   CAST(SUM(licenseeWLBT)*@eEUR 	 AS MONEY)  AS licenseeWLBTEUR,
 	   CAST(SUM(BetTradeComm)*@eEUR  AS MONEY)  AS BetTradeCommEUR,
 	   CAST(SUM(WLBetTicket+WLBoughtTicket-BetTradeComm)*@eEUR AS MONEY)	   AS AmtDueToBTEUR,
 	    --BaseUSD  
@@ -1197,7 +1197,7 @@ BEGIN
 	   CAST(SUM(AmtDuetoBA)*@eUSD    AS MONEY)   AS AmtDuetoBAUSD,
 	   CAST(SUM(AmtDuetoRB)*@eUSD    AS MONEY)   AS AmtDuetoRBUSD,
 	   --CAST(SUM(Company)*@eUSD     AS MONEY)   AS CompanyUSD ,
-	   CAST(SUM(licenseeWLBT)*@eUSD 	 AS MONEY)  AS BetTradeUSD,
+	   CAST(SUM(licenseeWLBT)*@eUSD 	 AS MONEY)  AS licenseeWLBTUSD,
 	   CAST(SUM(BetTradeComm)*@eUSD  AS MONEY)  AS BetTradeCommUSD,
 	   CAST(SUM(WLBetTicket+WLBoughtTicket-BetTradeComm)*@eUSD AS MONEY)	   AS AmtDueToBTUSD,
 		--BaseGBP  
@@ -1228,7 +1228,7 @@ BEGIN
 	   CAST(SUM(AmtDuetoBA)*@eGBP    AS MONEY)   AS AmtDuetoBAGBP,
 	   CAST(SUM(AmtDuetoRB)*@eGBP    AS MONEY)   AS AmtDuetoRBGBP,
 	   --CAST(SUM(Company)*@eGBP     AS MONEY)   AS CompanyGBP  
-	   CAST(SUM(licenseeWLBT)*@eGBP 	 AS MONEY)  AS BetTradeGBP,
+	   CAST(SUM(licenseeWLBT)*@eGBP 	 AS MONEY)  AS licenseeWLBTGBP,
 	   CAST(SUM(BetTradeComm)*@eGBP  AS MONEY)  AS BetTradeCommGBP,
 	   CAST(SUM(WLBetTicket+WLBoughtTicket-BetTradeComm)*@eGBP AS MONEY)	   AS AmtDueToBTGBP  
  FROM	#SAgWinLoss w   

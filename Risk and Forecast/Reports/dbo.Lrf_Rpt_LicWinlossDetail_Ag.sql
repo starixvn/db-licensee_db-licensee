@@ -1244,9 +1244,9 @@ WHERE exchangeid IN (SELECT DISTINCT Currency FROM #SAgWinLoss)
 	   CAST(SUM(AmtDuetoBA*e.USD)    AS MONEY)          AS AmtDuetoBAUSD,
 	   CAST(SUM(AmtDuetoRB*e.USD)    AS MONEY)          AS AmtDuetoRBUSD, 
 	   --CAST(SUM(Company * e.USD)     AS MONEY)          AS CompanyUSD,
-	   CAST(SUM(licenseeWLBT* e.USD)	 AS MONEY)	   AS BetTradeUSD,
+	   CAST(SUM(licenseeWLBT* e.USD)	 AS MONEY)	   AS licenseeWLBTUSD,
 	   CAST(SUM(BetTradeComm* e.USD)  AS MONEY)  AS BetTradeCommUSD,
-	   CAST(SUM(WLBetTicket+WLBoughtTicket-BetTradeComm)* e.USD  AS MONEY)	  AS AmtDueToBTUSD,
+	   CAST(SUM((WLBetTicket+WLBoughtTicket-BetTradeComm)* e.USD)  AS MONEY)	  AS AmtDueToBTUSD,
 	    --BaseEUR  
 	   CAST(SUM(TurnoverSB*e.EUR)    AS MONEY)     AS TurnoverSBEUR,   
 	   CAST(SUM(TurnoverBA*e.EUR)    AS MONEY)     AS TurnoverBAEUR,   
@@ -1277,9 +1277,9 @@ WHERE exchangeid IN (SELECT DISTINCT Currency FROM #SAgWinLoss)
 	   CAST(SUM(AmtDuetoBA*e.EUR)    AS MONEY)			AS AmtDuetoBAEUR,
 	   CAST(SUM(AmtDuetoRB*e.EUR)    AS MONEY)			AS AmtDuetoRBEUR,
 	   --CAST(SUM(Company * e.EUR)     AS MONEY)			AS CompanyEUR,
-	   CAST(SUM(licenseeWLBT* e.EUR)	 AS MONEY)	   AS BetTradeEUR,
+	   CAST(SUM(licenseeWLBT* e.EUR)	 AS MONEY)	   AS licenseeWLBTEUR,
 	   CAST(SUM(BetTradeComm* e.EUR)  AS MONEY)  AS BetTradeCommEUR,
-	   CAST(SUM(WLBetTicket+WLBoughtTicket-BetTradeComm)* e.EUR  AS MONEY)	  AS AmtDueToBTEUR,
+	   CAST(SUM((WLBetTicket+WLBoughtTicket-BetTradeComm)* e.EUR)  AS MONEY)	  AS AmtDueToBTEUR,
 	    --BaseGBP  
 	   CAST(SUM(TurnoverSB*e.GBP)    AS MONEY)     AS TurnoverSBGBP,   
 	   CAST(SUM(TurnoverBA*e.GBP)    AS MONEY)     AS TurnoverBAGBP,   
@@ -1310,9 +1310,9 @@ WHERE exchangeid IN (SELECT DISTINCT Currency FROM #SAgWinLoss)
 	   CAST(SUM(AmtDuetoBA*e.GBP)    AS MONEY)			AS AmtDuetoBAGBP,
 	   CAST(SUM(AmtDuetoRB*e.GBP)    AS MONEY)			AS AmtDuetoRBGBP,
 	   --CAST(SUM(Company * e.GBP)     AS MONEY)			AS CompanyGBP
-	   CAST(SUM(licenseeWLBT* e.GBP)	 AS MONEY)	   AS BetTradeGBP,
+	   CAST(SUM(licenseeWLBT* e.GBP)	 AS MONEY)	   AS licenseeWLBTGBP,
 	   CAST(SUM(BetTradeComm* e.GBP)  AS MONEY)  AS BetTradeCommGBP,
-	   CAST(SUM(WLBetTicket+WLBoughtTicket-BetTradeComm)* e.GBP  AS MONEY)	  AS AmtDueToBTGBP
+	   CAST(SUM((WLBetTicket+WLBoughtTicket-BetTradeComm)* e.GBP)  AS MONEY)	  AS AmtDueToBTGBP
 	          
  FROM	#SAgWinLoss w   
 		INNER JOIN #TempExchange e 
