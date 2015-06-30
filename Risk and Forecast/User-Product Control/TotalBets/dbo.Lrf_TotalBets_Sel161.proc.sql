@@ -23,6 +23,7 @@ Revisions:
 	 - 20130514@Jim:Restrict permission of Licensee Users by currency
 	 - 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
 	 - 20150123@Jim: support base on Currency GBP
+	 - 20150617@Jim:  Enhance Total Bets with sum values of running stakes  (Feature #36839)
 Param's Explanation:
 • @custid: agent ID
 • Bettype AND betteam explanation:
@@ -66,29 +67,53 @@ DECLARE @Data table
 	matchcode nvarchar(50),
 	matchid INT,
 	over_1stBall MONEY,
+	over_1stBall_ori MONEY,
 	under_1stBall MONEY,
+	under_1stBall_ori MONEY,
 	over_lastBall MONEY,
+	over_lastBall_ori MONEY,
 	under_lastBall MONEY,
+	under_lastBall_ori MONEY,
 	odd_1stBall MONEY,
+	odd_1stBall_ori MONEY,
 	even_1stBall MONEY,
+	even_1stBall_ori MONEY,
 	odd_lastBall MONEY,
+	odd_lastBall_ori MONEY,
 	even_lastBall MONEY,
+	even_lastBall_ori MONEY,
 	odd_fullTime MONEY,
+	odd_fullTime_ori MONEY,
 	even_fullTime MONEY,
+	even_fullTime_ori MONEY,
 	over_next MONEY,
+	over_next_ori MONEY,
 	under_next MONEY,
+	under_next_ori MONEY,
 	odd_next MONEY,
+	odd_next_ori MONEY,
 	even_next MONEY,
+	even_next_ori MONEY,
 	[high] MONEY,
+	[high_ori] MONEY,
 	[low] MONEY,
+	[low_ori] MONEY,
 	Warrior_SecondBall MONEY,
+	Warrior_SecondBall_ori MONEY,
 	Warrior_LastBall MONEY,
+	Warrior_LastBall_ori MONEY,
 	NextCombo_OverOdd MONEY,
+	NextCombo_OverOdd_ori MONEY,
 	NextCombo_OverEven MONEY,
+	NextCombo_OverEven_ori MONEY,
 	NextCombo_UnderOdd MONEY,
+	NextCombo_UnderOdd_ori MONEY,
 	NextCombo_UnderEven MONEY,
+	NextCombo_UnderEven_ori MONEY,
 	NumberGroup_live MONEY,
+	NumberGroup_live_ori MONEY,
 	NumberGroup_pre MONEY,
+	NumberGroup_pre_ori MONEY,
 	betcount_OU1stBall INT,
 	betcount_OULastBall INT,
 	betcount_OE1stBall INT,
@@ -111,29 +136,53 @@ SELECT
 		m.matchcode,
 		m.matchid,
 		SUM(CASE WHEN bettype=81 AND betteam = 'h' THEN Stake ELSE 0 END) AS over_1stBall,
+		SUM(CASE WHEN bettype=81 AND betteam = 'h' THEN Stake_ori ELSE 0 END) AS over_1stBall_ori,
 		SUM(CASE WHEN bettype=81 AND betteam = 'a' THEN Stake ELSE 0 END) AS under_1stBall,
+		SUM(CASE WHEN bettype=81 AND betteam = 'a' THEN Stake_ori ELSE 0 END) AS under_1stBall_ori,
 		SUM(CASE WHEN bettype=82 AND betteam = 'h' THEN Stake ELSE 0 END) AS over_lastBall,
+		SUM(CASE WHEN bettype=82 AND betteam = 'h' THEN Stake_ori ELSE 0 END) AS over_lastBall_ori,
 		SUM(CASE WHEN bettype=82 AND betteam = 'a' THEN Stake ELSE 0 END) AS under_lastBall,
+		SUM(CASE WHEN bettype=82 AND betteam = 'a' THEN Stake_ori ELSE 0 END) AS under_lastBall_ori,
 		SUM(CASE WHEN bettype=83 AND betteam = 'h' THEN Stake ELSE 0 END) AS odd_1stBall,
+		SUM(CASE WHEN bettype=83 AND betteam = 'h' THEN Stake_ori ELSE 0 END) AS odd_1stBall_ori,
 		SUM(CASE WHEN bettype=83 AND betteam = 'a' THEN Stake ELSE 0 END) AS even_1stBall,
+		SUM(CASE WHEN bettype=83 AND betteam = 'a' THEN Stake_ori ELSE 0 END) AS even_1stBall_ori,
 		SUM(CASE WHEN bettype=84 AND betteam = 'h' THEN Stake ELSE 0 END) AS odd_lastBall,
+		SUM(CASE WHEN bettype=84 AND betteam = 'h' THEN Stake_ori ELSE 0 END) AS odd_lastBall_ori,
 		SUM(CASE WHEN bettype=84 AND betteam = 'a' THEN Stake ELSE 0 END) AS even_lastBall,
+		SUM(CASE WHEN bettype=84 AND betteam = 'a' THEN Stake_ori ELSE 0 END) AS even_lastBall_ori,
 		SUM(CASE WHEN bettype=86 AND betteam = 'h' AND b.liveindicator=0 THEN Stake ELSE 0 END) AS odd_fullTime,
+		SUM(CASE WHEN bettype=86 AND betteam = 'h' AND b.liveindicator=0 THEN Stake_ori ELSE 0 END) AS odd_fullTime_ori,
 		SUM(CASE WHEN bettype=86 AND betteam = 'a' AND b.liveindicator=0 THEN Stake ELSE 0 END) AS even_fullTime,
+		SUM(CASE WHEN bettype=86 AND betteam = 'a' AND b.liveindicator=0 THEN Stake_ori ELSE 0 END) AS even_fullTime_ori,
 		SUM(CASE WHEN bettype=85 AND betteam = 'h' AND b.liveindicator=1 THEN Stake ELSE 0 END) AS over_next,
+		SUM(CASE WHEN bettype=85 AND betteam = 'h' AND b.liveindicator=1 THEN Stake_ori ELSE 0 END) AS over_next_ori,
 		SUM(CASE WHEN bettype=85 AND betteam = 'a' AND b.liveindicator=1 THEN Stake ELSE 0 END) AS under_next,
+		SUM(CASE WHEN bettype=85 AND betteam = 'a' AND b.liveindicator=1 THEN Stake_ori ELSE 0 END) AS under_next_ori,
 		SUM(CASE WHEN bettype=86 AND betteam = 'h' AND b.liveindicator=1 THEN Stake ELSE 0 END) AS odd_next,
+		SUM(CASE WHEN bettype=86 AND betteam = 'h' AND b.liveindicator=1 THEN Stake_ori ELSE 0 END) AS odd_next_ori,
 		SUM(CASE WHEN bettype=86 AND betteam = 'a' AND b.liveindicator=1 THEN Stake ELSE 0 END) AS even_next,		
+		SUM(CASE WHEN bettype=86 AND betteam = 'a' AND b.liveindicator=1 THEN Stake_ori ELSE 0 END) AS even_next_ori,
 		SUM(CASE WHEN bettype=87 AND betteam = 'h' THEN Stake ELSE 0 END) AS high,
+		SUM(CASE WHEN bettype=87 AND betteam = 'h' THEN Stake_ori ELSE 0 END) AS high_ori,
 		SUM(CASE WHEN bettype=87 AND betteam = 'a' THEN Stake ELSE 0 END) AS low,
+		SUM(CASE WHEN bettype=87 AND betteam = 'a' THEN Stake_ori ELSE 0 END) AS low_ori,
 		SUM(CASE WHEN bettype=88 AND betteam = 'h' THEN Stake ELSE 0 END) AS Warrior_SecondBall,  
+		SUM(CASE WHEN bettype=88 AND betteam = 'h' THEN Stake_ori ELSE 0 END) AS Warrior_SecondBall_ori,
 		SUM(CASE WHEN bettype=88 AND betteam = 'a' THEN Stake ELSE 0 END) AS Warrior_LastBall,
+		SUM(CASE WHEN bettype=88 AND betteam = 'a' THEN Stake_ori ELSE 0 END) AS Warrior_LastBall_ori,
 		SUM(CASE WHEN bettype=89 AND betteam = '1:1' THEN Stake ELSE 0 END) AS NextCombo_OverOdd ,  
+		SUM(CASE WHEN bettype=89 AND betteam = '1:1' THEN Stake_ori ELSE 0 END) AS NextCombo_OverOdd_ori ,  
 		SUM(CASE WHEN bettype=89 AND betteam = '1:2' THEN Stake ELSE 0 END) AS NextCombo_OverEven,  
+		SUM(CASE WHEN bettype=89 AND betteam = '1:2' THEN Stake_ori ELSE 0 END) AS NextCombo_OverEven_ori,  
 		SUM(CASE WHEN bettype=89 AND betteam = '2:1' THEN Stake ELSE 0 END) AS NextCombo_UnderOdd ,  
+		SUM(CASE WHEN bettype=89 AND betteam = '2:1' THEN Stake_ori ELSE 0 END) AS NextCombo_UnderOdd_ori ,
 		SUM(CASE WHEN bettype=89 AND betteam = '2:2' THEN Stake ELSE 0 END) AS NextCombo_UnderEven,
+		SUM(CASE WHEN bettype=89 AND betteam = '2:2' THEN Stake_ori ELSE 0 END) AS NextCombo_UnderEven_ori,
 		SUM(CASE WHEN bettype=90 AND b.liveindicator=1 THEN Stake ELSE 0 END) AS NumberGroup_live,    
+		SUM(CASE WHEN bettype=90 AND b.liveindicator=1 THEN Stake_ori ELSE 0 END) AS NumberGroup_live_ori,
 		SUM(CASE WHEN bettype=90 AND b.liveindicator=0 THEN Stake ELSE 0 END) AS NumberGroup_pre,    
+		SUM(CASE WHEN bettype=90 AND b.liveindicator=0 THEN Stake_ori ELSE 0 END) AS NumberGroup_pre_ori,
 		SUM(CASE WHEN bettype=81 THEN BetCount ELSE 0 END) AS betcount_OU1stBall,
 		SUM(CASE WHEN bettype=82 THEN BetCount ELSE 0 END) AS betcount_OULastBall,
 		SUM(CASE WHEN bettype=83 THEN BetCount ELSE 0 END) AS betcount_OE1stBall,
@@ -156,6 +205,7 @@ SELECT
 				betteam,
 				liveindicator,
 				SUM(stake * CASE WHEN ABS(odds) <1 THEN 1 ELSE ABS(odds) END) Stake,
+				SUM(stake) Stake_ori,
 				COUNT(1) AS BetCount
 		FROM bettrans WITH (NOLOCK)
 		WHERE
@@ -287,6 +337,56 @@ SELECT c.* FROM
 	INNER JOIN (SELECT *  FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
 	ON e.exchangeid = d.currency
 ) c WHERE c.RowNum BETWEEN @RowStart AND @RowEnd
+
+SELECT 
+	SUM(over_1stBall_ori) over_1stBall,
+	SUM(under_1stBall_ori) under_1stBall,
+	SUM(over_lastBall_ori) over_lastBall,
+	SUM(under_lastBall_ori) under_lastBall,
+	
+	SUM(odd_1stBall_ori) odd_1stBall,
+	
+	SUM(even_1stBall_ori) even_1stBall,
+	
+	SUM(odd_lastBall_ori) odd_lastBall,
+	
+	SUM(even_lastBall_ori) even_lastBall,
+	
+	SUM(odd_fullTime_ori) odd_fullTime,
+	
+	SUM(even_fullTime_ori) even_fullTime,
+	
+	SUM(over_next_ori) over_next,
+	
+	SUM(under_next_ori) under_next,
+	
+	SUM(odd_next_ori) odd_next,
+	
+	SUM(even_next_Ori) even_next,
+	
+	SUM([high_ori]) [high],
+	
+	SUM([low_ori]) [low],
+	
+	SUM(Warrior_SecondBall_ori) Warrior_SecondBall,
+	
+	SUM(Warrior_LastBall_ori) Warrior_LastBall,
+	
+	SUM(NextCombo_OverOdd_ori) NextCombo_OverOdd,
+	
+	SUM(NextCombo_OverEven_ori) NextCombo_OverEven,
+	
+	SUM(NextCombo_UnderOdd_ori) NextCombo_UnderOdd,
+	
+	SUM(NextCombo_UnderEven_ori) NextCombo_UnderEven,
+	
+	SUM(NumberGroup_live_ori) NumberGroup_live,
+	
+	SUM(NumberGroup_pre_ori) NumberGroup_pre
+	
+	
+FROM 
+
 DROP TABLE #currency
 GO
 GRANT EXECUTE ON [dbo].[Lrf_TotalBets_Sel161] TO [bodbLicenseeNet]
