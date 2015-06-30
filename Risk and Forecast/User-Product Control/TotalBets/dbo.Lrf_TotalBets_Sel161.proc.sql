@@ -1,4 +1,4 @@
-﻿CREATE PROCEDURE [dbo].[Lrf_TotalBets_Sel161]
+﻿ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel161]
 	@LicenseeID INT,
 	@UserID		INT,
 	@CurrencyID INT=0,
@@ -337,56 +337,133 @@ SELECT c.* FROM
 	INNER JOIN (SELECT *  FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
 	ON e.exchangeid = d.currency
 ) c WHERE c.RowNum BETWEEN @RowStart AND @RowEnd
-
+---CAST(over_1stBall * e.usd AS MONEY)   over_1stBallusd, eur,gbp
 SELECT 
 	SUM(over_1stBall_ori) over_1stBall,
+	SUM(over_1stBall_ori*e.usd) over_1stBallusd,
+	SUM(over_1stBall_ori*e.eur) over_1stBalleur,
+	SUM(over_1stBall_ori*e.gbp) over_1stBallgbp,
+	
 	SUM(under_1stBall_ori) under_1stBall,
+	SUM(under_1stBall_ori*e.usd) under_1stBallusd,
+	SUM(under_1stBall_ori*e.eur) under_1stBalleur,
+	SUM(under_1stBall_ori*e.gbp) under_1stBallgbp,
+	
 	SUM(over_lastBall_ori) over_lastBall,
+	SUM(over_lastBall_ori*e.usd) over_lastBallusd,
+	SUM(over_lastBall_ori*e.eur) over_lastBalleur,
+	SUM(over_lastBall_ori*e.gbp) over_lastBallgbp,
+	
 	SUM(under_lastBall_ori) under_lastBall,
+	SUM(under_lastBall_ori*e.usd) under_lastBallusd,
+	SUM(under_lastBall_ori*e.eur) under_lastBalleur,
+	SUM(under_lastBall_ori*e.gbp) under_lastBallgbp,
 	
 	SUM(odd_1stBall_ori) odd_1stBall,
+	SUM(odd_1stBall_ori*e.usd) odd_1stBallusd,
+	SUM(odd_1stBall_ori*e.eur) odd_1stBalleur,
+	SUM(odd_1stBall_ori*e.gbp) odd_1stBallgbp,
 	
 	SUM(even_1stBall_ori) even_1stBall,
+	SUM(even_1stBall_ori*e.usd) even_1stBallusd,
+	SUM(even_1stBall_ori*e.eur) even_1stBalleur,
+	SUM(even_1stBall_ori*e.gbp) even_1stBallgbp,
 	
 	SUM(odd_lastBall_ori) odd_lastBall,
+	SUM(odd_lastBall_ori*e.usd) odd_lastBallusd,
+	SUM(odd_lastBall_ori*e.eur) odd_lastBalleur,
+	SUM(odd_lastBall_ori*e.gbp) odd_lastBallgbp,
 	
 	SUM(even_lastBall_ori) even_lastBall,
+	SUM(even_lastBall_ori*e.usd) even_lastBallusd,
+	SUM(even_lastBall_ori*e.eur) even_lastBalleur,
+	SUM(even_lastBall_ori*e.gbp) even_lastBallgbp,
 	
 	SUM(odd_fullTime_ori) odd_fullTime,
+	SUM(odd_fullTime_ori*e.usd) odd_fullTimeusd,
+	SUM(odd_fullTime_ori*e.eur) odd_fullTimeeur,
+	SUM(odd_fullTime_ori*e.gbp) odd_fullTimegbp,
 	
 	SUM(even_fullTime_ori) even_fullTime,
+	SUM(even_fullTime_ori*e.usd) even_fullTimeusd,
+	SUM(even_fullTime_ori*e.eur) even_fullTimeeur,
+	SUM(even_fullTime_ori*e.gbp) even_fullTimegbp,
 	
 	SUM(over_next_ori) over_next,
+	SUM(over_next_ori*e.usd) over_nextusd,
+	SUM(over_next_ori*e.eur) over_nexteur,
+	SUM(over_next_ori*e.gbp) over_nextgbp,
 	
 	SUM(under_next_ori) under_next,
+	SUM(under_next_ori*e.usd) under_nextusd,
+	SUM(under_next_ori*e.eur) under_nexteur,
+	SUM(under_next_ori*e.gbp) under_nextgbp,
 	
 	SUM(odd_next_ori) odd_next,
+	SUM(odd_next_ori*e.usd) odd_nextusd,
+	SUM(odd_next_ori*e.eur) odd_nexteur,
+	SUM(odd_next_ori*e.gbp) odd_nextgbp,
 	
 	SUM(even_next_Ori) even_next,
+	SUM(even_next_Ori*e.usd) even_nextusd,
+	SUM(even_next_Ori*e.eur) even_nexteur,
+	SUM(even_next_Ori*e.gbp) even_nextgbp,
 	
 	SUM([high_ori]) [high],
+	SUM([high_ori]*e.usd) [highusd],
+	SUM([high_ori]*e.eur) [higheur],
+	SUM([high_ori]*e.gbp) [highgbp],
 	
 	SUM([low_ori]) [low],
+	SUM([low_ori]*e.usd) [lowusd],
+	SUM([low_ori]*e.eur) [loweur],
+	SUM([low_ori]*e.gbp) [lowgbp],
 	
 	SUM(Warrior_SecondBall_ori) Warrior_SecondBall,
+	SUM(Warrior_SecondBall_ori*e.usd) Warrior_SecondBallusd,
+	SUM(Warrior_SecondBall_ori*e.eur) Warrior_SecondBalleur,
+	SUM(Warrior_SecondBall_ori*e.gbp) Warrior_SecondBallgbp,
 	
 	SUM(Warrior_LastBall_ori) Warrior_LastBall,
+	SUM(Warrior_LastBall_ori*e.usd) Warrior_LastBallusd,
+	SUM(Warrior_LastBall_ori*e.eur) Warrior_LastBalleur,
+	SUM(Warrior_LastBall_ori*e.gbp) Warrior_LastBallgbp,
 	
 	SUM(NextCombo_OverOdd_ori) NextCombo_OverOdd,
+	SUM(NextCombo_OverOdd_ori*e.usd) NextCombo_OverOddusd,
+	SUM(NextCombo_OverOdd_ori*e.eur) NextCombo_OverOddeur,
+	SUM(NextCombo_OverOdd_ori*e.gbp) NextCombo_OverOddgbp,
 	
 	SUM(NextCombo_OverEven_ori) NextCombo_OverEven,
+	SUM(NextCombo_OverEven_ori*e.usd) NextCombo_OverEvenusd,
+	SUM(NextCombo_OverEven_ori*e.eur) NextCombo_OverEveneur,
+	SUM(NextCombo_OverEven_ori*e.gbp) NextCombo_OverEvengbp,
 	
 	SUM(NextCombo_UnderOdd_ori) NextCombo_UnderOdd,
+	SUM(NextCombo_UnderOdd_ori*e.usd) NextCombo_UnderOddusd,
+	SUM(NextCombo_UnderOdd_ori*e.eur) NextCombo_UnderOddeur,
+	SUM(NextCombo_UnderOdd_ori*e.gbp) NextCombo_UnderOddgbp,
 	
 	SUM(NextCombo_UnderEven_ori) NextCombo_UnderEven,
+	SUM(NextCombo_UnderEven_ori*e.usd) NextCombo_UnderEvenusd,
+	SUM(NextCombo_UnderEven_ori*e.eur) NextCombo_UnderEveneur,
+	SUM(NextCombo_UnderEven_ori*e.gbp) NextCombo_UnderEvengbp,
 	
 	SUM(NumberGroup_live_ori) NumberGroup_live,
+	SUM(NumberGroup_live_ori*e.usd) NumberGroup_liveusd,
+	SUM(NumberGroup_live_ori*e.eur) NumberGroup_liveeur,
+	SUM(NumberGroup_live_ori*e.gbp) NumberGroup_livegbp,
 	
-	SUM(NumberGroup_pre_ori) NumberGroup_pre
+	SUM(NumberGroup_pre_ori) NumberGroup_pre,
+	SUM(NumberGroup_pre_ori*e.usd) NumberGroup_preusd,
+	SUM(NumberGroup_pre_ori*e.eur) NumberGroup_preeur,
+	SUM(NumberGroup_pre_ori*e.gbp) NumberGroup_pregbp
 	
 	
 FROM 
-
+	@Data d
+	INNER JOIN (SELECT *  FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
+	ON e.exchangeid = d.currency
 DROP TABLE #currency
 GO
 GRANT EXECUTE ON [dbo].[Lrf_TotalBets_Sel161] TO [bodbLicenseeNet]
