@@ -1,11 +1,10 @@
 ﻿USE [bodb02]
 GO
-
+/****** Object:  StoredProcedure [dbo].[Task_DailyRptLicWinloss2]    Script Date: 07/01/2015 09:28:53 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-
 ALTER PROCEDURE [dbo].[Task_DailyRptLicWinloss2]
 	@winlostdate DATETIME
 AS
@@ -26,7 +25,8 @@ Revisions:
 	- 20131128@Jim: revert code to Group by All Virtual Sport into sporttypeID=180
 	- 20140310@Jim: offer KENO 
 	- 20140820@Jim: support to add more value bet BetEffective (RedmineID : #20518)
-   
+	- 20150618@Patrick: #36263: Fix super balance issue for: AGC, GD & VG
+    - 20150630@Jim: add MicroGaming 
  */
 
 SET NOCOUNT ON 
@@ -110,6 +110,10 @@ SELECT @winlostdate
 		WHEN bettype BETWEEN 51 AND 69 THEN 201
 		WHEN bettype IN (31,32,33,41,42,43) THEN 151
 		WHEN bettype BETWEEN 1501  AND 1599 THEN 202 -- Keno
+		WHEN bettype BETWEEN 1800 AND 1899 THEN 250 -- AGC
+		WHEN bettype BETWEEN 1700 AND 1799 THEN 255 -- GD
+		WHEN bettype BETWEEN 1900 AND 1999 THEN 249 -- VG
+		WHEN bettype BETWEEN 2001 AND 2009 THEN 203
 		ELSE 0 END sporttype
 	,CASE WHEN bettype IN (71,72,1000) THEN bettype ELSE 0 END bettype
 	--114: half win, 115: half lose
@@ -151,6 +155,10 @@ GROUP BY
 		WHEN bettype BETWEEN 51 AND 69 THEN 201
 		WHEN bettype IN (31,32,33,41,42,43) THEN 151
 		WHEN bettype BETWEEN 1501  AND 1599 THEN 202
+		WHEN bettype BETWEEN 1800 AND 1899 THEN 250 -- AGC
+		WHEN bettype BETWEEN 1700 AND 1799 THEN 255 -- GD
+		WHEN bettype BETWEEN 1900 AND 1999 THEN 249 -- VG
+		WHEN bettype BETWEEN 2001 AND 2009 THEN 203 -- Microgame
 		ELSE 0 END
 	,CASE WHEN bettype IN (71,72,1000) THEN bettype ELSE 0 END
 	,CASE 
