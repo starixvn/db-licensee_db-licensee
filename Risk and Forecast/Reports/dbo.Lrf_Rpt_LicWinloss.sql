@@ -402,7 +402,7 @@ BEGIN
 					ELSE 1 END
 				ELSE 1 END
 			   BetCount,	
-			SUM(CASE WHEN b.bettype IN (901,902) THEN (b.winlost-b.actual_stake)
+			-SUM(CASE WHEN b.bettype IN (901,902) THEN (b.winlost-b.actual_stake)
 				ELSE 0 END) AS licenseeWLBT,
 			SUM(CASE WHEN b.bettype =903 THEN b.awinlost
 				ELSE 0 END) AS BetTradeComm,
@@ -853,7 +853,7 @@ BEGIN
 					ELSE 1 END
 				ELSE 1 END
 			   BetCount,	
-			SUM(CASE WHEN b.bettype IN (901,902) THEN (b.winlost)
+			-SUM(CASE WHEN b.bettype IN (901,902) THEN (b.winlost)
 				ELSE 0 END) AS licenseeWLBT,
 			SUM(CASE WHEN b.bettype =903 THEN b.awinlost
 				ELSE 0 END) AS BetTradeComm,
@@ -1118,7 +1118,7 @@ BEGIN
 					ELSE 1 END
 				ELSE 1 END
 			   BetCount,	
-			SUM(CASE WHEN b.bettype IN (901,902) THEN (b.winlost)
+			-SUM(CASE WHEN b.bettype IN (901,902) THEN (b.winlost)
 				ELSE 0 END) AS licenseeWLBT,
 			SUM(CASE WHEN b.bettype =903 THEN b.awinlost
 				ELSE 0 END) AS BetTradeComm,
