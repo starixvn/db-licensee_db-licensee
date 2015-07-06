@@ -27,6 +27,7 @@ Revisions:
 	- 20140820@Jim: support to add more value bet BetEffective (RedmineID : #20518)
 	- 20150618@Patrick: #36263: Fix super balance issue for: AGC, GD & VG
     - 20150630@Jim: add MicroGaming 
+	- 20150702@Patrick: Support BetTrade
  */
 
 SET NOCOUNT ON 
@@ -115,7 +116,7 @@ SELECT @winlostdate
 		WHEN bettype BETWEEN 1900 AND 1999 THEN 249 -- VG
 		WHEN bettype BETWEEN 2001 AND 2009 THEN 203
 		ELSE 0 END sporttype
-	,CASE WHEN bettype IN (71,72,1000) THEN bettype ELSE 0 END bettype
+	,CASE WHEN bettype IN (71,72,1000,901,902,903) THEN bettype ELSE 0 END bettype
 	--114: half win, 115: half lose
 	,CASE 
 		WHEN bettrans.statusID = 112 AND bettrans.bettype IN(1,3,7,8,17,18) AND ABS(modds) = 0.25 THEN 114 
@@ -160,7 +161,7 @@ GROUP BY
 		WHEN bettype BETWEEN 1900 AND 1999 THEN 249 -- VG
 		WHEN bettype BETWEEN 2001 AND 2009 THEN 203 -- Microgame
 		ELSE 0 END
-	,CASE WHEN bettype IN (71,72,1000) THEN bettype ELSE 0 END
+	,CASE WHEN bettype IN (71,72,1000,901,902,903) THEN bettype ELSE 0 END
 	,CASE 
 		WHEN bettrans.statusID = 112 AND bettrans.bettype IN(1,3,7,8,17,18) AND ABS(modds) = 0.25 THEN 114 
 		WHEN bettrans.statusID = 113 AND bettrans.bettype IN(1,3,7,8,17,18) AND ABS(modds) = 0.25 THEN 115

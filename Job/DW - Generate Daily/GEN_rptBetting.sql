@@ -1,12 +1,5 @@
 USE [bodb_Licensee]
 GO
-/****** Object:  StoredProcedure [dbo].[GEN_rptBetting]    Script Date: 06/23/2015 04:16:40 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-/****** Object:  Stored Procedure dbo.GEN_rptBetting    Script Date: 9/25/2013 3:47:41 PM ******/
-
 ALTER PROCEDURE [dbo].[GEN_rptBetting]
     @date datetime, 
     @date2 datetime = null
@@ -24,6 +17,7 @@ Revisions:
 20111115@Don: Add information to identify 8RM (customercategory=27)
 20121102@Jim: add process to generate data for KPI NumberGame report
 20130903@Jim: support Virtual Horse Racing
+20150623@Patrick: Support BetTrade
 
 Param's Explanation:
 
@@ -55,7 +49,8 @@ INSERT INTO dbo.rpt_Betting
         ,[CommissionS]
         ,[WinLossVirtual]
         ,[CommissionSVirtual]
-        ,[CustomerCategory])
+        ,[CustomerCategory]
+		,[BuyBackAmount])
     SELECT  
 	    b.winlostdate,
         ISNULL(site.SiteID,-1) siteid,
@@ -65,7 +60,7 @@ INSERT INTO dbo.rpt_Betting
             WHEN b.bettype = 10 OR (b.bettype>30 AND b.bettype<50) THEN ISNULL(o.leagueid,-1)
             WHEN b.bettype IN(1231,1232,1233,1237,1238) THEN RaceInfo.LeagueID
             ELSE ISNULL(m.leagueid,-1) 
-        END AS leagueid,	
+        END AS leagueid,
 	    b.currency,
 	    b.statusid Status,
 	    b.liveindicator,
@@ -82,12 +77,13 @@ INSERT INTO dbo.rpt_Betting
 	    SUM(scomm) commissionS,
 	    SUM((winlost-actual_stake)*virtualrate) WinLossVirtual,
 	    SUM(scomm*virtualrate) CommissionSVirtual,
-	    b.customercategory
+	    b.customercategory,
+		SUM(CASE WHEN b.bettype IN (901) THEN winlost ELSE 0 END)
     FROM
 	    dbo.bettrans b (NOLOCK) 
 	    LEFT JOIN bodb02.dbo.customer ag (NOLOCK) ON b.recommend = ag.custid AND ag.roleid = 2
 	    LEFT JOIN bodb02.dbo.Site ibcsite (NOLOCK) ON ag.site=ibcsite.site
-	    LEFT JOIN dbo.view_site_list [site] (NOLOCK) ON ibcsite.siteid=site.IbcSiteID	
+	    LEFT JOIN dbo.view_site_list [site] (NOLOCK) ON ibcsite.siteid=site.IbcSiteID
 	    LEFT JOIN dbo.match m (NOLOCK) ON b.matchid = m.matchid
 	    LEFT JOIN dbo.outright o (NOLOCK) ON b.matchid = o.matchid
 	    LEFT JOIN DBRPT.bodb02.dbo.VSRaceInfo RaceInfo WITH (NOLOCK) ON b.matchid = RaceInfo.EventID AND b.bettype IN(1231,1232,1233,1237,1238)
