@@ -378,7 +378,8 @@ BEGIN
 			0 tunroverBG,
 			0 tunroverKN,
 			0 tunroverMGC,
-			0 AS Winlost,  
+			SUM(CASE WHEN b.bettype =903 THEN 0
+			ELSE (b.winlost-b.actual_stake) END) AS Winlost,  
 			-- - SUM(b.winlost - b.actual_stake) AS LicenseeWL,
 			0  AS LicenseeWLSB,
 			0 AS LicenseeWLBA,
@@ -831,7 +832,8 @@ BEGIN
 				0 tunroverBG,
 				0 tunroverKN,
 				0 turnoverMGC,
-				0 AS Winlost,  
+				SUM(CASE WHEN b.bettype =903 THEN 0
+				ELSE b.winlost END) AS Winlost,  
 				0 AS LicenseeWLSB,
 				0 AS LicenseeWLBA,
 				0 AS LicenseeWLNG,
@@ -1095,7 +1097,8 @@ BEGIN
 				0 tunroverBG,
 				0 tunroverKN,
 				0 turnoverMGC,
-				0 AS Winlost,  
+				SUM(CASE WHEN b.bettype =903 THEN 0
+				ELSE b.winlost END) AS Winlost,    
 				0 AS LicenseeWLSB,
 				0 AS LicenseeWLBA,
 				0 AS LicenseeWLNG,
