@@ -8,6 +8,8 @@ AS
 	Task: #36263 - Adjust data for 3rd product
 	DB: DBTRANS.bodb02
 	Revisions: 
+		- 20150702@Patrick: Fix bug multiple rate, use to index hint to get data from bettrans_bk
+		- 20150703@Patrick: Filter data by range balanceup & movebet
 	Format for transdesc: 
 		--AGC Betting - Transfer back to Sportsbook
 		--AGC Adjustment - Date: 2015-05-26
@@ -28,13 +30,14 @@ BEGIN
 		, Apositiontaking SMALLMONEY, actualrate FLOAT, CurrencyId TINYINT, Bettype SMALLINT)
 	CREATE TABLE #ChargeRate (PartyId INT, LicenseeId INT, ProductId INT, Rate MONEY, FromDate SMALLDATETIME, ToDate SMALLDATETIME)
 	DECLARE @LicenseeTable TABLE (RowId INT IDENTITY(1,1), LicenseeId INT, LicenseeName VARCHAR(50), CurrencyId TINYINT)
+	DECLARE @BalanceUpTable TABLE (BalanceUpDay SMALLDATETIME, MoveBetsDay SMALLDATETIME) 
 	
 	DECLARE @RowId INT, @LicenseeName VARCHAR(50), @CurrencyId TINYINT, @ProductId TINYINT
 		, @Today DATE, @SqlQueryForDummny VARCHAR(8000), @SqlQueryFor3rd VARCHAR(8000), @CustDummyId INT
 		, @SqlQueryChargeRate VARCHAR(8000), @PartyList VARCHAR(4000)
 		, @RefNo BIGINT, @SqlQuery VARCHAR(8000), @ExchangeRate FLOAT, @ProductIds VARCHAR(512)
 		, @LicenseeId INT, @BettypeIds VARCHAR(512), @FirstDateOfLastMonth SMALLDATETIME, @LastDateOfLastMonth SMALLDATETIME
-		, @AdjustmentIndicator VARCHAR(125), @BettingIndicator VARCHAR(125)
+		, @AdjustmentIndicator VARCHAR(125), @BettingIndicator VARCHAR(125), @BalanceUpDay SMALLDATETIME, @MoveBetsDay SMALLDATETIME
 	
 	SELECT @RowId = 1, @Today = DATEADD(DD, 1, @WinlostDate)
 	SELECT @FirstDateOfLastMonth = DATEADD(MONTH, DATEDIFF(MONTH, 0, @Today) -1, 0) --First day of last month
@@ -52,6 +55,13 @@ BEGIN
 		DROP TABLE #ChargeRate
 		RETURN
 	END
+
+	--check @WinlostDate less than @MoveBetDay
+	INSERT INTO @BalanceUpTable(BalanceUpDay, MoveBetsDay)
+	EXEC dbo.Age_SelBalanceUpDay
+	
+	SELECT @MoveBetsDay = MoveBetsDay, @BalanceUpDay = BalanceUpDay
+	FROM @BalanceUpTable
 	
 	--get licensee list
 	SET @SqlQuery = ''
@@ -172,9 +182,9 @@ BEGIN
 		SELECT @SqlQueryForDummny = ''
 		SELECT @SqlQueryForDummny = 'SELECT CustId, WinlostDate, Stake, Actual_stake, Winlost, TransDesc, RefNo, Apositiontaking, actualrate, Currency, Bettype
 			FROM OPENQUERY(DBARC, ''SELECT CustId, WinlostDate, Stake, Actual_stake, Winlost, TransDesc, RefNo, Apositiontaking, actualrate, Currency, Bettype
-			FROM bodb_archive.dbo.bettrans_bk WITH (NOLOCK) WHERE CustId IN (' + CAST(@CustDummyId AS VARCHAR) + ')'
+			FROM bodb_archive.dbo.bettrans_bk WITH (NOLOCK, INDEX = IX_custid) WHERE CustId IN (' + CAST(@CustDummyId AS VARCHAR) + ')'
 																+ ' AND WinlostDate BETWEEN ''''' + CONVERT(VARCHAR(10), @FirstDateOfLastMonth, 112) + ''''''
-																+ ' AND ''''' + CONVERT(VARCHAR(10), @WinlostDate, 112) + ''''''
+																+ ' AND ''''' + CONVERT(VARCHAR(10), @BalanceUpDay - 1, 112) + ''''''
 																+ ' AND bettype IN (' + CAST(@BettypeIds AS VARCHAR) + ')'
 																+ ''' )'
 		--select @SqlQueryForDummny as '@SqlQueryForDummny'
@@ -187,7 +197,7 @@ BEGIN
 		FROM dbo.bettrans14 WITH(NOLOCK)
 		WHERE custid = @CustDummyId-- custid IN (SELECT val FROM dbo.strSplit(@CustDummyIds, ','))
 			AND bettype IN (SELECT val FROM dbo.strSplit(@BettypeIds, ','))
-			AND winlostdate BETWEEN @FirstDateOfLastMonth AND @WinlostDate
+			AND winlostdate BETWEEN @BalanceUpDay AND @MoveBetsDay
 			
 		-- get data from bettrans
 		INSERT INTO #3rdDummnyData (CustId, WinlostDate, Stake, Actual_stake, Winlost, TransDesc, RefNo, Apositiontaking, actualrate, CurrencyId, Bettype)
@@ -195,7 +205,7 @@ BEGIN
 		FROM dbo.bettrans WITH(NOLOCK)
 		WHERE custid = @CustDummyId--custid IN (SELECT val FROM dbo.strSplit(@CustDummyIds, ','))
 			AND bettype IN (SELECT val FROM dbo.strSplit(@BettypeIds, ','))
-			AND winlostdate BETWEEN @FirstDateOfLastMonth AND @WinlostDate
+			AND winlostdate BETWEEN @MoveBetsDay + 1 AND @WinlostDate
 			
 		--exclude ticket sum of current month
 		DELETE #3rdDummnyData
@@ -302,6 +312,12 @@ BEGIN
 			OR tmp.Actual_stake <> ISNULL(tmp2.Actual_stake, 0)
 			OR tmp.Winlost <> ISNULL(tmp2.Winlost, 0)
 
+		IF NOT EXISTS (SELECT TOP 1 1 FROM @FinalData)
+		BEGIN
+			--PRINT('No data on that day. - WinlostDate: ' + CONVERT(VARCHAR(10), @WinlostDate, 112))
+			CONTINUE
+		END
+
 		--Incase missing all tickets on that date
 		DECLARE @Count INT, @IndexId INT, @WinlostDateTmp SMALLDATETIME, @CurrencyIdTmp TINYINT, @BettypeTmp SMALLINT
 		SELECT @Count = 0, @IndexId = 1
@@ -332,7 +348,7 @@ BEGIN
 		UPDATE tmp
 		SET TransDesc = CASE WHEN tmp.Bettype = 1800 THEN 'AGC' 
 							 WHEN tmp.Bettype = 1700 THEN 'GD' 
-							 WHEN tmp.Bettype = 1900 THEN 'VG' END + @AdjustmentIndicator + CONVERT(VARCHAR(10), WinlostDate, 120)
+							 WHEN tmp.Bettype = 1900 THEN 'VG' END + @AdjustmentIndicator + CONVERT(VARCHAR(10), WinlostDate, 120) + ' - Ex.Rate: ' + CAST(tmp.ActualRate AS VARCHAR)
 			, awinlost = -(Winlost - Actual_stake) * (1 - r.Rate)
 			, apositiontaking = 1 - r.Rate
 			, Status = CASE WHEN Winlost - Actual_stake > 0 THEN 'WON'
@@ -357,6 +373,11 @@ BEGIN
 			INNER JOIN CustDB.dbo.Customer c WITH(NOLOCK) ON tmp.CustId = c.custid AND c.roleid = 1
 			INNER JOIN CustDB.dbo.exchange ex WITH(NOLOCK) ON tmp.CurrencyId = ex.exchangeid
 		
+		--get exchange rate:
+		SELECT @ExchangeRate = ActualRate
+		FROM CustDB.dbo.ExchangeDailyOanda WITH(NOLOCK)
+		WHERE ExchangeDate = @WinlostDate AND ExchangeId = @CurrencyId
+
 		--select * from @FinalData
 		--delete data when charge rate did not config & avoid error a while insert into @bettrans
 		DELETE @FinalData 
@@ -458,7 +479,7 @@ BEGIN
 			, 0 betcheck
 			, NULL checktime
 			, NULL oddsspread
-			, actualrate
+			, @ExchangeRate
 			, 0 matchid
 			, recommend
 			, mrecommend
@@ -480,7 +501,7 @@ BEGIN
 			, srecommend
 			, Username
 			, CurrencyName
-			, actualrate virtualrate
+			, @ExchangeRate virtualrate
 			, NULL oddstype
 			, statusID
 			, NULL currency2
@@ -490,7 +511,7 @@ BEGIN
 			, NULL RecommDate
 		FROM @FinalData
 
-		WAITFOR DELAY '000:00:00.280'
+		--WAITFOR DELAY '000:00:00.280'
 		
 	END
 	
