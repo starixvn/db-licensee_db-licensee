@@ -1,11 +1,5 @@
 USE [bodb_Licensee]
 GO
-/****** Object:  StoredProcedure [dbo].[GEN_rptBetting_BA]    Script Date: 06/23/2015 04:17:38 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-/****** Object:  Stored Procedure dbo.GEN_rptBetting_BA    Script Date: 9/7/2012 9:38:02 AM ******/
 ALTER PROCEDURE [dbo].[GEN_rptBetting_BA]
     @date datetime, 
     @date2 datetime = null
@@ -17,6 +11,7 @@ DB: DB052.bodb_Licensee
 
 Revisions:
 20110726@Daniel: Process data for BA
+20150623@Patrick: Support BetTrade
 
 Param's Explanation:
 
@@ -47,7 +42,9 @@ INSERT INTO dbo.rpt_Betting_BA
         ,[CommissionM]
         ,[CommissionS]
         ,[WinLossVirtual]
-        ,[CommissionSVirtual])
+        ,[CommissionSVirtual]
+		,[customercategory]
+		,[BuyBackAmount])
     SELECT  
 	    b.winlostdate,
         ISNULL(site.SiteID,-1) siteid,
@@ -72,7 +69,9 @@ INSERT INTO dbo.rpt_Betting_BA
 	    SUM(acomm) commissionM,
 	    SUM(scomm) commissionS,
 	    SUM((winlost-actual_stake)*virtualrate) WinLossVirtual,
-	    SUM(scomm*virtualrate) CommissionSVirtual
+	    SUM(scomm*virtualrate) CommissionSVirtual,
+		b.customercategory,
+		SUM(CASE WHEN b.bettype IN (901) THEN winlost ELSE 0 END)
     FROM
 	    dbo.bettrans b (NOLOCK) 
 	    LEFT JOIN bodb02.dbo.customer ag (NOLOCK) ON b.recommend = ag.custid AND ag.roleid = 2

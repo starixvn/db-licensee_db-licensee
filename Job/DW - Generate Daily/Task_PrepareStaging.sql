@@ -1,13 +1,5 @@
 USE [bodb_Licensee]
 GO
-/****** Object:  StoredProcedure [dbo].[Task_PrepareStaging]    Script Date: 06/23/2015 04:15:59 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-/****** Object:  Stored Procedure dbo.Task_PrepareStaging    Script Date: 3/24/2015 1:48:13 PM ******/
-
-
 ALTER PROCEDURE [dbo].[Task_PrepareStaging]  
     @datefrom smalldatetime=null
     ,@dateto smalldatetime=null
@@ -23,6 +15,8 @@ Revisions:
     -20120613@Don: Fixed bug 'custid=0'
     -20150127@Don: Expand bet type ranges for Sportbook when processing BA
 	-20150324@Jim: exclude waiting ticket
+	-20150623@Patrick: Support BetTrade
+
 Param's Explanation:
 
 */
@@ -70,6 +64,10 @@ BEGIN
     create unique nonclustered index ix_t_recommend on #Recommend_List(t_recommend)*/
     
     CREATE TABLE #Customer (t_custid int PRIMARY KEY)
+	CREATE TABLE #BetTradeCust (custid int PRIMARY KEY)
+
+	INSERT INTO #BetTradeCust(CustId)
+	SELECT CustId FROM bodb02.dbo.f_GetBetTradeCustList('ALL')
     
     DECLARE @count int,@movebetdate smalldatetime,@tmpDate smalldatetime
 	SELECT @count=DATEDIFF(DAY,@thedaybefore,@today) - 1
@@ -210,6 +208,7 @@ BEGIN
 	--DROP TABLE #Recommend_List
 	DROP TABLE #Customer
 	
+	
 	UPDATE dbo.bettrans
 	SET statusid=CASE WHEN [status]='HALF WON' THEN 114 WHEN [status]='HALF LOSE' THEN 115 END
 	WHERE [status] IN ('HALF WON','HALF LOSE')
@@ -230,6 +229,14 @@ BEGIN
     UPDATE dbo.bettrans 
     SET IsBA=1
     WHERE transid IN (SELECT transid FROM @BATransids)
+
+	--turn on bettrade members
+	UPDATE dbo.bettrans 
+    SET customercategory = 2001 --bettrade
+    WHERE custid IN (SELECT CustId FROM #BetTradeCust)
+		OR Bettype = 901
+
+	DROP TABLE #BetTradeCust
 	  
 END
 GO
