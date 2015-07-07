@@ -53,6 +53,7 @@ AS
 	- 20141203@Jim : fix issue cannot query data when pass a User belong to CNY Currency (hot fix #27017)
 	- 20141204@Jim : hot fix #27063
 	- 20150415@Jim: support betradar phase 2
+	- 20150528@Jim: add more bettype Betradar and Sporting solution (for support multiple oddstype)
 	Parameter's Explanation:
 		- @ReportBy:  1: daily, 2: monthly
 		- @FilterBy:  1: Win, 2: Loss, 3: Draw
@@ -234,9 +235,11 @@ ELSE
 				b.winlost - b.actual_stake as winlost,
 				b.PlayerComm ,
 				--b.Odds,
-				CASE WHEN (b.bettype IN (1,2,3,7,12,8,20)	
+				CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
 									OR b.bettype BETWEEN 81 AND 88
-									OR b.bettype BETWEEN 90 AND 120)
+									OR b.bettype BETWEEN 90 AND 120
+									OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
+									)
 									THEN 
 											CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
 												 WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
@@ -303,9 +306,11 @@ ELSE
 						,sum(bk.winlost)  winlost
 						,sum(bk.PlayerComm) PlayerComm
 						--,bk.Odds
-						,CASE WHEN (bettype IN (1,2,3,7,12,8,20)	
+						,CASE WHEN (bettype IN (1,2,3,7,12,8,20,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype	
 									OR bettype BETWEEN 81 AND 88
-									OR bettype BETWEEN 90 AND 120)
+									OR bettype BETWEEN 90 AND 120
+									OR bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
+									)
 									THEN 
 											CASE WHEN OddsType = 1 THEN odds + 1 --decimal
 												 WHEN OddsType = 2 THEN Odds + 1 --hongkong to decimal
@@ -338,9 +343,11 @@ ELSE
 						,bk.bettype
 						,bk.currency
 						--,bk.Odds
-						,CASE WHEN (bettype IN (1,2,3,7,12,8,20)	
+						,CASE WHEN (bettype IN (1,2,3,7,12,8,20,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype	
 									OR bettype BETWEEN 81 AND 88
-									OR bettype BETWEEN 90 AND 120)
+									OR bettype BETWEEN 90 AND 120
+									OR bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
+									)
 									THEN 
 											CASE WHEN OddsType = 1 THEN odds + 1 --decimal
 												 WHEN OddsType = 2 THEN Odds + 1 --hongkong to decimal
@@ -375,9 +382,11 @@ ELSE
 					,sum(bk.winlost)  winlost
 					,sum(bk.PlayerComm) PlayerComm
 					--,bk.Odds
-					,CASE WHEN (bettype IN (1,2,3,7,12,8,20)	
+					,CASE WHEN (bettype IN (1,2,3,7,12,8,20,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype		
 							OR bettype BETWEEN 81 AND 88
-							OR bettype BETWEEN 90 AND 120)
+							OR bettype BETWEEN 90 AND 120
+							OR bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
+							)
 							THEN 
 									CASE WHEN OddsType = 1 THEN odds + 1 --decimal
 											WHEN OddsType = 2 THEN Odds + 1 --hongkong to decimal
@@ -411,9 +420,11 @@ ELSE
 					,bk.bettype
 					,bk.currency
 					--,bk.Odds
-					,CASE WHEN (bettype IN (1,2,3,7,12,8,20)	
+					,CASE WHEN (bettype IN (1,2,3,7,12,8,20,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype		
 							OR bettype BETWEEN 81 AND 88
-							OR bettype BETWEEN 90 AND 120)
+							OR bettype BETWEEN 90 AND 120
+							OR bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
+							)
 							THEN 
 									CASE WHEN OddsType = 1 THEN odds + 1 --decimal
 											WHEN OddsType = 2 THEN Odds + 1 --hongkong to decimal
