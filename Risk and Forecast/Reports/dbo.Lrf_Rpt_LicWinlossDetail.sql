@@ -4,7 +4,7 @@ GO
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinlossDetail]  
 	@LicenseeID	INT,
 	@UserID		INT,
-	@CurrencyID	INT = 0,
+	@CurrencyID	INT = 0, 
 	@CustID		INT = 0, --AgentID			
 	@FromDate	SMALLDATETIME,  
 	@ToDate		SMALLDATETIME,   
