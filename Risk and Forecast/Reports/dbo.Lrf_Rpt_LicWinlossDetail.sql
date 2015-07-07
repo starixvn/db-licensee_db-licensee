@@ -1093,7 +1093,7 @@ BEGIN
 			INNER JOIN @TempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
 			
 		WHERE 
-			b.Winlostdate BETWEEN @FDate AND @TempToDate  
+			b.Winlostdate BETWEEN @FDate AND @TempToDate   
 			AND b.bettype IN (901,902,903)
 		
 			GROUP BY  b.custid,b.statusID

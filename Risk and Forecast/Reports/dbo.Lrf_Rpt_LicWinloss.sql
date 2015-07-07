@@ -1,5 +1,10 @@
 ﻿USE [bodb02]
 GO
+/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_LicWinloss_xtest]    Script Date: 7/7/2015 8:45:59 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
  
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]  
  @LicenseeID	INT,
@@ -817,6 +822,8 @@ BEGIN
 
 	IF ( @ShowBT=1)
 	BEGIN
+		
+	
 		INSERT INTO #SAgWinLoss
 		SELECT   
 			b.winlostdate,  
@@ -867,7 +874,7 @@ BEGIN
 			INNER JOIN @TempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
 			
 		WHERE 
-			b.winlostdate BETWEEN @TempFromDate AND @_ToDate AND  
+			b.Winlostdate BETWEEN @_FromDate AND @TempToDate  AND
 			b.bettype IN (901,902,903)
 		GROUP BY   
 			b.winlostdate,ag.currency,statusID,b.bettype
@@ -1133,7 +1140,7 @@ BEGIN
 			INNER JOIN @TempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
 			
 		WHERE 
-			b.winlostdate BETWEEN @TempFromDate AND @_ToDate AND  
+			b.Winlostdate BETWEEN @_FromDate AND @TempToDate  AND 
 			b.bettype IN (901,902,903)
 		GROUP BY   
 			b.winlostdate,ag.currency,statusID,b.bettype
@@ -1355,7 +1362,3 @@ END
 	@Movebetsday='2012-08-23'
 */
 
-GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_LicWinloss] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LicWinloss] TO [vnteam] 
