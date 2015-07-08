@@ -215,9 +215,9 @@ IF @ShowBT=1 -- bettrade
 BEGIN 
 
 	INSERT INTO @bettype(bettype)
-	SELECT 902 AS typeid 
+	SELECT 901 AS typeid 
 	UNION 
-	SELECT 903 AS typeid 
+	SELECT 902 AS typeid 
 	
 END
 
@@ -482,7 +482,7 @@ BEGIN
 			AND roleID = 1
 			AND ISNULL(b.isBA,0) = 0
 			AND b.statusID <> 101 
-			AND b.bettype IN (902,903)
+			AND b.bettype IN (901,902)
 		GROUP BY b.CustID,b.winlostdate,b.currency	
 	END 
               
@@ -594,7 +594,7 @@ BEGIN
 			AND roleID = 1
 			AND ISNULL(b.isBA,0) = 0
 			AND b.statusID <> 101 
-			AND b.bettype IN (902,903)
+			AND b.bettype IN (901,902)
 		GROUP BY b.CustID,b.winlostdate,b.currency	
 	END
 END
