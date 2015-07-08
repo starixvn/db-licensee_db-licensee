@@ -211,6 +211,15 @@ BEGIN
 	SELECT typeid FROM bettype (NOLOCK)
 	WHERE (typeid BETWEEN 2001 AND 2007)
 END
+IF @ShowBT=1 -- bettrade
+BEGIN 
+
+	INSERT INTO @bettype(bettype)
+	SELECT 902 AS typeid 
+	UNION 
+	SELECT 903 AS typeid 
+	
+END
 
 
 CREATE TABLE #TempData
@@ -279,7 +288,7 @@ BEGIN
 			AND b.currency IN (SELECT Currency FROM @TempAg)
 			AND b.statusID  IN (111, 112, 113)
 			and bettype < 19999
-			AND ((@ShowBT=1 AND b.bettype<>903) OR (@ShowBT=0 AND b.bettype NOT IN (901,902,903)))
+			AND b.bettype NOT IN (901,902,903)
 		GROUP BY b.CustID,b.winlostdate,b.currency	
 	END
 
@@ -317,11 +326,11 @@ BEGIN
 			AND b.currency IN (SELECT Currency FROM @TempAg)
 			AND b.statusID  IN (111, 112, 113)
 			AND b.tpositiontaking <>0
-			AND ((@ShowBT=1 AND b.bettype<>903) OR (@ShowBT=0 AND b.bettype NOT IN (901,902,903)))
+			AND b.bettype NOT IN (901,902,903)
 		GROUP BY b.CustID,b.winlostdate,b.currency	 
 	END
 
-	IF (@ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowRB=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGC=1)
+	IF (@ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowRB=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGC=1 OR @ShowBT=1)
 	BEGIN
 		INSERT INTO #TempData
 		SELECT  
@@ -397,7 +406,7 @@ BEGIN
 			AND roleID = 1
 			AND b.statusID <> 101
 			AND ISNULL(b.isBA,0) = 1
-			AND ((@ShowBT=1 AND b.bettype<>903) OR (@ShowBT=0 AND b.bettype NOT IN (901,902,903)))
+			AND b.bettype NOT IN (901,902,903)
 		GROUP BY b.CustID,b.winlostdate,b.currency	
 	END
 	
@@ -436,7 +445,44 @@ BEGIN
 			AND roleID = 1
 			AND ISNULL(b.isBA,0) = 0
 			AND b.statusID <> 101 
-			AND ((@ShowBT=1 AND b.bettype<>903) OR (@ShowBT=0 AND b.bettype NOT IN (901,902,903)))
+			AND b.bettype NOT IN (901,902,903)
+		GROUP BY b.CustID,b.winlostdate,b.currency	
+	END 
+
+	--bettrade
+	IF (@ShowBT=1)
+	BEGIN
+		
+		INSERT  INTO #TempData
+		SELECT
+			b.CustID ,
+			b.winlostdate AS rptdate,
+			SUM(CASE WHEN (@DrawFilter IN (2,3) AND b.statusid=111) THEN 0
+					 ELSE b.turnover
+					 END
+			) AS Turnover,
+			SUM(winlost) MemberWinlost,
+			CASE WHEN winlostdate < @BetEffectiveDate  THEN 0 ELSE  SUM(ISNULL(BetEffective,0)) END    AS BetEffective,
+			- SUM(b.winlost) AS LicenseeWL ,
+			0 AS WinlossRB,
+			0 AS AmountDueToBA,
+			0 AS AmountDueToRB,
+			0 AS CommBA,
+			0 AS CommRB,
+			SUM( b.PlayerComm )  AS PlayerComm ,
+			SUM(CASE WHEN (@DrawFilter IN (2) AND b.statusid=111) THEN 0
+					 ELSE b.BetCount
+					 END) as betcount,
+			b.currency		 
+		FROM    
+			bodb_Licensee.dbo.rptLicWinloss2 b WITH (NOLOCK)
+			INNER JOIN @TempAg ag ON ag.custid = b.recommend  AND b.Currency = ag.Currency			
+		WHERE   
+			Winlostdate BETWEEN @_FromDate AND @TempToDate
+			AND roleID = 1
+			AND ISNULL(b.isBA,0) = 0
+			AND b.statusID <> 101 
+			AND b.bettype IN (902,903)
 		GROUP BY b.CustID,b.winlostdate,b.currency	
 	END 
               
@@ -476,7 +522,7 @@ BEGIN
 			AND b.statusID <> 101 
 			AND ISNULL(b.isBA,0) = 1
 			AND b.currency IN (SELECT Currency FROM @TempAg)
-			AND ((@ShowBT=1 AND b.bettype<>903) OR (@ShowBT=0 AND b.bettype NOT IN (901,902,903)))
+			AND b.bettype NOT IN (901,902,903)
 		GROUP BY b.CustID,b.winlostdate,b.currency	
 	END
 	
@@ -512,7 +558,43 @@ BEGIN
 			AND roleID = 1
 			AND ISNULL(b.isBA,0) = 0
 			AND b.statusID <> 101 
-			AND ((@ShowBT=1 AND b.bettype<>903) OR (@ShowBT=0 AND b.bettype NOT IN (901,902,903)))
+			AND b.bettype NOT IN (901,902,903)
+		GROUP BY b.CustID,b.winlostdate,b.currency	
+	END
+
+	IF (@showBT = 1)
+	BEGIN
+		INSERT  INTO #TempData
+		SELECT  
+			b.CustID ,
+			b.winlostdate AS rptdate,
+			SUM(CASE WHEN (@DrawFilter IN (2,3) AND b.statusid=111) THEN  0
+					 ELSE b.turnover
+					END
+			) AS Turnover,
+			SUM(winlost) MemberWinlost,
+			0 AS BetEffective,
+			- SUM(b.winlost) AS LicenseeWL ,
+			0 AS WinlossRB,
+			0 AS AmountDueToBA,
+			0 AS AmountDueToRB,
+			0 AS CommBA,
+			0 AS CommRB,
+			SUM( b.PlayerComm )  AS PlayerComm ,
+			SUM(CASE WHEN (@DrawFilter IN (2) AND b.statusid=111) THEN 0
+					ELSE b.BetCount
+				    END) AS betcount,
+			b.currency			
+		FROM    
+			bodb_Licensee.dbo.rptLicWinloss_Old b WITH ( NOLOCK )
+			INNER JOIN @TempAg ag ON ag.custid = b.recommend AND b.Currency = ag.Currency
+			INNER JOIN @sporttype t ON b.sporttype = t.sporttype
+		WHERE   
+			Winlostdate BETWEEN @_FromDate AND @_ToDate
+			AND roleID = 1
+			AND ISNULL(b.isBA,0) = 0
+			AND b.statusID <> 101 
+			AND b.bettype IN (902,903)
 		GROUP BY b.CustID,b.winlostdate,b.currency	
 	END
 END
