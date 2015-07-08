@@ -5,7 +5,7 @@ SET ANSI_NULLS ON
 GO
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
-    @LicenseeID INT ,
+    @LicenseeID INT , 
 	@UserID		INT,    
 	@DrawFilter	SMALLINT =1,
     @CurrencyID INT = 0 ,
