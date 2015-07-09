@@ -46,6 +46,7 @@ AS
 		- 20150123@Jim: support base on Currency GBP
 		- 20150612@Jim: support MicroGaming
 		- 20150624@Winnie: support licenseeWLBT
+		- 20150709@Jim: fix bug #39374 
 	Param's Explanation:  
 	  + @CustID: SuperID  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -814,7 +815,7 @@ BEGIN
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 0
 		GROUP BY  b.winlostdate,b.currency, b.recommend, b.statusID
-
+	END
 	IF ( @ShowBT=1)
 		BEGIN
 			INSERT INTO #SAgWinLoss
@@ -872,7 +873,7 @@ BEGIN
 				AND b.bettype IN (901,902,903)			
 				GROUP BY  b.winlostdate,b.currency, b.recommend, b.statusID
 		END
-	END
+	
 	
 			
  END 
