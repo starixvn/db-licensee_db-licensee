@@ -614,8 +614,8 @@ BEGIN
 			b.custid=@custid AND
 			sbt.ProductID=1 AND sbt.EventType=1 AND			
 			b.bettype IN (901,902,903) AND
-			b.ruben = 1 AND
-			b.transid NOT IN (SELECT Transid FROM #TempBetList) 
+			b.ruben = 1 AND			
+			(@ShowBA = 0 OR @ShowBA = 1 AND b.transid NOT IN (SELECT Transid FROM #TempBetList))
 	END
 
 	-- Horse Racing
@@ -1490,7 +1490,7 @@ BEGIN
 				--(b.bettype < 31 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 AND 1399)) AND
 				b.bettype IN (901,902,903) AND
 				b.ruben = 1 AND 
-				b.transid NOT IN (SELECT Transid FROM #TempBetList) 
+				(@ShowBA = 0 OR @ShowBA = 1 AND b.transid NOT IN (SELECT Transid FROM #TempBetList))
 	END
 
 	--Horse Racing
@@ -2300,7 +2300,7 @@ BEGIN
 				b.ruben = 1 AND
 				sbt.ProductID=1 AND sbt.EventType=1 AND				
 				b.bettype IN (901,902,903) AND
-				b.transid NOT IN (SELECT Transid FROM #TempBetList) 
+				(@ShowBA = 0 OR @ShowBA = 1 AND b.transid NOT IN (SELECT Transid FROM #TempBetList))
 	END
 
 	--Horse Racing

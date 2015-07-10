@@ -654,7 +654,7 @@ BEGIN
 			AND	b.matchid		>	0
 			AND sbt.ProductID	=	1
 			AND sbt.EventType	=	1
-			AND b.transid		NOT IN (SELECT TransId FROM #TempBATicket )
+			AND (@ShowBA = 0 OR @ShowBA = 1 AND b.transid NOT IN (SELECT Transid FROM #TempBATicket))
 			AND b.transdate		>=	@FromDate AND b.transdate<=@ToDate
 			AND b.bettype IN (901,902,903)
 	END

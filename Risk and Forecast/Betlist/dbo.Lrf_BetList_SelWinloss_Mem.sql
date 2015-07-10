@@ -573,7 +573,7 @@ BEGIN
 				sbt.ProductID=1 AND sbt.EventType=1 AND
 				b.matchid > 0 AND
 				b.statusID IN (111,112,113) AND
-				b.transid NOT IN (SELECT Transid FROM @TempBetList) --exclude BA tickets						
+				(@ShowBA = 0 OR @ShowBA = 1 AND b.transid NOT IN (SELECT Transid FROM @TempBetList))
 		END
 	
 	--Number Game
@@ -1464,7 +1464,7 @@ BEGIN
 				sbt.ProductID=1 AND sbt.EventType=1 AND
 				b.matchid>0 AND
 				b.statusID IN (111,112,113) AND
-				b.transid NOT IN (SELECT Transid FROM @TempBetList) --exclude BA tickets
+				(@ShowBA = 0 OR @ShowBA = 1 AND b.transid NOT IN (SELECT Transid FROM @TempBetList))
 		END
 	
 	--Number Game
@@ -2347,7 +2347,7 @@ BEGIN
 				b.status NOT IN ('VOID', 'REJECT', 'REFUND') AND 				
 				b.bettype IN (901,902,903) AND
 				sbt.ProductID=1 AND sbt.EventType=1 AND
-				b.transid NOT IN (SELECT Transid FROM @TempBetList) --exclude BA tickets
+				(@ShowBA = 0 OR @ShowBA = 1 AND b.transid NOT IN (SELECT Transid FROM @TempBetList))
 		END
 
 	--Number game
