@@ -1419,11 +1419,11 @@ BEGIN
 			SELECT
 				m.Sporttype, 
 				b.TransID,
-				ISNULL(b.BetID,0),
+				ISNULL(ob.bettype,0),
 				b.Bettype,
 				b.hdp1, 
 				b.hdp2, 
-				modds,
+				b.modds,
 				b.Oddstype,
 				b.Odds,
 				b.stake,
@@ -1433,8 +1433,8 @@ BEGIN
 				b.refno,
 				b.Transdate,	
 				b.winlostdate,						
-				(b.winlost-actual_stake),
-				- (b.winlost-actual_stake),
+				(b.winlost-b.actual_stake),
+				- (b.winlost-b.actual_stake),
 				CASE WHEN b.bettype = 903 THEN b.awinlost ELSE b.comm END AS comm,
 				b.playercomm,
 				b.Liveindicator,
@@ -1455,6 +1455,7 @@ BEGIN
 				,b.betcheck AS betcheck
 			FROM
 				dbo.bettrans14 AS b WITH (NOLOCK)		
+				INNER JOIN dbo.bettrans14 AS ob WITH(NOLOCK) ON b.refno = ob.transid
 				INNER JOIN dbo.match14 AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
 				INNER JOIN @SportBettype sbt ON b.Bettype=sbt.Bettype			
 			WHERE
@@ -2302,11 +2303,11 @@ BEGIN
 			SELECT
 				m.Sporttype, 
 				b.TransID,
-				ISNULL(b.BetID,0),
+				ISNULL(ob.bettype,0),
 				b.Bettype,
 				b.hdp1, 
 				b.hdp2,
-				modds,
+				b.modds,
 				b.Oddstype,
 				b.Odds,
 				b.stake,
@@ -2316,8 +2317,8 @@ BEGIN
 				b.refno,
 				b.Transdate,	
 				b.winlostdate,			
-				(b.winlost-actual_stake),
-				- (b.winlost-actual_stake),
+				(b.winlost-b.actual_stake),
+				- (b.winlost-b.actual_stake),
 				CASE WHEN b.bettype = 903 THEN b.awinlost ELSE b.comm END AS comm,
 			    b.playercomm,
 				b.Liveindicator,
@@ -2337,7 +2338,8 @@ BEGIN
 				'' As ShowTime
 				,b.betcheck AS betcheck
 			FROM
-				bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)		
+				bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)	
+				INNER JOIN bodb_archive.dbo.bettrans_bk AS ob WITH(NOLOCK) ON b.refno = ob.transid	
 				INNER JOIN bodb_archive.dbo.match_BK AS m WITH (NOLOCK) ON b.matchid=m.matchid 		
 				INNER JOIN @SportBettype sbt ON b.Bettype=sbt.Bettype
 			WHERE
@@ -2831,8 +2833,7 @@ BEGIN
 	UPDATE betList
 	SET betList.Odds	= originBetList.Odds
 		,betList.Stake	= originBetList.Stake
-		,betList.comm	= CASE WHEN betList.Bettype = 902 THEN commBetList.comm ELSE betList.comm END
-		,betList.BetID	= originBetList.Bettype
+		,betList.comm	= CASE WHEN betList.Bettype = 902 THEN commBetList.comm ELSE betList.comm END		
 	FROM @BetListByDateMem AS betList
 		INNER JOIN @BetListByDateMem AS originBetList ON betList.RefNO = originBetList.TransID
 		INNER JOIN @BetListByDateMem AS commBetList ON betList.RefNO = commBetList.RefNO

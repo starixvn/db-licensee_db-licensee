@@ -609,7 +609,7 @@ BEGIN
 			b.bettype,
 			'' AS refno,		
 			b.transid,
-			ISNULL(b.BetID,0),
+			ISNULL(ob.bettype,0),
 			m.matchcode, 
 			m.matchid,
 			'' AS Race, 
@@ -624,7 +624,7 @@ BEGIN
 			END as status,
 			b.stake,
 			b.actual_stake,
-			(winlost-actual_stake) winlost,
+			(b.winlost-b.actual_stake) winlost,
 			- (b.winlost-b.actual_stake) AS LicenseeWL ,
 			CASE WHEN b.bettype = 903 THEN b.awinlost ELSE b.comm END AS comm,
 			b.playercomm,
@@ -645,6 +645,7 @@ BEGIN
 			,'' AS betcheck
 		FROM 
 			bettrans b WITH (NOLOCK)
+			INNER JOIN bettrans ob WITH(NOLOCK) ON b.refno = ob.transid
 			INNER JOIN match m WITH (NOLOCK) 
 			ON b.matchid=m.matchid	
 			INNER JOIN @SportBettype sbt
@@ -1164,8 +1165,7 @@ BEGIN
 		UPDATE betList
 		SET betList.Odds	= originBetList.Odds
 			,betList.Stake	= originBetList.Stake
-			,betList.comm	= CASE WHEN betList.Bettype = 902 THEN commBetList.comm ELSE betList.comm END
-			,betList.BetID	= originBetList.Bettype
+			,betList.comm	= CASE WHEN betList.Bettype = 902 THEN commBetList.comm ELSE betList.comm END			
 		FROM #BetListSelAllByDateMem AS betList
 			INNER JOIN #BetListSelAllByDateMem AS originBetList ON betList.RefNO = originBetList.TransID
 			INNER JOIN #BetListSelAllByDateMem AS commBetList ON betList.RefNO = commBetList.RefNO
