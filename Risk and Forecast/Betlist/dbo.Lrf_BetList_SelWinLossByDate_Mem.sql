@@ -237,7 +237,8 @@ BEGIN
 		b.winlostdate BETWEEN @TempFromDate AND @todate AND
 		b.recommend = @Recommend AND --to improve performance
 		b.custid=@custid AND
-		b.ruben = 1 
+		b.ruben = 1 AND
+		b.bettype NOT IN (901,902,903) 
 
 	IF @ShowBA = 1
 	BEGIN
@@ -614,8 +615,7 @@ BEGIN
 			b.custid=@custid AND
 			sbt.ProductID=1 AND sbt.EventType=1 AND			
 			b.bettype IN (901,902,903) AND
-			b.ruben = 1 AND			
-			(@ShowBA = 0 OR @ShowBA = 1 AND b.transid NOT IN (SELECT Transid FROM #TempBetList))
+			b.ruben = 1
 	END
 
 	-- Horse Racing
@@ -1112,7 +1112,8 @@ BEGIN
 		b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate AND
 		b.recommend = @Recommend AND
 		b.custid=@custid AND
-		b.ruben = 1
+		b.ruben = 1 AND
+		b.bettype NOT IN (901,902,903)
 
 	IF @ShowBA = 1
 	BEGIN
@@ -1489,8 +1490,7 @@ BEGIN
 				sbt.ProductID=1 AND sbt.EventType=1 AND
 				--(b.bettype < 31 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 AND 1399)) AND
 				b.bettype IN (901,902,903) AND
-				b.ruben = 1 AND 
-				(@ShowBA = 0 OR @ShowBA = 1 AND b.transid NOT IN (SELECT Transid FROM #TempBetList))
+				b.ruben = 1
 	END
 
 	--Horse Racing
@@ -1926,7 +1926,8 @@ BEGIN
 			b.winlostdate BETWEEN @fromdate AND @TempToDate AND
 			b.recommend = @Recommend  AND
 			b.custid=@custid AND
-			b.ruben = 1 
+			b.ruben = 1 AND
+			b.bettype NOT IN (901,902,903) 
 
 	IF @ShowBA = 1
 	BEGIN
@@ -2299,8 +2300,7 @@ BEGIN
 				b.recommend = @Recommend AND 
 				b.ruben = 1 AND
 				sbt.ProductID=1 AND sbt.EventType=1 AND				
-				b.bettype IN (901,902,903) AND
-				(@ShowBA = 0 OR @ShowBA = 1 AND b.transid NOT IN (SELECT Transid FROM #TempBetList))
+				b.bettype IN (901,902,903)
 	END
 
 	--Horse Racing

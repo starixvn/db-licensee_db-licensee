@@ -207,7 +207,8 @@ BEGIN
 	WHERE
 		b.winlostdate BETWEEN @TempFromDate AND @tdate AND
 		b.custid=@custid AND (@currencyID=0 OR b.currency= @currencyID ) AND
-		b.statusID IN (111,112,113)
+		b.statusID IN (111,112,113) AND
+		b.bettype NOT IN (901,902,903)
 
 	IF @ShowBA = 1
 	BEGIN
@@ -572,8 +573,7 @@ BEGIN
 				b.bettype IN (901,902,903)	AND
 				sbt.ProductID=1 AND sbt.EventType=1 AND
 				b.matchid > 0 AND
-				b.statusID IN (111,112,113) AND
-				(@ShowBA = 0 OR @ShowBA = 1 AND b.transid NOT IN (SELECT Transid FROM @TempBetList))
+				b.statusID IN (111,112,113)				
 		END
 	
 	--Number Game
@@ -1098,8 +1098,8 @@ BEGIN
 	WHERE
 		b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate AND
 		b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
-		b.statusID IN (111,112,113)
-	
+		b.statusID IN (111,112,113) AND
+		b.bettype NOT IN (901,902,903)	
 
 	IF @ShowBA = 1
 	BEGIN
@@ -1463,8 +1463,7 @@ BEGIN
 				b.bettype IN (901,902,903) AND
 				sbt.ProductID=1 AND sbt.EventType=1 AND
 				b.matchid>0 AND
-				b.statusID IN (111,112,113) AND
-				(@ShowBA = 0 OR @ShowBA = 1 AND b.transid NOT IN (SELECT Transid FROM @TempBetList))
+				b.statusID IN (111,112,113)				
 		END
 	
 	--Number Game
@@ -1980,7 +1979,8 @@ BEGIN
 		b.winlostdate BETWEEN @fdate AND @TempToDate AND
 		b.custid=@custid AND  (@currencyID=0 OR b.currency= @currencyID ) AND
 		b.ruben = 1 AND
-		b.status NOT IN ('VOID','REJECT','REFUND')
+		b.status NOT IN ('VOID','REJECT','REFUND') AND
+		b.bettype NOT IN (901,902,903)
 	
 	IF @ShowBA = 1
 	BEGIN
@@ -2346,8 +2346,7 @@ BEGIN
 				b.ruben = 1 AND
 				b.status NOT IN ('VOID', 'REJECT', 'REFUND') AND 				
 				b.bettype IN (901,902,903) AND
-				sbt.ProductID=1 AND sbt.EventType=1 AND
-				(@ShowBA = 0 OR @ShowBA = 1 AND b.transid NOT IN (SELECT Transid FROM @TempBetList))
+				sbt.ProductID=1 AND sbt.EventType=1
 		END
 
 	--Number game
