@@ -107,7 +107,7 @@ insert into dbo.rptDepWinlost
 	turnover_ba, comm_ba, Amountdueto_ba, playercomm, Transfer3rdOthers, Comm_BetTrade, AmountDueTo_BetTrade)
 select winlostdate, custid, s.currency, OpeningBalance, Deposit, Aff2MemTransfer, Withdrawal, Bonus, Adjustment, Transfer3rd,  
 	Turnover, DrawGame, Outstanding, Winloss, recommend, mrecommend, srecommend,   
-	OpeningBalance + Deposit + Aff2MemTransfer - Withdrawal + Bonus + Adjustment - Outstanding + Winloss + playercomm + Transfer3rd, -- closingbalance  
+	OpeningBalance + Deposit + Aff2MemTransfer - Withdrawal + Bonus + Adjustment - Outstanding + Winloss + playercomm + Transfer3rd - comm_bettrade, -- closingbalance  
 	e.actualrate,turnover_ba, comm_ba, Amountdueto_ba , playercomm, Transfer3rdOthers, comm_bettrade, amountdueto_bettrade
 from #TEMP s
 	inner join bodb02.dbo.exchangedailyoanda e with(nolock) on s.currency = e.exchangeid and s.winlostdate = e.exchangedate 

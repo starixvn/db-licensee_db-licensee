@@ -498,7 +498,7 @@ BEGIN
 		turnover_ba, comm_ba, Amountdueto_ba, playercomm, Transfer3rdOthers, Comm_BetTrade, AmountDueTo_BetTrade)  
 	SELECT @date, custid, d.currency, SUM(OpeningBalance), SUM(Deposit), SUM(Aff2MemTransfer), SUM(Withdrawal), SUM(Bonus), SUM(Adjustment), SUM(Transfer3rd),  
 		SUM(Turnover), SUM(DrawGame), SUM(Outstanding), SUM(Winloss), recommend, mrecommend, srecommend,   
-		SUM(OpeningBalance + Deposit + Aff2MemTransfer - Withdrawal + Bonus + Adjustment - Outstanding + Winloss + playercomm + Transfer3rd + Transfer3rdOthers) , -- closingbalance  
+		SUM(OpeningBalance + Deposit + Aff2MemTransfer - Withdrawal + Bonus + Adjustment - Outstanding + Winloss + playercomm + Transfer3rd + Transfer3rdOthers - Comm_BetTrade) , -- closingbalance  
 		MIN(e.actualrate),SUM(turnover_ba), SUM(comm_ba), SUM(Amountdueto_ba), SUM(playercomm), SUM(Transfer3rdOthers), --Transfer3rdOthers
 		SUM(Comm_BetTrade), SUM(AmountDueTo_BetTrade)
 	FROM #Data d  
