@@ -69,7 +69,7 @@ BEGIN
 		Transfer3rd money default(0), DrawGame money default(0),   
 		turnover_ba money default (0), comm_ba money default(0), Amountdueto_ba money default(0), Playercomm money default(0), 
 		PartnerId int, Transfer3rdOthers money default(0),Transfer3rdOthers_In money default(0),Transfer3rdOthers_Out money default(0),
-		comm_bettrade money default(0), Amountdueto_bettrade money default(0)
+		comm_bettrade money default(0), Amountdueto_bettrade money default(0), comm_bettrade_full money default(1)
 		UNIQUE (custid, PartnerId, currency)  
 	) 
 
@@ -339,6 +339,7 @@ BEGIN
 	;WITH bettradeData AS (  
 		SELECT b.custid
 			, SUM(CASE WHEN b.bettype = 903 THEN b.awinlost ELSE 0 END) AS comm_bettrade
+			, SUM(CASE WHEN b.bettype = 903 THEN b.winlost - b.actual_stake ELSE 0 END) AS comm_bettrade_full
 			, SUM(CASE WHEN bt.CustId IS NOT NULL AND b.bettype NOT IN (902,903) THEN b.winlost - b.actual_stake ELSE 0 END) AS WLBeticket --WL of bet ticket of bettrade
 			, SUM(CASE WHEN b.bettype = 902 THEN b.winlost - b.actual_stake ELSE 0 END) AS WLBoughtTicket --WL of bought ticket of bettrade
 		FROM dbo.bettrans b with(rowlock)  
@@ -352,6 +353,7 @@ BEGIN
 	UPDATE #Data  
 	SET comm_bettrade = ISNULL(d.comm_bettrade, 0)
 		, Amountdueto_bettrade = ISNULL(d.WLBeticket, 0) + ISNULL(d.WLBoughtTicket, 0) - ISNULL(d.comm_bettrade, 0)
+		, comm_bettrade_full = ISNULL(d.comm_bettrade_full, 0)
 	FROM bettradeData d
 	WHERE #Data.custid = d.custid
 
@@ -498,7 +500,7 @@ BEGIN
 		turnover_ba, comm_ba, Amountdueto_ba, playercomm, Transfer3rdOthers, Comm_BetTrade, AmountDueTo_BetTrade)  
 	SELECT @date, custid, d.currency, SUM(OpeningBalance), SUM(Deposit), SUM(Aff2MemTransfer), SUM(Withdrawal), SUM(Bonus), SUM(Adjustment), SUM(Transfer3rd),  
 		SUM(Turnover), SUM(DrawGame), SUM(Outstanding), SUM(Winloss), recommend, mrecommend, srecommend,   
-		SUM(OpeningBalance + Deposit + Aff2MemTransfer - Withdrawal + Bonus + Adjustment - Outstanding + Winloss + playercomm + Transfer3rd + Transfer3rdOthers - Comm_BetTrade) , -- closingbalance  
+		SUM(OpeningBalance + Deposit + Aff2MemTransfer - Withdrawal + Bonus + Adjustment - Outstanding + Winloss + playercomm + Transfer3rd + Transfer3rdOthers - comm_bettrade_full) , -- closingbalance  
 		MIN(e.actualrate),SUM(turnover_ba), SUM(comm_ba), SUM(Amountdueto_ba), SUM(playercomm), SUM(Transfer3rdOthers), --Transfer3rdOthers
 		SUM(Comm_BetTrade), SUM(AmountDueTo_BetTrade)
 	FROM #Data d  

@@ -61,7 +61,7 @@ CREATE TABLE #Data(custid int, currency int,
 	Transfer3rd money default(0), DrawGame money default(0),
 	turnover_ba money default (0), comm_ba money default(0), Amountdueto_ba money default(0), playercomm money default(0), 
 	PartnerId int, Transfer3rdOthers money default(0),Transfer3rdOthers_In money default(0),Transfer3rdOthers_Out money default(0),
-	comm_bettrade money default(0), amountdueto_bettrade money default(0)
+	comm_bettrade money default(0), amountdueto_bettrade money default(0), comm_bettrade_full money default(0)
 	UNIQUE (custid, PartnerId, currency)
 	)
 
@@ -224,6 +224,7 @@ WHERE #data.custid = b.custid
 ;WITH bettradeData AS (  
 	SELECT b.custid
 		, SUM(CASE WHEN b.bettype = 903 THEN b.awinlost ELSE 0 END) AS comm_bettrade
+		, SUM(CASE WHEN b.bettype = 903 THEN b.winlost - b.actual_stake ELSE 0 END) AS comm_bettrade_full
 		, SUM(CASE WHEN bt.CustId IS NOT NULL AND b.bettype NOT IN (902,903) THEN b.winlost - b.actual_stake ELSE 0 END) AS WLBeticket --WL of bet ticket of bettrade
 		, SUM(CASE WHEN b.bettype = 902 THEN b.winlost - b.actual_stake ELSE 0 END) AS WLBoughtTicket --WL of bought ticket of bettrade
 	FROM dbo.bettrans b with(rowlock)  
@@ -236,6 +237,7 @@ WHERE #data.custid = b.custid
 )  
 UPDATE #Data  
 SET comm_bettrade = ISNULL(d.comm_bettrade, 0)
+	, comm_bettrade_full = ISNULL(d.comm_bettrade_full, 0)
 	, Amountdueto_bettrade = ISNULL(d.WLBeticket, 0) + ISNULL(d.WLBoughtTicket, 0) - ISNULL(d.comm_bettrade, 0)
 FROM bettradeData d
 WHERE #Data.custid = d.custid

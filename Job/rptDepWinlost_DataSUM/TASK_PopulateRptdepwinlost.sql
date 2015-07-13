@@ -43,6 +43,7 @@ SET NOCOUNT ON
 			,NULLIF(Transfer3rdOthers, 0) '@c0'
 			,NULLIF(comm_bettrade, 0) '@c1'
 			,NULLIF(amountdueto_bettrade, 0) '@c2'
+			,NULLIF(comm_bettrade_full, 0) '@c3'
 		FROM dbo.rptDepwinlost_staging WITH(NOLOCK)
 		FOR XML PATH('r'), ROOT ('root'), TYPE
 	)
