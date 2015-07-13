@@ -15,6 +15,7 @@ AS
  Revisions:   
   - 20120930@viet: create SP   
   - 20130627@Don: modify formula to calculate ClosingBalance, plus Tranfer3rdOthers
+  - 201507013@Patrick: Support bettrade
                  
  Param's Explanation:  
  • @winlostdate: The date need to summary  
@@ -51,6 +52,8 @@ SELECT
 	isnull(T.C.value('./@b8', 'money'), 0) amountdueto_ba,
 	isnull(T.C.value('./@b9', 'money'), 0) playercomm,
 	isnull(T.C.value('./@c0', 'money'), 0) transfer3rdothers,
+	isnull(T.C.value('./@c1', 'money'), 0) comm_bettrade,
+	isnull(T.C.value('./@c2', 'money'), 0) amountdueto_bettrade,
 	cast(0 as money) AS OpeningBalance,
 	cast(0 as money) AS ClosingBalance,
 	cast(0 as float) AS actualrate
@@ -88,6 +91,8 @@ UPDATE d
 		,AmountDueTo_BA = s.AmountDueTo_BA
 		,playercomm = s.playercomm
 		,Transfer3rdOthers = s.transfer3rdothers
+		,comm_bettrade = s.comm_bettrade
+		,amountdueto_bettrade = s.amountdueto_bettrade
 OUTPUT inserted.custid, inserted.winlostdate into @updated_list		
 FROM dbo.rptDepWinlost d WITH(ROWLOCK, UPDLOCK)
 	INNER JOIN #TEMP s on d.custid = s.custid and d.winlostdate = s.winlostdate
@@ -99,11 +104,11 @@ FROM #TEMP D
 insert into dbo.rptDepWinlost   
 	(winlostdate, custid, currency, OpeningBalance, Deposit, Aff2MemTransfer, Withdrawal, Bonus, Adjustment, Transfer3rd,  
 	Turnover, DrawGame, Outstanding, Winloss, recommend, mrecommend, srecommend,ClosingBalance, actualrate,  
-	turnover_ba, comm_ba, Amountdueto_ba, playercomm, Transfer3rdOthers)
+	turnover_ba, comm_ba, Amountdueto_ba, playercomm, Transfer3rdOthers, Comm_BetTrade, AmountDueTo_BetTrade)
 select winlostdate, custid, s.currency, OpeningBalance, Deposit, Aff2MemTransfer, Withdrawal, Bonus, Adjustment, Transfer3rd,  
 	Turnover, DrawGame, Outstanding, Winloss, recommend, mrecommend, srecommend,   
 	OpeningBalance + Deposit + Aff2MemTransfer - Withdrawal + Bonus + Adjustment - Outstanding + Winloss + playercomm + Transfer3rd, -- closingbalance  
-	e.actualrate,turnover_ba, comm_ba, Amountdueto_ba , playercomm, Transfer3rdOthers
+	e.actualrate,turnover_ba, comm_ba, Amountdueto_ba , playercomm, Transfer3rdOthers, comm_bettrade, amountdueto_bettrade
 from #TEMP s
 	inner join bodb02.dbo.exchangedailyoanda e with(nolock) on s.currency = e.exchangeid and s.winlostdate = e.exchangedate 
 
