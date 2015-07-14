@@ -121,14 +121,8 @@ BEGIN
 	)
 	
 	-- CREATE temp caching table
-	-- DROP TABLE tempdb..##tempLRFCustTORpt
-	IF ( OBJECT_ID('tempdb..##tempLRFCustTORpt') IS NULL 
-		OR COL_LENGTH('tempdb..##tempLRFCustTORpt','rptDate') IS NULL
-	)
+	IF ( OBJECT_ID('tempdb..##tempLRFCustTORpt') IS NULL )
 	BEGIN
-		IF(OBJECT_ID('tempdb..##tempLRFCustTORpt') IS NOT NULL ) 
-			DROP TABLE ##tempLRFCustTORpt
-
 		-- CREATE new caching table	
 		CREATE TABLE ##tempLRFCustTORpt
 		(
@@ -143,6 +137,7 @@ BEGIN
 			, rptVer		INT IDENTITY(1,1)
 		)
 		CREATE CLUSTERED INDEX [CIX_tempCustTORpt] ON ##tempLRFCustTORpt (rptHash, whticket)
+	
 	END
 	
 	CREATE TABLE #tempSumTotal 
@@ -408,30 +403,33 @@ BEGIN
 			
 		DECLARE @isCached BIT = 0
 		-- GET from temp table caching
-		INSERT INTO #tempSumTotal
-		SELECT s.*
-		FROM (
-			SELECT TOP 1 rpt.whticket
-				, rpt.betcount
-				, rpt.turnover
-				, rpt.winlost
-				, rpt.playercomm
-				, rpt.totalrow
-			FROM ##tempLRFCustTORpt rpt
-			WHERE rpt.rptHash = @rptHash AND rpt.whticket = 1
-				AND @pageIndex <> 1
+		IF ( OBJECT_ID('tempdb..##tempLRFCustTORpt') IS NOT NULL )
+		BEGIN
+			INSERT INTO #tempSumTotal
+			SELECT s.*
+			FROM (
+				SELECT TOP 1 rpt.whticket
+					, rpt.betcount
+					, rpt.turnover
+					, rpt.winlost
+					, rpt.playercomm
+					, rpt.totalrow
+				FROM ##tempLRFCustTORpt rpt
+				WHERE rpt.rptHash = @rptHash AND rpt.whticket = 1
+					AND @pageIndex <> 1
 
-			UNION ALL
-			SELECT TOP 1 rpt.whticket
-				, rpt.betcount
-				, rpt.turnover
-				, rpt.winlost
-				, rpt.playercomm
-				, rpt.totalrow
-			FROM ##tempLRFCustTORpt rpt
-			WHERE rpt.rptHash = @rptHashSum AND rpt.whticket = 2	
-		) s		
-				
+				UNION ALL
+				SELECT TOP 1 rpt.whticket
+					, rpt.betcount
+					, rpt.turnover
+					, rpt.winlost
+					, rpt.playercomm
+					, rpt.totalrow
+				FROM ##tempLRFCustTORpt rpt
+				WHERE rpt.rptHash = @rptHashSum AND rpt.whticket = 2	
+			) s		
+		END 		
+		
 		--SELECT totalrows
 		SELECT 
 			@totalBettrans		= CASE WHEN s.whticket 	= 1 THEN SUM(ISNULL(s.totalrow,0)) ELSE ISNULL(@totalBettrans, 0) END
@@ -460,9 +458,7 @@ BEGIN
 				,@ReportBy  	= @ReportBy
 				
 			-- CHECK for update/insert cache
-			IF(@rptHash IS NOT NULL 
-				AND @rptHashSum IS NOT NULL 
-			)
+			IF ( OBJECT_ID('tempdb..##tempLRFCustTORpt') IS NOT NULL )
 			BEGIN
 				MERGE INTO ##tempLRFCustTORpt c
 				USING ( 
@@ -505,7 +501,7 @@ BEGIN
 						, rpt.rptDate
 					)
 				;
-			END
+			END 
 		END
 		
 	END
@@ -571,12 +567,9 @@ BEGIN
 			FROM #tempSumTotal s 
 			WHERE ISNULL(s.totalrow, 0) = 0
 			
-			--- UPDATE caching
-			IF (@rptHash IS NOT NULL 
-				AND @rptHashSum IS NOT NULL 
-			)
+			--- UPDATE total rows caching
+			IF ( OBJECT_ID('tempdb..##tempLRFCustTORpt') IS NOT NULL )
 			BEGIN
-				-- GET total rows on bettrans
 				;WITH CTE_Total AS (
 					SELECT s.whticket
 						, s.totalrow
@@ -594,7 +587,7 @@ BEGIN
 					INNER JOIN CTE_Total t 
 					ON rpt.rptHash = t.rptHash AND rpt.whticket = t.whticket
 					
-			END
+			END 
 		END
 		
 	END
@@ -732,7 +725,7 @@ BEGIN
 	
 	--SET duration time
 	SET @Duration = DATEDIFF(MS, @startTime, GETDATE())
-	
+		
 	RETURN;
 END
 GO 
