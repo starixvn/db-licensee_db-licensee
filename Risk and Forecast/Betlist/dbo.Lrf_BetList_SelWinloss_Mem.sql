@@ -157,7 +157,7 @@ Declare @TempToDate DATETIME
 ----Get Sport Bettype Matrix------
 DECLARE @SportBettype TABLE(ProductID INT,Bettype INT,EventType INT)
 INSERT INTO @SportBettype
-EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel_xtest @mode=4
+EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4
 
 IF @ShowBT = 0
 BEGIN

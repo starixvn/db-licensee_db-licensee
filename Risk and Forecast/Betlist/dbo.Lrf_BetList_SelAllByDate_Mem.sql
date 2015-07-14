@@ -209,7 +209,7 @@ BEGIN
 		,Bettype
 		,EventType
 	)
-	EXEC dbo.Acc_SportBettypeMatrix_Sel_xtest @mode = 4
+	EXEC dbo.Acc_SportBettypeMatrix_Sel @mode = 4
 		
 	IF @ShowBT = 0
 	BEGIN

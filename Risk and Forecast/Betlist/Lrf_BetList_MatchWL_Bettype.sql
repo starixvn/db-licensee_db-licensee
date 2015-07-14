@@ -2,7 +2,7 @@
 set QUOTED_IDENTIFIER ON
 go
 
-ALTER PROCEDURE [dbo].[Lrf_BetList_MatchWL_Bettype_xtest]
+ALTER PROCEDURE [dbo].[Lrf_BetList_MatchWL_Bettype]
 	@MatchID INT,
 	@LicenseeID INT, 
 	@UserID	 INT,

@@ -1,4 +1,4 @@
-CREATE PROCEDURE [dbo].[Lrf_BetList_SelByDayAll_Mem]
+ALTER PROCEDURE [dbo].[Lrf_BetList_SelByDayAll_Mem]
 	@LicenseeID 		INT ,
 	@UserID				INT,
 	@custid				INT,
