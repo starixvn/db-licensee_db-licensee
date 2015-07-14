@@ -232,7 +232,7 @@ BEGIN
 
 	--turn on bettrade members
 	UPDATE dbo.bettrans 
-    SET customercategory = 2001 --bettrade
+    SET customercategory = 1001 --bettrade
     WHERE custid IN (SELECT CustId FROM #BetTradeCust)
 		OR Bettype = 901
 
