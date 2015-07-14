@@ -454,6 +454,7 @@ BEGIN
 	BEGIN
 		
 		INSERT  INTO #TempData
+		
 		SELECT
 			b.CustID ,
 			b.winlostdate AS rptdate,
@@ -479,8 +480,7 @@ BEGIN
 			INNER JOIN @TempAg ag ON ag.custid = b.recommend  AND b.Currency = ag.Currency			
 		WHERE   
 			Winlostdate BETWEEN @_FromDate AND @TempToDate
-			AND roleID = 1
-			AND ISNULL(b.isBA,0) = 0
+			AND roleID = 1			
 			AND b.statusID <> 101 
 			AND b.bettype IN (901,902)
 		GROUP BY b.CustID,b.winlostdate,b.currency	
@@ -591,8 +591,7 @@ BEGIN
 			INNER JOIN @sporttype t ON b.sporttype = t.sporttype
 		WHERE   
 			Winlostdate BETWEEN @_FromDate AND @_ToDate
-			AND roleID = 1
-			AND ISNULL(b.isBA,0) = 0
+			AND roleID = 1		
 			AND b.statusID <> 101 
 			AND b.bettype IN (901,902)
 		GROUP BY b.CustID,b.winlostdate,b.currency	
