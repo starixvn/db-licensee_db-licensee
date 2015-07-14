@@ -63,7 +63,7 @@ BEGIN
 			c.rowno
 			,c.winlostdate 
 			,c.custid
-			,rec.currency
+			,rec.currency 
 			,b.sporttype
 			,b.bettype
 			,c.whticket

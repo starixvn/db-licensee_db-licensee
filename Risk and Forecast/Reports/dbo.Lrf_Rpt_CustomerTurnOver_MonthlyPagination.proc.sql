@@ -17,7 +17,7 @@ CREATE PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver_MonthlyPagination]
 	,@MoveBetsDay 	SMALLDATETIME
 	,@Odds 			FLOAT
 	,@ReportBy  	TINYINT   =  1 
-	,@offsetRow 	INT
+	,@offsetRow 	INT 
 	,@maxRow		INT
 	,@totalBettrans	INT = 0 OUTPUT
 	,@totalSumRpt	INT = 0 OUTPUT

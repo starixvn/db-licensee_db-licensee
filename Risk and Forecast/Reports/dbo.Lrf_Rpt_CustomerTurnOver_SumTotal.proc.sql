@@ -16,7 +16,7 @@ ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver_SumTotal]
 	,@tempToDate 	SMALLDATETIME
 	,@MoveBetsDay 	SMALLDATETIME
 	,@Odds 			FLOAT
-	,@ReportBy  	TINYINT   =  1 
+	,@ReportBy  	TINYINT   =  1  
 ) 
 WITH RECOMPILE
 AS

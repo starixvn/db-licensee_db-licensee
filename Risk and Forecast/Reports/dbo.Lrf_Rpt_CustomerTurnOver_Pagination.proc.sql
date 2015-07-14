@@ -119,7 +119,7 @@ BEGIN
 								ELSE b.sporttype 
 							END			= p.sportID
 					WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
-					AND b.bettype NOT IN (901,902,903)		
+					AND b.bettype NOT IN (901,902,903)		 
 					GROUP BY 
 						b.winlostdate
 						, c.custid

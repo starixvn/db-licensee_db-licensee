@@ -9,7 +9,7 @@ GO
  
 ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
 (
-	@LicenseeID 	INT
+	@LicenseeID 	INT 
 	,@UserID  		INT
 	,@Username 		VARCHAR(50) =  '' 
 	,@Product  		VARCHAR(MAX) 
