@@ -230,9 +230,7 @@ BEGIN
 		OR (ProductID 	> 8 AND sbt.ProductID <> 13) -- not suport for LIC system
 	-- end filer bettypes by sporttype
 	
-	IF ( @ShowBA = 1 )
-	BEGIN
-		--general
+	--general
 		INSERT INTO #TempBATicket
 		SELECT 
 			b.bettype,
@@ -276,6 +274,9 @@ BEGIN
 			AND sbt.ProductId	=	1
 			AND b.transdate		>=	@FROMDate AND b.transdate<=@ToDate
 			AND b.bettype NOT IN (901,902,903)
+
+	IF ( @ShowBA = 1 )
+	BEGIN		
 		--Sportsbook
 		INSERT INTO #BetListSelAllByDateMem
 		SELECT 
