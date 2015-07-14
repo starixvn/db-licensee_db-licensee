@@ -1,4 +1,4 @@
-CREATE PROCEDURE [dbo].[Lrf_BetList_SelByDayAll_Mem_Old]
+ALTER PROCEDURE [dbo].[Lrf_BetList_SelByDayAll_Mem_Old]
 	@LicenseeID 		INT ,
 	@UserID				INT,
 	@custid				INT,
@@ -223,8 +223,8 @@ BEGIN
 		,betList.comm	= CASE WHEN betList.Bettype = 902 THEN commBetList.comm ELSE betList.comm END
 		,betList.BetID	= originBetList.Bettype
 	FROM @Data AS betList
-		INNER JOIN @Data AS originBetList ON betList.RefNO = originBetList.TransID
-		INNER JOIN @Data AS commBetList ON betList.RefNO = commBetList.RefNO
+		INNER JOIN bodb_archive.dbo.bettrans_bk AS originBetList WITH (NOLOCK) ON betList.RefNO = originBetList.TransID
+		INNER JOIN bodb_archive.dbo.bettrans_bk AS commBetList WITH (NOLOCK) ON betList.RefNO = commBetList.RefNO
 	WHERE betList.Sporttype = 1 AND betList.Bettype IN (901, 902)
 		AND commBetList.Bettype = 903
 

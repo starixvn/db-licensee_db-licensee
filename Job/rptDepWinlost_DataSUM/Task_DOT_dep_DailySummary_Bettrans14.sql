@@ -103,8 +103,8 @@ SELECT
 	CASE WHEN bettype in (p.TransferId, p.CancelTransferId) THEN p.PartnerId	ELSE -1 END PartnerId,
 	SUM(CASE @date WHEN @BalanceUpDay 
 			THEN CASE WHEN bettype = 20000 THEN winlost - actual_stake + playercomm ELSE 0 END 
-			ELSE CASE WHEN winlostdate < @date THEN CASE WHEN bettype = 903 THEN 0 ELSE winlost - actual_stake + playercomm END ELSE 0 END 
-		END), -- openingbalance: exclude betrade comm ticket
+			ELSE CASE WHEN winlostdate < @date THEN winlost - actual_stake + playercomm ELSE 0 END 
+		END),
 	SUM( CASE WHEN winlostdate = @date AND bettype = 22001 then winlost-actual_stake ELSE 0 END), --Deposit
 	SUM( CASE WHEN winlostdate = @date AND bettype = 21006 then winlost-actual_stake ELSE 0 END), --Aff2MemTransfer
 	-SUM(CASE WHEN winlostdate = @date AND bettype in (22002,22003) then winlost-actual_stake ELSE 0 END),--Withdrawal
@@ -227,7 +227,7 @@ WHERE #data.custid = b.custid
 		, SUM(CASE WHEN b.bettype = 903 THEN b.winlost - b.actual_stake ELSE 0 END) AS comm_bettrade_full
 		, SUM(CASE WHEN bt.CustId IS NOT NULL AND b.bettype NOT IN (902,903) THEN b.winlost - b.actual_stake ELSE 0 END) AS WLBeticket --WL of bet ticket of bettrade
 		, SUM(CASE WHEN b.bettype = 902 THEN b.winlost - b.actual_stake ELSE 0 END) AS WLBoughtTicket --WL of bought ticket of bettrade
-	FROM dbo.bettrans b with(rowlock)  
+	FROM dbo.bettrans14 b with(rowlock)  
 		LEFT JOIN dbo.f_GetBetTradeCustList('All') bt ON b.custid = bt.Custid AND b.Currency = bt.currency
 	WHERE b.winlostdate = @date  
 		AND (b.bettype < 31 OR b.bettype BETWEEN 121 AND 999 OR b.bettype BETWEEN 1301 AND 1399)
@@ -239,6 +239,7 @@ UPDATE #Data
 SET comm_bettrade = ISNULL(d.comm_bettrade, 0)
 	, comm_bettrade_full = ISNULL(d.comm_bettrade_full, 0)
 	, Amountdueto_bettrade = ISNULL(d.WLBeticket, 0) + ISNULL(d.WLBoughtTicket, 0) - ISNULL(d.comm_bettrade, 0)
+	--, OpeningBalance = OpeningBalance - ISNULL(d.comm_bettrade_full, 0)
 FROM bettradeData d
 WHERE #Data.custid = d.custid
 
@@ -303,7 +304,7 @@ insert into bodb_Report.dbo.rptDepWinlost
 	turnover_ba, comm_ba, Amountdueto_ba, playercomm, Transfer3rdOthers, comm_bettrade, amountdueto_bettrade)
 select @date, custid, d.currency, SUM(OpeningBalance), SUM(Deposit), SUM(Aff2MemTransfer), SUM(Withdrawal), SUM(Bonus), SUM(Adjustment), SUM(Transfer3rd),
 	SUM(Turnover), SUM(DrawGame), SUM(Outstanding), SUM(Winloss), recommend, mrecommend, srecommend, 
-	SUM(OpeningBalance + Deposit + Aff2MemTransfer - Withdrawal + Bonus + Adjustment - Outstanding + Winloss + playercomm + Transfer3rd + Transfer3rdOthers - comm_bettrade), -- closingbalance
+	SUM(OpeningBalance + Deposit + Aff2MemTransfer - Withdrawal + Bonus + Adjustment - Outstanding + Winloss + playercomm + Transfer3rd + Transfer3rdOthers - comm_bettrade_full), -- closingbalance
 	MIN(e.actualrate), SUM(turnover_ba), SUM(comm_ba) , SUM(Amountdueto_ba), SUM(playercomm), SUM(Transfer3rdOthers), --Transfer3rdOthers
 	SUM(comm_bettrade), SUM(amountdueto_bettrade)
 from #Data d

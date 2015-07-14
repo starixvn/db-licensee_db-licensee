@@ -157,7 +157,7 @@ Declare @TempToDate DATETIME
 ----Get Sport Bettype Matrix------
 DECLARE @SportBettype TABLE(ProductID INT,Bettype INT,EventType INT)
 INSERT INTO @SportBettype
-EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel_xtest @mode=4
+EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4
 
 IF @ShowBT = 0
 BEGIN
@@ -192,7 +192,7 @@ BEGIN
 		b.winlostdate,			
 		(b.winlost-actual_stake),
 		0,
-		CASE WHEN b.bettype = 903 THEN b.awinlost ELSE b.comm END AS comm,
+		b.comm AS comm,
 		b.playercomm,
 		b.Liveindicator,
 		b.Livehomescore,
@@ -381,7 +381,7 @@ BEGIN
 				b.winlostdate,			
 				(b.winlost-actual_stake),
 				- (b.winlost-actual_stake) ,
-				CASE WHEN b.bettype = 903 THEN b.awinlost ELSE b.comm END AS comm,
+				b.comm AS comm,
 				b.playercomm,
 				b.Liveindicator,
 				b.Livehomescore,
@@ -1083,7 +1083,7 @@ BEGIN
 		b.winlostdate,			
 		(b.winlost-actual_stake),
 		0,
-		CASE WHEN b.bettype = 903 THEN b.awinlost ELSE b.comm END AS comm,
+		b.comm AS comm,
 		b.playercomm,
 		b.Liveindicator,
 		b.Livehomescore,
@@ -1272,7 +1272,7 @@ BEGIN
 				b.winlostdate,						
 				(b.winlost-actual_stake),
 				- (b.winlost-actual_stake),
-				CASE WHEN b.bettype = 903 THEN b.awinlost ELSE b.comm END AS comm,
+				b.comm AS comm,
 				b.playercomm,
 				b.Liveindicator,
 				b.Livehomescore,
@@ -1964,7 +1964,7 @@ BEGIN
 		b.winlostdate,			
 		(b.winlost-actual_stake),
 		0,
-		CASE WHEN b.bettype = 903 THEN b.awinlost ELSE b.comm END AS comm,
+		b.comm AS comm,
 		b.playercomm,
 		b.Liveindicator,
 		b.Livehomescore,
@@ -2154,7 +2154,7 @@ BEGIN
 				b.winlostdate,			
 				(b.winlost-actual_stake),
 				- (b.winlost-actual_stake),
-				CASE WHEN b.bettype = 903 THEN b.awinlost ELSE b.comm END AS comm,
+				b.comm AS comm,
 			    b.playercomm,
 				b.Liveindicator,
 				b.Livehomescore,

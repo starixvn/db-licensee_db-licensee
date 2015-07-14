@@ -10,7 +10,7 @@ GO
 /****** Object:  Stored Procedure dbo.Lrf_BetList_WinlostByLeague_Mem    Script Date: 2/18/2014 10:35:57 PM ******/
 /****** Object:  Stored Procedure dbo.Lrf_BetList_WinlostByLeague_Mem    Script Date: 19/02/2014 11:25:01 AM ******/
 
-ALTER PROCEDURE [dbo].[Lrf_BetList_WinlostByLeague_Mem_xtest] 
+ALTER PROCEDURE [dbo].[Lrf_BetList_WinlostByLeague_Mem] 
 	@CustID INT
 	,@Odds FLOAT = 0
 	,@LeagueID INT
@@ -82,7 +82,7 @@ DECLARE @TempToDate SMALLDATETIME
 ----Get Sport Bettype Matrix------
 DECLARE @SportBettype TABLE(ProductID INT,Bettype INT,EventType INT)
 INSERT INTO @SportBettype
-EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel_xtest @mode=4 ,@ProductID=1
+EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4 ,@ProductID=1
 
 DELETE @SportBettype WHERE ProductID = 1 AND Bettype IN (901,902,903)
 -------
