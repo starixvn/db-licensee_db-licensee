@@ -59,8 +59,6 @@ DECLARE @Todate DATETIME
 DECLARE @SportBettype TABLE(ProductID INT,Bettype INT,EventType INT)
 INSERT INTO @SportBettype
 EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4
-
-DELETE @SportBettype WHERE ProductID = 1 AND Bettype = 903
 ------------
 
 SELECT  currencyID,LicenseeID into #currency
@@ -309,6 +307,16 @@ WHERE
 	AND b.custid = @CustID
 	AND b.statusID IN (101,102)
 	
+UPDATE betList
+SET betList.Odds	= originBetList.Odds
+	,betList.Stake	= originBetList.Stake
+	,betList.betid  = originBetList.Bettype
+FROM #Data AS betList
+	INNER JOIN bettrans AS originBetList WITH(NOLOCK) ON betList.RefNO = originBetList.TransID	
+WHERE betList.Sporttype = 1 AND betList.Bettype IN (901, 902)	
+
+DELETE #Data WHERE Sporttype = 1 AND Bettype = 903
+
 DECLARE @RowStart INT, @RowEnd INT  
 SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1
 

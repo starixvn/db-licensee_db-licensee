@@ -218,7 +218,7 @@ BEGIN
 
 	DELETE sbt
 	FROM @SportBettype sbt
-	WHERE ProductID		= CASE WHEN @ShowSB	= 0 AND @ShowBA = 0 AND @ShowBT = 1 THEN 1 END
+	WHERE ProductID		= CASE WHEN @ShowSB	= 0 AND @ShowBA = 0 AND @ShowBT = 0 THEN 1 END
 		OR ProductID	= CASE WHEN @ShowRB	= 0 THEN 2 END
 		OR ProductID	= CASE WHEN @ShowNG	= 0 THEN 3 END
 		OR ProductID	= CASE WHEN @ShowLC	= 0 THEN 4 END
@@ -250,7 +250,7 @@ BEGIN
 			b.actual_stake,
 			(winlost-actual_stake) winlost,
 			0 AS LicenseeWL ,
-			CASE WHEN b.bettype = 903 THEN b.awinlost ELSE b.comm END AS comm,
+			b.comm AS comm,
 			b.playercomm  AS PlayerComm,
 			b.discount,
 			b.transdate,
@@ -456,7 +456,7 @@ BEGIN
 			b.actual_stake,
 			(winlost-actual_stake) winlost,
 			- (b.winlost-b.actual_stake) AS LicenseeWL ,
-			CASE WHEN b.bettype = 903 THEN b.awinlost ELSE b.comm END AS comm,
+			b.comm AS comm,
 			b.playercomm,
 			b.discount,
 			b.transdate,
@@ -657,6 +657,18 @@ BEGIN
 			AND sbt.EventType	=	1			
 			AND b.transdate		>=	@FromDate AND b.transdate<=@ToDate
 			AND b.bettype IN (901,902,903)
+
+		UPDATE betList
+		SET betList.Odds	= originBetList.Odds
+			,betList.Stake	= originBetList.Stake
+			,betList.comm	= CASE WHEN betList.Bettype = 902 THEN commBetList.comm ELSE betList.comm END			
+		FROM #BetListSelAllByDateMem AS betList
+			INNER JOIN #BetListSelAllByDateMem AS originBetList ON betList.RefNO = originBetList.TransID
+			INNER JOIN #BetListSelAllByDateMem AS commBetList ON betList.RefNO = commBetList.RefNO
+		WHERE betList.Sporttype = 1 AND betList.Bettype IN (901, 902)
+			AND commBetList.Bettype = 903
+
+		DELETE #BetListSelAllByDateMem WHERE Sporttype = 1 AND Bettype = 903
 	END
 
 	DROP TABLE #TempBATicket;
@@ -1158,22 +1170,7 @@ BEGIN
 			AND sbt.EventType	=	0
 			AND	t.transdate		>=	@FROMDate AND t.transdate <= @ToDate 
 			AND t.statusID		IN (0,1)					
-	END
-
-	IF @ShowBT = 1
-	BEGIN
-		UPDATE betList
-		SET betList.Odds	= originBetList.Odds
-			,betList.Stake	= originBetList.Stake
-			,betList.comm	= CASE WHEN betList.Bettype = 902 THEN commBetList.comm ELSE betList.comm END			
-		FROM #BetListSelAllByDateMem AS betList
-			INNER JOIN #BetListSelAllByDateMem AS originBetList ON betList.RefNO = originBetList.TransID
-			INNER JOIN #BetListSelAllByDateMem AS commBetList ON betList.RefNO = commBetList.RefNO
-		WHERE betList.Sporttype = 1 AND betList.Bettype IN (901, 902)
-			AND commBetList.Bettype = 903
-
-		DELETE #BetListSelAllByDateMem WHERE Sporttype = 1 AND Bettype = 903
-	END
+	END	
 
 	CREATE NONCLUSTERED INDEX IDX_Index_betlist ON #BetListSelAllByDateMem(Currency)
 	
