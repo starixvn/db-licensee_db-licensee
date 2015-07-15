@@ -8,7 +8,7 @@ GO
 /****** Object:  Stored Procedure dbo.Task_DOT_dep_DailySummary_Bettrans14    Script Date: 4/14/2015 10:03:51 AM ******/
 
 
-ALTER PROCEDURE [dbo].[Task_DOT_dep_DailySummary_Bettrans14]
+ALTER PROCEDURE [dbo].[Task_DOT_dep_DailySummary_Bettrans14_xpre]
 	@winlostdate datetime
 AS
 /*	
@@ -44,6 +44,7 @@ AS
 		- 20150324@Patrick: Re-arrange code to easy to plugin 3rd product
 		- 20150414@Winnie: Re-add transferin/transfer out which have transferAmout=0 for AGBalance
 		- 20150618@Patrick: #36263: Fix super balance issue for: AGC, GD & VG
+		- 20150625@Patrick: #37769: Remove dummy account & exclude cancel transfer tickets for AG Casino (merge)
 
 	Param's Explanation:
 	• @date: The date need to summary
@@ -76,11 +77,15 @@ SET @Sql =
 EXEC(@Sql)
 
 --get bettype transfer of 3rd products
-DECLARE @CasinoPartner TABLE (ParnerId INT, TransferId INT, CancelTransferId INT)
-INSERT INTO @CasinoPartner(ParnerId, TransferId, CancelTransferId)
+DECLARE @CasinoPartner TABLE (PartnerId INT, TransferId INT, CancelTransferId INT)
+INSERT INTO @CasinoPartner(PartnerId, TransferId, CancelTransferId)
 SELECT PartnerId, TransferId, CancelTransferId
 FROM bodb_report.dbo.tblCasinoPartners WITH(NOLOCK)
 WHERE TransferId IS NOT NULL OR CancelTransferId IS NOT NULL
+
+--create table transferdata to calculate cancel tickets
+CREATE TABLE #RefNoList (RefNo BIGINT)
+CREATE TABLE #TransferData (CustId INT, currency TINYINT, recommend INT, mrecommend INT, srecommend INT, TransferIn MONEY, TransferOut MONEY, PartnerId INT)
 
 INSERT INTO #Data (custid,currency, recommend, mrecommend, srecommend, PartnerId, OpeningBalance, Deposit,Aff2MemTransfer,
 		Withdrawal, Bonus, Adjustment, Transfer3rd, Transfer3rdOthers,Transfer3rdOthers_In,Transfer3rdOthers_Out)
@@ -93,7 +98,7 @@ SELECT
 		ELSE b.currency 
 	END,
 	b.recommend, b.mrecommend, b.srecommend,
-	CASE WHEN bettype in (p.TransferId, p.CancelTransferId) THEN p.ParnerId	ELSE -1 END PartnerId,
+	CASE WHEN bettype in (p.TransferId, p.CancelTransferId) THEN p.PartnerId	ELSE -1 END PartnerId,
 	SUM(CASE @date WHEN @BalanceUpDay 
 			THEN CASE WHEN bettype = 20000 THEN winlost - actual_stake + playercomm ELSE 0 END 
 			ELSE CASE WHEN winlostdate < @date THEN winlost - actual_stake + playercomm ELSE 0 END 
@@ -121,8 +126,27 @@ GROUP BY b.custid,
 		ELSE b.currency 
 	END,
 	b.recommend, b.mrecommend, b.srecommend,
-	CASE WHEN bettype in (p.TransferId, p.CancelTransferId) THEN p.ParnerId	ELSE -1 END
+	CASE WHEN bettype in (p.TransferId, p.CancelTransferId) THEN p.PartnerId	ELSE -1 END
 
+INSERT INTO #RefNoList(RefNo)
+SELECT refno
+FROM dbo.bettrans b with(rowlock)
+	INNER JOIN @CasinoPartner p ON b.bettype = p.CancelTransferId
+	INNER JOIN dbo.customer c with(nolock) on b.custid = c.custid
+	INNER JOIN #DepositCustSuper s WITH(NOLOCK) ON s.custid = c.srecommend AND s.Currency = b.currency
+WHERE b.matchid = 0 AND b.winlostdate <= @date AND roleid = 1
+GROUP BY refno
+		
+--get cancel transfer data
+INSERT INTO #TransferData(CustId, currency, recommend, mrecommend, srecommend, PartnerId, TransferIn, TransferOut)
+SELECT b.CustId, b.currency, b.recommend, b.mrecommend, b.srecommend, p.PartnerId
+	, SUM( CASE WHEN b.winlostdate = @date AND (b.winlost-b.actual_stake) < 0 THEN -(b.winlost-b.actual_stake) ELSE 0 END) --TransferIn
+	, SUM( CASE WHEN b.winlostdate = @date AND (b.winlost-b.actual_stake) > 0 THEN -(b.winlost-b.actual_stake) ELSE 0 END) --TransferOut
+FROM dbo.bettrans b with(rowlock)
+	INNER JOIN @CasinoPartner p ON b.bettype in (p.CancelTransferId, p.TransferId)
+WHERE refno IN (SELECT refno FROM #RefNoList)
+GROUP BY b.custid, b.currency, b.recommend, b.mrecommend, b.srecommend, p.PartnerId
+	
 ;WITH B AS (
 	SELECT
 		b.custid,
@@ -160,6 +184,8 @@ WHERE Deposit = 0
 	AND openingbalance = 0
 	AND Playercomm = 0
 	AND Transfer3rdOthers = 0
+	AND Transfer3rdOthers_In = 0
+	AND Transfer3rdOthers_Out = 0
 	
 CREATE TABLE #BATransactionHistory (TransId BIGINT, WinlostDate SMALLDATETIME)
 DECLARE @sqlQuery VARCHAR(1024)
@@ -285,13 +311,17 @@ CREATE TABLE #rptDepWinlost_Transfer3rdOthers (
 )
 
 INSERT INTO #rptDepWinlost_Transfer3rdOthers(CustId,Currency,PartnerId,Recommend,MRecommend,SRecommend,TransferAmount,TransferIn,TransferOut)
-	SELECT CustId,Currency,PartnerId,Recommend,MRecommend,SRecommend
+	SELECT b.CustId,b.Currency,b.PartnerId,b.Recommend,b.MRecommend,b.SRecommend
 		, SUM(Transfer3rdOthers) --TransferAmount
-		, SUM(Transfer3rdOthers_In) --TransferIn
-		, SUM(Transfer3rdOthers_Out) --TransferOut
-	FROM #Data
-	WHERE PartnerId > -1
-	GROUP BY CustId,Currency,PartnerId,Recommend,MRecommend,SRecommend
+		, SUM(Transfer3rdOthers_In - ISNULL(d.TransferIn, 0)) --TransferIn
+		, SUM(Transfer3rdOthers_Out - ISNULL(d.TransferOut, 0)) --TransferOut
+	FROM #Data b
+	INNER JOIN bodb02.dbo.customer c with(nolock) on b.custid = c.custid  
+	INNER JOIN bodb02.dbo.customer agent with(nolock) on b.recommend = agent.custid  
+	LEFT JOIN #TransferData d on b.custid = d.CustId and b.currency = d.currency and b.PartnerId = d.PartnerId
+	WHERE b.PartnerId > -1
+	AND (c.username2 IS NOT NULL OR (c.username2 IS NULL AND agent.username NOT LIKE '%ACC%'))	
+	GROUP BY b.CustId,b.Currency,b.PartnerId,b.Recommend,b.MRecommend,b.SRecommend
 
 DELETE #rptDepWinlost_Transfer3rdOthers WHERE TransferAmount = 0 AND TransferIn=0 AND TransferOut=0
 

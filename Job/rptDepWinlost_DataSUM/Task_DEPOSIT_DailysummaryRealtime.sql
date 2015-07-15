@@ -19,7 +19,8 @@ AS
   - 20150116@Winnie: get tranferin tranferout for AG Casino
   - 20150324@Patrick: Re-arrange code to easy to plugin 3rd product
   - 20150618@Patrick: #36263: Fix super balance issue for: AGC, GD & VG
-                 
+  - 20150625@Patrick: #37769: Exclude cancel transfer tickets for AG Casino (merge)
+  
  Param's Explanation:  
  • @winlostdate: The date need to summary  
 */  
@@ -278,19 +279,53 @@ DROP TABLE #tempDepWinlostByProduct_staging
 -- Execute SP to insert Playtech Casino data to staging tables
 EXEC Task_DEPOSIT_PlaytechCS_DailySummaryRealtime
 
-INSERT INTO dbo.rptDepWinlost_Transfer3rdOthers_Staging (winlostdate,CustId,Currency,Recommend,MRecommend,SRecommend,PartnerId,TransferAmount,TransferIn,TransferOut)
-SELECT @date, b.custid, b.currency, b.recommend, b.mrecommend, b.srecommend,
-	CASE WHEN bettype in (p.TransferId, p.CancelTransferId) THEN p.PartnerId ELSE -1 END PartnerId,
-	SUM(winlost-actual_stake) AS Transfer3rdOthers,
-	SUM(CASE WHEN (winlost-actual_stake) < 0 THEN -(winlost-actual_stake) ELSE 0 END) AS TransferIn,  
-	SUM(CASE WHEN (winlost-actual_stake) > 0 THEN -(winlost-actual_stake) ELSE 0 END) AS TransferOut 
-FROM bettransDEP b with(nolock)
-	INNER JOIN @CasinoPartner p ON b.bettype IN (p.TransferId, p.CancelTransferId)
+--get refno has bettpe cancelled
+DECLARE @RefNoList TABLE (RefNo BIGINT)
+INSERT INTO @RefNoList(RefNo)
+SELECT refno
+FROM dbo.bettransDEP b with(rowlock)
+	INNER JOIN @CasinoPartner p ON b.bettype = p.CancelTransferId
 WHERE winlostdate >= @date
 	and custid in (select custid from @TempCustID)
 	and custid <> 0	
-	--and bettype in (22008,22009,22010,22011,22014,22015)
-GROUP BY b.custid, currency, recommend, mrecommend, srecommend,
-	CASE WHEN bettype in (p.TransferId, p.CancelTransferId) THEN p.PartnerId ELSE -1 END
+GROUP BY refno
+
+INSERT INTO dbo.rptDepWinlost_Transfer3rdOthers_Staging (winlostdate,CustId,Currency,Recommend,MRecommend,SRecommend,PartnerId,TransferAmount,TransferIn,TransferOut)
+(
+	SELECT @date, tmp.custid, tmp.currency, tmp.recommend, tmp.mrecommend, tmp.srecommend, tmp.PartnerId
+		, Transfer3rdOthers
+		, tmp.TransferIn - ISNULL(tmp2.TransferIn, 0) --TransferIn
+		, tmp.TransferOut - ISNULL(tmp2.TransferOut, 0) --TransferOut
+	FROM (
+		SELECT b.custid, b.currency, b.recommend, b.mrecommend, b.srecommend,
+			CASE WHEN bettype in (p.TransferId, p.CancelTransferId) THEN p.PartnerId ELSE -1 END PartnerId,
+			SUM(winlost-actual_stake) AS Transfer3rdOthers,
+			SUM(CASE WHEN (winlost-actual_stake) < 0 THEN -(winlost-actual_stake) ELSE 0 END) AS TransferIn,  
+			SUM(CASE WHEN (winlost-actual_stake) > 0 THEN -(winlost-actual_stake) ELSE 0 END) AS TransferOut 
+		FROM bettransDEP b with(nolock)
+			INNER JOIN @CasinoPartner p ON b.bettype IN (p.TransferId, p.CancelTransferId)
+			INNER JOIN bodb02.dbo.customer c with(nolock) on b.custid = c.custid  
+			INNER JOIN bodb02.dbo.customer agent with(nolock) on b.recommend = agent.custid
+		WHERE winlostdate >= @date
+			and b.custid in (select custid from @TempCustID)
+			and b.custid <> 0
+			and (c.username2 IS NOT NULL OR (c.username2 IS NULL AND agent.username NOT LIKE '%ACC%'))				
+			--and bettype in (22008,22009,22010,22011,22014,22015)
+		GROUP BY b.custid, b.currency, b.recommend, b.mrecommend, b.srecommend,
+			CASE WHEN bettype in (p.TransferId, p.CancelTransferId) THEN p.PartnerId ELSE -1 END
+	)tmp LEFT JOIN (
+		--get cancelled transfer data
+		SELECT b.CustId, b.currency, b.recommend, b.mrecommend, b.srecommend, p.PartnerId
+			, SUM( CASE WHEN (b.winlost-b.actual_stake) < 0 THEN -(b.winlost-b.actual_stake) ELSE 0 END) AS TransferIn
+			, SUM( CASE WHEN (b.winlost-b.actual_stake) > 0 THEN -(b.winlost-b.actual_stake) ELSE 0 END) AS TransferOut
+		FROM dbo.bettransDEP b with(rowlock)
+			INNER JOIN @CasinoPartner p ON b.bettype IN (p.CancelTransferId, p.TransferId)
+		WHERE b.matchid = 0 and b.winlostdate >= @date
+			and b.custid in (select custid from @TempCustID)
+			and b.custid <> 0
+			and b.refno in (select refno from @RefNoList)
+		GROUP BY b.custid, b.currency, b.recommend, b.mrecommend, b.srecommend, p.PartnerId
+	)tmp2 ON tmp.custid = tmp2.custid and tmp.currency = tmp2.currency and tmp.PartnerId = tmp2.PartnerId
+)
 
 SET NOCOUNT OFF
