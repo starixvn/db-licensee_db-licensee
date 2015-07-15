@@ -220,13 +220,12 @@ BEGIN
 	UPDATE betList
 	SET betList.Odds	= originBetList.Odds
 		,betList.Stake	= originBetList.Stake
-		,betList.comm	= CASE WHEN betList.Bettype = 902 THEN commBetList.comm ELSE betList.comm END
+		,betList.comm	= CASE WHEN betList.Bettype = 902 THEN ISNULL(commBetList.comm,0) ELSE betList.comm END
 		,betList.BetID	= originBetList.Bettype
 	FROM @Data AS betList
 		INNER JOIN bodb_archive.dbo.bettrans_bk AS originBetList WITH (NOLOCK) ON betList.RefNO = originBetList.TransID
-		INNER JOIN bodb_archive.dbo.bettrans_bk AS commBetList WITH (NOLOCK) ON betList.RefNO = commBetList.RefNO
-	WHERE betList.Sporttype = 1 AND betList.Bettype IN (901, 902)
-		AND commBetList.Bettype = 903
+		LEFT JOIN @Data AS commBetList ON betList.RefNO = commBetList.RefNO AND commBetList.Bettype = 903
+	WHERE betList.Sporttype = 1 AND betList.Bettype IN (901, 902)			
 
 	DELETE @Data WHERE Sporttype = 1 AND Bettype = 903
 
