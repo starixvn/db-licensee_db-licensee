@@ -1,7 +1,5 @@
 USE [bodb02]
 GO
-
-
 ALTER PROCEDURE [dbo].[Task_rptCustomerTurnOver_Bettrans14] 
 	@Date DATETIME
 AS
@@ -15,6 +13,8 @@ AS
 		-20140305@Florent: Change way to get BA tickets
 		-20140315@Florent: Offer Keno sport	
 		-20141130@Jim: change the way to retrieve currency value		
+		- 20150618@Patrick: #36263: Fix super balance isue for: AGC, GD & VG
+
 	Parameter's Explanation:			
 */
 SET NOCOUNT ON;
@@ -141,6 +141,9 @@ SELECT a.CustID
 			THEN 202-- Keno
 		WHEN a.bettype IN (31, 32, 33, 41, 42, 43)
 			THEN 151
+		WHEN a.bettype BETWEEN 1800 AND 1899 THEN 250 -- AGC
+		WHEN a.bettype BETWEEN 1700 AND 1799 THEN 255 -- GD
+		WHEN a.bettype BETWEEN 1900 AND 1999 THEN 249 -- VG
 		ELSE isNULL(b.sporttype, 0)
 		END sporttype
 	,a.Currency
@@ -198,6 +201,9 @@ GROUP BY a.CustID
 			THEN 202-- Keno
 		WHEN a.bettype IN (31, 32, 33, 41, 42, 43)
 			THEN 151
+		WHEN a.bettype BETWEEN 1800 AND 1899 THEN 250 -- AGC
+		WHEN a.bettype BETWEEN 1700 AND 1799 THEN 255 -- GD
+		WHEN a.bettype BETWEEN 1900 AND 1999 THEN 249 -- VG
 		ELSE isNULL(b.sporttype, 0)
 		END
 	,a.Currency
@@ -221,8 +227,4 @@ GROUP BY a.CustID
 	,winlostdate
 	,a.isba
 GO
-
-
-
 GRANT VIEW DEFINITION ON [dbo].[Task_rptCustomerTurnOver_Bettrans14] TO [vnteam] AS [dbo]
-GO
