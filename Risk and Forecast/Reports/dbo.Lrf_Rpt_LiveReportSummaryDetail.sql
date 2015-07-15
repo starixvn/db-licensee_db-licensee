@@ -44,6 +44,7 @@ Revisions:
 	-20150127@Jim: support base on GBP Currency
 	-20150209@Don: remove index hint IX_srecommend
     -20150415@Jim: change to use f_GroupBettype instead of LRF_view_bettype_SS
+	-20150618@Patrick: #36263: Fix super balance isue for: AGC, GD & VG
 	-20150612@Jim: support MicroGaming
 	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission 
 Param's Explanation:  
@@ -329,7 +330,7 @@ BEGIN
 		'INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID' + CHAR(13) + 
 		'WHERE b.rptDate BETWEEN ''' + convert(VARCHAR(10), @FDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13) + 
 		'AND b.status NOT IN (-1,103)' + CHAR(13) + 
-		'AND b.bettype NOT IN (9,29,901,902,903)' + CHAR(13) + 
+		'AND b.bettype NOT IN (9,29,1700,1800,1900,901,902,903)' + CHAR(13) + 
 		'AND b.CustomerCategory = -1' + CHAR(13) + 
 		'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13) + 
 		'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13) + 

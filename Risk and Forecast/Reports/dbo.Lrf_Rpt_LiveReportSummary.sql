@@ -36,6 +36,7 @@ Revisions:
 	-20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 	-20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	-20150127@Jim: support base on GBP Currency
+	- 20150618@Patrick: #36263: Fix super balance isue for: AGC, GD & VG
 	- 20150612@Jim: support MicroGaming 
 	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
 Param's Explanation:
@@ -429,7 +430,7 @@ BEGIN
 				OR (@Liveindicator = 1 and b.IsLive = 1)
 				OR (@Liveindicator = 2))
 			AND b.CustomerCategory = -1
-		AND b.bettype NOT IN (9,29,901,902,903)	
+		AND b.bettype NOT IN (9,29,1700,1800,1900,901,902,903)	
 		GROUP BY b.rptDate, b.currencyID,
 		CASE 
 			WHEN b.bettype BETWEEN 81 AND 120
