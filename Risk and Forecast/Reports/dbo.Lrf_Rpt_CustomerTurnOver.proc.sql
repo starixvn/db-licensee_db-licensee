@@ -1,6 +1,6 @@
 ﻿USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_CustomerTurnOver]    Script Date: 6/3/2015 4:25:44 PM ******/
+/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_CustomerTurnOver_xtest]    Script Date: 7/15/2015 2:03:52 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -9,7 +9,7 @@ GO
  
 ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
 (
-	@LicenseeID 	INT 
+	@LicenseeID 	INT
 	,@UserID  		INT
 	,@Username 		VARCHAR(50) =  '' 
 	,@Product  		VARCHAR(MAX) 
@@ -59,7 +59,7 @@ Revision:
 	- 20150528@Jim: add more bettype Betradar and Sporting solution (for support multiple oddstype)
 	- 20150603@Bobby: Revise code & improve performance
 	- 20150618@Bobby: Apply pre-caching sumtotal from rptcustomerturnOver_bobby table
-	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
+	
 Parameter's Explanation:
 	- @ReportBy:  1: daily, 2: monthly
 	- @FilterBy:  1: Win, 2: Loss, 3: Draw
@@ -205,8 +205,6 @@ BEGIN
 	INTO #BettypeID
 	FROM dbo.strSplit(@Bettype,',') AS b
 
-
-
 	INSERT INTO #BettypeID
 	SELECT ss.bettype AS typeID
 	FROM dbo.f_GroupBettype() ss
@@ -224,8 +222,8 @@ BEGIN
 		INNER JOIN @SportBettype sp 
 		ON bt.typeid 	=  sp.bettype
 		
-	DROP TABLE #BettypeID	
-
+	DROP TABLE #BettypeID
+		
 	SELECT 
 		lc.CustID
 		,lc.Currency
@@ -315,7 +313,7 @@ BEGIN
 			ON b.StatusID 	=  st.StatusID
 			
 		WHERE b.winlostdate BETWEEN @tempFromDate AND @ToDate
-		AND b.bettype NOT IN (901,902,903)	
+		
 		-- CREATE INDEXERS
 		CREATE CLUSTERED 	INDEX [CIX_tempBettrans] 			ON #tempBettrans (recommend, custid, winlostdate)
 		CREATE NONCLUSTERED INDEX IDX_tempBettrans_EventType 	ON #tempBettrans(EventType)
@@ -730,8 +728,3 @@ BEGIN
 		
 	RETURN;
 END
-GO 
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [vnteam] 
-GO
