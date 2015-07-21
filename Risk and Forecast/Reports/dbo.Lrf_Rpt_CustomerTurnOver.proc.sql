@@ -59,6 +59,7 @@ Revision:
 	- 20150528@Jim: add more bettype Betradar and Sporting solution (for support multiple oddstype)
 	- 20150603@Bobby: Revise code & improve performance
 	- 20150618@Bobby: Apply pre-caching sumtotal from rptcustomerturnOver_bobby table
+	- 20150713@Bobby: Check existence of global temp table before handling
 	
 Parameter's Explanation:
 	- @ReportBy:  1: daily, 2: monthly
