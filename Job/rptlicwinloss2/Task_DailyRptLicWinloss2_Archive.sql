@@ -1,12 +1,5 @@
 ﻿USE [bodb02]
 GO
-
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
-
 ALTER PROCEDURE [dbo].[Task_DailyRptLicWinloss2_archive]
 	@winlostdate SMALLDATETIME
 AS
@@ -26,6 +19,7 @@ Revisions:
    - 20130903@Jim: support Virtual Horse Racing
    - 20131128@Jim: revert code to Group by All Virtual Sport into sporttypeID=180
    - 20140310@Jim: offer KENO
+   - 20150618@Patrick: #36263: Fix super balance issue for: AGC, GD & VG
  */
 
 SET NOCOUNT ON 
@@ -71,6 +65,10 @@ INSERT INTO DBLIC.bodb_Licensee.dbo.rptLicWinloss2
 			WHEN (bettype BETWEEN 1201 AND 1299) THEN 180 --Virtual Sport
 			WHEN bettype BETWEEN 51 AND 69 THEN 201
 			WHEN bettype IN (31,32,33,41,42,43) THEN 151
+			WHEN bettype BETWEEN 1501  AND 1599 THEN 202
+			WHEN bettype BETWEEN 1800 AND 1899 THEN 250 -- AGC
+			WHEN bettype BETWEEN 1700 AND 1799 THEN 255 -- GD
+			WHEN bettype BETWEEN 1900 AND 1999 THEN 249 -- VG
 			ELSE 0 END sporttype,
 		CASE WHEN bettype IN (71,72,1000) THEN bettype ELSE 0 END bettype,
 		
@@ -113,6 +111,10 @@ INSERT INTO DBLIC.bodb_Licensee.dbo.rptLicWinloss2
 			WHEN (bettype BETWEEN 1201 AND 1299 ) THEN 180 --Virtual Sport
 			WHEN bettype BETWEEN 51 AND 69 THEN 201
 			WHEN bettype IN (31,32,33,41,42,43) THEN 151
+			WHEN bettype BETWEEN 1501  AND 1599 THEN 202
+			WHEN bettype BETWEEN 1800 AND 1899 THEN 250 -- AGC
+			WHEN bettype BETWEEN 1700 AND 1799 THEN 255 -- GD
+			WHEN bettype BETWEEN 1900 AND 1999 THEN 249 -- VG
 			ELSE 0 END,
 		CASE WHEN bettype IN (71,72,1000) THEN bettype ELSE 0 END,
 		
@@ -264,3 +266,5 @@ INSERT INTO DBLIC.bodb_Licensee.dbo.rptLicWinloss2
 		b.isBA,
 		b.isMobile,
 		b.betfrom
+GO
+GRANT VIEW DEFINITION ON [dbo].[Task_DailyRptLicWinloss2_archive] TO [vnteam] AS [dbo]

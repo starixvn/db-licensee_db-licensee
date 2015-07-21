@@ -43,6 +43,8 @@ Revisions:
 	- 20140915@Florent: hotfix duplicated VS bettype
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	- 20150127@Jim: support base on GBP Currency
+	- 20150618@Patrick: #36263: Fix super balance isue for: AGC, GD & VG
+
 Param's Explanation:  
 	@Liveindicator : indicate that whether the report will get live data or not
 		+ 0: Non - Live data only
@@ -395,7 +397,7 @@ BEGIN
 			'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13) + 
 			'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13) + 
 			'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13) + 
-			'AND b.bettype NOT IN (9,29)' + CHAR(13) +
+			'AND b.bettype NOT IN (9,29,1700,1800,1900)' + CHAR(13) +
 			'AND b.CustomerCategory = -1' + CHAR(13) +
 			'AND b.siteID =' + convert(VARCHAR(10), @LicenseeID) + CHAR(13) +
 			--'AND b.CurrencyID <> 20 ' + char(13) +

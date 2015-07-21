@@ -1,15 +1,7 @@
 USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Task_rptCustomerTurnOver_Bettrans14]    Script Date: 07/13/2015 23:57:28 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-/****** Object:  Stored Procedure dbo.Task_rptCustomerTurnOver_Bettrans14    Script Date: 12/1/2014 12:58:52 PM ******/
-
-
 ALTER PROCEDURE [dbo].[Task_rptCustomerTurnOver_Bettrans14] 
-	@Date SMALLDATETIME
+	@Date DATETIME
 AS
 /*	
 	Created	: Florent Nguyen
@@ -21,7 +13,8 @@ AS
 		-20140305@Florent: Change way to get BA tickets
 		-20140315@Florent: Offer Keno sport	
 		-20141130@Jim: change the way to retrieve currency value		
-		-20150714@Francis: Adjustment to serve to change KeenOcean's currency RMB to HK$
+		- 20150618@Patrick: #36263: Fix super balance isue for: AGC, GD & VG
+
 	Parameter's Explanation:			
 */
 SET NOCOUNT ON;
@@ -74,8 +67,7 @@ AS (
 		--,sum(awinlost) awinlost
 		--,sum(comm) comm
 	FROM dbo.bettrans14 a WITH (NOLOCK)
-	--INNER JOIN bodb_licensee.dbo.LicenseeCust lc ON a.recommend = lc.custid
-	INNER JOIN bodb_licensee.dbo.f_SelLicenseeCust(0) LC ON a.recommend = lc.custid AND a.currency = lc.currency
+	INNER JOIN bodb_licensee.dbo.LicenseeCust lc ON a.recommend = lc.custid
 	LEFT JOIN bodb_licensee.dbo.LicenseeBATransaction AS BA ON a.transid = ba.transid
 	WHERE a.winlostdate =@date 
 			AND a.statusID IN (111, 112, 113)
@@ -149,6 +141,9 @@ SELECT a.CustID
 			THEN 202-- Keno
 		WHEN a.bettype IN (31, 32, 33, 41, 42, 43)
 			THEN 151
+		WHEN a.bettype BETWEEN 1800 AND 1899 THEN 250 -- AGC
+		WHEN a.bettype BETWEEN 1700 AND 1799 THEN 255 -- GD
+		WHEN a.bettype BETWEEN 1900 AND 1999 THEN 249 -- VG
 		ELSE isNULL(b.sporttype, 0)
 		END sporttype
 	,a.Currency
@@ -206,6 +201,9 @@ GROUP BY a.CustID
 			THEN 202-- Keno
 		WHEN a.bettype IN (31, 32, 33, 41, 42, 43)
 			THEN 151
+		WHEN a.bettype BETWEEN 1800 AND 1899 THEN 250 -- AGC
+		WHEN a.bettype BETWEEN 1700 AND 1799 THEN 255 -- GD
+		WHEN a.bettype BETWEEN 1900 AND 1999 THEN 249 -- VG
 		ELSE isNULL(b.sporttype, 0)
 		END
 	,a.Currency
@@ -228,7 +226,5 @@ GROUP BY a.CustID
 		END
 	,winlostdate
 	,a.isba
-
-
 GO
 GRANT VIEW DEFINITION ON [dbo].[Task_rptCustomerTurnOver_Bettrans14] TO [vnteam] AS [dbo]
