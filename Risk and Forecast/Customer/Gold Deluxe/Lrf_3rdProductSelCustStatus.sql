@@ -1,10 +1,13 @@
+
 SET QUOTED_IDENTIFIER ON 
 GO
 SET ANSI_NULLS ON 
 GO
 
+/****** Object:  Stored Procedure dbo.Lrf_3rdProductSelCustStatus    Script Date: 7/22/2015 1:09:35 PM ******/
+
 /****** Object:  Stored Procedure dbo.Lrf_3rdProductSelCustStatus    Script Date: 6/10/2015 10:51:17 AM ******/
-CREATE PROCEDURE	[dbo].[Lrf_3rdProductSelCustStatus]
+CREATE  PROCEDURE	[dbo].[Lrf_3rdProductSelCustStatus]
 	@CustID			INT,
 	@ProductId		INT,
 	@IsEnabled		BIT=NULL				OUTPUT,
@@ -18,6 +21,7 @@ AS
 	Original:
 	Revisions:
 		- 20150609@Jim: support product microgaming
+		- 20150722@Jim: apply new DBCust structure
 	Param's Explanation:
 */
 BEGIN
@@ -30,11 +34,11 @@ BEGIN
 	WHERE c.CustID = @CustID
 	
 	SELECT @IsEnabled = ISNULL(IsEnabled,0)
-	FROM DBTXN.CustDB.dbo.Dep_CustProductSetting WITH (NOLOCK)
+	FROM DBCUST.CustDB.dbo.Dep_CustProductSetting WITH (NOLOCK)
 	WHERE CustID = @CustId AND ProductId=@ProductId
 	
 	SELECT @IsLineEnabled = ISNULL(IsEnabled, 0) 		
-	FROM DBTXN.CustDB.dbo.Dep_SupperProductSetting WITH (NOLOCK) 
+	FROM DBCUST.CustDB.dbo.Dep_SupperProductSetting WITH (NOLOCK) 
 	WHERE CustID = @Srecommend  AND ProductId=@ProductId
 	
 	IF (@ProductId = 14) ---Microgaming 

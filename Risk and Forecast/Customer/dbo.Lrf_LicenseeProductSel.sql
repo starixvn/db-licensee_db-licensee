@@ -1,7 +1,12 @@
-USE [bodb_licensee]
+
+SET QUOTED_IDENTIFIER ON 
 GO
+SET ANSI_NULLS ON 
+GO
+
+/****** Object:  Stored Procedure dbo.Lrf_LicenseeProductSel    Script Date: 7/22/2015 1:09:35 PM ******/
  
-ALTER PROCEDURE	[dbo].[Lrf_LicenseeProductSel]
+CREATE PROCEDURE	[dbo].[Lrf_LicenseeProductSel]
 	@LicenseeID	INT
 AS
 /*
@@ -10,6 +15,7 @@ AS
 	DB: DBLIC/bodb_licensee
 	Original:
 	Revisions:
+		- 20150722@Jim: apply new DBCust structure
 	Param's Explanation:
 */
 
@@ -29,7 +35,7 @@ BEGIN
 	WHERE LicenseeID = @LicenseeiD 
 	INSERT INTO @tblSuper (SrecommendID)
 	SELECT CustID
-	FROM DBTXN.CustDb.dbo.Dep_CustSuper WITH (NOLOCK)
+	FROM DBCUST.CustDb.dbo.Dep_CustSuper WITH (NOLOCK)
 	WHERE Site = @Site
 	
 	IF EXISTS(SELECT 1 FROM @tblSuper ) 
@@ -51,7 +57,7 @@ BEGIN
 			   
 		IF EXISTS (SELECT 1 FROM @tblProductActive WHERE ProductID = 10)	-- AGCasino
 			BEGIN
-				IF EXISTS (SELECT 1 FROM DBTXN.CustDB.dbo.Dep_SuperSetting_AGCasino s WITH (NOLOCK) INNER JOIN @tblSuper su ON s.CustID = su.SrecommendID WHERE IsEnabled=1)
+				IF EXISTS (SELECT 1 FROM DBCUST.CustDB.dbo.Dep_SuperSetting_AGCasino s WITH (NOLOCK) INNER JOIN @tblSuper su ON s.CustID = su.SrecommendID WHERE IsEnabled=1)
 				UPDATE @tblProductActive
 				SET isEnable =1
 				WHERE ProductID = 10
@@ -65,7 +71,7 @@ BEGIN
 			END
 		IF EXISTS (SELECT 1 FROM @tblProductActive WHERE ProductID = 12)	-- Vegas Games
 			BEGIN 
-				IF EXISTS (SELECT 1 FROM DBTXN.CustDB.dbo.Dep_SupperProductSetting s WITH (NOLOCK) INNER JOIN @tblSuper su ON s.CustID = su.SrecommendID WHERE  s.ProductID = 12 AND IsEnabled=1)
+				IF EXISTS (SELECT 1 FROM DBCUST.CustDB.dbo.Dep_SupperProductSetting s WITH (NOLOCK) INNER JOIN @tblSuper su ON s.CustID = su.SrecommendID WHERE  s.ProductID = 12 AND IsEnabled=1)
 				UPDATE @tblProductActive
 				SET isEnable =1
 				WHERE ProductID = 12
@@ -87,6 +93,15 @@ BEGIN
 	WHERE ProductID NOT IN (3,7,9)
 	ORDER BY ProductID ASC
 END
+
+GO
+
+SET QUOTED_IDENTIFIER OFF 
+GO
+SET ANSI_NULLS ON 
+GO
+
+
 GO 
  GRANT VIEW DEFINITION ON [dbo].[Lrf_LicenseeProductSel] TO [vnteam]
 GO 

@@ -1,3 +1,9 @@
+SET QUOTED_IDENTIFIER OFF 
+GO
+SET ANSI_NULLS ON 
+GO
+
+/****** Object:  Stored Procedure dbo.Lrf_3rdProductUpdCustStatus    Script Date: 7/22/2015 1:09:34 PM ******/
 
  
 
@@ -14,7 +20,7 @@ AS
 /*
 	Created: 20150304@Winnie
 	Task: Update status of 3rd product(Gold Dexluxe...) for Members
-	DB: DBTXN.CustDB
+	DB: DBCUST.CustDB
 	Original:
 	Revisions:
 		-20150609@Jim: support product microgaming
@@ -124,6 +130,7 @@ BEGIN
 				    @duration = @duration
     END CATCH
 END
+
 
 
 GO
