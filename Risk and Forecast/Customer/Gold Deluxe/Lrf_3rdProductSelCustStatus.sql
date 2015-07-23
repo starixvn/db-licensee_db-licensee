@@ -1,12 +1,4 @@
-
-SET QUOTED_IDENTIFIER ON 
-GO
-SET ANSI_NULLS ON 
-GO
-
-/****** Object:  Stored Procedure dbo.Lrf_3rdProductSelCustStatus    Script Date: 7/22/2015 1:09:35 PM ******/
-
-/****** Object:  Stored Procedure dbo.Lrf_3rdProductSelCustStatus    Script Date: 6/10/2015 10:51:17 AM ******/
+ 
 CREATE  PROCEDURE	[dbo].[Lrf_3rdProductSelCustStatus]
 	@CustID			INT,
 	@ProductId		INT,
@@ -28,8 +20,13 @@ BEGIN
 	SET NOCOUNT ON
 	
 	DECLARE @Srecommend INT
+			,@Mrecommend INT
+			,@Recommend  INT
 
-	SELECT @Srecommend = srecommend ,@Currency=c.currency
+	SELECT @Srecommend = srecommend 
+			,@Mrecommend = Mrecommend
+			 ,@Recommend = Recommend
+			,@Currency=c.currency
 	FROM bodb02.dbo.Customer c WITH (NOLOCK) 
 	WHERE c.CustID = @CustID
 	
@@ -46,28 +43,30 @@ BEGIN
 			SELECT @IsEnabled = CASE DisableMicrogame WHEN 0 THEN 1 ELSE 0 END 
 			FROM bodb02.dbo.CustInfo WITH (NOLOCK) 
 			WHERE CustID = @CustID
-			IF @IsEnabled = 1
-				SET @IsLineEnabled =1
-			ELSE 
-				SELECT @IsLineEnabled = CASE DisableMicrogame WHEN 0 THEN 1 ELSE 0 END 
+			IF EXISTS( 
+				SELECT 1
 				FROM bodb02.dbo.CustInfo WITH (NOLOCK) 
-				WHERE CustID = @Srecommend
-		END
+				WHERE CustID = @Srecommend AND DisableMicrogame = 0 )
+				AND EXISTS (
+				SELECT 1
+				FROM bodb02.dbo.CustInfo WITH (NOLOCK) 
+				WHERE CustID = @Mrecommend AND DisableMicrogame = 0 )
+				AND EXISTS (
+				SELECT 1
+				FROM bodb02.dbo.CustInfo WITH (NOLOCK) 
+				WHERE CustID = @Recommend AND DisableMicrogame = 0)
+ 
+				SET @IsLineEnabled = 1 
+			ELSE 	
+				SET @IsLineEnabled = 0
+		END	
 	IF (@IsLineEnabled = 0)
 		SELECT @IsEnabled = 0
 	
 END
 
 GRANT EXECUTE ON [dbo].[Lrf_3rdProductSelCustStatus] TO [bodbLicenseeNet]
-
-GO
-
-SET QUOTED_IDENTIFIER OFF 
-GO
-SET ANSI_NULLS ON 
-GO
-
-
+ 
 GO 
  GRANT EXECUTE ON [dbo].[Lrf_3rdProductSelCustStatus] TO [bodbLicenseeNet]
 GO 
