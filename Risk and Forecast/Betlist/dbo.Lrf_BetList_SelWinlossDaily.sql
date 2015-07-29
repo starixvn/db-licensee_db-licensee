@@ -89,7 +89,6 @@ Revisions:
 	- 20150604@Edward: Support MicroGamming
 	- 20150608@Edward: Exclude 3 transactions SOLD/BOUGHT/BetTrade Commission of BetTrade
 	- 20150623@Edward: Fix bug Missing Sporttype for Microgaming tickets (#38450)
-	- 20150729@Edward: Return betcheck for MicroGamming
 
 Param's Explanation: 	
 */
