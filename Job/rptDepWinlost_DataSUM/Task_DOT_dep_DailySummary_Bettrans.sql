@@ -41,6 +41,7 @@ AS
   - 20150414@Winnie: Re-add transferin/transfer out which have transferAmout=0 for AGBalance
   - 20150618@Patrick: #36263: Fix super balance issue for: AGC, GD & VG
   - 20150625@Patrick: #37769: Remove dummy account & exclude cancel transfer tickets for AG Casino (merge)
+  - 20150630@Jim: add MicroGaming
 
  Param's Explanation:  
 
@@ -354,6 +355,7 @@ BEGIN
 			WHEN bettype BETWEEN 1101 AND 1199 THEN 162 -- Live Casino
 			WHEN bettype BETWEEN 1201 AND 1299 THEN 180 -- Virtual Sport
 			WHEN bettype BETWEEN 1501 AND 1599 THEN 202 -- Keno
+			WHEN bettype BETWEEN 2001 AND 2099 THEN 203 -- MicroGaming
 		ELSE 0 END, -- sporttype
 		--b.currency,
 		CASE 
@@ -382,6 +384,7 @@ BEGIN
 			WHEN bettype BETWEEN 1101 AND 1199 THEN 162 -- Live Casino
 			WHEN bettype BETWEEN 1201 AND 1299  THEN 180 --Virtual Sport
 			WHEN bettype BETWEEN 1501 AND 1599 THEN 202 -- Keno
+			WHEN bettype BETWEEN 2001 AND 2099 THEN 203
 		ELSE 0 END,
 		CASE 
 			WHEN b.recommend = 14373731 AND @date < '20141128' THEN 13
