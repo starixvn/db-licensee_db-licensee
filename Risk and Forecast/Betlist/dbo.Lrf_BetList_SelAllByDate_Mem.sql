@@ -86,6 +86,7 @@ Revisions:
 	- 20150403@Bobby: Apply sporttype matrix & #32844 new 60 bettypes - betradar phase 2
 	- 20150605@Edward: Support MicroGamming
 	- 20150608@Edward: Support Bet Trade
+	- 20150729@Edward: Return betcheck for MicroGamming
 */
 BEGIN
 	
@@ -1108,7 +1109,7 @@ BEGIN
 			b.Oddstype,
 			b.currency,
 			''  AS ShowTime 
-			,'' AS betcheck
+			,b.betcheck
 		FROM 
 			bettrans b WITH (NOLOCK)
 			INNER JOIN @SportBettype sbt

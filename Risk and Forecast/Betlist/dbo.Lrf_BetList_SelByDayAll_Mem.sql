@@ -61,6 +61,7 @@ Revisions:
 	- 20150511@Kiwi: Fixed the bug (RedmineID: #35562)
 	- 20150608@Edward: Support MicroGamming
 	- 20150608@Edward: Support Bet Trade
+	- 20150729@Edward: Return betcheck for MicroGamming
 Param's Explanation: 
 	+ @transtype: 1-Betting Statement; 2-VOID/Cancelled Bet; 3-Outstanding Bet 
 	
@@ -595,7 +596,7 @@ BEGIN
 				CONVERT(BIT,0) AS IsNeutral,
 				b.currency,
 				'' AS ShowTime
-				,'' AS betcheck
+				,b.betcheck
 			FROM 
 				dbo.bettrans14 b WITH (NOLOCK)
 				INNER JOIN @SportBettype sbt ON b.bettype = sbt.bettype
@@ -1095,7 +1096,7 @@ BEGIN
 				CONVERT(BIT,0) AS IsNeutral,
 				b.currency,
 				'' AS ShowTime
-				,'' AS betcheck
+				,b.betcheck
 			FROM 
 				dbo.bettrans b WITH (NOLOCK)
 				INNER JOIN @SportBettype sbt ON b.bettype = sbt.bettype
