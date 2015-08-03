@@ -4,7 +4,7 @@ CREATE PROCEDURE [dbo].[LRF_MicroGamingWinloss_Bettype]
 	@TypeID BIT =0
 AS 
 /*  Created: Jim
-	Date: 2014-09-18
+	Date: 2015-07-28
     Task : MicroGaming Win Loss report 
     DB: DBEXT.bodb02  
     Revisions:  
@@ -18,16 +18,21 @@ AS
 		;WITH cte_kind
 		AS (
 			SELECT TypeID Bettype,
-				 CASE WHEN TypeID IN (2001,2002,2003,2004) THEN 1
+				 CASE WHEN TypeID IN (2001,2002,2003,2004,2009) THEN 1
 					  WHEN TypeID IN (2005,2006,2007,2008) THEN 2
 				      ELSE 0
-					  END TypeID		
+					  END TypeID
+				,CASE WHEN TypeID IN (2001,2002,2003,2004,2009) THEN 'Generic Game'
+					  WHEN TypeID IN (2005,2006,2007,2008) THEN 'Branded Game'
+				      ELSE ''
+					  END TypeName		
 			FROM dbo.bettype WITH (NOLOCK) 
 			WHERE typeID BETWEEN 2001 AND 2099
 			
 			)
 		SELECT  Bettype
 				,TypeID
+				,TypeName
 		FROM cte_kind
 		WHERE @TypeID = 0 OR (@TypeID =1 AND TypeId=1) OR (@TypeID =2 AND TypeId=2)
 			

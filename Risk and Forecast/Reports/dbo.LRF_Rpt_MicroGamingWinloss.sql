@@ -34,13 +34,14 @@ AS
 BEGIN
 	CREATE TABLE #tmpResult (WinlostDate	  DATETIME  	
 							 ,Currency 		  INT
-							 ,TypeID		  TINYINT 	
+							 ,TypeID		  TINYINT 
+							 ,TypeName		  VARCHAR(200)								 
 							 ,TurnOver 		  MONEY
 							 ,TotalTrans	  INT	
 							 ,Winlost  		  MONEY
 							 ,LicenseeWinlost MONEY
 							)
-	CREATE TABLE #Bettype (Bettype INT,TypeID TINYINT) 
+	CREATE TABLE #Bettype (Bettype INT,TypeID TINYINT,TypeName VARCHAR(200)) 
 	CREATE TABLE #TempAg  (CustId INT, Currency INT)
 	DECLARE @VNDCurrencyName VARCHAR(20)
 	 
@@ -69,13 +70,14 @@ BEGIN
 			@CurrencyID = 0
 			OR (Currency = @CurrencyID)
 			)
-	INSERT INTO #Bettype (Bettype,TypeID)	
+	INSERT INTO #Bettype (Bettype,TypeID,TypeName)	
 	EXEC LRF_MicroGamingWinloss_Bettype @TypeID = 0
 		
 	
 	INSERT INTO #tmpResult ( Winlostdate
 							 ,Currency 
 							 ,TypeID	
+							 ,TypeName
 							 ,TurnOver 	
 							 ,TotalTrans
 							 ,Winlost  	
@@ -86,6 +88,7 @@ BEGIN
 		   b.rptDate Winlostdate		
 		   ,b.CurrencyID Currency
 		   ,bet.TypeID
+		   ,bet.TypeName
 		   ,SUM(b.TurnOver) AS TurnOver
 		   ,SUM(b.BetCount) AS TotalTrans
 		   ,SUM(b.Winloss)  AS Winlost
@@ -97,7 +100,7 @@ BEGIN
 	GROUP BY 	b.rptDate  		
 				,b.CurrencyID  
 				,bet.TypeID
-	
+				 ,bet.TypeName
 	SELECT ExchangeDate
 		   ,ExchangeId
 		   ,Code
@@ -112,6 +115,7 @@ BEGIN
 				 WHEN @ReportType = 2 THEN CONVERT(VARCHAR(6),r.winlostdate,112)  
 				 ELSE '0' END winlostdate 
 		   ,r.TypeID
+		   ,r.TypeName
 		   ,r.Currency
 		   ,CASE WHEN r.Currency=51  THEN  @VNDCurrencyName
 				 ELSE e.Code 
@@ -138,6 +142,7 @@ BEGIN
 				 WHEN @ReportType = 2 THEN CONVERT(VARCHAR(6),r.winlostdate,112)  
 				 ELSE '0' END
 			   ,r.TypeID
+			   ,r.TypeName
 		      ,r.Currency
 		      ,CASE WHEN r.Currency=51  THEN  @VNDCurrencyName
 				 ELSE e.Code 
