@@ -60,7 +60,8 @@ BEGIN
 			AND CurrencyID = @CurrencyID
 			)
 		)
-
+	AND (@excludeTest=0 OR (@excludeTest=1 AND CurrencyID <> 20))	
+	
 	INSERT INTO #TempAg (CustId,Currency)
 	SELECT lc.CustID, lc.Currency 
 	FROM bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc
