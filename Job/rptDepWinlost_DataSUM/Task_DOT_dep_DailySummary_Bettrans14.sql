@@ -8,7 +8,7 @@ GO
 /****** Object:  Stored Procedure dbo.Task_DOT_dep_DailySummary_Bettrans14    Script Date: 4/14/2015 10:03:51 AM ******/
 
 
-ALTER PROCEDURE [dbo].[Task_DOT_dep_DailySummary_Bettrans14_xpre]
+ALTER PROCEDURE [dbo].[Task_DOT_dep_DailySummary_Bettrans14]
 	@winlostdate datetime
 AS
 /*	
@@ -45,6 +45,7 @@ AS
 		- 20150414@Winnie: Re-add transferin/transfer out which have transferAmout=0 for AGBalance
 		- 20150618@Patrick: #36263: Fix super balance issue for: AGC, GD & VG
 		- 20150625@Patrick: #37769: Remove dummy account & exclude cancel transfer tickets for AG Casino (merge)
+		- 20150630@Jim: add MicroGaming
 
 	Param's Explanation:
 	• @date: The date need to summary
@@ -240,6 +241,7 @@ SELECT
 		WHEN bettype BETWEEN 1800 AND 1899 THEN 250 -- AGC
 		WHEN bettype BETWEEN 1700 AND 1799 THEN 255 -- GD
 		WHEN bettype BETWEEN 1900 AND 1999 THEN 249 -- VG
+		WHEN bettype BETWEEN 2001 AND 2099 THEN 203 -- MicroGaming
 	ELSE 0 END, -- sporttype
 	b.currency,
 	SUM(CASE WHEN [status] not in ('VOID', 'REJECT', 'Refund') then stake ELSE 0 END),--Turnover  
@@ -262,6 +264,7 @@ GROUP BY b.custid,
 		WHEN bettype BETWEEN 1800 AND 1899 THEN 250 -- AGC
 		WHEN bettype BETWEEN 1700 AND 1799 THEN 255 -- GD
 		WHEN bettype BETWEEN 1900 AND 1999 THEN 249 -- VG
+		WHEN bettype BETWEEN 2001 AND 2099 THEN 203 -- MicroGaming
 	ELSE 0 END,
 	b.currency
 
