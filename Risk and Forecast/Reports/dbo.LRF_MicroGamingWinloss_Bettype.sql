@@ -22,8 +22,8 @@ AS
 					  WHEN TypeID IN (2005,2006,2007,2008) THEN 2
 				      ELSE 0
 					  END TypeID
-				,CASE WHEN TypeID IN (2001,2002,2003,2004,2009) THEN 'Generic Game'
-					  WHEN TypeID IN (2005,2006,2007,2008) THEN 'Branded Game'
+				,CASE WHEN TypeID IN (2001,2002,2003,2004,2009) THEN 'Generic Games'
+					  WHEN TypeID IN (2005,2006,2007,2008) THEN 'Branded Games'
 				      ELSE ''
 					  END TypeName		
 			FROM dbo.bettype WITH (NOLOCK) 
