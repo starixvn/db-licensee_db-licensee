@@ -149,7 +149,7 @@ BEGIN
 		, COUNT(b.transid) BetCount
 	FROM dbo.bettrans b WITH (
 			NOLOCK
-			, INDEX = IX_srecommend
+		 
 			)
 	INNER JOIN @TempAg t ON b.recommend = t.custid AND b.Currency = t.Currency 
 	INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON t.custid = BA.recommend
@@ -176,7 +176,7 @@ BEGIN
 		, COUNT(b.transid) BetCount
 	FROM dbo.bettrans b WITH (
 			NOLOCK
-			, INDEX = IX_srecommend
+			 
 			)
 	INNER JOIN @TempAg t ON b.recommend = t.custid AND b.currency = t.currency
 	INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON t.custid = BA.recommend
