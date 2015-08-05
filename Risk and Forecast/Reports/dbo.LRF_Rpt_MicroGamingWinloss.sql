@@ -93,11 +93,13 @@ BEGIN
 		   ,SUM(b.TurnOver) AS TurnOver
 		   ,SUM(b.BetCount) AS TotalTrans
 		   ,SUM(b.Winloss)  AS Winlost
-		   ,SUM(b.WinlossA) AS LicenseeWinlost
+		   ,-SUM(b.Winloss) AS LicenseeWinlost
 	FROM  bodb_licensee.dbo.rpt_Betting b  WITH (NOLOCK)
 		  INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID
 		  INNER JOIN #Bettype bet ON b.bettype  = bet.bettype
 	WHERE b.rptDate BETWEEN @FromDate AND @ToDate 
+		  AND b.status NOT IN (-1,103)
+		  AND b.CustomerCategory = -1	
 	GROUP BY 	b.rptDate  		
 				,b.CurrencyID  
 				,bet.TypeID
