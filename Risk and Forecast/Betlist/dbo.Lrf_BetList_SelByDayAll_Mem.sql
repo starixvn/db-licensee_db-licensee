@@ -1113,7 +1113,7 @@ BEGIN
 				0 AS leagueid,
 				0 AS homeID,
 				0 AS awayID,
-				0 AS bettype,
+				t.gameID AS bettype,
 				'' AS matchcode, 
 				'' AS race,
 				0 AS matchid, 
