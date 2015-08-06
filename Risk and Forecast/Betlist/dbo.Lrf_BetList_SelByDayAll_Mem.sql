@@ -62,6 +62,7 @@ Revisions:
 	- 20150608@Edward: Support MicroGamming
 	- 20150608@Edward: Support Bet Trade
 	- 20150729@Edward: Return betcheck for MicroGamming
+	- 20150806@Edward: Fixed bug return 0 instead of game id for MicroGamming
 Param's Explanation: 
 	+ @transtype: 1-Betting Statement; 2-VOID/Cancelled Bet; 3-Outstanding Bet 
 	
