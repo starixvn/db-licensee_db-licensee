@@ -1,6 +1,6 @@
-USE [bodb02]
+USE [CustDB]
 GO
-
+/****** Object:  StoredProcedure [dbo].[Lrf_CustomerSelMember_MinMaxBetVS]    Script Date: 6/9/2015 1:14:15 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -13,19 +13,21 @@ AS
 /*
 Created: 20130912@Jim
 Task : SELECT customer's bet setting of virtual sport
-DB: DB052.bodb02
+DB: DBCUST.CustDB
 Original: Lrf_CustomerSelMember_MinMaxBet181
 
 Revisions:
-   -20131007@Jim: offer Virtual Tennis
-   - 20131129@Jim: support :
-			182 – Virtual Greyhounds
-			184 – Virtual Motor Racing
-   -20140429@jim: support :
-				-Virtual Speedway (sporttype=183)
-				-Virtual Cycling (sporttype=185)	
+	- 20131007@Jim: offer Virtual Tennis
+	- 20131129@Jim: support :
+		182 – Virtual Greyhounds
+		184 – Virtual Motor Racing
+	- 20140429@Jim: support :
+		-Virtual Speedway (sporttype=183)
+		-Virtual Cycling (sporttype=185)
+	- 20150609@Kos: Separate CustDB to DBCUST server (Move SP to DBCUST.CustDB)
+
 Param's Explanation:
-• @CustID: customer id.   
+• @CustID: customer id.
 */
 
 DECLARE	@UserName VARCHAR(30), @recommend INT
@@ -228,6 +230,7 @@ SELECT isnull(@minminbet186,0) minminbet,
 FROM custinfo ci WITH(NOLOCK)
 INNER JOIN Dep_CustSetting3rd cs ON ci.custid = cs.custid
 WHERE ci.custid = @custid AND cs.bettype=1220 AND cs.sporttype =186
+
 GO
 
 GRANT EXECUTE ON [dbo].[Lrf_CustomerSelMember_MinMaxBetVS] TO [bodbLicenseeNet]

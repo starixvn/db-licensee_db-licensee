@@ -7,7 +7,7 @@ CREATE PROC [dbo].[Lrf_CustomerUpdMemberBAComm]
 	@Langkey VARCHAR(10) = 'en-US',
 	@IP VARCHAR(40),
 	@IsAdmin BIT = 0,
-	@OddsGroup VARCHAR(3) OUTPUT,
+	@OddsGroup VARCHAR(3) = '' OUTPUT,
 	@ErrCode INT = 0 OUTPUT,
 	@ErrMsg nvarchar(4000) = '' OUTPUT
 AS
@@ -30,6 +30,7 @@ Revisions:
     - 20130123@Daniel: Change link server alias & failover writelog to DBTXN
 	- 20130413@Jim: support multi language 
 	- 20150121@Jim: return more @OddsGroup param
+	- 20150630@Kathy: add default value for param @OddsGroup 
 	
 Param's Explanation:
 
