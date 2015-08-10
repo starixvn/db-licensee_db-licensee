@@ -46,6 +46,7 @@ AS
 	- 20141112@Victor: use f_SelLicenseeCust instead of licenseecust (#Redmine 25864)
 	- 20150120@Jim: add more column OddsGroup in the result
 	- 20150130@Winnie Add base currency GBP
+	- 20150626@Jim: support MicroGaming (feature #37034)
 
 	Param's Explanation:
 	  + @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
@@ -399,7 +400,7 @@ SELECT tl.custid,tl.currency,productID,statusID,sum(actual_stake) actual_stacke
 FROM dbo.translog tl WITH (NOLOCK)
 		INNER JOIN @TempAg lc ON tl.recommend=lc.CustID
 WHERE statusID IN (0,1)  --running and Waiting
-	and productID=202
+	and productID IN (202,203)
 GROUP BY tl.custid,tl.currency,productID,statusID
 
 SELECT *

@@ -1,4 +1,13 @@
-CREATE PROCEDURE [dbo].[Lrf_BetList_SelByDayAll_Mem_Old]
+USE [bodb02]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_BetList_SelByDayAll_Mem_Old]    Script Date: 07/21/2015 04:39:30 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+/****** Object:  Stored Procedure dbo.Lrf_BetList_SelByDayAll_Mem_Old    Script Date: 5/6/2015 3:17:05 AM ******/
+/****** Object:  Stored Procedure dbo.Lrf_BetList_SelByDayAll_Mem_Old    Script Date: 4/24/2015 3:55:41 PM ******/
+ALTER PROCEDURE [dbo].[Lrf_BetList_SelByDayAll_Mem_Old]
 	@LicenseeID 		INT ,
 	@UserID				INT,
 	@custid				INT,
@@ -58,7 +67,6 @@ Revisions:
 	- 20140411@Francis: add bettype restriction for VHR
 	- 20150130@Winnie: Add base currency GBP
 	- 20150413@Bobby: Re-format code  & #32844 new 60 bettypes - betradar phase 2
-	- 20150511@Kiwi: Fixed the bug (RedmineID: #35562)
 
 Param's Explanation: 
 
@@ -645,99 +653,8 @@ BEGIN
 	RETURN
 
 END
-GO 
 
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelByDayAll_Mem_Old] TO [vnteam]
-GO 
-
-GRANT EXECUTE ON [dbo].[Lrf_BetList_SelByDayAll_Mem_Old] TO [bodbLicenseeNet]
-GO 
-
-USE [bodb02]
 GO
-
-DECLARE @RC int
-DECLARE @LicenseeID int = 1
-DECLARE @UserID int = 8
-DECLARE @custid int = 1392829
-DECLARE @fromdate smalldatetime = '2015-03-28 00:00:00'
-DECLARE @language nvarchar(10)
-DECLARE @PageSize int = 100
-DECLARE @PageIndex int = 1
-DECLARE @TotalRows int = 0
-DECLARE @SumWinlost money
-DECLARE @SumLicenseeWL money
-DECLARE @SumComm money
-DECLARE @SumPlayerComm money
-DECLARE @SumWinlostUSD money
-DECLARE @SumLicenseeWLUSD money
-DECLARE @SumCommUSD money
-DECLARE @SumPlayerCommUSD money
-DECLARE @SumWinlostEUR money
-DECLARE @SumLicenseeWLEUR money
-DECLARE @SumCommEUR money
-DECLARE @SumPlayerCommEUR money
-DECLARE @SumWinlostGBP money
-DECLARE @SumLicenseeWLGBP money
-DECLARE @SumCommGBP money
-DECLARE @SumPlayerCommGBP money
-DECLARE @ErrCode int
-DECLARE @ErrMsg nvarchar(4000)
-
--- TODO: Set parameter values here.
-
-EXECUTE @RC = [dbo].[Lrf_BetList_SelByDayAll_Mem_Old] 
-   @LicenseeID
-  ,@UserID
-  ,@custid
-  ,@fromdate
-  ,@language
-  ,@PageSize
-  ,@PageIndex
-  ,@TotalRows OUTPUT
-  ,@SumWinlost OUTPUT
-  ,@SumLicenseeWL OUTPUT
-  ,@SumComm OUTPUT
-  ,@SumPlayerComm OUTPUT
-  ,@SumWinlostUSD OUTPUT
-  ,@SumLicenseeWLUSD OUTPUT
-  ,@SumCommUSD OUTPUT
-  ,@SumPlayerCommUSD OUTPUT
-  ,@SumWinlostEUR OUTPUT
-  ,@SumLicenseeWLEUR OUTPUT
-  ,@SumCommEUR OUTPUT
-  ,@SumPlayerCommEUR OUTPUT
-  ,@SumWinlostGBP OUTPUT
-  ,@SumLicenseeWLGBP OUTPUT
-  ,@SumCommGBP OUTPUT
-  ,@SumPlayerCommGBP OUTPUT
-  ,@ErrCode OUTPUT
-  ,@ErrMsg OUTPUT
-
-select @TotalRows 
-  ,@SumWinlost 
-  ,@SumLicenseeWL 
-  ,@SumComm 
-  ,@SumPlayerComm 
-  ,@SumWinlostUSD 
-  ,@SumLicenseeWLUSD 
-  ,@SumCommUSD 
-  ,@SumPlayerCommUSD 
-  ,@SumWinlostEUR 
-  ,@SumLicenseeWLEUR 
-  ,@SumCommEUR 
-  ,@SumPlayerCommEUR 
-  ,@SumWinlostGBP 
-  ,@SumLicenseeWLGBP 
-  ,@SumCommGBP 
-  ,@SumPlayerCommGBP 
-  ,@ErrCode 
-  ,@ErrMsg
+GRANT EXECUTE ON [dbo].[Lrf_BetList_SelByDayAll_Mem_Old] TO [bodbLicenseeNet] AS [dbo]
 GO
-
-
---select min(b.bettype), max(bettype)
---from bodb_archive.dbo.bettrans_bk b (nolock)
---inner join bodb_archive.dbo.match_bk m WITH (NOLOCK) ON b.matchid = m.matchid
---where custid = 1392829
---	and winlostdate = '2015-03-28 00:00:00'
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelByDayAll_Mem_Old] TO [vnteam] AS [dbo]
