@@ -71,6 +71,7 @@ Revisions:
 	 - 20150515@Winnie: fix bug
 	 - 20150604@Edward: Support MicroGamming
 	 - 20150608@Edward: Support Bet Trade
+	 - 20150729@Edward: Return betcheck for MicroGamming
 Param's Explanation:
 	+ @drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
 
@@ -1038,7 +1039,7 @@ BEGIN
 			0,0,
 			b.currency,
 			'' AS showtime
-			,NULL AS betcheck
+			,b.betcheck
 		FROM
 			dbo.bettrans AS b WITH (NOLOCK)
 			INNER JOIN @SportBettype sbt ON b.Bettype=sbt.Bettype
@@ -1924,7 +1925,7 @@ BEGIN
 			0,0,
 			b.currency,
 			'' AS showtime
-			,NULL AS betcheck
+			,b.betcheck
 		FROM
 			dbo.bettrans14 AS b WITH (NOLOCK)		
 			INNER JOIN @SportBettype sbt ON b.Bettype=sbt.Bettype
@@ -2815,7 +2816,7 @@ BEGIN
 			0,0,
 			b.currency,
 			'' AS showtime
-			,NULL AS betcheck
+			,b.betcheck
 		FROM
 			bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)		
 			 INNER JOIN @SportBettype sbt ON b.Bettype=sbt.Bettype

@@ -85,6 +85,7 @@ Revisions:
    - 20150406@Winnie: fix bug
    - 20150604@Edward: Support MicroGamming
    - 20150608@Edward: Support Bet Trade
+   - 20150729@Edward: Return betcheck for MicroGamming
    */
 
 SET NOCOUNT ON
@@ -1050,7 +1051,7 @@ BEGIN
 			CONVERT(BIT,0) AS IsNeutral	,
 			b.currency,
 			'' AS  ShowTime 
-			,NULL AS betcheck	
+			,b.betcheck	
 		FROM
 			dbo.bettrans AS b WITH (NOLOCK)		
 			INNER JOIN @SportBettype sbt ON b.Bettype=sbt.Bettype	
@@ -1868,7 +1869,7 @@ BEGIN
 			CONVERT(BIT,0) AS IsNeutral	,
 			b.currency,
 			''  AS ShowTime 
-			,NULL AS betcheck	
+			,b.betcheck	
 		FROM
 			dbo.bettrans14 AS b WITH (NOLOCK, INDEX=bettrans1423)	
 			INNER JOIN @SportBettype sbt ON b.Bettype=sbt.Bettype	
@@ -2683,7 +2684,7 @@ BEGIN
 			CONVERT(BIT,0) AS IsNeutral	,
 			b.currency,
 			'' AS ShowTime 	
-			,NULL AS betcheck 
+			,b.betcheck 
 		FROM
 			bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK, index=IX_custid)
 			INNER JOIN @SportBettype sbt ON b.Bettype=sbt.Bettype

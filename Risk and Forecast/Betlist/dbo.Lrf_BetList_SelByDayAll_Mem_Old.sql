@@ -60,6 +60,7 @@ Revisions:
 	- 20150413@Bobby: Re-format code  & #32844 new 60 bettypes - betradar phase 2
 	- 20150511@Kiwi: Fixed the bug (RedmineID: #35562)
 	- 20150608@Edward: Support MicroGamming
+	- 20150729@Edward: Return betcheck for MicroGamming
 
 Param's Explanation: 
 
@@ -549,7 +550,7 @@ BEGIN
 		CONVERT(BIT,0) AS IsNeutral,
 		b.currency,
 		'' AS ShowTime 
-		,'' AS betcheck
+		,b.betcheck
 	FROM	bodb_archive.dbo.bettrans_bk b WITH (NOLOCK)
 		INNER JOIN @SportBettype sbt ON b.bettype = sbt.bettype
 	WHERE	b.custid			= @custid 		
