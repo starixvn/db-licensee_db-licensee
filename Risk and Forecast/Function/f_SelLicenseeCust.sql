@@ -20,6 +20,7 @@ DB: DBLIC/bodb_Licensee
 
 Param's Explanation:   
 
+-- 20150810@Winnie: Hardcode @Yun=66 due to reverse currency keenocean
 */
 BEGIN
 	-- Get normal LicenseeCust list
@@ -35,7 +36,7 @@ BEGIN
 
 	SELECT @KeenOceanID = LicenseeID FROM dbo.Licensees WITH (NOLOCK) WHERE LicenseeName LIKE 'KeenOcean'
 	SELECT @RMB = ExchangeID FROM bodb02.dbo.Exchange WITH (NOLOCK) WHERE currency = 'RMB'
-	SELECT @YUN = ExchangeID FROM bodb02.dbo.Exchange WITH (NOLOCK) WHERE currency = 'YUN'
+	SELECT @YUN = 66--ExchangeID FROM bodb02.dbo.Exchange WITH (NOLOCK) WHERE currency = 'YUN'
 	
 	IF (@LicenseeID = @KeenOceanID OR ISNULL(@LicenseeID, 0) = 0)
 	BEGIN

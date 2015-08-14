@@ -48,7 +48,8 @@ AS
 		- 20150127@Jim: support base on GBP Currency
 		- 20150204@Don: remove index hint
 		- 20150612@Jim: support MicroGaming
-		- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission 
+		- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
+		- 20150814@Winnie: Keenocean reverse currency 
 	Param's Explanation:  
 	  + @SiteType: 1-WAP; 2-Smartphone; 3: Others;0-All  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -131,9 +132,10 @@ DECLARE @MaxOldDate DATETIME
 DECLARE @VNDCurrencyName VARCHAR(20)
 DECLARE @FDate DATETIME
 DECLARE @TDate DATETIME
+
 --to Deal WITH Parameter Sniffing
 SELECT @FDate=@FromDate,@TDate=@ToDate 
-
+SELECT @VNDCurrencyName = currency FROM exchange (NOLOCK) WHERE ExchangeId = 51
 SELECT  currencyID,LicenseeID into #currency
 FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
 WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
@@ -831,7 +833,8 @@ SELECT
 	c.username, 
 	SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS nickname,
 	w.Currency ,   
-	case WHEN w.Currency IN (20,51) THEN e.currency ELSE e.Code END as CurrencyName,
+	--case WHEN w.Currency IN (20,51) THEN e.currency ELSE e.Code END as CurrencyName,
+	case WHEN w.Currency =51 THEN @VNDCurrencyName ELSE e.Code END as CurrencyName,
 	
 	SUM(TurnOver)	AS Turnover,
 	SUM(Winlost)		AS Winlost,
@@ -883,10 +886,11 @@ SELECT
 	SUM(CompanyGBP) AS CompanyGBP
 FROM #WinLoss w 
 	INNER JOIN bodb_licensee.dbo.licenseecustinfo c WITH (NOLOCK) ON w.custid = c.custid
-	INNER JOIN Exchange e WITH (NOLOCK) on w.Currency=e.exchangeid
+	INNER JOIN  (SELECT DISTINCT ExchangeId,Code FROM @Exchange) e on w.Currency=e.exchangeid
+	--INNER JOIN Exchange e WITH (NOLOCK) on w.Currency=e.exchangeid
 GROUP BY
 	c.Custid, w.Currency ,c.username,c.username2,
-	CASE WHEN w.Currency IN (20,51) THEN e.currency ELSE e.Code END 
+	CASE WHEN w.Currency =51 THEN @VNDCurrencyName ELSE e.Code END 
 ORDER BY 5,2
 
 DROP TABLE #WinLoss

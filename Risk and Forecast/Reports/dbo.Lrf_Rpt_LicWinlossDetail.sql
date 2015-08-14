@@ -52,6 +52,7 @@ AS
 		- 20150123@Jim: support base on Currency GBP
 		- 20150612@Jim: support MicroGaming
 		- 20150624@Winnie: support licenseeWLBT
+		- 201508215@Winnie: Revever KeenOcean currency
 	Param's Explanation:  
 	  + @CustID: SuperID  
 	  + @BaseCurrency (input currencyID): 2-MYR ; 3-USD; 6-EUR
@@ -134,10 +135,6 @@ WHERE
 DROP TABLE #Currency
 ------------------
 
-IF @CurrencyID in (51,20)
-	SELECT @Code = currency FROM exchange (nolock) WHERE ExchangeId = @CurrencyID
-ELSE
-	SELECT @Code = code FROM exchange (nolock) WHERE exchangeid= @CurrencyID
 
 IF @ShowSB = 1  
 BEGIN  
@@ -235,11 +232,19 @@ SELECT @FDate=@FromDate,@TDate=@ToDate
 DECLARE @eEUR FLOAT
 		,@eUSD FLOAT
 		,@eGBP FLOAT
-
-SELECT TOP 1 @eEUR = eur, @eUSD = usd ,@eGBP = GBP
+		,@CodeKeenOcean VARCHAR (30)
+SELECT TOP 1 @eEUR = eur, @eUSD = usd ,@eGBP = GBP,@CodeKeenOcean=Code
 FROM Lrf_f_GetExchangeDaily(@FDate,@TDate)
 WHERE exchangeid  = @CurrencyID	
-	
+
+
+IF @CurrencyID in (51,20)
+	SELECT @Code = currency FROM exchange (nolock) WHERE ExchangeId = @CurrencyID
+ELSE IF @CurrencyID = 66
+	SELECT @Code = @CodeKeenOcean
+ELSE
+	SELECT @Code = code FROM exchange (nolock) WHERE exchangeid= @CurrencyID
+
 IF @TDate > @MoveBetsDay
 BEGIN
 	IF @FDate <= @MoveBetsDay 

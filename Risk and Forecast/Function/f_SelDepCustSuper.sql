@@ -1,4 +1,4 @@
-ALTER FUNCTION [dbo].[f_SelDepCustSuper](@Site VARCHAR(20) = '')
+CREATE FUNCTION [dbo].[f_SelDepCustSuper_xtest](@Site VARCHAR(20) = '')
 
 RETURNS @tbDepCustSuper TABLE 
 (
@@ -17,7 +17,7 @@ TASk : Get Dep_CustSuper list
 DB: DBLIC/bodb_Licensee, DBACC/bodb02, DBTXN/CustDB
 
 Param's Explanation:   
-
+-- 20150810@Winnie: Hardcode @Yun=66 due to reverse currency keenocean
 */
 BEGIN
 	-- Get normal LicenseeCust list
@@ -32,7 +32,7 @@ BEGIN
 	DECLARE @KeenOceanSite VARCHAR(50) = 'KeenOcean'
 
 	SELECT @RMB = ExchangeID FROM bodb02.dbo.Exchange WITH (NOLOCK) WHERE currency = 'RMB'
-	SELECT @YUN = ExchangeID FROM bodb02.dbo.Exchange WITH (NOLOCK) WHERE currency = 'YUN'
+	SELECT @YUN = 66--ExchangeID FROM bodb02.dbo.Exchange WITH (NOLOCK) WHERE currency = 'YUN'
 	
 	IF (ISNULL(@Site,'') = '' OR @Site = @KeenOceanSite)
 	BEGIN

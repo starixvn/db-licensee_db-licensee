@@ -36,6 +36,7 @@ AS
 		-20130809@Jim: offer Virtual Horse Racing
 		-20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 		- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
+		- 20150814@Winnie: Keenocean reverse currency 
 	Param's Explanation:  
 	  + @SiteType: 1-WAP; 2-Smartphone; 3: Others;0-All  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -101,7 +102,7 @@ DECLARE @FDate DATETIME
 DECLARE @TDate DATETIME
 --to Deal With Parameter Sniffing
 SELECT @FDate=@FromDate,@TDate=@ToDate 
-
+SELECT @VNDCurrencyName = currency FROM exchange (NOLOCK) WHERE ExchangeId = 51
 SELECT  currencyID,LicenseeID into #currency
 FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
 WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
@@ -655,7 +656,7 @@ SELECT
 	c.username,  
 	SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS nickname,
 	w.Currency ,   
-	case when w.Currency IN (20,51) then e.currency ELSE e.Code END as CurrencyName,
+	case when w.Currency=51 then @VNDCurrencyName ELSE e.Code END as CurrencyName,
 	SUM(TurnOver)	AS Turnover,
 	SUM(Winlost)		AS Winlost,
 	SUM(LicenseeWL) AS LicenseeWL,
@@ -692,9 +693,10 @@ SELECT
 	SUM(CompanyUSD) AS CompanyUSD
 FROM #WinLoss w 
 	INNER JOIN bodb_licensee.dbo.licenseecustinfo c WITH (NOLOCK) ON w.custid = c.custid
-	INNER JOIN Exchange e with (nolock) on w.Currency=e.exchangeid
+	--INNER JOIN Exchange e with (nolock) on w.Currency=e.exchangeid
+	INNER JOIN  (SELECT DISTINCT ExchangeId,Code FROM @Exchange) e on w.Currency=e.exchangeid
 GROUP BY
-	w.Currency ,c.username,c.username2,case when w.Currency IN (20,51) then e.currency ELSE e.Code END 
+	w.Currency ,c.username,c.username2,case when w.Currency=51 then @VNDCurrencyName ELSE e.Code END 
 
 
 DROP TABLE #WinLoss

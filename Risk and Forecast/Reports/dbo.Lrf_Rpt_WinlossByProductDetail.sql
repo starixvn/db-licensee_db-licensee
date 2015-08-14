@@ -57,6 +57,7 @@ AS
 	- 20150211@Don: remove index hint
 	- 20150612@Jim: support MicroGaming
 	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
+	- 201508215@Winnie: Revever KeenOcean currency
 	
 	Param's Explanation:  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -143,12 +144,6 @@ WHERE  site = @site
 DROP TABLE #Currency
 --------------------
 
-SELECT TOP 1 @TempCurrencyID=currency FROM @tempAg 
-
-IF @TempCurrencyID in (51,20)
-	SELECT @Code = currency FROM exchange (nolock) WHERE ExchangeId = @TempCurrencyID
-ELSE
-	SELECT @Code = code FROM exchange (nolock) WHERE exchangeid=@TempCurrencyID
 	
 IF @ShowSB = 1  
 BEGIN  
@@ -241,6 +236,16 @@ INSERT INTO @Exchange (exchangedate,exchangeid,eur,usd,GBP,code)
 SELECT exchangedate,exchangeid,eur,usd,GBP,code
 FROM Lrf_f_GetExchangeDaily(@FDate,@TDate)
 WHERE exchangeid IN (SELECT Currency FROM @TempAg)	
+
+SELECT TOP 1 @TempCurrencyID=currency FROM @tempAg 
+
+IF @TempCurrencyID in (51,20)
+	SELECT @Code = currency FROM exchange (nolock) WHERE ExchangeId = @TempCurrencyID
+ELSE IF @TempCurrencyID=66
+	SELECT TOP 1 @Code = code FROM @Exchange WHERE ExchangeId = @TempCurrencyID
+ELSE
+	SELECT @Code = code FROM exchange (nolock) WHERE exchangeid=@TempCurrencyID
+
 
 IF @TDate > @MoveBetsDay
 BEGIN
