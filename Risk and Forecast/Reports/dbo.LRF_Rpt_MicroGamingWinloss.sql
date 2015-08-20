@@ -1,7 +1,12 @@
 USE [bodb02]
 GO
+/****** Object:  StoredProcedure [dbo].[LRF_Rpt_MicroGamingWinloss]    Script Date: 08/20/2015 11:30:01 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
  
-ALTER PROCEDURE [dbo].[LRF_Rpt_MicroGamingWinloss]
+ALTER  PROCEDURE [dbo].[LRF_Rpt_MicroGamingWinloss]
  @LicenseeID	INT,
  @CurrencyID	INT = 0,
  @UserID		INT,
@@ -44,7 +49,13 @@ BEGIN
 	CREATE TABLE #Bettype (Bettype INT,TypeID TINYINT,TypeName VARCHAR(200)) 
 	CREATE TABLE #TempAg  (CustId INT, Currency INT)
 	DECLARE @VNDCurrencyName VARCHAR(20)
-	 
+			,@MoveBetsDay DATETIME
+			,@TempFromDate DATETIME
+			,@TempToDate DATETIME	
+	SELECT    
+        @MoveBetsDay = MAX(eventdate)  
+    FROM dbo.match14 WITH(NOLOCK)  
+    		
 	SELECT @VNDCurrencyName = currency 
 	FROM  dbo.Exchange WITH (NOLOCK) 
 	WHERE ExchangeId = 51
@@ -74,7 +85,42 @@ BEGIN
 	INSERT INTO #Bettype (Bettype,TypeID,TypeName)	
 	EXEC LRF_MicroGamingWinloss_Bettype @TypeID = 0
 		
-	
+	IF @ToDate > @MoveBetsDay
+	BEGIN
+		IF @FromDate <= @MoveBetsDay
+			SET @TempFromDate = DATEADD(DAY, 1, @MoveBetsDay)
+		ELSE
+			SET @TempFromDate = @FromDate
+				INSERT INTO #tmpResult ( Winlostdate
+							 ,Currency 
+							 ,TypeID	
+							 ,TypeName
+							 ,TurnOver 	
+							 ,TotalTrans
+							 ,Winlost  	
+							 ,LicenseeWinlost 
+							)
+				SELECT  b.winlostdate
+						, t.currency
+						, bet.TypeID
+						, bet.TypeName
+						, SUM(stake) turnover
+						, COUNT(b.transid) TotalTrans
+						, SUM(b.winlost - b.actual_stake) AS Winlost
+						, SUM(- 1 * (b.winlost - b.actual_stake)) AS LicenseeWinlost
+				FROM dbo.bettrans b WITH (NOLOCK)
+				INNER JOIN #TempAg t ON b.recommend = t.custid AND t.Currency = b.Currency
+				INNER JOIN #Bettype bet ON b.bettype  = bet.bettype
+				WHERE b.winlostdate BETWEEN @TempFromDate AND @ToDate
+							AND b.statusID IN (111, 112, 113)
+				GROUP BY b.winlostdate
+						, t.currency
+						, bet.TypeID
+						, bet.TypeName
+		
+							
+	END	
+
 	INSERT INTO #tmpResult ( Winlostdate
 							 ,Currency 
 							 ,TypeID	
