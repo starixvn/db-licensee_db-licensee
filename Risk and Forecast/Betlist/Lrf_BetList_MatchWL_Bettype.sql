@@ -70,7 +70,6 @@ Revisions:
    - 20150128@Winnie: Add base currency GBP
    - 20150406@Winnie: Apply matrix of sporttype & bettype & Add 60 bettype betradar 
    - 20150609@Edward: Exclude 3 transactions SOLD/BOUGHT/BetTrade Commission of BetTrade
-   - 20150819@Winnie: Change for KeenOcean reverse currency #42024
 Param's Explanation: 
 	
 */
@@ -873,7 +872,7 @@ DECLARE @Today SMALLDATETIME
 SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120)
 
 SELECT @FromDate=CASE WHEN MIN(winlostdate)>@Today THEN @Today ELSE MIN(winlostdate) END,
-	   @Todate=MAX(winlostdate)--CASE WHEN MAX(winlostdate)>@Today THEN @Today ELSE MAX(winlostdate) END
+	   @Todate=CASE WHEN MAX(winlostdate)>@Today THEN @Today ELSE MAX(winlostdate) END
 FROM  #Data
 
  
@@ -906,8 +905,7 @@ SELECT
 	@SumPlayerCommGBP=SUM(ISNULL(playercomm*e.GBP,0))		
 FROM #Data b
 	INNER JOIN #TempExchange e
-	ON e.ExchangeDate =  b.Winlostdate--(CASE WHEN b.winlostdate <= @Today THEN  b.winlostdate ELSE @Today END)   
-	AND e.exchangeid = b.currency
+	ON e.ExchangeDate = (CASE WHEN b.winlostdate <= @Today THEN  b.winlostdate ELSE @Today END)   AND e.exchangeid = b.currency
 
 SELECT A.* 
 FROM
@@ -935,8 +933,7 @@ FROM
 	FROM #Data b
 	INNER JOIN Customer c (NOLOCK) ON b.custid = c.custid
 	INNER JOIN #TempExchange e
-	ON e.ExchangeDate =  b.Winlostdate--(CASE WHEN b.winlostdate <= @Today THEN  b.winlostdate ELSE @Today END)   
-	AND e.exchangeid = b.currency
+	ON e.ExchangeDate = (CASE WHEN b.winlostdate <= @Today THEN  b.winlostdate ELSE @Today END)   AND e.exchangeid = b.currency
 ) A WHERE A.RowNum BETWEEN @RowStart AND @RowEnd
 
 DECLARE @BettransDetail TABLE(  
