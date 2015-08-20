@@ -69,6 +69,7 @@ Revisions:
    - 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust    
    - 20150128@Winnie: Add base currency GBP
    - 20150406@Winnie: Apply matrix of sporttype & bettype & Add 60 bettype betradar 
+   - 20150609@Edward: Exclude 3 transactions SOLD/BOUGHT/BetTrade Commission of BetTrade
    - 20150819@Winnie: Change for KeenOcean reverse currency #42024
 Param's Explanation: 
 	
@@ -104,6 +105,8 @@ SELECT @bettype = isnull(@bettype,0)
 DECLARE @SportBettype TABLE(ProductID INT,Bettype INT,EventType INT)
 INSERT INTO @SportBettype
 EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4
+
+DELETE @SportBettype WHERE ProductID = 1 AND Bettype IN (901,902,903)
 
 CREATE TABLE #Data 
 (
@@ -903,10 +906,9 @@ SELECT
 	@SumPlayerCommGBP=SUM(ISNULL(playercomm*e.GBP,0))		
 FROM #Data b
 	INNER JOIN #TempExchange e
-	ON e.ExchangeDate = b.Winlostdate--(CASE WHEN b.winlostdate <= @Today THEN  b.winlostdate ELSE @Today END)   
+	ON e.ExchangeDate =  b.Winlostdate--(CASE WHEN b.winlostdate <= @Today THEN  b.winlostdate ELSE @Today END)   
 	AND e.exchangeid = b.currency
 
-	
 SELECT A.* 
 FROM
 (
@@ -933,7 +935,7 @@ FROM
 	FROM #Data b
 	INNER JOIN Customer c (NOLOCK) ON b.custid = c.custid
 	INNER JOIN #TempExchange e
-	ON e.ExchangeDate = b.winlostdate--(CASE WHEN b.winlostdate <= @Today THEN  b.winlostdate ELSE @Today END)   
+	ON e.ExchangeDate =  b.Winlostdate--(CASE WHEN b.winlostdate <= @Today THEN  b.winlostdate ELSE @Today END)   
 	AND e.exchangeid = b.currency
 ) A WHERE A.RowNum BETWEEN @RowStart AND @RowEnd
 
