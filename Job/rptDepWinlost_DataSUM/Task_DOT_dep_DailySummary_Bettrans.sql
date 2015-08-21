@@ -70,7 +70,7 @@ BEGIN
 		Transfer3rd money default(0), DrawGame money default(0),   
 		turnover_ba money default (0), comm_ba money default(0), Amountdueto_ba money default(0), Playercomm money default(0), 
 		PartnerId int, Transfer3rdOthers money default(0),Transfer3rdOthers_In money default(0),Transfer3rdOthers_Out money default(0),
-		comm_bettrade money default(0), Amountdueto_bettrade money default(0), comm_bettrade_full money default(1)
+		comm_bettrade money default(0), Amountdueto_bettrade money default(0), comm_bettrade_full money default(0)
 		UNIQUE (custid, PartnerId, currency)  
 	) 
 
