@@ -59,6 +59,7 @@ Revision:
 	- 20150528@Jim: add more bettype Betradar and Sporting solution (for support multiple oddstype)
 	- 20150603@Bobby: Revise code & improve performance
 	- 20150618@Bobby: Apply pre-caching sumtotal from rptcustomerturnOver_bobby table
+	- 20150821@Winnie: KeenOcean revert currency
 	
 Parameter's Explanation:
 	- @ReportBy:  1: daily, 2: monthly
@@ -659,6 +660,8 @@ BEGIN
 			, CASE 
 				WHEN e.exchangeid = 20 THEN 'UUS'
 				WHEN e.exchangeid = 51 THEN 'INH'
+				WHEN e.exchangeid = 66 AND b.winlostdate<'2015-09-01' THEN 'HKD'
+				WHEN e.exchangeid = 66 AND b.winlostdate>='2015-09-01' THEN 'CNY'
 				ELSE e.Code END AS Currency
 			, b.sporttype
 			, CASE WHEN b.bettype BETWEEN 81 AND 120 THEN  N'NG - ' + bt.typenamee
@@ -690,6 +693,8 @@ BEGIN
 			, CASE 
 				WHEN e.exchangeid = 20 THEN 'UUS'
 				WHEN e.exchangeid = 51 THEN 'INH'
+				WHEN e.exchangeid = 66 AND b.winlostdate<'2015-09-01' THEN 'HKD'
+				WHEN e.exchangeid = 66 AND b.winlostdate>='2015-09-01' THEN 'CNY'
 				ELSE e.Code END
 			, b.sporttype
 			, CASE WHEN b.bettype BETWEEN 81 AND 120 THEN  N'NG - ' + bt.typenamee
