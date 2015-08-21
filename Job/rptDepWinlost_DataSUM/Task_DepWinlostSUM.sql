@@ -12,6 +12,7 @@ AS
   - 20121010@viet: create SP   
   - 20130628@Don: Adding one column to rptDepWinlost_SUM (Transfer3rdOthers)
   - 20141120@Don: Adjustment to serve to change KeenOcean's currency RMB to HK$
+  - 20150713@Patrick: Support bettrade
                  
  Param's Explanation:  
  • @winlostdate: The date need to summary  
@@ -90,6 +91,8 @@ SET NOCOUNT ON
 		,AmountDueTo_BA
 		,playercomm
 		,Transfer3rdOthers
+		,comm_bettrade
+		,amountdueto_bettrade
 	)
 	SELECT
 		winlostdate
@@ -115,6 +118,8 @@ SET NOCOUNT ON
 		,SUM(ISNULL(AmountDueTo_BA,0))
 		,SUM(ISNULL(playercomm,0))
 		,SUM(ISNULL(Transfer3rdOthers,0))
+		,SUM(ISNULL(comm_bettrade,0))
+		,SUM(ISNULL(amountdueto_bettrade,0))
 	FROM dbo.rptdepwinlost WITH(nolock)
 	WHERE winlostdate = @date
 	GROUP BY winlostdate, recommend, currency, srecommend

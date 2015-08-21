@@ -20,6 +20,7 @@ AS
   - 20150324@Patrick: Re-arrange code to easy to plugin 3rd product
   - 20150618@Patrick: #36263: Fix super balance issue for: AGC, GD & VG
   - 20150625@Patrick: #37769: Exclude cancel transfer tickets for AG Casino (merge)
+  - 20150630@Patrick: #38387: Support bettrade
   
  Param's Explanation:  
  • @winlostdate: The date need to summary  
@@ -103,6 +104,27 @@ GROUP BY b.custid,
 	END, -- currency
 	recommend, mrecommend, srecommend    
 
+;WITH bettradeData AS (  
+	SELECT b.custid
+		, SUM(CASE WHEN b.bettype = 903 THEN b.awinlost ELSE 0 END) AS comm_bettrade
+		, SUM(CASE WHEN b.bettype = 903 THEN b.winlost - b.actual_stake ELSE 0 END) AS comm_bettrade_full
+		, SUM(CASE WHEN bt.CustId IS NOT NULL AND b.bettype NOT IN (902,903) THEN b.winlost - b.actual_stake ELSE 0 END) AS WLBeticket --WL of bet ticket of bettrade
+		, SUM(CASE WHEN b.bettype = 902 THEN b.winlost - b.actual_stake ELSE 0 END) AS WLBoughtTicket --WL of bought ticket of bettrade
+	FROM dbo.bettransDEP b with(nolock)  
+		LEFT JOIN dbo.f_GetBetTradeCustList('All') bt ON b.custid = bt.Custid AND b.Currency = bt.currency
+	WHERE b.winlostdate = @date  
+		AND (b.bettype < 31 OR b.bettype BETWEEN 121 AND 999 OR b.bettype BETWEEN 1301 AND 1399)
+		AND b.ruben = 1  
+		AND b.statusID NOT IN (101, 102, 103)  
+	GROUP BY b.custid
+)  
+UPDATE tmp WITH(ROWLOCK, UPDLOCK) 
+SET comm_bettrade = ISNULL(d.comm_bettrade, 0)
+	, comm_bettrade_full = ISNULL(d.comm_bettrade_full, 0)
+	, Amountdueto_bettrade = ISNULL(d.WLBeticket, 0) + ISNULL(d.WLBoughtTicket, 0) - ISNULL(d.comm_bettrade, 0)
+FROM dbo.rptDepwinlost_staging tmp
+	INNER JOIN bettradeData d ON tmp.custid = d.custid
+
 --Keno product's turnover, Outstanding
 CREATE TABLE #tempDepWinlost_staging (winlostdate datetime, custid int, currency int, recommend int, mrecommend int, srecommend int,
 									  turnover money default (0), outstanding money default (0))
@@ -158,6 +180,9 @@ SELECT
 		WHEN bettype BETWEEN 1101 AND 1199 THEN 162 -- Live Casino
 		WHEN bettype BETWEEN 1201 AND 1299 THEN 180 --Virtual Sport		
 		WHEN bettype BETWEEN 1501 AND 1599 THEN 202 -- Keno
+		WHEN bettype = 901 THEN -2 -- BetTrade - Sold
+		WHEN bettype = 902 THEN -3 -- BetTrade - Bought
+		WHEN bettype = 903 THEN -4 -- BetTrade - Commission
 	ELSE 0 END, -- sporttype
 	--b.currency,
 	CASE 
@@ -186,6 +211,9 @@ GROUP BY b.custid,
 		WHEN bettype BETWEEN 1101 AND 1199 THEN 162 -- Live Casino
 		WHEN bettype BETWEEN 1201 AND 1299 THEN 180 --Virtual Sport
 		WHEN bettype BETWEEN 1501 AND 1599 THEN 202 -- Keno
+		WHEN bettype = 901 THEN -2 -- BetTrade - Sold
+		WHEN bettype = 902 THEN -3 -- BetTrade - Bought
+		WHEN bettype = 903 THEN -4 -- BetTrade - Commission
 	ELSE 0 END,
 	--b.currency
 	CASE 

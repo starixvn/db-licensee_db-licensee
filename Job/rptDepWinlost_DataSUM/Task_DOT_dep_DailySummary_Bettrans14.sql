@@ -46,6 +46,7 @@ AS
 		- 20150618@Patrick: #36263: Fix super balance issue for: AGC, GD & VG
 		- 20150625@Patrick: #37769: Remove dummy account & exclude cancel transfer tickets for AG Casino (merge)
 		- 20150630@Jim: add MicroGaming
+		- 20150630@Patrick: #38387: Support bettrade
 
 	Param's Explanation:
 	• @date: The date need to summary
@@ -60,7 +61,8 @@ CREATE TABLE #Data(custid int, currency int,
 	recommend int, mrecommend int, srecommend int,
 	Transfer3rd money default(0), DrawGame money default(0),
 	turnover_ba money default (0), comm_ba money default(0), Amountdueto_ba money default(0), playercomm money default(0), 
-	PartnerId int, Transfer3rdOthers money default(0),Transfer3rdOthers_In money default(0),Transfer3rdOthers_Out money default(0)
+	PartnerId int, Transfer3rdOthers money default(0),Transfer3rdOthers_In money default(0),Transfer3rdOthers_Out money default(0),
+	comm_bettrade money default(0), amountdueto_bettrade money default(0), comm_bettrade_full money default(0)
 	UNIQUE (custid, PartnerId, currency)
 	)
 
@@ -103,7 +105,7 @@ SELECT
 	SUM(CASE @date WHEN @BalanceUpDay 
 			THEN CASE WHEN bettype = 20000 THEN winlost - actual_stake + playercomm ELSE 0 END 
 			ELSE CASE WHEN winlostdate < @date THEN winlost - actual_stake + playercomm ELSE 0 END 
-		END), -- openingbalance
+		END),
 	SUM( CASE WHEN winlostdate = @date AND bettype = 22001 then winlost-actual_stake ELSE 0 END), --Deposit
 	SUM( CASE WHEN winlostdate = @date AND bettype = 21006 then winlost-actual_stake ELSE 0 END), --Aff2MemTransfer
 	-SUM(CASE WHEN winlostdate = @date AND bettype in (22002,22003) then winlost-actual_stake ELSE 0 END),--Withdrawal
@@ -220,6 +222,28 @@ SET
 FROM B
 WHERE #data.custid = b.custid
 
+;WITH bettradeData AS (  
+	SELECT b.custid
+		, SUM(CASE WHEN b.bettype = 903 THEN b.awinlost ELSE 0 END) AS comm_bettrade
+		, SUM(CASE WHEN b.bettype = 903 THEN b.winlost - b.actual_stake ELSE 0 END) AS comm_bettrade_full
+		, SUM(CASE WHEN bt.CustId IS NOT NULL AND b.bettype NOT IN (902,903) THEN b.winlost - b.actual_stake ELSE 0 END) AS WLBeticket --WL of bet ticket of bettrade
+		, SUM(CASE WHEN b.bettype = 902 THEN b.winlost - b.actual_stake ELSE 0 END) AS WLBoughtTicket --WL of bought ticket of bettrade
+	FROM dbo.bettrans14 b with(rowlock)  
+		LEFT JOIN dbo.f_GetBetTradeCustList('All') bt ON b.custid = bt.Custid AND b.Currency = bt.currency
+	WHERE b.winlostdate = @date  
+		AND (b.bettype < 31 OR b.bettype BETWEEN 121 AND 999 OR b.bettype BETWEEN 1301 AND 1399)
+		AND b.ruben = 1  
+		AND b.statusID NOT IN (101, 102, 103)  
+	GROUP BY b.custid
+)  
+UPDATE #Data  
+SET comm_bettrade = ISNULL(d.comm_bettrade, 0)
+	, comm_bettrade_full = ISNULL(d.comm_bettrade_full, 0)
+	, Amountdueto_bettrade = ISNULL(d.WLBeticket, 0) + ISNULL(d.WLBoughtTicket, 0) - ISNULL(d.comm_bettrade, 0)
+	--, OpeningBalance = OpeningBalance - ISNULL(d.comm_bettrade_full, 0)
+FROM bettradeData d
+WHERE #Data.custid = d.custid
+
 DROP TABLE #BATransactionHistory
 
 CREATE TABLE #DataByProduct (
@@ -242,6 +266,9 @@ SELECT
 		WHEN bettype BETWEEN 1700 AND 1799 THEN 255 -- GD
 		WHEN bettype BETWEEN 1900 AND 1999 THEN 249 -- VG
 		WHEN bettype BETWEEN 2001 AND 2099 THEN 203 -- MicroGaming
+		WHEN bettype = 901 THEN -2 -- BetTrade - Sold
+		WHEN bettype = 902 THEN -3 -- BetTrade - Bought
+		WHEN bettype = 903 THEN -4 -- BetTrade - Commission
 	ELSE 0 END, -- sporttype
 	b.currency,
 	SUM(CASE WHEN [status] not in ('VOID', 'REJECT', 'Refund') then stake ELSE 0 END),--Turnover  
@@ -265,6 +292,9 @@ GROUP BY b.custid,
 		WHEN bettype BETWEEN 1700 AND 1799 THEN 255 -- GD
 		WHEN bettype BETWEEN 1900 AND 1999 THEN 249 -- VG
 		WHEN bettype BETWEEN 2001 AND 2099 THEN 203 -- MicroGaming
+		WHEN bettype = 901 THEN -2 -- BetTrade - Sold
+		WHEN bettype = 902 THEN -3 -- BetTrade - Bought
+		WHEN bettype = 903 THEN -4 -- BetTrade - Commission
 	ELSE 0 END,
 	b.currency
 
@@ -274,11 +304,12 @@ DELETE bodb_Report.dbo.rptDepWinlost WHERE Winlostdate = @date
 insert into bodb_Report.dbo.rptDepWinlost
 	(winlostdate, custid, currency, OpeningBalance, Deposit, Aff2MemTransfer, Withdrawal, Bonus, Adjustment, Transfer3rd,
 	Turnover, DrawGame, Outstanding, Winloss, recommend, mrecommend, srecommend,ClosingBalance, actualrate,
-	turnover_ba, comm_ba, Amountdueto_ba, playercomm, Transfer3rdOthers)
+	turnover_ba, comm_ba, Amountdueto_ba, playercomm, Transfer3rdOthers, comm_bettrade, amountdueto_bettrade)
 select @date, custid, d.currency, SUM(OpeningBalance), SUM(Deposit), SUM(Aff2MemTransfer), SUM(Withdrawal), SUM(Bonus), SUM(Adjustment), SUM(Transfer3rd),
 	SUM(Turnover), SUM(DrawGame), SUM(Outstanding), SUM(Winloss), recommend, mrecommend, srecommend, 
-	SUM(OpeningBalance + Deposit + Aff2MemTransfer - Withdrawal + Bonus + Adjustment - Outstanding + Winloss + playercomm + Transfer3rd + Transfer3rdOthers), -- closingbalance
-	MIN(e.actualrate), SUM(turnover_ba), SUM(comm_ba) , SUM(Amountdueto_ba), SUM(playercomm), SUM(Transfer3rdOthers) --Transfer3rdOthers
+	SUM(OpeningBalance + Deposit + Aff2MemTransfer - Withdrawal + Bonus + Adjustment - Outstanding + Winloss + playercomm + Transfer3rd + Transfer3rdOthers - comm_bettrade_full), -- closingbalance
+	MIN(e.actualrate), SUM(turnover_ba), SUM(comm_ba) , SUM(Amountdueto_ba), SUM(playercomm), SUM(Transfer3rdOthers), --Transfer3rdOthers
+	SUM(comm_bettrade), SUM(amountdueto_bettrade)
 from #Data d
 	inner join exchangedailyoanda e with(nolock) on d.currency = e.exchangeid
 where exchangedate = @date
