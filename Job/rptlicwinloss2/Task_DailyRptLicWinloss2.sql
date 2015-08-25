@@ -28,6 +28,7 @@ Revisions:
 	- 20150618@Patrick: #36263: Fix super balance issue for: AGC, GD & VG
     - 20150630@Jim: add MicroGaming 
 	- 20150702@Patrick: Support BetTrade
+	- 20150824@Patrick: Not category BA's bettrade ticket
  */
 
 SET NOCOUNT ON 
@@ -40,6 +41,25 @@ BEGIN
 END
 
 DELETE FROM bodb_Licensee.dbo.rptLicWinloss2 WITH (rowlock) WHERE winlostdate = @winlostdate
+
+DECLARE @MinTransId BIGINT, @MaxTransId BIGINT
+SELECT @MinTransId = MIN(TransId), @MaxTransId = MAX(TransId)
+FROM dbo.bettrans14 bt WITH (NOLOCK)
+WHERE WinlostDate = @WinlostDate
+
+DECLARE @BATransIds TABLE (TransId BIGINT)
+INSERT INTO @BATransIds(TransId)
+SELECT TransId
+FROM bodb_Licensee.dbo.LicenseeBATransaction WITH(NOLOCK)
+WHERE TransId BETWEEN @MinTransId AND @MaxTransId
+
+--get more BA's bettrade ticket
+INSERT INTO @BATransIds(TransId)
+SELECT TransId
+FROM dbo.bettrans14 WITH(NOLOCK)
+WHERE WinlostDate = @winlostdate 
+	AND refno IN (SELECT TransId FROM @BATransIds)
+	AND transid NOT IN (SELECT TransId FROM @BATransIds)
 
 --Member Level
 INSERT INTO bodb_Licensee.dbo.rptLicWinloss2
@@ -132,7 +152,7 @@ SELECT @winlostdate
 FROM
 	dbo.bettrans14 bettrans WITH (NOLOCK)
 	INNER JOIN dbo.customer WITH (NOLOCK) ON bettrans.custid=customer.custid
-	LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON bettrans.transid = BA.transid
+	LEFT JOIN @BATransIds ba ON bettrans.transid = BA.transid
 WHERE
 	bettrans.winlostdate = @winlostdate AND
 	customer.srecommend IN (SELECT custid FROM f_DepSuper_1('All')) AND
