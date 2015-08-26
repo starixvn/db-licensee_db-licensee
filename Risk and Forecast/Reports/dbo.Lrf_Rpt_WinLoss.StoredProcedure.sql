@@ -72,6 +72,7 @@ AS /*
 		- 20150129@Jim : add base on curreny GBP
 		- 20150612@Jim: support MicroGaming
 		- 20150625@Winnie: support BetTrade
+		- 20150826@Winnie: Fix bug KeenOcean #42464
 */
     
 SET NOCOUNT ON
@@ -282,10 +283,10 @@ BEGIN
 			b.currency	
 		FROM    
 			bettrans b WITH (NOLOCK)   
-			INNER JOIN  @TempAg ag ON  b.recommend = ag.CustId 
+			INNER JOIN  @TempAg ag ON  b.recommend = ag.CustId AND b.currency=ag.Currency
 		WHERE transid IN (SELECT transid FROM bodb_Licensee.dbo.LicenseeBATransaction_active WITH (NOLOCK) )
 			AND winlostdate BETWEEN @TempFromDate AND @_ToDate
-			AND b.currency IN (SELECT Currency FROM @TempAg)
+			--AND b.currency IN (SELECT Currency FROM @TempAg)
 			AND b.statusID  IN (111, 112, 113)
 			and bettype < 19999
 			AND b.bettype NOT IN (901,902,903)
@@ -317,13 +318,13 @@ BEGIN
 			b.currency	
 		FROM    
 			Bettrans b WITH ( NOLOCK)
-			INNER JOIN @TempAg a ON b.recommend = a.custid  
+			INNER JOIN @TempAg a ON b.recommend = a.custid  AND b.currency=a.Currency
 		WHERE   
 			winlostdate BETWEEN @TempFromDate AND @_ToDate
 			AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
 							  OR (b.Bettype BETWEEN 1301 AND 1399) 
 			)
-			AND b.currency IN (SELECT Currency FROM @TempAg)
+			--AND b.currency IN (SELECT Currency FROM @TempAg)
 			AND b.statusID  IN (111, 112, 113)
 			AND b.tpositiontaking <>0
 			AND b.bettype NOT IN (901,902,903)
@@ -356,12 +357,12 @@ BEGIN
 			b.currency	
 		FROM    
 			Bettrans b WITH ( NOLOCK )
-			INNER JOIN @TempAg a  ON b.recommend = a.custid  
+			INNER JOIN @TempAg a  ON b.recommend = a.custid  AND b.currency=a.Currency
 			INNER JOIN @bettype bt ON b.bettype = bt.bettype
 			 
 		WHERE   
 			winlostdate BETWEEN @TempFromDate AND @_ToDate
-			AND b.currency IN (SELECT Currency FROM @TempAg)
+			--AND b.currency IN (SELECT Currency FROM @TempAg)
 			AND b.statusID  IN (111, 112, 113)			
 		GROUP BY b.CustID,b.winlostdate,b.currency	
 	END
