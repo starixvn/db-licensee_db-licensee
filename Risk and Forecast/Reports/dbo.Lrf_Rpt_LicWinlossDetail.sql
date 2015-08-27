@@ -53,6 +53,7 @@ AS
 		- 20150612@Jim: support MicroGaming
 		- 20150624@Winnie: support licenseeWLBT
 		- 201508215@Winnie: Revever KeenOcean currency
+		- 20150624@Winnie: fix bug bettrade dont count refund tickets.
 	Param's Explanation:  
 	  + @CustID: SuperID  
 	  + @BaseCurrency (input currencyID): 2-MYR ; 3-USD; 6-EUR
@@ -439,7 +440,8 @@ BEGIN
 			INNER JOIN @TempAg a ON b.recommend = a.custid AND b.currency = a.currency 
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @TDate  			
-			AND b.bettype IN (901,902,903)		
+			AND b.bettype IN (901,902,903)	
+			AND	b.statusID  IN (111, 112, 113) 	
 		GROUP BY   
 			b.custid,b.statusID
 	END
@@ -836,6 +838,7 @@ BEGIN
 		WHERE 
 			b.Winlostdate BETWEEN @FDate AND @TempToDate  
 			AND b.bettype IN (901,902,903)	
+			AND	b.statusID  IN (111, 112, 113) 
 			GROUP BY  b.custid,b.statusID
 	END
 			
@@ -1100,7 +1103,7 @@ BEGIN
 		WHERE 
 			b.Winlostdate BETWEEN @FDate AND @TempToDate   
 			AND b.bettype IN (901,902,903)
-		
+			AND	b.statusID  IN (111, 112, 113) 
 			GROUP BY  b.custid,b.statusID
 	END
  END

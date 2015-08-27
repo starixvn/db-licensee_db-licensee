@@ -47,6 +47,7 @@ AS
 		- 20150612@Jim: support MicroGaming
 		- 20150624@Winnie: support licenseeWLBT
 		- 20150709@Jim: fix bug #39374 
+		- 20150624@Winnie: fix bug bettrade dont count refund tickets.
 	Param's Explanation:  
 	  + @CustID: SuperID  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -419,6 +420,7 @@ BEGIN
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @TDate   			
 			AND b.bettype IN (901,902,903)
+			AND b.statusID  IN (111, 112, 113)
 		GROUP BY   
 			b.winlostdate,a.currency,b.recommend, b.statusID
 				
@@ -870,7 +872,8 @@ BEGIN
 			
 			WHERE 
 				b.Winlostdate BETWEEN @FDate AND @TempToDate  
-				AND b.bettype IN (901,902,903)			
+				AND b.bettype IN (901,902,903)	
+				AND b.statusID  IN (111, 112, 113)		
 				GROUP BY  b.winlostdate,b.currency, b.recommend, b.statusID
 		END
 	
@@ -1135,7 +1138,8 @@ BEGIN
 			
 			WHERE 
 				b.Winlostdate BETWEEN @FDate AND @TempToDate  
-				AND b.bettype IN (901,902,903)			
+				AND b.bettype IN (901,902,903)	
+				AND b.statusID  IN (111, 112, 113)		
 				GROUP BY  b.winlostdate,b.currency, b.recommend, b.statusID
 		END
  END
