@@ -1,4 +1,4 @@
-ALTER FUNCTION [dbo].[f_SelDepCustSuper](@Site VARCHAR(20) = '')
+CREATE FUNCTION [dbo].[f_SelDepCustSuper_xtest](@Site VARCHAR(20) = '')
 
 RETURNS @tbDepCustSuper TABLE 
 (

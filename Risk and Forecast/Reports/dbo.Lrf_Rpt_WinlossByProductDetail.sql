@@ -18,6 +18,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail]
  @ShowCS 		BIT=0,-- RNG Casino
  @ShowBG		BIT=0,-- Bingo
  @ShowKN   		BIT=0, -- Keno 
+ @ShowMGC 		BIT=0,-- MicroGamming
  @MoveBetsDay SMALLDATETIME,
  @IsOld BIT = 0,
  @drawfilter SMALLINT = 1  ,
@@ -54,6 +55,9 @@ AS
 	- 20150107@Jim: add more input param @CustID
 	- 20150123@Jim: support base on Currency GBP
 	- 20150211@Don: remove index hint
+	- 20150612@Jim: support MicroGaming
+	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
+	- 201508215@Winnie: Revever KeenOcean currency
 	
 	Param's Explanation:  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -140,12 +144,6 @@ WHERE  site = @site
 DROP TABLE #Currency
 --------------------
 
-SELECT TOP 1 @TempCurrencyID=currency FROM @tempAg 
-
-IF @TempCurrencyID in (51,20)
-	SELECT @Code = currency FROM exchange (nolock) WHERE ExchangeId = @TempCurrencyID
-ELSE
-	SELECT @Code = code FROM exchange (nolock) WHERE exchangeid=@TempCurrencyID
 	
 IF @ShowSB = 1  
 BEGIN  
@@ -216,6 +214,15 @@ BEGIN
 	SELECT typeid FROM bettype (NOLOCK)
 	WHERE (typeid BETWEEN 1501 AND 1599)
 END 
+IF @ShowMGC=1 -- MicroGamming
+BEGIN 
+	INSERT INTO @sporttype (sporttype)
+	VALUES(203)
+
+	INSERT INTO @bettype(bettype)
+	SELECT typeid FROM bettype (NOLOCK)
+	WHERE (typeid BETWEEN 2001 AND 2007)
+END
 
 DECLARE @TempFromDate DATETIME 
 DECLARE @TempToDate DATETIME 
@@ -229,6 +236,16 @@ INSERT INTO @Exchange (exchangedate,exchangeid,eur,usd,GBP,code)
 SELECT exchangedate,exchangeid,eur,usd,GBP,code
 FROM Lrf_f_GetExchangeDaily(@FDate,@TDate)
 WHERE exchangeid IN (SELECT Currency FROM @TempAg)	
+
+SELECT TOP 1 @TempCurrencyID=currency FROM @tempAg 
+
+IF @TempCurrencyID in (51,20)
+	SELECT @Code = currency FROM exchange (nolock) WHERE ExchangeId = @TempCurrencyID
+ELSE IF @TempCurrencyID=66
+	SELECT TOP 1 @Code = code FROM @Exchange WHERE ExchangeId = @TempCurrencyID
+ELSE
+	SELECT @Code = code FROM exchange (nolock) WHERE exchangeid=@TempCurrencyID
+
 
 IF @TDate > @MoveBetsDay
 BEGIN
@@ -319,6 +336,7 @@ BEGIN
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
 			(@MemberID = 0 OR (@MemberID <> 0 AND b.CustId = @MemberID)) AND
 			b.statusID IN (111, 112, 113) 
+			AND b.bettype NOT IN (901,902,903) 
 		GROUP BY   
 			b.custid,tma.currency, b.statusID
 	END
@@ -410,8 +428,9 @@ BEGIN
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
 						  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 			) AND
-			b.statusID  IN (111, 112, 113) AND
-			b.tpositiontaking <> 0
+			b.statusID  IN (111, 112, 113)
+			AND b.bettype NOT IN (901,902,903)
+			AND b.tpositiontaking <> 0
 			
 		GROUP BY   
 			b.custid,
@@ -420,7 +439,7 @@ BEGIN
 	END
 	
 	--NG+LC+VS+RB + KN
-	IF (@ShowNG=1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowRB=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1)
+	IF (@ShowNG=1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowRB=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGC=1)
 	BEGIN
 		SELECT 
 			DISTINCT
@@ -447,6 +466,7 @@ BEGIN
 				WHEN b.bettype=71 THEN 'CS'
 				WHEN b.bettype=73 THEN 'BG'
 				WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN' 
+				WHEN b.bettype BETWEEN 2001 AND 2007  THEN 'MGC'
 			END AS ProductCode,
 			SUM(
 				CASE WHEN b.bettype = 33 AND b.liveawayscore = 0 THEN stake/2 ELSE stake END 
@@ -542,6 +562,7 @@ BEGIN
 				WHEN b.bettype=71 THEN 'CS'
 				WHEN b.bettype=73 THEN 'BG'
 				WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN' 
+				WHEN b.bettype BETWEEN 2001 AND 2007  THEN 'MGC'
 			END
 			, statusID
 	DROP TABLE #tmpVS		
@@ -638,13 +659,15 @@ BEGIN
 			AND (@MemberID = 0 OR (@MemberID <> 0 AND b.CustId = @MemberID)) 
 			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
+			AND b.bettype NOT IN (901,902,903)
 			AND ISNULL(b.isBA,0) = 1
+
 		GROUP BY   b.custid,
 			b.currency, b.statusID
 	END
 	
 	--exclude BA tickets
-	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR @ShowLC=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1)
+	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR @ShowLC=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGC =1)
 	BEGIN
 		INSERT INTO #SAgWinLoss  
 		SELECT 
@@ -658,6 +681,7 @@ BEGIN
 				WHEN b.sporttype=251 THEN 'CS'
 				WHEN b.sporttype=252 THEN 'BG'
 				WHEN b.sporttype=202 THEN 'KN'
+				WHEN b.sporttype=203 THEN 'MGC'
 			END AS ProductCode,
 			SUM(b.turnover
 			*
@@ -735,6 +759,7 @@ BEGIN
 			AND b.roleid = 1
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND t.sporttype<>180
+			AND b.bettype NOT IN (901,902,903)
 			AND ISNULL(b.isBA,0) = 0
 		GROUP BY  
 			b.custid,
@@ -747,6 +772,7 @@ BEGIN
 				WHEN b.sporttype=251 THEN 'CS'
 				WHEN b.sporttype=252 THEN 'BG'
 				WHEN b.sporttype=202 THEN 'KN'
+				WHEN b.sporttype=203 THEN 'MGC'
 			END
 			, b.statusID
 	END
@@ -977,13 +1003,14 @@ BEGIN
 			AND (@MemberID = 0 OR (@MemberID <> 0 AND b.CustId = @MemberID))
 			AND b.roleid = 1  
 			AND b.statusID <> 101 --exclude REJECT bets
+			AND b.bettype NOT IN (901,902,903)
 			AND ISNULL(b.isBA,0) = 1
 		GROUP BY  b.custid,
 		b.currency, b.statusID
 	END
 
 	--exclude BA tickets
-	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1OR @ShowKN=1)
+	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1OR @ShowKN=1 OR @ShowMGC =1)
 	BEGIN
 		INSERT INTO #SAgWinLoss  
 		SELECT 
@@ -998,6 +1025,7 @@ BEGIN
 				WHEN b.sporttype=251 THEN 'CS'
 				WHEN b.sporttype=252 THEN 'BG'
 				WHEN b.sporttype=202 THEN 'KN'
+				WHEN b.sporttype=203 THEN 'MGC'
 			END AS ProductCode,
 			SUM(b.turnover
 			*
@@ -1075,6 +1103,7 @@ BEGIN
 			AND (@MemberID = 0 OR (@MemberID <> 0 AND b.CustId = @MemberID))
 			AND b.roleid = 1  
 			AND b.statusID <> 101 --exclude REJECT bets
+			AND b.bettype NOT IN (901,902,903)
 			AND ISNULL(b.isBA,0) = 0
 		GROUP BY  
 			b.custid,
@@ -1088,6 +1117,7 @@ BEGIN
 				WHEN b.sporttype=251 THEN 'CS'
 				WHEN b.sporttype=252 THEN 'BG'
 				WHEN b.sporttype=202 THEN 'KN'
+				WHEN b.sporttype=203 THEN 'MGC'
 			END
 			, b.statusID
 	END

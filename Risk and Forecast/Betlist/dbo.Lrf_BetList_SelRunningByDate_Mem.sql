@@ -18,7 +18,8 @@
 	@ShowVS		BIT = 0,
 	@ShowCS		BIT = 0, -- RNG Casino
 	@ShowBG		BIT = 0,  -- Bingo
-	@ShowKN		BIT = 0  -- Keno	
+	@ShowKN		BIT = 0,  -- Keno
+	@ShowMGC		BIT = 0  -- MicroGamming
 	-- output info
 	,@TotalRows INT=0 OUTPUT
 	,@ErrorCode INT=0 OUTPUT
@@ -58,6 +59,8 @@ Revisions:
    - 20141128@Jim: add more input param @CurrencyID
    - 20150126@Winnie: add base currency GBP 
    - 20150402@Bobby: Apply sporttype matrix & #32844 new 60 bettypes - betradar phase 2
+   - 20150608@Edward: Support MicroGamming
+   - 20150608@Edward: Exclude 3 transactions SOLD/BOUGHT/BetTrade Commission of BetTrade
 */
 BEGIN
 
@@ -107,7 +110,9 @@ BEGIN
 		,EventType
 	)
 	EXEC dbo.Acc_SportBettypeMatrix_Sel @mode = 4
-		
+	
+	DELETE @SportBettype WHERE ProductID = 1 AND Bettype IN (901,902,903)
+
 	DELETE sbt
 	FROM @SportBettype sbt
 	WHERE ProductID		= CASE WHEN @ShowSB	= 0 AND @ShowBA = 0 THEN 1 END
@@ -118,7 +123,8 @@ BEGIN
 		OR ProductID	= CASE WHEN @ShowCS	= 0 THEN 6 END
 		OR ProductID	= CASE WHEN @ShowBG	= 0 THEN 7 END
 		OR ProductID	= CASE WHEN @ShowKN	= 0 THEN 8 END
-		OR ProductID 	> 8 -- not suport for LIC system
+		OR ProductID	= CASE WHEN @ShowMGC= 0 THEN 13 END
+		OR (ProductID 	> 8 AND ProductID <> 13) -- not suport for LIC system
 	-- end filer bettypes by sporttype
 
 
@@ -855,6 +861,56 @@ BEGIN
 			AND t.statusID		IN (0,1) 
 	END
 
+	--MicroGamming
+	IF @ShowMGC = 1
+	BEGIN
+		INSERT INTO #BetListSelRunningByDateMem
+		SELECT
+			203 AS sporttype,
+			@Username AS UserName,
+			t.gameid AS bettype,
+			0 AS leagueID,	
+			t.translogid AS refno,					
+			t.translogid AS transid,
+			0 AS BetID,
+			'' AS matchcode,
+			'' AS Race,
+			0 AS homeID,
+			0 AS awayID,
+			0 AS hdp1, 
+			0 AS hdp2, 
+			t.odds,
+			0 AS modds,
+			--b.status,
+			t.status,
+			t.stake,
+			t.actual_stake, 
+			t.transdate,		
+			'' AS betteam,
+			t.discount,
+			0 AS liveindicator, 
+			0 AS livehomescore, 
+			0 AS liveawayscore, 
+			t.IP AS IP,
+			CONVERT(BIT,0) AS IsNeutral,
+			0 AS oddstype,
+			t.winlostdate,
+			t.currency,
+			0 AS playercomm,
+			'' AS ShowTime,
+			0 AS matchid
+			,'' AS betcheck
+		FROM 
+			translog t WITH (NOLOCK)			
+			INNER JOIN @SportBettype sbt
+			ON t.gameID = sbt.Bettype
+		WHERE
+			t.transdate			>= @FromDate AND t.transdate <= @ToDate 
+			AND t.custid		= @CustID 
+			AND sbt.ProductID	= 13
+			AND sbt.EventType	= 0
+			AND t.statusID		IN (0,1) 
+	END
 	-- check for filtering by currency
 	IF @CurrencyID <> 0 
 	BEGIN 

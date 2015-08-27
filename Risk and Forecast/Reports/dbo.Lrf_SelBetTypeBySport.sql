@@ -26,6 +26,7 @@ Revisions:
    - 20140911@Jim: add new sport Esport
    - 20141017@Jim : Apply for the change in Sporting Solution structure (#24478)
    - 20150415@Jim: support Betradar phase 2
+   - 20150714@Winnie: Exclude 901,902,903
 Param's Explanation:
 	
 */
@@ -82,7 +83,7 @@ SELECT
 				
 INTO #bettype		
 FROM bodb02.dbo.bettype  b WITH (NOLOCK)
-
+WHERE b.typeid NOT IN (901,902,903)
 IF ISNULL(@strSport,'')<>''
 BEGIN
 

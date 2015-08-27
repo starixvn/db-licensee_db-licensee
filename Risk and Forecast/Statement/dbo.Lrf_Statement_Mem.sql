@@ -29,6 +29,7 @@ Revisions:
  -- 20141002@Don: Fixed bug (Redmine ID #23380), if cannot get BU date of a specific customer in table Statement, the error will be happened
  -- 20150130@Winnie: Add base currency GBP  
  -- 20150507@Winnie: fix bug #35365
+ -- 201506125@Winnie: support BetTrade 
 Param's Explanation:   
 • @ErrCode:  
     = 0: add new member successfully.  
@@ -106,7 +107,7 @@ select @fdate = @FromDate, @tdate = @ToDate
                     FROM    bettrans with(nolock)  
                     WHERE   custid = @custid  
                             AND winlostdate BETWEEN @fdate AND @tdate  
-                            
+                            AND bettype <>903
                     GROUP BY winlostdate ,  
                             bettype ,  
                             CASE WHEN statusID IN (101,102) THEN 102  
@@ -149,7 +150,7 @@ select @fdate = @FromDate, @tdate = @ToDate
    where bettype between 1 and 19999   
     and custid=@CustID   
     and winlostdate between @fdate and @MoveBetsDay    
-  
+	AND bettype <>903
             INSERT  INTO @Data  
                     SELECT  0 ,  
     winlostdate ,  
@@ -246,6 +247,7 @@ select @fdate = @FromDate, @tdate = @ToDate
 				AND custid = @custid
 				AND statusID NOT IN (101,102,103) 
 				AND winlostdate between @fdate and @tdate
+				AND bettype <>903
 			GROUP BY winlostdate
   
             INSERT  INTO @Data  

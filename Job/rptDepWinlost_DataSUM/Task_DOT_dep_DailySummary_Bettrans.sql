@@ -1,6 +1,6 @@
 USE [bodb02]
 GO
-ALTER PROCEDURE [dbo].[c]
+ALTER PROCEDURE [dbo].[Task_DOT_dep_DailySummary_Bettrans]
 	@winlostdate datetime
 AS
 /*   
@@ -41,7 +41,6 @@ AS
   - 20150414@Winnie: Re-add transferin/transfer out which have transferAmout=0 for AGBalance
   - 20150618@Patrick: #36263: Fix super balance issue for: AGC, GD & VG
   - 20150625@Patrick: #37769: Remove dummy account & exclude cancel transfer tickets for AG Casino (merge)
-  - 20150630@Jim: add MicroGaming
   - 20150630@Patrick: #38387: Support bettrade
 
  Param's Explanation:  
@@ -70,7 +69,7 @@ BEGIN
 		Transfer3rd money default(0), DrawGame money default(0),   
 		turnover_ba money default (0), comm_ba money default(0), Amountdueto_ba money default(0), Playercomm money default(0), 
 		PartnerId int, Transfer3rdOthers money default(0),Transfer3rdOthers_In money default(0),Transfer3rdOthers_Out money default(0),
-		comm_bettrade money default(0), Amountdueto_bettrade money default(0), comm_bettrade_full money default(0)
+		comm_bettrade money default(0), Amountdueto_bettrade money default(0), comm_bettrade_full money default(1)
 		UNIQUE (custid, PartnerId, currency)  
 	) 
 
@@ -377,7 +376,6 @@ BEGIN
 			WHEN bettype BETWEEN 1101 AND 1199 THEN 162 -- Live Casino
 			WHEN bettype BETWEEN 1201 AND 1299 THEN 180 -- Virtual Sport
 			WHEN bettype BETWEEN 1501 AND 1599 THEN 202 -- Keno
-			WHEN bettype BETWEEN 2001 AND 2099 THEN 203 -- MicroGaming
 			WHEN bettype = 901 THEN -2 -- BetTrade - Sold
 			WHEN bettype = 902 THEN -3 -- BetTrade - Bought
 			WHEN bettype = 903 THEN -4 -- BetTrade - Commission
@@ -409,7 +407,6 @@ BEGIN
 			WHEN bettype BETWEEN 1101 AND 1199 THEN 162 -- Live Casino
 			WHEN bettype BETWEEN 1201 AND 1299  THEN 180 --Virtual Sport
 			WHEN bettype BETWEEN 1501 AND 1599 THEN 202 -- Keno
-			WHEN bettype BETWEEN 2001 AND 2099 THEN 203 -- MicroGaming
 			WHEN bettype = 901 THEN -2 -- BetTrade - Sold
 			WHEN bettype = 902 THEN -3 -- BetTrade - Bought
 			WHEN bettype = 903 THEN -4 -- BetTrade - Commission

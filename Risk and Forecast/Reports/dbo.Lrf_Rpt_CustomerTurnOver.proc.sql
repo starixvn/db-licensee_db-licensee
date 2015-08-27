@@ -1,6 +1,6 @@
 ﻿USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_CustomerTurnOver]    Script Date: 6/3/2015 4:25:44 PM ******/
+/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_CustomerTurnOver_xtest]    Script Date: 7/15/2015 2:03:52 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -59,7 +59,7 @@ Revision:
 	- 20150528@Jim: add more bettype Betradar and Sporting solution (for support multiple oddstype)
 	- 20150603@Bobby: Revise code & improve performance
 	- 20150618@Bobby: Apply pre-caching sumtotal from rptcustomerturnOver_bobby table
-	- 20150713@Bobby: Check existence of global temp table before handling
+	- 20150821@Winnie: KeenOcean revert currency
 	
 Parameter's Explanation:
 	- @ReportBy:  1: daily, 2: monthly
@@ -660,6 +660,8 @@ BEGIN
 			, CASE 
 				WHEN e.exchangeid = 20 THEN 'UUS'
 				WHEN e.exchangeid = 51 THEN 'INH'
+				WHEN e.exchangeid = 66 AND b.winlostdate<'2015-09-01' THEN 'HKD'
+				WHEN e.exchangeid = 66 AND b.winlostdate>='2015-09-01' THEN 'CNY'
 				ELSE e.Code END AS Currency
 			, b.sporttype
 			, CASE WHEN b.bettype BETWEEN 81 AND 120 THEN  N'NG - ' + bt.typenamee
@@ -691,6 +693,8 @@ BEGIN
 			, CASE 
 				WHEN e.exchangeid = 20 THEN 'UUS'
 				WHEN e.exchangeid = 51 THEN 'INH'
+				WHEN e.exchangeid = 66 AND b.winlostdate<'2015-09-01' THEN 'HKD'
+				WHEN e.exchangeid = 66 AND b.winlostdate>='2015-09-01' THEN 'CNY'
 				ELSE e.Code END
 			, b.sporttype
 			, CASE WHEN b.bettype BETWEEN 81 AND 120 THEN  N'NG - ' + bt.typenamee
@@ -729,8 +733,3 @@ BEGIN
 		
 	RETURN;
 END
-GO 
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [vnteam] 
-GO

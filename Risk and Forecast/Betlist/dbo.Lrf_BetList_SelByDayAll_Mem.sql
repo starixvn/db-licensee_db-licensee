@@ -1,4 +1,4 @@
-CREATE PROCEDURE [dbo].[Lrf_BetList_SelByDayAll_Mem]
+ALTER PROCEDURE [dbo].[Lrf_BetList_SelByDayAll_Mem]
 	@LicenseeID 		INT ,
 	@UserID				INT,
 	@custid				INT,
@@ -59,7 +59,10 @@ Revisions:
 	- 20150128@Winnie: Add currency GBP 
 	- 20150413@Bobby: Re-format code  & #32844 new 60 bettypes - betradar phase 2
 	- 20150511@Kiwi: Fixed the bug (RedmineID: #35562)
-
+	- 20150608@Edward: Support MicroGamming
+	- 20150608@Edward: Support Bet Trade
+	- 20150729@Edward: Return betcheck for MicroGamming
+	- 20150806@Edward: Fixed bug return 0 instead of game id for MicroGamming
 Param's Explanation: 
 	+ @transtype: 1-Betting Statement; 2-VOID/Cancelled Bet; 3-Outstanding Bet 
 	
@@ -187,7 +190,7 @@ BEGIN
 
 	DELETE sbt
 	FROM @SportBettype sbt
-	WHERE ProductID	> 8 -- not suport for LIC system
+	WHERE (ProductID	> 8 AND ProductID <> 13) -- not suport for LIC system
 
 	-- end filer bettypes
 
@@ -227,7 +230,7 @@ BEGIN
 			b.actual_stake,
 			(b.winlost-b.actual_stake) AS winlost, 
 			CASE WHEN BA.transid IS NULL THEN - (b.winlost-b.actual_stake) ELSE 0 END AS LicenseeWL ,
-			b.comm,
+			CASE WHEN b.bettype = 903 THEN b.awinlost ELSE b.comm END AS comm,
 			b.playercomm ,
 			b.discount,
 			b.livehomescore, 
@@ -548,6 +551,77 @@ BEGIN
 			AND (sbt.ProductID	IN (1, 2) AND sbt.EventType	= 2)
 			AND b.statusID 		IN (SELECT [statusID] FROM @tmpStatus)
 
+		-- MicroGamming
+		IF( @transtype = 1 OR @transtype = 2 )
+			INSERT INTO @Data 
+			SELECT
+				203 AS sporttype, 
+				0 AS leagueid,
+				0 AS homeID,
+				0 AS awayID,
+				b.bettype,
+				'' AS matchcode,
+				'' AS race,
+				0 AS matchid, 
+				b.transid AS transid, 
+				b.transdate, 
+				b.winlostdate,
+				b.refno, 
+				0 AS betid,
+				0 AS oddsid, 
+				0 AS hdp1, 
+				0 AS hdp2,
+				b.modds, 
+				0 AS Oddstype,
+				b.odds,
+				'' AS betteam,
+				b.status AS status,
+				'' AS betstatus, 
+				b.stake,
+				b.actual_stake,
+				(b.winlost-b.actual_stake) AS winlost, 
+				- (b.winlost-b.actual_stake) AS LicenseeWL ,
+				b.comm AS comm,
+				b.playercomm ,
+				b.discount,
+				0 AS livehomescore, 
+				0 AS liveawayscore, 
+				0 AS liveindicator, 
+				0 AS finalhomescore, 
+				0 AS finalawayscore,
+				0 AS hthomescore, 
+				0 AS htawayscore,
+				--b.username, 
+				b.IP AS IP,
+				b.Username,
+				CONVERT(BIT,0) AS IsNeutral,
+				b.currency,
+				'' AS ShowTime
+				,b.betcheck
+			FROM 
+				dbo.bettrans14 b WITH (NOLOCK)
+				INNER JOIN @SportBettype sbt ON b.bettype = sbt.bettype
+			WHERE
+				b.custid			= @custid
+				AND b.winlostdate	= @fromdate 
+				AND sbt.ProductID	= 13
+				AND sbt.EventType	= 0
+				AND b.statusID		IN (SELECT [statusID] FROM @tmpStatus)
+
+		-- For BetTrade
+		UPDATE betList
+		SET betList.Odds	= originBetList.Odds
+			,betList.Stake	= originBetList.Stake
+			,betList.comm	= CASE WHEN betList.Bettype = 902 THEN commBetList.comm ELSE betList.comm END
+			,betList.BetID	= originBetList.Bettype
+		FROM @Data AS betList
+			INNER JOIN bettrans14 AS originBetList WITH(NOLOCK) ON betList.RefNO = originBetList.TransID
+			INNER JOIN bettrans14 AS commBetList WITH(NOLOCK) ON betList.RefNO = commBetList.RefNO
+		WHERE betList.Sporttype = 1 AND betList.Bettype IN (901, 902)
+			AND commBetList.Bettype = 903
+
+		DELETE @Data WHERE Sporttype = 1 AND Bettype = 903	
+		-- End Bet Trade
 	END
 	ELSE
 	BEGIN
@@ -585,8 +659,13 @@ BEGIN
 			CASE WHEN b.statusID NOT IN (0,1) THEN 
 				CASE WHEN BA.transid IS NULL THEN - (b.winlost-b.actual_stake) ELSE 0 END 
 			ELSE 0 END	AS LicenseeWL ,
-				
-			CASE WHEN b.statusID NOT IN (0,1) THEN b.comm  ELSE 0 END as comm,
+
+			CASE 
+				WHEN b.bettype = 903 THEN b.awinlost 
+				ELSE 
+					CASE WHEN b.statusID NOT IN (0,1) THEN b.comm  ELSE 0 
+					END 
+			END as comm,
 			b.playercomm , 
 			b.discount,
 			b.livehomescore, 
@@ -971,7 +1050,133 @@ BEGIN
 			--AND b.bettype IN (10,31,32,33)
 			AND (sbt.ProductID	IN (1, 2) AND sbt.EventType	= 2)
 			AND b.statusID		IN (SELECT [statusID] FROM @tmpStatus)
-	END
+
+		-- MicroGamming
+		IF(@transtype = 1 or @transtype = 2)
+			INSERT INTO @Data 
+			SELECT
+				203 AS sporttype, 
+				0 AS leagueid,
+				0 AS homeID,
+				0 AS awayID,
+				b.bettype,
+				'' AS matchcode,
+				'' AS race,
+				0 AS matchid, 
+				b.transid AS transid, 
+				b.transdate, 
+				b.winlostdate,
+				b.refno, 
+				0 AS betid,
+				0 AS oddsid, 
+				0 AS hdp1, 
+				0 AS hdp2,
+				b.modds, 
+				0 AS Oddstype,
+				b.odds,
+				'' AS betteam,
+				b.status AS status,
+				0 AS betstatus, 
+				b.stake,
+				b.actual_stake,
+				(b.winlost-b.actual_stake) AS winlost, 
+				- (b.winlost-b.actual_stake) AS LicenseeWL ,
+				b.comm AS comm,
+				b.playercomm ,
+				b.discount,
+				0 AS livehomescore, 
+				0 AS liveawayscore, 
+				0 AS liveindicator, 
+				0 AS finalhomescore, 
+				0 AS finalawayscore,
+				0 AS hthomescore, 
+				0 AS htawayscore,
+				--b.username, 
+				b.IP AS IP,
+				b.Username,
+				CONVERT(BIT,0) AS IsNeutral,
+				b.currency,
+				'' AS ShowTime
+				,b.betcheck
+			FROM 
+				dbo.bettrans b WITH (NOLOCK)
+				INNER JOIN @SportBettype sbt ON b.bettype = sbt.bettype
+			WHERE
+				b.custid			= @custid
+				AND b.winlostdate	= @fromdate 
+				AND sbt.ProductID	= 13
+				AND sbt.EventType	= 0
+				AND b.statusID		IN (SELECT [statusID] FROM @tmpStatus)	
+		ELSE
+			INSERT INTO @Data	 
+			SELECT
+				203 AS sporttype, 
+				0 AS leagueid,
+				0 AS homeID,
+				0 AS awayID,
+				t.gameID AS bettype,
+				'' AS matchcode, 
+				'' AS race,
+				0 AS matchid, 
+				t.translogid, 
+				t.transdate, 
+				t.winlostdate,
+				t.translogid, 
+				0 as betid,
+				0 as oddsid, 
+				0 AS hdp1, 
+				0 AS hdp2, 
+				0 AS modds,
+				0 AS OddsType,
+				t.odds,
+				'' AS betteam,
+				t.status,
+				0 AS betstatus, 
+				t.stake,
+				t.actual_stake,
+				0 AS winlost,
+				0 AS LicenseeWL ,				
+				0 AS comm,
+				0 AS playercomm , 
+				t.discount,
+				0 AS livehomescore, 
+				0 AS liveawayscore, 
+				0 AS liveindicator, 
+				0 AS finalhomescore, 
+				0 AS finalawayscore,
+				0 AS hthomescore, 
+				0 AS htawayscore,
+				t.IP AS IP,
+				t.Username,
+				CONVERT(BIT,0) AS IsNeutral,
+				t.currency,
+				'' AS ShowTime 
+				,'' AS betcheck
+			FROM 
+				dbo.translog t WITH (NOLOCK)
+				INNER JOIN @SportBettype sbt ON t.gameID = sbt.bettype
+			WHERE
+				t.custid			= @custid
+				AND t.winlostdate	= @fromdate
+				AND sbt.ProductID	= 13
+				AND sbt.EventType	= 0
+				AND t.statusID IN (SELECT [statusID] FROM @tmpStatus)
+
+		-- For BetTrade
+		UPDATE betList
+		SET betList.Odds	= originBetList.Odds
+			,betList.Stake	= originBetList.Stake
+			,betList.comm	= CASE WHEN betList.Bettype = 902 THEN commBetList.comm ELSE betList.comm END
+			,betList.BetID	= originBetList.Bettype
+		FROM @Data AS betList
+			INNER JOIN bettrans AS originBetList WITH(NOLOCK) ON betList.RefNO = originBetList.TransID
+			INNER JOIN bettrans AS commBetList WITH(NOLOCK) ON betList.RefNO = commBetList.RefNO
+		WHERE betList.Sporttype = 1 AND betList.Bettype IN (901, 902)
+			AND commBetList.Bettype = 903
+
+		DELETE @Data WHERE Sporttype = 1 AND Bettype = 903	
+		-- End Bet Trade
+	END	
 
 	DECLARE @Today SMALLDATETIME 
 	SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 

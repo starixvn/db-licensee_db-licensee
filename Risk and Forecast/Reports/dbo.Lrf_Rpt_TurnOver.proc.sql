@@ -1,22 +1,25 @@
 ﻿USE [bodb02]
 GO
 ALTER PROCEDURE [dbo].[Lrf_Rpt_TurnOver]
-    @LicenseeID INT,
-    @UserID        INT,
-    @LicenseeType VARCHAR(100) = NULL,
-    @CurrencyID INT = 0,
-    @FromDate        SMALLDATETIME,  
-    @ToDate            SMALLDATETIME,   
-    @username VARCHAR(50) = NULL,
-    @excludeTest BIT = 1,
-    @showSB        BIT=0,  
-    @ShowRB        BIT=0,  
-    @ShowNG        BIT=0, 
-    @ShowLC        BIT=0,
-    @ShowVS        BIT=0,
-    @ShowCS     BIT=0,--- RNG Casino
-    @ShowBG        BIT=0, --- Bingo
-    @ShowKN       BIT=0 -- Keno 
+    @LicenseeID		INT,
+    @UserID			INT,
+    @LicenseeType	VARCHAR(100) = NULL,
+    @CurrencyID		INT = 0,
+    @FromDate       SMALLDATETIME,  
+    @ToDate         SMALLDATETIME,   
+    @username		VARCHAR(50) = NULL,
+    @excludeTest	BIT = 1,
+    @showSB			BIT=0,  
+    @ShowRB			BIT=0,  
+    @ShowNG			BIT=0, 
+    @ShowLC			BIT=0,
+    @ShowVS			BIT=0,
+    @ShowCS			BIT=0,--- RNG Casino
+    @ShowBG			BIT=0, --- Bingo
+    @ShowKN			BIT=0 ,-- Keno 
+	@ShowBT			BIT=0 ,-- Bet Trade 
+	@ShowMGC 		BIT=0
+	
 AS 
 /*
 Created: 20111017@Henry
@@ -43,6 +46,8 @@ Revisions:
    - 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
    - 20150127@Jim: support base on GBP Currency
    - 20150210@Jim: fix bug wrong condition when retrieve data from rptDepWinlostByProduct
+   - 20150612@Jim: support MicroGaming
+   - 20150630@Winnie: support Bet Trade
 Param's Explanation:
     + @excludeTest: remove currency UUS
     + @CurrencyID = 0: get all currency
@@ -92,7 +97,12 @@ IF @ShowVS = 1 INSERT INTO @sporttype(sporttype) VALUES(180)
 IF @ShowCS = 1 INSERT INTO @sporttype(sporttype) VALUES(251)
 IF @ShowBG = 1 INSERT INTO @sporttype(sporttype) VALUES(252)
 IF @ShowKN = 1 INSERT INTO @sporttype(sporttype) VALUES(202)--Keno
-    
+IF @ShowMGC = 1 INSERT INTO @sporttype(sporttype) VALUES(203)
+IF @ShowBT = 1 
+BEGIN
+INSERT INTO @sporttype(sporttype) VALUES(-2)
+INSERT INTO @sporttype(sporttype) VALUES(-3)
+END 
 IF @username <> ''
 BEGIN
     SELECT @CustID = CustID

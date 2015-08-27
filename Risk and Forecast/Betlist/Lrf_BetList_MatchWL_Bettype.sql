@@ -2,7 +2,7 @@
 set QUOTED_IDENTIFIER ON
 go
 
-ALTER PROCEDURE [dbo].[Lrf_BetList_MatchWL_Bettype_xtest]
+ALTER PROCEDURE [dbo].[Lrf_BetList_MatchWL_Bettype]
 	@MatchID INT,
 	@LicenseeID INT, 
 	@UserID	 INT,
@@ -69,6 +69,7 @@ Revisions:
    - 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust    
    - 20150128@Winnie: Add base currency GBP
    - 20150406@Winnie: Apply matrix of sporttype & bettype & Add 60 bettype betradar 
+   - 20150609@Edward: Exclude 3 transactions SOLD/BOUGHT/BetTrade Commission of BetTrade
 Param's Explanation: 
 	
 */
@@ -103,6 +104,8 @@ SELECT @bettype = isnull(@bettype,0)
 DECLARE @SportBettype TABLE(ProductID INT,Bettype INT,EventType INT)
 INSERT INTO @SportBettype
 EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4
+
+DELETE @SportBettype WHERE ProductID = 1 AND Bettype IN (901,902,903)
 
 CREATE TABLE #Data 
 (

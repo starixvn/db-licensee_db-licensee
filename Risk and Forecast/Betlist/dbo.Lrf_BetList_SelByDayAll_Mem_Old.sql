@@ -1,12 +1,3 @@
-USE [bodb02]
-GO
-/****** Object:  StoredProcedure [dbo].[Lrf_BetList_SelByDayAll_Mem_Old]    Script Date: 07/21/2015 04:39:30 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-/****** Object:  Stored Procedure dbo.Lrf_BetList_SelByDayAll_Mem_Old    Script Date: 5/6/2015 3:17:05 AM ******/
-/****** Object:  Stored Procedure dbo.Lrf_BetList_SelByDayAll_Mem_Old    Script Date: 4/24/2015 3:55:41 PM ******/
 ALTER PROCEDURE [dbo].[Lrf_BetList_SelByDayAll_Mem_Old]
 	@LicenseeID 		INT ,
 	@UserID				INT,
@@ -67,6 +58,9 @@ Revisions:
 	- 20140411@Francis: add bettype restriction for VHR
 	- 20150130@Winnie: Add base currency GBP
 	- 20150413@Bobby: Re-format code  & #32844 new 60 bettypes - betradar phase 2
+	- 20150511@Kiwi: Fixed the bug (RedmineID: #35562)
+	- 20150608@Edward: Support MicroGamming
+	- 20150729@Edward: Return betcheck for MicroGamming
 
 Param's Explanation: 
 
@@ -165,6 +159,7 @@ BEGIN
 	DELETE sbt
 	FROM @SportBettype sbt
 	WHERE ProductID > 8 -- not suport for affiliate system
+		AND sbt.ProductID <> 13
 	-- end filer bettypes by sporttype
 	
 	-- single bet
@@ -197,7 +192,7 @@ BEGIN
 		b.actual_stake, 
 		(b.winlost-b.actual_stake) AS winlost, 
 		CASE WHEN BA.transid IS NULL THEN - (b.winlost-b.actual_stake) ELSE 0 END AS LicenseeWL ,
-		b.comm,
+		CASE WHEN b.bettype = 903 THEN b.awinlost ELSE b.comm END AS comm,
 		b.playercomm,
 		b.livehomescore, 
 		b.liveawayscore, 
@@ -222,7 +217,18 @@ BEGIN
 			--AND b.bettype NOT IN (10,31,32,33,1231,1232,1233,1237,1238) --exclude Racing and VHS
 			--AND sbt.ProductID 	NOT IN (2, 5, 6, 7, 8)
 			AND sbt.EventType 	= 1
+	
+	UPDATE betList
+	SET betList.Odds	= originBetList.Odds
+		,betList.Stake	= originBetList.Stake
+		,betList.comm	= CASE WHEN betList.Bettype = 902 THEN ISNULL(commBetList.comm,0) ELSE betList.comm END
+		,betList.BetID	= originBetList.Bettype
+	FROM @Data AS betList
+		INNER JOIN bodb_archive.dbo.bettrans_bk AS originBetList WITH (NOLOCK) ON betList.RefNO = originBetList.TransID
+		LEFT JOIN @Data AS commBetList ON betList.RefNO = commBetList.RefNO AND commBetList.Bettype = 903
+	WHERE betList.Sporttype = 1 AND betList.Bettype IN (901, 902)			
 
+	DELETE @Data WHERE Sporttype = 1 AND Bettype = 903
 
 	--RNG Casino & Bingo		
 	INSERT INTO @Data 
@@ -500,6 +506,58 @@ BEGIN
 		--AND b.bettype IN (10,31,32,33)
 		AND (sbt.ProductID	IN (1, 2) AND sbt.EventType	= 2)
 
+	-- MicroGamming 
+	INSERT INTO @Data 
+	SELECT
+		203 AS sporttype, 
+		0 AS leagueid,
+		0 AS homeID,
+		0 AS awayID,
+		b.bettype,
+		'' AS matchcode,
+		'' AS race,
+		0 AS matchid, 
+		b.transid, 
+		b.transdate, 
+		b.winlostdate,
+		b.refno, 
+		--CASE WHEN b.bettype = 87 THEN b.betid ELSE 0 END, --- 87- High Low for NG: Current Live Ball 
+		b.betid,
+		b.oddsid, 
+		b.hdp1, 
+		b.hdp2,
+		0 AS modds, 
+		0 AS Oddstype,
+		b.Odds,	
+		'' AS betteam,
+		b.status AS status,
+		'' AS betstatus, 
+		b.stake,
+		b.actual_stake, 
+		(b.winlost-b.actual_stake) AS winlost, 
+		- (b.winlost-b.actual_stake) AS LicenseeWL ,
+		b.comm,
+		b.playercomm,
+		b.livehomescore, 
+		b.liveawayscore, 
+		b.liveindicator, 
+		0 AS finalhomescore, 
+		0 AS finalawayscore,
+		0 AS hthomescore, 
+		0 AS htawayscore,
+		b.IP AS IP,
+		@Username,
+		CONVERT(BIT,0) AS IsNeutral,
+		b.currency,
+		'' AS ShowTime 
+		,b.betcheck
+	FROM	bodb_archive.dbo.bettrans_bk b WITH (NOLOCK)
+		INNER JOIN @SportBettype sbt ON b.bettype = sbt.bettype
+	WHERE	b.custid			= @custid 		
+			AND b.winlostdate	= @fromdate 
+			AND sbt.ProductID	= 13
+			AND sbt.EventType	= 0
+
 	SELECT * 
 	INTO #TempExchange 
 	FROM Lrf_f_GetExchangeDaily(@fromdate,@fromdate)
@@ -653,8 +711,10 @@ BEGIN
 	RETURN
 
 END
+GO 
 
-GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_SelByDayAll_Mem_Old] TO [bodbLicenseeNet] AS [dbo]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelByDayAll_Mem_Old] TO [vnteam] AS [dbo]
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelByDayAll_Mem_Old] TO [vnteam]
+GO 
+
+GRANT EXECUTE ON [dbo].[Lrf_BetList_SelByDayAll_Mem_Old] TO [bodbLicenseeNet]
+GO 

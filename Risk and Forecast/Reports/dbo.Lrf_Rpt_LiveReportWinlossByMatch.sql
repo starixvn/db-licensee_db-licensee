@@ -8,6 +8,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportWinlossByMatch]
     @ShowBA			BIT	= 0,
 	@ShowLC 		BIT = 0,
 	@ShowVS			BIT = 0,
+	@ShowMGC 		BIT = 0,-- MicroGamming
     @SportId		INT = 0,
     @FromDate		SMALLDATETIME,  
 	@ToDate			SMALLDATETIME,
@@ -16,7 +17,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportWinlossByMatch]
 AS 
 /*
 Created: 20111031@
-Task : Live Report Summary by Sport
+Task : Live Report Summary by Sport 
 DB: DB052.bodb02
 
 Revisions:
@@ -34,6 +35,8 @@ Revisions:
 	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	- 20150127@Jim: support base on GBP Currency
+	- 20150612@Jim: support MicroGaming
+	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
 Return 3 tables:
 WinlostBySport
 WinlostByCurrency
@@ -99,6 +102,14 @@ BEGIN
 	WHERE (typeid BETWEEN 1201 AND 1299)
 END  
 
+IF @ShowMGC=1 -- MicroGamming
+BEGIN 
+	 
+	INSERT INTO @bettype(bettype)
+	SELECT typeid FROM bettype (NOLOCK)
+	WHERE (typeid BETWEEN 2001 AND 2007)
+END
+
 CREATE TABLE #tmpWinloss (
 	winlostdate		DATETIME,  
 	Currency		INT,
@@ -150,7 +161,7 @@ BEGIN
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
 						  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 			) AND
-			b.bettype NOT IN (9,29) AND
+			b.bettype NOT IN (9,29,901,902,903) AND
 			b.statusID IN (111,112,113) AND
 			b.tpositiontaking=0 AND
 			m.sporttype = @SportId AND
@@ -218,7 +229,7 @@ BEGIN
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
 							OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 			) AND
-			b.bettype NOT IN (9,29) AND
+			b.bettype NOT IN (9,29,901,902,903) AND
 			b.matchid > 0 AND
 			b.statusID IN (111,112,113) AND
 			m.sporttype = @SportId AND
@@ -261,7 +272,7 @@ BEGIN
 		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
 	END
 
-	IF ( @ShowLC=1 OR @ShowVS=1)
+	IF ( @ShowLC=1 OR @ShowVS=1 OR @ShowMGC =1)
 	BEGIN
 		INSERT INTO #tmpWinloss			
 		SELECT
@@ -331,7 +342,7 @@ BEGIN
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
 						  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 			) AND
-			b.bettype NOT IN (9,29) AND
+			b.bettype NOT IN (9,29,901,902,903) AND
 			b.tpositiontaking=0 AND
 			b.statusID IN (111,112,113) AND
 			m.sporttype = @SportId 	AND
@@ -400,7 +411,7 @@ BEGIN
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
 			    	 	  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 			) AND
-			b.bettype NOT IN (9,29) AND
+			b.bettype NOT IN (9,29,901,902,903) AND
 			b.tpositiontaking<>0 AND
 			b.statusID IN (111,112,113) AND
 			m.sporttype = @SportId AND
@@ -441,7 +452,7 @@ BEGIN
 		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
 	END		
 			
-	IF (@ShowLC = 1 OR @ShowVS = 1)
+	IF (@ShowLC = 1 OR @ShowVS = 1 OR @ShowMGC=1)
 	BEGIN		
 		INSERT INTO #tmpWinloss			
 		SELECT

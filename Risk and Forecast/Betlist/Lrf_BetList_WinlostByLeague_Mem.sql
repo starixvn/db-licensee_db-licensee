@@ -10,7 +10,7 @@ GO
 /****** Object:  Stored Procedure dbo.Lrf_BetList_WinlostByLeague_Mem    Script Date: 2/18/2014 10:35:57 PM ******/
 /****** Object:  Stored Procedure dbo.Lrf_BetList_WinlostByLeague_Mem    Script Date: 19/02/2014 11:25:01 AM ******/
 
-ALTER PROCEDURE [dbo].[Lrf_BetList_WinlostByLeague_Mem_xtest] 
+ALTER PROCEDURE [dbo].[Lrf_BetList_WinlostByLeague_Mem] 
 	@CustID INT
 	,@Odds FLOAT = 0
 	,@LeagueID INT
@@ -43,6 +43,7 @@ Revisions:
 	- 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
 	- 20150128@Winnie: Add base currency GBP
 	- 20150408@Winnie: Apply spottype bettype matrix & add 60 bettypes betradar
+	- 20150608@Edward: Exclude 3 transactions SOLD/BOUGHT/BetTrade Commission of BetTrade
 Param's Explanation: 
 	- @CustID : Customer Number
 	- @Odds : decimals odds, default >=0
@@ -81,7 +82,9 @@ DECLARE @TempToDate SMALLDATETIME
 ----Get Sport Bettype Matrix------
 DECLARE @SportBettype TABLE(ProductID INT,Bettype INT,EventType INT)
 INSERT INTO @SportBettype
-EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel_xtest @mode=4 ,@ProductID=1
+EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4 ,@ProductID=1
+
+DELETE @SportBettype WHERE ProductID = 1 AND Bettype IN (901,902,903)
 -------
 DECLARE @TempAg AS TABLE (custid INT)
 

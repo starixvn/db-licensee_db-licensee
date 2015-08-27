@@ -1,6 +1,6 @@
 ﻿USE [bodb02]
 GO
-ALTER PROCEDURE [dbo].[Lrf_Rpt_MobileWinloss]  
+ALTER PROCEDURE [dbo].[Lrf_Rpt_MobileWinloss]   
  @LicenseeID	INT,
  @UserID		INT,
  @CurrencyID	INT = 0,
@@ -14,6 +14,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_MobileWinloss]
  @ShowVS		BIT=0,
  @ShowCS		BIT=0,--- RNG Casino
  @ShowBG		BIT=0,--- Bingo
+ @ShowMGC		BIT=0,
  @SiteType	TINYINT=1, 
  @MoveBetsDay SMALLDATETIME,
  @drawfilter SMALLINT = 1  ,
@@ -46,6 +47,9 @@ AS
 		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 		- 20150127@Jim: support base on GBP Currency
 		- 20150204@Don: remove index hint
+		- 20150612@Jim: support MicroGaming
+		- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
+		- 20150814@Winnie: Keenocean reverse currency 
 	Param's Explanation:  
 	  + @SiteType: 1-WAP; 2-Smartphone; 3: Others;0-All  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -58,6 +62,7 @@ AS
 	  + @ShowLC: Show Live casino
 	  + @ShowCS: Show RNG Casino
 	  + @ShowBG: Show Bingo
+	  + @ShowMGC: Show MicroGamming
 	  + @MoveBetsDay: The day we move tickets to bettrans14
 */
     
@@ -127,9 +132,10 @@ DECLARE @MaxOldDate DATETIME
 DECLARE @VNDCurrencyName VARCHAR(20)
 DECLARE @FDate DATETIME
 DECLARE @TDate DATETIME
+
 --to Deal WITH Parameter Sniffing
 SELECT @FDate=@FromDate,@TDate=@ToDate 
-
+SELECT @VNDCurrencyName = currency FROM exchange (NOLOCK) WHERE ExchangeId = 51
 SELECT  currencyID,LicenseeID into #currency
 FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
 WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
@@ -213,6 +219,16 @@ BEGIN
 	INSERT INTO @bettype(bettype)
 	SELECT typeid FROM bettype (NOLOCK)
 	WHERE typeid =73
+END
+
+IF @ShowMGC=1 -- MicroGamming
+BEGIN 
+	INSERT INTO @sporttype (sporttype)
+	VALUES(203)
+
+	INSERT INTO @bettype(bettype)
+	SELECT typeid FROM bettype (NOLOCK)
+	WHERE (typeid BETWEEN 2001 AND 2007)
 END
 
 INSERT INTO @Exchange (exchangedate,exchangeid,eur,usd,gbp,code)
@@ -331,6 +347,7 @@ BEGIN
 			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 		WHERE
 			b.statusID  IN (111, 112, 113)
+			AND b.bettype NOT IN (901,902,903)
 			AND b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND 1= CASE @SiteType 
 					WHEN 1 THEN CASE WHEN b.betfrom = 'm' THEN 1 ELSE 0 END
@@ -447,6 +464,7 @@ BEGIN
 			AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
 							  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 			) 
+			AND b.bettype NOT IN (901,902,903)
 			AND b.tpositiontaking <>0
 			AND 1= CASE @SiteType 
 				WHEN 1 THEN CASE WHEN b.betfrom = 'm' THEN 1 ELSE 0 END
@@ -458,7 +476,7 @@ BEGIN
 	END
 	
 	
-	IF (@ShowRB=1 or @ShowNG=1 OR @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1)
+	IF (@ShowRB=1 or @ShowNG=1 OR @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowMGC =1 )
 	BEGIN
 		INSERT INTO #WinLoss
 			(CustID, Currency, 
@@ -678,6 +696,7 @@ BEGIN
 			b.Winlostdate BETWEEN @FDate AND @TempToDate  
 			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
+			AND b.bettype NOT IN (901,902,903)
 			AND ISNULL(b.isBA,0) = 1
 			AND 1= CASE @SiteType 
 				WHEN 1 THEN CASE WHEN b.betfrom = 'm' THEN 1 ELSE 0 END
@@ -691,7 +710,7 @@ BEGIN
 			b.statusID	
 			
 	END
-	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR  @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1)
+	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR  @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowMGC =1)
 	BEGIN
 		INSERT INTO #WinLoss
 			(CustID, Currency, 
@@ -793,6 +812,7 @@ BEGIN
 			b.Winlostdate BETWEEN @FDate AND @TempToDate  
 			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
+			AND b.bettype NOT IN (901,902,903)
 			AND ISNULL(b.isBA,0) = 0
 			AND 1= CASE @SiteType 
 				WHEN 1 THEN CASE WHEN b.betfrom = 'm' THEN 1 ELSE 0 END
@@ -813,7 +833,8 @@ SELECT
 	c.username, 
 	SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS nickname,
 	w.Currency ,   
-	case WHEN w.Currency IN (20,51) THEN e.currency ELSE e.Code END as CurrencyName,
+	--case WHEN w.Currency IN (20,51) THEN e.currency ELSE e.Code END as CurrencyName,
+	case WHEN w.Currency =51 THEN @VNDCurrencyName ELSE e.Code END as CurrencyName,
 	
 	SUM(TurnOver)	AS Turnover,
 	SUM(Winlost)		AS Winlost,
@@ -865,10 +886,11 @@ SELECT
 	SUM(CompanyGBP) AS CompanyGBP
 FROM #WinLoss w 
 	INNER JOIN bodb_licensee.dbo.licenseecustinfo c WITH (NOLOCK) ON w.custid = c.custid
-	INNER JOIN Exchange e WITH (NOLOCK) on w.Currency=e.exchangeid
+	INNER JOIN  (SELECT DISTINCT ExchangeId,Code FROM @Exchange) e on w.Currency=e.exchangeid
+	--INNER JOIN Exchange e WITH (NOLOCK) on w.Currency=e.exchangeid
 GROUP BY
 	c.Custid, w.Currency ,c.username,c.username2,
-	CASE WHEN w.Currency IN (20,51) THEN e.currency ELSE e.Code END 
+	CASE WHEN w.Currency =51 THEN @VNDCurrencyName ELSE e.Code END 
 ORDER BY 5,2
 
 DROP TABLE #WinLoss

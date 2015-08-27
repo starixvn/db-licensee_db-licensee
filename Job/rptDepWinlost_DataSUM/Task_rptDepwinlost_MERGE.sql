@@ -80,7 +80,7 @@ UPDATE d
 		,Turnover = s.Turnover
 		,Outstanding = s.Outstanding
 		,Winloss = s.Winloss
-		,ClosingBalance = s.openingbalance + s.Deposit + s.Aff2MemTransfer - s.Withdrawal + s.Bonus + s.Adjustment - s.Outstanding + s.Winloss + s.playercomm + s.Transfer3rd + s.transfer3rdothers - s.comm_bettrade_full
+		,ClosingBalance = s.openingbalance + s.Deposit + s.Aff2MemTransfer - s.Withdrawal + s.Bonus + s.Adjustment - s.Outstanding + s.Winloss + s.playercomm + s.Transfer3rd + s.transfer3rdothers - s.amountdueto_bettrade_full
 		--,recommend = s.recommend
 		--,mrecommend = s.mrecommend
 		--,srecommend = s.srecommend
@@ -108,7 +108,7 @@ insert into dbo.rptDepWinlost
 	turnover_ba, comm_ba, Amountdueto_ba, playercomm, Transfer3rdOthers, Comm_BetTrade, AmountDueTo_BetTrade)
 select winlostdate, custid, s.currency, OpeningBalance, Deposit, Aff2MemTransfer, Withdrawal, Bonus, Adjustment, Transfer3rd,  
 	Turnover, DrawGame, Outstanding, Winloss, recommend, mrecommend, srecommend,   
-	OpeningBalance + Deposit + Aff2MemTransfer - Withdrawal + Bonus + Adjustment - Outstanding + Winloss + playercomm + Transfer3rd - comm_bettrade_full, -- closingbalance  
+	OpeningBalance + Deposit + Aff2MemTransfer - Withdrawal + Bonus + Adjustment - Outstanding + Winloss + playercomm + Transfer3rd - amountdueto_bettrade_full, -- closingbalance  
 	e.actualrate,turnover_ba, comm_ba, Amountdueto_ba , playercomm, Transfer3rdOthers, comm_bettrade, amountdueto_bettrade
 from #TEMP s
 	inner join bodb02.dbo.exchangedailyoanda e with(nolock) on s.currency = e.exchangeid and s.winlostdate = e.exchangedate 

@@ -3,7 +3,7 @@ set QUOTED_IDENTIFIER ON
 go
 
 
-ALTER   PROCEDURE [dbo].[Lrf_Rpt_MobileWinlossDetail]  
+ALTER   PROCEDURE [dbo].[Lrf_Rpt_MobileWinlossDetail]   
  @LicenseeID	INT,
  @UserID		INT,
  @CurrencyID	INT = 0,
@@ -35,6 +35,8 @@ AS
 		-20130618@Jim: Restrict permission of Licensee Users by currency
 		-20130809@Jim: offer Virtual Horse Racing
 		-20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+		- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
+		- 20150814@Winnie: Keenocean reverse currency 
 	Param's Explanation:  
 	  + @SiteType: 1-WAP; 2-Smartphone; 3: Others;0-All  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -100,7 +102,7 @@ DECLARE @FDate DATETIME
 DECLARE @TDate DATETIME
 --to Deal With Parameter Sniffing
 SELECT @FDate=@FromDate,@TDate=@ToDate 
-
+SELECT @VNDCurrencyName = currency FROM exchange (NOLOCK) WHERE ExchangeId = 51
 SELECT  currencyID,LicenseeID into #currency
 FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
 WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
@@ -275,6 +277,7 @@ BEGIN
 		WHERE
 			b.statusID  IN (111, 112, 113)
 			AND b.winlostdate BETWEEN @TempFromDate AND @TDate
+			AND b.bettype NOT IN (901,902,903)
 			AND 1= CASE @SiteType 
 				WHEN 1 THEN CASE WHEN b.betfrom = 'm' THEN 1 ELSE 0 END
 				WHEN 2 THEN CASE WHEN b.betfrom IN ('s','l') THEN 1 ELSE 0 END
@@ -361,6 +364,7 @@ BEGIN
 			b.statusID  IN (111, 112, 113)
 			AND b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) 
+			AND b.bettype NOT IN (901,902,903)
 			AND b.tpositiontaking <>0
 			AND 1= CASE @SiteType 
 				WHEN 1 THEN CASE WHEN b.betfrom = 'm' THEN 1 ELSE 0 END
@@ -541,6 +545,7 @@ BEGIN
 			 b.Winlostdate BETWEEN @FDate AND @TempToDate  
 			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
+			AND b.bettype NOT IN (901,902,903)
 			AND ISNULL(b.isBA,0) = 1
 			AND 1= CASE @SiteType 
 				WHEN 1 THEN CASE WHEN b.betfrom = 'm' THEN 1 ELSE 0 END
@@ -631,6 +636,7 @@ BEGIN
 			 b.Winlostdate BETWEEN @FDate AND @TempToDate  
 			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
+			AND b.bettype NOT IN (901,902,903)
 			AND ISNULL(b.isBA,0) = 0
 			AND 1= CASE @SiteType 
 				WHEN 1 THEN CASE WHEN b.betfrom = 'm' THEN 1 ELSE 0 END
@@ -650,7 +656,7 @@ SELECT
 	c.username,  
 	SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS nickname,
 	w.Currency ,   
-	case when w.Currency IN (20,51) then e.currency ELSE e.Code END as CurrencyName,
+	case when w.Currency=51 then @VNDCurrencyName ELSE e.Code END as CurrencyName,
 	SUM(TurnOver)	AS Turnover,
 	SUM(Winlost)		AS Winlost,
 	SUM(LicenseeWL) AS LicenseeWL,
@@ -687,9 +693,10 @@ SELECT
 	SUM(CompanyUSD) AS CompanyUSD
 FROM #WinLoss w 
 	INNER JOIN bodb_licensee.dbo.licenseecustinfo c WITH (NOLOCK) ON w.custid = c.custid
-	INNER JOIN Exchange e with (nolock) on w.Currency=e.exchangeid
+	--INNER JOIN Exchange e with (nolock) on w.Currency=e.exchangeid
+	INNER JOIN  (SELECT DISTINCT ExchangeId,Code FROM @Exchange) e on w.Currency=e.exchangeid
 GROUP BY
-	w.Currency ,c.username,c.username2,case when w.Currency IN (20,51) then e.currency ELSE e.Code END 
+	w.Currency ,c.username,c.username2,case when w.Currency=51 then @VNDCurrencyName ELSE e.Code END 
 
 
 DROP TABLE #WinLoss

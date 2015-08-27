@@ -86,6 +86,10 @@ Revisions:
 	- 20150114@Winnie: remove hardcode bettype, use spottype bettype matrix
 	- 20150128@Winnie: Add base currency GBP 
 	- 20150410@Jim: support betradar and apply report-bettype matrix
+	- 20150604@Edward: Support MicroGamming
+	- 20150608@Edward: Exclude 3 transactions SOLD/BOUGHT/BetTrade Commission of BetTrade
+	- 20150623@Edward: Fix bug Missing Sporttype for Microgaming tickets (#38450)
+
 Param's Explanation: 	
 */
 SET NOCOUNT ON
@@ -226,6 +230,7 @@ BEGIN
 INSERT INTO #SportBettype
 EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel  @mode=4, @ProductID=1
  
+DELETE #SportBettype WHERE ProductID = 1 AND Bettype IN (901,902,903)
 END   
 --Number Game
 IF @Product='NG'
@@ -274,6 +279,14 @@ IF @Product='KN'
 BEGIN	
 INSERT INTO #SportBettype
 EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4, @ProductID=8
+	 
+END
+
+--MicroGamming
+IF @Product='MGC'
+BEGIN	
+INSERT INTO #SportBettype
+EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4, @ProductID=13
 	 
 END
 
@@ -606,6 +619,12 @@ BEGIN
 		INNER JOIN @hr  r ON b.oddsid=r.OrID
 	WHERE b.bettype IN (31, 32, 33)
 	
+	-- Update data for MicroGamming
+	UPDATE b
+	SET b.sporttype = 203
+	FROM #BetData1 b
+	WHERE b.bettype BETWEEN 2001 AND 2009
+
 	-- Insert and drop temp table
 	INSERT INTO #Data
 	SELECT 
@@ -914,6 +933,12 @@ BEGIN
 	FROM #BetData14 b
 		INNER JOIN @hr  r ON b.oddsid=r.OrID
 	WHERE b.bettype IN (31, 32, 33)	
+
+	-- Update data for MicroGamming
+	UPDATE b
+	SET b.sporttype = 203
+	FROM #BetData14 b
+	WHERE b.bettype BETWEEN 2001 AND 2009
 
 	-- Insert and drop temp table
 	INSERT INTO #Data

@@ -226,11 +226,6 @@ BEGIN
         WHERE (Bettype<31 OR (Bettype>=121 AND Bettype<1000) OR (Bettype>=1301 AND Bettype<1400))
 	        AND tpositiontaking=0
 
-	INSERT INTO @BATransids(transid)
-		SELECT transid
-        FROM dbo.bettrans b (NOLOCK)
-		WHERE RefNo IN (SELECT transid FROM @BATransids)
-
     UPDATE dbo.bettrans 
     SET IsBA=1
     WHERE transid IN (SELECT transid FROM @BATransids)

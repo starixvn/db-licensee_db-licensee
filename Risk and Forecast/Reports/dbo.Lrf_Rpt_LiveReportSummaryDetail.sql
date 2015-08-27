@@ -45,7 +45,8 @@ Revisions:
 	-20150209@Don: remove index hint IX_srecommend
     -20150415@Jim: change to use f_GroupBettype instead of LRF_view_bettype_SS
 	-20150618@Patrick: #36263: Fix super balance isue for: AGC, GD & VG
-
+	-20150612@Jim: support MicroGaming
+	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission 
 Param's Explanation:  
 	@Liveindicator : indicate that whether the report will get live data or not
 		+ 0: Non - Live data only
@@ -125,7 +126,7 @@ BEGIN
 				+ 'INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON t.custid=ba.recommend and b.transid = ba.transid' + CHAR(13) 
 				+ 'WHERE b.winlostdate BETWEEN ''' + convert(VARCHAR(10), @TempFromDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TDate, 120) + '''' + CHAR(13) + 
 			'AND b.statusID IN (111,112,113)'  + CHAR(13) + 
-			'AND b.bettype NOT IN (9,29)'  + CHAR(13) + 
+			'AND b.bettype NOT IN (9,29,901,902,903)'  + CHAR(13) + 
 			'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.liveindicator = 0)' + CHAR(13) + 
 			'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.liveindicator = 1)' + CHAR(13) + 
 			'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13) + 			
@@ -157,6 +158,7 @@ BEGIN
 		OR @ProductCode = 'CS'
 		OR @ProductCode = 'BG'
 		OR @ProductCode = 'KN' --Keno
+		OR @ProductCode = 'MGC' 
 	BEGIN
 		SELECT @sql = @sql + '--Get data from bettrans for non - BA' + CHAR(13)
 
@@ -179,7 +181,7 @@ BEGIN
 			'WHERE b.winlostdate BETWEEN ''' + convert(VARCHAR(10), @TempFromDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TDate, 120) + '''' + CHAR(13) + 
 			'AND b.Bettype <= 19999' + CHAR(13) +
 			'AND b.statusID IN (111,112,113)' + CHAR(13) + 
-			'AND b.bettype NOT IN (9,29)' + CHAR(13) + 
+			'AND b.bettype NOT IN (9,29,901,902,903)' + CHAR(13) + 
 			'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.liveindicator = 0)' + CHAR(13) + 
 			'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.liveindicator = 1)' + CHAR(13) + 
 			'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13) + 
@@ -201,6 +203,8 @@ BEGIN
 					THEN 'AND b.bettype = 73'
 				WHEN @ProductCode = 'KN' --Keno's bettype
 					THEN 'AND b.bettype BETWEEN 1501 AND 1599'
+				WHEN @ProductCode = 'MGC' --MicroGamming's bettype
+					THEN 'AND b.bettype BETWEEN 2001 AND 2007'	
 				ELSE ''
 				END + CHAR(13) + 
 				'GROUP BY  b.winlostdate, t.currency, b.bettype
@@ -233,7 +237,7 @@ BEGIN
 			WHEN @ProductCode = 'NG'
 				THEN 'AND b.bettype BETWEEN 81 AND 120 '
 			WHEN @ProductCode = 'SB'
-				THEN 'AND (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999))'
+				THEN 'AND (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999)) '
 			WHEN @ProductCode = 'RB'
 				THEN 'AND b.bettype BETWEEN 31 AND 33'
 			WHEN @ProductCode = 'LC'
@@ -246,6 +250,8 @@ BEGIN
 				THEN 'AND b.bettype = 73'
 			WHEN @ProductCode = 'KN' --Keno's bettype
 				THEN 'AND b.bettype BETWEEN 1501 AND 1599'
+			WHEN @ProductCode = 'MGC' --MicroGamming's bettype
+					THEN 'AND b.bettype BETWEEN 2001 AND 2007'		
 			ELSE ''
 			END + CHAR(13) + 
 
@@ -269,7 +275,7 @@ BEGIN
 
 		SELECT @sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13) + 'SELECT ' + CHAR(13) + 'b.rptDate,' + CHAR(13) + 'b.currencyID,' + CHAR(13) + 'b.bettype,' + CHAR(13) + 'sum(b.turnover) turnover,' + CHAR(13) + 'sum(b.winloss) winlost,' + CHAR(13) + '0 AS LicenseeWL,' + CHAR(13) + 'SUM (CommissionA) as Comm,' + CHAR(13) + 'SUM (CommissionP  ) as PlayerComm,' + CHAR(13) + '- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13) + 'sum(b.betcount) BetCount' + CHAR(13) + 'FROM bodb_Licensee.dbo.rpt_Betting_BA b WITH ( NOLOCK )' + CHAR(13) + 'INNER JOIN #Currency c ON b.siteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID' + CHAR(13) + 'WHERE b.rptDate BETWEEN ''' + convert(VARCHAR(10), @FDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13) + 
 		'AND b.status NOT IN (-1,103)' + CHAR(13) + 
-		'AND b.bettype NOT IN (9,29)' + CHAR(13) + 
+		'AND b.bettype NOT IN (9,29,901,902,903)' + CHAR(13) + 
 		'AND b.siteID =' + convert(VARCHAR(10), @LicenseeID) + CHAR(13) +
 		'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13) + 
 		'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13) + 
@@ -285,6 +291,7 @@ BEGIN
 
 		SELECT @sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13) + 'SELECT ' + CHAR(13) + 'b.rptDate,' + CHAR(13) + 'b.currencyID,' + CHAR(13) + 'b.bettype,' + CHAR(13) + 'sum(b.turnover) turnover,' + CHAR(13) + 'sum(b.winloss) winlost,' + CHAR(13) + '0 AS LicenseeWL,' + CHAR(13) + 'SUM (CommissionA) as Comm,' + CHAR(13) + 'SUM (CommissionP  ) as PlayerComm,' + CHAR(13) + '- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13) + 'sum(b.betcount) BetCount' + CHAR(13) + 'FROM bodb_LicenseeReport.dbo.rpt_BettingParlay b WITH ( NOLOCK )' + CHAR(13) + 'INNER JOIN #Currency c ON b.siteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID' + CHAR(13) + 'WHERE b.rptDate BETWEEN ''' + convert(VARCHAR(10), @FDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13) + 
 		'AND b.status NOT IN (-1,103)' + CHAR(13) + 
+		'AND b.bettype NOT IN (901,902,903)' + CHAR(13) + 
 		'AND b.isBA = 1' + CHAR(13) + 
 		'AND b.siteID =' + convert(VARCHAR(10), @LicenseeID) + CHAR(13) +
 		'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13) + 
@@ -308,6 +315,7 @@ BEGIN
 		OR @ProductCode = 'CS'
 		OR @ProductCode = 'BG'
 		OR @ProductCode = 'KN'
+		OR @ProductCode = 'MGC' 
 	BEGIN
 		SELECT @sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13) + 
 		'SELECT ' + CHAR(13) + 'b.rptDate,' + CHAR(13) + 
@@ -322,7 +330,7 @@ BEGIN
 		'INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID' + CHAR(13) + 
 		'WHERE b.rptDate BETWEEN ''' + convert(VARCHAR(10), @FDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13) + 
 		'AND b.status NOT IN (-1,103)' + CHAR(13) + 
-		'AND b.bettype NOT IN (9,29,1700,1800,1900)' + CHAR(13) + 
+		'AND b.bettype NOT IN (9,29,1700,1800,1900,901,902,903)' + CHAR(13) + 
 		'AND b.CustomerCategory = -1' + CHAR(13) + 
 		'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13) + 
 		'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13) + 
@@ -337,7 +345,7 @@ BEGIN
 				WHEN @ProductCode = 'NG'
 					THEN 'AND b.bettype BETWEEN 81 AND 120 '
 				WHEN @ProductCode = 'SB'
-					THEN 'AND (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399))'
+					THEN 'AND (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)) '
 				WHEN @ProductCode = 'RB'
 					THEN 'AND b.bettype BETWEEN 31 AND 33'
 				WHEN @ProductCode = 'LC'
@@ -350,6 +358,8 @@ BEGIN
 					THEN 'AND b.bettype = 73'
 				WHEN @ProductCode = 'KN' --keno's bettype
 					THEN 'AND b.bettype BETWEEN 1501 AND 1599'
+				WHEN @ProductCode = 'MGC' --MicroGamming's bettype
+					THEN 'AND b.bettype BETWEEN 2001 AND 2007'	
 				ELSE ''
 				END + CHAR(13) + 'GROUP BY b.rptDate, b.currencyID, b.bettype' + CHAR(13)
 
@@ -367,6 +377,7 @@ BEGIN
 		'INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID' + CHAR(13) + 
 		'WHERE b.rptDate BETWEEN ''' + convert(VARCHAR(10), @FDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13) + 
 		'AND b.status NOT IN (-1,103)' + CHAR(13) + 
+		'AND b.bettype NOT IN (901,902,903)' + CHAR(13) + 
 		'AND b.isBA = 0' + CHAR(13) + 
 		'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13) + 
 		'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13) + 
@@ -386,7 +397,7 @@ BEGIN
 				WHEN @ProductCode = 'NG'
 					THEN 'AND b.bettype BETWEEN 81 AND 120 '
 				WHEN @ProductCode = 'SB'
-					THEN 'AND (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399))'
+					THEN 'AND (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)) '
 				WHEN @ProductCode = 'RB'
 					THEN 'AND b.bettype BETWEEN 31 AND 33'
 				WHEN @ProductCode = 'LC'
@@ -399,6 +410,8 @@ BEGIN
 					THEN 'AND b.bettype = 73'
 				WHEN @ProductCode = 'KN' --keno's bettype
 					THEN 'AND b.bettype BETWEEN 1501 AND 1599'
+				WHEN @ProductCode = 'MGC' --MicroGamming's bettype
+					THEN 'AND b.bettype BETWEEN 2001 AND 2007'	
 				ELSE ''
 				END + CHAR(13) + 'GROUP BY b.rptDate, b.currencyID, b.bettype' + CHAR(13)
 	END

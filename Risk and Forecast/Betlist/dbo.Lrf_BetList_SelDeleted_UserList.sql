@@ -27,6 +27,7 @@ AS
 		 - 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 		 - 20150409@Winnie: Apply spottype bettype matrix 
 		 - 20150514@Winnie: fix bug
+		 - 20150609@Edward : Support BetTrade
 */ 
 SET NOCOUNT ON
 
@@ -38,6 +39,8 @@ WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 DECLARE @SportBettype TABLE(ProductID INT,Bettype INT,EventType INT)
 INSERT INTO @SportBettype
 EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4
+
+DELETE @SportBettype WHERE ProductID = 1 AND Bettype = 903
 ------------
 
 DECLARE @TempAg AS TABLE (custid INT,Currency INT)

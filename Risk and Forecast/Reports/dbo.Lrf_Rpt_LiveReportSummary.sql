@@ -36,8 +36,9 @@ Revisions:
 	-20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 	-20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	-20150127@Jim: support base on GBP Currency
-	-20150618@Patrick: #36263: Fix super balance isue for: AGC, GD & VG
-
+	- 20150618@Patrick: #36263: Fix super balance isue for: AGC, GD & VG
+	- 20150612@Jim: support MicroGaming 
+	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
 Param's Explanation:
 	@IsLive : indicate that whether the report will get live data or not
 			+ 0: Non - Live data only
@@ -73,7 +74,7 @@ IF @CurrencyID IS NULL
 CREATE TABLE #tmpWinloss (
 	winlostdate DATETIME
 	, Currency INT
-	, ProductCode VARCHAR(2)
+	, ProductCode VARCHAR(3)
 	, TurnOver MONEY
 	, Winlost MONEY
 	, LicenseeWL MONEY
@@ -149,7 +150,7 @@ BEGIN
 		, COUNT(b.transid) BetCount
 	FROM dbo.bettrans b WITH (
 			NOLOCK
-		 
+			, INDEX = IX_srecommend
 			)
 	INNER JOIN @TempAg t ON b.recommend = t.custid AND b.Currency = t.Currency 
 	INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON t.custid = BA.recommend
@@ -158,7 +159,7 @@ BEGIN
 		AND b.statusID IN (111, 112, 113)
 		AND (b.liveindicator = @Liveindicator
 			OR @Liveindicator = 2)
-		AND (b.bettype NOT IN (9,29))
+		AND (b.bettype NOT IN (9,29,901,902,903))
 	GROUP BY b.winlostdate
 		, t.currency
 
@@ -176,7 +177,7 @@ BEGIN
 		, COUNT(b.transid) BetCount
 	FROM dbo.bettrans b WITH (
 			NOLOCK
-			 
+			, INDEX = IX_srecommend
 			)
 	INNER JOIN @TempAg t ON b.recommend = t.custid AND b.currency = t.currency
 	INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON t.custid = BA.recommend
@@ -241,7 +242,7 @@ BEGIN
 			OR (b.bettype BETWEEN 121 AND 999)
 			OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 			)
-		AND (b.bettype NOT IN (9,29))
+		AND (b.bettype NOT IN (9,29,901,902,903))
 		AND b.tpositiontaking <> 0
 		AND b.statusID IN (111, 112, 113)
 		AND (b.liveindicator = @Liveindicator
@@ -295,6 +296,8 @@ BEGIN
 				THEN 'BG'
 			WHEN b.bettype BETWEEN 1501 AND 1599 --Keno
 				THEN 'KN'
+			WHEN b.bettype BETWEEN 2001 AND 2007
+				THEN 'MGC'
 			END AS ProductCode
 		, SUM(stake) turnover
 		, SUM(b.winlost - b.actual_stake) AS Winlost
@@ -316,6 +319,7 @@ BEGIN
 			OR b.bettype BETWEEN 1201 AND 1299
 			OR b.bettype IN (71, 73) --RNG CASINO & BINGO
 			OR b.bettype BETWEEN 1501 AND 1599 --Keno
+			OR b.bettype BETWEEN 2001 AND 2007
 			)
 		AND (
 			(b.liveindicator = @Liveindicator
@@ -354,7 +358,7 @@ BEGIN
 		AND ((@Liveindicator = 0 and b.IsLive = 0)
 			OR (@Liveindicator = 1 and b.IsLive = 1)
 			OR (@Liveindicator = 2))
-		AND b.bettype NOT IN (9,29)
+		AND b.bettype NOT IN (9,29,901,902,903)
 	GROUP BY 
 	b.rptdate, b.currencyID
 
@@ -375,6 +379,7 @@ BEGIN
 			INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID
 	WHERE b.rptDate BETWEEN @FDate AND @TempToDate
 		AND b.status NOT IN (-1,103)
+		AND b.Bettype NOT IN (901,902,903)
 		AND b.siteID = @LicenseeID
 		--AND ((@CurrencyID <> 0) OR (b.CurrencyID =@CurrencyID))
 		AND ((@Liveindicator = 0 and b.IsLive = 0)
@@ -405,6 +410,8 @@ BEGIN
 				THEN 'BG'
 			WHEN b.bettype BETWEEN 1501 AND 1599
 				THEN 'KN'
+			WHEN b.bettype BETWEEN 2001 AND 2007
+				THEN 'MGC'	
 		END AS ProductCode,
 		SUM(b.turnover * CASE WHEN b.bettype=33 AND b.status IN (114,115) THEN 0.5 ELSE 1 END) turnover,
 		sum(b.winloss) winlost,
@@ -423,7 +430,7 @@ BEGIN
 				OR (@Liveindicator = 1 and b.IsLive = 1)
 				OR (@Liveindicator = 2))
 			AND b.CustomerCategory = -1
-		AND b.bettype NOT IN (9,29,1700,1800,1900)	
+		AND b.bettype NOT IN (9,29,1700,1800,1900,901,902,903)	
 		GROUP BY b.rptDate, b.currencyID,
 		CASE 
 			WHEN b.bettype BETWEEN 81 AND 120
@@ -442,6 +449,8 @@ BEGIN
 				THEN 'BG'
 			WHEN b.bettype BETWEEN 1501 AND 1599
 				THEN 'KN'
+			WHEN b.bettype BETWEEN 2001 AND 2007
+				THEN 'MGC'		
 		END
 
 		-- parlay for SB
@@ -461,6 +470,7 @@ BEGIN
 				INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID
 		WHERE b.rptDate BETWEEN @FDate AND @TempToDate
 			AND b.status NOT IN (-1,103)
+			AND b.Bettype NOT IN (901,902,903)
 			AND b.siteID =@LicenseeID
 			--AND ((@CurrencyID <> 0) OR (b.CurrencyID =@CurrencyID))
 			AND ((@Liveindicator = 0 and b.IsLive = 0)
@@ -498,6 +508,8 @@ SELECT ProductCode
 			THEN 'Bingo'
 		WHEN 'KN'
 			THEN 'Keno'
+		WHEN 'MGC'
+			THEN 'Microgaming'
 		ELSE 'Sportsbook'
 		END AS ProductName
 	, SUM(TurnOver) AS Turnover

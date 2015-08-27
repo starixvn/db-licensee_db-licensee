@@ -24,7 +24,9 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerBalance]
 	@ShowVS  BIT=0,
 	@ShowCS  BIT=0, -- RNG Casino  
 	@ShowBG  BIT=0 , -- Bingo     
-	@ShowKN   		BIT = 0 -- Keno 
+	@ShowKN   		BIT = 0, -- Keno ,
+	@ShowBT   		BIT = 0, -- Bet Trade ,
+	@ShowMGC BIT=0
   
 AS /*  
 Created: 20120917@Henry  
@@ -44,7 +46,8 @@ Revisions:
    -20140217@Hannah: add condition for @LicenseeType
    -20140305@Florent: support Keno
    -20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
-
+   -20150612@Jim: support MicroGaming
+   -20150630@Winnie: support Bettrade
 Param's Explanation:  
  + @excludeTest: remove currency UUS  
  + @TopCount:   
@@ -88,7 +91,12 @@ IF @ShowVS = 1 INSERT INTO @sporttype(sporttype) VALUES(180)
 IF @ShowCS = 1 INSERT INTO @sporttype(sporttype) VALUES(251) -- RNG Casino  
 IF @ShowBG = 1 INSERT INTO @sporttype(sporttype) VALUES(252) -- Bingo    
 IF @ShowKN = 1 INSERT INTO @sporttype(sporttype) VALUES(202) -- Keno    
-
+IF @ShowMGC = 1 INSERT INTO @sporttype(sporttype) VALUES(203) -- MicroGaming
+IF @ShowBT = 1 
+BEGIN
+INSERT INTO @sporttype(sporttype) VALUES(-2) -- 901
+INSERT INTO @sporttype(sporttype) VALUES(-3) -- 902
+END
 
 SELECT CurrencyID,LicenseeID
 INTO #Currency

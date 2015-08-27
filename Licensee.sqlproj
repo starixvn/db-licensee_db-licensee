@@ -1,0 +1,391 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <SccProvider>SAK</SccProvider>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccProjectName>SAK</SccProjectName>
+    <UpgradedFromDBP>True</UpgradedFromDBP>
+    <Name>dbpProjectName</Name>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectVersion>4.1</ProjectVersion>
+    <ProjectGuid>{9d1a845f-99e1-4000-876d-4492085fb297}</ProjectGuid>
+    <DSP>Microsoft.Data.Tools.Schema.Sql.Sql120DatabaseSchemaProvider</DSP>
+    <OutputType>Database</OutputType>
+    <RootPath>
+    </RootPath>
+    <SccProvider>SAK</SccProvider>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccProjectName>SAK</SccProjectName>
+    <UpgradedFromDBP>True</UpgradedFromDBP>
+    <RootNamespace>dbpProjectName</RootNamespace>
+    <PostUpgradeAddToSCC>;D:\GitLab\db-licensee\db-licensee\Licensee.sqlproj;D:\GitLab\db-licensee\db-licensee\Connections.txt</PostUpgradeAddToSCC>
+    <SccProvider>SAK</SccProvider>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccProjectName>SAK</SccProjectName>
+    <UpgradedFromDBP>True</UpgradedFromDBP>
+    <AssemblyName>dbpProjectName</AssemblyName>
+    <ModelCollation>1033, CI</ModelCollation>
+    <DefaultFileStructure>BySchemaAndSchemaType</DefaultFileStructure>
+    <DeployToDatabase>True</DeployToDatabase>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetLanguage>CS</TargetLanguage>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <SqlServerVerification>False</SqlServerVerification>
+    <IncludeCompositeObjects>True</IncludeCompositeObjects>
+    <TargetDatabaseSet>True</TargetDatabaseSet>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>bin\Release\</OutputPath>
+    <BuildScriptName>$(MSBuildProjectName).sql</BuildScriptName>
+    <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <DefineDebug>false</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>bin\Debug\</OutputPath>
+    <BuildScriptName>$(MSBuildProjectName).sql</BuildScriptName>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <DefineDebug>true</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">11.0</VisualStudioVersion>
+    <!-- Default to the v11.0 targets path if the targets file for the current VS version is not found -->
+    <SSDTExists Condition="Exists('$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets')">True</SSDTExists>
+    <VisualStudioVersion Condition="'$(SSDTExists)' == ''">11.0</VisualStudioVersion>
+  </PropertyGroup>
+  <Import Condition="'$(SQLDBExtensionsRefPath)' != ''" Project="$(SQLDBExtensionsRefPath)\Microsoft.Data.Tools.Schema.SqlTasks.targets" />
+  <Import Condition="'$(SQLDBExtensionsRefPath)' == ''" Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets" />
+  <ItemGroup>
+    <Folder Include="Properties" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Billing System" />
+    <Folder Include="Billing System\Login-On_User" />
+    <Folder Include="Boping_Kahnawake" />
+    <Folder Include="Boping_Kahnawake\KBT" />
+    <Folder Include="Boping_Kahnawake\KGC" />
+    <Folder Include="Job" />
+    <Folder Include="Log" />
+    <Folder Include="PIH_Kahnawake" />
+    <Folder Include="PIH_Kahnawake\KBT" />
+    <Folder Include="PIH_Kahnawake\KGC" />
+    <Folder Include="Risk and Forecast" />
+    <Folder Include="Risk and Forecast\Betlist" />
+    <Folder Include="Risk and Forecast\Customer" />
+    <Folder Include="Risk and Forecast\CustomerLog" />
+    <Folder Include="Risk and Forecast\Domain" />
+    <Folder Include="Risk and Forecast\Forecast" />
+    <Folder Include="Risk and Forecast\Function" />
+    <Folder Include="Risk and Forecast\Internal Integration" />
+    <Folder Include="Risk and Forecast\LicenseeFunction" />
+    <Folder Include="Risk and Forecast\Login-On_User" />
+    <Folder Include="Risk and Forecast\Monitor" />
+    <Folder Include="Risk and Forecast\PlayerComm" />
+    <Folder Include="Risk and Forecast\Reports" />
+    <Folder Include="Risk and Forecast\Setting" />
+    <Folder Include="Risk and Forecast\Statement" />
+    <Folder Include="Risk and Forecast\Statistic" />
+    <Folder Include="Risk and Forecast\TotalBets" />
+    <Folder Include="Risk and Forecast\User-Product Control" />
+    <Folder Include="Properties" />
+  </ItemGroup>
+  <ItemGroup>
+    <NotInBuild Include="Connections.txt" />
+    <NotInBuild Include="Billing System\dbo.Lbs_Rpt_GetTotalTicket.sql" />
+    <NotInBuild Include="Billing System\Login-On_User\dbo.Lbs_UserLogin.sql" />
+    <NotInBuild Include="Boping_Kahnawake\KBT\Boping_BettransSel.sql" />
+    <NotInBuild Include="Boping_Kahnawake\KBT\Boping_ExchangeDailyOandaSel.sql" />
+    <NotInBuild Include="Boping_Kahnawake\KBT\Boping_rpt_BettingSel.sql" />
+    <NotInBuild Include="Boping_Kahnawake\KBT\Task_Gen_rpt_Betting_bettrans.sql" />
+    <NotInBuild Include="Boping_Kahnawake\KBT\Task_Gen_rpt_Betting_bettrans14.sql" />
+    <NotInBuild Include="Boping_Kahnawake\KBT\View_SiteList.sql" />
+    <NotInBuild Include="Boping_Kahnawake\KGC\Boping_BettransIns.sql" />
+    <NotInBuild Include="Boping_Kahnawake\KGC\Boping_ExchangeDailyOandaIns.sql" />
+    <NotInBuild Include="Boping_Kahnawake\KGC\Boping_rpt_BettingIns.sql" />
+    <NotInBuild Include="Boping_Kahnawake\KGC\Boping_Rpt_Winloss.sql" />
+    <NotInBuild Include="Boping_Kahnawake\KGC\Boping_Users_CheckIn.sql" />
+    <NotInBuild Include="Boping_Kahnawake\KGC\Boping_Users_GetByUserID.sql" />
+    <NotInBuild Include="Boping_Kahnawake\KGC\Boping_Users_GetByUsername.sql" />
+    <NotInBuild Include="Boping_Kahnawake\KGC\Boping_Users_GetSalt.sql" />
+    <NotInBuild Include="Boping_Kahnawake\KGC\Boping_Users_Login.sql" />
+    <NotInBuild Include="Boping_Kahnawake\KGC\Boping_Users_Logout.sql" />
+    <NotInBuild Include="Boping_Kahnawake\KGC\Boping_Users_Modify.sql" />
+    <NotInBuild Include="Boping_Kahnawake\KGC\Boping_Users_ReCheckIn.sql" />
+    <NotInBuild Include="Boping_Kahnawake\KGC\Boping_Users_ResetPassword.sql" />
+    <NotInBuild Include="Boping_Kahnawake\KGC\Boping_Users_UpdatePassword.sql" />
+    <NotInBuild Include="Boping_Kahnawake\KGC\OAS_Users_GetAll.sql" />
+    <NotInBuild Include="Boping_Kahnawake\KGC\Task_bettransUPD.sql" />
+    <NotInBuild Include="Job\dbo.Task_Licensee_ClearLogin.sql" />
+    <NotInBuild Include="Job\dbo.Task_Licensee_ClearLogin_Loop.sql" />
+    <NotInBuild Include="Log\Lrf_CustomerSettingLog_Sel.sql" />
+    <NotInBuild Include="Log\Lrf_GroupCommLog_Sel.sql" />
+    <NotInBuild Include="Log\Lrf_UserLog_LoginSel.sql" />
+    <NotInBuild Include="Log\WriteLog_UserLog_Login.sql" />
+    <NotInBuild Include="PIH_Kahnawake\KBT\PIH_BettransSel.sql" />
+    <NotInBuild Include="PIH_Kahnawake\KBT\PIH_ExchangeDailyOandaSel.sql" />
+    <NotInBuild Include="PIH_Kahnawake\KBT\PIH_rpt_BettingSel.sql" />
+    <NotInBuild Include="PIH_Kahnawake\KBT\Task_Gen_rpt_Betting_bettrans.sql" />
+    <NotInBuild Include="PIH_Kahnawake\KBT\Task_Gen_rpt_Betting_bettrans14.sql" />
+    <NotInBuild Include="PIH_Kahnawake\KBT\View_SiteList.sql" />
+    <NotInBuild Include="PIH_Kahnawake\KGC\OAS_Users_GetAll.sql" />
+    <NotInBuild Include="PIH_Kahnawake\KGC\PIH_BettransIns.sql" />
+    <NotInBuild Include="PIH_Kahnawake\KGC\PIH_ExchangeDailyOandaIns.sql" />
+    <NotInBuild Include="PIH_Kahnawake\KGC\PIH_rpt_BettingIns.sql" />
+    <NotInBuild Include="PIH_Kahnawake\KGC\PIH_Rpt_Winloss.sql" />
+    <NotInBuild Include="PIH_Kahnawake\KGC\PIH_Users_CheckIn.sql" />
+    <NotInBuild Include="PIH_Kahnawake\KGC\PIH_Users_GetByUserID.sql" />
+    <NotInBuild Include="PIH_Kahnawake\KGC\PIH_Users_GetByUsername.sql" />
+    <NotInBuild Include="PIH_Kahnawake\KGC\PIH_Users_GetSalt.sql" />
+    <NotInBuild Include="PIH_Kahnawake\KGC\PIH_Users_Login.sql" />
+    <NotInBuild Include="PIH_Kahnawake\KGC\PIH_Users_Logout.sql" />
+    <NotInBuild Include="PIH_Kahnawake\KGC\PIH_Users_Modify.sql" />
+    <NotInBuild Include="PIH_Kahnawake\KGC\PIH_Users_ReCheckIn.sql" />
+    <NotInBuild Include="PIH_Kahnawake\KGC\PIH_Users_ResetPassword.sql" />
+    <NotInBuild Include="PIH_Kahnawake\KGC\PIH_Users_UpdatePassword.sql" />
+    <NotInBuild Include="PIH_Kahnawake\KGC\Task_bettransUPD.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\dbo.Lrf_BetList_LiveReport_SelWinlossByMatch.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\dbo.Lrf_BetList_LiveReport_SelWinlossNumberGame.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\dbo.Lrf_BetList_LiveReport_SelWinlossOutright.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\dbo.Lrf_BetList_LiveReport_SelWinlossParlay.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\dbo.Lrf_BetList_LiveReport_SelWinlossRacing.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\dbo.Lrf_BetList_SelAllByDate_Mem.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\dbo.Lrf_BetList_SelAllByDateHR.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\dbo.Lrf_BetList_SelByDayAll_Mem.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\dbo.Lrf_BetList_SelByDayAll_Mem_Old.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\dbo.Lrf_BetList_SelCombinationParlayDetail.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\dbo.Lrf_BetList_SelDeleted.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\dbo.Lrf_BetList_SelDeleted_UserList.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\dbo.Lrf_BetList_SelMatchResult.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\dbo.Lrf_BetList_SelMatchResultNumberGame.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\dbo.Lrf_BetList_SelMatchResultParlay.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\dbo.Lrf_BetList_SelParlayDetail.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\dbo.Lrf_BetList_SelRunningByBettype.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\dbo.Lrf_BetList_SelRunningByBettypeMatch.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\dbo.Lrf_BetList_SelRunningByDate_Mem.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\dbo.Lrf_BetList_SelWinloss_Mem.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\dbo.Lrf_BetList_SelWinlossByBettypeMatch.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\dbo.Lrf_BetList_SelWinLossByDate_Mem.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\dbo.Lrf_BetList_SelWinlossDaily.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\dbo.Lrf_BetList_SelWinlossHR.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\dbo.Lrf_BetList_SelWinlossHRFull.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\dbo.Lrf_BetList_SelWinlossLiveCasino.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\dbo.Lrf_BetList_SelWinlossNumberGame.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\dbo.Lrf_BetList_SelWinlossOutright.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\dbo.Lrf_BetList_SelWinlossParlay.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\dbo.Lrf_BetList_SelWinlossVirtualSport.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\dbo.Lrf_BetList_SelWinlostByMatch.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\dbo.Lrf_BetList_SelWinlostRacing.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\dbo.Lrf_BettransSelBetSlip.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\dbo.Lrf_BettransSelBetSlip_Old.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\Lrf_BetList_MatchWL_Bettype.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\Lrf_BetList_MatchWL_Outright.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\Lrf_BetList_MatchWL_Parlay.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\Lrf_BetList_MatchWL_Racing.sql" />
+    <NotInBuild Include="Risk and Forecast\Betlist\Lrf_BetList_MatchWL_SelWinlossParlay.sql" />
+    <NotInBuild Include="Risk and Forecast\Customer\dbo.Lrf_CustomerInfoIns.sql" />
+    <NotInBuild Include="Risk and Forecast\Customer\dbo.Lrf_CustomerLoginInfo.sql" />
+    <NotInBuild Include="Risk and Forecast\Customer\dbo.Lrf_CustomerSel.sql" />
+    <NotInBuild Include="Risk and Forecast\Customer\dbo.Lrf_CustomerSelBalance.sql" />
+    <NotInBuild Include="Risk and Forecast\Customer\dbo.Lrf_CustomerSelCheckBelonging.sql" />
+    <NotInBuild Include="Risk and Forecast\Customer\dbo.Lrf_CustomerSelCheckEnable.sql" />
+    <NotInBuild Include="Risk and Forecast\Customer\dbo.Lrf_CustomerSelEditCustomer.sql" />
+    <NotInBuild Include="Risk and Forecast\Customer\dbo.Lrf_CustomerSelEditNG.sql" />
+    <NotInBuild Include="Risk and Forecast\Customer\dbo.Lrf_CustomerSelEditRB.sql" />
+    <NotInBuild Include="Risk and Forecast\Customer\dbo.Lrf_CustomerSelStatus.sql" />
+    <NotInBuild Include="Risk and Forecast\Customer\dbo.Lrf_CustomerSelUserSearch.sql" />
+    <NotInBuild Include="Risk and Forecast\Customer\dbo.Lrf_CustomerUpdClosed.sql" />
+    <NotInBuild Include="Risk and Forecast\Customer\dbo.Lrf_CustomerUpdMember_All.sql" />
+    <NotInBuild Include="Risk and Forecast\Customer\dbo.Lrf_CustomerUpdSuspended.sql" />
+    <NotInBuild Include="Risk and Forecast\Customer\dbo.Lrf_CustomerUpdUserSearch.sql" />
+    <NotInBuild Include="Risk and Forecast\Customer\dbo.Lrf_LicenseeCustSel.sql" />
+    <NotInBuild Include="Risk and Forecast\Customer\dbo.Lrf_LicenseeSel.sql" />
+    <NotInBuild Include="Risk and Forecast\Customer\dbo.Lrf_UserPasswordUpd.sql" />
+    <NotInBuild Include="Risk and Forecast\Customer\dbo.Lrf_UserSaltSel.sql" />
+    <NotInBuild Include="Risk and Forecast\CustomerLog\dbo.Lrf_UserLog_LoginSel.sql" />
+    <NotInBuild Include="Risk and Forecast\Domain\1.DomainCreateScript.sql" />
+    <NotInBuild Include="Risk and Forecast\Domain\2.ServiceTaskCreate.sql" />
+    <NotInBuild Include="Risk and Forecast\Domain\Lrf_DomainSel.sql" />
+    <NotInBuild Include="Risk and Forecast\Domain\Lrf_DomainStatusUpd.sql" />
+    <NotInBuild Include="Risk and Forecast\Forecast\dbo.Lrf_Forecast_OddsSelTopByMatch.sql" />
+    <NotInBuild Include="Risk and Forecast\Forecast\dbo.Lrf_Forecast_Sel1X2.sql" />
+    <NotInBuild Include="Risk and Forecast\Forecast\dbo.Lrf_Forecast_SelByLeague.sql" />
+    <NotInBuild Include="Risk and Forecast\Forecast\dbo.Lrf_Forecast_SelHDP.sql" />
+    <NotInBuild Include="Risk and Forecast\Forecast\dbo.Lrf_Forecast_SelOU.sql" />
+    <NotInBuild Include="Risk and Forecast\Forecast\dbo.Lrf_Forecast1x2_SelByLeague.sql" />
+    <NotInBuild Include="Risk and Forecast\Forecast\dbo.Lrf_LeagueSelRunning.sql" />
+    <NotInBuild Include="Risk and Forecast\Function\Lrf_f_EncodeXMLValue .sql" />
+    <NotInBuild Include="Risk and Forecast\Function\Lrf_f_GetChoice.sql" />
+    <NotInBuild Include="Risk and Forecast\Function\Lrf_f_GetCurrencybyUser.sql" />
+    <NotInBuild Include="Risk and Forecast\Function\Lrf_f_GetCustId.sql" />
+    <NotInBuild Include="Risk and Forecast\Function\Lrf_f_GetExchangeDaily.sql" />
+    <NotInBuild Include="Risk and Forecast\Function\Lrf_f_GetOddsByBettype.sql" />
+    <NotInBuild Include="Risk and Forecast\Function\Lrf_f_ShowOddsByBettype.sql" />
+    <NotInBuild Include="Risk and Forecast\Function\Lrf_f_TranslateMsg.sql" />
+    <NotInBuild Include="Risk and Forecast\Internal Integration\dbo.Lrf_GetDBCurrentDatetime.sql" />
+    <NotInBuild Include="Risk and Forecast\Internal Integration\dbo.Lrf_InternalLogin.sql" />
+    <NotInBuild Include="Risk and Forecast\Internal Integration\dbo.Lrf_SSOLinkSel.sql" />
+    <NotInBuild Include="Risk and Forecast\Internal Integration\dbo.Lrf_SyncInternalUser.sql" />
+    <NotInBuild Include="Risk and Forecast\Internal Integration\dbo.Lrf_UpdateUser.sql" />
+    <NotInBuild Include="Risk and Forecast\LicenseeFunction\1.Create.Functions.sql" />
+    <NotInBuild Include="Risk and Forecast\LicenseeFunction\2.Create.LicenseeUserFunctions.sql" />
+    <NotInBuild Include="Risk and Forecast\LicenseeFunction\3.Create.LicenseeFunctions.sql" />
+    <NotInBuild Include="Risk and Forecast\LicenseeFunction\4.Insert.Functions.sql" />
+    <NotInBuild Include="Risk and Forecast\LicenseeFunction\5.Insert.LicenseeFunctions.sql" />
+    <NotInBuild Include="Risk and Forecast\LicenseeFunction\6.Insert.LicenseeUserFunctions.sql" />
+    <NotInBuild Include="Risk and Forecast\LicenseeFunction\7.InsertNewFunction.sql" />
+    <NotInBuild Include="Risk and Forecast\LicenseeFunction\dbo.Lrf_CurrencyCustIns.sql" />
+    <NotInBuild Include="Risk and Forecast\LicenseeFunction\dbo.Lrf_CurrencyCustSel.sql" />
+    <NotInBuild Include="Risk and Forecast\LicenseeFunction\dbo.LRF_FunctionsDel.sql" />
+    <NotInBuild Include="Risk and Forecast\LicenseeFunction\dbo.LRF_FunctionsIns.sql" />
+    <NotInBuild Include="Risk and Forecast\LicenseeFunction\dbo.LRF_FunctionsSel.sql" />
+    <NotInBuild Include="Risk and Forecast\LicenseeFunction\dbo.LRF_LicenseeFunctionsIns.sql" />
+    <NotInBuild Include="Risk and Forecast\LicenseeFunction\dbo.LRF_LicenseeFunctionsSel.sql" />
+    <NotInBuild Include="Risk and Forecast\LicenseeFunction\dbo.LRF_LicenseeUserFunctionsDel.sql" />
+    <NotInBuild Include="Risk and Forecast\LicenseeFunction\dbo.LRF_LicenseeUserFunctionsIns.sql" />
+    <NotInBuild Include="Risk and Forecast\LicenseeFunction\dbo.LRF_LicenseeUserFunctionsSel.sql" />
+    <NotInBuild Include="Risk and Forecast\LicenseeFunction\dbo.Lrf_SelCurrencyByLicenseeUser.sql" />
+    <NotInBuild Include="Risk and Forecast\LicenseeFunction\dbo.LRF_UserFullPermissionSel.sql" />
+    <NotInBuild Include="Risk and Forecast\Login-On_User\dbo.Lrf_CheckIn.sql" />
+    <NotInBuild Include="Risk and Forecast\Login-On_User\dbo.Lrf_ReCheckIn.sql" />
+    <NotInBuild Include="Risk and Forecast\Login-On_User\dbo.Lrf_UserLogout.sql" />
+    <NotInBuild Include="Risk and Forecast\Login-On_User\Lrf_UserLogin.sql" />
+    <NotInBuild Include="Risk and Forecast\Monitor\dbo.Lrf_Monitor_BetlistSel.sql" />
+    <NotInBuild Include="Risk and Forecast\Monitor\dbo.Lrf_Monitor_BetlistSel_ByLeague.sql" />
+    <NotInBuild Include="Risk and Forecast\Monitor\dbo.Lrf_Monitor_BetlistSel_New.sql" />
+    <NotInBuild Include="Risk and Forecast\Monitor\dbo.Lrf_Monitor_MatchSel.sql" />
+    <NotInBuild Include="Risk and Forecast\Monitor\dbo.Lrf_Monitor_OutrightSel.sql" />
+    <NotInBuild Include="Risk and Forecast\PlayerComm\dbo.Lrf_CustomerMoveGroupComm.sql" />
+    <NotInBuild Include="Risk and Forecast\PlayerComm\dbo.Lrf_CustomerRemoveGroupComm.sql" />
+    <NotInBuild Include="Risk and Forecast\PlayerComm\dbo.Lrf_CustomerSetDefaultComm.sql" />
+    <NotInBuild Include="Risk and Forecast\PlayerComm\dbo.Lrf_CustomerUpdMemberComm.sql" />
+    <NotInBuild Include="Risk and Forecast\PlayerComm\dbo.Lrf_CustomerUpdMemberComm_Direct.sql" />
+    <NotInBuild Include="Risk and Forecast\PlayerComm\dbo.Lrf_CustomerUpdMemberComm_Main.sql" />
+    <NotInBuild Include="Risk and Forecast\PlayerComm\dbo.Lrf_GroupCommCheckByName.sql" />
+    <NotInBuild Include="Risk and Forecast\PlayerComm\dbo.Lrf_GroupCommGetById.sql" />
+    <NotInBuild Include="Risk and Forecast\PlayerComm\dbo.Lrf_LicenseeCustCommSel.sql" />
+    <NotInBuild Include="Risk and Forecast\PlayerComm\dbo.Lrf_LicenseeCustCommUpd.sql" />
+    <NotInBuild Include="Risk and Forecast\PlayerComm\dbo.Lrf_LicenseeGroupCommDel.sql" />
+    <NotInBuild Include="Risk and Forecast\PlayerComm\dbo.Lrf_LicenseeGroupCommIns.sql" />
+    <NotInBuild Include="Risk and Forecast\PlayerComm\dbo.Lrf_LicenseeGroupCommSel.sql" />
+    <NotInBuild Include="Risk and Forecast\PlayerComm\dbo.Lrf_LicenseeGroupCommUpd.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_BettypesGetAll.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_CheckHRAllowedCurrency.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_DW_SportSelByDate.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_GET_ExchangeRateOANDA.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_GetExchangeRate.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_LeagueMatchSelRunning.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Result_LeagueSelByDate.StoredProcedure.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Result_MatchSelByLeague.StoredProcedure.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Result_MatchSelNumberGameByLeague.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Result_Outright.proc.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Result_RaceSelByMeeting.proc.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Result_SportSelByDate.proc.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Rpt_Bonus.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Rpt_BonusDetail.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Rpt_CommByBettype_HR.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Rpt_CustomerBalance.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Rpt_CustomerPerformance.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Rpt_DepositWithdrawal.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Rpt_LicWinloss.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Rpt_LicWinlossDetail.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Rpt_LicWinlossDetail_Ag.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Rpt_LiveReportBySport.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Rpt_LiveReportSummary.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Rpt_LiveReportSummaryDetail.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Rpt_LiveReportWinlossByMatch.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Rpt_MatchSelResultEntered.StoredProcedure.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Rpt_MatchWinLoss.StoredProcedure.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Rpt_MatchWinloss_ExportExcel.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Rpt_MatchWinLossByBettype.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Rpt_MatchWinLossByOutrightParlay.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Rpt_MatchWinLossDetail.StoredProcedure.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Rpt_MobileWinloss.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Rpt_MobileWinlossDetail.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Rpt_MobileWinlossDetail_Ag.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Rpt_MonthlyLicCurrencyPlay.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Rpt_Outstanding.StoredProcedure.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Rpt_TurnOver.proc.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Rpt_WinLoss.StoredProcedure.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Rpt_WinLossByBettype.proc.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Rpt_WinlossByProduct.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Rpt_WinlossByProductDetail.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Rpt_WinlossByProductDetail_Ag.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_Rpt_WinlostRacing.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_SelBalanceUpDay.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_SelCurrency.sql" />
+    <NotInBuild Include="Risk and Forecast\Reports\dbo.Lrf_SportsGetAll.sql" />
+    <NotInBuild Include="Risk and Forecast\Setting\dbo.Lrf_CustomerSelMember_MinMaxBet180.sql" />
+    <NotInBuild Include="Risk and Forecast\Setting\dbo.Lrf_CustomerUpdDanger.sql" />
+    <NotInBuild Include="Risk and Forecast\Setting\dbo.Lrf_CustomerUpdMaxPerBall.sql" />
+    <NotInBuild Include="Risk and Forecast\Setting\dbo.Lrf_CustomerUpdMaxPerMatch.sql" />
+    <NotInBuild Include="Risk and Forecast\Setting\dbo.Lrf_CustomerUpdMaxPerMatch151_31.sql" />
+    <NotInBuild Include="Risk and Forecast\Setting\dbo.Lrf_CustomerUpdMaxPerMatch151_41.sql" />
+    <NotInBuild Include="Risk and Forecast\Setting\dbo.Lrf_CustomerUpdMaxPerMatch151_51.sql" />
+    <NotInBuild Include="Risk and Forecast\Setting\dbo.Lrf_CustomerUpdMaxPerMatch152_41.sql" />
+    <NotInBuild Include="Risk and Forecast\Setting\dbo.Lrf_CustomerUpdMaxPerMatch152_51.sql" />
+    <NotInBuild Include="Risk and Forecast\Setting\dbo.Lrf_CustomerUpdMaxPerMatch153_51.sql" />
+    <NotInBuild Include="Risk and Forecast\Setting\dbo.Lrf_CustomerUpdMember_MinMaxBet.sql" />
+    <NotInBuild Include="Risk and Forecast\Setting\dbo.Lrf_CustomerUpdMember_MinMaxBet151_31.sql" />
+    <NotInBuild Include="Risk and Forecast\Setting\dbo.Lrf_CustomerUpdMember_MinMaxBet151_41.sql" />
+    <NotInBuild Include="Risk and Forecast\Setting\dbo.Lrf_CustomerUpdMember_MinMaxBet151_51.sql" />
+    <NotInBuild Include="Risk and Forecast\Setting\dbo.Lrf_CustomerUpdMember_MinMaxBet152_41.sql" />
+    <NotInBuild Include="Risk and Forecast\Setting\dbo.Lrf_CustomerUpdMember_MinMaxBet152_51.sql" />
+    <NotInBuild Include="Risk and Forecast\Setting\dbo.Lrf_CustomerUpdMember_MinMaxBet153_51.sql" />
+    <NotInBuild Include="Risk and Forecast\Setting\dbo.Lrf_CustomerUpdMember_MinMaxBet161.sql" />
+    <NotInBuild Include="Risk and Forecast\Setting\dbo.Lrf_CustomerUpdMember_MinMaxBet180.sql" />
+    <NotInBuild Include="Risk and Forecast\Setting\dbo.Lrf_CustomerUpdMemberBA_PositionTaking.sql" />
+    <NotInBuild Include="Risk and Forecast\Setting\dbo.Lrf_CustomerUpdMemberBAComm.sql" />
+    <NotInBuild Include="Risk and Forecast\Setting\dbo.Lrf_CustomerUpdMemberBAStatus.sql" />
+    <NotInBuild Include="Risk and Forecast\Setting\dbo.Lrf_CustomerUpdSpecialLevel.sql" />
+    <NotInBuild Include="Risk and Forecast\Setting\dbo.Lrf_LicenseeBAHistoryIns.sql" />
+    <NotInBuild Include="Risk and Forecast\Setting\dbo.Lrf_LicenseeBAHistoryUpdDone.sql" />
+    <NotInBuild Include="Risk and Forecast\Statement\dbo.Lrf_Statement_Mem.sql" />
+    <NotInBuild Include="Risk and Forecast\Statement\dbo.Lrf_Statement_Mem_BetSummary.sql" />
+    <NotInBuild Include="Risk and Forecast\Statement\dbo.Lrf_Statement_Rpt.sql" />
+    <NotInBuild Include="Risk and Forecast\Statement\Lrf_Statement_Mem_Detail.sql" />
+    <NotInBuild Include="Risk and Forecast\Statistic\dbo.Lrf_BrowserStatistic.sql" />
+    <NotInBuild Include="Risk and Forecast\Statistic\dbo.Lrf_GetFunctionStatistic.sql" />
+    <NotInBuild Include="Risk and Forecast\Statistic\dbo.Lrf_GetLicenseeStatistic.sql" />
+    <NotInBuild Include="Risk and Forecast\Statistic\dbo.Lrf_GetNonFunctionStatistic.sql" />
+    <NotInBuild Include="Risk and Forecast\Statistic\dbo.Lrf_GetSystemNameStatistic.sql" />
+    <NotInBuild Include="Risk and Forecast\Statistic\dbo.Lrf_UpdateUserVisitStatistic.sql" />
+    <NotInBuild Include="Risk and Forecast\TotalBets\dbo.Lrf_TotalBets_Sel10.proc.sql" />
+    <NotInBuild Include="Risk and Forecast\TotalBets\dbo.Lrf_TotalBets_Sel121.sql" />
+    <NotInBuild Include="Risk and Forecast\TotalBets\dbo.Lrf_TotalBets_Sel1378.proc.sql" />
+    <NotInBuild Include="Risk and Forecast\TotalBets\dbo.Lrf_TotalBets_Sel14.proc.sql" />
+    <NotInBuild Include="Risk and Forecast\TotalBets\dbo.Lrf_TotalBets_Sel16.proc.sql" />
+    <NotInBuild Include="Risk and Forecast\TotalBets\dbo.Lrf_TotalBets_Sel161.proc.sql" />
+    <NotInBuild Include="Risk and Forecast\TotalBets\dbo.Lrf_TotalBets_Sel2021.proc.sql" />
+    <NotInBuild Include="Risk and Forecast\TotalBets\dbo.Lrf_TotalBets_Sel22.proc.sql" />
+    <NotInBuild Include="Risk and Forecast\TotalBets\dbo.Lrf_TotalBets_Sel25.proc.sql" />
+    <NotInBuild Include="Risk and Forecast\TotalBets\dbo.Lrf_TotalBets_Sel430.proc.sql" />
+    <NotInBuild Include="Risk and Forecast\TotalBets\dbo.Lrf_TotalBets_Sel6.proc.sql" />
+    <NotInBuild Include="Risk and Forecast\TotalBets\dbo.Lrf_TotalBets_SelHR.proc.sql" />
+    <NotInBuild Include="Risk and Forecast\User-Product Control\dbo.Lrf_BATimeCheck.sql" />
+    <NotInBuild Include="Risk and Forecast\User-Product Control\dbo.Lrf_CreateNormalUser.sql" />
+    <NotInBuild Include="Risk and Forecast\User-Product Control\dbo.Lrf_IsUserExisted.sql" />
+    <NotInBuild Include="Risk and Forecast\User-Product Control\dbo.Lrf_LicenseeProduct3rdSel.sql" />
+    <NotInBuild Include="Risk and Forecast\User-Product Control\dbo.Lrf_LicenseeUserSelCheckBelonging.sql" />
+    <NotInBuild Include="Risk and Forecast\User-Product Control\dbo.Lrf_PageAccessByLicenseeSel.sql" />
+    <NotInBuild Include="Risk and Forecast\User-Product Control\dbo.Lrf_UserAccessSel.sql" />
+    <NotInBuild Include="Risk and Forecast\User-Product Control\dbo.Lrf_UserInfoSel.sql" />
+    <NotInBuild Include="Risk and Forecast\User-Product Control\dbo.Lrf_UserPwdReset.sql" />
+    <NotInBuild Include="Risk and Forecast\User-Product Control\dbo.Lrf_UserUpdAccount.sql" />
+  </ItemGroup>
+</Project>

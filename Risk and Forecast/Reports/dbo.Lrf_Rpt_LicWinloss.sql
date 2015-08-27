@@ -1,9 +1,14 @@
 ﻿USE [bodb02]
 GO
+/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_LicWinloss_xtest]    Script Date: 7/7/2015 8:45:59 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
  
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]  
  @LicenseeID	INT,
- @UserID		INT,
+ @UserID		INT, 
  @CurrencyID	INT = 0,
  @FromDate		SMALLDATETIME,  
  @ToDate		SMALLDATETIME,   
@@ -13,12 +18,14 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]
  @ShowBA		BIT=0,
  @ShowLC		BIT=0,
  @ShowVS		BIT=0,
- @ShowCS   BIT=0, -- RNG Casino
- @ShowBG   BIT=0, -- Bingo 
+ @ShowCS   		BIT=0, -- RNG Casino
+ @ShowBG   		BIT=0, -- Bingo 
  @ShowKN		BIT=0,--Keno
+ @ShowMGC 		BIT=0,-- MicroGamming
+ @ShowBT 		BIT=0,-- licenseeWLBT
  @ReportType	TINYINT=1,  
  @MoveBetsDay SMALLDATETIME,
- @IsOld BIT = 0,
+ @IsOld BIT = 0, 
  @drawfilter SMALLINT = 1  ,
  @excludeTest BIT = 0
  AS  
@@ -43,6 +50,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]
 	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	- 20150123@Jim: support base on Currency GBP
+	- 20150612@Jim: support MicroGaming
+	- 20150624@Winnie: support licenseeWLBT
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -72,6 +81,7 @@ CREATE TABLE #SAgWinLoss (
 	TurnoverCS 		MONEY,
 	TurnoverBG		MONEY,
 	TurnoverKN		MONEY,--Keno
+	turnoverMGC		MONEY, -- microgaming
 	Winlost			MONEY,  
 	--LicenseeWL		MONEY, --Sportbook and NumberGame
 	LicenseeWLSB 	MONEY,
@@ -83,14 +93,19 @@ CREATE TABLE #SAgWinLoss (
 	LicenseeWLCS	MONEY,
 	LicenseeWLBG	MONEY,
 	LicenseeWLKN	MONEY,--Keno
+	LicenseeWLMGC	MONEY,--microgaming
 	--WinlossRB		MONEY,
 	AmtDueToBA		MONEY,   
 	AmtDueToRB		MONEY,
 	CommBA			MONEY,   
 	CommRB			MONEY,  
-	PlayerComm	MONEY, 
-	Company			MONEY,
-	Betcount		BIGINT
+	PlayerComm		MONEY, 	
+	--Company			MONEY,
+	Betcount		BIGINT,
+	licenseeWLBT		MONEY,   
+	BetTradeComm	MONEY,  
+	WLBetTicket		MONEY, 	
+	WLBoughtTicket	MONEY 	
 )  
 
 DECLARE @tempAg	TABLE( custID INT,currency INT)  
@@ -102,7 +117,7 @@ DECLARE @sporttype TABLE(sporttype INT)
 DECLARE @_FromDate SMALLDATETIME, @_ToDate SMALLDATETIME
 SELECT @_FromDate = @FromDate, @_ToDate = @ToDate
 
-SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WHERE LicenseeID = @LicenseeID
+SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WHERE LicenseeID = @LicenseeID 
 
 SELECT @VNDCurrencyName = currency FROM exchange (NOLOCK) WHERE ExchangeId = 51
 
@@ -192,6 +207,15 @@ BEGIN
 	SELECT typeid FROM bettype (NOLOCK)
 	WHERE (typeid BETWEEN 1501 AND 1599)
 END 
+IF @ShowMGC=1 -- MicroGamming
+BEGIN 
+	INSERT INTO @sporttype (sporttype)
+	VALUES(203)
+
+	INSERT INTO @bettype(bettype)
+	SELECT typeid FROM bettype (NOLOCK)
+	WHERE (typeid BETWEEN 2001 AND 2007)
+END 
 
 DECLARE @TempFromDate DATETIME 
 DECLARE @TempToDate DATETIME 
@@ -226,6 +250,7 @@ BEGIN
 			0 AS tunroverCS,
 			0 AS tunroverBG,
 			0 AS tunroverKN,
+			0 AS turnoverMGC,
 			SUM(b.winlost - b.actual_stake) AS Winlost,  
 			--0 as LicenseeWL,
 			0 AS LicenseeWLSB,
@@ -237,26 +262,36 @@ BEGIN
 			0 AS LicenseeWLCS,
 			0 AS LicenseeWLBG,
 			0 AS LicenseeWLKN,
+			0 AS LicenseeWLMGC,
 			--0 as WinlossRB,
-			- SUM (b.winlost - b.actual_stake + awinlost + comm ) as AmountDueToBA,
+			- SUM (b.winlost - b.actual_stake + awinlost + comm) as AmountDueToBA,
 			0 as AmountDueToRB,
 			SUM (comm) as CommBA,
 			0 as CommRB,
 			 SUM(ISNULL(b.playercomm,0)) as PlayerComm,
-			0 as Company,
+			--0 as Company,
 			COUNT(b.transid)
+			--COUNT(CASE WHEN b.bettype = 903 THEN NULL	
+			--	ELSE b.transid END)
 			* CASE WHEN @drawfilter = 2 THEN
 					CASE WHEN b.statusID = 111 THEN 0
 					ELSE 1 END
 				ELSE 1 END
-			   BetCount	
+			   BetCount,
+			0 AS licenseeWLBT,
+			0 AS BetTradeComm,			
+			SUM(CASE WHEN b.betdaqid =0 THEN (b.winlost-b.actual_stake)
+				ELSE 0 END) AS WLBetTicket,
+			0 AS WLBoughtTicket
 		FROM 
 			dbo.bettrans b WITH ( NOLOCK)    
 			INNER JOIN @TempAg tma ON tma.CustID=b.recommend AND b.currency = tma.currency
-			INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON tma.custid=BA.recommend and b.transid = BA.transid 	 
+			INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON tma.custid=BA.recommend and b.transid = BA.transid 	
+			 
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @_ToDate AND  
-			b.statusID  IN (111, 112, 113) 
+			b.statusID  IN (111, 112, 113)
+			AND b.bettype NOT IN (901,902,903)
 		GROUP BY   
 			b.winlostdate, tma.currency, b.statusID
 	END
@@ -285,6 +320,7 @@ BEGIN
 			0 turnoverCS,
 			0 tunroverBG,
 			0 tunroverKN,
+			0 turnoverMGC,
 			SUM(b.winlost - b.actual_stake) AS Winlost,  
 			-- -SUM(b.winlost - b.actual_stake) AS LicenseeWL,
 			-SUM(b.winlost - b.actual_stake) AS LicenseeWLSB,
@@ -296,19 +332,27 @@ BEGIN
 			0 AS LicenseeWLCS,
 			0 AS LicenseeWLBG,
 			0 AS LicenseeWLKN,
+			0 AS LicenseeWLMGC,
 			-- 0 AS WinlossRB,
 			0 as AmountDueToBA,
 			0 as AmountDueToRB,
 			0 as CommBA,
 			0 as CommRB,
 			SUM(b.playerComm) as PlayerComm,
-			- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) Company  ,
+			-- - SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) Company  ,
 			COUNT(b.transid)
-			* CASE WHEN @drawfilter = 2 THEN
+			--COUNT(CASE WHEN b.bettype = 903 THEN NULL	
+			--	ELSE b.transid END)
+			* CASE WHEN @drawfilter = 2  THEN
 					CASE WHEN b.statusID = 111 THEN 0
 					ELSE 1 END
 				ELSE 1 END
-			   BetCount	
+			   BetCount,	
+			0 AS licenseeWLBT,
+			0 AS BetTradeComm,	
+			SUM(CASE WHEN b.betdaqid =0 THEN (b.winlost-b.actual_stake)
+				ELSE 0 END) AS WLBetTicket,
+			0 AS WLBoughtTicket
 		FROM 
 			Bettrans b WITH ( NOLOCK)
 			INNER JOIN @TempAg a ON b.recommend = a.custid AND b.currency = a.currency
@@ -319,13 +363,71 @@ BEGIN
 			) AND
 			b.statusID  IN (111, 112, 113) AND
 			b.tpositiontaking <>0
+			AND b.bettype NOT IN (901,902,903)
+		GROUP BY   
+			b.winlostdate,a.currency,statusID,b.bettype
+	END
+
+	IF ( @ShowBT=1)
+	BEGIN
+		INSERT INTO #SAgWinLoss
+		SELECT   
+			b.winlostdate,  
+			a.currency,
+			0 turnoverSB, 
+			0 AS turnoverBA,
+			0 turnoverNG, 
+			0 AS turnoverRB,
+			0 turnoverLC, 
+			0 turnoverVS, 
+			0 turnoverCS,
+			0 tunroverBG,
+			0 tunroverKN,
+			0 turnoverMGC,
+			SUM(CASE WHEN b.bettype =903 THEN 0
+				ELSE (b.winlost-b.actual_stake) END) AS Winlost,  
+			0 AS LicenseeWLSB,
+			0 AS LicenseeWLBA,
+			0 AS LicenseeWLNG,
+			0 AS LicenseeWLRB,
+			0 AS LicenseeWLLC,
+			0 AS LicenseeWLVS,
+			0 AS LicenseeWLCS,
+			0 AS LicenseeWLBG,
+			0 AS LicenseeWLKN,
+			0 AS LicenseeWLMGC,			
+			0 as AmountDueToBA,
+			0 as AmountDueToRB,
+			0 as CommBA,
+			0 as CommRB,
+			0 as PlayerComm,
+			COUNT(CASE WHEN b.bettype = 903 THEN NULL	
+				ELSE b.transid END)
+			* CASE WHEN @drawfilter = 2  THEN
+					CASE WHEN b.statusID = 111 THEN 0
+					ELSE 1 END
+				ELSE 1 END
+			   BetCount,	
+			-SUM(CASE WHEN b.bettype IN (901,902) THEN (b.winlost-b.actual_stake)
+				ELSE 0 END) AS licenseeWLBT,
+			SUM(CASE WHEN b.bettype =903 THEN b.awinlost
+				ELSE 0 END) AS BetTradeComm,
+			0 WLBetTicket,
+			SUM(CASE WHEN b.bettype =902 THEN (b.winlost-b.actual_stake)
+				ELSE 0 END) AS WLBoughtTicket
+		FROM 
+			Bettrans b WITH ( NOLOCK)
+			INNER JOIN @TempAg a ON b.recommend = a.custid AND b.currency = a.currency
+		WHERE 
+			b.winlostdate BETWEEN @TempFromDate AND @_ToDate AND  
+			b.bettype IN (901,902,903)
 		GROUP BY   
 			b.winlostdate,a.currency,statusID,b.bettype
 	END
 	
 	
 	--SB + NG + VS + Live casino+ virtual sport + RNG Casino + Bingo + Keno
-	IF (@ShowNG=1 OR  @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1)
+	IF (@ShowNG=1 OR  @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGC =1)
 	BEGIN
 		INSERT INTO #SAgWinLoss
 		SELECT   
@@ -395,6 +497,17 @@ BEGIN
 				ELSE 1 END
 			ELSE 0 END	
 			) turnoverKN, 
+			SUM(
+			CASE WHEN b.bettype BETWEEN 2001 AND 2007 THEN --Microgaming
+				stake
+				*
+				CASE WHEN @drawfilter IN (2,3) THEN
+					CASE WHEN b.statusID = 111 THEN 0
+					ELSE 1 END
+				ELSE 1 END
+			ELSE 0 END	
+			) turnoverMGC, 
+			
 			SUM(b.winlost - b.actual_stake) AS Winlost,  
 			-- -SUM(b.winlost - b.actual_stake) AS LicenseeWL,
 			0 AS LicenseeWLSB,
@@ -406,19 +519,24 @@ BEGIN
 			-SUM(CASE WHEN b.bettype =71 THEN b.winlost - b.actual_stake ELSE 0 END)					AS LicenseeWLCS,
 			-SUM(CASE WHEN b.bettype =73 THEN b.winlost - b.actual_stake ELSE 0 END)					AS LicenseeWLBG,
 			-SUM(CASE WHEN b.bettype BETWEEN 1501 AND 1599	THEN b.winlost - b.actual_stake ELSE 0 END) AS LicenseeWLKN,
+			-SUM(CASE WHEN b.bettype BETWEEN 2001 AND 2007	THEN b.winlost - b.actual_stake ELSE 0 END) AS LicenseeWLMGC,
 			-- 0 AS WinlossRB,
 			0 as AmountDueToBA,
 			0 as AmountDueToRB,
 			0 as CommBA,
 			0 as CommRB,
 			SUM(b.playerComm) as PlayerComm,
-			- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) Company  ,
+			-- - SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) Company  ,
 			COUNT(b.transid)
 			* CASE WHEN @drawfilter = 2 THEN
 					CASE WHEN b.statusID = 111 THEN 0
 					ELSE 1 END
 				ELSE 1 END
-			   BetCount	
+			   BetCount	,
+			0 AS licenseeWLBT,
+			0 AS BetTradeComm,	
+			0 AS WLBetTicket,
+			0 AS WLBoughtTicket
 		FROM 
 			Bettrans b WITH ( NOLOCK)
 			INNER JOIN @TempAg a ON b.recommend = a.custid AND b.Currency = a.Currency
@@ -453,6 +571,7 @@ BEGIN
 			0 as turnoverCS,
 			0 as turnoverBG,
 			0 as turnoverKN,
+			0 as turnoverMGC,
 			SUM(b.winlost - b.actual_stake) AS Winlost,  
 			--0 AS LicenseeWL,
 			0 AS LicenseeWLSB,
@@ -464,19 +583,24 @@ BEGIN
 			0 AS LicenseeWLCS,
 			0 AS LicenseeWLBG,
 			0 AS LicenseeWLKN,
+			0 AS LicenseeWLMGC,
 			--SUM (b.awinlost) AS WinlossRB,
 			0 as AmountDueToBA,
 			- SUM ((b.winlost - b.actual_stake + awinlost + comm)) as AmountDueToRB,
 			0 as CommBA,
 			SUM (b.comm)  as CommRB,
 			SUM(ISNULL(b.PlayerComm,0))  as PlayerComm,
-			0 as Company, 
+			--0 as Company, 
 			COUNT(b.transid)
 			* CASE WHEN @drawfilter = 2 THEN
 					CASE WHEN b.statusID = 111 THEN 0
 					ELSE 1 END
 				ELSE 1 END
-			   BetCount	
+			   BetCount	,
+			0 AS licenseeWLBT,
+			0 AS BetTradeComm,	
+			0 AS WLBetTicket,
+			0 AS WLBoughtTicket
 		FROM 
 			Bettrans b WITH ( NOLOCK)
 			INNER JOIN @TempAg a ON b.recommend = a.custid AND b.currency = a.currency
@@ -521,6 +645,7 @@ BEGIN
 			0 AS turnoverCS,
 			0 AS turnoverBG,
 			0 AS turnoverKN,
+			0 AS turnoverMGC,
 			SUM(b.winlost),  
 			--0 as LicenseeWL,
 			0 AS LicenseeWLSB,
@@ -532,23 +657,31 @@ BEGIN
 			0 AS LicenseeWLCS,
 			0 AS LicenseeWLBG,
 			0 AS LicenseeWLKN,
+			0 AS LicenseeWLMGC,
 			--0 AS WinlossRB,
 			- SUM (b.winlost+b.awinlost+b.comm) as AmountDueToBA,
 			0 as AmountDueToRB,
 			SUM (b.comm) as CommBA,
 			0 as CommRB,
 			SUM(ISNULL(b.playercomm,0)) as PlayerComm,
-			0 as Company,
+			--0 as Company,
 			SUM(b.betcount)
 			* CASE WHEN @drawfilter = 2 THEN
 					CASE WHEN b.statusID = 111 THEN 0
 					ELSE 1 END
-				ELSE 1 END
+				ELSE 1 END,
+			0 AS licenseeWLBT,
+			0 AS BetTradeComm,	
+			SUM(CASE WHEN bt.CustId IS NOT NULL THEN b.winlost
+				ELSE 0 END) AS WLBetTicket,
+			0 AS WLBoughtTicket
 		FROM 
 			  bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
 			  INNER JOIN @TempAg ag ON b.recommend = ag.custID AND b.Currency = ag.currency
+			  LEFT JOIN f_GetBetTradeCustList(@LicenseeName) bt ON b.custid=bt.Custid AND b.Currency = bt.currency
 		WHERE  
 			 b.Winlostdate BETWEEN @_FromDate AND @TempToDate  
+			AND b.bettype NOT IN (901,902,903)
 			AND b.roleid = 2   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 1
@@ -556,7 +689,7 @@ BEGIN
 	END
 	
 	--exclude BA tickets
-	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1)
+	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGC =1)
 	BEGIN
 		INSERT INTO #SAgWinLoss  
 		SELECT 
@@ -636,7 +769,15 @@ BEGIN
 						ELSE 1 END
 					ELSE 1 END
 			ELSE 0 END) AS turnoverKN,
-		
+			SUM(CASE WHEN b.sporttype=203 THEN --MicroGaming
+				b.turnover
+				*
+					CASE WHEN @drawfilter IN (2,3) THEN
+						CASE WHEN b.statusID = 111  THEN 0
+						WHEN b.statusID IN (114,115) THEN 0.5
+						ELSE 1 END
+					ELSE 1 END
+			ELSE 0 END) AS turnoverMGC,
 			SUM(b.winlost),  
 			-SUM(CASE WHEN b.sporttype=0 THEN b.winlost ELSE 0 END) AS LicenseeWLSB,
 			0 AS LicenseeWLBA,
@@ -647,28 +788,96 @@ BEGIN
 			-SUM(CASE WHEN b.sporttype=251 THEN b.winlost ELSE 0 END) AS LicenseeWLCS,
 			-SUM(CASE WHEN b.sporttype=252 THEN b.winlost ELSE 0 END) AS LicenseeWLBG,
 			-SUM(CASE WHEN b.sporttype=202 THEN b.winlost ELSE 0 END) AS LicenseeWLKN,--Keno
+			-SUM(CASE WHEN b.sporttype=203 THEN b.winlost ELSE 0 END) AS LicenseeWLMGC,--MGC
 			--SUM(CASE WHEN  b.sporttype=151 THEN b.awinlost ELSE 0 END) AS WinlossRB,
 			0 as AmountDueToBA,
 			- SUM ( CASE WHEN b.sporttype = 151 THEN (b.winlost+b.awinlost+b.comm) ELSE 0 END) as AmountDueToRB,
 			0 as CommBA,
 			SUM ( CASE WHEN b.sporttype = 151 THEN (comm) ELSE 0 END) as CommRB,
 			SUM (ISNULL(playercomm,0))  as PlayerComm,
-			- SUM(CASE WHEN b.sporttype <> 151 THEN  b.awinlost + b.winlost + b.comm ELSE 0 END)  as Company   ,
+			-- - SUM(CASE WHEN b.sporttype <> 151 THEN  b.awinlost + b.winlost + b.comm ELSE 0 END)  as Company   ,
 			SUM(b.betcount)
 			* CASE WHEN @drawfilter = 2 THEN
 					CASE WHEN b.statusID = 111 THEN 0
 					ELSE 1 END
-				ELSE 1 END
+				ELSE 1 END,
+			0 AS licenseeWLBT,
+			0 AS BetTradeComm,	
+			SUM(CASE WHEN (bt.CustId IS NOT NULL) AND t.sporttype=0 THEN b.winlost
+				ELSE 0 END) AS WLBetTicket,
+			0 AS WLBoughtTicket
 		FROM 
 			bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
 			INNER JOIN @TempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
 			INNER JOIN @sporttype t ON b.sporttype = t.sporttype
+			LEFT JOIN f_GetBetTradeCustList(@LicenseeName) bt ON b.custid=bt.Custid AND b.Currency = bt.currency
 		WHERE  
-			b.Winlostdate BETWEEN @_FromDate AND @TempToDate  
+			b.Winlostdate BETWEEN @_FromDate AND @TempToDate
+			AND b.bettype NOT IN (901,902,903)  
 			AND b.roleid = 2   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 0
 		GROUP BY  b.winlostdate, b.currency, b.statusID
+	END
+
+	IF ( @ShowBT=1)
+	BEGIN
+		
+	
+		INSERT INTO #SAgWinLoss
+		SELECT   
+			b.winlostdate,  
+			ag.currency,
+			0 turnoverSB, 
+			0 AS turnoverBA,
+			0 turnoverNG, 
+			0 AS turnoverRB,
+			0 turnoverLC, 
+			0 turnoverVS, 
+			0 turnoverCS,
+			0 tunroverBG,
+			0 tunroverKN,
+			0 turnoverMGC,
+			SUM(CASE WHEN b.bettype =903 THEN 0
+			ELSE b.winlost END) AS Winlost,    
+			0 AS LicenseeWLSB,
+			0 AS LicenseeWLBA,
+			0 AS LicenseeWLNG,
+			0 AS LicenseeWLRB,
+			0 AS LicenseeWLLC,
+			0 AS LicenseeWLVS,
+			0 AS LicenseeWLCS,
+			0 AS LicenseeWLBG,
+			0 AS LicenseeWLKN,
+			0 AS LicenseeWLMGC,			
+			0 as AmountDueToBA,
+			0 as AmountDueToRB,
+			0 as CommBA,
+			0 as CommRB,
+			0 as PlayerComm,
+			COUNT(CASE WHEN b.bettype = 903 THEN NULL	
+				ELSE b.BetCount END)
+			* CASE WHEN @drawfilter = 2  THEN
+					CASE WHEN b.statusID = 111 THEN 0
+					ELSE 1 END
+				ELSE 1 END
+			   BetCount,	
+			-SUM(CASE WHEN b.bettype IN (901,902) THEN (b.winlost)
+				ELSE 0 END) AS licenseeWLBT,
+			SUM(CASE WHEN b.bettype =903 THEN b.awinlost
+				ELSE 0 END) AS BetTradeComm,
+			0 WLBetTicket,
+			SUM(CASE WHEN b.bettype =902 THEN (b.winlost)
+				ELSE 0 END) AS WLBoughtTicket
+		FROM 
+			bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
+			INNER JOIN @TempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
+			
+		WHERE 
+			b.Winlostdate BETWEEN @_FromDate AND @TempToDate  AND
+			b.bettype IN (901,902,903)
+		GROUP BY   
+			b.winlostdate,ag.currency,statusID,b.bettype
 	END
 	
 END 
@@ -702,6 +911,7 @@ BEGIN
 			0 AS turnoverCS,
 			0 AS turnoverBG,
 			0 AS turnoverKN,
+			0 AS turnoverMGC,
 			SUM(b.winlost),  
 			--0 as LicenseeWL,
 			0 AS LicenseeWLSB,
@@ -713,23 +923,31 @@ BEGIN
 			0 AS LicenseeWLCS,
 			0 AS LicenseeWLBG,
 			0 AS LicenseeWLKN,
+			0 AS LicenseeWLMGC,
 			--0 AS WinlossRB,
 			- SUM (b.winlost+b.awinlost+b.comm) as AmountDueToBA,
 			0 as AmountDueToRB,
 			SUM (b.comm) as CommBA,
 			0 as CommRB,
 			SUM(ISNULL(b.playercomm,0)) as PlayerComm,
-			0 as Company,
+			-- 0 as Company,
 			SUM(b.betcount)
 			* CASE WHEN @drawfilter = 2 THEN
 					CASE WHEN b.statusID = 111 THEN 0
 					ELSE 1 END
-				ELSE 1 END
+				ELSE 1 END,
+			0 AS licenseeWLBT,
+			0 AS BetTradeComm,	
+			SUM(CASE WHEN bt.CustId IS NOT NULL THEN b.winlost
+				ELSE 0 END) AS WLBetTicket,
+			0 AS WLBoughtTicket
 		FROM  
 			bodb_Licensee.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
 			INNER JOIN @TempAg ag ON b.recommend=ag.custID AND b.Currency = ag.currency
+			LEFT JOIN f_GetBetTradeCustList(@LicenseeName) bt ON b.custid=bt.Custid AND b.Currency = bt.currency
 		WHERE  
 			 b.Winlostdate BETWEEN @_FromDate AND @TempToDate  
+			AND b.bettype NOT IN (901,902,903)
 			AND b.roleid = 2   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 1
@@ -738,7 +956,7 @@ BEGIN
 
 	
 	--exclude BA tickets
-	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1)
+	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGC=1 )
 	BEGIN
 		INSERT INTO #SAgWinLoss  
 		SELECT 
@@ -818,6 +1036,15 @@ BEGIN
 						ELSE 1 END
 					ELSE 1 END
 			ELSE 0 END) AS turnoverKN,
+			SUM(CASE WHEN b.sporttype=203 THEN --MGC
+				b.turnover
+				*
+					CASE WHEN @drawfilter IN (2,3) THEN
+						CASE WHEN b.statusID = 111  THEN 0
+						WHEN b.statusID IN (114,115) THEN 0.5
+						ELSE 1 END
+					ELSE 1 END
+			ELSE 0 END) AS turnoverMGC,
 		
 			SUM(b.winlost),  
 			-SUM(CASE WHEN b.sporttype=0 THEN b.winlost ELSE 0 END) AS LicenseeWLSB,
@@ -829,29 +1056,94 @@ BEGIN
 			-SUM(CASE WHEN b.sporttype=251 THEN b.winlost ELSE 0 END) AS LicenseeWLCS,
 			-SUM(CASE WHEN b.sporttype=252 THEN b.winlost ELSE 0 END) AS LicenseeWLBG,
 			-SUM(CASE WHEN b.sporttype=202 THEN b.winlost ELSE 0 END) AS LicenseeWLKN,
+			-SUM(CASE WHEN b.sporttype=203 THEN b.winlost ELSE 0 END) AS LicenseeWLMGC,
 			--SUM(CASE WHEN  b.sporttype=151 THEN b.awinlost ELSE 0 END) AS WinlossRB,
 			0 as AmountDueToBA,
 			- SUM ( CASE WHEN b.sporttype = 151 THEN (b.winlost+b.awinlost+b.comm) ELSE 0 END) as AmountDueToRB,
 			0 as CommBA,
 			SUM ( CASE WHEN b.sporttype = 151 THEN (comm) ELSE 0 END) as CommRB,
 			SUM (ISNULL(playercomm,0))  as PlayerComm,
-			- SUM(CASE WHEN b.sporttype <> 151 THEN  b.awinlost + b.winlost + b.comm ELSE 0 END)  as Company   ,
+			-- - SUM(CASE WHEN b.sporttype <> 151 THEN  b.awinlost + b.winlost + b.comm ELSE 0 END)  as Company   ,
 			SUM(b.betcount)
 			* CASE WHEN @drawfilter = 2 THEN
 					CASE WHEN b.statusID = 111 THEN 0
 					ELSE 1 END
-				ELSE 1 END
+				ELSE 1 END,
+			0 AS licenseeWLBT,
+			0 AS BetTradeComm,	
+			SUM(CASE WHEN (bt.CustId IS NOT NULL) AND t.sporttype=0 THEN b.winlost
+				ELSE 0 END) AS WLBetTicket,
+			0 AS WLBoughtTicket
 		FROM 
 			bodb_Licensee.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
 			INNER JOIN @TempAg ag ON b.recommend = ag.custID AND b.Currency = ag.currency
 			INNER JOIN @sporttype t ON b.sporttype = t.sporttype
-			
+			LEFT JOIN f_GetBetTradeCustList(@LicenseeName) bt ON b.custid=bt.Custid AND b.Currency = bt.currency
 		WHERE  
 			b.Winlostdate BETWEEN @_FromDate AND @TempToDate  
+			AND b.bettype NOT IN (901,902,903)
 			AND b.roleid = 2   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 0
 		GROUP BY  b.winlostdate,   b.currency, b.statusID
+	END
+
+		IF ( @ShowBT=1)
+	BEGIN
+		INSERT INTO #SAgWinLoss
+		SELECT   
+			b.winlostdate,  
+			ag.currency,
+			0 turnoverSB, 
+			0 AS turnoverBA,
+			0 turnoverNG, 
+			0 AS turnoverRB,
+			0 turnoverLC, 
+			0 turnoverVS, 
+			0 turnoverCS,
+			0 tunroverBG,
+			0 tunroverKN,
+			0 turnoverMGC,
+			SUM(CASE WHEN b.bettype =903 THEN 0
+			ELSE b.winlost END) AS Winlost,    
+			0 AS LicenseeWLSB,
+			0 AS LicenseeWLBA,
+			0 AS LicenseeWLNG,
+			0 AS LicenseeWLRB,
+			0 AS LicenseeWLLC,
+			0 AS LicenseeWLVS,
+			0 AS LicenseeWLCS,
+			0 AS LicenseeWLBG,
+			0 AS LicenseeWLKN,
+			0 AS LicenseeWLMGC,			
+			0 as AmountDueToBA,
+			0 as AmountDueToRB,
+			0 as CommBA,
+			0 as CommRB,
+			0 as PlayerComm,
+			COUNT(CASE WHEN b.bettype = 903 THEN NULL	
+				ELSE b.BetCount END)
+			* CASE WHEN @drawfilter = 2  THEN
+					CASE WHEN b.statusID = 111 THEN 0
+					ELSE 1 END
+				ELSE 1 END
+			   BetCount,	
+			-SUM(CASE WHEN b.bettype IN (901,902) THEN (b.winlost)
+				ELSE 0 END) AS licenseeWLBT,
+			SUM(CASE WHEN b.bettype =903 THEN b.awinlost
+				ELSE 0 END) AS BetTradeComm,
+			0 WLBetTicket,
+			SUM(CASE WHEN b.bettype =902 THEN (b.winlost)
+				ELSE 0 END) AS WLBoughtTicket
+		FROM 
+			bodb_Licensee.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
+			INNER JOIN @TempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
+			
+		WHERE 
+			b.Winlostdate BETWEEN @_FromDate AND @TempToDate  AND 
+			b.bettype IN (901,902,903)
+		GROUP BY   
+			b.winlostdate,ag.currency,statusID,b.bettype
 	END
 	
 END
@@ -878,6 +1170,7 @@ SELECT
    SUM(TurnoverCS)       AS TurnoverCS,
    SUM(TurnoverBG)       AS TurnoverBG,
    SUM(TurnoverKN)       AS TurnoverKN,
+   SUM(TurnoverMGC)       AS TurnoverMGC,
    SUM(Winlost)        AS Winlost,  
    --SUM(LicenseeWL)     AS LicenseeWL,
    SUM(LicenseeWLSB)   AS LicenseeWLSB,
@@ -889,17 +1182,21 @@ SELECT
    SUM(LicenseeWLCS)   AS LicenseeWLCS,
    SUM(LicenseeWLBG)   AS LicenseeWLBG,
    SUM(LicenseeWLKN)   AS LicenseeWLKN,
+   SUM(LicenseeWLMGC)   AS LicenseeWLMGC,
   --SUM(WinlossRB)	   AS WinlossRB,
    SUM(CommBA)         AS CommBA,
    SUM(CommRB)         AS CommRB,
    SUM(playerComm)     AS PlayerComm,
    SUM(AmtDuetoBA)     AS AmtDuetoBA,
    SUM(AmtDuetoRB)     AS AmtDuetoRB,
-   SUM(Company)        AS Company,
+   --SUM(Company)        AS Company,
    SUM(Betcount)	   AS Betcount,
-   
+   SUM(licenseeWLBT)	   AS licenseeWLBT,
+   SUM(BetTradeComm)   AS BetTradeComm,
+   SUM(WLBetTicket+WLBoughtTicket-BetTradeComm)	   AS AmtDueToBT,
+
    --BaseRM  
-   CAST(SUM(TurnoverSB*e.MYR)    AS MONEY)     AS TurnoverSBMYR,   
+   /*CAST(SUM(TurnoverSB*e.MYR)    AS MONEY)     AS TurnoverSBMYR,   
    CAST(SUM(TurnoverBA*e.MYR)    AS MONEY)     AS TurnoverBAMYR,   
    CAST(SUM(TurnoverNG*e.MYR)    AS MONEY)     AS TurnoverNGMYR,   
    CAST(SUM(TurnoverRB*e.MYR)    AS MONEY)     AS TurnoverRBMYR,
@@ -908,6 +1205,7 @@ SELECT
    CAST(SUM(TurnoverCS*e.MYR)    AS MONEY)     AS TurnoverCSMYR,
    CAST(SUM(TurnoverBG*e.MYR)    AS MONEY)     AS TurnoverBGMYR,
    CAST(SUM(TurnoverKN*e.MYR)    AS MONEY)     AS TurnoverKNMYR,
+   CAST(SUM(TurnoverMGC*e.MYR)    AS MONEY)     AS TurnoverMGCMYR,
    CAST(SUM(Winlost*e.MYR)	   AS MONEY)     AS WinlostMYR,  
    --CAST(SUM(LicenseeWL*e.MYR)  AS MONEY)     AS LicenseeWLMYR,
    CAST(SUM(LicenseeWLSB*e.MYR)AS MONEY)     AS LicenseeWLSBMYR,
@@ -919,14 +1217,18 @@ SELECT
    CAST(SUM(LicenseeWLCS*e.MYR)AS MONEY)     AS LicenseeWLCSMYR,
    CAST(SUM(LicenseeWLBG*e.MYR)AS MONEY)     AS LicenseeWLBGMYR,
    CAST(SUM(LicenseeWLKN*e.MYR)AS MONEY)     AS LicenseeWLKNMYR,
+   CAST(SUM(LicenseeWLMGC*e.MYR)AS MONEY)    AS LicenseeWLMGCMYR,
    --CAST(SUM(WinlossRB*e.MYR)   AS MONEY)	 AS WinlossRBMYR,
    CAST(SUM(CommBA * e.MYR)    AS MONEY)     AS CommBAMYR,
    CAST(SUM(CommRB * e.MYR)    AS MONEY)     AS CommRBMYR,
    CAST(SUM(PlayerComm*e.MYR)  AS MONEY) 	 AS PlayerCommMYR,
    CAST(SUM(AmtDuetoBA*e.MYR)  AS MONEY)	 AS AmtDuetoBAMYR,
    CAST(SUM(AmtDuetoRB*e.MYR)  AS MONEY)	 AS AmtDuetoRBMYR,
-   CAST(SUM(Company * e.MYR)   AS MONEY)	 AS CompanyMYR,
-   
+   --CAST(SUM(Company * e.MYR)   AS MONEY)	 AS CompanyMYR,  
+   CAST(SUM(licenseeWLBT* e.MYR)		AS MONEY)   AS BetTradeMYR,
+   CAST(SUM(BetTradeComm* e.MYR)	AS MONEY)	AS BetTradeCommMYR,
+   CAST(SUM((WLBetTicket+WLBoughtTicket-BetTradeComm)* e.MYR) AS MONEY)	   AS AmtDueToBTMYR,
+   */
    --BaseUSD  
    CAST(SUM(TurnoverSB*e.USD)    AS MONEY)     AS TurnoverSBUSD,   
    CAST(SUM(TurnoverBA*e.USD)    AS MONEY)     AS TurnoverBAUSD,   
@@ -937,6 +1239,7 @@ SELECT
    CAST(SUM(TurnoverCS*e.USD)    AS MONEY)     AS TurnoverCSUSD,
    CAST(SUM(TurnoverBG*e.USD)    AS MONEY)     AS TurnoverBGUSD,
    CAST(SUM(TurnoverKN*e.USD)    AS MONEY)     AS TurnoverKNUSD,
+   CAST(SUM(TurnoverMGC*e.USD)    AS MONEY)     AS TurnoverMGCUSD,
    CAST(SUM(Winlost*e.USD)	   AS MONEY)	 AS WinlostUSD,  
    --CAST(SUM(LicenseeWL*e.USD)  AS MONEY) 	 AS LicenseeWLUSD,
    CAST(SUM(LicenseeWLSB*e.USD)AS MONEY)	 AS LicenseeWLSBUSD,
@@ -948,14 +1251,18 @@ SELECT
    CAST(SUM(LicenseeWLCS*e.USD)AS MONEY)	 AS LicenseeWLCSUSD,
    CAST(SUM(LicenseeWLBG*e.USD)AS MONEY)	 AS LicenseeWLBGUSD,
    CAST(SUM(LicenseeWLKN*e.USD)AS MONEY)	 AS LicenseeWLKNUSD,
+   CAST(SUM(LicenseeWLMGC*e.USD)AS MONEY)	 AS LicenseeWLMGCUSD,
    --CAST(SUM(WinlossRB*e.USD)   AS MONEY)	 AS WinlossRBUSD,
    CAST(SUM(CommBA * e.USD)    AS MONEY)	 AS CommBAUSD,
    CAST(SUM(CommRB * e.USD)    AS MONEY)	 AS CommRBUSD,
    CAST(SUM(PlayerComm*e.USD)  AS MONEY)	 AS PlayerCommUSD,
    CAST(SUM(AmtDuetoBA*e.USD)  AS MONEY)	 AS AmtDuetoBAUSD,
    CAST(SUM(AmtDuetoRB*e.USD)  AS MONEY)	 AS AmtDuetoRBUSD,
-   CAST(SUM(Company * e.USD)   AS MONEY)	 AS CompanyUSD,
-   
+   --CAST(SUM(Company * e.USD)   AS MONEY)	 AS CompanyUSD, 
+   CAST(SUM(licenseeWLBT* e.USD)		AS MONEY)   AS licenseeWLBTUSD,
+   CAST(SUM(BetTradeComm* e.USD)	AS MONEY)	AS BetTradeCommUSD,
+   CAST(SUM((WLBetTicket+WLBoughtTicket-BetTradeComm)* e.USD) AS MONEY)	   AS AmtDueToBTUSD,
+
     --BaseEUR  
    CAST(SUM(TurnoverSB*e.EUR)    AS MONEY)     AS TurnoverSBEUR,   
    CAST(SUM(TurnoverBA*e.EUR)    AS MONEY)     AS TurnoverBAEUR,   
@@ -966,6 +1273,7 @@ SELECT
    CAST(SUM(TurnoverCS*e.EUR)    AS MONEY)     AS TurnoverCSEUR,
    CAST(SUM(TurnoverBG*e.EUR)    AS MONEY)     AS TurnoverBGEUR,
    CAST(SUM(TurnoverKN*e.EUR)    AS MONEY)     AS TurnoverKNEUR,
+   CAST(SUM(TurnoverMGC*e.EUR)    AS MONEY)     AS TurnoverMGCEUR,
    CAST(SUM(Winlost*e.EUR)	   AS MONEY)	 AS WinlostEUR,  
    --CAST(SUM(LicenseeWL*e.EUR)  AS MONEY)	 AS LicenseeWLEUR,
    CAST(SUM(LicenseeWLSB*e.EUR)AS MONEY)	 AS LicenseeWLSBEUR,
@@ -977,13 +1285,18 @@ SELECT
    CAST(SUM(LicenseeWLCS*e.EUR)AS MONEY)	 AS LicenseeWLCSEUR,
    CAST(SUM(LicenseeWLBG*e.EUR)AS MONEY)	 AS LicenseeWLBGEUR,
    CAST(SUM(LicenseeWLKN*e.EUR)AS MONEY)	 AS LicenseeWLKNEUR,
+   CAST(SUM(LicenseeWLMGC*e.EUR)AS MONEY)	 AS LicenseeWLMGCEUR,
    --CAST(SUM(WinlossRB*e.EUR)   AS MONEY)	 AS WinlossRBEUR,
    CAST(SUM(CommBA * e.EUR)    AS MONEY)	 AS CommBAEUR,
    CAST(SUM(CommRB * e.EUR)    AS MONEY)	 AS CommRBEUR,
    CAST(SUM(PlayerComm*e.EUR)  AS MONEY)	 AS PlayerCommEUR,
    CAST(SUM(AmtDuetoBA*e.EUR)  AS MONEY)	 AS AmtDuetoBAEUR,
    CAST(SUM(AmtDuetoRB*e.EUR)  AS MONEY)	 AS AmtDuetoRBEUR,
-   CAST(SUM(Company * e.EUR)   AS MONEY)	 AS CompanyEUR,
+   --CAST(SUM(Company * e.EUR)   AS MONEY)	 AS CompanyEUR,   
+   CAST(SUM(licenseeWLBT* e.EUR)		AS MONEY)   AS licenseeWLBTEUR,
+   CAST(SUM(BetTradeComm* e.EUR)	AS MONEY)	AS BetTradeCommEUR,
+   CAST(SUM((WLBetTicket+WLBoughtTicket-BetTradeComm)* e.EUR) AS MONEY)	   AS AmtDueToBTEUR,
+
     --BaseGBP  
    CAST(SUM(TurnoverSB*e.GBP)    AS MONEY)     AS TurnoverSBGBP,   
    CAST(SUM(TurnoverBA*e.GBP)    AS MONEY)     AS TurnoverBAGBP,   
@@ -994,6 +1307,7 @@ SELECT
    CAST(SUM(TurnoverCS*e.GBP)    AS MONEY)     AS TurnoverCSGBP,
    CAST(SUM(TurnoverBG*e.GBP)    AS MONEY)     AS TurnoverBGGBP,
    CAST(SUM(TurnoverKN*e.GBP)    AS MONEY)     AS TurnoverKNGBP,
+   CAST(SUM(TurnoverMGC*e.GBP)    AS MONEY)     AS TurnoverMGCGBP,
    CAST(SUM(Winlost*e.GBP)	   AS MONEY)	 AS WinlostGBP,  
    --CAST(SUM(LicenseeWL*e.GBP)  AS MONEY)	 AS LicenseeWLGBP,
    CAST(SUM(LicenseeWLSB*e.GBP)AS MONEY)	 AS LicenseeWLSBGBP,
@@ -1005,13 +1319,17 @@ SELECT
    CAST(SUM(LicenseeWLCS*e.GBP)AS MONEY)	 AS LicenseeWLCSGBP,
    CAST(SUM(LicenseeWLBG*e.GBP)AS MONEY)	 AS LicenseeWLBGGBP,
    CAST(SUM(LicenseeWLKN*e.GBP)AS MONEY)	 AS LicenseeWLKNGBP,
+   CAST(SUM(LicenseeWLMGC*e.GBP)AS MONEY)	 AS LicenseeWLMGCGBP,
    --CAST(SUM(WinlossRB*e.GBP)   AS MONEY)	 AS WinlossRBGBP,
    CAST(SUM(CommBA * e.GBP)    AS MONEY)	 AS CommBAGBP,
    CAST(SUM(CommRB * e.GBP)    AS MONEY)	 AS CommRBGBP,
    CAST(SUM(PlayerComm*e.GBP)  AS MONEY)	 AS PlayerCommGBP,
    CAST(SUM(AmtDuetoBA*e.GBP)  AS MONEY)	 AS AmtDuetoBAGBP,
    CAST(SUM(AmtDuetoRB*e.GBP)  AS MONEY)	 AS AmtDuetoRBGBP,
-   CAST(SUM(Company * e.GBP)   AS MONEY)	 AS CompanyGBP
+   --CAST(SUM(Company * e.GBP)   AS MONEY)	 AS CompanyGBP
+   CAST(SUM(licenseeWLBT* e.GBP)		AS MONEY)   AS licenseeWLBTGBP,
+   CAST(SUM(BetTradeComm* e.GBP)	AS MONEY)	AS BetTradeCommGBP,
+   CAST(SUM((WLBetTicket+WLBoughtTicket-BetTradeComm)* e.GBP) AS MONEY)	   AS AmtDueToBTGBP
 FROM	
 	#SAgWinLoss w   
 	INNER JOIN 
@@ -1044,7 +1362,3 @@ END
 	@Movebetsday='2012-08-23'
 */
 
-GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_LicWinloss] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LicWinloss] TO [vnteam] 

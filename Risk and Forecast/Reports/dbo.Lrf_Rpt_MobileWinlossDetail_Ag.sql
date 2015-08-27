@@ -1,6 +1,6 @@
 ﻿USE [bodb02]
 GO
-ALTER PROCEDURE [dbo].[Lrf_Rpt_MobileWinlossDetail_Ag]  
+ALTER PROCEDURE [dbo].[Lrf_Rpt_MobileWinlossDetail_Ag]   
  @LicenseeID	INT,
  @UserID		INT,
  @CurrencyID	INT = 0,
@@ -30,6 +30,7 @@ AS
 			- 20140414@Jim: support USD base currency 
 			- 20130618@Jim: Restrict permission of Licensee Users by currency
 			- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+			- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
 	Param's Explanation:  
 	  + @SiteType: 1-WAP; 2-Smartphone; 3: Others;0-All  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -196,6 +197,7 @@ BEGIN
 			INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON tma.custid=BA.recommend and b.transid = BA.transid 	 	
 		WHERE
 			b.statusID  IN (111, 112, 113)
+			AND b.bettype NOT IN (901,902,903)
 			AND b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND 1= CASE @SiteType 
 				WHEN 1 THEN CASE WHEN b.betfrom = 'm' THEN 1 ELSE 0 END
@@ -242,6 +244,7 @@ BEGIN
 			b.statusID  IN (111, 112, 113)
 			AND b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)) 
+			AND b.bettype NOT IN (901,902,903)
 			AND b.tpositiontaking <>0
 			AND 1= CASE @SiteType 
 				WHEN 1 THEN CASE WHEN b.betfrom = 'm' THEN 1 ELSE 0 END
@@ -340,6 +343,7 @@ BEGIN
 			  b.Winlostdate BETWEEN @FDate AND @TempToDate  
 			AND b.roleid = 2   
 			AND b.statusID <> 101 --exclude REJECT bets
+			AND b.bettype NOT IN (901,902,903)
 			AND ISNULL(b.isBA,0) = 1
 			AND 1= CASE @SiteType 
 				WHEN 1 THEN CASE WHEN b.betfrom = 'm' THEN 1 ELSE 0 END
@@ -390,6 +394,7 @@ BEGIN
 			  b.Winlostdate BETWEEN @FDate AND @TempToDate  
 			AND b.roleid = 2   
 			AND b.statusID <> 101 --exclude REJECT bets
+			AND b.bettype NOT IN (901,902,903)
 			AND ISNULL(b.isBA,0) = 0
 			AND 1= CASE @SiteType 
 				WHEN 1 THEN CASE WHEN b.betfrom = 'm' THEN 1 ELSE 0 END

@@ -6,7 +6,6 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-
 ALTER PROCEDURE [dbo].[Lrf_BetList_SelDeleted]   
 	@LicenseeID INT ,
 	@UserID		INT,
@@ -45,6 +44,7 @@ Revisions:
 	- 20150128@Winnie: add base currency GBP
 	- 20150409@Winnie: Apply spottype bettype matrix & 60 bettypes betradar
 	- 20150423@Jim: fix bug 
+	- 20150609@Edward : Support BetTrade
 Param's Explanation:
 + @CustID: AgentID
 */
@@ -307,6 +307,16 @@ WHERE
 	AND b.custid = @CustID
 	AND b.statusID IN (101,102)
 	
+UPDATE betList
+SET betList.Odds	= originBetList.Odds
+	,betList.Stake	= originBetList.Stake
+	,betList.betid  = originBetList.Bettype
+FROM #Data AS betList
+	INNER JOIN bettrans AS originBetList WITH(NOLOCK) ON betList.RefNO = originBetList.TransID	
+WHERE betList.Sporttype = 1 AND betList.Bettype IN (901, 902)	
+
+DELETE #Data WHERE Sporttype = 1 AND Bettype = 903
+
 DECLARE @RowStart INT, @RowEnd INT  
 SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1
 
