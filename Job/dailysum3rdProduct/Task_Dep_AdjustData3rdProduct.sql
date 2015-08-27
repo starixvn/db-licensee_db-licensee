@@ -10,6 +10,8 @@ AS
 	Revisions: 
 		- 20150702@Patrick: Fix bug multiple rate, use to index hint to get data from bettrans_bk
 		- 20150703@Patrick: Filter data by range balanceup & movebet
+		- 20150824@Patrick: Call sp: Lrf_SelBalanceUpDay via link server
+
 	Format for transdesc: 
 		--AGC Betting - Transfer back to Sportsbook
 		--AGC Adjustment - Date: 2015-05-26
@@ -58,7 +60,7 @@ BEGIN
 
 	--check @WinlostDate less than @MoveBetDay
 	INSERT INTO @BalanceUpTable(BalanceUpDay, MoveBetsDay)
-	EXEC dbo.Age_SelBalanceUpDay
+	EXEC DBEXT.bodb02.dbo.Lrf_SelBalanceUpDay
 	
 	SELECT @MoveBetsDay = MoveBetsDay, @BalanceUpDay = BalanceUpDay
 	FROM @BalanceUpTable
