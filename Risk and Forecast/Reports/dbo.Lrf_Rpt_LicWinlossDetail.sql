@@ -54,6 +54,7 @@ AS
 		- 20150624@Winnie: support licenseeWLBT
 		- 201508215@Winnie: Revever KeenOcean currency
 		- 20150624@Winnie: fix bug bettrade dont count refund tickets.
+		- 20150903@Winnie: fix bug bettrade #42874
 	Param's Explanation:  
 	  + @CustID: SuperID  
 	  + @BaseCurrency (input currencyID): 2-MYR ; 3-USD; 6-EUR
@@ -817,7 +818,7 @@ BEGIN
 			0 as CommBA,
 			0 as CommRB,
 			0 as PlayerComm,
-			COUNT(CASE WHEN b.bettype = 903 THEN NULL	
+			SUM(CASE WHEN b.bettype = 903 THEN NULL	
 				ELSE b.BetCount END)
 			* CASE WHEN @drawfilter = 2  THEN
 					CASE WHEN b.statusID = 111 THEN 0
@@ -1082,7 +1083,7 @@ BEGIN
 			0 as CommBA,
 			0 as CommRB,
 			0 as PlayerComm,
-			COUNT(CASE WHEN b.bettype = 903 THEN NULL	
+			SUM(CASE WHEN b.bettype = 903 THEN NULL	
 				ELSE b.BetCount END)
 			* CASE WHEN @drawfilter = 2  THEN
 					CASE WHEN b.statusID = 111 THEN 0

@@ -53,6 +53,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]
 	- 20150612@Jim: support MicroGaming
 	- 20150624@Winnie: support licenseeWLBT
 	- 20150624@Winnie: fix bug bettrade dont count refund tickets.
+	- 20150903@Winnie: fix bug bettrade #42874
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -857,7 +858,7 @@ BEGIN
 			0 as CommBA,
 			0 as CommRB,
 			0 as PlayerComm,
-			COUNT(CASE WHEN b.bettype = 903 THEN NULL	
+			SUM(CASE WHEN b.bettype = 903 THEN NULL	
 				ELSE b.BetCount END)
 			* CASE WHEN @drawfilter = 2  THEN
 					CASE WHEN b.statusID = 111 THEN 0
@@ -1124,7 +1125,7 @@ BEGIN
 			0 as CommBA,
 			0 as CommRB,
 			0 as PlayerComm,
-			COUNT(CASE WHEN b.bettype = 903 THEN NULL	
+			SUM(CASE WHEN b.bettype = 903 THEN NULL	
 				ELSE b.BetCount END)
 			* CASE WHEN @drawfilter = 2  THEN
 					CASE WHEN b.statusID = 111 THEN 0
