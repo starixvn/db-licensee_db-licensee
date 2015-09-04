@@ -685,7 +685,7 @@ BEGIN
 		WHERE  
 			 b.Winlostdate BETWEEN @_FromDate AND @TempToDate  
 			AND b.bettype NOT IN (901,902,903)
-			AND b.roleid = 2   
+			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 1
 		GROUP BY  b.winlostdate,  b.currency, b.statusID
@@ -817,7 +817,7 @@ BEGIN
 		WHERE  
 			b.Winlostdate BETWEEN @_FromDate AND @TempToDate
 			AND b.bettype NOT IN (901,902,903)  
-			AND b.roleid = 2   
+			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 0
 		GROUP BY  b.winlostdate, b.currency, b.statusID
@@ -880,6 +880,7 @@ BEGIN
 			b.Winlostdate BETWEEN @_FromDate AND @TempToDate  AND
 			b.bettype IN (901,902,903) AND
 			b.statusID  IN (111, 112, 113)
+			AND b.roleid = 1 
 		GROUP BY   
 			b.winlostdate,ag.currency,statusID,b.bettype
 	END
@@ -952,7 +953,7 @@ BEGIN
 		WHERE  
 			 b.Winlostdate BETWEEN @_FromDate AND @TempToDate  
 			AND b.bettype NOT IN (901,902,903)
-			AND b.roleid = 2   
+			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 1
 		GROUP BY  b.winlostdate,  b.currency, b.statusID
@@ -1086,7 +1087,7 @@ BEGIN
 		WHERE  
 			b.Winlostdate BETWEEN @_FromDate AND @TempToDate  
 			AND b.bettype NOT IN (901,902,903)
-			AND b.roleid = 2   
+			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 0
 		GROUP BY  b.winlostdate,   b.currency, b.statusID
@@ -1147,6 +1148,7 @@ BEGIN
 			b.Winlostdate BETWEEN @_FromDate AND @TempToDate  AND 
 			b.bettype IN (901,902,903) AND 
 			b.statusID  IN (111, 112, 113)
+			AND b.roleid = 1 
 		GROUP BY   
 			b.winlostdate,ag.currency,statusID,b.bettype
 	END
