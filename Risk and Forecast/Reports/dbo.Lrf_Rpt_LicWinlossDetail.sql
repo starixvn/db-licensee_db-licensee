@@ -56,6 +56,7 @@ AS
 		- 201508215@Winnie: Revever KeenOcean currency
 		- 20150624@Winnie: fix bug bettrade dont count refund tickets.
 		- 20150903@Winnie: fix bug bettrade #42874
+		- 20150910@Jim: Integrate Microgaming RNG games (feature #43078)	
 	Param's Explanation:  
 	  + @CustID: SuperID  
 	  + @BaseCurrency (input currencyID): 2-MYR ; 3-USD; 6-EUR

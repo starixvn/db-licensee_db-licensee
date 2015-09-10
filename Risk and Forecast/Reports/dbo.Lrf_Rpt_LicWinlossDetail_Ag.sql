@@ -50,6 +50,7 @@ AS
 		- 20150709@Jim: fix bug #39374 
 		- 20150624@Winnie: fix bug bettrade dont count refund tickets.
 		- 20150903@Winnie: fix bug bettrade #42874
+		- 20150910@Jim: Integrate Microgaming RNG games (feature #43078)	
 	Param's Explanation:  
 	  + @CustID: SuperID  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)

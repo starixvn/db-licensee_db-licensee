@@ -75,6 +75,7 @@ AS /*
 		- 20150826@Winnie: Fix bug KeenOcean #42464
 		- 20150910@Jim: Integrate Microgaming RNG games (feature #43078)
 		- 20150917@Florent: Change datasource for AG Casino (#Redmine 43172)
+		
 */
     
 SET NOCOUNT ON
