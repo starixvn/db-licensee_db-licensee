@@ -106,7 +106,8 @@ CREATE TABLE #SAgWinLoss (
 	BetTradeComm	MONEY,  
 	WLBetTicket		MONEY, 	
 	WLBoughtTicket	MONEY 	
-)  
+) 
+ 
 
 DECLARE @tempAg	TABLE( custID INT,currency INT)  
 DECLARE @VNDCurrencyName VARCHAR(20)
