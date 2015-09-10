@@ -1,10 +1,6 @@
 ﻿USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_LicWinloss_xtest]    Script Date: 7/7/2015 8:45:59 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+ 
  
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]  
  @LicenseeID	INT,
@@ -217,7 +213,7 @@ BEGIN
 
 	INSERT INTO @bettype(bettype)
 	SELECT typeid FROM bettype (NOLOCK)
-	WHERE (typeid BETWEEN 2001 AND 2007)
+	WHERE (typeid BETWEEN 2001 AND 2099)
 END 
 
 DECLARE @TempFromDate DATETIME 
@@ -502,7 +498,7 @@ BEGIN
 			ELSE 0 END	
 			) turnoverKN, 
 			SUM(
-			CASE WHEN b.bettype BETWEEN 2001 AND 2007 THEN --Microgaming
+			CASE WHEN b.bettype BETWEEN 2001 AND 2099 THEN --Microgaming
 				stake
 				*
 				CASE WHEN @drawfilter IN (2,3) THEN
@@ -523,7 +519,7 @@ BEGIN
 			-SUM(CASE WHEN b.bettype =71 THEN b.winlost - b.actual_stake ELSE 0 END)					AS LicenseeWLCS,
 			-SUM(CASE WHEN b.bettype =73 THEN b.winlost - b.actual_stake ELSE 0 END)					AS LicenseeWLBG,
 			-SUM(CASE WHEN b.bettype BETWEEN 1501 AND 1599	THEN b.winlost - b.actual_stake ELSE 0 END) AS LicenseeWLKN,
-			-SUM(CASE WHEN b.bettype BETWEEN 2001 AND 2007	THEN b.winlost - b.actual_stake ELSE 0 END) AS LicenseeWLMGC,
+			-SUM(CASE WHEN b.bettype BETWEEN 2001 AND 2099	THEN b.winlost - b.actual_stake ELSE 0 END) AS LicenseeWLMGC,
 			-- 0 AS WinlossRB,
 			0 as AmountDueToBA,
 			0 as AmountDueToRB,
@@ -1370,3 +1366,7 @@ END
 	@Movebetsday='2012-08-23'
 */
 
+GO
+GRANT EXECUTE ON [dbo].[Lrf_Rpt_LicWinloss] TO [bodbLicenseeNet]  
+GO
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LicWinloss] TO [vnteam]  

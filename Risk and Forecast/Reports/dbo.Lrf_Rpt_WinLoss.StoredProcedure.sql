@@ -73,6 +73,7 @@ AS /*
 		- 20150612@Jim: support MicroGaming
 		- 20150625@Winnie: support BetTrade
 		- 20150826@Winnie: Fix bug KeenOcean #42464
+		- 20150910@Jim: Integrate Microgaming RNG games (feature #43078)
 */
     
 SET NOCOUNT ON
@@ -210,7 +211,7 @@ BEGIN
 
 	INSERT INTO @bettype(bettype)
 	SELECT typeid FROM bettype (NOLOCK)
-	WHERE (typeid BETWEEN 2001 AND 2007)
+	WHERE (typeid BETWEEN 2001 AND 2099)
 END
 IF @ShowBT=1 -- bettrade
 BEGIN 
