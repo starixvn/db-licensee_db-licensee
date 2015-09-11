@@ -1,5 +1,10 @@
 USE [bodb02]
 GO
+/****** Object:  StoredProcedure [dbo].[Task_DOT_dep_DailySummary_Bettrans_xpre]    Script Date: 09/11/2015 15:49:07 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
 ALTER PROCEDURE [dbo].[Task_DOT_dep_DailySummary_Bettrans]
 	@winlostdate datetime
 AS
@@ -43,6 +48,7 @@ AS
   - 20150625@Patrick: #37769: Remove dummy account & exclude cancel transfer tickets for AG Casino (merge)
   - 20150630@Jim: add MicroGaming
   - 20150630@Patrick: #38387: Support bettrade
+  - 20150911@Jim: add MicroGaming RNG
 
  Param's Explanation:  
 
@@ -188,7 +194,9 @@ BEGIN
 	   WHERE tl.winlostdate >= @date  
 			 and tl.productID = 202
 	   GROUP BY tl.custid,tl.currency,tl.recommend,tl.mrecommend,tl.srecommend
-
+	  
+	   
+	   	
 	   UPDATE #tempDepWinlost
 	   SET OpeningBalance = a.OpeningBalance 
 	   FROM #tempDepWinlost t
@@ -206,7 +214,22 @@ BEGIN
 	   ) a
 	   ON t.winlostdate = a. winlostdate and t.custid = a.custid
 
-   
+	   --- MicroGaming_RNG
+	   INSERT INTO #tempDepWinlost (winlostdate, custid, currency, recommend, mrecommend, srecommend, OpeningBalance, turnover, outstanding)	
+	   SELECT @date AS winlostdate
+			  ,g.custid
+			  ,g.currency
+			  ,g.recommend
+			  ,g.mrecommend
+			  ,g.srecommend
+			  ,-SUM(CASE WHEN winlostdate < @date AND g.statusID IN (0,1) THEN actual_stake ELSE 0 END) AS OpeningBalance
+			  ,SUM(CASE WHEN winlostdate = @date AND g.statusID IN (0,1) then stake ELSE 0 END) AS turnover
+			  ,SUM(CASE WHEN g.statusID IN (0,1) then actual_stake ELSE 0 END) AS outstanding
+	   FROM dbo.bettransRnG g WITH (rowlock) 
+	   INNER JOIN #DepositCustSuper s WITH(NOLOCK) ON s.custid = g.srecommend AND s.Currency = g.currency
+	   WHERE g.winlostdate >= @date 	
+		GROUP BY g.custid,g.currency,g.recommend,g.mrecommend,g.srecommend
+		
 	END
 	ELSE --@date < @today
 	BEGIN
@@ -297,7 +320,21 @@ BEGIN
 		WHERE tl.winlostdate <= @date  
 			  and tl.productID = 202
 		GROUP BY tl.custid,tl.currency,tl.recommend,tl.mrecommend,tl.srecommend
-
+		UNION -- microgaming_RNG
+		 SELECT @date AS winlostdate
+			  ,g.custid
+			  ,g.currency
+			  ,g.recommend
+			  ,g.mrecommend
+			  ,g.srecommend
+			  ,-SUM(CASE WHEN winlostdate < @date AND g.statusID IN (0,1) THEN actual_stake ELSE 0 END) AS OpeningBalance
+			  ,SUM(CASE WHEN winlostdate = @date AND g.statusID IN (0,1) then stake ELSE 0 END) AS turnover
+			  ,SUM(CASE WHEN g.statusID IN (0,1) then actual_stake ELSE 0 END) AS outstanding
+	   FROM dbo.bettransRnG g WITH (rowlock) 
+		INNER JOIN #DepositCustSuper s WITH(NOLOCK) ON s.custid = g.srecommend AND s.Currency = g.currency
+		WHERE g.winlostdate <= @date  
+		GROUP BY g.custid,g.currency,g.recommend,g.mrecommend,g.srecommend
+		
 	END 
 
 	delete #Data  
