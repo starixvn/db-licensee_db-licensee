@@ -45,10 +45,11 @@ AS
 		- 20150414@Winnie: Re-add transferin/transfer out which have transferAmout=0 for AGBalance
 		- 20150618@Patrick: #36263: Fix super balance issue for: AGC, GD & VG
 		- 20150625@Patrick: #37769: Remove dummy account & exclude cancel transfer tickets for AG Casino (merge)
+		- 20150630@Jim: add MicroGaming
 		- 20150630@Patrick: #38387: Support bettrade
 
 	Param's Explanation:
-	• @date: The date need to summary
+	? @date: The date need to summary
 */
 SET NOCOUNT ON
 declare @date datetime
@@ -114,6 +115,8 @@ SELECT
 	SUM( CASE WHEN winlostdate = @date AND bettype IN (p.TransferId, p.CancelTransferId) then winlost-actual_stake ELSE 0 END), --Transfer3rdOthers
 	SUM( CASE WHEN winlostdate = @date AND bettype IN (p.TransferId, p.CancelTransferId) AND (winlost-actual_stake) < 0 THEN -(winlost-actual_stake) ELSE 0 END), --Transfer3rdOthers_In
 	SUM( CASE WHEN winlostdate = @date AND bettype IN (p.TransferId, p.CancelTransferId) AND (winlost-actual_stake) > 0 THEN -(winlost-actual_stake) ELSE 0 END) --Transfer3rdOthers_Out
+	--SUM( CASE WHEN winlostdate = @date AND bettype =p.TransferId AND b.transdesc NOT LIKE '%(transfer cancelled)%' AND (winlost-actual_stake) < 0 THEN -(winlost-actual_stake) ELSE 0 END), --Transfer3rdOthers_In
+	--SUM( CASE WHEN winlostdate = @date AND bettype =p.TransferId AND b.transdesc NOT LIKE '%(transfer cancelled)%' AND (winlost-actual_stake) > 0 THEN -(winlost-actual_stake) ELSE 0 END) --Transfer3rdOthers_Out
 FROM dbo.bettrans b	with(readpast)
 	--inner join dep_custsuper s with(nolock) on s.custid = b.srecommend
 	INNER JOIN #DepositCustSuper s WITH(NOLOCK) ON s.custid = b.srecommend AND s.Currency = b.currency
@@ -264,6 +267,7 @@ SELECT
 		WHEN bettype BETWEEN 1800 AND 1899 THEN 250 -- AGC
 		WHEN bettype BETWEEN 1700 AND 1799 THEN 255 -- GD
 		WHEN bettype BETWEEN 1900 AND 1999 THEN 249 -- VG
+		WHEN bettype BETWEEN 2001 AND 2099 THEN 203 -- MicroGaming
 		WHEN bettype = 901 THEN -2 -- BetTrade - Sold
 		WHEN bettype = 902 THEN -3 -- BetTrade - Bought
 		WHEN bettype = 903 THEN -4 -- BetTrade - Commission
@@ -289,6 +293,7 @@ GROUP BY b.custid,
 		WHEN bettype BETWEEN 1800 AND 1899 THEN 250 -- AGC
 		WHEN bettype BETWEEN 1700 AND 1799 THEN 255 -- GD
 		WHEN bettype BETWEEN 1900 AND 1999 THEN 249 -- VG
+		WHEN bettype BETWEEN 2001 AND 2099 THEN 203 -- MicroGaming
 		WHEN bettype = 901 THEN -2 -- BetTrade - Sold
 		WHEN bettype = 902 THEN -3 -- BetTrade - Bought
 		WHEN bettype = 903 THEN -4 -- BetTrade - Commission
