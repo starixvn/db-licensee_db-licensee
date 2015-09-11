@@ -1,5 +1,10 @@
 USE [bodb02]
 GO
+/****** Object:  StoredProcedure [dbo].[Task_DOT_dep_DailySummary_Bettrans_xpre]    Script Date: 09/11/2015 15:49:07 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
 ALTER PROCEDURE [dbo].[Task_DOT_dep_DailySummary_Bettrans]
 	@winlostdate datetime
 AS
