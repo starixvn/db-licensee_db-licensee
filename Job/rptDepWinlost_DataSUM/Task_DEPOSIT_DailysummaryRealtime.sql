@@ -31,6 +31,7 @@ SET NOCOUNT ON
 declare @date datetime  
 select @date = @winlostdate
   
+
   
 IF EXISTS(SELECT 1 FROM DBACC.bodb02.dbo.SystemSettings WITH(NOLOCK) WHERE VValue = 1 AND VName = 'isCalculatingDEPdata')
 BEGIN
@@ -324,7 +325,7 @@ INSERT INTO #tempDepWinlostByProduct_staging (winlostdate,custid,sporttype,curre
    UNION 
    SELECT @date AS winlostdate
 	,g.custid   
-    ,203 AS sporttype
+    ,g.productID AS sporttype
     ,g.currency
 	,SUM(CASE WHEN winlostdate = @date AND g.statusID IN (0,1) then stake ELSE 0 END) AS turnover
 	,SUM(CASE WHEN winlostdate = @date AND g.statusID IN (0,1) then 1 ELSE 0 END) AS Betcount
@@ -335,7 +336,7 @@ INSERT INTO #tempDepWinlostByProduct_staging (winlostdate,custid,sporttype,curre
 		 and custid in (select custid from @TempCustID)
 		 and custid <> 0
 		 
-   GROUP BY g.custid,  g.currency
+   GROUP BY g.custid, g.productID,g.currency;
    UNION 
    SELECT @date AS winlostdate
 	,lc.custid   
