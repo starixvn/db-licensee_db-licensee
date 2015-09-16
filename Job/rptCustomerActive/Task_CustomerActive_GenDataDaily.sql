@@ -22,6 +22,7 @@ BEGIN
 	DECLARE @ProductCodes VARCHAR(125), @FromDate DATE, @ToDate DATE
 	SELECT @FromDate = DATEADD(D, -1, @TransDate), @ToDate = DATEADD(D, 1, @TransDate)
 	
+	
 	--get product prefix
 	SET @ProductCodes = 'SB'
 	SELECT @ProductCodes = COALESCE(@ProductCodes + ',' + ProductPrefix, ProductPrefix)
@@ -90,6 +91,14 @@ BEGIN
 	GROUP BY b.TransDate, b.CustId, b.Recommend, b.currency, b.ProductId
 	
 	-- AG Casino
+	--INSERT INTO #DataTmp(TransDate, CustId, Recommend, CurrencyId, ProductId)
+	--SELECT CAST(TransDate AS DATE) AS TransDate, b.CustID, b.recommend, b.currency, 9 AS ProductId
+	--FROM bodb_PlaytechCS.dbo.bettrans_PlaytechCS b WITH(NOLOCK)
+	--WHERE Winlostdate = @TransDate
+	--GROUP BY CAST(TransDate AS DATE), b.CustID, b.recommend, b.currency
+	--OPTION (RECOMPILE) --> Currently, playtech cs is terminated
+
+	-- For AG Casino
 	INSERT INTO #DataTmp(TransDate, CustId, Recommend, CurrencyId, ProductId)
 	SELECT b.TransDate, b.CustId, b.Recommend, b.currency, b.ProductId
 	FROM (
@@ -101,6 +110,7 @@ BEGIN
 	LEFT JOIN #DataTmp tmp ON b.TransDate = tmp.TransDate AND b.custid = tmp.CustId AND tmp.ProductID=10
 	WHERE tmp.TransDate IS NULL
 	GROUP BY b.TransDate, b.CustId, b.Recommend, b.currency, b.ProductId
+	
 	
 	--merge to business table
 	INSERT INTO dbo.rptCustomerActive(TransDate, CustId, Recommend, CurrencyId, ProductId)
