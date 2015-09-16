@@ -1,16 +1,21 @@
-﻿ALTER PROCEDURE [dbo].[Task_BATransaction_Ins]  
+﻿use bodb02
+go
+
+ALTER PROCEDURE [dbo].[Task_BATransaction_Ins]
 AS  
 /*  
  Created by:[Henry]  
  Date: 2011-06-20  
  Task: Insert BA Bets to LicenseeBATransaction  
- DB: DB05.BODB02  
+ DB: DB052.BODB02  
  Revisions:   
   20110824@Henry: Change the range of the bettype (not between 31 and 120)  
   20110909@Viet: revise SP  
   20111208@Jim: Change bettype condition  
   20100315@kIWI: Remove @TempBACustID table   
   20121030@Viet: change the way to get data, reduce load for server.  
+  20150127@Don: Expand bet type ranges for Sportbook when processing BA
+  20150903@Patrick: #42910: Exclude ticket 901 for BetTrade
  */  
 SET NOCOUNT ON   
   
@@ -31,11 +36,12 @@ SET NOCOUNT ON
   
  INSERT INTO @temptrans (transid, transdate, custid, recommend, srecommend)  
  SELECT transid, transdate, custid, recommend, srecommend
- FROM dbo.bettrans WITH(NOLOCK)     
+ FROM dbo.bettrans WITH(NOLOCK, index=IXU_transid)
  WHERE TransID BETWEEN @smallID AND @maxtransID  
-  AND (Bettype < 31 OR (bettype between 121 and 999))  
+  AND (Bettype < 31 OR (Bettype between 121 and 999) OR (Bettype>=1301 AND Bettype<1400))  
   AND StatusID <> 121 --DONE  
-  AND tpositiontaking = 0    
+  AND tpositiontaking = 0
+  AND bettype <> 901
   
  IF @@ROWCOUNT = 0 RETURN  
    
@@ -58,7 +64,6 @@ SET NOCOUNT ON
   
  INSERT INTO Bodb_Licensee.dbo.LicenseeBATransaction_active (TransID, Transdate, custid, recommend, srecommend)  
  SELECT TransID, Transdate, custid, recommend, srecommend  
- FROM @temptrans  
- 
+ FROM @temptrans
 GO
 GRANT VIEW DEFINITION ON [dbo].[Task_BATransaction_Ins] TO [vnteam] AS [dbo]

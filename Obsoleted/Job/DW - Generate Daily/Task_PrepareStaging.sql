@@ -1,4 +1,9 @@
-USE [bodb_Licensee]
+USE [bodb_licensee]
+GO
+/****** Object:  StoredProcedure [dbo].[Task_PrepareStaging]    Script Date: 9/3/2015 11:06:17 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
 GO
 ALTER PROCEDURE [dbo].[Task_PrepareStaging]  
     @datefrom smalldatetime=null
@@ -16,6 +21,7 @@ Revisions:
     -20150127@Don: Expand bet type ranges for Sportbook when processing BA
 	-20150324@Jim: exclude waiting ticket
 	-20150623@Patrick: Support BetTrade
+	-20150003@Patrick: #42910 (Exclude ticket 901 for BA ticket)
 
 Param's Explanation:
 
@@ -108,7 +114,8 @@ BEGIN
                 ,virtualrate
                 ,discount
                 ,tpositiontaking
-                ,customercategory)
+                ,customercategory
+				,isBA)
 			SELECT 
 			    b.transid,
 	            b.winlostdate,
@@ -132,9 +139,11 @@ BEGIN
                 b.tpositiontaking,
                 CASE WHEN b.recommend=52466 THEN 27 --8RM
 					 WHEN b.recommend=5707545  THEN 28 -- BARM
-					ELSE -1 END customercategory 
+					ELSE -1 END customercategory,
+				CASE WHEN b.transid2 = 1 AND btc.CustId IS NOT NULL AND b.bettype NOT IN (901,902,903) THEN 1 ELSE 0 END --for BA's bettrade tickets (original tickets)
 			FROM bodb02.dbo.bettrans b (NOLOCK)
 			    INNER JOIN @Recommend_List r ON b.recommend=r.t_recommend
+				LEFT JOIN #BetTradeCust btc ON b.CustId = btc.CustId
 			WHERE b.bettype<19000
 			    --AND b.statusid NOT IN (0,101,102,121)  -- 'void', 'reject', 'running','done'
 	            AND b.winlostdate=@tmpDate
@@ -172,7 +181,8 @@ BEGIN
                 ,virtualrate
                 ,discount
                 ,tpositiontaking
-                ,customercategory)
+                ,customercategory
+				,isBA)
 			SELECT 
 			    b.transid,
 	            b.winlostdate,
@@ -196,9 +206,11 @@ BEGIN
                 b.tpositiontaking,
                 CASE WHEN b.recommend=52466 THEN 27 --8RM
 					 WHEN b.recommend=5707545 THEN 28 	--BARM
-					ELSE -1 END customercategory 
+					ELSE -1 END customercategory,
+				CASE WHEN b.transid2 = 1 AND btc.custid IS NOT NULL AND b.bettype NOT IN (901,902,903) THEN 1 ELSE 0 END --for BA's bettrade tickets (original tickets)
 			FROM bodb02.dbo.bettrans14 b (NOLOCK)
 			    INNER JOIN #Customer c (NOLOCK) ON b.winlostdate=@tmpDate AND b.custid=c.t_custid
+				LEFT JOIN #BetTradeCust btc ON b.CustId = btc.CustId
 			WHERE b.statusid NOT IN (0,101,102,121)  -- 'void', 'reject', 'running','done'
         END
 
@@ -207,28 +219,30 @@ BEGIN
 	
 	--DROP TABLE #Recommend_List
 	DROP TABLE #Customer
-	
-	
+		
 	UPDATE dbo.bettrans
 	SET statusid=CASE WHEN [status]='HALF WON' THEN 114 WHEN [status]='HALF LOSE' THEN 115 END
 	WHERE [status] IN ('HALF WON','HALF LOSE')
 	
 	--///// PROCESS UPDATE BA STATUS FOR TICKETS ///////////////////
-    DECLARE @BATransids AS TABLE (transID bigint)
+    CREATE TABLE #BATransids (transID bigint)
 
     SELECT @today = current_timestamp
 
-    INSERT @BATransids
-        SELECT transid
+    INSERT #BATransids(transid)
+        SELECT b.transid
         FROM dbo.bettrans b (NOLOCK)
 	        INNER JOIN dbo.LicenseeBAHistory h (NOLOCK) 
 	            ON b.custid=h.custid AND (transdate BETWEEN OnDate AND ISNULL(OffDate,@today))
         WHERE (Bettype<31 OR (Bettype>=121 AND Bettype<1000) OR (Bettype>=1301 AND Bettype<1400))
 	        AND tpositiontaking=0
+			AND b.bettype NOT IN (901,902,903)
 
     UPDATE dbo.bettrans 
     SET IsBA=1
-    WHERE transid IN (SELECT transid FROM @BATransids)
+    WHERE transid IN (SELECT transid FROM #BATransids)
+
+	DROP TABLE #BATransids
 
 	--turn on bettrade members
 	UPDATE dbo.bettrans 
@@ -239,7 +253,3 @@ BEGIN
 	DROP TABLE #BetTradeCust
 	  
 END
-GO
-GRANT EXECUTE ON [dbo].[Task_PrepareStaging] TO [vnteam] AS [dbo]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Task_PrepareStaging] TO [vnteam] AS [dbo]
