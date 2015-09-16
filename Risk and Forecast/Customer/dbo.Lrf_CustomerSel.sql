@@ -402,6 +402,13 @@ FROM dbo.translog tl WITH (NOLOCK)
 WHERE statusID IN (0,1)  --running and Waiting
 	and productID IN (202,203)
 GROUP BY tl.custid,tl.currency,productID,statusID
+--- MicroGamming RNG
+INSERT INTO #OutstandingTranslog
+SELECT g.custid,g.currency,14 productID,statusID,sum(g.actual_stake) actual_stacke
+FROM dbo.bettransRnG g WITH (NOLOCK)
+	INNER JOIN @TempAg lc ON g.recommend=lc.CustID
+WHERE g.statusID IN (0,1)  --running and Waiting		
+GROUP BY   g.custid,g.currency,statusID
 
 SELECT *
 INTO #ExchangeRate
