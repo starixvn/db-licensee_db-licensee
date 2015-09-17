@@ -12,6 +12,9 @@ AS
 	Original:
 
 	Revisions:
+	   - 20150610@Daniel: 
+	      + Improve medthod check table existing in subscribers	
+	      + Separate custDB to new server DBCUST  
 
 	Param's Explanation:
 		
@@ -20,8 +23,11 @@ BEGIN
 
 	SET NOCOUNT ON
 	
-	IF (SELECT COUNT(1) FROM sys.objects WHERE name IN ('Dep_Custsetting3rd','custinfo') AND type = 'U') <> 2
-		RETURN
+	if NOT(dbo.f_CheckRepTable('custinfo') = 1 
+	     AND dbo.f_CheckRepTable('Dep_Custsetting3rd') = 1 
+     )
+	   	RETURN   	
+		
 	
 	DECLARE @string VARCHAR(MAX), @splitter CHAR(1), @xml XML
 	SELECT @splitter = ',', @string = @ids

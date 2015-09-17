@@ -6,7 +6,6 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-
 ALTER PROCEDURE [dbo].[Lrf_Result_MatchSelNumberGameByLeague]    
  @FromDate DATETIME,    
  @ToDate DATETIME = NULL,  

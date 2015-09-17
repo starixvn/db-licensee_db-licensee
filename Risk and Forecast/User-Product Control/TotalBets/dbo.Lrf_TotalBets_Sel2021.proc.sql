@@ -25,6 +25,7 @@ Revisions:
 	- 20150124@Winnie: Add base currency GBP 
 	- 20150617@Jim:  Enhance Total Bets with sum values of running stakes  (Feature #36839)
 */
+
 SET NOCOUNT ON
 
 DECLARE @Today smalldatetime 

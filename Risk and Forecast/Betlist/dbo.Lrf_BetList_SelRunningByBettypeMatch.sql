@@ -48,6 +48,7 @@ Revisions:
    - 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
    - 20150124@Winnie: Add base currency GBP
    - 20150414@Jim: support betradar 
+   - 20150630@Jim: remove BA ticket
 */
 
 SET NOCOUNT ON
@@ -201,7 +202,7 @@ BEGIN
 		b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) AND
 		((@Liveindicator=-1) OR (@Liveindicator=0 AND b.Liveindicator = 0) OR (@Liveindicator=1 AND b.Liveindicator = 1)) AND
 		((@betteam='') OR (@betteam<>'' AND b.betteam = @betteam))
-			
+		AND tpositiontaking <> 0
 	ORDER BY
 		b.status, b.transid
 END

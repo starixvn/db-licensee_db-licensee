@@ -1,4 +1,11 @@
-ALTER PROCEDURE	dbo.Lrf_AGC_UpdCustSetting
+USE [CustDB]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_AGC_UpdCustSetting]    Script Date: 06/06/2015 14:25:29 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE	[dbo].[Lrf_AGC_UpdCustSetting]
 	@CustID		INT,
 	@AGGroup	VARCHAR(20),
 	@UserID		INT,
@@ -10,9 +17,12 @@ AS
 /*
 	Created: 20140818@Victor
 	Task: Update member setting of AG Casino product
-	DB: DBLIC/bodb_licensee
+	DB: DBCust.CustDB
+	
 	Original:
 	Revisions:
+		- 20150606@Kathy: Move SP to DBCust.custDB [Redmine:#36216]
+
 	Param's Explanation:
 */
 BEGIN
@@ -27,13 +37,13 @@ BEGIN
 	SET @startRun = GETDATE()
 
 	SELECT @AGGroup_Old = ISNULL(AGGroup,'')
-	FROM DBTXN.CustDB.dbo.Dep_CustSetting_AGCasino WITH (NOLOCK)
+	FROM dbo.Dep_CustSetting_AGCasino WITH (NOLOCK)
 	WHERE CustID = @CustId
 
 	DECLARE @CustIDs VARCHAR(20)
 	SELECT @CustIDs = CONVERT(VARCHAR(20), @CustID)
 
-	EXEC DBTXN.CustDB.dbo.Dep_UpdCustSetting_AGC @CustIDs = @CustIDs, @AGGroup = @AGGroup
+		EXEC dbo.Dep_UpdCustSetting_AGC @CustIDs = @CustIDs, @AGGroup = @AGGroup
 
 	-- Write log
 	SET @endRun = GETDATE()
@@ -73,6 +83,6 @@ BEGIN
     END CATCH
 END
 
+
 GO
-GRANT EXECUTE ON dbo.Lrf_AGC_UpdCustSetting TO bodbLicenseeNet
-GO
+GRANT EXECUTE ON [dbo].[Lrf_AGC_UpdCustSetting] TO [bodbLicenseeNet] AS [dbo]
