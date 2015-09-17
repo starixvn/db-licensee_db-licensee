@@ -1,6 +1,6 @@
 ﻿USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_BetList_SelWinlossDaily]    Script Date: 10/1/2015 2:45:19 PM ******/
+/****** Object:  StoredProcedure [dbo].[Lrf_BetList_SelWinlossDaily]    Script Date: 04/20/2015 13:43:02 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -86,11 +86,10 @@ AS
 		- 20150114@Winnie: remove hardcode bettype, use spottype bettype matrix
 		- 20150128@Winnie: Add base currency GBP 
 		- 20150410@Jim: support betradar and apply report-bettype matrix
-		- 20150604@Edward: Support Microgaming
+		- 20150604@Edward: Support Micro Gaming
 		- 20150608@Edward: Exclude 3 transactions SOLD/BOUGHT/BetTrade Commission of BetTrade
 		- 20150623@Edward: Fix bug Missing Sporttype for Microgaming tickets (#38450)
 		- 20150916@Kos: Don't support Microgaming RNG Game
-		- 20150921@Kos: Don't support Microgaming
 
 	Param's Explanation: 
 */
@@ -202,7 +201,7 @@ BEGIN
 	CREATE TABLE #TempAg (custid INT, Currency INT)
 	--CREATE TABLE #TmpCondBettype(bettype INT primary key)
 	------------
-	CREATE TABLE #SportBettype (ProductID TINYINT, Bettype SMALLINT, EventType TINYINT)
+	CREATE TABLE #SportBettype (ProductID TINYINT, Bettype SMALLINT, EventType TINYINT, SubProduct VARCHAR(500))
 	------------
 	DECLARE @RowStart INT, @RowEnd INT
 
@@ -234,7 +233,7 @@ BEGIN
 	IF (@Product = 'SB' OR @Product = 'BA')
 	BEGIN
 		INSERT INTO #SportBettype
-		EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel  @mode = 4, @ProductID = 1
+		EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel  @mode = 5, @ProductID = 1
  
 		DELETE #SportBettype WHERE ProductID = 1 AND Bettype IN (901, 902, 903)
 	END
@@ -243,49 +242,59 @@ BEGIN
 	IF @Product = 'NG'
 	BEGIN 
 		INSERT INTO #SportBettype
-		EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode = 4, @ProductID = 3
+		EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode = 5, @ProductID = 3
 	END
 
 	-- Horse Racing
 	IF @Product = 'RB'
 	BEGIN 
 		INSERT INTO #SportBettype
-		EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode = 4, @ProductID = 2
+		EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode = 5, @ProductID = 2
 	END
 
 	--Live Casino
 	IF @Product = 'LC'
 	BEGIN	
 		INSERT INTO #SportBettype
-		EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode = 4, @ProductID = 4
+		EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode = 5, @ProductID = 4
 	END
 
 	-- Virtual Sports
 	IF @Product = 'VS'
 	BEGIN	
 		INSERT INTO #SportBettype
-		EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode = 4, @ProductID = 5
+		EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode = 5, @ProductID = 5
 	END
 
 	-- RNG Casino
 	IF @Product = 'CS'
 	BEGIN	
 		INSERT INTO #SportBettype
-		EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode = 4, @ProductID = 6
+		EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode = 5, @ProductID = 6
 	END
 
 	-- Bingo
 	IF @Product = 'BG'
 	BEGIN
 		INSERT INTO #SportBettype
-		EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode = 4, @ProductID = 7
+		EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode = 5, @ProductID = 7
 	END
 
 	-- Keno
 	IF @Product = 'KN'
 	BEGIN	
 		INSERT INTO #SportBettype
-		EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode = 4, @ProductID = 8
+		EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode = 5, @ProductID = 8
+	END
+
+	-- Micro Gaming
+	IF @Product = 'MGC'
+	BEGIN	
+		INSERT INTO #SportBettype
+		EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode = 5, @ProductID = 13
+
+		DELETE #SportBettype			-- Don't support Micro Gaming RNG Game
+		WHERE ProductID = 13 AND SubProduct = 'MGC-RNG'
 	END
 
 	SET @LicenseeWL =
@@ -304,17 +313,17 @@ BEGIN
 			IF @Sort LIKE '%Winlost%'
 			BEGIN
 				SELECT @SortTemp = @Winlost
-			 + '*e.' + SUBSTRING(@Sort, @charindex - 3,4) + SUBSTRING(@Sort, @charindex + 1, LEN(@Sort))
+			 + '*e.'+SUBSTRING(@Sort, @charindex - 3,4) + SUBSTRING(@Sort, @charindex + 1, LEN(@Sort))
 			END
 			ELSE
 			IF @Sort LIKE '%LicenseeWL%'
 			BEGIN
 				SELECT @SortTemp = @LicenseeWL
-			 + '*e.' + SUBSTRING(@Sort, @charindex - 3,4) + SUBSTRING(@Sort, @charindex + 1, LEN(@Sort))
+			 + '*e.'+SUBSTRING(@Sort, @charindex - 3,4) + SUBSTRING(@Sort, @charindex + 1, LEN(@Sort))
 			END
 			ELSE
 			BEGIN
-				SELECT @SortTemp = SUBSTRING (@Sort, 1, @charindex - 4) + '*e.'+SUBSTRING(@Sort, @charindex - 3,4) + SUBSTRING(@Sort, @charindex + 1, LEN(@Sort))
+				SELECT @SortTemp = substring (@Sort, 1, @charindex - 4) + '*e.'+SUBSTRING(@Sort, @charindex - 3,4) + SUBSTRING(@Sort, @charindex + 1, LEN(@Sort))
 			END	
 		END
 	ELSE
@@ -618,6 +627,12 @@ BEGIN
 		FROM #BetData1 b
 			INNER JOIN @hr  r ON b.oddsid=r.OrID
 		WHERE b.bettype IN (31, 32, 33)
+	
+		-- Update data for MicroGamming
+		UPDATE b
+		SET b.sporttype = 203
+		FROM #BetData1 b
+		WHERE b.bettype BETWEEN 2001 AND 2009
 
 		-- Insert and drop temp table
 		INSERT INTO #Data
@@ -934,6 +949,12 @@ BEGIN
 			INNER JOIN @hr  r ON b.oddsid=r.OrID
 		WHERE b.bettype IN (31, 32, 33)	
 
+		-- Update data for MicroGamming
+		UPDATE b
+		SET b.sporttype = 203
+		FROM #BetData14 b
+		WHERE b.bettype BETWEEN 2001 AND 2007
+
 		-- Insert and drop temp table
 		INSERT INTO #Data
 		SELECT 
@@ -1109,12 +1130,6 @@ BEGIN
 	DROP TABLE #TempAg
 	DROP TABLE #BettransDetail
 END
-
-
-
-
-
-
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinlossDaily] TO [bodbLicenseeNet]
