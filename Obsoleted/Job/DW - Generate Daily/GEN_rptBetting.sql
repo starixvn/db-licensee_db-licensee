@@ -1,5 +1,11 @@
 USE [bodb_Licensee]
 GO
+/****** Object:  StoredProcedure [dbo].[GEN_rptBetting]    Script Date: 09/17/2015 03:58:03 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+/****** Object:  Stored Procedure dbo.GEN_rptBetting    Script Date: 8/21/2015 1:13:37 PM ******/
 ALTER PROCEDURE [dbo].[GEN_rptBetting]
     @date datetime, 
     @date2 datetime = null
@@ -18,6 +24,7 @@ Revisions:
 20121102@Jim: add process to generate data for KPI NumberGame report
 20130903@Jim: support Virtual Horse Racing
 20150623@Patrick: Support BetTrade
+20150917@Francis: Cast LiveIndicator to 0 if it is NULL
 
 Param's Explanation:
 
@@ -63,7 +70,7 @@ INSERT INTO dbo.rpt_Betting
         END AS leagueid,
 	    b.currency,
 	    b.statusid Status,
-	    b.liveindicator,
+	    ISNULL(b.liveindicator,0) liveindicator,
         COUNT(*) Betcount,
         COUNT(DISTINCT b.custid) MemberCount,
         SUM(stake) Turnover,
@@ -118,6 +125,8 @@ exec GEN_RptKPI_MTD_Betting_3rdproduct
     @date2 = @date2,
     @stattype = 2,
     @isBA = 0*/
+GO
+GRANT EXECUTE ON [dbo].[GEN_rptBetting] TO [bodbLicenseeNet] AS [dbo]
 GO
 GRANT EXECUTE ON [dbo].[GEN_rptBetting] TO [vnteam] AS [dbo]
 GO
