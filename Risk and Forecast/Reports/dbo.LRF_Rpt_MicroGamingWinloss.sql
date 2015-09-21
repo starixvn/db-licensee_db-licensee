@@ -31,7 +31,7 @@ AS
     Task : MicroGaming Win Loss report 
     DB: DBEXT.bodb02  
     Revisions:  
-		 
+		  20150921@Jim: support RNG bettype
 	Param's Explanation:  
 	  + @excludeTest: remove currency UUS
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -117,8 +117,34 @@ BEGIN
 						, t.currency
 						, bet.TypeID
 						, bet.TypeName
-		
+				INSERT INTO #tmpResult ( Winlostdate
+							 ,Currency 
+							 ,TypeID	
+							 ,TypeName
+							 ,TurnOver 	
+							 ,TotalTrans
+							 ,Winlost  	
+							 ,LicenseeWinlost 
+							)
 							
+				SELECT 	b.winlostdate
+						, t.currency
+						, bet.TypeID
+						, bet.TypeName
+						, SUM(stake) turnover
+						, COUNT(b.transid) TotalTrans
+						, SUM(b.winlost - b.actual_stake) AS Winlost
+						, SUM(- 1 * (b.winlost - b.actual_stake)) AS LicenseeWinlost
+				FROM dbo.bettransRnG b WITH (NOLOCK)
+				INNER JOIN #TempAg t ON b.recommend = t.custid AND t.Currency = b.Currency
+				INNER JOIN #Bettype bet ON b.gameID  = bet.bettype
+				WHERE b.winlostdate BETWEEN @TempFromDate AND @ToDate
+							AND b.statusID IN (111, 112, 113)
+							AND b.IsSum=0
+				GROUP BY b.winlostdate
+						, t.currency
+						, bet.TypeID
+						, bet.TypeName		
 	END	
 
 	INSERT INTO #tmpResult ( Winlostdate
