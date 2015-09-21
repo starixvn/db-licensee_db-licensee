@@ -10,7 +10,7 @@ AS
 	 Revisions:
 		- 20150318@Patrick: Duplicate data for BA tickets
 		- 20150916@Jim: support microgaming
-
+		- 20150921@Jim: support AG Casino
 	 Param's Explanation:
 */
 
@@ -89,6 +89,18 @@ BEGIN
 	WHERE tmp.TransDate IS NULL
 	GROUP BY b.TransDate, b.CustId, b.Recommend, b.currency, b.ProductId
 	
+	-- AG Casino
+	INSERT INTO #DataTmp(TransDate, CustId, Recommend, CurrencyId, ProductId)
+	SELECT b.TransDate, b.CustId, b.Recommend, b.currency, b.ProductId
+	FROM (
+	SELECT blc.transdate,blc.custid,blc.recommend,blc.currency,10 ProductId
+	FROM bodb02.dbo.bettransLC blc WITH (NOLOCK) 
+		INNER JOIN bodb_licensee.dbo.LicenseeCust lc WITH(NOLOCK) ON blc.recommend = lc.custid
+	WHERE blc.transdate  > @FromDate AND blc.transdate < @ToDate
+	) b
+	LEFT JOIN #DataTmp tmp ON b.TransDate = tmp.TransDate AND b.custid = tmp.CustId AND tmp.ProductID=10
+	WHERE tmp.TransDate IS NULL
+	GROUP BY b.TransDate, b.CustId, b.Recommend, b.currency, b.ProductId
 	
 	--merge to business table
 	INSERT INTO dbo.rptCustomerActive(TransDate, CustId, Recommend, CurrencyId, ProductId)

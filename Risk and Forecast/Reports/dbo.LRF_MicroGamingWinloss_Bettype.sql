@@ -8,7 +8,7 @@ AS
     Task : MicroGaming Win Loss report 
     DB: DBEXT.bodb02  
     Revisions:  
-		 
+		 20150921@Jim: support RNG bettype
 	Param's Explanation:  
 	  + @TypeID: 0: All
 				 1: generic game
@@ -18,12 +18,16 @@ AS
 		;WITH cte_kind
 		AS (
 			SELECT TypeID Bettype,
-				 CASE WHEN TypeID IN (2001,2002,2003,2004,2009) THEN 1
-					  WHEN TypeID IN (2005,2006,2007,2008) THEN 2
+				 CASE WHEN TypeID IN (2001,2002,2003,2004) THEN 1
+					  WHEN TypeID IN (2009) THEN 3
+					  WHEN TypeID IN (2005,2006,2007) THEN 2
+					  WHEN TypeID IN (2008) THEN 4
 				      ELSE 0
 					  END TypeID
-				,CASE WHEN TypeID IN (2001,2002,2003,2004,2009) THEN 'Generic Games'
-					  WHEN TypeID IN (2005,2006,2007,2008) THEN 'Branded Games'
+				,CASE WHEN TypeID IN (2001,2002,2003,2004 ) THEN 'Live Casino Generic Games'
+					  WHEN TypeID IN (2009) THEN 'RNG Generic Games'
+					  WHEN TypeID IN (2005,2006,2007) THEN 'Live Casino Branded Games'
+					  WHEN TypeID IN (2008) THEN 'RNG Branded Games'
 				      ELSE ''
 					  END TypeName		
 			FROM dbo.bettype WITH (NOLOCK) 
