@@ -560,7 +560,7 @@ BEGIN
 		LEFT JOIN f_GetBetTradeCustList(@LicenseeName) bt ON b.custid=bt.Custid AND b.Currency = bt.currency
 	WHERE
 		b.Winlostdate BETWEEN @_FromDate AND @TempToDate AND	
-		roleID = 2 AND 
+		roleID = 1 AND 
 		b.statusID <> 101 --exclude REJECT bets
 	GROUP BY ag.currency
 	
@@ -588,7 +588,7 @@ BEGIN
 		LEFT JOIN f_GetBetTradeCustList(@LicenseeName) bt ON b.custid=bt.Custid AND b.Currency = bt.currency
 	WHERE
 		b.Winlostdate BETWEEN @_FromDate AND @_ToDate AND	
-		roleID = 2 AND 
+		roleID = 1 AND 
 		b.statusID <> 101 --exclude REJECT bets
 	--GROUP BY winlostdate,currency
 	GROUP BY ag.currency

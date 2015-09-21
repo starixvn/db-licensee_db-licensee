@@ -1,7 +1,7 @@
 ﻿USE [bodb02]
 GO
  
-ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinlossDetail]  
+CREATE PROCEDURE [dbo].[Lrf_Rpt_LicWinlossDetail]  
 	@LicenseeID	INT,
 	@UserID		INT,
 	@CurrencyID	INT = 0, 
@@ -53,6 +53,8 @@ AS
 		- 20150612@Jim: support MicroGaming
 		- 20150624@Winnie: support licenseeWLBT
 		- 201508215@Winnie: Revever KeenOcean currency
+		- 20150624@Winnie: fix bug bettrade dont count refund tickets.
+		- 20150903@Winnie: fix bug bettrade #42874
 	Param's Explanation:  
 	  + @CustID: SuperID  
 	  + @BaseCurrency (input currencyID): 2-MYR ; 3-USD; 6-EUR
@@ -439,7 +441,8 @@ BEGIN
 			INNER JOIN @TempAg a ON b.recommend = a.custid AND b.currency = a.currency 
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @TDate  			
-			AND b.bettype IN (901,902,903)		
+			AND b.bettype IN (901,902,903)	
+			AND	b.statusID  IN (111, 112, 113) 	
 		GROUP BY   
 			b.custid,b.statusID
 	END
@@ -815,7 +818,7 @@ BEGIN
 			0 as CommBA,
 			0 as CommRB,
 			0 as PlayerComm,
-			COUNT(CASE WHEN b.bettype = 903 THEN NULL	
+			SUM(CASE WHEN b.bettype = 903 THEN NULL	
 				ELSE b.BetCount END)
 			* CASE WHEN @drawfilter = 2  THEN
 					CASE WHEN b.statusID = 111 THEN 0
@@ -836,6 +839,8 @@ BEGIN
 		WHERE 
 			b.Winlostdate BETWEEN @FDate AND @TempToDate  
 			AND b.bettype IN (901,902,903)	
+			AND	b.statusID  IN (111, 112, 113) 
+			AND b.roleid = 1
 			GROUP BY  b.custid,b.statusID
 	END
 			
@@ -1079,7 +1084,7 @@ BEGIN
 			0 as CommBA,
 			0 as CommRB,
 			0 as PlayerComm,
-			COUNT(CASE WHEN b.bettype = 903 THEN NULL	
+			SUM(CASE WHEN b.bettype = 903 THEN NULL	
 				ELSE b.BetCount END)
 			* CASE WHEN @drawfilter = 2  THEN
 					CASE WHEN b.statusID = 111 THEN 0
@@ -1100,7 +1105,8 @@ BEGIN
 		WHERE 
 			b.Winlostdate BETWEEN @FDate AND @TempToDate   
 			AND b.bettype IN (901,902,903)
-		
+			AND	b.statusID  IN (111, 112, 113) 
+			AND b.roleid = 1
 			GROUP BY  b.custid,b.statusID
 	END
  END
@@ -1247,6 +1253,8 @@ BEGIN
 DROP TABLE #SAgWinLoss
  
 END   
+
+
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_LicWinlossDetail] TO [bodbLicenseeNet]
 GO

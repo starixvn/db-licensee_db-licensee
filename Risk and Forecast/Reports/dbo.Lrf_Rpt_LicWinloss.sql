@@ -52,6 +52,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]
 	- 20150123@Jim: support base on Currency GBP
 	- 20150612@Jim: support MicroGaming
 	- 20150624@Winnie: support licenseeWLBT
+	- 20150624@Winnie: fix bug bettrade dont count refund tickets.
+	- 20150903@Winnie: fix bug bettrade #42874
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -420,7 +422,8 @@ BEGIN
 			INNER JOIN @TempAg a ON b.recommend = a.custid AND b.currency = a.currency
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @_ToDate AND  
-			b.bettype IN (901,902,903)
+			b.bettype IN (901,902,903) AND
+			b.statusID  IN (111, 112, 113)
 		GROUP BY   
 			b.winlostdate,a.currency,statusID,b.bettype
 	END
@@ -682,7 +685,7 @@ BEGIN
 		WHERE  
 			 b.Winlostdate BETWEEN @_FromDate AND @TempToDate  
 			AND b.bettype NOT IN (901,902,903)
-			AND b.roleid = 2   
+			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 1
 		GROUP BY  b.winlostdate,  b.currency, b.statusID
@@ -814,7 +817,7 @@ BEGIN
 		WHERE  
 			b.Winlostdate BETWEEN @_FromDate AND @TempToDate
 			AND b.bettype NOT IN (901,902,903)  
-			AND b.roleid = 2   
+			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 0
 		GROUP BY  b.winlostdate, b.currency, b.statusID
@@ -855,7 +858,7 @@ BEGIN
 			0 as CommBA,
 			0 as CommRB,
 			0 as PlayerComm,
-			COUNT(CASE WHEN b.bettype = 903 THEN NULL	
+			SUM(CASE WHEN b.bettype = 903 THEN NULL	
 				ELSE b.BetCount END)
 			* CASE WHEN @drawfilter = 2  THEN
 					CASE WHEN b.statusID = 111 THEN 0
@@ -875,7 +878,9 @@ BEGIN
 			
 		WHERE 
 			b.Winlostdate BETWEEN @_FromDate AND @TempToDate  AND
-			b.bettype IN (901,902,903)
+			b.bettype IN (901,902,903) AND
+			b.statusID  IN (111, 112, 113)
+			AND b.roleid = 1 
 		GROUP BY   
 			b.winlostdate,ag.currency,statusID,b.bettype
 	END
@@ -948,7 +953,7 @@ BEGIN
 		WHERE  
 			 b.Winlostdate BETWEEN @_FromDate AND @TempToDate  
 			AND b.bettype NOT IN (901,902,903)
-			AND b.roleid = 2   
+			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 1
 		GROUP BY  b.winlostdate,  b.currency, b.statusID
@@ -1082,7 +1087,7 @@ BEGIN
 		WHERE  
 			b.Winlostdate BETWEEN @_FromDate AND @TempToDate  
 			AND b.bettype NOT IN (901,902,903)
-			AND b.roleid = 2   
+			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA,0) = 0
 		GROUP BY  b.winlostdate,   b.currency, b.statusID
@@ -1121,7 +1126,7 @@ BEGIN
 			0 as CommBA,
 			0 as CommRB,
 			0 as PlayerComm,
-			COUNT(CASE WHEN b.bettype = 903 THEN NULL	
+			SUM(CASE WHEN b.bettype = 903 THEN NULL	
 				ELSE b.BetCount END)
 			* CASE WHEN @drawfilter = 2  THEN
 					CASE WHEN b.statusID = 111 THEN 0
@@ -1141,7 +1146,9 @@ BEGIN
 			
 		WHERE 
 			b.Winlostdate BETWEEN @_FromDate AND @TempToDate  AND 
-			b.bettype IN (901,902,903)
+			b.bettype IN (901,902,903) AND 
+			b.statusID  IN (111, 112, 113)
+			AND b.roleid = 1 
 		GROUP BY   
 			b.winlostdate,ag.currency,statusID,b.bettype
 	END
