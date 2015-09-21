@@ -185,6 +185,108 @@ BEGIN
 				)
 		END
 	END
+	*/
+
+	DECLARE @TempFromDate	DATETIME 
+	DECLARE @TempToDate		DATETIME 
+	DECLARE @GapDate		DATETIME
+
+	SELECT @GapDate = MAX(c.Winlostdate) FROM bodb_report.dbo.rptDepWinlost_AGCasino c WITH (NOLOCK)
+
+	IF @ToDate > @GapDate
+	BEGIN
+		IF @FromDate <= @GapDate 
+			SET @TempFromDate =  DATEADD(DAY,1,@GapDate)
+		ELSE
+			SET @TempFromDate = @FromDate
+		BEGIN
+			DECLARE @FromDate2		DATETIME 
+			DECLARE @ToDate2		DATETIME 
+			DECLARE @MoveBetsDay	DATETIME
+
+			--get MoveBetsDay
+			DECLARE @MoveBet TABLE (BalanceUpDay DATETIME, MoveBetsDay DATETIME)
+			INSERT INTO @MoveBet (BalanceUpDay, MoveBetsDay)
+			EXEC dbo.Lrf_SelBalanceUpDay
+
+			SELECT @MoveBetsDay = MoveBetsDay FROM @MoveBet
+			--
+			IF @ToDate > @MoveBetsDay
+			BEGIN
+				IF @TempFromDate <= @MoveBetsDay 
+					SET @FromDate2 =  DATEADD(DAY, 1, @MoveBetsDay)
+				ELSE
+					SET @FromDate2 = @FromDate
+				BEGIN
+					--SELECT @FromDate2, @ToDate															
+					INSERT INTO #tmpResult(CustId, Winlostdate, Currency ,TurnOver, TotalTrans, Winlost, LicenseeWinlost)
+						(							
+							SELECT c.CustId, c.Winlostdate, c.Currency
+									, SUM(c.stake)		AS TurnOver
+									, COUNT(1)			AS TotalTrans
+									, SUM(c.winlost - c.actual_stake)	AS Winlost
+									, - SUM(c.Winlost - c.actual_stake)	AS LicenseeWinlost
+							FROM dbo.bettransLC c WITH (NOLOCK)
+								INNER JOIN #tmpCust ct ON c.Custid = ct.CustId AND c.Currency = ct.Currency
+							WHERE c.Winlostdate BETWEEN @FromDate2 AND @ToDate 
+								AND c.statusID IN (111, 112, 113)
+								AND c.productID = 10 -- AG
+							GROUP BY c.CustId, c.Winlostdate, c.Currency
+						)
+				END
+			END
+			IF @TempFromDate <= @MoveBetsDay 
+			BEGIN
+				IF @ToDate >= @MoveBetsDay
+						SET @ToDate2 = @MoveBetsDay
+					ELSE
+						SET @ToDate2 = @MoveBetsDay			
+				BEGIN
+					--SELECT @TempFromDate, @ToDate2
+					INSERT INTO #tmpResult(CustId, Winlostdate, Currency ,TurnOver, TotalTrans, Winlost, LicenseeWinlost)
+						(
+							SELECT c.CustID , c.Winlostdate, c.Currency
+									, SUM(c.TurnOver) AS TurnOver
+									, SUM(c.BetCount) AS TotalTrans
+									, SUM(c.Winlost)  AS Winlost
+									, -SUM(c.Winlost) AS LicenseeWinlost
+							FROM DBLIC.bodb_Licensee.dbo.rptLicWinloss2 c WITH (NOLOCK)
+								INNER JOIN #tmpCust ct ON c.Custid = ct.CustId AND c.Currency = ct.Currency
+							WHERE c.Winlostdate BETWEEN @TempFromDate AND @ToDate2 
+								AND c.roleid = 1
+								AND c.sporttype = 250 -- AG Casino
+								AND c.statusID <> 101								
+							GROUP BY c.CustId, c.Winlostdate, c.Currency
+						)						
+				END
+			END
+		END
+	END
+	
+	IF @FromDate <= @GapDate 
+	BEGIN
+		IF @ToDate >= @GapDate
+				SET @TempToDate = @GapDate
+			ELSE
+				SET  @TempToDate = @ToDate			
+		BEGIN
+			--SELECT @FromDate, @TempToDate 
+			INSERT INTO #tmpResult (CustID, Winlostdate, Currency, TurnOver, TotalTrans, Winlost, LicenseeWinlost)
+				(
+					SELECT c.CustId AS CustID
+						   ,c.Winlostdate		
+						   ,c.Currency
+						   ,SUM(c.TurnOver) AS TurnOver
+						   ,SUM(c.BetCount) AS TotalTrans
+						   ,SUM(c.Winlost)  AS Winlost
+						   ,-SUM(c.Winlost) AS LicenseeWinlost
+					FROM  bodb_report.dbo.rptDepWinlost_AGCasino c  WITH (NOLOCK)
+						  INNER JOIN #tmpCust ct ON c.CustID = ct.CustID AND c.Currency = ct.Currency
+					WHERE c.Winlostdate BETWEEN @FromDate AND @TempToDate 
+					GROUP BY c.CustId, c.Winlostdate, c.Currency
+				)
+		END
+	END
 
 	SELECT ExchangeDate
 		   ,ExchangeId
@@ -234,5 +336,6 @@ BEGIN
 	DROP TABLE #tmpCust
 	DROP TABLE #tmpResult
 	DROP TABLE #Currency
+	DROP TABLE #TempExchange 	
 	DROP TABLE #TempExchange 	
 END
