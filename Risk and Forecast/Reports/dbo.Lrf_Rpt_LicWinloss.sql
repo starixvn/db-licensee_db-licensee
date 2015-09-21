@@ -19,6 +19,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]
  @ShowKN		BIT=0,--Keno
  @ShowMGC 		BIT=0,-- MicroGamming
  @ShowBT 		BIT=0,-- licenseeWLBT
+ @ShowAGC		BIT=0,-- AGCasino
  @ReportType	TINYINT=1,  
  @MoveBetsDay SMALLDATETIME,
  @IsOld BIT = 0, 
@@ -51,7 +52,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]
 	- 20150624@Winnie: fix bug bettrade dont count refund tickets.
 	- 20150903@Winnie: fix bug bettrade #42874
 	- 20150910@Jim: Integrate Microgaming RNG games (feature #43078)
-
+	- 20150921@Jim: Implement the changes on reports for AG Casino (#43172)
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -217,7 +218,15 @@ BEGIN
 	SELECT typeid FROM bettype (NOLOCK)
 	WHERE (typeid BETWEEN 2001 AND 2099)
 END 
+IF  @ShowAGC=1 -- AGCasino
+BEGIN
+	INSERT INTO @sporttype (sporttype)
+	VALUES(250)
 
+	INSERT INTO @bettype(bettype)
+	SELECT typeid FROM bettype (NOLOCK)
+	WHERE (typeid BETWEEN 1800 AND 1899)
+END
 DECLARE @TempFromDate DATETIME 
 DECLARE @TempToDate DATETIME 
 DECLARE @MaxOldDate DATETIME
@@ -429,7 +438,7 @@ BEGIN
 	
 	
 	--SB + NG + VS + Live casino+ virtual sport + RNG Casino + Bingo + Keno
-	IF (@ShowNG=1 OR  @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGC =1)
+	IF (@ShowNG=1 OR  @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGC =1 OR @ShowAGC=1)
 	BEGIN
 		INSERT INTO #SAgWinLoss
 		SELECT   
@@ -691,7 +700,7 @@ BEGIN
 	END
 	
 	--exclude BA tickets
-	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGC =1)
+	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGC =1 OR @ShowAGC=1)
 	BEGIN
 		INSERT INTO #SAgWinLoss  
 		SELECT 
@@ -960,7 +969,7 @@ BEGIN
 
 	
 	--exclude BA tickets
-	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGC=1 )
+	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGC=1 OR @ShowAGC=1 )
 	BEGIN
 		INSERT INTO #SAgWinLoss  
 		SELECT 
