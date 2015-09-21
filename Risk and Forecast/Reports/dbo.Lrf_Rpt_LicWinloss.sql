@@ -1,10 +1,6 @@
 ﻿USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_LicWinloss_xtest]    Script Date: 7/7/2015 8:45:59 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+ 
  
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]  
  @LicenseeID	INT,
@@ -52,6 +48,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]
 	- 20150123@Jim: support base on Currency GBP
 	- 20150612@Jim: support MicroGaming
 	- 20150624@Winnie: support licenseeWLBT
+	- 20150910@Jim: Integrate Microgaming RNG games (feature #43078)
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -106,7 +103,8 @@ CREATE TABLE #SAgWinLoss (
 	BetTradeComm	MONEY,  
 	WLBetTicket		MONEY, 	
 	WLBoughtTicket	MONEY 	
-)  
+) 
+ 
 
 DECLARE @tempAg	TABLE( custID INT,currency INT)  
 DECLARE @VNDCurrencyName VARCHAR(20)
@@ -214,7 +212,7 @@ BEGIN
 
 	INSERT INTO @bettype(bettype)
 	SELECT typeid FROM bettype (NOLOCK)
-	WHERE (typeid BETWEEN 2001 AND 2007)
+	WHERE (typeid BETWEEN 2001 AND 2099)
 END 
 
 DECLARE @TempFromDate DATETIME 
@@ -498,7 +496,7 @@ BEGIN
 			ELSE 0 END	
 			) turnoverKN, 
 			SUM(
-			CASE WHEN b.bettype BETWEEN 2001 AND 2007 THEN --Microgaming
+			CASE WHEN b.bettype BETWEEN 2001 AND 2099 THEN --Microgaming
 				stake
 				*
 				CASE WHEN @drawfilter IN (2,3) THEN
@@ -519,7 +517,7 @@ BEGIN
 			-SUM(CASE WHEN b.bettype =71 THEN b.winlost - b.actual_stake ELSE 0 END)					AS LicenseeWLCS,
 			-SUM(CASE WHEN b.bettype =73 THEN b.winlost - b.actual_stake ELSE 0 END)					AS LicenseeWLBG,
 			-SUM(CASE WHEN b.bettype BETWEEN 1501 AND 1599	THEN b.winlost - b.actual_stake ELSE 0 END) AS LicenseeWLKN,
-			-SUM(CASE WHEN b.bettype BETWEEN 2001 AND 2007	THEN b.winlost - b.actual_stake ELSE 0 END) AS LicenseeWLMGC,
+			-SUM(CASE WHEN b.bettype BETWEEN 2001 AND 2099	THEN b.winlost - b.actual_stake ELSE 0 END) AS LicenseeWLMGC,
 			-- 0 AS WinlossRB,
 			0 as AmountDueToBA,
 			0 as AmountDueToRB,
@@ -1362,3 +1360,7 @@ END
 	@Movebetsday='2012-08-23'
 */
 
+GO
+GRANT EXECUTE ON [dbo].[Lrf_Rpt_LicWinloss] TO [bodbLicenseeNet]  
+GO
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LicWinloss] TO [vnteam]  

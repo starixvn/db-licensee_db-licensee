@@ -53,6 +53,7 @@ AS
 		- 20150612@Jim: support MicroGaming
 		- 20150624@Winnie: support licenseeWLBT
 		- 201508215@Winnie: Revever KeenOcean currency
+		- 20150910@Jim: Integrate Microgaming RNG games (feature #43078)
 	Param's Explanation:  
 	  + @CustID: SuperID  
 	  + @BaseCurrency (input currencyID): 2-MYR ; 3-USD; 6-EUR
@@ -212,7 +213,7 @@ BEGIN
 
 	INSERT INTO @bettype(bettype)
 	SELECT typeid FROM bettype (NOLOCK)
-	WHERE (typeid BETWEEN 2001 AND 2007)
+	WHERE (typeid BETWEEN 2001 AND 2099)
 END 
 
 --IF @ShowBT=1 -- Bet trade
@@ -523,7 +524,7 @@ BEGIN
 			) turnoverKN,
 			
 			SUM(
-			CASE WHEN b.bettype between 2001 and 2007 THEN
+			CASE WHEN b.bettype between 2001 and 2099 THEN
 				stake
 				*
 				CASE WHEN @drawfilter IN (2,3) THEN
@@ -543,7 +544,7 @@ BEGIN
 			-SUM(CASE WHEN (b.bettype =71) THEN (b.winlost-b.actual_stake) ELSE 0 END) AS LicenseeWLCS,
 			-SUM(CASE WHEN (b.bettype =73) THEN (b.winlost-b.actual_stake) ELSE 0 END) AS LicenseeWLBG,
 			-SUM(CASE WHEN (b.bettype BETWEEN 1501 AND 1599) THEN (b.winlost-b.actual_stake) ELSE 0 END) AS LicenseeWLKN,
-			-SUM(CASE WHEN (b.bettype BETWEEN 2001 AND 2007) THEN (b.winlost-b.actual_stake) ELSE 0 END) AS LicenseeWLMGC,
+			-SUM(CASE WHEN (b.bettype BETWEEN 2001 AND 2099) THEN (b.winlost-b.actual_stake) ELSE 0 END) AS LicenseeWLMGC,
 			--0 AS WinlossRB,
 			0 as AmountDueToBA,
 			- SUM (CASE WHEN b.bettype BETWEEN 31 AND 33 THEN b.winlost - b.actual_stake + awinlost + comm ELSE 0 END) as AmountDueToRB,
