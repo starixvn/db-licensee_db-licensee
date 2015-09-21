@@ -19,6 +19,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]
  @ShowKN		BIT=0,--Keno
  @ShowMGC 		BIT=0,-- MicroGamming
  @ShowBT 		BIT=0,-- licenseeWLBT
+ @ShowAGC		BIT=0,-- AGCasino
  @ReportType	TINYINT=1,  
  @MoveBetsDay SMALLDATETIME,
  @IsOld BIT = 0, 
@@ -215,7 +216,15 @@ BEGIN
 	SELECT typeid FROM bettype (NOLOCK)
 	WHERE (typeid BETWEEN 2001 AND 2099)
 END 
+IF  @ShowAGC=1 -- AGCasino
+BEGIN
+	INSERT INTO @sporttype (sporttype)
+	VALUES(250)
 
+	INSERT INTO @bettype(bettype)
+	SELECT typeid FROM bettype (NOLOCK)
+	WHERE (typeid BETWEEN 1800 AND 1899)
+END
 DECLARE @TempFromDate DATETIME 
 DECLARE @TempToDate DATETIME 
 DECLARE @MaxOldDate DATETIME
@@ -427,7 +436,7 @@ BEGIN
 	
 	
 	--SB + NG + VS + Live casino+ virtual sport + RNG Casino + Bingo + Keno
-	IF (@ShowNG=1 OR  @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGC =1)
+	IF (@ShowNG=1 OR  @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGC =1 OR @ShowAGC=1)
 	BEGIN
 		INSERT INTO #SAgWinLoss
 		SELECT   
@@ -689,7 +698,7 @@ BEGIN
 	END
 	
 	--exclude BA tickets
-	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGC =1)
+	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGC =1 OR @ShowAGC=1)
 	BEGIN
 		INSERT INTO #SAgWinLoss  
 		SELECT 
@@ -958,7 +967,7 @@ BEGIN
 
 	
 	--exclude BA tickets
-	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGC=1 )
+	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGC=1 OR @ShowAGC=1 )
 	BEGIN
 		INSERT INTO #SAgWinLoss  
 		SELECT 
