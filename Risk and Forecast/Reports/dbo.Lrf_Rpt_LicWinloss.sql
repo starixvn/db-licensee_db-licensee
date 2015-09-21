@@ -53,7 +53,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]
 	- 20150624@Winnie: fix bug bettrade dont count refund tickets.
 	- 20150903@Winnie: fix bug bettrade #42874
 	- 20150910@Jim: Integrate Microgaming RNG games (feature #43078)
-
+	- 20150921@Jim: Implement the changes on reports for AG Casino (#43172)
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)

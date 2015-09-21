@@ -57,6 +57,7 @@ AS
 		- 20150624@Winnie: fix bug bettrade dont count refund tickets.
 		- 20150903@Winnie: fix bug bettrade #42874
 		- 20150910@Jim: Integrate Microgaming RNG games (feature #43078)	
+		- 20150921@Jim: Implement the changes on reports for AG Casino (#43172)
 	Param's Explanation:  
 	  + @CustID: SuperID  
 	  + @BaseCurrency (input currencyID): 2-MYR ; 3-USD; 6-EUR
