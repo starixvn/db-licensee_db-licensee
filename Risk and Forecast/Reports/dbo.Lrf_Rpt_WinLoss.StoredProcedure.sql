@@ -22,6 +22,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
 	@ShowKN BIT = 0,
 	@ShowMGC BIT=0,
 	@ShowBT BIT=0,
+	@ShowAGC BIT = 0,
     @MoveBetsDay DATETIME ,
     @PageSize INT = 1000 ,
     @PageIndex INT = 1,
@@ -74,6 +75,7 @@ AS /*
 		- 20150625@Winnie: support BetTrade
 		- 20150826@Winnie: Fix bug KeenOcean #42464
 		- 20150910@Jim: Integrate Microgaming RNG games (feature #43078)
+		- 20150917@Florent: Change datasource for AG Casino (#Redmine 43172)
 */
     
 SET NOCOUNT ON
@@ -222,6 +224,14 @@ BEGIN
 	SELECT 902 AS typeid 
 	
 END
+IF @ShowAGC = 1 -- AG Casino
+BEGIN 
+
+	INSERT INTO @bettype(bettype)
+	SELECT typeid FROM bettype (NOLOCK)
+	WHERE (typeid BETWEEN 1801 AND 1899) 
+	
+END
 
 
 CREATE TABLE #TempData
@@ -332,7 +342,7 @@ BEGIN
 		GROUP BY b.CustID,b.winlostdate,b.currency	 
 	END
 
-	IF (@ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowRB=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGC=1 OR @ShowBT=1)
+	IF (@ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowRB=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGC=1 OR @ShowBT=1 OR @ShowAGC = 1)
 	BEGIN
 		INSERT INTO #TempData
 		SELECT  
@@ -414,7 +424,7 @@ BEGIN
 	
 	
 	--exclude BA tickets
-	IF (@ShowSB=1 OR @ShowRB = 1 OR @ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGC=1)
+	IF (@ShowSB=1 OR @ShowRB = 1 OR @ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGC=1 OR @ShowAGC = 1)
 	BEGIN
 		
 		INSERT  INTO #TempData
