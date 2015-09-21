@@ -24,6 +24,7 @@ AS
   - 20150911@Jim: add MicroGaming RNG
   - 20150921@Jim: Implement the changes on reports for AG Casino (#43172)
   
+  
  Param's Explanation:  
  • @winlostdate: The date need to summary  
 */  
@@ -325,7 +326,7 @@ INSERT INTO #tempDepWinlostByProduct_staging (winlostdate,custid,sporttype,curre
    UNION 
    SELECT @date AS winlostdate
 	,g.custid   
-    ,g.productID AS sporttype
+    ,203 AS sporttype
     ,g.currency
 	,SUM(CASE WHEN winlostdate = @date AND g.statusID IN (0,1) then stake ELSE 0 END) AS turnover
 	,SUM(CASE WHEN winlostdate = @date AND g.statusID IN (0,1) then 1 ELSE 0 END) AS Betcount
@@ -336,7 +337,7 @@ INSERT INTO #tempDepWinlostByProduct_staging (winlostdate,custid,sporttype,curre
 		 and custid in (select custid from @TempCustID)
 		 and custid <> 0
 		 
-   GROUP BY g.custid, g.productID,g.currency;
+   GROUP BY g.custid,  g.currency
    UNION 
    SELECT @date AS winlostdate
 	,lc.custid   
