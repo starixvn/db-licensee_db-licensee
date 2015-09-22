@@ -44,7 +44,7 @@ AS
 		- 20150413@Winnie: Apply spottype bettype matrix & add 60 bettype betradar 
 		- 20150608@Edward: Exclude 3 transactions SOLD/BOUGHT/BetTrade Commission of BetTrade
 		- 20150609@Edward: Support Microgaming
-		- 20150922@Kos: Don't support Microgaming anymore
+		- 20150922@Edward: Don't support Microgaming anymore
 
 	Param's Explanation: 
 		@Liveindicator : indicate that whether the report will get live data or not
