@@ -7,49 +7,50 @@ SET QUOTED_IDENTIFIER ON
 GO
 
 ALTER PROCEDURE [dbo].[Lrf_BetList_LiveReport_SelWinlossByMatch]
-	@MatchID INT,
-	@LicenseeID INT,
-	@UserID		INT,
-	@CurrencyID INT = 0,
-	@PageSize INT=1000,
-	@PageIndex INT=1,	
-	@ShowSB BIT = 0,	
-	@ShowBA BIT = 0,
-	@ShowLC BIT = 0,
-	@ShowVS BIT = 0,
-	@ShowMGC BIT = 0,
+	@MatchID		INT,
+	@LicenseeID		INT,
+	@UserID			INT,
+	@CurrencyID		INT = 0,
+	@PageSize		INT = 1000,
+	@PageIndex		INT = 1,
+	@ShowSB			BIT = 0,
+	@ShowBA			BIT = 0,
+	@ShowLC			BIT = 0,
+	@ShowVS			BIT = 0,
 	@Liveindicator	INT = 1
 AS
 /*
-Created: 20120111@Henry
-Task : Betlist
-DB: DB052.bodb02
-Original:[Lrf_BetList_SelWinlostByMatch]
-Revisions:
-   Get all tickets for a match
-   -- 20120214@Jim: change to use  table ExchangeDaily by use function Lrf_f_GetExchangeDaily  
-   -- 20120614@Jim: optimize code
-   -- 20120724@Jim: add playercomm value 
-   -- 20120820@Jim: add livecasino  
-   -- 20120913@Jim: add virtual sport 
-   -- 20121004@Jim: replace @currency input param by @currencyID
-   - 20121115@Henry: Only Sportsbook needs to exclude BA
-   - 20130411@Jim: support base currency USD
-   - 20130514@Jim: Restrict permission of Licensee Users by currency
-   - 20130625@Jim: support to view currency UUS 
-   - 20140602@Hannah: Separate Live/ Non - Live data in Live Report
-   - 20140630@Hannah: offer BetRadar and Sporting Solution 
-   - 20140925@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
-   - 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust   
-   - 20150124@Winnie: add base currency GBP
-   - 20150413@Winnie: Apply spottype bettype matrix & add 60 bettype betradar 
-   - 20150608@Edward: Exclude 3 transactions SOLD/BOUGHT/BetTrade Commission of BetTrade
-   - 20150609@Edward: Support MicroGamming
-Param's Explanation: 
-	@Liveindicator : indicate that whether the report will get live data or not
-		+ 0: Non - Live data only
-		+ 1: Live data only
-		+ 2: All 	
+	Created: 20120111@Henry
+	Task : Betlist
+	DB: DB052.bodb02
+	Original:[Lrf_BetList_SelWinlostByMatch]
+	Revisions:
+		Get all tickets for a match
+		- 20120214@Jim: change to use  table ExchangeDaily by use function Lrf_f_GetExchangeDaily  
+		- 20120614@Jim: optimize code
+		- 20120724@Jim: add playercomm value 
+		- 20120820@Jim: add livecasino  
+		- 20120913@Jim: add virtual sport 
+		- 20121004@Jim: replace @currency input param by @currencyID
+		- 20121115@Henry: Only Sportsbook needs to exclude BA
+		- 20130411@Jim: support base currency USD
+		- 20130514@Jim: Restrict permission of Licensee Users by currency
+		- 20130625@Jim: support to view currency UUS 
+		- 20140602@Hannah: Separate Live/ Non - Live data in Live Report
+		- 20140630@Hannah: offer BetRadar and Sporting Solution 
+		- 20140925@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
+		- 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust   
+		- 20150124@Winnie: add base currency GBP
+		- 20150413@Winnie: Apply spottype bettype matrix & add 60 bettype betradar 
+		- 20150608@Edward: Exclude 3 transactions SOLD/BOUGHT/BetTrade Commission of BetTrade
+		- 20150609@Edward: Support Microgaming
+		- 20150922@Edward: Don't support Microgaming anymore
+
+	Param's Explanation: 
+		@Liveindicator : indicate that whether the report will get live data or not
+			+ 0: Non - Live data only
+			+ 1: Live data only
+			+ 2: All 	
 */
 
 SET NOCOUNT ON
