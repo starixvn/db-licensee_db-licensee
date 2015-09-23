@@ -229,7 +229,7 @@ BEGIN
 
 	INSERT INTO @bettype(bettype)
 	SELECT typeid FROM bettype (NOLOCK)
-	WHERE (typeid BETWEEN 1801 AND 1899) 
+	WHERE (typeid BETWEEN 1800 AND 1899) 
 	
 END
 
