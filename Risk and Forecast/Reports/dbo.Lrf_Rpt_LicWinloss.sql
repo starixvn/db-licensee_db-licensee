@@ -832,7 +832,7 @@ BEGIN
 			-SUM(CASE WHEN b.sporttype=252 THEN b.winlost ELSE 0 END) AS LicenseeWLBG,
 			-SUM(CASE WHEN b.sporttype=202 THEN b.winlost ELSE 0 END) AS LicenseeWLKN,--Keno
 			-SUM(CASE WHEN b.sporttype=203 THEN b.winlost ELSE 0 END) AS LicenseeWLMGC,--MGC
-			-SUM(CASE WHEN b.sporttype=150 THEN b.winlost ELSE 0 END) AS LicenseeWLAGC,--AGC
+			-SUM(CASE WHEN b.sporttype=250 THEN b.winlost ELSE 0 END) AS LicenseeWLAGC,--AGC
 			--SUM(CASE WHEN  b.sporttype=151 THEN b.awinlost ELSE 0 END) AS WinlossRB,
 			0 as AmountDueToBA,
 			- SUM ( CASE WHEN b.sporttype = 151 THEN (b.winlost+b.awinlost+b.comm) ELSE 0 END) as AmountDueToRB,
