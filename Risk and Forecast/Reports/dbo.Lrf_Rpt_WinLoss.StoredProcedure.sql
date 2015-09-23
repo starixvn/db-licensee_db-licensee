@@ -238,6 +238,9 @@ BEGIN
 END
 IF @ShowAGC = 1 -- AG Casino
 BEGIN 
+	
+	INSERT INTO @sporttype (sporttype)
+	VALUES(250)
 
 	INSERT INTO @bettype(bettype)
 	SELECT typeid FROM bettype (NOLOCK)
