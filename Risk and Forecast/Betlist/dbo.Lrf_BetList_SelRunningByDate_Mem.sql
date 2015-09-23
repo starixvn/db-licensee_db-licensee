@@ -16,10 +16,11 @@
 	@ShowBA		BIT			= 0,
 	@ShowLC		BIT			= 0,
 	@ShowVS		BIT			= 0,
-	@ShowCS		BIT			= 0, -- RNG Casino
-	@ShowBG		BIT			= 0,  -- Bingo
-	@ShowKN		BIT			= 0,  -- Keno
-	@ShowMGC	BIT			= 0  -- Microgaming
+	@ShowCS		BIT			= 0,	-- RNG Casino
+	@ShowBG		BIT			= 0,	-- Bingo
+	@ShowKN		BIT			= 0,	-- Keno
+	@ShowMGC	BIT			= 0,	-- Microgaming
+	@ShowAGC	BIT			= 0		-- AG Casino
 	-- output info
 	,@TotalRows INT			= 0 OUTPUT
 	,@ErrorCode INT			= 0 OUTPUT
@@ -62,6 +63,7 @@ AS
 		- 20150608@Edward: Support MicroGamming
 		- 20150608@Edward: Exclude 3 transactions SOLD/BOUGHT/BetTrade Commission of BetTrade
 		- 20150917@Kos: Support Microgaming RNG Game
+		- 20150922@Kos: Support AG Casino
 */
 BEGIN
 
@@ -70,9 +72,9 @@ BEGIN
 	DECLARE @Today SMALLDATETIME 
 	
 	SELECT @Today	= CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120)
-	 ,@TotalRows	= 0
-	 ,@ErrorCode	= 0
-	 ,@ErrorMsg		= ''
+		,@TotalRows	= 0
+		,@ErrorCode	= 0
+		,@ErrorMsg	= ''
 
 	-- validate customer info
 	SELECT  currencyID
@@ -120,8 +122,9 @@ BEGIN
 		OR ProductID	= CASE WHEN @ShowCS	= 0 THEN 6 END
 		OR ProductID	= CASE WHEN @ShowBG	= 0 THEN 7 END
 		OR ProductID	= CASE WHEN @ShowKN	= 0 THEN 8 END
-		OR ProductID	= CASE WHEN @ShowMGC= 0 THEN 13 END
-		OR (ProductID 	> 8 AND ProductID <> 13) -- not suport for LIC system
+		OR ProductID	= CASE WHEN @ShowAGC = 0 THEN 11 END
+		OR ProductID	= CASE WHEN @ShowMGC = 0 THEN 13 END
+		OR (ProductID 	> 8 AND ProductID <> 11 AND ProductID <> 13) -- not suport for LIC system
 	-- end filer bettypes by sporttype
 
 	CREATE TABLE #BetListSelRunningByDateMem
@@ -969,6 +972,71 @@ BEGIN
 		END
 	END
 
+	-- AG Casino
+	IF @ShowAGC = 1
+	BEGIN
+		IF @ToDate >= DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)
+			AND @FromDate <= DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- today
+		BEGIN
+			-- AG Casino (today running ticket)
+			INSERT INTO #BetListSelRunningByDateMem
+			SELECT
+				250 AS sporttype,
+				@Username AS UserName,
+				b.bettype,
+				0 AS leagueID,
+				b.refno,
+				b.transid,
+				0 AS BetID,
+				'' AS matchcode,
+				'' AS Race,
+				0 AS homeID,
+				0 AS awayID,
+				0 AS hdp1,
+				0 AS hdp2,
+				0 AS odds,
+				0 AS modds,
+				'Running' AS Status,
+				SUM(blc.stake) AS Stake,
+				SUM(blc.actual_stake) AS Actual_Stake,
+				b.transdate,
+				'' AS betteam,
+				b.discount,
+				0 AS liveindicator,
+				0 AS livehomescore,
+				0 AS liveawayscore,
+				b.IP,
+				CONVERT(BIT, 0) AS IsNeutral,
+				0 AS oddstype,
+				b.winlostdate,
+				b.currency,
+				0 AS playercomm,
+				'' AS ShowTime,
+				0 AS matchid,
+				'' AS betcheck
+			FROM 
+				dbo.bettransLC AS blc WITH (NOLOCK)
+				INNER JOIN dbo.bettrans AS b WITH (NOLOCK) ON blc.RefNo = b.transid
+				INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
+			WHERE
+				b.transdate = DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- today
+				AND b.custid = @CustID 
+				AND sbt.ProductID = 11
+				AND sbt.EventType = 0
+				AND blc.statusID = 0
+			GROUP BY
+				b.transid,
+				ISNULL(b.BetID, 0),
+				b.Bettype,
+				b.refno,
+				b.transdate,
+				b.discount,
+				b.winlostdate,
+				b.IP,
+				b.currency
+		END
+	END
+
 	-- check for filtering by currency
 	IF @CurrencyID <> 0 
 	BEGIN 
@@ -1099,6 +1167,7 @@ BEGIN
 	DROP TABLE #BetListSelRunningByDateMem;
 
 END
+
 GO
 
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelRunningByDate_Mem] TO [bodbLicenseeNet]
