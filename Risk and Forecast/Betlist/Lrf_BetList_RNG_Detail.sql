@@ -109,7 +109,7 @@ BEGIN
 			brng.ip,
 			brng.transdesc,
 			CASE
-				WHEN brng.productID = 13 THEN brng.TranId3rd		-- Microgaming RNG Game
+				WHEN brng.productID = 203 THEN brng.TranId3rd		-- Microgaming RNG Game
 				ELSE ''
 			END AS BetCheck
 		FROM dbo.bettransRnG AS brng WITH (NOLOCK)
@@ -137,7 +137,7 @@ BEGIN
 			brng.ip,
 			brng.transdesc,
 			CASE
-				WHEN brng.productID = 13 THEN brng.TranId3rd		-- Microgaming RNG Game
+				WHEN brng.productID = 203 THEN brng.TranId3rd		-- Microgaming RNG Game
 				ELSE ''
 			END AS BetCheck
 		FROM dbo.bettransRnG14 AS brng WITH (NOLOCK)
@@ -163,7 +163,7 @@ BEGIN
 			brng.ip,
 			brng.transdesc,
 			CASE
-				WHEN brng.productID = 13 THEN brng.TranId3rd		-- Microgaming RNG Game
+				WHEN brng.productID = 203 THEN brng.TranId3rd		-- Microgaming RNG Game
 				ELSE ''
 			END AS BetCheck
 		FROM DBARC.bodb_Archive.dbo.bettransRnG_bk AS brng WITH (NOLOCK)
