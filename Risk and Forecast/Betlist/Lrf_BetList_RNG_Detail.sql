@@ -22,6 +22,8 @@ AS
 	DB: DBEXT.bodb02
 	Original:
 	Revisions:
+		- 20150924@Kos: Add column BetCheck to return TranId3rd for showing ticket result
+
 	Parameters:
 		- @TransType
 			+ 0 : All (DRAW/WON/LOSE/Reject/Void/Refund/Running/Waiting)
@@ -83,7 +85,8 @@ BEGIN
 		Comm			MONEY,
 		PlayerComm		MONEY,
 		IP				NVARCHAR(15),
-		TransDesc		NVARCHAR(1000)
+		TransDesc		NVARCHAR(1000),
+		BetCheck		VARCHAR(64)
 	)
 
 	IF EXISTS ( SELECT 1 FROM dbo.bettrans WITH (NOLOCK) WHERE transid = @RefNo )
@@ -104,7 +107,11 @@ BEGIN
 			brng.comm,
 			brng.playercomm,
 			brng.ip,
-			brng.transdesc
+			brng.transdesc,
+			CASE
+				WHEN brng.productID = 203 THEN brng.TranId3rd		-- Microgaming RNG Game
+				ELSE ''
+			END AS BetCheck
 		FROM dbo.bettransRnG AS brng WITH (NOLOCK)
 		WHERE brng.custid = @CustId 
 			AND brng.RefNo = @RefNo
@@ -128,7 +135,11 @@ BEGIN
 			brng.comm,
 			brng.playercomm,
 			brng.ip,
-			brng.transdesc
+			brng.transdesc,
+			CASE
+				WHEN brng.productID = 203 THEN brng.TranId3rd		-- Microgaming RNG Game
+				ELSE ''
+			END AS BetCheck
 		FROM dbo.bettransRnG14 AS brng WITH (NOLOCK)
 		WHERE brng.custid = @CustId AND brng.RefNo = @RefNo
 	END
@@ -150,7 +161,11 @@ BEGIN
 			brng.comm,
 			brng.playercomm,
 			brng.ip,
-			brng.transdesc
+			brng.transdesc,
+			CASE
+				WHEN brng.productID = 203 THEN brng.TranId3rd		-- Microgaming RNG Game
+				ELSE ''
+			END AS BetCheck
 		FROM DBARC.bodb_Archive.dbo.bettransRnG_bk AS brng WITH (NOLOCK)
 		WHERE brng.custid = @CustId AND brng.RefNo = @RefNo
 	END
@@ -209,7 +224,8 @@ BEGIN
 		CAST(PlayerComm * e.MYR AS MONEY) AS PlayerCommMYR,
 		CAST(PlayerComm * e.GBP AS MONEY) AS PlayerCommGBP,
 		IP,
-		TransDesc
+		TransDesc,
+		BetCheck
 	FROM @tmpBettransRnG AS b
 		INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@FromDate, @ToDate)) AS e
 			ON e.ExchangeDate = b.WinLostDate AND e.exchangeid = @currency

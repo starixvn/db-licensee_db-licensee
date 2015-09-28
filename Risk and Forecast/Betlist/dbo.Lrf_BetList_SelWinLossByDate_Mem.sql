@@ -1,4 +1,18 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinLossByDate_Mem]  
+﻿USE [bodb02]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_BetList_SelWinLossByDate_Mem]    Script Date: 9/24/2015 4:42:33 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+USE [bodb02]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_BetList_SelWinLossByDate_Mem]    Script Date: 9/24/2015 4:49:37 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinLossByDate_Mem]  
 	@LicenseeID 			INT,
 	@UserID					INT,
 	@CustID					INT,
@@ -1076,9 +1090,9 @@ BEGIN
 				b.Bettype,
 				0 AS hdp1,
 				0 AS hdp2,
-				0 AS modds,
 				0 AS oddstype,
 				0 AS Odds,
+				0 AS modds,
 				b.stake,
 				b.actual_stake,
 				'' AS betteam,
@@ -1130,9 +1144,9 @@ BEGIN
 					b.Bettype,
 					0 AS hdp1,
 					0 AS hdp2,
-					0 AS modds,
 					0 AS oddstype,
 					0 AS Odds,
+					0 AS modds,
 					SUM(brng.stake) AS Stake,
 					SUM(brng.actual_stake) AS Actual_Stake,
 					'' AS betteam,
@@ -1157,8 +1171,6 @@ BEGIN
 					0 AS AwayID,
 					0 AS Betstatus,
 					CONVERT(BIT, 0) AS IsNeutral,
-					0,
-					0,
 					b.currency,
 					'' AS showtime,
 					'' AS betcheck
@@ -1187,14 +1199,15 @@ BEGIN
 				INSERT INTO #BetListByDateMem
 				SELECT
 					203 AS Sporttype,
+					@Username, 
 					b.transid,
 					ISNULL(b.BetID, 0),
 					b.Bettype,
 					0 AS hdp1,
 					0 AS hdp2,
-					0 AS modds,
 					0 AS oddstype,
 					0 AS Odds,
+					0 AS modds,
 					SUM(brng.stake) AS Stake,
 					SUM(brng.actual_stake) AS Actual_Stake,
 					'' AS betteam,
@@ -1223,8 +1236,6 @@ BEGIN
 					0 AS AwayID,
 					0 AS Betstatus,
 					CONVERT(BIT, 0) AS IsNeutral,
-					0,
-					0,
 					b.currency,
 					'' AS showtime,
 					'' AS betcheck
@@ -1264,9 +1275,9 @@ BEGIN
 				b.Bettype,
 				0 AS hdp1,
 				0 AS hdp2,
-				0 AS modds,
 				0 AS oddstype,
 				0 AS Odds,
+				0 AS modds,
 				b.stake,
 				b.actual_stake,
 				'' AS betteam,
@@ -1317,9 +1328,9 @@ BEGIN
 					b.Bettype,
 					0 AS hdp1,
 					0 AS hdp2,
-					0 AS modds,
 					0 AS oddstype,
 					0 AS Odds,
+					0 AS modds,
 					SUM(blc.stake) AS Stake,
 					SUM(blc.actual_stake) AS Actual_Stake,
 					'' AS betteam,
@@ -1344,8 +1355,6 @@ BEGIN
 					0 AS AwayID,
 					0 AS Betstatus,
 					CONVERT(BIT, 0) AS IsNeutral,
-					0,
-					0,
 					b.currency,
 					'' AS showtime,
 					'' AS betcheck
@@ -1378,9 +1387,9 @@ BEGIN
 					b.Bettype,
 					0 AS hdp1,
 					0 AS hdp2,
-					0 AS modds,
 					0 AS oddstype,
 					0 AS Odds,
+					0 AS modds,
 					SUM(blc.stake) AS Stake,
 					SUM(blc.actual_stake) AS Actual_Stake,
 					'' AS betteam,
@@ -1409,8 +1418,6 @@ BEGIN
 					0 AS AwayID,
 					0 AS Betstatus,
 					CONVERT(BIT, 0) AS IsNeutral,
-					0,
-					0,
 					b.currency,
 					'' AS showtime,
 					'' AS betcheck
