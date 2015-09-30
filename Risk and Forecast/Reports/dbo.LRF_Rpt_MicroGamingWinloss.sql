@@ -146,36 +146,44 @@ BEGIN
 						, bet.TypeID
 						, bet.TypeName		
 	END	
+	
+	IF @FromDate <= @MoveBetsDay 
+	BEGIN
+		IF @ToDate >= @MoveBetsDay
+				SET @TempToDate = @MoveBetsDay
+			ELSE
+				SET  @TempToDate = @ToDate
+				
+		INSERT INTO #tmpResult ( Winlostdate
+								 ,Currency 
+								 ,TypeID	
+								 ,TypeName
+								 ,TurnOver 	
+								 ,TotalTrans
+								 ,Winlost  	
+								 ,LicenseeWinlost 
+								)
 
-	INSERT INTO #tmpResult ( Winlostdate
-							 ,Currency 
-							 ,TypeID	
-							 ,TypeName
-							 ,TurnOver 	
-							 ,TotalTrans
-							 ,Winlost  	
-							 ,LicenseeWinlost 
-							)
-
-	SELECT 
-		   b.rptDate Winlostdate		
-		   ,b.CurrencyID Currency
-		   ,bet.TypeID
-		   ,bet.TypeName
-		   ,SUM(b.TurnOver) AS TurnOver
-		   ,SUM(b.BetCount) AS TotalTrans
-		   ,SUM(b.Winloss)  AS Winlost
-		   ,-SUM(b.Winloss) AS LicenseeWinlost
-	FROM  bodb_licensee.dbo.rpt_Betting b  WITH (NOLOCK)
-		  INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID
-		  INNER JOIN #Bettype bet ON b.bettype  = bet.bettype
-	WHERE b.rptDate BETWEEN @FromDate AND @ToDate 
-		  AND b.status NOT IN (-1,103)
-		  AND b.CustomerCategory = -1	
-	GROUP BY 	b.rptDate  		
-				,b.CurrencyID  
-				,bet.TypeID
-				 ,bet.TypeName
+		SELECT 
+			   b.rptDate Winlostdate		
+			   ,b.CurrencyID Currency
+			   ,bet.TypeID
+			   ,bet.TypeName
+			   ,SUM(b.TurnOver) AS TurnOver
+			   ,SUM(b.BetCount) AS TotalTrans
+			   ,SUM(b.Winloss)  AS Winlost
+			   ,-SUM(b.Winloss) AS LicenseeWinlost
+		FROM  bodb_licensee.dbo.rpt_Betting b  WITH (NOLOCK)
+			  INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID
+			  INNER JOIN #Bettype bet ON b.bettype  = bet.bettype
+		WHERE b.rptDate BETWEEN @FromDate AND @TempToDate
+			  AND b.status NOT IN (-1,103)
+			  AND b.CustomerCategory = -1	
+		GROUP BY 	b.rptDate  		
+					,b.CurrencyID  
+					,bet.TypeID
+					 ,bet.TypeName
+	END				 
 	SELECT ExchangeDate
 		   ,ExchangeId
 		   ,Code
