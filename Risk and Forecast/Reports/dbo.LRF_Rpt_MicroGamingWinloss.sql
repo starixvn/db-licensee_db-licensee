@@ -31,7 +31,7 @@ AS
     Task : MicroGaming Win Loss report 
     DB: DBEXT.bodb02  
     Revisions:  
-		  20150921@Jim: support RNG bettype
+		 
 	Param's Explanation:  
 	  + @excludeTest: remove currency UUS
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -118,6 +118,7 @@ BEGIN
 						, t.currency
 						, bet.TypeID
 						, bet.TypeName
+		
 				INSERT INTO #tmpResult ( Winlostdate
 							 ,Currency 
 							 ,TypeID	
@@ -142,6 +143,18 @@ BEGIN
 				WHERE b.winlostdate BETWEEN @TempFromDate AND @ToDate
 							AND b.statusID IN (111, 112, 113)
 							AND bet.bettype IN (2007,2008)
+							
+	END	
+
+	INSERT INTO #tmpResult ( Winlostdate
+							 ,Currency 
+							 ,TypeID	
+							 ,TypeName
+							 ,TurnOver 	
+							 ,TotalTrans
+							 ,Winlost  	
+							 ,LicenseeWinlost 
+							)
 				GROUP BY b.winlostdate
 						, t.currency
 						, bet.TypeID
@@ -165,6 +178,25 @@ BEGIN
 								 ,LicenseeWinlost 
 								)
 
+	SELECT 
+		   b.rptDate Winlostdate		
+		   ,b.CurrencyID Currency
+		   ,bet.TypeID
+		   ,bet.TypeName
+		   ,SUM(b.TurnOver) AS TurnOver
+		   ,SUM(b.BetCount) AS TotalTrans
+		   ,SUM(b.Winloss)  AS Winlost
+		   ,-SUM(b.Winloss) AS LicenseeWinlost
+	FROM  bodb_LicenseeReport.dbo.rpt_ThirdPartyWL_ExtraGMT b  WITH (NOLOCK)
+		  INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID
+		  INNER JOIN #Bettype bet ON b.bettypeID  = bet.bettype
+	WHERE b.rptDate BETWEEN @FromDate AND @ToDate 
+		  AND b.StatusId NOT IN (-1,103)
+		 -- AND b.CustomerCategory = -1	
+	GROUP BY 	b.rptDate  		
+				,b.CurrencyID  
+				,bet.TypeID
+				 ,bet.TypeName
 		SELECT 
 			   b.rptDate Winlostdate		
 			   ,b.CurrencyID Currency
@@ -194,6 +226,7 @@ BEGIN
 	INTO #TempExchange 
 	FROM Lrf_f_GetExchangeDaily(@FromDate, @ToDate)
 	WHERE exchangeid IN (SELECT DISTINCT Currency FROM #tmpResult)
+	
 	
 	SELECT  CASE WHEN @ReportType = 1 THEN CONVERT(VARCHAR(8),r.winlostdate,112)  
 				 WHEN @ReportType = 2 THEN CONVERT(VARCHAR(6),r.winlostdate,112)  
