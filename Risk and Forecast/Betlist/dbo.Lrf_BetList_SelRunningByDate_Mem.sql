@@ -953,7 +953,7 @@ BEGIN
 				INNER JOIN dbo.bettrans AS b WITH (NOLOCK) ON brng.RefNo = b.transid
 				INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
 			WHERE
-				b.transdate = DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- today
+				b.transdate BETWEEN DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0) AND @ToDate	-- today
 				AND b.custid = @CustID 
 				AND sbt.ProductID = 13
 				AND sbt.SubProduct = 'MGC-RNG'
@@ -1019,7 +1019,7 @@ BEGIN
 				INNER JOIN dbo.bettrans AS b WITH (NOLOCK) ON blc.RefNo = b.transid
 				INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
 			WHERE
-				b.transdate = DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- today
+				b.transdate BETWEEN DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0) AND @ToDate	-- today
 				AND b.custid = @CustID 
 				AND sbt.ProductID = 11
 				AND sbt.EventType = 0
