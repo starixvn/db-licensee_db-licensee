@@ -45,6 +45,7 @@ Revisions:
 	- 20150415@Jim: change to use f_GroupBettype instead of LRF_view_bettype_SS
 	- 20150612@Jim: support MicroGaming
 	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission 
+	- 20151001@Jim: remove MicroGaming
 Param's Explanation: 
 */
 SET NOCOUNT ON
