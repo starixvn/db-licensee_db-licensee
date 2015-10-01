@@ -48,6 +48,7 @@ Revisions:
 	- 20150128@JIm: base on GBP
 	- 20150612@Jim: support MicroGaming
 	- 20150626@Winnie: support bettrade
+   - 20151001@Jim: remove MicroGaming
 */
 SET NOCOUNT ON
 
@@ -371,7 +372,7 @@ SELECT
 				OR b.bettype BETWEEN 1101 AND 1199 
 				OR b.bettype BETWEEN 1201 AND 1299 
 				OR b.bettype BETWEEN 1501 AND 1599 --Keno
-				OR b.bettype BETWEEN 2001 AND 2007
+			 
 				OR b.bettype IN (71,73)
 			)
 		  )  
@@ -542,7 +543,7 @@ BEGIN
 	INSERT INTO @SumTemp 
 	SELECT 
 		ag.currency,
-		ISNULL(- SUM(CASE WHEN ISNULL(b.isBA,0) = 0 AND (b.sporttype IN (0,161,162,180,251,252,202,203))  THEN b.winlost ELSE 0 END),0) AS SelectedMonthLicenseeWL,
+		ISNULL(- SUM(CASE WHEN ISNULL(b.isBA,0) = 0 AND (b.sporttype IN (0,161,162,180,251,252,202 ))  THEN b.winlost ELSE 0 END),0) AS SelectedMonthLicenseeWL,
 		ISNULL(- SUM ( CASE WHEN ISNULL(b.isBA,0) = 1 THEN  (b.winlost+b.awinlost+b.comm) ELSE 0 END),0) AS SelectedMonthAmtDuetoBA,
 		ISNULL(- SUM ( CASE WHEN b.sporttype = 151 THEN (b.winlost+b.awinlost+b.comm) ELSE 0 END),0) AS SelectedMonthAmtDuetoRB,
 		ISNULL(SUM (CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END),0) AS SelectedMonthWinlossRB,
@@ -570,7 +571,7 @@ BEGIN
 	INSERT INTO @SumTemp
 	SELECT 
 		ag.currency,
-		ISNULL(- SUM(CASE WHEN ISNULL(b.isBA,0) = 0 AND ( b.sporttype IN (0,161,162,180,251,252,202,203))  THEN b.winlost ELSE 0 END),0) AS SelectedMonthLicenseeWL,
+		ISNULL(- SUM(CASE WHEN ISNULL(b.isBA,0) = 0 AND ( b.sporttype IN (0,161,162,180,251,252,202 ))  THEN b.winlost ELSE 0 END),0) AS SelectedMonthLicenseeWL,
 		ISNULL(- SUM ( CASE WHEN ISNULL(b.isBA,0) = 1 THEN  (b.winlost+b.awinlost+b.comm) ELSE 0 END),0) AS SelectedMonthAmtDuetoBA,
 		ISNULL(- SUM ( CASE WHEN b.sporttype = 151 THEN (b.winlost+b.awinlost+b.comm) ELSE 0 END),0) AS SelectedMonthAmtDuetoRB,
 		ISNULL(SUM (CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END),0) AS SelectedMonthWinlossRB,
