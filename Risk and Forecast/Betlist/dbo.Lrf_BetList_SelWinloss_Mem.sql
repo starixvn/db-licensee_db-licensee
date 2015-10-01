@@ -72,6 +72,7 @@ Revisions:
 	 - 20150604@Edward: Support MicroGamming
 	 - 20150608@Edward: Support Bet Trade
 	 - 20150729@Edward: Return betcheck for MicroGamming
+	 - 20150828@Edward: Fixed Odds value of ticket 901, 902 is displayed incorrectly
 Param's Explanation:
 	+ @drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
 
@@ -535,8 +536,8 @@ BEGIN
 				b.hdp2,
 				b.modds,
 				b.OddsType,
-				b.Odds,
-				b.stake,
+				ob.Odds,
+				ob.stake,
 				b.actual_stake,  
 				b.betteam, --Betteam
 				b.status AS Status,				
@@ -1426,8 +1427,8 @@ BEGIN
 				b.hdp2, 
 				b.modds,
 				b.Oddstype,
-				b.Odds,
-				b.stake,
+				ob.Odds,
+				ob.stake,
 				b.actual_stake,  
 				b.betteam, --Betteam
 				b.status AS Status,				
@@ -2310,8 +2311,8 @@ BEGIN
 				b.hdp2,
 				b.modds,
 				b.Oddstype,
-				b.Odds,
-				b.stake,
+				ob.Odds,
+				ob.stake,
 				b.actual_stake,  
 				b.betteam, --Betteam
 				b.status AS Status,				
@@ -2832,11 +2833,8 @@ END
 IF @ShowBT = 1
 BEGIN
 	UPDATE betList
-	SET betList.Odds	= originBetList.Odds
-		,betList.Stake	= originBetList.Stake
-		,betList.comm	= CASE WHEN betList.Bettype = 902 THEN commBetList.comm ELSE betList.comm END		
-	FROM @BetListByDateMem AS betList
-		INNER JOIN @BetListByDateMem AS originBetList ON betList.RefNO = originBetList.TransID
+	SET betList.comm	= CASE WHEN betList.Bettype = 902 THEN commBetList.comm ELSE betList.comm END		
+	FROM @BetListByDateMem AS betList		
 		INNER JOIN @BetListByDateMem AS commBetList ON betList.RefNO = commBetList.RefNO
 	WHERE betList.Sporttype = 1 AND betList.Bettype IN (901, 902)
 		AND commBetList.Bettype = 903

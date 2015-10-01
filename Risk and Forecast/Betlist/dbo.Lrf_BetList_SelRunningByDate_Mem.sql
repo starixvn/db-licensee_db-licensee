@@ -61,6 +61,7 @@ Revisions:
    - 20150402@Bobby: Apply sporttype matrix & #32844 new 60 bettypes - betradar phase 2
    - 20150608@Edward: Support MicroGamming
    - 20150608@Edward: Exclude 3 transactions SOLD/BOUGHT/BetTrade Commission of BetTrade
+   - 20150820@Edward: BA tickets display when filtering with Sportsbook product
 */
 BEGIN
 
@@ -193,50 +194,50 @@ BEGIN
 		,betcheck		NVARCHAR(50)
 	)
 	
-	IF ( @ShowBA = 1 )
-	BEGIN
-		--Receive BA Ticket - SB ticket only
-		INSERT INTO #TempBATicket
-		SELECT
-			b.bettype,
-			b.refno,					
-			b.transid,
-			ISNULL(b.BetID,0),
-			CONVERT(FLOAT, b.hdp1) AS hdp1, 
-			CONVERT(FLOAT, b.hdp2) AS hdp2, 
-			b.odds,
-			b.modds,
-			--b.status,
-			CASE WHEN b.bettype NOT IN (9,29,10) AND b.status = 'running' AND IsNull(b.SecAcceptFlag, 0) = 1 and IsNull(b.checktime, CURRENT_TIMESTAMP) > CURRENT_TIMESTAMP THEN 'waiting'  
-			ELSE b.status   
-			END as status,  
-			b.stake,
-			b.actual_stake, 
-			b.transdate,		
-			b.betteam,
-			b.discount,
-			b.liveindicator, 
-			b.livehomescore, 
-			b.liveawayscore, 
-			b.IP AS IP,			
-			b.oddstype,
-			b.winlostdate,
-			b.currency,
-			b.matchid,
-			b.playercomm 
-			,b.betcheck
-		FROM 
-			bettrans b WITH (NOLOCK)			
-			INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) 
-			ON b.transid = BA.transid
-			INNER JOIN @SportBettype sbt
-			ON b.bettype = sbt.Bettype
-		WHERE
-			b.transdate			>= @FromDate AND b.transdate<=@ToDate
-			AND b.custid		= @CustID 
-			AND sbt.ProductId	= 1
-			AND b.statusID		IN (0,1) 
+	--Receive BA Ticket - SB ticket only
+	INSERT INTO #TempBATicket
+	SELECT
+		b.bettype,
+		b.refno,					
+		b.transid,
+		ISNULL(b.BetID,0),
+		CONVERT(FLOAT, b.hdp1) AS hdp1, 
+		CONVERT(FLOAT, b.hdp2) AS hdp2, 
+		b.odds,
+		b.modds,
+		--b.status,
+		CASE WHEN b.bettype NOT IN (9,29,10) AND b.status = 'running' AND IsNull(b.SecAcceptFlag, 0) = 1 and IsNull(b.checktime, CURRENT_TIMESTAMP) > CURRENT_TIMESTAMP THEN 'waiting'  
+		ELSE b.status   
+		END as status,  
+		b.stake,
+		b.actual_stake, 
+		b.transdate,		
+		b.betteam,
+		b.discount,
+		b.liveindicator, 
+		b.livehomescore, 
+		b.liveawayscore, 
+		b.IP AS IP,			
+		b.oddstype,
+		b.winlostdate,
+		b.currency,
+		b.matchid,
+		b.playercomm 
+		,b.betcheck
+	FROM 
+		bettrans b WITH (NOLOCK)			
+		INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) 
+		ON b.transid = BA.transid
+		INNER JOIN @SportBettype sbt
+		ON b.bettype = sbt.Bettype
+	WHERE
+		b.transdate			>= @FromDate AND b.transdate<=@ToDate
+		AND b.custid		= @CustID 
+		AND sbt.ProductId	= 1
+		AND b.statusID		IN (0,1) 
 
+	IF ( @ShowBA = 1 )
+	BEGIN	
 		--Sportbook 
 		INSERT INTO #BetListSelRunningByDateMem
 		SELECT
