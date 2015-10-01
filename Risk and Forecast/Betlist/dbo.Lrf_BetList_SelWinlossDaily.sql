@@ -1,6 +1,6 @@
 ﻿USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_BetList_SelWinlossDaily]    Script Date: 9/22/2015 11:24:48 AM ******/
+/****** Object:  StoredProcedure [dbo].[Lrf_BetList_SelWinlossDaily]    Script Date: 10/1/2015 2:45:19 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1109,6 +1109,8 @@ BEGIN
 	DROP TABLE #TempAg
 	DROP TABLE #BettransDetail
 END
+
+
 
 
 

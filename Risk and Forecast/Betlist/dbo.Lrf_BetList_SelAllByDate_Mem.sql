@@ -1207,10 +1207,11 @@ BEGIN
 			AND sbt.SubProduct = 'MGC-RNG'
 			AND sbt.EventType = 0
 			AND b.transdate >= @FromDate AND b.transdate <= @ToDate 
-			AND b.transdate <> DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- not today
+			AND b.transdate < DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- not today
 			AND b.statusID NOT IN (0, 1)
 
-		IF @ToDate >= DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- today
+		IF @ToDate >= DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)
+			AND @FromDate <= DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- today
 		BEGIN
 			-- Today running ticket
 			INSERT INTO #BetListSelAllByDateMem
@@ -1262,7 +1263,7 @@ BEGIN
 				AND sbt.ProductID = 13
 				AND sbt.SubProduct = 'MGC-RNG'
 				AND sbt.EventType = 0
-				AND b.transdate = DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- not today
+				AND b.transdate BETWEEN DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0) AND @ToDate	-- today
 				AND brng.statusID = 0
 			GROUP BY
 				b.transid,
@@ -1273,9 +1274,7 @@ BEGIN
 				b.winlostdate,
 				b.IP,
 				b.currency
-		END
-		ELSE
-		BEGIN
+
 			-- Today settled ticket
 			INSERT INTO #BetListSelAllByDateMem
 			SELECT 
@@ -1330,7 +1329,7 @@ BEGIN
 				AND sbt.ProductID = 13
 				AND sbt.SubProduct = 'MGC-RNG'
 				AND sbt.EventType = 0
-				AND b.transdate = DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- not today
+				AND b.transdate BETWEEN DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0) AND @ToDate	-- today
 				AND brng.statusID <> 0
 			GROUP BY
 				b.transid,
@@ -1397,7 +1396,7 @@ BEGIN
 			AND sbt.ProductID = 11
 			AND sbt.EventType = 0
 			AND b.transdate >= @FromDate AND b.transdate <= @ToDate 
-			AND b.transdate <> DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- not today
+			AND b.transdate < DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- not today
 			AND b.statusID NOT IN (0, 1)
 
 		IF @ToDate >= DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- today
@@ -1451,7 +1450,7 @@ BEGIN
 				AND b.recommend = @Recommend
 				AND sbt.ProductID = 11
 				AND sbt.EventType = 0
-				AND b.transdate = DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- not today
+				AND b.transdate BETWEEN DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0) AND @ToDate	-- today
 				AND blc.statusID = 0
 			GROUP BY
 				b.transid,
@@ -1518,7 +1517,7 @@ BEGIN
 				AND b.recommend = @Recommend
 				AND sbt.ProductID = 11
 				AND sbt.EventType = 0
-				AND b.transdate = DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- not today
+				AND b.transdate BETWEEN DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0) AND @ToDate	-- today
 				AND blc.statusID <> 0
 			GROUP BY
 				b.transid,
