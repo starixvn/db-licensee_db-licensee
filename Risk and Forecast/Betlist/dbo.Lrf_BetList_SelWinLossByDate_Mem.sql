@@ -93,6 +93,7 @@ AS
 		- 20150604@Edward: Support Microgaming
 		- 20150608@Edward: Support Bet Trade
 		- 20150729@Edward: Return betcheck for Microgaming
+		- 20150828@Edward: Fixed Odds value of ticket 901, 902 is displayed incorrectly
 		- 20150915@Kos: Support Microgaming RNG Game
 		- 20150922@Kos: Support AG Casino
 */
@@ -583,9 +584,9 @@ BEGIN
 				b.hdp1, 
 				b.hdp2,
 				b.OddsType,
-				b.Odds,
+				ob.Odds,
 				b.modds,
-				b.stake,
+				ob.stake,
 				b.actual_stake, 
 				b.betteam,
 				b.status AS Status,				
@@ -1697,9 +1698,9 @@ BEGIN
 				b.hdp1, 
 				b.hdp2, 
 				b.Oddstype,
-				b.odds,
+				ob.odds,
 				b.modds,
-				b.stake,
+				ob.stake,
 				b.actual_stake, 
 				b.betteam,
 				b.status AS Status,				
@@ -2560,9 +2561,9 @@ BEGIN
 				b.hdp1, 
 				b.hdp2, 			
 				b.Oddstype,
-				b.odds,
+				ob.odds,
 				b.modds,
-				b.stake,
+				ob.stake,
 				b.actual_stake, 
 				b.betteam,
 				b.status AS Status,				
@@ -3052,11 +3053,8 @@ BEGIN
 	IF @ShowBT = 1
 	BEGIN
 		UPDATE betList
-		SET betList.Odds	= originBetList.Odds
-			,betList.Stake	= originBetList.Stake
-			,betList.comm	= CASE WHEN betList.Bettype = 902 THEN commBetList.comm ELSE betList.comm END		
-		FROM #BetListByDateMem AS betList
-			INNER JOIN #BetListByDateMem AS originBetList ON betList.RefNO = originBetList.TransID
+		SET betList.comm	= CASE WHEN betList.Bettype = 902 THEN commBetList.comm ELSE betList.comm END		
+		FROM #BetListByDateMem AS betList		
 			INNER JOIN #BetListByDateMem AS commBetList ON betList.RefNO = commBetList.RefNO
 		WHERE betList.Sporttype = 1 AND betList.Bettype IN (901, 902)
 			AND commBetList.Bettype = 903
