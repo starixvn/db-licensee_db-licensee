@@ -1,12 +1,12 @@
 USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[LRF_Rpt_MicroGamingWinloss_xpre]    Script Date: 10/01/2015 09:51:59 ******/
+/****** Object:  StoredProcedure [dbo].[LRF_Rpt_MicroGamingWinloss_xpre]    Script Date: 10/02/2015 12:58:04 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
  
-ALTER  PROCEDURE [dbo].[LRF_Rpt_MicroGamingWinlossa]
+ALTER  PROCEDURE [dbo].[LRF_Rpt_MicroGamingWinloss]
  @LicenseeID	INT,
  @CurrencyID	INT = 0,
  @UserID		INT,
@@ -31,7 +31,7 @@ AS
     Task : MicroGaming Win Loss report 
     DB: DBEXT.bodb02  
     Revisions:  
-		 
+		  20150921@Jim: support RNG bettype
 	Param's Explanation:  
 	  + @excludeTest: remove currency UUS
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -83,7 +83,7 @@ BEGIN
 			OR (Currency = @CurrencyID)
 			)
 	INSERT INTO #Bettype (Bettype,TypeID,TypeName)	
-	EXEC LRF_MicroGamingWinloss_Bettype @TypeID = 0
+	EXEC LRF_MicroGamingWinloss_Bettype_xpre @TypeID = 0
 		
 	IF @ToDate > @MoveBetsDay
 	BEGIN
@@ -118,8 +118,17 @@ BEGIN
 						, t.currency
 						, bet.TypeID
 						, bet.TypeName
-				UNION ALL
-				SELECT  b.winlostdate
+				INSERT INTO #tmpResult ( Winlostdate
+							 ,Currency 
+							 ,TypeID	
+							 ,TypeName
+							 ,TurnOver 	
+							 ,TotalTrans
+							 ,Winlost  	
+							 ,LicenseeWinlost 
+							)
+							
+				SELECT 	b.winlostdate
 						, t.currency
 						, bet.TypeID
 						, bet.TypeName
@@ -136,21 +145,27 @@ BEGIN
 				GROUP BY b.winlostdate
 						, t.currency
 						, bet.TypeID
-						, bet.TypeName
-							
+						, bet.TypeName		
 	END	
+	
+	IF @FromDate <= @MoveBetsDay 
+	BEGIN
+		IF @ToDate >= @MoveBetsDay
+				SET @TempToDate = @MoveBetsDay
+			ELSE
+				SET  @TempToDate = @ToDate
+				
+		INSERT INTO #tmpResult ( Winlostdate
+								 ,Currency 
+								 ,TypeID	
+								 ,TypeName
+								 ,TurnOver 	
+								 ,TotalTrans
+								 ,Winlost  	
+								 ,LicenseeWinlost 
+								)
 
-	INSERT INTO #tmpResult ( Winlostdate
-							 ,Currency 
-							 ,TypeID	
-							 ,TypeName
-							 ,TurnOver 	
-							 ,TotalTrans
-							 ,Winlost  	
-							 ,LicenseeWinlost 
-							)
-
-	SELECT 
+		SELECT 
 		   b.rptDate Winlostdate		
 		   ,b.CurrencyID Currency
 		   ,bet.TypeID
@@ -169,6 +184,7 @@ BEGIN
 				,b.CurrencyID  
 				,bet.TypeID
 				 ,bet.TypeName
+	END				 
 	SELECT ExchangeDate
 		   ,ExchangeId
 		   ,Code
@@ -178,7 +194,6 @@ BEGIN
 	INTO #TempExchange 
 	FROM Lrf_f_GetExchangeDaily(@FromDate, @ToDate)
 	WHERE exchangeid IN (SELECT DISTINCT Currency FROM #tmpResult)
-	
 	
 	SELECT  CASE WHEN @ReportType = 1 THEN CONVERT(VARCHAR(8),r.winlostdate,112)  
 				 WHEN @ReportType = 2 THEN CONVERT(VARCHAR(6),r.winlostdate,112)  
