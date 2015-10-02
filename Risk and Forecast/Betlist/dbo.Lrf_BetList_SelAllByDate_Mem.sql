@@ -1344,7 +1344,7 @@ BEGIN
 	END
 
 	-- AG Casino
-	IF ( @ShowMGC = 1 )
+	IF ( @ShowAGC = 1 )
 	BEGIN
 		-- AG Casino (up to yesterday settled ticket)
 		INSERT INTO #BetListSelAllByDateMem
