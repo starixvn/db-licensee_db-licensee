@@ -118,7 +118,26 @@ BEGIN
 						, t.currency
 						, bet.TypeID
 						, bet.TypeName
-		
+				UNION ALL
+				SELECT  b.winlostdate
+						, t.currency
+						, bet.TypeID
+						, bet.TypeName
+						, SUM(stake) turnover
+						, COUNT(b.transid) TotalTrans
+						, SUM(b.winlost - b.actual_stake) AS Winlost
+						, SUM(- 1 * (b.winlost - b.actual_stake)) AS LicenseeWinlost
+				FROM dbo.bettransRnG b WITH (NOLOCK)
+				INNER JOIN #TempAg t ON b.recommend = t.custid AND t.Currency = b.Currency
+				INNER JOIN #Bettype bet ON b.gameID  = bet.bettype
+				WHERE b.winlostdate BETWEEN @TempFromDate AND @ToDate
+							AND b.statusID IN (111, 112, 113)
+							AND bet.bettype IN (2007,2008)
+				GROUP BY b.winlostdate
+						, t.currency
+						, bet.TypeID
+						, bet.TypeName
+							
 				INSERT INTO #tmpResult ( Winlostdate
 							 ,Currency 
 							 ,TypeID	
