@@ -6,7 +6,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
  
-ALTER  PROCEDURE [dbo].[LRF_Rpt_MicroGamingWinloss_xpre]
+ALTER  PROCEDURE [dbo].[LRF_Rpt_MicroGamingWinlossa]
  @LicenseeID	INT,
  @CurrencyID	INT = 0,
  @UserID		INT,
@@ -113,11 +113,30 @@ BEGIN
 				INNER JOIN #Bettype bet ON b.bettype  = bet.bettype
 				WHERE b.winlostdate BETWEEN @TempFromDate AND @ToDate
 							AND b.statusID IN (111, 112, 113)
+							AND b.bettype NOT IN (2008,2009)
 				GROUP BY b.winlostdate
 						, t.currency
 						, bet.TypeID
 						, bet.TypeName
-		
+				UNION ALL
+				SELECT  b.winlostdate
+						, t.currency
+						, bet.TypeID
+						, bet.TypeName
+						, SUM(stake) turnover
+						, COUNT(b.transid) TotalTrans
+						, SUM(b.winlost - b.actual_stake) AS Winlost
+						, SUM(- 1 * (b.winlost - b.actual_stake)) AS LicenseeWinlost
+				FROM dbo.bettransRnG b WITH (NOLOCK)
+				INNER JOIN #TempAg t ON b.recommend = t.custid AND t.Currency = b.Currency
+				INNER JOIN #Bettype bet ON b.gameID  = bet.bettype
+				WHERE b.winlostdate BETWEEN @TempFromDate AND @ToDate
+							AND b.statusID IN (111, 112, 113)
+							AND bet.bettype IN (2007,2008)
+				GROUP BY b.winlostdate
+						, t.currency
+						, bet.TypeID
+						, bet.TypeName
 							
 	END	
 
