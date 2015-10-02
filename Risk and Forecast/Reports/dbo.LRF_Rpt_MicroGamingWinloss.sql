@@ -31,7 +31,7 @@ AS
     Task : MicroGaming Win Loss report 
     DB: DBEXT.bodb02  
     Revisions:  
-		 
+		  20150921@Jim: support RNG bettype
 	Param's Explanation:  
 	  + @excludeTest: remove currency UUS
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -118,8 +118,17 @@ BEGIN
 						, t.currency
 						, bet.TypeID
 						, bet.TypeName
-				UNION ALL
-				SELECT  b.winlostdate
+				INSERT INTO #tmpResult ( Winlostdate
+							 ,Currency 
+							 ,TypeID	
+							 ,TypeName
+							 ,TurnOver 	
+							 ,TotalTrans
+							 ,Winlost  	
+							 ,LicenseeWinlost 
+							)
+							
+				SELECT 	b.winlostdate
 						, t.currency
 						, bet.TypeID
 						, bet.TypeName
@@ -136,7 +145,8 @@ BEGIN
 				GROUP BY b.winlostdate
 						, t.currency
 						, bet.TypeID
-						, bet.TypeName
+						, bet.TypeName		
+					 
 							
 				INSERT INTO #tmpResult ( Winlostdate
 							 ,Currency 
@@ -164,16 +174,23 @@ BEGIN
 							AND bet.bettype IN (2007,2008)
 							
 	END	
-
-	INSERT INTO #tmpResult ( Winlostdate
-							 ,Currency 
-							 ,TypeID	
-							 ,TypeName
-							 ,TurnOver 	
-							 ,TotalTrans
-							 ,Winlost  	
-							 ,LicenseeWinlost 
-							)
+	
+	IF @FromDate <= @MoveBetsDay 
+	BEGIN
+		IF @ToDate >= @MoveBetsDay
+				SET @TempToDate = @MoveBetsDay
+			ELSE
+				SET  @TempToDate = @ToDate
+				
+		INSERT INTO #tmpResult ( Winlostdate
+								 ,Currency 
+								 ,TypeID	
+								 ,TypeName
+								 ,TurnOver 	
+								 ,TotalTrans
+								 ,Winlost  	
+								 ,LicenseeWinlost 
+								)
 				GROUP BY b.winlostdate
 						, t.currency
 						, bet.TypeID
@@ -197,7 +214,7 @@ BEGIN
 								 ,LicenseeWinlost 
 								)
 
-	SELECT 
+		SELECT 
 		   b.rptDate Winlostdate		
 		   ,b.CurrencyID Currency
 		   ,bet.TypeID
