@@ -86,9 +86,9 @@ AS
 		- 20150403@Bobby: Apply sporttype matrix & #32844 new 60 bettypes - betradar phase 2
 		- 20150605@Edward: Support Microgaming
 		- 20150608@Edward: Support Bet Trade
+		- 20150729@Edward: Return betcheck for Microgaming
 		- 20150828@Edward: Return refNo value instead of '' for BetTrade tickets
 		- 20150828@Edward: Update Odds and Stake in the same time insert to temporary table
-		- 20150729@Edward: Return betcheck for Microgaming
 		- 20150917@Kos: Support Microgaming RNG Game
 		- 20150922@Kos: Support AG Casino
 */
