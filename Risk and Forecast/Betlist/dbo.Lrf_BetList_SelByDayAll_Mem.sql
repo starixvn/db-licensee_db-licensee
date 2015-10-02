@@ -63,6 +63,7 @@ AS
 		- 20150608@Edward: Support Bet Trade
 		- 20150729@Edward: Return betcheck for Microgaming
 		- 20150806@Edward: Fixed bug return 0 instead of game id for Microgaming
+		- 20150831@Edward: Fixed bettrade performance and odds value
 		- 20150916@Kos: Support Microgaming RNG Game
 		- 20150923@Kos: Support AG Casino
 
@@ -676,9 +677,8 @@ BEGIN
 			,betList.BetID	= originBetList.Bettype
 		FROM @Data AS betList
 			INNER JOIN bettrans14 AS originBetList WITH(NOLOCK) ON betList.RefNO = originBetList.TransID
-			INNER JOIN bettrans14 AS commBetList WITH(NOLOCK) ON betList.RefNO = commBetList.RefNO
-		WHERE betList.Sporttype = 1 AND betList.Bettype IN (901, 902)
-			AND commBetList.Bettype = 903
+			LEFT JOIN @Data AS commBetList ON betList.RefNO = commBetList.RefNO AND commBetList.Bettype = 903
+		WHERE betList.Sporttype = 1 AND betList.Bettype IN (901, 902)	
 
 		DELETE @Data WHERE Sporttype = 1 AND Bettype = 903	
 		-- End Bet Trade
@@ -1638,9 +1638,8 @@ BEGIN
 			,betList.BetID	= originBetList.Bettype
 		FROM @Data AS betList
 			INNER JOIN bettrans AS originBetList WITH(NOLOCK) ON betList.RefNO = originBetList.TransID
-			INNER JOIN bettrans AS commBetList WITH(NOLOCK) ON betList.RefNO = commBetList.RefNO
+			LEFT JOIN @Data AS commBetList ON betList.RefNO = commBetList.RefNO AND commBetList.Bettype = 903
 		WHERE betList.Sporttype = 1 AND betList.Bettype IN (901, 902)
-			AND commBetList.Bettype = 903
 
 		DELETE @Data WHERE Sporttype = 1 AND Bettype = 903	
 		-- End Bet Trade

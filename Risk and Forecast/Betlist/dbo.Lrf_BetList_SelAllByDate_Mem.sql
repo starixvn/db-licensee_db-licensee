@@ -86,6 +86,8 @@ AS
 		- 20150403@Bobby: Apply sporttype matrix & #32844 new 60 bettypes - betradar phase 2
 		- 20150605@Edward: Support Microgaming
 		- 20150608@Edward: Support Bet Trade
+		- 20150828@Edward: Return refNo value instead of '' for BetTrade tickets
+		- 20150828@Edward: Update Odds and Stake in the same time insert to temporary table
 		- 20150729@Edward: Return betcheck for Microgaming
 		- 20150917@Kos: Support Microgaming RNG Game
 		- 20150922@Kos: Support AG Casino
@@ -602,7 +604,7 @@ BEGIN
 			@UserName AS UserName,
 			m.sporttype,
 			b.bettype,
-			'' AS refno,		
+			b.refno,		
 			b.transid,
 			ISNULL(ob.bettype,0),
 			m.matchcode, 
@@ -612,12 +614,12 @@ BEGIN
 			m.awayID,
 			CONVERT(FLOAT, b.hdp1) AS hdp1, 
 			CONVERT(FLOAT, b.hdp2) AS hdp2, 
-			b.odds,
+			ob.odds,
 			b.modds,
 			CASE WHEN b.status = 'running' AND IsNull(b.SecAcceptFlag, 0) = 1 and IsNull(b.checktime, CURRENT_TIMESTAMP) > CURRENT_TIMESTAMP THEN 'waiting'  
 			ELSE b.status   
 			END AS status,
-			b.stake,
+			ob.stake,
 			b.actual_stake,
 			(b.winlost-b.actual_stake) winlost,
 			- (b.winlost-b.actual_stake) AS LicenseeWL ,
@@ -654,11 +656,8 @@ BEGIN
 			AND b.bettype IN (901,902,903)
 
 		UPDATE betList
-		SET betList.Odds	= originBetList.Odds
-			,betList.Stake	= originBetList.Stake
-			,betList.comm	= CASE WHEN betList.Bettype = 902 THEN commBetList.comm ELSE betList.comm END			
-		FROM #BetListSelAllByDateMem AS betList
-			INNER JOIN #BetListSelAllByDateMem AS originBetList ON betList.RefNO = originBetList.TransID
+		SET betList.comm	= CASE WHEN betList.Bettype = 902 THEN commBetList.comm ELSE betList.comm END			
+		FROM #BetListSelAllByDateMem AS betList			
 			INNER JOIN #BetListSelAllByDateMem AS commBetList ON betList.RefNO = commBetList.RefNO
 		WHERE betList.Sporttype = 1 AND betList.Bettype IN (901, 902)
 			AND commBetList.Bettype = 903
