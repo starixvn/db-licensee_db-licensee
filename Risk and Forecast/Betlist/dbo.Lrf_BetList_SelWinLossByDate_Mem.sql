@@ -1256,6 +1256,7 @@ BEGIN
 				INSERT INTO #BetListByDateMem
 				SELECT
 					250 AS Sporttype,
+					@Username, 
 					b.transid,
 					ISNULL(b.BetID, 0),
 					b.Bettype,
