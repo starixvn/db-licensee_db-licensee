@@ -26,7 +26,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerBalance]
 	@ShowBG  BIT=0 , -- Bingo     
 	@ShowKN   		BIT = 0, -- Keno ,
 	@ShowBT   		BIT = 0, -- Bet Trade ,
-	@ShowMGC BIT=0
+	@ShowMGC BIT=0,
+	@ShowAGC BIT=0
   
 AS /*  
 Created: 20120917@Henry  
