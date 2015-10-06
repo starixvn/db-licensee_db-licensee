@@ -187,7 +187,8 @@ BEGIN
 	DECLARE @GapDate		DATETIME
 
 	SELECT @GapDate = MAX(c.Winlostdate) FROM bodb_report.dbo.rptDepWinlost_AGCasino c WITH (NOLOCK)
-
+	WHERE EXISTS (SELECT 1 FROM #tmpCust tc WHERE c.Custid = tc.CustId)
+	
 	IF @ToDate > @GapDate
 	BEGIN
 		IF @FromDate <= @GapDate 
