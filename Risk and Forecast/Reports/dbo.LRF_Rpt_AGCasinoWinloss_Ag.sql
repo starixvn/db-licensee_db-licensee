@@ -80,36 +80,13 @@ BEGIN
 		INNER JOIN #Currency c ON  lc.Currency = c.CurrencyID 
 	WHERE  (@excludeTest=0 OR (@excludeTest=1 AND lc.Currency <> 20))	
 	
-	/*INSERT INTO #tmpResult (CustId 
-							 ,Winlostdate
-							 ,Currency 	
-							 ,TurnOver 	
-							 ,TotalTrans
-							 ,Winlost  	
-							 ,LicenseeWinlost 
-							)
-
-	SELECT ag.recommend AS CustID
-		   ,c.Winlostdate		
-		   ,ag.Currency
-		   ,SUM(c.TurnOver) AS TurnOver
-		   ,SUM(c.BetCount) AS TotalTrans
-		   ,SUM(c.Winlost)  AS Winlost
-		   ,-SUM(c.Winlost) AS LicenseeWinlost
-	FROM  bodb_report.dbo.rptDepWinlost_AGCasino c  WITH (NOLOCK)
-		  INNER JOIN #tmpCust ag ON c.CustID = ag.CustID AND c.Currency = ag.Currency
-	WHERE c.Winlostdate BETWEEN @FromDate AND @ToDate 
-	GROUP BY ag.recommend
-			,c.Winlostdate
-		    ,ag.Currency
-	*/
-
 	DECLARE @TempFromDate	DATETIME 
 	DECLARE @TempToDate		DATETIME 
 	DECLARE @GapDate		DATETIME
 
 	SELECT @GapDate = MAX(c.Winlostdate) FROM bodb_report.dbo.rptDepWinlost_AGCasino c WITH (NOLOCK)
-
+	WHERE EXISTS (SELECT 1 FROM #tmpCust tc WHERE c.Custid = tc.CustId)
+	
 	IF @ToDate > @GapDate
 	BEGIN
 		IF @FromDate <= @GapDate 
