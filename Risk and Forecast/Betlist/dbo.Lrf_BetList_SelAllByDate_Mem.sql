@@ -210,7 +210,7 @@ BEGIN
 	)
 	
 	INSERT INTO @SportBettype
-	EXEC dbo.Acc_SportBettypeMatrix_Sel @mode = 5
+		EXEC dbo.Acc_SportBettypeMatrix_Sel_xpre @mode = 5
 		
 	IF @ShowBT = 0
 	BEGIN
@@ -1398,7 +1398,8 @@ BEGIN
 			AND b.transdate < DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- not today
 			AND b.statusID NOT IN (0, 1)
 
-		IF @ToDate >= DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- today
+		IF @ToDate >= DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)
+			AND @FromDate <= DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- today
 		BEGIN
 			-- Today running ticket
 			INSERT INTO #BetListSelAllByDateMem
@@ -1460,9 +1461,7 @@ BEGIN
 				b.winlostdate,
 				b.IP,
 				b.currency
-		END
-		ELSE
-		BEGIN
+
 			-- Today settled ticket
 			INSERT INTO #BetListSelAllByDateMem
 			SELECT 
