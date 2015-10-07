@@ -17,7 +17,7 @@ DB: DBLIC/bodb_licensee
 */
 DECLARE @SBComm [decimal](9,8)
 	SET @SBComm = 0
-	
+		
 SELECT @SBComm = lgc.SBComm
 FROM dbo.LicenseeCustComm lcs WITH (NOLOCK)
 	INNER JOIN dbo.LicenseeGroupComm lgc WITH (NOLOCK) ON lcs.GroupCommID = lgc.id AND lcs.LicenseeID = lgc.Licenseeid
@@ -26,10 +26,13 @@ WHERE lcs.LicenseeID = @LicenseeID
 	  
 IF (@IsBA =1 )	--- Turn-on BA
 	BEGIN 
-		UPDATE dbo.LicenseeCustComm WITH (ROWLOCK,UPDLOCK)
-		SET SBComm      = 0
-		WHERE LicenseeID = @LicenseeID
-			   AND CustID = @CustID	   	
+		IF  NOT EXISTS (SELECT 1 FROM dbo.licensees WITH (NOLOCK) WHERE LicenseeName='Macaubet' AND LicenseeId=@LicenseeID )	
+			BEGIN
+				UPDATE dbo.LicenseeCustComm WITH (ROWLOCK,UPDLOCK)
+				SET SBComm      =  0
+				WHERE LicenseeID = @LicenseeID
+					   AND CustID = @CustID	   	
+			END
 	END
 ELSE IF (@IsBA = 0 ) -- Turn-off BA
 	BEGIN 
@@ -39,6 +42,11 @@ ELSE IF (@IsBA = 0 ) -- Turn-off BA
 		WHERE LicenseeID = @LicenseeID
 			   AND CustID = @CustID	   	
 	END	
+IF  NOT EXISTS (SELECT 1 FROM dbo.licensees WITH (NOLOCK) WHERE LicenseeName='Macaubet' AND LicenseeId=@LicenseeID )	
+			BEGIN
+				EXEC  DBCUST.CustDB.dbo.Lrf_LicenseeBACust_Playerdiscount_Upd @CustID = @CustID,@SBComm=@SBComm
+			END
+			
 
 GO
 
@@ -53,3 +61,4 @@ GO
 GO 
  GRANT EXECUTE ON [dbo].[Lrf_LicenseeBACustUpdComm] TO [bodbLicenseeNet]
 GO 
+	
