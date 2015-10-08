@@ -1,11 +1,14 @@
-SET QUOTED_IDENTIFIER ON 
+USE [bodb_licensee]
 GO
-SET ANSI_NULLS ON 
+/****** Object:  StoredProcedure [dbo].[Lrf_LicenseeBACustUpdComm]    Script Date: 10/08/2015 12:42:13 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
 GO
 
 /****** Object:  Stored Procedure dbo.Lrf_LicenseeBACustUpdComm    Script Date: 5/28/2015 9:20:36 AM ******/
- 
-CREATE PROC [dbo].[Lrf_LicenseeBACustUpdComm]
+  
+ALTER PROC [dbo].[Lrf_LicenseeBACustUpdComm]
 	@LicenseeID INT,
 	@CustID INT,--member
 	@IsBA BIT
@@ -33,6 +36,10 @@ IF (@IsBA =1 )	--- Turn-on BA
 				WHERE LicenseeID = @LicenseeID
 					   AND CustID = @CustID	   	
 			END
+			IF  NOT EXISTS (SELECT 1 FROM dbo.licensees WITH (NOLOCK) WHERE LicenseeName='Macaubet' AND LicenseeId=@LicenseeID )	
+			BEGIN
+				EXEC  DBCUST.CustDB.dbo.Lrf_LicenseeBACust_Playerdiscount_Upd @CustID = @CustID,@SBComm=0
+			END
 	END
 ELSE IF (@IsBA = 0 ) -- Turn-off BA
 	BEGIN 
@@ -41,19 +48,12 @@ ELSE IF (@IsBA = 0 ) -- Turn-off BA
 		SET SBComm      = @SBComm
 		WHERE LicenseeID = @LicenseeID
 			   AND CustID = @CustID	   	
-	END	
-IF  NOT EXISTS (SELECT 1 FROM dbo.licensees WITH (NOLOCK) WHERE LicenseeName='Macaubet' AND LicenseeId=@LicenseeID )	
+		IF  NOT EXISTS (SELECT 1 FROM dbo.licensees WITH (NOLOCK) WHERE LicenseeName='Macaubet' AND LicenseeId=@LicenseeID )	
 			BEGIN
 				EXEC  DBCUST.CustDB.dbo.Lrf_LicenseeBACust_Playerdiscount_Upd @CustID = @CustID,@SBComm=@SBComm
 			END
-			
-
-GO
-
-SET QUOTED_IDENTIFIER OFF 
-GO
-SET ANSI_NULLS ON 
-GO
+				   
+	END	
 
 
 GO 
