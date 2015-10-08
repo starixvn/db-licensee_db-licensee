@@ -17,6 +17,8 @@ AS
 Created: 20150508@Jim
 Task : Update SB Commission WHEN BA is ON/OFF
 DB: DBLIC/bodb_licensee
+Revision:
+	-20151005@Jim:HotFix #45031
 */
 DECLARE @SBComm [decimal](9,8)
 	SET @SBComm = 0
