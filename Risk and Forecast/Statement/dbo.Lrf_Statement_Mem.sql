@@ -31,6 +31,7 @@ Revisions:
  -- 20150507@Winnie: fix bug #35365
  -- 201506125@Winnie: support BetTrade 
  -- 20150626@Jim: support MicroGaming (feature #37034) 
+ -- 20150917@Florent: Change datasource for AG Casino (#Redmine 43172)
 Param's Explanation:   
 • @ErrCode:  
     = 0: add new member successfully.  
@@ -150,6 +151,23 @@ select @fdate = @FromDate, @tdate = @ToDate
 		WHERE   custid = @custid  
 				AND winlostdate BETWEEN @fdate AND @tdate                              
 				and statusID =0 -- get only running game _ bettransRnG
+			 
+		GROUP BY winlostdate ,gameid 	
+		
+	   INSERT  INTO @bet( winlostdate, bettype,statusID,transdate,transdesc ,stake, actual_stake, winlost, playercomm)  
+		SELECT  winlostdate ,  
+				gameid ,  
+				0 ,    
+				NULL ,  
+				'' transdesc, 
+				SUM(t.stake ) ,  
+				SUM(actual_stake) ,  
+				0 ,  --winlost
+				0  --playcomm
+		FROM    bodb02.dbo.bettransLC t with(nolock)  
+		WHERE   custid = @custid  
+				AND winlostdate BETWEEN @fdate AND @tdate                              
+				and statusID = 0 -- get only running game _ bettransLC
 			 
 		GROUP BY winlostdate ,gameid 	
 		
