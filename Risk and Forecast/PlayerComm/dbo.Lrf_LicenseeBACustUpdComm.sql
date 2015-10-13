@@ -1,6 +1,6 @@
 USE [bodb_licensee]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_LicenseeBACustUpdComm]    Script Date: 10/08/2015 12:42:13 ******/
+/****** Object:  StoredProcedure [dbo].[Lrf_LicenseeBACustUpdComm]    Script Date: 10/13/2015 17:49:59 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -63,4 +63,3 @@ GO
 GO 
  GRANT EXECUTE ON [dbo].[Lrf_LicenseeBACustUpdComm] TO [bodbLicenseeNet]
 GO 
-	
