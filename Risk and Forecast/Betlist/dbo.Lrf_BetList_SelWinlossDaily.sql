@@ -91,6 +91,7 @@ AS
 		- 20150623@Edward: Fix bug Missing Sporttype for Microgaming tickets (#38450)
 		- 20150916@Kos: Don't support Microgaming RNG Game
 		- 20150921@Kos: Don't support Microgaming
+		- 20151014@Kos: Increase data length of @sql to 3000
 
 	Param's Explanation: 
 */
@@ -210,7 +211,7 @@ BEGIN
 	SELECT @RowStart = @PageSize * @PageIndex + 1
 	SELECT @RowEnd = (@RowStart -1)  + @PageSize
 
-	DECLARE @sql		NVARCHAR(2500)
+	DECLARE @sql		NVARCHAR(3000)
 	DECLARE @SortTemp	VARCHAR(250) 
 	DECLARE @LicenseeWL	VARCHAR(150) 
 	DECLARE @Winlost	VARCHAR(150) 
