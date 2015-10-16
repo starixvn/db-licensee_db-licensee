@@ -15,6 +15,7 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMaxPerMatch]
 	@maxpermatchv8 MONEY,
 	@maxpermatchv10 MONEY,
 	@maxpermatchv11 MONEY,
+	@maxpermatchv44 MONEY,
 	@maxpermatchv154 MONEY,
 	@maxpermatchv99 MONEY,
 	@maxpermatchv99MP MONEY,	
@@ -25,6 +26,7 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMaxPerMatch]
 	@UpdateMinMaxBetv8 BIT = 1,
 	@UpdateMinMaxBetv10 BIT = 1,
 	@UpdateMinMaxBetv11 BIT = 1,
+	@UpdateMinMaxBetv44 BIT = 1,
 	@UpdateMinMaxBetv154 BIT = 1,
 	@UpdateMinMaxBetv99 BIT = 1,
 	@UpdateMinMaxBetv99MP BIT = 1,
@@ -41,6 +43,7 @@ Original: [Acc_CustomerUpdMaxPerMatch]
 Revisions:
 	- 20110520@Henry: Remove Number Game (by using SP: Lrf_CustomerUpdMaxPerMatch161)
 	- 20140207@Jim: support to offer Horse Racing Fixed Odds
+	- 20151015@Jim: Integrate Sportbook2 (Feature #44759)
 Param's Explanation:
 • @ErrCode:
     = 0: Update successfully.
@@ -58,6 +61,7 @@ SET
 	MaxPerMatch8=CASE WHEN  @UpdateMinMaxBetv8=1 THEN @MaxPerMatchv8 ELSE MaxPerMatch8 END,
 	MaxPerMatch10=CASE WHEN @UpdateMinMaxBetv10=1 THEN @MaxPerMatchv10 ELSE MaxPerMatch10 END,
 	MaxPerMatch11=CASE WHEN @UpdateMinMaxBetv11=1 THEN @MaxPerMatchv11 ELSE MaxPerMatch11 END,
+	MaxPerMatch44=CASE WHEN @UpdateMinMaxBetv44=1 THEN @MaxPerMatchv44 ELSE MaxPerMatch44 END,
 	MaxPerMatch154=CASE WHEN @UpdateMinMaxBetv154=1 THEN @MaxPerMatchv154 ELSE MaxPerMatch154 END,
 	MaxPerMatch99=CASE WHEN @UpdateMinMaxBetv99=1 THEN @MaxPerMatchv99 ELSE MaxPerMatch99 END,
 	MaxPerMatch99MP=CASE WHEN @UpdateMinMaxBetv99MP=1 THEN @MaxPerMatchv99MP ELSE MaxPerMatch99MP END

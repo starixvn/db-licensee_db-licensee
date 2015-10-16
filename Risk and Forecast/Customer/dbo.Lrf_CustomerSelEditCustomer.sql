@@ -22,6 +22,7 @@ Revisions:
 	- 20140212@Jim: support HorseRacingFixedOdds
 	- 20140821@Jim: add more value DisableEsports in result
 	- 20150609@Kos: Separate CustDB to DBCUST server (Move SP to DBCUST.CustDB)
+	- 20151015@Jim: Integrate Sportbook2 (Feature #44759)
 Param's Explanation:
 • @CustID: member ID
 */
@@ -34,6 +35,7 @@ DECLARE @MinBet_Max MONEY, @MaxBet_Min MONEY, @MaxPerMatch_Min MONEY, @MaxPerMat
         @MinBetv8_Max MONEY, @MaxBetv8_Min MONEY, @MaxPerMatchv8_Min MONEY, @MaxPerMatchv8_Max MONEY,
         @MinBetv10_Max MONEY, @MaxBetv10_Min MONEY, @MaxPerMatchv10_Min MONEY, @MaxPerMatchv10_Max MONEY,
         @MinBetv11_Max MONEY, @MaxBetv11_Min MONEY, @MaxPerMatchv11_Min MONEY, @MaxPerMatchv11_Max MONEY,
+		@MinBetv44_Max MONEY, @MaxBetv44_Min MONEY, @MaxPerMatchv44_Min MONEY, @MaxPerMatchv44_Max MONEY,
         @MinBetv154_Max MONEY, @MaxBetv154_Min MONEY, @MaxPerMatchv154_Min MONEY, @MaxPerMatchv154_Max MONEY,
         @MinBetv99_Max MONEY, @MaxBetv99_Min MONEY, @MaxPerMatchv99_Min MONEY, @MaxPerMatchv99_Max MONEY,
         @MinBetv99MP_Max MONEY, @MaxBetv99MP_Min MONEY, @MaxPerMatchv99MP_Min MONEY, @MaxPerMatchv99MP_Max MONEY
@@ -115,7 +117,16 @@ from
     INNER JOIN dbo.custinfo AS ci WITH (NOLOCK) ON (cs.CustID = ci.Recommend OR cs.CustID = ci.MRecommend OR cs.CustID = ci.SRecommend)
     AND cs.bettype = 1 AND cs.sporttype=11
 WHERE ci.custid = @CustID
-
+--SB2
+SELECT 
+    @MinBetv44_Max = MAX(CASE WHEN MinBet = 0 THEN NULL ELSE MinBet END), 
+    @MaxBetv44_Min = MIN(CASE WHEN MaxBet = 0 THEN NULL ELSE MaxBet END)
+from 
+    dbo.Dep_CustSetting AS cs WITH (NOLOCK)
+    INNER JOIN dbo.custinfo AS ci WITH (NOLOCK) ON (cs.CustID = ci.Recommend OR cs.CustID = ci.MRecommend OR cs.CustID = ci.SRecommend)
+    AND cs.bettype = 3 AND cs.sporttype=44
+WHERE ci.custid = @CustID
+--
 SELECT 
     @MinBetv154_Max = MAX(CASE WHEN MinBet = 0 THEN NULL ELSE MinBet END), 
     @MaxBetv154_Min = MIN(CASE WHEN MaxBet = 0 THEN NULL ELSE MaxBet END)
@@ -166,7 +177,10 @@ SELECT
     
     @MaxPerMatchv11_Min = 0,
     @MaxPerMatchv11_Max = MIN(CASE WHEN cs.MaxPerMatch11 = 0 THEN NULL ELSE cs.MaxPerMatch11 END), 
-    
+    --
+	@MaxPerMatchv44_Min = 0,
+    @MaxPerMatchv44_Max = MIN(CASE WHEN cs.MaxPerMatch44 = 0 THEN NULL ELSE cs.MaxPerMatch44 END), 
+	--
     @MaxPerMatchv154_Min = 0,
     @MaxPerMatchv154_Max = MIN(CASE WHEN cs.MaxPerMatch154 = 0 THEN NULL ELSE cs.MaxPerMatch154 END), 
     
@@ -190,6 +204,7 @@ SELECT
     ISNULL(ci.maxpermatch8, 0) AS maxpermatchv8,
     ISNULL(ci.maxpermatch10, 0) AS maxpermatchv10,
     ISNULL(ci.maxpermatch11, 0) AS maxpermatchv11,
+	ISNULL(ci.maxpermatch44, 0) AS maxpermatchv44,
     ISNULL(ci.maxpermatch154, 0) AS maxpermatchv154,
     ISNULL(ci.maxpermatch99, 0) AS maxpermatchv99,
     ISNULL(ci.maxpermatch99MP, 0) AS maxpermatchv99MP,
@@ -216,6 +231,9 @@ SELECT
     ISNULL(MAX(CASE WHEN cs.bettype = 1 AND cs.sporttype=11 THEN cs.minbet ELSE 0 END), 0) AS MinBetv11,
     ISNULL(MAX(CASE WHEN cs.bettype = 1 AND cs.sporttype=11 THEN cs.maxbet ELSE 0 END), 0) AS MaxBetv11,
     
+	ISNULL(MAX(CASE WHEN cs.bettype = 3 AND cs.sporttype=44 THEN cs.minbet ELSE 0 END), 0) AS MinBetv44,
+    ISNULL(MAX(CASE WHEN cs.bettype = 3 AND cs.sporttype=44 THEN cs.maxbet ELSE 0 END), 0) AS MaxBetv44,
+	
     ISNULL(MAX(CASE WHEN cs.bettype = 20 AND cs.sporttype=154 THEN cs.minbet ELSE 0 END), 0) AS MinBetv154,
     ISNULL(MAX(CASE WHEN cs.bettype = 20 AND cs.sporttype=154 THEN cs.maxbet ELSE 0 END), 0) AS MaxBetv154,
     
@@ -259,7 +277,12 @@ SELECT
     ISNULL(@MaxBetv11_Min, 0) AS MaxBetv11_Min,    
     ISNULL(@MaxPerMatchv11_Min, 0) AS MaxPerMatchv11_Min,    
     ISNULL(@MaxPerMatchv11_Max, 0) AS MaxPerMatchv11_Max,
-    
+    --
+	ISNULL(@MinBetv44_Max, 0) AS MinBetv44_Max,    
+    ISNULL(@MaxBetv44_Min, 0) AS MaxBetv44_Min,    
+    ISNULL(@MaxPerMatchv44_Min, 0) AS MaxPerMatchv44_Min,    
+    ISNULL(@MaxPerMatchv44_Max, 0) AS MaxPerMatchv44_Max,
+	
     ISNULL(@MinBetv154_Max, 0) AS MinBetv154_Max,    
     ISNULL(@MaxBetv154_Min, 0) AS MaxBetv154_Min,    
     ISNULL(@MaxPerMatchv154_Min, 0) AS MaxPerMatchv154_Min,    
@@ -292,6 +315,7 @@ GROUP BY
     ci.maxpermatch8,
     ci.maxpermatch10, 
     ci.maxpermatch11,
+	ci.maxpermatch44,  
     ci.maxpermatch154,
     ci.maxpermatch99,
     ci.maxpermatch99MP,
