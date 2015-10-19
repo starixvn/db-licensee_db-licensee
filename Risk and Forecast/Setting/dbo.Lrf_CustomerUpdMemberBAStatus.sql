@@ -447,7 +447,6 @@ ELSE --disable BA
 					@apositiontaking_10 SMALLMONEY,
 					@alivepositiontaking_1 SMALLMONEY,
 					@alivepositiontaking_3 SMALLMONEY,
-					@alivepositiontaking_3_44 SMALLMONEY,
 					@alivepositiontaking_7 SMALLMONEY,
 					@alivepositiontaking_8 SMALLMONEY,
 
