@@ -28,6 +28,7 @@ AS
 		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 		- 20150123@Jim: support base on Currency GBP
 		- 20150917@Florent: Change datasource for AG Casino
+		- 20151020@Florent: get MoveBetsDay
 	Param's Explanation:  
 	  + @excludeTest: remove currency UUS
 */  
@@ -99,11 +100,7 @@ BEGIN
 			DECLARE @MoveBetsDay	DATETIME
 
 			--get MoveBetsDay
-			DECLARE @MoveBet TABLE (BalanceUpDay DATETIME, MoveBetsDay DATETIME)
-			INSERT INTO @MoveBet (BalanceUpDay, MoveBetsDay)
-			EXEC dbo.Lrf_SelBalanceUpDay
-
-			SELECT @MoveBetsDay = MoveBetsDay FROM @MoveBet
+			SELECT @MoveBetsDay = MAX(eventdate) FROM dbo.match14 WITH(NOLOCK)
 			--
 			IF @ToDate > @MoveBetsDay
 			BEGIN
