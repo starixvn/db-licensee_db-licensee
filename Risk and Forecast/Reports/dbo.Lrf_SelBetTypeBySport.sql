@@ -120,7 +120,7 @@ BEGIN
 		
 	END
 	
-	IF EXISTS(SELECT 1 FROM #SBsport WHERE  SportID NOT IN (43,5,154))
+	IF EXISTS(SELECT 1 FROM #SBsport WHERE  SportID NOT IN (43,5,154,44))
 	BEGIN
 
 		INSERT INTO @Bettype
@@ -130,6 +130,16 @@ BEGIN
 							   OR (typeid BETWEEN 1301 and 1399)) --new tennis's bettypes
 			 
 	END
+	IF EXISTS(SELECT 1 FROM #SBsport WHERE  SportID =44)
+	BEGIN
+
+		INSERT INTO @Bettype
+			SELECT 44,typeid, typenamee
+			FROM #bettype
+			WHERE typeid IN(1,3)
+			 
+	END
+	
 	DROP TABLE #SBsport
 END
 
