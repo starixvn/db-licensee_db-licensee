@@ -2,6 +2,9 @@
 GO
  
  
+GO
+SET QUOTED_IDENTIFIER ON
+GO
  
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]  
  @LicenseeID	INT,
@@ -50,8 +53,10 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]
 	- 20150123@Jim: support base on Currency GBP
 	- 20150612@Jim: support MicroGaming
 	- 20150624@Winnie: support licenseeWLBT
+ 
 	- 20150624@Winnie: fix bug bettrade dont count refund tickets.
 	- 20150903@Winnie: fix bug bettrade #42874
+ 
 	- 20150910@Jim: Integrate Microgaming RNG games (feature #43078)
 	- 20150921@Jim: Implement the changes on reports for AG Casino (#43172)
 	Param's Explanation:  
