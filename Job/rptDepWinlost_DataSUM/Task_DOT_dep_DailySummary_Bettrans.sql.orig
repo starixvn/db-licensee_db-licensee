@@ -581,7 +581,10 @@ BEGIN
 	   FROM dbo.bettransLC lc with (ROWLOCK)
 			--inner join dep_custsuper s with(nolock) on s.custid = tl.srecommend
 			INNER JOIN #DepositCustSuper s WITH(NOLOCK) ON s.custid = lc.srecommend AND s.Currency = lc.currency
+ 
 	   WHERE lc.winlostdate >= @date  
+	   WHERE lc.winlostdate >= @date  
+ 
 	   GROUP BY lc.custid, lc.currency
 	WHILE (1 = 1)
 	BEGIN

@@ -336,11 +336,9 @@ INSERT INTO #tempDepWinlostByProduct_staging (winlostdate,custid,sporttype,curre
 		 and custid in (select custid from @TempCustID)
 		 and custid <> 0
 		 
-<<<<<<< HEAD
-   GROUP BY g.custid, g.productID,g.currency;
-=======
+ 
    GROUP BY g.custid,  g.currency
->>>>>>> commit code
+ 
    UNION 
    SELECT @date AS winlostdate
 	,lc.custid   

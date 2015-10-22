@@ -140,3 +140,4 @@ END
 GO
 GRANT VIEW DEFINITION ON [dbo].[Task_CustomerActive_GenDataDaily] TO [vnteam] AS [dbo]
 GO
+GO

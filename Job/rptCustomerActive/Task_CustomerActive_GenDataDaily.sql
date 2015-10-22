@@ -22,6 +22,11 @@ BEGIN
 	DECLARE @ProductCodes VARCHAR(125), @FromDate DATE, @ToDate DATE
 	SELECT @FromDate = DATEADD(D, -1, @TransDate), @ToDate = DATEADD(D, 1, @TransDate)
 	
+
+	----get licensee cust
+	--DECLARE @TmpLicenseeCust AS TABLE ( CustId INT, Currency INT)
+	--INSERT INTO @TmpLicenseeCust (CustId, Currency)
+	--SELECT CustID, Currency FROM bodb_licensee.dbo.f_SelLicenseeCust(0)
 	
 	--get product prefix
 	SET @ProductCodes = 'SB'
@@ -91,6 +96,8 @@ BEGIN
 	GROUP BY b.TransDate, b.CustId, b.Recommend, b.currency, b.ProductId
 	
 	-- AG Casino
+
+	-- For Playtech Casino --merge
 	--INSERT INTO #DataTmp(TransDate, CustId, Recommend, CurrencyId, ProductId)
 	--SELECT CAST(TransDate AS DATE) AS TransDate, b.CustID, b.recommend, b.currency, 9 AS ProductId
 	--FROM bodb_PlaytechCS.dbo.bettrans_PlaytechCS b WITH(NOLOCK)

@@ -76,10 +76,7 @@ AS /*
 		- 20150826@Winnie: Fix bug KeenOcean #42464
 		- 20150910@Jim: Integrate Microgaming RNG games (feature #43078)
 		- 20150917@Florent: Change datasource for AG Casino (#Redmine 43172)
-<<<<<<< HEAD
-		
-=======
->>>>>>> fix range bettype
+ 
 */
     
 SET NOCOUNT ON
@@ -230,20 +227,12 @@ BEGIN
 END
 IF @ShowAGC = 1 -- AG Casino
 BEGIN 
-<<<<<<< HEAD
-	
-	INSERT INTO @sporttype (sporttype)
-	VALUES(250)
-
-	INSERT INTO @bettype(bettype)
-	SELECT typeid FROM bettype (NOLOCK)
-	WHERE (typeid BETWEEN 1801 AND 1899) 
-=======
+ 
 
 	INSERT INTO @bettype(bettype)
 	SELECT typeid FROM bettype (NOLOCK)
 	WHERE (typeid BETWEEN 1800 AND 1899) 
->>>>>>> fix range bettype
+ 
 	
 END
 

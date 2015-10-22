@@ -47,6 +47,7 @@ AS
 	- 20150120@Jim: add more column OddsGroup in the result
 	- 20150130@Winnie Add base currency GBP
 	- 20150626@Jim: support MicroGaming (feature #37034)
+	- 20150917@Florent: Change datasource for AG Casino (#Redmine 43172)
 
 	Param's Explanation:
 	  + @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
@@ -408,6 +409,13 @@ SELECT g.custid,g.currency,14 productID,statusID,sum(g.actual_stake) actual_stac
 FROM dbo.bettransRnG g WITH (NOLOCK)
 	INNER JOIN @TempAg lc ON g.recommend=lc.CustID
 WHERE g.statusID IN (0,1)  --running and Waiting		
+GROUP BY   g.custid,g.currency,statusID
+--- AG Casino
+INSERT INTO #OutstandingTranslog
+SELECT g.custid,g.currency,10 productID,statusID,sum(g.actual_stake) actual_stacke
+FROM dbo.bettransLC g WITH (NOLOCK)
+	INNER JOIN @TempAg lc ON g.recommend = lc.CustID
+WHERE g.statusID IN (0, 1)  --running and Waiting		
 GROUP BY   g.custid,g.currency,statusID
 
 SELECT *
