@@ -1,6 +1,6 @@
 USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[LRF_Rpt_MicroGamingWinloss]    Script Date: 08/20/2015 11:30:01 ******/
+/****** Object:  StoredProcedure [dbo].[LRF_Rpt_MicroGamingWinloss_xpre]    Script Date: 10/02/2015 12:58:04 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -31,7 +31,7 @@ AS
     Task : MicroGaming Win Loss report 
     DB: DBEXT.bodb02  
     Revisions:  
-		 
+		  20150921@Jim: support RNG bettype
 	Param's Explanation:  
 	  + @excludeTest: remove currency UUS
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -83,7 +83,7 @@ BEGIN
 			OR (Currency = @CurrencyID)
 			)
 	INSERT INTO #Bettype (Bettype,TypeID,TypeName)	
-	EXEC LRF_MicroGamingWinloss_Bettype @TypeID = 0
+	EXEC LRF_MicroGamingWinloss_Bettype_xpre @TypeID = 0
 		
 	IF @ToDate > @MoveBetsDay
 	BEGIN
@@ -113,15 +113,12 @@ BEGIN
 				INNER JOIN #Bettype bet ON b.bettype  = bet.bettype
 				WHERE b.winlostdate BETWEEN @TempFromDate AND @ToDate
 							AND b.statusID IN (111, 112, 113)
+							AND b.bettype NOT IN (2008,2009)
 				GROUP BY b.winlostdate
 						, t.currency
 						, bet.TypeID
 						, bet.TypeName
-		
-							
-	END	
-
-	INSERT INTO #tmpResult ( Winlostdate
+				INSERT INTO #tmpResult ( Winlostdate
 							 ,Currency 
 							 ,TypeID	
 							 ,TypeName
@@ -130,8 +127,94 @@ BEGIN
 							 ,Winlost  	
 							 ,LicenseeWinlost 
 							)
+							
+				SELECT 	b.winlostdate
+						, t.currency
+						, bet.TypeID
+						, bet.TypeName
+						, SUM(stake) turnover
+						, COUNT(b.transid) TotalTrans
+						, SUM(b.winlost - b.actual_stake) AS Winlost
+						, SUM(- 1 * (b.winlost - b.actual_stake)) AS LicenseeWinlost
+				FROM dbo.bettransRnG b WITH (NOLOCK)
+				INNER JOIN #TempAg t ON b.recommend = t.custid AND t.Currency = b.Currency
+				INNER JOIN #Bettype bet ON b.gameID  = bet.bettype
+				WHERE b.winlostdate BETWEEN @TempFromDate AND @ToDate
+							AND b.statusID IN (111, 112, 113)
+							AND bet.bettype IN (2007,2008)
+				GROUP BY b.winlostdate
+						, t.currency
+						, bet.TypeID
+						, bet.TypeName		
+					 
+							
+				INSERT INTO #tmpResult ( Winlostdate
+							 ,Currency 
+							 ,TypeID	
+							 ,TypeName
+							 ,TurnOver 	
+							 ,TotalTrans
+							 ,Winlost  	
+							 ,LicenseeWinlost 
+							)
+							
+				SELECT 	b.winlostdate
+						, t.currency
+						, bet.TypeID
+						, bet.TypeName
+						, SUM(stake) turnover
+						, COUNT(b.transid) TotalTrans
+						, SUM(b.winlost - b.actual_stake) AS Winlost
+						, SUM(- 1 * (b.winlost - b.actual_stake)) AS LicenseeWinlost
+				FROM dbo.bettransRnG b WITH (NOLOCK)
+				INNER JOIN #TempAg t ON b.recommend = t.custid AND t.Currency = b.Currency
+				INNER JOIN #Bettype bet ON b.gameID  = bet.bettype
+				WHERE b.winlostdate BETWEEN @TempFromDate AND @ToDate
+							AND b.statusID IN (111, 112, 113)
+							AND bet.bettype IN (2007,2008)
+							
+	END	
+	
+	IF @FromDate <= @MoveBetsDay 
+	BEGIN
+		IF @ToDate >= @MoveBetsDay
+				SET @TempToDate = @MoveBetsDay
+			ELSE
+				SET  @TempToDate = @ToDate
+				
+		INSERT INTO #tmpResult ( Winlostdate
+								 ,Currency 
+								 ,TypeID	
+								 ,TypeName
+								 ,TurnOver 	
+								 ,TotalTrans
+								 ,Winlost  	
+								 ,LicenseeWinlost 
+								)
+				GROUP BY b.winlostdate
+						, t.currency
+						, bet.TypeID
+						, bet.TypeName		
+	END	
+	
+	IF @FromDate <= @MoveBetsDay 
+	BEGIN
+		IF @ToDate >= @MoveBetsDay
+				SET @TempToDate = @MoveBetsDay
+			ELSE
+				SET  @TempToDate = @ToDate
+				
+		INSERT INTO #tmpResult ( Winlostdate
+								 ,Currency 
+								 ,TypeID	
+								 ,TypeName
+								 ,TurnOver 	
+								 ,TotalTrans
+								 ,Winlost  	
+								 ,LicenseeWinlost 
+								)
 
-	SELECT 
+		SELECT 
 		   b.rptDate Winlostdate		
 		   ,b.CurrencyID Currency
 		   ,bet.TypeID
@@ -140,16 +223,36 @@ BEGIN
 		   ,SUM(b.BetCount) AS TotalTrans
 		   ,SUM(b.Winloss)  AS Winlost
 		   ,-SUM(b.Winloss) AS LicenseeWinlost
-	FROM  bodb_licensee.dbo.rpt_Betting b  WITH (NOLOCK)
+	FROM  bodb_LicenseeReport.dbo.rpt_ThirdPartyWL_ExtraGMT b  WITH (NOLOCK)
 		  INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID
-		  INNER JOIN #Bettype bet ON b.bettype  = bet.bettype
+		  INNER JOIN #Bettype bet ON b.bettypeID  = bet.bettype
 	WHERE b.rptDate BETWEEN @FromDate AND @ToDate 
-		  AND b.status NOT IN (-1,103)
-		  AND b.CustomerCategory = -1	
+		  AND b.StatusId NOT IN (-1,103)
+		 -- AND b.CustomerCategory = -1	
 	GROUP BY 	b.rptDate  		
 				,b.CurrencyID  
 				,bet.TypeID
 				 ,bet.TypeName
+		SELECT 
+			   b.rptDate Winlostdate		
+			   ,b.CurrencyID Currency
+			   ,bet.TypeID
+			   ,bet.TypeName
+			   ,SUM(b.TurnOver) AS TurnOver
+			   ,SUM(b.BetCount) AS TotalTrans
+			   ,SUM(b.Winloss)  AS Winlost
+			   ,-SUM(b.Winloss) AS LicenseeWinlost
+	FROM  bodb_LicenseeReport.dbo.rpt_ThirdPartyWL_ExtraGMT b  WITH (NOLOCK)
+			  INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID
+		  INNER JOIN #Bettype bet ON b.bettypeID  = bet.bettype
+		WHERE b.rptDate BETWEEN @FromDate AND @TempToDate
+		  AND b.StatusId NOT IN (-1,103)
+		 -- AND b.CustomerCategory = -1	
+		GROUP BY 	b.rptDate  		
+					,b.CurrencyID  
+					,bet.TypeID
+					 ,bet.TypeName
+	END				 
 	SELECT ExchangeDate
 		   ,ExchangeId
 		   ,Code
@@ -159,6 +262,7 @@ BEGIN
 	INTO #TempExchange 
 	FROM Lrf_f_GetExchangeDaily(@FromDate, @ToDate)
 	WHERE exchangeid IN (SELECT DISTINCT Currency FROM #tmpResult)
+	
 	
 	SELECT  CASE WHEN @ReportType = 1 THEN CONVERT(VARCHAR(8),r.winlostdate,112)  
 				 WHEN @ReportType = 2 THEN CONVERT(VARCHAR(6),r.winlostdate,112)  

@@ -47,6 +47,7 @@ Revisions:
 	-20150618@Patrick: #36263: Fix super balance isue for: AGC, GD & VG
 	-20150612@Jim: support MicroGaming
 	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission 
+	- 20151001@Jim: remove MicroGaming
 Param's Explanation:  
 	@Liveindicator : indicate that whether the report will get live data or not
 		+ 0: Non - Live data only
@@ -158,7 +159,7 @@ BEGIN
 		OR @ProductCode = 'CS'
 		OR @ProductCode = 'BG'
 		OR @ProductCode = 'KN' --Keno
-		OR @ProductCode = 'MGC' 
+		 
 	BEGIN
 		SELECT @sql = @sql + '--Get data from bettrans for non - BA' + CHAR(13)
 
@@ -203,8 +204,7 @@ BEGIN
 					THEN 'AND b.bettype = 73'
 				WHEN @ProductCode = 'KN' --Keno's bettype
 					THEN 'AND b.bettype BETWEEN 1501 AND 1599'
-				WHEN @ProductCode = 'MGC' --MicroGamming's bettype
-					THEN 'AND b.bettype BETWEEN 2001 AND 2007'	
+				 
 				ELSE ''
 				END + CHAR(13) + 
 				'GROUP BY  b.winlostdate, t.currency, b.bettype
@@ -250,8 +250,7 @@ BEGIN
 				THEN 'AND b.bettype = 73'
 			WHEN @ProductCode = 'KN' --Keno's bettype
 				THEN 'AND b.bettype BETWEEN 1501 AND 1599'
-			WHEN @ProductCode = 'MGC' --MicroGamming's bettype
-					THEN 'AND b.bettype BETWEEN 2001 AND 2007'		
+			 	
 			ELSE ''
 			END + CHAR(13) + 
 
@@ -315,7 +314,7 @@ BEGIN
 		OR @ProductCode = 'CS'
 		OR @ProductCode = 'BG'
 		OR @ProductCode = 'KN'
-		OR @ProductCode = 'MGC' 
+		 
 	BEGIN
 		SELECT @sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13) + 
 		'SELECT ' + CHAR(13) + 'b.rptDate,' + CHAR(13) + 
@@ -358,8 +357,7 @@ BEGIN
 					THEN 'AND b.bettype = 73'
 				WHEN @ProductCode = 'KN' --keno's bettype
 					THEN 'AND b.bettype BETWEEN 1501 AND 1599'
-				WHEN @ProductCode = 'MGC' --MicroGamming's bettype
-					THEN 'AND b.bettype BETWEEN 2001 AND 2007'	
+				 
 				ELSE ''
 				END + CHAR(13) + 'GROUP BY b.rptDate, b.currencyID, b.bettype' + CHAR(13)
 
@@ -410,8 +408,7 @@ BEGIN
 					THEN 'AND b.bettype = 73'
 				WHEN @ProductCode = 'KN' --keno's bettype
 					THEN 'AND b.bettype BETWEEN 1501 AND 1599'
-				WHEN @ProductCode = 'MGC' --MicroGamming's bettype
-					THEN 'AND b.bettype BETWEEN 2001 AND 2007'	
+				 
 				ELSE ''
 				END + CHAR(13) + 'GROUP BY b.rptDate, b.currencyID, b.bettype' + CHAR(13)
 	END

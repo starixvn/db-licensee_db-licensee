@@ -3,84 +3,87 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_SelByDayAll_Mem_Old]
 	@UserID				INT,
 	@custid				INT,
 	@fromdate			SMALLDATETIME,
-	@language			NVARCHAR(10) = 'en-us',
-	@PageSize 			INT=1000,
-	@PageIndex 			INT=1,
-	@TotalRows 			INT=0 OUTPUT,
-	@SumWinlost 		MONEY=0 OUTPUT,
-	@SumLicenseeWL 		MONEY=0 OUTPUT,
-	@SumComm 			MONEY=0 OUTPUT,
-	@SumPlayerComm 		MONEY=0 OUTPUT,
-	@SumWinlostUSD 		MONEY=0 OUTPUT,
-	@SumLicenseeWLUSD 	MONEY=0 OUTPUT,
-	@SumCommUSD 		MONEY=0 OUTPUT,
-	@SumPlayerCommUSD	MONEY=0 OUTPUT,
-	@SumWinlostEUR 		MONEY=0 OUTPUT,
-	@SumLicenseeWLEUR 	MONEY=0 OUTPUT,
-	@SumCommEUR 		MONEY=0 OUTPUT,
-	@SumPlayerCommEUR 	MONEY=0 OUTPUT,
-	@SumWinlostGBP 		MONEY=0 OUTPUT,
-	@SumLicenseeWLGBP 	MONEY=0 OUTPUT,
-	@SumCommGBP			MONEY=0 OUTPUT,
-	@SumPlayerCommGBP 	MONEY=0 OUTPUT,
-	@ErrCode			INT = 0 OUTPUT,
-	@ErrMsg				NVARCHAR(4000) = '' OUTPUT
+	@language			NVARCHAR(10)	= 'en-us',
+	@PageSize 			INT				= 1000,
+	@PageIndex 			INT				= 1,
+	@TotalRows 			INT				= 0 OUTPUT,
+	@SumWinlost 		MONEY			= 0 OUTPUT,
+	@SumLicenseeWL 		MONEY			= 0 OUTPUT,
+	@SumComm 			MONEY			= 0 OUTPUT,
+	@SumPlayerComm 		MONEY			= 0 OUTPUT,
+	@SumWinlostUSD 		MONEY			= 0 OUTPUT,
+	@SumLicenseeWLUSD 	MONEY			= 0 OUTPUT,
+	@SumCommUSD 		MONEY			= 0 OUTPUT,
+	@SumPlayerCommUSD	MONEY			= 0 OUTPUT,
+	@SumWinlostEUR 		MONEY			= 0 OUTPUT,
+	@SumLicenseeWLEUR 	MONEY			= 0 OUTPUT,
+	@SumCommEUR 		MONEY			= 0 OUTPUT,
+	@SumPlayerCommEUR 	MONEY			= 0 OUTPUT,
+	@SumWinlostGBP 		MONEY			= 0 OUTPUT,
+	@SumLicenseeWLGBP 	MONEY			= 0 OUTPUT,
+	@SumCommGBP			MONEY			= 0 OUTPUT,
+	@SumPlayerCommGBP 	MONEY			= 0 OUTPUT,
+	@ErrCode			INT				= 0 OUTPUT,
+	@ErrMsg				NVARCHAR(4000)	= '' OUTPUT
 AS
+
 /*
-Created: Henry
-Date: 2010-12-10 
-Task : Bet List for Daily Statement History 
-DB: DBRPT/bodb02 
-Original: [Age_BetList_SelByDayAll_Mem_Old]
+	Created: Henry
+	Date: 2010-12-10 
+	Task : Bet List for Daily Statement History 
+	DB: DBACC.bodb02 
+	Original: [Age_BetList_SelByDayAll_Mem_Old]
 
-Revisions:
-	-- 20110214@Jacob: Add column discount IN the result SET
-	-- 20110303@Henry: suppport based currency
-	- 20110408@Amy: Change function to get Odds value AND odds type
-	- 20110712@Henry: Add column LicenseeWL
-	- 20110725@Henry: Get refund tickets
-	- 20110729@Henry: offer 3 new bettypes for Number Game + Combination Mix Parlay
-	- 20110825@Henry: Add more bettype for euro site
-	- 20111229@Jim: change the way to get odds/oddstype/betteam to web dev
-	- 20120214@Jim: change table ExchangeDaily by function Lrf_f_GetExchangeDaily
-	- 20120319@Henry: show main transid for sub-ticket of system parlay
-	- 20120724@Jim: add player commision value 
-	- 20120817@Jim: add live casino 
-	- 20120913@Jim: add virtual sport 
-    - 20130123@Daniel: Change link server alias
-	- 20130410@Jim: return betteam,modd value for Parlay ticket (Mix parlay & system parlay)
-	- 20130411@Jim: support base currency USD
-	- 20130514@Jim: Restrict permission of Licensee Users by currency
-	- 20130905@Jim: support VHR
-	- 20140310@Hannah: offer Keno
-	- 20140324@Daniel: fix show RNG Casino / Bingo bets due to matchid = 0
-	- 20140411@Francis: fix incorrect sporttypes showing for VHR, Racing
-	- 20140411@Francis: add bettype restriction for VHR
-	- 20150130@Winnie: Add base currency GBP
-	- 20150413@Bobby: Re-format code  & #32844 new 60 bettypes - betradar phase 2
-	- 20150511@Kiwi: Fixed the bug (RedmineID: #35562)
-	- 20150608@Edward: Support MicroGamming
-	- 20150729@Edward: Return betcheck for MicroGamming
+	Revisions:
+		- 20110214@Jacob: Add column discount IN the result SET
+		- 20110303@Henry: suppport based currency
+		- 20110408@Amy: Change function to get Odds value AND odds type
+		- 20110712@Henry: Add column LicenseeWL
+		- 20110725@Henry: Get refund tickets
+		- 20110729@Henry: offer 3 new bettypes for Number Game + Combination Mix Parlay
+		- 20110825@Henry: Add more bettype for euro site
+		- 20111229@Jim: change the way to get odds/oddstype/betteam to web dev
+		- 20120214@Jim: change table ExchangeDaily by function Lrf_f_GetExchangeDaily
+		- 20120319@Henry: show main transid for sub-ticket of system parlay
+		- 20120724@Jim: add player commision value 
+		- 20120817@Jim: add live casino 
+		- 20120913@Jim: add virtual sport 
+		- 20130123@Daniel: Change link server alias
+		- 20130410@Jim: return betteam,modd value for Parlay ticket (Mix parlay & system parlay)
+		- 20130411@Jim: support base currency USD
+		- 20130514@Jim: Restrict permission of Licensee Users by currency
+		- 20130905@Jim: support VHR
+		- 20140310@Hannah: offer Keno
+		- 20140324@Daniel: fix show RNG Casino / Bingo bets due to matchid = 0
+		- 20140411@Francis: fix incorrect sporttypes showing for VHR, Racing
+		- 20140411@Francis: add bettype restriction for VHR
+		- 20150130@Winnie: Add base currency GBP
+		- 20150413@Bobby: Re-format code  & #32844 new 60 bettypes - betradar phase 2
+		- 20150511@Kiwi: Fixed the bug (RedmineID: #35562)
+		- 20150608@Edward: Support Microgaming
+		- 20150729@Edward: Return betcheck for Microgaming
+		- 20150923@Kos: Support AG Casino
 
-Param's Explanation: 
+	Param's Explanation: 
 
 */
+
 BEGIN
 	SET NOCOUNT ON;
 
 	SELECT CurrencyID
-		  ,LicenseeID
+		, LicenseeID
 	INTO #Currency
-	FROM  DBLIC.bodb_licensee.dbo.CurrencyUser WITH (NOLOCK)
-	WHERE  usrID=@userID 
-		AND LicenseeID=@LicenseeID 
-		AND SystemID=1
-		AND isActive=1
+	FROM DBLIC.bodb_licensee.dbo.CurrencyUser WITH (NOLOCK)
+	WHERE usrID = @userID 
+		AND LicenseeID = @LicenseeID 
+		AND SystemID = 1
+		AND isActive = 1
 
 	DECLARE @Username VARCHAR(30) 
 	SELECT	@Username = c.username 
 	FROM bodb02.dbo.Custinfo c WITH (NOLOCK) 
-		INNER JOIN #Currency cy ON c.currency=cy.CurrencyID
+		INNER JOIN #Currency cy ON c.currency = cy.CurrencyID
 	WHERE c.custid = @CustID 
 	
 	--select @Username, * from #Currency
@@ -144,9 +147,9 @@ BEGIN
 	
 	-- filer bettypes by sporttype
 	DECLARE @SportBettype TABLE ( 
-		ProductID 			INT
-		,Bettype 			INT
-		,EventType 			INT
+		ProductID 	INT
+		,Bettype 	INT
+		,EventType 	INT
 	)
 	
 	INSERT INTO @SportBettype (
@@ -154,11 +157,12 @@ BEGIN
 		,Bettype
 		,EventType
 	)
-				EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode = 4
+	EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode = 4
 		
 	DELETE sbt
 	FROM @SportBettype sbt
 	WHERE ProductID > 8 -- not suport for affiliate system
+		AND sbt.ProductID <> 11
 		AND sbt.ProductID <> 13
 	-- end filer bettypes by sporttype
 	
@@ -441,13 +445,11 @@ BEGIN
 		bodb_archive.dbo.bettrans_bk b WITH (NOLOCK)	
 		LEFT JOIN DBLIC.bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid	
 		INNER JOIN @SportBettype sbt ON b.bettype = sbt.bettype
-	
 	WHERE b.custid			= @custid
 		AND b.winlostdate	= @fromdate
 		AND b.matchid		IN (0, 9, 29) -- Should not remove 0 for Archive
 		AND sbt.ProductID	= 1
 		AND sbt.EventType	= 0
-
 
 	-- outright
 	INSERT INTO @Data 
@@ -494,7 +496,7 @@ BEGIN
 		b.currency,
 		'' AS ShowTime 
 		,'' AS betcheck
-	from 
+	FROM 
 		bodb_archive.dbo.bettrans_bk b WITH (NOLOCK)
 		inner join bodb_archive.dbo.outright_bk m WITH (NOLOCK) on b.matchid = m.orid	
 		inner join dbo.league l WITH (NOLOCK) on m.leagueid = l.leagueid
@@ -506,36 +508,36 @@ BEGIN
 		--AND b.bettype IN (10,31,32,33)
 		AND (sbt.ProductID	IN (1, 2) AND sbt.EventType	= 2)
 
-	-- MicroGamming 
-	INSERT INTO @Data 
+	-- Microgaming 
+	INSERT INTO @Data
 	SELECT
-		203 AS sporttype, 
+		203 AS sporttype,
 		0 AS leagueid,
 		0 AS homeID,
 		0 AS awayID,
 		b.bettype,
 		'' AS matchcode,
 		'' AS race,
-		0 AS matchid, 
-		b.transid, 
-		b.transdate, 
+		0 AS matchid,
+		b.transid,
+		b.transdate,
 		b.winlostdate,
-		b.refno, 
+		b.refno,
 		--CASE WHEN b.bettype = 87 THEN b.betid ELSE 0 END, --- 87- High Low for NG: Current Live Ball 
 		b.betid,
-		b.oddsid, 
-		b.hdp1, 
+		b.oddsid,
+		b.hdp1,
 		b.hdp2,
-		0 AS modds, 
+		0 AS modds,
 		0 AS Oddstype,
-		b.Odds,	
+		b.Odds,
 		'' AS betteam,
-		b.status AS status,
+		b.status,
 		'' AS betstatus, 
 		b.stake,
 		b.actual_stake, 
-		(b.winlost-b.actual_stake) AS winlost, 
-		- (b.winlost-b.actual_stake) AS LicenseeWL ,
+		(b.winlost - b.actual_stake) AS winlost,
+		- (b.winlost - b.actual_stake) AS LicenseeWL,
 		b.comm,
 		b.playercomm,
 		b.livehomescore, 
@@ -545,18 +547,70 @@ BEGIN
 		0 AS finalawayscore,
 		0 AS hthomescore, 
 		0 AS htawayscore,
-		b.IP AS IP,
+		b.IP,
 		@Username,
-		CONVERT(BIT,0) AS IsNeutral,
+		CONVERT(BIT, 0) AS IsNeutral,
 		b.currency,
-		'' AS ShowTime 
-		,b.betcheck
-	FROM	bodb_archive.dbo.bettrans_bk b WITH (NOLOCK)
-		INNER JOIN @SportBettype sbt ON b.bettype = sbt.bettype
-	WHERE	b.custid			= @custid 		
-			AND b.winlostdate	= @fromdate 
-			AND sbt.ProductID	= 13
-			AND sbt.EventType	= 0
+		'' AS ShowTime,
+		b.betcheck
+	FROM bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)
+		INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.bettype
+	WHERE b.custid = @custid
+		AND b.winlostdate = @fromdate 
+		AND sbt.ProductID = 13
+		AND sbt.EventType = 0
+
+	-- AG Casino 
+	INSERT INTO @Data
+	SELECT
+		250 AS sporttype,
+		0 AS leagueid,
+		0 AS homeID,
+		0 AS awayID,
+		b.bettype,
+		'' AS matchcode,
+		'' AS race,
+		0 AS matchid,
+		b.transid,
+		b.transdate,
+		b.winlostdate,
+		b.refno,
+		--CASE WHEN b.bettype = 87 THEN b.betid ELSE 0 END, --- 87- High Low for NG: Current Live Ball 
+		b.betid,
+		0 AS oddsid,
+		0 AS hdp1,
+		0 AS hdp2,
+		0 AS modds,
+		0 AS Oddstype,
+		0 AS Odds,
+		'' AS betteam,
+		b.status,
+		'' AS betstatus, 
+		b.stake,
+		b.actual_stake, 
+		(b.winlost - b.actual_stake) AS winlost,
+		- (b.winlost - b.actual_stake) AS LicenseeWL,
+		b.comm,
+		b.playercomm,
+		0 AS livehomescore, 
+		0 AS liveawayscore, 
+		0 AS liveindicator, 
+		0 AS finalhomescore, 
+		0 AS finalawayscore,
+		0 AS hthomescore, 
+		0 AS htawayscore,
+		b.IP,
+		@Username,
+		CONVERT(BIT, 0) AS IsNeutral,
+		b.currency,
+		'' AS ShowTime,
+		'' AS betcheck
+	FROM bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)
+		INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.bettype
+	WHERE b.custid = @custid
+		AND b.winlostdate = @fromdate 
+		AND sbt.ProductID = 11
+		AND sbt.EventType = 0
 
 	SELECT * 
 	INTO #TempExchange 
@@ -564,64 +618,63 @@ BEGIN
 	WHERE exchangeid IN (SELECT DISTINCT Currency FROM @Data)
 
 	SELECT 
-		@TotalRows				= COUNT(transid),
-		@SumWinlost				= SUM(ISNULL(winlost,0)),
-		@SumLicenseeWL			= SUM(ISNULL(LicenseeWL,0)),
-		@SumComm				= SUM(ISNULL(comm,0)) ,
-		@SumPlayerComm			= SUM(ISNULL(playercomm,0)) ,
+		@TotalRows			= COUNT(transid),
+		@SumWinlost			= SUM(ISNULL(winlost,0)),
+		@SumLicenseeWL		= SUM(ISNULL(LicenseeWL,0)),
+		@SumComm			= SUM(ISNULL(comm,0)) ,
+		@SumPlayerComm		= SUM(ISNULL(playercomm,0)) ,
 		--USD
-		@SumWinlostUSD			= SUM(ISNULL(winlost*e.USD,0)),
-		@SumLicenseeWLUSD		= SUM(ISNULL(LicenseeWL*e.USD,0)),
-		@SumCommUSD				= SUM(ISNULL(comm*e.USD,0)) ,
-		@SumPlayerCommUSD		= SUM(ISNULL(playercomm*e.USD,0)) ,
+		@SumWinlostUSD		= SUM(ISNULL(winlost*e.USD,0)),
+		@SumLicenseeWLUSD	= SUM(ISNULL(LicenseeWL*e.USD,0)),
+		@SumCommUSD			= SUM(ISNULL(comm*e.USD,0)) ,
+		@SumPlayerCommUSD	= SUM(ISNULL(playercomm*e.USD,0)) ,
 		--EUR
-		@SumWinlostEUR			= SUM(ISNULL(winlost*e.EUR,0)),
-		@SumLicenseeWLEUR		= SUM(ISNULL(LicenseeWL*e.EUR,0)),
-		@SumCommEUR				= SUM(ISNULL(comm*e.EUR,0)) ,
-		@SumPlayerCommEUR		= SUM(ISNULL(playercomm*e.EUR,0)) ,
+		@SumWinlostEUR		= SUM(ISNULL(winlost*e.EUR,0)),
+		@SumLicenseeWLEUR	= SUM(ISNULL(LicenseeWL*e.EUR,0)),
+		@SumCommEUR			= SUM(ISNULL(comm*e.EUR,0)) ,
+		@SumPlayerCommEUR	= SUM(ISNULL(playercomm*e.EUR,0)) ,
 		--GBP
-		@SumWinlostGBP			= SUM(ISNULL(winlost*e.GBP,0)),
-		@SumLicenseeWLGBP		= SUM(ISNULL(LicenseeWL*e.GBP,0)),
-		@SumCommGBP				= SUM(ISNULL(comm*e.GBP,0)) ,
-		@SumPlayerCommGBP		= SUM(ISNULL(playercomm*e.GBP,0)) 
+		@SumWinlostGBP		= SUM(ISNULL(winlost*e.GBP,0)),
+		@SumLicenseeWLGBP	= SUM(ISNULL(LicenseeWL*e.GBP,0)),
+		@SumCommGBP			= SUM(ISNULL(comm*e.GBP,0)) ,
+		@SumPlayerCommGBP	= SUM(ISNULL(playercomm*e.GBP,0)) 
 		
 	FROM @Data b
 	INNER JOIN #TempExchange e
 		ON e.ExchangeDate = b.winlostdate 
 		AND e.exchangeid = b.currency
 
-
 	SELECT A.* 
 	FROM
 	(
 		SELECT  
-				ROW_NUMBER() over(ORDER BY transid, refno) AS RowNum,
-				b.* ,
-				--USD
-				b.stake * e.USD stakeUSD,
-				b.Actual_stake * e.USD Actual_stakeUSD,
-				b.winlost * e.USD winlostUSD,
-				b.LicenseeWL * e.USD LicenseeWLUSD,
-				b.comm * e.USD commUSD,
-				b.playercomm * e.USD playercommUSD,
-				--EUR
-				b.stake * e.EUR stakeEUR,
-				b.Actual_stake * e.EUR Actual_stakeEUR,
-				b.winlost * e.EUR winlostEUR,
-				b.LicenseeWL   * e.EUR LicenseeWLEUR,
-				b.comm * e.EUR commEUR,
-				b.playercomm * e.EUR playercommEUR,
-				--GBP
-				b.stake * e.GBP stakeGBP,
-				b.Actual_stake * e.GBP Actual_stakeGBP,
-				b.winlost * e.GBP winlostGBP,
-				b.LicenseeWL   * e.GBP LicenseeWLGBP,
-				b.comm * e.GBP commGBP,
-				b.playercomm * e.GBP playercommGBP
+			ROW_NUMBER() over(ORDER BY transid, refno) AS RowNum,
+			b.* ,
+			--USD
+			b.stake * e.USD stakeUSD,
+			b.Actual_stake * e.USD Actual_stakeUSD,
+			b.winlost * e.USD winlostUSD,
+			b.LicenseeWL * e.USD LicenseeWLUSD,
+			b.comm * e.USD commUSD,
+			b.playercomm * e.USD playercommUSD,
+			--EUR
+			b.stake * e.EUR stakeEUR,
+			b.Actual_stake * e.EUR Actual_stakeEUR,
+			b.winlost * e.EUR winlostEUR,
+			b.LicenseeWL   * e.EUR LicenseeWLEUR,
+			b.comm * e.EUR commEUR,
+			b.playercomm * e.EUR playercommEUR,
+			--GBP
+			b.stake * e.GBP stakeGBP,
+			b.Actual_stake * e.GBP Actual_stakeGBP,
+			b.winlost * e.GBP winlostGBP,
+			b.LicenseeWL   * e.GBP LicenseeWLGBP,
+			b.comm * e.GBP commGBP,
+			b.playercomm * e.GBP playercommGBP
 		FROM 
 			@Data b
 			INNER JOIN #TempExchange e
-			ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
+				ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 	) AS A 
 	WHERE A.RowNum BETWEEN (((@PageIndex - 1) * @PageSize) + 1) AND (@PageSize * @PageIndex)
 
@@ -704,13 +757,13 @@ BEGIN
 	WHERE --B.Bettype = 1233
 		sbt.ProductID 		= 5
 		AND sbt.EventType 	= 3
-								 		
-			
-	SELECT * FROM @BettransDetail		
+
+	SELECT * FROM @BettransDetail
 	ORDER BY refno, bettype
 	RETURN
 
 END
+
 GO 
 
 GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelByDayAll_Mem_Old] TO [vnteam]

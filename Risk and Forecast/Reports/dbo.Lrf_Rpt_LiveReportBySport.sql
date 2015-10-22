@@ -46,6 +46,7 @@ Revisions:
 	- 20150618@Patrick: #36263: Fix super balance isue for: AGC, GD & VG
 	- 20150612@Jim: support MicroGaming
 	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission 
+	- 20151001@Jim: remove MicroGaming
 Param's Explanation:  
 	@Liveindicator : indicate that whether the report will get live data or not
 		+ 0: Non - Live data only
@@ -188,7 +189,7 @@ BEGIN
 		OR @ProductCode = 'CS'
 		OR @ProductCode = 'BG'
 		OR @ProductCode = 'KN'
-		OR @ProductCode = 'MGC'
+		 
 	BEGIN
 		SELECT @sql = @sql + '--Get data from bettrans for non-BA' + CHAR(13)
 
@@ -210,7 +211,6 @@ BEGIN
 			'WHEN b.bettype BETWEEN 81 AND 120 THEN 161 --NG' + CHAR(13) + 
 			'WHEN b.bettype BETWEEN 1101 AND 1199 THEN 162 --LC' + CHAR(13) + 
 			'WHEN b.bettype BETWEEN 1501 AND 1599 THEN 202 --Keno''s bettype' + CHAR(13) + --Keno's bettype
-			'WHEN b.bettype BETWEEN 2001 AND 2007 THEN 203 --MicroGamming''s bettype' + CHAR(13) + --MicroGamming's bettype
 			'WHEN (b.bettype BETWEEN 1201 AND 1299) AND b.bettype NOT IN (1231,1232,1233,1237,1238,1220,1235,1236) THEN 180 --VS' + CHAR(13) + 
 			'WHEN b.bettype IN ('+@strbettypeVHR+') THEN vs.SportType ' + CHAR(13) + --VHR+V.Greyhounds+V.Motor Racing
 			'WHEN b.bettype IN (1220,1235,1236) THEN 186 ' + CHAR(13) + --Virtual Tennis
@@ -254,15 +254,13 @@ BEGIN
 					THEN 'AND b.bettype = 73'
 				WHEN @ProductCode = 'KN'
 					THEN 'AND b.bettype BETWEEN 1501 AND 1599'
-				WHEN @ProductCode = 'MGC'
-					THEN 'AND b.bettype BETWEEN 2001 AND 2007'	
+				 
 				ELSE ''
 				END + CHAR(13) + '' + CHAR(13) + 'GROUP BY  b.winlostdate, b.currency,' + CHAR(13) + 'CASE' + CHAR(13) + 
 				'WHEN b.bettype BETWEEN 31 AND 33 THEN l.Sporttype' + CHAR(13) + 
 				'WHEN b.bettype BETWEEN 81 AND 120 THEN 161 --NG' + CHAR(13) + 
 				'WHEN b.bettype BETWEEN 1101 AND 1199 THEN 162 --LC' + CHAR(13) + 
 				'WHEN b.bettype BETWEEN 1501 AND 1599 THEN 202 --Keno''s bettype' + CHAR(13) + --Keno's bettype
-				'WHEN b.bettype BETWEEN 2001 AND 2007 THEN 203 --MicroGamming''s bettype' + CHAR(13)+
 				'WHEN (b.bettype BETWEEN 1201 AND 1299) AND b.bettype NOT IN (1231,1232,1233,1237,1238,1220,1235,1236) THEN 180 --VS' + CHAR(13) + 
 				'WHEN b.bettype IN (1231,1232,1233,1237,1238) THEN vs.SportType ' + CHAR(13) 
 				+ --VHR+V.Greyhounds+V.Motor Racing
@@ -314,8 +312,7 @@ BEGIN
 					THEN 'AND b.bettype = 73'
 				WHEN @ProductCode = 'KN'
 					THEN 'AND b.bettype BETWEEN 1501 AND 1599'
-				WHEN @ProductCode = 'MGC'
-					THEN 'AND b.bettype BETWEEN 2001 AND 2007'	
+				 
 				ELSE ''
 				END + CHAR(13) + '' + CHAR(13) + 'GROUP BY  b.winlostdate, b.currency,' + CHAR(13) + 'CASE' + CHAR(13) + 
 				'WHEN b.bettype = 9 THEN 101 --Mix Parlay' + CHAR(13) + 
@@ -380,7 +377,7 @@ BEGIN
 		OR @ProductCode = 'CS'
 		OR @ProductCode = 'BG'
 		OR @ProductCode = 'KN'
-		OR @ProductCode = 'MGC'
+		 
 	BEGIN
 		SELECT @sql = @sql + '--Get data from rpt_Betting for non-BA' + CHAR(13)
 
@@ -391,7 +388,7 @@ BEGIN
 							  WHEN b.bettype  = 73	THEN 252
 							  WHEN b.bettype BETWEEN 81 AND 120 THEN 161
 							  WHEN b.bettype BETWEEN 1501 AND 1599 THEN 202
-							  WHEN b.bettype BETWEEN 2001 AND 2007 THEN 203
+							  
 							  ELSE ISNULL(l.sporttype,0) 
 							END		
 						SportType,' + CHAR(13) + 
@@ -434,8 +431,7 @@ BEGIN
 						THEN 'AND b.bettype = 73'
 					WHEN @ProductCode = 'KN'
 						THEN 'AND b.bettype BETWEEN 1501 AND 1599'
-					WHEN @ProductCode = 'MGC'
-						THEN 'AND b.bettype BETWEEN 2001 AND 2007'		
+					 
 					ELSE ''
 				END + CHAR(13) + 
 				'GROUP BY b.rptDate, b.currencyID, ' + CHAR(13) + 'CASE 
@@ -444,7 +440,7 @@ BEGIN
 							  WHEN b.bettype  = 73	 THEN 252
 							  WHEN b.bettype BETWEEN 81 AND 120 THEN 161
 							  WHEN b.bettype BETWEEN 1501 AND 1599 THEN 202
-							  WHEN b.bettype BETWEEN 2001 AND 2007 THEN 203
+							  
 							  ELSE ISNULL(l.sporttype,0)  
 							END' + CHAR(13)
 		-- parlay for SB
@@ -492,8 +488,7 @@ BEGIN
 						THEN 'AND b.bettype = 73'
 					WHEN @ProductCode = 'KN'
 						THEN 'AND b.bettype BETWEEN 1501 AND 1599'
-					WHEN @ProductCode = 'MGC'
-						THEN 'AND b.bettype BETWEEN 2001 AND 2007'		
+					 	
 					ELSE ''
 				END + CHAR(13) + 
 				'GROUP BY b.rptDate, b.currencyID, ' + CHAR(13) + 'CASE 

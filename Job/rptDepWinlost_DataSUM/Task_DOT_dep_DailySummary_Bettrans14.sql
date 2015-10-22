@@ -47,6 +47,7 @@ AS
 		- 20150625@Patrick: #37769: Remove dummy account & exclude cancel transfer tickets for AG Casino (merge)
 		- 20150630@Jim: add MicroGaming
 		- 20150630@Patrick: #38387: Support bettrade
+		 
 
 	Param's Explanation:
 	? @date: The date need to summary

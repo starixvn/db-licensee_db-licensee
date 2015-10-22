@@ -45,6 +45,7 @@ Revisions:
 	- 20150415@Jim: change to use f_GroupBettype instead of LRF_view_bettype_SS
 	- 20150612@Jim: support MicroGaming
 	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission 
+	- 20151001@Jim: remove MicroGaming
 Param's Explanation: 
 */
 SET NOCOUNT ON
@@ -213,7 +214,7 @@ BEGIN
 						OR b.bettype BETWEEN 1101 AND 1199
 						OR b.bettype BETWEEN 1201 AND 1299
 						OR b.bettype BETWEEN 1501 AND 1599--Keno
-						OR b.bettype BETWEEN 2001 AND 2007
+						 
 						)
 					THEN (b.winlost - b.actual_stake)
 				ELSE 0
@@ -265,7 +266,7 @@ BEGIN
 						OR b.bettype BETWEEN 1101 AND 1199
 						OR b.bettype BETWEEN 1201 AND 1299
 						OR b.bettype BETWEEN 1501 AND 1599 --Keno
-						OR b.bettype BETWEEN 2001 AND 2007
+						 
 						)
 					THEN (b.winlost - b.actual_stake)
 				ELSE 0
@@ -317,7 +318,7 @@ BEGIN
 						OR b.bettype BETWEEN 1101 AND 1199
 						OR b.bettype BETWEEN 1201 AND 1299
 						OR b.bettype BETWEEN 1501 AND 1599 --Keno
-						OR b.bettype BETWEEN 2001 AND 2007
+						 
 						)
 					THEN (b.winlost - b.actual_stake)
 				ELSE 0
@@ -368,7 +369,7 @@ BEGIN
 						OR b.bettype BETWEEN 1101 AND 1199
 						OR b.bettype BETWEEN 1201 AND 1299
 						OR b.bettype BETWEEN 1501 AND 1599 --Keno
-						OR b.bettype BETWEEN 2001 AND 2007
+						 
 						)
 					THEN (b.winlost - b.actual_stake)
 				ELSE 0
@@ -414,7 +415,7 @@ BEGIN
 			FROM @TempAg
 			)
 		AND b.winlostdate BETWEEN @TempFromDate AND @TDate
-		AND bettype <= 2007  
+		AND bettype <= 1599  
 		AND bettype NOT IN (71, 73,901,902,903)
 		AND b.ruben = 1
 		AND statusID NOT IN (101, 102, 103)
@@ -465,7 +466,7 @@ BEGIN
 						OR b.bettype BETWEEN 1101 AND 1199
 						OR b.bettype BETWEEN 1201 AND 1299
 						OR b.bettype BETWEEN 1501 AND 1599 --Keno products
-						OR b.bettype BETWEEN 2001 AND 2007
+						 
 						)
 					THEN (b.winlost - b.actual_stake)
 				ELSE 0
@@ -517,7 +518,7 @@ BEGIN
 						OR b.bettype BETWEEN 1101 AND 1199
 						OR b.bettype BETWEEN 1201 AND 1299
 						OR b.bettype BETWEEN 1501 AND 1599--Keno
-						OR b.bettype BETWEEN 2001 AND 2007
+						 
 						)
 					THEN (b.winlost - b.actual_stake)
 				ELSE 0
@@ -569,7 +570,7 @@ BEGIN
 						OR b.bettype BETWEEN 1101 AND 1199
 						OR b.bettype BETWEEN 1201 AND 1299
 						OR b.bettype BETWEEN 1501 AND 1599--Keno
-						OR b.bettype BETWEEN 2001 AND 2007
+						 
 						)
 					THEN (b.winlost - b.actual_stake)
 				ELSE 0
@@ -620,7 +621,7 @@ BEGIN
 						OR b.bettype BETWEEN 1101 AND 1199
 						OR b.bettype BETWEEN 1201 AND 1299
 						OR b.bettype BETWEEN 1501 AND 1599 --Keno
-						OR b.bettype BETWEEN 2001 AND 2007
+						 
 						)
 					THEN (b.winlost - b.actual_stake)
 				ELSE 0
@@ -663,7 +664,7 @@ BEGIN
 	WHERE b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
 		AND b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
 		AND statusID NOT IN (101, 102, 103)
-		AND bettype <= 2007 
+		AND bettype <= 1599 
 		AND bettype NOT IN (71, 73,901,902,903)
 	GROUP BY bettype
 		, CASE 

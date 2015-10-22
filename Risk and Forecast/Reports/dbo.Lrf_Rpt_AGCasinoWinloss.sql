@@ -20,6 +20,8 @@ AS
 		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 		- 20150112@Florent: add filter ReportType 
 		- 20150123@Jim: support base on Currency GBP
+		- 20150917@Florent: Change datasource for AG Casino
+		- 20151020@Florent: get MoveBetsDay
 	Param's Explanation:  
 	  
 	  + @excludeTest: remove currency UUS
@@ -40,7 +42,7 @@ SET NOCOUNT ON
 BEGIN
 	CREATE TABLE #tmpResult (Winlostdate DATETIME, Currency INT,TurnOver MONEY,TotalTrans INT,Winlost MONEY,LicenseeWinlost MONEY)						
 	CREATE TABLE #Currency(currencyID INT)
-	CREATE TABLE #tmpCust (CustId INT, Currency INT)
+	CREATE TABLE #tmpCust (CustId INT, Currency INT, srecommend INT)
 	CREATE TABLE #TempExchange(ExchangeDate DATETIME, ExchangeId INT, Code NVARCHAR(5), USD FLOAT, EUR FLOAT,GBP FLOAT)
 		
 	DECLARE @VNDCurrencyName VARCHAR(20)
@@ -67,25 +69,108 @@ BEGIN
 	INSERT INTO @Temp (CustId, Currency)
 	EXEC (@sql1)
 	
-	INSERT INTO #tmpCust (CustID, Currency)	
-	SELECT co.CustID, lc.Currency 
+	INSERT INTO #tmpCust (CustID, Currency, srecommend)	
+	SELECT co.CustID, lc.Currency , co.srecommend
 	FROM dbo.custInfo co WITH (NOLOCK)
 		INNER JOIN #Currency c ON co.Currency = c.CurrencyID 
 		INNER JOIN @Temp lc ON co.recommend = lc.CustId AND lc.Currency = co.Currency
 	WHERE (@excludeTest = 0 OR (@excludeTest = 1 AND lc.Currency <> 20))	
 	
-	INSERT INTO #tmpResult (Winlostdate, Currency, TurnOver, TotalTrans, Winlost, LicenseeWinlost)
-		(
-			SELECT c.Winlostdate, ct.Currency
-					, SUM(c.TurnOver) AS TurnOver
-					, SUM(c.BetCount) AS TotalTrans
-					, SUM(c.Winlost)  AS Winlost
-					, -SUM(c.Winlost) AS LicenseeWinlost
-			FROM bodb_report.dbo.rptDepWinlost_AGCasino c WITH (NOLOCK)
-				INNER JOIN #tmpCust ct ON c.Custid = ct.CustId AND c.Currency = ct.Currency
-			WHERE c.Winlostdate BETWEEN @FromDate AND @ToDate 
-			GROUP BY c.Winlostdate, ct.Currency
-		)
+	DECLARE @TempFromDate	DATETIME 
+	DECLARE @TempToDate		DATETIME 
+	DECLARE @GapDate		DATETIME
+
+	SELECT @GapDate = MAX(c.Winlostdate) FROM bodb_report.dbo.rptDepWinlost_AGCasino c WITH (NOLOCK)
+	WHERE EXISTS (SELECT 1 FROM #tmpCust tc WHERE c.Custid = tc.CustId)
+
+	IF @ToDate > @GapDate
+	BEGIN
+		IF @FromDate <= @GapDate 
+			SET @TempFromDate =  DATEADD(DAY,1,@GapDate)
+		ELSE
+			SET @TempFromDate = @FromDate
+		BEGIN
+			DECLARE @FromDate2		DATETIME 
+			DECLARE @ToDate2		DATETIME 
+			DECLARE @MoveBetsDay	DATETIME
+
+			--get MoveBetsDay
+			SELECT @MoveBetsDay = MAX(eventdate) FROM dbo.match14 WITH(NOLOCK)
+			--
+			IF @ToDate > @MoveBetsDay
+			BEGIN
+				IF @TempFromDate <= @MoveBetsDay 
+					SET @FromDate2 =  DATEADD(DAY, 1, @MoveBetsDay)
+				ELSE
+					SET @FromDate2 = @FromDate
+				BEGIN
+					--SELECT @FromDate2, @ToDate															
+					INSERT INTO #tmpResult (Winlostdate, Currency, TurnOver, TotalTrans, Winlost, LicenseeWinlost)
+						(							
+							SELECT c.Winlostdate, c.Currency
+									, SUM(c.stake)		AS TurnOver
+									, COUNT(1)			AS TotalTrans
+									, SUM(c.winlost - c.actual_stake)	AS Winlost
+									, - SUM(c.Winlost - c.actual_stake)	AS LicenseeWinlost
+							FROM dbo.bettransLC c WITH (NOLOCK)
+								INNER JOIN #tmpCust ct ON c.Custid = ct.CustId AND c.Currency = ct.Currency
+							WHERE c.Winlostdate BETWEEN @FromDate2 AND @ToDate 
+								AND c.statusID IN (111, 112, 113)
+								AND c.productID = 10 -- AG
+							GROUP BY c.Winlostdate, c.Currency
+						)
+				END
+			END
+			IF @TempFromDate <= @MoveBetsDay 
+			BEGIN
+				IF @ToDate >= @MoveBetsDay
+						SET @ToDate2 = @MoveBetsDay
+					ELSE
+						SET @ToDate2 = @MoveBetsDay			
+				BEGIN
+					--SELECT @TempFromDate, @ToDate2
+					INSERT INTO #tmpResult (Winlostdate, Currency, TurnOver, TotalTrans, Winlost, LicenseeWinlost)
+						(
+							SELECT c.Winlostdate, c.Currency
+									, SUM(c.TurnOver) AS TurnOver
+									, SUM(c.BetCount) AS TotalTrans
+									, SUM(c.Winlost)  AS Winlost
+									, -SUM(c.Winlost) AS LicenseeWinlost
+							FROM DBLIC.bodb_Licensee.dbo.rptLicWinloss2 c WITH (NOLOCK)
+								INNER JOIN (SELECT DISTINCT srecommend, Currency FROM #tmpCust) ct ON c.Custid = ct.srecommend AND c.Currency = ct.Currency
+							WHERE c.Winlostdate BETWEEN @TempFromDate AND @ToDate2 
+								AND c.roleid = 4
+								AND c.sporttype = 250 -- AG Casino
+								AND c.statusID <> 101								
+							GROUP BY c.Winlostdate, c.Currency
+						)						
+				END
+			END
+		END
+	END
+	
+	IF @FromDate <= @GapDate 
+	BEGIN
+		IF @ToDate >= @GapDate
+				SET @TempToDate = @GapDate
+			ELSE
+				SET  @TempToDate = @ToDate			
+		BEGIN
+			--SELECT @FromDate, @TempToDate 
+			INSERT INTO #tmpResult (Winlostdate, Currency, TurnOver, TotalTrans, Winlost, LicenseeWinlost)
+				(
+					SELECT c.Winlostdate, c.Currency
+							, SUM(c.TurnOver) AS TurnOver
+							, SUM(c.BetCount) AS TotalTrans
+							, SUM(c.Winlost)  AS Winlost
+							, -SUM(c.Winlost) AS LicenseeWinlost
+					FROM bodb_report.dbo.rptDepWinlost_AGCasino c WITH (NOLOCK)
+						INNER JOIN #tmpCust ct ON c.Custid = ct.CustId AND c.Currency = ct.Currency
+					WHERE c.Winlostdate BETWEEN @FromDate AND @TempToDate 
+					GROUP BY c.Winlostdate, c.Currency
+				)
+		END
+	END
 
 	INSERT INTO #TempExchange(ExchangeDate, ExchangeId, Code, USD, EUR,GBP)
 		(

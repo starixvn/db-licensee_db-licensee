@@ -8,7 +8,8 @@ AS
 	 DB: DBLIC/bodb_LicenseeReport
 	 Revisions:
 		- 20150318@Patrick: Duplicate data for BA tickets
-
+		- 20150916@Jim: support microgaming
+	    - 20150921@Jim: support AG Casino
 	 Param's Explanation:
 */
 
@@ -74,7 +75,32 @@ BEGIN
 	)b LEFT JOIN #DataTmp tmp ON b.TransDate = tmp.TransDate AND b.custid = tmp.CustId AND b.ProductId = tmp.ProductId
 	WHERE tmp.TransDate IS NULL
 	OPTION (MAXDOP 1)
-
+	
+	-- Microgaming RNG
+	INSERT INTO #DataTmp(TransDate, CustId, Recommend, CurrencyId, ProductId)
+	SELECT b.TransDate, b.CustId, b.Recommend, b.currency, b.ProductId
+	FROM (
+	SELECT g.transdate,g.custid,g.recommend,g.currency,14 ProductId
+	FROM bodb02.dbo.bettransRnG g WITH (NOLOCK) 
+		INNER JOIN bodb_licensee.dbo.LicenseeCust lc WITH(NOLOCK) ON g.recommend = lc.custid
+	WHERE g.transdate  > @FromDate AND g.transdate < @ToDate
+	) b
+	LEFT JOIN #DataTmp tmp ON b.TransDate = tmp.TransDate AND b.custid = tmp.CustId AND tmp.ProductID=14
+	WHERE tmp.TransDate IS NULL
+	GROUP BY b.TransDate, b.CustId, b.Recommend, b.currency, b.ProductId
+	--- AG Casino
+	INSERT INTO #DataTmp(TransDate, CustId, Recommend, CurrencyId, ProductId)
+	SELECT b.TransDate, b.CustId, b.Recommend, b.currency, b.ProductId
+	FROM (
+	SELECT g.transdate,g.custid,g.recommend,g.currency,10 ProductId
+	FROM bodb02.dbo.bettransLC g WITH (NOLOCK) 
+		INNER JOIN bodb_licensee.dbo.LicenseeCust lc WITH(NOLOCK) ON g.recommend = lc.custid
+	WHERE g.transdate  > @FromDate AND g.transdate < @ToDate
+	) b
+	LEFT JOIN #DataTmp tmp ON b.TransDate = tmp.TransDate AND b.custid = tmp.CustId AND tmp.ProductID=10
+	WHERE tmp.TransDate IS NULL
+	GROUP BY b.TransDate, b.CustId, b.Recommend, b.currency, b.ProductId
+	
 	--merge to business table
 	INSERT INTO dbo.rptCustomerActive(TransDate, CustId, Recommend, CurrencyId, ProductId)
 	SELECT tmp.TransDate, tmp.CustId, tmp.Recommend, tmp.CurrencyId, tmp.ProductId

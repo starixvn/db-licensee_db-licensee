@@ -1,14 +1,16 @@
 USE bodb_LicenseeReport
 GO
-ALTER PROCEDURE dbo.Task_CustomerActive_GenDataDaily @TransDate DATE
+ALTER PROCEDURE dbo.Task_CustomerActive_GenDataFromBettrans 
+	@TransDate DATE
 AS
 /*
 	 Creator: 20150204@Patrick
 	 Task: Generate data for Customer Active
 	 DB: DBLIC/bodb_LicenseeReport
-	 Revisions: 
-		- 20150326@Patrick: Missing tickets for SB
-
+	 Revisions:
+		- 20150318@Patrick: Duplicate data for BA tickets
+		- 20150916@Jim: support microgaming
+		- 20150921@Jim: support AG Casino
 	 Param's Explanation:
 */
 
@@ -19,6 +21,7 @@ BEGIN
 
 	DECLARE @ProductCodes VARCHAR(125), @FromDate DATE, @ToDate DATE
 	SELECT @FromDate = DATEADD(D, -1, @TransDate), @ToDate = DATEADD(D, 1, @TransDate)
+	
 
 	----get licensee cust
 	--DECLARE @TmpLicenseeCust AS TABLE ( CustId INT, Currency INT)
@@ -40,7 +43,7 @@ BEGIN
 	BEGIN
 		DELETE #Bettype WHERE ProductID = 3
 	END
-	
+
 	--get licensee who is multi currencies
 	DECLARE @MultiCurrencies TABLE(recommend INT, currency INT, fromDate SMALLDATETIME, toDate SMALLDATETIME)
 	INSERT INTO @MultiCurrencies(recommend, currency, fromDate, toDate)
@@ -59,7 +62,8 @@ BEGIN
 		LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction ba WITH (NOLOCK) ON a.transid = ba.transid
 		LEFT JOIN @MultiCurrencies l ON a.recommend = l.recommend AND @TransDate BETWEEN l.fromDate AND l.toDate --incase keennocen
 	WHERE a.bettype < 19999
-		AND a.transdate > @FromDate AND a.transdate < @ToDate
+		AND (a.transdate > @FromDate AND a.transdate < @ToDate
+			OR a.winlostdate = @TransDate)
 	GROUP BY CAST(a.transdate AS DATE), a.CustID, a.recommend, a.currency
 		, CASE WHEN ba.transid IS NOT NULL THEN 3 ELSE bt.ProductID END
 	OPTION (MAXDOP 1)
@@ -78,6 +82,20 @@ BEGIN
 	)b LEFT JOIN #DataTmp tmp ON b.TransDate = tmp.TransDate AND b.custid = tmp.CustId AND b.ProductId = tmp.ProductId
 	WHERE tmp.TransDate IS NULL
 	OPTION (MAXDOP 1)
+	-- Microgaming RNG
+	INSERT INTO #DataTmp(TransDate, CustId, Recommend, CurrencyId, ProductId)
+	SELECT b.TransDate, b.CustId, b.Recommend, b.currency, b.ProductId
+	FROM (
+	SELECT g.transdate,g.custid,g.recommend,g.currency,14 ProductId
+	FROM bodb02.dbo.bettransRnG g WITH (NOLOCK) 
+		INNER JOIN bodb_licensee.dbo.LicenseeCust lc WITH(NOLOCK) ON g.recommend = lc.custid
+	WHERE g.transdate  > @FromDate AND g.transdate < @ToDate
+	) b
+	LEFT JOIN #DataTmp tmp ON b.TransDate = tmp.TransDate AND b.custid = tmp.CustId AND tmp.ProductID=14
+	WHERE tmp.TransDate IS NULL
+	GROUP BY b.TransDate, b.CustId, b.Recommend, b.currency, b.ProductId
+	
+	-- AG Casino
 
 	-- For Playtech Casino --merge
 	--INSERT INTO #DataTmp(TransDate, CustId, Recommend, CurrencyId, ProductId)
@@ -89,12 +107,30 @@ BEGIN
 
 	-- For AG Casino
 	INSERT INTO #DataTmp(TransDate, CustId, Recommend, CurrencyId, ProductId)
-	SELECT CAST(TransDate AS DATE) AS TransDate, b.CustID, b.recommend, b.currency, 10 AS ProductId
-	FROM bodb_PlaytechCS.dbo.bettrans_AGCasino b WITH(NOLOCK)
-	WHERE Winlostdate = @TransDate
-	GROUP BY CAST(TransDate AS DATE), b.CustID, b.recommend, b.currency
-	OPTION (RECOMPILE)
-
+	SELECT b.TransDate, b.CustId, b.Recommend, b.currency, b.ProductId
+	FROM (
+	SELECT blc.transdate,blc.custid,blc.recommend,blc.currency,10 ProductId
+	FROM bodb02.dbo.bettransLC blc WITH (NOLOCK) 
+		INNER JOIN bodb_licensee.dbo.LicenseeCust lc WITH(NOLOCK) ON blc.recommend = lc.custid
+	WHERE blc.transdate  > @FromDate AND blc.transdate < @ToDate
+	) b
+	LEFT JOIN #DataTmp tmp ON b.TransDate = tmp.TransDate AND b.custid = tmp.CustId AND tmp.ProductID=10
+	WHERE tmp.TransDate IS NULL
+	GROUP BY b.TransDate, b.CustId, b.Recommend, b.currency, b.ProductId
+	
+	-- AG Casino
+	INSERT INTO #DataTmp(TransDate, CustId, Recommend, CurrencyId, ProductId)
+	SELECT b.TransDate, b.CustId, b.Recommend, b.currency, b.ProductId
+	FROM (
+	SELECT blc.transdate,blc.custid,blc.recommend,blc.currency,10 ProductId
+	FROM bodb02.dbo.bettransLC blc WITH (NOLOCK) 
+		INNER JOIN bodb_licensee.dbo.LicenseeCust lc WITH(NOLOCK) ON blc.recommend = lc.custid
+	WHERE blc.transdate  > @FromDate AND blc.transdate < @ToDate
+	) b
+	LEFT JOIN #DataTmp tmp ON b.TransDate = tmp.TransDate AND b.custid = tmp.CustId AND tmp.ProductID=10
+	WHERE tmp.TransDate IS NULL
+	GROUP BY b.TransDate, b.CustId, b.Recommend, b.currency, b.ProductId
+	
 	--merge to business table
 	INSERT INTO dbo.rptCustomerActive(TransDate, CustId, Recommend, CurrencyId, ProductId)
 	SELECT tmp.TransDate, tmp.CustId, tmp.Recommend, tmp.CurrencyId, tmp.ProductId
