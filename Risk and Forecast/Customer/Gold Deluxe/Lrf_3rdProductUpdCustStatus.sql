@@ -24,6 +24,7 @@ AS
 	Original:
 	Revisions:
 		-20150609@Jim: support product microgaming
+		-20151022@Jim: support #44780
 	Param's Explanation:
 */
 BEGIN
@@ -69,25 +70,27 @@ BEGIN
 	UPDATE dbo.Dep_CustProductSetting WITH (ROWLOCK, UPDLOCK)
 	SET IsEnabled = @IsEnabled
 	WHERE ProductId=@ProductId AND CustID IN (SELECT CustID FROM #CustList)
+		AND @ProductId<>14
 	IF(@@ERROR<>0)
 	BEGIN
 	SELECT @ErrMsg='Could not update'
 	RETURN
 	END
-	
-	INSERT INTO dbo.Dep_CustProductSetting (CustID, ProductId, IsEnabled)
-	SELECT CustID, @ProductId, @IsEnabled	
-	FROM #CustList c
-	WHERE NOT EXISTS(SELECT 1 FROM dbo.Dep_CustProductSetting cs WITH (NOLOCK) WHERE cs.CustID = c.CustID AND cs.ProductId=@ProductId)
-	IF(@@ERROR<>0)
+	IF (@ProductId<>14)
 	BEGIN
-	SELECT @ErrMsg='Could not insert'
-	RETURN
+		INSERT INTO dbo.Dep_CustProductSetting (CustID, ProductId, IsEnabled)
+		SELECT CustID, @ProductId, @IsEnabled	
+		FROM #CustList c
+		WHERE NOT EXISTS(SELECT 1 FROM dbo.Dep_CustProductSetting cs WITH (NOLOCK) WHERE cs.CustID = c.CustID AND cs.ProductId=@ProductId)
+		IF(@@ERROR<>0)
+		BEGIN
+			SELECT @ErrMsg='Could not insert'
+			RETURN
+		END
 	END
 	--- MicroGaming
-	IF (@ProductID = 14)
+	ELSE IF (@ProductID = 14)
 		BEGIN 
-			
 			UPDATE dbo.CustInfo WITH (ROWLOCK,UPDLOCK)
 			SET DisableMicrogame = CASE @IsEnabled WHEN 1 THEN 0 ELSE 1 END
 			WHERE CustID = @CustID	
