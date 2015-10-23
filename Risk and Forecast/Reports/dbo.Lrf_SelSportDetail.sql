@@ -22,6 +22,7 @@ Revisions:
 	- 20140425@Florent: add new sport 
 						+ 183 Virtual Speedway
 						+ 185 Virtual Cycling 
+	- 20151023@Victor: Support New Simplified Chinese
 Param's Explanation:
 	
 */
@@ -42,6 +43,7 @@ INSERT INTO @ProductSport(ID, Name, ParentID)
 			CASE @Langkey
 							WHEN 'zh-CN'	THEN N'体育博彩'
 							WHEN 'zh-TW'	THEN N'體育博彩'
+							WHEN 'zh-Hans'	THEN N'体育博彩'
 							WHEN 'th-TH'	THEN N'อัตราค่าตอบแทนจากหน้ากีฬา'
 							WHEN 'ja-JP'	THEN N'スポーツベット '
 							WHEN 'ko-KR'	THEN N'스포츠북 '
@@ -52,9 +54,11 @@ INSERT INTO @ProductSport(ID, Name, ParentID)
 	UNION ALL
 	SELECT SportType--cast (SportType AS VARCHAR)
 			,CASE @Langkey
-			WHEN 'zh-CN'	THEN CASE  WHEN (ISNULL(SportNameCh,'')='' OR len(SportNameCh)=0) THEN SportName 
+			WHEN 'zh-CN'	THEN CASE  WHEN (ISNULL(SportNameCs,'')='' OR len(SportNameCs)=0) THEN SportName 
+												   ELSE SportNameCs END
+			WHEN 'zh-TW'	THEN CASE  WHEN (ISNULL(SportNameCh,'')='' OR len(SportNameCh)=0) THEN SportName 
 												   ELSE SportNameCh END
-			WHEN 'zh-TW'	THEN CASE  WHEN (ISNULL(SportNameCs,'')='' OR len(SportNameCs)=0) THEN SportName 
+			WHEN 'zh-Hans'	THEN CASE  WHEN (ISNULL(SportNameCs,'')='' OR len(SportNameCs)=0) THEN SportName 
 												   ELSE SportNameCs END
 			WHEN 'th-TH'	THEN CASE  WHEN (ISNULL(SportNameTh,'')='' OR len(SportNameTh)=0) THEN SportName 
 									ELSE SportNameTh END
@@ -81,6 +85,7 @@ INSERT INTO @ProductSport(ID, Name, ParentID)
 			CASE @Langkey
 							/*WHEN 'zh-CN'	THEN N'体育博彩'
 							WHEN 'zh-TW'	THEN N'體育博彩'
+							WHEN 'zh-Hans'	THEN N'体育博彩'
 							WHEN 'th-TH'	THEN N'อัตราค่าตอบแทนจากหน้ากีฬา'
 							WHEN 'ja-JP'	THEN N'スポーツベット '
 							WHEN 'ko-KR'	THEN N'스포츠북 '*/
@@ -101,6 +106,7 @@ INSERT INTO @ProductSport(ID, Name, ParentID)
 		CASE @Langkey
 			WHEN 'zh-CN'	THEN N'百練賽'
 			WHEN 'zh-TW'	THEN N'百练赛'
+			WHEN 'zh-Hans'	THEN N'百練賽'
 			WHEN 'th-TH'	THEN N'เกมหมายเลข'
 			WHEN 'ja-JP'	THEN N'番号ゲーム'
 			WHEN 'ko-KR'	THEN N'라이브빙고'
@@ -118,6 +124,7 @@ INSERT INTO @ProductSport(ID, Name, ParentID)
 		CASE @Langkey
 		WHEN 'zh-CN'	THEN N'虛擬足球'
 		WHEN 'zh-TW'	THEN N'虚拟足球'
+		WHEN 'zh-Hans'	THEN N'虛擬足球'
 		WHEN 'th-TH'	THEN N'ฟุตบอลอนิเมชั่น'
 		WHEN 'ja-JP'	THEN N'Virtual Soccer'
 		WHEN 'ko-KR'	THEN N'가상 축구'
@@ -137,6 +144,7 @@ INSERT INTO @ProductSport(ID, Name, ParentID)
 											CASE @Langkey
 												WHEN 'zh-CN'	THEN N'虛擬足球'
 												WHEN 'zh-TW'	THEN N'虚拟足球'
+												WHEN 'zh-Hans'	THEN N'虛擬足球'
 												WHEN 'th-TH'	THEN N'ฟุตบอลอนิเมชั่น'
 												WHEN 'ja-JP'	THEN N'Virtual Soccer'
 												WHEN 'ko-KR'	THEN N'가상 축구'
@@ -147,6 +155,7 @@ INSERT INTO @ProductSport(ID, Name, ParentID)
 											CASE @Langkey
 												WHEN 'zh-CN'	THEN N'百練賽'
 												WHEN 'zh-TW'	THEN N'百练赛'
+												WHEN 'zh-Hans'	THEN N'百練賽'
 												WHEN 'th-TH'	THEN N'เกมหมายเลข'
 												WHEN 'ja-JP'	THEN N'番号ゲーム'
 												WHEN 'ko-KR'	THEN N'라이브빙고'

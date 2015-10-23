@@ -11,11 +11,11 @@ AS
 /*
 Created: 20111101@Henry
 Task : Update Danger Level of member
-DB: DBTRANS.bodb02
+DB: DBTXN/bodb02
 
 
 Revisions:
-	
+	20151023@Victor: Support New Simplified Chinese
 Param's Explanation:
 
 */
@@ -37,6 +37,7 @@ BEGIN
 						WHEN 'en-us' THEN 'Could not update danger level for this member !'
 						WHEN 'zh-cn' THEN N'Could not update danger level for this member !'
 						WHEN 'zh-tw' THEN N'Could not update danger level for this member !'
+						WHEN 'zh-Hans' THEN N'Could not update danger level for this member !'
 						WHEN 'TH' THEN N'Could not update danger level for this member !'
 						WHEN 'Ja' THEN N'Could not update danger level for this member !'
 						WHEN 'KO' THEN N'Could not update danger level for this member !'

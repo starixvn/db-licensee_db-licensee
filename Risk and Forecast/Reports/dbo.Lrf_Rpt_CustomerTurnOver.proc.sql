@@ -1,6 +1,6 @@
 ﻿USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_CustomerTurnOver_xtest]    Script Date: 7/15/2015 2:03:52 PM ******/
+
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -60,6 +60,7 @@ Revision:
 	- 20150603@Bobby: Revise code & improve performance
 	- 20150618@Bobby: Apply pre-caching sumtotal from rptcustomerturnOver_bobby table
 	- 20150821@Winnie: KeenOcean revert currency
+	- 20151023@Victor: Support New Simplified Chinese
 	
 Parameter's Explanation:
 	- @ReportBy:  1: daily, 2: monthly
@@ -625,6 +626,7 @@ BEGIN
 				,CASE 
 					WHEN @Langkey =  'zh-CN'	AND ISNULL(bt.typenamecn, '')	<> '' THEN bt.typenamecn
 					WHEN @Langkey =  'zh-TW'	AND ISNULL(bt.typenamecn, '')	<> '' THEN bt.typenamecn
+					WHEN @Langkey =  'zh-Hans'	AND ISNULL(bt.typenamecn, '')	<> '' THEN bt.typenamecn
 					WHEN @Langkey =  'th-TH'	AND ISNULL(bt.typenameth, '')	<> '' THEN bt.typenameth
 					WHEN @Langkey =  'ja-JP'	AND ISNULL(bt.typenamej, '')	<> '' THEN bt.typenamej
 					WHEN @Langkey =  'ko-KR'	AND ISNULL(bt.typenameko, '')	<> '' THEN bt.typenameko
@@ -643,6 +645,7 @@ BEGIN
 				,CASE 
 					WHEN @Langkey =  'zh-CN'	AND ISNULL(bt.typenamecn, '')	<> '' THEN bt.typenamecn
 					WHEN @Langkey =  'zh-TW'	AND ISNULL(bt.typenamecn, '')	<> '' THEN bt.typenamecn
+					WHEN @Langkey =  'zh-Hans'	AND ISNULL(bt.typenamecn, '')	<> '' THEN bt.typenamecn
 					WHEN @Langkey =  'th-TH'	AND ISNULL(bt.typenameth, '')	<> '' THEN bt.typenameth
 					WHEN @Langkey =  'ja-JP'	AND ISNULL(bt.typenamej, '')	<> '' THEN bt.typenamej
 					WHEN @Langkey =  'ko-KR'	AND ISNULL(bt.typenameko, '')	<> '' THEN bt.typenameko

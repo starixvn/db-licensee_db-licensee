@@ -19,6 +19,7 @@ DB: DBTRANS.bodb02
 Revisions:
 	- 20110613@Henry: Logging Enhancement
 	- 20120326@Dom: Change CustSetting3rd to Dep_CustSetting3rd
+	- 20151023@Victor: Support New Simplified Chinese
 Param's Explanation:
 • @ErrCode:
     = 0: Transaction recorded successfully.
@@ -62,6 +63,7 @@ IF
 							WHEN 'en-us' THEN 'Wrong Min bet/ Max bet/ Max per match (for Number Game).'
 							WHEN 'zh-cn' THEN N'最低投注/最高投注/单场最高投注不正确(供数字游戏).'
 							WHEN 'zh-tw' THEN N'最低投注/最高投注/單場最高投注不正確(供數字游戲).'
+							WHEN 'zh-Hans' THEN N'最低投注/最高投注/单场最高投注不正确(供数字游戏).'
 							WHEN 'TH' THEN N'การกำหนดจำนวนเงินสำหรับการวางเดิมพันต่ำสุด/ สูงสุด/สูงสดต่อรายการไม่ถูกต้อง (สำหรับเกมหมายเลข).'
 							WHEN 'Ja' THEN N'Wrong Min bet/ Max bet/ Max per match (for Number Game).'
 							WHEN 'KO' THEN N'잘못된 최소 배팅/최대 배팅/경기당 최대 (for Number Game).'
@@ -77,6 +79,7 @@ IF
 					WHEN 'en-us' THEN 'Wrong Max Per Ball (Number Game).'
 					WHEN 'zh-cn' THEN N'单粒球最高投注设置错误.'
 					WHEN 'zh-tw' THEN N'單粒球最高投注設置錯誤.'
+					WHEN 'zh-Hans' THEN N'单粒球最高投注设置错误.'
 					WHEN 'TH' THEN N'ค่าการเดิมพันสูงสุดต่อบอลผิดพลาด .'
 					WHEN 'Ja' THEN N'Wrong Max Per Ball (Number Game).'
 					WHEN 'KO' THEN N'Wrong Max Per Ball (Number Game).'
@@ -112,6 +115,7 @@ IF (@MinBetv161 <> 0 AND @MaxBetv161 <> 0 AND @MinBetv161>@MaxBetv161) or (@MaxB
        WHEN 'en-us' THEN 'min bet must be less than max bet AND max bet must be less than max bet per match (for Number Game)'  
        WHEN 'zh-cn' THEN N'最低投注不能高于最高投注，最高投注不能高于单场最高投注设定(供数字游戏)'  
        WHEN 'zh-tw' THEN N'最低投注不能高於最高投注,最高投注不能高於單場最高投注設定(供數字游戲)'  
+	   WHEN 'zh-Hans' THEN N'最低投注不能高于最高投注，最高投注不能高于单场最高投注设定(供数字游戏)'  
        WHEN 'TH' THEN N'จำนวนเงินต่ำสุดที่วางเดิมพันได้ต้องน้อยกว่าจำนวนเงินสูงสุดในการวางเดิมพันและจำนวนเงินสูงสุดในการวางเดิมพันต้องน้อยกว่าจำนวนเงินสูงสุดของเงินเดิมพันต่อเกม (สำหรับเกมหมายเลข)'  
        WHEN 'Ja' THEN N'min bet must be less than max bet AND max bet must be less than max bet per match (for Number Game)'  
        WHEN 'KO' THEN N'최소 배팅은 최대 배팅 이하이여야 하고 최대 배팅은 경기당 최대 배팅보다 작아야 합니다 (for Number Game)'  
@@ -129,6 +133,7 @@ IF (@MinBetv161 <> 0 AND @MaxBetv161 <> 0 AND @MinBetv161>@MaxBetv161) or (@MaxB
        WHEN 'en-us' THEN 'min bet must be equal to or greater than Agent min bet (for Number Game)'  
        WHEN 'zh-cn' THEN N'最低投注需相等于或少于代理最低投注(供数字游戏)'  
        WHEN 'zh-tw' THEN N'最低投注需相等於或少於代理最低投注(供數字游戲)'  
+	   WHEN 'zh-Hans' THEN N'最低投注需相等于或少于代理最低投注(供数字游戏)'  
        WHEN 'TH' THEN N'จำนวนเงินต่ำสุดในการเล่นต้องเท่ากับหรือมากกว่าจำนวนเงินขั้นต่ำในการเล่นที่กำหนดไว้ของตัวแทน (สำหรับเกมหมายเลข)'  
        WHEN 'Ja' THEN N'min bet must be equal to or greater than Agent min bet (for Number Game)'  
        WHEN 'KO' THEN N'최소 배팅은 에이전트의 최소 배팅 이상이여야 합니다 (for Number Game)'  
@@ -145,6 +150,7 @@ IF (@MinBetv161 <> 0 AND @MaxBetv161 <> 0 AND @MinBetv161>@MaxBetv161) or (@MaxB
        WHEN 'en-us' THEN 'max bet must be equal to or less than Agent max bet (for Number Game)'  
        WHEN 'zh-cn' THEN N'最高投注需相等于或少于代理最高投注(供数字游戏)'  
        WHEN 'zh-tw' THEN N'最高投注需相等於或少於代理最高投注(供數字游戲)'  
+	   WHEN 'zh-Hans' THEN N'最高投注需相等于或少于代理最高投注(供数字游戏)'  
        WHEN 'TH' THEN N'จำนวนการวางเดิมพันสูงสุดต้องเท่ากับ หรือ น้อยกว่าราคาเดิมพันสูงสุดของตัวแทน (สำหรับเกมหมายเลข)'  
        WHEN 'Ja' THEN N'max bet must be equal to or less than Agent max bet (for Number Game)'  
        WHEN 'KO' THEN N'최대 배팅은 에이전트의 최대 배팅 이하이여야 합니다 (for Number Game)'  
@@ -162,6 +168,7 @@ IF (@MinBetv161 <> 0 AND @MaxBetv161 <> 0 AND @MinBetv161>@MaxBetv161) or (@MaxB
        WHEN 'en-us' THEN 'Max Per Match must be equal to or less than Agent Max Per Match (for Number Game)'  
        WHEN 'zh-cn' THEN N'单场最高投注需相等于或少于代理单场最高投注(供数字游戏)'  
        WHEN 'zh-tw' THEN N'單場最高投注需相等於或少於代理單場最高投注(供數字游戲)'  
+	   WHEN 'zh-Hans' THEN N'单场最高投注需相等于或少于代理单场最高投注(供数字游戏)'  
        WHEN 'TH' THEN N'จำนวนเงินสูงสุดในการเล่นต่อรายการต้องเท่ากับหรือน้อยกว่าจำนวนเงินสูงสุดต่อรายการที่กำหนดไว้ของตัวแทน (สำหรับเกมหมายเลข) '  
        WHEN 'Ja' THEN N'Max Per Match must be equal to or less than Agent Max Per Match (for Number Game)'  
        WHEN 'KO' THEN N'최대 경기는 에이전트의 최대 경기보다 작아야 합니다 (for Number Game)'  
@@ -179,6 +186,7 @@ IF (@MinBetv161 <> 0 AND @MaxBetv161 <> 0 AND @MinBetv161>@MaxBetv161) or (@MaxB
     WHEN 'en-us' THEN 'Sorry, Max Per Ball must be less than or equal to Agent Max Per Ball (Number Game).'  
     WHEN 'zh-cn' THEN N'单粒球最高投注必須等於或低於代理单粒球最高的投注.'  
     WHEN 'zh-tw' THEN N'單粒球最高投注必須等於或低於代理單粒球最高的投注.'  
+	WHEN 'zh-Hans' THEN N'单粒球最高投注必須等於或低於代理单粒球最高的投注.'  
     WHEN 'TH' THEN N'ขออภัย, ค่าสูงสุดต่อบอลต้องเท่ากับหรือน้อยกว่าการตั้งค่าสูงสุดต่อบอลของเอเย่น .'  
     WHEN 'Ja' THEN N'Sorry, Max Per Ball must be less than or equal to Agent Max Per Ball (Number Game).'  
     WHEN 'KO' THEN N'Sorry, Max Per Ball must be less than or equal to Agent Max Per Ball (Number Game).'  
@@ -221,6 +229,7 @@ BEGIN
       WHEN 'en-us' THEN 'UPDATE process is unsuccessful !'  
       WHEN 'zh-cn' THEN N'更新程序不成功 !'  
       WHEN 'zh-tw' THEN N'更新程序不成功 !'  
+	  WHEN 'zh-Hans' THEN N'更新程序不成功 !'  
       WHEN 'TH' THEN N'ขั้นตอนหรือกระบวนการในการปรับยอดไม่เสร็จสิ้น!'  
       WHEN 'Ja' THEN N'アップデート出来ません。'  
       WHEN 'KO' THEN N'업데이트에 실패했습니다.'  

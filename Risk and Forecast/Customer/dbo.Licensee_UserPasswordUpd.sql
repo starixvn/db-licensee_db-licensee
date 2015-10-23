@@ -21,10 +21,11 @@ AS
 /*  
  * Created: 20101201@ Johnny
  * Task : User change password
- * DB: DB052.bodb_Licensee  
+ * DB: DBLIC/bodb_Licensee  
  *  
  * Revisions:     
 	20140512@jim: add more filter (status='Open')
+	20151023@Victor: Support New Simplified Chinese
 */  
 BEGIN  
 SET NOCOUNT ON;  
@@ -38,6 +39,7 @@ Begin
 	select @ErrMsg = case @Language when 'en-us' then 'Wrong password.'  
          when 'zh-cn' then N'Wrong password.'  
          when 'zh-tw' then N'Wrong password.'  
+		 when 'zh-Hans' then N'Wrong password.' 
          when 'ja' then N'Wrong password.'  
          when 'TH' then N'Wrong password.'  
          when 'KO' then N'Wrong password.'  
@@ -51,6 +53,7 @@ Begin
 	select @ErrMsg = case @Language when 'en-us' then 'This user is not active.'  
          when 'zh-cn' then N'This user is not active.'  
          when 'zh-tw' then N'This user is not active.'  
+		 when 'zh-Hans' then N'Wrong password.' 
          when 'ja' then N'This user is not active.'  
          when 'TH' then N'This user is not active.'  
          when 'KO' then N'This user is not active.'  

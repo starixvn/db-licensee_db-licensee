@@ -1,6 +1,6 @@
 ﻿USE [CustDB]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_CustomerUpdMaxPerMatch]    Script Date: 2/13/2014 9:42:11 AM ******/
+
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -41,6 +41,7 @@ Original: [Acc_CustomerUpdMaxPerMatch]
 Revisions:
 	- 20110520@Henry: Remove Number Game (by using SP: Lrf_CustomerUpdMaxPerMatch161)
 	- 20140207@Jim: support to offer Horse Racing Fixed Odds
+	- 20151023@Victor: Support New Simplified Chinese
 Param's Explanation:
 • @ErrCode:
     = 0: Update successfully.
@@ -68,6 +69,7 @@ begin
 						WHEN 'en-us' THEN 'Update process is unsuccessful !'
 						WHEN 'zh-cn' THEN N'更新程序不成功 !'
 						WHEN 'zh-tw' THEN N'更新程序不成功 !'
+						WHEN 'zh-Hans' THEN N'更新程序不成功 !'
 						WHEN 'TH' THEN N'ขั้นตอนหรือกระบวนการในการปรับยอดไม่เสร็จสิ้น.'
 						WHEN 'Ja' THEN N'アップデート出来ません。'
 						WHEN 'KO' THEN N'업데이트에 실패했습니다.'

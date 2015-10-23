@@ -16,6 +16,7 @@ Original:
 
 Revisions:
    20130123@Daniel: Change link server alias & failover writelog to DBTXN
+   20151023@Victor: Support New Simplified Chinese
 	
 Param's Explanation:
 • @custid: custid that need to be viewed.   
@@ -70,6 +71,7 @@ BEGIN
 						WHEN 'en-us' THEN 'Invalid user!!'
 						WHEN 'zh-cn' THEN N'账号无效.'
 						WHEN 'zh-tw' THEN N'帳號無效.'
+						WHEN 'zh-Hans' THEN N'账号无效.'
 						WHEN 'TH' THEN N'ผู้ใช้ไม่ถูกต้อง!!'
 						WHEN 'Ja' THEN 'Invalid user!!'
 						WHEN 'KO' THEN N'잘못된 사용자 입니다!!'
@@ -90,6 +92,7 @@ BEGIN
 							WHEN 'en-us' THEN 'This user''s upline was closed. Cannot edit.'
 							WHEN 'zh-cn' THEN N'This user''s upline was closed. Cannot edit.'
 							WHEN 'zh-tw' THEN N'This user''s upline was closed. Cannot edit.'
+							WHEN 'zh-Hans' THEN N'This user''s upline was closed. Cannot edit.'
 							WHEN 'TH' THEN N'This user''s upline was closed. Cannot edit.'
 							WHEN 'Ja' THEN N'This user''s upline was closed. Cannot edit.'
 							WHEN 'KO' THEN N'This user''s upline was closed. Cannot edit.'
@@ -112,6 +115,7 @@ begin
 						WHEN 'en-us' THEN 'Update process is unsuccessful !'
 						WHEN 'zh-cn' THEN N'更新程序不成功 !'
 						WHEN 'zh-tw' THEN N'更新程序不成功 !'
+						WHEN 'zh-Hans' THEN N'更新程序不成功 !'
 						WHEN 'TH' THEN N'ขั้นตอนหรือกระบวนการในการปรับยอดไม่เสร็จสิ้น!!'
 						WHEN 'Ja' THEN N'アップデート出来ません。'
 						WHEN 'KO' THEN N'업데이트에 실패했습니다.'

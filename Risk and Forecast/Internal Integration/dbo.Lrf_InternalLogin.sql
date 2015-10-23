@@ -27,6 +27,7 @@ AS
 	- 20111004@Henry: check only Internal user (IsInternal = 1)
 	- 20120724@HEnry: return 1 more column: IsAllowedMemberComm
 	- 20141217@Jim: correct error code 
+	- 20151023@Victor: Support New Simplified Chinese
 */
 
 SET NOCOUNT ON
@@ -52,6 +53,7 @@ BEGIN
 	SELECT @ErrMsg = CASE @Language WHEN 'en-us' THEN 'The link has been expired!'  
          WHEN 'zh-cn' THEN N'The link has been expired!' 
          WHEN 'zh-tw' THEN N'The link has been expired!' 
+		 WHEN 'zh-Hans' THEN N'The link has been expired!' 
          WHEN 'Ja' THEN N'The link has been expired!'  
          WHEN 'TH' THEN N'The link has been expired!' 
          WHEN 'KO' THEN N'The link has been expired!'   
@@ -95,6 +97,7 @@ BEGIN
 	SELECT @ErrMsg = CASE @Language WHEN 'en-us' THEN 'Wrong username or password.'  
          WHEN 'zh-cn' THEN N'Wrong username or password.'  
          WHEN 'zh-tw' THEN N'Wrong username or password.'  
+		 WHEN 'zh-Hans' THEN N'Wrong username or password.'  
          WHEN 'Ja' THEN N'Wrong username or password.'  
          WHEN 'TH' THEN N'Wrong username or password.'  
          WHEN 'KO' THEN N'Wrong username or password.'  
@@ -126,6 +129,7 @@ BEGIN
 	SELECT @ErrMsg = CASE @Language WHEN 'en-us' THEN 'This user is not active.'  
          WHEN 'zh-cn' THEN N'This user is not active.'  
          WHEN 'zh-tw' THEN N'This user is not active.'  
+		 WHEN 'zh-Hans' THEN N'This user is not active.'  
          WHEN 'Ja' THEN N'This user is not active.'  
          WHEN 'TH' THEN N'This user is not active.'  
          WHEN 'KO' THEN N'This user is not active.'  
@@ -168,6 +172,7 @@ BEGIN
 			SELECT @ErrMsg = CASE @Language WHEN 'en-us' THEN 'This user has too many licensees.'  
 			 WHEN 'zh-cn' THEN N'This user has too many licensees.'  
 			 WHEN 'zh-tw' THEN N'This user has too many licensees.' 
+			 WHEN 'zh-Hans' THEN N'This user has too many licensees.'  
 			 WHEN 'Ja' THEN N'This user has too many licensees.' 
 			 WHEN 'TH' THEN N'This user has too many licensees.' 
 			 WHEN 'KO' THEN N'This user has too many licensees.' 
@@ -205,6 +210,7 @@ BEGIN
 					SELECT @ErrMsg = CASE @Language WHEN 'en-us' THEN 'This user has no licensee.'  
 					 WHEN 'zh-cn' THEN N'This user has no licensee.'
 					 WHEN 'zh-tw' THEN N'This user has no licensee.'
+					 WHEN 'zh-Hans' THEN N'This user has no licensee.'
 					 WHEN 'Ja' THEN N'This user has no licensee.'
 					 WHEN 'TH' THEN N'This user has no licensee.'
 					 WHEN 'KO' THEN N'This user has no licensee.'
