@@ -53,7 +53,7 @@ Begin
 	select @ErrMsg = case @Language when 'en-us' then 'This user is not active.'  
          when 'zh-cn' then N'This user is not active.'  
          when 'zh-tw' then N'This user is not active.'  
-		 when 'zh-Hans' then N'Wrong password.' 
+		 when 'zh-Hans' then N'This user is not active.' 
          when 'ja' then N'This user is not active.'  
          when 'TH' then N'This user is not active.'  
          when 'KO' then N'This user is not active.'  
