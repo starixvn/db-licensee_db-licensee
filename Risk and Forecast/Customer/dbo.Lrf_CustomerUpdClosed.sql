@@ -11,7 +11,7 @@ AS
 /*
 Created: 20110808@Henry
 Task : UPDATE status 'closed' for customer
-DB: DBTXN/bodb02
+DB: DBCUST/CustDB
 Original:
 
 Revisions:

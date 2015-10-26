@@ -71,7 +71,7 @@ as
 /*
 Created: 20101216@Henry
 Task : Update Member MinBet, MaxBet, MaxPerMatch
-DB: DBTRANS.bodb02
+DB: DBCUST/CustDB
 Original: [Acc_CustomerUpdMember_MinMaxBet]
 Revisions:
    - 20110505@Henry: change the ActionID

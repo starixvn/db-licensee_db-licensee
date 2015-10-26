@@ -19,7 +19,7 @@ AS
 /*
 	Created by: [20110704@Henry]
 	Task: Login to LRF thru Internal site
-	DB: DB052.bodb_Licensee
+	DB: DBLIC/bodb_Licensee
 	Param's Explanation:
 	
 	

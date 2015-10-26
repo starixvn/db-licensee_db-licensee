@@ -736,3 +736,8 @@ BEGIN
 		
 	RETURN;
 END
+GO
+GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [bodbLicenseeNet]
+GO
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [vnteam]  
+GO

@@ -11,7 +11,7 @@ AS
 /*  
 Created: 20140326@Jim  
 Task : Edit bet settings of super  
-DB: DBCUST.CustDB  
+DB: DBCUST/CustDB  
 Original :  
   
 Revisions:  
@@ -309,3 +309,9 @@ BEGIN
 END   
   
 DROP TABLE #setting  
+
+GO
+GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMember_MinMaxBetKN] TO [bodbLicenseeNet]
+GO
+GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerUpdMember_MinMaxBetKN] TO [vnteam]
+GO

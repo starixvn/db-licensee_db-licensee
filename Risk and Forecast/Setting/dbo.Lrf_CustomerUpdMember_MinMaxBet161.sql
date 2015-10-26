@@ -14,7 +14,7 @@ as
 /*
 Created: 20110519@Henry
 Task : UPDATE member's minbet, maxbet, max per match for Number Game
-DB: DBTRANS.bodb02
+DB: DBCUST/CustDB
 
 Revisions:
 	- 20110613@Henry: Logging Enhancement

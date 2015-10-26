@@ -13,7 +13,7 @@ AS
 	Created by: Jim
 	Date: 2013-04-05
 	Task: Get the content of message from msgID 
-	DB: DB052.bodb02
+	DB: DBEXT/bodb02
 	Original:DBTRANS.bodb02.f_Get_MsgNamebyMsgID
 	Revisions: 
 		+ 20151023@Victor: Support New Simplified Chinese 

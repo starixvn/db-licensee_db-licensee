@@ -11,7 +11,7 @@ AS
 /*
 Created: 20111101@Henry
 Task : Update Danger Level of member
-DB: DBTXN/bodb02
+DB: DBCUST/CustDB
 
 
 Revisions:

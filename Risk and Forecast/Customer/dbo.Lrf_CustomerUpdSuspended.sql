@@ -11,7 +11,7 @@ AS
 /*
 Created: 20110809@Henry
 Task : UPDATE suspended
-DB: DBTXN/bodb02
+DB: DBCUST/CustDB
 Original:
 
 Revisions:

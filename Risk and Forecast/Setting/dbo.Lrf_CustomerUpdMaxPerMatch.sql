@@ -36,7 +36,7 @@ AS
 /*
 Created: 20101216@Henry
 Task : Update Maxpermatch
-DB: DBTRANS.bodb02
+DB: DBCUST/CustDB
 Original: [Acc_CustomerUpdMaxPerMatch]
 Revisions:
 	- 20110520@Henry: Remove Number Game (by using SP: Lrf_CustomerUpdMaxPerMatch161)
