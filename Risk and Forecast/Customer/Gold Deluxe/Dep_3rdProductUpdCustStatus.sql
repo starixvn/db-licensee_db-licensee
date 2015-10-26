@@ -36,10 +36,10 @@ BEGIN
 			SELECT @Srecommend = srecommend FROM dbo.Customer c WITH (NOLOCK) WHERE c.CustID = @CustID
 
 			SELECT @IsEnable_Old = ISNULL(IsEnabled,0)
-			FROM DBTXN.CustDB.dbo.Dep_CustProductSetting WITH (NOLOCK)
+			FROM  dbo.Dep_CustProductSetting WITH (NOLOCK)
 			WHERE CustID = @CustId AND ProductId=@ProductId
 
-			SELECT @SEnabled = ISNULL(IsEnabled,0) FROM DBTXN.CustDB.dbo.Dep_SupperProductSetting WITH (NOLOCK) WHERE CustID = @Srecommend AND ProductId=@ProductId
+			SELECT @SEnabled = ISNULL(IsEnabled,0) FROM  dbo.Dep_SupperProductSetting WITH (NOLOCK) WHERE CustID = @Srecommend AND ProductId=@ProductId
 
 			IF (@SEnabled = 0)
 				SELECT @IsEnable_Old = 0
