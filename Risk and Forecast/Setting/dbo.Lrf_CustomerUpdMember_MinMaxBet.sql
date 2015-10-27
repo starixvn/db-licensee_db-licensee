@@ -1378,7 +1378,7 @@ SET
 												OR (@UpdateMinMaxBetv154 = 0 AND sporttype=154)
 												OR (@UpdateMinMaxBetv99 = 0 AND sporttype=99 AND bettype<>9)
 												OR (@UpdateMinMaxBetv99MP = 0 AND sporttype=99 AND bettype=9)
-												) THEN MinBet ELSE CASE sporttype WHEN 1 THEN @MinBet WHEN 2 THEN @MinBetv2 WHEN 3 THEN @MinBetv3 WHEN 5 THEN @MinBetv5 WHEN 8 THEN @MinBetv8 WHEN 10 THEN @MinBetv10 WHEN 11 THEN @MinBetv11 WHEN 154 THEN @MinBetv154 WHEN 99 THEN (CASE bettype WHEN 9 THEN @MinBetv99MP ELSE @MinBetv99 END) ELSE minbet END END,
+												) THEN MinBet ELSE CASE sporttype WHEN 1 THEN @MinBet WHEN 2 THEN @MinBetv2 WHEN 3 THEN @MinBetv3 WHEN 5 THEN @MinBetv5 WHEN 8 THEN @MinBetv8 WHEN 10 THEN @MinBetv10 WHEN 11 THEN @MinBetv11 WHEN 44 THEN @minbetv44 WHEN 154 THEN @MinBetv154 WHEN 99 THEN (CASE bettype WHEN 9 THEN @MinBetv99MP ELSE @MinBetv99 END) ELSE minbet END END,
 	MaxBet=CASE WHEN  ((@UpdateMinMaxBet = 0 AND sporttype=1)
 												OR (@UpdateMinMaxBetv2 = 0 AND sporttype=2)
 												OR (@UpdateMinMaxBetv3 = 0 AND sporttype=3)
@@ -1412,7 +1412,7 @@ begin
 END
 
 
-EXEC dbo.Lrf_CustomerUpdMaxPerMatch
+EXEC dbo.Lrf_CustomerUpdMaxPerMatch_xtest
 	@custid = @custid,
 	@maxpermatch = @maxpermatch,
 	@maxpermatchv2 = @maxpermatchv2,
