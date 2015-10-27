@@ -185,11 +185,12 @@ END
 DROP TABLE #input
 DROP TABLE #bettype
 
-SELECT  BettypeID
+SELECT   
+		BettypeID
 	   ,BettypeName
-FROM @Bettype
-GROUP BY sporttype,BettypeID,BettypeName
-ORDER BY sporttype
+FROM (SELECT Distinct sporttype,BettypeID,BettypeName FROM @Bettype)a
+ GROUP BY  BettypeID,BettypeName
+ ORDER BY BettypeID
 GO
 
 GRANT EXECUTE ON [dbo].[Lrf_SelBetTypeBySport] TO [bodbLicenseeNet] 
