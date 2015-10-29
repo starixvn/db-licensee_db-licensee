@@ -1412,7 +1412,7 @@ begin
 END
 
 
-EXEC dbo.Lrf_CustomerUpdMaxPerMatch_xtest
+EXEC dbo.Lrf_CustomerUpdMaxPerMatch 
 	@custid = @custid,
 	@maxpermatch = @maxpermatch,
 	@maxpermatchv2 = @maxpermatchv2,
