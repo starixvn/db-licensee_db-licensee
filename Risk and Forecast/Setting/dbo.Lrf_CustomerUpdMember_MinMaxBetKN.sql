@@ -1,6 +1,4 @@
-﻿/****** Object:  Stored Procedure dbo.Lrf_CustomerUpdMember_MinMaxBetKN    Script Date: 3/5/2015 11:09:18 PM ******/  
-/****** Object:  Stored Procedure dbo.Lrf_CustomerUpdMember_MinMaxBetKN    Script Date: 3/4/2015 2:52:46 PM ******/  
-   
+﻿  
 ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMember_MinMaxBetKN]  
  @UserID INT =0,  
  @Custid INT,  
@@ -13,7 +11,7 @@ AS
 /*  
 Created: 20140326@Jim  
 Task : Edit bet settings of super  
-DB: DBCUST.CustDB  
+DB: DBCUST/CustDB  
 Original :  
   
 Revisions:  
@@ -23,6 +21,7 @@ Revisions:
   - 20140714@Jim: support to active bettype  1511,1513 (Kentucky,Michigan : #redmineID :17215)  
   - 20150226@Jim: use Australia setting for all other Keno's countries. (RedmineID: #30921)  
   - 20150610@Joseph: Separate CustDB to DBCUST server (Move SP to DBCUST.CustDB, use temp table for GameType table)
+  - 20151023@Victor: Support New Simplified Chinese
 Param's Explanation:  
 @dataXML Format :  
   '<settings>  
@@ -88,6 +87,7 @@ IF EXISTS ( SELECT 1 FROM #Setting
        WHEN 'en-us' THEN 'Wrong Min bet/ Max bet/ Max per match .'  
        WHEN 'zh-cn' THEN N'最低投注/最高投注/单场最高投注不正确.'  
        WHEN 'zh-tw' THEN N'最低投注/最高投注/單場最高投注不正確.'  
+	   WHEN 'zh-Hans' THEN N'最低投注/最高投注/单场最高投注不正确.'  
        WHEN 'th-TH' THEN N'การกำหนดจำนวนเงินสำหรับการวางเดิมพันต่ำสุด/ สูงสุด/สูงสดต่อรายการไม่ถูกต้อง .'  
        WHEN 'ja-JP' THEN N'Wrong Min bet/ Max bet/ Max per match.'  
        WHEN 'ko-KR' THEN N'잘못된 최소 배팅/최대 배팅/경기당 최대 .'  
@@ -158,6 +158,7 @@ BEGIN
         WHEN 'en-us' THEN 'min bet must be less than max bet AND max bet must be less than max bet per match'  
         WHEN 'zh-cn' THEN N'最低投注不能高于最高投注，最高投注不能高于单场最高投注设定'  
         WHEN 'zh-tw' THEN N'最低投注不能高於最高投注,最高投注不能高於單場最高投注設定'  
+		WHEN 'zh-Hans' THEN N'最低投注不能高于最高投注，最高投注不能高于单场最高投注设定'  
         WHEN 'th-TH' THEN N'จำนวนเงินต่ำสุดที่วางเดิมพันได้ต้องน้อยกว่าจำนวนเงินสูงสุดในการวางเดิมพันและจำนวนเงินสูงสุดในการวางเดิมพันต้องน้อยกว่าจำนวนเงินสูงสุดของเงินเดิมพันต่อเกม.'  
         WHEN 'ja-JP' THEN N'min bet must be less than max bet AND max bet must be less than max bet per match'  
         WHEN 'ko-KR' THEN N'최소 배팅은 최대 배팅 이하이여야 하고 최대 배팅은 경기당 최대 배팅보다 작아야 합니다.'  
@@ -178,6 +179,7 @@ BEGIN
        WHEN 'en-us' THEN 'max bet must be equal to or less than Agent max bet'  
        WHEN 'zh-cn' THEN N'最高投注需相等于或少于代理最高投注'  
        WHEN 'zh-tw' THEN N'最高投注需相等於或少於代理最高投注'  
+	   WHEN 'zh-Hans' THEN N'最高投注需相等于或少于代理最高投注'  
        WHEN 'th-TH' THEN N'จำนวนการวางเดิมพันสูงสุดต้องเท่ากับ หรือ น้อยกว่าราคาเดิมพันสูงสุดของตัวแทน '  
        WHEN 'ja-JP' THEN N'max bet must be equal to or less than Agent max bet'  
        WHEN 'ko-KR' THEN N'최대 배팅은 에이전트의 최대 배팅 이하이여야 합니다.'  
@@ -197,6 +199,7 @@ BEGIN
         WHEN 'en-us' THEN 'The Max Bet must be equal to or less than the value '  
         WHEN 'zh-cn' THEN N'最高投注需相等于或少于代理最高投注'  
         WHEN 'zh-tw' THEN N'最高投注需相等於或少於代理最高投注'  
+		WHEN 'zh-Hans' THEN N'最高投注需相等于或少于代理最高投注'  
         WHEN 'th-TH' THEN N'จำนวนการวางเดิมพันสูงสุดต้องเท่ากับ หรือ น้อยกว่าราคาเดิมพันสูงสุดของตัวแทน '  
         WHEN 'ja-JP' THEN N'max bet must be equal to or less than Agent max bet'  
         WHEN 'ko-KR' THEN N'최대 배팅은 에이전트의 최대 배팅 이하이여야 합니다'  
@@ -216,6 +219,7 @@ BEGIN
         WHEN 'en-us' THEN 'The Max Per Match must be equal to or less than the value '  
         WHEN 'zh-cn' THEN N'单场最高投注需相等于或少于代理单场最高投注'  
         WHEN 'zh-tw' THEN N'單場最高投注需相等於或少於代理單場最高投注'  
+		WHEN 'zh-Hans' THEN N'单场最高投注需相等于或少于代理单场最高投注'  
         WHEN 'th-TH' THEN N'จำนวนเงินสูงสุดในการเล่นต่อรายการต้องเท่ากับหรือน้อยกว่าจำนวนเงินสูงสุดต่อรายการที่กำหนดไว้ของตัวแทน  '  
         WHEN 'ja-JP' THEN N'Max Per Match must be equal to or less than Agent Max Per Match'  
         WHEN 'ko-KR' THEN N'최대 경기는 에이전트의 최대 경기보다 작아야 합니다'  
@@ -258,6 +262,7 @@ BEGIN
          WHEN 'en-us' THEN 'Update process is unsuccessful !'  
          WHEN 'zh-cn' THEN N'更新程序不成功 !'  
          WHEN 'zh-tw' THEN N'更新程序不成功 !'  
+		 WHEN 'zh-Hans' THEN N'更新程序不成功 !'  
          WHEN 'th-TH' THEN N'ขั้นตอนหรือกระบวนการในการปรับยอดไม่เสร็จสิ้น!'  
          WHEN 'ja-JP' THEN N'アップデート出来ません。'  
          WHEN 'ko-KR' THEN N'업데이트에 실패했습니다.'  
@@ -304,3 +309,9 @@ BEGIN
 END   
   
 DROP TABLE #setting  
+
+GO
+GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMember_MinMaxBetKN] TO [bodbLicenseeNet]
+GO
+GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerUpdMember_MinMaxBetKN] TO [vnteam]
+GO

@@ -27,6 +27,7 @@ Revisions:
    - 20141017@Jim : Apply for the change in Sporting Solution structure (#24478)
    - 20150415@Jim: support Betradar phase 2
    - 20150714@Winnie: Exclude 901,902,903
+   - 20151023@Victor: Support New Simplified Chinese
 Param's Explanation:
 	
 */
@@ -68,6 +69,8 @@ SELECT
 				WHEN 'zh-CN'	THEN CASE  WHEN (ISNULL(typenamecn,'')='' OR LEN(typenamecn)=0) THEN typenamee 
 									   ELSE typenamecn END
 				WHEN 'zh-TW'	THEN CASE  WHEN (ISNULL(typenamecn,'')='' OR LEN(typenamecn)=0) THEN typenamee 
+									   ELSE typenamecn END
+				WHEN 'zh-Hans'	THEN CASE  WHEN (ISNULL(typenamecn,'')='' OR LEN(typenamecn)=0) THEN typenamee 
 									   ELSE typenamecn END
 				WHEN 'th-TH'	THEN CASE  WHEN (ISNULL(typenameth,'')='' OR LEN(typenameth)=0) THEN typenamee 
 									   ELSE typenameth END

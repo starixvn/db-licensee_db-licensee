@@ -11,11 +11,12 @@ AS
 /*
 Created: 20110809@Henry
 Task : UPDATE suspended
-DB: DBTXN/bodb02
+DB: DBCUST/CustDB
 Original:
 
 Revisions:
     - 20130123@Daniel: Change link server alias & failover writelog to DBTXN
+	- 20151023@Victor: Support New Simplified Chinese
 
  
 Param's Explanation:
@@ -76,6 +77,7 @@ BEGIN
 						WHEN 'en-us' THEN 'This user''s upline was suspended. Cannot edit.'
 						WHEN 'zh-cn' THEN N'此用户的上线暂停，不能编辑。'
 						WHEN 'zh-tw' THEN N'此用戶的上線暫停，不能編輯。'
+						WHEN 'zh-Hans' THEN N'此用户的上线暂停，不能编辑。'
 						WHEN 'TH' THEN N'ยูเซอร์นี้ได้ถูกระงับการใช้งานโดยอัพลายร์. ไม่สามารถแก้ไขได้'
 						WHEN 'Ja' THEN N'This user''s upline was suspended. Cannot edit.'
 						WHEN 'KO' THEN N'This user''s upline was suspended. Cannot edit.'
@@ -89,6 +91,7 @@ BEGIN
 							WHEN 'en-us' THEN 'This user''s upline was closed. Cannot edit.'
 							WHEN 'zh-cn' THEN N'此用户的上线关闭，不能编辑。'
 							WHEN 'zh-tw' THEN N'此用户的上线关闭，不能编辑。'
+							WHEN 'zh-Hans' THEN N'此用户的上线关闭，不能编辑。'
 							WHEN 'TH' THEN N'ยูเซอร์นี้ได้ถูกปิดการใช้งานโดยอัพลายร์. ไม่สามารถแก้ไขได้'
 							WHEN 'Ja' THEN N'This user''s upline was closed. Cannot edit.'
 							WHEN 'KO' THEN N'This user''s upline was closed. Cannot edit.'
@@ -105,6 +108,7 @@ BEGIN
 						WHEN 'en-us' THEN 'Invalid user!!'
 						WHEN 'zh-cn' THEN N'账号无效 !'
 						WHEN 'zh-tw' THEN N'帳號無效. !'
+						WHEN 'zh-Hans' THEN N'账号无效 !'
 						WHEN 'TH' THEN N'ผู้ใช้ไม่ถูกต้อง!!'
 						WHEN 'Ja' THEN N'Invalid user!!'
 						WHEN 'KO' THEN N'잘못된 사용자 입니다!!'
@@ -129,6 +133,7 @@ BEGIN
 						WHEN 'en-us' THEN 'Update process is unsuccessful !'
 						WHEN 'zh-cn' THEN N'更新程序不成功 !'
 						WHEN 'zh-tw' THEN N'更新程序不成功 !'
+						WHEN 'zh-Hans' THEN N'更新程序不成功 !'
 						WHEN 'TH' THEN N'ขั้นตอนหรือกระบวนการในการปรับยอดไม่เสร็จสิ้น'
 						WHEN 'Ja' THEN N'アップデート出来ません。'
 						WHEN 'KO' THEN N'업데이트에 실패했습니다.'
