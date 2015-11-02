@@ -13,7 +13,8 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerSel]
 	@CustStatus varchar(50)='' ,
 	@TotalRows INT = 0  OUTPUT,
 	@SpecialLevel INT = -1, --ALL
-	@GroupCommID INT = -1 --ALL	
+	@GroupCommID INT = -1, --ALL	
+	@OddsGroups VARCHAR(100)
 AS
 
 /*
@@ -48,10 +49,12 @@ AS
 	- 20150130@Winnie Add base currency GBP
 	- 20150626@Jim: support MicroGaming (feature #37034)
 	- 20150917@Florent: Change datasource for AG Casino (#Redmine 43172)
+	- 20151102@Victor: Add Odds Group filter to Customer List [Redmine: #46312]
 
 	Param's Explanation:
 	  + @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 	  + @SpecialLevel: default value = -1 (all)
+	  + @OddsGroups: Member's Odds Group
 	
 */
 
@@ -109,11 +112,15 @@ CREATE TABLE #OutstandingTranslog
 	actual_stake money
 )
 
-DECLARE @TempMember AS TABLE(CustID INT PRIMARY KEY CLUSTERED, speciallevel int, username2 varchar(50), username varchar(50),ugroup VARCHAR(3))
+CREATE TABLE #TempMember (CustID INT PRIMARY KEY CLUSTERED, speciallevel int, username2 varchar(50), username varchar(50),ugroup VARCHAR(3))
 
 DECLARE @TempBACust AS TABLE (ID INT IDENTITY(1,1),CustID INT)
 DECLARE @CustID INT, @i INT, @max INT,@LastOffBy INT
 
+DECLARE @OddsGroupList TABLE (uGroup VARCHAR(3))
+
+INSERT INTO @OddsGroupList (uGroup)
+SELECT val FROM dbo.Lrf_f_StringSplit(@OddsGroups,',')
 
 IF LEN(@Username)=0
 BEGIN
@@ -129,10 +136,11 @@ BEGIN
 				AND ((@CustStatus='') OR (@CustStatus IN ('Open') AND closed=0) OR (@CustStatus='Closed' AND closed = 1))
 				AND ((@CustStatus IN ('','Closed')) OR (@CustStatus = 'Open' AND ISNULL(reject,0)=0) OR (@CustStatus = 'Suspended' AND ISNULL(reject,0)=1))
 
-		INSERT INTO @TempMember (CustID,speciallevel,username2,username,ugroup)
+		INSERT INTO #TempMember (CustID,speciallevel,username2,username,ugroup)
 		SELECT c.CustID, lc.speciallevel, lc.username2, lc.username,c.ugroup
 		FROM #tmpCust c
 			INNER JOIN bodb_licensee.dbo.LicenseeCustInfo lc WITH(NOLOCK) ON c.custid = lc.custid
+			INNER JOIN @OddsGroupList og ON og.uGroup = RIGHT(c.ugroup, 1)
 			LEFT JOIN bodb_licensee.dbo.LicenseeCustComm cc WITH(NOLOCK) ON c.custid = cc.custid AND cc.Licenseeid=@LicenseeID
 		WHERE 
 			(@SpecialLevel=-1 OR (@SpecialLevel<>-1 AND lc.SpecialLevel=@SpecialLevel)  )
@@ -140,7 +148,7 @@ BEGIN
 		IF ISNULL(@TotalRows,0) = 0
 		BEGIN
 			SELECT @TotalRows = COUNT(c.custid)
-			FROM @TempMember c 
+			FROM #TempMember c 
 		END
 
 		INSERT INTO #Temp (custid, username, closed, suspended, nickname, BAStatus, SpecialLevel,ugroup, RowNumber)
@@ -160,7 +168,7 @@ BEGIN
 						m.ugroup,
 						ROW_NUMBER() OVER (ORDER BY ci.custid asc) AS RowNumber 
 					FROM
-						@TempMember m 
+						#TempMember m 
 						INNER JOIN #tmpCust ci with(nolock) ON m.custid = ci.custid
 				) a 
 				WHERE a.rownumber BETWEEN @rowstart AND @rowend
@@ -169,13 +177,14 @@ BEGIN
 	END
 	ELSE IF @BAFilter=1
 	BEGIN
-		INSERT INTO @TempMember (CustID,speciallevel,username2,ugroup)
+		INSERT INTO #TempMember (CustID,speciallevel,username2,ugroup)
 		SELECT ci.CustID , lc.speciallevel,lc.username2,RIGHT(cu.ugroup,1)
 		FROM bodb_Licensee.dbo.LicenseeBAHistory lb with (nolock)
 			INNER JOIN CustInfo ci (NOLOCK) ON lb.custid = ci.custid
 			INNER JOIN Customer cu WITH (NOLOCK) ON ci.CustID = cu.custid 
 			INNER JOIN @TempAg t ON ci.recommend = t.custid
 			INNER JOIN bodb_licensee.dbo.LicenseeCustInfo lc WITH(NOLOCK) ON ci.custid = lc.custid
+			INNER JOIN @OddsGroupList og ON og.uGroup = RIGHT(cu.ugroup, 1)
 			LEFT JOIN bodb_licensee.dbo.LicenseeCustComm cc WITH(NOLOCK) ON ci.custid = cc.custid AND cc.Licenseeid=@LicenseeID
 		WHERE 
 			lb.LicenseeID=@LicenseeID
@@ -187,7 +196,7 @@ BEGIN
 		IF ISNULL(@TotalRows,0) = 0
 		BEGIN
 			SELECT @TotalRows = COUNT(c.custid)
-			FROM @TempMember c
+			FROM #TempMember c
 		END
 		INSERT INTO #Temp (custid, username,closed, suspended,nickname, BAStatus,SpecialLevel,ugroup, RowNumber)
 		SELECT * FROM 
@@ -203,7 +212,7 @@ BEGIN
 				m.ugroup,
 				ROW_NUMBER() OVER (ORDER BY ci.custid asc) AS RowNumber 
 			FROM
-				@TempMember m 
+				#TempMember m 
 				INNER JOIN CustInfo ci (NOLOCK) ON m.custid = ci.custid
 		) a 
 		WHERE 
@@ -222,10 +231,11 @@ BEGIN
 				AND ((@CustStatus='') OR (@CustStatus IN ('Open') AND closed=0) OR (@CustStatus='Closed' AND closed = 1))
 				AND ((@CustStatus IN ('','Closed')) OR (@CustStatus = 'Open' AND ISNULL(reject,0)=0) OR (@CustStatus = 'Suspended' AND ISNULL(reject,0)=1))
 
-		INSERT INTO @TempMember (CustID,speciallevel,username2,username,ugroup)
+		INSERT INTO #TempMember (CustID,speciallevel,username2,username,ugroup)
 		SELECT c.CustID, lc.speciallevel, lc.username2, lc.username,c.ugroup
 		FROM #tmpCust c
 			INNER JOIN bodb_licensee.dbo.LicenseeCustInfo lc WITH(NOLOCK) ON c.custid = lc.custid
+			INNER JOIN @OddsGroupList og ON og.uGroup = RIGHT(c.ugroup, 1)
 			LEFT JOIN bodb_Licensee.dbo.LicenseeBAHistory lb WITH(NOLOCK) ON LicenseeID=@LicenseeID AND c.custid = lb.custid AND lb.Status= 'Running'
 			LEFT JOIN bodb_licensee.dbo.LicenseeCustComm cc WITH(NOLOCK) ON c.custid = cc.custid AND cc.Licenseeid=@LicenseeID
 		WHERE 
@@ -236,7 +246,7 @@ BEGIN
 		IF ISNULL(@TotalRows,0) = 0
 		BEGIN
 			SELECT @TotalRows = COUNT(c.custid)
-			FROM @TempMember c
+			FROM #TempMember c
 		END		
 	
 		INSERT INTO #Temp (custid, username,closed,suspended,nickname, BAStatus,SpecialLevel,ugroup, RowNumber)
@@ -253,7 +263,7 @@ BEGIN
 				m.ugroup,
 				ROW_NUMBER() OVER (ORDER BY ci.custid asc) AS RowNumber 
 			FROM
-				@TempMember m 
+				#TempMember m 
 				INNER JOIN #tmpCust ci with(nolock) ON m.custid = ci.custid
 				
 		) a 
@@ -266,10 +276,12 @@ ELSE
 BEGIN
 	SET @username = LTRIM(RTRIM(@username))
 	
-	INSERT INTO @TempMember(CustID,speciallevel,username2)
+	INSERT INTO #TempMember(CustID,speciallevel,username2)
 	SELECT c.CustID ,null,null 
 	FROM bodb_Licensee.dbo.LicenseeCustinfo c WITH (NOLOCK) 
 		INNER JOIN @TempAg t ON c.recommend = t.custid
+		INNER JOIN dbo.Customer cu ON cu.custid = c.Custid
+		INNER JOIN @OddsGroupList og ON og.uGroup = RIGHT(cu.ugroup, 1)
 		LEFT JOIN bodb_licensee.dbo.LicenseeCustComm cc ON c.custid = cc.custid AND cc.Licenseeid=@LicenseeID
 	WHERE 
 		(c.username2 LIKE + '%$' + @Username + '%' OR c.username LIKE @Username + '%')
@@ -283,7 +295,7 @@ BEGIN
 			SELECT 
 				@TotalRows = COUNT(ci.custid)
 			FROM 
-				custinfo ci (nolock)  INNER JOIN @TempMember t ON ci.custid = t.custid
+				custinfo ci (nolock)  INNER JOIN #TempMember t ON ci.custid = t.custid
 				INNER JOIN bodb_licensee.dbo.LicenseeCustInfo lc WITH (NOLOCK) ON ci.custid = lc.custid
 			WHERE 
 				((@CustStatus='') OR (@CustStatus IN ('Open','Suspended') AND closed=0) OR (@CustStatus='Closed' AND closed = 1))
@@ -295,7 +307,7 @@ BEGIN
 			SELECT 
 				@TotalRows = COUNT(ci.custid)
 			FROM 
-				custinfo ci (nolock)  INNER JOIN @TempMember t ON ci.custid = t.custid
+				custinfo ci (nolock)  INNER JOIN #TempMember t ON ci.custid = t.custid
 				INNER JOIN bodb_licensee.dbo.LicenseeCustInfo lc WITH (NOLOCK) ON ci.custid = lc.custid
 				LEFT JOIN 
 						bodb_Licensee.dbo.LicenseeBAHistory lb WITH (nolock) ON LicenseeID = @LicenseeID AND ci.custid = lb.custid AND lb.Status= 'Running'
@@ -324,7 +336,7 @@ BEGIN
 			
 			ROW_NUMBER() OVER (ORDER BY ci.currency asc, ci.custid asc) AS RowNumber 
 		FROM
-			custinfo ci (nolock)  INNER JOIN @TempMember t ON ci.custid = t.custid
+			custinfo ci (nolock)  INNER JOIN #TempMember t ON ci.custid = t.custid
 			INNER JOIN bodb_licensee.dbo.LicenseeCustInfo lc WITH (NOLOCK) ON ci.custid = lc.custid
 			LEFT JOIN 
 				bodb_Licensee.dbo.LicenseeBAHistory lb WITH (nolock) ON LicenseeID = @LicenseeID AND ci.custid = lb.custid AND lb.Status= 'Running'
@@ -502,7 +514,7 @@ DROP TABLE #OutstandingTranslog
 DROP TABLE #Data
 DROP TABLE #ExchangeRate
 DROP TABLE #tmpCust
-
+DROP TABLE #TempMember
 
 GO 
  GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerSel] TO [vnteam]
