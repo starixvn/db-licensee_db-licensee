@@ -14,7 +14,7 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerSel]
 	@TotalRows INT = 0  OUTPUT,
 	@SpecialLevel INT = -1, --ALL
 	@GroupCommID INT = -1, --ALL	
-	@OddsGroups VARCHAR(100)
+	@OddsGroups VARCHAR(100) = ''
 AS
 
 /*
@@ -117,6 +117,7 @@ CREATE TABLE #TempMember (CustID INT PRIMARY KEY CLUSTERED, speciallevel int, us
 DECLARE @TempBACust AS TABLE (ID INT IDENTITY(1,1),CustID INT)
 DECLARE @CustID INT, @i INT, @max INT,@LastOffBy INT
 
+SET @OddsGroups = ISNULL(@OddsGroups,'')
 DECLARE @OddsGroupList TABLE (uGroup VARCHAR(3))
 
 INSERT INTO @OddsGroupList (uGroup)
@@ -140,11 +141,11 @@ BEGIN
 		SELECT c.CustID, lc.speciallevel, lc.username2, lc.username,c.ugroup
 		FROM #tmpCust c
 			INNER JOIN bodb_licensee.dbo.LicenseeCustInfo lc WITH(NOLOCK) ON c.custid = lc.custid
-			INNER JOIN @OddsGroupList og ON og.uGroup = RIGHT(c.ugroup, 1)
 			LEFT JOIN bodb_licensee.dbo.LicenseeCustComm cc WITH(NOLOCK) ON c.custid = cc.custid AND cc.Licenseeid=@LicenseeID
 		WHERE 
 			(@SpecialLevel=-1 OR (@SpecialLevel<>-1 AND lc.SpecialLevel=@SpecialLevel)  )
 			AND (@GroupCommID=-1 OR (@GroupCommID<>-1 AND ISNULL(cc.GroupCommID,0)=@GroupCommID ))
+			AND (@OddsGroups = '' OR RIGHT(c.ugroup, 1) IN (SELECT uGroup FROM @OddsGroupList))
 		IF ISNULL(@TotalRows,0) = 0
 		BEGIN
 			SELECT @TotalRows = COUNT(c.custid)
@@ -184,7 +185,6 @@ BEGIN
 			INNER JOIN Customer cu WITH (NOLOCK) ON ci.CustID = cu.custid 
 			INNER JOIN @TempAg t ON ci.recommend = t.custid
 			INNER JOIN bodb_licensee.dbo.LicenseeCustInfo lc WITH(NOLOCK) ON ci.custid = lc.custid
-			INNER JOIN @OddsGroupList og ON og.uGroup = RIGHT(cu.ugroup, 1)
 			LEFT JOIN bodb_licensee.dbo.LicenseeCustComm cc WITH(NOLOCK) ON ci.custid = cc.custid AND cc.Licenseeid=@LicenseeID
 		WHERE 
 			lb.LicenseeID=@LicenseeID
@@ -193,6 +193,7 @@ BEGIN
 			AND ((@CustStatus IN('','Closed')) OR (@CustStatus = 'Open' AND ISNULL(reject,0)=0) OR (@CustStatus = 'Suspended' AND ISNULL(reject,0)=1))
 			AND (@SpecialLevel=-1 OR (@SpecialLevel<>-1 AND lc.SpecialLevel=@SpecialLevel)  )
 			AND (@GroupCommID=-1 OR (@GroupCommID<>-1 AND ISNULL(cc.GroupCommID,0)=@GroupCommID ))
+			AND (@OddsGroups = '' OR RIGHT(cu.ugroup, 1) IN (SELECT uGroup FROM @OddsGroupList))
 		IF ISNULL(@TotalRows,0) = 0
 		BEGIN
 			SELECT @TotalRows = COUNT(c.custid)
@@ -235,13 +236,13 @@ BEGIN
 		SELECT c.CustID, lc.speciallevel, lc.username2, lc.username,c.ugroup
 		FROM #tmpCust c
 			INNER JOIN bodb_licensee.dbo.LicenseeCustInfo lc WITH(NOLOCK) ON c.custid = lc.custid
-			INNER JOIN @OddsGroupList og ON og.uGroup = RIGHT(c.ugroup, 1)
 			LEFT JOIN bodb_Licensee.dbo.LicenseeBAHistory lb WITH(NOLOCK) ON LicenseeID=@LicenseeID AND c.custid = lb.custid AND lb.Status= 'Running'
 			LEFT JOIN bodb_licensee.dbo.LicenseeCustComm cc WITH(NOLOCK) ON c.custid = cc.custid AND cc.Licenseeid=@LicenseeID
 		WHERE 
 			ISNULL(lb.CustID ,0)=0
 			AND (@SpecialLevel=-1 OR (@SpecialLevel<>-1 AND lc.SpecialLevel=@SpecialLevel)  )
 			AND (@GroupCommID=-1 OR (@GroupCommID<>-1 AND ISNULL(cc.GroupCommID,0)=@GroupCommID ))
+			AND (@OddsGroups = '' OR RIGHT(c.ugroup, 1) IN (SELECT uGroup FROM @OddsGroupList))
 		
 		IF ISNULL(@TotalRows,0) = 0
 		BEGIN
@@ -281,12 +282,11 @@ BEGIN
 	FROM bodb_Licensee.dbo.LicenseeCustinfo c WITH (NOLOCK) 
 		INNER JOIN @TempAg t ON c.recommend = t.custid
 		INNER JOIN dbo.Customer cu ON cu.custid = c.Custid
-		INNER JOIN @OddsGroupList og ON og.uGroup = RIGHT(cu.ugroup, 1)
 		LEFT JOIN bodb_licensee.dbo.LicenseeCustComm cc ON c.custid = cc.custid AND cc.Licenseeid=@LicenseeID
 	WHERE 
 		(c.username2 LIKE + '%$' + @Username + '%' OR c.username LIKE @Username + '%')
 		AND (@GroupCommID=-1 OR (@GroupCommID<>-1 AND ISNULL(cc.GroupCommID,0)=@GroupCommID ))
-	
+		AND (@OddsGroups = '' OR RIGHT(cu.ugroup, 1) IN (SELECT uGroup FROM @OddsGroupList))
 						
 	IF ISNULL(@TotalRows,0) = 0
 	BEGIN
