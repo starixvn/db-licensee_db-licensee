@@ -54,6 +54,7 @@ Revisions:
 	- 20150121@Jim: return more @OddsGroup param
 	- 20150306@Patrick: Copy BA member to Dep_ActiveBAMember table [Redmine: #31720]
 	- 20150513@Jim: set SB comm of BA member when BA status changing
+	- 20151015@Jim: Integrate Sportbook2 (Feature #44759)
 	
 Param's Explanation:
 
@@ -292,10 +293,9 @@ IF @isBA = 1 --enable BA
 		@v99apositiontaking_3 = 0 ,
 		@v99apositiontaking_9 = 0 ,
 		@v99apositiontaking_20 = 0 ,
-
 		--HR Fixed Odds
 		@v154apositiontaking_20 = 0 ,
-
+		@v44apositiontaking_3 =0,
 
 		@UserID = @ModifyBy,
 		@IP = @IP,
@@ -418,7 +418,7 @@ ELSE --disable BA
 					SET @ErrCode=0
 					SET @ErrMsg= ''
 					--apply commission
-																				EXEC [Lrf_CustomerUpdMemberBAComm]
+							 EXEC [Lrf_CustomerUpdMemberBAComm]
 							@LicenseeID = @LicenseeID,
 							@CustID = @CustID,
 							@ModifyBy = @ModifyBy,
@@ -456,7 +456,7 @@ ELSE --disable BA
 					@v2apositiontaking_7 SMALLMONEY,
 					@v2apositiontaking_8 SMALLMONEY,
 					@v2apositiontaking_20 SMALLMONEY,
-
+					
 					@v3apositiontaking_1 SMALLMONEY,
 					@v3apositiontaking_2 SMALLMONEY,
 					@v3apositiontaking_3 SMALLMONEY,
@@ -478,7 +478,7 @@ ELSE --disable BA
 
 					@v11apositiontaking_1 SMALLMONEY,
 					@v11apositiontaking_20 SMALLMONEY,
-
+					
 					@v99apositiontaking_1 SMALLMONEY,
 					@v99apositiontaking_2 SMALLMONEY,
 					@v99apositiontaking_3 SMALLMONEY,
@@ -487,7 +487,9 @@ ELSE --disable BA
 					
 					--HR Fixed Odds
 					@v154apositiontaking_20 SMALLMONEY,
-
+					--SB2
+					@v44apositiontaking_3 SMALLMONEY,
+					
 					@recommend INT
 
 					SELECT @recommend = recommend FROM custinfo (NOLOCK) WHERE custid = @CustID
@@ -508,7 +510,7 @@ ELSE --disable BA
 						@alivepositiontaking_3 = ISNULL(MAX(CASE WHEN cs.bettype = 3 AND cs.sporttype=1 AND cs.islive=1 THEN cs.apositiontaking ELSE 0 END), 0),
 						@alivepositiontaking_7 = ISNULL(MAX(CASE WHEN cs.bettype = 7 AND cs.sporttype=1 AND cs.islive=1 THEN cs.apositiontaking ELSE 0 END), 0),
 						@alivepositiontaking_8 = ISNULL(MAX(CASE WHEN cs.bettype = 8 AND cs.sporttype=1 AND cs.islive=1 THEN cs.apositiontaking ELSE 0 END), 0),
-
+						
 						@v2apositiontaking_1 = ISNULL(MAX(CASE WHEN cs.bettype = 1 AND cs.sporttype=2 THEN cs.apositiontaking ELSE 0 END), 0),
 						@v2apositiontaking_2 = ISNULL(MAX(CASE WHEN cs.bettype = 2 AND cs.sporttype=2 THEN cs.apositiontaking ELSE 0 END), 0),
 						@v2apositiontaking_3 = ISNULL(MAX(CASE WHEN cs.bettype = 3 AND cs.sporttype=2 THEN cs.apositiontaking ELSE 0 END), 0),
@@ -548,7 +550,9 @@ ELSE --disable BA
 						@v99apositiontaking_20 = ISNULL(MAX(CASE WHEN cs.bettype = 20 AND cs.sporttype=99 THEN cs.apositiontaking ELSE 0 END), 0),
 
 						--HR Fixed Odds
-						@v154apositiontaking_20 = ISNULL(MAX(CASE WHEN cs.bettype = 20 AND cs.sporttype=154 THEN cs.apositiontaking ELSE 0 END), 0)
+						@v154apositiontaking_20 = ISNULL(MAX(CASE WHEN cs.bettype = 20 AND cs.sporttype=154 THEN cs.apositiontaking ELSE 0 END), 0),
+						--SB2
+						@v44apositiontaking_3 = ISNULL(MAX(CASE WHEN cs.bettype = 3 AND cs.sporttype=44 THEN cs.apositiontaking ELSE 0 END), 0)
 
 					FROM
 						CustInfo AS c WITH (NOLOCK)
@@ -613,7 +617,7 @@ ELSE --disable BA
 					@v99apositiontaking_20 = @v99apositiontaking_20 ,
 
 					@v154apositiontaking_20 = @v154apositiontaking_20 ,
-
+					@v44apositiontaking_3 = @v44apositiontaking_3 ,
 					@UserID = @ModifyBy,
 					@IsAdmin = @IsAdmin,
 					@IP = @IP,
