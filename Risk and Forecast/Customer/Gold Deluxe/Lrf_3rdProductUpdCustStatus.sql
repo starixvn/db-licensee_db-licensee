@@ -1,5 +1,5 @@
 
-ALTER PROCEDURE dbo.Lrf_3rdProductUpdCustStatus_uat1 @CustID INT
+ALTER PROCEDURE dbo.Lrf_3rdProductUpdCustStatus @CustID INT
 	, @ProductId INT
 	, @IsEnabled BIT
 	, @UserID INT
@@ -134,5 +134,5 @@ END
 GO
 
 GO 
- GRANT EXECUTE ON [dbo].[Lrf_3rdProductUpdCustStatus_uat1] TO [bodbLicenseeNet]
+ GRANT EXECUTE ON [dbo].[Lrf_3rdProductUpdCustStatus] TO [bodbLicenseeNet]
 GO 
