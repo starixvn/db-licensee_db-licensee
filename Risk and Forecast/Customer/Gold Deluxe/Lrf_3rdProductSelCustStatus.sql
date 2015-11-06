@@ -1,5 +1,5 @@
  
-ALTER PROCEDURE dbo.Lrf_3rdProductSelCustStatus_uat1 @CustID INT
+ALTER PROCEDURE dbo.Lrf_3rdProductSelCustStatus @CustID INT
 	, @ProductId INT
 	, @IsEnabled BIT = NULL OUTPUT
 	, @IsLineEnabled BIT = NULL OUTPUT
@@ -69,8 +69,8 @@ BEGIN
 	
 END
 
-GRANT EXECUTE ON [dbo].[Lrf_3rdProductSelCustStatus_uat1] TO [bodbLicenseeNet]
+GRANT EXECUTE ON [dbo].[Lrf_3rdProductSelCustStatus] TO [bodbLicenseeNet]
  
 GO 
-GRANT EXECUTE ON [dbo].[Lrf_3rdProductSelCustStatus_uat1] TO [bodbLicenseeNet]
+GRANT EXECUTE ON [dbo].[Lrf_3rdProductSelCustStatus] TO [bodbLicenseeNet]
 GO 
