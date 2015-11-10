@@ -826,7 +826,7 @@ BEGIN
 	END
 
 	-- Microgaming RNG Game
-	IF @ShowMGCLC = 1
+	IF @ShowMGCRNG = 1
 	BEGIN
 		IF @ToDate >= DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)
 			AND @FromDate <= DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- today
