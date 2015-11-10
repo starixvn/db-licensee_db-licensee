@@ -46,7 +46,7 @@ BEGIN
 			p.ProductId
 			,p.ProductName
 			,p.ProductPrefix AS  ProductCode
-			,CASE WHEN p.ProductID IN (10,11,12,14) THEN 0 ELSE 1 END 
+			,CASE WHEN p.ProductID IN (10,11,12,14,17) THEN 0 ELSE 1 END 
 		FROM dbo.Product3rd p WITH (NOLOCK) 
 			INNER JOIN dbo.LicenseeProduct3rd lp WITH (NOLOCK) ON p.ProductId = lp.ProductId 	
 		WHERE lp.LicenseeID  = @LicenseeID
