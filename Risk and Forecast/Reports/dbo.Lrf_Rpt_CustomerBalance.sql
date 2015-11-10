@@ -26,7 +26,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerBalance]
 	@ShowBG  BIT=0 , -- Bingo     
 	@ShowKN   		BIT = 0, -- Keno ,
 	@ShowBT   		BIT = 0, -- Bet Trade ,
-	@ShowMGC BIT=0,
+	@ShowMGCLC BIT=0,
+	@ShowMGCRnG BIT=0,
 	@ShowAGC BIT=0
   
 AS /*  
@@ -50,6 +51,7 @@ Revisions:
    -20150612@Jim: support MicroGaming
    -20150630@Winnie: support Bettrade
    -20150930@Florent: support AGC
+   -20151108@Jim: Separated MicroGaming into 2 product
 Param's Explanation:  
  + @excludeTest: remove currency UUS  
  + @TopCount:   
@@ -93,7 +95,8 @@ IF @ShowVS = 1 INSERT INTO @sporttype(sporttype) VALUES(180)
 IF @ShowCS = 1 INSERT INTO @sporttype(sporttype) VALUES(251) -- RNG Casino  
 IF @ShowBG = 1 INSERT INTO @sporttype(sporttype) VALUES(252) -- Bingo    
 IF @ShowKN = 1 INSERT INTO @sporttype(sporttype) VALUES(202) -- Keno    
-IF @ShowMGC = 1 INSERT INTO @sporttype(sporttype) VALUES(203) -- MicroGaming
+IF @ShowMGCLC = 1 INSERT INTO @sporttype(sporttype) VALUES(203) -- MicroGaming
+IF @ShowMGCRnG = 1 INSERT INTO @sporttype(sporttype) VALUES(205) -- MicroGaming
 IF @ShowAGC = 1 INSERT INTO @sporttype(sporttype) VALUES(250) -- AGC
 IF @ShowBT = 1 
 BEGIN

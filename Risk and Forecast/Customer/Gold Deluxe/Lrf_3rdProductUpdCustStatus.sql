@@ -25,6 +25,7 @@ AS
 	Revisions:
 		-20150609@Jim: support product microgaming
 		-20151022@Jim: support #44780
+		-20151108@Jim: Separated MicroGaming into 2 product
 	Param's Explanation:
 */
 BEGIN
@@ -70,7 +71,7 @@ BEGIN
 	UPDATE dbo.Dep_CustProductSetting WITH (ROWLOCK, UPDLOCK)
 	SET IsEnabled = @IsEnabled
 	WHERE ProductId=@ProductId AND CustID IN (SELECT CustID FROM #CustList)
-		AND @ProductId<>14
+		AND @ProductId NOT IN (14,17)
 	IF(@@ERROR<>0)
 	BEGIN
 	SELECT @ErrMsg='Could not update'
@@ -92,10 +93,15 @@ BEGIN
 	ELSE IF (@ProductID = 14)
 		BEGIN 
 			UPDATE dbo.CustInfo WITH (ROWLOCK,UPDLOCK)
-			SET DisableMicrogame = CASE @IsEnabled WHEN 1 THEN 0 ELSE 1 END
+			SET DisableMicrogameLC = CASE @IsEnabled WHEN 1 THEN 0 ELSE 1 END
 			WHERE CustID = @CustID	
 		END
-		
+	ELSE IF (@ProductID = 17)
+		BEGIN 
+			UPDATE dbo.CustInfo WITH (ROWLOCK,UPDLOCK)
+			SET DisableMicrogameRnG = CASE @IsEnabled WHEN 1 THEN 0 ELSE 1 END
+			WHERE CustID = @CustID	
+		END	
 	-- Write log
 	SET @endRun = GETDATE()
 	SET @duration  = DATEDIFF(MILLISECOND,@startRun,@endRun)

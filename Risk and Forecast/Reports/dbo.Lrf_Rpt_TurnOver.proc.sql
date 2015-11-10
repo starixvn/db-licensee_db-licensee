@@ -18,7 +18,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_TurnOver]
     @ShowBG			BIT=0, --- Bingo
     @ShowKN			BIT=0 ,-- Keno 
 	@ShowBT			BIT=0 ,-- Bet Trade 
-	@ShowMGC 		BIT=0,
+	@ShowMGCLC 		BIT=0,
+	@ShowMGCRnG 	BIT=0,
 	@ShowAGC		BIT=0
 	
 AS 
@@ -50,6 +51,7 @@ Revisions:
    - 20150612@Jim: support MicroGaming
    - 20150630@Winnie: support Bet Trade
    - 20150921@Jim: Implement the changes on reports for AG Casino (#43172)
+   - 20151108@Jim: Separated MicroGaming into 2 product
 Param's Explanation:
     + @excludeTest: remove currency UUS
     + @CurrencyID = 0: get all currency
@@ -99,12 +101,13 @@ IF @ShowVS = 1 INSERT INTO @sporttype(sporttype) VALUES(180)
 IF @ShowCS = 1 INSERT INTO @sporttype(sporttype) VALUES(251)
 IF @ShowBG = 1 INSERT INTO @sporttype(sporttype) VALUES(252)
 IF @ShowKN = 1 INSERT INTO @sporttype(sporttype) VALUES(202)--Keno
-IF @ShowMGC = 1 INSERT INTO @sporttype(sporttype) VALUES(203)
+IF @ShowMGCLC = 1 INSERT INTO @sporttype(sporttype) VALUES(203)
+IF @ShowMGCRnG = 1 INSERT INTO @sporttype(sporttype) VALUES(205)
 IF @ShowAGC =1 INSERT INTO @sporttype(sporttype) VALUES(250)
 IF @ShowBT = 1 
 BEGIN
-INSERT INTO @sporttype(sporttype) VALUES(-2)
-INSERT INTO @sporttype(sporttype) VALUES(-3)
+	INSERT INTO @sporttype(sporttype) VALUES(-2)
+	INSERT INTO @sporttype(sporttype) VALUES(-3)
 END 
 IF @username <> ''
 BEGIN
