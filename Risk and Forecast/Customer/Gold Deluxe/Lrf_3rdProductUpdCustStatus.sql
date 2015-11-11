@@ -77,7 +77,7 @@ BEGIN
 	SELECT @ErrMsg='Could not update'
 	RETURN
 	END
-	IF (@ProductId<>14)
+	IF @ProductId NOT IN (14,17)
 	BEGIN
 		INSERT INTO dbo.Dep_CustProductSetting (CustID, ProductId, IsEnabled)
 		SELECT CustID, @ProductId, @IsEnabled	
