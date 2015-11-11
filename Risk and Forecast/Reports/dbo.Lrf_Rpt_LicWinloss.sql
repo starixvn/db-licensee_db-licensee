@@ -2,10 +2,6 @@
 GO
  
  
-GO
-SET QUOTED_IDENTIFIER ON
-GO
- 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]  
  @LicenseeID	INT,
  @UserID		INT, 
@@ -1304,8 +1300,8 @@ SELECT
    SUM(TurnoverCS)       AS TurnoverCS,
    SUM(TurnoverBG)       AS TurnoverBG,
    SUM(TurnoverKN)       AS TurnoverKN,
-   SUM(TurnoverMGC)       AS TurnoverMGCLC,
-   SUM(TurnoverMGC)       AS TurnoverMGCRnG,
+   SUM(TurnoverMGCLC)       AS TurnoverMGCLC,
+   SUM(TurnoverMGCRnG)       AS TurnoverMGCRnG,
    SUM(TurnoverAGC)       AS TurnoverAGC,
    SUM(Winlost)        AS Winlost,  
    --SUM(LicenseeWL)     AS LicenseeWL,
@@ -1318,8 +1314,8 @@ SELECT
    SUM(LicenseeWLCS)   AS LicenseeWLCS,
    SUM(LicenseeWLBG)   AS LicenseeWLBG,
    SUM(LicenseeWLKN)   AS LicenseeWLKN,
-   SUM(LicenseeWLMGC)   AS LicenseeWLMGCLC,
-   SUM(LicenseeWLMGC)   AS LicenseeWLMGCRnG,
+   SUM(LicenseeWLMGCLC)   AS LicenseeWLMGCLC,
+   SUM(LicenseeWLMGCRnG)   AS LicenseeWLMGCRnG,
    SUM(LicenseeWLAGC)   AS LicenseeWLAGC,
   --SUM(WinlossRB)	   AS WinlossRB,
    SUM(CommBA)         AS CommBA,
@@ -1499,7 +1495,7 @@ DROP TABLE #TempExchange
  
  
 END   
-/*	Lrf_Rpt_LicWinloss
+/*	Lrf_Rpt_LicWinloss_xpre
 	@LicenseeID=1,
 	@Fromdate='2012-08-01',
 	@Todate='2012-08-20',
@@ -1511,7 +1507,6 @@ END
 	@ShowVS=1,
 	@Movebetsday='2012-08-23'
 */
-
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_LicWinloss] TO [bodbLicenseeNet]  
 GO
