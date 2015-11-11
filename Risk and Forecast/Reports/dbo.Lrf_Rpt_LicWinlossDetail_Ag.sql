@@ -848,7 +848,7 @@ BEGIN
 						ELSE 1 END
 					ELSE 1 END
 			ELSE 0 END) AS turnoverMGCLC,
-			SUM(CASE WHEN b.sporttype=203 THEN 
+			SUM(CASE WHEN b.sporttype=205 THEN 
 				b.turnover
 				*
 					CASE WHEN @drawfilter IN (2,3) THEN
