@@ -851,7 +851,7 @@ BEGIN
 						ELSE 1 END
 					ELSE 1 END
 			ELSE 0 END) AS turnoverMGCLC,
-			SUM(CASE WHEN b.sporttype=207 THEN --MicroGaming
+			SUM(CASE WHEN b.sporttype=205 THEN --MicroGaming
 				b.turnover
 				*
 					CASE WHEN @drawfilter IN (2,3) THEN
@@ -881,7 +881,7 @@ BEGIN
 			-SUM(CASE WHEN b.sporttype=252 THEN b.winlost ELSE 0 END) AS LicenseeWLBG,
 			-SUM(CASE WHEN b.sporttype=202 THEN b.winlost ELSE 0 END) AS LicenseeWLKN,--Keno
 			-SUM(CASE WHEN b.sporttype=203 THEN b.winlost ELSE 0 END) AS LicenseeWLMGCLC,--MGC
-			-SUM(CASE WHEN b.sporttype=207 THEN b.winlost ELSE 0 END) AS LicenseeWLMGCRnG,--MGC
+			-SUM(CASE WHEN b.sporttype=205 THEN b.winlost ELSE 0 END) AS LicenseeWLMGCRnG,--MGC
 			-SUM(CASE WHEN b.sporttype=250 THEN b.winlost ELSE 0 END) AS LicenseeWLAGC,--AGC
 			--SUM(CASE WHEN  b.sporttype=151 THEN b.awinlost ELSE 0 END) AS WinlossRB,
 			0 as AmountDueToBA,
@@ -1149,7 +1149,7 @@ BEGIN
 						ELSE 1 END
 					ELSE 1 END
 			ELSE 0 END) AS turnoverMGCLC,
-			SUM(CASE WHEN b.sporttype=207 THEN --MGC
+			SUM(CASE WHEN b.sporttype=205 THEN --MGC
 				b.turnover
 				*
 					CASE WHEN @drawfilter IN (2,3) THEN

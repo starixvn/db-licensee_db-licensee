@@ -1,7 +1,7 @@
 ﻿USE [bodb02]
 GO
  
-CREATE PROCEDURE [dbo].[Lrf_Rpt_LicWinlossDetail_Ag]   
+ALTER  PROCEDURE [dbo].[Lrf_Rpt_LicWinlossDetail_Ag]   
  @LicenseeID	INT,
  @UserID		INT,
  @CurrencyID	INT = 0, 
@@ -85,7 +85,6 @@ CREATE TABLE #SAgWinLoss (
 	TurnoverCS 		MONEY,
 	TurnoverBG		MONEY,
 	TurnoverKN		MONEY,
-	TurnoverMGC		MONEY,
 	TurnoverMGCLC		MONEY,
 	TurnoverMGCRnG		MONEY,
 	TurnoverAGC		MONEY,
@@ -880,7 +879,7 @@ BEGIN
 			- SUM(CASE WHEN b.sporttype=252 THEN b.winlost ELSE 0 END) AS LicenseeWLBG,
 			- SUM(CASE WHEN b.sporttype=202 THEN b.winlost ELSE 0 END) AS LicenseeWLKN,
 			- SUM(CASE WHEN b.sporttype=203 THEN b.winlost ELSE 0 END) AS LicenseeWLMGCLC,
-			- SUM(CASE WHEN b.sporttype=207 THEN b.winlost ELSE 0 END) AS LicenseeWLMGCRnG,
+			- SUM(CASE WHEN b.sporttype=205 THEN b.winlost ELSE 0 END) AS LicenseeWLMGCRnG,
 			- SUM(CASE WHEN b.sporttype=250 THEN b.winlost ELSE 0 END) AS LicenseeWLAGC,
 			--SUM(CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS WinlossRB,
 			0 AS AmountDueToBA,
@@ -1147,7 +1146,7 @@ BEGIN
 						ELSE 1 END
 					ELSE 1 END
 			ELSE 0 END) AS turnoverMGCLC,
-			SUM(CASE WHEN b.sporttype=207 THEN 
+			SUM(CASE WHEN b.sporttype=205 THEN 
 				b.turnover
 				*
 					CASE WHEN @drawfilter IN (2,3) THEN
@@ -1176,7 +1175,7 @@ BEGIN
 			-SUM(CASE WHEN b.sporttype=252 THEN b.winlost ELSE 0 END) AS LicenseeWLBG,
 			-SUM(CASE WHEN b.sporttype=202 THEN b.winlost ELSE 0 END) AS LicenseeWLKN,
 			-SUM(CASE WHEN b.sporttype=203 THEN b.winlost ELSE 0 END) AS LicenseeWLMGCLC,
-			-SUM(CASE WHEN b.sporttype=207 THEN b.winlost ELSE 0 END) AS LicenseeWLMGCRnG,
+			-SUM(CASE WHEN b.sporttype=205 THEN b.winlost ELSE 0 END) AS LicenseeWLMGCRnG,
 			-SUM(CASE WHEN b.sporttype=250 THEN b.winlost ELSE 0 END) AS LicenseeWLAGC,
 			0 AS AmountDueToBA,
 			- SUM ( CASE WHEN b.sporttype = 151 THEN (b.winlost+b.awinlost+b.comm) ELSE 0 END) AS AmountDueToRB,
@@ -1293,8 +1292,8 @@ WHERE exchangeid IN (SELECT DISTINCT Currency FROM #SAgWinLoss)
 	   SUM(TurnoverCS)       AS TurnoverCS,
 	   SUM(TurnoverBG)       AS TurnoverBG,	   
 	   SUM(TurnoverKN)       AS TurnoverKN,	
-	   SUM(TurnoverMGC)       AS TurnoverMGCLC,	
-	   SUM(TurnoverMGC)       AS TurnoverMGCRnG,
+	   SUM(TurnoverMGCLC)       AS TurnoverMGCLC,	
+	   SUM(TurnoverMGCRnG)       AS TurnoverMGCRnG,
 	   SUM(TurnoverAGC)       AS TurnoverAGC,
 	   SUM(Winlost)		 AS Winlost,  
 	   --SUM(LicenseeWL)   AS LicenseeWL,
@@ -1307,8 +1306,8 @@ WHERE exchangeid IN (SELECT DISTINCT Currency FROM #SAgWinLoss)
 	   SUM(LicenseeWLCS) AS LicenseeWLCS,
 	   SUM(LicenseeWLBG) AS LicenseeWLBG,
 	   SUM(LicenseeWLKN) AS LicenseeWLKN,
-	   SUM(LicenseeWLMGC) AS LicenseeWLMGCLC, 
-	   SUM(LicenseeWLMGC) AS LicenseeWLMGCRnG, 
+	   SUM(LicenseeWLMGCLC) AS LicenseeWLMGCLC, 
+	   SUM(LicenseeWLMGCRnG) AS LicenseeWLMGCRnG, 
 	   SUM(LicenseeWLAGC) AS LicenseeWLAGC, 
 	   --SUM(WinlossRB)	AS WinlossRB,
 	   SUM(CommBA) AS CommBA,
@@ -1376,7 +1375,7 @@ WHERE exchangeid IN (SELECT DISTINCT Currency FROM #SAgWinLoss)
 	   CAST(SUM(LicenseeWLCS*e.USD)	AS MONEY)	 		AS LicenseeWLCSUSD,
 	   CAST(SUM(LicenseeWLBG*e.USD)AS MONEY)	 		AS LicenseeWLBGUSD,
 	   CAST(SUM(LicenseeWLKN*e.USD)AS MONEY)			AS LicenseeWLKNUSD,
-	   CAST(SUM(LicenseeWLMGCL*e*e.USD)AS MONEY)			AS LicenseeWLMGCLCUSD,
+	   CAST(SUM(LicenseeWLMGCLC*e.USD)AS MONEY)			AS LicenseeWLMGCLCUSD,
 	   CAST(SUM(LicenseeWLMGCRnG*e.USD)AS MONEY)			AS LicenseeWLMGCRnGUSD,
 	   CAST(SUM(LicenseeWLAGC*e.USD)AS MONEY)			AS LicenseeWLAGCUSD,
 	   --CAST(SUM(WinlossRB*e.USD)	 AS MONEY)          AS WinlossRBUSD,
@@ -1477,12 +1476,6 @@ DROP TABLE #SAgWinLoss
 DROP TABLE #TempExchange
 
 END 
-
-
-
-
-
-
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_LicWinlossDetail_Ag] TO [bodbLicenseeNet]

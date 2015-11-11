@@ -811,7 +811,7 @@ BEGIN
 						ELSE 1 END
 					ELSE 1 END
 			ELSE 0 END) AS turnoverMGCLC,
-			SUM(CASE WHEN b.sporttype=207 THEN 
+			SUM(CASE WHEN b.sporttype=205 THEN 
 				b.turnover
 				*
 					CASE WHEN @drawfilter IN (2,3) THEN
@@ -841,7 +841,7 @@ BEGIN
 			- SUM(CASE WHEN b.sporttype=252 THEN b.winlost ELSE 0 END ) AS LicenseeWLBG,
 			- SUM(CASE WHEN b.sporttype=202 THEN b.winlost ELSE 0 END ) AS LicenseeWLKN,
 			- SUM(CASE WHEN b.sporttype=203 THEN b.winlost ELSE 0 END ) AS LicenseeWLMGCLC,
-			- SUM(CASE WHEN b.sporttype=207 THEN b.winlost ELSE 0 END ) AS LicenseeWLMGCRnG,
+			- SUM(CASE WHEN b.sporttype=205 THEN b.winlost ELSE 0 END ) AS LicenseeWLMGCRnG,
 			- SUM(CASE WHEN b.sporttype=250 THEN b.winlost ELSE 0 END ) AS LicenseeWLAGC,
 			0 as AmountDueToBA,
 			- SUM ( CASE WHEN b.sporttype = 151 THEN (b.winlost+b.awinlost+b.comm) ELSE 0 END) as AmountDueToRB,
@@ -1103,7 +1103,7 @@ BEGIN
 						ELSE 1 END
 					ELSE 1 END
 			ELSE 0 END) AS turnoverMGCLC,
-			SUM(CASE WHEN b.sporttype=207 THEN 
+			SUM(CASE WHEN b.sporttype=205 THEN 
 				b.turnover
 				*
 					CASE WHEN @drawfilter IN (2,3) THEN
@@ -1134,7 +1134,7 @@ BEGIN
 			- SUM(CASE WHEN b.sporttype=252 THEN b.winlost ELSE 0 END ) AS LicenseeWLBG,
 			- SUM(CASE WHEN b.sporttype=202 THEN b.winlost ELSE 0 END ) AS LicenseeWLKN,
 			- SUM(CASE WHEN b.sporttype=203 THEN b.winlost ELSE 0 END ) AS LicenseeWLMGCLC,
-			- SUM(CASE WHEN b.sporttype=207 THEN b.winlost ELSE 0 END ) AS LicenseeWLMGCRnG,
+			- SUM(CASE WHEN b.sporttype=205 THEN b.winlost ELSE 0 END ) AS LicenseeWLMGCRnG,
 			- SUM(CASE WHEN b.sporttype=250 THEN b.winlost ELSE 0 END ) AS LicenseeWLAGC,
 			0 as AmountDueToBA,
 			- SUM ( CASE WHEN b.sporttype = 151 THEN (b.winlost+b.awinlost+b.comm) ELSE 0 END) as AmountDueToRB,
