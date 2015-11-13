@@ -248,17 +248,7 @@ BEGIN
 	WHERE (typeid BETWEEN 1801 AND 1899) 
 	
 END
-IF @ShowAGC = 1 -- AG Casino
-BEGIN 
-	
-	INSERT INTO @sporttype (sporttype)
-	VALUES(250)
 
-	INSERT INTO @bettype(bettype)
-	SELECT typeid FROM bettype (NOLOCK)
-	WHERE (typeid BETWEEN 1800 AND 1899) 
-	
-END
 
 
 CREATE TABLE #TempData
