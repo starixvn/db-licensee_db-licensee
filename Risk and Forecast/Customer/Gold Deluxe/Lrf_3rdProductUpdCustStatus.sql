@@ -1,14 +1,7 @@
-SET QUOTED_IDENTIFIER OFF 
+USE [CustDB]
 GO
-SET ANSI_NULLS ON 
-GO
-
-/****** Object:  Stored Procedure dbo.Lrf_3rdProductUpdCustStatus    Script Date: 7/22/2015 1:09:34 PM ******/
-
  
-
-/****** Object:  Stored Procedure dbo.Lrf_3rdProductUpdCustStatus    Script Date: 6/10/2015 10:51:17 AM ******/
-CREATE PROCEDURE	dbo.Lrf_3rdProductUpdCustStatus  
+ALTER PROCEDURE	[dbo].[Lrf_3rdProductUpdCustStatus]  
 	@CustID		INT,
 	@ProductId	INT,
 	@IsEnabled	BIT,
@@ -92,12 +85,20 @@ BEGIN
 	--- MicroGaming
 	ELSE IF (@ProductID = 14)
 		BEGIN 
+			SELECT @IsEnable_Old = ISNULL(DisableMicrogameLC,0)
+			FROM dbo.CustInfo WITH (NOLOCK)
+			WHERE CustID = @CustId  
+			
 			UPDATE dbo.CustInfo WITH (ROWLOCK,UPDLOCK)
 			SET DisableMicrogameLC = CASE @IsEnabled WHEN 1 THEN 0 ELSE 1 END
 			WHERE CustID = @CustID	
 		END
 	ELSE IF (@ProductID = 17)
 		BEGIN 
+			SELECT @IsEnable_Old = ISNULL(DisableMicrogameRnG,0)
+			FROM dbo.CustInfo WITH (NOLOCK)
+			WHERE CustID = @CustId 
+			
 			UPDATE dbo.CustInfo WITH (ROWLOCK,UPDLOCK)
 			SET DisableMicrogameRnG = CASE @IsEnabled WHEN 1 THEN 0 ELSE 1 END
 			WHERE CustID = @CustID	
@@ -139,16 +140,6 @@ BEGIN
 				    @duration = @duration
     END CATCH
 END
-
-
-
-GO
-
-SET QUOTED_IDENTIFIER OFF 
-GO
-SET ANSI_NULLS ON 
-GO
-
 
 GO 
  GRANT EXECUTE ON [dbo].[Lrf_3rdProductUpdCustStatus] TO [bodbLicenseeNet]
