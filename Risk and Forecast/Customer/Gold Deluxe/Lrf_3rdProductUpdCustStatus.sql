@@ -85,7 +85,7 @@ BEGIN
 	--- MicroGaming
 	ELSE IF (@ProductID = 14)
 		BEGIN 
-			SELECT @IsEnable_Old = ISNULL(DisableMicrogameLC,0)
+			SELECT @IsEnable_Old =  CASE ISNULL(DisableMicrogameLC,0) WHEN 1 THEN 0 ELSE 1 END
 			FROM dbo.CustInfo WITH (NOLOCK)
 			WHERE CustID = @CustId  
 			
@@ -95,7 +95,7 @@ BEGIN
 		END
 	ELSE IF (@ProductID = 17)
 		BEGIN 
-			SELECT @IsEnable_Old = ISNULL(DisableMicrogameRnG,0)
+			SELECT @IsEnable_Old = CASE ISNULL(DisableMicrogameRnG,0) WHEN 1 THEN 0 ELSE 1 END
 			FROM dbo.CustInfo WITH (NOLOCK)
 			WHERE CustID = @CustId 
 			
