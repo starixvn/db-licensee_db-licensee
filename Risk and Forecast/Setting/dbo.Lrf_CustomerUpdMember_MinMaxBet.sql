@@ -1644,7 +1644,6 @@ EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
 
 ---------------------------------------------------------
 
-
 GO
 GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMember_MinMaxBet] TO [bodbLicenseeNet]
 GO
