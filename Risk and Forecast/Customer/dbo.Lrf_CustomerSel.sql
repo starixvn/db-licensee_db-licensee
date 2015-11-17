@@ -50,7 +50,8 @@ AS
 	- 20150626@Jim: support MicroGaming (feature #37034)
 	- 20150917@Florent: Change datasource for AG Casino (#Redmine 43172)
 	- 20151102@Victor: Add Odds Group filter to Customer List [Redmine: #46312]
-
+	-20151108@Jim: Separated MicroGaming into 2 product
+	
 	Param's Explanation:
 	  + @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 	  + @SpecialLevel: default value = -1 (all)
@@ -107,7 +108,7 @@ CREATE TABLE #OutstandingTranslog
 (
 	Custid int,
 	Currency INT,
-	ProductID int,
+	--ProductID int,
 	statusID tinyint,
 	actual_stake money
 )
@@ -409,7 +410,7 @@ END
 UPDATE #Temp SET IsPowerBAUserTurnoff = 0 WHERE IsPowerBAUserTurnoff IS NULL
 
 INSERT INTO #OutstandingTranslog
-SELECT tl.custid,tl.currency,productID,statusID,sum(actual_stake) actual_stacke
+SELECT tl.custid,tl.currency ,statusID,sum(actual_stake) actual_stacke
 FROM dbo.translog tl WITH (NOLOCK)
 		INNER JOIN @TempAg lc ON tl.recommend=lc.CustID
 WHERE statusID IN (0,1)  --running and Waiting
@@ -417,14 +418,14 @@ WHERE statusID IN (0,1)  --running and Waiting
 GROUP BY tl.custid,tl.currency,productID,statusID
 --- MicroGamming RNG
 INSERT INTO #OutstandingTranslog
-SELECT g.custid,g.currency,14 productID,statusID,sum(g.actual_stake) actual_stacke
+SELECT g.custid,g.currency ,statusID,sum(g.actual_stake) actual_stacke
 FROM dbo.bettransRnG g WITH (NOLOCK)
 	INNER JOIN @TempAg lc ON g.recommend=lc.CustID
 WHERE g.statusID IN (0,1)  --running and Waiting		
 GROUP BY   g.custid,g.currency,statusID
 --- AG Casino
 INSERT INTO #OutstandingTranslog
-SELECT g.custid,g.currency,10 productID,statusID,sum(g.actual_stake) actual_stacke
+SELECT g.custid,g.currency ,statusID,sum(g.actual_stake) actual_stacke
 FROM dbo.bettransLC g WITH (NOLOCK)
 	INNER JOIN @TempAg lc ON g.recommend = lc.CustID
 WHERE g.statusID IN (0, 1)  --running and Waiting		
@@ -505,7 +506,7 @@ SELECT d.custid ,
 	,GroupCommID
 	,UPPER(OddsGroup)OddsGroup
 FROM #Data d 
-LEFT JOIN #OutstandingTranslog tl ON d.custid= tl.Custid
+LEFT JOIN (SELECT SUM(actual_stake)actual_stake ,Custid,Currency FROM #OutstandingTranslog  GROUP BY Custid,Currency)tl ON d.custid= tl.Custid
 LEFT JOIN #ExchangeRate e ON tl.Currency=e.exchangeid
 ORDER BY d.username
 
