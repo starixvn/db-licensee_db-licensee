@@ -165,6 +165,26 @@ BEGIN
 								 ,Winlost  	
 								 ,LicenseeWinlost 
 								)
+	END	
+				
+							
+	END	
+	IF @FromDate <= @MoveBetsDay 
+	BEGIN
+		IF @ToDate >= @MoveBetsDay
+				SET @TempToDate = @MoveBetsDay
+			ELSE
+				SET  @TempToDate = @ToDate
+				
+		INSERT INTO #tmpResult ( Winlostdate
+								 ,Currency 
+								 ,TypeID	
+								 ,TypeName
+								 ,TurnOver 	
+								 ,TotalTrans
+								 ,Winlost  	
+								 ,LicenseeWinlost 
+								)
 
 		SELECT 
 		   b.rptDate Winlostdate		
@@ -178,7 +198,20 @@ BEGIN
 	FROM  bodb_LicenseeReport.dbo.rpt_ThirdPartyWL_ExtraGMT b  WITH (NOLOCK)
 		  INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID
 		  INNER JOIN #Bettype bet ON b.bettypeID  = bet.bettype
-	WHERE b.rptDate BETWEEN @FromDate AND @TempToDate
+	WHERE b.rptDate BETWEEN @FromDate AND @ToDate 
+		SELECT 
+		   b.rptDate Winlostdate		
+		   ,b.CurrencyID Currency
+		   ,bet.TypeID
+		   ,bet.TypeName
+		   ,SUM(b.TurnOver) AS TurnOver
+		   ,SUM(b.BetCount) AS TotalTrans
+		   ,SUM(b.Winloss)  AS Winlost
+		   ,-SUM(b.Winloss) AS LicenseeWinlost
+	FROM  bodb_LicenseeReport.dbo.rpt_ThirdPartyWL_ExtraGMT b  WITH (NOLOCK)
+		  INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID
+		  INNER JOIN #Bettype bet ON b.bettypeID  = bet.bettype
+	WHERE b.rptDate BETWEEN @FromDate AND @ToDate 
 		  AND b.StatusId NOT IN (-1,103)
 		 -- AND b.CustomerCategory = -1	
 	GROUP BY 	b.rptDate  		
