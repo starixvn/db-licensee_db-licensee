@@ -83,7 +83,7 @@ BEGIN
 			OR (Currency = @CurrencyID)
 			)
 	INSERT INTO #Bettype (Bettype,TypeID,TypeName)	
-	EXEC LRF_MicroGamingWinloss_Bettype_xpre @TypeID = 0
+	EXEC LRF_MicroGamingWinloss_Bettype  @TypeID = 0
 		
 	IF @ToDate > @MoveBetsDay
 	BEGIN
@@ -141,13 +141,14 @@ BEGIN
 				INNER JOIN #Bettype bet ON b.gameID  = bet.bettype
 				WHERE b.winlostdate BETWEEN @TempFromDate AND @ToDate
 							AND b.statusID IN (111, 112, 113)
-							AND bet.bettype IN (2007,2008)
+							AND bet.bettype IN (2009,2008)
 				GROUP BY b.winlostdate
 						, t.currency
 						, bet.TypeID
 						, bet.TypeName		
+				
+							
 	END	
-	
 	IF @FromDate <= @MoveBetsDay 
 	BEGIN
 		IF @ToDate >= @MoveBetsDay
@@ -166,24 +167,25 @@ BEGIN
 								)
 
 		SELECT 
-			   b.rptDate Winlostdate		
-			   ,b.CurrencyID Currency
-			   ,bet.TypeID
-			   ,bet.TypeName
-			   ,SUM(b.TurnOver) AS TurnOver
-			   ,SUM(b.BetCount) AS TotalTrans
-			   ,SUM(b.Winloss)  AS Winlost
-			   ,-SUM(b.Winloss) AS LicenseeWinlost
+		   b.rptDate Winlostdate		
+		   ,b.CurrencyID Currency
+		   ,bet.TypeID
+		   ,bet.TypeName
+		   ,SUM(b.TurnOver) AS TurnOver
+		   ,SUM(b.BetCount) AS TotalTrans
+		   ,SUM(b.Winloss)  AS Winlost
+		   ,-SUM(b.Winloss) AS LicenseeWinlost
 	FROM  bodb_LicenseeReport.dbo.rpt_ThirdPartyWL_ExtraGMT b  WITH (NOLOCK)
-			  INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID
+		  INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID
 		  INNER JOIN #Bettype bet ON b.bettypeID  = bet.bettype
-		WHERE b.rptDate BETWEEN @FromDate AND @TempToDate
+	WHERE b.rptDate BETWEEN @FromDate AND @ToDate 
 		  AND b.StatusId NOT IN (-1,103)
 		 -- AND b.CustomerCategory = -1	
-		GROUP BY 	b.rptDate  		
-					,b.CurrencyID  
-					,bet.TypeID
-					 ,bet.TypeName
+	GROUP BY 	b.rptDate  		
+				,b.CurrencyID  
+				,bet.TypeID
+				 ,bet.TypeName
+	
 	END				 
 	SELECT ExchangeDate
 		   ,ExchangeId
@@ -194,6 +196,7 @@ BEGIN
 	INTO #TempExchange 
 	FROM Lrf_f_GetExchangeDaily(@FromDate, @ToDate)
 	WHERE exchangeid IN (SELECT DISTINCT Currency FROM #tmpResult)
+	
 	
 	SELECT  CASE WHEN @ReportType = 1 THEN CONVERT(VARCHAR(8),r.winlostdate,112)  
 				 WHEN @ReportType = 2 THEN CONVERT(VARCHAR(6),r.winlostdate,112)  
