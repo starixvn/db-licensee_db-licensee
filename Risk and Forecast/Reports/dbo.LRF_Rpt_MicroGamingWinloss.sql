@@ -178,7 +178,7 @@ BEGIN
 	FROM  bodb_LicenseeReport.dbo.rpt_ThirdPartyWL_ExtraGMT b  WITH (NOLOCK)
 		  INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID
 		  INNER JOIN #Bettype bet ON b.bettypeID  = bet.bettype
-	WHERE b.rptDate BETWEEN @FromDate AND @ToDate 
+	WHERE b.rptDate BETWEEN @FromDate AND @TempToDate
 		  AND b.StatusId NOT IN (-1,103)
 		 -- AND b.CustomerCategory = -1	
 	GROUP BY 	b.rptDate  		
