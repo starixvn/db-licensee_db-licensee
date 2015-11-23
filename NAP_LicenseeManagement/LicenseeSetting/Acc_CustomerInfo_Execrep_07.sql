@@ -1,4 +1,4 @@
-ALTER PROCEDURE [dbo].[Acc_ExecRep_Cust_13]
+ALTER PROCEDURE [dbo].[Acc_CustomerInfo_Execrep_07]
 	@ids VARCHAR(MAX)
 	,@Sporttype INT
 	,@Bettype INT = 0
@@ -16,19 +16,17 @@ AS
 	Original:
 
 	Revisions:
- 	- 20150613@Daniel: 
- 	    + Created, split update custinfo part in SP Acc_CustSetting3rd_11 into this SP for separate custDB to new server DBCUST
-	    + Improve medthod check table existing in subscribers		
-
+ 		- 20150613@Daniel: 
+ 			+ Created, split update custinfo part in SP Acc_CustSetting3rd_11 into this SP for separate custDB to new server DBCUST
+			+ Improve medthod check table existing in subscribers		
+		- 20151123@Elodie: Support Muay Thai in Licensee Settings function [Redmine: #47801]
 	Param's Explanation:
 		
 */ 
 BEGIN
-
 	SET NOCOUNT ON
 	
 	IF(dbo.f_CheckRepTable('custinfo') = 0) RETURN
-	
 	
 	DECLARE @string VARCHAR(MAX), @splitter CHAR(1), @xml XML
 	SELECT @splitter = ',', @string = @ids
@@ -41,7 +39,7 @@ BEGIN
 	SELECT r.value('./@i','INT')
 	FROM @xml.nodes('//root/r') AS RECORDS(r)
 
-	IF @Sporttype IN (1,2,3,5,8,10,11,99,154) --Sportbook
+	IF @Sporttype IN (1,2,3,5,8,10,11,99,154,44) --Sportbook
 	BEGIN
 		IF @ExistedMember = 0
 		BEGIN
@@ -104,6 +102,12 @@ BEGIN
 				SET  maxpermatch154 = @MaxPerMatch
 				WHERE custid IN (SELECT custid FROM #tblCust) 
 					AND roleid <> 1
+
+			ELSE IF @Sporttype = 44
+				UPDATE Custinfo WITH(UPDLOCK,ROWLOCK)
+				SET  maxpermatch44 = @MaxPerMatch
+				WHERE custid IN (SELECT custid FROM #tblCust) 
+					AND roleid <> 1
 		END		
 		ELSE
 		BEGIN
@@ -155,6 +159,11 @@ BEGIN
 			ELSE IF @Sporttype = 154
 				UPDATE Custinfo WITH(UPDLOCK,ROWLOCK)
 				SET  maxpermatch154 = @MaxPerMatch
+				WHERE custid IN (SELECT custid FROM #tblCust) 
+
+			ELSE IF @Sporttype = 44
+				UPDATE Custinfo WITH(UPDLOCK,ROWLOCK)
+				SET  maxpermatch44 = @MaxPerMatch
 				WHERE custid IN (SELECT custid FROM #tblCust) 
 		END
 		
@@ -451,6 +460,5 @@ BEGIN
 	DROP TABLE #tblCust
 END
 
-
-
-
+GO
+GRANT VIEW DEFINITION ON [dbo].[Acc_CustomerInfo_Execrep_07] TO [vnteam] AS [dbo]
