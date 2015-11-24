@@ -32,6 +32,7 @@ BEGIN
 	CREATE TABLE #JackPotWin
 	( 
 	  WinlostDate SMALLDATETIME, 
+	  CustId INT,
 	  ExternalId VARCHAR (50) ,
 	  SystemId VARCHAR (30), 
 	  RefNo BIGINT,
@@ -62,15 +63,20 @@ BEGIN
 	
 	IF @MoveBetsDay < @ToDate
 	BEGIN 
-		SELECT @_FromDate = @MoveBetsDay, @_ToDate = @Todate 
+		SET @_ToDate = @Todate 
 
-		INSERT INTO #JackPotWin (WinlostDate, ExternalId, SystemID, RefNo, WinAmount, Bettype, Sporttype, TransDesc, Currency)
-		SELECT	p.WinlostDate, c.username2 as ExternalId, p.Username as SystemID, 
+		IF @MoveBetsDay < @FromDate
+			SET @_FromDate = @FromDate
+		ELSE 
+			SET @_FromDate = @MoveBetsDay
+
+		INSERT INTO #JackPotWin (WinlostDate, CustId, ExternalId, SystemID, RefNo, WinAmount, Bettype, Sporttype, TransDesc, Currency)
+		SELECT	p.WinlostDate, p.CustId, c.username2 as ExternalId, p.Username as SystemID, 
 				p.RefNo, p.WinAmount, p.GameId as Bettype, p.ProductId as Sporttype, b.transdesc, tma.currency
 		FROM	DBACC.bodb02.dbo.PayOutTrans p WITH (NOLOCK)
 			INNER JOIN dbo.BettransRNG b WITH (NOLOCK) 
 				ON p.RefNo = b.TransId
-			INNER JOIN dbo.Customer c WITH (NOLOCK)
+			INNER JOIN bodb_licensee.dbo.Licenseecustinfo c WITH (NOLOCK)
 				ON c.CustId = p.CustId
 			INNER JOIN @TempAg tma ON tma.CustID=c.recommend AND c.currency = tma.currency
 		WHERE	p.Winlostdate BETWEEN @_FromDate AND @_ToDate
@@ -79,9 +85,12 @@ BEGIN
 
 	IF @FromDate <= @MoveBetsDay
 	BEGIN 
-		SET @_FromDate = @FromDate 
+		IF @FromDate <= @BalanceUpDay
+			SET @_FromDate = @BalanceUpDay
+		ELSE
+			SET @_FromDate = @FromDate 
 
-		IF @ToDate > = @MoveBetsDay 
+		IF  @MoveBetsDay < @ToDate
 			SET @_ToDate = @MoveBetsDay
 		ELSE 
 			SET @_ToDate = @Todate
@@ -92,7 +101,7 @@ BEGIN
 		FROM	DBACC.bodb02.dbo.PayOutTrans p WITH (NOLOCK)
 			INNER JOIN dbo.BettransRNG14 b WITH (NOLOCK) 
 				ON p.RefNo = b.TransId
-			INNER JOIN dbo.Customer c WITH (NOLOCK)
+			INNER JOIN bodb_licensee.dbo.Licenseecustinfo c WITH (NOLOCK)
 				ON c.CustId = p.CustId
 			INNER JOIN @TempAg tma ON tma.CustID=c.recommend AND c.currency = tma.currency
 		WHERE	p.Winlostdate BETWEEN @_FromDate AND @_ToDate
@@ -104,7 +113,7 @@ BEGIN
 	BEGIN 
 		SET @_FromDate = @FromDate 
 
-		IF @ToDate > = @BalanceUpDay 
+		IF @BalanceUpDay < @ToDate
 			SET @_ToDate = @BalanceUpDay
 		ELSE 
 			SET @_ToDate = @Todate
@@ -115,7 +124,7 @@ BEGIN
 		FROM	DBACC.bodb02.dbo.PayOutTrans p WITH (NOLOCK)
 			INNER JOIN DBARC.bodb_archive.dbo.BettransRNG_BK b WITH (NOLOCK) 
 				ON p.RefNo = b.TransId
-			INNER JOIN dbo.Customer c WITH (NOLOCK)
+			INNER JOIN bodb_licensee.dbo.Licenseecustinfo c WITH (NOLOCK)
 				ON c.CustId = p.CustId
 			INNER JOIN @TempAg tma ON tma.CustID=c.recommend AND c.currency = tma.currency
 		WHERE	p.Winlostdate BETWEEN @_FromDate AND @_ToDate
@@ -126,12 +135,16 @@ BEGIN
 
 	SELECT *
 	INTO #TempExchange 
-	FROM Lrf_f_GetExchangeDaily(@FromDate,@ToDate)
+	FROM dbo.Lrf_f_GetExchangeDaily(@FromDate,@ToDate)
 	WHERE exchangeid IN (SELECT DISTINCT Currency FROM #JackPotWin)
 
 	----Get Data
 
-	SELECT * 
+	SELECT j.WinlostDate, J.CustId, j.ExternalId, j.SystemID, 
+		  j.RefNo, j.WinAmount, j.Bettype, j.Sporttype, j.transdesc, j.currency,
+		  j.WinAmount * e.EUR AS WinAmountEUR,
+		  j.WinAmount * e.USD AS WinAmountUSD,
+		  j.WinAmount * e.GBP AS WinAmountGBP
 	FROM  #JackPotWin j
 	INNER JOIN #TempExchange e
 		ON j.winlostdate = e.ExchangeDate AND j.currency = e.ExchangeId
