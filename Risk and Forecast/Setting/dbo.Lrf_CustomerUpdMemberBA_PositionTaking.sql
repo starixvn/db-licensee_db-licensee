@@ -55,7 +55,7 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberBA_PositionTaking]
  @v99apositiontaking_20 SMALLMONEY,  
   
  @v154apositiontaking_20 SMALLMONEY,  
-   
+ @v44apositiontaking_3  SMALLMONEY,
  @UserID INT,   
  @IsAdmin BIT = 0,  
  @IP VARCHAR(40)='',   
@@ -77,6 +77,7 @@ Revisions:
  - 20131113@winnie: Add bodb02.dbo  
  - 20140425@Francis: Add HR Fixed Odds  
  - 20150610@Joseph: Separate CustDB to DBCUST server (Move SP to DBCUST.CustDB, use temp table for GameType table)
+- 20151015@Jim: Integrate Sportbook2 (Feature #44759)
 Param's Explanation:  
 • @ErrCode:  
     = 0: Update successfully.  
@@ -171,7 +172,7 @@ DECLARE
  @v99mpositiontaking_20 SMALLMONEY,  
   
  @v154mpositiontaking_20 SMALLMONEY,  
-   
+ @v44mpositiontaking_3 SMALLMONEY,  
  --m3  
  @mapositiontaking_1_max SMALLMONEY,  
  @mapositiontaking_2_max SMALLMONEY,  
@@ -225,7 +226,7 @@ DECLARE
  @v99mapositiontaking_20_max SMALLMONEY,   
    
  @v154mapositiontaking_20_max SMALLMONEY,  
-  
+  @v44mapositiontaking_3_max SMALLMONEY,
  --old_a1  
  @old_apositiontaking_1 SMALLMONEY,  
  @old_apositiontaking_2 SMALLMONEY,  
@@ -278,7 +279,8 @@ DECLARE
  @old_v99apositiontaking_9 SMALLMONEY,   
  @old_v99apositiontaking_20 SMALLMONEY,  
    
- @old_v154apositiontaking_20 SMALLMONEY  
+ @old_v154apositiontaking_20 SMALLMONEY ,
+ @old_v44apositiontaking_3 SMALLMONEY 
    
   
 SELECT    
@@ -291,6 +293,7 @@ WHERE
  CustID = @CustID  
   
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+---Soccer
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------  
 if   
  @apositiontaking_1  <0  
@@ -804,7 +807,50 @@ BEGIN
     END  
  RETURN  
 END  
+--- SB2
+  if   
+ @v44apositiontaking_3  <0  
+ OR @v44apositiontaking_3  >0.9  
+   
+BEGIN  
+	 SELECT @ErrCode = 25  
+	 SELECT @ErrMsg =  CASE @Language   
+		  WHEN 'E' THEN 'Wrong position taking (for Muay Thai).'  
+		  WHEN 'CS' THEN N'占成数不正确(于赛马固定赔率).'  
+		  WHEN 'CT' THEN N'佔成數不正確(於賽馬固定賠率).'  
+		  WHEN 'TH' THEN N'Wrong position taking for (for Muay Thai).'  
+		  WHEN 'J' THEN N'Wrong position taking (for Muay Thai).'  
+		  WHEN 'KO' THEN N'거래 조건이 잘못 되었습니다 (경마 고정 배당률).'  
+		  ELSE N'Wrong position taking (for  Muay Thai).'  
+		END  
+	 RETURN  
+END  
   
+ 
+SELECT @ErrType = ''  
+SELECT @ErrType = @ErrType + sportname + '-'+ typenamee + '-Max: '+ CAST((scs.apositiontaking) AS VARCHAR(10))  
++ CASE WHEN b.sporttype=1 AND b.bettype IN (1,3,7,8) AND scs.islive = 1 THEN '-MaxLive: '+ CAST((scs.apositiontaking) AS VARCHAR(10)) ELSE '' END + '<br>'  
+FROM custinfo AS c WITH (NOLOCK) INNER JOIN dep_custsetting AS scs WITH (NOLOCK) ON c.srecommend = scs.custid INNER JOIN   
+ (  
+     SELECT 3 AS bettype, 44 AS sporttype, @v44apositiontaking_3 AS apositiontaking, 0 AS alivepositiontaking  
+ ) AS b ON scs.sporttype=b.sporttype AND scs.bettype = b.bettype  
+ INNER JOIN @tmp_Sports sports ON b.sporttype = sports.sporttype  
+ INNER JOIN @tmp_Bettype bettype ON b.bettype = bettype.typeid  
+WHERE c.custid = @recommend AND ((b.apositiontaking>scs.apositiontaking AND scs.islive = 0) OR (b.sporttype = 1 AND b.bettype IN (1,3,7,8) AND scs.islive = 1 AND b.alivepositiontaking>scs.apositiontaking))  
+if @ErrType <>''  
+BEGIN  
+ SELECT @ErrCode = 27  
+ SELECT @ErrMsg =  CASE @Language   
+      WHEN 'E' THEN 'Wrong position taking (max set by company).<br>'+@ErrType  
+      WHEN 'CS' THEN N'占成数不正确(公司设给最高占成).<br>'+@ErrType  
+      WHEN 'CT' THEN N'佔成數不正確(公司設給最高佔成).<br>'+@ErrType  
+      WHEN 'TH' THEN N'การกำหนดจำนวนเงินไม่ถูกต้อง (สูงสุด  อ้างอิงจากข้อมูลบริษัท).<br>'+@ErrType  
+      WHEN 'J' THEN N'Wrong position taking (max set by company).<br>'+@ErrType  
+      WHEN 'KO' THEN N'거래 조건이 잘못 되었습니다 (ibc가 설정한 최대 값).<br>'+@ErrType  
+      ELSE N'Wrong position taking (max set by company).<br>'+@ErrType  
+    END  
+ RETURN  
+END  
 --Mix Parlay Mixed Sports  
 if   
  @v99apositiontaking_9  <0  
@@ -914,8 +960,8 @@ SELECT @v99mpositiontaking_20 = mpositiontaking, @old_v99apositiontaking_20 = ap
   
 --HR Fixed Odds  
 SELECT @v154mpositiontaking_20 = mpositiontaking, @old_v154apositiontaking_20 = apositiontaking FROM dep_custsetting WITH (NOLOCK) WHERE custid = @custid AND bettype=20 AND sporttype=154  
-  
-  
+--SB2  
+SELECT @v44mpositiontaking_3 = mpositiontaking, @old_v44apositiontaking_3 = apositiontaking FROM dep_custsetting WITH (NOLOCK) WHERE custid = @custid AND bettype=3 AND sporttype=44    
 --s3,m3,u3,i3  
 SELECT @mapositiontaking_1_max = mpositiontaking FROM dep_custsetting WITH (NOLOCK) WHERE custid = @mrecommend AND bettype=1 AND sporttype=1 AND islive = 0  
 SELECT @malivepositiontaking_1_max = mpositiontaking FROM dep_custsetting WITH (NOLOCK) WHERE custid = @mrecommend AND bettype=1 AND sporttype=1 AND islive = 1  
@@ -970,7 +1016,8 @@ SELECT @v99mapositiontaking_20_max = mpositiontaking FROM dep_custsetting WITH (
   
 --HR Fixed Odds  
 SELECT @v154mapositiontaking_20_max = mpositiontaking FROM dep_custsetting WITH (NOLOCK) WHERE custid = @mrecommend AND bettype=20 AND sporttype=154  
-  
+---SB2
+SELECT @v44mapositiontaking_3_max = mpositiontaking FROM dep_custsetting WITH (NOLOCK) WHERE custid = @mrecommend AND bettype=3 AND sporttype=44  
   
 --a1=min(a1,m3)  
 SELECT   
@@ -1026,9 +1073,10 @@ SELECT
  @v99apositiontaking_20 = CASE WHEN @v99apositiontaking_20>@v99mapositiontaking_20_max THEN @v99mapositiontaking_20_max ELSE @v99apositiontaking_20 END,  
   
  --HR Fixed Odds  
- @v154apositiontaking_20 = CASE WHEN @v154apositiontaking_20>@v154mapositiontaking_20_max THEN @v154mapositiontaking_20_max ELSE @v154apositiontaking_20 END  
+ @v154apositiontaking_20 = CASE WHEN @v154apositiontaking_20>@v154mapositiontaking_20_max THEN @v154mapositiontaking_20_max ELSE @v154apositiontaking_20 END , 
+  ---SB2 
+ @v44apositiontaking_3 = CASE WHEN @v44apositiontaking_3>@v44mapositiontaking_3_max THEN @v44mapositiontaking_3_max ELSE @v44apositiontaking_3 END  
    
-  
 --a1=if(!im)if(m1+a1>m3,m3-m1)  
 SELECT   
  @apositiontaking_1 = CASE WHEN @apositiontaking_1+@mpositiontaking_1>@mapositiontaking_1_max THEN @mapositiontaking_1_max-@mpositiontaking_1 ELSE @apositiontaking_1 END,  
@@ -1083,7 +1131,9 @@ SELECT
  @v99apositiontaking_20 = CASE WHEN @v99apositiontaking_20+@v99mpositiontaking_20>@v99mapositiontaking_20_max THEN @v99mapositiontaking_20_max-@v99mpositiontaking_20 ELSE @v99apositiontaking_20 END,  
   
  --HR Fixed Odds  
- @v154apositiontaking_20 = CASE WHEN @v154apositiontaking_20+@v154mpositiontaking_20>@v154mapositiontaking_20_max THEN @v154mapositiontaking_20_max-@v154mpositiontaking_20 ELSE @v154apositiontaking_20 END  
+ @v154apositiontaking_20 = CASE WHEN @v154apositiontaking_20+@v154mpositiontaking_20>@v154mapositiontaking_20_max THEN @v154mapositiontaking_20_max-@v154mpositiontaking_20 ELSE @v154apositiontaking_20 END  ,
+ --SB2
+ @v44apositiontaking_3 = CASE WHEN @v44apositiontaking_3+@v44mpositiontaking_3>@v44mapositiontaking_3_max THEN @v44mapositiontaking_3_max-@v44mpositiontaking_3 ELSE @v44apositiontaking_3 END  
   
    
   
@@ -1140,8 +1190,9 @@ SELECT
  @v99apositiontaking_20 = CASE WHEN @v99apositiontaking_20<0 THEN 0 ELSE @v99apositiontaking_20 END,  
   
  --HR Fixed Odds  
- @v154apositiontaking_20 = CASE WHEN @v154apositiontaking_20<0 THEN 0 ELSE @v154apositiontaking_20 END  
-   
+ @v154apositiontaking_20 = CASE WHEN @v154apositiontaking_20<0 THEN 0 ELSE @v154apositiontaking_20 END  ,
+-- SB2
+@v44apositiontaking_3 = CASE WHEN @v44apositiontaking_3<0 THEN 0 ELSE @v44apositiontaking_3 END  
   
   
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1206,7 +1257,8 @@ SET
   
       --HR Fixed Odds  
       WHEN sporttype = 154 AND bettype = 20 THEN @v154apositiontaking_20  
-  
+	-- SB2
+	  WHEN sporttype = 44 AND bettype = 3 THEN @v44apositiontaking_3  
       ELSE  
        apositiontaking  
        END  
@@ -1275,7 +1327,9 @@ SELECT @LogSPData = '<Lrf_CustomerUpdMemberBA_PositionTaking><info ' +
 'v99apt_3="'+ COALESCE(CAST(@v99apositiontaking_3 AS VARCHAR(50)),SPACE(1)) + '" ' +  
 'v99apt_9="'+ COALESCE(CAST(@v99apositiontaking_9 AS VARCHAR(50)),SPACE(1)) + '" ' +  
 'v99apt_20="'+ COALESCE(CAST(@v99apositiontaking_20 AS VARCHAR(50)),SPACE(1)) + '" ' +  
+'v44apt_3="'+ COALESCE(CAST(@v44apositiontaking_3 AS VARCHAR(50)),SPACE(1)) + '" ' +  
 'v154apt_20="'+ COALESCE(CAST(@v154apositiontaking_20 AS VARCHAR(50)),SPACE(1)) + '" /></Lrf_CustomerUpdMemberBA_PositionTaking>'  
+ 
   
   
   
@@ -1335,6 +1389,7 @@ SELECT @TrackingValue2 = '<Lrf_CustomerUpdMemberBA_PositionTaking><info ' +
 'v99apt_3="'+ COALESCE(CAST(@Old_v99apositiontaking_3 AS VARCHAR(50)),SPACE(1)) + '" ' +  
 'v99apt_9="'+ COALESCE(CAST(@Old_v99apositiontaking_9 AS VARCHAR(50)),SPACE(1)) + '" ' +  
 'v99apt_20="'+ COALESCE(CAST(@Old_v99apositiontaking_20 AS VARCHAR(50)),SPACE(1)) + '" ' +  
+'v44apt_3="'+ COALESCE(CAST(@Old_v44apositiontaking_3 AS VARCHAR(50)),SPACE(1)) + '" ' +  
 'v154apt_20="'+ COALESCE(CAST(@Old_v154apositiontaking_20 AS VARCHAR(50)),SPACE(1)) + '" /></Lrf_CustomerUpdMemberBA_PositionTaking>'  
   
   

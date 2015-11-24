@@ -83,7 +83,7 @@ BEGIN
 			OR (Currency = @CurrencyID)
 			)
 	INSERT INTO #Bettype (Bettype,TypeID,TypeName)	
-	EXEC LRF_MicroGamingWinloss_Bettype_xpre @TypeID = 0
+	EXEC LRF_MicroGamingWinloss_Bettype  @TypeID = 0
 		
 	IF @ToDate > @MoveBetsDay
 	BEGIN
@@ -141,62 +141,14 @@ BEGIN
 				INNER JOIN #Bettype bet ON b.gameID  = bet.bettype
 				WHERE b.winlostdate BETWEEN @TempFromDate AND @ToDate
 							AND b.statusID IN (111, 112, 113)
-							AND bet.bettype IN (2007,2008)
+							AND bet.bettype IN (2009,2008)
 				GROUP BY b.winlostdate
 						, t.currency
 						, bet.TypeID
 						, bet.TypeName		
-					 
-							
-				INSERT INTO #tmpResult ( Winlostdate
-							 ,Currency 
-							 ,TypeID	
-							 ,TypeName
-							 ,TurnOver 	
-							 ,TotalTrans
-							 ,Winlost  	
-							 ,LicenseeWinlost 
-							)
-							
-				SELECT 	b.winlostdate
-						, t.currency
-						, bet.TypeID
-						, bet.TypeName
-						, SUM(stake) turnover
-						, COUNT(b.transid) TotalTrans
-						, SUM(b.winlost - b.actual_stake) AS Winlost
-						, SUM(- 1 * (b.winlost - b.actual_stake)) AS LicenseeWinlost
-				FROM dbo.bettransRnG b WITH (NOLOCK)
-				INNER JOIN #TempAg t ON b.recommend = t.custid AND t.Currency = b.Currency
-				INNER JOIN #Bettype bet ON b.gameID  = bet.bettype
-				WHERE b.winlostdate BETWEEN @TempFromDate AND @ToDate
-							AND b.statusID IN (111, 112, 113)
-							AND bet.bettype IN (2007,2008)
-							
-	END	
-	
-	IF @FromDate <= @MoveBetsDay 
-	BEGIN
-		IF @ToDate >= @MoveBetsDay
-				SET @TempToDate = @MoveBetsDay
-			ELSE
-				SET  @TempToDate = @ToDate
 				
-		INSERT INTO #tmpResult ( Winlostdate
-								 ,Currency 
-								 ,TypeID	
-								 ,TypeName
-								 ,TurnOver 	
-								 ,TotalTrans
-								 ,Winlost  	
-								 ,LicenseeWinlost 
-								)
-				GROUP BY b.winlostdate
-						, t.currency
-						, bet.TypeID
-						, bet.TypeName		
+							
 	END	
-	
 	IF @FromDate <= @MoveBetsDay 
 	BEGIN
 		IF @ToDate >= @MoveBetsDay
@@ -226,32 +178,14 @@ BEGIN
 	FROM  bodb_LicenseeReport.dbo.rpt_ThirdPartyWL_ExtraGMT b  WITH (NOLOCK)
 		  INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID
 		  INNER JOIN #Bettype bet ON b.bettypeID  = bet.bettype
-	WHERE b.rptDate BETWEEN @FromDate AND @ToDate 
+	WHERE b.rptDate BETWEEN @FromDate AND @TempToDate
 		  AND b.StatusId NOT IN (-1,103)
 		 -- AND b.CustomerCategory = -1	
 	GROUP BY 	b.rptDate  		
 				,b.CurrencyID  
 				,bet.TypeID
 				 ,bet.TypeName
-		SELECT 
-			   b.rptDate Winlostdate		
-			   ,b.CurrencyID Currency
-			   ,bet.TypeID
-			   ,bet.TypeName
-			   ,SUM(b.TurnOver) AS TurnOver
-			   ,SUM(b.BetCount) AS TotalTrans
-			   ,SUM(b.Winloss)  AS Winlost
-			   ,-SUM(b.Winloss) AS LicenseeWinlost
-	FROM  bodb_LicenseeReport.dbo.rpt_ThirdPartyWL_ExtraGMT b  WITH (NOLOCK)
-			  INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID
-		  INNER JOIN #Bettype bet ON b.bettypeID  = bet.bettype
-		WHERE b.rptDate BETWEEN @FromDate AND @TempToDate
-		  AND b.StatusId NOT IN (-1,103)
-		 -- AND b.CustomerCategory = -1	
-		GROUP BY 	b.rptDate  		
-					,b.CurrencyID  
-					,bet.TypeID
-					 ,bet.TypeName
+	
 	END				 
 	SELECT ExchangeDate
 		   ,ExchangeId

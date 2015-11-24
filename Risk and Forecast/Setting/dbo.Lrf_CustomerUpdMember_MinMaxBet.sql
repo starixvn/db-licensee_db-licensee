@@ -36,6 +36,10 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMember_MinMaxBet]
 	@maxbetv11 MONEY,
 	@maxpermatchv11 MONEY,
 	
+	@minbetv44 MONEY,
+	@maxbetv44 MONEY,
+	@maxpermatchv44 MONEY,
+	
 	@minbetv154 MONEY,
 	@maxbetv154 MONEY,
 	@maxpermatchv154 MONEY,
@@ -56,6 +60,7 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMember_MinMaxBet]
 	@UpdateMinMaxBetv8 BIT = 1,
 	@UpdateMinMaxBetv10 BIT = 1,
 	@UpdateMinMaxBetv11 BIT = 1,
+	@UpdateMinMaxBetv44 BIT = 1,
 	@UpdateMinMaxBetv154 BIT = 1,
 	
 	@UpdateMinMaxBetv99 BIT = 1,
@@ -79,6 +84,7 @@ Revisions:
    - 20110613@Henry: Logging Enhancement
    - 20120326@Dom: Change CustSetting to Dep_CustSetting, CustSetting3rd to Dep_CustSetting3rd
    - 20140207@Jim: support to offer HorseRacingFixedOdds
+   - 20151015@Jim: Integrate Sportbook2 (Feature #44759)
    - 20151023@Victor: Support New Simplified Chinese
    
 Param's Explanation:
@@ -103,6 +109,7 @@ DECLARE
 	@MinMinBetv8 MONEY, @MaxMaxBetv8 MONEY, @MaxMaxPerMatchv8 MONEY,
 	@MinMinBetv10 MONEY, @MaxMaxBetv10 MONEY, @MaxMaxPerMatchv10 MONEY,
 	@MinMinBetv11 MONEY, @MaxMaxBetv11 MONEY, @MaxMaxPerMatchv11 MONEY,
+	@MinMinBetv44 MONEY, @MaxMaxBetv44 MONEY, @MaxMaxPerMatchv44 MONEY,
 	@MinMinBetv154 MONEY, @MaxMaxBetv154 MONEY, @MaxMaxPerMatchv154 MONEY,
 	@MinMinBetv99 MONEY, @MaxMaxBetv99 MONEY, @MaxMaxPerMatchv99 MONEY,
 	@MinMinBetv99MP MONEY, @MaxMaxBetv99MP MONEY, @MaxMaxPerMatchv99MP MONEY
@@ -115,6 +122,7 @@ DECLARE
 	@Old_MinBetv8 MONEY, @Old_MaxBetv8 MONEY, @Old_MaxPerMatchv8 MONEY,
 	@Old_MinBetv10 MONEY, @Old_MaxBetv10 MONEY, @Old_MaxPerMatchv10 MONEY,
 	@Old_MinBetv11 MONEY, @Old_MaxBetv11 MONEY, @Old_MaxPerMatchv11 MONEY,
+	@Old_MinBetv44 MONEY, @Old_MaxBetv44 MONEY, @Old_MaxPerMatchv44 MONEY,
 	@Old_MinBetv154 MONEY, @Old_MaxBetv154 MONEY, @Old_MaxPerMatchv154 MONEY,
 	@Old_MinBetv99 MONEY, @Old_MaxBetv99 MONEY, @Old_MaxPerMatchv99 MONEY,
 	@Old_MinBetv99MP MONEY, @Old_MaxBetv99MP MONEY, @Old_MaxPerMatchv99MP MONEY
@@ -143,6 +151,8 @@ SELECT
 	@MaxMaxPerMatchv10 = Min(CASE WHEN cs.MaxPerMatch10 = 0 THEN NULL ELSE cs.MaxPerMatch10 END), 
 	
 	@MaxMaxPerMatchv11 = Min(CASE WHEN cs.MaxPerMatch11 = 0 THEN NULL ELSE cs.MaxPerMatch11 END), 
+	
+	@MaxMaxPerMatchv44 = Min(CASE WHEN cs.MaxPerMatch44 = 0 THEN NULL ELSE cs.MaxPerMatch44 END), 
 	
 	@MaxMaxPerMatchv154 = Min(CASE WHEN cs.MaxPerMatch154 = 0 THEN NULL ELSE cs.MaxPerMatch154 END), 
 	
@@ -876,7 +886,105 @@ BEGIN
 		RETURN
 	END
 END
-
+--- SB2
+	if @UpdateMinMaxBetv44 = 1
+BEGIN
+	if 
+		@MinBetv44 <0
+		or @MaxBetv44 <0
+		or @MaxPerMatchv44 <0		
+	BEGIN
+		SELECT @ErrCode = 3
+		SELECT @ErrMsg = 	CASE @Language 
+							WHEN 'en-us' THEN 'Wrong Min bet/ Max bet/ Max per match (for Muay Thai).'
+							WHEN 'zh-cn' THEN N'最低投注/最高投注/单场最高投注不正确(于赛车).'
+							WHEN 'zh-tw' THEN N'最低投注/最高投注/單場最高投注不正確(於賽車).'
+							WHEN 'TH' THEN N'การกำหนดจำนวนเงินสำหรับการวางเดิมพันต่ำสุด/ สูงสุด/สูงสดต่อรายการไม่ถูกต้อง (สำหรับกีฬารถแข่ง).'
+							WHEN 'Ja' THEN N'Wrong Min bet/ Max bet/ Max per match (for Muay Thai).'
+							WHEN 'KO' THEN N'잘못된 최소 배팅/최대 배팅/경기당 최대 (모토스포츠).'
+							ELSE N'Wrong Min bet/ Max bet/ Max per match (for Muay Thai).'
+					END
+		RETURN
+	END
+	
+	SELECT 
+		@MinMinBetv44 = Max(CASE WHEN MinBet = 0 THEN NULL ELSE MinBet END), 
+		@MaxMaxBetv44 = Min(CASE WHEN MaxBet = 0 THEN NULL ELSE MaxBet END)
+	from 
+		Dep_CustSetting as cs WITH (NOLOCK)
+		INNER JOIN custinfo as ci WITH (NOLOCK) on (cs.CustID = ci.Recommend or cs.CustID = ci.MRecommend or cs.CustID = ci.SRecommend)
+		AND cs.bettype = 3 AND cs.sporttype=44
+	WHERE ci.custid = @recommend
+	
+	if (@MinBetv44 <> 0 AND @MaxBetv44 <> 0 AND @MinBetv44>@MaxBetv44) or (@MaxBetv44 <> 0 AND @MaxPerMatchv44 <> 0 AND @MaxBetv44>@MaxPerMatchv44)
+	BEGIN
+		SELECT @ErrMsg =	@UserName + ': '+
+						CASE @Language 
+							WHEN 'en-us' THEN 'min bet must be less than max bet AND max bet must be less than max bet per match (for Muay Thai)'
+							WHEN 'zh-cn' THEN N'最低投注不能高于最高投注，最高投注不能高于单场最高投注设定(于赛车)'
+							WHEN 'zh-tw' THEN N'最低投注不能高於最高投注,最高投注不能高於單場最高投注設定(於賽車)'
+							WHEN 'TH' THEN N'จำนวนเงินต่ำสุดที่วางเดิมพันได้ต้องน้อยกว่าจำนวนเงินสูงสุดในการวางเดิมพันและจำนวนเงินสูงสุดในการวางเดิมพันต้องน้อยกว่าจำนวนเงินสูงสุดของเงินเดิมพันต่อเกม (สำหรับกีฬารถแข่ง)'
+							WHEN 'Ja' THEN N'min bet must be less than max bet AND max bet must be less than max bet per match (for Muay Thai)'
+							WHEN 'KO' THEN N'최소 배팅은 최대 배팅 이하이여야 하고 최대 배팅은 경기당 최대 배팅보다 작아야 합니다 (모토스포츠)'
+							ELSE N'min bet must be less than max bet AND max bet must be less than max bet per match (for Muay Thai)'
+						END						
+						+ char(13) + char(10) + convert(VARCHAR(20), @MinBetv44) + '-' + convert(VARCHAR(20), @MaxBetv44) + '-' + convert(VARCHAR(20), @MaxPerMatchv44), @ErrCode = 111
+				
+		RETURN
+	END
+	
+	IF (@MinMinBetv44>0 AND @MinBetv44>0 AND @MinBetv44<@MinMinBetv44)
+	BEGIN
+		SELECT @ErrMsg =	@UserName + ': '+
+						CASE @Language 
+							WHEN 'en-us' THEN 'min bet must be equal to or greater than Agent min bet (for Muay Thai)'
+							WHEN 'zh-cn' THEN N'最低投注需相等于或少于代理最低投注(于赛车)'
+							WHEN 'zh-tw' THEN N'最低投注需相等於或少於代理最低投注(於賽車)'
+							WHEN 'TH' THEN N'จำนวนเงินต่ำสุดในการเล่นต้องเท่ากับหรือมากกว่าจำนวนเงินขั้นต่ำในการเล่นที่กำหนดไว้ของตัวแทน (สำหรับกีฬารถแข่ง)'
+							WHEN 'Ja' THEN N'min bet must be equal to or greater than Agent min bet (for Muay Thai)'
+							WHEN 'KO' THEN N'최소 배팅은 에이전트의 최소 배팅 이상이여야 합니다 (모토스포츠)'
+							ELSE N'min bet must be equal to or greater than Agent min bet (for Muay Thai)'
+						END						
+						+' (' + CONVERT(VARCHAR(20), @MinMinBetv44) + ').', @ErrCode = 112
+				
+		RETURN
+	END	
+	IF (@MaxMaxBetv44>0 AND @MaxBetv44>0 AND @MaxBetv44>@MaxMaxBetv44)
+	BEGIN
+		SELECT @ErrMsg =	@UserName + ': '+
+						CASE @Language 
+							WHEN 'en-us' THEN 'max bet must be equal to or less than Agent max bet (for Muay Thai)'
+							WHEN 'zh-cn' THEN N'最高投注需相等于或少于代理最高投注(于赛车)'
+							WHEN 'zh-tw' THEN N'最高投注需相等於或少於代理最高投注(於賽車)'
+							WHEN 'TH' THEN N'จำนวนการวางเดิมพันสูงสุดต้องเท่ากับ หรือ น้อยกว่าราคาเดิมพันสูงสุดของตัวแทน (สำหรับกีฬารถแข่ง)'
+							WHEN 'Ja' THEN N'max bet must be equal to or less than Agent max bet (for Muay Thai)'
+							WHEN 'KO' THEN N'최대 배팅은 에이전트의 최대 배팅 이하이여야 합니다 (모토스포츠)'
+							ELSE N'max bet must be equal to or less than Agent max bet (for Muay Thai)'
+						END						
+						+' (' + CONVERT(VARCHAR(20), @MaxMaxBetv44) + ').', @ErrCode = 113
+				
+		RETURN
+	END
+	
+	IF (@MaxMaxPerMatchv44>0 AND @MaxPerMatchv44>0 AND @MaxPerMatchv44>@MaxMaxPerMatchv44)
+	BEGIN
+		SELECT @ErrMsg =	@UserName + ': '+
+						CASE @Language 
+							WHEN 'en-us' THEN 'Max Per Match must be equal to or less than Agent Max Per Match (for Muay Thai)'
+							WHEN 'zh-cn' THEN N'单场最高投注需相等于或少于代理单场最高投注(于赛车)'
+							WHEN 'zh-tw' THEN N'單場最高投注需相等於或少於代理單場最高投注(於賽車)'
+							WHEN 'TH' THEN N'จำนวนเงินสูงสุดในการเล่นต่อรายการต้องเท่ากับหรือน้อยกว่าจำนวนเงินสูงสุดต่อรายการที่กำหนดไว้ของตัวแทน (สำหรับกีฬารถแข่ง) '
+							WHEN 'Ja' THEN N'Max Per Match must be equal to or less than Agent Max Per Match (for Muay Thai)'
+							WHEN 'KO' THEN N'최대 경기는 에이전트의 최대 경기보다 작아야 합니다 (모토스포츠)'
+							ELSE N'Max Per Match must be equal to or less than Agent Max Per Match (for Muay Thai)'
+						END						
+						+' (' + CONVERT(VARCHAR(20), @MaxMaxPerMatchv44) + ').', @ErrCode = 113
+				
+		RETURN
+	END
+END
+	
+-- END SB2
 
 
 IF @UpdateMinMaxBetv154 = 1
@@ -1220,6 +1328,10 @@ SELECT @Old_MinBetv11 = MinBet, @Old_MaxBetv11 = MaxBet
 FROM Dep_CustSetting WITH(NOLOCK)
 WHERE custid = @custid AND bettype = 1 AND sporttype=11
 --
+SELECT @Old_MinBetv44 = MinBet, @Old_MaxBetv44 = MaxBet
+FROM Dep_CustSetting WITH(NOLOCK)
+WHERE custid = @custid AND bettype = 3 AND sporttype=44
+--
 SELECT @Old_MinBetv154 = MinBet, @Old_MaxBetv154 = MaxBet
 FROM Dep_CustSetting WITH(NOLOCK)
 WHERE custid = @custid AND bettype = 20 AND sporttype=154
@@ -1243,6 +1355,7 @@ SELECT
 	@Old_MaxPerMatchv8 = maxpermatch8,
 	@Old_MaxPerMatchv10 = maxpermatch10,
 	@Old_MaxPerMatchv11 = maxpermatch11,
+	@Old_MaxPerMatchv44 = maxpermatch44,
 	@Old_MaxPerMatchv154 = maxpermatch154,
 	@Old_MaxPerMatchv99 = maxpermatch99,
 	@Old_MaxPerMatchv99MP = maxpermatch99MP
@@ -1262,10 +1375,11 @@ SET
 												OR (@UpdateMinMaxBetv8 = 0 AND sporttype=8)
 												OR (@UpdateMinMaxBetv10 = 0 AND sporttype=10)
 												OR (@UpdateMinMaxBetv11 = 0 AND sporttype=11)
+												OR (@UpdateMinMaxBetv44 = 0 AND sporttype=44 AND bettype=3)
 												OR (@UpdateMinMaxBetv154 = 0 AND sporttype=154)
 												OR (@UpdateMinMaxBetv99 = 0 AND sporttype=99 AND bettype<>9)
 												OR (@UpdateMinMaxBetv99MP = 0 AND sporttype=99 AND bettype=9)
-												) THEN MinBet ELSE CASE sporttype WHEN 1 THEN @MinBet WHEN 2 THEN @MinBetv2 WHEN 3 THEN @MinBetv3 WHEN 5 THEN @MinBetv5 WHEN 8 THEN @MinBetv8 WHEN 10 THEN @MinBetv10 WHEN 11 THEN @MinBetv11 WHEN 154 THEN @MinBetv154 WHEN 99 THEN (CASE bettype WHEN 9 THEN @MinBetv99MP ELSE @MinBetv99 END) ELSE minbet END END,
+												) THEN MinBet ELSE CASE sporttype WHEN 1 THEN @MinBet WHEN 2 THEN @MinBetv2 WHEN 3 THEN @MinBetv3 WHEN 5 THEN @MinBetv5 WHEN 8 THEN @MinBetv8 WHEN 10 THEN @MinBetv10 WHEN 11 THEN @MinBetv11 WHEN 44 THEN @minbetv44 WHEN 154 THEN @MinBetv154 WHEN 99 THEN (CASE bettype WHEN 9 THEN @MinBetv99MP ELSE @MinBetv99 END) ELSE minbet END END,
 	MaxBet=CASE WHEN  ((@UpdateMinMaxBet = 0 AND sporttype=1)
 												OR (@UpdateMinMaxBetv2 = 0 AND sporttype=2)
 												OR (@UpdateMinMaxBetv3 = 0 AND sporttype=3)
@@ -1273,10 +1387,11 @@ SET
 												OR (@UpdateMinMaxBetv8 = 0 AND sporttype=8)
 												OR (@UpdateMinMaxBetv10 = 0 AND sporttype=10)
 												OR (@UpdateMinMaxBetv11 = 0 AND sporttype=11)
+												OR (@UpdateMinMaxBetv44 = 0 AND sporttype=3)
 												OR (@UpdateMinMaxBetv154 = 0 AND sporttype=154)
 												OR (@UpdateMinMaxBetv99 = 0 AND sporttype=99 AND bettype<>9)
 												OR (@UpdateMinMaxBetv99MP = 0 AND sporttype=99 AND bettype=9)
-												) THEN MaxBet ELSE CASE sporttype WHEN 1 THEN @MaxBet WHEN 2 THEN @MaxBetv2 WHEN 3 THEN @MaxBetv3 WHEN 5 THEN @MaxBetv5 WHEN 8 THEN @MaxBetv8 WHEN 10 THEN @MaxBetv10 WHEN 11 THEN @MaxBetv11 WHEN 154 THEN @MaxBetv154 WHEN 99 THEN (CASE bettype WHEN 9 THEN @MaxBetv99MP ELSE @MaxBetv99 END) ELSE maxbet END END
+												) THEN MaxBet ELSE CASE sporttype WHEN 1 THEN @MaxBet WHEN 2 THEN @MaxBetv2 WHEN 3 THEN @MaxBetv3 WHEN 5 THEN @MaxBetv5 WHEN 8 THEN @MaxBetv8 WHEN 10 THEN @MaxBetv10 WHEN 11 THEN @MaxBetv11 WHEN 44 THEN @MaxBetv44 WHEN 154 THEN @MaxBetv154 WHEN 99 THEN (CASE bettype WHEN 9 THEN @MaxBetv99MP ELSE @MaxBetv99 END) ELSE maxbet END END
 WHERE custid=@custid
 
 
@@ -1298,7 +1413,7 @@ begin
 END
 
 
-EXEC dbo.Lrf_CustomerUpdMaxPerMatch
+EXEC dbo.Lrf_CustomerUpdMaxPerMatch 
 	@custid = @custid,
 	@maxpermatch = @maxpermatch,
 	@maxpermatchv2 = @maxpermatchv2,
@@ -1307,6 +1422,7 @@ EXEC dbo.Lrf_CustomerUpdMaxPerMatch
 	@maxpermatchv8 = @maxpermatchv8,
 	@maxpermatchv10 = @maxpermatchv10,
 	@maxpermatchv11 = @maxpermatchv11,
+	@maxpermatchv44 = @maxpermatchv44,
 	@maxpermatchv154 = @maxpermatchv154,
 	@maxpermatchv99 = @maxpermatchv99,
 	@maxpermatchv99MP = @maxpermatchv99MP,
@@ -1317,6 +1433,7 @@ EXEC dbo.Lrf_CustomerUpdMaxPerMatch
 	@UpdateMinMaxBetv8 = @UpdateMinMaxBetv8,
 	@UpdateMinMaxBetv10 = @UpdateMinMaxBetv10,
 	@UpdateMinMaxBetv11 = @UpdateMinMaxBetv11,
+	@UpdateMinMaxBetv44 = @UpdateMinMaxBetv44,
 	@UpdateMinMaxBetv154 = @UpdateMinMaxBetv154,
 	@UpdateMinMaxBetv99 = @UpdateMinMaxBetv99,
 	@UpdateMinMaxBetv99MP = @UpdateMinMaxBetv99MP,
@@ -1377,6 +1494,13 @@ BEGIN
 	SET @maxbetv11 = @Old_maxbetv11
 	SET @maxpermatchv11 = @Old_maxpermatchv11
 END
+---
+IF @UpdateMinMaxBetv44 = 0
+BEGIN
+	SET @minbetv44 = @Old_minbetv44
+	SET @maxbetv44 = @Old_maxbetv44
+	SET @maxpermatchv44 = @Old_maxpermatchv44
+END
 
 IF @UpdateMinMaxBetv154 = 0
 BEGIN
@@ -1425,6 +1549,9 @@ SELECT @TrackingValue ='<Lrf_CustomerUpdMember_MinMaxBet custid="'+ COALESCE(CAS
 'MinBv11="'+ COALESCE(CAST(@minbetv11 as VARCHAR(50)),SPACE(1)) + '" ' +
 'MaxBv11="'+ COALESCE(CAST(@maxbetv11 as VARCHAR(50)),SPACE(1)) + '" ' +
 'MPMv11="'+ COALESCE(CAST(@maxpermatchv11 as VARCHAR(50)),SPACE(1))  + '" ' +
+'MinBv44="'+ COALESCE(CAST(@minbetv44 as VARCHAR(50)),SPACE(1)) + '" ' +
+'MaxBv44="'+ COALESCE(CAST(@maxbetv44 as VARCHAR(50)),SPACE(1)) + '" ' +
+'MPMv44="'+ COALESCE(CAST(@maxpermatchv44 as VARCHAR(50)),SPACE(1))  + '" ' +
 'MinBv154="'+ COALESCE(CAST(@minbetv154 as VARCHAR(50)),SPACE(1)) + '" ' +
 'MaxBv154="'+ COALESCE(CAST(@maxbetv154 as VARCHAR(50)),SPACE(1)) + '" ' +
 'MPMv154="'+ COALESCE(CAST(@maxpermatchv154 as VARCHAR(50)),SPACE(1))  + '" ' +
@@ -1441,6 +1568,7 @@ SELECT @TrackingValue ='<Lrf_CustomerUpdMember_MinMaxBet custid="'+ COALESCE(CAS
 'UMMBv8="'+ COALESCE(CAST(@UpdateMinMaxBetv8 as VARCHAR(50)),SPACE(1)) + '" ' +
 'UMMBv10="'+ COALESCE(CAST(@UpdateMinMaxBetv10 as VARCHAR(50)),SPACE(1)) + '" ' +
 'UMMBv11="'+ COALESCE(CAST(@UpdateMinMaxBetv11 as VARCHAR(50)),SPACE(1)) + '" ' +
+'UMMBv44="'+ COALESCE(CAST(@UpdateMinMaxBetv44 as VARCHAR(50)),SPACE(1)) + '" ' +
 'UMMBv154="'+ COALESCE(CAST(@UpdateMinMaxBetv154 as VARCHAR(50)),SPACE(1)) + '" ' +
 'UMMBv99="'+ COALESCE(CAST(@UpdateMinMaxBetv99 as VARCHAR(50)),SPACE(1)) + '" ' +
 'UMMBv99MP="'+ COALESCE(CAST(@UpdateMinMaxBetv99MP as VARCHAR(50)),SPACE(1)) + '" ' +
@@ -1473,6 +1601,9 @@ SELECT @TrackingValue2 ='<Lrf_CustomerUpdMember_MinMaxBet custid="'+ COALESCE(CA
 'MinBv11="'+ COALESCE(CAST(@Old_minbetv11 as VARCHAR(50)),SPACE(1)) + '" ' +
 'MaxBv11="'+ COALESCE(CAST(@Old_maxbetv11 as VARCHAR(50)),SPACE(1)) + '" ' +
 'MPMv11="'+ COALESCE(CAST(@Old_maxpermatchv11 as VARCHAR(50)),SPACE(1))  + '" ' +
+'MinBv44="'+ COALESCE(CAST(@Old_minbetv44 as VARCHAR(50)),SPACE(1)) + '" ' +
+'MaxBv44="'+ COALESCE(CAST(@Old_maxbetv44 as VARCHAR(50)),SPACE(1)) + '" ' +
+'MPMv44="'+ COALESCE(CAST(@Old_maxpermatchv44 as VARCHAR(50)),SPACE(1))  + '" ' +	
 'MinBv154="'+ COALESCE(CAST(@Old_minbetv154 as VARCHAR(50)),SPACE(1)) + '" ' +
 'MaxBv154="'+ COALESCE(CAST(@Old_maxbetv154 as VARCHAR(50)),SPACE(1)) + '" ' +
 'MPMv154="'+ COALESCE(CAST(@Old_maxpermatchv154 as VARCHAR(50)),SPACE(1))  + '" ' +
@@ -1489,6 +1620,7 @@ SELECT @TrackingValue2 ='<Lrf_CustomerUpdMember_MinMaxBet custid="'+ COALESCE(CA
 'UMMBv8="'+ COALESCE(CAST(@UpdateMinMaxBetv8 as VARCHAR(50)),SPACE(1)) + '" ' +
 'UMMBv10="'+ COALESCE(CAST(@UpdateMinMaxBetv10 as VARCHAR(50)),SPACE(1)) + '" ' +
 'UMMBv11="'+ COALESCE(CAST(@UpdateMinMaxBetv11 as VARCHAR(50)),SPACE(1)) + '" ' +
+'UMMBv44="'+ COALESCE(CAST(@UpdateMinMaxBetv44 as VARCHAR(50)),SPACE(1)) + '" ' +
 'UMMBv154="'+ COALESCE(CAST(@UpdateMinMaxBetv154 as VARCHAR(50)),SPACE(1)) + '" ' +
 'UMMBv99="'+ COALESCE(CAST(@UpdateMinMaxBetv99 as VARCHAR(50)),SPACE(1)) + '" ' +
 'UMMBv99MP="'+ COALESCE(CAST(@UpdateMinMaxBetv99MP as VARCHAR(50)),SPACE(1)) + '" ' +
@@ -1511,7 +1643,6 @@ EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
 	@duration = @duration
 
 ---------------------------------------------------------
-
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMember_MinMaxBet] TO [bodbLicenseeNet]
