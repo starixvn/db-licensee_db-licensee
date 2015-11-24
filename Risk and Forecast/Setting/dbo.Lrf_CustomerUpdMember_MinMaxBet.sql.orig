@@ -1,14 +1,11 @@
 ﻿USE [CustDB]
 GO
-<<<<<<< HEAD
-
+ 
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-=======
  
->>>>>>> 890b81b2a3025a22f76180f19836a23d86d8eff2
 ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMember_MinMaxBet]
 	@custid INT,-- MemberID
 	
@@ -88,12 +85,12 @@ Revisions:
    - 20110613@Henry: Logging Enhancement
    - 20120326@Dom: Change CustSetting to Dep_CustSetting, CustSetting3rd to Dep_CustSetting3rd
    - 20140207@Jim: support to offer HorseRacingFixedOdds
-<<<<<<< HEAD
+ 
    - 20151023@Victor: Support New Simplified Chinese
    
-=======
+ 
    - 20151015@Jim: Integrate Sportbook2 (Feature #44759)
->>>>>>> 890b81b2a3025a22f76180f19836a23d86d8eff2
+ 
 Param's Explanation:
 • @ErrCode:
     = 0: Update successfully.
@@ -1420,7 +1417,9 @@ begin
 END
 
 
+ 
 EXEC dbo.Lrf_CustomerUpdMaxPerMatch 
+ 
 	@custid = @custid,
 	@maxpermatch = @maxpermatch,
 	@maxpermatchv2 = @maxpermatchv2,

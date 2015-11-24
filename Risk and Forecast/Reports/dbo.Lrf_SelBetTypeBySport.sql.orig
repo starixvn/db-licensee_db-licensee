@@ -27,11 +27,10 @@ Revisions:
    - 20141017@Jim : Apply for the change in Sporting Solution structure (#24478)
    - 20150415@Jim: support Betradar phase 2
    - 20150714@Winnie: Exclude 901,902,903
-<<<<<<< HEAD
+ 
    - 20151023@Victor: Support New Simplified Chinese
-=======
    - 20151022@Jim: offer MuayThai
->>>>>>> 890b81b2a3025a22f76180f19836a23d86d8eff2
+ 
 Param's Explanation:
 	
 */
