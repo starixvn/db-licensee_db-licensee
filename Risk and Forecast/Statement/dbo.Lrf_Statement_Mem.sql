@@ -32,6 +32,8 @@ Revisions:
  -- 201506125@Winnie: support BetTrade 
  -- 20150626@Jim: support MicroGaming (feature #37034) 
  -- 20150917@Florent: Change datasource for AG Casino (#Redmine 43172)
+ -- 20151123@Sophia: Add Grand Prize for Microgaming - RNG Casino [RedmineId: #47601]
+ 
 Param's Explanation:   
 • @ErrCode:  
     = 0: add new member successfully.  
@@ -324,7 +326,31 @@ select @fdate = @FromDate, @tdate = @ToDate
                             AND accdate BETWEEN @fdate AND @tdate  
                             AND transtype NOT IN ( 'BET', 'COM' )  
         END   
-  
+	
+	---------Get Data of PayOutTrans for Progressive Jackpot Win ----------
+		INSERT  INTO @Data (
+							  OrderKey,  
+							  winlostdate,  
+							  transtype,  
+							  transdesc,  
+							  TurnOver,  
+							  totalAmt,  
+							  Commission)   
+        SELECT  
+			4 as OrderKey,  
+            winlostdate,  
+			'GP' as transtype,  
+            'Grand Prize' as transdesc,  
+            0 ,  
+            SUM (WinAmount) as totalAmt ,  
+            0  
+    FROM DBACC.bodb02.dbo.PayoutTrans WITH(NOLOCK) 
+	WHERE winlostdate BETWEEN @Fromdate AND @todate
+		  AND custid = @custid 
+	GROUP BY winlostdate , CustID
+	-----------------------------------------------------------------------------
+		
+
     DECLARE @RowStart INT ,  
         @RowEnd INT    
     SELECT  @PageIndex = @PageIndex - 1 ,  
