@@ -61,6 +61,7 @@ Revision:
 	- 20150618@Bobby: Apply pre-caching sumtotal from rptcustomerturnOver_bobby table
 	- 20150821@Winnie: KeenOcean revert currency
 	- 20151023@Victor: Support New Simplified Chinese
+	- 20151127@Bobby: #48081 - Apply PH-AIO new bettypes
 	
 Parameter's Explanation:
 	- @ReportBy:  1: daily, 2: monthly
@@ -287,6 +288,7 @@ BEGIN
 							OR b.bettype BETWEEN 81 AND 88
 							OR b.bettype BETWEEN 90 AND 120
 							OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
+							OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
 						)
 						THEN 
 								CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal

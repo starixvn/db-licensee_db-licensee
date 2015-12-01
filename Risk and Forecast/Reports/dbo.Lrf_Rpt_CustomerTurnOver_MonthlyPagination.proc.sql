@@ -24,6 +24,16 @@ ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver_MonthlyPagination]
 ) 
 WITH RECOMPILE
 AS
+/*	
+Created: 20150603@Bobby
+Task: Customer Performance Report
+DB: DBEXT/BODB02
+Revision:
+	- 20151127@Bobby: #48081 - Apply PH-AIO new bettypes
+	
+Parameter's Explanation:
+			
+*/
 BEGIN
 	SET NOCOUNT ON;
 
@@ -135,6 +145,7 @@ BEGIN
 										OR b.bettype BETWEEN 81 AND 88
 										OR b.bettype BETWEEN 90 AND 120
 										OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
+										OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
 									)
 									THEN 
 											CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
@@ -266,20 +277,21 @@ BEGIN
 										OR b.bettype BETWEEN 81 AND 88
 										OR b.bettype BETWEEN 90 AND 120
 										OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
-										)
-										THEN 
-												CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
-														WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
-														WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
-																			CASE 
-																				WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
-																				WHEN b.odds >=0 THEN (1 + b.odds) END
-														WHEN OddsType = 5 THEN --american odds to decimal
-																		CASE
-																		WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
-																		WHEN (b.odds * 100) % 2 = 0 THEN 2
-																		WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
-													END 
+										OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
+									)
+									THEN 
+											CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
+													WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
+													WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
+																		CASE 
+																			WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
+																			WHEN b.odds >=0 THEN (1 + b.odds) END
+													WHEN OddsType = 5 THEN --american odds to decimal
+																	CASE
+																	WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
+																	WHEN (b.odds * 100) % 2 = 0 THEN 2
+																	WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
+												END 
 									ELSE b.Odds
 								END >= @odds
 						--AND tp.custid IS NULL

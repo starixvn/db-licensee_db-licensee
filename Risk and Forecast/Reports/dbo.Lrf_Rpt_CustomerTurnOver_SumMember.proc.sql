@@ -26,6 +26,16 @@ ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver_SumMember]
 ) 
 WITH RECOMPILE
 AS
+/*	
+Created: 20150603@Bobby
+Task: Customer Performance Report
+DB: DBEXT/BODB02
+Revision:
+	- 20151127@Bobby: #48081 - Apply PH-AIO new bettypes
+	
+Parameter's Explanation:
+			
+*/
 BEGIN
 	SET NOCOUNT ON;
 
@@ -161,6 +171,7 @@ BEGIN
 								OR b.bettype BETWEEN 81 AND 88
 								OR b.bettype BETWEEN 90 AND 120
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
+								OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
 							)
 							THEN 
 									CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
@@ -195,12 +206,6 @@ BEGIN
 
 	RETURN;
 END
-GO 
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerTurnOver_SumMember] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CustomerTurnOver_SumMember] TO [vnteam] 
-GO
-
 GO 
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerTurnOver_SumMember] TO [bodbLicenseeNet]
 GO
