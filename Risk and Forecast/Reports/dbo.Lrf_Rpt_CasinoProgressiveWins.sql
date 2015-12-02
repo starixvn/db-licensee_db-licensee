@@ -95,8 +95,8 @@ BEGIN
 		ELSE 
 			SET @_ToDate = @Todate
 		
-		INSERT INTO #JackPotWin (WinlostDate, ExternalId, SystemID, RefNo, WinAmount, Bettype, Sporttype, TransDesc, currency)
-		SELECT	p.WinlostDate, c.username2 as ExternalId, p.Username as SystemID, 
+		INSERT INTO #JackPotWin (WinlostDate, CustId, ExternalId, SystemID, RefNo, WinAmount, Bettype, Sporttype, TransDesc, currency)
+		SELECT	p.WinlostDate, p.CustId, c.username2 as ExternalId, p.Username as SystemID, 
 				p.RefNo, p.WinAmount, p.GameId as Bettype, p.ProductId as Sporttype, b.transdesc, tma.currency
 		FROM	DBACC.bodb02.dbo.PayOutTrans p WITH (NOLOCK)
 			INNER JOIN dbo.BettransRNG14 b WITH (NOLOCK) 
@@ -118,8 +118,8 @@ BEGIN
 		ELSE 
 			SET @_ToDate = @Todate
 		
-		INSERT INTO #JackPotWin (WinlostDate, ExternalId, SystemID, RefNo, WinAmount, Bettype, Sporttype, TransDesc, currency)
-		SELECT	p.WinlostDate, c.username2 as ExternalId, p.Username as SystemID, 
+		INSERT INTO #JackPotWin (WinlostDate, CustId, ExternalId, SystemID, RefNo, WinAmount, Bettype, Sporttype, TransDesc, currency)
+		SELECT	p.WinlostDate, p.CustId, c.username2 as ExternalId, p.Username as SystemID, 
 				p.RefNo, p.WinAmount, p.GameId as Bettype, p.ProductId as Sporttype, b.transdesc, tma.currency
 		FROM	DBACC.bodb02.dbo.PayOutTrans p WITH (NOLOCK)
 			INNER JOIN DBARC.bodb_archive.dbo.BettransRNG_BK b WITH (NOLOCK) 
