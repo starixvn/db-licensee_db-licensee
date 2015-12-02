@@ -40,7 +40,8 @@ BEGIN
 	  Bettype SMALLINT, 
 	  SportType SMALLINT, 
 	  TransDesc NVARCHAR(1000),
-	  Currency INT
+	  Currency INT,
+	  TranId3rd VARCHAR(64)
 	)
 
 	SELECT	currencyID,LicenseeID 
@@ -70,9 +71,9 @@ BEGIN
 		ELSE 
 			SET @_FromDate = @MoveBetsDay
 
-		INSERT INTO #JackPotWin (WinlostDate, CustId, ExternalId, SystemID, RefNo, WinAmount, Bettype, Sporttype, TransDesc, Currency)
+		INSERT INTO #JackPotWin (WinlostDate, CustId, ExternalId, SystemID, RefNo, WinAmount, Bettype, Sporttype, TransDesc, Currency, TranId3rd)
 		SELECT	p.WinlostDate, p.CustId, c.username2 as ExternalId, p.Username as SystemID, 
-				p.RefNo, p.WinAmount, p.GameId as Bettype, p.ProductId as Sporttype, b.transdesc, tma.currency
+				p.RefNo, p.WinAmount, p.GameId as Bettype, p.ProductId as Sporttype, b.transdesc, tma.currency, b.TranId3rd
 		FROM	DBACC.bodb02.dbo.PayOutTrans p WITH (NOLOCK)
 			INNER JOIN dbo.BettransRNG b WITH (NOLOCK) 
 				ON p.RefNo = b.TransId
@@ -95,9 +96,9 @@ BEGIN
 		ELSE 
 			SET @_ToDate = @Todate
 		
-		INSERT INTO #JackPotWin (WinlostDate, CustId, ExternalId, SystemID, RefNo, WinAmount, Bettype, Sporttype, TransDesc, currency)
+		INSERT INTO #JackPotWin (WinlostDate, CustId, ExternalId, SystemID, RefNo, WinAmount, Bettype, Sporttype, TransDesc, currency, TranId3rd)
 		SELECT	p.WinlostDate, p.CustId, c.username2 as ExternalId, p.Username as SystemID, 
-				p.RefNo, p.WinAmount, p.GameId as Bettype, p.ProductId as Sporttype, b.transdesc, tma.currency
+				p.RefNo, p.WinAmount, p.GameId as Bettype, p.ProductId as Sporttype, b.transdesc, tma.currency, b.TranId3rd
 		FROM	DBACC.bodb02.dbo.PayOutTrans p WITH (NOLOCK)
 			INNER JOIN dbo.BettransRNG14 b WITH (NOLOCK) 
 				ON p.RefNo = b.TransId
@@ -118,9 +119,9 @@ BEGIN
 		ELSE 
 			SET @_ToDate = @Todate
 		
-		INSERT INTO #JackPotWin (WinlostDate, CustId, ExternalId, SystemID, RefNo, WinAmount, Bettype, Sporttype, TransDesc, currency)
+		INSERT INTO #JackPotWin (WinlostDate, CustId, ExternalId, SystemID, RefNo, WinAmount, Bettype, Sporttype, TransDesc, currency, TranId3rd)
 		SELECT	p.WinlostDate, p.CustId, c.username2 as ExternalId, p.Username as SystemID, 
-				p.RefNo, p.WinAmount, p.GameId as Bettype, p.ProductId as Sporttype, b.transdesc, tma.currency
+				p.RefNo, p.WinAmount, p.GameId as Bettype, p.ProductId as Sporttype, b.transdesc, tma.currency, b.TranId3rd
 		FROM	DBACC.bodb02.dbo.PayOutTrans p WITH (NOLOCK)
 			INNER JOIN DBARC.bodb_archive.dbo.BettransRNG_BK b WITH (NOLOCK) 
 				ON p.RefNo = b.TransId
@@ -141,7 +142,7 @@ BEGIN
 	----Get Data
 
 	SELECT j.WinlostDate, J.CustId, j.ExternalId, j.SystemID, 
-		  j.RefNo, j.WinAmount, j.Bettype, j.Sporttype, j.transdesc, j.currency,
+		  j.RefNo, j.WinAmount, j.Bettype, j.Sporttype, j.transdesc, j.currency, j.TranId3rd,
 		  j.WinAmount * e.EUR AS WinAmountEUR,
 		  j.WinAmount * e.USD AS WinAmountUSD,
 		  j.WinAmount * e.GBP AS WinAmountGBP
