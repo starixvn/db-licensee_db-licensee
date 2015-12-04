@@ -31,6 +31,7 @@ AS
 		- 20150127@Jim: support base on GBP Currency
 		- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
 		- 20151127@Bobby: #48081 - Apply PH-AIO new bettypes
+		- 20151203@Bobby: Database - Change datatype [Redmine: #48660]
 		
 	Parameter's Explanation:
 		- @LicenseeID : Licensee ID
@@ -134,7 +135,7 @@ DECLARE @AgMatchWLDetails TABLE (
 	,ProductName VARCHAR(4)
 	,leagueid INT
 	--,odds SMALLMONEY 
-	,odds2 SMALLMONEY
+	,odds2 MONEY
 	,turnover MONEY
 	,MemberWinLost MONEY
 	,LicenseeWL MONEY

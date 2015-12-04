@@ -6,16 +6,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
- 
-ALTER USE [bodb02]
-GO
-/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_CustomerTurnOver]    Script Date: 6/3/2015 4:25:44 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
- 
+  
 ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver_SumMember]
 (
 	@pStartDate		DATE

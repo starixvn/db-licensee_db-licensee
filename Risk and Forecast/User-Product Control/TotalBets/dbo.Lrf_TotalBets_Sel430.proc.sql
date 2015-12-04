@@ -31,6 +31,7 @@ Revisions:
 	- 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
 	- 20150124@Winnie: Add base currency GBP 
 	- 20150420@Jim: add more bettype 165, 166
+	- 20151203@Bobby: Database - Change datatype [Redmine: #48660]
 */
 
 SET NOCOUNT ON
@@ -47,8 +48,8 @@ DECLARE @Data TABLE(
 	AwayID INT,
 	hdp1 SMALLMONEY,
 	hdp2 SMALLMONEY,
-	odds SMALLMONEY,
-	modds SMALLMONEY,
+	odds MONEY,
+	modds MONEY,
 	status NVARCHAR(50),
 	Stake MONEY, 
 	Actual_Stake	MONEY,

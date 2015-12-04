@@ -32,6 +32,8 @@ Revisions:
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	- 20150127@Jim: support base on GBP Currency
 	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
+	- 20151127@Bobby: #48081 - Apply PH-AIO new bettypes
+	- 20151203@Bobby: Database - Change datatype [Redmine: #48660]
 Param's Explanation:   
    
 */
@@ -85,7 +87,7 @@ DECLARE @AgMatchWLDetails TABLE (
 	custid INT
 	,Winlostdate SMALLDATETIME
 	,Currency INT
-	,odds SMALLMONEY
+	,odds MONEY
 	,sporttype SMALLINT
 	,leagueid INT
 	,turnover MONEY
@@ -143,10 +145,11 @@ BEGIN
 			,b.Winlostdate
 			,b.currency
 			,CASE 
-				WHEN (
-						b.bettype IN (1, 2, 3, 7, 12, 8, 20)
-						OR b.bettype BETWEEN 81 AND 88
-						OR b.bettype BETWEEN 90 AND 120
+				WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
+							OR b.bettype BETWEEN 81 AND 88
+							OR b.bettype BETWEEN 90 AND 120
+							OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
+							OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
 						)
 					THEN CASE 
 							WHEN b.OddsType = 1
@@ -215,10 +218,11 @@ BEGIN
 			,b.liveindicator
 			,b.tpositiontaking
 			,CASE 
-				WHEN (
-						b.bettype IN (1, 2, 3, 7, 12, 8, 20)
-						OR b.bettype BETWEEN 81 AND 88
-						OR b.bettype BETWEEN 90 AND 120
+				WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
+							OR b.bettype BETWEEN 81 AND 88
+							OR b.bettype BETWEEN 90 AND 120
+							OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
+							OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
 						)
 					THEN CASE 
 							WHEN b.OddsType = 1
@@ -256,10 +260,11 @@ BEGIN
 			,b.Winlostdate
 			,b.currency
 			,CASE 
-				WHEN (
-						b.bettype IN (1, 2, 3, 7, 12, 8, 20)
-						OR b.bettype BETWEEN 81 AND 88
-						OR b.bettype BETWEEN 90 AND 120
+				WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
+							OR b.bettype BETWEEN 81 AND 88
+							OR b.bettype BETWEEN 90 AND 120
+							OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
+							OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
 						)
 					THEN CASE 
 							WHEN b.OddsType = 1
@@ -327,10 +332,11 @@ BEGIN
 			,b.liveindicator
 			,b.tpositiontaking
 			,CASE 
-				WHEN (
-						b.bettype IN (1, 2, 3, 7, 12, 8, 20)
-						OR b.bettype BETWEEN 81 AND 88
-						OR b.bettype BETWEEN 90 AND 120
+				WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
+							OR b.bettype BETWEEN 81 AND 88
+							OR b.bettype BETWEEN 90 AND 120
+							OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
+							OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
 						)
 					THEN CASE 
 							WHEN b.OddsType = 1
@@ -378,11 +384,12 @@ BEGIN
 				,b.Winlostdate
 				,ta.currency
 				,CASE 
-					WHEN (
-							b.bettype IN (1, 2, 3, 7, 12, 8, 20)
+					WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
 							OR b.bettype BETWEEN 81 AND 88
 							OR b.bettype BETWEEN 90 AND 120
-							)
+							OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
+							OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
+						)
 						THEN CASE 
 								WHEN b.OddsType = 1
 									THEN b.odds + 1 --decimal
@@ -447,11 +454,12 @@ BEGIN
 				,ta.Currency
 				,b.isBA
 				,CASE 
-					WHEN (
-							b.bettype IN (1, 2, 3, 7, 12, 8, 20)
+					WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
 							OR b.bettype BETWEEN 81 AND 88
 							OR b.bettype BETWEEN 90 AND 120
-							)
+							OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
+							OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
+						)
 						THEN CASE 
 								WHEN b.OddsType = 1
 									THEN b.odds + 1 --decimal
@@ -486,11 +494,12 @@ BEGIN
 				,b.Winlostdate
 				,ta.currency
 				,CASE 
-					WHEN (
-							b.bettype IN (1, 2, 3, 7, 12, 8, 20)
+					WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
 							OR b.bettype BETWEEN 81 AND 88
 							OR b.bettype BETWEEN 90 AND 120
-							)
+							OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
+							OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
+						)
 						THEN CASE 
 								WHEN b.OddsType = 1
 									THEN b.odds + 1 --decimal
@@ -553,11 +562,12 @@ BEGIN
 				,ta.currency				
 				,b.isBA
 				,CASE 
-					WHEN (
-							b.bettype IN (1, 2, 3, 7, 12, 8, 20)
+					WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
 							OR b.bettype BETWEEN 81 AND 88
 							OR b.bettype BETWEEN 90 AND 120
-							)
+							OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
+							OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
+						)
 						THEN CASE 
 								WHEN b.OddsType = 1
 									THEN b.odds + 1 --decimal

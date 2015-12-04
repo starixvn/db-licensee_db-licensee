@@ -1,6 +1,6 @@
 ﻿  ALTER FUNCTION [dbo].[Lrf_f_GetOddsByBettype]
 (	
-	@Odds		SMALLMONEY,
+	@Odds		MONEY,
 	@bettype	INT,
 	@OddsType	TINYINT = 1
 )
@@ -12,13 +12,15 @@ RETURNS SMALLMONEY
 
 	Revisions: 		
 		- 20110810@Henry: Add more bettype for number game
+		- 20151203@Bobby: Database - Change datatype [Redmine: #48660]
+		
 	Param's Explanation:
 		+ Input: @Odds 
 		+ Input: @bettype AND @oddsType: get the added values of odds (Dec AND American odds)		
 */
 AS
 BEGIN
-	DECLARE	@OddsValue SMALLMONEY
+	DECLARE	@OddsValue MONEY
 	IF (@bettype IN (1,2,3,7,12,8,20) OR @bettype BETWEEN 81 AND 88 OR @bettype BETWEEN 90 AND 120) AND @OddsType = 1 SELECT @OddsValue = @Odds + 1
 	ELSE IF (@bettype IN (1,2,3,7,12,8,20) OR @bettype BETWEEN 81 AND 88 OR @bettype BETWEEN 90 AND 120) AND @OddsType=5 SELECT @OddsValue = @Odds * 100 	
 	ELSE SELECT @OddsValue = @Odds 

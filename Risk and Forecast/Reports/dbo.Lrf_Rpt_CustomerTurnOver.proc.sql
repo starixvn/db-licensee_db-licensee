@@ -62,6 +62,7 @@ Revision:
 	- 20150821@Winnie: KeenOcean revert currency
 	- 20151023@Victor: Support New Simplified Chinese
 	- 20151127@Bobby: #48081 - Apply PH-AIO new bettypes
+	- 20151203@Bobby: Database - Change datatype [Redmine: #48660]
 	
 Parameter's Explanation:
 	- @ReportBy:  1: daily, 2: monthly
@@ -99,7 +100,7 @@ BEGIN
 		, winlostdate 		DATE
 		, custid 			INT
 		, currency			INT
-		, sporttype			INT
+		, sporttype			SMALLINT
 		, bettype			INT
 		, betcount 			INT
 		, turnover			MONEY
@@ -158,19 +159,19 @@ BEGIN
 		winlostdate		SMALLDATETIME
 		, custid		INT
 		, recommend		INT
-		, sporttype		INT
+		, sporttype		SMALLINT
 		, matchid		INT
-		, bettype		INT
+		, bettype		SMALLINT
 		, oddsid		INT
 		, winlost		MONEY
 		, stake			MONEY
 		, playercomm	MONEY
-		, Odds			FLOAT
+		, Odds			MONEY
 		, EventType		TINYINT
-		, ProductId		INT
+		, ProductId		TINYINT
 	)
 	
-	SELECT VAL AS sportId 
+	SELECT CAST(VAL AS TINYINT) AS sportId 
 	INTO #ProductID 
 	FROM dbo.strSplit(@Product,',')
 	
@@ -179,7 +180,7 @@ BEGIN
 		RETURN;
 	END 
 	
-	SELECT st AS StatusID
+	SELECT CAST(st AS TINYINT) AS StatusID
 	INTO #Status
 	FROM (
 		----@ShowWin
@@ -200,11 +201,11 @@ BEGIN
 		OR (@ShowDraw	= 1 AND sh = 3)
 	
 	-- bettype
-	DECLARE @SportBettype TABLE(ProductID INT, Bettype INT,EventType INT)
+	DECLARE @SportBettype TABLE(ProductID TINYINT, Bettype SMALLINT,EventType TINYINT)
 	INSERT INTO @SportBettype
 	EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4
 	
-	SELECT VAL AS typeID
+	SELECT CAST(VAL AS SMALLINT) AS typeID
 	INTO #BettypeID
 	FROM dbo.strSplit(@Bettype,',') AS b
 
