@@ -8,7 +8,7 @@ GO
 
 ALTER PROCEDURE [dbo].[Lrf_BetList_WinlostByLeague_Mem] 
 	@CustID			INT
-	,@Odds			FLOAT = 0
+	,@Odds			MONEY = 0
 	,@LeagueID		INT
 	,@MatchID		INT=0
 	,@LicenseeID	INT
