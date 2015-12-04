@@ -92,6 +92,7 @@ AS
 		- 20150917@Kos: Support Microgaming RNG Game
 		- 20150922@Kos: Support AG Casino
 		- 20151028@Kos: Change ProductId, SportType of Microgaming RNG Game
+		- 20151203@Kos: Change odds, modds data type from SMALLMONEY to MONEY [Redmine: #48660]
 */
 
 BEGIN
@@ -145,8 +146,8 @@ BEGIN
 		AwayID			INT, 
 		hdp1			SMALLMONEY, 
 		hdp2			SMALLMONEY, 
-		Odds			SMALLMONEY, 
-		modds			SMALLMONEY, 
+		Odds			MONEY, 
+		modds			MONEY, 
 		Status			NVARCHAR(50),
 		Stake			MONEY, 
 		Actual_Stake	MONEY,
@@ -178,8 +179,8 @@ BEGIN
 		BetID			BIGINT,
 		hdp1			SMALLMONEY, 
 		hdp2			SMALLMONEY, 
-		Odds			SMALLMONEY, 
-		modds			SMALLMONEY, 
+		Odds			MONEY, 
+		modds			MONEY, 
 		Status			NVARCHAR(10),
 		Stake			MONEY, 
 		Actual_Stake	MONEY,
@@ -1590,7 +1591,7 @@ BEGIN
 	-- get ticket in more detail
 	DECLARE @BettransDetail TABLE(
 		refno			BIGINT,
-		odds			SMALLMONEY,
+		odds			MONEY,
 		stake			MONEY,
 		status			NVARCHAR(10),
 		apositiontaking SMALLMONEY,

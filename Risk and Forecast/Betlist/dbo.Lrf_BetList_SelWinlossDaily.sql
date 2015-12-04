@@ -92,6 +92,7 @@ AS
 		- 20150916@Kos: Don't support Microgaming RNG Game
 		- 20150921@Kos: Don't support Microgaming
 		- 20151014@Kos: Increase data length of @sql to 3000
+		- 20151203@Kos: Change odds, modds data type from SMALLMONEY to MONEY [Redmine: #48660]
 
 	Param's Explanation: 
 */
@@ -122,7 +123,7 @@ BEGIN
 		AwayID			INT,
 		hdp1			SMALLMONEY,
 		hdp2			SMALLMONEY,
-		odds			SMALLMONEY,
+		odds			MONEY,
 		status			NVARCHAR(50),
 		stake			MONEY,
 		Winlost			MONEY,
@@ -336,9 +337,9 @@ BEGIN
 				,o.RacerID  
 				,r.BetStatus BetStatus
 				,r.EventTime   ShowTime
-				,NULL as AwayID
-				,NULL as IsNeutral	
-			FROM VSOutright o with (nolock) 
+				,NULL AS AwayID
+				,NULL AS IsNeutral	
+			FROM VSOutright o WITH (NOLOCK) 
 				INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
 			WHERE  o.EventDate =@wldate
 		END
@@ -355,72 +356,72 @@ BEGIN
 				m.TeamID ,
 				0 BetStatus,
 				'' ShowTime,
-				NULL as  AwayID,
+				NULL AS  AwayID,
 				CONVERT(BIT,0) AS IsNeutral
 			FROM dbo.Outright AS m WITH (NOLOCK) 
 				 INNER JOIN dbo.League AS l WITH (NOLOCK) ON m.leagueID = l.leagueID
-			WHERE m.eventdate=@wldate	 
+			WHERE m.eventdate = @wldate	 
 		END
 
-		IF (@Product='BA' )
-			BEGIN
-				INSERT INTO @DataSum
-				SELECT 
-					b.currency,
-					COUNT(b.transid),
-					SUM(ISNULL(b.winlost-b.actual_stake,0)),
-					0,
-					SUM(ISNULL(b.comm,0)),
-					SUM(b.playercomm )  AS  SumPlayerComm
-				FROM bettrans b WITH (nolock) 
-					INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
-					--INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
-					INNER JOIN #SportBettype sbt ON sbt.Bettype=b.bettype
-					INNER JOIN #TempAg ag ON b.recommend = ag.custid AND b.currency = ag.Currency
-				WHERE
-					b.winlostdate = @wldate
-					AND b.bettype NOT IN (9,29,10)
-					AND b.status=@status
-					AND b.ruben = 1
-					AND b.tpositiontaking=0
-				GROUP BY b.currency	
-			END
+		IF @Product='BA'
+		BEGIN
+			INSERT INTO @DataSum
+			SELECT 
+				b.currency,
+				COUNT(b.transid),
+				SUM(ISNULL(b.winlost-b.actual_stake,0)),
+				0,
+				SUM(ISNULL(b.comm,0)),
+				SUM(b.playercomm )  AS  SumPlayerComm
+			FROM bettrans b WITH (nolock) 
+				INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
+				--INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
+				INNER JOIN #SportBettype sbt ON sbt.Bettype=b.bettype
+				INNER JOIN #TempAg ag ON b.recommend = ag.custid AND b.currency = ag.Currency
+			WHERE
+				b.winlostdate = @wldate
+				AND b.bettype NOT IN (9,29,10)
+				AND b.status=@status
+				AND b.ruben = 1
+				AND b.tpositiontaking=0
+			GROUP BY b.currency	
+		END
 
-		IF (@Product<>'BA' )	
-			BEGIN
-				INSERT INTO @DataSum
-				SELECT 
-					b.currency,
-					COUNT(b.transid),
-					SUM(ISNULL(b.winlost-b.actual_stake,0)),
-					-SUM(ISNULL(CASE WHEN  b.bettype IN (31,32,33) THEN awinlost
-													ELSE (b.winlost-b.actual_stake) 
-													END	
-									,0)
-						),
-					SUM(ISNULL(b.comm,0)),
-					SUM(b.playercomm )  AS  SumPlayerComm
-				FROM bettrans b WITH (nolock) 
-					--INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
-					INNER JOIN #SportBettype sbt ON sbt.Bettype=b.bettype
-					INNER JOIN #TempAg ag ON b.recommend = ag.custid AND b.currency = ag.Currency
-				WHERE
-					b.winlostdate = @wldate
-					AND b.bettype NOT IN (9,29,10)
-					AND b.status=@status
-					AND b.ruben = 1
-					AND (
-						(@Product='SB' AND b.tpositiontaking<>0)
-						OR @Product<>'SB'
-						)
-				GROUP BY b.currency	
-			END
+		IF @Product <> 'BA'
+		BEGIN
+			INSERT INTO @DataSum
+			SELECT 
+				b.currency,
+				COUNT(b.transid),
+				SUM(ISNULL(b.winlost-b.actual_stake,0)),
+				-SUM(ISNULL(CASE WHEN  b.bettype IN (31,32,33) THEN awinlost
+												ELSE (b.winlost-b.actual_stake) 
+												END	
+								,0)
+					),
+				SUM(ISNULL(b.comm,0)),
+				SUM(b.playercomm )  AS  SumPlayerComm
+			FROM bettrans b WITH (nolock) 
+				--INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
+				INNER JOIN #SportBettype sbt ON sbt.Bettype=b.bettype
+				INNER JOIN #TempAg ag ON b.recommend = ag.custid AND b.currency = ag.Currency
+			WHERE
+				b.winlostdate = @wldate
+				AND b.bettype NOT IN (9,29,10)
+				AND b.status=@status
+				AND b.ruben = 1
+				AND (
+					(@Product='SB' AND b.tpositiontaking<>0)
+					OR @Product<>'SB'
+					)
+			GROUP BY b.currency	
+		END
 
 		CREATE TABLE #BetData1
 		(
 			oddsid INT,
 			Sporttype INT,		
-			Username nvarchar(50),
+			Username NVARCHAR(50),
 			NickName NVARCHAR(50),
 			Bettype INT,
 			LeagueID INT,
@@ -431,8 +432,8 @@ BEGIN
 			AwayID INT,
 			hdp1 SMALLMONEY,
 			hdp2 SMALLMONEY,
-			odds SMALLMONEY,
-			status nvarchar(50),
+			odds MONEY,
+			status NVARCHAR(50),
 			stake MONEY,
 			Winlost MONEY,
 			LicenseeWL   MONEY,
@@ -446,7 +447,7 @@ BEGIN
 			liveawayscore SMALLINT,
 			MatchID INT,
 			--ip nvarchar(30),
-			Betstatus nvarchar(50),
+			Betstatus NVARCHAR(50),
 			IsNeutral BIT,
 			oddstype INT,
 			betid BIGINT,
@@ -497,8 +498,8 @@ BEGIN
 				WHEN b.bettype NOT IN (31,32,33) THEN - (b.winlost-b.actual_stake) 
 				ELSE awinlost 
 			END AS LicenseeWL,
-			b.comm as comm,
-			b.playercomm as PlayerComm,
+			b.comm AS comm,
+			b.playercomm AS PlayerComm,
 			b.transdate,
 			b.winlostdate,
 			CASE  
@@ -523,19 +524,19 @@ BEGIN
 			+@Winlost+'*e.USD WinlostUSD,'
 			+@LicenseeWL+'*e.USD LicenseeWLUSD,
 			b.comm*e.USD commUSD,
-			b.playercomm*e.USD as PlayerCommUSD,
+			b.playercomm*e.USD AS PlayerCommUSD,
 			--EUR
 			b.stake*e.EUR stakeEUR,'
 			+@Winlost+'*e.EUR WinlostEUR,'
 			+@LicenseeWL+'*e.EUR LicenseeWLEUR,
 			b.comm*e.EUR commEUR,
-			b.playercomm*e.EUR as PlayerCommEUR,
+			b.playercomm*e.EUR AS PlayerCommEUR,
 			--GBP
 			b.stake*e.GBP stakeGBP,'
 			+@Winlost+'*e.GBP WinlostGBP,'
 			+@LicenseeWL+'*e.GBP LicenseeWLGBP,
 			b.comm*e.GBP commGBP,
-			b.playercomm*e.GBP as PlayerCommGBP
+			b.playercomm*e.GBP AS PlayerCommGBP
 		FROM
 			bettrans b WITH (nolock) 
 			INNER JOIN customer c WITH (nolock) ON b.custid = c.custid
@@ -552,7 +553,7 @@ BEGIN
 			AND b.ruben = 1'+char(13)+
 			CASE WHEN @Product='SB' THEN 'AND b.tpositiontaking<>0'	
 									ELSE ''
-									END+char(13)			
+									END+char(13)
 	
 		INSERT INTO #BetData1
 		(Oddsid,Sporttype,Username,NickName,Bettype,LeagueID,Transid,Matchcode,Race,HomeID,AwayID,hdp1,hdp2,
@@ -586,8 +587,7 @@ BEGIN
 			betstatus = m.betstatus, 
 			IsNeutral = m.IsNeutral,
 			showtime = CASE 
-							WHEN (b.bettype BETWEEN 1101 AND 1199 ) 
-							THEN  ISNULL(m.showtime,'') 
+							WHEN (b.bettype BETWEEN 1101 AND 1199 ) THEN  ISNULL(m.showtime,'') 
 							ELSE '' 
 						END
 		FROM #BetData1 b
@@ -643,19 +643,19 @@ BEGIN
 		IF (@Product='VS' )
 		BEGIN 
 			INSERT INTO @Vhr
-				SELECT 
-					o.OriD
-					,r.Sporttype
-					,r.LeagueID
-					,CONVERT (VARCHAR(50),o.RacerNum) matchcode
-					,o.RacerID  
-					,r.BetStatus BetStatus
-					,r.EventTime   ShowTime
-					,NULL as AwayID
-					,NULL as IsNeutral
-				FROM VSOutright14 o with (nolock) 
-					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
-				WHERE  o.EventDate =@wldate
+			SELECT 
+				o.OriD
+				,r.Sporttype
+				,r.LeagueID
+				,CONVERT (VARCHAR(50),o.RacerNum) matchcode
+				,o.RacerID  
+				,r.BetStatus
+				,r.EventTime   ShowTime
+				,NULL AS AwayID
+				,NULL AS IsNeutral
+			FROM VSOutright14 o WITH (NOLOCK) 
+				INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
+			WHERE  o.EventDate =@wldate
 		END
 
 		IF (@Product='RB' )
@@ -670,7 +670,7 @@ BEGIN
 				m.TeamID ,
 				0 BetStatus,
 				'' ShowTime,
-				NULL as  AwayID,
+				NULL AS  AwayID,
 				CONVERT(BIT,0) AS IsNeutral
 			FROM dbo.Outright14 AS m WITH (NOLOCK) 
 				 INNER JOIN dbo.League AS l WITH (NOLOCK) ON m.leagueID = l.leagueID
@@ -678,62 +678,61 @@ BEGIN
 		END
 
 		IF (@Product='BA' )
-			BEGIN
-				INSERT INTO @DataSum
-				SELECT 
-					b.currency,
-					COUNT(b.transid),
-					SUM(ISNULL(b.winlost - b.actual_stake,0)),
-					0,
-					SUM(ISNULL(b.comm ,0)),
-					SUM(b.playercomm )  AS  SumPlayerComm
-				FROM bettrans14 b WITH (NOLOCK)	
-					--INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
-					INNER JOIN #SportBettype sbt ON sbt.Bettype=b.bettype
-					INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
-					INNER JOIN #TempAg ag ON b.recommend = ag.custid AND b.currency = ag.Currency
-				WHERE
-					b.winlostdate = @wldate
-					AND b.bettype NOT IN (9,29,10)
-					AND b.status=@status
-				 
-				GROUP BY b.currency	
-			END
+		BEGIN
+			INSERT INTO @DataSum
+			SELECT 
+				b.currency,
+				COUNT(b.transid),
+				SUM(ISNULL(b.winlost - b.actual_stake,0)),
+				0,
+				SUM(ISNULL(b.comm ,0)),
+				SUM(b.playercomm )  AS  SumPlayerComm
+			FROM bettrans14 b WITH (NOLOCK)	
+				--INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
+				INNER JOIN #SportBettype sbt ON sbt.Bettype=b.bettype
+				INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
+				INNER JOIN #TempAg ag ON b.recommend = ag.custid AND b.currency = ag.Currency
+			WHERE
+				b.winlostdate = @wldate
+				AND b.bettype NOT IN (9,29,10)
+				AND b.status=@status
+			GROUP BY b.currency	
+		END
 
 		IF (@Product<>'BA' )	
-			BEGIN
-				INSERT INTO @DataSum
-				SELECT 
-					b.currency,
-					COUNT(b.transid),
-					SUM(ISNULL(b.winlost - b.actual_stake,0)),
-					-SUM(ISNULL(CASE WHEN  b.bettype IN (31,32,33) THEN awinlost
-													ELSE (b.winlost-b.actual_stake) 
-													END	
-									,0)
-						),
-					SUM(ISNULL(b.comm ,0)),
-					SUM(b.playercomm )  AS  SumPlayerComm
-				FROM bettrans14 b WITH (NOLOCK)	
-					--INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
-					INNER JOIN #SportBettype sbt ON sbt.Bettype=b.bettype
-					INNER JOIN #TempAg ag ON b.recommend = ag.custid AND b.currency = ag.Currency
-				WHERE
-					b.winlostdate = @wldate
-					AND b.bettype NOT IN (9,29,10)
-					AND b.status=@status
-					AND (
-						(@Product='SB' AND b.tpositiontaking<>0)
-						OR (@Product<>'SB')
-						)
-				GROUP BY b.currency	
-			END
+		BEGIN
+			INSERT INTO @DataSum
+			SELECT 
+				b.currency,
+				COUNT(b.transid),
+				SUM(ISNULL(b.winlost - b.actual_stake,0)),
+				-SUM(ISNULL(CASE WHEN  b.bettype IN (31,32,33) THEN awinlost
+												ELSE (b.winlost-b.actual_stake) 
+												END	
+								,0)
+					),
+				SUM(ISNULL(b.comm ,0)),
+				SUM(b.playercomm )  AS  SumPlayerComm
+			FROM bettrans14 b WITH (NOLOCK)	
+				--INNER JOIN #TmpCondBettype bt ON b.bettype = bt.bettype
+				INNER JOIN #SportBettype sbt ON sbt.Bettype=b.bettype
+				INNER JOIN #TempAg ag ON b.recommend = ag.custid AND b.currency = ag.Currency
+			WHERE
+				b.winlostdate = @wldate
+				AND b.bettype NOT IN (9,29,10)
+				AND b.status=@status
+				AND (
+					(@Product='SB' AND b.tpositiontaking<>0)
+					OR (@Product<>'SB')
+					)
+			GROUP BY b.currency	
+		END
 
 		CREATE TABLE #BetData14
 		(
 			oddsid INT,
 			Sporttype INT,
-			Username nvarchar(50),
+			Username NVARCHAR(50),
 			NickName NVARCHAR(50),
 			Bettype INT,
 			LeagueID INT,
@@ -744,8 +743,8 @@ BEGIN
 			AwayID INT,
 			hdp1 SMALLMONEY,
 			hdp2 SMALLMONEY,
-			odds SMALLMONEY,
-			status nvarchar(50),
+			odds MONEY,
+			status NVARCHAR(50),
 			stake MONEY,
 			Winlost MONEY,
 			LicenseeWL   MONEY,
@@ -759,7 +758,7 @@ BEGIN
 			liveawayscore SMALLINT,
 			MatchID INT,
 			--ip nvarchar(30),
-			Betstatus nvarchar(50),
+			Betstatus NVARCHAR(50),
 			IsNeutral BIT,
 			oddstype INT,
 			betid BIGINT,
@@ -809,8 +808,8 @@ BEGIN
 				WHEN b.bettype NOT IN (31,32,33) THEN - (b.winlost-b.actual_stake) 
 				ELSE awinlost 
 			END AS LicenseeWL,
-			b.comm as comm,
-			b.playercomm as PlayerComm,
+			b.comm AS comm,
+			b.playercomm AS PlayerComm,
 			b.transdate,
 			b.winlostdate,
 			CASE  
@@ -836,19 +835,19 @@ BEGIN
 			+@Winlost+'*e.USD WinlostUSD,'
 			+ @LicenseeWL+'*e.USD LicenseeWLUSD,
 			b.comm*e.USD commUSD,
-			b.playercomm*e.USD as PlayerCommUSD,
+			b.playercomm*e.USD AS PlayerCommUSD,
 			--EUR
 			b.stake*e.EUR stakeEUR,'
 			+@Winlost+'*e.EUR WinlostEUR,'
 			+ @LicenseeWL+'*e.EUR LicenseeWLEUR,
 			b.comm*e.EUR commEUR,
-			b.playercomm*e.EUR as PlayerCommEUR,
+			b.playercomm*e.EUR AS PlayerCommEUR,
 			--GBP
 			b.stake*e.GBP stakeGBP,'
 			+@Winlost+'*e.GBP WinlostGBP,'
 			+ @LicenseeWL+'*e.GBP LicenseeWLGBP,
 			b.comm*e.GBP commGBP,
-			b.playercomm*e.GBP as PlayerCommGBP
+			b.playercomm*e.GBP AS PlayerCommGBP
 		FROM
 			bettrans14 b WITH (nolock) 
 			INNER JOIN customer c WITH (nolock) ON b.custid = c.custid
@@ -999,7 +998,7 @@ BEGIN
 
 	CREATE TABLE #BettransDetail (
 		refno			BIGINT,
-		odds			SMALLMONEY,
+		odds			MONEY,
 		stake			MONEY,
 		status			NVARCHAR(10),
 		apositiontaking	SMALLMONEY,

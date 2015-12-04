@@ -66,6 +66,7 @@ AS
 		- 20150923@Kos: Support AG Casino
 		- 20151029@Kos: Change ProductId, SportType of Microgaming RNG Casino
 		- 20151124@Kos: Support Microgaming RNG Casino Jackpot Grand Prize ticket
+		- 20151203@Kos: Change odds, modds data type from SMALLMONEY to MONEY [Redmine: #48660]
 
 	Param's Explanation: 
 		+ @transtype:
@@ -121,9 +122,9 @@ BEGIN
 		oddsid 			INT,
 		hdp1 			SMALLMONEY, 
 		hdp2 			SMALLMONEY, 
-		Modds 			SMALLMONEY,
+		Modds 			MONEY,
 		oddstype 		TINYINT,
-		odds 			SMALLMONEY, 
+		odds 			MONEY, 
 		betteam 		NVARCHAR(50), 
 		status 			NVARCHAR(50), 
 		betstatus 		NVARCHAR(50), 
@@ -673,7 +674,7 @@ BEGIN
 	--get data from bettransm for bettype 33,43
 	DECLARE @BettransDetail TABLE(
 		refno				BIGINT,
-		odds				SMALLMONEY,
+		odds				MONEY,  
 		stake				MONEY,
 		status				NVARCHAR(10),
 		apositiontaking		SMALLMONEY,
@@ -750,6 +751,7 @@ BEGIN
 
 	DROP TABLE #TempExchange
 END
+
 
 
 GO 

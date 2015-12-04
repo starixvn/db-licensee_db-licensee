@@ -98,6 +98,7 @@ AS
 		- 20150915@Kos: Support Microgaming RNG Game
 		- 20150922@Kos: Support AG Casino
 		- 20151029@Kos: Change ProductId/SportType of Microgaming RNG Game
+		- 20151203@Kos: Change odds, modds data type from SMALLMONEY to MONEY [Redmine: #48660]
 */
 
 BEGIN
@@ -146,7 +147,7 @@ BEGIN
 
 	SELECT @UserName = UserName, 
 		@Recommend = Recommend 
-	FROM custinfo c WITH(NOLOCK) 
+	FROM dbo.custinfo c WITH (NOLOCK) 
 		INNER JOIN #Currency cy ON c.Currency = cy.CurrencyID
 	WHERE CustID = @CustID
 	----------------------------------------
@@ -161,8 +162,8 @@ BEGIN
 		hdp1			SMALLMONEY, 
 		hdp2			SMALLMONEY, 
 		OddsType		TINYINT,
-		Odds			SMALLMONEY, 
-		modds			SMALLMONEY, 
+		Odds			MONEY, 
+		modds			MONEY, 
 		Stake			MONEY, 
 		Actual_Stake	MONEY,
 		Betteam			NVARCHAR(20),
@@ -199,8 +200,8 @@ BEGIN
 		hdp1			SMALLMONEY, 
 		hdp2			SMALLMONEY, 
 		OddsType		TINYINT,
-		Odds			SMALLMONEY, 
-		modds			SMALLMONEY, 
+		Odds			MONEY, 
+		modds			MONEY, 
 		Stake			MONEY, 
 		Actual_Stake	MONEY,
 		Betteam			NVARCHAR(20),
@@ -2855,7 +2856,7 @@ BEGIN
 
 	DECLARE @BettransDetail TABLE(  
 		refno			BIGINT,  
-		odds			SMALLMONEY,  
+		odds			MONEY,  
 		stake			MONEY,
 		status			NVARCHAR(10),  
 		apositiontaking	SMALLMONEY,  
@@ -3073,6 +3074,8 @@ BEGIN
 	DROP TABLE #BetListByDateMem
 	DROP TABLE #TempBetList
 END
+
+
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinLossByDate_Mem] TO [bodbLicenseeNet] AS [dbo]

@@ -84,6 +84,7 @@ AS
 		- 20150914@Kos: Support Micro Gaming RNG Game
 		- 20150922@Kos: Support AG Casino
 		- 20151030@Kos: Change ProductId/SportType of Microgaming RNG Casino
+		- 20151203@Kos: Change odds, modds data type from SMALLMONEY to MONEY [Redmine: #48660]
 
 	Param's Explanation:
 		+ @drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -102,9 +103,9 @@ BEGIN
 		Bettype			INT,
 		hdp1			SMALLMONEY, 
 		hdp2			SMALLMONEY, 
-		Modds			SMALLMONEY,
+		Modds			MONEY,
 		OddsType		TINYINT,
-		Odds			SMALLMONEY, 
+		Odds			MONEY, 
 		Stake			MONEY, 
 		Actual_Stake	MONEY,
 		Betteam			NVARCHAR(20),
@@ -141,9 +142,9 @@ BEGIN
 		Bettype			INT,
 		hdp1			SMALLMONEY, 
 		hdp2			SMALLMONEY, 
-		Modds			SMALLMONEY,
+		Modds			MONEY,
 		OddsType		TINYINT,
-		Odds			SMALLMONEY, 
+		Odds			MONEY, 
 		Stake			MONEY, 
 		Actual_Stake	MONEY,
 		Betteam			NVARCHAR(20),
