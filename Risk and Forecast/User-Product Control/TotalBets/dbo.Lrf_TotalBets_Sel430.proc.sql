@@ -6,7 +6,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-ALTER  PROCEDURE [dbo].[Lrf_TotalBets_Sel430]
+ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel430]
 	@LicenseeID INT,
 	@CurrencyID INT=0,
 	@UserID		INT,
@@ -18,69 +18,70 @@ ALTER  PROCEDURE [dbo].[Lrf_TotalBets_Sel430]
  AS
 
 /*
-Created: Henry@20101209
-Task : Betlist for Correct score and first correct score
-DB: DB052.bodb02
-Original:
-Revisions:
-	--20111229@Jim : change the way to get odds/oddstype/betteam to web dev
-    --20120214@Jim: change to use  table ExchangeDaily by use function Lrf_f_GetExchangeDaily  
-	--20121004@Jim: replace @currencyname input param by @currencyID
-	--20130514@Jim:Restrict permission of Licensee Users by currency
-	--20140620@Florent: offer new bettypes 152 - Half Time/Full Time Correct Score
-	- 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
-	- 20150124@Winnie: Add base currency GBP 
-	- 20150420@Jim: add more bettype 165, 166
-	- 20151203@Bobby: Database - Change datatype [Redmine: #48660]
+	Created: Henry@20101209
+	Task : Betlist for Correct score and first correct score
+	DB: DB052.bodb02
+	Original:
+	Revisions:
+		- 20111229@Jim : change the way to get odds/oddstype/betteam to web dev
+		- 20120214@Jim: change to use  table ExchangeDaily by use function Lrf_f_GetExchangeDaily  
+		- 20121004@Jim: replace @currencyname input param by @currencyID
+		- 20130514@Jim:Restrict permission of Licensee Users by currency
+		- 20140620@Florent: offer new bettypes 152 - Half Time/Full Time Correct Score
+		- 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
+		- 20150124@Winnie: Add base currency GBP 
+		- 20150420@Jim: add more bettype 165, 166
+		- 20151203@Bobby: Database - Change datatype [Redmine: #48660]
+		- 20151207@Kos: Include bet type 405 2H Correct Score [Redmine: #47959]
 */
 
-SET NOCOUNT ON
+BEGIN
+	SET NOCOUNT ON
 
-DECLARE @Data TABLE(
-	CustID INT,
-	Sporttype INT,
-	Username NVARCHAR(50),
-	Bettype SMALLINT,
-	Transid BIGINT,
-	refno BIGINT,
-	Matchcode VARCHAR(50),
-	HomeID INT,
-	AwayID INT,
-	hdp1 SMALLMONEY,
-	hdp2 SMALLMONEY,
-	odds MONEY,
-	modds MONEY,
-	status NVARCHAR(50),
-	Stake MONEY, 
-	Actual_Stake	MONEY,
-	transdate DATETIME,
-	betteam VARCHAR (50),
-	livehomescore SMALLINT,
-	liveawayscore SMALLINT,
-	liveindicator INT,
-	discount DECIMAL(9,8),
-	LeagueID INT,
-	ip NVARCHAR(30),
-	IsNeutral BIT,
-	oddstype TINYINT,
-	winlostdate DATETIME,
-	currency SMALLINT
-)
+	DECLARE @Data TABLE(
+		CustID INT,
+		Sporttype INT,
+		Username NVARCHAR(50),
+		Bettype SMALLINT,
+		Transid BIGINT,
+		refno BIGINT,
+		Matchcode VARCHAR(50),
+		HomeID INT,
+		AwayID INT,
+		hdp1 SMALLMONEY,
+		hdp2 SMALLMONEY,
+		odds MONEY,
+		modds MONEY,
+		status NVARCHAR(50),
+		Stake MONEY, 
+		Actual_Stake	MONEY,
+		transdate DATETIME,
+		betteam VARCHAR (50),
+		livehomescore SMALLINT,
+		liveawayscore SMALLINT,
+		liveindicator INT,
+		discount DECIMAL(9,8),
+		LeagueID INT,
+		ip NVARCHAR(30),
+		IsNeutral BIT,
+		oddstype TINYINT,
+		winlostdate DATETIME,
+		currency SMALLINT
+	)
 
-SELECT  currencyID,LicenseeID into #currency
-FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
-WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+	SELECT  currencyID,LicenseeID into #currency
+	FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+	WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
-DECLARE @TempAg AS TABLE (custid INT)
-INSERT INTO @TempAg (custid)
-SELECT DISTINCT CustID  
-                FROM    bodb_Licensee.dbo.[f_SelLicenseeCust](0) lc --WITH ( NOLOCK )
-				INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
-                WHERE   [Description] = COALESCE(@LicenseeType,[Description])  
-------------------------
+	DECLARE @TempAg AS TABLE (custid INT)
 
--------------------------                                                   
-INSERT INTO @Data
+	INSERT INTO @TempAg (custid)
+	SELECT DISTINCT CustID  
+	FROM    bodb_Licensee.dbo.[f_SelLicenseeCust](0) lc --WITH ( NOLOCK )
+	INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
+	WHERE   [Description] = COALESCE(@LicenseeType,[Description])  
+
+	INSERT INTO @Data
 	SELECT
 		b.CustID, 
 		m.sporttype,
@@ -110,34 +111,32 @@ INSERT INTO @Data
 		b.Oddstype,
 		b.winlostdate,
 		b.currency
- 	FROM 
-		bettrans b WITH (NOLOCK)
-		INNER JOIN match m WITH (NOLOCK) ON  b.matchid=m.matchid 				
+	FROM 
+		dbo.bettrans b WITH (NOLOCK)
+		INNER JOIN dbo.match m WITH (NOLOCK) ON  b.matchid=m.matchid
 	WHERE 
 		b.Recommend IN (SELECT custid FROM @TempAg)
-		AND((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID))
-		AND b.bettype IN (4,30,152,165,166)
+		AND((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency)) OR (@CurrencyID<>0 AND Currency=@CurrencyID))
+		AND b.bettype IN (4,30,152,165,166, 405)
 		AND b.statusID IN (0,1)
 		AND b.tpositiontaking <> 0 
 	ORDER BY b.status, b.transid
 
-DECLARE @RowStart INT, @RowEnd INT  
-SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1
+	DECLARE @RowStart INT, @RowEnd INT  
+	SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1
 
-DECLARE @Today SMALLDATETIME 
-SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
+	DECLARE @Today SMALLDATETIME 
+	SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
 
+	IF @TotalRows = 0  
+	BEGIN 
+		 SELECT @TotalRows = count(transid) FROM @Data
+	END
 
-IF @TotalRows = 0  
-BEGIN 
-	 SELECT @TotalRows = count(transid) FROM @Data
-END
-
-
-SELECT A.* 
-FROM
-(
-	SELECT  
+	SELECT A.* 
+	FROM
+	(
+		SELECT  
 			ROW_NUMBER() over(ORDER BY b.status, b.transid) AS RowNum,
 			SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, len(c.username2)-CHARINDEX('$',c.username2)) AS nickname,
 			b.* ,
@@ -147,13 +146,17 @@ FROM
 			actual_stake * e.USD actual_stakeUSD,
 			actual_stake * e.EUR actual_stakeEUR,
 			actual_stake * e.GBP actual_stakeGBP
-	FROM 
-		@Data b
-		INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid	
-		INNER JOIN (SELECT *  FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
-		ON e.exchangeid = b.currency
-) A WHERE A.RowNum BETWEEN @RowStart AND @RowEnd
-DROP TABLE #currency
+		FROM 
+			@Data b
+			INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid	
+			INNER JOIN (SELECT *  FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
+			ON e.exchangeid = b.currency
+	) A WHERE A.RowNum BETWEEN @RowStart AND @RowEnd
+	
+	DROP TABLE #currency
+END
+
+
 GO
 GRANT EXECUTE ON [dbo].[Lrf_TotalBets_Sel430] TO [bodbLicenseeNet]
 GO
