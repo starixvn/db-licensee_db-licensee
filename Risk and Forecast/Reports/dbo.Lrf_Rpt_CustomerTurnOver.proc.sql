@@ -63,6 +63,8 @@ Revision:
 	- 20151023@Victor: Support New Simplified Chinese
 	- 20151127@Bobby: #48081 - Apply PH-AIO new bettypes
 	- 20151203@Bobby: Database - Change datatype [Redmine: #48660]
+	- 20151209@Bobby: Do rollback step for Bettype & ProductId data type
+
 	
 Parameter's Explanation:
 	- @ReportBy:  1: daily, 2: monthly
@@ -161,17 +163,17 @@ BEGIN
 		, recommend		INT
 		, sporttype		SMALLINT
 		, matchid		INT
-		, bettype		SMALLINT
+		, bettype		INT
 		, oddsid		INT
 		, winlost		MONEY
 		, stake			MONEY
 		, playercomm	MONEY
 		, Odds			MONEY
 		, EventType		TINYINT
-		, ProductId		TINYINT
+		, ProductId		INT
 	)
 	
-	SELECT CAST(VAL AS TINYINT) AS sportId 
+	SELECT VAL AS sportId 
 	INTO #ProductID 
 	FROM dbo.strSplit(@Product,',')
 	
@@ -180,7 +182,7 @@ BEGIN
 		RETURN;
 	END 
 	
-	SELECT CAST(st AS TINYINT) AS StatusID
+	SELECT st AS StatusID
 	INTO #Status
 	FROM (
 		----@ShowWin
