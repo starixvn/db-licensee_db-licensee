@@ -203,11 +203,11 @@ BEGIN
 		OR (@ShowDraw	= 1 AND sh = 3)
 	
 	-- bettype
-	DECLARE @SportBettype TABLE(ProductID TINYINT, Bettype SMALLINT,EventType TINYINT)
+	DECLARE @SportBettype TABLE(ProductID INT, Bettype INT,EventType INT)
 	INSERT INTO @SportBettype
 	EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4
 	
-	SELECT CAST(VAL AS SMALLINT) AS typeID
+	SELECT VAL AS typeID
 	INTO #BettypeID
 	FROM dbo.strSplit(@Bettype,',') AS b
 
