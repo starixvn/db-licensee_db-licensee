@@ -1,27 +1,27 @@
-﻿SET QUOTED_IDENTIFIER ON 
+﻿USE [bodb02]
 GO
-SET ANSI_NULLS ON 
-GO
-
-/****** Object:  Stored Procedure dbo.Lrf_Rpt_TurnOver    Script Date: 11/24/2015 1:43:09 PM ******/
-CREATE PROCEDURE [dbo].[Lrf_Rpt_TurnOver]
-    @LicenseeID INT,
-    @UserID        INT,
-    @LicenseeType VARCHAR(100) = NULL,
-    @CurrencyID INT = 0,
-    @FromDate        SMALLDATETIME,  
-    @ToDate            SMALLDATETIME,   
-    @username VARCHAR(50) = NULL,
-    @excludeTest BIT = 1,
-    @showSB        BIT=0,  
-    @ShowRB        BIT=0,  
-    @ShowNG        BIT=0, 
-    @ShowLC        BIT=0,
-    @ShowVS        BIT=0,
-    @ShowCS     BIT=0,--- RNG Casino
-    @ShowBG        BIT=0, --- Bingo
-    @ShowKN       BIT=0 ,-- Keno 
-	@ShowMGC 	  BIT=0
+ALTER PROCEDURE [dbo].[Lrf_Rpt_TurnOver]
+    @LicenseeID		INT,
+    @UserID			INT,
+    @LicenseeType	VARCHAR(100) = NULL,
+    @CurrencyID		INT = 0,
+    @FromDate       SMALLDATETIME,  
+    @ToDate         SMALLDATETIME,   
+    @username		VARCHAR(50) = NULL,
+    @excludeTest	BIT = 1,
+    @showSB			BIT=0,  
+    @ShowRB			BIT=0,  
+    @ShowNG			BIT=0, 
+    @ShowLC			BIT=0,
+    @ShowVS			BIT=0,
+    @ShowCS			BIT=0,--- RNG Casino
+    @ShowBG			BIT=0, --- Bingo
+    @ShowKN			BIT=0 ,-- Keno 
+	@ShowBT			BIT=0 ,-- Bet Trade 
+	@ShowMGCLC 		BIT=0,
+	@ShowMGCRnG 	BIT=0,
+	@ShowAGC		BIT=0
+	
 AS 
 /*
 Created: 20111017@Henry
@@ -49,6 +49,9 @@ Revisions:
    - 20150127@Jim: support base on GBP Currency
    - 20150210@Jim: fix bug wrong condition when retrieve data from rptDepWinlostByProduct
    - 20150612@Jim: support MicroGaming
+   - 20150630@Winnie: support Bet Trade
+   - 20150921@Jim: Implement the changes on reports for AG Casino (#43172)
+   - 20151108@Jim: Separated MicroGaming into 2 product
 Param's Explanation:
     + @excludeTest: remove currency UUS
     + @CurrencyID = 0: get all currency
@@ -98,8 +101,14 @@ IF @ShowVS = 1 INSERT INTO @sporttype(sporttype) VALUES(180)
 IF @ShowCS = 1 INSERT INTO @sporttype(sporttype) VALUES(251)
 IF @ShowBG = 1 INSERT INTO @sporttype(sporttype) VALUES(252)
 IF @ShowKN = 1 INSERT INTO @sporttype(sporttype) VALUES(202)--Keno
-IF @ShowMGC = 1 INSERT INTO @sporttype(sporttype) VALUES(203)
-    
+IF @ShowMGCLC = 1 INSERT INTO @sporttype(sporttype) VALUES(203)
+IF @ShowMGCRnG = 1 INSERT INTO @sporttype(sporttype) VALUES(205)
+IF @ShowAGC =1 INSERT INTO @sporttype(sporttype) VALUES(250)
+IF @ShowBT = 1 
+BEGIN
+	INSERT INTO @sporttype(sporttype) VALUES(-2)
+	INSERT INTO @sporttype(sporttype) VALUES(-3)
+END 
 IF @username <> ''
 BEGIN
     SELECT @CustID = CustID
@@ -432,6 +441,7 @@ BEGIN
 				INNER JOIN @tmpAg a ON  p.Currency = a.Currency AND a.CustID = c.Recommend
             WHERE p.winlostdate BETWEEN @tmpdate and @tdate    
                 AND c.roleid = 1
+                AND c.recommend in (SELECT DISTINCT custid FROM @tmpAg)
                 AND p.sporttype in (SELECT sporttype FROM @sporttype)                    
             GROUP BY p.winlostdate,c.currency
         )
@@ -528,19 +538,9 @@ GROUP BY b.winlostdate
 DROP TABLE     #tmpRpt
 DROP TABLE     #TempExchange
 
-
+Go
+GRANT EXECUTE ON [dbo].[Lrf_Rpt_TurnOver] TO [bodbLicenseeNet] 
 GO
-
-SET QUOTED_IDENTIFIER OFF 
+GRANT ALTER ON [dbo].[Lrf_Rpt_TurnOver] TO [vnteam] 
 GO
-SET ANSI_NULLS ON 
-GO
-
-
-GO 
- GRANT ALTER ON [dbo].[Lrf_Rpt_TurnOver] TO [vnteam]
-GO 
- GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_TurnOver] TO [vnteam]
-GO 
- GRANT EXECUTE ON [dbo].[Lrf_Rpt_TurnOver] TO [bodbLicenseeNet]
-GO 
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_TurnOver] TO [vnteam] 
