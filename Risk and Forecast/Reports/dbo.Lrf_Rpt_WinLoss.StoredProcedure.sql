@@ -20,7 +20,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
 	@ShowCS BIT = 0,-- RNG Casino
 	@ShowBG BIT = 0,-- Bingo
 	@ShowKN BIT = 0,
-	@ShowMGC BIT=0,
+	@ShowMGCLC BIT=0,
+	@ShowMGCRnG BIT=0,
 	@ShowBT BIT=0,
 	@ShowAGC BIT = 0,
     @MoveBetsDay DATETIME ,
@@ -76,6 +77,7 @@ AS /*
 		- 20150826@Winnie: Fix bug KeenOcean #42464
 		- 20150910@Jim: Integrate Microgaming RNG games (feature #43078)
 		- 20150917@Florent: Change datasource for AG Casino (#Redmine 43172)
+		- 20151108@Jim: Separated MicroGaming into 2 product
 		
 */
     
@@ -207,15 +209,25 @@ BEGIN
 	WHERE (typeid BETWEEN 1501 AND 1599)
 END
 
-IF @ShowMGC=1 -- MicroGamming
+IF @ShowMGCLC=1 -- MicroGamming
 BEGIN 
 	INSERT INTO @sporttype (sporttype)
 	VALUES(203)
 
 	INSERT INTO @bettype(bettype)
 	SELECT typeid FROM bettype (NOLOCK)
-	WHERE (typeid BETWEEN 2001 AND 2099)
+	WHERE (typeid BETWEEN 2001 AND 2007)
 END
+IF @ShowMGCRnG=1 -- MicroGamming
+BEGIN 
+	INSERT INTO @sporttype (sporttype)
+	VALUES(205)
+
+	INSERT INTO @bettype(bettype)
+	SELECT typeid FROM bettype (NOLOCK)
+	WHERE (typeid BETWEEN 2008 AND 2009)
+END
+
 IF @ShowBT=1 -- bettrade
 BEGIN 
 
@@ -236,17 +248,7 @@ BEGIN
 	WHERE (typeid BETWEEN 1801 AND 1899) 
 	
 END
-IF @ShowAGC = 1 -- AG Casino
-BEGIN 
-	
-	INSERT INTO @sporttype (sporttype)
-	VALUES(250)
 
-	INSERT INTO @bettype(bettype)
-	SELECT typeid FROM bettype (NOLOCK)
-	WHERE (typeid BETWEEN 1800 AND 1899) 
-	
-END
 
 
 CREATE TABLE #TempData
@@ -357,7 +359,7 @@ BEGIN
 		GROUP BY b.CustID,b.winlostdate,b.currency	 
 	END
 
-	IF (@ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowRB=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGC=1 OR @ShowBT=1 OR @ShowAGC = 1)
+	IF (@ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowRB=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGCLC=1 OR @ShowMGCRnG=1 OR @ShowBT=1 OR @ShowAGC = 1)
 	BEGIN
 		INSERT INTO #TempData
 		SELECT  
@@ -439,7 +441,7 @@ BEGIN
 	
 	
 	--exclude BA tickets
-	IF (@ShowSB=1 OR @ShowRB = 1 OR @ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGC=1 OR @ShowAGC = 1)
+	IF (@ShowSB=1 OR @ShowRB = 1 OR @ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGCLC=1 OR @ShowMGCRnG=1 OR @ShowAGC = 1)
 	BEGIN
 		
 		INSERT  INTO #TempData
@@ -553,7 +555,7 @@ BEGIN
 		GROUP BY b.CustID,b.winlostdate,b.currency	
 	END
 	
-	IF (@showSB = 1 OR @ShowRB = 1 OR @ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGC=1)
+	IF (@showSB = 1 OR @ShowRB = 1 OR @ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGCLC=1 OR @ShowMGCRnG=1)
 	BEGIN
 		INSERT  INTO #TempData
 		SELECT  

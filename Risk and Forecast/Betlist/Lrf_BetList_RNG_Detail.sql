@@ -23,6 +23,7 @@ AS
 	Original:
 	Revisions:
 		- 20150924@Kos: Add column BetCheck to return TranId3rd for showing ticket result
+		- 20151029@Kos: Change SportType of Microgaming RNG Game
 
 	Parameters:
 		- @TransType
@@ -109,7 +110,7 @@ BEGIN
 			brng.ip,
 			brng.transdesc,
 			CASE
-				WHEN brng.productID = 203 THEN brng.TranId3rd		-- Microgaming RNG Game
+				WHEN brng.productID = 205 THEN brng.TranId3rd		-- Microgaming RNG Game
 				ELSE ''
 			END AS BetCheck
 		FROM dbo.bettransRnG AS brng WITH (NOLOCK)
@@ -137,7 +138,7 @@ BEGIN
 			brng.ip,
 			brng.transdesc,
 			CASE
-				WHEN brng.productID = 203 THEN brng.TranId3rd		-- Microgaming RNG Game
+				WHEN brng.productID = 205 THEN brng.TranId3rd		-- Microgaming RNG Game
 				ELSE ''
 			END AS BetCheck
 		FROM dbo.bettransRnG14 AS brng WITH (NOLOCK)
@@ -163,7 +164,7 @@ BEGIN
 			brng.ip,
 			brng.transdesc,
 			CASE
-				WHEN brng.productID = 203 THEN brng.TranId3rd		-- Microgaming RNG Game
+				WHEN brng.productID = 205 THEN brng.TranId3rd		-- Microgaming RNG Game
 				ELSE ''
 			END AS BetCheck
 		FROM DBARC.bodb_Archive.dbo.bettransRnG_bk AS brng WITH (NOLOCK)

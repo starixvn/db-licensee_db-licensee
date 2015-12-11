@@ -25,7 +25,8 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_SelAllByDate_Mem]
 	@ShowCS				BIT = 0, -- RNG Casino
 	@ShowBG				BIT = 0, -- Bingo 
 	@ShowKN				BIT = 0, -- Keno
-	@ShowMGC			BIT = 0, -- Microgaming
+	@ShowMGCLC			BIT = 0, -- Microgaming Live Casino
+	@ShowMGCRNG			BIT = 0, -- Microgaming RNG Game
 	@ShowAGC			BIT = 0, -- AG Casino
 	@ShowBT				BIT = 0, -- Bet Trade
 	-- output info
@@ -56,7 +57,6 @@ AS
 	DB: DBEXT.bodb02
 	Original [Age_BetList_SelAllByDate_Mem]
 	Revisions:
-	
 		- 20110214@Jacob: Add column discount IN the result SET
 		- 20110303@Henry: suppport bASed currency
 		- 20110408@Amy: Change function to get Odds value AND odds type
@@ -91,6 +91,7 @@ AS
 		- 20150828@Edward: Update Odds and Stake in the same time insert to temporary table
 		- 20150917@Kos: Support Microgaming RNG Game
 		- 20150922@Kos: Support AG Casino
+		- 20151028@Kos: Change ProductId, SportType of Microgaming RNG Game
 */
 
 BEGIN
@@ -111,11 +112,11 @@ BEGIN
 	SELECT currencyID
 		,LicenseeID 
 	INTO #currency
-	FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+	FROM dbo.Lrf_f_GetCurrencybyUser(@licenseeID, @userID, 1)-- System is default=1 (LRF)
 
 	SELECT @Recommend 	= Recommend
 		, @UserName 	= Username 
-	FROM dbo.custinfo  c WITH(NOLOCK) 
+	FROM dbo.custinfo AS c WITH(NOLOCK) 
 		INNER JOIN #Currency cy ON cy.CurrencyID = c.Currency
 	WHERE CustID = @CustID
 	------------------------------
@@ -203,15 +204,14 @@ BEGIN
 	
 	-- filer bettypes by sporttype
 	DECLARE @SportBettype TABLE ( 
-		ProductID 		TINYINT
-		, Bettype 		SMALLINT
-		, EventType 	TINYINT
-		, SubProduct	VARCHAR(500)
+		ProductID 	TINYINT
+		, Bettype 	SMALLINT
+		, EventType	TINYINT
 	)
 	
 	INSERT INTO @SportBettype
-		EXEC dbo.Acc_SportBettypeMatrix_Sel_xpre @mode = 5
-		
+	EXEC dbo.Acc_SportBettypeMatrix_Sel @mode = 4
+
 	IF @ShowBT = 0
 	BEGIN
 		DELETE @SportBettype WHERE ProductID = 1 AND Bettype IN (901, 902, 903)
@@ -220,38 +220,39 @@ BEGIN
 	DELETE sbt
 	FROM @SportBettype sbt
 	WHERE ProductID		= CASE WHEN @ShowSB	= 0 AND @ShowBA = 0 AND @ShowBT = 0 THEN 1 END
-		OR ProductID	= CASE WHEN @ShowRB	= 0 THEN 2 END
-		OR ProductID	= CASE WHEN @ShowNG	= 0 THEN 3 END
-		OR ProductID	= CASE WHEN @ShowLC	= 0 THEN 4 END
-		OR ProductID	= CASE WHEN @ShowVS	= 0 THEN 5 END
-		OR ProductID	= CASE WHEN @ShowCS	= 0 THEN 6 END
-		OR ProductID	= CASE WHEN @ShowBG	= 0 THEN 7 END
-		OR ProductID	= CASE WHEN @ShowKN	= 0 THEN 8 END
-		OR ProductID	= CASE WHEN @ShowMGC= 0 THEN 13 END
-		OR ProductID	= CASE WHEN @ShowAGC= 0 THEN 11 END
-		OR (ProductID 	> 8 AND sbt.ProductID <> 11 AND sbt.ProductID <> 13) -- not suport for LIC system
+		OR ProductID	= CASE WHEN @ShowRB		= 0 THEN 2 END
+		OR ProductID	= CASE WHEN @ShowNG		= 0 THEN 3 END
+		OR ProductID	= CASE WHEN @ShowLC		= 0 THEN 4 END
+		OR ProductID	= CASE WHEN @ShowVS		= 0 THEN 5 END
+		OR ProductID	= CASE WHEN @ShowCS		= 0 THEN 6 END
+		OR ProductID	= CASE WHEN @ShowBG		= 0 THEN 7 END
+		OR ProductID	= CASE WHEN @ShowKN		= 0 THEN 8 END
+		OR ProductID	= CASE WHEN @ShowMGCLC	= 0 THEN 13 END
+		OR ProductID	= CASE WHEN @ShowMGCRNG	= 0 THEN 17 END
+		OR ProductID	= CASE WHEN @ShowAGC	= 0 THEN 11 END
+		OR (ProductID 	> 8 AND sbt.ProductID NOT IN (11, 13, 17)) -- not suport for LIC system
 	-- end filer bettypes by sporttype
 	
 	--general
 	INSERT INTO #TempBATicket
 	SELECT 
 		b.bettype,
-		b.refno,		
+		b.refno,
 		b.transid,
 		ISNULL(b.BetID,0),
 		CONVERT(FLOAT, b.hdp1) AS hdp1, 
 		CONVERT(FLOAT, b.hdp2) AS hdp2, 
 		b.odds,
 		b.modds,
-		CASE WHEN b.status = 'running' AND IsNull(b.SecAcceptFlag, 0) = 1 and IsNull(b.checktime, CURRENT_TIMESTAMP) > CURRENT_TIMESTAMP THEN 'waiting'  
+		CASE WHEN b.status = 'running' AND IsNull(b.SecAcceptFlag, 0) = 1 AND IsNull(b.checktime, CURRENT_TIMESTAMP) > CURRENT_TIMESTAMP THEN 'waiting'  
 		ELSE b.status   
 		END AS status,
 		b.stake,
 		b.actual_stake,
 		(winlost-actual_stake) winlost,
 		0 AS LicenseeWL ,
-		b.comm AS comm,
-		b.playercomm  AS PlayerComm,
+		b.comm,
+		b.playercomm,
 		b.discount,
 		b.transdate,
 		b.winlostdate,
@@ -277,15 +278,15 @@ BEGIN
 		AND b.transdate		>=	@FromDate AND b.transdate<=@ToDate
 		AND b.bettype NOT IN (901,902,903)
 
-	IF ( @ShowBA = 1 )
-	BEGIN		
+	IF @ShowBA = 1
+	BEGIN
 		--Sportsbook
 		INSERT INTO #BetListSelAllByDateMem
 		SELECT 
 			@UserName AS UserName,
 			m.sporttype,
 			b.bettype,
-			'' AS refno,		
+			'' AS refno,
 			b.transid,
 			b.BetID,
 			m.matchcode, 
@@ -293,17 +294,17 @@ BEGIN
 			'' AS Race, 
 			m.homeID,
 			m.awayID,
-			CONVERT(FLOAT, b.hdp1) AS hdp1, 
-			CONVERT(FLOAT, b.hdp2) AS hdp2, 
+			CONVERT(FLOAT, b.hdp1) AS hdp1,
+			CONVERT(FLOAT, b.hdp2) AS hdp2,
 			b.odds,
 			b.modds,
-			b.status AS Status,
+			b.status,
 			b.stake,
 			b.actual_stake,
 			b.winlost,
 			b.LicenseeWL ,
 			b.comm,
-			b.playercomm AS playercomm,
+			b.playercomm,
 			b.discount,
 			b.transdate,
 			b.winlostdate,
@@ -321,10 +322,8 @@ BEGIN
 			,b.betcheck
 		FROM 
 			#TempBATicket b
-			INNER JOIN match m WITH (NOLOCK) 
-			ON b.matchid = m.matchid	
-			INNER JOIN @SportBettype sbt
-			ON b.bettype = sbt.Bettype
+			INNER JOIN match m WITH (NOLOCK) ON b.matchid = m.matchid
+			INNER JOIN @SportBettype sbt ON b.bettype = sbt.Bettype
 		WHERE
 			sbt.ProductID		= 1
 			AND sbt.EventType	= 1
@@ -335,7 +334,7 @@ BEGIN
 			@UserName,
 			l.sporttype AS sporttype,
 			b.bettype,
-			'' AS refno,		
+			'' AS refno,
 			b.transid,
 			b.BetID,
 			m.matchcode,
@@ -351,15 +350,15 @@ BEGIN
 			b.stake,
 			b.actual_stake,
 			b.winlost,
-			b.LicenseeWL ,
+			b.LicenseeWL,
 			b.comm,
-			b.playercomm AS Playercomm, 
+			b.playercomm,
 			b.discount,
 			b.transdate,
 			b.winlostdate,
-			'' AS Betteam,    
+			'' AS Betteam,
 			m.leagueID,
-			0 AS liveindicator , 
+			0 AS liveindicator, 
 			b.livehomescore, 
 			b.liveawayscore, 
 			b.IP, 
@@ -371,23 +370,20 @@ BEGIN
 			,'' AS betcheck
 		FROM
 			#TempBATicket b
-			INNER JOIN outright m WITH (NOLOCK) 
-			ON b.matchid=m.orid		
-			INNER JOIN league l WITH (NOLOCK) 
-			ON m.leagueID=l.leagueID
-			INNER JOIN @SportBettype sbt
-			ON b.bettype = sbt.Bettype
+			INNER JOIN outright m WITH (NOLOCK) ON b.matchid = m.orid
+			INNER JOIN league l WITH (NOLOCK) ON m.leagueID = l.leagueID
+			INNER JOIN @SportBettype sbt ON b.bettype = sbt.Bettype
 		WHERE
 			sbt.ProductID		= 1
 			AND sbt.EventType	= 2
-			
-		--MixParlay & System Parlay
+
+		-- MixParlay & System Parlay
 		INSERT INTO #BetListSelAllByDateMem
 		SELECT 
 			@UserName AS UserName,
 			0 AS sporttype,
 			b.bettype,
-			CONVERT(NVARCHAR(20),b.refno) AS refno,		
+			CONVERT(NVARCHAR(20),b.refno) AS refno,
 			CASE WHEN (ISNULL(b.BetID,0) = 0 OR b.bettype = 9) THEN b.transid ELSE betid END AS transid, 
 			ISNULL(b.BetID,0),
 			'' AS matchcode, 
@@ -417,14 +413,13 @@ BEGIN
 			b.IP,
 			'' AS betstatus,
 			CONVERT(BIT,0) AS IsNeutral,
-			0 AS OddsType ,
+			0 AS OddsType,
 			b.currency,
 			'' AS ShowTime 
 			,'' AS betcheck
 		FROM 
 			#TempBATicket b
-			INNER JOIN @SportBettype sbt
-			ON b.bettype = sbt.Bettype
+			INNER JOIN @SportBettype sbt ON b.bettype = sbt.Bettype
 		WHERE
 			sbt.ProductID		= 1
 			AND sbt.EventType	= 0
@@ -438,7 +433,7 @@ BEGIN
 			@UserName AS UserName,
 			m.sporttype,
 			b.bettype,
-			'' AS refno,		
+			'' AS refno,
 			b.transid,
 			ISNULL(b.BetID,0),
 			m.matchcode, 
@@ -450,14 +445,14 @@ BEGIN
 			CONVERT(FLOAT, b.hdp2) AS hdp2, 
 			b.odds,
 			b.modds,
-			CASE WHEN b.status = 'running' AND IsNull(b.SecAcceptFlag, 0) = 1 and IsNull(b.checktime, CURRENT_TIMESTAMP) > CURRENT_TIMESTAMP THEN 'waiting'  
+			CASE WHEN b.status = 'running' AND IsNull(b.SecAcceptFlag, 0) = 1 AND IsNull(b.checktime, CURRENT_TIMESTAMP) > CURRENT_TIMESTAMP THEN 'waiting'  
 			ELSE b.status   
 			END AS status,
 			b.stake,
 			b.actual_stake,
 			(winlost-actual_stake) winlost,
-			- (b.winlost-b.actual_stake) AS LicenseeWL ,
-			b.comm AS comm,
+			- (b.winlost-b.actual_stake) AS LicenseeWL,
+			b.comm,
 			b.playercomm,
 			b.discount,
 			b.transdate,
@@ -476,10 +471,8 @@ BEGIN
 			,CASE WHEN b.bettype IN (216,217) THEN b.betcheck ELSE '' END AS betcheck
 		FROM 
 			bettrans b WITH (NOLOCK)
-			INNER JOIN match m WITH (NOLOCK) 
-			ON b.matchid=m.matchid	
-			INNER JOIN @SportBettype sbt
-			ON b.bettype = sbt.Bettype
+			INNER JOIN match m WITH (NOLOCK) ON b.matchid=m.matchid	
+			INNER JOIN @SportBettype sbt ON b.bettype = sbt.Bettype
 		WHERE b.CustID			=	@CustID 
 			AND	b.recommend		=	@Recommend  
 			AND	b.matchid		>	0
@@ -495,7 +488,7 @@ BEGIN
 			@UserName,
 			l.sporttype AS sporttype,
 			b.bettype,
-			'' AS refno,		
+			'' AS refno,
 			b.transid,
 			ISNULL(b.BetID,0),
 			m.matchcode,
@@ -510,14 +503,14 @@ BEGIN
 			b.status,
 			b.stake,
 			b.actual_stake,
-			(winlost-actual_stake)  winlost,
+			(winlost-actual_stake) winlost,
 			 - (b.winlost-b.actual_stake) AS LicenseeWL ,
 			b.comm ,
 			b.playercomm AS PlayerComm,
 			b.discount,
 			b.transdate,
 			b.winlostdate,
-			'' AS Betteam,    
+			'' AS Betteam,
 			m.leagueID,
 			0 AS liveindicator , 
 			b.livehomescore, 
@@ -531,8 +524,8 @@ BEGIN
 			,'' AS betcheck
 		FROM
 			bettrans b WITH (NOLOCK)
-			INNER JOIN outright m WITH (NOLOCK) ON b.matchid=m.orid		
-			INNER JOIN league l WITH (NOLOCK) ON m.leagueID=l.leagueID 
+			INNER JOIN outright m WITH (NOLOCK) ON b.matchid = m.orid
+			INNER JOIN league l WITH (NOLOCK) ON m.leagueID = l.leagueID 
 			INNER JOIN @SportBettype sbt ON b.bettype = sbt.Bettype
 		WHERE b.CustID			= @CustID
 			AND b.recommend		= @Recommend 
@@ -540,17 +533,16 @@ BEGIN
 			AND sbt.ProductID	= 1
 			AND sbt.EventType	= 2
 			AND b.transid		NOT IN ( SELECT TransId FROM #TempBATicket )
-			AND b.transdate		>= @FromDate AND b.transdate<=@ToDate
+			AND b.transdate >= @FromDate AND b.transdate<=@ToDate
 
-		--MixParlay & System Parlay
+		-- MixParlay & System Parlay
 		INSERT INTO #BetListSelAllByDateMem
 		SELECT 
 			@UserName AS UserName,
 			0 AS sporttype,
 			b.bettype,
-			CONVERT(NVARCHAR(20),b.refno) AS refno,		
-			--b.transid,
-			CASE WHEN (ISNULL(b.BetID,0)=0 OR b.bettype = 9) THEN b.transid ELSE betid END AS transid,
+			CONVERT(NVARCHAR(20),b.refno) AS refno,
+			CASE WHEN (ISNULL(b.BetID,0) = 0 OR b.bettype = 9) THEN b.transid ELSE betid END AS transid,
 			ISNULL(b.BetID,0),
 			'' AS matchcode, 
 			b.matchid,
@@ -566,8 +558,8 @@ BEGIN
 			b.actual_stake,
 			(winlost-actual_stake) winlost,
 			- (b.winlost-b.actual_stake) LicenseeWL ,
-			b.comm ,
-			b.playercomm AS PlayerComm ,
+			b.comm,
+			b.playercomm,
 			b.discount,
 			b.transdate,
 			b.winlostdate,
@@ -584,14 +576,14 @@ BEGIN
 			'' AS ShowTime 
 			,'' AS betcheck
 		FROM 
-			bettrans b WITH (NOLOCK)
-			INNER JOIN @SportBettype sbt ON b.bettype = sbt.Bettype	
+			dbo.bettrans b WITH (NOLOCK)
+			INNER JOIN @SportBettype sbt ON b.bettype = sbt.Bettype
 		WHERE b.CustID			= @CustID 
 			AND	b.recommend		= @Recommend  
 			AND sbt.ProductID	= 1
 			AND sbt.EventType	= 0
 			AND b.matchid		IN (9, 29) 
-			AND b.transid		NOT IN ( SELECT TransId FROM #TempBATicket )		
+			AND b.transid		NOT IN ( SELECT TransId FROM #TempBATicket )
 			AND b.transdate		>= @FromDate AND b.transdate <= @ToDate
 	END
 
@@ -604,7 +596,7 @@ BEGIN
 			@UserName AS UserName,
 			m.sporttype,
 			b.bettype,
-			b.refno,		
+			b.refno,
 			b.transid,
 			ISNULL(ob.bettype,0),
 			m.matchcode, 
@@ -616,13 +608,13 @@ BEGIN
 			CONVERT(FLOAT, b.hdp2) AS hdp2, 
 			ob.odds,
 			b.modds,
-			CASE WHEN b.status = 'running' AND IsNull(b.SecAcceptFlag, 0) = 1 and IsNull(b.checktime, CURRENT_TIMESTAMP) > CURRENT_TIMESTAMP THEN 'waiting'  
-			ELSE b.status   
+			CASE WHEN b.status = 'running' AND ISNULL(b.SecAcceptFlag, 0) = 1 AND ISNULL(b.checktime, CURRENT_TIMESTAMP) > CURRENT_TIMESTAMP THEN 'waiting'  
+			ELSE b.status
 			END AS status,
 			ob.stake,
 			b.actual_stake,
-			(b.winlost-b.actual_stake) winlost,
-			- (b.winlost-b.actual_stake) AS LicenseeWL ,
+			(b.winlost - b.actual_stake) winlost,
+			- (b.winlost - b.actual_stake) AS LicenseeWL ,
 			CASE WHEN b.bettype = 903 THEN b.awinlost ELSE b.comm END AS comm,
 			b.playercomm,
 			b.discount,
@@ -641,25 +633,24 @@ BEGIN
 			'' AS ShowTime 
 			,'' AS betcheck
 		FROM 
-			bettrans b WITH (NOLOCK)
-			INNER JOIN bettrans ob WITH(NOLOCK) ON b.refno = ob.transid
-			INNER JOIN match m WITH (NOLOCK) 
-			ON b.matchid=m.matchid	
-			INNER JOIN @SportBettype sbt
-			ON b.bettype = sbt.Bettype
+			dbo.bettrans b WITH (NOLOCK)
+			INNER JOIN dbo.bettrans ob WITH(NOLOCK) ON b.refno = ob.transid
+			INNER JOIN dbo.match m WITH (NOLOCK) ON b.matchid = m.matchid
+			INNER JOIN @SportBettype sbt ON b.bettype = sbt.Bettype
 		WHERE b.CustID			=	@CustID 
 			AND	b.recommend		=	@Recommend  
 			AND	b.matchid		>	0
 			AND sbt.ProductID	=	1
-			AND sbt.EventType	=	1			
+			AND sbt.EventType	=	1
 			AND b.transdate		>=	@FromDate AND b.transdate<=@ToDate
 			AND b.bettype IN (901,902,903)
 
 		UPDATE betList
-		SET betList.comm	= CASE WHEN betList.Bettype = 902 THEN commBetList.comm ELSE betList.comm END			
-		FROM #BetListSelAllByDateMem AS betList			
+		SET betList.comm = CASE WHEN betList.Bettype = 902 THEN commBetList.comm ELSE betList.comm END
+		FROM #BetListSelAllByDateMem AS betList
 			INNER JOIN #BetListSelAllByDateMem AS commBetList ON betList.RefNO = commBetList.RefNO
-		WHERE betList.Sporttype = 1 AND betList.Bettype IN (901, 902)
+		WHERE betList.Sporttype = 1 
+			AND betList.Bettype IN (901, 902)
 			AND commBetList.Bettype = 903
 
 		DELETE #BetListSelAllByDateMem WHERE Sporttype = 1 AND Bettype = 903
@@ -667,7 +658,7 @@ BEGIN
 
 	DROP TABLE #TempBATicket;
 
-	--Horse Racing
+	-- Horse Racing
 	IF ( @ShowRB = 1 )
 	BEGIN
 		INSERT INTO #BetListSelAllByDateMem
@@ -675,7 +666,7 @@ BEGIN
 			@UserName,
 			151 AS sporttype,
 			b.bettype,
-			'' AS refno,		
+			'' AS refno,
 			b.transid,
 			ISNULL(b.BetID,0),
 			m.matchcode,
@@ -687,7 +678,7 @@ BEGIN
 			CONVERT(FLOAT, b.hdp2) AS hdp2, 
 			b.odds,
 			b.modds,
-			CASE WHEN b.status = 'running' AND IsNull(b.SecAcceptFlag, 0) = 1 and IsNull(b.checktime, CURRENT_TIMESTAMP) > CURRENT_TIMESTAMP THEN 'waiting'  
+			CASE WHEN b.status = 'running' AND IsNull(b.SecAcceptFlag, 0) = 1 AND IsNull(b.checktime, CURRENT_TIMESTAMP) > CURRENT_TIMESTAMP THEN 'waiting'  
 			ELSE b.status   
 			END AS status,
 			b.stake,
@@ -695,13 +686,13 @@ BEGIN
 			(winlost-actual_stake)  winlost,
 			b.awinlost,
 			b.comm ,
-			b.playercomm  AS PlayerComm,
+			b.playercomm,
 			b.discount,
 			b.transdate,
 			b.winlostdate,
-			'' AS Betteam,    
+			'' AS Betteam,
 			m.leagueID,
-			0 AS liveindicator , 
+			0 AS liveindicator, 
 			b.livehomescore, 
 			b.liveawayscore, 
 			b.IP, 
@@ -712,8 +703,8 @@ BEGIN
 			'' AS ShowTime 
 			,'' AS betcheck
 		FROM
-			bettrans b WITH (NOLOCK)
-			INNER JOIN outright m WITH (NOLOCK) ON b.matchid = m.orid		
+			dbo.bettrans AS b WITH (NOLOCK)
+			INNER JOIN dbo.outright AS m WITH (NOLOCK) ON b.matchid = m.orid
 			INNER JOIN @SportBettype sbt ON b.bettype = sbt.Bettype	
 		WHERE b.CustID			= @CustID 
 			AND	b.recommend		= @Recommend
@@ -723,10 +714,10 @@ BEGIN
 			AND b.transdate		>= @FromDate AND b.transdate<=@ToDate	
 	END
 
-	--NUMBER GAME
-	IF ( @ShowNG	= 1 
-		OR @ShowLC	= 1 
-		OR @ShowVS	= 1  
+	-- Number Game
+	IF ( @ShowNG	= 1
+		OR @ShowLC	= 1
+		OR @ShowVS	= 1
 	)
 	BEGIN
 		INSERT INTO #BetListSelAllByDateMem
@@ -734,7 +725,7 @@ BEGIN
 			@UserName AS UserName,
 			m.sporttype,
 			b.bettype,
-			CASE WHEN b.bettype BETWEEN 1101 AND 1199 THEN CONVERT(NVARCHAR(20),b.refno)  ELSE '' END AS refno,		
+			CASE WHEN b.bettype BETWEEN 1101 AND 1199 THEN CONVERT(NVARCHAR(20),b.refno)  ELSE '' END AS refno,
 			b.transid,
 			ISNULL(b.BetID,0),
 			m.matchcode, 
@@ -742,11 +733,11 @@ BEGIN
 			'' AS Race, 
 			m.homeID,
 			m.awayID,
-			CONVERT(FLOAT, b.hdp1) AS hdp1, 
-			CONVERT(FLOAT, b.hdp2) AS hdp2,  
+			CONVERT(FLOAT, b.hdp1) AS hdp1,
+			CONVERT(FLOAT, b.hdp2) AS hdp2,
 			b.odds,
 			b.modds,
-			CASE WHEN b.status = 'running' AND IsNull(b.SecAcceptFlag, 0) = 1 and IsNull(b.checktime, CURRENT_TIMESTAMP) > CURRENT_TIMESTAMP THEN 'waiting'  
+			CASE WHEN b.status = 'running' AND ISNULL(b.SecAcceptFlag, 0) = 1 AND ISNULL(b.checktime, CURRENT_TIMESTAMP) > CURRENT_TIMESTAMP THEN 'waiting'  
 			ELSE b.status   
 			END AS status,
 			b.stake,
@@ -754,7 +745,7 @@ BEGIN
 			(winlost-actual_stake) winlost,
 			- (b.winlost-b.actual_stake) AS LicenseeWL ,
 			b.comm ,
-			b.playercomm  AS PlayerComm ,
+			b.playercomm,
 			b.discount,
 			b.transdate,
 			b.winlostdate,
@@ -771,9 +762,9 @@ BEGIN
 			CASE WHEN b.bettype BETWEEN 1101 AND 1199 THEN ISNULL(m.showtime,'') ELSE '' END AS ShowTime 
 			,'' AS betcheck
 		FROM 
-			bettrans b WITH (NOLOCK)
-			INNER JOIN match m WITH (NOLOCK) ON b.matchid=m.matchid		
-			INNER JOIN @SportBettype sbt ON b.bettype = sbt.Bettype
+			dbo.bettrans AS b WITH (NOLOCK)
+			INNER JOIN dbo.match AS m WITH (NOLOCK) ON b.matchid = m.matchid
+			INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
 		WHERE
 			b.CustID			=	@CustID 
 			AND	b.recommend		=	@Recommend  
@@ -798,7 +789,7 @@ BEGIN
 			CONVERT(FLOAT, b.hdp2) AS hdp2,  
 			b.odds,
 			b.modds,
-			CASE WHEN b.status = 'running' AND IsNull(b.SecAcceptFlag, 0) = 1 and IsNull(b.checktime, CURRENT_TIMESTAMP) > CURRENT_TIMESTAMP THEN 'waiting'  
+			CASE WHEN b.status = 'running' AND IsNull(b.SecAcceptFlag, 0) = 1 AND IsNull(b.checktime, CURRENT_TIMESTAMP) > CURRENT_TIMESTAMP THEN 'waiting'  
 			ELSE b.status   
 			END AS status,
 			b.stake,
@@ -806,7 +797,7 @@ BEGIN
 			(winlost-actual_stake) winlost,
 			- (b.winlost-b.actual_stake) AS LicenseeWL ,
 			b.comm ,
-			b.playercomm  AS PlayerComm ,
+			b.playercomm,
 			b.discount,
 			b.transdate,
 			b.winlostdate,
@@ -820,11 +811,11 @@ BEGIN
 			CONVERT(BIT,0) AS IsNeutral,
 			b.Oddstype,
 			b.currency,
-			CONVERT(VARCHAR(20),r.EventTime)  AS ShowTime 
+			CONVERT(VARCHAR(20),r.EventTime) AS ShowTime 
 			,'' AS betcheck
-		FROM bettrans b WITH (NOLOCK)
-			INNER JOIN VSOutright o WITH (NOLOCK) ON b.oddsid=o.Orid
-			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
+		FROM dbo.bettrans b WITH (NOLOCK)
+			INNER JOIN dbo.VSOutright o WITH (NOLOCK) ON b.oddsid = o.Orid
+			INNER JOIN dbo.VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
 			INNER JOIN @SportBettype sbt ON b.bettype = sbt.Bettype
 		WHERE
 			b.CustID			=	@CustID 
@@ -834,7 +825,7 @@ BEGIN
 			AND b.transdate		>=	@FromDate AND b.transdate <= @ToDate
 	END
 
-	--Casino
+	-- Casino
 	IF ( @ShowCS = 1 )
 	BEGIN
 		INSERT INTO #BetListSelAllByDateMem
@@ -842,7 +833,7 @@ BEGIN
 			@UserName AS UserName,
 			251 sporttype,
 			b.bettype,
-			b.refno,		
+			b.refno,
 			b.transid,
 			ISNULL(b.BetID,0),
 			'' AS matchcode, 
@@ -854,15 +845,15 @@ BEGIN
 			CONVERT(FLOAT, b.hdp2) AS hdp2,  
 			b.odds,
 			b.modds,
-			CASE WHEN b.status = 'running' AND IsNull(b.SecAcceptFlag, 0) = 1 and IsNull(b.checktime, CURRENT_TIMESTAMP) > CURRENT_TIMESTAMP THEN 'waiting'  
+			CASE WHEN b.status = 'running' AND IsNull(b.SecAcceptFlag, 0) = 1 AND IsNull(b.checktime, CURRENT_TIMESTAMP) > CURRENT_TIMESTAMP THEN 'waiting'  
 			ELSE b.status   
 			END AS status,
 			b.stake,
 			b.actual_stake,
 			(winlost-actual_stake) winlost,
-			- (b.winlost-b.actual_stake) AS LicenseeWL ,
+			- (b.winlost-b.actual_stake) AS LicenseeWL,
 			b.comm ,
-			b.playercomm  AS PlayerComm ,
+			b.playercomm,
 			b.discount,
 			b.transdate,
 			b.winlostdate,
@@ -879,7 +870,7 @@ BEGIN
 			''  AS ShowTime 
 			,'' AS betcheck
 		FROM 
-			bettrans b WITH (NOLOCK)
+			dbo.bettrans b WITH (NOLOCK)
 			INNER JOIN @SportBettype sbt ON b.bettype = sbt.Bettype	
 		WHERE
 			b.CustID			=	@CustID 
@@ -889,7 +880,7 @@ BEGIN
 			AND b.transdate		>=	@FromDate AND b.transdate <= @ToDate
 	END
 
-	--Bingo
+	-- Bingo
 	IF ( @ShowBG = 1 )
 	BEGIN
 		INSERT INTO #BetListSelAllByDateMem
@@ -897,7 +888,7 @@ BEGIN
 			@UserName AS UserName,
 			252 sporttype,
 			b.bettype,
-			b.refno,		
+			b.refno,
 			b.transid,
 			ISNULL(b.BetID,0),
 			'' AS matchcode, 
@@ -909,15 +900,15 @@ BEGIN
 			CONVERT(FLOAT, b.hdp2) AS hdp2,  
 			b.odds,
 			b.modds,
-			CASE WHEN b.status = 'running' AND IsNull(b.SecAcceptFlag, 0) = 1 and IsNull(b.checktime, CURRENT_TIMESTAMP) > CURRENT_TIMESTAMP THEN 'waiting'  
+			CASE WHEN b.status = 'running' AND IsNull(b.SecAcceptFlag, 0) = 1 AND IsNull(b.checktime, CURRENT_TIMESTAMP) > CURRENT_TIMESTAMP THEN 'waiting'  
 			ELSE b.status   
 			END AS status,
 			b.stake,
 			b.actual_stake,
 			(winlost-actual_stake) winlost,
-			- (b.winlost-b.actual_stake) AS LicenseeWL ,
-			b.comm ,
-			b.playercomm  AS PlayerComm ,
+			- (b.winlost-b.actual_stake) AS LicenseeWL,
+			b.comm,
+			b.playercomm,
 			b.discount,
 			b.transdate,
 			b.winlostdate,
@@ -934,7 +925,7 @@ BEGIN
 			''  AS ShowTime 
 			,'' AS betcheck
 		FROM 
-			bettrans b WITH (NOLOCK)
+			dbo.bettrans b WITH (NOLOCK)
 			INNER JOIN @SportBettype sbt ON b.bettype = sbt.Bettype	
 		WHERE
 			b.CustID			=	@CustID 
@@ -952,7 +943,7 @@ BEGIN
 			@UserName AS UserName,
 			202 AS sporttype,
 			b.bettype,
-			b.refno,		
+			b.refno,
 			b.transid AS transid,
 			ISNULL(b.BetID,0),
 			'' AS matchcode, 
@@ -969,7 +960,7 @@ BEGIN
 			b.actual_stake,
 			(winlost-actual_stake) winlost,
 			- (b.winlost-b.actual_stake) AS LicenseeWL ,
-			b.comm ,
+			b.comm,
 			b.playercomm,
 			b.discount,
 			b.transdate,
@@ -987,8 +978,8 @@ BEGIN
 			''  AS ShowTime 
 			,'' AS betcheck
 		FROM 
-			bettrans b WITH (NOLOCK)
-			INNER JOIN @SportBettype sbt ON b.bettype = sbt.Bettype	
+			dbo.bettrans b WITH (NOLOCK)
+			INNER JOIN @SportBettype sbt ON b.bettype = sbt.Bettype
 			CROSS APPLY dbo.[f_ParseTransDesc](b.TransDesc, b.bettype) t
 		WHERE
 			b.CustID			=	@CustID 
@@ -1003,7 +994,7 @@ BEGIN
 			@UserName AS UserName,
 			202 AS sporttype,
 			t.gameid AS bettype,
-			t.translogid AS refno,		
+			t.translogid AS refno,
 			t.translogid AS transid,
 			0 AS BetID, 
 			'' AS matchcode, 
@@ -1030,7 +1021,7 @@ BEGIN
 			0 AS liveindicator, 
 			0 AS livehomescore, 
 			0 AS liveawayscore,
-			t.IP AS IP,
+			t.IP,
 			0 AS betstatus,
 			CONVERT(BIT,0) AS IsNeutral,
 			0 AS Oddstype,
@@ -1038,7 +1029,7 @@ BEGIN
 			''  AS ShowTime 
 			,'' AS betcheck
 		FROM 
-			dbo.translog AS t WITH (NOLOCK)	
+			dbo.translog AS t WITH (NOLOCK)
 			INNER JOIN @SportBettype sbt ON t.gameID = sbt.Bettype	
 			CROSS APPLY dbo.[f_ParseTransDesc](t.TransDesc, t.gameid) k
 		WHERE
@@ -1050,113 +1041,9 @@ BEGIN
 			AND t.statusID		IN (0,1)	
 	END
 
-	-- Microgaming
-	IF ( @ShowMGC = 1 )
+	-- Microgaming Live Casino
+	IF ( @ShowMGCLC = 1 )
 	BEGIN
-		-- Microgaming - Live Casino
-		INSERT INTO #BetListSelAllByDateMem
-		SELECT 
-			@UserName AS UserName,
-			203 AS sporttype,
-			b.bettype,
-			b.refno,
-			b.transid,
-			ISNULL(b.BetID, 0),
-			'' AS matchcode,
-			0 AS matchid,
-			'' AS Race,
-			0 AS homeID,
-			0 AS awayID,
-			0 AS hdp1,
-			0 AS hdp2,
-			b.odds,
-			b.modds,
-			b.status,
-			b.stake,
-			b.actual_stake,
-			(winlost - actual_stake) AS winlost,
-			- (b.winlost - b.actual_stake) AS LicenseeWL,
-			b.comm,
-			b.playercomm,
-			b.discount,
-			b.transdate,
-			b.winlostdate,
-			'' AS betteam,
-			0 AS leagueID,
-			0 AS liveindicator,
-			0 AS livehomescore,
-			0 AS liveawayscore,
-			b.IP,
-			0 AS betstatus,
-			CONVERT(BIT, 0) AS IsNeutral,
-			b.Oddstype,
-			b.currency,
-			''  AS ShowTime,
-			b.betcheck
-		FROM 
-			bettrans AS b WITH (NOLOCK)
-			INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
-		WHERE
-			b.CustID = @CustID
-			AND b.recommend = @Recommend
-			AND sbt.ProductID = 13
-			AND sbt.SubProduct <> 'MGC-RNG'
-			AND sbt.EventType = 0
-			AND b.transdate >= @FromDate AND b.transdate <= @ToDate 
-			AND b.statusID NOT IN (0, 1)
-
-		UNION ALL
-		SELECT 
-			@UserName AS UserName,
-			203 AS sporttype,
-			t.gameid AS bettype,
-			t.translogid AS refno,
-			t.translogid AS transid,
-			0 AS BetID,
-			'' AS matchcode,
-			0 AS matchid,
-			'' AS Race,
-			0 AS homeID,
-			0 AS awayID,
-			0 AS hdp1,
-			0 AS hdp2,
-			t.odds,
-			0 AS modds,
-			t.status,
-			t.stake,
-			t.actual_stake,
-			(0 - actual_stake) AS winlost,
-			- (0 - t.actual_stake) AS LicenseeWL ,
-			0 AS comm,
-			0 AS PlayerComm,
-			t.discount,
-			t.transdate,
-			t.winlostdate,
-			'' AS betteam,
-			0 AS leagueID,
-			0 AS liveindicator,
-			0 AS livehomescore,
-			0 AS liveawayscore,
-			t.IP,
-			0 AS betstatus,
-			CONVERT(BIT, 0) AS IsNeutral,
-			0 AS Oddstype,
-			t.currency,
-			'' AS ShowTime,
-			'' AS betcheck
-		FROM 
-			dbo.translog AS t WITH (NOLOCK)
-			INNER JOIN @SportBettype AS sbt ON t.gameID = sbt.Bettype
-		WHERE
-			t.CustID = @CustID 
-			AND t.recommend = @Recommend 
-			AND sbt.ProductID = 13
-			AND sbt.SubProduct <> 'MGC-RNG'
-			AND sbt.EventType = 0
-			AND t.transdate >= @FromDate AND t.transdate <= @ToDate 
-			AND t.statusID IN (0, 1)
-
-		-- Microgaming - RNG Game (up to yesterday settled ticket)
 		INSERT INTO #BetListSelAllByDateMem
 		SELECT 
 			@UserName AS UserName,
@@ -1195,15 +1082,119 @@ BEGIN
 			0 AS Oddstype,
 			b.currency,
 			'' AS ShowTime,
-			'' AS betcheck
+			b.betcheck
 		FROM 
-			bettrans AS b WITH (NOLOCK)
+			dbo.bettrans AS b WITH (NOLOCK)
 			INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
 		WHERE
 			b.CustID = @CustID
 			AND b.recommend = @Recommend
 			AND sbt.ProductID = 13
-			AND sbt.SubProduct = 'MGC-RNG'
+			AND sbt.EventType = 0
+			AND b.transdate BETWEEN @FromDate AND @ToDate 
+			AND b.statusID NOT IN (0, 1)
+
+		UNION ALL
+		SELECT 
+			@UserName AS UserName,
+			203 AS sporttype,
+			t.gameid AS bettype,
+			t.translogid AS refno,
+			t.translogid AS transid,
+			0 AS BetID,
+			'' AS matchcode,
+			0 AS matchid,
+			'' AS Race,
+			0 AS homeID,
+			0 AS awayID,
+			0 AS hdp1,
+			0 AS hdp2,
+			0 AS odds,
+			0 AS modds,
+			t.status,
+			t.stake,
+			t.actual_stake,
+			(0 - actual_stake) AS winlost,
+			- (0 - t.actual_stake) AS LicenseeWL ,
+			0 AS comm,
+			0 AS PlayerComm,
+			t.discount,
+			t.transdate,
+			t.winlostdate,
+			'' AS betteam,
+			0 AS leagueID,
+			0 AS liveindicator,
+			0 AS livehomescore,
+			0 AS liveawayscore,
+			t.IP,
+			0 AS betstatus,
+			CONVERT(BIT, 0) AS IsNeutral,
+			0 AS Oddstype,
+			t.currency,
+			'' AS ShowTime,
+			'' AS betcheck
+		FROM 
+			dbo.translog AS t WITH (NOLOCK)
+			INNER JOIN @SportBettype AS sbt ON t.gameID = sbt.Bettype
+		WHERE
+			t.CustID = @CustID 
+			AND t.recommend = @Recommend 
+			AND sbt.ProductID = 13
+			AND sbt.EventType = 0
+			AND t.transdate BETWEEN @FromDate AND @ToDate 
+			AND t.statusID IN (0, 1)
+	END
+
+	-- Microgaming RNG Game
+	IF ( @ShowMGCRNG = 1 )
+	BEGIN
+		-- Up to yesterday settled ticket
+		INSERT INTO #BetListSelAllByDateMem
+		SELECT 
+			@UserName AS UserName,
+			205 AS sporttype,
+			b.bettype,
+			b.refno,
+			b.transid,
+			ISNULL(b.BetID, 0),
+			'' AS matchcode,
+			0 AS matchid,
+			'' AS Race,
+			0 AS homeID,
+			0 AS awayID,
+			0 AS hdp1,
+			0 AS hdp2,
+			0 AS odds,
+			0 AS modds,
+			b.status,
+			b.stake,
+			b.actual_stake,
+			(winlost - actual_stake) AS winlost,
+			- (b.winlost - b.actual_stake) AS LicenseeWL,
+			b.comm,
+			b.playercomm,
+			b.discount,
+			b.transdate,
+			b.winlostdate,
+			'' AS betteam,
+			0 AS leagueID,
+			0 AS liveindicator,
+			0 AS livehomescore,
+			0 AS liveawayscore,
+			b.IP,
+			0 AS betstatus,
+			CONVERT(BIT, 0) AS IsNeutral,
+			0 AS Oddstype,
+			b.currency,
+			'' AS ShowTime,
+			'' AS betcheck
+		FROM 
+			dbo.bettrans AS b WITH (NOLOCK)
+			INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
+		WHERE
+			b.CustID = @CustID
+			AND b.recommend = @Recommend
+			AND sbt.ProductID = 17
 			AND sbt.EventType = 0
 			AND b.transdate >= @FromDate AND b.transdate <= @ToDate 
 			AND b.transdate < DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- not today
@@ -1216,7 +1207,7 @@ BEGIN
 			INSERT INTO #BetListSelAllByDateMem
 			SELECT 
 				@UserName AS UserName,
-				203 AS sporttype,
+				205 AS sporttype,
 				b.bettype,
 				b.refno,
 				b.transid,
@@ -1259,8 +1250,7 @@ BEGIN
 			WHERE
 				b.CustID = @CustID
 				AND b.recommend = @Recommend
-				AND sbt.ProductID = 13
-				AND sbt.SubProduct = 'MGC-RNG'
+				AND sbt.ProductID = 17
 				AND sbt.EventType = 0
 				AND b.transdate BETWEEN DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0) AND @ToDate	-- today
 				AND brng.statusID = 0
@@ -1278,7 +1268,7 @@ BEGIN
 			INSERT INTO #BetListSelAllByDateMem
 			SELECT 
 				@UserName AS UserName,
-				203 AS sporttype,
+				205 AS sporttype,
 				b.bettype,
 				b.refno,
 				b.transid,
@@ -1325,8 +1315,7 @@ BEGIN
 			WHERE
 				b.CustID = @CustID
 				AND b.recommend = @Recommend
-				AND sbt.ProductID = 13
-				AND sbt.SubProduct = 'MGC-RNG'
+				AND sbt.ProductID = 17
 				AND sbt.EventType = 0
 				AND b.transdate BETWEEN DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0) AND @ToDate	-- today
 				AND brng.statusID <> 0
@@ -1387,7 +1376,7 @@ BEGIN
 			'' AS ShowTime,
 			'' AS betcheck
 		FROM 
-			bettrans AS b WITH (NOLOCK)
+			dbo.bettrans AS b WITH (NOLOCK)
 			INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
 		WHERE
 			b.CustID = @CustID

@@ -1,8 +1,6 @@
-
-ALTER PROCEDURE dbo.Lrf_3rdProductUpdCustStatus @CustID INT
-	, @ProductId INT
-	, @IsEnabled BIT
-	, @UserID INT
+USE [CustDB]
+ 
+ALTER PROCEDURE	[dbo].[Lrf_3rdProductUpdCustStatus]  
 	, @IP VARCHAR(40)
 	, @Language	VARCHAR(10) = 'en-US'
 	, @ErrMsg VARCHAR(100) = ''	OUTPUT
@@ -15,7 +13,7 @@ AS
 	Revisions:
 		- 20150609@Jim: support product microgaming
 		- 20151022@Jim: support #44780
-		- 20151106@Patrick: Support RnG Game & rename field named DisableMicroGame to DisableMicroGameLC
+		-20151108@Jim: Separated MicroGaming into 2 product
 
 	Param's Explanation:
 */
@@ -69,7 +67,7 @@ BEGIN
 		SELECT @ErrMsg='Could not update'
 		RETURN
 	END
-	IF (@ProductId NOT IN (14,17))
+	IF @ProductId NOT IN (14,17)
 	BEGIN
 		INSERT INTO dbo.Dep_CustProductSetting (CustID, ProductId, IsEnabled)
 		SELECT CustID, @ProductId, @IsEnabled	
@@ -87,12 +85,25 @@ BEGIN
 	--- MicroGaming
 	ELSE IF (@ProductID IN (14,17))
 		BEGIN 
+			SELECT @IsEnable_Old =  CASE ISNULL(DisableMicrogameLC,0) WHEN 1 THEN 0 ELSE 1 END
+			FROM dbo.CustInfo WITH (NOLOCK)
+			WHERE CustID = @CustId  
+			
 			UPDATE dbo.CustInfo WITH (ROWLOCK,UPDLOCK)
-			SET DisableMicrogame =  CASE WHEN @ProductID = 14 THEN ~@IsEnabled
+			SET DisableMicrogameLC = CASE @IsEnabled WHEN 1 THEN 0 ELSE 1 END
 										WHEN @ProductID = 17 THEN ~@IsEnabled END --CASE @IsEnabled WHEN 1 THEN 0 ELSE 1 END
 			WHERE CustID = @CustID
 		END
-		
+	ELSE IF (@ProductID = 17)
+		BEGIN 
+			SELECT @IsEnable_Old = CASE ISNULL(DisableMicrogameRnG,0) WHEN 1 THEN 0 ELSE 1 END
+			FROM dbo.CustInfo WITH (NOLOCK)
+			WHERE CustID = @CustId 
+			
+			UPDATE dbo.CustInfo WITH (ROWLOCK,UPDLOCK)
+			SET DisableMicrogameRnG = CASE @IsEnabled WHEN 1 THEN 0 ELSE 1 END
+			WHERE CustID = @CustID	
+		END	
 	-- Write log
 	SET @endRun = GETDATE()
 	SET @duration  = DATEDIFF(MILLISECOND, @startRun, @endRun)
@@ -130,8 +141,6 @@ BEGIN
 				    @duration = @duration
     END CATCH
 END
-
-GO
 
 GO 
  GRANT EXECUTE ON [dbo].[Lrf_3rdProductUpdCustStatus] TO [bodbLicenseeNet]

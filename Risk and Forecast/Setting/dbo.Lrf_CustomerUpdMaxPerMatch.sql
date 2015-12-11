@@ -43,8 +43,11 @@ Original: [Acc_CustomerUpdMaxPerMatch]
 Revisions:
 	- 20110520@Henry: Remove Number Game (by using SP: Lrf_CustomerUpdMaxPerMatch161)
 	- 20140207@Jim: support to offer Horse Racing Fixed Odds
-	- 20151015@Jim: Integrate Sportbook2 (Feature #44759)
+ 
 	- 20151023@Victor: Support New Simplified Chinese
+ 
+	- 20151015@Jim: Integrate Sportbook2 (Feature #44759)
+ 
 	
 Param's Explanation:
 • @ErrCode:

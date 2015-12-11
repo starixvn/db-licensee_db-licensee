@@ -84,9 +84,12 @@ Revisions:
    - 20110613@Henry: Logging Enhancement
    - 20120326@Dom: Change CustSetting to Dep_CustSetting, CustSetting3rd to Dep_CustSetting3rd
    - 20140207@Jim: support to offer HorseRacingFixedOdds
-   - 20151015@Jim: Integrate Sportbook2 (Feature #44759)
+ 
    - 20151023@Victor: Support New Simplified Chinese
    
+ 
+   - 20151015@Jim: Integrate Sportbook2 (Feature #44759)
+ 
 Param's Explanation:
 • @ErrCode:
     = 0: Update successfully.
@@ -1413,7 +1416,9 @@ begin
 END
 
 
+ 
 EXEC dbo.Lrf_CustomerUpdMaxPerMatch 
+ 
 	@custid = @custid,
 	@maxpermatch = @maxpermatch,
 	@maxpermatchv2 = @maxpermatchv2,

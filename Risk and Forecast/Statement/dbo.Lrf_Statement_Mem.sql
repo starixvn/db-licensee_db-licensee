@@ -32,6 +32,8 @@ Revisions:
  -- 201506125@Winnie: support BetTrade 
  -- 20150626@Jim: support MicroGaming (feature #37034) 
  -- 20150917@Florent: Change datasource for AG Casino (#Redmine 43172)
+ -- 20151203@Sophia: Add Grand Prize for Microgaming - RNG Casino [RedmineId: #47601]
+ 
 Param's Explanation:   
 • @ErrCode:  
     = 0: add new member successfully.  
@@ -172,25 +174,27 @@ select @fdate = @FromDate, @tdate = @ToDate
 		GROUP BY winlostdate ,gameid 	
 		
    IF @fdate <= @MoveBetsDay  
-   INSERT INTO @bet  
-   select distinct   
-    winlostdate,  
-    bettype,  
-    102 statusID,  
-    transdate,     
-    'Cancelled/Deleted Bets' transdesc,   
-    stake,  
-    stake,  
-    0,  
-    0   
-   from zzzbettrans with (nolock)  
-   where bettype between 1 and 19999   
-    and custid=@CustID   
-    and winlostdate between @fdate and @MoveBetsDay    
-	AND bettype <>903
+		INSERT INTO @bet  
+		select distinct   
+				winlostdate,  
+				bettype,  
+				102 statusID,  
+				transdate,     
+				'Cancelled/Deleted Bets' transdesc,   
+				stake,  
+				stake,  
+				0,  
+				0   
+	    from zzzbettrans with (nolock)  
+	    where bettype between 1 and 19999   
+			and custid=@CustID   
+			and winlostdate between @fdate and @MoveBetsDay    
+			AND bettype <>903
+	
+	
             INSERT  INTO @Data  
                     SELECT  0 ,  
-    winlostdate ,  
+							winlostdate ,  
                             'BAL' ,  
                             'OPENING BALANCE' ,  
                             0 ,  
@@ -251,8 +255,33 @@ select @fdate = @FromDate, @tdate = @ToDate
                     WHERE   bettype > 20000  
                             AND bettype NOT IN (23001,23002,23101,23102,23201,23202)
                             AND ( winlost - actual_stake ) <> 0   
+							
+			
+			---------Get Data of PayOutTrans for Progressive Jackpot Win ----------
+			INSERT  INTO @Data (
+								  OrderKey,  
+								  winlostdate,  
+								  transtype,  
+								  transdesc,  
+								  TurnOver,  
+								  totalAmt,  
+								  Commission)   
+			SELECT  
+				4 as OrderKey,  
+				winlostdate,  
+				'GP' as transtype,  
+				'Grand Prize' as transdesc,  
+				0 ,  
+				SUM (WinAmount) as totalAmt ,  
+				0  
+			FROM DBACC.bodb02.dbo.PayoutTrans WITH(NOLOCK) 
+			WHERE winlostdate BETWEEN @Fromdate AND @todate
+				  AND custid = @custid 
+			GROUP BY winlostdate , CustID
+			-----------------------------------------------------------------------------
      
         END   
+		
     IF @fdate < @BalanceUpDay   
         BEGIN   
             DECLARE @PreBalanceUpDay DATETIME  
@@ -305,7 +334,7 @@ select @fdate = @FromDate, @tdate = @ToDate
 						LEFT JOIN @DepWL b ON a.AccDate = b.winlostdate
                     WHERE   a.custid = @custid  
                             AND a.accdate BETWEEN @fdate AND @tdate  
-                            AND a.transtype IN ( 'BET', 'COM' )  
+                            AND a.transtype IN ( 'BET', 'COM')  
                     GROUP BY a.AccDate     
   
             INSERT  INTO @Data  
@@ -322,10 +351,10 @@ select @fdate = @FromDate, @tdate = @ToDate
                     FROM    DBRPT.bodb_report.dbo.Statement WITH ( NOLOCK )  
                     WHERE   custid = @custid  
                             AND accdate BETWEEN @fdate AND @tdate  
-                            AND transtype NOT IN ( 'BET', 'COM' )  
+                            AND transtype NOT IN ( 'BET', 'COM')  
         END   
-  
-    DECLARE @RowStart INT ,  
+	
+	DECLARE @RowStart INT ,  
         @RowEnd INT    
     SELECT  @PageIndex = @PageIndex - 1 ,  
             @RowStart = @PageSize * @PageIndex + 1 ,  

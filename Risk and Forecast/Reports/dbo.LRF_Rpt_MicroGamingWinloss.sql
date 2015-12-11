@@ -1,6 +1,6 @@
 USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[LRF_Rpt_MicroGamingWinloss_xpre]    Script Date: 10/02/2015 12:58:04 ******/
+/****** Object:  StoredProcedure [dbo].[LRF_Rpt_MicroGamingWinloss]    Script Date: 11/24/2015 12:47:13 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
