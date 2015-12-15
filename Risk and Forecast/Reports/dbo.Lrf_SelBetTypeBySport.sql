@@ -29,7 +29,7 @@ Revisions:
    - 20150714@Winnie: Exclude 901,902,903
    - 20151022@Jim: offer MuayThai
    - 20151023@Victor: Support New Simplified Chinese
-   - 20151210@Bobby: Fixbug#49033 and apply SportBettypeMatrix
+   - 20151210@Bobby: Fixbug#49033-49298 and apply SportBettypeMatrix & group bettype
    
  
 Param's Explanation:
@@ -81,6 +81,13 @@ BEGIN
 		,BettypeID SMALLINT
 		,BettypeName NVARCHAR(50)
 	)
+	;WITH CTE_GroupBettype AS (
+		SELECT ISNULL(ss.GroupTypeId, sp.bettype) AS bettype
+		FROM #SportBettype sp 
+			LEFT JOIN bodb02.dbo.f_GroupBettype() ss 
+			ON sp.bettype = ss.bettype
+		GROUP BY ISNULL(ss.GroupTypeId, sp.bettype)
+	)
 	SELECT 
 		b.typeID,
 		CASE @Langkey
@@ -104,10 +111,8 @@ BEGIN
 					
 	INTO #bettype		
 	FROM bodb02.dbo.bettype  b WITH (NOLOCK)
-		INNER JOIN #SportBettype sp 
-		ON b.typeID = sp.bettype
-		LEFT JOIN bodb02.dbo.f_GroupBettype() ss 
-		ON ISNULL(ss.GroupTypeId, sp.bettype) = b.typeid
+		INNER JOIN CTE_GroupBettype bt 
+		ON b.typeID = bt.bettype
 		
 	SELECT   
 		DISTINCT typeID AS BettypeID
