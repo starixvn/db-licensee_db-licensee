@@ -30,7 +30,7 @@ Revisions:
    - 20151022@Jim: offer MuayThai
    - 20151023@Victor: Support New Simplified Chinese
    - 20151210@Bobby: Fixbug#49033-49298 and apply SportBettypeMatrix & group bettype
-   
+   - 20151217@Bobby: Fixbug#49486 - Remove unsupported and mixed bettype
  
 Param's Explanation:
 	
@@ -51,6 +51,9 @@ BEGIN
 		, EventType 	TINYINT
 		, SubProduct 	VARCHAR(500)
 	)
+
+	DECLARE @sportFilter TABLE (sporttype SMALLINT)
+
 	INSERT INTO #SportBettype
 	EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=2
 
@@ -71,11 +74,31 @@ BEGIN
 	SELECT @strSport = COALESCE(@strSport + ',', '') + CAST(Sport AS Nvarchar(128))
 	FROM #INPUT
 
+	INSERT INTO @sportFilter
+	SELECT VAL
+	FROM bodb02.dbo.strSplit(@strSport,',')
+	
+	-- Soccer - business logic
+	IF(EXISTS(SELECT 1 FROM @sportFilter WHERE sporttype = 1))
+	BEGIN
+		INSERT INTO @sportFilter
+		SELECT 99 -- OtherSports
+		WHERE NOT EXISTS (SELECT 1 FROM @sportFilter WHERE sporttype = 99)
+	END
+	
 	DELETE sp
 	FROM #SportBettype sp
-	WHERE NOT EXISTS (SELECT 1 FROM bodb02.dbo.strSplit(@strSport,',') AS f WHERE sp.sporttype = f.VAL)
-		OR sp.bettype IN (901,902,903)
+	WHERE NOT EXISTS (SELECT 1 FROM @sportFilter AS f WHERE sp.sporttype = f.sporttype)
+		OR sp.bettype IN (901,902,903) -- bettrade
+		OR sp.bettype BETWEEN 301 AND 304 -- MO
+		OR sp.bettype BETWEEN 801 AND 899 -- MG
 	
+	-- Tenis - business logic
+	DELETE sp
+	FROM #SportBettype sp
+	WHERE SportType = 5
+		AND bettype IN(5, 15)
+			
 	DECLARE @Bettype TABLE (
 		sporttype SMALLINT
 		,BettypeID SMALLINT
