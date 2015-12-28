@@ -112,7 +112,8 @@ select @fdate = @FromDate, @tdate = @ToDate
                     FROM    bettrans with(nolock)  
                     WHERE   custid = @custid  
                             AND winlostdate BETWEEN @fdate AND @tdate  
-                            AND bettype <>903
+                            --AND bettype <>903
+							AND bettype NOT IN (903, 71)
                     GROUP BY winlostdate ,  
                             bettype ,  
                             CASE WHEN statusID IN (101,102) THEN 102  
