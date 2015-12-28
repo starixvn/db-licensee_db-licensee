@@ -54,6 +54,8 @@ Revisions:
    - 20151108@Jim: Separated MicroGaming into 2 product
    - 20151228@Patrick: Exclude 901 & 902 for turnover
 
+   - 20151228@Bobby: Implement RNG Casino sporttype(208,209,210)
+   
 Param's Explanation:
     + @excludeTest: remove currency UUS
     + @CurrencyID = 0: get all currency
@@ -100,7 +102,7 @@ IF @ShowNG = 1 INSERT INTO @sporttype(sporttype) VALUES(161)
 IF @ShowLC = 1 INSERT INTO @sporttype(sporttype) VALUES(162)
 IF @ShowVS = 1 INSERT INTO @sporttype(sporttype) VALUES(180)
 
-IF @ShowCS = 1 INSERT INTO @sporttype(sporttype) VALUES(251)
+IF @ShowCS = 1 INSERT INTO @sporttype(sporttype) VALUES(251),(208),(209),(210)
 IF @ShowBG = 1 INSERT INTO @sporttype(sporttype) VALUES(252)
 IF @ShowKN = 1 INSERT INTO @sporttype(sporttype) VALUES(202)--Keno
 IF @ShowMGCLC = 1 INSERT INTO @sporttype(sporttype) VALUES(203)

@@ -56,7 +56,8 @@ AS
 		- 20150921@Jim: Implement the changes on reports for AG Casino (#43172)
 		- 20151108@Jim: Separated MicroGaming into 2 product
 		- 20151230@Patrick: Add more output BuyBackAmt & BABuyBackAmt
- 
+		- 20151228@Bobby: Support MBC RNG Casino sporttype(208,209,210)
+		
 	Param's Explanation:  
 	  + @CustID: SuperID  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -197,6 +198,14 @@ BEGIN
 	VALUES (251)
 	INSERT INTO @bettype(bettype)
 	VALUES(71)
+	
+	-- MBC - RNG Casino
+	INSERT INTO @sporttype(sporttype)
+	VALUES (208),(209),(210)
+	INSERT INTO @bettype(bettype)
+	SELECT DISTINCT bettype
+	FROM dbo.SportBettypeMatrix with(nolock)
+	WHERE sporttype IN (208, 209, 210)
 END 
 IF @ShowBG=1 -- Bingo
 BEGIN 
