@@ -118,7 +118,13 @@ BEGIN
 	INSERT INTO @SportBettype
 	EXEC dbo.Acc_SportBettypeMatrix_Sel @mode = 5
 	
-	DELETE @SportBettype WHERE ProductID = 1 AND Bettype IN (901, 902, 903)
+	-- Don't support BetTrade
+	DELETE @SportBettype 
+	WHERE ProductID = 1 AND Bettype IN (901, 902, 903)
+
+	-- Don't support RNG Casino old bet type (71)
+	DELETE @SportBettype
+	WHERE ProductID = 6 AND SubProduct = ''
 
 	DELETE sbt
 	FROM @SportBettype sbt
@@ -1116,6 +1122,8 @@ BEGIN
 
 	DROP TABLE #BetListSelRunningByDateMem
 END
+
+
 
 GO
 
