@@ -93,7 +93,7 @@ AS
 		- 20150921@Kos: Don't support Microgaming
 		- 20151014@Kos: Increase data length of @sql to 3000
 		- 20151203@Kos: Change odds, modds data type from SMALLMONEY to MONEY [Redmine: #48660]
-		- 20151225@Kos: Don't support RNG Casino Single Wallet [Redmine: #48958]
+		- 20151225@Kos: Don't support RNG Casino [Redmine: #48958]
 
 	Param's Explanation: 
 */
@@ -269,17 +269,6 @@ BEGIN
 	BEGIN	
 		INSERT INTO #SportBettype
 		EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode = 5, @ProductID = 5
-	END
-
-	-- RNG Casino
-	IF @Product = 'CS'
-	BEGIN	
-		INSERT INTO #SportBettype
-		EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode = 5, @ProductID = 6
-
-		-- Don't support RNG Casino Single Wallet
-		DELETE FROM #SportBettype
-		WHERE ProductID = 6 AND SubProduct <> ''
 	END
 
 	-- Bingo
@@ -1119,6 +1108,7 @@ BEGIN
 	DROP TABLE #TempAg
 	DROP TABLE #BettransDetail
 END
+
 
 
 
