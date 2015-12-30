@@ -530,7 +530,7 @@ BEGIN
 			ELSE 0 END	
 			) turnoverVS, 
 			SUM(
-			CASE WHEN b.bettype =71 THEN
+			CASE WHEN b.bettype =71 OR b.bettype BETWEEN 2101 AND 2399 THEN
 				stake
 				*
 				CASE WHEN @drawfilter IN (2,3) THEN
@@ -599,7 +599,7 @@ BEGIN
 			0 AS LicenseeWLRB,
 			-SUM(CASE WHEN b.bettype BETWEEN 1101 AND 1199	THEN b.winlost - b.actual_stake ELSE 0 END) AS LicenseeWLLC,
 			-SUM(CASE WHEN b.bettype BETWEEN 1201 AND 1299	THEN b.winlost - b.actual_stake ELSE 0 END) AS LicenseeWLVS,
-			-SUM(CASE WHEN b.bettype =71 THEN b.winlost - b.actual_stake ELSE 0 END)					AS LicenseeWLCS,
+			-SUM(CASE WHEN b.bettype =71 OR b.bettype BETWEEN 2101 AND 2399 THEN b.winlost - b.actual_stake ELSE 0 END)					AS LicenseeWLCS,
 			-SUM(CASE WHEN b.bettype =73 THEN b.winlost - b.actual_stake ELSE 0 END)					AS LicenseeWLBG,
 			-SUM(CASE WHEN b.bettype BETWEEN 1501 AND 1599	THEN b.winlost - b.actual_stake ELSE 0 END) AS LicenseeWLKN,
 			-SUM(CASE WHEN b.bettype BETWEEN 2001 AND 2007	THEN b.winlost - b.actual_stake ELSE 0 END) AS LicenseeWLMGCLC,
