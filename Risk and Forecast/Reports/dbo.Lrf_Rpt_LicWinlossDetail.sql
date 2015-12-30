@@ -1,7 +1,7 @@
 ﻿USE [bodb02]
 GO
  
-CREATE PROCEDURE [dbo].[Lrf_Rpt_LicWinlossDetail]  
+ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinlossDetail]  
 	@LicenseeID	INT,
 	@UserID		INT,
 	@CurrencyID	INT = 0, 
@@ -61,6 +61,7 @@ AS
 		- 20150910@Jim: Integrate Microgaming RNG games (feature #43078)	
 		- 20150921@Jim: Implement the changes on reports for AG Casino (#43172)
 		- 20151108@Jim: Separated MicroGaming into 2 product
+		- 20151231@Patrick: Add more output buyback amount
  
 	Param's Explanation:  
 	  + @CustID: SuperID  
@@ -120,7 +121,9 @@ CREATE TABLE #SAgWinLoss (
 	licenseeWLBT		MONEY,   
 	BetTradeComm	MONEY,  
 	WLBetTicket		MONEY, 	
-	WLBoughtTicket	MONEY
+	WLBoughtTicket	MONEY,
+	BuyBackAmtSB	MONEY,
+	BuyBackAmtBA	MONEY,
 )  
 
 
@@ -338,7 +341,9 @@ BEGIN
 			0 AS BetTradeComm,			
 			SUM(CASE WHEN b.betdaqid =0 THEN (b.winlost-b.actual_stake)
 				ELSE 0 END) AS WLBetTicket,
-			0 AS WLBoughtTicket
+			0 AS WLBoughtTicket,
+			0 AS BuyBackAmtSB,
+			0 AS BuyBackAmtBA
 		FROM 
 			dbo.bettrans b WITH ( NOLOCK) 
 			INNER JOIN @TempAg tma ON tma.CustID=b.recommend 
@@ -410,7 +415,9 @@ BEGIN
 			0 AS BetTradeComm,	
 			SUM(CASE WHEN b.betdaqid =0 THEN (b.winlost-b.actual_stake)
 				ELSE 0 END) AS WLBetTicket,
-			0 AS WLBoughtTicket
+			0 AS WLBoughtTicket,
+			0 AS BuyBackAmtSB,
+			0 AS BuyBackAmtBA
 		FROM 	
 			Bettrans b WITH ( NOLOCK)
 			INNER JOIN @TempAg a ON b.recommend = a.custid AND b.currency = a.currency 
@@ -476,7 +483,9 @@ BEGIN
 				ELSE 0 END) AS BetTradeComm,
 			0 WLBetTicket,
 			SUM(CASE WHEN b.bettype =902 THEN (b.winlost-b.actual_stake)
-				ELSE 0 END) AS WLBoughtTicket
+				ELSE 0 END) AS WLBoughtTicket,
+			SUM(CASE WHEN b.bettype = 902 AND betdaqid = 0 THEN b.actual_stake ELSE 0 END) AS BuyBackAmtSB,
+			SUM(CASE WHEN b.bettype = 902 AND betdaqid = 1 THEN b.actual_stake ELSE 0 END) AS BuyBackAmtBA
 		FROM 	
 			Bettrans b WITH ( NOLOCK)
 			INNER JOIN @TempAg a ON b.recommend = a.custid AND b.currency = a.currency 
@@ -628,7 +637,9 @@ BEGIN
 			0 AS licenseeWLBT,
 			0 AS BetTradeComm,	
 			0 AS WLBetTicket,
-			0 AS WLBoughtTicket
+			0 AS WLBoughtTicket,
+			0 AS BuyBackAmtSB,
+			0 AS BuyBackAmtBA
 		FROM 	
 			Bettrans b WITH ( NOLOCK)
 			INNER JOIN @TempAg a ON b.recommend = a.custid  
@@ -705,7 +716,9 @@ BEGIN
 			0 AS BetTradeComm,	
 			SUM(CASE WHEN bt.CustId IS NOT NULL THEN b.winlost
 			ELSE 0 END) AS WLBetTicket,
-			0 AS WLBoughtTicket
+			0 AS WLBoughtTicket,
+			0 AS BuyBackAmtSB,
+			0 AS BuyBackAmtBA
 		FROM 
 			bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
 				INNER JOIN @TempAg a ON b.recommend= a.custID  AND b.Currency = a.Currency 
@@ -858,7 +871,9 @@ BEGIN
 			0 AS BetTradeComm,	
 			SUM(CASE WHEN (bt.CustId IS NOT NULL) AND t.sporttype=0 THEN b.winlost 
 				ELSE 0 END) AS WLBetTicket,
-			0 AS WLBoughtTicket
+			0 AS WLBoughtTicket,
+			0 AS BuyBackAmtSB,
+			0 AS BuyBackAmtBA
 		FROM bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
 			INNER JOIN @TempAg a ON b.recommend= a.custID  AND b.Currency = a.Currency 
 			INNER JOIN @sporttype t ON b.sporttype = t.sporttype
@@ -922,7 +937,9 @@ BEGIN
 				ELSE 0 END) AS BetTradeComm,
 			0 WLBetTicket,
 			SUM(CASE WHEN b.bettype =902 THEN (b.winlost)
-				ELSE 0 END) AS WLBoughtTicket
+				ELSE 0 END) AS WLBoughtTicket,
+			SUM(CASE WHEN b.bettype = 902 AND isBA = 0 THEN BuyBackAmt ELSE 0 END) AS BuyBackAmtSB,
+			SUM(CASE WHEN b.bettype = 902 AND isBA = 1 THEN BuyBackAmt ELSE 0 END) AS BuyBackAmtBA
 		FROM 
 			bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
 			INNER JOIN @TempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
@@ -1000,7 +1017,9 @@ BEGIN
 			0 AS BetTradeComm,	
 			SUM(CASE WHEN bt.CustId IS NOT NULL THEN b.winlost
 			ELSE 0 END) AS WLBetTicket,
-			0 AS WLBoughtTicket
+			0 AS WLBoughtTicket,
+			0 AS BuyBackAmtSB,
+			0 AS BuyBackAmtBA
 		FROM bodb_Licensee.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
 			INNER JOIN @TempAg a ON b.recommend= a.custID  AND b.Currency = a.Currency 
 			LEFT JOIN f_GetBetTradeCustList(@LicenseeName) bt ON b.custid=bt.Custid AND b.Currency = bt.currency
@@ -1152,7 +1171,9 @@ BEGIN
 			0 AS BetTradeComm,	
 			SUM(CASE WHEN (bt.CustId IS NOT NULL) AND t.sporttype=0 THEN b.winlost
 				ELSE 0 END) AS WLBetTicket,
-			0 AS WLBoughtTicket
+			0 AS WLBoughtTicket,
+			0 AS BuyBackAmtSB,
+			0 AS BuyBackAmtBA
 		
 		FROM bodb_Licensee.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
 			INNER JOIN @TempAg a ON b.recommend= a.custID  AND b.Currency = a.Currency 
@@ -1218,7 +1239,9 @@ BEGIN
 				ELSE 0 END) AS BetTradeComm,
 			0 WLBetTicket,
 			SUM(CASE WHEN b.bettype =902 THEN (b.winlost)
-				ELSE 0 END) AS WLBoughtTicket
+				ELSE 0 END) AS WLBoughtTicket,
+			0 AS BuyBackAmtSB,
+			0 AS BuyBackAmtBA
 		FROM 
 			bodb_Licensee.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
 			INNER JOIN @TempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
@@ -1275,6 +1298,8 @@ BEGIN
 	   SUM(licenseeWLBT)	   AS licenseeWLBT,
 	   SUM(BetTradeComm)   AS BetTradeComm,
 	   SUM(WLBetTicket+WLBoughtTicket-BetTradeComm)	   AS AmtDueToBT,
+	   SUM(BuyBackAmtSB) AS BuyBackAmtSB,
+	   SUM(BuyBackAmtBA) AS BuyBackAmtBA,
 	  
 	    --BaseEUR  
 	   CAST(SUM(TurnoverSB)*@eEUR    AS MONEY)     AS TurnoverSBEUR,   
@@ -1311,6 +1336,9 @@ BEGIN
 	   CAST(SUM(licenseeWLBT)*@eEUR 	 AS MONEY)  AS licenseeWLBTEUR,
 	   CAST(SUM(BetTradeComm)*@eEUR  AS MONEY)  AS BetTradeCommEUR,
 	   CAST(SUM(WLBetTicket+WLBoughtTicket-BetTradeComm)*@eEUR AS MONEY)	   AS AmtDueToBTEUR,
+	   CAST(SUM(BuyBackAmtSB * @eEUR) AS MONEY)	   AS BuyBackAmtSBUSD,
+	   CAST(SUM(BuyBackAmtBA * @eEUR) AS MONEY)	   AS BuyBackAmtBAUSD,
+
 	    --BaseUSD  
 	   CAST(SUM(TurnoverSB)*@eUSD    AS MONEY)     AS TurnoverSBUSD,   
 	   CAST(SUM(TurnoverBA)*@eUSD    AS MONEY)     AS TurnoverBAUSD,   
@@ -1346,6 +1374,9 @@ BEGIN
 	   CAST(SUM(licenseeWLBT)*@eUSD 	 AS MONEY)  AS licenseeWLBTUSD,
 	   CAST(SUM(BetTradeComm)*@eUSD  AS MONEY)  AS BetTradeCommUSD,
 	   CAST(SUM(WLBetTicket+WLBoughtTicket-BetTradeComm)*@eUSD AS MONEY)	   AS AmtDueToBTUSD,
+	   CAST(SUM(BuyBackAmtSB * @eUSD) AS MONEY)	   AS BuyBackAmtSBUSD,
+	   CAST(SUM(BuyBackAmtBA * @eUSD) AS MONEY)	   AS BuyBackAmtBAUSD,
+
 		--BaseGBP  
 	   CAST(SUM(TurnoverSB)*@eGBP    AS MONEY)     AS TurnoverSBGBP,   
 	   CAST(SUM(TurnoverBA)*@eGBP    AS MONEY)     AS TurnoverBAGBP,   
@@ -1380,7 +1411,9 @@ BEGIN
 	   --CAST(SUM(Company)*@eGBP     AS MONEY)   AS CompanyGBP  
 	   CAST(SUM(licenseeWLBT)*@eGBP 	 AS MONEY)  AS licenseeWLBTGBP,
 	   CAST(SUM(BetTradeComm)*@eGBP  AS MONEY)  AS BetTradeCommGBP,
-	   CAST(SUM(WLBetTicket+WLBoughtTicket-BetTradeComm)*@eGBP AS MONEY)	   AS AmtDueToBTGBP  
+	   CAST(SUM(WLBetTicket+WLBoughtTicket-BetTradeComm)*@eGBP AS MONEY)	   AS AmtDueToBTGBP,  
+	   CAST(SUM(BuyBackAmtSB * @eGBP) AS MONEY)	   AS BuyBackAmtSBUSD,
+	   CAST(SUM(BuyBackAmtBA * @eGBP) AS MONEY)	   AS BuyBackAmtBAUSD
  FROM	#SAgWinLoss w   
 		INNER JOIN bodb_licensee.dbo.licenseecustinfo c WITH (NOLOCK) ON w.custid = c.custid		
  GROUP BY w.custid, c.username,c.username2,w.currency
