@@ -48,6 +48,8 @@ Revisions:
 	-20150612@Jim: support MicroGaming
 	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission 
 	- 20151001@Jim: remove MicroGaming
+	- 20151228@Bobby: Remove RNG Casino
+	
 Param's Explanation:  
 	@Liveindicator : indicate that whether the report will get live data or not
 		+ 0: Non - Live data only
@@ -156,7 +158,6 @@ BEGIN
 		OR @ProductCode = 'RB'
 		OR @ProductCode = 'LC'
 		OR @ProductCode = 'VS'
-		OR @ProductCode = 'CS'
 		OR @ProductCode = 'BG'
 		OR @ProductCode = 'KN' --Keno
 		 
@@ -198,8 +199,6 @@ BEGIN
 					THEN 'AND b.bettype BETWEEN 1101 AND 1199'
 				WHEN @ProductCode = 'VS'
 					THEN 'AND b.bettype BETWEEN 1201 AND 1299'
-				WHEN @ProductCode = 'CS'
-					THEN 'AND b.bettype = 71'
 				WHEN @ProductCode = 'BG'
 					THEN 'AND b.bettype = 73'
 				WHEN @ProductCode = 'KN' --Keno's bettype
@@ -244,8 +243,6 @@ BEGIN
 				THEN 'AND b.bettype BETWEEN 1101 AND 1199'
 			WHEN @ProductCode = 'VS'
 				THEN 'AND b.bettype BETWEEN 1201 AND 1299'
-			WHEN @ProductCode = 'CS'
-				THEN 'AND b.bettype = 71'
 			WHEN @ProductCode = 'BG'
 				THEN 'AND b.bettype = 73'
 			WHEN @ProductCode = 'KN' --Keno's bettype
@@ -311,7 +308,6 @@ BEGIN
 		OR @ProductCode = 'SB'
 		OR @ProductCode = 'LC'
 		OR @ProductCode = 'VS'
-		OR @ProductCode = 'CS'
 		OR @ProductCode = 'BG'
 		OR @ProductCode = 'KN'
 		 
@@ -351,8 +347,6 @@ BEGIN
 					THEN 'AND b.bettype BETWEEN 1101 AND 1199'
 				WHEN @ProductCode = 'VS'
 					THEN 'AND b.bettype BETWEEN 1201 AND 1299'
-				WHEN @ProductCode = 'CS'
-					THEN 'AND b.bettype = 71'
 				WHEN @ProductCode = 'BG'
 					THEN 'AND b.bettype = 73'
 				WHEN @ProductCode = 'KN' --keno's bettype
@@ -402,8 +396,6 @@ BEGIN
 					THEN 'AND b.bettype BETWEEN 1101 AND 1199'
 				WHEN @ProductCode = 'VS'
 					THEN 'AND b.bettype BETWEEN 1201 AND 1299'
-				WHEN @ProductCode = 'CS'
-					THEN 'AND b.bettype = 71'
 				WHEN @ProductCode = 'BG'
 					THEN 'AND b.bettype = 73'
 				WHEN @ProductCode = 'KN' --keno's bettype

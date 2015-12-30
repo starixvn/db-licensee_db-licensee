@@ -40,7 +40,9 @@ Revisions:
 	- 20150612@Jim: support MicroGaming 
 	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
 	- 20151001@Jim: remove MicroGaming
+	- 20151228@Bobby: Remove RNG Casino
 	- 20160120@Victor: Fix bug missing bettrade original tickets [Redmine: #51053]
+	
 Param's Explanation:
 	@IsLive : indicate that whether the report will get live data or not
 			+ 0: Non - Live data only
@@ -292,8 +294,6 @@ BEGIN
 				THEN 'LC'
 			WHEN b.bettype BETWEEN 1201 AND 1299
 				THEN 'VS'
-			WHEN b.bettype = 71
-				THEN 'CS'
 			WHEN b.bettype = 73
 				THEN 'BG'
 			WHEN b.bettype BETWEEN 1501 AND 1599 --Keno
@@ -318,7 +318,7 @@ BEGIN
 			b.bettype BETWEEN 81 AND 120
 			OR b.bettype BETWEEN 1101 AND 1199
 			OR b.bettype BETWEEN 1201 AND 1299
-			OR b.bettype IN (71, 73) --RNG CASINO & BINGO
+			OR b.bettype IN (73) --RNG CASINO & BINGO
 			OR b.bettype BETWEEN 1501 AND 1599 --Keno
 			
 			)
@@ -405,8 +405,6 @@ BEGIN
 				THEN 'LC'
 			WHEN b.bettype BETWEEN 1201 AND 1299
 				THEN 'VS'
-			WHEN b.bettype = 71
-				THEN 'CS'
 			WHEN b.bettype = 73
 				THEN 'BG'
 			WHEN b.bettype BETWEEN 1501 AND 1599
@@ -443,8 +441,6 @@ BEGIN
 				THEN 'LC'
 			WHEN b.bettype BETWEEN 1201 AND 1299
 				THEN 'VS'
-			WHEN b.bettype = 71
-				THEN 'CS'
 			WHEN b.bettype = 73
 				THEN 'BG'
 			WHEN b.bettype BETWEEN 1501 AND 1599
@@ -501,8 +497,6 @@ SELECT ProductCode
 			THEN 'Live Casino'
 		WHEN 'VS'
 			THEN 'Virtual Sports'
-		WHEN 'CS'
-			THEN 'RNG Casino'
 		WHEN 'BG'
 			THEN 'Bingo'
 		WHEN 'KN'
