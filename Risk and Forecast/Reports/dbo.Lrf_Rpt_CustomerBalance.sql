@@ -52,6 +52,8 @@ Revisions:
    -20150630@Winnie: support Bettrade
    -20150930@Florent: support AGC
    -20151108@Jim: Separated MicroGaming into 2 product
+   -20151228@Patrick: Exclude 901 & 902 for turnover
+
 Param's Explanation:  
  + @excludeTest: remove currency UUS  
  + @TopCount:   
@@ -177,7 +179,7 @@ BEGIN
  ;WITH sourceDATA as (  
    SELECT   
     p.custid   
-    ,SUM(isnull(p.turnover,0)) as Turnover  
+    ,SUM(isnull(CASE WHEN p.sporttype IN (-2,-3) THEN 0 ELSE p.turnover END,0)) as Turnover  
     ,SUM(isnull(p.outstanding,0)) as outstanding  
     ,SUM(isnull(p.winlost,0)) as Winloss   
     ,SUM(isnull(p.drawTO,0)) as DrawGame  
@@ -225,7 +227,7 @@ BEGIN
  ;WITH sourceDATA as (  
    SELECT   
     p.custid   
-    ,SUM(isnull(p.turnover,0)) as Turnover  
+    ,SUM(isnull(CASE WHEN p.sporttype IN (-2,-3) THEN 0 ELSE p.turnover END,0)) as Turnover  
     ,SUM(isnull(p.outstanding,0)) as outstanding  
     ,SUM(isnull(p.winlost,0)) as Winloss   
     ,SUM(isnull(p.drawTO,0)) as DrawGame  

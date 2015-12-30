@@ -52,6 +52,8 @@ Revisions:
    - 20150630@Winnie: support Bet Trade
    - 20150921@Jim: Implement the changes on reports for AG Casino (#43172)
    - 20151108@Jim: Separated MicroGaming into 2 product
+   - 20151228@Patrick: Exclude 901 & 902 for turnover
+
 Param's Explanation:
     + @excludeTest: remove currency UUS
     + @CurrencyID = 0: get all currency
@@ -211,6 +213,8 @@ BEGIN
         NULL  AS PlayerCommGBP,
         NULL  AS AmountDueToBAGBP
     FROM #tmpRpt b
+	DROP TABLE #tmpRpt
+
     RETURN
 END
 
@@ -255,7 +259,7 @@ BEGIN
         ;WITH sourceDATA as (
             SELECT p.winlostdate
                 ,c.currency
-                ,SUM(isnull(p.turnover,0)) as Turnover
+                ,SUM(isnull(CASE WHEN p.sporttype IN (-2,-3) THEN 0 ELSE p.turnover END, 0)) as Turnover
                 ,SUM(isnull(p.outstanding,0)) as PendingFund
                 ,SUM(isnull(p.winlost,0)) as Winloss 
                 ,SUM(isnull(p.drawTO,0)) as DrawGame
@@ -312,7 +316,7 @@ BEGIN
         ;WITH sourceDATA as (
             SELECT p.winlostdate
                 ,c.currency
-                ,SUM(isnull(p.turnover,0)) as Turnover
+                ,SUM(isnull(CASE WHEN p.sporttype IN (-2,-3) THEN 0 ELSE p.turnover END, 0)) as Turnover
                 ,SUM(isnull(p.outstanding,0)) as PendingFund
                 ,SUM(isnull(p.winlost,0)) as Winloss 
                 ,SUM(isnull(p.drawTO,0)) as DrawGame

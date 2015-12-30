@@ -78,6 +78,7 @@ AS /*
 		- 20150910@Jim: Integrate Microgaming RNG games (feature #43078)
 		- 20150917@Florent: Change datasource for AG Casino (#Redmine 43172)
 		- 20151108@Jim: Separated MicroGaming into 2 product
+		- 20151228@Patrick: Exclude 901 & 902 for turnover
 		
 */
     
@@ -292,7 +293,7 @@ BEGIN
 		SELECT  
 			b.CustID ,
 			b.winlostdate AS rptDate,
-			SUM(CASE WHEN (@DrawFilter IN (2,3) AND b.statusid=111) THEN 0
+			SUM(CASE WHEN (@DrawFilter IN (2,3) AND b.statusid=111) OR b.bettype IN (901,902) THEN 0
 					 ELSE stake
 				END
 			) AS Turnover ,
@@ -327,7 +328,7 @@ BEGIN
 		SELECT  
 			b.CustID ,
 			b.winlostdate,
-			SUM(CASE WHEN (@DrawFilter IN (2,3) AND b.statusid=111) THEN 0
+			SUM(CASE WHEN (@DrawFilter IN (2,3) AND b.statusid=111) OR b.bettype IN (901,902) THEN 0
 					 ELSE stake
 				END
 			) AS Turnover,
@@ -365,7 +366,7 @@ BEGIN
 		SELECT  
 			b.CustID ,
 			b.winlostdate,
-			SUM(CASE WHEN (@DrawFilter IN (2,3) AND b.statusid=111) THEN 0
+			SUM(CASE WHEN (@DrawFilter IN (2,3) AND b.statusid=111) OR b.bettype IN (901,902) THEN 0
 					 ELSE 
 					 CASE WHEN b.liveawayscore = 0 AND b.bettype IN ( 33, 43 ) THEN b.stake / 2 ELSE b.stake END
 				END
@@ -410,7 +411,7 @@ BEGIN
 		SELECT  
 			b.CustID ,
 			b.winlostdate AS rptDate,
-			SUM(CASE WHEN (@DrawFilter IN (2,3) AND b.statusid=111) THEN 0
+			SUM(CASE WHEN (@DrawFilter IN (2,3) AND b.statusid=111) OR b.bettype IN (901,902) THEN 0
 				    ELSE b.turnover
 					END
 			) AS Turnover,
@@ -448,7 +449,7 @@ BEGIN
 		SELECT
 			b.CustID ,
 			b.winlostdate AS rptdate,
-			SUM(CASE WHEN (@DrawFilter IN (2,3) AND b.statusid=111) THEN 0
+			SUM(CASE WHEN (@DrawFilter IN (2,3) AND b.statusid=111) OR b.bettype IN (901,902) THEN 0
 					 ELSE b.turnover
 					 END
 			) AS Turnover,
@@ -487,7 +488,7 @@ BEGIN
 		SELECT
 			b.CustID ,
 			b.winlostdate AS rptdate,
-			SUM(CASE WHEN (@DrawFilter IN (2,3) AND b.statusid=111) THEN 0
+			SUM(CASE WHEN (@DrawFilter IN (2,3) AND b.statusid=111) OR b.bettype IN (901,902) THEN 0
 					 ELSE b.turnover
 					 END
 			) AS Turnover,
