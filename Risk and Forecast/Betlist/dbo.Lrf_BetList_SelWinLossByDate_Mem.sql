@@ -99,7 +99,7 @@ AS
 		- 20150922@Kos: Support AG Casino
 		- 20151029@Kos: Change ProductId/SportType of Microgaming RNG Game
 		- 20151203@Kos: Change odds, modds data type from SMALLMONEY to MONEY [Redmine: #48660]
-		- 20151224@Jim: fix bug (#49885)
+		- 20151224@Jim: Fix bug [Redmine: #49885]
 		- 20151225@Kos: Support RNG Casino Single Wallet [Redmine: #48958]
 */
 
@@ -139,7 +139,7 @@ BEGIN
 	SELECT CurrencyID
 		, LicenseeID
 	INTO #Currency
-	FROM  DBLIC.bodb_licensee.dbo.CurrencyUser WITH (NOLOCK)
+	FROM DBLIC.bodb_licensee.dbo.CurrencyUser WITH (NOLOCK)
 	WHERE usrID = @userID 
 		AND LicenseeID = @LicenseeID 
 		AND SystemID = 1

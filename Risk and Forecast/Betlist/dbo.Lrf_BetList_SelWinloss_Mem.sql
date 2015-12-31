@@ -85,8 +85,9 @@ AS
 		- 20150922@Kos: Support AG Casino
 		- 20151030@Kos: Change ProductId/SportType of Microgaming RNG Casino
 		- 20151203@Kos: Change odds, modds data type from SMALLMONEY to MONEY [Redmine: #48660]
-		- 20151224@Jim: fix bug (#49885)
+		- 20151224@Jim: Fix bug [Redmine: #49885]
 		- 20151225@Kos: Support RNG Casino Single Wallet [Redmine: #48958]
+
 	Param's Explanation:
 		+ @drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
 */
@@ -196,8 +197,6 @@ BEGIN
 		OR ProductID	= CASE WHEN @ShowMGCRNG = 0	THEN 17 END
 		OR (ProductID 	> 8 AND ProductID NOT IN (11, 13, 17))
 			-- not suport for LIC system
-		 
-	 
 
 	IF @tdate > @MoveBetsDay
 	BEGIN
@@ -268,13 +267,13 @@ BEGIN
 				b.Winlost,
 				b.LicenseeWL,
 				b.comm,
-				b.playercomm,	
+				b.playercomm,
 				b.Liveindicator,
 				b.Livehomescore,
 				b.Liveawayscore,
 				b.IP,
 				m.LeagueID,
-				m.MatchID,	
+				m.MatchID,
 				m.MatchCode,
 				'' AS Race,
 				m.HomeID,
@@ -407,14 +406,14 @@ BEGIN
 				b.OddsType,
 				b.Odds,
 				b.stake,
-				b.actual_stake,  
+				b.actual_stake,
 				b.betteam,
 				b.status,
 				b.refno,
-				b.Transdate,	
+				b.Transdate,
 				b.winlostdate,
 				(b.winlost-actual_stake),
-				- (b.winlost-actual_stake) ,
+				- (b.winlost-actual_stake),
 				b.comm,
 				b.playercomm,
 				b.Liveindicator,
@@ -422,9 +421,9 @@ BEGIN
 				b.Liveawayscore,
 				b.IP,
 				m.LeagueID,
-				m.MatchID,	
+				m.MatchID,
 				m.MatchCode,
-				'' AS Race,	
+				'' AS Race,
 				m.HomeID,
 				m.AwayID,
 				m.Betstatus,
@@ -548,7 +547,7 @@ BEGIN
 				'' AS betcheck,
 				'' AS transdesc
 			FROM
-				dbo.bettrans b WITH (NOLOCK)	
+				dbo.bettrans b WITH (NOLOCK)
 				INNER JOIN @SportBettype sbt ON b.Bettype = sbt.Bettype
 			WHERE
 				b.winlostdate BETWEEN @TempFromDate AND @tdate 
@@ -1747,9 +1746,9 @@ BEGIN
 				b.Liveawayscore,
 				b.IP,
 				m.LeagueID,
-				m.MatchID,	
+				m.MatchID,
 				m.MatchCode,
-				'' AS Race,	
+				'' AS Race,
 				m.HomeID,
 				m.AwayID,
 				m.Betstatus,
@@ -1792,7 +1791,7 @@ BEGIN
 				b.Transdate,
 				b.winlostdate,
 				(b.winlost-actual_stake),
-				- (b.winlost-actual_stake) ,
+				- (b.winlost-actual_stake),
 				b.comm,
 				b.playercomm,
 				b.Liveindicator,
@@ -1800,9 +1799,9 @@ BEGIN
 				b.Liveawayscore,
 				b.IP,
 				r.LeagueID,
-				o.EventID MatchID,	
+				o.EventID MatchID,
 				CONVERT(VARCHAR(50),o.RacerNum) MatchCode,
-				b.oddsid AS Race,	
+				b.oddsid AS Race,
 				o.RacerID HomeID,
 				0 AS AwayID,
 				r.Betstatus,

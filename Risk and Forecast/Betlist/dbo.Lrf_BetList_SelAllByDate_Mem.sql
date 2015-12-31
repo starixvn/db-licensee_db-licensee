@@ -93,8 +93,8 @@ AS
 		- 20150922@Kos: Support AG Casino
 		- 20151028@Kos: Change ProductId, SportType of Microgaming RNG Casino
 		- 20151203@Kos: Change odds, modds data type from SMALLMONEY to MONEY [Redmine: #48660]
-		- 20151224@Jim: fix bug (#49885)
-		- 20151228@Kos: Support RNG Casino Single Wallet
+		- 20151224@Jim: Fix bug []Redmine: #49885]
+		- 20151228@Kos: Support RNG Casino Single Wallet [Redmine: #48958]
 */	
 
 BEGIN
@@ -119,7 +119,7 @@ BEGIN
 
 	SELECT @Recommend	= Recommend
 		, @UserName		= Username 
-	FROM dbo.custinfo AS c WITH(NOLOCK) 
+	FROM dbo.custinfo AS c WITH (NOLOCK) 
 		INNER JOIN #Currency cy ON cy.CurrencyID = c.Currency
 	WHERE CustID = @CustID
 	------------------------------
@@ -510,9 +510,9 @@ BEGIN
 			b.winlostdate,
 			'' AS Betteam,
 			m.leagueID,
-			0 AS liveindicator , 
-			b.livehomescore, 
-			b.liveawayscore, 
+			0 AS liveindicator,
+			b.livehomescore,
+			b.liveawayscore,
 			b.IP, 
 			'' betstatus,
 			CONVERT(BIT,0) AS IsNeutral,
@@ -590,8 +590,8 @@ BEGIN
 	-- Bet trade
 	IF @ShowBT = 1
 	BEGIN
-		INSERT INTO #BetListSelAllByDateMem
 		--Single bets
+		INSERT INTO #BetListSelAllByDateMem
 		SELECT 
 			@UserName AS UserName,
 			m.sporttype,
@@ -717,7 +717,7 @@ BEGIN
 	END
 
 	-- Number Game, Live Casino, Virtual Sports
-	IF @ShowNG	= 1 OR @ShowLC = 1 OR @ShowVS = 1
+	IF @ShowNG = 1 OR @ShowLC = 1 OR @ShowVS = 1
 	BEGIN
 		INSERT INTO #BetListSelAllByDateMem
 		SELECT 
@@ -1643,7 +1643,6 @@ BEGIN
 
 	IF @ShowRB = 1
 	BEGIN
-		--get data FROM bettransm for bettype 33,43
 		INSERT INTO @BettransDetail
 		SELECT 
 			BM.refno, 
