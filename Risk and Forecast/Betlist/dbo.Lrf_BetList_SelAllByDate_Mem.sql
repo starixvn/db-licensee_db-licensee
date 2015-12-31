@@ -93,7 +93,8 @@ AS
 		- 20150922@Kos: Support AG Casino
 		- 20151028@Kos: Change ProductId, SportType of Microgaming RNG Game
 		- 20151203@Kos: Change odds, modds data type from SMALLMONEY to MONEY [Redmine: #48660]
-*/
+		- 20151224@Jim: fix bug (#49885)
+*/	
 
 BEGIN
 	SET NOCOUNT ON;
@@ -220,7 +221,7 @@ BEGIN
 
 	DELETE sbt
 	FROM @SportBettype sbt
-	WHERE ProductID		= CASE WHEN @ShowSB	= 0 AND @ShowBA = 0 AND @ShowBT = 0 THEN 1 END
+	WHERE 	(ProductID	= CASE WHEN @ShowSB	= 0 AND @ShowBA = 0 THEN 1 END AND Bettype NOT IN (901, 902, 903))
 		OR ProductID	= CASE WHEN @ShowRB		= 0 THEN 2 END
 		OR ProductID	= CASE WHEN @ShowNG		= 0 THEN 3 END
 		OR ProductID	= CASE WHEN @ShowLC		= 0 THEN 4 END

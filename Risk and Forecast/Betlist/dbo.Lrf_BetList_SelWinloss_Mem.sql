@@ -1,6 +1,6 @@
 ﻿USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_BetList_SelWinloss_Mem]    Script Date: 9/11/2015 5:25:00 PM ******/
+ 
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -85,7 +85,7 @@ AS
 		- 20150922@Kos: Support AG Casino
 		- 20151030@Kos: Change ProductId/SportType of Microgaming RNG Casino
 		- 20151203@Kos: Change odds, modds data type from SMALLMONEY to MONEY [Redmine: #48660]
-
+		- 20151224@Jim: fix bug (#49885)
 	Param's Explanation:
 		+ @drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
 */
@@ -181,7 +181,7 @@ BEGIN
 
 	DELETE sbt
 	FROM @SportBettype sbt
-	WHERE ProductID		= CASE WHEN @ShowSB	= 0 AND @ShowBA = 0 THEN 1 END
+	WHERE (ProductID	= CASE WHEN @ShowSB	= 0 AND @ShowBA = 0 THEN 1 END AND Bettype NOT IN (901, 902, 903))
 		OR ProductID	= CASE WHEN @ShowRB	= 0		THEN 2 END
 		OR ProductID	= CASE WHEN @ShowNG	= 0		THEN 3 END
 		OR ProductID	= CASE WHEN @ShowLC	= 0		THEN 4 END
@@ -192,7 +192,10 @@ BEGIN
 		OR ProductID	= CASE WHEN @ShowAGC = 0	THEN 11 END
 		OR ProductID	= CASE WHEN @ShowMGCLC = 0	THEN 13 END
 		OR ProductID	= CASE WHEN @ShowMGCRNG = 0	THEN 17 END
-		OR (ProductID 	> 8 AND ProductID NOT IN (11, 13, 17)) -- not suport for LIC system
+		OR (ProductID 	> 8 AND ProductID NOT IN (11, 13, 17))
+			-- not suport for LIC system
+		 
+	 
 
 	IF @tdate > @MoveBetsDay
 	BEGIN
