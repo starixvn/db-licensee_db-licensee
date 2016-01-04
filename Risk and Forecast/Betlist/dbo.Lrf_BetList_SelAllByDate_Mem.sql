@@ -170,7 +170,8 @@ BEGIN
 		oddstype		INT NULL,
 		currency		SMALLINT,
 		showtime		NVARCHAR(50) -- table - shoe - hand of Live Casino
-		,betcheck		NVARCHAR(50)
+		,betcheck		NVARCHAR(50),
+		transdesc		NVARCHAR(300)
 	)
 
 	CREATE TABLE #TempBATicket(
@@ -201,8 +202,7 @@ BEGIN
 		currency 		INT,
 		MatchID 		INT,
 		custid			INT,
-		betcheck		NVARCHAR(50),
-		transdesc		NVARCHAR(300)
+		betcheck		NVARCHAR(50)
 	)
 	
 	-- filer bettypes by sporttype
