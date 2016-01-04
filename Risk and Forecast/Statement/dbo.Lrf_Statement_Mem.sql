@@ -112,8 +112,7 @@ select @fdate = @FromDate, @tdate = @ToDate
                     FROM    bettrans with(nolock)  
                     WHERE   custid = @custid  
                             AND winlostdate BETWEEN @fdate AND @tdate  
-                            --AND bettype <>903
-							AND bettype NOT IN (903, 71)
+                            AND bettype <>903
                     GROUP BY winlostdate ,  
                             bettype ,  
                             CASE WHEN statusID IN (101,102) THEN 102  
@@ -123,8 +122,8 @@ select @fdate = @FromDate, @tdate = @ToDate
                             CASE WHEN bettype <= 19999 THEN NULL  
                                  ELSE transdate  
                             END 
-	--include running Keno bet
-	   INSERT  INTO @bet  
+		--include running Keno bet
+		INSERT  INTO @bet  
 		SELECT  winlostdate ,  
 				gameid ,  
 				0 ,   --running bet
@@ -140,8 +139,9 @@ select @fdate = @FromDate, @tdate = @ToDate
 				and statusID =0 -- get only running game _ Keno
 				--and t.productID=202 --Keno
 		GROUP BY winlostdate ,gameid 
-	--include running  microgaming
-	   INSERT  INTO @bet  
+		
+		--include running  microgaming + RNG Casino
+		INSERT  INTO @bet  
 		SELECT  winlostdate ,  
 				gameid ,  
 				0 ,    
