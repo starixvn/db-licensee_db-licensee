@@ -317,7 +317,7 @@ BEGIN
 			   BetCount,
 			0 AS licenseeWLBT,
 			0 AS BetTradeComm,			
-			SUM(CASE WHEN b.betdaqid =0 THEN (b.winlost-b.actual_stake)
+			SUM(CASE WHEN b.transid2 =0 THEN (b.winlost-b.actual_stake)
 				ELSE 0 END) AS WLBetTicket,
 			0 AS WLBoughtTicket,
 			0 AS BuyBackAmtSB,
@@ -393,7 +393,7 @@ BEGIN
 			   BetCount,	
 			0 AS licenseeWLBT,
 			0 AS BetTradeComm,	
-			SUM(CASE WHEN b.betdaqid =0 THEN (b.winlost-b.actual_stake)
+			SUM(CASE WHEN b.transid2 =0 THEN (b.winlost-b.actual_stake)
 				ELSE 0 END) AS WLBetTicket,
 			0 AS WLBoughtTicket,
 			0 AS BuyBackAmtSB,
@@ -464,8 +464,8 @@ BEGIN
 			0 WLBetTicket,
 			SUM(CASE WHEN b.bettype =902 THEN (b.winlost-b.actual_stake)
 				ELSE 0 END) AS WLBoughtTicket,
-			SUM(CASE WHEN b.bettype = 902 AND betdaqid = 0 THEN b.actual_stake ELSE 0 END) AS BuyBackAmtSB,
-			SUM(CASE WHEN b.bettype = 902 AND betdaqid = 1 THEN b.actual_stake ELSE 0 END) AS BuyBackAmtBA
+			SUM(CASE WHEN b.bettype = 902 AND transid2 = 0 THEN b.actual_stake ELSE 0 END) AS BuyBackAmtSB,
+			SUM(CASE WHEN b.bettype = 902 AND transid2 = 1 THEN b.actual_stake ELSE 0 END) AS BuyBackAmtBA
 		FROM 
 			Bettrans b WITH ( NOLOCK)
 			INNER JOIN @TempAg a ON b.recommend = a.custid AND b.currency = a.currency
