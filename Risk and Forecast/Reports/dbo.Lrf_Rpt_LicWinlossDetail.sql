@@ -339,7 +339,7 @@ BEGIN
 			   BetCount,
 			0 AS licenseeWLBT,
 			0 AS BetTradeComm,			
-			SUM(CASE WHEN b.transid2 =0 THEN (b.winlost-b.actual_stake)
+			SUM(CASE WHEN b.betdaqid =0 THEN (b.winlost-b.actual_stake)
 				ELSE 0 END) AS WLBetTicket,
 			0 AS WLBoughtTicket,
 			0 AS BuyBackAmtSB,
@@ -413,7 +413,7 @@ BEGIN
 			   BetCount,
 			0 AS licenseeWLBT,
 			0 AS BetTradeComm,	
-			SUM(CASE WHEN b.transid2 =0 THEN (b.winlost-b.actual_stake)
+			SUM(CASE WHEN b.betdaqid =0 THEN (b.winlost-b.actual_stake)
 				ELSE 0 END) AS WLBetTicket,
 			0 AS WLBoughtTicket,
 			0 AS BuyBackAmtSB,
