@@ -1468,8 +1468,8 @@ SELECT
    CAST(SUM(licenseeWLBT* e.EUR)		AS MONEY)   AS licenseeWLBTEUR,
    CAST(SUM(BetTradeComm* e.EUR)	AS MONEY)	AS BetTradeCommEUR,
    CAST(SUM((WLBetTicket+WLBoughtTicket-BetTradeComm)* e.EUR) AS MONEY)	   AS AmtDueToBTEUR,
-   CAST(SUM(BuyBackAmtSB * e.EUR) AS MONEY)	   AS BuyBackAmtSBUSD,
-   CAST(SUM(BuyBackAmtBA * e.EUR) AS MONEY)	   AS BuyBackAmtBAUSD,
+   CAST(SUM(BuyBackAmtSB * e.EUR) AS MONEY)	   AS BuyBackAmtSBEUR,
+   CAST(SUM(BuyBackAmtBA * e.EUR) AS MONEY)	   AS BuyBackAmtBAEUR,
 
     --BaseGBP  
    CAST(SUM(TurnoverSB*e.GBP)    AS MONEY)     AS TurnoverSBGBP,   
@@ -1508,8 +1508,8 @@ SELECT
    CAST(SUM(licenseeWLBT* e.GBP)		AS MONEY)   AS licenseeWLBTGBP,
    CAST(SUM(BetTradeComm* e.GBP)	AS MONEY)	AS BetTradeCommGBP,
    CAST(SUM((WLBetTicket+WLBoughtTicket-BetTradeComm)* e.GBP) AS MONEY)	   AS AmtDueToBTGBP,
-   CAST(SUM(BuyBackAmtSB * e.GBP) AS MONEY)	   AS BuyBackAmtSBUSD,
-   CAST(SUM(BuyBackAmtBA * e.GBP) AS MONEY)	   AS BuyBackAmtBAUSD
+   CAST(SUM(BuyBackAmtSB * e.GBP) AS MONEY)	   AS BuyBackAmtSBGBP,
+   CAST(SUM(BuyBackAmtBA * e.GBP) AS MONEY)	   AS BuyBackAmtBAGBP
 FROM	
 	#SAgWinLoss w   
 	INNER JOIN 

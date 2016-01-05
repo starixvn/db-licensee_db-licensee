@@ -1336,8 +1336,8 @@ BEGIN
 	   CAST(SUM(licenseeWLBT)*@eEUR 	 AS MONEY)  AS licenseeWLBTEUR,
 	   CAST(SUM(BetTradeComm)*@eEUR  AS MONEY)  AS BetTradeCommEUR,
 	   CAST(SUM(WLBetTicket+WLBoughtTicket-BetTradeComm)*@eEUR AS MONEY)	   AS AmtDueToBTEUR,
-	   CAST(SUM(BuyBackAmtSB * @eEUR) AS MONEY)	   AS BuyBackAmtSBUSD,
-	   CAST(SUM(BuyBackAmtBA * @eEUR) AS MONEY)	   AS BuyBackAmtBAUSD,
+	   CAST(SUM(BuyBackAmtSB * @eEUR) AS MONEY)	   AS BuyBackAmtSBEUR,
+	   CAST(SUM(BuyBackAmtBA * @eEUR) AS MONEY)	   AS BuyBackAmtBAEUR,
 
 	    --BaseUSD  
 	   CAST(SUM(TurnoverSB)*@eUSD    AS MONEY)     AS TurnoverSBUSD,   
@@ -1412,8 +1412,8 @@ BEGIN
 	   CAST(SUM(licenseeWLBT)*@eGBP 	 AS MONEY)  AS licenseeWLBTGBP,
 	   CAST(SUM(BetTradeComm)*@eGBP  AS MONEY)  AS BetTradeCommGBP,
 	   CAST(SUM(WLBetTicket+WLBoughtTicket-BetTradeComm)*@eGBP AS MONEY)	   AS AmtDueToBTGBP,  
-	   CAST(SUM(BuyBackAmtSB * @eGBP) AS MONEY)	   AS BuyBackAmtSBUSD,
-	   CAST(SUM(BuyBackAmtBA * @eGBP) AS MONEY)	   AS BuyBackAmtBAUSD
+	   CAST(SUM(BuyBackAmtSB * @eGBP) AS MONEY)	   AS BuyBackAmtSBGBP,
+	   CAST(SUM(BuyBackAmtBA * @eGBP) AS MONEY)	   AS BuyBackAmtBAGBP
  FROM	#SAgWinLoss w   
 		INNER JOIN bodb_licensee.dbo.licenseecustinfo c WITH (NOLOCK) ON w.custid = c.custid		
  GROUP BY w.custid, c.username,c.username2,w.currency
