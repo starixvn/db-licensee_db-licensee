@@ -41,6 +41,7 @@ Revisions:
 	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
 	- 20151001@Jim: remove MicroGaming
 	- 20151228@Bobby: Remove RNG Casino
+	- 20151228@Bobby: #50469 - Remove RNG Casino - exclude OneRNG range bettype
 	- 20160120@Victor: Fix bug missing bettrade original tickets [Redmine: #51053]
 	
 Param's Explanation:
@@ -312,7 +313,7 @@ BEGIN
 			)
 	INNER JOIN @TempAg t ON b.recommend = t.custid AND t.Currency = b.Currency
 	WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
-		AND b.bettype NOT IN (31, 32, 33)
+		AND b.bettype NOT IN (31, 32, 33, 71)
 		AND b.statusID IN (111, 112, 113)
 		AND (
 			b.bettype BETWEEN 81 AND 120
@@ -428,7 +429,7 @@ BEGIN
 				OR (@Liveindicator = 1 and b.IsLive = 1)
 				OR (@Liveindicator = 2))
 			AND b.CustomerCategory IN (-1, 1001)
-		AND b.bettype NOT IN (9,29,1700,1800,1900,901,902,903)	
+		AND b.bettype NOT IN (9,29,1700,1800,1900,901,902,903,71) AND b.bettype NOT BETWEEN 2101 AND 2399	
 		GROUP BY b.rptDate, b.currencyID,
 		CASE 
 			WHEN b.bettype BETWEEN 81 AND 120
