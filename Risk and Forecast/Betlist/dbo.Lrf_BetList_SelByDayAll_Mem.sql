@@ -205,6 +205,12 @@ BEGIN
 	DELETE sbt
 	FROM @SportBettype sbt
 	WHERE ProductID > 8 AND ProductID NOT IN (11, 13, 17) -- not suport for LIC system
+	
+	IF @transtype = 3	-- Don't support running RNG Casino old bet type (71)
+	BEGIN
+		DELETE @SportBettype
+		WHERE ProductID = 6 AND SubProduct = ''
+	END
 
 	IF @transtype = 4	-- support only for Microgaming RNG Casino
 	BEGIN
