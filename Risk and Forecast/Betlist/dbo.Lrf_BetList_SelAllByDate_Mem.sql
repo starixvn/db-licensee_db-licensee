@@ -1212,161 +1212,159 @@ BEGIN
 				OR (sbt.ProductID = 6 AND sbt.SubProduct <> ''))
 			AND sbt.EventType = 0
 			AND b.transdate >= @FromDate AND b.transdate <= @ToDate 
-			AND b.transdate < DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- not today
+			AND b.winlostdate < DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- not today summary ticket
 			AND b.statusID NOT IN (0, 1)
 
-		IF @ToDate >= DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)
-			AND @FromDate <= DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- today
-		BEGIN
-			-- Today running ticket
-			INSERT INTO #BetListSelAllByDateMem
-			SELECT 
-				@UserName AS UserName,
-				CASE
-					WHEN sbt.ProductID = 6 THEN b.matchid
-					WHEN sbt.ProductID = 17 THEN 205
-				END AS Sporttype,
-				b.bettype,
-				b.refno,
-				b.transid,
-				ISNULL(b.BetID, 0),
-				'' AS matchcode,
-				0 AS matchid,
-				'' AS Race,
-				0 AS homeID,
-				0 AS awayID,
-				0 AS hdp1,
-				0 AS hdp2,
-				0 AS odds,
-				0 AS modds,
-				'Running' AS Status,
-				SUM(brng.stake) AS Stake,
-				SUM(brng.actual_stake) AS Actual_Stake,
-				0 AS Winlost,
-				0 AS LicenseeWL,
-				0 AS comm,
-				0 AS playercomm,
-				0 AS discount,
-				b.transdate,
-				b.winlostdate,
-				'' AS betteam,
-				0 AS leagueID,
-				0 AS liveindicator,
-				0 AS livehomescore,
-				0 AS liveawayscore,
-				b.IP,
-				0 AS betstatus,
-				CONVERT(BIT, 0) AS IsNeutral,
-				0 AS Oddstype,
-				b.currency,
-				'' AS ShowTime,
-				'' AS betcheck,
-				CASE
-					WHEN sbt.ProductID = 6 THEN b.transdesc
-					ELSE ''
-				END AS transdesc
-			FROM 
-				dbo.bettransRnG AS brng WITH (NOLOCK)
-				INNER JOIN dbo.bettrans AS b WITH (NOLOCK) ON brng.RefNo = b.transid
-				INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
-			WHERE
-				b.CustID = @CustID
-				AND b.recommend = @Recommend
-				AND (sbt.ProductID = 17
-					OR (sbt.ProductID = 6 AND sbt.SubProduct <> ''))
-				AND sbt.EventType = 0
-				AND b.transdate BETWEEN DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0) AND @ToDate	-- today
-				AND brng.statusID = 0
-			GROUP BY
-				b.transid,
-				ISNULL(b.BetID, 0),
-				b.Bettype,
-				b.refno,
-				b.transdate,
-				b.winlostdate,
-				b.IP,
-				b.currency,
-				b.matchid,
-				b.transdesc,
-				sbt.ProductID
+		-- Today running ticket
+		INSERT INTO #BetListSelAllByDateMem
+		SELECT 
+			@UserName AS UserName,
+			CASE
+				WHEN sbt.ProductID = 6 THEN b.matchid
+				WHEN sbt.ProductID = 17 THEN 205
+			END AS Sporttype,
+			b.bettype,
+			b.refno,
+			b.transid,
+			ISNULL(b.BetID, 0),
+			'' AS matchcode,
+			0 AS matchid,
+			'' AS Race,
+			0 AS homeID,
+			0 AS awayID,
+			0 AS hdp1,
+			0 AS hdp2,
+			0 AS odds,
+			0 AS modds,
+			'Running' AS Status,
+			SUM(brng.stake) AS Stake,
+			SUM(brng.actual_stake) AS Actual_Stake,
+			0 AS Winlost,
+			0 AS LicenseeWL,
+			0 AS comm,
+			0 AS playercomm,
+			0 AS discount,
+			b.transdate,
+			b.winlostdate,
+			'' AS betteam,
+			0 AS leagueID,
+			0 AS liveindicator,
+			0 AS livehomescore,
+			0 AS liveawayscore,
+			b.IP,
+			0 AS betstatus,
+			CONVERT(BIT, 0) AS IsNeutral,
+			0 AS Oddstype,
+			b.currency,
+			'' AS ShowTime,
+			'' AS betcheck,
+			CASE
+				WHEN sbt.ProductID = 6 THEN b.transdesc
+				ELSE ''
+			END AS transdesc
+		FROM 
+			dbo.bettransRnG AS brng WITH (NOLOCK)
+			INNER JOIN dbo.bettrans AS b WITH (NOLOCK) ON brng.RefNo = b.transid
+			INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
+		WHERE
+			b.CustID = @CustID
+			AND b.recommend = @Recommend
+			AND (sbt.ProductID = 17
+				OR (sbt.ProductID = 6 AND sbt.SubProduct <> ''))
+			AND sbt.EventType = 0
+			AND b.transdate >= @FromDate AND b.transdate <= @ToDate 
+			AND b.winlostdate = DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- today summary ticket
+			AND brng.statusID = 0
+		GROUP BY
+			b.transid,
+			ISNULL(b.BetID, 0),
+			b.Bettype,
+			b.refno,
+			b.transdate,
+			b.winlostdate,
+			b.IP,
+			b.currency,
+			b.matchid,
+			b.transdesc,
+			sbt.ProductID
 
-			-- Today settled ticket
-			INSERT INTO #BetListSelAllByDateMem
-			SELECT 
-				@UserName AS UserName,
-				CASE
-					WHEN sbt.ProductID = 6 THEN b.matchid
-					WHEN sbt.ProductID = 17 THEN 205
-				END AS Sporttype,
-				b.bettype,
-				b.refno,
-				b.transid,
-				ISNULL(b.BetID, 0),
-				'' AS matchcode,
-				0 AS matchid,
-				'' AS Race,
-				0 AS homeID,
-				0 AS awayID,
-				0 AS hdp1,
-				0 AS hdp2,
-				0 AS odds,
-				0 AS modds,
-				CASE 
-					WHEN SUM(brng.winlost - brng.actual_stake) = 0 THEN 'Draw'
-					WHEN SUM(brng.winlost - brng.actual_stake) > 0 THEN 'Won'
-					WHEN SUM(brng.winlost - brng.actual_stake) < 0 THEN 'Lose'
-				END AS Status,
-				SUM(brng.stake) AS Stake,
-				SUM(brng.actual_stake) AS Actual_Stake,
-				SUM(brng.winlost - brng.actual_stake) AS Winlost,
-				SUM(- (brng.winlost - brng.actual_stake)) AS LicenseeWL,
-				SUM(brng.comm) AS comm,
-				SUM(brng.playercomm) AS playercomm,
-				b.discount,
-				b.transdate,
-				b.winlostdate,
-				'' AS betteam,
-				0 AS leagueID,
-				0 AS liveindicator,
-				0 AS livehomescore,
-				0 AS liveawayscore,
-				b.IP,
-				0 AS betstatus,
-				CONVERT(BIT, 0) AS IsNeutral,
-				0 AS Oddstype,
-				b.currency,
-				'' AS ShowTime,
-				'' AS betcheck,
-				CASE
-					WHEN sbt.ProductID = 6 THEN b.transdesc
-					ELSE ''
-				END AS transdesc
-			FROM 
-				dbo.bettransRnG AS brng WITH (NOLOCK)
-				INNER JOIN dbo.bettrans AS b WITH (NOLOCK) ON brng.RefNo = b.transid
-				INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
-			WHERE
-				b.CustID = @CustID
-				AND b.recommend = @Recommend
-				AND (sbt.ProductID = 17
-					OR (sbt.ProductID = 6 AND sbt.SubProduct <> ''))
-				AND sbt.EventType = 0
-				AND b.transdate BETWEEN DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0) AND @ToDate	-- today
-				AND brng.statusID <> 0
-			GROUP BY
-				b.transid,
-				ISNULL(b.BetID, 0),
-				b.Bettype,
-				b.refno,
-				b.discount,
-				b.transdate,
-				b.winlostdate,
-				b.IP,
-				b.currency,
-				b.matchid,
-				b.transdesc,
-				sbt.ProductID
-		END
+		-- Today settled ticket
+		INSERT INTO #BetListSelAllByDateMem
+		SELECT 
+			@UserName AS UserName,
+			CASE
+				WHEN sbt.ProductID = 6 THEN b.matchid
+				WHEN sbt.ProductID = 17 THEN 205
+			END AS Sporttype,
+			b.bettype,
+			b.refno,
+			b.transid,
+			ISNULL(b.BetID, 0),
+			'' AS matchcode,
+			0 AS matchid,
+			'' AS Race,
+			0 AS homeID,
+			0 AS awayID,
+			0 AS hdp1,
+			0 AS hdp2,
+			0 AS odds,
+			0 AS modds,
+			CASE 
+				WHEN SUM(brng.winlost - brng.actual_stake) = 0 THEN 'Draw'
+				WHEN SUM(brng.winlost - brng.actual_stake) > 0 THEN 'Won'
+				WHEN SUM(brng.winlost - brng.actual_stake) < 0 THEN 'Lose'
+			END AS Status,
+			SUM(brng.stake) AS Stake,
+			SUM(brng.actual_stake) AS Actual_Stake,
+			SUM(brng.winlost - brng.actual_stake) AS Winlost,
+			SUM(- (brng.winlost - brng.actual_stake)) AS LicenseeWL,
+			SUM(brng.comm) AS comm,
+			SUM(brng.playercomm) AS playercomm,
+			b.discount,
+			b.transdate,
+			b.winlostdate,
+			'' AS betteam,
+			0 AS leagueID,
+			0 AS liveindicator,
+			0 AS livehomescore,
+			0 AS liveawayscore,
+			b.IP,
+			0 AS betstatus,
+			CONVERT(BIT, 0) AS IsNeutral,
+			0 AS Oddstype,
+			b.currency,
+			'' AS ShowTime,
+			'' AS betcheck,
+			CASE
+				WHEN sbt.ProductID = 6 THEN b.transdesc
+				ELSE ''
+			END AS transdesc
+		FROM 
+			dbo.bettransRnG AS brng WITH (NOLOCK)
+			INNER JOIN dbo.bettrans AS b WITH (NOLOCK) ON brng.RefNo = b.transid
+			INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
+		WHERE
+			b.CustID = @CustID
+			AND b.recommend = @Recommend
+			AND (sbt.ProductID = 17
+				OR (sbt.ProductID = 6 AND sbt.SubProduct <> ''))
+			AND sbt.EventType = 0
+			AND b.transdate >= @FromDate AND b.transdate <= @ToDate 
+			AND b.winlostdate = DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- today summary ticket
+			AND brng.statusID <> 0
+		GROUP BY
+			b.transid,
+			ISNULL(b.BetID, 0),
+			b.Bettype,
+			b.refno,
+			b.discount,
+			b.transdate,
+			b.winlostdate,
+			b.IP,
+			b.currency,
+			b.matchid,
+			b.transdesc,
+			sbt.ProductID
 	END
 
 	-- AG Casino
@@ -1422,141 +1420,139 @@ BEGIN
 			AND sbt.ProductID = 11
 			AND sbt.EventType = 0
 			AND b.transdate >= @FromDate AND b.transdate <= @ToDate 
-			AND b.transdate < DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- not today
+			AND b.winlostdate < DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- not today summary ticket
 			AND b.statusID NOT IN (0, 1)
 
-		IF @ToDate >= DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)
-			AND @FromDate <= DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- today
-		BEGIN
-			-- Today running ticket
-			INSERT INTO #BetListSelAllByDateMem
-			SELECT 
-				@UserName AS UserName,
-				250 AS sporttype,
-				b.bettype,
-				b.refno,
-				b.transid,
-				ISNULL(b.BetID, 0),
-				'' AS matchcode,
-				0 AS matchid,
-				'' AS Race,
-				0 AS homeID,
-				0 AS awayID,
-				0 AS hdp1,
-				0 AS hdp2,
-				0 AS odds,
-				0 AS modds,
-				'Running' AS Status,
-				SUM(blc.stake) AS Stake,
-				SUM(blc.actual_stake) AS Actual_Stake,
-				0 AS Winlost,
-				0 AS LicenseeWL,
-				0 AS comm,
-				0 AS playercomm,
-				0 AS discount,
-				b.transdate,
-				b.winlostdate,
-				'' AS betteam,
-				0 AS leagueID,
-				0 AS liveindicator,
-				0 AS livehomescore,
-				0 AS liveawayscore,
-				b.IP,
-				0 AS betstatus,
-				CONVERT(BIT, 0) AS IsNeutral,
-				0 AS Oddstype,
-				b.currency,
-				'' AS ShowTime,
-				'' AS betcheck,
-				'' AS transdesc
-			FROM 
-				dbo.bettransLC AS blc WITH (NOLOCK)
-				INNER JOIN dbo.bettrans AS b WITH (NOLOCK) ON blc.RefNo = b.transid
-				INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
-			WHERE
-				b.CustID = @CustID
-				AND b.recommend = @Recommend
-				AND sbt.ProductID = 11
-				AND sbt.EventType = 0
-				AND b.transdate BETWEEN DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0) AND @ToDate	-- today
-				AND blc.statusID = 0
-			GROUP BY
-				b.transid,
-				ISNULL(b.BetID, 0),
-				b.Bettype,
-				b.refno,
-				b.transdate,
-				b.winlostdate,
-				b.IP,
-				b.currency
+		-- Today running ticket
+		INSERT INTO #BetListSelAllByDateMem
+		SELECT 
+			@UserName AS UserName,
+			250 AS sporttype,
+			b.bettype,
+			b.refno,
+			b.transid,
+			ISNULL(b.BetID, 0),
+			'' AS matchcode,
+			0 AS matchid,
+			'' AS Race,
+			0 AS homeID,
+			0 AS awayID,
+			0 AS hdp1,
+			0 AS hdp2,
+			0 AS odds,
+			0 AS modds,
+			'Running' AS Status,
+			SUM(blc.stake) AS Stake,
+			SUM(blc.actual_stake) AS Actual_Stake,
+			0 AS Winlost,
+			0 AS LicenseeWL,
+			0 AS comm,
+			0 AS playercomm,
+			0 AS discount,
+			b.transdate,
+			b.winlostdate,
+			'' AS betteam,
+			0 AS leagueID,
+			0 AS liveindicator,
+			0 AS livehomescore,
+			0 AS liveawayscore,
+			b.IP,
+			0 AS betstatus,
+			CONVERT(BIT, 0) AS IsNeutral,
+			0 AS Oddstype,
+			b.currency,
+			'' AS ShowTime,
+			'' AS betcheck,
+			'' AS transdesc
+		FROM 
+			dbo.bettransLC AS blc WITH (NOLOCK)
+			INNER JOIN dbo.bettrans AS b WITH (NOLOCK) ON blc.RefNo = b.transid
+			INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
+		WHERE
+			b.CustID = @CustID
+			AND b.recommend = @Recommend
+			AND sbt.ProductID = 11
+			AND sbt.EventType = 0
+			AND b.transdate >= @FromDate AND b.transdate <= @ToDate 
+			AND b.winlostdate = DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- today summary ticket
+			AND blc.statusID = 0
+		GROUP BY
+			b.transid,
+			ISNULL(b.BetID, 0),
+			b.Bettype,
+			b.refno,
+			b.transdate,
+			b.winlostdate,
+			b.IP,
+			b.currency
 
-			-- Today settled ticket
-			INSERT INTO #BetListSelAllByDateMem
-			SELECT 
-				@UserName AS UserName,
-				250 AS sporttype,
-				b.bettype,
-				b.refno,
-				b.transid,
-				ISNULL(b.BetID, 0),
-				'' AS matchcode,
-				0 AS matchid,
-				'' AS Race,
-				0 AS homeID,
-				0 AS awayID,
-				0 AS hdp1,
-				0 AS hdp2,
-				0 AS odds,
-				0 AS modds,
-				CASE 
-					WHEN SUM(blc.winlost - blc.actual_stake) = 0 THEN 'Draw'
-					WHEN SUM(blc.winlost - blc.actual_stake) > 0 THEN 'Won'
-					WHEN SUM(blc.winlost - blc.actual_stake) < 0 THEN 'Lose'
-				END AS Status,
-				SUM(blc.stake) AS Stake,
-				SUM(blc.actual_stake) AS Actual_Stake,
-				SUM(blc.winlost - blc.actual_stake) AS Winlost,
-				SUM(- (blc.winlost - blc.actual_stake)) AS LicenseeWL,
-				SUM(blc.comm) AS comm,
-				SUM(blc.playercomm) AS playercomm,
-				b.discount,
-				b.transdate,
-				b.winlostdate,
-				'' AS betteam,
-				0 AS leagueID,
-				0 AS liveindicator,
-				0 AS livehomescore,
-				0 AS liveawayscore,
-				b.IP,
-				0 AS betstatus,
-				CONVERT(BIT, 0) AS IsNeutral,
-				0 AS Oddstype,
-				b.currency,
-				'' AS ShowTime,
-				'' AS betcheck,
-				'' AS transdesc
-			FROM 
-				dbo.bettransLC AS blc WITH (NOLOCK)
-				INNER JOIN dbo.bettrans AS b WITH (NOLOCK) ON blc.RefNo = b.transid
-				INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
-			WHERE
-				b.CustID = @CustID
-				AND b.recommend = @Recommend
-				AND sbt.ProductID = 11
-				AND sbt.EventType = 0
-				AND b.transdate BETWEEN DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0) AND @ToDate	-- today
-				AND blc.statusID <> 0
-			GROUP BY
-				b.transid,
-				ISNULL(b.BetID, 0),
-				b.Bettype,
-				b.refno,
-				b.discount,
-				b.transdate,
-				b.winlostdate,
-				b.IP,
-				b.currency
-		END
+		-- Today settled ticket
+		INSERT INTO #BetListSelAllByDateMem
+		SELECT 
+			@UserName AS UserName,
+			250 AS sporttype,
+			b.bettype,
+			b.refno,
+			b.transid,
+			ISNULL(b.BetID, 0),
+			'' AS matchcode,
+			0 AS matchid,
+			'' AS Race,
+			0 AS homeID,
+			0 AS awayID,
+			0 AS hdp1,
+			0 AS hdp2,
+			0 AS odds,
+			0 AS modds,
+			CASE 
+				WHEN SUM(blc.winlost - blc.actual_stake) = 0 THEN 'Draw'
+				WHEN SUM(blc.winlost - blc.actual_stake) > 0 THEN 'Won'
+				WHEN SUM(blc.winlost - blc.actual_stake) < 0 THEN 'Lose'
+			END AS Status,
+			SUM(blc.stake) AS Stake,
+			SUM(blc.actual_stake) AS Actual_Stake,
+			SUM(blc.winlost - blc.actual_stake) AS Winlost,
+			SUM(- (blc.winlost - blc.actual_stake)) AS LicenseeWL,
+			SUM(blc.comm) AS comm,
+			SUM(blc.playercomm) AS playercomm,
+			b.discount,
+			b.transdate,
+			b.winlostdate,
+			'' AS betteam,
+			0 AS leagueID,
+			0 AS liveindicator,
+			0 AS livehomescore,
+			0 AS liveawayscore,
+			b.IP,
+			0 AS betstatus,
+			CONVERT(BIT, 0) AS IsNeutral,
+			0 AS Oddstype,
+			b.currency,
+			'' AS ShowTime,
+			'' AS betcheck,
+			'' AS transdesc
+		FROM 
+			dbo.bettransLC AS blc WITH (NOLOCK)
+			INNER JOIN dbo.bettrans AS b WITH (NOLOCK) ON blc.RefNo = b.transid
+			INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
+		WHERE
+			b.CustID = @CustID
+			AND b.recommend = @Recommend
+			AND sbt.ProductID = 11
+			AND sbt.EventType = 0
+			AND b.transdate >= @FromDate AND b.transdate <= @ToDate 
+			AND b.winlostdate = DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- today summary ticket
+			AND blc.statusID <> 0
+		GROUP BY
+			b.transid,
+			ISNULL(b.BetID, 0),
+			b.Bettype,
+			b.refno,
+			b.discount,
+			b.transdate,
+			b.winlostdate,
+			b.IP,
+			b.currency
 	END
 
 	CREATE NONCLUSTERED INDEX IDX_Index_betlist ON #BetListSelAllByDateMem(Currency)
