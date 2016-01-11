@@ -57,7 +57,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]
 	- 20150910@Jim: Integrate Microgaming RNG games (feature #43078)
 	- 20150921@Jim: Implement the changes on reports for AG Casino (#43172)
 	- 20151108@Jim: Separated MicroGaming into 2 product
-	- 20151230@Patrick: Add more output buyback amount
+	- 20151230@Patrick: Add more output BuyBackAmt & BABuyBackAmt
 
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -985,8 +985,8 @@ BEGIN
 			0 WLBetTicket,
 			SUM(CASE WHEN b.bettype =902 THEN (b.winlost)
 				ELSE 0 END) AS WLBoughtTicket,
-			SUM(CASE WHEN b.bettype = 902 AND isBA = 0 THEN BuyBackAmt ELSE 0 END) AS BuyBackAmtSB,
-			SUM(CASE WHEN b.bettype = 902 AND isBA = 1 THEN BuyBackAmt ELSE 0 END) AS BuyBackAmtBA
+			SUM(CASE WHEN b.bettype = 902 THEN BuyBackAmt ELSE 0 END) AS BuyBackAmtSB,
+			SUM(CASE WHEN b.bettype = 902 THEN BABuyBackAmt ELSE 0 END) AS BuyBackAmtBA
 		FROM 
 			bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
 			INNER JOIN @TempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
