@@ -23,7 +23,7 @@ Task: Customer Performance Report
 DB: DBEXT/BODB02
 Revision:
 	- 20151127@Bobby: #48081 - Apply PH-AIO new bettypes
-	
+	- 20151223@Jim: Add "Effective Betting Value" in Customer Turnover report [Redmine: #45736]
 Parameter's Explanation:
 			
 */
@@ -43,6 +43,7 @@ BEGIN
 			, SUM(1) 			as betcount
 			, SUM(b.stake) 		as turnover 
 			, SUM(b.winlost) 	as winlost
+			,SUM (b.BetEffective) as BetEffective
 			, SUM(b.playercomm) as playercomm
 			, c.whticket
 		FROM #tempBettrans b
@@ -85,6 +86,7 @@ BEGIN
 				, SUM(b.betcount) as betcount
 				, SUM(b.stake) as turnover 
 				, SUM(b.winlost) as winlost
+				, SUM(b.BetEffective) As BetEffective
 				, SUM(b.playercomm) as playercomm
 				, c.whticket
 				
@@ -137,6 +139,7 @@ BEGIN
 				, SUM(b.betcount) as betcount
 				, SUM(b.stake) as turnover 
 				, SUM(b.winlost) as winlost
+				, SUM(b.BetEffective) As BetEffective
 				, SUM(b.playercomm) as playercomm
 				, c.whticket
 				

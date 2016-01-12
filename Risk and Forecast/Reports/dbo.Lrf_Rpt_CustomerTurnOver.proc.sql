@@ -64,7 +64,7 @@ Revision:
 	- 20151127@Bobby: #48081 - Apply PH-AIO new bettypes
 	- 20151203@Bobby: Database - Change datatype [Redmine: #48660]
 	- 20151209@Bobby: Do rollback step for Bettype & ProductId data type
-
+	- 20151223@Jim: Add "Effective Betting Value" in Customer Turnover report [Redmine: #45736]
 	
 Parameter's Explanation:
 	- @ReportBy:  1: daily, 2: monthly
@@ -107,6 +107,7 @@ BEGIN
 		, betcount 			INT
 		, turnover			MONEY
 		, winlost			MONEY
+		, BetEffective      MONEY
 		, playercomm		MONEY
 		, whticket			TINYINT
 	)
@@ -126,23 +127,20 @@ BEGIN
 		, totalrow		INT
 	)
 	
-	-- CREATE temp caching table
-	IF ( OBJECT_ID('tempdb..##tempLRFCustTORpt') IS NULL )
-	BEGIN
-		-- CREATE new caching table	
-		CREATE TABLE ##tempLRFCustTORpt
+	CREATE TABLE #tempLRFCustTORpt
 		(
 			whticket		TINYINT
 			, betcount		INT
 			, turnover		MONEY
 			, winlost		MONEY
+			, BetEffective  MONEY
 			, playercomm	MONEY
 			, totalrow		INT
 			, rptHash		VARBINARY(256)
 			, rptDate		DATETIME
 			, rptVer		INT IDENTITY(1,1)
 		)
-		CREATE CLUSTERED INDEX [CIX_tempCustTORpt] ON ##tempLRFCustTORpt (rptHash, whticket)
+	
 	
 	END
 	
@@ -152,6 +150,7 @@ BEGIN
 		, betcount		INT
 		, turnover		MONEY
 		, winlost		MONEY
+		, BetEffective  MONEY
 		, playercomm	MONEY
 		, totalrow		INT
 	)
@@ -166,9 +165,11 @@ BEGIN
 		, bettype		INT
 		, oddsid		INT
 		, winlost		MONEY
+		, BetEffective  MONEY
 		, stake			MONEY
 		, playercomm	MONEY
 		, Odds			MONEY
+		, oddstype 		tinyint	
 		, EventType		TINYINT
 		, ProductId		INT
 	)
@@ -238,8 +239,7 @@ BEGIN
 		INNER JOIN bodb_licensee.dbo.CurrencyUser c WITH (NOLOCK) 
 		ON lc.LicenseeID	= c.LicenseeID 
 		AND lc.Currency		= c.CurrencyID
-	WHERE	lc.RoleID	= 2
-		AND lc.Currency	= @CurrencyID		
+	WHERE	 lc.Currency	= @CurrencyID		
 		AND c.usrID		= @userID 
 		AND c.SystemID	= 1 
 		AND c.isActive	= 1	 
@@ -260,11 +260,9 @@ BEGIN
 		INSERT INTO #tempCust
 		SELECT c.custid
 			, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS username
-		FROM bodb02.dbo.Customer c WITH (NOLOCK) -- for using indexer
-			INNER JOIN bodb_licensee.dbo.LicenseeCustinfo  lc WITH (NOLOCK) 
-			ON c.CustID		= lc.CustID  
-		WHERE c.roleid		= 1
-			AND c.recommend		IN (SELECT custid FROM #recommend)
+		FROM  bodb_licensee.dbo.LicenseeCustinfo  c WITH (NOLOCK) 
+		  
+		WHERE   c.recommend		IN (SELECT custid FROM #recommend)
 			AND (
 				c.username2 	LIKE '%$%' 	+ @Username + '%'
 				OR c.username	LIKE '%' 	+ @Username + '%'
@@ -285,32 +283,13 @@ BEGIN
 			, b.bettype
 			, b.oddsid
 			, (b.winlost - b.actual_stake) AS winlost
+			, ABS(b.winlost - b.actual_stake) BetEffective
 			, b.stake
 			, b.playercomm
-			, CASE 	WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-							OR b.bettype BETWEEN 81 AND 88
-							OR b.bettype BETWEEN 90 AND 120
-							OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
-							OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
-						)
-						THEN 
-								CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
-									 WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
-									 WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
-															CASE 
-																WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
-																WHEN b.odds >=0 THEN (1 + b.odds) END
-									 WHEN b.OddsType = 5 THEN --american odds to decimal
-														CASE
-														WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
-														WHEN (b.odds * 100) % 2 = 0 THEN 2
-														WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
-								 END 
-					ELSE b.Odds
-			END AS odds
+			, b.Odds
+			, b.oddstype 
 			, bt.EventType
 			, bt.ProductID
-			
 		FROM dbo.bettrans b WITH(NOLOCK)
 			INNER JOIN #recommend rec 
 			ON b.Recommend	= rec.CustID 
@@ -318,9 +297,27 @@ BEGIN
 			ON b.bettype 	=  bt.typeid
 			INNER JOIN #Status st
 			ON b.StatusID 	=  st.StatusID
-			
 		WHERE b.winlostdate BETWEEN @tempFromDate AND @ToDate
 		
+		UPDATE #tempBettrans b
+		SET Odds = CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
+						 WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
+						 WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
+												CASE 
+													WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
+													WHEN b.odds >=0 THEN (1 + b.odds) END
+						 WHEN b.OddsType = 5 THEN --american odds to decimal
+											CASE
+											WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
+											WHEN (b.odds * 100) % 2 = 0 THEN 2
+											WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
+					 END 
+		WHERE b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
+						OR b.bettype BETWEEN 81 AND 88
+						OR b.bettype BETWEEN 90 AND 120
+						OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
+						OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
+			
 		-- CREATE INDEXERS
 		CREATE CLUSTERED 	INDEX [CIX_tempBettrans] 			ON #tempBettrans (recommend, custid, winlostdate)
 		CREATE NONCLUSTERED INDEX IDX_tempBettrans_EventType 	ON #tempBettrans(EventType)
@@ -333,7 +330,6 @@ BEGIN
 				ON b.Recommend	= rec.CustID
 				LEFT JOIN #tempCust c
 				ON b.custid = c.custid
-				
 			WHERE c.custid IS NULL
 		END
 		
@@ -410,7 +406,7 @@ BEGIN
 			
 		DECLARE @isCached BIT = 0
 		-- GET from temp table caching
-		IF ( OBJECT_ID('tempdb..##tempLRFCustTORpt') IS NOT NULL )
+		IF  EXISTS ( SELECT TOP 1 1 FROM #tempLRFCustTORpt )
 		BEGIN
 			INSERT INTO #tempSumTotal
 			SELECT s.*
@@ -419,9 +415,10 @@ BEGIN
 					, rpt.betcount
 					, rpt.turnover
 					, rpt.winlost
+					, rpt.BetEffective
 					, rpt.playercomm
 					, rpt.totalrow
-				FROM ##tempLRFCustTORpt rpt
+				FROM #tempLRFCustTORpt rpt
 				WHERE rpt.rptHash = @rptHash AND rpt.whticket = 1
 					AND @pageIndex <> 1
 
@@ -430,9 +427,10 @@ BEGIN
 					, rpt.betcount
 					, rpt.turnover
 					, rpt.winlost
+					, rpt.BetEffective
 					, rpt.playercomm
 					, rpt.totalrow
-				FROM ##tempLRFCustTORpt rpt
+				FROM #tempLRFCustTORpt rpt
 				WHERE rpt.rptHash = @rptHashSum AND rpt.whticket = 2	
 			) s		
 		END 		
@@ -465,9 +463,9 @@ BEGIN
 				,@ReportBy  	= @ReportBy
 				
 			-- CHECK for update/insert cache
-			IF ( OBJECT_ID('tempdb..##tempLRFCustTORpt') IS NOT NULL )
+			IF EXISTS (SELECT TOP 1 1 FROM #tempLRFCustTORpt) 
 			BEGIN
-				MERGE INTO ##tempLRFCustTORpt c
+				MERGE INTO #tempLRFCustTORpt c
 				USING ( 
 					SELECT *
 						, CASE 
@@ -485,6 +483,7 @@ BEGIN
 						SET c.betcount	= rpt.betcount
 						, c.turnover	= rpt.turnover
 						, c.winlost		= rpt.winlost
+						, c.BetEffective = rpt.BetEffective
 						, c.playercomm	= rpt.playercomm
 						, c.totalrow	= rpt.totalrow
 					
@@ -493,6 +492,7 @@ BEGIN
 						, betcount
 						, turnover
 						, winlost
+						, BetEffective
 						, playercomm
 						, totalrow
 						, rptHash
@@ -502,6 +502,7 @@ BEGIN
 						, rpt.betcount
 						, rpt.turnover
 						, rpt.winlost
+						, rpt.BetEffective
 						, rpt.playercomm
 						, rpt.totalrow 
 						, rpt.rptHash
@@ -575,7 +576,8 @@ BEGIN
 			WHERE ISNULL(s.totalrow, 0) = 0
 			
 			--- UPDATE total rows caching
-			IF ( OBJECT_ID('tempdb..##tempLRFCustTORpt') IS NOT NULL )
+			
+			IF ( SELECT TOP 1 1 FROM #tempLRFCustTORpt )
 			BEGIN
 				;WITH CTE_Total AS (
 					SELECT s.whticket
@@ -590,7 +592,7 @@ BEGIN
 				-- totalBettrans & totalSumRpt
 				UPDATE rpt
 				SET rpt.totalrow = t.TotalRow
-				FROM ##tempLRFCustTORpt rpt
+				FROM #tempLRFCustTORpt rpt
 					INNER JOIN CTE_Total t 
 					ON rpt.rptHash = t.rptHash AND rpt.whticket = t.whticket
 					
@@ -682,6 +684,7 @@ BEGIN
 			, SUM(b.betcount)	AS betcount
 			, SUM(b.turnover)	AS turnover
 			, SUM(b.winlost) 	AS winlost
+			, SUM(b.BetEffective) AS BetEffective
 			, SUM(b.playercomm) AS playercomm
 
 		FROM #custData b
@@ -720,6 +723,7 @@ BEGIN
 			SUM(ISNULL(s.betcount, 0))		AS SumBetCount
 			, SUM(ISNULL(s.turnover, 0))	AS SumTurnover
 			, SUM(ISNULL(s.winlost, 0))		AS SumWinlost
+			, SUM(ISNULL(s.BetEffective,0)) AS SUMBetEffective
 			, SUM(ISNULL(s.playercomm, 0))	AS SumComm
 			, SUM(ISNULL(s.totalrow, 0))	AS TotalRows
 			
@@ -735,7 +739,7 @@ BEGIN
 	DROP TABLE #custData
 	DROP TABLE #tempSumTotal
 	DROP TABLE #tempBettrans
-	
+	DROP TABLE #tempLRFCustTORpt
 	--SET duration time
 	SET @Duration = DATEDIFF(MS, @startTime, GETDATE())
 		

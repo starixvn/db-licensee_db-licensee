@@ -26,7 +26,7 @@ Task: Customer Performance Report
 DB: DBEXT/BODB02
 Revision:
 	- 20151127@Bobby: #48081 - Apply PH-AIO new bettypes
-	
+	- 20151223@Jim: Add "Effective Betting Value" in Customer Turnover report [Redmine: #45736]
 Parameter's Explanation:
 			
 */
@@ -42,6 +42,7 @@ BEGIN
 				, SUM(1)			AS betcount
 				, SUM(stake) 		AS turnover
 				, SUM(winlost) 		AS winlost
+				, SUM(BetEffective) AS BetEffective
 				, SUM(b.playercomm) AS playercomm
 				, 0 AS totalrow
 			FROM #tempBettrans b
@@ -57,6 +58,7 @@ BEGIN
 					, SUM(b.betcount)	AS betcount
 					, SUM(b.stake) 		AS turnover
 					, SUM(b.winlost)  	AS winlost
+					, SUM (b.BetEffective) AS BetEffective
 					, SUM(b.playercomm) AS playercomm
 					, 0 AS totalrow
 				FROM bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)--, INDEX=CIX_winlostdate)
@@ -84,6 +86,7 @@ BEGIN
 					, SUM(b.betcount)	AS betcount
 					, SUM(b.stake) 		AS turnover
 					, SUM(b.winlost)  	AS winlost
+					,SUM(b.BetEffective) AS BetEffective
 					, SUM(b.playercomm) AS playercomm
 					, 0 AS totalrow
 				FROM bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)--, INDEX=CIX_winlostdate)
@@ -136,6 +139,7 @@ BEGIN
 				, SUM(1)			AS betcount
 				, SUM(stake) 		AS turnover
 				, SUM(winlost) 		AS winlost
+				, SUM(BetEffective) AS BetEffective
 				, SUM(b.playercomm) AS playercomm
 				, 0 AS totalrow
 			FROM #tempBettrans b					
@@ -151,6 +155,7 @@ BEGIN
 					, SUM(b.betcount)	AS betcount
 					, SUM(b.stake) 		AS turnover
 					, SUM(b.winlost)  	AS winlost
+					, SUM(b.BetEffective) AS BetEffective
 					, SUM(b.playercomm) AS playercomm
 					, 0 AS totalrow
 				FROM bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)--, INDEX=CIX_winlostdate)
@@ -179,6 +184,7 @@ BEGIN
 					, SUM(b.betcount)	AS betcount
 					, SUM(b.stake) 		AS turnover
 					, SUM(b.winlost)  	AS winlost
+					, SUM(b.BetEffective) As BetEffective
 					, SUM(b.playercomm) AS playercomm
 					, 0 AS totalrow
 				FROM bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)--, INDEX=CIX_winlostdate)
