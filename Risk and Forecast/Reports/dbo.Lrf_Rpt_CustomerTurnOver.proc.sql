@@ -300,6 +300,33 @@ BEGIN
 			ON b.StatusID 	=  st.StatusID
 		WHERE b.winlostdate BETWEEN @tempFromDate AND @ToDate
 		
+		UPDATE #tempBettrans b
+		SET Odds = CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
+						 WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
+						 WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
+												CASE 
+													WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
+													WHEN b.odds >=0 THEN (1 + b.odds) END
+						 WHEN b.OddsType = 5 THEN --american odds to decimal
+											CASE
+											WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
+											WHEN (b.odds * 100) % 2 = 0 THEN 2
+											WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
+					 END 
+		WHERE b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
+						OR b.bettype BETWEEN 81 AND 88
+						OR b.bettype BETWEEN 90 AND 120
+						OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
+						OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
+		FROM dbo.bettrans b WITH(NOLOCK)
+			INNER JOIN #recommend rec 
+			ON b.Recommend	= rec.CustID 
+			INNER JOIN #bettype bt
+			ON b.bettype 	=  bt.typeid
+			INNER JOIN #Status st
+			ON b.StatusID 	=  st.StatusID
+		WHERE b.winlostdate BETWEEN @tempFromDate AND @ToDate
+		
 		UPDATE #tempBettrans 
 		SET Odds = CASE WHEN OddsType = 1 THEN odds + 1 --decimal
 						 WHEN OddsType = 2 THEN Odds + 1 --hongkong to decimal
@@ -331,6 +358,7 @@ BEGIN
 				ON b.Recommend	= rec.CustID
 				LEFT JOIN #tempCust c
 				ON b.custid = c.custid
+				
 			WHERE c.custid IS NULL
 		END
 		
@@ -578,7 +606,7 @@ BEGIN
 			
 			--- UPDATE total rows caching
 			
-			IF EXISTS( SELECT TOP 1 1 FROM #tempLRFCustTORpt )
+			IF ( SELECT TOP 1 1 FROM #tempLRFCustTORpt )
 			BEGIN
 				;WITH CTE_Total AS (
 					SELECT s.whticket
