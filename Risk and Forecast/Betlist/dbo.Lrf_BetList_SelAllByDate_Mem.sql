@@ -1556,10 +1556,22 @@ BEGIN
 	END
 
 	CREATE NONCLUSTERED INDEX IDX_Index_betlist ON #BetListSelAllByDateMem(Currency)
-	
+
+	DECLARE @WinLostDate DATETIME,
+		@ExchangeToDate DATETIME
+
+	-- Get exchange rate due to winlostdate
+	SELECT @WinLostDate = MAX(WinLostDate)
+	FROM #BetListSelAllByDateMem
+
+	SELECT @ExchangeToDate = CASE
+								WHEN @WinLostDate IS NULL OR @WinLostDate <= @ToDate THEN @ToDate
+								ELSE @WinLostDate
+							END
+
 	SELECT * 
 	INTO #TempExchange 
-	FROM Lrf_f_GetExchangeDaily(@FromDate, @ToDate) ex
+	FROM Lrf_f_GetExchangeDaily(@FromDate, @ExchangeToDate) ex
 	WHERE ex.ExchangeId IN (SELECT DISTINCT Currency FROM #BetListSelAllByDateMem)
 
 	SELECT 
