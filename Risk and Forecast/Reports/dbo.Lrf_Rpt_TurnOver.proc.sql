@@ -26,7 +26,7 @@ AS
 /*
 Created: 20111017@Henry
 Task : Report Turn Over
-DB: DBRPT/bodb02
+DB: DBACC/bodb02
 
 
 Revisions:

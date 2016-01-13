@@ -33,7 +33,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerBalance]
 AS /*  
 Created: 20120917@Henry  
 Task : Report Customer Balance  
-DB: DBRPT/bodb02  
+DB: DBACC/bodb02
 Original: Lrf_Rpt_CustomerTurnOver  
   
 Revisions:  
