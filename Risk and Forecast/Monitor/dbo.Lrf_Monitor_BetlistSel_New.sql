@@ -37,6 +37,7 @@ AS
 		- 20150128@Jim: base on GBP
 		- 20150415@Jim: support betradar
 		- 20151210@Kos: support PH All In One 4 new bet types 401, 402, 403, 404 (O/U bettypes)
+		- 20160115@Joseph: Redefine values of parameter betfrom
 
 	Parameter's Explanation:
 		- @bettypes: 
@@ -49,11 +50,12 @@ AS
 		- @SportID = 999  -> Parlay and System Parlay
 		- @Liveindicator ( 0 : non live, 1 : live , 2 : mix non live & live)
 		- @includebetfrom: 1: show column betfrom, 0: hide
-		- @betfrom: 0: All
-					1: WEB (d)
-					2: WAP (m)		
-		3: SMARTPHONE (sl) 
-					4: Other (not in  (d,m,s,l))
+		- @betfrom:  0: All  
+					 1: Asia (d)  
+					 2: New Asia (a)
+					 3: Euro (e) (and Euro 12bet (u))
+					 4: WAP (m)    
+					 5: SMARTPHONE (sl)
 	Excecute sample :
 		[Lrf_Monitor_BetlistSel_New]
 			@LicenseeID = 14,
@@ -180,11 +182,12 @@ BEGIN
 		'AND cr.SystemID=1'+ CHAR(13) +
 		'AND Transid >'+CONVERT(VARCHAR(20),@transid)+'  '+ CHAR(13) + 
 		'AND Statusid = 0   '+ CHAR(13) +
-		CASE WHEN @betfrom=1 THEN 'AND betfrom=''d'''
-			WHEN @betfrom=2 THEN 'AND betfrom=''m'''
-			WHEN @betfrom=3 THEN 'AND betfrom IN (''s'',''l'')'
-			WHEN @betfrom=4 THEN 'AND betfrom NOT IN (''d'',''m'',''s'',''l'')'
-			ELSE ''
+		CASE WHEN @betfrom=1 THEN 'AND betfrom=''d'''  
+		   WHEN @betfrom=2 THEN 'AND betfrom=''a'''  
+		   WHEN @betfrom=3 THEN 'AND betfrom IN (''e'',''u'')'  
+		   WHEN @betfrom=4 THEN 'AND betfrom=''m'''  
+		   WHEN @betfrom=5 THEN 'AND betfrom IN (''s'',''l'')'
+		   ELSE '' 
 		END + CHAR(13) +  
 		CASE 
 			WHEN @BaseCurrency = 'USD' THEN
