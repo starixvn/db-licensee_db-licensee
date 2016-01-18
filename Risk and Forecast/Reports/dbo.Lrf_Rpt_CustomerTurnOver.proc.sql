@@ -1,13 +1,14 @@
-﻿USE [bodb02]
+﻿SET QUOTED_IDENTIFIER ON 
+GO
+SET ANSI_NULLS ON 
 GO
 
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+/****** Object:  Stored Procedure dbo.Lrf_Rpt_CustomerTurnOver    Script Date: 1/14/2016 10:00:41 AM ******/
+
+/****** Object:  Stored Procedure dbo.Lrf_Rpt_CustomerTurnOver    Script Date: 12/24/2015 5:27:11 PM ******/
 
  
-ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
+CREATE PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
 (
 	@LicenseeID 	INT
 	,@UserID  		INT
@@ -299,24 +300,24 @@ BEGIN
 			ON b.StatusID 	=  st.StatusID
 		WHERE b.winlostdate BETWEEN @tempFromDate AND @ToDate
 		
-		UPDATE #tempBettrans b
-		SET Odds = CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
-						 WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
-						 WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
+		UPDATE #tempBettrans 
+		SET Odds = CASE WHEN OddsType = 1 THEN odds + 1 --decimal
+						 WHEN OddsType = 2 THEN Odds + 1 --hongkong to decimal
+						 WHEN OddsType IN (3,4) THEN --malay and indo to decimal
 												CASE 
-													WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
-													WHEN b.odds >=0 THEN (1 + b.odds) END
-						 WHEN b.OddsType = 5 THEN --american odds to decimal
+													WHEN odds < 0 THEN (1 -  cast(1 as float) / cast(odds AS float))
+													WHEN odds >=0 THEN (1 + odds) END
+						 WHEN OddsType = 5 THEN --american odds to decimal
 											CASE
-											WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
-											WHEN (b.odds * 100) % 2 = 0 THEN 2
-											WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
+											WHEN (odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (odds AS float))
+											WHEN (odds * 100) % 2 = 0 THEN 2
+											WHEN (odds * 100) > 0 THEN (1 + odds) END 
 					 END 
-		WHERE b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-						OR b.bettype BETWEEN 81 AND 88
-						OR b.bettype BETWEEN 90 AND 120
-						OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
-						OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
+		WHERE bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
+						OR bettype BETWEEN 81 AND 88
+						OR bettype BETWEEN 90 AND 120
+						OR bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
+						OR bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
 			
 		-- CREATE INDEXERS
 		CREATE CLUSTERED 	INDEX [CIX_tempBettrans] 			ON #tempBettrans (recommend, custid, winlostdate)
@@ -577,7 +578,7 @@ BEGIN
 			
 			--- UPDATE total rows caching
 			
-			IF ( SELECT TOP 1 1 FROM #tempLRFCustTORpt )
+			IF EXISTS( SELECT TOP 1 1 FROM #tempLRFCustTORpt )
 			BEGIN
 				;WITH CTE_Total AS (
 					SELECT s.whticket
@@ -624,7 +625,7 @@ BEGIN
 			,@MoveBetsDay 	= @MoveBetsDay
 	END	
 	
-	
+ 
 	OutputResult:
 	BEGIN
 		WITH CTE_Bettype AS
@@ -729,7 +730,7 @@ BEGIN
 			
 		FROM #tempSumTotal s
 	END
-	
+		 
 	DROP TABLE #tempCust
 	DROP TABLE #ProductID
 	DROP TABLE #bettype 
@@ -743,10 +744,21 @@ BEGIN
 	--SET duration time
 	SET @Duration = DATEDIFF(MS, @startTime, GETDATE())
 		
-	RETURN;
-END
+ 
+ 
+ 
+ 
+
 GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [bodbLicenseeNet]
+
+SET QUOTED_IDENTIFIER OFF 
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [vnteam]  
+SET ANSI_NULLS ON 
 GO
+
+
+GO 
+ GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [vnteam]
+GO 
+ GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [bodbLicenseeNet]
+GO 

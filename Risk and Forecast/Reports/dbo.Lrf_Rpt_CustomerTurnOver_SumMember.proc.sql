@@ -1,13 +1,11 @@
-USE [bodb02]
+
+SET QUOTED_IDENTIFIER ON 
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_CustomerTurnOver]    Script Date: 6/3/2015 4:25:44 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
+SET ANSI_NULLS ON 
 GO
 
-  
-ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver_SumMember]
+ 
+CREATE PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver_SumMember]
 (
 	@pStartDate		DATE
 	,@pEndDate 		DATE
@@ -200,8 +198,18 @@ BEGIN
 
 	RETURN;
 END
+
+
+GO
+
+SET QUOTED_IDENTIFIER OFF 
+GO
+SET ANSI_NULLS ON 
+GO
+
+
 GO 
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerTurnOver_SumMember] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CustomerTurnOver_SumMember] TO [vnteam] 
-GO
+ GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CustomerTurnOver_SumMember] TO [vnteam]
+GO 
+ GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerTurnOver_SumMember] TO [bodbLicenseeNet]
+GO 
