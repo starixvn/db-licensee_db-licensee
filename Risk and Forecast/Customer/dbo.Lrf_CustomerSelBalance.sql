@@ -48,7 +48,8 @@ Revisions:
 	- 20150128@JIm: base on GBP
 	- 20150612@Jim: support MicroGaming
 	- 20150626@Winnie: support bettrade
-   - 20151001@Jim: remove MicroGaming
+    - 20151001@Jim: remove MicroGaming
+    - 20160118@Victor: Exclude Bettrade tickets on AmountDueToBA column [Redmine: 51053]
 */
 SET NOCOUNT ON
 
@@ -379,7 +380,7 @@ SELECT
 			THEN (b.winlost - b.actual_stake)  
 			WHEN b.bettype BETWEEN 31 AND 33 THEN awinlost
 			ELSE 0 END),0) as LicenseeWL,	--20130619@Daniel: Fix more bug regconize BA tickets
-	ISNULL(- SUM ( CASE WHEN b.tpositiontaking=0 AND ((b.bettype NOT BETWEEN 31 AND 120 AND b.bettype<=999) OR (b.bettype BETWEEN 1301 and 1399)) THEN (b.winlost - b.actual_stake + awinlost + comm) ELSE 0 END),0) AS AmtDuetoBA,
+	ISNULL(- SUM ( CASE WHEN b.tpositiontaking=0 AND ((b.bettype NOT BETWEEN 31 AND 120 AND b.bettype<=999 AND b.bettype NOT IN (901,902,903)) OR (b.bettype BETWEEN 1301 and 1399)) THEN (b.winlost - b.actual_stake + awinlost + comm) ELSE 0 END),0) AS AmtDuetoBA,
 	ISNULL(- SUM ( CASE WHEN b.bettype IN (31,32,33) THEN (b.winlost - b.actual_stake + awinlost + comm) ELSE 0 END),0)AS AmtDuetoRB,
 	ISNULL(SUM (CASE WHEN b.bettype IN (31,32,33) THEN b.awinlost ELSE 0 END),0) AS WinlossRB,
 	ISNULL(SUM ( CASE WHEN b.tpositiontaking=0 AND ((b.bettype NOT BETWEEN 31 AND 120 AND b.bettype<=999) OR (b.bettype BETWEEN 1301 and 1399)) THEN  comm  ELSE 0 END),0) AS CommBA,
