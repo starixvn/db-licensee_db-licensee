@@ -4,6 +4,7 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
+ 
 
 /****** Object:  Stored Procedure dbo.Lrf_Rpt_CustomerTurnOver    Script Date: 1/14/2016 10:00:41 AM ******/
 
