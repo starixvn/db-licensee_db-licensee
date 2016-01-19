@@ -1,13 +1,10 @@
-USE [bodb02]
-GO
-/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_CustomerTurnOver]    Script Date: 6/3/2015 4:25:44 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
 
+SET QUOTED_IDENTIFIER ON 
+GO
+SET ANSI_NULLS ON 
+GO
  
-ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver_SumTotal]
+CREATE PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver_SumTotal]
 (
 	@searchCust 	BIT = 0
 	,@FromDate 		SMALLDATETIME
@@ -26,7 +23,7 @@ Task: Customer Performance Report
 DB: DBEXT/BODB02
 Revision:
 	- 20151127@Bobby: #48081 - Apply PH-AIO new bettypes
-	
+	- 20151223@Jim: Add "Effective Betting Value" in Customer Turnover report [Redmine: #45736]
 Parameter's Explanation:
 			
 */
@@ -42,6 +39,7 @@ BEGIN
 				, SUM(1)			AS betcount
 				, SUM(stake) 		AS turnover
 				, SUM(winlost) 		AS winlost
+				, SUM(BetEffective) AS BetEffective
 				, SUM(b.playercomm) AS playercomm
 				, 0 AS totalrow
 			FROM #tempBettrans b
@@ -57,6 +55,7 @@ BEGIN
 					, SUM(b.betcount)	AS betcount
 					, SUM(b.stake) 		AS turnover
 					, SUM(b.winlost)  	AS winlost
+					, SUM (b.BetEffective) AS BetEffective
 					, SUM(b.playercomm) AS playercomm
 					, 0 AS totalrow
 				FROM bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)--, INDEX=CIX_winlostdate)
@@ -84,6 +83,7 @@ BEGIN
 					, SUM(b.betcount)	AS betcount
 					, SUM(b.stake) 		AS turnover
 					, SUM(b.winlost)  	AS winlost
+					,SUM(b.BetEffective) AS BetEffective
 					, SUM(b.playercomm) AS playercomm
 					, 0 AS totalrow
 				FROM bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)--, INDEX=CIX_winlostdate)
@@ -136,6 +136,7 @@ BEGIN
 				, SUM(1)			AS betcount
 				, SUM(stake) 		AS turnover
 				, SUM(winlost) 		AS winlost
+				, SUM(BetEffective) AS BetEffective
 				, SUM(b.playercomm) AS playercomm
 				, 0 AS totalrow
 			FROM #tempBettrans b					
@@ -151,6 +152,7 @@ BEGIN
 					, SUM(b.betcount)	AS betcount
 					, SUM(b.stake) 		AS turnover
 					, SUM(b.winlost)  	AS winlost
+					, SUM(b.BetEffective) AS BetEffective
 					, SUM(b.playercomm) AS playercomm
 					, 0 AS totalrow
 				FROM bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)--, INDEX=CIX_winlostdate)
@@ -179,6 +181,7 @@ BEGIN
 					, SUM(b.betcount)	AS betcount
 					, SUM(b.stake) 		AS turnover
 					, SUM(b.winlost)  	AS winlost
+					, SUM(b.BetEffective) As BetEffective
 					, SUM(b.playercomm) AS playercomm
 					, 0 AS totalrow
 				FROM bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)--, INDEX=CIX_winlostdate)
@@ -222,8 +225,18 @@ BEGIN
 	END
 	RETURN;
 END
+
+
+GO
+
+SET QUOTED_IDENTIFIER OFF 
+GO
+SET ANSI_NULLS ON 
+GO
+
+
 GO 
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerTurnOver_SumTotal] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CustomerTurnOver_SumTotal] TO [vnteam] 
-GO
+ GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CustomerTurnOver_SumTotal] TO [vnteam]
+GO 
+ GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerTurnOver_SumTotal] TO [bodbLicenseeNet]
+GO 
