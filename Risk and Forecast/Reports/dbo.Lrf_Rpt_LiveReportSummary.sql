@@ -40,6 +40,7 @@ Revisions:
 	- 20150612@Jim: support MicroGaming 
 	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
 	- 20151001@Jim: remove MicroGaming
+	- 20160120@Victor: Fix bug missing bettrade original tickets [Redmine: #51053]
 Param's Explanation:
 	@IsLive : indicate that whether the report will get live data or not
 			+ 0: Non - Live data only
@@ -428,7 +429,7 @@ BEGIN
 			AND ((@Liveindicator = 0 and b.IsLive = 0)
 				OR (@Liveindicator = 1 and b.IsLive = 1)
 				OR (@Liveindicator = 2))
-			AND b.CustomerCategory = -1
+			AND b.CustomerCategory IN (-1, 1001)
 		AND b.bettype NOT IN (9,29,1700,1800,1900,901,902,903)	
 		GROUP BY b.rptDate, b.currencyID,
 		CASE 
