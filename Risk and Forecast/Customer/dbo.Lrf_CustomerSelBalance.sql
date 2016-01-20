@@ -383,7 +383,7 @@ SELECT
 	ISNULL(- SUM ( CASE WHEN b.tpositiontaking=0 AND ((b.bettype NOT BETWEEN 31 AND 120 AND b.bettype<=999 AND b.bettype NOT IN (901,902,903)) OR (b.bettype BETWEEN 1301 and 1399)) THEN (b.winlost - b.actual_stake + awinlost + comm) ELSE 0 END),0) AS AmtDuetoBA,
 	ISNULL(- SUM ( CASE WHEN b.bettype IN (31,32,33) THEN (b.winlost - b.actual_stake + awinlost + comm) ELSE 0 END),0)AS AmtDuetoRB,
 	ISNULL(SUM (CASE WHEN b.bettype IN (31,32,33) THEN b.awinlost ELSE 0 END),0) AS WinlossRB,
-	ISNULL(SUM ( CASE WHEN b.tpositiontaking=0 AND ((b.bettype NOT BETWEEN 31 AND 120 AND b.bettype<=999) OR (b.bettype BETWEEN 1301 and 1399)) THEN  comm  ELSE 0 END),0) AS CommBA,
+	ISNULL(SUM ( CASE WHEN b.tpositiontaking=0 AND ((b.bettype NOT BETWEEN 31 AND 120 AND b.bettype<=999 AND b.bettype NOT IN (901,902,903)) OR (b.bettype BETWEEN 1301 and 1399)) THEN  comm  ELSE 0 END),0) AS CommBA,
 	ISNULL(SUM ( CASE WHEN b.bettype IN (31,32,33) THEN comm  ELSE 0 END),0) AS CommRB,
 	ISNULL(SUM (  playercomm ),0) AS PlayerComm,
 	SUM(CASE WHEN (bettype < 31 OR bettype BETWEEN 121 AND 999 OR (bettype BETWEEN 1301 AND 1399)) AND bettype NOT IN(901,902,903)
