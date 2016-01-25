@@ -50,6 +50,7 @@ Revisions:
 	- 20150626@Winnie: support bettrade
     - 20151001@Jim: remove MicroGaming
     - 20160118@Victor: Exclude Bettrade tickets on AmountDueToBA column [Redmine: 51053]
+	- 20160125@Victor: Fix incorrect formula of AmountDueToBettrade column [Redmine: 51053]
 */
 SET NOCOUNT ON
 
@@ -553,7 +554,7 @@ BEGIN
 		ISNULL(SUM ( playercomm),0) AS SelectedMonthPlayerComm,
 		SUM(CASE WHEN b.bettype =903 THEN b.awinlost
 				ELSE 0 END) AS SelectedMonthBetTradeComm,
-		ISNULL(- SUM(CASE WHEN (b.sporttype =0 AND b.bettype NOT IN (901,902,903)) AND bt.Custid IS NOT NULL THEN b.winlost ELSE 0 END),0) AS SelectedMonthWLBetTicket,			
+		ISNULL(SUM(CASE WHEN (b.sporttype =0 AND b.bettype NOT IN (901,902,903)) AND bt.Custid IS NOT NULL THEN b.winlost ELSE 0 END),0) AS SelectedMonthWLBetTicket,			
 		SUM(CASE WHEN b.bettype =902 THEN (b.winlost)
 				ELSE 0 END) AS SelectedMonthWLBoughtTicket
 	FROM 
@@ -581,7 +582,7 @@ BEGIN
 		ISNULL(SUM ( playercomm ),0) AS SelectedMonthPlayerComm,
 		SUM(CASE WHEN b.bettype =903 THEN b.awinlost
 				ELSE 0 END) AS SelectedMonthBetTradeComm,
-		ISNULL(- SUM(CASE WHEN (b.sporttype =0 AND b.bettype NOT IN (901,902,903)) AND bt.Custid IS NOT NULL THEN b.winlost ELSE 0 END),0) AS SelectedMonthWLBetTicket,			
+		ISNULL(SUM(CASE WHEN (b.sporttype =0 AND b.bettype NOT IN (901,902,903)) AND bt.Custid IS NOT NULL THEN b.winlost ELSE 0 END),0) AS SelectedMonthWLBetTicket,			
 		SUM(CASE WHEN b.bettype =902 THEN (b.winlost)
 				ELSE 0 END) AS SelectedMonthWLBoughtTicket
 	FROM 
