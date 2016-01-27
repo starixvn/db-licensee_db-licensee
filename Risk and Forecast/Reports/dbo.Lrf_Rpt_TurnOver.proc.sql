@@ -55,6 +55,7 @@ Revisions:
    - 20151228@Patrick: Exclude 901 & 902 for turnover
 
    - 20151228@Bobby: Implement RNG Casino sporttype(208,209,210)
+   - 20160127@Bobby: #51625 - HotFix for perf - redundant codes c.recommend in ( .... )
    
 Param's Explanation:
     + @excludeTest: remove currency UUS
@@ -447,7 +448,6 @@ BEGIN
 				INNER JOIN @tmpAg a ON  p.Currency = a.Currency AND a.CustID = c.Recommend
             WHERE p.winlostdate BETWEEN @tmpdate and @tdate    
                 AND c.roleid = 1
-                AND c.recommend in (SELECT DISTINCT custid FROM @tmpAg)
                 AND p.sporttype in (SELECT sporttype FROM @sporttype)                    
             GROUP BY p.winlostdate,c.currency
         )
