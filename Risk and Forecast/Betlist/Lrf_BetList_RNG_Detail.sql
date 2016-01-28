@@ -24,6 +24,7 @@ AS
 	Revisions:
 		- 20150924@Kos: Add column BetCheck to return TranId3rd for showing ticket result
 		- 20151029@Kos: Change SportType of Microgaming RNG Game
+		- 20151223@Kos: Support RNG Casino Single Wallet and use SportBettypeMatrix [Redmine: #48958]
 
 	Parameters:
 		- @TransType
@@ -35,6 +36,15 @@ AS
 
 BEGIN
 	SET NOCOUNT ON
+
+	DECLARE @SportBettype TABLE(ProductID TINYINT, Bettype SMALLINT, EventType TINYINT, SubProduct VARCHAR(500))
+
+	INSERT INTO @SportBettype
+	EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode = 5
+
+	DELETE FROM @SportBettype
+	WHERE ProductID NOT IN (6, 17)	-- Support Microgaming RNG Casino, RNG Casino Single Wallet
+		OR (ProductID = 6 AND SubProduct = '')
 
 	DECLARE @tmpStatus TABLE (statusId TINYINT)
 
@@ -110,10 +120,11 @@ BEGIN
 			brng.ip,
 			brng.transdesc,
 			CASE
-				WHEN brng.productID = 205 THEN brng.TranId3rd		-- Microgaming RNG Game
+				WHEN sbt.productID IN (6, 17) THEN brng.TranId3rd
 				ELSE ''
 			END AS BetCheck
 		FROM dbo.bettransRnG AS brng WITH (NOLOCK)
+			INNER JOIN @SportBettype AS sbt ON brng.gameID = sbt.Bettype
 		WHERE brng.custid = @CustId 
 			AND brng.RefNo = @RefNo
 			AND brng.statusID IN (SELECT statusId FROM @tmpStatus)
@@ -138,10 +149,11 @@ BEGIN
 			brng.ip,
 			brng.transdesc,
 			CASE
-				WHEN brng.productID = 205 THEN brng.TranId3rd		-- Microgaming RNG Game
+				WHEN sbt.productID IN (6, 17) THEN brng.TranId3rd
 				ELSE ''
 			END AS BetCheck
 		FROM dbo.bettransRnG14 AS brng WITH (NOLOCK)
+			INNER JOIN @SportBettype AS sbt ON brng.gameID = sbt.Bettype
 		WHERE brng.custid = @CustId AND brng.RefNo = @RefNo
 	END
 	ELSE IF EXISTS ( SELECT 1 FROM DBARC.bodb_Archive.dbo.bettrans_bk WITH (NOLOCK) WHERE transid = @RefNo )
@@ -164,10 +176,11 @@ BEGIN
 			brng.ip,
 			brng.transdesc,
 			CASE
-				WHEN brng.productID = 205 THEN brng.TranId3rd		-- Microgaming RNG Game
+				WHEN sbt.productID IN (6, 17) THEN brng.TranId3rd
 				ELSE ''
 			END AS BetCheck
 		FROM DBARC.bodb_Archive.dbo.bettransRnG_bk AS brng WITH (NOLOCK)
+			INNER JOIN @SportBettype AS sbt ON brng.gameID = sbt.Bettype
 		WHERE brng.custid = @CustId AND brng.RefNo = @RefNo
 	END
 
