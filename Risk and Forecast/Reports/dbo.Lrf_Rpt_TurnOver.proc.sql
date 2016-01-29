@@ -26,7 +26,7 @@ AS
 /*
 Created: 20111017@Henry
 Task : Report Turn Over
-DB: DBRPT/bodb02
+DB: DBACC/bodb02
 
 
 Revisions:
@@ -54,6 +54,9 @@ Revisions:
    - 20151108@Jim: Separated MicroGaming into 2 product
    - 20151228@Patrick: Exclude 901 & 902 for turnover
 
+   - 20151228@Bobby: Implement RNG Casino sporttype(208,209,210)
+   - 20160127@Bobby: #51625 - HotFix for perf - redundant codes c.recommend in ( .... )
+   
 Param's Explanation:
     + @excludeTest: remove currency UUS
     + @CurrencyID = 0: get all currency
@@ -100,7 +103,7 @@ IF @ShowNG = 1 INSERT INTO @sporttype(sporttype) VALUES(161)
 IF @ShowLC = 1 INSERT INTO @sporttype(sporttype) VALUES(162)
 IF @ShowVS = 1 INSERT INTO @sporttype(sporttype) VALUES(180)
 
-IF @ShowCS = 1 INSERT INTO @sporttype(sporttype) VALUES(251)
+IF @ShowCS = 1 INSERT INTO @sporttype(sporttype) VALUES(251),(208),(209),(210)
 IF @ShowBG = 1 INSERT INTO @sporttype(sporttype) VALUES(252)
 IF @ShowKN = 1 INSERT INTO @sporttype(sporttype) VALUES(202)--Keno
 IF @ShowMGCLC = 1 INSERT INTO @sporttype(sporttype) VALUES(203)
@@ -445,7 +448,6 @@ BEGIN
 				INNER JOIN @tmpAg a ON  p.Currency = a.Currency AND a.CustID = c.Recommend
             WHERE p.winlostdate BETWEEN @tmpdate and @tdate    
                 AND c.roleid = 1
-                AND c.recommend in (SELECT DISTINCT custid FROM @tmpAg)
                 AND p.sporttype in (SELECT sporttype FROM @sporttype)                    
             GROUP BY p.winlostdate,c.currency
         )

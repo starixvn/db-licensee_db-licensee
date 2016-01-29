@@ -33,6 +33,7 @@ Revisions:
  -- 20150626@Jim: support MicroGaming (feature #37034) 
  -- 20150917@Florent: Change datasource for AG Casino (#Redmine 43172)
  -- 20151203@Sophia: Add Grand Prize for Microgaming - RNG Casino [RedmineId: #47601]
+ -- 20151228@Bobby: Implement RNG Casino sporttype(208,209,210)
  
 Param's Explanation:   
 • @ErrCode:  
@@ -111,7 +112,8 @@ select @fdate = @FromDate, @tdate = @ToDate
                     FROM    bettrans with(nolock)  
                     WHERE   custid = @custid  
                             AND winlostdate BETWEEN @fdate AND @tdate  
-                            AND bettype <>903
+                            --AND bettype <>903
+							AND bettype NOT IN (903, 71)
                     GROUP BY winlostdate ,  
                             bettype ,  
                             CASE WHEN statusID IN (101,102) THEN 102  
@@ -121,8 +123,8 @@ select @fdate = @FromDate, @tdate = @ToDate
                             CASE WHEN bettype <= 19999 THEN NULL  
                                  ELSE transdate  
                             END 
-	--include running Keno bet
-	   INSERT  INTO @bet  
+		--include running Keno bet
+		INSERT  INTO @bet  
 		SELECT  winlostdate ,  
 				gameid ,  
 				0 ,   --running bet
@@ -138,8 +140,9 @@ select @fdate = @FromDate, @tdate = @ToDate
 				and statusID =0 -- get only running game _ Keno
 				--and t.productID=202 --Keno
 		GROUP BY winlostdate ,gameid 
-	--include running  microgaming
-	   INSERT  INTO @bet  
+		
+		--include running  microgaming + RNG Casino
+		INSERT  INTO @bet  
 		SELECT  winlostdate ,  
 				gameid ,  
 				0 ,    

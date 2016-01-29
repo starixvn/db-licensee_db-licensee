@@ -47,6 +47,8 @@ Revisions:
 	- 20150612@Jim: support MicroGaming
 	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission 
 	- 20151001@Jim: remove MicroGaming
+	- 20151228@Bobby: #50469 - Remove RNG Casino - exclude OneRNG range bettype
+	
 Param's Explanation:  
 	@Liveindicator : indicate that whether the report will get live data or not
 		+ 0: Non - Live data only
@@ -186,7 +188,6 @@ BEGIN
 		OR @ProductCode = 'SB'
 		OR @ProductCode = 'LC'
 		OR @ProductCode = 'VS'
-		OR @ProductCode = 'CS'
 		OR @ProductCode = 'BG'
 		OR @ProductCode = 'KN'
 		 
@@ -216,7 +217,6 @@ BEGIN
 			'WHEN b.bettype IN (1220,1235,1236) THEN 186 ' + CHAR(13) + --Virtual Tennis
 			'WHEN b.bettype = 9 THEN 101 --Mix Parlay' + CHAR(13) + 'WHEN b.bettype = 29 THEN 102 --System Parlay' + CHAR(13) + 
 			'WHEN b.bettype = 10 THEN 103 -- Outright' + CHAR(13) +
-			'WHEN b.bettype = 71 THEN 251 -- RNG Casino' + CHAR(13) +
 			'WHEN b.bettype = 73 THEN 252 -- Bingo' + CHAR(13) + 			
 			'ELSE m.SportType END as Sporttype,' + CHAR(13) + 
 			'SUM(CASE WHEN b.bettype = 33 AND b.liveawayscore = 0 THEN stake/2 ELSE stake END) turnover,' + CHAR(13) + 
@@ -236,7 +236,7 @@ BEGIN
 			'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.liveindicator = 0)' + CHAR(13) + 
 			'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.liveindicator = 1)' + CHAR(13) + 
 			'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13) + 
-			'AND b.bettype NOT IN (9,29,901,902,903)' + CHAR(13) + 
+			'AND b.bettype NOT IN (9,29,901,902,903,71) AND b.bettype NOT BETWEEN 2101 AND 2399' + CHAR(13) + 
 			'AND b.statusID IN (111,112,113)' + CHAR(13) + 'AND BA.transid IS NULL' + CHAR(13) + CASE 
 				WHEN @ProductCode = 'NG'
 					THEN 'AND b.bettype BETWEEN 81 AND 120 '
@@ -248,8 +248,6 @@ BEGIN
 					THEN 'AND b.bettype BETWEEN 1101 AND 1199'
 				WHEN @ProductCode = 'VS'
 					THEN 'AND b.bettype BETWEEN 1201 AND 1299'
-				WHEN @ProductCode = 'CS'
-					THEN 'AND b.bettype = 71'
 				WHEN @ProductCode = 'BG'
 					THEN 'AND b.bettype = 73'
 				WHEN @ProductCode = 'KN'
@@ -268,7 +266,6 @@ BEGIN
 				'WHEN b.bettype = 9 THEN 101 --Mix Parlay' + CHAR(13) + 
 				'WHEN b.bettype = 29 THEN 102 --System Parlay' + CHAR(13) + 
 				'WHEN b.bettype = 10 THEN 103 -- Outright' + CHAR(13) + 
-				'WHEN b.bettype = 71 THEN 251 -- RNG Casino' + CHAR(13) + 
 				'WHEN b.bettype = 73 THEN 252 -- Bingo' + CHAR(13) + 'ELSE m.SportType END ' + CHAR(13)
 
 		--SB for parlay
@@ -306,8 +303,6 @@ BEGIN
 					THEN 'AND b.bettype BETWEEN 1101 AND 1199'
 				WHEN @ProductCode = 'VS'
 					THEN 'AND b.bettype BETWEEN 1201 AND 1299'
-				WHEN @ProductCode = 'CS'
-					THEN 'AND b.bettype = 71'
 				WHEN @ProductCode = 'BG'
 					THEN 'AND b.bettype = 73'
 				WHEN @ProductCode = 'KN'
@@ -374,7 +369,6 @@ BEGIN
 		OR @ProductCode = 'SB'
 		OR @ProductCode = 'LC'
 		OR @ProductCode = 'VS'
-		OR @ProductCode = 'CS'
 		OR @ProductCode = 'BG'
 		OR @ProductCode = 'KN'
 		 
@@ -384,7 +378,6 @@ BEGIN
 		SELECT @sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13) + 'SELECT ' + CHAR(13) + 'b.rptDate,' + CHAR(13) + 'b.currencyID,' + CHAR(13) + 
 						'CASE 
 							  WHEN b.bettype  = 10 	 THEN 103
-							  WHEN b.bettype  = 71  THEN 251 
 							  WHEN b.bettype  = 73	THEN 252
 							  WHEN b.bettype BETWEEN 81 AND 120 THEN 161
 							  WHEN b.bettype BETWEEN 1501 AND 1599 THEN 202
@@ -405,7 +398,7 @@ BEGIN
 			'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13) + 
 			'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13) + 
 			'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13) + 
-			'AND b.bettype NOT IN (9,29,1700,1800,1900,901,902,903)' + CHAR(13) +
+			'AND b.bettype NOT IN (9,29,1700,1800,1900,901,902,903,71) AND b.bettype NOT BETWEEN 2101 AND 2399' + CHAR(13) +
 			'AND b.CustomerCategory = -1' + CHAR(13) +
 			'AND b.siteID =' + convert(VARCHAR(10), @LicenseeID) + CHAR(13) +
 			--'AND b.CurrencyID <> 20 ' + char(13) +
@@ -425,8 +418,6 @@ BEGIN
 						THEN 'AND b.bettype BETWEEN 1101 AND 1199'
 					WHEN @ProductCode = 'VS'
 						THEN 'AND b.bettype BETWEEN 1201 AND 1299'
-					WHEN @ProductCode = 'CS'
-						THEN 'AND b.bettype = 71'
 					WHEN @ProductCode = 'BG'
 						THEN 'AND b.bettype = 73'
 					WHEN @ProductCode = 'KN'
@@ -436,7 +427,6 @@ BEGIN
 				END + CHAR(13) + 
 				'GROUP BY b.rptDate, b.currencyID, ' + CHAR(13) + 'CASE 
 							  WHEN b.bettype  = 10 	 THEN 103
-							  WHEN b.bettype  = 71   THEN 251 
 							  WHEN b.bettype  = 73	 THEN 252
 							  WHEN b.bettype BETWEEN 81 AND 120 THEN 161
 							  WHEN b.bettype BETWEEN 1501 AND 1599 THEN 202
@@ -482,8 +472,6 @@ BEGIN
 						THEN 'AND b.bettype BETWEEN 1101 AND 1199'
 					WHEN @ProductCode = 'VS'
 						THEN 'AND b.bettype BETWEEN 1201 AND 1299'
-					WHEN @ProductCode = 'CS'
-						THEN 'AND b.bettype = 71'
 					WHEN @ProductCode = 'BG'
 						THEN 'AND b.bettype = 73'
 					WHEN @ProductCode = 'KN'

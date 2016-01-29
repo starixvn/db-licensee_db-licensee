@@ -16,7 +16,6 @@ ALTER   PROCEDURE [dbo].[Lrf_Rpt_MobileWinlossDetail]
  @ShowBA		BIT=0,
  @ShowLC 		BIT=0,
  @ShowVS		BIT=0,
- @ShowCS		BIT=0,-- RNG Casino
  @ShowBG		BIT=0,-- Bingo	
  @SiteType	TINYINT=1, 
  @MoveBetsDay SMALLDATETIME,
@@ -37,6 +36,8 @@ AS
 		-20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 		- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
 		- 20150814@Winnie: Keenocean reverse currency 
+		- 20151228@Bobby: Remove RNG Casino
+		
 	Param's Explanation:  
 	  + @SiteType: 1-WAP; 2-Smartphone; 3: Others;0-All  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -167,16 +168,6 @@ BEGIN
 	INSERT INTO @bettype(bettype)
 	SELECT typeid FROM bettype (NOLOCK)
 	WHERE (typeid BETWEEN 1201 AND 1299)
-END
-
-
-IF @ShowCS = 1	
-BEGIN
-	INSERT  INTO @sporttype( Sporttype) VALUES  (251)
-	
-	INSERT INTO @bettype(bettype)
-	SELECT typeid FROM bettype (NOLOCK)
-	WHERE typeid =71
 END
 
 IF @ShowBG = 1	
@@ -376,7 +367,7 @@ BEGIN
 	END
 	
 	
-	IF (@ShowRB=1 or @ShowNG=1 OR @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1)
+	IF (@ShowRB=1 or @ShowNG=1 OR @ShowLC = 1 OR @ShowVS=1 OR @ShowBG=1)
 	BEGIN
 		INSERT INTO #WinLoss
 		SELECT 
@@ -559,7 +550,7 @@ BEGIN
 			b.statusID	
 			
 	END
-	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR  @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1)
+	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR  @ShowLC = 1 OR @ShowVS=1 OR @ShowBG=1)
 	BEGIN
 		INSERT INTO #WinLoss
 		SELECT 

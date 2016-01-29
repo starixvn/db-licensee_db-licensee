@@ -48,6 +48,8 @@ Revisions:
 	-20150612@Jim: support MicroGaming
 	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission 
 	- 20151001@Jim: remove MicroGaming
+	- 20151228@Bobby: #50469 - Remove RNG Casino - exclude OneRNG range bettype
+	
 Param's Explanation:  
 	@Liveindicator : indicate that whether the report will get live data or not
 		+ 0: Non - Live data only
@@ -156,7 +158,6 @@ BEGIN
 		OR @ProductCode = 'RB'
 		OR @ProductCode = 'LC'
 		OR @ProductCode = 'VS'
-		OR @ProductCode = 'CS'
 		OR @ProductCode = 'BG'
 		OR @ProductCode = 'KN' --Keno
 		 
@@ -182,7 +183,7 @@ BEGIN
 			'WHERE b.winlostdate BETWEEN ''' + convert(VARCHAR(10), @TempFromDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TDate, 120) + '''' + CHAR(13) + 
 			'AND b.Bettype <= 19999' + CHAR(13) +
 			'AND b.statusID IN (111,112,113)' + CHAR(13) + 
-			'AND b.bettype NOT IN (9,29,901,902,903)' + CHAR(13) + 
+			'AND b.bettype NOT IN (9,29,901,902,903,71) AND b.bettype NOT BETWEEN 2101 AND 2399' + CHAR(13) + 
 			'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.liveindicator = 0)' + CHAR(13) + 
 			'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.liveindicator = 1)' + CHAR(13) + 
 			'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13) + 
@@ -198,8 +199,6 @@ BEGIN
 					THEN 'AND b.bettype BETWEEN 1101 AND 1199'
 				WHEN @ProductCode = 'VS'
 					THEN 'AND b.bettype BETWEEN 1201 AND 1299'
-				WHEN @ProductCode = 'CS'
-					THEN 'AND b.bettype = 71'
 				WHEN @ProductCode = 'BG'
 					THEN 'AND b.bettype = 73'
 				WHEN @ProductCode = 'KN' --Keno's bettype
@@ -244,8 +243,6 @@ BEGIN
 				THEN 'AND b.bettype BETWEEN 1101 AND 1199'
 			WHEN @ProductCode = 'VS'
 				THEN 'AND b.bettype BETWEEN 1201 AND 1299'
-			WHEN @ProductCode = 'CS'
-				THEN 'AND b.bettype = 71'
 			WHEN @ProductCode = 'BG'
 				THEN 'AND b.bettype = 73'
 			WHEN @ProductCode = 'KN' --Keno's bettype
@@ -311,7 +308,6 @@ BEGIN
 		OR @ProductCode = 'SB'
 		OR @ProductCode = 'LC'
 		OR @ProductCode = 'VS'
-		OR @ProductCode = 'CS'
 		OR @ProductCode = 'BG'
 		OR @ProductCode = 'KN'
 		 
@@ -329,7 +325,7 @@ BEGIN
 		'INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID' + CHAR(13) + 
 		'WHERE b.rptDate BETWEEN ''' + convert(VARCHAR(10), @FDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13) + 
 		'AND b.status NOT IN (-1,103)' + CHAR(13) + 
-		'AND b.bettype NOT IN (9,29,1700,1800,1900,901,902,903)' + CHAR(13) + 
+		'AND b.bettype NOT IN (9,29,1700,1800,1900,901,902,903,71) AND b.bettype NOT BETWEEN 2101 AND 2399' + CHAR(13) + 
 		'AND b.CustomerCategory = -1' + CHAR(13) + 
 		'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13) + 
 		'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13) + 
@@ -351,8 +347,6 @@ BEGIN
 					THEN 'AND b.bettype BETWEEN 1101 AND 1199'
 				WHEN @ProductCode = 'VS'
 					THEN 'AND b.bettype BETWEEN 1201 AND 1299'
-				WHEN @ProductCode = 'CS'
-					THEN 'AND b.bettype = 71'
 				WHEN @ProductCode = 'BG'
 					THEN 'AND b.bettype = 73'
 				WHEN @ProductCode = 'KN' --keno's bettype
@@ -402,8 +396,6 @@ BEGIN
 					THEN 'AND b.bettype BETWEEN 1101 AND 1199'
 				WHEN @ProductCode = 'VS'
 					THEN 'AND b.bettype BETWEEN 1201 AND 1299'
-				WHEN @ProductCode = 'CS'
-					THEN 'AND b.bettype = 71'
 				WHEN @ProductCode = 'BG'
 					THEN 'AND b.bettype = 73'
 				WHEN @ProductCode = 'KN' --keno's bettype

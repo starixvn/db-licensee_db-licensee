@@ -79,6 +79,7 @@ AS /*
 		- 20150917@Florent: Change datasource for AG Casino (#Redmine 43172)
 		- 20151108@Jim: Separated MicroGaming into 2 product
 		- 20151228@Patrick: Exclude 901 & 902 for turnover
+		- 20151228@Bobby: Implement RNG Casino sporttype(208,209,210)
 		
 */
     
@@ -188,6 +189,14 @@ BEGIN
     INSERT INTO @bettype(bettype)
 	SELECT typeid FROM bettype (NOLOCK)
 	WHERE typeid=71
+	
+	-- MBC - RNG Casino
+	INSERT INTO @sporttype(sporttype)
+	VALUES (208),(209),(210)
+	INSERT INTO @bettype(bettype)
+	SELECT DISTINCT bettype
+	FROM dbo.SportBettypeMatrix with(nolock)
+	WHERE sporttype IN (208, 209, 210)
 END
 
 IF @ShowBG = 1

@@ -51,6 +51,7 @@ AS
 	- 20150917@Florent: Change datasource for AG Casino (#Redmine 43172)
 	- 20151102@Victor: Add Odds Group filter to Customer List [Redmine: #46312]
 	-20151108@Jim: Separated MicroGaming into 2 product
+	-20160104@Bobby: Fixbug#50272 - Remove RNG Casino bettype 71
 	
 	Param's Explanation:
 	  + @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
@@ -443,22 +444,22 @@ SELECT
 	,CAST(ISNULL(SUM(e.GBP*ISNULL(b.winlost-b.actual_stake + b.playercomm,0)),0) AS MONEY) AS TotalBalanceGBP
 	,ISNULL(SUM(CASE 
 					WHEN ruben = 0 
-						THEN ISNULL(b.actual_stake, 0)
+						THEN ISNULL(b.actual_stake, 0)*(CASE WHEN b.bettype = 71 THEN 0 ELSE 1 END)
 				ELSE 0
 				END), 0) AS Outstanding
 	,CAST(ISNULL(SUM(e.USD * CASE 
 					WHEN ruben = 0
-						THEN ISNULL(b.actual_stake, 0)
+						THEN ISNULL(b.actual_stake, 0)*(CASE WHEN b.bettype = 71 THEN 0 ELSE 1 END)
 					ELSE 0
 					END), 0) AS MONEY) AS OutstandingUSD
 	, CAST(ISNULL(SUM(e.EUR * CASE 
 					WHEN ruben = 0
-						THEN ISNULL(b.actual_stake, 0)
+						THEN ISNULL(b.actual_stake, 0)*(CASE WHEN b.bettype = 71 THEN 0 ELSE 1 END)
 					ELSE 0
 					END), 0) AS MONEY) AS OutstandingEUR
 	, CAST(ISNULL(SUM(e.GBP * CASE 
 					WHEN ruben = 0
-						THEN ISNULL(b.actual_stake, 0)
+						THEN ISNULL(b.actual_stake, 0)*(CASE WHEN b.bettype = 71 THEN 0 ELSE 1 END)
 					ELSE 0
 					END), 0) AS MONEY) AS OutstandingGBP				
 	,ISNULL(lg.color,'') AS GroupColor

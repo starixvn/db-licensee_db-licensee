@@ -49,6 +49,8 @@ Revisions:
 	- 20150612@Jim: support MicroGaming
 	- 20150626@Winnie: support bettrade
     - 20151001@Jim: remove MicroGaming
+	- 20151228@Bobby: Remove RNG Casino
+	
     - 20160118@Victor: Exclude Bettrade tickets on AmountDueToBA column [Redmine: 51053]
 	- 20160125@Victor: Fix incorrect formula of AmountDueToBettrade column [Redmine: 51053]
 */
@@ -375,7 +377,7 @@ SELECT
 				OR b.bettype BETWEEN 1201 AND 1299 
 				OR b.bettype BETWEEN 1501 AND 1599 --Keno
 			 
-				OR b.bettype IN (71,73)
+				OR b.bettype IN (73)
 			)
 		  )  
 			THEN (b.winlost - b.actual_stake)  

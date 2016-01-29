@@ -56,7 +56,8 @@ AS
 		- 20150921@Jim: Implement the changes on reports for AG Casino (#43172)
 		- 20151108@Jim: Separated MicroGaming into 2 product
 		- 20151230@Patrick: Add more output BuyBackAmt & BABuyBackAmt
- 
+		- 20151228@Bobby: Support MBC RNG Casino sporttype(208,209,210)
+		
 	Param's Explanation:  
 	  + @CustID: SuperID  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -197,6 +198,14 @@ BEGIN
 	VALUES (251)
 	INSERT INTO @bettype(bettype)
 	VALUES(71)
+	
+	-- MBC - RNG Casino
+	INSERT INTO @sporttype(sporttype)
+	VALUES (208),(209),(210)
+	INSERT INTO @bettype(bettype)
+	SELECT DISTINCT bettype
+	FROM dbo.SportBettypeMatrix with(nolock)
+	WHERE sporttype IN (208, 209, 210)
 END 
 IF @ShowBG=1 -- Bingo
 BEGIN 
@@ -519,7 +528,7 @@ BEGIN
 			ELSE 0 END	
 			) turnoverVS, 
 			SUM(
-			CASE WHEN b.bettype =71 THEN
+			CASE WHEN b.bettype =71 OR b.bettype BETWEEN 2101 AND 2399 THEN
 				stake
 				*
 				CASE WHEN @drawfilter IN (2,3) THEN
@@ -587,7 +596,7 @@ BEGIN
 			0 AS LicenseeWLRB,
 			-SUM(CASE WHEN b.bettype BETWEEN 1101 AND 1199 THEN (b.winlost-b.actual_stake) ELSE 0 END ) AS LicenseeWLLC,
 			-SUM(CASE WHEN b.bettype BETWEEN 1201 AND 1299 THEN (b.winlost-b.actual_stake) ELSE 0 END ) AS LicenseeWLVS,
-			-SUM(CASE WHEN b.bettype =71 THEN b.winlost - b.actual_stake ELSE 0 END)					AS LicenseeWLCS,
+			-SUM(CASE WHEN b.bettype =71 OR b.bettype BETWEEN 2101 AND 2399 THEN b.winlost - b.actual_stake ELSE 0 END)					AS LicenseeWLCS,
 			-SUM(CASE WHEN b.bettype =73 THEN b.winlost - b.actual_stake ELSE 0 END)					AS LicenseeWLBG,
 			-SUM(CASE WHEN b.bettype BETWEEN 1501 AND 1599  THEN b.winlost - b.actual_stake ELSE 0 END) AS LicenseeWLKN,
 			-SUM(CASE WHEN b.bettype BETWEEN 2001 AND 2007  THEN b.winlost - b.actual_stake ELSE 0 END) AS LicenseeWLMGCLC,
@@ -827,7 +836,7 @@ BEGIN
 						ELSE 1 END
 					ELSE 1 END
 			ELSE 0 END) AS turnoverVS,
-			SUM(CASE WHEN b.sporttype=251 THEN 
+			SUM(CASE WHEN b.sporttype IN (251, 208, 209, 210) THEN 
 				b.turnover
 				*
 					CASE WHEN @drawfilter IN (2,3) THEN
@@ -890,7 +899,7 @@ BEGIN
 			SUM(CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS LicenseeWLRB,
 			- SUM(CASE WHEN b.sporttype=162 THEN b.winlost ELSE 0 END) AS LicenseeWLLC,
 			- SUM(CASE WHEN b.sporttype=180 THEN b.winlost ELSE 0 END) AS LicenseeWLVS,
-			- SUM(CASE WHEN b.sporttype=251 THEN b.winlost ELSE 0 END) AS LicenseeWLCS,
+			- SUM(CASE WHEN b.sporttype IN (251, 208, 209, 210) THEN b.winlost ELSE 0 END) AS LicenseeWLCS,
 			- SUM(CASE WHEN b.sporttype=252 THEN b.winlost ELSE 0 END) AS LicenseeWLBG,
 			- SUM(CASE WHEN b.sporttype=202 THEN b.winlost ELSE 0 END) AS LicenseeWLKN,
 			- SUM(CASE WHEN b.sporttype=203 THEN b.winlost ELSE 0 END) AS LicenseeWLMGCLC,
@@ -1131,7 +1140,7 @@ BEGIN
 						ELSE 1 END
 					ELSE 1 END
 			ELSE 0 END) AS turnoverVS,
-			SUM(CASE WHEN b.sporttype=251 THEN 
+			SUM(CASE WHEN b.sporttype IN (251, 208, 209, 210) THEN 
 				b.turnover
 				*
 					CASE WHEN @drawfilter IN (2,3) THEN
@@ -1192,7 +1201,7 @@ BEGIN
 			SUM(CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS LicenseeWLRB,
 			- SUM(CASE WHEN b.sporttype=162 THEN b.winlost ELSE 0 END) AS LicenseeWLLC,
 			- SUM(CASE WHEN b.sporttype=180 THEN b.winlost ELSE 0 END) AS LicenseeWLVS,
-			-SUM(CASE WHEN b.sporttype=251 THEN b.winlost ELSE 0 END) AS LicenseeWLCS,
+			-SUM(CASE WHEN b.sporttype IN (251, 208, 209, 210) THEN b.winlost ELSE 0 END) AS LicenseeWLCS,
 			-SUM(CASE WHEN b.sporttype=252 THEN b.winlost ELSE 0 END) AS LicenseeWLBG,
 			-SUM(CASE WHEN b.sporttype=202 THEN b.winlost ELSE 0 END) AS LicenseeWLKN,
 			-SUM(CASE WHEN b.sporttype=203 THEN b.winlost ELSE 0 END) AS LicenseeWLMGCLC,
