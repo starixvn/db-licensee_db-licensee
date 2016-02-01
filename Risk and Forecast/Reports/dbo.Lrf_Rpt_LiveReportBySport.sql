@@ -48,6 +48,7 @@ Revisions:
 	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission 
 	- 20151001@Jim: remove MicroGaming
 	- 20151228@Bobby: #50469 - Remove RNG Casino - exclude OneRNG range bettype
+	- 20160201@Victor: Include Bettrade original ticket [Redmine: 51053]
 	
 Param's Explanation:  
 	@Liveindicator : indicate that whether the report will get live data or not
@@ -399,7 +400,7 @@ BEGIN
 			'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13) + 
 			'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13) + 
 			'AND b.bettype NOT IN (9,29,1700,1800,1900,901,902,903,71) AND b.bettype NOT BETWEEN 2101 AND 2399' + CHAR(13) +
-			'AND b.CustomerCategory = -1' + CHAR(13) +
+			'AND b.CustomerCategory IN (-1, 1001)' + CHAR(13) +
 			'AND b.siteID =' + convert(VARCHAR(10), @LicenseeID) + CHAR(13) +
 			--'AND b.CurrencyID <> 20 ' + char(13) +
 			CASE 
