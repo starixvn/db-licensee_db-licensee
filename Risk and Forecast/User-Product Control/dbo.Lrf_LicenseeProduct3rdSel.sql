@@ -11,7 +11,7 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeProduct3rdSel]
 	@LicenseeID INT = 0,
 	@ProductPrefix VARCHAR(10) = '',
 	@Langkey VARCHAR(10)='en-US',
-	@isExcludeAG BIT =1	
+	@isExcludeAG BIT =0
 	
 AS
 /*
@@ -23,6 +23,7 @@ Original:
 Revisions:
 	- 20111122@Henry: Add filter @ProductPrefix + default values
 	- 20150407@Winnie: Add ProductId
+	- 20160201@Jim: Set @isExcludeAG =0 (Redmine #51815)
 	
 */
 SET NOCOUNT ON
