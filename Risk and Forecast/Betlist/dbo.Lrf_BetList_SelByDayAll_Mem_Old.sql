@@ -68,6 +68,7 @@ AS
 		- 20151124@Kos: Support Microgaming RNG Casino Jackpot Grand Prize ticket
 		- 20151203@Kos: Change odds, modds data type from SMALLMONEY to MONEY [Redmine: #48660]
 		- 20151228@Kos: Support RNG Casino Single Wallet
+		- 20160202@Kos: Support PH All In One 1.2 [#Redmine: 50897]
 
 	Param's Explanation: 
 		+ @transtype:
@@ -121,30 +122,30 @@ BEGIN
 		refno			NVARCHAR(50), 
 		betid			BIGINT,
 		oddsid			INT,
-		hdp1			SMALLMONEY, 
-		hdp2			SMALLMONEY, 
+		hdp1			SMALLMONEY,
+		hdp2			SMALLMONEY,
 		Modds			MONEY,
 		oddstype		TINYINT,
-		odds			MONEY, 
-		betteam			NVARCHAR(50), 
-		status			NVARCHAR(50), 
-		betstatus		NVARCHAR(50), 
+		odds			MONEY,
+		betteam			NVARCHAR(50),
+		status			NVARCHAR(50),
+		betstatus		NVARCHAR(50),
 		Stake			MONEY, 
 		Actual_Stake	MONEY,
 		winlost			MONEY,
 		LicenseeWL		MONEY,
 		comm			MONEY,
 		playercomm		MONEY,
-		livehomescore	SMALLINT, 
-		liveawayscore	SMALLINT, 
+		livehomescore	SMALLINT,
+		liveawayscore	SMALLINT,
 		liveindicator	BIT,
-		finalhomescore	SMALLINT, 
-		finalawayscore	SMALLINT, 
-		hthomescore		SMALLINT, 
-		htawayscore		SMALLINT, 
+		finalhomescore	SMALLINT,
+		finalawayscore	SMALLINT,
+		hthomescore		SMALLINT,
+		htawayscore		SMALLINT,
 		ip				NVARCHAR(20),
 		username		NVARCHAR(50),
-		isNeutral		BIT	,
+		isNeutral		BIT,
 		currency		SMALLINT,
 		showtime		NVARCHAR(50), -- table - shoe - hand of Live Casino
 		betcheck		NVARCHAR(50),
@@ -211,12 +212,21 @@ BEGIN
 			b.IP,
 			@Username,
 			ISNULL(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral,
-			b.currency
-			,CASE WHEN sbt.ProductID = 4 THEN ISNULL(m.showtime,'') ELSE '' END AS ShowTime 
-			,CASE WHEN sbt.ProductID = 1 AND b.bettype IN (216,217) THEN b.betcheck ELSE '' END AS betcheck
-			,'' AS transdesc
-		FROM bodb_archive.dbo.bettrans_bk b WITH (NOLOCK)
-			INNER JOIN bodb_archive.dbo.match_bk m WITH (NOLOCK) ON b.matchid = m.matchid
+			b.currency,
+			CASE 
+				WHEN sbt.ProductID = 4 THEN ISNULL(m.showtime,'') 
+				ELSE '' 
+			END AS ShowTime,
+			CASE 
+				WHEN sbt.ProductID = 1 AND b.bettype IN (216, 217) THEN b.betcheck 
+				ELSE '' 
+			END AS betcheck,
+			CASE 
+				WHEN sbt.ProductID = 1 THEN ISNULL(b.transdesc, '')
+				ELSE '' 
+			END AS transdesc
+		FROM bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)
+			INNER JOIN bodb_archive.dbo.match_bk AS m WITH (NOLOCK) ON b.matchid = m.matchid
 			LEFT JOIN DBLIC.bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
 			INNER JOIN @SportBettype sbt ON b.bettype = sbt.bettype
 		WHERE b.custid			= @custid
@@ -254,16 +264,16 @@ BEGIN
 			b.oddsid, 
 			b.hdp1, 
 			b.hdp2,
-			0 AS modds, 
+			0 AS modds,
 			0 AS Oddstype,
 			b.Odds,
 			fnc.ChoiceId AS betteam,
 			b.status,
-			'' AS betstatus, 
+			'' AS betstatus,
 			b.stake,
-			b.actual_stake, 
+			b.actual_stake,
 			(b.winlost-b.actual_stake) AS winlost,
-			- (b.winlost-b.actual_stake) AS LicenseeWL ,
+			- (b.winlost-b.actual_stake) AS LicenseeWL,
 			b.comm,
 			b.playercomm,
 			b.livehomescore, 
@@ -280,8 +290,8 @@ BEGIN
 			'' AS ShowTime 
 			,'' AS betcheck
 			,'' AS transdesc
-		FROM bodb_archive.dbo.bettrans_bk b WITH (NOLOCK)
-			INNER JOIN @SportBettype sbt ON b.bettype = sbt.bettype
+		FROM bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)
+			INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.bettype
 			CROSS APPLY dbo.f_ParseTransDesc(b.transdesc, b.bettype) AS fnc
 		WHERE	b.custid		= @custid
 			AND b.winlostdate	= @fromdate 
@@ -335,14 +345,14 @@ BEGIN
 			,'' AS transdesc
 		FROM bodb_archive.dbo.bettrans_bk b WITH (NOLOCK)
 			INNER JOIN bodb_Archive.dbo.VSOutright_bk o WITH (NOLOCK) ON b.oddsid=o.Orid
-			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
+			INNER JOIN dbo.VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID	
 			INNER JOIN @SportBettype sbt ON b.bettype = sbt.bettype
 		WHERE	b.custid		= @custid
 			AND b.winlostdate	= @fromdate
 			AND sbt.ProductId	= 5 
 			AND sbt.EventType	= 3
 
-		-- mixed parlay & system parlay
+		-- Mixed parlay & system parlay
 		INSERT INTO @Data 
 		SELECT
 			0,
@@ -388,7 +398,7 @@ BEGIN
 			,'' AS betcheck
 			,'' AS transdesc
 		FROM
-			bodb_archive.dbo.bettrans_bk b WITH (NOLOCK)	
+			bodb_archive.dbo.bettrans_bk b WITH (NOLOCK)
 			LEFT JOIN DBLIC.bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid	
 			INNER JOIN @SportBettype sbt ON b.bettype = sbt.bettype
 		WHERE b.custid			= @custid
@@ -717,7 +727,7 @@ BEGIN
 	FROM bodb_archive.dbo.bettransG BG WITH (NOLOCK)
 		INNER JOIN @Data B ON BG.refno = b.refno AND BG.custID = @CustID 
 		INNER JOIN #TempExchange e
-			ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency	
+			ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 		INNER JOIN @SportBettype sbt ON b.bettype = sbt.bettype
 	WHERE sbt.ProductID = 4 AND sbt.EventType = 1
 	
@@ -763,10 +773,10 @@ BEGIN
 
 	SELECT * FROM @BettransDetail
 	ORDER BY refno, bettype
-	RETURN
 
 	DROP TABLE #TempExchange
 END
+
 
 
 

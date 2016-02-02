@@ -6,22 +6,22 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 ALTER PROCEDURE [dbo].[Lrf_BetList_SelAllByDate_Mem]
-	@LicenseeID 		INT,
+	@LicenseeID			INT,
 	@UserID				INT,
-	@custid 			INT			= NULL,
-	@FromDate 			DATETIME,
-	@ToDate 			DATETIME,
-	@Langkey 			VARCHAR(10) = 'en-US',
-	@username 			VARCHAR(50) = NULL, -- for API
-	@PageSize 			INT			= 1000,
-	@PageIndex 			INT			= 1,
+	@custid				INT			= NULL,
+	@FromDate			DATETIME,
+	@ToDate				DATETIME,
+	@Langkey			VARCHAR(10) = 'en-US',
+	@username			VARCHAR(50) = NULL, -- for API
+	@PageSize			INT			= 1000,
+	@PageIndex			INT			= 1,
 	-- check for showing product
-	@ShowSB 			BIT = 0,
-	@ShowRB 			BIT = 0,
-	@ShowNG 			BIT = 0,
-	@ShowBA 			BIT = 0,
+	@ShowSB				BIT = 0,
+	@ShowRB				BIT = 0,
+	@ShowNG				BIT = 0,
+	@ShowBA				BIT = 0,
 	@ShowLC				BIT = 0,
-	@ShowVS 			BIT = 0,
+	@ShowVS				BIT = 0,
 	@ShowCS				BIT = 0, -- RNG Casino
 	@ShowBG				BIT = 0, -- Bingo 
 	@ShowKN				BIT = 0, -- Keno
@@ -46,8 +46,8 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_SelAllByDate_Mem]
 	@SumLicenseeWLGBP 	MONEY			= 0 OUTPUT,
 	@SumCommGBP 		MONEY			= 0 OUTPUT,
 	@SumPlayerCommGBP 	MONEY			= 0 OUTPUT,
-	@TotalRows 			INT				= 0	OUTPUT,
-	@ErrorCode 			INT				= 0	OUTPUT,
+	@TotalRows 			INT				= 0 OUTPUT,
+	@ErrorCode 			INT				= 0 OUTPUT,
 	@ErrorMsg			NVARCHAR(100)	= '' OUTPUT
 AS
 
@@ -95,6 +95,7 @@ AS
 		- 20151203@Kos: Change odds, modds data type from SMALLMONEY to MONEY [Redmine: #48660]
 		- 20151224@Jim: Fix bug []Redmine: #49885]
 		- 20151228@Kos: Support RNG Casino Single Wallet [Redmine: #48958]
+		- 20160202@Kos: Support PH All In One 1.2 [#Redmine: 50897]
 		- 20160216@Kos: Support yesterday running ticket [Redmine: #52277]
 */	
 
@@ -203,7 +204,8 @@ BEGIN
 		currency 		INT,
 		MatchID 		INT,
 		custid			INT,
-		betcheck		NVARCHAR(50)
+		betcheck		NVARCHAR(50),
+		transdesc		NVARCHAR(300)
 	)
 	
 	-- filer bettypes by sporttype
@@ -230,7 +232,7 @@ BEGIN
 		OR ProductID	= CASE WHEN @ShowMGCLC	= 0 THEN 13 END
 		OR ProductID	= CASE WHEN @ShowMGCRNG	= 0 THEN 17 END
 		OR ProductID	= CASE WHEN @ShowAGC	= 0 THEN 11 END
-		OR (ProductID 	> 8 AND sbt.ProductID NOT IN (11, 13, 17)) -- not suport for LIC system
+		OR (ProductID > 8 AND sbt.ProductID NOT IN (11, 13, 17)) -- not suport for LIC system
 	-- end filer bettypes by sporttype
 	
 	-- BA tickets
@@ -266,7 +268,8 @@ BEGIN
 		b.currency,
 		b.matchid,
 		b.custid,
-		b.betcheck
+		b.betcheck,
+		ISNULL(b.transdesc, '') AS transdesc
 	FROM 
 		dbo.bettrans b WITH (NOLOCK)
 		INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
@@ -319,7 +322,7 @@ BEGIN
 			b.currency,
 			'' AS ShowTime,
 			b.betcheck,
-			'' AS transdesc
+			b.transdesc
 		FROM 
 			#TempBATicket b
 			INNER JOIN dbo.match m WITH (NOLOCK) ON b.matchid = m.matchid
@@ -466,9 +469,12 @@ BEGIN
 			b.Oddstype,
 			b.currency,
 			'' AS ShowTime,
-			CASE WHEN b.bettype IN (216,217) THEN b.betcheck ELSE '' END AS betcheck,
-			'' AS transdesc
-		FROM 
+			CASE 
+				WHEN b.bettype IN (216, 217) THEN b.betcheck 
+				ELSE '' 
+			END AS betcheck,
+			ISNULL(b.transdesc, '') AS transdesc
+		FROM
 			dbo.bettrans b WITH (NOLOCK)
 			INNER JOIN dbo.match m WITH (NOLOCK) ON b.matchid = m.matchid
 			INNER JOIN @SportBettype sbt ON b.bettype = sbt.Bettype
@@ -1690,9 +1696,9 @@ BEGIN
 			BG.apositiontaking, 
 			BG.bettype,
 			BG.betteam,
-			BG.stake*e.EUR,
-			BG.stake*e.USD,
-			BG.stake*e.GBP
+			BG.stake * e.EUR,
+			BG.stake * e.USD,
+			BG.stake * e.GBP
 		FROM dbo.bettransg BG WITH (NOLOCK)
 			INNER JOIN #BetListSelAllByDateMem B ON BG.refno = B.refno AND BG.custid = @CustID
 			INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate AND e.exchangeid = B.currency
@@ -1711,9 +1717,9 @@ BEGIN
 			BG.apositiontaking, 
 			BG.bettype,
 			BG.Betteam,
-			BG.stake*e.EUR,
-			BG.stake*e.USD,
-			BG.stake*e.GBP
+			BG.stake * e.EUR,
+			BG.stake * e.USD,
+			BG.stake * e.GBP
 		FROM dbo.bettransm BG WITH (NOLOCK)
 			INNER JOIN #BetListSelAllByDateMem B ON BG.refno = B.refno
 			INNER JOIN #TempExchange e ON e.ExchangeDate = B.winlostdate AND e.exchangeid = B.currency
