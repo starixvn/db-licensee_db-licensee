@@ -1,20 +1,24 @@
 USE [CustDB]
- 
+GO
+
 ALTER PROCEDURE	[dbo].[Lrf_3rdProductUpdCustStatus]  
-	, @IP VARCHAR(40)
-	, @Language	VARCHAR(10) = 'en-US'
-	, @ErrMsg VARCHAR(100) = ''	OUTPUT
+	@CustID		INT,
+	@ProductId	INT,
+	@IsEnabled	BIT,
+	@UserID		INT, 
+	@IP			VARCHAR(40),
+	@Language	VARCHAR(10)		= 'en-US',	
+	@ErrMsg		VARCHAR(100)	= ''	OUTPUT 
 AS
 /*
 	Created: 20150304@Winnie
 	Task: Update status of 3rd product(Gold Dexluxe...) for Members
-	DB: DBCUST/CustDB
+	DB: DBCUST.CustDB
 	Original:
 	Revisions:
-		- 20150609@Jim: support product microgaming
-		- 20151022@Jim: support #44780
+		-20150609@Jim: support product microgaming
+		-20151022@Jim: support #44780
 		-20151108@Jim: Separated MicroGaming into 2 product
-
 	Param's Explanation:
 */
 BEGIN
@@ -29,16 +33,15 @@ BEGIN
 	SET @startRun = GETDATE()
 
 	-- Get old status of member
-	DECLARE @Srecommend INT, @SEnabled INT = 0
+	DECLARE @Srecommend INT
+			,@SEnabled INT = 0
 	SELECT @Srecommend = srecommend FROM dbo.Customer c WITH (NOLOCK) WHERE c.CustID = @CustID
 
-	SELECT @IsEnable_Old = ISNULL(IsEnabled, 0)
+	SELECT @IsEnable_Old = ISNULL(IsEnabled,0)
 	FROM dbo.Dep_CustProductSetting WITH (NOLOCK)
-	WHERE CustID = @CustId AND ProductId = @ProductId
+	WHERE CustID = @CustId AND ProductId=@ProductId
 
-	SELECT @SEnabled = ISNULL(IsEnabled, 0) 
-	FROM dbo.Dep_SupperProductSetting WITH (NOLOCK) 
-	WHERE CustID = @Srecommend AND ProductId=@ProductId
+	SELECT @SEnabled = ISNULL(IsEnabled,0) FROM dbo.Dep_SupperProductSetting WITH (NOLOCK) WHERE CustID = @Srecommend AND ProductId=@ProductId
 
 	IF (@SEnabled = 0)
 		SELECT @IsEnable_Old = 0
@@ -47,35 +50,32 @@ BEGIN
 	DECLARE @CustIDs VARCHAR(20)
 	SELECT @CustIDs = CONVERT(VARCHAR(20), @CustID)
 
+
 	CREATE TABLE #CustList (CustID INT)
+
 	INSERT INTO #CustList (CustID)
 	SELECT val FROM dbo.strSplit(@CustIDs,',')
-
 	IF(@@ERROR<>0)
 	BEGIN
-		SELECT @ErrMsg='Could not update'
-		RETURN
+	SELECT @ErrMsg='Could not update'
+	RETURN
 	END
 
 	UPDATE dbo.Dep_CustProductSetting WITH (ROWLOCK, UPDLOCK)
 	SET IsEnabled = @IsEnabled
-	WHERE ProductId = @ProductId AND CustID IN (SELECT CustID FROM #CustList)
+	WHERE ProductId=@ProductId AND CustID IN (SELECT CustID FROM #CustList)
 		AND @ProductId NOT IN (14,17)
-
 	IF(@@ERROR<>0)
 	BEGIN
-		SELECT @ErrMsg='Could not update'
-		RETURN
+	SELECT @ErrMsg='Could not update'
+	RETURN
 	END
 	IF @ProductId NOT IN (14,17)
 	BEGIN
 		INSERT INTO dbo.Dep_CustProductSetting (CustID, ProductId, IsEnabled)
 		SELECT CustID, @ProductId, @IsEnabled	
 		FROM #CustList c
-		WHERE NOT EXISTS(SELECT 1 
-						FROM dbo.Dep_CustProductSetting cs WITH (NOLOCK) 
-						WHERE cs.CustID = c.CustID AND cs.ProductId = @ProductId)
-
+		WHERE NOT EXISTS(SELECT 1 FROM dbo.Dep_CustProductSetting cs WITH (NOLOCK) WHERE cs.CustID = c.CustID AND cs.ProductId=@ProductId)
 		IF(@@ERROR<>0)
 		BEGIN
 			SELECT @ErrMsg='Could not insert'
@@ -83,7 +83,7 @@ BEGIN
 		END
 	END
 	--- MicroGaming
-	ELSE IF (@ProductID IN (14,17))
+	ELSE IF (@ProductID = 14)
 		BEGIN 
 			SELECT @IsEnable_Old =  CASE ISNULL(DisableMicrogameLC,0) WHEN 1 THEN 0 ELSE 1 END
 			FROM dbo.CustInfo WITH (NOLOCK)
@@ -91,8 +91,7 @@ BEGIN
 			
 			UPDATE dbo.CustInfo WITH (ROWLOCK,UPDLOCK)
 			SET DisableMicrogameLC = CASE @IsEnabled WHEN 1 THEN 0 ELSE 1 END
-										WHEN @ProductID = 17 THEN ~@IsEnabled END --CASE @IsEnabled WHEN 1 THEN 0 ELSE 1 END
-			WHERE CustID = @CustID
+			WHERE CustID = @CustID	
 		END
 	ELSE IF (@ProductID = 17)
 		BEGIN 
@@ -106,21 +105,21 @@ BEGIN
 		END	
 	-- Write log
 	SET @endRun = GETDATE()
-	SET @duration  = DATEDIFF(MILLISECOND, @startRun, @endRun)
+	SET @duration  = DATEDIFF(MILLISECOND,@startRun,@endRun)
 
-	SELECT @LogSPData = '<Lrf_3rdProductUpdCustStatus CustID="'+ COALESCE(CAST(@CustID as VARCHAR(50)), SPACE(1)) 
-		+ '" ' + 'ProductId="'+ COALESCE(CAST(@ProductId as VARCHAR(20)), SPACE(1)) 
-		+ '" ' + 'IsEnabled="'+ COALESCE(CAST(@IsEnabled as VARCHAR(1)), SPACE(1)) 
-		+ '" ' + 'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)), SPACE(1)) 
-		+ '" ' + 'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)), SPACE(1)) 
-		+ '" ' + 'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(8000)), SPACE(1))+ '" />'
+	SELECT @LogSPData = '<Lrf_3rdProductUpdCustStatus CustID="'+ COALESCE(CAST(@CustID as VARCHAR(50)),SPACE(1)) + '" ' +
+						'ProductId="'+ COALESCE(CAST(@ProductId as VARCHAR(20)),SPACE(1)) + '" ' +
+						'IsEnabled="'+ COALESCE(CAST(@IsEnabled as VARCHAR(1)),SPACE(1)) + '" ' +
+						'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
+						'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +						
+						'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(8000)),SPACE(1))+ '" />'
 
-	SELECT @TrackingValue2 = '<Lrf_3rdProductUpdCustStatus CustID="'+ COALESCE(CAST(@CustID as VARCHAR(50)), SPACE(1)) 
-		+ '" ' + 'ProductId="'+ COALESCE(CAST(@ProductId as VARCHAR(20)), SPACE(1)) 
-		+ '" ' + 'IsEnabled="'+ COALESCE(CAST(@IsEnable_Old as VARCHAR(1)), SPACE(1)) 
-		+ '" ' + 'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)), SPACE(1)) 
-		+ '" ' + 'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)), SPACE(1)) 
-		+ '" ' + 'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(8000)), SPACE(1))+ '" />'
+	SELECT @TrackingValue2 = '<Lrf_3rdProductUpdCustStatus CustID="'+ COALESCE(CAST(@CustID as VARCHAR(50)),SPACE(1)) + '" ' +
+						'ProductId="'+ COALESCE(CAST(@ProductId as VARCHAR(20)),SPACE(1)) + '" ' +
+						'IsEnabled="'+ COALESCE(CAST(@IsEnable_Old as VARCHAR(1)),SPACE(1)) + '" ' +
+						'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
+						'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +						
+						'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(8000)),SPACE(1))+ '" />'
 
 	BEGIN TRY
 	    EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP 
@@ -141,7 +140,5 @@ BEGIN
 				    @duration = @duration
     END CATCH
 END
-
-GO 
- GRANT EXECUTE ON [dbo].[Lrf_3rdProductUpdCustStatus] TO [bodbLicenseeNet]
-GO 
+GO
+GRANT EXECUTE ON [dbo].[Lrf_3rdProductUpdCustStatus] TO [bodbLicenseeNet] AS [dbo]
