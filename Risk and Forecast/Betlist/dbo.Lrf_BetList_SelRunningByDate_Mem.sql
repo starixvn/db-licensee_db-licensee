@@ -68,6 +68,7 @@ AS
 		- 20151029@Kos: Change ProductId/SportType of Microgaming RNG Game
 		- 20151203@Kos: Change odds, modds data type from SMALLMONEY to MONEY [Redmine: #48660]
 		- 20151225@Kos: Support RNG Casino Single Wallet [Redmine: #48958]
+		- 20160216@Kos: Support yesterday running ticket [Redmine: #52277]
 */
 BEGIN
 
@@ -856,7 +857,7 @@ BEGIN
 	-- Microgaming RNG Casino, RNG Casino Single Wallet
 	IF @ShowCS = 1 OR @ShowMGCRNG = 1
 	BEGIN
-		-- Today running ticket
+		-- Yesterday and today running ticket
 		INSERT INTO #BetListSelRunningByDateMem
 		SELECT
 			CASE
@@ -905,7 +906,8 @@ BEGIN
 			INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
 		WHERE
 			b.transdate BETWEEN @FromDate AND @ToDate
-			AND b.winlostdate = DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- today summary ticket
+			AND b.winlostdate BETWEEN DATEADD(DAY, DATEDIFF(DAY, 1, GETDATE()), 0) 
+				AND DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)		-- yesterday and today
 			AND b.custid = @CustID 
 			AND (sbt.ProductID = 17
 				OR (sbt.ProductID = 6 AND sbt.SubProduct <> ''))
@@ -924,12 +926,13 @@ BEGIN
 			b.matchid,
 			b.transdesc,
 			sbt.ProductID
+		OPTION (RECOMPILE)
 	END
 
 	-- AG Casino
 	IF @ShowAGC = 1
 	BEGIN
-		-- Today running ticket
+		-- Yesterday and today running ticket
 		INSERT INTO #BetListSelRunningByDateMem
 		SELECT
 			250 AS sporttype,
@@ -972,7 +975,8 @@ BEGIN
 			INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
 		WHERE
 			b.transdate BETWEEN @FromDate AND @ToDate
-			AND b.winlostdate = DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- today summary ticket
+			AND b.winlostdate BETWEEN DATEADD(DAY, DATEDIFF(DAY, 1, GETDATE()), 0) 
+				AND DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)		-- yesterday and today
 			AND b.custid = @CustID 
 			AND sbt.ProductID = 11
 			AND sbt.EventType = 0
@@ -987,6 +991,7 @@ BEGIN
 			b.winlostdate,
 			b.IP,
 			b.currency
+		OPTION (RECOMPILE)
 	END
 
 	-- check for filtering by currency

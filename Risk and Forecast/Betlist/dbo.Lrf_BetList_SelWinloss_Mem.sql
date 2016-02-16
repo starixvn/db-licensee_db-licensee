@@ -87,6 +87,7 @@ AS
 		- 20151203@Kos: Change odds, modds data type from SMALLMONEY to MONEY [Redmine: #48660]
 		- 20151224@Jim: Fix bug [Redmine: #49885]
 		- 20151225@Kos: Support RNG Casino Single Wallet [Redmine: #48958]
+		- 20160216@Kos: Support yesterday running ticket [Redmine: #52277]
 
 	Param's Explanation:
 		+ @drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -1017,14 +1018,14 @@ BEGIN
 				INNER JOIN @SportBettype AS sbt ON b.Bettype = sbt.Bettype
 			WHERE
 				b.winlostdate BETWEEN @TempFromDate AND @tdate 
-				AND b.winlostdate <> DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- not today
+				AND b.winlostdate < DATEADD(DAY, DATEDIFF(DAY, 1, GETDATE()), 0)	-- not yesterday and today
 				AND b.custid = @custid 
 				AND (@currencyID = 0 OR b.currency = @currencyID) 
 				AND (sbt.ProductID = 17 
 					OR (sbt.ProductID = 6 AND sbt.SubProduct <> ''))
 				AND b.statusID IN (111, 112, 113)
 
-			IF @tdate >= DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)
+			IF @tdate >= DATEADD(DAY, DATEDIFF(DAY, 1, GETDATE()), 0)				-- yesterday
 				AND @TempFromDate <= DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- today
 			BEGIN
 				-- Today settled ticket
@@ -1082,8 +1083,9 @@ BEGIN
 					dbo.bettransRnG AS brng WITH (NOLOCK)
 					INNER JOIN dbo.bettrans AS b WITH (NOLOCK) ON brng.RefNo = b.transid
 					INNER JOIN @SportBettype AS sbt ON b.Bettype = sbt.Bettype
-				WHERE
-					b.winlostdate = DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- today
+				WHERE b.winlostdate BETWEEN @TempFromDate AND @tdate
+					AND b.winlostdate BETWEEN DATEADD(DAY, DATEDIFF(DAY, 1, GETDATE()), 0) 
+						AND DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)		-- yesterday and today
 					AND b.custid = @custid 
 					AND (@currencyID = 0 OR b.currency = @currencyID) 
 					AND (sbt.ProductID = 17
@@ -1101,6 +1103,7 @@ BEGIN
 					b.matchid,
 					b.transdesc,
 					sbt.ProductID
+				OPTION (RECOMPILE)
 			END
 		END
 
@@ -1153,13 +1156,13 @@ BEGIN
 				INNER JOIN @SportBettype AS sbt ON b.Bettype = sbt.Bettype
 			WHERE
 				b.winlostdate BETWEEN @TempFromDate AND @tdate 
-				AND b.winlostdate <> DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- not today
+				AND b.winlostdate <> DATEADD(DAY, DATEDIFF(DAY, 1, GETDATE()), 0)	-- not yesterday and today
 				AND b.custid = @custid 
 				AND (@currencyID = 0 OR b.currency = @currencyID) 
 				AND sbt.ProductID = 11 
 				AND b.statusID IN (111, 112, 113)
 
-			IF @tdate >= DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)
+			IF @tdate >= DATEADD(DAY, DATEDIFF(DAY, 1, GETDATE()), 0)				-- yesterday
 				AND @TempFromDate <= DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- today
 			BEGIN
 				-- Today settled ticket
@@ -1211,8 +1214,9 @@ BEGIN
 					dbo.bettransLC AS blc WITH (NOLOCK)
 					INNER JOIN dbo.bettrans AS b WITH (NOLOCK) ON blc.RefNo = b.transid
 					INNER JOIN @SportBettype AS sbt ON b.Bettype = sbt.Bettype
-				WHERE
-					b.winlostdate = DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- today
+				WHERE b.winlostdate BETWEEN @TempFromDate AND @tdate
+					AND b.winlostdate BETWEEN DATEADD(DAY, DATEDIFF(DAY, 1, GETDATE()), 0) 
+						AND DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)		-- yesterday and today
 					AND b.custid = @custid 
 					AND (@currencyID = 0 OR b.currency = @currencyID) 
 					AND sbt.ProductID = 11 
@@ -1226,6 +1230,7 @@ BEGIN
 					b.winlostdate,
 					b.IP,
 					b.currency
+				OPTION (RECOMPILE)
 			END
 		END
 	END

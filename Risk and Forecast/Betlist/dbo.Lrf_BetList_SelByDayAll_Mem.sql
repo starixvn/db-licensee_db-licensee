@@ -70,6 +70,7 @@ AS
 		- 20151124@Kos: Support Microgaming RNG Casino Jackpot Grand Prize ticket
 		- 20151203@Kos: Change odds, modds data type from SMALLMONEY to MONEY [Redmine: #48660]
 		- 20151228@Kos: Support RNG Casino Single Wallet
+		- 20160216@Kos: Support yesterday running ticket [Redmine: #52277]
 
 	Param's Explanation: 
 		+ @transtype:
@@ -1293,7 +1294,7 @@ BEGIN
 		-- Microgaming RNG Casino, RNG Casino Single Wallet
 		IF @transtype = 1
 		BEGIN
-			IF @fromdate <> DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- not today settled ticket
+			IF @fromdate < DATEADD(DAY, DATEDIFF(DAY, 1, GETDATE()), 0)	-- not yesterday and today settled ticket
 			BEGIN
 				INSERT INTO @Data 
 				SELECT
@@ -1357,7 +1358,7 @@ BEGIN
 					AND sbt.EventType = 0
 					AND b.statusID IN (SELECT [statusID] FROM @tmpStatus)
 			END
-			ELSE	-- today settled ticket
+			ELSE	-- yesterday and today settled ticket
 			BEGIN
 				INSERT INTO @Data 
 				SELECT
@@ -1438,11 +1439,13 @@ BEGIN
 					b.matchid,
 					b.transdesc,
 					sbt.ProductID
+				OPTION (RECOMPILE)
 			END
 		END
 		ELSE IF @transtype = 3
 		BEGIN
-			IF @fromdate = DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)		-- today running ticket
+			IF @fromdate BETWEEN DATEADD(DAY, DATEDIFF(DAY, 1, GETDATE()), 0) 
+				AND DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)		-- yesterday and today running ticket
 			BEGIN
 				INSERT INTO @Data 
 				SELECT
@@ -1518,6 +1521,7 @@ BEGIN
 					b.matchid,
 					b.transdesc,
 					sbt.ProductID
+				OPTION (RECOMPILE)
 			END
 		END
 		ELSE IF @transtype = 4	-- Jackpot Win
@@ -1581,7 +1585,7 @@ BEGIN
 		-- AG Casino
 		IF @transtype = 1
 		BEGIN
-			IF @fromdate <> DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)	-- not today settled ticket
+			IF @fromdate < DATEADD(DAY, DATEDIFF(DAY, 1, GETDATE()), 0)	-- not yesterday and today settled ticket
 			BEGIN
 				INSERT INTO @Data 
 				SELECT
@@ -1638,7 +1642,7 @@ BEGIN
 					AND sbt.EventType = 0
 					AND b.statusID IN (SELECT [statusID] FROM @tmpStatus)
 			END
-			ELSE	-- today settled ticket
+			ELSE	-- yesterday and today settled ticket
 			BEGIN
 				INSERT INTO @Data 
 				SELECT
@@ -1709,11 +1713,13 @@ BEGIN
 					b.IP,
 					b.Username,
 					b.currency
+				OPTION (RECOMPILE)
 			END
 		END
 		ELSE IF @transtype = 3
 		BEGIN
-			IF @fromdate = DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)		-- today running ticket
+			IF @fromdate BETWEEN DATEADD(DAY, DATEDIFF(DAY, 1, GETDATE()), 0) 
+				AND DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)		-- yesterday and today running ticket
 			BEGIN
 				INSERT INTO @Data 
 				SELECT
@@ -1779,6 +1785,7 @@ BEGIN
 					b.IP,
 					b.Username,
 					b.currency
+				OPTION (RECOMPILE)
 			END
 		END
 
