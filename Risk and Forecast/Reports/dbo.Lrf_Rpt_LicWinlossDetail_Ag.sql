@@ -57,6 +57,7 @@ AS
 		- 20151108@Jim: Separated MicroGaming into 2 product
 		- 20151230@Patrick: Add more output BuyBackAmt & BABuyBackAmt
 		- 20151228@Bobby: Support MBC RNG Casino sporttype(208,209,210)
+		- 20160216@Victor: Add Bettrade Actual Stake amount [Redmine: #51264]
 		
 	Param's Explanation:  
 	  + @CustID: SuperID  
@@ -90,6 +91,7 @@ CREATE TABLE #SAgWinLoss (
 	TurnoverMGCLC		MONEY,
 	TurnoverMGCRnG		MONEY,
 	TurnoverAGC		MONEY,
+	BTActualStake	MONEY,
 	Winlost			MONEY,
 	--LicenseeWL		MONEY, --Sportbook and NumberGame
 	LicenseeWLSB	MONEY,
@@ -293,6 +295,7 @@ BEGIN
 			0 AS tunroverMGCLC,
 			0 AS tunroverMGCRnG,
 			0 AS tunroverAGC,
+			0 AS BTActualStake,
 		SUM(b.winlost - b.actual_stake) AS Winlost,  
 		--0 AS LicenseeWL,
 		0 AS LicenseeWLSB,
@@ -367,6 +370,7 @@ BEGIN
 			0 tunroverMGCLC,
 			0 tunroverMGCRnG,
 			0 tunroverAGC,
+			0 BTActualStake,
 			SUM(b.winlost - b.actual_stake) AS Winlost,  
 			-- - SUM(b.winlost - b.actual_stake) AS LicenseeWL,
 			- SUM (b.winlost - b.actual_stake)  AS LicenseeWLSB,
@@ -437,6 +441,7 @@ BEGIN
 			0 tunroverMGCLC,
 			0 tunroverMGCRnG,
 			0 tunroverAGC,
+			SUM(CASE WHEN b.bettype = 902 THEN b.winlost ELSE 0 END) AS BTActualStake,
 			SUM(CASE WHEN b.bettype =903 THEN 0
 			ELSE (b.winlost-b.actual_stake) END) AS Winlost,  
 			-- - SUM(b.winlost - b.actual_stake) AS LicenseeWL,
@@ -588,6 +593,7 @@ BEGIN
 				ELSE 1 END
 			ELSE 0 END	
 			) turnoverAGC,
+			0 AS BTActualStake,
 			SUM(b.winlost - b.actual_stake) AS Winlost,  
 			-- - SUM(b.winlost - b.actual_stake) AS LicenseeWL,
 			0  AS LicenseeWLSB,
@@ -660,6 +666,7 @@ BEGIN
 			0 as turnoverMGCLC,
 			0 as turnoverMGCRnG,
 			0 as turnoverAGC,
+			0 AS BTActualStake,
 			SUM(b.winlost - b.actual_stake) AS Winlost,  
 			--0 AS LicenseeWL,
 			0 AS LicenseeWLSB,
@@ -737,6 +744,7 @@ BEGIN
 			0 AS turnoverMGCLC,
 			0 AS turnoverMGCRnG,
 			0 AS turnoverAGC,
+			0 AS BTActualStake,
 			SUM(b.winlost),  
 			--0 AS LicenseeWL,
 			0 AS LicenseeWLSB,
@@ -891,6 +899,7 @@ BEGIN
 						ELSE 1 END
 					ELSE 1 END
 			ELSE 0 END) AS turnoverAGC,
+			0 AS BTActualStake,
 			SUM(b.winlost),  
 			-- - SUM(CASE WHEN ( b.sporttype IN (0,161,162,180))  THEN b.winlost ELSE 0 END) AS LicenseeWL ,
 			- SUM(CASE WHEN b.sporttype=0 THEN b.winlost ELSE 0 END) AS LicenseeWLSB,
@@ -956,6 +965,7 @@ BEGIN
 				0 turnoverMGCLC,
 				0 turnoverMGCRnG,
 				0 turnoverAGC,
+				SUM(CASE WHEN b.bettype = 902 THEN b.winlost + BuyBackAmt + BABuyBackAmt ELSE 0 END) AS BTActualStake,
 				SUM(CASE WHEN b.bettype =903 THEN 0
 				ELSE b.winlost END) AS Winlost,  
 				0 AS LicenseeWLSB,
@@ -1040,6 +1050,7 @@ BEGIN
 			0 AS turnoverMGCLC,
 			0 AS turnoverMGCRnG,
 			0 AS turnoverAGC,
+			0 AS BTActualStake,
 			SUM(b.winlost),  
 			--0 AS LicenseeWL,
 			0 AS LicenseeWLSB,
@@ -1194,6 +1205,7 @@ BEGIN
 						ELSE 1 END
 					ELSE 1 END
 			ELSE 0 END) AS turnoverAGC,
+			0 AS BTActualStake,
 			SUM(b.winlost),  
 			- SUM(CASE WHEN b.sporttype=0 THEN b.winlost ELSE 0 END) AS LicenseeWLSB,
 			0 AS LicenseeWLBA,
@@ -1257,6 +1269,7 @@ BEGIN
 				0 turnoverMGCLC,
 				0 turnoverMGCRnG,
 				0 turnoverAGC,
+				0 AS BTActualStake,
 				SUM(CASE WHEN b.bettype =903 THEN 0
 				ELSE b.winlost END) AS Winlost,    
 				0 AS LicenseeWLSB,
@@ -1329,6 +1342,7 @@ WHERE exchangeid IN (SELECT DISTINCT Currency FROM #SAgWinLoss)
 	   SUM(TurnoverMGCLC)       AS TurnoverMGCLC,	
 	   SUM(TurnoverMGCRnG)       AS TurnoverMGCRnG,
 	   SUM(TurnoverAGC)       AS TurnoverAGC,
+	   SUM(BTActualStake)	AS BTActualStake,
 	   SUM(Winlost)		 AS Winlost,  
 	   --SUM(LicenseeWL)   AS LicenseeWL,
 	   SUM(LicenseeWLSB) AS LicenseeWLSB,
@@ -1400,6 +1414,7 @@ WHERE exchangeid IN (SELECT DISTINCT Currency FROM #SAgWinLoss)
 	   CAST(SUM(TurnoverMGCLC*e.USD)    AS MONEY)     AS TurnoverMGCLCUSD,
 	   CAST(SUM(TurnoverMGCRnG*e.USD)    AS MONEY)     AS TurnoverMGCRnGUSD,
 	   CAST(SUM(TurnoverAGC*e.USD)    AS MONEY)     AS TurnoverAGCUSD,
+	   CAST(SUM(BTActualStake*e.USD)    AS MONEY)     AS BTActualStakeUSD,
 	   CAST(SUM(Winlost*e.USD)	     AS MONEY)          AS WinlostUSD,  
 	   --CAST(SUM(LicenseeWL*e.USD)    AS MONEY)          AS LicenseeWLUSD,
 	   CAST(SUM(LicenseeWLSB*e.USD)  AS MONEY)          AS LicenseeWLSBUSD,
@@ -1439,6 +1454,7 @@ WHERE exchangeid IN (SELECT DISTINCT Currency FROM #SAgWinLoss)
 	   CAST(SUM(TurnoverMGCLC*e.EUR)    AS MONEY)     AS TurnoverMGCLCEUR,
 	   CAST(SUM(TurnoverMGCRnG*e.EUR)    AS MONEY)     AS TurnoverMGCRnGEUR,
 	   CAST(SUM(TurnoverAGC*e.EUR)    AS MONEY)     AS TurnoverAGCEUR,
+	   CAST(SUM(BTActualStake*e.EUR)    AS MONEY)     AS BTActualStakeEUR,
 	   CAST(SUM(Winlost*e.EUR)	     AS MONEY)          AS WinlostEUR,  
 	   --CAST(SUM(LicenseeWL*e.EUR)    AS MONEY)          AS LicenseeWLEUR,
 	   CAST(SUM(LicenseeWLSB*e.EUR)  AS MONEY)			AS LicenseeWLSBEUR,
@@ -1478,6 +1494,7 @@ WHERE exchangeid IN (SELECT DISTINCT Currency FROM #SAgWinLoss)
 	   CAST(SUM(TurnoverMGCLC*e.GBP)    AS MONEY)     AS TurnoverMGCLCGBP,
 	   CAST(SUM(TurnoverMGCRnG*e.GBP)    AS MONEY)     AS TurnoverMGCRnGGBP,
 	   CAST(SUM(TurnoverAGC*e.GBP)    AS MONEY)     AS TurnoverAGCGBP,
+	   CAST(SUM(BTActualStake*e.GBP)    AS MONEY)     AS BTActualStakeGBP,
 	   CAST(SUM(Winlost*e.GBP)	     AS MONEY)          AS WinlostGBP,  
 	   --CAST(SUM(LicenseeWL*e.GBP)    AS MONEY)          AS LicenseeWLGBP,
 	   CAST(SUM(LicenseeWLSB*e.GBP)  AS MONEY)			AS LicenseeWLSBGBP,
