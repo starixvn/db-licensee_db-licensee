@@ -1156,7 +1156,7 @@ BEGIN
 				INNER JOIN @SportBettype AS sbt ON b.Bettype = sbt.Bettype
 			WHERE
 				b.winlostdate BETWEEN @TempFromDate AND @tdate 
-				AND b.winlostdate <> DATEADD(DAY, DATEDIFF(DAY, 1, GETDATE()), 0)	-- not yesterday and today
+				AND b.winlostdate < DATEADD(DAY, DATEDIFF(DAY, 1, GETDATE()), 0)	-- not yesterday and today
 				AND b.custid = @custid 
 				AND (@currencyID = 0 OR b.currency = @currencyID) 
 				AND sbt.ProductID = 11 
@@ -3199,6 +3199,7 @@ BEGIN
 		@ShowAGC		 = 1
 	*/
 END 
+
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinloss_Mem] TO [bodbLicenseeNet] 
