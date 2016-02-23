@@ -421,7 +421,7 @@ BEGIN
 				'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13) + 
 				'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13) + 
 				'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13) + 
-				'AND b.bettype NOT IN (9,29,1700,1800,1900,901,902,9031)' + CHAR(13) +
+				'AND b.bettype NOT IN (9,29,1700,1800,1900,901,902,903)' + CHAR(13) +
 				'AND b.CustomerCategory IN (-1, 1001)' + CHAR(13) +
 				'AND b.siteID =' + convert(VARCHAR(10), @LicenseeID) + CHAR(13) +
 				--'AND b.CurrencyID <> 20 ' + char(13) +
