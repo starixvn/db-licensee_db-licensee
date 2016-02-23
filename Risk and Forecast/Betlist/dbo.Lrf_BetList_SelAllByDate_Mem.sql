@@ -102,10 +102,12 @@ AS
 BEGIN
 	SET NOCOUNT ON;
 	
-	DECLARE @Recommend	INT
-		,@Today			SMALLDATETIME 
+	DECLARE @Recommend	INT,
+		@Today			DATETIME,
+		@Yesterday		DATETIME
 
-	SELECT @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
+	SELECT @Today = DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)
+		, @Yesterday = DATEADD(DAY, DATEDIFF(DAY, 1, GETDATE()), 0)
 	
 	IF @custid IS NULL
 	BEGIN
@@ -1219,7 +1221,7 @@ BEGIN
 				OR (sbt.ProductID = 6 AND sbt.SubProduct <> ''))
 			AND sbt.EventType = 0
 			AND b.transdate >= @FromDate AND b.transdate <= @ToDate 
-			AND b.winlostdate < DATEADD(DAY, DATEDIFF(DAY, 1, GETDATE()), 0)	-- not yesterday and today summary ticket
+			AND b.winlostdate < @Yesterday	-- not yesterday and today summary ticket
 			AND b.statusID NOT IN (0, 1)
 
 		-- Today running ticket
@@ -1280,8 +1282,7 @@ BEGIN
 				OR (sbt.ProductID = 6 AND sbt.SubProduct <> ''))
 			AND sbt.EventType = 0
 			AND b.transdate >= @FromDate AND b.transdate <= @ToDate 
-			AND b.winlostdate BETWEEN DATEADD(DAY, DATEDIFF(DAY, 1, GETDATE()), 0) 
-				AND DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)		-- yesterday and today
+			AND b.winlostdate BETWEEN @Yesterday AND @Today		-- yesterday and today
 			AND brng.statusID = 0
 		GROUP BY
 			b.transid,
@@ -1295,7 +1296,6 @@ BEGIN
 			b.matchid,
 			b.transdesc,
 			sbt.ProductID
-		OPTION (RECOMPILE)
 
 		-- Today settled ticket
 		INSERT INTO #BetListSelAllByDateMem
@@ -1359,8 +1359,7 @@ BEGIN
 				OR (sbt.ProductID = 6 AND sbt.SubProduct <> ''))
 			AND sbt.EventType = 0
 			AND b.transdate >= @FromDate AND b.transdate <= @ToDate 
-			AND b.winlostdate BETWEEN DATEADD(DAY, DATEDIFF(DAY, 1, GETDATE()), 0) 
-				AND DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)		-- yesterday and today
+			AND b.winlostdate BETWEEN @Yesterday AND @Today		-- yesterday and today
 			AND brng.statusID <> 0
 		GROUP BY
 			b.transid,
@@ -1375,7 +1374,6 @@ BEGIN
 			b.matchid,
 			b.transdesc,
 			sbt.ProductID
-		OPTION (RECOMPILE)
 	END
 
 	-- AG Casino
@@ -1431,7 +1429,7 @@ BEGIN
 			AND sbt.ProductID = 11
 			AND sbt.EventType = 0
 			AND b.transdate >= @FromDate AND b.transdate <= @ToDate 
-			AND b.winlostdate < DATEADD(DAY, DATEDIFF(DAY, 1, GETDATE()), 0)	-- not yesterday and today summary ticket
+			AND b.winlostdate < @Yesterday	-- not yesterday and today summary ticket
 			AND b.statusID NOT IN (0, 1)
 
 		-- Today running ticket
@@ -1485,8 +1483,7 @@ BEGIN
 			AND sbt.ProductID = 11
 			AND sbt.EventType = 0
 			AND b.transdate >= @FromDate AND b.transdate <= @ToDate 
-			AND b.winlostdate BETWEEN DATEADD(DAY, DATEDIFF(DAY, 1, GETDATE()), 0) 
-				AND DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)		-- yesterday and today
+			AND b.winlostdate BETWEEN @Yesterday AND @Today		-- yesterday and today
 			AND blc.statusID = 0
 		GROUP BY
 			b.transid,
@@ -1497,7 +1494,6 @@ BEGIN
 			b.winlostdate,
 			b.IP,
 			b.currency
-		OPTION (RECOMPILE)
 
 		-- Today settled ticket
 		INSERT INTO #BetListSelAllByDateMem
@@ -1554,8 +1550,7 @@ BEGIN
 			AND sbt.ProductID = 11
 			AND sbt.EventType = 0
 			AND b.transdate >= @FromDate AND b.transdate <= @ToDate 
-			AND b.winlostdate BETWEEN DATEADD(DAY, DATEDIFF(DAY, 1, GETDATE()), 0) 
-				AND DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)		-- yesterday and today
+			AND b.winlostdate BETWEEN @Yesterday AND @Today		-- yesterday and today
 			AND blc.statusID <> 0
 		GROUP BY
 			b.transid,
@@ -1567,7 +1562,6 @@ BEGIN
 			b.winlostdate,
 			b.IP,
 			b.currency
-		OPTION (RECOMPILE)
 	END
 
 	CREATE NONCLUSTERED INDEX IDX_Index_betlist ON #BetListSelAllByDateMem(Currency)

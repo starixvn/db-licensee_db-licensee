@@ -75,9 +75,11 @@ BEGIN
 
 	SET NOCOUNT ON;
 	
-	DECLARE @Today SMALLDATETIME 
+	DECLARE @Today		DATETIME
+		, @Yesterday	DATETIME
 	
-	SELECT @Today	= CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120)
+	SELECT @Today	= DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)
+		,@Yesterday	= DATEADD(DAY, DATEDIFF(DAY, 1, GETDATE()), 0)
 		,@TotalRows	= 0
 		,@ErrorCode	= 0
 		,@ErrorMsg	= ''
@@ -909,8 +911,7 @@ BEGIN
 			INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
 		WHERE
 			b.transdate BETWEEN @FromDate AND @ToDate
-			AND b.winlostdate BETWEEN DATEADD(DAY, DATEDIFF(DAY, 1, GETDATE()), 0) 
-				AND DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)		-- yesterday and today
+			AND b.winlostdate BETWEEN @Yesterday AND @Today		-- yesterday and today
 			AND b.custid = @CustID 
 			AND (sbt.ProductID = 17
 				OR (sbt.ProductID = 6 AND sbt.SubProduct <> ''))
@@ -929,7 +930,6 @@ BEGIN
 			b.matchid,
 			b.transdesc,
 			sbt.ProductID
-		OPTION (RECOMPILE)
 	END
 
 	-- AG Casino
@@ -978,8 +978,7 @@ BEGIN
 			INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
 		WHERE
 			b.transdate BETWEEN @FromDate AND @ToDate
-			AND b.winlostdate BETWEEN DATEADD(DAY, DATEDIFF(DAY, 1, GETDATE()), 0) 
-				AND DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)		-- yesterday and today
+			AND b.winlostdate BETWEEN @Yesterday AND @Today		-- yesterday and today
 			AND b.custid = @CustID 
 			AND sbt.ProductID = 11
 			AND sbt.EventType = 0
@@ -994,7 +993,6 @@ BEGIN
 			b.winlostdate,
 			b.IP,
 			b.currency
-		OPTION (RECOMPILE)
 	END
 
 	-- check for filtering by currency

@@ -1108,7 +1108,6 @@ BEGIN
 					b.matchid,
 					b.transdesc,
 					sbt.ProductID
-				OPTION (RECOMPILE)
 			END
 		END
 
@@ -1235,7 +1234,6 @@ BEGIN
 					b.winlostdate,
 					b.IP,
 					b.currency
-				OPTION (RECOMPILE)
 			END
 		END
 	END
@@ -3206,6 +3204,7 @@ BEGIN
 		@ShowAGC		 = 1
 	*/
 END 
+
 
 
 

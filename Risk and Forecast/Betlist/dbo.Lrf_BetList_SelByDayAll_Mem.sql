@@ -121,6 +121,12 @@ BEGIN
 		SELECT 113 
 	END
 
+	DECLARE @yesterday DATETIME
+		, @today DATETIME
+
+	SELECT @Today = DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)
+		, @Yesterday = DATEADD(DAY, DATEDIFF(DAY, 1, GETDATE()), 0)
+
 	CREATE TABLE #Currency (currencyID INT, LicenseeID INT)
 
 	INSERT INTO #currency
@@ -1302,7 +1308,7 @@ BEGIN
 		-- Microgaming RNG Casino, RNG Casino Single Wallet
 		IF @transtype = 1
 		BEGIN
-			IF @fromdate < DATEADD(DAY, DATEDIFF(DAY, 1, GETDATE()), 0)	-- not yesterday and today settled ticket
+			IF @fromdate < @yesterday	-- not yesterday and today settled ticket
 			BEGIN
 				INSERT INTO @Data 
 				SELECT
@@ -1447,13 +1453,11 @@ BEGIN
 					b.matchid,
 					b.transdesc,
 					sbt.ProductID
-				OPTION (RECOMPILE)
 			END
 		END
 		ELSE IF @transtype = 3
 		BEGIN
-			IF @fromdate BETWEEN DATEADD(DAY, DATEDIFF(DAY, 1, GETDATE()), 0) 
-				AND DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)		-- yesterday and today running ticket
+			IF @fromdate BETWEEN @yesterday AND @today		-- yesterday and today running ticket
 			BEGIN
 				INSERT INTO @Data 
 				SELECT
@@ -1529,7 +1533,6 @@ BEGIN
 					b.matchid,
 					b.transdesc,
 					sbt.ProductID
-				OPTION (RECOMPILE)
 			END
 		END
 		ELSE IF @transtype = 4	-- Jackpot Win
@@ -1593,7 +1596,7 @@ BEGIN
 		-- AG Casino
 		IF @transtype = 1
 		BEGIN
-			IF @fromdate < DATEADD(DAY, DATEDIFF(DAY, 1, GETDATE()), 0)	-- not yesterday and today settled ticket
+			IF @fromdate < @yesterday	-- not yesterday and today settled ticket
 			BEGIN
 				INSERT INTO @Data 
 				SELECT
@@ -1721,13 +1724,11 @@ BEGIN
 					b.IP,
 					b.Username,
 					b.currency
-				OPTION (RECOMPILE)
 			END
 		END
 		ELSE IF @transtype = 3
 		BEGIN
-			IF @fromdate BETWEEN DATEADD(DAY, DATEDIFF(DAY, 1, GETDATE()), 0) 
-				AND DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)		-- yesterday and today running ticket
+			IF @fromdate BETWEEN @yesterday AND @today		-- yesterday and today running ticket
 			BEGIN
 				INSERT INTO @Data 
 				SELECT
@@ -1793,7 +1794,6 @@ BEGIN
 					b.IP,
 					b.Username,
 					b.currency
-				OPTION (RECOMPILE)
 			END
 		END
 
@@ -1811,9 +1811,6 @@ BEGIN
 		DELETE @Data WHERE Sporttype = 1 AND Bettype = 903	
 		-- End Bet Trade
 	END	
-
-	DECLARE @Today SMALLDATETIME 
-	SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
 
 	SELECT * 
 	INTO #TempExchange 

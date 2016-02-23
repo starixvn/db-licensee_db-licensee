@@ -1000,7 +1000,7 @@ BEGIN
 		-- Microgaming RNG Casino, RNG Casino Single Wallet
 		IF @ShowCS = 1 OR @ShowMGCRNG = 1
 		BEGIN
-			-- Up to yesterday settled ticket)
+			-- Up to yesterday settled ticket
 			INSERT INTO #BetListByDateMem
 			SELECT
 				CASE
@@ -1137,7 +1137,6 @@ BEGIN
 					b.matchid,
 					b.transdesc,
 					sbt.ProductID
-				OPTION (RECOMPILE)
 			END
 		END
 
@@ -1264,7 +1263,6 @@ BEGIN
 					b.winlostdate,
 					b.IP,
 					b.currency
-				OPTION (RECOMPILE)
 			END
 		END
 	END
@@ -3187,6 +3185,7 @@ BEGIN
 	DROP TABLE #BetListByDateMem
 	DROP TABLE #TempBetList
 END
+
 
 
 
