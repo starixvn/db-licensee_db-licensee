@@ -103,8 +103,8 @@ BEGIN
 	SET NOCOUNT ON;
 	
 	DECLARE @Recommend	INT,
-		@Today			DATETIME,
-		@Yesterday		DATETIME
+		@Today			SMALLDATETIME,
+		@Yesterday		SMALLDATETIME
 
 	SELECT @Today = DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)
 		, @Yesterday = DATEADD(DAY, DATEDIFF(DAY, 1, GETDATE()), 0)
