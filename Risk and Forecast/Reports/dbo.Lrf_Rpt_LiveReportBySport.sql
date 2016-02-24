@@ -249,7 +249,8 @@ BEGIN
 				'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.liveindicator = 1)' + CHAR(13) + 
 				'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13) + 
 				'AND b.bettype NOT IN (9,29,901,902,903)' + CHAR(13) + 
-				'AND b.statusID IN (111,112,113)' + CHAR(13) + 'AND BA.transid IS NULL' + CHAR(13) + CASE 
+				'AND b.statusID IN (111,112,113)' + CHAR(13) + 'AND BA.transid IS NULL' + CHAR(13) + 
+				CASE 
 					WHEN @ProductCode = 'NG'
 						THEN 'AND b.bettype BETWEEN 81 AND 120 '
 					WHEN @ProductCode = 'SB'
@@ -327,7 +328,8 @@ BEGIN
 						THEN 'AND b.bettype = 73'
 					WHEN @ProductCode = 'KN'
 						THEN 'AND b.bettype BETWEEN 1501 AND 1599'
-					 
+					WHEN @ProductCode = 'CS'
+						THEN 'AND b.bettype = 71 AND b.bettype BETWEEN 2101 AND 2399' 
 					ELSE ''
 					END + CHAR(13) + '' + CHAR(13) + 'GROUP BY  b.winlostdate, b.currency,' + CHAR(13) + 'CASE' + CHAR(13) + 
 					'WHEN b.bettype = 9 THEN 101 --Mix Parlay' + CHAR(13) + 
@@ -351,7 +353,11 @@ BEGIN
 		BEGIN
 			SELECT @sql = @sql + '--Get data from rpt_Betting_BA for BA' + CHAR(13)
 
-			SELECT @sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13) + 'SELECT ' + CHAR(13) + 'b.rptDate,' + CHAR(13) + 'b.currencyID,' + CHAR(13) + 'CASE' + CHAR(13) + 'WHEN b.bettype = 9 THEN 101 --Mix Parlay' + CHAR(13) + 'WHEN b.bettype = 29 THEN 102 --System Parlay' + CHAR(13) + 'WHEN b.bettype = 10 THEN 103 -- Outright' + CHAR(13) + 'ELSE l.SportType END as Sporttype,' + CHAR(13) + 'sum(b.turnover) turnover,' + CHAR(13) + 'sum(b.winloss) winlost,' + CHAR(13) + '0 AS LicenseeWL,' + CHAR(13) + 'SUM (CommissionA) as Comm,' + CHAR(13) + 'SUM (CommissionP  ) as PlayerComm,' + CHAR(13) + '- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13) + 'sum(b.betcount) BetCount' + CHAR(13) + 'FROM bodb_Licensee.dbo.rpt_Betting_BA b WITH ( NOLOCK )' + CHAR(13) + 'INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID' + CHAR(13) + 'LEFT JOIN league l WITH (NOLOCK) ON b.LeagueID = l.LeagueID' + CHAR(13) + 'WHERE b.rptDate BETWEEN ''' + convert(VARCHAR(10), @FDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13) + 
+			SELECT @sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13) + 'SELECT ' + CHAR(13) + 'b.rptDate,' + CHAR(13) + 'b.currencyID,' + CHAR(13) + 'CASE' + CHAR(13) + 'WHEN b.bettype = 9 THEN 101 --Mix Parlay' + CHAR(13) + 'WHEN b.bettype = 29 THEN 102 --System Parlay' + CHAR(13) + 'WHEN b.bettype = 10 THEN 103 -- Outright' + CHAR(13) + 'ELSE l.SportType END as Sporttype,' + CHAR(13) + 'sum(b.turnover) turnover,' + CHAR(13) + 'sum(b.winloss) winlost,' + CHAR(13) + '0 AS LicenseeWL,' + CHAR(13) + 'SUM (CommissionA) as Comm,' + CHAR(13) + 'SUM (CommissionP  ) as PlayerComm,' + CHAR(13) + '- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13) + 'sum(b.betcount) BetCount' + CHAR(13) + 
+				'FROM bodb_Licensee.dbo.rpt_Betting_BA b WITH ( NOLOCK )' + CHAR(13) + 
+				'INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID' + CHAR(13) + 
+				'LEFT JOIN league l WITH (NOLOCK) ON b.LeagueID = l.LeagueID' + CHAR(13) + 
+				'WHERE b.rptDate BETWEEN ''' + convert(VARCHAR(10), @FDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13) + 
 				'AND b.status NOT IN (-1,103)' + CHAR(13) +
 				'AND b.bettype NOT IN (9,29,901,902,903)' + CHAR(13) +
 				'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13) + 
@@ -366,9 +372,12 @@ BEGIN
 					END + CHAR(13) + 'GROUP BY b.rptDate, b.currencyID, ' + CHAR(13) + 'CASE' + CHAR(13) + 'WHEN b.bettype = 9 THEN 101 --Mix Parlay' + CHAR(13) + 'WHEN b.bettype = 29 THEN 102 --System Parlay' + CHAR(13) + 'WHEN b.bettype = 10 THEN 103 -- Outright' + CHAR(13) + 'ELSE l.SportType END ' + CHAR(13)
 			
 			-- Parlay for BA
-			SELECT @sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13) + 'SELECT ' + CHAR(13) + 'b.rptDate,' + CHAR(13) + 'b.currencyID,' + CHAR(13) + 'CASE' + CHAR(13) + 'WHEN b.bettype = 9 THEN 101 --Mix Parlay' + CHAR(13) + 'WHEN b.bettype = 29 THEN 102 --System Parlay' + CHAR(13)+ 'END as Sporttype,' + CHAR(13) + 'sum(b.turnover) turnover,' + CHAR(13) + 'sum(b.winloss) winlost,' + CHAR(13) + '0 AS LicenseeWL,' + CHAR(13) + 'SUM (CommissionA) as Comm,' + CHAR(13) + 'SUM (CommissionP  ) as PlayerComm,' + CHAR(13) + '- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13) + 'sum(b.betcount) BetCount' + CHAR(13) + 'FROM bodb_LicenseeReport.dbo.rpt_BettingParlay b WITH ( NOLOCK )' + CHAR(13) + 'INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID' + CHAR(13) + 'WHERE b.rptDate BETWEEN ''' + convert(VARCHAR(10), @FDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13) + 
+			SELECT @sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13) + 'SELECT ' + CHAR(13) + 'b.rptDate,' + CHAR(13) + 'b.currencyID,' + CHAR(13) + 'CASE' + CHAR(13) + 'WHEN b.bettype = 9 THEN 101 --Mix Parlay' + CHAR(13) + 'WHEN b.bettype = 29 THEN 102 --System Parlay' + CHAR(13)+ 'END as Sporttype,' + CHAR(13) + 'sum(b.turnover) turnover,' + CHAR(13) + 'sum(b.winloss) winlost,' + CHAR(13) + '0 AS LicenseeWL,' + CHAR(13) + 'SUM (CommissionA) as Comm,' + CHAR(13) + 'SUM (CommissionP  ) as PlayerComm,' + CHAR(13) + '- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13) + 'sum(b.betcount) BetCount' + CHAR(13) + 
+			'FROM bodb_LicenseeReport.dbo.rpt_BettingParlay b WITH ( NOLOCK )' + CHAR(13) + 
+			'INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID' + CHAR(13) + 
+			'WHERE b.rptDate BETWEEN ''' + convert(VARCHAR(10), @FDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13) + 
 			'AND b.status NOT IN (-1,103)' + CHAR(13) +
-			'AND b.bettype NOT IN (901,902,903)' + CHAR(13) +
+			'AND b.bettype IN (9 ,29)' + CHAR(13) +
 			'AND b.isBA = 1' + CHAR(13) +
 			'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13) + 
 			'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13) + 
@@ -396,36 +405,37 @@ BEGIN
 		BEGIN
 			SELECT @sql = @sql + '--Get data from rpt_Betting for non-BA' + CHAR(13)
 
-			SELECT @sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13) + 'SELECT ' + CHAR(13) + 'b.rptDate,' + CHAR(13) + 'b.currencyID,' + CHAR(13) + 
-							'CASE 
-								  WHEN b.bettype  = 10 	 THEN 103
-								  WHEN b.bettype  = 73	THEN 252
-								  WHEN b.bettype BETWEEN 81 AND 120 THEN 161
-								  WHEN b.bettype BETWEEN 1501 AND 1599 THEN 202
-								  WHEN b.bettype = 71 THEN 251 
-								  WHEN b.bettype BETWEEN 2101 AND 2199 THEN 208 
-								  WHEN b.bettype BETWEEN 2201 AND 2299 THEN 209 
-								  WHEN b.bettype BETWEEN 2301 AND 2399 THEN 210 
-								  ELSE ISNULL(l.sporttype,0) 
-								END	AS SportType,' + CHAR(13) + 
-							'SUM(b.turnover * CASE WHEN b.bettype=33 AND b.status IN (114,115) THEN 0.5 ELSE 1 END) turnover,' + CHAR(13) + 
-							'sum(b.winloss) winlost,' + CHAR(13) + 
-							'SUM(CASE WHEN bettype BETWEEN 31 AND 33 THEN b.WinlossA ELSE  -1 * b.winloss END) AS LicenseeWL,' + CHAR(13) + 
-							'sum(b.CommissionA) Comm,' + CHAR(13) + 'sum( b.CommissionP  ) PlayerComm,' + CHAR(13) + 
-							'- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13) + 
-							'sum(b.betcount) BetCount' + CHAR(13) + 
-							'FROM bodb_Licensee.dbo.rpt_Betting b WITH ( NOLOCK )' + CHAR(13) + 
-							'INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID' + CHAR(13) + 
-							'LEFT JOIN league l WITH (NOLOCK) ON b.LeagueID = l.LeagueID' + CHAR(13) + 
+			SELECT @sql = @sql + 
+				'INSERT INTO #tmpWinloss' + CHAR(13) + 'SELECT ' + CHAR(13) + 'b.rptDate,' + CHAR(13) + 'b.currencyID,' + CHAR(13) + 
+					'CASE 
+						  WHEN b.bettype  = 10 	 THEN 103
+						  WHEN b.bettype  = 73	THEN 252
+						  WHEN b.bettype BETWEEN 81 AND 120 THEN 161
+						  WHEN b.bettype BETWEEN 1501 AND 1599 THEN 202
+						  WHEN b.bettype = 71 THEN 251 
+						  WHEN b.bettype BETWEEN 2101 AND 2199 THEN 208 
+						  WHEN b.bettype BETWEEN 2201 AND 2299 THEN 209 
+						  WHEN b.bettype BETWEEN 2301 AND 2399 THEN 210 
+						  ELSE ISNULL(l.sporttype,0) 
+						END	AS SportType,' + CHAR(13) + 
+					'SUM(b.turnover * CASE WHEN b.bettype=33 AND b.status IN (114,115) THEN 0.5 ELSE 1 END) turnover,' + CHAR(13) + 
+					'sum(b.winloss) winlost,' + CHAR(13) + 
+					'SUM(CASE WHEN bettype BETWEEN 31 AND 33 THEN b.WinlossA ELSE  -1 * b.winloss END) AS LicenseeWL,' + CHAR(13) + 
+					'sum(b.CommissionA) Comm,' + CHAR(13) + 'sum( b.CommissionP  ) PlayerComm,' + CHAR(13) + 
+					'- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13) + 
+					'sum(b.betcount) BetCount' + CHAR(13) + 
+				'FROM bodb_Licensee.dbo.rpt_Betting b WITH ( NOLOCK )' + CHAR(13) + 
+					'INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID' + CHAR(13) + 
+					'LEFT JOIN league l WITH (NOLOCK) ON b.LeagueID = l.LeagueID' + CHAR(13) + 
 				'WHERE b.rptDate BETWEEN ''' + convert(VARCHAR(10), @FDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13) + 'AND b.status NOT IN (-1,103)' + CHAR(13) + 
-				'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13) + 
-				'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13) + 
-				'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13) + 
-				'AND b.bettype NOT IN (9,29,1700,1800,1900,901,902,903)' + CHAR(13) +
-				'AND b.CustomerCategory IN (-1, 1001)' + CHAR(13) +
-				'AND b.siteID =' + convert(VARCHAR(10), @LicenseeID) + CHAR(13) +
-				--'AND b.CurrencyID <> 20 ' + char(13) +
-				CASE 
+					'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13) + 
+					'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13) + 
+					'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13) + 
+					'AND b.bettype NOT IN (9,29,1700,1800,1900,901,902,903)' + CHAR(13) +
+					'AND b.CustomerCategory IN (-1, 1001)' + CHAR(13) +
+					'AND b.siteID =' + convert(VARCHAR(10), @LicenseeID) + CHAR(13) +
+					--'AND b.CurrencyID <> 20 ' + char(13) +
+					CASE 
 					WHEN @CurrencyID <> 0
 						THEN 'AND b.CurrencyID =' + convert(VARCHAR(10), @CurrencyID)
 					ELSE ''
@@ -462,29 +472,30 @@ BEGIN
 								  ELSE ISNULL(l.sporttype,0)  
 								END' + CHAR(13)
 			-- parlay for SB
-			SELECT @sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13) + 'SELECT ' + CHAR(13) + 'b.rptDate,' + CHAR(13) + 'b.currencyID,' + CHAR(13) + 
-							'CASE WHEN b.bettype = 9    THEN 101 
-								  WHEN b.bettype  = 29   THEN 102
-								END		
-							SportType,' + CHAR(13) + 
-							'SUM(b.turnover) turnover,' + CHAR(13) + 
-							'sum(b.winloss) winlost,' + CHAR(13) + 
-							'SUM(-1 * b.winloss) AS LicenseeWL,' + CHAR(13) + 
-							'sum(b.CommissionA) Comm,' + CHAR(13) + 'sum( b.CommissionP  ) PlayerComm,' + CHAR(13) + 
-							'- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13) + 
-							'sum(b.betcount) BetCount' + CHAR(13) + 
-							'FROM bodb_LicenseeReport.dbo.rpt_BettingParlay b WITH ( NOLOCK )' + CHAR(13) + 
-							'INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID' + CHAR(13) + 
+			SELECT @sql = @sql + 
+				'INSERT INTO #tmpWinloss' + CHAR(13) + 'SELECT ' + CHAR(13) + 'b.rptDate,' + CHAR(13) + 'b.currencyID,' + CHAR(13) + 
+					'CASE WHEN b.bettype = 9    THEN 101 
+						  WHEN b.bettype  = 29   THEN 102
+						END		
+					SportType,' + CHAR(13) + 
+					'SUM(b.turnover) turnover,' + CHAR(13) + 
+					'sum(b.winloss) winlost,' + CHAR(13) + 
+					'SUM(-1 * b.winloss) AS LicenseeWL,' + CHAR(13) + 
+					'sum(b.CommissionA) Comm,' + CHAR(13) + 'sum( b.CommissionP  ) PlayerComm,' + CHAR(13) + 
+					'- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13) + 
+					'sum(b.betcount) BetCount' + CHAR(13) + 
+				'FROM bodb_LicenseeReport.dbo.rpt_BettingParlay b WITH ( NOLOCK )' + CHAR(13) + 
+				'INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID' + CHAR(13) + 
 				'WHERE b.rptDate BETWEEN ''' + convert(VARCHAR(10), @FDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13) + 'AND b.status NOT IN (-1,103)' + CHAR(13) + 
-				'AND b.bettype NOT IN (901,902,903)' + CHAR(13) +
-				'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13) + 
-				'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13) + 
-				'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13) + 
-				'AND b.siteID =' + convert(VARCHAR(10), @LicenseeID) + CHAR(13) +
-				'AND b.isBA = 0' + CHAR(13) +
+					'AND b.bettype IN (9,29)' + CHAR(13) +
+					'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13) + 
+					'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13) + 
+					'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13) + 
+					'AND b.siteID =' + convert(VARCHAR(10), @LicenseeID) + CHAR(13) +
+					'AND b.isBA = 0' + CHAR(13) +
 
-				--'AND b.CurrencyID <> 20 ' + char(13) +
-				CASE 
+					--'AND b.CurrencyID <> 20 ' + char(13) +
+					CASE 
 					WHEN @CurrencyID <> 0
 						THEN 'AND b.CurrencyID =' + convert(VARCHAR(10), @CurrencyID)
 					ELSE ''
@@ -504,7 +515,8 @@ BEGIN
 							THEN 'AND b.bettype = 73'
 						WHEN @ProductCode = 'KN'
 							THEN 'AND b.bettype BETWEEN 1501 AND 1599'
-							
+						WHEN @ProductCode = 'CS'
+							THEN 'AND (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399)'	
 						ELSE ''
 					END + CHAR(13) + 
 					'GROUP BY b.rptDate, b.currencyID, ' + CHAR(13) + 'CASE 
