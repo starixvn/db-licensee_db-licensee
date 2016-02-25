@@ -1,17 +1,13 @@
-﻿SET QUOTED_IDENTIFIER ON 
+﻿USE [bodb02]
 GO
-SET ANSI_NULLS ON 
+
+SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
- 
-
-/****** Object:  Stored Procedure dbo.Lrf_Rpt_CustomerTurnOver    Script Date: 1/14/2016 10:00:41 AM ******/
-
-/****** Object:  Stored Procedure dbo.Lrf_Rpt_CustomerTurnOver    Script Date: 12/24/2015 5:27:11 PM ******/
 
  
-CREATE PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
+ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
 (
 	@LicenseeID 	INT
 	,@UserID  		INT
@@ -321,33 +317,6 @@ BEGIN
 						OR bettype BETWEEN 90 AND 120
 						OR bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
 						OR bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
-		FROM dbo.bettrans b WITH(NOLOCK)
-			INNER JOIN #recommend rec 
-			ON b.Recommend	= rec.CustID 
-			INNER JOIN #bettype bt
-			ON b.bettype 	=  bt.typeid
-			INNER JOIN #Status st
-			ON b.StatusID 	=  st.StatusID
-		WHERE b.winlostdate BETWEEN @tempFromDate AND @ToDate
-		
-		UPDATE #tempBettrans 
-		SET Odds = CASE WHEN OddsType = 1 THEN odds + 1 --decimal
-						 WHEN OddsType = 2 THEN Odds + 1 --hongkong to decimal
-						 WHEN OddsType IN (3,4) THEN --malay and indo to decimal
-												CASE 
-													WHEN odds < 0 THEN (1 -  cast(1 as float) / cast(odds AS float))
-													WHEN odds >=0 THEN (1 + odds) END
-						 WHEN OddsType = 5 THEN --american odds to decimal
-											CASE
-											WHEN (odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (odds AS float))
-											WHEN (odds * 100) % 2 = 0 THEN 2
-											WHEN (odds * 100) > 0 THEN (1 + odds) END 
-					 END 
-		WHERE bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-						OR bettype BETWEEN 81 AND 88
-						OR bettype BETWEEN 90 AND 120
-						OR bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
-						OR bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
 			
 		-- CREATE INDEXERS
 		CREATE CLUSTERED 	INDEX [CIX_tempBettrans] 			ON #tempBettrans (recommend, custid, winlostdate)
@@ -361,7 +330,6 @@ BEGIN
 				ON b.Recommend	= rec.CustID
 				LEFT JOIN #tempCust c
 				ON b.custid = c.custid
-				
 			WHERE c.custid IS NULL
 		END
 		
@@ -484,7 +452,7 @@ BEGIN
 		
 		IF( @isCached = 0 )
 		BEGIN
-			EXEC [dbo].[Lrf_Rpt_CustomerTurnOver_SumTotal]
+												EXEC [dbo].[Lrf_Rpt_CustomerTurnOver_SumTotal]
 				@searchCust 	= @searchCust
 				,@FromDate 		= @FromDate
 				,@tempFromDate 	= @tempFromDate
@@ -596,6 +564,7 @@ BEGIN
 				,@totalBettrans	= @totalBettrans OUTPUT
 				,@totalSumRpt	= @totalSumRpt OUTPUT
 		END
+
 		--select @totalBettrans totalBettrans, @totalSumRpt totalSumRpt
 		IF( @totalBettrans > 0 OR @totalSumRpt > 0 )
 		BEGIN
@@ -648,7 +617,7 @@ BEGIN
 			, @pEndDate		= CASE WHEN @reportBy = 2 THEN DATEADD(DD, -1, DATEADD(M, 1, @pEndDate)) ELSE @pEndDate END
 			, @pEndDate		= CASE WHEN @pEndDate > @ToDate THEN @ToDate ELSE @pEndDate END
 		
-		EXEC [dbo].[Lrf_Rpt_CustomerTurnOver_SumMember]
+								EXEC [dbo].[Lrf_Rpt_CustomerTurnOver_SumMember]
 			@pStartDate		= @pStartDate
 			,@pEndDate		= @pEndDate
 			,@Odds 			= @Odds
@@ -774,22 +743,7 @@ BEGIN
 	DROP TABLE #tempLRFCustTORpt
 	--SET duration time
 	SET @Duration = DATEDIFF(MS, @startTime, GETDATE())
-		
- 
- 
- 
- 
-
 GO
-
-SET QUOTED_IDENTIFIER OFF 
+GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [bodbLicenseeNet] AS [dbo]
 GO
-SET ANSI_NULLS ON 
-GO
-
-
-GO 
- GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [vnteam]
-GO 
- GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [bodbLicenseeNet]
-GO 
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [vnteam] AS [dbo]
