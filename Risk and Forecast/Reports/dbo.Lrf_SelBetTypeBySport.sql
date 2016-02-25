@@ -67,11 +67,11 @@ BEGIN
 
 	SELECT *
 	INTO #INPUT
-	FROM OPENXML (@iDoc, '/products/product',1) WITH(ID SMALLINT, Sport NVARCHAR(128))
+	FROM OPENXML (@iDoc, '/products/product',1) WITH(ID SMALLINT, Sport NVARCHAR(1000))
 
 	EXEC sp_xml_removedocument @iDoc
 	
-	SELECT @strSport = COALESCE(@strSport + ',', '') + CAST(Sport AS Nvarchar(128))
+	SELECT @strSport = COALESCE(@strSport + ',', '') + CAST(Sport AS Nvarchar(1000))
 	FROM #INPUT
 
 	INSERT INTO @sportFilter
