@@ -581,7 +581,7 @@ BEGIN
 					b.refno,
 					m.ShowTime,
 					b.betcheck,
-					ISNULL(b.transdesc, '') AS transdesc
+					ISNULL(b.transdesc, '''''''') AS transdesc
 				FROM 
 					bodb_archive.dbo.bettrans_bk  b WITH (NOLOCK, INDEX=IX_CUSTID) 
 					INNER JOIN cte_match m ON b.matchid=m.matchid
@@ -668,7 +668,7 @@ BEGIN
 					b.refno,
 					m.ShowTime,
 					b.betcheck,
-					ISNULL(b.transdesc, '') AS transdesc
+					ISNULL(b.transdesc, '''''''') AS transdesc
 				FROM bodb_archive.dbo.bettrans_bk b WITH (NOLOCK, INDEX=IX_CUSTID)
 					INNER JOIN cte_match m ON b.matchid = m.matchid
 				WHERE b.winlostdate between ''''' 
