@@ -14,7 +14,7 @@ AS
 /*
 	Created: Henry@20101210
 	Task : get parlay tickets
-	DB: DB052.bodb02
+	DB: DBEXT.bodb02
 	Original: [Age_BetList_SelParlayDetail]
 
 	Revisions:
@@ -24,6 +24,7 @@ AS
 		- 20141212@Florent: fix when betcheck = '' will return NULL
 		- 20150424@Jim: support Betradar (add column betcheck in result)
 		- 20151203@Kos: Change odds, modds data type from SMALLMONEY to MONEY [Redmine: #48660]
+		- 20160202@Kos: Support PH All In One 1.2 [#Redmine: 50897]
 */
 
 BEGIN
@@ -48,7 +49,8 @@ BEGIN
 		,betstatus		NVARCHAR(50)
 		,isNeutral		BIT
 		,statusID		INT
-		)
+		,transdesc		NVARCHAR(200))
+
 	DECLARE @refno BIGINT
 		,@custID INT
 
@@ -68,38 +70,16 @@ BEGIN
 		BEGIN
 			SELECT @refno = refno
 				,@custID = custid
-			FROM DB06.bodb_archive.dbo.bettrans_BK WITH (NOLOCK)
+			FROM DBACC.bodb_archive.dbo.bettrans_BK WITH (NOLOCK)
 			WHERE TransID = @TransID
 		END
 	END
 
-	IF EXISTS (
-			SELECT 1
-			FROM dbo.bettransm WITH (NOLOCK)
-			WHERE refno = @refno
-				AND custid = @custid
-			)
+	IF EXISTS (	SELECT 1
+				FROM dbo.bettransm WITH (NOLOCK)
+				WHERE refno = @refno AND custid = @custid )
 	BEGIN
-		INSERT INTO @tmpParlay (
-			transid
-			,betID
-			,betcheck
-			,sporttype
-			,leagueid
-			,bettype
-			,homeid
-			,awayid
-			,hdp1
-			,hdp2
-			,odds
-			,betteam
-			,livehomescore
-			,liveawayscore
-			,liveindicator
-			,betstatus
-			,isNeutral
-			,statusID
-			)
+		INSERT INTO @tmpParlay
 		SELECT b.transid
 			,NULL 
 			,b.betcheck
@@ -118,6 +98,7 @@ BEGIN
 			,m.betstatus
 			,m.isNeutral
 			,b.statusID
+			,b.transdesc
 		FROM (
 			SELECT transid
 				,CASE WHEN betcheck = '' THEN NULL ELSE betcheck END AS betcheck
@@ -131,40 +112,18 @@ BEGIN
 				,liveawayscore
 				,liveindicator
 				,statusID
+				,ISNULL(transdesc, '') AS transdesc
 			FROM dbo.BettransM WITH (NOLOCK)
-			WHERE refno = @refno
-				AND custID = @custID
+			WHERE refno = @refno AND custID = @custID
 			) AS b
 		INNER JOIN dbo.match AS m WITH (NOLOCK) ON b.matchid = m.matchid
 	END
 
-	IF EXISTS (
-			SELECT 1
-			FROM dbo.bettransm14 WITH (NOLOCK)
-			WHERE refno = @refno
-				AND custid = @custid
-			)
+	IF EXISTS (	SELECT 1
+				FROM dbo.bettransm14 WITH (NOLOCK)
+				WHERE refno = @refno AND custid = @custid )
 	BEGIN
-		INSERT INTO @tmpParlay (
-			transid
-			,betID
-			,betcheck
-			,sporttype
-			,leagueid
-			,bettype
-			,homeid
-			,awayid
-			,hdp1
-			,hdp2
-			,odds
-			,betteam
-			,livehomescore
-			,liveawayscore
-			,liveindicator
-			,betstatus
-			,isNeutral
-			,statusID
-			)
+		INSERT INTO @tmpParlay
 		SELECT b.transid
 			,NULL
 			,b.betcheck
@@ -183,9 +142,10 @@ BEGIN
 			,m.betstatus
 			,m.isNeutral
 			,b.statusID
+			,b.transdesc
 		FROM (
 			SELECT transid
-				 ,CASE WHEN betcheck = '' THEN NULL ELSE betcheck END AS betcheck
+				,CASE WHEN betcheck = '' THEN NULL ELSE betcheck END AS betcheck
 				,matchid
 				,Bettype
 				,hdp1
@@ -196,39 +156,18 @@ BEGIN
 				,liveawayscore
 				,liveindicator
 				,statusID
+				,ISNULL(transdesc, '') AS transdesc
 			FROM dbo.BettransM14 WITH (NOLOCK)
-			WHERE refno = @refno
-				AND custID = @custID
+			WHERE refno = @refno AND custID = @custID
 			) AS b
 		INNER JOIN dbo.match14 AS m WITH (NOLOCK) ON b.matchid = m.matchid
 	END
 
-	IF EXISTS (
-			SELECT 1
-			FROM DB06.bodb_archive.dbo.BettransM WITH (NOLOCK)
-			WHERE refno = @refno
-			)
+	IF EXISTS (	SELECT 1
+				FROM DBACC.bodb_archive.dbo.BettransM WITH (NOLOCK)
+				WHERE refno = @refno )
 	BEGIN
-		INSERT INTO @tmpParlay (
-			transid
-			,betID
-			,betcheck
-			,sporttype
-			,leagueid
-			,bettype
-			,homeid
-			,awayid
-			,hdp1
-			,hdp2
-			,odds
-			,betteam
-			,livehomescore
-			,liveawayscore
-			,liveindicator
-			,betstatus
-			,isNeutral
-			,statusID
-			)
+		INSERT INTO @tmpParlay
 		SELECT b.transid
 			,NULL
 			,b.betcheck
@@ -247,9 +186,10 @@ BEGIN
 			,m.betstatus
 			,m.isNeutral
 			,b.statusID
+			,b.transdesc
 		FROM (
 			SELECT transid
-				 ,CASE WHEN betcheck = '' THEN NULL ELSE betcheck END AS betcheck
+				,CASE WHEN betcheck = '' THEN NULL ELSE betcheck END AS betcheck
 				,matchid
 				,Bettype
 				,hdp1
@@ -260,17 +200,18 @@ BEGIN
 				,liveawayscore
 				,liveindicator
 				,statusID
-			FROM DB06.bodb_archive.dbo.BettransM WITH (NOLOCK)
-			WHERE refno = @refno
-				AND custID = @custID
+				,ISNULL(transdesc, '') AS transdesc
+			FROM DBACC.bodb_archive.dbo.BettransM WITH (NOLOCK)
+			WHERE refno = @refno AND custID = @custID
 			) AS b
-		INNER JOIN DB06.bodb_archive.dbo.match_bk AS m WITH (NOLOCK) ON b.matchid = m.matchid
+		INNER JOIN DBACC.bodb_archive.dbo.match_bk AS m WITH (NOLOCK) ON b.matchid = m.matchid
 	END
 
 	SELECT *
 	FROM @tmpParlay
 	ORDER BY transID DESC 
 END
+
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_SelParlayDetail] TO [bodbLicenseeNet]
