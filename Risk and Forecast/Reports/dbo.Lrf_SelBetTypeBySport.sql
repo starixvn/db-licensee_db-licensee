@@ -31,7 +31,7 @@ Revisions:
    - 20151023@Victor: Support New Simplified Chinese
    - 20151210@Bobby: Fixbug#49033-49298 and apply SportBettypeMatrix & group bettype
    - 20151217@Bobby: Fixbug#49486 - Remove unsupported and mixed bettype
- 
+   - 20160217@Jim: exclude bettype 500 (Charge Commission),502 (Match Winner 1X2) since those bettype not offer for deposit model (redmine #50759 )
 Param's Explanation:
 	
 */
@@ -67,11 +67,11 @@ BEGIN
 
 	SELECT *
 	INTO #INPUT
-	FROM OPENXML (@iDoc, '/products/product',1) WITH(ID SMALLINT, Sport NVARCHAR(128))
+	FROM OPENXML (@iDoc, '/products/product',1) WITH(ID SMALLINT, Sport NVARCHAR(1000))
 
 	EXEC sp_xml_removedocument @iDoc
 	
-	SELECT @strSport = COALESCE(@strSport + ',', '') + CAST(Sport AS Nvarchar(128))
+	SELECT @strSport = COALESCE(@strSport + ',', '') + CAST(Sport AS Nvarchar(1000))
 	FROM #INPUT
 
 	INSERT INTO @sportFilter
@@ -92,7 +92,7 @@ BEGIN
 		OR sp.bettype IN (901,902,903) -- bettrade
 		OR sp.bettype BETWEEN 301 AND 304 -- MO
 		OR sp.bettype BETWEEN 801 AND 899 -- MG
-	
+		OR sp.bettype IN (500,502) --Criket
 	-- Tenis - business logic
 	DELETE sp
 	FROM #SportBettype sp
