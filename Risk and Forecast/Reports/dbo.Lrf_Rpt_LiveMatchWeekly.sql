@@ -1,0 +1,240 @@
+ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveMatchWeekly]
+	@LicenseeID INT =1
+	,@UserID 	INT
+	,@FromDate  DATETIME
+	,@ToDate    DATETIME
+	,@MoveBetsDay		DATETIME
+	,@BalanceUpDay		DATETIME
+	,@excludeTest BIT =1
+AS	
+/*
+	Created: Jim
+	Date: 2016-03-03
+	Task : LRF - Weekly live matches [Redmine #52886]
+	DB: DBEXT/bodb02
+*/
+DECLARE @TempFromDate DATETIME
+		,@TempToDate DATETIME
+		,@last_day_in_week_1 DATETIME
+		,@last_day_in_week_2   DATETIME
+		,@Cols VARCHAR(5000)
+		,@query nvarchar(max)=null	
+CREATE TABLE #tmpRaw (EventDate DATETIME,first_day_in_week VARCHAR(500),last_day_in_week VARCHAR(500),Sporttype INT,SportName VARCHAR(200),MatchCount INT)
+CREATE TABLE #tmpStr (ID INT IDENTITY (1,1),week VARCHAR(500),eventdate DATETIME)	
+CREATE TABLE #tmpSport (Sporttype INT,SportName VARCHAR(200))	
+INSERT INTO #tmpSport (Sporttype, SportName)
+SELECT m.Sporttype,s.SportName
+FROM dbo.SportBettypeMatrix m WITH (NOLOCK) 
+	INNER JOIN dbo.Sports s WITH (NOLOCK) ON m.Sporttype = s.Sporttype
+WHERE m.ProductID =1 
+
+IF @FromDate > @MoveBetsDay
+	BEGIN
+		IF @FromDate <= @MoveBetsDay 
+			SET @TempFromDate = DATEADD(DAY, 1, @MoveBetsDay)
+		ELSE
+			SET @TempFromDate = @FromDate
+		INSERT INTO #tmpRaw (EventDate,first_day_in_week , last_day_in_week, Sporttype,SportName,MatchCount)
+		SELECT   
+				m.EventDate
+				,CONVERT(VARCHAR,DATEADD (DAY, -DATEPART (WEEKDAY, EventDate) + 1, EventDate),106) AS first_day_in_week
+				,CONVERT(VARCHAR,DATEADD(d,6,(DATEADD (DAY, -DATEPART (WEEKDAY, EventDate) + 1, EventDate))),106) last_day_in_week
+			   ,l.sporttype
+			   ,s.SportName
+			   ,SUM(m.MatchCount) AS MatchCount
+			   
+		FROM (
+		SELECT    leagueid
+				  ,EventDate 
+				  ,COUNT (matchid) MatchCount
+		FROM  dbo.Match WITH ( NOLOCK )
+		WHERE Match.EventDate BETWEEN @TempFromDate AND @ToDate
+			  AND Match.eventstatus = 'running'
+		GROUP BY leagueid
+				  ,EventDate 	  
+		UNION ALL
+		SELECT  m.LeagueID
+				,EventDate
+				,COUNT(orid)	MatchCount
+		FROM  dbo.Outright m WITH ( NOLOCK )
+		WHERE     EventDate BETWEEN @TempFromDate AND @ToDate
+				AND m.OddsStatus ='running'
+		GROUP BY m.LeagueID
+				 ,EventDate		
+		 )AS M
+			INNER JOIN dbo.League l WITH (NOLOCK) ON m.LeagueId = l.LeagueId
+			INNER JOIN #tmpSport s WITH (NOLOCK) ON l.sporttype= s.sporttype
+		GROUP BY EventDate
+			   ,l.sporttype					 
+			  ,s.SportName
+		ORDER BY EventDate ASC 	 
+	END
+IF @fromdate <= @MoveBetsDay
+	BEGIN
+		IF @todate >= @MoveBetsDay
+			SET @TempToDate = @MoveBetsDay
+		ELSE
+			SET @TempToDate = @todate
+	
+		IF @BalanceUpDay < @fromdate 
+			SELECT @BalanceUpDay = @fromdate
+			
+		INSERT INTO #tmpRaw (EventDate,first_day_in_week , last_day_in_week, Sporttype,SportName,MatchCount)
+		SELECT   
+				m.EventDate
+				,CONVERT(VARCHAR,DATEADD (DAY, -DATEPART (WEEKDAY, EventDate) + 1, EventDate),106) AS first_day_in_week
+				,CONVERT(VARCHAR,DATEADD(d,6,(DATEADD (DAY, -DATEPART (WEEKDAY, EventDate) + 1, EventDate))),106) last_day_in_week
+			   ,l.sporttype
+			   ,s.SportName
+			   ,SUM(m.MatchCount) AS MatchCount
+			   
+		FROM (
+		SELECT    leagueid
+				  ,EventDate 
+				  ,COUNT (matchid) MatchCount
+		FROM  dbo.Match14 Match WITH ( NOLOCK )
+		WHERE Match.EventDate BETWEEN @BalanceUpDay AND @TempToDate
+			  AND Match.eventstatus = 'running'
+		GROUP BY leagueid
+				  ,EventDate 	  
+		UNION ALL
+		SELECT  m.LeagueID
+				,EventDate
+				,COUNT(orid)	MatchCount
+		FROM  dbo.Outright14 m WITH ( NOLOCK )
+		WHERE     EventDate BETWEEN @BalanceUpDay AND @TempToDate
+				AND m.OddsStatus ='running'
+		GROUP BY m.LeagueID
+				 ,EventDate		
+		 )AS M
+			INNER JOIN dbo.League l WITH (NOLOCK) ON m.LeagueId = l.LeagueId
+			INNER JOIN #tmpSport s WITH (NOLOCK) ON l.sporttype= s.sporttype
+		GROUP BY EventDate
+			   ,l.sporttype					 
+			  ,s.SportName
+		ORDER BY EventDate ASC 	 
+	END
+IF @FromDate < @BalanceUpDay
+	BEGIN
+		IF @todate >= DATEADD(dd, -1, @BalanceUpDay)
+			SET @TempToDate = DATEADD(dd, -1, @BalanceUpDay)
+		ELSE
+			SET @TempToDate = @todate
+		
+		INSERT INTO #tmpRaw (EventDate,first_day_in_week , last_day_in_week, Sporttype,SportName,MatchCount)
+		SELECT   
+				m.EventDate
+				,CONVERT(VARCHAR,DATEADD (DAY, -DATEPART (WEEKDAY, EventDate) + 1, EventDate),106) AS first_day_in_week
+				,CONVERT(VARCHAR,DATEADD(d,6,(DATEADD (DAY, -DATEPART (WEEKDAY, EventDate) + 1, EventDate))),106) last_day_in_week
+			   ,l.sporttype
+			   ,s.SportName
+			   ,SUM(m.MatchCount) AS MatchCount
+			   
+		FROM (
+		SELECT    leagueid
+				  ,EventDate 
+				  ,COUNT (matchid) MatchCount
+		FROM  DBARC.bodb_archive.dbo.Match_bk Match WITH ( NOLOCK )
+		WHERE Match.EventDate BETWEEN @FromDate AND @TempToDate
+			  AND Match.eventstatus = 'running'
+		GROUP BY leagueid
+				  ,EventDate 	  
+		UNION ALL
+		SELECT  m.LeagueID
+				,EventDate
+				,COUNT(orid)	MatchCount
+		FROM  DBARC.bodb_archive.dbo.Outright_bk m WITH ( NOLOCK )
+		WHERE     EventDate BETWEEN @FromDate AND @TempToDate
+				AND m.OddsStatus ='running'
+		GROUP BY m.LeagueID
+				 ,EventDate		
+		 )AS M
+			INNER JOIN dbo.League l WITH (NOLOCK) ON m.LeagueId = l.LeagueId
+			INNER JOIN #tmpSport s WITH (NOLOCK) ON l.sporttype= s.sporttype
+		GROUP BY EventDate
+			   ,l.sporttype					 
+			  ,s.SportName
+		ORDER BY EventDate ASC 	 
+	END			
+ ----------------------------------------------------------------------
+SELECT @last_day_in_week_1= CONVERT(VARCHAR,last_day_in_week,106)
+FROM #tmpRaw
+WHERE EventDate = @FromDate
+
+SELECT @last_day_in_week_2= CONVERT(VARCHAR,last_day_in_week,106)
+FROM #tmpRaw
+WHERE EventDate = @ToDate
+ 
+UPDATE #tmpRaw
+SET first_day_in_week = CASE WHEN EventDate BETWEEN @FromDate AND @last_day_in_week_1 AND EventDate>first_day_in_week THEN CONVERT(VARCHAR,@FromDate,106) ELSE first_day_in_week END 
+
+UPDATE #tmpRaw
+SET last_day_in_week = CASE WHEN EventDate BETWEEN @last_day_in_week_2-6 AND @last_day_in_week_2 AND EventDate<last_day_in_week THEN CONVERT(VARCHAR,@ToDate,106) ELSE last_day_in_week END  
+
+ 
+SELECT 
+	eventdate
+	,first_day_in_week+'-'+last_day_in_week  AS	[week]
+	,Sporttype
+	,SportName
+	,SUM(MatchCount) MatchCount
+	 into #tmpReturn
+FROM #tmpRaw
+GROUP BY 
+		 eventdate
+		 ,first_day_in_week +'-'+ last_day_in_week 
+		,Sporttype
+		,SportName
+ORDER BY eventdate  	
+ 
+	
+INSERT INTO #tmpStr (week,eventdate)
+SELECT  DISTINCT first_day_in_week+'-'+last_day_in_week AS week
+		,MAX(eventdate)
+FROM #tmpRaw 
+GROUP BY first_day_in_week+'-'+last_day_in_week
+ORDER BY  MAX(eventdate) 
+ 
+ 
+SELECT @cols= STUFF((SELECT ',' + QUOTENAME(seq )
+                    FROM 
+                    (
+                      select     [week]  AS seq
+                     from #tmpStr  
+                     
+                    )d
+					FOR XML PATH(''), TYPE
+					).value('.', 'NVARCHAR(MAX)') 
+				,1,1,'')
+ 
+SET @query='select  sporttype, sportname,' + @cols + ' 
+            from
+            (
+              select s.sporttype, s.sportname,matchcount,seq
+              from
+              (
+                select sporttype,sportname,matchcount
+                  , week as seq
+                from #tmpReturn
+              ) s
+              
+            ) x
+            pivot 
+            (
+                max(ISNULL(matchcount,0))
+                for seq in (' + CONVERT(VARCHAR(1000),@cols) + ')
+            ) p 
+            order by sporttype '
+			
+	 EXECUTE sp_executesql @query;
+	--	print @query
+					
+ DROP TABLE #tmpRaw
+ DROP TABLE #tmpReturn
+ DROP TABLE #tmpStr
+ DROP TABLE #tmpSport
+ GO
+ GO
+GRANT EXECUTE ON [dbo].[Lrf_Rpt_LiveMatchWeekly] TO [bodbLicenseeNet] 
+GO
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LiveMatchWeekly] TO [vnteam] 
