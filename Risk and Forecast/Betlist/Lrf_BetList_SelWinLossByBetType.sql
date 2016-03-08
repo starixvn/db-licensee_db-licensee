@@ -1,6 +1,6 @@
 ﻿USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_BetList_SelWinLossByBetType]    Script Date: 3/4/2016 9:13:49 AM ******/
+/****** Object:  StoredProcedure [dbo].[Lrf_BetList_SelWinLossByBetType]    Script Date: 3/8/2016 2:31:26 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -119,91 +119,13 @@ BEGIN
 	DECLARE @TempFromDate DATETIME,
 		@TempToDate DATETIME
 
+	-- Bettrans range
 	IF @ToDate > @MoveBetsDay
 	BEGIN
 		IF @FromDate <= @MoveBetsDay
 			SET @TempFromDate = DATEADD(DAY, 1, @MoveBetsDay)
 		ELSE
 			SET @TempFromDate = @FromDate
-
-		---- Get BA tickets
-		--INSERT INTO #BATicket
-		--SELECT
-		--	b.transid,
-		--	b.refno,
-		--	ISNULL(b.betid, 0),
-		--	b.Bettype,
-		--	b.currency,
-		--	b.matchid,
-		--	b.hdp1,
-		--	b.hdp2,
-		--	b.betteam,
-		--	b.odds,
-		--	b.oddstype,
-		--	b.modds,
-		--	b.liveindicator,
-		--	b.livehomescore,
-		--	b.liveawayscore,
-		--	b.status,
-		--	b.transdate,
-		--	b.winlostdate,
-		--	b.stake,
-		--	b.actual_stake,
-		--	(b.winlost-actual_stake),
-		--	0,
-		--	b.comm,
-		--	b.playercomm,
-		--	ISNULL(b.betcheck, '') AS BetCheck,
-		--	ISNULL(b.transdesc, '') AS TransDesc
-		--FROM dbo.bettrans AS b WITH (NOLOCK)
-		--	INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction AS ba WITH (NOLOCK) ON b.transid = ba.transid
-		--	INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
-		--	LEFT JOIN dbo.f_GroupBettype() AS ss ON b.bettype = ss.bettype
-		--WHERE b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
-		--	AND b.winlostdate BETWEEN @TempFromDate AND @ToDate
-		--	AND CASE WHEN ss.Bettype IS NULL THEN b.bettype ELSE ss.Grouptypeid END = @bettype
-		--	AND ((@CurrencyID = 0 AND b.currency IN (SELECT currencyId FROM #currency)) 
-		--		OR (@CurrencyId <> 0 AND b.Currency = @CurrencyId)) 
-		--	AND b.statusID NOT IN (101, 102, 103)
-		--	AND b.ruben = 1
-
-		--TransId			BIGINT,
-		--RefNo			BIGINT,
-		--BetId			BIGINT,
-		--CustId			INT,
-		--Username		NVARCHAR(50),
-		--SportType		INT,
-		--BetType			INT,
-		--Currency		SMALLINT,
-		--LeagueId		INT,
-		--MatchId			INT,
-		--MatchCode		VARCHAR(50),
-		--IsNeutral		BIT,
-		--HomeId			INT,
-		--AwayId			INT,
-		--Hdp1			SMALLMONEY,
-		--Hdp2			SMALLMONEY,
-		--BetTeam			NVARCHAR(10),
-		--Odds			MONEY,
-		--OddsType		TINYINT,
-		--Modds			MONEY,
-		--LiveIndicator	BIT,
-		--LiveHomeScore	SMALLINT,
-		--LiveAwayScore	SMALLINT,
-		--ShowTime		NVARCHAR(50),
-		--Status			NVARCHAR(10),
-		--BetStatus		NVARCHAR(50),
-		--TransDate		DATETIME,
-		--WinLostDate		DATETIME,
-		--Stake			MONEY,
-		--Actual_Stake	MONEY,
-		--WinLost			MONEY,
-		--LicenseeWL		MONEY,
-		--Comm			MONEY,
-		--PlayerComm		MONEY,
-		--Race			VARCHAR(20),
-		--BetCheck		NVARCHAR(50),
-		--TransDesc		NVARCHAR(300)
 
 		-- Sportsbook
 		IF EXISTS (SELECT 1 FROM @SportBettype WHERE ProductId = 1 AND Bettype = @BetType)
@@ -607,12 +529,16 @@ BEGIN
 		END
 	END
 
+	-- Bettrans14 range
 	IF @FromDate <= @MoveBetsDay
 	BEGIN
 		IF @ToDate >= @MoveBetsDay
 			SET @TempToDate = @MoveBetsDay
 		ELSE
 			SET @TempToDate = @ToDate
+
+		IF @BalanceUpDay < @FromDate
+			SELECT @BalanceUpDay = @FromDate
 
 		-- Sportsbook
 		IF EXISTS (SELECT 1 FROM @SportBettype WHERE ProductId = 1 AND Bettype = @BetType)
@@ -661,7 +587,7 @@ BEGIN
 				INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
 				LEFT JOIN dbo.f_GroupBettype() AS ss ON b.bettype = ss.bettype
 			WHERE b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
-				AND b.winlostdate BETWEEN @TempFromDate AND @ToDate
+				AND b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
 				AND CASE WHEN ss.Bettype IS NULL THEN b.bettype ELSE ss.Grouptypeid END = @bettype
 				AND ((@CurrencyId = 0 AND b.currency IN (SELECT currencyId FROM #Currency))
 					OR (@CurrencyId <> 0 AND b.Currency = @CurrencyId)) 
@@ -717,7 +643,7 @@ BEGIN
 				INNER JOIN dbo.League AS l WITH (NOLOCK) ON o.leagueid = l.leagueid
 				INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
 			WHERE b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
-				AND b.winlostdate BETWEEN @TempFromDate AND @ToDate
+				AND b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
 				AND b.bettype = @bettype
 				AND ((@CurrencyId = 0 AND b.currency IN (SELECT currencyId FROM #Currency))
 					OR (@CurrencyId <> 0 AND b.Currency = @CurrencyId)) 
@@ -775,7 +701,7 @@ BEGIN
 			FROM dbo.bettrans14 AS b WITH (NOLOCK)
 				INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
 			WHERE b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
-				AND b.winlostdate BETWEEN @TempFromDate AND @ToDate
+				AND b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
 				AND b.bettype = @bettype
 				AND ((@CurrencyId = 0 AND b.currency IN (SELECT currencyId FROM #Currency))
 					OR (@CurrencyId <> 0 AND b.Currency = @CurrencyId)) 
@@ -837,7 +763,7 @@ BEGIN
 				INNER JOIN dbo.match14 AS m WITH (NOLOCK) ON b.matchid = m.matchid
 				INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
 			WHERE b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
-				AND b.winlostdate BETWEEN @TempFromDate AND @ToDate
+				AND b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
 				AND b.bettype = @bettype
 				AND ((@CurrencyId = 0 AND b.currency IN (SELECT currencyId FROM #Currency))
 					OR (@CurrencyId <> 0 AND b.Currency = @CurrencyId)) 
@@ -894,7 +820,7 @@ BEGIN
 				INNER JOIN dbo.League AS l WITH (NOLOCK) ON o.leagueid = l.leagueid
 				INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
 			WHERE b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
-				AND b.winlostdate BETWEEN @TempFromDate AND @ToDate
+				AND b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
 				AND b.bettype = @bettype
 				AND ((@CurrencyId = 0 AND b.currency IN (SELECT currencyId FROM #Currency))
 					OR (@CurrencyId <> 0 AND b.Currency = @CurrencyId)) 
@@ -950,7 +876,7 @@ BEGIN
 				INNER JOIN dbo.VSRaceInfo AS r WITH (NOLOCK) ON r.EventID = o.EventID
 				INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
 			WHERE b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
-				AND b.winlostdate BETWEEN @TempFromDate AND @ToDate
+				AND b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
 				AND b.bettype = @bettype
 				AND ((@CurrencyId = 0 AND b.currency IN (SELECT currencyId FROM #Currency))
 					OR (@CurrencyId <> 0 AND b.Currency = @CurrencyId)) 
@@ -1002,11 +928,11 @@ BEGIN
 				'' AS Race,
 				'' AS BetCheck,
 				'' AS TransDesc
-			FROM dbo.bettrans AS b WITH (NOLOCK)
+			FROM dbo.bettrans14 AS b WITH (NOLOCK)
 				INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
 				CROSS APPLY dbo.f_ParseTransDesc(b.transdesc, b.bettype) AS fnc
 			WHERE b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
-				AND b.winlostdate BETWEEN @TempFromDate AND @ToDate
+				AND b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
 				AND b.bettype = @bettype
 				AND ((@CurrencyId = 0 AND b.currency IN (SELECT currencyId FROM #Currency))
 					OR (@CurrencyId <> 0 AND b.Currency = @CurrencyId)) 
@@ -1046,7 +972,7 @@ BEGIN
 	FROM #Data AS b
 		INNER JOIN #TempExchange AS e ON e.ExchangeDate = b.WinLostDate AND e.Exchangeid = b.Currency
 
-	DECLARE @RowStart	 INT,
+	DECLARE @RowStart	INT,
 		@RowEnd			INT
 
 	SELECT @PageIndex = @PageIndex - 1,
@@ -1187,40 +1113,34 @@ BEGIN
 END
 
 
+
+GRANT	VIEW DEFINITION	ON	Lrf_BetList_SelWinLossByBetType	TO	vnteam
+GRANT	EXECUTE	ON	Lrf_BetList_SelWinLossByBetType	TO	bodbLicenseeNet
+
 /*
-	declare @p10 int
-	declare @p11 money
-	declare @p12 money
-	declare @p13 money
-	declare @p14 money
-	declare @p15 money
-	declare @p16 money
-	declare @p17 money
-	declare @p18 money
-	declare @p19 money
-	declare @p20 money
-	declare @p21 money
-	declare @p22 money
-	declare @p23 money
-	declare @p24 money
-	declare @p25 money
-	declare @p26 money
-	exec Lrf_BetList_SelWinLossByBetType @licenseeid=1,@userid=68,@CurrencyID=0,@LicenseeType=NULL,@bettype=9,
-	@PageSize=2147483646,@PageIndex=1,@totalrows=@p10 output,@SumWinlost=@p11 output,@SumLicenseeWL=@p12 output,
-	@SumComm=@p13 output,@SumPlayerComm=@p14 output,@SumWinlostUSD=@p15 output,@SumLicenseeWLUSD=@p16 output,@SumCommUSD=@p17 output,
-	@SumPlayerCommUSD=@p18 output,@SumWinlostEUR=@p19 output,@SumLicenseeWLEUR=@p20 output,@SumCommEUR=@p21 output,
-	@SumPlayerCommEUR=@p22 output,@SumWinlostGBP=@p23 output,@SumLicenseeWLGBP=@p24 output,@SumCommGBP=@p25 output,
-	@SumPlayerCommGBP=@p26 output,@FromDate='2016-02-24 00:00:00',@ToDate='2016-02-28 00:00:00',
-	@MoveBetsDay='2016-02-21 00:00:00',@BalanceUpDay='2016-02-20 00:00:00'
-	select @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18, @p19, @p20, @p21, @p22, @p23, @p24, @p25, @p26
+declare @p10 int
+declare @p11 money
+declare @p12 money
+declare @p13 money
+declare @p14 money
+declare @p15 money
+declare @p16 money
+declare @p17 money
+declare @p18 money
+declare @p19 money
+declare @p20 money
+declare @p21 money
+declare @p22 money
+declare @p23 money
+declare @p24 money
+declare @p25 money
+declare @p26 money
+exec Lrf_BetList_SelWinLossByBetType @licenseeid=1,@userid=68,@CurrencyID=0,@LicenseeType=NULL,@bettype=9,
+@PageSize=2147483646,@PageIndex=1,@totalrows=@p10 output,@SumWinlost=@p11 output,@SumLicenseeWL=@p12 output,
+@SumComm=@p13 output,@SumPlayerComm=@p14 output,@SumWinlostUSD=@p15 output,@SumLicenseeWLUSD=@p16 output,@SumCommUSD=@p17 output,
+@SumPlayerCommUSD=@p18 output,@SumWinlostEUR=@p19 output,@SumLicenseeWLEUR=@p20 output,@SumCommEUR=@p21 output,
+@SumPlayerCommEUR=@p22 output,@SumWinlostGBP=@p23 output,@SumLicenseeWLGBP=@p24 output,@SumCommGBP=@p25 output,
+@SumPlayerCommGBP=@p26 output,@FromDate='2016-02-24 00:00:00',@ToDate='2016-02-28 00:00:00',
+@MoveBetsDay='2016-02-21 00:00:00',@BalanceUpDay='2016-02-20 00:00:00'
+select @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18, @p19, @p20, @p21, @p22, @p23, @p24, @p25, @p26
 */
-
-
-
-GO
-GRANT EXECUTE ON [dbo].[Lrf_BetList_SelWinLossByBetType] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelWinLossByBetType] TO vnteam
-
-
-
