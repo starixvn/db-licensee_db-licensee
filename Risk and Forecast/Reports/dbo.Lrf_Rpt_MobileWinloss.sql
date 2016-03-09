@@ -13,7 +13,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_MobileWinloss]
  @ShowLC 		BIT=0,
  @ShowVS		BIT=0,
  @ShowBG		BIT=0,--- Bingo
- @SiteType	TINYINT=1, 
+ @PlatformType	TINYINT=1, 
  @MoveBetsDay SMALLDATETIME,
  @drawfilter SMALLINT = 1  ,
  @excludeTest BIT = 0,
@@ -50,9 +50,15 @@ AS
 		- 20150814@Winnie: Keenocean reverse currency 
 		- 20151001@Jim: remove MicroGaming
 		- 20151228@Bobby: Remove RNG Casino
+		- 20160219@Joseph: Implement @PlatformType param (#50939)
 		
 	Param's Explanation:  
-	  + @SiteType: 1-WAP; 2-Smartphone; 3: Others;0-All  
+	  + @PlatformType: 0: All  
+					   1: Asia (d)  
+					   2: New Asia (a)
+					   3: Euro (e) (and Euro 12bet (u))
+					   4: WAP (m)    
+					   5: SMARTPHONE (s,l)  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
 	  + @IsOld: 0 - query in table rptLicWinloss2, 1 - query in table rptLicWinloss_old
 	  + @excludeTest: remove currency UUS
@@ -332,10 +338,12 @@ BEGIN
 			b.statusID  IN (111, 112, 113)
 			AND b.bettype NOT IN (901,902,903)
 			AND b.winlostdate BETWEEN @TempFromDate AND @TDate
-			AND 1= CASE @SiteType 
-					WHEN 1 THEN CASE WHEN b.betfrom = 'm' THEN 1 ELSE 0 END
-					WHEN 2 THEN CASE WHEN b.betfrom IN ('s','l') THEN 1 ELSE 0 END
-					WHEN 3 THEN CASE WHEN b.betfrom NOT IN ('s','m','l') THEN 1 ELSE 0 END
+			AND 1= CASE @PlatformType 
+					WHEN 1 THEN CASE WHEN b.betfrom = 'd' THEN 1 ELSE 0 END
+					WHEN 2 THEN CASE WHEN b.betfrom = 'a' THEN 1 ELSE 0 END
+					WHEN 3 THEN CASE WHEN b.betfrom IN ('e','u') THEN 1 ELSE 0 END
+					WHEN 4 THEN CASE WHEN b.betfrom = 'm' THEN 1 ELSE 0 END
+					WHEN 5 THEN CASE WHEN b.betfrom IN ('s','l') THEN 1 ELSE 0 END
 					ELSE 1 
 				END
 		GROUP BY   b.currency, b.statusID, b.custid	
@@ -449,10 +457,12 @@ BEGIN
 			) 
 			AND b.bettype NOT IN (901,902,903)
 			AND b.tpositiontaking <>0
-			AND 1= CASE @SiteType 
-				WHEN 1 THEN CASE WHEN b.betfrom = 'm' THEN 1 ELSE 0 END
-				WHEN 2 THEN CASE WHEN b.betfrom IN ('s','l') THEN 1 ELSE 0 END
-				WHEN 3 THEN CASE WHEN b.betfrom NOT IN ('s','m','l') THEN 1 ELSE 0 END
+			AND 1= CASE @PlatformType 
+				WHEN 1 THEN CASE WHEN b.betfrom = 'd' THEN 1 ELSE 0 END
+				WHEN 2 THEN CASE WHEN b.betfrom = 'a' THEN 1 ELSE 0 END
+				WHEN 3 THEN CASE WHEN b.betfrom IN ('e','u') THEN 1 ELSE 0 END
+				WHEN 4 THEN CASE WHEN b.betfrom = 'm' THEN 1 ELSE 0 END
+				WHEN 5 THEN CASE WHEN b.betfrom IN ('s','l') THEN 1 ELSE 0 END
 				ELSE 1 
 				END
 		GROUP BY  tma.currency, b.statusID, b.custid	   
@@ -562,10 +572,12 @@ BEGIN
 		WHERE
 			b.statusID  IN (111, 112, 113)
 			AND b.winlostdate BETWEEN @TempFromDate AND @TDate
-			AND 1= CASE @SiteType 
-				WHEN 1 THEN CASE WHEN b.betfrom = 'm' THEN 1 ELSE 0 END
-				WHEN 2 THEN CASE WHEN b.betfrom IN ('s','l') THEN 1 ELSE 0 END
-				WHEN 3 THEN CASE WHEN b.betfrom NOT IN ('s','m','l') THEN 1 ELSE 0 END
+			AND 1= CASE @PlatformType 
+				WHEN 1 THEN CASE WHEN b.betfrom = 'd' THEN 1 ELSE 0 END
+				WHEN 2 THEN CASE WHEN b.betfrom = 'a' THEN 1 ELSE 0 END
+				WHEN 3 THEN CASE WHEN b.betfrom IN ('e','u') THEN 1 ELSE 0 END
+				WHEN 4 THEN CASE WHEN b.betfrom = 'm' THEN 1 ELSE 0 END
+				WHEN 5 THEN CASE WHEN b.betfrom IN ('s','l') THEN 1 ELSE 0 END
 				ELSE 1 
 				END
 		GROUP BY   tma.currency, b.statusID, b.custid
@@ -681,10 +693,12 @@ BEGIN
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND b.bettype NOT IN (901,902,903)
 			AND ISNULL(b.isBA,0) = 1
-			AND 1= CASE @SiteType 
-				WHEN 1 THEN CASE WHEN b.betfrom = 'm' THEN 1 ELSE 0 END
-				WHEN 2 THEN CASE WHEN b.betfrom IN ('s','l') THEN 1 ELSE 0 END
-				WHEN 3 THEN CASE WHEN b.betfrom NOT IN ('s','m','l') THEN 1 ELSE 0 END
+			AND 1= CASE @PlatformType 
+				WHEN 1 THEN CASE WHEN b.betfrom = 'd' THEN 1 ELSE 0 END
+				WHEN 2 THEN CASE WHEN b.betfrom = 'a' THEN 1 ELSE 0 END
+				WHEN 3 THEN CASE WHEN b.betfrom IN ('e','u') THEN 1 ELSE 0 END
+				WHEN 4 THEN CASE WHEN b.betfrom = 'm' THEN 1 ELSE 0 END
+				WHEN 5 THEN CASE WHEN b.betfrom IN ('s','l') THEN 1 ELSE 0 END
 				ELSE 1 
 				END		
 		GROUP BY	
@@ -797,10 +811,12 @@ BEGIN
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND b.bettype NOT IN (901,902,903)
 			AND ISNULL(b.isBA,0) = 0
-			AND 1= CASE @SiteType 
-				WHEN 1 THEN CASE WHEN b.betfrom = 'm' THEN 1 ELSE 0 END
-				WHEN 2 THEN CASE WHEN b.betfrom IN ('s','l') THEN 1 ELSE 0 END
-				WHEN 3 THEN CASE WHEN b.betfrom NOT IN ('s','m','l') THEN 1 ELSE 0 END
+			AND 1= CASE @PlatformType 
+				WHEN 1 THEN CASE WHEN b.betfrom = 'd' THEN 1 ELSE 0 END
+				WHEN 2 THEN CASE WHEN b.betfrom = 'a' THEN 1 ELSE 0 END
+				WHEN 3 THEN CASE WHEN b.betfrom IN ('e','u') THEN 1 ELSE 0 END
+				WHEN 4 THEN CASE WHEN b.betfrom = 'm' THEN 1 ELSE 0 END
+				WHEN 5 THEN CASE WHEN b.betfrom IN ('s','l') THEN 1 ELSE 0 END
 				ELSE 1 
 				END	
 		GROUP BY	
