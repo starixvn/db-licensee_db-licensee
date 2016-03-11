@@ -53,15 +53,7 @@ IF @ToDate > @MoveBetsDay
 			  AND Match.eventstatus = 'running'
 		GROUP BY leagueid
 				  ,EventDate 	  
-		UNION ALL
-		SELECT  m.LeagueID
-				,EventDate
-				,COUNT(orid)	MatchCount
-		FROM  dbo.Outright m WITH ( NOLOCK )
-		WHERE     EventDate BETWEEN @TempFromDate AND @ToDate
-				AND m.OddsStatus ='running'
-		GROUP BY m.LeagueID
-				 ,EventDate		
+		 
 		 )AS M
 			INNER JOIN dbo.League l WITH (NOLOCK) ON m.LeagueId = l.LeagueId
 			INNER JOIN #tmpSport s WITH (NOLOCK) ON l.sporttype= s.sporttype
@@ -79,7 +71,7 @@ IF @fromdate <= @MoveBetsDay
 	
 		IF @BalanceUpDay < @fromdate 
 			SELECT @BalanceUpDay = @fromdate
-			
+								 
 		INSERT INTO #tmpRaw (EventDate,first_day_in_week , last_day_in_week, Sporttype,SportName,MatchCount)
 		SELECT   
 				m.EventDate
@@ -90,24 +82,13 @@ IF @fromdate <= @MoveBetsDay
 			   ,SUM(m.MatchCount) AS MatchCount
 			   
 		FROM (
-		SELECT    leagueid
-				  ,EventDate 
-				  ,COUNT (matchid) MatchCount
-		FROM  dbo.Match14 Match WITH ( NOLOCK )
-		WHERE Match.EventDate BETWEEN @BalanceUpDay AND @TempToDate
-			  AND Match.eventstatus = 'running'
-		GROUP BY leagueid
-				  ,EventDate 	  
-		UNION ALL
-		SELECT  m.LeagueID
-				,EventDate
-				,COUNT(orid)	MatchCount
-		FROM  dbo.Outright14 m WITH ( NOLOCK )
-		WHERE     EventDate BETWEEN @BalanceUpDay AND @TempToDate
-				AND m.OddsStatus ='running'
-		GROUP BY m.LeagueID
-				 ,EventDate		
-		 )AS M
+				
+			SELECT COUNT(DISTINCT MatchID) MatchCount,rptdate EventDate,leagueId
+			 FROM [DBDWH].[bodb_Account].[dbo].[rptMatch] b WITH (NOLOCK) 
+			 WHERE b.rptdate BETWEEN @fromdate AND @TempToDate
+			 GROUP BY rptdate,leagueId
+		
+			)AS M
 			INNER JOIN dbo.League l WITH (NOLOCK) ON m.LeagueId = l.LeagueId
 			INNER JOIN #tmpSport s WITH (NOLOCK) ON l.sporttype= s.sporttype
 		GROUP BY EventDate
@@ -115,48 +96,7 @@ IF @fromdate <= @MoveBetsDay
 			  ,s.SportName
 		ORDER BY EventDate ASC 	 
 	END
-IF @FromDate < @BalanceUpDay
-	BEGIN
-		IF @todate >= DATEADD(dd, -1, @BalanceUpDay)
-			SET @TempToDate = DATEADD(dd, -1, @BalanceUpDay)
-		ELSE
-			SET @TempToDate = @todate
 		
-		INSERT INTO #tmpRaw (EventDate,first_day_in_week , last_day_in_week, Sporttype,SportName,MatchCount)
-		SELECT   
-				m.EventDate
-				,CONVERT(VARCHAR,DATEADD (DAY, -DATEPART (WEEKDAY, EventDate) + 1, EventDate),106) AS first_day_in_week
-				,CONVERT(VARCHAR,DATEADD(d,6,(DATEADD (DAY, -DATEPART (WEEKDAY, EventDate) + 1, EventDate))),106) last_day_in_week
-			   ,l.sporttype
-			   ,s.SportName
-			   ,SUM(m.MatchCount) AS MatchCount
-			   
-		FROM (
-		SELECT    leagueid
-				  ,EventDate 
-				  ,COUNT (matchid) MatchCount
-		FROM  DBARC.bodb_archive.dbo.Match_bk Match WITH ( NOLOCK )
-		WHERE Match.EventDate BETWEEN @FromDate AND @TempToDate
-			  AND Match.eventstatus = 'running'
-		GROUP BY leagueid
-				  ,EventDate 	  
-		UNION ALL
-		SELECT  m.LeagueID
-				,EventDate
-				,COUNT(orid)	MatchCount
-		FROM  DBARC.bodb_archive.dbo.Outright_bk m WITH ( NOLOCK )
-		WHERE     EventDate BETWEEN @FromDate AND @TempToDate
-				AND m.OddsStatus ='running'
-		GROUP BY m.LeagueID
-				 ,EventDate		
-		 )AS M
-			INNER JOIN dbo.League l WITH (NOLOCK) ON m.LeagueId = l.LeagueId
-			INNER JOIN #tmpSport s WITH (NOLOCK) ON l.sporttype= s.sporttype
-		GROUP BY EventDate
-			   ,l.sporttype					 
-			  ,s.SportName
-		ORDER BY EventDate ASC 	 
-	END			
  -- Sec3: format template
 
 
