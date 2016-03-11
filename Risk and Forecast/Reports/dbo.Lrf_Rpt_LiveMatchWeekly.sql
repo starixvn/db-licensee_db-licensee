@@ -50,7 +50,7 @@ IF @ToDate > @MoveBetsDay
 				  ,COUNT (matchid) MatchCount
 		FROM  dbo.Match WITH ( NOLOCK )
 		WHERE Match.EventDate BETWEEN @TempFromDate AND @ToDate
-			  AND Match.eventstatus = 'running'
+			  AND Match.haslive = 1
 		GROUP BY leagueid
 				  ,EventDate 	  
 		 
@@ -86,6 +86,7 @@ IF @fromdate <= @MoveBetsDay
 			SELECT COUNT(DISTINCT MatchID) MatchCount,rptdate EventDate,leagueId
 			 FROM [DBDWH].[bodb_Account].[dbo].[rptMatch] b WITH (NOLOCK) 
 			 WHERE b.rptdate BETWEEN @fromdate AND @TempToDate
+				  AND isLive =1	
 			 GROUP BY rptdate,leagueId
 		
 			)AS M
