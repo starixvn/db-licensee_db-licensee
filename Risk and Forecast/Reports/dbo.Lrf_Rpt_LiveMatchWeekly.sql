@@ -186,9 +186,10 @@ SET @query='select  sporttype, sportname,' + @cols + '
               select s.sporttype, s.sportname, matchcount ,seq
               from
               (
-                select sporttype,sportname, matchcount
+                select sporttype,sportname, sum(matchcount) matchcount
                   , week as seq
                 from #tmpReturn 
+				group by sporttype,sportname,week
               ) s
               
             ) x
