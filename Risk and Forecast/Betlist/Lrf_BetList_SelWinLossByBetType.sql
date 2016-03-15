@@ -76,6 +76,24 @@ BEGIN
 	WHERE [Description] = COALESCE(@LicenseeType, [Description])
 
 	-- Create temp table
+	CREATE TABLE #AllData (
+		TransId		BIGINT,
+		RefNo		BIGINT,
+		Currency		SMALLINT,
+		WinLostDate		DATETIME,
+		WinLost		MONEY,
+		LicenseeWL	MONEY,
+		Comm		MONEY,
+		PlayerComm	MONEY,
+		WhTicket	TINYINT
+	)
+
+	CREATE TABLE #TempData (
+		TransId		BIGINT,
+		RefNo		BIGINT,
+		WhTicket	TINYINT
+	)
+
 	CREATE TABLE #Data (
 		TransId			BIGINT,
 		RefNo			BIGINT,
@@ -127,6 +145,168 @@ BEGIN
 		ELSE
 			SET @TempFromDate = @FromDate
 
+		IF EXISTS (SELECT 1 FROM @SportBettype WHERE ProductId = 1 AND Bettype = @BetType)
+		BEGIN
+			INSERT INTO #AllData
+			SELECT
+				b.transid,
+				b.refno,
+				b.currency,
+				b.winlostdate,
+				(b.winlost - b.actual_stake) AS WinLost,
+				-(b.winlost - b.actual_stake) AS LicenseeWL,
+				b.comm,
+				b.playercomm,
+				1 AS WhTicket
+			FROM dbo.bettrans AS b WITH (NOLOCK, INDEX = CIX_recommend_matchid_bettype)
+				LEFT JOIN dbo.f_GroupBettype() AS ss ON b.bettype = ss.bettype
+			WHERE b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
+				AND b.winlostdate BETWEEN @TempFromDate AND @ToDate
+				AND CASE WHEN ss.Bettype IS NULL THEN b.bettype ELSE ss.Grouptypeid END = @bettype
+				AND ((@CurrencyId = 0 AND b.currency IN (SELECT currencyId FROM #Currency))
+					OR (@CurrencyId <> 0 AND b.Currency = @CurrencyId)) 
+				AND b.statusID NOT IN (101, 102, 103)
+				AND b.ruben = 1
+		END
+		ELSE
+		BEGIN
+			INSERT INTO #AllData
+			SELECT
+				b.transid,
+				b.refno,
+				b.currency,
+				b.winlostdate,
+				(b.winlost - b.actual_stake) AS WinLost,
+				-(b.winlost - b.actual_stake) AS LicenseeWL,
+				b.comm,
+				b.playercomm,
+				1 AS WhTicket
+			FROM dbo.bettrans AS b WITH (NOLOCK, INDEX = CIX_recommend_matchid_bettype)
+			WHERE b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
+				AND b.winlostdate BETWEEN @TempFromDate AND @ToDate
+				AND b.bettype = @bettype
+				AND ((@CurrencyId = 0 AND b.currency IN (SELECT currencyId FROM #Currency))
+					OR (@CurrencyId <> 0 AND b.Currency = @CurrencyId)) 
+				AND b.statusID NOT IN (101, 102, 103)
+				AND b.ruben = 1
+		END
+	END
+
+	-- Bettrans14 range
+	IF @FromDate <= @MoveBetsDay
+	BEGIN
+		IF @ToDate >= @MoveBetsDay
+			SET @TempToDate = @MoveBetsDay
+		ELSE
+			SET @TempToDate = @ToDate
+
+		IF @BalanceUpDay < @FromDate
+			SELECT @BalanceUpDay = @FromDate
+
+		IF EXISTS (SELECT 1 FROM @SportBettype WHERE ProductId = 1 AND Bettype = @BetType)
+		BEGIN
+			INSERT INTO #AllData
+			SELECT
+				b.transid,
+				b.refno,
+				b.currency,
+				b.winlostdate,
+				(b.winlost - b.actual_stake) AS WinLost,
+				-(b.winlost - b.actual_stake) AS LicenseeWL,
+				b.comm,
+				b.playercomm,
+				2 AS WhTicket
+			FROM dbo.bettrans14 AS b WITH (NOLOCK, INDEX = bettrans143)
+				LEFT JOIN dbo.f_GroupBettype() AS ss ON b.bettype = ss.bettype
+			WHERE b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
+				AND b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
+				AND CASE WHEN ss.Bettype IS NULL THEN b.bettype ELSE ss.Grouptypeid END = @bettype
+				AND ((@CurrencyId = 0 AND b.currency IN (SELECT currencyId FROM #Currency))
+					OR (@CurrencyId <> 0 AND b.Currency = @CurrencyId)) 
+				AND b.statusID NOT IN (101, 102, 103)
+				AND b.ruben = 1
+		END
+		ELSE
+		BEGIN
+			INSERT INTO #AllData
+			SELECT
+				b.transid,
+				b.refno,
+				b.currency,
+				b.winlostdate,
+				(b.winlost - b.actual_stake) AS WinLost,
+				-(b.winlost - b.actual_stake) AS LicenseeWL,
+				b.comm,
+				b.playercomm,
+				2 AS WhTicket
+			FROM dbo.bettrans14 AS b WITH (NOLOCK, INDEX = bettrans143)
+			WHERE b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
+				AND b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
+				AND b.bettype = @bettype
+				AND ((@CurrencyId = 0 AND b.currency IN (SELECT currencyId FROM #Currency))
+					OR (@CurrencyId <> 0 AND b.Currency = @CurrencyId)) 
+				AND b.statusID NOT IN (101, 102, 103)
+				AND b.ruben = 1
+		END
+	END
+
+	DECLARE @RowStart	INT,
+		@RowEnd			INT
+
+	SELECT @PageIndex = @PageIndex - 1,
+		@RowStart = @PageSize * @PageIndex + 1,
+		@RowEnd = @RowStart + @PageSize - 1
+
+	-- Get exchange rate
+	SELECT * 
+	INTO #TempExchange
+	FROM Lrf_f_GetExchangeDaily(@FromDate, @ToDate)
+	WHERE ExchangeId IN (SELECT DISTINCT Currency FROM #AllData)
+
+	-- Get total values
+	SELECT
+		@TotalRows			= COUNT(b.TransId),
+		@SumWinlost			= SUM(ISNULL(b.WinLost, 0)),
+		@SumLicenseeWL		= SUM(ISNULL(b.LicenseeWL, 0)),
+		@SumComm			= SUM(ISNULL(b.Comm, 0)),
+		@SumPlayerComm		= SUM(ISNULL(b.PlayerComm, 0)),
+		-- USD
+		@SumWinlostUSD		= SUM(ISNULL(b.WinLost		* e.USD, 0)),
+		@SumLicenseeWLUSD	= SUM(ISNULL(b.LicenseeWL	* e.USD, 0)),
+		@SumCommUSD			= SUM(ISNULL(b.Comm			* e.USD, 0)),
+		@SumPlayerCommUSD	= SUM(ISNULL(b.PlayerComm	* e.USD, 0)),
+		-- EUR
+		@SumWinlostEUR		= SUM(ISNULL(b.WinLost		* e.EUR, 0)),
+		@SumLicenseeWLEUR	= SUM(ISNULL(b.LicenseeWL	* e.EUR, 0)),
+		@SumCommEUR			= SUM(ISNULL(b.Comm			* e.EUR, 0)),
+		@SumPlayerCommEUR	= SUM(ISNULL(b.PlayerComm	* e.EUR, 0)),
+		-- GBP
+		@SumWinlostGBP		= SUM(ISNULL(b.WinLost		* e.GBP, 0)),
+		@SumLicenseeWLGBP	= SUM(ISNULL(b.LicenseeWL	* e.GBP, 0)),
+		@SumCommGBP			= SUM(ISNULL(b.Comm			* e.GBP, 0)),
+		@SumPlayerCommGBP	= SUM(ISNULL(b.PlayerComm	* e.GBP, 0))
+	FROM #AllData AS b
+		INNER JOIN #TempExchange AS e ON e.ExchangeDate = b.WinLostDate AND e.Exchangeid = b.Currency
+
+	-- Get paging data
+	INSERT INTO #TempData
+	SELECT
+		tmp.TransId,
+		tmp.RefNo,
+		tmp.WhTicket
+	FROM (
+			SELECT
+				ROW_NUMBER() OVER(ORDER BY b.transid) AS RowNum,
+				b.*
+			FROM #AllData AS b
+		) AS tmp
+	WHERE tmp.RowNum BETWEEN @RowStart AND @RowEnd
+
+	DROP TABLE #AllData
+
+	-- Get ticket detail
+	IF EXISTS (SELECT 1 FROM #TempData WHERE WhTicket = 1)
+	BEGIN
 		-- Sportsbook
 		IF EXISTS (SELECT 1 FROM @SportBettype WHERE ProductId = 1 AND Bettype = @BetType)
 		BEGIN
@@ -171,16 +351,8 @@ BEGIN
 				ISNULL(b.transdesc, '') AS TransDesc
 			FROM dbo.bettrans AS b WITH (NOLOCK)
 				INNER JOIN dbo.match AS m WITH (NOLOCK) ON b.matchid = m.matchid
-				INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
-				LEFT JOIN dbo.f_GroupBettype() AS ss ON b.bettype = ss.bettype
-			WHERE b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
-				AND b.winlostdate BETWEEN @TempFromDate AND @ToDate
-				AND CASE WHEN ss.Bettype IS NULL THEN b.bettype ELSE ss.Grouptypeid END = @bettype
-				AND ((@CurrencyId = 0 AND b.currency IN (SELECT currencyId FROM #Currency))
-					OR (@CurrencyId <> 0 AND b.Currency = @CurrencyId)) 
-				AND b.statusID NOT IN (101, 102, 103)
-				AND b.ruben = 1
-				AND sbt.ProductId = 1
+				INNER JOIN #TempData AS td ON b.transid = td.TransId
+			WHERE td.WhTicket = 1
 		END
 
 		-- Outright
@@ -228,16 +400,8 @@ BEGIN
 			FROM dbo.bettrans AS b WITH (NOLOCK)
 				INNER JOIN dbo.outright AS o WITH (NOLOCK) ON b.matchid = o.orid
 				INNER JOIN dbo.League AS l WITH (NOLOCK) ON o.leagueid = l.leagueid
-				INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
-			WHERE b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
-				AND b.winlostdate BETWEEN @TempFromDate AND @ToDate
-				AND b.bettype = @bettype
-				AND ((@CurrencyId = 0 AND b.currency IN (SELECT currencyId FROM #Currency))
-					OR (@CurrencyId <> 0 AND b.Currency = @CurrencyId)) 
-				AND b.statusID NOT IN (101, 102, 103)
-				AND b.ruben = 1
-				AND sbt.ProductId = 1
-				AND sbt.EventType = 2
+				INNER JOIN #TempData AS td ON b.transid = td.TransId
+			WHERE td.WhTicket = 1
 		END
 
 		-- Mix Parlay & System Parlay
@@ -286,16 +450,8 @@ BEGIN
 				'' AS BetCheck,
 				'' AS TransDesc
 			FROM dbo.bettrans AS b WITH (NOLOCK)
-				INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
-			WHERE b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
-				AND b.winlostdate BETWEEN @TempFromDate AND @ToDate
-				AND b.bettype = @bettype
-				AND ((@CurrencyId = 0 AND b.currency IN (SELECT currencyId FROM #Currency))
-					OR (@CurrencyId <> 0 AND b.Currency = @CurrencyId)) 
-				AND b.statusID NOT IN (101, 102, 103)
-				AND b.ruben = 1
-				AND sbt.ProductId = 1
-				AND sbt.EventType = 0
+				INNER JOIN #TempData AS td ON b.transid = td.TransId
+			WHERE td.WhTicket = 1
 		END
 
 		-- Number Game, Live Casino, Virtual Sports (EventType = 1)
@@ -349,15 +505,8 @@ BEGIN
 			FROM dbo.bettrans AS b WITH (NOLOCK)
 				INNER JOIN dbo.match AS m WITH (NOLOCK) ON b.matchid = m.matchid
 				INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
-			WHERE b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
-				AND b.winlostdate BETWEEN @TempFromDate AND @ToDate
-				AND b.bettype = @bettype
-				AND ((@CurrencyId = 0 AND b.currency IN (SELECT currencyId FROM #Currency))
-					OR (@CurrencyId <> 0 AND b.Currency = @CurrencyId)) 
-				AND b.statusID NOT IN (101, 102, 103)
-				AND b.ruben = 1
-				AND sbt.ProductId IN (3, 4, 5)
-				AND sbt.EventType = 1
+				INNER JOIN #TempData AS td ON b.transid = td.TransId
+			WHERE td.WhTicket = 1
 		END
 
 		-- Horse Racing (EventType = 2)
@@ -405,15 +554,8 @@ BEGIN
 			FROM dbo.bettrans AS b WITH (NOLOCK)
 				INNER JOIN dbo.outright AS o WITH (NOLOCK) ON b.matchid = o.orid
 				INNER JOIN dbo.League AS l WITH (NOLOCK) ON o.leagueid = l.leagueid
-				INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
-			WHERE b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
-				AND b.winlostdate BETWEEN @TempFromDate AND @ToDate
-				AND b.bettype = @bettype
-				AND ((@CurrencyId = 0 AND b.currency IN (SELECT currencyId FROM #Currency))
-					OR (@CurrencyId <> 0 AND b.Currency = @CurrencyId)) 
-				AND b.statusID NOT IN (101, 102, 103)
-				AND b.ruben = 1
-				AND sbt.ProductId = 2
+				INNER JOIN #TempData AS td ON b.transid = td.TransId
+			WHERE td.WhTicket = 1
 		END
 
 		-- Virtual Sports (EventType = 2)
@@ -461,16 +603,8 @@ BEGIN
 			FROM dbo.bettrans AS b WITH (NOLOCK)
 				INNER JOIN dbo.VSOutright AS o WITH (NOLOCK) ON b.oddsid = o.orid
 				INNER JOIN dbo.VSRaceInfo AS r WITH (NOLOCK) ON r.EventID = o.EventID
-				INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
-			WHERE b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
-				AND b.winlostdate BETWEEN @TempFromDate AND @ToDate
-				AND b.bettype = @bettype
-				AND ((@CurrencyId = 0 AND b.currency IN (SELECT currencyId FROM #Currency))
-					OR (@CurrencyId <> 0 AND b.Currency = @CurrencyId)) 
-				AND b.statusID NOT IN (101, 102, 103)
-				AND b.ruben = 1
-				AND sbt.ProductId = 5
-				AND sbt.EventType = 3
+				INNER JOIN #TempData AS td ON b.transid = td.TransId
+			WHERE td.WhTicket = 1
 		END
 
 		-- Keno
@@ -516,30 +650,14 @@ BEGIN
 				'' AS BetCheck,
 				'' AS TransDesc
 			FROM dbo.bettrans AS b WITH (NOLOCK)
-				INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
+				INNER JOIN #TempData AS td ON b.transid = td.TransId
 				CROSS APPLY dbo.f_ParseTransDesc(b.transdesc, b.bettype) AS fnc
-			WHERE b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
-				AND b.winlostdate BETWEEN @TempFromDate AND @ToDate
-				AND b.bettype = @bettype
-				AND ((@CurrencyId = 0 AND b.currency IN (SELECT currencyId FROM #Currency))
-					OR (@CurrencyId <> 0 AND b.Currency = @CurrencyId)) 
-				AND b.statusID NOT IN (101, 102, 103)
-				AND b.ruben = 1
-				AND sbt.ProductId = 8
+			WHERE td.WhTicket = 1
 		END
 	END
 
-	-- Bettrans14 range
-	IF @FromDate <= @MoveBetsDay
+	IF EXISTS (SELECT 1 FROM #TempData WHERE WhTicket = 2)
 	BEGIN
-		IF @ToDate >= @MoveBetsDay
-			SET @TempToDate = @MoveBetsDay
-		ELSE
-			SET @TempToDate = @ToDate
-
-		IF @BalanceUpDay < @FromDate
-			SELECT @BalanceUpDay = @FromDate
-
 		-- Sportsbook
 		IF EXISTS (SELECT 1 FROM @SportBettype WHERE ProductId = 1 AND Bettype = @BetType)
 		BEGIN
@@ -584,16 +702,8 @@ BEGIN
 				ISNULL(b.transdesc, '') AS TransDesc
 			FROM dbo.bettrans14 AS b WITH (NOLOCK)
 				INNER JOIN dbo.match14 AS m WITH (NOLOCK) ON b.matchid = m.matchid
-				INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
-				LEFT JOIN dbo.f_GroupBettype() AS ss ON b.bettype = ss.bettype
-			WHERE b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
-				AND b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
-				AND CASE WHEN ss.Bettype IS NULL THEN b.bettype ELSE ss.Grouptypeid END = @bettype
-				AND ((@CurrencyId = 0 AND b.currency IN (SELECT currencyId FROM #Currency))
-					OR (@CurrencyId <> 0 AND b.Currency = @CurrencyId)) 
-				AND b.statusID NOT IN (101, 102, 103)
-				AND b.ruben = 1
-				AND sbt.ProductId = 1
+				INNER JOIN #TempData AS td ON b.transid = td.TransId
+			WHERE td.WhTicket = 2
 		END
 
 		-- Outright
@@ -641,16 +751,8 @@ BEGIN
 			FROM dbo.bettrans14 AS b WITH (NOLOCK)
 				INNER JOIN dbo.outright14 AS o WITH (NOLOCK) ON b.matchid = o.orid
 				INNER JOIN dbo.League AS l WITH (NOLOCK) ON o.leagueid = l.leagueid
-				INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
-			WHERE b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
-				AND b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
-				AND b.bettype = @bettype
-				AND ((@CurrencyId = 0 AND b.currency IN (SELECT currencyId FROM #Currency))
-					OR (@CurrencyId <> 0 AND b.Currency = @CurrencyId)) 
-				AND b.statusID NOT IN (101, 102, 103)
-				AND b.ruben = 1
-				AND sbt.ProductId = 1
-				AND sbt.EventType = 2
+				INNER JOIN #TempData AS td ON b.transid = td.TransId
+			WHERE td.WhTicket = 2
 		END
 
 		-- Mix Parlay & System Parlay
@@ -699,16 +801,8 @@ BEGIN
 				'' AS BetCheck,
 				'' AS TransDesc
 			FROM dbo.bettrans14 AS b WITH (NOLOCK)
-				INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
-			WHERE b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
-				AND b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
-				AND b.bettype = @bettype
-				AND ((@CurrencyId = 0 AND b.currency IN (SELECT currencyId FROM #Currency))
-					OR (@CurrencyId <> 0 AND b.Currency = @CurrencyId)) 
-				AND b.statusID NOT IN (101, 102, 103)
-				AND b.ruben = 1
-				AND sbt.ProductId = 1
-				AND sbt.EventType = 0
+				INNER JOIN #TempData AS td ON b.transid = td.TransId
+			WHERE td.WhTicket = 2
 		END
 
 		-- Number Game, Live Casino, Virtual Sports (EventType = 1)
@@ -762,15 +856,8 @@ BEGIN
 			FROM dbo.bettrans14 AS b WITH (NOLOCK)
 				INNER JOIN dbo.match14 AS m WITH (NOLOCK) ON b.matchid = m.matchid
 				INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
-			WHERE b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
-				AND b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
-				AND b.bettype = @bettype
-				AND ((@CurrencyId = 0 AND b.currency IN (SELECT currencyId FROM #Currency))
-					OR (@CurrencyId <> 0 AND b.Currency = @CurrencyId)) 
-				AND b.statusID NOT IN (101, 102, 103)
-				AND b.ruben = 1
-				AND sbt.ProductId IN (3, 4, 5)
-				AND sbt.EventType = 1
+				INNER JOIN #TempData AS td ON b.transid = td.TransId
+			WHERE td.WhTicket = 2
 		END
 
 		-- Horse Racing (EventType = 2)
@@ -818,15 +905,8 @@ BEGIN
 			FROM dbo.bettrans14 AS b WITH (NOLOCK)
 				INNER JOIN dbo.outright14 AS o WITH (NOLOCK) ON b.matchid = o.orid
 				INNER JOIN dbo.League AS l WITH (NOLOCK) ON o.leagueid = l.leagueid
-				INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
-			WHERE b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
-				AND b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
-				AND b.bettype = @bettype
-				AND ((@CurrencyId = 0 AND b.currency IN (SELECT currencyId FROM #Currency))
-					OR (@CurrencyId <> 0 AND b.Currency = @CurrencyId)) 
-				AND b.statusID NOT IN (101, 102, 103)
-				AND b.ruben = 1
-				AND sbt.ProductId = 2
+				INNER JOIN #TempData AS td ON b.transid = td.TransId
+			WHERE td.WhTicket = 2
 		END
 
 		-- Virtual Sports (EventType = 2)
@@ -874,16 +954,8 @@ BEGIN
 			FROM dbo.bettrans14 AS b WITH (NOLOCK)
 				INNER JOIN dbo.VSOutright14 AS o WITH (NOLOCK) ON b.oddsid = o.orid
 				INNER JOIN dbo.VSRaceInfo AS r WITH (NOLOCK) ON r.EventID = o.EventID
-				INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
-			WHERE b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
-				AND b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
-				AND b.bettype = @bettype
-				AND ((@CurrencyId = 0 AND b.currency IN (SELECT currencyId FROM #Currency))
-					OR (@CurrencyId <> 0 AND b.Currency = @CurrencyId)) 
-				AND b.statusID NOT IN (101, 102, 103)
-				AND b.ruben = 1
-				AND sbt.ProductId = 5
-				AND sbt.EventType = 3
+				INNER JOIN #TempData AS td ON b.transid = td.TransId
+			WHERE td.WhTicket = 2
 		END
 
 		-- Keno
@@ -929,83 +1001,34 @@ BEGIN
 				'' AS BetCheck,
 				'' AS TransDesc
 			FROM dbo.bettrans14 AS b WITH (NOLOCK)
-				INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
+				INNER JOIN #TempData AS td ON b.transid = td.TransId
 				CROSS APPLY dbo.f_ParseTransDesc(b.transdesc, b.bettype) AS fnc
-			WHERE b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
-				AND b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
-				AND b.bettype = @bettype
-				AND ((@CurrencyId = 0 AND b.currency IN (SELECT currencyId FROM #Currency))
-					OR (@CurrencyId <> 0 AND b.Currency = @CurrencyId)) 
-				AND b.statusID NOT IN (101, 102, 103)
-				AND b.ruben = 1
-				AND sbt.ProductId = 8
+			WHERE td.WhTicket = 2
 		END
 	END
 
-	-- Get exchange rate
-	SELECT * 
-	INTO #TempExchange
-	FROM Lrf_f_GetExchangeDaily(@FromDate, @ToDate)
-	WHERE ExchangeId IN (SELECT DISTINCT Currency FROM #Data)
-
-	SELECT 
-		@TotalRows			= COUNT(b.TransId),
-		@SumWinlost			= SUM(ISNULL(b.WinLost, 0)),
-		@SumLicenseeWL		= SUM(ISNULL(b.LicenseeWL, 0)),
-		@SumComm			= SUM(ISNULL(b.Comm, 0)),
-		@SumPlayerComm		= SUM(ISNULL(b.PlayerComm, 0)),
-		--USD
-		@SumWinlostUSD		= SUM(ISNULL(b.WinLost		* e.USD, 0)),
-		@SumLicenseeWLUSD	= SUM(ISNULL(b.LicenseeWL	* e.USD, 0)),
-		@SumCommUSD			= SUM(ISNULL(b.Comm			* e.USD, 0)),
-		@SumPlayerCommUSD	= SUM(ISNULL(b.PlayerComm	* e.USD, 0)),
-		--EUR
-		@SumWinlostEUR		= SUM(ISNULL(b.WinLost		* e.EUR, 0)),
-		@SumLicenseeWLEUR	= SUM(ISNULL(b.LicenseeWL	* e.EUR, 0)),
-		@SumCommEUR			= SUM(ISNULL(b.Comm			* e.EUR, 0)),
-		@SumPlayerCommEUR	= SUM(ISNULL(b.PlayerComm	* e.EUR, 0)),
-		--GBP
-		@SumWinlostGBP		= SUM(ISNULL(b.WinLost		* e.GBP, 0)),
-		@SumLicenseeWLGBP	= SUM(ISNULL(b.LicenseeWL	* e.GBP, 0)),
-		@SumCommGBP			= SUM(ISNULL(b.Comm			* e.GBP, 0)),
-		@SumPlayerCommGBP	= SUM(ISNULL(b.PlayerComm	* e.GBP, 0))
+	SELECT
+		b.*,
+		SUBSTRING(c.username2, CHARINDEX('$',c.username2) + 1, LEN(c.username2) - CHARINDEX('$',c.username2)) AS Nickname,
+		Stake		* e.USD AS StakeUSD,
+		WinLost		* e.USD AS WinLostUSD,
+		LicenseeWL	* e.USD AS LicenseeWLUSD,
+		Comm		* e.USD AS CommUSD,
+		PlayerComm	* e.USD AS PlayerCommUSD,
+		Stake		* e.EUR AS StakeEUR,
+		WinLost		* e.EUR AS WinLostEUR,
+		LicenseeWL	* e.EUR AS LicenseeWLEUR,
+		Comm		* e.EUR AS CommEUR,
+		PlayerComm	* e.EUR AS PlayerCommEUR,
+		Stake		* e.GBP AS StakeGBP,
+		WinLost		* e.GBP AS WinLostGBP,
+		LicenseeWL	* e.GBP AS LicenseeWLGBP,
+		Comm		* e.GBP AS CommGBP,
+		PlayerComm	* e.GBP AS PlayerCommGBP
 	FROM #Data AS b
+		INNER JOIN dbo.Customer AS c (NOLOCK) ON b.custid = c.custid
 		INNER JOIN #TempExchange AS e ON e.ExchangeDate = b.WinLostDate AND e.Exchangeid = b.Currency
-
-	DECLARE @RowStart	INT,
-		@RowEnd			INT
-
-	SELECT @PageIndex = @PageIndex - 1,
-		@RowStart = @PageSize * @PageIndex + 1,
-		@RowEnd = @RowStart + @PageSize - 1
-
-	SELECT A.*
-	FROM
-		(
-			SELECT
-				ROW_NUMBER() OVER(ORDER BY b.transid) AS RowNum,
-				b.*,
-				SUBSTRING(c.username2, CHARINDEX('$',c.username2) + 1, LEN(c.username2) - CHARINDEX('$',c.username2)) AS Nickname,
-				Stake		* e.USD AS StakeUSD,
-				WinLost		* e.USD AS WinLostUSD,
-				LicenseeWL	* e.USD AS LicenseeWLUSD,
-				Comm		* e.USD AS CommUSD,
-				PlayerComm	* e.USD AS PlayerCommUSD,
-				Stake		* e.EUR AS StakeEUR,
-				WinLost		* e.EUR AS WinLostEUR,
-				LicenseeWL	* e.EUR AS LicenseeWLEUR,
-				Comm		* e.EUR AS CommEUR,
-				PlayerComm	* e.EUR AS PlayerCommEUR,
-				Stake		* e.GBP AS StakeGBP,
-				WinLost		* e.GBP AS WinLostGBP,
-				LicenseeWL	* e.GBP AS LicenseeWLGBP,
-				Comm		* e.GBP AS CommGBP,
-				PlayerComm	* e.GBP AS PlayerCommGBP
-			FROM #Data AS b
-				INNER JOIN dbo.Customer AS c (NOLOCK) ON b.custid = c.custid
-				INNER JOIN #TempExchange AS e ON e.ExchangeDate = b.WinLostDate AND e.Exchangeid = b.Currency
-		) A 
-	WHERE A.RowNum BETWEEN @RowStart AND @RowEnd
+	ORDER BY b.TransId
 
 	DECLARE @BettransDetail TABLE (
 		RefNo			BIGINT,
@@ -1023,7 +1046,7 @@ BEGIN
 	IF EXISTS (	SELECT 1
 				FROM #Data AS b
 					INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
-				WHERE sbt.ProductID = 4 )
+				WHERE sbt.ProductId = 4 )
 	BEGIN
 		INSERT INTO @BettransDetail
 		SELECT 
@@ -1039,9 +1062,9 @@ BEGIN
 			bg.stake * e.GBP
 		FROM dbo.bettransg AS bg WITH (NOLOCK)
 			INNER JOIN #Data AS b ON bg.refno = b.refno AND bg.custid = b.custid
-			INNER JOIN #TempExchange AS e ON e.ExchangeDate = B.WinLostDate AND e.Exchangeid = B.Currency
+			INNER JOIN #TempExchange AS e ON e.ExchangeDate = b.WinLostDate AND e.Exchangeid = b.Currency
 			INNER JOIN @SportBettype AS sbt ON bg.bettype = sbt.Bettype
-		WHERE sbt.ProductID = 4
+		WHERE sbt.ProductId = 4
 
 		INSERT INTO @BettransDetail
 		SELECT 
@@ -1057,15 +1080,15 @@ BEGIN
 			bg.stake * e.GBP
 		FROM dbo.bettransg14 AS bg WITH (NOLOCK)
 			INNER JOIN #Data AS b ON bg.refno = b.refno AND bg.custid = b.custid
-			INNER JOIN #TempExchange AS e ON e.ExchangeDate = B.WinLostDate AND e.Exchangeid = B.Currency
+			INNER JOIN #TempExchange AS e ON e.ExchangeDate = b.WinLostDate AND e.Exchangeid = b.Currency
 			INNER JOIN @SportBettype AS sbt ON bg.bettype = sbt.Bettype
-		WHERE sbt.ProductID = 4
+		WHERE sbt.ProductId = 4
 	END
 	
 	IF EXISTS (	SELECT 1
 				FROM #Data AS b
 					INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.Bettype
-				WHERE sbt.ProductID = 5 AND sbt.EventType = 3)
+				WHERE sbt.ProductId = 5 AND sbt.EventType = 3)
 	BEGIN
 		INSERT INTO @BettransDetail
 		SELECT 
@@ -1081,9 +1104,9 @@ BEGIN
 			bg.stake * e.GBP
 		FROM dbo.bettransm AS bg WITH (NOLOCK)
 			INNER JOIN #Data AS b ON bg.refno = b.refno AND bg.custid = b.custid
-			INNER JOIN #TempExchange AS e ON e.ExchangeDate = B.WinLostDate AND e.Exchangeid = B.Currency
+			INNER JOIN #TempExchange AS e ON e.ExchangeDate = b.WinLostDate AND e.Exchangeid = b.Currency
 			INNER JOIN @SportBettype AS sbt ON bg.bettype = sbt.Bettype
-		WHERE sbt.ProductID = 5 AND sbt.EventType = 3
+		WHERE sbt.ProductId = 5 AND sbt.EventType = 3
 
 		INSERT INTO @BettransDetail
 		SELECT 
@@ -1099,9 +1122,9 @@ BEGIN
 			bg.stake * e.GBP
 		FROM dbo.bettransm14 AS bg WITH (NOLOCK)
 			INNER JOIN #Data AS b ON bg.refno = b.refno AND bg.custid = b.custid
-			INNER JOIN #TempExchange AS e ON e.ExchangeDate = B.WinLostDate AND e.Exchangeid = B.Currency
+			INNER JOIN #TempExchange AS e ON e.ExchangeDate = b.WinLostDate AND e.Exchangeid = b.Currency
 			INNER JOIN @SportBettype AS sbt ON bg.bettype = sbt.Bettype
-		WHERE sbt.ProductID = 5 AND sbt.EventType = 3
+		WHERE sbt.ProductId = 5 AND sbt.EventType = 3
 	END
 
 	SELECT * FROM @BettransDetail 
@@ -1109,6 +1132,7 @@ BEGIN
 
 	DROP TABLE #TempExchange
 	DROP TABLE #Data
+	DROP TABLE #TempData
 	DROP TABLE #Currency
 END
 
