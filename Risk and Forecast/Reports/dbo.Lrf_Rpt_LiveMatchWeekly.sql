@@ -84,7 +84,7 @@ IF @fromdate <= @MoveBetsDay
 		FROM (
 				
 			SELECT COUNT(DISTINCT MatchID) MatchCount,rptdate EventDate,leagueId
-			 FROM [DBDWH].[bodb_Account].[dbo].[rptMatch] b WITH (NOLOCK) 
+			 FROM [DBWH].[bodb_Account].[dbo].[rptMatch] b WITH (NOLOCK) 
 			 WHERE b.rptdate BETWEEN @fromdate AND @TempToDate
 				  AND isLive =1	
 			 GROUP BY rptdate,leagueId
