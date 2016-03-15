@@ -69,9 +69,7 @@ IF @fromdate <= @MoveBetsDay
 		ELSE
 			SET @TempToDate = @todate
 	
-		IF @BalanceUpDay < @fromdate 
-			SELECT @BalanceUpDay = @fromdate
-								 
+	 
 		INSERT INTO #tmpRaw (EventDate,first_day_in_week , last_day_in_week, Sporttype,SportName,MatchCount)
 		SELECT   
 				m.EventDate
