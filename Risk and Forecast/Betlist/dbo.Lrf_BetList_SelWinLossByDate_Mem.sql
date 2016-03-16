@@ -2423,7 +2423,6 @@ BEGIN
 				b.winlostdate BETWEEN @fromdate AND @TempToDate 
 				AND b.custid = @custid 
 				AND b.recommend = @Recommend
-				AND b.ruben = 1 
 				AND sbt.ProductID = 1 
 				AND sbt.EventType = 2 
 				AND b.statusID IN (111, 112, 113)
