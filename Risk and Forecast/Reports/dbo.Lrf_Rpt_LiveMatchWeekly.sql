@@ -22,79 +22,57 @@ DECLARE @TempFromDate DATETIME
 		,@query nvarchar(max)=null	
 CREATE TABLE #tmpRaw (EventDate DATETIME,first_day_in_week VARCHAR(500),last_day_in_week VARCHAR(500),Sporttype INT,SportName VARCHAR(200),MatchCount INT)
 CREATE TABLE #tmpStr (ID INT IDENTITY (1,1),week VARCHAR(500),eventdate DATETIME)	
-CREATE TABLE #tmpSport (Sporttype INT,SportName VARCHAR(200))	
+CREATE TABLE #tmpSport (Sporttype INT,SportName VARCHAR(200))
+CREATE TABLE #tblMatchHedge(matchid INT,matchcode VARCHAR(500))
+	
 INSERT INTO #tmpSport (Sporttype, SportName)
 SELECT DISTINCT m.Sporttype,s.SportName
 FROM dbo.SportBettypeMatrix m WITH (NOLOCK) 
 	INNER JOIN dbo.Sports s WITH (NOLOCK) ON m.Sporttype = s.Sporttype
 WHERE m.ProductID =1 
--- Sec2: retrieve raw data
-IF @ToDate > @MoveBetsDay
-	BEGIN
-		IF @FromDate <= @MoveBetsDay 
-			SET @TempFromDate = DATEADD(DAY, 1, @MoveBetsDay)
-		ELSE
-			SET @TempFromDate = @FromDate
-		INSERT INTO #tmpRaw (EventDate,first_day_in_week , last_day_in_week, Sporttype,SportName,MatchCount)
-		SELECT   
-				m.EventDate
-				,CONVERT(VARCHAR,DATEADD (DAY, -DATEPART (WEEKDAY, EventDate) + 1, EventDate),106) AS first_day_in_week
-				,CONVERT(VARCHAR,DATEADD(d,6,(DATEADD (DAY, -DATEPART (WEEKDAY, EventDate) + 1, EventDate))),106) last_day_in_week
-			   ,l.sporttype
-			   ,s.SportName
-			   ,SUM(m.MatchCount) AS MatchCount
-			   
-		FROM (
-		SELECT    leagueid
-				  ,EventDate 
-				  ,COUNT (matchid) MatchCount
-		FROM  dbo.Match WITH ( NOLOCK )
-		WHERE Match.EventDate BETWEEN @TempFromDate AND @ToDate
-			  AND Match.haslive = 1
-		GROUP BY leagueid
-				  ,EventDate 	  
-		 
-		 )AS M
-			INNER JOIN dbo.League l WITH (NOLOCK) ON m.LeagueId = l.LeagueId
-			INNER JOIN #tmpSport s WITH (NOLOCK) ON l.sporttype= s.sporttype
-		GROUP BY EventDate
-			   ,l.sporttype					 
-			  ,s.SportName
-		ORDER BY EventDate ASC 	 
-	END
-IF @fromdate <= @MoveBetsDay
-	BEGIN
-		IF @todate >= @MoveBetsDay
-			SET @TempToDate = @MoveBetsDay
-		ELSE
-			SET @TempToDate = @todate
-	
-	 
-		INSERT INTO #tmpRaw (EventDate,first_day_in_week , last_day_in_week, Sporttype,SportName,MatchCount)
-		SELECT   
-				m.EventDate
-				,CONVERT(VARCHAR,DATEADD (DAY, -DATEPART (WEEKDAY, EventDate) + 1, EventDate),106) AS first_day_in_week
-				,CONVERT(VARCHAR,DATEADD(d,6,(DATEADD (DAY, -DATEPART (WEEKDAY, EventDate) + 1, EventDate))),106) last_day_in_week
-			   ,l.sporttype
-			   ,s.SportName
-			   ,SUM(m.MatchCount) AS MatchCount
-			   
-		FROM (
-				
-			SELECT COUNT(DISTINCT MatchID) MatchCount,rptdate EventDate,leagueId
-			 FROM [DBWH].[bodb_Account].[dbo].[rptMatch] b WITH (NOLOCK) 
-			 WHERE b.rptdate BETWEEN @fromdate AND @TempToDate
-				  AND isLive =1	
-			 GROUP BY rptdate,leagueId
+
+INSERT INTO #tblMatchHedge
+	SELECT m.Matchid, matchcode
+	FROM[DBWH].[bodb_Account].[dbo].match m WITH(NOLOCK)
+	WHERE m.eventdate BETWEEN @fromdate AND @ToDate
+		AND matchcode like '%Hedge%'
+	UNION
+	SELECT m.Matchid,matchcode
+	FROM [DBWH].[bodb_archive].[dbo].match m WITH(NOLOCK)
+	WHERE m.eventdate BETWEEN @fromdate AND @ToDate
+		AND matchcode like '%Hedge%'
 		
-			)AS M
-			INNER JOIN dbo.League l WITH (NOLOCK) ON m.LeagueId = l.LeagueId
-			INNER JOIN #tmpSport s WITH (NOLOCK) ON l.sporttype= s.sporttype
-		GROUP BY EventDate
-			   ,l.sporttype					 
-			  ,s.SportName
-		ORDER BY EventDate ASC 	 
-	END
+-- Sec2: retrieve raw data
+ 
+
+INSERT INTO #tmpRaw (EventDate,first_day_in_week , last_day_in_week, Sporttype,SportName,MatchCount)
+SELECT   
+		m.EventDate
+		,CONVERT(VARCHAR,DATEADD (DAY, -DATEPART (WEEKDAY, EventDate) + 1, EventDate),106) AS first_day_in_week
+		,CONVERT(VARCHAR,DATEADD(d,6,(DATEADD (DAY, -DATEPART (WEEKDAY, EventDate) + 1, EventDate))),106) last_day_in_week
+	   ,l.sporttype
+	   ,s.SportName
+	   ,SUM(m.MatchCount) AS MatchCount
+	   
+FROM (
+		
+	SELECT COUNT(DISTINCT b.MatchID) MatchCount,rptdate EventDate,leagueId
+	 FROM [DBWH].[bodb_Account].[dbo].[rptMatch] b WITH (NOLOCK) 
+	 LEFT JOIN #tblMatchHedge h ON b.matchId = h.matchId
+	 WHERE b.rptdate BETWEEN @fromdate AND @ToDate
+		  AND isLive =1	
+		  AND customercategory NOT IN (27,28,30) --- BARM, 8RM, Accountest
+		  AND ISNULL(h.matchId,0) = 0
+	 GROUP BY rptdate,leagueId
+
+	)AS M
+	INNER JOIN dbo.League l WITH (NOLOCK) ON m.LeagueId = l.LeagueId
+	INNER JOIN #tmpSport s WITH (NOLOCK) ON l.sporttype= s.sporttype
+GROUP BY EventDate
+	   ,l.sporttype					 
+	  ,s.SportName
+ORDER BY EventDate ASC 	 
+ 
 		
  -- Sec3: format template
 
