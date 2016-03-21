@@ -3,9 +3,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveMatchWeekly]
 	,@UserID 	INT
 	,@FromDate  DATETIME
 	,@ToDate    DATETIME
-	,@MoveBetsDay		DATETIME
-	,@BalanceUpDay		DATETIME
-	,@excludeTest BIT =1
+	
 AS	
 /*
 	Created: Jim
