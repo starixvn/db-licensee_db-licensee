@@ -1,10 +1,11 @@
 ﻿USE [CustDB]
 GO
-
+ 
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
+ 
 ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMember_MinMaxBet]
 	@custid INT,-- MemberID
 	
@@ -84,12 +85,9 @@ Revisions:
    - 20110613@Henry: Logging Enhancement
    - 20120326@Dom: Change CustSetting to Dep_CustSetting, CustSetting3rd to Dep_CustSetting3rd
    - 20140207@Jim: support to offer HorseRacingFixedOdds
- 
-   - 20151023@Victor: Support New Simplified Chinese
-   
- 
    - 20151015@Jim: Integrate Sportbook2 (Feature #44759)
- 
+   - 20151023@Victor: Support New Simplified Chinese
+   - 20160329@Jim: correct setting for MuayThai (RedmineID #55036)
 Param's Explanation:
 • @ErrCode:
     = 0: Update successfully.
@@ -395,6 +393,7 @@ BEGIN
 							WHEN 'zh-Hans' THEN N'最低投注/最高投注/单场最高投注不正确(于美式足球).'
 							WHEN 'TH' THEN N'การกำหนดจำนวนเงินสำหรับการวางเดิมพันต่ำสุด/ สูงสุด/สูงสดต่อรายการไม่ถูกต้อง (สำหรับกีฬาอเมริกันฟุตบอล).'
 							WHEN 'Ja' THEN N'Wrong Min bet/ Max bet/ Max per match (for Football).'
+
 							WHEN 'KO' THEN N'잘못된 최소 배팅/최대 배팅/경기당 최대 (풋볼).'
 							ELSE N'Wrong Min bet/ Max bet/ Max per match (for Football).'
 					END
@@ -1390,7 +1389,7 @@ SET
 												OR (@UpdateMinMaxBetv8 = 0 AND sporttype=8)
 												OR (@UpdateMinMaxBetv10 = 0 AND sporttype=10)
 												OR (@UpdateMinMaxBetv11 = 0 AND sporttype=11)
-												OR (@UpdateMinMaxBetv44 = 0 AND sporttype=3)
+												OR (@UpdateMinMaxBetv44 = 0 AND sporttype=44 AND bettype=3)
 												OR (@UpdateMinMaxBetv154 = 0 AND sporttype=154)
 												OR (@UpdateMinMaxBetv99 = 0 AND sporttype=99 AND bettype<>9)
 												OR (@UpdateMinMaxBetv99MP = 0 AND sporttype=99 AND bettype=9)
@@ -1416,9 +1415,7 @@ begin
 END
 
 
- 
 EXEC dbo.Lrf_CustomerUpdMaxPerMatch 
- 
 	@custid = @custid,
 	@maxpermatch = @maxpermatch,
 	@maxpermatchv2 = @maxpermatchv2,
@@ -1648,8 +1645,7 @@ EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
 	@duration = @duration
 
 ---------------------------------------------------------
-
 GO
-GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMember_MinMaxBet] TO [bodbLicenseeNet]
+GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMember_MinMaxBet] TO [bodbLicenseeNet] AS [dbo]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerUpdMember_MinMaxBet] TO [vnteam]
+GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerUpdMember_MinMaxBet] TO [vnteam] AS [dbo]
