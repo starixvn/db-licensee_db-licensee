@@ -22,7 +22,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProduct]
  @ShowBG   		BIT=0, -- Bingo 
  @ShowKN   		BIT=0, -- Keno
  @ShowMGCLC 	BIT=0,-- MicroGamming
- @ShowMGCRnG 	BIT=0,-- MicroGamming 
+ @ShowMGCRnG 	BIT=0,-- MicroGamming
+ @ShowVB		BIT=0,-- Voidbridge
  @ReportType	TINYINT=1,  
  @MoveBetsDay SMALLDATETIME,
  @IsOld BIT = 0,
@@ -36,10 +37,10 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProduct]
 AS    
 /*  Created: Henry  
 	Date: 2011-07-06
-    Task : Winloss By Product Report for Licensee 
-    DB: DB052.bodb02  
+	Task : Winloss By Product Report for Licensee 
+	DB: DB052.bodb02  
    
-    Revisions:  
+	Revisions:  
 	- 20111013@Henry: change to use rptLicWinloss2
 	- 20111208@Jim: change bettype condition
 	- 20120214@Jim: change to use  table ExchangeDaily by use function Lrf_f_GetExchangeDaily  	
@@ -68,6 +69,7 @@ AS
 	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
 	- 20151001@Jim: remove MicroGaming
 	- 20151228@Bobby: Support MBC RNG Casino sporttype(208,209,210)	
+	- 20160331@Walter: Support Voidbridge single wallet [Redmine: #55057]
 	- 20160413@Victor: support MKK currency code [Redmine: #55745]
 	
 	Param's Explanation:  
@@ -94,7 +96,7 @@ CREATE TABLE #SAgWinLoss (
 	Winlost			MONEY,  
 	LicenseeWL		MONEY, 
 	Comm			MONEY,  
-    PlayerComm 		MONEY, 	
+	PlayerComm 		MONEY, 	
 	AmtDueTo3rd		MONEY,
 	Betcount		BIGINT
 )  
@@ -173,16 +175,16 @@ DROP TABLE #Currency
 IF @ShowSB = 1  
 BEGIN  
 	INSERT  INTO @sporttype( sporttype)
-    VALUES  (0)	
+	VALUES  (0)	
 	
 END  
 
 IF @ShowLC = 1
 BEGIN
 	INSERT  INTO @sporttype( Sporttype)
-    VALUES  (162)
-    
-    INSERT INTO @bettype(bettype)
+	VALUES  (162)
+	
+	INSERT INTO @bettype(bettype)
 	SELECT typeid FROM bettype (NOLOCK)
 	WHERE (typeid BETWEEN 1101 AND 1199)
 END
@@ -190,7 +192,7 @@ END
 IF @ShowRB = 1  
 BEGIN  
 	INSERT  INTO @sporttype( Sporttype)
-    VALUES  (151)
+	VALUES  (151)
 END  
 
 IF @ShowNG = 1
@@ -205,7 +207,7 @@ END
 IF @ShowVS = 1
 BEGIN
 	INSERT  INTO @sporttype( Sporttype)
-    SELECT  180
+	SELECT  180
 	
 	INSERT INTO @bettype(bettype)
 	SELECT typeid FROM bettype (NOLOCK)
@@ -262,6 +264,15 @@ BEGIN
 	INSERT INTO @bettype(bettype)
 	SELECT typeid FROM bettype (NOLOCK)
 	WHERE (typeid BETWEEN 2008 AND 2009)
+END
+IF @ShowVB=1 -- Voidbridge
+BEGIN 
+	INSERT INTO @sporttype (sporttype)
+	VALUES(212)
+
+	INSERT INTO @bettype(bettype)
+	SELECT typeid FROM bettype (NOLOCK)
+	WHERE (typeid BETWEEN 4001 AND 7999)
 END
 
 DECLARE @TempFromDate DATETIME 
@@ -362,8 +373,8 @@ BEGIN
 			b.winlostdate,a.currency,b.statusID
 	END
 	
-	--SB + RB + LC
-	IF (@ShowNG=1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGCLC = 1 OR @showMGCRnG = 1 )
+	--SB + RB + LC + VB
+	IF 1 IN (@ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @showMGCRnG, @ShowVB )
 	BEGIN
 		SELECT 
 			DISTINCT
@@ -391,6 +402,7 @@ BEGIN
 				WHEN b.bettype BETWEEN 1501 AND 1599  THEN 'KN'
 				WHEN b.bettype BETWEEN 2001 AND 2007 THEN 'MGCLC'
 				WHEN b.bettype BETWEEN 2008 AND 2009 THEN 'MGCRNG'
+				WHEN b.bettype BETWEEN 4001 AND 7999 THEN 'VB'
 				
 			END AS ProductCode,
 			SUM(stake
@@ -434,6 +446,7 @@ BEGIN
 				WHEN b.bettype BETWEEN 1501 AND 1599  THEN 'KN'
 				WHEN b.bettype BETWEEN 2001 AND 2007 THEN 'MGCLC'
 				WHEN b.bettype BETWEEN 2008 AND 2009 THEN 'MGCRNG'
+				WHEN b.bettype BETWEEN 4001 AND 7999 THEN 'VB'
 			END 
 			,b.statusID
 		DROP TABLE #tmpVS	
@@ -521,7 +534,7 @@ BEGIN
 		GROUP BY  b.winlostdate,  b.currency, b.statusID
 	END
 	
-	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 or @ShowLC=1  OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGCLC = 1 OR @showMGCRnG = 1 )
+	IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowLC, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @showMGCRnG, @ShowVB )
 	BEGIN
 		INSERT INTO #SAgWinLoss  
 		SELECT 
@@ -537,6 +550,7 @@ BEGIN
 				WHEN b.sporttype = 202 THEN 'KN'
 				WHEN b.sporttype = 203 THEN 'MGCLC'
 				WHEN b.sporttype = 205 THEN 'MGCRNG'
+				WHEN b.sporttype = 212 THEN 'VB'
 			END AS ProductCode,
 			SUM(b.turnover
 			*
@@ -581,6 +595,7 @@ BEGIN
 				WHEN b.sporttype = 202 THEN 'KN'
 				WHEN b.sporttype = 203 THEN 'MGCLC'
 				WHEN b.sporttype = 205 THEN 'MGCRNG'
+				WHEN b.sporttype = 212 THEN 'VB'
 				 
 			END
 			, b.statusID
@@ -769,7 +784,7 @@ BEGIN
 			bodb_Licensee.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
 			INNER JOIN @TempAg ag ON b.recommend = ag.custID AND ag.Currency = b.Currency
 		WHERE  
-		    b.Winlostdate BETWEEN @FDate AND @TempToDate  
+			b.Winlostdate BETWEEN @FDate AND @TempToDate  
 			AND (@CustId = 0 OR (@CustId <> 0 AND b.CustId = @CustID))
 			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
@@ -779,7 +794,7 @@ BEGIN
 	END
 
 	--exclude BA tickets
-	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1  or @ShowLC=1 or @ShowVS=1 or @ShowCS=1 or @ShowBG=1OR @ShowKN=1 )
+	IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowVB )
 	BEGIN
 		INSERT INTO #SAgWinLoss  
 		SELECT 
@@ -796,6 +811,7 @@ BEGIN
 				WHEN b.sporttype = 202 THEN 'KN'
 				WHEN b.sporttype = 203 THEN 'MGCLC'
 				WHEN b.sporttype = 205 THEN 'MGCRNG'
+				WHEN b.sporttype = 212 THEN 'VB'
 				 
 			END AS ProductCode,
 			SUM(b.turnover
@@ -840,7 +856,8 @@ BEGIN
 				WHEN b.sporttype = 202 THEN 'KN'
 				WHEN b.sporttype = 203 THEN 'MGCLC'
 				WHEN b.sporttype = 205 THEN 'MGCRNG'
-				 
+				WHEN b.sporttype = 212 THEN 'VB'
+								 
 			END,
 			b.statusID
 	END
@@ -886,14 +903,14 @@ SELECT
    CAST(SUM(PlayerComm*e.USD)  			AS MONEY)	AS PlayerCommUSD,
    CAST(SUM(AmtDueto3rd*e.USD) 			AS MONEY)	AS AmtDueto3rdUSD,
    
-    --BaseEUR  
+	--BaseEUR  
    CAST(SUM(TurnOver*e.EUR)				AS MONEY)	AS TurnoverEUR,   
    CAST(SUM(Winlost*e.EUR)				AS MONEY)	AS WinlostEUR,  
    CAST(SUM(LicenseeWL*e.EUR) 			AS MONEY)	AS LicenseeWLEUR,
    CAST(SUM(Comm * e.EUR) 				AS MONEY)	AS CommEUR,
    CAST(SUM(PlayerComm*e.EUR) 			AS MONEY)	AS PlayerCommEUR,
    CAST(SUM(AmtDueto3rd*e.EUR) 			AS MONEY)	AS AmtDueto3rdEUR,
-    --BaseGBP  
+	--BaseGBP  
    CAST(SUM(TurnOver*e.GBP)				AS MONEY)	AS TurnoverGBP,   
    CAST(SUM(Winlost*e.GBP)				AS MONEY)	AS WinlostGBP,  
    CAST(SUM(LicenseeWL*e.GBP) 			AS MONEY)	AS LicenseeWLGBP,

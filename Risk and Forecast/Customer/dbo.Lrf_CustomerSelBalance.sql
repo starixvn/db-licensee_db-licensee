@@ -53,6 +53,7 @@ Revisions:
 	
 	- 20160118@Victor: Exclude Bettrade tickets on AmountDueToBA column [Redmine: 51053]
 	- 20160125@Victor: Fix incorrect formula of AmountDueToBettrade column [Redmine: 51053]
+	- 20160331@Walter: Support Voidbridge single wallet [Redmine: #55057]
 */
 SET NOCOUNT ON
 
