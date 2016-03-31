@@ -20,16 +20,16 @@ Original: Age_CustomerSelBalance_Ag
 Param's Explanation:  
 	+ @IsOld: 0 - query IN table rptLicWinloss, 1 - query IN table rptLicWinloss_old. 
 Revisions:
-    - 20110225@Henry: Allow to choose all type of licensee AND all currency + suppport based currency
-    - 20110513@Henry: change bettype to new range
-    - 20110609@Henry: change rptLicWinlost to rptLicWinloss
-    - 20110711@Henry: show Comm, Amt Due to for each 3rd party product: BA, Racing. Show Licensee W/L (remove PT)
-    - 20110729@Henry: offer 3 new bettypes for Number Game
-    - 20111013@Henry: Change to use rptLicWinloss2
-    - 20111212@Jim:   Change condition bettype<19000
-    - 20120214@Jim: change table ExchangeDaily by function Lrf_f_GetExchangeDaily  
-    - 20120305@Henry: enhance performance
-    - 20120319@Don: reduce IO by using covering index
+	- 20110225@Henry: Allow to choose all type of licensee AND all currency + suppport based currency
+	- 20110513@Henry: change bettype to new range
+	- 20110609@Henry: change rptLicWinlost to rptLicWinloss
+	- 20110711@Henry: show Comm, Amt Due to for each 3rd party product: BA, Racing. Show Licensee W/L (remove PT)
+	- 20110729@Henry: offer 3 new bettypes for Number Game
+	- 20111013@Henry: Change to use rptLicWinloss2
+	- 20111212@Jim:   Change condition bettype<19000
+	- 20120214@Jim: change table ExchangeDaily by function Lrf_f_GetExchangeDaily  
+	- 20120305@Henry: enhance performance
+	- 20120319@Don: reduce IO by using covering index
 	- 20120724@Jim: add player commission value 
 	- 20121004@Jim: replace @currencyname input param by @currencyID
 	- 20130417@Scott: Support RNG Casino and Bingo  
@@ -48,10 +48,10 @@ Revisions:
 	- 20150128@JIm: base on GBP
 	- 20150612@Jim: support MicroGaming
 	- 20150626@Winnie: support bettrade
-    - 20151001@Jim: remove MicroGaming
+	- 20151001@Jim: remove MicroGaming
 	- 20151228@Bobby: Remove RNG Casino
 	
-    - 20160118@Victor: Exclude Bettrade tickets on AmountDueToBA column [Redmine: 51053]
+	- 20160118@Victor: Exclude Bettrade tickets on AmountDueToBA column [Redmine: 51053]
 	- 20160125@Victor: Fix incorrect formula of AmountDueToBettrade column [Redmine: 51053]
 */
 SET NOCOUNT ON
@@ -205,7 +205,7 @@ DECLARE @SumOutstanding as table
 )
 DECLARE @LicenseeWL as table
 (
-    winlostdate smalldatetime,
+	winlostdate smalldatetime,
 	currency INT,
 	LicenseeWL money,
 	AmtDuetoBA money,
@@ -274,27 +274,27 @@ DROP TABLE #Currency
 
 --outstanding then get today rate
 INSERT INTO @SumOutstanding (currency,outstanding)
-    SELECT a.currency,ISNULL(SUM(b.actual_stake),0)
-    FROM 
-	    dbo.bettrans b WITH(NOLOCK) 
-        INNER JOIN @TempAg a ON b.recommend = a.custid AND b.currency = a.currency
-    WHERE 
-	    --b.bettype <= 1299 
+	SELECT a.currency,ISNULL(SUM(b.actual_stake),0)
+	FROM 
+		dbo.bettrans b WITH(NOLOCK) 
+		INNER JOIN @TempAg a ON b.recommend = a.custid AND b.currency = a.currency
+	WHERE 
+		--b.bettype <= 1299 
 		b.bettype <= 1399 
-	    AND b.statusid IN (0,1)
-    GROUP BY a.currency
+		AND b.statusid IN (0,1)
+	GROUP BY a.currency
 
 --Keno sport
 INSERT INTO @SumOutstanding (currency,outstanding)
-    SELECT a.currency,ISNULL(SUM(b.actual_stake),0)
-    FROM 
-	    bodb02.dbo.Translog b WITH(NOLOCK) 
-        INNER JOIN @TempAg a ON b.recommend = a.custid AND b.currency = a.currency
-    WHERE 
-	    --b.productid =202--Keno 
-	    --AND 
+	SELECT a.currency,ISNULL(SUM(b.actual_stake),0)
+	FROM 
+		bodb02.dbo.Translog b WITH(NOLOCK) 
+		INNER JOIN @TempAg a ON b.recommend = a.custid AND b.currency = a.currency
+	WHERE 
+		--b.productid =202--Keno 
+		--AND 
 		b.statusid = 0 -- running
-    GROUP BY a.currency
+	GROUP BY a.currency
 	
 SELECT 
 	@MemberOutstanding=ISNULL(SUM(outstanding),0),
@@ -311,7 +311,7 @@ FROM
 --****Begin For Yesterday and Today Winloss Part***	
 --Yesterday/Today Licensee WL
 CREATE TABLE #Temp_Bettrans
-		     ( srecommend int
+			 ( srecommend int
 			   ,winlostdate smalldatetime
 			   ,bettype smallint
 			   ,currency int
@@ -320,9 +320,9 @@ CREATE TABLE #Temp_Bettrans
 			   ,winlost money
 			   ,tpositiontaking smallmoney
 			   ,comm money
-		       ,playercomm money
+			   ,playercomm money
 			   ,awinlost money
-		       ,actual_stake money
+			   ,actual_stake money
 			   ,betdaqid bigint
 			 )
 
@@ -356,8 +356,42 @@ SELECT srecommend
 FROM dbo.bettrans b WITH(NOLOCK) 
 	INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
 WHERE 
-     b.winlostdate BETWEEN @MoveBetsDay AND @Today 
+	 b.winlostdate BETWEEN @MoveBetsDay AND @Today 
 	AND b.bettype <= 1599 
+	AND b.statusID IN (111,112,113)
+	
+INSERT INTO #Temp_Bettrans (srecommend
+							,winlostdate
+							,bettype
+							,currency 
+							,statusID
+							,recommend
+							,winlost
+							,tpositiontaking
+							,comm
+							,playercomm
+							,awinlost
+							,actual_stake
+							,betdaqid
+							)
+SELECT srecommend
+	  ,winlostdate
+	  ,gameID
+	  ,ag.currency
+	  ,statusID
+	  ,recommend
+	  ,winlost
+	  ,tpositiontaking
+	  ,comm
+	  ,playercomm
+	  ,awinlost
+	  ,actual_stake
+	  ,-1
+FROM dbo.bettransRnG b WITH(NOLOCK) 
+	INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
+WHERE 
+	 b.winlostdate BETWEEN @MoveBetsDay AND @Today 
+	AND b.bettype BETWEEN 4001 AND 7999
 	AND b.statusID IN (111,112,113)	
 
 INSERT INTO @LicenseeWL (winlostdate,currency,LicenseeWL,AmtDuetoBA,AmtDuetoRB,WinlossRB,CommBA,CommRB,PlayerComm,WLBetTicket,BetTradeComm,WLBoughtTicket)
@@ -376,6 +410,7 @@ SELECT
 				OR b.bettype BETWEEN 1101 AND 1199 
 				OR b.bettype BETWEEN 1201 AND 1299 
 				OR b.bettype BETWEEN 1501 AND 1599 --Keno
+				OR b.bettype BETWEEN 4001 AND 7999
 			 
 				OR b.bettype IN (73)
 			)
@@ -443,7 +478,7 @@ SELECT
 FROM 
 	@LicenseeWL b 
 	INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Yesterday,@Yesterday))e 	
-	    ON e.exchangeid = b.currency AND b.winlostdate = @Yesterday
+		ON e.exchangeid = b.currency AND b.winlostdate = @Yesterday
 
 
 SELECT   
@@ -488,8 +523,8 @@ SELECT
 FROM 
 	@LicenseeWL b 
 	INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 	
-	    ON  e.exchangeid = b.currency AND b.winlostdate = @Today
-	    	
+		ON  e.exchangeid = b.currency AND b.winlostdate = @Today
+			
  --****End For Yesterday and Today Winloss Part***	
 
 			
@@ -517,23 +552,23 @@ BEGIN
 						SelectedMonthWLBoughtTicket
 						)
 						
-    SELECT 
-	    b.currency,
-	    ISNULL(SUM(LicenseeWL),0),
-	    ISNULL(SUM(AmtDuetoBA),0),
-	    ISNULL(SUM(AmtDuetoRB),0),
-	    ISNULL(SUM (WinlossRB),0),
-	    ISNULL(SUM (CommBA),0),
-	    ISNULL(SUM (CommRB),0),
+	SELECT 
+		b.currency,
+		ISNULL(SUM(LicenseeWL),0),
+		ISNULL(SUM(AmtDuetoBA),0),
+		ISNULL(SUM(AmtDuetoRB),0),
+		ISNULL(SUM (WinlossRB),0),
+		ISNULL(SUM (CommBA),0),
+		ISNULL(SUM (CommRB),0),
 		ISNULL(SUM (playercomm),0),
 		ISNULL(SUM (BetTradeComm),0),
 		ISNULL(SUM (b.WLBetTicket),0),
 		ISNULL(SUM (b.WLBoughtTicket),0)
-    FROM 
-	    @LicenseeWL b
-    WHERE 
-	    b.winlostdate BETWEEN @TempFromDate AND @_ToDate 
-    GROUP by b.currency
+	FROM 
+		@LicenseeWL b
+	WHERE 
+		b.winlostdate BETWEEN @TempFromDate AND @_ToDate 
+	GROUP by b.currency
 	
 	
 END
