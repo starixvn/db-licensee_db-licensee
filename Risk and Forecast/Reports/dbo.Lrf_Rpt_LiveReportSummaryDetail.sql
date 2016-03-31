@@ -164,7 +164,7 @@ BEGIN
 		END
 
 		--Not BA
-		IF	@ProductCode IN ('', 'NG', 'SB', 'RB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VG')
+		IF	@ProductCode IN ('', 'NG', 'SB', 'RB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VB')
 		BEGIN
 			SELECT	@sql = @sql + '--Get data from bettrans for non - BA' + CHAR(13)
 
@@ -198,7 +198,7 @@ BEGIN
 									WHEN @ProductCode = 'BG' THEN 'AND b.bettype = 73'
 									WHEN @ProductCode = 'KN' THEN 'AND b.bettype BETWEEN 1501 AND 1599'
 									WHEN @ProductCode = 'CS' THEN 'AND (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399)'
-									WHEN @ProductCode = 'VG' THEN 'AND b.bettype BETWEEN 4001 AND 7999'
+									WHEN @ProductCode = 'VB' THEN 'AND b.bettype BETWEEN 4001 AND 7999'
 									ELSE '' END + CHAR(13)
 								+ 'GROUP BY  b.winlostdate, t.currency, b.bettype' + CHAR(13)
 			--SB for parlay
@@ -231,7 +231,7 @@ BEGIN
 									WHEN @ProductCode = 'BG' THEN 'AND b.bettype = 73'
 									WHEN @ProductCode = 'KN' THEN 'AND b.bettype BETWEEN 1501 AND 1599'
 									WHEN @ProductCode = 'CS' THEN 'AND (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399)'
-									WHEN @ProductCode = 'VG' THEN 'AND b.bettype BETWEEN 4001 AND 7999'
+									WHEN @ProductCode = 'VB' THEN 'AND b.bettype BETWEEN 4001 AND 7999'
 									ELSE '' END + CHAR(13)
 								+ 'GROUP BY  b.winlostdate, t.currency, b.bettype	' + CHAR(13)
 		END
@@ -297,7 +297,7 @@ BEGIN
 		END
 
 		--Not BA
-		IF @ProductCode IN ('', 'RB', 'NG', 'SB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VG')
+		IF @ProductCode IN ('', 'RB', 'NG', 'SB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VB')
 		BEGIN
 			SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
 								+ 'SELECT b.rptDate, b.currencyID, b.bettype,' + CHAR(13)
@@ -327,7 +327,7 @@ BEGIN
 									WHEN @ProductCode = 'BG' THEN 'AND b.bettype = 73'
 									WHEN @ProductCode = 'KN' THEN 'AND b.bettype BETWEEN 1501 AND 1599'
 									WHEN @ProductCode = 'CS' THEN 'AND (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399)'
-									WHEN @ProductCode = 'VG' THEN 'AND b.bettype BETWEEN 4001 AND 7999'
+									WHEN @ProductCode = 'VB' THEN 'AND b.bettype BETWEEN 4001 AND 7999'
 									ELSE '' END + CHAR(13)
 								+ 'GROUP BY b.rptDate, b.currencyID, b.bettype' + CHAR(13)
 
@@ -365,7 +365,7 @@ BEGIN
 									WHEN @ProductCode = 'BG' THEN 'AND b.bettype = 73'
 									WHEN @ProductCode = 'KN' THEN 'AND b.bettype BETWEEN 1501 AND 1599'
 									WHEN @ProductCode = 'CS' THEN 'AND (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399)'
-									WHEN @ProductCode = 'VG' THEN 'AND b.bettype BETWEEN 4001 AND 7999'
+									WHEN @ProductCode = 'VB' THEN 'AND b.bettype BETWEEN 4001 AND 7999'
 									ELSE '' END + CHAR(13)
 								+ 'GROUP BY b.rptDate, b.currencyID, b.bettype' + CHAR(13)
 		END

@@ -267,7 +267,7 @@ BEGIN
 				WHEN b.bettype = 73	THEN 'BG'
 				WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN' -- Keno
 				WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 THEN 'CS' -- RNG CASINO
-				WHEN b.bettype BETWEEN 4001 AND 7999 THEN 'VG' -- Voidbridge
+				WHEN b.bettype BETWEEN 4001 AND 7999 THEN 'VB' -- Voidbridge
 				END AS ProductCode,
 			SUM(stake) turnover,
 			SUM(b.winlost - b.actual_stake) AS Winlost,
@@ -303,7 +303,7 @@ BEGIN
 				WHEN b.bettype = 73	THEN 'BG'
 				WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN' -- Keno
 				WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 THEN 'CS' -- RNG CASINO
-				WHEN b.bettype BETWEEN 4001 AND 7999 THEN 'VG' -- Voidbridge
+				WHEN b.bettype BETWEEN 4001 AND 7999 THEN 'VB' -- Voidbridge
 				END
 	END
 
@@ -389,7 +389,7 @@ BEGIN
 				WHEN b.bettype = 73	THEN 'BG'
 				WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN'
 				WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 THEN 'CS' -- RNG CASINO
-				WHEN b.bettype BETWEEN 4001 AND 7999 THEN 'VG' -- Voidbridge
+				WHEN b.bettype BETWEEN 4001 AND 7999 THEN 'VB' -- Voidbridge
 				END AS ProductCode,
 			SUM(b.turnover * CASE WHEN b.bettype = 33 AND b.status IN (114, 115) THEN 0.5 ELSE 1 END) turnover,
 			SUM(b.winloss) winlost,
@@ -426,7 +426,7 @@ BEGIN
 				WHEN b.bettype = 73	THEN 'BG'
 				WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN'
 				WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 THEN 'CS' -- RNG CASINO
-				WHEN b.bettype BETWEEN 4001 AND 7999 THEN 'VG' -- Voidbridge
+				WHEN b.bettype BETWEEN 4001 AND 7999 THEN 'VB' -- Voidbridge
 				END
 
 			-- parlay for SB
@@ -480,7 +480,7 @@ BEGIN
 			WHEN 'BG' THEN 'Bingo'
 			WHEN 'KN' THEN 'Keno'
 			WHEN 'CS' THEN 'RNG Casino'
-			WHEN 'VG' THEN 'Voidbridge'
+			WHEN 'VB' THEN 'Voidbridge'
 			ELSE 'Sportsbook'
 			END AS ProductName,
 		SUM(TurnOver) AS Turnover,
