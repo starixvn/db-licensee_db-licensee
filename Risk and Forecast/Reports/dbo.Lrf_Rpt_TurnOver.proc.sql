@@ -14,8 +14,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_TurnOver]
     @ShowNG			BIT = 0, 
     @ShowLC			BIT = 0,
     @ShowVS			BIT = 0,
-    @ShowCS			BIT = 0, --- RNG Casino
-    @ShowBG			BIT = 0, --- Bingo
+    @ShowCS			BIT = 0, -- RNG Casino
+    @ShowBG			BIT = 0, -- Bingo
     @ShowKN			BIT = 0, -- Keno 
 	@ShowBT			BIT = 0, -- Bet Trade 
 	@ShowMGCLC 		BIT = 0,
@@ -113,8 +113,7 @@ IF @ShowMGCLC	= 1 INSERT INTO @sporttype(sporttype) VALUES(203)
 IF @ShowMGCRnG	= 1 INSERT INTO @sporttype(sporttype) VALUES(205)
 IF @ShowAGC		= 1 INSERT INTO @sporttype(sporttype) VALUES(250)
 IF @ShowVB		= 1 INSERT INTO @sporttype(sporttype) VALUES(212)
-
-IF @ShowBT = 1 
+IF @ShowBT		= 1 
 BEGIN
 	INSERT INTO @sporttype(sporttype) VALUES(-2)
 	INSERT INTO @sporttype(sporttype) VALUES(-3)
