@@ -27,10 +27,10 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail_Ag]
 AS  
 /*  Created: Henry  
 	Date: 2011-07-06
-    Task : Winloss By Product Detail Report for Licensee Agent Level
-    DB: DB052.bodb02  
+	Task : Winloss By Product Detail Report for Licensee Agent Level
+	DB: DB052.bodb02  
    
-    Revisions:  
+	Revisions:  
 	- 20111013@Henry: Change to use rptLicWinlost2	
 	- 20111208@Jim: chang bettype condition 
 	- 20120214@Jim: change to use  table ExchangeDaily by use function Lrf_f_GetExchangeDaily  
@@ -83,7 +83,7 @@ CREATE TABLE #SAgWinLoss(
 	Winlost			MONEY,  
 	LicenseeWL		MONEY, 
 	Comm			MONEY, 
-    PlayerComm 		MONEY,
+	PlayerComm 		MONEY,
 	AmtDueTo3rd		MONEY,
 	Betcount		BIGINT
 )  
@@ -133,13 +133,13 @@ DROP TABLE #Currency
 IF @ShowSB = 1  
 BEGIN  
 	INSERT  INTO @sporttype( sporttype)
-    VALUES  (0)	
+	VALUES  (0)	
 END  
 
 IF @ShowRB = 1  
 BEGIN  
 	INSERT  INTO @sporttype( Sporttype)
-    VALUES  (151)
+	VALUES  (151)
 END  
 
 IF @ShowNG = 1
@@ -154,18 +154,18 @@ END
 IF @ShowLC = 1
 BEGIN
 	INSERT  INTO @sporttype( Sporttype)
-    VALUES  (162)
-    
-    INSERT INTO @bettype(bettype)
+	VALUES  (162)
+	
+	INSERT INTO @bettype(bettype)
 	SELECT typeid FROM bettype (NOLOCK)
 	WHERE (typeid BETWEEN 1101 AND 1199)
 END
 IF @ShowVS = 1
 BEGIN
 	INSERT  INTO @sporttype( Sporttype)
-    SELECT 180 
+	SELECT 180 
 	
-    INSERT INTO @bettype(bettype)
+	INSERT INTO @bettype(bettype)
 	SELECT typeid FROM bettype (NOLOCK)
 	WHERE (typeid BETWEEN 1201 AND 1299)
 END
@@ -525,7 +525,7 @@ BEGIN
 				ELSE 1 END
 			),     
 			SUM(b.winlost),  
-			SUM(CASE WHEN ( b.sporttype IN(0,161,162,251,252,202,203,205,208,209,210 ))  THEN -1 * b.winlost WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS LicenseeWL ,
+			SUM(CASE WHEN ( b.sporttype IN(0,161,162,251,252,202,203,205,208,209,210,212 ))  THEN -1 * b.winlost WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS LicenseeWL ,
 			SUM(comm ) as Comm,
 			SUM( PlayerComm  ) AS PlayerComm,
 			- SUM (b.awinlost + b.winlost + b.comm) as AmountDueTo3rd,
@@ -712,7 +712,7 @@ BEGIN
 				ELSE 1 END
 			),     
 			SUM(b.winlost),  
-			SUM(CASE WHEN (b.sporttype IN (0,161,162,180,251,252,202,203,205,208,209,210 ))  THEN -1 * b.winlost WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS LicenseeWL ,
+			SUM(CASE WHEN (b.sporttype IN (0,161,162,180,251,252,202,203,205,208,209,210,212 ))  THEN -1 * b.winlost WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS LicenseeWL ,
 			SUM(comm) as Comm,
 			SUM( b.playerComm ) AS PlayerComm, 
 			- SUM (b.awinlost + b.winlost + b.comm) as AmountDueTo3rd,
@@ -774,11 +774,11 @@ SELECT
 
 	--BaseRM  
 	CAST(SUM(TurnOver*e.MYR)			AS MONEY)	AS TurnoverMYR,   
-    CAST(SUM(Winlost*e.MYR)				AS MONEY)	AS WinlostMYR,  
-    CAST(SUM(LicenseeWL*e.MYR) 			AS MONEY)	AS LicenseeWLMYR,
+	CAST(SUM(Winlost*e.MYR)				AS MONEY)	AS WinlostMYR,  
+	CAST(SUM(LicenseeWL*e.MYR) 			AS MONEY)	AS LicenseeWLMYR,
 	CAST(SUM(Comm * e.MYR) 				AS MONEY)	AS CommMYR,
-    CAST(SUM(PlayerComm* e.MYR) 		AS MONEY)	AS PlayerCommMYR,
-    CAST(SUM(AmtDueto3rd*e.MYR) 		AS MONEY)	AS AmtDueto3rdMYR,
+	CAST(SUM(PlayerComm* e.MYR) 		AS MONEY)	AS PlayerCommMYR,
+	CAST(SUM(AmtDueto3rd*e.MYR) 		AS MONEY)	AS AmtDueto3rdMYR,
 	
 	--BaseUSD  
 	CAST(SUM(TurnOver*e.USD)			AS MONEY)	AS TurnoverUSD,   

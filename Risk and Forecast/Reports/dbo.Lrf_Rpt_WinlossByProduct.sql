@@ -560,7 +560,7 @@ BEGIN
 					ELSE 1 END
 			),     
 			SUM(b.winlost),  
-			SUM(CASE WHEN (b.sporttype in(0,161,162,251,252,202,203,205,208,209,210 ))  THEN -1 * b.winlost 
+			SUM(CASE WHEN (b.sporttype in(0,161,162,251,252,202,203,205,208,209,210,212 ))  THEN -1 * b.winlost 
 					WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END
 				) AS LicenseeWL,
 			SUM(comm ) as Comm,
@@ -823,7 +823,7 @@ BEGIN
 				
 			),     
 			SUM(b.winlost),  
-			SUM(CASE WHEN (b.sporttype in(0,161,162,180,251,252,202,203,205,208,209,210 ))  THEN -1 * b.winlost WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS LicenseeWL ,
+			SUM(CASE WHEN (b.sporttype in(0,161,162,180,251,252,202,203,205,208,209,210,212 ))  THEN -1 * b.winlost WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS LicenseeWL ,
 			SUM(comm) as Comm,
 			SUM( playerComm  ) AS PlayerComm,
 			- SUM (b.awinlost + b.winlost + b.comm) as AmountDueTo3rd,
