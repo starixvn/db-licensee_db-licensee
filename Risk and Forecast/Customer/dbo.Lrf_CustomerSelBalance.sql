@@ -369,42 +369,8 @@ FROM dbo.bettrans b WITH(NOLOCK)
 	INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
 WHERE 
 	 b.winlostdate BETWEEN @MoveBetsDay AND @Today 
-	AND b.bettype <= 1599
+	AND (b.bettype <= 1599 OR b.bettype BETWEEN 4001 AND 7999)
 	AND b.statusID IN (111,112,113)
-	
-INSERT INTO #Temp_Bettrans (srecommend
-							,winlostdate
-							,bettype
-							,currency 
-							,statusID
-							,recommend
-							,winlost
-							,tpositiontaking
-							,comm
-							,playercomm
-							,awinlost
-							,actual_stake
-							,betdaqid
-							)
-SELECT srecommend
-	  ,winlostdate
-	  ,gameID
-	  ,ag.currency
-	  ,statusID
-	  ,recommend
-	  ,winlost
-	  ,tpositiontaking
-	  ,comm
-	  ,playercomm
-	  ,awinlost
-	  ,actual_stake
-	  ,-1
-FROM dbo.bettransRnG b WITH(NOLOCK) 
-	INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
-WHERE 
-	 b.winlostdate BETWEEN @MoveBetsDay AND @Today 
-	AND b.gameID BETWEEN 4001 AND 7999
-	AND b.statusID IN (111,112,113)	
 
 INSERT INTO @LicenseeWL (winlostdate,currency,LicenseeWL,AmtDuetoBA,AmtDuetoRB,WinlossRB,CommBA,CommRB,PlayerComm,WLBetTicket,BetTradeComm,WLBoughtTicket)
 SELECT
