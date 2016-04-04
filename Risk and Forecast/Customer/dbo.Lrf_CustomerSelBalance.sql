@@ -296,6 +296,17 @@ INSERT INTO @SumOutstanding (currency,outstanding)
 		--AND 
 		b.statusid = 0 -- running
 	GROUP BY a.currency
+
+--Voidbridge
+INSERT INTO @SumOutstanding (currency,outstanding)
+	SELECT a.currency,ISNULL(SUM(b.actual_stake),0)
+	FROM 
+		dbo.bettransRnG b WITH(NOLOCK) 
+		INNER JOIN @TempAg a ON b.recommend = a.custid AND b.currency = a.currency
+	WHERE 
+		b.gameID BETWEEN 4001 AND 7999
+		AND b.statusid IN (0,1)
+	GROUP BY a.currency
 	
 SELECT 
 	@MemberOutstanding=ISNULL(SUM(outstanding),0),
@@ -358,7 +369,7 @@ FROM dbo.bettrans b WITH(NOLOCK)
 	INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
 WHERE 
 	 b.winlostdate BETWEEN @MoveBetsDay AND @Today 
-	AND b.bettype <= 1599 
+	AND b.bettype <= 1599
 	AND b.statusID IN (111,112,113)
 	
 INSERT INTO #Temp_Bettrans (srecommend
@@ -392,7 +403,7 @@ FROM dbo.bettransRnG b WITH(NOLOCK)
 	INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
 WHERE 
 	 b.winlostdate BETWEEN @MoveBetsDay AND @Today 
-	AND b.bettype BETWEEN 4001 AND 7999
+	AND b.gameID BETWEEN 4001 AND 7999
 	AND b.statusID IN (111,112,113)	
 
 INSERT INTO @LicenseeWL (winlostdate,currency,LicenseeWL,AmtDuetoBA,AmtDuetoRB,WinlossRB,CommBA,CommRB,PlayerComm,WLBetTicket,BetTradeComm,WLBoughtTicket)
