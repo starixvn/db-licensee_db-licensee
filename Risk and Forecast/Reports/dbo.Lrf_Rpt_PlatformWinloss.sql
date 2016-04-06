@@ -1,29 +1,29 @@
 ﻿USE [bodb02]
 GO
 ALTER PROCEDURE [dbo].[Lrf_Rpt_PlatformWinloss]   
- @LicenseeID	INT,
- @UserID		INT,
- @CurrencyID	INT = 0,
- @FromDate		SMALLDATETIME,  
- @ToDate		SMALLDATETIME,   
- @showSB		BIT=0,  
- @ShowRB		BIT=0,  
- @ShowNG		BIT=0, 
- @ShowBA		BIT=0,
- @ShowLC 		BIT=0,
- @ShowVS		BIT=0,
- @ShowKN		BIT=0,
- @ShowCS		BIT=0,
- @ShowMGCLC		BIT=0,
- @ShowMGCRNG	BIT=0,
- @ShowVB		BIT=0,		
- @PlatformType	TINYINT=1, 
- @MoveBetsDay SMALLDATETIME,
- @drawfilter SMALLINT = 1,
- @excludeTest BIT = 0
+	 @LicenseeID	INT,
+	 @UserID		INT,
+	 @CurrencyID	INT = 0,
+	 @FromDate		SMALLDATETIME,  
+	 @ToDate		SMALLDATETIME,   
+	 @showSB		BIT=0,  
+	 @ShowRB		BIT=0,  
+	 @ShowNG		BIT=0, 
+	 @ShowBA		BIT=0,
+	 @ShowLC 		BIT=0,
+	 @ShowVS		BIT=0,
+	 @ShowKN		BIT=0,
+	 @ShowCS		BIT=0,
+	 @ShowMGCLC		BIT=0,
+	 @ShowMGCRNG	BIT=0,
+	 @ShowVB		BIT=0,		
+	 @PlatformType	TINYINT=1, 
+	 @MoveBetsDay SMALLDATETIME,
+	 @drawfilter SMALLINT = 1,
+	 @excludeTest BIT = 0
 AS
 
-/*  Created: 20160401@Victor
+/*  Created: 20160406@Victor
     Task : Platform WinLoss Report 
     DB: DBEXT/bodb02  
    
@@ -46,7 +46,7 @@ AS
 	  + @ShowMGCLC: Show MicroGamming Live Casino
 	  + @ShowMGCRNG: Show MicroGamming RNG Casino
 	  + @ShowKN: Show Keno
-	  + @ShowCVB: Show Voidbridge
+	  + @ShowVB: Show Voidbridge
 	  + @MoveBetsDay: The day we move tickets to bettrans14
 */
     
