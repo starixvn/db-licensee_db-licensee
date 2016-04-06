@@ -50,12 +50,13 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinLossByDate_Mem]
 	@ShowMGCLC			BIT				= 0,	-- Microgaming Live Casino
 	@ShowMGCRNG			BIT				= 0,	-- Microgaming RNG Casino
 	@ShowAGC			BIT				= 0,
+	@ShowVB				BIT				= 0,	-- Voidbridge
 	@ShowBT				BIT				= 0		-- Bet Trade
 AS
 
 /*
 	Created: 20101209@Henry
-	Task : Bet List Win-loss By Date
+	Task: Bet List Win-loss By Date
 	DB: DBACC.bodb02
 	Original: [Age_BetList_SelWinLossByDate_Mem]
 
@@ -67,12 +68,12 @@ AS
 						Get data for Number Game
 		- 20110513@Henry: change bettype to new range
 		- 20110523@Henry: remove @ShowCasino, @ShowP2P, @ShowFI, @ShowBI
-		- 20110712@Henry: Add column LicenseeWL	
+		- 20110712@Henry: Add column LicenseeWL
 		- 20110729@Henry: offer 3 new bettypes for Number Game + Combination Mixed Parlay
 		- 20111208@Jim: change condition bettype<31
 		- 20111229@Jim: change the way to get odds/oddstype/betteam to web dev
 		- 20120319@Henry: show main transid for sub-ticket of system parlay
-		- 20120614@Jim: optimize code 
+		- 20120614@Jim: optimize code
 		- 20120711@Jim: get value for hdp1, hdp2
 		- 20120726@Jim: add playercomm value
 		- 20120817@Jim: add live casino
@@ -84,10 +85,10 @@ AS
 		- 20130903@Jim: support Virtual Horse Racing
 		- 20131101@Victor: enhance performance
 		- 20140326@Jim: offer Keno
-		- 20140630@Hannah: offer BetRadar and Sporting Solution 
-		- 20140819@Jim: add more output @SumBetEffective  
+		- 20140630@Hannah: offer BetRadar and Sporting Solution
+		- 20140819@Jim: add more output @SumBetEffective
 		- 20140908@Jim: restrict Virtual Horse Racing bettype (hot fix  #22012)
-		- 20141128@Jim: add more input param @CurrencyID   
+		- 20141128@Jim: add more input param @CurrencyID
 		- 20150128@Winnie: Add base currency GBP
 		- 20150406@Winnie: Apply sporttype, bettype matrix and add 60 bettypes betradar 
 		- 20150406@Winnie: fix bug
@@ -104,6 +105,7 @@ AS
 		- 20160201@Kos: Support PH All In One 1.2 [#Redmine: 50897]
 		- 20160216@Kos: Support yesterday running ticket [Redmine: #52277]
 		- 20160316@Kos: Exclude Void/Reject tickets [Redmine: #43921]
+		- 20160405@Kos: Support Voidbridge [#Redmine: 54925]
 */
 
 BEGIN
@@ -133,7 +135,8 @@ BEGIN
 		OR ProductID	= CASE WHEN @ShowAGC = 0	THEN 11 END
 		OR ProductID	= CASE WHEN @ShowMGCLC = 0	THEN 13 END
 		OR ProductID	= CASE WHEN @ShowMGCRNG = 0	THEN 17 END
-		OR (ProductID > 8 AND ProductID NOT IN (11, 13, 17)) -- not suport for LIC system
+		OR ProductID	= CASE WHEN @ShowVB	 = 0	THEN 22 END
+		OR (ProductID > 8 AND ProductID NOT IN (11, 13, 17, 22)) -- not suport for LIC system
 
 	DECLARE @UserName		NVARCHAR(20)
 		, @Recommend		INT
@@ -160,16 +163,16 @@ BEGIN
 	-----------------------------------------
 	CREATE TABLE #BetListByDateMem (
 		Sporttype		SMALLINT,
-		Username		NVARCHAR(20), 
+		Username		NVARCHAR(20),
 		TransID			BIGINT,
 		BetID			BIGINT,
 		Bettype			SMALLINT,
-		hdp1			SMALLMONEY, 
-		hdp2			SMALLMONEY, 
+		hdp1			SMALLMONEY,
+		hdp2			SMALLMONEY,
 		OddsType		TINYINT,
-		Odds			MONEY, 
-		modds			MONEY, 
-		Stake			MONEY, 
+		Odds			MONEY,
+		modds			MONEY,
+		Stake			MONEY,
 		Actual_Stake	MONEY,
 		Betteam			NVARCHAR(20),
 		Status			NVARCHAR(10),
@@ -245,10 +248,10 @@ BEGIN
 		SELECT
 			b.TransID,
 			ISNULL(b.BetID,0),
-			b.Bettype,
+			b.bettype,
 			b.hdp1,
 			b.hdp2,
-			b.OddsType,
+			b.oddstype,
 			b.Odds,
 			b.modds,
 			b.stake,
@@ -360,7 +363,7 @@ BEGIN
 				b.LiveAwayscore,
 				b.IP,
 				m.LeagueID,
-				m.OrId,--0, --MatchID
+				m.OrId, --MatchID
 				m.MatchCode,
 				m.GroupMatch,--Race
 				m.TeamID, --HomeID
@@ -852,7 +855,7 @@ BEGIN
 				r.LeagueID,
 				o.EventID matchid,
 				CONVERT(VARCHAR(50),o.RacerNum) MatchCode,
-				b.oddsid AS Race,	
+				b.oddsid AS Race,
 				o.RacerID HomeID,
 				0 AwayID,
 				r.Betstatus,
@@ -998,8 +1001,8 @@ BEGIN
 				AND b.statusID IN (111, 112, 113)
 		END
 
-		-- Microgaming RNG Casino, RNG Casino Single Wallet
-		IF @ShowCS = 1 OR @ShowMGCRNG = 1
+		-- Microgaming RNG Casino, RNG Casino Single Wallet, Voidbridge
+		IF @ShowCS = 1 OR @ShowMGCRNG = 1 OR @ShowVB = 1
 		BEGIN
 			-- Up to yesterday settled ticket
 			INSERT INTO #BetListByDateMem
@@ -1007,11 +1010,12 @@ BEGIN
 				CASE
 					WHEN sbt.ProductID = 6 THEN b.matchid
 					WHEN sbt.ProductID = 17 THEN 205
+					WHEN sbt.ProductID = 22 THEN 212
 				END AS Sporttype,
-				@Username, 
-				b.TransID,
-				ISNULL(b.BetID, 0),
-				b.Bettype,
+				@Username,
+				b.transid,
+				ISNULL(b.betid, 0),
+				b.bettype,
 				0 AS hdp1,
 				0 AS hdp2,
 				0 AS oddstype,
@@ -1022,7 +1026,7 @@ BEGIN
 				'' AS betteam,
 				b.status,
 				b.refno,
-				b.Transdate,
+				b.transdate,
 				b.winlostdate,
 				(b.winlost - b.actual_stake) AS Winlost,
 				ABS(b.winlost - b.actual_stake) AS BetEffective,
@@ -1045,7 +1049,7 @@ BEGIN
 				'' AS ShowTime,
 				'' AS betcheck,
 				CASE
-					WHEN sbt.ProductID = 6 THEN b.transdesc
+					WHEN sbt.ProductID IN (6, 22) THEN b.transdesc
 					ELSE ''
 				END AS transdesc
 			FROM
@@ -1056,7 +1060,7 @@ BEGIN
 				AND b.winlostdate < DATEADD(DAY, DATEDIFF(DAY, 1, GETDATE()), 0)	-- not yesterday and today
 				AND b.recommend = @Recommend --to improve performance
 				AND b.custid = @CustID 
-				AND (sbt.ProductID = 17 
+				AND (sbt.ProductID IN (17, 22)
 					OR (sbt.ProductID = 6 AND sbt.SubProduct <> ''))
 				AND b.statusID IN (111, 112, 113)
 
@@ -1069,6 +1073,7 @@ BEGIN
 					CASE
 						WHEN sbt.ProductID = 6 THEN b.matchid
 						WHEN sbt.ProductID = 17 THEN 205
+						WHEN sbt.ProductID = 22 THEN 212
 					END AS Sporttype,
 					@Username, 
 					b.transid,
@@ -1111,7 +1116,7 @@ BEGIN
 					'' AS showtime,
 					'' AS betcheck,
 					CASE
-						WHEN sbt.ProductID = 6 THEN b.transdesc
+						WHEN sbt.ProductID IN (6, 22) THEN b.transdesc
 						ELSE ''
 					END AS transdesc
 				FROM
@@ -1123,7 +1128,7 @@ BEGIN
 						AND DATEADD(DAY, DATEDIFF(DAY, 0, GETDATE()), 0)		-- yesterday and today
 					AND b.custid = @custid 
 					AND (@currencyID = 0 OR b.currency = @currencyID) 
-					AND (sbt.ProductID = 17
+					AND (sbt.ProductID IN (17, 22)
 						OR (sbt.ProductID = 6 AND sbt.SubProduct <> ''))
 					AND brng.statusID <> 0
 				GROUP BY
@@ -1326,18 +1331,18 @@ BEGIN
 			-- Sportsbook
 			INSERT INTO #BetListByDateMem
 			SELECT
-				m.Sporttype, 
-				@Username, 
+				m.Sporttype,
+				@Username,
 				b.TransID,
 				b.BetID,
 				b.Bettype,
-				b.hdp1, 
+				b.hdp1,
 				b.hdp2,
 				b.OddsType,
 				b.Odds,
 				b.modds,
 				b.stake,
-				b.actual_stake, 
+				b.actual_stake,
 				b.betteam,
 				b.status,
 				b.refno,
@@ -1400,7 +1405,7 @@ BEGIN
 				b.LiveAwayscore,
 				b.IP,
 				m.LeagueID,
-				m.OrId,--0, --MatchID
+				m.OrId, --MatchID
 				m.MatchCode,
 				m.GroupMatch,--Race
 				m.TeamID, --HomeID
@@ -1530,12 +1535,12 @@ BEGIN
 			INSERT INTO #BetListByDateMem
 			SELECT
 				0, --Sporttype
-				@Username, 
+				@Username,
 				b.TransID,
 				ISNULL(b.BetID,0),
 				b.bettype,
-				b.hdp1, 
-				b.hdp2, 
+				b.hdp1,
+				b.hdp2,
 				0 AS OddsType,
 				b.Odds,
 				b.modds,
@@ -1589,7 +1594,7 @@ BEGIN
 				b.Bettype,
 				CONVERT(FLOAT, b.hdp1) AS hdp1,
 				CONVERT(FLOAT, b.hdp2) AS hdp2,
-				0 AS OddsType, 
+				0 AS OddsType,
 				b.Odds,
 				b.modds,
 				b.stake,
@@ -1609,7 +1614,7 @@ BEGIN
 				b.LiveAwayscore,
 				b.IP,
 				m.LeagueID,
-				m.OrId,--0, --MatchID
+				m.OrId, --MatchID
 				m.MatchCode,
 				m.GroupMatch AS Race,
 				m.TeamID, --HomeID
@@ -1640,13 +1645,13 @@ BEGIN
 		BEGIN
 			INSERT INTO #BetListByDateMem
 			SELECT
-				m.Sporttype, 
-				@Username, 
+				m.Sporttype,
+				@Username,
 				b.TransID,
 				ISNULL(ob.bettype,0),
 				b.Bettype,
-				b.hdp1, 
-				b.hdp2, 
+				b.hdp1,
+				b.hdp2,
 				b.Oddstype,
 				ob.odds,
 				b.modds,
@@ -1914,9 +1919,9 @@ BEGIN
 				AND b.statusID IN (111, 112, 113)
 		END
 
-		-- RNG Casino, Bingo, AG Casino, Microgaming Live Casino, Microgaming RNG Casino
-		IF @ShowCS = 1 OR @ShowBG = 1 OR @ShowMGCLC = 1 OR @ShowMGCRNG = 1 OR @ShowAGC = 1
-		BEGIN	
+		-- RNG Casino, Bingo, AG Casino, Microgaming Live Casino, Microgaming RNG Casino, Voidbridge
+		IF @ShowCS = 1 OR @ShowBG = 1 OR @ShowMGCLC = 1 OR @ShowMGCRNG = 1 OR @ShowAGC = 1  OR @ShowVB = 1
+		BEGIN
 			INSERT INTO #BetListByDateMem
 			SELECT
 				CASE
@@ -1926,6 +1931,7 @@ BEGIN
 					WHEN sbt.ProductID = 11 THEN 250
 					WHEN sbt.ProductID = 13 THEN 203
 					WHEN sbt.ProductID = 17 THEN 205
+					WHEN sbt.ProductID = 22 THEN 212
 				END AS Sporttype,
 				@Username, 
 				b.TransID,
@@ -1996,6 +2002,7 @@ BEGIN
 				END AS betcheck,
 				CASE
 					WHEN sbt.ProductID = 6 AND sbt.SubProduct <> '' THEN b.transdesc
+					WHEN sbt.ProductID = 22 THEN b.transdesc
 					ELSE ''
 				END AS transdesc
 			FROM
@@ -2005,7 +2012,7 @@ BEGIN
 				b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate 
 				AND b.recommend = @Recommend --to improve performance
 				AND b.custid = @CustID 
-				AND sbt.ProductID IN (6, 7, 11, 13, 17) 
+				AND sbt.ProductID IN (6, 7, 11, 13, 17, 22)
 				AND b.statusID IN (111, 112, 113)
 		END
 
@@ -2708,8 +2715,8 @@ BEGIN
 				AND b.statusID IN (111, 112, 113)
 		END
 
-		-- RNG Casino, Bingo, Microgaming Live Casino, Microgaming RNG Casino, AG Casino
-		IF @ShowCS = 1 OR @ShowBG = 1 OR @ShowMGCLC = 1 OR @ShowMGCRNG = 1 OR @ShowAGC = 1
+		-- RNG Casino, Bingo, Microgaming Live Casino, Microgaming RNG Casino, AG Casino, Voidbridge
+		IF @ShowCS = 1 OR @ShowBG = 1 OR @ShowMGCLC = 1 OR @ShowMGCRNG = 1 OR @ShowAGC = 1 OR @ShowVB = 1
 		BEGIN
 			INSERT INTO #BetListByDateMem
 			SELECT
@@ -2720,6 +2727,7 @@ BEGIN
 					WHEN sbt.ProductID = 11 THEN 250
 					WHEN sbt.ProductID = 13 THEN 203
 					WHEN sbt.ProductID = 17 THEN 205
+					WHEN sbt.ProductID = 22 THEN 212
 				END AS Sporttype,
 				@Username, 
 				b.TransID,
@@ -2790,6 +2798,7 @@ BEGIN
 				END AS betcheck,
 				CASE
 					WHEN sbt.ProductID = 6 AND sbt.SubProduct <> '' THEN b.transdesc
+					WHEN sbt.ProductID = 22 THEN b.transdesc
 					ELSE ''
 				END AS transdesc
 			FROM
@@ -2799,7 +2808,7 @@ BEGIN
 				b.winlostdate BETWEEN @fromdate AND @TempToDate 
 				AND b.custid = @CustID 
 				AND b.recommend = @Recommend 
-				AND sbt.ProductID IN (6, 7, 11, 13, 17)
+				AND sbt.ProductID IN (6, 7, 11, 13, 17, 22)
 				AND sbt.EventType = 0 
 				AND b.statusID IN (111, 112, 113)
 		END
@@ -2933,7 +2942,7 @@ BEGIN
 	FROM
 	(
 		SELECT
-			ROW_NUMBER() over(ORDER BY b.TransID) AS RowNum,
+			ROW_NUMBER() OVER(ORDER BY b.TransID) AS RowNum,
 			b.*,
 			--USD
 			Stake			* e.USD AS StakeUSD,

@@ -18,13 +18,14 @@ AS
 
 /*
 	Created: Kos@20150921
-	Task : Get ticket detail from table betransRnG (Microgaming RNG Game)
+	Task : Get ticket detail from table bettransRnG (Microgaming RNG Game)
 	DB: DBEXT.bodb02
 	Original:
 	Revisions:
 		- 20150924@Kos: Add column BetCheck to return TranId3rd for showing ticket result
-		- 20151029@Kos: Change SportType of Microgaming RNG Game
+		- 20151029@Kos: Change SportType of Microgaming RNG Casino
 		- 20151223@Kos: Support RNG Casino Single Wallet and use SportBettypeMatrix [Redmine: #48958]
+		- 20160406@Kos: Support Voidbridge [#Redmine: 54925]
 
 	Parameters:
 		- @TransType
@@ -43,7 +44,7 @@ BEGIN
 	EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode = 5
 
 	DELETE FROM @SportBettype
-	WHERE ProductID NOT IN (6, 17)	-- Support Microgaming RNG Casino, RNG Casino Single Wallet
+	WHERE ProductID NOT IN (6, 17, 22)	-- Support Microgaming RNG Casino, RNG Casino Single Wallet, Voidbridge
 		OR (ProductID = 6 AND SubProduct = '')
 
 	DECLARE @tmpStatus TABLE (statusId TINYINT)
@@ -51,33 +52,33 @@ BEGIN
 	IF @TransType = 0
 	BEGIN
 		INSERT INTO @tmpStatus
-		SELECT 111 UNION ALL 
-		SELECT 112 UNION ALL 
+		SELECT 111 UNION ALL
+		SELECT 112 UNION ALL
 		SELECT 113 UNION ALL
-		SELECT 101 UNION ALL 
-		SELECT 102 UNION ALL 
-		SELECT 103 UNION ALL 
-		SELECT 0 UNION ALL 
+		SELECT 101 UNION ALL
+		SELECT 102 UNION ALL
+		SELECT 103 UNION ALL
+		SELECT 0 UNION ALL
 		SELECT 1
 	END
 	ELSE IF @TransType = 1
 	BEGIN
 		INSERT INTO @tmpStatus
-		SELECT 111 UNION ALL 
-		SELECT 112 UNION ALL 
-		SELECT 113 UNION ALL 
+		SELECT 111 UNION ALL
+		SELECT 112 UNION ALL
+		SELECT 113 UNION ALL
 		SELECT 103
 	END
 	ELSE IF @TransType = 2
 	BEGIN
 		INSERT INTO @tmpStatus
-		SELECT 101 UNION ALL 
+		SELECT 101 UNION ALL
 		SELECT 102
 	END 
 	ELSE IF @TransType = 3
 	BEGIN
-		INSERT INTO @tmpStatus(statusId)
-		SELECT 0 UNION ALL 
+		INSERT INTO @tmpStatus
+		SELECT 0 UNION ALL
 		SELECT 1
 	END
 
@@ -89,7 +90,7 @@ BEGIN
 		WinLostDate		SMALLDATETIME,
 		Status			VARCHAR(10),
 		StatusId		TINYINT,
-		Odds			SMALLMONEY,
+		Odds			MONEY,
 		Stake			MONEY,
 		Actual_Stake	MONEY,
 		WinLost			MONEY,
@@ -119,10 +120,7 @@ BEGIN
 			brng.playercomm,
 			brng.ip,
 			brng.transdesc,
-			CASE
-				WHEN sbt.productID IN (6, 17) THEN brng.TranId3rd
-				ELSE ''
-			END AS BetCheck
+			brng.TranId3rd AS BetCheck
 		FROM dbo.bettransRnG AS brng WITH (NOLOCK)
 			INNER JOIN @SportBettype AS sbt ON brng.gameID = sbt.Bettype
 		WHERE brng.custid = @CustId 
@@ -148,10 +146,7 @@ BEGIN
 			brng.playercomm,
 			brng.ip,
 			brng.transdesc,
-			CASE
-				WHEN sbt.productID IN (6, 17) THEN brng.TranId3rd
-				ELSE ''
-			END AS BetCheck
+			brng.TranId3rd AS BetCheck
 		FROM dbo.bettransRnG14 AS brng WITH (NOLOCK)
 			INNER JOIN @SportBettype AS sbt ON brng.gameID = sbt.Bettype
 		WHERE brng.custid = @CustId AND brng.RefNo = @RefNo
@@ -175,10 +170,7 @@ BEGIN
 			brng.playercomm,
 			brng.ip,
 			brng.transdesc,
-			CASE
-				WHEN sbt.productID IN (6, 17) THEN brng.TranId3rd
-				ELSE ''
-			END AS BetCheck
+			brng.TranId3rd AS BetCheck
 		FROM DBARC.bodb_Archive.dbo.bettransRnG_bk AS brng WITH (NOLOCK)
 			INNER JOIN @SportBettype AS sbt ON brng.gameID = sbt.Bettype
 		WHERE brng.custid = @CustId AND brng.RefNo = @RefNo
@@ -192,7 +184,7 @@ BEGIN
 	INTO #currency
 	FROM dbo.Lrf_f_GetCurrencybyUser(@LicenseeId, @UserId, 1)	-- System is default=1 (LRF)
 
-	SELECT @currency = c.currency 
+	SELECT @currency = c.currency
 	FROM dbo.custinfo AS c WITH (NOLOCK)
 		INNER JOIN #Currency AS cy ON c.Currency = cy.CurrencyID 
 	WHERE c.custid = @custid
