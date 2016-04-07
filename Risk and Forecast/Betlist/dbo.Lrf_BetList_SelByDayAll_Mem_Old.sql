@@ -228,7 +228,7 @@ BEGIN
 				WHEN sbt.ProductID = 1 THEN ISNULL(b.transdesc, '')
 				ELSE '' 
 			END AS transdesc
-		FROM bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)
+		FROM bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK, INDEX=IX_custid)
 			INNER JOIN bodb_archive.dbo.match_bk AS m WITH (NOLOCK) ON b.matchid = m.matchid
 			LEFT JOIN DBLIC.bodb_Licensee.dbo.LicenseeBATransaction AS ba WITH (NOLOCK) ON b.transid = ba.transid
 			INNER JOIN @SportBettype sbt ON b.bettype = sbt.bettype
@@ -293,7 +293,7 @@ BEGIN
 			'' AS ShowTime,
 			'' AS betcheck,
 			'' AS transdesc
-		FROM bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)
+		FROM bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK, INDEX=IX_custid)
 			INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.bettype
 			CROSS APPLY dbo.f_ParseTransDesc(b.transdesc, b.bettype) AS fnc
 		WHERE b.custid = @custid
@@ -346,7 +346,7 @@ BEGIN
 			CONVERT(VARCHAR(20),r.eventTime) AS ShowTime,
 			'' AS betcheck,
 			'' AS transdesc
-		FROM bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)
+		FROM bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK, INDEX=IX_custid)
 			INNER JOIN bodb_Archive.dbo.VSOutright_bk AS o WITH (NOLOCK) ON b.oddsid = o.Orid
 			INNER JOIN dbo.VSRaceInfo AS r WITH (NOLOCK) ON r.EventID = o.EventID
 			INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.bettype
@@ -404,7 +404,7 @@ BEGIN
 			'' AS betcheck,
 			'' AS transdesc
 		FROM
-			bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)
+			bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK, INDEX=IX_custid)
 			LEFT JOIN DBLIC.bodb_Licensee.dbo.LicenseeBATransaction AS ba WITH (NOLOCK) ON b.transid = ba.transid
 			INNER JOIN @SportBettype sbt ON b.bettype = sbt.bettype
 		WHERE b.custid = @custid
@@ -463,7 +463,7 @@ BEGIN
 			'' AS betcheck,
 			'' AS transdesc
 		FROM 
-			bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)
+			bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK, INDEX=IX_custid)
 			INNER JOIN bodb_archive.dbo.outright_bk AS m WITH (NOLOCK) ON b.matchid = m.orid
 			INNER JOIN dbo.league AS l WITH (NOLOCK) ON m.leagueid = l.leagueid
 			LEFT JOIN DBLIC.bodb_Licensee.dbo.LicenseeBATransaction AS ba WITH (NOLOCK) ON b.transid = ba.transid
@@ -577,7 +577,7 @@ BEGIN
 				WHEN sbt.ProductID = 22 THEN b.transdesc
 				ELSE ''
 			END AS transdesc
-		FROM bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK)
+		FROM bodb_archive.dbo.bettrans_bk AS b WITH (NOLOCK, INDEX=IX_custid)
 			INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.bettype
 		WHERE b.custid = @custid
 			AND b.winlostdate = @fromdate
