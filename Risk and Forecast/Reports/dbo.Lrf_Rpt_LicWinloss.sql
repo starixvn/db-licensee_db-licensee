@@ -251,7 +251,7 @@ END
 IF @ShowVB = 1
 BEGIN
 	INSERT INTO @sporttype (sporttype)
-	VALUES(250)
+	VALUES (212)
 
 	INSERT INTO @bettype(bettype)
 	SELECT	typeid FROM bettype (NOLOCK)
@@ -525,7 +525,7 @@ BEGIN
 					stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
 					-- stake * CASE WHEN @drawfilter IN (2,3) THEN CASE WHEN b.statusID = 111 THEN 0 ELSE 1 END ELSE 1 END
 				ELSE 0 END	
-			) AS turnoverAGC,
+			) AS turnoverVB,
 			0 AS BTActualStake,
 			SUM(b.winlost-b.actual_stake) AS Winlost,
 			0 AS LicenseeWLSB,
