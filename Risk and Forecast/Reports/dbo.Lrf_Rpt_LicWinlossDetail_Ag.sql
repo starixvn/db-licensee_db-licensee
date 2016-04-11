@@ -1187,7 +1187,7 @@ BEGIN
 						ELSE 1 END
 					ELSE 0 END
 				) AS turnoverAGC,
-				SUM(CASE WHEN b.sporttype = 250 THEN 
+				SUM(CASE WHEN b.sporttype = 212 THEN 
 					b.turnover
 					*
 					CASE WHEN @drawfilter IN (2,3) THEN
