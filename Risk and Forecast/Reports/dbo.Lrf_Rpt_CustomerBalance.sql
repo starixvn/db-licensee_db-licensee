@@ -50,6 +50,7 @@ Revisions:
 	- 20151108@Jim: Separated MicroGaming into 2 product
 	- 20151228@Patrick: Exclude 901 & 902 for turnover
 	- 20151228@Bobby: Implement RNG Casino sporttype(208,209,210)
+	- 20160408@Percy: Support Voidbridge single wallet [Redmine: #55057]
    
 Param's Explanation:  
 	+ @excludeTest: remove currency UUS  
