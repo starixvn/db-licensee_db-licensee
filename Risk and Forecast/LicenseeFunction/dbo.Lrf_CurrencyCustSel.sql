@@ -13,6 +13,7 @@ DB: DBLIC.bodb_Licensee
 
 
 Revisions:
+	- 20160413@Victor: support MKK currency code
     
 Param's Explanation:
 
@@ -35,6 +36,7 @@ BEGIN
 	SELECT c.CurrencyID ,
 		   CASE WHEN c.CurrencyID =20 THEN 'UUS'
 				WHEN c.CurrencyID =51 THEN 'INH'
+				WHEN c.CurrencyID =70 THEN 'MKK'
 				ELSE e.Code 
 			END AS CurrencyName	
 	FROM cte_Currency c
@@ -42,6 +44,7 @@ BEGIN
 		ON c.CurrencyID=e.ExchangeID 	
 	ORDER BY CASE WHEN c.CurrencyID =20 THEN 'UUS'
 				WHEN c.CurrencyID =51 THEN 'INH'
+				WHEN c.CurrencyID =70 THEN 'MKK'
 				ELSE e.Code 
 			 END
 		

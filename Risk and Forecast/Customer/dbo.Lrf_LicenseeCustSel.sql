@@ -18,6 +18,7 @@ AS
 	- 20130416@Jim: support multi language
 	- 20130507@Jim: hard-code to just show licensee description for licensee :1,5,7
 	- 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function 
+	- 20160413@Victor: support MKK currency code
 */
 
 SET NOCOUNT ON
@@ -27,7 +28,11 @@ SET NOCOUNT ON
 		,l.CustID
 		,l.RoleID
 		,l.Currency
-		,CASE WHEN l.CurrencyName = 'VND' THEN 'INH' ELSE l.CurrencyName END as CurrencyName
+		,CASE 
+			WHEN l.CurrencyName = 'VND' THEN 'INH' 
+			WHEN l.CurrencyName = 'MMK' THEN 'MKK' 
+			ELSE l.CurrencyName 
+		END as CurrencyName
 		,CASE WHEN l.licenseeID IN (1,5,7) THEN l.Description ELSE '' END AS Description
 		,m.MsgID
 	--FROM 

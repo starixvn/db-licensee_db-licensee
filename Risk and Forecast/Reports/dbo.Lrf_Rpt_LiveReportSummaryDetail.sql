@@ -52,6 +52,7 @@ Revisions:
 	- 20160201@Victor: Include Bettrade original ticket [Redmine: 51053]
 	- 20160218@Bobby: #52428 - Intergate RnG Casino product
 	- 20160218@Bobby: #52787 - Fix bug for showing parlay when choosing specific product code
+	- 20160413@Victor: support MKK currency code
 	
 Param's Explanation:  
 	@Liveindicator : indicate that whether the report will get live data or not
@@ -439,7 +440,7 @@ BEGIN
 
 	SELECT @sql = @sql + '-- Get winlost by currency  ' + CHAR(13)
 
-	SELECT @sql = @sql + 'select CASE WHEN e.Code = ''VND'' THEN ''INH'' ELSE e.code END AS Currency, ' + CHAR(13) + 'SUM(TurnOver) AS Turnover,' + CHAR(13) + 'SUM(Winlost)  AS Winlost,' + CHAR(13) + 'SUM(LicenseeWL) AS LicenseeWL,' + CHAR(13) + 'SUM(Comm) AS Comm,' + CHAR(13) + 'SUM(PlayerComm) AS PlayerComm,' + CHAR(13) + 'SUM(AmtDueto3rd) AS AmtDueto3rd, ' + CHAR(13) + 'SUM(Betcount) AS Betcount,' + CHAR(13) +
+	SELECT @sql = @sql + 'select CASE WHEN e.Code = ''VND'' THEN ''INH'' WHEN e.Code = ''MMK'' THEN ''MKK'' ELSE e.code END AS Currency, ' + CHAR(13) + 'SUM(TurnOver) AS Turnover,' + CHAR(13) + 'SUM(Winlost)  AS Winlost,' + CHAR(13) + 'SUM(LicenseeWL) AS LicenseeWL,' + CHAR(13) + 'SUM(Comm) AS Comm,' + CHAR(13) + 'SUM(PlayerComm) AS PlayerComm,' + CHAR(13) + 'SUM(AmtDueto3rd) AS AmtDueto3rd, ' + CHAR(13) + 'SUM(Betcount) AS Betcount,' + CHAR(13) +
 		--BaseEUR
 		'CAST(SUM(TurnOver*e.EUR) AS MONEY) AS TurnoverEUR,' + CHAR(13) + 'CAST(SUM(Winlost*e.EUR) AS MONEY) AS WinlostEUR,' + CHAR(13) + 'CAST(SUM(LicenseeWL*e.EUR) AS MONEY) AS LicenseeWLEUR,' + CHAR(13) + 'CAST(SUM(Comm * e.EUR) AS MONEY) AS CommEUR,' + CHAR(13) + 'CAST(SUM(PlayerComm * e.EUR) AS MONEY) AS PlayerCommEUR,' + CHAR(13) + 'CAST(SUM(AmtDueto3rd*e.EUR) AS MONEY) AS AmtDueto3rdEUR,' + CHAR(13) +
 		--BaseUSD
@@ -450,8 +451,8 @@ BEGIN
 		'from #tmpWinloss b  WITH (NOLOCK)  ' + CHAR(13) + 
 		'INNER JOIN #TempExchange e ' + CHAR(13) + 
 		'ON e.ExchangeDate = b.winlostdate   AND e.exchangeid = b.currency ' + CHAR(13) + 
-		'group by CASE WHEN e.Code = ''VND'' THEN ''INH'' ELSE e.code END' + CHAR(13) + 
-		'Order By CASE WHEN e.Code = ''VND'' THEN ''INH'' ELSE e.code END ' + CHAR(13)
+		'group by CASE WHEN e.Code = ''VND'' THEN ''INH'' WHEN e.Code = ''MMK'' THEN ''MKK'' ELSE e.code END' + CHAR(13) + 
+		'Order By CASE WHEN e.Code = ''VND'' THEN ''INH'' WHEN e.Code = ''MMK'' THEN ''MKK'' ELSE e.code END ' + CHAR(13)
 
 	-- Get winlost by bettype   
 	SELECT @sql = @sql + '-- Get winlost by bettype  ' + CHAR(13)
