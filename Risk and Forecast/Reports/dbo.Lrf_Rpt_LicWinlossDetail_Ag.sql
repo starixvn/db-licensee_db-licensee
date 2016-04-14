@@ -58,6 +58,7 @@ AS
 		- 20151230@Patrick: Add more output BuyBackAmt & BABuyBackAmt
 		- 20151228@Bobby: Support MBC RNG Casino sporttype(208,209,210)
 		- 20160216@Victor: Add Bettrade Actual Stake amount [Redmine: #51264]
+		- 20160413@Victor: support MKK currency code [Redmine: #55745]
 		
 	Param's Explanation:  
 	  + @CustID: SuperID  
@@ -1329,6 +1330,7 @@ WHERE exchangeid IN (SELECT DISTINCT Currency FROM #SAgWinLoss)
 	   w.custid, 
 	   w.currency,
 	   CASE WHEN w.Currency = 51 THEN @VNDCurrencyName 
+			WHEN w.Currency = 70 THEN 'MKK'
 				ELSE e.Code END AS CurrencyName,
 	   SUM(TurnoverSB)       AS TurnoverSB,   
 	   SUM(TurnoverBA)       AS TurnoverBA,   
@@ -1528,6 +1530,7 @@ WHERE exchangeid IN (SELECT DISTINCT Currency FROM #SAgWinLoss)
 		INNER JOIN Customer c WITH(NOLOCK) ON w.custid = c.custid
   GROUP BY w.currency,w.custid, c.username, 
 			CASE WHEN w.Currency = 51 THEN @VNDCurrencyName 
+				WHEN w.Currency = 70 THEN 'MKK'
 				ELSE e.Code END
   ORDER BY w.currency
 

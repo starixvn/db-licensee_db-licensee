@@ -1,7 +1,7 @@
 USE [bodb02]
 GO
  
-ALTER  PROCEDURE [dbo].[LRF_Rpt_AGCasinoWinloss_Mem] 
+ALTER PROCEDURE [dbo].[LRF_Rpt_AGCasinoWinloss_Mem] 
  @LicenseeID	INT,
  @CustID		INT, --- recommend
  @Currency		INT = 0,
@@ -12,7 +12,7 @@ ALTER  PROCEDURE [dbo].[LRF_Rpt_AGCasinoWinloss_Mem]
 AS  
 /*
 
- exec LRF_Rpt_AGCasinoWinloss_Mem
+  exec LRF_Rpt_AGCasinoWinloss_Mem
  @LicenseeID=1
 ,@Currency=0
 ,@UserID=10
@@ -31,6 +31,7 @@ AS
 			- 20150123@Jim: support base on Currency GBP
 			- 20150917@Florent: Change datasource for AG Casino
 			- 20151020@Florent: get MoveBetsDay
+			- 20160413@Victor: support MKK currency code [Redmine: #55745]
 	Param's Explanation:  
 	  + @excludeTest: remove currency UUS
 */  
@@ -152,134 +153,6 @@ BEGIN
 								AND c.sporttype = 250 -- AG Casino
 								AND c.statusID <> 101								
 							GROUP BY c.CustId, c.Winlostdate, c.Currency
-						)
-				END
-			END
-			IF @TempFromDate <= @MoveBetsDay 
-			BEGIN
-				IF @ToDate >= @MoveBetsDay
-						SET @ToDate2 = @MoveBetsDay
-					ELSE
-						SET @ToDate2 = @MoveBetsDay			
-				BEGIN
-					--SELECT @TempFromDate, @ToDate2
-					INSERT INTO #tmpResult(CustId, Winlostdate, Currency ,TurnOver, TotalTrans, Winlost, LicenseeWinlost)
-						(
-							SELECT c.CustID , c.Winlostdate, c.Currency
-									, SUM(c.TurnOver) AS TurnOver
-									, SUM(c.BetCount) AS TotalTrans
-									, SUM(c.Winlost)  AS Winlost
-									, -SUM(c.Winlost) AS LicenseeWinlost
-							FROM DBLIC.bodb_Licensee.dbo.rptLicWinloss2 c WITH (NOLOCK)
-								INNER JOIN #tmpCust ct ON c.Custid = ct.CustId AND c.Currency = ct.Currency
-							WHERE c.Winlostdate BETWEEN @TempFromDate AND @ToDate2 
-								AND c.roleid = 1
-								AND c.sporttype = 250 -- AG Casino
-								AND c.statusID <> 101								
-							GROUP BY c.CustId, c.Winlostdate, c.Currency
-						)						
-				END
-			END
-		END
-	END
-	
-	IF @FromDate <= @GapDate 
-	BEGIN
-		IF @ToDate >= @GapDate
-				SET @TempToDate = @GapDate
-			ELSE
-				SET  @TempToDate = @ToDate			
-		BEGIN
-			--SELECT @FromDate, @TempToDate 
-			INSERT INTO #tmpResult (CustID, Winlostdate, Currency, TurnOver, TotalTrans, Winlost, LicenseeWinlost)
-				(
-					SELECT c.CustId AS CustID
-						   ,c.Winlostdate		
-						   ,c.Currency
-						   ,SUM(c.TurnOver) AS TurnOver
-						   ,SUM(c.BetCount) AS TotalTrans
-						   ,SUM(c.Winlost)  AS Winlost
-						   ,-SUM(c.Winlost) AS LicenseeWinlost
-					FROM  bodb_report.dbo.rptDepWinlost_AGCasino c  WITH (NOLOCK)
-						  INNER JOIN #tmpCust ct ON c.CustID = ct.CustID AND c.Currency = ct.Currency
-					WHERE c.Winlostdate BETWEEN @FromDate AND @TempToDate 
-					GROUP BY c.CustId, c.Winlostdate, c.Currency
-				)
-		END
-	END
-	*/
-
-	DECLARE @TempFromDate	DATETIME 
-	DECLARE @TempToDate		DATETIME 
-	DECLARE @GapDate		DATETIME
-
-	SELECT @GapDate = MAX(c.Winlostdate) FROM bodb_report.dbo.rptDepWinlost_AGCasino c WITH (NOLOCK)
-	WHERE EXISTS (SELECT 1 FROM #tmpCust tc WHERE c.Custid = tc.CustId)
-	
-	IF @ToDate > @GapDate
-	BEGIN
-		IF @FromDate <= @GapDate 
-			SET @TempFromDate =  DATEADD(DAY,1,@GapDate)
-		ELSE
-			SET @TempFromDate = @FromDate
-		BEGIN
-			DECLARE @FromDate2		DATETIME 
-			DECLARE @ToDate2		DATETIME 
-			DECLARE @MoveBetsDay	DATETIME
-
-			--get MoveBetsDay
-			DECLARE @MoveBet TABLE (BalanceUpDay DATETIME, MoveBetsDay DATETIME)
-			INSERT INTO @MoveBet (BalanceUpDay, MoveBetsDay)
-			EXEC dbo.Lrf_SelBalanceUpDay
-
-			SELECT @MoveBetsDay = MoveBetsDay FROM @MoveBet
-			--
-			IF @ToDate > @MoveBetsDay
-			BEGIN
-				IF @TempFromDate <= @MoveBetsDay 
-					SET @FromDate2 =  DATEADD(DAY, 1, @MoveBetsDay)
-				ELSE
-					SET @FromDate2 = @FromDate
-				BEGIN
-					--SELECT @FromDate2, @ToDate															
-					INSERT INTO #tmpResult(CustId, Winlostdate, Currency ,TurnOver, TotalTrans, Winlost, LicenseeWinlost)
-						(							
-							SELECT c.CustId, c.Winlostdate, c.Currency
-									, SUM(c.stake)		AS TurnOver
-									, COUNT(1)			AS TotalTrans
-									, SUM(c.winlost - c.actual_stake)	AS Winlost
-									, - SUM(c.Winlost - c.actual_stake)	AS LicenseeWinlost
-							FROM dbo.bettransLC c WITH (NOLOCK)
-								INNER JOIN #tmpCust ct ON c.Custid = ct.CustId AND c.Currency = ct.Currency
-							WHERE c.Winlostdate BETWEEN @FromDate2 AND @ToDate 
-								AND c.statusID IN (111, 112, 113)
-								AND c.productID = 10 -- AG
-							GROUP BY c.CustId, c.Winlostdate, c.Currency
-						)
-				END
-			END
-			IF @TempFromDate <= @MoveBetsDay 
-			BEGIN
-				IF @ToDate >= @MoveBetsDay
-						SET @ToDate2 = @MoveBetsDay
-					ELSE
-						SET @ToDate2 = @MoveBetsDay			
-				BEGIN
-					--SELECT @TempFromDate, @ToDate2
-					INSERT INTO #tmpResult(CustId, Winlostdate, Currency ,TurnOver, TotalTrans, Winlost, LicenseeWinlost)
-						(
-							SELECT c.CustID , c.Winlostdate, c.Currency
-									, SUM(c.TurnOver) AS TurnOver
-									, SUM(c.BetCount) AS TotalTrans
-									, SUM(c.Winlost)  AS Winlost
-									, -SUM(c.Winlost) AS LicenseeWinlost
-							FROM DBLIC.bodb_Licensee.dbo.rptLicWinloss2 c WITH (NOLOCK)
-								INNER JOIN #tmpCust ct ON c.Custid = ct.CustId AND c.Currency = ct.Currency
-							WHERE c.Winlostdate BETWEEN @TempFromDate AND @ToDate2 
-								AND c.roleid = 1
-								AND c.sporttype = 250 -- AG Casino
-								AND c.statusID <> 101								
-							GROUP BY c.CustId, c.Winlostdate, c.Currency
 						)						
 				END
 			END
@@ -325,6 +198,7 @@ BEGIN
 			,c.Username
 			,r.Currency
 		    ,CASE WHEN r.Currency=51  THEN  @VNDCurrencyName
+				  WHEN r.Currency=70  THEN  'MKK'
 				 ELSE e.Code 
 				 END CurrencyName		
 		    ,SUM(r.TurnOver)   	 AS TurnOver
@@ -350,7 +224,8 @@ BEGIN
 	GROUP BY SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2))
 			 ,c.Username
 			 ,r.Currency
-			 ,CASE WHEN r.Currency=51  THEN  @VNDCurrencyName
+			 ,CASE	WHEN r.Currency=51  THEN  @VNDCurrencyName
+					WHEN r.Currency=70  THEN  'MKK'
 				 ELSE e.Code 
 				 END 		
 	ORDER BY c.Username
@@ -360,6 +235,8 @@ BEGIN
 	DROP TABLE #tmpResult
 	DROP TABLE #Currency
 	DROP TABLE #TempExchange 	
-	DROP TABLE #TempExchange 	
-	
 END
+GO
+GRANT EXECUTE ON [dbo].[LRF_Rpt_AGCasinoWinloss_Mem] TO [bodbLicenseeNet] AS [dbo]
+GO
+GRANT VIEW DEFINITION ON [dbo].[LRF_Rpt_AGCasinoWinloss_Mem] TO [vnteam] AS [dbo]

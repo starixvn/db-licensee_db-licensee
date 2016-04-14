@@ -60,6 +60,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]
 	- 20151230@Patrick: Add more output BuyBackAmt & BABuyBackAmt
 	- 20151228@Bobby: Support MBC RNG Casino sporttype(208,209,210)
 	- 20160215@Victor: Add Bettrade Actual Stake amount [Redmine: #51264]
+	- 20160413@Victor: support MKK currency code [Redmine: #55745]
 	
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -1337,6 +1338,7 @@ SELECT
 		ELSE '0' END ReportType,  
    Currency ,   
 		CASE WHEN Currency = 51 THEN @VNDCurrencyName 
+			WHEN Currency = 70 THEN 'MKK'
 			ELSE e.Code END currencyName,
    SUM(TurnoverSB)       AS TurnoverSB,   
    SUM(TurnoverBA)       AS TurnoverBA,   
@@ -1545,8 +1547,9 @@ GROUP BY
 	,CASE WHEN @ReportType = 1 THEN CONVERT(VARCHAR(8),w.winlostdate,112)  
 		  WHEN @ReportType = 2 THEN CONVERT(VARCHAR(6),w.winlostdate,112)  
 		  ELSE '0' END   
-	, CASE WHEN Currency = 51 THEN @VNDCurrencyName 
-			ELSE e.Code END
+	, CASE	WHEN Currency = 51 THEN @VNDCurrencyName 
+			WHEN Currency = 70 THEN 'MKK'
+	  ELSE e.Code END
 ORDER BY ReportType  
 
 DROP TABLE #SAgWinLoss
