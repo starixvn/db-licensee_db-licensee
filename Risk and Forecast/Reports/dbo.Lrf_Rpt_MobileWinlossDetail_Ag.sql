@@ -31,6 +31,7 @@ AS
 			- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 			- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
 			- 20151228@Bobby: Remove RNG Casino
+			- 20160413@Victor: support MKK currency code [Redmine: #55745]
 			
 	Param's Explanation:  
 	  + @SiteType: 1-WAP; 2-Smartphone; 3: Others;0-All  
@@ -415,6 +416,7 @@ SELECT
 	w.custid,
 	w.Currency ,   
 	CASE WHEN w.Currency = 51 THEN @VNDCurrencyName 
+		 WHEN w.Currency = 70 THEN 'MKK'
 		ELSE e.Code END currencyName,
 	SUM(TurnOver)	AS Turnover,
 	SUM(Winlost)		AS Winlost,
@@ -459,6 +461,7 @@ FROM
 GROUP BY
 	w.Currency ,c.username,w.custid,
 	CASE WHEN w.Currency = 51 THEN @VNDCurrencyName 
+		 WHEN w.Currency = 70 THEN 'MKK'
 		ELSE e.Code END	
 
 

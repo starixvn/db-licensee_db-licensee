@@ -37,6 +37,7 @@ AS
 		- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
 		- 20150814@Winnie: Keenocean reverse currency 
 		- 20151228@Bobby: Remove RNG Casino
+		- 20160413@Victor: support MKK currency code [Redmine: #55745]
 		
 	Param's Explanation:  
 	  + @SiteType: 1-WAP; 2-Smartphone; 3: Others;0-All  
@@ -647,7 +648,11 @@ SELECT
 	c.username,  
 	SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS nickname,
 	w.Currency ,   
-	case when w.Currency=51 then @VNDCurrencyName ELSE e.Code END as CurrencyName,
+	case 
+		when w.Currency=51 then @VNDCurrencyName 
+		when w.Currency=70 then 'MKK'
+		ELSE e.Code 
+	END as CurrencyName,
 	SUM(TurnOver)	AS Turnover,
 	SUM(Winlost)		AS Winlost,
 	SUM(LicenseeWL) AS LicenseeWL,
@@ -687,7 +692,12 @@ FROM #WinLoss w
 	--INNER JOIN Exchange e with (nolock) on w.Currency=e.exchangeid
 	INNER JOIN  (SELECT DISTINCT ExchangeId,Code FROM @Exchange) e on w.Currency=e.exchangeid
 GROUP BY
-	w.Currency ,c.username,c.username2,case when w.Currency=51 then @VNDCurrencyName ELSE e.Code END 
+	w.Currency ,c.username,c.username2,
+	case 
+		when w.Currency=51 then @VNDCurrencyName 
+		when w.Currency=70 then 'MKK' 
+		ELSE e.Code 
+	END 
 
 
 DROP TABLE #WinLoss

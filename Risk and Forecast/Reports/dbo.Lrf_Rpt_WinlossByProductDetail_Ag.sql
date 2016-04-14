@@ -55,6 +55,7 @@ AS
 	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
 	- 20151001@Jim: remove MicroGaming
 	- 20151228@Bobby: Include MBC RNG Casino sporttype(208,209,210)
+	- 20160413@Victor: support MKK currency code [Redmine: #55745]
 	
 	Param's Explanation:  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -743,6 +744,7 @@ SELECT
 	w.custid,
 	w.Currency ,   
 		CASE WHEN w.Currency = 51 THEN @VNDCurrencyName 
+			 WHEN w.Currency = 70 THEN 'MKK'
 			ELSE e.Code END currencyName,
 	ProductCode, 		
 	SUM(TurnOver)	AS Turnover,   
@@ -793,6 +795,7 @@ GROUP BY
 	w.Currency,
 	ProductCode,
 	CASE WHEN w.Currency = 51 THEN @VNDCurrencyName 
+		 WHEN w.Currency = 70 THEN 'MKK'
 			ELSE e.Code END
 ORDER BY w.currency
 
