@@ -31,7 +31,8 @@ AS
     Task : MicroGaming Win Loss report 
     DB: DBEXT.bodb02  
     Revisions:  
-		  20150921@Jim: support RNG bettype
+		  - 20150921@Jim: support RNG bettype
+		  - 20160413@Victor: support MKK currency code [Redmine: #55745]
 	Param's Explanation:  
 	  + @excludeTest: remove currency UUS
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -205,6 +206,7 @@ BEGIN
 		   ,r.TypeName
 		   ,r.Currency
 		   ,CASE WHEN r.Currency=51  THEN  @VNDCurrencyName
+				 WHEN r.Currency=70  THEN  'MKK'
 				 ELSE e.Code 
 				 END CurrencyName		
 		   ,SUM(r.TurnOver)   	 AS TurnOver
@@ -232,6 +234,7 @@ BEGIN
 			   ,r.TypeName
 		      ,r.Currency
 		      ,CASE WHEN r.Currency=51  THEN  @VNDCurrencyName
+					WHEN r.Currency=70  THEN  'MKK'
 				 ELSE e.Code 
 				 END	
 	ORDER BY r.TypeID

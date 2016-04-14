@@ -21,6 +21,7 @@ AS
 		- 20140527@Hannah: Modify NetGaming values
 		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 		- 20150123@Jim: support base on Currency GBP
+		- 20160413@Victor: support MKK currency code [Redmine: #55745]
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
 */  
@@ -115,6 +116,7 @@ BEGIN
 			ELSE '0' END ReportType,  
 	   Currency ,   
 			CASE WHEN Currency = 51 THEN @VNDCurrencyName 
+				 WHEN Currency = 70 THEN 'MKK'
 				ELSE e.Code END currencyName,
 	   SUM(Turnover)       AS Turnover,   
 	   SUM(Winlost)        AS Winlost,  
@@ -163,7 +165,8 @@ BEGIN
 		,CASE WHEN @ReportType = 1 THEN CONVERT(VARCHAR(8),w.winlostdate,112)  
 			  WHEN @ReportType = 2 THEN CONVERT(VARCHAR(6),w.winlostdate,112)  
 			  ELSE '0' END   
-		, CASE WHEN Currency = 51 THEN @VNDCurrencyName 
+		, CASE	WHEN Currency = 51 THEN @VNDCurrencyName 
+				WHEN Currency = 70 THEN 'MKK'
 				ELSE e.Code END
 	ORDER BY ReportType  
 
