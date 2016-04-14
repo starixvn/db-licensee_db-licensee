@@ -90,13 +90,11 @@ DECLARE @tempAg	TABLE( custID INT, Currency INT)
 DECLARE @TempFromDate DATETIME 
 DECLARE @TempToDate DATETIME 
 DECLARE @MaxOldDate DATETIME
-DECLARE @VNDCurrencyName VARCHAR(20)
 DECLARE @FDate DATETIME
 DECLARE @TDate DATETIME
 
 --to Deal WITH Parameter Sniffing
 SELECT @FDate=@FromDate,@TDate=@ToDate 
-SELECT @VNDCurrencyName = currency FROM exchange (NOLOCK) WHERE ExchangeId = 51
 SELECT  currencyID,LicenseeID into #currency
 FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
 WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))

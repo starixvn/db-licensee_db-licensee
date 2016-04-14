@@ -804,7 +804,11 @@ SELECT
 	c.username, 
 	SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS nickname,
 	w.Currency,
-	case WHEN w.Currency =51 THEN @VNDCurrencyName ELSE e.Code END as CurrencyName,
+	CASE 
+		WHEN w.Currency =51 THEN @VNDCurrencyName 
+		WHEN w.Currency =70 THEN 'MKK'
+		ELSE e.Code 
+	END AS CurrencyName,
 	SUM(Betcount)	AS Betcount,
 
 	SUM(TurnOver)	AS Turnover,
@@ -857,7 +861,11 @@ FROM #WinLoss w
 	INNER JOIN  (SELECT DISTINCT ExchangeId,Code FROM @Exchange) e on w.Currency=e.exchangeid
 GROUP BY
 	w.CustID, w.Currency, c.username, c.username2,
-	CASE WHEN w.Currency =51 THEN @VNDCurrencyName ELSE e.Code END 
+	CASE 
+		WHEN w.Currency =51 THEN @VNDCurrencyName
+		WHEN w.Currency =70 THEN 'MKK'
+		ELSE e.Code 
+	END 
 ORDER BY 5,2
 
 DROP TABLE #WinLoss	
