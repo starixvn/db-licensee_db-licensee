@@ -84,7 +84,7 @@ CREATE TABLE #WinLoss (
 
 	BetCount	BIGINT
 	)
-DECLARE @sporttype TABLE(sporttype INT)
+DECLARE @sporttype TABLE(sporttype INT, ProductPrefix VARCHAR(10))
 DECLARE @bettype AS TABLE (bettype INT PRIMARY KEY, ProductPrefix VARCHAR(10))
 DECLARE @tempAg	TABLE( custID INT, Currency INT)
 DECLARE @TempFromDate DATETIME 
@@ -137,11 +137,11 @@ DELETE FROM @PlatformList WHERE betfrom IS NULL
 DECLARE @Exchange TABLE(ExchangeDate SMALLDATETIME, ExchangeId INT,  EUR FLOAT,USD FLOAT,GBP FLOAT,Code VARCHAR(10), PRIMARY KEY(ExchangeDate,ExchangeId))
 
 IF @ShowSB = 1  
-	INSERT  INTO @sporttype( sporttype) VALUES  (0)	
+	INSERT  INTO @sporttype(sporttype, ProductPrefix) VALUES  (0, 'SB')	
 
 IF @ShowRB = 1  
 BEGIN
-	INSERT  INTO @sporttype( Sporttype) VALUES  (151)
+	INSERT  INTO @sporttype( Sporttype, ProductPrefix) VALUES  (151, 'RB')
 
 	INSERT INTO @bettype(bettype, ProductPrefix)
 	SELECT typeid, 'RB' FROM bettype (NOLOCK)
@@ -150,7 +150,7 @@ END
 
 IF @ShowNG = 1	
 BEGIN
-	INSERT INTO @sporttype(Sporttype) VALUES(161)  
+	INSERT INTO @sporttype(Sporttype, ProductPrefix) VALUES(161, 'NG')  
 	
 	INSERT INTO @bettype(bettype, ProductPrefix)
 	SELECT typeid, 'NG' FROM bettype (NOLOCK)
@@ -159,7 +159,7 @@ END
 
 IF @ShowLC = 1	
 BEGIN
-	INSERT  INTO @sporttype( Sporttype) VALUES  (162)
+	INSERT  INTO @sporttype( Sporttype, ProductPrefix) VALUES  (162, 'LC')
 	
 	INSERT INTO @bettype(bettype, ProductPrefix)
 	SELECT typeid, 'LC' FROM bettype (NOLOCK)
@@ -168,18 +168,34 @@ END
 
 IF @ShowVS = 1	
 BEGIN
-	INSERT  INTO @sporttype( Sporttype) 
-	SELECT 180
+	INSERT  INTO @sporttype( Sporttype, ProductPrefix) 
+	SELECT 180, 'VS'
 	
 	INSERT INTO @bettype(bettype, ProductPrefix)
 	SELECT typeid, 'VS' FROM bettype (NOLOCK)
 	WHERE (typeid BETWEEN 1201 AND 1299)
 END
 
+IF @ShowCS=1 -- RNG Casino
+BEGIN
+	INSERT INTO @sporttype(sporttype, ProductPrefix)
+	VALUES (251, 'CS')
+	INSERT INTO @bettype(bettype, ProductPrefix)
+	VALUES(71, 'CS')
+	
+	-- MBC - RNG Casino
+	INSERT INTO @sporttype(sporttype, ProductPrefix)
+	VALUES (208, 'CS'),(209, 'CS'),(210, 'CS')
+	INSERT INTO @bettype(bettype, ProductPrefix)
+	SELECT DISTINCT bettype, 'CS'
+	FROM dbo.SportBettypeMatrix WITH(NOLOCK)
+	WHERE sporttype IN (208, 209, 210)
+END
+
 IF @ShowKN=1 -- Keno
 BEGIN 
-	INSERT INTO @sporttype (sporttype)
-	VALUES(202)
+	INSERT INTO @sporttype (sporttype, ProductPrefix)
+	VALUES(202, 'KN')
 
 	INSERT INTO @bettype(bettype, ProductPrefix)
 	SELECT typeid, 'KN' FROM bettype (NOLOCK)
@@ -187,8 +203,8 @@ BEGIN
 END 
 IF @showMGCLC =1 -- MicroGamming LC
 BEGIN 
-	INSERT INTO @sporttype (sporttype)
-	VALUES(203)
+	INSERT INTO @sporttype (sporttype, ProductPrefix)
+	VALUES(203, 'MGCLC')
 
 	INSERT INTO @bettype(bettype, ProductPrefix)
 	SELECT typeid, 'MGCLC' FROM bettype (NOLOCK)
@@ -197,8 +213,8 @@ END
 
 IF @showMGCRnG =1 -- MicroGamming RNG
 BEGIN 
-	INSERT INTO @sporttype (sporttype)
-	VALUES(205)
+	INSERT INTO @sporttype (sporttype, ProductPrefix)
+	VALUES(205, 'MGCRNG')
 
 	INSERT INTO @bettype(bettype, ProductPrefix)
 	SELECT typeid, 'MGCRNG' FROM bettype (NOLOCK)
@@ -207,8 +223,8 @@ END
 
 IF @showVB = 1 -- Voidbridge
 BEGIN 
-	INSERT INTO @sporttype (sporttype)
-	VALUES(212)
+	INSERT INTO @sporttype (sporttype, ProductPrefix)
+	VALUES(212, 'VB')
 
 	INSERT INTO @bettype(bettype, ProductPrefix)
 	SELECT typeid, 'VB' FROM bettype (NOLOCK)
@@ -642,7 +658,7 @@ BEGIN
 			BetCount)
 		SELECT 
 			b.currency,
-			ISNULL(bt.ProductPrefix,'SB') AS ProductPrefix,
+			t.ProductPrefix,
 			CASE
 				WHEN b.betfrom = 'd' THEN 1
 				WHEN b.betfrom = 'a' THEN 2
@@ -713,7 +729,6 @@ BEGIN
 		FROM bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )
 			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
 			INNER JOIN @sporttype t ON b.sporttype = t.sporttype
-			LEFT JOIN @bettype bt ON bt.bettype = b.bettype
 			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 			INNER JOIN @PlatformList pl ON pl.betfrom = b.betfrom
 		WHERE 		
@@ -725,7 +740,7 @@ BEGIN
 		GROUP BY	
 			b.currency,
 			b.statusID,
-			ISNULL(bt.ProductPrefix,'SB'),
+			t.ProductPrefix,
 			CASE 
 				WHEN b.betfrom = 'd' THEN 1
 				WHEN b.betfrom = 'a' THEN 2
