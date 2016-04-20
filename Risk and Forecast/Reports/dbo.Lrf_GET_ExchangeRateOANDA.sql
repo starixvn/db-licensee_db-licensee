@@ -9,6 +9,7 @@ AS
  * Revisions :  
  *  - 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	- 20150422@Victor: support to view more currencies
+	- 20160413@Victor: support MKK currency code
 
  * Param's Explanation:    
 
@@ -24,7 +25,11 @@ IF ISNULL(@Todate,'')=''
 
 SELECT 
 	edo.ExchangeDate,
-	CASE WHEN edo.Code='VND' THEN 'INH' ELSE edo.Code END CurrencyCode,
+	CASE 
+		WHEN edo.Code='VND' THEN 'INH' 
+		WHEN edo.Code='MMK' THEN 'MKK' 
+		ELSE edo.Code 
+	END CurrencyCode,
 	edo.EUR,
 	edo.USD,
 	edo.MYR,

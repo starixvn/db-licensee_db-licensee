@@ -22,6 +22,7 @@ AS
 		- 20150123@Jim: support base on Currency GBP
 		- 20150917@Florent: Change datasource for AG Casino
 		- 20151020@Florent: get MoveBetsDay
+		- 20160413@Victor: support MKK currency code [Redmine: #55745]
 	Param's Explanation:  
 	  
 	  + @excludeTest: remove currency UUS
@@ -189,8 +190,8 @@ BEGIN
 			END AS Winlostdate
 		, r.Currency
 		, CASE 
-		 	WHEN Currency = 51
-		 		THEN @VNDCurrencyName
+		 	WHEN Currency = 51 THEN @VNDCurrencyName
+			WHEN Currency = 70 THEN 'MKK'
 		 	ELSE e.Code
 		 	END						AS CurrencyName
 		, SUM(r.TurnOver)			AS TurnOver
@@ -221,8 +222,8 @@ BEGIN
 			 END
 		, r.Currency
 		, CASE 
-			WHEN Currency = 51
-				THEN @VNDCurrencyName
+			WHEN Currency = 51 THEN @VNDCurrencyName
+			WHEN Currency = 70 THEN 'MKK'
 			ELSE e.Code
 			END
 	--ORDER BY r.Winlostdate

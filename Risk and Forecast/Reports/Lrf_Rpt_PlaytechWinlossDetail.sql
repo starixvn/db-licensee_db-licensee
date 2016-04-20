@@ -19,6 +19,7 @@ AS
 		- 20140527@Hannah: Modify NetGaming values
 		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 		- 20150123@Jim: support base on Currency GBP
+		- 20160413@Victor: support MKK currency code [Redmine: #55745]
 	Param's Explanation:  
 	  + @CustID: AgentID  
 	  + @BaseCurrency (input currencyID): 2-MYR ; 3-USD; 6-EUR
@@ -79,7 +80,7 @@ BEGIN
 
 	SELECT TOP 1 @TempCurrencyID=currency FROM #tmpCust 
 
-	IF @TempCurrencyID in (51, 20)
+	IF @TempCurrencyID in (51, 20, 70)
 		SELECT @Code = currency FROM exchange (nolock) WHERE ExchangeId = @TempCurrencyID
 	ELSE
 		SELECT @Code = code FROM exchange (nolock) WHERE exchangeid=@TempCurrencyID

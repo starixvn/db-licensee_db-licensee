@@ -68,6 +68,7 @@ AS
 	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
 	- 20151001@Jim: remove MicroGaming
 	- 20151228@Bobby: Support MBC RNG Casino sporttype(208,209,210)	
+	- 20160413@Victor: support MKK currency code [Redmine: #55745]
 	
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -857,6 +858,7 @@ SELECT
 		ELSE '0' END ReportType,  
    Currency ,   
 		CASE WHEN Currency = 51 THEN @VNDCurrencyName 
+			 WHEN Currency = 70 THEN 'MKK'
 			ELSE e.Code END currencyName,
    ProductCode,			
    SUM(TurnOver)	AS Turnover,   
@@ -909,6 +911,7 @@ GROUP BY
 		  WHEN @ReportType = 2 THEN CONVERT(VARCHAR(6),w.winlostdate,112)  
 		  ELSE '0' END   ,
 	CASE WHEN Currency = 51 THEN @VNDCurrencyName 
+		 WHEN Currency = 70 THEN 'MKK'
 			ELSE e.Code END
 ORDER BY ReportType,  Currency,ProductCode
 

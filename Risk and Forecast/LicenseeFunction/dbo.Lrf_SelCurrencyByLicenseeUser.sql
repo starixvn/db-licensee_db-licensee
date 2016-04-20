@@ -14,7 +14,8 @@ Created: 20130509@Jim
 Task :  Restrict permission of Licensee Users by currency
 DB: DB052.bodb02
 Revisions:  
-- 20141118@winnie: Change from LicenseeCust table to f_SelLicenseeCust   
+	- 20141118@winnie: Change from LicenseeCust table to f_SelLicenseeCust   
+	- 20160413@Victor: support MKK currency code
 Param's Explanation:
 */
 
@@ -39,6 +40,7 @@ BEGIN
 		CASE 
 			WHEN t.currency = 20 THEN 'UUS' 
 			WHEN t.currency = 51 THEN 'INH'
+			WHEN t.currency = 70 THEN 'MKK'
 			ELSE e.Code 
 		END AS CurrencyName,
 		t.isActive
@@ -49,6 +51,7 @@ BEGIN
 		CASE 
 			WHEN t.currency = 20 THEN 'UUS' 
 			WHEN t.currency = 51 THEN 'INH'
+			WHEN t.currency = 70 THEN 'MKK'
 			ELSE e.Code 
 		END
 	--------------------

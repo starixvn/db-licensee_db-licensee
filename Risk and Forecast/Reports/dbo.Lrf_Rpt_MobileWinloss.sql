@@ -51,6 +51,7 @@ AS
 		- 20151001@Jim: remove MicroGaming
 		- 20151228@Bobby: Remove RNG Casino
 		- 20160219@Joseph: Implement @PlatformType param (#50939)
+		- 20160413@Victor: support MKK currency code [Redmine: #55745]
 		
 	Param's Explanation:  
 	  + @PlatformType: 0: All  
@@ -833,7 +834,11 @@ SELECT
 	SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS nickname,
 	w.Currency ,   
 	--case WHEN w.Currency IN (20,51) THEN e.currency ELSE e.Code END as CurrencyName,
-	case WHEN w.Currency =51 THEN @VNDCurrencyName ELSE e.Code END as CurrencyName,
+	case 
+		WHEN w.Currency =51 THEN @VNDCurrencyName 
+		WHEN w.Currency =70 THEN 'MKK' 
+		ELSE e.Code 
+	END as CurrencyName,
 	
 	SUM(TurnOver)	AS Turnover,
 	SUM(Winlost)		AS Winlost,
@@ -889,7 +894,11 @@ FROM #WinLoss w
 	--INNER JOIN Exchange e WITH (NOLOCK) on w.Currency=e.exchangeid
 GROUP BY
 	c.Custid, w.Currency ,c.username,c.username2,
-	CASE WHEN w.Currency =51 THEN @VNDCurrencyName ELSE e.Code END 
+	CASE 
+		WHEN w.Currency =51 THEN @VNDCurrencyName 
+		WHEN w.Currency =70 THEN 'MKK' 
+		ELSE e.Code 
+	END 
 ORDER BY 5,2
 
 DROP TABLE #WinLoss

@@ -61,6 +61,7 @@ AS
 	- 201508215@Winnie: Revever KeenOcean currency
 	- 20151001@Jim: remove MicroGaming
 	- 20151228@Bobby: Support MBC RNG Casino sporttype(208,209,210)
+	- 20160413@Victor: support MKK currency code [Redmine: #55745]
 	
 	Param's Explanation:  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -260,7 +261,7 @@ WHERE exchangeid IN (SELECT Currency FROM @TempAg)
 
 SELECT TOP 1 @TempCurrencyID=currency FROM @tempAg 
 
-IF @TempCurrencyID in (51,20)
+IF @TempCurrencyID in (51,20,70)
 	SELECT @Code = currency FROM exchange (nolock) WHERE ExchangeId = @TempCurrencyID
 ELSE IF @TempCurrencyID=66
 	SELECT TOP 1 @Code = code FROM @Exchange WHERE ExchangeId = @TempCurrencyID

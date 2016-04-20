@@ -20,6 +20,7 @@ ALTER  PROCEDURE [dbo].[Lrf_Rpt_PlaytechWinlossDetail_Ag]
 		- 20140527@Hannah: Modify NetGaming values
 		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 		- 20150123@Jim: support base on Currency GBP
+		- 20160413@Victor: support MKK currency code [Redmine: #55745]
 	Param's Explanation:  
 */  
 BEGIN  
@@ -112,6 +113,7 @@ BEGIN
 		w.custid, 
 		w.currency,
 		CASE WHEN w.Currency = 51 THEN @VNDCurrencyName 
+			 WHEN w.Currency = 70 THEN 'MKK'
 				ELSE e.Code END AS CurrencyName,
 		SUM(Turnover)		 AS Turnover,   
 		SUM(Winlost)		 AS Winlost,  
@@ -156,6 +158,7 @@ BEGIN
 		INNER JOIN CustInfo c WITH(NOLOCK) ON w.custid = c.custid
 	GROUP BY w.currency,w.custid, c.username, 
 			CASE WHEN w.Currency = 51 THEN @VNDCurrencyName 
+				 WHEN w.Currency = 70 THEN 'MKK'
 				ELSE e.Code END
 	ORDER BY w.currency
 

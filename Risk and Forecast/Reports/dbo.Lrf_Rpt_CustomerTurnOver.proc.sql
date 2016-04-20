@@ -65,6 +65,7 @@ Revision:
 	- 20151203@Bobby: Database - Change datatype [Redmine: #48660]
 	- 20151209@Bobby: Do rollback step for Bettype & ProductId data type
 	- 20151223@Jim: Add "Effective Betting Value" in Customer Turnover report [Redmine: #45736]
+	- 20160413@Victor: support MKK currency code
 	
 Parameter's Explanation:
 	- @ReportBy:  1: daily, 2: monthly
@@ -671,6 +672,7 @@ BEGIN
 			, CASE 
 				WHEN e.exchangeid = 20 THEN 'UUS'
 				WHEN e.exchangeid = 51 THEN 'INH'
+				WHEN e.exchangeid = 70 THEN 'MKK'
 				WHEN e.exchangeid = 66 AND b.winlostdate<'2015-09-01' THEN 'HKD'
 				WHEN e.exchangeid = 66 AND b.winlostdate>='2015-09-01' THEN 'CNY'
 				ELSE e.Code END AS Currency
@@ -705,6 +707,7 @@ BEGIN
 			, CASE 
 				WHEN e.exchangeid = 20 THEN 'UUS'
 				WHEN e.exchangeid = 51 THEN 'INH'
+				WHEN e.exchangeid = 70 THEN 'MKK'
 				WHEN e.exchangeid = 66 AND b.winlostdate<'2015-09-01' THEN 'HKD'
 				WHEN e.exchangeid = 66 AND b.winlostdate>='2015-09-01' THEN 'CNY'
 				ELSE e.Code END

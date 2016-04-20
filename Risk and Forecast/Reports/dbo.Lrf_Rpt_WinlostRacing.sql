@@ -23,6 +23,7 @@ AS
 		 -- 20130618@Jim: Restrict permission of Licensee Users by currency	
 		 -- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 		 - 20150123@Jim: support base on Currency GBP
+		 - 20160413@Victor: support MKK currency code
 	Param's Explanation:
 		
 */
@@ -68,7 +69,7 @@ DROP TABLE #Currency
 IF @wldate > @MoveBetsDay 	
 BEGIN
 	SELECT	
-			CASE WHEN e.exchangeid = 51 THEN 'INH' ELSE e.Code END as currencyname,
+			CASE WHEN e.exchangeid = 51 THEN 'INH' WHEN e.exchangeid = 70 THEN 'MKK' ELSE e.Code END as currencyname,
 			currency,
 			leagueid,
 			groupmatch,
@@ -254,7 +255,7 @@ END
 ELSE
 BEGIN
 	SELECT	
-			CASE WHEN e.exchangeid = 51 THEN 'INH' ELSE e.Code END as currencyname,
+			CASE WHEN e.exchangeid = 51 THEN 'INH' WHEN e.exchangeid = 70 THEN 'MKK' ELSE e.Code END as currencyname,
 			currency,
 			leagueid,
 			groupmatch,

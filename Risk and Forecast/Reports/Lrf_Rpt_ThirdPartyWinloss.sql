@@ -22,6 +22,7 @@ AS
     Task : GD Win Loss report 
     DB: DBEXT.bodb02  
     Revisions:  		
+		- 20160413@Victor: support MKK currency code [Redmine: #55745]
 	Param's Explanation:  
 	  
 	  + @excludeTest: remove currency UUS
@@ -101,8 +102,8 @@ BEGIN
 			END AS Winlostdate
 		, r.Currency
 		, CASE 
-		 	WHEN Currency = 51
-		 		THEN @VNDCurrencyName
+		 	WHEN Currency = 51 THEN @VNDCurrencyName
+			WHEN Currency = 70 THEN 'MKK'
 		 	ELSE e.Code
 		 	END						AS CurrencyName
 		, SUM(r.TurnOver)			AS TurnOver
@@ -133,8 +134,8 @@ BEGIN
 			 END
 		, r.Currency
 		, CASE 
-			WHEN Currency = 51
-				THEN @VNDCurrencyName
+			WHEN Currency = 51 THEN @VNDCurrencyName
+			WHEN Currency = 70 THEN 'MKK'
 			ELSE e.Code
 			END
 	--ORDER BY r.Winlostdate

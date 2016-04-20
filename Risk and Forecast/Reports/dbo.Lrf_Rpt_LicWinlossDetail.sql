@@ -64,6 +64,7 @@ AS
 		- 20151230@Patrick: Add more output BuyBackAmt & BABuyBackAmt
 		- 20151228@Bobby: Support MBC RNG Casino sporttype(208,209,210)
 		- 20160216@Victor: Add Bettrade Actual Stake amount [Redmine: #51264]
+		- 20160413@Victor: support MKK currency code [Redmine: #55745]
 		
 	Param's Explanation:  
 	  + @CustID: SuperID  
@@ -283,7 +284,7 @@ FROM Lrf_f_GetExchangeDaily(@FDate,@TDate)
 WHERE exchangeid  = @CurrencyID	
 
 
-IF @CurrencyID in (51,20)
+IF @CurrencyID in (51,20,70)
 	SELECT @Code = currency FROM exchange (nolock) WHERE ExchangeId = @CurrencyID
 ELSE IF @CurrencyID = 66
 	SELECT @Code = @CodeKeenOcean
