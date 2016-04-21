@@ -84,14 +84,17 @@ CREATE TABLE #WinLoss (
 
 	BetCount	BIGINT
 	)
-DECLARE @sporttype TABLE(sporttype INT, ProductPrefix VARCHAR(10))
-DECLARE @bettype AS TABLE (bettype INT PRIMARY KEY, ProductPrefix VARCHAR(10))
-DECLARE @tempAg	TABLE( custID INT, Currency INT)
+
+
 DECLARE @TempFromDate DATETIME 
 DECLARE @TempToDate DATETIME 
 DECLARE @MaxOldDate DATETIME
 DECLARE @FDate DATETIME
 DECLARE @TDate DATETIME
+
+CREATE TABLE #sporttype (sporttype INT, ProductPrefix VARCHAR(10))
+CREATE TABLE #bettype	(bettype INT PRIMARY KEY, ProductPrefix VARCHAR(10))
+CREATE TABLE #tempAg	(custID INT, Currency INT)
 
 --to Deal WITH Parameter Sniffing
 SELECT @FDate=@FromDate,@TDate=@ToDate 
@@ -99,7 +102,7 @@ SELECT  currencyID,LicenseeID into #currency
 FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
 WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
-INSERT INTO @tempAg (custID,currency) 
+INSERT INTO #tempAg (custID,currency) 
 SELECT custID,currency 
 FROM  bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc
 	INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
@@ -134,59 +137,59 @@ BEGIN
 END
 DELETE FROM @PlatformList WHERE betfrom IS NULL
 
-DECLARE @Exchange TABLE(ExchangeDate SMALLDATETIME, ExchangeId INT,  EUR FLOAT,USD FLOAT,GBP FLOAT,Code VARCHAR(10), PRIMARY KEY(ExchangeDate,ExchangeId))
+CREATE TABLE #Exchange (ExchangeDate SMALLDATETIME, ExchangeId INT,  EUR FLOAT,USD FLOAT,GBP FLOAT,Code VARCHAR(10), PRIMARY KEY(ExchangeDate,ExchangeId))
 
 IF @ShowSB = 1  
-	INSERT  INTO @sporttype(sporttype, ProductPrefix) VALUES  (0, 'SB')	
+	INSERT  INTO #sporttype(sporttype, ProductPrefix) VALUES  (0, 'SB')	
 
 IF @ShowRB = 1  
 BEGIN
-	INSERT  INTO @sporttype( Sporttype, ProductPrefix) VALUES  (151, 'RB')
+	INSERT  INTO #sporttype( Sporttype, ProductPrefix) VALUES  (151, 'RB')
 
-	INSERT INTO @bettype(bettype, ProductPrefix)
+	INSERT INTO #bettype(bettype, ProductPrefix)
 	SELECT typeid, 'RB' FROM bettype (NOLOCK)
 	WHERE (typeid BETWEEN 31 AND 33)
 END
 
 IF @ShowNG = 1	
 BEGIN
-	INSERT INTO @sporttype(Sporttype, ProductPrefix) VALUES(161, 'NG')  
+	INSERT INTO #sporttype(Sporttype, ProductPrefix) VALUES(161, 'NG')  
 	
-	INSERT INTO @bettype(bettype, ProductPrefix)
+	INSERT INTO #bettype(bettype, ProductPrefix)
 	SELECT typeid, 'NG' FROM bettype (NOLOCK)
 	WHERE (typeid BETWEEN 81 AND 120)
 END
 
 IF @ShowLC = 1	
 BEGIN
-	INSERT  INTO @sporttype( Sporttype, ProductPrefix) VALUES  (162, 'LC')
+	INSERT  INTO #sporttype( Sporttype, ProductPrefix) VALUES  (162, 'LC')
 	
-	INSERT INTO @bettype(bettype, ProductPrefix)
+	INSERT INTO #bettype(bettype, ProductPrefix)
 	SELECT typeid, 'LC' FROM bettype (NOLOCK)
 	WHERE (typeid BETWEEN 1101 AND 1199)
 END
 
 IF @ShowVS = 1	
 BEGIN
-	INSERT  INTO @sporttype( Sporttype, ProductPrefix) 
+	INSERT  INTO #sporttype( Sporttype, ProductPrefix) 
 	SELECT 180, 'VS'
 	
-	INSERT INTO @bettype(bettype, ProductPrefix)
+	INSERT INTO #bettype(bettype, ProductPrefix)
 	SELECT typeid, 'VS' FROM bettype (NOLOCK)
 	WHERE (typeid BETWEEN 1201 AND 1299)
 END
 
 IF @ShowCS=1 -- RNG Casino
 BEGIN
-	INSERT INTO @sporttype(sporttype, ProductPrefix)
+	INSERT INTO #sporttype(sporttype, ProductPrefix)
 	VALUES (251, 'CS')
-	INSERT INTO @bettype(bettype, ProductPrefix)
+	INSERT INTO #bettype(bettype, ProductPrefix)
 	VALUES(71, 'CS')
 	
 	-- MBC - RNG Casino
-	INSERT INTO @sporttype(sporttype, ProductPrefix)
+	INSERT INTO #sporttype(sporttype, ProductPrefix)
 	VALUES (208, 'CS'),(209, 'CS'),(210, 'CS')
-	INSERT INTO @bettype(bettype, ProductPrefix)
+	INSERT INTO #bettype(bettype, ProductPrefix)
 	SELECT DISTINCT bettype, 'CS'
 	FROM dbo.SportBettypeMatrix WITH(NOLOCK)
 	WHERE sporttype IN (208, 209, 210)
@@ -194,47 +197,47 @@ END
 
 IF @ShowKN=1 -- Keno
 BEGIN 
-	INSERT INTO @sporttype (sporttype, ProductPrefix)
+	INSERT INTO #sporttype (sporttype, ProductPrefix)
 	VALUES(202, 'KN')
 
-	INSERT INTO @bettype(bettype, ProductPrefix)
+	INSERT INTO #bettype(bettype, ProductPrefix)
 	SELECT typeid, 'KN' FROM bettype (NOLOCK)
 	WHERE (typeid BETWEEN 1501 AND 1599)
 END 
 IF @showMGCLC =1 -- MicroGamming LC
 BEGIN 
-	INSERT INTO @sporttype (sporttype, ProductPrefix)
+	INSERT INTO #sporttype (sporttype, ProductPrefix)
 	VALUES(203, 'MGCLC')
 
-	INSERT INTO @bettype(bettype, ProductPrefix)
+	INSERT INTO #bettype(bettype, ProductPrefix)
 	SELECT typeid, 'MGCLC' FROM bettype (NOLOCK)
 	WHERE (typeid BETWEEN 2001 AND 2007)
 END 
 
 IF @showMGCRnG =1 -- MicroGamming RNG
 BEGIN 
-	INSERT INTO @sporttype (sporttype, ProductPrefix)
+	INSERT INTO #sporttype (sporttype, ProductPrefix)
 	VALUES(205, 'MGCRNG')
 
-	INSERT INTO @bettype(bettype, ProductPrefix)
+	INSERT INTO #bettype(bettype, ProductPrefix)
 	SELECT typeid, 'MGCRNG' FROM bettype (NOLOCK)
 	WHERE (typeid BETWEEN 2008 AND 2009)
 END
 
 IF @showVB = 1 -- Voidbridge
 BEGIN 
-	INSERT INTO @sporttype (sporttype, ProductPrefix)
+	INSERT INTO #sporttype (sporttype, ProductPrefix)
 	VALUES(212, 'VB')
 
-	INSERT INTO @bettype(bettype, ProductPrefix)
+	INSERT INTO #bettype(bettype, ProductPrefix)
 	SELECT typeid, 'VB' FROM bettype (NOLOCK)
 	WHERE (typeid BETWEEN 4001 AND 7999)
 END
 
-INSERT INTO @Exchange (exchangedate,exchangeid,eur,usd,gbp,code)
+INSERT INTO #Exchange (exchangedate,exchangeid,eur,usd,gbp,code)
 SELECT exchangedate,exchangeid,eur,usd,gbp,code
 	FROM Lrf_f_GetExchangeDaily(@FDate,@TDate)
-	WHERE exchangeid IN (SELECT Currency FROM @TempAg)	
+	WHERE exchangeid IN (SELECT Currency FROM #tempAg)	
 
 IF @TDate>@MoveBetsDay
 BEGIN
@@ -324,9 +327,9 @@ BEGIN
 					ELSE 1 END
 				   BetCount
 		FROM dbo.bettrans b WITH (NOLOCK)
-			INNER JOIN @TempAg tma ON tma.CustID=b.recommend AND b.currency = tma.currency
+			INNER JOIN #tempAg tma ON tma.CustID=b.recommend AND b.currency = tma.currency
 			INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON tma.custid=BA.recommend and b.transid = BA.transid 	 	
-			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
+			INNER JOIN #Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 			INNER JOIN @PlatformList pl ON pl.betfrom = b.betfrom
 		WHERE
 			b.statusID  IN (111, 112, 113)
@@ -422,8 +425,8 @@ BEGIN
 				ELSE 1 END
 			   BetCount
 		FROM dbo.bettrans b WITH (NOLOCK)
-			INNER JOIN @tempAg tma ON tma.CustID=b.recommend  AND b.currency = tma.currency
-			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
+			INNER JOIN #tempAg tma ON tma.CustID=b.recommend  AND b.currency = tma.currency
+			INNER JOIN #Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 			INNER JOIN @PlatformList pl ON pl.betfrom = b.betfrom
 		WHERE
 			b.statusID  IN (111, 112, 113)
@@ -524,9 +527,9 @@ BEGIN
 				ELSE 1 END
 			   BetCount
 		FROM dbo.bettrans b WITH (NOLOCK)
-			INNER JOIN @tempAg tma ON tma.CustID=b.recommend AND b.currency = tma.currency
-			INNER JOIN @bettype bt ON b.bettype = bt.bettype
-			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
+			INNER JOIN #tempAg tma ON tma.CustID=b.recommend AND b.currency = tma.currency
+			INNER JOIN #bettype bt ON b.bettype = bt.bettype
+			INNER JOIN #Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 			INNER JOIN @PlatformList pl ON pl.betfrom = b.betfrom
 		WHERE
 			b.statusID  IN (111, 112, 113)
@@ -629,8 +632,8 @@ BEGIN
 					ELSE 1 END
 				ELSE 1 END
 		FROM bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )
-			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
-			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
+			INNER JOIN 	#tempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
+			INNER JOIN #Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 			INNER JOIN @PlatformList pl ON pl.betfrom = b.betfrom
 		WHERE 
 			b.Winlostdate BETWEEN @FDate AND @TempToDate  
@@ -727,9 +730,9 @@ BEGIN
 					ELSE 1 END
 				ELSE 1 END
 		FROM bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )
-			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
-			INNER JOIN @sporttype t ON b.sporttype = t.sporttype
-			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
+			INNER JOIN #tempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
+			INNER JOIN #sporttype t ON b.sporttype = t.sporttype
+			INNER JOIN #Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 			INNER JOIN @PlatformList pl ON pl.betfrom = b.betfrom
 		WHERE 		
 			b.Winlostdate BETWEEN @FDate AND @TempToDate  
@@ -781,12 +784,15 @@ SELECT
 	SUM(LicenseeWLGBP)	AS LicenseeWLGBP,
 	SUM(PlayerCommGBP)	AS PlayerCommGBP
 FROM #WinLoss w 
-	INNER JOIN  (SELECT DISTINCT ExchangeId,Code FROM @Exchange) e on w.Currency=e.exchangeid
 GROUP BY
 	w.ProductPrefix, w.PlatformType
 ORDER BY w.PlatformType, w.ProductPrefix
 
+DROP TABLE #sporttype
+DROP TABLE #bettype
+DROP TABLE #Exchange
 DROP TABLE #WinLoss
+DROP TABLE #tempAg
 
 END
 GO
