@@ -889,6 +889,7 @@ DROP TABLE #bettype
 DROP TABLE #sporttype
 DROP TABLE #tempAg
 DROP TABLE #WinLoss	
+DROP TABLE #Exchange
 	
 END
 GO
