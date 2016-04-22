@@ -17,7 +17,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_PlatformWinloss]
 	 @ShowMGCLC		BIT=0,
 	 @ShowMGCRNG	BIT=0,
 	 @ShowVB		BIT=0,		
-	 @PlatformType	TINYINT=1, 
+	 @PlatformType	TINYINT=0, 
 	 @MoveBetsDay SMALLDATETIME,
 	 @drawfilter SMALLINT = 1,
 	 @excludeTest BIT = 0
@@ -58,30 +58,14 @@ IF DATEDIFF(MONTH,@FromDate,@ToDate) > 1
 	RETURN
 
 CREATE TABLE #WinLoss (
+	Winlostdate DATE,
 	Currency	INT ,
 	ProductPrefix	VARCHAR(10),
 	PlatformType	TINYINT,
-
 	Turnover	MONEY, 
 	Winlost		MONEY, 
 	LicenseeWL	MONEY,
 	playercomm	MONEY,
-
-	TurnoverEUR		MONEY,   	
-	WinlostEUR		MONEY,  
-	LicenseeWLEUR	MONEY,
-	PlayerCommEUR 	MONEY,	
-	
-	TurnoverUSD		MONEY,   	
-	WinlostUSD		MONEY,  
-	LicenseeWLUSD	MONEY,
-	PlayerCommUSD 	MONEY,	
-	
-	TurnoverGBP		MONEY,   	
-	WinlostGBP		MONEY,  
-	LicenseeWLGBP	MONEY,
-	PlayerCommGBP 	MONEY,	
-
 	BetCount	BIGINT
 	)
 
@@ -248,14 +232,10 @@ BEGIN
 	
 	IF @ShowBA=1
 	BEGIN
-		INSERT INTO #WinLoss 
-			(Currency, ProductPrefix, PlatformType, Turnover, Winlost, LicenseeWL, playercomm, 
-			TurnoverEUR, WinlostEUR, LicenseeWLEUR, PlayerCommEUR,
-			TurnoverUSD, WinlostUSD, LicenseeWLUSD, PlayerCommUSD,
-			TurnoverGBP, WinlostGBP, LicenseeWLGBP, PlayerCommGBP,
-			BetCount)
+		INSERT INTO #WinLoss (Winlostdate, Currency, ProductPrefix, PlatformType, Turnover, Winlost, LicenseeWL, playercomm, BetCount)
 
-		SELECT 
+		SELECT
+			b.Winlostdate, 
 			b.currency,
 			'BA' AS ProductPrefix,
 			CASE 
@@ -278,48 +258,7 @@ BEGIN
 			SUM(b.winlost - b.actual_stake) AS Winlost,	
 			0 as LicenseeWL,
 			SUM(b.playercomm  ) as PlayerComm,
-
-			--EUR
-			SUM( stake
-					*
-					CASE WHEN @drawfilter IN (2,3) THEN
-						CASE WHEN b.statusID = 111 THEN 0
-						WHEN (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
-						ELSE 1 END
-					ELSE 1 END
-					* e.EUR
-				) turnoverEUR,
-			SUM((b.winlost - b.actual_stake)*e.EUR) AS WinlostEUR,		
-			0 as LicenseeWLEUR,
-			SUM(b.playercomm * e.EUR ) as PlayerCommEUR,
-			---------------------------
-			--USD
-			SUM( stake
-					*
-					CASE WHEN @drawfilter IN (2,3) THEN
-						CASE WHEN b.statusID = 111 THEN 0
-						WHEN (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
-						ELSE 1 END
-					ELSE 1 END
-					* e.USD
-				) turnoverUSD,
-			SUM((b.winlost - b.actual_stake)*e.USD) AS WinlostUSD,		
-			0 as LicenseeWLUSD,
-			SUM(b.playercomm * e.USD ) as PlayerCommUSD,
-			--GBP
-			SUM( stake
-					*
-					CASE WHEN @drawfilter IN (2,3) THEN
-						CASE WHEN b.statusID = 111 THEN 0
-						WHEN (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
-						ELSE 1 END
-					ELSE 1 END
-					* e.GBP
-				) turnoverGBP,
-			SUM((b.winlost - b.actual_stake)*e.GBP) AS WinlostGBP,		
-			0 as LicenseeWLGBP,
-			SUM(b.playercomm * e.GBP ) as PlayerCommGBP,
-			
+			--------BetCount-----------
 			COUNT(b.transid) 
 				* CASE WHEN @drawfilter = 2 THEN
 						CASE WHEN b.statusID = 111 THEN 0
@@ -329,13 +268,12 @@ BEGIN
 		FROM dbo.bettrans b WITH (NOLOCK)
 			INNER JOIN #tempAg tma ON tma.CustID=b.recommend AND b.currency = tma.currency
 			INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON tma.custid=BA.recommend and b.transid = BA.transid 	 	
-			INNER JOIN #Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 			INNER JOIN @PlatformList pl ON pl.betfrom = b.betfrom
 		WHERE
 			b.statusID  IN (111, 112, 113)
 			AND b.bettype NOT IN (901,902,903)
 			AND b.winlostdate BETWEEN @TempFromDate AND @TDate
-		GROUP BY   b.currency, b.statusID, 	CASE 
+		GROUP BY   b.winlostdate, b.currency, b.statusID, 	CASE 
 												WHEN b.betfrom = 'd' THEN 1
 												WHEN b.betfrom = 'a' THEN 2
 												WHEN b.betfrom IN ('e', 'u') THEN 3
@@ -347,13 +285,9 @@ BEGIN
 	
 	IF (@ShowSB=1)
 	BEGIN
-		INSERT INTO #WinLoss
-			(Currency, ProductPrefix, PlatformType, Turnover, Winlost, LicenseeWL, playercomm, 
-			TurnoverEUR, WinlostEUR, LicenseeWLEUR, PlayerCommEUR, 
-			TurnoverUSD, WinlostUSD, LicenseeWLUSD, PlayerCommUSD,
-			TurnoverGBP, WinlostGBP, LicenseeWLGBP, PlayerCommGBP,
-			BetCount)
-		SELECT 
+		INSERT INTO #WinLoss (Winlostdate, Currency, ProductPrefix, PlatformType, Turnover, Winlost, LicenseeWL, playercomm, BetCount)
+		SELECT
+			b.winlostdate, 
 			tma.currency,
 			'SB' AS ProductPrefix,
 			CASE
@@ -364,7 +298,6 @@ BEGIN
 				WHEN b.betfrom IN ('s','l') THEN 5
 				ELSE 6
 			END AS PlatformType,
-
 			SUM( CASE WHEN b.bettype in (33,34) AND b.liveawayscore=0 THEN b.stake/2 ELSE b.stake END
 					*
 					CASE WHEN @drawfilter IN (2,3) THEN
@@ -376,47 +309,6 @@ BEGIN
 			SUM(b.winlost-b.actual_stake) AS Winlost,	
 			- SUM(CASE WHEN (b.bettype NOT BETWEEN 31 AND 33)  THEN (b.winlost - b.actual_stake) ELSE 0 END) AS LicenseeWL ,
 			SUM (   b.playercomm ) as PlayerComm,
-		
-			--------------EUR
-			SUM( CASE WHEN b.bettype in (33,34) AND b.liveawayscore=0 THEN b.stake/2 ELSE b.stake END
-					*
-					CASE WHEN @drawfilter IN (2,3) THEN
-						CASE WHEN b.statusID = 111 THEN 0
-						WHEN (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
-						ELSE 1 END
-					ELSE 1 END
-					* e.EUR
-				) turnoverEUR,
-			SUM((b.winlost-b.actual_stake)*e.EUR) AS WinlostEUR,	
-			- SUM(CASE WHEN (b.bettype NOT BETWEEN 31 AND 33)  THEN (b.winlost - b.actual_stake) ELSE 0 END * e.EUR) AS LicenseeWLEUR ,
-			SUM (   b.playercomm * e.EUR) as PlayerCommEUR,
-			
-			--------------USD
-			SUM( CASE WHEN b.bettype in (33,34) AND b.liveawayscore=0 THEN b.stake/2 ELSE b.stake END
-					*
-					CASE WHEN @drawfilter IN (2,3) THEN
-						CASE WHEN b.statusID = 111 THEN 0
-						WHEN (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
-						ELSE 1 END
-					ELSE 1 END
-					* e.USD
-				) turnoverUSD,
-			SUM((b.winlost-b.actual_stake)*e.USD) AS WinlostUSD,	
-			- SUM(CASE WHEN (b.bettype NOT BETWEEN 31 AND 33)  THEN (b.winlost - b.actual_stake) ELSE 0 END * e.USD) AS LicenseeWLUSD ,
-			SUM (   b.playercomm * e.USD) as PlayerCommUSD,
-			--------------GBP
-			SUM( CASE WHEN b.bettype in (33,34) AND b.liveawayscore=0 THEN b.stake/2 ELSE b.stake END
-					*
-					CASE WHEN @drawfilter IN (2,3) THEN
-						CASE WHEN b.statusID = 111 THEN 0
-						WHEN (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
-						ELSE 1 END
-					ELSE 1 END
-					* e.GBP
-				) turnoverGBP,
-			SUM((b.winlost-b.actual_stake)*e.GBP) AS WinlostGBP,	
-			- SUM(CASE WHEN (b.bettype NOT BETWEEN 31 AND 33)  THEN (b.winlost - b.actual_stake) ELSE 0 END * e.GBP) AS LicenseeWLGBP ,
-			SUM (   b.playercomm * e.GBP) as PlayerCommGBP,
 			--------BetCount-----------
 			COUNT(b.transid) 
 			* CASE WHEN @drawfilter = 2 THEN
@@ -426,7 +318,6 @@ BEGIN
 			   BetCount
 		FROM dbo.bettrans b WITH (NOLOCK)
 			INNER JOIN #tempAg tma ON tma.CustID=b.recommend  AND b.currency = tma.currency
-			INNER JOIN #Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 			INNER JOIN @PlatformList pl ON pl.betfrom = b.betfrom
 		WHERE
 			b.statusID  IN (111, 112, 113)
@@ -436,7 +327,7 @@ BEGIN
 			) 
 			AND b.bettype NOT IN (901,902,903)
 			AND b.tpositiontaking <>0
-		GROUP BY  tma.currency, b.statusID, CASE 
+		GROUP BY  b.winlostdate, tma.currency, b.statusID, CASE 
 												WHEN b.betfrom = 'd' THEN 1
 												WHEN b.betfrom = 'a' THEN 2
 												WHEN b.betfrom IN ('e', 'u') THEN 3
@@ -449,13 +340,9 @@ BEGIN
 	
 	IF (@ShowRB=1 or @ShowNG=1 OR @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @showMGCLC =1 OR @showMGCRnG =1 OR @ShowVB = 1)
 	BEGIN
-		INSERT INTO #WinLoss
-			(Currency, ProductPrefix, PlatformType, Turnover, Winlost, LicenseeWL, playercomm, 
-			TurnoverEUR, WinlostEUR, LicenseeWLEUR, PlayerCommEUR,
-			TurnoverUSD, WinlostUSD, LicenseeWLUSD, PlayerCommUSD,
-			TurnoverGBP, WinlostGBP, LicenseeWLGBP, PlayerCommGBP,	
-			BetCount)
+		INSERT INTO #WinLoss (Winlostdate, Currency, ProductPrefix, PlatformType, Turnover, Winlost, LicenseeWL, playercomm, BetCount)
 		SELECT 
+			b.Winlostdate,
 			tma.currency,
 			bt.ProductPrefix AS ProductPrefix,
 			CASE 
@@ -478,48 +365,7 @@ BEGIN
 			SUM(b.winlost-b.actual_stake) AS Winlost,	
 			- SUM(CASE WHEN (b.bettype NOT BETWEEN 31 AND 33)  THEN (b.winlost - b.actual_stake) ELSE 0 END) AS LicenseeWL ,
 			SUM (   b.playercomm ) as PlayerComm,
-
-			--EUR
-			SUM( CASE WHEN b.bettype in (33,34) AND b.liveawayscore=0 THEN b.stake/2 ELSE b.stake END
-					*
-					CASE WHEN @drawfilter IN (2,3) THEN
-						CASE WHEN b.statusID = 111 THEN 0
-						WHEN (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
-						ELSE 1 END
-					ELSE 1 END
-					* e.EUR
-				) turnoverEUR,
-			SUM((b.winlost-b.actual_stake) * e.EUR) AS WinlostEUR,	
-			- SUM(CASE WHEN (b.bettype NOT BETWEEN 31 AND 33)  THEN (b.winlost - b.actual_stake) ELSE 0 END * e.EUR) AS LicenseeWLEUR ,
-			SUM (   b.playercomm * e.EUR) as PlayerCommEUR,
-			--------------------------
-			--USD
-			SUM( CASE WHEN b.bettype in (33,34) AND b.liveawayscore=0 THEN b.stake/2 ELSE b.stake END
-					*
-					CASE WHEN @drawfilter IN (2,3) THEN
-						CASE WHEN b.statusID = 111 THEN 0
-						WHEN (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
-						ELSE 1 END
-					ELSE 1 END
-					* e.USD
-				) turnoverUSD,
-			SUM((b.winlost-b.actual_stake) * e.USD) AS WinlostUSD,	
-			- SUM(CASE WHEN (b.bettype NOT BETWEEN 31 AND 33)  THEN (b.winlost - b.actual_stake) ELSE 0 END * e.USD) AS LicenseeWLUSD ,
-			SUM (   b.playercomm * e.USD) as PlayerCommUSD,
-			--GBP
-			SUM( CASE WHEN b.bettype in (33,34) AND b.liveawayscore=0 THEN b.stake/2 ELSE b.stake END
-					*
-					CASE WHEN @drawfilter IN (2,3) THEN
-						CASE WHEN b.statusID = 111 THEN 0
-						WHEN (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
-						ELSE 1 END
-					ELSE 1 END
-					* e.GBP
-				) turnoverGBP,
-			SUM((b.winlost-b.actual_stake) * e.GBP) AS WinlostGBP,	
-			- SUM(CASE WHEN (b.bettype NOT BETWEEN 31 AND 33)  THEN (b.winlost - b.actual_stake) ELSE 0 END * e.GBP) AS LicenseeWLGBP ,
-			SUM (   b.playercomm * e.GBP) as PlayerCommGBP,
-			--------------------------
+			--------BetCount-----------
 			COUNT(b.transid) 
 			* CASE WHEN @drawfilter = 2 THEN
 					CASE WHEN b.statusID = 111 THEN 0
@@ -529,12 +375,11 @@ BEGIN
 		FROM dbo.bettrans b WITH (NOLOCK)
 			INNER JOIN #tempAg tma ON tma.CustID=b.recommend AND b.currency = tma.currency
 			INNER JOIN #bettype bt ON b.bettype = bt.bettype
-			INNER JOIN #Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 			INNER JOIN @PlatformList pl ON pl.betfrom = b.betfrom
 		WHERE
 			b.statusID  IN (111, 112, 113)
 			AND b.winlostdate BETWEEN @TempFromDate AND @TDate
-		GROUP BY   tma.currency, b.statusID, bt.ProductPrefix, 
+		GROUP BY   b.winlostdate, tma.currency, b.statusID, bt.ProductPrefix, 
 			CASE 
 				WHEN b.betfrom = 'd' THEN 1
 				WHEN b.betfrom = 'a' THEN 2
@@ -555,13 +400,9 @@ BEGIN
 			SET  @TempToDate = @TDate
 	IF @ShowBA=1 
 	BEGIN
-		INSERT INTO #WinLoss
-			(Currency, ProductPrefix, PlatformType, Turnover, Winlost, LicenseeWL, playercomm, 
-			TurnoverEUR, WinlostEUR, LicenseeWLEUR, PlayerCommEUR, 
-			TurnoverUSD, WinlostUSD, LicenseeWLUSD, PlayerCommUSD, 
-			TurnoverGBP, WinlostGBP, LicenseeWLGBP, PlayerCommGBP,
-			BetCount)
+		INSERT INTO #WinLoss (Winlostdate, Currency, ProductPrefix, PlatformType, Turnover, Winlost, LicenseeWL, playercomm, BetCount)
 		SELECT 
+			b.winlostdate,
 			b.currency,
 			'BA' AS ProductPrefix,
 			CASE
@@ -584,48 +425,7 @@ BEGIN
 			SUM(b.winlost),  
 			0 as LicenseeWL,
 			SUM(b.playercomm ) AS PlayerComm, 
-
-			--EUR
-			SUM(b.turnover
-			*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE WHEN b.statusID = 111  THEN 0
-					WHEN b.statusID IN (114,115) THEN 0.5
-					ELSE 1 END
-				ELSE 1 END
-				* e.EUR
-			),     
-			SUM(b.winlost * e.EUR),  
-			0 as LicenseeWLEUR,
-			SUM(b.playercomm * e.EUR ) AS PlayerCommEUR, 
-			------------------------
-			--USD
-			SUM(b.turnover
-			*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE WHEN b.statusID = 111  THEN 0
-					WHEN b.statusID IN (114,115) THEN 0.5
-					ELSE 1 END
-				ELSE 1 END
-				* e.USD
-			),     
-			SUM(b.winlost * e.USD),  
-			0 as LicenseeWLUSD,
-			SUM(b.playercomm * e.USD ) AS PlayerCommUSD, 
-			--GBP
-			SUM(b.turnover
-			*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE WHEN b.statusID = 111  THEN 0
-					WHEN b.statusID IN (114,115) THEN 0.5
-					ELSE 1 END
-				ELSE 1 END
-				* e.GBP
-			),     
-			SUM(b.winlost * e.GBP),  
-			0 as LicenseeWLGBP,
-			SUM(b.playercomm * e.GBP ) AS PlayerCommGBP, 
-			-----------------------------
+			--------BetCount-----------
 			SUM(b.betcount)
 			* CASE WHEN @drawfilter = 2 THEN
 					CASE WHEN b.statusID = 111 THEN 0
@@ -633,7 +433,6 @@ BEGIN
 				ELSE 1 END
 		FROM bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )
 			INNER JOIN 	#tempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
-			INNER JOIN #Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 			INNER JOIN @PlatformList pl ON pl.betfrom = b.betfrom
 		WHERE 
 			b.Winlostdate BETWEEN @FDate AND @TempToDate  
@@ -641,7 +440,7 @@ BEGIN
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND b.bettype NOT IN (901,902,903)
 			AND ISNULL(b.isBA,0) = 1	
-		GROUP BY b.currency, b.statusID, CASE 
+		GROUP BY b.winlostdate, b.currency, b.statusID, CASE 
 											WHEN b.betfrom = 'd' THEN 1
 											WHEN b.betfrom = 'a' THEN 2
 											WHEN b.betfrom IN ('e', 'u') THEN 3
@@ -653,13 +452,9 @@ BEGIN
 	END
 	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR  @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @showMGCLC =1 OR @showMGCRnG =1 OR @ShowVB = 1)
 	BEGIN
-		INSERT INTO #WinLoss
-			(Currency, ProductPrefix, PlatformType, Turnover, Winlost, LicenseeWL, playercomm, 
-			TurnoverEUR, WinlostEUR, LicenseeWLEUR, PlayerCommEUR, 
-			TurnoverUSD, WinlostUSD, LicenseeWLUSD, PlayerCommUSD, 
-			TurnoverGBP, WinlostGBP, LicenseeWLGBP, PlayerCommGBP,
-			BetCount)
+		INSERT INTO #WinLoss (Winlostdate, Currency, ProductPrefix, PlatformType, Turnover, Winlost, LicenseeWL, playercomm, BetCount)
 		SELECT 
+			b.winlostdate,
 			b.currency,
 			t.ProductPrefix,
 			CASE
@@ -670,7 +465,6 @@ BEGIN
 				WHEN b.betfrom IN ('s','l') THEN 5
 				ELSE 6
 			END AS PlatformType,
-
 			SUM(b.turnover
 			*
 				CASE WHEN @drawfilter IN (2,3) THEN
@@ -682,48 +476,7 @@ BEGIN
 			SUM(b.winlost),
 			- SUM(CASE WHEN (b.sporttype <> 151)  THEN b.winlost ELSE 0 END) AS LicenseeWL ,
 			SUM ( b.playercomm ) as PlayerComm,
-
-			--EUR
-			SUM(b.turnover
-			*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE WHEN b.statusID = 111  THEN 0
-					WHEN b.statusID IN (114,115) THEN 0.5
-					ELSE 1 END
-				ELSE 1 END
-				* e.EUR
-			),     
-			SUM(b.winlost * e.EUR),
-			- SUM(CASE WHEN (b.sporttype <> 151)  THEN b.winlost ELSE 0 END * e.EUR) AS LicenseeWLEUR ,
-			SUM ( b.playercomm * e.EUR) as PlayerCommEUR,
-			------------------------------------------
-				--USD
-			SUM(b.turnover
-			*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE WHEN b.statusID = 111  THEN 0
-					WHEN b.statusID IN (114,115) THEN 0.5
-					ELSE 1 END
-				ELSE 1 END
-				* e.USD
-			),     
-			SUM(b.winlost * e.USD),
-			- SUM(CASE WHEN (b.sporttype <> 151)  THEN b.winlost ELSE 0 END * e.USD) AS LicenseeWLUSD ,
-			SUM ( b.playercomm * e.USD) as PlayerCommUSD,
-			--GBP
-			SUM(b.turnover
-			*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE WHEN b.statusID = 111  THEN 0
-					WHEN b.statusID IN (114,115) THEN 0.5
-					ELSE 1 END
-				ELSE 1 END
-				* e.GBP
-			),     
-			SUM(b.winlost * e.GBP),
-			- SUM(CASE WHEN (b.sporttype <> 151)  THEN b.winlost ELSE 0 END * e.GBP) AS LicenseeWLGBP ,
-			SUM ( b.playercomm * e.GBP) as PlayerCommGBP,
-			------------------------------------------
+			--------BetCount-----------
 			SUM(b.betcount)
 			* CASE WHEN @drawfilter = 2 THEN
 					CASE WHEN b.statusID = 111 THEN 0
@@ -732,7 +485,6 @@ BEGIN
 		FROM bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )
 			INNER JOIN #tempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
 			INNER JOIN #sporttype t ON b.sporttype = t.sporttype
-			INNER JOIN #Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 			INNER JOIN @PlatformList pl ON pl.betfrom = b.betfrom
 		WHERE 		
 			b.Winlostdate BETWEEN @FDate AND @TempToDate  
@@ -741,6 +493,7 @@ BEGIN
 			AND b.bettype NOT IN (901,902,903)
 			AND ISNULL(b.isBA,0) = 0	
 		GROUP BY	
+			b.winlostdate,
 			b.currency,
 			b.statusID,
 			t.ProductPrefix,
@@ -768,22 +521,23 @@ SELECT
 	SUM(PlayerComm)		AS PlayerComm,
 			
 	--BASE EUR
-	SUM(TurnoverEUR)	AS TurnoverEUR,
-	SUM(WinlostEUR)		AS WinlostEUR,
-	SUM(LicenseeWLEUR)	AS LicenseeWLEUR,
-	SUM(PlayerCommEUR)	AS PlayerCommEUR,
+	SUM(Turnover * e.EUR)	AS TurnoverEUR,
+	SUM(Winlost * e.EUR)		AS WinlostEUR,
+	SUM(LicenseeWL * e.EUR)	AS LicenseeWLEUR,
+	SUM(PlayerComm * e.EUR)	AS PlayerCommEUR,
 	
 	--BASE USD
-	SUM(TurnoverUSD)	AS TurnoverUSD,
-	SUM(WinlostUSD)		AS WinlostUSD,
-	SUM(LicenseeWLUSD)	AS LicenseeWLUSD,
-	SUM(PlayerCommUSD)	AS PlayerCommUSD,
+	SUM(Turnover * e.USD)	AS TurnoverUSD,
+	SUM(Winlost * e.USD)		AS WinlostUSD,
+	SUM(LicenseeWL * e.USD)	AS LicenseeWLUSD,
+	SUM(PlayerComm * e.USD)	AS PlayerCommUSD,
 	--BASE GBP
-	SUM(TurnoverGBP)	AS TurnoverGBP,
-	SUM(WinlostGBP)		AS WinlostGBP,
-	SUM(LicenseeWLGBP)	AS LicenseeWLGBP,
-	SUM(PlayerCommGBP)	AS PlayerCommGBP
+	SUM(Turnover * e.GBP)	AS TurnoverGBP,
+	SUM(Winlost * e.GBP)		AS WinlostGBP,
+	SUM(LicenseeWL * e.GBP)	AS LicenseeWLGBP,
+	SUM(PlayerComm * e.GBP)	AS PlayerCommGBP
 FROM #WinLoss w 
+	INNER JOIN  #Exchange e on w.Currency=e.exchangeid AND e.ExchangeDate = w.Winlostdate
 GROUP BY
 	w.ProductPrefix, w.PlatformType
 ORDER BY w.PlatformType, w.ProductPrefix
