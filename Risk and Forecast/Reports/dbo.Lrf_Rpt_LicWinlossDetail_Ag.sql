@@ -1312,8 +1312,9 @@ BEGIN
 		c.username,  
 		w.custid, 
 		w.currency,
-		CASE WHEN w.Currency = 51 THEN @VNDCurrencyName ELSE e.Code END AS CurrencyName,
+		CASE WHEN w.Currency = 51 THEN @VNDCurrencyName 
 			WHEN w.Currency = 70 THEN 'MKK'
+			ELSE e.Code END AS CurrencyName,
 		SUM(TurnoverSB)			AS TurnoverSB,   
 		SUM(TurnoverBA)			AS TurnoverBA,   
 		SUM(TurnoverNG)			AS TurnoverNG,   
@@ -1473,9 +1474,10 @@ BEGIN
 		INNER JOIN Customer c WITH(NOLOCK) ON w.custid = c.custid
 	GROUP BY
 		w.currency, w.custid, c.username, 
-				WHEN w.Currency = 70 THEN 'MKK'
-				ELSE e.Code END
-  ORDER BY w.currency
+		CASE WHEN w.Currency = 51 THEN @VNDCurrencyName 
+			WHEN w.Currency = 70 THEN 'MKK'
+			ELSE e.Code END
+	ORDER BY w.currency
 
 	DROP TABLE #SAgWinLoss
 	DROP TABLE #TempExchange

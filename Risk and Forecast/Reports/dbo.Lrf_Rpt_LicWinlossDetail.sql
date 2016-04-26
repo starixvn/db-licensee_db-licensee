@@ -275,7 +275,7 @@ BEGIN
 	FROM Lrf_f_GetExchangeDaily(@FDate, @TDate)
 	WHERE exchangeid = @CurrencyID	
 
-	IF @CurrencyID IN (51,20 20)
+	IF @CurrencyID IN (51,20,70)
 		SELECT @Code = currency FROM exchange (NOLOCK) WHERE exchangeid = @CurrencyID
 	ELSE IF @CurrencyID = 66
 		SELECT @Code = @CodeKeenOcean

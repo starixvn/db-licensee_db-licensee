@@ -1288,8 +1288,9 @@ SELECT
 		WHEN @ReportType = 2 THEN CONVERT(VARCHAR(6),w.winlostdate,112)  
 		ELSE '0' END ReportType,  
 	Currency,   
-	CASE WHEN Currency = 51 THEN @VNDCurrencyName ELSE e.Code END currencyName,
+	CASE	WHEN Currency = 51 THEN @VNDCurrencyName 
 			WHEN Currency = 70 THEN 'MKK'
+	  ELSE e.Code END AS currencyName,
 	SUM(TurnoverSB)			AS TurnoverSB,   
 	SUM(TurnoverBA)			AS TurnoverBA,   
 	SUM(TurnoverNG)			AS TurnoverNG,   
@@ -1451,7 +1452,7 @@ GROUP BY
 	CASE	WHEN @ReportType = 1 THEN CONVERT(VARCHAR(8),w.winlostdate,112)  
 			WHEN @ReportType = 2 THEN CONVERT(VARCHAR(6),w.winlostdate,112)  
 			ELSE '0' END,  
-	, CASE	WHEN Currency = 51 THEN @VNDCurrencyName 
+	CASE	WHEN Currency = 51 THEN @VNDCurrencyName 
 			WHEN Currency = 70 THEN 'MKK'
 	  ELSE e.Code END
 ORDER BY ReportType
