@@ -61,20 +61,17 @@ WHILE (datediff (m,@tmpFromDate,@todate)>=0)
 BEGIN
 	IF @i = 1
 	BEGIN
-		SET @tmpFromDate = CAST(CONVERT(VARCHAR(10),DATEADD(dd,-(DAY(@tmpFromDate)-1),@tmpFromDate),111) AS DATETIME)
+		SET @tmpFromDate = CAST(CONVERT(VARCHAR(10),DATEADD(dd,-(DAY(@tmpFromDate)-1),@tmpFromDate),111) AS SMALLDATETIME)
 	END
 
-	SET @tmpToDate = CAST(CONVERT(VARCHAR(10),  DATEADD(s,-1,DATEADD(mm, DATEDIFF(m,0,@tmpFromDate)+1,0)), 111) AS DATETIME)
+	SET @tmpToDate = CAST(CONVERT(VARCHAR(10),  DATEADD(s,-1,DATEADD(mm, DATEDIFF(m,0,@tmpFromDate)+1,0)), 111) AS SMALLDATETIME)
 	
-	IF @tmpToDate > @todate
-		SET @tmpToDate = @todate
-
 	--IF @tmpToDate>@ReferencedExchangeDate 
 	--	SET @tmpToDate=@ReferencedExchangeDate
 			
 	SET @tmpDate = @tmpFromDate
 	
-	WHILE (@tmpDate<=@tmpToDate)--AND @tmpDate<=@todate
+	WHILE (@tmpDate<=@tmpToDate AND @tmpDate<=@todate)
 	BEGIN
 		INSERT INTO @tempDate (exchangedate,ExchangeId,Code,MYR, USD, EUR, CNY,GBP, actualrate)
 		SELECT @tmpDate,ExchangeId,Code,MYR, USD, EUR, CNY,GBP, actualrate
@@ -94,8 +91,10 @@ RETURN
 
 END
 
+
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_f_GetExchangeDaily] TO [vnteam]
+GRANT SELECT ON [dbo].[Lrf_f_GetExchangeDaily] TO [bodbAdminNet] AS [dbo]
 GO
-GRANT SELECT ON [dbo].[Lrf_f_GetExchangeDaily] TO [bodbLicenseeNet]
+GRANT SELECT ON [dbo].[Lrf_f_GetExchangeDaily] TO [bodbLicenseeNet] AS [dbo]
 GO
+GRANT VIEW DEFINITION ON [dbo].[Lrf_f_GetExchangeDaily] TO [vnteam] AS [dbo]
