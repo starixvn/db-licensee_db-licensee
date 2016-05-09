@@ -78,14 +78,19 @@ BEGIN
 	INSERT INTO #Bettype (Bettype,TypeID,TypeName)	
 	EXEC LRF_MicroGamingWinloss_Bettype  @TypeID = 0
 	
+	--Get PayoutTrans data
+	CREATE TABLE #PayoutTrans (Refno BIGINT, WinAmount MONEY)
+	INSERT INTO #PayoutTrans(Refno, WinAmount)
+	SELECT Refno, WinAmount FROM DBTXN.bodb02.dbo.PayoutTrans WITH (NOLOCK)
+	
 	-------------LA's part
 	--Get PartyID from LicenseeID
 	DECLARE @PartyID SMALLINT
 	SELECT @PartyID = PartyID FROM bodb_licensee.dbo.OAS_Party WITH (NOLOCK) WHERE OldRefID = @LicenseeID AND PartyType = 1
 	
 	--Get ProductID and BettypeRef from Bettype
-	DECLARE @ProductBettypeRef AS TABLE (Bettype SMALLINT, BettypeRef SMALLINT, ProductID SMALLINT)
-	INSERT INTO @ProductBettypeRef (Bettype, BettypeRef, ProductID)
+	CREATE TABLE #ProductBettypeRef (Bettype SMALLINT, BettypeRef SMALLINT, ProductID SMALLINT)
+	INSERT INTO #ProductBettypeRef (Bettype, BettypeRef, ProductID)
 	SELECT b.Bettype, sbr.BettypeRef,
 		    CASE WHEN sbr.Sporttype = 203 THEN 14
 				WHEN sbr.Sporttype = 205 THEN 17 ELSE 0 END AS ProductID 
@@ -93,8 +98,8 @@ BEGIN
 		INNER JOIN bodb_licensee.dbo.Sport_Bettype_Reference sbr WITH (NOLOCK) ON b.Bettype = sbr.Bettype
 		
 	--Get charge rate
-	DECLARE @ChargeRate AS TABLE (ProductID INT, Bettype INT, DI_Rate MONEY, FromDate SMALLDATETIME, ToDate SMALLDATETIME)
-	INSERT INTO @ChargeRate (ProductID, Bettype, DI_Rate, FromDate, ToDate)
+	CREATE TABLE #ChargeRate (ProductID INT, Bettype INT, DI_Rate MONEY, FromDate SMALLDATETIME, ToDate SMALLDATETIME)
+	INSERT INTO #ChargeRate (ProductID, Bettype, DI_Rate, FromDate, ToDate)
 	SELECT ProductID, Bettype, DI_Rate, Fromdate, Todate
 	FROM bodb_licensee.dbo.LA_f_ChargeInfo(@PartyID, @FromDate, @ToDate, 'MGCLC,MGCRNG', 'OA', 1)
 	-------------
@@ -131,8 +136,8 @@ BEGIN
 				FROM dbo.bettrans b WITH (NOLOCK)
 				INNER JOIN #TempAg t ON b.recommend = t.custid AND t.Currency = b.Currency
 				INNER JOIN #Bettype bet ON b.bettype = bet.bettype
-				INNER JOIN @ProductBettypeRef pbr ON bet.bettype = pbr.Bettype
-				LEFT JOIN @ChargeRate cr ON pbr.BettypeRef = cr.Bettype AND pbr.ProductID = cr.ProductID AND b.winlostdate BETWEEN cr.FromDate AND cr.ToDate
+				INNER JOIN #ProductBettypeRef pbr ON bet.bettype = pbr.Bettype
+				LEFT JOIN #ChargeRate cr ON pbr.BettypeRef = cr.Bettype AND pbr.ProductID = cr.ProductID AND b.winlostdate BETWEEN cr.FromDate AND cr.ToDate
 				WHERE b.winlostdate BETWEEN @TempFromDate AND @ToDate
 							AND b.statusID IN (111, 112, 113)
 							AND b.bettype NOT IN (2008,2009)
@@ -167,20 +172,18 @@ BEGIN
 						, SUM((b.actual_stake - b.winlost - ISNULL(ABS(b.stake) * r.Contribution,0)) * ISNULL(cr.DI_Rate,0)) AS AmtDueToMGC
 				FROM dbo.bettransRnG b WITH (NOLOCK)
 				INNER JOIN #TempAg t ON b.recommend = t.custid AND t.Currency = b.Currency
-				INNER JOIN #Bettype bet ON b.gameID  = bet.bettype
-				INNER JOIN @ProductBettypeRef pbr ON bet.bettype = pbr.Bettype
-				LEFT JOIN @ChargeRate cr ON pbr.BettypeRef = cr.Bettype AND pbr.ProductID = cr.ProductID AND b.winlostdate BETWEEN cr.FromDate AND cr.ToDate
-				LEFT JOIN bodb_LicenseeReport.dbo.view_MGCRNG_ProgressiveContribution_Rate r ON b.transdesc = r.ResourceID
-				LEFT JOIN DBTXN.bodb02.dbo.PayoutTrans p ON b.transid = p.RefNo
+				INNER HASH JOIN #Bettype bet ON b.gameID  = bet.bettype
+				INNER HASH JOIN #ProductBettypeRef pbr ON bet.bettype = pbr.Bettype
+				LEFT HASH JOIN #ChargeRate cr ON pbr.BettypeRef = cr.Bettype AND pbr.ProductID = cr.ProductID AND b.winlostdate BETWEEN cr.FromDate AND cr.ToDate
+				LEFT HASH JOIN bodb_LicenseeReport.dbo.view_MGCRNG_ProgressiveContribution_Rate r ON b.transdesc = r.ResourceID
+				LEFT HASH JOIN #PayoutTrans p ON b.transid = p.RefNo
 				WHERE b.winlostdate BETWEEN @TempFromDate AND @ToDate
 							AND b.statusID IN (111, 112, 113)
 							AND bet.bettype IN (2009,2008)
 				GROUP BY b.winlostdate
 						, t.currency
 						, bet.TypeID
-						, bet.TypeName		
-				
-							
+						, bet.TypeName									
 	END	
 	IF @FromDate <= @MoveBetsDay 
 	BEGIN
@@ -216,8 +219,8 @@ BEGIN
 	FROM  bodb_LicenseeReport.dbo.rpt_ThirdPartyWL_ExtraGMT b  WITH (NOLOCK)
 		  INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID
 		  INNER JOIN #Bettype bet ON b.bettypeID  = bet.bettype
-		  INNER JOIN @ProductBettypeRef pbr ON bet.bettype = pbr.Bettype
-		  LEFT JOIN @ChargeRate cr ON pbr.BettypeRef = cr.Bettype AND pbr.ProductID = cr.ProductID AND b.RptDate BETWEEN cr.FromDate AND cr.ToDate
+		  INNER JOIN #ProductBettypeRef pbr ON bet.bettype = pbr.Bettype
+		  LEFT JOIN #ChargeRate cr ON pbr.BettypeRef = cr.Bettype AND pbr.ProductID = cr.ProductID AND b.RptDate BETWEEN cr.FromDate AND cr.ToDate
 	WHERE b.rptDate BETWEEN @FromDate AND @TempToDate
 		  AND b.StatusId NOT IN (-1,103)
 		 -- AND b.CustomerCategory = -1	
@@ -305,8 +308,12 @@ BEGIN
 	DROP TABLE #TempAg
 	DROP TABLE #TempExchange 
 	DROP TABLE #Bettype 
+	DROP TABLE #ProductBettypeRef
+	DROP TABLE #ChargeRate
+	DROP TABLE #PayoutTrans
 	
 END
+
 GO
 GRANT EXECUTE ON [dbo].[LRF_Rpt_MicroGamingWinloss] TO [bodbLicenseeNet] AS [dbo]
 GO
