@@ -48,7 +48,7 @@ END
 SELECT @maxExchangeDate=MAX(exchangedate) FROM ExchangeDailyOanda WITH (NOLOCK)
 SELECT @ReferencedExchangeDate = (SELECT a.ExchangeDate FROM (SELECT TOP 1 ExchangeDate, COUNT (1) AS ExchangeCount
 				FROM ExchangeDailyOanda WITH (NOLOCK)
-				WHERE ExchangeDate BETWEEN CAST(CONVERT(VARCHAR(10),DATEADD(dd,-(DAY(@maxExchangeDate)-1),GETDATE()),111) AS SMALLDATETIME)
+				WHERE ExchangeDate BETWEEN CAST(CONVERT(VARCHAR(10),DATEADD(dd,-(DAY(@maxExchangeDate)-1),@maxExchangeDate),111) AS SMALLDATETIME)
 									AND CAST(CONVERT(VARCHAR(10),@maxExchangeDate,111) AS SMALLDATETIME)
 				GROUP BY ExchangeDate
 				ORDER BY 2 DESC, 1 DESC) a )

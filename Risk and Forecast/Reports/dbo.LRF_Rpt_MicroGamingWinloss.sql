@@ -1,12 +1,11 @@
 USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[LRF_Rpt_MicroGamingWinloss]    Script Date: 11/24/2015 12:47:13 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
- 
-ALTER  PROCEDURE [dbo].[LRF_Rpt_MicroGamingWinloss]
+
+ALTER PROCEDURE [dbo].[LRF_Rpt_MicroGamingWinloss]
  @LicenseeID	INT,
  @CurrencyID	INT = 0,
  @UserID		INT,
@@ -15,17 +14,6 @@ ALTER  PROCEDURE [dbo].[LRF_Rpt_MicroGamingWinloss]
  @ReportType	TINYINT=1,  
  @excludeTest   BIT = 0
 AS  
-
-/*
-[LRF_Rpt_MicroGamingWinloss] 
- @LicenseeID	=1,
- @CurrencyID	 = 0,
- @UserID		=10,
- @FromDate		='2015-05-01',  
- @ToDate		='2015-08-01',   
- @ReportType	=2,
- @excludeTest    = 0
-*/
 /*  Created: Jim
 	Date: 2015-07-28
     Task : MicroGaming Win Loss report 
@@ -33,6 +21,7 @@ AS
     Revisions:  
 		  - 20150921@Jim: support RNG bettype
 		  - 20160413@Victor: support MKK currency code [Redmine: #55745]
+		  - 20160506@Francis: support MGC RNG progressive contribution [Redmine: #56248]
 	Param's Explanation:  
 	  + @excludeTest: remove currency UUS
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -46,6 +35,9 @@ BEGIN
 							 ,TotalTrans	  INT	
 							 ,Winlost  		  MONEY
 							 ,LicenseeWinlost MONEY
+							 ,ProgressiveContribution MONEY
+							 ,ProgressivePayout MONEY
+							 ,AmtDueToMGC MONEY
 							)
 	CREATE TABLE #Bettype (Bettype INT,TypeID TINYINT,TypeName VARCHAR(200)) 
 	CREATE TABLE #TempAg  (CustId INT, Currency INT)
@@ -85,6 +77,27 @@ BEGIN
 			)
 	INSERT INTO #Bettype (Bettype,TypeID,TypeName)	
 	EXEC LRF_MicroGamingWinloss_Bettype  @TypeID = 0
+	
+	-------------LA's part
+	--Get PartyID from LicenseeID
+	DECLARE @PartyID SMALLINT
+	SELECT @PartyID = PartyID FROM bodb_licensee.dbo.OAS_Party WITH (NOLOCK) WHERE OldRefID = @LicenseeID AND PartyType = 1
+	
+	--Get ProductID and BettypeRef from Bettype
+	DECLARE @ProductBettypeRef AS TABLE (Bettype SMALLINT, BettypeRef SMALLINT, ProductID SMALLINT)
+	INSERT INTO @ProductBettypeRef (Bettype, BettypeRef, ProductID)
+	SELECT b.Bettype, sbr.BettypeRef,
+		    CASE WHEN sbr.Sporttype = 203 THEN 14
+				WHEN sbr.Sporttype = 205 THEN 17 ELSE 0 END AS ProductID 
+	FROM #Bettype b
+		INNER JOIN bodb_licensee.dbo.Sport_Bettype_Reference sbr WITH (NOLOCK) ON b.Bettype = sbr.Bettype
+		
+	--Get charge rate
+	DECLARE @ChargeRate AS TABLE (ProductID INT, Bettype INT, DI_Rate MONEY, FromDate SMALLDATETIME, ToDate SMALLDATETIME)
+	INSERT INTO @ChargeRate (ProductID, Bettype, DI_Rate, FromDate, ToDate)
+	SELECT ProductID, Bettype, DI_Rate, Fromdate, Todate
+	FROM bodb_licensee.dbo.LA_f_ChargeInfo(@PartyID, @FromDate, @ToDate, 'MGCLC,MGCRNG', 'OA', 1)
+	-------------
 		
 	IF @ToDate > @MoveBetsDay
 	BEGIN
@@ -99,19 +112,27 @@ BEGIN
 							 ,TurnOver 	
 							 ,TotalTrans
 							 ,Winlost  	
-							 ,LicenseeWinlost 
+							 ,LicenseeWinlost
+							 ,ProgressiveContribution
+							 ,ProgressivePayout
+							 ,AmtDueToMGC 
 							)
 				SELECT  b.winlostdate
 						, t.currency
 						, bet.TypeID
 						, bet.TypeName
-						, SUM(stake) turnover
-						, COUNT(b.transid) TotalTrans
+						, SUM(stake) AS turnover
+						, COUNT(b.transid) AS TotalTrans
 						, SUM(b.winlost - b.actual_stake) AS Winlost
 						, SUM(- 1 * (b.winlost - b.actual_stake)) AS LicenseeWinlost
+						, 0 AS ProgressiveContribution
+						, 0 AS ProgressivePayout
+						, SUM((b.actual_stake - b.winlost) * ISNULL(cr.DI_Rate,0)) AS AmtDueToMGC
 				FROM dbo.bettrans b WITH (NOLOCK)
 				INNER JOIN #TempAg t ON b.recommend = t.custid AND t.Currency = b.Currency
-				INNER JOIN #Bettype bet ON b.bettype  = bet.bettype
+				INNER JOIN #Bettype bet ON b.bettype = bet.bettype
+				INNER JOIN @ProductBettypeRef pbr ON bet.bettype = pbr.Bettype
+				LEFT JOIN @ChargeRate cr ON pbr.BettypeRef = cr.Bettype AND pbr.ProductID = cr.ProductID AND b.winlostdate BETWEEN cr.FromDate AND cr.ToDate
 				WHERE b.winlostdate BETWEEN @TempFromDate AND @ToDate
 							AND b.statusID IN (111, 112, 113)
 							AND b.bettype NOT IN (2008,2009)
@@ -119,6 +140,8 @@ BEGIN
 						, t.currency
 						, bet.TypeID
 						, bet.TypeName
+					
+				--For MGC RNG		
 				INSERT INTO #tmpResult ( Winlostdate
 							 ,Currency 
 							 ,TypeID	
@@ -127,8 +150,10 @@ BEGIN
 							 ,TotalTrans
 							 ,Winlost  	
 							 ,LicenseeWinlost 
-							)
-							
+							 ,ProgressiveContribution
+							 ,ProgressivePayout
+							 ,AmtDueToMGC 
+							)		
 				SELECT 	b.winlostdate
 						, t.currency
 						, bet.TypeID
@@ -137,9 +162,16 @@ BEGIN
 						, COUNT(b.transid) TotalTrans
 						, SUM(b.winlost - b.actual_stake) AS Winlost
 						, SUM(- 1 * (b.winlost - b.actual_stake)) AS LicenseeWinlost
+						, SUM(ISNULL(ABS(b.stake) * r.Contribution,0)) AS ProgressiveContribution
+						, SUM(ISNULL(p.WinAmount,0)) AS ProgressivePayout
+						, SUM((b.actual_stake - b.winlost - ISNULL(ABS(b.stake) * r.Contribution,0)) * ISNULL(cr.DI_Rate,0)) AS AmtDueToMGC
 				FROM dbo.bettransRnG b WITH (NOLOCK)
 				INNER JOIN #TempAg t ON b.recommend = t.custid AND t.Currency = b.Currency
 				INNER JOIN #Bettype bet ON b.gameID  = bet.bettype
+				INNER JOIN @ProductBettypeRef pbr ON bet.bettype = pbr.Bettype
+				LEFT JOIN @ChargeRate cr ON pbr.BettypeRef = cr.Bettype AND pbr.ProductID = cr.ProductID AND b.winlostdate BETWEEN cr.FromDate AND cr.ToDate
+				LEFT JOIN bodb_LicenseeReport.dbo.view_MGCRNG_ProgressiveContribution_Rate r ON b.transdesc = r.ResourceID
+				LEFT JOIN DBTXN.bodb02.dbo.PayoutTrans p ON b.transid = p.RefNo
 				WHERE b.winlostdate BETWEEN @TempFromDate AND @ToDate
 							AND b.statusID IN (111, 112, 113)
 							AND bet.bettype IN (2009,2008)
@@ -164,21 +196,28 @@ BEGIN
 								 ,TurnOver 	
 								 ,TotalTrans
 								 ,Winlost  	
-								 ,LicenseeWinlost 
+								 ,LicenseeWinlost
+     							 ,ProgressiveContribution
+								 ,ProgressivePayout
+								 ,AmtDueToMGC
 								)
-
 		SELECT 
-		   b.rptDate Winlostdate		
-		   ,b.CurrencyID Currency
-		   ,bet.TypeID
-		   ,bet.TypeName
-		   ,SUM(b.TurnOver) AS TurnOver
-		   ,SUM(b.BetCount) AS TotalTrans
-		   ,SUM(b.Winloss)  AS Winlost
-		   ,-SUM(b.Winloss) AS LicenseeWinlost
+		     b.rptDate AS Winlostdate		
+		   , b.CurrencyID AS Currency
+		   , bet.TypeID AS TypeID
+		   , bet.TypeID AS TypeName
+		   , SUM(b.TurnOver) AS TurnOver
+		   , SUM(b.BetCount) AS TotalTrans
+		   , SUM(b.Winloss)  AS Winlost
+		   , -SUM(b.Winloss) AS LicenseeWinlost
+		   , SUM(b.ProgressiveContribution) AS ProgressiveContribution
+		   , SUM(b.ProgressivePayout) AS ProgressivePayout
+		   , SUM(b.ProgressiveContribution - b.Winloss) AS AmtDueToMGC
 	FROM  bodb_LicenseeReport.dbo.rpt_ThirdPartyWL_ExtraGMT b  WITH (NOLOCK)
 		  INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID
 		  INNER JOIN #Bettype bet ON b.bettypeID  = bet.bettype
+		  INNER JOIN @ProductBettypeRef pbr ON bet.bettype = pbr.Bettype
+		  LEFT JOIN @ChargeRate cr ON pbr.BettypeRef = cr.Bettype AND pbr.ProductID = cr.ProductID AND b.RptDate BETWEEN cr.FromDate AND cr.ToDate
 	WHERE b.rptDate BETWEEN @FromDate AND @TempToDate
 		  AND b.StatusId NOT IN (-1,103)
 		 -- AND b.CustomerCategory = -1	
@@ -213,18 +252,38 @@ BEGIN
 		   ,SUM(r.TotalTrans) 	 AS TotalTrans
 		   ,SUM(r.Winlost)		 AS Winlost
 		   ,SUM(r.LicenseeWinlost) AS LicenseeWinlost
+		   ,SUM(r.ProgressiveContribution) AS ProgressiveContribution
+		   ,SUM(r.ProgressivePayout) AS ProgressivePayout
+		   ,SUM(r.LicenseeWinlost - r.ProgressiveContribution) AS LicenseeNetWin
+		   ,SUM(r.AmtDueToMGC) AS AmtDueToMGC
+		   ,SUM(r.ProgressiveContribution - r.ProgressivePayout) AS ProgressiveFee
 		---USD
 			,SUM(r.TurnOver*e.USD)   	 	AS TurnOverUSD
 			,SUM(r.Winlost*e.USD)		 	AS WinlostUSD
 			,SUM(r.LicenseeWinlost*e.USD)   AS LicenseeWinlostUSD
+			,SUM(r.ProgressiveContribution*e.USD) AS ProgressiveContributionUSD
+		    ,SUM(r.ProgressivePayout*e.USD) AS ProgressivePayoutUSD
+		    ,SUM((r.LicenseeWinlost - r.ProgressiveContribution)*e.USD) AS LicenseeNetWinUSD
+		    ,SUM(r.AmtDueToMGC*e.USD) AS AmtDueToMGCUSD
+		    ,SUM((r.ProgressiveContribution - r.ProgressivePayout)*e.USD) AS ProgressiveFeeUSD
 		---EUR
 			,SUM(r.TurnOver*e.EUR)   	 	AS TurnOverEUR
 			,SUM(r.Winlost*e.EUR)		 	AS WinlostEUR
 			,SUM(r.LicenseeWinlost*e.EUR)   AS LicenseeWinlostEUR
+			,SUM(r.ProgressiveContribution*e.EUR) AS ProgressiveContributionEUR
+		    ,SUM(r.ProgressivePayout*e.EUR) AS ProgressivePayoutEUR
+		    ,SUM((r.LicenseeWinlost - r.ProgressiveContribution)*e.EUR) AS LicenseeNetWinEUR
+		    ,SUM(r.AmtDueToMGC*e.EUR) AS AmtDueToMGCEUR
+		    ,SUM((r.ProgressiveContribution - r.ProgressivePayout)*e.EUR) AS ProgressiveFeeEUR
 		---GBP
 			,SUM(r.TurnOver*e.GBP)   	 	AS TurnOverGBP
 			,SUM(r.Winlost*e.GBP)		 	AS WinlostGBP
-			,SUM(r.LicenseeWinlost*e.GBP)   AS LicenseeWinlostGBP	
+			,SUM(r.LicenseeWinlost*e.GBP)   AS LicenseeWinlostGBP
+			,SUM(r.ProgressiveContribution*e.GBP) AS ProgressiveContributionGBP
+		    ,SUM(r.ProgressivePayout*e.GBP) AS ProgressivePayoutGBP
+		    ,SUM((r.LicenseeWinlost - r.ProgressiveContribution)*e.GBP) AS LicenseeNetWinGBP
+		    ,SUM(r.AmtDueToMGC*e.GBP) AS AmtDueToMGCGBP
+		    ,SUM((r.ProgressiveContribution - r.ProgressivePayout)*e.GBP) AS ProgressiveFeeGBP
 	FROM #tmpResult r
 		INNER JOIN #TempExchange e ON r.Winlostdate = e.ExchangeDate AND r.currency = e.ExchangeId
 	GROUP BY  CASE WHEN @ReportType = 1 THEN CONVERT(VARCHAR(8),r.winlostdate,112)  
@@ -248,7 +307,7 @@ BEGIN
 	DROP TABLE #Bettype 
 	
 END
- GO
-GRANT EXECUTE ON [dbo].[LRF_Rpt_MicroGamingWinloss] TO [bodbLicenseeNet]  
 GO
-GRANT VIEW DEFINITION ON [dbo].[LRF_Rpt_MicroGamingWinloss] TO [vnteam] 
+GRANT EXECUTE ON [dbo].[LRF_Rpt_MicroGamingWinloss] TO [bodbLicenseeNet] AS [dbo]
+GO
+GRANT VIEW DEFINITION ON [dbo].[LRF_Rpt_MicroGamingWinloss] TO [vnteam] AS [dbo]
