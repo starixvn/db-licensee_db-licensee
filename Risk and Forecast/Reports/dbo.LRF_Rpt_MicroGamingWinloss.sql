@@ -215,7 +215,7 @@ BEGIN
 		   , -SUM(b.Winloss) AS LicenseeWinlost
 		   , SUM(b.ProgressiveContribution) AS ProgressiveContribution
 		   , SUM(b.ProgressivePayout) AS ProgressivePayout
-		   , SUM((b.ProgressiveContribution - b.Winloss) * ISNULL(cr.DI_Rate,0)) AS AmtDueToMGC
+		   , SUM((-b.ProgressiveContribution - b.Winloss) * ISNULL(cr.DI_Rate,0)) AS AmtDueToMGC
 	FROM  bodb_LicenseeReport.dbo.rpt_ThirdPartyWL_ExtraGMT b  WITH (NOLOCK)
 		  INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID
 		  INNER JOIN #Bettype bet ON b.bettypeID  = bet.bettype
