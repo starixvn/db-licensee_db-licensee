@@ -53,13 +53,7 @@ BEGIN
 			   ,'Sportsbook'
 			   ,'SB'
 			   ,1
-		/* Hardcode for specific licensee
 		
-		IF NOT EXISTS (SELECT 1 FROM @tblProductActive WHERE ProductID = 22) --AND @LicenseeiD = 26
-		BEGIN
-			INSERT INTO @tblProductActive VALUES (22,'Voidbridge','VB',1)
-		END 	
-		*/	   
 		IF EXISTS (SELECT 1 FROM @tblProductActive WHERE ProductID = 10)	-- AGCasino
 			BEGIN
 				IF EXISTS (SELECT 1 FROM DBCUST.CustDB.dbo.Dep_SuperSetting_AGCasino s WITH (NOLOCK) INNER JOIN @tblSuper su ON s.CustID = su.SrecommendID WHERE IsEnabled=1)
