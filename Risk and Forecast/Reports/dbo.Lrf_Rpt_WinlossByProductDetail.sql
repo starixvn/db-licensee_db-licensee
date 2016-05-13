@@ -20,6 +20,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail]
  @ShowKN   		BIT=0, -- Keno
  @ShowMGCLC 	BIT=0,-- MicroGamming
  @ShowMGCRnG 	BIT=0,-- MicroGamming  
+ @ShowVB		BIT=0,-- Voidbridge
  @MoveBetsDay SMALLDATETIME,
  @IsOld BIT = 0,
  @drawfilter SMALLINT = 1  ,
@@ -28,10 +29,10 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail]
 AS  
 /*  Created: Henry  
 	Date: 2011-07-06
-    Task : Winloss By Product Detail Report for Licensee Member Level 
-    DB: DB052.bodb02  
+	Task : Winloss By Product Detail Report for Licensee Member Level 
+	DB: DB052.bodb02  
    
-    Revisions:  
+	Revisions:  
 	-20111013@Henry: change to use rptLicWinloss2
 	-20111208@Jim: change bettype condition
 	-20120214@Jim: change to use  table ExchangeDaily by use function Lrf_f_GetExchangeDaily  
@@ -61,6 +62,7 @@ AS
 	- 201508215@Winnie: Revever KeenOcean currency
 	- 20151001@Jim: remove MicroGaming
 	- 20151228@Bobby: Support MBC RNG Casino sporttype(208,209,210)
+	- 20160331@Walter: Support Voidbridge single wallet [Redmine: #55057]
 	- 20160413@Victor: support MKK currency code [Redmine: #55745]
 	
 	Param's Explanation:  
@@ -152,15 +154,15 @@ DROP TABLE #Currency
 IF @ShowSB = 1  
 BEGIN  
 	INSERT  INTO @sporttype( sporttype)
-    VALUES  (0)	
+	VALUES  (0)	
 END  
 
 IF @ShowRB = 1  
 BEGIN  
 	INSERT  INTO @sporttype( Sporttype)
-    VALUES  (151)
-    
-    INSERT INTO @bettype(bettype)
+	VALUES  (151)
+	
+	INSERT INTO @bettype(bettype)
 	SELECT typeid FROM bettype (NOLOCK)
 	WHERE (typeid BETWEEN 31 AND 33)
 END  
@@ -177,18 +179,18 @@ END
 IF @ShowLC = 1
 BEGIN
 	INSERT  INTO @sporttype( Sporttype)
-    VALUES  (162)
-    
-    INSERT INTO @bettype(bettype)
+	VALUES  (162)
+	
+	INSERT INTO @bettype(bettype)
 	SELECT typeid FROM bettype (NOLOCK)
 	WHERE (typeid BETWEEN 1101 AND 1199)
 END
 IF @ShowVS = 1
 BEGIN
 	INSERT  INTO @sporttype( Sporttype)
-    SELECT 180
+	SELECT 180
 	
-    INSERT INTO @bettype(bettype)
+	INSERT INTO @bettype(bettype)
 	SELECT typeid FROM bettype (NOLOCK)
 	WHERE (typeid BETWEEN 1201 AND 1299)
 END
@@ -244,6 +246,15 @@ BEGIN
 	INSERT INTO @bettype(bettype)
 	SELECT typeid FROM bettype (NOLOCK)
 	WHERE (typeid BETWEEN 2008 AND 2009)
+END
+IF @ShowVB=1 -- Voidbridge
+BEGIN 
+	INSERT INTO @sporttype (sporttype)
+	VALUES(212)
+
+	INSERT INTO @bettype(bettype)
+	SELECT typeid FROM bettype (NOLOCK)
+	WHERE (typeid BETWEEN 4001 AND 7999)
 END
 
 DECLARE @TempFromDate DATETIME 
@@ -460,8 +471,8 @@ BEGIN
 			statusID
 	END
 	
-	--NG+LC+VS+RB + KN
-	IF (@ShowNG=1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowRB=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGCLC = 1 OR @showMGCRnG = 1 )
+	--NG+LC+VS+RB + KN + VB
+	IF 1 IN (@ShowNG, @ShowLC, @ShowVS, @ShowRB, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @showMGCRnG, @ShowVB)
 	BEGIN
 		SELECT 
 			DISTINCT
@@ -490,6 +501,7 @@ BEGIN
 				WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN' 
 				WHEN b.bettype BETWEEN 2001 AND 2007 THEN 'MGCLC'
 				WHEN b.bettype BETWEEN 2008 AND 2009 THEN 'MGCRNG'
+				WHEN b.bettype BETWEEN 4001 AND 7999 THEN 'VB'
 			END AS ProductCode,
 			SUM(
 				CASE WHEN b.bettype = 33 AND b.liveawayscore = 0 THEN stake/2 ELSE stake END 
@@ -587,6 +599,7 @@ BEGIN
 				WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN' 
 				WHEN b.bettype BETWEEN 2001 AND 2007 THEN 'MGCLC'
 				WHEN b.bettype BETWEEN 2008 AND 2009 THEN 'MGCRNG'
+				WHEN b.bettype BETWEEN 4001 AND 7999 THEN 'VB'
 			END
 			, statusID
 	DROP TABLE #tmpVS		
@@ -691,7 +704,7 @@ BEGIN
 	END
 	
 	--exclude BA tickets
-	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR @ShowLC=1 OR @ShowCS=1 OR @ShowBG=1 OR @ShowKN=1 OR @ShowMGCLC = 1 OR @showMGCRnG = 1  )
+	IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowLC, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @showMGCRnG, @ShowVB)
 	BEGIN
 		INSERT INTO #SAgWinLoss  
 		SELECT 
@@ -707,6 +720,7 @@ BEGIN
 				WHEN b.sporttype=202 THEN 'KN'
 				WHEN b.sporttype = 203 THEN 'MGCLC'
 				WHEN b.sporttype = 205 THEN 'MGCRNG'
+				WHEN b.sporttype = 212 THEN 'VB'
 			END AS ProductCode,
 			SUM(b.turnover
 			*
@@ -799,6 +813,7 @@ BEGIN
 				WHEN b.sporttype=202 THEN 'KN'
 				WHEN b.sporttype = 203 THEN 'MGCLC'
 				WHEN b.sporttype = 205 THEN 'MGCRNG'
+				WHEN b.sporttype = 212 THEN 'VB'
 			END
 			, b.statusID
 	END
@@ -1036,7 +1051,7 @@ BEGIN
 	END
 
 	--exclude BA tickets
-	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR @ShowLC=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowBG=1OR @ShowKN=1 OR @ShowMGCLC = 1 OR @showMGCRnG = 1 )
+	IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @showMGCRnG, @ShowVB)
 	BEGIN
 		INSERT INTO #SAgWinLoss  
 		SELECT 
@@ -1053,6 +1068,7 @@ BEGIN
 				WHEN b.sporttype=202 THEN 'KN'
 				WHEN b.sporttype = 203 THEN 'MGCLC'
 				WHEN b.sporttype = 205 THEN 'MGCRNG'
+				WHEN b.sporttype = 212 THEN 'VB'
 			END AS ProductCode,
 			SUM(b.turnover
 			*
@@ -1121,7 +1137,7 @@ BEGIN
 					ELSE 1 END
 				ELSE 1 END
 		FROM 
-	         bodb_Licensee.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
+			 bodb_Licensee.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
 			INNER JOIN @TempAg ag ON b.recommend = ag.custID AND b.Currency= ag.currency
 			INNER JOIN @sporttype t ON b.sporttype = t.sporttype
 			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
@@ -1146,6 +1162,7 @@ BEGIN
 				WHEN b.sporttype=202 THEN 'KN'
 				WHEN b.sporttype = 203 THEN 'MGCLC'
 				WHEN b.sporttype = 205 THEN 'MGCRNG'
+				WHEN b.sporttype = 212 THEN 'VB'
 			END
 			, b.statusID
 	END
