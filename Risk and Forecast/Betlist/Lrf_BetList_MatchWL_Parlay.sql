@@ -53,6 +53,7 @@ AS
 		- 20141111@Winnie: change from LicenseeCust to f_SelLicenseeCust 
 		- 20150128@Winnie: Add base currency GBP
 		- 20151203@Kos: Change odds, modds data type from SMALLMONEY to MONEY [Redmine: #48660]
+		- 20160516@Kos: Add sorting function [#Redmine: 57433]
 
 	Param's Explanation: 
 
@@ -73,9 +74,10 @@ BEGIN
 		INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
 	WHERE  [Description] = COALESCE(@LicenseeType,[Description])
 
-	CREATE TABLE #AgWinlossMP
+	CREATE TABLE #Data
 	(
 		username		NVARCHAR(50),
+		Nickname		VARCHAR(50),
 		custid			INT,
 		bettype			SMALLINT,
 		refno			NVARCHAR(50),		
@@ -109,9 +111,10 @@ BEGIN
 	BEGIN
 		IF @ShowBA = 1
 		BEGIN
-			INSERT INTO #AgWinlossMP 
+			INSERT INTO #Data 
 			SELECT
 				b.username,
+				'' AS Nickname,
 				b.custid,
 				b.bettype,		
 				CONVERT(NVARCHAR,b.refno),		
@@ -156,9 +159,10 @@ BEGIN
 
 		IF @ShowSB = 1
 		BEGIN
-			INSERT INTO #AgWinlossMP 
+			INSERT INTO #Data 
 			SELECT
 				b.username,
+				'' AS Nickname,
 				b.custid,
 				b.bettype,		
 				CONVERT(NVARCHAR,b.refno),		
@@ -206,9 +210,10 @@ BEGIN
 	BEGIN
 		IF @ShowBA = 1
 		BEGIN
-			INSERT INTO #AgWinlossMP 
+			INSERT INTO #Data 
 			SELECT
 				b.username,
+				'' AS Nickname,
 				b.custid,
 				b.bettype,		
 				CONVERT(NVARCHAR,b.refno),		
@@ -253,9 +258,10 @@ BEGIN
 
 		IF @ShowSB = 1
 		BEGIN
-			INSERT INTO #AgWinlossMP 
+			INSERT INTO #Data 
 			SELECT
 				b.username,
+				'' AS Nickname,
 				b.custid,
 				b.bettype,		
 				CONVERT(NVARCHAR,b.refno),		
@@ -302,11 +308,11 @@ BEGIN
 	DECLARE @RowStart INT, @RowEnd INT  
 	SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1
 
-	CREATE NONCLUSTERED INDEX IDX_Index_Ag ON #AgWinlossMP (Currency)
+	CREATE NONCLUSTERED INDEX IDX_Index_Ag ON #Data (Currency)
 
 	SELECT * INTO #TempExchange 
 	FROM Lrf_f_GetExchangeDaily(@FromDate,@ToDate)
-	WHERE exchangeid IN (SELECT DISTINCT Currency FROM #AgWinlossMP)
+	WHERE exchangeid IN (SELECT DISTINCT Currency FROM #Data)
 
 	SELECT 
 		@TotalRows = COUNT(transid),
@@ -329,66 +335,118 @@ BEGIN
 		@SumLicenseeWLGBP=SUM(ISNULL(LicenseeWL*e.GBP,0)),
 		@SumCommGBP=SUM(ISNULL(comm*e.GBP,0)),
 		@SumPlayerCommGBP=SUM(ISNULL(playercomm*e.GBP,0))	
-	FROM #AgWinlossMP b
+	FROM #Data b
 	INNER JOIN #TempExchange e ON b.currency=e.exchangeID AND b.winlostdate=e.exchangeDate
 	INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid
 
-	DECLARE @sql NVARCHAR(2000)
-	DECLARE @SortTemp VARCHAR(250) 
+	UPDATE #Data
+	SET Nickname = SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1, LEN(c.username2) - CHARINDEX('$', c.username2))
+	FROM #Data AS b
+		INNER JOIN dbo.Customer AS c WITH (NOLOCK) ON b.CustId = c.custid
 
-	IF (@Sort LIKE '%USD%') OR (@Sort LIKE '%EUR%')OR (@Sort LIKE '%GBP%')
+	CREATE TABLE #PagingData (
+		RowNum			INT,
+		username		NVARCHAR(50),
+		Nickname		VARCHAR(50),
+		custid			INT,
+		bettype			SMALLINT,
+		refno			NVARCHAR(50),		
+		transid			BIGINT,	
+		BetID			BIGINT,
+		hdp1			SMALLMONEY,
+		hdp2			SMALLMONEY,
+		odds			MONEY,
+		modds			MONEY,
+		status			NVARCHAR(50),
+		Stake			MONEY, 
+		Actual_Stake	MONEY,
+		winlost			MONEY,
+		licenseeWL		MONEY,
+		comm			MONEY,
+		playercomm		MONEY,
+		transdate		DATETIME,
+		winlostdate		DATETIME,
+		betteam			NVARCHAR(25),
+		liveindicator	BIT,
+		livehomescore	SMALLINT,
+		liveawayscore	SMALLINT,
+		IP				VARCHAR(30),
+		isNeutral		BIT,
+		currency		SMALLINT,
+		isBA			INT,
+		awinlost		MONEY
+	)
+
+	DECLARE @sql NVARCHAR(2000)
+	DECLARE @SortTemp VARCHAR(250)
+
+	IF @Sort LIKE '%USD%' OR @Sort LIKE '%EUR%' OR @Sort LIKE '%GBP%'
 	BEGIN
 		DECLARE @charindex INT
-		SELECT @charindex = CHARINDEX( ' ', @Sort, 1)
 
-		SELECT @SortTemp = substring (@Sort, 1, @charindex - 4) + '*e.'+SUBSTRING(@Sort, @charindex - 3,4) + SUBSTRING(@Sort, @charindex + 1, LEN(@Sort))
+		SELECT @charindex = CHARINDEX( ' ', @Sort, 1)
+		SELECT @SortTemp = SUBSTRING (@Sort, 1, @charindex - 4) + '*e.' + SUBSTRING(@Sort, @charindex - 3,4) + SUBSTRING(@Sort, @charindex + 1, LEN(@Sort))
 	END
 	ELSE
 	BEGIN
 		SET @SortTemp = @Sort
 	END
 
-	SET @sql = 
-		   'SELECT A.* ,'''' betstatus, '''' matchcode, 0 homeid, 0 awayid, 0 leagueid, 0 matchid, 0 sporttype
-			FROM
-			(
-				SELECT  
-						ROW_NUMBER() over(ORDER BY '+@SortTemp +' ) AS RowNum,
-						b.* ,
-						SUBSTRING(c.username2,  CHARINDEX(''$'',c.username2)+1, len(c.username2)-CHARINDEX(''$'',c.username2)) AS nickname,
-						--USD
-						stake * e.USD stakeUSD,
-						actual_stake * e.USD actual_stakeUSD,
-						winlost * e.USD winlostUSD,
-						LicenseeWL* e.USD LicenseeWLUSD,
-						comm * e.USD commUSD,
-						playercomm*e.USD PlayerCommUSD,
-						--EUR
-						stake * e.EUR stakeEUR,
-						actual_stake * e.EUR actual_stakeEUR,
-						winlost * e.EUR winlostEUR,
-						LicenseeWL* e.EUR LicenseeWLEUR,
-						comm * e.EUR commEUR,
-						playercomm*e.EUR playercommEUR,				
-						--GBP
-						stake * e.GBP stakeGBP,
-						actual_stake * e.GBP actual_stakeGBP,
-						winlost * e.GBP winlostGBP,
-						LicenseeWL* e.GBP LicenseeWLGBP,
-						comm * e.GBP commGBP,
-						playercomm*e.GBP playercommGBP
-			
-				FROM #AgWinlossMP b
-					INNER JOIN customer c WITH(NOLOCK) ON c.custid=b.custid
-					INNER JOIN #TempExchange e ON b.currency=e.exchangeID AND b.winlostdate=e.exchangeDate
-			) A WHERE A.RowNum BETWEEN '+ cast(@RowStart as varchar(50))+' AND '+cast(@RowEnd as varchar(50))
-				+' ORDER BY A.RowNum'
-	EXEC (@sql)
+	SET @Sql = 
+		'INSERT INTO #PagingData
+		SELECT A.*
+		FROM
+		(
+			SELECT
+				ROW_NUMBER() OVER (ORDER BY ' + @SortTemp + ') AS RowNum,
+				b.* 
+			FROM #Data AS b
+		) A 
+		WHERE A.RowNum BETWEEN ' + CAST(@RowStart AS VARCHAR(50)) + ' AND ' + CAST(@RowEnd AS VARCHAR(50))
+		+ ' ORDER BY A.RowNum'
 
-	DROP TABLE #AgWinlossMP
+	EXEC sp_executesql @sql
+
+	DROP TABLE #Data
+
+	SELECT
+		b.*,
+		'' AS BetStatus,
+		'' AS MatchCode,
+		0 AS HomeId,
+		0 AS AwayId,
+		0 AS LeagueId,
+		0 AS MatchId,
+		0 AS SportType,
+		-- USD
+		b.Stake			* e.USD AS StakeUSD,
+		b.Actual_Stake	* e.USD AS Actual_StakeUSD,
+		b.WinLost		* e.USD AS WinLostUSD,
+		b.LicenseeWL	* e.USD AS LicenseeWLUSD,
+		b.Comm			* e.USD AS CommUSD,
+		b.PlayerComm	* e.USD AS PlayerCommUSD,
+		-- EUR
+		b.Stake			* e.EUR AS StakeEUR,
+		b.Actual_Stake	* e.EUR AS Actual_StakeEUR,
+		b.WinLost		* e.EUR AS WinLostEUR,
+		b.LicenseeWL	* e.EUR AS LicenseeWLEUR,
+		b.Comm			* e.EUR AS CommEUR,
+		b.PlayerComm	* e.EUR AS PlayerCommEUR,
+		-- GBP
+		b.Stake			* e.GBP AS StakeGBP,
+		b.Actual_Stake	* e.GBP AS Actual_StakeGBP,
+		b.WinLost		* e.GBP AS WinLostGBP,
+		b.LicenseeWL	* e.GBP AS LicenseeWLGBP,
+		b.Comm			* e.GBP AS CommGBP,
+		b.PlayerComm	* e.GBP AS PlayerCommGBP
+	FROM #PagingData AS b
+		INNER JOIN #TempExchange AS e ON e.ExchangeDate = b.WinLostDate AND e.exchangeid = b.Currency
+
+	DROP TABLE #PagingData
 	DROP TABLE #TempExchange 
 	DROP TABLE #Currency
 END
+
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_MatchWL_Parlay] TO [bodbLicenseeNet]
