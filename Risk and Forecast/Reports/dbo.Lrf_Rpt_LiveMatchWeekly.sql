@@ -1,3 +1,9 @@
+SET QUOTED_IDENTIFIER ON 
+GO
+SET ANSI_NULLS ON 
+GO
+
+/****** Object:  Stored Procedure dbo.Lrf_Rpt_LiveMatchWeekly    Script Date: 3/21/2016 9:55:52 AM ******/
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveMatchWeekly]
 	@LicenseeID INT =1
 	,@UserID 	INT
@@ -10,6 +16,14 @@ AS
 	Date: 2016-03-03
 	Task : LRF - Weekly live matches [Redmine #52886]
 	DB: DBEXT/bodb02
+	Revisions: 20160518@Jim: use view instead of table league to filter test leaguage
+*/
+/*
+[Lrf_Rpt_LiveMatchWeekly]
+	@LicenseeID   =1
+	,@UserID 	=10
+	,@FromDate  ='20160501'
+	,@ToDate    ='20160520'
 */
 -- Sec1: declare variable
 DECLARE @TempFromDate DATETIME
@@ -64,7 +78,7 @@ FROM (
 	 GROUP BY rptdate,leagueId
 
 	)AS M
-	INNER JOIN dbo.League l WITH (NOLOCK) ON m.LeagueId = l.LeagueId
+	INNER JOIN dbo.view_LiveMatch_LeagueEx l   ON m.LeagueId = l.LeagueId
 	INNER JOIN #tmpSport s WITH (NOLOCK) ON l.sporttype= s.sporttype
 GROUP BY EventDate
 	   ,l.sporttype					 
@@ -181,8 +195,17 @@ SET @query='select  sporttype, sportname,' + @cols + '
  DROP TABLE #tmpReturn
  DROP TABLE #tmpStr
  DROP TABLE #tmpSport
- GO
- 
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_LiveMatchWeekly] TO [bodbLicenseeNet] 
+ DROP TABLE #tblMatchHedge
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LiveMatchWeekly] TO [vnteam] 
+
+SET QUOTED_IDENTIFIER OFF 
+GO
+SET ANSI_NULLS ON 
+GO
+
+
+GO 
+ GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LiveMatchWeekly] TO [vnteam]
+GO 
+ GRANT EXECUTE ON [dbo].[Lrf_Rpt_LiveMatchWeekly] TO [bodbLicenseeNet]
+GO 
