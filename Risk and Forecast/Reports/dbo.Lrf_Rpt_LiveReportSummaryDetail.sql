@@ -53,7 +53,7 @@ Revisions:
 	- 20160218@Bobby: #52787 - Fix bug for showing parlay when choosing specific product code
 	- 20160330@Percy: Support Voidbridge single wallet [Redmine: #55057]
 	- 20160413@Victor: support MKK currency code
-	
+	- 20160519@Jim: HotFix #57810
 Param's Explanation:  
 	@Liveindicator : indicate that whether the report will get live data or not
 		+ 0: Non - Live data only
@@ -199,7 +199,7 @@ BEGIN
 									WHEN @ProductCode = 'KN' THEN 'AND b.bettype BETWEEN 1501 AND 1599'
 									WHEN @ProductCode = 'CS' THEN 'AND (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399)'
 									WHEN @ProductCode = 'VB' THEN 'AND b.bettype BETWEEN 4001 AND 7999'
-									ELSE '' END + CHAR(13)
+									ELSE 'AND b.bettype NOT BETWEEN 2001 AND 2007 ' END + CHAR(13)
 								+ 'GROUP BY  b.winlostdate, t.currency, b.bettype' + CHAR(13)
 			--SB for parlay
 			SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
@@ -328,7 +328,7 @@ BEGIN
 									WHEN @ProductCode = 'KN' THEN 'AND b.bettype BETWEEN 1501 AND 1599'
 									WHEN @ProductCode = 'CS' THEN 'AND (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399)'
 									WHEN @ProductCode = 'VB' THEN 'AND b.bettype BETWEEN 4001 AND 7999'
-									ELSE '' END + CHAR(13)
+									ELSE 'AND b.bettype NOT BETWEEN 2001 AND 2007' END + CHAR(13)
 								+ 'GROUP BY b.rptDate, b.currencyID, b.bettype' + CHAR(13)
 
 			-- parlay for SB			
