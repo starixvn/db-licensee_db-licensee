@@ -15,7 +15,7 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_MatchWL_Outright]
 	@MoveBetsDay		SMALLDATETIME,
 	@PageSize			INT				= 1000,
 	@PageIndex			INT				= 0,
-	@Sort				VARCHAR(30)		= 'TransId DESC',
+	@Sort				VARCHAR(100)	= 'TransId ASC',
 	@TotalRows			INT				= 0 OUTPUT,
 	@SumWinLost			MONEY			= 0 OUTPUT,
 	@SumLicenseeWL		MONEY			= 0 OUTPUT,
@@ -450,7 +450,28 @@ BEGIN
 		IsBA			INT
 	)
 
-	DECLARE @Sql NVARCHAR(500)
+	-- Exchange rate is different for each day => Stake order may be different from StakeUSD order
+	DECLARE @SortExp VARCHAR(200)
+
+	IF @Sort LIKE '%USD%' OR @Sort LIKE '%EUR%' OR @Sort LIKE '%GBP%'
+	BEGIN
+		DECLARE @CharIndex INT
+
+		SELECT @CharIndex = CHARINDEX( ' ', @Sort, 1)
+		SELECT @SortExp = SUBSTRING (@Sort, 1, @CharIndex - 4) + ' * e.' 
+			+ SUBSTRING(@Sort, @CharIndex - 3, 4) + SUBSTRING(@Sort, @CharIndex + 1, LEN(@Sort))
+	END
+	ELSE
+	BEGIN
+		SET @SortExp = @Sort
+	END
+
+	IF @SortExp NOT LIKE '%TransId%'
+	BEGIN
+		SELECT @SortExp = @SortExp + ', TransId ASC'
+	END
+
+	DECLARE @Sql NVARCHAR(1000)
 
 	SET @Sql = 
 		'INSERT INTO #PagingData
@@ -458,10 +479,11 @@ BEGIN
 		FROM
 		(
 			SELECT
-				ROW_NUMBER() OVER (ORDER BY ' + @Sort + ') AS RowNum,
+				ROW_NUMBER() OVER (ORDER BY ' + @SortExp + ') AS RowNum,
 				b.* 
 			FROM #Data AS b
-		) A 
+				INNER JOIN #TempExchange AS e ON e.exchangeid = b.Currency AND e.ExchangeDate = b.WinLostDate
+		) A
 		WHERE A.RowNum BETWEEN ' + CAST(@RowStart AS VARCHAR(50)) + ' AND ' + CAST(@RowEnd AS VARCHAR(50))
 		+ ' ORDER BY A.RowNum'
 

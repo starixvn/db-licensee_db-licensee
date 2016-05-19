@@ -36,7 +36,7 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_MatchWL_Bettype]
 	@ShowVS				BIT				= 0,
 	@ShowBA				BIT				= 0,
 	@Date				SMALLDATETIME	= NULL,
-	@Sort				VARCHAR(30)		= 'TransId DESC'
+	@Sort				VARCHAR(100)		= 'TransId ASC'
 AS
 
 /*
@@ -748,18 +748,45 @@ BEGIN
 		TransDesc		NVARCHAR(300)
 	)
 
-	DECLARE @Sql NVARCHAR(500)
+	-- Exchange rate is different for each day => Stake order may be different from StakeUSD order
+	DECLARE @SortExp VARCHAR(200)
+
+	IF @Sort LIKE '%USD%' OR @Sort LIKE '%EUR%' OR @Sort LIKE '%GBP%'
+	BEGIN
+		DECLARE @CharIndex INT
+
+		SELECT @CharIndex = CHARINDEX( ' ', @Sort, 1)
+		SELECT @SortExp = SUBSTRING (@Sort, 1, @CharIndex - 4) + ' * e.' 
+			+ SUBSTRING(@Sort, @CharIndex - 3, 4) + SUBSTRING(@Sort, @CharIndex + 1, LEN(@Sort))
+	END
+	ELSE
+	BEGIN
+		SET @SortExp = @Sort
+	END
+
+	IF @SortExp NOT LIKE '%TransId%'
+	BEGIN
+		SELECT @SortExp = @SortExp + ', TransId ASC'
+	END
+
+	DECLARE @Sql NVARCHAR(1000)
 
 	SET @Sql = 
-		'INSERT INTO #PagingData
+		'DECLARE @TempToday SMALLDATETIME 
+		SET @TempToday = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120)
+		
+		INSERT INTO #PagingData
 		SELECT A.*
 		FROM
 		(
 			SELECT
-				ROW_NUMBER() OVER (ORDER BY ' + @Sort + ') AS RowNum,
+				ROW_NUMBER() OVER (ORDER BY ' + @SortExp + ') AS RowNum,
 				b.* 
 			FROM #Data AS b
-		) A 
+				INNER JOIN #TempExchange AS e
+					ON e.exchangeid = b.Currency
+						AND e.ExchangeDate = (CASE WHEN b.WinLostDate <= @TempToday THEN b.WinLostDate ELSE @TempToday END)
+		) A
 		WHERE A.RowNum BETWEEN ' + CAST(@RowStart AS VARCHAR(50)) + ' AND ' + CAST(@RowEnd AS VARCHAR(50))
 		+ ' ORDER BY A.RowNum'
 
@@ -786,7 +813,7 @@ BEGIN
 		b.PlayerComm	* e.GBP AS PlayerCommGBP
 	FROM #PagingData AS b
 		INNER JOIN #TempExchange AS e
-			ON e.ExchangeDate = (CASE WHEN b.winlostdate <= @Today THEN b.winlostdate ELSE @Today END) AND e.exchangeid = b.currency
+			ON e.ExchangeDate = (CASE WHEN b.WinLostDate <= @Today THEN b.WinLostDate ELSE @Today END) AND e.exchangeid = b.Currency
 
 	DECLARE @BettransDetail TABLE (
 		RefNo			BIGINT,

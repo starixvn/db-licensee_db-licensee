@@ -377,20 +377,28 @@ BEGIN
 		awinlost		MONEY
 	)
 
-	DECLARE @sql NVARCHAR(2000)
-	DECLARE @SortTemp VARCHAR(250)
+	-- Exchange rate is different for each day => Stake order may be different from StakeUSD order
+	DECLARE @SortExp VARCHAR(200)
 
 	IF @Sort LIKE '%USD%' OR @Sort LIKE '%EUR%' OR @Sort LIKE '%GBP%'
 	BEGIN
-		DECLARE @charindex INT
+		DECLARE @CharIndex INT
 
-		SELECT @charindex = CHARINDEX( ' ', @Sort, 1)
-		SELECT @SortTemp = SUBSTRING (@Sort, 1, @charindex - 4) + '*e.' + SUBSTRING(@Sort, @charindex - 3,4) + SUBSTRING(@Sort, @charindex + 1, LEN(@Sort))
+		SELECT @CharIndex = CHARINDEX( ' ', @Sort, 1)
+		SELECT @SortExp = SUBSTRING (@Sort, 1, @CharIndex - 4) + ' * e.' 
+			+ SUBSTRING(@Sort, @CharIndex - 3, 4) + SUBSTRING(@Sort, @CharIndex + 1, LEN(@Sort))
 	END
 	ELSE
 	BEGIN
-		SET @SortTemp = @Sort
+		SET @SortExp = @Sort
 	END
+
+	IF @SortExp NOT LIKE '%TransId%'
+	BEGIN
+		SELECT @SortExp = @SortExp + ', TransId ASC'
+	END
+
+	DECLARE @Sql NVARCHAR(1000)
 
 	SET @Sql = 
 		'INSERT INTO #PagingData
@@ -398,10 +406,11 @@ BEGIN
 		FROM
 		(
 			SELECT
-				ROW_NUMBER() OVER (ORDER BY ' + @SortTemp + ') AS RowNum,
+				ROW_NUMBER() OVER (ORDER BY ' + @SortExp + ') AS RowNum,
 				b.* 
 			FROM #Data AS b
-		) A 
+				INNER JOIN #TempExchange AS e ON e.exchangeid = b.Currency AND e.ExchangeDate = b.WinLostDate
+		) A
 		WHERE A.RowNum BETWEEN ' + CAST(@RowStart AS VARCHAR(50)) + ' AND ' + CAST(@RowEnd AS VARCHAR(50))
 		+ ' ORDER BY A.RowNum'
 
