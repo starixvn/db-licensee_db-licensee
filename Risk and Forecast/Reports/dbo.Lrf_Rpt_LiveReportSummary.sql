@@ -413,7 +413,7 @@ BEGIN
 			)
 			AND b.CustomerCategory IN (-1, 1001)
 			AND b.bettype NOT IN (9,29,1700,1800,1900,901,902,903) 
-			AND b.bettype NOT BETWEEN 2001 AND 2007 -- Exclude Microgamming (#44084)
+			AND b.bettype NOT BETWEEN 2001 AND 2009 -- Exclude Microgamming (#44084)
 				
 		GROUP BY
 			b.rptDate,
