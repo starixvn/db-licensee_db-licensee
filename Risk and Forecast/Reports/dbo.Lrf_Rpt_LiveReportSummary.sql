@@ -44,7 +44,7 @@ Revisions:
 	- 20160120@Victor: Fix bug missing bettrade original tickets [Redmine: #51053]
 	- 20160218@Bobby: #52428 - Intergate RnG Casino product
 	- 20160330@Percy: Support Voidbridge single wallet [Redmine: #55057]
-	
+	- 20160519@Jim: HotFix #57810
 Param's Explanation:
 	@IsLive : indicate that whether the report will get live data or not
 			+ 0: Non - Live data only
@@ -413,6 +413,7 @@ BEGIN
 			)
 			AND b.CustomerCategory IN (-1, 1001)
 			AND b.bettype NOT IN (9,29,1700,1800,1900,901,902,903) 
+			AND b.bettype NOT BETWEEN 2001 AND 2009 -- Exclude Microgamming (#44084)
 				
 		GROUP BY
 			b.rptDate,

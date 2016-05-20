@@ -24,7 +24,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
     @MoveBetsDay	DATETIME,
     @PageSize		INT = 1000,
     @PageIndex		INT = 1,
-    @IsOld			BIT = 0
+    @IsOld			BIT = 0,
+	@excludeTest	BIT = 0
     
 AS
 /*
@@ -80,6 +81,7 @@ AS
 		- 20151228@Patrick: Exclude 901 & 902 for turnover
 		- 20151228@Bobby: Implement RNG Casino sporttype(208, 209, 210)
 		- 20160401@Percy: Support Voidbridge single wallet [Redmine: #55057]
+		- 20160519@Jim: add more parameter  @excludeTest (#57836)
 */
     
 SET NOCOUNT ON
@@ -117,14 +119,16 @@ SELECT	@Today = CONVERT(DATE, GETDATE())
 SELECT  currencyID, LicenseeID 
 INTO #currency
 FROM dbo.Lrf_f_GetCurrencybyUser(@licenseeID, @userID, 1)-- System is default=1 (LRF)
-WHERE (@CurrencyID = 0 OR (@CurrencyID <> 0 AND CurrencyID = @CurrencyID))
+WHERE ((@CurrencyID = 0 ) OR (@CurrencyID <> 0 AND CurrencyID = @CurrencyID))
+	
 
 INSERT INTO @TempAg(CustId, Currency)
 SELECT CustID, Currency
 FROM
 	bodb_licensee.dbo.f_SelLicenseeCust(@LicenseeID) lc  
 	INNER JOIN #Currency c ON lc.LicenseeID = c.LicenseeID AND lc.Currency = c.CurrencyID
-
+WHERE (@excludeTest = 0 OR (@excludeTest = 1 AND Currency <> 20))	
+	
 INSERT INTO @Exchange(ExchangeDate, ExchangeId, MYR, USD, EUR, GBP)
 SELECT ExchangeDate, ExchangeId, MYR, USD, EUR, GBP
 FROM Lrf_f_GetExchangeDaily(@_FromDate, @_ToDate)
