@@ -814,6 +814,7 @@ BEGIN
 	FROM #PagingData AS b
 		INNER JOIN #TempExchange AS e
 			ON e.ExchangeDate = (CASE WHEN b.WinLostDate <= @Today THEN b.WinLostDate ELSE @Today END) AND e.exchangeid = b.Currency
+	ORDER BY b.RowNum
 
 	DECLARE @BettransDetail TABLE (
 		RefNo			BIGINT,

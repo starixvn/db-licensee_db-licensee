@@ -355,7 +355,8 @@ BEGIN
 		b.Comm			* e.GBP AS CommGBP,
 		b.PlayerComm	* e.GBP AS PlayerCommGBP
 	FROM #PagingData AS b
-		INNER JOIN  #TempExchange AS e ON e.ExchangeDate = b.WinLostDate AND e.exchangeid = b.Currency
+		INNER JOIN #TempExchange AS e ON e.ExchangeDate = b.WinLostDate AND e.exchangeid = b.Currency
+	ORDER BY b.RowNum
 
 	-- Get data from bettransm for bettype 33,43
 	IF @BetType IN (33, 43)
@@ -380,7 +381,7 @@ BEGIN
 				bm.apositiontaking,
 				bm.bettype
 			FROM dbo.bettransm AS bm WITH (NOLOCK)
-				INNER JOIN #Data AS b ON bm.refno = b.transid
+				INNER JOIN #PagingData AS b ON bm.refno = b.transid
 			WHERE b.Bettype = @Bettype
 		END
 
@@ -395,7 +396,7 @@ BEGIN
 				bm.apositiontaking,
 				bm.bettype
 			FROM dbo.bettransm14 AS bm WITH (NOLOCK)
-				INNER JOIN #Data AS b ON bm.refno = b.transid
+				INNER JOIN #PagingData AS b ON bm.refno = b.transid
 			WHERE b.Bettype = @Bettype
 		END
 

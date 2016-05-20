@@ -513,6 +513,7 @@ BEGIN
 		b.PlayerComm	* e.GBP AS PlayerCommGBP
 	FROM #PagingData AS b
 		INNER JOIN #TempExchange AS e ON e.ExchangeDate = b.WinLostDate AND e.exchangeid = b.Currency
+	ORDER BY b.RowNum
 
 	DROP TABLE #PagingData
 	DROP TABLE #TempExchange
