@@ -148,6 +148,10 @@ SELECT eventdate
 FROM #tmpSport s
 	LEFT JOIN #tmpReturn t ON s.sporttype=t.sporttype
 WHERE ISNULL(t.Sporttype,0)=0
+
+UPDATE 	#tmpReturn
+SET Sporttype = 27
+WHERE Sporttype = 50 -- combine two Cricket sport into this one
 	
 INSERT INTO #tmpStr (week,eventdate)
 SELECT  DISTINCT first_day_in_week+'-'+last_day_in_week AS week
