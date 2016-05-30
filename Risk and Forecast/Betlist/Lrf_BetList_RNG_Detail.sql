@@ -26,6 +26,7 @@ AS
 		- 20151029@Kos: Change SportType of Microgaming RNG Casino
 		- 20151223@Kos: Support RNG Casino Single Wallet and use SportBettypeMatrix [Redmine: #48958]
 		- 20160406@Kos: Support Voidbridge [#Redmine: 54925]
+		- 20160530@Kos: Add ORDER BY statement to correct ticket order [Redmine: #58448]
 
 	Parameters:
 		- @TransType
@@ -199,7 +200,7 @@ BEGIN
 		@Todate = MAX(WinLostDate) 
 	FROM @tmpBettransRnG
 
-	SELECT 
+	SELECT
 		TransId,
 		SportType,
 		BetType,
@@ -235,6 +236,7 @@ BEGIN
 	FROM @tmpBettransRnG AS b
 		INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@FromDate, @ToDate)) AS e
 			ON e.ExchangeDate = b.WinLostDate AND e.exchangeid = @currency
+	ORDER BY b.TransId ASC
 
 END
 

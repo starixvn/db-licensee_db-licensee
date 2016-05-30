@@ -6,7 +6,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-CREATE PROCEDURE [dbo].[Lrf_BetList_LC_Detail]
+ALTER PROCEDURE [dbo].[Lrf_BetList_LC_Detail]
 	@LicenseeId		INT,
 	@UserId			INT,
 	@CustId			INT,
@@ -22,6 +22,8 @@ AS
 	DB: DBEXT.bodb02
 	Original:
 	Revisions:
+		- 20160530@Kos: Add ORDER BY statement to correct ticket order [Redmine: #58448]
+
 	Parameters:
 		- @TransType
 			+ 0 : All (DRAW/WON/LOSE/Reject/Void/Refund/Running/Waiting)
@@ -76,7 +78,7 @@ BEGIN
 		WinLostDate		SMALLDATETIME,
 		Status			VARCHAR(10),
 		StatusId		TINYINT,
-		Odds			SMALLMONEY,
+		Odds			MONEY,
 		Stake			MONEY,
 		Actual_Stake	MONEY,
 		WinLost			MONEY,
@@ -213,8 +215,10 @@ BEGIN
 	FROM @tmpBettransLC AS b
 		INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@FromDate, @ToDate)) AS e
 			ON e.ExchangeDate = b.WinLostDate AND e.exchangeid = @currency
+	ORDER BY b.TransId ASC
 
 END
+
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_BetList_LC_Detail] TO [bodbAdminNet] AS [dbo]
