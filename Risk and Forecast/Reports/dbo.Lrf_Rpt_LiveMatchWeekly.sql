@@ -178,7 +178,9 @@ SET @query='select  sporttype, sportname,' + @cols + '
               select s.sporttype, s.sportname, matchcount ,seq
               from
               (
-                select sporttype,sportname, sum(matchcount) matchcount
+                select sporttype
+					   ,sportname
+					   ,case when sporttype=43   then CONVERT(INT,ROUND(sum(matchcount)/2.7,0)) else sum(matchcount) end matchcount
                   , week as seq
                 from #tmpReturn 
 				group by sporttype,sportname,week
