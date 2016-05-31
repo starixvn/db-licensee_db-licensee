@@ -1,10 +1,13 @@
-﻿ set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
+﻿SET QUOTED_IDENTIFIER ON 
+GO
+SET ANSI_NULLS ON 
+GO
+
+/****** Object:  Stored Procedure dbo.Lrf_SelCurrencyByLicenseeUser    Script Date: 5/30/2016 11:30:30 AM ******/
 
 
 
-ALTER  PROCEDURE  [dbo].[Lrf_SelCurrencyByLicenseeUser]		
+CREATE  PROCEDURE  [dbo].[Lrf_SelCurrencyByLicenseeUser]		
 	@LicenseeID int = 0, 
 	@UserID 	INT,
 	@excludeTest BIT=0
@@ -16,6 +19,7 @@ DB: DB052.bodb02
 Revisions:  
 	- 20141118@winnie: Change from LicenseeCust table to f_SelLicenseeCust   
 	- 20160413@Victor: support MKK currency code
+	- 20160523@Jim: Currency permision restrict (#53882)
 Param's Explanation:
 */
 
@@ -23,6 +27,7 @@ SET NOCOUNT ON
 BEGIN
 	select currencyID,LicenseeID into #currency
 	from dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+	where currencyID not in (SELECT CurrencyID FROM bodb_licensee.dbo.Lrf_f_LicenseeCurrencyLimit () WHERE LicenseeID =@LicenseeID)
 	
 	declare @temp as table (currency int,isActive BIT)
 	insert into @temp
@@ -58,6 +63,15 @@ BEGIN
 	drop table #currency
 	--------------------
 END
+
+
+GO
+
+SET QUOTED_IDENTIFIER OFF 
+GO
+SET ANSI_NULLS ON 
+GO
+
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_SelCurrencyByLicenseeUser] TO [bodbLicenseeNet] 

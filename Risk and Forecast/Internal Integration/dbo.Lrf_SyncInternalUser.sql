@@ -1,9 +1,5 @@
-﻿set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
-
-
-ALTER PROCEDURE [dbo].[Lrf_SyncInternalUser]
+﻿ 
+CREATE PROCEDURE [dbo].[Lrf_SyncInternalUser]
 	@LicenseeName VARCHAR (50),
 	@Username VARCHAR(50),
 	@EncryptedPassword VARCHAR (50),
@@ -14,7 +10,7 @@ AS
 /*
 	Created by: [20110704@Henry]
 	Task: Create Licensee User thru Internal site
-	DB: DB052/bodb_Licensee
+	DB: DBLIC/bodb_Licensee
 	Param's Explanation:
 	@UserRole: value=Licensee/Admin
 	
@@ -26,6 +22,7 @@ AS
 	- 20130625@Jim: set default currency permission for new licensee user
 	- 20130725@Jim: restrict permission for DW function 
 	- 20141112@Victor: use f_SelLicenseeCust instead of licenseecust (#Redmine 25864)
+	- 20160523@Jim: Currency permision restrict (#53882)
 */
 
 SET NOCOUNT ON
@@ -51,7 +48,8 @@ BEGIN
 
 	INSERT INTO @Currency 
 	SELECT DISTINCT  Currency as CurrencyID
-	FROM dbo.f_SelLicenseeCust(@LicenseeID)		
+	FROM dbo.f_SelLicenseeCust(@LicenseeID)	
+	WHERE Currency NOT IN (SELECT CurrencyID FROM dbo.Lrf_f_LicenseeCurrencyLimit () WHERE LicenseeID =@LicenseeID)	
 END
 
 
@@ -148,8 +146,17 @@ BEGIN
 	END
 	
 END
-GO
-GRANT EXECUTE ON [dbo].[Lrf_SyncInternalUser] TO [bodbLicenseeNet] 
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_SyncInternalUser] TO [vnteam]  
 
+GO
+
+SET QUOTED_IDENTIFIER OFF 
+GO
+SET ANSI_NULLS ON 
+GO
+
+
+GO 
+ GRANT VIEW DEFINITION ON [dbo].[Lrf_SyncInternalUser] TO [vnteam]
+GO 
+ GRANT EXECUTE ON [dbo].[Lrf_SyncInternalUser] TO [bodbLicenseeNet]
+GO 
