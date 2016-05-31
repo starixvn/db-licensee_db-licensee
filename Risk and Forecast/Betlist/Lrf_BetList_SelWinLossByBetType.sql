@@ -18,6 +18,7 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_SelWinLossByBetType]
 	@BalanceUpDay		SMALLDATETIME,
 	@PageSize			INT				= 1000,
 	@PageIndex			INT				= 1,
+	@Sort				VARCHAR(100)	= 'TransId ASC',
 	@TotalRows			INT				= 0 OUTPUT,
 	@SumWinlost			MONEY			= 0 OUTPUT,
 	@SumWinlostUSD		MONEY			= 0 OUTPUT,
@@ -43,6 +44,7 @@ AS
 	DB: DBEXT.bodb02
 	Original:
 	Revisions:
+		- 20160531@Kos: Add sorting function [#Redmine: 58491]
 
 	Parameters:
 */
@@ -79,8 +81,9 @@ BEGIN
 	CREATE TABLE #AllData (
 		TransId		BIGINT,
 		RefNo		BIGINT,
-		Currency		SMALLINT,
-		WinLostDate		DATETIME,
+		Currency	SMALLINT,
+		WinLostDate	DATETIME,
+		Stake		MONEY,
 		WinLost		MONEY,
 		LicenseeWL	MONEY,
 		Comm		MONEY,
@@ -89,12 +92,14 @@ BEGIN
 	)
 
 	CREATE TABLE #TempData (
+		RowNum		INT,
 		TransId		BIGINT,
 		RefNo		BIGINT,
 		WhTicket	TINYINT
 	)
 
 	CREATE TABLE #Data (
+		RowNum			INT,
 		TransId			BIGINT,
 		RefNo			BIGINT,
 		BetId			BIGINT,
@@ -156,6 +161,7 @@ BEGIN
 					b.refno,
 					b.currency,
 					b.winlostdate,
+					b.stake,
 					(b.winlost - b.actual_stake) AS WinLost,
 					-(b.winlost - b.actual_stake) AS LicenseeWL,
 					b.comm,
@@ -178,6 +184,7 @@ BEGIN
 					b.refno,
 					b.currency,
 					b.winlostdate,
+					b.stake,
 					(b.winlost - b.actual_stake) AS WinLost,
 					-(b.winlost - b.actual_stake) AS LicenseeWL,
 					b.comm,
@@ -203,6 +210,7 @@ BEGIN
 					b.refno,
 					b.currency,
 					b.winlostdate,
+					b.stake,
 					(b.winlost - b.actual_stake) AS WinLost,
 					-(b.winlost - b.actual_stake) AS LicenseeWL,
 					b.comm,
@@ -213,7 +221,7 @@ BEGIN
 				WHERE b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
 					AND b.winlostdate BETWEEN @TempFromDate AND @ToDate
 					AND CASE WHEN ss.Bettype IS NULL THEN b.bettype ELSE ss.Grouptypeid END = @bettype
-					AND b.Currency = @CurrencyId
+					AND b.currency = @CurrencyId
 					AND b.statusID NOT IN (101, 102, 103)
 					AND b.ruben = 1
 			END
@@ -225,6 +233,7 @@ BEGIN
 					b.refno,
 					b.currency,
 					b.winlostdate,
+					b.stake,
 					(b.winlost - b.actual_stake) AS WinLost,
 					-(b.winlost - b.actual_stake) AS LicenseeWL,
 					b.comm,
@@ -234,7 +243,7 @@ BEGIN
 				WHERE b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
 					AND b.winlostdate BETWEEN @TempFromDate AND @ToDate
 					AND b.bettype = @bettype
-					AND b.Currency = @CurrencyId
+					AND b.currency = @CurrencyId
 					AND b.statusID NOT IN (101, 102, 103)
 					AND b.ruben = 1
 			END
@@ -263,6 +272,7 @@ BEGIN
 					b.refno,
 					b.currency,
 					b.winlostdate,
+					b.stake,
 					(b.winlost - b.actual_stake) AS WinLost,
 					-(b.winlost - b.actual_stake) AS LicenseeWL,
 					b.comm,
@@ -285,6 +295,7 @@ BEGIN
 					b.refno,
 					b.currency,
 					b.winlostdate,
+					b.stake,
 					(b.winlost - b.actual_stake) AS WinLost,
 					-(b.winlost - b.actual_stake) AS LicenseeWL,
 					b.comm,
@@ -310,6 +321,7 @@ BEGIN
 					b.refno,
 					b.currency,
 					b.winlostdate,
+					b.stake,
 					(b.winlost - b.actual_stake) AS WinLost,
 					-(b.winlost - b.actual_stake) AS LicenseeWL,
 					b.comm,
@@ -332,6 +344,7 @@ BEGIN
 					b.refno,
 					b.currency,
 					b.winlostdate,
+					b.stake,
 					(b.winlost - b.actual_stake) AS WinLost,
 					-(b.winlost - b.actual_stake) AS LicenseeWL,
 					b.comm,
@@ -386,19 +399,48 @@ BEGIN
 	FROM #AllData AS b
 		INNER JOIN #TempExchange AS e ON e.ExchangeDate = b.WinLostDate AND e.Exchangeid = b.Currency
 
-	-- Get paging data
-	INSERT INTO #TempData
-	SELECT
-		tmp.TransId,
-		tmp.RefNo,
-		tmp.WhTicket
-	FROM (
+	-- Exchange rate is different for each day => Stake order may be different from StakeUSD order
+	DECLARE @SortExp VARCHAR(200)
+
+	IF @Sort LIKE '%USD%' OR @Sort LIKE '%EUR%' OR @Sort LIKE '%GBP%'
+	BEGIN
+		DECLARE @CharIndex INT
+
+		SELECT @CharIndex = CHARINDEX( ' ', @Sort, 1)
+		SELECT @SortExp = SUBSTRING (@Sort, 1, @CharIndex - 4) + ' * e.' 
+			+ SUBSTRING(@Sort, @CharIndex - 3, 4) + SUBSTRING(@Sort, @CharIndex + 1, LEN(@Sort))
+	END
+	ELSE
+	BEGIN
+		SET @SortExp = @Sort
+	END
+
+	IF @SortExp NOT LIKE '%TransId%'
+	BEGIN
+		SELECT @SortExp = @SortExp + ', TransId ASC'
+	END
+
+	DECLARE @Sql NVARCHAR(1000)
+
+	SET @Sql = 
+		'INSERT INTO #TempData
+		SELECT
+			tmp.RowNum,
+			tmp.TransId,
+			tmp.RefNo,
+			tmp.WhTicket
+		FROM
+		(
 			SELECT
-				ROW_NUMBER() OVER(ORDER BY b.transid) AS RowNum,
-				b.*
+				ROW_NUMBER() OVER (ORDER BY ' + @SortExp + ') AS RowNum,
+				b.* 
 			FROM #AllData AS b
+				INNER JOIN #TempExchange AS e ON e.exchangeid = b.Currency AND e.ExchangeDate = b.WinLostDate
 		) AS tmp
-	WHERE tmp.RowNum BETWEEN @RowStart AND @RowEnd
+		WHERE tmp.RowNum BETWEEN ' + CAST(@RowStart AS VARCHAR(50)) + ' AND ' + CAST(@RowEnd AS VARCHAR(50))
+		+ ' ORDER BY tmp.RowNum'
+
+	EXEC sp_executesql @sql
 
 	DROP TABLE #AllData
 
@@ -410,6 +452,7 @@ BEGIN
 		BEGIN
 			INSERT INTO #Data
 			SELECT
+				td.RowNum,
 				b.transid,
 				b.refno,
 				b.betid,
@@ -458,6 +501,7 @@ BEGIN
 		BEGIN
 			INSERT INTO #Data
 			SELECT
+				td.RowNum,
 				b.transid,
 				b.refno,
 				ISNULL(b.betid, 0) AS BetId,
@@ -507,6 +551,7 @@ BEGIN
 		BEGIN
 			INSERT INTO #Data
 			SELECT
+				td.RowNum,
 				CASE
 					WHEN b.bettype = 29 AND ISNULL(b.BetID, 0) > 0 THEN b.betid
 					ELSE b.transid
@@ -557,6 +602,7 @@ BEGIN
 		BEGIN
 			INSERT INTO #Data
 			SELECT
+				td.RowNum,
 				b.transid,
 				b.refno,
 				ISNULL(b.BetID, 0) AS BetId,
@@ -612,6 +658,7 @@ BEGIN
 		BEGIN
 			INSERT INTO #Data
 			SELECT
+				td.RowNum,
 				b.transid,
 				b.refno,
 				ISNULL(b.betid, 0) AS BetId,
@@ -661,6 +708,7 @@ BEGIN
 		BEGIN
 			INSERT INTO #Data
 			SELECT
+				td.RowNum,
 				b.transid,
 				b.refno,
 				ISNULL(b.betid, 0) AS BetId,
@@ -710,6 +758,7 @@ BEGIN
 		BEGIN
 			INSERT INTO #Data
 			SELECT
+				td.RowNum,
 				b.transid,
 				b.refno,
 				ISNULL(b.betid, 0) AS BetId,
@@ -761,6 +810,7 @@ BEGIN
 		BEGIN
 			INSERT INTO #Data
 			SELECT
+				td.RowNum,
 				b.transid,
 				b.refno,
 				b.betid,
@@ -809,6 +859,7 @@ BEGIN
 		BEGIN
 			INSERT INTO #Data
 			SELECT
+				td.RowNum,
 				b.transid,
 				b.refno,
 				ISNULL(b.betid, 0) AS BetId,
@@ -858,6 +909,7 @@ BEGIN
 		BEGIN
 			INSERT INTO #Data
 			SELECT
+				td.RowNum,
 				CASE
 					WHEN b.bettype = 29 AND ISNULL(b.BetID, 0) > 0 THEN b.betid
 					ELSE b.transid
@@ -908,6 +960,7 @@ BEGIN
 		BEGIN
 			INSERT INTO #Data
 			SELECT
+				td.RowNum,
 				b.transid,
 				b.refno,
 				ISNULL(b.BetID, 0) AS BetId,
@@ -963,6 +1016,7 @@ BEGIN
 		BEGIN
 			INSERT INTO #Data
 			SELECT
+				td.RowNum,
 				b.transid,
 				b.refno,
 				ISNULL(b.betid, 0) AS BetId,
@@ -1012,6 +1066,7 @@ BEGIN
 		BEGIN
 			INSERT INTO #Data
 			SELECT
+				td.RowNum,
 				b.transid,
 				b.refno,
 				ISNULL(b.betid, 0) AS BetId,
@@ -1061,6 +1116,7 @@ BEGIN
 		BEGIN
 			INSERT INTO #Data
 			SELECT
+				td.RowNum,
 				b.transid,
 				b.refno,
 				ISNULL(b.betid, 0) AS BetId,
@@ -1126,7 +1182,7 @@ BEGIN
 	FROM #Data AS b
 		INNER JOIN dbo.Customer AS c (NOLOCK) ON b.custid = c.custid
 		INNER JOIN #TempExchange AS e ON e.ExchangeDate = b.WinLostDate AND e.Exchangeid = b.Currency
-	ORDER BY b.TransId
+	ORDER BY b.RowNum
 
 	DECLARE @BettransDetail TABLE (
 		RefNo			BIGINT,
@@ -1225,7 +1281,7 @@ BEGIN
 		WHERE sbt.ProductId = 5 AND sbt.EventType = 3
 	END
 
-	SELECT * FROM @BettransDetail 
+	SELECT * FROM @BettransDetail
 	ORDER BY RefNo, Bettype
 
 	DROP TABLE #TempExchange
