@@ -17,6 +17,8 @@ AS
 	Task : LRF - Weekly live matches [Redmine #52886]
 	DB: DBEXT/bodb02
 	Revisions: 20160518@Jim: use view instead of table league to filter test leaguage
+			   20160602@Jim: change formula to calculate total match of E-sport and set monday is the first day of week	
+			   	
 */
 /*
 [Lrf_Rpt_LiveMatchWeekly]
@@ -60,11 +62,11 @@ INSERT INTO #tblMatchHedge
 INSERT INTO #tmpRaw (EventDate,first_day_in_week , last_day_in_week, Sporttype,SportName,MatchCount)
 SELECT   
 		m.EventDate
-		,CONVERT(VARCHAR,DATEADD (DAY, -DATEPART (WEEKDAY, EventDate) + 1, EventDate),106) AS first_day_in_week
-		,CONVERT(VARCHAR,DATEADD(d,6,(DATEADD (DAY, -DATEPART (WEEKDAY, EventDate) + 1, EventDate))),106) last_day_in_week
-	   ,l.sporttype
-	   ,s.SportName
-	   ,SUM(m.MatchCount) AS MatchCount
+		,CONVERT(VARCHAR,DATEADD(d,-1 * cast(EventDate as integer) % 7,EventDate),106) AS first_day_in_week
+		,CONVERT(VARCHAR,DATEADD(d,6,DATEADD(d,-1 * cast(EventDate as integer) % 7,EventDate)),106) last_day_in_week
+	    ,l.sporttype
+	    ,s.SportName
+	    ,SUM(m.MatchCount) AS MatchCount
 	   
 FROM (
 		
@@ -101,8 +103,8 @@ AS
 	)
 INSERT INTO #tmpRaw (EventDate,first_day_in_week , last_day_in_week, Sporttype,SportName,MatchCount)
 SELECT [Date]
-	   ,CONVERT(VARCHAR,DATEADD (DAY, -DATEPART (WEEKDAY, [Date]) + 1, [Date]),106)
-	   ,CONVERT(VARCHAR,DATEADD(d,6,(DATEADD (DAY, -DATEPART (WEEKDAY, [Date]) + 1, [Date]))),106) last_day_in_week	
+		,CONVERT (VARCHAR,DATEADD(d,-1 * cast([Date] as integer) % 7,[Date]),106) AS first_day_in_week
+		,CONVERT(VARCHAR,DATEADD(d,6,DATEADD(d,-1 * cast([Date] as integer) % 7,[Date])),106) last_day_in_week
 	   ,1 Sporttype
 	   ,'Soccer' SportName
 	   ,NULL MatchCount
