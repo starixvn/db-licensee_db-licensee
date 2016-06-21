@@ -18,7 +18,7 @@ AS
 	DB: DBEXT/bodb02
 	Revisions: 20160518@Jim: use view instead of table league to filter test leaguage
 			   20160602@Jim: change formula to calculate total match of E-sport and set monday is the first day of week	
-			   	
+			   20160621@Jim: modify sp to adapt new specs	
 */
 /*
 [Lrf_Rpt_LiveMatchWeekly]
@@ -70,18 +70,21 @@ SELECT
 	   
 FROM (
 		
-	SELECT COUNT(DISTINCT b.MatchID) MatchCount,rptdate EventDate,leagueId
+	SELECT COUNT(DISTINCT b.MatchID) MatchCount,rptdate EventDate,leagueId,teamhomeID,teamawayID
 	 FROM [DBWH].[bodb_Account].[dbo].[rptMatch] b WITH (NOLOCK) 
 	 LEFT JOIN #tblMatchHedge h ON b.matchId = h.matchId
 	 WHERE b.rptdate BETWEEN @fromdate AND @ToDate
 		  AND isLive =1	
 		  AND customercategory NOT IN (27,28,30) --- BARM, 8RM, Accountest
 		  AND ISNULL(h.matchId,0) = 0
-	 GROUP BY rptdate,leagueId
+		  
+	 GROUP BY rptdate,leagueId,teamhomeID,teamawayID
 
 	)AS M
 	INNER JOIN dbo.view_LiveMatch_LeagueEx l   ON m.LeagueId = l.LeagueId
 	INNER JOIN #tmpSport s WITH (NOLOCK) ON l.sporttype= s.sporttype
+WHERE M.teamhomeID	NOT IN (SELECT teamID FROM dbo.Team WITH (NOLOCK) WHERE teamname   LIKE '%(PEN)%' )
+	AND M.teamawayID NOT IN (SELECT teamID FROM dbo.Team WITH (NOLOCK) WHERE teamname   LIKE '%(PEN)%' )
 GROUP BY EventDate
 	   ,l.sporttype					 
 	  ,s.SportName
