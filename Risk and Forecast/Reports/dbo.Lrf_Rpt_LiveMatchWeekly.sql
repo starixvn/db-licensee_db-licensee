@@ -3,6 +3,8 @@ GO
 SET ANSI_NULLS ON 
 GO
 
+/****** Object:  Stored Procedure dbo.Lrf_Rpt_LiveMatchWeekly    Script Date: 6/21/2016 5:25:24 PM ******/
+
 /****** Object:  Stored Procedure dbo.Lrf_Rpt_LiveMatchWeekly    Script Date: 3/21/2016 9:55:52 AM ******/
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveMatchWeekly]
 	@LicenseeID INT =1
@@ -24,7 +26,7 @@ AS
 [Lrf_Rpt_LiveMatchWeekly]
 	@LicenseeID   =1
 	,@UserID 	=10
-	,@FromDate  ='20160501'
+	,@FromDate  ='20160401'
 	,@ToDate    ='20160520'
 */
 -- Sec1: declare variable
@@ -58,7 +60,9 @@ INSERT INTO #tblMatchHedge
 		
 -- Sec2: retrieve raw data
  
-
+ SELECT teamID 
+INTO #ExTeam
+ FROM dbo.Team WITH (NOLOCK) WHERE teamname   LIKE '%(PEN)%'  
 INSERT INTO #tmpRaw (EventDate,first_day_in_week , last_day_in_week, Sporttype,SportName,MatchCount)
 SELECT   
 		m.EventDate
@@ -83,14 +87,14 @@ FROM (
 	)AS M
 	INNER JOIN dbo.view_LiveMatch_LeagueEx l   ON m.LeagueId = l.LeagueId
 	INNER JOIN #tmpSport s WITH (NOLOCK) ON l.sporttype= s.sporttype
-WHERE M.teamhomeID	NOT IN (SELECT teamID FROM dbo.Team WITH (NOLOCK) WHERE teamname   LIKE '%(PEN)%' )
-	AND M.teamawayID NOT IN (SELECT teamID FROM dbo.Team WITH (NOLOCK) WHERE teamname   LIKE '%(PEN)%' )
+WHERE M.teamhomeID	NOT IN (SELECT teamID FROM #ExTeam )
+	AND M.teamawayID NOT IN (SELECT teamID FROM #ExTeam)
 GROUP BY EventDate
 	   ,l.sporttype					 
 	  ,s.SportName
 ORDER BY EventDate ASC 	 
  
-		
+DROP TABLE #ExTeam
  -- Sec3: format template
 
 
@@ -207,6 +211,7 @@ SET @query='select  sporttype, sportname,' + @cols + '
  DROP TABLE #tmpStr
  DROP TABLE #tmpSport
  DROP TABLE #tblMatchHedge
+
 GO
 
 SET QUOTED_IDENTIFIER OFF 
