@@ -62,7 +62,19 @@ INSERT INTO #tblMatchHedge
  
  SELECT teamID 
 INTO #ExTeam
- FROM dbo.Team WITH (NOLOCK) WHERE teamname   LIKE '%(PEN)%'  
+ FROM dbo.Team WITH (NOLOCK) 
+ WHERE teamname   LIKE '%(PEN)%' 
+	   OR teamname   LIKE '%1st Goal%' 
+	   OR teamname   LIKE '%2nd Goal%' 
+	   OR teamname   LIKE '%3rd Goal%' 
+	   OR teamname   LIKE '%th Goal%' 
+	   OR teamname   LIKE '%free kick%' 
+	   OR teamname   LIKE '%throw in%' 
+	   OR teamname   LIKE '%offside%' 
+	   OR teamname   LIKE '%penalty award%' 
+	   OR teamname   LIKE '%goal kick%' 
+	   OR teamname   LIKE '%penalty to score%' 
+	   
 INSERT INTO #tmpRaw (EventDate,first_day_in_week , last_day_in_week, Sporttype,SportName,MatchCount)
 SELECT   
 		m.EventDate
