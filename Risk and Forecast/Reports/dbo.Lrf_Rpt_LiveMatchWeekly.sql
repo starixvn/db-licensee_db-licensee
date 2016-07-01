@@ -1,11 +1,11 @@
-SET QUOTED_IDENTIFIER ON 
+USE [bodb02]
 GO
-SET ANSI_NULLS ON 
+ 
+SET ANSI_NULLS ON
 GO
-
-/****** Object:  Stored Procedure dbo.Lrf_Rpt_LiveMatchWeekly    Script Date: 6/21/2016 5:25:24 PM ******/
-
-/****** Object:  Stored Procedure dbo.Lrf_Rpt_LiveMatchWeekly    Script Date: 3/21/2016 9:55:52 AM ******/
+SET QUOTED_IDENTIFIER ON
+GO
+ 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveMatchWeekly]
 	@LicenseeID INT =1
 	,@UserID 	INT
@@ -30,6 +30,11 @@ AS
 	,@ToDate    ='20160520'
 */
 -- Sec1: declare variable
+DECLARE @FromDate_  DATETIME
+	   ,@ToDate_    DATETIME
+SELECT 	@FromDate_ = @FromDate
+		,@ToDate_ = @ToDate
+		
 DECLARE @TempFromDate DATETIME
 		,@TempToDate DATETIME
 		,@last_day_in_week_1 DATETIME
@@ -50,12 +55,12 @@ WHERE m.ProductID =1
 INSERT INTO #tblMatchHedge
 	SELECT m.Matchid, matchcode
 	FROM[DBWH].[bodb_Account].[dbo].match m WITH(NOLOCK)
-	WHERE m.eventdate BETWEEN @fromdate AND @ToDate
+	WHERE m.eventdate BETWEEN @fromdate_ AND @ToDate_
 		AND matchcode like '%Hedge%'
 	UNION
 	SELECT m.Matchid,matchcode
 	FROM [DBWH].[bodb_archive].[dbo].match m WITH(NOLOCK)
-	WHERE m.eventdate BETWEEN @fromdate AND @ToDate
+	WHERE m.eventdate BETWEEN @fromdate_ AND @ToDate_
 		AND matchcode like '%Hedge%'
 		
 -- Sec2: retrieve raw data
@@ -74,7 +79,38 @@ INTO #ExTeam
 	   OR teamname   LIKE '%penalty award%' 
 	   OR teamname   LIKE '%goal kick%' 
 	   OR teamname   LIKE '%penalty to score%' 
-	   
+	   /*
+DECLARE @SQL VARCHAR(4000)	   
+CREATE TABLE #tmpRptMatch (MatchID INT, EventDate DATETIME, LeagueID INT,teamhomeID INT, teamawayID INT)
+SELECT @SQL='SELECT  MatchID ,  EventDate,leagueId,teamhomeID,teamawayID
+				  FROM OPENQUERY (DBWH,''SELECT  b.MatchID ,rptdate EventDate,leagueId,teamhomeID,teamawayID
+										 FROM [bodb_Account].[dbo].[rptMatch] b WITH (NOLOCK)
+										 WHERE b.rptdate BETWEEN ''''' + CONVERT(VARCHAR(10),@FromDate,120) +''''' AND ''''' + CONVERT(VARCHAR(10),@ToDate,120) +'''''
+										 AND isLive =1	
+										 AND customercategory NOT IN (27,28,30)
+										 '')'
+INSERT INTO #tmpRptMatch
+EXEC (@SQL)
+*/
+ 									 
+SELECT  b.MatchID ,rptdate EventDate,leagueId,teamhomeID,teamawayID
+INTO #tmpRptMatch
+FROM [DBWH].[bodb_Account].[dbo].[rptMatch] b WITH (NOLOCK ) 
+WHERE b.rptdate BETWEEN @fromdate_ AND @ToDate_
+	  AND isLive =1	
+	  AND customercategory NOT IN (27,28,30) --- BARM, 8RM, Accountest
+	  AND status IS NOT NULL
+	  AND betteam IS NOT NULL
+	  AND halfcurrency IS NOT NULL
+	  AND minuteofmatch IS NOT NULL 
+OPTION (RECOMPILE)
+
+DELETE #tmpRptMatch
+WHERE matchID IN (SELECT matchID FROM #tblMatchHedge)
+	OR 	teamhomeID  IN (SELECT teamID FROM #ExTeam )	
+	OR  teamawayID  IN (SELECT teamID FROM #ExTeam )
+ 
+	  
 INSERT INTO #tmpRaw (EventDate,first_day_in_week , last_day_in_week, Sporttype,SportName,MatchCount)
 SELECT   
 		m.EventDate
@@ -86,21 +122,13 @@ SELECT
 	   
 FROM (
 		
-	SELECT COUNT(DISTINCT b.MatchID) MatchCount,rptdate EventDate,leagueId,teamhomeID,teamawayID
-	 FROM [DBWH].[bodb_Account].[dbo].[rptMatch] b WITH (NOLOCK) 
-	 LEFT JOIN #tblMatchHedge h ON b.matchId = h.matchId
-	 WHERE b.rptdate BETWEEN @fromdate AND @ToDate
-		  AND isLive =1	
-		  AND customercategory NOT IN (27,28,30) --- BARM, 8RM, Accountest
-		  AND ISNULL(h.matchId,0) = 0
-		  
-	 GROUP BY rptdate,leagueId,teamhomeID,teamawayID
+	SELECT COUNT(DISTINCT b.MatchID) MatchCount,  EventDate,leagueId 
+	 FROM #tmpRptMatch b  
+	GROUP BY EventDate,leagueId 
 
 	)AS M
 	INNER JOIN dbo.view_LiveMatch_LeagueEx l   ON m.LeagueId = l.LeagueId
 	INNER JOIN #tmpSport s WITH (NOLOCK) ON l.sporttype= s.sporttype
-WHERE M.teamhomeID	NOT IN (SELECT teamID FROM #ExTeam )
-	AND M.teamawayID NOT IN (SELECT teamID FROM #ExTeam)
 GROUP BY EventDate
 	   ,l.sporttype					 
 	  ,s.SportName
@@ -113,7 +141,7 @@ DROP TABLE #ExTeam
 ;WITH cte_tmpRaw
 AS
 	(
-	SELECT @FromDate As [Date]
+	SELECT @FromDate_ As [Date]
 	UNION ALL
 	SELECT DATEADD(dd, 1, [Date])
 	FROM cte_tmpRaw
@@ -129,14 +157,15 @@ SELECT [Date]
 	   ,NULL MatchCount
 FROM cte_tmpRaw c LEFT JOIN #tmpRaw t ON c.[Date] = t.EventDate
 WHERE ISNULL(t.EventDate,'')=''
+OPTION (maxrecursion 0)
 
 SELECT @last_day_in_week_1= CONVERT(VARCHAR,last_day_in_week,106)
 FROM #tmpRaw
-WHERE EventDate = @FromDate
+WHERE EventDate = @FromDate_
 
 SELECT @last_day_in_week_2= CONVERT(VARCHAR,last_day_in_week,106)
 FROM #tmpRaw
-WHERE EventDate = @ToDate
+WHERE EventDate = @ToDate_
 	
 UPDATE #tmpRaw
 SET first_day_in_week = CASE WHEN EventDate BETWEEN @FromDate AND @last_day_in_week_1 AND EventDate>first_day_in_week THEN CONVERT(VARCHAR,@FromDate,106) ELSE first_day_in_week END 
@@ -223,17 +252,8 @@ SET @query='select  sporttype, sportname,' + @cols + '
  DROP TABLE #tmpStr
  DROP TABLE #tmpSport
  DROP TABLE #tblMatchHedge
-
-GO
-
-SET QUOTED_IDENTIFIER OFF 
-GO
-SET ANSI_NULLS ON 
-GO
-
-
+ DROP TABLE #tmpRptMatch
 GO 
  GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LiveMatchWeekly] TO [vnteam]
 GO 
  GRANT EXECUTE ON [dbo].[Lrf_Rpt_LiveMatchWeekly] TO [bodbLicenseeNet]
-GO 
