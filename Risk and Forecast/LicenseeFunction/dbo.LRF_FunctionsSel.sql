@@ -8,6 +8,7 @@ AS
 	DB: DB052.bodb_Licensee
 	Param's Explanation:		
 	Revisions:
+		- 20160714@Victor: Add two new columns to Functions table [Remine: #58537]
 	
 	Example:
 		EXEC [dbo].[Lrf_FunctionsSel]
@@ -23,7 +24,9 @@ SELECT [FunctionId],
 	[IsMenu],
 	[DisplayOrder],
 	[IsActive],
-	[IsNew]	
+	[IsNew],
+	FunctionKey,
+	Environment
 FROM [dbo].[Functions] WITH(NOLOCK)
 WHERE IsActive = 1
 
