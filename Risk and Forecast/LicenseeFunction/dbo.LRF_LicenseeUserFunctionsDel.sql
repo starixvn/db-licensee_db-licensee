@@ -14,8 +14,8 @@ AS
 	DB: DB052.bodb_Licensee
 	Param's Explanation:
 		
-	Revisions:
-	
+	Revisions: -20160707@Jim: change the way to grant ACCOUNT MANAGEMENT FUNCTIONS permission ( #58537)
+		
 	Example:
 
 */
@@ -26,13 +26,22 @@ DECLARE @startRun DATETIME
 DECLARE @endRun DATETIME
 DECLARE @duration INT
 SET @startRun = GETDATE()
-
-DELETE FROM [dbo].[LicenseeUserFunctions]
-WHERE LicenseeId = @LicenseeId AND 
-	 UserId = @CustID AND
-	 FunctionId = @FunctionId
-
+IF (@FunctionId<>6)
+	BEGIN
+		DELETE FROM [dbo].[LicenseeUserFunctions]
+		WHERE LicenseeId = @LicenseeId AND 
+			 UserId = @CustID AND
+			 FunctionId = @FunctionId
+	END
+	ELSE IF (@FunctionId=6)
+	BEGIN 
+		DELETE FROM [dbo].[LicenseeUserFunctions]
+		WHERE LicenseeId = @LicenseeId AND 
+			 UserId = @CustID AND
+			 FunctionID IN (SELECT FunctionID FROM dbo.Functions WITH (NOLOCK) WHERE ParentId=6 OR  FunctionId=6)
+	END
 IF (@@ERROR<>0)	
+
 	BEGIN 
 		SELECT @ErrMsg = 
 				CASE @Langkey 

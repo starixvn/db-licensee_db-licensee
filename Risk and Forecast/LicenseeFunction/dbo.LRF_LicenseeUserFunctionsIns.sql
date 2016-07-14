@@ -15,7 +15,7 @@ AS
 	DB: DB052.bodb_Licensee
 	Param's Explanation:
 		
-	Revisions:
+	Revisions: -20160707@Jim: change the way to grant ACCOUNT MANAGEMENT FUNCTIONS permission ( #58537)
 	
 	
 */
@@ -37,10 +37,21 @@ BEGIN
 	DECLARE @duration INT
 	SET @startRun = GETDATE()
 
-
-	INSERT INTO [dbo].[LicenseeUserFunctions](LicenseeId, UserId, FunctionId)
-	VALUES(@LicenseeId,@CustID, @FunctionId)
-	
+	IF (@FunctionId <> 6)
+	BEGIN
+		INSERT INTO [dbo].[LicenseeUserFunctions](LicenseeId, UserId, FunctionId)
+		VALUES(@LicenseeId,@CustID, @FunctionId)
+	END
+	ELSE IF (@FunctionId = 6)
+		BEGIN 
+			INSERT INTO [dbo].[LicenseeUserFunctions](LicenseeId, UserId, FunctionId)
+			SELECT @LicenseeId
+				  ,@CustID
+				  ,FunctionId
+			FROM dbo.Functions WITH (NOLOCK)
+			WHERE (ParentId=6 OR  FunctionId=6)
+				AND FunctionID NOT IN (SELECT FunctionID FROM dbo.LicenseeUserFunctions WITH (NOLOCK) WHERE LicenseeId = @LicenseeID AND UserID = @CustID)
+		END
 	IF (@@ERROR<>0)	
 			BEGIN 
 				SELECT @ErrMsg = 
