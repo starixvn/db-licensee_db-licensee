@@ -24,7 +24,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerBalance]
 	@ShowMGCLC		BIT = 0,
 	@ShowMGCRnG		BIT = 0,
 	@ShowAGC		BIT = 0,
-	@ShowVB			BIT = 0
+	@ShowVB			BIT = 0,
+	@ShowAB			BIT = 0
 AS
 /*  
 Created: 20120917@Henry  
@@ -51,6 +52,7 @@ Revisions:
 	- 20151228@Patrick: Exclude 901 & 902 for turnover
 	- 20151228@Bobby: Implement RNG Casino sporttype(208,209,210)
 	- 20160408@Percy: Support Voidbridge single wallet [Redmine: #55057]
+	- 20160619@Jim: Allbet - Live Casino Integration for Licensees [Redmine: #59624]
 	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
    
 Param's Explanation:  
@@ -101,6 +103,7 @@ IF @ShowMGCLC	= 1 INSERT INTO @sporttype(sporttype) VALUES(203) -- MicroGaming
 IF @ShowMGCRnG	= 1 INSERT INTO @sporttype(sporttype) VALUES(205) -- MicroGaming
 IF @ShowAGC		= 1 INSERT INTO @sporttype(sporttype) VALUES(250) -- AGC
 IF @ShowVB		= 1 INSERT INTO @sporttype(sporttype) VALUES(212) -- Voidbridge
+IF @ShowAB		= 1 INSERT INTO @sporttype(sporttype) VALUES(211) -- Allbet
 IF @ShowBT		= 1 
 BEGIN
 	INSERT INTO @sporttype(sporttype) VALUES(-2) -- 901
