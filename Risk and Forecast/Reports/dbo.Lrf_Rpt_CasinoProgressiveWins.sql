@@ -1,6 +1,5 @@
 USE [bodb02]
 GO
- 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_CasinoProgressiveWins] 
 	 @LicenseeID	INT,
 	 @UserID		INT, 
@@ -18,6 +17,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_CasinoProgressiveWins]
     DB: DBEXT/bodb02  
    
     Revisions:
+		- 20160714@Percy: Enhance Performance - using OPENQUERY instead of linked-server [RedmineID: #60208]
 
 	Param's Explanation: 
 	 
@@ -27,11 +27,24 @@ BEGIN
 	
 	DECLARE @_FromDate SMALLDATETIME, @_ToDate SMALLDATETIME
 	DECLARE @tempAg	TABLE( custID INT,Currency INT)   	 
-	DECLARE @sporttype TABLE(sporttype INT)	 
+	DECLARE @sporttype TABLE(sporttype INT)
+
+	CREATE TABLE #PayOutTrans
+	(
+		winlostDate DATETIME,
+		CustId		INT,
+		username2	NVARCHAR(100),
+		Username	NVARCHAR(100),
+		Refno		BIGINT,
+		WinAmount	MONEY,
+		GameId		SMALLINT,
+		ProductId	SMALLINT,
+		currency	INT
+	)
 
 	CREATE TABLE #JackPotWin
 	( 
-	  WinlostDate SMALLDATETIME, 
+	  winlostDate SMALLDATETIME, 
 	  CustId INT,
 	  ExternalId VARCHAR (50) ,
 	  SystemId VARCHAR (30), 
@@ -51,67 +64,52 @@ BEGIN
 
 
 	INSERT INTO @tempAg (custID,Currency) 
-	SELECT custID,Currency
+	SELECT DISTINCT custID,Currency
 	FROM bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc  
 		INNER JOIN #Currency c ON lc.LicenseeID = c.LicenseeID AND lc.Currency = c.CurrencyID
 	WHERE (@excludeTest = 0 OR (@excludeTest = 1 AND Currency <> 20))
+
+	DROP TABLE #currency
 
 	IF @showMGCRnG =1  -- MicroGamming - RNG Casino
 	BEGIN 
 		INSERT INTO @sporttype (sporttype)
 		VALUES(205)
 	END
+
+	INSERT INTO #PayOutTrans
+	SELECT winlostDate, p.CustId, c.username2, p.Username, Refno, WinAmount, GameId, ProductId, tma.currency
+	FROM
+		DBACC.bodb02.dbo.PayOutTrans p WITH (NOLOCK)
+		INNER JOIN bodb_licensee.dbo.Licenseecustinfo c WITH (NOLOCK) ON c.CustId = p.CustId
+		INNER JOIN @TempAg tma ON tma.CustID=c.recommend --AND c.currency = tma.currency
+	WHERE
+		Winlostdate BETWEEN @FromDate AND @ToDate
+		AND ProductId IN (SELECT sporttype FROM @sporttype)
 	
 	IF @MoveBetsDay < @ToDate
 	BEGIN 
-		SET @_ToDate = @Todate 
-
-		IF @MoveBetsDay < @FromDate
-			SET @_FromDate = @FromDate
-		ELSE 
-			SET @_FromDate = @MoveBetsDay
-
 		INSERT INTO #JackPotWin (WinlostDate, CustId, ExternalId, SystemID, RefNo, WinAmount, Bettype, Sporttype, TransDesc, Currency, TranId3rd)
-		SELECT	p.WinlostDate, p.CustId, c.username2 as ExternalId, p.Username as SystemID, 
-				p.RefNo, p.WinAmount, p.GameId as Bettype, p.ProductId as Sporttype, b.transdesc, tma.currency, b.TranId3rd
-		FROM	DBACC.bodb02.dbo.PayOutTrans p WITH (NOLOCK)
-			INNER JOIN dbo.BettransRNG b WITH (NOLOCK) 
-				ON p.RefNo = b.TransId
-			INNER JOIN bodb_licensee.dbo.Licenseecustinfo c WITH (NOLOCK)
-				ON c.CustId = p.CustId
-			INNER JOIN @TempAg tma ON tma.CustID=c.recommend AND c.currency = tma.currency
-		WHERE	p.Winlostdate BETWEEN @_FromDate AND @_ToDate
-			AND p.ProductId IN (Select sporttype FROM @sporttype)
+		SELECT	p.WinlostDate, p.CustId, p.username2 as ExternalId, p.Username as SystemID, 
+				p.RefNo, p.WinAmount, p.GameId as Bettype, p.ProductId as Sporttype, b.transdesc, p.currency, b.TranId3rd
+		FROM
+			#PayOutTrans p
+			INNER JOIN dbo.BettransRNG b WITH (NOLOCK) ON p.RefNo = b.TransId
 	END
 
 	IF @FromDate <= @MoveBetsDay
-	BEGIN 
-		IF @FromDate <= @BalanceUpDay
-			SET @_FromDate = @BalanceUpDay
-		ELSE
-			SET @_FromDate = @FromDate 
-
-		IF  @MoveBetsDay < @ToDate
-			SET @_ToDate = @MoveBetsDay
-		ELSE 
-			SET @_ToDate = @Todate
-		
+	BEGIN 	
 		INSERT INTO #JackPotWin (WinlostDate, CustId, ExternalId, SystemID, RefNo, WinAmount, Bettype, Sporttype, TransDesc, currency, TranId3rd)
-		SELECT	p.WinlostDate, p.CustId, c.username2 as ExternalId, p.Username as SystemID, 
-				p.RefNo, p.WinAmount, p.GameId as Bettype, p.ProductId as Sporttype, b.transdesc, tma.currency, b.TranId3rd
-		FROM	DBACC.bodb02.dbo.PayOutTrans p WITH (NOLOCK)
-			INNER JOIN dbo.BettransRNG14 b WITH (NOLOCK) 
-				ON p.RefNo = b.TransId
-			INNER JOIN bodb_licensee.dbo.Licenseecustinfo c WITH (NOLOCK)
-				ON c.CustId = p.CustId
-			INNER JOIN @TempAg tma ON tma.CustID=c.recommend AND c.currency = tma.currency
-		WHERE	p.Winlostdate BETWEEN @_FromDate AND @_ToDate
-			AND p.ProductId IN (Select sporttype FROM @sporttype)
+		SELECT	p.WinlostDate, p.CustId, p.username2 as ExternalId, p.Username as SystemID, 
+				p.RefNo, p.WinAmount, p.GameId as Bettype, p.ProductId as Sporttype, b.transdesc, p.currency, b.TranId3rd
+		FROM
+			#PayOutTrans p
+			INNER JOIN dbo.BettransRNG14 b WITH (NOLOCK) ON p.RefNo = b.TransId
 
 	END
 
 	IF @FromDate < @BalanceUpDay
-	BEGIN 
+	BEGIN
 		SET @_FromDate = @FromDate 
 
 		IF @BalanceUpDay < @ToDate
@@ -119,25 +117,26 @@ BEGIN
 		ELSE 
 			SET @_ToDate = @Todate
 		
+		DECLARE @OPENQUERY NVARCHAR(MAX)
+		
+		SELECT @OPENQUERY = 'SELECT	T.WinlostDate, T.CustId, p.username2, T.Username, 
+								T.RefNo, T.WinAmount, T.GameId, T.ProductId, T.transdesc, p.currency, T.TranId3rd
+								FROM (SELECT * FROM OPENQUERY (DBACC,''SELECT p.*, b.transdesc, b.TranId3rd, b.transid FROM bodb02.dbo.PayOutTrans p WITH (NOLOCK)
+											 INNER JOIN bodb_archive.dbo.BettransRNG_BK b WITH (NOLOCK) ON p.RefNo = b.TransId
+											 WHERE p.WinlostDate BETWEEN ''''' + CONVERT(VARCHAR(10),@_FromDate,120) + 
+												   ''''' AND ''''' + CONVERT(VARCHAR(10),@_ToDate,120) + ''''''')) T
+								INNER JOIN #PayOutTrans p ON p.Refno = T.transid'
+	
 		INSERT INTO #JackPotWin (WinlostDate, CustId, ExternalId, SystemID, RefNo, WinAmount, Bettype, Sporttype, TransDesc, currency, TranId3rd)
-		SELECT	p.WinlostDate, p.CustId, c.username2 as ExternalId, p.Username as SystemID, 
-				p.RefNo, p.WinAmount, p.GameId as Bettype, p.ProductId as Sporttype, b.transdesc, tma.currency, b.TranId3rd
-		FROM	DBACC.bodb02.dbo.PayOutTrans p WITH (NOLOCK)
-			INNER JOIN DBARC.bodb_archive.dbo.BettransRNG_BK b WITH (NOLOCK) 
-				ON p.RefNo = b.TransId
-			INNER JOIN bodb_licensee.dbo.Licenseecustinfo c WITH (NOLOCK)
-				ON c.CustId = p.CustId
-			INNER JOIN @TempAg tma ON tma.CustID=c.recommend AND c.currency = tma.currency
-		WHERE	p.Winlostdate BETWEEN @_FromDate AND @_ToDate
-			AND p.ProductId IN (Select sporttype FROM @sporttype)
-
+		EXEC (@OPENQUERY)
 	END 
-
+	
+	DROP TABLE #PayOutTrans
 
 	SELECT *
 	INTO #TempExchange 
 	FROM dbo.Lrf_f_GetExchangeDaily(@FromDate,@ToDate)
-	WHERE exchangeid IN (SELECT DISTINCT Currency FROM #JackPotWin)
+	--WHERE exchangeid IN (SELECT DISTINCT Currency FROM #JackPotWin)
 
 	----Get Data
 
@@ -149,10 +148,10 @@ BEGIN
 	FROM  #JackPotWin j
 	INNER JOIN #TempExchange e
 		ON j.winlostdate = e.ExchangeDate AND j.currency = e.ExchangeId
-			
 	
+	DROP TABLE #TempExchange
+	DROP TABLE #JackPotWin
 END
-
-GO 
-GRANT EXECUTE ON [Lrf_Rpt_CasinoProgressiveWins] TO [bodbLicenseeNet] AS [dbo]
+GO
+GRANT EXECUTE ON [dbo].[Lrf_Rpt_CasinoProgressiveWins] TO [bodbLicenseeNet] AS [dbo]
 GO
