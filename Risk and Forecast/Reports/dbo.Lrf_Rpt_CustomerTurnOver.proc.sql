@@ -66,7 +66,7 @@ Revision:
 	- 20151209@Bobby: Do rollback step for Bettype & ProductId data type
 	- 20151223@Jim: Add "Effective Betting Value" in Customer Turnover report [Redmine: #45736]
 	- 20160413@Victor: support MKK currency code
-	
+	- 20160720@Jim : Implement 67 new bet types (PH All in one - Phase 2) [Redmine : #53520]
 Parameter's Explanation:
 	- @ReportBy:  1: daily, 2: monthly
 	- @FilterBy:  1: Win, 2: Loss, 3: Draw
@@ -318,6 +318,7 @@ BEGIN
 						OR bettype BETWEEN 90 AND 120
 						OR bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
 						OR bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
+						OR bettype = 428 -- 2H Odd/Even
 			
 		-- CREATE INDEXERS
 		CREATE CLUSTERED 	INDEX [CIX_tempBettrans] 			ON #tempBettrans (recommend, custid, winlostdate)

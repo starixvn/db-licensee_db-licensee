@@ -19,6 +19,15 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlostByLeague]
 	,@ShowBA BIT = 1
 AS
 /*
+exec Lrf_Rpt_WinlostByLeague 
+@licenseeid=8,@userid=10
+,@currencyid=0,@fromdate='2016-06-01 00:00:00'
+,@todate='2016-06-30 00:00:00',@odds=0,@leagueid=10,@matchid=0
+,@movebetsday='2016-07-11 00:00:00',@balanceupday='2016-07-09 00:00:00',@showwin=1
+,@showloss=1,@showdraw=1,@showsb=1,@showba=1
+
+*/
+/*
 	Created	: Florent
 	Task: Winloss by League
 	Date: 2013-12-30
@@ -33,6 +42,7 @@ AS
 		- 20151127@Bobby: #48081 - Apply PH-AIO new bettypes
 		- 20151203@Bobby: Database - Change datatype [Redmine: #48660]
 		- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
+		- 20160720@Jim : Implement 67 new bet types (PH All in one - Phase 2) [Redmine : #53520]
 	Parameter's Explanation:
 		- @LicenseeID : Licensee ID
 		- @UserID : UserID who run this report
@@ -182,6 +192,7 @@ BEGIN
 							OR b.bettype BETWEEN 90 AND 120
 							OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
 							OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
+							OR b.bettype = 428 -- 2H Odd/Even  
 						)
 						THEN CASE 
 								WHEN b.OddsType = 1
@@ -265,6 +276,7 @@ BEGIN
 							OR b.bettype BETWEEN 90 AND 120
 							OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
 							OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
+							OR b.bettype = 428 -- 2H Odd/Even  
 						)
 						THEN CASE 
 								WHEN b.OddsType = 1
@@ -313,6 +325,7 @@ BEGIN
 							OR b.bettype BETWEEN 90 AND 120
 							OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
 							OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
+							OR b.bettype = 428 -- 2H Odd/Even  
 						)
 						THEN CASE 
 								WHEN b.OddsType = 1
@@ -392,6 +405,7 @@ BEGIN
 							OR b.bettype BETWEEN 90 AND 120
 							OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
 							OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
+							OR b.bettype = 428 -- 2H Odd/Even  
 						)
 						THEN CASE 
 								WHEN b.OddsType = 1
@@ -493,6 +507,7 @@ BEGIN
 							OR b.bettype BETWEEN 90 AND 120
 							OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
 							OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
+							OR b.bettype = 428 -- 2H Odd/Even  
 						)
 						THEN CASE 
 								WHEN b.OddsType = 1
@@ -573,6 +588,7 @@ BEGIN
 							OR b.bettype BETWEEN 90 AND 120
 							OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
 							OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
+							OR b.bettype = 428 -- 2H Odd/Even  
 						)
 						THEN CASE 
 								WHEN b.OddsType = 1
@@ -620,6 +636,7 @@ BEGIN
 							OR b.bettype BETWEEN 90 AND 120
 							OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
 							OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
+							OR b.bettype = 428 -- 2H Odd/Even  
 						)
 						THEN CASE 
 								WHEN b.OddsType = 1
@@ -700,6 +717,7 @@ BEGIN
 							OR b.bettype BETWEEN 90 AND 120
 							OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
 							OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
+							OR b.bettype = 428 -- 2H Odd/Even  
 						)
 						THEN CASE 
 								WHEN b.OddsType = 1
