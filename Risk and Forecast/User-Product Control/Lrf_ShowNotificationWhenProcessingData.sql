@@ -8,54 +8,66 @@ AS
 	Task: Show notification when processing data
 	DB: DB052.bodb02
 	Revision:   
-  
+		- 20160726@Francis: Revise SP to display notification during movebet process even though data is ready
 */  
 BEGIN  
 	SET NOCOUNT ON  
-	DECLARE @MoveBetDay SMALLDATETIME, @MaxWinlostDate SMALLDATETIME, @EndMoveBetTime DATETIME
-		, @StartMoveBetTime DATETIME, @TotalDays TINYINT, @EstimatedTimeForMoveBet SMALLINT
-		, @EstimatedTimeForGenReport SMALLINT, @Today DATETIME
+	DECLARE @TotalDayMoveBetCompleted TINYINT, @TotalDayMoveBet TINYINT
+	        , @EstimatedTimeForMoveBet SMALLINT, @EstimatedTimeForGenReport SMALLINT
+	        , @StartMoveBetTime DATETIME, @Tomorrow DATETIME, @Today DATETIME
+
+	--DECLARE @MoveBetDayTable TABLE (BalanceUpDay SMALLDATETIME, MoveBetDay SMALLDATETIME)
+	--INSERT INTO @MoveBetDayTable(BalanceUpDay, MoveBetDay)
+	--EXEC dbo.Lrf_SelBalanceUpDay
+
+	--SELECT @MoveBetDay = MoveBetDay
+	--FROM @MoveBetDayTable
 
 	SELECT @EstimatedTimeForMoveBet = 45 --45 minutes
-		, @EstimatedTimeForGenReport = 15 --15 minutes
-		, @Today = GETDATE()
-
-	DECLARE @MoveBetDayTable TABLE (BalanceUpDay SMALLDATETIME, MoveBetDay SMALLDATETIME)
-	DECLARE @MoveBetSchedule TABLE(ScheduleId TINYINT, MoveBetDay SMALLDATETIME)
-
-	INSERT INTO @MoveBetDayTable(BalanceUpDay, MoveBetDay)
-	EXEC dbo.Lrf_SelBalanceUpDay
-
-	SELECT @MoveBetDay = MoveBetDay
-	FROM @MoveBetDayTable
-	
-	SELECT @MaxWinlostDate = MAX(Winlostdate) 
+		, @EstimatedTimeForGenReport = 10 --10 minutes
+		, @Tomorrow = DATEADD(dd, 1, CAST(GETDATE() AS DATE))
+		, @Today = CAST(GETDATE() AS DATE)
+		, @StartMoveBetTime = NULL
+		
+	SELECT @AvailableWinlostDate = MAX(Winlostdate) 
 	FROM bodb_Licensee.dbo.rptLicWinloss2 WITH (NOLOCK)
 
-	SET @AvailableWinlostDate =  @MaxWinlostDate
-
+	DECLARE @MoveBetSchedule TABLE(ScheduleId TINYINT, MoveBetDay SMALLDATETIME)
+	
 	INSERT INTO @MoveBetSchedule(ScheduleId, MoveBetDay)
 	EXEC DBTXN.bodb02.dbo.Task_MoveBetsDayByScheduleSel
 
-	SELECT @TotalDays = COUNT(1)
+	SELECT @TotalDayMoveBet = ISNULL(COUNT(1),0)
 	FROM @MoveBetSchedule
-	IF ISNULL(@TotalDays, 0) = 0 --no move bet on that day
-	BEGIN
-		RETURN
-	END
-
-	--SELECT @TotalDays as '@TotalDays'
-
+	
+	IF @TotalDayMoveBet = 0 RETURN --no movebet today
+	
+	SELECT @TotalDayMoveBetCompleted = ISNULL(COUNT(1),0)
+	FROM DBACC.bodb02.dbo.userlog WITH(NOLOCK)
+	WHERE userid = 25520 AND doing = 'Task_DailySummary : End (with Finish)'
+		AND logdate > @Today AND logdate < @Tomorrow
+	
+	IF @TotalDayMoveBetCompleted = @TotalDayMoveBet RETURN --movebet has been finished
+	
+	--get latest start time of movebet
+	SELECT TOP 1 @StartMoveBetTime = logdate
+	FROM DBACC.bodb02.dbo.userlog WITH(NOLOCK)
+	WHERE userid = 25520 AND doing = 'Task_DailySummary : MoveBet start'
+		  AND logdate > @Today AND logdate < @Tomorrow
+	ORDER BY logid DESC
+	
+	IF @StartMoveBetTime IS NULL RETURN --move bet has not been started yet
+	
+	SELECT @EstimatedTime = DATEADD(mi,((@TotalDayMoveBet-@TotalDayMoveBetCompleted) * @EstimatedTimeForMoveBet
+										 + (@TotalDayMoveBet * @EstimatedTimeForGenReport)), @StartMoveBetTime)
+	
+	/*
 	SELECT TOP 1 @EndMoveBetTime = logdate
 	FROM DBACC.bodb02.dbo.userlog WITH(NOLOCK)
 	WHERE userid = 25520 AND doing = 'Task_DailySummary : End (with Finish)'
 	ORDER BY logid DESC
 	
-	SELECT TOP 1 @StartMoveBetTime = logdate
-	FROM DBACC.bodb02.dbo.userlog WITH(NOLOCK)
-	WHERE userid = 25520 AND doing = 'Task_DailySummary : MoveBet start'
-	ORDER BY logid DESC
-	
+		
 	IF @MaxWinlostDate < @MoveBetDay--movebet is running + generate data does not running
 	BEGIN
 		IF CAST(@EndMoveBetTime AS DATE) = CAST(@Today AS DATE) --totalmovebetdays > 1 & completed a part
@@ -74,8 +86,9 @@ BEGIN
 
 		SET @AvailableWinlostDate = DATEADD(DD, -1, @MaxWinlostDate)
 	END
+	*/
 
-	IF @EstimatedTime IS NOT NULL AND @EstimatedTime < GETDATE() --incase estimation incorrect
+	IF @EstimatedTime IS NOT NULL AND @EstimatedTime < GETDATE() --incase estimation is incorrect
 		SET @EstimatedTime = DATEADD(mi, 5, GETDATE())
 
 END
