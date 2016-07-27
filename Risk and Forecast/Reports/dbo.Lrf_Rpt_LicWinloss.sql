@@ -59,7 +59,7 @@ AS
 	- 20160215@Victor: Add Bettrade Actual Stake amount [Redmine: #51264]
 	- 20160331@Percy: Support Voidbridge single wallet [Redmine: #55057]
 	- 20160413@Victor: support MKK currency code [Redmine: #55745]
-	
+	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -332,7 +332,7 @@ BEGIN
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 			AND b.statusID  IN (111, 112, 113)
-			AND b.bettype NOT IN (901, 902, 903)
+			AND b.bettype NOT IN (901, 902, 903,904)
 		GROUP BY b.winlostdate, tma.currency, b.statusID
 	END
 	
@@ -405,7 +405,7 @@ BEGIN
 			)
 			AND b.statusID IN (111, 112, 113)
 			AND b.tpositiontaking <> 0
-			AND b.bettype NOT IN (901, 902, 903)
+			AND b.bettype NOT IN (901, 902, 903,904)
 		GROUP BY b.winlostdate, a.currency, statusID, b.bettype
 	END
 
@@ -707,7 +707,7 @@ BEGIN
 			  LEFT JOIN f_GetBetTradeCustList(@LicenseeName) bt ON b.custid = bt.Custid AND b.Currency = bt.currency
 		WHERE  
 			 b.Winlostdate BETWEEN @_FromDate AND @TempToDate  
-			AND b.bettype NOT IN (901,902,903)
+			AND b.bettype NOT IN (901,902,903,904)
 			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA, 0) = 1
@@ -890,7 +890,7 @@ BEGIN
 			LEFT JOIN f_GetBetTradeCustList(@LicenseeName) bt ON b.custid = bt.Custid AND b.Currency = bt.currency
 		WHERE  
 			b.Winlostdate BETWEEN @_FromDate AND @TempToDate
-			AND b.bettype NOT IN (901, 902, 903)  
+			AND b.bettype NOT IN (901,902, 903,904)  
 			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA, 0) = 0
@@ -1027,7 +1027,7 @@ BEGIN
 			LEFT JOIN f_GetBetTradeCustList(@LicenseeName) bt ON b.custid = bt.Custid AND b.Currency = bt.currency
 		WHERE  
 			b.Winlostdate BETWEEN @_FromDate AND @TempToDate  
-			AND b.bettype NOT IN (901, 902, 903)
+			AND b.bettype NOT IN (901, 902, 903,904)
 			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA, 0) = 1
@@ -1210,7 +1210,7 @@ BEGIN
 			LEFT JOIN f_GetBetTradeCustList(@LicenseeName) bt ON b.custid = bt.Custid AND b.Currency = bt.currency
 		WHERE  
 			b.Winlostdate BETWEEN @_FromDate AND @TempToDate  
-			AND b.bettype NOT IN (901, 902, 903)
+			AND b.bettype NOT IN (901, 902, 903,904)
 			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND ISNULL(b.isBA, 0) = 0
