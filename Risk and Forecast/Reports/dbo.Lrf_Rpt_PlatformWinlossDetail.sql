@@ -28,6 +28,7 @@ AS
     DB: DBEXT/bodb02  
    
     Revisions:  
+		- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
 	Param's Explanation:  
 	  + @PlatformType: 0: All  
 					   1: Asia (d)  
@@ -274,7 +275,7 @@ BEGIN
 			INNER JOIN @PlatformList pl ON pl.betfrom = b.betfrom
 		WHERE
 			b.statusID  IN (111, 112, 113)
-			AND b.bettype NOT IN (901,902,903)
+			AND b.bettype NOT IN (901,902,903,904)
 			AND b.winlostdate BETWEEN @TempFromDate AND @TDate
 		GROUP BY   b.winlostdate, b.custid, b.currency, b.statusID
 	END
@@ -320,7 +321,7 @@ BEGIN
 			AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
 							  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 			) 
-			AND b.bettype NOT IN (901,902,903)
+			AND b.bettype NOT IN (901,902,903,904)
 			AND b.tpositiontaking <>0
 		GROUP BY  b.winlostdate, b.CustID, tma.currency, b.statusID
 	END
@@ -412,7 +413,7 @@ BEGIN
 			b.Winlostdate BETWEEN @FDate AND @TempToDate  
 			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
-			AND b.bettype NOT IN (901,902,903)
+			AND b.bettype NOT IN (901,902,903,904)
 			AND ISNULL(b.isBA,0) = 1	
 		GROUP BY b.winlostdate, b.CustID, b.currency, b.statusID
 			
@@ -455,7 +456,7 @@ BEGIN
 			b.Winlostdate BETWEEN @FDate AND @TempToDate  
 			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
-			AND b.bettype NOT IN (901,902,903)
+			AND b.bettype NOT IN (901,902,903,904)
 			AND ISNULL(b.isBA,0) = 0	
 		GROUP BY b.winlostdate, b.CustID, b.currency, b.statusID
 	END

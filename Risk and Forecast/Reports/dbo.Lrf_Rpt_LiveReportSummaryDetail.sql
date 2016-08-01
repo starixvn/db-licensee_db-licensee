@@ -54,6 +54,7 @@ Revisions:
 	- 20160330@Percy: Support Voidbridge single wallet [Redmine: #55057]
 	- 20160413@Victor: support MKK currency code
 	- 20160519@Jim: HotFix #57810
+	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
 Param's Explanation:  
 	@Liveindicator : indicate that whether the report will get live data or not
 		+ 0: Non - Live data only
@@ -135,7 +136,7 @@ BEGIN
 								+ 'INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON t.custid=ba.recommend and b.transid = ba.transid' + CHAR(13) 
 								+ 'WHERE b.winlostdate BETWEEN ''' + convert(VARCHAR(10), @TempFromDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TDate, 120) + '''' + CHAR(13)
 								+ 'AND b.statusID IN (111,112,113)'  + CHAR(13)
-								+ 'AND b.bettype NOT IN (9,29,901,902,903)'  + CHAR(13)
+								+ 'AND b.bettype NOT IN (9,29,901,902,903,904)'  + CHAR(13)
 								+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.liveindicator = 0)' + CHAR(13)
 								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.liveindicator = 1)' + CHAR(13)
 								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
@@ -184,7 +185,7 @@ BEGIN
 								+ 'WHERE b.winlostdate BETWEEN ''' + convert(VARCHAR(10), @TempFromDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TDate, 120) + '''' + CHAR(13)
 								+ 'AND b.Bettype <= 19999' + CHAR(13)
 								+ 'AND b.statusID IN (111,112,113)' + CHAR(13)
-								+ 'AND b.bettype NOT IN (9,29,901,902,903)' + CHAR(13)
+								+ 'AND b.bettype NOT IN (9,29,901,902,903,904)' + CHAR(13)
 								+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.liveindicator = 0)' + CHAR(13)
 								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.liveindicator = 1)' + CHAR(13)
 								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
@@ -263,7 +264,7 @@ BEGIN
 								+ 'INNER JOIN #Currency c ON b.siteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID' + CHAR(13)
 								+ 'WHERE b.rptDate BETWEEN ''' + CONVERT(VARCHAR(10), @FDate, 120) + ''' AND ''' + CONVERT(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13)
 								+ 'AND b.status NOT IN (-1,103)' + CHAR(13)
-								+ 'AND b.bettype NOT IN (9,29,901,902,903)' + CHAR(13)
+								+ 'AND b.bettype NOT IN (9,29,901,902,903,904)' + CHAR(13)
 								+ 'AND b.siteID =' + CONVERT(VARCHAR(10), @LicenseeID) + CHAR(13)
 								+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13)
 								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13)
@@ -311,7 +312,7 @@ BEGIN
 								+ 'INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID' + CHAR(13)
 								+ 'WHERE b.rptDate BETWEEN ''' + CONVERT(VARCHAR(10), @FDate, 120) + ''' AND ''' + CONVERT(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13)
 								+ 'AND b.status NOT IN (-1,103)' + CHAR(13)
-								+ 'AND b.bettype NOT IN (9,29,1700,1800,1900,901,902,903)' + CHAR(13)
+								+ 'AND b.bettype NOT IN (9,29,1700,1800,1900,901,902,903,904)' + CHAR(13)
 								+ 'AND b.CustomerCategory IN (-1, 1001)' + CHAR(13)
 								+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13)
 								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13)

@@ -51,6 +51,7 @@ Revisions:
 	- 20160218@Bobby: #52428 - Intergate RnG Casino product
 	- 20160330@Percy: Support Voidbridge single wallet [Redmine: #55057]
 	- 20160519@Jim: HotFix #57810
+	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
 Param's Explanation:
 	@Liveindicator : indicate that whether the report will get live data or not
 		+ 0: Non - Live data only
@@ -144,7 +145,7 @@ BEGIN
 								+ 'LEFT JOIN [match] m with(nolock) ON b.matchid = m.matchid' + CHAR(13)
 								+ 'WHERE b.winlostdate BETWEEN ''' + CONVERT(VARCHAR(10), @TempFromDate, 120) + ''' AND ''' + CONVERT(VARCHAR(10), @TDate, 120) + '''' + CHAR(13)
 								+ 'AND b.statusID IN (111,112,113)' + CHAR(13)
-								+ 'AND b.bettype NOT IN (9,29,901,902,903)' + CHAR(13)
+								+ 'AND b.bettype NOT IN (9,29,901,902,903,904)' + CHAR(13)
 								+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.liveindicator = 0)' + CHAR(13)
 								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.liveindicator = 1)' + CHAR(13)
 								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
@@ -233,7 +234,7 @@ BEGIN
 								+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.liveindicator = 0)' + CHAR(13)
 								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.liveindicator = 1)' + CHAR(13)
 								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
-								+ 'AND b.bettype NOT IN (9,29,901,902,903)' + CHAR(13)
+								+ 'AND b.bettype NOT IN (9,29,901,902,903,904)' + CHAR(13)
 								+ 'AND b.statusID IN (111,112,113)' + CHAR(13) + 'AND BA.transid IS NULL' + CHAR(13)
 								+ CASE
 									WHEN @ProductCode = 'NG' THEN 'AND b.bettype BETWEEN 81 AND 120 '
@@ -343,7 +344,7 @@ BEGIN
 								+ 'LEFT JOIN league l WITH (NOLOCK) ON b.LeagueID = l.LeagueID' + CHAR(13)
 								+ 'WHERE b.rptDate BETWEEN ''' + CONVERT(VARCHAR(10), @FDate, 120) + ''' AND ''' + CONVERT(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13)
 								+ 'AND b.status NOT IN (-1,103)' + CHAR(13)
-								+ 'AND b.bettype NOT IN (9,29,901,902,903)' + CHAR(13)
+								+ 'AND b.bettype NOT IN (9,29,901,902,903,904)' + CHAR(13)
 								+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13)
 								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13)
 								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
@@ -422,7 +423,7 @@ BEGIN
 								+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13)
 								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13)
 								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
-								+ 'AND b.bettype NOT IN (9,29,1700,1800,1900,901,902,903)' + CHAR(13)
+								+ 'AND b.bettype NOT IN (9,29,1700,1800,1900,901,902,903,904)' + CHAR(13)
 								+ 'AND b.CustomerCategory IN (-1, 1001)' + CHAR(13)
 								+ 'AND b.siteID = ' + CONVERT(VARCHAR(10), @LicenseeID) + CHAR(13)
 								+ CASE WHEN @CurrencyID <> 0 THEN 'AND b.CurrencyID = ' + CONVERT(VARCHAR(10), @CurrencyID) ELSE '' END + CHAR(13)

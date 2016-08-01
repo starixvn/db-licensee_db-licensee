@@ -82,6 +82,7 @@ AS
 		- 20151228@Bobby: Implement RNG Casino sporttype(208, 209, 210)
 		- 20160401@Percy: Support Voidbridge single wallet [Redmine: #55057]
 		- 20160519@Jim: add more parameter  @excludeTest (#57836)
+		- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
 */
     
 SET NOCOUNT ON
@@ -324,7 +325,7 @@ BEGIN
 			AND winlostdate BETWEEN @TempFromDate AND @_ToDate
 			AND b.statusID  IN (111, 112, 113)
 			and bettype < 19999
-			AND b.bettype NOT IN (901, 902, 903)
+			AND b.bettype NOT IN (901, 902, 903,904)
 		GROUP BY b.CustID, b.winlostdate, b.currency	
 	END
 
@@ -359,7 +360,7 @@ BEGIN
 			)
 			AND b.statusID IN (111, 112, 113)
 			AND b.tpositiontaking <> 0
-			AND b.bettype NOT IN (901, 902, 903)
+			AND b.bettype NOT IN (901, 902, 903,904)
 		GROUP BY b.CustID, b.winlostdate, b.currency	 
 	END
 
@@ -429,7 +430,7 @@ BEGIN
 			AND roleID = 1
 			AND b.statusID <> 101
 			AND ISNULL(b.isBA, 0) = 1
-			AND b.bettype NOT IN (901, 902, 903)
+			AND b.bettype NOT IN (901, 902, 903,904)
 		GROUP BY b.CustID, b.winlostdate, b.currency
 	END
 
@@ -461,7 +462,7 @@ BEGIN
 			AND roleID = 1
 			AND ISNULL(b.isBA, 0) = 0
 			AND b.statusID <> 101 
-			AND b.bettype NOT IN (901, 902, 903)
+			AND b.bettype NOT IN (901, 902, 903,904)
 		GROUP BY b.CustID, b.winlostdate, b.currency	
 	END 
 
@@ -525,7 +526,7 @@ BEGIN
 			AND b.statusID <> 101 
 			AND ISNULL(b.isBA, 0) = 1
 			AND b.currency IN (SELECT Currency FROM @TempAg)
-			AND b.bettype NOT IN (901, 902, 903)
+			AND b.bettype NOT IN (901, 902, 903,904)
 		GROUP BY b.CustID, b.winlostdate, b.currency	
 	END
 	
@@ -556,7 +557,7 @@ BEGIN
 			AND roleID = 1
 			AND ISNULL(b.isBA,0) = 0
 			AND b.statusID <> 101 
-			AND b.bettype NOT IN (901,902,903)
+			AND b.bettype NOT IN (901,902,903,904)
 		GROUP BY b.CustID,b.winlostdate,b.currency	
 	END
 

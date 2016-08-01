@@ -46,6 +46,7 @@ Revisions:
 	- 20150612@Jim: support MicroGaming
 	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission 
 	- 20151001@Jim: remove MicroGaming
+	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
 	- 20160721@Percy: Enhance Performance - using index srecommend on bettrans [RedmineID: #60770]
 Param's Explanation: 
 */
@@ -433,7 +434,7 @@ BEGIN
 			) 
 		AND */ b.winlostdate BETWEEN @TempFromDate AND @TDate
 		AND bettype <= 1599  
-		AND bettype NOT IN (71, 73,901,902,903)
+		AND bettype NOT IN (71, 73,901,902,903,904)
 		AND b.ruben = 1
 		AND statusID NOT IN (101, 102, 103)
 	GROUP BY bettype
@@ -686,7 +687,7 @@ BEGIN
 		AND */ b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
 		AND statusID NOT IN (101, 102, 103)
 		AND bettype <= 1599 
-		AND bettype NOT IN (71, 73,901,902,903)
+		AND bettype NOT IN (71, 73,901,902,903,904)
 	GROUP BY bettype
 		, CASE 
 			WHEN b.bettype BETWEEN 81 AND 120

@@ -51,6 +51,7 @@ Revisions:
 	- 20151228@Patrick: Exclude 901 & 902 for turnover
 	- 20151228@Bobby: Implement RNG Casino sporttype(208,209,210)
 	- 20160408@Percy: Support Voidbridge single wallet [Redmine: #55057]
+	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
    
 Param's Explanation:  
 	+ @excludeTest: remove currency UUS  
@@ -181,7 +182,7 @@ BEGIN
 	(  
 		SELECT   
 			p.custid,
-			SUM(ISNULL(CASE WHEN p.sporttype IN (-2,-3) THEN 0 ELSE p.turnover END,0)) AS Turnover,
+			SUM(ISNULL(CASE WHEN p.sporttype IN (-2,-3,-5) THEN 0 ELSE p.turnover END,0)) AS Turnover,
 			SUM(ISNULL(p.outstanding,0)) AS outstanding,
 			SUM(ISNULL(p.winlost,0)) AS Winloss,
 			SUM(ISNULL(p.drawTO,0)) AS DrawGame,
@@ -235,7 +236,7 @@ BEGIN
 	(
 		SELECT
 			p.custid,
-			SUM(ISNULL(CASE WHEN p.sporttype IN (-2,-3) THEN 0 ELSE p.turnover END,0)) AS Turnover,
+			SUM(ISNULL(CASE WHEN p.sporttype IN (-2,-3,-5) THEN 0 ELSE p.turnover END,0)) AS Turnover,
 			SUM(ISNULL(p.outstanding,0)) AS outstanding,
 			SUM(ISNULL(p.winlost,0)) AS Winloss,
 			SUM(ISNULL(p.drawTO,0)) AS DrawGame,

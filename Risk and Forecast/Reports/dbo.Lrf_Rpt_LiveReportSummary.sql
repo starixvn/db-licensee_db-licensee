@@ -45,6 +45,7 @@ Revisions:
 	- 20160218@Bobby: #52428 - Intergate RnG Casino product
 	- 20160330@Percy: Support Voidbridge single wallet [Redmine: #55057]
 	- 20160519@Jim: HotFix #57810
+	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
 Param's Explanation:
 	@IsLive : indicate that whether the report will get live data or not
 			+ 0: Non - Live data only
@@ -139,7 +140,7 @@ BEGIN
 			b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND b.statusID IN (111, 112, 113)
 			AND (b.liveindicator = @Liveindicator OR @Liveindicator = 2)
-			AND (b.bettype NOT IN (9,29,901,902,903))
+			AND (b.bettype NOT IN (9,29,901,902,903,904))
 		GROUP BY
 			b.winlostdate,
 			t.currency
@@ -219,7 +220,7 @@ BEGIN
 				OR (b.bettype BETWEEN 121 AND 999)
 				OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 				)
-			AND (b.bettype NOT IN (9,29,901,902,903))
+			AND (b.bettype NOT IN (9,29,901,902,903,904))
 			AND b.tpositiontaking <> 0
 			AND b.statusID IN (111, 112, 113)
 			AND (b.liveindicator = @Liveindicator OR @Liveindicator = 2)
@@ -339,7 +340,7 @@ BEGIN
 				OR (@Liveindicator = 1 AND b.IsLive = 1)
 				OR (@Liveindicator = 2)
 			)
-			AND b.bettype NOT IN (9,29,901,902,903)
+			AND b.bettype NOT IN (9,29,901,902,903,904)
 		GROUP BY 
 			b.rptdate,
 			b.currencyID
@@ -363,7 +364,7 @@ BEGIN
 		WHERE
 			b.rptDate BETWEEN @FDate AND @TempToDate
 			AND b.status NOT IN (-1,103)
-			AND b.Bettype NOT IN (901,902,903)
+			AND b.Bettype NOT IN (901,902,903,904)
 			AND b.siteID = @LicenseeID
 			AND
 			(
@@ -412,7 +413,7 @@ BEGIN
 				OR (@Liveindicator = 2)
 			)
 			AND b.CustomerCategory IN (-1, 1001)
-			AND b.bettype NOT IN (9,29,1700,1800,1900,901,902,903) 
+			AND b.bettype NOT IN (9,29,1700,1800,1900,901,902,903,904) 
 			AND b.bettype NOT BETWEEN 2001 AND 2009 -- Exclude Microgamming (#44084)
 				
 		GROUP BY
@@ -449,7 +450,7 @@ BEGIN
 		WHERE
 			b.rptDate BETWEEN @FDate AND @TempToDate
 			AND b.status NOT IN (-1,103)
-			AND b.Bettype NOT IN (901,902,903)
+			AND b.Bettype NOT IN (901,902,903,904)
 			AND b.siteID =@LicenseeID
 			AND
 			(

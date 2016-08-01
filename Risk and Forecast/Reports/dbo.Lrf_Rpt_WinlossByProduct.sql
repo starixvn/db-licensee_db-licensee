@@ -71,6 +71,7 @@ AS
 	- 20151228@Bobby: Support MBC RNG Casino sporttype(208,209,210)	
 	- 20160331@Walter: Support Voidbridge single wallet [Redmine: #55057]
 	- 20160413@Victor: support MKK currency code [Redmine: #55745]
+	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
 	
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -323,7 +324,7 @@ BEGIN
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
 			b.statusID IN (111, 112, 113) 
-			AND b.bettype NOT IN (901,902,903)
+			AND b.bettype NOT IN (901,902,903,904)
 			AND (@CustId = 0 OR (@CustId <> 0 AND b.CustId = @CustID))
 		GROUP BY   
 			b.winlostdate,tma.currency, b.statusID
@@ -365,7 +366,7 @@ BEGIN
 						  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 			) AND
 			b.statusID  IN (111, 112, 113) 
-			AND b.bettype NOT IN (901,902,903)
+			AND b.bettype NOT IN (901,902,903,904)
 			AND
 			b.tpositiontaking<>0
 			
@@ -529,7 +530,7 @@ BEGIN
 			AND (@CustId = 0 OR (@CustId <> 0 AND b.CustId = @CustID))  
 			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
-			AND b.bettype NOT IN (901,902,903)
+			AND b.bettype NOT IN (901,902,903,904)
 			AND ISNULL(b.isBA,0) = 1
 		GROUP BY  b.winlostdate,  b.currency, b.statusID
 	END
@@ -579,7 +580,7 @@ BEGIN
 			 AND (@CustId = 0 OR (@CustId <> 0 AND b.CustId = @CustID))
 			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
-			AND b.bettype NOT IN (901,902,903)
+			AND b.bettype NOT IN (901,902,903,904)
 			AND ISNULL(b.isBA,0) = 0
 			and t.sporttype <>180
 		GROUP BY  
@@ -788,7 +789,7 @@ BEGIN
 			AND (@CustId = 0 OR (@CustId <> 0 AND b.CustId = @CustID))
 			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
-			AND b.bettype NOT IN (901,902,903)
+			AND b.bettype NOT IN (901,902,903,904)
 			AND ISNULL(b.isBA,0) = 1
 		GROUP BY  b.winlostdate,  b.currency, b.statusID
 	END
@@ -840,7 +841,7 @@ BEGIN
 			AND (@CustId = 0 OR (@CustId <> 0 AND b.CustId = @CustID))  
 			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
-			AND b.bettype NOT IN (901,902,903)
+			AND b.bettype NOT IN (901,902,903,904)
 			AND ISNULL(b.isBA,0) = 0
 		GROUP BY  
 			b.winlostdate,  
