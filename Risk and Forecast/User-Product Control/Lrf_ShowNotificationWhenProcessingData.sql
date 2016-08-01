@@ -1,6 +1,10 @@
-USE bodb02
+USE [bodb02]
 GO
-ALTER PROCEDURE dbo.Lrf_ShowNotificationWhenProcessingData @AvailableWinlostDate SMALLDATETIME OUTPUT
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[Lrf_ShowNotificationWhenProcessingData] @AvailableWinlostDate SMALLDATETIME OUTPUT
 	, @EstimatedTime DATETIME = NULL OUTPUT
 AS  
 /* 
@@ -40,23 +44,23 @@ BEGIN
 	SELECT @TotalDayMoveBet = ISNULL(COUNT(1),0)
 	FROM @MoveBetSchedule
 	
-	IF @TotalDayMoveBet = 0 RETURN --no movebet today
+	IF @TotalDayMoveBet = 0 BEGIN PRINT 'no movebet today' RETURN END--no movebet today
 	
 	SELECT @TotalDayMoveBetCompleted = ISNULL(COUNT(1),0)
 	FROM DBACC.bodb02.dbo.userlog WITH(NOLOCK)
 	WHERE userid = 25520 AND doing = 'Task_DailySummary : End (with Finish)'
 		AND logdate > @Today AND logdate < @Tomorrow
 	
-	IF @TotalDayMoveBetCompleted = @TotalDayMoveBet RETURN --movebet has been finished
+	IF @TotalDayMoveBetCompleted = @TotalDayMoveBet BEGIN PRINT 'movebet has been finished' RETURN END --movebet has been finished
 	
 	--get latest start time of movebet
 	SELECT TOP 1 @StartMoveBetTime = logdate
 	FROM DBACC.bodb02.dbo.userlog WITH(NOLOCK)
-	WHERE userid = 25520 AND doing = 'Task_DailySummary : MoveBet start'
+	WHERE userid = 25520 AND doing LIKE 'Task_DailySummary : MoveBet start%'
 		  AND logdate > @Today AND logdate < @Tomorrow
 	ORDER BY logid DESC
 	
-	IF @StartMoveBetTime IS NULL RETURN --move bet has not been started yet
+	IF @StartMoveBetTime IS NULL BEGIN PRINT 'move bet has not been started yet' RETURN END --move bet has not been started yet
 	
 	SELECT @EstimatedTime = DATEADD(mi,((@TotalDayMoveBet-@TotalDayMoveBetCompleted) * @EstimatedTimeForMoveBet
 										 + (@TotalDayMoveBet * @EstimatedTimeForGenReport)), @StartMoveBetTime)
@@ -93,9 +97,8 @@ BEGIN
 
 END
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_ShowNotificationWhenProcessingData] TO [vnteam]
-GO 
-GRANT EXECUTE ON [dbo].[Lrf_ShowNotificationWhenProcessingData] TO [bodbLicenseeNet]
-GO 
-GRANT EXECUTE ON [dbo].[Lrf_ShowNotificationWhenProcessingData] TO [bodbDownlineNet]
-GO 
+GRANT EXECUTE ON [dbo].[Lrf_ShowNotificationWhenProcessingData] TO [bodbDownlineNet] AS [dbo]
+GO
+GRANT EXECUTE ON [dbo].[Lrf_ShowNotificationWhenProcessingData] TO [bodbLicenseeNet] AS [dbo]
+GO
+GRANT VIEW DEFINITION ON [dbo].[Lrf_ShowNotificationWhenProcessingData] TO [vnteam] AS [dbo]
