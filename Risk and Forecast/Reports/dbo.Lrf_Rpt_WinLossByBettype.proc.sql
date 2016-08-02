@@ -46,6 +46,7 @@ Revisions:
 	- 20150612@Jim: support MicroGaming
 	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission 
 	- 20151001@Jim: remove MicroGaming
+	- 20160721@Percy: Enhance Performance - using index srecommend on bettrans [RedmineID: #60770]
 Param's Explanation: 
 */
 SET NOCOUNT ON
@@ -83,21 +84,33 @@ WHERE (
 			)
 		)
 
-DECLARE @TempAg AS TABLE (
+--DECLARE @TempAg AS TABLE
+CREATE TABLE #TempAg
+(
 	CustId INT
 	, currency INT
 	)
 
-INSERT INTO @TempAg (
+INSERT INTO #TempAg (
 	CustId
 	, currency
 	)
-SELECT CustID
+SELECT DISTINCT CustID
 	, currency
 FROM bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc
 INNER JOIN #Currency c ON lc.LicenseeID = c.LicenseeID
 	AND lc.Currency = c.CurrencyID
 WHERE [Description] = COALESCE(@LicenseeType, [Description])
+
+CREATE TABLE #TempSAg (srecommend INT, currency INT)
+INSERT INTO #TempSAg (srecommend, currency)
+SELECT DISTINCT
+	c.srecommend, t.currency
+FROM
+	#TempAg t
+	INNER JOIN dbo.Customer c WITH (NOLOCK) ON t.CustId = c.custid
+WHERE
+	c.roleid = 2
 
 --------------------------------------
 DROP TABLE #Currency
@@ -107,8 +120,8 @@ CREATE TABLE #AgWinLoss (
 	bettype INT
 	, liveindicator BIT
 	,
-	--winlostdate 	SMALLDATETIME,
-	--currency 		INT,
+	winlostdate 	SMALLDATETIME,
+	currency 		INT,
 	TurnOver MONEY
 	, MemberWinLost MONEY
 	, LicenseeWL MONEY
@@ -119,6 +132,7 @@ CREATE TABLE #AgWinLoss (
 	, CommBA MONEY
 	, CommRB MONEY
 	, PlayerComm MONEY
+	/*
 	, TurnOverEUR MONEY
 	, MemberWinLostEUR MONEY
 	, LicenseeWLEUR MONEY
@@ -149,6 +163,7 @@ CREATE TABLE #AgWinLoss (
 	, CommBAGBP MONEY
 	, CommRBGBP MONEY
 	, PlayerCommGBP MONEY
+	*/
 	)
 
 DECLARE @TempFromDate DATETIME
@@ -175,7 +190,7 @@ SELECT exchangedate
 FROM Lrf_f_GetExchangeDaily(@FDate, @TDate)
 WHERE exchangeid IN (
 		SELECT Currency
-		FROM @TempAg
+		FROM #TempAg
 		)
 
 IF @Tdate > @MoveBetsDay
@@ -193,8 +208,8 @@ BEGIN
 			ELSE 0
 			END AS liveindicator
 		,
-		--b.winlostdate,
-		--b.currency,
+		b.winlostdate,
+		b.currency,
 		SUM(CASE 
 				WHEN b.liveawayscore = 0
 					AND bettype IN (33, 43)
@@ -245,6 +260,7 @@ BEGIN
 				ELSE 0
 				END) AS CommRB
 		, SUM(playercomm) AS PlayerComm
+		/*
 		,
 		---- EUR
 		SUM(CASE 
@@ -401,20 +417,21 @@ BEGIN
 				END * e.GBP) AS CommRBGBP
 		, SUM(playercomm * e.GBP) AS PlayerCommGBP
 		
-		
+		*/
 	FROM dbo.bettrans b WITH (
 			NOLOCK
-			, INDEX = CIX_recommend_matchid_bettype
+			--, INDEX = CIX_recommend_matchid_bettype
 			)
-	LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON b.recommend = BA.recommend
-		AND b.transid = BA.transid
-	LEFT JOIN @Exchange e ON e.ExchangeDate = b.winlostdate
-		AND e.exchangeid = b.currency
-	WHERE b.recommend IN (
+	INNER JOIN #TempSAg s ON b.srecommend = s.srecommend AND b.currency = s.currency
+	LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON /* b.recommend = BA.recommend
+		AND */ b.transid = BA.transid
+	 /* LEFT JOIN @Exchange e ON e.ExchangeDate = b.winlostdate
+		AND e.exchangeid = b.currency */
+	WHERE /* b.recommend IN (
 			SELECT DISTINCT custid
-			FROM @TempAg
-			)
-		AND b.winlostdate BETWEEN @TempFromDate AND @TDate
+			FROM #TempAg
+			) 
+		AND */ b.winlostdate BETWEEN @TempFromDate AND @TDate
 		AND bettype <= 1599  
 		AND bettype NOT IN (71, 73,901,902,903)
 		AND b.ruben = 1
@@ -425,6 +442,8 @@ BEGIN
 				THEN b.liveindicator
 			ELSE 0
 			END
+		,b.winlostdate
+		,b.currency
 END
 
 IF @FDate <= @MoveBetsDay
@@ -445,8 +464,8 @@ BEGIN
 			ELSE 0
 			END AS liveindicator
 		,
-		--b.winlostdate,
-		--b.currency,
+		b.winlostdate,
+		b.currency,
 		SUM(CASE 
 				WHEN b.liveawayscore = 0
 					AND bettype IN (33, 43)
@@ -497,6 +516,7 @@ BEGIN
 				ELSE 0
 				END) AS CommRB
 		, SUM(playercomm) AS PlayerComm
+		/*
 		,
 		--- EUR
 		SUM(CASE 
@@ -652,17 +672,18 @@ BEGIN
 				ELSE 0
 				END * e.GBP) AS CommRBGBP
 		, SUM(playercomm * e.GBP) AS PlayerCommGBP
-		
+		*/
 	FROM Bettrans14 b WITH (
 			NOLOCK
-			, INDEX = bettrans143
+			--, INDEX = bettrans143
 			)
-	LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_bk BA WITH (NOLOCK) ON b.recommend = BA.recommend
-		AND b.transid = BA.transid
-	LEFT JOIN @Exchange e ON e.ExchangeDate = b.winlostdate
-		AND e.exchangeid = b.currency
-	WHERE b.recommend IN (SELECT DISTINCT CustId FROM @TempAg)
-		AND b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
+	INNER JOIN #TempAg s ON b.recommend = s.CustId AND b.currency = s.currency
+	LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_bk BA WITH (NOLOCK) ON /* b.recommend = BA.recommend
+		AND */ b.transid = BA.transid
+	/* LEFT JOIN @Exchange e ON e.ExchangeDate = b.winlostdate
+		AND e.exchangeid = b.currency */
+	WHERE /* b.recommend IN (SELECT DISTINCT CustId FROM #TempAg)
+		AND */ b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
 		AND statusID NOT IN (101, 102, 103)
 		AND bettype <= 1599 
 		AND bettype NOT IN (71, 73,901,902,903)
@@ -671,7 +692,7 @@ BEGIN
 			WHEN b.bettype BETWEEN 81 AND 120
 				THEN b.liveindicator
 			ELSE 0
-			END --, b.winlostdate, b.currency	
+			END , b.winlostdate, b.currency	
 END
 
 -- Calculate total value
@@ -685,47 +706,48 @@ FROM (
 				END bettype
 		, liveindicator
 		, SUM(TurnOver) AS TurnOver
-		, CAST(SUM(TurnOverEUR) AS MONEY) AS TurnOverEUR
-		, CAST(SUM(TurnOverUSD) AS MONEY) AS TurnOverUSD
-		, CAST(SUM(TurnOverGBP) AS MONEY) AS TurnOverGBP
+		, CAST(SUM(TurnOver*e.EUR) AS MONEY) AS TurnOverEUR
+		, CAST(SUM(TurnOver*e.USD) AS MONEY) AS TurnOverUSD
+		, CAST(SUM(TurnOver*e.GBP) AS MONEY) AS TurnOverGBP
 		, SUM(MemberWinLost) AS MemberWinLost
-		, CAST(SUM(MemberWinLostEUR) AS MONEY) AS MemberWinLostEUR
-		, CAST(SUM(MemberWinLostUSD) AS MONEY) AS MemberWinLostUSD
-		, CAST(SUM(MemberWinLostGBP) AS MONEY) AS MemberWinLostGBP
+		, CAST(SUM(MemberWinLost*e.EUR) AS MONEY) AS MemberWinLostEUR
+		, CAST(SUM(MemberWinLost*e.USD) AS MONEY) AS MemberWinLostUSD
+		, CAST(SUM(MemberWinLost*e.GBP) AS MONEY) AS MemberWinLostGBP
 		, SUM(LicenseeWL) AS LicenseeWL
-		, CAST(SUM(LicenseeWLEUR) AS MONEY) AS LicenseeWLEUR
-		, CAST(SUM(LicenseeWLUSD) AS MONEY) AS LicenseeWLUSD
-		, CAST(SUM(LicenseeWLGBP) AS MONEY) AS LicenseeWLGBP
+		, CAST(SUM(LicenseeWL*e.EUR) AS MONEY) AS LicenseeWLEUR
+		, CAST(SUM(LicenseeWL*e.USD) AS MONEY) AS LicenseeWLUSD
+		, CAST(SUM(LicenseeWL*e.GBP) AS MONEY) AS LicenseeWLGBP
 		, SUM(WinlossRB) AS WinlossRB
-		, CAST(SUM(WinlossRBEUR) AS MONEY) AS WinlossRBEUR
-		, CAST(SUM(WinlossRBUSD) AS MONEY) AS WinlossRBUSD
-		, CAST(SUM(WinlossRBGBP) AS MONEY) AS WinlossRBGBP
+		, CAST(SUM(WinlossRB*e.EUR) AS MONEY) AS WinlossRBEUR
+		, CAST(SUM(WinlossRB*e.USD) AS MONEY) AS WinlossRBUSD
+		, CAST(SUM(WinlossRB*e.GBP) AS MONEY) AS WinlossRBGBP
 		, SUM(CommBA) AS CommBA
-		, CAST(SUM(CommBAEUR) AS MONEY) AS CommBAEUR
-		, CAST(SUM(CommBAUSD) AS MONEY) AS CommBAUSD
-		, CAST(SUM(CommBAGBP) AS MONEY) AS CommBAGBP
+		, CAST(SUM(CommBA*e.EUR) AS MONEY) AS CommBAEUR
+		, CAST(SUM(CommBA*e.USD) AS MONEY) AS CommBAUSD
+		, CAST(SUM(CommBA*e.GBP) AS MONEY) AS CommBAGBP
 		, SUM(commRB) AS commRB
-		, CAST(SUM(commRBEUR) AS MONEY) AS commRBEUR
-		, CAST(SUM(commRBUSD) AS MONEY) AS commRBUSD
-		, CAST(SUM(commRBGBP) AS MONEY) AS commRBGBP
+		, CAST(SUM(commRB*e.EUR) AS MONEY) AS commRBEUR
+		, CAST(SUM(commRB*e.USD) AS MONEY) AS commRBUSD
+		, CAST(SUM(commRB*e.GBP) AS MONEY) AS commRBGBP
 		, SUM(PlayerComm) AS PlayerComm
-		, CAST(SUM(PlayerCommEUR) AS MONEY) AS PlayerCommEUR
-		, CAST(SUM(PlayerCommUSD) AS MONEY) AS PlayerCommUSD
-		, CAST(SUM(PlayerCommGBP) AS MONEY) AS PlayerCommGBP
+		, CAST(SUM(PlayerComm*e.EUR) AS MONEY) AS PlayerCommEUR
+		, CAST(SUM(PlayerComm*e.USD) AS MONEY) AS PlayerCommUSD
+		, CAST(SUM(PlayerComm*e.GBP) AS MONEY) AS PlayerCommGBP
 		, SUM(AmtDuetoBA) AS AmtDuetoBA
-		, CAST(SUM(AmtDuetoBAEUR) AS MONEY) AS AmtDuetoBAEUR
-		, CAST(SUM(AmtDuetoBAUSD) AS MONEY) AS AmtDuetoBAUSD
-		, CAST(SUM(AmtDuetoBAGBP) AS MONEY) AS AmtDuetoBAGBP
+		, CAST(SUM(AmtDuetoBA*e.EUR) AS MONEY) AS AmtDuetoBAEUR
+		, CAST(SUM(AmtDuetoBA*e.USD) AS MONEY) AS AmtDuetoBAUSD
+		, CAST(SUM(AmtDuetoBA*e.GBP) AS MONEY) AS AmtDuetoBAGBP
 		, SUM(AmtDuetoRB) AS AmtDuetoRB
-		, CAST(SUM(AmtDuetoRBEUR) AS MONEY) AS AmtDuetoRBEUR
-		, CAST(SUM(AmtDuetoRBUSD) AS MONEY) AS AmtDuetoRBUSD
-		, CAST(SUM(AmtDuetoRBGBP) AS MONEY) AS AmtDuetoRBGBP
+		, CAST(SUM(AmtDuetoRB*e.EUR) AS MONEY) AS AmtDuetoRBEUR
+		, CAST(SUM(AmtDuetoRB*e.USD) AS MONEY) AS AmtDuetoRBUSD
+		, CAST(SUM(AmtDuetoRB*e.GBP) AS MONEY) AS AmtDuetoRBGBP
 		, ROW_NUMBER() OVER (
 			ORDER BY CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.grouptypeId
 				ELSE b.bettype 
 				END
 			) AS RowNum
 	FROM #AgWinLoss b
+		LEFT JOIN @Exchange e ON b.winlostdate = e.ExchangeDate AND b.currency = e.ExchangeId
 		LEFT JOIN dbo.f_GroupBettype() ss ON b.bettype = ss.bettype 	
 	GROUP BY CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.grouptypeId
 				ELSE b.bettype 
@@ -735,46 +757,50 @@ FROM (
 	) wl
 WHERE wl.RowNum BETWEEN @RowStart AND @RowEnd
 
-
+/*
 SELECT SUM(TurnOver) AS SumTurnOver
-	, CAST(SUM(TurnOverEUR) AS MONEY) AS SumTurnOverEUR
-	, CAST(SUM(TurnOverUSD) AS MONEY) AS SumTurnOverUSD
-	, CAST(SUM(TurnOverGBP) AS MONEY) AS SumTurnOverGBP
+	, CAST(SUM(TurnOver*e.EUR) AS MONEY) AS SumTurnOverEUR
+	, CAST(SUM(TurnOver*e.USD) AS MONEY) AS SumTurnOverUSD
+	, CAST(SUM(TurnOver*e.GBP) AS MONEY) AS SumTurnOverGBP
 	, SUM(MemberWinLost) AS SumMemberWinLost
-	, CAST(SUM(MemberWinLostEUR) AS MONEY) AS SumMemberWinLostEUR
-	, CAST(SUM(MemberWinLostUSD) AS MONEY) AS SumMemberWinLostUSD
-	, CAST(SUM(MemberWinLostGBP) AS MONEY) AS SumMemberWinLostGBP
+	, CAST(SUM(MemberWinLost*e.EUR) AS MONEY) AS SumMemberWinLostEUR
+	, CAST(SUM(MemberWinLost*e.USD) AS MONEY) AS SumMemberWinLostUSD
+	, CAST(SUM(MemberWinLost*e.GBP) AS MONEY) AS SumMemberWinLostGBP
 	, SUM(LicenseeWL) AS SumLicenseeWL
-	, CAST(SUM(LicenseeWLEUR) AS MONEY) AS SumLicenseeWLEUR
-	, CAST(SUM(LicenseeWLUSD) AS MONEY) AS SumLicenseeWLUSD
-	, CAST(SUM(LicenseeWLGBP) AS MONEY) AS SumLicenseeWLGBP
-	, CAST(SUM(WinlossRBEUR) AS MONEY) AS SumWinlossRBEUR
-	, CAST(SUM(WinlossRBUSD) AS MONEY) AS SumWinlossRBUSD
-	, CAST(SUM(WinlossRBGBP) AS MONEY) AS SumWinlossRBGBP
+	, CAST(SUM(LicenseeWL*e.EUR) AS MONEY) AS SumLicenseeWLEUR
+	, CAST(SUM(LicenseeWL*e.USD) AS MONEY) AS SumLicenseeWLUSD
+	, CAST(SUM(LicenseeWL*e.GBP) AS MONEY) AS SumLicenseeWLGBP
+	--, SUM(WinlossRB) AS SumWinlossRB
+	, CAST(SUM(WinlossRB*e.EUR) AS MONEY) AS SumWinlossRBEUR
+	, CAST(SUM(WinlossRB*e.USD) AS MONEY) AS SumWinlossRBUSD
+	, CAST(SUM(WinlossRB*e.GBP) AS MONEY) AS SumWinlossRBGBP
 	, SUM(CommBA) AS SumCommBA
-	, CAST(SUM(CommBAEUR) AS MONEY) AS SumCommBAEUR
-	, CAST(SUM(CommBAUSD) AS MONEY) AS SumCommBAUSD
-	, CAST(SUM(CommBAGBP) AS MONEY) AS SumCommBAGBP
+	, CAST(SUM(CommBA*e.EUR) AS MONEY) AS SumCommBAEUR
+	, CAST(SUM(CommBA*e.USD) AS MONEY) AS SumCommBAUSD
+	, CAST(SUM(CommBA*e.GBP) AS MONEY) AS SumCommBAGBP
 	, SUM(commRB) AS SumcommRB
-	, CAST(SUM(commRBEUR) AS MONEY) AS SumcommRBEUR
-	, CAST(SUM(commRBUSD) AS MONEY) AS SumcommRBUSD
-	, CAST(SUM(commRBGBP) AS MONEY) AS SumcommRBGBP
+	, CAST(SUM(commRB*e.EUR) AS MONEY) AS SumcommRBEUR
+	, CAST(SUM(commRB*e.USD) AS MONEY) AS SumcommRBUSD
+	, CAST(SUM(commRB*e.GBP) AS MONEY) AS SumcommRBGBP
 	, SUM(PlayerComm) AS SumPlayerComm
-	, CAST(SUM(PlayerCommEUR) AS MONEY) AS SumPlayerCommEUR
-	, CAST(SUM(PlayerCommUSD) AS MONEY) AS SumPlayerCommUSD
-	, CAST(SUM(PlayerCommGBP) AS MONEY) AS SumPlayerCommGBP
+	, CAST(SUM(PlayerComm*e.EUR) AS MONEY) AS SumPlayerCommEUR
+	, CAST(SUM(PlayerComm*e.USD) AS MONEY) AS SumPlayerCommUSD
+	, CAST(SUM(PlayerComm*e.GBP) AS MONEY) AS SumPlayerCommGBP
 	, SUM(AmtDuetoBA) AS SumAmtDuetoBA
-	, CAST(SUM(AmtDuetoBAEUR) AS MONEY) AS SumAmtDuetoBAEUR
-	, CAST(SUM(AmtDuetoBAUSD) AS MONEY) AS SumAmtDuetoBAUSD
-	, CAST(SUM(AmtDuetoBAGBP) AS MONEY) AS SumAmtDuetoBAGBP
+	, CAST(SUM(AmtDuetoBA*e.EUR) AS MONEY) AS SumAmtDuetoBAEUR
+	, CAST(SUM(AmtDuetoBA*e.USD) AS MONEY) AS SumAmtDuetoBAUSD
+	, CAST(SUM(AmtDuetoBA*e.GBP) AS MONEY) AS SumAmtDuetoBAGBP
 	, SUM(AmtDuetoRB) AS SumAmtDuetoRB
-	, CAST(SUM(AmtDuetoRBEUR) AS MONEY) AS SumAmtDuetoRBEUR
-	, CAST(SUM(AmtDuetoRBUSD) AS MONEY) AS SumAmtDuetoRBUSD
-	, CAST(SUM(AmtDuetoRBGBP) AS MONEY) AS SumAmtDuetoRBGBP
+	, CAST(SUM(AmtDuetoRB*e.EUR) AS MONEY) AS SumAmtDuetoRBEUR
+	, CAST(SUM(AmtDuetoRB*e.USD) AS MONEY) AS SumAmtDuetoRBUSD
+	, CAST(SUM(AmtDuetoRB*e.GBP) AS MONEY) AS SumAmtDuetoRBGBP
 	, ISNULL(@TotalRows, 0) AS TotalRows
 FROM #AgWinLoss b
-
+	LEFT JOIN @Exchange e ON b.winlostdate = e.ExchangeDate AND b.currency = e.ExchangeId
+*/
 DROP TABLE #AgWinLoss
+DROP TABLE #TempAg
+DROP TABLE #TempSAg
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinLossByBettype] TO [bodbLicenseeNet]
 GO
