@@ -55,7 +55,7 @@ Revisions:
    - 20151228@Bobby: Implement RNG Casino sporttype(208,209,210)
    - 20160127@Bobby: #51625 - HotFix for perf - redundant codes c.recommend in ( .... )
    - 20160401@Percy: Support Voidbridge single wallet [Redmine: #55057]
-   
+   - 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
 Param's Explanation:
     + @excludeTest: remove currency UUS
     + @CurrencyID = 0: get all currency
