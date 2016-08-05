@@ -53,7 +53,7 @@ AS
 		- 20151108@Jim: Separated MicroGaming into 2 product
 		- 20160104@Bobby: Fixbug#50272 - Remove RNG Casino bettype 71
 		- 20160404@Percy: Support Voidbridge single wallet [Redmine: #55057]
-	
+		- 20160805@Jim: LRF - Offer different member commission for parlay tickets [RedmineID:#61897]		 
 	Param's Explanation:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 		+ @SpecialLevel: default value = -1 (all)
@@ -526,6 +526,7 @@ SELECT
 	ISNULL(lc.NGComm, 0) AS NGComm,
 	ISNULL(lc.LCComm, 0) AS LCComm,
 	ISNULL(lc.RNGComm, 0) AS RNGComm,
+	ISNULL(lc.ParlayComm, 0) AS ParlayComm,
 	ISNULL(lg.id, 0) AS GroupCommID,
 	ISNULL(RIGHT(t.ugroup, 1), '') AS OddsGroup
 INTO #data
@@ -535,7 +536,7 @@ FROM
 	LEFT JOIN #ExchangeRate e ON e.exchangeid = b.currency
 	LEFT JOIN bodb_Licensee.dbo.LicenseeCustComm lc WITH (NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
 	LEFT JOIN bodb_Licensee.dbo.LicenseeGroupComm lg WITH (NOLOCK) ON lc.GroupCommID = lg.id	
-GROUP BY t.custid, t.username, t.nickname, t.BAStatus, t.RowNumber, t.closed, t.suspended, t.SpecialLevel, t.IsPowerBAUserTurnoff, lg.color, lg.groupname, lc.SBComm, lc.RacingComm, lc.NGComm, lc.LCComm, lc.RNGComm, lg.id, t.ugroup
+GROUP BY t.custid, t.username, t.nickname, t.BAStatus, t.RowNumber, t.closed, t.suspended, t.SpecialLevel, t.IsPowerBAUserTurnoff, lg.color, lg.groupname, lc.SBComm, lc.RacingComm, lc.NGComm, lc.LCComm, lc.RNGComm,lc.ParlayComm, lg.id, t.ugroup
 ORDER BY t.username
 
 SELECT
@@ -563,6 +564,7 @@ SELECT
 	NGComm,
 	LCComm,
 	RNGComm,
+	ParlayComm,
 	GroupCommID,
 	UPPER(OddsGroup) OddsGroup
 FROM

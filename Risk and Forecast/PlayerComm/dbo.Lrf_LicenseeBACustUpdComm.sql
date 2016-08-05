@@ -19,11 +19,13 @@ Task : Update SB Commission WHEN BA is ON/OFF
 DB: DBLIC/bodb_licensee
 Revision:
 	-20151005@Jim:HotFix #45031
+	-20160805@Jim: LRF - Offer different member commission for parlay tickets [RedmineID:#61897]
 */
-DECLARE @SBComm [decimal](9,8)
-	SET @SBComm = 0
+DECLARE @SBComm [decimal](9,8), @ParlayComm [decimal](9,8)
+	SELECT  @SBComm = 0 , @ParlayComm = 0
 		
 SELECT @SBComm = lgc.SBComm
+	   ,@ParlayComm = lgc.ParlayComm
 FROM dbo.LicenseeCustComm lcs WITH (NOLOCK)
 	INNER JOIN dbo.LicenseeGroupComm lgc WITH (NOLOCK) ON lcs.GroupCommID = lgc.id AND lcs.LicenseeID = lgc.Licenseeid
 WHERE lcs.LicenseeID = @LicenseeID
@@ -35,12 +37,13 @@ IF (@IsBA =1 )	--- Turn-on BA
 			BEGIN
 				UPDATE dbo.LicenseeCustComm WITH (ROWLOCK,UPDLOCK)
 				SET SBComm      =  0
+					,ParlayComm =  0
 				WHERE LicenseeID = @LicenseeID
 					   AND CustID = @CustID	   	
 			END
 			IF  NOT EXISTS (SELECT 1 FROM dbo.licensees WITH (NOLOCK) WHERE LicenseeName='Macaubet' AND LicenseeId=@LicenseeID )	
 			BEGIN
-				EXEC  DBCUST.CustDB.dbo.Lrf_LicenseeBACust_Playerdiscount_Upd @CustID = @CustID,@SBComm=0
+				EXEC  DBCUST.CustDB.dbo.Lrf_LicenseeBACust_Playerdiscount_Upd @CustID = @CustID,@SBComm=0, @ParlayComm = 0
 			END
 	END
 ELSE IF (@IsBA = 0 ) -- Turn-off BA
@@ -48,11 +51,12 @@ ELSE IF (@IsBA = 0 ) -- Turn-off BA
 	
 		UPDATE dbo.LicenseeCustComm WITH (ROWLOCK,UPDLOCK)
 		SET SBComm      = @SBComm
+			,ParlayComm = @ParlayComm
 		WHERE LicenseeID = @LicenseeID
 			   AND CustID = @CustID	   	
 		IF  NOT EXISTS (SELECT 1 FROM dbo.licensees WITH (NOLOCK) WHERE LicenseeName='Macaubet' AND LicenseeId=@LicenseeID )	
 			BEGIN
-				EXEC  DBCUST.CustDB.dbo.Lrf_LicenseeBACust_Playerdiscount_Upd @CustID = @CustID,@SBComm=@SBComm
+				EXEC  DBCUST.CustDB.dbo.Lrf_LicenseeBACust_Playerdiscount_Upd @CustID = @CustID,@SBComm=@SBComm, @ParlayComm = 0
 			END
 				   
 	END	

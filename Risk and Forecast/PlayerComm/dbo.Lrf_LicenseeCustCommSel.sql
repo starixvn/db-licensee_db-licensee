@@ -8,7 +8,7 @@ AS
  * DB: DB052.bodb_Licensee  
  *  
  * Revisions:     
-	
+	-20160805@Jim: LRF - Offer different member commission for parlay tickets [RedmineID:#61897]
 */  
 BEGIN  
 SET NOCOUNT ON;  
@@ -17,7 +17,7 @@ IF @CustID=0 --get all
 BEGIN
 	SELECT 
 		lc.CustID,c.username,SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, LEN(c.username2)-CHARINDEX('$',c.username2)) AS nickname,
-		lc.SBComm,lc.RacingComm,lc.NGComm,ISNULL(lgc.GroupName,'') AS GroupName
+		lc.SBComm,lc.ParlayComm,lc.RacingComm,lc.NGComm,ISNULL(lgc.GroupName,'') AS GroupName
 	FROM LicenseeCustComm lc WITH (NOLOCK)	
 		INNER JOIN LicenseeCustInfo c WITH (NOLOCK)	ON c.custid = lc.custid
 		LEFT JOIN LicenseeGroupComm lgc WITH (NOLOCK) ON lc.GroupCommID = lgc.id
@@ -26,7 +26,7 @@ ELSE
 BEGIN
 	SELECT 
 		lc.CustID,c.username,SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, LEN(c.username2)-CHARINDEX('$',c.username2)) AS nickname,
-		lc.SBComm,lc.RacingComm,lc.NGComm,ISNULL(lgc.GroupName,'') AS GroupName
+		lc.SBComm,lc.ParlayComm,lc.RacingComm,lc.NGComm,ISNULL(lgc.GroupName,'') AS GroupName
 	FROM LicenseeCustComm lc WITH (NOLOCK)	
 		INNER JOIN LicenseeCustInfo c WITH (NOLOCK)	ON c.custid = lc.custid
 		LEFT JOIN LicenseeGroupComm lgc WITH (NOLOCK) ON lc.GroupCommID = lgc.id
