@@ -12,7 +12,7 @@ DB: DBCUST/CustDB
 Revision :
 	-20160805@Jim: LRF - Offer different member commission for parlay tickets [RedmineID:#61897]
 */
-*/
+ 
 
 BEGIN				
 	UPDATE [dbo].Dep_CustSetting WITH (ROWLOCK, UPDLOCK)
