@@ -66,6 +66,7 @@ AS
 		- 20160216@Victor: Add Bettrade Actual Stake amount [Redmine: #51264]
 		- 20160331@Percy: Support Voidbridge single wallet [Redmine: #55057]
 		- 20160413@Victor: support MKK currency code [Redmine: #55745]
+
 		- 20160718@Jim: Allbet - Live Casino Integration for Licensees (#59624)
 		- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
 	Param's Explanation:  
@@ -465,7 +466,7 @@ BEGIN
 				0 AS turnoverLC, 
 				0 AS turnoverVS, 
 				0 AS turnoverCS, 
-				0 AS turnoverNG, 
+				0 AS turnoverBG, 
 				0 AS turnoverKN, 
 				0 AS turnoverMGCLC,
 				0 AS turnoverMGCRnG,
@@ -488,7 +489,7 @@ BEGIN
 				0 AS LicenseeWLAGC,
 				0 AS LicenseeWLVB,
 				0 AS LicenseeWLAB,
-				0 AS LicenseeWLAB,
+				 
 				0 AS AmountDueToBA,
 				0 AS AmountDueToRB,
 				0 AS CommBA,
@@ -523,55 +524,66 @@ BEGIN
 				0 AS turnoverBA,
 				SUM(CASE WHEN b.bettype BETWEEN 81 AND 120 THEN
 						stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
+
 						 
 					ELSE 0 END	
 				) AS turnoverNG, 
 				SUM(CASE WHEN b.bettype BETWEEN 31 AND 33 THEN CASE WHEN b.bettype = 33 AND liveawayscore = 0 THEN stake/2 ELSE stake END ELSE 0 END	
 					* CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
+
 					 
 				) AS turnoverRB, 
 				SUM(CASE WHEN b.bettype BETWEEN 1101 AND 1199 THEN
 					stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
+
 					 
 					ELSE 0 END	
 				) AS turnoverLC, 
 				SUM(CASE WHEN b.bettype BETWEEN 1201 AND 1299 THEN
 					stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
+
 						 
 					ELSE 0 END	
 				) AS turnoverVS, 
 				SUM(CASE WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 THEN
 					stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
+
 						 
 					ELSE 0 END	
 				) AS turnoverCS,
 				SUM(CASE WHEN b.bettype = 73 THEN
 					stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
+
 						 
 					ELSE 0 END	
 				) AS turnoverBG,
 				SUM(CASE WHEN b.bettype BETWEEN 1501 AND 1599 THEN
 					stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
+
 					 
 					ELSE 0 END	
 				) AS turnoverKN,
 				SUM(CASE WHEN b.bettype BETWEEN 2001 AND 2007 THEN
 					stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
+
 						 
 					ELSE 0 END	
 				) AS turnoverMGCLC,
 				SUM(CASE WHEN b.bettype BETWEEN 2008 AND 2009 THEN
 					stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
+
 						 
 					ELSE 0 END	
 				) AS turnoverMGCRnG,
 				SUM(CASE WHEN b.bettype BETWEEN 1800 AND 1899 THEN
 					stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
+
 						 
 					ELSE 0 END	
 				) AS turnoverAGC,
 				SUM(CASE WHEN b.bettype BETWEEN 4001 AND 7999 THEN
 					stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
+
 					 
 					ELSE 0 END	
 				) AS turnoverVB,
