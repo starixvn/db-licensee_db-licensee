@@ -274,7 +274,7 @@ BEGIN
 	IF @ShowAB = 1
 	BEGIN
 		INSERT INTO @sporttype (sporttype)
-		VALUES (212)
+		VALUES (211)
 
 		INSERT INTO @bettype(bettype)
 		SELECT	typeid FROM bettype (NOLOCK)
