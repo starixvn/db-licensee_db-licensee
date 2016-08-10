@@ -34,6 +34,7 @@ Revisions:
 	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
 	- 20151127@Bobby: #48081 - Apply PH-AIO new bettypes
 	- 20151203@Bobby: Database - Change datatype [Redmine: #48660]
+	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
 Param's Explanation:   
    
 */
@@ -199,7 +200,7 @@ BEGIN
 				OR (b.bettype BETWEEN 121 AND 999)
 				OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 				)
-			AND b.bettype NOT IN (901,902,903)
+			AND b.bettype NOT IN (901,902,903,904)
 			-- --AND b.tpositiontaking <> 0  
 			AND b.winlostdate BETWEEN @TempFromDate AND @todate
 			AND b.statusID IN (
@@ -314,7 +315,7 @@ BEGIN
 				OR (b.bettype BETWEEN 121 AND 999)
 				OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 				)
-			AND b.bettype NOT IN (901,902,903)			
+			AND b.bettype NOT IN (901,902,903,904)			
 			AND b.winlostdate BETWEEN @TempFromDate AND @todate
 			AND b.statusID IN (
 				SELECT *
@@ -441,7 +442,7 @@ BEGIN
 					OR (b.bettype BETWEEN 121 AND 999)
 					OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 					)
-				AND b.bettype NOT IN (901,902,903)
+				AND b.bettype NOT IN (901,902,903,904)
 				AND (@matchid=0 or b.matchid = @MatchID)
 				AND b.statusID IN (
 					SELECT *
@@ -548,7 +549,7 @@ BEGIN
 					OR (b.bettype BETWEEN 121 AND 999)
 					OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 					)
-				AND b.bettype NOT IN (901,902,903)
+				AND b.bettype NOT IN (901,902,903,904)
 				--AND b.matchid = @MatchID
 				AND (@matchid=0 or b.matchid = @MatchID)
 				AND b.statusID IN (

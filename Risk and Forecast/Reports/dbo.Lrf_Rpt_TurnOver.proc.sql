@@ -55,7 +55,7 @@ Revisions:
    - 20151228@Bobby: Implement RNG Casino sporttype(208,209,210)
    - 20160127@Bobby: #51625 - HotFix for perf - redundant codes c.recommend in ( .... )
    - 20160401@Percy: Support Voidbridge single wallet [Redmine: #55057]
-   
+   - 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
 Param's Explanation:
     + @excludeTest: remove currency UUS
     + @CurrencyID = 0: get all currency
@@ -268,7 +268,7 @@ BEGIN
 				SELECT
 					p.winlostdate,
 					c.currency,
-					SUM(ISNULL(CASE WHEN p.sporttype IN (-2,-3) THEN 0 ELSE p.turnover END, 0)) AS Turnover,
+					SUM(ISNULL(CASE WHEN p.sporttype IN (-2,-3,-5) THEN 0 ELSE p.turnover END, 0)) AS Turnover,
 					SUM(ISNULL(p.outstanding, 0)) AS PendingFund,
 					SUM(ISNULL(p.winlost, 0)) AS Winloss, 
 					SUM(ISNULL(p.drawTO, 0)) AS DrawGame,
@@ -333,7 +333,7 @@ BEGIN
 				SELECT
 					p.winlostdate,
 					c.currency,
-					SUM(ISNULL(CASE WHEN p.sporttype IN (-2,-3) THEN 0 ELSE p.turnover END, 0)) AS Turnover,
+					SUM(ISNULL(CASE WHEN p.sporttype IN (-2,-3,-5) THEN 0 ELSE p.turnover END, 0)) AS Turnover,
 					SUM(ISNULL(p.outstanding, 0)) AS PendingFund,
 					SUM(ISNULL(p.winlost, 0)) AS Winloss,
 					SUM(ISNULL(p.drawTO, 0)) AS DrawGame,

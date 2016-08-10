@@ -44,6 +44,7 @@ Revisions:
 	- 20150203@Jim: fix bug duplicate command when retrieve BA data from bettrans14
 	- 20150415@Jim: change to use f_GroupBettype instead of LRF_view_bettype_SS
 	- 20150622@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission 
+	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
 Param's Explanation:   
    
 */  
@@ -251,7 +252,7 @@ BEGIN
         WHERE     
          b.winlostdate = @_Date  
          AND b.statusID IN (111,112,113)  
-		 AND b.bettype NOT IN (901,902,903)
+		 AND b.bettype NOT IN (901,902,903,904)
          AND  b.matchid = @MatchID 
 		
         GROUP BY  
@@ -287,7 +288,7 @@ BEGIN
         WHERE     
             b.winlostdate = @_Date   
          AND b.statusID IN (111,112,113)  
-		 AND b.bettype NOT IN (901,902,903)
+		 AND b.bettype NOT IN (901,902,903,904)
          AND o.leagueid = @LeagueID  
          AND o.groupmatch = @MatchID  
         GROUP BY  
@@ -501,7 +502,7 @@ BEGIN
 		  WHERE     
 			   b.winlostdate = @_Date  
 			   AND b.statusID IN (111,112,113)  
-			   AND b.bettype NOT IN (901,902,903)
+			   AND b.bettype NOT IN (901,902,903,904)
 			   AND b.matchid = @MatchID  
 			   AND tpositiontaking = 0  
 			   AND (b.bettype < 31 OR (b.Bettype BETWEEN 121 AND 999)
@@ -576,7 +577,7 @@ BEGIN
 		INNER JOIN @TempAg ag ON b.recommend = ag.custid  AND b.Currency = ag.Currency
 	WHERE b.winlostdate = @_Date  
 		AND b.statusID NOT IN ( 101, 102, 103 )  
-		AND b.bettype NOT IN (901,902,903)
+		AND b.bettype NOT IN (901,902,903,904)
 		AND b.matchid = @MatchID  
 	GROUP BY  
 		b.Winlostdate,  
@@ -608,7 +609,7 @@ ELSE -- @showRB = 1, Racing
 	WHERE     
 		b.winlostdate = @_Date  
 		AND b.statusID NOT IN ( 101, 102, 103 )  
-		AND b.bettype NOT IN (901,902,903)
+		AND b.bettype NOT IN (901,902,903,904)
 		AND o.leagueid = @LeagueID  
 		AND o.groupmatch = @MatchID  
 	GROUP BY  
