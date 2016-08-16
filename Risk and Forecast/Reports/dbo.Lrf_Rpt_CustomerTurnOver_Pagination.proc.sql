@@ -30,7 +30,7 @@ Task: Customer Performance Report
 DB: DBEXT/BODB02
 Revision:
 	- 20151127@Bobby: #48081 - Apply PH-AIO new bettypes
-	
+	- 20160720@Jim : Implement 67 new bet types (PH All in one - Phase 2) [Redmine : #53520]
 Parameter's Explanation:
 			
 */
@@ -177,6 +177,7 @@ BEGIN
 										OR b.bettype BETWEEN 90 AND 120
 										OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
 										OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
+										OR b.bettype = 428 -- 2H Odd/Even
 									)
 									THEN 
 											CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
@@ -356,6 +357,7 @@ BEGIN
 										OR b.bettype BETWEEN 90 AND 120
 										OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
 										OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
+										OR b.bettype = 428 -- 2H Odd/Even
 									)
 									THEN 
 											CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
