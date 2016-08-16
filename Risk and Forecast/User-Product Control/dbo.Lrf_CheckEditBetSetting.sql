@@ -10,7 +10,7 @@ AS
 	
 */  
 SET NOCOUNT ON  
- IF NOT EXISTS (SELECT 1 FROM dbo.Licensees WITH (NOLOCK) WHERE EditBetSetting = 1 AND LiceseeID = @LicenseeId) 
+ IF NOT EXISTS (SELECT 1 FROM dbo.Licensees WITH (NOLOCK) WHERE EditBetSetting = 1 AND AND LicenseeID = @LicenseeId) 
 	BEGIN 
 		SELECT @LicenseeID LicenseeID,@UserID UserID ,0 AS IsGrant
 	END 
