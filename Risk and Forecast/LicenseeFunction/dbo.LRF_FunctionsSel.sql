@@ -27,7 +27,7 @@ SELECT [FunctionId],
 	[IsNew],
 	[FunctionKey],
 	[Environment],
-	[IsHidden]
+	[IsFunction]
 FROM [dbo].[Functions] WITH(NOLOCK)
 WHERE IsActive = 1
 
