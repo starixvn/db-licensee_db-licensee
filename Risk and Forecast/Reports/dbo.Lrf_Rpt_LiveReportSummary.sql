@@ -1,5 +1,6 @@
 ﻿USE [bodb02]
 GO
+
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportSummary]
 	@LicenseeID		INT,
 	@UserID			INT,
@@ -46,6 +47,7 @@ Revisions:
 	- 20160330@Percy: Support Voidbridge single wallet [Redmine: #55057]
 	- 20160519@Jim: HotFix #57810
 	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
+	- 20160804@Percy: Enhance Performance - using faster index on bettrans [RedmineID: #60770]
 Param's Explanation:
 	@IsLive : indicate that whether the report will get live data or not
 			+ 0: Non - Live data only
@@ -61,7 +63,7 @@ SELECT @DateFrom = DATEADD(DAY, -15, GETDATE())
 SELECT @DateTo = GETDATE()
 SELECT @MoveBetsDay = MAX(eventdate) FROM match14 WITH(NOLOCK)
 
-EXEC [Lrf_Rpt_LiveReportSummary] @LicenseeId = 1, @CurrencyID = 0, @FromDate=@DateFrom, @ToDate=@DateTo, @MoveBetsDay = @MoveBetsDay
+EXEC [Lrf_Rpt_LiveReportSummary_UAT3] @LicenseeId = 1, @CurrencyID = 0, @FromDate=@DateFrom, @ToDate=@DateTo, @MoveBetsDay = @MoveBetsDay
 
 */
 BEGIN
@@ -104,13 +106,10 @@ BEGIN
 	DECLARE @TempAg AS TABLE (CustId INT, Currency INT)
 
 	INSERT INTO @TempAg (CustId, Currency)
-	SELECT lc.CustID, lc.Currency 
+	SELECT DISTINCT lc.CustID, lc.Currency 
 	FROM
 		bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc
 		INNER JOIN #Currency c ON lc.LicenseeID = c.LicenseeID AND lc.Currency = c.CurrencyID
-	WHERE
-		@CurrencyID = 0
-		OR Currency = @CurrencyID
 
 	IF @TDate > @MoveBetsDay
 	BEGIN
@@ -120,6 +119,12 @@ BEGIN
 			SET @TempFromDate = @FDate
 
 		--BA
+		;WITH CTE AS
+		(
+			SELECT transid FROM bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK)
+				INNER JOIN @TempAg t ON BA.recommend = t.CustId
+			UNION SELECT NULL
+		)
 		INSERT INTO #tmpWinloss
 		SELECT
 			b.winlostdate,
@@ -133,18 +138,19 @@ BEGIN
 			- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd,
 			COUNT(b.transid) BetCount
 		FROM
-			dbo.bettrans b WITH (NOLOCK, INDEX = IX_srecommend)
+			dbo.bettrans b WITH (NOLOCK)
 			INNER JOIN @TempAg t ON b.recommend = t.custid AND b.Currency = t.Currency 
-			INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON t.custid = BA.recommend AND b.transid = BA.transid
+			--INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON /* t.custid = BA.recommend AND */ b.transid = BA.transid
+			INNER JOIN CTE ON b.transid = CTE.TransID
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND b.statusID IN (111, 112, 113)
 			AND (b.liveindicator = @Liveindicator OR @Liveindicator = 2)
-			AND (b.bettype NOT IN (9,29,901,902,903,904))
+			AND (b.bettype NOT IN (901,902,903,904))
 		GROUP BY
 			b.winlostdate,
 			t.currency
-
+		/*
 		--BA for Parlay
 		INSERT INTO #tmpWinloss
 		SELECT
@@ -159,9 +165,9 @@ BEGIN
 			- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd,
 			COUNT(b.transid) BetCount
 		FROM
-			dbo.bettrans b WITH (NOLOCK, INDEX = IX_srecommend)
+			dbo.bettrans b WITH (NOLOCK)
 			INNER JOIN @TempAg t ON b.recommend = t.custid AND b.currency = t.currency
-			INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON t.custid = BA.recommend AND b.transid = BA.transid
+			INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON /* t.custid = BA.recommend AND */ b.transid = BA.transid
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND b.statusID IN (111, 112, 113)
@@ -170,7 +176,7 @@ BEGIN
 		GROUP BY
 			b.winlostdate,
 			t.currency
-
+		*/
 		--RB
 		INSERT INTO #tmpWinloss
 		SELECT
@@ -469,7 +475,7 @@ BEGIN
 	SELECT *
 	INTO #TempExchange
 	FROM Lrf_f_GetExchangeDaily(@FDate, @TDate)
-	WHERE exchangeid IN (SELECT DISTINCT Currency FROM #tmpWinloss)
+	--WHERE exchangeid IN (SELECT DISTINCT Currency FROM #tmpWinloss)
 
 	SELECT
 		ProductCode,
@@ -525,7 +531,6 @@ BEGIN
 	DROP TABLE #tmpWinloss
 
 	DROP TABLE #TempExchange
-
 
 END
 GO

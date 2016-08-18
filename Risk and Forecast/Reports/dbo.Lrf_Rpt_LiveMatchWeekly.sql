@@ -1,11 +1,6 @@
 USE [bodb02]
 GO
- 
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
- 
+
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveMatchWeekly]
 	@LicenseeID INT =1
 	,@UserID 	INT
@@ -21,6 +16,7 @@ AS
 	Revisions: 20160518@Jim: use view instead of table league to filter test leaguage
 			   20160602@Jim: change formula to calculate total match of E-sport and set monday is the first day of week	
 			   20160621@Jim: modify sp to adapt new specs	
+			   20160803@Francis: Revise SP to enhance performance
 */
 /*
 [Lrf_Rpt_LiveMatchWeekly]
@@ -64,7 +60,7 @@ INSERT INTO #tblMatchHedge
 		AND matchcode like '%Hedge%'
 		
 -- Sec2: retrieve raw data
- 
+/*
  SELECT teamID 
 INTO #ExTeam
  FROM dbo.Team WITH (NOLOCK) 
@@ -79,6 +75,54 @@ INTO #ExTeam
 	   OR teamname   LIKE '%penalty award%' 
 	   OR teamname   LIKE '%goal kick%' 
 	   OR teamname   LIKE '%penalty to score%' 
+*/
+SELECT a.teamID 
+INTO #ExTeam
+ FROM (SELECT teamID 
+ FROM dbo.Team WITH (NOLOCK) 
+ WHERE teamname   LIKE '%(PEN)%' 
+ UNION ALL
+ SELECT teamID 
+ FROM dbo.Team WITH (NOLOCK) 
+ WHERE teamname   LIKE '%1st Goal%' 
+ UNION ALL
+ SELECT teamID 
+ FROM dbo.Team WITH (NOLOCK) 
+ WHERE teamname   LIKE '%2nd Goal%' 
+ UNION ALL
+ SELECT teamID 
+ FROM dbo.Team WITH (NOLOCK) 
+ WHERE teamname   LIKE '%3rd Goal%' 
+ UNION ALL
+ SELECT teamID 
+ FROM dbo.Team WITH (NOLOCK) 
+ WHERE teamname   LIKE '%th Goal%' 
+ UNION ALL
+ SELECT teamID 
+ FROM dbo.Team WITH (NOLOCK) 
+ WHERE teamname   LIKE '%free kick%' 
+ UNION ALL
+ SELECT teamID 
+ FROM dbo.Team WITH (NOLOCK) 
+ WHERE teamname   LIKE '%throw in%' 
+ UNION ALL
+ SELECT teamID 
+ FROM dbo.Team WITH (NOLOCK) 
+ WHERE teamname   LIKE '%offside%' 
+ UNION ALL
+ SELECT teamID 
+ FROM dbo.Team WITH (NOLOCK) 
+ WHERE teamname   LIKE '%penalty award%' 
+ UNION ALL
+ SELECT teamID 
+ FROM dbo.Team WITH (NOLOCK) 
+ WHERE teamname   LIKE '%goal kick%' 
+ UNION ALL
+ SELECT teamID 
+ FROM dbo.Team WITH (NOLOCK) 
+ WHERE teamname   LIKE '%penalty to score%' 
+ ) a
+ GROUP BY a.teamid
 	   /*
 DECLARE @SQL VARCHAR(4000)	   
 CREATE TABLE #tmpRptMatch (MatchID INT, EventDate DATETIME, LeagueID INT,teamhomeID INT, teamawayID INT)
@@ -92,25 +136,26 @@ SELECT @SQL='SELECT  MatchID ,  EventDate,leagueId,teamhomeID,teamawayID
 INSERT INTO #tmpRptMatch
 EXEC (@SQL)
 */
- 									 
-SELECT  b.MatchID ,rptdate EventDate,leagueId,teamhomeID,teamawayID
-INTO #tmpRptMatch
-FROM [DBWH].[bodb_Account].[dbo].[rptMatch] b WITH (NOLOCK ) 
+ 		
+DECLARE @tmpRptMatch AS TABLE (MatchID INT, EventDate DATETIME, LeagueID INT, teamhomeID INT, teamawayID INT);
+
+--CREATE TABLE #tmpRptMatch (MatchID INT, EventDate DATETIME, LeagueID INT, teamhomeID INT, teamawayID INT)
+--CREATE CLUSTERED INDEX IX_MatchID ON #tmpRptMatch (MatchID, teamhomeID, teamawayID) WITH (STATISTICS_NORECOMPUTE = ON) 
+							 
+INSERT INTO @tmpRptMatch (MatchID,EventDate,LeagueID,teamhomeID,teamawayID)
+SELECT b.MatchID ,rptdate EventDate,leagueId,teamhomeID,teamawayID
+FROM [DBWH].[bodb_Account].[dbo].[rptMatch] b WITH (NOLOCK) 
 WHERE b.rptdate BETWEEN @fromdate_ AND @ToDate_
 	  AND isLive =1	
 	  AND customercategory NOT IN (27,28,30) --- BARM, 8RM, Accountest
-	  AND status IS NOT NULL
-	  AND betteam IS NOT NULL
-	  AND halfcurrency IS NOT NULL
-	  AND minuteofmatch IS NOT NULL 
+GROUP BY b.MatchID, rptdate,leagueId,teamhomeID,teamawayID
 OPTION (RECOMPILE)
 
-DELETE #tmpRptMatch
+DELETE @tmpRptMatch
 WHERE matchID IN (SELECT matchID FROM #tblMatchHedge)
-	OR 	teamhomeID  IN (SELECT teamID FROM #ExTeam )	
-	OR  teamawayID  IN (SELECT teamID FROM #ExTeam )
- 
-	  
+	OR 	teamhomeID  IN (SELECT teamID FROM #ExTeam)	
+	OR  teamawayID  IN (SELECT teamID FROM #ExTeam)
+
 INSERT INTO #tmpRaw (EventDate,first_day_in_week , last_day_in_week, Sporttype,SportName,MatchCount)
 SELECT   
 		m.EventDate
@@ -123,7 +168,7 @@ SELECT
 FROM (
 		
 	SELECT COUNT(DISTINCT b.MatchID) MatchCount,  EventDate,leagueId 
-	 FROM #tmpRptMatch b  
+	 FROM @tmpRptMatch b  
 	GROUP BY EventDate,leagueId 
 
 	)AS M
@@ -252,8 +297,9 @@ SET @query='select  sporttype, sportname,' + @cols + '
  DROP TABLE #tmpStr
  DROP TABLE #tmpSport
  DROP TABLE #tblMatchHedge
- DROP TABLE #tmpRptMatch
+ --DROP TABLE #tmpRptMatch
+
 GO 
- GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LiveMatchWeekly] TO [vnteam]
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LiveMatchWeekly] TO [vnteam]
 GO 
- GRANT EXECUTE ON [dbo].[Lrf_Rpt_LiveMatchWeekly] TO [bodbLicenseeNet]
+GRANT EXECUTE ON [dbo].[Lrf_Rpt_LiveMatchWeekly] TO [bodbLicenseeNet]
