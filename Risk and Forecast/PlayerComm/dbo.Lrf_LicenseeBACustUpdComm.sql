@@ -56,7 +56,7 @@ ELSE IF (@IsBA = 0 ) -- Turn-off BA
 			   AND CustID = @CustID	   	
 		IF  NOT EXISTS (SELECT 1 FROM dbo.licensees WITH (NOLOCK) WHERE LicenseeName='Macaubet' AND LicenseeId=@LicenseeID )	
 			BEGIN
-				EXEC  DBCUST.CustDB.dbo.Lrf_LicenseeBACust_Playerdiscount_Upd @CustID = @CustID,@SBComm=@SBComm, @ParlayComm = 0
+				EXEC  DBCUST.CustDB.dbo.Lrf_LicenseeBACust_Playerdiscount_Upd @CustID = @CustID,@SBComm=@SBComm, @ParlayComm = @ParlayComm
 			END
 				   
 	END	
