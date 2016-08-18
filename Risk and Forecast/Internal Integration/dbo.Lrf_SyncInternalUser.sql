@@ -144,6 +144,7 @@ BEGIN
 			INNER JOIN [LicenseeFunctions] l WITH(NOLOCK) ON f.FunctionId = l.FunctionId
 		WHERE l.LicenseeId =@LicenseeId			
 		AND f.FunctionId = 6 OR f.ParentId = 6
+			OR   f.functionID   IN (SELECT FunctionID FROM dbo.Functions WITH (NOLOCK) WHERE Name ='Edit Bet Setting')
 	END
 	
 END
