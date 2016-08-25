@@ -292,6 +292,7 @@ BEGIN
 	SELECT	typeid FROM bettype (NOLOCK)
 	WHERE	typeid BETWEEN 2401  AND 2499
 END
+
 DECLARE @TempFromDate	DATETIME,
 		@TempToDate		DATETIME,
 		@MaxOldDate		DATETIME
@@ -567,7 +568,7 @@ BEGIN
 		GROUP BY b.winlostdate, a.currency --, statusID, b.bettype
 	END
 
-	IF 1 IN (@ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @showMGCLC, @showMGCRnG, @ShowAGC, @ShowVB,@ShowAB)
+	IF 1 IN (@ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @showMGCLC, @showMGCRnG, @ShowAGC, @ShowVB)
 	BEGIN
 		INSERT INTO #SAgWinLoss
 		SELECT   
@@ -584,6 +585,7 @@ BEGIN
 				WHEN RAND() + 1 > 0 AND b.bettype BETWEEN 2008 AND 2009 THEN 'MGCRnG'
 				WHEN RAND() + 1 > 0 AND b.bettype BETWEEN 1800 AND 1899 THEN 'AGC'
 				WHEN RAND() + 1 > 0 AND b.bettype BETWEEN 4001 AND 7999 THEN 'VB'
+				WHEN RAND() + 1 > 0 AND b.bettype BETWEEN 2401 AND 2499 THEN 'AB'
 				ELSE ''
 			END,
 			SUM(CASE WHEN RAND() + 1 > 0 AND @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE stake END) AS turnover,
@@ -713,6 +715,7 @@ BEGIN
 				WHEN RAND() + 1 > 0 AND b.bettype BETWEEN 2008 AND 2009 THEN 'MGCRnG'
 				WHEN RAND() + 1 > 0 AND b.bettype BETWEEN 1800 AND 1899 THEN 'AGC'
 				WHEN RAND() + 1 > 0 AND b.bettype BETWEEN 4001 AND 7999 THEN 'VB'
+				WHEN RAND() + 1 > 0 AND b.bettype BETWEEN 2401 AND 2499 THEN 'AB'
 				ELSE ''
 			END
 			END
@@ -913,7 +916,7 @@ BEGIN
 	END
 	
 	--exclude BA tickets
-	IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowAGC, @ShowVB,@ShowAB)
+	IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowAGC, @ShowVB)
 	BEGIN
 		INSERT INTO #SAgWinLoss  
 		SELECT 
@@ -932,6 +935,7 @@ BEGIN
 				WHEN RAND() + 1 > 0 AND b.sporttype = 205 THEN 'MGCRnG'
 				WHEN RAND() + 1 > 0 AND b.sporttype = 250 THEN 'AGC'
 				WHEN RAND() + 1 > 0 AND b.sporttype = 212 THEN 'VB'
+				WHEN RAND() + 1 > 0 AND b.sporttype = 211 THEN 'AB'
 				ELSE ''
 				END,
 			SUM(CASE WHEN RAND() + 1 > 0 THEN b.turnover ELSE 0 END
@@ -1166,6 +1170,7 @@ BEGIN
 				WHEN RAND() + 1 > 0 AND b.sporttype = 205 THEN 'MGCRnG'
 				WHEN RAND() + 1 > 0 AND b.sporttype = 250 THEN 'AGC'
 				WHEN RAND() + 1 > 0 AND b.sporttype = 212 THEN 'VB'
+				WHEN RAND() + 1 > 0 AND b.sporttype = 211 THEN 'AB'
 				ELSE ''
 				END
 
@@ -1373,7 +1378,7 @@ BEGIN
 	END
 
 	--exclude BA tickets
-	IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowAGC, @ShowVB,@ShowAB)
+	IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowAGC, @ShowVB)
 	BEGIN
 		INSERT INTO #SAgWinLoss  
 		SELECT 
@@ -1392,6 +1397,7 @@ BEGIN
 				WHEN b.sporttype = 205 THEN 'MGCRnG'
 				WHEN b.sporttype = 250 THEN 'AGC'
 				WHEN b.sporttype = 212 THEN 'VB'
+				WHEN b.sporttype = 211 THEN 'AB'
 				ELSE ''
 				END,
 			SUM(CASE WHEN RAND() + 1 > 0 THEN b.turnover ELSE 0 END
@@ -1627,6 +1633,7 @@ BEGIN
 				WHEN b.sporttype = 205 THEN 'MGCRnG'
 				WHEN b.sporttype = 250 THEN 'AGC'
 				WHEN b.sporttype = 212 THEN 'VB'
+				WHEN b.sporttype = 211 THEN 'AB'
 				ELSE ''
 				END
 
@@ -1736,6 +1743,7 @@ DECLARE @SAgWL TABLE
 	turnoverMGCRnG		MONEY, 
 	turnoverAGC			MONEY,
 	turnoverVB			MONEY, 
+	turnoverAB			MONEY,
 	BTActualStake		MONEY,
 	Winlost				MONEY,
 	LicenseeWLSB 		MONEY,
@@ -1751,6 +1759,7 @@ DECLARE @SAgWL TABLE
 	LicenseeWLMGCRnG	MONEY,
 	LicenseeWLAGC		MONEY,
 	LicenseeWLVB		MONEY,
+	LicenseeWLAB		MONEY,
 	AmtDueToBA			MONEY,   
 	AmtDueToRB			MONEY,
 	CommBA				MONEY,   
@@ -1783,6 +1792,7 @@ SELECT
 	SUM(CASE ProductCode WHEN 'MGCRnG'	THEN Turnover ELSE 0 END)   AS TurnoverMGCRnG,
 	SUM(CASE ProductCode WHEN 'AGC'		THEN Turnover ELSE 0 END)	AS TurnoverAGC,
 	SUM(CASE ProductCode WHEN 'VB'		THEN Turnover ELSE 0 END)	AS TurnoverVB,
+	SUM(CASE ProductCode WHEN 'AB'		THEN Turnover ELSE 0 END)	AS TurnoverAB,
 	SUM(BTActualStake)		AS BTActualStake,
 	SUM(Winlost)			AS Winlost,
 	SUM(CASE ProductCode WHEN 'SB'		THEN LicenseeWL ELSE 0 END)	AS LicenseeWLSB,   
@@ -1798,6 +1808,7 @@ SELECT
 	SUM(CASE ProductCode WHEN 'MGCRnG'	THEN LicenseeWL ELSE 0 END) AS LicenseeWLMGCRnG,
 	SUM(CASE ProductCode WHEN 'AGC'		THEN LicenseeWL ELSE 0 END)	AS LicenseeWLAGC,
 	SUM(CASE ProductCode WHEN 'VB'		THEN LicenseeWL ELSE 0 END)	AS LicenseeWLVB,
+	SUM(CASE ProductCode WHEN 'AB'		THEN LicenseeWL ELSE 0 END)	AS LicenseeWLAB,
 	SUM(AmtDuetoBA)			AS AmtDuetoBA,
 	SUM(AmtDuetoRB)			AS AmtDuetoRB,
 	SUM(CommBA)				AS CommBA,
