@@ -9,7 +9,7 @@ AS
 	Param's Explanation:		
 	Revisions:
 		- 20160714@Victor: Add two new columns to Functions table [Remine: #58537]
-	
+		- 20160812@Jim: LRF - Set "Adjust bet settings" with separate authorization [RedmineID : #61999 ]
 	Example:
 		EXEC [dbo].[Lrf_FunctionsSel]
 */
@@ -25,8 +25,9 @@ SELECT [FunctionId],
 	[DisplayOrder],
 	[IsActive],
 	[IsNew],
-	FunctionKey,
-	Environment
+	[FunctionKey],
+	[Environment],
+	[IsFunction]
 FROM [dbo].[Functions] WITH(NOLOCK)
 WHERE IsActive = 1
 

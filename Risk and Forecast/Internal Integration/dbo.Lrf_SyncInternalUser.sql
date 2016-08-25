@@ -23,6 +23,7 @@ AS
 	- 20130725@Jim: restrict permission for DW function 
 	- 20141112@Victor: use f_SelLicenseeCust instead of licenseecust (#Redmine 25864)
 	- 20160523@Jim: Currency permision restrict (#53882)
+	- 20160818@Jim:  LRF - Set "Adjust bet settings" with separate authorization [RedmineID : #61999 ]
 */
 
 SET NOCOUNT ON
@@ -117,7 +118,7 @@ BEGIN
 		INNER JOIN [LicenseeFunctions] l WITH(NOLOCK) ON f.FunctionId = l.FunctionId
 	WHERE l.LicenseeId =@LicenseeId			
 	AND f.FunctionId = 4 OR f.ParentId = 4
-
+	AND f.functionID NOT IN (SELECT FunctionID FROM dbo.Functions WITH (NOLOCK) WHERE Name ='Edit Bet Setting')
 	--DataWarehouse
 	INSERT INTO [LicenseeUserFunctions](LicenseeId, UserId, FunctionId)
 	SELECT DISTINCT @LicenseeId, @UserId, f.FunctionId 
@@ -143,6 +144,7 @@ BEGIN
 			INNER JOIN [LicenseeFunctions] l WITH(NOLOCK) ON f.FunctionId = l.FunctionId
 		WHERE l.LicenseeId =@LicenseeId			
 		AND f.FunctionId = 6 OR f.ParentId = 6
+			OR   f.functionID   IN (SELECT FunctionID FROM dbo.Functions WITH (NOLOCK) WHERE Name ='Edit Bet Setting')
 	END
 	
 END
