@@ -21,6 +21,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
 	@ShowBT			BIT = 0,
 	@ShowAGC		BIT = 0,
 	@ShowVB			BIT = 0,
+	@ShowAB			BIT = 0,
     @MoveBetsDay	DATETIME,
     @PageSize		INT = 1000,
     @PageIndex		INT = 1,
@@ -82,6 +83,7 @@ AS
 		- 20151228@Bobby: Implement RNG Casino sporttype(208, 209, 210)
 		- 20160401@Percy: Support Voidbridge single wallet [Redmine: #55057]
 		- 20160519@Jim: add more parameter  @excludeTest (#57836)
+		- 20160619@Jim: Allbet - Live Casino Integration for Licensees [Redmine: #59624]
 		- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
 */
     
@@ -262,6 +264,17 @@ BEGIN
 	WHERE	typeid BETWEEN 4001 AND 7999
 END
 
+IF @ShowAB = 1 -- Allbet
+BEGIN
+	INSERT INTO @sporttype(sporttype)
+	VALUES (211)
+
+	INSERT INTO @bettype(bettype)
+	SELECT	typeid FROM bettype (NOLOCK)
+	WHERE	typeid BETWEEN 2401 AND 2499
+END
+
+
 CREATE TABLE #TempData
 (
 	CustID			INT,
@@ -364,7 +377,7 @@ BEGIN
 		GROUP BY b.CustID, b.winlostdate, b.currency	 
 	END
 
-	IF 1 IN (@ShowNG, @ShowLC, @ShowVS, @ShowRB, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowBT, @ShowAGC, @ShowVb)
+	IF 1 IN (@ShowNG, @ShowLC, @ShowVS, @ShowRB, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowBT, @ShowAGC, @ShowVb,@ShowAB)
 	BEGIN
 		INSERT INTO #TempData
 		SELECT
@@ -435,7 +448,7 @@ BEGIN
 	END
 
 	--exclude BA tickets
-	IF 1 IN (@ShowSB, @ShowRB, @ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowAGC, @ShowVB)
+	IF 1 IN (@ShowSB, @ShowRB, @ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowAGC, @ShowVB,@ShowAB)
 	BEGIN
 		INSERT INTO #TempData
 		SELECT
@@ -530,7 +543,7 @@ BEGIN
 		GROUP BY b.CustID, b.winlostdate, b.currency	
 	END
 	
-	IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowVB)
+	IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowVB,@ShowAB)
 	BEGIN
 		INSERT  INTO #TempData
 		SELECT  

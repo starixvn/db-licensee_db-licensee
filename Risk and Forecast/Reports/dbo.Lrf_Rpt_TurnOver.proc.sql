@@ -18,6 +18,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_TurnOver]
     @ShowBG			BIT = 0, -- Bingo
     @ShowKN			BIT = 0, -- Keno 
 	@ShowBT			BIT = 0, -- Bet Trade 
+	@ShowAB			BIT = 0, -- Allbet
 	@ShowMGCLC 		BIT = 0,
 	@ShowMGCRnG 	BIT = 0,
 	@ShowAGC		BIT = 0,
@@ -55,6 +56,7 @@ Revisions:
    - 20151228@Bobby: Implement RNG Casino sporttype(208,209,210)
    - 20160127@Bobby: #51625 - HotFix for perf - redundant codes c.recommend in ( .... )
    - 20160401@Percy: Support Voidbridge single wallet [Redmine: #55057]
+   - 20160619@Jim: Allbet - Live Casino Integration for Licensees [Redmine: #59624]
    - 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
 Param's Explanation:
     + @excludeTest: remove currency UUS
@@ -113,6 +115,7 @@ IF @ShowMGCLC	= 1 INSERT INTO @sporttype(sporttype) VALUES(203)
 IF @ShowMGCRnG	= 1 INSERT INTO @sporttype(sporttype) VALUES(205)
 IF @ShowAGC		= 1 INSERT INTO @sporttype(sporttype) VALUES(250)
 IF @ShowVB		= 1 INSERT INTO @sporttype(sporttype) VALUES(212)
+IF @ShowAB		= 1 INSERT INTO @sporttype(sporttype) VALUES(211)
 IF @ShowBT		= 1 
 BEGIN
 	INSERT INTO @sporttype(sporttype) VALUES(-2)
