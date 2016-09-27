@@ -1,4 +1,4 @@
-﻿USE [bodb02]
+USE [bodb02]
 GO
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportSummary]
@@ -48,6 +48,7 @@ Revisions:
 	- 20160519@Jim: HotFix #57810
 	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
 	- 20160804@Percy: Enhance Performance - using faster index on bettrans [RedmineID: #60770]
+	- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
 Param's Explanation:
 	@IsLive : indicate that whether the report will get live data or not
 			+ 0: Non - Live data only
@@ -334,7 +335,7 @@ BEGIN
 			- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,
 			SUM(b.betcount) BetCount
 		FROM
-			bodb_Licensee.dbo.rpt_Betting_BA b WITH ( NOLOCK )
+			bodb_licenseereport.dbo.rpt_Betting_BA b WITH ( NOLOCK )
 			INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID
 		WHERE
 			b.rptDate BETWEEN @FDate AND @TempToDate
@@ -406,7 +407,7 @@ BEGIN
 			- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,
 			SUM(b.betcount) BetCount
 		FROM
-			bodb_Licensee.dbo.rpt_Betting b WITH ( NOLOCK )
+			bodb_licenseereport.dbo.rpt_Betting b WITH ( NOLOCK )
 			INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID
 		WHERE
 			b.rptDate BETWEEN @FDate AND @TempToDate

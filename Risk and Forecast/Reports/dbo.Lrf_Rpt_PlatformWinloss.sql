@@ -1,4 +1,4 @@
-﻿USE [bodb02]
+USE [bodb02]
 GO
 ALTER PROCEDURE [dbo].[Lrf_Rpt_PlatformWinloss]   
 	 @LicenseeID	INT,
@@ -30,7 +30,8 @@ AS
    
     Revisions:  
 		- 20160719@Jim: Allbet - Live Casino Integration for Licensees (#59624)
-			- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
+		- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
+		- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
 	Param's Explanation:  
 	  + @PlatformType: 0: All  
 					   1: Asia (d)  
@@ -444,7 +445,7 @@ BEGIN
 					CASE WHEN b.statusID = 111 THEN 0
 					ELSE 1 END
 				ELSE 1 END
-		FROM bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )
+		FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )
 			INNER JOIN 	#tempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
 			INNER JOIN @PlatformList pl ON pl.betfrom = b.betfrom
 		WHERE 
@@ -495,7 +496,7 @@ BEGIN
 					CASE WHEN b.statusID = 111 THEN 0
 					ELSE 1 END
 				ELSE 1 END
-		FROM bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )
+		FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )
 			INNER JOIN #tempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
 			INNER JOIN #sporttype t ON b.sporttype = t.sporttype
 			INNER JOIN @PlatformList pl ON pl.betfrom = b.betfrom

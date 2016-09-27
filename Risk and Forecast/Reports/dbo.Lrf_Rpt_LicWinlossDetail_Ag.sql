@@ -1,4 +1,4 @@
-﻿USE [bodb02]
+USE [bodb02]
 GO
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinlossDetail_Ag]   
 	@LicenseeID		INT,
@@ -62,6 +62,7 @@ AS
 		- 20160413@Victor: support MKK currency code [Redmine: #55745]
 		- 20160718@Jim: Allbet - Live Casino Integration for Licensees (#59624)
 		- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
+		- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
 		
 	Param's Explanation:  
 	  + @CustID: SuperID  
@@ -775,7 +776,7 @@ BEGIN
 				0 AS BuyBackAmtSB,
 				0 AS BuyBackAmtBA
 			FROM
-				bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
+				bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
 				INNER JOIN @TempAg a ON b.recommend = a.custID AND b.Currency = a.currency
 				LEFT JOIN f_GetBetTradeCustList(@LicenseeName) bt ON b.custid = bt.Custid AND b.Currency = bt.currency
 			WHERE  
@@ -956,7 +957,7 @@ BEGIN
 				0 AS BuyBackAmtSB,
 				0 AS BuyBackAmtBA
 			FROM 
-				bodb_Licensee.dbo.rptLicWinloss2 b WITH (NOLOCK)  
+				bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)  
 				INNER JOIN @TempAg a    ON b.recommend = a.custID AND b.Currency = a.currency
 				INNER JOIN @sporttype t ON b.sporttype = t.sporttype
 				LEFT JOIN  f_GetBetTradeCustList(@LicenseeName) bt ON b.custid=bt.Custid AND b.Currency = bt.currency
@@ -1021,7 +1022,7 @@ BEGIN
 				SUM(CASE WHEN b.bettype = 902 THEN BuyBackAmt ELSE 0 END) AS BuyBackAmtSB,
 				SUM(CASE WHEN b.bettype = 902 THEN BABuyBackAmt ELSE 0 END) AS BuyBackAmtBA
 			FROM 
-				bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
+				bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
 				INNER JOIN @TempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
 			WHERE 
 				b.Winlostdate BETWEEN @FDate AND @TempToDate  
@@ -1100,7 +1101,7 @@ BEGIN
 				0 AS BuyBackAmtSB,
 				0 AS BuyBackAmtBA
 			FROM 
-				bodb_Licensee.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
+				bodb_licenseereport.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
 				INNER JOIN @TempAg a ON b.recommend = a.custID AND b.Currency = a.currency
 				LEFT JOIN  f_GetBetTradeCustList(@LicenseeName) bt ON b.custid=bt.Custid AND b.Currency = bt.currency
 			WHERE  
@@ -1296,7 +1297,7 @@ BEGIN
 				0 AS BuyBackAmtSB,
 				0 AS BuyBackAmtBA
 			FROM
-				bodb_Licensee.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
+				bodb_licenseereport.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
 				INNER JOIN @TempAg a    ON b.recommend = a.custID AND b.Currency = a.currency
 				INNER JOIN @sporttype t ON b.sporttype = t.sporttype
 				LEFT JOIN  f_GetBetTradeCustList(@LicenseeName) bt ON b.custid=bt.Custid AND b.Currency = bt.currency
@@ -1361,7 +1362,7 @@ BEGIN
 				0 AS BuyBackAmtSB,
 				0 AS BuyBackAmtBA
 			FROM 
-				bodb_Licensee.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
+				bodb_licenseereport.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
 				INNER JOIN @TempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
 			WHERE 
 				b.Winlostdate BETWEEN @FDate AND @TempToDate  

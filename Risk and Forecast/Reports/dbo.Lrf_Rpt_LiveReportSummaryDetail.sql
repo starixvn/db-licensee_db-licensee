@@ -1,4 +1,4 @@
-﻿USE [bodb02]
+USE [bodb02]
 GO
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportSummaryDetail] 
 	@LicenseeID		INT,
@@ -55,6 +55,7 @@ Revisions:
 	- 20160413@Victor: support MKK currency code
 	- 20160519@Jim: HotFix #57810
 	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
+	- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
 Param's Explanation:  
 	@Liveindicator : indicate that whether the report will get live data or not
 		+ 0: Non - Live data only
@@ -260,7 +261,7 @@ BEGIN
 								+ 'SUM (CommissionP) as PlayerComm,' + CHAR(13)
 								+ '- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13)
 								+ 'SUM(b.betcount) BetCount' + CHAR(13)
-								+ 'FROM bodb_Licensee.dbo.rpt_Betting_BA b WITH ( NOLOCK )' + CHAR(13)
+								+ 'FROM bodb_licenseereport.dbo.rpt_Betting_BA b WITH ( NOLOCK )' + CHAR(13)
 								+ 'INNER JOIN #Currency c ON b.siteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID' + CHAR(13)
 								+ 'WHERE b.rptDate BETWEEN ''' + CONVERT(VARCHAR(10), @FDate, 120) + ''' AND ''' + CONVERT(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13)
 								+ 'AND b.status NOT IN (-1,103)' + CHAR(13)
@@ -308,7 +309,7 @@ BEGIN
 								+ 'SUM(b.CommissionA) Comm,' + CHAR(13) + 'sum( b.CommissionP ) PlayerComm,' + CHAR(13)
 								+ '- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13)
 								+ 'SUM(b.betcount) BetCount' + CHAR(13)
-								+ 'FROM bodb_Licensee.dbo.rpt_Betting b WITH ( NOLOCK )' + CHAR(13)
+								+ 'FROM bodb_licenseereport.dbo.rpt_Betting b WITH ( NOLOCK )' + CHAR(13)
 								+ 'INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID' + CHAR(13)
 								+ 'WHERE b.rptDate BETWEEN ''' + CONVERT(VARCHAR(10), @FDate, 120) + ''' AND ''' + CONVERT(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13)
 								+ 'AND b.status NOT IN (-1,103)' + CHAR(13)
