@@ -1,10 +1,16 @@
-﻿ALTER FUNCTION [dbo].[Lrf_f_GetExchangeDaily]
+﻿SET QUOTED_IDENTIFIER ON 
+GO
+SET ANSI_NULLS ON 
+GO
+
+/****** Object:  User Defined Function dbo.Lrf_f_GetExchangeDaily    Script Date: 9/23/2016 10:19:23 AM ******/
+CREATE FUNCTION [dbo].[Lrf_f_GetExchangeDaily]
     (
       @fromdate DATETIME,
       @todate DATETIME
       
     )
-RETURNS @tempDate TABLE (exchangedate DATETIME,ExchangeId INT,Code VARCHAR(5),MYR FLOAT, USD FLOAT, EUR FLOAT, CNY FLOAT,GBP FLOAT, actualrate FLOAT, UNIQUE CLUSTERED(exchangedate,exchangeid))
+RETURNS @tempDate TABLE (exchangedate DATETIME,ExchangeId INT,Code VARCHAR(5),MYR FLOAT, USD FLOAT, EUR FLOAT, CNY FLOAT,GBP FLOAT,HKD FLOAT, actualrate FLOAT, UNIQUE CLUSTERED(exchangedate,exchangeid))
 AS
 
  /*
@@ -15,6 +21,7 @@ AS
 	- 20120608@Henry: If the date range smaller than 1st of June 2012 then get from ExchangeDaily else get from ExchangeDailyOanda
 	- 20150123@Jim: return base on GBP
 	- 20160425@Francis: return rates of the latest day that has full ExchangeRate in ExchangeDailyOanda table in case current date's rates are missing
+	- 20160914@Jim:  Add HKD base currency into OANDA Exchange rate [RedmineID : #63975]
 */
 BEGIN
 
@@ -26,8 +33,8 @@ SET @gapDate = '2012-06-01'
 --Get the data before 1st of June 2012 in ExchangeDaily table
 IF @todate < @gapDate
 BEGIN
-	INSERT INTO @tempDate (exchangedate,ExchangeId,Code,MYR, USD, EUR, CNY,GBP,actualrate)
-	SELECT exchangedate,ExchangeId,Code,MYR, USD, EUR, CNY, 1 AS GBP,actualrate
+	INSERT INTO @tempDate (exchangedate,ExchangeId,Code,MYR, USD, EUR, CNY,GBP,HKD,actualrate)
+	SELECT exchangedate,ExchangeId,Code,MYR, USD, EUR, CNY, 1 AS GBP,1 AS HKD,actualrate
 	FROM ExchangeDaily WITH (NOLOCK)
 	WHERE ExchangeDate BETWEEN @fromdate AND @todate
 	
@@ -35,8 +42,8 @@ BEGIN
 END
 ELSE IF @todate >= @gapDate AND @fromdate < @gapDate
 BEGIN
-	INSERT INTO @tempDate (exchangedate,ExchangeId,Code,MYR, USD, EUR, CNY,GBP,actualrate)
-	SELECT exchangedate,ExchangeId,Code,MYR, USD, EUR, CNY,1 AS GBP, actualrate
+	INSERT INTO @tempDate (exchangedate,ExchangeId,Code,MYR, USD, EUR, CNY,GBP,HKD,actualrate)
+	SELECT exchangedate,ExchangeId,Code,MYR, USD, EUR, CNY,1 AS GBP,1 AS HKD , actualrate
 	FROM ExchangeDaily WITH (NOLOCK)
 	WHERE ExchangeDate BETWEEN @fromdate AND dateadd(day,-1,@gapDate)
 	
@@ -73,8 +80,8 @@ BEGIN
 	
 	WHILE (@tmpDate<=@tmpToDate AND @tmpDate<=@todate)
 	BEGIN
-		INSERT INTO @tempDate (exchangedate,ExchangeId,Code,MYR, USD, EUR, CNY,GBP, actualrate)
-		SELECT @tmpDate,ExchangeId,Code,MYR, USD, EUR, CNY,GBP, actualrate
+		INSERT INTO @tempDate (exchangedate,ExchangeId,Code,MYR, USD, EUR, CNY,GBP,HKD, actualrate)
+		SELECT @tmpDate,ExchangeId,Code,MYR, USD, EUR, CNY,GBP,HKD, actualrate
 		FROM ExchangeDailyOanda WITH (NOLOCK)
 		WHERE ExchangeDate = CASE WHEN @tmpToDate > @ReferencedExchangeDate THEN @ReferencedExchangeDate ELSE @tmpToDate END
 	
@@ -92,9 +99,21 @@ RETURN
 END
 
 
+
 GO
-GRANT SELECT ON [dbo].[Lrf_f_GetExchangeDaily] TO [bodbAdminNet] AS [dbo]
+
+SET QUOTED_IDENTIFIER OFF 
 GO
-GRANT SELECT ON [dbo].[Lrf_f_GetExchangeDaily] TO [bodbLicenseeNet] AS [dbo]
+SET ANSI_NULLS ON 
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_f_GetExchangeDaily] TO [vnteam] AS [dbo]
+
+
+GO 
+ GRANT VIEW DEFINITION ON [dbo].[Lrf_f_GetExchangeDaily] TO [vnteam]
+GO 
+ GRANT SELECT ON [dbo].[Lrf_f_GetExchangeDaily] TO [Dot_Casino]
+GO 
+ GRANT SELECT ON [dbo].[Lrf_f_GetExchangeDaily] TO [bodbLicenseeNet]
+GO 
+ GRANT SELECT ON [dbo].[Lrf_f_GetExchangeDaily] TO [bodbAdminNet]
+GO 
