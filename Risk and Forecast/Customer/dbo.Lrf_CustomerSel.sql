@@ -53,7 +53,8 @@ AS
 		- 20151108@Jim: Separated MicroGaming into 2 product
 		- 20160104@Bobby: Fixbug#50272 - Remove RNG Casino bettype 71
 		- 20160404@Percy: Support Voidbridge single wallet [Redmine: #55057]
-		- 20160805@Jim: LRF - Offer different member commission for parlay tickets [RedmineID:#61897]		 
+		- 20160805@Jim: LRF - Offer different member commission for parlay tickets [RedmineID:#61897]	
+		- 20160913@Jim : LRF - Implement Colossus Bets [Redmine: #63785]	
 	Param's Explanation:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 		+ @SpecialLevel: default value = -1 (all)
@@ -484,7 +485,7 @@ FROM
 	INNER JOIN @TempAg lc ON tl.recommend=lc.CustID
 WHERE
 	statusID IN (0, 1)  --running and Waiting
-	AND productID IN (202, 203)
+	AND productID IN (202, 203,204)
 GROUP BY tl.custid, tl.currency, productID, statusID
 
 --- bettransRNG
