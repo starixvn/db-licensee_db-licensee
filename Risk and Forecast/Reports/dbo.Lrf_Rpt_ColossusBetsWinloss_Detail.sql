@@ -248,7 +248,7 @@ BEGIN
 			FROM @tmpRawData
 			)
 
-	SELECT CASE 
+	SELECT t.CutID,CASE 
 			WHEN @ReportType = 1
 				THEN CONVERT(VARCHAR(8), t.rptDate, 112)
 			WHEN @ReportType = 2
@@ -299,7 +299,7 @@ BEGIN
 			AND t.CurrencyId = e.ExchangeID
 	INNER JOIN bodb_licensee.dbo.licenseecustinfo c WITH (NOLOCK)
 		ON t.custid = c.custid
-	GROUP BY CASE 
+	GROUP BY t.CustID,CASE 
 			WHEN @ReportType = 1
 				THEN CONVERT(VARCHAR(8), t.rptDate, 112)
 			WHEN @ReportType = 2
