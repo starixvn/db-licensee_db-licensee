@@ -1,4 +1,4 @@
-ï»¿USE [bodb02]
+USE [bodb02]
 GO
 ALTER PROCEDURE [dbo].[Lrf_Statement_Mem]  
     @CustID			INT,  
@@ -40,11 +40,11 @@ Revisions:
 	- 20151228@Bobby: Implement RNG Casino sporttype(208,209,210)
  
 Param's Explanation:   
-	â€¢ @ErrCode:
+	• @ErrCode:
 		= 0: add new member successfully.
 		> 0: Specific Error.  
     
-	â€¢ @ErrMsg: Error description.  
+	• @ErrMsg: Error description.  
 */
 BEGIN
 	SET NOCOUNT ON
