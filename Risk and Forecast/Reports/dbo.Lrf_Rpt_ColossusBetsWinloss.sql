@@ -146,7 +146,7 @@ BEGIN
 									, 18005
 									, 18006
 									)
-								AND bm.STATUS = 'WON'
+								AND b.STATUS = 'WON'
 							THEN bm.Winlost - bm.stake
 							ELSE 0
 							END
@@ -156,7 +156,7 @@ BEGIN
 						THEN 0
 					ELSE CASE 
 							WHEN bm.bettype = 18002
-								AND bm.STATUS = 'WON'
+								AND b.STATUS = 'WON'
 							THEN bm.winlost - bm.stake
 							ELSE 0
 							END

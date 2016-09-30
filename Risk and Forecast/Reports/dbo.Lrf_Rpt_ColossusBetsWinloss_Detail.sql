@@ -151,6 +151,7 @@ BEGIN
 									, 18005
 									, 18006
 									)
+								AND b.STATUS = 'WON'		
 								THEN bm.Winlost - bm.stake
 							ELSE 0
 							END
@@ -160,13 +161,14 @@ BEGIN
 						THEN 0
 					ELSE CASE 
 							WHEN bm.bettype = 18002
+								AND b.STATUS = 'WON'
 								THEN bm.winlost - bm.stake
 							ELSE 0
 							END
 					END) AS CashOutAmt
 			, SUM(CASE 
 					WHEN bm.bettype = 18002
-						THEN bm.oddsspread
+						THEN bm.acomm
 					ELSE 0
 					END) AS CashInAmt
 			, SUM(CASE 
@@ -184,6 +186,7 @@ BEGIN
 		LEFT JOIN @tmpGrandAmt a
 			ON b.CustID = a.CustID
 		WHERE b.bettype = 18000
+			AND bm.bettype BETWEEN 18001 AND 18006	
 			AND b.winlostdate BETWEEN @TempFromDate
 				AND @_ToDate
 		GROUP BY b.CustID
@@ -248,7 +251,7 @@ BEGIN
 			FROM @tmpRawData
 			)
 
-	SELECT t.CutID,CASE 
+	SELECT t.CustID,CASE 
 			WHEN @ReportType = 1
 				THEN CONVERT(VARCHAR(8), t.rptDate, 112)
 			WHEN @ReportType = 2
@@ -280,8 +283,8 @@ BEGIN
 		, CAST(SUM(CommAmt * e.USD) AS MONEY) CommAmtUSD
 		, CAST(SUM(GrandAmt * e.USD) AS MONEY) GrandAmtUSD
 		---EUR
-		, CAST(SUM(TurnOver * e.EUR) AS MONEY) TurnOverUSD
-		, CAST(SUM(WinningPrize * e.EUR) AS MONEY) WinningPrizeUSD
+		, CAST(SUM(TurnOver * e.EUR) AS MONEY) TurnOverEUR
+		, CAST(SUM(WinningPrize * e.EUR) AS MONEY) WinningPrizeEUR
 		, CAST(SUM(CashOutAmt * e.EUR) AS MONEY) CashOutAmtEUR
 		, CAST(SUM(CashInAmt * e.EUR) AS MONEY) CashInAmtEUR
 		, CAST(SUM(CommAmt * e.EUR) AS MONEY) CommAmtEUR
@@ -299,7 +302,8 @@ BEGIN
 			AND t.CurrencyId = e.ExchangeID
 	INNER JOIN bodb_licensee.dbo.licenseecustinfo c WITH (NOLOCK)
 		ON t.custid = c.custid
-	GROUP BY t.CustID,CASE 
+	GROUP BY t.CustID
+			,CASE 
 			WHEN @ReportType = 1
 				THEN CONVERT(VARCHAR(8), t.rptDate, 112)
 			WHEN @ReportType = 2
