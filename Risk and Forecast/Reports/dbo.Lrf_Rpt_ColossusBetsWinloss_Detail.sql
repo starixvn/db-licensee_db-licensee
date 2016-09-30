@@ -141,7 +141,7 @@ BEGIN
 			, b.CustID
 			, b.Currency
 			, SUM(ABS(b.Stake)) TurnOver
-			, COUNT(1) TotalTrans
+			, COUNT(DISTINCT b.refno) TotalTrans
 			, SUM(CASE 
 					WHEN b.winlost = 0
 						THEN 0
