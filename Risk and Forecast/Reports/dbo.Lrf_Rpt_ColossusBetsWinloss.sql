@@ -171,7 +171,7 @@ BEGIN
 						THEN bm.acomm
 					ELSE 0
 					END) CommAmt
-			, a.GrandAmt AS GrandAmt
+			, SUM(a.GrandAmt) AS GrandAmt
 		FROM dbo.bettrans b WITH (NOLOCK)
 		INNER JOIN dbo.bettransm bm WITH (NOLOCK)
 			ON b.refno = bm.refno
@@ -187,7 +187,7 @@ BEGIN
 				AND 18006
 		GROUP BY b.Currency
 			, b.winlostdate
-			, a.GrandAmt
+			 
 	END
 
 	IF @_FromDate <= @MoveBetsDay
