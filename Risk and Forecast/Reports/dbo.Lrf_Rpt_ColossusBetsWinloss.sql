@@ -1,7 +1,7 @@
 USE [bodb02]
 GO
 
-CREATE PROCEDURE [dbo].[Lrf_Rpt_ColossusBetsWinloss] @LicenseeID INT
+ALTER PROCEDURE [dbo].[Lrf_Rpt_ColossusBetsWinloss] @LicenseeID INT
 	, @CurrencyID INT = 0
 	, @UserID INT
 	, @FromDate SMALLDATETIME
@@ -54,12 +54,6 @@ BEGIN
 		, CommAmt MONEY
 		, GrandAmt MONEY
 		)
-	DECLARE @tmpGrandAmt AS TABLE (
-		rptDate DATETIME
-		, CustID INT
-		, GrandAmt MONEY
-		)
-	DECLARE @tmpCust AS TABLE (CustID INT)
 
 	---Section 2 : INIT VARIABLE
 	SELECT @_FromDate = @FromDate
@@ -107,6 +101,12 @@ BEGIN
 		ELSE
 			SET @TempFromDate = @_FromDate
 
+		DECLARE @tmpGrandAmt AS TABLE (
+			rptDate DATETIME
+			, CustID INT
+			, GrandAmt MONEY
+			)
+
 		INSERT INTO @tmpGrandAmt (
 			rptDate
 			, CustID
@@ -122,6 +122,51 @@ BEGIN
 		GROUP BY CustID
 			, winlostdate
 
+		DECLARE @tmpBettrans AS TABLE (
+			refno BIGINT
+			, winlostdate DATETIME
+			, Currency INT
+			, TurnOver MONEY
+			, TotalTrans INT
+			, Winlost MONEY
+			, STATUS NVARCHAR(20)
+			, GrandAmt MONEY
+			)
+
+		INSERT INTO @tmpBettrans (
+			refno
+			, winlostdate
+			, Currency
+			, TurnOver
+			, TotalTrans
+			, Winlost
+			, STATUS
+			, GrandAmt
+			)
+		SELECT b.refno
+			, b.winlostdate
+			, b.Currency
+			, SUM(ABS(b.Stake)) TurnOver
+			, COUNT(DISTINCT b.refno) TotalTrans
+			, b.Winlost
+			, b.STATUS
+			, SUM(a.GrandAmt) AS GrandAmt
+		FROM dbo.bettrans b WITH (NOLOCK)
+		INNER JOIN @tempAg t
+			ON b.recommend = t.CustID
+				AND b.Currency = t.Currency
+		LEFT JOIN @tmpGrandAmt a
+			ON b.CustID = a.CustID
+				AND b.winlostdate = a.rptDate
+		WHERE b.bettype = 18000
+			AND b.winlostdate BETWEEN @TempFromDate
+				AND @_ToDate
+		GROUP BY b.refno
+			, b.winlostdate
+			, b.Currency
+			, b.Winlost
+			, b.STATUS
+
 		INSERT INTO @tmpRawData (
 			rptDate
 			, CurrencyID
@@ -135,7 +180,7 @@ BEGIN
 			)
 		SELECT b.winlostdate AS rptDate
 			, b.Currency
-			, SUM(ABS(b.Stake)) TurnOver
+			, 0 TurnOver
 			, COUNT(DISTINCT b.refno) TotalTrans
 			, SUM(CASE 
 					WHEN b.winlost = 0
@@ -147,7 +192,7 @@ BEGIN
 									, 18006
 									)
 								AND b.STATUS = 'WON'
-							THEN bm.Winlost - bm.stake
+								THEN bm.Winlost - bm.stake
 							ELSE 0
 							END
 					END) AS WinningPrize
@@ -157,7 +202,7 @@ BEGIN
 					ELSE CASE 
 							WHEN bm.bettype = 18002
 								AND b.STATUS = 'WON'
-							THEN bm.winlost - bm.stake
+								THEN bm.winlost - bm.stake
 							ELSE 0
 							END
 					END) AS CashOutAmt
@@ -171,23 +216,30 @@ BEGIN
 						THEN bm.acomm
 					ELSE 0
 					END) CommAmt
-			, SUM(a.GrandAmt) AS GrandAmt
-		FROM dbo.bettrans b WITH (NOLOCK)
+			, SUM(b.GrandAmt) AS GrandAmt
+		FROM @tmpBettrans b
 		INNER JOIN dbo.bettransm bm WITH (NOLOCK)
 			ON b.refno = bm.refno
-		INNER JOIN @tempAg t
-			ON b.recommend = t.CustID
-				AND b.Currency = t.Currency
-		LEFT JOIN @tmpGrandAmt a
-			ON b.CustID = a.CustID
-		WHERE b.bettype = 18000
-			AND b.winlostdate BETWEEN @TempFromDate
-				AND @_ToDate
-			AND bm.bettype BETWEEN 18001
+		WHERE bm.bettype BETWEEN 18001
 				AND 18006
 		GROUP BY b.Currency
-			, b.winlostdate
-			 
+			, b.winlostdate;
+
+		WITH cte_TO
+		AS (
+			SELECT Currency
+				, winlostdate
+				, SUM(TurnOver) TurnOver
+			FROM @tmpBettrans
+			GROUP BY Currency
+				, winlostdate
+			)
+		UPDATE d
+		SET TurnOver = s.TurnOver
+		FROM @tmpRawData d
+		INNER JOIN cte_TO s
+			ON d.CurrencyID = s.Currency
+				AND d.rptDate = s.Winlostdate
 	END
 
 	IF @_FromDate <= @MoveBetsDay
@@ -196,6 +248,8 @@ BEGIN
 			SET @TempToDate = @MoveBetsDay
 		ELSE
 			SET @TempToDate = @_ToDate
+
+		DECLARE @tmpCust AS TABLE (CustID INT)
 
 		INSERT INTO @tmpCust (CustID)
 		SELECT lci.CustID
@@ -306,6 +360,7 @@ BEGIN
 				THEN 'MKK'
 			ELSE e.Code
 			END
+	DROP TABLE #TempExchange		
 END
 GO
 
