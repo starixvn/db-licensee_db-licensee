@@ -751,7 +751,7 @@ BEGIN
 END 
 IF @IsOld = 1 
 BEGIN
-	SELECT @MaxOldDate = MAX(winlostdate) FROM bodb_Licensee.dbo.rptLicWinloss_old (NOLOCK)
+	SELECT @MaxOldDate = MAX(winlostdate) FROM bodb_Licenseereport.dbo.rptLicWinloss_old (NOLOCK)
 	IF @TDate >= @MaxOldDate
 			SET @TempToDate = @MaxOldDate
 		ELSE
