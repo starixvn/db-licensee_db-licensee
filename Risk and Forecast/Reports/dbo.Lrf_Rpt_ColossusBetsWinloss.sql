@@ -216,7 +216,7 @@ BEGIN
 						THEN bm.acomm
 					ELSE 0
 					END) CommAmt
-			, SUM(b.GrandAmt) AS GrandAmt
+			, 0 AS GrandAmt
 		FROM @tmpBettrans b
 		INNER JOIN dbo.bettransm bm WITH (NOLOCK)
 			ON b.refno = bm.refno
@@ -230,12 +230,14 @@ BEGIN
 			SELECT Currency
 				, winlostdate
 				, SUM(TurnOver) TurnOver
+				,SUM(GrandAmt) GrandAmt
 			FROM @tmpBettrans
 			GROUP BY Currency
 				, winlostdate
 			)
 		UPDATE d
 		SET TurnOver = s.TurnOver
+			,GrandAmt = s.GrandAmt
 		FROM @tmpRawData d
 		INNER JOIN cte_TO s
 			ON d.CurrencyID = s.Currency
