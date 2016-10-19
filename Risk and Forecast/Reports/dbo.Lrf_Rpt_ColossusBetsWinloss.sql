@@ -102,17 +102,20 @@ BEGIN
 			SET @TempFromDate = @_FromDate
 
 		DECLARE @tmpGrandAmt AS TABLE (
-			rptDate DATETIME
+			Refno BIGINT
+			,rptDate DATETIME
 			, CustID INT
 			, GrandAmt MONEY
 			)
 
 		INSERT INTO @tmpGrandAmt (
-			rptDate
+			Refno
+			,rptDate
 			, CustID
 			, GrandAmt
 			)
-		SELECT winlostdate
+		SELECT Refno
+			, winlostdate
 			, CustID
 			, SUM(WinAmount) AS GrandAmt
 		FROM DBACC.bodb02.dbo.PayoutTrans p WITH (NOLOCK)
@@ -121,6 +124,7 @@ BEGIN
 				AND @_ToDate
 		GROUP BY CustID
 			, winlostdate
+			,Refno
 
 		DECLARE @tmpBettrans AS TABLE (
 			refno BIGINT
@@ -158,6 +162,7 @@ BEGIN
 		LEFT JOIN @tmpGrandAmt a
 			ON b.CustID = a.CustID
 				AND b.winlostdate = a.rptDate
+				AND b.transid = a.refno
 		WHERE b.bettype = 18000
 			AND b.winlostdate BETWEEN @TempFromDate
 				AND @_ToDate
