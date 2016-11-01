@@ -11,6 +11,7 @@ AS
 		- 20150722@Jim: apply new DBCust structure
 		- 20151108@Jim: Separated MicroGaming into 2 product
 		- 20160419@Helen: VoidBridge IN DCS Structure - [Redmine: 55057]
+		- 20160801@Helen: Allbet IN DCS Structure - [Redmine: 61066]
 		
 	Param's Explanation:
 */
@@ -42,7 +43,7 @@ BEGIN
 			p.ProductId
 			,p.ProductName
 			,p.ProductPrefix AS  ProductCode
-			,CASE WHEN p.ProductID IN (10,11,12,14,17,22) THEN 0 ELSE 1 END 
+			,CASE WHEN p.ProductID IN (10,11,12,14,17,22,21) THEN 0 ELSE 1 END 
 		FROM dbo.Product3rd p WITH (NOLOCK) 
 			INNER JOIN dbo.LicenseeProduct3rd lp WITH (NOLOCK) ON p.ProductId = lp.ProductId 	
 		WHERE lp.LicenseeID  = @LicenseeID
@@ -102,6 +103,20 @@ BEGIN
 			SET isEnable =1
 			WHERE ProductID = 22	
 		END		
+		
+		IF EXISTS (SELECT 1 FROM @tblProductActive WHERE ProductID = 21)	---Allbet
+		BEGIN 
+			IF EXISTS (SELECT 1 
+				   FROM DBCUST.CustDB.dbo.Dep_LicenseeProductSetting lps WITH (NOLOCK)
+						INNER JOIN DBCUST.CustDB.dbo.Dep_ProductSetting ps WITH (NOLOCK) ON lps.ProductSettingID = ps.ProductSettingID
+						INNER JOIN @tblSuper su ON lps.CustID = su.SrecommendID
+				   WHERE ps.ProductID= 21)
+				   
+			UPDATE @tblProductActive
+			SET isEnable =1
+			WHERE ProductID = 21	
+		END		
+		
 	END
 	
 	SELECT ProductID
