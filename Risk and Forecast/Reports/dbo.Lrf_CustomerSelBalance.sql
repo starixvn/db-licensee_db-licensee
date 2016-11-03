@@ -55,6 +55,7 @@ Revisions:
 	- 20160125@Victor: Fix incorrect formula of AmountDueToBettrade column [Redmine: 51053]
 	- 20160331@Walter: Support Voidbridge single wallet [Redmine: #55057]
 	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
+	- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
 	 
 */
 SET NOCOUNT ON
@@ -575,7 +576,7 @@ BEGIN
 		SUM(CASE WHEN b.bettype =902 THEN (b.winlost)
 				ELSE 0 END) AS SelectedMonthWLBoughtTicket
 	FROM 
-		bodb_Licensee.dbo.rptLicWinloss2 b WITH(NOLOCK) 
+		bodb_Licenseereport.dbo.rptLicWinloss2 b WITH(NOLOCK) 
 		INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
 		LEFT JOIN f_GetBetTradeCustList(@LicenseeName) bt ON b.custid=bt.Custid AND b.Currency = bt.currency
 	WHERE
@@ -603,7 +604,7 @@ BEGIN
 		SUM(CASE WHEN b.bettype =902 THEN (b.winlost)
 				ELSE 0 END) AS SelectedMonthWLBoughtTicket
 	FROM 
-		bodb_Licensee.dbo.rptLicWinloss_old b WITH(NOLOCK)
+		bodb_Licenseereport.dbo.rptLicWinloss_old b WITH(NOLOCK)
 		INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency	
 		LEFT JOIN f_GetBetTradeCustList(@LicenseeName) bt ON b.custid=bt.Custid AND b.Currency = bt.currency
 	WHERE
