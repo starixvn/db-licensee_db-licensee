@@ -1,4 +1,4 @@
-﻿USE [bodb02]
+USE [bodb02]
 GO
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail]  
@@ -65,6 +65,7 @@ AS
 	- 20160331@Walter: Support Voidbridge single wallet [Redmine: #55057]
 	- 20160413@Victor: support MKK currency code [Redmine: #55745]
 	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
+	- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
 	
 	Param's Explanation:  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -689,7 +690,7 @@ BEGIN
 					ELSE 1 END
 				ELSE 1 END
 		FROM 
-			bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
+			bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
 			INNER JOIN @TempAg ag ON b.recommend = ag.custID AND b.Currency = ag.currency
 			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 		WHERE  
@@ -789,7 +790,7 @@ BEGIN
 					ELSE 1 END
 				ELSE 1 END
 		FROM 
-			bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
+			bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
 			INNER JOIN @sporttype t ON b.sporttype = t.sporttype
 			INNER JOIN @TempAg ag ON b.recommend = ag.custID AND b.Currency = ag.currency
 			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
@@ -958,7 +959,7 @@ END
 IF @IsOld = 1 
 BEGIN
 
-	SELECT @MaxOldDate = MAX(winlostdate) FROM bodb_Licensee.dbo.rptLicWinloss_old (NOLOCK)
+	SELECT @MaxOldDate = MAX(winlostdate) FROM bodb_licenseereport.dbo.rptLicWinloss_old (NOLOCK)
 	IF @TDate >= @MaxOldDate
 			SET @TempToDate = @MaxOldDate
 		ELSE
@@ -1037,7 +1038,7 @@ BEGIN
 					ELSE 1 END
 				ELSE 1 END
 		FROM 
-			bodb_Licensee.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
+			bodb_licenseereport.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
 			INNER JOIN @TempAg ag ON b.recommend = ag.custID AND b.Currency = ag.currency
 			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 		WHERE  
@@ -1138,7 +1139,7 @@ BEGIN
 					ELSE 1 END
 				ELSE 1 END
 		FROM 
-			 bodb_Licensee.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
+			 bodb_licenseereport.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
 			INNER JOIN @TempAg ag ON b.recommend = ag.custID AND b.Currency= ag.currency
 			INNER JOIN @sporttype t ON b.sporttype = t.sporttype
 			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency

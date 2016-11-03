@@ -1,4 +1,4 @@
-ï»¿USE [bodb02]
+USE [bodb02]
 GO 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportBySport] 
 	@LicenseeID		INT,
@@ -33,8 +33,8 @@ Revisions:
 	- 20130809@Jim: offer Virtual Horse Racing
 	- 20131007@Jim: support Virtual Tennis
 	- 20131129@Jim: support :
-				182 â€“ Virtual Greyhounds
-				184 â€“ Virtual Motor Racing
+				182 – Virtual Greyhounds
+				184 – Virtual Motor Racing
 	- 20140404@Florent: offer 202 Keno
 	- 20140410@Jim: fix bug #14715 (wrong RNG Casino sporttype)	
 	- 20140602@Hannah: Separate Live/ Non - Live data in Live Report	
@@ -52,6 +52,7 @@ Revisions:
 	- 20160330@Percy: Support Voidbridge single wallet [Redmine: #55057]
 	- 20160519@Jim: HotFix #57810
 	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
+	- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
 Param's Explanation:
 	@Liveindicator : indicate that whether the report will get live data or not
 		+ 0: Non - Live data only
@@ -339,7 +340,7 @@ BEGIN
 								+ 'SUM(CommissionP) as PlayerComm,'+ CHAR(13)
 								+ '- SUM(b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13)
 								+ 'SUM(b.betcount) BetCount' + CHAR(13)
-								+ 'FROM bodb_Licensee.dbo.rpt_Betting_BA b WITH (NOLOCK)' + CHAR(13)
+								+ 'FROM bodb_LicenseeReport.dbo.rpt_Betting_BA b WITH (NOLOCK)' + CHAR(13)
 								+ 'INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID' + CHAR(13)
 								+ 'LEFT JOIN league l WITH (NOLOCK) ON b.LeagueID = l.LeagueID' + CHAR(13)
 								+ 'WHERE b.rptDate BETWEEN ''' + CONVERT(VARCHAR(10), @FDate, 120) + ''' AND ''' + CONVERT(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13)
@@ -415,7 +416,7 @@ BEGIN
 								+ 'SUM(b.CommissionP  ) PlayerComm,' + CHAR(13)
 								+ '- SUM(b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13)
 								+ 'SUM(b.betcount) BetCount' + CHAR(13)
-								+ 'FROM bodb_Licensee.dbo.rpt_Betting b WITH ( NOLOCK )' + CHAR(13)
+								+ 'FROM bodb_licenseereport.dbo.rpt_Betting b WITH ( NOLOCK )' + CHAR(13)
 								+ 'INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID' + CHAR(13)
 								+ 'LEFT JOIN league l WITH (NOLOCK) ON b.LeagueID = l.LeagueID' + CHAR(13)
 								+ 'WHERE b.rptDate BETWEEN ''' + CONVERT(VARCHAR(10), @FDate, 120) + ''' AND ''' + CONVERT(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13)

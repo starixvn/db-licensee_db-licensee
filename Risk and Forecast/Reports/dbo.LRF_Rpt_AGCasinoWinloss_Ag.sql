@@ -30,6 +30,7 @@ AS
 		- 20150917@Florent: Change datasource for AG Casino
 		- 20151020@Florent: get MoveBetsDay
 		- 20160413@Victor: support MKK currency code [Redmine: #55745]
+		- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
 	Param's Explanation:  
 	  + @excludeTest: remove currency UUS
 */  
@@ -142,7 +143,7 @@ BEGIN
 									, SUM(c.BetCount) AS TotalTrans
 									, SUM(c.Winlost)  AS Winlost
 									, -SUM(c.Winlost) AS LicenseeWinlost
-							FROM DBLIC.bodb_Licensee.dbo.rptLicWinloss2 c WITH (NOLOCK)
+							FROM DBLIC.bodb_licenseereport.dbo.rptLicWinloss2 c WITH (NOLOCK)
 								INNER JOIN (SELECT DISTINCT Recommend, Currency FROM #tmpCust) ct ON c.Custid = ct.Recommend AND c.Currency = ct.Currency
 							WHERE c.Winlostdate BETWEEN @TempFromDate AND @ToDate2 
 								AND c.roleid = 2

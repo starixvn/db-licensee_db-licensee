@@ -72,6 +72,7 @@ AS
 	- 20160331@Walter: Support Voidbridge single wallet [Redmine: #55057]
 	- 20160413@Victor: support MKK currency code [Redmine: #55745]
 	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
+	- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
 	
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -523,7 +524,7 @@ BEGIN
 				CASE WHEN b.statusID = 111 THEN 0|@sumBetCount
 					ELSE 1 END
 		FROM 
-			bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
+			bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
 			INNER JOIN @TempAg ag ON b.Currency = ag.Currency AND b.recommend= ag.custID
 		WHERE  
 			  b.Winlostdate BETWEEN @FDate AND @TempToDate  
@@ -572,7 +573,7 @@ BEGIN
 				CASE WHEN b.statusID = 111 THEN 0|@sumBetCount
 					ELSE 1 END
 		FROM 
-			bodb_Licensee.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
+			bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
 			INNER JOIN @sporttype t ON b.sporttype = t.sporttype
 			INNER JOIN @TempAg ag ON b.recommend = ag.custID AND b.Currency = ag.Currency
 		WHERE  
@@ -751,7 +752,7 @@ BEGIN
 END 
 IF @IsOld = 1 
 BEGIN
-	SELECT @MaxOldDate = MAX(winlostdate) FROM bodb_Licensee.dbo.rptLicWinloss_old (NOLOCK)
+	SELECT @MaxOldDate = MAX(winlostdate) FROM bodb_Licenseereport.dbo.rptLicWinloss_old (NOLOCK)
 	IF @TDate >= @MaxOldDate
 			SET @TempToDate = @MaxOldDate
 		ELSE
@@ -782,7 +783,7 @@ BEGIN
 				CASE WHEN b.statusID = 111 THEN 0|@sumBetCount
 					ELSE 1 END
 		FROM 
-			bodb_Licensee.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
+			bodb_licenseereport.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
 			INNER JOIN @TempAg ag ON b.recommend = ag.custID AND ag.Currency = b.Currency
 		WHERE  
 			b.Winlostdate BETWEEN @FDate AND @TempToDate  
@@ -833,7 +834,7 @@ BEGIN
 				CASE WHEN b.statusID = 111 THEN 0|@sumBetCount
 					ELSE 1 END
 		FROM 
-			bodb_Licensee.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
+			bodb_licenseereport.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
 			INNER JOIN @TempAg ag  ON b.recommend = ag.custID AND b.Currency = ag.Currency
 			INNER JOIN @sporttype t ON b.sporttype = t.sporttype
 		WHERE  
