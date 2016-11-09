@@ -1,4 +1,4 @@
-ï»¿USE [bodb02]
+USE [bodb02]
 GO
 ALTER PROCEDURE [dbo].[Lrf_Statement_Mem]  
     @CustID			INT,  
@@ -38,13 +38,14 @@ Revisions:
 	- 20150917@Florent: Change datasource for AG Casino (#Redmine 43172)
 	- 20151203@Sophia: Add Grand Prize for Microgaming - RNG Casino [RedmineId: #47601]
 	- 20151228@Bobby: Implement RNG Casino sporttype(208,209,210)
+	- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
  
 Param's Explanation:   
-	â€¢ @ErrCode:
+	• @ErrCode:
 		= 0: add new member successfully.
 		> 0: Specific Error.  
     
-	â€¢ @ErrMsg: Error description.  
+	• @ErrMsg: Error description.  
 */
 BEGIN
 	SET NOCOUNT ON
@@ -312,7 +313,7 @@ BEGIN
 
 		INSERT INTO @DepWL(winlostdate, turnover)
 		SELECT winlostdate, SUM(turnover) AS turnover
-		FROM bodb_Licensee.dbo.rptLicWinloss2 (NOLOCK)
+		FROM bodb_Licenseereport.dbo.rptLicWinloss2 (NOLOCK)
 		WHERE
 			recommend = @recommend 
 			AND custid = @custid

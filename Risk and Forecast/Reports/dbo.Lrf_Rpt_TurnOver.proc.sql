@@ -22,7 +22,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_TurnOver]
 	@ShowMGCLC 		BIT = 0,
 	@ShowMGCRnG 	BIT = 0,
 	@ShowAGC		BIT = 0,
-	@ShowVB			BIT = 0
+	@ShowVB			BIT = 0,
+	@ShowCB			BIT = 0
 AS 
 /*
 Created: 20111017@Henry
@@ -58,6 +59,7 @@ Revisions:
    - 20160401@Percy: Support Voidbridge single wallet [Redmine: #55057]
    - 20160619@Jim: Allbet - Live Casino Integration for Licensees [Redmine: #59624]
    - 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
+   - 20160913@Jim : LRF - Implement Colossus Bets [Redmine: #63785]
 Param's Explanation:
     + @excludeTest: remove currency UUS
     + @CurrencyID = 0: get all currency
@@ -116,6 +118,7 @@ IF @ShowMGCRnG	= 1 INSERT INTO @sporttype(sporttype) VALUES(205)
 IF @ShowAGC		= 1 INSERT INTO @sporttype(sporttype) VALUES(250)
 IF @ShowVB		= 1 INSERT INTO @sporttype(sporttype) VALUES(212)
 IF @ShowAB		= 1 INSERT INTO @sporttype(sporttype) VALUES(211)
+IF @ShowCB		= 1 INSERT INTO @sporttype(sporttype) VALUES(204)	
 IF @ShowBT		= 1 
 BEGIN
 	INSERT INTO @sporttype(sporttype) VALUES(-2)
