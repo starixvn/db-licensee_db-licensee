@@ -19,6 +19,7 @@ AS
 		-20150609@Jim: support product microgaming
 		-20151022@Jim: support #44780
 		-20151108@Jim: Separated MicroGaming into 2 product
+		- 20160909@Winnie: support colossusBet RedmineID: #63785
 	Param's Explanation:
 */
 BEGIN
@@ -36,13 +37,36 @@ BEGIN
 	DECLARE @Srecommend INT
 			,@SEnabled INT = 0
 	SELECT @Srecommend = srecommend FROM dbo.Customer c WITH (NOLOCK) WHERE c.CustID = @CustID
+	
+	IF (@ProductId=15)
+	BEGIN
+	SELECT @IsEnable_Old = ~ISNULL(DisableColossusBet,1)
+	FROM dbo.custInfo WITH (NOLOCK)
+	WHERE CustID = @CustId 
 
+	SELECT @SEnabled = ~ISNULL(DisableColossusBet,1) FROM dbo.custInfo WITH (NOLOCK) WHERE CustID = @Srecommend 
+	
+	IF (@SEnabled = 0)
+		SELECT @IsEnable_Old = 0
+	
+	UPDATE dbo.CustInfo WITH (ROWLOCK,UPDLOCK)
+	SET DisableColossusBet = CASE @IsEnabled WHEN 1 THEN 0 ELSE 1 END
+	WHERE CustID = @CustID	
+	IF(@@ERROR<>0)
+	BEGIN
+	SELECT @ErrMsg='Could not update'
+	RETURN
+	END
+			
+	END
+	ELSE
+	BEGIN
 	SELECT @IsEnable_Old = ISNULL(IsEnabled,0)
 	FROM dbo.Dep_CustProductSetting WITH (NOLOCK)
 	WHERE CustID = @CustId AND ProductId=@ProductId
 
 	SELECT @SEnabled = ISNULL(IsEnabled,0) FROM dbo.Dep_SupperProductSetting WITH (NOLOCK) WHERE CustID = @Srecommend AND ProductId=@ProductId
-
+	
 	IF (@SEnabled = 0)
 		SELECT @IsEnable_Old = 0
 
@@ -103,6 +127,8 @@ BEGIN
 			SET DisableMicrogameRnG = CASE @IsEnabled WHEN 1 THEN 0 ELSE 1 END
 			WHERE CustID = @CustID	
 		END	
+		
+	END
 	-- Write log
 	SET @endRun = GETDATE()
 	SET @duration  = DATEDIFF(MILLISECOND,@startRun,@endRun)
