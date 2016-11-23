@@ -13,7 +13,6 @@ AS
     Task : Colossus Bets report [RedminID : #63785]
     DB: DBEXT.bodb02  
     Revisions:  
-		- 20161118@Jim: Correct CashOutAmount,WinPrizeAmount value [RedmineID : #67473] 
 		- 20161121@Sophia: Correct CashOutAmount,WinPrizeAmount value [RedmineID : #67473] 
 	Param's Explanation:  
 	   - @excludeTest: remove currency UUS
