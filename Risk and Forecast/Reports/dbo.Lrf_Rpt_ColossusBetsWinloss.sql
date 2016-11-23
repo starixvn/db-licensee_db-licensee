@@ -1,5 +1,10 @@
-USE [bodb02]
+
+SET QUOTED_IDENTIFIER ON 
 GO
+SET ANSI_NULLS ON 
+GO
+
+/****** Object:  Stored Procedure dbo.Lrf_Rpt_ColossusBetsWinloss    Script Date: 11/18/2016 5:30:33 PM ******/
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_ColossusBetsWinloss] @LicenseeID INT
 	, @CurrencyID INT = 0
@@ -15,7 +20,7 @@ AS
     Task : Colossus Bets report [RedminID : #63785]
     DB: DBEXT.bodb02  
     Revisions:  
-		-  
+		- 20161121@Sophia: Correct fomular CashOutAmount,WinPrizeAmount value [RedmineID : #67473]
 	Param's Explanation:  
 	   - @excludeTest: remove currency UUS
 	   - @ReportType : 1 Daily, 2 Monthly
@@ -133,6 +138,7 @@ BEGIN
 			, TurnOver MONEY
 			, TotalTrans INT
 			, Winlost MONEY
+			, Actual_stake MONEY
 			, STATUS NVARCHAR(20)
 			, GrandAmt MONEY
 			)
@@ -144,6 +150,7 @@ BEGIN
 			, TurnOver
 			, TotalTrans
 			, Winlost
+			, Actual_stake
 			, STATUS
 			, GrandAmt
 			)
@@ -153,6 +160,7 @@ BEGIN
 			, SUM(ABS(b.Stake)) TurnOver
 			, COUNT(DISTINCT b.refno) TotalTrans
 			, b.Winlost
+			, b.Actual_stake
 			, b.STATUS
 			, SUM(a.GrandAmt) AS GrandAmt
 		FROM dbo.bettrans b WITH (NOLOCK)
@@ -170,6 +178,7 @@ BEGIN
 			, b.winlostdate
 			, b.Currency
 			, b.Winlost
+			, b.Actual_stake
 			, b.STATUS
 
 		INSERT INTO @tmpRawData (
@@ -188,7 +197,7 @@ BEGIN
 			, 0 TurnOver
 			, COUNT(DISTINCT b.refno) TotalTrans
 			, SUM(CASE 
-					WHEN b.winlost = 0
+					WHEN (b.winlost - b.actual_stake ) < 0 AND b.status  = 'WON' 
 						THEN 0
 					ELSE CASE 
 							WHEN bm.bettype IN (
@@ -196,17 +205,15 @@ BEGIN
 									, 18005
 									, 18006
 									)
-								AND b.STATUS = 'WON'
 								THEN bm.Winlost - bm.stake
 							ELSE 0
 							END
 					END) AS WinningPrize
 			, SUM(CASE 
-					WHEN b.winlost = 0
+					WHEN (b.winlost - b.actual_stake ) < 0 AND b.status  = 'WON'
 						THEN 0
 					ELSE CASE 
 							WHEN bm.bettype = 18002
-								AND b.STATUS = 'WON'
 								THEN bm.winlost - bm.stake
 							ELSE 0
 							END
@@ -369,13 +376,17 @@ BEGIN
 			END
 	DROP TABLE #TempExchange		
 END
+
 GO
 
-GRANT EXECUTE
-	ON [dbo].[Lrf_Rpt_ColossusBetsWinloss]
-	TO [bodbLicenseeNet]
+SET QUOTED_IDENTIFIER OFF 
+GO
+SET ANSI_NULLS ON 
 GO
 
-GRANT VIEW DEFINITION
-	ON [dbo].[Lrf_Rpt_ColossusBetsWinloss]
-	TO [vnteam]
+
+GO 
+ GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_ColossusBetsWinloss] TO [vnteam]
+GO 
+ GRANT EXECUTE ON [dbo].[Lrf_Rpt_ColossusBetsWinloss] TO [bodbLicenseeNet]
+GO 
