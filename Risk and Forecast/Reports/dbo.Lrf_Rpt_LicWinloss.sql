@@ -529,7 +529,7 @@ BEGIN
 			0 AS CommBA,
 			0 AS CommRB,
 			0 AS PlayerComm,
-			COUNT(CASE WHEN RAND() + 1 > 0 AND (b.bettype = 903) AND (@drawfilter = 2 AND b.statusID = 111) THEN NULL ELSE b.transid END) AS BetCount,
+			COUNT(CASE WHEN RAND() + 1 > 0 AND ((b.bettype = 903) OR (@drawfilter = 2 AND b.statusID = 111)) THEN NULL ELSE b.transid END) AS BetCount,
 			/*
 				* CASE WHEN @drawfilter = 2 AND b.statusID = 111 THEN 0 ELSE 1 END BetCount,
 				-- * CASE WHEN @drawfilter = 2 THEN CASE WHEN b.statusID = 111 THEN 0 ELSE 1 END ELSE 1 END BetCount,
@@ -1185,7 +1185,7 @@ BEGIN
 			0 as CommBA,
 			0 as CommRB,
 			0 as PlayerComm,
-			SUM(CASE WHEN RAND() + 1 > 0 AND (b.bettype = 903) AND (@drawfilter = 2 AND b.statusID = 111) THEN 0 ELSE b.BetCount END) AS BetCount,
+			SUM(CASE WHEN RAND() + 1 > 0 AND ((b.bettype = 903) OR (@drawfilter = 2 AND b.statusID = 111)) THEN 0 ELSE b.BetCount END) AS BetCount,
 			/*
 				* CASE WHEN @drawfilter = 2 AND b.statusID = 111 THEN 0 ELSE 1 END BetCount,
 				-- * CASE WHEN @drawfilter = 2 THEN CASE WHEN b.statusID = 111 THEN 0 ELSE 1 END ELSE 1 END BetCount,
@@ -1614,7 +1614,7 @@ BEGIN
 			0 AS CommBA,
 			0 AS CommRB,
 			0 AS PlayerComm,
-			SUM(CASE WHEN RAND() + 1 > 0 AND (b.bettype = 903) AND (@drawfilter = 2 AND b.statusID = 111) THEN 0 ELSE b.BetCount END) AS BetCount,
+			SUM(CASE WHEN RAND() + 1 > 0 AND ((b.bettype = 903) OR (@drawfilter = 2 AND b.statusID = 111)) THEN 0 ELSE b.BetCount END) AS BetCount,
 			/*
 				* CASE WHEN @drawfilter = 2 AND b.statusID = 111 THEN 0 ELSE 1 END BetCount,
 				-- * CASE WHEN @drawfilter = 2 THEN CASE WHEN b.statusID = 111 THEN 0 ELSE 1 END ELSE 1 END BetCount,
