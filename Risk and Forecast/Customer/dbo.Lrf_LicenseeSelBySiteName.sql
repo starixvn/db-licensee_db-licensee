@@ -1,6 +1,6 @@
 ﻿USE [bodb_licensee]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_LicenseeSelBySiteName]    Script Date: 11/24/2016 12:47:29 PM ******/
+ 
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -41,3 +41,8 @@ BEGIN
 		AND s.ID = 1 --- 'LRF'
  
 END
+
+GO
+GRANT EXECUTE ON [dbo].[Lrf_LicenseeSelBySiteName] TO [bodbLicenseeNet]
+GO
+GRANT VIEW DEFINITION ON [dbo].[Lrf_LicenseeSelBySiteName] TO vnteam
