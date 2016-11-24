@@ -611,7 +611,7 @@ BEGIN
 					ELSE 0 END	
 				) AS turnoverAB,
 				
-				SUM(CASE WHEN b.bettype = 1011  
+				SUM(CASE WHEN b.bettype = 1011  THEN
 					stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
 					 
 					ELSE 0 END	
