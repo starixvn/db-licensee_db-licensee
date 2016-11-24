@@ -1,17 +1,21 @@
 ﻿USE [bodb_licensee]
 GO
- 
-ALTER PROCEDURE [dbo].[Lrf_LicenseeSelByLicenseeId]
-	@LicenseeID INT
+/****** Object:  StoredProcedure [dbo].[Lrf_LicenseeSelBySiteName]    Script Date: 11/24/2016 12:47:29 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[Lrf_LicenseeSelBySiteName]
+	@siteName nvarchar(25)
 AS
 /*
 	Created by: [20161114@Alex]
-	Task: Get detailed of licensee by LicenseeID
+	Task: Get detailed of licensee by SiteName
 	DB: DBLIC/bodb_Licensee
 	Revisions:
 		
 */
---  EXEC Lrf_LicenseeSelByLicenseeId @LicenseeID=1
+--  EXEC Lrf_LicenseeSelBysiteName @siteName=12bet
 SET NOCOUNT ON
 BEGIN
 	SELECT l.LicenseeID
@@ -31,13 +35,9 @@ BEGIN
 		ON r.ResellerID = lr.ResellerID
 	LEFT JOIN dbo.LicenseeBAConfig lb WITH (NOLOCK)
 		ON lb.licenseeID = l.licenseeID
-	WHERE l.LicenseeID = @LicenseeID
+	WHERE LOWER(l.LicenseeName) = LOWER(@siteName)
 		AND l.IsActive = 1
 		AND sl.IsActive = 1
 		AND s.ID = 1 --- 'LRF'
  
 END
-GO
-GRANT EXECUTE ON [dbo].Lrf_LicenseeSelByLicenseeId TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].Lrf_LicenseeSelByLicenseeId TO [vnteam]
