@@ -288,7 +288,7 @@ BEGIN
 
 		INSERT INTO @bettype(bettype)
 		SELECT	typeid FROM bettype (NOLOCK)
-		WHERE	typeid BETWEEN 1101 AND 1020
+		WHERE	typeid BETWEEN 1011 AND 1020
 	END
 	
 	DECLARE @TempFromDate	DATETIME, 
@@ -599,7 +599,7 @@ BEGIN
 						
 					ELSE 0 END
 				) AS turnoverAB,
-				SUM(CASE WHEN b.bettype = 219 THEN
+				SUM(CASE WHEN b.bettype BETWEEN 1011 AND 1020 THEN
 					stake * (CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END)
 						
 					ELSE 0 END
