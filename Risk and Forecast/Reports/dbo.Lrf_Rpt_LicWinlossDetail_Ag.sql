@@ -288,7 +288,7 @@ BEGIN
 
 		INSERT INTO @bettype(bettype)
 		SELECT	typeid FROM bettype (NOLOCK)
-		WHERE	typeid = 1011
+		WHERE	typeid BETWEEN 1101 AND 1020
 	END
 	
 	DECLARE @TempFromDate	DATETIME, 
@@ -933,7 +933,7 @@ BEGIN
 							ELSE 1 END
 						ELSE 1 END
 					ELSE 0 END) AS turnoverVB,
-					SUM(CASE WHEN b.sporttype = 212 THEN 
+					SUM(CASE WHEN b.sporttype = 211 THEN 
 					b.turnover
 					*
 					CASE WHEN @drawfilter IN (2,3) THEN

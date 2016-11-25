@@ -284,7 +284,7 @@ BEGIN
 
 	INSERT INTO @bettype(bettype)
 	SELECT	typeid FROM bettype (NOLOCK)
-	WHERE	typeid  = 1011
+	WHERE	typeid BETWEEN 1011 AND 1020
 END
 
 CREATE TABLE #TempData

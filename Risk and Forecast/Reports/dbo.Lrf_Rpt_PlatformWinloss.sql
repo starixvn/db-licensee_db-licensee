@@ -243,7 +243,7 @@ BEGIN
 
 	INSERT INTO #bettype(bettype, ProductPrefix)
 	SELECT typeid, 'FW' FROM bettype (NOLOCK)
-	WHERE (typeid  = 1011)
+	WHERE (typeid  BETWEEN 1011 AND 1020)
 END
 
 INSERT INTO #Exchange (exchangedate,exchangeid,eur,usd,gbp,code)
