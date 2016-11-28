@@ -50,12 +50,12 @@ Revisions:
 	- 20150626@Winnie: support bettrade
 	- 20151001@Jim: remove MicroGaming
 	- 20151228@Bobby: Remove RNG Casino
-	
 	- 20160118@Victor: Exclude Bettrade tickets on AmountDueToBA column [Redmine: 51053]
 	- 20160125@Victor: Fix incorrect formula of AmountDueToBettrade column [Redmine: 51053]
 	- 20160331@Walter: Support Voidbridge single wallet [Redmine: #55057]
 	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
 	- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
+	- 20161115@Jim: LRF - Integrate new product Fishing World [RedmineID : #66737]
 	 
 */
 SET NOCOUNT ON
@@ -373,6 +373,7 @@ FROM dbo.bettrans b WITH(NOLOCK)
 WHERE 
 	 b.winlostdate BETWEEN @MoveBetsDay AND @Today 
 	AND (b.bettype <= 1599 OR b.bettype BETWEEN 4001 AND 7999)
+	AND b.bettype NOT BETWEEN 1011 AND 1020
 	AND b.statusID IN (111,112,113)
 
 INSERT INTO @LicenseeWL (winlostdate,currency,LicenseeWL,AmtDuetoBA,AmtDuetoRB,WinlossRB,CommBA,CommRB,PlayerComm,WLBetTicket,BetTradeComm,WLBoughtTicket)
