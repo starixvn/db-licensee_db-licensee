@@ -611,7 +611,7 @@ BEGIN
 					ELSE 0 END	
 				) AS turnoverAB,
 				
-				SUM(CASE WHEN b.bettype = 1011  THEN
+				SUM(CASE WHEN b.bettype BETWEEN 1011 AND 1020  THEN
 					stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
 					 
 					ELSE 0 END	
@@ -645,7 +645,7 @@ BEGIN
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLVB,
 				-SUM(CASE WHEN b.bettype BETWEEN 2401  AND 2499
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLAB,
-				-SUM(CASE WHEN b.bettype = 1011
+				-SUM(CASE WHEN b.bettype BETWEEN  1011 AND 1020
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLFW,
 					
 				0 as AmountDueToBA,

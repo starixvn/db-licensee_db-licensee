@@ -579,7 +579,7 @@ BEGIN
 				WHEN RAND() + 1 > 0 AND b.bettype BETWEEN 1800 AND 1899 THEN 'AGC'
 				WHEN RAND() + 1 > 0 AND b.bettype BETWEEN 4001 AND 7999 THEN 'VB'
 				WHEN RAND() + 1 > 0 AND b.bettype BETWEEN 2401 AND 2499 THEN 'AB'
-				WHEN RAND() + 1 > 0 AND b.bettype = 1011  THEN 'FW'
+				WHEN RAND() + 1 > 0 AND b.bettype BETWEEN 1011 AND 1020 THEN 'FW'
 				ELSE ''
 			END,
 			SUM(CASE WHEN RAND() + 1 > 0 AND @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE stake END) AS turnover,
@@ -705,7 +705,7 @@ BEGIN
 				WHEN RAND() + 1 > 0 AND b.bettype BETWEEN 1800 AND 1899 THEN 'AGC'
 				WHEN RAND() + 1 > 0 AND b.bettype BETWEEN 4001 AND 7999 THEN 'VB'
 				WHEN RAND() + 1 > 0 AND b.bettype BETWEEN 2401 AND 2499 THEN 'AB'
-				WHEN RAND() + 1 > 0 AND b.bettype = 1011  THEN 'FW'
+				WHEN RAND() + 1 > 0 AND b.bettype BETWEEN 1011 AND 1020 THEN 'FW'
 				ELSE ''
 			END
 	END
