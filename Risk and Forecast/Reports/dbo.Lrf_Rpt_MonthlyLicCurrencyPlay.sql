@@ -1,4 +1,12 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_Rpt_MonthlyLicCurrencyPlay]  
+﻿USE [bodb_Licensee]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_MonthlyLicCurrencyPlay]    Script Date: 12/07/2016 02:37:30 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+/****** Object:  Stored Procedure dbo.Lrf_Rpt_MonthlyLicCurrencyPlay    Script Date: 6/19/2012 11:25:07 AM ******/
+ALTER PROCEDURE [dbo].[Lrf_Rpt_MonthlyLicCurrencyPlay]  
  @FromDate	SMALLDATETIME,
  @ToDate	SMALLDATETIME
  
@@ -11,6 +19,7 @@ AS
     Revisions:  
 	
 	Param's Explanation:  
+	- 20160726@Francis: Move SP to bodb_LicenseeReport - [Redmine: #60449]
 	  
 */
     
@@ -35,7 +44,7 @@ SUM(CASE WHEN statusID IN (112,113,111,114,115) THEN turnover ELSE 0 END ) AS Tu
 SUM(winlost) AS winlost,
 sum(BetCount) as betcount,
 count(CustID) as membercount
-FROM rptLicIPBetting b WITH (NOLOCK)
+FROM bodb_Report.dbo.rptLicIPBetting b WITH (NOLOCK)
     INNER join Licensees l WITH (NOLOCK) ON l.licenseeid = b.licenseeid
     INNER join bodb02.dbo.exchange e WITH (NOLOCK) ON b.currency = e.exchangeid
 	LEFT JOIN country ct WITH (NOLOCK) ON b.countrySHORT = ct.countrySHORT
@@ -48,15 +57,6 @@ ORDER BY LicenseeName, e.code,CASE WHEN ISNULL(ct.countryLONG,'') IN ('','-') TH
 		ELSE ct.countryLONG END
 
 	
-END	
+END
 GO
-
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_MonthlyLicCurrencyPlay] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_MonthlyLicCurrencyPlay] TO [vnteam]  
-	
-	
-
-	
-	
-	
+GRANT EXECUTE ON [dbo].[Lrf_Rpt_MonthlyLicCurrencyPlay] TO [bodbLicenseeNet] AS [dbo]
