@@ -23,7 +23,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_TurnOver]
 	@ShowMGCRnG 	BIT = 0,
 	@ShowAGC		BIT = 0,
 	@ShowVB			BIT = 0,
-	@ShowCB			BIT = 0
+	@ShowCB			BIT = 0,
+	@ShowFW 		BIT =0
 AS 
 /*
 Created: 20111017@Henry
@@ -60,6 +61,7 @@ Revisions:
    - 20160619@Jim: Allbet - Live Casino Integration for Licensees [Redmine: #59624]
    - 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
    - 20160913@Jim : LRF - Implement Colossus Bets [Redmine: #63785]
+   - 20161115@Jim: LRF - Integrate new product Fishing World [RedmineID : #66737]
 Param's Explanation:
     + @excludeTest: remove currency UUS
     + @CurrencyID = 0: get all currency
@@ -124,6 +126,7 @@ BEGIN
 	INSERT INTO @sporttype(sporttype) VALUES(-2)
 	INSERT INTO @sporttype(sporttype) VALUES(-3)
 END
+IF @ShowFW		= 1 INSERT INTO @sporttype(sporttype) VALUES(219)
 
 IF @username <> ''
 BEGIN

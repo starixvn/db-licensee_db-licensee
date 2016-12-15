@@ -14,6 +14,7 @@ AS
     DB: DBEXT.bodb02  
     Revisions:  
 		- 20161121@Sophia: Correct CashOutAmount,WinPrizeAmount value [RedmineID : #67473] 
+		- 20161205@Jim:  Report should include only WLD tickets [RedminID : #68316]
 	Param's Explanation:  
 	   - @excludeTest: remove currency UUS
 	   - @ReportType : 1 Daily, 2 Monthly
@@ -171,6 +172,7 @@ BEGIN
 		WHERE b.bettype = 18000
 			AND b.winlostdate BETWEEN @TempFromDate
 				AND @_ToDate
+			AND b.statusID IN (111,112,113)		
 		GROUP BY b.CustID
 			, b.refno
 			, b.winlostdate
@@ -234,6 +236,7 @@ BEGIN
 			ON b.refno = bm.refno
 		WHERE bm.bettype BETWEEN 18001
 				AND 18006
+			AND bm.statusID IN (111,112,113)			
 		GROUP BY b.CustID
 			, b.Currency
 			, b.winlostdate;
@@ -302,6 +305,7 @@ BEGIN
 			ON b.CustID = c.CustID
 		WHERE rptDate BETWEEN @_FromDate
 				AND @TempToDate
+				AND b.statusID IN (111,112,113)
 		GROUP BY b.rptDate
 			, b.CustID
 			, b.CurrencyId

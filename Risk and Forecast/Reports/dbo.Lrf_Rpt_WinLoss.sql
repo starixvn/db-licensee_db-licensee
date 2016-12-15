@@ -22,6 +22,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
 	@ShowAGC		BIT = 0,
 	@ShowVB			BIT = 0,
 	@ShowAB			BIT = 0,
+	@ShowFW			BIT	= 0,
     @MoveBetsDay	DATETIME,
     @PageSize		INT = 1000,
     @PageIndex		INT = 1,
@@ -86,6 +87,7 @@ AS
 		- 20160619@Jim: Allbet - Live Casino Integration for Licensees [Redmine: #59624]
 		- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
 		- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
+		- 20161115@Jim: LRF - Integrate new product Fishing World [RedmineID : #66737]
 */
     
 SET NOCOUNT ON
@@ -275,6 +277,15 @@ BEGIN
 	WHERE	typeid BETWEEN 2401 AND 2499
 END
 
+IF @ShowFW = 1 -- Fishing World
+BEGIN
+	INSERT INTO @sporttype(sporttype)
+	VALUES (219)
+
+	INSERT INTO @bettype(bettype)
+	SELECT	typeid FROM bettype (NOLOCK)
+	WHERE	typeid BETWEEN 1011 AND 1020
+END
 
 CREATE TABLE #TempData
 (
@@ -378,7 +389,7 @@ BEGIN
 		GROUP BY b.CustID, b.winlostdate, b.currency	 
 	END
 
-	IF 1 IN (@ShowNG, @ShowLC, @ShowVS, @ShowRB, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowBT, @ShowAGC, @ShowVb,@ShowAB)
+	IF 1 IN (@ShowNG, @ShowLC, @ShowVS, @ShowRB, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowBT, @ShowAGC, @ShowVb,@ShowAB,@ShowFW)
 	BEGIN
 		INSERT INTO #TempData
 		SELECT
@@ -449,7 +460,7 @@ BEGIN
 	END
 
 	--exclude BA tickets
-	IF 1 IN (@ShowSB, @ShowRB, @ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowAGC, @ShowVB,@ShowAB)
+	IF 1 IN (@ShowSB, @ShowRB, @ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowAGC, @ShowVB,@ShowAB,@ShowFW)
 	BEGIN
 		INSERT INTO #TempData
 		SELECT
@@ -544,7 +555,7 @@ BEGIN
 		GROUP BY b.CustID, b.winlostdate, b.currency	
 	END
 	
-	IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowVB,@ShowAB)
+	IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowVB,@ShowAB,@ShowFW)
 	BEGIN
 		INSERT  INTO #TempData
 		SELECT  

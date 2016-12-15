@@ -48,6 +48,7 @@ Revisions:
 	- 20151001@Jim: remove MicroGaming
 	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
 	- 20160721@Percy: Enhance Performance - using index srecommend on bettrans [RedmineID: #60770]
+	- 20161115@Jim: LRF - Integrate new product Fishing World [RedmineID : #66737]
 Param's Explanation: 
 */
 SET NOCOUNT ON
@@ -229,7 +230,7 @@ BEGIN
 						OR b.bettype BETWEEN 81 AND 120
 						OR b.bettype BETWEEN 1101 AND 1199
 						OR b.bettype BETWEEN 1201 AND 1299
-						OR b.bettype BETWEEN 1501 AND 1599--Keno
+						OR b.bettype BETWEEN 1501 AND 1599 --Keno
 						 
 						)
 					THEN (b.winlost - b.actual_stake)
@@ -434,7 +435,7 @@ BEGIN
 			) 
 		AND */ b.winlostdate BETWEEN @TempFromDate AND @TDate
 		AND bettype <= 1599  
-		AND bettype NOT IN (71, 73,901,902,903,904)
+		AND (bettype NOT IN (71, 73,901,902,903,904) AND bettype NOT BETWEEN 1011 AND 1020)
 		AND b.ruben = 1
 		AND statusID NOT IN (101, 102, 103)
 	GROUP BY bettype
@@ -687,7 +688,7 @@ BEGIN
 		AND */ b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
 		AND statusID NOT IN (101, 102, 103)
 		AND bettype <= 1599 
-		AND bettype NOT IN (71, 73,901,902,903,904)
+		AND (bettype NOT IN (71, 73,901,902,903,904) AND bettype NOT BETWEEN 1011 AND 1020)
 	GROUP BY bettype
 		, CASE 
 			WHEN b.bettype BETWEEN 81 AND 120

@@ -18,6 +18,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_PlatformWinlossDetail]
  @ShowMGCRNG	BIT=0,
  @ShowVB		BIT=0,		
  @ShowAB		BIT=0,	
+ @ShowFW		BIT=0,
  @PlatformType	TINYINT=0, 
  @MoveBetsDay SMALLDATETIME,
  @drawfilter SMALLINT = 1,
@@ -32,6 +33,7 @@ AS
 		- 20160719@Jim: Allbet - Live Casino Integration for Licensees (#59624)
 		- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
 		- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
+		- 20161115@Jim: LRF - Integrate new product Fishing World [RedmineID : #66737]
 	Param's Explanation:  
 	  + @PlatformType: 0: All  
 					   1: Asia (d)  
@@ -51,6 +53,8 @@ AS
 	  + @ShowMGCRNG: Show MicroGamming RNG Casino
 	  + @ShowKN: Show Keno
 	  + @ShowVB: Show Voidbridge
+	  + @ShowAB: Show Allbet
+	  + @ShowFW : Show Fishing World
 	  + @MoveBetsDay: The day we move tickets to bettrans14
 */
     
@@ -238,6 +242,16 @@ BEGIN
 	WHERE (typeid BETWEEN 2401 AND 2499)
 END
 
+IF @showFW = 1 -- Fishing World. 
+BEGIN 
+	INSERT INTO #sporttype (sporttype, ProductPrefix)
+	VALUES(219, 'FW')
+
+	INSERT INTO #bettype(bettype, ProductPrefix)
+	SELECT typeid, 'FW' FROM bettype (NOLOCK)
+	WHERE (typeid  BETWEEN 1011 AND 1020)
+END
+
 INSERT INTO #Exchange (exchangedate,exchangeid,eur,usd,gbp,code)
 SELECT exchangedate,exchangeid,eur,usd,gbp,code
 	FROM Lrf_f_GetExchangeDaily(@FDate,@TDate)
@@ -340,7 +354,7 @@ BEGIN
 	END
 	
 	
-	IF (@ShowRB=1 or @ShowNG=1 OR @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @showMGCLC =1 OR @showMGCRnG =1 OR @ShowVB = 1 OR @ShowAB = 1)
+	IF (@ShowRB=1 or @ShowNG=1 OR @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @showMGCLC =1 OR @showMGCRnG =1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW =1 )
 	BEGIN
 		INSERT INTO #WinLoss (Winlostdate, CustID, Currency, Turnover, Winlost, LicenseeWL, playercomm, WinlossRB, AmtDueToBA, AmtDueToRB, CommBA, CommRB, Company, BetCount)
 		SELECT 
@@ -431,7 +445,7 @@ BEGIN
 		GROUP BY b.winlostdate, b.CustID, b.currency, b.statusID
 			
 	END
-	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR  @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @showMGCLC =1 OR @showMGCRnG =1 OR @ShowVB = 1 OR @ShowAB = 1)
+	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR  @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @showMGCLC =1 OR @showMGCRnG =1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW =1)
 	BEGIN
 		INSERT INTO #WinLoss (Winlostdate, CustID, Currency, Turnover, Winlost, LicenseeWL, playercomm, WinlossRB, AmtDueToBA, AmtDueToRB, CommBA, CommRB, Company, BetCount)
 		SELECT 
