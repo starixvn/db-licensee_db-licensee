@@ -17,7 +17,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_PlatformWinloss]
 	 @ShowMGCLC		BIT=0,
 	 @ShowMGCRNG	BIT=0,
 	 @ShowVB		BIT=0,		
-	 @ShowAB		BIT=0,	
+	 @ShowAB		BIT=0,
 	 @ShowFW		BIT=0,
 	 @PlatformType	TINYINT=0, 
 	 @MoveBetsDay SMALLDATETIME,
@@ -230,6 +230,16 @@ IF @showAB = 1 -- Allbet
 BEGIN 
 	INSERT INTO #sporttype (sporttype, ProductPrefix)
 	VALUES(211, 'AB')
+	IF @showFW = 1 -- Fishing World. 
+	BEGIN 
+		SET @SportTypeSQL = @SportTypeSQL + ', (219, ''FW'')'
+
+		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 1011 AND 1020 THEN ''FW''
+				'
+
+		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 1011 AND 1020)'
+	END
+
 
 	INSERT INTO #bettype(bettype, ProductPrefix)
 	SELECT typeid, 'AB' FROM bettype (NOLOCK)
@@ -366,7 +376,7 @@ BEGIN
 	END
 	
 	
-	IF (@ShowRB=1 or @ShowNG=1 OR @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @showMGCLC =1 OR @showMGCRnG =1 OR @ShowVB = 1 OR @ShowAB =1  OR @ShowFW =1)
+		IF (@ShowRB=1 or @ShowNG=1 OR @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @showMGCLC =1 OR @showMGCRnG =1 OR @ShowVB = 1 OR @ShowAB =1  OR @ShowFW =1)
 	BEGIN
 		INSERT INTO #WinLoss (Winlostdate, Currency, ProductPrefix, PlatformType, Turnover, Winlost, LicenseeWL, playercomm, BetCount)
 		SELECT 
@@ -478,7 +488,7 @@ BEGIN
 										 END
 			
 	END
-	IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR  @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @showMGCLC =1 OR @showMGCRnG =1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW =1)
+		IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR  @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @showMGCLC =1 OR @showMGCRnG =1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW =1)
 	BEGIN
 		INSERT INTO #WinLoss (Winlostdate, Currency, ProductPrefix, PlatformType, Turnover, Winlost, LicenseeWL, playercomm, BetCount)
 		SELECT 
