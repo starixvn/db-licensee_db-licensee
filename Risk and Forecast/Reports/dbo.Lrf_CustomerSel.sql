@@ -1,5 +1,11 @@
 USE [bodb02]
 GO
+/****** Object:  StoredProcedure [dbo].[Lrf_CustomerSel]    Script Date: 12/21/2016 23:41:26 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+/****** Object:  Stored Procedure dbo.Lrf_CustomerSel    Script Date: 12/21/2016 11:33:27 PM ******/
 ALTER PROCEDURE [dbo].[Lrf_CustomerSel]
 	@LicenseeID		INT,
 	@UserID			INT,
@@ -167,7 +173,8 @@ BEGIN
 					)
 					AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))'	
 		
-			EXEC sp_executesql @strSQL
+			--EXEC sp_executesql @strSQL
+			EXEC (@strSQL)
 		
 			SELECT @strSQL = 'INSERT INTO #TempMember (CustID, speciallevel, username2, username, ugroup, closed, reject)
 			SELECT c.CustID, lc.speciallevel, lc.username2, lc.username, c.ugroup, c.closed, c.reject
@@ -184,7 +191,8 @@ BEGIN
 				(' + CONVERT(VARCHAR(10),@SpecialLevel) + ' = -1 OR lc.SpecialLevel = ' +  CONVERT(VARCHAR(10),@SpecialLevel) + ')
 				AND (' + CONVERT(VARCHAR(10),@GroupCommID) + ' = -1 OR ISNULL(cc.GroupCommID, 0) = ' + CONVERT(VARCHAR(10),@GroupCommID) + ')'
 			
-			EXEC sp_executesql @strSQL
+			--EXEC sp_executesql @strSQL
+			EXEC (@strSQL)
 		
 			IF ISNULL(@TotalRows, 0) = 0
 				SELECT @TotalRows = COUNT(c.custid) FROM #TempMember c
@@ -241,7 +249,8 @@ BEGIN
 									AND (' + CONVERT(VARCHAR(10),@SpecialLevel) + ' = -1 OR lc.SpecialLevel = ' +  CONVERT(VARCHAR(10),@SpecialLevel) + ')
 									AND (' + CONVERT(VARCHAR(10),@GroupCommID) + ' = -1 OR ISNULL(cc.GroupCommID, 0) = ' + CONVERT(VARCHAR(10),@GroupCommID) + ')'
 			
-			EXEC sp_executesql @strSQL
+			--EXEC sp_executesql @strSQL
+			EXEC (@strSQL)
 		
 			IF ISNULL(@TotalRows, 0) = 0
 				SELECT @TotalRows = COUNT(c.custid) FROM #TempMember c
@@ -286,7 +295,8 @@ BEGIN
 					)
 					AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))'	
 		
-			EXEC sp_executesql @strSQL
+			--EXEC sp_executesql @strSQL
+			EXEC (@strSQL)
 
 			SELECT @strSQL = 'INSERT INTO #TempMember (CustID, speciallevel, username2, username, ugroup, closed, reject)
 			SELECT c.CustID, lc.speciallevel, lc.username2, lc.username, c.ugroup, c.closed, c.reject
@@ -304,7 +314,8 @@ BEGIN
 				AND (' + CONVERT(VARCHAR(10),@SpecialLevel) + ' = -1 OR lc.SpecialLevel = ' +  CONVERT(VARCHAR(10),@SpecialLevel) + ')
 				AND (' + CONVERT(VARCHAR(10),@GroupCommID) + ' = -1 OR ISNULL(cc.GroupCommID, 0) = ' + CONVERT(VARCHAR(10),@GroupCommID) + ')'
 		
-			EXEC sp_executesql @strSQL
+			--EXEC sp_executesql @strSQL
+			EXEC (@strSQL)
 		
 			IF ISNULL(@TotalRows, 0) = 0
 				SELECT @TotalRows = COUNT(c.custid) FROM #TempMember c
@@ -391,8 +402,8 @@ BEGIN
 					+ ' OR ('+ CONVERT(VARCHAR(10),@BAFilter) + '= 2 AND ISNULL(lb.[Status],'') != ''Running''))'
 		END			
 					
-		--PRINT @strSQL
-		EXEC sp_executesql @strSQL	
+		--EXEC sp_executesql @strSQL
+		EXEC (@strSQL)
 										
 		IF ISNULL(@TotalRows, 0) = 0
 			SELECT @TotalRows = COUNT(c.custid) FROM #TempMember c
@@ -586,10 +597,9 @@ BEGIN
 	DROP TABLE #tmpCust
 	DROP TABLE #TempMember
 END
-GO 
-GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerSel] TO [vnteam]
-GO 
-GRANT EXECUTE ON [dbo].[Lrf_CustomerSel] TO [bodbLicenseeNet]
-GO 
-GRANT EXECUTE ON [dbo].[Lrf_CustomerSel] TO [bodbDownlineNet]
-GO 
+GO
+GRANT EXECUTE ON [dbo].[Lrf_CustomerSel] TO [bodbDownlineNet] AS [dbo]
+GO
+GRANT EXECUTE ON [dbo].[Lrf_CustomerSel] TO [bodbLicenseeNet] AS [dbo]
+GO
+GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerSel] TO [vnteam] AS [dbo]
