@@ -97,17 +97,16 @@ BEGIN
 	CREATE CLUSTERED INDEX ix_tempAg_cl ON #tempAg(Currency, custID)
 
 	CREATE TABLE #rptLicWinloss2(
-		recommend int,
 		currency smallint,
 		sporttype smallint,
 		winlostdate smalldatetime,
-		betfrom nvarchar(1),
 		isBA bit,
 		Turnover money,
 		Winlost money,
 		LicenseeWL money,
 		playercomm money,
-		BetCount money
+		BetCount money,
+		PlatformType TINYINT
 	)
 
 	--to Deal WITH Parameter Sniffing
@@ -125,8 +124,8 @@ BEGIN
 
 	DROP TABLE #Currency 
 
-	DECLARE @PlatformList TABLE (betfrom NVARCHAR(1), PlatformType TINYINT)
-	INSERT INTO @PlatformList (betfrom, PlatformType)
+	CREATE TABLE #PlatformList (betfrom NVARCHAR(1), PlatformType TINYINT)
+	INSERT INTO #PlatformList (betfrom, PlatformType)
 	SELECT	d.betfrom, d.PlatformType
 	FROM (
 		VALUES	(1, 'd'),
@@ -332,7 +331,7 @@ BEGIN
 			FROM dbo.bettrans b WITH (NOLOCK)
 				INNER JOIN #tempAg tma ON tma.CustID=b.recommend AND b.currency = tma.currency
 				INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON tma.custid=BA.recommend and b.transid = BA.transid 	 	
-				INNER JOIN @PlatformList pl ON pl.betfrom = b.betfrom
+				INNER JOIN #PlatformList pl ON pl.betfrom = b.betfrom
 			WHERE
 				b.statusID  IN (111, 112, 113)
 				AND b.bettype NOT IN (901,902,903,904)
@@ -368,7 +367,7 @@ BEGIN
 				   BetCount
 			FROM dbo.bettrans b WITH (NOLOCK)
 				INNER JOIN #tempAg tma ON tma.CustID=b.recommend  AND b.currency = tma.currency
-				INNER JOIN @PlatformList pl ON pl.betfrom = b.betfrom
+				INNER JOIN #PlatformList pl ON pl.betfrom = b.betfrom
 			WHERE
 				b.statusID  IN (111, 112, 113)
 				AND b.winlostdate BETWEEN @TempFromDate AND @TDate
@@ -411,7 +410,7 @@ BEGIN
 			FROM dbo.bettrans b WITH (NOLOCK)
 				INNER JOIN #tempAg tma ON tma.CustID=b.recommend AND b.currency = tma.currency
 				INNER JOIN #bettype bt ON b.bettype = bt.bettype
-				INNER JOIN @PlatformList pl ON pl.betfrom = b.betfrom
+				INNER JOIN #PlatformList pl ON pl.betfrom = b.betfrom
 			WHERE
 				b.statusID  IN (111, 112, 113)
 				AND b.winlostdate BETWEEN @TempFromDate AND @TDate
@@ -428,13 +427,12 @@ BEGIN
 			ELSE
 				SET  @TempToDate = @TDate
 
-		INSERT INTO #rptLicWinloss2(recommend, currency, sporttype, winlostdate, betfrom, isBA, Turnover, winlost, LicenseeWL, playercomm, BetCount)
-		SELECT	b.recommend,
-				b.currency,
+		INSERT INTO #rptLicWinloss2(currency, sporttype, winlostdate, isBA, PlatformType,Turnover, winlost, LicenseeWL, playercomm, BetCount)
+		SELECT	b.currency,
 				b.sporttype,
 				b.winlostdate,
-				b.betfrom,
 				b.isBA,
+				pl.PlatformType,
 				SUM(b.turnover
 				*
 					CASE WHEN @drawfilter IN (2,3) THEN
@@ -453,17 +451,18 @@ BEGIN
 						ELSE 1 END
 					ELSE 1 END AS BetCount
 		FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )
+			INNER JOIN 	#tempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
+			INNER JOIN #PlatformList pl ON pl.betfrom = b.betfrom
 		WHERE b.Winlostdate BETWEEN @FDate AND @TempToDate
 			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
-			AND b.bettype NOT IN (901,902,903,904)
-		GROUP BY b.recommend,
-				b.currency,
+			AND (b.bettype < 901 OR b.bettype > 904)
+		GROUP BY b.currency,
 				b.sporttype,	
 				b.winlostdate,
 				b.statusID,
-				b.betfrom,
-				b.isBA
+				b.isBA,
+				pl.PlatformType
 
 		IF @ShowBA=1 
 		BEGIN
@@ -472,7 +471,7 @@ BEGIN
 				b.winlostdate,
 				b.currency,
 				'BA' AS ProductPrefix,
-				pl.PlatformType,
+				b.PlatformType,
 
 				SUM(b.turnover),     
 				SUM(b.winlost),  
@@ -481,10 +480,8 @@ BEGIN
 				--------BetCount-----------
 				SUM(b.betcount)
 			FROM #rptLicWinloss2 b WITH ( NOLOCK )
-				INNER JOIN 	#tempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
-				INNER JOIN @PlatformList pl ON pl.betfrom = b.betfrom
 			WHERE b.isBA = 1	
-			GROUP BY b.winlostdate, b.currency, pl.PlatformType
+			GROUP BY b.winlostdate, b.currency, b.PlatformType
 			
 		END
 		IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR  @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @showMGCLC =1 OR @showMGCRnG =1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW =1)
@@ -494,7 +491,7 @@ BEGIN
 				b.winlostdate,
 				b.currency,
 				t.ProductPrefix,
-				pl.PlatformType,
+				b.PlatformType,
 				SUM(b.Turnover),
 				SUM(b.winlost),
 				SUM(b.LicenseeWL) AS LicenseeWL ,
@@ -502,15 +499,13 @@ BEGIN
 				--------BetCount-----------
 				SUM(b.betcount)
 			FROM #rptLicWinloss2 b WITH ( NOLOCK )
-				INNER JOIN #tempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
 				INNER JOIN #sporttype t ON b.sporttype = t.sporttype
-				INNER JOIN @PlatformList pl ON pl.betfrom = b.betfrom
 			WHERE (b.isBA = 0 OR b.isBA IS NULL)
 			GROUP BY	
 				b.winlostdate,
 				b.currency,
 				t.ProductPrefix,
-				pl.PlatformType
+				b.PlatformType
 
 		END
 	END			
