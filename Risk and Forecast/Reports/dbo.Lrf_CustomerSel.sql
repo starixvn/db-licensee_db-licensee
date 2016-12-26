@@ -1,11 +1,5 @@
 USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_CustomerSel]    Script Date: 12/21/2016 23:41:26 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-/****** Object:  Stored Procedure dbo.Lrf_CustomerSel    Script Date: 12/21/2016 11:33:27 PM ******/
 ALTER PROCEDURE [dbo].[Lrf_CustomerSel]
 	@LicenseeID		INT,
 	@UserID			INT,
@@ -62,6 +56,7 @@ AS
 		- 20160805@Jim: LRF - Offer different member commission for parlay tickets [RedmineID:#61897]	
 		- 20160913@Jim: LRF - Implement Colossus Bets [Redmine: #63785]	
 		- 20161122@Francis: Use dynamic query to enhance performance [Redmine: #66801]
+		- 20161226@Francis: Hotfix BA filter with username syntax error when building dynamic string
 	Param's Explanation:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 		+ @SpecialLevel: default value = -1 (all)
@@ -307,7 +302,7 @@ BEGIN
 				 FROM bodb_licensee.dbo.LicenseeCustInfo lci WITH(NOLOCK) 
 				 INNER JOIN #TempAg t ON lci.recommend = t.custid
 				 ) lc ON lc.custid = c.custid
-				LEFT JOIN bodb_Licensee.dbo.LicenseeBAHistory lb WITH(NOLOCK) ON LicenseeID = ' + CONVERT(VARCHAR(10),@LicenseeID) + ' AND c.custid = lb.custid AND lb.[Status] = ''Running''
+				LEFT JOIN bodb_Licensee.dbo.LicenseeBAHistory lb WITH(NOLOCK) ON lb.LicenseeID = ' + CONVERT(VARCHAR(10),@LicenseeID) + ' AND c.custid = lb.custid AND lb.[Status] = ''Running''
 				LEFT JOIN  bodb_licensee.dbo.LicenseeCustComm cc WITH(NOLOCK) ON c.custid = cc.custid AND cc.Licenseeid = '
 				+ CONVERT(VARCHAR(10),@LicenseeID) + '
 			WHERE ISNULL (lb.CustID, 0) = 0
@@ -379,7 +374,7 @@ BEGIN
 					INNER JOIN dbo.Customer c WITH (NOLOCK) ON c.custid = lc.Custid
 					INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = c.custid
 					LEFT JOIN bodb_licensee.dbo.LicenseeCustComm cc ON cc.custid = lc.custid AND cc.Licenseeid = ' + CONVERT(VARCHAR(10),@LicenseeID) + '
-					LEFT JOIN bodb_Licensee.dbo.LicenseeBAHistory lb WITH(NOLOCK) ON LicenseeID = ' + CONVERT(VARCHAR(10),@LicenseeID) + 
+					LEFT JOIN bodb_Licensee.dbo.LicenseeBAHistory lb WITH(NOLOCK) ON lb.LicenseeID = ' + CONVERT(VARCHAR(10),@LicenseeID) + 
 					' AND ci.custid = lb.custid AND lb.[Status] = ''Running''
 				WHERE 
 					(lc.username2 LIKE ' + '''%$' + @Username + '%''' + ' OR lc.username LIKE ''' + @Username + '%''' + ')
@@ -398,8 +393,8 @@ BEGIN
 					AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))
 					AND (' + CONVERT(VARCHAR(10),@SpecialLevel) + ' = -1 OR lc.SpecialLevel = ' +  CONVERT(VARCHAR(10),@SpecialLevel) + ')
 					AND (' + CONVERT(VARCHAR(10),@GroupCommID) + ' = -1 OR ISNULL(cc.GroupCommID, 0) = ' + CONVERT(VARCHAR(10),@GroupCommID) + ')
-					AND ((' + CONVERT(VARCHAR(10),@BAFilter) + ' = 1 AND ISNULL(lb.[Status],'') = ''Running'')'
-					+ ' OR ('+ CONVERT(VARCHAR(10),@BAFilter) + '= 2 AND ISNULL(lb.[Status],'') != ''Running''))'
+					AND ((' + CONVERT(VARCHAR(10),@BAFilter) + ' = 1 AND ISNULL(lb.[Status],'''') = ''Running'')'
+					+ ' OR ('+ CONVERT(VARCHAR(10),@BAFilter) + '= 2 AND ISNULL(lb.[Status],'''') != ''Running''))'
 		END			
 					
 		--EXEC sp_executesql @strSQL
@@ -597,6 +592,8 @@ BEGIN
 	DROP TABLE #tmpCust
 	DROP TABLE #TempMember
 END
+
+
 GO
 GRANT EXECUTE ON [dbo].[Lrf_CustomerSel] TO [bodbDownlineNet] AS [dbo]
 GO
