@@ -337,7 +337,9 @@ BEGIN
 	ELSE
 	BEGIN
 		SET @username = LTRIM(RTRIM(@username))
-	
+				
+		SELECT @username = REPLACE(@username,'''','''''')
+		
 		IF @BAFilter = 0
 		BEGIN
 		SELECT @strSQL = 'INSERT INTO #TempMember (CustID, speciallevel, username2, username, ugroup, closed, reject)
@@ -592,8 +594,6 @@ BEGIN
 	DROP TABLE #tmpCust
 	DROP TABLE #TempMember
 END
-
-
 GO
 GRANT EXECUTE ON [dbo].[Lrf_CustomerSel] TO [bodbDownlineNet] AS [dbo]
 GO
