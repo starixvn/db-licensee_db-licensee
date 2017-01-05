@@ -1,5 +1,10 @@
 USE [bodb_PlaytechCS]
 GO
+/****** Object:  StoredProcedure [dbo].[Task_AGCasino_ImportDataToDB]    Script Date: 01/05/2017 00:23:04 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
 ALTER PROCEDURE [dbo].[Task_AGCasino_ImportDataToDB]
 	@XmlData NVARCHAR(MAX),
 	@LicenseeName VARCHAR(50),
@@ -17,7 +22,7 @@ Original:
 Revisions:
 	- 20141017@Victor: remove time convertion, input data have GMT -4 timezone already
 	- 20141218@Winnie: DBA- Modify sp to Fix the issue of missing AG Casino's data(Task #27842)
-	- 20161227@Francis: put cmd into a queue to run background to reduce server's loading
+	- 20161227@Francis: put cmd into a queue to run background to reduce server's loading [RedmineID: #68972]
 
 Param explanation:
 
