@@ -1,9 +1,8 @@
 USE [bodb_licensee]
 GO
-
+/****** Object:  StoredProcedure [dbo].[Lrf_LicenseeProduct3rdSel_active_xtest]    Script Date: 01/17/2017 10:07:44 ******/
 SET ANSI_NULLS ON
 GO
-
 SET QUOTED_IDENTIFIER ON
 GO
 
@@ -22,7 +21,7 @@ Revisions:
 	- 20111122@Henry: Add filter @ProductPrefix + default values
 	- 20150407@Winnie: Add ProductId
 	- 20151019@Jim: clone sp from Lrf_LicenseeProduct3rdSel
-	 
+	- 20170116@Jim: Handle AG product settings with single& separate wallet mode [#70431] 
 */
 SET NOCOUNT ON
 SET @ProductPrefix = LTRIM(RTRIM(@ProductPrefix))
@@ -34,6 +33,7 @@ SELECT lp.LicenseeID
 	, p.Productid
 	, lp.Comm
 	, lp.Winloss
+	, p.offerSingle AS   IsOfferedSingleWallet
 FROM LicenseeProduct3rd lp(NOLOCK)
 INNER JOIN Licensees l(NOLOCK)
 	ON lp.LicenseeID = l.LicenseeID
@@ -54,6 +54,7 @@ WHERE (
 			)
 		)
 
+ 
  
 GO
 GRANT EXECUTE ON [dbo].[Lrf_LicenseeProduct3rdSel_active] TO [bodbLicenseeNet]  
