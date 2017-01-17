@@ -574,10 +574,11 @@ BEGIN
 		INNER JOIN #TempExchange e
 		ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 	GROUP BY b.winlostdate
+	DROP TABLE #TempExchange
 END
     
 DROP TABLE #tmpRpt
-DROP TABLE #TempExchange
+
 
 GO
 
