@@ -1,11 +1,5 @@
 ﻿USE [bodb_licensee]
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_LicenseeProduct3rdSel]    Script Date: 11/24/2015 13:36:42 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
- 
 
 ALTER PROCEDURE [dbo].[Lrf_LicenseeProduct3rdSel]
 	@LicenseeID INT = 0,
@@ -24,6 +18,7 @@ Revisions:
 	- 20111122@Henry: Add filter @ProductPrefix + default values
 	- 20150407@Winnie: Add ProductId
 	- 20160201@Jim: Set @isExcludeAG =0 (Redmine #51815)
+	- 20170116@Jim: Handle AG product settings with single& separate wallet mode [#70431]
 	
 */
 SET NOCOUNT ON
@@ -37,7 +32,8 @@ SELECT
 	p.ProductPrefix,
 	p.Productid,
 	lp.Comm,
-	lp.Winloss 
+	lp.Winloss ,
+	p.offerSingle AS IsOfferedSingleWallet
 	INTO #tmpReturn
 from
 	LicenseeProduct3rd lp (nolock)
@@ -61,6 +57,7 @@ SELECT LicenseeID,
 		ProductPrefix,
 		Productid,
 		Comm,
-		Winloss 
+		Winloss ,
+		IsOfferedSingleWallet
 FROM #tmpReturn
 DROP TABLE #tmpReturn		
