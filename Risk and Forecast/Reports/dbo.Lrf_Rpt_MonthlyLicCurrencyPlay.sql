@@ -44,7 +44,7 @@ SUM(CASE WHEN statusID IN (112,113,111,114,115) THEN turnover ELSE 0 END ) AS Tu
 SUM(winlost) AS winlost,
 sum(BetCount) as betcount,
 count(CustID) as membercount
-FROM bodb_Report.dbo.rptLicIPBetting b WITH (NOLOCK)
+FROM bodb_LicenseeReport.dbo.rptLicIPBetting b WITH (NOLOCK)
     INNER join Licensees l WITH (NOLOCK) ON l.licenseeid = b.licenseeid
     INNER join bodb02.dbo.exchange e WITH (NOLOCK) ON b.currency = e.exchangeid
 	LEFT JOIN country ct WITH (NOLOCK) ON b.countrySHORT = ct.countrySHORT
