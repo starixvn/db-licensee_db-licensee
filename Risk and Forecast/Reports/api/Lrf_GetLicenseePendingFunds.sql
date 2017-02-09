@@ -1,118 +1,114 @@
-ALTER PROCEDURE [dbo].[Lrf_GetLicenseePendingFunds]
+USE [bodb02]
+GO
+
+CREATE PROCEDURE [dbo].[Lrf_GetLicenseePendingFunds]
     @LicenseeID		INT,
 	@UserID			INT,
     @CurrencyID		INT = 0
 AS 
-/*
-Created: 20170119@Joseph
-Task : Dashboard API - Pending funds
-DB: DBEXT.bodb02
 
-Revisions:
-	- 20170119@Joseph: Copy from Lrf_Rpt_Outstanding
-Param's Explanation:
+/*
+	Created: 20170119@Joseph
+	Task : Dashboard API - Pending funds
+	DB: DBACC.bodb02
+
+	Revisions:
+		- 20170119@Joseph: Copy from Lrf_Rpt_TurnOver [RedmineID: #70616]
+	Param's Explanation:
 	
 */
+
 BEGIN
-    SET NOCOUNT ON
-    DECLARE
-        @Today		SMALLDATETIME,
-		@FromDate	DATETIME,
-		@ToDate		DATETIME
-	
-	SELECT  @Today	= CONVERT(DATE, GETDATE()) 
-    
-    SELECT	@FromDate	= CASE WHEN MAX(m.eventdate) <= @Today THEN MAX(m.eventdate) ELSE @Today END,
-			@ToDate		= @Today
-	FROM dbo.match14 m (NOLOCK)
-	GROUP BY m.eventdate 	        
-	
-	SELECT currencyID, LicenseeID INTO #currency
-	FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID, @userID, 1)-- System is default=1 (LRF)
-	WHERE (@CurrencyID = 0 OR (@CurrencyID <> 0 AND CurrencyID = @CurrencyID))
+    SET NOCOUNT ON;
+   
+	DECLARE @tmpAg   TABLE (custID INT, currency INT);
 
-    DECLARE @TempAg TABLE (CustId INT, Currency INT)
-    INSERT INTO @TempAg(CustId, Currency)
-    SELECT CustID, Currency 
-	FROM
-		bodb_licensee.dbo.f_SelLicenseeCust(@LicenseeID) lc   
-		INNER JOIN #Currency c ON lc.LicenseeID = c.LicenseeID AND lc.Currency = c.CurrencyID
+	SELECT	CurrencyID, LicenseeID
+	INTO	#Currency
+	FROM	DBLIC.bodb_licensee.dbo.CurrencyUser WITH (NOLOCK)
+	WHERE	usrID = @userID
+		AND LicenseeID = @LicenseeID 
+		AND SystemID = 1 -- System is default=1 (LRF)
+		AND isActive = 1
+		AND (@CurrencyID = 0 OR (@CurrencyID <> 0 AND CurrencyID = @CurrencyID));
 
-	DROP TABLE #Currency
-		
-    DECLARE @Outstanding TABLE
+	DECLARE @Temp TABLE (LicenseeId INT, CustId INT, Currency INT, [Description] VARCHAR(100));
+	DECLARE @sql1 VARCHAR(500);
+
+	SELECT  @sql1 = 'SELECT LicenseeId, CustID, Currency, Description 
+					FROM OPENQUERY(DBLIC, ''SELECT LicenseeId,CustID,Currency,Description  FROM bodb_licensee.dbo.f_SelLicenseeCust('+CAST(@LicenseeID AS VARCHAR(10))+')'')';
+
+	INSERT INTO @Temp (LicenseeId, CustId, Currency, [Description])
+	EXEC (@sql1);
+	
+	INSERT INTO @tmpAg
+	SELECT CustID, currency 
+	FROM @Temp lc
+		INNER JOIN #Currency c ON lc.LicenseeID = c.LicenseeID AND lc.Currency = c.CurrencyID 
+	WHERE Currency <> 20;
+
+	DROP TABLE #Currency;
+
+	CREATE TABLE #tmpRpt
 	(
-		currency	INT,
-		outstanding MONEY    
-	)       
-    
-    INSERT INTO @Outstanding
-	-- bettrans --
-	SELECT                 
-		b.currency,
-		SUM(actual_stake) Outstanding
-		   
-	FROM 
-		dbo.bettrans AS b WITH(NOLOCK)
-		INNER JOIN @TempAg a ON b.recommend = a.CustId AND b.Currency = a.Currency
-		LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid                  
-	WHERE  
-		BA.transid IS NULL 
-		AND b.bettype <= 1399 
-		AND b.ruben = 0
-		AND b.matchid > 0
-		AND b.bettype NOT BETWEEN 2101 AND 2399 -- exclude OWRnG
-		AND b.bettype NOT BETWEEN 4001 AND 7999 -- exclude Voidbridge
-	
-	GROUP BY
-		b.currency
-		
-	-- translog --
-	UNION ALL
-	SELECT
-		t.currency,
-		SUM(t.actual_stake) Outstanding
-	FROM
-		dbo.translog t WITH (NOLOCK) 
-		INNER JOIN @TempAg a ON t.recommend = a.CustId AND t.Currency = a.Currency
-	WHERE
-		t.statusID = 0
-	GROUP BY
-		t.currency     
-	
-	-- bettrans RNG --
-	UNION ALL
-	SELECT
-		g.currency,
-		SUM(g.actual_stake) Outstanding
-	FROM
-		dbo.BettransRNG g WITH (NOLOCK) 
-		INNER JOIN @TempAg a ON g.recommend = a.CustId AND g.Currency = a.Currency
-		INNER JOIN dbo.Custinfo c WITH (NOLOCK) ON g.CustID = c.CustID
-	WHERE
-		statusid IN (0, 1) -- AND IsSum = 0
-	GROUP BY g.currency
+		Winlostdate			SMALLDATETIME,
+		Currency			INT,  
+		PendingFund			MONEY
+	);
 
-	-- bettransLC --
-	UNION ALL
-	SELECT
-		g.currency,
-		SUM(g.actual_stake) Outstanding
-	FROM
-		dbo.bettransLC g WITH (NOLOCK) 
-		INNER JOIN @TempAg a ON g.recommend = a.CustId AND g.Currency = a.Currency
-		INNER JOIN dbo.Custinfo c WITH (NOLOCK) ON g.CustID = c.CustID
-	WHERE
-		statusid IN (0, 1) -- AND IsSum = 0
-		
-	GROUP BY g.currency
+	INSERT INTO #tmpRpt
+	(
+		Winlostdate, Currency, PendingFund
+	)
+	SELECT  p.winlostdate,
+			c.currency,
+			SUM(ISNULL(p.outstanding,0)) AS PendingFund
+	FROM bodb_Report.dbo.rptdepwinlostbyproduct_SUM p WITH(NOLOCK)    
+		INNER JOIN @tmpAg c ON p.custid = c.custid AND p.Currency = c.Currency
+	GROUP BY p.winlostdate, c.currency;
+			   
+	INSERT INTO #tmpRpt
+	(
+		Winlostdate, Currency, PendingFund
+	)
+	SELECT  p.winlostdate,
+			c.currency,
+			SUM(ISNULL(p.outstanding,0)) AS PendingFund
+	FROM bodb_Report.dbo.rptDepWinlostByProduct p WITH(NOLOCK)    
+		INNER JOIN dbo.Customer c WITH(NOLOCK) ON p.custid = c.custid
+		INNER JOIN @tmpAg a ON p.Currency = a.Currency AND a.CustID = c.Recommend
+	WHERE c.roleid = 1                  
+	GROUP BY p.winlostdate, c.currency;
     
-    SELECT  
-		ISNULL(SUM(Outstanding),0.00) AS SumOutstanding,
-        ISNULL(SUM(Outstanding * e.USD),0.00) AS SumOutstandingUSD,
-        ISNULL(SUM(Outstanding * e.EUR),0.00) AS SumOutstandingEUR,
-		ISNULL(SUM(Outstanding * e.GBP),0.00) AS SumOutstandingGBP
-    FROM
-		@Outstanding b
-		INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today, @Today)) e ON e.exchangeid = b.currency
+	DECLARE @FromDate SMALLDATETIME,
+			@ToDate SMALLDATETIME;
+
+	SELECT	@FromDate = MIN(Winlostdate),
+			@ToDate = MAX(Winlostdate)
+	FROM #tmpRpt;
+
+	SELECT * INTO #TempExchange
+	FROM Lrf_f_GetExchangeDaily(@FromDate, @ToDate)
+	WHERE exchangeid IN (SELECT DISTINCT Currency FROM #tmpRpt);
+
+	SELECT  SUM(b.PendingFund) AS PendingFund,
+			--- EUR
+			CAST(SUM(b.PendingFund * e.EUR) AS MONEY) AS PendingFundEUR,
+			--- USD
+			CAST(SUM(b.PendingFund * e.USD) AS MONEY) AS PendingFundUSD,
+			--- GBP
+			CAST(SUM(b.PendingFund * e.GBP) AS MONEY) AS PendingFundGBP
+	FROM #tmpRpt b
+		INNER JOIN #TempExchange e ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency;
+
+	DROP TABLE #TempExchange;
+	DROP TABLE #tmpRpt;
 END
+GO
+
+GRANT EXECUTE ON [dbo].[Lrf_GetLicenseePendingFunds] TO [bodbLicenseeNet] 
+GO
+GRANT ALTER ON [dbo].[Lrf_GetLicenseePendingFunds] TO [vnteam] 
+GO
+GRANT VIEW DEFINITION ON [dbo].[Lrf_GetLicenseePendingFunds] TO [vnteam]
+GO 
