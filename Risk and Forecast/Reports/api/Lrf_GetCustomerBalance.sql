@@ -1,9 +1,8 @@
 USE [bodb02]
 GO
 
-CREATE PROCEDURE [dbo].[Lrf_GetCustomerBalance] 
+ALTER PROCEDURE [dbo].[Lrf_GetCustomerBalance] 
 	@LicenseeID		INT,
-	@UserID			INT,
 	@CurrencyID		INT,
 	@ReportDate		SMALLDATETIME
 AS
@@ -28,32 +27,19 @@ BEGIN
 		Currency INT
 	)
 
-	SELECT	CurrencyID,
-			LicenseeID
-	INTO #Currency
-	FROM DBLIC.bodb_licensee.dbo.CurrencyUser WITH (NOLOCK)
-	WHERE usrID = @userID
-		AND LicenseeID = @LicenseeID
-		AND SystemID = 1 -- System is default=1 (LRF)
-		AND (@CurrencyID = 0 OR CurrencyID = @CurrencyID)
-
 	DECLARE @Temp TABLE (
-		LicenseeId INT,
 		CustId INT,
-		Currency INT,
-		[Description] VARCHAR(200)
+		Currency INT
 	)
 
 	DECLARE @sql VARCHAR(500)
 
-	SELECT @sql = 'SELECT LicenseeId,CustID,Currency,Description 
+	SELECT @sql = 'SELECT CustID,Currency
 					FROM OPENQUERY(DBLIC, ''SELECT LicenseeId,CustID,Currency,Description FROM bodb_licensee.dbo.f_SelLicenseeCust(' + CAST(@LicenseeID AS VARCHAR(10)) + ')'')'
 
 	INSERT INTO @Temp (
-		LicenseeId,
 		CustId,
-		Currency,
-		[Description]
+		Currency
 	)
 	EXEC (@sql)
 
@@ -64,17 +50,31 @@ BEGIN
 	SELECT	CustID,
 			Currency
 	FROM @Temp lc
-		INNER JOIN #Currency c 
-			ON lc.LicenseeID = c.LicenseeID
-			AND lc.Currency = c.CurrencyID
 	WHERE (@CurrencyID = 0 OR (@CurrencyID <> 0 AND Currency = @CurrencyID))
 		AND Currency <> 20
-		
-	DROP TABLE #Currency
 
-	SELECT SUM(b.ClosingBalance) AS ClosingBalance
+	CREATE TABLE #Exchange (ExchangeDate SMALLDATETIME, ExchangeId INT,  EUR FLOAT,USD FLOAT,GBP FLOAT, CNY FLOAT, MYR FLOAT, Code VARCHAR(10), PRIMARY KEY(ExchangeDate,ExchangeId));
+
+	INSERT INTO #Exchange (exchangedate, exchangeid, eur, usd, gbp, cny, myr, code)
+	SELECT exchangedate, exchangeid, eur, usd, gbp, cny, myr, code
+	FROM Lrf_f_GetExchangeDaily(@ReportDate, @ReportDate) t_ex
+	WHERE EXISTS (SELECT 1 FROM @tmpAg t_ag WHERE t_ag.Currency = t_ex.ExchangeId);
+
+	SELECT	SUM(b.ClosingBalance) AS ClosingBalance,		
+			--BASE EUR
+			SUM(b.ClosingBalance * e.EUR)	AS ClosingBalanceEUR,	
+			--BASE USD
+			SUM(b.ClosingBalance * e.USD)	AS ClosingBalanceUSD,
+			--BASE GBP
+			SUM(b.ClosingBalance * e.GBP)	AS ClosingBalanceGBP,
+			--BASE CNY
+			SUM(b.ClosingBalance * e.CNY)	AS ClosingBalanceCNY,
+			--BASE MYR
+			SUM(b.ClosingBalance * e.MYR)	AS ClosingBalanceMYR
 	FROM bodb_Report.dbo.rptDepWinlost b WITH (NOLOCK)
-	INNER JOIN @tmpAg a
-		ON b.recommend = a.CustId AND b.Currency = a.Currency
+		INNER JOIN @tmpAg a ON b.recommend = a.CustId AND b.Currency = a.Currency
+		INNER JOIN #Exchange e ON e.exchangeid = a.currency
 	WHERE b.winlostdate = @ReportDate
+
+	SET NOCOUNT OFF
 END

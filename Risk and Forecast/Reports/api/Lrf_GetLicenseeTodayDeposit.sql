@@ -14,7 +14,6 @@ GO
 
 CREATE PROCEDURE [dbo].[Lrf_GetLicenseeTodayDeposit]
     @LicenseeID		INT,
-    @UserID			INT,
     @CurrencyID		INT = 0,
     @ReportDate		SMALLDATETIME
 AS 
@@ -36,31 +35,20 @@ BEGIN
  
 	SELECT	@fdate = @ReportDate;
 
-	SELECT	CurrencyID, LicenseeID
-	INTO	#Currency
-	FROM	DBLIC.bodb_licensee.dbo.CurrencyUser WITH (NOLOCK)
-	WHERE	usrID = @userID
-		AND LicenseeID = @LicenseeID 
-		AND SystemID = 1 -- System is default=1 (LRF)
-		AND isActive = 1
-		AND (@CurrencyID = 0 OR (@CurrencyID <> 0 AND CurrencyID = @CurrencyID));
-
-	DECLARE @Temp TABLE (LicenseeId INT, CustId INT, Currency INT, [Description] VARCHAR(100));
+	DECLARE @Temp TABLE (CustId INT, Currency INT);
 	DECLARE @sql1 VARCHAR(MAX);
 
-	SELECT  @sql1 = 'SELECT LicenseeId, CustID, Currency, Description 
+	SELECT  @sql1 = 'SELECT CustID, Currency
 					FROM OPENQUERY(DBLIC, ''SELECT LicenseeId,CustID,Currency,Description FROM bodb_licensee.dbo.f_SelLicenseeCust('+CAST(@LicenseeID AS VARCHAR(10))+')'')';
 
-	INSERT INTO @Temp (LicenseeId, CustId, Currency, [Description])
+	INSERT INTO @Temp (CustId, Currency)
 	EXEC (@sql1);
 	
 	INSERT INTO @tmpAg(custID, currency)
 	SELECT CustID, currency 
 	FROM @Temp lc
-		INNER JOIN #Currency c ON lc.LicenseeID = c.LicenseeID AND lc.Currency = c.CurrencyID 
-	WHERE Currency <> 20;
-
-	DROP TABLE #Currency;    
+	WHERE Currency <> 20
+		AND (@CurrencyID = 0 OR (@CurrencyID <> 0 AND currency = @CurrencyID));
 
 	CREATE TABLE #tmpRpt
 	(
@@ -89,7 +77,11 @@ BEGIN
 			--- USD
 			CAST(SUM(b.Deposit * e.USD) AS MONEY) AS DepositUSD,
 			--- GBP
-			CAST(SUM(b.Deposit * e.GBP) AS MONEY) AS DepositGBP
+			CAST(SUM(b.Deposit * e.GBP) AS MONEY) AS DepositGBP,
+			--- CNY
+			CAST(SUM(b.Deposit * e.CNY) AS MONEY) AS DepositCNY,
+			--- MYR
+			CAST(SUM(b.Deposit * e.MYR) AS MONEY) AS DepositMYR
 	FROM #tmpRpt b
 		INNER JOIN #TempExchange e ON e.exchangeid = b.currency
 	WHERE e.ExchangeDate = @fdate;

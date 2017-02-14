@@ -14,11 +14,9 @@ GO
 
 CREATE PROCEDURE [dbo].[Lrf_GetLicenseeTurnoverByPlatform]   
 	 @LicenseeID	INT,
-	 @UserID		INT,
 	 @CurrencyID	INT = 0,
 	 @FromDate		SMALLDATETIME,  
-	 @ToDate		SMALLDATETIME,   
-	 @MoveBetsDay SMALLDATETIME
+	 @ToDate		SMALLDATETIME
 AS
 
 /*
@@ -58,18 +56,11 @@ BEGIN
 	--to Deal WITH Parameter Sniffing
 	SELECT @FDate = @FromDate, @TDate = @ToDate;
 
-	SELECT  currencyID, LicenseeID 
-	INTO #currency
-	FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID, @userID,1)-- System is default=1 (LRF)
-	WHERE (@CurrencyID = 0 OR CurrencyID = @CurrencyID);
-
 	INSERT INTO #tempAg (custID, currency) 
 	SELECT custID, currency 
 	FROM bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc
-		INNER JOIN #Currency c ON lc.LicenseeID = c.LicenseeID AND lc.Currency = c.CurrencyID
-	WHERE Currency <> 20;
-
-	DROP TABLE #Currency;
+	WHERE Currency <> 20
+		AND (@CurrencyID = 0 OR Currency = @CurrencyID);
 
 	CREATE TABLE #PlatformList (betfrom NVARCHAR(1), PlatformType TINYINT);
 
@@ -85,14 +76,23 @@ BEGIN
 				(5, 'l')
 	) d(PlatformType, betfrom);
 	
-	CREATE TABLE #Exchange (ExchangeDate SMALLDATETIME, ExchangeId INT,  EUR FLOAT,USD FLOAT,GBP FLOAT,Code VARCHAR(10), PRIMARY KEY(ExchangeDate,ExchangeId));
+	CREATE TABLE #Exchange (ExchangeDate SMALLDATETIME, ExchangeId INT,  EUR FLOAT,USD FLOAT,GBP FLOAT, CNY FLOAT, MYR FLOAT, Code VARCHAR(10), PRIMARY KEY(ExchangeDate,ExchangeId));
 
-	INSERT INTO #Exchange (exchangedate, exchangeid, eur, usd, gbp, code)
-	SELECT exchangedate, exchangeid, eur, usd, gbp, code
+	INSERT INTO #Exchange (exchangedate, exchangeid, eur, usd, gbp, cny, myr, code)
+	SELECT exchangedate, exchangeid, eur, usd, gbp, cny, myr, code
 	FROM Lrf_f_GetExchangeDaily(@FDate, @TDate) t_ex
 	WHERE EXISTS (SELECT 1 FROM #tempAg t_ag WHERE t_ag.Currency = t_ex.ExchangeId);
 
-	IF @TDate>@MoveBetsDay
+	DECLARE @MoveBetsDay SMALLDATETIME;
+
+	DECLARE @MoveBetTable AS TABLE (BalanceUpDay SMALLDATETIME, MoveBetsDay SMALLDATETIME);
+	INSERT INTO @MoveBetTable (BalanceUpDay, MoveBetsDay)
+	EXEC bodb02.dbo.Age_SelBalanceUpDay;
+
+	SELECT TOP 1 @MoveBetsDay = MoveBetsDay
+	FROM @MoveBetTable;
+
+	IF @TDate > @MoveBetsDay
 	BEGIN
 		IF @FDate <= @MoveBetsDay 
 			SET @TempFromDate =  DATEADD(DAY, 1, @MoveBetsDay);
@@ -151,7 +151,11 @@ BEGIN
 			--BASE USD
 			SUM(Turnover * e.USD)	AS TurnoverUSD,
 			--BASE GBP
-			SUM(Turnover * e.GBP)	AS TurnoverGBP
+			SUM(Turnover * e.GBP)	AS TurnoverGBP,
+			--BASE CNY
+			SUM(Turnover * e.CNY)	AS TurnoverCNY,
+			--BASE MYR
+			SUM(Turnover * e.MYR)	AS TurnoverMYR
 	FROM #WinLoss w 
 		INNER JOIN  #Exchange e on w.Currency = e.exchangeid AND e.ExchangeDate = w.Winlostdate
 	GROUP BY w.PlatformType

@@ -1,9 +1,8 @@
 USE [bodb02]
 GO
 
-CREATE PROCEDURE [dbo].[Lrf_GetLicenseePendingFunds]
+ALTER PROCEDURE [dbo].[Lrf_GetLicenseePendingFunds]
     @LicenseeID		INT,
-	@UserID			INT,
     @CurrencyID		INT = 0
 AS 
 
@@ -23,31 +22,20 @@ BEGIN
    
 	DECLARE @tmpAg   TABLE (custID INT, currency INT);
 
-	SELECT	CurrencyID, LicenseeID
-	INTO	#Currency
-	FROM	DBLIC.bodb_licensee.dbo.CurrencyUser WITH (NOLOCK)
-	WHERE	usrID = @userID
-		AND LicenseeID = @LicenseeID 
-		AND SystemID = 1 -- System is default=1 (LRF)
-		AND isActive = 1
-		AND (@CurrencyID = 0 OR (@CurrencyID <> 0 AND CurrencyID = @CurrencyID));
-
-	DECLARE @Temp TABLE (LicenseeId INT, CustId INT, Currency INT, [Description] VARCHAR(100));
+	DECLARE @Temp TABLE (CustId INT, Currency INT);
 	DECLARE @sql1 VARCHAR(500);
 
-	SELECT  @sql1 = 'SELECT LicenseeId, CustID, Currency, Description 
+	SELECT  @sql1 = 'SELECT CustID, Currency
 					FROM OPENQUERY(DBLIC, ''SELECT LicenseeId,CustID,Currency,Description  FROM bodb_licensee.dbo.f_SelLicenseeCust('+CAST(@LicenseeID AS VARCHAR(10))+')'')';
 
-	INSERT INTO @Temp (LicenseeId, CustId, Currency, [Description])
+	INSERT INTO @Temp (CustId, Currency)
 	EXEC (@sql1);
 	
-	INSERT INTO @tmpAg
+	INSERT INTO @tmpAg(CustId, Currency)
 	SELECT CustID, currency 
 	FROM @Temp lc
-		INNER JOIN #Currency c ON lc.LicenseeID = c.LicenseeID AND lc.Currency = c.CurrencyID 
-	WHERE Currency <> 20;
-
-	DROP TABLE #Currency;
+	WHERE Currency <> 20
+		AND (@CurrencyID = 0 OR (@CurrencyID <> 0 AND Currency = @CurrencyID));
 
 	CREATE TABLE #tmpRpt
 	(
@@ -97,7 +85,11 @@ BEGIN
 			--- USD
 			CAST(SUM(b.PendingFund * e.USD) AS MONEY) AS PendingFundUSD,
 			--- GBP
-			CAST(SUM(b.PendingFund * e.GBP) AS MONEY) AS PendingFundGBP
+			CAST(SUM(b.PendingFund * e.GBP) AS MONEY) AS PendingFundGBP,
+			--- CNY
+			CAST(SUM(b.PendingFund * e.CNY) AS MONEY) AS PendingFundCNY,
+			--- MYR
+			CAST(SUM(b.PendingFund * e.MYR) AS MONEY) AS PendingFundMYR
 	FROM #tmpRpt b
 		INNER JOIN #TempExchange e ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency;
 
