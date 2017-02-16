@@ -20,18 +20,18 @@ AS
 BEGIN
     SET NOCOUNT ON;
    
-	DECLARE @tmpAg   TABLE (custID INT, currency INT);
+	CREATE TABLE #tmpAg (custID INT, currency INT);
 
 	DECLARE @Temp TABLE (CustId INT, Currency INT);
 	DECLARE @sql1 VARCHAR(500);
 
 	SELECT  @sql1 = 'SELECT CustID, Currency
-					FROM OPENQUERY(DBLIC, ''SELECT LicenseeId,CustID,Currency,Description  FROM bodb_licensee.dbo.f_SelLicenseeCust('+CAST(@LicenseeID AS VARCHAR(10))+')'')';
+		FROM OPENQUERY(DBLIC, ''SELECT LicenseeId,CustID,Currency,Description  FROM bodb_licensee.dbo.f_SelLicenseeCust('+CAST(@LicenseeID AS VARCHAR(10))+')'')';
 
 	INSERT INTO @Temp (CustId, Currency)
 	EXEC (@sql1);
-	
-	INSERT INTO @tmpAg(CustId, Currency)
+ 
+	INSERT INTO #tmpAg(CustId, Currency)
 	SELECT CustID, currency 
 	FROM @Temp lc
 	WHERE Currency <> 20
@@ -39,9 +39,9 @@ BEGIN
 
 	CREATE TABLE #tmpRpt
 	(
-		Winlostdate			SMALLDATETIME,
-		Currency			INT,  
-		PendingFund			MONEY
+		Winlostdate   SMALLDATETIME,
+		Currency   INT,  
+		PendingFund   MONEY
 	);
 
 	INSERT INTO #tmpRpt
@@ -49,34 +49,49 @@ BEGIN
 		Winlostdate, Currency, PendingFund
 	)
 	SELECT  p.winlostdate,
-			c.currency,
+			a.currency,
 			SUM(ISNULL(p.outstanding,0)) AS PendingFund
-	FROM bodb_Report.dbo.rptdepwinlostbyproduct_SUM p WITH(NOLOCK)    
-		INNER JOIN @tmpAg c ON p.custid = c.custid AND p.Currency = c.Currency
-	GROUP BY p.winlostdate, c.currency;
-			   
+	FROM bodb_Report.dbo.rptdepwinlostbyproduct_SUM p WITH(NOLOCK)  
+		INNER JOIN #tmpAg a ON a.CustID = p.custid
+	GROUP BY p.winlostdate, a.currency
+	HAVING SUM(ISNULL(p.outstanding,0)) > 0;
+ 
 	INSERT INTO #tmpRpt
 	(
 		Winlostdate, Currency, PendingFund
 	)
 	SELECT  p.winlostdate,
-			c.currency,
-			SUM(ISNULL(p.outstanding,0)) AS PendingFund
+		a.currency,
+		SUM(ISNULL(p.outstanding,0)) AS PendingFund
 	FROM bodb_Report.dbo.rptDepWinlostByProduct p WITH(NOLOCK)    
 		INNER JOIN dbo.Customer c WITH(NOLOCK) ON p.custid = c.custid
-		INNER JOIN @tmpAg a ON p.Currency = a.Currency AND a.CustID = c.Recommend
+		INNER JOIN #tmpAg a ON a.CustID = c.Recommend
 	WHERE c.roleid = 1                  
-	GROUP BY p.winlostdate, c.currency;
-    
-	DECLARE @FromDate SMALLDATETIME,
-			@ToDate SMALLDATETIME;
+	GROUP BY p.winlostdate, a.currency
+	HAVING SUM(ISNULL(p.outstanding,0)) > 0;
 
-	SELECT	@FromDate = MIN(Winlostdate),
-			@ToDate = MAX(Winlostdate)
+	CREATE TABLE #WinLossDate(
+		WinLossDate SMALLDATETIME
+	);
+
+	INSERT INTO #WinLossDate(WinLossDate)
+	SELECT DISTINCT winlostdate
 	FROM #tmpRpt;
 
-	SELECT * INTO #TempExchange
-	FROM Lrf_f_GetExchangeDaily(@FromDate, @ToDate)
+	CREATE TABLE #TempExchange(
+		ExchangeDate SMALLDATETIME,
+		exchangeid INT,
+		EUR FLOAT,
+		USD FLOAT,
+		GBP FLOAT,
+		CNY FLOAT,
+		MYR FLOAT
+	);
+
+	INSERT INTO #TempExchange(ExchangeDate, exchangeid, EUR, USD,GBP, CNY, MYR)
+	SELECT ExchangeDate, exchangeid, EUR, USD,GBP, CNY, MYR
+	FROM #WinLossDate w
+		CROSS APPLY Lrf_f_GetExchangeDaily(w.WinLossDate, w.WinLossDate) e
 	WHERE exchangeid IN (SELECT DISTINCT Currency FROM #tmpRpt);
 
 	SELECT  SUM(b.PendingFund) AS PendingFund,
@@ -95,6 +110,8 @@ BEGIN
 
 	DROP TABLE #TempExchange;
 	DROP TABLE #tmpRpt;
+	DROP TABLE #tmpAg;
+	DROP TABLE #WinLossDate;
 END
 GO
 
