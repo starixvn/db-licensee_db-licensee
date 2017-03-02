@@ -5,11 +5,8 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProduct]   
- @LicenseeID	INT,
- @UserID		INT,
+ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProduct_xpre]  
  @UserName		VARCHAR(50) = NULL,
- @CurrencyID	INT = 0,
  @FromDate		SMALLDATETIME,  
  @ToDate		SMALLDATETIME,   
  @showSB		BIT=0,  
@@ -25,14 +22,14 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProduct]
  @ShowMGCRnG 	BIT=0,-- MicroGamming
  @ShowVB		BIT=0,-- Voidbridge
  @ReportType	TINYINT=1,  
- @MoveBetsDay SMALLDATETIME,
- @IsOld BIT = 0,
- @drawfilter SMALLINT = 1  ,
- @excludeTest BIT = 0,
- @CustID	  INT =0 OUTPUT,
- @SystemName VARCHAR(50)='' OUTPUT,
- @ErrCode  TINYINT = 0OUTPUT,
- @ErrMsg   VARCHAR(400)='' OUTPUT
+ @MoveBetsDay	SMALLDATETIME,
+ @IsOld			BIT = 0,
+ @drawfilter	SMALLINT = 1  ,
+ @CustID		INT =0 OUTPUT,
+ @AgentList		VARCHAR(MAX),
+ @SystemName	VARCHAR(50)='' OUTPUT,
+ @ErrCode		TINYINT = 0OUTPUT,
+ @ErrMsg		VARCHAR(400)='' OUTPUT
  WITH RECOMPILE
 AS    
 /*  Created: Henry  
@@ -73,7 +70,8 @@ AS
 	- 20160413@Victor: support MKK currency code [Redmine: #55745]
 	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
 	- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
-	
+	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -86,6 +84,11 @@ AS
 	  + @ShowLC: Show Live Casino bets
 	  +	@ShowVS: Show Virual Sport bets	
 	  + @MoveBetsDay: The day we move tickets to bettrans14
+	  + @AgentList: xml structure
+					  <ROOT>
+					   <Agent AgentId="12345" Currency="3"/>  
+					   <Agent AgentId="12345" Currency="5"/>  
+					  </ROOT> 
 */  
 BEGIN  
 SET NOCOUNT ON  
@@ -103,8 +106,6 @@ CREATE TABLE #SAgWinLoss (
 	Betcount		BIGINT
 )  
 
- 
-DECLARE @tempAg	TABLE( custID INT,Currency INT)  
 DECLARE @VNDCurrencyName VARCHAR(20)
 DECLARE @bettype AS TABLE (bettype INT PRIMARY KEY)
 DECLARE @sporttype TABLE(sporttype INT)
@@ -126,18 +127,28 @@ END
 
 SELECT @VNDCurrencyName = Currency FROM exchange (NOLOCK) WHERE ExchangeId = 51
 
-SELECT  currencyID,LicenseeID into #currency
-FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
-WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
+DECLARE @DocHandler INT
 
-INSERT INTO @tempAg (custID,Currency) 
-SELECT custID,Currency
-FROM bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc  
-	INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
-WHERE (@excludeTest=0 OR (@excludeTest=1 AND Currency <> 20))	
+BEGIN TRY
+	EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
+	INSERT INTO @TempAg (custID, currency)
+	SELECT AgentId, Currency
+	FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+
+	EXEC sp_xml_removedocument @DocHandler
+END TRY
+
+BEGIN CATCH
+	SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+	RETURN
+END CATCH;
 
 SET @UserName = ISNULL(@UserName,'')
-IF LEN(@UserName)= 0
+IF LEN(@UserName) = 0
 	SET @CustID = 0
 ELSE 
 	BEGIN 
@@ -171,9 +182,7 @@ ELSE
 				FROM #tblCust
 		DROP TABLE 	#tblCust	
 	END
---------------------------------------------
-DROP TABLE #Currency	
---------------------------------------------
+
 IF @ShowSB = 1  
 BEGIN  
 	INSERT  INTO @sporttype( sporttype)

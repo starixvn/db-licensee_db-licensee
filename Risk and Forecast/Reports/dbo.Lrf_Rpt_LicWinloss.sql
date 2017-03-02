@@ -1,10 +1,8 @@
 USE [bodb02]
 GO
 
-ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]  
+ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss_xpre]  	
 	@LicenseeID		INT,
-	@UserID			INT, 
-	@CurrencyID		INT = 0,
 	@FromDate		SMALLDATETIME,  
 	@ToDate			SMALLDATETIME,   
 	@showSB			BIT = 0,  
@@ -27,7 +25,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]
 	@MoveBetsDay	SMALLDATETIME,
 	@IsOld			BIT = 0,
 	@drawfilter		SMALLINT = 1,
-	@excludeTest	BIT = 0
+	@AgentList		VARCHAR(MAX)
 AS 
 /*  Created: Henry  
 	Date: 2012-01-09
@@ -67,13 +65,19 @@ AS
 	- 20160804@Percy: Enhance Performance - using faster index on bettrans [RedmineID: #60770]
 	- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
 	- 20161115@Jim: LRF - Integrate new product Fishing World [RedmineID : #66737]
-	
+	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
 	  + @IsOld: 0 - query in table rptLicWinloss, 1 - query in table rptLicWinloss_old. 
 	  + @excludeTest: remove currency UUS
 	  + @MoveBetsDay: The day we move tickets to bettrans14
+	  + @AgentList: xml structure
+					  <ROOT>
+					   <Agent AgentId="12345" Currency="3"/>  
+					   <Agent AgentId="12345" Currency="5"/>  
+					  </ROOT>
 */  
 BEGIN  
 
@@ -84,40 +88,10 @@ CREATE TABLE #SAgWinLoss
 	winlostdate			DATETIME,  
 	Currency			INT,
 	ProductCode			VARCHAR(10),
-	Turnover			MONEY,
-	/* 	
-	TurnoverSB			MONEY,
-	TurnoverBA			MONEY,
-	TurnoverNG			MONEY,
-	TurnoverRB			MONEY,
-	TurnoverLC			MONEY,
-	TurnoverVS			MONEY,
-	TurnoverCS 			MONEY,
-	TurnoverBG			MONEY,
-	TurnoverKN			MONEY,
-	turnoverMGCLC		MONEY, 
-	turnoverMGCRnG		MONEY, 
-	turnoverAGC			MONEY,
-	turnoverVB			MONEY, 
-	*/
+	Turnover			MONEY,	
 	BTActualStake		MONEY,
 	Winlost				MONEY,
-	LicenseeWL			MONEY,
-	/*
-	LicenseeWLSB 		MONEY,
-	LicenseeWLBA		MONEY,
-	LicenseeWLNG		MONEY,
-	LicenseeWLRB		MONEY,
-	LicenseeWLLC		MONEY,
-	LicenseeWLVS		MONEY,
-	LicenseeWLCS		MONEY,
-	LicenseeWLBG		MONEY,
-	LicenseeWLKN		MONEY,
-	LicenseeWLMGCLC	    MONEY,
-	LicenseeWLMGCRnG	MONEY,
-	LicenseeWLAGC		MONEY,
-	LicenseeWLVB		MONEY,
-	*/
+	LicenseeWL			MONEY,	
 	AmtDueToBA			MONEY,   
 	AmtDueToRB			MONEY,
 	CommBA				MONEY,   
@@ -135,31 +109,36 @@ CREATE TABLE #SAgWinLoss
 
 DECLARE @tempAg				TABLE(custID INT, currency INT)  
 DECLARE @VNDCurrencyName	VARCHAR(20)
-DECLARE @LicenseeName		VARCHAR(50)
 DECLARE @bettype			TABLE (bettype INT PRIMARY KEY)
 DECLARE @sporttype			TABLE (sporttype INT)
+DECLARE @LicenseeName		VARCHAR(50)
+DECLARE @WLBetTicket		TABLE (winlostdate DATETIME, currency INT, WLBetTicket MONEY)
 
 DECLARE @_FromDate SMALLDATETIME, @_ToDate SMALLDATETIME
 SELECT @_FromDate = @FromDate, @_ToDate = @ToDate
 
-SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WHERE LicenseeID = @LicenseeID 
-
 SELECT @VNDCurrencyName = currency FROM exchange (NOLOCK) WHERE ExchangeId = 51
 
-SELECT currencyID, LicenseeID INTO #currency
-FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID, @userID, 1) -- System is default=1 (LRF)
-WHERE (@CurrencyID = 0 OR (@CurrencyID <> 0 AND CurrencyID = @CurrencyID))
+DECLARE @DocHandler INT
 
-INSERT INTO @tempAg(custID, currency) 
-SELECT DISTINCT lc.custID, lc.currency 
-FROM
-	bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc 
-	INNER JOIN #Currency c ON lc.LicenseeID = c.LicenseeID AND lc.Currency = c.CurrencyID 
-WHERE (@excludeTest = 0 OR (@excludeTest = 1 AND Currency <> 20))	
+BEGIN TRY
+	EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
+	INSERT INTO @TempAg (custID, currency)
+	SELECT AgentId, Currency
+	FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
---DROP TABLE #Currency
-DECLARE @WLBetTicket TABLE (winlostdate DATETIME, currency INT, WLBetTicket MONEY)
+	EXEC sp_xml_removedocument @DocHandler
+END TRY
 
+BEGIN CATCH
+	SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+	RETURN
+END CATCH;
+
+SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WHERE LicenseeID = @LicenseeID 
 
 IF @ShowSB = 1  
 BEGIN  
@@ -332,61 +311,16 @@ BEGIN
 						WHEN (b.statusID = 112 OR b.statusID = 113) AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
 						ELSE 1 END
 				ELSE 1 END
-			) AS turnover, 
-			 
-			/*
-			0 AS turnoverSB,
-			SUM(stake
-				*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE
-						WHEN b.statusID = 111 THEN 0
-						WHEN (b.statusID = 112 OR b.statusID = 113) AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
-						ELSE 1 END
-				ELSE 1 END
-			) AS turnoverBA, 
-			0 AS turnoverNG,
-			0 AS turnoverRB,
-			0 AS turnoverLC,
-			0 AS turnoverVS,
-			0 AS tunroverCS,
-			0 AS tunroverBG,
-			0 AS tunroverKN,
-			0 AS turnoverMGCLC,
-			0 AS turnoverMGCRnG,
-			0 AS turnoverAGC,
-			0 AS turnoverVB,
-			*/
+			) AS turnover, 	
 			0 AS BTActualStake,
 			SUM(CASE WHEN RAND() + 1 > 0 THEN b.winlost-b.actual_stake ELSE 0 END) AS Winlost,
-			0 AS LicenseeWL,
-			 
-			/*
-			0 AS LicenseeWLSB,
-			0 AS LicenseeWLBA,
-			0 AS LicenseeWLNG,
-			0 AS LicenseeWLRB,
-			0 AS LicenseeWLLC,
-			0 AS LicenseeWLVS,
-			0 AS LicenseeWLCS,
-			0 AS LicenseeWLBG,
-			0 AS LicenseeWLKN,
-			0 AS LicenseeWLMGCLC,
-			0 AS LicenseeWLMGCRnG,
-			0 AS LicenseeWLAGC,
-			0 AS LicenseeWLVB,
-			*/
+			0 AS LicenseeWL,			
 			-SUM(CASE WHEN RAND() + 1 > 0 THEN b.winlost-b.actual_stake+awinlost+comm ELSE 0 END) AS AmountDueToBA,
 			0 AS AmountDueToRB,
 			SUM(CASE WHEN RAND() + 1 > 0 THEN comm ELSE 0 END) AS CommBA,
 			0 AS CommRB,
 			SUM(ISNULL(CASE WHEN RAND() + 1 > 0 THEN b.playercomm ELSE 0 END,0)) AS PlayerComm,
-			COUNT(CASE WHEN RAND() + 1 > 0 AND @drawfilter = 2 AND b.statusID = 111 THEN NULL ELSE b.transid END)AS BetCount,
-			/*
-			COUNT(b.transid)
-				* CASE WHEN @drawfilter = 2 AND b.statusID = 111 THEN 0 ELSE 1 END AS BetCount,
-				-- * CASE WHEN @drawfilter = 2 THEN CASE WHEN b.statusID = 111 THEN 0 ELSE 1 END ELSE 1 END BetCount,
-			*/
+			COUNT(CASE WHEN RAND() + 1 > 0 AND @drawfilter = 2 AND b.statusID = 111 THEN NULL ELSE b.transid END)AS BetCount,			
 			0 AS licenseeWLBT,
 			0 AS BetTradeComm,			
 			SUM(CASE WHEN RAND() + 1 > 0 AND b.betdaqid = 0 THEN (b.winlost-b.actual_stake) ELSE 0 END) AS WLBetTicket,
@@ -397,7 +331,6 @@ BEGIN
 			CTE
 			INNER JOIN dbo.bettrans b WITH (NOLOCK) ON CTE.transid = b.transid
 			INNER JOIN @tempAg tma ON tma.custID = b.recommend AND b.currency = tma.currency
-			--INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON /* tma.custid = BA.recommend AND */ b.transid = BA.transid
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 			AND b.statusID  IN (111, 112, 113)
@@ -420,59 +353,16 @@ BEGIN
 						WHEN (b.statusID = 112 OR b.statusID = 113) AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
 						ELSE 1 END
 				ELSE 1 END
-			) AS turnover,
-			/*
-			SUM(stake
-				*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE
-						WHEN b.statusID = 111 THEN 0
-						WHEN (b.statusID = 112 OR b.statusID = 113) AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
-						ELSE 1 END
-				ELSE 1 END
-			) AS turnoverSB, 
-			0 AS turnoverBA,
-			0 AS turnoverNG, 
-			0 AS turnoverRB,
-			0 AS turnoverLC, 
-			0 AS turnoverVS, 
-			0 AS turnoverCS,
-			0 AS tunroverBG,
-			0 AS tunroverKN,
-			0 AS turnoverMGCLC,
-			0 AS turnoverMGCRnG,
-			0 AS turnoverAGC,
-			0 AS turnoverVB,
-			*/
+			) AS turnover,			
 			0 AS BTActualStake,
 			SUM(CASE WHEN RAND() + 1 > 0 THEN b.winlost-b.actual_stake ELSE 0 END) AS Winlost,
-			-SUM(CASE WHEN RAND() + 1 > 0 THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWL,
-			/*
-			-SUM(b.winlost-b.actual_stake) AS LicenseeWLSB,
-			0 AS LicenseeWLBA,
-			0 AS LicenseeWLNG,
-			0 AS LicenseeWLRB,
-			0 AS LicenseeWLLC,
-			0 AS LicenseeWLVS,
-			0 AS LicenseeWLCS,
-			0 AS LicenseeWLBG,
-			0 AS LicenseeWLKN,
-			0 AS LicenseeWLMGCLC,
-			0 AS LicenseeWLMGCRnG,
-			0 AS LicenseeWLAGC,
-			0 AS LicenseeWLVB,
-			*/
+			-SUM(CASE WHEN RAND() + 1 > 0 THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWL,			
 			0 AS AmountDueToBA,
 			0 AS AmountDueToRB,
 			0 AS CommBA,
 			0 AS CommRB,
 			SUM(CASE WHEN RAND() + 1 > 0 THEN b.playerComm ELSE 0 END) AS PlayerComm,
-			COUNT(CASE WHEN RAND() + 1 > 0 AND @drawfilter = 2 AND b.statusID = 111 THEN NULL ELSE b.transid END)AS BetCount,
-			/*
-			COUNT(b.transid)
-				* CASE WHEN @drawfilter = 2 THEN CASE WHEN b.statusID = 111 THEN 0 ELSE 1 END ELSE 1 END BetCount,
-				-- * CASE WHEN @drawfilter = 2 THEN CASE WHEN b.statusID = 111 THEN 0 ELSE 1 END ELSE 1 END BetCount,
-			*/
+			COUNT(CASE WHEN RAND() + 1 > 0 AND @drawfilter = 2 AND b.statusID = 111 THEN NULL ELSE b.transid END)AS BetCount,			
 			0 AS licenseeWLBT,
 			0 AS BetTradeComm,	
 			SUM(CASE WHEN RAND() + 1 > 0 AND b.betdaqid = 0 THEN b.winlost-b.actual_stake ELSE 0 END) AS WLBetTicket,
@@ -504,40 +394,10 @@ BEGIN
 			b.winlostdate,  
 			a.currency,
 			'BT',
-			0 turnover,
-			/*
-			0 turnoverSB, 
-			0 AS turnoverBA,
-			0 turnoverNG, 
-			0 AS turnoverRB,
-			0 turnoverLC, 
-			0 turnoverVS, 
-			0 turnoverCS,
-			0 tunroverBG,
-			0 tunroverKN,
-			0 turnoverMGCLC,
-			0 turnoverMGCRnG,
-			0 turnoverAGC,
-			0 turnoverVB,
-			*/
+			0 turnover,			
 			SUM(CASE WHEN RAND() + 1 > 0 AND b.bettype = 902 THEN b.winlost ELSE 0 END) AS BTActualStake,
 			SUM(CASE WHEN RAND() + 1 > 0 AND b.bettype = 903 THEN 0 ELSE b.winlost-b.actual_stake END) AS Winlost,
-			0 AS LicenseeWL,
-			/*
-			0 AS LicenseeWLSB,
-			0 AS LicenseeWLBA,
-			0 AS LicenseeWLNG,
-			0 AS LicenseeWLRB,
-			0 AS LicenseeWLLC,
-			0 AS LicenseeWLVS,
-			0 AS LicenseeWLCS,
-			0 AS LicenseeWLBG,
-			0 AS LicenseeWLKN,
-			0 AS LicenseeWLMGCLC,			
-			0 AS LicenseeWLMGCRnG,
-			0 AS LicenseeWLAGC,
-			0 AS LicenseeWLVB,
-			*/
+			0 AS LicenseeWL,			
 			0 AS AmountDueToBA,
 			0 AS AmountDueToRB,
 			0 AS CommBA,
@@ -582,101 +442,16 @@ BEGIN
 				WHEN RAND() + 1 > 0 AND b.bettype BETWEEN 1011 AND 1020 THEN 'FW'
 				ELSE ''
 			END,
-			SUM(CASE WHEN RAND() + 1 > 0 AND @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE stake END) AS turnover,
-			/*
-			0 AS turnoverSB, 
-			0 AS turnoverBA,
-			SUM(CASE WHEN b.bettype BETWEEN 81 AND 120 THEN
-					stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
-					-- stake * CASE WHEN @drawfilter IN (2,3) THEN CASE WHEN b.statusID = 111 THEN 0 ELSE 1 END ELSE 1 END
-				ELSE 0 END	
-			) AS turnoverNG, 
-			0 AS turnoverRB,
-			SUM(CASE WHEN b.bettype BETWEEN 1101 AND 1199 THEN
-					stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
-					-- stake * CASE WHEN @drawfilter IN (2,3) THEN CASE WHEN b.statusID = 111 THEN 0 ELSE 1 END ELSE 1 END
-				ELSE 0 END	
-			) AS turnoverLC, 
-			SUM(CASE WHEN b.bettype BETWEEN 1201 AND 1299 THEN
-					stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
-					-- stake * CASE WHEN @drawfilter IN (2,3) THEN CASE WHEN b.statusID = 111 THEN 0 ELSE 1 END ELSE 1 END
-				ELSE 0 END	
-			) AS turnoverVS, 
-			SUM(CASE WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 THEN
-					stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
-					-- stake * CASE WHEN @drawfilter IN (2,3) THEN CASE WHEN b.statusID = 111 THEN 0 ELSE 1 END ELSE 1 END
-				ELSE 0 END	
-			) AS turnoverCS,
-			SUM(CASE WHEN b.bettype = 73 THEN
-					stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
-					-- stake * CASE WHEN @drawfilter IN (2,3) THEN CASE WHEN b.statusID = 111 THEN 0 ELSE 1 END ELSE 1 END
-				ELSE 0 END	
-			) AS turnoverBG,
-			SUM(CASE WHEN b.bettype BETWEEN 1501 AND 1599 THEN --Keno
-					stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
-					-- stake * CASE WHEN @drawfilter IN (2,3) THEN CASE WHEN b.statusID = 111 THEN 0 ELSE 1 END ELSE 1 END
-				ELSE 0 END	
-			) AS turnoverKN, 
-			SUM(CASE WHEN b.bettype BETWEEN 2001 AND 2007 THEN --Microgaming
-					stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
-					-- stake * CASE WHEN @drawfilter IN (2,3) THEN CASE WHEN b.statusID = 111 THEN 0 ELSE 1 END ELSE 1 END
-				ELSE 0 END	
-			) AS turnoverMGCLC,
-			SUM(CASE WHEN b.bettype BETWEEN 2008 AND 2009 THEN --Microgaming
-					stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
-					-- stake * CASE WHEN @drawfilter IN (2,3) THEN CASE WHEN b.statusID = 111 THEN 0 ELSE 1 END ELSE 1 END
-				ELSE 0 END	
-			) AS turnoverMGCRnG,
-			SUM(CASE WHEN b.bettype BETWEEN 1800 AND 1899 THEN --AGC
-					stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
-					-- stake * CASE WHEN @drawfilter IN (2,3) THEN CASE WHEN b.statusID = 111 THEN 0 ELSE 1 END ELSE 1 END
-				ELSE 0 END	
-			) AS turnoverAGC,
-			SUM(CASE WHEN b.bettype BETWEEN 4001 AND 7999 THEN --Voidbridge
-					stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
-					-- stake * CASE WHEN @drawfilter IN (2,3) THEN CASE WHEN b.statusID = 111 THEN 0 ELSE 1 END ELSE 1 END
-				ELSE 0 END	
-			) AS turnoverVB,
-			*/
+			SUM(CASE WHEN RAND() + 1 > 0 AND @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE stake END) AS turnover,			
 			0 AS BTActualStake,
 			SUM(CASE WHEN RAND() + 1 > 0 THEN b.winlost-b.actual_stake ELSE 0 END) AS Winlost,
-			-SUM(CASE WHEN RAND() + 1 > 0 THEN b.winlost - b.actual_stake ELSE 0 END) AS LicenseeWL,
-			/*
-			0 AS LicenseeWLSB,
-			0 AS LicenseeWLBA,
-			-SUM(CASE WHEN b.bettype BETWEEN 81 AND 120
-				THEN b.winlost - b.actual_stake ELSE 0 END) AS LicenseeWLNG,
-			0 AS LicenseeWLRB,
-			-SUM(CASE WHEN b.bettype BETWEEN 1101 AND 1199
-				THEN b.winlost - b.actual_stake ELSE 0 END) AS LicenseeWLLC,
-			-SUM(CASE WHEN b.bettype BETWEEN 1201 AND 1299
-				THEN b.winlost - b.actual_stake ELSE 0 END) AS LicenseeWLVS,
-			-SUM(CASE WHEN b.bettype =71 OR b.bettype BETWEEN 2101 AND 2399
-				THEN b.winlost - b.actual_stake ELSE 0 END)	AS LicenseeWLCS,
-			-SUM(CASE WHEN b.bettype =73
-				THEN b.winlost - b.actual_stake ELSE 0 END)	AS LicenseeWLBG,
-			-SUM(CASE WHEN b.bettype BETWEEN 1501 AND 1599
-				THEN b.winlost - b.actual_stake ELSE 0 END) AS LicenseeWLKN,
-			-SUM(CASE WHEN b.bettype BETWEEN 2001 AND 2007
-				THEN b.winlost - b.actual_stake ELSE 0 END) AS LicenseeWLMGCLC,
-			-SUM(CASE WHEN b.bettype BETWEEN 2008 AND 2009
-				THEN b.winlost - b.actual_stake ELSE 0 END) AS LicenseeWLMGCRnG,
-			-SUM(CASE WHEN b.bettype BETWEEN 1800 AND 1899
-				THEN b.winlost - b.actual_stake ELSE 0 END) AS LicenseeWLAGC,
-			-SUM(CASE WHEN b.bettype BETWEEN 4001 AND 7999
-				THEN b.winlost - b.actual_stake ELSE 0 END) AS LicenseeWLVB,
-			*/
+			-SUM(CASE WHEN RAND() + 1 > 0 THEN b.winlost - b.actual_stake ELSE 0 END) AS LicenseeWL,			
 			0 AS AmountDueToBA,
 			0 AS AmountDueToRB,
 			0 AS CommBA,
 			0 AS CommRB,
 			SUM(CASE WHEN RAND() + 1 > 0 THEN b.playerComm ELSE 0 END) AS PlayerComm,
-			COUNT(CASE WHEN RAND() + 1 > 0 AND @drawfilter = 2 AND b.statusID = 111 THEN NULL ELSE b.transid END) AS BetCount,
-			/*
-			COUNT(b.transid)
-				* CASE WHEN @drawfilter = 2 AND b.statusID = 111 THEN 0 ELSE 1 END BetCount,
-				-- * CASE WHEN @drawfilter = 2 THEN CASE WHEN b.statusID = 111 THEN 0 ELSE 1 END ELSE 1 END BetCount,
-			*/
+			COUNT(CASE WHEN RAND() + 1 > 0 AND @drawfilter = 2 AND b.statusID = 111 THEN NULL ELSE b.transid END) AS BetCount,			
 			0 AS licenseeWLBT,
 			0 AS BetTradeComm,	
 			0 AS WLBetTicket,
@@ -718,56 +493,17 @@ BEGIN
 			a.currency,
 			'RB',
 			SUM(CASE WHEN RAND() + 1 > 0 AND b.bettype IN (33, 43) AND liveawayscore = 0 THEN stake/2 ELSE stake END 
-				* CASE WHEN RAND() + 1 > 0 AND @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
-				-- * CASE WHEN @drawfilter IN (2,3) THEN CASE WHEN b.statusID = 111 THEN 0 ELSE 1 END ELSE 1 END
-			) AS turnover,
-			/*
-			0 AS turnoverSB,
-			0 AS turnoverBA,
-			0 AS turnoverNG,
-			SUM(CASE WHEN b.bettype IN (33, 43) AND liveawayscore = 0 THEN stake/2 ELSE stake END 
-				* CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
-				-- * CASE WHEN @drawfilter IN (2,3) THEN CASE WHEN b.statusID = 111 THEN 0 ELSE 1 END ELSE 1 END
-			) AS turnoverRB, 
-			0 AS turnoverLC,
-			0 AS turnoverVS,
-			0 AS turnoverCS,
-			0 AS turnoverBG,
-			0 AS turnoverKN,
-			0 AS turnoverMGCLC,
-			0 AS turnoverMGCRnG,
-			0 AS turnoverAGC,
-			0 AS turnoverVB,
-			*/
+				* CASE WHEN RAND() + 1 > 0 AND @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END				
+			) AS turnover,			
 			0 AS BTActualStake,
 			SUM(CASE WHEN RAND() + 1 > 0 THEN b.winlost-b.actual_stake ELSE 0 END) AS Winlost,
-			SUM(CASE WHEN RAND() + 1 > 0 THEN b.awinlost ELSE 0 END) AS LicenseeWL,
-			/*
-			0 AS LicenseeWLSB,
-			0 AS LicenseeWLBA,
-			0 AS LicenseeWLNG,
-			SUM(b.awinlost) AS LicenseeWLRB,
-			0 AS LicenseeWLLC,
-			0 AS LicenseeWLVS,
-			0 AS LicenseeWLCS,
-			0 AS LicenseeWLBG,
-			0 AS LicenseeWLKN,
-			0 AS LicenseeWLMGCLC,
-			0 AS LicenseeWLMGCRnG,
-			0 AS LicenseeWLAGC,
-			0 AS LicenseeWLVB,
-			*/
+			SUM(CASE WHEN RAND() + 1 > 0 THEN b.awinlost ELSE 0 END) AS LicenseeWL,			
 			0 AS AmountDueToBA,
 			-SUM((CASE WHEN RAND() + 1 > 0 THEN b.winlost-b.actual_stake+awinlost+comm ELSE 0 END)) AS AmountDueToRB,
 			0 AS CommBA,
 			SUM(CASE WHEN RAND() + 1 > 0 THEN b.comm ELSE 0 END) AS CommRB,
 			SUM(ISNULL(CASE WHEN RAND() + 1 > 0 THEN b.PlayerComm ELSE 0 END,0)) AS PlayerComm,
-			COUNT(CASE WHEN RAND() + 1 > 0 AND @drawfilter = 2 AND b.statusID = 111 THEN NULL ELSE b.transid END) AS BetCount,
-			/*
-			COUNT(b.transid)
-				* CASE WHEN @drawfilter = 2 AND b.statusID = 111 THEN 0 ELSE 1 END BetCount,
-				-- * CASE WHEN @drawfilter = 2 THEN CASE WHEN b.statusID = 111 THEN 0 ELSE 1 END ELSE 1 END BetCount,
-			*/
+			COUNT(CASE WHEN RAND() + 1 > 0 AND @drawfilter = 2 AND b.statusID = 111 THEN NULL ELSE b.transid END) AS BetCount,			
 			0 AS licenseeWLBT,
 			0 AS BetTradeComm,	
 			0 AS WLBetTicket,
@@ -776,10 +512,9 @@ BEGIN
 			0 AS BuyBackAmtBA
 		FROM 
 			dbo.Bettrans b WITH (NOLOCK)
-			INNER JOIN @tempAg a ON b.recommend = a.custID 
+			INNER JOIN @tempAg a ON b.recommend = a.custID AND b.currency = a.currency
 		WHERE 
-			b.winlostdate BETWEEN @TempFromDate AND @_ToDate
-			AND EXISTS (SELECT TOP 1 1 FROM #currency WHERE b.currency = currencyID)
+			b.winlostdate BETWEEN @TempFromDate AND @_ToDate			
 			AND bettype BETWEEN 31 AND 33
 			AND b.statusID IN (111, 112, 113)
 			AND b.transid >= @transid
@@ -796,8 +531,9 @@ BEGIN
 	
 	DECLARE @CustBettrade TABLE (recommend INT, custid INT, currency INT)
 	INSERT INTO @CustBettrade
-	SELECT c.recommend, bt.custID, bt.currency FROM f_GetBetTradeCustList(@LicenseeName) bt
-	INNER JOIN dbo.Customer c WITH(NOLOCK) ON bt.custID = c.custid AND c.roleid = 1
+	SELECT c.recommend, bt.custID, bt.currency 
+	FROM f_GetBetTradeCustList(@LicenseeName) bt
+		INNER JOIN dbo.Customer c WITH(NOLOCK) ON bt.custID = c.custid AND c.roleid = 1
 
 	IF @ShowBA = 1 
 	BEGIN
@@ -814,59 +550,16 @@ BEGIN
 						WHEN b.statusID IN (114,115) THEN 0.5
 						ELSE 1 END
 				ELSE 1 END
-			) AS turnover,
-			/*
-			0 AS turnoverSB,
-			SUM(b.turnover
-				*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE
-						WHEN b.statusID = 111 THEN 0
-						WHEN b.statusID IN (114,115) THEN 0.5
-						ELSE 1 END
-				ELSE 1 END
-			) AS turnoverBA,     
-			0 AS turnoverNG,
-			0 AS turnoverRB,
-			0 AS turnoverLC,
-			0 AS turnoverVS,
-			0 AS turnoverCS,
-			0 AS turnoverBG,
-			0 AS turnoverKN,
-			0 AS turnoverMGCLC,
-			0 AS turnoverMGCRnG,
-			0 AS turnoverAGC,
-			0 AS turnoverVB,
-			*/
+			) AS turnover,			
 			0 AS BTActualStake,
 			SUM(CASE WHEN RAND() + 1 > 0 THEN b.winlost ELSE 0 END),
-			0 AS LicenseeWL,
-			/*
-			0 AS LicenseeWLSB,
-			0 AS LicenseeWLBA,
-			0 AS LicenseeWLNG,
-			0 AS LicenseeWLRB,
-			0 AS LicenseeWLLC,
-			0 AS LicenseeWLVS,
-			0 AS LicenseeWLCS,
-			0 AS LicenseeWLBG,
-			0 AS LicenseeWLKN,
-			0 AS LicenseeWLMGCLC,
-			0 AS LicenseeWLMGCRnG,
-			0 AS LicenseeWLAGC,
-			0 AS LicenseeWLVB,
-			*/
+			0 AS LicenseeWL,			
 			-SUM(CASE WHEN RAND() + 1 > 0 THEN b.winlost+b.awinlost+b.comm ELSE 0 END) AS AmountDueToBA,
 			0 AS AmountDueToRB,
 			SUM (CASE WHEN RAND() + 1 > 0 THEN b.comm ELSE 0 END) AS CommBA,
 			0 AS CommRB,
 			SUM(ISNULL(CASE WHEN RAND() + 1 > 0 THEN b.playercomm ELSE 0 END,0)) AS PlayerComm,
-			SUM(CASE WHEN RAND() + 1 > 0 AND @drawfilter = 2 AND b.statusID = 111 THEN 0 ELSE b.betcount END) AS BetCount,
-			/*
-			SUM(b.betcount)
-				* CASE WHEN @drawfilter = 2 AND b.statusID = 111 THEN 0 ELSE 1 END,
-				-- * CASE WHEN @drawfilter = 2 THEN CASE WHEN b.statusID = 111 THEN 0 ELSE 1 END ELSE 1 END,
-			*/
+			SUM(CASE WHEN RAND() + 1 > 0 AND @drawfilter = 2 AND b.statusID = 111 THEN 0 ELSE b.betcount END) AS BetCount,			
 			0 AS licenseeWLBT,
 			0 AS BetTradeComm,	
 			0 AS WLBetTicket,
@@ -875,8 +568,7 @@ BEGIN
 			0 AS BuyBackAmtBA
 		FROM 
 			  bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
-			  INNER JOIN @TempAg ag ON b.recommend = ag.custID AND b.Currency = ag.currency
-			  --LEFT JOIN f_GetBetTradeCustList(@LicenseeName) bt ON b.custid = bt.Custid AND b.Currency = bt.currency
+			  INNER JOIN @TempAg ag ON b.recommend = ag.custID AND b.Currency = ag.currency			  
 		WHERE  
 			 b.Winlostdate BETWEEN @_FromDate AND @TempToDate  
 			AND b.bettype NOT IN (901,902,903,904)
@@ -934,171 +626,16 @@ BEGIN
 						WHEN b.statusID IN (114,115) THEN 0.5
 						ELSE 1 END
 					ELSE 1 END
-			) AS turnover,
-			/*
-			SUM(CASE WHEN b.sporttype = 0 THEN 
-				b.turnover
-				*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE
-						WHEN b.statusID = 111 THEN 0
-						WHEN b.statusID IN (114,115) THEN 0.5
-						ELSE 1 END
-					ELSE 1 END
-				ELSE 0 END
-			) AS turnoverSB,
-			0 AS turnoverBA,
-			SUM(CASE WHEN b.sporttype = 161 THEN 
-				b.turnover
-				*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE
-						WHEN b.statusID = 111 THEN 0
-						WHEN b.statusID IN (114,115) THEN 0.5
-						ELSE 1 END
-					ELSE 1 END
-				ELSE 0 END
-			) AS turnoverNG,
-			SUM(CASE WHEN b.sporttype = 151 THEN 
-				b.turnover
-				*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE
-						WHEN b.statusID = 111 THEN 0
-						WHEN b.statusID IN (114,115) THEN 0.5
-						ELSE 1 END
-					ELSE 1 END
-				ELSE 0 END
-			) AS turnoverRB,
-			SUM(CASE WHEN b.sporttype = 162 THEN 
-				b.turnover
-				*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE
-						WHEN b.statusID = 111 THEN 0
-						WHEN b.statusID IN (114,115) THEN 0.5
-						ELSE 1 END
-					ELSE 1 END
-				ELSE 0 END
-			) AS turnoverLC,
-			SUM(CASE WHEN b.sporttype = 180 THEN 
-				b.turnover
-				*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE
-						WHEN b.statusID = 111 THEN 0
-						WHEN b.statusID IN (114,115) THEN 0.5
-						ELSE 1 END
-					ELSE 1 END
-				ELSE 0 END
-			) AS turnoverVS,
-			SUM(CASE WHEN b.sporttype IN (251, 208, 209, 210) THEN 
-				b.turnover
-				*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE
-						WHEN b.statusID = 111 THEN 0
-						WHEN b.statusID IN (114,115) THEN 0.5
-						ELSE 1 END
-					ELSE 1 END
-				ELSE 0 END
-			) AS turnoverCS,
-			SUM(CASE WHEN b.sporttype = 252 THEN 
-				b.turnover
-				*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE
-						WHEN b.statusID = 111 THEN 0
-						WHEN b.statusID IN (114,115) THEN 0.5
-						ELSE 1 END
-					ELSE 1 END
-				ELSE 0 END
-			) AS turnoverBG,
-			SUM(CASE WHEN b.sporttype = 202 THEN --Keno
-				b.turnover
-				*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE
-						WHEN b.statusID = 111 THEN 0
-						WHEN b.statusID IN (114,115) THEN 0.5
-						ELSE 1 END
-					ELSE 1 END
-				ELSE 0 END
-			) AS turnoverKN,
-			SUM(CASE WHEN b.sporttype = 203 THEN --MicroGaming
-				b.turnover
-				*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE
-						WHEN b.statusID = 111 THEN 0
-						WHEN b.statusID IN (114,115) THEN 0.5
-						ELSE 1 END
-					ELSE 1 END
-				ELSE 0 END
-			) AS turnoverMGCLC,
-			SUM(CASE WHEN b.sporttype = 205 THEN --MicroGaming
-				b.turnover
-				*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE
-						WHEN b.statusID = 111 THEN 0
-						WHEN b.statusID IN (114,115) THEN 0.5
-						ELSE 1 END
-					ELSE 1 END
-				ELSE 0 END
-			) AS turnoverMGCRnG,
-			SUM(CASE WHEN b.sporttype = 250 THEN --AGC
-				b.turnover
-				*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE
-						WHEN b.statusID = 111 THEN 0
-						WHEN b.statusID IN (114,115) THEN 0.5
-						ELSE 1 END
-					ELSE 1 END
-				ELSE 0 END
-			) AS turnoverAGC,
-			SUM(CASE WHEN b.sporttype = 212 THEN
-				b.turnover
-				*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE
-						WHEN b.statusID = 111 THEN 0
-						WHEN b.statusID IN (114,115) THEN 0.5
-						ELSE 1 END
-					ELSE 1 END
-				ELSE 0 END
-			) AS turnoverVB,
-			*/
+			) AS turnover,			
 			0 AS BTActualStake,
 			SUM(CASE WHEN RAND() + 1 > 0 THEN b.winlost ELSE 0 END),
-			-SUM(CASE WHEN RAND() + 1 > 0 THEN b.winlost ELSE 0 END) AS LicenseeWL,
-			/*
-			-SUM(CASE WHEN b.sporttype = 0 THEN b.winlost ELSE 0 END) AS LicenseeWLSB,
-			0 AS LicenseeWLBA,
-			-SUM(CASE WHEN b.sporttype = 161 THEN b.winlost ELSE 0 END) AS LicenseeWLNG,
-			SUM(CASE WHEN  b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS LicenseeWLRB,
-			-SUM(CASE WHEN b.sporttype = 162 THEN b.winlost ELSE 0 END) AS LicenseeWLLC,
-			-SUM(CASE WHEN b.sporttype = 180 THEN b.winlost ELSE 0 END) AS LicenseeWLVS,-- virtual sport
-			-SUM(CASE WHEN b.sporttype IN (251, 208, 209, 210) THEN b.winlost ELSE 0 END) AS LicenseeWLCS,
-			-SUM(CASE WHEN b.sporttype = 252 THEN b.winlost ELSE 0 END) AS LicenseeWLBG,
-			-SUM(CASE WHEN b.sporttype = 202 THEN b.winlost ELSE 0 END) AS LicenseeWLKN,--Keno
-			-SUM(CASE WHEN b.sporttype = 203 THEN b.winlost ELSE 0 END) AS LicenseeWLMGCLC,--MGC
-			-SUM(CASE WHEN b.sporttype = 205 THEN b.winlost ELSE 0 END) AS LicenseeWLMGCRnG,--MGC
-			-SUM(CASE WHEN b.sporttype = 250 THEN b.winlost ELSE 0 END) AS LicenseeWLAGC,--AGC
-			-SUM(CASE WHEN b.sporttype = 212 THEN b.winlost ELSE 0 END) AS LicenseeWLVB,
-			*/
+			-SUM(CASE WHEN RAND() + 1 > 0 THEN b.winlost ELSE 0 END) AS LicenseeWL,			
 			0 AS AmountDueToBA,
 			-SUM(CASE WHEN RAND() + 1 > 0 AND b.sporttype = 151 THEN b.winlost+b.awinlost+b.comm ELSE 0 END) AS AmountDueToRB,
 			0 AS CommBA,
 			SUM(CASE WHEN RAND() + 1 > 0 AND b.sporttype = 151 THEN comm ELSE 0 END) AS CommRB,
 			SUM(ISNULL(CASE WHEN RAND() + 1 > 0 THEN playercomm ELSE 0 END, 0)) AS PlayerComm,
-			SUM(CASE WHEN RAND() + 1 > 0 AND @drawfilter = 2 AND b.statusID = 111 THEN 0 ELSE b.betcount END) AS BetCount,
-			/*
-			SUM(b.betcount)
-				* CASE WHEN @drawfilter = 2 AND b.statusID = 111 THEN 0 ELSE 1 END,
-				-- * CASE WHEN @drawfilter = 2 THEN CASE WHEN b.statusID = 111 THEN 0 ELSE 1 END ELSE 1 END,
-			*/
+			SUM(CASE WHEN RAND() + 1 > 0 AND @drawfilter = 2 AND b.statusID = 111 THEN 0 ELSE b.betcount END) AS BetCount,			
 			0 AS licenseeWLBT,
 			0 AS BetTradeComm,	
 			0 AS WLBetTicket,
@@ -1109,7 +646,6 @@ BEGIN
 			bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
 			INNER JOIN @TempAg ag   ON b.recommend = ag.custID AND ag.currency = b.Currency
 			INNER JOIN @sporttype t ON b.sporttype = t.sporttype
-			--LEFT JOIN f_GetBetTradeCustList(@LicenseeName) bt ON b.custid = bt.Custid AND b.Currency = bt.currency
 		WHERE  
 			b.Winlostdate BETWEEN @_FromDate AND @TempToDate
 			AND b.bettype NOT IN (901, 902, 903,904)  
@@ -1160,50 +696,16 @@ BEGIN
 			b.winlostdate,  
 			ag.currency,
 			'BT',
-			0 AS turnover,
-			/*
-			0 AS turnoverSB, 
-			0 AS turnoverBA,
-			0 AS turnoverNG, 
-			0 AS turnoverRB,
-			0 AS turnoverLC, 
-			0 AS turnoverVS, 
-			0 AS turnoverCS,
-			0 AS tunroverBG,
-			0 AS tunroverKN,
-			0 AS turnoverMGCLC,
-			0 AS turnoverMGCRnG,
-			0 AS turnoverAGC,
-			0 AS turnoverVB,
-			*/
+			0 AS turnover,			
 			SUM(CASE WHEN RAND() + 1 > 0 AND b.bettype = 902 THEN b.winlost + BuyBackAmt + BABuyBackAmt ELSE 0 END) AS BTActualStake,
 			SUM(CASE WHEN RAND() + 1 > 0 AND b.bettype = 903 THEN 0 ELSE b.winlost END) AS Winlost,    
-			0 AS LicenseeWL,
-			/*
-			0 AS LicenseeWLSB,
-			0 AS LicenseeWLBA,
-			0 AS LicenseeWLNG,
-			0 AS LicenseeWLRB,
-			0 AS LicenseeWLLC,
-			0 AS LicenseeWLVS,
-			0 AS LicenseeWLCS,
-			0 AS LicenseeWLBG,
-			0 AS LicenseeWLKN,
-			0 AS LicenseeWLMGCLC,			
-			0 AS LicenseeWLMGCRnG,	
-			0 AS LicenseeWLAGC,
-			0 AS LicenseeWLVB,
-			*/
+			0 AS LicenseeWL,			
 			0 as AmountDueToBA,
 			0 as AmountDueToRB,
 			0 as CommBA,
 			0 as CommRB,
 			0 as PlayerComm,
-			SUM(CASE WHEN RAND() + 1 > 0 AND ((b.bettype = 903) OR (@drawfilter = 2 AND b.statusID = 111)) THEN 0 ELSE b.BetCount END) AS BetCount,
-			/*
-				* CASE WHEN @drawfilter = 2 AND b.statusID = 111 THEN 0 ELSE 1 END BetCount,
-				-- * CASE WHEN @drawfilter = 2 THEN CASE WHEN b.statusID = 111 THEN 0 ELSE 1 END ELSE 1 END BetCount,
-			*/
+			SUM(CASE WHEN RAND() + 1 > 0 AND ((b.bettype = 903) OR (@drawfilter = 2 AND b.statusID = 111)) THEN 0 ELSE b.BetCount END) AS BetCount,			
 			-SUM(CASE WHEN RAND() + 1 > 0 AND b.bettype IN (901, 902) THEN b.winlost ELSE 0 END) AS licenseeWLBT,
 			SUM(CASE WHEN RAND() + 1 > 0 AND b.bettype = 903 THEN b.awinlost ELSE 0 END) AS BetTradeComm,
 			0 WLBetTicket,
@@ -1245,59 +747,16 @@ BEGIN
 						WHEN b.statusID IN (114,115) THEN 0.5
 						ELSE 1 END
 				ELSE 1 END
-			) AS turnover,
-			/*
-			0 AS turnoverSB,
-			SUM(b.turnover
-				*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE
-						WHEN b.statusID = 111 THEN 0
-						WHEN b.statusID IN (114,115) THEN 0.5
-						ELSE 1 END
-				ELSE 1 END
-			) AS turnoverBA,     
-			0 AS turnoverNG,
-			0 AS turnoverRB,
-			0 AS turnoverLC,
-			0 AS turnoverVS,
-			0 AS turnoverCS,
-			0 AS turnoverBG,
-			0 AS turnoverKN,
-			0 AS turnoverMGCLC,
-			0 AS turnoverMGCRnG,
-			0 AS turnoverAGC,
-			0 AS turnoverVB,
-			*/
+			) AS turnover,			
 			0 AS BTActualStake,
 			SUM(CASE WHEN RAND() + 1 > 0 THEN b.winlost ELSE 0 END),
-			0 AS LicenseeWL,
-			/*
-			0 AS LicenseeWLSB,
-			0 AS LicenseeWLBA,
-			0 AS LicenseeWLNG,
-			0 AS LicenseeWLRB,
-			0 AS LicenseeWLLC,
-			0 AS LicenseeWLVS,
-			0 AS LicenseeWLCS,
-			0 AS LicenseeWLBG,
-			0 AS LicenseeWLKN,
-			0 AS LicenseeWLMGCLC,
-			0 AS LicenseeWLMGCRnG,
-			0 AS LicenseeWLAGC,
-			0 AS LicenseeWLVB,
-			*/
+			0 AS LicenseeWL,			
 			-SUM(CASE WHEN RAND() + 1 > 0 THEN b.winlost+b.awinlost+b.comm ELSE 0 END) AS AmountDueToBA,
 			0 AS AmountDueToRB,
 			SUM(CASE WHEN RAND() + 1 > 0 THEN b.comm ELSE 0 END) AS CommBA,
 			0 AS CommRB,
 			SUM(ISNULL(CASE WHEN RAND() + 1 > 0 THEN b.playercomm ELSE 0 END,0)) AS PlayerComm,
-			SUM(CASE WHEN RAND() + 1 > 0 AND @drawfilter = 2 AND b.statusID = 111 THEN 0 ELSE b.betcount END) AS BetCount,
-			/*
-			SUM(b.betcount)
-				* CASE WHEN @drawfilter = 2 AND b.statusID = 111 THEN 0 ELSE 1 END,
-				-- * CASE WHEN @drawfilter = 2 THEN CASE WHEN b.statusID = 111 THEN 0 ELSE 1 END ELSE 1 END,
-			*/
+			SUM(CASE WHEN RAND() + 1 > 0 AND @drawfilter = 2 AND b.statusID = 111 THEN 0 ELSE b.betcount END) AS BetCount,			
 			0 AS licenseeWLBT,
 			0 AS BetTradeComm,	
 			0 AS WLBetTicket,
@@ -1306,8 +765,7 @@ BEGIN
 			0 AS BuyBackAmtBA
 		FROM  
 			bodb_licenseereport.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
-			INNER JOIN @TempAg ag ON b.recommend = ag.custID AND b.Currency = ag.currency
-			--LEFT JOIN f_GetBetTradeCustList(@LicenseeName) bt ON b.custid = bt.Custid AND b.Currency = bt.currency
+			INNER JOIN @TempAg ag ON b.recommend = ag.custID AND b.Currency = ag.currency			
 		WHERE  
 			b.Winlostdate BETWEEN @_FromDate AND @TempToDate  
 			AND b.bettype NOT IN (901, 902, 903,904)
@@ -1365,171 +823,16 @@ BEGIN
 						WHEN b.statusID IN (114,115) THEN 0.5
 						ELSE 1 END
 					ELSE 1 END
-			) AS turnover,
-			/* 
-			SUM(CASE WHEN b.sporttype = 0 THEN 
-				b.turnover
-				*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE
-						WHEN b.statusID = 111 THEN 0
-						WHEN b.statusID IN (114,115) THEN 0.5
-						ELSE 1 END
-					ELSE 1 END
-				ELSE 0 END
-			) AS turnoverSB,
-			0 AS turnoverBA,
-			SUM(CASE WHEN b.sporttype = 161 THEN 
-				b.turnover
-				*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE
-						WHEN b.statusID = 111 THEN 0
-						WHEN b.statusID IN (114,115) THEN 0.5
-						ELSE 1 END
-					ELSE 1 END
-				ELSE 0 END
-			) AS turnoverNG,
-			SUM(CASE WHEN b.sporttype = 151 THEN 
-				b.turnover
-				*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE
-						WHEN b.statusID = 111 THEN 0
-						WHEN b.statusID IN (114,115) THEN 0.5
-						ELSE 1 END
-					ELSE 1 END
-				ELSE 0 END
-			) AS turnoverRB,
-			SUM(CASE WHEN b.sporttype = 162 THEN 
-				b.turnover
-				*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE
-						WHEN b.statusID = 111 THEN 0
-						WHEN b.statusID IN (114,115) THEN 0.5
-						ELSE 1 END
-					ELSE 1 END
-				ELSE 0 END
-			) AS turnoverLC,
-			SUM(CASE WHEN b.sporttype = 180 THEN 
-				b.turnover
-				*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE
-						WHEN b.statusID = 111 THEN 0
-						WHEN b.statusID IN (114,115) THEN 0.5
-						ELSE 1 END
-					ELSE 1 END
-				ELSE 0 END
-			) AS turnoverVS,
-			SUM(CASE WHEN b.sporttype IN (251, 208, 209, 210) THEN 
-				b.turnover
-				*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE
-						WHEN b.statusID = 111 THEN 0
-						WHEN b.statusID IN (114,115) THEN 0.5
-						ELSE 1 END
-					ELSE 1 END
-				ELSE 0 END
-			) AS turnoverCS,
-			SUM(CASE WHEN b.sporttype = 252 THEN 
-				b.turnover
-				*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE
-						WHEN b.statusID = 111 THEN 0
-						WHEN b.statusID IN (114,115) THEN 0.5
-						ELSE 1 END
-					ELSE 1 END
-				ELSE 0 END
-			) AS turnoverBG,
-			SUM(CASE WHEN b.sporttype = 202 THEN --Keno
-				b.turnover
-				*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE
-						WHEN b.statusID = 111 THEN 0
-						WHEN b.statusID IN (114,115) THEN 0.5
-						ELSE 1 END
-					ELSE 1 END
-				ELSE 0 END
-			) AS turnoverKN,
-			SUM(CASE WHEN b.sporttype = 203 THEN --MGC
-				b.turnover
-				*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE
-						WHEN b.statusID = 111 THEN 0
-						WHEN b.statusID IN (114,115) THEN 0.5
-						ELSE 1 END
-					ELSE 1 END
-				ELSE 0 END
-			) AS turnoverMGCLC,
-			SUM(CASE WHEN b.sporttype = 205 THEN --MGC
-				b.turnover
-				*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE
-						WHEN b.statusID = 111 THEN 0
-						WHEN b.statusID IN (114,115) THEN 0.5
-						ELSE 1 END
-					ELSE 1 END
-				ELSE 0 END
-			) AS turnoverMGCRnG,
-			SUM(CASE WHEN b.sporttype = 250 THEN --AGC
-				b.turnover
-				*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE
-						WHEN b.statusID = 111 THEN 0
-						WHEN b.statusID IN (114,115) THEN 0.5
-						ELSE 1 END
-					ELSE 1 END
-				ELSE 0 END
-			) AS turnoverAGC,
-			SUM(CASE WHEN b.sporttype = 212 THEN --AGC
-				b.turnover
-				*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE
-						WHEN b.statusID = 111 THEN 0
-						WHEN b.statusID IN (114,115) THEN 0.5
-						ELSE 1 END
-					ELSE 1 END
-				ELSE 0 END
-			) AS turnoverVB,
-			*/
+			) AS turnover,			
 			0 AS BTActualStake,
 			SUM(CASE WHEN RAND() + 1 > 0 THEN b.winlost ELSE 0 END),  
-			-SUM(CASE WHEN RAND() + 1 > 0 THEN b.winlost ELSE 0 END) AS LicenseeWL,
-			/*
-			-SUM(CASE WHEN b.sporttype = 0 THEN b.winlost ELSE 0 END) AS LicenseeWLSB,
-			0 AS LicenseeWLBA,
-			-SUM(CASE WHEN b.sporttype = 161 THEN b.winlost ELSE 0 END) AS LicenseeWLNG,
-			SUM(CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS LicenseeWLRB,
-			-SUM(CASE WHEN b.sporttype = 162 THEN b.winlost ELSE 0 END) AS LicenseeWLLC,
-			-SUM(CASE WHEN b.sporttype = 180 THEN b.winlost ELSE 0 END) AS LicenseeWLVS,-- virtual sport
-			-SUM(CASE WHEN b.sporttype IN (251, 208, 209, 210) THEN b.winlost ELSE 0 END) AS LicenseeWLCS,
-			-SUM(CASE WHEN b.sporttype = 252 THEN b.winlost ELSE 0 END) AS LicenseeWLBG,
-			-SUM(CASE WHEN b.sporttype = 202 THEN b.winlost ELSE 0 END) AS LicenseeWLKN,
-			-SUM(CASE WHEN b.sporttype = 203 THEN b.winlost ELSE 0 END) AS LicenseeWLMGCLC,
-			-SUM(CASE WHEN b.sporttype = 205 THEN b.winlost ELSE 0 END) AS LicenseeWLMGCRnG,
-			-SUM(CASE WHEN b.sporttype = 250 THEN b.winlost ELSE 0 END) AS LicenseeWLAGC,
-			-SUM(CASE WHEN b.sporttype = 212 THEN b.winlost ELSE 0 END) AS LicenseeWLVB,
-			*/
+			-SUM(CASE WHEN RAND() + 1 > 0 THEN b.winlost ELSE 0 END) AS LicenseeWL,			
 			0 AS AmountDueToBA,
 			- SUM ( CASE WHEN RAND() + 1 > 0 AND b.sporttype = 151 THEN (b.winlost+b.awinlost+b.comm) ELSE 0 END) AS AmountDueToRB,
 			0 AS CommBA,
 			SUM ( CASE WHEN RAND() + 1 > 0 AND b.sporttype = 151 THEN (comm) ELSE 0 END) AS CommRB,
 			SUM (ISNULL(CASE WHEN RAND() + 1 > 0 THEN playercomm ELSE 0 END,0)) AS PlayerComm,
-			SUM(CASE WHEN RAND() + 1 > 0 AND @drawfilter = 2 AND b.statusID = 111 THEN 0 ELSE b.betcount END) AS BetCount,
-			/*
-			SUM(b.betcount)
-				* CASE WHEN @drawfilter = 2 AND b.statusID = 111 THEN 0 ELSE 1 END,
-				-- * CASE WHEN @drawfilter = 2 THEN CASE WHEN b.statusID = 111 THEN 0 ELSE 1 END ELSE 1 END,
-			*/
+			SUM(CASE WHEN RAND() + 1 > 0 AND @drawfilter = 2 AND b.statusID = 111 THEN 0 ELSE b.betcount END) AS BetCount,			
 			0 AS licenseeWLBT,
 			0 AS BetTradeComm,	
 			0 AS WLBetTicket,
@@ -1539,8 +842,7 @@ BEGIN
 		FROM 
 			bodb_licenseereport.dbo.rptLicWinloss_old b WITH (NOLOCK)  
 			INNER JOIN @TempAg ag   ON b.recommend = ag.custID AND b.Currency = ag.currency
-			INNER JOIN @sporttype t ON b.sporttype = t.sporttype
-			--LEFT JOIN f_GetBetTradeCustList(@LicenseeName) bt ON b.custid = bt.Custid AND b.Currency = bt.currency
+			INNER JOIN @sporttype t ON b.sporttype = t.sporttype			
 		WHERE  
 			b.Winlostdate BETWEEN @_FromDate AND @TempToDate  
 			AND b.bettype NOT IN (901, 902, 903,904)
@@ -1591,50 +893,16 @@ BEGIN
 			b.winlostdate,  
 			ag.currency,
 			'BT',
-			0 AS turnover,
-			/*
-			0 AS turnoverSB, 
-			0 AS turnoverBA,
-			0 AS turnoverNG, 
-			0 AS turnoverRB,
-			0 AS turnoverLC, 
-			0 AS turnoverVS, 
-			0 AS turnoverCS,
-			0 AS tunroverBG,
-			0 AS tunroverKN,
-			0 AS turnoverMGCLC,
-			0 AS turnoverMGCRnG,
-			0 AS turnoverAGC,
-			0 AS turnoverVB,
-			*/
+			0 AS turnover,			
 			0 BTActualStake,
 			SUM(CASE WHEN RAND() + 1 > 0 AND b.bettype = 903 THEN 0 ELSE b.winlost END) AS Winlost,    
-			0 AS LicenseeWL,
-			/*
-			0 AS LicenseeWLSB,
-			0 AS LicenseeWLBA,
-			0 AS LicenseeWLNG,
-			0 AS LicenseeWLRB,
-			0 AS LicenseeWLLC,
-			0 AS LicenseeWLVS,
-			0 AS LicenseeWLCS,
-			0 AS LicenseeWLBG,
-			0 AS LicenseeWLKN,
-			0 AS LicenseeWLMGCLC,			
-			0 AS LicenseeWLMGCRnG,
-			0 AS LicenseeWLAGC,
-			0 AS LicenseeWLVB,
-			*/
+			0 AS LicenseeWL,			
 			0 AS AmountDueToBA,
 			0 AS AmountDueToRB,
 			0 AS CommBA,
 			0 AS CommRB,
 			0 AS PlayerComm,
-			SUM(CASE WHEN RAND() + 1 > 0 AND ((b.bettype = 903) OR (@drawfilter = 2 AND b.statusID = 111)) THEN 0 ELSE b.BetCount END) AS BetCount,
-			/*
-				* CASE WHEN @drawfilter = 2 AND b.statusID = 111 THEN 0 ELSE 1 END BetCount,
-				-- * CASE WHEN @drawfilter = 2 THEN CASE WHEN b.statusID = 111 THEN 0 ELSE 1 END ELSE 1 END BetCount,
-			*/
+			SUM(CASE WHEN RAND() + 1 > 0 AND ((b.bettype = 903) OR (@drawfilter = 2 AND b.statusID = 111)) THEN 0 ELSE b.BetCount END) AS BetCount,			
 			-SUM(CASE WHEN RAND() + 1 > 0 AND b.bettype IN (901, 902) THEN (b.winlost) ELSE 0 END) AS licenseeWLBT,
 			SUM(CASE WHEN RAND() + 1 > 0 AND b.bettype = 903 THEN b.awinlost ELSE 0 END) AS BetTradeComm,
 			0 WLBetTicket,
@@ -1765,7 +1033,6 @@ FROM
 
 SELECT * INTO #TempExchange 
 FROM Lrf_f_GetExchangeDaily(@_FromDate,@_ToDate)
---WHERE exchangeid IN (SELECT DISTINCT Currency FROM #SAgWinLoss)
 
 SELECT   
 	CASE WHEN @ReportType = 1 THEN CONVERT(VARCHAR(8),w.winlostdate,112)  
@@ -1960,7 +1227,7 @@ ORDER BY ReportType
 DROP TABLE #SAgWinLoss
 
 DROP TABLE #TempExchange
-DROP TABLE #Currency
+
 END
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_LicWinloss] TO [bodbLicenseeNet]
