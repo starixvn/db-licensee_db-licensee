@@ -7,13 +7,10 @@ SET QUOTED_IDENTIFIER ON
 GO
  
 ALTER PROCEDURE [dbo].[LRF_Rpt_ThirdPartyWinloss_Ag] 
- @LicenseeID	INT,
- @ProductID	    INT,
- @Currency		INT = 0,
- @UserID		INT,
- @FromDate		SMALLDATETIME,  
- @ToDate		SMALLDATETIME,   
- @excludeTest   BIT = 0
+	@ProductID	    INT,
+	@FromDate		SMALLDATETIME,  
+	@ToDate			SMALLDATETIME,  
+	@AgentList		VARCHAR(MAX)
 AS  
 
 /*
@@ -32,6 +29,7 @@ AS
     DB: DBEXT.bodb02   
     Revisions:  		
 		- 20160413@Victor: support MKK currency code [Redmine: #55745]
+		- 20170302@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest [Redmine: #71679]
 	Param's Explanation:  
 	  + @excludeTest: remove currency UUS
 */  
@@ -46,8 +44,6 @@ BEGIN
 							 ,LicenseeWinlost MONEY
 							)
 						
-	CREATE TABLE #Currency(currencyID INT
-						  )
 	CREATE TABLE #tmpCust (  Recommend INT
 							,CustId INT
 							,Currency INT	
@@ -60,19 +56,27 @@ BEGIN
 	FROM  dbo.Exchange WITH (NOLOCK) 
 	WHERE ExchangeId = 51
 
-	SET @sql = 'SELECT CurrencyID
-					FROM OPENQUERY( DBLIC,''SELECT CurrencyID
-											FROM bodb02.dbo.Lrf_f_GetCurrencybyUser(' + CAST(@LicenseeID AS VARCHAR) + ', '+ CAST(@UserID AS VARCHAR) + +', 1)
-							WHERE ('+ CAST(@Currency AS VARCHAR) +' = 0  OR ('+ CAST(@currency AS VARCHAR) +' <> 0 AND CurrencyID = '+ CAST(@currency AS VARCHAR) +'))''
-								)'
-	INSERT INTO #Currency (CurrencyID)						
-	EXEC (@sql)
+	DECLARE @Temp AS TABLE ( CustId INT,Currency INT )
+
+	DECLARE @DocHandler INT
+
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
 	
-	DECLARE @Temp AS TABLE (CustId INT,Currency INT )
-	DECLARE @sql1 VARCHAR(500)
-	SELECT  @sql1 =  'SELECT CustID,Currency   FROM  OPENQUERY(DBLIC, ''SELECT CustID,Currency  FROM bodb_licensee.dbo.f_SelLicenseeCust('+CAST(@LicenseeID AS VARCHAR(10))+')'')'
-	INSERT INTO @Temp (CustId ,Currency)
-	EXEC (@sql1)
+		INSERT INTO @Temp(CustId, Currency)
+		SELECT AgentId, Currency 
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
+
+	BEGIN CATCH
+		SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+		RETURN
+	END CATCH;
 	
 	INSERT INTO #tmpCust (Recommend,CustID,Currency)	
 	SELECT   lc.CustId AS Recommend
@@ -81,8 +85,6 @@ BEGIN
 	FROM 
 		dbo.CustInfo co WITH (NOLOCK)
 		INNER JOIN @Temp lc ON lc.CustId = co.Recommend AND co.Currency = lc.Currency
-		INNER JOIN #Currency c ON  lc.Currency = c.CurrencyID 
-	WHERE  (@excludeTest=0 OR (@excludeTest=1 AND lc.Currency <> 20))	
 	
 	INSERT INTO #tmpResult (CustId 
 							 ,Winlostdate
@@ -156,7 +158,6 @@ BEGIN
 	
 	---------
 	DROP TABLE #tmpResult
-	DROP TABLE #Currency
 	DROP TABLE #tmpCust
 	DROP TABLE #TempExchange 
 	

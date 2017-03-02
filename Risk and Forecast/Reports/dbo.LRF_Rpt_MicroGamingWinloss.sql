@@ -1,18 +1,17 @@
 USE [bodb02]
 GO
+
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 
 ALTER PROCEDURE [dbo].[LRF_Rpt_MicroGamingWinloss]
- @LicenseeID	INT,
- @CurrencyID	INT = 0,
- @UserID		INT,
- @FromDate		SMALLDATETIME,  
- @ToDate		SMALLDATETIME,  
- @ReportType	TINYINT=1,  
- @excludeTest   BIT = 0
+	@LicenseeID INT,
+	@FromDate	SMALLDATETIME,  
+	@ToDate		SMALLDATETIME,  
+	@ReportType	TINYINT=1,  
+	@AgentList	VARCHAR(MAX)
 AS  
 /*  Created: Jim
 	Date: 2015-07-28
@@ -22,6 +21,7 @@ AS
 		  - 20150921@Jim: support RNG bettype
 		  - 20160413@Victor: support MKK currency code [Redmine: #55745]
 		  - 20160506@Francis: support MGC RNG progressive contribution [Redmine: #56248]
+		  - 20170302@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest [Redmine: #71679]
 	Param's Explanation:  
 	  + @excludeTest: remove currency UUS
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -53,28 +53,26 @@ BEGIN
 	FROM  dbo.Exchange WITH (NOLOCK) 
 	WHERE ExchangeId = 51
 	
-	SELECT currencyID
-	, LicenseeID
-	INTO #currency
-	FROM dbo.Lrf_f_GetCurrencybyUser(@licenseeID, @userID, 1) -- System is default=1 (LRF)
-	WHERE (
-		@CurrencyID = 0
-		OR (
-			@CurrencyID <> 0
-			AND CurrencyID = @CurrencyID
-			)
-		)
-	AND (@excludeTest=0 OR (@excludeTest=1 AND CurrencyID <> 20))	
+	DECLARE @DocHandler INT
+
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
 	
-	INSERT INTO #TempAg (CustId,Currency)
-	SELECT lc.CustID, lc.Currency 
-	FROM bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc
-	INNER JOIN #Currency c ON lc.LicenseeID = c.LicenseeID
-		AND lc.Currency = c.CurrencyID
-	WHERE (
-			@CurrencyID = 0
-			OR (Currency = @CurrencyID)
-			)
+		INSERT INTO #TempAg(CustId, Currency)
+		SELECT AgentId, Currency 
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
+
+	BEGIN CATCH
+		SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+		RETURN
+	END CATCH;
+
 	INSERT INTO #Bettype (Bettype,TypeID,TypeName)	
 	EXEC LRF_MicroGamingWinloss_Bettype  @TypeID = 0
 	
@@ -217,13 +215,13 @@ BEGIN
 		   , SUM(b.ProgressivePayout) AS ProgressivePayout
 		   , SUM((-b.Winloss - b.ProgressiveContribution) * ISNULL(cr.DI_Rate,0)) AS AmtDueToMGC
 	FROM  bodb_LicenseeReport.dbo.rpt_ThirdPartyWL_ExtraGMT b  WITH (NOLOCK)
-		  INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID
+		  INNER JOIN #TempAg c ON b.CurrencyID = c.Currency
 		  INNER JOIN #Bettype bet ON b.bettypeID  = bet.bettype
 		  INNER JOIN #ProductBettypeRef pbr ON bet.bettype = pbr.Bettype
 		  LEFT JOIN #ChargeRate cr ON pbr.BettypeRef = cr.Bettype AND pbr.ProductID = cr.ProductID AND b.RptDate BETWEEN cr.FromDate AND cr.ToDate
 	WHERE b.rptDate BETWEEN @FromDate AND @TempToDate
 		  AND b.StatusId NOT IN (-1,103)
-		 -- AND b.CustomerCategory = -1	
+		  AND b.SiteID = @LicenseeID
 	GROUP BY 	b.rptDate  		
 				,b.CurrencyID  
 				,bet.TypeID
@@ -304,7 +302,6 @@ BEGIN
 	
 	---------
 	DROP TABLE #tmpResult
-	DROP TABLE #Currency
 	DROP TABLE #TempAg
 	DROP TABLE #TempExchange 
 	DROP TABLE #Bettype 
