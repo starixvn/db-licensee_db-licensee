@@ -7,12 +7,10 @@ SET QUOTED_IDENTIFIER ON
 GO
 
 ALTER PROCEDURE [dbo].[Lrf_SelLeagueBySport] 
-	 @LicenseeID INT
-	,@CurrencyID INT=0
-	,@userID INT
-	,@sportId INT
+	@sportId INT
 	,@Fromdate SMALLDATETIME
 	,@Todate SMALLDATETIME
+	,@AgentList	VARCHAR(MAX)
 AS
 /*
 Created: 20140102@Florent
@@ -22,6 +20,7 @@ DB: DBLIC/bodb_Licensee
 Revisions:
 	- 20140117@Florent: add new sport 154
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+	- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID [Redmine: #71679]
 Param's Explanation:	
 */
 SET NOCOUNT ON
@@ -44,17 +43,27 @@ BEGIN
 	SELECT @MoveBetsDay = MoveBetsDay
 	FROM #tblBalanceDate
 	--------
-	SELECT  currencyID,LicenseeID into #currency
-	FROM  bodb02.dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
-	WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
-	-------
+	DECLARE @TempAg AS TABLE (CustId INT,Currency int)
 
-	DECLARE @TempAg AS TABLE (custid INT ,currency INT)
-	INSERT INTO @TempAg (custid,currency)
-	SELECT    lc.CustID  
-			 ,lc.Currency
-	FROM    bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc
-			INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
+	DECLARE @DocHandler INT
+
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
+	
+		INSERT INTO @TempAg(CustId, Currency)
+		SELECT AgentId, Currency 
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
+
+	BEGIN CATCH
+		SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+		RETURN
+	END CATCH;
  
 	--------
 	SET @f = @Fromdate
@@ -103,7 +112,6 @@ BEGIN
 	order by l.sporttype
 	DROP TABLE #tblLeagueid
 	DROP TABLE #tblBalanceDate
-	DROP TABLE #currency
 END
 
 GO

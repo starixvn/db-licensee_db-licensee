@@ -1,14 +1,12 @@
 USE [bodb02]
 GO
+
 ALTER PROCEDURE [dbo].[Lrf_Rpt_ActiveMember]   
-	@LicenseeID		INT, 
-	@UserID			INT,
-	@CurrencyID		INT	= 0,
 	@FromDate		SMALLDATETIME,
 	@ToDate			SMALLDATETIME,
 	@Products		VARCHAR(100) = '',
-	@excludeTest	BIT	= 0,
-	@TotalActive	INT OUTPUT  
+	@TotalActive	INT OUTPUT,
+	@AgentList		VARCHAR(MAX)
 AS
 /*  Created: Florent.Nguyen    
 	Date: 2015-01-25  
@@ -17,6 +15,7 @@ AS
      
     Revisions:    
      - 20150624@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission 
+	 - 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest [Redmine: #71679]
 	
 	Param's Explanation:         
 	   + @excludeTest: remove currency UUS  
@@ -64,18 +63,25 @@ BEGIN
 	SELECT	@_FromDate = @FromDate,
 			@_ToDate   = @ToDate  
   
-	SELECT currencyID, LicenseeID   
-	INTO #Currency  
-	FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID, @userID, 1) -- System is default=1 (LRF)  
-	WHERE (@CurrencyID = 0  OR (@CurrencyID <> 0 AND CurrencyID = @CurrencyID))  
-   
-	INSERT INTO @tempAg (CustID, Currency)   
-	SELECT lc.CustID, lc.Currency   
-	FROM bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc   
-		INNER JOIN #Currency c ON lc.LicenseeID = c.LicenseeID AND lc.Currency = c.CurrencyID   
-	WHERE (@excludeTest = 0 OR (@excludeTest = 1 AND lc.Currency <> 20))  
-  
-	DROP TABLE #Currency
+	DECLARE @DocHandler INT
+
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
+	
+		INSERT INTO @TempAg(CustId, Currency)
+		SELECT AgentId, Currency 
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
+
+	BEGIN CATCH
+		SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+		RETURN
+	END CATCH;
 
 	IF ISNULL(@Products, '') = ''  
 		RETURN  

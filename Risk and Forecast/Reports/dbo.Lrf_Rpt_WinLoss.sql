@@ -1,10 +1,7 @@
 USE [bodb02]
 GO
-ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
-    @LicenseeID		INT , 
-	@UserID			INT,    
+ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]   
 	@DrawFilter		SMALLINT = 1,
-    @CurrencyID		INT = 0 ,
     @FromDate		DATETIME,
     @ToDate			DATETIME ,
     @showSB			BIT = 0,
@@ -27,7 +24,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
     @PageSize		INT = 1000,
     @PageIndex		INT = 1,
     @IsOld			BIT = 0,
-	@excludeTest	BIT = 0
+	@AgentList		VARCHAR(MAX)
     
 AS
 /*
@@ -88,6 +85,7 @@ AS
 		- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
 		- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
 		- 20161115@Jim: LRF - Integrate new product Fishing World [RedmineID : #66737]
+		- 20170215@Sophia: Get @AgentList by web instead of @UserId, @LicenseeID, @CurrencyID, remove @excludeTest [Redmine: #71679]
 */
     
 SET NOCOUNT ON
@@ -122,25 +120,35 @@ SELECT  @PageIndex	= @PageIndex - 1,
         @RowStart	= @PageSize * @PageIndex + 1,
         @RowEnd		= @RowStart + @PageSize - 1
 SELECT	@Today = CONVERT(DATE, GETDATE())
-SELECT  currencyID, LicenseeID 
-INTO #currency
-FROM dbo.Lrf_f_GetCurrencybyUser(@licenseeID, @userID, 1)-- System is default=1 (LRF)
-WHERE ((@CurrencyID = 0 ) OR (@CurrencyID <> 0 AND CurrencyID = @CurrencyID))
-	
 
-INSERT INTO @TempAg(CustId, Currency)
-SELECT CustID, Currency
-FROM
-	bodb_licensee.dbo.f_SelLicenseeCust(@LicenseeID) lc  
-	INNER JOIN #Currency c ON lc.LicenseeID = c.LicenseeID AND lc.Currency = c.CurrencyID
-WHERE (@excludeTest = 0 OR (@excludeTest = 1 AND Currency <> 20))	
+-------- Get AgentList 	
+DECLARE @DocHandler INT
+
+BEGIN TRY
+	EXEC sp_xml_preparedocument @DocHandler OUTPUT
+		,@AgentList
+	
+	INSERT INTO @TempAg(CustId, Currency)
+	SELECT AgentId, Currency 
+	FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+
+	EXEC sp_xml_removedocument @DocHandler
+END TRY
+
+BEGIN CATCH
+	SELECT ErrCode = 100
+		,ErrMsg = N'Paramter invalid.'
+
+	RETURN
+END CATCH;
+
+
+-------End Get AgentList
 	
 INSERT INTO @Exchange(ExchangeDate, ExchangeId, MYR, USD, EUR, GBP)
 SELECT ExchangeDate, ExchangeId, MYR, USD, EUR, GBP
 FROM Lrf_f_GetExchangeDaily(@_FromDate, @_ToDate)
-WHERE exchangeid IN (SELECT DISTINCT CurrencyID FROM #Currency)
-
-DROP TABLE #Currency 
+WHERE exchangeid IN (SELECT DISTINCT Currency FROM @TempAg)
 
 IF @ShowSB = 1 
 BEGIN

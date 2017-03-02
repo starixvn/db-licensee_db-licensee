@@ -29,6 +29,7 @@ ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
 	,@ShowLoss 		BIT =  1
 	,@ShowDraw 		BIT =  1
 	,@Duration		INT	=  0 OUTPUT
+	,@AgentList		VARCHAR(MAX)
 ) 
 WITH RECOMPILE
 AS
@@ -67,6 +68,7 @@ Revision:
 	- 20151223@Jim: Add "Effective Betting Value" in Customer Turnover report [Redmine: #45736]
 	- 20160413@Victor: support MKK currency code
 	- 20160720@Jim : Implement 67 new bet types (PH All in one - Phase 2) [Redmine : #53520]
+	- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID [Redmine: #71679]
 Parameter's Explanation:
 	- @ReportBy:  1: daily, 2: monthly
 	- @FilterBy:  1: Win, 2: Loss, 3: Draw
@@ -232,18 +234,31 @@ BEGIN
 		
 	DROP TABLE #BettypeID
 		
-	SELECT 
-		lc.CustID
-		,lc.Currency
-	INTO #recommend	
-	FROM bodb_licensee.dbo.f_SelLicenseeCust (@LicenseeID) lc  
-		INNER JOIN bodb_licensee.dbo.CurrencyUser c WITH (NOLOCK) 
-		ON lc.LicenseeID	= c.LicenseeID 
-		AND lc.Currency		= c.CurrencyID
-	WHERE	 lc.Currency	= @CurrencyID		
-		AND c.usrID		= @userID 
-		AND c.SystemID	= 1 
-		AND c.isActive	= 1	 
+	CREATE TABLE #recommend
+	(
+		CustID			INT,
+		Currency		INT
+	)
+
+	DECLARE @DocHandler INT
+
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
+	
+		INSERT INTO #recommend(CustId, Currency)
+		SELECT AgentId, Currency 
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
+
+	BEGIN CATCH
+		SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+		RETURN
+	END CATCH;
 	
 	
 	SELECT @Username 	=  LTRIM(RTRIM(ISNULL(@Username,'')))

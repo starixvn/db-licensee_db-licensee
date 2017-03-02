@@ -2,13 +2,10 @@ USE [bodb02]
 GO
  
 ALTER PROCEDURE [dbo].[Lrf_Rpt_AGCasinoWinloss]
-	  @LicenseeID	INT
-	, @Currency		INT				= 0
-	, @UserID		INT
-	, @FromDate		SMALLDATETIME
+	 @FromDate		SMALLDATETIME
 	, @ToDate		SMALLDATETIME
-	, @excludeTest	BIT				= 0
 	, @ReportType	TINYINT			= 1
+	, @AgentList	VARCHAR(MAX)
 WITH RECOMPILE
 AS  
 
@@ -24,6 +21,7 @@ AS
 		- 20151020@Florent: get MoveBetsDay
 		- 20160413@Victor: support MKK currency code [Redmine: #55745]
 		- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
+		- 20170301@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest [Redmine: #71679]
 	Param's Explanation:  
 	  
 	  + @excludeTest: remove currency UUS
@@ -42,8 +40,7 @@ AS
 */
 SET NOCOUNT ON
 BEGIN
-	CREATE TABLE #tmpResult (Winlostdate DATETIME, Currency INT,TurnOver MONEY,TotalTrans INT,Winlost MONEY,LicenseeWinlost MONEY)						
-	CREATE TABLE #Currency(currencyID INT)
+	CREATE TABLE #tmpResult (Winlostdate DATETIME, Currency INT,TurnOver MONEY,TotalTrans INT,Winlost MONEY,LicenseeWinlost MONEY)	
 	CREATE TABLE #tmpCust (CustId INT, Currency INT, srecommend INT)
 	CREATE TABLE #TempExchange(ExchangeDate DATETIME, ExchangeId INT, Code NVARCHAR(5), USD FLOAT, EUR FLOAT,GBP FLOAT)
 		
@@ -54,29 +51,32 @@ BEGIN
 	FROM  dbo.Exchange WITH (NOLOCK) 
 	WHERE ExchangeId = 51
 
-	SET @sql = 'SELECT CurrencyID 
-				FROM OPENQUERY( DBLIC,''SELECT CurrencyID 
-										FROM bodb02.dbo.Lrf_f_GetCurrencybyUser(' + CAST(@LicenseeID AS VARCHAR) + ', '+ CAST(@UserID AS VARCHAR) + +', 1)
-										WHERE ('+ CAST(@Currency AS VARCHAR) +' = 0  OR ('+ CAST(@currency AS VARCHAR) +' <> 0 
-											AND CurrencyID = '+ CAST(@currency AS VARCHAR) +'))''
-											)'
-	INSERT INTO #Currency (CurrencyID)						
-	EXEC (@sql)
+	DECLARE @Temp AS TABLE ( CustId INT,Currency INT )
+
+	DECLARE @DocHandler INT
+
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
 	
-	DECLARE @Temp AS TABLE ( CustId INT, Currency INT )
-	DECLARE @sql1 VARCHAR(500)
-	SELECT  @sql1 = 'SELECT CustID, Currency 
-					FROM OPENQUERY(DBLIC, ''SELECT CustID, Currency 
-											FROM bodb_licensee.dbo.f_SelLicenseeCust('+CAST(@LicenseeID AS VARCHAR(10))+')'')'
-	INSERT INTO @Temp (CustId, Currency)
-	EXEC (@sql1)
+		INSERT INTO @Temp(CustId, Currency)
+		SELECT AgentId, Currency 
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
+
+	BEGIN CATCH
+		SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+		RETURN
+	END CATCH;
 	
 	INSERT INTO #tmpCust (CustID, Currency, srecommend)	
 	SELECT co.CustID, lc.Currency , co.srecommend
 	FROM dbo.custInfo co WITH (NOLOCK)
-		INNER JOIN #Currency c ON co.Currency = c.CurrencyID 
 		INNER JOIN @Temp lc ON co.recommend = lc.CustId AND lc.Currency = co.Currency
-	WHERE (@excludeTest = 0 OR (@excludeTest = 1 AND lc.Currency <> 20))	
 	
 	DECLARE @TempFromDate	DATETIME 
 	DECLARE @TempToDate		DATETIME 
@@ -237,7 +237,6 @@ BEGIN
 			 END
 	---------
 	DROP TABLE #tmpResult
-	DROP TABLE #Currency
 	DROP TABLE #tmpCust
 	DROP TABLE #TempExchange 
 	
