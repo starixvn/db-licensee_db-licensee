@@ -1,10 +1,10 @@
-﻿ALTER  PROCEDURE [dbo].[Lrf_Forecast_SelHDP]
-    @LicenseeID INT ,
-    @LicenseeType VARCHAR(100) = NULL ,
-    @CurrencyID INT=0,
-	@UserID		INT,
-    @matchid INT ,
-    @bettype INT = 1
+﻿USE bodb02
+GO
+
+ALTER  PROCEDURE [dbo].[Lrf_Forecast_SelHDP]    
+    @matchid	INT ,
+    @bettype	INT = 1,
+	@AgentList	VARCHAR(MAX)
 AS /*
 Created: 20101207@Henry
 Original: Age_Forecast_SelHDP
@@ -19,26 +19,40 @@ Revisions:
 	- 20130514@Jim:Restrict permission of Licensee Users by currency 
 	- 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function 
 	- 20150123@Jim: support base on Currency GBP
+	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+
+Param's Explanation:
+	+ @AgentList: xml structure
+					<ROOT>
+					<Agent AgentId="12345" Currency="3"/>  
+					<Agent AgentId="12345" Currency="5"/>  
+					</ROOT> 
 */
     SET NOCOUNT ON
 
     DECLARE @Today SMALLDATETIME 
     SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
 	
-	SELECT  currencyID,LicenseeID into #currency
-	FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
-	WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
-	
-	DECLARE @TempAg AS TABLE ( CustId INT )
-    INSERT  INTO @TempAg ( CustId)
-	SELECT  DISTINCT CustID  
-	FROM    bodb_Licensee.dbo.[f_SelLicenseeCust](0) lc --WITH ( NOLOCK )  
-			INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
-	WHERE   [Description] = COALESCE(@LicenseeType,  
-										 [Description])
-	------------------
-	DROP TABLE #currency
-	--------------------
+	DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
+	DECLARE @DocHandler INT
+
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+				,@AgentList
+		INSERT INTO @TempAg (custID, currency)
+		SELECT AgentId, Currency
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
+
+	BEGIN CATCH
+		SELECT ErrCode = 100
+				,ErrMsg = N'Paramter invalid.'
+
+		RETURN
+	END CATCH; 
+
     SELECT  -x.hdp + score offset ,
             SUM(x.hometotal * 1) 'ht' ,
             SUM(x.hometotalUSD * 1) 'htUSD' ,

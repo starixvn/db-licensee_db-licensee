@@ -1,11 +1,11 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel121] 
-	@LicenseeID INT,
-	@UserID		INT,
-	@CurrencyID INT=0,
-	@licenseetype VARCHAR(100) = NULL,
-	@PageSize INT=50,
-	@PageIndex INT=0,
-	@TotalRows INT=0 OUTPUT
+﻿USE bodb02
+GO
+
+ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel121] 	
+	@PageSize	INT=50,
+	@PageIndex	INT=0,
+	@TotalRows	INT=0 OUTPUT,
+	@AgentList	VARCHAR(MAX)
  AS
 
 /*
@@ -19,28 +19,39 @@ Revisions:
 	 - 20140718@Hannah: Change liveindicator datatype to INT to fix running live matches are not being showed at the top list (RedmineID:19136)
 	 - 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
 	 - 20150123@Jim: support base on Currency GBP
+	 - 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+
 Param's Explanation:
-• @CustID: AgentID
+	+ @AgentList: xml structure
+					<ROOT>
+					<Agent AgentId="12345" Currency="3"/>  
+					<Agent AgentId="12345" Currency="5"/>  
+					</ROOT>
 */
 
 SET NOCOUNT ON
 DECLARE @Today SMALLDATETIME 
 SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
 
-SELECT  currencyID,LicenseeID into #currency
-FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
-WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
+DECLARE @DocHandler INT
 
-DECLARE @TempAg AS TABLE (CustID INT)
-INSERT INTO @TempAg (CustID)
-SELECT  DISTINCT CustID  
-                FROM    bodb_Licensee.dbo.[f_SelLicenseeCust](0) lc --WITH ( NOLOCK )
-						INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
-                WHERE    [Description] = COALESCE(@LicenseeType,  
-                                                     [Description])
--------------------------
+BEGIN TRY
+	EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
+	INSERT INTO @TempAg (custID, currency)
+	SELECT AgentId, Currency
+	FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
--------------------------
+	EXEC sp_xml_removedocument @DocHandler
+END TRY
+
+BEGIN CATCH
+	SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+	RETURN
+END CATCH;
 
 DECLARE @RowCount INT, @RowStart INT, @RowEnd INT  
 SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
@@ -99,10 +110,9 @@ SELECT
 	FROM
 		bettrans AS b  WITH (NOLOCK)
 		INNER JOIN match AS m  WITH (NOLOCK) ON m.matchid = b.matchid and m.eventstatus='running'
+		INNER JOIN @TempAg ag ON b.recommend = ag.CustId AND b.currency = ag.Currency
 	WHERE  	
-		b.recommend IN (SELECT CustID FROM @TempAg) AND
-		 ((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) 
-		AND b.bettype in (25,121,122)
+		b.bettype in (25,121,122)
 		AND b.statusID in (0,1)
 		AND b.ruben = 0
 		AND b.tpositiontaking <> 0
@@ -161,7 +171,6 @@ SELECT c.* FROM
 	FROM @Data b
 	INNER JOIN #TempExchange e ON b.currency = e.exchangeid
 ) c WHERE c.RowNum BETWEEN @RowStart AND @RowEnd
-DROP TABLE #currency
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_TotalBets_Sel121] TO [bodbLicenseeNet]

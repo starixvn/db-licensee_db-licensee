@@ -1,7 +1,8 @@
 USE [bodb02]
 GO
 
-ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportSummary_xpre]	
+ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportSummary]	
+	@LicenseeID		INT,
 	@FromDate		SMALLDATETIME,
 	@ToDate			SMALLDATETIME,
 	@MoveBetsDay	SMALLDATETIME,
@@ -316,11 +317,11 @@ BEGIN
 			SUM(b.betcount) BetCount
 		FROM
 			bodb_licenseereport.dbo.rpt_Betting_BA b WITH ( NOLOCK )
-			INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID
+			INNER JOIN @TempAg ag ON b.CurrencyID = ag.Currency
 		WHERE
+			b.SiteID = @LicenseeID AND 
 			b.rptDate BETWEEN @FDate AND @TempToDate
 			AND b.status NOT IN (-1,103)
-			AND b.siteID = @LicenseeID
 			AND
 			(
 				(@Liveindicator = 0 AND b.IsLive = 0)
@@ -347,12 +348,12 @@ BEGIN
 			SUM(b.betcount) BetCount
 		FROM
 			bodb_LicenseeReport.dbo.rpt_BettingParlay b WITH ( NOLOCK )
-			INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID
+			INNER JOIN @TempAg ag ON b.CurrencyID = ag.Currency
 		WHERE
+			b.SiteID = @LicenseeID AND
 			b.rptDate BETWEEN @FDate AND @TempToDate
 			AND b.status NOT IN (-1,103)
 			AND b.Bettype NOT IN (901,902,903,904)
-			AND b.siteID = @LicenseeID
 			AND
 			(
 				(@Liveindicator = 0 AND b.IsLive = 0)
@@ -388,11 +389,11 @@ BEGIN
 			SUM(b.betcount) BetCount
 		FROM
 			bodb_licenseereport.dbo.rpt_Betting b WITH ( NOLOCK )
-			INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID
+			INNER JOIN @TempAg ag ON b.CurrencyID = ag.Currency
 		WHERE
-			b.rptDate BETWEEN @FDate AND @TempToDate
+			b.SiteID = @LicenseeID 
+			AND b.rptDate BETWEEN @FDate AND @TempToDate
 			AND b.status NOT IN (-1,103)
-			AND b.siteID = @LicenseeID
 			AND
 			(
 				(@Liveindicator = 0 AND b.IsLive = 0)
@@ -433,12 +434,12 @@ BEGIN
 			SUM(b.betcount) BetCount
 		FROM
 			bodb_LicenseeReport.dbo.rpt_BettingParlay b WITH ( NOLOCK )
-			INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID
+			INNER JOIN @TempAg ag ON b.CurrencyID = ag.Currency
 		WHERE
-			b.rptDate BETWEEN @FDate AND @TempToDate
+			b.SiteID = @LicenseeID
+			AND b.rptDate BETWEEN @FDate AND @TempToDate
 			AND b.status NOT IN (-1,103)
 			AND b.Bettype NOT IN (901,902,903,904)
-			AND b.siteID =@LicenseeID
 			AND
 			(
 				(@Liveindicator = 0 AND b.IsLive = 0)

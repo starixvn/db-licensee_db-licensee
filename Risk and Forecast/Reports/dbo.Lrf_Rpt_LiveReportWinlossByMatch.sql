@@ -1,9 +1,6 @@
 ﻿USE [bodb02]
 GO
-ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportWinlossByMatch]    
-	@LicenseeID		INT ,
-	@UserID			INT,
-    @CurrencyID		INT = NULL , 
+ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportWinlossByMatch]   	
     @ShowSB			BIT	= 0,
     @ShowBA			BIT	= 0,
 	@ShowLC 		BIT = 0,
@@ -13,7 +10,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportWinlossByMatch]
     @FromDate		SMALLDATETIME,  
 	@ToDate			SMALLDATETIME,
 	@MoveBetsDay	SMALLDATETIME,
-	@Liveindicator	INT = 1
+	@Liveindicator	INT = 1,
+	@AgentList		VARCHAR(MAX)
 AS 
 /*
 Created: 20111031@
@@ -39,6 +37,8 @@ Revisions:
 	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
 	- 20151001@Jim: remove MicroGaming
 	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
+	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+
 Return 3 tables:
 WinlostBySport
 WinlostByCurrency
@@ -49,6 +49,12 @@ Param's Explanation:
 		+ 0: Non - Live data only
 		+ 1: Live data only
 		+ 2: All
+
+	+ @AgentList: xml structure
+					<ROOT>
+					<Agent AgentId="12345" Currency="3"/>  
+					<Agent AgentId="12345" Currency="5"/>  
+					</ROOT> 
 Example:
 
 DECLARE @FromDate DATETIME
@@ -69,24 +75,27 @@ DECLARE @FDate SMALLDATETIME
 DECLARE @TDate SMALLDATETIME 
 	
 --to Deal With Parameter Sniffing
-SELECT @FDate=@FromDate,@TDate=@ToDate 
+SELECT @FDate = @FromDate, @TDate = @ToDate 
 
-IF @CurrencyID IS NULL
-	SET @CurrencyID = 0  
+DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
+DECLARE @DocHandler INT
 
-SELECT  currencyID,LicenseeID into #currency
-FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
-WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+BEGIN TRY
+	EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
+	INSERT INTO @TempAg (custID, currency)
+	SELECT AgentId, Currency
+	FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
-DECLARE @TempAg AS TABLE ( CustId INT , Currency INT )
-INSERT  INTO @TempAg ( CustId, Currency)
-SELECT  CustID  
-		,Currency
-FROM    bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc  
-		INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
---WHERE   Currency <> 20
-		
-DROP TABLE #Currency 
+	EXEC sp_xml_removedocument @DocHandler
+END TRY
+
+BEGIN CATCH
+	SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+	RETURN
+END CATCH; 
     
 DECLARE @bettype AS TABLE (bettype INT PRIMARY KEY)
 

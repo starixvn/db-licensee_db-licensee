@@ -1,11 +1,12 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel1378]
+﻿USE bodb02
+GO
+
+ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel1378]	
 	@LicenseeID INT,
-	@CurrencyID INT=0,
-	@UserID		INT,	
-	@licenseetype VARCHAR(100) = NULL,
-	@PageSize INT=50,
-	@PageIndex INT=0,
-	@TotalRows INT=0 OUTPUT
+	@PageSize	INT=50,
+	@PageIndex	INT=0,
+	@TotalRows	INT=0 OUTPUT,
+	@AgentList	VARCHAR(MAX)
 AS
 
 /*
@@ -15,7 +16,7 @@ DB: DB052.bodb02
 Original: Age_TotalBets_Sel1378_Ag
 
 Revisions:
- 201133@Alex :  Allow to choose all type of licensee AND all currency + suppport based currency
+ - 201133@Alex :  Allow to choose all type of licensee AND all currency + suppport based currency
  - 20110801@Henry: Remove PT + exclude BA ticket
  - 20120214@Jim: change to use  table ExchangeDaily by use function Lrf_f_GetExchangeDaily  
  - 20121004@Jim: replace @currencyname input param by @currencyID
@@ -25,6 +26,14 @@ Revisions:
  - 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
  - 20150124@Winnie: Add base currency GBP 
  - 20150617@Jim:  Enhance Total Bets with sum values of running stakes  (Feature #36839)
+ - 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+
+Param's Explanation:
+	+ @AgentList: xml structure
+					<ROOT>
+					<Agent AgentId="12345" Currency="3"/>  
+					<Agent AgentId="12345" Currency="5"/>  
+					</ROOT> 
 Param's Explanation:
 • @custid: agent ID
 
@@ -34,21 +43,26 @@ SET NOCOUNT ON
 DECLARE @Today SMALLDATETIME 
 SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
 
-SELECT  currencyID,LicenseeID into #currency
-FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
-WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
+DECLARE @DocHandler INT
 
-DECLARE @TempAg AS TABLE (CustID INT)
-INSERT INTO @TempAg (CustID)
-SELECT DISTINCT CustID  
-                FROM    bodb_Licensee.dbo.[f_SelLicenseeCust](0) lc --WITH ( NOLOCK )
-						INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
-                WHERE   lc.Description = COALESCE(@LicenseeType,  
-                                                     lc.[Description])
+BEGIN TRY
+	EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
+	INSERT INTO @TempAg (custID, currency)
+	SELECT AgentId, Currency
+	FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
----------------------
+	EXEC sp_xml_removedocument @DocHandler
+END TRY
 
----------------------
+BEGIN CATCH
+	SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+	RETURN
+END CATCH;
+
 DECLARE @RowCount INT, @RowStart INT, @RowEnd INT  
 SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
 
@@ -272,10 +286,8 @@ SELECT
 			COUNT(*) BetCount
 		FROM bettrans b WITH (NOLOCK)
        	INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e ON e.exchangeid = b.currency
-		WHERE
-				recommend IN (SELECT CustID FROM @TempAg)
-				AND  ((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID))
-				AND bettype IN (1,3,7,8)
+		INNER JOIN @TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
+		WHERE	bettype IN (1,3,7,8)
 				AND statusID IN (0,1)
 				AND ruben = 0
 				AND tpositiontaking <> 0
@@ -465,7 +477,7 @@ END
 			SUM(BetCount_OU) AS BetCount_OU,
 			SUM(BetCount_HTOU) AS BetCount_HTOU	
 	FROM @Data
-DROP TABLE #currency
+
 GO
 GRANT EXECUTE ON [dbo].[Lrf_TotalBets_Sel1378] TO [bodbLicenseeNet]
 GO

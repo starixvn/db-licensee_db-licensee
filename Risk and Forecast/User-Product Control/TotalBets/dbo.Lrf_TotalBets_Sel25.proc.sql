@@ -6,14 +6,11 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel25] 
-	@LicenseeID INT,
-	@CurrencyID INT=0,
-	@UserID		INT,
-	@licenseetype VARCHAR(100) = NULL,
-	@PageSize INT=50,
-	@PageIndex INT=0,
-	@TotalRows INT=0 OUTPUT
+ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel25] 	
+	@PageSize	INT=50,
+	@PageIndex	INT=0,
+	@TotalRows	INT=0 OUTPUT,
+	@AgentList	VARCHAR(MAX)
  AS
 
 /*
@@ -33,28 +30,40 @@ Revisions:
 	- 20150124@Winnie: Add base currency GBP 
 	- 20150413@Jim: add more bettype Odd/Even (3rd) (157) ,Extra Time 1H 1X2 (167)
 	- 20150617@Jim:  Enhance Total Bets with sum values of running stakes  (Feature #36839)
+	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+
 Param's Explanation:
-• @CustID: AgentID
+	+ @AgentList: xml structure
+					<ROOT>
+					<Agent AgentId="12345" Currency="3"/>  
+					<Agent AgentId="12345" Currency="5"/>  
+					</ROOT>
 */
 
 SET NOCOUNT ON
 DECLARE @Today SMALLDATETIME 
 SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
 
-SELECT  currencyID,LicenseeID into #currency
-FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
-WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
+DECLARE @DocHandler INT
 
-DECLARE @TempAg AS TABLE (CustID INT)
-INSERT INTO @TempAg (CustID)
-SELECT  DISTINCT CustID  
-                FROM    bodb_Licensee.dbo.[f_SelLicenseeCust](0) lc --WITH ( NOLOCK )
-				INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID		
-                WHERE  [Description] = COALESCE(@LicenseeType,  
-                                                     [Description])
--------------------
+BEGIN TRY
+	EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
+	INSERT INTO @TempAg (custID, currency)
+	SELECT AgentId, Currency
+	FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
--------------------
+	EXEC sp_xml_removedocument @DocHandler
+END TRY
+
+BEGIN CATCH
+	SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+	RETURN
+END CATCH;
+
 DECLARE @RowCount INT, @RowStart INT, @RowEnd INT  
 SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
 
@@ -263,11 +272,9 @@ SELECT
 	FROM
 		bettrans AS a  WITH (NOLOCK)
 		INNER JOIN match AS m  WITH (NOLOCK) ON m.matchid       = a.matchid 
-		INNER JOIN (SELECT *  FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
-		ON e.exchangeid = a.currency
-	WHERE  	
-		a.recommend IN (SELECT CustID FROM @TempAg) AND
-		 ((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))  OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
+		INNER JOIN (SELECT *  FROM Lrf_f_GetExchangeDaily(@Today,@Today)) e ON e.exchangeid = a.currency
+		INNER JOIN @TempAg ag ON a.recommend = ag.CustId AND a.currency = ag.Currency
+	WHERE 	
 		a.bettype in (2, 12, 5, 15,123,157,167)
 		AND a.statusID in (0,1)
 		AND a.ruben = 0
@@ -312,9 +319,7 @@ SELECT
 	SUM(away_odds_OE_ori) away_odds_OE ,
 	SUM(away_odds_OEUSD_ori) away_odds_OEUSD ,
 	SUM(away_odds_OEEUR_ori) away_odds_OEEUR ,
-	SUM(away_odds_OEGBP_ori) away_odds_OEGBP,
-	
-	 
+	SUM(away_odds_OEGBP_ori) away_odds_OEGBP,	 
 	
 	SUM(home_odds_OE_1st_ori) home_odds_OE_1st,
 	SUM(home_odds_OE_1stUSD_ori) home_odds_OE_1stUSD,
@@ -367,11 +372,8 @@ SELECT
 	SUM(away_odds_DNDEUR) away_odds_DNDEUR,
 	SUM(away_odds_DNDGBP) away_odds_DNDGBP
 FROM @Data
-DROP TABLE #currency
-
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_TotalBets_Sel25] TO [bodbLicenseeNet]
-
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_TotalBets_Sel25] TO [vnteam]
