@@ -1,7 +1,7 @@
 ﻿USE [bodb02]
 GO
 
-ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLossByBettype_xpre] 	
+ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLossByBettype] 	
 	  @FromDate		SMALLDATETIME
 	, @ToDate		SMALLDATETIME
 	, @MoveBetsDay	SMALLDATETIME

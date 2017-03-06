@@ -1,7 +1,7 @@
 ﻿USE [bodb02]
 GO
  
-ALTER PROCEDURE [dbo].[Lrf_Rpt_MatchWinLossByBettype_xpre]  	
+ALTER PROCEDURE [dbo].[Lrf_Rpt_MatchWinLossByBettype]  	
 	@MatchID 	  INT, -- in case of Racing, this param is 'race'  
 	@LeagueID     INT = 0, -- in case of Racing, this param is '>0'  
 	@Date 		  SMALLDATETIME,  

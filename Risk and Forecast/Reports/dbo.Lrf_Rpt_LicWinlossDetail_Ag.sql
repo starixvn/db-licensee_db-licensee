@@ -1,6 +1,6 @@
 USE [bodb02]
 GO
-ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinlossDetail_Ag_xpre]  
+ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinlossDetail_Ag]  
 	@LicenseeID		INT,
 	@FromDate		SMALLDATETIME,  
 	@ToDate			SMALLDATETIME,    

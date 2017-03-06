@@ -1,7 +1,7 @@
 USE [bodb02]
 GO
 
-ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail_xpre]  
+ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail]  
  @CustID		INT = 0, --AgentID
  @MemberID		INT = 0, --memberID
  @FromDate		SMALLDATETIME,  

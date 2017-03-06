@@ -5,7 +5,7 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProduct_xpre]  
+ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProduct]  
  @UserName		VARCHAR(50) = NULL,
  @FromDate		SMALLDATETIME,  
  @ToDate		SMALLDATETIME,   

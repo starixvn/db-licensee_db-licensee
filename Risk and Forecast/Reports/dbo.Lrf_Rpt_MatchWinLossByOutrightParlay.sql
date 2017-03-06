@@ -1,7 +1,7 @@
 ﻿USE [bodb02]
 GO 
 
-ALTER PROCEDURE [dbo].[Lrf_Rpt_MatchWinLossByOutrightParlay_xpre]    
+ALTER PROCEDURE [dbo].[Lrf_Rpt_MatchWinLossByOutrightParlay]    
     @Date SMALLDATETIME,
     @MoveBetsDay SMALLDATETIME,
     @showSB BIT = 0,
