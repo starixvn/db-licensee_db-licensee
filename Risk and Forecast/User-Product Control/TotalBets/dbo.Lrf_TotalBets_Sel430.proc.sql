@@ -6,8 +6,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel430]	
-	@Langkey		VARCHAR(10)		= 'en-US',
+ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel430]
 	@PageSize		INT				= 50,
 	@PageIndex		INT				= 1,
 	@TotalRows		INT				= 0 OUTPUT,
