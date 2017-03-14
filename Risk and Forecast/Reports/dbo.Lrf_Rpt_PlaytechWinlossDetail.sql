@@ -1,10 +1,13 @@
 USE [bodb02]
 GO
 ALTER  PROCEDURE [dbo].[Lrf_Rpt_PlaytechWinlossDetail]  
+	@LicenseeID	INT,
+	@UserID		INT,
+	@CurrencyID	INT = 0,
 	@CustID		INT = 0, --AgentID			
 	@FromDate	SMALLDATETIME,  
 	@ToDate		SMALLDATETIME,
-	@AgentList	VARCHAR(MAX)
+	@excludeTest BIT = 0
 AS  
 /*  Created: Hannah  
 	Date: 2014-04-11 
@@ -17,7 +20,6 @@ AS
 		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 		- 20150123@Jim: support base on Currency GBP
 		- 20160413@Victor: support MKK currency code [Redmine: #55745]
-		- 20170301@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest [Redmine: #71679]
 	Param's Explanation:  
 	  + @CustID: AgentID  
 	  + @BaseCurrency (input currencyID): 2-MYR ; 3-USD; 6-EUR
@@ -46,27 +48,21 @@ BEGIN
 	DECLARE @Exchange TABLE(ExchangeDate SMALLDATETIME, ExchangeId INT, USD FLOAT, EUR FLOAT,MYR FLOAT,GBP FLOAT,Code VARCHAR(10), PRIMARY KEY(ExchangeDate, ExchangeId))
 	DECLARE @sql NVARCHAR(1000)
 
-	DECLARE @Temp AS TABLE ( CustId INT,Currency INT )
+	CREATE TABLE #currency(currencyID INT, LicenseeID INT)
 
-	DECLARE @DocHandler INT
+	SET @sql = 'SELECT currencyID, LicenseeID
+				FROM openquery( DBLIC,''SELECT * 
+				FROM bodb02.dbo.Lrf_f_GetCurrencybyUser(' + CAST(@LicenseeID AS VARCHAR) + ', '+ CAST(@UserID AS VARCHAR) + +', 1)
+						WHERE ('+ CAST(@currencyID AS VARCHAR) +' = 0  OR ('+ CAST(@currencyID AS VARCHAR) +' <> 0 AND CurrencyID = '+ CAST(@currencyID AS VARCHAR) +'))'')'
 
-	BEGIN TRY
-		EXEC sp_xml_preparedocument @DocHandler OUTPUT
-			,@AgentList
+	INSERT INTO #currency(currencyID, LicenseeID)
+	EXEC (@sql)
 	
-		INSERT INTO @Temp(CustId, Currency)
-		SELECT AgentId, Currency 
-		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
-
-		EXEC sp_xml_removedocument @DocHandler
-	END TRY
-
-	BEGIN CATCH
-		SELECT ErrCode = 100
-			,ErrMsg = N'Paramter invalid.'
-
-		RETURN
-	END CATCH;
+	DECLARE @Temp AS TABLE (CustId INT,Currency INT )
+	DECLARE @sql1 VARCHAR(500)
+	SELECT  @sql1 =  'SELECT CustID,Currency   FROM  OPENQUERY(DBLIC, ''SELECT CustID,Currency  FROM bodb_licensee.dbo.f_SelLicenseeCust('+CAST(@LicenseeID AS VARCHAR(10))+')'')'
+	INSERT INTO @Temp (CustId ,Currency)
+	EXEC (@sql1)
 	
 	INSERT INTO #tmpCust (Recommend,CustID,Currency)	
 	SELECT   lc.CustId AS Recommend
@@ -75,7 +71,12 @@ BEGIN
 	FROM 
 		dbo.CustInfo co WITH (NOLOCK)
 		INNER JOIN @Temp lc ON lc.CustId = co.Recommend AND co.Currency = lc.Currency
-	WHERE (@CustID = 0 OR (@CustID <> 0 AND lc.CustID = @CustID))
+		INNER JOIN #Currency c ON  lc.Currency = c.CurrencyID 
+	WHERE  
+		(@CustID = 0 OR (@CustID <> 0 AND lc.CustID = @CustID))
+		AND (@excludeTest=0 OR (@excludeTest=1 AND lc.Currency <> 20))	
+	
+	DROP TABLE #Currency
 
 	SELECT TOP 1 @TempCurrencyID=currency FROM #tmpCust 
 
