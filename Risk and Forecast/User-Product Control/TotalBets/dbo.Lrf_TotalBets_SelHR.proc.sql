@@ -1,11 +1,12 @@
-﻿USE bodb02
-GO
-
-ALTER PROCEDURE [dbo].[Lrf_TotalBets_SelHR]  	
-	@PageSize	INT=50,  
-	@PageIndex	INT=1,
-	@AgentList	VARCHAR(MAX)	
-AS  
+﻿ALTER PROCEDURE [dbo].[Lrf_TotalBets_SelHR]  
+	@LicenseeID INT,
+	@UserID		INT,
+	@CurrencyID INT=0,
+	@LicenseeType VARCHAR(100) = NULL, 
+	@PageSize INT=50,  
+	@PageIndex INT=1
+	
+	AS  
   
 /*  
 Created: 20101201@Henry  
@@ -21,38 +22,27 @@ Revisions:
 	- 20130514@Jim:Restrict permission of Licensee Users by currency	
 	- 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
 	- 20150123@Jim: support base on Currency GBP
-	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
-
-Param's Explanation:
-	+ @AgentList: xml structure
-					<ROOT>
-					<Agent AgentId="12345" Currency="3"/>  
-					<Agent AgentId="12345" Currency="5"/>  
-					</ROOT>
+Param's Explanation:  
+• @CustID: agentID  
 */  
 SET NOCOUNT ON  
 DECLARE @Today smalldatetime 
 SET @Today = convert(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
 
-DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
-DECLARE @DocHandler INT
+SELECT  currencyID,LicenseeID into #currency
+FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
+WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
 
-BEGIN TRY
-	EXEC sp_xml_preparedocument @DocHandler OUTPUT
-			,@AgentList
-	INSERT INTO @TempAg (custID, currency)
-	SELECT AgentId, Currency
-	FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+DECLARE @TempAg as TABLE (CustID INT)
+INSERT INTO @TempAg (CustID)
+SELECT  DISTINCT CustID  
+                FROM    bodb_Licensee.dbo.[f_SelLicenseeCust](0) lc --WITH ( NOLOCK )  
+						INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
+                WHERE   [Description] = COALESCE(@LicenseeType,  
+                                                     [Description])
+-------------------------
 
-	EXEC sp_xml_removedocument @DocHandler
-END TRY
-
-BEGIN CATCH
-	SELECT ErrCode = 100
-			,ErrMsg = N'Paramter invalid.'
-
-	RETURN
-END CATCH;
+-------------------------
 
 DECLARE @FromDate DATETIME  
 SELECT @FromDate = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP,120)  
@@ -108,11 +98,11 @@ INSERT INTO @TotalBets(     transid, bettype, matchid, stake,  discount, apositi
 		m1.teamID,   
 		m1.leagueId  
 	 
-	FROM bettrans b1 (NOLOCK) 
-		INNER JOIN outright m1 (NOLOCK) ON b1.matchid = m1.orid
-		INNER JOIN @TempAg ag ON b1.recommend = ag.CustId AND b1.currency = ag.Currency
-
-	WHERE   	  
+	FROM   
+		bettrans b1 (NOLOCK) INNER JOIN outright m1 (NOLOCK) ON b1.matchid = m1.orid   
+	WHERE   
+	  b1.recommend  IN (SELECT CustID FROM @TempAg) AND   
+	  ((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 	  b1.bettype IN (31,32,33) AND   
 	  b1.statusID NOT IN (101,102,103)  AND
 	  m1.eventdate = @fromdate 
@@ -276,7 +266,8 @@ FROM
 	@Data  b
 	INNER JOIN (SELECT *  FROM Lrf_f_GetExchangeDaily(@FromDate,@FromDate))e 
 	ON e.exchangeid = b.currency
-	
+	DROP TABLE #currency
+
 GO
 GRANT EXECUTE ON [dbo].[Lrf_TotalBets_SelHR] TO [bodbLicenseeNet]
 

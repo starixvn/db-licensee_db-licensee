@@ -12,8 +12,7 @@ GO
 
 ALTER  PROCEDURE  [dbo].[Lrf_SelCurrencyByLicenseeUser]		
 	@LicenseeID int = 0, 
-	@UserID 	INT,
-	@excludeTest BIT=0
+	@UserID 	INT
 AS	
 /*
 Created: 20130509@Jim
@@ -23,7 +22,7 @@ Revisions:
 	- 20141118@winnie: Change from LicenseeCust table to f_SelLicenseeCust   
 	- 20160413@Victor: support MKK currency code
 	- 20160523@Jim: Currency permision restrict (#53882)
-	- 20170216@Sophia: Get AgentID, cast isActive as BIT [Redmine: #71679]
+	- 20170216@Sophia: Get AgentID, cast isActive as BIT, remove @excludeTest [Redmine: #71679]
 Param's Explanation:
 */
 
@@ -48,9 +47,7 @@ BEGIN
 		FROM bodb_Licensee.dbo.f_SelLicenseeCust(@LicenseeID) lc  
 			LEFT JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
 			INNER JOIN exchange e with (nolock) ON lc.currency = e.exchangeid
-		WHERE 
-			(@LicenseeID = 0 OR lc.LicenseeID = @LicenseeID)
-			AND (@excludeTest=0 OR (@excludeTest=1 AND lc.Currency <> 20))	
+		WHERE (@LicenseeID = 0 OR lc.LicenseeID = @LicenseeID)
 		ORDER BY 
 			CASE 
 				WHEN lc.currency = 20 THEN 'UUS' 

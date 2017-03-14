@@ -10,6 +10,7 @@ Created: 20161116@Alex
 Task :  Restrict permission of Licensee 
 DB: DBEXT/bodb02
 Revisions:  
+	- 20170228@Paul: Return AgentId [Redmine: #71679]
 	
 Param's Explanation:
 */

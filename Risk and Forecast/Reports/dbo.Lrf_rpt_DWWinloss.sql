@@ -61,14 +61,13 @@ BEGIN
 		, PRIMARY KEY(ExchangeDate,ExchangeId)
 	)
 	INSERT INTO @Exchange (ExchangeDate,ExchangeId,Code,MYR,USD,EUR,GBP)
-	SELECT 
-		ExchangeDate,
-		ExchangeId,
-		lc.CurrencyName,
-		MYR,
-		USD,
-		EUR,
-		GBP
+	SELECT	DISTINCT ExchangeDate,
+			ExchangeId,
+			lc.CurrencyName,
+			MYR,
+			USD,
+			EUR,
+			GBP
 	FROM bodb02.dbo.Lrf_f_GetExchangeDaily(@FromDate,@ToDate) a
 		INNER JOIN @TempAg b ON a.ExchangeId = b.Currency
 		INNER JOIN dbo.f_SelLicenseeCust(@LicenseeID) lc ON b.Currency = lc.Currency AND b.CustId = lc.CustID
