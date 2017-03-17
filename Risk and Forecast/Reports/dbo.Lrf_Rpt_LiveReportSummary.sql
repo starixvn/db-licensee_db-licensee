@@ -121,6 +121,12 @@ BEGIN
 		RETURN
 	END CATCH; 
 
+	CREATE TABLE #currency(currency INT)
+
+	INSERT INTO #currency(currency)
+	SELECT DISTINCT Currency
+	FROM @TempAg
+
 	IF @TDate > @MoveBetsDay
 	BEGIN
 		IF @FDate <= @MoveBetsDay
@@ -317,7 +323,7 @@ BEGIN
 			SUM(b.betcount) BetCount
 		FROM
 			bodb_licenseereport.dbo.rpt_Betting_BA b WITH ( NOLOCK )
-			INNER JOIN @TempAg ag ON b.CurrencyID = ag.Currency
+			INNER JOIN #currency c ON b.CurrencyID = c.Currency
 		WHERE
 			b.SiteID = @LicenseeID AND 
 			b.rptDate BETWEEN @FDate AND @TempToDate
@@ -348,7 +354,7 @@ BEGIN
 			SUM(b.betcount) BetCount
 		FROM
 			bodb_LicenseeReport.dbo.rpt_BettingParlay b WITH ( NOLOCK )
-			INNER JOIN @TempAg ag ON b.CurrencyID = ag.Currency
+			INNER JOIN #currency c ON b.CurrencyID = c.Currency
 		WHERE
 			b.SiteID = @LicenseeID AND
 			b.rptDate BETWEEN @FDate AND @TempToDate
@@ -389,7 +395,7 @@ BEGIN
 			SUM(b.betcount) BetCount
 		FROM
 			bodb_licenseereport.dbo.rpt_Betting b WITH ( NOLOCK )
-			INNER JOIN @TempAg ag ON b.CurrencyID = ag.Currency
+			INNER JOIN #currency c ON b.CurrencyID = c.Currency
 		WHERE
 			b.SiteID = @LicenseeID 
 			AND b.rptDate BETWEEN @FDate AND @TempToDate
@@ -434,7 +440,7 @@ BEGIN
 			SUM(b.betcount) BetCount
 		FROM
 			bodb_LicenseeReport.dbo.rpt_BettingParlay b WITH ( NOLOCK )
-			INNER JOIN @TempAg ag ON b.CurrencyID = ag.Currency
+			INNER JOIN #currency c ON b.CurrencyID = c.Currency
 		WHERE
 			b.SiteID = @LicenseeID
 			AND b.rptDate BETWEEN @FDate AND @TempToDate
@@ -510,6 +516,7 @@ BEGIN
 
 	DROP TABLE #tmpWinloss
 	DROP TABLE #TempExchange
+	DROP TABLE #currency
 
 END
 GO

@@ -117,6 +117,10 @@ BEGIN
 						+ 'SELECT ErrCode = 100, ErrMsg = N''Paramter invalid.''' + CHAR(13)
 						+ 'RETURN' + CHAR(13)
 						+ 'END CATCH;' + CHAR(13)
+						+ 'CREATE TABLE #currency(currency INT)' + CHAR(13)
+						+ 'INSERT INTO #currency(currency)' + CHAR(13)
+						+ 'SELECT DISTINCT Currency' + CHAR(13)
+						+ 'FROM @TempAg' + CHAR(13)
 
 	IF @ProductCode IS NULL
 		SET @ProductCode = ''
@@ -347,7 +351,7 @@ BEGIN
 								+ '- SUM(b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13)
 								+ 'SUM(b.betcount) BetCount' + CHAR(13)
 								+ 'FROM bodb_LicenseeReport.dbo.rpt_Betting_BA b WITH (NOLOCK)' + CHAR(13)
-								+ 'INNER JOIN @TempAg c ON b.CurrencyID=c.Currency' + CHAR(13)
+								+ 'INNER JOIN #currency c ON b.CurrencyID=c.Currency' + CHAR(13)
 								+ 'LEFT JOIN league l WITH (NOLOCK) ON b.LeagueID = l.LeagueID' + CHAR(13)
 								+ 'WHERE b.rptDate BETWEEN ''' + CONVERT(VARCHAR(10), @FDate, 120) + ''' AND ''' + CONVERT(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13)
 								+ 'AND b.status NOT IN (-1,103)' + CHAR(13)
@@ -378,7 +382,7 @@ BEGIN
 								+ '- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13)
 								+ 'SUM(b.betcount) BetCount' + CHAR(13)
 								+ 'FROM bodb_LicenseeReport.dbo.rpt_BettingParlay b WITH ( NOLOCK )' + CHAR(13)
-								+ 'INNER JOIN @TempAg c ON b.CurrencyID = c.Currency' + CHAR(13)
+								+ 'INNER JOIN #currency c ON b.CurrencyID = c.Currency' + CHAR(13)
 								+ 'WHERE b.rptDate BETWEEN ''' + CONVERT(VARCHAR(10), @FDate, 120) + ''' AND ''' + CONVERT(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13)
 								+ 'AND b.status NOT IN (-1,103)' + CHAR(13)
 								+ 'AND b.bettype IN (9 ,29)' + CHAR(13)
@@ -421,7 +425,7 @@ BEGIN
 								+ '- SUM(b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13)
 								+ 'SUM(b.betcount) BetCount' + CHAR(13)
 								+ 'FROM bodb_licenseereport.dbo.rpt_Betting b WITH ( NOLOCK )' + CHAR(13)
-								+ 'INNER JOIN @TempAg c ON b.CurrencyID = c.Currency' + CHAR(13)
+								+ 'INNER JOIN #currency c ON b.CurrencyID = c.Currency' + CHAR(13)
 								+ 'LEFT JOIN league l WITH (NOLOCK) ON b.LeagueID = l.LeagueID' + CHAR(13)
 								+ 'WHERE b.rptDate BETWEEN ''' + CONVERT(VARCHAR(10), @FDate, 120) + ''' AND ''' + CONVERT(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13)
 								+ 'AND b.status NOT IN (-1,103)' + CHAR(13)
@@ -469,7 +473,7 @@ BEGIN
 								+ '- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13)
 								+ 'SUM(b.betcount) BetCount' + CHAR(13)
 								+ 'FROM bodb_LicenseeReport.dbo.rpt_BettingParlay b WITH (NOLOCK)' + CHAR(13)
-								+ 'INNER JOIN @TempAg c ON b.CurrencyID = c.Currency' + CHAR(13)
+								+ 'INNER JOIN #currency c ON b.CurrencyID = c.Currency' + CHAR(13)
 								+ 'WHERE b.rptDate BETWEEN ''' + CONVERT(VARCHAR(10), @FDate, 120) + ''' AND ''' + CONVERT(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13)
 								+ 'AND b.status NOT IN (-1,103)' + CHAR(13)
 								+ 'AND b.bettype IN (9,29)' + CHAR(13)
@@ -535,7 +539,8 @@ BEGIN
 						+ 'INNER JOIN #TempExchange e ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency ' + CHAR(13)
 						+ 'GROUP BY b.SportType' + CHAR(13)
 						+ 'DROP TABLE #tmpWinloss' + CHAR(13)
-						+ 'DROP TABLE #TempExchange' + CHAR(13)						
+						+ 'DROP TABLE #TempExchange' + CHAR(13)	
+						+ 'DROP TABLE #currency' + CHAR(13)					
 
 	IF (@debug = 1)
 		PRINT @sql
