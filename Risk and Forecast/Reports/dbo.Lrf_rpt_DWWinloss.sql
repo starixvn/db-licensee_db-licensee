@@ -49,6 +49,13 @@ BEGIN
 		RETURN
 	END CATCH;
 
+	CREATE TABLE #currency(Currency INT, CurrencyName VARCHAR(20))
+
+	INSERT INTO #currency(Currency, CurrencyName)
+	SELECT DISTINCT b.Currency, lc.CurrencyName
+	FROM @TempAg b
+		INNER JOIN dbo.f_SelLicenseeCust(@LicenseeID) lc ON b.Currency = lc.Currency AND b.CustId = lc.CustID
+	WHERE b.Currency <> 20
 
 	DECLARE @Exchange	AS TABLE (
 		ExchangeDate	SMALLDATETIME,
@@ -61,16 +68,15 @@ BEGIN
 		, PRIMARY KEY(ExchangeDate,ExchangeId)
 	)
 	INSERT INTO @Exchange (ExchangeDate,ExchangeId,Code,MYR,USD,EUR,GBP)
-	SELECT	DISTINCT ExchangeDate,
+	SELECT	ExchangeDate,
 			ExchangeId,
-			lc.CurrencyName,
+			c.CurrencyName,
 			MYR,
 			USD,
 			EUR,
 			GBP
 	FROM bodb02.dbo.Lrf_f_GetExchangeDaily(@FromDate,@ToDate) a
-		INNER JOIN @TempAg b ON a.ExchangeId = b.Currency
-		INNER JOIN dbo.f_SelLicenseeCust(@LicenseeID) lc ON b.Currency = lc.Currency AND b.CustId = lc.CustID
+		INNER JOIN #currency c ON a.ExchangeId = c.Currency
 
 	CREATE TABLE #TempData
 	(
@@ -142,6 +148,7 @@ BEGIN
 					end) as betcount
 			FROM    
 				bodb_licenseereport.dbo.rpt_Betting b WITH ( NOLOCK)
+				INNER JOIN #currency c ON b.CurrencyID = c.Currency
 				LEFT JOIN @Exchange e  ON e.ExchangeDate = b.rptDate AND e.exchangeid = b.CurrencyID
 			WHERE   
 				b.rptDate BETWEEN @FromDate AND @ToDate
