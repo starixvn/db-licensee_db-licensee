@@ -73,6 +73,12 @@ BEGIN
 		RETURN
 	END CATCH;
 
+	CREATE TABLE #currency(Currency INT)
+
+	INSERT INTO #currency(Currency)
+	SELECT DISTINCT Currency
+	FROM #TempAg
+
 	INSERT INTO #Bettype (Bettype,TypeID,TypeName)	
 	EXEC LRF_MicroGamingWinloss_Bettype  @TypeID = 0
 	
@@ -215,7 +221,7 @@ BEGIN
 		   , SUM(b.ProgressivePayout) AS ProgressivePayout
 		   , SUM((-b.Winloss - b.ProgressiveContribution) * ISNULL(cr.DI_Rate,0)) AS AmtDueToMGC
 	FROM  bodb_LicenseeReport.dbo.rpt_ThirdPartyWL_ExtraGMT b  WITH (NOLOCK)
-		  INNER JOIN #TempAg c ON b.CurrencyID = c.Currency
+		  INNER JOIN #currency c ON b.CurrencyID = c.Currency
 		  INNER JOIN #Bettype bet ON b.bettypeID  = bet.bettype
 		  INNER JOIN #ProductBettypeRef pbr ON bet.bettype = pbr.Bettype
 		  LEFT JOIN #ChargeRate cr ON pbr.BettypeRef = cr.Bettype AND pbr.ProductID = cr.ProductID AND b.RptDate BETWEEN cr.FromDate AND cr.ToDate
@@ -308,7 +314,7 @@ BEGIN
 	DROP TABLE #ProductBettypeRef
 	DROP TABLE #ChargeRate
 	DROP TABLE #PayoutTrans
-	
+	DROP TABLE #currency
 END
 
 GO
