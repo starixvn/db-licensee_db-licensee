@@ -39,6 +39,7 @@ Revisions:
 	- 20151203@Sophia: Add Grand Prize for Microgaming - RNG Casino [RedmineId: #47601]
 	- 20151228@Bobby: Implement RNG Casino sporttype(208,209,210)
 	- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
+	- 20170320@Paul: Implement Cash Out [RedmineID :#71727]
  
 Param's Explanation:   
 	• @ErrCode:
@@ -53,9 +54,20 @@ BEGIN
 	IF(SELECT DATEDIFF(mm, @FromDate, @ToDate)) > 3
 		SELECT @FromDate = DATEADD(MONTH, DATEDIFF(MONTH, 0, @ToDate) - 3, 0) -- GET
   
-	DECLARE @fdate DATETIME, @tdate DATETIME
+	DECLARE @fdate DATETIME,
+			@tdate DATETIME,
+			@IsCOMember bit = 0 --Cash Out member
 
 	SELECT  @fdate = @FromDate, @tdate = @ToDate
+
+	IF EXISTS (
+		SELECT 1
+		FROM TradeCust WITH(NOLOCK)
+		WHERE custid = @CustID
+	)
+	BEGIN
+		SET @IsCOMember = 1
+	END
 
     DECLARE @bet TABLE  
     (
@@ -92,7 +104,7 @@ BEGIN
 		IF @fdate > @BalanceUpDay   
             SELECT  @fdate = @BalanceUpDay   
   
-        INSERT INTO @bet  
+        INSERT INTO @bet(winlostdate, bettype, statusID, transdate, transdesc, stake, actual_stake, winlost, playercomm)
         SELECT 
 			winlostdate,
             bettype,
@@ -110,7 +122,8 @@ BEGIN
         WHERE
 			custid = @custid  
             AND winlostdate BETWEEN @fdate AND @tdate
-			AND bettype NOT IN (903, 71)
+			AND bettype NOT IN (903, 71, 913, 914)
+			AND ((@IsCOMember = 0 AND bettype <> 912) OR (@IsCOMember = 1 AND bettype <> 911))
         GROUP BY
 			winlostdate,
             bettype,
@@ -121,7 +134,7 @@ BEGIN
             CASE WHEN bettype <= 19999 THEN NULL ELSE transdate END
 
 		--include running Keno bet
-		INSERT INTO @bet  
+		INSERT INTO @bet(winlostdate, bettype, statusID, transdate, transdesc, stake, actual_stake, winlost, playercomm)
 		SELECT
 			winlostdate,
 			gameid,
@@ -140,7 +153,7 @@ BEGIN
 		GROUP BY winlostdate, gameID
 		
 		--include running Microgaming + RNG Casino + Voidbridge
-		INSERT INTO @bet  
+		INSERT INTO @bet(winlostdate, bettype, statusID, transdate, transdesc, stake, actual_stake, winlost, playercomm)
 		SELECT
 			winlostdate,
 			gameid,
@@ -158,7 +171,7 @@ BEGIN
 			AND statusID = 0 -- get only running game _ bettransRnG
 		GROUP BY winlostdate, gameID
 		
-	   INSERT INTO @bet  
+	   INSERT INTO @bet(winlostdate, bettype, statusID, transdate, transdesc, stake, actual_stake, winlost, playercomm)
 		SELECT
 			winlostdate,
 			gameid,
@@ -177,7 +190,7 @@ BEGIN
 		GROUP BY winlostdate, gameID
 		
 		IF @fdate <= @MoveBetsDay  
-			INSERT INTO @bet  
+			INSERT INTO @bet(winlostdate, bettype, statusID, transdate, transdesc, stake, actual_stake, winlost, playercomm)
 			SELECT DISTINCT   
 				winlostdate,
 				bettype,
@@ -193,9 +206,10 @@ BEGIN
 				bettype BETWEEN 1 AND 19999
 				AND custid = @CustID   
 				AND winlostdate BETWEEN @fdate AND @MoveBetsDay    
-				AND bettype <> 903
+				AND bettype NOT IN (903, 913, 914)
+				AND ((@IsCOMember = 0 AND bettype <> 912) OR (@IsCOMember = 1 AND bettype <> 911))
 		
-		INSERT INTO @Data  
+		INSERT INTO @Data(OrderKey, winlostdate, transtype, transdesc, TurnOver, totalAmt, Commission)
         SELECT
 			0,
 			winlostdate,
@@ -208,13 +222,13 @@ BEGIN
         WHERE bettype = 20000
         GROUP BY winlostdate
      
-        INSERT INTO @Data  
+        INSERT INTO @Data(OrderKey, winlostdate, transtype, transdesc, TurnOver, totalAmt, Commission)
         SELECT
 			1,
             winlostdate,
             'BET',
             'Betting Statement',
-            SUM(stake),
+            SUM(CASE WHEN bettype IN (911, 912) THEN 0 ELSE stake END),
             SUM(winlost - actual_stake),  
             SUM(playercomm) Commission
         FROM @bet  
@@ -223,7 +237,7 @@ BEGIN
             AND statusID = 131  
         GROUP BY winlostdate    
      
-        INSERT INTO @Data  
+        INSERT INTO @Data(OrderKey, winlostdate, transtype, transdesc, TurnOver, totalAmt, Commission)
         SELECT
 			2,  
             winlostdate,
@@ -236,7 +250,7 @@ BEGIN
         WHERE statusID = 102  
         GROUP BY winlostdate    
      
-        INSERT INTO @Data  
+        INSERT INTO @Data(OrderKey, winlostdate, transtype, transdesc, TurnOver, totalAmt, Commission)
         SELECT
 			3,
             winlostdate,
@@ -251,7 +265,7 @@ BEGIN
 			AND bettype NOT IN (23001, 23002, 23101, 23102, 23201, 23202)
         GROUP BY winlostdate    
      
-        INSERT INTO @Data  
+        INSERT INTO @Data(OrderKey, winlostdate, transtype, transdesc, TurnOver, totalAmt, Commission)
         SELECT
 			2,
             transdate,
@@ -270,7 +284,7 @@ BEGIN
 							
 			
 		---------Get Data of PayOutTrans for Progressive Jackpot Win ----------
-		INSERT INTO @Data
+		INSERT INTO @Data(OrderKey, winlostdate, transtype, transdesc, TurnOver, totalAmt, Commission)
 		SELECT
 			4 AS OrderKey,
 			winlostdate,
@@ -312,17 +326,17 @@ BEGIN
 		SELECT @recommend = recommend FROM Customer (NOLOCK) WHERE custID = @custid
 
 		INSERT INTO @DepWL(winlostdate, turnover)
-		SELECT winlostdate, SUM(turnover) AS turnover
+		SELECT winlostdate, SUM(CASE WHEN bettype IN (911, 912) THEN 0 ELSE turnover END) AS turnover
 		FROM bodb_Licenseereport.dbo.rptLicWinloss2 (NOLOCK)
 		WHERE
 			recommend = @recommend 
 			AND custid = @custid
 			AND statusID NOT IN (101, 102, 103) 
 			AND winlostdate BETWEEN @fdate AND @tdate
-			AND bettype <> 903
+			AND bettype NOT IN (903, 913, 914)
 		GROUP BY winlostdate
   
-        INSERT INTO @Data  
+        INSERT INTO @Data(OrderKey, winlostdate, transtype, transdesc, TurnOver, totalAmt, Commission)
         SELECT
 			1,
             a.AccDate,
@@ -340,7 +354,7 @@ BEGIN
             AND a.transtype IN ('BET', 'COM')  
         GROUP BY a.AccDate     
   
-        INSERT INTO @Data  
+        INSERT INTO @Data(OrderKey, winlostdate, transtype, transdesc, TurnOver, totalAmt, Commission)
         SELECT
 			CASE transtype WHEN 'BAL' THEN 0 ELSE 2 END,  
             AccDate,

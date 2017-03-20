@@ -67,6 +67,7 @@ AS
 	- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
 	- 20161115@Jim: LRF - Integrate new product Fishing World [RedmineID : #66737]
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+	- 20170320@Paul: Implement Cash Out [RedmineID :#71727]
 
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -300,7 +301,13 @@ SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WH
 				UNION
 				SELECT NULL
 			)
-			INSERT INTO #SAgWinLoss  
+			INSERT INTO #SAgWinLoss
+			(  
+				winlostdate, Currency, ProductCode, Turnover, BTActualStake,
+				Winlost, LicenseeWL, AmtDueToBA, AmtDueToRB, CommBA,
+				CommRB, PlayerComm, Betcount, licenseeWLBT, BetTradeComm,  
+				WLBetTicket, WLBoughtTicket, BuyBackAmtSB, BuyBackAmtBA, CashOutComm
+			)
 			SELECT   
 				b.winlostdate,  
 				tma.currency,
@@ -345,6 +352,12 @@ SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WH
 		IF @ShowSB = 1
 		BEGIN
 			INSERT INTO #SAgWinLoss
+			(  
+				winlostdate, Currency, ProductCode, Turnover, BTActualStake,
+				Winlost, LicenseeWL, AmtDueToBA, AmtDueToRB, CommBA,
+				CommRB, PlayerComm, Betcount, licenseeWLBT, BetTradeComm,  
+				WLBetTicket, WLBoughtTicket, BuyBackAmtSB, BuyBackAmtBA, CashOutComm
+			)
 			SELECT   
 				b.winlostdate,  
 				a.currency,
@@ -396,6 +409,12 @@ SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WH
 		IF @ShowBT = 1
 		BEGIN
 			INSERT INTO #SAgWinLoss
+			(  
+				winlostdate, Currency, ProductCode, Turnover, BTActualStake,
+				Winlost, LicenseeWL, AmtDueToBA, AmtDueToRB, CommBA,
+				CommRB, PlayerComm, Betcount, licenseeWLBT, BetTradeComm,  
+				WLBetTicket, WLBoughtTicket, BuyBackAmtSB, BuyBackAmtBA, CashOutComm
+			)
 			SELECT   
 				b.winlostdate,  
 				a.currency,
@@ -431,6 +450,12 @@ SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WH
 		IF @ShowCO = 1
 		BEGIN
 			INSERT INTO #SAgWinLoss
+			(  
+				winlostdate, Currency, ProductCode, Turnover, BTActualStake,
+				Winlost, LicenseeWL, AmtDueToBA, AmtDueToRB, CommBA,
+				CommRB, PlayerComm, Betcount, licenseeWLBT, BetTradeComm,  
+				WLBetTicket, WLBoughtTicket, BuyBackAmtSB, BuyBackAmtBA, CashOutComm
+			)
 			SELECT   
 				b.winlostdate,  
 				a.currency,
@@ -466,6 +491,12 @@ SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WH
 		IF 1 IN (@ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @showMGCLC, @showMGCRnG, @ShowAGC, @ShowVB,@ShowAB,@ShowFW)
 		BEGIN
 			INSERT INTO #SAgWinLoss
+			(  
+				winlostdate, Currency, ProductCode, Turnover, BTActualStake,
+				Winlost, LicenseeWL, AmtDueToBA, AmtDueToRB, CommBA,
+				CommRB, PlayerComm, Betcount, licenseeWLBT, BetTradeComm,  
+				WLBetTicket, WLBoughtTicket, BuyBackAmtSB, BuyBackAmtBA, CashOutComm
+			)
 			SELECT   
 				b.winlostdate,  
 				a.currency,
@@ -531,6 +562,12 @@ SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WH
 		IF @ShowRB = 1
 		BEGIN
 			INSERT INTO #SAgWinLoss
+			(  
+				winlostdate, Currency, ProductCode, Turnover, BTActualStake,
+				Winlost, LicenseeWL, AmtDueToBA, AmtDueToRB, CommBA,
+				CommRB, PlayerComm, Betcount, licenseeWLBT, BetTradeComm,  
+				WLBetTicket, WLBoughtTicket, BuyBackAmtSB, BuyBackAmtBA, CashOutComm
+			)
 			SELECT   
 				b.winlostdate,  
 				a.currency,
@@ -582,6 +619,12 @@ SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WH
 		IF @ShowBA = 1 
 		BEGIN
 			INSERT INTO #SAgWinLoss  
+			(  
+				winlostdate, Currency, ProductCode, Turnover, BTActualStake,
+				Winlost, LicenseeWL, AmtDueToBA, AmtDueToRB, CommBA,
+				CommRB, PlayerComm, Betcount, licenseeWLBT, BetTradeComm,  
+				WLBetTicket, WLBoughtTicket, BuyBackAmtSB, BuyBackAmtBA, CashOutComm
+			)
 			SELECT 
 				b.winlostdate,  
 				b.currency,
@@ -623,7 +666,7 @@ SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WH
 				AND b.isBA = 1 
 			GROUP BY b.winlostdate, b.currency
 
-			INSERT INTO @WLBetTicket
+			INSERT INTO @WLBetTicket(winlostdate, currency, WLBetTicket)
 			SELECT 
 				b.winlostdate,  
 				b.currency,
@@ -644,7 +687,13 @@ SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WH
 		--exclude BA tickets
 		IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowAGC, @ShowVB,@ShowAB,@ShowFW)
 		BEGIN
-			INSERT INTO #SAgWinLoss  
+			INSERT INTO #SAgWinLoss 
+			(  
+				winlostdate, Currency, ProductCode, Turnover, BTActualStake,
+				Winlost, LicenseeWL, AmtDueToBA, AmtDueToRB, CommBA,
+				CommRB, PlayerComm, Betcount, licenseeWLBT, BetTradeComm,  
+				WLBetTicket, WLBoughtTicket, BuyBackAmtSB, BuyBackAmtBA, CashOutComm
+			) 
 			SELECT 
 				b.winlostdate,  
 				b.currency,
@@ -720,7 +769,7 @@ SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WH
 					ELSE ''
 					END
 
-			INSERT INTO @WLBetTicket
+			INSERT INTO @WLBetTicket(winlostdate, currency, WLBetTicket)
 			SELECT 
 				b.winlostdate,  
 				b.currency,
@@ -742,6 +791,12 @@ SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WH
 		IF @ShowBT = 1
 		BEGIN
 			INSERT INTO #SAgWinLoss
+			(  
+				winlostdate, Currency, ProductCode, Turnover, BTActualStake,
+				Winlost, LicenseeWL, AmtDueToBA, AmtDueToRB, CommBA,
+				CommRB, PlayerComm, Betcount, licenseeWLBT, BetTradeComm,  
+				WLBetTicket, WLBoughtTicket, BuyBackAmtSB, BuyBackAmtBA, CashOutComm
+			)
 			SELECT   
 				b.winlostdate,  
 				ag.currency,
@@ -773,6 +828,47 @@ SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WH
 				AND b.roleid = 1 
 			GROUP BY b.winlostdate, ag.currency, b.bettype
 		END
+
+		IF @ShowCO = 1
+		BEGIN
+			INSERT INTO #SAgWinLoss
+			(  
+				winlostdate, Currency, ProductCode, Turnover, BTActualStake,
+				Winlost, LicenseeWL, AmtDueToBA, AmtDueToRB, CommBA,
+				CommRB, PlayerComm, Betcount, licenseeWLBT, BetTradeComm,  
+				WLBetTicket, WLBoughtTicket, BuyBackAmtSB, BuyBackAmtBA, CashOutComm
+			)
+			SELECT   
+				b.winlostdate,  
+				ag.currency,
+				'CO',
+				0 AS turnover,
+				0 AS BTActualStake,
+				0 AS Winlost,    
+				0 AS LicenseeWL,
+				0 as AmountDueToBA,
+				0 as AmountDueToRB,
+				0 as CommBA,
+				0 as CommRB,
+				0 as PlayerComm,
+				SUM(b.BetCount) AS BetCount,
+				0 AS licenseeWLBT,
+				0 AS BetTradeComm,
+				0 WLBetTicket,
+				0 AS WLBoughtTicket,
+				0 AS BuyBackAmtSB,
+				0 AS BuyBackAmtBA,
+				SUM(awinlost) AS CashOutComm
+			FROM 
+				bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
+				INNER JOIN @TempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
+			WHERE 
+				b.Winlostdate BETWEEN @_FromDate AND @TempToDate
+				AND b.bettype = 913
+				AND b.statusID  IN (111, 112, 113)
+				AND b.roleid = 1 
+			GROUP BY b.winlostdate, ag.currency
+		END
 	END
 
 	IF @IsOld = 1 
@@ -786,6 +882,12 @@ SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WH
 		IF @ShowBA = 1 
 		BEGIN
 			INSERT INTO #SAgWinLoss  
+			(  
+				winlostdate, Currency, ProductCode, Turnover, BTActualStake,
+				Winlost, LicenseeWL, AmtDueToBA, AmtDueToRB, CommBA,
+				CommRB, PlayerComm, Betcount, licenseeWLBT, BetTradeComm,  
+				WLBetTicket, WLBoughtTicket, BuyBackAmtSB, BuyBackAmtBA, CashOutComm
+			)
 			SELECT 
 				b.winlostdate,  
 				b.currency,
@@ -826,7 +928,7 @@ SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WH
 				AND ISNULL(b.isBA, 0) = 1
 			GROUP BY b.winlostdate, b.currency
 
-			INSERT INTO @WLBetTicket
+			INSERT INTO @WLBetTicket(winlostdate, currency, WLBetTicket)
 			SELECT 
 				b.winlostdate,  
 				b.currency,
@@ -847,6 +949,12 @@ SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WH
 		IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowAGC, @ShowVB,@ShowAB,@ShowFW)
 		BEGIN
 			INSERT INTO #SAgWinLoss  
+			(  
+				winlostdate, Currency, ProductCode, Turnover, BTActualStake,
+				Winlost, LicenseeWL, AmtDueToBA, AmtDueToRB, CommBA,
+				CommRB, PlayerComm, Betcount, licenseeWLBT, BetTradeComm,  
+				WLBetTicket, WLBoughtTicket, BuyBackAmtSB, BuyBackAmtBA, CashOutComm
+			)
 			SELECT 
 				b.winlostdate,  
 				b.currency,
@@ -921,7 +1029,7 @@ SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WH
 					ELSE ''
 					END
 
-			INSERT INTO @WLBetTicket
+			INSERT INTO @WLBetTicket(winlostdate, currency, WLBetTicket)
 			SELECT 
 				b.winlostdate,  
 				b.currency,
@@ -942,6 +1050,12 @@ SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WH
 		IF @ShowBT = 1
 		BEGIN
 			INSERT INTO #SAgWinLoss
+			(  
+				winlostdate, Currency, ProductCode, Turnover, BTActualStake,
+				Winlost, LicenseeWL, AmtDueToBA, AmtDueToRB, CommBA,
+				CommRB, PlayerComm, Betcount, licenseeWLBT, BetTradeComm,  
+				WLBetTicket, WLBoughtTicket, BuyBackAmtSB, BuyBackAmtBA, CashOutComm
+			)
 			SELECT   
 				b.winlostdate,  
 				ag.currency,
@@ -994,6 +1108,7 @@ SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WH
 		turnoverVB			MONEY, 
 		turnoverAB			MONEY,
 		turnoverFW			MONEY, 
+		turnoverCO			MONEY,
 		BTActualStake		MONEY,
 		Winlost				MONEY,
 		LicenseeWLSB 		MONEY,
@@ -1011,6 +1126,7 @@ SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WH
 		LicenseeWLVB		MONEY,
 		LicenseeWLAB		MONEY,
 		LicenseeWLFW		MONEY,
+		LicenseeWLCO		MONEY,
 		AmtDueToBA			MONEY,   
 		AmtDueToRB			MONEY,
 		CommBA				MONEY,   
@@ -1028,6 +1144,23 @@ SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WH
 	)  
 
 	INSERT INTO @SAgWL
+	(  
+		winlostdate, Currency,
+		TurnoverSB, TurnoverBA, TurnoverNG, TurnoverRB, TurnoverLC, TurnoverVS, TurnoverCS, TurnoverBG,
+		TurnoverKN, turnoverMGCLC, turnoverMGCRnG, turnoverAGC, turnoverVB, turnoverAB, turnoverFW, turnoverCO,
+		BTActualStake, Winlost,
+		LicenseeWLSB, LicenseeWLBA, LicenseeWLNG, LicenseeWLRB, LicenseeWLLC, LicenseeWLVS, LicenseeWLCS, LicenseeWLBG,
+		LicenseeWLKN, LicenseeWLMGCLC, LicenseeWLMGCRnG, LicenseeWLAGC, LicenseeWLVB, LicenseeWLAB, LicenseeWLFW, LicenseeWLCO,
+		AmtDueToBA, AmtDueToRB,
+		CommBA, CommRB,  
+		PlayerComm,
+		Betcount,
+		licenseeWLBT,   
+		BetTradeComm,  
+		WLBetTicket, WLBoughtTicket,
+		BuyBackAmtSB, BuyBackAmtBA,
+		CashOutComm
+	)
 	SELECT
 		winlostdate,
 		Currency,
@@ -1046,6 +1179,7 @@ SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WH
 		SUM(CASE ProductCode WHEN 'VB'		THEN Turnover ELSE 0 END)	AS TurnoverVB,
 		SUM(CASE ProductCode WHEN 'AB'		THEN Turnover ELSE 0 END)	AS TurnoverAB,
 		SUM(CASE ProductCode WHEN 'FW'		THEN Turnover ELSE 0 END)	AS TurnoverFW,
+		SUM(CASE ProductCode WHEN 'CO'		THEN Turnover ELSE 0 END)	AS TurnoverCO,
 		SUM(BTActualStake)		AS BTActualStake,
 		SUM(Winlost)			AS Winlost,
 		SUM(CASE ProductCode WHEN 'SB'		THEN LicenseeWL ELSE 0 END)	AS LicenseeWLSB,   
@@ -1063,6 +1197,7 @@ SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WH
 		SUM(CASE ProductCode WHEN 'VB'		THEN LicenseeWL ELSE 0 END)	AS LicenseeWLVB,
 		SUM(CASE ProductCode WHEN 'AB'		THEN LicenseeWL ELSE 0 END)	AS LicenseeWLAB,
 		SUM(CASE ProductCode WHEN 'FW'		THEN LicenseeWL ELSE 0 END)	AS LicenseeWLFW,
+		SUM(CASE ProductCode WHEN 'CO'		THEN LicenseeWL ELSE 0 END)	AS LicenseeWLCO,
 		SUM(AmtDuetoBA)			AS AmtDuetoBA,
 		SUM(AmtDuetoRB)			AS AmtDuetoRB,
 		SUM(CommBA)				AS CommBA,
@@ -1112,6 +1247,7 @@ SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WH
 		SUM(TurnoverVB)			AS TurnoverVB,
 		SUM(TurnoverAB)			AS TurnoverAB,
 		SUM(TurnoverFW)			AS TurnoverFW,
+		SUM(TurnoverCO)			AS TurnoverCO,
 		SUM(BTActualStake)		AS BTActualStake,
 		SUM(Winlost)			AS Winlost,
 		SUM(LicenseeWLSB)		AS LicenseeWLSB,
@@ -1129,6 +1265,7 @@ SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WH
 		SUM(LicenseeWLVB)		AS LicenseeWLVB,
 		SUM(LicenseeWLAB)		AS LicenseeWLAB,
 		SUM(LicenseeWLFW)		AS LicenseeWLFW,
+		SUM(LicenseeWLCO)		AS LicenseeWLCO,
 		SUM(CommBA)				AS CommBA,
 		SUM(CommRB)				AS CommRB,
 		SUM(playerComm)			AS PlayerComm,
@@ -1156,6 +1293,7 @@ SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WH
 		CAST(SUM(TurnoverVB*e.USD)			AS MONEY)   AS TurnoverVBUSD,
 		CAST(SUM(TurnoverAB*e.USD)			AS MONEY)   AS TurnoverABUSD,
 		CAST(SUM(TurnoverFW*e.USD)			AS MONEY)   AS TurnoverFWUSD,
+		CAST(SUM(TurnoverCO*e.USD)			AS MONEY)   AS TurnoverCOUSD,
 		CAST(SUM(BTActualStake*e.USD)		AS MONEY)   AS BTActualStakeUSD,
 		CAST(SUM(Winlost*e.USD)				AS MONEY)	AS WinlostUSD,
 		CAST(SUM(LicenseeWLSB*e.USD)		AS MONEY)	AS LicenseeWLSBUSD,
@@ -1173,6 +1311,7 @@ SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WH
 		CAST(SUM(LicenseeWLVB*e.USD)		AS MONEY)	AS LicenseeWLVBUSD,
 		CAST(SUM(LicenseeWLAB*e.USD)		AS MONEY)	AS LicenseeWLABUSD,
 		CAST(SUM(LicenseeWLFW*e.USD)		AS MONEY)	AS LicenseeWLFWUSD,
+		CAST(SUM(LicenseeWLCO*e.USD)		AS MONEY)	AS LicenseeWLCOUSD,
 		CAST(SUM(CommBA * e.USD)			AS MONEY)	AS CommBAUSD,
 		CAST(SUM(CommRB * e.USD)			AS MONEY)	AS CommRBUSD,
 		CAST(SUM(PlayerComm*e.USD)			AS MONEY)	AS PlayerCommUSD,
@@ -1199,6 +1338,7 @@ SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WH
 		CAST(SUM(TurnoverVB*e.EUR)			AS MONEY)   AS TurnoverVBEUR,
 		CAST(SUM(TurnoverAB*e.EUR)			AS MONEY)   AS TurnoverABEUR,
 		CAST(SUM(TurnoverFW*e.EUR)			AS MONEY)   AS TurnoverFWEUR,
+		CAST(SUM(TurnoverCO*e.EUR)			AS MONEY)   AS TurnoverCOEUR,
 		CAST(SUM(BTActualStake*e.EUR)		AS MONEY)   AS BTActualStakeEUR,
 		CAST(SUM(Winlost*e.EUR)				AS MONEY)	AS WinlostEUR,
 		CAST(SUM(LicenseeWLSB*e.EUR)		AS MONEY)	AS LicenseeWLSBEUR,
@@ -1216,6 +1356,7 @@ SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WH
 		CAST(SUM(LicenseeWLVB*e.EUR)		AS MONEY)	AS LicenseeWLVBEUR,
 		CAST(SUM(LicenseeWLAB*e.EUR)		AS MONEY)	AS LicenseeWLABEUR,
 		CAST(SUM(LicenseeWLFW*e.EUR)		AS MONEY)	AS LicenseeWLFWEUR,
+		CAST(SUM(LicenseeWLCO*e.EUR)		AS MONEY)	AS LicenseeWLCOEUR,
 		CAST(SUM(CommBA * e.EUR)			AS MONEY)	AS CommBAEUR,
 		CAST(SUM(CommRB * e.EUR)			AS MONEY)	AS CommRBEUR,
 		CAST(SUM(PlayerComm*e.EUR)			AS MONEY)	AS PlayerCommEUR,
@@ -1242,6 +1383,7 @@ SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WH
 		CAST(SUM(TurnoverVB*e.GBP)			AS MONEY)   AS TurnoverVBGBP,
 		CAST(SUM(TurnoverAB*e.GBP)			AS MONEY)   AS TurnoverABGBP,
 		CAST(SUM(TurnoverFW*e.GBP)			AS MONEY)   AS TurnoverFWGBP,
+		CAST(SUM(TurnoverCO*e.GBP)			AS MONEY)   AS TurnoverCOGBP,
 		CAST(SUM(BTActualStake*e.GBP)		AS MONEY)   AS BTActualStakeGBP,
 		CAST(SUM(Winlost*e.GBP)				AS MONEY)	AS WinlostGBP,
 		CAST(SUM(LicenseeWLSB*e.GBP)		AS MONEY)	AS LicenseeWLSBGBP,
@@ -1259,6 +1401,7 @@ SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WH
 		CAST(SUM(LicenseeWLVB*e.GBP)		AS MONEY)	AS LicenseeWLVBGBP,
 		CAST(SUM(LicenseeWLAB*e.GBP)		AS MONEY)	AS LicenseeWLABGBP,
 		CAST(SUM(LicenseeWLFW*e.GBP)		AS MONEY)	AS LicenseeWLFWGBP,
+		CAST(SUM(LicenseeWLCO*e.GBP)		AS MONEY)	AS LicenseeWLCOGBP,
 		CAST(SUM(CommBA*e.GBP)				AS MONEY)	AS CommBAGBP,
 		CAST(SUM(CommRB*e.GBP)				AS MONEY)	AS CommRBGBP,
 		CAST(SUM(PlayerComm*e.GBP)			AS MONEY)	AS PlayerCommGBP,
