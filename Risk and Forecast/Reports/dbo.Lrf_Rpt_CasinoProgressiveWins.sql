@@ -126,8 +126,10 @@ BEGIN
 		SELECT @OPENQUERY = 'SELECT	T.WinlostDate, T.CustId, p.username2, T.Username, 
 								T.RefNo, T.WinAmount, T.GameId, T.ProductId, T.transdesc, p.currency, T.TranId3rd
 								FROM (SELECT * FROM OPENQUERY (DBACC,''SELECT p.*, b.transdesc, b.TranId3rd, b.transid FROM bodb02.dbo.PayOutTrans p WITH (NOLOCK)
-											 INNER JOIN bodb_archive.dbo.BettransRNG_BK b WITH (NOLOCK) ON p.RefNo = b.TransId
+											 INNER JOIN bodb_archive.dbo.BettransRNG_BK b WITH (NOLOCK) ON p.RefNo = b.TransId and p.CustID = b.CustID
 											 WHERE p.WinlostDate BETWEEN ''''' + CONVERT(VARCHAR(10),@_FromDate,120) + 
+												   ''''' AND ''''' + CONVERT(VARCHAR(10),@_ToDate,120) + '''''
+												AND b.WinlostDate BETWEEN ''''' + CONVERT(VARCHAR(10),@_FromDate,120) + 
 												   ''''' AND ''''' + CONVERT(VARCHAR(10),@_ToDate,120) + ''''''')) T
 								INNER JOIN #PayOutTrans p ON p.Refno = T.transid'
 	
@@ -137,10 +139,20 @@ BEGIN
 	
 	DROP TABLE #PayOutTrans
 
-	SELECT *
+	CREATE TABLE #WinlossDate(WinlossDate SMALLDATETIME)
+
+	INSERT INTO #WinlossDate(WinlossDate)
+	SELECT DISTINCT winlostDate
+	FROM #JackPotWin
+
+	SELECT	d.ExchangeId,
+			d.exchangedate,
+			d.EUR,
+			d.USD,
+			d.GBP
 	INTO #TempExchange 
-	FROM dbo.Lrf_f_GetExchangeDaily(@FromDate,@ToDate)
-	--WHERE exchangeid IN (SELECT DISTINCT Currency FROM #JackPotWin)
+	FROM #WinlossDate w
+		CROSS APPLY dbo.Lrf_f_GetExchangeDaily(WinlossDate, WinlossDate) d
 
 	----Get Data
 
@@ -155,6 +167,7 @@ BEGIN
 	
 	DROP TABLE #TempExchange
 	DROP TABLE #JackPotWin
+	DROP TABLE #WinlossDate
 END
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_CasinoProgressiveWins] TO [bodbLicenseeNet] AS [dbo]
