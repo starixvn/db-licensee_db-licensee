@@ -1,9 +1,13 @@
-﻿ALTER   PROCEDURE  [Lrf_CustomerSettingLog_Sel]    
+﻿USE bodb_CustomerLog
+GO
+
+ALTER PROCEDURE  [Lrf_CustomerSettingLog_Sel]    
 	@LicenseeID INT ,
-	@UserName AS VARCHAR(50),     
-	@FilterBy SMALLINT=0,     
-	@FromDate DATETIME,      
-	@ToDate DATETIME    
+	@UserName	AS VARCHAR(50),     
+	@FilterBy	SMALLINT=0,     
+	@FromDate	DATETIME,      
+	@ToDate		DATETIME,
+	@AgentList	VARCHAR(MAX)     
 AS       
 /*     
 Created:20130206@Scott    
@@ -13,7 +17,8 @@ DB: bodb_CustomerLog
 Revisions:      
 	20130411Scott : Check Customer belong Licensee
 	20131126@Jim: return result-table with NULL value if search condition are not match
-       
+    20170321@Harper: Add more Currency permission [#73677]
+	   
 Param's Explaination:          
  - @UserName: customer name type in textbox to search      
  - @FilterBy : 0 - View All    
@@ -36,68 +41,88 @@ exec  Lrf_CustomerSettingLog_Sel
 */      
       
 BEGIN      
-SET NOCOUNT ON     
+	SET NOCOUNT ON     
      
---### DECLARE VARIABLE ###--    
-DECLARE @custid INT ,@status int   
-DECLARE @RowFilter table ( Actionid int)
-declare @UserName2 varchar(50)   
+	--### DECLARE VARIABLE ###--    
+	DECLARE @custid INT ,@status int   
+	DECLARE @RowFilter table ( Actionid int)
+	declare @UserName2 varchar(50)   
 
-IF (@UserName is null or @UserName= '')
-	return;
+	IF (@UserName is null or @UserName = '')
+		return;
+	
+	DECLARE @TempAg		TABLE (CustId INT, Currency INT)
+	DECLARE @DocHandler INT
 
-SELECT @UserName2=licenseeName+'$'+@Username 
-FROM bodb_Licensee.dbo.Licensees 
-WHERE LicenseeID = @LicenseeID
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
+	
+		INSERT INTO @TempAg(CustId, Currency)
+		SELECT AgentId, Currency 
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
+
+	BEGIN CATCH
+		SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+		RETURN
+	END CATCH;
+
+	SELECT @UserName2 = licenseeName+'$'+@Username 
+	FROM bodb_Licensee.dbo.Licensees 
+	WHERE LicenseeID = @LicenseeID
     
---### SET VALUE FOR VARIABLE ###--      
-SELECT	@Custid = c.custid       
-FROM bodb02.dbo.customer c WITH(NOLOCK) 
-	INNER JOIN bodb_Licensee.dbo.LicenseeCust l WITH(NOLOCK) on c.recommend = l.custid         
-WHERE   ( username = @Username or username2 = @Username2 ) 	AND 
-		l.licenseeid = @LicenseeID  and c.roleid = 1
-/*
-IF @Custid IS NULL
-	Return;
-*/	
+	--### SET VALUE FOR VARIABLE ###--      
+	SELECT	@Custid = c.custid       
+	FROM bodb02.dbo.customer c WITH(NOLOCK) 
+		INNER JOIN @TempAg ag ON c.recommend = ag.CustId AND c.currency = ag.Currency      
+	WHERE   ( username = @Username or username2 = @Username2 ) 
+			AND c.roleid = 1
+	/*
+	IF @Custid IS NULL
+		Return;
+	*/	
  
---### set actionid by @rowfilter    
+	--### set actionid by @rowfilter    
     
---Default view all    
+	--Default view all    
 
-INSERT INTO @RowFilter VALUES (2401)    
-INSERT INTO @RowFilter VALUES (2403)    
-INSERT INTO @RowFilter VALUES (2200)    
-INSERT INTO @RowFilter VALUES (2201)    
-INSERT INTO @RowFilter VALUES (2612)    
-INSERT INTO @RowFilter VALUES (2407)    
+	INSERT INTO @RowFilter VALUES (2401)    
+	INSERT INTO @RowFilter VALUES (2403)    
+	INSERT INTO @RowFilter VALUES (2200)    
+	INSERT INTO @RowFilter VALUES (2201)    
+	INSERT INTO @RowFilter VALUES (2612)    
+	INSERT INTO @RowFilter VALUES (2407)    
 
  
  
-IF @filterby=1     
-	DELETE @RowFilter WHERE actionid not in (2401,2403)    
-IF @filterby=2    
-	DELETE @RowFilter WHERE actionid not in (2200,2201)    
-IF @filterby=3    
-	DELETE @RowFilter WHERE actionid not in (2612)    
-IF @filterby=4    
-	DELETE @RowFilter WHERE actionid not in (2407)    
+	IF @filterby=1     
+		DELETE @RowFilter WHERE actionid not in (2401,2403)    
+	IF @filterby=2    
+		DELETE @RowFilter WHERE actionid not in (2200,2201)    
+	IF @filterby=3    
+		DELETE @RowFilter WHERE actionid not in (2612)    
+	IF @filterby=4    
+		DELETE @RowFilter WHERE actionid not in (2407)    
    
---### GET DATA     
-SELECT Logid, LogDate,u.username 'Editedby',l.Actionid,    
-		CASE	WHEN l.Actionid = 2401 then 'Turn On BA'     
-				WHEN l.Actionid = 2403 then 'Turn Off BA'    
-		ELSE actionnameen END ActionName,     
-	trackingvalue , trackingvalue2 as trackingvalueold    
-FROM dbo.UserLog_RunSP l     
-	INNER JOIN  bodb_licensee.dbo.users u ON u.userid = l.userid    
-	INNER JOIN LogAction a ON a.actionid = l.actionid    
-	INNER JOIN @RowFilter r ON r.actionid = l.actionid    
-WHERE custid = @custid   And
-	convert(varchar(12), Logdate ,113)  BETWEEN  @FromDate  AND  @ToDate   
-ORDER BY logdate      
+	--### GET DATA     
+	SELECT Logid, LogDate,u.username 'Editedby',l.Actionid,    
+			CASE	WHEN l.Actionid = 2401 then 'Turn On BA'     
+					WHEN l.Actionid = 2403 then 'Turn Off BA'    
+			ELSE actionnameen END ActionName,     
+		trackingvalue , trackingvalue2 as trackingvalueold    
+	FROM dbo.UserLog_RunSP l     
+		INNER JOIN  bodb_licensee.dbo.users u ON u.userid = l.userid    
+		INNER JOIN LogAction a ON a.actionid = l.actionid    
+		INNER JOIN @RowFilter r ON r.actionid = l.actionid    
+	WHERE custid = @custid   And
+		convert(varchar(12), Logdate ,113)  BETWEEN  @FromDate  AND  @ToDate   
+	ORDER BY logdate     
   
-
 END    
 
 GO
