@@ -28,6 +28,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerBalance]
 	, @ShowAB BIT = 0
 	, @ShowCB BIT = 0
 	, @ShowFW BIT = 0
+	, @ShowCO BIT = 0
 	,@AgentList		VARCHAR(MAX)
 AS
 /*  
@@ -61,6 +62,7 @@ Revisions:
 	- 20161115@Jim: LRF - Integrate new product Fishing World [RedmineID : #66737]
 	- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest, @LicenseeType [Redmine: #71679]
 	- 20170328@Paul: Support sorting values for Opening Balance and Closing Balance [RedmineID: #74120]
+	- 20170330@Paul: Implement Cash Out [RedmineID :#71727]
     
 Param's Explanation:  
 	+ @excludeTest: remove currency UUS  
@@ -173,7 +175,16 @@ BEGIN
 	IF @ShowFW = 1
 		INSERT INTO @sporttype (sporttype)
 		VALUES (219) -- Fishing World
-	
+
+	IF @ShowCO = 1
+	BEGIN
+		INSERT INTO @sporttype (sporttype)
+		VALUES (-6) -- 911
+
+		INSERT INTO @sporttype (sporttype)
+		VALUES (-7) -- 912
+	END
+
 	DECLARE @DocHandler INT
 
 	BEGIN TRY
@@ -275,6 +286,8 @@ BEGIN
 									- 2
 									, - 3
 									, - 5
+									, -6
+									, -7
 									)
 								THEN 0
 							ELSE p.turnover
@@ -365,6 +378,8 @@ BEGIN
 									- 2
 									, - 3
 									, - 5
+									, -6
+									, -7
 									)
 								THEN 0
 							ELSE p.turnover

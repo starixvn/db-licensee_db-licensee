@@ -87,6 +87,7 @@ AS
 		- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
 		- 20161115@Jim: LRF - Integrate new product Fishing World [RedmineID : #66737]
 		- 20170215@Sophia: Get @AgentList by web instead of @UserId, @LicenseeID, @CurrencyID, remove @excludeTest [Redmine: #71679]
+		- 20170320@Paul: Implement Cash Out [RedmineID :#71727]
 */
     
 SET NOCOUNT ON
