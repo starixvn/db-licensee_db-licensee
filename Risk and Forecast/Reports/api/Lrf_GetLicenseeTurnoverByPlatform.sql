@@ -13,10 +13,9 @@ SET QUOTED_IDENTIFIER ON
 GO
 
 CREATE PROCEDURE [dbo].[Lrf_GetLicenseeTurnoverByPlatform]   
-	 @LicenseeID	INT,
-	 @CurrencyID	INT = 0,
-	 @FromDate		SMALLDATETIME,  
-	 @ToDate		SMALLDATETIME
+	@FromDate	SMALLDATETIME,  
+	@ToDate		SMALLDATETIME,
+	@AgentList	VARCHAR(MAX)
 AS
 
 /*
@@ -26,6 +25,7 @@ AS
 	Original: Lrf_Rpt_PlatformWinloss
 	Revisions:
 		- 20170207@Paul: Create new [RedmineID: #70616]
+		- 20170323@Paul: Implement Cash Out [RedmineID: #71727]
 
 	Param's Explanation:  
 	  + @MoveBetsDay: The day we move tickets to bettrans14
@@ -49,18 +49,33 @@ BEGIN
 			@FDate SMALLDATETIME,
 			@TDate SMALLDATETIME;
 
-	CREATE TABLE #tempAg	(custID INT, Currency INT);
+	CREATE TABLE #tempAg(custID INT, Currency INT);
 
 	CREATE CLUSTERED INDEX ix_tempAg_cl ON #tempAg(Currency, custID);
 
 	--to Deal WITH Parameter Sniffing
 	SELECT @FDate = @FromDate, @TDate = @ToDate;
 
-	INSERT INTO #tempAg (custID, currency) 
-	SELECT custID, currency 
-	FROM bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc
-	WHERE Currency <> 20
-		AND (@CurrencyID = 0 OR Currency = @CurrencyID);
+	DECLARE @DocHandler INT
+
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
+	
+		INSERT INTO #tempAg(CustId, Currency)
+		SELECT AgentId, Currency 
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+		WHERE Currency <> 20
+
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
+
+	BEGIN CATCH
+		SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+		RETURN
+	END CATCH;
 
 	CREATE TABLE #PlatformList (betfrom NVARCHAR(1), PlatformType TINYINT);
 
@@ -112,7 +127,8 @@ BEGIN
 			AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
 								OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 			) 
-			AND b.bettype NOT IN (901,902,903,904)
+			AND (b.bettype < 901 OR b.bettype > 904)
+			AND (b.bettype < 911 OR b.bettype > 914)
 			AND b.tpositiontaking <> 0
 		GROUP BY  b.winlostdate, 
 				tma.currency, 

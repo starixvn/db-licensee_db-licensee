@@ -2,9 +2,8 @@ USE [bodb02]
 GO
 
 ALTER PROCEDURE [dbo].[Lrf_GetCustomerBalance] 
-	@LicenseeID		INT,
-	@CurrencyID		INT,
-	@ReportDate		SMALLDATETIME
+	@ReportDate	SMALLDATETIME,
+	@AgentList	VARCHAR(MAX)
 AS
 
 /*  
@@ -15,6 +14,7 @@ AS
   
 	Revisions:  
 		- 20170120@Joseph: Copy from Lrf_Rpt_PlatformWinloss [RedmineID: #70616]
+		- 20170323@Paul: Implement Cash Out [RedmineID: #71727]
 
 	Param's Explanation:  
 */
@@ -27,31 +27,26 @@ BEGIN
 		Currency INT
 	)
 
-	DECLARE @Temp TABLE (
-		CustId INT,
-		Currency INT
-	)
+	DECLARE @DocHandler INT
 
-	DECLARE @sql VARCHAR(500)
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
+	
+		INSERT INTO @tmpAg(CustId, Currency)
+		SELECT AgentId, Currency 
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+		WHERE Currency <> 20
 
-	SELECT @sql = 'SELECT CustID,Currency
-					FROM OPENQUERY(DBLIC, ''SELECT LicenseeId,CustID,Currency,Description FROM bodb_licensee.dbo.f_SelLicenseeCust(' + CAST(@LicenseeID AS VARCHAR(10)) + ')'')'
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
 
-	INSERT INTO @Temp (
-		CustId,
-		Currency
-	)
-	EXEC (@sql)
+	BEGIN CATCH
+		SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
 
-	INSERT INTO @tmpAg (
-		CustId,
-		Currency
-	)
-	SELECT	CustID,
-			Currency
-	FROM @Temp lc
-	WHERE (@CurrencyID = 0 OR (@CurrencyID <> 0 AND Currency = @CurrencyID))
-		AND Currency <> 20
+		RETURN
+	END CATCH;
 
 	CREATE TABLE #Exchange (ExchangeDate SMALLDATETIME, ExchangeId INT,  EUR FLOAT,USD FLOAT,GBP FLOAT, CNY FLOAT, MYR FLOAT, Code VARCHAR(10), PRIMARY KEY(ExchangeDate,ExchangeId));
 

@@ -2,8 +2,7 @@ USE [bodb02]
 GO
 
 ALTER PROCEDURE [dbo].[Lrf_GetLicenseePendingFunds]
-    @LicenseeID		INT,
-    @CurrencyID		INT = 0
+	@AgentList	VARCHAR(MAX)
 AS 
 
 /*
@@ -13,6 +12,7 @@ AS
 
 	Revisions:
 		- 20170119@Joseph: Copy from Lrf_Rpt_TurnOver [RedmineID: #70616]
+		- 20170323@Paul: Implement Cash Out [RedmineID: #71727]
 	Param's Explanation:
 	
 */
@@ -22,20 +22,26 @@ BEGIN
    
 	CREATE TABLE #tmpAg (custID INT, currency INT);
 
-	DECLARE @Temp TABLE (CustId INT, Currency INT);
-	DECLARE @sql1 VARCHAR(500);
+	DECLARE @DocHandler INT
 
-	SELECT  @sql1 = 'SELECT CustID, Currency
-		FROM OPENQUERY(DBLIC, ''SELECT LicenseeId,CustID,Currency,Description  FROM bodb_licensee.dbo.f_SelLicenseeCust('+CAST(@LicenseeID AS VARCHAR(10))+')'')';
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
+	
+		INSERT INTO #tmpAg(CustId, Currency)
+		SELECT AgentId, Currency 
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+		WHERE Currency <> 20
 
-	INSERT INTO @Temp (CustId, Currency)
-	EXEC (@sql1);
- 
-	INSERT INTO #tmpAg(CustId, Currency)
-	SELECT CustID, currency 
-	FROM @Temp lc
-	WHERE Currency <> 20
-		AND (@CurrencyID = 0 OR (@CurrencyID <> 0 AND Currency = @CurrencyID));
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
+
+	BEGIN CATCH
+		SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+		RETURN
+	END CATCH;
 
 	CREATE TABLE #tmpRpt
 	(
@@ -53,6 +59,7 @@ BEGIN
 			SUM(ISNULL(p.outstanding,0)) AS PendingFund
 	FROM bodb_Report.dbo.rptdepwinlostbyproduct_SUM p WITH(NOLOCK)  
 		INNER JOIN #tmpAg a ON a.CustID = p.custid
+	WHERE sporttype NOT IN (-6, -7, -8, -9)
 	GROUP BY p.winlostdate, a.currency
 	HAVING SUM(ISNULL(p.outstanding,0)) > 0;
  
@@ -66,7 +73,8 @@ BEGIN
 	FROM bodb_Report.dbo.rptDepWinlostByProduct p WITH(NOLOCK)    
 		INNER JOIN dbo.Customer c WITH(NOLOCK) ON p.custid = c.custid
 		INNER JOIN #tmpAg a ON a.CustID = c.Recommend
-	WHERE c.roleid = 1                  
+	WHERE c.roleid = 1      
+		AND sporttype NOT IN (-6, -7, -8, -9)            
 	GROUP BY p.winlostdate, a.currency
 	HAVING SUM(ISNULL(p.outstanding,0)) > 0;
 

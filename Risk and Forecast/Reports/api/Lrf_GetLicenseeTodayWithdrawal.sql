@@ -13,9 +13,8 @@ SET QUOTED_IDENTIFIER ON
 GO
 
 CREATE PROCEDURE [dbo].[Lrf_GetLicenseeTodayWithdrawal]
-    @LicenseeID		INT,
-    @CurrencyID		INT = 0,
-    @ReportDate		SMALLDATETIME
+    @ReportDate	SMALLDATETIME,
+	@AgentList	VARCHAR(MAX)
 AS 
 
 /*
@@ -25,6 +24,7 @@ AS
 	Original: Lrf_Rpt_TurnOver
 	Revisions:
 		- 20170208@Paul: Create new [RedmineID: #70616]
+		- 20170323@Paul: Implement Cash Out [RedmineID: #71727]
 */
 
 BEGIN
@@ -35,20 +35,26 @@ BEGIN
  
 	SELECT	@fdate = @ReportDate;
 
-	DECLARE @Temp TABLE (CustId INT, Currency INT);
-	DECLARE @sql1 VARCHAR(MAX);
+	DECLARE @DocHandler INT
 
-	SELECT  @sql1 = 'SELECT CustID, Currency
-					FROM OPENQUERY(DBLIC, ''SELECT LicenseeId,CustID,Currency,Description FROM bodb_licensee.dbo.f_SelLicenseeCust('+CAST(@LicenseeID AS VARCHAR(10))+')'')';
-
-	INSERT INTO @Temp (CustId, Currency)
-	EXEC (@sql1);
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
 	
-	INSERT INTO @tmpAg(custID, currency)
-	SELECT CustID, currency 
-	FROM @Temp lc
-	WHERE Currency <> 20
-		AND (@CurrencyID = 0 OR (@CurrencyID <> 0 AND Currency = @CurrencyID));
+		INSERT INTO @tmpAg(CustId, Currency)
+		SELECT AgentId, Currency 
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+		WHERE Currency <> 20
+
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
+
+	BEGIN CATCH
+		SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+		RETURN
+	END CATCH;
 
 	CREATE TABLE #tmpRpt
 	(
