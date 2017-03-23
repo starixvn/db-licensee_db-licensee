@@ -1,17 +1,14 @@
 ﻿USE [bodb02]
 GO
 
-ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLossByBettype] 
-	@LicenseeID INT
-	, @UserID INT
-	, @LicenseeType VARCHAR(100) = NULL
-	, @CurrencyID INT = 0
-	, @FromDate SMALLDATETIME
-	, @ToDate SMALLDATETIME
-	, @MoveBetsDay SMALLDATETIME
+ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLossByBettype] 	
+	  @FromDate		SMALLDATETIME
+	, @ToDate		SMALLDATETIME
+	, @MoveBetsDay	SMALLDATETIME
 	, @BalanceUpDay SMALLDATETIME
-	, @PageSize INT = 1000
-	, @PageIndex INT = 1
+	, @PageSize		INT = 1000
+	, @PageIndex	INT = 1
+	, @AgentList		VARCHAR(MAX)
 AS
 /*
 Created: 20101201@Jacob
@@ -49,7 +46,14 @@ Revisions:
 	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
 	- 20160721@Percy: Enhance Performance - using index srecommend on bettrans [RedmineID: #60770]
 	- 20161115@Jim: LRF - Integrate new product Fishing World [RedmineID : #66737]
+	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+
 Param's Explanation: 
+	+ @AgentList: xml structure
+					<ROOT>
+					<Agent AgentId="12345" Currency="3"/>  
+					<Agent AgentId="12345" Currency="5"/>  
+					</ROOT> 
 */
 SET NOCOUNT ON
 
@@ -74,50 +78,37 @@ SELECT @PageIndex = @PageIndex - 1
 	, @RowEnd = @RowStart + @PageSize - 1
 	, @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120)
 
-SELECT currencyID
-	, LicenseeID
-INTO #currency
-FROM dbo.Lrf_f_GetCurrencybyUser(@licenseeID, @userID, 1) -- System is default=1 (LRF)
-WHERE (
-		@CurrencyID = 0
-		OR (
-			@CurrencyID <> 0
-			AND CurrencyID = @CurrencyID
-			)
-		)
 
---DECLARE @TempAg AS TABLE
-CREATE TABLE #TempAg
-(
-	CustId INT
-	, currency INT
-	)
+DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
+DECLARE @DocHandler INT
 
-INSERT INTO #TempAg (
-	CustId
-	, currency
-	)
-SELECT DISTINCT CustID
-	, currency
-FROM bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc
-INNER JOIN #Currency c ON lc.LicenseeID = c.LicenseeID
-	AND lc.Currency = c.CurrencyID
-WHERE [Description] = COALESCE(@LicenseeType, [Description])
+BEGIN TRY
+	EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
+	INSERT INTO @TempAg (custID, currency)
+	SELECT AgentId, Currency
+	FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+
+	EXEC sp_xml_removedocument @DocHandler
+END TRY
+
+BEGIN CATCH
+	SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+	RETURN
+END CATCH;
 
 CREATE TABLE #TempSAg (srecommend INT, currency INT)
 INSERT INTO #TempSAg (srecommend, currency)
 SELECT DISTINCT
 	c.srecommend, t.currency
 FROM
-	#TempAg t
+	@TempAg t
 	INNER JOIN dbo.Customer c WITH (NOLOCK) ON t.CustId = c.custid
 WHERE
 	c.roleid = 2
-
---------------------------------------
-DROP TABLE #Currency
-
---------------------------------------                
+	         
 CREATE TABLE #AgWinLoss (
 	bettype INT
 	, liveindicator BIT
@@ -133,39 +124,7 @@ CREATE TABLE #AgWinLoss (
 	, AmtDueToRB MONEY
 	, CommBA MONEY
 	, CommRB MONEY
-	, PlayerComm MONEY
-	/*
-	, TurnOverEUR MONEY
-	, MemberWinLostEUR MONEY
-	, LicenseeWLEUR MONEY
-	, --Sportbook and NumberGame
-	WinlossRBEUR MONEY
-	, AmtDueToBAEUR MONEY
-	, AmtDueToRBEUR MONEY
-	, CommBAEUR MONEY
-	, CommRBEUR MONEY
-	, PlayerCommEUR MONEY
-	, TurnOverUSD MONEY
-	, MemberWinLostUSD MONEY
-	, LicenseeWLUSD MONEY
-	, --Sportbook and NumberGame
-	WinlossRBUSD MONEY
-	, AmtDueToBAUSD MONEY
-	, AmtDueToRBUSD MONEY
-	, CommBAUSD MONEY
-	, CommRBUSD MONEY
-	, PlayerCommUSD MONEY
-	, TurnOverGBP MONEY
-	, MemberWinLostGBP MONEY
-	, LicenseeWLGBP MONEY
-	, --Sportbook and NumberGame
-	WinlossRBGBP MONEY
-	, AmtDueToBAGBP MONEY
-	, AmtDueToRBGBP MONEY
-	, CommBAGBP MONEY
-	, CommRBGBP MONEY
-	, PlayerCommGBP MONEY
-	*/
+	, PlayerComm MONEY	
 	)
 
 DECLARE @TempFromDate DATETIME
@@ -192,7 +151,7 @@ SELECT exchangedate
 FROM Lrf_f_GetExchangeDaily(@FDate, @TDate)
 WHERE exchangeid IN (
 		SELECT Currency
-		FROM #TempAg
+		FROM @TempAg
 		)
 
 IF @Tdate > @MoveBetsDay
@@ -261,179 +220,11 @@ BEGIN
 					THEN comm
 				ELSE 0
 				END) AS CommRB
-		, SUM(playercomm) AS PlayerComm
-		/*
-		,
-		---- EUR
-		SUM(CASE 
-				WHEN b.liveawayscore = 0
-					AND bettype IN (33, 43)
-					THEN stake / 2
-				ELSE stake
-				END * e.EUR)
-		, SUM((winlost - actual_stake) * e.EUR)
-		, - SUM(CASE 
-				WHEN ISNULL(BA.transid, 0) = 0
-					AND (
-						(
-							b.bettype < 31
-							OR (b.bettype BETWEEN 121 AND 999)
-							OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
-							)
-						OR b.bettype BETWEEN 81 AND 120
-						OR b.bettype BETWEEN 1101 AND 1199
-						OR b.bettype BETWEEN 1201 AND 1299
-						OR b.bettype BETWEEN 1501 AND 1599 --Keno
-						 
-						)
-					THEN (b.winlost - b.actual_stake)
-				ELSE 0
-				END * e.EUR) AS LicenseeWLEUR
-		, SUM(CASE 
-				WHEN b.bettype IN (31, 32, 33)
-					THEN b.awinlost
-				ELSE 0
-				END * e.EUR) AS WinlossRBEUR
-		, - SUM(CASE 
-				WHEN ISNULL(BA.transid, 0) <> 0
-					THEN (b.winlost - b.actual_stake + awinlost + comm)
-				ELSE 0
-				END * e.EUR) AS AmountDueToBAEUR
-		, - SUM(CASE 
-				WHEN b.bettype IN (31, 32, 33)
-					THEN (b.winlost - b.actual_stake + awinlost + comm)
-				ELSE 0
-				END * e.EUR) AS AmountDueToRBEUR
-		, SUM(CASE 
-				WHEN ISNULL(BA.transid, 0) <> 0
-					THEN comm
-				ELSE 0
-				END * e.EUR) AS CommBAEUR
-		, SUM(CASE 
-				WHEN b.bettype IN (31, 32, 33)
-					THEN comm
-				ELSE 0
-				END * e.EUR) AS CommRBEUR
-		, SUM(playercomm * e.EUR) AS PlayerCommEUR
-		,
-		--- USD
-		SUM(CASE 
-				WHEN b.liveawayscore = 0
-					AND bettype IN (33, 43)
-					THEN stake / 2
-				ELSE stake
-				END * e.USD)
-		, SUM((winlost - actual_stake) * e.USD)
-		, - SUM(CASE 
-				WHEN ISNULL(BA.transid, 0) = 0
-					AND (
-						(
-							b.bettype < 31
-							OR (b.bettype BETWEEN 121 AND 999)
-							OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
-							)
-						OR b.bettype BETWEEN 81 AND 120
-						OR b.bettype BETWEEN 1101 AND 1199
-						OR b.bettype BETWEEN 1201 AND 1299
-						OR b.bettype BETWEEN 1501 AND 1599 --Keno
-						 
-						)
-					THEN (b.winlost - b.actual_stake)
-				ELSE 0
-				END * e.USD) AS LicenseeWLUSD
-		, SUM(CASE 
-				WHEN b.bettype IN (31, 32, 33)
-					THEN b.awinlost
-				ELSE 0
-				END * e.USD) AS WinlossRBUSD
-		, - SUM(CASE 
-				WHEN ISNULL(BA.transid, 0) <> 0
-					THEN (b.winlost - b.actual_stake + awinlost + comm)
-				ELSE 0
-				END * e.USD) AS AmountDueToBAUSD
-		, - SUM(CASE 
-				WHEN b.bettype IN (31, 32, 33)
-					THEN (b.winlost - b.actual_stake + awinlost + comm)
-				ELSE 0
-				END * e.USD) AS AmountDueToRBUSD
-		, SUM(CASE 
-				WHEN ISNULL(BA.transid, 0) <> 0
-					THEN comm
-				ELSE 0
-				END * e.USD) AS CommBAUSD
-		, SUM(CASE 
-				WHEN b.bettype IN (31, 32, 33)
-					THEN comm
-				ELSE 0
-				END * e.USD) AS CommRBUSD
-		, SUM(playercomm * e.USD) AS PlayerCommUSD,
-		--- GBP
-		SUM(CASE 
-				WHEN b.liveawayscore = 0
-					AND bettype IN (33, 43)
-					THEN stake / 2
-				ELSE stake
-				END * e.GBP)
-		, SUM((winlost - actual_stake) * e.GBP)
-		, - SUM(CASE 
-				WHEN ISNULL(BA.transid, 0) = 0
-					AND (
-						(
-							b.bettype < 31
-							OR (b.bettype BETWEEN 121 AND 999)
-							OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
-							)
-						OR b.bettype BETWEEN 81 AND 120
-						OR b.bettype BETWEEN 1101 AND 1199
-						OR b.bettype BETWEEN 1201 AND 1299
-						OR b.bettype BETWEEN 1501 AND 1599 --Keno
-						 
-						)
-					THEN (b.winlost - b.actual_stake)
-				ELSE 0
-				END * e.GBP) AS LicenseeWLGBP
-		, SUM(CASE 
-				WHEN b.bettype IN (31, 32, 33)
-					THEN b.awinlost
-				ELSE 0
-				END * e.GBP) AS WinlossRBGBP
-		, - SUM(CASE 
-				WHEN ISNULL(BA.transid, 0) <> 0
-					THEN (b.winlost - b.actual_stake + awinlost + comm)
-				ELSE 0
-				END * e.GBP) AS AmountDueToBAGBP
-		, - SUM(CASE 
-				WHEN b.bettype IN (31, 32, 33)
-					THEN (b.winlost - b.actual_stake + awinlost + comm)
-				ELSE 0
-				END * e.GBP) AS AmountDueToRBGBP
-		, SUM(CASE 
-				WHEN ISNULL(BA.transid, 0) <> 0
-					THEN comm
-				ELSE 0
-				END * e.GBP) AS CommBAGBP
-		, SUM(CASE 
-				WHEN b.bettype IN (31, 32, 33)
-					THEN comm
-				ELSE 0
-				END * e.GBP) AS CommRBGBP
-		, SUM(playercomm * e.GBP) AS PlayerCommGBP
-		
-		*/
-	FROM dbo.bettrans b WITH (
-			NOLOCK
-			--, INDEX = CIX_recommend_matchid_bettype
-			)
+		, SUM(playercomm) AS PlayerComm		
+	FROM dbo.bettrans b WITH (NOLOCK)
 	INNER JOIN #TempSAg s ON b.srecommend = s.srecommend AND b.currency = s.currency
-	LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON /* b.recommend = BA.recommend
-		AND */ b.transid = BA.transid
-	 /* LEFT JOIN @Exchange e ON e.ExchangeDate = b.winlostdate
-		AND e.exchangeid = b.currency */
-	WHERE /* b.recommend IN (
-			SELECT DISTINCT custid
-			FROM #TempAg
-			) 
-		AND */ b.winlostdate BETWEEN @TempFromDate AND @TDate
+	LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON b.transid = BA.transid	 
+	WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
 		AND bettype <= 1599  
 		AND (bettype NOT IN (71, 73,901,902,903,904) AND bettype NOT BETWEEN 1011 AND 1020)
 		AND b.ruben = 1
@@ -517,175 +308,11 @@ BEGIN
 					THEN comm
 				ELSE 0
 				END) AS CommRB
-		, SUM(playercomm) AS PlayerComm
-		/*
-		,
-		--- EUR
-		SUM(CASE 
-				WHEN b.liveawayscore = 0
-					AND bettype IN (33, 43)
-					THEN stake / 2
-				ELSE stake
-				END * e.EUR)
-		, SUM((winlost - actual_stake) * e.EUR)
-		, - SUM(CASE 
-				WHEN ISNULL(BA.transid, 0) = 0
-					AND (
-						(
-							b.bettype < 31
-							OR (b.bettype BETWEEN 121 AND 999)
-							OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
-							)
-						OR b.bettype BETWEEN 81 AND 120
-						OR b.bettype BETWEEN 1101 AND 1199
-						OR b.bettype BETWEEN 1201 AND 1299
-						OR b.bettype BETWEEN 1501 AND 1599--Keno
-						 
-						)
-					THEN (b.winlost - b.actual_stake)
-				ELSE 0
-				END * e.EUR) AS LicenseeWLEUR
-		, SUM(CASE 
-				WHEN b.bettype IN (31, 32, 33)
-					THEN b.awinlost
-				ELSE 0
-				END * e.EUR) AS WinlossRBEUR
-		, - SUM(CASE 
-				WHEN ISNULL(BA.transid, 0) <> 0
-					THEN (b.winlost - b.actual_stake + awinlost + comm)
-				ELSE 0
-				END * e.EUR) AS AmountDueToBAEUR
-		, - SUM(CASE 
-				WHEN b.bettype IN (31, 32, 33)
-					THEN (b.winlost - b.actual_stake + awinlost + comm)
-				ELSE 0
-				END * e.EUR) AS AmountDueToRBEUR
-		, SUM(CASE 
-				WHEN ISNULL(BA.transid, 0) <> 0
-					THEN comm
-				ELSE 0
-				END * e.EUR) AS CommBAEUR
-		, SUM(CASE 
-				WHEN b.bettype IN (31, 32, 33)
-					THEN comm
-				ELSE 0
-				END * e.EUR) AS CommRBEUR
-		, SUM(playercomm * e.EUR) AS PlayerCommEUR
-		,
-		--- USD
-		SUM(CASE 
-				WHEN b.liveawayscore = 0
-					AND bettype IN (33, 43)
-					THEN stake / 2
-				ELSE stake
-				END * e.USD)
-		, SUM((winlost - actual_stake) * e.USD)
-		, - SUM(CASE 
-				WHEN ISNULL(BA.transid, 0) = 0
-					AND (
-						(
-							b.bettype < 31
-							OR (b.bettype BETWEEN 121 AND 999)
-							OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
-							)
-						OR b.bettype BETWEEN 81 AND 120
-						OR b.bettype BETWEEN 1101 AND 1199
-						OR b.bettype BETWEEN 1201 AND 1299
-						OR b.bettype BETWEEN 1501 AND 1599--Keno
-						 
-						)
-					THEN (b.winlost - b.actual_stake)
-				ELSE 0
-				END * e.USD) AS LicenseeWLUSD
-		, SUM(CASE 
-				WHEN b.bettype IN (31, 32, 33)
-					THEN b.awinlost
-				ELSE 0
-				END * e.USD) AS WinlossRBUSD
-		, - SUM(CASE 
-				WHEN ISNULL(BA.transid, 0) <> 0
-					THEN (b.winlost - b.actual_stake + awinlost + comm)
-				ELSE 0
-				END * e.USD) AS AmountDueToBAUSD
-		, - SUM(CASE 
-				WHEN b.bettype IN (31, 32, 33)
-					THEN (b.winlost - b.actual_stake + awinlost + comm)
-				ELSE 0
-				END * e.USD) AS AmountDueToRBUSD
-		, SUM(CASE 
-				WHEN ISNULL(BA.transid, 0) <> 0
-					THEN comm
-				ELSE 0
-				END * e.USD) AS CommBAUSD
-		, SUM(CASE 
-				WHEN b.bettype IN (31, 32, 33)
-					THEN comm
-				ELSE 0
-				END * e.USD) AS CommRBUSD
-		, SUM(playercomm * e.USD) AS PlayerCommUSD,
-		--- GBP
-		SUM(CASE 
-				WHEN b.liveawayscore = 0
-					AND bettype IN (33, 43)
-					THEN stake / 2
-				ELSE stake
-				END * e.GBP)
-		, SUM((winlost - actual_stake) * e.GBP)
-		, - SUM(CASE 
-				WHEN ISNULL(BA.transid, 0) = 0
-					AND (
-						(
-							b.bettype < 31
-							OR (b.bettype BETWEEN 121 AND 999)
-							OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
-							)
-						OR b.bettype BETWEEN 81 AND 120
-						OR b.bettype BETWEEN 1101 AND 1199
-						OR b.bettype BETWEEN 1201 AND 1299
-						OR b.bettype BETWEEN 1501 AND 1599 --Keno
-						 
-						)
-					THEN (b.winlost - b.actual_stake)
-				ELSE 0
-				END * e.GBP) AS LicenseeWLGBP
-		, SUM(CASE 
-				WHEN b.bettype IN (31, 32, 33)
-					THEN b.awinlost
-				ELSE 0
-				END * e.GBP) AS WinlossRBGBP
-		, - SUM(CASE 
-				WHEN ISNULL(BA.transid, 0) <> 0
-					THEN (b.winlost - b.actual_stake + awinlost + comm)
-				ELSE 0
-				END * e.GBP) AS AmountDueToBAGBP
-		, - SUM(CASE 
-				WHEN b.bettype IN (31, 32, 33)
-					THEN (b.winlost - b.actual_stake + awinlost + comm)
-				ELSE 0
-				END * e.GBP) AS AmountDueToRBGBP
-		, SUM(CASE 
-				WHEN ISNULL(BA.transid, 0) <> 0
-					THEN comm
-				ELSE 0
-				END * e.GBP) AS CommBAGBP
-		, SUM(CASE 
-				WHEN b.bettype IN (31, 32, 33)
-					THEN comm
-				ELSE 0
-				END * e.GBP) AS CommRBGBP
-		, SUM(playercomm * e.GBP) AS PlayerCommGBP
-		*/
-	FROM Bettrans14 b WITH (
-			NOLOCK
-			--, INDEX = bettrans143
-			)
-	INNER JOIN #TempAg s ON b.recommend = s.CustId AND b.currency = s.currency
-	LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_bk BA WITH (NOLOCK) ON /* b.recommend = BA.recommend
-		AND */ b.transid = BA.transid
-	/* LEFT JOIN @Exchange e ON e.ExchangeDate = b.winlostdate
-		AND e.exchangeid = b.currency */
-	WHERE /* b.recommend IN (SELECT DISTINCT CustId FROM #TempAg)
-		AND */ b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
+		, SUM(playercomm) AS PlayerComm		
+	FROM Bettrans14 b WITH (NOLOCK)
+	INNER JOIN @TempAg s ON b.recommend = s.CustId AND b.currency = s.currency
+	LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_bk BA WITH (NOLOCK) ON b.transid = BA.transid	
+	WHERE b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
 		AND statusID NOT IN (101, 102, 103)
 		AND bettype <= 1599 
 		AND (bettype NOT IN (71, 73,901,902,903,904) AND bettype NOT BETWEEN 1011 AND 1020)
@@ -759,51 +386,10 @@ FROM (
 	) wl
 WHERE wl.RowNum BETWEEN @RowStart AND @RowEnd
 
-/*
-SELECT SUM(TurnOver) AS SumTurnOver
-	, CAST(SUM(TurnOver*e.EUR) AS MONEY) AS SumTurnOverEUR
-	, CAST(SUM(TurnOver*e.USD) AS MONEY) AS SumTurnOverUSD
-	, CAST(SUM(TurnOver*e.GBP) AS MONEY) AS SumTurnOverGBP
-	, SUM(MemberWinLost) AS SumMemberWinLost
-	, CAST(SUM(MemberWinLost*e.EUR) AS MONEY) AS SumMemberWinLostEUR
-	, CAST(SUM(MemberWinLost*e.USD) AS MONEY) AS SumMemberWinLostUSD
-	, CAST(SUM(MemberWinLost*e.GBP) AS MONEY) AS SumMemberWinLostGBP
-	, SUM(LicenseeWL) AS SumLicenseeWL
-	, CAST(SUM(LicenseeWL*e.EUR) AS MONEY) AS SumLicenseeWLEUR
-	, CAST(SUM(LicenseeWL*e.USD) AS MONEY) AS SumLicenseeWLUSD
-	, CAST(SUM(LicenseeWL*e.GBP) AS MONEY) AS SumLicenseeWLGBP
-	--, SUM(WinlossRB) AS SumWinlossRB
-	, CAST(SUM(WinlossRB*e.EUR) AS MONEY) AS SumWinlossRBEUR
-	, CAST(SUM(WinlossRB*e.USD) AS MONEY) AS SumWinlossRBUSD
-	, CAST(SUM(WinlossRB*e.GBP) AS MONEY) AS SumWinlossRBGBP
-	, SUM(CommBA) AS SumCommBA
-	, CAST(SUM(CommBA*e.EUR) AS MONEY) AS SumCommBAEUR
-	, CAST(SUM(CommBA*e.USD) AS MONEY) AS SumCommBAUSD
-	, CAST(SUM(CommBA*e.GBP) AS MONEY) AS SumCommBAGBP
-	, SUM(commRB) AS SumcommRB
-	, CAST(SUM(commRB*e.EUR) AS MONEY) AS SumcommRBEUR
-	, CAST(SUM(commRB*e.USD) AS MONEY) AS SumcommRBUSD
-	, CAST(SUM(commRB*e.GBP) AS MONEY) AS SumcommRBGBP
-	, SUM(PlayerComm) AS SumPlayerComm
-	, CAST(SUM(PlayerComm*e.EUR) AS MONEY) AS SumPlayerCommEUR
-	, CAST(SUM(PlayerComm*e.USD) AS MONEY) AS SumPlayerCommUSD
-	, CAST(SUM(PlayerComm*e.GBP) AS MONEY) AS SumPlayerCommGBP
-	, SUM(AmtDuetoBA) AS SumAmtDuetoBA
-	, CAST(SUM(AmtDuetoBA*e.EUR) AS MONEY) AS SumAmtDuetoBAEUR
-	, CAST(SUM(AmtDuetoBA*e.USD) AS MONEY) AS SumAmtDuetoBAUSD
-	, CAST(SUM(AmtDuetoBA*e.GBP) AS MONEY) AS SumAmtDuetoBAGBP
-	, SUM(AmtDuetoRB) AS SumAmtDuetoRB
-	, CAST(SUM(AmtDuetoRB*e.EUR) AS MONEY) AS SumAmtDuetoRBEUR
-	, CAST(SUM(AmtDuetoRB*e.USD) AS MONEY) AS SumAmtDuetoRBUSD
-	, CAST(SUM(AmtDuetoRB*e.GBP) AS MONEY) AS SumAmtDuetoRBGBP
-	, ISNULL(@TotalRows, 0) AS TotalRows
-FROM #AgWinLoss b
-	LEFT JOIN @Exchange e ON b.winlostdate = e.ExchangeDate AND b.currency = e.ExchangeId
-*/
 DROP TABLE #AgWinLoss
-DROP TABLE #TempAg
 DROP TABLE #TempSAg
 GO
+
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinLossByBettype] TO [bodbLicenseeNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_WinLossByBettype] TO [vnteam]

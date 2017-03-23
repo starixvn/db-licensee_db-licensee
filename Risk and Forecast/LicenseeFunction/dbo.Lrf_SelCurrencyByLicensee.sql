@@ -1,3 +1,6 @@
+USE bodb02
+GO
+
 ALTER  PROCEDURE  [dbo].[Lrf_SelCurrencyByLicensee]		
 	@LicenseeID int = 0, 
 	@excludeTest BIT=0
@@ -7,6 +10,7 @@ Created: 20161116@Alex
 Task :  Restrict permission of Licensee 
 DB: DBEXT/bodb02
 Revisions:  
+	- 20170228@Paul: Return AgentId [Redmine: #71679]
 	
 Param's Explanation:
 */
@@ -20,6 +24,7 @@ BEGIN
 			WHEN lc.currency = 70 THEN 'MKK'
 			ELSE Code 
 		END AS CurrencyName 
+		,lc.CustID AS AgentId
 	FROM bodb_licensee.dbo.LicenseeCust lc WITH (NOLOCK)
 		INNER JOIN dbo.exchange e with (nolock) ON lc.currency = e.exchangeid
 		WHERE (lc.LicenseeID = @LicenseeId OR @LicenseeID = 0)

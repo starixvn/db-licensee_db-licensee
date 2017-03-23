@@ -5,9 +5,9 @@ go
 
 ALTER  FUNCTION [dbo].[Lrf_f_GetCurrencybyUser]
 (
-@LicenseeID INT ,
-@userID INT ,
-@systemID INT 
+	@LicenseeID INT ,
+	@userID INT ,
+	@systemID INT 
 )
 RETURNS @tmp TABLE (CurrencyID INT, LicenseeID INT, UsrID INT )
 AS

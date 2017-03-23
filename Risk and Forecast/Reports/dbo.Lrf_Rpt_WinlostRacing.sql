@@ -1,12 +1,9 @@
 ﻿USE [bodb02]
 GO
  
-ALTER  PROCEDURE [dbo].[Lrf_Rpt_WinlostRacing]
-	@LicenseeID    INT ,
-	@UserID		INT,
-    @LicenseeType  VARCHAR(100) = NULL ,
-    @CurrencyID    INT=0 ,
-	@winlostdate	DATETIME
+ALTER  PROCEDURE [dbo].[Lrf_Rpt_WinlostRacing]	
+	@winlostdate	DATETIME,
+	@AgentList		VARCHAR(MAX)
 AS 
 /*
 	Created by: Henry
@@ -24,7 +21,14 @@ AS
 		 -- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 		 - 20150123@Jim: support base on Currency GBP
 		 - 20160413@Victor: support MKK currency code
+		 - 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+
 	Param's Explanation:
+		+ @AgentList: xml structure
+				<ROOT>
+				<Agent AgentId="12345" Currency="3"/>  
+				<Agent AgentId="12345" Currency="5"/>  
+				</ROOT>	
 		
 */
 BEGIN
@@ -37,35 +41,26 @@ BEGIN
 
 	SELECT @wldate=@winlostdate
 	
-	SELECT CurrencyID
-		  ,LicenseeID
-		  INTO #Currency
-	FROM  DBLIC.bodb_licensee.dbo.CurrencyUser WITH (NOLOCK)
-	WHERE  usrID=@userID 
-		AND LicenseeID=@LicenseeID 
-		AND SystemID=1
-		AND isActive=1
-		AND (@CurrencyID =0 OR (CurrencyID=@CurrencyID ))
-	
-	DECLARE @Temp   AS TABLE (LicenseeId INT,CustId INT,Currency INT,Description VARCHAR(100) )	
-	DECLARE @TempAg AS TABLE ( CustId INT, Currency INT )
-	DECLARE @sql VARCHAR(500)
-	SELECT  @sql =  'SELECT LicenseeId,CustID,Currency,Description FROM  OPENQUERY(DBLIC, ''SELECT * FROM bodb_licensee.dbo.f_SelLicenseeCust('+CAST(@LicenseeID AS VARCHAR(10))+')'')'
-	
-	INSERT INTO @Temp  (LicenseeId  ,CustId  ,Currency  ,Description )
-	EXEC (@sql)
-	
-	INSERT  INTO @TempAg(CustId,Currency )
-	SELECT    CustID  
-			,Currency
-	FROM     @Temp lc
-			INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
-	WHERE   (@CurrencyID=0 OR (@CurrencyID <> 0 AND  Currency = @CurrencyID))
-			 AND [Description] = COALESCE(@LicenseeType,  
-										 [Description])  
----------------------------
-DROP TABLE #Currency
----------------------------
+	DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
+DECLARE @DocHandler INT
+
+BEGIN TRY
+	EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
+	INSERT INTO @TempAg (custID, currency)
+	SELECT AgentId, Currency
+	FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+
+	EXEC sp_xml_removedocument @DocHandler
+END TRY
+
+BEGIN CATCH
+	SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+	RETURN
+END CATCH;
+
 IF @wldate > @MoveBetsDay 	
 BEGIN
 	SELECT	

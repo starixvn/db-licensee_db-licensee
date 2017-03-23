@@ -1,11 +1,11 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel16]
-	@LicenseeID INT,
-	@CurrencyID INT=0,
-	@UserID		INT,
-	@licenseetype VARCHAR(100) = NULL,
-	@PageSize INT=50,
-	@PageIndex INT=0,
-	@TotalRows INT=0 OUTPUT
+﻿USE bodb02
+GO
+
+ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel16]	
+	@PageSize	INT=50,
+	@PageIndex	INT=0,
+	@TotalRows	INT=0 OUTPUT,
+	@AgentList	VARCHAR(MAX)
 AS
 /*
 Created: 20101201@Henry
@@ -22,6 +22,14 @@ Revisions:
 	- 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
 	- 20150123@Jim: support base on Currency GBP
 	- 20150617@Jim:  Enhance Total Bets with sum values of running stakes  (Feature #36839)
+	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+
+Param's Explanation:
+	+ @AgentList: xml structure
+					<ROOT>
+					<Agent AgentId="12345" Currency="3"/>  
+					<Agent AgentId="12345" Currency="5"/>  
+					</ROOT>	
 */
 
 SET NOCOUNT ON
@@ -29,18 +37,25 @@ SET NOCOUNT ON
 DECLARE @Today SMALLDATETIME 
 SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
 
-SELECT  currencyID,LicenseeID into #currency
-FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
-WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
+DECLARE @DocHandler INT
 
-DECLARE @TempAg AS TABLE (CustID INT)
-INSERT INTO @TempAg (CustID)
-SELECT  DISTINCT CustID  
-                FROM    bodb_Licensee.dbo.[f_SelLicenseeCust](0) lc --WITH ( NOLOCK ) 
-						INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
-                WHERE   [Description] = COALESCE(@LicenseeType,  
-                                                     [Description])
+BEGIN TRY
+	EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
+	INSERT INTO @TempAg (custID, currency)
+	SELECT AgentId, Currency
+	FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
+	EXEC sp_xml_removedocument @DocHandler
+END TRY
+
+BEGIN CATCH
+	SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+	RETURN
+END CATCH;
 
 DECLARE @RowCount INT, @RowStart INT, @RowEnd INT  
 SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
@@ -250,12 +265,10 @@ SELECT
 		isnull(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral
 		
 	FROM  bettrans b with (nolock)
-		inner join match m with (nolock) on m.matchid = b.matchid 	
-		INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
-		ON e.exchangeid = b.currency
+		INNER JOIN match m with (nolock) on m.matchid = b.matchid 	
+		INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today)) e ON e.exchangeid = b.currency
+		INNER JOIN @TempAg ag ON b.recommend = ag.CustId AND b.currency = ag.Currency
 	WHERE    
-		b.recommend IN (SELECT CustID FROM @TempAg) AND 
-		 ((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))    OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
 		b.bettype = 16 AND
 		b.statusID =0 AND
 		m.matchid>0 AND
@@ -336,7 +349,6 @@ SELECT
 	SUM(totalAAGBP_ori) totalAAGBP
 FROM @Data
 
-DROP TABLE #currency
 GO
 GRANT EXECUTE ON [dbo].[Lrf_TotalBets_Sel16] TO [bodbLicenseeNet]
 

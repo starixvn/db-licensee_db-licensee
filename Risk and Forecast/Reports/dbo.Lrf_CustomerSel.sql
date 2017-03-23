@@ -2,9 +2,6 @@ USE [bodb02]
 GO
 ALTER PROCEDURE [dbo].[Lrf_CustomerSel]
 	@LicenseeID		INT,
-	@UserID			INT,
-	@CurrencyID		INT = 0,
-	@LicenseeType	VARCHAR(100) = NULL,
 	@username		VARCHAR(50) = NULL,
 	@PageSize		INT = 50,
 	@PageIndex		INT = 1,
@@ -13,7 +10,8 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerSel]
 	@TotalRows		INT = 0  OUTPUT,
 	@SpecialLevel	INT = -1, --ALL
 	@GroupCommID	INT = -1, --ALL
-	@OddsGroups		VARCHAR(100) = ''
+	@OddsGroups		VARCHAR(100) = '',
+	@AgentList		VARCHAR(MAX)
 AS
 
 /*
@@ -57,6 +55,7 @@ AS
 		- 20160913@Jim: LRF - Implement Colossus Bets [Redmine: #63785]	
 		- 20161122@Francis: Use dynamic query to enhance performance [Redmine: #66801]
 		- 20161226@Francis: Hotfix BA filter with username syntax error when building dynamic string
+		- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, Remove @LicenseeType [Redmine: #71679]
 	Param's Explanation:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 		+ @SpecialLevel: default value = -1 (all)
@@ -73,19 +72,27 @@ BEGIN
 	DECLARE @RowCount INT, @RowStart INT, @RowEnd INT
 	SELECT  @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
 
-	SELECT  currencyID, LicenseeID INTO #currency
-	FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID, @userID, 1)-- System is default=1 (LRF)
-	WHERE (@CurrencyID = 0 OR (@CurrencyID <> 0 AND CurrencyID = @CurrencyID))
-
 	CREATE TABLE #TempAg (custid INT)
-	INSERT INTO #TempAg (custid)
-	SELECT DISTINCT CustID  
-	FROM
-		bodb_Licensee.dbo.f_SelLicenseeCust(0) lc  
-		INNER JOIN #Currency c ON lc.LicenseeID = c.LicenseeID AND lc.Currency = c.CurrencyID	
-	WHERE [Description] = @LicenseeType OR @LicenseeType IS NULL
 
-	DROP TABLE #Currency
+	DECLARE @DocHandler INT
+
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
+	
+		INSERT INTO #TempAg(CustId)
+		SELECT AgentId
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
+
+	BEGIN CATCH
+		SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+		RETURN
+	END CATCH;
  
 	SET @Username = ISNULL(@Username, '')
 

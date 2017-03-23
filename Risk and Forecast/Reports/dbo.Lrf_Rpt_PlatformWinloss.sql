@@ -1,28 +1,25 @@
 USE [bodb02]
 GO
 ALTER PROCEDURE [dbo].[Lrf_Rpt_PlatformWinloss]   
-	 @LicenseeID	INT,
-	 @UserID		INT,
-	 @CurrencyID	INT = 0,
-	 @FromDate		SMALLDATETIME,  
-	 @ToDate		SMALLDATETIME,   
-	 @showSB		BIT=0,  
-	 @ShowRB		BIT=0,  
-	 @ShowNG		BIT=0, 
-	 @ShowBA		BIT=0,
-	 @ShowLC 		BIT=0,
-	 @ShowVS		BIT=0,
-	 @ShowKN		BIT=0,
-	 @ShowCS		BIT=0,
-	 @ShowMGCLC		BIT=0,
-	 @ShowMGCRNG	BIT=0,
-	 @ShowVB		BIT=0,		
-	 @ShowAB		BIT=0,
-	 @ShowFW		BIT=0,
-	 @PlatformType	TINYINT=0, 
-	 @MoveBetsDay SMALLDATETIME,
-	 @drawfilter SMALLINT = 1,
-	 @excludeTest BIT = 0
+	@FromDate		SMALLDATETIME,  
+	@ToDate		SMALLDATETIME,   
+	@showSB		BIT=0,  
+	@ShowRB		BIT=0,  
+	@ShowNG		BIT=0, 
+	@ShowBA		BIT=0,
+	@ShowLC 		BIT=0,
+	@ShowVS		BIT=0,
+	@ShowKN		BIT=0,
+	@ShowCS		BIT=0,
+	@ShowMGCLC		BIT=0,
+	@ShowMGCRNG	BIT=0,
+	@ShowVB		BIT=0,		
+	@ShowAB		BIT=0,
+	@ShowFW		BIT=0,
+	@PlatformType	TINYINT=0, 
+	@MoveBetsDay SMALLDATETIME,
+	@drawfilter SMALLINT = 1,
+	@AgentList		VARCHAR(MAX)
 AS
 
 /*  Created: 20160406@Victor
@@ -35,6 +32,8 @@ AS
 		- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
 		- 20161115@Jim: LRF - Integrate new product Fishing World [RedmineID : #66737]
 		- 20161128@Paul: enhance performance [RedmineID :#66801]
+		- 20170301@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest [Redmine: #71679]
+
 	Param's Explanation:  
 	  + @PlatformType: 0: All  
 					   1: Asia (d)  
@@ -43,7 +42,6 @@ AS
 					   4: WAP (m)    
 					   5: SMARTPHONE (s,l)  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover onlly)
-	  + @excludeTest: remove currency UUS
 	  + @showSB: Show SportsBook bets
 	  + @ShowRB: Show RB bets
 	  + @ShowNG: Show Number game bets
@@ -112,17 +110,25 @@ BEGIN
 	--to Deal WITH Parameter Sniffing
 	SELECT @FDate=@FromDate,@TDate=@ToDate 
 
-	SELECT  currencyID,LicenseeID into #currency
-	FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
-	WHERE (@CurrencyID=0  OR CurrencyID=@CurrencyID)
+	DECLARE @DocHandler INT
 
-	INSERT INTO #tempAg (custID, currency) 
-	SELECT custID,currency 
-	FROM  bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc
-		INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
-	WHERE (@excludeTest = 0 OR Currency <> 20)
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
+	
+		INSERT INTO #tempAg(CustId, Currency)
+		SELECT AgentId, Currency 
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
-	DROP TABLE #Currency 
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
+
+	BEGIN CATCH
+		SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+		RETURN
+	END CATCH;
 
 	CREATE TABLE #PlatformList (betfrom NVARCHAR(1), PlatformType TINYINT)
 	INSERT INTO #PlatformList (betfrom, PlatformType)

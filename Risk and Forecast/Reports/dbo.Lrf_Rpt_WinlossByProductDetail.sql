@@ -2,9 +2,6 @@ USE [bodb02]
 GO
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail]  
- @LicenseeID	INT,
- @UserID		INT,
- @CurrencyID	INT = 0,
  @CustID		INT = 0, --AgentID
  @MemberID		INT = 0, --memberID
  @FromDate		SMALLDATETIME,  
@@ -21,10 +18,10 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail]
  @ShowMGCLC 	BIT=0,-- MicroGamming
  @ShowMGCRnG 	BIT=0,-- MicroGamming  
  @ShowVB		BIT=0,-- Voidbridge
- @MoveBetsDay SMALLDATETIME,
- @IsOld BIT = 0,
- @drawfilter SMALLINT = 1  ,
- @excludeTest BIT = 0
+ @MoveBetsDay	SMALLDATETIME,
+ @IsOld			BIT = 0,
+ @drawfilter	SMALLINT = 1  ,
+ @AgentList		VARCHAR(MAX)
  WITH RECOMPILE
 AS  
 /*  Created: Henry  
@@ -66,7 +63,8 @@ AS
 	- 20160413@Victor: support MKK currency code [Redmine: #55745]
 	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
 	- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
-	
+	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+
 	Param's Explanation:  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
 	  + @IsOld: 0 - query in table rptLicWinloss, 1 - query in table rptLicWinloss_old. 
@@ -78,6 +76,11 @@ AS
 	  + @ShowLC: Show Live Casino	
 	  +	@ShowVS: Show Virtual Sport
 	  + @MoveBetsDay: The day we move tickets to bettrans14
+	  + @AgentList: xml structure
+					  <ROOT>
+					   <Agent AgentId="12345" Currency="3"/>  
+					   <Agent AgentId="12345" Currency="5"/>  
+					  </ROOT> 
 */  
 BEGIN  
 SET NOCOUNT ON  
@@ -117,41 +120,32 @@ CREATE TABLE #SAgWinLoss  (
 	
 	Betcount		BIGINT
 )  
---CREATE NONCLUSTERED INDEX IDX_Index_SA ON #SAgWinLoss(Custid)
 
-
-DECLARE @tempAg	TABLE( custID INT,currency INT)  
 DECLARE @Code VARCHAR(20), @TempCurrencyID INT
 DECLARE @bettype AS TABLE (bettype INT PRIMARY KEY)
 DECLARE @sporttype TABLE(sporttype INT)
 DECLARE @Exchange TABLE(ExchangeDate SMALLDATETIME, ExchangeId INT,  EUR FLOAT,USD FLOAT,GBP FLOAT,Code VARCHAR(10), PRIMARY KEY(ExchangeDate,ExchangeId))
 
-SELECT  currencyID,LicenseeID into #currency
-FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
-WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
+DECLARE @DocHandler INT
 
-INSERT INTO @tempAg (custID,currency) 
-SELECT custID,currency 
-FROM bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc  
-	INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID	
-WHERE (@CustID=0 OR (@CustID<>0 AND CustiD=@CustID))
-		AND (@excludeTest=0 OR (@excludeTest=1 AND Currency <> 20))	
-/*
-DECLARE @site VARCHAR(50)
-SELECT @site=LicenseeName FROM bodb_licensee.dbo.Licensees (NOLOCK) 
-WHERE LicenseeID=@LicenseeID
+BEGIN TRY
+	EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
+	INSERT INTO @TempAg (custID, currency)
+	SELECT AgentId, Currency
+	FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+	WHERE @CustID = 0 OR (@CustID <> 0 AND AgentId = @CustID)
 
-DECLARE @Super AS TABLE (custid int primary key, currency int)
-INSERT INTO @Super(custid,currency)  
-SELECT CustID,currency 
-FROM Dep_CustSuper dc WITH (NOLOCK)  
-INNER JOIN #Currency c ON dc.Currency=c.CurrencyID
-WHERE  site = @site	
-*/
---------------------
-DROP TABLE #Currency
---------------------
+	EXEC sp_xml_removedocument @DocHandler
+END TRY
 
+BEGIN CATCH
+	SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+	RETURN
+END CATCH;
 	
 IF @ShowSB = 1  
 BEGIN  
@@ -452,8 +446,7 @@ BEGIN
 					ELSE 1 END
 				ELSE 1 END
 			   BetCount	
-		FROM 
-			--dbo.bettrans b WITH ( NOLOCK,INDEX=IX_srecommend )
+		FROM 			
 			dbo.bettrans b WITH (NOLOCK)
 			INNER JOIN @TempAg a ON b.recommend = a.custid AND b.currency = a.currency
 			LEFT JOIN @Exchange e  ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
@@ -573,8 +566,7 @@ BEGIN
 					ELSE 1 END
 				ELSE 1 END
 			   BetCount	
-		FROM 
-			--dbo.bettrans b WITH ( NOLOCK,INDEX=IX_srecommend )
+		FROM 			
 			dbo.bettrans b WITH (NOLOCK)
 			INNER JOIN @TempAg a ON b.recommend = a.custid AND a.currency = b.currency 
 			INNER JOIN @bettype bt ON b.bettype = bt.bettype

@@ -1,12 +1,12 @@
-ALTER PROCEDURE [dbo].[Lrf_Rpt_ColossusBetsWinloss_Detail] @LicenseeID INT
-	, @Currency INT = 0
-	, @UserID INT
-	, @FromDate SMALLDATETIME
+USE bodb02
+GO
+
+ALTER PROCEDURE [dbo].[Lrf_Rpt_ColossusBetsWinloss_Detail] 
+	 @FromDate SMALLDATETIME
 	, @ToDate SMALLDATETIME
 	, @MoveBetsDay SMALLDATETIME
-	, @CurrencyID INT = 0
-	, @excludeTest BIT = 0
 	, @ReportType TINYINT = 1
+	, @AgentList	VARCHAR(MAX)
 AS
 /*  Created: Jim
 	Date: 2016-09-16
@@ -15,6 +15,7 @@ AS
     Revisions:  
 		- 20161121@Sophia: Correct CashOutAmount,WinPrizeAmount value [RedmineID : #67473] 
 		- 20161205@Jim:  Report should include only WLD tickets [RedminID : #68316]
+		- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest [Redmine: #71679]
 	Param's Explanation:  
 	   - @excludeTest: remove currency UUS
 	   - @ReportType : 1 Daily, 2 Monthly
@@ -64,35 +65,25 @@ BEGIN
 	FROM dbo.Exchange WITH (NOLOCK)
 	WHERE ExchangeId = 51
 
-	SELECT currencyID
-		, LicenseeID
-	INTO #currency
-	FROM dbo.Lrf_f_GetCurrencybyUser(@licenseeID, @userID, 1) -- System is default=1 (LRF)
-	WHERE (
-			@CurrencyID = 0
-			OR (
-				@CurrencyID <> 0
-				AND CurrencyID = @CurrencyID
-				)
-			)
+	DECLARE @DocHandler INT
 
-	INSERT INTO @tempAg (
-		custID
-		, currency
-		)
-	SELECT DISTINCT lc.custID
-		, lc.currency
-	FROM bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc
-	INNER JOIN #Currency c
-		ON lc.LicenseeID = c.LicenseeID
-			AND lc.Currency = c.CurrencyID
-	WHERE (
-			@excludeTest = 0
-			OR (
-				@excludeTest = 1
-				AND Currency <> 20
-				)
-			)
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
+	
+		INSERT INTO @TempAg(CustId, Currency)
+		SELECT AgentId, Currency 
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
+
+	BEGIN CATCH
+		SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+		RETURN
+	END CATCH;
 
 	---Section 2 :RETRIEVE RAW DATA
 	IF @_ToDate > @MoveBetsDay
@@ -312,7 +303,6 @@ BEGIN
 	END
 
 	----
-	DROP TABLE #currency
 
 	SELECT *
 	INTO #TempExchange

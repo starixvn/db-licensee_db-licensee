@@ -2,13 +2,10 @@
 GO
 
 ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel10]
-@LicenseeID INT,
-@UserID		INT,
-@CurrencyID INT=0,
-@LicenseeType VARCHAR(100) = NULL,
-@PageSize INT=50,
-@PageIndex INT=0,
-@TotalRows INT=0 OUTPUT
+@PageSize	INT=50,
+@PageIndex	INT=0,
+@TotalRows	INT=0 OUTPUT,
+@AgentList	VARCHAR(MAX)
  AS
  
 /*
@@ -26,9 +23,14 @@ Revisions:
    - 20130514@Jim:Restrict permission of Licensee Users by currency
    - 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
    - 20150123@Jim: support base on Currency GBP
-	
+	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+
 Param's Explanation:
-• @custid: agent ID
+	+ @AgentList: xml structure
+					<ROOT>
+					<Agent AgentId="12345" Currency="3"/>  
+					<Agent AgentId="12345" Currency="5"/>  
+					</ROOT>	
 */
 
 SET NOCOUNT ON
@@ -36,20 +38,26 @@ SET NOCOUNT ON
 DECLARE @Today smalldatetime 
 SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
 
-SELECT  currencyID,LicenseeID into #currency
-FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
-WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
+DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
+DECLARE @DocHandler INT
 
-DECLARE @TempAg as TABLE (custid INT)
-INSERT INTO @TempAg (custid)
-    SELECT DISTINCT CustID  
-                FROM    bodb_Licensee.dbo.[f_SelLicenseeCust](0) lc --WITH ( NOLOCK )
-				INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
-                WHERE   [Description] = COALESCE(@LicenseeType,  
-                                                     [Description])
------------------
+BEGIN TRY
+	EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
+	INSERT INTO @TempAg (custID, currency)
+	SELECT AgentId, Currency
+	FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
------------------
+	EXEC sp_xml_removedocument @DocHandler
+END TRY
+
+BEGIN CATCH
+	SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+	RETURN
+END CATCH;
+
 DECLARE @RowCount INT, @RowStart INT, @RowEnd INT  
 SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1  
 
@@ -112,12 +120,9 @@ SELECT
 		bettrans AS a  WITH (NOLOCK)
 		INNER JOIN outright AS m  WITH (NOLOCK) ON m.orid     = a.matchid 
 									AND a.statusID = 0
-		INNER JOIN @TempAg t ON a.recommend=t.custid
-		INNER JOIN #TempExchange e 
-		ON e.exchangeid = a.currency
-	WHERE  	
---		a.recommend IN (SELECT custid FROM @TempAg) AND
-		((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
+		INNER JOIN @TempAg t ON a.recommend = t.custid AND t.Currency = a.currency
+		INNER JOIN #TempExchange e ON e.exchangeid = a.currency
+	WHERE
 		a.bettype = 10 AND
 		a.statusID=0 AND
 		a.tpositiontaking <>0
@@ -148,10 +153,9 @@ SELECT
 					FROM
 						bettrans AS a  WITH (NOLOCK)
 						INNER JOIN outright AS m  WITH (NOLOCK) ON m.orid = a.matchid  AND a.statusID = 0
-						INNER JOIN 	@TempAg t ON a.recommend=t.custid
+						INNER JOIN 	@TempAg t ON a.recommend = t.custid AND t.Currency = a.currency
 						INNER JOIN #TempExchange e ON e.exchangeid = a.currency
-					WHERE  	
-						((@CurrencyID=0 AND currency IN (SELECT currencyId FROM #currency))   OR (@CurrencyID<>0 AND Currency=@CurrencyID)) AND
+					WHERE						
 						a.bettype = 10 AND
 						 a.statusID = 0 AND
 						a.tpositiontaking <>0
@@ -187,7 +191,7 @@ FROM
 		* FROM @Data
 ) as c
 WHERE RowNum BETWEEN @RowStart AND @RowEnd
-DROP TABLE #currency
+
 GO
 GRANT EXECUTE ON [dbo].[Lrf_TotalBets_Sel10] TO [bodbLicenseeNet]
 GO

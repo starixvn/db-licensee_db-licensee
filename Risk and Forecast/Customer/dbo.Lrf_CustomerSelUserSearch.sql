@@ -1,10 +1,12 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_CustomerSelUserSearch]
-	@LicenseeID INT,
+﻿USE bodb_Licensee
+GO
+
+ALTER PROCEDURE [dbo].[Lrf_CustomerSelUserSearch]
 	@UserID		INT,
-	@CurrencyID INT=0,
-	@LicenseeType VARCHAR(100) = NULL,	
-	@username VARCHAR(50)
+	@username VARCHAR(50),
+	@AgentList		VARCHAR(MAX)
 AS 
+
 /*
 Created: 20110309@Henry
 Task : For Licensee Quick search
@@ -18,35 +20,34 @@ Param's Explanation:
 	20120326@Henry: replace "where username like '%' + @username + '%'" (index scan) by "where username like @username + '%'" (index seek).
 	20130619@Jim: Restrict permission of Licensee Users by currency	
 	20141112@Victor: use f_SelLicenseeCust instead of licenseecust (#Redmine 25864)
+	20170228@Paul: remove @LicenseeID, @CurrencyID, @LicenseeType and add @AgentList due to logic change [Redmine: #71679]
 */
 
-SET NOCOUNT ON
-
-SELECT  currencyID,LicenseeID into #currency
-FROM  bodb02.dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
-WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
-
-IF  isnull(@LicenseeType,'') <> ''
 BEGIN
-	DECLARE @TempAg as TABLE (custid INT)
+	SET NOCOUNT ON
+
+	DECLARE @TempAg		TABLE (CustId INT, Currency INT)
+
+	DECLARE @DocHandler INT
+
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
 	
-	INSERT INTO @TempAg (custid)
-	SELECT DISTINCT custID FROM dbo.f_SelLicenseeCust(0) lc
-			INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
-	WHERE 
-		 [Description] = COALESCE(@LicenseeType,[Description])
-		
-	SELECT TOP 10 
-				SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, LEN(c.username2)-CHARINDEX('$',c.username2)) AS Username,
-				c.custid
-	FROM LicenseeCustinfo c WITH (NOLOCK)
-		INNER JOIN @TempAg t ON c.recommend = t.custid
-	WHERE 
-			c.username2 LIKE + '%$' + @Username + '%' OR c.username LIKE @Username + '%'
-	ORDER BY username
-END
-ELSE
-BEGIN --this for quick search
+		INSERT INTO @TempAg(CustId, Currency)
+		SELECT AgentId, Currency 
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
+
+	BEGIN CATCH
+		SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+		RETURN
+	END CATCH;
+	
 	DECLARE @tmpUsername TABLE(Username VARCHAR(30),SearchCount INT)
 
 	INSERT INTO @tmpUsername (Username,SearchCount)
@@ -62,11 +63,8 @@ BEGIN --this for quick search
 				SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, LEN(c.username2)-CHARINDEX('$',c.username2)), 
 				-1 AS searchcount
 		FROM LicenseeCustinfo c WITH (NOLOCK)
-			INNER JOIN bodb_Licensee.dbo.f_SelLicenseeCust(0) lc ON c.recommend = lc.custid AND c.currency = lc.Currency
-			INNER JOIN #Currency cy ON lc.LicenseeID=cy.LicenseeID AND lc.Currency=cy.CurrencyID
-		WHERE 
-			lc.licenseeid = @LicenseeID
-			AND (c.username2 LIKE + '%$' + @Username + '%' OR c.username LIKE @Username + '%')
+			INNER JOIN @TempAg lc ON c.recommend = lc.custid AND c.currency = lc.Currency
+		WHERE (c.username2 LIKE + '%$' + @Username + '%' OR c.username LIKE @Username + '%')
 		ORDER BY username
 	END
 
@@ -87,13 +85,10 @@ BEGIN --this for quick search
 				username NOT IN (SELECT username FROM @tmpUsername WHERE searchcount >= 0) 
 		)a
 	ORDER BY searchcount DESC, username
-	DROP TABLE #Currency 
-END	
-
 	
 
 
-
+END
 
 GO
 GRANT EXECUTE ON [dbo].[Lrf_CustomerSelUserSearch] TO [bodbLicenseeNet]

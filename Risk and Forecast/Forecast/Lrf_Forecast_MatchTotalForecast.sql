@@ -1,17 +1,17 @@
+USE bodb02
+GO
+
 SET ANSI_NULLS ON
 SET QUOTED_IDENTIFIER ON
 GO
 
 ALTER PROCEDURE Lrf_Forecast_MatchTotalForecast
-(
-	@LicenseeID INT,
-	@LicenseeType VARCHAR(100) = NULL,
-	@CurrencyID INT=0,
-	@UserID INT,
-	@MatchID INT,
-	@HomeScore INT OUTPUT,
-	@AwayScore INT OUTPUT,
-	@MatchTime DATETIME=NULL OUTPUT
+(	
+	@MatchID	INT,
+	@HomeScore	INT OUTPUT,
+	@AwayScore	INT OUTPUT,
+	@MatchTime	DATETIME = NULL OUTPUT,
+	@AgentList	VARCHAR(MAX)
 )
 AS
 
@@ -27,6 +27,14 @@ Revisions:
 	20131024@Victor: Basketball and Baseball dont use Live score in formular
 	20131028@Victor: Update list of Sports that use Live score in formular
 	20150123@Jim: support base on Currency GBP
+	20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+
+Param's Explanation:
+	+ @AgentList: xml structure
+					<ROOT>
+					<Agent AgentId="12345" Currency="3"/>  
+					<Agent AgentId="12345" Currency="5"/>  
+					</ROOT>
 */
 
 BEGIN
@@ -52,18 +60,25 @@ BEGIN
 	
     SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
 	
-	SELECT  currencyID,LicenseeID into #currency
-	FROM  dbo.Lrf_f_GetCurrencybyUser(@LicenseeID,@UserID,1)-- System is default=1 (LRF)
-	WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
-	
-	DECLARE @TempAg AS TABLE ( CustId INT )
-    INSERT  INTO @TempAg ( CustId)
-	SELECT  DISTINCT CustID  
-	FROM    bodb_Licensee.dbo.[f_SelLicenseeCust](0) lc --WITH ( NOLOCK )  
-			INNER JOIN #currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
-	WHERE   [Description] = COALESCE(@LicenseeType,[Description])
+	DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
+	DECLARE @DocHandler INT
 
-	DROP TABLE #currency
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+				,@AgentList
+		INSERT INTO @TempAg (custID, currency)
+		SELECT AgentId, Currency
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
+
+	BEGIN CATCH
+		SELECT ErrCode = 100
+				,ErrMsg = N'Paramter invalid.'
+
+		RETURN
+	END CATCH;
 
 	DECLARE @IsLive BIT
 

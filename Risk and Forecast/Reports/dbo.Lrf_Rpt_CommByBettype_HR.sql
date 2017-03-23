@@ -1,18 +1,14 @@
 ﻿USE [bodb02]
 GO
-ALTER PROCEDURE [dbo].[Lrf_Rpt_CommByBettype_HR]
-    @LicenseeID INT ,
-	@UserID		INT,
-    @LicenseeType VARCHAR(100) = NULL ,
-    @CurrencyID   INT = 0 ,
-    @FromDate SMALLDATETIME ,
-    @ToDate SMALLDATETIME ,
+
+ALTER PROCEDURE [dbo].[Lrf_Rpt_CommByBettype_HR]    
+    @FromDate	SMALLDATETIME ,
+    @ToDate		SMALLDATETIME ,
     @MoveBetsDay SMALLDATETIME ,
-    @PageSize INT = 1000 ,
-    @PageIndex INT = 1
-AS 
-    SET NOCOUNT ON     
-   
+    @PageSize	INT = 1000 ,
+    @PageIndex	INT = 1,
+	@AgentList	VARCHAR(MAX)
+AS         
   
 /*  
 Created: Henry@20110207  
@@ -28,20 +24,36 @@ Revisions:
 	  - 20130618@Jim: Restrict permission of Licensee Users by currency	
 	  - 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	  - 20150123@Jim: support base on Currency GBP
+	  - 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+
+Param's Explanation: 
+		+ @AgentList: xml structure
+					<ROOT>
+					<Agent AgentId="12345" Currency="3"/>  
+					<Agent AgentId="12345" Currency="5"/>  
+					</ROOT> 
 */  
-   	SELECT  currencyID,LicenseeID into #currency
-	FROM  dbo.Lrf_f_GetCurrencybyUser(@licenseeID,@userID,1)-- System is default=1 (LRF)
-	WHERE (@CurrencyID=0  OR (@CurrencyID<>0 AND CurrencyID=@CurrencyID))
-	
-    DECLARE @TempAg AS TABLE ( CustId INT, Currency INT )
-    INSERT  INTO @TempAg( CustId, Currency )
-    SELECT  lc.CustID  
-			,lc.Currency
-	FROM    bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc  
-			INNER JOIN #Currency c ON lc.LicenseeID=c.LicenseeID AND lc.Currency=c.CurrencyID
-	WHERE   [Description] = COALESCE(@LicenseeType,  
-										 [Description])  
-    DROP TABLE #Currency                
+	SET NOCOUNT ON 
+
+   	DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
+	DECLARE @DocHandler INT
+
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+				,@AgentList
+		INSERT INTO @TempAg (custID, currency)
+		SELECT AgentId, Currency
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
+
+	BEGIN CATCH
+		SELECT ErrCode = 100
+				,ErrMsg = N'Paramter invalid.'
+
+		RETURN
+	END CATCH;               
   
 	CREATE TABLE #Data 
         (

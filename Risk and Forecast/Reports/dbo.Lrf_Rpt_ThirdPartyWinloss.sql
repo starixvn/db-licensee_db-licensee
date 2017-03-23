@@ -1,3 +1,6 @@
+USE bodb02
+GO
+
 SET QUOTED_IDENTIFIER ON 
 GO
 SET ANSI_NULLS ON 
@@ -6,14 +9,11 @@ GO
 /****** Object:  Stored Procedure dbo.Lrf_Rpt_ThirdPartyWinloss    Script Date: 4/7/2015 10:01:49 AM ******/
  
 ALTER PROCEDURE [dbo].[Lrf_Rpt_ThirdPartyWinloss]
-	  @LicenseeID	INT
-	, @ProductID	INT
-	, @Currency		INT				= 0
-	, @UserID		INT
+	  @ProductID	INT
 	, @FromDate		SMALLDATETIME
 	, @ToDate		SMALLDATETIME
-	, @excludeTest	BIT				= 0
 	, @ReportType	TINYINT			= 1
+	, @AgentList	VARCHAR(MAX)
 
 AS  
 
@@ -23,6 +23,7 @@ AS
     DB: DBEXT.bodb02  
     Revisions:  		
 		- 20160413@Victor: support MKK currency code [Redmine: #55745]
+		- 20170302@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest [Redmine: #71679]
 	Param's Explanation:  
 	  
 	  + @excludeTest: remove currency UUS
@@ -42,7 +43,6 @@ AS
 SET NOCOUNT ON
 BEGIN
 	CREATE   TABLE #tmpResult (Winlostdate DATETIME, Currency INT,TurnOver MONEY,TotalTrans INT,Winlost MONEY,LicenseeWinlost MONEY)						
-	DECLARE  @tblCurrency TABLE(currencyID INT)
 	DECLARE  @tmpCust TABLE (CustId INT, Currency INT)
 	DECLARE  @TempExchange TABLE(ExchangeDate DATETIME, ExchangeId INT, Code NVARCHAR(5), USD FLOAT, EUR FLOAT,GBP FLOAT)
 		
@@ -54,23 +54,33 @@ BEGIN
 	WHERE ExchangeId = 51
 
 
-	INSERT INTO @tblCurrency (CurrencyID)		
-	SELECT CurrencyID	FROM dbo.Lrf_f_GetCurrencybyUser	(@LicenseeID,@UserID,1)					
+	DECLARE @Temp AS TABLE ( CustId INT,Currency INT )
 
+	DECLARE @DocHandler INT
+
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
 	
-	DECLARE @Temp AS TABLE ( CustId INT, Currency INT )
+		INSERT INTO @Temp(CustId, Currency)
+		SELECT AgentId, Currency 
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
-	INSERT INTO @Temp (CustId, Currency)
-	SELECT CustID,Currency  FROM bodb_licensee.dbo.f_SelLicenseeCust(@LicenseeID)
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
+
+	BEGIN CATCH
+		SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+		RETURN
+	END CATCH;
 
 	
 	INSERT INTO @tmpCust (CustID, Currency)	
 	SELECT co.CustID, lc.Currency 
 	FROM dbo.custInfo co WITH (NOLOCK)
-		INNER JOIN @tblCurrency c ON co.Currency = c.CurrencyID 
-		INNER JOIN @Temp lc ON co.recommend = lc.CustId AND lc.Currency = co.Currency		
-	WHERE (@excludeTest = 0 OR (@excludeTest = 1 AND lc.Currency <> 20))	
-	AND ((@currency <> 0 AND c.CurrencyID =  @currency) OR @currency = 0)
+		INNER JOIN @Temp lc ON co.recommend = lc.CustId AND lc.Currency = co.Currency	
 
 	INSERT INTO #tmpResult (Winlostdate, Currency, TurnOver, TotalTrans, Winlost, LicenseeWinlost)
 		(

@@ -7,14 +7,10 @@ SET QUOTED_IDENTIFIER ON
 GO
 
 ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel430]
-	@LicenseeID		INT,
-	@CurrencyID		INT				= 0,
-	@UserID			INT,
-	@LicenseeType	VARCHAR(100)	= NULL,
-	@Langkey		VARCHAR(10)		= 'en-US',
 	@PageSize		INT				= 50,
 	@PageIndex		INT				= 1,
-	@TotalRows		INT				= 0 OUTPUT
+	@TotalRows		INT				= 0 OUTPUT,
+	@AgentList		VARCHAR(MAX)
 AS
 
 /*
@@ -34,6 +30,14 @@ AS
 		- 20151203@Bobby: Database - Change datatype [Redmine: #48660]
 		- 20151207@Kos: Include bet type 405 2H Correct Score [Redmine: #47959]
 		- 20160129@Kos: Include bet type 413 Correct Score (aos) and [414] 1H Correct Score (aos) [Redmine: #50897]
+		- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+
+Param's Explanation:
+	+ @AgentList: xml structure
+					<ROOT>
+					<Agent AgentId="12345" Currency="3"/>  
+					<Agent AgentId="12345" Currency="5"/>  
+					</ROOT>
 */
 
 BEGIN
@@ -71,19 +75,25 @@ BEGIN
 		transdesc		NVARCHAR(200)
 	)
 
-	SELECT currencyID,
-		LicenseeID 
-	INTO #currency
-	FROM dbo.Lrf_f_GetCurrencybyUser(@licenseeID, @userID, 1)-- System is default=1 (LRF)
-	WHERE @CurrencyID = 0 OR (@CurrencyID <> 0 AND CurrencyID = @CurrencyID)
+	DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
+	DECLARE @DocHandler INT
 
-	DECLARE @TempAg AS TABLE (custid INT)
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+				,@AgentList
+		INSERT INTO @TempAg (custID, currency)
+		SELECT AgentId, Currency
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
-	INSERT INTO @TempAg (custid)
-	SELECT DISTINCT CustID  
-	FROM bodb_Licensee.dbo.[f_SelLicenseeCust](0) lc
-		INNER JOIN #currency c ON lc.LicenseeID = c.LicenseeID AND lc.Currency = c.CurrencyID
-	WHERE [Description] = COALESCE(@LicenseeType, [Description])
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
+
+	BEGIN CATCH
+		SELECT ErrCode = 100
+				,ErrMsg = N'Paramter invalid.'
+
+		RETURN
+	END CATCH;
 
 	INSERT INTO @Data
 	SELECT
@@ -119,11 +129,8 @@ BEGIN
 	FROM 
 		dbo.bettrans AS b WITH (NOLOCK)
 		INNER JOIN dbo.match AS m WITH (NOLOCK) ON b.matchid = m.matchid
-	WHERE 
-		b.Recommend IN (SELECT custid FROM @TempAg)
-		AND((@CurrencyID = 0 AND currency IN (SELECT currencyId FROM #currency))
-			OR (@CurrencyID <> 0 AND Currency = @CurrencyID))
-		AND b.bettype IN (4, 30, 152, 165, 166, 405, 413, 414)
+		INNER JOIN @TempAg ag ON b.recommend = ag.CustId AND b.currency = ag.Currency
+	WHERE b.bettype IN (4, 30, 152, 165, 166, 405, 413, 414)
 		AND b.statusID IN (0, 1)
 		AND b.tpositiontaking <> 0 
 	ORDER BY b.status, b.transid
@@ -163,7 +170,6 @@ BEGIN
 		) A 
 	WHERE A.RowNum BETWEEN @RowStart AND @RowEnd
 	
-	DROP TABLE #currency
 END
 
 

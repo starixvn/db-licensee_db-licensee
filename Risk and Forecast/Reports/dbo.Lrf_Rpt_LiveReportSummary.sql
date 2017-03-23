@@ -1,14 +1,13 @@
 USE [bodb02]
 GO
 
-ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportSummary]
+ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportSummary]	
 	@LicenseeID		INT,
-	@UserID			INT,
-	@CurrencyID		INT = NULL,
 	@FromDate		SMALLDATETIME,
 	@ToDate			SMALLDATETIME,
 	@MoveBetsDay	SMALLDATETIME,
-	@Liveindicator	INT = 1
+	@Liveindicator	INT = 1,
+	@AgentList		VARCHAR(MAX)
 AS 
 /*
 Created: 20111031@Henry
@@ -49,11 +48,19 @@ Revisions:
 	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
 	- 20160804@Percy: Enhance Performance - using faster index on bettrans [RedmineID: #60770]
 	- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
+	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+
 Param's Explanation:
-	@IsLive : indicate that whether the report will get live data or not
+	+ @IsLive : indicate that whether the report will get live data or not
 			+ 0: Non - Live data only
 			+ 1: Live data only
 			+ 2: All
+
+	+ @AgentList: xml structure
+					<ROOT>
+					<Agent AgentId="12345" Currency="3"/>  
+					<Agent AgentId="12345" Currency="5"/>  
+					</ROOT> 
 	
 Example: 
 	
@@ -78,10 +85,7 @@ BEGIN
 
 	--to Deal With Parameter Sniffing
 	SELECT	@FDate = @FromDate,
-			@TDate = @ToDate
-
-	IF @CurrencyID IS NULL
-		SET @CurrencyID = 0
+			@TDate = @ToDate	
 
 	CREATE TABLE #tmpWinloss
 	(
@@ -97,20 +101,31 @@ BEGIN
 		Betcount	INT
 	)
 
-	SELECT currencyID, LicenseeID
-	INTO #currency
-	FROM dbo.Lrf_f_GetCurrencybyUser(@licenseeID, @userID, 1) -- System is default=1 (LRF)
-	WHERE
-		@CurrencyID = 0
-		OR (@CurrencyID <> 0 AND CurrencyID = @CurrencyID)
+	DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
+	DECLARE @DocHandler INT
 
-	DECLARE @TempAg AS TABLE (CustId INT, Currency INT)
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+				,@AgentList
+		INSERT INTO @TempAg (custID, currency)
+		SELECT AgentId, Currency
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
-	INSERT INTO @TempAg (CustId, Currency)
-	SELECT DISTINCT lc.CustID, lc.Currency 
-	FROM
-		bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc
-		INNER JOIN #Currency c ON lc.LicenseeID = c.LicenseeID AND lc.Currency = c.CurrencyID
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
+
+	BEGIN CATCH
+		SELECT ErrCode = 100
+				,ErrMsg = N'Paramter invalid.'
+
+		RETURN
+	END CATCH; 
+
+	CREATE TABLE #currency(currency INT)
+
+	INSERT INTO #currency(currency)
+	SELECT DISTINCT Currency
+	FROM @TempAg
 
 	IF @TDate > @MoveBetsDay
 	BEGIN
@@ -141,7 +156,6 @@ BEGIN
 		FROM
 			dbo.bettrans b WITH (NOLOCK)
 			INNER JOIN @TempAg t ON b.recommend = t.custid AND b.Currency = t.Currency 
-			--INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON /* t.custid = BA.recommend AND */ b.transid = BA.transid
 			INNER JOIN CTE ON b.transid = CTE.TransID
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @TDate
@@ -150,34 +164,7 @@ BEGIN
 			AND (b.bettype NOT IN (901,902,903,904))
 		GROUP BY
 			b.winlostdate,
-			t.currency
-		/*
-		--BA for Parlay
-		INSERT INTO #tmpWinloss
-		SELECT
-			b.winlostdate,
-			t.currency,
-			'BA' AS ProductCode,
-			SUM(stake) turnover,
-			SUM(b.winlost - b.actual_stake) AS Winlost,
-			0 AS LicenseeWL,
-			SUM(comm) AS Comm,
-			SUM(b.playercomm) AS PlayerComm,
-			- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd,
-			COUNT(b.transid) BetCount
-		FROM
-			dbo.bettrans b WITH (NOLOCK)
-			INNER JOIN @TempAg t ON b.recommend = t.custid AND b.currency = t.currency
-			INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON /* t.custid = BA.recommend AND */ b.transid = BA.transid
-		WHERE
-			b.winlostdate BETWEEN @TempFromDate AND @TDate
-			AND b.statusID IN (111, 112, 113)
-			AND (b.livehomescore = @Liveindicator OR @Liveindicator = 2)
-			AND (b.bettype IN (9,29))
-		GROUP BY
-			b.winlostdate,
-			t.currency
-		*/
+			t.currency		
 		--RB
 		INSERT INTO #tmpWinloss
 		SELECT
@@ -336,11 +323,11 @@ BEGIN
 			SUM(b.betcount) BetCount
 		FROM
 			bodb_licenseereport.dbo.rpt_Betting_BA b WITH ( NOLOCK )
-			INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID
+			INNER JOIN #currency c ON b.CurrencyID = c.Currency
 		WHERE
+			b.SiteID = @LicenseeID AND 
 			b.rptDate BETWEEN @FDate AND @TempToDate
 			AND b.status NOT IN (-1,103)
-			AND b.siteID = @LicenseeID
 			AND
 			(
 				(@Liveindicator = 0 AND b.IsLive = 0)
@@ -367,12 +354,12 @@ BEGIN
 			SUM(b.betcount) BetCount
 		FROM
 			bodb_LicenseeReport.dbo.rpt_BettingParlay b WITH ( NOLOCK )
-			INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID
+			INNER JOIN #currency c ON b.CurrencyID = c.Currency
 		WHERE
+			b.SiteID = @LicenseeID AND
 			b.rptDate BETWEEN @FDate AND @TempToDate
 			AND b.status NOT IN (-1,103)
 			AND b.Bettype NOT IN (901,902,903,904)
-			AND b.siteID = @LicenseeID
 			AND
 			(
 				(@Liveindicator = 0 AND b.IsLive = 0)
@@ -408,11 +395,11 @@ BEGIN
 			SUM(b.betcount) BetCount
 		FROM
 			bodb_licenseereport.dbo.rpt_Betting b WITH ( NOLOCK )
-			INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID
+			INNER JOIN #currency c ON b.CurrencyID = c.Currency
 		WHERE
-			b.rptDate BETWEEN @FDate AND @TempToDate
+			b.SiteID = @LicenseeID 
+			AND b.rptDate BETWEEN @FDate AND @TempToDate
 			AND b.status NOT IN (-1,103)
-			AND b.siteID = @LicenseeID
 			AND
 			(
 				(@Liveindicator = 0 AND b.IsLive = 0)
@@ -453,12 +440,12 @@ BEGIN
 			SUM(b.betcount) BetCount
 		FROM
 			bodb_LicenseeReport.dbo.rpt_BettingParlay b WITH ( NOLOCK )
-			INNER JOIN #Currency c ON b.SiteID=c.LicenseeID AND b.CurrencyID=c.CurrencyID
+			INNER JOIN #currency c ON b.CurrencyID = c.Currency
 		WHERE
-			b.rptDate BETWEEN @FDate AND @TempToDate
+			b.SiteID = @LicenseeID
+			AND b.rptDate BETWEEN @FDate AND @TempToDate
 			AND b.status NOT IN (-1,103)
 			AND b.Bettype NOT IN (901,902,903,904)
-			AND b.siteID =@LicenseeID
 			AND
 			(
 				(@Liveindicator = 0 AND b.IsLive = 0)
@@ -527,11 +514,9 @@ BEGIN
 	GROUP BY ProductCode
 	ORDER BY ProductName
 
-	DROP TABLE #Currency
-
 	DROP TABLE #tmpWinloss
-
 	DROP TABLE #TempExchange
+	DROP TABLE #currency
 
 END
 GO
