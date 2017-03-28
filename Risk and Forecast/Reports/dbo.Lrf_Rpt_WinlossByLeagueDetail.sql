@@ -34,6 +34,7 @@ Revisions:
 	- 20151203@Bobby: Database - Change datatype [Redmine: #48660]
 	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
 	- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID [Redmine: #71679]
+	- 20170328@Paul: Implement Cash Out [RedmineID :#71727]
 Param's Explanation:   
    
 */
@@ -200,7 +201,8 @@ BEGIN
 					OR (b.bettype BETWEEN 121 AND 999)
 					OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 					)
-				AND b.bettype NOT IN (901,902,903,904)
+				AND (b.bettype < 901 OR b.bettype > 904)
+				AND (b.bettype < 911 OR b.bettype > 914)
 				-- --AND b.tpositiontaking <> 0  
 				AND b.winlostdate BETWEEN @TempFromDate AND @todate
 				AND b.statusID IN (
@@ -315,7 +317,8 @@ BEGIN
 					OR (b.bettype BETWEEN 121 AND 999)
 					OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 					)
-				AND b.bettype NOT IN (901,902,903,904)			
+				AND (b.bettype < 901 OR b.bettype > 904)
+				AND (b.bettype < 911 OR b.bettype > 914)			
 				AND b.winlostdate BETWEEN @TempFromDate AND @todate
 				AND b.statusID IN (
 					SELECT *
@@ -442,7 +445,8 @@ BEGIN
 						OR (b.bettype BETWEEN 121 AND 999)
 						OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 						)
-					AND b.bettype NOT IN (901,902,903,904)
+					AND (b.bettype < 901 OR b.bettype > 904)
+					AND (b.bettype < 911 OR b.bettype > 914)
 					AND (@matchid=0 or b.matchid = @MatchID)
 					AND b.statusID IN (
 						SELECT *
@@ -549,7 +553,8 @@ BEGIN
 						OR (b.bettype BETWEEN 121 AND 999)
 						OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 						)
-					AND b.bettype NOT IN (901,902,903,904)
+					AND (b.bettype < 901 OR b.bettype > 904)
+					AND (b.bettype < 911 OR b.bettype > 914)
 					--AND b.matchid = @MatchID
 					AND (@matchid=0 or b.matchid = @MatchID)
 					AND b.statusID IN (

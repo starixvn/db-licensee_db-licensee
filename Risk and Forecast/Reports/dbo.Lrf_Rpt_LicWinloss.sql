@@ -114,34 +114,34 @@ BEGIN
 	DECLARE @VNDCurrencyName	VARCHAR(20)
 	DECLARE @bettype			TABLE (bettype INT PRIMARY KEY)
 	DECLARE @sporttype			TABLE (sporttype INT)
-DECLARE @LicenseeName		VARCHAR(50)
-DECLARE @WLBetTicket		TABLE (winlostdate DATETIME, currency INT, WLBetTicket MONEY)
+	DECLARE @LicenseeName		VARCHAR(50)
+	DECLARE @WLBetTicket		TABLE (winlostdate DATETIME, currency INT, WLBetTicket MONEY)
 
 	DECLARE @_FromDate SMALLDATETIME, @_ToDate SMALLDATETIME
 	SELECT @_FromDate = @FromDate, @_ToDate = @ToDate
 
 	SELECT @VNDCurrencyName = currency FROM exchange (NOLOCK) WHERE ExchangeId = 51
 
-DECLARE @DocHandler INT
+	DECLARE @DocHandler INT
 
-BEGIN TRY
-	EXEC sp_xml_preparedocument @DocHandler OUTPUT
-			,@AgentList
-	INSERT INTO @TempAg (custID, currency)
-	SELECT AgentId, Currency
-	FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+				,@AgentList
+		INSERT INTO @TempAg (custID, currency)
+		SELECT AgentId, Currency
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
-	EXEC sp_xml_removedocument @DocHandler
-END TRY
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
 
-BEGIN CATCH
-	SELECT ErrCode = 100
-			,ErrMsg = N'Paramter invalid.'
+	BEGIN CATCH
+		SELECT ErrCode = 100
+				,ErrMsg = N'Paramter invalid.'
 
-	RETURN
-END CATCH;
+		RETURN
+	END CATCH;
 
-SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WHERE LicenseeID = @LicenseeID 
+	SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WHERE LicenseeID = @LicenseeID 
 
 	IF @ShowSB = 1  
 	BEGIN  
@@ -612,8 +612,8 @@ SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WH
 	
 		DECLARE @CustBettrade TABLE (recommend INT, custid INT, currency INT)
 		INSERT INTO @CustBettrade
-	SELECT c.recommend, bt.custID, bt.currency 
-	FROM f_GetBetTradeCustList(@LicenseeName) bt
+		SELECT c.recommend, bt.custID, bt.currency 
+		FROM f_GetBetTradeCustList(@LicenseeName) bt
 		INNER JOIN dbo.Customer c WITH(NOLOCK) ON bt.custID = c.custid AND c.roleid = 1
 
 		IF @ShowBA = 1 

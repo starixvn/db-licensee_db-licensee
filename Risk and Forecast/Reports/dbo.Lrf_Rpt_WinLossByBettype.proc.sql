@@ -47,6 +47,7 @@ Revisions:
 	- 20160721@Percy: Enhance Performance - using index srecommend on bettrans [RedmineID: #60770]
 	- 20161115@Jim: LRF - Integrate new product Fishing World [RedmineID : #66737]
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+	- 20170327@Paul: Implement Cash Out [RedmineID :#71727]
 
 Param's Explanation: 
 	+ @AgentList: xml structure
@@ -226,7 +227,7 @@ BEGIN
 	LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON b.transid = BA.transid	 
 	WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
 		AND bettype <= 1599  
-		AND (bettype NOT IN (71, 73,901,902,903,904) AND bettype NOT BETWEEN 1011 AND 1020)
+		AND (bettype NOT IN (71, 73,901,902,903,904,911,912,913,914) AND bettype NOT BETWEEN 1011 AND 1020)
 		AND b.ruben = 1
 		AND statusID NOT IN (101, 102, 103)
 	GROUP BY bettype
@@ -315,7 +316,7 @@ BEGIN
 	WHERE b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
 		AND statusID NOT IN (101, 102, 103)
 		AND bettype <= 1599 
-		AND (bettype NOT IN (71, 73,901,902,903,904) AND bettype NOT BETWEEN 1011 AND 1020)
+		AND (bettype NOT IN (71, 73,901,902,903,904,911,912,913,914) AND bettype NOT BETWEEN 1011 AND 1020)
 	GROUP BY bettype
 		, CASE 
 			WHEN b.bettype BETWEEN 81 AND 120

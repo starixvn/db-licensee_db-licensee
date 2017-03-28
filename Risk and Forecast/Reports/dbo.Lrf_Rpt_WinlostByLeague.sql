@@ -42,6 +42,7 @@ exec Lrf_Rpt_WinlostByLeague
 		- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
 		- 20160720@Jim : Implement 67 new bet types (PH All in one - Phase 2) [Redmine : #53520]
 		- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID [Redmine: #71679]
+		- 20170327@Paul: Implement Cash Out [RedmineID :#71727]
 	Parameter's Explanation:
 		- @LicenseeID : Licensee ID
 		- @UserID : UserID who run this report
@@ -233,7 +234,8 @@ BEGIN
 						OR (b.bettype BETWEEN 121 AND 999)		
 						OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes		
 						)
-					AND b.bettype NOT IN (901,902,903,904)
+					AND (b.bettype < 901 OR b.bettype > 904)
+					AND (b.bettype < 911 OR b.bettype > 914)
 					AND (
 						@MatchID = 0
 						OR m.matchid = @MatchID
@@ -366,7 +368,8 @@ BEGIN
 						OR (b.bettype BETWEEN 121 AND 999)	
 						OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes			
 						)
-					AND b.bettype NOT IN (901,902,903,904)
+					AND (b.bettype < 901 OR b.bettype > 904)
+					AND (b.bettype < 911 OR b.bettype > 914)
 					AND (
 						@MatchID = 0
 						OR m.matchid = @MatchID
@@ -548,7 +551,8 @@ BEGIN
 						OR (b.bettype BETWEEN 121 AND 999)			
 						OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes		
 						)
-					AND b.bettype NOT IN (901,902,903,904)
+					AND (b.bettype < 901 OR b.bettype > 904)
+					AND (b.bettype < 911 OR b.bettype > 914)
 					AND b.leagueid = @LeagueID
 					AND (
 						m.matchid = @MatchID
@@ -677,7 +681,8 @@ BEGIN
 						OR (b.bettype BETWEEN 121 AND 999)	
 						OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes			
 						)
-					AND b.bettype NOT IN (901,902,903,904)
+					AND (b.bettype < 901 OR b.bettype > 904)
+					AND (b.bettype < 911 OR b.bettype > 914)
 					AND b.leagueid = @LeagueID
 					AND (
 						m.matchid = @MatchID
