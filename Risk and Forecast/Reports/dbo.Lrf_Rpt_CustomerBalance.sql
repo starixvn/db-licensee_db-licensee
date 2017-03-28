@@ -60,6 +60,7 @@ Revisions:
 	- 20160913@Jim : LRF - Implement Colossus Bets [Redmine: #63785]
 	- 20161115@Jim: LRF - Integrate new product Fishing World [RedmineID : #66737]
 	- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest, @LicenseeType [Redmine: #71679]
+	- 20170328@Paul: Support sorting values for Opening Balance and Closing Balance [RedmineID: #74120]
     
 Param's Explanation:  
 	+ @excludeTest: remove currency UUS  
@@ -73,6 +74,8 @@ Param's Explanation:
 		3: Turnover  
 		4: Winloss desc  
 		5: Winloss asc  
+		6: Opening balance
+		7: Closing balance
 */
 
 BEGIN
@@ -536,6 +539,10 @@ BEGIN
 									THEN rpt.Turnover
 								WHEN 4
 									THEN rpt.Winloss
+								WHEN 6
+									THEN rpt.OpeningBalance
+								WHEN 7
+									THEN rpt.ClosingBalance
 								END DESC
 							, rpt.Custid
 						) AS RowNum
@@ -600,6 +607,10 @@ BEGIN
 									THEN rpt.Turnover
 								WHEN 4
 									THEN rpt.Winloss
+								WHEN 6
+									THEN rpt.OpeningBalance
+								WHEN 7
+									THEN rpt.ClosingBalance
 								END DESC
 							, rpt.Custid
 						) AS RowNum
@@ -648,6 +659,10 @@ BEGIN
 									THEN rpt.Turnover
 								WHEN 4
 									THEN rpt.Winloss
+								WHEN 6
+									THEN rpt.OpeningBalance
+								WHEN 7
+									THEN rpt.ClosingBalance
 								END DESC
 							, rpt.Custid
 						) AS RowNum
