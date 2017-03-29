@@ -33,6 +33,7 @@ AS
 		- 20161115@Jim: LRF - Integrate new product Fishing World [RedmineID : #66737]
 		- 20161128@Paul: enhance performance [RedmineID :#66801]
 		- 20170301@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest [Redmine: #71679]
+		- 20170329@Paul: Implement Cash Out [RedmineID: #71727]
 
 	Param's Explanation:  
 	  + @PlatformType: 0: All  
@@ -340,7 +341,8 @@ BEGIN
 				INNER JOIN #PlatformList pl ON pl.betfrom = b.betfrom
 			WHERE
 				b.statusID  IN (111, 112, 113)
-				AND b.bettype NOT IN (901,902,903,904)
+				AND (b.bettype < 901 OR b.bettype > 904)
+				AND (b.bettype < 911 OR b.bettype > 914)
 				AND b.winlostdate BETWEEN @TempFromDate AND @TDate
 			GROUP BY   b.winlostdate, b.currency, b.statusID, pl.PlatformType
 		END
@@ -380,7 +382,8 @@ BEGIN
 				AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
 								  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 				) 
-				AND b.bettype NOT IN (901,902,903,904)
+				AND (b.bettype < 901 OR b.bettype > 904)
+				AND (b.bettype < 911 OR b.bettype > 914)
 				AND b.tpositiontaking <>0
 			GROUP BY  b.winlostdate, tma.currency, b.statusID, pl.PlatformType
 		END
@@ -463,6 +466,7 @@ BEGIN
 			AND b.roleid = 1   
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND (b.bettype < 901 OR b.bettype > 904)
+			AND (b.bettype < 911 OR b.bettype > 914)
 		GROUP BY b.currency,
 				b.sporttype,	
 				b.winlostdate,

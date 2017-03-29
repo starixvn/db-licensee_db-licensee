@@ -55,6 +55,7 @@ Revisions:
 	- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
 	- 20161115@Jim: LRF - Integrate new product Fishing World [RedmineID : #66737]
 	- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @LicenseeType [Redmine: #71679]
+	- 20170329@Paul: Implement Cash Out [RedmineID: #71727]
 	 
 */
 
@@ -394,7 +395,7 @@ BEGIN
 				CASE WHEN (
 				(
 					(bettype < 31 OR bettype BETWEEN 121 AND 999 OR (bettype BETWEEN 1301 AND 1399)) 
-					AND b.tpositiontaking<>0 AND bettype NOT IN(901,902,903,904)
+					AND b.tpositiontaking<>0 AND bettype NOT IN(901,902,903,904) AND (b.bettype < 911 OR b.bettype > 914)
 				) 
 				OR 
 				(
@@ -410,13 +411,13 @@ BEGIN
 				THEN (b.winlost - b.actual_stake)  
 				WHEN b.bettype BETWEEN 31 AND 33 THEN awinlost
 				ELSE 0 END),0) as LicenseeWL,	--20130619@Daniel: Fix more bug regconize BA tickets
-		ISNULL(- SUM ( CASE WHEN b.tpositiontaking=0 AND ((b.bettype NOT BETWEEN 31 AND 120 AND b.bettype<=999 AND b.bettype NOT IN (901,902,903,904)) OR (b.bettype BETWEEN 1301 and 1399)) THEN (b.winlost - b.actual_stake + awinlost + comm) ELSE 0 END),0) AS AmtDuetoBA,
+		ISNULL(- SUM ( CASE WHEN b.tpositiontaking=0 AND ((b.bettype NOT BETWEEN 31 AND 120 AND b.bettype<=999 AND b.bettype NOT IN (901,902,903,904) AND (b.bettype < 911 OR b.bettype > 914)) OR (b.bettype BETWEEN 1301 and 1399)) THEN (b.winlost - b.actual_stake + awinlost + comm) ELSE 0 END),0) AS AmtDuetoBA,
 		ISNULL(- SUM ( CASE WHEN b.bettype IN (31,32,33) THEN (b.winlost - b.actual_stake + awinlost + comm) ELSE 0 END),0)AS AmtDuetoRB,
 		ISNULL(SUM (CASE WHEN b.bettype IN (31,32,33) THEN b.awinlost ELSE 0 END),0) AS WinlossRB,
-		ISNULL(SUM ( CASE WHEN b.tpositiontaking=0 AND ((b.bettype NOT BETWEEN 31 AND 120 AND b.bettype<=999 AND b.bettype NOT IN (901,902,903,904)) OR (b.bettype BETWEEN 1301 and 1399)) THEN  comm  ELSE 0 END),0) AS CommBA,
+		ISNULL(SUM ( CASE WHEN b.tpositiontaking=0 AND ((b.bettype NOT BETWEEN 31 AND 120 AND b.bettype<=999 AND b.bettype NOT IN (901,902,903,904) AND (b.bettype < 911 OR b.bettype > 914)) OR (b.bettype BETWEEN 1301 and 1399)) THEN  comm  ELSE 0 END),0) AS CommBA,
 		ISNULL(SUM ( CASE WHEN b.bettype IN (31,32,33) THEN comm  ELSE 0 END),0) AS CommRB,
 		ISNULL(SUM (  playercomm ),0) AS PlayerComm,
-		SUM(CASE WHEN (bettype < 31 OR bettype BETWEEN 121 AND 999 OR (bettype BETWEEN 1301 AND 1399)) AND bettype NOT IN(901,902,903,904)
+		SUM(CASE WHEN (bettype < 31 OR bettype BETWEEN 121 AND 999 OR (bettype BETWEEN 1301 AND 1399)) AND bettype NOT IN(901,902,903,904) AND (b.bettype < 911 OR b.bettype > 914)
 						AND betdaqid =0 THEN (b.winlost-b.actual_stake)
 					ELSE 0 END) AS WLBetTicket,
 		SUM(CASE WHEN b.bettype =903 THEN b.awinlost
@@ -583,7 +584,7 @@ BEGIN
 			ISNULL(SUM ( playercomm),0) AS SelectedMonthPlayerComm,
 			SUM(CASE WHEN b.bettype =903 THEN b.awinlost
 					ELSE 0 END) AS SelectedMonthBetTradeComm,
-			ISNULL(SUM(CASE WHEN (b.sporttype =0 AND b.bettype NOT IN (901,902,903,904)) AND bt.Custid IS NOT NULL THEN b.winlost ELSE 0 END),0) AS SelectedMonthWLBetTicket,			
+			ISNULL(SUM(CASE WHEN (b.sporttype =0 AND b.bettype NOT IN (901,902,903,904) AND (b.bettype < 911 OR b.bettype > 914)) AND bt.Custid IS NOT NULL THEN b.winlost ELSE 0 END),0) AS SelectedMonthWLBetTicket,			
 			SUM(CASE WHEN b.bettype =902 THEN (b.winlost)
 					ELSE 0 END) AS SelectedMonthWLBoughtTicket
 		FROM 

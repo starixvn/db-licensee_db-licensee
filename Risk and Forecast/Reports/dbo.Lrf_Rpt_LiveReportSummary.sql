@@ -49,6 +49,7 @@ Revisions:
 	- 20160804@Percy: Enhance Performance - using faster index on bettrans [RedmineID: #60770]
 	- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+	- 20170328@Paul: Implement Cash Out [RedmineID: #71727]
 
 Param's Explanation:
 	+ @IsLive : indicate that whether the report will get live data or not
@@ -161,10 +162,12 @@ BEGIN
 			b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND b.statusID IN (111, 112, 113)
 			AND (b.liveindicator = @Liveindicator OR @Liveindicator = 2)
-			AND (b.bettype NOT IN (901,902,903,904))
+			AND (b.bettype < 901 OR b.bettype > 904)
+			AND (b.bettype < 911 OR b.bettype > 914)
 		GROUP BY
 			b.winlostdate,
 			t.currency		
+
 		--RB
 		INSERT INTO #tmpWinloss
 		SELECT
@@ -214,7 +217,9 @@ BEGIN
 				OR (b.bettype BETWEEN 121 AND 999)
 				OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 				)
-			AND (b.bettype NOT IN (9,29,901,902,903,904))
+			AND (b.bettype NOT IN (9,29))
+			AND (b.bettype < 901 OR b.bettype > 904)
+			AND (b.bettype < 911 OR b.bettype > 914)
 			AND b.tpositiontaking <> 0
 			AND b.statusID IN (111, 112, 113)
 			AND (b.liveindicator = @Liveindicator OR @Liveindicator = 2)
@@ -334,7 +339,9 @@ BEGIN
 				OR (@Liveindicator = 1 AND b.IsLive = 1)
 				OR (@Liveindicator = 2)
 			)
-			AND b.bettype NOT IN (9,29,901,902,903,904)
+			AND b.bettype NOT IN (9,29)
+			AND (b.bettype < 901 OR b.bettype > 904)
+			AND (b.bettype < 911 OR b.bettype > 914)
 		GROUP BY 
 			b.rptdate,
 			b.currencyID
@@ -359,7 +366,8 @@ BEGIN
 			b.SiteID = @LicenseeID AND
 			b.rptDate BETWEEN @FDate AND @TempToDate
 			AND b.status NOT IN (-1,103)
-			AND b.Bettype NOT IN (901,902,903,904)
+			AND (b.bettype < 901 OR b.bettype > 904)
+			AND (b.bettype < 911 OR b.bettype > 914)
 			AND
 			(
 				(@Liveindicator = 0 AND b.IsLive = 0)
@@ -407,9 +415,10 @@ BEGIN
 				OR (@Liveindicator = 2)
 			)
 			AND b.CustomerCategory IN (-1, 1001)
-			AND b.bettype NOT IN (9,29,1700,1800,1900,901,902,903,904) 
+			AND b.bettype NOT IN (9,29,1700,1800,1900) 
 			AND b.bettype NOT BETWEEN 2001 AND 2009 -- Exclude Microgamming (#44084)
-				
+			AND (b.bettype < 901 OR b.bettype > 904)
+			AND (b.bettype < 911 OR b.bettype > 914)
 		GROUP BY
 			b.rptDate,
 			b.currencyID,
@@ -445,7 +454,8 @@ BEGIN
 			b.SiteID = @LicenseeID
 			AND b.rptDate BETWEEN @FDate AND @TempToDate
 			AND b.status NOT IN (-1,103)
-			AND b.Bettype NOT IN (901,902,903,904)
+			AND (b.bettype < 901 OR b.bettype > 904)
+			AND (b.bettype < 911 OR b.bettype > 914)
 			AND
 			(
 				(@Liveindicator = 0 AND b.IsLive = 0)

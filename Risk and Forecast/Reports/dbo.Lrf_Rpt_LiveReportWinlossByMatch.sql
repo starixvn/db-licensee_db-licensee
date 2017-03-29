@@ -38,6 +38,7 @@ Revisions:
 	- 20151001@Jim: remove MicroGaming
 	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+	- 20170329@Paul: Implement Cash Out [RedmineID: #71727]
 
 Return 3 tables:
 WinlostBySport
@@ -165,7 +166,8 @@ BEGIN
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
 						  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 			) AND
-			b.bettype NOT IN (9,29,901,902,903,904) AND
+			b.bettype NOT IN (9,29,901,902,903,904) AND 
+			(b.bettype < 911 OR b.bettype > 914) AND
 			b.statusID IN (111,112,113) AND
 			b.tpositiontaking=0 AND
 			m.sporttype = @SportId AND
@@ -233,7 +235,8 @@ BEGIN
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
 							OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 			) AND
-			b.bettype NOT IN (9,29,901,902,903,904) AND
+			b.bettype NOT IN (9,29,901,902,903,904) AND 
+			(b.bettype < 911 OR b.bettype > 914) AND
 			b.matchid > 0 AND
 			b.statusID IN (111,112,113) AND
 			m.sporttype = @SportId AND
@@ -346,7 +349,8 @@ BEGIN
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
 						  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 			) AND
-			b.bettype NOT IN (9,29,901,902,903,904) AND
+			b.bettype NOT IN (9,29,901,902,903,904) AND 
+			(b.bettype < 911 OR b.bettype > 914) AND
 			b.tpositiontaking=0 AND
 			b.statusID IN (111,112,113) AND
 			m.sporttype = @SportId 	AND
@@ -415,7 +419,8 @@ BEGIN
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
 			    	 	  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 			) AND
-			b.bettype NOT IN (9,29,901,902,903,904) AND
+			b.bettype NOT IN (9,29,901,902,903,904) AND 
+			(b.bettype < 911 OR b.bettype > 914) AND
 			b.tpositiontaking<>0 AND
 			b.statusID IN (111,112,113) AND
 			m.sporttype = @SportId AND
