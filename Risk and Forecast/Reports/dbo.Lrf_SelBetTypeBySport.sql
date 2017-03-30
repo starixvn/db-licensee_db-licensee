@@ -33,6 +33,8 @@ Revisions:
    - 20151217@Bobby: Fixbug#49486 - Remove unsupported and mixed bettype
    - 20160217@Jim: exclude bettype 500 (Charge Commission),502 (Match Winner 1X2) since those bettype not offer for deposit model (redmine #50759 )
    - 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
+   - 20170330@Paul: Implement Cash Out [RedmineID: #71727]
+
 	Param's Explanation:  
 Param's Explanation:
 	
@@ -95,6 +97,8 @@ BEGIN
 		OR sp.bettype BETWEEN 301 AND 304 -- MO
 		OR sp.bettype BETWEEN 801 AND 899 -- MG
 		OR sp.bettype IN (500,502) --Criket
+		OR sp.bettype IN (911,912,913,914) -- Cash Out
+
 	-- Tenis - business logic
 	DELETE sp
 	FROM #SportBettype sp
