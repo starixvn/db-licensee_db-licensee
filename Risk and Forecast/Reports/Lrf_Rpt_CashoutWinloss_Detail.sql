@@ -1,0 +1,280 @@
+USE bodb02
+GO
+
+ALTER PROCEDURE [dbo].[Lrf_Rpt_CashoutWinloss_Detail]
+	@FromDate		SMALLDATETIME,
+	@ToDate			SMALLDATETIME,
+	@MoveBetsDay	SMALLDATETIME,
+	@ReportType		TINYINT = 1,
+	@AgentList		VARCHAR(MAX)
+AS
+/*
+	Created: 20170330@Harper
+	Description: LRF - Implement Cash Out [#71727]
+	DB: DBEXT.bodb02 
+	Revisions: 
+
+	Param's Explanation:  
+
+	EXEC 
+*/
+
+SET NOCOUNT ON
+BEGIN
+	
+	DECLARE @FDate SMALLDATETIME,
+			@TDate SMALLDATETIME,
+			@TempFromDate SMALLDATETIME,
+			@TempToDate SMALLDATETIME,
+			@VNDCurrencyName VARCHAR(20)
+
+	SELECT @FDate = @FromDate,
+		   @TDate = @ToDate
+	
+	SELECT @VNDCurrencyName = currency
+	FROM dbo.Exchange WITH (NOLOCK)
+	WHERE ExchangeId = 51	
+
+	DECLARE @DocHandler INT
+	DECLARE @tempAg AS TABLE (custID INT, currency INT)
+
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
+	
+		INSERT INTO @TempAg(CustId, Currency)
+		SELECT AgentId, Currency 
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
+
+	BEGIN CATCH
+		SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+		RETURN
+	END CATCH;
+
+	CREATE TABLE #Exchange(ExchangeID INT, ExchageDate SMALLDATETIME, Code VARCHAR(5), USD FLOAT, EUR FLOAT, GBP FLOAT)
+
+	INSERT INTO #Exchange(ExchangeID, ExchageDate, Code, USD, EUR, GBP)
+	SELECT ExchangeId, exchangedate, Code, USD, EUR, GBP	
+	FROM Lrf_f_GetExchangeDaily(@FDate, @TDate)	
+
+	CREATE TABLE #TempData (
+				rptDate		SMALLDATETIME,
+				CurrencyID	INT,
+				Bettype		INT, 
+				Transid		BIGINT, 
+				Refno		BIGINT, 
+				Actual_stake MONEY, 
+				winlost		MONEY, 
+				awinlost	MONEY, 
+				transid2	INT,
+				CustID		INT
+	)
+
+	DECLARE @Result AS TABLE (
+				rptDate			SMALLDATETIME,
+				CurrencyID		INT,
+				CustID			INT,
+				CashoutTime		INT,
+				CashoutTicket	INT,
+				CashoutValue	MONEY,
+				BuyBackAmountSB MONEY,
+				BuyBackAmountBA MONEY,
+				BuyBackAmount	MONEY,
+				TicketPayout	MONEY,
+				CashoutComm		MONEY,
+				AmountDue_TicketPayout	MONEY,
+				AmountDue_Comm			MONEY,
+				AmountDue_Total			MONEY
+	)
+
+	-- 
+	IF @TDate > @MoveBetsDay
+	BEGIN
+		SELECT @TempFromDate = CASE WHEN @FDate <= @MoveBetsDay THEN DATEADD(DAY, 1, @MoveBetsDay) ELSE @FDate END
+
+		INSERT INTO #TempData ( rptDate ,CurrencyID ,Bettype ,Transid ,Refno ,Actual_stake ,winlost ,awinlost ,transid2, CustID)			
+		SELECT b.winlostdate, b.currency, b.bettype, b.transid, b.refno, b.actual_stake, b.winlost, b.awinlost, b.transid2, b.custid
+		FROM dbo.bettrans b WITH (NOLOCK)
+			INNER JOIN @tempAg ag ON b.recommend = ag.custID AND b.currency = ag.currency
+		WHERE b.bettype IN (911, 913)
+			AND b.winlostdate BETWEEN @TempFromDate AND @TDate
+			AND b.statusID IN (111, 112, 113)
+
+		INSERT INTO @Result
+		        ( rptDate ,
+		          CurrencyID ,
+				  CustID,
+		          CashoutTime ,
+		          CashoutTicket ,
+		          CashoutValue ,
+		          BuyBackAmountSB ,
+		          BuyBackAmountBA 
+		        )		
+		SELECT b.rptDate,
+				b.CurrencyID,	
+				b.custid,			
+				COUNT (*) AS CashoutTime,
+				COUNT(DISTINCT (b.refno)) AS CashoutTicket,
+				SUM(b.actual_stake) AS CashoutValue,
+				SUM(CASE WHEN b.transid2 = 0 THEN b.winlost ELSE 0 END) AS BuyBackAmountSB,
+				SUM(CASE WHEN b.transid2 = 1 THEN b.winlost ELSE 0 END) AS BuyBackAmountBA
+		FROM #TempData b
+		WHERE b.bettype = 911			
+		GROUP BY b.rptDate, b.CurrencyID, b.custid
+		
+		;WITH comm AS (
+						SELECT rptDate, CurrencyID, custid, SUM(awinlost) AS CashoutComm
+						FROM #TempData
+						WHERE Bettype = 113
+						GROUP BY rptDate, CurrencyID, custid
+					) 
+		UPDATE r
+		SET r.CashoutComm = c.CashoutComm
+		FROM @Result r 
+			INNER JOIN comm c ON r.rptDate = c.rptDate AND r.CurrencyID = c.CurrencyID AND c.CustID = r.CustID
+		
+		;WITH ticketPayout AS (
+								SELECT b.winlostdate, b.currency, b.custid, SUM(b.winlost) AS ticketPayout
+								FROM dbo.bettrans b WITH (NOLOCK)
+								WHERE b.bettype NOT IN (911, 912, 913, 914)
+									AND b.refno IN (SELECT Transid FROM #TempData WHERE Bettype = 911)
+								GROUP BY b.winlostdate, b.currency, b.custid
+							)
+		UPDATE r
+		SET r.TicketPayout = p.ticketPayout
+		FROM @Result r
+			INNER JOIN ticketPayout p ON r.rptDate = p.winlostdate AND r.CurrencyID = p.currency AND p.custid = r.CustID
+	END	
+
+	IF @FDate <= @MoveBetsDay
+	BEGIN
+		SELECT @TempToDate = CASE WHEN @TDate >= @MoveBetsDay THEN @MoveBetsDay ELSE @TDate END
+		
+		INSERT INTO @Result
+		        ( rptDate ,
+		          CurrencyID ,
+				  CustID,
+		          CashoutTime ,
+		          CashoutTicket ,
+		          CashoutValue ,
+		          BuyBackAmountSB ,
+		          BuyBackAmountBA ,
+				  CashoutComm
+		        )		
+		SELECT b.winlostdate, b.Currency, b.custid
+			, SUM(CASE WHEN b.bettype = 911 THEN b.BetCount ELSE 0 END)
+			, SUM(CASE WHEN b.bettype = 911 THEN b.COTicketCount ELSE 0 END)
+			, SUM(CASE WHEN b.bettype = 912 THEN b.winlost ELSE 0 END)
+			, SUM(b.BuyBackAmt)
+			, SUM(b.BABuyBackAmt)
+			, SUM(CASE WHEN b.bettype = 913 THEN b.awinlost ELSE 0 END)
+		FROM bodb_LicenseeReport.dbo.rptLicWinloss2 b WITH (NOLOCK)
+			INNER JOIN @tempAg ag ON b.custid = ag.custID AND b.Currency = ag.currency
+		WHERE b.winlostdate BETWEEN @FDate AND @TempToDate
+			AND b.StatusId IN (111, 112, 113)
+			AND b.Bettype IN (911, 912, 913)
+		GROUP BY b.winlostdate, b.Currency, b.custid
+
+		;WITH ticketPayout AS (
+								SELECT b.winlostdate, b.Currency, b.custid, SUM (b.winlost) AS ticketPayout
+								FROM bodb_LicenseeReport.dbo.rptLicWinloss2 b WITH (NOLOCK)
+									INNER JOIN (SELECT CustId FROM bodb02.dbo.f_GetCashoutCustList('ALL')) c ON b.custid = c.CustId
+								WHERE b.winlostdate BETWEEN @FDate AND @TempToDate
+									AND b.StatusId IN (111, 112, 113)
+									AND b.Bettype NOT IN (911, 912, 913, 914)
+								GROUP BY b.winlostdate, b.Currency, b.custid
+							)		
+		UPDATE r
+		SET r.TicketPayout = p.ticketPayout
+		FROM @Result r
+			INNER JOIN ticketPayout p ON r.rptDate = p.winlostdate AND r.CurrencyID = r.CurrencyID AND p.custid = r.CustID
+	END
+
+	-- Select Result
+	SELECT 
+		CASE WHEN @ReportType = 1 THEN CONVERT(VARCHAR(8), r.rptDate, 112)
+				WHEN @ReportType = 2 THEN CONVERT(VARCHAR(6), r.rptDate, 112)
+				ELSE '0'
+		END AS ReportType
+		, r.CurrencyID
+		, r.CustID
+		, CASE WHEN r.CurrencyID = 51 THEN @VNDCurrencyName
+				WHEN r.CurrencyID = 70 THEN 'MKK'
+				ELSE e.Code
+		END AS CurrencyName
+		, SUM(r.CashoutTime) AS CashoutTime
+		, SUM(r.CashoutTicket) AS CashoutTicket
+		, SUM(r.CashoutValue) AS CashoutValue
+		, SUM(r.BuyBackAmountSB) AS BuyBackAmountSB
+		, SUM(r.BuyBackAmountBA) AS BuyBackAmountBA
+		, SUM(r.BuyBackAmountSB + r.BuyBackAmountBA) AS BuyBackAmount
+		, SUM(r.TicketPayout) AS TicketPayout
+		, SUM(r.CashoutComm) AS CashoutComm
+		, SUM(r.TicketPayout) AS AmountDue_TicketPayout
+		, SUM(r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm) AS AmountDue_Comm
+		, SUM(r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm - r.TicketPayout) AS Amount_Total
+		--- USD
+		, CAST(SUM(r.CashoutTime * e.USD) AS MONEY) AS CashoutTimeUSD
+		, CAST(SUM(r.CashoutTicket * e.USD) AS MONEY) AS CashoutTicketUSD
+		, CAST(SUM(r.CashoutValue * e.USD) AS MONEY) AS CashoutValueUSD
+		, CAST(SUM(r.BuyBackAmountSB * e.USD) AS MONEY) AS BuyBackAmountSBUSD
+		, CAST(SUM(r.BuyBackAmountBA * e.USD) AS MONEY) AS BuyBackAmountBAUSD
+		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA) * e.USD) AS MONEY) AS BuyBackAmountUSD
+		, CAST(SUM(r.TicketPayout * e.USD) AS MONEY) AS TicketPayoutUSD
+		, CAST(SUM(r.CashoutComm * e.USD) AS MONEY) AS CashoutCommUSD
+		, CAST(SUM(r.TicketPayout * e.USD) AS MONEY) AS AmountDue_TicketPayoutUSD
+		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm) * e.USD) AS MONEY) AS AmountDue_CommUSD
+		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm - r.TicketPayout) * e.USD) AS MONEY) AS Amount_TotalUSD
+		--- EUR
+		, CAST(SUM(r.CashoutTime * e.EUR) AS MONEY) AS CashoutTimeEUR
+		, CAST(SUM(r.CashoutTicket * e.EUR) AS MONEY) AS CashoutTicketEUR
+		, CAST(SUM(r.CashoutValue * e.EUR) AS MONEY) AS CashoutValueEUR
+		, CAST(SUM(r.BuyBackAmountSB * e.EUR) AS MONEY) AS BuyBackAmountSBEUR
+		, CAST(SUM(r.BuyBackAmountBA * e.EUR) AS MONEY) AS BuyBackAmountBAEUR
+		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA) * e.EUR) AS MONEY) AS BuyBackAmountEUR
+		, CAST(SUM(r.TicketPayout * e.EUR) AS MONEY) AS TicketPayoutEUR
+		, CAST(SUM(r.CashoutComm * e.EUR) AS MONEY) AS CashoutCommEUR
+		, CAST(SUM(r.TicketPayout * e.EUR) AS MONEY) AS AmountDue_TicketPayoutEUR
+		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm) * e.EUR) AS MONEY) AS AmountDue_CommEUR
+		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm - r.TicketPayout) * e.EUR) AS MONEY) AS Amount_TotalEUR
+		--- GBP
+		, CAST(SUM(r.CashoutTime * e.GBP) AS MONEY) AS CashoutTimeGBP
+		, CAST(SUM(r.CashoutTicket * e.GBP) AS MONEY) AS CashoutTicketGBP
+		, CAST(SUM(r.CashoutValue * e.GBP) AS MONEY) AS CashoutValueGBP
+		, CAST(SUM(r.BuyBackAmountSB * e.GBP) AS MONEY) AS BuyBackAmountSBGBP
+		, CAST(SUM(r.BuyBackAmountBA * e.GBP) AS MONEY) AS BuyBackAmountBAGBP
+		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA) * e.GBP) AS MONEY) AS BuyBackAmountGBP
+		, CAST(SUM(r.TicketPayout * e.GBP) AS MONEY) AS TicketPayoutGBP
+		, CAST(SUM(r.CashoutComm * e.GBP) AS MONEY) AS CashoutCommGBP
+		, CAST(SUM(r.TicketPayout * e.GBP) AS MONEY) AS AmountDue_TicketPayoutGBP
+		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm) * e.GBP) AS MONEY) AS AmountDue_CommGBP
+		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm - r.TicketPayout) * e.GBP) AS MONEY) AS Amount_TotalGBP
+	FROM @Result r
+		INNER JOIN #Exchange e ON r.rptDate = e.ExchageDate AND r.CurrencyID = e.ExchangeID
+	GROUP BY 
+		CASE WHEN @ReportType = 1 THEN CONVERT(VARCHAR(8), r.rptDate, 112)
+				WHEN @ReportType = 2 THEN CONVERT(VARCHAR(6), r.rptDate, 112)
+				ELSE '0'
+		END
+		, r.CurrencyID
+		, r.CustID
+		, CASE WHEN r.CurrencyID = 51 THEN @VNDCurrencyName
+				WHEN r.CurrencyID = 70 THEN 'MKK'
+				ELSE e.Code
+		END
+
+	DROP TABLE #TempData
+	DROP TABLE #Exchange
+END
+GO
+
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CashoutWinloss_Detail] TO [vnteam]
+GO 
+
+GRANT EXECUTE ON [dbo].[Lrf_Rpt_CashoutWinloss_Detail] TO [bodbLicenseeNet]
+GO 
