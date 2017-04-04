@@ -212,9 +212,7 @@ BEGIN
 		, SUM(r.TicketPayout) AS AmountDue_TicketPayout
 		, SUM(r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm) AS AmountDue_Comm
 		, SUM(r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm - r.TicketPayout) AS Amount_Total
-		--- USD
-		, CAST(SUM(r.CashoutTime * e.USD) AS MONEY) AS CashoutTimeUSD
-		, CAST(SUM(r.CashoutTicket * e.USD) AS MONEY) AS CashoutTicketUSD
+		--- USD		
 		, CAST(SUM(r.CashoutValue * e.USD) AS MONEY) AS CashoutValueUSD
 		, CAST(SUM(r.BuyBackAmountSB * e.USD) AS MONEY) AS BuyBackAmountSBUSD
 		, CAST(SUM(r.BuyBackAmountBA * e.USD) AS MONEY) AS BuyBackAmountBAUSD
@@ -224,9 +222,7 @@ BEGIN
 		, CAST(SUM(r.TicketPayout * e.USD) AS MONEY) AS AmountDue_TicketPayoutUSD
 		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm) * e.USD) AS MONEY) AS AmountDue_CommUSD
 		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm - r.TicketPayout) * e.USD) AS MONEY) AS Amount_TotalUSD
-		--- EUR
-		, CAST(SUM(r.CashoutTime * e.EUR) AS MONEY) AS CashoutTimeEUR
-		, CAST(SUM(r.CashoutTicket * e.EUR) AS MONEY) AS CashoutTicketEUR
+		--- EUR		
 		, CAST(SUM(r.CashoutValue * e.EUR) AS MONEY) AS CashoutValueEUR
 		, CAST(SUM(r.BuyBackAmountSB * e.EUR) AS MONEY) AS BuyBackAmountSBEUR
 		, CAST(SUM(r.BuyBackAmountBA * e.EUR) AS MONEY) AS BuyBackAmountBAEUR
@@ -236,9 +232,7 @@ BEGIN
 		, CAST(SUM(r.TicketPayout * e.EUR) AS MONEY) AS AmountDue_TicketPayoutEUR
 		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm) * e.EUR) AS MONEY) AS AmountDue_CommEUR
 		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm - r.TicketPayout) * e.EUR) AS MONEY) AS Amount_TotalEUR
-		--- GBP
-		, CAST(SUM(r.CashoutTime * e.GBP) AS MONEY) AS CashoutTimeGBP
-		, CAST(SUM(r.CashoutTicket * e.GBP) AS MONEY) AS CashoutTicketGBP
+		--- GBP		
 		, CAST(SUM(r.CashoutValue * e.GBP) AS MONEY) AS CashoutValueGBP
 		, CAST(SUM(r.BuyBackAmountSB * e.GBP) AS MONEY) AS BuyBackAmountSBGBP
 		, CAST(SUM(r.BuyBackAmountBA * e.GBP) AS MONEY) AS BuyBackAmountBAGBP
