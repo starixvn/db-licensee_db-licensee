@@ -2,7 +2,8 @@ USE [bodb02]
 GO
 
 ALTER PROCEDURE [dbo].[Lrf_GetLicenseePendingFunds]
-	@AgentList	VARCHAR(MAX)
+    @LicenseeID		INT,
+    @CurrencyID		INT = 0
 AS 
 
 /*
@@ -22,26 +23,20 @@ BEGIN
    
 	CREATE TABLE #tmpAg (custID INT, currency INT);
 
-	DECLARE @DocHandler INT
+	DECLARE @Temp TABLE (CustId INT, Currency INT);
+	DECLARE @sql1 VARCHAR(500);
 
-	BEGIN TRY
-		EXEC sp_xml_preparedocument @DocHandler OUTPUT
-			,@AgentList
-	
-		INSERT INTO #tmpAg(CustId, Currency)
-		SELECT AgentId, Currency 
-		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
-		WHERE Currency <> 20
+	SELECT  @sql1 = 'SELECT CustID, Currency
+		FROM OPENQUERY(DBLIC, ''SELECT LicenseeId,CustID,Currency,Description  FROM bodb_licensee.dbo.f_SelLicenseeCust('+CAST(@LicenseeID AS VARCHAR(10))+')'')';
 
-		EXEC sp_xml_removedocument @DocHandler
-	END TRY
-
-	BEGIN CATCH
-		SELECT ErrCode = 100
-			,ErrMsg = N'Paramter invalid.'
-
-		RETURN
-	END CATCH;
+	INSERT INTO @Temp (CustId, Currency)
+	EXEC (@sql1);
+ 
+	INSERT INTO #tmpAg(CustId, Currency)
+	SELECT CustID, currency 
+	FROM @Temp lc
+	WHERE Currency <> 20
+		AND (@CurrencyID = 0 OR (@CurrencyID <> 0 AND Currency = @CurrencyID));
 
 	CREATE TABLE #tmpRpt
 	(
@@ -73,8 +68,8 @@ BEGIN
 	FROM bodb_Report.dbo.rptDepWinlostByProduct p WITH(NOLOCK)    
 		INNER JOIN dbo.Customer c WITH(NOLOCK) ON p.custid = c.custid
 		INNER JOIN #tmpAg a ON a.CustID = c.Recommend
-	WHERE c.roleid = 1      
-		AND sporttype NOT IN (-6, -7, -8, -9)            
+	WHERE c.roleid = 1
+		AND sporttype NOT IN (-6, -7, -8, -9)        
 	GROUP BY p.winlostdate, a.currency
 	HAVING SUM(ISNULL(p.outstanding,0)) > 0;
 

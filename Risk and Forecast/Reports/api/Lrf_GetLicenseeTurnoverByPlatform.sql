@@ -13,9 +13,10 @@ SET QUOTED_IDENTIFIER ON
 GO
 
 CREATE PROCEDURE [dbo].[Lrf_GetLicenseeTurnoverByPlatform]   
-	@FromDate	SMALLDATETIME,  
-	@ToDate		SMALLDATETIME,
-	@AgentList	VARCHAR(MAX)
+	 @LicenseeID	INT,
+	 @CurrencyID	INT = 0,
+	 @FromDate		SMALLDATETIME,  
+	 @ToDate		SMALLDATETIME
 AS
 
 /*
@@ -28,7 +29,6 @@ AS
 		- 20170323@Paul: Implement Cash Out [RedmineID: #71727]
 
 	Param's Explanation:  
-	  + @MoveBetsDay: The day we move tickets to bettrans14
 */
     
 BEGIN      
@@ -56,26 +56,11 @@ BEGIN
 	--to Deal WITH Parameter Sniffing
 	SELECT @FDate = @FromDate, @TDate = @ToDate;
 
-	DECLARE @DocHandler INT
-
-	BEGIN TRY
-		EXEC sp_xml_preparedocument @DocHandler OUTPUT
-			,@AgentList
-	
-		INSERT INTO #tempAg(CustId, Currency)
-		SELECT AgentId, Currency 
-		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
-		WHERE Currency <> 20
-
-		EXEC sp_xml_removedocument @DocHandler
-	END TRY
-
-	BEGIN CATCH
-		SELECT ErrCode = 100
-			,ErrMsg = N'Paramter invalid.'
-
-		RETURN
-	END CATCH;
+	INSERT INTO #tempAg (custID, currency) 
+	SELECT custID, currency 
+	FROM bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc
+	WHERE Currency <> 20
+		AND (@CurrencyID = 0 OR Currency = @CurrencyID);
 
 	CREATE TABLE #PlatformList (betfrom NVARCHAR(1), PlatformType TINYINT);
 
