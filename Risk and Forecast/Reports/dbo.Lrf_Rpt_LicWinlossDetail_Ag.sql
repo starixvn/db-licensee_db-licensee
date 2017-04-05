@@ -369,6 +369,7 @@ BEGIN
 			0 AS LicenseeWLVB,
 			0 AS LicenseeWLAB,
 			0 AS LicenseeWLFW,
+			0 AS LicenseeWLCO,
 			- SUM(b.winlost - b.actual_stake + awinlost + comm) AS AmountDueToBA,
 			0 AS AmountDueToRB,
 			SUM(comm) AS CommBA,

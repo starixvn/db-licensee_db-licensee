@@ -34,7 +34,7 @@ AS
 BEGIN      
 	SET NOCOUNT ON;
 
-	IF DATEDIFF(MONTH,@FromDate,@ToDate) > 1
+	IF DATEDIFF(MONTH,@FromDate,@ToDate) > 0
 		RETURN;
 
 	CREATE TABLE #WinLoss (
