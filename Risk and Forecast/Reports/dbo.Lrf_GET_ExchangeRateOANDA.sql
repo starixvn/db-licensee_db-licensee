@@ -1,4 +1,5 @@
-﻿ALTER  PROCEDURE [dbo].[Lrf_GET_ExchangeRateOANDA]
+﻿/*<info serverAlias="DBLIC-bodb_Licensee" executers="bodbAdminNet,bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested=”0”></info>*/
+ALTER  PROCEDURE [dbo].[Lrf_GET_ExchangeRateOANDA]
 	@Fromdate DATETIME=NULL,
 	@ToDate DATETIME=NULL 
 AS 
@@ -10,6 +11,7 @@ AS
  *  - 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	- 20150422@Victor: support to view more currencies
 	- 20160413@Victor: support MKK currency code
+	- 20170410@Sophia: Get 3 base rate columns of KWR, JPY, HKD [Redmine: #64238]
 
  * Param's Explanation:    
 
@@ -40,7 +42,10 @@ SELECT
 	edo.GBP,
 	edo.SGD,
 	edo.THB,
-	edo.VND / 1000 AS 'INH'
+	edo.VND / 1000 AS 'INH',
+	edo.KRW,
+	edo.JPY,
+	edo.HKD
 FROM bodb02.dbo.ExchangeDailyOanda edo (NOLOCK)
 WHERE 
 	edo.ExchangeDate>=@fromdate AND edo.ExchangeDate<=@todate 
@@ -50,10 +55,4 @@ WHERE
 ORDER BY edo.ExchangeDate,edo.Code ASC 
 
 END
-
 GO
-GRANT EXECUTE ON [dbo].[Lrf_GET_ExchangeRateOANDA] TO [bodbLicenseeNet] 
-GO
-GRANT EXECUTE ON [dbo].[Lrf_GET_ExchangeRateOANDA] TO [bodbAdminNet] 
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_GET_ExchangeRateOANDA] TO [vnteam]    
