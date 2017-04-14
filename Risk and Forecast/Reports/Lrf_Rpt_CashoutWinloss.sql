@@ -16,7 +16,8 @@ AS
 
 	Param's Explanation:  
 
-	EXEC 
+	exec Lrf_Rpt_CashoutWinloss @fromdate='2017-04-04 00:00:00',@todate='2017-04-04 00:00:00',@ReportType = 1,@AgentList=N'<ROOT><Agent AgentId="791088" Currency="6"/><Agent AgentId="860379" Currency="6"/><Agent AgentId="2428981" Currency="6"/><Agent AgentId="2812696" Currency="6"/><Agent AgentId="3575140" Currency="6"/><Agent AgentId="4362999" Currency="6"/></ROOT>',@MoveBetsDay='2017-03-26 00:00:00' 
+ 
 */
 
 SET NOCOUNT ON
@@ -126,7 +127,7 @@ BEGIN
 		;WITH comm AS (
 						SELECT rptDate, CurrencyID, SUM(awinlost) AS CashoutComm
 						FROM #TempData
-						WHERE Bettype = 113
+						WHERE Bettype = 913
 						GROUP BY rptDate, CurrencyID
 					) 
 		UPDATE r
@@ -142,9 +143,9 @@ BEGIN
 								GROUP BY b.winlostdate, b.currency
 							)
 		UPDATE r
-		SET r.TicketPayout = p.ticketPayout
+		SET r.TicketPayout = ISNULL(p.ticketPayout, 0)
 		FROM @Result r
-			INNER JOIN ticketPayout p ON r.rptDate = p.winlostdate AND r.CurrencyID = p.currency
+			LEFT JOIN ticketPayout p ON r.rptDate = p.winlostdate AND r.CurrencyID = p.currency
 	END	
 
 	IF @FDate <= @MoveBetsDay
@@ -159,7 +160,8 @@ BEGIN
 		          CashoutValue ,
 		          BuyBackAmountSB ,
 		          BuyBackAmountBA ,
-				  CashoutComm
+				  CashoutComm,
+				  TicketPayout
 		        )		
 		SELECT b.winlostdate, b.Currency
 			, SUM(CASE WHEN b.bettype = 911 THEN b.BetCount ELSE 0 END)
@@ -168,26 +170,13 @@ BEGIN
 			, SUM(b.BuyBackAmt)
 			, SUM(b.BABuyBackAmt)
 			, SUM(CASE WHEN b.bettype = 913 THEN b.awinlost ELSE 0 END)
+			, SUM(CASE WHEN b.bettype =911 THEN b.TicketPayout ELSE 0 END)
 		FROM bodb_LicenseeReport.dbo.rptLicWinloss2 b WITH (NOLOCK)
 			INNER JOIN @tempAg ag ON b.custid = ag.custID AND b.Currency = ag.currency
 		WHERE b.winlostdate BETWEEN @FDate AND @TempToDate
 			AND b.StatusId IN (111, 112, 113)
 			AND b.Bettype IN (911, 912, 913)
-		GROUP BY b.winlostdate, b.Currency
-
-		;WITH ticketPayout AS (
-								SELECT b.winlostdate, b.Currency, SUM (b.winlost) AS ticketPayout
-								FROM bodb_LicenseeReport.dbo.rptLicWinloss2 b WITH (NOLOCK)
-									INNER JOIN (SELECT CustId FROM bodb02.dbo.f_GetCashoutCustList('ALL')) c ON b.custid = c.CustId
-								WHERE b.winlostdate BETWEEN @FDate AND @TempToDate
-									AND b.StatusId IN (111, 112, 113)
-									AND b.Bettype NOT IN (911, 912, 913, 914)
-								GROUP BY b.winlostdate, b.Currency
-							)		
-		UPDATE r
-		SET r.TicketPayout = p.ticketPayout
-		FROM @Result r
-			INNER JOIN ticketPayout p ON r.rptDate = p.winlostdate AND r.CurrencyID = r.CurrencyID
+		GROUP BY b.winlostdate, b.Currency	
 	END
 
 	-- Select Result
@@ -211,7 +200,7 @@ BEGIN
 		, SUM(r.CashoutComm) AS CashoutComm
 		, SUM(r.TicketPayout) AS AmountDue_TicketPayout
 		, SUM(r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm) AS AmountDue_Comm
-		, SUM(r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm - r.TicketPayout) AS Amount_Total
+		, SUM(r.TicketPayout - (r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm)) AS Amount_Total
 		--- USD		
 		, CAST(SUM(r.CashoutValue * e.USD) AS MONEY) AS CashoutValueUSD
 		, CAST(SUM(r.BuyBackAmountSB * e.USD) AS MONEY) AS BuyBackAmountSBUSD
@@ -221,7 +210,7 @@ BEGIN
 		, CAST(SUM(r.CashoutComm * e.USD) AS MONEY) AS CashoutCommUSD
 		, CAST(SUM(r.TicketPayout * e.USD) AS MONEY) AS AmountDue_TicketPayoutUSD
 		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm) * e.USD) AS MONEY) AS AmountDue_CommUSD
-		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm - r.TicketPayout) * e.USD) AS MONEY) AS Amount_TotalUSD
+		, CAST(SUM((r.TicketPayout - (r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm)) * e.USD) AS MONEY) AS Amount_TotalUSD
 		--- EUR		
 		, CAST(SUM(r.CashoutValue * e.EUR) AS MONEY) AS CashoutValueEUR
 		, CAST(SUM(r.BuyBackAmountSB * e.EUR) AS MONEY) AS BuyBackAmountSBEUR
@@ -231,7 +220,7 @@ BEGIN
 		, CAST(SUM(r.CashoutComm * e.EUR) AS MONEY) AS CashoutCommEUR
 		, CAST(SUM(r.TicketPayout * e.EUR) AS MONEY) AS AmountDue_TicketPayoutEUR
 		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm) * e.EUR) AS MONEY) AS AmountDue_CommEUR
-		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm - r.TicketPayout) * e.EUR) AS MONEY) AS Amount_TotalEUR
+		, CAST(SUM((r.TicketPayout - (r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm)) * e.EUR) AS MONEY) AS Amount_TotalEUR
 		--- GBP		
 		, CAST(SUM(r.CashoutValue * e.GBP) AS MONEY) AS CashoutValueGBP
 		, CAST(SUM(r.BuyBackAmountSB * e.GBP) AS MONEY) AS BuyBackAmountSBGBP
@@ -241,7 +230,7 @@ BEGIN
 		, CAST(SUM(r.CashoutComm * e.GBP) AS MONEY) AS CashoutCommGBP
 		, CAST(SUM(r.TicketPayout * e.GBP) AS MONEY) AS AmountDue_TicketPayoutGBP
 		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm) * e.GBP) AS MONEY) AS AmountDue_CommGBP
-		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm - r.TicketPayout) * e.GBP) AS MONEY) AS Amount_TotalGBP
+		, CAST(SUM((r.TicketPayout - (r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm)) * e.GBP) AS MONEY) AS Amount_TotalGBP
 	FROM @Result r
 		INNER JOIN #Exchange e ON r.rptDate = e.ExchageDate AND r.CurrencyID = e.ExchangeID
 	GROUP BY 
