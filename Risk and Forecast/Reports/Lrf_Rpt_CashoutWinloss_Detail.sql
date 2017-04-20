@@ -15,7 +15,7 @@ AS
 
 	Param's Explanation:  
 
-	exec Lrf_Rpt_CashoutWinloss_Detail @fromdate='2017-04-04 00:00:00',@todate='2017-04-04 00:00:00',@AgentList=N'<ROOT><Agent AgentId="791088" Currency="6"/><Agent AgentId="860379" Currency="6"/><Agent AgentId="2428981" Currency="6"/><Agent AgentId="2812696" Currency="6"/><Agent AgentId="3575140" Currency="6"/><Agent AgentId="4362999" Currency="6"/></ROOT>',@MoveBetsDay='2017-03-26 00:00:00' 
+	exec Lrf_Rpt_CashoutWinloss_Detail @fromdate='2017-04-17 00:00:00',@todate='2017-04-17 00:00:00',@AgentList=N'<ROOT><Agent AgentId="791088" Currency="3"/><Agent AgentId="860379" Currency="6"/><Agent AgentId="2428981" Currency="6"/><Agent AgentId="2812696" Currency="6"/><Agent AgentId="3575140" Currency="6"/><Agent AgentId="4362999" Currency="6"/></ROOT>',@MoveBetsDay='2017-04-26 00:00:00' 
 */
 
 SET NOCOUNT ON
@@ -155,6 +155,12 @@ BEGIN
 	BEGIN
 		SELECT @TempToDate = CASE WHEN @TDate >= @MoveBetsDay THEN @MoveBetsDay ELSE @TDate END
 		
+		DECLARE @tmpCust AS TABLE (CustID INT, Currency INT)
+		INSERT INTO @tmpCust (CustID, Currency)
+		SELECT DISTINCT lci.CustID, t.currency
+		FROM DBLIC.bodb_licensee.dbo.LicenseeCustInfo lci WITH (NOLOCK)
+			INNER JOIN @tempAg t ON lci.recommend = t.CustID 
+
 		INSERT INTO @Result
 		        ( rptDate ,
 		          CurrencyID ,
@@ -167,19 +173,18 @@ BEGIN
 				  CashoutComm,
 				  TicketPayout
 		        )		
-		SELECT b.winlostdate, b.Currency, b.custid
-			, SUM(CASE WHEN b.bettype = 911 THEN b.BetCount ELSE 0 END)
-			, SUM(CASE WHEN b.bettype = 911 THEN b.COTicketCount ELSE 0 END)
-			, SUM(CASE WHEN b.bettype = 912 THEN b.winlost ELSE 0 END)
+		SELECT b.winlostdate, b.Currency, b.CustID
+			, SUM(b.NumOfCashoutTrans)
+			, SUM(b.NumOfCashoutTicket)
+			, SUM(b.CashoutAmount)
 			, SUM(b.BuyBackAmt)
 			, SUM(b.BABuyBackAmt)
-			, SUM(CASE WHEN b.bettype = 913 THEN b.awinlost ELSE 0 END)
-			, SUM(CASE WHEN b.bettype = 911 THEN b.TicketPayout ELSE 0 END)
-		FROM bodb_LicenseeReport.dbo.rptLicWinloss2 b WITH (NOLOCK)
-			INNER JOIN @tempAg ag ON b.custid = ag.custID AND b.Currency = ag.currency
-		WHERE b.winlostdate BETWEEN @FDate AND @TempToDate
-			AND b.StatusId IN (111, 112, 113)
-			AND b.Bettype IN (911, 912, 913)
+			, SUM(b.CashoutComm)
+			, SUM(b.TicketPayout)
+		FROM bodb_LicenseeReport.dbo.rptLicCashoutSummary b WITH (NOLOCK)			
+			INNER JOIN @tmpCust ag ON b.custid = ag.custID AND b.Currency = ag.currency
+		WHERE b.winlostdate BETWEEN @FDate AND @TempToDate		
+			AND b.ProductID = 25	
 		GROUP BY b.winlostdate, b.Currency, b.custid
 	END
 
