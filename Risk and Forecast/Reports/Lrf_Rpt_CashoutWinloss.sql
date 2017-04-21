@@ -63,6 +63,11 @@ BEGIN
 	SELECT ExchangeId, exchangedate, Code, USD, EUR, GBP	
 	FROM Lrf_f_GetExchangeDaily(@FDate, @TDate)	
 
+	CREATE TABLE #CashoutCust (CustId INT PRIMARY KEY)
+
+	INSERT INTO #CashoutCust(CustId)
+	SELECT CustId FROM bodb02.dbo.f_GetCashoutCustList('ALL', 14) -- Cashout
+
 	CREATE TABLE #TempData (
 				rptDate		SMALLDATETIME,
 				CurrencyID	INT,
@@ -174,7 +179,7 @@ BEGIN
 		FROM bodb_LicenseeReport.dbo.rptLicCashoutSummary b WITH (NOLOCK)
 			INNER JOIN @tempAg ag ON b.Recommend = ag.custID AND b.Currency = ag.currency
 		WHERE b.winlostdate BETWEEN @FDate AND @TempToDate
-			AND b.RoleID = 1 AND b.ProductID = 25
+			AND b.RoleID = 1 AND b.ProductID = 25			
 		GROUP BY b.winlostdate, b.Currency	
 	END
 
