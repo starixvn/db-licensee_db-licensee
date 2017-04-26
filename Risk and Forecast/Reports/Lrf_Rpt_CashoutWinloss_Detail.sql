@@ -15,7 +15,7 @@ AS
 
 	Param's Explanation:  
 
-	exec Lrf_Rpt_CashoutWinloss_Detail @fromdate='2017-04-17 00:00:00',@todate='2017-04-17 00:00:00',@AgentList=N'<ROOT><Agent AgentId="791088" Currency="3"/><Agent AgentId="860379" Currency="6"/><Agent AgentId="2428981" Currency="6"/><Agent AgentId="2812696" Currency="6"/><Agent AgentId="3575140" Currency="6"/><Agent AgentId="4362999" Currency="6"/></ROOT>',@MoveBetsDay='2017-04-26 00:00:00' 
+	exec Lrf_Rpt_CashoutWinloss_Detail_xtest @fromdate='2017-04-20 00:00:00',@todate='2017-04-20 00:00:00',@AgentList=N'<ROOT><Agent AgentId="791088" Currency="3"/><Agent AgentId="860379" Currency="6"/><Agent AgentId="2428981" Currency="6"/><Agent AgentId="2812696" Currency="6"/><Agent AgentId="3575140" Currency="6"/><Agent AgentId="4362999" Currency="6"/></ROOT>',@MoveBetsDay='2017-04-18 00:00:00' 
 */
 
 SET NOCOUNT ON
@@ -60,6 +60,10 @@ BEGIN
 	INSERT INTO #Exchange(ExchangeID, ExchageDate, Code, USD, EUR, GBP)
 	SELECT ExchangeId, exchangedate, Code, USD, EUR, GBP	
 	FROM Lrf_f_GetExchangeDaily(@FDate, @TDate)	
+
+	CREATE TABLE #CashoutCust (CustId INT PRIMARY KEY)
+	INSERT INTO #CashoutCust(CustId)
+	SELECT CustId FROM bodb02.dbo.f_GetCashoutCustList('ALL', 14) -- VendorID of Cashout
 
 	CREATE TABLE #TempData (
 				rptDate		SMALLDATETIME,
@@ -107,23 +111,28 @@ BEGIN
 			AND b.statusID IN (111, 112, 113)
 		
 		UPDATE t
-		SET CashoutComm = (SELECT c.awinlost FROM #TempData c WHERE c.Bettype = 913 AND t.Transid = c.Refno)
+		SET CashoutComm = c.awinlost
 		FROM #TempData t
+			INNER JOIN (
+							SELECT c.awinlost, c.Refno 
+							FROM #TempData c 
+							WHERE c.Bettype = 913
+						) c ON t.Transid = c.Refno
 		WHERE t.Bettype = 911
 
 		;WITH ticketPayout AS (
-								SELECT b.winlostdate, b.currency, b.refno, SUM(b.winlost) AS ticketPayout
-								FROM dbo.bettrans b WITH (NOLOCK)
-								WHERE b.bettype NOT IN (911, 912, 913, 914)
-									AND b.refno IN (SELECT Transid FROM #TempData WHERE Bettype = 911)
-								GROUP BY b.winlostdate, b.currency, b.refno
+								SELECT b.refno, b.winlost AS ticketPayout
+								FROM dbo.bettrans b WITH (NOLOCK)		
+									INNER JOIN #CashoutCust ctc ON b.CustId = ctc.CustId							
+								WHERE b.bettype NOT IN (911, 912, 913, 914)									
+									AND b.winlostdate BETWEEN @TempFromDate AND @TDate
+									AND b.statusID IN (111, 112, 113)	
 							)
 		UPDATE t
 		SET t.TicketPayout = ISNULL(p.ticketPayout, 0)
 		FROM #TempData t
-			LEFT JOIN ticketPayout p ON t.rptDate = p.winlostdate AND t.CurrencyID = p.currency AND p.refno = t.Transid
-
-		
+			INNER JOIN ticketPayout p ON p.refno = t.Transid
+					
 		INSERT INTO @Result
 		        ( rptDate ,
 		          CurrencyID ,
@@ -155,12 +164,6 @@ BEGIN
 	BEGIN
 		SELECT @TempToDate = CASE WHEN @TDate >= @MoveBetsDay THEN @MoveBetsDay ELSE @TDate END
 		
-		DECLARE @tmpCust AS TABLE (CustID INT, Currency INT)
-		INSERT INTO @tmpCust (CustID, Currency)
-		SELECT DISTINCT lci.CustID, t.currency
-		FROM DBLIC.bodb_licensee.dbo.LicenseeCustInfo lci WITH (NOLOCK)
-			INNER JOIN @tempAg t ON lci.recommend = t.CustID 
-
 		INSERT INTO @Result
 		        ( rptDate ,
 		          CurrencyID ,
@@ -182,9 +185,10 @@ BEGIN
 			, SUM(b.CashoutComm)
 			, SUM(b.TicketPayout)
 		FROM bodb_LicenseeReport.dbo.rptLicCashoutSummary b WITH (NOLOCK)			
-			INNER JOIN @tmpCust ag ON b.custid = ag.custID AND b.Currency = ag.currency
+			INNER JOIN @tempAg ag ON b.Recommend = ag.custID AND b.Currency = ag.currency
 		WHERE b.winlostdate BETWEEN @FDate AND @TempToDate		
 			AND b.ProductID = 25	
+			AND b.RoleID = 1
 		GROUP BY b.winlostdate, b.Currency, b.custid
 	END
 
@@ -252,6 +256,7 @@ BEGIN
 
 	DROP TABLE #TempData
 	DROP TABLE #Exchange
+	DROP TABLE #CashoutCust
 END
 GO
 

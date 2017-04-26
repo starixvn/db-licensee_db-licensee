@@ -16,7 +16,7 @@ AS
 
 	Param's Explanation:  
 
-	exec Lrf_Rpt_CashoutWinloss @fromdate='2017-04-17 00:00:00',@todate='2017-04-17 00:00:00',@ReportType = 1,@AgentList=N'<ROOT><Agent AgentId="791088" Currency="3"/><Agent AgentId="860379" Currency="6"/><Agent AgentId="2428981" Currency="6"/><Agent AgentId="2812696" Currency="6"/><Agent AgentId="3575140" Currency="6"/><Agent AgentId="4362999" Currency="6"/></ROOT>',@MoveBetsDay='2017-04-26 00:00:00' 
+	exec Lrf_Rpt_CashoutWinloss @fromdate='2017-04-24 00:00:00',@todate='2017-04-24 00:00:00',@ReportType = 1,@AgentList=N'<ROOT><Agent AgentId="791088" Currency="3"/><Agent AgentId="860379" Currency="6"/><Agent AgentId="2428981" Currency="6"/><Agent AgentId="2812696" Currency="6"/><Agent AgentId="3575140" Currency="6"/><Agent AgentId="4362999" Currency="6"/></ROOT>',@MoveBetsDay='2017-04-20 00:00:00' 
  
 */
 
@@ -77,7 +77,10 @@ BEGIN
 				Actual_stake MONEY, 
 				winlost		MONEY, 
 				awinlost	MONEY, 
-				transid2	INT
+				transid2	INT,
+				CustID		INT,
+				CashoutComm	MONEY, 
+				TicketPayout MONEY
 	)
 
 	DECLARE @Result AS TABLE (
@@ -109,6 +112,29 @@ BEGIN
 			AND b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND b.statusID IN (111, 112, 113)
 
+		UPDATE t
+		SET CashoutComm = c.awinlost
+		FROM #TempData t
+			INNER JOIN (
+							SELECT c.awinlost, c.Refno 
+							FROM #TempData c 
+							WHERE c.Bettype = 913
+						) c ON t.Transid = c.Refno
+		WHERE t.Bettype = 911
+
+		;WITH ticketPayout AS (
+								SELECT b.refno, b.winlost AS ticketPayout
+								FROM dbo.bettrans b WITH (NOLOCK)		
+									INNER JOIN #CashoutCust ctc ON b.CustId = ctc.CustId							
+								WHERE b.bettype NOT IN (911, 912, 913, 914)									
+									AND b.winlostdate BETWEEN @TempFromDate AND @TDate
+									AND b.statusID IN (111, 112, 113)	
+							)
+		UPDATE t
+		SET t.TicketPayout = ISNULL(p.ticketPayout, 0)
+		FROM #TempData t
+			INNER JOIN ticketPayout p ON p.refno = t.Transid
+
 		INSERT INTO @Result
 		        ( rptDate ,
 		          CurrencyID ,
@@ -127,30 +153,8 @@ BEGIN
 				SUM(CASE WHEN b.transid2 = 1 THEN b.winlost ELSE 0 END) AS BuyBackAmountBA
 		FROM #TempData b
 		WHERE b.bettype = 911			
-		GROUP BY b.rptDate, b.CurrencyID
+		GROUP BY b.rptDate, b.CurrencyID	
 		
-		;WITH comm AS (
-						SELECT rptDate, CurrencyID, SUM(awinlost) AS CashoutComm
-						FROM #TempData
-						WHERE Bettype = 913
-						GROUP BY rptDate, CurrencyID
-					) 
-		UPDATE r
-		SET r.CashoutComm = c.CashoutComm
-		FROM @Result r 
-			INNER JOIN comm c ON r.rptDate = c.rptDate AND r.CurrencyID = c.CurrencyID
-		
-		;WITH ticketPayout AS (
-								SELECT b.winlostdate, b.currency, SUM(b.winlost) AS ticketPayout
-								FROM dbo.bettrans b WITH (NOLOCK)
-								WHERE b.bettype NOT IN (911, 912, 913, 914)
-									AND b.refno IN (SELECT Transid FROM #TempData WHERE Bettype = 911)
-								GROUP BY b.winlostdate, b.currency
-							)
-		UPDATE r
-		SET r.TicketPayout = ISNULL(p.ticketPayout, 0)
-		FROM @Result r
-			LEFT JOIN ticketPayout p ON r.rptDate = p.winlostdate AND r.CurrencyID = p.currency
 	END	
 
 	IF @FDate <= @MoveBetsDay
@@ -250,6 +254,7 @@ BEGIN
 
 	DROP TABLE #TempData
 	DROP TABLE #Exchange
+	DROP TABLE #CashoutCust
 END
 GO
 
