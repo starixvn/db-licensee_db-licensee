@@ -15,7 +15,7 @@ AS
 
 	Param's Explanation:  
 
-	exec Lrf_Rpt_CashoutWinloss_Detail_xtest @fromdate='2017-04-20 00:00:00',@todate='2017-04-20 00:00:00',@AgentList=N'<ROOT><Agent AgentId="791088" Currency="3"/><Agent AgentId="860379" Currency="6"/><Agent AgentId="2428981" Currency="6"/><Agent AgentId="2812696" Currency="6"/><Agent AgentId="3575140" Currency="6"/><Agent AgentId="4362999" Currency="6"/></ROOT>',@MoveBetsDay='2017-04-18 00:00:00' 
+	exec Lrf_Rpt_CashoutWinloss_Detail @fromdate='2017-04-20 00:00:00',@todate='2017-04-20 00:00:00',@AgentList=N'<ROOT><Agent AgentId="791088" Currency="3"/><Agent AgentId="860379" Currency="6"/><Agent AgentId="2428981" Currency="6"/><Agent AgentId="2812696" Currency="6"/><Agent AgentId="3575140" Currency="6"/><Agent AgentId="4362999" Currency="6"/></ROOT>',@MoveBetsDay='2017-04-18 00:00:00' 
 */
 
 SET NOCOUNT ON
@@ -125,8 +125,7 @@ BEGIN
 								FROM dbo.bettrans b WITH (NOLOCK)		
 									INNER JOIN #CashoutCust ctc ON b.CustId = ctc.CustId							
 								WHERE b.bettype NOT IN (911, 912, 913, 914)									
-									AND b.winlostdate BETWEEN @TempFromDate AND @TDate
-									AND b.statusID IN (111, 112, 113)	
+									AND b.winlostdate BETWEEN @TempFromDate AND @TDate										
 							)
 		UPDATE t
 		SET t.TicketPayout = ISNULL(p.ticketPayout, 0)

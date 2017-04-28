@@ -127,8 +127,7 @@ BEGIN
 								FROM dbo.bettrans b WITH (NOLOCK)		
 									INNER JOIN #CashoutCust ctc ON b.CustId = ctc.CustId							
 								WHERE b.bettype NOT IN (911, 912, 913, 914)									
-									AND b.winlostdate BETWEEN @TempFromDate AND @TDate
-									AND b.statusID IN (111, 112, 113)	
+									AND b.winlostdate BETWEEN @TempFromDate AND @TDate										
 							)
 		UPDATE t
 		SET t.TicketPayout = ISNULL(p.ticketPayout, 0)
