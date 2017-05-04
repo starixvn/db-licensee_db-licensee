@@ -1,5 +1,6 @@
 ﻿USE [bodb02]
 GO
+
 ALTER PROCEDURE [dbo].[Lrf_Rpt_TurnOver]
 	@FromDate       SMALLDATETIME,  
     @ToDate         SMALLDATETIME,   
@@ -20,6 +21,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_TurnOver]
 	@ShowVB			BIT = 0,
 	@ShowCB			BIT = 0,
 	@ShowFW 		BIT = 0,
+	@ShowCO			BIT = 0,
 	@AgentList		VARCHAR(MAX)
 AS 
 /*
@@ -59,6 +61,7 @@ Revisions:
    - 20160913@Jim : LRF - Implement Colossus Bets [Redmine: #63785]
    - 20161115@Jim: LRF - Integrate new product Fishing World [RedmineID : #66737]
    - 20170301@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest, @LicenseeType [Redmine: #71679]
+   - 20170328@Harper: LRF - Integrate new product Cashout [#71727]
 
 Param's Explanation:
     
@@ -119,6 +122,7 @@ BEGIN
 		INSERT INTO @sporttype(sporttype) VALUES(-3)
 	END
 	IF @ShowFW		= 1 INSERT INTO @sporttype(sporttype) VALUES(219)
+	IF @ShowCO		= 1 INSERT INTO @sporttype(sporttype) VALUES(-6), (-7)
 
 	IF @username <> ''
 	BEGIN
@@ -269,7 +273,7 @@ BEGIN
 					SELECT
 						p.winlostdate,
 						c.currency,
-						SUM(ISNULL(CASE WHEN p.sporttype IN (-2,-3,-5) THEN 0 ELSE p.turnover END, 0)) AS Turnover,
+						SUM(ISNULL(CASE WHEN p.sporttype IN (-2,-3,-5,-6,-7) THEN 0 ELSE p.turnover END, 0)) AS Turnover,
 						SUM(ISNULL(p.outstanding, 0)) AS PendingFund,
 						SUM(ISNULL(p.winlost, 0)) AS Winloss, 
 						SUM(ISNULL(p.drawTO, 0)) AS DrawGame,
@@ -334,7 +338,7 @@ BEGIN
 					SELECT
 						p.winlostdate,
 						c.currency,
-						SUM(ISNULL(CASE WHEN p.sporttype IN (-2,-3,-5) THEN 0 ELSE p.turnover END, 0)) AS Turnover,
+						SUM(ISNULL(CASE WHEN p.sporttype IN (-2,-3,-5,-6,-7) THEN 0 ELSE p.turnover END, 0)) AS Turnover,
 						SUM(ISNULL(p.outstanding, 0)) AS PendingFund,
 						SUM(ISNULL(p.winlost, 0)) AS Winloss,
 						SUM(ISNULL(p.drawTO, 0)) AS DrawGame,

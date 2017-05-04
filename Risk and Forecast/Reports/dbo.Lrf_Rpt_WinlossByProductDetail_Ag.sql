@@ -59,6 +59,7 @@ AS
 	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
 	- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+	- 20170327@Paul: Implement Cash Out [RedmineID :#71727]
 
 	Param's Explanation:  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -280,7 +281,8 @@ BEGIN
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
 			b.statusID IN (111, 112, 113) 
-			AND b.bettype NOT IN (901,902,903,904)
+			AND (b.bettype < 901 OR b.bettype > 904)
+			AND (b.bettype < 911 OR b.bettype > 914)
 		GROUP BY   
 			b.winlostdate,b.recommend,tma.currency, b.statusID
 	END
@@ -321,7 +323,8 @@ BEGIN
 						  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 			) AND
 			b.statusID  IN (111, 112, 113) 
-			AND b.bettype NOT IN (901,902,903,904)
+			AND (b.bettype < 901 OR b.bettype > 904)
+			AND (b.bettype < 911 OR b.bettype > 914)
 			AND b.tpositiontaking<>0
 			
 		GROUP BY   
@@ -490,7 +493,8 @@ BEGIN
 			 b.Winlostdate BETWEEN @FDate AND @TempToDate  
 			AND b.roleid = 2   
 			AND b.statusID <> 101 --exclude REJECT bets
-			AND b.bettype NOT IN (901,902,903,904)
+			AND (b.bettype < 901 OR b.bettype > 904)
+			AND (b.bettype < 911 OR b.bettype > 914)
 			AND ISNULL(b.isBA,0) = 1
 		GROUP BY  b.winlostdate, b.recommend,b.currency, b.statusID
 	END
@@ -542,7 +546,8 @@ BEGIN
 			AND b.roleid = 2
 			AND b.sporttype<>180
 			AND b.statusID <> 101 --exclude REJECT bets
-			AND b.bettype NOT IN (901,902,903,904)
+			AND (b.bettype < 901 OR b.bettype > 904)
+			AND (b.bettype < 911 OR b.bettype > 914)
 			AND ISNULL(b.isBA,0) = 0
 		GROUP BY  
 			b.winlostdate, b.recommend,b.currency, 

@@ -13,6 +13,7 @@ AS
 
 	Revisions:
 		- 20170119@Joseph: Copy from Lrf_Rpt_TurnOver [RedmineID: #70616]
+		- 20170323@Paul: Implement Cash Out [RedmineID: #71727]
 	Param's Explanation:
 	
 */
@@ -53,6 +54,7 @@ BEGIN
 			SUM(ISNULL(p.outstanding,0)) AS PendingFund
 	FROM bodb_Report.dbo.rptdepwinlostbyproduct_SUM p WITH(NOLOCK)  
 		INNER JOIN #tmpAg a ON a.CustID = p.custid
+	WHERE sporttype NOT IN (-6, -7, -8, -9)
 	GROUP BY p.winlostdate, a.currency
 	HAVING SUM(ISNULL(p.outstanding,0)) > 0;
  
@@ -66,7 +68,8 @@ BEGIN
 	FROM bodb_Report.dbo.rptDepWinlostByProduct p WITH(NOLOCK)    
 		INNER JOIN dbo.Customer c WITH(NOLOCK) ON p.custid = c.custid
 		INNER JOIN #tmpAg a ON a.CustID = c.Recommend
-	WHERE c.roleid = 1                  
+	WHERE c.roleid = 1
+		AND sporttype NOT IN (-6, -7, -8, -9)        
 	GROUP BY p.winlostdate, a.currency
 	HAVING SUM(ISNULL(p.outstanding,0)) > 0;
 

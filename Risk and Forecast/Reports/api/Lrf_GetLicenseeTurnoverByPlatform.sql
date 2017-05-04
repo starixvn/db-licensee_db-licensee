@@ -26,15 +26,15 @@ AS
 	Original: Lrf_Rpt_PlatformWinloss
 	Revisions:
 		- 20170207@Paul: Create new [RedmineID: #70616]
+		- 20170323@Paul: Implement Cash Out [RedmineID: #71727]
 
 	Param's Explanation:  
-	  + @MoveBetsDay: The day we move tickets to bettrans14
 */
     
 BEGIN      
 	SET NOCOUNT ON;
 
-	IF DATEDIFF(MONTH,@FromDate,@ToDate) > 1
+	IF DATEDIFF(MONTH,@FromDate,@ToDate) > 0
 		RETURN;
 
 	CREATE TABLE #WinLoss (
@@ -49,7 +49,7 @@ BEGIN
 			@FDate SMALLDATETIME,
 			@TDate SMALLDATETIME;
 
-	CREATE TABLE #tempAg	(custID INT, Currency INT);
+	CREATE TABLE #tempAg(custID INT, Currency INT);
 
 	CREATE CLUSTERED INDEX ix_tempAg_cl ON #tempAg(Currency, custID);
 
@@ -112,7 +112,8 @@ BEGIN
 			AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
 								OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 			) 
-			AND b.bettype NOT IN (901,902,903,904)
+			AND (b.bettype < 901 OR b.bettype > 904)
+			AND (b.bettype < 911 OR b.bettype > 914)
 			AND b.tpositiontaking <> 0
 		GROUP BY  b.winlostdate, 
 				tma.currency, 
