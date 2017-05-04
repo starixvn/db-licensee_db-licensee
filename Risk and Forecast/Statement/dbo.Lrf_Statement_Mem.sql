@@ -64,6 +64,7 @@ BEGIN
 		SELECT 1
 		FROM TradeCust WITH(NOLOCK)
 		WHERE custid = @CustID
+			AND VendorID = 14
 	)
 	BEGIN
 		SET @IsCOMember = 1
