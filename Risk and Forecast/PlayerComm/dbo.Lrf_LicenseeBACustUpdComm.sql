@@ -20,9 +20,17 @@ DB: DBLIC/bodb_licensee
 Revision:
 	-20151005@Jim:HotFix #45031
 	-20160805@Jim: LRF - Offer different member commission for parlay tickets [RedmineID:#61897]
+	-20170509@Winnie: LRF-Set back VR setting=0 for BA members [RedmineID:#76231]
 */
 DECLARE @SBComm [decimal](9,8), @ParlayComm [decimal](9,8)
 	SELECT  @SBComm = 0 , @ParlayComm = 0
+
+DECLARE @ProfileID INT
+SELECT @ProfileID=profileID FROM DBCUST.CUSTDB.dbo.ProfileVirtualSetting WITH(NOLOCK) WHERE sporttype=1 AND bettype=1 AND islive=1
+
+
+DECLARE @VirtualMultiplier VARCHAR(MAX)
+SELECT @VirtualMultiplier = '<ROOT>	<Rate CustIds="' + CONVERT(VARCHAR(50),@CustID) + '" VirtualMultiplier="1.0" />	</ROOT>' 
 		
 SELECT @SBComm = lgc.SBComm
 	   ,@ParlayComm = lgc.ParlayComm
@@ -44,6 +52,10 @@ IF (@IsBA =1 )	--- Turn-on BA
 			IF  NOT EXISTS (SELECT 1 FROM dbo.licensees WITH (NOLOCK) WHERE LicenseeName='Macaubet' AND LicenseeId=@LicenseeID )	
 			BEGIN
 				EXEC  DBCUST.CustDB.dbo.Lrf_LicenseeBACust_Playerdiscount_Upd @CustID = @CustID,@SBComm=0, @ParlayComm = 0
+			END
+			IF EXISTS(SELECT TOP 1 1 FROM DBCUST.CUSTDB.dbo.CustVirtualSetting WITH(NOLOCK)	WHERE custid=@CustID AND seqNo=1 AND SUBSTRING(bitmapVirtual,1+((@ProfileID-1)%64), 1)=0xDC)
+			BEGIN			
+				EXEC DBCUST.CustDB.dbo.Acc_CustSetting_10 @VirtualMultiplier = @VirtualMultiplier
 			END
 	END
 ELSE IF (@IsBA = 0 ) -- Turn-off BA
