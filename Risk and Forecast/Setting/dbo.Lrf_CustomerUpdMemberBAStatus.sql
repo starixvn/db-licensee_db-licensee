@@ -386,11 +386,11 @@ IF @isBA = 1 --enable BA
 
 		-- update VR
 		SELECT @ProfileID = ProfileID FROM DBCUST.CUSTDB.dbo.[ProfileVirtualSetting] WITH(NOLOCK) WHERE sporttype=1 and bettype=1 and islive=1
-		SELECT @bitmap = [bitmapVirtual] FROM DBCUST.CUSTDB.[dbo].[CustVirtualSetting] WITH(NOLOCK) WHERE seqNo=1
-
-		IF ([dbo].[f_GetVirtualSetting](@ProfileID,@bitmap))=1 
+		SELECT @bitmap = [bitmapVirtual] FROM DBCUST.CUSTDB.[dbo].[CustVirtualSetting] WITH(NOLOCK) WHERE custid=@CustID AND seqNo=1 
+		
+		IF ([dbo].[f_GetVirtualSetting](@bitmap,@ProfileID))=3
 			BEGIN			
-				EXEC DBCUST.CustDB.dbo.Acc_CustSetting_10 @VirtualMultiplier = @VirtualMultiplier
+				EXEC dbo.Acc_CustSetting_10 @VirtualMultiplier = @VirtualMultiplier
 			END
 		
 END
@@ -714,6 +714,7 @@ ELSE --disable BA
 				END
 		END
 	END
+
 
 GO
 
