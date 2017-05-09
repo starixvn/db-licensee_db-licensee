@@ -4,7 +4,7 @@ GO
 SET ANSI_NULLS ON 
 GO
 
- CREATE PROCEDURE [dbo].[Lrf_CustomerUpdMemberBAStatus]
+ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberBAStatus]
 	@LicenseeID INT,
 	@CustID INT,
 	@ModifyBy INT,
@@ -55,7 +55,7 @@ Revisions:
 	- 20150306@Patrick: Copy BA member to Dep_ActiveBAMember table [Redmine: #31720]
 	- 20150513@Jim: set SB comm of BA member when BA status changing
 	- 20151015@Jim: Integrate Sportbook2 (Feature #44759)
-	
+	- 20170509@Winnie: LRF-Set back VR setting=0 for BA members [RedmineID:#76231]
 Param's Explanation:
 
 */
@@ -68,7 +68,11 @@ DECLARE @currency INT
 DECLARE @CurrencyUgroup VARCHAR(3)
 DECLARE @IsPowerBAUser BIT
 DECLARE @LastOffBy INT
+DECLARE @bitmap binary(64)
+DECLARE @ProfileID INT
 
+DECLARE @VirtualMultiplier VARCHAR(MAX)
+SELECT @VirtualMultiplier = '<ROOT>	<Rate CustIds="' + CONVERT(VARCHAR(50),@CustID) + '" VirtualMultiplier="1.0" />	</ROOT>' 
 
 IF @IsAdmin = 0 --This is only for LRF system
 BEGIN
@@ -379,6 +383,15 @@ IF @isBA = 1 --enable BA
 			@LicenseeID = @LicenseeID ,
 			@CustID     = @CustID ,
 			@IsBA		= 1
+
+		-- update VR
+		SELECT @ProfileID = ProfileID FROM DBCUST.CUSTDB.dbo.[ProfileVirtualSetting] WITH(NOLOCK) WHERE sporttype=1 and bettype=1 and islive=1
+		SELECT @bitmap = [bitmapVirtual] FROM DBCUST.CUSTDB.[dbo].[CustVirtualSetting] WITH(NOLOCK) WHERE seqNo=1
+
+		IF ([dbo].[f_GetVirtualSetting](@ProfileID,@bitmap))=1 
+			BEGIN			
+				EXEC DBCUST.CustDB.dbo.Acc_CustSetting_10 @VirtualMultiplier = @VirtualMultiplier
+			END
 		
 END
 ELSE --disable BA
