@@ -25,9 +25,10 @@ Revision:
 DECLARE @SBComm [decimal](9,8), @ParlayComm [decimal](9,8)
 	SELECT  @SBComm = 0 , @ParlayComm = 0
 
+DECLARE @bitmap binary(64)
 DECLARE @ProfileID INT
-SELECT @ProfileID=profileID FROM DBCUST.CUSTDB.dbo.ProfileVirtualSetting WITH(NOLOCK) WHERE sporttype=1 AND bettype=1 AND islive=1
-
+SELECT @ProfileID = ProfileID FROM DBCUST.CUSTDB.dbo.[ProfileVirtualSetting] WITH(NOLOCK) WHERE sporttype=1 and bettype=1 and islive=1
+SELECT @bitmap = [bitmapVirtual] FROM DBCUST.CUSTDB.[dbo].[CustVirtualSetting] WITH(NOLOCK) WHERE seqNo=1
 
 DECLARE @VirtualMultiplier VARCHAR(MAX)
 SELECT @VirtualMultiplier = '<ROOT>	<Rate CustIds="' + CONVERT(VARCHAR(50),@CustID) + '" VirtualMultiplier="1.0" />	</ROOT>' 
@@ -53,7 +54,7 @@ IF (@IsBA =1 )	--- Turn-on BA
 			BEGIN
 				EXEC  DBCUST.CustDB.dbo.Lrf_LicenseeBACust_Playerdiscount_Upd @CustID = @CustID,@SBComm=0, @ParlayComm = 0
 			END
-			IF EXISTS(SELECT TOP 1 1 FROM DBCUST.CUSTDB.dbo.CustVirtualSetting WITH(NOLOCK)	WHERE custid=@CustID AND seqNo=1 AND SUBSTRING(bitmapVirtual,1+((@ProfileID-1)%64), 1)=0xDC)
+			IF (SELECT top 1 val FROM [dbo].[f_GetVirtualSetting](@ProfileID,@bitmap))=1 
 			BEGIN			
 				EXEC DBCUST.CustDB.dbo.Acc_CustSetting_10 @VirtualMultiplier = @VirtualMultiplier
 			END
