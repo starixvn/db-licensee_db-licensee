@@ -386,8 +386,7 @@ IF @isBA = 1 --enable BA
 			@IsBA		= 1
 
 		-- RF-Set back VR setting=0 for BA members
-		SELECT @ProfileID	= ProfileID FROM dbo.[ProfileVirtualSetting] WITH(NOLOCK) WHERE sporttype=1 and bettype=1 and islive=1
-		SELECT @SeqNo		= seqNo FROM [ProfileVirtualSetting] WITH(NOLOCK) WHERE profileID=@ProfileID
+		SELECT @ProfileID	= ProfileID,@SeqNo=seqNo FROM dbo.[ProfileVirtualSetting] WITH(NOLOCK) WHERE sporttype=1 and bettype=1 and islive=1	
 		SELECT @bitmap = [bitmapVirtual] FROM [dbo].[CustVirtualSetting] WITH(NOLOCK) WHERE custid=@CustID AND seqNo= @SeqNo
 		
 		IF (SELECT val FROM [dbo].[f_GetVirtualRateSetting](@bitmap,@ProfileID))=3
