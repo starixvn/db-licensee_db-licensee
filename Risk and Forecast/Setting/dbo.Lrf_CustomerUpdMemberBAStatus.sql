@@ -384,11 +384,11 @@ IF @isBA = 1 --enable BA
 			@CustID     = @CustID ,
 			@IsBA		= 1
 
-		-- update VR
+		-- RF-Set back VR setting=0 for BA members
 		SELECT @ProfileID = ProfileID FROM dbo.[ProfileVirtualSetting] WITH(NOLOCK) WHERE sporttype=1 and bettype=1 and islive=1
-		SELECT @bitmap = [bitmapVirtual] FROM [dbo].[CustVirtualSetting] WITH(NOLOCK) WHERE custid=@CustID AND seqNo=1 
+		SELECT @bitmap = [bitmapVirtual] FROM [dbo].[CustVirtualSetting] WITH(NOLOCK) WHERE custid=@CustID AND seqNo= (SELECT seqNo FROM [ProfileVirtualSetting] WITH(NOLOCK) WHERE profileID=@ProfileID ) 
 		
-		IF ([dbo].[f_GetVirtualSetting](@bitmap,@ProfileID))=3
+		IF (SELECT val FROM [dbo].[f_GetVirtualRateSetting](@bitmap,@ProfileID))=3
 			BEGIN			
 				EXEC dbo.Acc_CustSetting_10 @VirtualMultiplier = @VirtualMultiplier
 			END
