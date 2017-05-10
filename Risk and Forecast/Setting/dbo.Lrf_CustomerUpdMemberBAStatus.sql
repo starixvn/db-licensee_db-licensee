@@ -70,6 +70,7 @@ DECLARE @IsPowerBAUser BIT
 DECLARE @LastOffBy INT
 DECLARE @bitmap binary(64)
 DECLARE @ProfileID INT
+DECLARE @SeqNo INT
 
 DECLARE @VirtualMultiplier VARCHAR(MAX)
 SELECT @VirtualMultiplier = '<ROOT>	<Rate CustIds="' + CONVERT(VARCHAR(50),@CustID) + '" VirtualMultiplier="1.0" />	</ROOT>' 
@@ -385,8 +386,9 @@ IF @isBA = 1 --enable BA
 			@IsBA		= 1
 
 		-- RF-Set back VR setting=0 for BA members
-		SELECT @ProfileID = ProfileID FROM dbo.[ProfileVirtualSetting] WITH(NOLOCK) WHERE sporttype=1 and bettype=1 and islive=1
-		SELECT @bitmap = [bitmapVirtual] FROM [dbo].[CustVirtualSetting] WITH(NOLOCK) WHERE custid=@CustID AND seqNo= (SELECT seqNo FROM [ProfileVirtualSetting] WITH(NOLOCK) WHERE profileID=@ProfileID ) 
+		SELECT @ProfileID	= ProfileID FROM dbo.[ProfileVirtualSetting] WITH(NOLOCK) WHERE sporttype=1 and bettype=1 and islive=1
+		SELECT @SeqNo		= seqNo FROM [ProfileVirtualSetting] WITH(NOLOCK) WHERE profileID=@ProfileID
+		SELECT @bitmap = [bitmapVirtual] FROM [dbo].[CustVirtualSetting] WITH(NOLOCK) WHERE custid=@CustID AND seqNo= @SeqNo
 		
 		IF (SELECT val FROM [dbo].[f_GetVirtualRateSetting](@bitmap,@ProfileID))=3
 			BEGIN			
