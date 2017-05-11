@@ -71,10 +71,9 @@ DECLARE @LastOffBy INT
 DECLARE @bitmap binary(64)
 DECLARE @ProfileID INT
 DECLARE @SeqNo INT
-
 DECLARE @VirtualMultiplier VARCHAR(MAX)
-SELECT @VirtualMultiplier = '<ROOT>	<Rate CustIds="' + CONVERT(VARCHAR(50),@CustID) + '" VirtualMultiplier="1.0" />	</ROOT>' 
-
+DECLARE @virtualmultiplierXML XML
+DECLARE @EnableVirtualrate BIT=0
 IF @IsAdmin = 0 --This is only for LRF system
 BEGIN
 	--For Power BA users, no need to call function [Lrf_BATimeCheck]
@@ -386,14 +385,28 @@ IF @isBA = 1 --enable BA
 			@IsBA		= 1
 
 		-- RF-Set back VR setting=0 for BA members
+		SELECT @EnableVirtualrate= VirtualMultiplier FROM custInfo WITH(NOLOCK) WHERE custid=@CustID
 		SELECT @ProfileID	= ProfileID,@SeqNo=seqNo FROM dbo.[ProfileVirtualSetting] WITH(NOLOCK) WHERE sporttype=1 and bettype=1 and islive=1	
-		SELECT @bitmap = [bitmapVirtual] FROM [dbo].[CustVirtualSetting] WITH(NOLOCK) WHERE custid=@CustID AND seqNo= @SeqNo
-		
-		IF (SELECT val FROM [dbo].[f_GetVirtualRateSetting](@bitmap,@ProfileID))=3
-			BEGIN			
-				EXEC dbo.Acc_CustSetting_10 @VirtualMultiplier = @VirtualMultiplier
-			END
-		
+		SELECT @bitmap = [bitmapVirtual] FROM [dbo].[CustVirtualSetting] WITH(NOLOCK) WHERE custid=@CustID AND seqNo= @SeqNo	
+		IF(@EnableVirtualrate=1 AND  (SELECT val FROM [dbo].[f_GetVirtualRateSetting](@bitmap,@ProfileID))=3 )
+		BEGIN
+		SELECT @virtualmultiplierXML =(
+								SELECT (
+										SELECT	sporttype	AS '@SportType'
+											,	bettype		AS '@Bettype'
+											,	IsLive		AS '@IsLive'
+											,	1			AS '@VirtualMultiplier'
+										FROM ProfileVirtualSetting
+										FOR XML PATH('Rate')
+											, TYPE
+										)
+								FOR XML PATH('ROOT')
+									, TYPE
+								)
+
+		SELECT @VirtualMultiplier = CONVERT(VARCHAR(MAX),@virtualmultiplierXML)					
+		EXEC dbo.[Acc_CustomerUpdVirtualMultiplier] @custid=@CustID,@EnableVirtualrate=@EnableVirtualrate,@VirtualMultiplier = @VirtualMultiplier,@Userid=@ModifyBy,@IP=@IP,@IsLicenseeUser=1,@ErrCode=@ErrCode,@ErrMsg=@ErrMsg	
+		END
 END
 ELSE --disable BA
 	BEGIN
