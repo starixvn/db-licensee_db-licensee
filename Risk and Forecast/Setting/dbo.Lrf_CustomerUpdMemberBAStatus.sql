@@ -393,10 +393,10 @@ IF @isBA = 1 --enable BA
 		SELECT @virtualmultiplierXML =(
 								SELECT (
 										SELECT	sporttype	AS '@SportType'
-											,	bettype		AS '@Bettype'
+											,	bettype		AS '@BetType'
 											,	IsLive		AS '@IsLive'
 											,	1			AS '@VirtualMultiplier'
-										FROM ProfileVirtualSetting
+										FROM ProfileVirtualSetting 
 										FOR XML PATH('Rate')
 											, TYPE
 										)
