@@ -13,7 +13,7 @@ AS
 		- 20160419@Helen: VoidBridge IN DCS Structure - [Redmine: 55057]
 		- 20161122@Helen: Fishing World IN DCS Structure - [Redmine: 66737]
 		- 20160801@Helen: Allbet IN DCS Structure - [Redmine: 61066]
-		
+		- 20170517@Winnie: Hide Setting for CashOut - [Redmine: 72171]
 	Param's Explanation:
 */
 
@@ -138,7 +138,7 @@ BEGIN
 		   ,ProductCode
 		   ,isEnable
 	FROM @tblProductActive t 
-	WHERE ProductID NOT IN (3,7,9)
+	WHERE ProductID NOT IN (3,7,9,25)-- Hide Setting for CashOut
 	ORDER BY ProductID ASC
 	
 END
