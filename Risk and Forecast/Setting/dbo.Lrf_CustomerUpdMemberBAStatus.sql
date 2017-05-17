@@ -4,7 +4,7 @@ GO
 SET ANSI_NULLS ON 
 GO
 
- CREATE PROCEDURE [dbo].[Lrf_CustomerUpdMemberBAStatus]
+ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberBAStatus]
 	@LicenseeID INT,
 	@CustID INT,
 	@ModifyBy INT,
@@ -55,7 +55,7 @@ Revisions:
 	- 20150306@Patrick: Copy BA member to Dep_ActiveBAMember table [Redmine: #31720]
 	- 20150513@Jim: set SB comm of BA member when BA status changing
 	- 20151015@Jim: Integrate Sportbook2 (Feature #44759)
-	
+	- 20170509@Winnie: LRF-Set back VR setting=0 for BA members [RedmineID:#76231]
 Param's Explanation:
 
 */
@@ -68,8 +68,12 @@ DECLARE @currency INT
 DECLARE @CurrencyUgroup VARCHAR(3)
 DECLARE @IsPowerBAUser BIT
 DECLARE @LastOffBy INT
-
-
+DECLARE @bitmap binary(64)
+DECLARE @ProfileID INT
+DECLARE @SeqNo INT
+DECLARE @VirtualMultiplier VARCHAR(MAX)
+DECLARE @virtualmultiplierXML XML
+DECLARE @EnableVirtualrate BIT=0
 IF @IsAdmin = 0 --This is only for LRF system
 BEGIN
 	--For Power BA users, no need to call function [Lrf_BATimeCheck]
@@ -379,7 +383,30 @@ IF @isBA = 1 --enable BA
 			@LicenseeID = @LicenseeID ,
 			@CustID     = @CustID ,
 			@IsBA		= 1
-		
+
+		-- RF-Set back VR setting=0 for BA members
+		SELECT @EnableVirtualrate= VirtualMultiplier FROM custInfo WITH(NOLOCK) WHERE custid=@CustID
+		SELECT @ProfileID	= ProfileID,@SeqNo=seqNo FROM dbo.[ProfileVirtualSetting] WITH(NOLOCK) WHERE sporttype=1 and bettype=1 and islive=1	
+		SELECT @bitmap = [bitmapVirtual] FROM [dbo].[CustVirtualSetting] WITH(NOLOCK) WHERE custid=@CustID AND seqNo= @SeqNo	
+		IF(@EnableVirtualrate=1 AND  (SELECT val FROM [dbo].[f_GetVirtualRateSetting](@bitmap,@ProfileID))=3 )
+		BEGIN
+		SELECT @virtualmultiplierXML =(
+								SELECT (
+										SELECT	sporttype	AS '@SportType'
+											,	bettype		AS '@BetType'
+											,	IsLive		AS '@IsLive'
+											,	1			AS '@VirtualMultiplier'
+										FROM ProfileVirtualSetting 
+										FOR XML PATH('Rate')
+											, TYPE
+										)
+								FOR XML PATH('ROOT')
+									, TYPE
+								)
+
+		SELECT @VirtualMultiplier = CONVERT(VARCHAR(MAX),@virtualmultiplierXML)					
+		EXEC dbo.[Acc_CustomerUpdVirtualMultiplier] @custid=@CustID,@EnableVirtualrate=@EnableVirtualrate,@VirtualMultiplier = @VirtualMultiplier,@Userid=@ModifyBy,@IP=@IP,@IsLicenseeUser=1,@ErrCode=@ErrCode,@ErrMsg=@ErrMsg	
+		END
 END
 ELSE --disable BA
 	BEGIN
@@ -701,6 +728,7 @@ ELSE --disable BA
 				END
 		END
 	END
+
 
 GO
 
