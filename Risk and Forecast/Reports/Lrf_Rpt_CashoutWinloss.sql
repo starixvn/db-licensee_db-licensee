@@ -141,7 +141,9 @@ BEGIN
 		          CashoutTicket ,
 		          CashoutValue ,
 		          BuyBackAmountSB ,
-		          BuyBackAmountBA 
+		          BuyBackAmountBA,
+				  CashoutComm,
+				  TicketPayout 
 		        )		
 		SELECT b.rptDate,
 				b.CurrencyID,				
@@ -149,7 +151,9 @@ BEGIN
 				COUNT(DISTINCT (b.refno)) AS CashoutTicket,
 				SUM(b.actual_stake) AS CashoutValue,
 				SUM(CASE WHEN b.transid2 = 0 THEN b.winlost ELSE 0 END) AS BuyBackAmountSB,
-				SUM(CASE WHEN b.transid2 = 1 THEN b.winlost ELSE 0 END) AS BuyBackAmountBA
+				SUM(CASE WHEN b.transid2 = 1 THEN b.winlost ELSE 0 END) AS BuyBackAmountBA,
+				SUM(ISNULL(b.CashoutComm, 0)),
+				SUM(ISNULL(b.TicketPayout, 0))
 		FROM #TempData b
 		WHERE b.bettype = 911			
 		GROUP BY b.rptDate, b.CurrencyID	
