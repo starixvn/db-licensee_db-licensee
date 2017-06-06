@@ -10,8 +10,8 @@ GO
  
 ALTER PROCEDURE [dbo].[Lrf_Rpt_ThirdPartyWinloss]
 	  @ProductID	INT
-	, @FromDate		SMALLDATETIME
-	, @ToDate		SMALLDATETIME
+	, @FromDate		DATE
+	, @ToDate		DATE
 	, @ReportType	TINYINT			= 1
 	, @AgentList	VARCHAR(MAX)
 
@@ -24,6 +24,7 @@ AS
     Revisions:  		
 		- 20160413@Victor: support MKK currency code [Redmine: #55745]
 		- 20170302@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest [Redmine: #71679]
+		- 20170602@Paul: Enhance performance [Redmine: #77691]
 	Param's Explanation:  
 	  
 	  + @excludeTest: remove currency UUS
@@ -42,9 +43,8 @@ AS
 */
 SET NOCOUNT ON
 BEGIN
-	CREATE   TABLE #tmpResult (Winlostdate DATETIME, Currency INT,TurnOver MONEY,TotalTrans INT,Winlost MONEY,LicenseeWinlost MONEY)						
-	DECLARE  @tmpCust TABLE (CustId INT, Currency INT)
-	DECLARE  @TempExchange TABLE(ExchangeDate DATETIME, ExchangeId INT, Code NVARCHAR(5), USD FLOAT, EUR FLOAT,GBP FLOAT)
+	CREATE   TABLE #tmpResult (Winlostdate DATE, Currency INT,TurnOver MONEY,TotalTrans INT,Winlost MONEY,LicenseeWinlost MONEY)						
+	DECLARE  @TempExchange TABLE(ExchangeDate DATE, ExchangeId INT, Code NVARCHAR(5), USD FLOAT, EUR FLOAT,GBP FLOAT)
 		
 	DECLARE @VNDCurrencyName VARCHAR(20)
 	
@@ -54,7 +54,7 @@ BEGIN
 	WHERE ExchangeId = 51
 
 
-	DECLARE @Temp AS TABLE ( CustId INT,Currency INT )
+	CREATE TABLE #Temp ( CustId INT,Currency INT )
 
 	DECLARE @DocHandler INT
 
@@ -62,7 +62,7 @@ BEGIN
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT
 			,@AgentList
 	
-		INSERT INTO @Temp(CustId, Currency)
+		INSERT INTO #Temp(CustId, Currency)
 		SELECT AgentId, Currency 
 		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
@@ -76,31 +76,31 @@ BEGIN
 		RETURN
 	END CATCH;
 
-	
-	INSERT INTO @tmpCust (CustID, Currency)	
-	SELECT co.CustID, lc.Currency 
-	FROM dbo.custInfo co WITH (NOLOCK)
-		INNER JOIN @Temp lc ON co.recommend = lc.CustId AND lc.Currency = co.Currency	
-
 	INSERT INTO #tmpResult (Winlostdate, Currency, TurnOver, TotalTrans, Winlost, LicenseeWinlost)
 		(
-			SELECT c.Winlostdate, ct.Currency
+			SELECT c.Winlostdate, co.Currency
 					, SUM(c.TurnOver) AS TurnOver
 					, SUM(c.BetCount) AS TotalTrans
 					, SUM(c.Winlost)  AS Winlost
 					, -SUM(c.Winlost) AS LicenseeWinlost
 			FROM [bodb_LicenseeReport].dbo.rptDepWinlost_ThirdParty c WITH (NOLOCK)
-				INNER JOIN @tmpCust ct ON c.Custid = ct.CustId AND c.Currency = ct.Currency
+				INNER JOIN dbo.custInfo co WITH (NOLOCK) ON c.Custid = co.CustId AND c.Currency = co.Currency
+				INNER JOIN #Temp lc ON co.recommend = lc.CustId AND lc.Currency = co.Currency
 			WHERE c.ProductId=@ProductID AND c.Winlostdate BETWEEN @FromDate AND @ToDate 
-			GROUP BY c.Winlostdate, ct.Currency
+			GROUP BY c.Winlostdate, co.Currency
 		)
 
+	CREATE TABLE #Winlostdate(Winlostdate DATE)
+
+	INSERT INTO #Winlostdate(Winlostdate)
+	SELECT DISTINCT Winlostdate
+	FROM #tmpResult
+
 	INSERT INTO @TempExchange(ExchangeDate, ExchangeId, Code, USD, EUR,GBP)
-		(
-			SELECT ExchangeDate, ExchangeId, Code, USD, EUR	,GBP 
-			FROM dbo.Lrf_f_GetExchangeDaily(@FromDate, @ToDate)
-			WHERE ExchangeId IN (SELECT DISTINCT Currency FROM #tmpResult)
-		)
+	SELECT d.exchangedate, d.ExchangeId, d.Code, d.USD, d.EUR, d.GBP
+	FROM #Winlostdate w
+		CROSS APPLY dbo.Lrf_f_GetExchangeDaily(w.Winlostdate, w.Winlostdate) d
+	WHERE d.ExchangeId IN (SELECT DISTINCT Currency FROM #tmpResult)
 	
 	SELECT --r.Winlostdate
 		   CASE 
