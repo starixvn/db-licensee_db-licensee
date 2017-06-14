@@ -31,6 +31,8 @@ AS
 			- 20160413@Victor: support MKK currency code [Redmine: #55745]
 			- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
 			- 20170302@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest [Redmine: #71679]
+			- 20170524@Harper: Make sure data correct between two stages of Balance up process [RedmineID: #77065]
+
 	Param's Explanation:  
 	  + @excludeTest: remove currency UUS
 */  
@@ -137,7 +139,7 @@ BEGIN
 				IF @ToDate >= @MoveBetsDay
 						SET @ToDate2 = @MoveBetsDay
 					ELSE
-						SET @ToDate2 = @MoveBetsDay			
+						SET @ToDate2 = @ToDate			
 				BEGIN
 					--SELECT @TempFromDate, @ToDate2
 					INSERT INTO #tmpResult(CustId, Winlostdate, Currency ,TurnOver, TotalTrans, Winlost, LicenseeWinlost)
