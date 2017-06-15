@@ -14,6 +14,8 @@ AS
 	Revisions:
 		- 20170119@Joseph: Copy from Lrf_Rpt_TurnOver [RedmineID: #70616]
 		- 20170323@Paul: Implement Cash Out [RedmineID: #71727]
+		- 20170613@Paul: return value in THB, IDR rates [RedmineID: #75030]
+
 	Param's Explanation:
 	
 */
@@ -88,7 +90,9 @@ BEGIN
 		USD FLOAT,
 		GBP FLOAT,
 		CNY FLOAT,
-		MYR FLOAT
+		MYR FLOAT,
+		THB FLOAT,
+		IDR FLOAT
 	);
 
 	INSERT INTO #TempExchange(ExchangeDate, exchangeid, EUR, USD,GBP, CNY, MYR)
@@ -107,7 +111,11 @@ BEGIN
 			--- CNY
 			CAST(SUM(b.PendingFund * e.CNY) AS MONEY) AS PendingFundCNY,
 			--- MYR
-			CAST(SUM(b.PendingFund * e.MYR) AS MONEY) AS PendingFundMYR
+			CAST(SUM(b.PendingFund * e.MYR) AS MONEY) AS PendingFundMYR,
+			--- THB
+			CAST(SUM(b.PendingFund * e.THB) AS MONEY) AS PendingFundTHB,
+			--- IDR
+			CAST(SUM(b.PendingFund * e.IDR) AS MONEY) AS PendingFundIDR
 	FROM #tmpRpt b
 		INNER JOIN #TempExchange e ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency;
 

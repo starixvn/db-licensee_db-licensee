@@ -15,6 +15,7 @@ AS
   
 	Revisions:  
 		- 20170120@Joseph: Copy from Lrf_Rpt_PlatformWinloss [RedmineID: #70616]
+		- 20170613@Paul: return value in THB, IDR rates [RedmineID: #75030]
 
 	Param's Explanation:  
 */
@@ -53,10 +54,10 @@ BEGIN
 	WHERE (@CurrencyID = 0 OR (@CurrencyID <> 0 AND Currency = @CurrencyID))
 		AND Currency <> 20
 
-	CREATE TABLE #Exchange (ExchangeDate SMALLDATETIME, ExchangeId INT,  EUR FLOAT,USD FLOAT,GBP FLOAT, CNY FLOAT, MYR FLOAT, Code VARCHAR(10), PRIMARY KEY(ExchangeDate,ExchangeId));
+	CREATE TABLE #Exchange (ExchangeDate SMALLDATETIME, ExchangeId INT,  EUR FLOAT,USD FLOAT,GBP FLOAT, CNY FLOAT, MYR FLOAT, THB FLOAT, IDR FLOAT, Code VARCHAR(10), PRIMARY KEY(ExchangeDate,ExchangeId));
 
-	INSERT INTO #Exchange (exchangedate, exchangeid, eur, usd, gbp, cny, myr, code)
-	SELECT exchangedate, exchangeid, eur, usd, gbp, cny, myr, code
+	INSERT INTO #Exchange (exchangedate, exchangeid, eur, usd, gbp, cny, myr, thb, idr, code)
+	SELECT exchangedate, exchangeid, eur, usd, gbp, cny, myr, thb, idr, code
 	FROM Lrf_f_GetExchangeDaily(@ReportDate, @ReportDate) t_ex
 	WHERE EXISTS (SELECT 1 FROM @tmpAg t_ag WHERE t_ag.Currency = t_ex.ExchangeId);
 
@@ -70,7 +71,11 @@ BEGIN
 			--BASE CNY
 			SUM(b.ClosingBalance * e.CNY)	AS ClosingBalanceCNY,
 			--BASE MYR
-			SUM(b.ClosingBalance * e.MYR)	AS ClosingBalanceMYR
+			SUM(b.ClosingBalance * e.MYR)	AS ClosingBalanceMYR,
+			--BASE THB
+			SUM(b.ClosingBalance * e.THB)	AS ClosingBalanceTHB,
+			--BASE IDR
+			SUM(b.ClosingBalance * e.IDR)	AS ClosingBalanceIDR
 	FROM bodb_Report.dbo.rptDepWinlost b WITH (NOLOCK)
 		INNER JOIN @tmpAg a ON b.recommend = a.CustId AND b.Currency = a.Currency
 		INNER JOIN #Exchange e ON e.exchangeid = a.currency
