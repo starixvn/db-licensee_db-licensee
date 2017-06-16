@@ -1,3 +1,5 @@
+USE bodb02
+GO
 
 SET QUOTED_IDENTIFIER ON 
 GO
@@ -5,7 +7,7 @@ SET ANSI_NULLS ON
 GO
 
  
-CREATE PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver_SumMember]
+ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver_SumMember]
 (
 	@pStartDate		DATE
 	,@pEndDate 		DATE
@@ -23,12 +25,24 @@ Revision:
 	- 20151127@Bobby: #48081 - Apply PH-AIO new bettypes
 	- 20151223@Jim: Add "Effective Betting Value" in Customer Turnover report [Redmine: #45736]
 	- 20160720@Jim : Implement 67 new bet types (PH All in one - Phase 2) [Redmine : #53520]
+	- 20170615@Harper: Customer Turnover report values are inconsistent [RedmineID: #78391]
+
 Parameter's Explanation:
 			
 */
 BEGIN
 	SET NOCOUNT ON;
 
+	DECLARE @tempFromDate SMALLDATETIME, 
+			@tempToDate SMALLDATETIME
+
+	SELECT @tempFromDate =  CASE WHEN @pStartDate <= @MoveBetsDay THEN DATEADD(DAY,1,@MoveBetsDay)
+								ELSE @pStartDate
+							END
+
+	SELECT @tempToDate 	=  CASE WHEN @pEndDate >= @MoveBetsDay THEN @MoveBetsDay 
+								ELSE @pEndDate 
+							END
 	--GET sum member detial
 	IF(@pEndDate > @MoveBetsDay)
 	BEGIN
@@ -54,7 +68,7 @@ BEGIN
 									ELSE b.winlostdate
 								END
 		
-		WHERE b.winlostdate BETWEEN @pStartDate AND @pEndDate
+		WHERE b.winlostdate BETWEEN @tempFromDate AND @pEndDate
 		
 		GROUP BY
 			c.rowno
@@ -106,7 +120,7 @@ BEGIN
 						ELSE b.sporttype 
 					END			= p.sportID
 					
-			WHERE b.winlostdate BETWEEN @pStartDate AND @pEndDate
+			WHERE b.winlostdate BETWEEN @pStartDate AND @tempToDate
 				
 			GROUP BY
 				c.rowno
@@ -159,7 +173,7 @@ BEGIN
 						ELSE b.sporttype 
 					END			= p.sportID
 					
-			WHERE b.winlostdate BETWEEN @pStartDate AND @pEndDate
+			WHERE b.winlostdate BETWEEN @pStartDate AND @tempToDate
 				AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
 								OR b.bettype BETWEEN 81 AND 88
 								OR b.bettype BETWEEN 90 AND 120
