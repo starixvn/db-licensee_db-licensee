@@ -469,7 +469,7 @@ BEGIN
 		
 		IF( @isCached = 0 )
 		BEGIN
-												EXEC [dbo].[Lrf_Rpt_CustomerTurnOver_SumTotal]
+			EXEC [dbo].[Lrf_Rpt_CustomerTurnOver_SumTotal]
 				@searchCust 	= @searchCust
 				,@FromDate 		= @FromDate
 				,@tempFromDate 	= @tempFromDate
@@ -634,7 +634,7 @@ BEGIN
 			, @pEndDate		= CASE WHEN @reportBy = 2 THEN DATEADD(DD, -1, DATEADD(M, 1, @pEndDate)) ELSE @pEndDate END
 			, @pEndDate		= CASE WHEN @pEndDate > @ToDate THEN @ToDate ELSE @pEndDate END
 		
-								EXEC [dbo].[Lrf_Rpt_CustomerTurnOver_SumMember]
+		EXEC [dbo].[Lrf_Rpt_CustomerTurnOver_SumMember]
 			@pStartDate		= @pStartDate
 			,@pEndDate		= @pEndDate
 			,@Odds 			= @Odds
