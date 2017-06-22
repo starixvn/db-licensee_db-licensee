@@ -1,4 +1,7 @@
-﻿SET QUOTED_IDENTIFIER ON 
+﻿USE [bodb02]
+GO
+
+SET QUOTED_IDENTIFIER ON 
 GO
 SET ANSI_NULLS ON 
 GO
@@ -34,8 +37,8 @@ SET @gapDate = '2012-06-01'
 --Get the data before 1st of June 2012 in ExchangeDaily table
 IF @todate < @gapDate
 BEGIN
-	INSERT INTO @tempDate (exchangedate,ExchangeId,Code,MYR, USD, EUR, CNY,GBP,HKD,actualrate)
-	SELECT exchangedate,ExchangeId,Code,MYR, USD, EUR, CNY, 1 AS GBP,1 AS HKD,actualrate
+	INSERT INTO @tempDate (exchangedate,ExchangeId,Code,MYR, USD, EUR, CNY, GBP, HKD, THB, IDR, actualrate)
+	SELECT exchangedate,ExchangeId,Code,MYR, USD, EUR, CNY, 1 AS GBP, 1 AS HKD, 1 AS THB, 1 AS IDR, actualrate
 	FROM ExchangeDaily WITH (NOLOCK)
 	WHERE ExchangeDate BETWEEN @fromdate AND @todate
 	
@@ -43,8 +46,8 @@ BEGIN
 END
 ELSE IF @todate >= @gapDate AND @fromdate < @gapDate
 BEGIN
-	INSERT INTO @tempDate (exchangedate,ExchangeId,Code,MYR, USD, EUR, CNY,GBP,HKD,actualrate)
-	SELECT exchangedate,ExchangeId,Code,MYR, USD, EUR, CNY,1 AS GBP,1 AS HKD , actualrate
+	INSERT INTO @tempDate (exchangedate,ExchangeId,Code,MYR, USD, EUR, CNY, GBP, HKD, THB, IDR, actualrate)
+	SELECT exchangedate,ExchangeId,Code,MYR, USD, EUR, CNY, 1 AS GBP, 1 AS HKD, 1 AS THB, 1 AS IDR, actualrate
 	FROM ExchangeDaily WITH (NOLOCK)
 	WHERE ExchangeDate BETWEEN @fromdate AND dateadd(day,-1,@gapDate)
 	
