@@ -95,8 +95,8 @@ BEGIN
 		IDR FLOAT
 	);
 
-	INSERT INTO #TempExchange(ExchangeDate, exchangeid, EUR, USD,GBP, CNY, MYR)
-	SELECT ExchangeDate, exchangeid, EUR, USD,GBP, CNY, MYR
+	INSERT INTO #TempExchange(ExchangeDate, exchangeid, EUR, USD,GBP, CNY, MYR, THB, IDR)
+	SELECT ExchangeDate, exchangeid, EUR, USD,GBP, CNY, MYR, THB, IDR
 	FROM #WinLossDate w
 		CROSS APPLY Lrf_f_GetExchangeDaily(w.WinLossDate, w.WinLossDate) e
 	WHERE exchangeid IN (SELECT DISTINCT Currency FROM #tmpRpt);
