@@ -25,6 +25,7 @@ AS
 	Original: Lrf_Rpt_TurnOver
 	Revisions:
 		- 20170208@Paul: Create new [RedmineID: #70616]
+		- 20170613@Paul: return value in THB, IDR rates [RedmineID: #75030]
 */
 
 BEGIN
@@ -81,7 +82,11 @@ BEGIN
 			--- CNY
 			CAST(SUM(b.Withdrawal * e.CNY) AS MONEY) AS WithdrawalCNY,
 			--- MYR
-			CAST(SUM(b.Withdrawal * e.MYR) AS MONEY) AS WithdrawalMYR
+			CAST(SUM(b.Withdrawal * e.MYR) AS MONEY) AS WithdrawalMYR,
+			--- THB
+			CAST(SUM(b.Withdrawal * e.THB) AS MONEY) AS WithdrawalTHB,
+			--- IDR
+			CAST(SUM(b.Withdrawal * e.IDR) AS MONEY) AS WithdrawalIDR
 	FROM #tmpRpt b
 		INNER JOIN #TempExchange e ON e.exchangeid = b.currency
 	WHERE e.ExchangeDate = @fdate;

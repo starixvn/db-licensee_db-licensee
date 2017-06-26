@@ -27,6 +27,7 @@ AS
 	Revisions:
 		- 20170207@Paul: Create new [RedmineID: #70616]
 		- 20170323@Paul: Implement Cash Out [RedmineID: #71727]
+		- 20170613@Paul: return value in THB, IDR rates [RedmineID: #75030]
 
 	Param's Explanation:  
 */
@@ -76,10 +77,10 @@ BEGIN
 				(5, 'l')
 	) d(PlatformType, betfrom);
 	
-	CREATE TABLE #Exchange (ExchangeDate SMALLDATETIME, ExchangeId INT,  EUR FLOAT,USD FLOAT,GBP FLOAT, CNY FLOAT, MYR FLOAT, Code VARCHAR(10), PRIMARY KEY(ExchangeDate,ExchangeId));
+	CREATE TABLE #Exchange (ExchangeDate SMALLDATETIME, ExchangeId INT,  EUR FLOAT,USD FLOAT,GBP FLOAT, CNY FLOAT, MYR FLOAT, THB FLOAT, IDR FLOAT, Code VARCHAR(10), PRIMARY KEY(ExchangeDate,ExchangeId));
 
-	INSERT INTO #Exchange (exchangedate, exchangeid, eur, usd, gbp, cny, myr, code)
-	SELECT exchangedate, exchangeid, eur, usd, gbp, cny, myr, code
+	INSERT INTO #Exchange (exchangedate, exchangeid, eur, usd, gbp, cny, myr, thb, idr, code)
+	SELECT exchangedate, exchangeid, eur, usd, gbp, cny, myr, thb, idr, code
 	FROM Lrf_f_GetExchangeDaily(@FDate, @TDate) t_ex
 	WHERE EXISTS (SELECT 1 FROM #tempAg t_ag WHERE t_ag.Currency = t_ex.ExchangeId);
 
@@ -156,7 +157,11 @@ BEGIN
 			--BASE CNY
 			SUM(Turnover * e.CNY)	AS TurnoverCNY,
 			--BASE MYR
-			SUM(Turnover * e.MYR)	AS TurnoverMYR
+			SUM(Turnover * e.MYR)	AS TurnoverMYR,
+			--BASE THB
+			SUM(Turnover * e.THB)	AS TurnoverTHB,
+			--BASE IDR
+			SUM(Turnover * e.IDR)	AS TurnoverIDR
 	FROM #WinLoss w 
 		INNER JOIN  #Exchange e on w.Currency = e.exchangeid AND e.ExchangeDate = w.Winlostdate
 	GROUP BY w.PlatformType
