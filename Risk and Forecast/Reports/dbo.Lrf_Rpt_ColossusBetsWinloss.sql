@@ -1,13 +1,4 @@
-USE bodb02
-GO
-
-SET QUOTED_IDENTIFIER ON 
-GO
-SET ANSI_NULLS ON 
-GO
-
-/****** Object:  Stored Procedure dbo.Lrf_Rpt_ColossusBetsWinloss    Script Date: 11/18/2016 5:30:33 PM ******/
-
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_Rpt_ColossusBetsWinloss] 
 	@FromDate SMALLDATETIME
 	, @ToDate SMALLDATETIME
@@ -23,6 +14,7 @@ AS
 		- 20161121@Sophia: Correct fomular CashOutAmount,WinPrizeAmount value [RedmineID : #67473]
 		- 20161205@Jim:  Report should include only WLD tickets [RedminID : #68316]
 		- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest [Redmine: #71679]
+		- 20170703@Sophia: Add CNY at total row [Redmine: #79365]
 	Param's Explanation:  
 	   - @excludeTest: remove currency UUS
 	   - @ReportType : 1 Daily, 2 Monthly
@@ -349,6 +341,14 @@ BEGIN
 		, CAST(SUM(CashInAmt * e.GBP) AS MONEY) CashInAmtGBP
 		, CAST(SUM(CommAmt * e.GBP) AS MONEY) CommAmtGBP
 		, CAST(SUM(GrandAmt * e.GBP) AS MONEY) GrandAmtGBP
+		---CNY
+		, CAST(SUM(TurnOver * e.CNY) AS MONEY) TurnOverCNY
+		, CAST(SUM(WinningPrize * e.CNY) AS MONEY) WinningPrizeCNY
+		, CAST(SUM(CashOutAmt * e.CNY) AS MONEY) CashOutAmtCNY
+		, CAST(SUM(CashInAmt * e.CNY) AS MONEY) CashInAmtCNY
+		, CAST(SUM(CommAmt * e.CNY) AS MONEY) CommAmtCNY
+		, CAST(SUM(GrandAmt * e.CNY) AS MONEY) GrandAmtCNY
+		
 	FROM @tmpRawData t
 	INNER JOIN #TempExchange e
 		ON t.rptDate = e.ExchangeDate
@@ -370,17 +370,4 @@ BEGIN
 			END
 	DROP TABLE #TempExchange		
 END
-
-GO
-
-SET QUOTED_IDENTIFIER OFF 
-GO
-SET ANSI_NULLS ON 
-GO
-
-
-GO 
- GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_ColossusBetsWinloss] TO [vnteam]
-GO 
- GRANT EXECUTE ON [dbo].[Lrf_Rpt_ColossusBetsWinloss] TO [bodbLicenseeNet]
 GO 
