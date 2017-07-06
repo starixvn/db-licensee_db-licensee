@@ -50,6 +50,7 @@ Revisions:
 	- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
 	- 20170328@Paul: Implement Cash Out [RedmineID: #71727]
+	- 20170705@Harper: Hotfix for Cash Out [RedmineID: #79546]
 
 Param's Explanation:
 	+ @IsLive : indicate that whether the report will get live data or not
@@ -414,7 +415,7 @@ BEGIN
 				OR (@Liveindicator = 1 AND b.IsLive = 1)
 				OR (@Liveindicator = 2)
 			)
-			AND b.CustomerCategory IN (-1, 1001)
+			AND b.CustomerCategory IN (-1, 1001, 1003)
 			AND b.bettype NOT IN (9,29,1700,1800,1900) 
 			AND b.bettype NOT BETWEEN 2001 AND 2009 -- Exclude Microgamming (#44084)
 			AND (b.bettype < 901 OR b.bettype > 904)
