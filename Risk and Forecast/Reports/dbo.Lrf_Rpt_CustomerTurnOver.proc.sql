@@ -69,6 +69,8 @@ Revision:
 	- 20160413@Victor: support MKK currency code
 	- 20160720@Jim : Implement 67 new bet types (PH All in one - Phase 2) [Redmine : #53520]
 	- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID [Redmine: #71679]
+	- 20170707@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
+
 Parameter's Explanation:
 	- @ReportBy:  1: daily, 2: monthly
 	- @FilterBy:  1: Win, 2: Loss, 3: Draw
@@ -469,7 +471,7 @@ BEGIN
 		
 		IF( @isCached = 0 )
 		BEGIN
-			EXEC [dbo].[Lrf_Rpt_CustomerTurnOver_SumTotal]
+												EXEC [dbo].[Lrf_Rpt_CustomerTurnOver_SumTotal]
 				@searchCust 	= @searchCust
 				,@FromDate 		= @FromDate
 				,@tempFromDate 	= @tempFromDate
@@ -698,7 +700,8 @@ BEGIN
 																					WHEN b.bettype = 1235 THEN '(Tennis)'
 																					ELSE ''
 																				END
-				 ELSE  bt.typenamee
+				WHEN (b.bettype BETWEEN 2701 AND 2799) THEN  N'BRVS - ' + bt.typenamee
+				ELSE  bt.typenamee
 			END AS bettype
 			, SUM(b.betcount)	AS betcount
 			, SUM(b.turnover)	AS turnover
@@ -733,6 +736,7 @@ BEGIN
 																					WHEN b.bettype = 1235 THEN '(Tennis)'
 																					ELSE ''
 																				END
+				 WHEN (b.bettype BETWEEN 2701 AND 2799) THEN  N'BRVS - ' + bt.typenamee
 				 ELSE  bt.typenamee
 			END
 		ORDER BY 

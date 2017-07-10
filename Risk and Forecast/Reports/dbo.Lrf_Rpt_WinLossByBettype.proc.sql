@@ -48,6 +48,7 @@ Revisions:
 	- 20161115@Jim: LRF - Integrate new product Fishing World [RedmineID : #66737]
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
 	- 20170327@Paul: Implement Cash Out [RedmineID :#71727]
+	- 20170619@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
 
 Param's Explanation: 
 	+ @AgentList: xml structure
@@ -190,6 +191,7 @@ BEGIN
 						OR b.bettype BETWEEN 81 AND 120
 						OR b.bettype BETWEEN 1101 AND 1199
 						OR b.bettype BETWEEN 1201 AND 1299
+						OR b.bettype BETWEEN 2701 AND 2799
 						OR b.bettype BETWEEN 1501 AND 1599 --Keno
 						 
 						)
@@ -278,6 +280,7 @@ BEGIN
 						OR b.bettype BETWEEN 81 AND 120
 						OR b.bettype BETWEEN 1101 AND 1199
 						OR b.bettype BETWEEN 1201 AND 1299
+						OR b.bettype BETWEEN 2701 AND 2799
 						OR b.bettype BETWEEN 1501 AND 1599 --Keno products
 						 
 						)

@@ -34,6 +34,7 @@ Revisions:
    - 20160217@Jim: exclude bettype 500 (Charge Commission),502 (Match Winner 1X2) since those bettype not offer for deposit model (redmine #50759 )
    - 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
    - 20170330@Paul: Implement Cash Out [RedmineID: #71727]
+   - 20170710@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
 
 	Param's Explanation:  
 Param's Explanation:
@@ -46,6 +47,7 @@ BEGIN
 	DECLARE @checkVTennis BIT
 	DECLARE @checkVR 	  BIT 
 	DECLARE @checkVSW 	  BIT --Virtual Speedway
+	DECLARE @checkBRVS	  BIT
 	DECLARE @strSport 	  VARCHAR(5000)
 	
 	CREATE TABLE #SportBettype (
@@ -66,6 +68,7 @@ BEGIN
 		  ,@checkVTennis = 0
 		  ,@checkVR = 0
 		  ,@checkVSW = 0
+		  ,@checkBRVS = 0
 
 	EXEC sp_xml_preparedocument @iDoc OUTPUT, @SportList
 
@@ -151,6 +154,7 @@ BEGIN
 																				WHEN typeid = 1235 THEN '(Tennis)'
 																				ELSE '' 
 																			END
+			WHEN (typeid BETWEEN 2701 AND 2799) THEN  N'BRVS - ' + typenamee
 			ELSE typenamee 																 
 		END AS BettypeName
 	

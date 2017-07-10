@@ -21,6 +21,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
 	@ShowAB			BIT = 0,
 	@ShowFW			BIT	= 0,
 	@ShowCO			BIT = 0,
+	@ShowBRVS		BIT = 0, -- Bet Radar Virtual Sports
     @MoveBetsDay	DATETIME,
     @PageSize		INT = 1000,
     @PageIndex		INT = 1,
@@ -88,6 +89,7 @@ AS
 		- 20161115@Jim: LRF - Integrate new product Fishing World [RedmineID : #66737]
 		- 20170215@Sophia: Get @AgentList by web instead of @UserId, @LicenseeID, @CurrencyID, remove @excludeTest [Redmine: #71679]
 		- 20170320@Paul: Implement Cash Out [RedmineID :#71727]
+		- 20170706@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
 */
 
 BEGIN
@@ -102,10 +104,11 @@ BEGIN
 			@TempFromDate		DATETIME,
 			@TempToDate			DATETIME
 
-	DECLARE @TempAg		TABLE (CustId INT, Currency INT)
-	DECLARE @bettype	TABLE (bettype INT PRIMARY KEY)
-	DECLARE @sporttype	TABLE (sporttype INT)
-	DECLARE @Exchange	TABLE
+	DECLARE @TempAg			TABLE (CustId INT, Currency INT)
+	DECLARE @bettype		TABLE (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))
+	DECLARE @sporttype		TABLE (sporttype INT, ProductCode VARCHAR(10))
+	DECLARE @ProductList	VARCHAR (500)
+	DECLARE @Exchange		TABLE
 	(
 		ExchangeDate SMALLDATETIME,
 		ExchangeId	 INT,
@@ -155,153 +158,111 @@ BEGIN
 
 	IF @ShowSB = 1 
 	BEGIN
-		INSERT INTO @sporttype(Sporttype)
-		VALUES (0)
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'SB', 'SB')	
 	END
 
 	IF @ShowRB = 1 
 	BEGIN
-		INSERT INTO @sporttype(Sporttype)
-		VALUES (151)
-    
-		INSERT INTO @bettype(bettype)
-		SELECT	typeid FROM bettype (NOLOCK)
-		WHERE	typeid BETWEEN 31 AND 33
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'RB', 'RB')	
 	END
 
 	IF @ShowNG = 1  
 	BEGIN  
-		INSERT INTO @sporttype(Sporttype)  
-		VALUES (161)  
-	
-		INSERT INTO @bettype(bettype)
-		SELECT	typeid FROM bettype (NOLOCK)
-		WHERE	typeid BETWEEN 81 AND 120
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'NG', 'NG')	
 	END
 
 	IF @ShowLC = 1
 	BEGIN
-		INSERT INTO @sporttype( Sporttype)
-		VALUES (162)
-    
-		INSERT INTO @bettype(bettype)
-		SELECT	typeid FROM bettype (NOLOCK)
-		WHERE	typeid BETWEEN 1101 AND 1199
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'LC', 'LC')	
 	END
 
 	IF @ShowVS = 1
 	BEGIN
-		INSERT  INTO @sporttype( Sporttype)
-		SELECT 180
-    
-		INSERT INTO @bettype(bettype)
-		SELECT	typeid FROM bettype (NOLOCK)
-		WHERE	typeid BETWEEN 1201 AND 1299
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS', 'VS')
 	END
 
 	IF @ShowCS = 1
 	BEGIN
-		INSERT INTO @sporttype(Sporttype)
-		VALUES (251), (208), (209), (210)
-    
-		INSERT INTO @bettype(bettype)
-		SELECT DISTINCT bettype
-		FROM dbo.SportBettypeMatrix WITH (NOLOCK)
-		WHERE sporttype IN (208, 209, 210)
-		UNION
-		SELECT 71 AS bettype
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'CS', 'CS')
 	END
 
 	IF @ShowBG = 1
 	BEGIN
-		INSERT  INTO @sporttype( Sporttype)
-		VALUES  (252)
-    
-		INSERT INTO @bettype(bettype)
-		SELECT typeid FROM bettype (NOLOCK)
-		WHERE typeid=73
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'BG', 'BG')
 	END
 
 	IF @ShowKN = 1 -- Keno
 	BEGIN 
-		INSERT INTO @sporttype (sporttype)
-		VALUES(202)
-
-		INSERT INTO @bettype(bettype)
-		SELECT	typeid FROM bettype (NOLOCK)
-		WHERE	typeid BETWEEN 1501 AND 1599
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'KN', 'KN')
 	END
 
 	IF @ShowMGCLC = 1 -- MicroGamming
 	BEGIN 
-		INSERT INTO @sporttype (sporttype)
-		VALUES (203)
-
-		INSERT INTO @bettype(bettype)
-		SELECT	typeid FROM bettype (NOLOCK)
-		WHERE	typeid BETWEEN 2001 AND 2007
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'MGCLC', 'MGCLC')
 	END
 
 	IF @ShowMGCRnG = 1 -- MicroGamming
 	BEGIN 
-		INSERT INTO @sporttype (sporttype)
-		VALUES (205)
-
-		INSERT INTO @bettype(bettype)
-		SELECT	typeid FROM bettype (NOLOCK)
-		WHERE	typeid BETWEEN 2008 AND 2009
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'MGCRNG', 'MGCRNG')
 	END
 
 	IF @ShowBT = 1 -- bettrade
 	BEGIN
-		INSERT INTO @bettype(bettype)
-		VALUES (901), (902)	
+		INSERT INTO @bettype(bettype, ProductCode)
+		VALUES (901, 'BT'), (902, 'BT')	
 	END
 
 	IF @ShowAGC = 1 -- AG Casino
 	BEGIN
-		INSERT INTO @sporttype(sporttype)
-		VALUES (250)
-
-		INSERT INTO @bettype(bettype)
-		SELECT	typeid FROM bettype (NOLOCK)
-		WHERE	typeid BETWEEN 1801 AND 1899
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'AGC', 'AGC')
 	END
 
 	IF @ShowVB = 1 -- Voidbridge
 	BEGIN
-		INSERT INTO @sporttype(sporttype)
-		VALUES (212)
-
-		INSERT INTO @bettype(bettype)
-		SELECT	typeid FROM bettype (NOLOCK)
-		WHERE	typeid BETWEEN 4001 AND 7999
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'VB', 'VB')
 	END
 
 	IF @ShowAB = 1 -- Allbet
 	BEGIN
-		INSERT INTO @sporttype(sporttype)
-		VALUES (211)
-
-		INSERT INTO @bettype(bettype)
-		SELECT	typeid FROM bettype (NOLOCK)
-		WHERE	typeid BETWEEN 2401 AND 2499
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'AB', 'AB')
 	END
 
 	IF @ShowFW = 1 -- Fishing World
 	BEGIN
-		INSERT INTO @sporttype(sporttype)
-		VALUES (219)
-
-		INSERT INTO @bettype(bettype)
-		SELECT	typeid FROM bettype (NOLOCK)
-		WHERE	typeid BETWEEN 1011 AND 1020
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'FW', 'FW')
 	END
 
 	IF @ShowCO = 1 -- Cash Out
 	BEGIN
-		INSERT INTO @bettype(bettype)
-		VALUES (911), (912)	
+		INSERT INTO @bettype(bettype, ProductCode)
+		VALUES (911, 'CO'), (912, 'CO')	
+	END
+
+	IF @ShowBRVS = 1 -- Betradar Virtual Sports
+	BEGIN
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'BRVS', 'BRVS')
+	END
+
+	IF LEN(ISNULL(@ProductList, '')) > 0 
+	BEGIN
+		-- Insert Bettype
+		INSERT INTO @bettype ( bettype, ProductCode )
+		SELECT DISTINCT BetType, ProductPrefix
+		FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, 0)
+
+		IF CHARINDEX('CS', @ProductList) > 0
+			DELETE @bettype
+			WHERE bettype = 72 AND ProductCode = 'CS'
+
+		IF CHARINDEX('SB', @ProductList) > 0
+			DELETE @bettype
+			WHERE ProductCode IN ('SB')
+		
+		-- Insert Sport Type
+		INSERT INTO @sporttype ( sporttype, ProductCode )
+		SELECT DISTINCT sporttype, ProductCode
+		FROM f_LicWinLoss_ProductSportType_Sel(@ProductList)
+
 	END
 
 	CREATE TABLE #TempData
@@ -408,7 +369,7 @@ BEGIN
 			GROUP BY b.CustID, b.winlostdate, b.currency	 
 		END
 
-		IF 1 IN (@ShowNG, @ShowLC, @ShowVS, @ShowRB, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowBT, @ShowAGC, @ShowVb,@ShowAB,@ShowFW, @ShowCO)
+		IF 1 IN (@ShowNG, @ShowLC, @ShowVS, @ShowRB, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowBT, @ShowAGC, @ShowVb,@ShowAB,@ShowFW, @ShowCO, @ShowBRVS)
 		BEGIN
 			INSERT INTO #TempData
 			SELECT
@@ -480,7 +441,7 @@ BEGIN
 		END
 
 		--exclude BA tickets
-		IF 1 IN (@ShowSB, @ShowRB, @ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowAGC, @ShowVB,@ShowAB,@ShowFW)
+		IF 1 IN (@ShowSB, @ShowRB, @ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowBRVS)
 		BEGIN
 			INSERT INTO #TempData
 			SELECT
@@ -606,7 +567,7 @@ BEGIN
 			GROUP BY b.CustID, b.winlostdate, b.currency	
 		END
 	
-		IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowVB,@ShowAB,@ShowFW)
+		IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowVB,@ShowAB,@ShowFW, @ShowBRVS)
 		BEGIN
 			INSERT  INTO #TempData
 			SELECT  
