@@ -1,5 +1,5 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
-ALTER PROC [dbo].[Lrf_Rpt_LicWinloss]  	
+ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]  	
 	@LicenseeID		INT,
 	@FromDate		SMALLDATETIME,  
 	@ToDate			SMALLDATETIME,   
@@ -66,7 +66,7 @@ AS
 	- 20161115@Jim: LRF - Integrate new product Fishing World [RedmineID : #66737]
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
 	- 20170320@Paul: Implement Cash Out [RedmineID :#71727]
-	- 20170711@Harper: Fix Racing Revenue of Licensee Winloss
+	- 20170711@Harper: Fix Racing Revenue of Licensee Winloss [RedmineID :#79748]
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
