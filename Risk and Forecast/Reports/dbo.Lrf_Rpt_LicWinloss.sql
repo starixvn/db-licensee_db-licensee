@@ -1,7 +1,7 @@
 USE [bodb02]
 GO
 
-ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]  	
+ALTER PROC [dbo].[Lrf_Rpt_LicWinloss]  	
 	@LicenseeID		INT,
 	@FromDate		SMALLDATETIME,  
 	@ToDate			SMALLDATETIME,   
@@ -68,7 +68,7 @@ AS
 	- 20161115@Jim: LRF - Integrate new product Fishing World [RedmineID : #66737]
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
 	- 20170320@Paul: Implement Cash Out [RedmineID :#71727]
-
+	- 20170711@Harper: Fix Racing Revenue of Licensee Winloss
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -725,7 +725,7 @@ BEGIN
 				) AS turnover,
 				0 AS BTActualStake,
 				SUM(CASE WHEN RAND() + 1 > 0 THEN b.winlost ELSE 0 END),
-				-SUM(CASE WHEN RAND() + 1 > 0 THEN b.winlost ELSE 0 END) AS LicenseeWL,
+				-SUM(CASE WHEN RAND() + 1 > 0 THEN CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE b.winlost END ELSE 0 END) AS LicenseeWL,
 				0 AS AmountDueToBA,
 				-SUM(CASE WHEN RAND() + 1 > 0 AND b.sporttype = 151 THEN b.winlost+b.awinlost+b.comm ELSE 0 END) AS AmountDueToRB,
 				0 AS CommBA,
@@ -986,7 +986,7 @@ BEGIN
 				) AS turnover,
 				0 AS BTActualStake,
 				SUM(CASE WHEN RAND() + 1 > 0 THEN b.winlost ELSE 0 END),  
-				-SUM(CASE WHEN RAND() + 1 > 0 THEN b.winlost ELSE 0 END) AS LicenseeWL,
+				-SUM(CASE WHEN RAND() + 1 > 0 THEN CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE b.winlost END ELSE 0 END) AS LicenseeWL,
 				0 AS AmountDueToBA,
 				- SUM ( CASE WHEN RAND() + 1 > 0 AND b.sporttype = 151 THEN (b.winlost+b.awinlost+b.comm) ELSE 0 END) AS AmountDueToRB,
 				0 AS CommBA,
@@ -1185,7 +1185,7 @@ BEGIN
 		SUM(CASE ProductCode WHEN 'SB'		THEN LicenseeWL ELSE 0 END)	AS LicenseeWLSB,   
 		SUM(CASE ProductCode WHEN 'BA'		THEN LicenseeWL ELSE 0 END)	AS LicenseeWLBA,   
 		SUM(CASE ProductCode WHEN 'NG'		THEN LicenseeWL ELSE 0 END)	AS LicenseeWLNG,   
-		SUM(CASE ProductCode WHEN 'RB'		THEN LicenseeWL ELSE 0 END)	AS LicenseeWLRB,   
+		SUM(CASE ProductCode WHEN 'RB'		THEN -LicenseeWL ELSE 0 END)	AS LicenseeWLRB,   
 		SUM(CASE ProductCode WHEN 'LC'		THEN LicenseeWL ELSE 0 END)	AS LicenseeWLLC,   
 		SUM(CASE ProductCode WHEN 'VS'		THEN LicenseeWL ELSE 0 END)	AS LicenseeWLVS,   
 		SUM(CASE ProductCode WHEN 'CS'		THEN LicenseeWL ELSE 0 END)	AS LicenseeWLCS,
