@@ -3,7 +3,7 @@ GO
 
 /****** Object:  Stored Procedure dbo.Lrf_Rpt_CustomerBalance    Script Date: 7/10/2017 1:46:42 PM ******/
  
-CREATE PROCEDURE [dbo].[Lrf_Rpt_CustomerBalance] 
+ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerBalance] 
 	@FromDate		SMALLDATETIME
 	, @ToDate		SMALLDATETIME
 	, @OrderItem	TINYINT = 1

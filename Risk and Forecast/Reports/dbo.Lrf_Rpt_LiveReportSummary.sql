@@ -49,6 +49,7 @@ Revisions:
 	- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
 	- 20170328@Paul: Implement Cash Out [RedmineID: #71727]
+	- 20170705@Harper: Hotfix for Cash Out [RedmineID: #79546]
 	- 20170710@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
 	- 20170721@Harper: Hotfix add AB and FW to LiveReport [RedmineID: #80350]
 
