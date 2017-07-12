@@ -1,5 +1,6 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
  
+
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportBySport] 
 	@LicenseeID		INT,	
 	@ProductCode	VARCHAR(20) = NULL,
@@ -220,7 +221,6 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 1101 AND 1199 THEN 162 --LC' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1501 AND 1599 THEN 202 --Keno''s bettype' + CHAR(13)
 								+ 'WHEN (b.bettype BETWEEN 1201 AND 1299) AND b.bettype NOT IN (1231,1232,1233,1237,1238,1220,1235,1236) THEN 180 --VS' + CHAR(13)
-								+ 'WHEN (b.bettype BETWEEN 2701 AND 2799) THEN 190 --BRVS' + CHAR(13)
 								+ 'WHEN b.bettype IN ('+@strbettypeVHR+') THEN vs.SportType ' + CHAR(13)
 								+ 'WHEN b.bettype IN (1220,1235,1236) THEN 186 ' + CHAR(13)
 								+ 'WHEN b.bettype = 9 THEN 101 --Mix Parlay' + CHAR(13)
@@ -235,6 +235,7 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 4001 AND 7999 THEN 212' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1011 AND 1020 THEN 219 -- Fishing World' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 2401 AND 2499 THEN 211 -- AllBet' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 2701 AND 2798 THEN 190 --BRVS' + CHAR(13)
 								+ 'ELSE m.SportType END as Sporttype,' + CHAR(13)
 								+ 'SUM(CASE WHEN b.bettype = 33 AND b.liveawayscore = 0 THEN stake/2 ELSE stake END) turnover,' + CHAR(13)
 								+ 'SUM(b.winlost - b.actual_stake) AS Winlost,' + CHAR(13)
@@ -292,6 +293,7 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 4001 AND 7999 THEN 212' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1011 AND 1020 THEN 219 -- Fishing World' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 2401 AND 2499 THEN 211 -- AllBet' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 2701 AND 2798 THEN 190 --BRVS' + CHAR(13)
 								+ 'ELSE m.SportType END ' + CHAR(13)
 
 			--SB for parlay
@@ -332,6 +334,7 @@ BEGIN
 									WHEN @ProductCode = 'VB' THEN 'AND b.bettype BETWEEN 4001 AND 7999'
 									WHEN @ProductCode = 'FW' THEN 'AND b.bettype BETWEEN 1011 AND 1020'
 									WHEN @ProductCode = 'AB' THEN 'AND b.bettype BETWEEN 2401 AND 2499'
+									WHEN @ProductCode = 'BRVS' THEN 'AND b.bettype BETWEEN 2701 AND 2799'
 									ELSE '' END + CHAR(13)
 								+ 'GROUP BY  b.winlostdate, b.currency,' + CHAR(13)
 								+ 'CASE' + CHAR(13)
@@ -341,10 +344,8 @@ BEGIN
 			
 			-- Betradar for parlay
 			SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13) 
-								+ 'SELECT b.winlostdate, b.currency,' + CHAR(13)
-								+ 'CASE' + CHAR(13)
-								+ 'WHEN b.bettype = 2799 THEN 104 --Mix Parlay BetradarS' + CHAR(13)
-								+ 'END as Sporttype,' + CHAR(13)
+								+ 'SELECT b.winlostdate, b.currency,' + CHAR(13)								
+								+ '104 as Sporttype,' + CHAR(13)
 								+ 'SUM(stake) turnover,' + CHAR(13)
 								+ 'SUM(b.winlost - b.actual_stake) AS Winlost,' + CHAR(13)
 								+ 'SUM(-1 * (b.winlost - b.actual_stake)) AS LicenseeWL,' + CHAR(13)
@@ -376,10 +377,7 @@ BEGIN
 									WHEN @ProductCode = 'VB' THEN 'AND b.bettype BETWEEN 4001 AND 7999'
 									WHEN @ProductCode = 'BRVS' THEN 'AND b.bettype BETWEEN 2701 AND 2799'
 									ELSE '' END + CHAR(13)
-								+ 'GROUP BY  b.winlostdate, b.currency,' + CHAR(13)
-								+ 'CASE' + CHAR(13)
-								+ 'WHEN b.bettype = 2799 THEN 104 --Mix Parlay BetradarS' + CHAR(13)
-								+ 'END ' + CHAR(13)
+								+ 'GROUP BY  b.winlostdate, b.currency' + CHAR(13)								
 
 			SELECT	@sql = @sql + 'DROP TABLE #tmpVS' + CHAR(13)
 		END
@@ -461,7 +459,7 @@ BEGIN
 
 		--Not BA
 		IF @ProductCode IN ('', 'RB', 'NG', 'SB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB', 'BRVS')
-		BEGIN
+		BEGIN			
 			SELECT	@sql = @sql + '--Get data from rpt_Betting for non-BA' + CHAR(13)
 
 			SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
@@ -528,6 +526,7 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 2401 AND 2499 THEN 211' + CHAR(13)
 								+ 'ELSE ISNULL(l.sporttype, 0)' + CHAR(13)
 								+ 'END' + CHAR(13)
+			
 			-- parlay for SB
 			SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
 								+ 'SELECT ' + CHAR(13) + 'b.rptDate,' + CHAR(13) + 'b.currencyID,' + CHAR(13)
@@ -563,19 +562,18 @@ BEGIN
 									WHEN @ProductCode = 'VB' THEN 'AND (b.bettype BETWEEN 4001 AND 7999)'
 									WHEN @ProductCode = 'FW' THEN 'AND b.bettype BETWEEN 1011 AND 1020'
 									WHEN @ProductCode = 'AB' THEN 'AND b.bettype BETWEEN 2401 AND 2499'
+									WHEN @ProductCode = 'BRVS' THEN 'AND b.bettype BETWEEN 2701 AND 2799'
 									ELSE '' END + CHAR(13)
 								+ 'GROUP BY b.rptDate, b.currencyID,' + CHAR(13)
 								+ 'CASE' + CHAR(13)
 								+ 'WHEN b.bettype = 9 THEN 101' + CHAR(13)
 								+ 'WHEN b.bettype = 29 THEN 102' + CHAR(13)
 								+ 'END' + CHAR(13)
-
-			-- parlay for SB
+		
+			-- parlay for BetRadar			
 			SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
 								+ 'SELECT ' + CHAR(13) + 'b.rptDate,' + CHAR(13) + 'b.currencyID,' + CHAR(13)
-								+ 'CASE' + CHAR(13)
-								+ 'WHEN b.bettype = 2799 THEN 104 --Mix Parlay BetradarS' + CHAR(13)
-								+ 'END AS SportType,' + CHAR(13)
+								+ '104 AS SportType,' + CHAR(13)
 								+ 'SUM(b.turnover) turnover,' + CHAR(13)
 								+ 'SUM(b.winloss) winlost,' + CHAR(13)
 								+ 'SUM(-1 * b.winloss) AS LicenseeWL,' + CHAR(13)
@@ -604,11 +602,7 @@ BEGIN
 									WHEN @ProductCode = 'VB' THEN 'AND (b.bettype BETWEEN 4001 AND 7999)'
 									WHEN @ProductCode = 'BRVS' THEN 'AND b.bettype BETWEEN 2701 AND 2799'
 									ELSE '' END + CHAR(13)
-								+ 'GROUP BY b.rptDate, b.currencyID,' + CHAR(13)
-								+ 'CASE' + CHAR(13)
-								+ 'WHEN b.bettype = 2799 THEN 104 --Mix Parlay BetradarS' + CHAR(13)
-								+ 'END' + CHAR(13)
-
+								+ 'GROUP BY b.rptDate, b.currencyID' + CHAR(13)	
 		END
 	END
 

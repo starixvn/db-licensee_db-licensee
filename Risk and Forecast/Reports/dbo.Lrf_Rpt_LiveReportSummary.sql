@@ -94,7 +94,7 @@ BEGIN
 	(
 		winlostdate DATETIME,
 		Currency	INT,
-		ProductCode VARCHAR(3),
+		ProductCode VARCHAR(20),
 		TurnOver	MONEY,
 		Winlost		MONEY,
 		LicenseeWL	MONEY,
