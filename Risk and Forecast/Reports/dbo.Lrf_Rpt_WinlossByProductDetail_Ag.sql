@@ -119,6 +119,9 @@ IF (@CustID<>0)
 
 SELECT @VNDCurrencyName = currency FROM exchange (NOLOCK) WHERE ExchangeId = 51
 
+DECLARE @IsTest BIT = 0
+SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
+
 DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
 DECLARE @DocHandler INT
 
@@ -205,7 +208,7 @@ BEGIN
 	-- Insert Bettype
 	INSERT INTO @bettype ( bettype, ProductCode )
 	SELECT DISTINCT BetType, ProductPrefix
-	FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, 0)
+	FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
 
 	IF CHARINDEX('CS', @ProductList) > 0
 		DELETE @bettype

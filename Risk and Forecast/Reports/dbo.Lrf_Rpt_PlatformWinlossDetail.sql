@@ -100,6 +100,9 @@ BEGIN
 	SELECT @FDate=@FromDate,@TDate=@ToDate 
 	SELECT @VNDCurrencyName = currency FROM exchange (NOLOCK) WHERE ExchangeId = 51
 
+	DECLARE @IsTest BIT = 0
+	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
+
 	DECLARE @DocHandler INT
 
 	BEGIN TRY
@@ -216,18 +219,18 @@ BEGIN
 		-- Insert Bettype
 		INSERT INTO #bettype ( bettype, ProductPrefix )		
 		SELECT DISTINCT BetType, ProductPrefix
-		FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, 0)
+		FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
 
 		IF CHARINDEX('CS', @ProductList) > 0
 			DELETE #bettype
-			WHERE bettype = 72 AND ProductCode = 'CS'
+			WHERE bettype = 72 AND ProductPrefix = 'CS'
 
 		IF CHARINDEX('SB', @ProductList) > 0
 			DELETE #bettype
-			WHERE ProductCode IN ('SB')
+			WHERE ProductPrefix IN ('SB')
 		
 		-- Insert Sport Type
-		INSERT INTO #sporttype ( sporttype, ProductCode )
+		INSERT INTO #sporttype ( sporttype, ProductPrefix )
 		SELECT DISTINCT sporttype, ProductCode
 		FROM f_LicWinLoss_ProductSportType_Sel(@ProductList)
 

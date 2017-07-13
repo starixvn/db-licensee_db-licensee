@@ -156,9 +156,12 @@ BEGIN
 	DECLARE @bettype		TABLE (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))
 	DECLARE @sporttype		TABLE (sporttype INT, ProductCode VARCHAR(10))
 	DECLARE @LicenseeName	VARCHAR(50)
-	DECLARE @ProductList		VARCHAR (500)
+	DECLARE @ProductList	VARCHAR (500)
 
-	SELECT	@LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WHERE LicenseeID = @LicenseeID	
+	SELECT	@LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WHERE LicenseeID = @LicenseeID
+	
+	DECLARE @IsTest BIT = 0
+	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)	
 
 	DECLARE @DocHandler INT
 
@@ -259,7 +262,7 @@ BEGIN
 		-- Insert Bettype
 		INSERT INTO @bettype ( bettype, ProductCode )
 		SELECT DISTINCT BetType, ProductPrefix
-		FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, 0)
+		FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
 
 		IF CHARINDEX('CS', @ProductList) > 0
 			DELETE @bettype

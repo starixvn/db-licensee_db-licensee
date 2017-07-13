@@ -71,6 +71,9 @@ SET @_Date = @Date
 DECLARE @Today SMALLDATETIME   
 SELECT @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120)   
 
+DECLARE @IsTest BIT = 0
+SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
+
 DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
 DECLARE @DocHandler INT
 
@@ -159,7 +162,7 @@ BEGIN
 	-- Insert Bettype
 	INSERT INTO @bettype ( bettype, ProductCode )
 	SELECT DISTINCT BetType, ProductPrefix
-	FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, 0)
+	FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
 END	    
   
 IF @_Date > @MoveBetsDay   

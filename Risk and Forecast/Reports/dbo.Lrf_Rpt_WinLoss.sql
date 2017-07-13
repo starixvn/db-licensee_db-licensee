@@ -127,6 +127,9 @@ BEGIN
 			@RowEnd		= @RowStart + @PageSize - 1
 	SELECT	@Today = CONVERT(DATE, GETDATE())
 
+	DECLARE @IsTest BIT = 0
+	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
+
 	-------- Get AgentList 	
 	DECLARE @DocHandler INT
 
@@ -248,7 +251,7 @@ BEGIN
 		-- Insert Bettype
 		INSERT INTO @bettype ( bettype, ProductCode )
 		SELECT DISTINCT BetType, ProductPrefix
-		FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, 0)
+		FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
 
 		IF CHARINDEX('CS', @ProductList) > 0
 			DELETE @bettype

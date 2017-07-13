@@ -136,6 +136,9 @@ DECLARE @sporttype		TABLE (sporttype INT, ProductCode VARCHAR(10))
 DECLARE @Exchange		TABLE(ExchangeDate SMALLDATETIME, ExchangeId INT,  EUR FLOAT,USD FLOAT,GBP FLOAT,Code VARCHAR(10), PRIMARY KEY(ExchangeDate,ExchangeId))
 DECLARE @ProductList	VARCHAR (500)
 
+DECLARE @IsTest BIT = 0
+SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
+
 DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
 DECLARE @DocHandler INT
 
@@ -223,7 +226,7 @@ BEGIN
 	-- Insert Bettype
 	INSERT INTO @bettype ( bettype, ProductCode )
 	SELECT DISTINCT BetType, ProductPrefix
-	FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, 0)
+	FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
 
 	IF CHARINDEX('CS', @ProductList) > 0
 		DELETE @bettype
