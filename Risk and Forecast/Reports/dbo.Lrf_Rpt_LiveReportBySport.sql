@@ -235,7 +235,6 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 4001 AND 7999 THEN 212' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1011 AND 1020 THEN 219 -- Fishing World' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 2401 AND 2499 THEN 211 -- AllBet' + CHAR(13)
-								+ 'WHEN b.bettype BETWEEN 2701 AND 2798 THEN 190 --BRVS' + CHAR(13)
 								+ 'ELSE m.SportType END as Sporttype,' + CHAR(13)
 								+ 'SUM(CASE WHEN b.bettype = 33 AND b.liveawayscore = 0 THEN stake/2 ELSE stake END) turnover,' + CHAR(13)
 								+ 'SUM(b.winlost - b.actual_stake) AS Winlost,' + CHAR(13)
@@ -293,7 +292,6 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 4001 AND 7999 THEN 212' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1011 AND 1020 THEN 219 -- Fishing World' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 2401 AND 2499 THEN 211 -- AllBet' + CHAR(13)
-								+ 'WHEN b.bettype BETWEEN 2701 AND 2798 THEN 190 --BRVS' + CHAR(13)
 								+ 'ELSE m.SportType END ' + CHAR(13)
 
 			--SB for parlay
