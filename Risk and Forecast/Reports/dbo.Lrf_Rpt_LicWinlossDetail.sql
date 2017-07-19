@@ -1000,7 +1000,7 @@ BEGIN
 					ELSE 0 END
 				) AS turnoverFW,
 				0  AS turnoverCO,
-				SUM(CASE WHEN b.sporttype IN (190, 191, 196) THEN 
+				SUM(CASE WHEN b.sporttype IN (190, 191) THEN 
 					b.turnover
 					*
 					CASE WHEN @drawfilter IN (2,3) THEN

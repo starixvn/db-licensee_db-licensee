@@ -8,7 +8,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLossByBettype]
 	, @BalanceUpDay SMALLDATETIME
 	, @PageSize		INT = 1000
 	, @PageIndex	INT = 1
-	, @AgentList		VARCHAR(MAX)
+	, @AgentList	VARCHAR(MAX)
 AS
 /*
 Created: 20101201@Jacob
@@ -228,7 +228,7 @@ BEGIN
 	INNER JOIN #TempSAg s ON b.srecommend = s.srecommend AND b.currency = s.currency
 	LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON b.transid = BA.transid	 
 	WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
-		AND bettype <= 1599  
+		AND bettype <= 2799  
 		AND (bettype NOT IN (71, 73,901,902,903,904,911,912,913,914) AND bettype NOT BETWEEN 1011 AND 1020)
 		AND b.ruben = 1
 		AND statusID NOT IN (101, 102, 103)
@@ -318,7 +318,7 @@ BEGIN
 	LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_bk BA WITH (NOLOCK) ON b.transid = BA.transid	
 	WHERE b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
 		AND statusID NOT IN (101, 102, 103)
-		AND bettype <= 1599 
+		AND bettype <= 2799 
 		AND (bettype NOT IN (71, 73,901,902,903,904,911,912,913,914) AND bettype NOT BETWEEN 1011 AND 1020)
 	GROUP BY bettype
 		, CASE 

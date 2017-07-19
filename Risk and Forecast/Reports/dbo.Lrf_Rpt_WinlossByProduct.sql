@@ -382,7 +382,20 @@ BEGIN
 		FROM VSOutright o with (nolock)
 			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
 		WHERE EventDate BETWEEN @TempFromDate AND @TDate 
-			
+		
+
+		SELECT b.transid, m.sporttype
+		INTO #tmpParlay
+		FROM 
+			dbo.bettrans b WITH ( NOLOCK)--,INDEX=IX_srecommend )  
+			INNER JOIN bettransm bm WITH (NOLOCK) ON b.refno = bm.refno AND b.custid = bm.custid
+			INNER JOIN dbo.match m WITH (NOLOCK) ON bm.matchid = m.matchid
+			INNER JOIN @TempAg a ON b.recommend = a.custid AND b.Currency = a.Currency 
+			INNER JOIN @bettype bt ON b.bettype = bt.bettype			
+		WHERE b.bettype = 2799 -- Betradar VS Parlay
+			AND b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
+			(@CustId = 0 OR (@CustId <> 0 AND b.CustId = @CustID)) AND
+			b.statusID  IN (111, 112, 113)	
 		 
 		INSERT INTO #SAgWinLoss
 		SELECT   
@@ -394,10 +407,10 @@ BEGIN
 					ELSE 'VS' + CONVERT(varchar(10),vs.sporttype)
 				END
 			WHEN b.bettype BETWEEN 2701 AND 2799 THEN
-				CASE WHEN ISNULL(vs.sporttype, 0) = 0  
-					THEN 'BRVS'+ CONVERT(varchar(10), ISNULL(m.sporttype,0))
-					ELSE 'BRVS' + CONVERT(varchar(10), vs.sporttype)
-				END				
+				CASE WHEN b.bettype = 2799 THEN 'BRVS' + CONVERT(varchar(10), p.sporttype)
+				     WHEN ISNULL(vs.sporttype, 0) = 0 AND b.bettype <> 2799 THEN 'BRVS'+ CONVERT(varchar(10), ISNULL(m.sporttype,0))
+					 ELSE 'BRVS' + CONVERT(varchar(10), vs.sporttype)
+				END						
 			ELSE bt.ProductCode END AS ProductCode,
 			SUM(stake *			
 				CASE WHEN b.statusID = 111 THEN 0|@sumTurnOver
@@ -418,6 +431,7 @@ BEGIN
 			INNER JOIN @bettype bt ON b.bettype = bt.bettype
 			LEFT JOIN [match] m with(nolock) ON b.matchid = m.matchid AND b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype())
 			LEFT JOIN #tmpVS vs ON b.oddsid = vs.Orid AND b.bettype IN (1231,1232,1233,1237,1238,1220,1235,1236)	
+			LEFT JOIN #tmpParlay p ON b.transid = p.transid AND b.bettype = 2799
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
 			(@CustId = 0 OR (@CustId <> 0 AND b.CustId = @CustID)) AND
@@ -431,12 +445,13 @@ BEGIN
 					ELSE 'VS' + CONVERT(varchar(10),vs.sporttype)
 				END
 			WHEN b.bettype BETWEEN 2701 AND 2799 THEN
-				CASE WHEN ISNULL(vs.sporttype, 0) = 0  
-					THEN 'BRVS'+convert(varchar(10),ISNULL(m.sporttype,0))
-					ELSE 'BRVS' +convert(varchar(10),vs.sporttype)
-				END				
+				CASE WHEN b.bettype = 2799 THEN 'BRVS' + CONVERT(varchar(10), p.sporttype)
+				     WHEN ISNULL(vs.sporttype, 0) = 0 AND b.bettype <> 2799 THEN 'BRVS'+ CONVERT(varchar(10), ISNULL(m.sporttype,0))
+					 ELSE 'BRVS' + CONVERT(varchar(10), vs.sporttype)
+				END						
 			ELSE bt.ProductCode END 
 			,b.statusID
+
 		DROP TABLE #tmpVS	
 	END
 	
