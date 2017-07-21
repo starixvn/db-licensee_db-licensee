@@ -1,11 +1,10 @@
-﻿USE [bodb02]
+﻿SET QUOTED_IDENTIFIER ON 
 GO
-/****** Object:  StoredProcedure [dbo].[Lrf_Rpt_WinlossByProduct_xpre]    Script Date: 01/31/2015 09:25:31 ******/
-SET ANSI_NULLS ON
+SET ANSI_NULLS ON 
 GO
-SET QUOTED_IDENTIFIER ON
-GO
-ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProduct]  
+
+/****** Object:  Stored Procedure dbo.Lrf_Rpt_WinlossByProduct    Script Date: 7/21/2017 1:48:26 PM ******/
+CREATE PROCEDURE [dbo].[Lrf_Rpt_WinlossByProduct]  
  @UserName		VARCHAR(50) = NULL,
  @FromDate		SMALLDATETIME,  
  @ToDate		SMALLDATETIME,   
@@ -72,6 +71,7 @@ AS
 	- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
 	- 20170327@Paul: Implement Cash Out [RedmineID :#71727]
+	- 20170721@Sophia: Change to call Alias DBWH instead of DBDW2 
 
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -655,7 +655,7 @@ BEGIN
 			,SUM(commissionP) 
 			,SUM(WinlossA)  	
 			,SUM(betcount)  
-		FROM DBDW2.bodb_Account.dbo.mcCustVirtualSport  WITH ( NOLOCK )   	
+		FROM DBWH.bodb_Account.dbo.mcCustVirtualSport  WITH ( NOLOCK )   	
 		WHERE rptdate BETWEEN @FDate AND @TempToDate  
 			 AND status=8 --  in (8,3,4)
 			 AND (@CustId = 0 OR (@CustId <> 0 AND CustId = @CustID))
@@ -689,7 +689,7 @@ BEGIN
 			,SUM(commissionP) 
 			,SUM(WinlossA)  	
 			,SUM(betcount)  
-		FROM DBDW2.bodb_Account.dbo.mcCustVirtualSport  WITH ( NOLOCK )   	
+		FROM DBWH.bodb_Account.dbo.mcCustVirtualSport  WITH ( NOLOCK )   	
 		WHERE rptdate BETWEEN @FDate AND @TempToDate  
 			AND (@CustId = 0 OR (@CustId <> 0 AND CustId = @CustID))
 			 AND status=3  
@@ -723,7 +723,7 @@ BEGIN
 			,SUM(commissionP) 
 			,SUM(WinlossA)  	
 			,SUM(betcount)  
-		FROM DBDW2.bodb_Account.dbo.mcCustVirtualSport  WITH ( NOLOCK )   	
+		FROM DBWH.bodb_Account.dbo.mcCustVirtualSport  WITH ( NOLOCK )   	
 		WHERE rptdate BETWEEN @FDate AND @TempToDate  
 			 AND status=4
 			 AND (@CustId = 0 OR (@CustId <> 0 AND CustId = @CustID))
@@ -954,7 +954,17 @@ DROP TABLE #TempExchange
 END
 
 
+
 GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinlossByProduct] TO [bodbLicenseeNet]
+
+SET QUOTED_IDENTIFIER OFF 
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_WinlossByProduct] TO [vnteam] 
+SET ANSI_NULLS ON 
+GO
+
+
+GO 
+ GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_WinlossByProduct] TO [vnteam]
+GO 
+ GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinlossByProduct] TO [bodbLicenseeNet]
+GO 

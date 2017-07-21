@@ -1,7 +1,12 @@
-USE [bodb02]
+
+SET QUOTED_IDENTIFIER ON 
+GO
+SET ANSI_NULLS ON 
 GO
 
-ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail_Ag]  
+/****** Object:  Stored Procedure dbo.Lrf_Rpt_WinlossByProductDetail_Ag    Script Date: 7/21/2017 1:48:26 PM ******/
+
+CREATE PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail_Ag]  
  @CustID		INT = 0, --memberID
  @FromDate		SMALLDATETIME,  
  @ToDate		SMALLDATETIME,    
@@ -60,6 +65,7 @@ AS
 	- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
 	- 20170327@Paul: Implement Cash Out [RedmineID :#71727]
+	- 20170721@Sophia: Change to call Alias DBWH instead of DBDW2 
 
 	Param's Explanation:  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -602,7 +608,7 @@ BEGIN
 			,commissionP 
 			,WinlossA  	
 			,betcount  
-		FROM DBDW2.bodb_Account.dbo.mcCustVirtualSport  WITH ( NOLOCK )   	
+		FROM DBWH.bodb_Account.dbo.mcCustVirtualSport  WITH ( NOLOCK )   	
 		WHERE rptdate BETWEEN @FDate AND @TempToDate  
 			 AND status  in (8,3,4)
 		INSERT INTO #SAgWinLoss
@@ -824,7 +830,17 @@ DROP TABLE #SAgWinLoss
 DROP TABLE #TempExchange
  
 END
+
 GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinlossByProductDetail_Ag] TO [bodbLicenseeNet]
+
+SET QUOTED_IDENTIFIER OFF 
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_WinlossByProductDetail_Ag] TO [vnteam]   
+SET ANSI_NULLS ON 
+GO
+
+
+GO 
+ GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_WinlossByProductDetail_Ag] TO [vnteam]
+GO 
+ GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinlossByProductDetail_Ag] TO [bodbLicenseeNet]
+GO 
