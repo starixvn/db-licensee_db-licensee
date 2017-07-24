@@ -73,7 +73,7 @@ SELECT @DateFrom = DATEADD(DAY, -15, GETDATE())
 SELECT @DateTo = GETDATE()
 SELECT @MoveBetsDay = MAX(eventdate) FROM match14 WITH(NOLOCK)
 
-EXEC [Lrf_Rpt_LiveReportSummary_UAT3] @LicenseeId = 1, @CurrencyID = 0, @FromDate=@DateFrom, @ToDate=@DateTo, @MoveBetsDay = @MoveBetsDay
+EXEC [Lrf_Rpt_LiveReportSummary] @LicenseeId = 1, @CurrencyID = 0, @FromDate=@DateFrom, @ToDate=@DateTo, @MoveBetsDay = @MoveBetsDay
 
 */
 BEGIN
