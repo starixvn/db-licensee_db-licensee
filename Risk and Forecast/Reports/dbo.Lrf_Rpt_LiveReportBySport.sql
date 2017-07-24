@@ -1,5 +1,5 @@
-USE [bodb02]
-GO 
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+ 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportBySport] 
 	@LicenseeID		INT,	
 	@ProductCode	VARCHAR(20) = NULL,
@@ -55,6 +55,7 @@ Revisions:
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
 	- 20170329@Paul: Implement Cash Out [RedmineID: #71727]
 	- 20170705@Harper: Hotfix for Cash Out [RedmineID: #79546]
+	- 20170721@Harper: Hotfix add AB and FW to LiveReport [RedmineID: #80350]
 
 Param's Explanation:
 	@Liveindicator : indicate that whether the report will get live data or not
@@ -199,7 +200,7 @@ BEGIN
 								+ 'END ' + CHAR(13)
 		END
 
-		IF @ProductCode IN ('', 'RB', 'NG', 'SB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VB')	 
+		IF @ProductCode IN ('', 'RB', 'NG', 'SB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB')	 
 		BEGIN
 			SELECT	@sql = @sql + '--Get data from bettrans for non-BA' + CHAR(13)
 
@@ -229,6 +230,8 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 2201 AND 2299 THEN 209 -- New Casino' + CHAR(13)		
 								+ 'WHEN b.bettype BETWEEN 2301 AND 2399 THEN 210 -- New Casino' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 4001 AND 7999 THEN 212' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 1011 AND 1020 THEN 219 -- Fishing World' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 2401 AND 2499 THEN 211 -- AllBet' + CHAR(13)
 								+ 'ELSE m.SportType END as Sporttype,' + CHAR(13)
 								+ 'SUM(CASE WHEN b.bettype = 33 AND b.liveawayscore = 0 THEN stake/2 ELSE stake END) turnover,' + CHAR(13)
 								+ 'SUM(b.winlost - b.actual_stake) AS Winlost,' + CHAR(13)
@@ -261,6 +264,8 @@ BEGIN
 									WHEN @ProductCode = 'KN' THEN 'AND b.bettype BETWEEN 1501 AND 1599'
 									WHEN @ProductCode = 'CS' THEN 'AND (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399)'
 									WHEN @ProductCode = 'VB' THEN 'AND (b.bettype BETWEEN 4001 AND 7999)'
+									WHEN @ProductCode = 'FW' THEN 'AND b.bettype BETWEEN 1011 AND 1020'
+									WHEN @ProductCode = 'AB' THEN 'AND b.bettype BETWEEN 2401 AND 2499'
 									ELSE 'AND b.bettype NOT BETWEEN 2001 AND 2009 ' END + CHAR(13)
 								+ 'GROUP BY  b.winlostdate, b.currency,' + CHAR(13)
 								+ 'CASE' + CHAR(13)
@@ -280,6 +285,8 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 2201 AND 2299 THEN 209 -- New Casino' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 2301 AND 2399 THEN 210 -- New Casino' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 4001 AND 7999 THEN 212' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 1011 AND 1020 THEN 219 -- Fishing World' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 2401 AND 2499 THEN 211 -- AllBet' + CHAR(13)
 								+ 'ELSE m.SportType END ' + CHAR(13)
 
 			--SB for parlay
@@ -318,6 +325,8 @@ BEGIN
 									WHEN @ProductCode = 'KN' THEN 'AND b.bettype BETWEEN 1501 AND 1599'
 									WHEN @ProductCode = 'CS' THEN 'AND b.bettype = 71 AND b.bettype BETWEEN 2101 AND 2399'
 									WHEN @ProductCode = 'VB' THEN 'AND b.bettype BETWEEN 4001 AND 7999'
+									WHEN @ProductCode = 'FW' THEN 'AND b.bettype BETWEEN 1011 AND 1020'
+									WHEN @ProductCode = 'AB' THEN 'AND b.bettype BETWEEN 2401 AND 2499'
 									ELSE '' END + CHAR(13)
 								+ 'GROUP BY  b.winlostdate, b.currency,' + CHAR(13)
 								+ 'CASE' + CHAR(13)
@@ -404,7 +413,7 @@ BEGIN
 		END
 
 		--Not BA
-		IF @ProductCode IN ('', 'RB', 'NG', 'SB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VB')
+		IF @ProductCode IN ('', 'RB', 'NG', 'SB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB')
 		BEGIN
 			SELECT	@sql = @sql + '--Get data from rpt_Betting for non-BA' + CHAR(13)
 
@@ -420,6 +429,8 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 2201 AND 2299 THEN 209' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 2301 AND 2399 THEN 210' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 4001 AND 7999 THEN 212' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 1011 AND 1020 THEN 219' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 2401 AND 2499 THEN 211' + CHAR(13)
 								+ 'ELSE ISNULL(l.sporttype, 0)' + CHAR(13)
 								+ 'END AS SportType,' + CHAR(13)
 								+ 'SUM(b.turnover * CASE WHEN b.bettype=33 AND b.status IN (114,115) THEN 0.5 ELSE 1 END) turnover,' + CHAR(13)
@@ -451,6 +462,8 @@ BEGIN
 									WHEN @ProductCode = 'KN' THEN 'AND b.bettype BETWEEN 1501 AND 1599'
 									WHEN @ProductCode = 'CS' THEN 'AND (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399)'
 									WHEN @ProductCode = 'VB' THEN 'AND (b.bettype BETWEEN 4001 AND 7999)'
+									WHEN @ProductCode = 'FW' THEN 'AND b.bettype BETWEEN 1011 AND 1020'
+									WHEN @ProductCode = 'AB' THEN 'AND b.bettype BETWEEN 2401 AND 2499'
 									ELSE 'AND b.bettype NOT BETWEEN 2001 AND 2009 ' END + CHAR(13)
 								+ 'GROUP BY b.rptDate, b.currencyID, ' + CHAR(13)
 								+ 'CASE' + CHAR(13)
@@ -463,6 +476,8 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 2201 AND 2299 THEN 209' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 2301 AND 2399 THEN 210' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 4001 AND 7999 THEN 212' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 1011 AND 1020 THEN 219' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 2401 AND 2499 THEN 211' + CHAR(13)
 								+ 'ELSE ISNULL(l.sporttype, 0)' + CHAR(13)
 								+ 'END' + CHAR(13)
 			-- parlay for SB
@@ -498,6 +513,8 @@ BEGIN
 									WHEN @ProductCode = 'KN' THEN 'AND b.bettype BETWEEN 1501 AND 1599'
 									WHEN @ProductCode = 'CS' THEN 'AND (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399)'
 									WHEN @ProductCode = 'VB' THEN 'AND (b.bettype BETWEEN 4001 AND 7999)'
+									WHEN @ProductCode = 'FW' THEN 'AND b.bettype BETWEEN 1011 AND 1020'
+									WHEN @ProductCode = 'AB' THEN 'AND b.bettype BETWEEN 2401 AND 2499'
 									ELSE '' END + CHAR(13)
 								+ 'GROUP BY b.rptDate, b.currencyID,' + CHAR(13)
 								+ 'CASE' + CHAR(13)
