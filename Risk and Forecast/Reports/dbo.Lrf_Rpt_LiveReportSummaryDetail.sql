@@ -174,7 +174,7 @@ BEGIN
 								+ 'INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON t.custid=ba.recommend and b.transid = ba.transid' + CHAR(13) 
 								+ 'WHERE b.winlostdate BETWEEN ''' + convert(VARCHAR(10), @TempFromDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TDate, 120) + '''' + CHAR(13)
 								+ 'AND b.statusID IN (111,112,113)'  + CHAR(13)
-								+ 'AND b.bettype IN (9,29)'  + CHAR(13)
+								+ 'AND b.bettype IN (9,29,2799)'  + CHAR(13)
 								+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.livehomescore = 0)' + CHAR(13)
 								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.livehomescore = 1)' + CHAR(13)
 								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
@@ -223,76 +223,83 @@ BEGIN
 									WHEN @ProductCode = 'BRVS' THEN 'AND b.bettype BETWEEN 2701 AND 2799'
 									ELSE 'AND b.bettype NOT BETWEEN 2001 AND 2009 AND b.bettype NOT BETWEEN 4001 AND 4099 AND b.bettype NOT BETWEEN 2501 AND 2699 ' END + CHAR(13)
 								+ 'GROUP BY  b.winlostdate, t.currency, b.bettype' + CHAR(13)
-			--SB for parlay
-			SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
-								+ 'SELECT b.winlostdate, t.currency, b.bettype,' + CHAR(13)
-								+ 'SUM(stake) turnover,' + CHAR(13)
-								+ 'SUM(b.winlost - b.actual_stake) AS Winlost,' + CHAR(13)
-								+ 'SUM(-1 * (b.winlost - b.actual_stake)) AS LicenseeWL,' + CHAR(13)
-								+ 'SUM (comm) AS Comm,' + CHAR(13)
-								+ 'SUM (b.playercomm) AS PlayerComm,' + CHAR(13)
-								+ '- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd, ' + CHAR(13)
-								+ 'COUNT(b.transid) BetCount' + CHAR(13)
-								+ 'FROM bettrans b  WITH (NOLOCK)' + CHAR(13)
-								+ 'INNER JOIN @TempAg t  ON b.recommend =t.custid AND b.Currency = t.Currency ' + CHAR(13)
-								+ 'LEFT JOIN dbo.match m WITH (NOLOCK) ON b.matchID = m.matchID' + CHAR(13)
-								+ 'LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON t.custid=ba.recommend and  b.transid = BA.transid' + CHAR(13)
-								+ 'WHERE b.winlostdate BETWEEN ''' + convert(VARCHAR(10), @TempFromDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TDate, 120) + '''' + CHAR(13)
-								+ 'AND b.statusID IN (111,112,113)' + CHAR(13)
-								+ 'AND b.bettype IN (9,29)' + CHAR(13)
-								+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.livehomescore = 0)' + CHAR(13)
-								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.livehomescore = 1)' + CHAR(13)
-								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
-								+ 'AND BA.transid IS NULL' + CHAR(13)
-								+ CASE
-									WHEN @ProductCode = 'NG' THEN 'AND b.bettype BETWEEN 81 AND 120 '
-									WHEN @ProductCode = 'SB' THEN 'AND (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999)) '
-									WHEN @ProductCode = 'RB' THEN 'AND b.bettype BETWEEN 31 AND 33'
-									WHEN @ProductCode = 'LC' THEN 'AND b.bettype BETWEEN 1101 AND 1199'
-									WHEN @ProductCode = 'VS' THEN 'AND b.bettype BETWEEN 1201 AND 1299'
-									WHEN @ProductCode = 'BG' THEN 'AND b.bettype = 73'
-									WHEN @ProductCode = 'KN' THEN 'AND b.bettype BETWEEN 1501 AND 1599'
-									WHEN @ProductCode = 'CS' THEN 'AND (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399)'
-									WHEN @ProductCode = 'VB' THEN 'AND b.bettype BETWEEN 4001 AND 7999'
+
+			IF @ProductCode IN ('', 'SB')
+			BEGIN
+				--SB for parlay
+				SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
+									+ 'SELECT b.winlostdate, t.currency, b.bettype,' + CHAR(13)
+									+ 'SUM(stake) turnover,' + CHAR(13)
+									+ 'SUM(b.winlost - b.actual_stake) AS Winlost,' + CHAR(13)
+									+ 'SUM(-1 * (b.winlost - b.actual_stake)) AS LicenseeWL,' + CHAR(13)
+									+ 'SUM (comm) AS Comm,' + CHAR(13)
+									+ 'SUM (b.playercomm) AS PlayerComm,' + CHAR(13)
+									+ '- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd, ' + CHAR(13)
+									+ 'COUNT(b.transid) BetCount' + CHAR(13)
+									+ 'FROM bettrans b  WITH (NOLOCK)' + CHAR(13)
+									+ 'INNER JOIN @TempAg t  ON b.recommend =t.custid AND b.Currency = t.Currency ' + CHAR(13)
+									+ 'LEFT JOIN dbo.match m WITH (NOLOCK) ON b.matchID = m.matchID' + CHAR(13)
+									+ 'LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON t.custid=ba.recommend and  b.transid = BA.transid' + CHAR(13)
+									+ 'WHERE b.winlostdate BETWEEN ''' + convert(VARCHAR(10), @TempFromDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TDate, 120) + '''' + CHAR(13)
+									+ 'AND b.statusID IN (111,112,113)' + CHAR(13)
+									+ 'AND b.bettype IN (9,29)' + CHAR(13)
+									+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.livehomescore = 0)' + CHAR(13)
+									+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.livehomescore = 1)' + CHAR(13)
+									+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
+									+ 'AND BA.transid IS NULL' + CHAR(13)
+									+ CASE
+										WHEN @ProductCode = 'NG' THEN 'AND b.bettype BETWEEN 81 AND 120 '
+										WHEN @ProductCode = 'SB' THEN 'AND (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999)) '
+										WHEN @ProductCode = 'RB' THEN 'AND b.bettype BETWEEN 31 AND 33'
+										WHEN @ProductCode = 'LC' THEN 'AND b.bettype BETWEEN 1101 AND 1199'
+										WHEN @ProductCode = 'VS' THEN 'AND b.bettype BETWEEN 1201 AND 1299'
+										WHEN @ProductCode = 'BG' THEN 'AND b.bettype = 73'
+										WHEN @ProductCode = 'KN' THEN 'AND b.bettype BETWEEN 1501 AND 1599'
+										WHEN @ProductCode = 'CS' THEN 'AND (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399)'
+										WHEN @ProductCode = 'VB' THEN 'AND b.bettype BETWEEN 4001 AND 7999'
 									WHEN @ProductCode = 'FW' THEN 'AND b.bettype BETWEEN 1011 AND 1020'
 									WHEN @ProductCode = 'AB' THEN 'AND b.bettype BETWEEN 2401 AND 2499'
-									ELSE '' END + CHAR(13)
-								+ 'GROUP BY  b.winlostdate, t.currency, b.bettype	' + CHAR(13)
-
-			-- Parlay of BetRadar
-			SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
-								+ 'SELECT b.winlostdate, t.currency, b.bettype,' + CHAR(13)
-								+ 'SUM(stake) turnover,' + CHAR(13)
-								+ 'SUM(b.winlost - b.actual_stake) AS Winlost,' + CHAR(13)
-								+ 'SUM(-1 * (b.winlost - b.actual_stake)) AS LicenseeWL,' + CHAR(13)
-								+ 'SUM (comm) AS Comm,' + CHAR(13)
-								+ 'SUM (b.playercomm) AS PlayerComm,' + CHAR(13)
-								+ '- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd, ' + CHAR(13)
-								+ 'COUNT(b.transid) BetCount' + CHAR(13)
-								+ 'FROM bettrans b  WITH (NOLOCK)' + CHAR(13)
-								+ 'INNER JOIN @TempAg t  ON b.recommend =t.custid AND b.Currency = t.Currency ' + CHAR(13)
-								+ 'LEFT JOIN dbo.match m WITH (NOLOCK) ON b.matchID = m.matchID' + CHAR(13)
-								+ 'LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON t.custid=ba.recommend and  b.transid = BA.transid' + CHAR(13)
-								+ 'WHERE b.winlostdate BETWEEN ''' + convert(VARCHAR(10), @TempFromDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TDate, 120) + '''' + CHAR(13)
-								+ 'AND b.statusID IN (111,112,113)' + CHAR(13)
-								+ 'AND b.bettype IN (2799)' + CHAR(13)
-								+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.livehomescore = 0)' + CHAR(13)
-								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.livehomescore = 1)' + CHAR(13)
-								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
-								+ 'AND BA.transid IS NULL' + CHAR(13)
-								+ CASE
-									WHEN @ProductCode = 'NG' THEN 'AND b.bettype BETWEEN 81 AND 120 '
-									WHEN @ProductCode = 'SB' THEN 'AND (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999)) '
-									WHEN @ProductCode = 'RB' THEN 'AND b.bettype BETWEEN 31 AND 33'
-									WHEN @ProductCode = 'LC' THEN 'AND b.bettype BETWEEN 1101 AND 1199'
-									WHEN @ProductCode = 'VS' THEN 'AND b.bettype BETWEEN 1201 AND 1299'
-									WHEN @ProductCode = 'BG' THEN 'AND b.bettype = 73'
-									WHEN @ProductCode = 'KN' THEN 'AND b.bettype BETWEEN 1501 AND 1599'
-									WHEN @ProductCode = 'CS' THEN 'AND (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399)'
-									WHEN @ProductCode = 'VB' THEN 'AND b.bettype BETWEEN 4001 AND 7999'
 									WHEN @ProductCode = 'BRVS' THEN 'AND b.bettype BETWEEN 2701 AND 2799'
 									ELSE '' END + CHAR(13)
 								+ 'GROUP BY  b.winlostdate, t.currency, b.bettype	' + CHAR(13)
+
+			IF @ProductCode IN ('', 'BRVS')
+			BEGIN
+				-- Parlay of BetRadar
+				SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
+									+ 'SELECT b.winlostdate, t.currency, b.bettype,' + CHAR(13)
+									+ 'SUM(stake) turnover,' + CHAR(13)
+									+ 'SUM(b.winlost - b.actual_stake) AS Winlost,' + CHAR(13)
+									+ 'SUM(-1 * (b.winlost - b.actual_stake)) AS LicenseeWL,' + CHAR(13)
+									+ 'SUM (comm) AS Comm,' + CHAR(13)
+									+ 'SUM (b.playercomm) AS PlayerComm,' + CHAR(13)
+									+ '- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd, ' + CHAR(13)
+									+ 'COUNT(b.transid) BetCount' + CHAR(13)
+									+ 'FROM bettrans b  WITH (NOLOCK)' + CHAR(13)
+									+ 'INNER JOIN @TempAg t  ON b.recommend =t.custid AND b.Currency = t.Currency ' + CHAR(13)
+									+ 'LEFT JOIN dbo.match m WITH (NOLOCK) ON b.matchID = m.matchID' + CHAR(13)
+									+ 'LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON t.custid=ba.recommend and  b.transid = BA.transid' + CHAR(13)
+									+ 'WHERE b.winlostdate BETWEEN ''' + convert(VARCHAR(10), @TempFromDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TDate, 120) + '''' + CHAR(13)
+									+ 'AND b.statusID IN (111,112,113)' + CHAR(13)
+									+ 'AND b.bettype IN (2799)' + CHAR(13)
+									+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.livehomescore = 0)' + CHAR(13)
+									+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.livehomescore = 1)' + CHAR(13)
+									+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
+									+ 'AND BA.transid IS NULL' + CHAR(13)
+									+ CASE
+										WHEN @ProductCode = 'NG' THEN 'AND b.bettype BETWEEN 81 AND 120 '
+										WHEN @ProductCode = 'SB' THEN 'AND (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999)) '
+										WHEN @ProductCode = 'RB' THEN 'AND b.bettype BETWEEN 31 AND 33'
+										WHEN @ProductCode = 'LC' THEN 'AND b.bettype BETWEEN 1101 AND 1199'
+										WHEN @ProductCode = 'VS' THEN 'AND b.bettype BETWEEN 1201 AND 1299'
+										WHEN @ProductCode = 'BG' THEN 'AND b.bettype = 73'
+										WHEN @ProductCode = 'KN' THEN 'AND b.bettype BETWEEN 1501 AND 1599'
+										WHEN @ProductCode = 'CS' THEN 'AND (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399)'
+										WHEN @ProductCode = 'VB' THEN 'AND b.bettype BETWEEN 4001 AND 7999'
+										WHEN @ProductCode = 'BRVS' THEN 'AND b.bettype BETWEEN 2701 AND 2799'
+										ELSE '' END + CHAR(13)
+									+ 'GROUP BY  b.winlostdate, t.currency, b.bettype	' + CHAR(13)
+			END
 		END
 	END
 
@@ -345,7 +352,7 @@ BEGIN
 								+ 'INNER JOIN #currency c ON b.CurrencyID = c.Currency' + CHAR(13)
 								+ 'WHERE b.rptDate BETWEEN ''' + CONVERT(VARCHAR(10), @FDate, 120) + ''' AND ''' + CONVERT(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13)
 								+ 'AND b.status NOT IN (-1,103)' + CHAR(13)
-								+ 'AND b.bettype IN (9,29)' + CHAR(13)
+								+ 'AND b.bettype IN (9,29,2799)' + CHAR(13)
 								+ 'AND b.isBA = 1' + CHAR(13)
 								+ 'AND b.siteID =' + CONVERT(VARCHAR(10), @LicenseeID) + CHAR(13)
 								+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13)
@@ -392,74 +399,81 @@ BEGIN
 									ELSE 'AND b.bettype NOT BETWEEN 2001 AND 2009 AND b.bettype NOT BETWEEN 4001 AND 4099 AND b.bettype NOT BETWEEN 2501 AND 2699 ' END + CHAR(13)
 								+ 'GROUP BY b.rptDate, b.currencyID, b.bettype' + CHAR(13)
 
-			-- parlay for SB			
-			SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
-								+ 'SELECT b.rptDate, b.currencyID, b.bettype,' + CHAR(13)
-								+ 'SUM(b.turnover) turnover,' + CHAR(13)
-								+ 'sum(b.winloss) winlost,' + CHAR(13)
-								+ 'SUM(-1 * b.winloss) AS LicenseeWL,' + CHAR(13)
-								+ 'sum(b.CommissionA) Comm,' + CHAR(13)
-								+ 'sum( b.CommissionP ) PlayerComm,' + CHAR(13)
-								+ '- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13)
-								+ 'sum(b.betcount) BetCount' + CHAR(13)
-								+ 'FROM bodb_LicenseeReport.dbo.rpt_BettingParlay b WITH ( NOLOCK )' + CHAR(13)
-								+ 'INNER JOIN #currency c ON b.CurrencyID = c.Currency' + CHAR(13)
-								+ 'WHERE b.rptDate BETWEEN ''' + convert(VARCHAR(10), @FDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13)
-								+ 'AND b.status NOT IN (-1,103)' + CHAR(13)
-								+ 'AND b.bettype IN (9,29)' + CHAR(13)
-								+ 'AND b.isBA = 0' + CHAR(13)
-								+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13)
-								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13)
-								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
-								+ 'AND b.siteID =' + convert(VARCHAR(10), @LicenseeID) + CHAR(13)								
-								+ CASE 
-									WHEN @ProductCode = 'NG' THEN 'AND b.bettype BETWEEN 81 AND 120 '
-									WHEN @ProductCode = 'SB' THEN 'AND (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)) '
-									WHEN @ProductCode = 'RB' THEN 'AND b.bettype BETWEEN 31 AND 33'
-									WHEN @ProductCode = 'LC' THEN 'AND b.bettype BETWEEN 1101 AND 1199'
-									WHEN @ProductCode = 'VS' THEN 'AND b.bettype BETWEEN 1201 AND 1299'
-									WHEN @ProductCode = 'BG' THEN 'AND b.bettype = 73'
-									WHEN @ProductCode = 'KN' THEN 'AND b.bettype BETWEEN 1501 AND 1599'
-									WHEN @ProductCode = 'CS' THEN 'AND (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399)'
-									WHEN @ProductCode = 'VB' THEN 'AND b.bettype BETWEEN 4001 AND 7999'
+			IF @ProductCode IN ('', 'SB') 
+			BEGIN
+				-- parlay for SB			
+				SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
+									+ 'SELECT b.rptDate, b.currencyID, b.bettype,' + CHAR(13)
+									+ 'SUM(b.turnover) turnover,' + CHAR(13)
+									+ 'sum(b.winloss) winlost,' + CHAR(13)
+									+ 'SUM(-1 * b.winloss) AS LicenseeWL,' + CHAR(13)
+									+ 'sum(b.CommissionA) Comm,' + CHAR(13)
+									+ 'sum( b.CommissionP ) PlayerComm,' + CHAR(13)
+									+ '- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13)
+									+ 'sum(b.betcount) BetCount' + CHAR(13)
+									+ 'FROM bodb_LicenseeReport.dbo.rpt_BettingParlay b WITH ( NOLOCK )' + CHAR(13)
+									+ 'INNER JOIN #currency c ON b.CurrencyID = c.Currency' + CHAR(13)
+									+ 'WHERE b.rptDate BETWEEN ''' + convert(VARCHAR(10), @FDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13)
+									+ 'AND b.status NOT IN (-1,103)' + CHAR(13)
+									+ 'AND b.bettype IN (9,29)' + CHAR(13)
+									+ 'AND b.isBA = 0' + CHAR(13)
+									+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13)
+									+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13)
+									+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
+									+ 'AND b.siteID =' + convert(VARCHAR(10), @LicenseeID) + CHAR(13)								
+									+ CASE 
+										WHEN @ProductCode = 'NG' THEN 'AND b.bettype BETWEEN 81 AND 120 '
+										WHEN @ProductCode = 'SB' THEN 'AND (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)) '
+										WHEN @ProductCode = 'RB' THEN 'AND b.bettype BETWEEN 31 AND 33'
+										WHEN @ProductCode = 'LC' THEN 'AND b.bettype BETWEEN 1101 AND 1199'
+										WHEN @ProductCode = 'VS' THEN 'AND b.bettype BETWEEN 1201 AND 1299'
+										WHEN @ProductCode = 'BG' THEN 'AND b.bettype = 73'
+										WHEN @ProductCode = 'KN' THEN 'AND b.bettype BETWEEN 1501 AND 1599'
+										WHEN @ProductCode = 'CS' THEN 'AND (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399)'
+										WHEN @ProductCode = 'VB' THEN 'AND b.bettype BETWEEN 4001 AND 7999'
 									WHEN @ProductCode = 'FW' THEN 'AND b.bettype BETWEEN 1011 AND 1020'
 									WHEN @ProductCode = 'AB' THEN 'AND b.bettype BETWEEN 2401 AND 2499'
-									ELSE '' END + CHAR(13)
-								+ 'GROUP BY b.rptDate, b.currencyID, b.bettype' + CHAR(13)
-
-			-- Parlay for BetRadar		
-			SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
-								+ 'SELECT b.rptDate, b.currencyID, b.bettype,' + CHAR(13)
-								+ 'SUM(b.turnover) turnover,' + CHAR(13)
-								+ 'sum(b.winloss) winlost,' + CHAR(13)
-								+ 'SUM(-1 * b.winloss) AS LicenseeWL,' + CHAR(13)
-								+ 'sum(b.CommissionA) Comm,' + CHAR(13)
-								+ 'sum( b.CommissionP ) PlayerComm,' + CHAR(13)
-								+ '- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13)
-								+ 'sum(b.betcount) BetCount' + CHAR(13)
-								+ 'FROM bodb_LicenseeReport.dbo.rpt_BettingParlay b WITH ( NOLOCK )' + CHAR(13)
-								+ 'INNER JOIN #currency c ON b.CurrencyID = c.Currency' + CHAR(13)
-								+ 'WHERE b.rptDate BETWEEN ''' + convert(VARCHAR(10), @FDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13)
-								+ 'AND b.status NOT IN (-1,103)' + CHAR(13)
-								+ 'AND b.bettype IN (2799)' + CHAR(13)
-								+ 'AND b.isBA = 0' + CHAR(13)
-								+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13)
-								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13)
-								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
-								+ 'AND b.siteID =' + convert(VARCHAR(10), @LicenseeID) + CHAR(13)								
-								+ CASE 
-									WHEN @ProductCode = 'NG' THEN 'AND b.bettype BETWEEN 81 AND 120 '
-									WHEN @ProductCode = 'SB' THEN 'AND (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)) '
-									WHEN @ProductCode = 'RB' THEN 'AND b.bettype BETWEEN 31 AND 33'
-									WHEN @ProductCode = 'LC' THEN 'AND b.bettype BETWEEN 1101 AND 1199'
-									WHEN @ProductCode = 'VS' THEN 'AND b.bettype BETWEEN 1201 AND 1299'
-									WHEN @ProductCode = 'BG' THEN 'AND b.bettype = 73'
-									WHEN @ProductCode = 'KN' THEN 'AND b.bettype BETWEEN 1501 AND 1599'
-									WHEN @ProductCode = 'CS' THEN 'AND (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399)'
-									WHEN @ProductCode = 'VB' THEN 'AND b.bettype BETWEEN 4001 AND 7999'
 									WHEN @ProductCode = 'BRVS' THEN 'AND b.bettype BETWEEN 2701 AND 2799'
-									ELSE '' END + CHAR(13)
-								+ 'GROUP BY b.rptDate, b.currencyID, b.bettype' + CHAR(13)
+										ELSE '' END + CHAR(13)
+									+ 'GROUP BY b.rptDate, b.currencyID, b.bettype' + CHAR(13)
+			END
+
+			IF @ProductCode IN ('', 'BRVS')
+			BEGIN
+				-- Parlay for BetRadar		
+				SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
+									+ 'SELECT b.rptDate, b.currencyID, b.bettype,' + CHAR(13)
+									+ 'SUM(b.turnover) turnover,' + CHAR(13)
+									+ 'sum(b.winloss) winlost,' + CHAR(13)
+									+ 'SUM(-1 * b.winloss) AS LicenseeWL,' + CHAR(13)
+									+ 'sum(b.CommissionA) Comm,' + CHAR(13)
+									+ 'sum( b.CommissionP ) PlayerComm,' + CHAR(13)
+									+ '- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13)
+									+ 'sum(b.betcount) BetCount' + CHAR(13)
+									+ 'FROM bodb_LicenseeReport.dbo.rpt_BettingParlay b WITH ( NOLOCK )' + CHAR(13)
+									+ 'INNER JOIN #currency c ON b.CurrencyID = c.Currency' + CHAR(13)
+									+ 'WHERE b.rptDate BETWEEN ''' + convert(VARCHAR(10), @FDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13)
+									+ 'AND b.status NOT IN (-1,103)' + CHAR(13)
+									+ 'AND b.bettype IN (2799)' + CHAR(13)
+									+ 'AND b.isBA = 0' + CHAR(13)
+									+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13)
+									+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13)
+									+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
+									+ 'AND b.siteID =' + convert(VARCHAR(10), @LicenseeID) + CHAR(13)								
+									+ CASE 
+										WHEN @ProductCode = 'NG' THEN 'AND b.bettype BETWEEN 81 AND 120 '
+										WHEN @ProductCode = 'SB' THEN 'AND (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 AND 1399)) '
+										WHEN @ProductCode = 'RB' THEN 'AND b.bettype BETWEEN 31 AND 33'
+										WHEN @ProductCode = 'LC' THEN 'AND b.bettype BETWEEN 1101 AND 1199'
+										WHEN @ProductCode = 'VS' THEN 'AND b.bettype BETWEEN 1201 AND 1299'
+										WHEN @ProductCode = 'BG' THEN 'AND b.bettype = 73'
+										WHEN @ProductCode = 'KN' THEN 'AND b.bettype BETWEEN 1501 AND 1599'
+										WHEN @ProductCode = 'CS' THEN 'AND (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399)'
+										WHEN @ProductCode = 'VB' THEN 'AND b.bettype BETWEEN 4001 AND 7999'
+										WHEN @ProductCode = 'BRVS' THEN 'AND b.bettype BETWEEN 2701 AND 2799'
+										ELSE '' END + CHAR(13)
+									+ 'GROUP BY b.rptDate, b.currencyID, b.bettype' + CHAR(13)
+			END
 		END
 	END
 

@@ -100,21 +100,34 @@ BEGIN CATCH
 END CATCH; 
     
 DECLARE @bettype AS TABLE (bettype INT PRIMARY KEY)
+DECLARE @ProductList VARCHAR (500)
+
+DECLARE @IsTest BIT = 0
+SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
 
 IF @ShowLC = 1
 BEGIN
-    INSERT INTO @bettype(bettype)
-	SELECT typeid FROM bettype (NOLOCK)
-	WHERE (typeid BETWEEN 1101 AND 1199)
+    SELECT @ProductList = COALESCE(@ProductList + ',' + 'LC', 'LC')		
 END
 
 IF @ShowVS = 1
 BEGIN
-	INSERT INTO @bettype(bettype)
-	SELECT typeid FROM bettype (NOLOCK)
-	WHERE (typeid BETWEEN 1201 AND 1299)
+	SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS', 'VS')
 END  
- 
+
+IF @ShowBRVS = 1
+BEGIN
+	SELECT @ProductList = COALESCE(@ProductList + ',' + 'BRVS', 'BRVS')
+END 
+
+IF LEN(ISNULL(@ProductList, '')) > 0 
+BEGIN
+	-- Insert Bettype
+	INSERT INTO @bettype ( bettype )
+	SELECT DISTINCT BetType
+	FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
+
+END	
 
 CREATE TABLE #tmpWinloss (
 	winlostdate		DATETIME,  

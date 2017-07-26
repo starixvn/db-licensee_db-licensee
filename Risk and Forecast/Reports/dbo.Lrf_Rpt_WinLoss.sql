@@ -105,7 +105,7 @@ BEGIN
 			@TempToDate			DATETIME
 
 	DECLARE @TempAg			TABLE (CustId INT, Currency INT)
-	DECLARE @bettype		TABLE (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))
+	DECLARE @bettype		TABLE (bettype INT, ProductCode VARCHAR(10))
 	DECLARE @sporttype		TABLE (sporttype INT, ProductCode VARCHAR(10))
 	DECLARE @ProductList	VARCHAR (500)
 	DECLARE @Exchange		TABLE
@@ -252,7 +252,7 @@ BEGIN
 		INSERT INTO @bettype ( bettype, ProductCode )
 		SELECT DISTINCT BetType, ProductPrefix
 		FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
-
+		
 		IF CHARINDEX('CS', @ProductList) > 0
 			DELETE @bettype
 			WHERE bettype = 72 AND ProductCode = 'CS'
@@ -267,7 +267,7 @@ BEGIN
 		FROM f_LicWinLoss_ProductSportType_Sel(@ProductList)
 
 	END
-
+	
 	CREATE TABLE #TempData
 	(
 		CustID			INT,

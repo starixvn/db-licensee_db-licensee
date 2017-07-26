@@ -256,6 +256,33 @@ BEGIN
 			b.winlostdate,
 			t.currency,
 			b.bettype
+		
+		-- Parlay for BRVS
+		INSERT INTO #tmpWinloss
+		SELECT
+			b.winlostdate,
+			t.currency,
+			'BRVS' AS ProductCode,
+			SUM(stake) turnover,
+			SUM(b.winlost - b.actual_stake) AS Winlost,
+			SUM(- 1 * (b.winlost - b.actual_stake)) AS LicenseeWL,
+			SUM(comm) AS Comm,
+			SUM(b.playercomm) AS PlayerComm,
+			- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd,
+			COUNT(b.transid) BetCount
+		FROM
+			dbo.bettrans b WITH (NOLOCK)
+			INNER JOIN @TempAg t ON b.recommend = t.custid AND t.Currency = b.Currency
+		WHERE
+			b.winlostdate BETWEEN @TempFromDate AND @TDate
+			AND b.bettype = 2799
+			AND b.tpositiontaking <> 0
+			AND b.statusID IN (111, 112, 113)
+			AND (b.livehomescore = @Liveindicator OR @Liveindicator = 2)
+		GROUP BY
+			b.winlostdate,
+			t.currency,
+			b.bettype
 
 		--Others
 		INSERT INTO #tmpWinloss
@@ -429,7 +456,7 @@ BEGIN
 				OR (@Liveindicator = 2)
 			)
 			AND b.CustomerCategory IN (-1, 1001, 1003)
-			AND b.bettype NOT IN (9,29,1700,1800,1900) 
+			AND b.bettype NOT IN (9,29,2799,1700,1800,1900) 
 			AND b.bettype NOT BETWEEN 2001 AND 2009 -- Exclude Microgamming (#44084)
 			AND (b.bettype < 901 OR b.bettype > 904)
 			AND (b.bettype < 911 OR b.bettype > 914)
@@ -464,7 +491,7 @@ BEGIN
 				WHEN b.bettype BETWEEN 2701 AND 2799 THEN 'BRVS'
 			END
 
-			-- parlay for SB
+		-- parlay for SB
 		INSERT INTO #tmpWinloss
 		SELECT 
 			b.rptDate,
@@ -486,6 +513,39 @@ BEGIN
 			AND b.status NOT IN (-1,103)
 			AND (b.bettype < 901 OR b.bettype > 904)
 			AND (b.bettype < 911 OR b.bettype > 914)
+			AND b.Bettype <> 2799
+			AND
+			(
+				(@Liveindicator = 0 AND b.IsLive = 0)
+				OR (@Liveindicator = 1 AND b.IsLive = 1)
+				OR (@Liveindicator = 2)
+			)
+			AND b.isBA = 0
+		GROUP BY
+			b.rptDate,
+			b.currencyID
+
+		-- parlay for BRVS
+		INSERT INTO #tmpWinloss
+		SELECT 
+			b.rptDate,
+			b.currencyID,
+			'BRVS' AS ProductCode,
+			SUM(b.turnover) turnover,
+			SUM(b.winloss) winlost,
+			SUM(-1 * b.winloss) AS LicenseeWL,
+			SUM(b.CommissionA) Comm,
+			SUM( b.CommissionP  ) PlayerComm,
+			- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,
+			SUM(b.betcount) BetCount
+		FROM
+			bodb_LicenseeReport.dbo.rpt_BettingParlay b WITH ( NOLOCK )
+			INNER JOIN #currency c ON b.CurrencyID = c.Currency
+		WHERE
+			b.SiteID = @LicenseeID
+			AND b.rptDate BETWEEN @FDate AND @TempToDate
+			AND b.status NOT IN (-1,103)			
+			AND b.Bettype = 2799
 			AND
 			(
 				(@Liveindicator = 0 AND b.IsLive = 0)
