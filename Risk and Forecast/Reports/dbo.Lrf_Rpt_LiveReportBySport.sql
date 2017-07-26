@@ -251,7 +251,7 @@ BEGIN
 								+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.liveindicator = 0)' + CHAR(13)
 								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.liveindicator = 1)' + CHAR(13)
 								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
-								+ 'AND b.bettype NOT IN (9,29,901,902,903,904,1700,1800,1900)' + CHAR(13)
+								+ 'AND b.bettype NOT IN (9,29,901,902,903,904,1700,1800,1900,18000)' + CHAR(13)
 								+ 'AND (b.bettype < 911 OR b.bettype > 914)' + CHAR(13)
 								+ 'AND b.statusID IN (111,112,113)' + CHAR(13) + 'AND BA.transid IS NULL' + CHAR(13)
 								+ CASE
@@ -266,7 +266,7 @@ BEGIN
 									WHEN @ProductCode = 'VB' THEN 'AND (b.bettype BETWEEN 4001 AND 7999)'
 									WHEN @ProductCode = 'FW' THEN 'AND b.bettype BETWEEN 1011 AND 1020'
 									WHEN @ProductCode = 'AB' THEN 'AND b.bettype BETWEEN 2401 AND 2499'
-									ELSE 'AND b.bettype NOT BETWEEN 2001 AND 2009 ' END + CHAR(13)
+									ELSE 'AND b.bettype NOT BETWEEN 2001 AND 2009 AND b.bettype NOT BETWEEN 4001 AND 4099 AND b.bettype NOT BETWEEN 2501 AND 2699 ' END + CHAR(13)
 								+ 'GROUP BY  b.winlostdate, b.currency,' + CHAR(13)
 								+ 'CASE' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 31 AND 33 THEN l.Sporttype' + CHAR(13)
@@ -448,7 +448,7 @@ BEGIN
 								+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13)
 								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13)
 								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
-								+ 'AND b.bettype NOT IN (9,29,1700,1800,1900,901,902,903,904)' + CHAR(13)
+								+ 'AND b.bettype NOT IN (9,29,1700,1800,1900,901,902,903,904,18000)' + CHAR(13)
 								+ 'AND (b.bettype < 911 OR b.bettype > 914)' + CHAR(13)
 								+ 'AND b.CustomerCategory IN (-1, 1001, 1003)' + CHAR(13)
 								+ 'AND b.siteID = ' + CONVERT(VARCHAR(10), @LicenseeID) + CHAR(13)								
@@ -464,7 +464,7 @@ BEGIN
 									WHEN @ProductCode = 'VB' THEN 'AND (b.bettype BETWEEN 4001 AND 7999)'
 									WHEN @ProductCode = 'FW' THEN 'AND b.bettype BETWEEN 1011 AND 1020'
 									WHEN @ProductCode = 'AB' THEN 'AND b.bettype BETWEEN 2401 AND 2499'
-									ELSE 'AND b.bettype NOT BETWEEN 2001 AND 2009 ' END + CHAR(13)
+									ELSE 'AND b.bettype NOT BETWEEN 2001 AND 2009 AND b.bettype NOT BETWEEN 4001 AND 4099 AND b.bettype NOT BETWEEN 2501 AND 2699 ' END + CHAR(13)
 								+ 'GROUP BY b.rptDate, b.currencyID, ' + CHAR(13)
 								+ 'CASE' + CHAR(13)
 								+ 'WHEN b.bettype  = 10 THEN 103' + CHAR(13)

@@ -200,7 +200,7 @@ BEGIN
 								+ 'WHERE b.winlostdate BETWEEN ''' + convert(VARCHAR(10), @TempFromDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TDate, 120) + '''' + CHAR(13)
 								+ 'AND b.Bettype <= 19999' + CHAR(13)
 								+ 'AND b.statusID IN (111,112,113)' + CHAR(13)
-								+ 'AND b.bettype NOT IN (9,29,901,902,903,904)' + CHAR(13)
+								+ 'AND b.bettype NOT IN (9,29,901,902,903,904,1700,1800,1900,18000)' + CHAR(13)
 								+ 'AND (b.bettype < 911 OR b.bettype > 914)' + CHAR(13)
 								+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.liveindicator = 0)' + CHAR(13)
 								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.liveindicator = 1)' + CHAR(13)
@@ -218,7 +218,7 @@ BEGIN
 									WHEN @ProductCode = 'VB' THEN 'AND b.bettype BETWEEN 4001 AND 7999'
 									WHEN @ProductCode = 'FW' THEN 'AND b.bettype BETWEEN 1011 AND 1020'
 									WHEN @ProductCode = 'AB' THEN 'AND b.bettype BETWEEN 2401 AND 2499'
-									ELSE 'AND b.bettype NOT BETWEEN 2001 AND 2009 ' END + CHAR(13)
+									ELSE 'AND b.bettype NOT BETWEEN 2001 AND 2009 AND b.bettype NOT BETWEEN 4001 AND 4099 AND b.bettype NOT BETWEEN 2501 AND 2699 ' END + CHAR(13)
 								+ 'GROUP BY  b.winlostdate, t.currency, b.bettype' + CHAR(13)
 			--SB for parlay
 			SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
@@ -331,7 +331,7 @@ BEGIN
 								+ 'INNER JOIN #currency c ON b.CurrencyID = c.Currency' + CHAR(13)
 								+ 'WHERE b.rptDate BETWEEN ''' + CONVERT(VARCHAR(10), @FDate, 120) + ''' AND ''' + CONVERT(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13)
 								+ 'AND b.status NOT IN (-1,103)' + CHAR(13)
-								+ 'AND b.bettype NOT IN (9,29,1700,1800,1900,901,902,903,904)' + CHAR(13)
+								+ 'AND b.bettype NOT IN (9,29,1700,1800,1900,901,902,903,904,18000)' + CHAR(13)
 								+ 'AND (b.bettype < 911 OR b.bettype > 914)' + CHAR(13)
 								+ 'AND b.CustomerCategory IN (-1, 1001, 1003)' + CHAR(13)
 								+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13)
@@ -350,7 +350,7 @@ BEGIN
 									WHEN @ProductCode = 'VB' THEN 'AND b.bettype BETWEEN 4001 AND 7999'
 									WHEN @ProductCode = 'FW' THEN 'AND b.bettype BETWEEN 1011 AND 1020'
 									WHEN @ProductCode = 'AB' THEN 'AND b.bettype BETWEEN 2401 AND 2499'
-									ELSE 'AND b.bettype NOT BETWEEN 2001 AND 2009' END + CHAR(13)
+									ELSE 'AND b.bettype NOT BETWEEN 2001 AND 2009 AND b.bettype NOT BETWEEN 4001 AND 4099 AND b.bettype NOT BETWEEN 2501 AND 2699 ' END + CHAR(13)
 								+ 'GROUP BY b.rptDate, b.currencyID, b.bettype' + CHAR(13)
 
 			-- parlay for SB			
