@@ -428,7 +428,7 @@ BEGIN
 			AND b.bettype NOT BETWEEN 2001 AND 2009 -- Exclude Microgamming (#44084)
 			AND (b.bettype < 901 OR b.bettype > 904)
 			AND (b.bettype < 911 OR b.bettype > 914)
-			AND (b.bettype < 31
+			AND (b.bettype <= 33
 				OR b.bettype BETWEEN 121 AND 999
 				OR b.Bettype BETWEEN 1301 and 1399 
 				OR b.bettype BETWEEN 81 AND 120
