@@ -1,5 +1,4 @@
-USE [bodb02]
-GO
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportSummary]	
 	@LicenseeID		INT,
@@ -51,6 +50,7 @@ Revisions:
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
 	- 20170328@Paul: Implement Cash Out [RedmineID: #71727]
 	- 20170705@Harper: Hotfix for Cash Out [RedmineID: #79546]
+	- 20170721@Harper: Hotfix add AB and FW to LiveReport [RedmineID: #80350]
 
 Param's Explanation:
 	+ @IsLive : indicate that whether the report will get live data or not
@@ -73,7 +73,7 @@ SELECT @DateFrom = DATEADD(DAY, -15, GETDATE())
 SELECT @DateTo = GETDATE()
 SELECT @MoveBetsDay = MAX(eventdate) FROM match14 WITH(NOLOCK)
 
-EXEC [Lrf_Rpt_LiveReportSummary_UAT3] @LicenseeId = 1, @CurrencyID = 0, @FromDate=@DateFrom, @ToDate=@DateTo, @MoveBetsDay = @MoveBetsDay
+EXEC [Lrf_Rpt_LiveReportSummary] @LicenseeId = 1, @CurrencyID = 0, @FromDate=@DateFrom, @ToDate=@DateTo, @MoveBetsDay = @MoveBetsDay
 
 */
 BEGIN
@@ -269,6 +269,8 @@ BEGIN
 				WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN' -- Keno
 				WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 THEN 'CS' -- RNG CASINO
 				WHEN b.bettype BETWEEN 4001 AND 7999 THEN 'VB' -- Voidbridge
+				WHEN b.bettype BETWEEN 1011 AND 1020 THEN 'FW' -- Fishing World
+				WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
 				END AS ProductCode,
 			SUM(stake) turnover,
 			SUM(b.winlost - b.actual_stake) AS Winlost,
@@ -292,6 +294,8 @@ BEGIN
 				OR b.bettype BETWEEN 1501 AND 1599 -- Keno
 				OR (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399) -- RNG CASINO
 				OR b.bettype BETWEEN 4001 AND 7999 -- Voidbridge
+				OR b.bettype BETWEEN 1011 AND 1020 -- FW
+				OR b.bettype BETWEEN 2401 AND 2499 -- AB
 			)
 			AND (b.liveindicator = @Liveindicator OR @Liveindicator = 2)
 		GROUP BY
@@ -305,7 +309,9 @@ BEGIN
 				WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN' -- Keno
 				WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 THEN 'CS' -- RNG CASINO
 				WHEN b.bettype BETWEEN 4001 AND 7999 THEN 'VB' -- Voidbridge
-				END
+				WHEN b.bettype BETWEEN 1011 AND 1020 THEN 'FW' -- Fishing World
+				WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
+			END
 	END
 
 	IF @FDate <= @MoveBetsDay
@@ -394,7 +400,9 @@ BEGIN
 				WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN'
 				WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 THEN 'CS' -- RNG CASINO
 				WHEN b.bettype BETWEEN 4001 AND 7999 THEN 'VB' -- Voidbridge
-				END AS ProductCode,
+				WHEN b.bettype BETWEEN 1011 AND 1020 THEN 'FW' -- Fishing World
+				WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
+			END AS ProductCode,
 			SUM(b.turnover * CASE WHEN b.bettype = 33 AND b.status IN (114, 115) THEN 0.5 ELSE 1 END) turnover,
 			SUM(b.winloss) winlost,
 			SUM(CASE WHEN bettype BETWEEN 31 AND 33 THEN b.WinlossA ELSE -1 * b.winloss END) AS LicenseeWL,
@@ -420,6 +428,19 @@ BEGIN
 			AND b.bettype NOT BETWEEN 2001 AND 2009 -- Exclude Microgamming (#44084)
 			AND (b.bettype < 901 OR b.bettype > 904)
 			AND (b.bettype < 911 OR b.bettype > 914)
+			AND (b.bettype <= 33
+				OR b.bettype BETWEEN 121 AND 999
+				OR b.Bettype BETWEEN 1301 and 1399 
+				OR b.bettype BETWEEN 81 AND 120
+				OR b.bettype BETWEEN 1101 AND 1199
+				OR b.bettype BETWEEN 1201 AND 1299
+				OR b.bettype IN (73) -- BINGO
+				OR b.bettype BETWEEN 1501 AND 1599 -- Keno
+				OR (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399) -- RNG CASINO
+				OR b.bettype BETWEEN 4001 AND 7999 -- Voidbridge
+				OR b.bettype BETWEEN 1011 AND 1020 -- FW
+				OR b.bettype BETWEEN 2401 AND 2499 -- AB
+				)
 		GROUP BY
 			b.rptDate,
 			b.currencyID,
@@ -433,7 +454,9 @@ BEGIN
 				WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN'
 				WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 THEN 'CS' -- RNG CASINO
 				WHEN b.bettype BETWEEN 4001 AND 7999 THEN 'VB' -- Voidbridge
-				END
+				WHEN b.bettype BETWEEN 1011 AND 1020 THEN 'FW' -- Fishing World
+				WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
+			END
 
 			-- parlay for SB
 		INSERT INTO #tmpWinloss
@@ -488,6 +511,8 @@ BEGIN
 			WHEN 'KN' THEN 'Keno'
 			WHEN 'CS' THEN 'RNG Casino'
 			WHEN 'VB' THEN 'Voidbridge'
+			WHEN 'FW' THEN 'Fishing World'
+			WHEN 'AB' THEN 'AllBet'
 			ELSE 'Sportsbook'
 			END AS ProductName,
 		SUM(TurnOver) AS Turnover,
