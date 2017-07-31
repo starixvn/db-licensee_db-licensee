@@ -268,9 +268,9 @@ BEGIN
 			DELETE @bettype
 			WHERE bettype = 72 AND ProductCode = 'CS'
 
-		IF CHARINDEX('SB', @ProductList) > 0 OR CHARINDEX('RB', @ProductList) > 0
+		IF CHARINDEX('SB', @ProductList) > 0
 			DELETE @bettype
-			WHERE ProductCode IN ('SB', 'RB')
+			WHERE ProductCode IN ('SB')
 		
 		-- Insert Sport Type
 		INSERT INTO @sporttype ( sporttype, ProductCode )
