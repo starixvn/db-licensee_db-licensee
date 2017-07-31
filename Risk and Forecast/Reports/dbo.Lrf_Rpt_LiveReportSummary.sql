@@ -472,6 +472,7 @@ BEGIN
 				OR b.bettype BETWEEN 4001 AND 7999 -- Voidbridge
 				OR b.bettype BETWEEN 1011 AND 1020 -- FW
 				OR b.bettype BETWEEN 2401 AND 2499 -- AB
+				OR b.bettype BETWEEN 2701 AND 2799 -- BRVS
 				)
 		GROUP BY
 			b.rptDate,
