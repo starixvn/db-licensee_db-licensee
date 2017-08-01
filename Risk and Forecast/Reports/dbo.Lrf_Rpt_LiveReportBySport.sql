@@ -147,7 +147,7 @@ BEGIN
 								+ 'WHEN b.bettype = 9 THEN 101 -- Mix Parlay' + CHAR(13)
 								+ 'WHEN b.bettype = 29 THEN 102 --System Parlay' + CHAR(13)
 								+ 'WHEN b.bettype = 10 THEN 103 -- Outright' + CHAR(13)
-								+ 'WHEN b.bettype = 2799 THEN 104 -- BRVS Parlay' + CHAR(13)
+								+ 'WHEN b.bettype = 2799 THEN 104 -- VS2 Parlay' + CHAR(13)
 								+ 'ELSE m.SportType END as Sporttype,' + CHAR(13)
 								+ 'SUM(Stake) turnover,' + CHAR(13)
 								+ 'SUM(b.winlost - b.actual_stake) AS Winlost,' + CHAR(13)
@@ -172,14 +172,14 @@ BEGIN
 								+ 'WHEN b.bettype = 9 THEN 101 --Mix Parlay' + CHAR(13)
 								+ 'WHEN b.bettype = 29 THEN 102 --System Parlay' + CHAR(13)
 								+ 'WHEN b.bettype = 10 THEN 103 -- Outright' + CHAR(13)
-								+ 'WHEN b.bettype = 2799 THEN 104 -- BRVS Parlay' + CHAR(13)
+								+ 'WHEN b.bettype = 2799 THEN 104 -- VS2 Parlay' + CHAR(13)
 								+ 'ELSE m.SportType END ' + CHAR(13)
 			--BA for parlay
 			SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
 								+ 'SELECT b.winlostdate, b.currency,' + CHAR(13)
 								+ 'CASE' + CHAR(13) + 'WHEN b.bettype = 9 THEN 101 --Mix Parlay' + CHAR(13)
 								+ 'WHEN b.bettype = 29 THEN 102 --System Parlay' + CHAR(13)
-								+ 'WHEN b.bettype = 2799 THEN 104 -- BRVS Parlay' + CHAR(13)
+								+ 'WHEN b.bettype = 2799 THEN 104 -- VS2 Parlay' + CHAR(13)
 								+ 'END as Sporttype,' + CHAR(13)
 								+ 'SUM(Stake) turnover,' + CHAR(13)
 								+ 'SUM(b.winlost - b.actual_stake) AS Winlost, ' + CHAR(13)
@@ -202,11 +202,11 @@ BEGIN
 								+ 'CASE' + CHAR(13)
 								+ 'WHEN b.bettype = 9 THEN 101 --Mix Parlay' + CHAR(13)
 								+ 'WHEN b.bettype = 29 THEN 102 --System Parlay' + CHAR(13)
-								+ 'WHEN b.bettype = 2799 THEN 104 -- BRVS Parlay' + CHAR(13)
+								+ 'WHEN b.bettype = 2799 THEN 104 -- VS2 Parlay' + CHAR(13)
 								+ 'END ' + CHAR(13)
 		END
 
-		IF @ProductCode IN ('', 'RB', 'NG', 'SB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB', 'BRVS')	 
+		IF @ProductCode IN ('', 'RB', 'NG', 'SB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2')	 
 		BEGIN
 			SELECT	@sql = @sql + '--Get data from bettrans for non-BA' + CHAR(13)
 
@@ -273,7 +273,7 @@ BEGIN
 									WHEN @ProductCode = 'VB' THEN 'AND (b.bettype BETWEEN 4001 AND 7999)'
 									WHEN @ProductCode = 'FW' THEN 'AND b.bettype BETWEEN 1011 AND 1020'
 									WHEN @ProductCode = 'AB' THEN 'AND b.bettype BETWEEN 2401 AND 2499'
-									WHEN @ProductCode = 'BRVS' THEN 'AND b.bettype BETWEEN 2701 AND 2799'
+									WHEN @ProductCode = 'VS2' THEN 'AND b.bettype BETWEEN 2701 AND 2799'
 									ELSE 'AND b.bettype NOT BETWEEN 2001 AND 2009 AND b.bettype NOT BETWEEN 4001 AND 4099 AND b.bettype NOT BETWEEN 2501 AND 2699 ' END + CHAR(13)
 								+ 'GROUP BY  b.winlostdate, b.currency,' + CHAR(13)
 								+ 'CASE' + CHAR(13)
@@ -338,7 +338,7 @@ BEGIN
 										WHEN @ProductCode = 'VB' THEN 'AND b.bettype BETWEEN 4001 AND 7999'
 										WHEN @ProductCode = 'FW' THEN 'AND b.bettype BETWEEN 1011 AND 1020'
 										WHEN @ProductCode = 'AB' THEN 'AND b.bettype BETWEEN 2401 AND 2499'
-										WHEN @ProductCode = 'BRVS' THEN 'AND b.bettype BETWEEN 2701 AND 2799'
+										WHEN @ProductCode = 'VS2' THEN 'AND b.bettype BETWEEN 2701 AND 2799'
 										ELSE '' END + CHAR(13)
 									+ 'GROUP BY  b.winlostdate, b.currency,' + CHAR(13)
 									+ 'CASE' + CHAR(13)
@@ -347,7 +347,7 @@ BEGIN
 									+ 'END ' + CHAR(13)
 			END
 
-			IF @ProductCode IN ('', 'BRVS')
+			IF @ProductCode IN ('', 'VS2')
 			BEGIN
 				-- Betradar for parlay
 				SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13) 
@@ -384,7 +384,7 @@ BEGIN
 										WHEN @ProductCode = 'VB' THEN 'AND b.bettype BETWEEN 4001 AND 7999'
 										WHEN @ProductCode = 'FW' THEN 'AND b.bettype BETWEEN 1011 AND 1020'
 										WHEN @ProductCode = 'AB' THEN 'AND b.bettype BETWEEN 2401 AND 2499'
-										WHEN @ProductCode = 'BRVS' THEN 'AND b.bettype BETWEEN 2701 AND 2799'
+										WHEN @ProductCode = 'VS2' THEN 'AND b.bettype BETWEEN 2701 AND 2799'
 										ELSE '' END + CHAR(13)
 									+ 'GROUP BY  b.winlostdate, b.currency' + CHAR(13)								
 			END
@@ -409,7 +409,7 @@ BEGIN
 								+ 'CASE' + CHAR(13) + 'WHEN b.bettype = 9 THEN 101 --Mix Parlay' + CHAR(13)
 								+ 'WHEN b.bettype = 29 THEN 102 --System Parlay' + CHAR(13)
 								+ 'WHEN b.bettype = 10 THEN 103 -- Outright' + CHAR(13)
-								+ 'WHEN b.bettype = 2799 THEN 104 -- BRVS Parlay' + CHAR(13)
+								+ 'WHEN b.bettype = 2799 THEN 104 -- VS2 Parlay' + CHAR(13)
 								+ 'ELSE l.SportType END as Sporttype,' + CHAR(13)
 								+ 'SUM(b.turnover) turnover,' + CHAR(13)
 								+ 'SUM(b.winloss) winlost,' + CHAR(13)
@@ -434,7 +434,7 @@ BEGIN
 								+ 'WHEN b.bettype = 9 THEN 101 --Mix Parlay' + CHAR(13)
 								+ 'WHEN b.bettype = 29 THEN 102 --System Parlay' + CHAR(13)
 								+ 'WHEN b.bettype = 10 THEN 103 -- Outright' + CHAR(13)
-								+ 'WHEN b.bettype = 2799 THEN 104 -- BRVS Parlay' + CHAR(13)
+								+ 'WHEN b.bettype = 2799 THEN 104 -- VS2 Parlay' + CHAR(13)
 								+ 'ELSE l.SportType END ' + CHAR(13)
 			
 			-- Parlay for BA
@@ -443,7 +443,7 @@ BEGIN
 								+ 'CASE' + CHAR(13)
 								+ 'WHEN b.bettype = 9 THEN 101 --Mix Parlay' + CHAR(13)
 								+ 'WHEN b.bettype = 29 THEN 102 --System Parlay' + CHAR(13)
-								+ 'WHEN b.bettype = 2799 THEN 104 -- BRVS Parlay' + CHAR(13)
+								+ 'WHEN b.bettype = 2799 THEN 104 -- VS2 Parlay' + CHAR(13)
 								+ 'END AS Sporttype,' + CHAR(13)
 								+ 'SUM(b.turnover) turnover,' + CHAR(13)
 								+ 'SUM(b.winloss) winlost,' + CHAR(13)
@@ -466,12 +466,12 @@ BEGIN
 								+ 'CASE' + CHAR(13)
 								+ 'WHEN b.bettype = 9 THEN 101 --Mix Parlay' + CHAR(13)
 								+ 'WHEN b.bettype = 29 THEN 102 --System Parlay' + CHAR(13)
-								+ 'WHEN b.bettype = 2799 THEN 104 -- BRVS Parlay' + CHAR(13)
+								+ 'WHEN b.bettype = 2799 THEN 104 -- VS2 Parlay' + CHAR(13)
 								+ 'END' + CHAR(13)
 		END
 
 		--Not BA
-		IF @ProductCode IN ('', 'RB', 'NG', 'SB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB', 'BRVS')
+		IF @ProductCode IN ('', 'RB', 'NG', 'SB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2')
 		BEGIN			
 			SELECT	@sql = @sql + '--Get data from rpt_Betting for non-BA' + CHAR(13)
 
@@ -522,7 +522,7 @@ BEGIN
 									WHEN @ProductCode = 'VB' THEN 'AND (b.bettype BETWEEN 4001 AND 7999)'
 									WHEN @ProductCode = 'FW' THEN 'AND b.bettype BETWEEN 1011 AND 1020'
 									WHEN @ProductCode = 'AB' THEN 'AND b.bettype BETWEEN 2401 AND 2499'
-									WHEN @ProductCode = 'BRVS' THEN 'AND b.bettype BETWEEN 2701 AND 2799'
+									WHEN @ProductCode = 'VS2' THEN 'AND b.bettype BETWEEN 2701 AND 2799'
 									ELSE 'AND b.bettype NOT BETWEEN 2001 AND 2009 AND b.bettype NOT BETWEEN 4001 AND 4099 AND b.bettype NOT BETWEEN 2501 AND 2699 ' END + CHAR(13)
 								+ 'GROUP BY b.rptDate, b.currencyID, ' + CHAR(13)
 								+ 'CASE' + CHAR(13)
@@ -577,7 +577,7 @@ BEGIN
 										WHEN @ProductCode = 'VB' THEN 'AND (b.bettype BETWEEN 4001 AND 7999)'
 										WHEN @ProductCode = 'FW' THEN 'AND b.bettype BETWEEN 1011 AND 1020'
 										WHEN @ProductCode = 'AB' THEN 'AND b.bettype BETWEEN 2401 AND 2499'
-										WHEN @ProductCode = 'BRVS' THEN 'AND b.bettype BETWEEN 2701 AND 2799'
+										WHEN @ProductCode = 'VS2' THEN 'AND b.bettype BETWEEN 2701 AND 2799'
 										ELSE '' END + CHAR(13)
 									+ 'GROUP BY b.rptDate, b.currencyID,' + CHAR(13)
 									+ 'CASE' + CHAR(13)
@@ -586,7 +586,7 @@ BEGIN
 									+ 'END' + CHAR(13)
 			END
 
-			IF @ProductCode IN ('', 'BRVS')
+			IF @ProductCode IN ('', 'VS2')
 			BEGIN
 				-- parlay for BetRadar			
 				SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
@@ -620,7 +620,7 @@ BEGIN
 										WHEN @ProductCode = 'VB' THEN 'AND (b.bettype BETWEEN 4001 AND 7999)'
 										WHEN @ProductCode = 'FW' THEN 'AND b.bettype BETWEEN 1011 AND 1020'
 										WHEN @ProductCode = 'AB' THEN 'AND b.bettype BETWEEN 2401 AND 2499'
-										WHEN @ProductCode = 'BRVS' THEN 'AND b.bettype BETWEEN 2701 AND 2799'
+										WHEN @ProductCode = 'VS2' THEN 'AND b.bettype BETWEEN 2701 AND 2799'
 										ELSE '' END + CHAR(13)
 									+ 'GROUP BY b.rptDate, b.currencyID' + CHAR(13)	
 			END

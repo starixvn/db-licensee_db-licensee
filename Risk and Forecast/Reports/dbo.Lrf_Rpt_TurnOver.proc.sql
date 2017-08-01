@@ -22,7 +22,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_TurnOver]
 	@ShowCB			BIT = 0,
 	@ShowFW 		BIT = 0,
 	@ShowCO			BIT = 0,
-	@ShowBRVS		BIT = 0, -- Bet Radar Virtual Sports
+	@ShowVS2		BIT = 0, -- Bet Radar Virtual Sports
 	@AgentList		VARCHAR(MAX)
 AS 
 /*
@@ -125,7 +125,7 @@ BEGIN
 	END
 	IF @ShowFW		= 1 INSERT INTO @sporttype(sporttype) VALUES(219)
 	IF @ShowCO		= 1 INSERT INTO @sporttype(sporttype) VALUES(-6), (-7)
-	IF @ShowBRVS	= 1 INSERT INTO @sporttype(sporttype) VALUES(190)
+	IF @ShowVS2	= 1 INSERT INTO @sporttype(sporttype) VALUES(190)
 
 	IF @username <> ''
 	BEGIN

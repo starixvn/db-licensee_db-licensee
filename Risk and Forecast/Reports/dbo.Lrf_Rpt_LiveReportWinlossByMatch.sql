@@ -5,7 +5,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportWinlossByMatch]
     @ShowBA			BIT	= 0,
 	@ShowLC 		BIT = 0,
 	@ShowVS			BIT = 0,
-	@ShowBRVS		BIT = 0,
+	@ShowVS2		BIT = 0,
     @SportId		INT = 0,
     @FromDate		SMALLDATETIME,  
 	@ToDate			SMALLDATETIME,
@@ -115,9 +115,9 @@ BEGIN
 	SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS', 'VS')
 END  
 
-IF @ShowBRVS = 1
+IF @ShowVS2 = 1
 BEGIN
-	SELECT @ProductList = COALESCE(@ProductList + ',' + 'BRVS', 'BRVS')
+	SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS2', 'VS2')
 END 
 
 IF LEN(ISNULL(@ProductList, '')) > 0 
@@ -293,7 +293,7 @@ BEGIN
 		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
 	END
 
-	IF ( @ShowLC=1 OR @ShowVS=1 OR @ShowBRVS = 1)
+	IF ( @ShowLC=1 OR @ShowVS=1 OR @ShowVS2 = 1)
 	BEGIN
 		INSERT INTO #tmpWinloss			
 		SELECT
@@ -509,7 +509,7 @@ BEGIN
 		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
 	END		
 			
-	IF (@ShowLC = 1 OR @ShowVS = 1  OR @ShowBRVS = 1)
+	IF (@ShowLC = 1 OR @ShowVS = 1  OR @ShowVS2 = 1)
 	BEGIN		
 		INSERT INTO #tmpWinloss			
 		SELECT

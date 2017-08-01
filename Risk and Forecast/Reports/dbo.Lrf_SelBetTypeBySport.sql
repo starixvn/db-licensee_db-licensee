@@ -47,7 +47,7 @@ BEGIN
 	DECLARE @checkVTennis BIT
 	DECLARE @checkVR 	  BIT 
 	DECLARE @checkVSW 	  BIT --Virtual Speedway
-	DECLARE @checkBRVS	  BIT
+	DECLARE @checkVS2	  BIT
 	DECLARE @strSport 	  VARCHAR(5000)
 	
 	CREATE TABLE #SportBettype (
@@ -68,7 +68,7 @@ BEGIN
 		  ,@checkVTennis = 0
 		  ,@checkVR = 0
 		  ,@checkVSW = 0
-		  ,@checkBRVS = 0
+		  ,@checkVS2 = 0
 
 	EXEC sp_xml_preparedocument @iDoc OUTPUT, @SportList
 
@@ -154,7 +154,7 @@ BEGIN
 																				WHEN typeid = 1235 THEN '(Tennis)'
 																				ELSE '' 
 																			END
-			WHEN (typeid BETWEEN 2701 AND 2799) THEN  N'BRVS - ' + typenamee
+			WHEN (typeid BETWEEN 2701 AND 2799) THEN  N'VS2 - ' + typenamee
 			ELSE typenamee 																 
 		END AS BettypeName
 	

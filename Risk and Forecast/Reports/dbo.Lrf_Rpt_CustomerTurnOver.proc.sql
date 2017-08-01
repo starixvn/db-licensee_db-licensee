@@ -700,7 +700,7 @@ BEGIN
 																					WHEN b.bettype = 1235 THEN '(Tennis)'
 																					ELSE ''
 																				END
-				WHEN (b.bettype BETWEEN 2701 AND 2799) THEN  N'BRVS - ' + bt.typenamee
+				WHEN (b.bettype BETWEEN 2701 AND 2799) THEN  N'VS2 - ' + bt.typenamee
 				ELSE  bt.typenamee
 			END AS bettype
 			, SUM(b.betcount)	AS betcount
@@ -736,7 +736,7 @@ BEGIN
 																					WHEN b.bettype = 1235 THEN '(Tennis)'
 																					ELSE ''
 																				END
-				 WHEN (b.bettype BETWEEN 2701 AND 2799) THEN  N'BRVS - ' + bt.typenamee
+				 WHEN (b.bettype BETWEEN 2701 AND 2799) THEN  N'VS2 - ' + bt.typenamee
 				 ELSE  bt.typenamee
 			END
 		ORDER BY 

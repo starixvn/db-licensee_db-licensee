@@ -6,7 +6,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_MatchWinLossByOutrightParlay]
     @MoveBetsDay SMALLDATETIME,
     @showSB		BIT = 0,
 	@showBA		BIT = 0,
-	@showBRVS	BIT = 0,
+	@showVS2	BIT = 0,
 	@AgentList	VARCHAR(MAX)
     
 AS 
@@ -311,7 +311,7 @@ BEGIN
 			m.groupmatch
 	END
 
-	IF @showBRVS = 1 
+	IF @showVS2 = 1 
 	BEGIN	
 
 		INSERT INTO @AgMatchWLDetails ( Winlostdate, Currency, matchid,	homeid,	awayid,
@@ -554,7 +554,7 @@ BEGIN
 			m.groupmatch
 	END
 
-	IF @showBRVS = 1 
+	IF @showVS2 = 1 
 	BEGIN	
 
 		INSERT INTO @AgMatchWLDetails ( Winlostdate, Currency, matchid,	homeid,	awayid,

@@ -21,7 +21,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
 	@ShowAB			BIT = 0,
 	@ShowFW			BIT	= 0,
 	@ShowCO			BIT = 0,
-	@ShowBRVS		BIT = 0, -- Bet Radar Virtual Sports
+	@ShowVS2		BIT = 0, -- Bet Radar Virtual Sports
     @MoveBetsDay	DATETIME,
     @PageSize		INT = 1000,
     @PageIndex		INT = 1,
@@ -241,9 +241,9 @@ BEGIN
 		VALUES (911, 'CO'), (912, 'CO')	
 	END
 
-	IF @ShowBRVS = 1 -- Betradar Virtual Sports
+	IF @ShowVS2 = 1 -- Betradar Virtual Sports
 	BEGIN
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'BRVS', 'BRVS')
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS2', 'VS2')
 	END
 
 	IF LEN(ISNULL(@ProductList, '')) > 0 
@@ -372,7 +372,7 @@ BEGIN
 			GROUP BY b.CustID, b.winlostdate, b.currency	 
 		END
 
-		IF 1 IN (@ShowNG, @ShowLC, @ShowVS, @ShowRB, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowBT, @ShowAGC, @ShowVb,@ShowAB,@ShowFW, @ShowCO, @ShowBRVS)
+		IF 1 IN (@ShowNG, @ShowLC, @ShowVS, @ShowRB, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowBT, @ShowAGC, @ShowVb,@ShowAB,@ShowFW, @ShowCO, @ShowVS2)
 		BEGIN
 			INSERT INTO #TempData
 			SELECT
@@ -444,7 +444,7 @@ BEGIN
 		END
 
 		--exclude BA tickets
-		IF 1 IN (@ShowSB, @ShowRB, @ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowBRVS)
+		IF 1 IN (@ShowSB, @ShowRB, @ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowVS2)
 		BEGIN
 			INSERT INTO #TempData
 			SELECT
@@ -570,7 +570,7 @@ BEGIN
 			GROUP BY b.CustID, b.winlostdate, b.currency	
 		END
 	
-		IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowVB,@ShowAB,@ShowFW, @ShowBRVS)
+		IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowVB,@ShowAB,@ShowFW, @ShowVS2)
 		BEGIN
 			INSERT  INTO #TempData
 			SELECT  

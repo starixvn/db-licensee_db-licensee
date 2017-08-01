@@ -6,7 +6,7 @@ GO
 
 /****** Object:  Stored Procedure dbo.Lrf_Rpt_WinlossByProductDetail    Script Date: 7/21/2017 1:48:26 PM ******/
 
-CREATE PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail]  
+ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail]  
  @CustID		INT = 0, --AgentID
  @MemberID		INT = 0, --memberID
  @FromDate		SMALLDATETIME,  
@@ -23,7 +23,7 @@ CREATE PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail]
  @ShowMGCLC 	BIT=0,-- MicroGamming
  @ShowMGCRnG 	BIT=0,-- MicroGamming  
  @ShowVB		BIT=0,-- Voidbridge
- @ShowBRVS		BIT=0,-- BetRadar VS 
+ @ShowVS2		BIT=0,-- BetRadar VS 
  @MoveBetsDay	SMALLDATETIME,
  @IsOld			BIT = 0,
  @drawfilter	SMALLINT = 1  ,
@@ -216,9 +216,9 @@ BEGIN
 	SELECT @ProductList = COALESCE(@ProductList + ',' + 'VB', 'VB')
 END
 
-IF @ShowBRVS = 1 -- Betradar Virtual Sports
+IF @ShowVS2 = 1 -- Betradar Virtual Sports
 BEGIN
-	SELECT @ProductList = COALESCE(@ProductList + ',' + 'BRVS', 'BRVS')
+	SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS2', 'VS2')
 END
 
 IF LEN(ISNULL(@ProductList, '')) > 0 
@@ -459,7 +459,7 @@ BEGIN
 	END
 	
 	--NG+LC+VS+RB + KN + VB
-	IF 1 IN (@ShowNG, @ShowLC, @ShowVS, @ShowRB, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @showMGCRnG, @ShowVB, @ShowBRVS)
+	IF 1 IN (@ShowNG, @ShowLC, @ShowVS, @ShowRB, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @showMGCRnG, @ShowVB, @ShowVS2)
 	BEGIN
 		SELECT 
 			DISTINCT
@@ -482,8 +482,8 @@ BEGIN
 				END
 			WHEN b.bettype BETWEEN 2701 AND 2799 THEN
 				CASE WHEN ISNULL(vs.sporttype, 0) = 0  
-					THEN 'BRVS'+ CONVERT(varchar(10), ISNULL(m.sporttype,0))
-					ELSE 'BRVS' + CONVERT(varchar(10), vs.sporttype)
+					THEN 'VS2'+ CONVERT(varchar(10), ISNULL(m.sporttype,0))
+					ELSE 'VS2' + CONVERT(varchar(10), vs.sporttype)
 				END				
 			ELSE bt.ProductCode END AS ProductCode,
 			SUM(
@@ -575,8 +575,8 @@ BEGIN
 				END
 			WHEN b.bettype BETWEEN 2701 AND 2799 THEN
 				CASE WHEN ISNULL(vs.sporttype, 0) = 0  
-					THEN 'BRVS'+convert(varchar(10),ISNULL(m.sporttype,0))
-					ELSE 'BRVS' +convert(varchar(10),vs.sporttype)
+					THEN 'VS2'+convert(varchar(10),ISNULL(m.sporttype,0))
+					ELSE 'VS2' +convert(varchar(10),vs.sporttype)
 				END				
 			ELSE bt.ProductCode END
 			, statusID
@@ -777,7 +777,7 @@ BEGIN
 	END
 END 
 
-IF 1 IN (@showVS, @ShowBRVS)
+IF 1 IN (@showVS, @ShowVS2)
 BEGIN
 	DECLARE  @tblVS AS TABLE 
 				(rptdate    datetime
@@ -839,7 +839,7 @@ BEGIN
 			CASE WHEN b.sportID BETWEEN 180 AND 186 
 				THEN 'VS' + CONVERT(varchar(10),ISNULL(b.sportID,0))
 				WHEN b.sportID BETWEEN 190 AND 199					
-				THEN 'BRVS' + CONVERT(varchar(10),ISNULL(b.sportID,0))			
+				THEN 'VS2' + CONVERT(varchar(10),ISNULL(b.sportID,0))			
 				ELSE '' 
 			END AS ProductCode,
 			SUM(b.turnoverIBC
@@ -918,7 +918,7 @@ BEGIN
 			CASE WHEN b.sportID BETWEEN 180 AND 186 
 				THEN 'VS' + CONVERT(varchar(10),ISNULL(b.sportID,0))
 				WHEN b.sportID BETWEEN 190 AND 199					
-				THEN 'BRVS' + CONVERT(varchar(10),ISNULL(b.sportID,0))			
+				THEN 'VS2' + CONVERT(varchar(10),ISNULL(b.sportID,0))			
 				ELSE '' 
 			END
 			, b.status
@@ -1021,7 +1021,7 @@ BEGIN
 	END
 
 	--exclude BA tickets
-	IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @showMGCRnG, @ShowVB, @ShowBRVS)
+	IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @showMGCRnG, @ShowVB, @ShowVS2)
 	BEGIN
 		INSERT INTO #SAgWinLoss  
 		SELECT 

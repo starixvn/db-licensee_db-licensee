@@ -14,7 +14,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_MatchWinLossByBettype]
 	@showVS BIT = 0,
 	@ShowCS BIT = 0, --- RNG Casino  
 	@ShowBG BIT = 0, --- Bingo  
-	@ShowBRVS BIT = 0, -- Bet Radar Virtual Sports
+	@ShowVS2 BIT = 0, -- Bet Radar Virtual Sports
 	@AgentList	VARCHAR(MAX)
       
 AS   
@@ -152,9 +152,9 @@ BEGIN
 	SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS', 'VS')  
 END   
 
-IF @ShowBRVS = 1 -- Betradar Virtual Sports
+IF @ShowVS2 = 1 -- Betradar Virtual Sports
 BEGIN
-	SELECT @ProductList = COALESCE(@ProductList + ',' + 'BRVS', 'BRVS')
+	SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS2', 'VS2')
 END
 
 IF LEN(ISNULL(@ProductList, '')) > 0 
@@ -367,7 +367,7 @@ BEGIN
 			   b.liveindicator    
 	 END  
    
-	 IF (@showNG=1 OR @showLC=1 OR @ShowVS=1 OR @ShowBRVS = 1)  
+	 IF (@showNG=1 OR @showLC=1 OR @ShowVS=1 OR @ShowVS2 = 1)  
 	 BEGIN  
 	  --exclude BA tickets  
 		  INSERT  INTO @AgMatchWLDetails  
@@ -689,7 +689,7 @@ ELSE -- @showRB = 1, Racing
 			b.liveindicator  
 	END  
   
- IF (@showNG=1 OR @showLC=1 OR @ShowVS=1 OR @ShowBRVS = 1)  
+ IF (@showNG=1 OR @showLC=1 OR @ShowVS=1 OR @ShowVS2 = 1)  
  BEGIN  
 	INSERT  INTO @AgMatchWLDetails  
 	SELECT  b.Winlostdate,  

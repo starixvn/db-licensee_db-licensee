@@ -257,12 +257,12 @@ BEGIN
 			t.currency,
 			b.bettype
 		
-		-- Parlay for BRVS
+		-- Parlay for VS2
 		INSERT INTO #tmpWinloss
 		SELECT
 			b.winlostdate,
 			t.currency,
-			'BRVS' AS ProductCode,
+			'VS2' AS ProductCode,
 			SUM(stake) turnover,
 			SUM(b.winlost - b.actual_stake) AS Winlost,
 			SUM(- 1 * (b.winlost - b.actual_stake)) AS LicenseeWL,
@@ -299,7 +299,7 @@ BEGIN
 				WHEN b.bettype BETWEEN 4001 AND 7999 THEN 'VB' -- Voidbridge
 				WHEN b.bettype BETWEEN 1011 AND 1020 THEN 'FW' -- Fishing World
 				WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
-				WHEN b.bettype BETWEEN 2701 AND 2799 THEN 'BRVS'
+				WHEN b.bettype BETWEEN 2701 AND 2799 THEN 'VS2'
 				END AS ProductCode,
 			SUM(stake) turnover,
 			SUM(b.winlost - b.actual_stake) AS Winlost,
@@ -341,7 +341,7 @@ BEGIN
 				WHEN b.bettype BETWEEN 4001 AND 7999 THEN 'VB' -- Voidbridge
 				WHEN b.bettype BETWEEN 1011 AND 1020 THEN 'FW' -- Fishing World
 				WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
-				WHEN b.bettype BETWEEN 2701 AND 2799 THEN 'BRVS'
+				WHEN b.bettype BETWEEN 2701 AND 2799 THEN 'VS2'
 			END
 	END
 
@@ -433,7 +433,7 @@ BEGIN
 				WHEN b.bettype BETWEEN 4001 AND 7999 THEN 'VB' -- Voidbridge
 				WHEN b.bettype BETWEEN 1011 AND 1020 THEN 'FW' -- Fishing World
 				WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
-				WHEN b.bettype BETWEEN 2701 AND 2799 THEN 'BRVS'
+				WHEN b.bettype BETWEEN 2701 AND 2799 THEN 'VS2'
 			END AS ProductCode,
 			SUM(b.turnover * CASE WHEN b.bettype = 33 AND b.status IN (114, 115) THEN 0.5 ELSE 1 END) turnover,
 			SUM(b.winloss) winlost,
@@ -472,7 +472,7 @@ BEGIN
 				OR b.bettype BETWEEN 4001 AND 7999 -- Voidbridge
 				OR b.bettype BETWEEN 1011 AND 1020 -- FW
 				OR b.bettype BETWEEN 2401 AND 2499 -- AB
-				OR b.bettype BETWEEN 2701 AND 2799 -- BRVS
+				OR b.bettype BETWEEN 2701 AND 2799 -- VS2
 				)
 		GROUP BY
 			b.rptDate,
@@ -489,7 +489,7 @@ BEGIN
 				WHEN b.bettype BETWEEN 4001 AND 7999 THEN 'VB' -- Voidbridge
 				WHEN b.bettype BETWEEN 1011 AND 1020 THEN 'FW' -- Fishing World
 				WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
-				WHEN b.bettype BETWEEN 2701 AND 2799 THEN 'BRVS'
+				WHEN b.bettype BETWEEN 2701 AND 2799 THEN 'VS2'
 			END
 
 		-- parlay for SB
@@ -526,12 +526,12 @@ BEGIN
 			b.rptDate,
 			b.currencyID
 
-		-- parlay for BRVS
+		-- parlay for VS2
 		INSERT INTO #tmpWinloss
 		SELECT 
 			b.rptDate,
 			b.currencyID,
-			'BRVS' AS ProductCode,
+			'VS2' AS ProductCode,
 			SUM(b.turnover) turnover,
 			SUM(b.winloss) winlost,
 			SUM(-1 * b.winloss) AS LicenseeWL,
@@ -580,7 +580,7 @@ BEGIN
 			WHEN 'VB' THEN 'Voidbridge'
 			WHEN 'FW' THEN 'Fishing World'
 			WHEN 'AB' THEN 'AllBet'
-			WHEN 'BRVS' THEN 'Betradar Virtual Sports'
+			WHEN 'VS2' THEN 'Betradar Virtual Sports'
 			ELSE 'Sportsbook'
 			END AS ProductName,
 		SUM(TurnOver) AS Turnover,

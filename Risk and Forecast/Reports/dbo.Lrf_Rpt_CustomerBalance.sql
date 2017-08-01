@@ -27,7 +27,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerBalance]
 	, @ShowCB		BIT = 0
 	, @ShowFW		BIT = 0
 	, @ShowCO		BIT = 0
-	, @ShowBRVS		BIT = 0 -- BetRadar VS
+	, @ShowVS2		BIT = 0 -- BetRadar VS
 	,@AgentList		VARCHAR(MAX)
 AS
 /*  
@@ -170,9 +170,9 @@ BEGIN
 		VALUES (-7, 'CO') -- 912
 	END
 
-	IF @ShowBRVS = 1
+	IF @ShowVS2 = 1
 	BEGIN
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'BRVS', 'BRVS')
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS2', 'VS2')
 	END
 
 	IF LEN(ISNULL(@ProductList, '')) > 0 

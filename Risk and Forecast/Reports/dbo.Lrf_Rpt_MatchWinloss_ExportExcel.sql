@@ -15,7 +15,7 @@ GO
 	@showVS BIT = 0,
 	@showCS BIT = 0,
 	@showBG BIT =0,
-	@showBRVS BIT = 0
+	@showVS2 BIT = 0
 AS 
 /*
 Created: 20120702@Henry
@@ -120,9 +120,9 @@ BEGIN
     SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS', 'VS')
 END
  
- IF @ShowBRVS = 1 -- Betradar Virtual Sports
+ IF @ShowVS2 = 1 -- Betradar Virtual Sports
 BEGIN
-	SELECT @ProductList = COALESCE(@ProductList + ',' + 'BRVS', 'BRVS')
+	SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS2', 'VS2')
 END
 
 IF LEN(ISNULL(@ProductList, '')) > 0 
@@ -286,7 +286,7 @@ BEGIN
 			
 	END
 	
-	IF (@showNG = 1 OR @showLC = 1 OR @ShowVS = 1 OR @showBRVS = 1) 
+	IF (@showNG = 1 OR @showLC = 1 OR @ShowVS = 1 OR @showVS2 = 1) 
 	BEGIN
 		--exclude BA tickets
 		INSERT  INTO @AgMatchWLDetails
@@ -525,7 +525,7 @@ BEGIN
 			b.liveindicator
 	END
 
-	IF (@showNG = 1 OR @showLC = 1 OR @ShowVS = 1 OR @showBRVS = 1)
+	IF (@showNG = 1 OR @showLC = 1 OR @ShowVS = 1 OR @showVS2 = 1)
 	BEGIN
 		INSERT  INTO @AgMatchWLDetails
 		SELECT  

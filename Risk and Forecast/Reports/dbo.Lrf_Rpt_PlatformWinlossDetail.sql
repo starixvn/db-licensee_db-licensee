@@ -16,7 +16,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_PlatformWinlossDetail]
 	@ShowVB		BIT=0,		
 	@ShowAB		BIT=0,	
 	@ShowFW		BIT=0,
-	@ShowBRVS	BIT = 0, -- Bet Radar Virtual Sports
+	@ShowVS2	BIT = 0, -- Bet Radar Virtual Sports
 	@PlatformType	TINYINT=0, 
 	@MoveBetsDay SMALLDATETIME,
 	@drawfilter SMALLINT = 1,
@@ -209,9 +209,9 @@ BEGIN
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'FW', 'FW')
 	END
 
-	IF @ShowBRVS = 1 -- Betradar Virtual Sports
+	IF @ShowVS2 = 1 -- Betradar Virtual Sports
 	BEGIN
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'BRVS', 'BRVS')
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS2', 'VS2')
 	END
 
 	IF LEN(ISNULL(@ProductList, '')) > 0 
@@ -340,7 +340,7 @@ BEGIN
 		END
 	
 	
-		IF (@ShowRB=1 or @ShowNG=1 OR @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @showMGCLC =1 OR @showMGCRnG =1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW =1 OR @ShowBRVS = 1)
+		IF (@ShowRB=1 or @ShowNG=1 OR @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @showMGCLC =1 OR @showMGCRnG =1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW =1 OR @ShowVS2 = 1)
 		BEGIN
 			INSERT INTO #WinLoss (Winlostdate, CustID, Currency, Turnover, Winlost, LicenseeWL, playercomm, WinlossRB, AmtDueToBA, AmtDueToRB, CommBA, CommRB, Company, BetCount)
 			SELECT 
@@ -432,7 +432,7 @@ BEGIN
 			GROUP BY b.winlostdate, b.CustID, b.currency, b.statusID
 			
 		END
-		IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR  @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @showMGCLC =1 OR @showMGCRnG =1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW =1 OR @ShowBRVS = 1)
+		IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR  @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @showMGCLC =1 OR @showMGCRnG =1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW =1 OR @ShowVS2 = 1)
 		BEGIN
 			INSERT INTO #WinLoss (Winlostdate, CustID, Currency, Turnover, Winlost, LicenseeWL, playercomm, WinlossRB, AmtDueToBA, AmtDueToRB, CommBA, CommRB, Company, BetCount)
 			SELECT 
