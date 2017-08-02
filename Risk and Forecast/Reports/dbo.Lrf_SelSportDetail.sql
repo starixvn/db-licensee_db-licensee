@@ -109,9 +109,9 @@ INSERT INTO @ProductSport(ID, Name, ParentID)
 							WHEN 'th-TH'	THEN N'อัตราค่าตอบแทนจากหน้ากีฬา'
 							WHEN 'ja-JP'	THEN N'スポーツベット '
 							WHEN 'ko-KR'	THEN N'스포츠북 '*/
-							WHEN 'es'  	    THEN N'Betradar Virtual Sports'
-							WHEN 'vi-VN'	THEN N'Betradar Virtual Sports'
-							ELSE N'Betradar Virtual Sports' END 
+							WHEN 'es'  	    THEN N'Virtual Sports 2'
+							WHEN 'vi-VN'	THEN N'Virtual Sports 2'
+							ELSE N'Virtual Sports 2' END 
 			, NULL
 	 FROM dbo.Product3rd p1 WITH(NOLOCK)
 		INNER JOIN dbo.LicenseeProduct3rd p2 WITH (NOLOCK) ON p1.ProductID = p2.ProductID

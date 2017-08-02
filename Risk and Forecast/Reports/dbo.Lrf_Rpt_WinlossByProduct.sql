@@ -384,7 +384,7 @@ BEGIN
 		WHERE EventDate BETWEEN @TempFromDate AND @TDate 
 		
 
-		SELECT b.transid, m.sporttype
+		SELECT DISTINCT b.transid, m.sporttype
 		INTO #tmpParlay
 		FROM 
 			dbo.bettrans b WITH ( NOLOCK)--,INDEX=IX_srecommend )  

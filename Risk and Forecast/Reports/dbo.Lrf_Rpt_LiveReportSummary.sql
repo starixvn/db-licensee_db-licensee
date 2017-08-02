@@ -580,7 +580,7 @@ BEGIN
 			WHEN 'VB' THEN 'Voidbridge'
 			WHEN 'FW' THEN 'Fishing World'
 			WHEN 'AB' THEN 'AllBet'
-			WHEN 'VS2' THEN 'Betradar Virtual Sports'
+			WHEN 'VS2' THEN 'Virtual Sports 2'
 			ELSE 'Sportsbook'
 			END AS ProductName,
 		SUM(TurnOver) AS Turnover,
