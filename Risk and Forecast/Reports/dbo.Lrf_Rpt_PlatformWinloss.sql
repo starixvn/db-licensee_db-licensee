@@ -37,13 +37,13 @@ AS
 		- 20170802@Sophia: Add new Flatfrom [redmine: #80687]
 
 	Param's Explanation:  
-	  + @PlatformType:  0: All  
+	   + @PlatformType:  0: All  
 						1: Asia (d, g, x)  
 						2: China (a, z)
 						3: Euro (e, u , y) (and Euro 12bet (u))
 						4: WAP (m)    
 						5: SMART SITE (s,l)  
-						6: TABLET (r) 
+						6: TABLET (r)  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover onlly)
 	  + @showSB: Show SportsBook bets
 	  + @ShowRB: Show RB bets
@@ -577,6 +577,3 @@ BEGIN
 
 END
 GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_PlatformWinloss] TO [bodbLicenseeNet] AS [dbo]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_PlatformWinloss] TO [vnteam] AS [dbo]
