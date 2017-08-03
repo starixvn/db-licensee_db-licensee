@@ -16,6 +16,7 @@ AS
 		- 20170323@Paul: Implement Cash Out [RedmineID: #71727]
 		- 20170613@Paul: return value in THB, IDR rates [RedmineID: #75030]
 		- 20170808@Walter: Support UUS currency [RedmineID: #80855]
+		- 20170802@Sophia: Add new Flatfrom [redmine: #80687]
 		- 20170814@Alex  : Restrict permission by currency  [RedmineID: #80855]
      
 	Param's Explanation: 
@@ -66,7 +67,12 @@ BEGIN
 				(4, 'm'),
 				(5, 's'),
 				(3, 'u'),
-				(5, 'l')
+				(5, 'l'),
+				(1, 'g'),
+				(6, 'r'),
+				(1, 'x'),
+				(3, 'y'),
+				(2, 'z')
 	) d(PlatformType, betfrom);
 	
 	CREATE TABLE #Exchange (ExchangeDate SMALLDATETIME, ExchangeId INT,  EUR FLOAT,USD FLOAT,GBP FLOAT, CNY FLOAT, MYR FLOAT, THB FLOAT, IDR FLOAT, Code VARCHAR(10), PRIMARY KEY(ExchangeDate,ExchangeId));
@@ -165,4 +171,4 @@ BEGIN
 
 	SET NOCOUNT OFF;
 END
-GO
+GO 

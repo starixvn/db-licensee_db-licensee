@@ -1,5 +1,4 @@
-USE [bodb02]
-GO
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_Rpt_PlatformWinloss]   
 	@FromDate		SMALLDATETIME,  
 	@ToDate		SMALLDATETIME,   
@@ -35,15 +34,16 @@ AS
 		- 20161128@Paul: enhance performance [RedmineID :#66801]
 		- 20170301@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest [Redmine: #71679]
 		- 20170329@Paul: Implement Cash Out [RedmineID: #71727]
-		- 20170706@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
+		- 20170802@Sophia: Add new Flatfrom [redmine: #80687]
 
 	Param's Explanation:  
-	  + @PlatformType: 0: All  
-					   1: Asia (d)  
-					   2: New Asia (a)
-					   3: Euro (e) (and Euro 12bet (u))
-					   4: WAP (m)    
-					   5: SMARTPHONE (s,l)  
+	  + @PlatformType:  0: All  
+						1: Asia (d, g, x)  
+						2: China (a, z)
+						3: Euro (e, u , y) (and Euro 12bet (u))
+						4: WAP (m)    
+						5: SMART SITE (s,l)  
+						6: TABLET (r) 
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover onlly)
 	  + @showSB: Show SportsBook bets
 	  + @ShowRB: Show RB bets
@@ -143,7 +143,11 @@ BEGIN
 				(4, 'm'),
 				(5, 's'),
 				(3, 'u'),
-				(5, 'l')
+				(5, 'l'),
+				(6, 'r'),
+				(1, 'x'),
+				(3, 'y'),
+				(2, 'z')
 	) d(PlatformType, betfrom)
 	WHERE d.PlatformType = @PlatformType OR @PlatformType = 0
 
