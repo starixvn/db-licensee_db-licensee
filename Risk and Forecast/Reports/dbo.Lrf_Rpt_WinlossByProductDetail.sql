@@ -6,7 +6,7 @@ GO
 
 /****** Object:  Stored Procedure dbo.Lrf_Rpt_WinlossByProductDetail    Script Date: 7/21/2017 1:48:26 PM ******/
 
-ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail_xtest]  
+ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail]  
  @CustID		INT = 0, --AgentID
  @MemberID		INT = 0, --memberID
  @FromDate		SMALLDATETIME,  
