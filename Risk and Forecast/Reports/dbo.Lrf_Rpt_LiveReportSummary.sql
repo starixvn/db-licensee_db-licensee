@@ -299,7 +299,7 @@ BEGIN
 				WHEN b.bettype BETWEEN 4001 AND 7999 THEN 'VB' -- Voidbridge
 				WHEN b.bettype BETWEEN 1011 AND 1020 THEN 'FW' -- Fishing World
 				WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
-				WHEN b.bettype BETWEEN 2701 AND 2799 THEN 'VS2'
+				WHEN b.bettype BETWEEN 2701 AND 2798 THEN 'VS2'
 				END AS ProductCode,
 			SUM(stake) turnover,
 			SUM(b.winlost - b.actual_stake) AS Winlost,
@@ -325,7 +325,7 @@ BEGIN
 				OR b.bettype BETWEEN 4001 AND 7999 -- Voidbridge
 				OR b.bettype BETWEEN 1011 AND 1020 -- FW
 				OR b.bettype BETWEEN 2401 AND 2499 -- AB
-				OR b.bettype BETWEEN 2701 AND 2799 -- BetRadar VS
+				OR b.bettype BETWEEN 2701 AND 2798 -- BetRadar VS
 			)
 			AND (b.liveindicator = @Liveindicator OR @Liveindicator = 2)
 		GROUP BY
@@ -341,7 +341,7 @@ BEGIN
 				WHEN b.bettype BETWEEN 4001 AND 7999 THEN 'VB' -- Voidbridge
 				WHEN b.bettype BETWEEN 1011 AND 1020 THEN 'FW' -- Fishing World
 				WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
-				WHEN b.bettype BETWEEN 2701 AND 2799 THEN 'VS2'
+				WHEN b.bettype BETWEEN 2701 AND 2798 THEN 'VS2'
 			END
 	END
 

@@ -383,7 +383,6 @@ BEGIN
 			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
 		WHERE EventDate BETWEEN @TempFromDate AND @TDate 
 		
-
 		SELECT DISTINCT b.transid, m.sporttype
 		INTO #tmpParlay
 		FROM 
