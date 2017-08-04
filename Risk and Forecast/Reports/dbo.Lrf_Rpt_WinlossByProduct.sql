@@ -1,4 +1,6 @@
-﻿SET QUOTED_IDENTIFIER ON 
+﻿/*<info serverAlias="DB052-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+
+SET QUOTED_IDENTIFIER ON 
 GO
 SET ANSI_NULLS ON 
 GO
@@ -21,6 +23,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProduct]
  @ShowMGCRnG 	BIT=0,-- MicroGamming
  @ShowVB		BIT=0,-- Voidbridge
  @ShowVS2		BIT=0,-- BetRadar VS 
+ @ShowLT		BIT=0,-- Lottery
  @ReportType	TINYINT=1,  
  @MoveBetsDay	SMALLDATETIME,
  @IsOld			BIT = 0,
@@ -74,6 +77,7 @@ AS
 	- 20170327@Paul: Implement Cash Out [RedmineID :#71727]
 	- 20170721@Sophia: Change to call Alias DBWH instead of DBDW2 
 	- 20170704@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
+	- 20170619@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -250,6 +254,11 @@ BEGIN
 	SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS2', 'VS2')
 END
 
+IF @ShowLT = 1 -- Betradar Virtual Sports
+BEGIN
+	SELECT @ProductList = COALESCE(@ProductList + ',' + 'LT', 'LT')
+END
+
 IF LEN(ISNULL(@ProductList, '')) > 0 
 BEGIN
 	-- Insert Bettype
@@ -294,7 +303,6 @@ BEGIN
 			b.winlostdate,  
 			tma.currency,
 			'BA' ProductCode,
-			--'BA' AS ProductName,   
 			SUM( stake
 				*
 				
@@ -333,7 +341,6 @@ BEGIN
 			b.winlostdate,  
 			a.currency,
 			'SB' AS ProductCode,
-			--'Sportsbook' AS ProductName,
 			SUM(stake
 				*
 		
@@ -372,7 +379,7 @@ BEGIN
 	END
 	
 	--SB + RB + LC + VB
-	IF 1 IN (@ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @showMGCRnG, @ShowVB, @ShowVS2 )
+	IF 1 IN (@ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @showMGCRnG, @ShowVB, @ShowVS2, @ShowLT )
 	BEGIN
 		SELECT 
 			DISTINCT
@@ -543,7 +550,7 @@ BEGIN
 		GROUP BY  b.winlostdate,  b.currency, b.statusID
 	END
 	
-	IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowLC, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @showMGCRnG, @ShowVB )
+	IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowLC, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @showMGCRnG, @ShowVB, @ShowLT )
 	BEGIN
 		INSERT INTO #SAgWinLoss  
 		SELECT 
@@ -558,7 +565,7 @@ BEGIN
 					ELSE 1 END
 			),     
 			SUM(b.winlost),  
-			SUM(CASE WHEN (b.sporttype in(0,161,162,251,252,202,203,205,208,209,210,212 ))  THEN -1 * b.winlost 
+			SUM(CASE WHEN (b.sporttype in(0,161,162,251,252,202,203,205,208,209,210,212,220 ))  THEN -1 * b.winlost 
 					WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END
 				) AS LicenseeWL,
 			SUM(comm ) as Comm,
@@ -778,6 +785,7 @@ BEGIN
 			'BA' ProductCode,
 			SUM(b.turnover
 			*				
+				END	
 				CASE WHEN b.statusID = 111  THEN 0|@sumTurnOver
 					WHEN b.statusID IN (114,115) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0)
 					ELSE 1 END

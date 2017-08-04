@@ -61,6 +61,7 @@ Revisions:
 	- 20170710@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
 	- 20170705@Harper: Hotfix for Cash Out [RedmineID: #79546]
 	- 20170721@Harper: Hotfix add AB and FW to LiveReport [RedmineID: #80350]
+	- 20170710@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
 
 Param's Explanation:  
 	+ @Liveindicator : indicate that whether the report will get live data or not
@@ -478,6 +479,7 @@ BEGIN
 										WHEN @ProductCode = 'VS2' THEN 'AND b.bettype BETWEEN 2701 AND 2799'
 										ELSE '' END + CHAR(13)
 									+ 'GROUP BY b.rptDate, b.currencyID, b.bettype' + CHAR(13)
+			END
 			END
 		END
 	END

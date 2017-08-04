@@ -1,5 +1,5 @@
-USE [bodb02]
-GO
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+
 ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]   
 	@DrawFilter		SMALLINT = 1,
     @FromDate		DATETIME,
@@ -22,6 +22,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
 	@ShowFW			BIT	= 0,
 	@ShowCO			BIT = 0,
 	@ShowVS2		BIT = 0, -- Bet Radar Virtual Sports
+	@ShowLT			BIT = 0, -- Lottery
     @MoveBetsDay	DATETIME,
     @PageSize		INT = 1000,
     @PageIndex		INT = 1,
@@ -90,6 +91,7 @@ AS
 		- 20170215@Sophia: Get @AgentList by web instead of @UserId, @LicenseeID, @CurrencyID, remove @excludeTest [Redmine: #71679]
 		- 20170320@Paul: Implement Cash Out [RedmineID :#71727]
 		- 20170706@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
+		- 20170619@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 */
 
 BEGIN
@@ -245,6 +247,11 @@ BEGIN
 	BEGIN
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS2', 'VS2')
 	END
+	
+	IF @ShowLT = 1 -- Lottery
+	BEGIN
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'LT', 'LT')
+	END
 
 	IF LEN(ISNULL(@ProductList, '')) > 0 
 	BEGIN
@@ -372,7 +379,7 @@ BEGIN
 			GROUP BY b.CustID, b.winlostdate, b.currency	 
 		END
 
-		IF 1 IN (@ShowNG, @ShowLC, @ShowVS, @ShowRB, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowBT, @ShowAGC, @ShowVb,@ShowAB,@ShowFW, @ShowCO, @ShowVS2)
+		IF 1 IN (@ShowNG, @ShowLC, @ShowVS, @ShowRB, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowBT, @ShowAGC, @ShowVb,@ShowAB,@ShowFW, @ShowCO, @ShowVS2, @ShowLT)
 		BEGIN
 			INSERT INTO #TempData
 			SELECT
@@ -444,7 +451,7 @@ BEGIN
 		END
 
 		--exclude BA tickets
-		IF 1 IN (@ShowSB, @ShowRB, @ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowVS2)
+		IF 1 IN (@ShowSB, @ShowRB, @ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowVS2, @ShowLT)
 		BEGIN
 			INSERT INTO #TempData
 			SELECT

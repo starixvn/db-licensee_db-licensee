@@ -1,24 +1,26 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+
 ALTER PROCEDURE [dbo].[Lrf_Rpt_PlatformWinlossDetail]   
-	@FromDate		SMALLDATETIME,  
+	@FromDate	SMALLDATETIME,  
 	@ToDate		SMALLDATETIME,   
 	@showSB		BIT=0,  
 	@ShowRB		BIT=0,  
 	@ShowNG		BIT=0, 
 	@ShowBA		BIT=0,
-	@ShowLC 		BIT=0,
+	@ShowLC 	BIT=0,
 	@ShowVS		BIT=0,
 	@ShowKN		BIT=0,
 	@ShowCS		BIT=0,
-	@ShowMGCLC		BIT=0,
+	@ShowMGCLC	BIT=0,
 	@ShowMGCRNG	BIT=0,
 	@ShowVB		BIT=0,		
 	@ShowAB		BIT=0,	
 	@ShowFW		BIT=0,
 	@ShowVS2	BIT = 0, -- Bet Radar Virtual Sports
+	@ShowLT		BIT = 0, -- Lottery
 	@PlatformType	TINYINT=0, 
-	@MoveBetsDay SMALLDATETIME,
-	@drawfilter SMALLINT = 1,
+	@MoveBetsDay	SMALLDATETIME,
+	@drawfilter		SMALLINT = 1,
 	@AgentList		VARCHAR(MAX)
 AS
 
@@ -35,6 +37,7 @@ AS
 		- 20170329@Paul: Implement Cash Out [RedmineID: #71727]
 		- 20170706@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
 		- 20170802@Sophia: Add new betfrom [redmine: #80687]
+		- 20170619@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 
 	Param's Explanation:  
 	  + @PlatformType:  0: All  
@@ -208,6 +211,11 @@ BEGIN
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS2', 'VS2')
 	END
 
+	IF @ShowLT = 1 -- Lottery
+	BEGIN
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'LT', 'LT')
+	END
+
 	IF LEN(ISNULL(@ProductList, '')) > 0 
 	BEGIN
 		-- Insert Bettype
@@ -286,7 +294,7 @@ BEGIN
 			GROUP BY   b.winlostdate, b.custid, b.currency, b.statusID
 		END
 	
-		IF (@ShowSB=1)
+		IF (@ShowSB = 1)
 		BEGIN
 			INSERT INTO #WinLoss (Winlostdate, CustID, Currency, Turnover, Winlost, LicenseeWL, playercomm, WinlossRB, AmtDueToBA, AmtDueToRB, CommBA, CommRB, Company, BetCount)
 			SELECT 
@@ -334,7 +342,7 @@ BEGIN
 		END
 	
 	
-		IF (@ShowRB=1 or @ShowNG=1 OR @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @showMGCLC =1 OR @showMGCRnG =1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW =1 OR @ShowVS2 = 1)
+		IF (@ShowRB = 1 or @ShowNG = 1 OR @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @showMGCLC =1 OR @showMGCRnG =1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW = 1 OR @ShowVS2 = 1 OR @ShowLT = 1)
 		BEGIN
 			INSERT INTO #WinLoss (Winlostdate, CustID, Currency, Turnover, Winlost, LicenseeWL, playercomm, WinlossRB, AmtDueToBA, AmtDueToRB, CommBA, CommRB, Company, BetCount)
 			SELECT 
@@ -380,10 +388,11 @@ BEGIN
 	IF @FDate <= @MoveBetsDay 
 	BEGIN
 		IF @TDate >= @MoveBetsDay
-				SET @TempToDate = @MoveBetsDay
-			ELSE
-				SET  @TempToDate = @TDate
-		IF @ShowBA=1 
+			SET @TempToDate = @MoveBetsDay
+		ELSE
+			SET  @TempToDate = @TDate
+
+		IF @ShowBA = 1 
 		BEGIN
 			INSERT INTO #WinLoss (Winlostdate, CustID, Currency, Turnover, Winlost, LicenseeWL, playercomm, WinlossRB, AmtDueToBA, AmtDueToRB, CommBA, CommRB, Company, BetCount)
 			SELECT 
@@ -426,7 +435,8 @@ BEGIN
 			GROUP BY b.winlostdate, b.CustID, b.currency, b.statusID
 			
 		END
-		IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR  @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @showMGCLC =1 OR @showMGCRnG =1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW =1 OR @ShowVS2 = 1)
+
+		IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR  @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @showMGCLC =1 OR @showMGCRnG =1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW =1 OR @ShowVS2 = 1 OR @ShowLT = 1)
 		BEGIN
 			INSERT INTO #WinLoss (Winlostdate, CustID, Currency, Turnover, Winlost, LicenseeWL, playercomm, WinlossRB, AmtDueToBA, AmtDueToRB, CommBA, CommRB, Company, BetCount)
 			SELECT 

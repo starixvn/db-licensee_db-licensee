@@ -38,7 +38,8 @@ RETURN
 					(21, 'AB', 211, 0),	-- Allbet  
 					(22, 'VB', 212, 0), -- Macau Games 
 					(24, 'FW', 219, 0), -- Fishing World  
-					(27, 'VS2', 190, 0)-- Betradar Virtual Sports  
+					(27, 'VS2', 190, 0),-- Betradar Virtual Sports  
+					(28, 'LT', 220, 0)	-- Lottery
 			) d(ProductID, ProductCode, SportType, BetType)  
 	WHERE ',' + @ProductCodes + ',' LIKE '%,' + CAST(ProductCode as varchar(10)) + ',%'  
 GO

@@ -1,5 +1,7 @@
-﻿USE bodb02
-GO
+﻿/*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+
+
+/****** Object:  Stored Procedure dbo.Lrf_Rpt_CustomerBalance    Script Date: 7/10/2017 1:46:42 PM ******/
 
 /****** Object:  Stored Procedure dbo.Lrf_Rpt_CustomerBalance    Script Date: 7/10/2017 1:46:42 PM ******/
  
@@ -28,6 +30,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerBalance]
 	, @ShowFW		BIT = 0
 	, @ShowCO		BIT = 0
 	, @ShowVS2		BIT = 0 -- BetRadar VS
+	, @ShowLT		BIT = 0 -- Lottery
 	,@AgentList		VARCHAR(MAX)
 AS
 /*  
@@ -63,6 +66,7 @@ Revisions:
 	- 20170328@Paul: Support sorting values for Opening Balance and Closing Balance [RedmineID: #74120]
 	- 20170330@Paul: Implement Cash Out [RedmineID :#71727]
     - 20170706@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
+	- 20170619@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 
 Param's Explanation:  
 	+ @excludeTest: remove currency UUS  
@@ -175,13 +179,17 @@ BEGIN
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS2', 'VS2')
 	END
 
+	IF @ShowLT = 1
+	BEGIN
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'LT', 'LT')
+	END
+
 	IF LEN(ISNULL(@ProductList, '')) > 0 
 	BEGIN		
 		-- Insert Sport Type
 		INSERT INTO @sporttype ( sporttype, ProductCode )
 		SELECT DISTINCT sporttype, ProductCode
 		FROM dbo.f_LicWinLoss_ProductSportType_Sel(@ProductList)
-
 	END
 
 	DECLARE @DocHandler INT
