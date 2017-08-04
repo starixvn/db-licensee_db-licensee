@@ -262,6 +262,7 @@ BEGIN
 										WHEN @ProductCode = 'VS2' THEN 'AND b.bettype BETWEEN 2701 AND 2799'
 									ELSE '' END + CHAR(13)
 								+ 'GROUP BY  b.winlostdate, t.currency, b.bettype	' + CHAR(13)
+			END
 
 			IF @ProductCode IN ('', 'VS2')
 			BEGIN
@@ -301,8 +302,7 @@ BEGIN
 										WHEN @ProductCode = 'VS2' THEN 'AND b.bettype BETWEEN 2701 AND 2799'
 										ELSE '' END + CHAR(13)
 									+ 'GROUP BY  b.winlostdate, t.currency, b.bettype	' + CHAR(13)
-			END
-		END
+			END		
 		END
 	END
 
