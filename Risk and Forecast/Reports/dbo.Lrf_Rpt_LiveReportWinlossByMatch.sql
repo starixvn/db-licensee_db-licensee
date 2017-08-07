@@ -5,8 +5,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportWinlossByMatch]
     @ShowBA			BIT	= 0,
 	@ShowLC 		BIT = 0,
 	@ShowVS			BIT = 0,
-	@ShowVS2		BIT = 0,
-	@ShowLT			BIT = 0,
+	@ShowVS2		BIT = 0,	
     @SportId		INT = 0,
     @FromDate		SMALLDATETIME,  
 	@ToDate			SMALLDATETIME,
@@ -40,8 +39,7 @@ Revisions:
 	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
 	- 20170329@Paul: Implement Cash Out [RedmineID: #71727]
-	- 20170710@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
-	- 20170619@Harper: LRF - Integrate Lottery [RedmineID: #79997]
+	- 20170710@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]	
 
 Return 3 tables:
 WinlostBySport
@@ -121,11 +119,6 @@ IF @ShowVS2 = 1
 BEGIN
 	SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS2', 'VS2')
 END 
-
-IF @ShowLT = 1
-BEGIN
-	SELECT @ProductList = COALESCE(@ProductList + ',' + 'LT', 'LT')
-END
 
 IF LEN(ISNULL(@ProductList, '')) > 0 
 BEGIN
@@ -300,7 +293,7 @@ BEGIN
 		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
 	END
 
-	IF ( @ShowLC = 1 OR @ShowVS = 1 OR @ShowVS2 = 1 OR @ShowLT = 1)
+	IF ( @ShowLC = 1 OR @ShowVS = 1 OR @ShowVS2 = 1)
 	BEGIN
 		INSERT INTO #tmpWinloss			
 		SELECT
@@ -516,7 +509,7 @@ BEGIN
 		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
 	END		
 			
-	IF (@ShowLC = 1 OR @ShowVS = 1  OR @ShowVS2 = 1 OR @ShowLT = 1)
+	IF (@ShowLC = 1 OR @ShowVS = 1 OR @ShowVS2 = 1)
 	BEGIN		
 		INSERT INTO #tmpWinloss			
 		SELECT
