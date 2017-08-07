@@ -52,6 +52,7 @@ Revisions:
 	- 20170705@Harper: Hotfix for Cash Out [RedmineID: #79546]
 	- 20170710@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
 	- 20170721@Harper: Hotfix add AB and FW to LiveReport [RedmineID: #80350]
+	- 20170619@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 
 Param's Explanation:
 	+ @IsLive : indicate that whether the report will get live data or not
@@ -300,6 +301,7 @@ BEGIN
 				WHEN b.bettype BETWEEN 1011 AND 1020 THEN 'FW' -- Fishing World
 				WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
 				WHEN b.bettype BETWEEN 2701 AND 2798 THEN 'VS2'
+				WHEN b.bettype BETWEEN 1021 AND 1049 THEN 'LT'
 				END AS ProductCode,
 			SUM(stake) turnover,
 			SUM(b.winlost - b.actual_stake) AS Winlost,
@@ -326,6 +328,7 @@ BEGIN
 				OR b.bettype BETWEEN 1011 AND 1020 -- FW
 				OR b.bettype BETWEEN 2401 AND 2499 -- AB
 				OR b.bettype BETWEEN 2701 AND 2798 -- BetRadar VS
+				OR b.bettype BETWEEN 1021 AND 1049
 			)
 			AND (b.liveindicator = @Liveindicator OR @Liveindicator = 2)
 		GROUP BY
@@ -342,6 +345,7 @@ BEGIN
 				WHEN b.bettype BETWEEN 1011 AND 1020 THEN 'FW' -- Fishing World
 				WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
 				WHEN b.bettype BETWEEN 2701 AND 2798 THEN 'VS2'
+				WHEN b.bettype BETWEEN 1021 AND 1049 THEN 'LT'
 			END
 	END
 
@@ -434,6 +438,7 @@ BEGIN
 				WHEN b.bettype BETWEEN 1011 AND 1020 THEN 'FW' -- Fishing World
 				WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
 				WHEN b.bettype BETWEEN 2701 AND 2799 THEN 'VS2'
+				WHEN b.bettype BETWEEN 1021 AND 1049 THEN 'LT'
 			END AS ProductCode,
 			SUM(b.turnover * CASE WHEN b.bettype = 33 AND b.status IN (114, 115) THEN 0.5 ELSE 1 END) turnover,
 			SUM(b.winloss) winlost,
@@ -473,6 +478,7 @@ BEGIN
 				OR b.bettype BETWEEN 1011 AND 1020 -- FW
 				OR b.bettype BETWEEN 2401 AND 2499 -- AB
 				OR b.bettype BETWEEN 2701 AND 2799 -- VS2
+				OR b.bettype BETWEEN 1021 AND 1049 -- LT
 				)
 		GROUP BY
 			b.rptDate,
@@ -490,6 +496,7 @@ BEGIN
 				WHEN b.bettype BETWEEN 1011 AND 1020 THEN 'FW' -- Fishing World
 				WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
 				WHEN b.bettype BETWEEN 2701 AND 2799 THEN 'VS2'
+				WHEN b.bettype BETWEEN 1021 AND 1049 THEN 'LT'
 			END
 
 		-- parlay for SB
@@ -581,6 +588,7 @@ BEGIN
 			WHEN 'FW' THEN 'Fishing World'
 			WHEN 'AB' THEN 'AllBet'
 			WHEN 'VS2' THEN 'Virtual Sports 2'
+			WHEN 'LT' THEN 'Lottery'
 			ELSE 'Sportsbook'
 			END AS ProductName,
 		SUM(TurnOver) AS Turnover,

@@ -62,6 +62,7 @@ Revisions:
 	- 20170705@Harper: Hotfix for Cash Out [RedmineID: #79546]
 	- 20170721@Harper: Hotfix add AB and FW to LiveReport [RedmineID: #80350]
 	- 20170710@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
+	- 20170619@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 
 Param's Explanation:  
 	+ @Liveindicator : indicate that whether the report will get live data or not
@@ -183,7 +184,7 @@ BEGIN
 		END
 
 		--Not BA
-		IF	@ProductCode IN ('', 'NG', 'SB', 'RB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2')
+		IF	@ProductCode IN ('', 'NG', 'SB', 'RB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT')
 		BEGIN
 			SELECT	@sql = @sql + '--Get data from bettrans for non - BA' + CHAR(13)
 
@@ -222,6 +223,7 @@ BEGIN
 									WHEN @ProductCode = 'FW' THEN 'AND b.bettype BETWEEN 1011 AND 1020'
 									WHEN @ProductCode = 'AB' THEN 'AND b.bettype BETWEEN 2401 AND 2499'
 									WHEN @ProductCode = 'VS2' THEN 'AND b.bettype BETWEEN 2701 AND 2799'
+									WHEN @ProductCode = 'LT' THEN 'AND b.bettype BETWEEN 1021 AND 1049'
 									ELSE 'AND b.bettype NOT BETWEEN 2001 AND 2009 AND b.bettype NOT BETWEEN 4001 AND 4099 AND b.bettype NOT BETWEEN 2501 AND 2699 ' END + CHAR(13)
 								+ 'GROUP BY  b.winlostdate, t.currency, b.bettype' + CHAR(13)
 
@@ -261,6 +263,7 @@ BEGIN
 										WHEN @ProductCode = 'FW' THEN 'AND b.bettype BETWEEN 1011 AND 1020'
 										WHEN @ProductCode = 'AB' THEN 'AND b.bettype BETWEEN 2401 AND 2499'
 										WHEN @ProductCode = 'VS2' THEN 'AND b.bettype BETWEEN 2701 AND 2799'
+										WHEN @ProductCode = 'LT' THEN 'AND b.bettype BETWEEN 1021 AND 1049'
 									ELSE '' END + CHAR(13)
 								+ 'GROUP BY  b.winlostdate, t.currency, b.bettype	' + CHAR(13)
 			END
@@ -301,6 +304,7 @@ BEGIN
 										WHEN @ProductCode = 'FW' THEN 'AND b.bettype BETWEEN 1011 AND 1020'
 										WHEN @ProductCode = 'AB' THEN 'AND b.bettype BETWEEN 2401 AND 2499'
 										WHEN @ProductCode = 'VS2' THEN 'AND b.bettype BETWEEN 2701 AND 2799'
+										WHEN @ProductCode = 'LT' THEN 'AND b.bettype BETWEEN 1021 AND 1049'
 										ELSE '' END + CHAR(13)
 									+ 'GROUP BY  b.winlostdate, t.currency, b.bettype	' + CHAR(13)
 			END		
@@ -366,7 +370,7 @@ BEGIN
 		END
 
 		--Not BA
-		IF @ProductCode IN ('', 'RB', 'NG', 'SB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2')
+		IF @ProductCode IN ('', 'RB', 'NG', 'SB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT')
 		BEGIN
 			SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
 								+ 'SELECT b.rptDate, b.currencyID, b.bettype,' + CHAR(13)
@@ -400,6 +404,7 @@ BEGIN
 									WHEN @ProductCode = 'FW' THEN 'AND b.bettype BETWEEN 1011 AND 1020'
 									WHEN @ProductCode = 'AB' THEN 'AND b.bettype BETWEEN 2401 AND 2499'
 									WHEN @ProductCode = 'VS2' THEN 'AND b.bettype BETWEEN 2701 AND 2799'
+									WHEN @ProductCode = 'LT' THEN 'AND b.bettype BETWEEN 1021 AND 1049'
 									ELSE 'AND b.bettype NOT BETWEEN 2001 AND 2009 AND b.bettype NOT BETWEEN 4001 AND 4099 AND b.bettype NOT BETWEEN 2501 AND 2699 ' END + CHAR(13)
 								+ 'GROUP BY b.rptDate, b.currencyID, b.bettype' + CHAR(13)
 
@@ -438,6 +443,7 @@ BEGIN
 										WHEN @ProductCode = 'FW' THEN 'AND b.bettype BETWEEN 1011 AND 1020'
 										WHEN @ProductCode = 'AB' THEN 'AND b.bettype BETWEEN 2401 AND 2499'
 										WHEN @ProductCode = 'VS2' THEN 'AND b.bettype BETWEEN 2701 AND 2799'
+										WHEN @ProductCode = 'LT' THEN 'AND b.bettype BETWEEN 1021 AND 1049'
 										ELSE '' END + CHAR(13)
 									+ 'GROUP BY b.rptDate, b.currencyID, b.bettype' + CHAR(13)
 			END
@@ -477,9 +483,9 @@ BEGIN
 										WHEN @ProductCode = 'FW' THEN 'AND b.bettype BETWEEN 1011 AND 1020'
 										WHEN @ProductCode = 'AB' THEN 'AND b.bettype BETWEEN 2401 AND 2499'
 										WHEN @ProductCode = 'VS2' THEN 'AND b.bettype BETWEEN 2701 AND 2799'
+										WHEN @ProductCode = 'LT' THEN 'AND b.bettype BETWEEN 1021 AND 1049'
 										ELSE '' END + CHAR(13)
 									+ 'GROUP BY b.rptDate, b.currencyID, b.bettype' + CHAR(13)
-			END
 			END
 		END
 	END
