@@ -34,10 +34,12 @@ AS
 		- 20161128@Paul: enhance performance [RedmineID :#66801]
 		- 20170301@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest [Redmine: #71679]
 		- 20170329@Paul: Implement Cash Out [RedmineID: #71727]
-		- 20170802@Sophia: Add new Flatfrom [redmine: #80687]
+		- 20170706@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
+		- 20170802@Sophia: Add new betfrom [redmine: #80687]
+
 
 	Param's Explanation:  
-	   + @PlatformType:  0: All  
+	  + @PlatformType:  0: All  
 						1: Asia (d, g, x)  
 						2: China (a, z)
 						3: Euro (e, u , y) (and Euro 12bet (u))
