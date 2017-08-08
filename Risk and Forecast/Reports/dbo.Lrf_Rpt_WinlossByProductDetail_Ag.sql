@@ -336,17 +336,22 @@ BEGIN
 		INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
 		WHERE EventDate BETWEEN @TempFromDate AND @TDate 
 		
-		SELECT DISTINCT b.transid, m.sporttype
-		INTO #tmpParlay
-		FROM 
-			dbo.bettrans b WITH ( NOLOCK)--,INDEX=IX_srecommend )  
-			INNER JOIN bettransm bm WITH (NOLOCK) ON b.refno = bm.refno AND b.custid = bm.custid
-			INNER JOIN dbo.match m WITH (NOLOCK) ON bm.matchid = m.matchid
-			INNER JOIN @TempAg a ON b.recommend = a.custid AND b.Currency = a.Currency 
-			INNER JOIN @bettype bt ON b.bettype = bt.bettype			
-		WHERE b.bettype = 2799 -- Betradar VS Parlay
-			AND b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
-			b.statusID  IN (111, 112, 113)
+		DECLARE @tmpParlay TABLE (transid BIGINT PRIMARY KEY, sporttype SMALLINT)
+
+		IF (@ShowVS2 = 1)
+		BEGIN
+			INSERT INTO @tmpParlay( transid, sporttype )		
+			SELECT DISTINCT b.transid, m.sporttype		
+			FROM 
+				dbo.bettrans b WITH ( NOLOCK)--,INDEX=IX_srecommend )  
+				INNER JOIN dbo.bettransm bm WITH (NOLOCK) ON b.refno = bm.refno
+				INNER JOIN dbo.match m WITH (NOLOCK) ON bm.matchid = m.matchid
+				INNER JOIN @TempAg a ON b.recommend = a.custid AND b.Currency = a.Currency 
+				INNER JOIN @bettype bt ON b.bettype = bt.bettype			
+			WHERE b.bettype = 2799 -- Betradar VS Parlay
+				AND b.winlostdate BETWEEN @TempFromDate AND @TDate
+				AND b.statusID  IN (111, 112, 113)
+		END
 
 		INSERT INTO #SAgWinLoss
 		SELECT   
@@ -389,7 +394,7 @@ BEGIN
 			INNER JOIN @bettype bt ON b.bettype = bt.bettype
 			LEFT JOIN [match] m with(nolock) ON b.matchid = m.matchid AND b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype())
 			LEFT JOIN #tmpVS vs ON b.oddsid=vs.Orid AND b.bettype IN (1231,1232,1233,1237,1238,1220,1235,1236)	
-			LEFT JOIN #tmpParlay p ON b.transid = p.transid AND b.bettype = 2799
+			LEFT JOIN @tmpParlay p ON b.transid = p.transid AND b.bettype = 2799
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
 			b.statusID  IN (111, 112, 113)
@@ -408,8 +413,7 @@ BEGIN
 			ELSE bt.ProductCode END
 			, statusID
 
-		DROP TABLE #tmpVS	
-		DROP TABLE #tmpParlay		
+		DROP TABLE #tmpVS			
 	END	
 	
 	IF @ShowRB = 1

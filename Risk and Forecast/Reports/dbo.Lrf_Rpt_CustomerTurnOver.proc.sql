@@ -292,11 +292,27 @@ BEGIN
 	
 	IF (@ToDate > @MoveBetsDay)
 	BEGIN
+
+		SELECT b.transid, bm.sporttype
+		INTO #tmpParlay
+		FROM dbo.bettrans b WITH (NOLOCK)
+			INNER JOIN #recommend rec ON b.Recommend = rec.CustID
+			INNER JOIN #Status st ON b.StatusID =  st.StatusID
+			CROSS APPLY (	SELECT TOP 1 m.sporttype
+							FROM dbo.bettransm bm WITH (NOLOCK)
+								INNER JOIN dbo.match m WITH (NOLOCK) ON bm.matchid = m.matchid
+							WHERE b.refno = bm.refno
+					) AS bm
+		WHERE b.bettype = 2799		
+			AND b.winlostdate BETWEEN @tempFromDate AND @ToDate
+
 		INSERT INTO #tempBettrans
 		SELECT b.winlostdate
 			, b.custid
 			, recommend
-			, CASE WHEN bt.EventType = 0 THEN 1 ELSE 0 END AS sporttype
+			, CASE WHEN bt.EventType = 0 THEN
+					CASE WHEN b.bettype = 2799 THEN p.sporttype ELSE 1 END
+			  ELSE 0 END AS sporttype
 			, b.matchid
 			, b.bettype
 			, b.oddsid
@@ -309,12 +325,10 @@ BEGIN
 			, bt.EventType
 			, bt.ProductID
 		FROM dbo.bettrans b WITH(NOLOCK)
-			INNER JOIN #recommend rec 
-			ON b.Recommend	= rec.CustID 
-			INNER JOIN #bettype bt
-			ON b.bettype 	=  bt.typeid
-			INNER JOIN #Status st
-			ON b.StatusID 	=  st.StatusID
+			INNER JOIN #recommend rec ON b.Recommend = rec.CustID 
+			INNER JOIN #bettype bt ON b.bettype =  bt.typeid
+			INNER JOIN #Status st ON b.StatusID =  st.StatusID
+			LEFT JOIN #tmpParlay p ON b.transid = p.transid
 		WHERE b.winlostdate BETWEEN @tempFromDate AND @ToDate
 		
 		UPDATE #tempBettrans 
@@ -383,6 +397,7 @@ BEGIN
 			WHERE b.EventType = 2
 				AND o.eventdate BETWEEN @tempFromDate AND @ToDate 
 		END
+
 		IF(EXISTS(SELECT TOP 1 1 FROM #tempBettrans WHERE EventType = 3 ))
 		BEGIN
 			UPDATE b
@@ -394,7 +409,7 @@ BEGIN
 				ON vs.EventID  		= r.EventID
 			WHERE b.EventType = 3
 				AND vs.eventdate BETWEEN @tempFromDate AND @ToDate 
-		END
+		END		
 		
 		--FILTER product
 		DELETE b
