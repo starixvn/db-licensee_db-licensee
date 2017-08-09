@@ -1,5 +1,5 @@
-﻿/****** Object:  Stored Procedure dbo.Lrf_CustomerUpdMemberBA_PositionTaking    Script Date: 4/25/2014 6:38:44 AM ******/  
-/****** Object:  Stored Procedure dbo.Lrf_CustomerUpdMemberBA_PositionTaking    Script Date: 4/25/2014 17:04:07  ******/  
+﻿/*<info serverAlias="DBCUST-CUSTDB" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
+
 ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberBA_PositionTaking]  
  @custid INT,--memberid    
     
@@ -77,7 +77,8 @@ Revisions:
  - 20131113@winnie: Add bodb02.dbo  
  - 20140425@Francis: Add HR Fixed Odds  
  - 20150610@Joseph: Separate CustDB to DBCUST server (Move SP to DBCUST.CustDB, use temp table for GameType table)
-- 20151015@Jim: Integrate Sportbook2 (Feature #44759)
+ - 20151015@Jim: Integrate Sportbook2 (Feature #44759)
+ - 20170809@Winnie: Change Data Type of Sporttype [RedmineID: #73545]
 Param's Explanation:  
 • @ErrCode:  
     = 0: Update successfully.  
@@ -88,7 +89,7 @@ Param's Explanation:
   
 SET NOCOUNT ON  
   
-DECLARE @tmp_Sports TABLE (SportType TINYINT, SportName NVARCHAR(50))
+DECLARE @tmp_Sports TABLE (SportType SMALLINT, SportName NVARCHAR(50))
 DECLARE @tmp_Bettype TABLE (TypeID INT, TypeNamee NVARCHAR(50))
 
 BEGIN TRY
@@ -1416,3 +1417,4 @@ BEGIN
  @TrackingValue2 = @TrackingValue2,  
  @duration = @duration  
 END  
+GO
