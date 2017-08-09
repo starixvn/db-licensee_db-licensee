@@ -15,6 +15,7 @@ AS
 		- 20170119@Joseph: Copy from Lrf_Rpt_TurnOver [RedmineID: #70616]
 		- 20170323@Paul: Implement Cash Out [RedmineID: #71727]
 		- 20170613@Paul: return value in THB, IDR rates [RedmineID: #75030]
+		- 20170808@Walter: Support UUS currency [RedmineID: #80855]
 
 	Param's Explanation:
 	
@@ -37,8 +38,7 @@ BEGIN
 	INSERT INTO #tmpAg(CustId, Currency)
 	SELECT CustID, currency 
 	FROM @Temp lc
-	WHERE Currency <> 20
-		AND (@CurrencyID = 0 OR (@CurrencyID <> 0 AND Currency = @CurrencyID));
+	WHERE @CurrencyID = 0 OR (@CurrencyID <> 0 AND Currency = @CurrencyID);
 
 	CREATE TABLE #tmpRpt
 	(

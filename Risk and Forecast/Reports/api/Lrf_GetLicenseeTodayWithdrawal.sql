@@ -26,6 +26,7 @@ AS
 	Revisions:
 		- 20170208@Paul: Create new [RedmineID: #70616]
 		- 20170613@Paul: return value in THB, IDR rates [RedmineID: #75030]
+		- 20170808@Walter: Support UUS currency [RedmineID: #80855]
 */
 
 BEGIN
@@ -48,8 +49,7 @@ BEGIN
 	INSERT INTO @tmpAg(custID, currency)
 	SELECT CustID, currency 
 	FROM @Temp lc
-	WHERE Currency <> 20
-		AND (@CurrencyID = 0 OR (@CurrencyID <> 0 AND Currency = @CurrencyID));
+	WHERE @CurrencyID = 0 OR (@CurrencyID <> 0 AND Currency = @CurrencyID);
 
 	CREATE TABLE #tmpRpt
 	(

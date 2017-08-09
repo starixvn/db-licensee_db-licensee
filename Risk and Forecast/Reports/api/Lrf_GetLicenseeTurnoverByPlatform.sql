@@ -12,7 +12,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-CREATE PROCEDURE [dbo].[Lrf_GetLicenseeTurnoverByPlatform]   
+ALTER PROCEDURE [dbo].[Lrf_GetLicenseeTurnoverByPlatform]   
 	 @LicenseeID	INT,
 	 @CurrencyID	INT = 0,
 	 @FromDate		SMALLDATETIME,  
@@ -28,6 +28,7 @@ AS
 		- 20170207@Paul: Create new [RedmineID: #70616]
 		- 20170323@Paul: Implement Cash Out [RedmineID: #71727]
 		- 20170613@Paul: return value in THB, IDR rates [RedmineID: #75030]
+		- 20170808@Walter: Support UUS currency [RedmineID: #80855]
 
 	Param's Explanation:  
 */
@@ -60,8 +61,7 @@ BEGIN
 	INSERT INTO #tempAg (custID, currency) 
 	SELECT custID, currency 
 	FROM bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc
-	WHERE Currency <> 20
-		AND (@CurrencyID = 0 OR Currency = @CurrencyID);
+	WHERE @CurrencyID = 0 OR Currency = @CurrencyID;
 
 	CREATE TABLE #PlatformList (betfrom NVARCHAR(1), PlatformType TINYINT);
 
