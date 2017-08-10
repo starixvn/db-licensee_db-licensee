@@ -293,7 +293,7 @@ BEGIN
 	IF (@ToDate > @MoveBetsDay)
 	BEGIN
 
-		SELECT b.transid, bm.sporttype
+		SELECT DISTINCT b.transid, s.sporttype
 		INTO #tmpParlay
 		FROM dbo.bettrans b WITH (NOLOCK)
 			INNER JOIN #recommend rec ON b.Recommend = rec.CustID
@@ -301,10 +301,11 @@ BEGIN
 			CROSS APPLY (	SELECT TOP 1 m.sporttype
 							FROM dbo.bettransm bm WITH (NOLOCK)
 								INNER JOIN dbo.match m WITH (NOLOCK) ON bm.matchid = m.matchid
-							WHERE b.refno = bm.refno
-					) AS bm
+							WHERE b.refno = bm.refno AND b.custid = bm.custid
+					) AS s
 		WHERE b.bettype = 2799		
 			AND b.winlostdate BETWEEN @tempFromDate AND @ToDate
+			AND b.matchid = 2799
 
 		INSERT INTO #tempBettrans
 		SELECT b.winlostdate

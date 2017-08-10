@@ -388,31 +388,34 @@ BEGIN
 		IF (@ShowVS2 = 1)
 		BEGIN
 			INSERT INTO @tmpParlay( transid, sporttype )		
-			SELECT DISTINCT b.transid, m.sporttype		
-			FROM 
-				dbo.bettrans b WITH ( NOLOCK)--,INDEX=IX_srecommend )  
-				INNER JOIN dbo.bettransm bm WITH (NOLOCK) ON b.refno = bm.refno
-				INNER JOIN dbo.match m WITH (NOLOCK) ON bm.matchid = m.matchid
-				INNER JOIN @TempAg a ON b.recommend = a.custid AND b.Currency = a.Currency 
-				INNER JOIN @bettype bt ON b.bettype = bt.bettype			
+			SELECT DISTINCT b.transid, s.sporttype
+			FROM bodb02.dbo.bettrans b WITH (NOLOCK)
+				CROSS APPLY (	SELECT TOP 1 m.sporttype
+								FROM bodb02.dbo.bettransm bm WITH (NOLOCK)
+									INNER JOIN bodb02.dbo.match m WITH (NOLOCK) ON bm.matchid = m.matchid
+								WHERE b.refno = bm.refno AND b.custid = bm.custid
+							) AS s
+				INNER JOIN @TempAg a ON b.recommend = a.custid AND b.Currency = a.Currency 							
 			WHERE b.bettype = 2799 -- Betradar VS Parlay
 				AND b.winlostdate BETWEEN @TempFromDate AND @TDate   
 				AND (@CustId = 0 OR (@CustId <> 0 AND b.CustId = @CustID)) 
 				AND b.statusID  IN (111, 112, 113)
+				AND b.matchid = 2799
 		END	
 		 
 		INSERT INTO #SAgWinLoss
 		SELECT   
-			b.winlostdate,  
+			b.winlostdate,  --b.bettype,p.sporttype, m.sporttype, vs.sporttype,
 			a.currency,
 			CASE WHEN b.bettype BETWEEN 1201 AND 1299 THEN
 				CASE WHEN ISNULL(vs.sporttype, 0) = 0  
 					THEN 'VS' + CONVERT(varchar(10),ISNULL(m.sporttype,0))
 					ELSE 'VS' + CONVERT(varchar(10),vs.sporttype)
 				END
-			WHEN b.bettype BETWEEN 2701 AND 2799 THEN
-				CASE WHEN b.bettype = 2799 THEN 'VS2' + CONVERT(varchar(10), p.sporttype)
-				     WHEN ISNULL(vs.sporttype, 0) = 0 AND b.bettype <> 2799 THEN 'VS2'+ CONVERT(varchar(10), ISNULL(m.sporttype,0))
+			WHEN b.bettype = 2799 THEN 'VS2' + CONVERT(varchar(10), p.sporttype)
+			WHEN b.bettype BETWEEN 2701 AND 2798 THEN
+				CASE 
+				     WHEN ISNULL(vs.sporttype, 0) = 0 THEN 'VS2'+ CONVERT(varchar(10), ISNULL(m.sporttype,0))
 					 ELSE 'VS2' + CONVERT(varchar(10), vs.sporttype)
 				END						
 			ELSE bt.ProductCode END AS ProductCode,
@@ -441,18 +444,19 @@ BEGIN
 			(@CustId = 0 OR (@CustId <> 0 AND b.CustId = @CustID)) AND
 			b.statusID  IN (111, 112, 113)
 		GROUP BY   
-			b.winlostdate
+			b.winlostdate--, b.bettype, p.sporttype, m.sporttype, vs.sporttype
 			,a.currency
 			,CASE WHEN b.bettype BETWEEN 1201 AND 1299 THEN
 				CASE WHEN ISNULL(vs.sporttype, 0) = 0  
 					THEN 'VS' + CONVERT(varchar(10),ISNULL(m.sporttype,0))
 					ELSE 'VS' + CONVERT(varchar(10),vs.sporttype)
 				END
-			WHEN b.bettype BETWEEN 2701 AND 2799 THEN
-				CASE WHEN b.bettype = 2799 THEN 'VS2' + CONVERT(varchar(10), p.sporttype)
-				     WHEN ISNULL(vs.sporttype, 0) = 0 AND b.bettype <> 2799 THEN 'VS2'+ CONVERT(varchar(10), ISNULL(m.sporttype,0))
+			WHEN b.bettype = 2799 THEN 'VS2' + CONVERT(varchar(10), p.sporttype)
+			WHEN b.bettype BETWEEN 2701 AND 2798 THEN
+				CASE 
+				     WHEN ISNULL(vs.sporttype, 0) = 0 THEN 'VS2'+ CONVERT(varchar(10), ISNULL(m.sporttype,0))
 					 ELSE 'VS2' + CONVERT(varchar(10), vs.sporttype)
-				END						
+				END							
 			ELSE bt.ProductCode END 
 			,b.statusID
 
@@ -543,7 +547,7 @@ BEGIN
 	BEGIN
 		INSERT INTO #SAgWinLoss  
 		SELECT 
-			b.winlostdate,  
+			b.winlostdate,
 			b.currency,
 			t.ProductCode,
 			SUM(b.turnover
@@ -576,9 +580,9 @@ BEGIN
 			AND (b.bettype < 901 OR b.bettype > 904)
 			AND (b.bettype < 911 OR b.bettype > 914)
 			AND ISNULL(b.isBA,0) = 0
-			and t.sporttype NOT IN (180, 190)
+			and t.ProductCode NOT IN ('VS', 'VS2')
 		GROUP BY  
-			b.winlostdate,   
+			b.winlostdate,  
 			b.currency,
 			t.ProductCode
 			, b.statusID
@@ -622,8 +626,10 @@ BEGIN
 			,SUM(commissionP) 
 			,SUM(WinlossA)  	
 			,SUM(betcount)  
-		FROM DBWH.bodb_Account.dbo.mcCustVirtualSport  WITH ( NOLOCK )   	
+		FROM DBWH.bodb_Account.dbo.mcCustVirtualSport  WITH ( NOLOCK )   
+			INNER JOIN @sporttype s ON SportID = s.sporttype	
 		WHERE rptdate BETWEEN @FDate AND @TempToDate  
+			 AND s.ProductCode IN ('VS', 'VS2')
 			 AND status=8 --  in (8,3,4)
 			 AND (@CustId = 0 OR (@CustId <> 0 AND CustId = @CustID))
 		GROUP BY 
@@ -657,10 +663,12 @@ BEGIN
 			,SUM(commissionP) 
 			,SUM(WinlossA)  	
 			,SUM(betcount)  
-		FROM DBWH.bodb_Account.dbo.mcCustVirtualSport  WITH ( NOLOCK )   	
+		FROM DBWH.bodb_Account.dbo.mcCustVirtualSport  WITH ( NOLOCK )   
+			INNER JOIN @sporttype s ON SportID = s.sporttype	
 		WHERE rptdate BETWEEN @FDate AND @TempToDate  
+			AND s.ProductCode IN ('VS', 'VS2')
 			AND (@CustId = 0 OR (@CustId <> 0 AND CustId = @CustID))
-			 AND status=3  
+			AND status=3  
 		GROUP BY 
 		rptdate    
 		,sportID	
@@ -692,10 +700,12 @@ BEGIN
 			,SUM(commissionP) 
 			,SUM(WinlossA)  	
 			,SUM(betcount)  
-		FROM DBWH.bodb_Account.dbo.mcCustVirtualSport  WITH ( NOLOCK )   	
-		WHERE rptdate BETWEEN @FDate AND @TempToDate  
-			 AND status=4
-			 AND (@CustId = 0 OR (@CustId <> 0 AND CustId = @CustID))
+		FROM DBWH.bodb_Account.dbo.mcCustVirtualSport  WITH ( NOLOCK )   
+			INNER JOIN @sporttype s ON SportID = s.sporttype	
+		WHERE rptdate BETWEEN @FDate AND @TempToDate 
+			AND s.ProductCode IN ('VS', 'VS2') 
+			AND status = 4
+			AND (@CustId = 0 OR (@CustId <> 0 AND CustId = @CustID))
 		GROUP BY 
 		rptdate    
 		,sportID	

@@ -341,16 +341,18 @@ BEGIN
 		IF (@ShowVS2 = 1)
 		BEGIN
 			INSERT INTO @tmpParlay( transid, sporttype )		
-			SELECT DISTINCT b.transid, m.sporttype		
-			FROM 
-				dbo.bettrans b WITH ( NOLOCK)--,INDEX=IX_srecommend )  
-				INNER JOIN dbo.bettransm bm WITH (NOLOCK) ON b.refno = bm.refno
-				INNER JOIN dbo.match m WITH (NOLOCK) ON bm.matchid = m.matchid
-				INNER JOIN @TempAg a ON b.recommend = a.custid AND b.Currency = a.Currency 
-				INNER JOIN @bettype bt ON b.bettype = bt.bettype			
+			SELECT DISTINCT b.transid, s.sporttype
+			FROM bodb02.dbo.bettrans b WITH (NOLOCK)
+				CROSS APPLY (	SELECT TOP 1 m.sporttype
+								FROM bodb02.dbo.bettransm bm WITH (NOLOCK)
+									INNER JOIN bodb02.dbo.match m WITH (NOLOCK) ON bm.matchid = m.matchid
+								WHERE b.refno = bm.refno AND b.custid = bm.custid
+							) AS s
+				INNER JOIN @TempAg a ON b.recommend = a.custid AND b.Currency = a.Currency 							
 			WHERE b.bettype = 2799 -- Betradar VS Parlay
-				AND b.winlostdate BETWEEN @TempFromDate AND @TDate
+				AND b.winlostdate BETWEEN @TempFromDate AND @TDate  
 				AND b.statusID  IN (111, 112, 113)
+				AND b.matchid = 2799
 		END
 
 		INSERT INTO #SAgWinLoss
@@ -363,9 +365,10 @@ BEGIN
 					THEN 'VS' + CONVERT(varchar(10),ISNULL(m.sporttype,0))
 					ELSE 'VS' + CONVERT(varchar(10),vs.sporttype)
 				END
-			WHEN b.bettype BETWEEN 2701 AND 2799 THEN
-				CASE WHEN b.bettype = 2799 THEN 'VS2' + CONVERT(varchar(10), p.sporttype)
-				     WHEN ISNULL(vs.sporttype, 0) = 0 AND b.bettype <> 2799 THEN 'VS2'+ CONVERT(varchar(10), ISNULL(m.sporttype,0))
+			WHEN b.bettype = 2799 THEN 'VS2' + CONVERT(varchar(10), p.sporttype)
+			WHEN b.bettype BETWEEN 2701 AND 2798 THEN
+				CASE 
+				     WHEN ISNULL(vs.sporttype, 0) = 0 THEN 'VS2'+ CONVERT(varchar(10), ISNULL(m.sporttype,0))
 					 ELSE 'VS2' + CONVERT(varchar(10), vs.sporttype)
 				END				
 			ELSE bt.ProductCode END AS ProductCode,
@@ -405,9 +408,10 @@ BEGIN
 					THEN 'VS' + CONVERT(varchar(10),ISNULL(m.sporttype,0))
 					ELSE 'VS' + CONVERT(varchar(10),vs.sporttype)
 				END
-			WHEN b.bettype BETWEEN 2701 AND 2799 THEN
-				CASE WHEN b.bettype = 2799 THEN 'VS2' + CONVERT(varchar(10), p.sporttype)
-				     WHEN ISNULL(vs.sporttype, 0) = 0 AND b.bettype <> 2799 THEN 'VS2'+ CONVERT(varchar(10), ISNULL(m.sporttype,0))
+			WHEN b.bettype = 2799 THEN 'VS2' + CONVERT(varchar(10), p.sporttype)
+			WHEN b.bettype BETWEEN 2701 AND 2798 THEN
+				CASE 
+				     WHEN ISNULL(vs.sporttype, 0) = 0 THEN 'VS2'+ CONVERT(varchar(10), ISNULL(m.sporttype,0))
 					 ELSE 'VS2' + CONVERT(varchar(10), vs.sporttype)
 				END			
 			ELSE bt.ProductCode END
@@ -582,9 +586,12 @@ BEGIN
 			,commissionP 
 			,WinlossA  	
 			,betcount  
-		FROM DBWH.bodb_Account.dbo.mcCustVirtualSport  WITH ( NOLOCK )   	
+		FROM DBWH.bodb_Account.dbo.mcCustVirtualSport  WITH ( NOLOCK )   
+			INNER JOIN @sporttype s ON SportID = s.sporttype	
 		WHERE rptdate BETWEEN @FDate AND @TempToDate  
+			 AND s.ProductCode IN ('VS', 'VS2') 
 			 AND status  in (8,3,4)
+
 		INSERT INTO #SAgWinLoss
 		SELECT 
 			b.rptdate winlostdate,  
