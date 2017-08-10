@@ -646,7 +646,7 @@ BEGIN
 				0 AS LicenseeWLCO,
 				-SUM(CASE WHEN b.bettype BETWEEN 2700 AND 2799
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLVS2,	
-				-SUM(CASE b.bettype BETWEEN 1021 AND 1049
+				-SUM(CASE WHEN b.bettype BETWEEN 1021 AND 1049
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLLT,	
 				0 AS AmountDueToBA,
 				0 AS AmountDueToRB,

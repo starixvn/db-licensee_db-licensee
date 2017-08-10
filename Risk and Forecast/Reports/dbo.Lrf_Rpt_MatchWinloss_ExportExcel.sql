@@ -1,6 +1,6 @@
 ﻿/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 
- ALTER  PROCEDURE [dbo].[Lrf_Rpt_MatchWinLoss_ExportExcel]
+ ALTER PROCEDURE [dbo].[Lrf_Rpt_MatchWinLoss_ExportExcel]
     @LicenseeID INT,
     @LicenseeType VARCHAR(100) = NULL,
     @CurrencyID	  INT=0,
@@ -36,7 +36,7 @@ Param's Explanation:
 	
 */
 
-
+BEGIN
 SET NOCOUNT ON
 
 DECLARE @ExchangeDaily TABLE(ExchangeDate SMALLDATETIME, ExchangeId INT, USD FLOAT, EUR FLOAT,GBP FLOAT, PRIMARY KEY(ExchangeDate,ExchangeId))
@@ -686,10 +686,11 @@ DROP TABLE #TempBetList
 	@showLC  = 1,
 	@showVS  = 1
 
-*/	
+*/
+END	
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_MatchWinLoss_ExportExcel] TO [bodbLicenseeNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_MatchWinLoss_ExportExcel] TO vnteam
-
+GO
 
