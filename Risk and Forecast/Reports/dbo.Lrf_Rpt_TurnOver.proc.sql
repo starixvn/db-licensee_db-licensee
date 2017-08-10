@@ -127,6 +127,7 @@ BEGIN
 	IF @ShowFW		= 1 INSERT INTO @sporttype(sporttype) VALUES(219)
 	IF @ShowCO		= 1 INSERT INTO @sporttype(sporttype) VALUES(-6), (-7)
 	IF @ShowVS2	= 1 INSERT INTO @sporttype(sporttype) VALUES(190)
+	IF @ShowLT	= 1 INSERT INTO @sporttype(sporttype) VALUES(220)
 
 	IF @username <> ''
 	BEGIN

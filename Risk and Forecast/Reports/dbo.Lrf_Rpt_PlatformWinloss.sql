@@ -274,7 +274,7 @@ BEGIN
 		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 1011 AND 1020)'
 	END
 
-	IF @ShowVS2 = 1	
+	IF @ShowVS2 = 1 -- Betradar Virtual Sports
 	BEGIN
 		SET @SportTypeSQL = @SportTypeSQL + ', (190, ''VS2'')'
 
@@ -282,6 +282,16 @@ BEGIN
 				'
 
 		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 2701 AND 2799)'
+	END
+
+	IF @ShowLT = 1 -- Lottery
+	BEGIN
+		SET @SportTypeSQL = @SportTypeSQL + ', (220, ''LT'')'
+
+		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 1021 AND 1049 THEN ''LT''
+				'
+
+		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 1021 AND 1049)'
 	END
 
 	SET @SportTypeSQL = STUFF(@SportTypeSQL, 1, 1, '')

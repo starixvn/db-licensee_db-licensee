@@ -706,7 +706,7 @@ BEGIN
 						 
 					ELSE 0 END	
 				) AS turnoverVS2,
-				SUM(CASE WHEN bt.ProductCode = 'LT' THEN
+				SUM(CASE WHEN b.bettype BETWEEN 1021 AND 1049 THEN
 						stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END						 
 					ELSE 0 END	
 				) AS turnoverLT,
@@ -743,7 +743,7 @@ BEGIN
 				0 AS LicenseeWLCO,
 				-SUM(CASE WHEN b.bettype BETWEEN 2700 AND 2799
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLVS2,	
-				-SUM(CASE WHEN bt.ProductCode = 'LT'
+				-SUM(CASE WHEN b.bettype BETWEEN 1021 AND 1049
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLLT,	
 				0 as AmountDueToBA,
 				- SUM (CASE WHEN b.bettype BETWEEN 31 AND 33 THEN b.winlost - b.actual_stake + awinlost + comm ELSE 0 END) as AmountDueToRB,
@@ -1032,7 +1032,7 @@ BEGIN
 						ELSE 1 END
 					ELSE 0 END
 				) AS turnoverVS2,
-				SUM(CASE WHEN t.ProductCode = 'LT' THEN 
+				SUM(CASE WHEN b.sporttype = 220 THEN 
 					b.turnover
 					*
 					CASE WHEN @drawfilter IN (2,3) THEN

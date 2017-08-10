@@ -57,116 +57,111 @@ Param's Explanation:
 					<Agent AgentId="12345" Currency="5"/>  
 					</ROOT> 
 */
-BEGIN
-	SET NOCOUNT ON
+SET NOCOUNT ON
 
-	DECLARE @RowStart INT
-		, @RowEnd INT
-		, @TotalRows INT
-		, @Today SMALLDATETIME
-
-	DECLARE @Exchange TABLE (
-		ExchangeDate SMALLDATETIME
-		, ExchangeId INT
-		, EUR FLOAT
-		, USD FLOAT
-		, GBP FLOAT
-		, PRIMARY KEY (ExchangeDate, ExchangeId)
+DECLARE @RowStart INT
+	, @RowEnd INT
+	, @TotalRows INT
+	, @Today SMALLDATETIME
+DECLARE @Exchange TABLE (
+	ExchangeDate SMALLDATETIME
+	, ExchangeId INT
+	, EUR FLOAT
+	, USD FLOAT
+	, GBP FLOAT
+	, PRIMARY KEY (
+		ExchangeDate
+		, ExchangeId
 		)
+	)
 
-	SELECT @PageIndex = @PageIndex - 1
-		, @RowStart = @PageSize * @PageIndex + 1
-		, @RowEnd = @RowStart + @PageSize - 1
-		, @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120)
+SELECT @PageIndex = @PageIndex - 1
+	, @RowStart = @PageSize * @PageIndex + 1
+	, @RowEnd = @RowStart + @PageSize - 1
+	, @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120)
 
-	DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
-	DECLARE @DocHandler INT
 
-	BEGIN TRY
-		EXEC sp_xml_preparedocument @DocHandler OUTPUT
-				,@AgentList
-		INSERT INTO @TempAg (custID, currency)
-		SELECT AgentId, Currency
-		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
+DECLARE @DocHandler INT
 
-		EXEC sp_xml_removedocument @DocHandler
-	END TRY
+BEGIN TRY
+	EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
+	INSERT INTO @TempAg (custID, currency)
+	SELECT AgentId, Currency
+	FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
-	BEGIN CATCH
-		SELECT ErrCode = 100
-				,ErrMsg = N'Paramter invalid.'
+	EXEC sp_xml_removedocument @DocHandler
+END TRY
 
-		RETURN
-	END CATCH;
+BEGIN CATCH
+	SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
 
-	CREATE TABLE #TempSAg (srecommend INT, currency INT)
+	RETURN
+END CATCH;
 
-	INSERT INTO #TempSAg (srecommend, currency)
-	SELECT DISTINCT c.srecommend, t.currency
-	FROM @TempAg t
-		INNER JOIN dbo.Customer c WITH (NOLOCK) ON t.CustId = c.custid
-	WHERE c.roleid = 2
+CREATE TABLE #TempSAg (srecommend INT, currency INT)
+INSERT INTO #TempSAg (srecommend, currency)
+SELECT DISTINCT
+	c.srecommend, t.currency
+FROM
+	@TempAg t
+	INNER JOIN dbo.Customer c WITH (NOLOCK) ON t.CustId = c.custid
+WHERE
+	c.roleid = 2
 	         
-	CREATE TABLE #AgWinLoss (
-		bettype INT
-		, liveindicator BIT
-		, winlostdate 	SMALLDATETIME
-		, currency 		INT
-		, TurnOver		MONEY
-		, MemberWinLost MONEY
-		, LicenseeWL	MONEY
-		, WinlossRB		MONEY --Sportbook and NumberGame
-		, AmtDueToBA	MONEY
-		, AmtDueToRB	MONEY
-		, CommBA		MONEY
-		, CommRB		MONEY
-		, PlayerComm	MONEY	
+CREATE TABLE #AgWinLoss (
+	bettype INT
+	, liveindicator BIT
+	,
+	winlostdate 	SMALLDATETIME,
+	currency 		INT,
+	TurnOver MONEY
+	, MemberWinLost MONEY
+	, LicenseeWL MONEY
+	, --Sportbook and NumberGame
+	WinlossRB MONEY
+	, AmtDueToBA MONEY
+	, AmtDueToRB MONEY
+	, CommBA MONEY
+	, CommRB MONEY
+	, PlayerComm MONEY	
+	)
+
+DECLARE @TempFromDate DATETIME
+DECLARE @TempToDate DATETIME
+DECLARE @FDate DATETIME
+DECLARE @TDate DATETIME
+
+--to Deal With Parameter Sniffing
+SELECT @FDate = @FromDate
+	, @TDate = @ToDate
+
+INSERT INTO @Exchange (
+	exchangedate
+	, exchangeid
+	, eur
+	, usd
+	,GBP
+	)
+SELECT exchangedate
+	, exchangeid
+	, eur
+	, usd
+	, GBP
+FROM Lrf_f_GetExchangeDaily(@FDate, @TDate)
+WHERE exchangeid IN (
+		SELECT Currency
+		FROM @TempAg
 		)
 
-	DECLARE @TempFromDate DATETIME
-	DECLARE @TempToDate DATETIME
-	DECLARE @FDate DATETIME
-	DECLARE @TDate DATETIME
-
-	--to Deal With Parameter Sniffing
-	SELECT @FDate = @FromDate
-		, @TDate = @ToDate
-
-	INSERT INTO @Exchange (
-		exchangedate
-		, exchangeid
-		, eur
-		, usd
-		, GBP
-		)
-	SELECT exchangedate
-		, exchangeid
-		, eur
-		, usd
-		, GBP
-	FROM Lrf_f_GetExchangeDaily(@FDate, @TDate)
-	WHERE exchangeid IN (
-			SELECT Currency
-			FROM @TempAg
-			)
-	
-	DECLARE @IsTest		BIT = 0
-	DECLARE @bettype	TABLE (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))
-	DECLARE @ProductList VARCHAR (500)
-
-	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
-	SELECT @ProductList = 'SB,RB,NG,LC,VS,KN,VS2,LT'
-
-	INSERT INTO @bettype ( bettype, ProductCode )
-	SELECT DISTINCT BetType, ProductPrefix
-	FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
-
-	IF @Tdate > @MoveBetsDay
-	BEGIN
-		IF @FDate <= @MoveBetsDay
-			SET @TempFromDate = DATEADD(DAY, 1, @MoveBetsDay)
-		ELSE
-			SET @TempFromDate = @FDate
+IF @Tdate > @MoveBetsDay
+BEGIN
+	IF @FDate <= @MoveBetsDay
+		SET @TempFromDate = DATEADD(DAY, 1, @MoveBetsDay)
+	ELSE
+		SET @TempFromDate = @FDate
 
 	INSERT INTO #AgWinLoss
 	SELECT bettype
@@ -198,7 +193,7 @@ BEGIN
 						OR b.bettype BETWEEN 1201 AND 1299
 						OR b.bettype BETWEEN 2701 AND 2799
 						OR b.bettype BETWEEN 1501 AND 1599 --Keno
-						 
+						OR b.bettype BETWEEN 1021 AND 1049 -- Lottery						 
 						)
 					THEN (b.winlost - b.actual_stake)
 				ELSE 0
@@ -247,15 +242,15 @@ BEGIN
 		,b.currency
 END
 
-	IF @FDate <= @MoveBetsDay
-	BEGIN
-		IF @TDate >= @MoveBetsDay
-			SET @TempToDate = @MoveBetsDay
-		ELSE
-			SET @TempToDate = @TDate
+IF @FDate <= @MoveBetsDay
+BEGIN
+	IF @TDate >= @MoveBetsDay
+		SET @TempToDate = @MoveBetsDay
+	ELSE
+		SET @TempToDate = @TDate
 
-		IF @BalanceUpDay < @FDate
-			SELECT @BalanceUpDay = @FDate
+	IF @BalanceUpDay < @FDate
+		SELECT @BalanceUpDay = @FDate
 
 	INSERT INTO #AgWinLoss
 	SELECT bettype
@@ -287,6 +282,7 @@ END
 						OR b.bettype BETWEEN 1201 AND 1299
 						OR b.bettype BETWEEN 2701 AND 2799
 						OR b.bettype BETWEEN 1501 AND 1599 --Keno products
+						OR b.bettype BETWEEN 1021 AND 1049 --Lottery
 						 
 						)
 					THEN (b.winlost - b.actual_stake)
@@ -333,70 +329,70 @@ END
 			END , b.winlostdate, b.currency	
 END
 
-	-- Calculate total value
-	SELECT @TotalRows = COUNT(DISTINCT bettype)
-	FROM #AgWinLoss
+-- Calculate total value
+SELECT @TotalRows = COUNT(DISTINCT bettype)
+FROM #AgWinLoss
 
-	SELECT wl.*
-	FROM (
-		SELECT CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.grouptypeId
-					ELSE b.bettype 
-					END bettype
+SELECT wl.*
+FROM (
+	SELECT CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.grouptypeId
+				ELSE b.bettype 
+				END bettype
+		, liveindicator
+		, SUM(TurnOver) AS TurnOver
+		, CAST(SUM(TurnOver*e.EUR) AS MONEY) AS TurnOverEUR
+		, CAST(SUM(TurnOver*e.USD) AS MONEY) AS TurnOverUSD
+		, CAST(SUM(TurnOver*e.GBP) AS MONEY) AS TurnOverGBP
+		, SUM(MemberWinLost) AS MemberWinLost
+		, CAST(SUM(MemberWinLost*e.EUR) AS MONEY) AS MemberWinLostEUR
+		, CAST(SUM(MemberWinLost*e.USD) AS MONEY) AS MemberWinLostUSD
+		, CAST(SUM(MemberWinLost*e.GBP) AS MONEY) AS MemberWinLostGBP
+		, SUM(LicenseeWL) AS LicenseeWL
+		, CAST(SUM(LicenseeWL*e.EUR) AS MONEY) AS LicenseeWLEUR
+		, CAST(SUM(LicenseeWL*e.USD) AS MONEY) AS LicenseeWLUSD
+		, CAST(SUM(LicenseeWL*e.GBP) AS MONEY) AS LicenseeWLGBP
+		, SUM(WinlossRB) AS WinlossRB
+		, CAST(SUM(WinlossRB*e.EUR) AS MONEY) AS WinlossRBEUR
+		, CAST(SUM(WinlossRB*e.USD) AS MONEY) AS WinlossRBUSD
+		, CAST(SUM(WinlossRB*e.GBP) AS MONEY) AS WinlossRBGBP
+		, SUM(CommBA) AS CommBA
+		, CAST(SUM(CommBA*e.EUR) AS MONEY) AS CommBAEUR
+		, CAST(SUM(CommBA*e.USD) AS MONEY) AS CommBAUSD
+		, CAST(SUM(CommBA*e.GBP) AS MONEY) AS CommBAGBP
+		, SUM(commRB) AS commRB
+		, CAST(SUM(commRB*e.EUR) AS MONEY) AS commRBEUR
+		, CAST(SUM(commRB*e.USD) AS MONEY) AS commRBUSD
+		, CAST(SUM(commRB*e.GBP) AS MONEY) AS commRBGBP
+		, SUM(PlayerComm) AS PlayerComm
+		, CAST(SUM(PlayerComm*e.EUR) AS MONEY) AS PlayerCommEUR
+		, CAST(SUM(PlayerComm*e.USD) AS MONEY) AS PlayerCommUSD
+		, CAST(SUM(PlayerComm*e.GBP) AS MONEY) AS PlayerCommGBP
+		, SUM(AmtDuetoBA) AS AmtDuetoBA
+		, CAST(SUM(AmtDuetoBA*e.EUR) AS MONEY) AS AmtDuetoBAEUR
+		, CAST(SUM(AmtDuetoBA*e.USD) AS MONEY) AS AmtDuetoBAUSD
+		, CAST(SUM(AmtDuetoBA*e.GBP) AS MONEY) AS AmtDuetoBAGBP
+		, SUM(AmtDuetoRB) AS AmtDuetoRB
+		, CAST(SUM(AmtDuetoRB*e.EUR) AS MONEY) AS AmtDuetoRBEUR
+		, CAST(SUM(AmtDuetoRB*e.USD) AS MONEY) AS AmtDuetoRBUSD
+		, CAST(SUM(AmtDuetoRB*e.GBP) AS MONEY) AS AmtDuetoRBGBP
+		, ROW_NUMBER() OVER (
+			ORDER BY CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.grouptypeId
+				ELSE b.bettype 
+				END
+			) AS RowNum
+	FROM #AgWinLoss b
+		LEFT JOIN @Exchange e ON b.winlostdate = e.ExchangeDate AND b.currency = e.ExchangeId
+		LEFT JOIN dbo.f_GroupBettype() ss ON b.bettype = ss.bettype 	
+	GROUP BY CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.grouptypeId
+				ELSE b.bettype 
+				END
 			, liveindicator
-			, SUM(TurnOver) AS TurnOver
-			, CAST(SUM(TurnOver*e.EUR) AS MONEY) AS TurnOverEUR
-			, CAST(SUM(TurnOver*e.USD) AS MONEY) AS TurnOverUSD
-			, CAST(SUM(TurnOver*e.GBP) AS MONEY) AS TurnOverGBP
-			, SUM(MemberWinLost) AS MemberWinLost
-			, CAST(SUM(MemberWinLost*e.EUR) AS MONEY) AS MemberWinLostEUR
-			, CAST(SUM(MemberWinLost*e.USD) AS MONEY) AS MemberWinLostUSD
-			, CAST(SUM(MemberWinLost*e.GBP) AS MONEY) AS MemberWinLostGBP
-			, SUM(LicenseeWL) AS LicenseeWL
-			, CAST(SUM(LicenseeWL*e.EUR) AS MONEY) AS LicenseeWLEUR
-			, CAST(SUM(LicenseeWL*e.USD) AS MONEY) AS LicenseeWLUSD
-			, CAST(SUM(LicenseeWL*e.GBP) AS MONEY) AS LicenseeWLGBP
-			, SUM(WinlossRB) AS WinlossRB
-			, CAST(SUM(WinlossRB*e.EUR) AS MONEY) AS WinlossRBEUR
-			, CAST(SUM(WinlossRB*e.USD) AS MONEY) AS WinlossRBUSD
-			, CAST(SUM(WinlossRB*e.GBP) AS MONEY) AS WinlossRBGBP
-			, SUM(CommBA) AS CommBA
-			, CAST(SUM(CommBA*e.EUR) AS MONEY) AS CommBAEUR
-			, CAST(SUM(CommBA*e.USD) AS MONEY) AS CommBAUSD
-			, CAST(SUM(CommBA*e.GBP) AS MONEY) AS CommBAGBP
-			, SUM(commRB) AS commRB
-			, CAST(SUM(commRB*e.EUR) AS MONEY) AS commRBEUR
-			, CAST(SUM(commRB*e.USD) AS MONEY) AS commRBUSD
-			, CAST(SUM(commRB*e.GBP) AS MONEY) AS commRBGBP
-			, SUM(PlayerComm) AS PlayerComm
-			, CAST(SUM(PlayerComm*e.EUR) AS MONEY) AS PlayerCommEUR
-			, CAST(SUM(PlayerComm*e.USD) AS MONEY) AS PlayerCommUSD
-			, CAST(SUM(PlayerComm*e.GBP) AS MONEY) AS PlayerCommGBP
-			, SUM(AmtDuetoBA) AS AmtDuetoBA
-			, CAST(SUM(AmtDuetoBA*e.EUR) AS MONEY) AS AmtDuetoBAEUR
-			, CAST(SUM(AmtDuetoBA*e.USD) AS MONEY) AS AmtDuetoBAUSD
-			, CAST(SUM(AmtDuetoBA*e.GBP) AS MONEY) AS AmtDuetoBAGBP
-			, SUM(AmtDuetoRB) AS AmtDuetoRB
-			, CAST(SUM(AmtDuetoRB*e.EUR) AS MONEY) AS AmtDuetoRBEUR
-			, CAST(SUM(AmtDuetoRB*e.USD) AS MONEY) AS AmtDuetoRBUSD
-			, CAST(SUM(AmtDuetoRB*e.GBP) AS MONEY) AS AmtDuetoRBGBP
-			, ROW_NUMBER() OVER (
-				ORDER BY CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.grouptypeId
-					ELSE b.bettype 
-					END
-				) AS RowNum
-		FROM #AgWinLoss b
-			LEFT JOIN @Exchange e ON b.winlostdate = e.ExchangeDate AND b.currency = e.ExchangeId
-			LEFT JOIN dbo.f_GroupBettype() ss ON b.bettype = ss.bettype 	
-		GROUP BY CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.grouptypeId
-					ELSE b.bettype 
-					END
-				, liveindicator			 
-		) wl
-	WHERE wl.RowNum BETWEEN @RowStart AND @RowEnd
+			 
+	) wl
+WHERE wl.RowNum BETWEEN @RowStart AND @RowEnd
 
-	DROP TABLE #AgWinLoss
-	DROP TABLE #TempSAg
-END
+DROP TABLE #AgWinLoss
+DROP TABLE #TempSAg
 GO
 
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinLossByBettype] TO [bodbLicenseeNet]

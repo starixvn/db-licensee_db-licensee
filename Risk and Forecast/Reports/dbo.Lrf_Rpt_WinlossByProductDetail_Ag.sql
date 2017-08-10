@@ -206,6 +206,11 @@ BEGIN
 	SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS2', 'VS2')
 END
 
+IF @ShowLT = 1 -- Lottery
+BEGIN
+	SELECT @ProductList = COALESCE(@ProductList + ',' + 'LT', 'LT')
+END
+
 IF LEN(ISNULL(@ProductList, '')) > 0 
 BEGIN
 	-- Insert Bettype
@@ -420,8 +425,7 @@ BEGIN
 			ELSE bt.ProductCode END
 			, statusID
 
-		DROP TABLE #tmpVS	
-		DROP TABLE #tmpParlay		
+		DROP TABLE #tmpVS			
 	END	
 	
 	IF @ShowRB = 1
@@ -453,10 +457,9 @@ BEGIN
 		FROM 
 			dbo.bettrans b WITH ( NOLOCK )  
 			INNER JOIN @TempAg tma ON b.recommend = tma.custid AND b.Currency = tma.Currency 
-			INNER JOIN @bettype bt ON b.bettype = bt.bettype
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND 
-			bt.ProductCode = 'RB' AND
+			(bettype BETWEEN 31 AND 33) AND 
 			b.statusID  IN (111, 112, 113)
 			
 		GROUP BY   
@@ -554,7 +557,7 @@ BEGIN
 			t.ProductCode,
 			 b.statusID
 	END
-	IF 1 IN (@ShowVS, @ShowVS2)
+
 	IF 1 IN (@ShowVS, @ShowVS2)
 	BEGIN 
 		SELECT s.SportType, s.ProductPrefix
