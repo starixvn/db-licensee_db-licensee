@@ -66,7 +66,7 @@ SELECT @FromDate = DATEADD(DAY, -15, GETDATE())
 SELECT @ToDate = GETDATE()
 SELECT @MoveBetsDay = MAX(eventdate) FROM match14 WITH(NOLOCK)
 
-EXEC [Lrf_Rpt_LiveReportWinlossByMatch_xtest]	 @LicenseeId = 1, @CurrencyID = 0, @FromDate=@FromDate, @SportId =1, @ToDate=@ToDate, @MoveBetsDay = @MoveBetsDay
+EXEC [Lrf_Rpt_LiveReportWinlossByMatch]	 @LicenseeId = 1, @CurrencyID = 0, @FromDate=@FromDate, @SportId =1, @ToDate=@ToDate, @MoveBetsDay = @MoveBetsDay
 
 */
 SET NOCOUNT ON

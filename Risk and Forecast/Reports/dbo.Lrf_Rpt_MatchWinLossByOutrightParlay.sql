@@ -1,5 +1,5 @@
-﻿USE [bodb02]
-GO 
+﻿/*<info serverAlias="DB052-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+ 
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_MatchWinLossByOutrightParlay]    
     @Date SMALLDATETIME,

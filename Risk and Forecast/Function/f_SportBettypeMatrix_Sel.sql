@@ -1,5 +1,5 @@
-USE [bodb02]
-GO
+/*<info serverAlias="DBAGE-bodb02,DBEXT-bodb02,DBACC-bodb02,DBPRO-bodb02,DBDWH.bodb02,DBTXN.bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="1" isNested="0"></info>*/
+
 
 ALTER FUNCTION [dbo].[f_SportBettypeMatrix_Sel]
 (
@@ -15,7 +15,7 @@ ALTER FUNCTION [dbo].[f_SportBettypeMatrix_Sel]
 	Creator: Percy	
 	Date: 20160323
 	Task: Get SportType_Bettype
-	DB: DBAGE.bodb02, DBEXT.bodb02, DBACC.bodb02, DBPRO.bodb02, DBDWH.bodb02
+	DB: DBAGE.bodb02, DBEXT.bodb02, DBACC.bodb02, DBPRO.bodb02, DBDWH.bodb02,DBTXN.bodb02
 		
 	Revisions:
 		- 20160505@Percy: Return 2 columns RefTable, CasinoType
