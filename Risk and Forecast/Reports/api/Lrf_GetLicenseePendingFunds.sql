@@ -1,6 +1,4 @@
-USE [bodb02]
-GO
-
+ /*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_GetLicenseePendingFunds]
     @LicenseeID		INT,
     @CurrencyID		INT = 0
@@ -125,10 +123,3 @@ BEGIN
 	DROP TABLE #WinLossDate;
 END
 GO
-
-GRANT EXECUTE ON [dbo].[Lrf_GetLicenseePendingFunds] TO [bodbLicenseeNet] 
-GO
-GRANT ALTER ON [dbo].[Lrf_GetLicenseePendingFunds] TO [vnteam] 
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_GetLicenseePendingFunds] TO [vnteam]
-GO 

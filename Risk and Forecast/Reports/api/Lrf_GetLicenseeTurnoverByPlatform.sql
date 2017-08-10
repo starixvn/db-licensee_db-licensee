@@ -1,17 +1,4 @@
-USE [bodb02]
-GO
-
-/****** Object:  StoredProcedure [dbo].[Lrf_GetLicenseeTurnoverByPlatform]    Script Date: 2/8/2017 1:20:06 PM ******/
-DROP PROCEDURE [dbo].[Lrf_GetLicenseeTurnoverByPlatform]
-GO
-
-/****** Object:  StoredProcedure [dbo].[Lrf_GetLicenseeTurnoverByPlatform]    Script Date: 2/8/2017 1:20:06 PM ******/
-SET ANSI_NULLS ON
-GO
-
-SET QUOTED_IDENTIFIER ON
-GO
-
+ /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_GetLicenseeTurnoverByPlatform]   
 	 @LicenseeID	INT,
 	 @CurrencyID	INT = 0,
@@ -175,11 +162,3 @@ BEGIN
 END
 
 GO
-
-GRANT EXECUTE ON [dbo].[Lrf_GetLicenseeTurnoverByPlatform] TO [bodbLicenseeNet] AS [dbo]
-GO
-
-GRANT VIEW DEFINITION ON [dbo].[Lrf_GetLicenseeTurnoverByPlatform] TO [vnteam] AS [dbo]
-GO
-
-

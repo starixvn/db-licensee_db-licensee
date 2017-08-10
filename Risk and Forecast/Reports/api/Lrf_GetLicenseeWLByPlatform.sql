@@ -1,6 +1,4 @@
-USE [bodb02]
-GO
-
+ /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_GetLicenseeWLByPlatform]
 	@LicenseeID INT,  
 	@CurrencyID INT = 0,  
@@ -162,7 +160,4 @@ BEGIN
 
 	SET NOCOUNT OFF;
 END
-GO
-
-GRANT EXECUTE ON [dbo].[Lrf_GetLicenseeWLByPlatform] TO [bodbLicenseeNet] AS [dbo]
 GO

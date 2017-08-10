@@ -1,17 +1,4 @@
-USE [bodb02]
-GO
-
-/****** Object:  StoredProcedure [dbo].[Lrf_GetLicenseeTodayDeposit]    Script Date: 2/8/2017 1:27:16 PM ******/
-DROP PROCEDURE [dbo].[Lrf_GetLicenseeTodayDeposit]
-GO
-
-/****** Object:  StoredProcedure [dbo].[Lrf_GetLicenseeTodayDeposit]    Script Date: 2/8/2017 1:27:16 PM ******/
-SET ANSI_NULLS ON
-GO
-
-SET QUOTED_IDENTIFIER ON
-GO
-
+ /*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 CREATE PROCEDURE [dbo].[Lrf_GetLicenseeTodayDeposit]
     @LicenseeID		INT,
     @CurrencyID		INT = 0,
@@ -98,14 +85,3 @@ BEGIN
 END
 
 GO
-
-GRANT EXECUTE ON [dbo].[Lrf_GetLicenseeTodayDeposit] TO [bodbLicenseeNet] AS [dbo]
-GO
-
-GRANT ALTER ON [dbo].[Lrf_GetLicenseeTodayDeposit] TO [vnteam] AS [dbo]
-GO
-
-GRANT VIEW DEFINITION ON [dbo].[Lrf_GetLicenseeTodayDeposit] TO [vnteam] AS [dbo]
-GO
-
-

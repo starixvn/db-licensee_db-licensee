@@ -1,6 +1,4 @@
-USE [bodb02]
-GO
-
+ /*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_GetCustomerBalance] 
 	@LicenseeID		INT,
 	@CurrencyID		INT,
@@ -83,3 +81,4 @@ BEGIN
 
 	SET NOCOUNT OFF
 END
+GO
