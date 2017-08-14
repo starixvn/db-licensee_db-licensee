@@ -471,6 +471,19 @@ BEGIN
 		END
 	END			
 
+	----Delete zero data 
+	DELETE #WinLoss 
+	WHERE 	Betcount = 0 
+			AND Turnover = 0 
+			AND Winlost = 0 
+			AND LicenseeWL = 0 
+			AND PlayerComm = 0 
+			AND WinlossRB = 0 
+			AND CommBA = 0 
+			AND CommRB = 0 
+			AND AmtDuetoBA = 0 
+			AND AmtDuetoRB = 0 
+			AND Company = 0
 
 	SELECT 
 		w.CustID,

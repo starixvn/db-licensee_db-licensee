@@ -537,7 +537,10 @@ BEGIN
 				b.PlatformType
 
 		END
-	END			
+	END		
+
+	----Delete zero data 
+	DELETE #WinLoss WHERE Betcount = 0 AND Turnover = 0 AND Winlost = 0 AND LicenseeWL = 0 AND PlayerComm = 0
 
 	SELECT 
 		w.ProductPrefix, 
