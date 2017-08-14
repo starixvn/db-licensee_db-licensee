@@ -53,6 +53,7 @@ Revisions:
 	- 20170710@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
 	- 20170721@Harper: Hotfix add AB and FW to LiveReport [RedmineID: #80350]
 	- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
+	- 20170814@Harper: One RNG - Offer New Tablet Games [RedmineID: #78424]
 
 Param's Explanation:
 	+ @IsLive : indicate that whether the report will get live data or not
@@ -296,7 +297,7 @@ BEGIN
 				WHEN b.bettype BETWEEN 1201 AND 1299 THEN 'VS'
 				WHEN b.bettype = 73	THEN 'BG'
 				WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN' -- Keno
-				WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 THEN 'CS' -- RNG CASINO
+				WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999 THEN 'CS' -- RNG CASINO
 				WHEN b.bettype BETWEEN 4001 AND 7999 THEN 'VB' -- Voidbridge
 				WHEN b.bettype BETWEEN 1011 AND 1020 THEN 'FW' -- Fishing World
 				WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
@@ -323,7 +324,7 @@ BEGIN
 				OR b.bettype BETWEEN 1201 AND 1299
 				OR b.bettype IN (73) -- BINGO
 				OR b.bettype BETWEEN 1501 AND 1599 -- Keno
-				OR (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399) -- RNG CASINO
+				OR (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999) -- RNG CASINO
 				OR b.bettype BETWEEN 4001 AND 7999 -- Voidbridge
 				OR b.bettype BETWEEN 1011 AND 1020 -- FW
 				OR b.bettype BETWEEN 2401 AND 2499 -- AB
@@ -340,7 +341,7 @@ BEGIN
 				WHEN b.bettype BETWEEN 1201 AND 1299 THEN 'VS'
 				WHEN b.bettype = 73	THEN 'BG'
 				WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN' -- Keno
-				WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 THEN 'CS' -- RNG CASINO
+				WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999 THEN 'CS' -- RNG CASINO
 				WHEN b.bettype BETWEEN 4001 AND 7999 THEN 'VB' -- Voidbridge
 				WHEN b.bettype BETWEEN 1011 AND 1020 THEN 'FW' -- Fishing World
 				WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
@@ -433,7 +434,7 @@ BEGIN
 				WHEN b.bettype BETWEEN 1201 AND 1299 THEN 'VS'
 				WHEN b.bettype = 73	THEN 'BG'
 				WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN'
-				WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 THEN 'CS' -- RNG CASINO
+				WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999 THEN 'CS' -- RNG CASINO
 				WHEN b.bettype BETWEEN 4001 AND 7999 THEN 'VB' -- Voidbridge
 				WHEN b.bettype BETWEEN 1011 AND 1020 THEN 'FW' -- Fishing World
 				WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
@@ -473,7 +474,7 @@ BEGIN
 				OR b.bettype BETWEEN 1201 AND 1299
 				OR b.bettype IN (73) -- BINGO
 				OR b.bettype BETWEEN 1501 AND 1599 -- Keno
-				OR (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399) -- RNG CASINO
+				OR (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999) -- RNG CASINO
 				OR b.bettype BETWEEN 4001 AND 7999 -- Voidbridge
 				OR b.bettype BETWEEN 1011 AND 1020 -- FW
 				OR b.bettype BETWEEN 2401 AND 2499 -- AB
@@ -491,7 +492,7 @@ BEGIN
 				WHEN b.bettype BETWEEN 1201 AND 1299 THEN 'VS'
 				WHEN b.bettype = 73	THEN 'BG'
 				WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN'
-				WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 THEN 'CS' -- RNG CASINO
+				WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999 THEN 'CS' -- RNG CASINO
 				WHEN b.bettype BETWEEN 4001 AND 7999 THEN 'VB' -- Voidbridge
 				WHEN b.bettype BETWEEN 1011 AND 1020 THEN 'FW' -- Fishing World
 				WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
