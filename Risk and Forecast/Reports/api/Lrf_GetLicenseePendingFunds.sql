@@ -1,7 +1,8 @@
- /*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
-ALTER PROCEDURE [dbo].[Lrf_GetLicenseePendingFunds]
-    @LicenseeID		INT,
-    @CurrencyID		INT = 0
+
+/*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+
+CREATE PROCEDURE [dbo].[Lrf_GetLicenseePendingFunds] @LicenseeID     INT,
+                                                          @CurrencyIDList VARCHAR(500) = ''
 AS 
 
 /*
@@ -14,112 +15,141 @@ AS
 		- 20170323@Paul: Implement Cash Out [RedmineID: #71727]
 		- 20170613@Paul: return value in THB, IDR rates [RedmineID: #75030]
 		- 20170808@Walter: Support UUS currency [RedmineID: #80855]
-
+		- 20170814@Alex  : Restrict permission by currency  [RedmineID: #80855]
 	Param's Explanation:
 	
 */
 
-BEGIN
-    SET NOCOUNT ON;
-   
-	CREATE TABLE #tmpAg (custID INT, currency INT);
-
-	DECLARE @Temp TABLE (CustId INT, Currency INT);
-	DECLARE @sql1 VARCHAR(500);
-
-	SELECT  @sql1 = 'SELECT CustID, Currency
+     BEGIN
+         SET NOCOUNT ON;
+         CREATE TABLE #tmpAg
+         (custID   INT,
+          currency INT
+         );
+         DECLARE @Temp TABLE
+         (CustId   INT,
+          Currency INT
+         );
+         DECLARE @sql1 VARCHAR(500);
+         SELECT @sql1 = 'SELECT CustID, Currency
 		FROM OPENQUERY(DBLIC, ''SELECT LicenseeId,CustID,Currency,Description  FROM bodb_licensee.dbo.f_SelLicenseeCust('+CAST(@LicenseeID AS VARCHAR(10))+')'')';
-
-	INSERT INTO @Temp (CustId, Currency)
-	EXEC (@sql1);
- 
-	INSERT INTO #tmpAg(CustId, Currency)
-	SELECT CustID, currency 
-	FROM @Temp lc
-	WHERE @CurrencyID = 0 OR (@CurrencyID <> 0 AND Currency = @CurrencyID);
-
-	CREATE TABLE #tmpRpt
-	(
-		Winlostdate   SMALLDATETIME,
-		Currency   INT,  
-		PendingFund   MONEY
-	);
-
-	INSERT INTO #tmpRpt
-	(
-		Winlostdate, Currency, PendingFund
-	)
-	SELECT  p.winlostdate,
-			a.currency,
-			SUM(ISNULL(p.outstanding,0)) AS PendingFund
-	FROM bodb_Report.dbo.rptdepwinlostbyproduct_SUM p WITH(NOLOCK)  
-		INNER JOIN #tmpAg a ON a.CustID = p.custid
-	WHERE sporttype NOT IN (-6, -7, -8, -9)
-	GROUP BY p.winlostdate, a.currency
-	HAVING SUM(ISNULL(p.outstanding,0)) > 0;
- 
-	INSERT INTO #tmpRpt
-	(
-		Winlostdate, Currency, PendingFund
-	)
-	SELECT  p.winlostdate,
-		a.currency,
-		SUM(ISNULL(p.outstanding,0)) AS PendingFund
-	FROM bodb_Report.dbo.rptDepWinlostByProduct p WITH(NOLOCK)    
-		INNER JOIN dbo.Customer c WITH(NOLOCK) ON p.custid = c.custid
-		INNER JOIN #tmpAg a ON a.CustID = c.Recommend
-	WHERE c.roleid = 1
-		AND sporttype NOT IN (-6, -7, -8, -9)        
-	GROUP BY p.winlostdate, a.currency
-	HAVING SUM(ISNULL(p.outstanding,0)) > 0;
-
-	CREATE TABLE #WinLossDate(
-		WinLossDate SMALLDATETIME
-	);
-
-	INSERT INTO #WinLossDate(WinLossDate)
-	SELECT DISTINCT winlostdate
-	FROM #tmpRpt;
-
-	CREATE TABLE #TempExchange(
-		ExchangeDate SMALLDATETIME,
-		exchangeid INT,
-		EUR FLOAT,
-		USD FLOAT,
-		GBP FLOAT,
-		CNY FLOAT,
-		MYR FLOAT,
-		THB FLOAT,
-		IDR FLOAT
-	);
-
-	INSERT INTO #TempExchange(ExchangeDate, exchangeid, EUR, USD,GBP, CNY, MYR, THB, IDR)
-	SELECT ExchangeDate, exchangeid, EUR, USD,GBP, CNY, MYR, THB, IDR
-	FROM #WinLossDate w
-		CROSS APPLY Lrf_f_GetExchangeDaily(w.WinLossDate, w.WinLossDate) e
-	WHERE exchangeid IN (SELECT DISTINCT Currency FROM #tmpRpt);
-
-	SELECT  SUM(b.PendingFund) AS PendingFund,
+         INSERT INTO @Temp
+         (CustId,
+          Currency
+         )
+         EXEC (@sql1);
+         INSERT INTO #tmpAg
+         (CustId,
+          Currency
+         )
+                SELECT CustID,
+                       currency
+                FROM @Temp lc
+                WHERE Currency IN
+                (
+                    SELECT val
+                    FROM dbo.strSplit(@CurrencyIDList, ',')
+                );
+         CREATE TABLE #tmpRpt
+         (Winlostdate SMALLDATETIME,
+          Currency    INT,
+          PendingFund MONEY
+         );
+         INSERT INTO #tmpRpt
+         (Winlostdate,
+          Currency,
+          PendingFund
+         )
+                SELECT p.winlostdate,
+                       a.currency,
+                       SUM(ISNULL(p.outstanding, 0)) AS PendingFund
+                FROM bodb_Report.dbo.rptdepwinlostbyproduct_SUM p WITH (NOLOCK)
+                     INNER JOIN #tmpAg a ON a.CustID = p.custid
+                WHERE sporttype NOT IN(-6, -7, -8, -9)
+                GROUP BY p.winlostdate,
+                         a.currency
+                HAVING SUM(ISNULL(p.outstanding, 0)) > 0;
+         INSERT INTO #tmpRpt
+         (Winlostdate,
+          Currency,
+          PendingFund
+         )
+                SELECT p.winlostdate,
+                       a.currency,
+                       SUM(ISNULL(p.outstanding, 0)) AS PendingFund
+                FROM bodb_Report.dbo.rptDepWinlostByProduct p WITH (NOLOCK)
+                     INNER JOIN dbo.Customer c WITH (NOLOCK) ON p.custid = c.custid
+                     INNER JOIN #tmpAg a ON a.CustID = c.Recommend
+                WHERE c.roleid = 1
+                      AND sporttype NOT IN(-6, -7, -8, -9)
+                GROUP BY p.winlostdate,
+                         a.currency
+                HAVING SUM(ISNULL(p.outstanding, 0)) > 0;
+         CREATE TABLE #WinLossDate(WinLossDate SMALLDATETIME);
+         INSERT INTO #WinLossDate(WinLossDate)
+                SELECT DISTINCT
+                       winlostdate
+                FROM #tmpRpt;
+         CREATE TABLE #TempExchange
+         (ExchangeDate SMALLDATETIME,
+          exchangeid   INT,
+          EUR          FLOAT,
+          USD          FLOAT,
+          GBP          FLOAT,
+          CNY          FLOAT,
+          MYR          FLOAT,
+          THB          FLOAT,
+          IDR          FLOAT
+         );
+         INSERT INTO #TempExchange
+         (ExchangeDate,
+          exchangeid,
+          EUR,
+          USD,
+          GBP,
+          CNY,
+          MYR,
+          THB,
+          IDR
+         )
+                SELECT ExchangeDate,
+                       exchangeid,
+                       EUR,
+                       USD,
+                       GBP,
+                       CNY,
+                       MYR,
+                       THB,
+                       IDR
+                FROM #WinLossDate w
+                     CROSS APPLY Lrf_f_GetExchangeDaily(w.WinLossDate, w.WinLossDate) e
+                WHERE exchangeid IN
+                (
+                    SELECT DISTINCT
+                           Currency
+                    FROM #tmpRpt
+                );
+         SELECT SUM(b.PendingFund) AS PendingFund,
 			--- EUR
-			CAST(SUM(b.PendingFund * e.EUR) AS MONEY) AS PendingFundEUR,
+                CAST(SUM(b.PendingFund * e.EUR) AS MONEY) AS PendingFundEUR,
 			--- USD
-			CAST(SUM(b.PendingFund * e.USD) AS MONEY) AS PendingFundUSD,
+                CAST(SUM(b.PendingFund * e.USD) AS MONEY) AS PendingFundUSD,
 			--- GBP
-			CAST(SUM(b.PendingFund * e.GBP) AS MONEY) AS PendingFundGBP,
+                CAST(SUM(b.PendingFund * e.GBP) AS MONEY) AS PendingFundGBP,
 			--- CNY
-			CAST(SUM(b.PendingFund * e.CNY) AS MONEY) AS PendingFundCNY,
+                CAST(SUM(b.PendingFund * e.CNY) AS MONEY) AS PendingFundCNY,
 			--- MYR
-			CAST(SUM(b.PendingFund * e.MYR) AS MONEY) AS PendingFundMYR,
+                CAST(SUM(b.PendingFund * e.MYR) AS MONEY) AS PendingFundMYR,
 			--- THB
-			CAST(SUM(b.PendingFund * e.THB) AS MONEY) AS PendingFundTHB,
+                CAST(SUM(b.PendingFund * e.THB) AS MONEY) AS PendingFundTHB,
 			--- IDR
-			CAST(SUM(b.PendingFund * e.IDR) AS MONEY) AS PendingFundIDR
-	FROM #tmpRpt b
-		INNER JOIN #TempExchange e ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency;
-
-	DROP TABLE #TempExchange;
-	DROP TABLE #tmpRpt;
-	DROP TABLE #tmpAg;
-	DROP TABLE #WinLossDate;
-END
+                CAST(SUM(b.PendingFund * e.IDR) AS MONEY) AS PendingFundIDR
+         FROM #tmpRpt b
+              INNER JOIN #TempExchange e ON e.ExchangeDate = b.winlostdate
+                                            AND e.exchangeid = b.currency;
+         DROP TABLE #TempExchange;
+         DROP TABLE #tmpRpt;
+         DROP TABLE #tmpAg;
+         DROP TABLE #WinLossDate;
+     END;
 GO

@@ -1,7 +1,7 @@
  /*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 CREATE PROCEDURE [dbo].[Lrf_GetLicenseeTodayWithdrawal]
     @LicenseeID		INT,
-    @CurrencyID		INT = 0,
+    @CurrencyIDList		VARCHAR(500) = '',
     @ReportDate		SMALLDATETIME
 AS 
 
@@ -36,7 +36,11 @@ BEGIN
 	INSERT INTO @tmpAg(custID, currency)
 	SELECT CustID, currency 
 	FROM @Temp lc
-	WHERE @CurrencyID = 0 OR (@CurrencyID <> 0 AND Currency = @CurrencyID);
+	WHERE Currency IN
+                (
+                    SELECT val
+                    FROM dbo.strSplit(@CurrencyIDList, ',')
+                );
 
 	CREATE TABLE #tmpRpt
 	(

@@ -1,7 +1,7 @@
  /*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
-ALTER PROCEDURE [dbo].[Lrf_GetCustomerBalance] 
+CREATE PROCEDURE [dbo].[Lrf_GetCustomerBalance] 
 	@LicenseeID		INT,
-	@CurrencyID		INT,
+	@CurrencyIDList		VARCHAR(500)='',
 	@ReportDate		SMALLDATETIME
 AS
 
@@ -50,7 +50,11 @@ BEGIN
 	SELECT	CustID,
 			Currency
 	FROM @Temp lc
-	WHERE @CurrencyID = 0 OR (@CurrencyID <> 0 AND Currency = @CurrencyID)
+	WHERE Currency IN
+                (
+                    SELECT val
+                    FROM dbo.strSplit(@CurrencyIDList, ',')
+                );
 
 	CREATE TABLE #Exchange (ExchangeDate SMALLDATETIME, ExchangeId INT,  EUR FLOAT,USD FLOAT,GBP FLOAT, CNY FLOAT, MYR FLOAT, THB FLOAT, IDR FLOAT, Code VARCHAR(10), PRIMARY KEY(ExchangeDate,ExchangeId));
 

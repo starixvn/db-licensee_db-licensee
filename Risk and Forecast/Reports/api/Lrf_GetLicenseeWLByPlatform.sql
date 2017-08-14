@@ -1,7 +1,16 @@
+ 
+ USE [bodb02]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_GetLicenseeWLByPlatform_xtest]    Script Date: 8/14/2017 7:55:26 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
  /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
-ALTER PROCEDURE [dbo].[Lrf_GetLicenseeWLByPlatform]
+
+CREATE PROCEDURE [dbo].[Lrf_GetLicenseeWLByPlatform]
 	@LicenseeID INT,  
-	@CurrencyID INT = 0,  
+	@CurrencyIDList VARCHAR(500)  = 0,
 	@FromDate	SMALLDATETIME,    
 	@ToDate		SMALLDATETIME
 AS  
@@ -48,7 +57,11 @@ BEGIN
 	INSERT INTO #tempAg (custID, currency) 
 	SELECT custID, currency 
 	FROM bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc
-	WHERE @CurrencyID = 0 OR Currency = @CurrencyID;
+	 WHERE Currency IN
+                (
+                    SELECT val
+                    FROM dbo.strSplit(@CurrencyIDList, ',')
+                );
 
 	CREATE TABLE #PlatformList (betfrom NVARCHAR(1), PlatformType TINYINT);
 
