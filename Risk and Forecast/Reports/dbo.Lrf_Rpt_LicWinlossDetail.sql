@@ -1060,6 +1060,7 @@ BEGIN
 				-SUM(CASE WHEN b.sporttype = 212 THEN b.winlost ELSE 0 END) AS LicenseeWLVB,
 				-SUM(CASE WHEN b.sporttype = 211 THEN b.winlost ELSE 0 END) AS LicenseeWLAB,
 				-SUM(CASE WHEN b.sporttype = 219 THEN b.winlost ELSE 0 END) AS LicenseeWLFW,
+				-SUM(CASE WHEN b.sporttype IN (190, 191, 196) THEN b.winlost ELSE 0 END) AS LicenseeWLVS2,
 				0 AS LicenseeWLCO,
 				-SUM(CASE WHEN b.sporttype IN (190, 191, 196) THEN b.winlost ELSE 0 END) AS LicenseeWLVS2,
 				-SUM(CASE WHEN t.ProductCode = 'LT' THEN b.winlost ELSE 0 END) AS LicenseeWLLT,				
