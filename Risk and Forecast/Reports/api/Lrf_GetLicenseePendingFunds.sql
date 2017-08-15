@@ -1,9 +1,7 @@
-USE [bodb02]
-GO
-
+ /*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_GetLicenseePendingFunds]
     @LicenseeID		INT,
-    @CurrencyID		INT = 0
+    @CurrencyIDList VARCHAR(500) = ''
 AS 
 
 /*
@@ -15,6 +13,8 @@ AS
 		- 20170119@Joseph: Copy from Lrf_Rpt_TurnOver [RedmineID: #70616]
 		- 20170323@Paul: Implement Cash Out [RedmineID: #71727]
 		- 20170613@Paul: return value in THB, IDR rates [RedmineID: #75030]
+		- 20170808@Walter: Support UUS currency [RedmineID: #80855]
+		- 20170814@Alex  : Restrict permission by currency  [RedmineID: #80855]
 
 	Param's Explanation:
 	
@@ -37,8 +37,11 @@ BEGIN
 	INSERT INTO #tmpAg(CustId, Currency)
 	SELECT CustID, currency 
 	FROM @Temp lc
-	WHERE Currency <> 20
-		AND (@CurrencyID = 0 OR (@CurrencyID <> 0 AND Currency = @CurrencyID));
+	WHERE Currency IN
+                (
+                    SELECT val
+                    FROM dbo.strSplit(@CurrencyIDList, ',')
+                );
 
 	CREATE TABLE #tmpRpt
 	(
@@ -125,10 +128,3 @@ BEGIN
 	DROP TABLE #WinLossDate;
 END
 GO
-
-GRANT EXECUTE ON [dbo].[Lrf_GetLicenseePendingFunds] TO [bodbLicenseeNet] 
-GO
-GRANT ALTER ON [dbo].[Lrf_GetLicenseePendingFunds] TO [vnteam] 
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_GetLicenseePendingFunds] TO [vnteam]
-GO 

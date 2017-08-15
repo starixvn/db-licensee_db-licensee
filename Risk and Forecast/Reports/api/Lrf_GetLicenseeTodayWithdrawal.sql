@@ -1,20 +1,7 @@
-USE [bodb02]
-GO
-
-/****** Object:  StoredProcedure [dbo].[Lrf_GetLicenseeTodayWithdrawal]    Script Date: 2/8/2017 1:27:42 PM ******/
-DROP PROCEDURE [dbo].[Lrf_GetLicenseeTodayWithdrawal]
-GO
-
-/****** Object:  StoredProcedure [dbo].[Lrf_GetLicenseeTodayWithdrawal]    Script Date: 2/8/2017 1:27:42 PM ******/
-SET ANSI_NULLS ON
-GO
-
-SET QUOTED_IDENTIFIER ON
-GO
-
+ /*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 CREATE PROCEDURE [dbo].[Lrf_GetLicenseeTodayWithdrawal]
     @LicenseeID		INT,
-    @CurrencyID		INT = 0,
+    @CurrencyIDList VARCHAR(500)  = 0,
     @ReportDate		SMALLDATETIME
 AS 
 
@@ -26,6 +13,8 @@ AS
 	Revisions:
 		- 20170208@Paul: Create new [RedmineID: #70616]
 		- 20170613@Paul: return value in THB, IDR rates [RedmineID: #75030]
+		- 20170808@Walter: Support UUS currency [RedmineID: #80855]
+		- 20170814@Alex  : Restrict permission by currency  [RedmineID: #80855]
 */
 
 BEGIN
@@ -48,8 +37,11 @@ BEGIN
 	INSERT INTO @tmpAg(custID, currency)
 	SELECT CustID, currency 
 	FROM @Temp lc
-	WHERE Currency <> 20
-		AND (@CurrencyID = 0 OR (@CurrencyID <> 0 AND Currency = @CurrencyID));
+	WHERE Currency IN
+                (
+                    SELECT val
+                    FROM dbo.strSplit(@CurrencyIDList, ',')
+                );
 
 	CREATE TABLE #tmpRpt
 	(
@@ -98,14 +90,3 @@ BEGIN
 END
 
 GO
-
-GRANT EXECUTE ON [dbo].[Lrf_GetLicenseeTodayWithdrawal] TO [bodbLicenseeNet] AS [dbo]
-GO
-
-GRANT ALTER ON [dbo].[Lrf_GetLicenseeTodayWithdrawal] TO [vnteam] AS [dbo]
-GO
-
-GRANT VIEW DEFINITION ON [dbo].[Lrf_GetLicenseeTodayWithdrawal] TO [vnteam] AS [dbo]
-GO
-
-

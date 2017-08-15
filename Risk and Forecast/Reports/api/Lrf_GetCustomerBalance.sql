@@ -1,9 +1,7 @@
-USE [bodb02]
-GO
-
-ALTER PROCEDURE [dbo].[Lrf_GetCustomerBalance] 
+ /*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+CREATE PROCEDURE [dbo].[Lrf_GetCustomerBalance] 
 	@LicenseeID		INT,
-	@CurrencyID		INT,
+	@CurrencyIDList		VARCHAR(500)='',
 	@ReportDate		SMALLDATETIME
 AS
 
@@ -16,6 +14,8 @@ AS
 	Revisions:  
 		- 20170120@Joseph: Copy from Lrf_Rpt_PlatformWinloss [RedmineID: #70616]
 		- 20170613@Paul: return value in THB, IDR rates [RedmineID: #75030]
+		- 20170808@Walter: Support UUS currency [RedmineID: #80855]
+		- 20170814@Alex  : Restrict permission by currency  [RedmineID: #80855]
 
 	Param's Explanation:  
 */
@@ -51,8 +51,11 @@ BEGIN
 	SELECT	CustID,
 			Currency
 	FROM @Temp lc
-	WHERE (@CurrencyID = 0 OR (@CurrencyID <> 0 AND Currency = @CurrencyID))
-		AND Currency <> 20
+	WHERE Currency IN
+                (
+                    SELECT val
+                    FROM dbo.strSplit(@CurrencyIDList, ',')
+                );
 
 	CREATE TABLE #Exchange (ExchangeDate SMALLDATETIME, ExchangeId INT,  EUR FLOAT,USD FLOAT,GBP FLOAT, CNY FLOAT, MYR FLOAT, THB FLOAT, IDR FLOAT, Code VARCHAR(10), PRIMARY KEY(ExchangeDate,ExchangeId));
 
@@ -83,3 +86,4 @@ BEGIN
 
 	SET NOCOUNT OFF
 END
+GO

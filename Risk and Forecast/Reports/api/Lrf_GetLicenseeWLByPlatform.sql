@@ -1,9 +1,7 @@
-USE [bodb02]
-GO
-
+ /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_GetLicenseeWLByPlatform]
 	@LicenseeID INT,  
-	@CurrencyID INT = 0,  
+	@CurrencyIDList VARCHAR(500)  = 0,
 	@FromDate	SMALLDATETIME,    
 	@ToDate		SMALLDATETIME
 AS  
@@ -17,6 +15,8 @@ AS
 		- 20170119@Joseph: Copy from Lrf_Rpt_PlatformWinloss [RedmineID: #70616]
 		- 20170323@Paul: Implement Cash Out [RedmineID: #71727]
 		- 20170613@Paul: return value in THB, IDR rates [RedmineID: #75030]
+		- 20170808@Walter: Support UUS currency [RedmineID: #80855]
+		- 20170814@Alex  : Restrict permission by currency  [RedmineID: #80855]
      
 	Param's Explanation: 
 */  
@@ -49,8 +49,11 @@ BEGIN
 	INSERT INTO #tempAg (custID, currency) 
 	SELECT custID, currency 
 	FROM bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc
-	WHERE Currency <> 20
-		AND (@CurrencyID = 0 OR Currency = @CurrencyID);
+	WHERE Currency IN
+                (
+                    SELECT val
+                    FROM dbo.strSplit(@CurrencyIDList, ',')
+                );
 
 	CREATE TABLE #PlatformList (betfrom NVARCHAR(1), PlatformType TINYINT);
 
@@ -161,8 +164,5 @@ BEGIN
 	DROP TABLE #tempAg;
 
 	SET NOCOUNT OFF;
-END  
-GO
-
-GRANT EXECUTE ON [dbo].[Lrf_GetLicenseeWLByPlatform] TO [bodbLicenseeNet] AS [dbo]
+END
 GO
