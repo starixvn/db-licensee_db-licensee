@@ -1,7 +1,7 @@
  /*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 CREATE PROCEDURE [dbo].[Lrf_GetLicenseeTodayWithdrawal]
     @LicenseeID		INT,
-    @CurrencyIDList		VARCHAR(500) = '',
+    @CurrencyIDList VARCHAR(500)  = 0,
     @ReportDate		SMALLDATETIME
 AS 
 
@@ -14,6 +14,7 @@ AS
 		- 20170208@Paul: Create new [RedmineID: #70616]
 		- 20170613@Paul: return value in THB, IDR rates [RedmineID: #75030]
 		- 20170808@Walter: Support UUS currency [RedmineID: #80855]
+		- 20170814@Alex  : Restrict permission by currency  [RedmineID: #80855]
 */
 
 BEGIN

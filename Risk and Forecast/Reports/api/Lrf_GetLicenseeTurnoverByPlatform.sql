@@ -1,7 +1,7 @@
  /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 CREATE PROCEDURE [dbo].[Lrf_GetLicenseeTurnoverByPlatform]   
 	 @LicenseeID	INT,
-	 @CurrencyIDList	VARCHAR(500) = 0,
+	 @CurrencyIDList VARCHAR(500)  = 0,
 	 @FromDate		SMALLDATETIME,  
 	 @ToDate		SMALLDATETIME
 AS
@@ -16,6 +16,7 @@ AS
 		- 20170323@Paul: Implement Cash Out [RedmineID: #71727]
 		- 20170613@Paul: return value in THB, IDR rates [RedmineID: #75030]
 		- 20170808@Walter: Support UUS currency [RedmineID: #80855]
+		- 20170814@Alex  : Restrict permission by currency  [RedmineID: #80855]
 
 	Param's Explanation:  
 */

@@ -1,14 +1,5 @@
- 
- USE [bodb02]
-GO
-/****** Object:  StoredProcedure [dbo].[Lrf_GetLicenseeWLByPlatform_xtest]    Script Date: 8/14/2017 7:55:26 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
  /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
-
-CREATE PROCEDURE [dbo].[Lrf_GetLicenseeWLByPlatform]
+ALTER PROCEDURE [dbo].[Lrf_GetLicenseeWLByPlatform]
 	@LicenseeID INT,  
 	@CurrencyIDList VARCHAR(500)  = 0,
 	@FromDate	SMALLDATETIME,    
@@ -25,6 +16,7 @@ AS
 		- 20170323@Paul: Implement Cash Out [RedmineID: #71727]
 		- 20170613@Paul: return value in THB, IDR rates [RedmineID: #75030]
 		- 20170808@Walter: Support UUS currency [RedmineID: #80855]
+		- 20170814@Alex  : Restrict permission by currency  [RedmineID: #80855]
      
 	Param's Explanation: 
 */  
@@ -57,7 +49,7 @@ BEGIN
 	INSERT INTO #tempAg (custID, currency) 
 	SELECT custID, currency 
 	FROM bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc
-	 WHERE Currency IN
+	WHERE Currency IN
                 (
                     SELECT val
                     FROM dbo.strSplit(@CurrencyIDList, ',')

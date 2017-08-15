@@ -15,6 +15,7 @@ AS
 		- 20170120@Joseph: Copy from Lrf_Rpt_PlatformWinloss [RedmineID: #70616]
 		- 20170613@Paul: return value in THB, IDR rates [RedmineID: #75030]
 		- 20170808@Walter: Support UUS currency [RedmineID: #80855]
+		- 20170814@Alex  : Restrict permission by currency  [RedmineID: #80855]
 
 	Param's Explanation:  
 */
