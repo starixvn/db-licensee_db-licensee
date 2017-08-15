@@ -118,7 +118,7 @@ BEGIN
 		TurnoverAB			MONEY,
 		TurnoverFW			MONEY,
 		TurnoverCO			MONEY,
-		TurnoverVS2		MONEY,
+		TurnoverVS2			MONEY,
 		TurnoverLT			MONEY,
 		BTActualStake		MONEY,
 		Winlost				MONEY,
