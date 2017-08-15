@@ -803,6 +803,17 @@ END
 
 IF 1 IN (@showVS, @ShowVS2)
 BEGIN
+	SELECT s.SportType, s.ProductPrefix
+	INTO #tmpSport
+	FROM 
+	(
+		SELECT DISTINCT m.SportType, p.ProductPrefix		
+		FROM dbo.SportBettypeMatrix m WITH (NOLOCK)
+			INNER JOIN dbo.Products p WITH (NOLOCK) ON m.ProductID = p.ProductID
+		WHERE p.ProductPrefix IN (SELECT val FROM strSplit(@ProductList, ','))
+	) s
+	WHERE s.ProductPrefix IN ('VS', 'VS2')
+
 	DECLARE  @tblVS AS TABLE 
 				(rptdate    datetime
 				,CustID		 int
@@ -845,9 +856,8 @@ BEGIN
 		,SUM(WinlossA)
 		,SUM(betcount)
 	FROM DBWH.bodb_Account.dbo.mcCustVirtualSport  WITH ( NOLOCK )   
-			INNER JOIN @sporttype s ON SportID = s.sporttype	
-	WHERE rptdate BETWEEN @FDate AND @TempToDate  
-			AND s.ProductCode IN ('VS', 'VS2') 
+			INNER JOIN #tmpSport s ON SportID = s.sporttype	
+	WHERE rptdate BETWEEN @FDate AND @TempToDate  			
 		 AND status in (8,3,4)
 		 AND (@MemberID = 0 OR (@MemberID <> 0 AND CustId = @MemberID))	 
 	GROUP BY 
@@ -948,6 +958,7 @@ BEGIN
 				ELSE '' 
 			END
 			, b.status
+DROP TABLE #tmpVS
 END	
 
 IF @IsOld = 1 

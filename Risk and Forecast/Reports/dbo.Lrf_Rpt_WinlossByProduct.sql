@@ -590,6 +590,17 @@ BEGIN
 
 	IF 1 IN (@ShowVS, @ShowVS2)
 	BEGIN		
+		SELECT s.SportType, s.ProductPrefix
+		INTO #tmpSport
+		FROM 
+		(
+			SELECT DISTINCT m.SportType, p.ProductPrefix		
+			FROM dbo.SportBettypeMatrix m WITH (NOLOCK)
+				INNER JOIN dbo.Products p WITH (NOLOCK) ON m.ProductID = p.ProductID
+			WHERE p.ProductPrefix IN (SELECT val FROM strSplit(@ProductList, ','))
+		) s
+		WHERE s.ProductPrefix IN ('VS', 'VS2')
+
 		DECLARE  @tblVS AS TABLE 
 			(rptdate    datetime
 			,sportID	 int
@@ -627,9 +638,8 @@ BEGIN
 			,SUM(WinlossA)  	
 			,SUM(betcount)  
 		FROM DBWH.bodb_Account.dbo.mcCustVirtualSport  WITH ( NOLOCK )   
-			INNER JOIN @sporttype s ON SportID = s.sporttype	
-		WHERE rptdate BETWEEN @FDate AND @TempToDate  
-			 AND s.ProductCode IN ('VS', 'VS2')
+			INNER JOIN #tmpSport s ON SportID = s.sporttype	
+		WHERE rptdate BETWEEN @FDate AND @TempToDate  			 
 			 AND status=8 --  in (8,3,4)
 			 AND (@CustId = 0 OR (@CustId <> 0 AND CustId = @CustID))
 		GROUP BY 
@@ -664,9 +674,8 @@ BEGIN
 			,SUM(WinlossA)  	
 			,SUM(betcount)  
 		FROM DBWH.bodb_Account.dbo.mcCustVirtualSport  WITH ( NOLOCK )   
-			INNER JOIN @sporttype s ON SportID = s.sporttype	
-		WHERE rptdate BETWEEN @FDate AND @TempToDate  
-			AND s.ProductCode IN ('VS', 'VS2')
+			INNER JOIN #tmpSport s ON SportID = s.sporttype		
+		WHERE rptdate BETWEEN @FDate AND @TempToDate  			
 			AND (@CustId = 0 OR (@CustId <> 0 AND CustId = @CustID))
 			AND status=3  
 		GROUP BY 
@@ -701,9 +710,8 @@ BEGIN
 			,SUM(WinlossA)  	
 			,SUM(betcount)  
 		FROM DBWH.bodb_Account.dbo.mcCustVirtualSport  WITH ( NOLOCK )   
-			INNER JOIN @sporttype s ON SportID = s.sporttype	
-		WHERE rptdate BETWEEN @FDate AND @TempToDate 
-			AND s.ProductCode IN ('VS', 'VS2') 
+			INNER JOIN #tmpSport s ON SportID = s.sporttype	
+		WHERE rptdate BETWEEN @FDate AND @TempToDate 			
 			AND status = 4
 			AND (@CustId = 0 OR (@CustId <> 0 AND CustId = @CustID))
 		GROUP BY 
@@ -749,6 +757,7 @@ BEGIN
 					THEN 'VS2' + CONVERT(varchar(10),ISNULL(b.sportID,0))			
 					ELSE '' 
 				END	
+	DROP TABLE #tmpSport
 	END	
 END 
 
