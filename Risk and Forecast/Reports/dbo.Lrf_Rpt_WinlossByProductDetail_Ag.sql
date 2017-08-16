@@ -645,7 +645,7 @@ BEGIN
 				ELSE '' 
 			END	
 
-	DROP TABLE #tmpVS		
+	DROP TABLE #tmpSport		
 	END 
 END 
 

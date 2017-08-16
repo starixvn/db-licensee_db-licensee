@@ -958,7 +958,7 @@ BEGIN
 				ELSE '' 
 			END
 			, b.status
-DROP TABLE #tmpVS
+	DROP TABLE #tmpSport
 END	
 
 IF @IsOld = 1 
