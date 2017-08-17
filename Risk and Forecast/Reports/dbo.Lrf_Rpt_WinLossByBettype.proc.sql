@@ -8,7 +8,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLossByBettype]
 	, @BalanceUpDay SMALLDATETIME
 	, @PageSize		INT = 1000
 	, @PageIndex	INT = 1
-	, @AgentList		VARCHAR(MAX)
+	, @AgentList	VARCHAR(MAX)
 AS
 /*
 Created: 20101201@Jacob
@@ -48,6 +48,7 @@ Revisions:
 	- 20161115@Jim: LRF - Integrate new product Fishing World [RedmineID : #66737]
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
 	- 20170327@Paul: Implement Cash Out [RedmineID :#71727]
+	- 20170619@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
 
 Param's Explanation: 
 	+ @AgentList: xml structure
@@ -190,6 +191,7 @@ BEGIN
 						OR b.bettype BETWEEN 81 AND 120
 						OR b.bettype BETWEEN 1101 AND 1199
 						OR b.bettype BETWEEN 1201 AND 1299
+						OR b.bettype BETWEEN 2701 AND 2799
 						OR b.bettype BETWEEN 1501 AND 1599 --Keno
 						 
 						)
@@ -226,7 +228,7 @@ BEGIN
 	INNER JOIN #TempSAg s ON b.srecommend = s.srecommend AND b.currency = s.currency
 	LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON b.transid = BA.transid	 
 	WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
-		AND bettype <= 1599  
+		AND (bettype <= 1599 OR (b.bettype >= 2701 AND b.bettype <= 2799))
 		AND (bettype NOT IN (71, 73,901,902,903,904,911,912,913,914) AND bettype NOT BETWEEN 1011 AND 1020)
 		AND b.ruben = 1
 		AND statusID NOT IN (101, 102, 103)
@@ -278,6 +280,7 @@ BEGIN
 						OR b.bettype BETWEEN 81 AND 120
 						OR b.bettype BETWEEN 1101 AND 1199
 						OR b.bettype BETWEEN 1201 AND 1299
+						OR b.bettype BETWEEN 2701 AND 2799
 						OR b.bettype BETWEEN 1501 AND 1599 --Keno products
 						 
 						)
@@ -315,7 +318,7 @@ BEGIN
 	LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_bk BA WITH (NOLOCK) ON b.transid = BA.transid	
 	WHERE b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
 		AND statusID NOT IN (101, 102, 103)
-		AND bettype <= 1599 
+		AND (bettype <= 1599 OR (b.bettype >= 2701 AND b.bettype <= 2799)) 
 		AND (bettype NOT IN (71, 73,901,902,903,904,911,912,913,914) AND bettype NOT BETWEEN 1011 AND 1020)
 	GROUP BY bettype
 		, CASE 

@@ -5,7 +5,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportWinlossByMatch]
     @ShowBA			BIT	= 0,
 	@ShowLC 		BIT = 0,
 	@ShowVS			BIT = 0,
- 
+	@ShowVS2		BIT = 0,
     @SportId		INT = 0,
     @FromDate		SMALLDATETIME,  
 	@ToDate			SMALLDATETIME,
@@ -39,6 +39,7 @@ Revisions:
 	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
 	- 20170329@Paul: Implement Cash Out [RedmineID: #71727]
+	- 20170710@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
 
 Return 3 tables:
 WinlostBySport
@@ -99,21 +100,34 @@ BEGIN CATCH
 END CATCH; 
     
 DECLARE @bettype AS TABLE (bettype INT PRIMARY KEY)
+DECLARE @ProductList VARCHAR (500)
+
+DECLARE @IsTest BIT = 0
+SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
 
 IF @ShowLC = 1
 BEGIN
-    INSERT INTO @bettype(bettype)
-	SELECT typeid FROM bettype (NOLOCK)
-	WHERE (typeid BETWEEN 1101 AND 1199)
+    SELECT @ProductList = COALESCE(@ProductList + ',' + 'LC', 'LC')		
 END
 
 IF @ShowVS = 1
 BEGIN
-	INSERT INTO @bettype(bettype)
-	SELECT typeid FROM bettype (NOLOCK)
-	WHERE (typeid BETWEEN 1201 AND 1299)
+	SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS', 'VS')
 END  
- 
+
+IF @ShowVS2 = 1
+BEGIN
+	SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS2', 'VS2')
+END 
+
+IF LEN(ISNULL(@ProductList, '')) > 0 
+BEGIN
+	-- Insert Bettype
+	INSERT INTO @bettype ( bettype )
+	SELECT DISTINCT BetType
+	FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
+
+END	
 
 CREATE TABLE #tmpWinloss (
 	winlostdate		DATETIME,  
@@ -279,7 +293,7 @@ BEGIN
 		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
 	END
 
-	IF ( @ShowLC=1 OR @ShowVS=1  )
+	IF ( @ShowLC=1 OR @ShowVS=1 OR @ShowVS2 = 1)
 	BEGIN
 		INSERT INTO #tmpWinloss			
 		SELECT
@@ -305,12 +319,46 @@ BEGIN
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
 			b.matchid > 0 AND
 			b.statusID IN (111,112,113) AND
+			b.bettype <> 2799 AND
 			m.sporttype = @SportId AND
 			((@Liveindicator = 0 and b.liveindicator = 0)
 			OR (@Liveindicator = 1 and b.liveindicator = 1)
 			OR (@Liveindicator = 2))
 		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype,
 					CASE WHEN b.bettype BETWEEN 1101 AND 1199  THEN ISNULL(m.showtime,'') ELSE '' END 
+		
+		-- Parlay for Betradar
+		INSERT INTO #tmpWinloss			
+		SELECT
+			b.winlostdate,  
+			b.currency,
+			m.matchid, 		
+			m.homeid, 
+			m.awayid,
+			SUM(stake) turnover, 
+			SUM(b.winlost - b.actual_stake) AS Winlost,  	
+			SUM(-1 * (b.winlost - b.actual_stake)) AS LicenseeWL,
+			SUM (comm ) as Comm,
+			SUM (  b.playercomm  ) as PlayerComm,
+			- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,
+			COUNT(b.transid) BetCount,
+			b.bettype, 
+			'' AS ShowTime 
+		FROM bettrans b  WITH (NOLOCK) 
+			INNER JOIN [match] m WITH(NOLOCK) ON b.matchid=m.matchid
+			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency	
+		WHERE
+			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
+			b.bettype IN (2799) AND
+			b.matchid > 0 AND
+			b.statusID IN (111,112,113) AND
+			m.sporttype = @SportId AND
+			b.tpositiontaking<>0 AND
+			((@Liveindicator = 0 and b.livehomescore = 0)
+			OR (@Liveindicator = 1 and b.livehomescore = 1)
+			OR (@Liveindicator = 2))
+		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
+
 	END	
 END
 
@@ -461,7 +509,7 @@ BEGIN
 		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
 	END		
 			
-	IF (@ShowLC = 1 OR @ShowVS = 1  )
+	IF (@ShowLC = 1 OR @ShowVS = 1  OR @ShowVS2 = 1)
 	BEGIN		
 		INSERT INTO #tmpWinloss			
 		SELECT
@@ -487,11 +535,43 @@ BEGIN
 			b.winlostdate BETWEEN @FDate AND @TempToDate  AND
 			b.statusID IN (111,112,113) AND
 			m.sporttype = @SportId AND
+			b.bettype <> 2799 AND
 			((@Liveindicator = 0 and b.liveindicator = 0)
 			OR (@Liveindicator = 1 and b.liveindicator = 1)
 			OR (@Liveindicator = 2))
 		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype, 
 				CASE WHEN b.bettype BETWEEN 1101 AND 1199  THEN ISNULL(m.showtime,'') ELSE '' END
+		
+		-- Parlay of Betradar
+		INSERT INTO #tmpWinloss			
+		SELECT
+			b.winlostdate,  
+			b.currency,
+			m.matchid, 		
+			m.homeid, 
+			m.awayid,	
+			SUM(stake) turnover, 
+			SUM(b.winlost - b.actual_stake) AS Winlost,  		
+			SUM(-1 * (b.winlost - b.actual_stake)) AS LicenseeWL,
+			SUM (comm ) as Comm,
+			SUM (playercomm  ) as PlayerComm,
+			- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,
+			COUNT(b.transid) BetCount,
+			b.bettype,
+			'' AS ShowTime 
+		FROM bettrans14 b  WITH (NOLOCK) 
+			INNER JOIN [match14] m WITH(NOLOCK) ON b.matchid = m.matchid
+			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency	
+		WHERE
+			b.winlostdate BETWEEN @FDate AND @TempToDate  AND
+			b.bettype IN (2799) AND
+			b.tpositiontaking<>0 AND
+			b.statusID IN (111,112,113) AND
+			m.sporttype = @SportId AND
+			((@Liveindicator = 0 and b.livehomescore = 0)
+			OR (@Liveindicator = 1 and b.livehomescore = 1)
+			OR (@Liveindicator = 2))			
+		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
 	END		
 	
 END	

@@ -22,6 +22,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_TurnOver]
 	@ShowCB			BIT = 0,
 	@ShowFW 		BIT = 0,
 	@ShowCO			BIT = 0,
+	@ShowVS2		BIT = 0, -- Bet Radar Virtual Sports
 	@AgentList		VARCHAR(MAX)
 AS 
 /*
@@ -62,6 +63,7 @@ Revisions:
    - 20161115@Jim: LRF - Integrate new product Fishing World [RedmineID : #66737]
    - 20170301@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest, @LicenseeType [Redmine: #71679]
    - 20170328@Harper: LRF - Integrate new product Cashout [#71727]
+   - 20170619@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
 
 Param's Explanation:
     
@@ -123,6 +125,7 @@ BEGIN
 	END
 	IF @ShowFW		= 1 INSERT INTO @sporttype(sporttype) VALUES(219)
 	IF @ShowCO		= 1 INSERT INTO @sporttype(sporttype) VALUES(-6), (-7)
+	IF @ShowVS2	= 1 INSERT INTO @sporttype(sporttype) VALUES(190)
 
 	IF @username <> ''
 	BEGIN
@@ -580,7 +583,6 @@ GO
 
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_TurnOver] TO [bodbLicenseeNet] 
 GO
-GRANT ALTER ON [dbo].[Lrf_Rpt_TurnOver] TO [vnteam] 
-GO
+
 GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_TurnOver] TO [vnteam]
 GO 

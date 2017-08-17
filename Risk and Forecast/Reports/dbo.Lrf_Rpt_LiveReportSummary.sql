@@ -50,6 +50,7 @@ Revisions:
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
 	- 20170328@Paul: Implement Cash Out [RedmineID: #71727]
 	- 20170705@Harper: Hotfix for Cash Out [RedmineID: #79546]
+	- 20170710@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
 	- 20170721@Harper: Hotfix add AB and FW to LiveReport [RedmineID: #80350]
 
 Param's Explanation:
@@ -93,7 +94,7 @@ BEGIN
 	(
 		winlostdate DATETIME,
 		Currency	INT,
-		ProductCode VARCHAR(3),
+		ProductCode VARCHAR(20),
 		TurnOver	MONEY,
 		Winlost		MONEY,
 		LicenseeWL	MONEY,
@@ -255,6 +256,33 @@ BEGIN
 			b.winlostdate,
 			t.currency,
 			b.bettype
+		
+		-- Parlay for VS2
+		INSERT INTO #tmpWinloss
+		SELECT
+			b.winlostdate,
+			t.currency,
+			'VS2' AS ProductCode,
+			SUM(stake) turnover,
+			SUM(b.winlost - b.actual_stake) AS Winlost,
+			SUM(- 1 * (b.winlost - b.actual_stake)) AS LicenseeWL,
+			SUM(comm) AS Comm,
+			SUM(b.playercomm) AS PlayerComm,
+			- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd,
+			COUNT(b.transid) BetCount
+		FROM
+			dbo.bettrans b WITH (NOLOCK)
+			INNER JOIN @TempAg t ON b.recommend = t.custid AND t.Currency = b.Currency
+		WHERE
+			b.winlostdate BETWEEN @TempFromDate AND @TDate
+			AND b.bettype = 2799
+			AND b.tpositiontaking <> 0
+			AND b.statusID IN (111, 112, 113)
+			AND (b.livehomescore = @Liveindicator OR @Liveindicator = 2)
+		GROUP BY
+			b.winlostdate,
+			t.currency,
+			b.bettype
 
 		--Others
 		INSERT INTO #tmpWinloss
@@ -271,6 +299,7 @@ BEGIN
 				WHEN b.bettype BETWEEN 4001 AND 7999 THEN 'VB' -- Voidbridge
 				WHEN b.bettype BETWEEN 1011 AND 1020 THEN 'FW' -- Fishing World
 				WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
+				WHEN b.bettype BETWEEN 2701 AND 2798 THEN 'VS2'
 				END AS ProductCode,
 			SUM(stake) turnover,
 			SUM(b.winlost - b.actual_stake) AS Winlost,
@@ -296,6 +325,7 @@ BEGIN
 				OR b.bettype BETWEEN 4001 AND 7999 -- Voidbridge
 				OR b.bettype BETWEEN 1011 AND 1020 -- FW
 				OR b.bettype BETWEEN 2401 AND 2499 -- AB
+				OR b.bettype BETWEEN 2701 AND 2798 -- BetRadar VS
 			)
 			AND (b.liveindicator = @Liveindicator OR @Liveindicator = 2)
 		GROUP BY
@@ -311,6 +341,7 @@ BEGIN
 				WHEN b.bettype BETWEEN 4001 AND 7999 THEN 'VB' -- Voidbridge
 				WHEN b.bettype BETWEEN 1011 AND 1020 THEN 'FW' -- Fishing World
 				WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
+				WHEN b.bettype BETWEEN 2701 AND 2798 THEN 'VS2'
 			END
 	END
 
@@ -346,7 +377,7 @@ BEGIN
 				OR (@Liveindicator = 1 AND b.IsLive = 1)
 				OR (@Liveindicator = 2)
 			)
-			AND b.bettype NOT IN (9,29)
+			AND b.bettype NOT IN (9,29,2799)
 			AND (b.bettype < 901 OR b.bettype > 904)
 			AND (b.bettype < 911 OR b.bettype > 914)
 		GROUP BY 
@@ -402,6 +433,7 @@ BEGIN
 				WHEN b.bettype BETWEEN 4001 AND 7999 THEN 'VB' -- Voidbridge
 				WHEN b.bettype BETWEEN 1011 AND 1020 THEN 'FW' -- Fishing World
 				WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
+				WHEN b.bettype BETWEEN 2701 AND 2799 THEN 'VS2'
 			END AS ProductCode,
 			SUM(b.turnover * CASE WHEN b.bettype = 33 AND b.status IN (114, 115) THEN 0.5 ELSE 1 END) turnover,
 			SUM(b.winloss) winlost,
@@ -424,7 +456,7 @@ BEGIN
 				OR (@Liveindicator = 2)
 			)
 			AND b.CustomerCategory IN (-1, 1001, 1003)
-			AND b.bettype NOT IN (9,29,1700,1800,1900) 
+			AND b.bettype NOT IN (9,29,2799,1700,1800,1900) 
 			AND b.bettype NOT BETWEEN 2001 AND 2009 -- Exclude Microgamming (#44084)
 			AND (b.bettype < 901 OR b.bettype > 904)
 			AND (b.bettype < 911 OR b.bettype > 914)
@@ -440,6 +472,7 @@ BEGIN
 				OR b.bettype BETWEEN 4001 AND 7999 -- Voidbridge
 				OR b.bettype BETWEEN 1011 AND 1020 -- FW
 				OR b.bettype BETWEEN 2401 AND 2499 -- AB
+				OR b.bettype BETWEEN 2701 AND 2799 -- VS2
 				)
 		GROUP BY
 			b.rptDate,
@@ -456,9 +489,10 @@ BEGIN
 				WHEN b.bettype BETWEEN 4001 AND 7999 THEN 'VB' -- Voidbridge
 				WHEN b.bettype BETWEEN 1011 AND 1020 THEN 'FW' -- Fishing World
 				WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
+				WHEN b.bettype BETWEEN 2701 AND 2799 THEN 'VS2'
 			END
 
-			-- parlay for SB
+		-- parlay for SB
 		INSERT INTO #tmpWinloss
 		SELECT 
 			b.rptDate,
@@ -480,6 +514,39 @@ BEGIN
 			AND b.status NOT IN (-1,103)
 			AND (b.bettype < 901 OR b.bettype > 904)
 			AND (b.bettype < 911 OR b.bettype > 914)
+			AND b.Bettype <> 2799
+			AND
+			(
+				(@Liveindicator = 0 AND b.IsLive = 0)
+				OR (@Liveindicator = 1 AND b.IsLive = 1)
+				OR (@Liveindicator = 2)
+			)
+			AND b.isBA = 0
+		GROUP BY
+			b.rptDate,
+			b.currencyID
+
+		-- parlay for VS2
+		INSERT INTO #tmpWinloss
+		SELECT 
+			b.rptDate,
+			b.currencyID,
+			'VS2' AS ProductCode,
+			SUM(b.turnover) turnover,
+			SUM(b.winloss) winlost,
+			SUM(-1 * b.winloss) AS LicenseeWL,
+			SUM(b.CommissionA) Comm,
+			SUM( b.CommissionP  ) PlayerComm,
+			- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,
+			SUM(b.betcount) BetCount
+		FROM
+			bodb_LicenseeReport.dbo.rpt_BettingParlay b WITH ( NOLOCK )
+			INNER JOIN #currency c ON b.CurrencyID = c.Currency
+		WHERE
+			b.SiteID = @LicenseeID
+			AND b.rptDate BETWEEN @FDate AND @TempToDate
+			AND b.status NOT IN (-1,103)			
+			AND b.Bettype = 2799
 			AND
 			(
 				(@Liveindicator = 0 AND b.IsLive = 0)
@@ -513,6 +580,7 @@ BEGIN
 			WHEN 'VB' THEN 'Voidbridge'
 			WHEN 'FW' THEN 'Fishing World'
 			WHEN 'AB' THEN 'AllBet'
+			WHEN 'VS2' THEN 'Virtual Sports 2'
 			ELSE 'Sportsbook'
 			END AS ProductName,
 		SUM(TurnOver) AS Turnover,

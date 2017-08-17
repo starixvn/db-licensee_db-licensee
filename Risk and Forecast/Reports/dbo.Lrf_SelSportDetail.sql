@@ -23,6 +23,7 @@ Revisions:
 						+ 183 Virtual Speedway
 						+ 185 Virtual Cycling 
 	- 20151023@Victor: Support New Simplified Chinese
+	- 20170710@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
 Param's Explanation:
 	
 */
@@ -96,7 +97,26 @@ INSERT INTO @ProductSport(ID, Name, ParentID)
 	 FROM dbo.Product3rd p1 WITH(NOLOCK)
 		INNER JOIN dbo.LicenseeProduct3rd p2 WITH (NOLOCK) ON p1.ProductID=p2.ProductID
 	WHERE  p2.LicenseeID=@LicenseeID
-		AND p1.ProductID  IN (5)	
+		AND p1.ProductID  IN (5)
+	
+	UNION ALL
+	 SELECT 990--cast(0 AS VARCHAR)
+			,
+			CASE @Langkey
+							/*WHEN 'zh-CN'	THEN N'体育博彩'
+							WHEN 'zh-TW'	THEN N'體育博彩'
+							WHEN 'zh-Hans'	THEN N'体育博彩'
+							WHEN 'th-TH'	THEN N'อัตราค่าตอบแทนจากหน้ากีฬา'
+							WHEN 'ja-JP'	THEN N'スポーツベット '
+							WHEN 'ko-KR'	THEN N'스포츠북 '*/
+							WHEN 'es'  	    THEN N'Virtual Sports 2'
+							WHEN 'vi-VN'	THEN N'Virtual Sports 2'
+							ELSE N'Virtual Sports 2' END 
+			, NULL
+	 FROM dbo.Product3rd p1 WITH(NOLOCK)
+		INNER JOIN dbo.LicenseeProduct3rd p2 WITH (NOLOCK) ON p1.ProductID = p2.ProductID
+	WHERE  p2.LicenseeID = @LicenseeID
+		AND p1.ProductID  IN (27)		
 	/*
 	* 	end 
 	*/
@@ -136,44 +156,6 @@ INSERT INTO @ProductSport(ID, Name, ParentID)
 		INNER JOIN dbo.LicenseeProduct3rd p2 WITH (NOLOCK) ON p1.ProductID=p2.ProductID
 	WHERE  p2.LicenseeID=@LicenseeID
 		AND p1.ProductID  IN (5)
-	/*UNION ALL
-	SELECT CASE p1.ProductID WHEN 2 THEN 161--'161'
-										 WHEN 5 THEN 180--'180'	
-				END 
-			,CASE  p1.Productid WHEN 5 THEN 
-											CASE @Langkey
-												WHEN 'zh-CN'	THEN N'虛擬足球'
-												WHEN 'zh-TW'	THEN N'虚拟足球'
-												WHEN 'zh-Hans'	THEN N'虛擬足球'
-												WHEN 'th-TH'	THEN N'ฟุตบอลอนิเมชั่น'
-												WHEN 'ja-JP'	THEN N'Virtual Soccer'
-												WHEN 'ko-KR'	THEN N'가상 축구'
-												WHEN 'es'  	    THEN N'Virtual Soccer'
-												WHEN 'vi-VN'	THEN N'Virtual Soccer'
-												ELSE N'Virtual Soccer' END 
-									WHEN 2 THEN 
-											CASE @Langkey
-												WHEN 'zh-CN'	THEN N'百練賽'
-												WHEN 'zh-TW'	THEN N'百练赛'
-												WHEN 'zh-Hans'	THEN N'百練賽'
-												WHEN 'th-TH'	THEN N'เกมหมายเลข'
-												WHEN 'ja-JP'	THEN N'番号ゲーム'
-												WHEN 'ko-KR'	THEN N'라이브빙고'
-												WHEN 'es'  	    THEN N'Number Game'
-												WHEN 'vi-VN'	THEN N'Number Game'
-												ELSE N'Number Game' END 
-													
-								
-								END
-			, CASE WHEN p1.Productid =5 THEN 999 END 
-	FROM dbo.Product3rd p1 WITH(NOLOCK)
-		INNER JOIN dbo.LicenseeProduct3rd p2 WITH (NOLOCK) ON p1.ProductID=p2.ProductID
-	WHERE  p2.LicenseeID=@LicenseeID
-		AND p1.ProductID  IN (2,5)	
-	*/
-	/*
-	 * add more sproduct
-	 */
 	 
 	UNION ALL
 	SELECT CASE p1.ProductID WHEN 5 THEN 186--'186'
@@ -251,6 +233,31 @@ INSERT INTO @ProductSport(ID, Name, ParentID)
 		INNER JOIN dbo.LicenseeProduct3rd p2 WITH (NOLOCK) ON p1.ProductID=p2.ProductID
 	WHERE  p2.LicenseeID=@LicenseeID
 		AND p1.ProductID  IN (5)
+	
+	UNION ALL
+	SELECT 190,
+		CASE @Langkey		
+		WHEN 'es'  	    THEN N'Virtual Soccer League'
+		WHEN 'vi-VN'	THEN N'Virtual Soccer League'
+		ELSE N'Virtual Soccer League' END  
+			, 990
+	FROM dbo.Product3rd p1 WITH(NOLOCK)
+		INNER JOIN dbo.LicenseeProduct3rd p2 WITH (NOLOCK) ON p1.ProductID = p2.ProductID
+	WHERE  p2.LicenseeID = @LicenseeID
+		AND p1.ProductID  IN (27)
+	 
+	UNION ALL
+	SELECT 191
+			,
+			CASE @Langkey												
+				WHEN 'es'  	    THEN N'Virtual Soccer Nation'
+				WHEN 'vi-VN'	THEN N'Virtual Soccer Nation'
+				ELSE N'Virtual Soccer Nation' END
+			, 990
+	FROM dbo.Product3rd p1 WITH(NOLOCK)
+		INNER JOIN dbo.LicenseeProduct3rd p2 WITH (NOLOCK) ON p1.ProductID = p2.ProductID
+	WHERE  p2.LicenseeID = @LicenseeID
+		AND p1.ProductID  IN (27)
 	/*
 	 * end add more
 	 */

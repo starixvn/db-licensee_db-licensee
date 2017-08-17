@@ -69,6 +69,8 @@ Revision:
 	- 20160413@Victor: support MKK currency code
 	- 20160720@Jim : Implement 67 new bet types (PH All in one - Phase 2) [Redmine : #53520]
 	- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID [Redmine: #71679]
+	- 20170707@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
+
 Parameter's Explanation:
 	- @ReportBy:  1: daily, 2: monthly
 	- @FilterBy:  1: Win, 2: Loss, 3: Draw
@@ -290,11 +292,28 @@ BEGIN
 	
 	IF (@ToDate > @MoveBetsDay)
 	BEGIN
+
+		SELECT DISTINCT b.transid, s.sporttype
+		INTO #tmpParlay
+		FROM dbo.bettrans b WITH (NOLOCK)
+			INNER JOIN #recommend rec ON b.Recommend = rec.CustID
+			INNER JOIN #Status st ON b.StatusID =  st.StatusID
+			CROSS APPLY (	SELECT TOP 1 m.sporttype
+							FROM dbo.bettransm bm WITH (NOLOCK)
+								INNER JOIN dbo.match m WITH (NOLOCK) ON bm.matchid = m.matchid
+							WHERE b.refno = bm.refno AND b.custid = bm.custid
+					) AS s
+		WHERE b.bettype = 2799		
+			AND b.winlostdate BETWEEN @tempFromDate AND @ToDate
+			AND b.matchid = 2799
+
 		INSERT INTO #tempBettrans
 		SELECT b.winlostdate
 			, b.custid
 			, recommend
-			, CASE WHEN bt.EventType = 0 THEN 1 ELSE 0 END AS sporttype
+			, CASE WHEN bt.EventType = 0 THEN
+					CASE WHEN b.bettype = 2799 THEN p.sporttype ELSE 1 END
+			  ELSE 0 END AS sporttype
 			, b.matchid
 			, b.bettype
 			, b.oddsid
@@ -307,12 +326,10 @@ BEGIN
 			, bt.EventType
 			, bt.ProductID
 		FROM dbo.bettrans b WITH(NOLOCK)
-			INNER JOIN #recommend rec 
-			ON b.Recommend	= rec.CustID 
-			INNER JOIN #bettype bt
-			ON b.bettype 	=  bt.typeid
-			INNER JOIN #Status st
-			ON b.StatusID 	=  st.StatusID
+			INNER JOIN #recommend rec ON b.Recommend = rec.CustID 
+			INNER JOIN #bettype bt ON b.bettype =  bt.typeid
+			INNER JOIN #Status st ON b.StatusID =  st.StatusID
+			LEFT JOIN #tmpParlay p ON b.transid = p.transid
 		WHERE b.winlostdate BETWEEN @tempFromDate AND @ToDate
 		
 		UPDATE #tempBettrans 
@@ -381,6 +398,7 @@ BEGIN
 			WHERE b.EventType = 2
 				AND o.eventdate BETWEEN @tempFromDate AND @ToDate 
 		END
+
 		IF(EXISTS(SELECT TOP 1 1 FROM #tempBettrans WHERE EventType = 3 ))
 		BEGIN
 			UPDATE b
@@ -392,7 +410,7 @@ BEGIN
 				ON vs.EventID  		= r.EventID
 			WHERE b.EventType = 3
 				AND vs.eventdate BETWEEN @tempFromDate AND @ToDate 
-		END
+		END		
 		
 		--FILTER product
 		DELETE b
@@ -469,7 +487,7 @@ BEGIN
 		
 		IF( @isCached = 0 )
 		BEGIN
-			EXEC [dbo].[Lrf_Rpt_CustomerTurnOver_SumTotal]
+												EXEC [dbo].[Lrf_Rpt_CustomerTurnOver_SumTotal]
 				@searchCust 	= @searchCust
 				,@FromDate 		= @FromDate
 				,@tempFromDate 	= @tempFromDate
@@ -698,7 +716,8 @@ BEGIN
 																					WHEN b.bettype = 1235 THEN '(Tennis)'
 																					ELSE ''
 																				END
-				 ELSE  bt.typenamee
+				WHEN (b.bettype BETWEEN 2701 AND 2799) THEN  N'VS2 - ' + bt.typenamee
+				ELSE  bt.typenamee
 			END AS bettype
 			, SUM(b.betcount)	AS betcount
 			, SUM(b.turnover)	AS turnover
@@ -733,6 +752,7 @@ BEGIN
 																					WHEN b.bettype = 1235 THEN '(Tennis)'
 																					ELSE ''
 																				END
+				 WHEN (b.bettype BETWEEN 2701 AND 2799) THEN  N'VS2 - ' + bt.typenamee
 				 ELSE  bt.typenamee
 			END
 		ORDER BY 
