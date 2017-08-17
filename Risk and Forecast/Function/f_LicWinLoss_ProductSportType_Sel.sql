@@ -34,7 +34,7 @@ RETURN
 					(13, 'MGCLC', 203, 0),	-- Microgaming - Live Casino 
 					(14, 'VG', 249, 0),	 -- Macau
 					(15, 'CB', 204, 0),	 -- Colossus Bets  
-					(17, 'MGCRnG', 205, 0),	-- Microgaming - Live Casino					
+					(17, 'MGCRNG', 205, 0),	-- Microgaming - Live Casino					
 					(21, 'AB', 211, 0),	-- Allbet  
 					(22, 'VB', 212, 0), -- Macau Games 
 					(24, 'FW', 219, 0), -- Fishing World  
