@@ -1,4 +1,4 @@
-/****** Object:  Stored Procedure dbo.Lrf_LicenseeProductSel    Script Date: 7/22/2015 1:09:35 PM ******/
+/*<info serverAlias="DBLIC-bodb_licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
 ALTER PROCEDURE	[dbo].[Lrf_LicenseeProductSel]
 	@LicenseeID	INT
 AS
@@ -14,6 +14,8 @@ AS
 		- 20161122@Helen: Fishing World IN DCS Structure - [Redmine: 66737]
 		- 20160801@Helen: Allbet IN DCS Structure - [Redmine: 61066]
 		- 20170517@Winnie: Hide Setting for CashOut - [Redmine: 72171]
+		- 20170302@Helen: Betradar Virtual Sports  -Integration for Cash [Redmine: 77274]
+		
 	Param's Explanation:
 */
 
@@ -21,7 +23,6 @@ AS
  EXEC Lrf_LicenseeProductSel
 	@LicenseeID=2
  */
- 
  
 BEGIN
 	DECLARE @site VARCHAR(20)
@@ -44,7 +45,7 @@ BEGIN
 			p.ProductId
 			,p.ProductName
 			,p.ProductPrefix AS  ProductCode
-			,CASE WHEN p.ProductID IN (10,11,12,14,17,22,24,21) THEN 0 ELSE 1 END 
+			,CASE WHEN p.ProductID IN (10,11,12,14,17,22,24,21,5,27) THEN 0 ELSE 1 END 
 		FROM dbo.Product3rd p WITH (NOLOCK) 
 			INNER JOIN dbo.LicenseeProduct3rd lp WITH (NOLOCK) ON p.ProductId = lp.ProductId 	
 		WHERE lp.LicenseeID  = @LicenseeID
@@ -129,6 +130,32 @@ BEGIN
 			UPDATE @tblProductActive
 			SET isEnable =1
 			WHERE ProductID = 21	
+		END	
+		
+		IF EXISTS (SELECT 1 FROM @tblProductActive WHERE ProductID = 5)	---Virtual Sport
+		BEGIN 
+			IF EXISTS (SELECT 1 
+				   FROM DBCUST.CustDB.dbo.Dep_LicenseeProductSetting lps WITH (NOLOCK)
+						INNER JOIN DBCUST.CustDB.dbo.Dep_ProductSetting ps WITH (NOLOCK) ON lps.ProductSettingID = ps.ProductSettingID
+						INNER JOIN @tblSuper su ON lps.CustID = su.SrecommendID
+				   WHERE ps.ProductID= 5)
+				   
+			UPDATE @tblProductActive
+				SET isEnable =1
+			WHERE ProductID = 5	
+		END	
+		
+		IF EXISTS (SELECT 1 FROM @tblProductActive WHERE ProductID = 27)	---Betradar
+		BEGIN 
+			IF EXISTS (SELECT 1 
+				   FROM DBCUST.CustDB.dbo.Dep_LicenseeProductSetting lps WITH (NOLOCK)
+						INNER JOIN DBCUST.CustDB.dbo.Dep_ProductSetting ps WITH (NOLOCK) ON lps.ProductSettingID = ps.ProductSettingID
+						INNER JOIN @tblSuper su ON lps.CustID = su.SrecommendID
+				   WHERE ps.ProductID= 27)
+				   
+			UPDATE @tblProductActive
+				SET isEnable =1
+			WHERE ProductID = 27	
 		END	
 		
 	END
