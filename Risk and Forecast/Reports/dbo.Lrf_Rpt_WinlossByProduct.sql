@@ -1,10 +1,5 @@
 ﻿/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 
-SET QUOTED_IDENTIFIER ON 
-GO
-SET ANSI_NULLS ON 
-GO
-
 /****** Object:  Stored Procedure dbo.Lrf_Rpt_WinlossByProduct    Script Date: 7/21/2017 1:48:26 PM ******/
 ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProduct]  
  @UserName		VARCHAR(50) = NULL,
@@ -293,8 +288,7 @@ BEGIN
 	IF @FDate <= @MoveBetsDay 
 		SET @TempFromDate =  DATEADD(DAY,1,@MoveBetsDay)
 	ELSE
-		SET @TempFromDate = @FDate
-	
+		SET @TempFromDate = @FDate	
 	
 	IF @ShowBA=1 
 	BEGIN
@@ -784,8 +778,7 @@ BEGIN
 			b.currency,
 			'BA' ProductCode,
 			SUM(b.turnover
-			*				
-				END	
+			*	
 				CASE WHEN b.statusID = 111  THEN 0|@sumTurnOver
 					WHEN b.statusID IN (114,115) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0)
 					ELSE 1 END
@@ -854,7 +847,7 @@ BEGIN
 			b.currency, 
 			t.ProductCode,
 			b.statusID
-	END
+	END	
 END
 
 SELECT * INTO #TempExchange 
@@ -928,18 +921,8 @@ DROP TABLE #SAgWinLoss
 DROP TABLE #TempExchange
  
 END
-
-
-
 GO
 
-SET QUOTED_IDENTIFIER OFF 
-GO
-SET ANSI_NULLS ON 
-GO
-
-
-GO 
  GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_WinlossByProduct] TO [vnteam]
 GO 
  GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinlossByProduct] TO [bodbLicenseeNet]
