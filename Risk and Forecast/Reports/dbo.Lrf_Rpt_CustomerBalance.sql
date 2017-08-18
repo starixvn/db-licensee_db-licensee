@@ -112,84 +112,66 @@ BEGIN
 		, @RowEnd = @RowStart + @PageSize - 1
 
 	IF @ShowSB = 1
-		INSERT INTO @sporttype (sporttype)
-		VALUES (0)
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'SB', 'SB')
 
 	IF @ShowRB = 1
-		INSERT INTO @sporttype (sporttype)
-		VALUES (151)
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'RB', 'RB')	
 
 	IF @ShowNG = 1
-		INSERT INTO @sporttype (sporttype)
-		VALUES (161)
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'NG', 'NG')		
 
 	IF @ShowLC = 1
-		INSERT INTO @sporttype (sporttype)
-		VALUES (162)
-
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'LC', 'LC')		
+		
 	IF @ShowVS = 1
-		INSERT INTO @sporttype (sporttype)
-		VALUES (180)
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS', 'VS')
 
 	IF @ShowCS = 1
-		INSERT INTO @sporttype (sporttype)
-		VALUES (251)
-			, (208)
-			, (209)
-			, (210) -- RNG Casino  
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'CS', 'CS')
 
 	IF @ShowBG = 1
-		INSERT INTO @sporttype (sporttype)
-		VALUES (252) -- Bingo    
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'BG', 'BG')
 
 	IF @ShowKN = 1
-		INSERT INTO @sporttype (sporttype)
-		VALUES (202) -- Keno    
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'KN', 'KN')    
 
 	IF @ShowMGCLC = 1
-		INSERT INTO @sporttype (sporttype)
-		VALUES (203) -- MicroGaming
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'MGCLC', 'MGCLC')
 
 	IF @ShowMGCRnG = 1
-		INSERT INTO @sporttype (sporttype)
-		VALUES (205) -- MicroGaming
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'MGCRNG', 'MGCRNG')
 
 	IF @ShowAGC = 1
-		INSERT INTO @sporttype (sporttype)
-		VALUES (250) -- AGC
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'AGC', 'AGC')
 
 	IF @ShowVB = 1
-		INSERT INTO @sporttype (sporttype)
-		VALUES (212) -- Voidbridge
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'VB', 'VB')
 
 	IF @ShowAB = 1
-		INSERT INTO @sporttype (sporttype)
-		VALUES (211) -- Allbet
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'AB', 'AB')
 
 	IF @ShowCB = 1
-		INSERT INTO @sporttype (sporttype)
-		VALUES (204) -- Colossus Bets
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'CB', 'CB')
 
 	IF @ShowBT = 1
 	BEGIN
-		INSERT INTO @sporttype (sporttype)
-		VALUES (- 2) -- 901
+		INSERT INTO @sporttype (sporttype, ProductCode)
+		VALUES (- 2, 'BT') -- 901
 
-		INSERT INTO @sporttype (sporttype)
-		VALUES (- 3) -- 902
+		INSERT INTO @sporttype (sporttype, ProductCode)
+		VALUES (- 3, 'BT') -- 902
 	END
 
 	IF @ShowFW = 1
-		INSERT INTO @sporttype (sporttype)
-		VALUES (219) -- Fishing World
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'FW', 'FW')
 
 	IF @ShowCO = 1
 	BEGIN
-		INSERT INTO @sporttype (sporttype)
-		VALUES (-6) -- 911
+		INSERT INTO @sporttype (sporttype, ProductCode)
+		VALUES (-6, 'CO') -- 911
 
-		INSERT INTO @sporttype (sporttype)
-		VALUES (-7) -- 912
+		INSERT INTO @sporttype (sporttype, ProductCode)
+		VALUES (-7, 'CO') -- 912
 	END
 
 	IF @ShowVS2 = 1
@@ -208,6 +190,7 @@ BEGIN
 		INSERT INTO @sporttype ( sporttype, ProductCode )
 		SELECT DISTINCT sporttype, ProductCode
 		FROM dbo.f_LicWinLoss_ProductSportType_Sel(@ProductList)
+
 	END
 
 	DECLARE @DocHandler INT
