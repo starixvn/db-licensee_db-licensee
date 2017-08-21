@@ -15,6 +15,7 @@ AS
 		- 20160801@Helen: Allbet IN DCS Structure - [Redmine: 61066]
 		- 20170517@Winnie: Hide Setting for CashOut - [Redmine: 72171]
 		- 20170302@Helen: Betradar Virtual Sports  -Integration for Cash [Redmine: 77274]
+		- 20170724@Helen: Lottery in DCS Structure - [Redmine:79997]
 		
 	Param's Explanation:
 */
@@ -45,7 +46,7 @@ BEGIN
 			p.ProductId
 			,p.ProductName
 			,p.ProductPrefix AS  ProductCode
-			,CASE WHEN p.ProductID IN (10,11,12,14,17,22,24,21,5,27) THEN 0 ELSE 1 END 
+			,CASE WHEN p.ProductID IN (10,11,12,14,17,22,24,21,5,27,28) THEN 0 ELSE 1 END 
 		FROM dbo.Product3rd p WITH (NOLOCK) 
 			INNER JOIN dbo.LicenseeProduct3rd lp WITH (NOLOCK) ON p.ProductId = lp.ProductId 	
 		WHERE lp.LicenseeID  = @LicenseeID
@@ -158,6 +159,20 @@ BEGIN
 			WHERE ProductID = 27	
 		END	
 		
+		
+		IF EXISTS (SELECT 1 FROM @tblProductActive WHERE ProductID = 28)	---Keno Lottery
+		BEGIN 
+			IF EXISTS (SELECT 1 
+				   FROM DBCUST.CustDB.dbo.Dep_LicenseeProductSetting lps WITH (NOLOCK)
+						INNER JOIN DBCUST.CustDB.dbo.Dep_ProductSetting ps WITH (NOLOCK) ON lps.ProductSettingID = ps.ProductSettingID
+						INNER JOIN @tblSuper su ON lps.CustID = su.SrecommendID
+				   WHERE ps.ProductID= 28)
+				   
+			UPDATE @tblProductActive
+			SET isEnable =1
+			WHERE ProductID = 28	
+		END	
+		
 	END
 	
 	SELECT ProductID
@@ -169,15 +184,6 @@ BEGIN
 	ORDER BY ProductID ASC
 	
 END
-
-GO
-
-SET QUOTED_IDENTIFIER OFF 
-GO
-SET ANSI_NULLS ON 
-GO
-
-
 GO 
  GRANT VIEW DEFINITION ON [dbo].[Lrf_LicenseeProductSel] TO [vnteam]
 GO 
