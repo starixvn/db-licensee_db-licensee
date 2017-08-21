@@ -106,7 +106,7 @@ BEGIN
 	SELECT	@sql = @sql + '--Declare variable:' + CHAR(13)
 
 	SELECT	@sql = @sql + 'DECLARE @TempAg TABLE (CustId INT, Currency INT)' + CHAR(13)
-						+ 'CREATE TABLE #tmpWinloss (winlostdate DATETIME, Currency INT, BetType INT, TurnOver MONEY, Winlost MONEY, LicenseeWL MONEY, Comm MONEY, PlayerComm MONEY, AmtDueTo3rd MONEY, Betcount INT)' + CHAR(13)
+						+ 'CREATE TABLE #tmpWinloss (winlostdate DATETIME, Currency INT, ProductCode VARCHAR(10), BetType INT, TurnOver MONEY, Winlost MONEY, LicenseeWL MONEY, Comm MONEY, PlayerComm MONEY, AmtDueTo3rd MONEY, Betcount INT)' + CHAR(13)
 						+ 'DECLARE @DocHandler INT' + CHAR(13)	
 
 	--insert agentIds to temp table
@@ -142,7 +142,9 @@ BEGIN
 			SELECT	@sql = @sql + '-- Get data from bettrans for BA' + CHAR(13)
 
 			SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13) 
-								+ 'SELECT ' + CHAR(13) + 'b.winlostdate, ' + CHAR(13) + 't.currency,' + CHAR(13) + 'b.bettype,' + CHAR(13) 
+								+ 'SELECT ' + CHAR(13) + 'b.winlostdate, ' + CHAR(13) + 't.currency,' + CHAR(13) 
+								+ '''BA'' AS ProductCode,' + CHAR(13)
+								+ 'b.bettype,' + CHAR(13) 
 								+ 'SUM(CASE WHEN b.bettype = 33 AND b.liveawayscore = 0 THEN stake/2 ELSE stake END) turnover,' + CHAR(13) 
 								+ 'SUM(b.winlost - b.actual_stake) AS Winlost,' + CHAR(13) + '0 AS LicenseeWL,' + CHAR(13) 
 								+ 'SUM (comm ) AS Comm,' + CHAR(13) + 'SUM (b.playercomm  ) AS PlayerComm,' + CHAR(13) 
@@ -162,7 +164,9 @@ BEGIN
 
 			--BA for parlay
 			SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
-								+ 'SELECT b.winlostdate, t.currency, b.bettype,' + CHAR(13)
+								+ 'SELECT b.winlostdate, t.currency,' + CHAR(13)
+								+ '''BA'' AS ProductCode,' + CHAR(13)
+								+ 'b.bettype,' + CHAR(13)
 								+ 'SUM(CASE WHEN b.bettype = 33 AND b.liveawayscore = 0 THEN stake/2 ELSE stake END) turnover,' + CHAR(13)
 								+ 'SUM(b.winlost - b.actual_stake) AS Winlost,' + CHAR(13)
 								+ '0 AS LicenseeWL,' + CHAR(13)
@@ -188,7 +192,22 @@ BEGIN
 			SELECT	@sql = @sql + '--Get data from bettrans for non - BA' + CHAR(13)
 
 			SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
-								+ 'SELECT b.winlostdate, t.currency, b.bettype,' + CHAR(13)
+								+ 'SELECT b.winlostdate, t.currency, '
+								+ 'CASE' + CHAR(13)		
+								+ 'WHEN b.bettype < 31 OR b.bettype BETWEEN 121 AND 999 OR b.Bettype BETWEEN 1301 and 1399 THEN ''SB''' + CHAR(13)			
+								+ 'WHEN b.bettype BETWEEN 81 AND 120 THEN ''NG''' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 1101 AND 1199 THEN ''LC''' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 1201 AND 1299 THEN ''VS''' + CHAR(13)
+								+ 'WHEN b.bettype = 73	THEN ''BG''' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 1501 AND 1599 THEN ''KN'' -- Keno' + CHAR(13)
+								+ 'WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 THEN ''CS'' -- RNG CASINO' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 4001 AND 7999 THEN ''VB'' -- Voidbridge' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 1011 AND 1020 THEN ''FW'' -- Fishing World' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 2401 AND 2499 THEN ''AB'' -- AllBet' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 2701 AND 2798 THEN ''VS2''' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 1021 AND 1049 THEN ''LT''' + CHAR(13)
+								+ 'END AS ProductCode,' + CHAR(13)
+								+ 'b.bettype,' + CHAR(13)
 								+ 'SUM(CASE WHEN b.bettype = 33 AND b.liveawayscore = 0 THEN stake/2 ELSE stake END) turnover,' + CHAR(13)
 								+ 'SUM(b.winlost - b.actual_stake) AS Winlost,' + CHAR(13)
 								+ 'SUM(CASE WHEN bettype BETWEEN 31 AND 33 THEN b.awinlost ELSE  -1 * (b.winlost - b.actual_stake) END) AS LicenseeWL,' + CHAR(13)
@@ -224,13 +243,29 @@ BEGIN
 									WHEN @ProductCode = 'VS2' THEN 'AND b.bettype BETWEEN 2701 AND 2799'
 									WHEN @ProductCode = 'LT' THEN 'AND b.bettype BETWEEN 1021 AND 1049'
 									ELSE 'AND b.bettype NOT BETWEEN 2001 AND 2009 AND b.bettype NOT BETWEEN 4001 AND 4099 AND b.bettype NOT BETWEEN 2501 AND 2699 ' END + CHAR(13)
-								+ 'GROUP BY  b.winlostdate, t.currency, b.bettype' + CHAR(13)
+								+ 'GROUP BY  b.winlostdate, t.currency, b.bettype,' + CHAR(13)
+								+ 'CASE' + CHAR(13)		
+								+ 'WHEN b.bettype < 31 OR b.bettype BETWEEN 121 AND 999 OR b.Bettype BETWEEN 1301 and 1399 THEN ''SB''' + CHAR(13)			
+								+ 'WHEN b.bettype BETWEEN 81 AND 120 THEN ''NG''' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 1101 AND 1199 THEN ''LC''' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 1201 AND 1299 THEN ''VS''' + CHAR(13)
+								+ 'WHEN b.bettype = 73	THEN ''BG''' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 1501 AND 1599 THEN ''KN'' -- Keno' + CHAR(13)
+								+ 'WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 THEN ''CS'' -- RNG CASINO' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 4001 AND 7999 THEN ''VB'' -- Voidbridge' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 1011 AND 1020 THEN ''FW'' -- Fishing World' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 2401 AND 2499 THEN ''AB'' -- AllBet' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 2701 AND 2798 THEN ''VS2''' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 1021 AND 1049 THEN ''LT''' + CHAR(13)
+								+ 'END' + CHAR(13)
 
 			IF @ProductCode IN ('', 'SB')
 			BEGIN
 				--SB for parlay
 				SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
-									+ 'SELECT b.winlostdate, t.currency, b.bettype,' + CHAR(13)
+									+ 'SELECT b.winlostdate, t.currency,' + CHAR(13)
+									+ '''SB'' AS ProductCode,' + CHAR(13)
+									+ 'b.bettype,' + CHAR(13)
 									+ 'SUM(stake) turnover,' + CHAR(13)
 									+ 'SUM(b.winlost - b.actual_stake) AS Winlost,' + CHAR(13)
 									+ 'SUM(-1 * (b.winlost - b.actual_stake)) AS LicenseeWL,' + CHAR(13)
@@ -271,7 +306,9 @@ BEGIN
 			BEGIN
 				-- Parlay of BetRadar
 				SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
-									+ 'SELECT b.winlostdate, t.currency, b.bettype,' + CHAR(13)
+									+ 'SELECT b.winlostdate, t.currency,' + CHAR(13)
+									+ '''VS2'' AS ProductCode,' + CHAR(13)
+									+ 'b.bettype,' + CHAR(13)
 									+ 'SUM(stake) turnover,' + CHAR(13)
 									+ 'SUM(b.winlost - b.actual_stake) AS Winlost,' + CHAR(13)
 									+ 'SUM(-1 * (b.winlost - b.actual_stake)) AS LicenseeWL,' + CHAR(13)
@@ -324,7 +361,9 @@ BEGIN
 			SELECT	@sql = @sql + '--Get data from rpt_Betting_BA for BA' + CHAR(13)
 
 			SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
-								+ 'SELECT b.rptDate, b.currencyID, b.bettype,' + CHAR(13)
+								+ 'SELECT b.rptDate, b.currencyID,'
+								+ '''BA'' AS ProductCode,' + CHAR(13)
+								+ 'b.bettype,' + CHAR(13)
 								+ 'SUM(b.turnover) turnover,' + CHAR(13)
 								+ 'SUM(b.winloss) winlost,' + CHAR(13)
 								+ '0 AS LicenseeWL,' + CHAR(13)
@@ -347,7 +386,9 @@ BEGIN
 			SELECT	@sql = @sql + '--Get data from rpt_BettingParlay for BA' + CHAR(13)
 
 			SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
-								+ 'SELECT b.rptDate, b.currencyID, b.bettype,' + CHAR(13)
+								+ 'SELECT b.rptDate, b.currencyID,' + CHAR(13)
+								+ '''BA'' AS ProductCode,' + CHAR(13)
+								+ 'b.bettype,' + CHAR(13)
 								+ 'SUM(b.turnover) turnover,' + CHAR(13)
 								+ 'SUM(b.winloss) winlost,' + CHAR(13)
 								+ '0 AS LicenseeWL,' + CHAR(13)
@@ -372,7 +413,22 @@ BEGIN
 		IF @ProductCode IN ('', 'RB', 'NG', 'SB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT')
 		BEGIN
 			SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
-								+ 'SELECT b.rptDate, b.currencyID, b.bettype,' + CHAR(13)
+								+ 'SELECT b.rptDate, b.currencyID,' + CHAR(13)
+								+ 'CASE' + CHAR(13)		
+								+ 'WHEN b.bettype < 31 OR b.bettype BETWEEN 121 AND 999 OR b.Bettype BETWEEN 1301 and 1399 THEN ''SB''' + CHAR(13)			
+								+ 'WHEN b.bettype BETWEEN 81 AND 120 THEN ''NG''' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 1101 AND 1199 THEN ''LC''' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 1201 AND 1299 THEN ''VS''' + CHAR(13)
+								+ 'WHEN b.bettype = 73	THEN ''BG''' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 1501 AND 1599 THEN ''KN'' -- Keno' + CHAR(13)
+								+ 'WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 THEN ''CS'' -- RNG CASINO' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 4001 AND 7999 THEN ''VB'' -- Voidbridge' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 1011 AND 1020 THEN ''FW'' -- Fishing World' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 2401 AND 2499 THEN ''AB'' -- AllBet' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 2701 AND 2798 THEN ''VS2''' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 1021 AND 1049 THEN ''LT''' + CHAR(13)
+								+ 'END AS ProductCode,' + CHAR(13)
+								+ 'b.bettype,' + CHAR(13)
 								+ 'SUM(b.turnover * CASE WHEN b.bettype=33 AND b.status IN (114,115) THEN 0.5 ELSE 1 END) turnover,' + CHAR(13)
 								+ 'SUM(b.winloss) winlost,' + CHAR(13)
 								+ 'SUM(CASE WHEN bettype BETWEEN 31 AND 33 THEN b.WinlossA ELSE  -1 * b.winloss END) AS LicenseeWL,' + CHAR(13)
@@ -405,13 +461,29 @@ BEGIN
 									WHEN @ProductCode = 'VS2' THEN 'AND b.bettype BETWEEN 2701 AND 2799'
 									WHEN @ProductCode = 'LT' THEN 'AND b.bettype BETWEEN 1021 AND 1049'
 									ELSE 'AND b.bettype NOT BETWEEN 2001 AND 2009 AND b.bettype NOT BETWEEN 4001 AND 4099 AND b.bettype NOT BETWEEN 2501 AND 2699 ' END + CHAR(13)
-								+ 'GROUP BY b.rptDate, b.currencyID, b.bettype' + CHAR(13)
+								+ 'GROUP BY b.rptDate, b.currencyID, b.bettype,' + CHAR(13)
+								+ 'CASE' + CHAR(13)		
+								+ 'WHEN b.bettype < 31 OR b.bettype BETWEEN 121 AND 999 OR b.Bettype BETWEEN 1301 and 1399 THEN ''SB''' + CHAR(13)			
+								+ 'WHEN b.bettype BETWEEN 81 AND 120 THEN ''NG''' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 1101 AND 1199 THEN ''LC''' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 1201 AND 1299 THEN ''VS''' + CHAR(13)
+								+ 'WHEN b.bettype = 73	THEN ''BG''' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 1501 AND 1599 THEN ''KN'' -- Keno' + CHAR(13)
+								+ 'WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 THEN ''CS'' -- RNG CASINO' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 4001 AND 7999 THEN ''VB'' -- Voidbridge' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 1011 AND 1020 THEN ''FW'' -- Fishing World' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 2401 AND 2499 THEN ''AB'' -- AllBet' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 2701 AND 2798 THEN ''VS2''' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 1021 AND 1049 THEN ''LT''' + CHAR(13)
+								+ 'END' + CHAR(13)
 
 			IF @ProductCode IN ('', 'SB') 
 			BEGIN
 				-- parlay for SB			
 				SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
-									+ 'SELECT b.rptDate, b.currencyID, b.bettype,' + CHAR(13)
+									+ 'SELECT b.rptDate, b.currencyID,' + CHAR(13)
+									+ '''SB'' AS ProductCode,' + CHAR(13)
+									+ 'b.bettype,' + CHAR(13)
 									+ 'SUM(b.turnover) turnover,' + CHAR(13)
 									+ 'sum(b.winloss) winlost,' + CHAR(13)
 									+ 'SUM(-1 * b.winloss) AS LicenseeWL,' + CHAR(13)
@@ -451,7 +523,9 @@ BEGIN
 			BEGIN
 				-- Parlay for BetRadar		
 				SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
-									+ 'SELECT b.rptDate, b.currencyID, b.bettype,' + CHAR(13)
+									+ 'SELECT b.rptDate, b.currencyID,' + CHAR(13)
+									+ '''VS2'' AS ProductCode,' + CHAR(13)
+									+ 'b.bettype,' + CHAR(13)
 									+ 'SUM(b.turnover) turnover,' + CHAR(13)
 									+ 'sum(b.winloss) winlost,' + CHAR(13)
 									+ 'SUM(-1 * b.winloss) AS LicenseeWL,' + CHAR(13)
@@ -532,7 +606,7 @@ BEGIN
 	-- Get winlost by bettype   
 	SELECT	@sql = @sql + '-- Get winlost by bettype  ' + CHAR(13)
 
-	SELECT	@sql = @sql + 'SELECT CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.GroupTypeID ELSE b.bettype END bettype,' + CHAR(13)
+	SELECT	@sql = @sql + 'SELECT b.ProductCode, CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.GroupTypeID ELSE b.bettype END bettype,' + CHAR(13)
 						+ 'SUM(TurnOver) AS Turnover,' + CHAR(13)
 						+ 'SUM(Winlost)  AS Winlost,' + CHAR(13)
 						+ 'SUM(LicenseeWL) AS LicenseeWL,' + CHAR(13)
@@ -563,7 +637,7 @@ BEGIN
 						+ 'INNER JOIN bettype bt WITH (nolock) ON b.bettype = bt.typeid ' + CHAR(13)
 						+ 'INNER JOIN #TempExchange e' + CHAR(13)
 						+ 'ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency ' + CHAR(13)
-						+ 'GROUP BY CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.grouptypeId ELSE b.bettype END' + CHAR(13)
+						+ 'GROUP BY b.ProductCode, CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.grouptypeId ELSE b.bettype END' + CHAR(13)
 						+ 'ORDER BY CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.GroupTypeID ELSE b.bettype END' + CHAR(13)
 						+ 'DROP TABLE #tmpWinloss' + CHAR(13)
 						+ 'DROP TABLE #TempExchange' + CHAR(13)	
