@@ -1,6 +1,8 @@
-/*<info serverAlias="DBLIC-bodb_licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
+/*<info serverAlias="DBLIC-bodb_licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE	[dbo].[Lrf_LicenseeProductSel]
+(
 	@LicenseeID	INT
+)	
 AS
 /*
 	Created: 20150608@Jim
@@ -36,7 +38,7 @@ BEGIN
 	
 	INSERT INTO @tblSuper (SrecommendID)
 	SELECT CustID
-	FROM DBCUST.CustDb.dbo.Dep_CustSuper WITH (NOLOCK)
+	FROM DBCUST.CUSTDB.dbo.Dep_CustSuper WITH (NOLOCK)
 	WHERE Site = @Site
 	
 	IF EXISTS(SELECT 1 FROM @tblSuper ) 
@@ -61,37 +63,37 @@ BEGIN
 		IF EXISTS (SELECT 1 FROM @tblProductActive WHERE ProductID = 10)	-- AGCasino
 			BEGIN
 				IF EXISTS (SELECT 1 FROM DBCUST.CustDB.dbo.Dep_SuperSetting_AGCasino s WITH (NOLOCK) INNER JOIN @tblSuper su ON s.CustID = su.SrecommendID WHERE IsEnabled=1)
-				UPDATE @tblProductActive
-				SET isEnable =1
-				WHERE ProductID = 10
+					UPDATE @tblProductActive
+					SET isEnable =1
+					WHERE ProductID = 10
 			END
 		IF EXISTS (SELECT 1 FROM @tblProductActive WHERE ProductID = 11)   -- Gold Deluxe	
 			BEGIN 
 				IF EXISTS (SELECT 1 FROM  bodb02.dbo.CustInfo ci WITH (NOLOCK) INNER JOIN @tblSuper r ON ci.srecommend = r.SrecommendID WHERE ci.DisableGoldDeluxe = 0)
-				UPDATE @tblProductActive
-				SET isEnable =1
-				WHERE ProductID = 11	
+					UPDATE @tblProductActive
+					SET isEnable =1
+					WHERE ProductID = 11	
 			END
 		IF EXISTS (SELECT 1 FROM @tblProductActive WHERE ProductID = 12)	-- Vegas Games
 			BEGIN 
 				IF EXISTS (SELECT 1 FROM DBCUST.CustDB.dbo.Dep_SupperProductSetting s WITH (NOLOCK) INNER JOIN @tblSuper su ON s.CustID = su.SrecommendID WHERE  s.ProductID = 12 AND IsEnabled=1)
-				UPDATE @tblProductActive
-				SET isEnable =1
-				WHERE ProductID = 12
+					UPDATE @tblProductActive
+					SET isEnable =1
+					WHERE ProductID = 12
 			END
 		IF EXISTS (SELECT 1 FROM @tblProductActive WHERE ProductID = 14)	---Microgaming
 			BEGIN 
 				IF EXISTS (SELECT 1 FROM  bodb02.dbo.CustInfo ci WITH (NOLOCK) INNER JOIN @tblSuper r ON ci.srecommend = r.SrecommendID WHERE ci.DisableMicrogameLC = 0)
-				UPDATE @tblProductActive
-				SET isEnable =1
-				WHERE ProductID = 14	
+					UPDATE @tblProductActive
+					SET isEnable =1
+					WHERE ProductID = 14	
 			END
 		IF EXISTS (SELECT 1 FROM @tblProductActive WHERE ProductID = 17)	---Microgaming
 			BEGIN 
 				IF EXISTS (SELECT 1 FROM  bodb02.dbo.CustInfo ci WITH (NOLOCK) INNER JOIN @tblSuper r ON ci.srecommend = r.SrecommendID WHERE ci.DisableMicrogameRNG = 0)
-				UPDATE @tblProductActive
-				SET isEnable =1
-				WHERE ProductID = 17	
+					UPDATE @tblProductActive
+					SET isEnable =1
+					WHERE ProductID = 17	
 			END	
 		
 		IF EXISTS (SELECT 1 FROM @tblProductActive WHERE ProductID = 22)	---VoidBridge
@@ -102,9 +104,9 @@ BEGIN
 						INNER JOIN @tblSuper su ON lps.CustID = su.SrecommendID
 				   WHERE ps.ProductID= 22)
 				   
-			UPDATE @tblProductActive
-			SET isEnable =1
-			WHERE ProductID = 22	
+				UPDATE @tblProductActive
+				SET isEnable =1
+				WHERE ProductID = 22	
 		END		
 		
 		IF EXISTS (SELECT 1 FROM @tblProductActive WHERE ProductID = 24)	---Fishing World
@@ -115,9 +117,9 @@ BEGIN
 						INNER JOIN @tblSuper su ON lps.CustID = su.SrecommendID
 				   WHERE ps.ProductID= 24)
 				   
-			UPDATE @tblProductActive
-			SET isEnable =1
-			WHERE ProductID = 24	
+				UPDATE @tblProductActive
+				SET isEnable =1
+				WHERE ProductID = 24	
 		END	
 		
 		IF EXISTS (SELECT 1 FROM @tblProductActive WHERE ProductID = 21)	---Allbet
@@ -128,9 +130,9 @@ BEGIN
 						INNER JOIN @tblSuper su ON lps.CustID = su.SrecommendID
 				   WHERE ps.ProductID= 21)
 				   
-			UPDATE @tblProductActive
-			SET isEnable =1
-			WHERE ProductID = 21	
+				UPDATE @tblProductActive
+				SET isEnable =1
+				WHERE ProductID = 21	
 		END	
 		
 		IF EXISTS (SELECT 1 FROM @tblProductActive WHERE ProductID = 5)	---Virtual Sport
@@ -141,9 +143,9 @@ BEGIN
 						INNER JOIN @tblSuper su ON lps.CustID = su.SrecommendID
 				   WHERE ps.ProductID= 5)
 				   
-			UPDATE @tblProductActive
-				SET isEnable =1
-			WHERE ProductID = 5	
+				UPDATE @tblProductActive
+					SET isEnable =1
+				WHERE ProductID = 5	
 		END	
 		
 		IF EXISTS (SELECT 1 FROM @tblProductActive WHERE ProductID = 27)	---Betradar
@@ -154,9 +156,9 @@ BEGIN
 						INNER JOIN @tblSuper su ON lps.CustID = su.SrecommendID
 				   WHERE ps.ProductID= 27)
 				   
-			UPDATE @tblProductActive
-				SET isEnable =1
-			WHERE ProductID = 27	
+				UPDATE @tblProductActive
+					SET isEnable =1
+				WHERE ProductID = 27	
 		END	
 		
 		
@@ -168,9 +170,9 @@ BEGIN
 						INNER JOIN @tblSuper su ON lps.CustID = su.SrecommendID
 				   WHERE ps.ProductID= 28)
 				   
-			UPDATE @tblProductActive
-			SET isEnable =1
-			WHERE ProductID = 28	
+				UPDATE @tblProductActive
+				SET isEnable =1
+				WHERE ProductID = 28	
 		END	
 		
 	END
@@ -184,8 +186,5 @@ BEGIN
 	ORDER BY ProductID ASC
 	
 END
-GO 
- GRANT VIEW DEFINITION ON [dbo].[Lrf_LicenseeProductSel] TO [vnteam]
-GO 
- GRANT EXECUTE ON [dbo].[Lrf_LicenseeProductSel] TO [bodbLicenseeNet]
+
 GO 
