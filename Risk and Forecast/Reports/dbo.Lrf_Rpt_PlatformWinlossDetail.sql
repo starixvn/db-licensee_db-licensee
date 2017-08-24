@@ -1,5 +1,4 @@
-USE [bodb02]
-GO
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_Rpt_PlatformWinlossDetail]   
 	@FromDate		SMALLDATETIME,  
 	@ToDate		SMALLDATETIME,   
@@ -35,14 +34,16 @@ AS
 		- 20170301@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest [Redmine: #71679]
 		- 20170329@Paul: Implement Cash Out [RedmineID: #71727]
 		- 20170706@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
+		- 20170802@Sophia: Add new betfrom [redmine: #80687]
 
 	Param's Explanation:  
-	  + @PlatformType: 0: All  
-					   1: Asia (d)  
-					   2: New Asia (a)
-					   3: Euro (e) (and Euro 12bet (u))
-					   4: WAP (m)    
-					   5: SMARTPHONE (s,l)  
+	  + @PlatformType:  0: All  
+						1: Asia (d, g, x)  
+						2: China (a, z)
+						3: Euro (e, u , y) (and Euro 12bet (u))
+						4: WAP (m)    
+						5: SMART SITE (s,l)  
+						6: TABLET (r)   
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover onlly)
 	  + @excludeTest: remove currency UUS
 	  + @showSB: Show SportsBook bets
@@ -123,31 +124,24 @@ BEGIN
 		RETURN
 	END CATCH;
 
-	DECLARE @PlatformList TABLE (betfrom NVARCHAR(1))
-	INSERT INTO @PlatformList (betfrom)
-	SELECT	CASE 
-				WHEN @PlatformType = 1 THEN 'd'
-				WHEN @PlatformType = 2 THEN 'a'
-				WHEN @PlatformType = 3 THEN 'e'
-				WHEN @PlatformType = 4 THEN 'm'
-				WHEN @PlatformType = 5 THEN 's'
-			END
-	UNION
-	SELECT	CASE 
-				WHEN @PlatformType = 3 THEN 'u'
-				WHEN @PlatformType = 5 THEN 'l'
-			END
-	IF @PlatformType = 0
-	BEGIN
-		INSERT INTO @PlatformList (betfrom) VALUES ('a')
-		INSERT INTO @PlatformList (betfrom) VALUES ('d')
-		INSERT INTO @PlatformList (betfrom) VALUES ('e')
-		INSERT INTO @PlatformList (betfrom) VALUES ('u')
-		INSERT INTO @PlatformList (betfrom) VALUES ('s')
-		INSERT INTO @PlatformList (betfrom) VALUES ('m')
-		INSERT INTO @PlatformList (betfrom) VALUES ('l')
-	END
-	DELETE FROM @PlatformList WHERE betfrom IS NULL
+	CREATE TABLE #PlatformList (betfrom NVARCHAR(1), PlatformType TINYINT)
+	INSERT INTO #PlatformList (betfrom, PlatformType)
+	SELECT	d.betfrom, d.PlatformType
+	FROM (
+		VALUES	(1, 'd'),
+				(2, 'a'),
+				(3, 'e'),
+				(4, 'm'),
+				(5, 's'),
+				(3, 'u'),
+				(5, 'l'),
+				(1, 'g'),
+				(6, 'r'),
+				(1, 'x'),
+				(3, 'y'),
+				(2, 'z')
+	) d(PlatformType, betfrom)
+	WHERE d.PlatformType = @PlatformType OR @PlatformType = 0
 
 	CREATE TABLE #Exchange (ExchangeDate SMALLDATETIME, ExchangeId INT,  EUR FLOAT,USD FLOAT,GBP FLOAT,Code VARCHAR(10), PRIMARY KEY(ExchangeDate,ExchangeId))
 
@@ -283,7 +277,7 @@ BEGIN
 			FROM dbo.bettrans b WITH (NOLOCK)
 				INNER JOIN #tempAg tma ON tma.CustID=b.recommend AND b.currency = tma.currency
 				INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON tma.custid=BA.recommend and b.transid = BA.transid 	 	
-				INNER JOIN @PlatformList pl ON pl.betfrom = b.betfrom
+				INNER JOIN #PlatformList pl ON pl.betfrom = b.betfrom
 			WHERE
 				b.statusID  IN (111, 112, 113)
 				AND (b.bettype < 901 OR b.bettype > 904)
@@ -326,7 +320,7 @@ BEGIN
 				   BetCount
 			FROM dbo.bettrans b WITH (NOLOCK)
 				INNER JOIN #tempAg tma ON tma.CustID=b.recommend  AND b.currency = tma.currency
-				INNER JOIN @PlatformList pl ON pl.betfrom = b.betfrom
+				INNER JOIN #PlatformList pl ON pl.betfrom = b.betfrom
 			WHERE
 				b.statusID  IN (111, 112, 113)
 				AND b.winlostdate BETWEEN @TempFromDate AND @TDate
@@ -374,7 +368,7 @@ BEGIN
 			FROM dbo.bettrans b WITH (NOLOCK)
 				INNER JOIN #tempAg tma ON tma.CustID=b.recommend AND b.currency = tma.currency
 				INNER JOIN #bettype bt ON b.bettype = bt.bettype
-				INNER JOIN @PlatformList pl ON pl.betfrom = b.betfrom
+				INNER JOIN #PlatformList pl ON pl.betfrom = b.betfrom
 			WHERE
 				b.statusID  IN (111, 112, 113)
 				AND b.winlostdate BETWEEN @TempFromDate AND @TDate
@@ -421,7 +415,7 @@ BEGIN
 					ELSE 1 END
 			FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )
 				INNER JOIN 	#tempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
-				INNER JOIN @PlatformList pl ON pl.betfrom = b.betfrom
+				INNER JOIN #PlatformList pl ON pl.betfrom = b.betfrom
 			WHERE 
 				b.Winlostdate BETWEEN @FDate AND @TempToDate  
 				AND b.roleid = 1   
@@ -465,7 +459,7 @@ BEGIN
 			FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )
 				INNER JOIN 	#tempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
 				INNER JOIN #sporttype t ON b.sporttype = t.sporttype
-				INNER JOIN @PlatformList pl ON pl.betfrom = b.betfrom
+				INNER JOIN #PlatformList pl ON pl.betfrom = b.betfrom
 			WHERE 		
 				b.Winlostdate BETWEEN @FDate AND @TempToDate  
 				AND b.roleid = 1   
@@ -477,6 +471,19 @@ BEGIN
 		END
 	END			
 
+	----Delete zero data 
+	DELETE #WinLoss 
+	WHERE 	Betcount = 0 
+			AND Turnover = 0 
+			AND Winlost = 0 
+			AND LicenseeWL = 0 
+			AND PlayerComm = 0 
+			AND WinlossRB = 0 
+			AND CommBA = 0 
+			AND CommRB = 0 
+			AND AmtDuetoBA = 0 
+			AND AmtDuetoRB = 0 
+			AND Company = 0
 
 	SELECT 
 		w.CustID,
@@ -552,9 +559,7 @@ BEGIN
 	DROP TABLE #tempAg
 	DROP TABLE #WinLoss	
 	DROP TABLE #Exchange
+	DROP TABLE #PlatformList
 	
 END
-GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_PlatformWinlossDetail] TO [bodbLicenseeNet] AS [dbo]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_PlatformWinlossDetail] TO [vnteam] AS [dbo]
+GO 
