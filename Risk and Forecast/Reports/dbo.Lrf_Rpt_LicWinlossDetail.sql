@@ -76,7 +76,7 @@ AS
 		- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
 		- 20170320@Paul: Implement Cash Out [RedmineID :#71727]
 		- 20170704@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
-		- 20170619@Harper: LRF - Integrate Lottery [RedmineID: #79997]
+		- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 
 	Param's Explanation:  
 	  + @CustID: SuperID  

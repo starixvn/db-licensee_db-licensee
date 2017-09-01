@@ -38,7 +38,7 @@ AS
 		- 20170329@Paul: Implement Cash Out [RedmineID: #71727]
 		- 20170706@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
 		- 20170802@Sophia: Add new betfrom [redmine: #80687]
-		- 20170619@Harper: LRF - Integrate Lottery [RedmineID: #79997]
+		- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 
 
 	Param's Explanation:  

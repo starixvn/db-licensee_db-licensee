@@ -72,7 +72,7 @@ AS
 	- 20170327@Paul: Implement Cash Out [RedmineID :#71727]
 	- 20170721@Sophia: Change to call Alias DBWH instead of DBDW2 
 	- 20170704@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
-	- 20170619@Harper: LRF - Integrate Lottery [RedmineID: #79997]
+	- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  

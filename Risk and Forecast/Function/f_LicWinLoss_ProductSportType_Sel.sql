@@ -11,6 +11,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
     
 	Revisions:  	  
 		- 20170703@Harper: Get SportType by Product follow job sum [Redmine: #78241]
+		- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 
 	Paramters Explanation:  
 		@ProductID: list of products  

@@ -45,7 +45,7 @@ Revisions:
 	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
 	- 20170327@Paul: Implement Cash Out [RedmineID :#71727]
-	- 20170619@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
+	- 20170731@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
 
 Param's Explanation:   
 	+ @AgentList: xml structure

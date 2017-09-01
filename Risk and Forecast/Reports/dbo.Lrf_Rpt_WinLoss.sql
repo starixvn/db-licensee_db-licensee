@@ -91,7 +91,7 @@ AS
 		- 20170215@Sophia: Get @AgentList by web instead of @UserId, @LicenseeID, @CurrencyID, remove @excludeTest [Redmine: #71679]
 		- 20170320@Paul: Implement Cash Out [RedmineID :#71727]
 		- 20170706@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
-		- 20170619@Harper: LRF - Integrate Lottery [RedmineID: #79997]
+		- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 */
 
 BEGIN

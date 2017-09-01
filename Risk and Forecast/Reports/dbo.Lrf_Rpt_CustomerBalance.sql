@@ -66,7 +66,7 @@ Revisions:
 	- 20170328@Paul: Support sorting values for Opening Balance and Closing Balance [RedmineID: #74120]
 	- 20170330@Paul: Implement Cash Out [RedmineID :#71727]
     - 20170706@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
-	- 20170619@Harper: LRF - Integrate Lottery [RedmineID: #79997]
+	- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 
 Param's Explanation:  
 	+ @excludeTest: remove currency UUS  

@@ -63,8 +63,8 @@ Revisions:
    - 20161115@Jim: LRF - Integrate new product Fishing World [RedmineID : #66737]
    - 20170301@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest, @LicenseeType [Redmine: #71679]
    - 20170328@Harper: LRF - Integrate new product Cashout [#71727]
-   - 20170619@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
-   - 20170619@Harper: LRF - Integrate Lottery [RedmineID: #79997]
+   - 20170710@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
+   - 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 
 Param's Explanation:
     
