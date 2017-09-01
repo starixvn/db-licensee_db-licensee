@@ -1,3 +1,4 @@
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 
 SET QUOTED_IDENTIFIER ON 
 GO
@@ -23,6 +24,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail_Ag]
  @ShowMGCRnG 	BIT=0,-- MicroGamming 
  @ShowVB		BIT=0,-- Voidbridge
  @ShowVS2		BIT=0,-- BetRadar VS 
+ @ShowLT		BIT=0,-- Lottery
  @MoveBetsDay	SMALLDATETIME,
  @IsOld			BIT = 0,
  @drawfilter	SMALLINT = 1  ,
@@ -68,6 +70,7 @@ AS
 	- 20170327@Paul: Implement Cash Out [RedmineID :#71727]
 	- 20170704@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
 	- 20170721@Sophia: Change to call Alias DBWH instead of DBDW2 
+	- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 
 	Param's Explanation:  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -203,6 +206,11 @@ BEGIN
 	SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS2', 'VS2')
 END
 
+IF @ShowLT = 1 -- Lottery
+BEGIN
+	SELECT @ProductList = COALESCE(@ProductList + ',' + 'LT', 'LT')
+END
+
 IF LEN(ISNULL(@ProductList, '')) > 0 
 BEGIN
 	-- Insert Bettype
@@ -325,7 +333,7 @@ BEGIN
 	END
 	
 	--SB + NG+LC+VS+CS+BG+ KN
-	IF 1 IN (@ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @showMGCRnG, @ShowVB, @ShowVS2)
+	IF 1 IN (@ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @showMGCRnG, @ShowVB, @ShowVS2, @ShowLT)
 	BEGIN
 		SELECT 
 			DISTINCT
@@ -506,7 +514,7 @@ BEGIN
 	END
 	
 	--exclude BA tickets
-	IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowLC, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @showMGCRnG, @ShowVB)
+	IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowLC, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @showMGCRnG, @ShowVB, @ShowLT)
 	BEGIN
 		INSERT INTO #SAgWinLoss  
 		SELECT 
@@ -523,7 +531,7 @@ BEGIN
 				ELSE 1 END
 			),     
 			SUM(b.winlost),  
-			SUM(CASE WHEN ( b.sporttype IN(0,161,162,251,252,202,203,205,208,209,210,212 ))  THEN -1 * b.winlost WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS LicenseeWL ,
+			SUM(CASE WHEN ( b.sporttype IN(0,161,162,251,252,202,203,205,208,209,210,212, 220 ))  THEN -1 * b.winlost WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS LicenseeWL ,
 			SUM(comm ) as Comm,
 			SUM( PlayerComm  ) AS PlayerComm,
 			- SUM (b.awinlost + b.winlost + b.comm) as AmountDueTo3rd,
@@ -549,6 +557,7 @@ BEGIN
 			t.ProductCode,
 			 b.statusID
 	END
+
 	IF 1 IN (@ShowVS, @ShowVS2)
 	BEGIN 
 		SELECT s.SportType, s.ProductPrefix

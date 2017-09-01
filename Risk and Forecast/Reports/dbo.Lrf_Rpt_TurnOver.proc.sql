@@ -1,5 +1,4 @@
-﻿USE [bodb02]
-GO
+﻿/*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_TurnOver]
 	@FromDate       SMALLDATETIME,  
@@ -23,6 +22,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_TurnOver]
 	@ShowFW 		BIT = 0,
 	@ShowCO			BIT = 0,
 	@ShowVS2		BIT = 0, -- Bet Radar Virtual Sports
+	@ShowLT			BIT = 0, -- Lottery
 	@AgentList		VARCHAR(MAX)
 AS 
 /*
@@ -63,7 +63,8 @@ Revisions:
    - 20161115@Jim: LRF - Integrate new product Fishing World [RedmineID : #66737]
    - 20170301@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest, @LicenseeType [Redmine: #71679]
    - 20170328@Harper: LRF - Integrate new product Cashout [#71727]
-   - 20170619@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
+   - 20170710@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
+   - 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 
 Param's Explanation:
     
@@ -126,6 +127,7 @@ BEGIN
 	IF @ShowFW		= 1 INSERT INTO @sporttype(sporttype) VALUES(219)
 	IF @ShowCO		= 1 INSERT INTO @sporttype(sporttype) VALUES(-6), (-7)
 	IF @ShowVS2	= 1 INSERT INTO @sporttype(sporttype) VALUES(190)
+	IF @ShowLT	= 1 INSERT INTO @sporttype(sporttype) VALUES(220)
 
 	IF @username <> ''
 	BEGIN

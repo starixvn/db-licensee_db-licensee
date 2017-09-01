@@ -1,3 +1,4 @@
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 
 SET QUOTED_IDENTIFIER ON 
 GO
@@ -24,6 +25,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail]
  @ShowMGCRnG 	BIT=0,-- MicroGamming  
  @ShowVB		BIT=0,-- Voidbridge
  @ShowVS2		BIT=0,-- BetRadar VS 
+ @ShowLT		BIT=0,-- Lottery
  @MoveBetsDay	SMALLDATETIME,
  @IsOld			BIT = 0,
  @drawfilter	SMALLINT = 1  ,
@@ -73,6 +75,7 @@ AS
 	- 20170327@Paul: Implement Cash Out [RedmineID :#71727]
 	- 20170704@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
 	- 20170721@Sophia: Change to call Alias DBWH instead of DBDW2 
+	- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 
 	Param's Explanation:  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -219,6 +222,11 @@ END
 IF @ShowVS2 = 1 -- Betradar Virtual Sports
 BEGIN
 	SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS2', 'VS2')
+END
+
+IF @ShowLT = 1 -- Lottery
+BEGIN
+	SELECT @ProductList = COALESCE(@ProductList + ',' + 'LT', 'LT')
 END
 
 IF LEN(ISNULL(@ProductList, '')) > 0 
@@ -459,7 +467,7 @@ BEGIN
 	END
 	
 	--NG+LC+VS+RB + KN + VB
-	IF 1 IN (@ShowNG, @ShowLC, @ShowVS, @ShowRB, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @showMGCRnG, @ShowVB, @ShowVS2)
+	IF 1 IN (@ShowNG, @ShowLC, @ShowVS, @ShowRB, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @showMGCRnG, @ShowVB, @ShowVS2, @ShowLT)
 	BEGIN
 		SELECT 
 			DISTINCT
@@ -521,8 +529,7 @@ BEGIN
 			SUM( PlayerComm  ) AS PlayerComm, 
 			- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,
 			
-			--EUR
-			
+			--EUR			
 			SUM(
 				CASE WHEN b.bettype = 33 AND b.liveawayscore = 0 THEN stake/2 ELSE stake END 
 				*
@@ -537,6 +544,7 @@ BEGIN
 			SUM (comm * e.EUR) as CommEUR,
 			SUM( PlayerComm * e.EUR ) AS PlayerCommEUR, 
 			- SUM((b.awinlost + b.winlost - b.actual_stake + b.comm) * e.EUR) AmountDueTo3rdEUR  ,
+
 			--- USD
 			SUM(
 				CASE WHEN b.bettype = 33 AND b.liveawayscore = 0 THEN stake/2 ELSE stake END 
@@ -707,7 +715,7 @@ BEGIN
 	END
 	
 	--exclude BA tickets
-	IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowLC, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @showMGCRnG, @ShowVB)
+	IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowLC, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @showMGCRnG, @ShowVB, @ShowLT)
 	BEGIN
 		INSERT INTO #SAgWinLoss  
 		SELECT 
@@ -1168,24 +1176,24 @@ SELECT
 	
 	--BaseEUR  
 	CAST(SUM(TurnOverEUR)			AS MONEY)	AS TurnoverEUR,   
-	CAST(SUM(WinlostEUR)				AS MONEY)	AS WinlostEUR,  
-	CAST(SUM(LicenseeWLEUR) 			AS MONEY)	AS LicenseeWLEUR,
+	CAST(SUM(WinlostEUR)			AS MONEY)	AS WinlostEUR,  
+	CAST(SUM(LicenseeWLEUR) 		AS MONEY)	AS LicenseeWLEUR,
 	CAST(SUM(CommEUR) 				AS MONEY)	AS CommEUR,
-	CAST(SUM(PlayerCommEUR) 			AS MONEY)	AS PlayerCommEUR,
+	CAST(SUM(PlayerCommEUR) 		AS MONEY)	AS PlayerCommEUR,
 	CAST(SUM(AmtDueto3rdEUR) 		AS MONEY)	AS AmtDueto3rdEUR,
 	--BaseUSD  
 	CAST(SUM(TurnOverUSD)			AS MONEY)	AS TurnoverUSD,   
-	CAST(SUM(WinlostUSD)				AS MONEY)	AS WinlostUSD,  
-	CAST(SUM(LicenseeWLUSD) 			AS MONEY)	AS LicenseeWLUSD,
+	CAST(SUM(WinlostUSD)			AS MONEY)	AS WinlostUSD,  
+	CAST(SUM(LicenseeWLUSD) 		AS MONEY)	AS LicenseeWLUSD,
 	CAST(SUM(CommUSD) 				AS MONEY)	AS CommUSD,
-	CAST(SUM(PlayerCommUSD) 			AS MONEY)	AS PlayerCommUSD,
+	CAST(SUM(PlayerCommUSD) 		AS MONEY)	AS PlayerCommUSD,
 	CAST(SUM(AmtDueto3rdUSD) 		AS MONEY)	AS AmtDueto3rdUSD,
 	--BaseGBP
 	CAST(SUM(TurnOverGBP)			AS MONEY)	AS TurnoverGBP,   
-	CAST(SUM(WinlostGBP)				AS MONEY)	AS WinlostGBP,  
-	CAST(SUM(LicenseeWLGBP) 			AS MONEY)	AS LicenseeWLGBP,
+	CAST(SUM(WinlostGBP)			AS MONEY)	AS WinlostGBP,  
+	CAST(SUM(LicenseeWLGBP) 		AS MONEY)	AS LicenseeWLGBP,
 	CAST(SUM(CommGBP) 				AS MONEY)	AS CommGBP,
-	CAST(SUM(PlayerCommGBP) 			AS MONEY)	AS PlayerCommGBP,
+	CAST(SUM(PlayerCommGBP) 		AS MONEY)	AS PlayerCommGBP,
 	CAST(SUM(AmtDueto3rdGBP) 		AS MONEY)	AS AmtDueto3rdGBP
 FROM	
 	#SAgWinLoss w   

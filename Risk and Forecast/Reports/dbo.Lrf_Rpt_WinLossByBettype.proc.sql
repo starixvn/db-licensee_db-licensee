@@ -1,5 +1,4 @@
-﻿USE [bodb02]
-GO
+﻿/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLossByBettype] 	
 	  @FromDate		SMALLDATETIME
@@ -48,7 +47,8 @@ Revisions:
 	- 20161115@Jim: LRF - Integrate new product Fishing World [RedmineID : #66737]
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
 	- 20170327@Paul: Implement Cash Out [RedmineID :#71727]
-	- 20170619@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
+	- 20170710@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
+	- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 
 Param's Explanation: 
 	+ @AgentList: xml structure
@@ -193,7 +193,7 @@ BEGIN
 						OR b.bettype BETWEEN 1201 AND 1299
 						OR b.bettype BETWEEN 2701 AND 2799
 						OR b.bettype BETWEEN 1501 AND 1599 --Keno
-						 
+						OR b.bettype BETWEEN 1021 AND 1049 -- Lottery						 
 						)
 					THEN (b.winlost - b.actual_stake)
 				ELSE 0
@@ -282,6 +282,7 @@ BEGIN
 						OR b.bettype BETWEEN 1201 AND 1299
 						OR b.bettype BETWEEN 2701 AND 2799
 						OR b.bettype BETWEEN 1501 AND 1599 --Keno products
+						OR b.bettype BETWEEN 1021 AND 1049 --Lottery
 						 
 						)
 					THEN (b.winlost - b.actual_stake)

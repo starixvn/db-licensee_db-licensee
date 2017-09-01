@@ -1,11 +1,11 @@
-﻿USE [bodb02]
-GO
+﻿/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportWinlossByMatch]   	
     @ShowSB			BIT	= 0,
     @ShowBA			BIT	= 0,
 	@ShowLC 		BIT = 0,
 	@ShowVS			BIT = 0,
-	@ShowVS2		BIT = 0,
+	@ShowVS2		BIT = 0,	
     @SportId		INT = 0,
     @FromDate		SMALLDATETIME,  
 	@ToDate			SMALLDATETIME,
@@ -39,7 +39,7 @@ Revisions:
 	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
 	- 20170329@Paul: Implement Cash Out [RedmineID: #71727]
-	- 20170710@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
+	- 20170710@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]	
 
 Return 3 tables:
 WinlostBySport
@@ -66,7 +66,7 @@ SELECT @FromDate = DATEADD(DAY, -15, GETDATE())
 SELECT @ToDate = GETDATE()
 SELECT @MoveBetsDay = MAX(eventdate) FROM match14 WITH(NOLOCK)
 
-EXEC [Lrf_Rpt_LiveReportWinlossByMatch_xtest]	 @LicenseeId = 1, @CurrencyID = 0, @FromDate=@FromDate, @SportId =1, @ToDate=@ToDate, @MoveBetsDay = @MoveBetsDay
+EXEC [Lrf_Rpt_LiveReportWinlossByMatch]	 @LicenseeId = 1, @CurrencyID = 0, @FromDate=@FromDate, @SportId =1, @ToDate=@ToDate, @MoveBetsDay = @MoveBetsDay
 
 */
 SET NOCOUNT ON
@@ -293,7 +293,7 @@ BEGIN
 		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
 	END
 
-	IF ( @ShowLC=1 OR @ShowVS=1 OR @ShowVS2 = 1)
+	IF ( @ShowLC = 1 OR @ShowVS = 1 OR @ShowVS2 = 1)
 	BEGIN
 		INSERT INTO #tmpWinloss			
 		SELECT
@@ -509,7 +509,7 @@ BEGIN
 		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
 	END		
 			
-	IF (@ShowLC = 1 OR @ShowVS = 1  OR @ShowVS2 = 1)
+	IF (@ShowLC = 1 OR @ShowVS = 1 OR @ShowVS2 = 1)
 	BEGIN		
 		INSERT INTO #tmpWinloss			
 		SELECT

@@ -1,24 +1,26 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+
 ALTER PROCEDURE [dbo].[Lrf_Rpt_PlatformWinloss]   
-	@FromDate		SMALLDATETIME,  
+	@FromDate	SMALLDATETIME,  
 	@ToDate		SMALLDATETIME,   
 	@showSB		BIT=0,  
 	@ShowRB		BIT=0,  
 	@ShowNG		BIT=0, 
 	@ShowBA		BIT=0,
-	@ShowLC 		BIT=0,
+	@ShowLC 	BIT=0,
 	@ShowVS		BIT=0,
 	@ShowKN		BIT=0,
 	@ShowCS		BIT=0,
-	@ShowMGCLC		BIT=0,
+	@ShowMGCLC	BIT=0,
 	@ShowMGCRNG	BIT=0,
 	@ShowVB		BIT=0,		
 	@ShowAB		BIT=0,
 	@ShowFW		BIT=0,
 	@ShowVS2	BIT = 0, -- Bet Radar Virtual Sports
+	@ShowLT		BIT = 0, -- Lottery
 	@PlatformType	TINYINT=0, 
-	@MoveBetsDay SMALLDATETIME,
-	@drawfilter SMALLINT = 1,
+	@MoveBetsDay	SMALLDATETIME,
+	@drawfilter		SMALLINT = 1,
 	@AgentList		VARCHAR(MAX)
 AS
 
@@ -36,6 +38,7 @@ AS
 		- 20170329@Paul: Implement Cash Out [RedmineID: #71727]
 		- 20170706@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
 		- 20170802@Sophia: Add new betfrom [redmine: #80687]
+		- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 
 
 	Param's Explanation:  
@@ -271,7 +274,7 @@ BEGIN
 		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 1011 AND 1020)'
 	END
 
-	IF @ShowVS2 = 1	
+	IF @ShowVS2 = 1 -- Betradar Virtual Sports
 	BEGIN
 		SET @SportTypeSQL = @SportTypeSQL + ', (190, ''VS2'')'
 
@@ -279,6 +282,16 @@ BEGIN
 				'
 
 		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 2701 AND 2799)'
+	END
+
+	IF @ShowLT = 1 -- Lottery
+	BEGIN
+		SET @SportTypeSQL = @SportTypeSQL + ', (220, ''LT'')'
+
+		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 1021 AND 1049 THEN ''LT''
+				'
+
+		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 1021 AND 1049)'
 	END
 
 	SET @SportTypeSQL = STUFF(@SportTypeSQL, 1, 1, '')
@@ -319,7 +332,7 @@ BEGIN
 	FROM Lrf_f_GetExchangeDaily(@FDate,@TDate) t_ex
 	WHERE EXISTS (SELECT 1 FROM #tempAg t_ag WHERE t_ag.Currency = t_ex.ExchangeId)
 
-	IF @TDate>@MoveBetsDay
+	IF @TDate > @MoveBetsDay
 	BEGIN
 		IF @FDate <= @MoveBetsDay 
 			SET @TempFromDate =  DATEADD(DAY,1,@MoveBetsDay)
@@ -408,7 +421,7 @@ BEGIN
 		END
 	
 	
-		IF (@ShowRB=1 or @ShowNG=1 OR @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @showMGCLC =1 OR @showMGCRnG =1 OR @ShowVB = 1 OR @ShowAB =1  OR @ShowFW =1 OR @ShowVS2 = 1)
+		IF (@ShowRB=1 or @ShowNG=1 OR @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @showMGCLC =1 OR @showMGCRnG =1 OR @ShowVB = 1 OR @ShowAB =1  OR @ShowFW =1 OR @ShowVS2 = 1 OR @ShowLT = 1)
 		BEGIN
 			INSERT INTO #WinLoss (Winlostdate, Currency, ProductPrefix, PlatformType, Turnover, Winlost, LicenseeWL, playercomm, BetCount)
 			SELECT 
@@ -513,7 +526,8 @@ BEGIN
 			GROUP BY b.winlostdate, b.currency, b.PlatformType
 			
 		END
-		IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR  @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @showMGCLC =1 OR @showMGCRnG =1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW =1 OR @ShowVS2 = 1)
+
+		IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR  @ShowLC = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @showMGCLC =1 OR @showMGCRnG =1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW =1 OR @ShowVS2 = 1 OR @ShowLT = 1)
 		BEGIN
 			INSERT INTO #WinLoss (Winlostdate, Currency, ProductPrefix, PlatformType, Turnover, Winlost, LicenseeWL, playercomm, BetCount)
 			SELECT 
@@ -537,7 +551,7 @@ BEGIN
 				b.PlatformType
 
 		END
-	END		
+	END			
 
 	----Delete zero data 
 	DELETE #WinLoss WHERE Betcount = 0 AND Turnover = 0 AND Winlost = 0 AND LicenseeWL = 0 AND PlayerComm = 0

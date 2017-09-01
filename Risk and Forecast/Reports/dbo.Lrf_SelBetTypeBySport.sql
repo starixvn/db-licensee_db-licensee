@@ -1,5 +1,5 @@
-USE [bodb_licensee]
-GO
+/*<info serverAlias="DBLIC-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+
 
 SET ANSI_NULLS ON
 GO

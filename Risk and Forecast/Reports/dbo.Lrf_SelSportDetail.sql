@@ -1,5 +1,5 @@
-USE [bodb_licensee]
-GO
+/*<info serverAlias="DBLIC-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+
 /****** Object:  StoredProcedure [dbo].[Lrf_SelSportDetail]    Script Date: 12/02/2014 10:09:10 AM ******/
 SET ANSI_NULLS ON
 GO
