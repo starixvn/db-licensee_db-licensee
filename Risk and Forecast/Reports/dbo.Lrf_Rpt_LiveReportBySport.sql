@@ -58,7 +58,7 @@ Revisions:
 	- 20170705@Harper: Hotfix for Cash Out [RedmineID: #79546]
 	- 20170721@Harper: Hotfix add AB and FW to LiveReport [RedmineID: #80350]
 	- 20170710@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
-	- 20170619@Harper: LRF - Integrate Lottery [RedmineID: #79997]
+	- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 
 Param's Explanation:
 	@Liveindicator : indicate that whether the report will get live data or not
