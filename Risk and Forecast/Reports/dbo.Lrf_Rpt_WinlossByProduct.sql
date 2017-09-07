@@ -762,6 +762,7 @@ BEGIN
 	END	
 END 
 
+
 IF @IsOld = 1 
 BEGIN
 	SELECT @MaxOldDate = MAX(winlostdate) FROM bodb_Licenseereport.dbo.rptLicWinloss_old (NOLOCK)
@@ -921,8 +922,6 @@ DROP TABLE #SAgWinLoss
 DROP TABLE #TempExchange
  
 END
-GO
-
  GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_WinlossByProduct] TO [vnteam]
 GO 
  GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinlossByProduct] TO [bodbLicenseeNet]

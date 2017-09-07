@@ -69,6 +69,7 @@ AS
 		- 20170320@Paul: Implement Cash Out [RedmineID :#71727]
 		- 20170710@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
 		- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
+		- 20170814@Harper: One RNG - Offer New Tablet Games [RedmineID: #78424]
 
 	Param's Explanation:  
 	  + @CustID: SuperID  
@@ -558,7 +559,7 @@ BEGIN
 						
 					ELSE 0 END
 				) AS turnoverVS, 
-				SUM(CASE WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 THEN
+				SUM(CASE WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999 THEN
 					stake * (CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END)
 						
 					ELSE 0 END
@@ -625,7 +626,7 @@ BEGIN
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLLC,
 				-SUM(CASE WHEN b.bettype BETWEEN 1201 AND 1299
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLVS,
-				-SUM(CASE WHEN b.bettype =71 OR b.bettype BETWEEN 2101 AND 2399
+				-SUM(CASE WHEN b.bettype =71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLCS,
 				-SUM(CASE WHEN b.bettype =73
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLBG,

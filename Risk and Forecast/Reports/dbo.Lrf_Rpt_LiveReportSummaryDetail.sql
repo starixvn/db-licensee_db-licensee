@@ -62,6 +62,7 @@ Revisions:
 	- 20170705@Harper: Hotfix for Cash Out [RedmineID: #79546]
 	- 20170721@Harper: Hotfix add AB and FW to LiveReport [RedmineID: #80350]	
 	- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
+	- 20170814@Harper: One RNG - Offer New Tablet Games [RedmineID: #78424]
 
 Param's Explanation:  
 	+ @Liveindicator : indicate that whether the report will get live data or not
@@ -237,7 +238,7 @@ BEGIN
 									WHEN @ProductCode = 'VS' THEN 'AND b.bettype BETWEEN 1201 AND 1299'
 									WHEN @ProductCode = 'BG' THEN 'AND b.bettype = 73'
 									WHEN @ProductCode = 'KN' THEN 'AND b.bettype BETWEEN 1501 AND 1599'
-									WHEN @ProductCode = 'CS' THEN 'AND (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399)'
+									WHEN @ProductCode = 'CS' THEN 'AND (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999)'
 									WHEN @ProductCode = 'VB' THEN 'AND b.bettype BETWEEN 4001 AND 7999'
 									WHEN @ProductCode = 'FW' THEN 'AND b.bettype BETWEEN 1011 AND 1020'
 									WHEN @ProductCode = 'AB' THEN 'AND b.bettype BETWEEN 2401 AND 2499'
@@ -294,7 +295,7 @@ BEGIN
 										WHEN @ProductCode = 'VS' THEN 'AND b.bettype BETWEEN 1201 AND 1299'
 										WHEN @ProductCode = 'BG' THEN 'AND b.bettype = 73'
 										WHEN @ProductCode = 'KN' THEN 'AND b.bettype BETWEEN 1501 AND 1599'
-										WHEN @ProductCode = 'CS' THEN 'AND (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399)'
+										WHEN @ProductCode = 'CS' THEN 'AND (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999)'
 										WHEN @ProductCode = 'VB' THEN 'AND b.bettype BETWEEN 4001 AND 7999'
 										WHEN @ProductCode = 'FW' THEN 'AND b.bettype BETWEEN 1011 AND 1020'
 										WHEN @ProductCode = 'AB' THEN 'AND b.bettype BETWEEN 2401 AND 2499'
@@ -457,7 +458,7 @@ BEGIN
 									WHEN @ProductCode = 'VS' THEN 'AND b.bettype BETWEEN 1201 AND 1299'
 									WHEN @ProductCode = 'BG' THEN 'AND b.bettype = 73'
 									WHEN @ProductCode = 'KN' THEN 'AND b.bettype BETWEEN 1501 AND 1599'
-									WHEN @ProductCode = 'CS' THEN 'AND (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399)'
+									WHEN @ProductCode = 'CS' THEN 'AND (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999)'
 									WHEN @ProductCode = 'VB' THEN 'AND b.bettype BETWEEN 4001 AND 7999'
 									WHEN @ProductCode = 'FW' THEN 'AND b.bettype BETWEEN 1011 AND 1020'
 									WHEN @ProductCode = 'AB' THEN 'AND b.bettype BETWEEN 2401 AND 2499'
@@ -513,7 +514,7 @@ BEGIN
 										WHEN @ProductCode = 'VS' THEN 'AND b.bettype BETWEEN 1201 AND 1299'
 										WHEN @ProductCode = 'BG' THEN 'AND b.bettype = 73'
 										WHEN @ProductCode = 'KN' THEN 'AND b.bettype BETWEEN 1501 AND 1599'
-										WHEN @ProductCode = 'CS' THEN 'AND (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399)'
+										WHEN @ProductCode = 'CS' THEN 'AND (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999)'
 										WHEN @ProductCode = 'VB' THEN 'AND b.bettype BETWEEN 4001 AND 7999'
 										WHEN @ProductCode = 'FW' THEN 'AND b.bettype BETWEEN 1011 AND 1020'
 										WHEN @ProductCode = 'AB' THEN 'AND b.bettype BETWEEN 2401 AND 2499'
