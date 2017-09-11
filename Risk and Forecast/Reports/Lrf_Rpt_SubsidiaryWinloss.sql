@@ -325,7 +325,7 @@ BEGIN
 		
 	SELECT * 
 	INTO #TempExchange 
-	FROM  dbo.Lrf_f_GetExchangeDaily(@FDate,@TDate)
+	FROM  dbo.Lrf_f_GetExchangeDaily(@FromDate,@ToDate)
 	WHERE exchangeid IN (SELECT DISTINCT Currency FROM #Subsidiary)
 			  
 	SELECT   
