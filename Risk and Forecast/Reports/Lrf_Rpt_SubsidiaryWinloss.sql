@@ -154,7 +154,7 @@ BEGIN
 					ON a.CustID = b.recommend  					 	
 			WHERE b.winlostdate BETWEEN @FDate AND @TDate
 				  AND b.statusID IN (111, 112, 113) 				
-				  AND b.bettype IN (9010,902,903)
+				  AND b.bettype IN (901,902,903)
 			GROUP BY   
 				b.Winlostdate, b.recommend, a.currency
 		END
