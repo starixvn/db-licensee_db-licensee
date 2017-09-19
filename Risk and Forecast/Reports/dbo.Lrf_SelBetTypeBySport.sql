@@ -1,11 +1,6 @@
 /*<info serverAlias="DBLIC-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
-
-
-SET ANSI_NULLS ON
+USE [bodb_licensee]
 GO
-SET QUOTED_IDENTIFIER ON
-GO
-
 
 ALTER PROCEDURE [dbo].[Lrf_SelBetTypeBySport]
 	@LicenseeID int
@@ -35,6 +30,7 @@ Revisions:
    - 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
    - 20170330@Paul: Implement Cash Out [RedmineID: #71727]
    - 20170710@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
+   - 20170919@Percy: Change way get SportBettypeMatrix [RedmineID: #83442]
 
 	Param's Explanation:  
 Param's Explanation:
@@ -51,17 +47,19 @@ BEGIN
 	DECLARE @strSport 	  VARCHAR(5000)
 	
 	CREATE TABLE #SportBettype (
-		ProductID 		TINYINT
-		, SportType 	SMALLINT
+		  SportType 	SMALLINT
 		, Bettype 		SMALLINT
-		, EventType 	TINYINT
-		, SubProduct 	VARCHAR(500)
 	)
 
 	DECLARE @sportFilter TABLE (sporttype SMALLINT)
 
-	INSERT INTO #SportBettype
-	EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=2
+	DECLARE @isTest BIT = 0
+	SELECT  @isTest = dbo.f_CheckSPVersion(@@PROCID)
+	
+	INSERT INTO #SportBettype (SportType, Bettype)
+	SELECT DISTINCT SportType, Bettype
+	FROM bodb02.dbo.SportBettypeMatrix WITH (NOLOCK)
+	WHERE IsTest <= @isTest
 
 	SELECT @checkVS = 0
 		  ,@checkNG = 0
@@ -167,7 +165,3 @@ BEGIN
 	
 END
 GO
-
-GRANT EXECUTE ON [dbo].[Lrf_SelBetTypeBySport] TO [bodbLicenseeNet] 
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_SelBetTypeBySport] TO [vnteam] 
