@@ -190,7 +190,7 @@ BEGIN
 				b.Winlostdate,   
 				b.recommend,
 				a.currency,
-				CASE WHEN p.Bettype IN (901,902,903,904) THEN 'BT' ELSE p.ProductCode END AS ProductCode,
+				p.ProductCode,
 				COUNT(CASE WHEN RAND() + 1 > 0 THEN b.transid ELSE 0 END) AS BetCount,
 				SUM (CASE WHEN RAND() + 1 > 0 THEN stake ELSE 0 END) AS Turnover, 
 				SUM (CASE WHEN RAND() + 1 > 0 THEN b.winlost-b.actual_stake ELSE 0 END) AS Winlost,  
@@ -203,11 +203,10 @@ BEGIN
 				b.winlostdate BETWEEN @FDate AND @TDate  				
 				AND b.statusID IN (111, 112, 113)	
 				AND (CASE WHEN p.ProductCode ='SB' THEN b.tpositiontaking ELSE 1 END <> 0 )  --- EXCLUDE BA 
-				AND (b.bettype < 901 OR b.bettype > 904)
-				AND (b.bettype < 911 OR b.bettype > 914)	
+				
 			GROUP BY   
 				b.Winlostdate, b.recommend, a.currency, 
-				CASE WHEN p.Bettype IN (901,902,903,904) THEN 'BT' ELSE p.ProductCode END
+				p.ProductCode
 		END	
 
 		 
