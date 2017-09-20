@@ -264,8 +264,7 @@ BEGIN
 			WHERE 
 				b.winlostdate BETWEEN @FDate AND @TDate  				
 				AND b.roleid = 1   
-				AND b.statusID IN (111,112,113) --exclude REJECT bets
-				AND b.isBA =0 
+				AND b.statusID IN (111,112,113) --exclude REJECT bets			 
 				AND b.bettype IN (901,902,903)
 			GROUP BY   
 				b.Winlostdate, b.recommend, a.currency 
@@ -288,8 +287,7 @@ BEGIN
 			WHERE 
 				b.winlostdate BETWEEN @FDate AND @TDate  				
 				AND b.roleid = 1   
-				AND b.statusID IN (111,112,113) --exclude REJECT bets
-				AND b.isBA = 0 
+				AND b.statusID IN (111,112,113) --exclude REJECT bets			
 				AND b.bettype = 913
 			GROUP BY   
 				b.Winlostdate, b.recommend, a.currency 
