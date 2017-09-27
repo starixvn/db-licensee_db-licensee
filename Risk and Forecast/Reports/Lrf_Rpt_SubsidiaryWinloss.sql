@@ -202,6 +202,7 @@ BEGIN
 			WHERE 
 				b.winlostdate BETWEEN @FDate AND @TDate  				
 				AND b.statusID IN (111, 112, 113)	
+				AND b.matchID > 0 
 				AND (CASE WHEN p.ProductCode ='SB' THEN b.tpositiontaking ELSE 1 END <> 0 )  --- EXCLUDE BA 
 				
 			GROUP BY   
@@ -295,28 +296,40 @@ BEGIN
 
 		IF EXISTS (SELECT TOP 1 1 FROM #BettypeProduct)     --- exclude BA , BT, CO
 		BEGIN
-			INSERT INTO #Subsidiary (Winlostdate, recommend, Currency, ProductCode, BetCount, Turnover, Winlost, LicenseeWL)
-			SELECT   
-				b.Winlostdate,
-				b.recommend,
-				a.currency,
-				p.ProductCode,
-				SUM (CASE WHEN RAND() + 1 > 0 THEN b.betcount ELSE 0 END) AS BetCount,
-				SUM (CASE WHEN RAND() + 1 > 0 THEN b.turnover ELSE 0 END) AS Turnover, 
-				SUM (CASE WHEN RAND() + 1 > 0 THEN b.winlost ELSE 0 END) AS Winlost,  
-				-SUM(CASE WHEN RAND() + 1 > 0 THEN CASE WHEN p.ProductCode ='RB' THEN - b.comm ELSE b.winlost END ELSE 0 END) AS LicenseeWL
-			FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)  				
-				INNER JOIN @TempAg a ON b.recommend = a.custid 
+				INSERT INTO #Subsidiary (Winlostdate, recommend, Currency, ProductCode, BetCount, Turnover, Winlost, LicenseeWL)
+			SELECT
+						b.Winlostdate,
+						b.recommend,
+						b.currency,
+						p.ProductCode,
+						SUM ( b.betcount) AS BetCount,
+						SUM (b.turnover) AS Turnover, 
+						SUM (b.winlost) AS Winlost,  
+						-SUM(CASE WHEN p.ProductCode ='RB' THEN - b.comm ELSE b.winlost END) AS LicenseeWL						 
+			FROM	( 
+						SELECT   
+							b.Winlostdate,
+							b.recommend,
+							a.currency,
+							b.sporttype,
+							SUM (CASE WHEN RAND() + 1 > 0 THEN b.betcount ELSE 0 END) AS BetCount,
+							SUM (CASE WHEN RAND() + 1 > 0 THEN b.turnover ELSE 0 END) AS Turnover, 
+							SUM (CASE WHEN RAND() + 1 > 0 THEN b.winlost ELSE 0 END) AS Winlost,  
+							SUM (CASE WHEN RAND() + 1 > 0 THEN b.comm ELSE 0 END) AS comm
+						FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)  				
+							INNER JOIN @TempAg a ON b.recommend = a.custid 						 
+						WHERE 
+							b.winlostdate BETWEEN @FDate AND @TDate 					
+							AND (b.bettype < 901 OR b.bettype > 904)
+							AND (b.bettype < 911 OR b.bettype > 914)
+							AND b.roleid = 1   
+							AND b.statusID IN (111,112,113,114,115) --exclude REJECT bets
+							AND b.isBA = 0 
+						GROUP BY   
+							b.Winlostdate, b.recommend, a.currency, b.sporttype
+					) b 
 				INNER JOIN #SporttypeProduct p ON b.sporttype = p.sporttype
-			WHERE 
-				b.winlostdate BETWEEN @FDate AND @TDate 					
-				AND (b.bettype < 901 OR b.bettype > 904)
-				AND (b.bettype < 911 OR b.bettype > 914)
-				AND b.roleid = 1   
-				AND b.statusID IN (111,112,113,114,115) --exclude REJECT bets
-				AND b.isBA = 0 
-			GROUP BY   
-				b.Winlostdate, b.recommend, a.currency, p.ProductCode
+			GROUP BY b.Winlostdate, b.recommend, b.currency, p.ProductCode
 		END	 
 	END
 		
@@ -362,6 +375,4 @@ BEGIN
 	DROP TABLE #SporttypeProduct
 
 END
-GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_SubsidiaryWinloss] TO [bodbLicenseeNet]
 GO
