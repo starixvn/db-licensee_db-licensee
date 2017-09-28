@@ -1,20 +1,31 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_CustomerSelCheckBelonging]
+﻿/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+ALTER PROCEDURE [dbo].[Lrf_CustomerSelCheckBelonging]
 	@LicenseeID int,
 	@custid int = 0,
 	@transid bigint = NULL,
-	@status bit OUTPUT
+	@status bit OUTPUT 
 AS
 /*
 Created: Henry@20101210
 Task: check downline belonging
-DB: DB052.bodb02
+DB: DBEXT.bodb02
 Original:  [Age_CustomerSelCheckBelonging]
 	
 Revisions:
    - 20110406: check customer by transid/refno
    - 20131218@winnie : change db02 to DBARC Alias
+   - 20170928@Sophia: check sourced Licensee [redmine: #82797]
 */
 SET NOCOUNT ON
+
+CREATE TABLE #LicenseeIDList (LicenseeID INT , AgentID INT, CurrencyID INT)
+
+INSERT INTO #LicenseeIDList (LicenseeID)
+VALUES (@LicenseeID)
+
+INSERT INTO #LicenseeIDList (LicenseeID, AgentID, CurrencyID)
+EXEC bodb_Licensee.dbo.LRF_LicenseeSourcedSel @LicenseeID = @LicenseeID
+
 
 declare @roleid int
 declare @recommend int
@@ -34,7 +45,7 @@ begin
 		@roleid = c.RoleID
 	from bodb_Licensee.dbo.LicenseeCust lc (nolock)
 	inner join custinfo c with (nolock) on lc.custid = c.custid
-	where lc.LicenseeID = @LicenseeID
+	where lc.LicenseeID IN (Select DISTINCT LicenseeID FROM #LicenseeIDList)
 	and lc.custid = @recommend	
 		
 end
@@ -45,7 +56,7 @@ begin
 		@roleid = c.RoleID
 	from bodb_Licensee.dbo.LicenseeCust lc (nolock)
 	inner join custinfo c with (nolock) on lc.custid = c.custid
-	where lc.LicenseeID = @LicenseeID
+	where lc.LicenseeID IN (Select DISTINCT LicenseeID FROM #LicenseeIDList)
 	and lc.custid = @custid
 	
 	if isnull(@roleid,0) = 0
@@ -59,7 +70,7 @@ begin
 			and c.recommend in
 			(
 				select custid from bodb_Licensee.dbo.LicenseeCust (nolock)
-				where LicenseeID = @LicenseeID
+				where LicenseeID IN (Select DISTINCT LicenseeID FROM #LicenseeIDList)
 			)
 	end
 end
@@ -72,7 +83,4 @@ if isnull(@roleid, 0) = 0
 	select @status = 0
 else
 	select @status = 1
-GO
-GRANT EXECUTE ON [dbo].[Lrf_CustomerSelCheckBelonging] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerSelCheckBelonging] TO [vnteam]
+GO 
