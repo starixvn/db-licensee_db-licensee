@@ -12,7 +12,7 @@ AS
     DB: DBEXT.bodb02
    
     Revisions:  
-    - 20170829@Sophia: Initial SP
+    - 20170829@Sophia: Initial SP [Redmine: #76246]
 
 	Param's Explanation:  
 	
