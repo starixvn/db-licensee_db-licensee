@@ -149,8 +149,11 @@ BEGIN
 				SELECT DISTINCT @LicenseeId, @UserId, f.FunctionId 
 				FROM dbo.Functions f WITH(NOLOCK)
 					INNER JOIN dbo.LicenseeFunctions lf WITH(NOLOCK) ON f.FunctionId = lf.FunctionId
-				WHERE lf.LicenseeId = @LicenseeId AND (f.FunctionId = 3 OR f.ParentId = 3)
-					OR f.functionID IN (SELECT FunctionID FROM dbo.Functions WITH (NOLOCK) WHERE Name = 'Edit Bet Setting')
+				WHERE lf.LicenseeId = @LicenseeId
+					AND (f.FunctionId = 6
+						OR f.ParentId = 6
+						OR f.functionID IN (SELECT FunctionID FROM dbo.Functions WITH (NOLOCK) WHERE Name = 'Edit Bet Setting')
+					)
 
 				SELECT @LogData = @LogData + ' - ' + 'Grant permission on Manage Account Function because the user is Admin'
 			END

@@ -134,7 +134,7 @@ BEGIN
 	END
 
 	SELECT @UserID = ISNULL(@UserID, 0), @ServerID = 200, @Duration = DATEDIFF(MILLISECOND, @Begin, GETDATE())
-	SELECT @LogData = CASE WHEN @LogData = 'Success' AND @UserRole = 'Admin' THEN 'Admin: ' ELSE 'User: ' END + @UserName +  ' - ' + @UserPwd + ' - ' + @LogData
+	SELECT @LogData = CASE WHEN @LogData = 'Success' AND @UserRole = 'Admin' THEN 'Admin: ' ELSE 'User: ' END + @UserName +  ' - ' + 'Password: ' + @UserPwd + ' - ' + @LogData
 
 	EXEC dbo.WriteLog_UserLog_Login
 		@UserID = @UserID,
