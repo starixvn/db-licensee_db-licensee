@@ -155,7 +155,7 @@ BEGIN
 						OR f.functionID IN (SELECT FunctionID FROM dbo.Functions WITH (NOLOCK) WHERE Name = 'Edit Bet Setting')
 					)
 
-				SELECT @LogData = @LogData + ' - ' + 'Grant permission on Manage Account Function because the user is Admin'
+				SELECT @LogData = @LogData + ' - ' + 'Grant permission on Manage Account Function because the username =''Admin/Administrator'''
 			END
 		END
 	END
