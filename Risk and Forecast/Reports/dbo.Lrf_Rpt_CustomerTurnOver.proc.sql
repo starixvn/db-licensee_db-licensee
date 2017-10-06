@@ -65,7 +65,9 @@ Revision:
 	- 20160720@Jim : Implement 67 new bet types (PH All in one - Phase 2) [Redmine : #53520]
 	- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID [Redmine: #71679]
 	- 20170707@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
-	- 20171006@Percy: Hotfix - Missing bettypes of Basketball (601-617) [RedmineID: #84457]
+	- 20171006@Percy: Hotfix - Add missing mutilple odds bettypes [RedmineID: #84457]
+		1. Basketball (603-607, 609-613, 615-617)
+		2. Virtual Sports 2 (2701-2707)
 
 Parameter's Explanation:
 	- @ReportBy:  1: daily, 2: monthly
@@ -348,7 +350,8 @@ BEGIN
 						OR bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
 						OR bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
 						OR bettype = 428 -- 2H Odd/Even
-						OR (bettype BETWEEN 603 AND 607 OR bettype BETWEEN 609 AND 613 OR bettype BETWEEN 615 AND 617) -- add more Basketball bettypes
+						OR (bettype BETWEEN 603 AND 607 OR bettype BETWEEN 609 AND 613 OR bettype BETWEEN 615 AND 617) -- Basketball bettypes
+						OR bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
 			
 		-- CREATE INDEXERS
 		CREATE CLUSTERED 	INDEX [CIX_tempBettrans] 			ON #tempBettrans (recommend, custid, winlostdate)
