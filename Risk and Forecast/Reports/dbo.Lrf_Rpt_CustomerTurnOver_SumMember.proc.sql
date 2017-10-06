@@ -1,11 +1,6 @@
-USE bodb02
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="1"></info>*/
+USE [bodb02]
 GO
-
-SET QUOTED_IDENTIFIER ON 
-GO
-SET ANSI_NULLS ON 
-GO
-
  
 ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver_SumMember]
 (
@@ -26,6 +21,7 @@ Revision:
 	- 20151223@Jim: Add "Effective Betting Value" in Customer Turnover report [Redmine: #45736]
 	- 20160720@Jim : Implement 67 new bet types (PH All in one - Phase 2) [Redmine : #53520]
 	- 20170615@Harper: Customer Turnover report values are inconsistent [RedmineID: #78391]
+	- 20171006@Percy: Hotfix - Missing bettypes of Basketball (601-617) [RedmineID: #84457]
 
 Parameter's Explanation:
 			
@@ -180,6 +176,7 @@ BEGIN
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
 								OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
 								OR b.bettype = 428 -- 2H Odd/Even
+								OR (bettype BETWEEN 603 AND 607 OR bettype BETWEEN 609 AND 613 OR bettype BETWEEN 615 AND 617) -- add more Basketball bettypes
 							)
 							THEN 
 									CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
@@ -214,18 +211,4 @@ BEGIN
 
 	RETURN;
 END
-
-
 GO
-
-SET QUOTED_IDENTIFIER OFF 
-GO
-SET ANSI_NULLS ON 
-GO
-
-
-GO 
- GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CustomerTurnOver_SumMember] TO [vnteam]
-GO 
- GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerTurnOver_SumMember] TO [bodbLicenseeNet]
-GO 
