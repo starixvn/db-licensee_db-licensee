@@ -1,11 +1,6 @@
 ﻿/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
-
-
-SET ANSI_NULLS ON
+USE [bodb02]
 GO
-SET QUOTED_IDENTIFIER ON
-GO
-
  
 ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
 (
@@ -70,6 +65,9 @@ Revision:
 	- 20160720@Jim : Implement 67 new bet types (PH All in one - Phase 2) [Redmine : #53520]
 	- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID [Redmine: #71679]
 	- 20170707@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
+	- 20171006@Percy: Hotfix - Add missing mutilple odds bettypes [RedmineID: #84457]
+		1. Basketball (603-607, 609-613, 615-617)
+		2. Virtual Sports 2 (2701-2707)
 
 Parameter's Explanation:
 	- @ReportBy:  1: daily, 2: monthly
@@ -146,9 +144,6 @@ BEGIN
 			, rptVer		INT IDENTITY(1,1)
 		)
 	
-	
-	END
-	
 	CREATE TABLE #tempSumTotal 
 	(
 		whticket		TINYINT
@@ -209,9 +204,13 @@ BEGIN
 		OR (@ShowDraw	= 1 AND sh = 3)
 	
 	-- bettype
+	DECLARE @isTest BIT = 0
+	SELECT  @isTest = dbo.f_CheckSPVersion(@@PROCID)
+
 	DECLARE @SportBettype TABLE(ProductID INT, Bettype INT,EventType INT)
-	INSERT INTO @SportBettype
-	EXEC bodb02.dbo.Acc_SportBettypeMatrix_Sel @mode=4
+	INSERT INTO @SportBettype (ProductID, Bettype, EventType)
+	SELECT ProductID, Bettype, EventType
+	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', '', @isTest)
 	
 	SELECT VAL AS typeID
 	INTO #BettypeID
@@ -351,6 +350,8 @@ BEGIN
 						OR bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
 						OR bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
 						OR bettype = 428 -- 2H Odd/Even
+						OR (bettype BETWEEN 603 AND 607 OR bettype BETWEEN 609 AND 613 OR bettype BETWEEN 615 AND 617) -- Basketball bettypes
+						OR bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
 			
 		-- CREATE INDEXERS
 		CREATE CLUSTERED 	INDEX [CIX_tempBettrans] 			ON #tempBettrans (recommend, custid, winlostdate)
@@ -487,7 +488,7 @@ BEGIN
 		
 		IF( @isCached = 0 )
 		BEGIN
-												EXEC [dbo].[Lrf_Rpt_CustomerTurnOver_SumTotal]
+			EXEC [dbo].[Lrf_Rpt_CustomerTurnOver_SumTotal]
 				@searchCust 	= @searchCust
 				,@FromDate 		= @FromDate
 				,@tempFromDate 	= @tempFromDate
@@ -782,7 +783,5 @@ BEGIN
 	DROP TABLE #tempLRFCustTORpt
 	--SET duration time
 	SET @Duration = DATEDIFF(MS, @startTime, GETDATE())
+END
 GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [bodbLicenseeNet] AS [dbo]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CustomerTurnOver] TO [vnteam] AS [dbo]
