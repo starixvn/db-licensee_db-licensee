@@ -1,3 +1,4 @@
+/*<info serverAlias="DBACC-bodb02,DBEXT-bodb02" executers="" viewers="vnteam" isFunction="1" isNested="0"></info>*/
 ALTER FUNCTION [dbo].[f_ParseTransDesc]
 (
 	@TransDesc NVARCHAR(300)
@@ -11,13 +12,16 @@ AS
 			- If GameId contains of character then set to -1
 			- If TransDesc wrong format then return null
 
-	DB: DBACC/bodb02, DBAGE/bodb02, DBARC/bodb_archive, DBAGE/bodb_Age
+	DB: DBACC/bodb02, DBEXT/bodb02
 	Revisions:
+		- 20171009@Paul: Parse string if not having referID; Check if string has 'betChoice=' pattern [RedmineID: #84541]
 		
 	Paramters Explanation:
-		@TransDesc = 'betChoice=[GaneId],[ChoiceId];referID='
+		Old format: @TransDesc = 'betChoice=[GameId],[ChoiceId];referID='
 			Ex: betChoice=1704525,3;referID=
 
+		New format: @TransDesc = 'betChoice=[GameId],[ChoiceId]'
+			Ex: betChoice=1704525,3
 */
 
 BEGIN 
@@ -26,10 +30,20 @@ BEGIN
 		RETURN
 	IF @BetType < 1501 OR @BetType > 1599
 		RETURN
+	IF PATINDEX('betChoice=%', @TransDesc) = 0
+		RETURN
 	
 	DECLARE @Separate CHAR(1) = ','
 	
-	SET @TransDesc = REPLACE(SUBSTRING(@TransDesc, 0, CHARINDEX(';', @TransDesc)), 'betChoice=', '')
+	IF PATINDEX('%;referID=%', @TransDesc) > 0
+	BEGIN
+		SET @TransDesc = REPLACE(SUBSTRING(@TransDesc, 0, CHARINDEX(';', @TransDesc)), 'betChoice=', '')
+	END
+	ELSE
+	BEGIN
+		SET @TransDesc = REPLACE(@TransDesc, 'betChoice=', '')
+	END
+
 	IF @TransDesc = ''
 		RETURN
 
@@ -57,4 +71,3 @@ BEGIN
 	RETURN
 END
 GO
-GRANT VIEW DEFINITION ON [dbo].[f_ParseTransDesc] TO [vnteam] AS [dbo]
