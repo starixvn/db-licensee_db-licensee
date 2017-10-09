@@ -2,7 +2,7 @@
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportSummaryDetail] 
 	@LicenseeID		INT,	
-	@ProductCode	VARCHAR(20) = NULL,
+	@ProductCodes	VARCHAR(MAX) = NULL,
 	@FromDate		SMALLDATETIME,
 	@ToDate			SMALLDATETIME,
 	@MoveBetsDay	SMALLDATETIME,
@@ -138,7 +138,10 @@ BEGIN
 			SET @TempFromDate = @FDate
 
 		--BA
-		IF @ProductCode IN ('', 'BA')
+		IF EXISTS(	SELECT	ISNULL(Val,'') 	
+				FROM	dbo.strSplit(@ProductCodes,',') 
+				WHERE   ISNULL(Val,'') IN ('', 'BA')	
+				)
 		BEGIN
 			SELECT	@sql = @sql + '-- Get data from bettrans for BA' + CHAR(13)
 
@@ -188,7 +191,11 @@ BEGIN
 		END
 
 		--Not BA
-		IF	@ProductCode IN ('', 'NG', 'SB', 'RB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT')
+		IF EXISTS(	SELECT	ISNULL(Val,'') 	
+				FROM	dbo.strSplit(@ProductCodes,',') 
+				WHERE   ISNULL(Val,'') IN ('', 'NG', 'SB', 'RB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT')
+				)
+				
 		BEGIN
 			SELECT	@sql = @sql + '--Get data from bettrans for non - BA' + CHAR(13)
 
@@ -262,7 +269,10 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 1021 AND 1049 THEN ''LT''' + CHAR(13)
 								+ 'END' + CHAR(13)
 
-			IF @ProductCode IN ('', 'SB')
+			IF EXISTS(	SELECT	ISNULL(Val,'') 	
+				FROM	dbo.strSplit(@ProductCodes,',') 
+				WHERE   ISNULL(Val,'') IN ('', 'SB')	
+				)
 			BEGIN
 				--SB for parlay
 				SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
@@ -305,7 +315,10 @@ BEGIN
 								+ 'GROUP BY  b.winlostdate, t.currency, b.bettype	' + CHAR(13)
 			END
 
-			IF @ProductCode IN ('', 'VS2')
+			IF EXISTS(	SELECT	ISNULL(Val,'') 	
+				FROM	dbo.strSplit(@ProductCodes,',') 
+				WHERE   ISNULL(Val,'') IN ('', 'VS2')	
+				)
 			BEGIN
 				-- Parlay of BetRadar
 				SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
@@ -358,8 +371,10 @@ BEGIN
 			SET @TempToDate = @TDate
 
 		--BA
-		IF @ProductCode = ''
-			OR @ProductCode = 'BA'
+		IF EXISTS(	SELECT	ISNULL(Val,'') 	
+				FROM	dbo.strSplit(@ProductCodes,',') 
+				WHERE   ISNULL(Val,'') IN ('', 'BA')	
+				)
 		BEGIN
 			SELECT	@sql = @sql + '--Get data from rpt_Betting_BA for BA' + CHAR(13)
 
@@ -412,8 +427,11 @@ BEGIN
 								+ 'GROUP BY b.rptDate, b.currencyID, b.bettype' + CHAR(13)
 		END
 
-		--Not BA
-		IF @ProductCode IN ('', 'RB', 'NG', 'SB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT')
+		--Not BA 
+		IF EXISTS(	SELECT	ISNULL(Val,'') 	
+				FROM	dbo.strSplit(@ProductCodes,',') 
+				WHERE   ISNULL(Val,'') IN ('', 'RB', 'NG', 'SB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT')
+				)				
 		BEGIN
 			SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
 								+ 'SELECT b.rptDate, b.currencyID,' + CHAR(13)
@@ -482,7 +500,11 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 1021 AND 1049 THEN ''LT''' + CHAR(13)
 								+ 'END' + CHAR(13)
 
-			IF @ProductCode IN ('', 'SB') 
+
+			IF EXISTS(	SELECT	ISNULL(Val,'') 	
+				FROM	dbo.strSplit(@ProductCodes,',') 
+				WHERE   ISNULL(Val,'') IN ('', 'SB')	
+				)
 			BEGIN
 				-- parlay for SB			
 				SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
@@ -524,7 +546,10 @@ BEGIN
 									+ 'GROUP BY b.rptDate, b.currencyID, b.bettype' + CHAR(13)
 			END
 
-			IF @ProductCode IN ('', 'VS2')
+			IF EXISTS(	SELECT	ISNULL(Val,'') 	
+				FROM	dbo.strSplit(@ProductCodes,',') 
+				WHERE   ISNULL(Val,'') IN ('', 'VS2')	
+				)
 			BEGIN
 				-- Parlay for BetRadar		
 				SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)

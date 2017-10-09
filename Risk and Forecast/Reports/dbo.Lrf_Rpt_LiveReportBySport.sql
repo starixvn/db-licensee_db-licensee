@@ -3,7 +3,7 @@
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportBySport] 
 	@LicenseeID		INT,	
-	@ProductCode	VARCHAR(20) = NULL,
+	@ProductCodes	VARCHAR(MAX) = NULL,
 	@FromDate		SMALLDATETIME,
 	@ToDate			SMALLDATETIME,
 	@MoveBetsDay	SMALLDATETIME,
@@ -139,7 +139,10 @@ BEGIN
 		ELSE
 			SET @TempFromDate = @FDate
 
-		IF @ProductCode IN ('', 'BA')
+		IF EXISTS(	SELECT	ISNULL(Val,'') 	
+				FROM	dbo.strSplit(@ProductCodes,',') 
+				WHERE   ISNULL(Val,'') IN ('', 'BA')	
+				)
 		BEGIN
 			SELECT	@sql = @sql + '--Get data from bettrans for BA' + CHAR(13)
 
@@ -207,8 +210,12 @@ BEGIN
 								+ 'WHEN b.bettype = 2799 THEN 104 -- VS2 Parlay' + CHAR(13)
 								+ 'END ' + CHAR(13)
 		END
-
-		IF @ProductCode IN ('', 'RB', 'NG', 'SB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT')	 
+ 
+		IF EXISTS(	SELECT	ISNULL(Val,'') 	
+				FROM	dbo.strSplit(@ProductCodes,',') 
+				WHERE   ISNULL(Val,'') IN ('', 'RB', 'NG', 'SB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT')	 
+				)
+				
 		BEGIN
 			SELECT	@sql = @sql + '--Get data from bettrans for non-BA' + CHAR(13)
 
@@ -303,7 +310,10 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 1021 AND 1049 THEN 220 -- Lottery' + CHAR(13)
 								+ 'ELSE m.SportType END ' + CHAR(13)
 
-			IF @ProductCode IN ('', 'SB')
+			IF EXISTS(	SELECT	ISNULL(Val,'') 	
+				FROM	dbo.strSplit(@ProductCodes,',') 
+				WHERE   ISNULL(Val,'') IN ('', 'SB')	
+				)
 			BEGIN
 				--SB for parlay
 				SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13) 
@@ -353,7 +363,10 @@ BEGIN
 									+ 'END ' + CHAR(13)
 			END
 
-			IF @ProductCode IN ('', 'VS2')
+			IF EXISTS(	SELECT	ISNULL(Val,'') 	
+				FROM	dbo.strSplit(@ProductCodes,',') 
+				WHERE   ISNULL(Val,'') IN ('', 'VS2')	
+				)
 			BEGIN
 				-- Betradar for parlay
 				SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13) 
@@ -407,7 +420,10 @@ BEGIN
 			SET @TempToDate = @TDate
 
 		--BA
-		IF @ProductCode IN ('', 'BA')
+		IF EXISTS(	SELECT	ISNULL(Val,'') 	
+				FROM	dbo.strSplit(@ProductCodes,',') 
+				WHERE   ISNULL(Val,'') IN ('', 'BA')	
+				)
 		BEGIN
 			SELECT	@sql = @sql + '--Get data from rpt_Betting_BA for BA' + CHAR(13)
 
@@ -478,7 +494,10 @@ BEGIN
 		END
 
 		--Not BA
-		IF @ProductCode IN ('', 'RB', 'NG', 'SB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT')
+		IF EXISTS(	SELECT	ISNULL(Val,'') 	
+				FROM	dbo.strSplit(@ProductCodes,',') 
+				WHERE   ISNULL(Val,'') IN ('', 'RB', 'NG', 'SB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT')	
+				)
 		BEGIN			
 			SELECT	@sql = @sql + '--Get data from rpt_Betting for non-BA' + CHAR(13)
 
@@ -550,7 +569,10 @@ BEGIN
 								+ 'ELSE ISNULL(l.sporttype, 0)' + CHAR(13)
 								+ 'END' + CHAR(13)
 			
-			IF @ProductCode IN ('', 'SB')
+			IF EXISTS(	SELECT	ISNULL(Val,'') 	
+				FROM	dbo.strSplit(@ProductCodes,',') 
+				WHERE   ISNULL(Val,'') IN ('', 'SB')	
+				)
 			BEGIN	
 				-- parlay for SB
 				SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
@@ -597,7 +619,10 @@ BEGIN
 									+ 'END' + CHAR(13)
 			END
 
-			IF @ProductCode IN ('', 'VS2')
+			IF EXISTS(	SELECT	ISNULL(Val,'') 	
+				FROM	dbo.strSplit(@ProductCodes,',') 
+				WHERE   ISNULL(Val,'') IN ('', 'VS2')	
+				)
 			BEGIN
 				-- parlay for BetRadar			
 				SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)

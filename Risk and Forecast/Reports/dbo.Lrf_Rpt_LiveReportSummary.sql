@@ -2,6 +2,7 @@
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportSummary]	
 	@LicenseeID		INT,
+	@ProductCodes	VARCHAR(MAX) = '',
 	@FromDate		SMALLDATETIME,
 	@ToDate			SMALLDATETIME,
 	@MoveBetsDay	SMALLDATETIME,
@@ -54,6 +55,7 @@ Revisions:
 	- 20170721@Harper: Hotfix add AB and FW to LiveReport [RedmineID: #80350]
 	- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 	- 20170814@Harper: One RNG - Offer New Tablet Games [RedmineID: #78424]
+	- 20171009@Sophia: Add ProductCode [RedmineID : #82797]
 
 Param's Explanation:
 	+ @IsLive : indicate that whether the report will get live data or not
@@ -76,7 +78,7 @@ SELECT @DateFrom = DATEADD(DAY, -15, GETDATE())
 SELECT @DateTo = GETDATE()
 SELECT @MoveBetsDay = MAX(eventdate) FROM match14 WITH(NOLOCK)
 
-EXEC [Lrf_Rpt_LiveReportSummary] @LicenseeId = 1, @CurrencyID = 0, @FromDate=@DateFrom, @ToDate=@DateTo, @MoveBetsDay = @MoveBetsDay
+EXEC [Lrf_Rpt_LiveReportSummary] @LicenseeId = 1, @CurrencyID = 0, @FromDate=@DateFrom, @ToDate=@DateTo, @MoveBetsDay = @MoveBetsDay, @ProductCode= NULL
 
 */
 BEGIN
@@ -131,7 +133,11 @@ BEGIN
 	INSERT INTO #currency(currency)
 	SELECT DISTINCT Currency
 	FROM @TempAg
-
+	
+	IF @ProductCodes IS NULL
+		SET @ProductCodes = ''
+	
+	
 	IF @TDate > @MoveBetsDay
 	BEGIN
 		IF @FDate <= @MoveBetsDay
@@ -139,7 +145,12 @@ BEGIN
 		ELSE
 			SET @TempFromDate = @FDate
 
-		--BA
+	--BA
+	IF EXISTS(	SELECT	ISNULL(Val,'') 	
+				FROM	dbo.strSplit(@ProductCodes,',') 
+				WHERE   ISNULL(Val,'') IN ('','BA') 	
+				)
+	BEGIN
 		;WITH CTE AS
 		(
 			SELECT transid FROM bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK)
@@ -171,8 +182,14 @@ BEGIN
 		GROUP BY
 			b.winlostdate,
 			t.currency		
+	END
 
-		--RB
+	--RB
+	IF EXISTS(	SELECT	ISNULL(Val,'') 	
+				FROM	dbo.strSplit(@ProductCodes,',') 
+				WHERE   ISNULL(Val,'') IN ('','RB') 	
+				)
+	BEGIN
 		INSERT INTO #tmpWinloss
 		SELECT
 			b.winlostdate,
@@ -197,8 +214,14 @@ BEGIN
 			b.winlostdate,
 			t.currency,
 			b.bettype
+	END
 
-		--SB
+	--SB
+	IF EXISTS(	SELECT	ISNULL(Val,'') 	
+				FROM	dbo.strSplit(@ProductCodes,',') 
+				WHERE   ISNULL(Val,'') IN ('','SB') 	
+				)
+	BEGIN
 		INSERT INTO #tmpWinloss
 		SELECT
 			b.winlostdate,
@@ -231,8 +254,14 @@ BEGIN
 			b.winlostdate,
 			t.currency,
 			b.bettype
+	END
 
-		--parlay for SB
+	--parlay for SB
+	IF EXISTS(	SELECT	ISNULL(Val,'') 	
+				FROM	dbo.strSplit(@ProductCodes,',') 
+				WHERE   ISNULL(Val,'') IN ('','SB') 	
+				)
+	BEGIN	
 		INSERT INTO #tmpWinloss
 		SELECT
 			b.winlostdate,
@@ -258,8 +287,14 @@ BEGIN
 			b.winlostdate,
 			t.currency,
 			b.bettype
+	END
 		
-		-- Parlay for VS2
+	-- Parlay for VS2
+	IF EXISTS(	SELECT	ISNULL(Val,'') 	
+				FROM	dbo.strSplit(@ProductCodes,',') 
+				WHERE   ISNULL(Val,'') IN ('','VS2') 	
+				)
+	BEGIN	
 		INSERT INTO #tmpWinloss
 		SELECT
 			b.winlostdate,
@@ -285,8 +320,14 @@ BEGIN
 			b.winlostdate,
 			t.currency,
 			b.bettype
+	END
 
-		--Others
+	--Others	
+	IF EXISTS(	SELECT	ISNULL(Val,'') 	
+				FROM	dbo.strSplit(@ProductCodes,',') 
+				WHERE   ISNULL(Val,'') IN ('', 'NG', 'RB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT') 	
+				)
+	BEGIN
 		INSERT INTO #tmpWinloss
 		SELECT
 			b.winlostdate,
@@ -348,6 +389,7 @@ BEGIN
 				WHEN b.bettype BETWEEN 2701 AND 2798 THEN 'VS2'
 				WHEN b.bettype BETWEEN 1021 AND 1049 THEN 'LT'
 			END
+		END
 	END
 
 	IF @FDate <= @MoveBetsDay
@@ -357,6 +399,12 @@ BEGIN
 		ELSE
 			SET @TempToDate = @TDate
 
+	---- BA		
+	IF EXISTS(	SELECT	ISNULL(Val,'') 	
+				FROM	dbo.strSplit(@ProductCodes,',') 
+				WHERE   ISNULL(Val,'') IN ('','BA') 	
+				)
+	BEGIN
 		INSERT INTO #tmpWinloss
 		SELECT
 			b.rptdate,
@@ -388,8 +436,14 @@ BEGIN
 		GROUP BY 
 			b.rptdate,
 			b.currencyID
-
-		-- parlay for BA
+	END
+		
+	-- parlay for BA
+	IF EXISTS(	SELECT	ISNULL(Val,'') 	
+				FROM	dbo.strSplit(@ProductCodes,',') 
+				WHERE   ISNULL(Val,'') IN ('','BA') 	
+				)
+	BEGIN
 		INSERT INTO #tmpWinloss
 		SELECT
 			b.rptdate,
@@ -421,7 +475,14 @@ BEGIN
 		GROUP BY 
 			b.rptdate,
 			b.currencyID
+	END
 
+	----Others
+	IF EXISTS(	SELECT	ISNULL(Val,'') 	
+				FROM	dbo.strSplit(@ProductCodes,',') 
+				WHERE   ISNULL(Val,'') IN ('', 'NG', 'SB', 'RB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT')	
+				)
+	BEGIN
 		INSERT INTO #tmpWinloss
 		SELECT 
 			b.rptDate,
@@ -499,8 +560,14 @@ BEGIN
 				WHEN b.bettype BETWEEN 2701 AND 2799 THEN 'VS2'
 				WHEN b.bettype BETWEEN 1021 AND 1049 THEN 'LT'
 			END
+	END
 
-		-- parlay for SB
+	-- parlay for SB
+	IF EXISTS(	SELECT	ISNULL(Val,'') 	
+				FROM	dbo.strSplit(@ProductCodes,',') 
+				WHERE   ISNULL(Val,'') IN ('','SB') 	
+				)
+	BEGIN
 		INSERT INTO #tmpWinloss
 		SELECT 
 			b.rptDate,
@@ -533,8 +600,15 @@ BEGIN
 		GROUP BY
 			b.rptDate,
 			b.currencyID
-
-		-- parlay for VS2
+	END 
+	
+	
+	-- parlay for VS2
+	IF EXISTS(	SELECT	ISNULL(Val,'') 	
+				FROM	dbo.strSplit(@ProductCodes,',') 
+				WHERE   ISNULL(Val,'') IN ('','VS2') 	
+				)
+	BEGIN		
 		INSERT INTO #tmpWinloss
 		SELECT 
 			b.rptDate,
@@ -565,6 +639,7 @@ BEGIN
 		GROUP BY
 			b.rptDate,
 			b.currencyID
+	END
 	END
 
 	CREATE NONCLUSTERED INDEX IX_tmpWinloss ON #tmpWinloss (Currency)
