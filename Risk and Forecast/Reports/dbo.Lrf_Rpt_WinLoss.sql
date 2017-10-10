@@ -668,7 +668,7 @@ BEGIN
 		BEGIN
 			DELETE d
 			FROM #TempData d
-				LEFT JOIN #tempCust c ON d.custid = c.custid
+				LEFT JOIN #tmpCust c ON d.custid = c.custid
 			WHERE c.custid IS NULL
 		END
 
@@ -806,13 +806,8 @@ BEGIN
 	DROP TABLE #tmpDataDetail
 	DROP TABLE #TempCustID
 	DROP TABLE #TempCustIDFull
+	DROP TABLE #tmpCust
 
 	SET NOCOUNT OFF;
 END
-GO 
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinLoss] TO [vnteam]
-GO 
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_WinLoss] TO [vnteam]
-GO 
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinLoss] TO [bodbLicenseeNet]
-GO 
+GO
