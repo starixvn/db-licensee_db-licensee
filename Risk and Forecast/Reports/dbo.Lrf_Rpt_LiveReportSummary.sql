@@ -136,7 +136,12 @@ BEGIN
 	
 	IF @ProductCodes IS NULL
 		SET @ProductCodes = ''
-	
+		
+	CREATE TABLE #ProductCodes (ProductCode VARCHAR(10))
+
+	INSERT INTO #ProductCodes (ProductCode)
+	SELECT	ISNULL(Val,'') 	
+	FROM	dbo.strSplit(@ProductCodes,',')  
 	
 	IF @TDate > @MoveBetsDay
 	BEGIN
@@ -146,10 +151,7 @@ BEGIN
 			SET @TempFromDate = @FDate
 
 	--BA
-	IF EXISTS(	SELECT	ISNULL(Val,'') 	
-				FROM	dbo.strSplit(@ProductCodes,',') 
-				WHERE   ISNULL(Val,'') IN ('','BA') 	
-				)
+	IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'BA'))
 	BEGIN
 		;WITH CTE AS
 		(
@@ -185,10 +187,7 @@ BEGIN
 	END
 
 	--RB
-	IF EXISTS(	SELECT	ISNULL(Val,'') 	
-				FROM	dbo.strSplit(@ProductCodes,',') 
-				WHERE   ISNULL(Val,'') IN ('','RB') 	
-				)
+	IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'RB'))
 	BEGIN
 		INSERT INTO #tmpWinloss
 		SELECT
@@ -217,10 +216,7 @@ BEGIN
 	END
 
 	--SB
-	IF EXISTS(	SELECT	ISNULL(Val,'') 	
-				FROM	dbo.strSplit(@ProductCodes,',') 
-				WHERE   ISNULL(Val,'') IN ('','SB') 	
-				)
+	IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'SB'))
 	BEGIN
 		INSERT INTO #tmpWinloss
 		SELECT
@@ -257,10 +253,7 @@ BEGIN
 	END
 
 	--parlay for SB
-	IF EXISTS(	SELECT	ISNULL(Val,'') 	
-				FROM	dbo.strSplit(@ProductCodes,',') 
-				WHERE   ISNULL(Val,'') IN ('','SB') 	
-				)
+	IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'SB'))
 	BEGIN	
 		INSERT INTO #tmpWinloss
 		SELECT
@@ -290,10 +283,7 @@ BEGIN
 	END
 		
 	-- Parlay for VS2
-	IF EXISTS(	SELECT	ISNULL(Val,'') 	
-				FROM	dbo.strSplit(@ProductCodes,',') 
-				WHERE   ISNULL(Val,'') IN ('','VS2') 	
-				)
+	IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'VS2'))
 	BEGIN	
 		INSERT INTO #tmpWinloss
 		SELECT
@@ -323,10 +313,7 @@ BEGIN
 	END
 
 	--Others	
-	IF EXISTS(	SELECT	ISNULL(Val,'') 	
-				FROM	dbo.strSplit(@ProductCodes,',') 
-				WHERE   ISNULL(Val,'') IN ('', 'NG', 'RB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT') 	
-				)
+	IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'NG', 'RB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT'))			
 	BEGIN
 		INSERT INTO #tmpWinloss
 		SELECT
@@ -400,10 +387,7 @@ BEGIN
 			SET @TempToDate = @TDate
 
 	---- BA		
-	IF EXISTS(	SELECT	ISNULL(Val,'') 	
-				FROM	dbo.strSplit(@ProductCodes,',') 
-				WHERE   ISNULL(Val,'') IN ('','BA') 	
-				)
+	IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'BA'))
 	BEGIN
 		INSERT INTO #tmpWinloss
 		SELECT
@@ -439,10 +423,7 @@ BEGIN
 	END
 		
 	-- parlay for BA
-	IF EXISTS(	SELECT	ISNULL(Val,'') 	
-				FROM	dbo.strSplit(@ProductCodes,',') 
-				WHERE   ISNULL(Val,'') IN ('','BA') 	
-				)
+	IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'BA'))
 	BEGIN
 		INSERT INTO #tmpWinloss
 		SELECT
@@ -478,10 +459,7 @@ BEGIN
 	END
 
 	----Others
-	IF EXISTS(	SELECT	ISNULL(Val,'') 	
-				FROM	dbo.strSplit(@ProductCodes,',') 
-				WHERE   ISNULL(Val,'') IN ('', 'NG', 'SB', 'RB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT')	
-				)
+	IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'RB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT')	)
 	BEGIN
 		INSERT INTO #tmpWinloss
 		SELECT 
@@ -563,10 +541,7 @@ BEGIN
 	END
 
 	-- parlay for SB
-	IF EXISTS(	SELECT	ISNULL(Val,'') 	
-				FROM	dbo.strSplit(@ProductCodes,',') 
-				WHERE   ISNULL(Val,'') IN ('','SB') 	
-				)
+	IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'SB'))
 	BEGIN
 		INSERT INTO #tmpWinloss
 		SELECT 
@@ -604,10 +579,7 @@ BEGIN
 	
 	
 	-- parlay for VS2
-	IF EXISTS(	SELECT	ISNULL(Val,'') 	
-				FROM	dbo.strSplit(@ProductCodes,',') 
-				WHERE   ISNULL(Val,'') IN ('','VS2') 	
-				)
+	IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'VS2'))
 	BEGIN		
 		INSERT INTO #tmpWinloss
 		SELECT 
@@ -641,6 +613,11 @@ BEGIN
 			b.currencyID
 	END
 	END
+	
+	----Filter again by ProductCodes
+	DELETE #tmpWinloss 
+	WHERE  ProductCode NOT IN (SELECT ProductCode FROM #ProductCodes)
+	---------------------------------
 
 	CREATE NONCLUSTERED INDEX IX_tmpWinloss ON #tmpWinloss (Currency)
 
