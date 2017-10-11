@@ -123,10 +123,17 @@ BEGIN
 						+ 'SELECT ErrCode = 100, ErrMsg = N''Paramter invalid.''' + CHAR(13)
 						+ 'RETURN' + CHAR(13)
 						+ 'END CATCH;' + CHAR(13)
-						+ 'CREATE TABLE #currency(currency INT)' + CHAR(13)
-						+ 'INSERT INTO #currency(currency)' + CHAR(13)
-						+ 'SELECT DISTINCT Currency' + CHAR(13)
-						+ 'FROM @TempAg' + CHAR(13)
+						+ 'CREATE TABLE #LicenseeList(LicenseeID INT, Currency INT)' + CHAR(13)
+						+ 'CREATE CLUSTERED INDEX IX_LicenseeList_cl ON #LicenseeList(LicenseeID, Currency)' + CHAR(13)
+						+ 'INSERT INTO #LicenseeList(LicenseeID, Currency)' + CHAR(13)
+						+ 'SELECT DISTINCT LicenseeID, Currency' + CHAR(13)
+						+ 'FROM bodb_licensee.dbo.LicenseeCust lc WITH(NOLOCK)' + CHAR(13)
+						+ 'WHERE EXISTS(' + CHAR(13)
+						+ '		   SELECT 1' + CHAR(13)
+						+ '		   FROM @TempAg t' + CHAR(13)
+						+ '		   WHERE t.CustId = lc.CustID' + CHAR(13)
+						+ '			   AND t.Currency = lc.Currency' + CHAR(13)
+						+ '	   )' + CHAR(13)
 
 
 	IF @ProductCodes IS NULL
@@ -253,7 +260,7 @@ BEGIN
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','AB')) = 1 THEN 'OR b.bettype BETWEEN 2401 AND 2499' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VS2')) = 1 THEN 'OR b.bettype BETWEEN 2701 AND 2799' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','LT')) = 1 THEN 'OR b.bettype BETWEEN 1021 AND 1049' + CHAR(13) ELSE '' END 
-								+ ') AND b.bettype NOT BETWEEN 2001 AND 2009 AND b.bettype NOT BETWEEN 4001 AND 4099 AND b.bettype NOT BETWEEN 2501 AND 2699 ' + CHAR(13)
+								+ ') ' + CHAR(13)
 								+ 'GROUP BY  b.winlostdate, t.currency, b.bettype,' + CHAR(13)
 								+ 'CASE' + CHAR(13)		
 								+ 'WHEN b.bettype < 31 OR b.bettype BETWEEN 121 AND 999 OR b.Bettype BETWEEN 1301 and 1399 THEN ''SB''' + CHAR(13)			
@@ -354,12 +361,11 @@ BEGIN
 								+ '- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13)
 								+ 'SUM(b.betcount) BetCount' + CHAR(13)
 								+ 'FROM bodb_licenseereport.dbo.rpt_Betting_BA b WITH ( NOLOCK )' + CHAR(13)
-								+ 'INNER JOIN #currency c ON b.CurrencyID = c.Currency' + CHAR(13)
+								+ 'INNER JOIN #LicenseeList l ON b.SiteID = l.LicenseeID AND b.CurrencyID = l.Currency' + CHAR(13)
 								+ 'WHERE b.rptDate BETWEEN ''' + CONVERT(VARCHAR(10), @FDate, 120) + ''' AND ''' + CONVERT(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13)
 								+ 'AND b.status NOT IN (-1,103)' + CHAR(13)
 								+ 'AND b.bettype NOT IN (9,29,2799,901,902,903,904)' + CHAR(13)
 								+ 'AND (b.bettype < 911 OR b.bettype > 914)' + CHAR(13)
-								+ 'AND b.siteID =' + CONVERT(VARCHAR(10), @LicenseeID) + CHAR(13)
 								+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13)
 								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13)
 								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)								
@@ -379,12 +385,11 @@ BEGIN
 								+ '- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13)
 								+ 'SUM(b.betcount) BetCount' + CHAR(13)
 								+ 'FROM bodb_LicenseeReport.dbo.rpt_BettingParlay b WITH (NOLOCK)' + CHAR(13)
-								+ 'INNER JOIN #currency c ON b.CurrencyID = c.Currency' + CHAR(13)
+								+ 'INNER JOIN #LicenseeList l ON b.SiteID = l.LicenseeID AND b.CurrencyID = l.Currency' + CHAR(13)
 								+ 'WHERE b.rptDate BETWEEN ''' + CONVERT(VARCHAR(10), @FDate, 120) + ''' AND ''' + CONVERT(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13)
 								+ 'AND b.status NOT IN (-1,103)' + CHAR(13)
 								+ 'AND b.bettype IN (9,29,2799)' + CHAR(13)
 								+ 'AND b.isBA = 1' + CHAR(13)
-								+ 'AND b.siteID =' + CONVERT(VARCHAR(10), @LicenseeID) + CHAR(13)
 								+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13)
 								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13)
 								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
@@ -419,7 +424,7 @@ BEGIN
 								+ '- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13)
 								+ 'SUM(b.betcount) BetCount' + CHAR(13)
 								+ 'FROM bodb_licenseereport.dbo.rpt_Betting b WITH ( NOLOCK )' + CHAR(13)
-								+ 'INNER JOIN #currency c ON b.CurrencyID = c.Currency' + CHAR(13)
+								+ 'INNER JOIN #LicenseeList l ON b.SiteID = l.LicenseeID AND b.CurrencyID = l.Currency' + CHAR(13)
 								+ 'WHERE b.rptDate BETWEEN ''' + CONVERT(VARCHAR(10), @FDate, 120) + ''' AND ''' + CONVERT(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13)
 								+ 'AND b.status NOT IN (-1,103)' + CHAR(13)
 								+ 'AND b.bettype NOT IN (9,29,2799,1700,1800,1900,901,902,903,904,18000)' + CHAR(13)
@@ -428,7 +433,7 @@ BEGIN
 								+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13)
 								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13)
 								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
-								+ 'AND b.siteID =' + CONVERT(VARCHAR(10), @LicenseeID) + CHAR(13) + 'AND (1 <> 1' + CHAR(13)
+								+ 'AND (1 <> 1' + CHAR(13)
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','NG')) = 1 THEN 'OR b.bettype BETWEEN 81 AND 120 '+ CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SB')) = 1 THEN 'OR (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 and 1399))' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','RB')) = 1 THEN 'OR b.bettype BETWEEN 31 AND 33' + CHAR(13) ELSE '' END
@@ -442,7 +447,7 @@ BEGIN
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','AB')) = 1 THEN 'OR b.bettype BETWEEN 2401 AND 2499' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VS2')) = 1 THEN 'OR b.bettype BETWEEN 2701 AND 2799' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','LT')) = 1 THEN 'OR b.bettype BETWEEN 1021 AND 1049' + CHAR(13) ELSE '' END 
-								+ ') AND b.bettype NOT BETWEEN 2001 AND 2009 AND b.bettype NOT BETWEEN 4001 AND 4099 AND b.bettype NOT BETWEEN 2501 AND 2699 ' + CHAR(13)
+								+ ') ' + CHAR(13)
 								+ 'GROUP BY b.rptDate, b.currencyID, b.bettype,' + CHAR(13)
 								+ 'CASE' + CHAR(13)		
 								+ 'WHEN b.bettype < 31 OR b.bettype BETWEEN 121 AND 999 OR b.Bettype BETWEEN 1301 and 1399 THEN ''SB''' + CHAR(13)			
@@ -476,15 +481,14 @@ BEGIN
 									+ '- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13)
 									+ 'sum(b.betcount) BetCount' + CHAR(13)
 									+ 'FROM bodb_LicenseeReport.dbo.rpt_BettingParlay b WITH ( NOLOCK )' + CHAR(13)
-									+ 'INNER JOIN #currency c ON b.CurrencyID = c.Currency' + CHAR(13)
+									+ 'INNER JOIN #LicenseeList l ON b.SiteID = l.LicenseeID AND b.CurrencyID = l.Currency' + CHAR(13)
 									+ 'WHERE b.rptDate BETWEEN ''' + convert(VARCHAR(10), @FDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13)
 									+ 'AND b.status NOT IN (-1,103)' + CHAR(13)
 									+ 'AND b.bettype IN (9,29)' + CHAR(13)
 									+ 'AND b.isBA = 0' + CHAR(13)
 									+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13)
 									+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13)
-									+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
-									+ 'AND b.siteID =' + convert(VARCHAR(10), @LicenseeID) + CHAR(13)					
+									+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)					
 									+ 'GROUP BY b.rptDate, b.currencyID, b.bettype' + CHAR(13)
 			END
 
@@ -503,15 +507,14 @@ BEGIN
 									+ '- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13)
 									+ 'sum(b.betcount) BetCount' + CHAR(13)
 									+ 'FROM bodb_LicenseeReport.dbo.rpt_BettingParlay b WITH ( NOLOCK )' + CHAR(13)
-									+ 'INNER JOIN #currency c ON b.CurrencyID = c.Currency' + CHAR(13)
+									+ 'INNER JOIN #LicenseeList l ON b.SiteID = l.LicenseeID AND b.CurrencyID = l.Currency' + CHAR(13)
 									+ 'WHERE b.rptDate BETWEEN ''' + convert(VARCHAR(10), @FDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13)
 									+ 'AND b.status NOT IN (-1,103)' + CHAR(13)
 									+ 'AND b.bettype IN (2799)' + CHAR(13)
 									+ 'AND b.isBA = 0' + CHAR(13)
 									+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13)
 									+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13)
-									+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
-									+ 'AND b.siteID =' + convert(VARCHAR(10), @LicenseeID) + CHAR(13)			
+									+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)		
 									+ 'GROUP BY b.rptDate, b.currencyID, b.bettype' + CHAR(13)
 			END
 		END
@@ -595,7 +598,7 @@ BEGIN
 						+ 'ORDER BY CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.GroupTypeID ELSE b.bettype END' + CHAR(13)
 						+ 'DROP TABLE #tmpWinloss' + CHAR(13)
 						+ 'DROP TABLE #TempExchange' + CHAR(13)	
-						+ 'DROP TABLE #currency' + CHAR(13)					
+						+ 'DROP TABLE #LicenseeList' + CHAR(13)					
 
 	IF @Debug = 1
 		PRINT @sql
