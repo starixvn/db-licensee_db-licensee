@@ -58,7 +58,7 @@ Revisions:
 	- 20150513@Jim: set SB comm of BA member when BA status changing
 	- 20151015@Jim: Integrate Sportbook2 (Feature #44759)
 	- 20170509@Winnie: LRF-Set back VR setting=0 for BA members [RedmineID:#76231]
-	- 20170602@Harper: LRF - Edit for Bonus system [RedmineID: #72792]
+	- 20171012@Winnie: LRF - Edit for Bonus system [RedmineID: #72792]
 
 Param's Explanation:
 
@@ -231,7 +231,7 @@ IF @isBA = 1 --enable BA
 		END
 
 		-- Check Member belong the Bonus campaign or not
-		IF EXISTS (SELECT 1 FROM dbo.custInfo WITH (NOLOCK) WHERE custid = @CustID AND ISNULL(WalletFlag, 0) = 1)
+		IF EXISTS (SELECT 1 FROM dbo.custInfo WITH (NOLOCK) WHERE custid = @CustID AND ISNULL(BonusWalletFlag, 0) = 1)
 		BEGIN
 			SELECT @ErrMsg = CASE @Langkey 
 								WHEN 'en-US' THEN 'Cannot turn on BA for customers joining Bonus campaign.'
