@@ -1,0 +1,4 @@
+Risk and Forecast/Reports/dbo.Lrf_Rpt_LiveReportSummaryDetail.sql
+Risk and Forecast/Reports/dbo.Lrf_Rpt_MatchWinLossByBettype.sql
+Risk and Forecast/Reports/dbo.Lrf_Rpt_MatchWinLossDetail.StoredProcedure.sql
+Risk and Forecast/Reports/dbo.Lrf_Rpt_WinLossByBettype.proc.sql

@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+﻿/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 USE [bodb02]
 GO
  
@@ -65,6 +65,7 @@ Revision:
 	- 20160720@Jim : Implement 67 new bet types (PH All in one - Phase 2) [Redmine : #53520]
 	- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID [Redmine: #71679]
 	- 20170707@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
+	- 20170919@Percy: Change way get SportBettypeMatrix [RedmineID: #83442]
 	- 20171006@Percy: Hotfix - Add missing mutilple odds bettypes [RedmineID: #84457]
 		1. Basketball (603-607, 609-613, 615-617)
 		2. Virtual Sports 2 (2701-2707)
@@ -207,7 +208,7 @@ BEGIN
 	DECLARE @isTest BIT = 0
 	SELECT  @isTest = dbo.f_CheckSPVersion(@@PROCID)
 
-	DECLARE @SportBettype TABLE(ProductID INT, Bettype INT,EventType INT)
+	DECLARE @SportBettype TABLE (ProductID INT, Bettype INT, EventType INT)
 	INSERT INTO @SportBettype (ProductID, Bettype, EventType)
 	SELECT ProductID, Bettype, EventType
 	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', '', @isTest)
