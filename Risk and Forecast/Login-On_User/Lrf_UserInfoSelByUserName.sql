@@ -9,7 +9,8 @@ GO
 /****** Object:  Stored Procedure dbo.Lrf_UserInfoSel    Script Date: 10/5/2011 5:41:07 PM ******/
 ALTER PROCEDURE [dbo].[Lrf_UserInfoSelByUserName] 
 	 @UserName	NVARCHAR(50)
-	,@LicenseeId	INT = 0
+	, @LicenseeId	INT = 0,
+	 @isInternal INT 
 AS
 /*
 	Created by: [20141028@Florent.Nguyen ]
@@ -18,6 +19,9 @@ AS
 	DB: DB052.bodb_Licensee
 	Revisions:
 		20170906@Harper: Get User with Status is Open [RedmineID: #82675]
+		20171013@Alex  : Query user by system type
+		//@isInternal = 0 :IT Admin system
+		//@isInternal =1  : Internal admin and LAP system
 	
 */
 SET NOCOUNT ON
@@ -31,8 +35,8 @@ SELECT DISTINCT  u.UserID
 	  ,u.isInternal AS IsInternal
 	  ,u.UserSalt
 FROM dbo.Users u(NOLOCK)
-     INNER JOIN dbo.LicenseeUser l(NOLOCK) ON u.UserID = l.UserID
-WHERE u.Username = @UserName AND u.Status = 'Open'
+     INNER JOIN dbo.LicenseeUser l(NOLOCK) ON u.UserID = l.UserID and u.isInternal=@isInternal
+WHERE u.Username = @UserName
 	AND (
 		@LicenseeId = 0
 		OR (
@@ -40,6 +44,8 @@ WHERE u.Username = @UserName AND u.Status = 'Open'
 			AND l.LicenseeID = @LicenseeId
 			)
 		)
+
+		
 
 GO
 

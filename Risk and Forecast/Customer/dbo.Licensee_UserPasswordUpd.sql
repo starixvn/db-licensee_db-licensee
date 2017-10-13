@@ -26,6 +26,7 @@ AS
  * Revisions:     
 	20140512@jim: add more filter (status='Open')
 	20151023@Victor: Support New Simplified Chinese
+	20171013@Alex  : only support to change password for it account
 */  
 BEGIN  
 SET NOCOUNT ON;  
