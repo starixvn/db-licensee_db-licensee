@@ -19,7 +19,7 @@ AS
 	DB: DB052.bodb_Licensee
 	Revisions:
 		20170906@Harper: Get User with Status is Open [RedmineID: #82675]
-		20171013@Alex  : Query user by system type
+		20171013@Alex  : Query user by system type [RedmineID: #84901]
 		//@isInternal = 0 :IT Admin system
 		//@isInternal =1  : Internal admin and LAP system
 	
