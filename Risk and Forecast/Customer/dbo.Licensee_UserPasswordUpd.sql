@@ -26,13 +26,14 @@ AS
  * Revisions:     
 	20140512@jim: add more filter (status='Open')
 	20151023@Victor: Support New Simplified Chinese
+	20171013@Alex  : only support to change password for it account [RedmineID: #84901]
 */  
 BEGIN  
 SET NOCOUNT ON;  
 
 Declare @UserId int
 
-SELECT @UserId = UserId from Users with (nolock) where Username = @UserName and UserPwd = @OldPwd 
+SELECT @UserId = UserId from Users with (nolock) where Username = @UserName and UserPwd = @OldPwd and isInternal=0
 
 If isnull(@UserId, 0) = 0
 Begin
@@ -65,7 +66,7 @@ End
 UPDATE dbo.Users   with (ROWLOCK)
 SET UserPwd = @NewPwd,   
   UserSalt = @UserSalt  
-WHERE Username = @UserName  
+WHERE Username = @UserName and isInternal=0
   AND status='Open'
  IF (@@ERROR > 0)  
   SELECT @ErrCode = 100, @ErrMsg = 'Cannot change password'  
