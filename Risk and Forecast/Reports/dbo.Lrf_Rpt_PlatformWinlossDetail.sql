@@ -38,15 +38,17 @@ AS
 		- 20170706@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
 		- 20170802@Sophia: Add new betfrom [redmine: #80687]
 		- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
+		- 20171020@Harper: LRF - Add "New Asia" in platform list [RedmineID: #85203]
 
 	Param's Explanation:  
 	  + @PlatformType:  0: All  
-						1: Asia (d, g, x)  
+						1: Asia (d, g)  
 						2: China (a, z)
 						3: Euro (e, u , y) (and Euro 12bet (u))
 						4: WAP (m)    
 						5: SMART SITE (s,l)  
 						6: TABLET (r)   
+						7: New Asia (x)
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover onlly)
 	  + @excludeTest: remove currency UUS
 	  + @showSB: Show SportsBook bets
@@ -140,7 +142,7 @@ BEGIN
 				(5, 'l'),
 				(1, 'g'),
 				(6, 'r'),
-				(1, 'x'),
+				(7, 'x'),
 				(3, 'y'),
 				(2, 'z')
 	) d(PlatformType, betfrom)

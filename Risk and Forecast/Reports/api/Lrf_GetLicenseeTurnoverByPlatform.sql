@@ -1,5 +1,5 @@
  /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
-CREATE PROCEDURE [dbo].[Lrf_GetLicenseeTurnoverByPlatform]   
+ALTER PROCEDURE [dbo].[Lrf_GetLicenseeTurnoverByPlatform]   
 	 @LicenseeID	INT,
 	 @CurrencyIDList VARCHAR(500)  = 0,
 	 @FromDate		SMALLDATETIME,  
@@ -18,6 +18,7 @@ AS
 		- 20170808@Walter: Support UUS currency [RedmineID: #80855]
 		- 20170802@Sophia: Add new Flatfrom [redmine: #80687]
 		- 20170814@Alex  : Restrict permission by currency  [RedmineID: #80855]
+		- 20171020@Harper: LRF - Add "New Asia" in platform list [RedmineID: #85203]
 
 	Param's Explanation:  
 */
@@ -70,7 +71,7 @@ BEGIN
 				(5, 'l'),
 				(1, 'g'),
 				(6, 'r'),
-				(1, 'x'),
+				(7, 'x'),
 				(3, 'y'),
 				(2, 'z')
 	) d(PlatformType, betfrom);
