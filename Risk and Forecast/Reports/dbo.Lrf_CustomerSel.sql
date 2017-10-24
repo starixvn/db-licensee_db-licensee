@@ -1,5 +1,4 @@
-USE [bodb02]
-GO
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" viewers="vnteam" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_CustomerSel]
 	@LicenseeID		INT,
 	@username		VARCHAR(50) = NULL,
@@ -56,6 +55,7 @@ AS
 		- 20161122@Francis: Use dynamic query to enhance performance [Redmine: #66801]
 		- 20161226@Francis: Hotfix BA filter with username syntax error when building dynamic string
 		- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, Remove @LicenseeType [Redmine: #71679]
+		- 20171017@Johnson: offer comm for Allbet [Redmine: #82036]
 	Param's Explanation:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 		+ @SpecialLevel: default value = -1 (all)
@@ -578,6 +578,7 @@ BEGIN
 		ISNULL(lc.LCComm, 0) AS LCComm,
 		ISNULL(lc.RNGComm, 0) AS RNGComm,
 		ISNULL(lc.ParlayComm, 0) AS ParlayComm,
+		ISNULL(lc.AllbetComm,0) AS AllbetComm,
 		ISNULL(lg.id, 0) AS GroupCommID,
 		ISNULL(UPPER(t.ugroup), '') AS OddsGroup
 	FROM #Temp t
@@ -602,8 +603,3 @@ BEGIN
 	DROP TABLE #TempMember
 END
 GO
-GRANT EXECUTE ON [dbo].[Lrf_CustomerSel] TO [bodbDownlineNet] AS [dbo]
-GO
-GRANT EXECUTE ON [dbo].[Lrf_CustomerSel] TO [bodbLicenseeNet] AS [dbo]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerSel] TO [vnteam] AS [dbo]
