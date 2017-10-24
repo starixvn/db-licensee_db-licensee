@@ -110,7 +110,7 @@ BEGIN
 	BEGIN
 		IF EXISTS(SELECT TOP 1 1 
 					FROM dbo.Dep_CustSettingMode WITH(NOLOCK)
-					WHERE CustID IN (SELECT custid FROM @res) AND isGroupComm = 1)
+					WHERE CustID IN (SELECT custid FROM @res) AND isGroupedComm = 1)
 		BEGIN
 			DECLARE @AgentID INT 
 			
@@ -138,7 +138,7 @@ BEGIN
 			CROSS APPLY (SELECT custid
 						FROM dbo.Dep_CustSettingMode WITH(NOLOCK)
 						WHERE CustID IN (SELECT custid FROM @res) 
-							AND isGroupComm = 1) t
+							AND isGroupedComm = 1) t
 			LEFT JOIN dbo.Dep_CustDiscountSetting_Member cs WITH(NOLOCK) ON cs.custid = t.custid
 																		AND cs.sporttype = grp.sporttype
 																		AND cs.bettype = grp.bettype
@@ -146,9 +146,9 @@ BEGIN
 				AND cs.custid IS NULL
 			
 			UPDATE dbo.Dep_CustSettingMode WITH(UPDLOCK,ROWLOCK)
-			SET	isGroupComm = 0		
+			SET	isGroupedComm = 0		
 			WHERE custid IN (SELECT custid FROM @res)
-				AND isGroupComm = 1
+				AND isGroupedComm = 1
 		END		
 		
 		UPDATE dbo.Dep_CustDiscountSetting_Member WITH(UPDLOCK,ROWLOCK)
