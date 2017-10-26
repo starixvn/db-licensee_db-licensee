@@ -1,4 +1,4 @@
-/*<info serverAlias="DBLic-bodb_Licensee" executers="bodbLicenseeNet,bodbAdminNet,Dot_Member" viewers="vnteam" isFunction="0"></info>*/
+/*<info serverAlias="DBLOG-bodb_CustomerLog" executers="bodbLicenseeNet,bodbAdminNet,Dot_Member" viewers="vnteam" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[WriteLog_UserLog_UpdMemComm_RunSP]
 		@UserID INT,
 		@strCustID VARCHAR(MAX) = NULL,
