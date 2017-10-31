@@ -26,6 +26,7 @@ AS
 	- 20160425@Francis: return rates of the latest day that has full ExchangeRate in ExchangeDailyOanda table in case current date's rates are missing
 	- 20160914@Jim:  Add HKD base currency into OANDA Exchange rate [RedmineID : #63975]
 	- 20170613@Paul: return THB, IDR rates [RedmineID: #75030]
+	- 20171031@Harper: Fix rate for IDR currency [RedmineID: #85203]
 */
 BEGIN
 
@@ -85,7 +86,7 @@ BEGIN
 	WHILE (@tmpDate<=@tmpToDate AND @tmpDate<=@todate)
 	BEGIN
 		INSERT INTO @tempDate (exchangedate,ExchangeId,Code,MYR, USD, EUR, CNY, GBP, HKD, THB, IDR, actualrate)
-		SELECT @tmpDate,ExchangeId,Code,MYR, USD, EUR, CNY, GBP, HKD, THB, IDR, actualrate
+		SELECT @tmpDate,ExchangeId,Code,MYR, USD, EUR, CNY, GBP, HKD, THB, IDR / 1000 AS IDR, actualrate
 		FROM ExchangeDailyOanda WITH (NOLOCK)
 		WHERE ExchangeDate = CASE WHEN @tmpToDate > @ReferencedExchangeDate THEN @ReferencedExchangeDate ELSE @tmpToDate END
 	
