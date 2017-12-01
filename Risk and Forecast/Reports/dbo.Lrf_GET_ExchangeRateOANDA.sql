@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBLIC-bodb_Licensee" executers="bodbAdminNet,bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested=”0”></info>*/
+﻿/*<info serverAlias="DBLIC-bodb_Licensee" executers="bodbAdminNet,bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER  PROCEDURE [dbo].[Lrf_GET_ExchangeRateOANDA]
 	@Fromdate DATETIME=NULL,
 	@ToDate DATETIME=NULL 
@@ -12,6 +12,7 @@ AS
 	- 20150422@Victor: support to view more currencies
 	- 20160413@Victor: support MKK currency code
 	- 20170410@Sophia: Get 3 base rate columns of KWR, JPY, HKD [Redmine: #64238]
+	- 20171124@Harper: Get TWD and PHP currencies from OANDA [RedmindID: #87042]
 
  * Param's Explanation:    
 
@@ -45,7 +46,9 @@ SELECT
 	edo.VND / 1000 AS 'INH',
 	edo.KRW,
 	edo.JPY,
-	edo.HKD
+	edo.HKD,
+	edo.TWD,
+	edo.PHP
 FROM bodb02.dbo.ExchangeDailyOanda edo (NOLOCK)
 WHERE 
 	edo.ExchangeDate>=@fromdate AND edo.ExchangeDate<=@todate 
