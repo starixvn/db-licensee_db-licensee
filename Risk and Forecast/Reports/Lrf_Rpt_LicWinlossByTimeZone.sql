@@ -505,7 +505,7 @@ BEGIN
 	
 	INSERT INTO #Exchange(FirstExchangeDateByMonth, LastExchangeDateByMonth, ExchangeID, Code, MYR, USD, EUR, CNY, GBP, HKD, THB, IDR)
 	SELECT FirstExchangeDateByMonth, LastExchangeDateByMonth, ExchangeID, Code, MYR, USD, EUR, CNY, GBP, HKD, THB, IDR
-	FROM bodb02.dbo.LRF_f_SubExchangedailySel(@MinDate, @MaxDate)
+	FROM bodb02.dbo.Lrf_f_GetSubExchangeDaily(@MinDate, @MaxDate)
 	-- #End: Get Exchange Rate
 
 	-- #Start: Get Report
