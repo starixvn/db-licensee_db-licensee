@@ -25,6 +25,7 @@ Revisions:
 	    + Separate custDB to new server DBCUST 	
 	- 20160805@Jim: LRF - Offer different member commission for parlay tickets [RedmineID:#61897]
 	- 20171020@Johnson: offer Allbet commision [Redmine: #82036]
+	- 20171201@Johnson: enhance AB comm setting, dont move individual setting if not change comm AB [Redmine: #87352]
 Param's Explanation:
 • @ErrCode:
     = 0: Transaction recorded successfully.
@@ -118,37 +119,47 @@ BEGIN
 			FROM dbo.CustInfo WITH(NOLOCK)
 			WHERE custid IN (SELECT top 1 custid FROM @res)
 			
-			--move to individual setting
-			INSERT INTO dbo.Dep_CustDiscountSetting_Member
-				(CustID
-				,SportType
-				,BetType
-				,PlayerDiscount
-				,AgentDiscount
-				,MasterDiscount
-				,SuperDiscount)
-			SELECT t.CustID
-				,grp.SportType
-				,grp.BetType
-				,grp.PlayerDiscount
-				,grp.AgentDiscount
-				,grp.MasterDiscount
-				,grp.SuperDiscount
-			FROM dbo.Dep_CustDiscountGroupSetting_Member grp WITH(NOLOCK)
-			CROSS APPLY (SELECT custid
-						FROM dbo.Dep_CustSettingMode WITH(NOLOCK)
-						WHERE CustID IN (SELECT custid FROM @res) 
-							AND isGroupedComm = 1) t
-			LEFT JOIN dbo.Dep_CustDiscountSetting_Member cs WITH(NOLOCK) ON cs.custid = t.custid
-																		AND cs.sporttype = grp.sporttype
-																		AND cs.bettype = grp.bettype
-			WHERE AgentID = @AgentID
-				AND cs.custid IS NULL
-			
-			UPDATE dbo.Dep_CustSettingMode WITH(UPDLOCK,ROWLOCK)
-			SET	isGroupedComm = 0		
-			WHERE custid IN (SELECT custid FROM @res)
-				AND isGroupedComm = 1
+			--check if setting change really or not before move
+			IF EXISTS(SELECT 1
+					FROM dbo.Dep_CustDiscountGroupSetting_Member grp WITH(NOLOCK)
+					WHERE AgentID = @AgentID
+						AND sporttype = 211
+						AND bettype = 2401
+						AND playerdiscount <> @AllbetComm
+					)
+			BEGIN		
+				--move to individual setting
+				INSERT INTO dbo.Dep_CustDiscountSetting_Member
+					(CustID
+					,SportType
+					,BetType
+					,PlayerDiscount
+					,AgentDiscount
+					,MasterDiscount
+					,SuperDiscount)
+				SELECT t.CustID
+					,grp.SportType
+					,grp.BetType
+					,grp.PlayerDiscount
+					,grp.AgentDiscount
+					,grp.MasterDiscount
+					,grp.SuperDiscount
+				FROM dbo.Dep_CustDiscountGroupSetting_Member grp WITH(NOLOCK)
+				CROSS APPLY (SELECT custid
+							FROM dbo.Dep_CustSettingMode WITH(NOLOCK)
+							WHERE CustID IN (SELECT custid FROM @res) 
+								AND isGroupedComm = 1) t
+				LEFT JOIN dbo.Dep_CustDiscountSetting_Member cs WITH(NOLOCK) ON cs.custid = t.custid
+																			AND cs.sporttype = grp.sporttype
+																			AND cs.bettype = grp.bettype
+				WHERE AgentID = @AgentID
+					AND cs.custid IS NULL
+				
+				UPDATE dbo.Dep_CustSettingMode WITH(UPDLOCK,ROWLOCK)
+				SET	isGroupedComm = 0		
+				WHERE custid IN (SELECT custid FROM @res)
+					AND isGroupedComm = 1
+			END		
 		END		
 		
 		UPDATE dbo.Dep_CustDiscountSetting_Member WITH(UPDLOCK,ROWLOCK)
