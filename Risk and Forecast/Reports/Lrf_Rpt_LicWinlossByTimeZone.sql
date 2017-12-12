@@ -471,6 +471,16 @@ BEGIN
 			SUM(LicenseeWL*GBP) AS LicenseeWLGBP, 
 			SUM(LicenseeComm*GBP) AS LicenseeCommGBP,
 
+			SUM(Turnover*HKD) AS TurnoverHKD,
+			SUM(PlayerComm*HKD) AS PlayerCommHKD, 
+			SUM(LicenseeWL*HKD) AS LicenseeWLHKD, 
+			SUM(LicenseeComm*HKD) AS LicenseeCommHKD,
+
+			SUM(Turnover*THB) AS TurnoverTHB,
+			SUM(PlayerComm*THB) AS PlayerCommTHB, 
+			SUM(LicenseeWL*THB) AS LicenseeWLTHB, 
+			SUM(LicenseeComm*THB) AS LicenseeCommTHB,
+
 			SUM(Turnover*IDR) AS TurnoverIDR,
 			SUM(PlayerComm*IDR) AS PlayerCommIDR, 
 			SUM(LicenseeWL*IDR) AS LicenseeWLIDR, 
