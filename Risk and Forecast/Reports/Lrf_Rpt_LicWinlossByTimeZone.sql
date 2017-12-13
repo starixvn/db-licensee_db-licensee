@@ -296,6 +296,8 @@ BEGIN
 					AND b.RptDate <= @MoveBetsDay
 					AND b.roleid = 2   
 					AND (b.statusID IN (112,113,114,115) OR (b.statusID = 111 AND @IncludeDraw = 1)) --exclude REJECT bets
+					AND (b.bettype < 901 OR b.bettype > 904)
+					AND (b.bettype < 911 OR b.bettype > 914)
 					AND b.isBA = 1 
 				GROUP BY   
 					b.RptDateGMT, b.RptDate, a.currency 
@@ -333,6 +335,8 @@ BEGIN
 								AND b.RptDate <= @MoveBetsDay
 								AND b.roleid = 2   
 								AND (b.statusID IN (112,113,114,115) OR (b.statusID = 111 AND @IncludeDraw = 1)) --exclude REJECT bets
+								AND (b.bettype < 901 OR b.bettype > 904)
+								AND (b.bettype < 911 OR b.bettype > 914)
 								AND b.isBA = 0 
 							GROUP BY   
 								b.RptDateGMT,RptDate, a.currency, b.sporttype
