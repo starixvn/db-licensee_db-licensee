@@ -16,12 +16,13 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinlossByTimeZone]
 	@GroupBy 		TINYINT = 1
 	
 AS 
-/*  Created: 20170112@Sophia
+/*  Created: 20171201@Sophia
 	Date: 2012-01-09
     Task : Winloss Report for Licensee by Time Zone [Redmine: #84932]
     DB: DBEXT.bodb02  
    
-    Revisions:     
+    Revisions:   
+		- 20171201@Sophia: initial version. Apply for Sportsbook first [redmine: #84932]  
 
 	Param's Explanation:  
 	  + @TimeZone: =-4: GMT-4
@@ -142,8 +143,15 @@ BEGIN
 						b.winlostdate, 				
 						a.currency,
 						'BA' AS ProductCode,
-						SUM (CASE WHEN RAND() + 1 > 0 THEN b.BetCount ELSE 0 END) AS BetCount,
-						SUM (CASE WHEN RAND() + 1 > 0 THEN b.Turnover ELSE 0 END) AS Turnover, 
+						SUM(CASE WHEN RAND() + 1 > 0 AND @IncludeDraw = 0 AND b.statusID = 111 THEN 0 ELSE b.betcount END) AS BetCount,
+						SUM (CASE WHEN RAND() + 1 > 0 THEN b.Turnover ELSE 0 END
+							*
+							CASE WHEN @IncludeDraw = 0 THEN
+								CASE
+									WHEN b.statusID = 111 THEN 0
+									WHEN b.statusID IN (114, 115) THEN 0.5
+									ELSE 1 END
+							ELSE 1 END) AS Turnover, 
 						- SUM (CASE WHEN RAND() + 1 > 0 THEN b.Winlost ELSE 0 END) AS LicenseeWL,
 						SUM (CASE WHEN RAND() + 1 > 0 THEN b.PlayerComm ELSE 0 END) AS PlayerComm,
 						SUM (CASE WHEN RAND() + 1 > 0 THEN b.comm ELSE 0 END) AS LicenseeComm  ---- BA Comm
@@ -152,7 +160,7 @@ BEGIN
 				WHERE 
 					b.winlostdate BETWEEN @FromDateLicWL2 AND @ToDateLicWL2  		
 					AND b.roleid = 2   
-					AND (b.statusID IN (112,113,114,115) OR (b.statusID = 111 AND @IncludeDraw = 1)) --exclude REJECT bets
+					AND b.statusID IN (111,112,113,114,115) --exclude REJECT bets
 					AND (b.bettype < 901 OR b.bettype > 904)
 					AND (b.bettype < 911 OR b.bettype > 914)
 					AND b.isBA = 1 
@@ -178,8 +186,15 @@ BEGIN
 								b.winlostdate, 
 								a.currency,
 								b.sporttype,
-								SUM (CASE WHEN RAND() + 1 > 0 THEN b.betcount ELSE 0 END) AS BetCount,
-								SUM (CASE WHEN RAND() + 1 > 0 THEN b.turnover ELSE 0 END) AS Turnover, 
+								SUM(CASE WHEN RAND() + 1 > 0 AND @IncludeDraw = 0 AND b.statusID = 111 THEN 0 ELSE b.betcount END) AS BetCount,
+								SUM (CASE WHEN RAND() + 1 > 0 THEN b.turnover ELSE 0 END
+									*
+									CASE WHEN @IncludeDraw = 0 THEN
+										CASE
+											WHEN b.statusID = 111 THEN 0
+											WHEN b.statusID IN (114, 115) THEN 0.5
+											ELSE 1 END
+									ELSE 1 END) AS Turnover, 
 								-SUM (CASE WHEN RAND() + 1 > 0 THEN b.winlost ELSE 0 END) AS Winlost,  								
 								SUM (CASE WHEN RAND() + 1 > 0 THEN b.PlayerComm ELSE 0 END) AS PlayerComm,
 								SUM (CASE WHEN RAND() + 1 > 0 THEN b.comm ELSE 0 END) AS Comm
@@ -188,7 +203,7 @@ BEGIN
 							WHERE 
 								b.winlostdate BETWEEN @FromDateLicWL2 AND @ToDateLicWL2 	
 								AND b.roleid = 2   
-								AND (b.statusID IN (112,113,114,115) OR (b.statusID = 111 AND @IncludeDraw = 1)) --exclude REJECT bets
+								AND b.statusID IN (111,112,113,114,115) --exclude REJECT bets
 								AND (b.bettype < 901 OR b.bettype > 904)
 								AND (b.bettype < 911 OR b.bettype > 914)
 								AND b.isBA = 0 
@@ -225,17 +240,24 @@ BEGIN
 						b.Winlostdate, 
 						b.Currency,
 						'BA' ProductCode,  
-						COUNT(CASE WHEN RAND() + 1 > 0 THEN b.transid ELSE 0 END) AS BetCount,
-						SUM (CASE WHEN RAND() + 1 > 0 THEN b.stake ELSE 0 END) AS Turnover, 
+						COUNT(CASE WHEN RAND() + 1 > 0 AND @IncludeDraw = 0 AND b.statusID = 111 THEN NULL ELSE b.transid END) AS BetCount,
+						SUM (CASE WHEN RAND() + 1 > 0 THEN b.stake ELSE 0 END
+							*
+							CASE WHEN @IncludeDraw = 0 THEN
+								CASE
+									WHEN b.statusID = 111 THEN 0
+									WHEN (b.statusID = 112 OR b.statusID = 113) AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
+									ELSE 1 END
+							ELSE 1 END) AS Turnover, 
 						- SUM (CASE WHEN RAND() + 1 > 0 THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWL,
 						SUM (CASE WHEN RAND() + 1 > 0 THEN b.PlayerComm ELSE 0 END) AS PlayerComm,
 						SUM (CASE WHEN RAND() + 1 > 0 THEN b.comm ELSE 0 END) AS LicenseeComm  ---- BA Comm
 				FROM	dbo.bettrans b WITH (NOLOCK)
-					INNER JOIN @TempAg a ON a.CustID = b.recommend   
+					INNER JOIN @TempAg a ON a.CustID = b.recommend
 					INNER JOIN BA WITH (NOLOCK) 
 						ON b.transid = BA.transid 	 	
 				WHERE	b.winlostdate BETWEEN @FromDateBettrans AND @ToDateBettrans
-						AND (b.statusID IN (112, 113) OR (b.statusID = 111 AND @IncludeDraw = 1))
+						AND b.statusID IN (111, 112, 113)
 				GROUP BY b.Winlostdate, b.recommend, b.currency
 			END
 
@@ -247,17 +269,24 @@ BEGIN
 					b.Winlostdate, 				
 					b.currency,
 					p.ProductCode,
-					COUNT(CASE WHEN RAND() + 1 > 0 THEN b.transid ELSE 0 END) AS BetCount,
-					SUM (CASE WHEN RAND() + 1 > 0 THEN b.stake ELSE 0 END) AS Turnover, 
+					COUNT(CASE WHEN RAND() + 1 > 0 AND @IncludeDraw = 0 AND b.statusID = 111 THEN NULL ELSE b.transid END) AS BetCount,
+					SUM (CASE WHEN RAND() + 1 > 0 THEN b.stake ELSE 0 END
+						*
+						CASE WHEN @IncludeDraw = 0 THEN
+							CASE
+								WHEN b.statusID = 111 THEN 0
+								WHEN (b.statusID = 112 OR b.statusID = 113) AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
+								ELSE 1 END
+						ELSE 1 END) AS Turnover, 
 					- SUM (CASE WHEN RAND() + 1 > 0 THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWL,
 					SUM (CASE WHEN RAND() + 1 > 0 THEN b.PlayerComm ELSE 0 END) AS PlayerComm,
 					SUM (CASE WHEN RAND() + 1 > 0 THEN b.comm ELSE 0 END) AS LicenseeComm  ---- BA Comm
 				FROM dbo.bettrans b WITH (NOLOCK)  
-					INNER JOIN @TempAg a ON b.recommend = a.custid 
+					INNER JOIN @TempAg a ON b.recommend = a.custid
 					INNER JOIN #BettypeProduct p 
 						ON p.bettype = b.bettype
 				WHERE	b.winlostdate BETWEEN @FromDateBettrans AND @ToDateBettrans				
-						AND (b.statusID IN (112, 113) OR (b.statusID = 111 AND @IncludeDraw = 1))
+						AND b.statusID IN (111, 112, 113)
 						AND b.matchID > 0 
 						AND (CASE WHEN p.ProductCode ='SB' THEN b.tpositiontaking ELSE 1 END <> 0 )  --- EXCLUDE BA 				
 				GROUP BY   
@@ -283,8 +312,15 @@ BEGIN
 						b.RptDate,				
 						a.currency,
 						'BA' AS ProductCode,
-						SUM (CASE WHEN RAND() + 1 > 0 THEN b.BetCount ELSE 0 END) AS BetCount,
-						SUM (CASE WHEN RAND() + 1 > 0 THEN b.Turnover ELSE 0 END) AS Turnover, 
+						SUM(CASE WHEN RAND() + 1 > 0 AND @IncludeDraw = 0 AND b.statusID = 111 THEN 0 ELSE b.betcount END) AS BetCount,
+						SUM (CASE WHEN RAND() + 1 > 0 THEN b.Turnover ELSE 0 END
+							*
+							CASE WHEN @IncludeDraw = 0 THEN
+								CASE
+									WHEN b.statusID = 111 THEN 0
+									WHEN b.statusID IN (114, 115) THEN 0.5
+									ELSE 1 END
+							ELSE 1 END) AS Turnover, 
 						- SUM (CASE WHEN RAND() + 1 > 0 THEN b.Winlost ELSE 0 END) AS LicenseeWL,
 						SUM (CASE WHEN RAND() + 1 > 0 THEN b.PlayerComm ELSE 0 END) AS PlayerComm,
 						SUM (CASE WHEN RAND() + 1 > 0 THEN b.comm ELSE 0 END) AS LicenseeComm  ---- BA Comm
@@ -295,7 +331,7 @@ BEGIN
 					AND b.TimeZone = @TimeZone  
 					AND b.RptDate <= @MoveBetsDay
 					AND b.roleid = 2   
-					AND (b.statusID IN (112,113,114,115) OR (b.statusID = 111 AND @IncludeDraw = 1)) --exclude REJECT bets
+					AND b.statusID IN (111,112,113,114,115) --exclude REJECT bets
 					AND (b.bettype < 901 OR b.bettype > 904)
 					AND (b.bettype < 911 OR b.bettype > 914)
 					AND b.isBA = 1 
@@ -322,8 +358,15 @@ BEGIN
 								b.RptDate,
 								a.currency,
 								b.sporttype,
-								SUM (CASE WHEN RAND() + 1 > 0 THEN b.betcount ELSE 0 END) AS BetCount,
-								SUM (CASE WHEN RAND() + 1 > 0 THEN b.turnover ELSE 0 END) AS Turnover, 
+								SUM(CASE WHEN RAND() + 1 > 0 AND @IncludeDraw = 0 AND b.statusID = 111 THEN 0 ELSE b.betcount END) AS BetCount,
+								SUM (CASE WHEN RAND() + 1 > 0 THEN b.turnover ELSE 0 END
+									*
+									CASE WHEN @IncludeDraw = 0 THEN
+										CASE
+											WHEN b.statusID = 111 THEN 0
+											WHEN b.statusID IN (114, 115) THEN 0.5
+											ELSE 1 END
+									ELSE 1 END) AS Turnover, 
 								-SUM (CASE WHEN RAND() + 1 > 0 THEN b.winlost ELSE 0 END) AS Winlost,  								
 								SUM (CASE WHEN RAND() + 1 > 0 THEN b.PlayerComm ELSE 0 END) AS PlayerComm,
 								SUM (CASE WHEN RAND() + 1 > 0 THEN b.comm ELSE 0 END) AS Comm
@@ -334,7 +377,7 @@ BEGIN
 								AND b.TimeZone = @TimeZone  
 								AND b.RptDate <= @MoveBetsDay
 								AND b.roleid = 2   
-								AND (b.statusID IN (112,113,114,115) OR (b.statusID = 111 AND @IncludeDraw = 1)) --exclude REJECT bets
+								AND b.statusID IN (111,112,113,114,115) --exclude REJECT bets
 								AND (b.bettype < 901 OR b.bettype > 904)
 								AND (b.bettype < 911 OR b.bettype > 914)
 								AND b.isBA = 0 
@@ -362,8 +405,15 @@ BEGIN
 						b.Winlostdate,
 						b.Currency,
 						'BA' ProductCode,  
-						COUNT(CASE WHEN RAND() + 1 > 0 THEN b.transid ELSE 0 END) AS BetCount,
-						SUM (CASE WHEN RAND() + 1 > 0 THEN b.stake ELSE 0 END) AS Turnover, 
+						COUNT(CASE WHEN RAND() + 1 > 0 AND @IncludeDraw = 0 AND b.statusID = 111 THEN NULL ELSE b.transid END) AS BetCount,
+						SUM (CASE WHEN RAND() + 1 > 0 THEN b.stake ELSE 0 END
+							*
+							CASE WHEN @IncludeDraw = 0 THEN
+								CASE
+									WHEN b.statusID = 111 THEN 0
+									WHEN (b.statusID = 112 OR b.statusID = 113) AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
+									ELSE 1 END
+							ELSE 1 END) AS Turnover, 
 						- SUM (CASE WHEN RAND() + 1 > 0 THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWL,
 						SUM (CASE WHEN RAND() + 1 > 0 THEN b.PlayerComm ELSE 0 END) AS PlayerComm,
 						SUM (CASE WHEN RAND() + 1 > 0 THEN b.comm ELSE 0 END) AS LicenseeComm  ---- BA Comm
@@ -375,7 +425,7 @@ BEGIN
 					INNER JOIN BA WITH (NOLOCK) 
 						ON b.transid = BA.transid 	 	
 				WHERE	CONVERT(DATE,DATEADD(HOUR, @TimeZone + 4, ISNULL(m.GlobalShowTime, b.Winlostdate))) BETWEEN @FromDate AND @ToDate
-						AND (b.statusID IN (112, 113) OR (b.statusID = 111 AND @IncludeDraw = 1))
+						AND b.statusID IN (111,112, 113)
 				GROUP BY CONVERT(DATE,DATEADD(HOUR, @TimeZone + 4, ISNULL(m.GlobalShowTime, b.Winlostdate))), b.Winlostdate, b.recommend, b.currency
 			END
 
@@ -388,8 +438,15 @@ BEGIN
 					b.Winlostdate,			
 					b.currency,
 					p.ProductCode,
-					COUNT(CASE WHEN RAND() + 1 > 0 THEN b.transid ELSE 0 END) AS BetCount,
-					SUM (CASE WHEN RAND() + 1 > 0 THEN b.stake ELSE 0 END) AS Turnover, 
+					COUNT(CASE WHEN RAND() + 1 > 0 AND @IncludeDraw = 0 AND b.statusID = 111 THEN NULL ELSE b.transid END) AS BetCount,
+					SUM (CASE WHEN RAND() + 1 > 0 THEN b.stake ELSE 0 END
+						*
+						CASE WHEN @IncludeDraw = 0 THEN
+							CASE
+								WHEN b.statusID = 111 THEN 0
+								WHEN (b.statusID = 112 OR b.statusID = 113) AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
+								ELSE 1 END
+						ELSE 1 END) AS Turnover, 
 					- SUM (CASE WHEN RAND() + 1 > 0 THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWL,
 					SUM (CASE WHEN RAND() + 1 > 0 THEN b.PlayerComm ELSE 0 END) AS PlayerComm,
 					SUM (CASE WHEN RAND() + 1 > 0 THEN b.comm ELSE 0 END) AS LicenseeComm  ---- BA Comm
@@ -401,7 +458,7 @@ BEGIN
 					INNER JOIN #BettypeProduct p 
 						ON p.bettype = b.bettype
 				WHERE	CONVERT(DATE,DATEADD(HOUR, @TimeZone + 4, ISNULL(m.GlobalShowTime, b.Winlostdate))) BETWEEN @FromDate AND @ToDate				
-						AND (b.statusID IN (112, 113) OR (b.statusID = 111 AND @IncludeDraw = 1))
+						AND b.statusID IN (11,112, 113)
 						AND b.matchID > 0 
 						AND (CASE WHEN p.ProductCode = 'SB' THEN b.tpositiontaking ELSE 1 END <> 0 )  --- EXCLUDE BA 				
 				GROUP BY   
