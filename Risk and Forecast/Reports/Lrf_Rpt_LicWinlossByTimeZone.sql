@@ -425,7 +425,7 @@ BEGIN
 					INNER JOIN BA WITH (NOLOCK) 
 						ON b.transid = BA.transid 	 	
 				WHERE	CONVERT(DATE,DATEADD(HOUR, @TimeZone + 4, ISNULL(m.GlobalShowTime, b.Winlostdate))) BETWEEN @FromDate AND @ToDate
-						AND b.statusID IN (111,112, 113)
+						AND b.statusID IN (111, 112, 113)
 				GROUP BY CONVERT(DATE,DATEADD(HOUR, @TimeZone + 4, ISNULL(m.GlobalShowTime, b.Winlostdate))), b.Winlostdate, b.recommend, b.currency
 			END
 
@@ -458,7 +458,7 @@ BEGIN
 					INNER JOIN #BettypeProduct p 
 						ON p.bettype = b.bettype
 				WHERE	CONVERT(DATE,DATEADD(HOUR, @TimeZone + 4, ISNULL(m.GlobalShowTime, b.Winlostdate))) BETWEEN @FromDate AND @ToDate				
-						AND b.statusID IN (11,112, 113)
+						AND b.statusID IN (111, 112, 113)
 						AND b.matchID > 0 
 						AND (CASE WHEN p.ProductCode = 'SB' THEN b.tpositiontaking ELSE 1 END <> 0 )  --- EXCLUDE BA 				
 				GROUP BY   
