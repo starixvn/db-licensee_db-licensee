@@ -4,17 +4,16 @@ GO
 
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinlossByTimeZone]  	
-	@FromDate		SMALLDATETIME,  
-	@ToDate			SMALLDATETIME,   
-	@TimeZone		SMALLINT = -4,
-	@ProductList	VARCHAR(MAX) = '',	
-	@MoveBetsDay	SMALLDATETIME,
-	@AgentList		VARCHAR(MAX),
-	@CurrencyId 	INT = 0,
-	@IncludeDraw	BIT = 0,	
-	@ReportBy		TINYINT = 1,  
-	@GroupBy 		TINYINT = 1
-	
+	@FromDate			SMALLDATETIME,  
+	@ToDate				SMALLDATETIME,   
+	@TimeZone			SMALLINT = -4,
+	@ProductList		VARCHAR(MAX) = '',	
+	@MoveBetsDay		SMALLDATETIME,
+	@AgentList			VARCHAR(MAX),
+	@CurrencyId 		INT = 0,
+	@IncludeDraw		BIT = 0,	
+	@ReportBy			TINYINT = 1,  
+	@GroupBy 			TINYINT = 1
 AS 
 /*  Created: 20171201@Sophia
 	Date: 2012-01-09
@@ -70,6 +69,7 @@ BEGIN
 	BEGIN TRY
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT
 				,@AgentList
+
 		INSERT INTO @TempAg (CustID, Currency)
 		SELECT AgentId, Currency
 		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
@@ -152,7 +152,7 @@ BEGIN
 									WHEN b.statusID IN (114, 115) THEN 0.5
 									ELSE 1 END
 							ELSE 1 END) AS Turnover, 
-						- SUM (CASE WHEN RAND() + 1 > 0 THEN b.Winlost ELSE 0 END) AS LicenseeWL,
+						0 AS LicenseeWL,
 						SUM (CASE WHEN RAND() + 1 > 0 THEN b.PlayerComm ELSE 0 END) AS PlayerComm,
 						SUM (CASE WHEN RAND() + 1 > 0 THEN b.comm ELSE 0 END) AS LicenseeComm  ---- BA Comm
 				FROM bodb_LicenseeReport.dbo.rptLicWinloss2 b WITH (NOLOCK)  
@@ -249,7 +249,7 @@ BEGIN
 									WHEN (b.statusID = 112 OR b.statusID = 113) AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
 									ELSE 1 END
 							ELSE 1 END) AS Turnover, 
-						- SUM (CASE WHEN RAND() + 1 > 0 THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWL,
+						0 AS LicenseeWL,
 						SUM (CASE WHEN RAND() + 1 > 0 THEN b.PlayerComm ELSE 0 END) AS PlayerComm,
 						SUM (CASE WHEN RAND() + 1 > 0 THEN b.comm ELSE 0 END) AS LicenseeComm  ---- BA Comm
 				FROM	dbo.bettrans b WITH (NOLOCK)
@@ -280,7 +280,7 @@ BEGIN
 						ELSE 1 END) AS Turnover, 
 					- SUM (CASE WHEN RAND() + 1 > 0 THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWL,
 					SUM (CASE WHEN RAND() + 1 > 0 THEN b.PlayerComm ELSE 0 END) AS PlayerComm,
-					SUM (CASE WHEN RAND() + 1 > 0 THEN b.comm ELSE 0 END) AS LicenseeComm  ---- BA Comm
+					SUM (CASE WHEN RAND() + 1 > 0 THEN b.comm ELSE 0 END) AS LicenseeComm  
 				FROM dbo.bettrans b WITH (NOLOCK)  
 					INNER JOIN @TempAg a ON b.recommend = a.custid
 					INNER JOIN #BettypeProduct p 
@@ -321,7 +321,7 @@ BEGIN
 									WHEN b.statusID IN (114, 115) THEN 0.5
 									ELSE 1 END
 							ELSE 1 END) AS Turnover, 
-						- SUM (CASE WHEN RAND() + 1 > 0 THEN b.Winlost ELSE 0 END) AS LicenseeWL,
+						0 AS LicenseeWL,
 						SUM (CASE WHEN RAND() + 1 > 0 THEN b.PlayerComm ELSE 0 END) AS PlayerComm,
 						SUM (CASE WHEN RAND() + 1 > 0 THEN b.comm ELSE 0 END) AS LicenseeComm  ---- BA Comm
 				FROM bodb_LicenseeReport.dbo.rptLicWinlossGMT b WITH (NOLOCK)  
@@ -414,7 +414,7 @@ BEGIN
 									WHEN (b.statusID = 112 OR b.statusID = 113) AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
 									ELSE 1 END
 							ELSE 1 END) AS Turnover, 
-						- SUM (CASE WHEN RAND() + 1 > 0 THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWL,
+						0 AS LicenseeWL,
 						SUM (CASE WHEN RAND() + 1 > 0 THEN b.PlayerComm ELSE 0 END) AS PlayerComm,
 						SUM (CASE WHEN RAND() + 1 > 0 THEN b.comm ELSE 0 END) AS LicenseeComm  ---- BA Comm
 				FROM	dbo.bettrans b WITH (NOLOCK)
@@ -449,7 +449,7 @@ BEGIN
 						ELSE 1 END) AS Turnover, 
 					- SUM (CASE WHEN RAND() + 1 > 0 THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWL,
 					SUM (CASE WHEN RAND() + 1 > 0 THEN b.PlayerComm ELSE 0 END) AS PlayerComm,
-					SUM (CASE WHEN RAND() + 1 > 0 THEN b.comm ELSE 0 END) AS LicenseeComm  ---- BA Comm
+					SUM (CASE WHEN RAND() + 1 > 0 THEN b.comm ELSE 0 END) AS LicenseeComm 
 				FROM dbo.bettrans b WITH (NOLOCK)  
 					LEFT JOIN dbo.Match m WITH (NOLOCK)
 						ON m.MatchId = b.MatchId
