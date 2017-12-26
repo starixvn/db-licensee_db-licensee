@@ -1,7 +1,6 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
-Use bodb02
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+USE [bodb02]
 GO
-
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinlossByTimeZone]  	
 	@FromDate			SMALLDATETIME,  
@@ -14,14 +13,16 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinlossByTimeZone]
 	@IncludeDraw		BIT = 0,	
 	@ReportBy			TINYINT = 1,  
 	@GroupBy 			TINYINT = 1
-AS 
+AS
+
 /*  Created: 20171201@Sophia
 	Date: 2012-01-09
     Task : Winloss Report for Licensee by Time Zone [Redmine: #84932]
     DB: DBEXT.bodb02  
    
     Revisions:   
-		- 20171201@Sophia: initial version. Apply for Sportsbook first [redmine: #84932]  
+		- 20171201@Sophia: initial version. Apply for Sportsbook first [redmine: #84932]
+		- 20171226@Percy: Remove redundant code [RedmineID: #88704] 
 
 	Param's Explanation:  
 	  + @TimeZone: =-4: GMT-4
@@ -41,7 +42,8 @@ AS
 					   <Agent AgentId="12345" Currency="3"/>  
 					   <Agent AgentId="12346" Currency="5"/>  
 					  </ROOT>
-*/  
+*/ 
+
 BEGIN  
 
 	SET NOCOUNT ON  
@@ -108,15 +110,6 @@ BEGIN
 	---#2: End: Get SportBettypeMatrix
 
 	----------------- ######## Get data ########## ---------------
-
-	--DECLARE @FDate SMALLDATETIME, @TDate SMALLDATETIME
-	--SELECT @FDate = @FromDate, @TDate = @ToDate
-
-
-	DECLARE @GapDate DATE 
-	SELECT @GapDate = MIN (RptDate) FROM bodb_LicenseeReport.dbo.rptLicWinlossGMT WITH (NOLOCK)
-
-
 	DECLARE @FromDateLicWL2 SMALLDATETIME, @ToDateLicWL2 SMALLDATETIME, 
 			@FromDateBettrans SMALLDATETIME, @ToDateBettrans SMALLDATETIME
 
