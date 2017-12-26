@@ -37,7 +37,7 @@ BEGIN
 		Betcount		INT,
 		Turnover		MONEY,		
 		Winlost			MONEY,
-		SubsidiaryWL	MONEY,
+		LicenseeWL	MONEY,
 		SubsidiaryComm	MONEY
 	)
 	
@@ -187,7 +187,7 @@ BEGIN
 		
 		IF EXISTS (SELECT TOP 1 1 FROM #BettypeProduct)  ---- exclude BA , BT, CO
 		BEGIN
-			INSERT INTO #Subsidiary (Winlostdate, recommend, Currency, ProductCode, BetCount, Turnover, Winlost, SubsidiaryComm, SubsidiaryWL)
+			INSERT INTO #Subsidiary (Winlostdate, recommend, Currency, ProductCode, BetCount, Turnover, Winlost, SubsidiaryComm, LicenseeWL)
 			SELECT
 				b.Winlostdate,   
 				b.recommend,
@@ -197,7 +197,7 @@ BEGIN
 				SUM (CASE WHEN RAND() + 1 > 0 THEN stake ELSE 0 END) AS Turnover, 
 				SUM (CASE WHEN RAND() + 1 > 0 THEN b.winlost-b.actual_stake ELSE 0 END) AS Winlost,  
 				SUM (CASE WHEN RAND() + 1 > 0 AND p.ProductCode = 'RB' THEN b.Comm ELSE 0 END) AS SubsidiaryComm,
-				- SUM (CASE WHEN RAND() + 1 > 0 AND p.ProductCode <> 'RB' THEN b.winlost - b.actual_stake ELSE 0 END) AS SubsidiaryWL  ---- Licensee Winlost or RB Comm 
+				- SUM (CASE WHEN RAND() + 1 > 0 AND p.ProductCode <> 'RB' THEN b.winlost - b.actual_stake ELSE 0 END) AS LicenseeWL  ---- Licensee Winlost or RB Comm 
 			FROM 
 				dbo.bettrans b WITH (NOLOCK)  
 				INNER JOIN @TempAg a ON b.recommend = a.custid 
@@ -299,7 +299,7 @@ BEGIN
 
 		IF EXISTS (SELECT TOP 1 1 FROM #BettypeProduct)     --- exclude BA , BT, CO
 		BEGIN
-				INSERT INTO #Subsidiary (Winlostdate, recommend, Currency, ProductCode, BetCount, Turnover, Winlost, SubsidiaryComm, SubsidiaryWL)
+				INSERT INTO #Subsidiary (Winlostdate, recommend, Currency, ProductCode, BetCount, Turnover, Winlost, SubsidiaryComm, LicenseeWL)
 			SELECT
 						b.Winlostdate,
 						b.recommend,
@@ -309,7 +309,7 @@ BEGIN
 						SUM (b.turnover) AS Turnover, 
 						SUM (b.winlost) AS Winlost,  
 						SUM(CASE WHEN p.ProductCode = 'RB' THEN b.comm ELSE 0 END) AS SubsidiaryComm,
-						-SUM(CASE WHEN p.ProductCode <> 'RB' THEN b.winlost ELSE 0 END) AS SubsidiaryWL						 
+						-SUM(CASE WHEN p.ProductCode <> 'RB' THEN b.winlost ELSE 0 END) AS LicenseeWL						 
 			FROM	( 
 						SELECT   
 							b.Winlostdate,
@@ -353,42 +353,42 @@ BEGIN
 		SUM (BetCount)	AS BetCount,
 		SUM(Turnover)	AS Turnover, 
 		SUM(Winlost)	AS Winlost,
-		SUM(SubsidiaryWL)	AS SubsidiaryWL,
+		SUM(LicenseeWL)	AS LicenseeWL,
 		SUM(SubsidiaryComm)	AS SubsidiaryComm,
 
 		SUM(Turnover*e.USD)	AS TurnoverUSD, 
 		SUM(Winlost*e.USD)	AS WinlostUSD,
-		SUM(SubsidiaryWL*e.USD) AS SubsidiaryWLUSD,
+		SUM(LicenseeWL*e.USD) AS LicenseeWLUSD,
 		SUM(SubsidiaryComm*e.USD) AS SubsidiaryCommUSD,
 
 		SUM(Turnover*e.EUR)	AS TurnoverEUR, 
 		SUM(Winlost*e.EUR)	AS WinlostEUR,
-		SUM(SubsidiaryWL*e.EUR) AS SubsidiaryWLEUR,
+		SUM(LicenseeWL*e.EUR) AS LicenseeWLEUR,
 		SUM(SubsidiaryComm*e.EUR) AS SubsidiaryCommEUR,
 
 		SUM(Turnover*e.GBP)	AS TurnoverGBP, 
 		SUM(Winlost*e.GBP)	AS WinlostGBP,
-		SUM(SubsidiaryWL*e.GBP) AS SubsidiaryWLGBP,
+		SUM(LicenseeWL*e.GBP) AS LicenseeWLGBP,
 		SUM(SubsidiaryComm*e.GBP) AS SubsidiaryCommGBP,
 
 		SUM(Turnover*e.MYR)	AS TurnoverMYR, 
 		SUM(Winlost*e.MYR)	AS WinlostMYR,
-		SUM(SubsidiaryWL*e.MYR) AS SubsidiaryWLMYR,
+		SUM(LicenseeWL*e.MYR) AS LicenseeWLMYR,
 		SUM(SubsidiaryComm*e.MYR) AS SubsidiaryCommMYR,
 
 		SUM(Turnover*e.CNY)	AS TurnoverCNY, 
 		SUM(Winlost*e.CNY)	AS WinlostCNY,
-		SUM(SubsidiaryWL*e.CNY) AS SubsidiaryWLCNY,
+		SUM(LicenseeWL*e.CNY) AS LicenseeWLCNY,
 		SUM(SubsidiaryComm*e.CNY) AS SubsidiaryCommCNY,
 
 		SUM(Turnover*e.THB)	AS TurnoverTHB, 
 		SUM(Winlost*e.THB)	AS WinlostTHB,
-		SUM(SubsidiaryWL*e.THB) AS SubsidiaryWLTHB,
+		SUM(LicenseeWL*e.THB) AS LicenseeWLTHB,
 		SUM(SubsidiaryComm*e.THB) AS SubsidiaryCommTHB,
 
 		SUM(Turnover*e.IDR)	AS TurnoverIDR, 
 		SUM(Winlost*e.IDR)	AS WinlostIDR,
-		SUM(SubsidiaryWL*e.IDR) AS SubsidiaryWLIDR,
+		SUM(LicenseeWL*e.IDR) AS LicenseeWLIDR,
 		SUM(SubsidiaryComm*e.IDR) AS SubsidiaryCommIDR
 	FROM	
 		#Subsidiary s   
