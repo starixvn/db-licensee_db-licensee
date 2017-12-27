@@ -17,17 +17,18 @@ AS
 
 /*  Created: 20171201@Sophia
 	Date: 2012-01-09
-    Task : Winloss Report for Licensee by Time Zone [Redmine: #84932]
+    Task: Winloss Report for Licensee by Time Zone [Redmine: #84932]
     DB: DBEXT.bodb02  
    
     Revisions:   
-		- 20171201@Sophia: initial version. Apply for Sportsbook first [redmine: #84932]
+		- 20171201@Sophia: Initial version. Apply for Sportsbook first [redmine: #84932]
 		- 20171226@Percy: Remove redundant code [RedmineID: #88704] 
+		- 20171227@Percy: Enhance performance SP [RedmineID: #88751]
 
 	Param's Explanation:  
 	  + @TimeZone: =-4: GMT-4
 				   = 8: GMT+8
-	  + @ProductCodes: = @ProductCodes (multiple selection) ('SB', 'BA')
+	  + @ProductList: List of Product Code (multiple selection) ('SB', 'BA')
  	  + @MoveBetsDay: The day we move tickets to bettrans14
 	  + @ReportBy: = 1: Summary 
 				   = 2: Daily
@@ -45,7 +46,6 @@ AS
 */ 
 
 BEGIN  
-
 	SET NOCOUNT ON  
 
 	CREATE TABLE #WinLoss
@@ -60,32 +60,30 @@ BEGIN
 		PlayerComm			MONEY,		
 		LicenseeComm		MONEY
 	) 
-	DECLARE @VNDCurrencyName	VARCHAR(20)
-	SELECT @VNDCurrencyName = currency FROM exchange (NOLOCK) WHERE ExchangeId = 51
-
+	DECLARE @VNDCurrencyName VARCHAR(20)
+	SELECT @VNDCurrencyName = currency FROM dbo.Exchange WITH (NOLOCK) WHERE ExchangeId = 51
 	
 	---#1: Begin: Get AgentList 	
-	DECLARE @TempAg AS TABLE(custID INT, currency INT)  
-	DECLARE @DocHandler INT
+	DECLARE @TempAg TABLE (custID INT, currency INT)  
+	DECLARE @AgentListXML XML
 
 	BEGIN TRY
-		EXEC sp_xml_preparedocument @DocHandler OUTPUT
-				,@AgentList
-
-		INSERT INTO @TempAg (CustID, Currency)
-		SELECT AgentId, Currency
-		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
-
-		EXEC sp_xml_removedocument @DocHandler
+		SELECT @AgentListXML = CONVERT(XML, @AgentList)
+	
+		INSERT INTO @TempAg (custID, currency)
+		SELECT
+			t.c.value('@AgentId', 'INT') AS CustID,
+			t.c.value('@Currency', 'INT') AS Currency
+		FROM @AgentListXML.nodes('ROOT/Agent') AS t(c)
+		OPTION (OPTIMIZE FOR (@AgentListXML = NULL))
 	END TRY
 
 	BEGIN CATCH
-		SELECT ErrCode = 100
-				,ErrMsg = N'Paramter invalid.'
+		SELECT ErrCode = 100, ErrMsg = N'Paramter invalid.'
 
 		RETURN
-	END CATCH;
-	---#1: End: Get AgentList 
+	END CATCH
+	---#1: End: Get AgentList
 
 	---#2: Begin: Get SportBettypeMatrix
 	BEGIN
@@ -96,13 +94,13 @@ BEGIN
 		SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID) 
 			
 		-- Insert Bettype
-		INSERT INTO #BettypeProduct ( bettype, ProductCode)		--- Don't have ProductCode IN (BA, BT, CO) because SportBettypeMatrix don't have ProductPrefix = 'BA'
+		INSERT INTO #BettypeProduct (bettype, ProductCode) --- Don't have ProductCode IN (BA, BT, CO) -- SportBettypeMatrix don't have ProductPrefix = 'BA'
 		SELECT DISTINCT BetType, ProductPrefix
 		FROM dbo.f_SportBettypeMatrix_Sel (0, 0, 0, 2, '', @ProductList, @IsTest)  --- This phase @ProductList is only ('SB', 'BA')
 		WHERE Bettype NOT IN (901, 902, 903, 904, 911, 912, 913, 914)
 
 		-- Insert Sport Type
-		INSERT INTO #SporttypeProduct ( sporttype, ProductCode )   --- Don't have ProductCode IN (BA, BT, CO)
+		INSERT INTO #SporttypeProduct (sporttype, ProductCode) --- Don't have ProductCode IN (BA, BT, CO)
 		SELECT DISTINCT sporttype, ProductCode
 		FROM dbo.f_LicWinLoss_ProductSportType_Sel(@ProductList)   
 			 
@@ -111,13 +109,13 @@ BEGIN
 
 	----------------- ######## Get data ########## ---------------
 	DECLARE @FromDateLicWL2 SMALLDATETIME, @ToDateLicWL2 SMALLDATETIME, 
-			@FromDateBettrans SMALLDATETIME, @ToDateBettrans SMALLDATETIME
+			@FromDateBettrans SMALLDATETIME, @ToDateBettrans SMALLDATETIME,
+			@tmpFromDate SMALLDATETIME, @tmpToDate SMALLDATETIME
 
 
 	--------------## I: Begin :TimeZone = -4 ## -------------
 	IF @TimeZone = -4  
 	BEGIN 
-			
 		---#I.1: Begin : Get data from rptLicWinloss2 table
 		IF @FromDate <= @MoveBetsDay
 		BEGIN 			
@@ -156,7 +154,8 @@ BEGIN
 					AND b.statusID IN (111,112,113,114,115) --exclude REJECT bets
 					AND (b.bettype < 901 OR b.bettype > 904)
 					AND (b.bettype < 911 OR b.bettype > 914)
-					AND b.isBA = 1 
+					AND b.isBA = 1
+					AND b.sporttype = 0
 				GROUP BY   
 					b.winlostdate, a.currency 
 			END
@@ -199,7 +198,8 @@ BEGIN
 								AND b.statusID IN (111,112,113,114,115) --exclude REJECT bets
 								AND (b.bettype < 901 OR b.bettype > 904)
 								AND (b.bettype < 911 OR b.bettype > 914)
-								AND b.isBA = 0 
+								AND b.isBA = 0
+								AND b.sporttype = 0
 							GROUP BY   
 								b.winlostdate, a.currency, b.sporttype
 						) b 
@@ -293,10 +293,25 @@ BEGIN
 	
 	---------## II: Begin :TimeZone <> GMT-4 ## -------------
 	ELSE
-	BEGIN 
+	BEGIN
+		CREATE TABLE #match (matchId INT, RptDateGMT SMALLDATETIME)
 
-		---#II.1: Begin : Get data from rptLicWinlossGMT table 
-		BEGIN
+		---#II.1: Begin : Get data from rptLicWinlossGMT table
+		IF @FromDate <= @MoveBetsDay
+		BEGIN 			
+			SELECT @tmpFromDate = @FromDate 
+
+			IF @ToDate > @MoveBetsDay
+				SELECT @tmpToDate = @MoveBetsDay
+			ELSE 
+				SELECT @tmpToDate = @ToDate
+
+			INSERT INTO #match (matchId, RptDateGMT)
+			SELECT matchid, CONVERT(DATE, DATEADD(HOUR, @TimeZone + 4, ISNULL(m.GlobalShowTime, m.eventdate))) AS RptDateGMT
+			FROM dbo.match m WITH (NOLOCK)
+			WHERE m.sporttype <= 99 -- sportbook
+				AND CONVERT(DATE, DATEADD(HOUR, @TimeZone + 4, ISNULL(m.GlobalShowTime, m.eventdate))) BETWEEN @tmpFromDate AND @tmpToDate
+		
 			IF PATINDEX('%,BA,%', ',' + @ProductList + ',') > 0  ---- BA 
 			BEGIN
 				INSERT INTO #WinLoss (RptDateGMT, RptDate, CurrencyId, ProductCode, BetCount, Turnover, LicenseeWL, PlayerComm, LicenseeComm)
@@ -320,16 +335,49 @@ BEGIN
 				FROM bodb_LicenseeReport.dbo.rptLicWinlossGMT b WITH (NOLOCK)  
 					INNER JOIN @TempAg a ON b.recommend = a.custID  
 				WHERE 
-					b.RptDateGMT BETWEEN @FromDate AND @ToDate
+					b.RptDateGMT BETWEEN @tmpFromDate AND @tmpToDate
 					AND b.TimeZone = @TimeZone  
-					AND b.RptDate <= @MoveBetsDay
-					AND b.roleid = 2   
+					AND b.roleid = 2
 					AND b.statusID IN (111,112,113,114,115) --exclude REJECT bets
 					AND (b.bettype < 901 OR b.bettype > 904)
 					AND (b.bettype < 911 OR b.bettype > 914)
 					AND b.isBA = 1 
-				GROUP BY   
-					b.RptDateGMT, b.RptDate, a.currency 
+				GROUP BY
+					b.RptDateGMT, b.RptDate, a.currency
+
+				;WITH BA AS
+				(
+					SELECT DISTINCT transid
+					FROM bodb_licensee.dbo.LicenseeBATransaction_active BA WITH(NOLOCK)
+						INNER JOIN @tempAg r ON BA.recommend = r.custID
+				)
+				INSERT INTO #WinLoss (RptDateGMT, RptDate, CurrencyId, ProductCode, BetCount, Turnover, LicenseeWL, PlayerComm, LicenseeComm)
+				SELECT
+						m.RptDateGMT,   
+						b.winlostdate,				
+						a.currency,
+						'BA' AS ProductCode,
+						COUNT(CASE WHEN RAND() + 1 > 0 AND @IncludeDraw = 0 AND b.statusID = 111 THEN NULL ELSE b.transid END) AS BetCount,
+						SUM (CASE WHEN RAND() + 1 > 0 THEN b.stake ELSE 0 END
+							*
+							CASE WHEN @IncludeDraw = 0 THEN
+								CASE
+									WHEN b.statusID = 111 THEN 0
+									WHEN (b.statusID = 112 OR b.statusID = 113) AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
+									ELSE 1 END
+							ELSE 1 END) AS Turnover, 
+						0 AS LicenseeWL,
+						SUM (CASE WHEN RAND() + 1 > 0 THEN b.PlayerComm ELSE 0 END) AS PlayerComm,
+						SUM (CASE WHEN RAND() + 1 > 0 THEN b.comm ELSE 0 END) AS LicenseeComm  ---- BA Comm
+				FROM dbo.bettrans b WITH (NOLOCK)  
+					INNER JOIN @TempAg a ON b.recommend = a.custID
+					INNER JOIN BA ON b.transid = BA.transid
+					INNER JOIN #match m ON b.matchid = m.matchid
+				WHERE 
+					EXISTS (SELECT matchid FROM #match m WHERE b.matchid = m.matchid)
+					AND b.statusID IN (111, 112, 113)
+				GROUP BY
+					m.RptDateGMT, b.winlostdate, a.currency 
 			END
 
 			IF EXISTS (SELECT 1 FROM #BettypeProduct WHERE ProductCode = 'SB')     --- exclude BA , BT, CO
@@ -366,10 +414,9 @@ BEGIN
 							FROM bodb_licenseereport.dbo.rptLicWinlossGMT b WITH (NOLOCK)  				
 								INNER JOIN @TempAg a ON b.recommend = a.custID 						 
 							WHERE 
-								b.RptDateGMT BETWEEN @FromDate AND @ToDate
-								AND b.TimeZone = @TimeZone  
-								AND b.RptDate <= @MoveBetsDay
-								AND b.roleid = 2   
+								b.RptDateGMT BETWEEN @tmpFromDate AND @tmpToDate
+								AND b.TimeZone = @TimeZone
+								AND b.roleid = 2
 								AND b.statusID IN (111,112,113,114,115) --exclude REJECT bets
 								AND (b.bettype < 901 OR b.bettype > 904)
 								AND (b.bettype < 911 OR b.bettype > 914)
@@ -379,55 +426,10 @@ BEGIN
 						) b 
 					INNER JOIN #SporttypeProduct p ON b.sporttype = p.sporttype
 				GROUP BY b.RptDateGMT,RptDate, b.currency, p.ProductCode
-			END	 
-		END
-		---#II.1: End : Get data from rptLicWinlossGMT table 
 
-		---#II.2: Begin : Get data from Bettrans table 
-		BEGIN 
-			IF PATINDEX('%,BA,%', ',' + @ProductList + ',') > 0  ---- BA Product
-			BEGIN
-				;WITH BA AS
-				(
-					SELECT DISTINCT transid
-					FROM bodb_licensee.dbo.LicenseeBATransaction_active BA WITH(NOLOCK)
-						INNER JOIN @tempAg r ON BA.recommend = r.custID
-				)
-				INSERT INTO #WinLoss (RptDateGMT, RptDate, CurrencyId, ProductCode, BetCount, Turnover, LicenseeWL, PlayerComm, LicenseeComm)
-				SELECT	CONVERT(DATE,DATEADD(HOUR, @TimeZone + 4, ISNULL(m.GlobalShowTime, b.Winlostdate))), 
-						b.Winlostdate,
-						b.Currency,
-						'BA' ProductCode,  
-						COUNT(CASE WHEN RAND() + 1 > 0 AND @IncludeDraw = 0 AND b.statusID = 111 THEN NULL ELSE b.transid END) AS BetCount,
-						SUM (CASE WHEN RAND() + 1 > 0 THEN b.stake ELSE 0 END
-							*
-							CASE WHEN @IncludeDraw = 0 THEN
-								CASE
-									WHEN b.statusID = 111 THEN 0
-									WHEN (b.statusID = 112 OR b.statusID = 113) AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
-									ELSE 1 END
-							ELSE 1 END) AS Turnover, 
-						0 AS LicenseeWL,
-						SUM (CASE WHEN RAND() + 1 > 0 THEN b.PlayerComm ELSE 0 END) AS PlayerComm,
-						SUM (CASE WHEN RAND() + 1 > 0 THEN b.comm ELSE 0 END) AS LicenseeComm  ---- BA Comm
-				FROM	dbo.bettrans b WITH (NOLOCK)
-					LEFT JOIN dbo.Match m WITH (NOLOCK)
-						ON m.MatchId = b.MatchId
-					INNER JOIN @TempAg a 
-						ON a.CustID = b.recommend   
-					INNER JOIN BA WITH (NOLOCK) 
-						ON b.transid = BA.transid 	 	
-				WHERE	CONVERT(DATE,DATEADD(HOUR, @TimeZone + 4, ISNULL(m.GlobalShowTime, b.Winlostdate))) BETWEEN @FromDate AND @ToDate
-						AND b.statusID IN (111, 112, 113)
-				GROUP BY CONVERT(DATE,DATEADD(HOUR, @TimeZone + 4, ISNULL(m.GlobalShowTime, b.Winlostdate))), b.Winlostdate, b.recommend, b.currency
-			END
-
-
-			IF EXISTS (SELECT 1 FROM #BettypeProduct WHERE ProductCode = 'SB')  ---- SB exclude BA , BT, CO 
-			BEGIN
 				INSERT INTO #WinLoss (RptDateGMT, RptDate, CurrencyId, ProductCode, BetCount, Turnover, LicenseeWL, PlayerComm, LicenseeComm)
 				SELECT
-					CONVERT(DATE,DATEADD(HOUR, @TimeZone + 4, ISNULL(m.GlobalShowTime, b.Winlostdate))),   	
+					m.RptDateGMT,   	
 					b.Winlostdate,			
 					b.currency,
 					p.ProductCode,
@@ -444,22 +446,104 @@ BEGIN
 					SUM (CASE WHEN RAND() + 1 > 0 THEN b.PlayerComm ELSE 0 END) AS PlayerComm,
 					SUM (CASE WHEN RAND() + 1 > 0 THEN b.comm ELSE 0 END) AS LicenseeComm 
 				FROM dbo.bettrans b WITH (NOLOCK)  
-					LEFT JOIN dbo.Match m WITH (NOLOCK)
+					INNER JOIN @TempAg a ON b.recommend = a.custID
+					INNER JOIN #match m ON b.matchid = m.matchid
+					INNER JOIN #BettypeProduct p ON p.bettype = b.bettype
+				WHERE b.statusID IN (111, 112, 113)
+					--AND b.matchID > 0 
+					AND (CASE WHEN p.ProductCode = 'SB' THEN b.tpositiontaking ELSE 1 END <> 0 )  --- EXCLUDE BA 				
+				GROUP BY m.RptDateGMT, b.Winlostdate, b.currency, p.ProductCode
+			END
+		END
+		---#II.1: End : Get data from rptLicWinlossGMT table 
+
+		---#II.2: Begin : Get data from Bettrans table 
+		IF @ToDate > @MoveBetsDay
+		BEGIN	
+			SELECT @tmpToDate = @ToDate
+
+			IF @FromDate <= @MoveBetsDay
+				SELECT @tmpFromDate = DATEADD(DAY, 1, @MoveBetsDay)
+			ELSE 
+				SELECT @tmpFromDate = @FromDate
+
+			INSERT INTO #match (matchId, RptDateGMT)
+			SELECT matchid, CONVERT(DATE, DATEADD(HOUR, @TimeZone + 4, ISNULL(m.GlobalShowTime, m.eventdate))) AS RptDateGMT
+			FROM dbo.match m WITH (NOLOCK)
+			WHERE m.sporttype <= 99 -- sportbook
+				AND CONVERT(DATE, DATEADD(HOUR, @TimeZone + 4, ISNULL(m.GlobalShowTime, m.eventdate))) BETWEEN @tmpFromDate AND @tmpToDate
+			
+			IF PATINDEX('%,BA,%', ',' + @ProductList + ',') > 0  ---- BA Product
+			BEGIN
+				;WITH BA AS
+				(
+					SELECT DISTINCT transid
+					FROM bodb_licensee.dbo.LicenseeBATransaction_active BA WITH(NOLOCK)
+						INNER JOIN @tempAg r ON BA.recommend = r.custID
+				)
+				INSERT INTO #WinLoss (RptDateGMT, RptDate, CurrencyId, ProductCode, BetCount, Turnover, LicenseeWL, PlayerComm, LicenseeComm)
+				SELECT	m.RptDateGMT, 
+						b.Winlostdate,
+						b.Currency,
+						'BA' ProductCode,  
+						COUNT(CASE WHEN RAND() + 1 > 0 AND @IncludeDraw = 0 AND b.statusID = 111 THEN NULL ELSE b.transid END) AS BetCount,
+						SUM (CASE WHEN RAND() + 1 > 0 THEN b.stake ELSE 0 END
+							*
+							CASE WHEN @IncludeDraw = 0 THEN
+								CASE
+									WHEN b.statusID = 111 THEN 0
+									WHEN (b.statusID = 112 OR b.statusID = 113) AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
+									ELSE 1 END
+							ELSE 1 END) AS Turnover, 
+						0 AS LicenseeWL,
+						SUM (CASE WHEN RAND() + 1 > 0 THEN b.PlayerComm ELSE 0 END) AS PlayerComm,
+						SUM (CASE WHEN RAND() + 1 > 0 THEN b.comm ELSE 0 END) AS LicenseeComm  ---- BA Comm
+				FROM	dbo.bettrans b WITH (NOLOCK)
+					INNER JOIN #match m
+						ON m.MatchId = b.MatchId
+					INNER JOIN @TempAg a 
+						ON a.CustID = b.recommend   
+					INNER JOIN BA WITH (NOLOCK) 
+						ON b.transid = BA.transid 	 	
+				WHERE b.statusID IN (111, 112, 113)
+				GROUP BY m.RptDateGMT, b.Winlostdate, b.recommend, b.currency
+			END
+
+			IF EXISTS (SELECT 1 FROM #BettypeProduct WHERE ProductCode = 'SB')  ---- SB exclude BA , BT, CO 
+			BEGIN
+				INSERT INTO #WinLoss (RptDateGMT, RptDate, CurrencyId, ProductCode, BetCount, Turnover, LicenseeWL, PlayerComm, LicenseeComm)
+				SELECT
+					m.RptDateGMT,   	
+					b.Winlostdate,			
+					b.currency,
+					p.ProductCode,
+					COUNT(CASE WHEN RAND() + 1 > 0 AND @IncludeDraw = 0 AND b.statusID = 111 THEN NULL ELSE b.transid END) AS BetCount,
+					SUM (CASE WHEN RAND() + 1 > 0 THEN b.stake ELSE 0 END
+						*
+						CASE WHEN @IncludeDraw = 0 THEN
+							CASE
+								WHEN b.statusID = 111 THEN 0
+								WHEN (b.statusID = 112 OR b.statusID = 113) AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
+								ELSE 1 END
+						ELSE 1 END) AS Turnover, 
+					- SUM (CASE WHEN RAND() + 1 > 0 THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWL,
+					SUM (CASE WHEN RAND() + 1 > 0 THEN b.PlayerComm ELSE 0 END) AS PlayerComm,
+					SUM (CASE WHEN RAND() + 1 > 0 THEN b.comm ELSE 0 END) AS LicenseeComm 
+				FROM dbo.bettrans b WITH (NOLOCK)  
+					INNER JOIN #match m
 						ON m.MatchId = b.MatchId
 					INNER JOIN @TempAg a 
 						ON b.recommend = a.custid 
 					INNER JOIN #BettypeProduct p 
 						ON p.bettype = b.bettype
-				WHERE	CONVERT(DATE,DATEADD(HOUR, @TimeZone + 4, ISNULL(m.GlobalShowTime, b.Winlostdate))) BETWEEN @FromDate AND @ToDate				
+				WHERE m.RptDateGMT BETWEEN @tmpFromDate AND @tmpToDate
 						AND b.statusID IN (111, 112, 113)
 						AND b.matchID > 0 
 						AND (CASE WHEN p.ProductCode = 'SB' THEN b.tpositiontaking ELSE 1 END <> 0 )  --- EXCLUDE BA 				
-				GROUP BY   
-					CONVERT(DATE,DATEADD(HOUR, @TimeZone + 4, ISNULL(m.GlobalShowTime, b.Winlostdate))), b.Winlostdate, b.currency, p.ProductCode
+				GROUP BY m.RptDateGMT, b.Winlostdate, b.currency, p.ProductCode
 			END		
 		END 
 		---#II.2: End : Get data from Bettrans table 
-
 	END 
 	---------## II: End :TimeZone <> GMT-4 ## -------------
 	----------#############################---------------
@@ -564,7 +648,3 @@ BEGIN
 
 END
 GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_LicWinlossByTimeZone] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LicWinlossByTimeZone] TO [vnteam]
-GO 
