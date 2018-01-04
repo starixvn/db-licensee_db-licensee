@@ -43,19 +43,7 @@ BEGIN
 
 	SELECT @ProductID = ProductID
 	FROM bodb_licensee.dbo.Product3rd WITH (NOLOCK)
-	WHERE ProductPrefix = 'BX'
-
-	-- #Region: Get Licensee Charge Rate
-	INSERT INTO @PartyList (PartyId, PartyName, BranchName, ParentId)
-	EXEC bodb_licensee.dbo.LA_PartyListSel
-
-	SELECT @PartyIds = COALESCE(@PartyIds + ', ', '') + CONVERT(VARCHAR(10), PartyId)
-	FROM @PartyList 
-
-	INSERT INTO @ChargeInfo(ProductID, Rate, Fromdate, Todate)
-	SELECT DISTINCT ProductID, DI_Rate, Fromdate, Todate
-	FROM bodb_licensee.dbo.LA_f_ChargeInfo(@PartyIDs, @FromDate, @ToDate, 'BX', 'OA', 1)
-	-- #EndRegion: Get Licensee Charge Rate
+	WHERE ProductPrefix = 'BX'	
 
 	-- #Region: Get list custIDs
 	DECLARE @tmpCust	AS TABLE (CustID INT, Currency INT)		
@@ -102,11 +90,10 @@ BEGIN
 	SELECT c.CustID, b.Winlostdate, b.Currency
 		, SUM(b.Turnover), SUM(ValidBetAmount), SUM(b.BetCount)
 		, SUM(b.Winlost), -SUM(b.Winlost), SUM(CommissionP)
-		, SUM((-b.Winlost * (1 - ci.Rate)) + (CommissionP - CommissionA))
+		, SUM((b.Winlost - b.WinlostA) + (CommissionP - CommissionA))
 		, SUM(CommissionA)
 	FROM bodb_LicenseeReport.dbo.rptDepWinlost_ThirdParty b WITH (NOLOCK)
 		INNER JOIN @tmpCust c ON b.Custid = c.CustID AND b.Currency = c.Currency
-		INNER JOIN @ChargeInfo ci ON b.ProductId = ci.ProductID AND b.Winlostdate BETWEEN ci.Fromdate AND ci.Todate
 	WHERE b.Winlostdate BETWEEN @FDate AND @ToDate
 		AND b.ProductId = @ProductID	
 	GROUP BY b.Winlostdate, b.Currency, c.CustID
