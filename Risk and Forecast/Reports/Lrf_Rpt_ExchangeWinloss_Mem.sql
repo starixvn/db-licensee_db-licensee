@@ -92,7 +92,7 @@ BEGIN
 	SELECT c.CustID, b.Winlostdate, b.Currency
 		, SUM(b.Turnover), SUM(ValidBetAmount), SUM(b.BetCount)
 		, SUM(b.Winlost), -SUM(b.Winlost), SUM(b.WinLostA), SUM(CommissionP)
-		, SUM((b.Winlost - b.WinlostA) + (CommissionP - CommissionA))
+		, -SUM(( b.Winlost + b.CommissionP) + ( b.WinLostA + CommissionA))
 		, SUM(CommissionA)
 	FROM bodb_LicenseeReport.dbo.rptDepWinlost_ThirdParty b WITH (NOLOCK)
 		INNER JOIN @tmpCust c ON b.Custid = c.CustID AND b.Currency = c.Currency
