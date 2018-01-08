@@ -23,7 +23,7 @@ BEGIN
 	SET NOCOUNT ON
 
 	CREATE TABLE #tmpResult (CustID INT, Winlostdate DATE, CurrencyID INT, TotalTrans INT, TurnOver MONEY
-							, NETTurnOver MONEY, Winlost MONEY, LicWinlost MONEY, CustComm MONEY, AmountDueTo MONEY, AgentComm MONEY)
+							, NETTurnOver MONEY, Winlost MONEY, LicWinlost MONEY, LicNetWL MONEY, CustComm MONEY, AmountDueTo MONEY, AgentComm MONEY)
 	CREATE TABLE #Exchange (ExchangeID INT, ExchageDate DATE, Code VARCHAR(5), GBP FLOAT, USD FLOAT, EUR FLOAT)
 	DECLARE @ChargeInfo TABLE (ProductID INT, Rate MONEY, Fromdate DATE, Todate DATE)
 	DECLARE @PartyList  TABLE (PartyId INT, PartyName	VARCHAR(100), BranchName VARCHAR(100), ParentId	INT)
@@ -71,6 +71,7 @@ BEGIN
 	SELECT ci.custid, ci.currency
 	FROM dbo.custInfo ci WITH (NOLOCK)
 		INNER JOIN @tempAg ag ON ci.recommend = ag.custID AND ci.currency = ag.currency
+	WHERE ag.CustId =  @CustID
 	-- #EndRegion: Get list custIDs
 
 	-- #Region: Handle Raw Data
@@ -83,13 +84,14 @@ BEGIN
 							TotalTrans ,							
 							Winlost ,							
 							LicWinlost,
+							LicNetWL,
 							CustComm,
 							AmountDueTo,
 							AgentComm
 						)
 	SELECT c.CustID, b.Winlostdate, b.Currency
 		, SUM(b.Turnover), SUM(ValidBetAmount), SUM(b.BetCount)
-		, SUM(b.Winlost), -SUM(b.Winlost), SUM(CommissionP)
+		, SUM(b.Winlost), -SUM(b.Winlost), SUM(b.WinLostA), SUM(CommissionP)
 		, SUM((b.Winlost - b.WinlostA) + (CommissionP - CommissionA))
 		, SUM(CommissionA)
 	FROM bodb_LicenseeReport.dbo.rptDepWinlost_ThirdParty b WITH (NOLOCK)
@@ -129,6 +131,7 @@ BEGIN
 		, SUM(r.LicWinlost)			AS LicenseeWinlost
 		, SUM(r.AmountDueTo)		AS AmountDueTo
 		, SUM(r.AgentComm)			AS AgentComm
+		, SUM(r.LicNetWL)			AS LicNetWL
 		---USD
 		, SUM(r.TurnOver * e.USD)			AS TurnOverUSD
 		, SUM(r.NETTurnOver * e.USD)		AS NetTurnOverUSD
@@ -138,6 +141,7 @@ BEGIN
 		, SUM(r.LicWinlost * e.USD)			AS LicenseeWinlostUSD
 		, SUM(r.AmountDueTo * e.USD)		AS AmountDueToUSD
 		, SUM(r.AgentComm * e.USD)			AS AgentCommUSD
+		, SUM(r.LicNetWL * e.USD)			AS LicNetWLUSD
 		---EUR
 		, SUM(r.TurnOver * e.EUR)			AS TurnOverEUR
 		, SUM(r.NETTurnOver * e.EUR)		AS NetTurnOverEUR
@@ -147,6 +151,7 @@ BEGIN
 		, SUM(r.LicWinlost * e.EUR)			AS LicenseeWinlostEUR
 		, SUM(r.AmountDueTo * e.EUR)		AS AmountDueToEUR
 		, SUM(r.AgentComm * e.EUR)			AS AgentCommEUR
+		, SUM(r.LicNetWL * e.EUR)			AS LicNetWLEUR
 		---GBP
 		, SUM(r.TurnOver * e.GBP)			AS TurnOverGBP
 		, SUM(r.NETTurnOver * e.GBP)		AS NetTurnOverGBP
@@ -156,6 +161,7 @@ BEGIN
 		, SUM(r.LicWinlost * e.GBP)			AS LicenseeWinlostGBP
 		, SUM(r.AmountDueTo * e.GBP)		AS AmountDueToGBP
 		, SUM(r.AgentComm * e.GBP)			AS AgentCommGBP
+		, SUM(r.LicNetWL * e.GBP)			AS LicNetWLGBP
 	FROM #tmpResult r
 		INNER JOIN #Exchange e ON r.Winlostdate = e.ExchageDate AND r.CurrencyID = e.ExchangeId
 		INNER JOIN dbo.customer c WITH  (NOLOCK) ON c.CustID = r.CustID
