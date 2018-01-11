@@ -40,16 +40,7 @@ BEGIN
 	DECLARE @endRun DATETIME
 	DECLARE @duration INT
 	SET @startRun = getdate()
-	SELECT @ErrCode = 0, @ErrMsg =''
-
-		EXEC DBEXT.bodb02.dbo.NAP_LM_CustomerSelCheckAllowedDownlines
-		@custid = @CustID
-		,@Language = 'E'
-		,@ErrMsg = @ErrMsg OUTPUT
-		,@ErrCode=@ErrCode OUTPUT
-
-	IF @ErrCode <> 0 
-		RETURN 
+	SELECT @ErrCode = 0, @ErrMsg =''	
 	
 	CREATE TABLE #temp(custid INT PRIMARY KEY, isfinished BIT DEFAULT(0))
 	INSERT INTO #temp(custid)
