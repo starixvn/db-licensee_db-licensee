@@ -1,7 +1,7 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_ExchangeWinloss_Mem]
-	  @CustID		INT
+	  @CustID		INT = 0
 	, @FromDate		DATE
 	, @ToDate		DATE	
 	, @AgentList	VARCHAR(MAX)
@@ -71,7 +71,7 @@ BEGIN
 	SELECT ci.custid, ci.currency
 	FROM dbo.custInfo ci WITH (NOLOCK)
 		INNER JOIN @tempAg ag ON ci.recommend = ag.custID AND ci.currency = ag.currency
-	WHERE ag.CustId =  @CustID
+	WHERE @CustID = 0 OR (@CustID <> 0 AND ag.CustId =  @CustID)
 	-- #EndRegion: Get list custIDs
 
 	-- #Region: Handle Raw Data
