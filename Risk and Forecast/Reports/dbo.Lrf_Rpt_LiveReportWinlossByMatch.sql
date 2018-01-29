@@ -2,8 +2,7 @@
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportWinlossByMatch]   	
     @ShowSB			BIT	= 0,
-    @ShowBA			BIT	= 0,
-	@ShowLC 		BIT = 0,
+    @ShowBA			BIT	= 0,	
 	@ShowVS			BIT = 0,
 	@ShowVS2		BIT = 0,	
     @SportId		INT = 0,
@@ -40,6 +39,7 @@ Revisions:
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
 	- 20170329@Paul: Implement Cash Out [RedmineID: #71727]
 	- 20170710@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]	
+	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 
 Return 3 tables:
 WinlostBySport
@@ -104,11 +104,6 @@ DECLARE @ProductList VARCHAR (500)
 
 DECLARE @IsTest BIT = 0
 SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
-
-IF @ShowLC = 1
-BEGIN
-    SELECT @ProductList = COALESCE(@ProductList + ',' + 'LC', 'LC')		
-END
 
 IF @ShowVS = 1
 BEGIN
@@ -293,7 +288,7 @@ BEGIN
 		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
 	END
 
-	IF ( @ShowLC = 1 OR @ShowVS = 1 OR @ShowVS2 = 1)
+	IF ( @ShowVS = 1 OR @ShowVS2 = 1)
 	BEGIN
 		INSERT INTO #tmpWinloss			
 		SELECT
@@ -310,7 +305,7 @@ BEGIN
 			- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,
 			COUNT(b.transid) BetCount,
 			b.bettype, 
-			CASE WHEN b.bettype BETWEEN 1101 AND 1199  THEN ISNULL(m.showtime,'') ELSE '' END AS ShowTime 
+			'' AS ShowTime 
 		FROM bettrans b  WITH (NOLOCK) 
 			INNER JOIN [match] m WITH(NOLOCK) ON b.matchid=m.matchid				
 			INNER JOIN @bettype bt ON b.bettype = bt.bettype
@@ -509,7 +504,7 @@ BEGIN
 		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
 	END		
 			
-	IF (@ShowLC = 1 OR @ShowVS = 1 OR @ShowVS2 = 1)
+	IF (@ShowVS = 1 OR @ShowVS2 = 1)
 	BEGIN		
 		INSERT INTO #tmpWinloss			
 		SELECT
@@ -526,7 +521,7 @@ BEGIN
 			- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,
 			COUNT(b.transid) BetCount,
 			b.bettype,
-			CASE WHEN b.bettype BETWEEN 1101 AND 1199  THEN ISNULL(m.showtime,'') ELSE '' END AS ShowTime 
+			'' AS ShowTime 
 		FROM bettrans14 b  WITH (NOLOCK) 
 			INNER JOIN [match14] m WITH(NOLOCK) ON b.matchid = m.matchid
 			INNER JOIN @bettype bt ON b.bettype = bt.bettype	
