@@ -1,5 +1,5 @@
-﻿USE [bodb02]
-GO
+﻿/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+
 ALTER PROCEDURE [dbo].[Lrf_Rpt_MobileWinloss]   
 	@LicenseeID		INT,
 	@UserID			INT,
@@ -10,7 +10,6 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_MobileWinloss]
 	@ShowRB			BIT = 0,  
 	@ShowNG			BIT = 0, 
 	@ShowBA			BIT = 0,
-	@ShowLC 		BIT = 0,
 	@ShowVS			BIT = 0,
 	@ShowBG			BIT = 0,
 	@ShowVB			BIT = 0,
@@ -54,7 +53,8 @@ AS
 		- 20160219@Joseph: Implement @PlatformType param (#50939)
 		- 20160331@Percy: Support Voidbridge single wallet [Redmine: #55057]
 		- 20160413@Victor: support MKK currency code [Redmine: #55745]
-		
+		- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
+
 	Param's Explanation:  
 	  + @PlatformType: 0: All  
 					   1: Asia (d)  
@@ -68,8 +68,7 @@ AS
 	  + @showSB: Show SportsBook bets
 	  + @ShowRB: Show RB bets
 	  + @ShowNG: Show Number game bets
-	  + @ShowBA: Show Bet Aggregator bets (combined WITH Sportsbook or Number Game)
-	  + @ShowLC: Show Live casino
+	  + @ShowBA: Show Bet Aggregator bets (combined WITH Sportsbook or Number Game)	 
 	  + @ShowVS: Show Virtual Sports
 	  + @ShowBG: Show Bingo
 	  + @ShowVB: Show Voidbridge
@@ -194,16 +193,7 @@ BEGIN
 		INSERT INTO @bettype(bettype)
 		SELECT	typeid FROM bettype (NOLOCK)
 		WHERE	typeid BETWEEN 81 AND 120
-	END
-
-	IF @ShowLC = 1	
-	BEGIN
-		INSERT INTO @sporttype(Sporttype) VALUES (162)
-	
-		INSERT INTO @bettype(bettype)
-		SELECT	typeid FROM bettype (NOLOCK)
-		WHERE	typeid BETWEEN 1101 AND 1199
-	END
+	END	
 
 	IF @ShowVS = 1	
 	BEGIN
@@ -495,7 +485,7 @@ BEGIN
 			GROUP BY tma.currency, b.statusID, b.custid	   
 		END
 
-		IF (@ShowRB = 1 OR @ShowNG = 1 OR @ShowLC = 1 OR @ShowVS = 1 OR @ShowBG = 1 OR @ShowVB = 1)
+		IF (@ShowRB = 1 OR @ShowNG = 1 OR @ShowVS = 1 OR @ShowBG = 1 OR @ShowVB = 1)
 		BEGIN
 			INSERT INTO #WinLoss
 			(
@@ -739,7 +729,7 @@ BEGIN
 			GROUP BY b.custid, b.currency, b.statusID	
 			
 		END
-		IF (@showSB = 1 OR @ShowRB = 1 OR @ShowNG = 1 OR @ShowLC = 1 OR @ShowVS = 1 OR @ShowBG = 1 OR @ShowVB = 1)
+		IF (@showSB = 1 OR @ShowRB = 1 OR @ShowNG = 1 OR @ShowVS = 1 OR @ShowBG = 1 OR @ShowVB = 1)
 		BEGIN
 			INSERT INTO #WinLoss
 			(

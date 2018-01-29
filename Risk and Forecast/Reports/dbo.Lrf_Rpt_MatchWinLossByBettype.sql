@@ -10,7 +10,6 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_MatchWinLossByBettype]
 	@showRB BIT = 0,  
 	@showNG BIT = 0,  
 	@showBA BIT = 0,  
-	@showLC BIT = 0,  
 	@showVS BIT = 0,
 	@ShowCS BIT = 0, --- RNG Casino  
 	@ShowBG BIT = 0, --- Bingo  
@@ -46,6 +45,7 @@ Revisions:
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
 	- 20170327@Paul: Implement Cash Out [RedmineID :#71727]
 	- 20170731@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
+	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 
 Param's Explanation:   
 	+ @AgentList: xml structure
@@ -136,11 +136,6 @@ CREATE TABLE #TempBetList(
 	 tpositiontaking SMALLMONEY ,
 	 betcount int
 	)    
-  
-IF @ShowLC = 1  
-BEGIN  
-	SELECT @ProductList = COALESCE(@ProductList + ',' + 'LC', 'LC')		  
-END  
      
 IF @ShowNG = 1  
 BEGIN  
@@ -367,7 +362,7 @@ BEGIN
 			   b.liveindicator    
 	 END  
    
-	 IF (@showNG=1 OR @showLC=1 OR @ShowVS=1 OR @ShowVS2 = 1)  
+	 IF (@showNG=1 OR @ShowVS=1 OR @ShowVS2 = 1)  
 	 BEGIN  
 	  --exclude BA tickets  
 		  INSERT  INTO @AgMatchWLDetails  
@@ -689,7 +684,7 @@ ELSE -- @showRB = 1, Racing
 			b.liveindicator  
 	END  
   
- IF (@showNG=1 OR @showLC=1 OR @ShowVS=1 OR @ShowVS2 = 1)  
+ IF (@showNG=1 OR @ShowVS=1 OR @ShowVS2 = 1)  
  BEGIN  
 	INSERT  INTO @AgMatchWLDetails  
 	SELECT  b.Winlostdate,  
