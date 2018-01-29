@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="1"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="1"></info>*/
 USE [bodb02]
 GO
  
@@ -29,6 +29,7 @@ Revision:
 	- 20171006@Percy: Hotfix - Add missing mutilple odds bettypes [RedmineID: #84457]
 		1. Basketball (603-607, 609-613, 615-617)
 		2. Virtual Sports 2 (2701-2707)
+	- 20180129@Percy: Hotfix page size, page index [RedmineID: #90104]
 Parameter's Explanation:
 			
 */
@@ -71,7 +72,7 @@ BEGIN
 					, c.username
 			)
 			INSERT INTO #tempCustPaging 
-			SELECT TOP (@topRow) 
+			SELECT
 				p.RowIdx AS rowno
 				, 1 AS whTicket
 				, p.winlostdate
@@ -80,7 +81,7 @@ BEGIN
 			FROM CTE_Paging p
 			WHERE (p.RowIdx BETWEEN @offsetRow AND @maxRow)
 				OR (@totalBettrans = 0 AND p.RowIdx = 1)
-				
+
 			OPTION (RECOMPILE)
 			
 			--SET totalBettrans
@@ -130,7 +131,7 @@ BEGIN
 						, c.username
 				)
 				INSERT INTO #tempCustPaging 
-				SELECT TOP (@topRow) 
+				SELECT
 					p.RowIdx AS rowno
 					, 2 AS whTicket
 					, p.winlostdate
@@ -202,7 +203,7 @@ BEGIN
 					
 				)
 				INSERT INTO #tempCustPaging 
-				SELECT TOP (@topRow) 
+				SELECT
 					p.RowIdx AS rowno
 					, 2 AS whTicket
 					, p.winlostdate
@@ -254,7 +255,7 @@ BEGIN
 					, c.custid
 			)
 			INSERT INTO #tempCustPaging 
-			SELECT TOP (@topRow) 
+			SELECT
 				p.RowIdx AS rowno
 				, 1 AS whTicket
 				, p.winlostdate
@@ -312,7 +313,7 @@ BEGIN
 						, c.custid
 				)
 				INSERT INTO #tempCustPaging 
-				SELECT TOP (@topRow) 
+				SELECT
 					p.RowIdx AS rowno
 					, 2 AS whTicket
 					, p.winlostdate
@@ -383,7 +384,7 @@ BEGIN
 						, c.custid
 				)
 				INSERT INTO #tempCustPaging 
-				SELECT TOP (@topRow) 
+				SELECT
 					p.RowIdx AS rowno
 					, 2 AS whTicket
 					, p.winlostdate
