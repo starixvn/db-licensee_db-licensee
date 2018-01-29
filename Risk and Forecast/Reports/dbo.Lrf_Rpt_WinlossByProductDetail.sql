@@ -12,7 +12,6 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail]
  @ShowRB		BIT=0,  
  @ShowNG		BIT=0, 
  @ShowBA		BIT=0,  
- @ShowLC 		BIT=0,	
  @ShowVS		BIT=0,
  @ShowCS 		BIT=0,-- RNG Casino
  @ShowBG		BIT=0,-- Bingo
@@ -72,6 +71,7 @@ AS
 	- 20170704@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
 	- 20170721@Sophia: Change to call Alias DBWH instead of DBDW2 
 	- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
+	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 
 	Param's Explanation:  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -81,7 +81,6 @@ AS
 	  + @ShowRB: Show RB bets
 	  + @ShowNG: Show Number game bets
 	  + @ShowBA: Show Bet Aggregator bets (combined with Sportsbook or Number Game)
-	  + @ShowLC: Show Live Casino	
 	  +	@ShowVS: Show Virtual Sport
 	  + @MoveBetsDay: The day we move tickets to bettrans14
 	  + @AgentList: xml structure
@@ -173,11 +172,6 @@ IF @ShowNG = 1
 BEGIN
 	SELECT @ProductList = COALESCE(@ProductList + ',' + 'NG', 'NG')
 END  
-
-IF @ShowLC = 1
-BEGIN
-	SELECT @ProductList = COALESCE(@ProductList + ',' + 'LC', 'LC')	
-END
 
 IF @ShowVS = 1
 BEGIN
@@ -462,8 +456,8 @@ BEGIN
 			statusID
 	END
 	
-	--NG+LC+VS+RB + KN + VB
-	IF 1 IN (@ShowNG, @ShowLC, @ShowVS, @ShowRB, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @showMGCRnG, @ShowVB, @ShowVS2, @ShowLT)
+	--NG+VS+RB + KN + VB
+	IF 1 IN (@ShowNG, @ShowVS, @ShowRB, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @showMGCRnG, @ShowVB, @ShowVS2, @ShowLT)
 	BEGIN
 		SELECT 
 			DISTINCT
@@ -711,7 +705,7 @@ BEGIN
 	END
 	
 	--exclude BA tickets
-	IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowLC, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @showMGCRnG, @ShowVB, @ShowLT)
+	IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @showMGCRnG, @ShowVB, @ShowLT)
 	BEGIN
 		INSERT INTO #SAgWinLoss  
 		SELECT 
@@ -1062,7 +1056,7 @@ BEGIN
 	END
 
 	--exclude BA tickets
-	IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @showMGCRnG, @ShowVB, @ShowVS2)
+	IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @showMGCRnG, @ShowVB, @ShowVS2)
 	BEGIN
 		INSERT INTO #SAgWinLoss  
 		SELECT 

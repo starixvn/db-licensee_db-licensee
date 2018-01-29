@@ -673,8 +673,7 @@ DROP TABLE #TempBetList
 	@showSB  = 1,
 	@showRB  = 1,
 	@showNG  = 1,
-	@showBA  = 1,
-	@showLC  = 1,
+	@showBA  = 1,	
 	@showVS  = 1
 
 */
