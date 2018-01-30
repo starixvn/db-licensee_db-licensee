@@ -69,6 +69,7 @@ Revision:
 	- 20171006@Percy: Hotfix - Add missing mutilple odds bettypes [RedmineID: #84457]
 		1. Basketball (603-607, 609-613, 615-617)
 		2. Virtual Sports 2 (2701-2707)
+	- 20180129@Percy: Hotfix page size, page index [RedmineID: #90104]
 
 Parameter's Explanation:
 	- @ReportBy:  1: daily, 2: monthly
@@ -94,8 +95,6 @@ BEGIN
 		, @rptCode			VARCHAR(MAX)
 		, @rptHash			VARBINARY(256)
 		, @rptHashSum		VARBINARY(256)
-		, @offsetRow 		INT
-		, @maxRow			INT
 	
 	--SET start time value
 	SET @startTime 			= GETDATE()
@@ -560,15 +559,6 @@ BEGIN
 	----------------------------------------
 	GET_PAGING:
 	BEGIN
-		IF(@IsExportExcel =  1)
-		BEGIN
-			SELECT @PageIndex	= 1
-				, @PageSize		= 65000
-		END
-		
-		SELECT @offsetRow	= (((@PageIndex - 1) * @PageSize) + 1) 
-			, @maxRow		= (@PageSize * @PageIndex)
-			
 		IF(@ReportBy = 1)
 		BEGIN
 			EXEC [dbo].[Lrf_Rpt_CustomerTurnOver_Pagination]
@@ -580,12 +570,13 @@ BEGIN
 				,@MoveBetsDay 	= @MoveBetsDay
 				,@Odds 			= @Odds
 				,@ReportBy  	= @ReportBy
-				,@offsetRow 	= @offsetRow 
-				,@maxRow		= @maxRow
+				,@pageSize 		= @pageSize
+				,@pageIndex		= @pageIndex
+				,@IsExportExcel	= @IsExportExcel
 				,@totalBettrans	= @totalBettrans OUTPUT
 				,@totalSumRpt	= @totalSumRpt OUTPUT
 		END
-		IF(@ReportBy = 2)
+		ELSE IF(@ReportBy = 2)
 		BEGIN
 			EXEC [dbo].[Lrf_Rpt_CustomerTurnOver_MonthlyPagination]
 				@searchCust 	= @searchCust
@@ -596,8 +587,9 @@ BEGIN
 				,@MoveBetsDay 	= @MoveBetsDay
 				,@Odds 			= @Odds
 				,@ReportBy  	= @ReportBy
-				,@offsetRow 	= @offsetRow 
-				,@maxRow		= @maxRow
+				,@pageSize 		= @pageSize
+				,@pageIndex		= @pageIndex
+				,@IsExportExcel	= @IsExportExcel
 				,@totalBettrans	= @totalBettrans OUTPUT
 				,@totalSumRpt	= @totalSumRpt OUTPUT
 		END
