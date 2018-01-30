@@ -56,6 +56,7 @@ AS
 		- 20161226@Francis: Hotfix BA filter with username syntax error when building dynamic string
 		- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, Remove @LicenseeType [Redmine: #71679]
 		- 20171017@Johnson: offer comm for Allbet [Redmine: #82036]
+		- 20180130@Johnson: exclude cashout dummy from result [Redmine:#90168]
 	Param's Explanation:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 		+ @SpecialLevel: default value = -1 (all)
@@ -160,7 +161,8 @@ BEGIN
 			FROM #TempAg t 
 				 INNER JOIN custInfo ci WITH(NOLOCK) ON t.custid = ci.recommend
 				 INNER JOIN Customer c WITH (NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid 
-			WHERE ci.roleid=1 
+			WHERE ci.roleid=1
+					AND c.username  NOT LIKE ''%CASHOUT%''
 					AND
 					(
 						(''' + @CustStatus + ''' = '''')
@@ -283,6 +285,7 @@ BEGIN
 				 INNER JOIN custInfo ci WITH(NOLOCK) ON t.custid = ci.recommend
 				 INNER JOIN Customer c WITH (NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid 
 			WHERE ci.roleid=1 
+					AND c.username NOT LIKE ''%CashOut%''
 					AND
 					(
 						(''' + @CustStatus + ''' = '''')
@@ -358,6 +361,7 @@ BEGIN
 					LEFT JOIN bodb_licensee.dbo.LicenseeCustComm cc ON cc.custid = lc.custid AND cc.Licenseeid = ' + CONVERT(VARCHAR(10),@LicenseeID) + '
 				WHERE 
 					(lc.username2 LIKE ' + '''%$' + @Username + '%''' + ' OR lc.username LIKE ''' + @Username + '%''' + ')
+					AND lc.username NOT LIKE ''%CashOut%''
 					AND
 					(
 						(''' + @CustStatus + ''' = '''')
@@ -387,6 +391,7 @@ BEGIN
 					' AND ci.custid = lb.custid AND lb.[Status] = ''Running''
 				WHERE 
 					(lc.username2 LIKE ' + '''%$' + @Username + '%''' + ' OR lc.username LIKE ''' + @Username + '%''' + ')
+					AND lc.username NOT LIKE ''%CashOut%''
 					AND
 					(
 						(''' + @CustStatus + ''' = '''')
