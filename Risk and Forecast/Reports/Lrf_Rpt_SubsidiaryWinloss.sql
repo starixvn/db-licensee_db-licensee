@@ -410,3 +410,7 @@ BEGIN
 
 END
 GO
+GRANT EXECUTE ON [dbo].[Lrf_Rpt_SubsidiaryWinloss] TO [bodbLicenseeNet]
+GO
+GRANT VIEW definition ON [dbo].[Lrf_Rpt_SubsidiaryWinloss] TO vnteam
+GO

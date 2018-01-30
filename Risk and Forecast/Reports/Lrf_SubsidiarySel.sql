@@ -19,3 +19,7 @@ BEGIN
 	 WHERE SiteName = @LicenseeName
 END
 GO
+GRANT EXECUTE ON [dbo].[Lrf_SubsidiarySel] TO [bodbLicenseeNet]
+GO
+GRANT VIEW definition ON [dbo].[Lrf_SubsidiarySel] TO vnteam
+GO
