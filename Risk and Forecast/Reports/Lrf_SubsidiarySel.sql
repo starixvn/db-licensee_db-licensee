@@ -18,3 +18,4 @@ BEGIN
 	 FROM Operator WITH(NOLOCK)
 	 WHERE SiteName = @LicenseeName
 END
+GO
