@@ -12,8 +12,9 @@ ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver_MonthlyPagination]
 	,@MoveBetsDay 	SMALLDATETIME
 	,@Odds 			FLOAT
 	,@ReportBy  	TINYINT   =  1 
-	,@offsetRow 	INT
-	,@maxRow		INT
+	,@PageSize 		INT
+	,@PageIndex 	INT
+	,@IsExportExcel BIT
 	,@totalBettrans	INT = 0 OUTPUT
 	,@totalSumRpt	INT = 0 OUTPUT
 ) 
@@ -29,14 +30,20 @@ Revision:
 	- 20171006@Percy: Hotfix - Add missing mutilple odds bettypes [RedmineID: #84457]
 		1. Basketball (603-607, 609-613, 615-617)
 		2. Virtual Sports 2 (2701-2707)
-	
+	- 20180129@Percy: Hotfix page size, page index [RedmineID: #90104]
+
 Parameter's Explanation:
 			
 */
 BEGIN
 	SET NOCOUNT ON;
 
-	DECLARE @topRow INT 
+	DECLARE @offsetRow INT, @maxRow INT, @topRow INT 
+	
+	SELECT
+		@offsetRow = (((@PageIndex - 1) * @PageSize) + 1)
+	   ,@maxRow = (@PageSize * @PageIndex)
+	    
 	CREATE TABLE #tempPaging 
 	(
 		winlostdate	SMALLDATETIME
@@ -354,7 +361,7 @@ BEGIN
 		GROUP BY t.whticket
 	)
 	INSERT INTO #tempCustPaging 
-	SELECT TOP (@topRow) 
+	SELECT
 		p.RowIdx AS rowno
 		, p.whTicket
 		, p.winlostdate
@@ -363,6 +370,7 @@ BEGIN
 	FROM CTE_MixPaging p
 		INNER JOIN CTE_TotalRow t ON p.whticket = t.whticket
 	WHERE p.RowIdx BETWEEN @offsetRow AND @maxRow
+		OR @IsExportExcel = 1
 
 	UNION ALL -- just get sum totalrow
 	SELECT TOP (1) 
@@ -401,7 +409,7 @@ BEGIN
 	-- Reset paging
 	DELETE p
 	FROM #tempCustPaging p
-	WHERE (p.rowno < @offsetRow OR p.rowno > @maxRow)
+	WHERE p.rowno = 0
 	
 	DROP TABLE #tempPaging;
 

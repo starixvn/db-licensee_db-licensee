@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="1"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="1"></info>*/
 USE [bodb02]
 GO
  
@@ -11,9 +11,10 @@ ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver_Pagination]
 	,@tempToDate 	SMALLDATETIME
 	,@MoveBetsDay 	SMALLDATETIME
 	,@Odds 			FLOAT
-	,@ReportBy  	TINYINT   =  1 
-	,@offsetRow 	INT
-	,@maxRow		INT
+	,@ReportBy  	TINYINT   =  1
+	,@PageSize 		INT
+	,@PageIndex 	INT
+	,@IsExportExcel BIT
 	,@totalBettrans	INT = 0 OUTPUT
 	,@totalSumRpt	INT = 0 OUTPUT
 ) 
@@ -29,13 +30,20 @@ Revision:
 	- 20171006@Percy: Hotfix - Add missing mutilple odds bettypes [RedmineID: #84457]
 		1. Basketball (603-607, 609-613, 615-617)
 		2. Virtual Sports 2 (2701-2707)
+	- 20180129@Percy: Hotfix page size, page index [RedmineID: #90104]
+
 Parameter's Explanation:
 			
 */
 BEGIN
 	SET NOCOUNT ON;
 
-	DECLARE @topRow INT 
+	DECLARE @offsetRow INT, @maxRow INT, @topRow INT 
+	
+	SELECT
+		@offsetRow = (((@PageIndex - 1) * @PageSize) + 1)
+	   ,@maxRow = (@PageSize * @PageIndex)
+
 	SET @topRow = (@maxRow - @offsetRow) + 1
 
 	-- VIEW specific members
@@ -71,7 +79,7 @@ BEGIN
 					, c.username
 			)
 			INSERT INTO #tempCustPaging 
-			SELECT TOP (@topRow) 
+			SELECT
 				p.RowIdx AS rowno
 				, 1 AS whTicket
 				, p.winlostdate
@@ -80,7 +88,8 @@ BEGIN
 			FROM CTE_Paging p
 			WHERE (p.RowIdx BETWEEN @offsetRow AND @maxRow)
 				OR (@totalBettrans = 0 AND p.RowIdx = 1)
-				
+				OR @IsExportExcel = 1
+
 			OPTION (RECOMPILE)
 			
 			--SET totalBettrans
@@ -130,7 +139,7 @@ BEGIN
 						, c.username
 				)
 				INSERT INTO #tempCustPaging 
-				SELECT TOP (@topRow) 
+				SELECT
 					p.RowIdx AS rowno
 					, 2 AS whTicket
 					, p.winlostdate
@@ -139,6 +148,7 @@ BEGIN
 				FROM CTE_Paging p
 				WHERE (p.RowIdx BETWEEN @offsetRow AND @maxRow)
 					OR ( @totalSumRpt = 0 AND p.RowIdx = (@totalBettrans+ 1))
+					OR @IsExportExcel = 1
 				
 				OPTION (RECOMPILE)
 			END	
@@ -202,7 +212,7 @@ BEGIN
 					
 				)
 				INSERT INTO #tempCustPaging 
-				SELECT TOP (@topRow) 
+				SELECT
 					p.RowIdx AS rowno
 					, 2 AS whTicket
 					, p.winlostdate
@@ -211,6 +221,7 @@ BEGIN
 				FROM CTE_Paging p
 				WHERE (p.RowIdx BETWEEN @offsetRow AND @maxRow)
 					OR ( @totalSumRpt = 0 AND p.RowIdx = (@totalBettrans+ 1))
+					OR @IsExportExcel = 1
 				
 				OPTION (RECOMPILE)
 			END
@@ -254,7 +265,7 @@ BEGIN
 					, c.custid
 			)
 			INSERT INTO #tempCustPaging 
-			SELECT TOP (@topRow) 
+			SELECT
 				p.RowIdx AS rowno
 				, 1 AS whTicket
 				, p.winlostdate
@@ -263,6 +274,7 @@ BEGIN
 			FROM CTE_Paging p
 			WHERE (p.RowIdx BETWEEN @offsetRow AND @maxRow)
 				OR (@totalBettrans = 0 AND p.RowIdx = 1)
+				OR @IsExportExcel = 1
 			
 			OPTION (RECOMPILE)
 			
@@ -312,7 +324,7 @@ BEGIN
 						, c.custid
 				)
 				INSERT INTO #tempCustPaging 
-				SELECT TOP (@topRow) 
+				SELECT
 					p.RowIdx AS rowno
 					, 2 AS whTicket
 					, p.winlostdate
@@ -321,6 +333,7 @@ BEGIN
 				FROM CTE_Paging p
 				WHERE (p.RowIdx BETWEEN @offsetRow AND @maxRow )
 					OR ( @totalSumRpt = 0 AND p.RowIdx = (@totalBettrans+ 1))
+					OR @IsExportExcel = 1
 				
 				OPTION (RECOMPILE)
 			END
@@ -383,7 +396,7 @@ BEGIN
 						, c.custid
 				)
 				INSERT INTO #tempCustPaging 
-				SELECT TOP (@topRow) 
+				SELECT
 					p.RowIdx AS rowno
 					, 2 AS whTicket
 					, p.winlostdate
@@ -392,6 +405,7 @@ BEGIN
 				FROM CTE_Paging p
 				WHERE (p.RowIdx BETWEEN @offsetRow AND @maxRow )
 					OR ( @totalSumRpt = 0 AND p.RowIdx = (@totalBettrans+ 1))
+					OR @IsExportExcel = 1
 				
 				OPTION (RECOMPILE)
 			END
@@ -402,9 +416,11 @@ BEGIN
 		END
 	END
 	-- Reset paging
-	DELETE p
-	FROM #tempCustPaging p
-	WHERE (p.rowno < @offsetRow OR p.rowno > @maxRow)
+	IF @IsExportExcel = 0
+		DELETE p
+		FROM #tempCustPaging p
+		WHERE (p.rowno < @offsetRow OR p.rowno > @maxRow)
+
 	RETURN;
 END
 GO
