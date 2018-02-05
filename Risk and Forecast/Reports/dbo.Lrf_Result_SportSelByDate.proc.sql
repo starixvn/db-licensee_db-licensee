@@ -1,4 +1,6 @@
-﻿USE [bodb02]
+﻿/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+
+USE [bodb02]
 GO
 /****** Object:  StoredProcedure [dbo].[Lrf_Result_SportSelByDate]    Script Date: 12/02/2014 10:07:48 AM ******/
 SET ANSI_NULLS ON
@@ -33,7 +35,8 @@ Revisions:
 	20150414@Sophia: Support BetRadar
 	20150416@Sophia: Condition of showing Running match different between Sporting solution and BetRadar
 	20150810@Sophia: Hardcode to exclude ResultDetail of bettype 216, 217 for a temporary time [#40991]
-	
+	20180129@Harper: Remove LC from product list [RedmineID: #85965]
+
 */
 /* sample test case:
 	exec Lrf_Result_SportSelByDate @EventDate='2013-10-06 00:00:00',@licenseeid=1
@@ -61,12 +64,7 @@ IF EXISTS (SELECT TOP 1 1 FROM #LicenseeProduct WHERE ProductID=2) -- Number Gam
 		INSERT INTO @LicenseeProduct
 		SELECT 161
 	END
-
-IF EXISTS (SELECT TOP 1 1 FROM #LicenseeProduct WHERE ProductID=4) -- LIve Casino
-	BEGIN 
-		INSERT INTO @LicenseeProduct
-		SELECT 162
-	END	
+	
 IF EXISTS (SELECT TOP 1 1 FROM #LicenseeProduct WHERE ProductID=5) -- Virtual Sports
 	BEGIN 
 	

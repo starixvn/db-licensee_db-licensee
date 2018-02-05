@@ -56,7 +56,7 @@ Revisions:
 	- 20161115@Jim: LRF - Integrate new product Fishing World [RedmineID : #66737]
 	- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @LicenseeType [Redmine: #71679]
 	- 20170329@Paul: Implement Cash Out [RedmineID: #71727]
-	 
+	- 20180205@Harper: Remove LC from product list [RedmineID: #85965]
 */
 
 BEGIN
@@ -381,7 +381,6 @@ BEGIN
 						OR 
 						(
 							b.bettype BETWEEN 81 AND 120 
-							OR b.bettype BETWEEN 1101 AND 1199 
 							OR b.bettype BETWEEN 1201 AND 1299 
 							OR b.bettype BETWEEN 1501 AND 1599 --Keno
 							OR b.bettype BETWEEN 4001 AND 7999
@@ -570,7 +569,7 @@ BEGIN
 			SelectedMonthWLBoughtTicket
 		)
 		SELECT  ag.currency,
-				ISNULL(-SUM(CASE WHEN ISNULL(b.isBA, 0) = 0 AND (b.sporttype IN (0, 161, 162, 180, 251, 252, 202)) THEN b.winlost 
+				ISNULL(-SUM(CASE WHEN ISNULL(b.isBA, 0) = 0 AND (b.sporttype IN (0, 161, 180, 251, 252, 202)) THEN b.winlost 
 								ELSE 0 END), 0) AS SelectedMonthLicenseeWL,
 				ISNULL(-SUM(CASE WHEN ISNULL(b.isBA, 0) = 1 THEN (b.winlost + b.awinlost + b.comm) ELSE 0 END), 0) AS SelectedMonthAmtDuetoBA,
 				ISNULL(-SUM(CASE WHEN b.sporttype = 151 THEN (b.winlost + b.awinlost + b.comm) ELSE 0 END), 0) AS SelectedMonthAmtDuetoRB,
@@ -599,7 +598,7 @@ BEGIN
 		INSERT INTO @SumTemp
 		SELECT 
 			ag.currency,
-			ISNULL(- SUM(CASE WHEN ISNULL(b.isBA,0) = 0 AND ( b.sporttype IN (0,161,162,180,251,252,202 ))  THEN b.winlost ELSE 0 END),0) AS SelectedMonthLicenseeWL,
+			ISNULL(- SUM(CASE WHEN ISNULL(b.isBA,0) = 0 AND ( b.sporttype IN (0,161,180,251,252,202 ))  THEN b.winlost ELSE 0 END),0) AS SelectedMonthLicenseeWL,
 			ISNULL(- SUM ( CASE WHEN ISNULL(b.isBA,0) = 1 THEN  (b.winlost+b.awinlost+b.comm) ELSE 0 END),0) AS SelectedMonthAmtDuetoBA,
 			ISNULL(- SUM ( CASE WHEN b.sporttype = 151 THEN (b.winlost+b.awinlost+b.comm) ELSE 0 END),0) AS SelectedMonthAmtDuetoRB,
 			ISNULL(SUM (CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END),0) AS SelectedMonthWinlossRB,

@@ -49,6 +49,7 @@ Revisions:
 	- 20170327@Paul: Implement Cash Out [RedmineID :#71727]
 	- 20170710@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
 	- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
+	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 
 Param's Explanation: 
 	+ @AgentList: xml structure
@@ -189,7 +190,6 @@ BEGIN
 							OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 							)
 						OR b.bettype BETWEEN 81 AND 120
-						OR b.bettype BETWEEN 1101 AND 1199
 						OR b.bettype BETWEEN 1201 AND 1299
 						OR b.bettype BETWEEN 2701 AND 2799
 						OR b.bettype BETWEEN 1501 AND 1599 --Keno
@@ -278,7 +278,6 @@ BEGIN
 							OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 							)
 						OR b.bettype BETWEEN 81 AND 120
-						OR b.bettype BETWEEN 1101 AND 1199
 						OR b.bettype BETWEEN 1201 AND 1299
 						OR b.bettype BETWEEN 2701 AND 2799
 						OR b.bettype BETWEEN 1501 AND 1599 --Keno products

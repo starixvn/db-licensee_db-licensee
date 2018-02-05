@@ -1,3 +1,5 @@
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+
 USE [bodb02]
 GO
 
@@ -18,7 +20,7 @@ Original: [Age_Result_MatchSelResultDetail]
 Revisions: 
 	- 20150407@Sophia: Support to get BetRadar
 	- 20150810@Sophia: Hardcode to exclude ResultDetail of bettype 216, 217 for a temporary time [#40991]
-
+	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 -------
 EXEC Lrf_Result_MatchSelByLeague_Detail_xtest
 	@MatchId = 10860032
@@ -37,7 +39,7 @@ BEGIN
 			m.matchid,		 
 			m.matchcode,
 			m.eventdate, 
-			CASE WHEN m.sporttype NOT IN (162,161,180,186)
+			CASE WHEN m.sporttype NOT IN (161,180,186)
 					THEN m.GlobalShowTime
 					ELSE m.kickofftime
 					END kickofftime,
@@ -98,7 +100,7 @@ BEGIN
 			m.matchid,		 
 			m.matchcode,
 			m.eventdate, 
-			CASE WHEN m.sporttype NOT IN (162,161,180,186)
+			CASE WHEN m.sporttype NOT IN (161,180,186)
 					THEN m.GlobalShowTime
 					ELSE m.kickofftime
 					END kickofftime,

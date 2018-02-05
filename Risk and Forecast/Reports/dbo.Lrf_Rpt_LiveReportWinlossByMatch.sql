@@ -319,8 +319,7 @@ BEGIN
 			((@Liveindicator = 0 and b.liveindicator = 0)
 			OR (@Liveindicator = 1 and b.liveindicator = 1)
 			OR (@Liveindicator = 2))
-		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype,
-					CASE WHEN b.bettype BETWEEN 1101 AND 1199  THEN ISNULL(m.showtime,'') ELSE '' END 
+		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
 		
 		-- Parlay for Betradar
 		INSERT INTO #tmpWinloss			
@@ -534,8 +533,7 @@ BEGIN
 			((@Liveindicator = 0 and b.liveindicator = 0)
 			OR (@Liveindicator = 1 and b.liveindicator = 1)
 			OR (@Liveindicator = 2))
-		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype, 
-				CASE WHEN b.bettype BETWEEN 1101 AND 1199  THEN ISNULL(m.showtime,'') ELSE '' END
+		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
 		
 		-- Parlay of Betradar
 		INSERT INTO #tmpWinloss			
@@ -582,8 +580,8 @@ SELECT
 	b.homeid,	
 	b.awayid,
 	--b.bettype,
-	CASE WHEN b.bettype BETWEEN 1101 AND 1199 THEN b.bettype ELSE 0 END as bettype,
-	CASE WHEN b.bettype BETWEEN 1101 AND 1199  THEN ISNULL(b.showtime,'') ELSE '' END AS ShowTime ,
+	0 AS bettype,
+	'' AS ShowTime ,
 	SUM(TurnOver)	AS Turnover,   
 	SUM(Winlost)		AS Winlost,  
 	SUM(LicenseeWL) AS LicenseeWL,
@@ -617,7 +615,7 @@ SELECT
 FROM #tmpWinloss b  WITH (NOLOCK) 	
 	INNER JOIN  #TempExchange e
 	ON e.ExchangeDate = b.winlostdate  AND e.exchangeid = b.currency
-group by b.matchid, b.homeid, b.awayid,CASE WHEN b.bettype BETWEEN 1101 AND 1199 THEN b.bettype ELSE 0 END ,CASE WHEN b.bettype BETWEEN 1101 AND 1199  THEN ISNULL(b.showtime,'') ELSE '' END
+group by b.matchid, b.homeid, b.awayid
 
 DROP TABLE #TempExchange
 DROP TABLE #tmpWinloss

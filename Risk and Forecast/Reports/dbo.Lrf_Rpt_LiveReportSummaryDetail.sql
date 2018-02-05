@@ -64,6 +64,7 @@ Revisions:
 	- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 	- 20170814@Harper: One RNG - Offer New Tablet Games [RedmineID: #78424]
 	- 20171009@Sophia: Add ProductCode [RedmineID : #82797]
+	- 20180205@Harper: Remove LC from product list [RedmineID: #85965]
 
 Param's Explanation:  
 	+ @Liveindicator : indicate that whether the report will get live data or not
@@ -204,7 +205,7 @@ BEGIN
 		END
 
 		--Not BA
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'RB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT'))		
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'RB', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT'))		
 
 		BEGIN
 			SELECT	@sql = @sql + '--Get data from bettrans for non - BA' + CHAR(13)
@@ -215,7 +216,6 @@ BEGIN
 								+ 'WHEN b.bettype < 31 OR b.bettype BETWEEN 121 AND 999 OR b.Bettype BETWEEN 1301 and 1399 THEN ''SB''' + CHAR(13)			
 								+ 'WHEN b.bettype BETWEEN 31 AND 33 THEN ''RB''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 81 AND 120 THEN ''NG''' + CHAR(13)
-								+ 'WHEN b.bettype BETWEEN 1101 AND 1199 THEN ''LC''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1201 AND 1299 THEN ''VS''' + CHAR(13)
 								+ 'WHEN b.bettype = 73	THEN ''BG''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1501 AND 1599 THEN ''KN'' -- Keno' + CHAR(13)
@@ -250,7 +250,6 @@ BEGIN
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','NG')) = 1 THEN 'OR b.bettype BETWEEN 81 AND 120 '+ CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SB')) = 1 THEN 'OR (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 and 1399))' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','RB')) = 1 THEN 'OR b.bettype BETWEEN 31 AND 33' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','LC')) = 1 THEN 'OR b.bettype BETWEEN 1101 AND 1199' + CHAR(13)ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VS')) = 1 THEN 'OR b.bettype BETWEEN 1201 AND 1299' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','BG')) = 1 THEN 'OR b.bettype = 73' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','KN')) = 1 THEN 'OR b.bettype BETWEEN 1501 AND 1599' + CHAR(13) ELSE '' END 
@@ -266,7 +265,6 @@ BEGIN
 								+ 'WHEN b.bettype < 31 OR b.bettype BETWEEN 121 AND 999 OR b.Bettype BETWEEN 1301 and 1399 THEN ''SB''' + CHAR(13)			
 								+ 'WHEN b.bettype BETWEEN 31 AND 33 THEN ''RB''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 81 AND 120 THEN ''NG''' + CHAR(13)
-								+ 'WHEN b.bettype BETWEEN 1101 AND 1199 THEN ''LC''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1201 AND 1299 THEN ''VS''' + CHAR(13)
 								+ 'WHEN b.bettype = 73	THEN ''BG''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1501 AND 1599 THEN ''KN'' -- Keno' + CHAR(13)
@@ -397,7 +395,7 @@ BEGIN
 		END
 
 		--Not BA 
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'RB', 'NG', 'SB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT'))			
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'RB', 'NG', 'SB', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT'))			
 		BEGIN
 			SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
 								+ 'SELECT b.rptDate, b.currencyID,' + CHAR(13)
@@ -405,7 +403,6 @@ BEGIN
 								+ 'WHEN b.bettype < 31 OR b.bettype BETWEEN 121 AND 999 OR b.Bettype BETWEEN 1301 and 1399 THEN ''SB''' + CHAR(13)			
 								+ 'WHEN b.bettype BETWEEN 31 AND 33 THEN ''RB''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 81 AND 120 THEN ''NG''' + CHAR(13)
-								+ 'WHEN b.bettype BETWEEN 1101 AND 1199 THEN ''LC''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1201 AND 1299 THEN ''VS''' + CHAR(13)
 								+ 'WHEN b.bettype = 73	THEN ''BG''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1501 AND 1599 THEN ''KN'' -- Keno' + CHAR(13)
@@ -437,7 +434,6 @@ BEGIN
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','NG')) = 1 THEN 'OR b.bettype BETWEEN 81 AND 120 '+ CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SB')) = 1 THEN 'OR (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 and 1399))' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','RB')) = 1 THEN 'OR b.bettype BETWEEN 31 AND 33' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','LC')) = 1 THEN 'OR b.bettype BETWEEN 1101 AND 1199' + CHAR(13)ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VS')) = 1 THEN 'OR b.bettype BETWEEN 1201 AND 1299' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','BG')) = 1 THEN 'OR b.bettype = 73' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','KN')) = 1 THEN 'OR b.bettype BETWEEN 1501 AND 1599' + CHAR(13) ELSE '' END 
@@ -453,7 +449,6 @@ BEGIN
 								+ 'WHEN b.bettype < 31 OR b.bettype BETWEEN 121 AND 999 OR b.Bettype BETWEEN 1301 and 1399 THEN ''SB''' + CHAR(13)			
 								+ 'WHEN b.bettype BETWEEN 31 AND 33 THEN ''RB''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 81 AND 120 THEN ''NG''' + CHAR(13)
-								+ 'WHEN b.bettype BETWEEN 1101 AND 1199 THEN ''LC''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1201 AND 1299 THEN ''VS''' + CHAR(13)
 								+ 'WHEN b.bettype = 73	THEN ''BG''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1501 AND 1599 THEN ''KN'' -- Keno' + CHAR(13)
