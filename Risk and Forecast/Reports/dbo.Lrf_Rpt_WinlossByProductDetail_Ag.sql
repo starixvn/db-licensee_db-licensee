@@ -1,7 +1,5 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 
-/****** Object:  Stored Procedure dbo.Lrf_Rpt_WinlossByProductDetail_Ag    Script Date: 7/21/2017 1:48:26 PM ******/
-
 ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail_Ag]  
  @CustID		INT = 0, --memberID
  @FromDate		SMALLDATETIME,  
@@ -66,6 +64,7 @@ AS
 	- 20170704@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
 	- 20170721@Sophia: Change to call Alias DBWH instead of DBDW2 
 	- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
+	- 20180205@Harper: LRF - Fix handle for getting data only invidual member at Licensee level [RedmineID: #90485]
 
 	Param's Explanation:  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -108,12 +107,12 @@ DECLARE @RecommendID		INT
 DECLARE @ProductList		VARCHAR (500)
 
 SET @RecommendID = 0 
-IF (@CustID<>0) 
-	BEGIN 
-		SELECT @RecommendID = recommend
-		FROM dbo.Custinfo WITH (NOLOCK) 
-		WHERE CustId = @CustID
-	END
+IF (@CustID <> 0) 
+BEGIN 
+	SELECT @RecommendID = recommend
+	FROM dbo.Custinfo WITH (NOLOCK) 
+	WHERE CustId = @CustID	
+END
 
 SELECT @VNDCurrencyName = currency FROM exchange (NOLOCK) WHERE ExchangeId = 51
 
@@ -279,6 +278,7 @@ BEGIN
 			b.statusID IN (111, 112, 113) 
 			AND (b.bettype < 901 OR b.bettype > 904)
 			AND (b.bettype < 911 OR b.bettype > 914)
+			AND (@CustID = 0 OR (@CustID <> 0 AND b.CustId = @CustID)) -- Get Specific User
 		GROUP BY   
 			b.winlostdate,b.recommend,tma.currency, b.statusID
 	END
@@ -322,7 +322,7 @@ BEGIN
 			AND (b.bettype < 901 OR b.bettype > 904)
 			AND (b.bettype < 911 OR b.bettype > 914)
 			AND b.tpositiontaking<>0
-			
+			AND (@CustID = 0 OR (@CustID <> 0 AND b.CustId = @CustID)) -- Get Specific User
 		GROUP BY   
 			b.winlostdate,b.recommend, tma.currency ,statusID
 	END
@@ -356,6 +356,7 @@ BEGIN
 				AND b.winlostdate BETWEEN @TempFromDate AND @TDate  
 				AND b.statusID  IN (111, 112, 113)
 				AND b.matchid = 2799
+				AND (@CustID = 0 OR (@CustID <> 0 AND b.CustId = @CustID)) -- Get Specific User
 		END
 
 		INSERT INTO #SAgWinLoss
@@ -404,6 +405,7 @@ BEGIN
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
 			b.statusID  IN (111, 112, 113)
+			AND (@CustID = 0 OR (@CustID <> 0 AND b.CustId = @CustID)) -- Get Specific User
 		GROUP BY   
 			b.winlostdate,b.recommend, tma.currency ,
 			CASE WHEN b.bettype BETWEEN 1201 AND 1299 THEN
@@ -456,7 +458,7 @@ BEGIN
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND 
 			(bettype BETWEEN 31 AND 33) AND 
 			b.statusID  IN (111, 112, 113)
-			
+			AND (@CustID = 0 OR (@CustID <> 0 AND b.CustId = @CustID)) -- Get Specific User
 		GROUP BY   
 			b.winlostdate,b.recommend,tma.currency,statusID	
 	END
@@ -505,6 +507,7 @@ BEGIN
 			AND (b.bettype < 901 OR b.bettype > 904)
 			AND (b.bettype < 911 OR b.bettype > 914)
 			AND ISNULL(b.isBA,0) = 1
+			AND (@CustID = 0 OR (@CustID <> 0 AND b.CustId = @CustID)) -- Get Specific User
 		GROUP BY  b.winlostdate, b.recommend,b.currency, b.statusID
 	END
 	
@@ -547,6 +550,7 @@ BEGIN
 			AND (b.bettype < 901 OR b.bettype > 904)
 			AND (b.bettype < 911 OR b.bettype > 914)
 			AND ISNULL(b.isBA,0) = 0
+			AND (@CustID = 0 OR (@CustID <> 0 AND b.CustId = @CustID)) -- Get Specific User
 		GROUP BY  
 			b.winlostdate, b.recommend,b.currency, 
 			t.ProductCode,
@@ -569,7 +573,8 @@ BEGIN
 		DECLARE  @tblVS AS TABLE 
 							(rptdate    datetime
 							,sportID	 int
-							,recommend   int
+							,recommend   INT
+                            ,custID		 INT
 							,currency	 int
 							,status 	 MONEY
 							,turnoverIBC MONEY
@@ -578,9 +583,11 @@ BEGIN
 							,commissionP MONEY
 							,WinlossA  	MONEY
 							,betcount INT )
+
 		INSERT INTO @tblVS (rptdate    
 							,sportID	
-							,recommend   
+							,recommend  
+							,custID
 							,currency	 
 							,status 	 
 							,turnoverIBC 
@@ -592,7 +599,8 @@ BEGIN
 		SELECT 
 			 rptdate    
 			,sportID	
-			,recommend   
+			,recommend 
+			,CustID  
 			,currency	 
 			,status 	 
 			,stake 
@@ -636,7 +644,8 @@ BEGIN
 				ELSE 1 END
 			ELSE 1 END
 		FROM  @tblVS  b
-		INNER JOIN @TempAg ag ON ag.CustID = b.recommend AND b.Currency  = ag.Currency 
+			INNER JOIN @TempAg ag ON ag.CustID = b.recommend AND b.Currency  = ag.Currency 
+		WHERE (@CustID = 0 OR (@CustID <> 0 AND b.CustId = @CustID)) -- Get Specific User
 		GROUP BY  
 			b.rptdate,
 			b.status,  
@@ -696,6 +705,7 @@ BEGIN
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND b.bettype NOT IN (901,902,903,904)
 			AND ISNULL(b.isBA,0) = 1
+			AND (@CustID = 0 OR (@CustID <> 0 AND b.CustId = @CustID)) -- Get Specific User
 		GROUP BY  b.winlostdate, b.recommend, b.currency, b.statusID
 	END
 
@@ -736,6 +746,7 @@ BEGIN
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND b.bettype NOT IN (901,902,903,904)
 			AND ISNULL(b.isBA,0) = 0
+			AND (@CustID = 0 OR (@CustID <> 0 AND b.CustId = @CustID)) -- Get Specific User
 		GROUP BY  
 			b.winlostdate,b.recommend,  b.currency, 
 			t.ProductCode
