@@ -1,9 +1,4 @@
-﻿
-SET QUOTED_IDENTIFIER ON 
-GO
-SET ANSI_NULLS ON 
-GO
-
+﻿/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet,bodbDownlineNet,bodbExtAccNet,Dot_Member,vnteam" viewers="vnteam" isFunction="0"></info>*/
  ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberBAStatus]
 	@LicenseeID INT,
 	@CustID INT,
@@ -56,6 +51,8 @@ Revisions:
 	- 20150513@Jim: set SB comm of BA member when BA status changing
 	- 20151015@Jim: Integrate Sportbook2 (Feature #44759)
 	- 20170509@Winnie: LRF-Set back VR setting=0 for BA members [RedmineID:#76231]
+	- 20171012@Winnie: LRF - Edit for Bonus system [RedmineID: #72792]
+
 Param's Explanation:
 
 */
@@ -226,8 +223,18 @@ IF @isBA = 1 --enable BA
 			END
 		END
 
+		-- Check Member belong the Bonus campaign or not
+		IF EXISTS (SELECT 1 FROM dbo.custInfo WITH (NOLOCK) WHERE custid = @CustID AND ISNULL(BonusWalletFlag, 0) = 1)
+		BEGIN
+			SELECT @ErrMsg = CASE @Langkey 
+								WHEN 'en-US' THEN 'Cannot turn on BA for customers joining Bonus campaign.'
+								ELSE  [dbo].[Lrf_f_Get_MsgNamebyMsgID](200048,@Langkey)
+					END, @ErrCode = 200048
+			RETURN
+		END
+
 		--apply commission
-								EXEC [Lrf_CustomerUpdMemberBAComm]
+		EXEC [Lrf_CustomerUpdMemberBAComm]
 				@LicenseeID = @LicenseeID,
 				@CustID = @CustID,
 				@ModifyBy = @ModifyBy,
@@ -244,8 +251,9 @@ IF @isBA = 1 --enable BA
 
 		SET @ErrCode=0
 		SET @ErrMsg= ''
+
 		--apply PT
-				EXEC [Lrf_CustomerUpdMemberBA_PositionTaking]
+		EXEC [Lrf_CustomerUpdMemberBA_PositionTaking]
 		@custid = @CustID,
 		@apositiontaking_1 = 0 ,
 		@apositiontaking_2 = 0 ,
@@ -336,9 +344,9 @@ IF @isBA = 1 --enable BA
 
 
 		IF(@danger=0)
-			BEGIN
-				SELECT @danger=100
-			END	
+		BEGIN
+			SELECT @danger=100
+		END	
 		EXEC DBLIC.bodb_licensee.dbo.[Lrf_LicenseeBAHistoryIns]
 		@LicenseeID = @LicenseeID,
 		@CustID = @CustID,
@@ -744,6 +752,4 @@ GO
  GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMemberBAStatus] TO [bodbLicenseeNet]
 GO 
  GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMemberBAStatus] TO [bodbAdminNet]
-GO 
- GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerUpdMemberBAStatus] TO [bodbAdminNet]
-GO 
+GO  
