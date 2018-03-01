@@ -1,4 +1,5 @@
-﻿ALTER  PROCEDURE [dbo].[Lrf_CustomerSelStatus]
+﻿/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/ 
+ALTER  PROCEDURE [dbo].[Lrf_CustomerSelStatus]
 	@CustID INT,
 	@AdminID INT = 0
 AS 
@@ -11,6 +12,8 @@ Original: Acc_CustomerSelStatus
 Revisions:
    - 20130719@Jim: remove suspended status 
    - 20131023@Jim: Allow users to enable/ disable Casino games for specific players	
+   - 20180228@Vicky: Remove LC from product list [Redmine: #85965]
+   
 Param's Explanation:
 • @CustID: customer id.   
 */
@@ -45,7 +48,7 @@ SELECT --ISNULL(reject,0) AS Suspend,
 		ISNULL(DisableFinancial,0) AS DisableFI,
 		ISNULL(SyncCasino,0) AS SyncCasino,
 		ISNULL(DisableCasino,0) AS DisableCasino,
-		ISNULL(SyncLiveCasino,0) AS SyncLiveCasino,
+		--ISNULL(SyncLiveCasino,0) AS SyncLiveCasino,
 		ISNULL(DisableLiveCasino,0) AS DisableLiveCasino,
 		ISNULL(DisableOutright,0) AS DisableOutright,
 		ISNULL(srecommend, 0) AS SRecommend,
@@ -59,6 +62,3 @@ WHERE ci.CustID = @CustID
 
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_CustomerSelStatus] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerSelStatus] TO vnteam
