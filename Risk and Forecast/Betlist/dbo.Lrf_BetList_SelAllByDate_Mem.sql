@@ -1,4 +1,10 @@
-﻿/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
+﻿USE [bodb02]
+GO
+/****** Object:  StoredProcedure [dbo].[Lrf_BetList_SelAllByDate_Mem_xtest]    Script Date: 7/7/2015 2:27:28 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
 ALTER PROCEDURE [dbo].[Lrf_BetList_SelAllByDate_Mem]
 	@LicenseeID			INT,
 	@UserID				INT,
@@ -14,6 +20,7 @@ ALTER PROCEDURE [dbo].[Lrf_BetList_SelAllByDate_Mem]
 	@ShowRB				BIT = 0,
 	@ShowNG				BIT = 0,
 	@ShowBA				BIT = 0,
+	@ShowLC				BIT = 0,
 	@ShowVS				BIT = 0,
 	@ShowCS				BIT = 0, -- RNG Casino
 	@ShowBG				BIT = 0, -- Bingo 
@@ -92,7 +99,6 @@ AS
 		- 20160202@Kos: Support PH All In One 1.2 [#Redmine: 50897]
 		- 20160216@Kos: Support yesterday running ticket [Redmine: #52277]
 		- 20160406@Kos: Support Voidbridge [#Redmine: 54925]
-		- 20180228@Vicky: Remove LC from product list [Redmine: #85965]
 */
 
 BEGIN
@@ -222,6 +228,7 @@ BEGIN
 	WHERE 	(ProductID	= CASE WHEN @ShowSB	= 0 AND @ShowBA = 0 THEN 1 END AND Bettype NOT IN (901, 902, 903))
 		OR ProductID	= CASE WHEN @ShowRB		= 0 THEN 2 END
 		OR ProductID	= CASE WHEN @ShowNG		= 0 THEN 3 END
+		OR ProductID	= CASE WHEN @ShowLC		= 0 THEN 4 END
 		OR ProductID	= CASE WHEN @ShowVS		= 0 THEN 5 END
 		OR ProductID	= CASE WHEN @ShowCS		= 0 THEN 6 END
 		OR ProductID	= CASE WHEN @ShowBG		= 0 THEN 7 END
@@ -730,7 +737,7 @@ BEGIN
 	END
 
 	-- Number Game, Live Casino, Virtual Sports
-	IF @ShowNG = 1 OR @ShowVS = 1
+	IF @ShowNG = 1 OR @ShowLC = 1 OR @ShowVS = 1
 	BEGIN
 		INSERT INTO #BetListSelAllByDateMem
 		SELECT 
@@ -1694,6 +1701,27 @@ BEGIN
 		WHERE sbt.ProductID = 2 AND sbt.EventType = 2
 	END
 
+	IF @ShowLC = 1
+	BEGIN
+		INSERT INTO @BettransDetail
+		SELECT 
+			bg.refno,
+			bg.odds,
+			bg.stake,
+			bg.status,
+			bg.apositiontaking,
+			bg.bettype,
+			bg.betteam,
+			bg.stake * e.EUR,
+			bg.stake * e.USD,
+			bg.stake * e.GBP
+		FROM dbo.bettransg AS bg WITH (NOLOCK)
+			INNER JOIN #BetListSelAllByDateMem AS b ON bg.refno = b.refno AND bg.custid = @CustID
+			INNER JOIN #TempExchange AS e ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
+			INNER JOIN @SportBettype AS sbt ON b.bettype = sbt.bettype
+		WHERE sbt.ProductID = 4 AND sbt.EventType = 1
+	END
+
 	IF @ShowVS = 1
 	BEGIN
 		INSERT INTO @BettransDetail
@@ -1726,4 +1754,8 @@ BEGIN
 END
 
 
+GO
+GRANT  EXECUTE  ON [dbo].[Lrf_BetList_SelAllByDate_Mem]  TO [bodbLicenseeNet]
+GO
+GRANT VIEW DEFINITION ON [dbo].[Lrf_BetList_SelAllByDate_Mem] TO [vnteam]
 GO
