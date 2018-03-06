@@ -1,5 +1,5 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
-ALTER  PROCEDURE [dbo].[Lrf_CustomerSelStatus]
+ALTER PROCEDURE [dbo].[Lrf_CustomerSelStatus]
     @CustID INT,
     @AdminID INT = 0
 AS 
