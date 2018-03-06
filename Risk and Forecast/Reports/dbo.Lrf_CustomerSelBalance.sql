@@ -1,3 +1,5 @@
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+
 USE [bodb02]
  
 SET QUOTED_IDENTIFIER ON
@@ -287,6 +289,7 @@ BEGIN
 		INNER JOIN @TempAg a ON b.recommend = a.custid AND b.currency = a.currency
 	WHERE b.bettype <= 1399 
 		AND b.statusid IN (0,1)
+		AND b.bettype NOT BETWEEN 1101 AND 1199 --Remove LC
 	GROUP BY a.currency
 
 	--Keno sport
@@ -367,6 +370,7 @@ BEGIN
 	WHERE b.winlostdate BETWEEN @MoveBetsDay AND @Today 
 		AND (b.bettype <= 1599 OR b.bettype BETWEEN 4001 AND 7999)
 		AND b.bettype NOT BETWEEN 1011 AND 1020
+		AND b.bettype NOT BETWEEN 1101 AND 1199 -- Remove LC
 		AND b.statusID IN (111,112,113)
 
 	INSERT INTO @LicenseeWL(winlostdate, currency, LicenseeWL, AmtDuetoBA, AmtDuetoRB, WinlossRB, CommBA, CommRB, PlayerComm, WLBetTicket, BetTradeComm, WLBoughtTicket)
