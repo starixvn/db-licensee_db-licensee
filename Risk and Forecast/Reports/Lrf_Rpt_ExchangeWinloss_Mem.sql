@@ -13,6 +13,7 @@ AS
 	DB: DBEXT.bodb02 
 	Revisions: 
 		- 20171215@Harper: Create new report Exchange Winloss [RedmineID: #86640]
+		- 20180302@Harper: Return CustID for Support Bet List [RedmineID: #91048]
 
 	Param's Explanation:  		
 
@@ -117,6 +118,7 @@ BEGIN
 	-- #Region: Return data
 	SELECT SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS nickname
 		, c.username		
+		, c.CustID
 		, r.CurrencyID
 		, CASE 
 		 		WHEN r.CurrencyID = 51 THEN @VNDCurrencyName
@@ -167,6 +169,7 @@ BEGIN
 		INNER JOIN dbo.customer c WITH  (NOLOCK) ON c.CustID = r.CustID
 	GROUP BY SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2))
 		, c.username
+		, c.CustID
 		, r.CurrencyID
 		, CASE 
 			WHEN CurrencyID = 51 THEN @VNDCurrencyName
