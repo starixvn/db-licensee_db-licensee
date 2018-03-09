@@ -299,7 +299,7 @@ BEGIN
 			ON b.CustID = c.CustID
 		WHERE rptDate BETWEEN @_FromDate AND @TempToDate
 			AND b.statusID IN (111,112,113)	
-			AND (@TicketType = -1 OR b.TicketType = @TicketType)
+			AND (@TicketType = -1 OR ISNULL(b.TicketType, 0) = @TicketType)
 		GROUP BY b.rptDate
 			, b.CustID
 			, b.CurrencyId
