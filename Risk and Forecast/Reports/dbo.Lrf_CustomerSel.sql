@@ -57,6 +57,8 @@ AS
 		- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, Remove @LicenseeType [Redmine: #71679]
 		- 20171017@Johnson: offer comm for Allbet [Redmine: #82036]
 		- 20180130@Johnson: exclude cashout dummy from result [Redmine:#90168]
+		- 20180228@Vicky: Remove LC from product list [Redmine: #85965]
+		
 	Param's Explanation:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 		+ @SpecialLevel: default value = -1 (all)
@@ -580,7 +582,6 @@ BEGIN
 		ISNULL(lc.SBComm, 0) AS SBComm,
 		ISNULL(lc.RacingComm, 0) AS RacingComm,
 		ISNULL(lc.NGComm, 0) AS NGComm,
-		ISNULL(lc.LCComm, 0) AS LCComm,
 		ISNULL(lc.RNGComm, 0) AS RNGComm,
 		ISNULL(lc.ParlayComm, 0) AS ParlayComm,
 		ISNULL(lc.AllbetComm,0) AS AllbetComm,

@@ -4,12 +4,10 @@ ALTER PROCEDURE [dbo].[Acc_ExecRep_Cust_02]
 	@SBComm DECIMAL(9,8) ,
 	@NGComm DECIMAL(9,8)=0,	
 	@RacingComm DECIMAL(9,8)=0,
-	@LCComm DECIMAL(9,8)=0,
 	@ParlayComm DECIMAL(9,8)=0,
 	@AllbetComm DECIMAL(9,8)=0,
 	@IsUpdateNG BIT = 0,
 	@IsUpdateRacing BIT = 0,
-	@IsUpdateLC BIT = 0,
 	@IsUpdateAllbet BIT = 0
 AS
 /*
@@ -26,6 +24,8 @@ Revisions:
 	- 20160805@Jim: LRF - Offer different member commission for parlay tickets [RedmineID:#61897]
 	- 20171020@Johnson: offer Allbet commision [Redmine: #82036]
 	- 20171201@Johnson: enhance AB comm setting, dont move individual setting if not change comm AB [Redmine: #87352]
+	- 20180228@Vicky: Remove LC from product list [Redmine: #85965]
+	
 Param's Explanation:
 • @ErrCode:
     = 0: Transaction recorded successfully.
@@ -98,14 +98,6 @@ BEGIN
 			AND playerdiscount <> @RacingComm
 			AND sporttype IN (151,152,153)
 	END		
-	IF (@IsUpdateLC=1) -- update Live Casino
-	BEGIN	
-		UPDATE [dbo].CustSettingGame WITH (ROWLOCK, UPDLOCK)
-		SET playerdiscount = @LCComm 
-		WHERE custid IN (SELECT CustID FROM @res)  
-			AND playerdiscount <> @LCComm
-			AND sporttype = 162  	
-	END
 	
 	IF (@IsUpdateAllbet=1)
 	BEGIN
