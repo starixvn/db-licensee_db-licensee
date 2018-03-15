@@ -19,7 +19,7 @@ AS
 		- 20170302@Helen: Betradar Virtual Sports  -Integration for Cash [Redmine: 77274]
 		- 20170724@Helen: Lottery in DCS Structure - [Redmine:79997]
 		- 20180228@Vicky: Remove LC from product list [Redmine: #85965]
-		
+		- 20180315@Winnie: Bet Setting - Cash Out product is not listed in Product dropdown box [HotFix #92097]
 	Param's Explanation:
 */
 
@@ -183,7 +183,7 @@ BEGIN
 		   ,ProductCode
 		   ,isEnable
 	FROM @tblProductActive t 
-	WHERE ProductID NOT IN (3,7,9,25,4)-- Hide Setting for CashOut and LC
+	WHERE ProductID NOT IN (3,7,9,4)-- Hide Setting for CashOut and LC
 	ORDER BY ProductID ASC
 	
 END
