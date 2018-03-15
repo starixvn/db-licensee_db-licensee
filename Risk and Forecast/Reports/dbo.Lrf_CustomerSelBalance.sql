@@ -1,3 +1,5 @@
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+
 USE [bodb02]
  
 SET QUOTED_IDENTIFIER ON
@@ -56,7 +58,7 @@ Revisions:
 	- 20161115@Jim: LRF - Integrate new product Fishing World [RedmineID : #66737]
 	- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @LicenseeType [Redmine: #71679]
 	- 20170329@Paul: Implement Cash Out [RedmineID: #71727]
-	 
+	- 20180205@Harper: Remove LC from product list [RedmineID: #85965]
 */
 
 BEGIN
@@ -287,6 +289,7 @@ BEGIN
 		INNER JOIN @TempAg a ON b.recommend = a.custid AND b.currency = a.currency
 	WHERE b.bettype <= 1399 
 		AND b.statusid IN (0,1)
+		AND b.bettype NOT BETWEEN 1101 AND 1199 --Remove LC
 	GROUP BY a.currency
 
 	--Keno sport
@@ -367,6 +370,7 @@ BEGIN
 	WHERE b.winlostdate BETWEEN @MoveBetsDay AND @Today 
 		AND (b.bettype <= 1599 OR b.bettype BETWEEN 4001 AND 7999)
 		AND b.bettype NOT BETWEEN 1011 AND 1020
+		AND b.bettype NOT BETWEEN 1101 AND 1199 -- Remove LC
 		AND b.statusID IN (111,112,113)
 
 	INSERT INTO @LicenseeWL(winlostdate, currency, LicenseeWL, AmtDuetoBA, AmtDuetoRB, WinlossRB, CommBA, CommRB, PlayerComm, WLBetTicket, BetTradeComm, WLBoughtTicket)
@@ -381,7 +385,6 @@ BEGIN
 						OR 
 						(
 							b.bettype BETWEEN 81 AND 120 
-							OR b.bettype BETWEEN 1101 AND 1199 
 							OR b.bettype BETWEEN 1201 AND 1299 
 							OR b.bettype BETWEEN 1501 AND 1599 --Keno
 							OR b.bettype BETWEEN 4001 AND 7999
@@ -570,7 +573,7 @@ BEGIN
 			SelectedMonthWLBoughtTicket
 		)
 		SELECT  ag.currency,
-				ISNULL(-SUM(CASE WHEN ISNULL(b.isBA, 0) = 0 AND (b.sporttype IN (0, 161, 162, 180, 251, 252, 202)) THEN b.winlost 
+				ISNULL(-SUM(CASE WHEN ISNULL(b.isBA, 0) = 0 AND (b.sporttype IN (0, 161, 180, 251, 252, 202)) THEN b.winlost 
 								ELSE 0 END), 0) AS SelectedMonthLicenseeWL,
 				ISNULL(-SUM(CASE WHEN ISNULL(b.isBA, 0) = 1 THEN (b.winlost + b.awinlost + b.comm) ELSE 0 END), 0) AS SelectedMonthAmtDuetoBA,
 				ISNULL(-SUM(CASE WHEN b.sporttype = 151 THEN (b.winlost + b.awinlost + b.comm) ELSE 0 END), 0) AS SelectedMonthAmtDuetoRB,
@@ -599,7 +602,7 @@ BEGIN
 		INSERT INTO @SumTemp
 		SELECT 
 			ag.currency,
-			ISNULL(- SUM(CASE WHEN ISNULL(b.isBA,0) = 0 AND ( b.sporttype IN (0,161,162,180,251,252,202 ))  THEN b.winlost ELSE 0 END),0) AS SelectedMonthLicenseeWL,
+			ISNULL(- SUM(CASE WHEN ISNULL(b.isBA,0) = 0 AND ( b.sporttype IN (0,161,180,251,252,202 ))  THEN b.winlost ELSE 0 END),0) AS SelectedMonthLicenseeWL,
 			ISNULL(- SUM ( CASE WHEN ISNULL(b.isBA,0) = 1 THEN  (b.winlost+b.awinlost+b.comm) ELSE 0 END),0) AS SelectedMonthAmtDuetoBA,
 			ISNULL(- SUM ( CASE WHEN b.sporttype = 151 THEN (b.winlost+b.awinlost+b.comm) ELSE 0 END),0) AS SelectedMonthAmtDuetoRB,
 			ISNULL(SUM (CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END),0) AS SelectedMonthWinlossRB,

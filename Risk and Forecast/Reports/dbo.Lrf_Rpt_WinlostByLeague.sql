@@ -1,3 +1,5 @@
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+
 USE [bodb02]
 GO
  
@@ -43,6 +45,8 @@ exec Lrf_Rpt_WinlostByLeague
 		- 20160720@Jim : Implement 67 new bet types (PH All in one - Phase 2) [Redmine : #53520]
 		- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID [Redmine: #71679]
 		- 20170327@Paul: Implement Cash Out [RedmineID :#71727]
+		- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
+
 	Parameter's Explanation:
 		- @LicenseeID : Licensee ID
 		- @UserID : UserID who run this report
@@ -769,11 +773,7 @@ BEGIN
 				THEN 0
 			ELSE b.KickoffTime
 			END KickoffTime
-		,CASE 
-			WHEN b.bettype BETWEEN 1101 AND 1199
-				THEN b.bettype
-			ELSE 0
-			END AS bettype
+		, 0 AS bettype
 		--,ProductName
 		,--bettype,  
 		leagueid
@@ -817,11 +817,7 @@ BEGIN
 			END matchcode
 		,isNeutral
 		,b.sporttype
-		,CASE 
-			WHEN b.bettype BETWEEN 1101 AND 1199
-				THEN b.showtime
-			ELSE ''
-			END AS showtime
+		,'' AS showtime
 		,sum(b.betcount) betcount
 	--,odds2
 	FROM @AgMatchWLDetails b
@@ -844,12 +840,7 @@ BEGIN
 			WHEN ISNULL(b.KickoffTime, 0) = 0
 				THEN 0
 			ELSE b.KickoffTime
-			END
-		,CASE 
-			WHEN b.bettype BETWEEN 1101 AND 1199
-				THEN b.bettype
-			ELSE 0
-			END
+			END		
 		--,ProductName
 		,--bettype,  
 		CASE 
@@ -859,24 +850,8 @@ BEGIN
 			END
 		,leagueid
 		,isNeutral
-		,b.sporttype
-		,CASE 
-			WHEN b.bettype BETWEEN 1101 AND 1199
-				THEN showtime
-			ELSE ''
-			END
-	--,b.odds2
-	--,b.betcount
-	/*ORDER BY CASE ProductName
-			WHEN 'SB'
-				THEN 0
-			WHEN 'NG'
-				THEN 1
-			WHEN 'LC'
-				THEN 2
-			ELSE 3
-			END
-	*/
+		,b.sporttype		
+	
 	DROP TABLE #match
 END
 GO

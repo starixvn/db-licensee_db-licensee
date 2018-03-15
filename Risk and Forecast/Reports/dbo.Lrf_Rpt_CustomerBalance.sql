@@ -1,9 +1,4 @@
 ﻿/*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
-
-
-/****** Object:  Stored Procedure dbo.Lrf_Rpt_CustomerBalance    Script Date: 7/10/2017 1:46:42 PM ******/
-
-/****** Object:  Stored Procedure dbo.Lrf_Rpt_CustomerBalance    Script Date: 7/10/2017 1:46:42 PM ******/
  
 ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerBalance] 
 	@FromDate		SMALLDATETIME
@@ -14,8 +9,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerBalance]
 	, @PageIndex	INT = 1
 	, @showSB		BIT = 0
 	, @ShowRB		BIT = 0
-	, @ShowNG		BIT = 0
-	, @ShowLC		BIT = 0
+	, @ShowNG		BIT = 0	
 	, @ShowVS		BIT = 0
 	, @ShowCS		BIT = 0
 	, @ShowBG		BIT = 0 -- RNG Casino  	
@@ -67,6 +61,7 @@ Revisions:
 	- 20170330@Paul: Implement Cash Out [RedmineID :#71727]
     - 20170706@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
 	- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
+	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 
 Param's Explanation:  
 	+ @excludeTest: remove currency UUS  
@@ -118,10 +113,7 @@ BEGIN
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'RB', 'RB')	
 
 	IF @ShowNG = 1
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'NG', 'NG')		
-
-	IF @ShowLC = 1
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'LC', 'LC')		
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'NG', 'NG')	
 		
 	IF @ShowVS = 1
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS', 'VS')

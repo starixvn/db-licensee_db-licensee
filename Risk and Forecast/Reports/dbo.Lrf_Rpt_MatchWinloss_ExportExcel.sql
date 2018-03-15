@@ -9,8 +9,7 @@
     @showSB BIT = 0,
 	@showRB BIT = 0,
 	@showNG BIT = 0,
-	@showBA BIT = 0,
-    @showLC BIT = 0,
+	@showBA BIT = 0,    
 	@showVS BIT = 0,
 	@showCS BIT = 0,
 	@showBG BIT =0,
@@ -31,6 +30,7 @@ Revisions:
 	- 20150123@Jim: support base on Currency GBP
 	- 20150622@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission 
 	- 20170706@Harper: LRF - Integrate Bet Radar Virtual Sports & Cashout[RedmineID: #78241]
+	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 
 Param's Explanation: 
 	
@@ -103,11 +103,6 @@ CREATE TABLE #TempBetList(
 	tpositiontaking	SMALLMONEY,
 	liveindicator BIT
 )
-
-IF @ShowLC = 1
-BEGIN	
-    SELECT @ProductList = COALESCE(@ProductList + ',' + 'LC', 'LC')	
-END
  
 IF @ShowNG = 1
 BEGIN
@@ -285,7 +280,7 @@ BEGIN
 			
 	END
 	
-	IF (@showNG = 1 OR @showLC = 1 OR @ShowVS = 1 OR @showVS2 = 1) 
+	IF (@showNG = 1 OR @ShowVS = 1 OR @showVS2 = 1) 
 	BEGIN
 		--exclude BA tickets
 		INSERT  INTO @AgMatchWLDetails
@@ -309,7 +304,7 @@ BEGIN
 			m.matchcode,
 			ISNULL(m.isNeutral, CONVERT(BIT, 0)) AS IsNeutral,
 			b.liveindicator AS liveindicator,
-			CASE WHEN b.bettype BETWEEN 1101 AND 1199 THEN m.showtime ELSE '' END AS ShowTime
+			'' AS ShowTime
 		FROM    
 			#TempBetList b
 			INNER JOIN match m WITH ( NOLOCK ) ON m.matchid = b.matchid
@@ -325,9 +320,7 @@ BEGIN
 			m.leagueid,
 			m.matchcode,
 			m.isNeutral	,
-			b.liveindicator,
-			CASE WHEN b.bettype BETWEEN 1101 AND 1199 THEN m.showtime ELSE '' END
-				
+			b.liveindicator				
 	END
 	
 	IF @showRB = 1
@@ -524,7 +517,7 @@ BEGIN
 			b.liveindicator
 	END
 
-	IF (@showNG = 1 OR @showLC = 1 OR @ShowVS = 1 OR @showVS2 = 1)
+	IF (@showNG = 1 OR @ShowVS = 1 OR @showVS2 = 1)
 	BEGIN
 		INSERT  INTO @AgMatchWLDetails
 		SELECT  
@@ -547,7 +540,7 @@ BEGIN
 			m.matchcode,
 			ISNULL(m.isNeutral, CONVERT(BIT, 0)) AS IsNeutral,
 			b.liveindicator AS liveindicator,
-			CASE WHEN b.bettype BETWEEN 1101 AND 1199 THEN m.showtime ELSE '' END as showtime
+			'' AS showtime
 		FROM   
 			#TempBetList b
 			INNER JOIN match14 m WITH ( NOLOCK ) ON m.matchid = b.matchid
@@ -562,9 +555,7 @@ BEGIN
 			m.leagueid,
 			m.matchcode,
 			m.isNeutral,
-			b.liveindicator,
-			CASE WHEN b.bettype BETWEEN 1101 AND 1199 THEN m.showtime ELSE '' END
-				
+			b.liveindicator				
 	END    
 
 	IF @showRB=1
@@ -682,8 +673,7 @@ DROP TABLE #TempBetList
 	@showSB  = 1,
 	@showRB  = 1,
 	@showNG  = 1,
-	@showBA  = 1,
-	@showLC  = 1,
+	@showBA  = 1,	
 	@showVS  = 1
 
 */

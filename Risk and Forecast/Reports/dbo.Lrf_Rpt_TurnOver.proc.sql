@@ -6,8 +6,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_TurnOver]
     @username		VARCHAR(50) = NULL,
     @showSB			BIT = 0,  
     @ShowRB			BIT = 0,  
-    @ShowNG			BIT = 0, 
-    @ShowLC			BIT = 0,
+    @ShowNG			BIT = 0,     
     @ShowVS			BIT = 0,
     @ShowCS			BIT = 0, -- RNG Casino
     @ShowBG			BIT = 0, -- Bingo
@@ -65,6 +64,7 @@ Revisions:
    - 20170328@Harper: LRF - Integrate new product Cashout [#71727]
    - 20170710@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
    - 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
+   - 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 
 Param's Explanation:
     
@@ -108,7 +108,6 @@ BEGIN
 	IF @ShowSB		= 1 INSERT INTO @sporttype(sporttype) VALUES(0)
 	IF @ShowRB		= 1 INSERT INTO @sporttype(sporttype) VALUES(151) 
 	IF @ShowNG		= 1 INSERT INTO @sporttype(sporttype) VALUES(161)
-	IF @ShowLC		= 1 INSERT INTO @sporttype(sporttype) VALUES(162)
 	IF @ShowVS		= 1 INSERT INTO @sporttype(sporttype) VALUES(180)
 	IF @ShowCS		= 1 INSERT INTO @sporttype(sporttype) VALUES(251),(208),(209),(210)
 	IF @ShowBG		= 1 INSERT INTO @sporttype(sporttype) VALUES(252)

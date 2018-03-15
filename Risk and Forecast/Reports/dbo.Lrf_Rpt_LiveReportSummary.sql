@@ -56,6 +56,7 @@ Revisions:
 	- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 	- 20170814@Harper: One RNG - Offer New Tablet Games [RedmineID: #78424]
 	- 20171009@Sophia: Add ProductCode [RedmineID : #82797]
+	- 20180205@Harper: Remove LC from product list [RedmineID: #85965]
 
 Param's Explanation:
 	+ @IsLive : indicate that whether the report will get live data or not
@@ -321,7 +322,7 @@ BEGIN
 		END
 
 		--Others	
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'NG', 'RB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT'))			
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'NG', 'RB', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT'))			
 		BEGIN
 			INSERT INTO #tmpWinloss
 			SELECT
@@ -329,7 +330,6 @@ BEGIN
 				t.currency,
 				CASE 
 					WHEN b.bettype BETWEEN 81 AND 120 THEN 'NG'
-					WHEN b.bettype BETWEEN 1101 AND 1199 THEN 'LC'
 					WHEN b.bettype BETWEEN 1201 AND 1299 THEN 'VS'
 					WHEN b.bettype = 73	THEN 'BG'
 					WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN' -- Keno
@@ -356,7 +356,6 @@ BEGIN
 				AND b.statusID IN (111, 112, 113)
 				AND (
 					b.bettype BETWEEN 81 AND 120
-					OR b.bettype BETWEEN 1101 AND 1199
 					OR b.bettype BETWEEN 1201 AND 1299
 					OR b.bettype IN (73) -- BINGO
 					OR b.bettype BETWEEN 1501 AND 1599 -- Keno
@@ -373,7 +372,6 @@ BEGIN
 				t.currency,
 				CASE 
 					WHEN b.bettype BETWEEN 81 AND 120 THEN 'NG'
-					WHEN b.bettype BETWEEN 1101 AND 1199 THEN 'LC'
 					WHEN b.bettype BETWEEN 1201 AND 1299 THEN 'VS'
 					WHEN b.bettype = 73	THEN 'BG'
 					WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN' -- Keno
@@ -465,7 +463,7 @@ BEGIN
 		END
 
 		----Others
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'RB', 'LC', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT')	)
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'RB', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT')	)
 		BEGIN
 			INSERT INTO #tmpWinloss
 			SELECT 
@@ -475,7 +473,6 @@ BEGIN
 					WHEN b.bettype BETWEEN 81 AND 120 THEN 'NG'
 					WHEN (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 and 1399)) THEN 'SB'
 					WHEN b.bettype BETWEEN 31 AND 33 THEN 'RB'
-					WHEN b.bettype BETWEEN 1101 AND 1199 THEN 'LC'
 					WHEN b.bettype BETWEEN 1201 AND 1299 THEN 'VS'
 					WHEN b.bettype = 73	THEN 'BG'
 					WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN'
@@ -514,7 +511,6 @@ BEGIN
 					OR b.bettype BETWEEN 121 AND 999
 					OR b.Bettype BETWEEN 1301 and 1399 
 					OR b.bettype BETWEEN 81 AND 120
-					OR b.bettype BETWEEN 1101 AND 1199
 					OR b.bettype BETWEEN 1201 AND 1299
 					OR b.bettype IN (73) -- BINGO
 					OR b.bettype BETWEEN 1501 AND 1599 -- Keno
@@ -532,7 +528,6 @@ BEGIN
 					WHEN b.bettype BETWEEN 81 AND 120 THEN 'NG'
 					WHEN (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 and 1399)) THEN 'SB'
 					WHEN b.bettype BETWEEN 31 AND 33 THEN 'RB'
-					WHEN b.bettype BETWEEN 1101 AND 1199 THEN 'LC'
 					WHEN b.bettype BETWEEN 1201 AND 1299 THEN 'VS'
 					WHEN b.bettype = 73	THEN 'BG'
 					WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN'
@@ -635,7 +630,6 @@ BEGIN
 			WHEN 'BA' THEN 'BA'
 			WHEN 'RB' THEN 'Racing'
 			WHEN 'NG' THEN 'Number Game'
-			WHEN 'LC' THEN 'Live Casino'
 			WHEN 'VS' THEN 'Virtual Sports'
 			WHEN 'BG' THEN 'Bingo'
 			WHEN 'KN' THEN 'Keno'

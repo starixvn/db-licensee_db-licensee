@@ -9,7 +9,6 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProduct]
  @ShowRB		BIT=0,  
  @ShowNG		BIT=0, 
  @ShowBA		BIT=0,
- @ShowLC		BIT=0,
  @ShowVS		BIT=0,
  @ShowCS  		BIT=0, -- RNG Casino
  @ShowBG   		BIT=0, -- Bingo 
@@ -73,6 +72,7 @@ AS
 	- 20170721@Sophia: Change to call Alias DBWH instead of DBDW2 
 	- 20170704@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
 	- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
+	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -83,7 +83,6 @@ AS
 	  + @ShowRB: Show RB bets
 	  + @ShowNG: Show Number game bets
 	  + @ShowBA: Show Bet Aggregator bets (combined with Sportsbook or Number Game)
-	  + @ShowLC: Show Live Casino bets
 	  +	@ShowVS: Show Virual Sport bets	
 	  + @MoveBetsDay: The day we move tickets to bettrans14
 	  + @AgentList: xml structure
@@ -193,11 +192,6 @@ IF @ShowSB = 1
 BEGIN  
 	SELECT @ProductList = COALESCE(@ProductList + ',' + 'SB', 'SB')		
 END  
-
-IF @ShowLC = 1
-BEGIN
-	SELECT @ProductList = COALESCE(@ProductList + ',' + 'LC', 'LC')	
-END
 
 IF @ShowRB = 1  
 BEGIN  
@@ -372,8 +366,8 @@ BEGIN
 			b.winlostdate,a.currency,b.statusID
 	END
 	
-	--SB + RB + LC + VB
-	IF 1 IN (@ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @showMGCRnG, @ShowVB, @ShowVS2, @ShowLT )
+	--SB + RB + VB
+	IF 1 IN (@ShowNG, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @showMGCRnG, @ShowVB, @ShowVS2, @ShowLT )
 	BEGIN
 		SELECT 
 			DISTINCT
@@ -544,7 +538,7 @@ BEGIN
 		GROUP BY  b.winlostdate,  b.currency, b.statusID
 	END
 	
-	IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowLC, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @showMGCRnG, @ShowVB, @ShowLT )
+	IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @showMGCRnG, @ShowVB, @ShowLT )
 	BEGIN
 		INSERT INTO #SAgWinLoss  
 		SELECT 
@@ -559,7 +553,7 @@ BEGIN
 					ELSE 1 END
 			),     
 			SUM(b.winlost),  
-			SUM(CASE WHEN (b.sporttype in(0,161,162,251,252,202,203,205,208,209,210,212,220 ))  THEN -1 * b.winlost 
+			SUM(CASE WHEN (b.sporttype in(0,161,251,252,202,203,205,208,209,210,212,220 ))  THEN -1 * b.winlost 
 					WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END
 				) AS LicenseeWL,
 			SUM(comm ) as Comm,
@@ -808,7 +802,7 @@ BEGIN
 	END
 
 	--exclude BA tickets
-	IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowVB, @ShowVS2 )
+	IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowVB, @ShowVS2 )
 	BEGIN
 		INSERT INTO #SAgWinLoss  
 		SELECT 
@@ -824,7 +818,7 @@ BEGIN
 				
 			),     
 			SUM(b.winlost),  
-			SUM(CASE WHEN (b.sporttype in(0,161,162,180,190,251,252,202,203,205,208,209,210,212 ))  THEN -1 * b.winlost WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS LicenseeWL ,
+			SUM(CASE WHEN (b.sporttype in(0,161,180,190,251,252,202,203,205,208,209,210,212 ))  THEN -1 * b.winlost WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS LicenseeWL ,
 			SUM(comm) as Comm,
 			SUM( playerComm  ) AS PlayerComm,
 			- SUM (b.awinlost + b.winlost + b.comm) as AmountDueTo3rd,

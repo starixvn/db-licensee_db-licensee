@@ -10,7 +10,6 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
     @ShowRB			BIT = 0,
     @showNG			BIT = 0, 
     @ShowBA			BIT = 0,
-	@ShowLC			BIT = 0,
 	@ShowVS			BIT = 0,
 	@ShowCS			BIT = 0, -- RNG Casino
 	@ShowBG			BIT = 0, -- Bingo
@@ -99,6 +98,7 @@ AS
 		- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 		- 20171009@Percy: Add @Username filter [RedmineID: #84551]
 		- 20171109@Paul: Support sorting [RedmineID: #86214]
+		- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 
 	Param's Explanation:
 		@OrderItem:
@@ -208,12 +208,7 @@ BEGIN
 	IF @ShowNG = 1  
 	BEGIN  
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'NG', 'NG')	
-	END
-
-	IF @ShowLC = 1
-	BEGIN
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'LC', 'LC')	
-	END
+	END	
 
 	IF @ShowVS = 1
 	BEGIN
@@ -435,7 +430,7 @@ BEGIN
 				GROUP BY b.CustID, b.winlostdate, b.currency	 
 			END
 
-			IF 1 IN (@ShowNG, @ShowLC, @ShowVS, @ShowRB, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowBT, @ShowAGC, @ShowVb,@ShowAB,@ShowFW, @ShowCO, @ShowVS2, @ShowLT)
+			IF 1 IN (@ShowNG, @ShowVS, @ShowRB, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowBT, @ShowAGC, @ShowVb,@ShowAB,@ShowFW, @ShowCO, @ShowVS2, @ShowLT)
 			BEGIN
 				INSERT INTO #TempData
 				SELECT
@@ -507,7 +502,7 @@ BEGIN
 			END
 
 			--exclude BA tickets
-			IF 1 IN (@ShowSB, @ShowRB, @ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowVS2, @ShowLT)
+			IF 1 IN (@ShowSB, @ShowRB, @ShowNG, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowVS2, @ShowLT)
 			BEGIN
 				INSERT INTO #TempData
 				SELECT
@@ -633,7 +628,7 @@ BEGIN
 				GROUP BY b.CustID, b.winlostdate, b.currency	
 			END
 	
-			IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowLC, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowVB,@ShowAB,@ShowFW, @ShowVS2)
+			IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowVB,@ShowAB,@ShowFW, @ShowVS2)
 			BEGIN
 				INSERT  INTO #TempData
 				SELECT  

@@ -12,6 +12,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 	Revisions:  	  
 		- 20170703@Harper: Get SportType by Product follow job sum [Redmine: #78241]
 		- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
+		- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 
 	Paramters Explanation:  
 		@ProductID: list of products  
@@ -22,8 +23,7 @@ RETURN
 	FROM (  
 			VALUES (1, 'SB', 0, 0),		-- Sportsbook 
 					(2, 'RB', 151, 0),	-- Racing 					
-					(3, 'NG', 161, 0),	-- Number Game  
-					(4, 'LC', 162, 0),	-- Live Casino
+					(3, 'NG', 161, 0),	-- Number Game  					
 					(5, 'VS', 180, 0),	-- Virtual Sports  								
 					(6, 'CS', 251, 71), (6, 'CS', 208, 0), (6, 'CS', 209, 0), (6, 'CS', 210, 0), -- RNG Casino 
 					(7, 'BG', 252, 0),	-- Bingo
