@@ -1,5 +1,5 @@
 ﻿/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
-ALTER PROCEDURE [dbo].[Lrf_CustomerSelCheckBelonging]
+ALTER  PROCEDURE [dbo].[Lrf_CustomerSelCheckBelonging]
 	@LicenseeID int,
 	@custid int = 0,
 	@transid bigint = NULL,
@@ -15,17 +15,10 @@ Revisions:
    - 20110406: check customer by transid/refno
    - 20131218@winnie : change db02 to DBARC Alias
    - 20170928@Sophia: check sourced Licensee [redmine: #82797]
+   - 20180314@Sophia: remove code of LicenseeSourced, because we don't offer this function for Sourced Licensee [redmine: #91738] 
+   
 */
 SET NOCOUNT ON
-
-CREATE TABLE #LicenseeIDList (LicenseeID INT , AgentID INT, CurrencyID INT)
-
-INSERT INTO #LicenseeIDList (LicenseeID)
-VALUES (@LicenseeID)
-
-INSERT INTO #LicenseeIDList (LicenseeID, AgentID, CurrencyID)
-EXEC bodb_Licensee.dbo.LRF_LicenseeSourcedSel @LicenseeID = @LicenseeID
-
 
 declare @roleid int
 declare @recommend int
@@ -45,7 +38,7 @@ begin
 		@roleid = c.RoleID
 	from bodb_Licensee.dbo.LicenseeCust lc (nolock)
 	inner join custinfo c with (nolock) on lc.custid = c.custid
-	where lc.LicenseeID IN (Select DISTINCT LicenseeID FROM #LicenseeIDList)
+	where lc.LicenseeID = @LicenseeID
 	and lc.custid = @recommend	
 		
 end
@@ -56,7 +49,7 @@ begin
 		@roleid = c.RoleID
 	from bodb_Licensee.dbo.LicenseeCust lc (nolock)
 	inner join custinfo c with (nolock) on lc.custid = c.custid
-	where lc.LicenseeID IN (Select DISTINCT LicenseeID FROM #LicenseeIDList)
+	where lc.LicenseeID = @LicenseeID
 	and lc.custid = @custid
 	
 	if isnull(@roleid,0) = 0
@@ -70,11 +63,10 @@ begin
 			and c.recommend in
 			(
 				select custid from bodb_Licensee.dbo.LicenseeCust (nolock)
-				where LicenseeID IN (Select DISTINCT LicenseeID FROM #LicenseeIDList)
+				where LicenseeID = @LicenseeID
 			)
 	end
 end
-
 
 
 select @roleid = isnull(@roleid, 0)
@@ -83,4 +75,6 @@ if isnull(@roleid, 0) = 0
 	select @status = 0
 else
 	select @status = 1
-GO 
+
+GO
+ 
