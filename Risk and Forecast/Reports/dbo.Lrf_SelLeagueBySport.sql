@@ -21,6 +21,7 @@ Revisions:
 	- 20140117@Florent: add new sport 154
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID [Redmine: #71679]
+	- 20180319: Enhance SP because of timeout issue [Redmine: #92292] 
 Param's Explanation:	
 */
 SET NOCOUNT ON
@@ -28,14 +29,14 @@ SET NOCOUNT ON
 BEGIN
 	CREATE TABLE #tblLeagueid (leagueid INT)
 	CREATE TABLE #tblBalanceDate (
-		BalanceUpDay DATETIME
-		,MoveBetsDay DATETIME
+		BalanceUpDay SMALLDATETIME
+		,MoveBetsDay SMALLDATETIME
 		)
-	DECLARE @f DATETIME
-		,@t DATETIME
-		,@TempFromDate DATETIME
-		,@TempToDate DATETIME
-		,@MoveBetsDay DATETIME
+	DECLARE @f SMALLDATETIME
+		,@t SMALLDATETIME
+		,@TempFromDate SMALLDATETIME
+		,@TempToDate SMALLDATETIME
+		,@MoveBetsDay SMALLDATETIME
 
 	INSERT INTO #tblBalanceDate
 	EXEC bodb02.dbo.Lrf_SelBalanceUpDay
