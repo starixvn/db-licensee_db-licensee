@@ -1,3 +1,5 @@
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+
 USE bodb02
 GO
 
@@ -9,13 +11,16 @@ GO
 /****** Object:  Stored Procedure dbo.Lrf_Rpt_ColossusBetsWinloss    Script Date: 11/18/2016 5:30:33 PM ******/
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_ColossusBetsWinloss] 
-	@FromDate SMALLDATETIME
-	, @ToDate SMALLDATETIME
-	, @MoveBetsDay SMALLDATETIME
-	, @ReportType TINYINT = 1
+	@FromDate		SMALLDATETIME
+	, @ToDate		SMALLDATETIME
+	, @MoveBetsDay	SMALLDATETIME
+	, @ReportType	TINYINT = 1
 	, @AgentList	VARCHAR(MAX)
+	, @TicketType	INT = -1
 AS
-/*  Created: Jim
+	
+/*  
+	Created: Jim
 	Date: 2016-09-16
     Task : Colossus Bets report [RedminID : #63785]
     DB: DBEXT.bodb02  
@@ -23,9 +28,12 @@ AS
 		- 20161121@Sophia: Correct fomular CashOutAmount,WinPrizeAmount value [RedmineID : #67473]
 		- 20161205@Jim:  Report should include only WLD tickets [RedminID : #68316]
 		- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest [Redmine: #71679]
+		- 20180305@Harper: Implement CB free play ticket [RedmineID: #90768]
+
 	Param's Explanation:  
 	   - @excludeTest: remove currency UUS
 	   - @ReportType : 1 Daily, 2 Monthly
+	   - @TicketType : -1: ALL, 0: Money Play, 1: Free Play, 
 */
 /*
  exec Lrf_Rpt_ColossusBetsWinloss 
@@ -41,25 +49,27 @@ SET NOCOUNT ON
 
 BEGIN
 	---Section 1 : DECLARE VARIABLE
-	DECLARE @_FromDate SMALLDATETIME
-		, @_ToDate SMALLDATETIME
+	DECLARE @_FromDate	SMALLDATETIME
+		, @_ToDate		SMALLDATETIME
 		, @TempFromDate SMALLDATETIME
-		, @TempToDate SMALLDATETIME
+		, @TempToDate	SMALLDATETIME
 		, @VNDCurrencyName VARCHAR(20)
+
 	DECLARE @tempAg AS TABLE (
-		custID INT
-		, currency INT
-		)
+								custID		INT
+								, currency	INT
+							)
+
 	DECLARE @tmpRawData AS TABLE (
-		rptDate DATETIME
-		, CurrencyID INT
-		, TurnOver MONEY
-		, TotalTrans INT
-		, WinningPrize MONEY
-		, CashOutAmt MONEY
-		, CashInAmt MONEY
-		, CommAmt MONEY
-		, GrandAmt MONEY
+		rptDate			DATETIME
+		, CurrencyID	INT
+		, TurnOver		MONEY
+		, TotalTrans	INT
+		, WinningPrize	MONEY
+		, CashOutAmt	MONEY
+		, CashInAmt		MONEY
+		, CommAmt		MONEY
+		, GrandAmt		MONEY
 		)
 
 	---Section 2 : INIT VARIABLE
@@ -117,22 +127,21 @@ BEGIN
 			, SUM(WinAmount) AS GrandAmt
 		FROM DBACC.bodb02.dbo.PayoutTrans p WITH (NOLOCK)
 		WHERE productId = 204
-			AND p.winlostdate BETWEEN @TempFromDate
-				AND @_ToDate
+			AND p.winlostdate BETWEEN @TempFromDate	AND @_ToDate
 		GROUP BY CustID
 			, winlostdate
 			,Refno
 
 		DECLARE @tmpBettrans AS TABLE (
-			refno BIGINT
-			, winlostdate DATETIME
-			, Currency INT
-			, TurnOver MONEY
-			, TotalTrans INT
-			, Winlost MONEY
-			, Actual_stake MONEY
-			, STATUS NVARCHAR(20)
-			, GrandAmt MONEY
+			refno			BIGINT
+			, winlostdate	DATETIME
+			, Currency		INT
+			, TurnOver		MONEY
+			, TotalTrans	INT
+			, Winlost		MONEY
+			, Actual_stake	MONEY
+			, STATUS		NVARCHAR(20)
+			, GrandAmt		MONEY
 			)
 
 		INSERT INTO @tmpBettrans (
@@ -164,9 +173,9 @@ BEGIN
 				AND b.winlostdate = a.rptDate
 				AND b.transid = a.refno
 		WHERE b.bettype = 18000
-			AND b.winlostdate BETWEEN @TempFromDate
-				AND @_ToDate
+			AND b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 			AND b.statusID IN (111,112,113)	
+			AND (@TicketType = -1 OR ISNULL(b.currency2, 0) = @TicketType)
 		GROUP BY b.refno
 			, b.winlostdate
 			, b.Currency
@@ -288,9 +297,9 @@ BEGIN
 		FROM bodb_licenseeReport.dbo.rpt_BettingColossusBets b WITH (NOLOCK)
 		INNER JOIN @tmpCust c
 			ON b.CustID = c.CustID
-		WHERE rptDate BETWEEN @_FromDate
-				AND @TempToDate
+		WHERE rptDate BETWEEN @_FromDate AND @TempToDate
 			AND b.statusID IN (111,112,113)	
+			AND (@TicketType = -1 OR ISNULL(b.TicketType, 0) = @TicketType)
 		GROUP BY b.rptDate
 			, b.CustID
 			, b.CurrencyId
