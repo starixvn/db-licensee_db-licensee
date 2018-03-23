@@ -36,6 +36,7 @@ AS
    
     Revisions:  
 		- 20180312@Harper: Created new Licensee Winloss SP for Ivorybet and Opal88 [RedmineID: #91738]
+		- 20180323@Sophia: Add more column SourcedLicenseeSitename [Redmine: #92574]
 
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -79,7 +80,7 @@ BEGIN
  
 
 	DECLARE @TempCurrency		TABLE(ID INT IDENTITY, currency INT)  
-	DECLARE @SourceIDs			TABLE (LicenseeID INT, CustID INT, CurrencyID INT, RoleID TINYINT, EffectiveDate SMALLDATETIME)
+	DECLARE @SourceIDs			TABLE (LicenseeID INT, LicenseeeName NVARCHAR(50), CustID INT, CurrencyID INT, RoleID TINYINT, EffectiveDate SMALLDATETIME)
 	CREATE TABLE #tmpCust		(CustID INT, AgentID INT, currency INT, EffectiveDate SMALLDATETIME)
 
 	DECLARE @VNDCurrencyName	VARCHAR(20)
@@ -117,7 +118,7 @@ BEGIN
 		RETURN
 	END CATCH;
 	
-	INSERT INTO @SourceIDs (LicenseeID, CustID, RoleID, CurrencyID, EffectiveDate)	
+	INSERT INTO @SourceIDs (LicenseeID, LicenseeeName, CustID, RoleID, CurrencyID, EffectiveDate)	
 	EXEC bodb_Licensee.dbo.LRF_LicenseeSourcedSel @LicenseeID = @LicenseeID, @ToDate = @_ToDate
 
 	DELETE s
