@@ -1229,5 +1229,7 @@ END
 GO
 GRANT EXECUTE ON [dbo].[Lrf_Rpt_LicWinloss_BySourced] TO [bodbLicenseeNet]
 GO
+GRANT EXECUTE ON [dbo].[Lrf_Rpt_LicWinloss_BySourced] TO [dot_member]
+GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LicWinloss_BySourced] TO [vnteam]
 GO
