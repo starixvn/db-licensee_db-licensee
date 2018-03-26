@@ -229,7 +229,7 @@ BEGIN
 	-- #EndRegion: Get today's data
 
 	-- #Region: Handle Raw Data
-	IF @FDate >= @TDate
+	IF @FDate <= @TDate
 	BEGIN
 		INSERT INTO #tmpResult( CustID,
 								Winlostdate,
