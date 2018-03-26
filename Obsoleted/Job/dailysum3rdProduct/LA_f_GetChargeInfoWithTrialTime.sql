@@ -1,3 +1,4 @@
+/*<info serverAlias="DBLIC-bodb_licensee" executers="bodbAdminNet" viewers="vnteam" isFunction="1" isNested="0"></info>*/
 USE [bodb_licensee]
 GO
 
@@ -17,17 +18,22 @@ RETURNS @tbChargeInfo TABLE (ChargeId INT
 	, OW_Rate MONEY
 	, PNR_Rate MONEY
 	, FromDate SMALLDATETIME
-	, ToDate SMALLDATETIME)
+	, ToDate SMALLDATETIME
+	, ChargeType TINYINT
+	)
 AS
 /*  Created: 20150618@Patrick
     Task : Get charge information for trial time but have charge rate for summary data to bettrans only
-    DB: DB052/bodb_Licensee  
+    DB: DBLIC/bodb_Licensee  
     Param's Explanation:
+	Revisions:
+		- 20171227@Sophia: output column ChargeType [Redmine: #82408]
+		
     select * FROM dbo.LA_f_GetChargeInfoWithTrialTime ('14','2016-06-01','2016-06-30','GD','OA', 0)
 */
 
 BEGIN     
-    INSERT INTO @tbChargeInfo (ChargeID , PartyID, LicenseeID, isDeposit, AffectedDate, ProductID, DI_Rate, OW_Rate, PNR_Rate, Fromdate, Todate)
+    INSERT INTO @tbChargeInfo (ChargeID , PartyID, LicenseeID, isDeposit, AffectedDate, ProductID, DI_Rate, OW_Rate, PNR_Rate, Fromdate, Todate, ChargeType)
 	SELECT DISTINCT DI.ChargeID 
 		, p.PartyID
 		, CASE 
@@ -51,6 +57,7 @@ BEGIN
 				THEN DI.ToDate
 			ELSE @ToDate
 			END
+		, DI.ChargeType 
 	FROM dbo.OAS_Party p WITH (NOLOCK)	
 		INNER JOIN dbo.OAS_ChargeInfo DI WITH (NOLOCK) ON DI.FromParty = p.PartyID	AND DI.ChargeType = 1 AND p.PartyType = 1
 		LEFT JOIN dbo.OAS_ChargeInfo OW WITH (NOLOCK) ON DI.ParentChargeID = OW.ChargeID
