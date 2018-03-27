@@ -12,8 +12,9 @@ AS
 	DB: DBEXT.bodb02 
 	Revisions: 
 		- 20171215@Harper: Create new report Exchange Winloss [RedmineID: #86640]
+		- 20180323@Amanda: Support today's data [Redmine: #92495]
 
-	Param's Explanation:  		
+	Param's Explanation:
 
 	exec Lrf_Rpt_ExchangeWinloss_Ag @fromdate='2017-04-24 00:00:00',@todate='2017-04-24 00:00:00',@AgentList=N'<ROOT><Agent AgentId="791088" Currency="3"/><Agent AgentId="860379" Currency="6"/><Agent AgentId="2428981" Currency="6"/><Agent AgentId="2812696" Currency="6"/><Agent AgentId="3575140" Currency="6"/><Agent AgentId="4362999" Currency="6"/></ROOT>'
  
@@ -99,6 +100,7 @@ BEGIN
 			,	@LicenseeId		INT
 			,	@PartyList		VARCHAR(4000)
 			,	@ChargeRate		MONEY
+			,	@HasChargeRate	BIT = 0
 		
 		SELECT TOP 1 @Site = [Site]
 		FROM dbo.Customer cust WITH (NOLOCK)
@@ -110,6 +112,8 @@ BEGIN
 		INNER JOIN bodb_licensee.dbo.view_site_list [site] WITH (NOLOCK) ON ibcsite.siteid = [Site].IbcSiteID
 		WHERE ibcsite.[site] = @Site
 		
+		SET @LicenseeId = ISNULL(@LicenseeId, -1)
+		
 		SELECT @PartyList = COALESCE(@PartyList + ',' + CAST(FromParty AS VARCHAR), CAST(FromParty AS VARCHAR))
 		FROM (
 			SELECT FromParty
@@ -118,18 +122,25 @@ BEGIN
 			GROUP BY FromParty
 		)tmp
 		
-		SELECT TOP 1 @ChargeRate = DI_Rate
+		SELECT TOP 1 @ChargeRate = DI_Rate, @HasChargeRate = 1
 		FROM bodb_licensee.dbo.LA_f_ChargeInfo(@PartyList, @ToDay, @ToDay, @ProductPrefix, 'OA', 1)
 		WHERE LicenseeId = @LicenseeId AND ChargeType = 1 AND DI_Rate > 0 AND @ToDay >= FromDate AND @ToDay <= ToDate
 		
 		IF @ChargeRate IS NULL
 		BEGIN
-			SELECT TOP 1 @ChargeRate = DI_Rate
+			SELECT TOP 1 @ChargeRate = DI_Rate, @HasChargeRate = 1
 			FROM bodb_licensee.dbo.LA_f_GetChargeInfoWithTrialTime(@PartyList, @ToDay, @ToDay, @ProductPrefix, 'OA', 1)
 			WHERE LicenseeId = @LicenseeId AND ChargeType = 1 AND DI_Rate > 0 AND  @ToDay >= FromDate AND @ToDay <= ToDate
 		END
 		
-		SET @ChargeRate = ISNULL(@ChargeRate,0)
+		IF @HasChargeRate = 1
+		BEGIN
+			SET @ChargeRate = ISNULL(@ChargeRate,0)
+		END
+		ELSE
+		BEGIN
+			SET @ChargeRate = 1
+		END
 		
 		CREATE TABLE #sumBet (
 				CustID			INT,
@@ -219,8 +230,8 @@ BEGIN
 								AND sumbet.marketID	= bet.marketID
 		GROUP BY sumbet.CurrencyID, sumbet.CustID
 	
-		DELETE #sumBet
-		DELETE #detailBet
+		DROP TABLE #sumBet
+		DROP TABLE #detailBet
 	END
 	-- #EndRegion: Get today's data
 
@@ -332,7 +343,9 @@ BEGIN
 		, r.CurrencyID
 		, e.Code
 	ORDER BY ci.username
-			
 	-- #EndRegion: Return data
+
+	DROP TABLE #tmpResult
+	DROP TABLE #Exchange
 END
 GO
