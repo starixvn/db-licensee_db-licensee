@@ -79,6 +79,7 @@ Revisions:
  - 20150610@Joseph: Separate CustDB to DBCUST server (Move SP to DBCUST.CustDB, use temp table for GameType table)
  - 20151015@Jim: Integrate Sportbook2 (Feature #44759)
  - 20170809@Winnie: Change Data Type of Sporttype [RedmineID: #73545]
+ - 20180326@Winnie: Customer Setting - urgent fix to support for long bettype name. [RedmineID: #91216]		
 Param's Explanation:  
 • @ErrCode:  
     = 0: Update successfully.  
@@ -89,25 +90,34 @@ Param's Explanation:
   
 SET NOCOUNT ON  
   
-DECLARE @tmp_Sports TABLE (SportType SMALLINT, SportName NVARCHAR(50))
-DECLARE @tmp_Bettype TABLE (TypeID INT, TypeNamee NVARCHAR(50))
-
 BEGIN TRY
-	INSERT INTO @tmp_Sports (SportType, SportName)
-	SELECT SportType, SportName FROM DBAGE.bodb02.dbo.Sports WITH (NOLOCK)		
+	SELECT *
+	INTO #tmp_Sports
+	FROM dbo.f_GetSportTypeBetTypeGameType(1,'DBAGE')	
 END TRY
 BEGIN CATCH
-	INSERT INTO @tmp_Sports (SportType, SportName)
-	SELECT SportType, SportName FROM DBTXN.bodb02.dbo.Sports WITH (NOLOCK)	
+	IF OBJECT_ID(N'tempdb..#tmp_Sports') IS NOT NULL
+	BEGIN
+		TRUNCATE TABLE #tmp_Sports
+		INSERT INTO #tmp_Sports
+		SELECT *
+		FROM dbo.f_GetSportTypeBetTypeGameType(1,'DBTXN')	
+	END
 END CATCH
 
 BEGIN TRY			
-	INSERT INTO @tmp_Bettype (TypeID, TypeNamee)
-	SELECT TypeID, TypeNamee FROM DBAGE.bodb02.dbo.Bettype WITH (NOLOCK)
+	SELECT *
+	INTO #tmp_Bettype
+	FROM dbo.f_GetSportTypeBetTypeGameType(2,'DBAGE')	
 END TRY
 BEGIN CATCH		
-	INSERT INTO @tmp_Bettype (TypeID, TypeNamee)
-	SELECT TypeID, TypeNamee FROM DBTXN.bodb02.dbo.Bettype WITH (NOLOCK)
+	IF OBJECT_ID(N'tempdb..#tmp_Bettype') IS NOT NULL
+	BEGIN
+		TRUNCATE TABLE #tmp_Bettype
+		INSERT INTO #tmp_Bettype
+		SELECT *
+		FROM dbo.f_GetSportTypeBetTypeGameType(2,'DBTXN')	
+	END
 END CATCH
 
 DECLARE @startRun DATETIME  
@@ -342,7 +352,7 @@ END
 
 --check a1<=a4 - Vinh  
 SELECT @ErrType = ''  
-SELECT @ErrType = @ErrType + sportname + '-'+ typenamee + '-Max: '+ CAST((scs.apositiontaking) AS VARCHAR(10))  
+SELECT @ErrType = @ErrType + sports.Name + '-'+ bettype.Name + '-Max: '+ CAST((scs.apositiontaking) AS VARCHAR(10))  
 + CASE WHEN b.sporttype=1 AND b.bettype IN (1,3,7,8) AND scs.islive = 1 THEN '-MaxLive: '+ CAST((scs.apositiontaking) AS VARCHAR(10)) ELSE '' END + '<br>'  
 FROM custinfo AS c WITH (NOLOCK) INNER JOIN dep_custsetting AS scs WITH (NOLOCK) ON c.srecommend = scs.custid INNER JOIN   
  (  
@@ -357,8 +367,8 @@ FROM custinfo AS c WITH (NOLOCK) INNER JOIN dep_custsetting AS scs WITH (NOLOCK)
   UNION ALL  SELECT 9 AS bettype, 1 AS sporttype, @apositiontaking_9 AS apositiontaking, 0 AS alivepositiontaking  
   UNION ALL  SELECT 10 AS bettype, 1 AS sporttype, @apositiontaking_10 AS apositiontaking, 0 AS alivepositiontaking  
   ) AS b ON scs.sporttype=b.sporttype AND scs.bettype = b.bettype  
- INNER JOIN @tmp_Sports sports ON b.sporttype = sports.sporttype  
- INNER JOIN @tmp_Bettype bettype ON b.bettype = bettype.typeid  
+ INNER JOIN #tmp_Sports sports ON b.sporttype = sports.ID  
+ INNER JOIN #tmp_Bettype bettype ON b.bettype = bettype.ID  
 WHERE c.custid = @recommend AND ((b.apositiontaking>scs.apositiontaking AND scs.islive = 0) OR (b.sporttype = 1 AND b.bettype IN (1,3,7,8) AND scs.islive = 1 AND b.alivepositiontaking>scs.apositiontaking))  
 if @ErrType <>''  
 BEGIN  
@@ -410,7 +420,7 @@ END
   
 --check a1<=a4 - Vinh  
 SELECT @ErrType = ''  
-SELECT @ErrType = @ErrType + sportname + '-'+ typenamee + '-Max: '+ CAST((scs.apositiontaking) AS VARCHAR(10))  
+SELECT @ErrType = @ErrType + sports.Name + '-'+ bettype.Name  + '-Max: '+ CAST((scs.apositiontaking) AS VARCHAR(10))  
 + CASE WHEN b.sporttype=1 AND b.bettype IN (1,3,7,8) AND scs.islive = 1 THEN '-MaxLive: '+ CAST((scs.apositiontaking) AS VARCHAR(10)) ELSE '' END + '<br>'  
 FROM custinfo AS c WITH (NOLOCK) INNER JOIN dep_custsetting AS scs WITH (NOLOCK) ON c.srecommend = scs.custid INNER JOIN   
  (  
@@ -422,8 +432,8 @@ FROM custinfo AS c WITH (NOLOCK) INNER JOIN dep_custsetting AS scs WITH (NOLOCK)
 --   UNION ALL  SELECT 9 AS bettype, 2 AS sporttype, @v2apositiontaking_9 AS apositiontaking, 0 AS alivepositiontaking  
   UNION ALL  SELECT 20 AS bettype, 2 AS sporttype, @v2apositiontaking_20 AS apositiontaking, 0 AS alivepositiontaking  
  ) AS b ON scs.sporttype=b.sporttype AND scs.bettype = b.bettype  
- INNER JOIN @tmp_Sports sports ON b.sporttype = sports.sporttype  
- INNER JOIN @tmp_Bettype bettype ON b.bettype = bettype.typeid  
+ INNER JOIN #tmp_Sports sports ON b.sporttype = sports.ID  
+ INNER JOIN #tmp_Bettype bettype ON b.bettype = bettype.ID  
 WHERE c.custid = @recommend AND ((b.apositiontaking>scs.apositiontaking AND scs.islive = 0) OR (b.sporttype = 1 AND b.bettype IN (1,3,7,8) AND scs.islive = 1 AND b.alivepositiontaking>scs.apositiontaking))  
 if @ErrType <>''  
 BEGIN  
@@ -470,7 +480,7 @@ END
   
 --check a1<=a4 - Vinh  
 SELECT @ErrType = ''  
-SELECT @ErrType = @ErrType + sportname + '-'+ typenamee + '-Max: '+ CAST((scs.apositiontaking) AS VARCHAR(10))  
+SELECT @ErrType = @ErrType + sports.Name + '-'+ bettype.Name  + '-Max: '+ CAST((scs.apositiontaking) AS VARCHAR(10))  
 + CASE WHEN b.sporttype=1 AND b.bettype IN (1,3,7,8) AND scs.islive = 1 THEN '-MaxLive: '+ CAST((scs.apositiontaking) AS VARCHAR(10)) ELSE '' END + '<br>'  
 FROM custinfo AS c WITH (NOLOCK) INNER JOIN dep_custsetting AS scs WITH (NOLOCK) ON c.srecommend = scs.custid INNER JOIN   
  (  
@@ -479,8 +489,8 @@ FROM custinfo AS c WITH (NOLOCK) INNER JOIN dep_custsetting AS scs WITH (NOLOCK)
   UNION ALL  SELECT 3 AS bettype, 3 AS sporttype, @v3apositiontaking_3 AS apositiontaking, 0 AS alivepositiontaking  
   UNION ALL  SELECT 20 AS bettype, 3 AS sporttype, @v3apositiontaking_20 AS apositiontaking, 0 AS alivepositiontaking  
  ) AS b ON scs.sporttype=b.sporttype AND scs.bettype = b.bettype  
- INNER JOIN @tmp_Sports sports ON b.sporttype = sports.sporttype  
- INNER JOIN @tmp_Bettype bettype ON b.bettype = bettype.typeid  
+ INNER JOIN #tmp_Sports sports ON b.sporttype = sports.ID  
+ INNER JOIN #tmp_Bettype bettype ON b.bettype = bettype.ID  
 WHERE c.custid = @recommend AND ((b.apositiontaking>scs.apositiontaking AND scs.islive = 0) OR (b.sporttype = 1 AND b.bettype IN (1,3,7,8) AND scs.islive = 1 AND b.alivepositiontaking>scs.apositiontaking))  
 if @ErrType <>''  
 BEGIN  
@@ -527,7 +537,7 @@ END
   
 --check a1<=a4 - Vinh  
 SELECT @ErrType = ''  
-SELECT @ErrType = @ErrType + sportname + '-'+ typenamee + '-Max: '+ CAST((scs.apositiontaking) AS VARCHAR(10))  
+SELECT @ErrType = @ErrType + sports.Name + '-'+ bettype.Name  + '-Max: '+ CAST((scs.apositiontaking) AS VARCHAR(10))  
 + CASE WHEN b.sporttype=1 AND b.bettype IN (1,3,7,8) AND scs.islive = 1 THEN '-MaxLive: '+ CAST((scs.apositiontaking) AS VARCHAR(10)) ELSE '' END + '<br>'  
 FROM custinfo AS c WITH (NOLOCK) INNER JOIN dep_custsetting AS scs WITH (NOLOCK) ON c.srecommend = scs.custid INNER JOIN   
  (  
@@ -536,8 +546,8 @@ FROM custinfo AS c WITH (NOLOCK) INNER JOIN dep_custsetting AS scs WITH (NOLOCK)
   UNION ALL  SELECT 3 AS bettype, 5 AS sporttype, @v5apositiontaking_3 AS apositiontaking, 0 AS alivepositiontaking  
   UNION ALL  SELECT 20 AS bettype, 5 AS sporttype, @v5apositiontaking_20 AS apositiontaking, 0 AS alivepositiontaking  
  ) AS b ON scs.sporttype=b.sporttype AND scs.bettype = b.bettype  
- INNER JOIN @tmp_Sports sports ON b.sporttype = sports.sporttype  
- INNER JOIN @tmp_Bettype bettype ON b.bettype = bettype.typeid  
+ INNER JOIN #tmp_Sports sports ON b.sporttype = sports.ID  
+ INNER JOIN #tmp_Bettype bettype ON b.bettype = bettype.ID  
 WHERE c.custid = @recommend AND ((b.apositiontaking>scs.apositiontaking AND scs.islive = 0) OR (b.sporttype = 1 AND b.bettype IN (1,3,7,8) AND scs.islive = 1 AND b.alivepositiontaking>scs.apositiontaking))  
 if @ErrType <>''  
 BEGIN  
@@ -579,7 +589,7 @@ END
   
 --check a1<=a4 - Vinh  
 SELECT @ErrType = ''  
-SELECT @ErrType = @ErrType + sportname + '-'+ typenamee + '-Max: '+ CAST((scs.apositiontaking) AS VARCHAR(10))  
+SELECT @ErrType = @ErrType + sports.Name + '-'+ bettype.Name  + '-Max: '+ CAST((scs.apositiontaking) AS VARCHAR(10))  
 + CASE WHEN b.sporttype=1 AND b.bettype IN (1,3,7,8) AND scs.islive = 1 THEN '-MaxLive: '+ CAST((scs.apositiontaking) AS VARCHAR(10)) ELSE '' END + '<br>'  
 FROM custinfo AS c WITH (NOLOCK) INNER JOIN dep_custsetting AS scs WITH (NOLOCK) ON c.srecommend = scs.custid INNER JOIN   
  (  
@@ -587,8 +597,8 @@ FROM custinfo AS c WITH (NOLOCK) INNER JOIN dep_custsetting AS scs WITH (NOLOCK)
   UNION ALL  SELECT 3 AS bettype, 8 AS sporttype, @v8apositiontaking_3 AS apositiontaking, 0 AS alivepositiontaking  
   UNION ALL  SELECT 20 AS bettype, 8 AS sporttype, @v8apositiontaking_20 AS apositiontaking, 0 AS alivepositiontaking  
  ) AS b ON scs.sporttype=b.sporttype AND scs.bettype = b.bettype  
- INNER JOIN @tmp_Sports sports ON b.sporttype = sports.sporttype  
- INNER JOIN @tmp_Bettype bettype ON b.bettype = bettype.typeid  
+ INNER JOIN #tmp_Sports sports ON b.sporttype = sports.ID  
+ INNER JOIN #tmp_Bettype bettype ON b.bettype = bettype.ID  
 WHERE c.custid = @recommend AND ((b.apositiontaking>scs.apositiontaking AND scs.islive = 0) OR (b.sporttype = 1 AND b.bettype IN (1,3,7,8) AND scs.islive = 1 AND b.alivepositiontaking>scs.apositiontaking))  
 if @ErrType <>''  
 BEGIN  
@@ -633,7 +643,7 @@ END
   
 --check a1<=a4 - Vinh  
 SELECT @ErrType = ''  
-SELECT @ErrType = @ErrType + sportname + '-'+ typenamee + '-Max: '+ CAST((scs.apositiontaking) AS VARCHAR(10))  
+SELECT @ErrType = @ErrType + sports.Name + '-'+ bettype.Name  + '-Max: '+ CAST((scs.apositiontaking) AS VARCHAR(10))  
 + CASE WHEN b.sporttype=1 AND b.bettype IN (1,3,7,8) AND scs.islive = 1 THEN '-MaxLive: '+ CAST((scs.apositiontaking) AS VARCHAR(10)) ELSE '' END + '<br>'  
 FROM custinfo AS c WITH (NOLOCK) INNER JOIN dep_custsetting AS scs WITH (NOLOCK) ON c.srecommend = scs.custid INNER JOIN   
  (  
@@ -642,8 +652,8 @@ FROM custinfo AS c WITH (NOLOCK) INNER JOIN dep_custsetting AS scs WITH (NOLOCK)
   UNION ALL  SELECT 3 AS bettype, 10 AS sporttype, @v10apositiontaking_3 AS apositiontaking, 0 AS alivepositiontaking  
   UNION ALL  SELECT 20 AS bettype, 10 AS sporttype, @v10apositiontaking_20 AS apositiontaking, 0 AS alivepositiontaking  
  ) AS b ON scs.sporttype=b.sporttype AND scs.bettype = b.bettype  
- INNER JOIN @tmp_Sports sports ON b.sporttype = sports.sporttype  
- INNER JOIN @tmp_Bettype bettype ON b.bettype = bettype.typeid  
+ INNER JOIN #tmp_Sports sports ON b.sporttype = sports.ID  
+ INNER JOIN #tmp_Bettype bettype ON b.bettype = bettype.ID  
 WHERE c.custid = @recommend AND ((b.apositiontaking>scs.apositiontaking AND scs.islive = 0) OR (b.sporttype = 1 AND b.bettype IN (1,3,7,8) AND scs.islive = 1 AND b.alivepositiontaking>scs.apositiontaking))  
 if @ErrType <>''  
 BEGIN  
@@ -684,15 +694,15 @@ END
   
 --check a1<=a4 - Vinh  
 SELECT @ErrType = ''  
-SELECT @ErrType = @ErrType + sportname + '-'+ typenamee + '-Max: '+ CAST((scs.apositiontaking) AS VARCHAR(10))  
+SELECT @ErrType = @ErrType + sports.Name + '-'+ bettype.Name  + '-Max: '+ CAST((scs.apositiontaking) AS VARCHAR(10))  
 + CASE WHEN b.sporttype=1 AND b.bettype IN (1,3,7,8) AND scs.islive = 1 THEN '-MaxLive: '+ CAST((scs.apositiontaking) AS VARCHAR(10)) ELSE '' END + '<br>'  
 FROM custinfo AS c WITH (NOLOCK) INNER JOIN dep_custsetting AS scs WITH (NOLOCK) ON c.srecommend = scs.custid INNER JOIN   
  (  
      SELECT 1 AS bettype, 11 AS sporttype, @v11apositiontaking_1 AS apositiontaking, 0 AS alivepositiontaking  
   UNION ALL  SELECT 20 AS bettype, 11 AS sporttype, @v11apositiontaking_20 AS apositiontaking, 0 AS alivepositiontaking  
  ) AS b ON scs.sporttype=b.sporttype AND scs.bettype = b.bettype  
- INNER JOIN @tmp_Sports sports ON b.sporttype = sports.sporttype  
- INNER JOIN @tmp_Bettype bettype ON b.bettype = bettype.typeid  
+ INNER JOIN #tmp_Sports sports ON b.sporttype = sports.ID  
+ INNER JOIN #tmp_Bettype bettype ON b.bettype = bettype.ID  
 WHERE c.custid = @recommend AND ((b.apositiontaking>scs.apositiontaking AND scs.islive = 0) OR (b.sporttype = 1 AND b.bettype IN (1,3,7,8) AND scs.islive = 1 AND b.alivepositiontaking>scs.apositiontaking))  
 if @ErrType <>''  
 BEGIN  
@@ -736,7 +746,7 @@ END
   
 --check a1<=a4 - Vinh  
 SELECT @ErrType = ''  
-SELECT @ErrType = @ErrType + sportname + '-'+ typenamee + '-Max: '+ CAST((scs.apositiontaking) AS VARCHAR(10))  
+SELECT @ErrType = @ErrType + sports.Name + '-'+ bettype.Name  + '-Max: '+ CAST((scs.apositiontaking) AS VARCHAR(10))  
 + CASE WHEN b.sporttype=1 AND b.bettype IN (1,3,7,8) AND scs.islive = 1 THEN '-MaxLive: '+ CAST((scs.apositiontaking) AS VARCHAR(10)) ELSE '' END + '<br>'  
 FROM custinfo AS c WITH (NOLOCK) INNER JOIN dep_custsetting AS scs WITH (NOLOCK) ON c.srecommend = scs.custid INNER JOIN   
  (  
@@ -745,8 +755,8 @@ FROM custinfo AS c WITH (NOLOCK) INNER JOIN dep_custsetting AS scs WITH (NOLOCK)
   UNION ALL  SELECT 3 AS bettype, 99 AS sporttype, @v99apositiontaking_3 AS apositiontaking, 0 AS alivepositiontaking  
   UNION ALL  SELECT 20 AS bettype, 99 AS sporttype, @v99apositiontaking_20 AS apositiontaking, 0 AS alivepositiontaking  
  ) AS b ON scs.sporttype=b.sporttype AND scs.bettype = b.bettype  
- INNER JOIN @tmp_Sports sports ON b.sporttype = sports.sporttype  
- INNER JOIN @tmp_Bettype bettype ON b.bettype = bettype.typeid  
+ INNER JOIN #tmp_Sports sports ON b.sporttype = sports.ID  
+ INNER JOIN #tmp_Bettype bettype ON b.bettype = bettype.ID  
 WHERE c.custid = @recommend AND ((b.apositiontaking>scs.apositiontaking AND scs.islive = 0) OR (b.sporttype = 1 AND b.bettype IN (1,3,7,8) AND scs.islive = 1 AND b.alivepositiontaking>scs.apositiontaking))  
 if @ErrType <>''  
 BEGIN  
@@ -785,14 +795,14 @@ END
   
 --check a1<=a4 - Vinh  
 SELECT @ErrType = ''  
-SELECT @ErrType = @ErrType + sportname + '-'+ typenamee + '-Max: '+ CAST((scs.apositiontaking) AS VARCHAR(10))  
+SELECT @ErrType = @ErrType + sports.Name + '-'+ bettype.Name  + '-Max: '+ CAST((scs.apositiontaking) AS VARCHAR(10))  
 + CASE WHEN b.sporttype=1 AND b.bettype IN (1,3,7,8) AND scs.islive = 1 THEN '-MaxLive: '+ CAST((scs.apositiontaking) AS VARCHAR(10)) ELSE '' END + '<br>'  
 FROM custinfo AS c WITH (NOLOCK) INNER JOIN dep_custsetting AS scs WITH (NOLOCK) ON c.srecommend = scs.custid INNER JOIN   
  (  
      SELECT 20 AS bettype, 154 AS sporttype, @v154apositiontaking_20 AS apositiontaking, 0 AS alivepositiontaking  
  ) AS b ON scs.sporttype=b.sporttype AND scs.bettype = b.bettype  
- INNER JOIN @tmp_Sports sports ON b.sporttype = sports.sporttype  
- INNER JOIN @tmp_Bettype bettype ON b.bettype = bettype.typeid  
+ INNER JOIN #tmp_Sports sports ON b.sporttype = sports.ID  
+ INNER JOIN #tmp_Bettype bettype ON b.bettype = bettype.ID  
 WHERE c.custid = @recommend AND ((b.apositiontaking>scs.apositiontaking AND scs.islive = 0) OR (b.sporttype = 1 AND b.bettype IN (1,3,7,8) AND scs.islive = 1 AND b.alivepositiontaking>scs.apositiontaking))  
 if @ErrType <>''  
 BEGIN  
@@ -829,14 +839,14 @@ END
   
  
 SELECT @ErrType = ''  
-SELECT @ErrType = @ErrType + sportname + '-'+ typenamee + '-Max: '+ CAST((scs.apositiontaking) AS VARCHAR(10))  
+SELECT @ErrType = @ErrType + sports.Name + '-'+ bettype.Name  + '-Max: '+ CAST((scs.apositiontaking) AS VARCHAR(10))  
 + CASE WHEN b.sporttype=1 AND b.bettype IN (1,3,7,8) AND scs.islive = 1 THEN '-MaxLive: '+ CAST((scs.apositiontaking) AS VARCHAR(10)) ELSE '' END + '<br>'  
 FROM custinfo AS c WITH (NOLOCK) INNER JOIN dep_custsetting AS scs WITH (NOLOCK) ON c.srecommend = scs.custid INNER JOIN   
  (  
      SELECT 3 AS bettype, 44 AS sporttype, @v44apositiontaking_3 AS apositiontaking, 0 AS alivepositiontaking  
  ) AS b ON scs.sporttype=b.sporttype AND scs.bettype = b.bettype  
- INNER JOIN @tmp_Sports sports ON b.sporttype = sports.sporttype  
- INNER JOIN @tmp_Bettype bettype ON b.bettype = bettype.typeid  
+ INNER JOIN #tmp_Sports sports ON b.sporttype = sports.ID  
+ INNER JOIN #tmp_Bettype bettype ON b.bettype = bettype.ID  
 WHERE c.custid = @recommend AND ((b.apositiontaking>scs.apositiontaking AND scs.islive = 0) OR (b.sporttype = 1 AND b.bettype IN (1,3,7,8) AND scs.islive = 1 AND b.alivepositiontaking>scs.apositiontaking))  
 if @ErrType <>''  
 BEGIN  
@@ -872,13 +882,13 @@ END
   
 --check a1<=a4   
 SELECT @ErrType = ''  
-SELECT @ErrType = @ErrType + sportname + '-'+ typenamee + '-Max: '+ CAST((scs.apositiontaking) AS VARCHAR(10)) + '<br>'  
+SELECT @ErrType = @ErrType + sports.Name + '-'+ bettype.Name  + '-Max: '+ CAST((scs.apositiontaking) AS VARCHAR(10)) + '<br>'  
 FROM custinfo AS c WITH (NOLOCK) INNER JOIN dep_custsetting AS scs WITH (NOLOCK) ON c.srecommend = scs.custid INNER JOIN   
  (  
      SELECT 9 AS bettype, 99 AS sporttype, @v99apositiontaking_9 AS apositiontaking  
  ) AS b ON scs.sporttype=b.sporttype AND scs.bettype = b.bettype  
- INNER JOIN @tmp_Sports sports ON b.sporttype = sports.sporttype  
- INNER JOIN @tmp_Bettype bettype ON b.bettype = bettype.typeid  
+ INNER JOIN #tmp_Sports sports ON b.sporttype = sports.ID  
+ INNER JOIN #tmp_Bettype bettype ON b.bettype = bettype.ID  
 WHERE c.custid = @recommend AND b.apositiontaking>scs.apositiontaking  
 if @ErrType <>''  
 BEGIN  
