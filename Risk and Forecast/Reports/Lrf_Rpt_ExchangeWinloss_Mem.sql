@@ -15,7 +15,7 @@ AS
 	Revisions: 
 		- 20171215@Harper: Create new report Exchange Winloss [RedmineID: #86640]
 		- 20180302@Harper: Return CustID for Support Bet List [RedmineID: #91048]
-		- 20180323@Amanda: Support today's data [Redmine: #92495]
+		- 20180323@Amanda: Support today's data and get yesterday's data from raw table if yesterday's data is not ready in sum table [Redmine: #92495]
 
 	Param's Explanation:  		
 
@@ -53,14 +53,13 @@ BEGIN
 		, @ProductID		INT
 		, @FDate			DATE
 		, @TDate			DATE
-		, @PartyIds			VARCHAR(4000)
-		, @Today			DATE
+		, @Yesterday		DATE
 		, @ProductPrefix	VARCHAR(2)
 	
 	SELECT @FDate = @FromDate,
 		   @TDate = @ToDate
 		   
-	SET @Today = GETDATE()
+	SET @Yesterday = DATEADD(DAY, -1, GETDATE())
 	SET @ProductPrefix = 'BX'
 
 	SELECT @ProductID = ProductID
@@ -96,32 +95,47 @@ BEGIN
 	WHERE @CustID = 0 OR (@CustID <> 0 AND ag.CustId =  @CustID)
 	-- #EndRegion: Get list custIDs
 
-	-- #Region: Get today's data
-	IF @TDate >= @Today
+	-- #Region: Get data has not been moved to sum table yet(yesterday and today)
+	IF @TDate >= @Yesterday
 	BEGIN
-		SET @TDate = DATEADD(DAY, -1, @Today)
+		DECLARE @IsDataYesterdayReady	BIT,
+				@ToDay					DATE,
+				@TmpFromDate			DATE,
+				@TmpToDate				DATE
 		
-		DECLARE @PartyID		VARCHAR(10)
-			,	@ChargeRate		MONEY
+		SET @ToDay = GETDATE()
+		EXEC @IsDataYesterdayReady = bodb_LicenseeReport.dbo.Task_rptBetting_CheckDataReady
+		
+		IF @IsDataYesterdayReady = 1 SET @TmpFromDate = @ToDay
+		ELSE SET @TmpFromDate = @Yesterday
+		
+		IF @TDate >= @ToDay SET @TmpToDate = @ToDay
+		ELSE SET @TmpToDate = @Yesterday
+		
+		IF @TmpToDate < @TmpFromDate RETURN
+		
+		DECLARE @PartyID VARCHAR(10)
+		DECLARE @ChargeRates AS TABLE(Rate MONEY, FromDate DATE, ToDate DATE)
 
 		SELECT @PartyID = CAST(PartyID AS VARCHAR)
 		FROM bodb_licensee.dbo.OAS_Party WITH(NOLOCK)
 		WHERE OldRefID = @LicenseeId AND PartyType = 1
-
-		SELECT TOP 1 @ChargeRate = DI_Rate
-		FROM bodb_licensee.dbo.LA_f_ChargeInfo(@PartyID, @ToDay, @ToDay, @ProductPrefix, 'OA', 1)
+		
+		INSERT INTO @ChargeRates(Rate, FromDate, ToDate)
+		SELECT DI_Rate, Fromdate, Todate
+		FROM bodb_licensee.dbo.LA_f_ChargeInfo(@PartyID, @TmpFromDate, @TmpToDate, @ProductPrefix, 'OA', 1)
 		WHERE ChargeType = 1 AND DI_Rate > 0
 		
-		IF @ChargeRate IS NULL
+		IF NOT EXISTS (SELECT 1 FROM @ChargeRates)
 		BEGIN
-			SELECT TOP 1 @ChargeRate = DI_Rate
-			FROM bodb_licensee.dbo.LA_f_GetChargeInfoWithTrialTime(@PartyID, @ToDay, @ToDay, @ProductPrefix, 'OA', 1)
+			INSERT INTO @ChargeRates(Rate, FromDate, ToDate)
+			SELECT DI_Rate, Fromdate, Todate
+			FROM bodb_licensee.dbo.LA_f_GetChargeInfoWithTrialTime(@PartyID, @TmpFromDate, @TmpToDate, @ProductPrefix, 'OA', 1)
 			WHERE ChargeType = 1 AND DI_Rate > 0
 		END
 		
-		SET @ChargeRate = ISNULL(@ChargeRate,1)
-		
 		CREATE TABLE #sumBet (
+				SettledDate		DATE,
 				CustID			INT,
 				UserID			VARCHAR(20),
 				EventID			INT,
@@ -134,7 +148,8 @@ BEGIN
 				ExVirtualRate	FLOAT
 		)
 		
-		INSERT INTO #sumBet(CustID,
+		INSERT INTO #sumBet(SettledDate,
+							CustID,
 							UserID,
 							EventID,
 							MarketID,
@@ -145,19 +160,21 @@ BEGIN
 							AgentComm,
 							ExVirtualRate
 			)
-		SELECT	sumbet.CustID,
+		SELECT	CONVERT(DATE, sumbet.settledDate),
+				sumbet.CustID,
 				sumbet.userId,
 				sumbet.eventID,
 				sumbet.marketID,
 				sumbet.currency,
-				sumbet.stakeTotal/sumbet.ExVirtualRate,		-- TurnOver			
-				sumbet.marketTotal/sumbet.ExVirtualRate,	-- winloss
-				sumbet.commission/sumbet.ExVirtualRate,		-- CustComm 
-				sumbet.agentCommission/sumbet.ExVirtualRate,-- AgentComm
+				SUM(sumbet.stakeTotal/sumbet.ExVirtualRate),		-- TurnOver			
+				SUM(sumbet.marketTotal/sumbet.ExVirtualRate),		-- winloss
+				SUM(sumbet.commission/sumbet.ExVirtualRate),		-- CustComm 
+				SUM(sumbet.agentCommission/sumbet.ExVirtualRate),	-- AgentComm
 				sumbet.ExVirtualRate
 		FROM bodb_3rdProduct.dbo.Sum_winloss_Exchange sumbet WITH (NOLOCK)
 		INNER JOIN @tmpCust cust ON cust.Custid = sumbet.CustID AND cust.Currency = sumbet.Currency	 
-		WHERE CONVERT(DATE, sumbet.settledDate) = @ToDay
+		WHERE CONVERT(DATE, sumbet.settledDate) >= @TmpFromDate AND CONVERT(DATE, sumbet.settledDate) <= @TmpToDate
+		GROUP BY CONVERT(DATE, sumbet.settledDate), sumbet.CustID, sumbet.userId, sumbet.eventID, sumbet.marketID, sumbet.currency, sumbet.ExVirtualRate
 		
 		CREATE TABLE #detailBet (
 				UserID			VARCHAR(20),
@@ -192,29 +209,30 @@ BEGIN
 								AgentComm
 			)
 		SELECT	sumbet.CustID
-				, @Today
+				, sumbet.SettledDate
 				, sumbet.CurrencyID
 				, SUM(sumbet.Turnover)
 				, SUM(ABS(ISNULL(bet.Lay, 0) - ISNULL(bet.Back, 0)))
 				, SUM(ISNULL(bet.BetCount, 0))
 				, SUM(sumbet.Winlost)
 				, - SUM(sumbet.Winlost)
-				, - SUM(sumbet.Winlost) * (1 - @ChargeRate)
+				, - SUM(sumbet.Winlost * (1 - ISNULL(rate.Rate, 1)))
 				, SUM(sumbet.CustComm)
-				, - SUM((sumbet.Winlost + sumbet.CustComm) + (-sumbet.Winlost*(1-@ChargeRate) + sumbet.AgentComm)) -- (LicWL - NetLicWL) + (LicComm - NetLicComm)
+				, - SUM((sumbet.Winlost + sumbet.CustComm) + (-sumbet.Winlost*(1-ISNULL(rate.Rate,1)) + sumbet.AgentComm)) -- (LicWL - NetLicWL) + (LicComm - NetLicComm)
 				, SUM(sumbet.AgentComm)
 		FROM #sumBet sumbet
 		LEFT JOIN #detailBet bet on sumbet.userId	= bet.userId 
 								AND sumbet.eventID	= bet.eventID 
 								AND sumbet.marketID	= bet.marketID
-		GROUP BY sumbet.CurrencyID, sumbet.CustID
+		LEFT JOIN @ChargeRates rate ON sumbet.SettledDate >= rate.FromDate AND sumbet.SettledDate <= rate.ToDate
+		GROUP BY sumbet.SettledDate, sumbet.CurrencyID, sumbet.CustID
 	
 		DROP TABLE #sumBet
 		DROP TABLE #detailBet
 	END
-	-- #EndRegion: Get today's data
+	-- #EndRegion: Get data has not been moved to sum table yet(yesterday and today)
 
-	-- #Region: Handle Raw Data
+	-- #Region: Handle Data	from Sum Table
 	IF @FDate <= @TDate
 	BEGIN
 		INSERT INTO #tmpResult( CustID,
@@ -241,7 +259,7 @@ BEGIN
 			AND b.ProductId = @ProductID	
 		GROUP BY b.Winlostdate, b.Currency, c.CustID
 	END
-	-- #EndRegion: Handle Raw Data
+	-- #EndRegion: Handle Data	from Sum Table
 
 	-- #Region: Handle Exchange Rate
 	INSERT INTO #Exchange( ExchangeID ,
