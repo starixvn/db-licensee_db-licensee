@@ -64,7 +64,7 @@ BEGIN
 	
 	INSERT INTO @RawWinLostDate (WinLostDate, StartWLDate, EndWLDate)
 	SELECT DISTINCT WinlostDate, WinlostDate, DATEADD(Day, 1, WinlostDate)
-	FROM bodb_3rdProduct.dbo.Product3rd_SummarizedDateHistory WITH (NOLOCK
+	FROM bodb_3rdProduct.dbo.Product3rd_SummarizedDateHistory WITH (NOLOCK)
 	WHERE WinlostDate >= @FDate AND WinlostDate <= @TDate AND SumToThirdPartyDate IS NULL
 	
 	SELECT @ProductID = ProductID
