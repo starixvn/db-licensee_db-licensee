@@ -34,17 +34,18 @@ BEGIN
 		,	@TDate				DATE
 		,	@ProductPrefix		VARCHAR(2)
 		
-	DECLARE @RawWinLostDate AS TABLE (WinLostDate DATE)
+	DECLARE @RawWinLostDate AS TABLE (WinLostDate DATE, StartWLDate DATETIME, EndWLDate DATETIME)
 
 	SELECT @FDate = @FromDate,
 		   @TDate = @ToDate
 	
 	SET @ProductPrefix = 'BX'
 	
-	INSERT INTO @RawWinLostDate
-	SELECT DISTINCT WinlostDate
-	FROM bodb_3rdProduct.dbo.Product3rd_SummarizedDateHistory
-	WHERE WinlostDate >= @FDate AND WinlostDate <= @ToDate AND SumToThirdPartyDate IS NULL
+	INSERT INTO @RawWinLostDate (WinLostDate, StartWLDate, EndWLDate)
+	SELECT DISTINCT WinlostDate, WinlostDate, DATEADD(Day, 1, WinlostDate)
+	FROM bodb_3rdProduct.dbo.Product3rd_SummarizedDateHistory WITH (NOLOCK)
+	WHERE WinlostDate >= @FDate AND WinlostDate <= @TDate 
+		AND SumToThirdPartyDate IS NULL
 
 	SELECT @ProductID = ProductID
 	FROM bodb_licensee.dbo.Product3rd WITH (NOLOCK)
@@ -75,11 +76,11 @@ BEGIN
 	INSERT INTO @tmpCust ( CustID, Currency )
 	SELECT ci.custid, ci.currency
 	FROM dbo.custInfo ci WITH (NOLOCK)
-	INNER JOIN @tempAg ag ON ci.recommend = ag.custID AND ci.currency = ag.currency
+		INNER JOIN @tempAg ag ON ci.recommend = ag.custID AND ci.currency = ag.currency
 	-- #EndRegion: Get list custIDs
 
 	-- #Region: Get data has not been moved to sum table yet(yesterday and today)
-	IF EXISTS (SELECT TOP 1 1 FROM @RawWinLostDate)
+	IF EXISTS (SELECT 1 FROM @RawWinLostDate)
 	BEGIN
 		DECLARE @RawFDate	DATE,
 				@RawTDate	DATE,
@@ -98,7 +99,7 @@ BEGIN
 		FROM bodb_licensee.dbo.LA_f_ChargeInfo(@PartyID, @RawFDate, @RawTDate, @ProductPrefix, 'OA', 1)
 		WHERE ChargeType = 1 AND DI_Rate > 0
 		
-		IF NOT EXISTS (SELECT TOP 1 1 FROM @ChargeRates)
+		IF NOT EXISTS (SELECT 1 FROM @ChargeRates)
 		BEGIN
 			INSERT INTO @ChargeRates(Rate, FromDate, ToDate)
 			SELECT DI_Rate, Fromdate, Todate
@@ -107,7 +108,7 @@ BEGIN
 		END
 
 		CREATE TABLE #sumBet (
-				SettledDate		DATETIME,
+				SettledDate		DATE,
 				UserID			VARCHAR(20),
 				EventID			INT,
 				MarketID		VARCHAR(50),
@@ -130,7 +131,7 @@ BEGIN
 							AgentComm,
 							ExVirtualRate
 			)
-		SELECT	sumbet.settledDate,
+		SELECT	CONVERT(DATE, sumbet.settledDate),
 				sumbet.userId,
 				sumbet.eventID,
 				sumbet.marketID,
@@ -141,12 +142,12 @@ BEGIN
 				SUM(sumbet.agentCommission/sumbet.ExVirtualRate),	-- AgentComm
 				sumbet.ExVirtualRate
 		FROM bodb_3rdProduct.dbo.Sum_winloss_Exchange sumbet WITH (NOLOCK)
-		INNER JOIN @RawWinLostDate wldate ON CONVERT(DATE, sumbet.settledDate) = wldate.WinLostDate
-		INNER JOIN @tmpCust cust ON cust.Custid = sumbet.CustID AND cust.Currency = sumbet.Currency
+			INNER JOIN @RawWinLostDate wldate ON sumbet.settledDate >= wldate.StartWLDate AND sumbet.settledDate < wldate.EndWLDate
+			INNER JOIN @tmpCust cust ON cust.Custid = sumbet.CustID AND cust.Currency = sumbet.Currency
 		GROUP BY sumbet.settledDate, sumbet.userId, sumbet.eventID, sumbet.marketID, sumbet.currency, sumbet.ExVirtualRate
 		
 		CREATE TABLE #detailBet (
-				SettledDate		DATETIME,
+				SettledDate		DATE,
 				UserID			VARCHAR(20),
 				EventID			INT,
 				MarketID		VARCHAR(50),
@@ -161,7 +162,7 @@ BEGIN
 			, SUM(CASE WHEN bet.matchType = 'Lay' THEN (bet.matchStake/sumbet.ExVirtualRate) ELSE 0 END) AS Lay
 			, SUM(CASE WHEN bet.matchType = 'Back' THEN (bet.matchStake/sumbet.ExVirtualRate) ELSE 0 END) AS Back
 		FROM bodb_3rdProduct.dbo.Bettrans_Exchange bet WITH (NOLOCK)
-		INNER JOIN #sumBet sumbet ON bet.userId = sumbet.UserID AND bet.eventID = sumbet.EventID AND bet.marketID = sumbet.MarketID
+			INNER JOIN #sumBet sumbet ON bet.userId = sumbet.UserID AND bet.eventID = sumbet.EventID AND bet.marketID = sumbet.MarketID
 		WHERE bet.betstatus = 'Settled'				
 		GROUP BY sumbet.SettledDate, bet.userId, bet.eventID, bet.marketID
 		
@@ -177,7 +178,7 @@ BEGIN
 								AmountDueTo,
 								AgentComm
 			)
-		SELECT	CONVERT(DATE, sumbet.SettledDate)
+		SELECT	sumbet.SettledDate
 				, sumbet.CurrencyID
 				, SUM(sumbet.Turnover)
 				, SUM(ABS(ISNULL(bet.Lay, 0) - ISNULL(bet.Back, 0)))
@@ -189,12 +190,12 @@ BEGIN
 				, - SUM((sumbet.Winlost + sumbet.CustComm) + (-sumbet.Winlost*(1-ISNULL(rate.Rate,1)) + sumbet.AgentComm)) -- (LicWL - NetLicWL) + (LicComm - NetLicComm)
 				, SUM(sumbet.AgentComm)
 		FROM #sumBet sumbet
-		LEFT JOIN #detailBet bet ON sumbet.userId	= bet.userId 
-								AND sumbet.eventID	= bet.eventID 
-								AND sumbet.marketID	= bet.marketID
-								AND sumbet.SettledDate = bet.SettledDate
-		LEFT JOIN @ChargeRates rate ON CONVERT(DATE, sumbet.SettledDate) BETWEEN rate.FromDate AND rate.ToDate
-		GROUP BY CONVERT(DATE, sumbet.SettledDate), sumbet.CurrencyID
+			LEFT JOIN #detailBet bet ON sumbet.userId	= bet.userId 
+									AND sumbet.eventID	= bet.eventID 
+									AND sumbet.marketID	= bet.marketID
+									AND sumbet.SettledDate = bet.SettledDate
+			LEFT JOIN @ChargeRates rate ON sumbet.SettledDate BETWEEN rate.FromDate AND rate.ToDate
+		GROUP BY sumbet.SettledDate, sumbet.CurrencyID
 	
 		DROP TABLE #sumBet
 		DROP TABLE #detailBet
@@ -222,18 +223,20 @@ BEGIN
 			, -SUM(( b.Winlost + b.CommissionP) + ( b.WinLostA + CommissionA)) -- (LicWL - NetLicWL) + (LicComm - NetLicComm)
 			, SUM(CommissionA)
 		FROM bodb_LicenseeReport.dbo.rptDepWinlost_ThirdParty b WITH (NOLOCK)
-			INNER JOIN @tmpCust c ON b.Custid = c.CustID AND b.Currency = c.Currency
-			LEFT JOIN @RawWinLostDate rawdate ON b.Winlostdate = rawdate.WinLostDate
-		WHERE b.Winlostdate BETWEEN @FDate AND @TDate AND b.ProductId = @ProductID AND rawdate.WinLostDate IS NULL
+			INNER JOIN @tmpCust c ON b.Custid = c.CustID AND b.Currency = c.Currency			
+		WHERE b.Winlostdate BETWEEN @FDate AND @TDate 
+			AND b.ProductId = @ProductID 
+			AND NOT EXISTS (SELECT 1 FROM @RawWinLostDate r WHERE b.Winlostdate = r.WinLostDate)
 		GROUP BY b.Winlostdate, b.Currency
 	END
 	-- #EndRegion: Handle Data	from Sum Table
 
 	-- #Region: Handle Exchange Rate
-	;WITH Currency_CTE (CurrencyID)
-	AS (
-		SELECT DISTINCT CurrencyID FROM #tmpResult
-	)
+	;WITH Currency_CTE (CurrencyID) AS (
+											SELECT DISTINCT CurrencyID 
+											FROM #tmpResult
+										)
+
 	INSERT INTO #Exchange( ExchangeID ,
 							ExchageDate ,
 							Code ,
