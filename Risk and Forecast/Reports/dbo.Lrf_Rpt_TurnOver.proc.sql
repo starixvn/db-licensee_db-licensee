@@ -65,6 +65,7 @@ Revisions:
    - 20170710@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
    - 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
    - 20180129@Harper: Remove LC from product list [RedmineID: #85965]
+   - 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
 
 Param's Explanation:
     
@@ -125,7 +126,7 @@ BEGIN
 	END
 	IF @ShowFW		= 1 INSERT INTO @sporttype(sporttype) VALUES(219)
 	IF @ShowCO		= 1 INSERT INTO @sporttype(sporttype) VALUES(-6), (-7)
-	IF @ShowVS2	= 1 INSERT INTO @sporttype(sporttype) VALUES(190)
+	IF @ShowVS2	= 1 INSERT INTO @sporttype(sporttype) VALUES(190),(193)
 	IF @ShowLT	= 1 INSERT INTO @sporttype(sporttype) VALUES(220)
 
 	IF @username <> ''

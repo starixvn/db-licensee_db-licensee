@@ -77,6 +77,7 @@ AS
 		- 20170704@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
 		- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 		- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
+		- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
 		- 20180420@Amanda: Include more cash out tickets [RedmineID: #93919]
 
 	Param's Explanation:  
@@ -680,7 +681,7 @@ BEGIN
 					ELSE 0 END	
 				) AS turnoverFW,
 				0 AS turnoverCO,
-				SUM(CASE WHEN b.bettype BETWEEN 2700 AND 2799 THEN
+				SUM(CASE WHEN b.bettype BETWEEN 2700 AND 2899 THEN
 					stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
 
 						 
@@ -719,7 +720,7 @@ BEGIN
 				-SUM(CASE WHEN b.bettype BETWEEN  1011 AND 1020
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLFW,
 				0 AS LicenseeWLCO,
-				-SUM(CASE WHEN b.bettype BETWEEN 2700 AND 2799
+				-SUM(CASE WHEN b.bettype BETWEEN 2700 AND 2899
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLVS2,	
 				-SUM(CASE WHEN b.bettype BETWEEN 1021 AND 1049
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLLT,	
@@ -986,7 +987,7 @@ BEGIN
 					ELSE 0 END
 				) AS turnoverFW,
 				0  AS turnoverCO,
-				SUM(CASE WHEN b.sporttype IN (190, 191) THEN 
+				SUM(CASE WHEN b.sporttype IN (190, 191, 193) THEN 
 					b.turnover
 					*
 					CASE WHEN @drawfilter IN (2,3) THEN
@@ -1025,7 +1026,7 @@ BEGIN
 				-SUM(CASE WHEN b.sporttype = 211 THEN b.winlost ELSE 0 END) AS LicenseeWLAB,
 				-SUM(CASE WHEN b.sporttype = 219 THEN b.winlost ELSE 0 END) AS LicenseeWLFW,
 				0 AS LicenseeWLCO,
-				-SUM(CASE WHEN b.sporttype IN (190, 191, 196) THEN b.winlost ELSE 0 END) AS LicenseeWLVS2,
+				-SUM(CASE WHEN b.sporttype IN (190, 191,193, 196) THEN b.winlost ELSE 0 END) AS LicenseeWLVS2,
 				-SUM(CASE WHEN t.ProductCode = 'LT' THEN b.winlost ELSE 0 END) AS LicenseeWLLT,				
 				0 AS AmountDueToBA,
 				-SUM(CASE WHEN b.sporttype = 151 THEN b.winlost+b.awinlost+b.comm ELSE 0 END) AS AmountDueToRB,
@@ -1426,7 +1427,7 @@ BEGIN
 					ELSE 0 END
 				) AS turnoverFW,
 				0 AS turnoverCO,
-				SUM(CASE WHEN b.sporttype IN (190, 191, 196) THEN 
+				SUM(CASE WHEN b.sporttype IN (190, 191,193, 196) THEN 
 					b.turnover
 					*
 					CASE WHEN @drawfilter IN (2,3) THEN
@@ -1454,7 +1455,7 @@ BEGIN
 				-SUM(CASE WHEN b.sporttype = 211 THEN b.winlost ELSE 0 END) AS LicenseeWLAB,
 				-SUM(CASE WHEN b.sporttype = 219 THEN b.winlost ELSE 0 END) AS LicenseeWLFW,
 				0 AS LicenseeWLCO,
-				-SUM(CASE WHEN b.sporttype IN (190,191,196) THEN b.winlost ELSE 0 END) AS LicenseeWLVS2,
+				-SUM(CASE WHEN b.sporttype IN (190,191,193,196) THEN b.winlost ELSE 0 END) AS LicenseeWLVS2,
 				0 AS AmountDueToBA,
 				-SUM(CASE WHEN b.sporttype = 151 THEN b.winlost+b.awinlost+b.comm ELSE 0 END) AS AmountDueToRB,
 				0 AS CommBA,

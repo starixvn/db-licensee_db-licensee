@@ -65,6 +65,7 @@ Revisions:
 	- 20170814@Harper: One RNG - Offer New Tablet Games [RedmineID: #78424]
 	- 20171009@Sophia: Add ProductCode [RedmineID : #82797]
 	- 20180205@Harper: Remove LC from product list [RedmineID: #85965]
+	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
 
 Param's Explanation:  
 	+ @Liveindicator : indicate that whether the report will get live data or not
@@ -223,7 +224,7 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 4001 AND 7999 THEN ''VB'' -- Voidbridge' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1011 AND 1020 THEN ''FW'' -- Fishing World' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 2401 AND 2499 THEN ''AB'' -- AllBet' + CHAR(13)
-								+ 'WHEN b.bettype BETWEEN 2701 AND 2798 THEN ''VS2''' + CHAR(13)
+								+ 'WHEN (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2801 AND 2899) THEN ''VS2''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1021 AND 1049 THEN ''LT''' + CHAR(13)
 								+ 'END AS ProductCode,' + CHAR(13)
 								+ 'b.bettype,' + CHAR(13)
@@ -257,7 +258,7 @@ BEGIN
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VB')) = 1 THEN 'OR (b.bettype BETWEEN 4001 AND 7999)' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','FW')) = 1 THEN 'OR b.bettype BETWEEN 1011 AND 1020' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','AB')) = 1 THEN 'OR b.bettype BETWEEN 2401 AND 2499' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VS2')) = 1 THEN 'OR b.bettype BETWEEN 2701 AND 2799' + CHAR(13) ELSE '' END
+								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VS2')) = 1 THEN 'OR b.bettype BETWEEN 2701 AND 2899' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','LT')) = 1 THEN 'OR b.bettype BETWEEN 1021 AND 1049' + CHAR(13) ELSE '' END 
 								+ ') ' + CHAR(13)
 								+ 'GROUP BY  b.winlostdate, t.currency, b.bettype,' + CHAR(13)
@@ -272,7 +273,7 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 4001 AND 7999 THEN ''VB'' -- Voidbridge' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1011 AND 1020 THEN ''FW'' -- Fishing World' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 2401 AND 2499 THEN ''AB'' -- AllBet' + CHAR(13)
-								+ 'WHEN b.bettype BETWEEN 2701 AND 2798 THEN ''VS2''' + CHAR(13)
+								+ 'WHEN (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2801 AND 2899) THEN ''VS2''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1021 AND 1049 THEN ''LT''' + CHAR(13)
 								+ 'END' + CHAR(13)
 			
@@ -410,7 +411,7 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 4001 AND 7999 THEN ''VB'' -- Voidbridge' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1011 AND 1020 THEN ''FW'' -- Fishing World' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 2401 AND 2499 THEN ''AB'' -- AllBet' + CHAR(13)
-								+ 'WHEN b.bettype BETWEEN 2701 AND 2798 THEN ''VS2''' + CHAR(13)
+								+ 'WHEN (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2801 AND 2899) THEN ''VS2''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1021 AND 1049 THEN ''LT''' + CHAR(13)
 								+ 'END AS ProductCode,' + CHAR(13)
 								+ 'b.bettype,' + CHAR(13)
@@ -441,7 +442,7 @@ BEGIN
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VB')) = 1 THEN 'OR (b.bettype BETWEEN 4001 AND 7999)' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','FW')) = 1 THEN 'OR b.bettype BETWEEN 1011 AND 1020' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','AB')) = 1 THEN 'OR b.bettype BETWEEN 2401 AND 2499' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VS2')) = 1 THEN 'OR b.bettype BETWEEN 2701 AND 2799' + CHAR(13) ELSE '' END
+								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VS2')) = 1 THEN 'OR b.bettype BETWEEN 2701 AND 2899' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','LT')) = 1 THEN 'OR b.bettype BETWEEN 1021 AND 1049' + CHAR(13) ELSE '' END 
 								+ ') ' + CHAR(13)
 								+ 'GROUP BY b.rptDate, b.currencyID, b.bettype,' + CHAR(13)
@@ -456,7 +457,7 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 4001 AND 7999 THEN ''VB'' -- Voidbridge' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1011 AND 1020 THEN ''FW'' -- Fishing World' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 2401 AND 2499 THEN ''AB'' -- AllBet' + CHAR(13)
-								+ 'WHEN b.bettype BETWEEN 2701 AND 2798 THEN ''VS2''' + CHAR(13)
+								+ 'WHEN (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2801 AND 2899) THEN ''VS2''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1021 AND 1049 THEN ''LT''' + CHAR(13)
 								+ 'END' + CHAR(13)
 

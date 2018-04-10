@@ -31,6 +31,7 @@ Revisions:
    - 20170330@Paul: Implement Cash Out [RedmineID: #71727]
    - 20170710@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
    - 20170919@Percy: Change way get SportBettypeMatrix [RedmineID: #83442]
+	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
 
 	Param's Explanation:  
 Param's Explanation:
@@ -152,7 +153,7 @@ BEGIN
 																				WHEN typeid = 1235 THEN '(Tennis)'
 																				ELSE '' 
 																			END
-			WHEN (typeid BETWEEN 2701 AND 2799) THEN  N'VS2 - ' + typenamee
+			WHEN (typeid BETWEEN 2701 AND 2899) THEN  N'VS2 - ' + typenamee
 			ELSE typenamee 																 
 		END AS BettypeName
 	

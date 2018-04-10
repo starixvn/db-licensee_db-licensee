@@ -40,6 +40,7 @@ AS
 		- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 		- 20171020@Harper: LRF - Add "New Asia" in platform list [RedmineID: #85203]
 		- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
+		- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
 
 	Param's Explanation:  
 	  + @PlatformType:  0: All  
@@ -266,12 +267,12 @@ BEGIN
 
 	IF @ShowVS2 = 1 -- Betradar Virtual Sports
 	BEGIN
-		SET @SportTypeSQL = @SportTypeSQL + ', (190, ''VS2'')'
+		SET @SportTypeSQL = @SportTypeSQL + ', (190, ''VS2''), (193, ''VS2'')'
 
-		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 2701 AND 2799 THEN ''VS2''
+		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 2701 AND 2899 THEN ''VS2''
 				'
 
-		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 2701 AND 2799)'
+		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 2701 AND 2899)'
 	END
 
 	IF @ShowLT = 1 -- Lottery

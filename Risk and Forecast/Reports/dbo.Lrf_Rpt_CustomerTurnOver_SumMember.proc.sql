@@ -24,6 +24,7 @@ Revision:
 	- 20171006@Percy: Hotfix - Add missing mutilple odds bettypes [RedmineID: #84457]
 		1. Basketball (603-607, 609-613, 615-617)
 		2. Virtual Sports 2 (2701-2707)
+	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
 
 Parameter's Explanation:
 			
@@ -180,6 +181,7 @@ BEGIN
 								OR b.bettype = 428 -- 2H Odd/Even
 								OR (bettype BETWEEN 603 AND 607 OR bettype BETWEEN 609 AND 613 OR bettype BETWEEN 615 AND 617) -- Basketball bettypes
 								OR bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
+								OR bettype BETWEEN 2801 AND 2829 -- Virtual Sport 2: basketball
 							)
 							THEN 
 									CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
