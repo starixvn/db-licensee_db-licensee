@@ -24,6 +24,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_TurnOver]
 	@ShowCO			BIT = 0,
 	@ShowVS2		BIT = 0, -- Bet Radar Virtual Sports
 	@ShowLT			BIT = 0, -- Lottery
+	@ShowPP			BIT = 0, -- Lottery
 	@AgentList		VARCHAR(MAX)
 AS 
 /*
@@ -69,6 +70,7 @@ Revisions:
    - 20180129@Harper: Remove LC from product list [RedmineID: #85965]
    - 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
    - 20180412@Harper: Integrate Bonus wallet [RedmineID: 91740]
+   - 20180418@Amanda: LAP - Integrate PP [RedmineID: #92381]
 
 Param's Explanation:
     
@@ -131,6 +133,7 @@ BEGIN
 	IF @ShowCO		= 1 INSERT INTO @sporttype(sporttype) VALUES(-6), (-7)
 	IF @ShowVS2	= 1 INSERT INTO @sporttype(sporttype) VALUES(190),(193)
 	IF @ShowLT	= 1 INSERT INTO @sporttype(sporttype) VALUES(220)
+	IF @ShowPP	= 1 INSERT INTO @sporttype(sporttype) VALUES(248)
 
 	IF @username <> ''
 	BEGIN

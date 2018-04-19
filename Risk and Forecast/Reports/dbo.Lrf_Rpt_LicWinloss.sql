@@ -22,6 +22,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]
 	@ShowCO			BIT = 0, -- Cash Out
 	@ShowVS2		BIT = 0, -- Bet Radar Virtual Sports
 	@ShowLT			BIT = 0, -- Lottery
+	@ShowPP			BIT = 0, -- PP
 	@ReportType		TINYINT = 1,  
 	@MoveBetsDay	SMALLDATETIME,
 	@IsOld			BIT = 0,
@@ -72,6 +73,7 @@ AS
 	- 20170711@Harper: Fix Racing Revenue of Licensee Winloss [RedmineID :#79748]
 	- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
+	- 20180418@Amanda: LAP - Integrate PP [RedmineID: #92381]
 	- 20180420@Amanda: Include more cash out tickets [RedmineID: #93919]
 	- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 
@@ -223,6 +225,11 @@ BEGIN
 	IF @ShowLT = 1 -- Lottery
 	BEGIN
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'LT', 'LT')
+	END
+	
+	IF @ShowPP = 1 -- PP
+	BEGIN
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'PP', 'PP')
 	END
 
 	IF LEN(ISNULL(@ProductList, '')) > 0 
@@ -459,7 +466,7 @@ BEGIN
 			GROUP BY b.winlostdate, a.currency  
 		END
 
-		IF 1 IN (@ShowNG, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @showMGCLC, @showMGCRnG, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowVS2, @ShowLT)
+		IF 1 IN (@ShowNG, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @showMGCLC, @showMGCRnG, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowVS2, @ShowLT, @ShowPP)
 		BEGIN
 			INSERT INTO #SAgWinLoss
 			(  
@@ -628,7 +635,7 @@ BEGIN
 		END
 	
 		--exclude BA tickets
-		IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowVS2, @ShowLT)
+		IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowVS2, @ShowLT, @ShowPP)
 		BEGIN
 			INSERT INTO #SAgWinLoss 
 			(  

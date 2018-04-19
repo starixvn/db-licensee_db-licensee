@@ -14,6 +14,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 		- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 		- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 		- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
+		- 20180418@Amanda: LAP - Integrate PP [RedmineID: #92381]
 
 	Paramters Explanation:  
 		@ProductID: list of products  
@@ -40,7 +41,8 @@ RETURN
 					(22, 'VB', 212, 0), -- Macau Games 
 					(24, 'FW', 219, 0), -- Fishing World  
 					(27, 'VS2', 190, 0), (27, 'VS2', 193, 0),-- Betradar Virtual Sports  
-					(28, 'LT', 220, 0)	-- Lottery
+					(28, 'LT', 220, 0),	-- Lottery
+					(32, 'PP', 248, 0)	-- PP
 			) d(ProductID, ProductCode, SportType, BetType)  
 	WHERE ',' + @ProductCodes + ',' LIKE '%,' + CAST(ProductCode as varchar(10)) + ',%'  
 GO

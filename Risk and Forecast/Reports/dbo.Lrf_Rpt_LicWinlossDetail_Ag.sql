@@ -22,6 +22,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinlossDetail_Ag]
 	@ShowCO			BIT = 0, -- Cash Out
 	@ShowVS2		BIT = 0, -- Bet Radar Virtual Sports
 	@ShowLT			BIT = 0, -- Lottery
+	@ShowPP			BIT = 0, -- PP
 	@MoveBetsDay	SMALLDATETIME,
 	@IsOld			BIT = 0,
 	@drawfilter		SMALLINT = 1,
@@ -72,6 +73,7 @@ AS
 		- 20170814@Harper: One RNG - Offer New Tablet Games [RedmineID: #78424]
 		- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 		- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
+		- 20180418@Amanda: LAP - Integrate PP [RedmineID: #92381]
 		- 20180420@Amanda: Include more cash out tickets [RedmineID: #93919]
 		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 
@@ -256,6 +258,11 @@ BEGIN
 	IF @ShowLT = 1 -- Lottery
 	BEGIN
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'LT', 'LT')
+	END
+	
+	IF @ShowPP = 1 -- PP
+	BEGIN
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'PP', 'PP')
 	END
 
 	IF LEN(ISNULL(@ProductList, '')) > 0 
@@ -523,7 +530,7 @@ BEGIN
 				b.winlostdate, a.currency, b.recommend, b.statusID			
 		END
 
-		IF 1 IN (@ShowNG, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowVS2, @ShowLT)
+		IF 1 IN (@ShowNG, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowVS2, @ShowLT, @ShowPP)
 		BEGIN
 			INSERT INTO #SAgWinLoss
 			SELECT   
@@ -880,7 +887,7 @@ BEGIN
 		END
 	
 		--exclude BA tickets
-		IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowVS2, @ShowLT)
+		IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowVS2, @ShowLT, @ShowPP)
 		BEGIN
 			INSERT INTO #SAgWinLoss  
 			SELECT 
