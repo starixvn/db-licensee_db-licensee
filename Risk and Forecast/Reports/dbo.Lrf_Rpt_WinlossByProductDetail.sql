@@ -72,6 +72,7 @@ AS
 	- 20170721@Sophia: Change to call Alias DBWH instead of DBDW2 
 	- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
+	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
 
 	Param's Explanation:  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
