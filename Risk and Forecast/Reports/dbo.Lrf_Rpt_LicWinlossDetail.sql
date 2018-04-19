@@ -79,8 +79,7 @@ AS
 		- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 		- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 		- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
-		- 20180418@Amanda: LAP - Integrate PP [RedmineID: #92381]
-		- 20180420@Amanda: Include more cash out tickets [RedmineID: #93919]
+		- 20180418@Amanda: LAP - Update VB bet type range and integrate PP [RedmineID: #92381]		- 20180420@Amanda: Include more cash out tickets [RedmineID: #93919]
 		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 		- 20180809@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
 
@@ -125,6 +124,7 @@ BEGIN
 		TurnoverCO			MONEY,
 		TurnoverVS2			MONEY,
 		TurnoverLT			MONEY,
+		TurnoverPP			MONEY,
 		BTActualStake		MONEY,
 		Winlost				MONEY,
 		LicenseeWLSB		MONEY,
@@ -144,6 +144,7 @@ BEGIN
 		LicenseeWLCO		MONEY,
 		LicenseeWLVS2		MONEY,
 		LicenseeWLLT		MONEY,
+		LicenseeWLPP		MONEY,
 		AmtDueToBA			MONEY,   
 		AmtDueToRB			MONEY,
 		CommBA				MONEY,   
@@ -346,6 +347,7 @@ BEGIN
 				0 AS turnoverCO,
 				0 AS turnoverVS2,
 				0 AS turnoverLT,
+				0 AS turnoverPP,
 				0 AS BTActualStake,
 				SUM(b.winlost-b.actual_stake) AS Winlost,  
 				0 AS LicenseeWLSB,
@@ -365,6 +367,7 @@ BEGIN
 				0 AS LicenseeWLCO,
 				0 AS LicenseeWLVS2,
 				0 AS LicenseeWLLT,
+				0 AS LicenseeWLPP,
 				-SUM(b.winlost-b.actual_stake+awinlost+comm ) AS AmountDueToBA,
 				0 AS AmountDueToRB,
 				SUM(comm) AS CommBA,
@@ -421,7 +424,8 @@ BEGIN
 				0 AS turnoverFW,
 				0 AS turnoverCO,
 				0 AS turnoverVS2,
-				0 AS turnoverLT, 
+				0 AS turnoverLT,
+				0 AS turnoverPP,
 				0 AS BTActualStake,
 				SUM(b.winlost-b.actual_stake) AS Winlost,  
 				-SUM(b.winlost-b.actual_stake) AS LicenseeWLSB,
@@ -441,6 +445,7 @@ BEGIN
 				0 AS LicenseeWLCO,
 				0 AS LicenseeWLVS2,
 				0 AS LicenseeWLLT,
+				0 AS LicenseeWLPP,
 				0 AS AmountDueToBA,
 				0 AS AmountDueToRB,
 				0 AS CommBA,
@@ -495,7 +500,8 @@ BEGIN
 				0 AS turnoverFW,
 				0 AS turnoverCO,
 				0 AS turnoverVS2, 
-				0 AS turnoverLT, 
+				0 AS turnoverLT,
+				0 AS turnoverPP,
 				SUM(CASE WHEN b.bettype = 902 THEN b.winlost ELSE 0 END) AS BTAtualStake,
 				SUM(CASE WHEN b.bettype = 903 THEN 0 ELSE b.winlost-b.actual_stake END) AS Winlost,  
 				0 AS LicenseeWLSB,
@@ -515,6 +521,7 @@ BEGIN
 				0 AS LicenseeWLCO, 
 				0 AS LicenseeWLVS2,
 				0 AS LicenseeWLLT,
+				0 AS LicenseeWLPP,
 				0 AS AmountDueToBA,
 				0 AS AmountDueToRB,
 				0 AS CommBA,
@@ -562,6 +569,7 @@ BEGIN
 				0 AS turnoverCO,
 				0 AS turnoverVS2,
 				0 AS turnoverLT,
+				0 AS turnoverPP,
 				0 AS BTAtualStake,
 				SUM(CASE WHEN b.bettype = 913 THEN 0 ELSE b.winlost - b.actual_stake END) AS Winlost,  
 				0 AS LicenseeWLSB,
@@ -581,6 +589,7 @@ BEGIN
 				- SUM(CASE WHEN b.bettype = 913 THEN 0 ELSE b.winlost - b.actual_stake END) AS LicenseeWLCO, 
 				0 AS LicenseeWLVS2,
 				0 AS LicenseeWLLT,
+				0 AS LicenseeWLPP,
 				0 AS AmountDueToBA,
 				0 AS AmountDueToRB,
 				0 AS CommBA,
@@ -665,7 +674,7 @@ BEGIN
 						 
 					ELSE 0 END	
 				) AS turnoverAGC,
-				SUM(CASE WHEN b.bettype BETWEEN 4001 AND 7999 THEN
+				SUM(CASE WHEN b.bettype BETWEEN 4001 AND 4100 THEN
 					stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
 
 					 
@@ -693,6 +702,10 @@ BEGIN
 						stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END						 
 					ELSE 0 END	
 				) AS turnoverLT,
+				SUM(CASE WHEN b.bettype BETWEEN 4101 AND 4300 THEN
+						stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
+					ELSE 0 END	
+				) AS turnoverPP,
 				0 AS BTActualStake,
 				SUM(b.winlost-b.actual_stake) AS Winlost,  
 				0 AS LicenseeWLSB,
@@ -715,7 +728,7 @@ BEGIN
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLMGCRnG,
 				-SUM(CASE WHEN b.bettype BETWEEN 1800 AND 1899
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLAGC,
-				-SUM(CASE WHEN b.bettype BETWEEN 4001 AND 7999
+				-SUM(CASE WHEN b.bettype BETWEEN 4001 AND 4100
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLVB,
 				-SUM(CASE WHEN b.bettype BETWEEN 2401  AND 2499
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLAB,
@@ -725,7 +738,9 @@ BEGIN
 				-SUM(CASE WHEN b.bettype BETWEEN 2701 AND 2829
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLVS2,	
 				-SUM(CASE WHEN b.bettype BETWEEN 1021 AND 1049
-					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLLT,	
+					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLLT,
+				-SUM(CASE WHEN b.bettype BETWEEN 4101 AND 4300
+					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLPP,
 				0 as AmountDueToBA,
 				- SUM (CASE WHEN b.bettype BETWEEN 31 AND 33 THEN b.winlost - b.actual_stake + awinlost + comm ELSE 0 END) as AmountDueToRB,
 				0 AS CommBA,
@@ -790,6 +805,7 @@ BEGIN
 				0 AS turnoverCO,
 				0 AS turnoverVS2,
 				0 AS turnoverLT,
+				0 AS turnoverPP,
 				0 AS BTActualStake,
 				SUM(b.winlost),  
 				0 AS LicenseeWLSB,
@@ -809,6 +825,7 @@ BEGIN
 				0 AS LicenseeWLCO,
 				0 AS LicenseeWLVS2,
 				0 AS LicenseeWLLT,
+				0 AS LicenseeWLPP,
 				-SUM(b.winlost+b.awinlost+b.comm) AS AmountDueToBA,
 				0 AS AmountDueToRB,
 				SUM(comm) AS CommBA,
@@ -1011,6 +1028,17 @@ BEGIN
 						ELSE 1 END
 					ELSE 0 END
 				) AS turnoverLT,
+				SUM(CASE WHEN b.sporttype = 248 THEN 
+					b.turnover
+					*
+					CASE WHEN @drawfilter IN (2,3) THEN
+						CASE
+							WHEN b.statusID = 111 THEN 0
+							WHEN b.statusID IN (114,115) THEN 0.5
+							ELSE 1 END
+						ELSE 1 END
+					ELSE 0 END
+				) AS turnoverPP,
 				0 AS BTActualStake,
 				SUM(b.winlost),
 				-SUM(CASE WHEN b.sporttype = 0 THEN b.winlost ELSE 0 END) AS LicenseeWLSB,
@@ -1029,7 +1057,8 @@ BEGIN
 				-SUM(CASE WHEN b.sporttype = 219 THEN b.winlost ELSE 0 END) AS LicenseeWLFW,
 				0 AS LicenseeWLCO,
 				-SUM(CASE WHEN b.sporttype IN (190, 193) THEN b.winlost ELSE 0 END) AS LicenseeWLVS2,
-				-SUM(CASE WHEN t.ProductCode = 'LT' THEN b.winlost ELSE 0 END) AS LicenseeWLLT,				
+				-SUM(CASE WHEN t.ProductCode = 'LT' THEN b.winlost ELSE 0 END) AS LicenseeWLLT,
+				-SUM(CASE WHEN b.sporttype = 248 THEN b.winlost ELSE 0 END) AS LicenseeWLPP,
 				0 AS AmountDueToBA,
 				-SUM(CASE WHEN b.sporttype = 151 THEN b.winlost+b.awinlost+b.comm ELSE 0 END) AS AmountDueToRB,
 				0 AS CommBA,
@@ -1082,6 +1111,7 @@ BEGIN
 				0 AS turnoverCO,
 				0 AS turnoverVS2,
 				0 AS tunroverLT,
+				0 AS tunroverPP,
 				SUM(CASE WHEN b.bettype = 902 THEN b.winlost + BuyBackAmt + BABuyBackAmt ELSE 0 END) AS BTActualStake,
 				SUM(CASE WHEN b.bettype = 903 THEN 0 ELSE b.winlost END) AS Winlost,   
 				0 AS LicenseeWLSB,
@@ -1101,6 +1131,7 @@ BEGIN
 				0 AS LicenseeWLCO,
 				0 AS LicenseeWLVS2,
 				0 AS LicenseeWLLT,
+				0 AS LicenseeWLPP,
 				0 AS AmountDueToBA,
 				0 AS AmountDueToRB,
 				0 AS CommBA,
@@ -1149,6 +1180,7 @@ BEGIN
 				0 AS turnoverCO,
 				0 AS turnoverVS2, 
 				0 AS tunroverLT,
+				0 AS tunroverPP,
 				0 AS BTActualStake,
 				SUM(CASE WHEN b.bettype = 913 THEN 0 ELSE b.winlost END) AS Winlost,   
 				0 AS LicenseeWLSB,
@@ -1168,6 +1200,7 @@ BEGIN
 				- SUM(CASE WHEN b.bettype = 913 THEN 0 ELSE b.winlost END) AS LicenseeWLCO,
 				0 AS LicenseeWLVS2,
 				0 AS LicenseeWLLT,
+				0 AS LicenseeWLPP,
 				0 AS AmountDueToBA,
 				0 AS AmountDueToRB,
 				0 AS CommBA,
@@ -1576,6 +1609,7 @@ BEGIN
 		SUM(TurnoverCO)			AS TurnoverCO,
 		SUM(TurnoverVS2)		AS TurnoverVS2,
 		SUM(TurnoverLT)			AS TurnoverLT,
+		SUM(TurnoverPP)			AS TurnoverPP,
 		SUM(BTActualStake)		AS BTActualStake,
 		SUM(Winlost)			AS Winlost,  
 		SUM(LicenseeWLSB)		AS LicenseeWLSB,
@@ -1595,6 +1629,7 @@ BEGIN
 		SUM(LicenseeWLCO)		AS LicenseeWLCO,
 		SUM(LicenseeWLVS2)		AS LicenseeWLVS2,
 		SUM(LicenseeWLLT)		AS LicenseeWLLT,
+		SUM(LicenseeWLPP)		AS LicenseeWLPP,
 		SUM(CommBA)				AS CommBA,
 		SUM(CommRB)				AS CommRB,
 		SUM(PlayerComm)			AS PlayerComm,
@@ -1623,7 +1658,8 @@ BEGIN
 		CAST(SUM(TurnoverFW*e.eEUR)			AS MONEY)   AS TurnoverFWEUR,  
 		CAST(SUM(TurnoverCO*e.eEUR)			AS MONEY)   AS TurnoverCOEUR,
 		CAST(SUM(TurnoverVS2*e.eEUR)		AS MONEY)   AS TurnoverVS2EUR,
-		CAST(SUM(TurnoverLT*e.eEUR)			AS MONEY)   AS TurnoverLTEUR,  
+		CAST(SUM(TurnoverLT*e.eEUR)			AS MONEY)   AS TurnoverLTEUR,
+		CAST(SUM(TurnoverPP*e.eEUR)			AS MONEY)   AS TurnoverPPEUR, 
 		CAST(SUM(BTActualStake*e.eEUR)		AS MONEY)   AS BTActualStakeEUR,
 		CAST(SUM(Winlost*e.eEUR)			AS MONEY)   AS WinlostEUR,
 		CAST(SUM(LicenseeWLSB*e.eEUR)		AS MONEY)   AS LicenseeWLSBEUR,
@@ -1643,6 +1679,7 @@ BEGIN
 		CAST(SUM(LicenseeWLCO*e.eEUR)		AS MONEY)   AS LicenseeWLCOEUR,
 		CAST(SUM(LicenseeWLVS2*e.eEUR)		AS MONEY)   AS LicenseeWLVS2EUR,
 		CAST(SUM(LicenseeWLLT*e.eEUR)		AS MONEY)   AS LicenseeWLLTEUR,
+		CAST(SUM(LicenseeWLPP*e.eEUR)		AS MONEY)   AS LicenseeWLPPEUR,
 		CAST(SUM(CommBA*e.eEUR)				AS MONEY)   AS CommBAEUR,
 		CAST(SUM(CommRB*e.eEUR)				AS MONEY)   AS CommRBEUR,
 		CAST(SUM(PlayerComm*e.eEUR)			AS MONEY)   AS PlayerCommEUR,
@@ -1670,7 +1707,8 @@ BEGIN
 		CAST(SUM(TurnoverFW*e.eUSD)			AS MONEY)   AS TurnoverFWUSD,
 		CAST(SUM(TurnoverCO*e.eUSD)			AS MONEY)   AS TurnoverCOUSD,
 		CAST(SUM(TurnoverVS2*e.eUSD)		AS MONEY)   AS TurnoverVS2USD, 
-		CAST(SUM(TurnoverLT*e.eUSD)			AS MONEY)   AS TurnoverLTUSD,  
+		CAST(SUM(TurnoverLT*e.eUSD)			AS MONEY)   AS TurnoverLTUSD,
+		CAST(SUM(TurnoverPP*e.eUSD)			AS MONEY)   AS TurnoverPPUSD, 
 		CAST(SUM(BTActualStake*e.eUSD)		AS MONEY)   AS BTActualStakeUSD,
 		CAST(SUM(Winlost*e.eUSD)			AS MONEY)   AS WinlostUSD,  
 		CAST(SUM(LicenseeWLSB*e.eUSD)		AS MONEY)   AS LicenseeWLSBUSD,
@@ -1690,6 +1728,7 @@ BEGIN
 		CAST(SUM(LicenseeWLCO*e.eUSD)		AS MONEY)   AS LicenseeWLCOUSD,
 		CAST(SUM(LicenseeWLVS2*e.eUSD)		AS MONEY)   AS LicenseeWLVS2USD,
 		CAST(SUM(LicenseeWLLT*e.eUSD)		AS MONEY)   AS LicenseeWLLTUSD,
+		CAST(SUM(LicenseeWLPP*e.eUSD)		AS MONEY)   AS LicenseeWLPPUSD,
 		CAST(SUM(CommBA*e.eUSD)				AS MONEY)   AS CommBAUSD,
 		CAST(SUM(CommRB*e.eUSD)				AS MONEY)   AS CommRBUSD,
 		CAST(SUM(PlayerComm*e.eUSD)			AS MONEY)   AS PlayerCommUSD,
@@ -1717,7 +1756,8 @@ BEGIN
 		CAST(SUM(TurnoverFW*e.eGBP)			AS MONEY)   AS TurnoverFWGBP,
 		CAST(SUM(TurnoverCO*e.eGBP)			AS MONEY)   AS TurnoverCOGBP,
 		CAST(SUM(TurnoverVS2*e.eGBP)		AS MONEY)   AS TurnoverVS2GBP,
-		CAST(SUM(TurnoverLT*e.eGBP)			AS MONEY)   AS TurnoverLTGBP,  
+		CAST(SUM(TurnoverLT*e.eGBP)			AS MONEY)   AS TurnoverLTGBP,
+		CAST(SUM(TurnoverPP*e.eGBP)			AS MONEY)   AS TurnoverPPGBP, 
 		CAST(SUM(BTActualStake*e.eGBP)		AS MONEY)   AS BTActualStakeGBP,
 		CAST(SUM(Winlost*e.eGBP)			AS MONEY)   AS WinlostGBP,  
 		CAST(SUM(LicenseeWLSB*e.eGBP)		AS MONEY)   AS LicenseeWLSBGBP,
@@ -1737,6 +1777,7 @@ BEGIN
 		CAST(SUM(LicenseeWLCO*e.eGBP)		AS MONEY)   AS LicenseeWLCOGBP,
 		CAST(SUM(LicenseeWLVS2*e.eGBP)		AS MONEY)   AS LicenseeWLVS2GBP,
 		CAST(SUM(LicenseeWLLT*e.eGBP)		AS MONEY)   AS LicenseeWLLTGBP,
+		CAST(SUM(LicenseeWLPP*e.eGBP)		AS MONEY)   AS LicenseeWLPPGBP,
 		CAST(SUM(CommBA*e.eGBP)				AS MONEY)   AS CommBAGBP,
 		CAST(SUM(CommRB*e.eGBP)				AS MONEY)   AS CommRBGBP,
 		CAST(SUM(PlayerComm*e.eGBP)			AS MONEY)   AS PlayerCommGBP,

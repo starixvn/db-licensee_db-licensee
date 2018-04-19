@@ -22,6 +22,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss_BySourced]
 	@ShowCO			BIT = 0, -- Cash Out
 	@ShowVS2		BIT = 0, -- Bet Radar Virtual Sports
 	@ShowLT			BIT = 0, -- Lottery
+	@ShowPP			BIT = 0, -- PP
 	@ReportType		TINYINT = 1,  
 	@MoveBetsDay	SMALLDATETIME,
 	@IsOld			BIT = 0,
@@ -35,6 +36,7 @@ AS
    
     Revisions:  
 		- 20180312@Harper: Created new Licensee Winloss SP for Ivorybet and Opal88 [RedmineID: #91738]
+		- 20180419@Amanda: LAP - Integrate PP [RedmineID: #92381]
 		- 20180420@Amanda: Include more cash out tickets [RedmineID: #93919]
 		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 		- 20180515@Joseph: Remove LC product [RedmineID: #85965]
@@ -209,6 +211,11 @@ BEGIN
 	IF @ShowLT = 1 -- Lottery
 	BEGIN
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'LT', 'LT')
+	END
+	
+	IF @ShowPP = 1 -- PP
+	BEGIN
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'PP', 'PP')
 	END
 
 	IF LEN(ISNULL(@ProductList, '')) > 0 
@@ -445,7 +452,7 @@ BEGIN
 			GROUP BY b.winlostdate, a.currency  
 		END
 
-		IF 1 IN (@ShowNG, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @showMGCLC, @showMGCRnG, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowVS2, @ShowLT)
+		IF 1 IN (@ShowNG, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @showMGCLC, @showMGCRnG, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowVS2, @ShowLT, @ShowPP)
 		BEGIN
 			INSERT INTO #SAgWinLoss
 			(  
@@ -614,7 +621,7 @@ BEGIN
 		END
 	
 		--exclude BA tickets
-		IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowVS2, @ShowLT)
+		IF 1 IN (@showSB, @ShowRB, @ShowNG, @ShowVS, @ShowCS, @ShowBG, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowVS2, @ShowLT, @ShowPP)
 		BEGIN
 			INSERT INTO #SAgWinLoss 
 			(  
@@ -975,6 +982,7 @@ BEGIN
 		turnoverCO			MONEY,
 		TurnoverVS2		MONEY,
 		TurnoverLT			MONEY,
+		TurnoverPP			MONEY,
 		BTActualStake		MONEY,
 		Winlost				MONEY,
 		LicenseeWLSB 		MONEY,
@@ -994,6 +1002,7 @@ BEGIN
 		LicenseeWLCO		MONEY,
 		LicenseeWLVS2		MONEY,
 		LicenseeWLLT		MONEY,
+		LicenseeWLPP		MONEY,
 		AmtDueToBA			MONEY,   
 		AmtDueToRB			MONEY,
 		CommBA				MONEY,   
@@ -1014,15 +1023,15 @@ BEGIN
 	(  
 		winlostdate, Currency,
 		TurnoverSB, TurnoverBA, TurnoverNG, TurnoverRB, TurnoverVS, TurnoverCS, TurnoverBG,
-		TurnoverKN, turnoverMGCLC, turnoverMGCRnG, turnoverAGC, turnoverVB, turnoverAB, turnoverFW, turnoverCO, TurnoverVS2, TurnoverLT,
+		TurnoverKN, turnoverMGCLC, turnoverMGCRnG, turnoverAGC, turnoverVB, turnoverAB, turnoverFW, turnoverCO, TurnoverVS2, TurnoverLT, TurnoverPP,
 		BTActualStake, Winlost,
 		LicenseeWLSB, LicenseeWLBA, LicenseeWLNG, LicenseeWLRB, LicenseeWLVS, LicenseeWLCS, LicenseeWLBG,
-		LicenseeWLKN, LicenseeWLMGCLC, LicenseeWLMGCRnG, LicenseeWLAGC, LicenseeWLVB, LicenseeWLAB, LicenseeWLFW, LicenseeWLCO, LicenseeWLVS2, LicenseeWLLT,
+		LicenseeWLKN, LicenseeWLMGCLC, LicenseeWLMGCRnG, LicenseeWLAGC, LicenseeWLVB, LicenseeWLAB, LicenseeWLFW, LicenseeWLCO, LicenseeWLVS2, LicenseeWLLT, LicenseeWLPP,
 		AmtDueToBA, AmtDueToRB,
 		CommBA, CommRB,  
 		PlayerComm,
 		Betcount,
-		licenseeWLBT,   
+		licenseeWLBT,
 		BetTradeComm,  
 		WLBetTicket, WLBoughtTicket,
 		BuyBackAmtSB, BuyBackAmtBA,
@@ -1046,8 +1055,9 @@ BEGIN
 		SUM(CASE ProductCode WHEN 'AB'		THEN Turnover ELSE 0 END)	AS TurnoverAB,
 		SUM(CASE ProductCode WHEN 'FW'		THEN Turnover ELSE 0 END)	AS TurnoverFW,
 		SUM(CASE ProductCode WHEN 'CO'		THEN Turnover ELSE 0 END)	AS TurnoverCO,
-		SUM(CASE ProductCode WHEN 'VS2'	THEN Turnover ELSE 0 END)	AS TurnoverVS2,
+		SUM(CASE ProductCode WHEN 'VS2'		THEN Turnover ELSE 0 END)	AS TurnoverVS2,
 		SUM(CASE ProductCode WHEN 'LT'		THEN Turnover ELSE 0 END)	AS TurnoverLT,
+		SUM(CASE ProductCode WHEN 'PP'		THEN Turnover ELSE 0 END)	AS TurnoverPP,
 		SUM(BTActualStake)		AS BTActualStake,
 		SUM(Winlost)			AS Winlost,
 		SUM(CASE ProductCode WHEN 'SB'		THEN LicenseeWL ELSE 0 END)	AS LicenseeWLSB,   
@@ -1067,6 +1077,7 @@ BEGIN
 		SUM(CASE ProductCode WHEN 'CO'		THEN LicenseeWL ELSE 0 END)	AS LicenseeWLCO,
 		SUM(CASE ProductCode WHEN 'VS2'	THEN LicenseeWL ELSE 0 END)	AS LicenseeWLVS2,
 		SUM(CASE ProductCode WHEN 'LT'		THEN LicenseeWL ELSE 0 END)	AS LicenseeWLLT,
+		SUM(CASE ProductCode WHEN 'PP'		THEN LicenseeWL ELSE 0 END)	AS LicenseeWLPP,
 		SUM(AmtDuetoBA)			AS AmtDuetoBA,
 		SUM(AmtDuetoRB)			AS AmtDuetoRB,
 		SUM(CommBA)				AS CommBA,
@@ -1115,6 +1126,7 @@ BEGIN
 		SUM(TurnoverCO)			AS TurnoverCO,
 		SUM(TurnoverVS2)		AS TurnoverVS2,
 		SUM(TurnoverLT)			AS TurnoverLT,
+		SUM(TurnoverPP)			AS TurnoverPP,
 		SUM(BTActualStake)		AS BTActualStake,
 		SUM(Winlost)			AS Winlost,
 		SUM(LicenseeWLSB)		AS LicenseeWLSB,
@@ -1134,6 +1146,7 @@ BEGIN
 		SUM(LicenseeWLCO)		AS LicenseeWLCO,
 		SUM(LicenseeWLVS2)		AS LicenseeWLVS2,
 		SUM(LicenseeWLLT)		AS LicenseeWLLT,
+		SUM(LicenseeWLPP)		AS LicenseeWLPP,
 		SUM(CommBA)				AS CommBA,
 		SUM(CommRB)				AS CommRB,
 		SUM(playerComm)			AS PlayerComm,
@@ -1161,8 +1174,9 @@ BEGIN
 		CAST(SUM(TurnoverAB*e.USD)			AS MONEY)   AS TurnoverABUSD,
 		CAST(SUM(TurnoverFW*e.USD)			AS MONEY)   AS TurnoverFWUSD,
 		CAST(SUM(TurnoverCO*e.USD)			AS MONEY)   AS TurnoverCOUSD,
-		CAST(SUM(TurnoverVS2*e.USD)		AS MONEY)   AS TurnoverVS2USD,
+		CAST(SUM(TurnoverVS2*e.USD)			AS MONEY)   AS TurnoverVS2USD,
 		CAST(SUM(TurnoverLT*e.USD)			AS MONEY)   AS TurnoverLTUSD,
+		CAST(SUM(TurnoverPP*e.USD)			AS MONEY)   AS TurnoverPPUSD,
 		CAST(SUM(BTActualStake*e.USD)		AS MONEY)   AS BTActualStakeUSD,
 		CAST(SUM(Winlost*e.USD)				AS MONEY)	AS WinlostUSD,
 		CAST(SUM(LicenseeWLSB*e.USD)		AS MONEY)	AS LicenseeWLSBUSD,
@@ -1182,6 +1196,7 @@ BEGIN
 		CAST(SUM(LicenseeWLCO*e.USD)		AS MONEY)	AS LicenseeWLCOUSD,
 		CAST(SUM(LicenseeWLVS2*e.USD)		AS MONEY)	AS LicenseeWLVS2USD,
 		CAST(SUM(LicenseeWLLT*e.USD)		AS MONEY)	AS LicenseeWLLTUSD,
+		CAST(SUM(LicenseeWLPP*e.USD)		AS MONEY)	AS LicenseeWLPPUSD,
 		CAST(SUM(CommBA * e.USD)			AS MONEY)	AS CommBAUSD,
 		CAST(SUM(CommRB * e.USD)			AS MONEY)	AS CommRBUSD,
 		CAST(SUM(PlayerComm*e.USD)			AS MONEY)	AS PlayerCommUSD,
