@@ -77,6 +77,7 @@ AS
 		- 20170704@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
 		- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 		- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
+		- 20180420@Amanda: Include more cash out tickets [RedmineID: #93919]
 
 	Param's Explanation:  
 	  + @CustID: SuperID  
@@ -559,7 +560,7 @@ BEGIN
 				0 AS turnoverVS2,
 				0 AS turnoverLT,
 				0 AS BTAtualStake,
-				0 AS Winlost,  
+				SUM(CASE WHEN b.bettype = 913 THEN 0 ELSE b.winlost - b.actual_stake END) AS Winlost,  
 				0 AS LicenseeWLSB,
 				0 AS LicenseeWLBA,
 				0 AS LicenseeWLNG,
@@ -574,7 +575,7 @@ BEGIN
 				0 AS LicenseeWLVB,
 				0 AS LicenseeWLAB,
 				0 AS LicenseeWLFW, 
-				0 AS LicenseeWLCO, 
+				- SUM(CASE WHEN b.bettype = 913 THEN 0 ELSE b.winlost - b.actual_stake END) AS LicenseeWLCO, 
 				0 AS LicenseeWLVS2,
 				0 AS LicenseeWLLT,
 				0 AS AmountDueToBA,
@@ -582,7 +583,7 @@ BEGIN
 				0 AS CommBA,
 				0 AS CommRB,
 				0 AS PlayerComm,		
-				COUNT(b.transid) AS BetCount,
+				SUM(CASE WHEN b.bettype = 913 THEN 0 ELSE 1 END) AS BetCount,
 				0 AS licenseeWLBT,
 				0 AS BetTradeComm,
 				0 WLBetTicket,
@@ -595,7 +596,7 @@ BEGIN
 				INNER JOIN @TempAg a ON b.recommend = a.custid AND b.currency = a.currency 
 			WHERE 
 				b.winlostdate BETWEEN @TempFromDate AND @TDate  			
-				AND b.bettype = 913
+				AND (b.bettype = 911 OR b.bettype = 912 OR b.bettype = 913)
 				AND	b.statusID IN (111, 112, 113)
 			GROUP BY b.custid, b.statusID, a.Currency
 		END
@@ -1146,7 +1147,7 @@ BEGIN
 				0 AS turnoverVS2, 
 				0 AS tunroverLT,
 				0 AS BTActualStake,
-				0 AS Winlost,   
+				SUM(CASE WHEN b.bettype = 913 THEN 0 ELSE b.winlost END) AS Winlost,   
 				0 AS LicenseeWLSB,
 				0 AS LicenseeWLBA,
 				0 AS LicenseeWLNG,
@@ -1161,7 +1162,7 @@ BEGIN
 				0 AS LicenseeWLVB,
 				0 AS LicenseeWLAB,
 				0 AS LicenseeWLFW,
-				0 AS LicenseeWLCO,
+				- SUM(CASE WHEN b.bettype = 913 THEN 0 ELSE b.winlost END) AS LicenseeWLCO,
 				0 AS LicenseeWLVS2,
 				0 AS LicenseeWLLT,
 				0 AS AmountDueToBA,
@@ -1169,7 +1170,7 @@ BEGIN
 				0 AS CommBA,
 				0 AS CommRB,
 				0 AS PlayerComm,
-				SUM(b.BetCount) AS BetCount,
+				SUM(CASE WHEN b.bettype = 913 THEN 0 ELSE b.BetCount END) AS BetCount,
 				0 AS licenseeWLBT,
 				0 AS BetTradeComm,
 				0 WLBetTicket,
@@ -1182,7 +1183,7 @@ BEGIN
 				INNER JOIN @TempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
 			WHERE 
 				b.Winlostdate BETWEEN @FDate AND @TempToDate  
-				AND b.bettype = 913
+				AND (b.bettype = 911 OR b.bettype = 912 OR b.bettype = 913)
 				AND	b.statusID IN (111, 112, 113) 
 				AND b.roleid = 1
 				GROUP BY b.custid, b.statusID, ag.Currency

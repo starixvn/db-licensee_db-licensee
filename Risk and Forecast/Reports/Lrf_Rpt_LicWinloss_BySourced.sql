@@ -36,6 +36,7 @@ AS
    
     Revisions:  
 		- 20180312@Harper: Created new Licensee Winloss SP for Ivorybet and Opal88 [RedmineID: #91738]
+		- 20180420@Amanda: Include more cash out tickets [RedmineID: #93919]
 
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -423,14 +424,14 @@ BEGIN
 				'CO',
 				0 AS turnover,
 				0 AS BTActualStake,
-				0 AS Winlost,
-				0 AS LicenseeWL,
+				SUM(CASE WHEN b.bettype = 913 THEN 0 ELSE b.winlost - b.actual_stake END) AS Winlost,
+				- SUM(CASE WHEN b.bettype = 913 THEN 0 ELSE b.winlost - b.actual_stake END) AS LicenseeWL,
 				0 AS AmountDueToBA,
 				0 AS AmountDueToRB,
 				0 AS CommBA,
 				0 AS CommRB,
 				0 AS PlayerComm,
-				COUNT(b.transid) AS BetCount,
+				SUM(CASE WHEN b.bettype = 913 THEN 0 ELSE 1 END) AS BetCount,
 				0 AS licenseeWLBT,
 				0 AS BetTradeComm,
 				0 WLBetTicket,
@@ -443,7 +444,7 @@ BEGIN
 				INNER JOIN #tmpCust a ON b.recommend = a.AgentID AND b.currency = a.currency AND b.winlostdate >= a.EffectiveDate
 			WHERE (a.CustID IS NULL OR b.custid = a.CustID)
 				AND b.winlostdate BETWEEN @TempFromDate AND @_ToDate
-				AND b.bettype = 913
+				AND (b.bettype = 911 OR b.bettype = 912 OR b.bettype = 913)
 				AND b.statusID IN (111, 112, 113)
 				AND b.transid >= @transid
 			GROUP BY b.winlostdate, a.currency  
@@ -745,14 +746,14 @@ BEGIN
 				'CO',
 				0 AS turnover,
 				0 AS BTActualStake,
-				0 AS Winlost,    
-				0 AS LicenseeWL,
+				SUM(CASE WHEN b.bettype = 913 THEN 0 ELSE b.winlost END) AS Winlost,    
+				- SUM(CASE WHEN b.bettype = 913 THEN 0 ELSE b.winlost END) AS LicenseeWL,
 				0 as AmountDueToBA,
 				0 as AmountDueToRB,
 				0 as CommBA,
 				0 as CommRB,
 				0 as PlayerComm,
-				SUM(b.BetCount) AS BetCount,
+				SUM(CASE WHEN b.bettype = 913 THEN 0 ELSE b.BetCount END) AS BetCount,
 				0 AS licenseeWLBT,
 				0 AS BetTradeComm,
 				0 WLBetTicket,
@@ -765,7 +766,7 @@ BEGIN
 				INNER JOIN #tmpCust ag ON b.recommend = ag.AgentID AND ag.currency = b.Currency AND b.winlostdate >= ag.EffectiveDate
 			WHERE (ag.CustID IS NULL OR b.custid = ag.CustID)
 				AND b.Winlostdate BETWEEN @_FromDate AND @TempToDate
-				AND b.bettype = 913
+				AND (b.bettype = 911 OR b.bettype = 912 OR b.bettype = 913)
 				AND b.statusID  IN (111, 112, 113)
 				AND b.roleid = 1 
 			GROUP BY b.winlostdate, ag.currency
