@@ -454,7 +454,7 @@ BEGIN
 				INNER JOIN @tempAg a ON b.recommend = a.custID AND b.currency = a.currency
 			WHERE 
 				b.winlostdate BETWEEN @TempFromDate AND @_ToDate
-				AND (b.bettype = 911 OR b.bettype = 912 OR b.bettype = 913)
+				AND b.bettype IN (911, 912, 913)
 				AND b.statusID IN (111, 112, 113)
 				AND b.transid >= @transid
 			GROUP BY b.winlostdate, a.currency  
@@ -776,7 +776,7 @@ BEGIN
 				INNER JOIN @TempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
 			WHERE 
 				b.Winlostdate BETWEEN @_FromDate AND @TempToDate
-				AND (b.bettype = 911 OR b.bettype = 912 OR b.bettype = 913)  
+				AND b.bettype IN (911, 912, 913) 
 				AND b.statusID  IN (111, 112, 113)
 				AND b.roleid = 1 
 			GROUP BY b.winlostdate, ag.currency
