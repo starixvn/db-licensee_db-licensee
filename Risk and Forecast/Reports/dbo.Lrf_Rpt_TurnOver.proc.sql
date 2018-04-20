@@ -66,6 +66,7 @@ Revisions:
    - 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
    - 20180129@Harper: Remove LC from product list [RedmineID: #85965]
    - 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
+   - 20180412@Harper: Integrate Bonus wallet [RedmineID: 91740]
 
 Param's Explanation:
     
@@ -254,8 +255,8 @@ BEGIN
 					SUM(ISNULL(b.deposit, 0)),
 					SUM(ISNULL(b.withdrawal, 0)),
 					SUM(ISNULL(b.Aff2MemTransfer, 0)), --AffiliateTransfer
-					SUM(ISNULL(b.Bonus, 0)),
-					SUM(ISNULL(b.Adjustment, 0)),
+					SUM(ISNULL(b.Bonus, 0) + ISNULL(b.BonusWallet, 0)),
+					SUM(ISNULL(b.Adjustment, 0) + ISNULL(b.AdjBonusWallet, 0)),
 					0 AS Turnover,
 					0 AS PendingFund,
 					0 AS Winloss,
@@ -318,8 +319,8 @@ BEGIN
 					SUM(ISNULL(b.deposit, 0)),
 					SUM(ISNULL(b.withdrawal, 0)),
 					SUM(ISNULL(b.Aff2MemTransfer, 0)), --AffiliateTransfer
-					SUM(ISNULL(b.Bonus, 0)),
-					SUM(ISNULL(b.Adjustment, 0)),
+					SUM(ISNULL(b.Bonus, 0) + ISNULL(b.BonusWallet, 0)),
+					SUM(ISNULL(b.Adjustment, 0) + ISNULL(b.AdjBonusWallet, 0)),
 					0 AS Turnover,
 					0 AS PendingFund,
 					0 AS Winloss,
@@ -370,7 +371,7 @@ BEGIN
 		BEGIN
 			DECLARE @maxdate_SUM SMALLDATETIME
 			SELECT @maxdate_SUM =  MAX(winlostdate) FROM bodb_report.dbo.rptdepwinlost_SUM WITH(NOLOCK)
-    
+			
 			IF @fdate <= @maxdate_SUM
 			BEGIN        
 				SELECT @tmpdate = CASE WHEN @tdate > @maxdate_SUM THEN @maxdate_SUM ELSE @tdate END
@@ -387,8 +388,8 @@ BEGIN
 					SUM(ISNULL(b.deposit,0)),
 					SUM(ISNULL(b.withdrawal,0)),
 					SUM(ISNULL(b.Aff2MemTransfer,0)), --AffiliateTransfer
-					SUM(ISNULL(b.Bonus,0)),
-					SUM(ISNULL(b.Adjustment,0)),
+					SUM(ISNULL(b.Bonus, 0) + ISNULL(b.BonusWallet, 0)),
+					SUM(ISNULL(b.Adjustment, 0) + ISNULL(b.AdjBonusWallet, 0)),
 					0 AS Turnover,
 					0 AS PendingFund,
 					0 AS Winloss,
@@ -449,8 +450,8 @@ BEGIN
 					SUM(ISNULL(b.deposit,0)),
 					SUM(ISNULL(b.withdrawal,0)),
 					SUM(ISNULL(b.Aff2MemTransfer,0)), --AffiliateTransfer
-					SUM(ISNULL(b.Bonus,0)),
-					SUM(ISNULL(b.Adjustment,0)),
+					SUM(ISNULL(b.Bonus,0) + ISNULL(b.BonusWallet, 0)),
+					SUM(ISNULL(b.Adjustment,0) + ISNULL(b.AdjBonusWallet, 0)),
 					0 AS Turnover,
 					0 AS PendingFund,
 					0 AS Winloss,

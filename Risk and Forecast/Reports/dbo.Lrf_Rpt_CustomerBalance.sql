@@ -62,6 +62,7 @@ Revisions:
     - 20170706@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
 	- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
+	- 20180412@Harper: Integrate Bonus wallet [RedmineID: 91740]
 
 Param's Explanation:  
 	+ @excludeTest: remove currency UUS  
@@ -240,8 +241,8 @@ BEGIN
 			, SUM(b.Withdrawal) AS Withdrawal
 			, 0 AS Turnover
 			, 0 AS winloss
-			, SUM(b.Bonus) AS Bonus
-			, SUM(b.Adjustment) AS Adjustment
+			, SUM(ISNULL(b.Bonus, 0) + ISNULL(b.BonusWallet, 0)) AS Bonus
+			, SUM(ISNULL(b.Adjustment, 0) + ISNULL(b.AdjBonusWallet, 0)) AS Adjustment
 			, 0 AS Outstanding
 			, SUM(CASE b.winlostdate
 					WHEN @fdate
@@ -331,8 +332,8 @@ BEGIN
 			, SUM(b.Withdrawal) AS Withdrawal
 			, CAST(0 AS MONEY) AS Turnover
 			, CAST(0 AS MONEY) AS winloss
-			, SUM(b.Bonus) AS Bonus
-			, SUM(b.Adjustment) AS Adjustment
+			, SUM(ISNULL(b.Bonus, 0) + ISNULL(b.BonusWallet, 0)) AS Bonus
+			, SUM(ISNULL(b.Adjustment, 0) + ISNULL(b.AdjBonusWallet, 0)) AS Adjustment
 			, CAST(0 AS MONEY) AS Outstanding
 			, SUM(CASE b.winlostdate
 					WHEN @fdate
