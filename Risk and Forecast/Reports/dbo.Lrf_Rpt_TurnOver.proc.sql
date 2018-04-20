@@ -24,7 +24,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_TurnOver]
 	@ShowCO			BIT = 0,
 	@ShowVS2		BIT = 0, -- Bet Radar Virtual Sports
 	@ShowLT			BIT = 0, -- Lottery
-	@ShowPP			BIT = 0, -- Lottery
+	@ShowPP			BIT = 0, -- PP
 	@AgentList		VARCHAR(MAX)
 AS 
 /*
