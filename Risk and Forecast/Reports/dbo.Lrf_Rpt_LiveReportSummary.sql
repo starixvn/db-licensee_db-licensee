@@ -338,7 +338,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 4001 AND 7999 THEN 'VB' -- Voidbridge
 					WHEN b.bettype BETWEEN 1011 AND 1020 THEN 'FW' -- Fishing World
 					WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
-					WHEN (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2801 AND 2899) THEN 'VS2'
+					WHEN (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) THEN 'VS2'
 					WHEN b.bettype BETWEEN 1021 AND 1049 THEN 'LT'
 					END AS ProductCode,
 				SUM(stake) turnover,
@@ -364,7 +364,7 @@ BEGIN
 					OR b.bettype BETWEEN 4001 AND 7999 -- Voidbridge
 					OR b.bettype BETWEEN 1011 AND 1020 -- FW
 					OR b.bettype BETWEEN 2401 AND 2499 -- AB
-					OR (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2801 AND 2899) -- BetRadar VS
+					OR (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) -- BetRadar VS
 					OR b.bettype BETWEEN 1021 AND 1049
 				)
 				AND (b.liveindicator = @Liveindicator OR @Liveindicator = 2)
@@ -380,7 +380,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 4001 AND 7999 THEN 'VB' -- Voidbridge
 					WHEN b.bettype BETWEEN 1011 AND 1020 THEN 'FW' -- Fishing World
 					WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
-					WHEN (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2801 AND 2899) THEN 'VS2'
+					WHEN (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) THEN 'VS2'
 					WHEN b.bettype BETWEEN 1021 AND 1049 THEN 'LT'
 				END
 			END
@@ -481,7 +481,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 4001 AND 7999 THEN 'VB' -- Voidbridge
 					WHEN b.bettype BETWEEN 1011 AND 1020 THEN 'FW' -- Fishing World
 					WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
-					WHEN b.bettype BETWEEN 2701 AND 2899 THEN 'VS2'
+					WHEN b.bettype BETWEEN 2701 AND 2829 THEN 'VS2'
 					WHEN b.bettype BETWEEN 1021 AND 1049 THEN 'LT'
 				END AS ProductCode,
 				SUM(b.turnover * CASE WHEN b.bettype = 33 AND b.status IN (114, 115) THEN 0.5 ELSE 1 END) turnover,
@@ -519,7 +519,7 @@ BEGIN
 					OR b.bettype BETWEEN 4001 AND 7999 -- Voidbridge
 					OR b.bettype BETWEEN 1011 AND 1020 -- FW
 					OR b.bettype BETWEEN 2401 AND 2499 -- AB
-					OR b.bettype BETWEEN 2701 AND 2899 -- VS2
+					OR b.bettype BETWEEN 2701 AND 2829 -- VS2
 					OR b.bettype BETWEEN 1021 AND 1049 -- LT
 					)
 			GROUP BY
@@ -536,7 +536,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 4001 AND 7999 THEN 'VB' -- Voidbridge
 					WHEN b.bettype BETWEEN 1011 AND 1020 THEN 'FW' -- Fishing World
 					WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
-					WHEN b.bettype BETWEEN 2701 AND 2899 THEN 'VS2'
+					WHEN b.bettype BETWEEN 2701 AND 2829 THEN 'VS2'
 					WHEN b.bettype BETWEEN 1021 AND 1049 THEN 'LT'
 				END
 		END

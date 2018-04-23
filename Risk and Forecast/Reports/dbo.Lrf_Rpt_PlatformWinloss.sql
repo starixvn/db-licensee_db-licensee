@@ -269,10 +269,10 @@ BEGIN
 	BEGIN
 		SET @SportTypeSQL = @SportTypeSQL + ', (190, ''VS2''), (193, ''VS2'')'
 
-		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 2701 AND 2899 THEN ''VS2''
+		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 2701 AND 2829 THEN ''VS2''
 				'
 
-		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 2701 AND 2899)'
+		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 2701 AND 2829)'
 	END
 
 	IF @ShowLT = 1 -- Lottery

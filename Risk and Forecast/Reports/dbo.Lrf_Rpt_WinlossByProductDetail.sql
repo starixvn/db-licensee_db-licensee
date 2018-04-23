@@ -500,7 +500,7 @@ BEGIN
 					ELSE 'VS' + CONVERT(varchar(10),vs.sporttype)
 				END
 			WHEN b.bettype = 2799 THEN 'VS2' + CONVERT(varchar(10), p.sporttype)
-			WHEN (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2801 AND 2899) THEN
+			WHEN (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) THEN
 				CASE 
 				     WHEN ISNULL(vs.sporttype, 0) = 0 THEN 'VS2'+ CONVERT(varchar(10), ISNULL(m.sporttype,0))
 					 ELSE 'VS2' + CONVERT(varchar(10), vs.sporttype)
@@ -595,7 +595,7 @@ BEGIN
 					ELSE 'VS' + CONVERT(varchar(10),vs.sporttype)
 				END
 			WHEN b.bettype = 2799 THEN 'VS2' + CONVERT(varchar(10), p.sporttype)
-			WHEN (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2801 AND 2899) THEN
+			WHEN (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) THEN
 				CASE 
 				     WHEN ISNULL(vs.sporttype, 0) = 0 THEN 'VS2'+ CONVERT(varchar(10), ISNULL(m.sporttype,0))
 					 ELSE 'VS2' + CONVERT(varchar(10), vs.sporttype)

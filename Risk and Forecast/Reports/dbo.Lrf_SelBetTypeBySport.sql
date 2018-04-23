@@ -153,7 +153,7 @@ BEGIN
 																				WHEN typeid = 1235 THEN '(Tennis)'
 																				ELSE '' 
 																			END
-			WHEN (typeid BETWEEN 2701 AND 2899) THEN  N'VS2 - ' + typenamee
+			WHEN (typeid BETWEEN 2701 AND 2829) THEN  N'VS2 - ' + typenamee
 			ELSE typenamee 																 
 		END AS BettypeName
 	

@@ -353,7 +353,7 @@ BEGIN
 						OR bettype = 428 -- 2H Odd/Even
 						OR (bettype BETWEEN 603 AND 607 OR bettype BETWEEN 609 AND 613 OR bettype BETWEEN 615 AND 617) -- Basketball bettypes
 						OR bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
-						OR bettype BETWEEN 2801 AND 2829 -- Virtual Sport 2: basketball
+						OR bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
 			
 		-- CREATE INDEXERS
 		CREATE CLUSTERED 	INDEX [CIX_tempBettrans] 			ON #tempBettrans (recommend, custid, winlostdate)
@@ -712,7 +712,7 @@ BEGIN
 																					WHEN b.bettype = 1235 THEN '(Tennis)'
 																					ELSE ''
 																				END
-				WHEN (b.bettype BETWEEN 2701 AND 2899) THEN  N'VS2 - ' + bt.typenamee
+				WHEN (b.bettype BETWEEN 2701 AND 2829) THEN  N'VS2 - ' + bt.typenamee
 				ELSE  bt.typenamee
 			END AS bettype
 			, SUM(b.betcount)	AS betcount
@@ -748,7 +748,7 @@ BEGIN
 																					WHEN b.bettype = 1235 THEN '(Tennis)'
 																					ELSE ''
 																				END
-				 WHEN (b.bettype BETWEEN 2701 AND 2899) THEN  N'VS2 - ' + bt.typenamee
+				 WHEN (b.bettype BETWEEN 2701 AND 2829) THEN  N'VS2 - ' + bt.typenamee
 				 ELSE  bt.typenamee
 			END
 		ORDER BY 

@@ -161,7 +161,7 @@ BEGIN
 			OR (@showRB = 1 AND b.bettype IN (31,32,33))
 			OR (@showNG = 1 AND b.bettype BETWEEN 81 AND 120)
 			OR (@ShowVS = 1 AND b.bettype BETWEEN 1201 AND 1299)
-			OR (@ShowVS2 = 1 AND b.bettype BETWEEN 2701 AND 2899)
+			OR (@ShowVS2 = 1 AND b.bettype BETWEEN 2701 AND 2829)
 			OR (@ShowBG = 1 AND b.bettype = 73)
 			 
 		)

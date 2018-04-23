@@ -192,7 +192,7 @@ BEGIN
 							)
 						OR b.bettype BETWEEN 81 AND 120
 						OR b.bettype BETWEEN 1201 AND 1299
-						OR b.bettype BETWEEN 2701 AND 2899
+						OR b.bettype BETWEEN 2701 AND 2829
 						OR b.bettype BETWEEN 1501 AND 1599 --Keno
 						OR b.bettype BETWEEN 1021 AND 1049 -- Lottery						 
 						)
@@ -229,7 +229,7 @@ BEGIN
 	INNER JOIN #TempSAg s ON b.srecommend = s.srecommend AND b.currency = s.currency
 	LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON b.transid = BA.transid	 
 	WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
-		AND (bettype <= 1599 OR (b.bettype >= 2701 AND b.bettype <= 2899))
+		AND (bettype <= 1599 OR (b.bettype >= 2701 AND b.bettype <= 2829))
 		AND (bettype NOT IN (71, 73,901,902,903,904,911,912,913,914) AND bettype NOT BETWEEN 1011 AND 1020 AND b.bettype NOT BETWEEN 1101 AND 1199) -- Remove LC
 		AND b.ruben = 1
 		AND statusID NOT IN (101, 102, 103)
@@ -280,7 +280,7 @@ BEGIN
 							)
 						OR b.bettype BETWEEN 81 AND 120
 						OR b.bettype BETWEEN 1201 AND 1299
-						OR b.bettype BETWEEN 2701 AND 2899
+						OR b.bettype BETWEEN 2701 AND 2829
 						OR b.bettype BETWEEN 1501 AND 1599 --Keno products
 						OR b.bettype BETWEEN 1021 AND 1049 --Lottery
 						 
@@ -319,7 +319,7 @@ BEGIN
 	LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_bk BA WITH (NOLOCK) ON b.transid = BA.transid	
 	WHERE b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
 		AND statusID NOT IN (101, 102, 103)
-		AND (bettype <= 1599 OR (b.bettype >= 2701 AND b.bettype <= 2899)) 
+		AND (bettype <= 1599 OR (b.bettype >= 2701 AND b.bettype <= 2829)) 
 		AND (bettype NOT IN (71, 73,901,902,903,904,911,912,913,914) 
 				AND bettype NOT BETWEEN 1011 AND 1020 
 				AND bettype NOT BETWEEN 1101 AND 1199
