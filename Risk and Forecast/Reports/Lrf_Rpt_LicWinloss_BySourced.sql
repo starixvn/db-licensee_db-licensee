@@ -438,7 +438,7 @@ BEGIN
 				0 AS WLBoughtTicket,
 				0 AS BuyBackAmtSB,
 				0 AS BuyBackAmtBA,
-				SUM(awinlost) AS CashOutComm
+				SUM(CASE WHEN b.bettype = 913 THEN b.awinlost ELSE 0 END) AS CashOutComm
 			FROM 
 				Bettrans b WITH (NOLOCK)
 				INNER JOIN #tmpCust a ON b.recommend = a.AgentID AND b.currency = a.currency AND b.winlostdate >= a.EffectiveDate
@@ -760,7 +760,7 @@ BEGIN
 				0 AS WLBoughtTicket,
 				0 AS BuyBackAmtSB,
 				0 AS BuyBackAmtBA,
-				SUM(awinlost) AS CashOutComm
+				SUM(CASE WHEN b.bettype = 913 THEN b.awinlost ELSE 0 END) AS CashOutComm
 			FROM 
 				bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
 				INNER JOIN #tmpCust ag ON b.recommend = ag.AgentID AND ag.currency = b.Currency AND b.winlostdate >= ag.EffectiveDate
