@@ -51,6 +51,7 @@ Revisions:
 	- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
+	- 20180423@Harper: Fix bug group VS2: BasketBall - Virual Soccer [RedmineID: #93844]
 
 Param's Explanation: 
 	+ @AgentList: xml structure
@@ -192,7 +193,7 @@ BEGIN
 							)
 						OR b.bettype BETWEEN 81 AND 120
 						OR b.bettype BETWEEN 1201 AND 1299
-						OR b.bettype BETWEEN 2701 AND 2829
+						OR b.bettype BETWEEN 2701 AND 2829 -- Virtual Sport 2
 						OR b.bettype BETWEEN 1501 AND 1599 --Keno
 						OR b.bettype BETWEEN 1021 AND 1049 -- Lottery						 
 						)
@@ -339,8 +340,9 @@ FROM #AgWinLoss
 SELECT wl.*
 FROM (
 	SELECT CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.grouptypeId
-				ELSE b.bettype 
-				END bettype
+				WHEN ISNULL(vs.Bettype, 0) <> 0 THEN vs.GroupTypeId 
+				ELSE b.bettype
+			END bettype
 		, liveindicator
 		, SUM(TurnOver) AS TurnOver
 		, CAST(SUM(TurnOver*e.EUR) AS MONEY) AS TurnOverEUR
@@ -380,13 +382,16 @@ FROM (
 		, CAST(SUM(AmtDuetoRB*e.GBP) AS MONEY) AS AmtDuetoRBGBP
 		, ROW_NUMBER() OVER (
 			ORDER BY CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.grouptypeId
+						  WHEN ISNULL(vs.Bettype, 0) <> 0 THEN vs.GroupTypeId 
 				ELSE b.bettype 
 				END
 			) AS RowNum
 	FROM #AgWinLoss b
 		LEFT JOIN @Exchange e ON b.winlostdate = e.ExchangeDate AND b.currency = e.ExchangeId
 		LEFT JOIN dbo.f_GroupBettype() ss ON b.bettype = ss.bettype 	
+		LEFT JOIN dbo.f_GroupBetType3rd() vs ON b.bettype = vs.Bettype
 	GROUP BY CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.grouptypeId
+				  WHEN ISNULL(vs.Bettype, 0) <> 0 THEN vs.GroupTypeId 
 				ELSE b.bettype 
 				END
 			, liveindicator
