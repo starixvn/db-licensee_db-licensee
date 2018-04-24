@@ -152,7 +152,7 @@ BEGIN
 		LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid                  
 	WHERE  
 		BA.transid IS NULL 
-		AND b.bettype <= 2799
+		AND b.bettype <= 2829
 		AND b.ruben = 0
 		AND b.matchid > 0
 		AND
