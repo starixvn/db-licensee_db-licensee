@@ -71,6 +71,7 @@ Revision:
 		2. Virtual Sports 2 (2701-2707)
 	- 20180129@Percy: Hotfix page size, page index [RedmineID: #90104]
 	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
+	- 20180424@Joseph: Fix bug group VS2: BasketBall - Virual Soccer [RedmineID: #93844]
 
 Parameter's Explanation:
 	- @ReportBy:  1: daily, 2: monthly
@@ -224,6 +225,12 @@ BEGIN
 		ON b.typeid 	=  ss.GroupTypeId
 	WHERE ss.bettype NOT IN (SELECT typeID FROM #BettypeID)	
 
+	INSERT INTO #BettypeID
+	SELECT bt.bettype AS typeID
+	FROM dbo.f_GroupBettype3rd() bt
+		INNER JOIN #BettypeID b 
+		ON b.typeid 	=  bt.GroupTypeId
+	WHERE bt.bettype NOT IN (SELECT typeID FROM #BettypeID)	
 	
 	SELECT 
 		bt.typeID
@@ -676,8 +683,10 @@ BEGIN
 			FROM #custData b
 				LEFT JOIN dbo.f_GroupBettype() ss 
 				ON b.bettype 	= ss.bettype
+				LEFT JOIN dbo.f_GroupBettype3rd() ss2
+				ON b.bettype 	= ss2.bettype
 				INNER JOIN dbo.bettype bt WITH(NOLOCK)
-				ON ISNULL(ss.GroupTypeID, b.bettype) = bt.typeid
+				ON ISNULL(COALESCE(ss.GroupTypeID, ss2.GroupTypeID), b.bettype) = bt.typeid
 				
 			GROUP BY 
 				b.bettype
