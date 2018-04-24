@@ -15,25 +15,25 @@ RETURN
 		- 20180308@Kos: Support Betradar Virtual Basketball [Redmine: #90616]
 */
 
-	-- Grouped bettype for Betradar Virtual Basketball
-	SELECT 2703 AS Bettype, 2703 AS GroupTypeId		-- Over/Under
-	UNION ALL
-	SELECT 2803, 2703
-
-	UNION ALL
-	SELECT 2704, 2704		-- 1H Over/Under
-	UNION ALL
-	SELECT 2704, 2804
-
-	UNION ALL
-	SELECT 2705, 2705		-- Handicap
-	UNION ALL
-	SELECT 2705, 2805
-
-	UNION ALL
-	SELECT 2706, 2706		-- 1H Handicap
-	UNION ALL
-	SELECT 2706, 2806
+	-- Grouped bettype for Betradar Virtual Basketball  
+	 SELECT 2703 AS Bettype, 2703 AS GroupTypeId  -- Over/Under  
+	 UNION ALL  
+	 SELECT 2803, 2703  
+  
+	 UNION ALL  
+	 SELECT 2704, 2704  -- 1H Over/Under  
+	 UNION ALL  
+	 SELECT 2804, 2704  
+  
+	 UNION ALL  
+	 SELECT 2705, 2705  -- Handicap  
+	 UNION ALL  
+	 SELECT 2805, 2705  
+  
+	 UNION ALL  
+	 SELECT 2706, 2706  -- 1H Handicap  
+	 UNION ALL  
+	 SELECT 2806, 2706
 GO
 
 
