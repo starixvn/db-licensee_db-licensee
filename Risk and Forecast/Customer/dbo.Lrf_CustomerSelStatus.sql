@@ -13,6 +13,7 @@ Revisions:
    - 20130719@Jim: remove suspended status 
    - 20131023@Jim: Allow users to enable/ disable Casino games for specific players 
    - 20180228@Vicky: Remove LC from product list [Redmine: #85965]
+   - 20180420@Akex : Return more currencyId [Redmine:93961]
    
 Param's Explanation:
     - @CustID: customer id.   
@@ -55,6 +56,7 @@ BEGIN
             ISNULL(mrecommend, 0) AS MRecommend,
             ISNULL(recommend, 0) as ARecommend,
             ISNULL(@IsAdminCanViewVNIP,1) AS IsAdminCanViewVNIP,
+		  ci.currency as CurrencyID,
             @IsInternal AS IsInternal
     FROM custinfo AS ci WITH (nolock)
         LEFT JOIN CustMaster AS cm WITH (NOLOCK) ON ci.CustID = cm.custid
