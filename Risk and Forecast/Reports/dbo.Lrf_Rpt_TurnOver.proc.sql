@@ -255,8 +255,8 @@ BEGIN
 					SUM(ISNULL(b.deposit, 0)),
 					SUM(ISNULL(b.withdrawal, 0)),
 					SUM(ISNULL(b.Aff2MemTransfer, 0)), --AffiliateTransfer
-					SUM(ISNULL(b.Bonus, 0) + ISNULL(b.BonusWallet, 0)),
-					SUM(ISNULL(b.Adjustment, 0) + ISNULL(b.AdjBonusWallet, 0)),
+					SUM(ISNULL(b.Bonus, 0) + ISNULL(bo.Bonus, 0)),
+					SUM(ISNULL(b.Adjustment, 0) + ISNULL(bo.Adjustment, 0)),
 					0 AS Turnover,
 					0 AS PendingFund,
 					0 AS Winloss,
@@ -270,6 +270,8 @@ BEGIN
 				FROM
 					bodb_report.dbo.rptdepwinlost_bk b WITH (NOLOCK) 
 					INNER JOIN @tmpAg a ON b.recommend = a.CustId AND b.Currency = a.Currency
+					LEFT JOIN bodb_Report.dbo.rptDepWinlost_BonusWallet bo WITH (NOLOCK) -- New Bonus Wallet
+					ON b.custid = bo.CustID AND b.winlostdate = bo.Winlostdate
 				WHERE b.winlostdate BETWEEN @fdate AND @tmpdate
 					AND b.custid = @custid
 				GROUP BY b.winlostdate, b.currency
@@ -388,8 +390,8 @@ BEGIN
 					SUM(ISNULL(b.deposit,0)),
 					SUM(ISNULL(b.withdrawal,0)),
 					SUM(ISNULL(b.Aff2MemTransfer,0)), --AffiliateTransfer
-					SUM(ISNULL(b.Bonus, 0) + ISNULL(b.BonusWallet, 0)),
-					SUM(ISNULL(b.Adjustment, 0) + ISNULL(b.AdjBonusWallet, 0)),
+					SUM(ISNULL(b.Bonus, 0) + ISNULL(bo.Bonus, 0)),
+					SUM(ISNULL(b.Adjustment, 0) + ISNULL(bo.Adjustment, 0)),
 					0 AS Turnover,
 					0 AS PendingFund,
 					0 AS Winloss,
@@ -403,6 +405,8 @@ BEGIN
 				FROM
 					bodb_report.dbo.rptdepwinlost_SUM b WITH(NOLOCK)
 					INNER JOIN @tmpAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency	
+					LEFT JOIN bodb_Report.dbo.rptDepWinlost_BonusWallet bo WITH (NOLOCK) -- New Bonus Wallet
+					ON b.custid = bo.CustID AND b.winlostdate = bo.Winlostdate
 				WHERE b.winlostdate BETWEEN @fdate AND @tmpdate    
 				GROUP BY b.winlostdate, b.currency
         
