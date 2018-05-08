@@ -1,1 +1,0 @@
-Risk and Forecast\Reports\dbo.Lrf_Rpt_CustomerTurnOver.proc.sql

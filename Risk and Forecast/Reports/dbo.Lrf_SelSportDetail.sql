@@ -24,6 +24,8 @@ Revisions:
 						+ 185 Virtual Cycling 
 	- 20151023@Victor: Support New Simplified Chinese
 	- 20170710@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
+	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
+	
 Param's Explanation:
 	
 */
@@ -231,8 +233,7 @@ INSERT INTO @ProductSport(ID, Name, ParentID)
 			, 999
 	FROM dbo.Product3rd p1 WITH(NOLOCK)
 		INNER JOIN dbo.LicenseeProduct3rd p2 WITH (NOLOCK) ON p1.ProductID=p2.ProductID
-	WHERE  p2.LicenseeID=@LicenseeID
-		AND p1.ProductID  IN (5)
+	WHERE  p2.LicenseeID=@LicenseeID AND p1.ProductID  IN (5)
 	
 	UNION ALL
 	SELECT 190,
@@ -243,8 +244,7 @@ INSERT INTO @ProductSport(ID, Name, ParentID)
 			, 990
 	FROM dbo.Product3rd p1 WITH(NOLOCK)
 		INNER JOIN dbo.LicenseeProduct3rd p2 WITH (NOLOCK) ON p1.ProductID = p2.ProductID
-	WHERE  p2.LicenseeID = @LicenseeID
-		AND p1.ProductID  IN (27)
+	WHERE  p2.LicenseeID = @LicenseeID AND p1.ProductID  IN (27)
 	 
 	UNION ALL
 	SELECT 191
@@ -256,8 +256,30 @@ INSERT INTO @ProductSport(ID, Name, ParentID)
 			, 990
 	FROM dbo.Product3rd p1 WITH(NOLOCK)
 		INNER JOIN dbo.LicenseeProduct3rd p2 WITH (NOLOCK) ON p1.ProductID = p2.ProductID
-	WHERE  p2.LicenseeID = @LicenseeID
-		AND p1.ProductID  IN (27)
+	WHERE  p2.LicenseeID = @LicenseeID AND p1.ProductID  IN (27)
+	UNION ALL
+	SELECT 192
+			,
+			CASE @Langkey												
+				WHEN 'es'  	    THEN N'Virtual Soccer World Cup'
+				WHEN 'vi-VN'	THEN N'Virtual Soccer World Cup'
+				ELSE N'Virtual Soccer World Cup' END
+			, 990
+	FROM dbo.Product3rd p1 WITH(NOLOCK)
+		INNER JOIN dbo.LicenseeProduct3rd p2 WITH (NOLOCK) ON p1.ProductID = p2.ProductID
+	WHERE  p2.LicenseeID = @LicenseeID AND p1.ProductID  IN (27)
+
+	UNION ALL
+	SELECT 193
+			,
+			CASE @Langkey												
+				WHEN 'es'  	    THEN N'Virtual Basketball'
+				WHEN 'vi-VN'	THEN N'Virtual Basketball'
+				ELSE N'Virtual Basketball' END
+			, 990
+	FROM dbo.Product3rd p1 WITH(NOLOCK)
+		INNER JOIN dbo.LicenseeProduct3rd p2 WITH (NOLOCK) ON p1.ProductID = p2.ProductID
+	WHERE  p2.LicenseeID = @LicenseeID AND p1.ProductID  IN (27)
 	/*
 	 * end add more
 	 */

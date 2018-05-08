@@ -65,6 +65,7 @@ AS
 	- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 	- 20180205@Harper: LRF - Fix handle for getting data only invidual member at Licensee level [RedmineID: #90485]
 	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
+	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
 
 	Param's Explanation:  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -364,7 +365,7 @@ BEGIN
 					ELSE 'VS' + CONVERT(varchar(10),vs.sporttype)
 				END
 			WHEN b.bettype = 2799 THEN 'VS2' + CONVERT(varchar(10), p.sporttype)
-			WHEN b.bettype BETWEEN 2701 AND 2798 THEN
+			WHEN (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) THEN
 				CASE 
 				     WHEN ISNULL(vs.sporttype, 0) = 0 THEN 'VS2'+ CONVERT(varchar(10), ISNULL(m.sporttype,0))
 					 ELSE 'VS2' + CONVERT(varchar(10), vs.sporttype)
@@ -408,7 +409,7 @@ BEGIN
 					ELSE 'VS' + CONVERT(varchar(10),vs.sporttype)
 				END
 			WHEN b.bettype = 2799 THEN 'VS2' + CONVERT(varchar(10), p.sporttype)
-			WHEN b.bettype BETWEEN 2701 AND 2798 THEN
+			WHEN (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) THEN
 				CASE 
 				     WHEN ISNULL(vs.sporttype, 0) = 0 THEN 'VS2'+ CONVERT(varchar(10), ISNULL(m.sporttype,0))
 					 ELSE 'VS2' + CONVERT(varchar(10), vs.sporttype)
@@ -539,7 +540,7 @@ BEGIN
 		WHERE  
 			  b.Winlostdate BETWEEN @FDate AND @TempToDate  
 			AND b.roleid = 2
-			AND b.sporttype NOT IN (180, 190)
+			AND b.sporttype NOT IN (180, 190,193)
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND (b.bettype < 901 OR b.bettype > 904)
 			AND (b.bettype < 911 OR b.bettype > 914)
@@ -721,7 +722,7 @@ BEGIN
 				ELSE 1 END
 			),     
 			SUM(b.winlost),  
-			SUM(CASE WHEN (b.sporttype IN (0,161,180, 190,251,252,202,203,205,208,209,210,212 ))  THEN -1 * b.winlost WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS LicenseeWL ,
+			SUM(CASE WHEN (b.sporttype IN (0,161,180, 190,193,251,252,202,203,205,208,209,210,212 ))  THEN -1 * b.winlost WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS LicenseeWL ,
 			SUM(comm) as Comm,
 			SUM( b.playerComm ) AS PlayerComm, 
 			- SUM (b.awinlost + b.winlost + b.comm) as AmountDueTo3rd,

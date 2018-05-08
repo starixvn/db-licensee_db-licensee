@@ -70,6 +70,8 @@ Revision:
 		1. Basketball (603-607, 609-613, 615-617)
 		2. Virtual Sports 2 (2701-2707)
 	- 20180129@Percy: Hotfix page size, page index [RedmineID: #90104]
+	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
+	- 20180424@Joseph: Fix bug group VS2: BasketBall - Virual Soccer [RedmineID: #93844]
 
 Parameter's Explanation:
 	- @ReportBy:  1: daily, 2: monthly
@@ -223,6 +225,12 @@ BEGIN
 		ON b.typeid 	=  ss.GroupTypeId
 	WHERE ss.bettype NOT IN (SELECT typeID FROM #BettypeID)	
 
+	INSERT INTO #BettypeID
+	SELECT bt.bettype AS typeID
+	FROM dbo.f_GroupBettype3rd() bt
+		INNER JOIN #BettypeID b 
+		ON b.typeid 	=  bt.GroupTypeId
+	WHERE bt.bettype NOT IN (SELECT typeID FROM #BettypeID)	
 	
 	SELECT 
 		bt.typeID
@@ -352,6 +360,7 @@ BEGIN
 						OR bettype = 428 -- 2H Odd/Even
 						OR (bettype BETWEEN 603 AND 607 OR bettype BETWEEN 609 AND 613 OR bettype BETWEEN 615 AND 617) -- Basketball bettypes
 						OR bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
+						OR bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
 			
 		-- CREATE INDEXERS
 		CREATE CLUSTERED 	INDEX [CIX_tempBettrans] 			ON #tempBettrans (recommend, custid, winlostdate)
@@ -674,8 +683,10 @@ BEGIN
 			FROM #custData b
 				LEFT JOIN dbo.f_GroupBettype() ss 
 				ON b.bettype 	= ss.bettype
+				LEFT JOIN dbo.f_GroupBettype3rd() ss2
+				ON b.bettype 	= ss2.bettype
 				INNER JOIN dbo.bettype bt WITH(NOLOCK)
-				ON ISNULL(ss.GroupTypeID, b.bettype) = bt.typeid
+				ON ISNULL(COALESCE(ss.GroupTypeID, ss2.GroupTypeID), b.bettype) = bt.typeid
 				
 			GROUP BY 
 				b.bettype
@@ -710,7 +721,7 @@ BEGIN
 																					WHEN b.bettype = 1235 THEN '(Tennis)'
 																					ELSE ''
 																				END
-				WHEN (b.bettype BETWEEN 2701 AND 2799) THEN  N'VS2 - ' + bt.typenamee
+				WHEN (b.bettype BETWEEN 2701 AND 2829) THEN  N'VS2 - ' + bt.typenamee
 				ELSE  bt.typenamee
 			END AS bettype
 			, SUM(b.betcount)	AS betcount
@@ -746,7 +757,7 @@ BEGIN
 																					WHEN b.bettype = 1235 THEN '(Tennis)'
 																					ELSE ''
 																				END
-				 WHEN (b.bettype BETWEEN 2701 AND 2799) THEN  N'VS2 - ' + bt.typenamee
+				 WHEN (b.bettype BETWEEN 2701 AND 2829) THEN  N'VS2 - ' + bt.typenamee
 				 ELSE  bt.typenamee
 			END
 		ORDER BY 

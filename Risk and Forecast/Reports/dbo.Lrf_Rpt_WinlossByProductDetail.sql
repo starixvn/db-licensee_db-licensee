@@ -72,6 +72,7 @@ AS
 	- 20170721@Sophia: Change to call Alias DBWH instead of DBDW2 
 	- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
+	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
 
 	Param's Explanation:  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -499,7 +500,7 @@ BEGIN
 					ELSE 'VS' + CONVERT(varchar(10),vs.sporttype)
 				END
 			WHEN b.bettype = 2799 THEN 'VS2' + CONVERT(varchar(10), p.sporttype)
-			WHEN b.bettype BETWEEN 2701 AND 2798 THEN
+			WHEN (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) THEN
 				CASE 
 				     WHEN ISNULL(vs.sporttype, 0) = 0 THEN 'VS2'+ CONVERT(varchar(10), ISNULL(m.sporttype,0))
 					 ELSE 'VS2' + CONVERT(varchar(10), vs.sporttype)
@@ -594,7 +595,7 @@ BEGIN
 					ELSE 'VS' + CONVERT(varchar(10),vs.sporttype)
 				END
 			WHEN b.bettype = 2799 THEN 'VS2' + CONVERT(varchar(10), p.sporttype)
-			WHEN b.bettype BETWEEN 2701 AND 2798 THEN
+			WHEN (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) THEN
 				CASE 
 				     WHEN ISNULL(vs.sporttype, 0) = 0 THEN 'VS2'+ CONVERT(varchar(10), ISNULL(m.sporttype,0))
 					 ELSE 'VS2' + CONVERT(varchar(10), vs.sporttype)
@@ -787,7 +788,7 @@ BEGIN
 			AND (@MemberID = 0 OR (@MemberID <> 0 AND b.CustId = @MemberID))  
 			AND b.roleid = 1
 			AND b.statusID <> 101 --exclude REJECT bets
-			AND t.sporttype NOT IN (180, 190)
+			AND t.sporttype NOT IN (180, 190,193)
 			AND (b.bettype < 901 OR b.bettype > 904)
 			AND (b.bettype < 911 OR b.bettype > 914)
 			AND ISNULL(b.isBA,0) = 0
