@@ -1744,7 +1744,7 @@ BEGIN
 		#SAgWinLoss w   
 		INNER JOIN bodb_licensee.dbo.licenseecustinfo c WITH (NOLOCK) ON w.custid = c.custid		
 		INNER JOIN @Exchange e ON w.Currency = e.CurrencyID
-	GROUP BY w.custid, c.username, c.username2, w.currency, e.Code
+	GROUP BY w.custid, c.username, c.username2, w.currency
 
 	DROP TABLE #SAgWinLoss
 
