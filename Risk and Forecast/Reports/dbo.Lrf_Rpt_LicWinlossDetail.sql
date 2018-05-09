@@ -79,6 +79,7 @@ AS
 		- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 		- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
 		- 20180420@Amanda: Include more cash out tickets [RedmineID: #93919]
+		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 
 	Param's Explanation:  
 	  + @CustID: SuperID  
@@ -292,19 +293,12 @@ BEGIN
 	--to Deal With Parameter Sniffing
 	SELECT @FDate = @FromDate, @TDate = @ToDate 
 	
-	DECLARE @Exchange TABLE (eEUR FLOAT, eUSD FLOAT, eGBP FLOAT, CodeKeenOcean VARCHAR(30), Code VARCHAR(30), CurrencyID INT)
+	DECLARE @Exchange TABLE (eEUR FLOAT, eUSD FLOAT, eGBP FLOAT, CurrencyID INT)
 
-	INSERT INTO @Exchange ( eEUR, eUSD, eGBP, CodeKeenOcean, CurrencyID)	
-	SELECT DISTINCT eur, usd, GBP, Code, ExchangeId		
+	INSERT INTO @Exchange ( eEUR, eUSD, eGBP, CurrencyID)	
+	SELECT DISTINCT eur, usd, GBP,  ExchangeId		
 	FROM Lrf_f_GetExchangeDaily(@FDate, @TDate)
 		INNER JOIN (SELECT DISTINCT Currency FROM @tempAg) c ON ExchangeId = c.Currency
-	
-	UPDATE ex
-	SET Code = CASE WHEN CurrencyID IN (51, 20, 70) THEN e.currency
-					WHEN CurrencyID = 66 THEN ex.CodeKeenOcean
-					ELSE e.Code END
-	FROM @Exchange ex
-		INNER JOIN dbo.Exchange e ON ex.CurrencyID = e.exchangeid	
 
 	IF @TDate > @MoveBetsDay
 	BEGIN
@@ -1557,7 +1551,6 @@ BEGIN
 		SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS nickname,
 		w.custid, 
 		w.currency,
-		e.Code AS CurrencyName,
 		SUM(TurnoverSB)			AS TurnoverSB,   
 		SUM(TurnoverBA)			AS TurnoverBA,   
 		SUM(TurnoverNG)			AS TurnoverNG,   
@@ -1756,8 +1749,4 @@ BEGIN
 	DROP TABLE #SAgWinLoss
 
 END
-GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_LicWinlossDetail] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LicWinlossDetail] TO [vnteam]
 GO

@@ -74,6 +74,7 @@ AS
 	- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
+	- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -108,7 +109,6 @@ CREATE TABLE #SAgWinLoss (
 	Betcount		BIGINT
 )  
 
-DECLARE @VNDCurrencyName	VARCHAR(20)
 DECLARE @bettype			TABLE (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))
 DECLARE @sporttype			TABLE (sporttype INT, ProductCode VARCHAR(10))
 DECLARE @sumTurnOver		BIT
@@ -127,8 +127,6 @@ IF(@drawfilter=3)
 BEGIN
 	SET @sumTurnOver=0
 END
-
-SELECT @VNDCurrencyName = Currency FROM exchange (NOLOCK) WHERE ExchangeId = 51
 
 DECLARE @IsTest BIT = 0
 SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
@@ -854,10 +852,7 @@ SELECT
    CASE WHEN @ReportType = 1 THEN CONVERT(VARCHAR(8),w.winlostdate,112)  
 		WHEN @ReportType = 2 THEN CONVERT(VARCHAR(6),w.winlostdate,112)  
 		ELSE '0' END ReportType,  
-   Currency ,   
-		CASE WHEN Currency = 51 THEN @VNDCurrencyName 
-			 WHEN Currency = 70 THEN 'MKK'
-			ELSE e.Code END currencyName,
+   Currency , 
    ProductCode,			
    SUM(TurnOver)	AS Turnover,   
    SUM(Winlost)		AS Winlost,  
@@ -907,17 +902,11 @@ GROUP BY
 	Productcode,
 	CASE WHEN @ReportType = 1 THEN CONVERT(VARCHAR(8),w.winlostdate,112)  
 		  WHEN @ReportType = 2 THEN CONVERT(VARCHAR(6),w.winlostdate,112)  
-		  ELSE '0' END   ,
-	CASE WHEN Currency = 51 THEN @VNDCurrencyName 
-		 WHEN Currency = 70 THEN 'MKK'
-			ELSE e.Code END
+		  ELSE '0' END 
 ORDER BY ReportType,  Currency,ProductCode
 
 DROP TABLE #SAgWinLoss
 DROP TABLE #TempExchange
  
 END
- GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_WinlossByProduct] TO [vnteam]
-GO 
- GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinlossByProduct] TO [bodbLicenseeNet]
-GO 
+GO

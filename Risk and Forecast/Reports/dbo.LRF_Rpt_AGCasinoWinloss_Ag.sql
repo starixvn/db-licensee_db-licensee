@@ -1,5 +1,4 @@
-USE [bodb02]
-GO
+/*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
  
 ALTER PROCEDURE [dbo].[LRF_Rpt_AGCasinoWinloss_Ag] 
 	@FromDate	SMALLDATETIME,  
@@ -30,6 +29,7 @@ AS
 		- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
 		- 20170302@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest [Redmine: #71679]
 		- 20170524@Harper: Make sure data correct between two stages of Balance up process [RedmineID: #77065]
+		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 
 	Param's Explanation:  
 	  + @excludeTest: remove currency UUS
@@ -50,12 +50,7 @@ BEGIN
 							,Currency INT	
 							)
 		
-	DECLARE @VNDCurrencyName VARCHAR(20)
 	DECLARE @sql NVARCHAR(1000)
-	 
-	SELECT @VNDCurrencyName = currency 
-	FROM  dbo.Exchange WITH (NOLOCK) 
-	WHERE ExchangeId = 51
 
 	DECLARE @Temp AS TABLE ( CustId INT,Currency INT )
 
@@ -198,10 +193,6 @@ BEGIN
 	SELECT r.CustID
 		   ,c.Username
 		   ,r.Currency
-		   ,CASE WHEN r.Currency=51  THEN  @VNDCurrencyName
-				 WHEN r.Currency=70  THEN  'MKK'
-				 ELSE e.Code 
-				 END CurrencyName		
 		   ,SUM(r.TurnOver)   	 AS TurnOver
 		   ,SUM(r.TotalTrans) 	 AS TotalTrans
 		   ,SUM(r.Winlost)		 AS Winlost
@@ -224,11 +215,7 @@ BEGIN
 	GROUP BY r.CustId 
 			 ,c.Username
 			 ,r.CustID
-			 ,r.Currency
-			 ,CASE	WHEN r.Currency=51  THEN  @VNDCurrencyName
-					WHEN r.Currency=70  THEN  'MKK'
-				 ELSE e.Code 
-				 END 		
+			 ,r.Currency	
 	ORDER BY c.Username
 			
 	
@@ -239,6 +226,3 @@ BEGIN
 	
 END
 GO
-GRANT EXECUTE ON [dbo].[LRF_Rpt_AGCasinoWinloss_Ag] TO [bodbLicenseeNet]  
-GO
-GRANT VIEW DEFINITION ON [dbo].[LRF_Rpt_AGCasinoWinloss_Ag] TO [vnteam] 

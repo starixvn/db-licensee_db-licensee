@@ -1,5 +1,4 @@
-USE bodb02
-GO
+/*<info serverAlias="DBEXT-bodb02" executers="" viewers="" isFunction="0" isNested="0"></info>*/
 
 SET QUOTED_IDENTIFIER ON 
 GO
@@ -24,6 +23,7 @@ AS
     Revisions:  		
 		- 20160413@Victor: support MKK currency code [Redmine: #55745]
 		- 20170302@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest [Redmine: #71679]
+		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 	Param's Explanation:  
 	  
 	  + @excludeTest: remove currency UUS
@@ -45,15 +45,7 @@ BEGIN
 	CREATE   TABLE #tmpResult (Winlostdate DATETIME, Currency INT,TurnOver MONEY,TotalTrans INT,Winlost MONEY,LicenseeWinlost MONEY)						
 	DECLARE  @tmpCust TABLE (CustId INT, Currency INT)
 	DECLARE  @TempExchange TABLE(ExchangeDate DATETIME, ExchangeId INT, Code NVARCHAR(5), USD FLOAT, EUR FLOAT,GBP FLOAT)
-		
-	DECLARE @VNDCurrencyName VARCHAR(20)
 	
-	
-	SELECT @VNDCurrencyName = currency 
-	FROM  dbo.Exchange WITH (NOLOCK) 
-	WHERE ExchangeId = 51
-
-
 	DECLARE @Temp AS TABLE ( CustId INT,Currency INT )
 
 	DECLARE @DocHandler INT
@@ -111,11 +103,6 @@ BEGIN
 				ELSE '0'
 			END AS Winlostdate
 		, r.Currency
-		, CASE 
-		 	WHEN Currency = 51 THEN @VNDCurrencyName
-			WHEN Currency = 70 THEN 'MKK'
-		 	ELSE e.Code
-		 	END						AS CurrencyName
 		, SUM(r.TurnOver)			AS TurnOver
 		, SUM(r.TotalTrans)			AS TotalTrans
 		, SUM(r.Winlost)			AS Winlost
@@ -143,11 +130,6 @@ BEGIN
 				ELSE '0'
 			 END
 		, r.Currency
-		, CASE 
-			WHEN Currency = 51 THEN @VNDCurrencyName
-			WHEN Currency = 70 THEN 'MKK'
-			ELSE e.Code
-			END
 	--ORDER BY r.Winlostdate
 	ORDER BY CASE 
 				WHEN @ReportType = 1
@@ -166,10 +148,3 @@ SET QUOTED_IDENTIFIER OFF
 GO
 SET ANSI_NULLS ON 
 GO
-
-
-GO 
- GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_ThirdPartyWinloss] TO [vnteam]
-GO 
- GRANT EXECUTE ON [dbo].[Lrf_Rpt_ThirdPartyWinloss] TO [bodbLicenseeNet]
-GO 

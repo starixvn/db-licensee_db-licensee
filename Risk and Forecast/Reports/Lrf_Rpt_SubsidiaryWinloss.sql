@@ -14,6 +14,7 @@ AS
     Revisions:  
 		- 20170829@Sophia: Initial SP [Redmine: #76246]
 		- 20171226@Harper: Return more column for report [RedmineID: #88398]
+		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 
 	Param's Explanation:  
 	
@@ -44,9 +45,6 @@ BEGIN
 
 	DECLARE @FDate SMALLDATETIME, @TDate SMALLDATETIME
 	SELECT @FDate = @FromDate, @TDate = @ToDate
-
-	DECLARE @VNDCurrencyName VARCHAR(20)
-	SELECT @VNDCurrencyName = currency FROM dbo.exchange (NOLOCK) WHERE ExchangeId = 51
 
 	-----Begin Get AgentList
 	BEGIN 
@@ -351,10 +349,6 @@ BEGIN
 	SELECT   
 		s.recommend,
 		s.Currency,
-		CASE WHEN Currency = 51 THEN @VNDCurrencyName 
-			WHEN Currency = 70 THEN 'MKK'
-		ELSE e.Code END CurrencyName,
-
 		s.ProductCode,		 
 		SUM (BetCount)	AS BetCount,
 		SUM(Turnover)	AS Turnover, 
@@ -399,8 +393,7 @@ BEGIN
 	FROM	
 		#Subsidiary s   
 		INNER JOIN #TempExchange e ON s.winlostdate = e.ExchangeDate AND s.currency = e.ExchangeId
-	GROUP BY  s.recommend, s.currency, s.ProductCode,	
-			  CASE WHEN Currency = 51 THEN @VNDCurrencyName WHEN Currency = 70 THEN 'MKK' ELSE e.Code END  
+	GROUP BY  s.recommend, s.currency, s.ProductCode
 	ORDER BY CurrencyName
 
 	DROP TABLE #Subsidiary
@@ -409,8 +402,4 @@ BEGIN
 	DROP TABLE #SporttypeProduct
 
 END
-GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_SubsidiaryWinloss] TO [bodbLicenseeNet]
-GO
-GRANT VIEW definition ON [dbo].[Lrf_Rpt_SubsidiaryWinloss] TO vnteam
 GO

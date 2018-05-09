@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_PlatformWinlossDetail]   
 	@FromDate	SMALLDATETIME,  
@@ -39,6 +39,7 @@ AS
 		- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 		- 20171020@Harper: LRF - Add "New Asia" in platform list [RedmineID: #85203]
 		- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
+		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 
 	Param's Explanation:  
 	  + @PlatformType:  0: All  
@@ -92,7 +93,6 @@ BEGIN
 	DECLARE @TempFromDate	DATETIME 
 	DECLARE @TempToDate		DATETIME 
 	DECLARE @MaxOldDate		DATETIME
-	DECLARE @VNDCurrencyName VARCHAR(20)
 	DECLARE @FDate			DATETIME
 	DECLARE @TDate			DATETIME
 	DECLARE @ProductList	VARCHAR (500)
@@ -103,7 +103,6 @@ BEGIN
 
 	--to Deal WITH Parameter Sniffing
 	SELECT @FDate=@FromDate,@TDate=@ToDate 
-	SELECT @VNDCurrencyName = currency FROM exchange (NOLOCK) WHERE ExchangeId = 51
 
 	DECLARE @IsTest BIT = 0
 	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
@@ -496,11 +495,6 @@ BEGIN
 		c.username, 
 		SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS nickname,
 		w.Currency,
-		CASE 
-			WHEN w.Currency =51 THEN @VNDCurrencyName 
-			WHEN w.Currency =70 THEN 'MKK'
-			ELSE e.Code 
-		END AS CurrencyName,
 		SUM(Betcount)	AS Betcount,
 
 		SUM(TurnOver)	AS Turnover,
@@ -552,12 +546,7 @@ BEGIN
 		INNER JOIN bodb_licensee.dbo.licenseecustinfo c WITH (NOLOCK) ON w.custid = c.custid
 		INNER JOIN  #Exchange e on w.Currency=e.exchangeid AND e.ExchangeDate = w.Winlostdate
 	GROUP BY
-		w.CustID, w.Currency, c.username, c.username2,
-		CASE 
-			WHEN w.Currency =51 THEN @VNDCurrencyName
-			WHEN w.Currency =70 THEN 'MKK'
-			ELSE e.Code 
-		END 
+		w.CustID, w.Currency, c.username, c.username2
 	ORDER BY 5,2
 
 	DROP TABLE #bettype
