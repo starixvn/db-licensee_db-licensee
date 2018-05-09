@@ -5,7 +5,7 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-ALTER  PROCEDURE [dbo].[LRF_Rpt_AGCasinoBalance_Mem] 
+ALTER PROCEDURE [dbo].[LRF_Rpt_AGCasinoBalance_Mem] 
 	@CustID		INT, --- recommend
 	@FromDate	SMALLDATETIME,  
 	@ToDate		SMALLDATETIME,   
