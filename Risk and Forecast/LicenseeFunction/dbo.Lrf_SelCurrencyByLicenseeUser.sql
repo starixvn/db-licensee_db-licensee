@@ -1,5 +1,4 @@
-﻿USE [bodb02]
-GO
+﻿/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 
 SET QUOTED_IDENTIFIER ON 
 GO
@@ -8,9 +7,7 @@ GO
 
 /****** Object:  Stored Procedure dbo.Lrf_SelCurrencyByLicenseeUser    Script Date: 5/30/2016 11:30:30 AM ******/
 
-
-
-ALTER  PROCEDURE  [dbo].[Lrf_SelCurrencyByLicenseeUser]		
+ALTER PROCEDURE [dbo].[Lrf_SelCurrencyByLicenseeUser]		
 	@LicenseeID int = 0, 
 	@UserID 	INT
 AS	
@@ -23,6 +20,7 @@ Revisions:
 	- 20160413@Victor: support MKK currency code
 	- 20160523@Jim: Currency permision restrict (#53882)
 	- 20170216@Sophia: Get AgentID, cast isActive as BIT, remove @excludeTest [Redmine: #71679]
+	- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 Param's Explanation:
 */
 
@@ -36,10 +34,13 @@ BEGIN
 		 
 	SELECT 
 			distinct lc.Currency,
-			CASE 
-				WHEN lc.currency = 20 THEN 'UUS' 
-				WHEN lc.currency = 51 THEN 'INH'
-				WHEN lc.currency = 70 THEN 'MKK'
+			CASE lc.currency
+				WHEN 20 THEN 'UUS' 
+				WHEN 51 THEN 'INH'
+				WHEN 70 THEN 'MKK'
+				WHEN 75 THEN 'PTU'
+				WHEN 76 THEN 'PS'
+				WHEN 77 THEN 'PTH'
 				ELSE e.Code 
 			END AS CurrencyName,
 			CASE WHEN ISNULL(c.CurrencyID,0)=0 THEN CAST(0 AS BIT) ELSE CAST(1 AS BIT) END isActive,
@@ -49,10 +50,13 @@ BEGIN
 			INNER JOIN exchange e with (nolock) ON lc.currency = e.exchangeid
 		WHERE (@LicenseeID = 0 OR lc.LicenseeID = @LicenseeID)
 		ORDER BY 
-			CASE 
-				WHEN lc.currency = 20 THEN 'UUS' 
-				WHEN lc.currency = 51 THEN 'INH'
-				WHEN lc.currency = 70 THEN 'MKK'
+			CASE lc.currency
+				WHEN 20 THEN 'UUS' 
+				WHEN 51 THEN 'INH'
+				WHEN 70 THEN 'MKK'
+				WHEN 75 THEN 'PTU'
+				WHEN 76 THEN 'PS'
+				WHEN 77 THEN 'PTH'
 				ELSE e.Code 
 			END
 	
@@ -70,9 +74,3 @@ SET QUOTED_IDENTIFIER OFF
 GO
 SET ANSI_NULLS ON 
 GO
-
-
-GO
-GRANT EXECUTE ON [dbo].[Lrf_SelCurrencyByLicenseeUser] TO [bodbLicenseeNet] 
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_SelCurrencyByLicenseeUser] TO [vnteam] 
