@@ -1,4 +1,6 @@
 ﻿/*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+USE bodb02
+GO
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_TurnOver]
 	@FromDate       SMALLDATETIME,  
