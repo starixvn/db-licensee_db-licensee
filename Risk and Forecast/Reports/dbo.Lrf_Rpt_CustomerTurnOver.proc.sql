@@ -72,6 +72,7 @@ Revision:
 	- 20180129@Percy: Hotfix page size, page index [RedmineID: #90104]
 	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
 	- 20180424@Joseph: Fix bug group VS2: BasketBall - Virual Soccer [RedmineID: #93844]
+	- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 
 Parameter's Explanation:
 	- @ReportBy:  1: daily, 2: monthly
@@ -708,13 +709,7 @@ BEGIN
 				ELSE CONVERT(VARCHAR(8), b.winlostdate, 112)
 			END AS ReportBy
 			, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS username
-			, CASE 
-				WHEN e.exchangeid = 20 THEN 'UUS'
-				WHEN e.exchangeid = 51 THEN 'INH'
-				WHEN e.exchangeid = 70 THEN 'MKK'
-				WHEN e.exchangeid = 66 AND b.winlostdate<'2015-09-01' THEN 'HKD'
-				WHEN e.exchangeid = 66 AND b.winlostdate>='2015-09-01' THEN 'CNY'
-				ELSE e.Code END AS Currency
+			, e.exchangeid as currencyid
 			, b.sporttype
 			, CASE WHEN b.bettype BETWEEN 81 AND 120 THEN  N'NG - ' + bt.typenamee
 				 WHEN (b.bettype BETWEEN 1201 AND 1299) THEN  N'VS - '+bt.typenamee + CASE WHEN b.bettype = 1204 THEN '(Soccer)'
@@ -744,13 +739,7 @@ BEGIN
 				ELSE CONVERT(VARCHAR(8), b.winlostdate, 112)
 			END
 			, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username)
-			, CASE 
-				WHEN e.exchangeid = 20 THEN 'UUS'
-				WHEN e.exchangeid = 51 THEN 'INH'
-				WHEN e.exchangeid = 70 THEN 'MKK'
-				WHEN e.exchangeid = 66 AND b.winlostdate<'2015-09-01' THEN 'HKD'
-				WHEN e.exchangeid = 66 AND b.winlostdate>='2015-09-01' THEN 'CNY'
-				ELSE e.Code END
+			, e.exchangeid
 			, b.sporttype
 			, CASE WHEN b.bettype BETWEEN 81 AND 120 THEN  N'NG - ' + bt.typenamee
 				 WHEN (b.bettype BETWEEN 1201 AND 1299) THEN  N'VS - '+bt.typenamee + CASE WHEN b.bettype = 1204 THEN '(Soccer)'

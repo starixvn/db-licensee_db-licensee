@@ -20,7 +20,7 @@ Revisions:
 	- 20160413@Victor: support MKK currency code
 	- 20160523@Jim: Currency permision restrict (#53882)
 	- 20170216@Sophia: Get AgentID, cast isActive as BIT, remove @excludeTest [Redmine: #71679]
-	- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
+	- 20180509@Joseph: Cheat currency name for special currencies [RedmineID: #94845]
 Param's Explanation:
 */
 
