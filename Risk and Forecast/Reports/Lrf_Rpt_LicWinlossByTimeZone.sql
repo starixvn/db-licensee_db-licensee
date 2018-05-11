@@ -483,8 +483,8 @@ BEGIN
 				 WHEN @ReportBy = 3 THEN CONVERT(VARCHAR(6),w.RptDateGMT,112)   ---Monthly
 				 ELSE '' END ReportBy,  --- Summary
 
-			CASE WHEN @GroupBy = 1 THEN CONVERT(VARCHAR(8),w.ProductCode,112)  ---- ProductCode
-				 WHEN @GroupBy = 2 THEN CurrencyId
+			CASE WHEN @GroupBy = 1 THEN CONVERT(VARCHAR(8),w.ProductCode)  ---- ProductCode
+				 WHEN @GroupBy = 2 THEN CONVERT(VARCHAR(6),CurrencyId)
 				 ELSE '0' 
 			END GroupBy, 
 			SUM(BetCount) AS BetCount,
@@ -541,8 +541,8 @@ BEGIN
 				 WHEN @ReportBy = 3 THEN CONVERT(VARCHAR(6),w.RptDateGMT,112)   ---Monthly
 				 ELSE '' END,  --- Summary
 
-			CASE WHEN @GroupBy = 1 THEN CONVERT(VARCHAR(8),w.ProductCode,112)  ---- ProductCode
-				 WHEN @GroupBy = 2 THEN CurrencyID
+			CASE WHEN @GroupBy = 1 THEN CONVERT(VARCHAR(8),w.ProductCode)  ---- ProductCode
+				 WHEN @GroupBy = 2 THEN CONVERT(VARCHAR(6), CurrencyID)
 				 ELSE '0' END
 	ORDER BY ReportBy, GroupBy
 	
