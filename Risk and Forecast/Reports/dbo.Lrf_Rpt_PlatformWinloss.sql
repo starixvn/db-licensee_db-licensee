@@ -41,7 +41,6 @@ AS
 		- 20171020@Harper: LRF - Add "New Asia" in platform list [RedmineID: #85203]
 		- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 		- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
-		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 
 	Param's Explanation:  
 	  + @PlatformType:  0: All  
