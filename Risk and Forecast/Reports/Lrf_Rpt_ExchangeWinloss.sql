@@ -305,7 +305,6 @@ BEGIN
 			ELSE '0'
 		END
 		, r.CurrencyID
-		, e.Code
 	ORDER BY 
 		CASE 
 			WHEN @ReportType = 1 THEN r.winlostdate

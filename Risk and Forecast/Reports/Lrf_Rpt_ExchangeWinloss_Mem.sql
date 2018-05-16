@@ -323,7 +323,6 @@ BEGIN
 		, c.username
 		, c.CustID
 		, r.CurrencyID
-		, e.Code
 	ORDER BY c.username
 	-- #EndRegion: Return data
 

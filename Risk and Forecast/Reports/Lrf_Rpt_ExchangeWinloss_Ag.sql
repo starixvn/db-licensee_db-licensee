@@ -317,7 +317,6 @@ BEGIN
 	GROUP BY --r.Winlostdate
 		 r.CustID, ci.username
 		, r.CurrencyID
-		, e.Code
 	ORDER BY ci.username
 	-- #EndRegion: Return data
 
