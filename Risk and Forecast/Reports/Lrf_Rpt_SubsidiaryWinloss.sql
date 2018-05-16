@@ -394,7 +394,6 @@ BEGIN
 		#Subsidiary s   
 		INNER JOIN #TempExchange e ON s.winlostdate = e.ExchangeDate AND s.currency = e.ExchangeId
 	GROUP BY  s.recommend, s.currency, s.ProductCode
-	ORDER BY CurrencyName
 
 	DROP TABLE #Subsidiary
 	DROP TABLE #TempExchange
