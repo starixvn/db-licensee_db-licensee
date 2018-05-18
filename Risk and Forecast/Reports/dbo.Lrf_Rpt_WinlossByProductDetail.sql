@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 /****** Object:  Stored Procedure dbo.Lrf_Rpt_WinlossByProductDetail    Script Date: 7/21/2017 1:48:26 PM ******/
 

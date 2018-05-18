@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 /****** Object:  StoredProcedure [dbo].[LRF_Rpt_ThirdPartyWinloss_Mem]    Script Date: 3/30/2015 5:21:42 PM ******/
 SET ANSI_NULLS ON

@@ -1,4 +1,4 @@
-/*<info serverAlias="DBPTCS-bodb_PlaytechCS" executers="" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBPTCS-bodb_PlaytechCS" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 /****** Object:  StoredProcedure [dbo].[LRF_Rpt_AGCasinoBalance_Mem]    Script Date: 4/13/2015 5:20:54 PM ******/
 SET ANSI_NULLS ON

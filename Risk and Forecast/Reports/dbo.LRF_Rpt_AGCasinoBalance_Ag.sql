@@ -1,4 +1,4 @@
-/*<info serverAlias="DBPTCS-bodb_PlaytechCS" executers="" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBPTCS-bodb_PlaytechCS" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 /****** Object:  Stored Procedure dbo.LRF_Rpt_AGCasinoBalance_Ag    Script Date: 3/4/2015 4:33:16 PM ******/
 
