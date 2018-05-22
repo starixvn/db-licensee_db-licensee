@@ -290,9 +290,12 @@ BEGIN
 			   ,r.TypeID
 			   ,r.TypeName
 		      ,r.Currency
-	ORDER BY r.TypeID
+	ORDER BY r.TypeID,
+			CASE WHEN @ReportType = 1 THEN CONVERT(VARCHAR(8),r.winlostdate,112)  
+				 WHEN @ReportType = 2 THEN CONVERT(VARCHAR(6),r.winlostdate,112)  
+				 ELSE '0' 
+			END
 			
-	
 	---------
 	DROP TABLE #tmpResult
 	DROP TABLE #TempAg

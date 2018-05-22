@@ -241,6 +241,10 @@ BEGIN
 				ELSE '0'
 		END
 		, r.CurrencyID
+	ORDER BY CASE WHEN @ReportType = 1 THEN CONVERT(VARCHAR(8), r.rptDate, 112)
+				WHEN @ReportType = 2 THEN CONVERT(VARCHAR(6), r.rptDate, 112)
+				ELSE '0'
+		END
 
 	DROP TABLE #TempData
 	DROP TABLE #Exchange
