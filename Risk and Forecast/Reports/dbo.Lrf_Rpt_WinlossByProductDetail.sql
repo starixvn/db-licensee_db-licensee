@@ -1,5 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
-
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 /****** Object:  Stored Procedure dbo.Lrf_Rpt_WinlossByProductDetail    Script Date: 7/21/2017 1:48:26 PM ******/
 
@@ -73,6 +72,7 @@ AS
 	- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
+	- 20180515@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 
 	Param's Explanation:  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -129,7 +129,6 @@ CREATE TABLE #SAgWinLoss  (
 	Betcount		BIGINT
 )  
 
-DECLARE @Code			VARCHAR(20), @TempCurrencyID INT
 DECLARE @bettype		TABLE (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))
 DECLARE @sporttype		TABLE (sporttype INT, ProductCode VARCHAR(10))
 DECLARE @Exchange		TABLE(ExchangeDate SMALLDATETIME, ExchangeId INT,  EUR FLOAT,USD FLOAT,GBP FLOAT,Code VARCHAR(10), PRIMARY KEY(ExchangeDate,ExchangeId))
@@ -253,16 +252,6 @@ INSERT INTO @Exchange (exchangedate,exchangeid,eur,usd,GBP,code)
 SELECT exchangedate,exchangeid,eur,usd,GBP,code
 FROM Lrf_f_GetExchangeDaily(@FDate,@TDate)
 WHERE exchangeid IN (SELECT Currency FROM @TempAg)	
-
-SELECT TOP 1 @TempCurrencyID=currency FROM @tempAg 
-
-IF @TempCurrencyID in (51,20,70)
-	SELECT @Code = currency FROM exchange (nolock) WHERE ExchangeId = @TempCurrencyID
-ELSE IF @TempCurrencyID=66
-	SELECT TOP 1 @Code = code FROM @Exchange WHERE ExchangeId = @TempCurrencyID
-ELSE
-	SELECT @Code = code FROM exchange (nolock) WHERE exchangeid=@TempCurrencyID
-
 
 IF @TDate > @MoveBetsDay
 BEGIN
@@ -1154,8 +1143,7 @@ END
 SELECT   
 	c.username,  
 	SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS nickname,	   w.custid, 
-	w.Currency ,   
-	@Code AS CurrencyName,
+	w.Currency ,
 	ProductCode, 
 	SUM(TurnOver)	  AS Turnover,   
 	SUM(Winlost)	  AS Winlost,  
@@ -1199,9 +1187,4 @@ ORDER BY c.username
 DROP TABLE #SAgWinLoss
  
 END
-
-GO 
- GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_WinlossByProductDetail] TO [vnteam]
-GO 
- GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinlossByProductDetail] TO [bodbLicenseeNet]
-GO 
+GO

@@ -1,5 +1,4 @@
-USE [bodb02]
-GO
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 SET ANSI_NULLS ON
 GO
@@ -22,6 +21,7 @@ AS
 		  - 20160413@Victor: support MKK currency code [Redmine: #55745]
 		  - 20160506@Francis: support MGC RNG progressive contribution [Redmine: #56248]
 		  - 20170302@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest [Redmine: #71679]
+		  - 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 	Param's Explanation:  
 	  + @excludeTest: remove currency UUS
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -41,18 +41,13 @@ BEGIN
 							)
 	CREATE TABLE #Bettype (Bettype INT,TypeID TINYINT,TypeName VARCHAR(200)) 
 	CREATE TABLE #TempAg  (CustId INT, Currency INT)
-	DECLARE @VNDCurrencyName VARCHAR(20)
-			,@MoveBetsDay DATETIME
+	DECLARE @MoveBetsDay DATETIME
 			,@TempFromDate DATETIME
 			,@TempToDate DATETIME	
 	SELECT    
         @MoveBetsDay = MAX(eventdate)  
     FROM dbo.match14 WITH(NOLOCK)  
     		
-	SELECT @VNDCurrencyName = currency 
-	FROM  dbo.Exchange WITH (NOLOCK) 
-	WHERE ExchangeId = 51
-	
 	DECLARE @DocHandler INT
 
 	BEGIN TRY
@@ -250,11 +245,7 @@ BEGIN
 				 ELSE '0' END winlostdate 
 		   ,r.TypeID
 		   ,r.TypeName
-		   ,r.Currency
-		   ,CASE WHEN r.Currency=51  THEN  @VNDCurrencyName
-				 WHEN r.Currency=70  THEN  'MKK'
-				 ELSE e.Code 
-				 END CurrencyName		
+		   ,r.Currency	
 		   ,SUM(r.TurnOver)   	 AS TurnOver
 		   ,SUM(r.TotalTrans) 	 AS TotalTrans
 		   ,SUM(r.Winlost)		 AS Winlost
@@ -299,13 +290,12 @@ BEGIN
 			   ,r.TypeID
 			   ,r.TypeName
 		      ,r.Currency
-		      ,CASE WHEN r.Currency=51  THEN  @VNDCurrencyName
-					WHEN r.Currency=70  THEN  'MKK'
-				 ELSE e.Code 
-				 END	
-	ORDER BY r.TypeID
+	ORDER BY r.TypeID,
+			CASE WHEN @ReportType = 1 THEN CONVERT(VARCHAR(8),r.winlostdate,112)  
+				 WHEN @ReportType = 2 THEN CONVERT(VARCHAR(6),r.winlostdate,112)  
+				 ELSE '0' 
+			END
 			
-	
 	---------
 	DROP TABLE #tmpResult
 	DROP TABLE #TempAg
@@ -316,8 +306,4 @@ BEGIN
 	DROP TABLE #PayoutTrans
 	DROP TABLE #currency
 END
-
 GO
-GRANT EXECUTE ON [dbo].[LRF_Rpt_MicroGamingWinloss] TO [bodbLicenseeNet] AS [dbo]
-GO
-GRANT VIEW DEFINITION ON [dbo].[LRF_Rpt_MicroGamingWinloss] TO [vnteam] AS [dbo]

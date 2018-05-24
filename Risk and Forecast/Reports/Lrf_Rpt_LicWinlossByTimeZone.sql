@@ -23,6 +23,7 @@ AS
     Revisions:   
 		- 20171201@Sophia: initial version. Apply for Sportsbook first [redmine: #84932]
 		- 20171226@Percy: Remove redundant code [RedmineID: #88704] 
+		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 
 	Param's Explanation:  
 	  + @TimeZone: =-4: GMT-4
@@ -60,9 +61,6 @@ BEGIN
 		PlayerComm			MONEY,		
 		LicenseeComm		MONEY
 	) 
-	DECLARE @VNDCurrencyName	VARCHAR(20)
-	SELECT @VNDCurrencyName = currency FROM exchange (NOLOCK) WHERE ExchangeId = 51
-
 	
 	---#1: Begin: Get AgentList 	
 	DECLARE @TempAg AS TABLE(custID INT, currency INT)  
@@ -485,12 +483,8 @@ BEGIN
 				 WHEN @ReportBy = 3 THEN CONVERT(VARCHAR(6),w.RptDateGMT,112)   ---Monthly
 				 ELSE '' END ReportBy,  --- Summary
 
-			CASE WHEN @GroupBy = 1 THEN CONVERT(VARCHAR(8),w.ProductCode,112)  ---- ProductCode
-				 WHEN @GroupBy = 2 THEN  
-										CASE WHEN CurrencyId = 51 THEN @VNDCurrencyName  ---Currency
-											 WHEN CurrencyId = 70 THEN 'MKK'
-											 ELSE e.Code 
-									    END
+			CASE WHEN @GroupBy = 1 THEN CONVERT(VARCHAR(8),w.ProductCode)  ---- ProductCode
+				 WHEN @GroupBy = 2 THEN CONVERT(VARCHAR(6),CurrencyId)
 				 ELSE '0' 
 			END GroupBy, 
 			SUM(BetCount) AS BetCount,
@@ -547,12 +541,8 @@ BEGIN
 				 WHEN @ReportBy = 3 THEN CONVERT(VARCHAR(6),w.RptDateGMT,112)   ---Monthly
 				 ELSE '' END,  --- Summary
 
-			CASE WHEN @GroupBy = 1 THEN CONVERT(VARCHAR(8),w.ProductCode,112)  ---- ProductCode
-				 WHEN @GroupBy = 2 THEN  
-										CASE WHEN CurrencyID = 51 THEN @VNDCurrencyName  ---Currency
-											 WHEN CurrencyID = 70 THEN 'MKK'
-											 ELSE e.Code 
-									    END
+			CASE WHEN @GroupBy = 1 THEN CONVERT(VARCHAR(8),w.ProductCode)  ---- ProductCode
+				 WHEN @GroupBy = 2 THEN CONVERT(VARCHAR(6), CurrencyID)
 				 ELSE '0' END
 	ORDER BY ReportBy, GroupBy
 	
@@ -564,7 +554,3 @@ BEGIN
 
 END
 GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_LicWinlossByTimeZone] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LicWinlossByTimeZone] TO [vnteam]
-GO 

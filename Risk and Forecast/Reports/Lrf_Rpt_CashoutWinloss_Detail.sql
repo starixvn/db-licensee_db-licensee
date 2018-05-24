@@ -1,5 +1,4 @@
-USE bodb02
-GO
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_CashoutWinloss_Detail]
 	@FromDate		SMALLDATETIME,
@@ -12,6 +11,7 @@ AS
 	Description: LRF - Implement Cash Out [#71727]
 	DB: DBEXT.bodb02 
 	Revisions: 
+		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 
 	Param's Explanation:  
 
@@ -24,16 +24,11 @@ BEGIN
 	DECLARE @FDate SMALLDATETIME,
 			@TDate SMALLDATETIME,
 			@TempFromDate SMALLDATETIME,
-			@TempToDate SMALLDATETIME,
-			@VNDCurrencyName VARCHAR(20)
+			@TempToDate SMALLDATETIME
 
 	SELECT @FDate = @FromDate,
 		   @TDate = @ToDate
 	
-	SELECT @VNDCurrencyName = currency
-	FROM dbo.Exchange WITH (NOLOCK)
-	WHERE ExchangeId = 51	
-
 	DECLARE @DocHandler INT
 	DECLARE @tempAg AS TABLE (custID INT, currency INT)
 
@@ -197,10 +192,6 @@ BEGIN
 		, r.CustID
 		, c.username AS SystemId
 		, SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1, LEN(c.username2) - CHARINDEX('$', c.username2)) AS ExternalID
-		, CASE WHEN r.CurrencyID = 51 THEN @VNDCurrencyName
-				WHEN r.CurrencyID = 70 THEN 'MKK'
-				ELSE e.Code
-		END AS CurrencyName
 		, SUM(r.CashoutTime) AS CashoutTime
 		, SUM(r.CashoutTicket) AS CashoutTicket
 		, SUM(r.CashoutValue) AS CashoutValue
@@ -248,19 +239,9 @@ BEGIN
 	GROUP BY 		
 		  r.CurrencyID
 		, r.CustID, c.username, c.username2
-		, CASE WHEN r.CurrencyID = 51 THEN @VNDCurrencyName
-				WHEN r.CurrencyID = 70 THEN 'MKK'
-				ELSE e.Code
-		END
 
 	DROP TABLE #TempData
 	DROP TABLE #Exchange
 	DROP TABLE #CashoutCust
 END
 GO
-
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CashoutWinloss_Detail] TO [vnteam]
-GO 
-
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_CashoutWinloss_Detail] TO [bodbLicenseeNet]
-GO 

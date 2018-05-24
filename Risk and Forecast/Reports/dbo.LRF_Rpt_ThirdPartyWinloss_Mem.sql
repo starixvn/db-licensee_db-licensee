@@ -1,12 +1,12 @@
-USE [bodb02]
-GO
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+
 /****** Object:  StoredProcedure [dbo].[LRF_Rpt_ThirdPartyWinloss_Mem]    Script Date: 3/30/2015 5:21:42 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
  
-ALTER  PROCEDURE [dbo].[LRF_Rpt_ThirdPartyWinloss_Mem] 
+ALTER PROCEDURE [dbo].[LRF_Rpt_ThirdPartyWinloss_Mem] 
 	@ProductID	INT,
 	@CustID		INT, --- recommend
 	@FromDate	SMALLDATETIME,  
@@ -31,6 +31,7 @@ AS
     Revisions:  			
 		- 20160413@Victor: support MKK currency code [Redmine: #55745]
 		- 20170302@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest [Redmine: #71679]
+		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 	Param's Explanation:  
 	  + @excludeTest: remove currency UUS
 */  
@@ -51,13 +52,8 @@ BEGIN
 							)
 		
 		
-	DECLARE @VNDCurrencyName VARCHAR(20)
 	DECLARE @sql NVARCHAR(1000)
 	 
-	SELECT @VNDCurrencyName = currency 
-	FROM  dbo.Exchange WITH (NOLOCK) 
-	WHERE ExchangeId = 51
-
 	DECLARE @Temp AS TABLE ( CustId INT,Currency INT )
 
 	DECLARE @DocHandler INT
@@ -123,11 +119,7 @@ BEGIN
 	
 	SELECT  SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS nickname
 			,c.Username
-			,r.Currency
-		    ,CASE	WHEN r.Currency=51  THEN  @VNDCurrencyName
-					WHEN r.Currency=70  THEN  'MKK'
-				 ELSE e.Code 
-				 END CurrencyName		
+			,r.Currency	
 		    ,SUM(r.TurnOver)   	 AS TurnOver
 		    ,SUM(r.TotalTrans) 	 AS TotalTrans
 		    ,SUM(r.Winlost)		 AS Winlost
@@ -150,11 +142,7 @@ BEGIN
 		INNER JOIN dbo.customer c WITH  (NOLOCK) ON c.CustID = r.CustID
 	GROUP BY SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2))
 			 ,c.Username
-			 ,r.Currency
-			 ,CASE  WHEN r.Currency=51  THEN  @VNDCurrencyName
-					WHEN r.Currency=70  THEN  'MKK'
-				 ELSE e.Code 
-				 END 		
+			 ,r.Currency	
 	ORDER BY c.Username
 	
 	---------
@@ -164,4 +152,4 @@ BEGIN
 	
 	
 END
-
+GO

@@ -14,6 +14,7 @@ AS
 	Revisions: 
 		- 20171215@Harper: Create new report Exchange Winloss [RedmineID: #86640]
 		- 20180323@Amanda: Get data from raw table that data is not sum [Redmine: #92495]
+		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 
 	Param's Explanation:
 
@@ -41,13 +42,11 @@ BEGIN
 	CREATE TABLE #Exchange (
 		ExchangeID	INT, 
 		ExchageDate DATE, 
-		Code		VARCHAR(5), 
 		GBP			FLOAT, 
 		USD			FLOAT, 
 		EUR			FLOAT)
 	
-	DECLARE @VNDCurrencyNAME	VARCHAR(20)
-		,	@ProductID			INT
+	DECLARE @ProductID			INT
 		,	@FDate				DATE
 		,	@TDate				DATE
 		,	@ProductPrefix		VARCHAR(2)
@@ -261,35 +260,18 @@ BEGIN
 										)
 	INSERT INTO #Exchange( ExchangeID ,
 							ExchageDate ,
-							Code ,
 							GBP ,
 							USD ,
 							EUR
 						)
-	SELECT ExchangeId, ExchangeDate, Code, GBP, USD, EUR
+	SELECT ExchangeId, ExchangeDate, GBP, USD, EUR
 	FROM dbo.Lrf_f_GetExchangeDaily(@FDate, @ToDate) exc
 	INNER JOIN Currency_CTE cur ON exc.ExchangeId = cur.CurrencyID
-	
-	-- update VND Currency Name	
-	SELECT @VNDCurrencyName = currency 
-	FROM  dbo.Exchange WITH (NOLOCK) 
-	WHERE ExchangeId = 51
-	
-	UPDATE #Exchange
-	SET Code = @VNDCurrencyName
-	WHERE ExchangeID = 51
-	
-	-- update Myanmar Currency Name
-	UPDATE #Exchange
-	SET Code = 'MKK'
-	WHERE ExchangeID = 70
-	-- #EndRegion: Handle Exchange Rate
 
 	-- #Region: Return data
 	SELECT r.CustID
 		, ci.username		
 		, r.CurrencyID
-		, e.Code AS CurrencyName
 		, SUM(r.TurnOver)			AS TurnOver
 		, SUM(r.NETTurnOver)		AS NetTurnOver
 		, SUM(r.TotalTrans)			AS TotalTrans
@@ -335,7 +317,6 @@ BEGIN
 	GROUP BY --r.Winlostdate
 		 r.CustID, ci.username
 		, r.CurrencyID
-		, e.Code
 	ORDER BY ci.username
 	-- #EndRegion: Return data
 

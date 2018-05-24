@@ -73,6 +73,7 @@ AS
 		- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 		- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
 		- 20180420@Amanda: Include more cash out tickets [RedmineID: #93919]
+		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 
 	Param's Explanation:  
 	  + @CustID: SuperID  
@@ -156,11 +157,9 @@ BEGIN
 	DECLARE @LicenseeName		VARCHAR(50)
 	DECLARE @bettype			TABLE (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))
 	DECLARE @sporttype			TABLE (sporttype INT, ProductCode VARCHAR(10))
-	DECLARE @VNDCurrencyName	VARCHAR(20)
 	DECLARE @ProductList		VARCHAR (500)
 
 	SELECT	@LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WHERE LicenseeID = @LicenseeID
-	SELECT	@VNDCurrencyName = currency FROM exchange (NOLOCK) WHERE ExchangeId = 51 
 
 	DECLARE @IsTest BIT = 0
 	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)	
@@ -1596,9 +1595,6 @@ BEGIN
 		c.username,  
 		w.custid, 
 		w.currency,
-		CASE WHEN w.Currency = 51 THEN @VNDCurrencyName 
-			WHEN w.Currency = 70 THEN 'MKK'
-			ELSE e.Code END AS CurrencyName,
 		SUM(TurnoverSB)			AS TurnoverSB,   
 		SUM(TurnoverBA)			AS TurnoverBA,   
 		SUM(TurnoverNG)			AS TurnoverNG,   
@@ -1793,18 +1789,10 @@ BEGIN
 		INNER JOIN #TempExchange e ON w.winlostdate = e.ExchangeDate AND w.currency = e.ExchangeId
 		INNER JOIN Customer c WITH(NOLOCK) ON w.custid = c.custid
 	GROUP BY
-		w.currency, w.custid, c.username, 
-		CASE WHEN w.Currency = 51 THEN @VNDCurrencyName 
-			WHEN w.Currency = 70 THEN 'MKK'
-			ELSE e.Code END
+		w.currency, w.custid, c.username
 	ORDER BY w.currency
 
 	DROP TABLE #SAgWinLoss
 	DROP TABLE #TempExchange
 END 
-
-GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_LicWinlossDetail_Ag] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LicWinlossDetail_Ag] TO [vnteam]
 GO

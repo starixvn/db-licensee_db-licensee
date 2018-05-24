@@ -29,6 +29,7 @@ AS
 		- 20161205@Jim:  Report should include only WLD tickets [RedminID : #68316]
 		- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest [Redmine: #71679]
 		- 20180305@Harper: Implement CB free play ticket [RedmineID: #90768]
+		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 
 	Param's Explanation:  
 	   - @excludeTest: remove currency UUS
@@ -53,7 +54,6 @@ BEGIN
 		, @_ToDate		SMALLDATETIME
 		, @TempFromDate SMALLDATETIME
 		, @TempToDate	SMALLDATETIME
-		, @VNDCurrencyName VARCHAR(20)
 
 	DECLARE @tempAg AS TABLE (
 								custID		INT
@@ -75,10 +75,6 @@ BEGIN
 	---Section 2 : INIT VARIABLE
 	SELECT @_FromDate = @FromDate
 		, @_ToDate = @ToDate
-
-	SELECT @VNDCurrencyName = currency
-	FROM dbo.Exchange WITH (NOLOCK)
-	WHERE ExchangeId = 51
 
 	DECLARE @DocHandler INT
 
@@ -323,13 +319,6 @@ BEGIN
 			ELSE '0'
 			END ReportType
 		, CurrencyID
-		, CASE 
-			WHEN CurrencyID = 51
-				THEN @VNDCurrencyName
-			WHEN CurrencyID = 70
-				THEN 'MKK'
-			ELSE e.Code
-			END AS currencyName
 		, SUM(TurnOver) TurnOver
 		, SUM(TotalTrans) TotalTrans
 		, SUM(WinningPrize) WinningPrize
@@ -370,13 +359,14 @@ BEGIN
 			ELSE '0'
 			END
 		, CurrencyID
-		, CASE 
-			WHEN CurrencyID = 51
-				THEN @VNDCurrencyName
-			WHEN CurrencyID = 70
-				THEN 'MKK'
-			ELSE e.Code
+	ORDER BY CASE 
+			WHEN @ReportType = 1
+				THEN CONVERT(VARCHAR(8), t.rptDate, 112)
+			WHEN @ReportType = 2
+				THEN CONVERT(VARCHAR(6), t.rptDate, 112)
+			ELSE '0'
 			END
+
 	DROP TABLE #TempExchange		
 END
 
@@ -386,10 +376,3 @@ SET QUOTED_IDENTIFIER OFF
 GO
 SET ANSI_NULLS ON 
 GO
-
-
-GO 
- GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_ColossusBetsWinloss] TO [vnteam]
-GO 
- GRANT EXECUTE ON [dbo].[Lrf_Rpt_ColossusBetsWinloss] TO [bodbLicenseeNet]
-GO 

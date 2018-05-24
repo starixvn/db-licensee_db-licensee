@@ -1,5 +1,4 @@
-USE [bodb02]
-GO
+/*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
  
 ALTER PROCEDURE [dbo].[LRF_Rpt_AGCasinoWinloss_Mem] 
 	@CustID		INT, --- recommend
@@ -32,6 +31,7 @@ AS
 			- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
 			- 20170302@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest [Redmine: #71679]
 			- 20170524@Harper: Make sure data correct between two stages of Balance up process [RedmineID: #77065]
+			- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 
 	Param's Explanation:  
 	  + @excludeTest: remove currency UUS
@@ -52,12 +52,7 @@ BEGIN
 							)
 		
 		
-	DECLARE @VNDCurrencyName VARCHAR(20)
 	DECLARE @sql NVARCHAR(1000)
-	 
-	SELECT @VNDCurrencyName = currency 
-	FROM  dbo.Exchange WITH (NOLOCK) 
-	WHERE ExchangeId = 51
 
 	DECLARE @Temp AS TABLE ( CustId INT,Currency INT )
 
@@ -199,11 +194,7 @@ BEGIN
 	
 	SELECT  SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS nickname
 			,c.Username
-			,r.Currency
-		    ,CASE WHEN r.Currency=51  THEN  @VNDCurrencyName
-				  WHEN r.Currency=70  THEN  'MKK'
-				 ELSE e.Code 
-				 END CurrencyName		
+			,r.Currency	
 		    ,SUM(r.TurnOver)   	 AS TurnOver
 		    ,SUM(r.TotalTrans) 	 AS TotalTrans
 		    ,SUM(r.Winlost)		 AS Winlost
@@ -226,11 +217,7 @@ BEGIN
 		INNER JOIN dbo.customer c WITH  (NOLOCK) ON c.CustID = r.CustID
 	GROUP BY SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2))
 			 ,c.Username
-			 ,r.Currency
-			 ,CASE	WHEN r.Currency=51  THEN  @VNDCurrencyName
-					WHEN r.Currency=70  THEN  'MKK'
-				 ELSE e.Code 
-				 END 		
+			 ,r.Currency		
 	ORDER BY c.Username
 	
 	---------
@@ -239,6 +226,3 @@ BEGIN
 	DROP TABLE #TempExchange 	
 END
 GO
-GRANT EXECUTE ON [dbo].[LRF_Rpt_AGCasinoWinloss_Mem] TO [bodbLicenseeNet] AS [dbo]
-GO
-GRANT VIEW DEFINITION ON [dbo].[LRF_Rpt_AGCasinoWinloss_Mem] TO [vnteam] AS [dbo]

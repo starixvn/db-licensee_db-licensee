@@ -66,6 +66,7 @@ AS
 	- 20180205@Harper: LRF - Fix handle for getting data only invidual member at Licensee level [RedmineID: #90485]
 	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
+	- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 
 	Param's Explanation:  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -100,7 +101,6 @@ CREATE TABLE #SAgWinLoss(
 	Betcount		BIGINT
 )  
 
-DECLARE @VNDCurrencyName	VARCHAR(20)
 DECLARE @bettype			TABLE (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))
 DECLARE @sporttype			TABLE (sporttype INT, ProductCode VARCHAR(10))
 DECLARE @RecommendID		INT
@@ -113,8 +113,6 @@ BEGIN
 	FROM dbo.Custinfo WITH (NOLOCK) 
 	WHERE CustId = @CustID	
 END
-
-SELECT @VNDCurrencyName = currency FROM exchange (NOLOCK) WHERE ExchangeId = 51
 
 DECLARE @IsTest BIT = 0
 SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
@@ -759,9 +757,6 @@ SELECT
 	c.username,  
 	w.custid,
 	w.Currency ,   
-		CASE WHEN w.Currency = 51 THEN @VNDCurrencyName 
-			 WHEN w.Currency = 70 THEN 'MKK'
-			ELSE e.Code END currencyName,
 	ProductCode, 		
 	SUM(TurnOver)	AS Turnover,   
 	SUM(Winlost)	AS Winlost,  
@@ -809,20 +804,11 @@ FROM
 GROUP BY   
 	w.custid, c.username, 
 	w.Currency,
-	ProductCode,
-	CASE WHEN w.Currency = 51 THEN @VNDCurrencyName 
-		 WHEN w.Currency = 70 THEN 'MKK'
-			ELSE e.Code END
+	ProductCode
 ORDER BY w.currency
 
 DROP TABLE #SAgWinLoss
 DROP TABLE #TempExchange
  
 END
-
 GO
-
- GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_WinlossByProductDetail_Ag] TO [vnteam]
-GO 
- GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinlossByProductDetail_Ag] TO [bodbLicenseeNet]
-GO 

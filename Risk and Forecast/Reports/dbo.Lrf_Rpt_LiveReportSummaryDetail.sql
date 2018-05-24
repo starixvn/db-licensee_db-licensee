@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportSummaryDetail] 
 	@LicenseeID		INT,	
@@ -66,6 +66,7 @@ Revisions:
 	- 20171009@Sophia: Add ProductCode [RedmineID : #82797]
 	- 20180205@Harper: Remove LC from product list [RedmineID: #85965]
 	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
+	- 20180515@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 
 Param's Explanation:  
 	+ @Liveindicator : indicate that whether the report will get live data or not
@@ -524,7 +525,7 @@ BEGIN
 
 	SELECT	@sql = @sql + '-- Get winlost by currency  ' + CHAR(13)
 
-	SELECT	@sql = @sql + 'SELECT CASE WHEN e.Code = ''VND'' THEN ''INH'' ELSE e.code END AS Currency, ' + CHAR(13)
+	SELECT	@sql = @sql + 'SELECT b.currency AS Currency, ' + CHAR(13)
 						+ 'SUM(TurnOver) AS Turnover,' + CHAR(13)
 						+ 'SUM(Winlost)  AS Winlost,' + CHAR(13)
 						+ 'SUM(LicenseeWL) AS LicenseeWL,' + CHAR(13)
@@ -553,8 +554,7 @@ BEGIN
 						+ 'FROM #tmpWinloss b WITH (NOLOCK)' + CHAR(13)
 						+ 'INNER JOIN #TempExchange e ' + CHAR(13)
 						+ 'ON e.ExchangeDate = b.winlostdate   AND e.exchangeid = b.currency ' + CHAR(13)
-						+ 'GROUP BY CASE WHEN e.Code = ''VND'' THEN ''INH'' ELSE e.code END' + CHAR(13)
-						+ 'ORDER BY CASE WHEN e.Code = ''VND'' THEN ''INH'' ELSE e.code END ' + CHAR(13)
+						+ 'GROUP BY b.currency' + CHAR(13)
 
 	-- Get winlost by bettype   
 	SELECT	@sql = @sql + '-- Get winlost by bettype  ' + CHAR(13)
@@ -602,7 +602,3 @@ BEGIN
 		EXEC (@sql)
 END
 GO
-
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_LiveReportSummaryDetail] TO [bodbLicenseeNet] AS [dbo]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LiveReportSummaryDetail] TO [vnteam] AS [dbo]

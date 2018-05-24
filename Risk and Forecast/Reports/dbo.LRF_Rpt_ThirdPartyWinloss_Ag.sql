@@ -1,5 +1,5 @@
-USE [bodb02]
-GO
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+
 /****** Object:  StoredProcedure [dbo].[LRF_Rpt_ThirdPartyWinloss_Ag]    Script Date: 3/30/2015 5:19:59 PM ******/
 SET ANSI_NULLS ON
 GO
@@ -30,6 +30,7 @@ AS
     Revisions:  		
 		- 20160413@Victor: support MKK currency code [Redmine: #55745]
 		- 20170302@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest [Redmine: #71679]
+		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 	Param's Explanation:  
 	  + @excludeTest: remove currency UUS
 */  
@@ -49,13 +50,8 @@ BEGIN
 							,Currency INT	
 							)
 		
-	DECLARE @VNDCurrencyName VARCHAR(20)
 	DECLARE @sql NVARCHAR(1000)
 	 
-	SELECT @VNDCurrencyName = currency 
-	FROM  dbo.Exchange WITH (NOLOCK) 
-	WHERE ExchangeId = 51
-
 	DECLARE @Temp AS TABLE ( CustId INT,Currency INT )
 
 	DECLARE @DocHandler INT
@@ -122,10 +118,6 @@ BEGIN
 	SELECT r.CustID
 		   ,c.Username
 		   ,r.Currency
-		   ,CASE WHEN r.Currency=51  THEN  @VNDCurrencyName
-				 WHEN r.Currency=70  THEN  'MKK'
-				 ELSE e.Code 
-				 END CurrencyName		
 		   ,SUM(r.TurnOver)   	 AS TurnOver
 		   ,SUM(r.TotalTrans) 	 AS TotalTrans
 		   ,SUM(r.Winlost)		 AS Winlost
@@ -148,11 +140,7 @@ BEGIN
 	GROUP BY r.CustId 
 			 ,c.Username
 			 ,r.CustID
-			 ,r.Currency
-			 ,CASE  WHEN r.Currency=51  THEN  @VNDCurrencyName
-					WHEN r.Currency=70  THEN  'MKK'
-				 ELSE e.Code 
-				 END 		
+			 ,r.Currency	
 	ORDER BY c.Username
 			
 	
@@ -162,3 +150,4 @@ BEGIN
 	DROP TABLE #TempExchange 
 	
 END
+GO
