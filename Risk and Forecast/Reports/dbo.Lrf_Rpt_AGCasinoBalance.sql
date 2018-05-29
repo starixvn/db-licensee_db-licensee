@@ -14,6 +14,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_AGCasinoBalance]
 		- 20160104@Francis: change join type from inner join to hash join for remote query to enhance duration
 		- 20170302@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest [Redmine: #71679]
 		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
+		- 20180529@Joseph: Add OPTION RECOMPILE to fix performance issue
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
 	  + @excludeTest: remove currency UUS
@@ -119,6 +120,7 @@ BEGIN
 			FROM #tmpCust c
 			WHERE b.Currency = c.Currency AND b.CustId = c.CustId
 		)
+		OPTION (RECOMPILE)
 		
 	INSERT INTO #tmpResult (Winlostdate
 							, CustId 
