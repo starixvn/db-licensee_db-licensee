@@ -21,6 +21,7 @@ AS
 		- 20180228@Vicky: Remove LC from product list [Redmine: #85965]
 		- 20180315@Winnie: Bet Setting - Cash Out product is not listed in Product dropdown box [HotFix #92097]
 		- 20180405@Amanda: Bet Setting - Hide RB product [Redmine #92291]
+		- 20180620@Johnson: Integrate Pragmatic [Redmine: #92318]
 	Param's Explanation:
 */
 
@@ -33,7 +34,7 @@ BEGIN
 	DECLARE @site VARCHAR(20)
 	DECLARE @tblSuper AS TABLE (SrecommendID INT)
 	DECLARE @tblProductActive AS TABLE (ProductID INT,ProductName VARCHAR(50) ,ProductCode VARCHAR(10),isEnable BIT)
-	
+		
 	SELECT @Site = LicenseeName
 	FROM dbo.Licensees WITH (NOLOCK) 
 	WHERE LicenseeID = @LicenseeiD 
@@ -42,7 +43,7 @@ BEGIN
 	SELECT CustID
 	FROM DBCUST.CUSTDB.dbo.Dep_CustSuper WITH (NOLOCK)
 	WHERE Site = @Site
-	
+				
 	IF EXISTS(SELECT 1 FROM @tblSuper ) 
 	BEGIN
 		INSERT INTO @tblProductActive (ProductID,ProductName,ProductCode,isEnable)
@@ -50,7 +51,7 @@ BEGIN
 			p.ProductId
 			,p.ProductName
 			,p.ProductPrefix AS  ProductCode
-			,CASE WHEN p.ProductID IN (10,11,12,14,17,22,24,21,5,27,28) THEN 0 ELSE 1 END 
+			,CASE WHEN p.ProductID IN (10,11,12,14,17) OR ApplyDCS = 1 THEN 0 ELSE 1 END 
 		FROM dbo.Product3rd p WITH (NOLOCK) 
 			INNER JOIN dbo.LicenseeProduct3rd lp WITH (NOLOCK) ON p.ProductId = lp.ProductId 	
 		WHERE lp.LicenseeID  = @LicenseeID
@@ -98,85 +99,18 @@ BEGIN
 					WHERE ProductID = 17	
 			END	
 		
-		IF EXISTS (SELECT 1 FROM @tblProductActive WHERE ProductID = 22)	---VoidBridge
-		BEGIN 
-			IF EXISTS (SELECT 1 
-				   FROM DBCUST.CustDB.dbo.Dep_LicenseeProductSetting lps WITH (NOLOCK)
-						INNER JOIN DBCUST.CustDB.dbo.Dep_ProductSetting ps WITH (NOLOCK) ON lps.ProductSettingID = ps.ProductSettingID
-						INNER JOIN @tblSuper su ON lps.CustID = su.SrecommendID
-				   WHERE ps.ProductID= 22)
-				   
-				UPDATE @tblProductActive
-				SET isEnable =1
-				WHERE ProductID = 22	
-		END		
-		
-		IF EXISTS (SELECT 1 FROM @tblProductActive WHERE ProductID = 24)	---Fishing World
-		BEGIN 
-			IF EXISTS (SELECT 1 
-				   FROM DBCUST.CustDB.dbo.Dep_LicenseeProductSetting lps WITH (NOLOCK)
-						INNER JOIN DBCUST.CustDB.dbo.Dep_ProductSetting ps WITH (NOLOCK) ON lps.ProductSettingID = ps.ProductSettingID
-						INNER JOIN @tblSuper su ON lps.CustID = su.SrecommendID
-				   WHERE ps.ProductID= 24)
-				   
-				UPDATE @tblProductActive
-				SET isEnable =1
-				WHERE ProductID = 24	
-		END	
-		
-		IF EXISTS (SELECT 1 FROM @tblProductActive WHERE ProductID = 21)	---Allbet
-		BEGIN 
-			IF EXISTS (SELECT 1 
-				   FROM DBCUST.CustDB.dbo.Dep_LicenseeProductSetting lps WITH (NOLOCK)
-						INNER JOIN DBCUST.CustDB.dbo.Dep_ProductSetting ps WITH (NOLOCK) ON lps.ProductSettingID = ps.ProductSettingID
-						INNER JOIN @tblSuper su ON lps.CustID = su.SrecommendID
-				   WHERE ps.ProductID= 21)
-				   
-				UPDATE @tblProductActive
-				SET isEnable =1
-				WHERE ProductID = 21	
-		END	
-		
-		IF EXISTS (SELECT 1 FROM @tblProductActive WHERE ProductID = 5)	---Virtual Sport
-		BEGIN 
-			IF EXISTS (SELECT 1 
-				   FROM DBCUST.CustDB.dbo.Dep_LicenseeProductSetting lps WITH (NOLOCK)
-						INNER JOIN DBCUST.CustDB.dbo.Dep_ProductSetting ps WITH (NOLOCK) ON lps.ProductSettingID = ps.ProductSettingID
-						INNER JOIN @tblSuper su ON lps.CustID = su.SrecommendID
-				   WHERE ps.ProductID= 5)
-				   
-				UPDATE @tblProductActive
-					SET isEnable =1
-				WHERE ProductID = 5	
-		END	
-		
-		IF EXISTS (SELECT 1 FROM @tblProductActive WHERE ProductID = 27)	---Betradar
-		BEGIN 
-			IF EXISTS (SELECT 1 
-				   FROM DBCUST.CustDB.dbo.Dep_LicenseeProductSetting lps WITH (NOLOCK)
-						INNER JOIN DBCUST.CustDB.dbo.Dep_ProductSetting ps WITH (NOLOCK) ON lps.ProductSettingID = ps.ProductSettingID
-						INNER JOIN @tblSuper su ON lps.CustID = su.SrecommendID
-				   WHERE ps.ProductID= 27)
-				   
-				UPDATE @tblProductActive
-					SET isEnable =1
-				WHERE ProductID = 27	
-		END	
-		
-		
-		IF EXISTS (SELECT 1 FROM @tblProductActive WHERE ProductID = 28)	---Keno Lottery
-		BEGIN 
-			IF EXISTS (SELECT 1 
-				   FROM DBCUST.CustDB.dbo.Dep_LicenseeProductSetting lps WITH (NOLOCK)
-						INNER JOIN DBCUST.CustDB.dbo.Dep_ProductSetting ps WITH (NOLOCK) ON lps.ProductSettingID = ps.ProductSettingID
-						INNER JOIN @tblSuper su ON lps.CustID = su.SrecommendID
-				   WHERE ps.ProductID= 28)
-				   
-				UPDATE @tblProductActive
-				SET isEnable =1
-				WHERE ProductID = 28	
-		END	
-		
+		--check DCS setting
+		;WITH tmp AS(
+		SELECT DISTINCT ps.ProductID 
+		FROM DBCUST.CustDB.dbo.Dep_LicenseeProductSetting lps WITH (NOLOCK)
+			INNER JOIN DBCUST.CustDB.dbo.Dep_ProductSetting ps WITH (NOLOCK) ON lps.ProductSettingID = ps.ProductSettingID
+			INNER JOIN @tblSuper su ON lps.CustID = su.SrecommendID
+		WHERE ps.ProductID IN (SELECT productID FROM dbo.Product3rd p WITH (NOLOCK) WHERE applyDCS = 1)
+		)
+		UPDATE t
+		SET isEnable = 1
+		FROM @tblProductActive t
+		WHERE productID IN (SELECT productID FROM tmp)	   
 	END
 	
 	SELECT ProductID
