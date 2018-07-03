@@ -20,7 +20,7 @@ Revisions:
 	- 20151023@Victor: Support New Simplified Chinese
 	- 20170710@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
 	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
-	- 20180629@Amanda: Add new param @ProductCodes [Redmine: #80941]
+	- 20180629@Amanda: Add new param @ProductCodes and use Lrf_f_GetSportTypeByProduct to get sports for product [Redmine: #80941]
 	
 Param's Explanation:
 	- @ProductCodes = '' - Get all
@@ -131,9 +131,25 @@ BEGIN
 	IF EXISTS (SELECT 1 FROM @Product3rds WHERE Code = 'NG')
 	BEGIN
 		INSERT INTO @ProductSport(ID, Name, ParentID)
-		VALUES (161, NULL, NULL)
+		VALUES
+		(161,
+		 CASE @Langkey
+			WHEN 'zh-CN'	THEN N'百練賽'
+			WHEN 'zh-TW'	THEN N'百练赛'
+			WHEN 'zh-Hans'	THEN N'百練賽'
+			WHEN 'th-TH'	THEN N'เกมหมายเลข'
+			WHEN 'ja-JP'	THEN N'番号ゲーム'
+			WHEN 'ko-KR'	THEN N'라이브빙고'
+			WHEN 'es'  	    THEN N'Number Game'
+			WHEN 'vi-VN'	THEN N'Number Game'
+			ELSE N'Number Game' END,
+		 NULL)
 	END
 
+	SELECT ps.ID, ps.ParentID, ps.Name
+	FROM @ProductSport ps
+	WHERE ps.ParentID IS NULL
+	UNION ALL
 	SELECT	ps.ID, ps.ParentID,
 			CASE @Langkey
 				WHEN 'zh-CN'	THEN CASE  WHEN SportNameCs IS NULL OR SportNameCs = '' THEN SportName 
@@ -142,21 +158,20 @@ BEGIN
 								ELSE SportNameCh END
 				WHEN 'zh-Hans'	THEN CASE  WHEN SportNameCs IS NULL OR SportNameCs = '' THEN SportName 
 								ELSE SportNameCs END
-				WHEN 'th-TH'	THEN CASE  WHEN SportNameTh IS NULL OR SportNameTh = '' THEN s.SportName 
+				WHEN 'th-TH'	THEN CASE  WHEN SportNameTh IS NULL OR SportNameTh = '' THEN SportName 
 								ELSE SportNameTh END
-				WHEN 'ja-JP'	THEN CASE  WHEN SportNameJp IS NULL OR SportNameJp = '' THEN s.SportName 
+				WHEN 'ja-JP'	THEN CASE  WHEN SportNameJp IS NULL OR SportNameJp = '' THEN SportName 
 								ELSE SportNameJp END
-				WHEN 'ko-KR'	THEN CASE  WHEN SportNameKo IS NULL OR SportNameKo = '' THEN s.SportName 
+				WHEN 'ko-KR'	THEN CASE  WHEN SportNameKo IS NULL OR SportNameKo = '' THEN SportName 
 								ELSE SportNameKo END
-				WHEN 'es'  	    THEN CASE  WHEN SportNameES IS NULL OR SportNameES = '' THEN s.SportName 
+				WHEN 'es'  	    THEN CASE  WHEN SportNameES IS NULL OR SportNameES = '' THEN SportName 
 								ELSE SportNameES END
-				WHEN 'vi-VN'	THEN CASE  WHEN SportNameVN IS NULL OR SportNameVN = '' THEN s.SportName 
+				WHEN 'vi-VN'	THEN CASE  WHEN SportNameVN IS NULL OR SportNameVN = '' THEN SportName 
 								ELSE SportNameVN END
 				ELSE SportName END
 			AS Name
 	FROM @ProductSport ps
-	LEFT JOIN bodb02.dbo.Sports s WITH(NOLOCK) ON ps.ID = s.SportType AND ps.Name IS NULL
-
+	INNER JOIN bodb02.dbo.Sports s WITH(NOLOCK) ON ps.ID = s.SportType AND ps.ParentID IS NOT NULL
 END
 
 GO
