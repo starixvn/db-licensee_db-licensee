@@ -85,6 +85,17 @@ BEGIN
 		SELECT ID, NULL, 0
 		FROM dbo.Lrf_f_GetSportTypeByProduct('SB')
 	END
+	-- BA --
+	IF EXISTS (SELECT 1 FROM @Product3rds WHERE Code = 'BA')
+	BEGIN
+		INSERT INTO @ProductSport(ID, Name, ParentID)
+		SELECT	3,
+				'Bet Aggregator',
+				NULL
+		UNION ALL
+		SELECT ID, NULL, 0
+		FROM dbo.Lrf_f_GetSportTypeByProduct('BA')
+	END
 	-- VS --
 	IF EXISTS (SELECT 1 FROM @Product3rds WHERE Code = 'VS')
 	BEGIN
