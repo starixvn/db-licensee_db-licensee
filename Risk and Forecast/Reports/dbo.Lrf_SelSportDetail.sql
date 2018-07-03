@@ -135,7 +135,7 @@ BEGIN
 				ELSE N'Virtual Sports 2' END,
 			NULL
 		UNION ALL
-		SELECT ID, NULL, 999
+		SELECT ID, NULL, 990
 		FROM dbo.Lrf_f_GetSportTypeByProduct('VS2')
 	END
 	-- NG --
