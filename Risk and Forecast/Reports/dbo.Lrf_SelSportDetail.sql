@@ -69,19 +69,18 @@ BEGIN
 	IF EXISTS (SELECT 1 FROM @Products WHERE Code = '' OR Code = 'SB')
 	BEGIN
 		INSERT INTO @ProductSport(ID, Name, ParentID)
-		SELECT 0--cast(0 AS VARCHAR)
-				,
+		SELECT	0,
 				CASE @Langkey
-								WHEN 'zh-CN'	THEN N'体育博彩'
-								WHEN 'zh-TW'	THEN N'體育博彩'
-								WHEN 'zh-Hans'	THEN N'体育博彩'
-								WHEN 'th-TH'	THEN N'อัตราค่าตอบแทนจากหน้ากีฬา'
-								WHEN 'ja-JP'	THEN N'スポーツベット '
-								WHEN 'ko-KR'	THEN N'스포츠북 '
-								WHEN 'es'  	    THEN N'Sportsbook'
-								WHEN 'vi-VN'	THEN N'Thể thao'
-								ELSE N'Sportbook' END 
-				, NULL
+					WHEN 'zh-CN'	THEN N'体育博彩'
+					WHEN 'zh-TW'	THEN N'體育博彩'
+					WHEN 'zh-Hans'	THEN N'体育博彩'
+					WHEN 'th-TH'	THEN N'อัตราค่าตอบแทนจากหน้ากีฬา'
+					WHEN 'ja-JP'	THEN N'スポーツベット '
+					WHEN 'ko-KR'	THEN N'스포츠북 '
+					WHEN 'es'  	    THEN N'Sportsbook'
+					WHEN 'vi-VN'	THEN N'Thể thao'
+					ELSE N'Sportbook' END,
+				NULL
 		UNION ALL
 		SELECT ID, NULL, 0
 		FROM dbo.Lrf_f_GetSportTypeByProduct('SB')

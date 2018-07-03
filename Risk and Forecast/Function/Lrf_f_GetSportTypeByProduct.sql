@@ -22,7 +22,7 @@ BEGIN
 	BEGIN
 		;WITH cte_tmpSport AS (SELECT 1 AS id UNION ALL SELECT id + 1 FROM cte_tmpSport WHERE id + 1 <= 99)
 		INSERT INTO @sports(ID)
-		SELECT id, 0
+		SELECT id
 		FROM cte_tmpSport
 		OPTION (MAXRECURSION 100)
 		
