@@ -3,7 +3,7 @@
 ALTER PROCEDURE [dbo].[Lrf_SelSportDetail]
 	@LicenseeID		INT,
 	@langkey		VARCHAR(20)='en-US',
-	@ProductCodes	VARCHAR(50)=''
+	@ProductCodes	VARCHAR(500)=''
 AS 
 /*
 Created: 20131010@Don
