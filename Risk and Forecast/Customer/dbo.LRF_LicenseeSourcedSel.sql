@@ -27,7 +27,7 @@ BEGIN
 	FROM	bodb_Licensee.dbo.LicenseeSourcedSetting WITH (NOLOCK) 
 	WHERE   (SiteName = @SiteName OR @SiteName = '')
 			AND (LicenseeID = @LicenseeID OR @LicenseeID = 0)  
-			AND (@FromDate = '' OR @ToDate = '' OR (EffectiveDate <= @FromDate AND @ToDate <= EndDate))
+			AND (@FromDate = '' OR @ToDate = '' OR (@FromDate <= EndDate AND EffectiveDate <= @ToDate))
 			AND IsActive = 1 
 END    
 
