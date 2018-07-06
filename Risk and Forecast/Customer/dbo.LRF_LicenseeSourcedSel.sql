@@ -17,17 +17,19 @@ AS
 		- 20170925@Sophia: Initial SP   
 		- 20180313@Sophia: Change the name SourcedID and get RoleId, EffectiveDate [Redmine: #91738]
 		- 20180320@Harper: Add more parameter @ToDate [Redmine: #91738]
+		- 20180323@Sophia: Add more column SourcedLicenseeSitename [Redmine: #92574]
 		- 20180706@Joseph: Add more parameter @FromDate [Redmine: #97913]
  */
 	 
 BEGIN 
 	SET NOCOUNT ON 
+	IF ((@FromDate = '' AND @ToDate != '') OR (@FromDate !='' and @ToDate = ''))
+		RETURN
 
-	SELECT  SourcedLicenseeID, SourcedID, RoleId, SourcedCurrencyID, EffectiveDate, EndDate
+	SELECT  SourcedLicenseeID, SourcedSiteName, SourcedID, RoleId, SourcedCurrencyID, EffectiveDate, EndDate
 	FROM	bodb_Licensee.dbo.LicenseeSourcedSetting WITH (NOLOCK) 
-	WHERE   (SiteName = @SiteName OR @SiteName = '')
-			AND (LicenseeID = @LicenseeID OR @LicenseeID = 0)  
-			AND (@FromDate = '' OR @ToDate = '' OR (@FromDate <= EndDate AND EffectiveDate <= @ToDate))
+	WHERE   (SiteName = @SiteName OR LicenseeID = @LicenseeID)
+			AND ((@FromDate = '' AND @ToDate = '') OR (@FromDate <= EndDate AND EffectiveDate <= @ToDate))
 			AND IsActive = 1 
 END    
 

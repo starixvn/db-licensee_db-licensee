@@ -38,6 +38,7 @@ AS
 		- 20180420@Amanda: Include more cash out tickets [RedmineID: #93919]
 		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 		- 20180515@Joseph: Remove LC product [RedmineID: #85965]
+		- 20180323@Sophia: Add more column SourcedLicenseeSitename [Redmine: #92574]
 		- 20180706@Joseph: Add EndDate column to SourcedLicensee [Redmine: #97913]
 
 	Param's Explanation:  
@@ -82,7 +83,7 @@ BEGIN
  
 
 	DECLARE @TempCurrency		TABLE(ID INT IDENTITY, currency INT)  
-	DECLARE @SourceIDs			TABLE (LicenseeID INT, CustID INT, CurrencyID INT, RoleID TINYINT, EffectiveDate SMALLDATETIME, EndDate SMALLDATETIME)
+	DECLARE @SourceIDs			TABLE (LicenseeID INT, LicenseeeName NVARCHAR(50), CustID INT, CurrencyID INT, RoleID TINYINT, EffectiveDate SMALLDATETIME, EndDate SMALLDATETIME)
 	CREATE TABLE #tmpCust		(CustID INT, AgentID INT, currency INT, EffectiveDate SMALLDATETIME, EndDate SMALLDATETIME)
 
 	DECLARE @bettype			TABLE (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))
@@ -117,7 +118,7 @@ BEGIN
 		RETURN
 	END CATCH;
 	
-	INSERT INTO @SourceIDs (LicenseeID, CustID, RoleID, CurrencyID, EffectiveDate, EndDate)	
+	INSERT INTO @SourceIDs (LicenseeID, LicenseeeName, CustID, RoleID, CurrencyID, EffectiveDate, EndDate)	
 	EXEC bodb_Licensee.dbo.LRF_LicenseeSourcedSel @LicenseeID = @LicenseeID, @FromDate = @_FromDate, @ToDate = @_ToDate
 
 	DELETE s
