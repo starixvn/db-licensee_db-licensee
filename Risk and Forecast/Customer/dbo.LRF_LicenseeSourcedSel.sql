@@ -23,12 +23,12 @@ AS
 	 
 BEGIN 
 	SET NOCOUNT ON 
-	IF ((@FromDate = '' AND @ToDate != '') OR (@FromDate !='' and @ToDate = ''))
+	IF ((@FromDate = '' AND @ToDate != '') OR (@FromDate !='' AND @ToDate = ''))
 		RETURN
 
 	SELECT  SourcedLicenseeID, SourcedSiteName, SourcedID, RoleId, SourcedCurrencyID, EffectiveDate, EndDate
 	FROM	bodb_Licensee.dbo.LicenseeSourcedSetting WITH (NOLOCK) 
-	WHERE   (SiteName = @SiteName OR LicenseeID = @LicenseeID)
+	WHERE  (SiteName = @SiteName OR LicenseeID = @LicenseeID)
 			AND ((@FromDate = '' AND @ToDate = '') OR (@FromDate <= EndDate AND EffectiveDate <= @ToDate))
 			AND IsActive = 1 
 END    
