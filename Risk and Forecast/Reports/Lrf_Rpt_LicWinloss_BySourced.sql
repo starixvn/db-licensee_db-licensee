@@ -38,6 +38,7 @@ AS
 		- 20180420@Amanda: Include more cash out tickets [RedmineID: #93919]
 		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 		- 20180515@Joseph: Remove LC product [RedmineID: #85965]
+		- 20180706@Joseph: Add EndDate column to SourcedLicensee [Redmine: #97913]
 
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -81,8 +82,8 @@ BEGIN
  
 
 	DECLARE @TempCurrency		TABLE(ID INT IDENTITY, currency INT)  
-	DECLARE @SourceIDs			TABLE (LicenseeID INT, CustID INT, CurrencyID INT, RoleID TINYINT, EffectiveDate SMALLDATETIME)
-	CREATE TABLE #tmpCust		(CustID INT, AgentID INT, currency INT, EffectiveDate SMALLDATETIME)
+	DECLARE @SourceIDs			TABLE (LicenseeID INT, CustID INT, CurrencyID INT, RoleID TINYINT, EffectiveDate SMALLDATETIME, EndDate SMALLDATETIME)
+	CREATE TABLE #tmpCust		(CustID INT, AgentID INT, currency INT, EffectiveDate SMALLDATETIME, EndDate SMALLDATETIME)
 
 	DECLARE @bettype			TABLE (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))
 	DECLARE @sporttype			TABLE (sporttype INT, ProductCode VARCHAR(10))
@@ -116,19 +117,19 @@ BEGIN
 		RETURN
 	END CATCH;
 	
-	INSERT INTO @SourceIDs (LicenseeID, CustID, RoleID, CurrencyID, EffectiveDate)	
-	EXEC bodb_Licensee.dbo.LRF_LicenseeSourcedSel @LicenseeID = @LicenseeID, @ToDate = @_ToDate
+	INSERT INTO @SourceIDs (LicenseeID, CustID, RoleID, CurrencyID, EffectiveDate, EndDate)	
+	EXEC bodb_Licensee.dbo.LRF_LicenseeSourcedSel @LicenseeID = @LicenseeID, @FromDate = @_FromDate, @ToDate = @_ToDate
 
 	DELETE s
 	FROM @SourceIDs s
 	WHERE NOT EXISTS (SELECT 1 FROM @TempCurrency c WHERE s.CurrencyID = c.currency)
 
-	INSERT INTO #tmpCust (CustID, AgentID, Currency, EffectiveDate)	
-	SELECT NULL, lc.CustID, lc.CurrencyID, lc.EffectiveDate
+	INSERT INTO #tmpCust (CustID, AgentID, Currency, EffectiveDate, EndDate)	
+	SELECT NULL, lc.CustID, lc.CurrencyID, lc.EffectiveDate, lc.EndDate
 	FROM @SourceIDs lc
 	WHERE lc.RoleID = 2 -- Agent
 	UNION ALL
-	SELECT a.CustID, c.recommend, a.CurrencyID, EffectiveDate
+	SELECT a.CustID, c.recommend, a.CurrencyID, EffectiveDate, EndDate
 	FROM @SourceIDs a
 		INNER JOIN dbo.custInfo c WITH (NOLOCK) ON a.CustID = c.custid
 	WHERE a.RoleID = 1 -- Member
@@ -295,7 +296,7 @@ BEGIN
 			FROM
 				CTE
 				INNER JOIN dbo.bettrans b WITH (NOLOCK) ON CTE.transid = b.transid
-				INNER JOIN #tmpCust tma ON tma.AgentID = b.recommend AND b.currency = tma.currency AND b.winlostdate >= tma.EffectiveDate
+				INNER JOIN #tmpCust tma ON tma.AgentID = b.recommend AND b.currency = tma.currency AND b.winlostdate >= tma.EffectiveDate AND b.winlostdate <= tma.EndDate
 			WHERE (tma.CustID IS NULL OR b.custid = tma.CustID)
 				AND b.winlostdate BETWEEN @TempFromDate AND @_ToDate				
 				AND b.statusID  IN (111, 112, 113)
@@ -344,7 +345,7 @@ BEGIN
 				0 AS CashOutComm
 			FROM 
 				Bettrans b WITH (NOLOCK)
-				INNER JOIN #tmpCust a ON b.recommend = a.AgentID AND b.currency = a.currency AND b.winlostdate >= a.EffectiveDate
+				INNER JOIN #tmpCust a ON b.recommend = a.AgentID AND b.currency = a.currency AND b.winlostdate >= a.EffectiveDate AND b.winlostdate <= a.EndDate
 			WHERE (a.CustID IS NULL OR b.custid = a.CustID)
 				AND b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 				AND  
@@ -393,7 +394,7 @@ BEGIN
 				0 AS CashOutComm
 			FROM 
 				Bettrans b WITH (NOLOCK)
-				INNER JOIN #tmpCust a ON b.recommend = a.AgentID AND b.currency = a.currency AND b.winlostdate >= a.EffectiveDate
+				INNER JOIN #tmpCust a ON b.recommend = a.AgentID AND b.currency = a.currency AND b.winlostdate >= a.EffectiveDate AND b.winlostdate <= a.EndDate
 			WHERE (a.CustID IS NULL OR b.custid = a.CustID)
 				AND b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 				AND b.bettype IN (901, 902, 903)
@@ -434,7 +435,7 @@ BEGIN
 				SUM(CASE WHEN b.bettype = 913 THEN b.awinlost ELSE 0 END) AS CashOutComm
 			FROM 
 				Bettrans b WITH (NOLOCK)
-				INNER JOIN #tmpCust a ON b.recommend = a.AgentID AND b.currency = a.currency AND b.winlostdate >= a.EffectiveDate
+				INNER JOIN #tmpCust a ON b.recommend = a.AgentID AND b.currency = a.currency AND b.winlostdate >= a.EffectiveDate AND b.winlostdate <= a.EndDate
 			WHERE (a.CustID IS NULL OR b.custid = a.CustID)
 				AND b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 				AND b.bettype IN (911, 912, 913)
@@ -475,7 +476,7 @@ BEGIN
 				0 AS CashOutComm
 			FROM 
 				Bettrans b WITH (NOLOCK)
-				INNER JOIN #tmpCust a   ON b.recommend = a.AgentID AND b.Currency = a.Currency AND b.winlostdate >= a.EffectiveDate
+				INNER JOIN #tmpCust a   ON b.recommend = a.AgentID AND b.Currency = a.Currency AND b.winlostdate >= a.EffectiveDate AND b.winlostdate <= a.EndDate
 				INNER JOIN @bettype bt ON b.bettype = bt.bettype
 			WHERE (a.CustID IS NULL OR b.custid = a.CustID)
 				AND b.winlostdate BETWEEN @TempFromDate AND @_ToDate
@@ -520,7 +521,7 @@ BEGIN
 				0 AS CashOutComm
 			FROM 
 				dbo.Bettrans b WITH (NOLOCK)
-			INNER JOIN #tmpCust a ON b.recommend = a.AgentID AND b.currency = a.currency AND b.winlostdate >= a.EffectiveDate
+			INNER JOIN #tmpCust a ON b.recommend = a.AgentID AND b.currency = a.currency AND b.winlostdate >= a.EffectiveDate AND b.winlostdate <= a.EndDate
 			WHERE (a.CustID IS NULL OR b.custid = a.CustID)
 				AND b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 				AND bettype BETWEEN 31 AND 33
@@ -583,7 +584,7 @@ BEGIN
 				0 AS CashOutComm
 			FROM 
 				  bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
-				  INNER JOIN #tmpCust ag ON b.recommend = ag.AgentID AND b.Currency = ag.currency AND b.winlostdate >= ag.EffectiveDate
+				  INNER JOIN #tmpCust ag ON b.recommend = ag.AgentID AND b.Currency = ag.currency AND b.winlostdate >= ag.EffectiveDate AND b.winlostdate <= ag.EndDate
 			WHERE (ag.CustID IS NULL OR b.custid = ag.CustID)
 				AND b.Winlostdate BETWEEN @_FromDate AND @TempToDate  
 				AND (b.bettype < 901 OR b.bettype > 904)
@@ -652,7 +653,7 @@ BEGIN
 				0 AS CashOutComm
 			FROM
 				bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
-				INNER JOIN #tmpCust ag   ON b.recommend = ag.AgentID AND ag.currency = b.Currency AND b.winlostdate >= ag.EffectiveDate
+				INNER JOIN #tmpCust ag   ON b.recommend = ag.AgentID AND ag.currency = b.Currency AND b.winlostdate >= ag.EffectiveDate AND b.winlostdate <= ag.EndDate
 				INNER JOIN @sporttype t ON b.sporttype = t.sporttype
 			WHERE (ag.CustID IS NULL OR b.custid = ag.CustID)
 				AND b.Winlostdate BETWEEN @_FromDate AND @TempToDate
@@ -715,7 +716,7 @@ BEGIN
 				0 AS CashOutComm
 			FROM 
 				bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
-				INNER JOIN #tmpCust ag ON b.recommend = ag.AgentID AND ag.currency = b.Currency AND b.winlostdate >= ag.EffectiveDate
+				INNER JOIN #tmpCust ag ON b.recommend = ag.AgentID AND ag.currency = b.Currency AND b.winlostdate >= ag.EffectiveDate AND b.winlostdate <= ag.EndDate
 			WHERE (ag.CustID IS NULL OR b.custid = ag.CustID)
 				AND b.Winlostdate BETWEEN @_FromDate AND @TempToDate
 				AND b.bettype IN (901, 902, 903)
@@ -756,7 +757,7 @@ BEGIN
 				SUM(CASE WHEN b.bettype = 913 THEN b.awinlost ELSE 0 END) AS CashOutComm
 			FROM 
 				bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
-				INNER JOIN #tmpCust ag ON b.recommend = ag.AgentID AND ag.currency = b.Currency AND b.winlostdate >= ag.EffectiveDate
+				INNER JOIN #tmpCust ag ON b.recommend = ag.AgentID AND ag.currency = b.Currency AND b.winlostdate >= ag.EffectiveDate AND b.winlostdate <= ag.EndDate
 			WHERE (ag.CustID IS NULL OR b.custid = ag.CustID)
 				AND b.Winlostdate BETWEEN @_FromDate AND @TempToDate
 				AND b.bettype IN (911, 912, 913)
@@ -814,7 +815,7 @@ BEGIN
 				0 AS CashOutComm
 			FROM  
 				bodb_licenseereport.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
-				INNER JOIN #tmpCust ag ON b.recommend = ag.AgentID AND b.Currency = ag.currency AND b.winlostdate >= ag.EffectiveDate
+				INNER JOIN #tmpCust ag ON b.recommend = ag.AgentID AND b.Currency = ag.currency AND b.winlostdate >= ag.EffectiveDate AND b.winlostdate <= ag.EndDate
 			WHERE  (ag.CustID IS NULL OR b.custid = ag.CustID)
 				AND b.Winlostdate BETWEEN @_FromDate AND @TempToDate  
 				AND b.bettype NOT IN (901, 902, 903,904) 
@@ -881,7 +882,7 @@ BEGIN
 				0 AS CashOutComm
 			FROM 
 				bodb_licenseereport.dbo.rptLicWinloss_old b WITH (NOLOCK)  
-				INNER JOIN #tmpCust ag ON b.recommend = ag.AgentID AND b.Currency = ag.currency AND b.winlostdate >= ag.EffectiveDate
+				INNER JOIN #tmpCust ag ON b.recommend = ag.AgentID AND b.Currency = ag.currency AND b.winlostdate >= ag.EffectiveDate AND b.winlostdate <= ag.EndDate
 				INNER JOIN @sporttype t ON b.sporttype = t.sporttype
 			WHERE  (ag.CustID IS NULL OR b.custid = ag.CustID)
 				AND b.Winlostdate BETWEEN @_FromDate AND @TempToDate  
@@ -942,7 +943,7 @@ BEGIN
 				0 AS CashOutComm
 			FROM 
 				bodb_licenseereport.dbo.rptLicWinloss_old b WITH (NOLOCK)  
-				INNER JOIN #tmpCust ag ON b.recommend = ag.AgentID AND ag.currency = b.Currency AND b.winlostdate >= ag.EffectiveDate
+				INNER JOIN #tmpCust ag ON b.recommend = ag.AgentID AND ag.currency = b.Currency AND b.winlostdate >= ag.EffectiveDate AND b.winlostdate <= ag.EndDate
 			WHERE (ag.CustID IS NULL OR b.custid = ag.CustID)
 				AND b.Winlostdate BETWEEN @_FromDate AND @TempToDate
 				AND b.bettype IN (901, 902, 903)
