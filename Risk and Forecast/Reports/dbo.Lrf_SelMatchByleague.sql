@@ -52,6 +52,7 @@ BEGIN
 	FROM bodb02.dbo.match AS m WITH (NOLOCK)
 	WHERE m.eventdate BETWEEN @TempFromDate AND @Todate
 		AND ((@LeagueID = 0 AND (m.sporttype < 100 OR m.sporttype=154)) OR m.leagueid = @LeagueID)
+		AND m.leagueid > 0
 		AND m.matchcode NOT LIKE 'hedge%'
 END
 
@@ -72,6 +73,7 @@ BEGIN
 	FROM bodb02.dbo.match14 AS m WITH (NOLOCK)
 	WHERE m.eventdate BETWEEN @BalanceUpDay AND @TempToDate
 		AND ((@LeagueID = 0 AND (m.sporttype < 100 OR m.sporttype=154)) OR m.leagueid = @LeagueID)
+		AND m.leagueid > 0
 		AND m.matchcode NOT LIKE 'hedge%'
 END
 
@@ -95,6 +97,7 @@ BEGIN
 						FROM bodb_archive.dbo.match_bk AS m WITH (NOLOCK)
 						WHERE m.eventdate between '''''+CAST(@fromdate AS VARCHAR)+''''''+' AND '''''+ CAST( @TempToDate AS VARCHAR)+'''''
 						AND (('+CAST(@leagueid AS VARCHAR)+' = 0 AND (m.sporttype < 100 OR m.sporttype=154)) OR m.leagueid = '+CAST(@leagueid AS VARCHAR)+') '+'
+						AND m.leagueid > 0 
 						AND m.matchcode NOT LIKE ''''hedge%''''					
 						'')' 	
 		SELECT @sql=@OPENQUERY+@TSQL
