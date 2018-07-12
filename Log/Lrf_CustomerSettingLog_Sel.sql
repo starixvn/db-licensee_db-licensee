@@ -201,11 +201,5 @@ BEGIN
 
 		DROP TABLE #lapUsers2
 	END
-END    
-
+END
 GO
-GRANT EXECUTE ON [dbo].[Lrf_CustomerSettingLog_Sel] TO [bodbLicenseeNet]
-GO
-GRANT EXECUTE ON [dbo].[Lrf_CustomerSettingLog_Sel] TO [bodbAdminNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerSettingLog_Sel] TO [vnteam] 

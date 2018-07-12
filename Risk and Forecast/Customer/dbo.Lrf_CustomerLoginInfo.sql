@@ -19,7 +19,7 @@ AS
 		- 20180711@Amanda: get username of LAP if log data is after LAP launch data [#97994]
 	Param's Explanation:	
 */
-
+BEGIN
 	SET NOCOUNT ON
 
 ----------- get last updated special level ---------------
@@ -125,9 +125,6 @@ AS
 		@SpecialLevelUpdateDate AS SpecialLevelUpdateDate
 	FROM dbo.Customer WITH(NOLOCK)
 	WHERE CustID = @CustID
-	
+END
 GO
-GRANT EXECUTE ON [dbo].[Lrf_CustomerLoginInfo] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerLoginInfo] TO [vnteam]
 

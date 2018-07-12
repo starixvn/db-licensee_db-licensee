@@ -126,18 +126,6 @@ BEGIN
 		DROP TABLE #lapUsers2
 	END
 
-	DROP TABLE #log
-/*    
-==========Execute sample=================    
-exec  [Lrf_GroupCommLog_Sel]    
-    @FromDate ='2013-01-05',      
-    @ToDate = '2013-02-07'        
-*/    
+	DROP TABLE #log  
 END
-
 GO
-GRANT EXECUTE ON [dbo].[Lrf_GroupCommLog_Sel] TO [bodbLicenseeNet]
-GO
-GRANT EXECUTE ON [dbo].[Lrf_GroupCommLog_Sel] TO [bodbAdminNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_GroupCommLog_Sel] TO [vnteam] 
