@@ -17,7 +17,7 @@ Revisions:
 	20180711@Amanda: get username of LAP if log data is after LAP launch data [#97994]
        
 Param's Explaination:          
- - @FromDate: date range to view log      
+ - @FromDate: date range to view log
  - @ToDate: date range to view log      
 */      
       
@@ -40,7 +40,7 @@ BEGIN
 			l.trackingvalue,
 			l.trackingvalue2 AS trackingvalueold
 	FROM dbo.UserLog_RunSP l WITH(NOLOCK)
-		INNER JOIN LogAction a WITH(NOLOCK) ON a.actionid = l.actionid
+		INNER JOIN dbo.LogAction a WITH(NOLOCK) ON a.actionid = l.actionid
 		INNER JOIN bodb_licensee.dbo.LicenseeGroupComm c WITH(NOLOCK) ON l.custid = c.id
 	WHERE Logdate BETWEEN @FromDate AND @ToDate AND (l.ActionID = 2609 OR l.ActionID = 2610) AND c.LicenseeID = @Licenseeid
 	UNION ALL
@@ -52,67 +52,79 @@ BEGIN
 			l.trackingvalue,
 			l.trackingvalue2 AS trackingvalueold
 	FROM dbo.UserLog_RunSP l WITH(NOLOCK)
-		INNER JOIN LogAction a WITH(NOLOCK) ON a.actionid = l.actionid
+		INNER JOIN dbo.LogAction a WITH(NOLOCK) ON a.actionid = l.actionid
 	WHERE l.Logdate BETWEEN @FromDate AND @ToDate AND l.actionid = 2611 AND l.custid = @Licenseeid
 
-
 	IF @ToDate < @LapLaunchDate
-		BEGIN
-			SELECT	l.LogId,
-					l.LogDate,
-					u.Username AS Editedby,
-					l.ActionId,
-					l.ActionName,
-					l.TrackingValue,
-					l.TrackingValueOld
-			FROM #log l
-				INNER JOIN bodb_licensee.dbo.users u ON u.userid = l.userid
-			ORDER BY l.logid
-		END
-		ELSE IF @FromDate >= @LapLaunchDate
-		BEGIN
-			SELECT	l.LogId,
-					l.LogDate,
-					u.Username AS Editedby,
-					l.ActionId,
-					l.ActionName,
-					l.TrackingValue,
-					l.TrackingValueOld    
-			FROM #log l
-				INNER JOIN DBCUST.SiteConfig.dbo.users u ON u.userSEQ = l.userid
-			WHERE u.SiteName = @SiteName
-			ORDER BY l.logid
-		END
-		ELSE
-		BEGIN
-			DECLARE @tempToDate DATETIME
-			SET @tempToDate = DATEADD(DAY, 1, @LapLaunchDate)
+	BEGIN				
+		SELECT	l.LogId,
+				l.LogDate,
+				u.Username AS Editedby,
+				l.ActionId,
+				l.ActionName,
+				l.TrackingValue,
+				l.TrackingValueOld
+		FROM #log l
+			INNER JOIN bodb_licensee.dbo.users u WITH(NOLOCK) ON u.userid = l.userid
+		ORDER BY l.logid DESC
+	END
+	ELSE IF @FromDate >= @LapLaunchDate
+	BEGIN
+		CREATE TABLE #lapUsers1 (UserId INT, Editedby NVARCHAR(20))
+		INSERT INTO #lapUsers1 (UserId, Editedby)
+		SELECT UserSEQ, Username
+		FROM DBCUST.SiteConfig.dbo.users WITH(NOLOCK)
+		WHERE SiteName = @SiteName
+		
+		SELECT	l.LogId,
+				l.LogDate,
+				u.Editedby,
+				l.ActionId,
+				l.ActionName,
+				l.TrackingValue,
+				l.TrackingValueOld
+		FROM #log l
+			INNER JOIN #lapUsers1 u ON u.UserId = l.userid
+		ORDER BY l.logid DESC
+		
+		DROP TABLE #lapUsers1
+	END
+	ELSE
+	BEGIN
+		DECLARE @tempToDate DATETIME
+		SET @tempToDate = DATEADD(DAY, 1, @LapLaunchDate)
 
-			SELECT	l.LogId,
-					l.LogDate,
-					u.Username AS Editedby,
-					l.ActionId,
-					l.ActionName,
-					l.TrackingValue,
-					l.TrackingValueOld
-			FROM #log l
-				INNER JOIN bodb_licensee.dbo.users u ON u.userid = l.userid
-			WHERE l.Logdate BETWEEN @FromDate AND @tempToDate
-			ORDER BY l.logid
-			UNION ALL
-			SELECT	l.LogId,
-					l.LogDate,
-					u.Username AS Editedby,
-					l.ActionId,
-					l.ActionName,
-					l.TrackingValue,
-					l.TrackingValueOld
-			FROM #log l
-				INNER JOIN DBCUST.SiteConfig.dbo.users u ON u.userSEQ = l.userid
-			WHERE l.Logdate BETWEEN @LapLaunchDate AND @ToDate AND u.SiteName = @SiteName
-			ORDER BY l.logid
+		CREATE TABLE #lapUsers2 (UserId INT, Editedby NVARCHAR(20))
+		INSERT INTO #lapUsers2 (UserId, Editedby)
+		SELECT UserSEQ, Username
+		FROM DBCUST.SiteConfig.dbo.users WITH(NOLOCK)
+		WHERE SiteName = @SiteName
+		
+		SELECT	l.LogId,
+				l.LogDate,
+				u.Username AS Editedby,
+				l.ActionId,
+				l.ActionName,
+				l.TrackingValue,
+				l.TrackingValueOld
+		FROM #log l
+			INNER JOIN bodb_licensee.dbo.users u WITH(NOLOCK) ON u.userid = l.userid
+		WHERE l.Logdate BETWEEN @FromDate AND @tempToDate
+		UNION ALL
+		SELECT	l.LogId,
+				l.LogDate,
+				u.Editedby,
+				l.ActionId,
+				l.ActionName,
+				l.TrackingValue,
+				l.TrackingValueOld
+		FROM #log l
+			INNER JOIN #lapUsers2 u ON u.UserId = l.userid
+		WHERE l.Logdate BETWEEN @LapLaunchDate AND @ToDate
+		ORDER BY l.logid DESC
 
-		END
+		DROP TABLE #lapUsers2
+	END
 
 	DROP TABLE #log
 /*    

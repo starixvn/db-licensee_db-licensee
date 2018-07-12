@@ -27,9 +27,8 @@ AS
 
 	SELECT TOP 1 @SpecialLevelUpdateByID = UserID, @SpecialLevelUpdateDate = LogDate
 	FROM bodb_CustomerLog.dbo.UserLog_RunSP WITH (NOLOCK)
-	WHERE
-		CustID = @CustID
-		AND ActionID = 2407
+	WHERE	CustID = @CustID
+			AND ActionID = 2407
 	ORDER BY LogDate DESC
 	
 	IF ISNULL(@SpecialLevelUpdateByID,0) <> 0
@@ -50,21 +49,21 @@ AS
 	DECLARE @LastUpdatedBaById INT, @LastUpdatedBaByName VARCHAR(50), @LastUpdatedBaDate DATETIME
 
 	--Running
-	SELECT TOP 1 @LastUpdatedBaDate = OnDate, @LastUpdatedBaById = lb.OnBy
-	FROM bodb_Licensee.dbo.LicenseeBAHistory lb WITH (nolock)
+	SELECT TOP 1 @LastUpdatedBaDate = OnDate, @LastUpdatedBaById = OnBy
+	FROM bodb_Licensee.dbo.LicenseeBAHistory WITH (NOLOCK)
 	WHERE	LicenseeID = @LicenseeID
-			AND lb.CustID = @CustID
-			AND lb.Status = 'Running'
+			AND CustID = @CustID
+			AND [Status] = 'Running'
 	ORDER BY OnDate DESC
 		
 	IF ISNULL(@LastUpdatedBaById,0) = 0
 	BEGIN
 		--Done
-		SELECT TOP 1 @LastUpdatedBaDate = OffDate, @LastUpdatedBaById = lb.OffBy 
-		FROM bodb_Licensee.dbo.LicenseeBAHistory lb WITH (nolock) 
+		SELECT TOP 1 @LastUpdatedBaDate = OffDate, @LastUpdatedBaById = OffBy 
+		FROM bodb_Licensee.dbo.LicenseeBAHistory WITH (NOLOCK) 
 		WHERE	LicenseeID = @LicenseeID
-				AND lb.CustID = @CustID
-				AND lb.Status = 'Done'
+				AND CustID = @CustID
+				AND [Status] = 'Done'
 		ORDER BY OffDate DESC
 	END
 
@@ -72,12 +71,14 @@ AS
 	BEGIN
 		IF @LastUpdatedBaDate >= @LapLaunchDate -- LAP USER
 		BEGIN
-			SELECT @LastUpdatedBaByName = Username FROM DBCUST.SiteConfig.dbo.Users WITH (NOLOCK)
+			SELECT @LastUpdatedBaByName = Username 
+			FROM DBCUST.SiteConfig.dbo.Users WITH (NOLOCK)
 			WHERE UserSEQ = @LastUpdatedBaById AND SiteName = @SiteName
 		END
 		ELSE -- LRF USER
 		BEGIN
-			SELECT @LastUpdatedBaByName = Username FROM bodb_Licensee.dbo.Users WITH (NOLOCK)
+			SELECT @LastUpdatedBaByName = Username 
+			FROM bodb_Licensee.dbo.Users WITH (NOLOCK)
 			WHERE UserID = @LastUpdatedBaById
 		END
 	END
@@ -86,13 +87,13 @@ AS
 	DECLARE @LastTransferDate DATETIME
 
 	SELECT @LastTransferDate = MAX(transdate)
-	FROM bettrans WITH (NOLOCK)
+	FROM dbo.bettrans WITH (NOLOCK)
 	WHERE custid = @CustID AND bettype <= 999
 		
 	IF 	ISNULL(@LastTransferDate,'') = ''
 	BEGIN
 		SELECT @LastTransferDate = MAX(transdate)
-		FROM bettrans14 WITH (NOLOCK)
+		FROM dbo.bettrans14 WITH (NOLOCK)
 		WHERE custid = @CustID
 	END
 
@@ -106,24 +107,24 @@ AS
 	IF ISNULL(@LastTransferDate,'') = ''
 	BEGIN
 		SELECT @LastTransferDate = MAX(transdate)
-		FROM bettrans WITH (NOLOCK)
+		FROM dbo.bettrans WITH (NOLOCK)
 		WHERE custid = @CustID
 	END
 
 ----------- return ---------------
 	SELECT
-		c.custid,
-		c.username,
-		SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, LEN(c.username2)-CHARINDEX('$',c.username2)) AS nickname,
-		c.lastlogged,
-		c.creatdate AS createdate,
+		custid,
+		username,
+		SUBSTRING(username2, CHARINDEX('$',username2) + 1, LEN(username2) - CHARINDEX('$',username2)) AS nickname,
+		lastlogged,
+		creatdate AS createdate,
 		@LastTransferDate AS LastTransferDate,
 		@LastUpdatedBaByName AS LastUpdateBA,
 		@LastUpdatedBaDate AS BAUpdatedBy,
 		@SpecialLevelUpdateByName AS SpecialLevelUpdateBy,
 		@SpecialLevelUpdateDate AS SpecialLevelUpdateDate
-	FROM Customer c WITH(NOLOCK)
-	WHERE c.CustID = @CustID
+	FROM dbo.Customer WITH(NOLOCK)
+	WHERE CustID = @CustID
 	
 GO
 GRANT EXECUTE ON [dbo].[Lrf_CustomerLoginInfo] TO [bodbLicenseeNet]
