@@ -36,9 +36,9 @@ Param's Explaination:
 ==========Execute sample=================    
 exec  Lrf_CustomerSettingLog_Sel    
 	@LicenseeID = 1,
-	@UserName=N'AlogIN01002',    
-    @FromDate ='2013-02-05',      
-    @ToDate = '2013-02-07'        
+	@UserName=N'AlogIN01002',
+    @FromDate ='2013-02-05',
+    @ToDate = '2013-02-07'
  
 */      
       
@@ -113,6 +113,9 @@ BEGIN
 		INSERT INTO @RowFilter VALUES (2401), (2403), (2200), (2201), (2612), (2407)
 	END  
 	
+	DECLARE @logDataToDate DATE
+	SELECT @logDataToDate = DATEADD(DAY, 1, @ToDate)
+	
 	IF @ToDate < @LapLaunchDate
 	BEGIN
 		SELECT	l.Logid,
@@ -128,7 +131,7 @@ BEGIN
 			INNER JOIN @RowFilter r ON r.actionid = l.actionid
 			INNER JOIN bodb_licensee.dbo.users u WITH(NOLOCK) ON u.userid = l.userid
 			INNER JOIN dbo.LogAction a WITH(NOLOCK) ON a.actionid = l.actionid
-		WHERE l.custid = @custid And l.Logdate BETWEEN @FromDate AND @ToDate
+		WHERE l.custid = @custid And l.Logdate >= @FromDate AND l.logdate < @logDataToDate
 		ORDER BY l.logid DESC
 	END
 	ELSE IF @FromDate >= @LapLaunchDate
@@ -152,7 +155,7 @@ BEGIN
 			INNER JOIN @RowFilter r ON r.actionid = l.actionid
 			INNER JOIN #lapUsers1 u ON u.UserId = l.userid
 			INNER JOIN dbo.LogAction a WITH(NOLOCK) ON a.actionid = l.actionid
-		WHERE l.custid = @custid AND l.Logdate BETWEEN @FromDate AND @ToDate
+		WHERE l.custid = @custid AND l.Logdate >= @FromDate AND l.logdate < @logDataToDate
 		ORDER BY l.logid DESC
 		
 		DROP TABLE #lapUsers1
@@ -181,7 +184,7 @@ BEGIN
 			INNER JOIN @RowFilter r ON r.actionid = l.actionid
 			INNER JOIN  bodb_licensee.dbo.users u WITH(NOLOCK) ON u.userid = l.userid
 			INNER JOIN dbo.LogAction a WITH(NOLOCK) ON a.actionid = l.actionid
-		WHERE l.custid = @custid And l.Logdate BETWEEN @FromDate AND @tempToDate
+		WHERE l.custid = @custid And l.Logdate >= @FromDate AND l.logdate < @LapLaunchDate
 		UNION ALL
 		SELECT	l.Logid,
 				l.LogDate,
@@ -196,7 +199,7 @@ BEGIN
 			INNER JOIN @RowFilter r ON r.actionid = l.actionid
 			INNER JOIN #lapUsers2 u ON u.UserId = l.userid
 			INNER JOIN dbo.LogAction a WITH(NOLOCK) ON a.actionid = l.actionid
-		WHERE l.custid = @custid AND l.Logdate BETWEEN @LapLaunchDate AND @ToDate
+		WHERE l.custid = @custid AND l.Logdate >= @LapLaunchDate AND l.logdate < @logDataToDate
 		ORDER BY l.logid DESC
 
 		DROP TABLE #lapUsers2

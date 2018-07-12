@@ -24,7 +24,10 @@ Param's Explaination:
 BEGIN
 
 	SET NOCOUNT ON
-
+	
+	DECLARE @logDataToDate DATE
+	SELECT @logDataToDate = DATEADD(DAY, 1, @ToDate)
+	
 	CREATE TABLE #log (	LogId BIGINT, LogDate DATETIME,
 						UserId INT, ActionId INT, 
 						ActionName NVARCHAR(256), TrackingValue NVARCHAR(MAX),
@@ -42,7 +45,7 @@ BEGIN
 	FROM dbo.UserLog_RunSP l WITH(NOLOCK)
 		INNER JOIN dbo.LogAction a WITH(NOLOCK) ON a.actionid = l.actionid
 		INNER JOIN bodb_licensee.dbo.LicenseeGroupComm c WITH(NOLOCK) ON l.custid = c.id
-	WHERE Logdate BETWEEN @FromDate AND @ToDate AND (l.ActionID = 2609 OR l.ActionID = 2610) AND c.LicenseeID = @Licenseeid
+	WHERE Logdate >= @FromDate AND l.logdate < @logDataToDate AND (l.ActionID = 2609 OR l.ActionID = 2610) AND c.LicenseeID = @Licenseeid
 	UNION ALL
 	SELECT	l.Logid,
 			l.LogDate,
@@ -53,7 +56,7 @@ BEGIN
 			l.trackingvalue2 AS trackingvalueold
 	FROM dbo.UserLog_RunSP l WITH(NOLOCK)
 		INNER JOIN dbo.LogAction a WITH(NOLOCK) ON a.actionid = l.actionid
-	WHERE l.Logdate BETWEEN @FromDate AND @ToDate AND l.actionid = 2611 AND l.custid = @Licenseeid
+	WHERE l.Logdate >= @FromDate AND l.logdate < @logDataToDate AND l.actionid = 2611 AND l.custid = @Licenseeid
 
 	IF @ToDate < @LapLaunchDate
 	BEGIN				
@@ -91,9 +94,6 @@ BEGIN
 	END
 	ELSE
 	BEGIN
-		DECLARE @tempToDate DATETIME
-		SET @tempToDate = DATEADD(DAY, 1, @LapLaunchDate)
-
 		CREATE TABLE #lapUsers2 (UserId INT, Editedby NVARCHAR(20))
 		INSERT INTO #lapUsers2 (UserId, Editedby)
 		SELECT UserSEQ, Username
@@ -109,7 +109,7 @@ BEGIN
 				l.TrackingValueOld
 		FROM #log l
 			INNER JOIN bodb_licensee.dbo.users u WITH(NOLOCK) ON u.userid = l.userid
-		WHERE l.Logdate BETWEEN @FromDate AND @tempToDate
+		WHERE l.Logdate >= @FromDate AND l.LogDate < @LapLaunchDate
 		UNION ALL
 		SELECT	l.LogId,
 				l.LogDate,
@@ -120,7 +120,7 @@ BEGIN
 				l.TrackingValueOld
 		FROM #log l
 			INNER JOIN #lapUsers2 u ON u.UserId = l.userid
-		WHERE l.Logdate BETWEEN @LapLaunchDate AND @ToDate
+		WHERE l.Logdate >= @LapLaunchDate AND l.LogDate < @logDataToDate
 		ORDER BY l.logid DESC
 
 		DROP TABLE #lapUsers2
