@@ -1,6 +1,6 @@
 ﻿/*<info serverAlias="DBLOG-bodb_CustomerLog" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 
-ALTER PROCEDURE  [Lrf_CustomerSettingLog_Sel]    
+ALTER PROCEDURE  [dbo].[Lrf_CustomerSettingLog_Sel]    
 	@LicenseeID			INT,
 	@SiteName			VARCHAR(50),
 	@UserName			AS VARCHAR(50), 
