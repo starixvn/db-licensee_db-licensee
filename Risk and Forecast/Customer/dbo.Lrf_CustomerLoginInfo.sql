@@ -1,6 +1,6 @@
 ﻿/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 
-ALTER  PROCEDURE [dbo].[Lrf_CustomerLoginInfo]
+ALTER PROCEDURE [dbo].[Lrf_CustomerLoginInfo]
 	@LicenseeID		INT,
 	@CustID			INT,
 	@SiteName		VARCHAR(50),
@@ -119,8 +119,8 @@ BEGIN
 		lastlogged,
 		creatdate AS createdate,
 		@LastTransferDate AS LastTransferDate,
-		@LastUpdatedBaByName AS LastUpdateBA,
-		@LastUpdatedBaDate AS BAUpdatedBy,
+		@LastUpdatedBaDate AS LastUpdateBA,
+		@LastUpdatedBaByName AS BAUpdatedBy,
 		@SpecialLevelUpdateByName AS SpecialLevelUpdateBy,
 		@SpecialLevelUpdateDate AS SpecialLevelUpdateDate
 	FROM dbo.Customer WITH(NOLOCK)
