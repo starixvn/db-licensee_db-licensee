@@ -73,7 +73,7 @@ AS
 	- 20170711@Harper: Fix Racing Revenue of Licensee Winloss [RedmineID :#79748]
 	- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
-	- 20180418@Amanda: LAP - Integrate PP [RedmineID: #92381]
+	- 20180418@Amanda: LAP - Integrate PP [RedmineID: #92318]
 	- 20180420@Amanda: Include more cash out tickets [RedmineID: #93919]
 	- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 

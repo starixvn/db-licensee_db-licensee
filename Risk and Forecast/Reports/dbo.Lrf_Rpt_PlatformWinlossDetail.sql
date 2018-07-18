@@ -41,7 +41,7 @@ AS
 		- 20171020@Harper: LRF - Add "New Asia" in platform list [RedmineID: #85203]
 		- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
-		- 20180418@Amanda: LAP - Integrate PP [RedmineID: #92381]
+		- 20180418@Amanda: LAP - Integrate PP [RedmineID: #92318]
 		- 20180809@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
 
 	Param's Explanation:  

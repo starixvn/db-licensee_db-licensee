@@ -36,7 +36,7 @@ AS
    
     Revisions:  
 		- 20180312@Harper: Created new Licensee Winloss SP for Ivorybet and Opal88 [RedmineID: #91738]
-		- 20180419@Amanda: LAP - Integrate PP [RedmineID: #92381]
+		- 20180419@Amanda: LAP - Integrate PP [RedmineID: #92318]
 		- 20180420@Amanda: Include more cash out tickets [RedmineID: #93919]
 		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 		- 20180515@Joseph: Remove LC product [RedmineID: #85965]

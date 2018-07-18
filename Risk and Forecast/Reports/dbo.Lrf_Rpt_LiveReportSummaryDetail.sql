@@ -67,7 +67,7 @@ Revisions:
 	- 20180205@Harper: Remove LC from product list [RedmineID: #85965]
 	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
 	- 20180515@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
-	- 20180418@Amanda: LAP - Update VB bet type range and integrate PP [RedmineID: #92381]
+	- 20180418@Amanda: LAP - Update VB bet type range and integrate PP [RedmineID: #92318]
 
 Param's Explanation:  
 	+ @Liveindicator : indicate that whether the report will get live data or not

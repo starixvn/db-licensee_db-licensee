@@ -100,7 +100,7 @@ AS
 		- 20171009@Percy: Add @Username filter [RedmineID: #84551]
 		- 20171109@Paul: Support sorting [RedmineID: #86214]
 		- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
-		- 20180418@Amanda: LAP - Integrate PP [RedmineID: #92381]
+		- 20180418@Amanda: LAP - Integrate PP [RedmineID: #92318]
 		- 20180809@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
 
 	Param's Explanation:

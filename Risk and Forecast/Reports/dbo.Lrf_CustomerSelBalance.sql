@@ -59,7 +59,7 @@ Revisions:
 	- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @LicenseeType [Redmine: #71679]
 	- 20170329@Paul: Implement Cash Out [RedmineID: #71727]
 	- 20180205@Harper: Remove LC from product list [RedmineID: #85965]
-	- 20180418@Amanda: LAP - Update VB bet type range and integrate PP [RedmineID: #92381]
+	- 20180418@Amanda: LAP - Update VB bet type range and integrate PP [RedmineID: #92318]
 */
 
 BEGIN

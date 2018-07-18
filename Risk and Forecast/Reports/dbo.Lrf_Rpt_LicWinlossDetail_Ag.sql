@@ -73,7 +73,8 @@ AS
 		- 20170814@Harper: One RNG - Offer New Tablet Games [RedmineID: #78424]
 		- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 		- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
-		- 20180418@Amanda: LAP - Update VB bet type range and integrate PP [RedmineID: #92381]		- 20180420@Amanda: Include more cash out tickets [RedmineID: #93919]
+		- 20180418@Amanda: LAP - Update VB bet type range and integrate PP [RedmineID: #92318]
+		- 20180420@Amanda: Include more cash out tickets [RedmineID: #93919]
 		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 
 	Param's Explanation:  
