@@ -79,8 +79,10 @@ AS
 		- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 		- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 		- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
-		- 20180418@Amanda: LAP - Update VB bet type range and integrate PP [RedmineID: #92381]		- 20180420@Amanda: Include more cash out tickets [RedmineID: #93919]
+		- 20180418@Amanda: LAP - Update VB bet type range and integrate PP [RedmineID: #92318]
+		- 20180420@Amanda: Include more cash out tickets [RedmineID: #93919]
 		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
+		- 20180718@Amanda: Correct CS bet types [RedmineID: #92318]
 		- 20180809@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
 
 	Param's Explanation:  
@@ -638,7 +640,7 @@ BEGIN
 						 
 					ELSE 0 END	
 				) AS turnoverVS, 
-				SUM(CASE WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 THEN
+				SUM(CASE WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999 THEN
 					stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
 
 						 
@@ -716,7 +718,7 @@ BEGIN
 					THEN b.awinlost ELSE 0 END) AS LicenseeWLRB,				
 				-SUM(CASE WHEN b.bettype BETWEEN 1201 AND 1299
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLVS,
-				-SUM(CASE WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399
+				-SUM(CASE WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999 
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLCS,
 				-SUM(CASE WHEN b.bettype = 73
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLBG,
