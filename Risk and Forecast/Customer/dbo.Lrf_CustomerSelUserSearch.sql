@@ -1,6 +1,4 @@
-﻿USE bodb_Licensee
-GO
-
+﻿/*<info serverAlias="DBLIC-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_CustomerSelUserSearch]
 	@UserID		INT,
 	@username VARCHAR(50),
@@ -21,6 +19,7 @@ Param's Explanation:
 	20130619@Jim: Restrict permission of Licensee Users by currency	
 	20141112@Victor: use f_SelLicenseeCust instead of licenseecust (#Redmine 25864)
 	20170228@Paul: remove @LicenseeID, @CurrencyID, @LicenseeType and add @AgentList due to logic change [Redmine: #71679]
+	20180416@Joseph: Increase column size of table @tmpUsername (column username) to fix error [Redmine: #98294]
 */
 
 BEGIN
@@ -48,7 +47,7 @@ BEGIN
 		RETURN
 	END CATCH;
 	
-	DECLARE @tmpUsername TABLE(Username VARCHAR(30),SearchCount INT)
+	DECLARE @tmpUsername TABLE(Username VARCHAR(50),SearchCount INT)
 
 	INSERT INTO @tmpUsername (Username,SearchCount)
 	SELECT top 10 Username, SearchCount
@@ -91,6 +90,3 @@ BEGIN
 END
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_CustomerSelUserSearch] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerSelUserSearch] TO vnteam
