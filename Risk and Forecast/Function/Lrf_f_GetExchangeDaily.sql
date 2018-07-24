@@ -1,12 +1,6 @@
-﻿USE [bodb02]
+﻿/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02" executers="bodbLicenseeNet,bodbAdminNet" viewers="vnteam" isFunction="1" isNested="0"></info>*/
+USE [bodb02]
 GO
-
-SET QUOTED_IDENTIFIER ON 
-GO
-SET ANSI_NULLS ON 
-GO
-
-/****** Object:  User Defined Function dbo.Lrf_f_GetExchangeDaily    Script Date: 9/23/2016 10:19:23 AM ******/
 ALTER FUNCTION [dbo].[Lrf_f_GetExchangeDaily]
     (
       @fromdate DATETIME,
@@ -27,33 +21,13 @@ AS
 	- 20160914@Jim:  Add HKD base currency into OANDA Exchange rate [RedmineID : #63975]
 	- 20170613@Paul: return THB, IDR rates [RedmineID: #75030]
 	- 20171031@Harper: Fix rate for IDR currency [RedmineID: #85203]
+	- 20170724@Sophia: HA - remove table ExchangeDaily [Redmine: #98631]
 */
 BEGIN
 
 DECLARE @tmpFromDate DATETIME, @tmpToDate DATETIME, @maxExchangeDate DATETIME, @tmpDate DATETIME, @gapDate DATETIME, @ReferencedExchangeDate DATETIME
 DECLARE @i INT
 
-SET @gapDate = '2012-06-01'
-
---Get the data before 1st of June 2012 in ExchangeDaily table
-IF @todate < @gapDate
-BEGIN
-	INSERT INTO @tempDate (exchangedate,ExchangeId,Code,MYR, USD, EUR, CNY, GBP, HKD, THB, IDR, actualrate)
-	SELECT exchangedate,ExchangeId,Code,MYR, USD, EUR, CNY, 1 AS GBP, 1 AS HKD, 1 AS THB, 1 AS IDR, actualrate
-	FROM ExchangeDaily WITH (NOLOCK)
-	WHERE ExchangeDate BETWEEN @fromdate AND @todate
-	
-	RETURN
-END
-ELSE IF @todate >= @gapDate AND @fromdate < @gapDate
-BEGIN
-	INSERT INTO @tempDate (exchangedate,ExchangeId,Code,MYR, USD, EUR, CNY, GBP, HKD, THB, IDR, actualrate)
-	SELECT exchangedate,ExchangeId,Code,MYR, USD, EUR, CNY, 1 AS GBP, 1 AS HKD, 1 AS THB, 1 AS IDR, actualrate
-	FROM ExchangeDaily WITH (NOLOCK)
-	WHERE ExchangeDate BETWEEN @fromdate AND dateadd(day,-1,@gapDate)
-	
-	SET @fromdate = @gapDate
-END
 
 --Get the data after 1st of June 2012 in ExchangeDailyOanda
 --Get the Referenced Exchange Date
@@ -97,28 +71,10 @@ BEGIN
 	SET @tmpFromDate = DATEADD(m,1,@tmpFromDate)
 END
 
-
-
 RETURN 
 
 END
 
 
-
 GO
 
-SET QUOTED_IDENTIFIER OFF 
-GO
-SET ANSI_NULLS ON 
-GO
-
-
-GO 
- GRANT VIEW DEFINITION ON [dbo].[Lrf_f_GetExchangeDaily] TO [vnteam]
-GO 
- GRANT SELECT ON [dbo].[Lrf_f_GetExchangeDaily] TO [Dot_Casino]
-GO 
- GRANT SELECT ON [dbo].[Lrf_f_GetExchangeDaily] TO [bodbLicenseeNet]
-GO 
- GRANT SELECT ON [dbo].[Lrf_f_GetExchangeDaily] TO [bodbAdminNet]
-GO 
