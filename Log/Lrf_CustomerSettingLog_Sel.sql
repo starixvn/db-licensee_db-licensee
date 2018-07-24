@@ -138,7 +138,7 @@ BEGIN
 	BEGIN
 		CREATE TABLE #lapUsers1 (UserId INT, Editedby NVARCHAR(20))
 		INSERT INTO #lapUsers1 (UserId, Editedby)
-		SELECT UserSEQ, Username
+		SELECT UserSEQ, UserID
 		FROM DBCUST.SiteConfig.dbo.users WITH(NOLOCK)
 		WHERE SiteName = @SiteName
 	
@@ -165,7 +165,7 @@ BEGIN
 
 		CREATE TABLE #lapUsers2 (UserId INT, Editedby NVARCHAR(20))
 		INSERT INTO #lapUsers2 (UserId, Editedby)
-		SELECT UserSEQ, Username
+		SELECT UserSEQ, UserID
 		FROM DBCUST.SiteConfig.dbo.users WITH(NOLOCK)
 		WHERE SiteName = @SiteName
 	

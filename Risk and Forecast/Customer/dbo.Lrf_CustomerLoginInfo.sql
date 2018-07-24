@@ -35,7 +35,7 @@ BEGIN
 	BEGIN
 		IF @SpecialLevelUpdateDate >= @LapLaunchDate -- LAP USER
 		BEGIN
-			SELECT @SpecialLevelUpdateByName = Username FROM DBCUST.SiteConfig.dbo.Users WITH (NOLOCK)
+			SELECT @SpecialLevelUpdateByName = UserID FROM DBCUST.SiteConfig.dbo.Users WITH (NOLOCK)
 			WHERE UserSEQ = @SpecialLevelUpdateByID AND SiteName = @SiteName
 		END
 		ELSE -- LRF USER
@@ -71,7 +71,7 @@ BEGIN
 	BEGIN
 		IF @LastUpdatedBaDate >= @LapLaunchDate -- LAP USER
 		BEGIN
-			SELECT @LastUpdatedBaByName = Username 
+			SELECT @LastUpdatedBaByName = UserID
 			FROM DBCUST.SiteConfig.dbo.Users WITH (NOLOCK)
 			WHERE UserSEQ = @LastUpdatedBaById AND SiteName = @SiteName
 		END
