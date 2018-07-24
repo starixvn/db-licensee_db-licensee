@@ -162,9 +162,7 @@ BEGIN
 	END
 	ELSE
 	BEGIN
-		DECLARE @tempToDate DATETIME
-		SET @tempToDate = DATEADD(DAY, 1, @LapLaunchDate)
-	
+
 		CREATE TABLE #lapUsers2 (UserId INT, Editedby NVARCHAR(20))
 		INSERT INTO #lapUsers2 (UserId, Editedby)
 		SELECT UserSEQ, Username
