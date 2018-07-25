@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02" executers="bodbLicenseeNet,bodbAdminNet" viewers="vnteam" isFunction="1" isNested="0"></info>*/
+﻿/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02" executers="bodbLicenseeNet,bodbAdminNet,Dot_Casino" viewers="vnteam" isFunction="1" isNested="0"></info>*/
 USE [bodb02]
 GO
 ALTER FUNCTION [dbo].[Lrf_f_GetExchangeDaily]
