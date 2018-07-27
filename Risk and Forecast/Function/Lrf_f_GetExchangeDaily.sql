@@ -21,7 +21,7 @@ AS
 	- 20160914@Jim:  Add HKD base currency into OANDA Exchange rate [RedmineID : #63975]
 	- 20170613@Paul: return THB, IDR rates [RedmineID: #75030]
 	- 20171031@Harper: Fix rate for IDR currency [RedmineID: #85203]
-	- 20170724@Sophia: HA - remove table ExchangeDaily [Redmine: #98631]
+	- 20180724@Sophia: HA - remove table ExchangeDaily [Redmine: #98631]
 */
 BEGIN
 

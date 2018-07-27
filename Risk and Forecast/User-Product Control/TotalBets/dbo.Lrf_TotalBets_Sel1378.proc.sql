@@ -28,7 +28,7 @@ Revisions:
  - 20150124@Winnie: Add base currency GBP 
  - 20150617@Jim:  Enhance Total Bets with sum values of running stakes  (Feature #36839)
  - 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
- - 20170724@Sophia: HA - remove Bodog [Redmine: #98631]
+ - 20180727@Sophia: HA - remove Bodog [Redmine: #98631]
 
 Param's Explanation:
 	+ @AgentList: xml structure
