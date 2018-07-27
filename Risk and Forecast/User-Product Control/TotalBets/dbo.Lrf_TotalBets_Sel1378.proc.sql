@@ -1,4 +1,5 @@
-﻿USE bodb02
+﻿/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+USE bodb02
 GO
 
 ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel1378]	
@@ -27,6 +28,7 @@ Revisions:
  - 20150124@Winnie: Add base currency GBP 
  - 20150617@Jim:  Enhance Total Bets with sum values of running stakes  (Feature #36839)
  - 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+ - 20170724@Sophia: HA - remove Bodog [Redmine: #98631]
 
 Param's Explanation:
 	+ @AgentList: xml structure
@@ -310,9 +312,12 @@ SELECT
 
 DECLARE @LicenseeID_temp INT
 
-SELECT @LicenseeID_temp = LicenseeID 
-FROM bodb_licensee.dbo.licensees WITH (NOLOCK)
-WHERE LicenseeName = 'Bodog'
+--SELECT @LicenseeID_temp = LicenseeID 
+--FROM bodb_licensee.dbo.licensees WITH (NOLOCK)
+--WHERE LicenseeName = 'Bodog'
+
+SELECT @LicenseeID_temp = 14 ---- LicenseeID of Bodog
+
 
 IF (@licenseeID_temp <> @LicenseeID)
 BEGIN
@@ -479,6 +484,3 @@ END
 	FROM @Data
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_TotalBets_Sel1378] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_TotalBets_Sel1378] TO [vnteam]
