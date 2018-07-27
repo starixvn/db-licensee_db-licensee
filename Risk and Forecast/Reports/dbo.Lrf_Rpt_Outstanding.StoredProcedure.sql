@@ -68,6 +68,7 @@ Revisions:
 	- 20171108@Paul: Support sorting [RedmineID: #86214]
 	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
+	- 20170724@Sophia: HA - use table LicenseeBATransaction_active instead of LicenseeBATransaction [Redmine: #98631]
 
 Param's Explanation:
 	@OrderItem:
@@ -149,7 +150,7 @@ BEGIN
 	FROM 
 		dbo.bettrans AS b WITH(NOLOCK)
 		INNER JOIN @TempAg a ON b.recommend = a.CustId AND b.Currency = a.Currency
-		LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid                  
+		LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON b.transid = BA.transid                  
 	WHERE  
 		BA.transid IS NULL 
 		AND b.bettype <= 2829
