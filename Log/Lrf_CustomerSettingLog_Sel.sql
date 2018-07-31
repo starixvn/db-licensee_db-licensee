@@ -28,7 +28,6 @@ Param's Explaination:
       2 - View by Status    
       3 - View by Commission    
       4 - View by Special Level.
-	  5	- View by Currency
            
  - @FromDate: date range to view log      
  - @ToDate: date range to view log 
