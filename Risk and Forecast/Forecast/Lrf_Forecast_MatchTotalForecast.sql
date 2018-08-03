@@ -18,7 +18,7 @@ AS
 /*
 Created: Victor@20130805
 Task : Forecast
-DB: DB052.bodb02
+DB: DB042.bodb02
 Original: [Lrf_Forecast_MatchTotalForecast]
 Revisions:    
 	20130930@Victor: Revert back formular for HDP tickets
@@ -28,6 +28,7 @@ Revisions:
 	20131028@Victor: Update list of Sports that use Live score in formular
 	20150123@Jim: support base on Currency GBP
 	20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+	20180802@Sophia: HA - remove ruben to use new index on DB042 [Redmine: #98631]
 
 Param's Explanation:
 	+ @AgentList: xml structure
@@ -115,8 +116,7 @@ BEGIN
 	WHERE	b.recommend IN ( SELECT custid FROM   @TempAg )
 			AND b.matchid = @MatchID
 			AND b.statusID IN ( 0, 1 )
-			AND b.bettype IN (1,3,7,8) -- Handicap & Over/Under
-			AND b.ruben = 0
+			AND b.bettype IN (1,3,7,8) -- Handicap & Over/Under		
 			AND b.tpositiontaking <> 0
 	
 	-- Get Handicap detail resultset

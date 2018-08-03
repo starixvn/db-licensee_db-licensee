@@ -16,7 +16,7 @@ ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel25]
 /*
 Created: 20101201@Henry
 Task : Retrieve Total bets for bettype 25
-DB: DB052.bodb02
+DB: DB042.bodb02
 Original:[Age_TotalBets_Sel25_Ag]
 Revisions:
 	- 201133@Alex:Allow to choose all type of licensee AND all currency + suppport based currency
@@ -31,6 +31,7 @@ Revisions:
 	- 20150413@Jim: add more bettype Odd/Even (3rd) (157) ,Extra Time 1H 1X2 (167)
 	- 20150617@Jim:  Enhance Total Bets with sum values of running stakes  (Feature #36839)
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+	- 20180802@Sophia: HA - use new index on DB042 [Redmine: #98631]
 
 Param's Explanation:
 	+ @AgentList: xml structure
@@ -276,8 +277,7 @@ SELECT
 		INNER JOIN @TempAg ag ON a.recommend = ag.CustId AND a.currency = ag.Currency
 	WHERE 	
 		a.bettype in (2, 12, 5, 15,123,157,167)
-		AND a.statusID in (0,1)
-		AND a.ruben = 0
+		AND a.statusID in (0,1)	
 		AND m.eventstatus='running'
 		AND a.tpositiontaking <> 0
 	GROUP BY a.liveindicator, 

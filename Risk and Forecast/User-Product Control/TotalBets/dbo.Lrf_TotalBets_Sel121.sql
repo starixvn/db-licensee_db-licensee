@@ -20,6 +20,7 @@ Revisions:
 	 - 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
 	 - 20150123@Jim: support base on Currency GBP
 	 - 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+	 - 20180802@Sophia: HA - remove ruben to use new index on DB042 [Redmine: #98631]
 
 Param's Explanation:
 	+ @AgentList: xml structure
@@ -114,7 +115,6 @@ SELECT
 	WHERE  	
 		b.bettype in (25,121,122)
 		AND b.statusID in (0,1)
-		AND b.ruben = 0
 		AND b.tpositiontaking <> 0
 	GROUP BY 
 		b.currency,

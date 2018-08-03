@@ -68,6 +68,7 @@ Revisions:
 	- 20171108@Paul: Support sorting [RedmineID: #86214]
 	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
+	- 20180802@Sophia: use LicenseeBATransaction_active instead of LicenseeBATransaction, change code to use index on DB042 [Redmind: #98631]
 
 Param's Explanation:
 	@OrderItem:
@@ -136,45 +137,65 @@ BEGIN
 		outstanding MONEY,
 		BetCounts	INT       
 	)       
-    
-    INSERT INTO @Outstanding
-	-- bettrans --
+
+	CREATE TABLE #AgentBettype (CustId INT, Currency TINYINT, Bettype SMALLINT, PRIMARY KEY (CustId, Currency, bettype))
+
+    DECLARE @i BIGINT = 10000000
+	
+	--1. bettrans --  
+	--1.1
+	INSERT INTO #AgentBettype (CustId, Currency, Bettype)
+	SELECT DISTINCT CustId, Currency, Bettype 
+	FROM @TempAg 
+	CROSS JOIN SportbettypeMatrix b WITH (NOLOCK) 
+			WHERE 
+			(@showSB = 1 AND (b.Bettype < 31 OR (b.Bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 and 1399))) --new tennis's bettypes
+			OR (@showRB = 1 AND b.Bettype IN (31,32,33))
+			OR (@showNG = 1 AND b.Bettype BETWEEN 81 AND 120)
+			OR (@ShowVS = 1 AND b.Bettype BETWEEN 1201 AND 1299)
+			OR (@ShowVS2 = 1 AND b.Bettype BETWEEN 2701 AND 2829)
+			OR (@ShowBG = 1 AND b.Bettype = 73)
+			AND b.Bettype <= 2829
+			AND (b.Bettype NOT BETWEEN 2101 AND 2399 OR b.Bettype NOT BETWEEN 2901 AND 2999) -- exclude OWRnG
+			AND b.Bettype NOT BETWEEN 4001 AND 7999 -- exclude Voidbridge 	
+	
+	--1.2
+	INSERT INTO @Outstanding
 	SELECT 
 		b.username,
 		b.custid,                    
 		b.currency,
 		SUM(actual_stake) Outstanding,
-		COUNT(1) AS BetCounts
-		   
-	FROM 
-		dbo.bettrans AS b WITH(NOLOCK)
-		INNER JOIN @TempAg a ON b.recommend = a.CustId AND b.Currency = a.Currency
-		LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid                  
-	WHERE  
-		BA.transid IS NULL 
-		AND b.bettype <= 2829
-		AND b.ruben = 0
-		AND b.matchid > 0
-		AND
-		(
-			   (@showSB = 1 AND (b.bettype < 31 OR (b.bettype BETWEEN 121 AND 999) OR (b.bettype BETWEEN 1301 and 1399))) --new tennis's bettypes
-			OR (@showRB = 1 AND b.bettype IN (31,32,33))
-			OR (@showNG = 1 AND b.bettype BETWEEN 81 AND 120)
-			OR (@ShowVS = 1 AND b.bettype BETWEEN 1201 AND 1299)
-			OR (@ShowVS2 = 1 AND b.bettype BETWEEN 2701 AND 2829)
-			OR (@ShowBG = 1 AND b.bettype = 73)
-			 
-		)
-		AND (b.bettype NOT BETWEEN 2101 AND 2399 OR b.bettype NOT BETWEEN 2901 AND 2999) -- exclude OWRnG
-		AND b.bettype NOT BETWEEN 4001 AND 7999 -- exclude Voidbridge
- 
+		COUNT(1) AS BetCounts		   
+	FROM #AgentBettype a
+		INNER JOIN dbo.bettrans AS b WITH(NOLOCK)	
+			ON  b.recommend = a.CustId AND b.Currency = a.Currency AND b.bettype = a.bettype 
+	WHERE b.StatusID IN (0,1)	
+		AND NOT EXISTS (SELECT 1 FROM bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) WHERE b.transid = BA.transid )				 	              
 	GROUP BY
 		b.username,
 		b.custid,
-		b.currency
-	
-	-- translog --
-	UNION ALL
+		b.currency	 
+
+
+	--2. translog --
+	--2.1
+	DELETE #AgentBettype 
+
+	INSERT INTO #AgentBettype (CustId, Currency, Bettype)
+	SELECT DISTINCT CustId, Currency, Bettype 
+	FROM @TempAg 
+	CROSS JOIN SportbettypeMatrix b WITH (NOLOCK) 
+			WHERE 
+			(
+			(@ShowKN = 1 AND b.Bettype BETWEEN 1501 AND 1599)
+			OR (@ShowMGCLC = 1 AND b.Bettype BETWEEN 2001 AND 2007)
+			OR (@ShowCB =1 AND b.Bettype = 18000)
+			OR (@ShowLT = 1 AND b.Bettype BETWEEN 1021 AND 1049)
+			)
+		
+	--2.2		
+	INSERT INTO @Outstanding
 	SELECT
 		t.Username,
 		t.custid,
@@ -183,25 +204,35 @@ BEGIN
 		COUNT(1) BetCounts 
 	FROM
 		dbo.translog t WITH (NOLOCK) 
-		INNER JOIN @TempAg a ON t.recommend = a.CustId AND t.Currency = a.Currency
+		INNER JOIN #AgentBettype a ON t.recommend = a.CustId AND t.Currency = a.Currency AND t.gameID = a.bettype
 	WHERE
-		t.statusID = 0
-		AND
-		(
-			(@ShowKN = 1 AND t.productID = 202)
-			OR (@ShowMGCLC = 1 AND t.productID = 203)
-			OR (@ShowCB =1 AND t.productID = 204)
-			OR (@ShowLT = 1 AND t.productID = 220)
-		)
+		t.StatusID IN (0,1)	
 	GROUP BY
 		t.Username,
 		t.custid,
 		t.currency     
 	
-	-- bettrans RNG --
-	UNION ALL
+
+	-- 3. bettrans RNG --
+	-- 3.1
+	DELETE #AgentBettype 
+
+	INSERT INTO #AgentBettype (CustId, Currency, Bettype)
+	SELECT DISTINCT CustId, Currency, Bettype 
+	FROM @TempAg 
+	CROSS JOIN SportbettypeMatrix b WITH (NOLOCK) 
+	WHERE 			
+		(
+			(@ShowMGCRnG = 1 AND b.Bettype BETWEEN 2008 AND 2009)
+			OR (@ShowCS  = 1 AND (b.Bettype BETWEEN 2101 AND 2399 OR b.Bettype BETWEEN 2901 AND 2999)) -- AND bettrans.matchID IN (208, 209, 210)
+			OR (@ShowVB  = 1 AND b.Bettype BETWEEN 4001 AND 7999)
+			OR (@ShowFW  = 1 AND b.Bettype BETWEEN  1011 AND 1020)
+		)
+
+	--3.2
+	INSERT INTO @Outstanding
 	SELECT
-		c.Username,
+		g.Username,
 		g.custid,
 		g.currency,
 		SUM(g.actual_stake) Outstanding,
@@ -213,40 +244,42 @@ BEGIN
 					END) BetCounts
 	FROM
 		dbo.BettransRNG g WITH (NOLOCK) 
-		INNER JOIN @TempAg a ON g.recommend = a.CustId AND g.Currency = a.Currency
-		INNER JOIN dbo.Custinfo c WITH (NOLOCK) ON g.CustID = c.CustID
+		INNER JOIN #AgentBettype a ON g.recommend = a.CustId AND g.Currency = a.Currency AND g.gameID = a.bettype	
 	WHERE
-		statusid IN (0, 1) -- AND IsSum = 0
-		AND
-		(
-			(@ShowMGCRnG = 1 AND g.gameID BETWEEN 2008 AND 2009)
-			OR (@ShowCS  = 1 AND (g.gameID BETWEEN 2101 AND 2399 OR g.gameID BETWEEN 2901 AND 2999)) -- AND bettrans.matchID IN (208, 209, 210)
-			OR (@ShowVB  = 1 AND g.gameID BETWEEN 4001 AND 7999)
-			OR (@ShowFW  = 1 AND g.gameID BETWEEN  1011 AND 1020)
-		)
-	GROUP BY c.Username, g.custid, g.currency
+		statusid IN (0, 1) -- AND IsSum = 0		
+	GROUP BY g.Username, g.custid, g.currency
 
-	-- bettransLC --
-	UNION ALL
+
+	-- 4. bettransLC --
+	--4.1
+	DELETE #AgentBettype 
+
+	INSERT INTO #AgentBettype (CustId, Currency, Bettype)
+	SELECT DISTINCT CustId, Currency, Bettype 
+	FROM @TempAg 
+	CROSS JOIN SportbettypeMatrix b WITH (NOLOCK) 
+	WHERE 			
+		(
+		(@ShowAGC = 1   AND b.bettype BETWEEN 1800 AND 1804)
+		OR (@ShowAB = 1   AND b.bettype BETWEEN 2401 AND 2499)
+		)
+
+	--4.2
+	INSERT INTO @Outstanding
 	SELECT
-		c.Username,
+		g.Username,
 		g.custid,
 		g.currency,
 		SUM(g.actual_stake) Outstanding,
 		COUNT(1) BetCounts 
 	FROM
 		dbo.bettransLC g WITH (NOLOCK) 
-		INNER JOIN @TempAg a ON g.recommend = a.CustId AND g.Currency = a.Currency
-		INNER JOIN dbo.Custinfo c WITH (NOLOCK) ON g.CustID = c.CustID
+		INNER JOIN #AgentBettype a ON g.recommend = a.CustId AND g.Currency = a.Currency AND g.gameID = a.bettype			
 	WHERE
-		statusid IN (0, 1) -- AND IsSum = 0
-		AND (
-			(@ShowAGC = 1   AND g.gameID BETWEEN 1800 AND 1804)
-			OR (@ShowAB = 1   AND g.gameID BETWEEN 2401 AND 2499)
-			)
-		
-	GROUP BY c.Username, g.custid, g.currency
-		
+		statusid IN (0, 1) -- AND IsSum = 0		
+	GROUP BY g.Username, g.custid, g.currency
+
+	-- 5. BA	
 	IF @ShowBA = 1
 	BEGIN
 		INSERT INTO @Outstanding
@@ -257,12 +290,12 @@ BEGIN
             SUM(actual_stake) Outstanding,
             COUNT(1) AS BetCounts
         FROM
-			dbo.bettrans AS b WITH(NOLOCK, INDEX=IXU_transid)
-			INNER JOIN @TempAg a ON b.recommend = a.CustId AND b.Currency = a.Currency
-            INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid 
+			dbo.bettrans AS b WITH (NOLOCK)
+			INNER JOIN @TempAg a ON b.recommend = a.CustId AND b.Currency = a.Currency           
         WHERE   
 			(b.bettype <= 999 OR b.bettype BETWEEN 1301 and 1399)
-			AND b.ruben = 0				
+			AND b.StatusID IN (0,1)			
+			AND EXISTS (SELECT 1 FROM bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) WHERE b.transid = BA.transid)
         GROUP BY 
 			b.username,
             b.custid,

@@ -9,7 +9,7 @@ AS
  /*
 Created by: [20101207@Henry]
 Task: Forecast for 1x2 bettype
-DB: DB052.bodb02
+DB: DB042.bodb02
 Original: [Age_Forecast_Sel1X2]
 Revisions:
 	
@@ -23,6 +23,7 @@ Revisions:
 	- 20150123@Jim: support base on Currency GBP
 	- 20150420@Jim: support betradar
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+	- 20180802@Sophia: HA - remove ruben to use new index on DB042 [Redmine: #98631]
 
 Param's explanation:
 	--1:home
@@ -706,8 +707,7 @@ Param's explanation:
 						b.recommend in (SELECT custid from @TempAg)
 						AND b.bettype = @bettype
                         AND b.matchid = @MatchID
-                        AND b.statusID IN ( 0, 1 )
-                        AND b.ruben = 0
+                        AND b.statusID IN ( 0, 1 )                     
                         AND b.tpositiontaking <> 0
                         
               GROUP BY  liveindicator ,

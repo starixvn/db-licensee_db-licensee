@@ -4,7 +4,7 @@
 AS /*
 	Created: 20101207@Henry
 	Task: Forecast at Lrf Site 
-	DB: DB052.bodb02
+	DB: DB042.bodb02
 	Original:Age_Forecast_OddsSelTopByMatch
 	
 	Revisions: 

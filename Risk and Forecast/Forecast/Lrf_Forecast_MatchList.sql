@@ -11,7 +11,7 @@ AS
 /*
 Created: Victor@20130802
 Task : Forecast
-DB: DB052.bodb02
+DB: DB042.bodb02
 Original: [Lrf_Forecast_MatchList]
 Revisions:    
 

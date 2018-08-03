@@ -11,7 +11,7 @@ ALTER  PROCEDURE [dbo].[Lrf_Forecast_SelByLeague]
 AS /*
 Created: 20101207@Henry
 Task: Forecast for bettype according to league.
-DB: DB052.bodb02
+DB: DB042.bodb02
 Original: [Age_Forecast_SelByLeague_Ag]
 Revisions: 
 
@@ -23,6 +23,7 @@ Revisions:
 	- 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function 
 	- 20150123@Jim: support base on Currency GBP
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+	- 20180802@Sophia: HA - remove ruben to use new index on DB042 [Redmine: #98631]
 
 Param's Explanation:
 	+ @AgentList: xml structure
@@ -849,8 +850,7 @@ Param's Explanation:
                                                               AND L.LeagueID = @LeagueID
                                       WHERE     b.recommend IN ( SELECT custid FROM @TempAg )
                                                 AND b.bettype = @BetTypeHDP
-                                                AND b.statusID IN ( 0, 1 )
-                                                AND b.ruben = 0
+                                                AND b.statusID IN ( 0, 1 )                                               
                                                 AND b.tpositiontaking <>0
                                       GROUP BY  b.currency ,
                                                 b.hdp2 - b.hdp1 ,

@@ -15,7 +15,7 @@ AS
 /*
 Created: 20101201@Henry
 Task: Retrieve Total Bet values for First Goal/Last Goal.
-DB: DB052.bodb02
+DB: DB042.bodb02
 Original: [Age_TotalBets_Sel14_Ag]
 Revisions:
 	- 201134@Alex:Allow to choose all type of licensee AND all currency + suppport based currency
@@ -29,6 +29,7 @@ Revisions:
 	- 20150123@Jim: support base on Currency GBP
 	- 20150617@Jim:  Enhance Total Bets with sum values of running stakes  (Feature #36839)
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+	- 20180802@Sophia: HA - remove ruben to use new index on DB042 [Redmine: #98631]
 
 Param's Explanation:
 	+ @AgentList: xml structure
@@ -307,8 +308,7 @@ SELECT
 		INNER JOIN @TempAg ag ON a.recommend = ag.CustId AND a.currency = ag.Currency
 	WHERE 		
 		a.bettype in (14,127) AND -- FG/LG: 14, 1H FG/LG: 127
-		a.ruben=0 AND
-		a.statusID = 0 AND
+		a.statusID IN (0,1) AND
 		m.eventstatus = 'running'  AND
 		a.tpositiontaking <>0
 		

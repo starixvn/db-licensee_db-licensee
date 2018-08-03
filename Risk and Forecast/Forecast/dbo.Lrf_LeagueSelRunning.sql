@@ -10,7 +10,7 @@ AS
 Created: 20101207@Henry
 Original: [Age_LeagueSelRunning_Ag]
 Task: SELECT running Leagues for 1,3,5,7,8, AND 15 bet types
-DB: DB052.bodb02
+DB: DB042.bodb02
 Revisions: 
 	- 20110513@Henry: change @Bettypes from VARCHAR(20) to VARCHAR(100)
 	- 20121004@Jim: replace @currencyname input param by @currencyID

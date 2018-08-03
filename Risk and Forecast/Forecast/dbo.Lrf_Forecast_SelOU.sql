@@ -10,7 +10,7 @@ AS
 /*
 Original: SP [Age_Forecast_SelOU]
 Task: Forcast for OU bettypes.
-DB: DB052.bodb02
+DB: DB042.bodb02
 Revisions: 
 	- 20110303@Jacob: Allow to choose all type of licensee AND all currency + suppport based currency	
 	- 20110801@Henry: Remove PT + exclude BA ticket
@@ -20,6 +20,7 @@ Revisions:
 	- 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
 	- 20150123@Jim: support base on Currency GBP
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+	- 20180802@Sophia: HA - remove ruben to use new index on DB042 [Redmine: #98631]
 
 Param's Explanation:
 	+ @AgentList: xml structure
@@ -227,8 +228,7 @@ Param's Explanation:
                                              FROM   @TempAg )
 						AND bettype = @bettype
                         AND matchid = @matchid
-                        AND b.statusID IN ( 0, 1 )
-                        AND b.ruben = 0
+                        AND b.statusID IN ( 0, 1 )                
                         AND b.tpositiontaking <> 0
               GROUP BY  liveindicator ,
                         status ,
