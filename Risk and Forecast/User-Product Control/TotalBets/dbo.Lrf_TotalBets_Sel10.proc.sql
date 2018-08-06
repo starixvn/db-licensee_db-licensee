@@ -119,8 +119,7 @@ SELECT
 		CONVERT(BIT,0) as IsNeutral
 	FROM
 		bettrans AS a  WITH (NOLOCK)
-		INNER JOIN outright AS m  WITH (NOLOCK) ON m.orid     = a.matchid 
-									AND a.statusID = 0
+		INNER JOIN outright AS m  WITH (NOLOCK) ON m.orid     = a.matchid 									
 		INNER JOIN @TempAg t ON a.recommend = t.custid AND t.Currency = a.currency
 		INNER JOIN #TempExchange e ON e.exchangeid = a.currency
 	WHERE
@@ -158,7 +157,7 @@ SELECT
 						INNER JOIN #TempExchange e ON e.exchangeid = a.currency
 					WHERE						
 						a.bettype = 10 AND
-						 a.statusID = 0 AND
+						a.statusID IN (0,1) AND
 						a.tpositiontaking <>0
 						
 					GROUP BY  m.leagueid
