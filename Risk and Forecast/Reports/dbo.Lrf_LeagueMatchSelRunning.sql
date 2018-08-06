@@ -6,7 +6,7 @@ AS
 /*          
 Created: 20130418@Scott        
 Task: Get league, match running        
-DB: DB052.bodb02          
+DB: DB042.bodb02          
 Revisions:        
 */    
           
