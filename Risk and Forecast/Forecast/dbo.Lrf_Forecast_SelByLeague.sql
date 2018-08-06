@@ -1067,7 +1067,6 @@ Param's Explanation:
                                       WHERE     b.recommend IN ( SELECT custid FROM @TempAg )
                                                 AND b.bettype = @BetTypeOU
                                                 AND b.statusID IN ( 0, 1 )
-                                                AND b.ruben = 0
                                                 AND b.tpositiontaking <> 0
                                       GROUP BY  b.currency ,
                                                 b.hdp1 ,
@@ -1273,8 +1272,7 @@ Param's Explanation:
                                                               AND L.LeagueID = @LeagueID
                                       WHERE     b.recommend IN ( SELECT custid FROM @TempAg )
                                                 AND b.bettype = @BetTypeHTHDP
-                                                AND b.statusID IN ( 0, 1 )
-                                                AND b.ruben = 0
+                                                AND b.statusID IN ( 0, 1 )                                                
                                                 AND b.tpositiontaking <> 0
                                       GROUP BY 
 				--			status, 
@@ -1495,8 +1493,7 @@ Param's Explanation:
                                                               AND L.LeagueID = @LeagueID
                                       WHERE     b.recommend IN ( SELECT custid FROM @TempAg )
                                                 AND b.bettype = @BetTypeHTOU
-                                                AND b.statusID IN ( 0, 1 )
-                                                AND b.ruben = 0
+                                                AND b.statusID IN ( 0, 1 )                                              
                                                 AND b.tpositiontaking <> 0
                                       GROUP BY  b.currency ,
                                                 b.hdp1 ,
