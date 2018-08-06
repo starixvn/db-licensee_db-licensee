@@ -153,7 +153,7 @@ SELECT
 						SUM(stake*e.gbp) as totalbalancegbp
 					FROM
 						bettrans AS a  WITH (NOLOCK)
-						INNER JOIN outright AS m  WITH (NOLOCK) ON m.orid = a.matchid  AND a.statusID = 0
+						INNER JOIN outright AS m  WITH (NOLOCK) ON m.orid = a.matchid  
 						INNER JOIN 	@TempAg t ON a.recommend = t.custid AND t.Currency = a.currency
 						INNER JOIN #TempExchange e ON e.exchangeid = a.currency
 					WHERE						

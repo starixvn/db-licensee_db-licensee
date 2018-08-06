@@ -93,22 +93,15 @@ BEGIN
     DECLARE
 		@RowStart	INT,
         @RowEnd		INT,
-        @Today		SMALLDATETIME,
-		@FromDate	DATETIME,
-		@ToDate		DATETIME 
+        @Today		SMALLDATETIME
 
 	SELECT  @PageIndex	= @PageIndex - 1 ,
             @RowStart	= @PageSize * @PageIndex + 1 ,
             @RowEnd		= @RowStart + @PageSize - 1 ,
-            @Today		= CONVERT(DATE, GETDATE()) 
-    
-    SELECT	@FromDate	= CASE WHEN MAX(m.eventdate) <= @Today THEN MAX(m.eventdate) ELSE @Today END,
-			@ToDate		= @Today
-	FROM dbo.match14 m (NOLOCK)
-	GROUP BY m.eventdate 	        
+            @Today		= CONVERT(DATE, GETDATE())    
+        
 	
 	DECLARE @TempAg		TABLE (CustId INT, Currency INT)
-
 	DECLARE @DocHandler INT
 
 	BEGIN TRY
@@ -142,13 +135,112 @@ BEGIN
 
     DECLARE @i BIGINT = 10000000
 	
+	DECLARE @SportBettype		TABLE (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))
+	DECLARE @ProductList		VARCHAR (500)
+	
+	DECLARE @IsTest BIT = 0
+	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
+	
+	IF @ShowSB = 1  
+	BEGIN  
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'SB', 'SB')		
+	END  
+
+	IF @ShowRB = 1  
+	BEGIN  
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'RB', 'RB')		
+	END  
+
+	IF @ShowNG = 1
+	BEGIN
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'NG', 'NG')		
+	END 	
+
+	IF @ShowVS = 1
+	BEGIN
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS', 'VS')
+	END
+
+	IF @ShowCS = 1 -- RNG Casino
+	BEGIN
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'CS', 'CS')
+	END
+
+	IF @ShowBG = 1 -- Bingo
+	BEGIN 
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'BG', 'BG')
+	END 
+
+	IF @ShowKN = 1 -- Keno
+	BEGIN 
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'KN', 'KN')
+	END
+
+	IF @showMGCLC = 1 -- MicroGamming
+	BEGIN 
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'MGCLC', 'MGCLC')
+	END 
+
+	IF @showMGCRnG = 1 -- MicroGamming
+	BEGIN 
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'MGCRNG', 'MGCRNG')
+	END
+
+	IF @ShowAGC = 1 -- AGCasino
+	BEGIN
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'AGC', 'AGC')
+	END
+
+	IF @ShowVB = 1
+	BEGIN
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'VB', 'VB')
+	END
+	IF @ShowAB = 1
+	BEGIN
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'AB', 'AB')
+	END
+
+	IF @ShowFW = 1
+	BEGIN 
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'FW', 'FW')
+	END
+
+	IF @ShowVS2 = 1 -- Betradar Virtual Sports
+	BEGIN
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS2', 'VS2')
+	END
+	
+	IF @ShowLT = 1 -- Lottery
+	BEGIN
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'LT', 'LT')
+	END
+
+	IF LEN(ISNULL(@ProductList, '')) > 0 
+	BEGIN
+		-- Insert Bettype
+		INSERT INTO @SportBettype ( bettype, ProductCode )
+		SELECT DISTINCT BetType, ProductPrefix
+		FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
+
+		/*
+		IF CHARINDEX('CS', @ProductList) > 0
+			DELETE @bettype
+			WHERE bettype = 72 AND ProductCode = 'CS'
+
+		IF CHARINDEX('SB', @ProductList) > 0 OR CHARINDEX('RB', @ProductList) > 0
+			DELETE @bettype
+			WHERE ProductCode IN ('SB', 'RB')		
+		*/
+	END	
+
+	
 	--1. bettrans --  
 	--1.1
 	INSERT INTO #AgentBettype (CustId, Currency, Bettype)
 	SELECT DISTINCT CustId, Currency, Bettype 
 	FROM @TempAg 
-	CROSS JOIN SportbettypeMatrix b WITH (NOLOCK) 
-			WHERE 
+	CROSS JOIN @SportBettype b WITH (NOLOCK) 
+	WHERE 
 			(@showSB = 1 AND (b.Bettype < 31 OR (b.Bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 and 1399))) --new tennis's bettypes
 			OR (@showRB = 1 AND b.Bettype IN (31,32,33))
 			OR (@showNG = 1 AND b.Bettype BETWEEN 81 AND 120)

@@ -11,7 +11,7 @@ ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel121]
 /*
 Created: 20120703@Henry
 Task : Retrieve Total bets for bettype No Bet (Home/Draw/Away No bet)
-DB: DB052.bodb02
+DB: DB042.bodb02
 Original:
 Revisions:
 	 - 20121004@Jim: replace @currencyname input param by @currencyID
