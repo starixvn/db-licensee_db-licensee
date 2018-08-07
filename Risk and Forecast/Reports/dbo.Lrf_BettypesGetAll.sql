@@ -2,13 +2,10 @@
 
 ALTER PROCEDURE [dbo].[Lrf_BetTypesGetAll]  
  @ShowSB BIT = 0,  
- @ShowRB BIT = 0,  
  @ShowNG BIT = 0,  
  @ShowBA BIT = 0,   
  @ShowVS BIT = 0,
- @ShowCS BIT = 0, --- RNG Casino  
- @ShowBG BIT = 0 --- Bingo  
-  
+ @ShowCS BIT = 0 --- RNG Casino
 AS  
 /*      
  Created : Henry      
@@ -22,6 +19,7 @@ AS
     - 20120905@Jim:   add show Virtual  bettype  
     - 20130401@Scott: add more parameter @ShowCS,@ShowBG 
 	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
+	- 20180807@Amanda: Remove Racing, Bingo [RedmineID: #99378]
 */    
   
 BEGIN    
@@ -36,16 +34,10 @@ BEGIN
 		  (  
 		   ((@ShowSB=1 OR @ShowBA=1) AND (typeid < 31 OR typeid BETWEEN 121 AND 999))  
 		   OR  
-		   (@ShowRB=1 AND typeid BETWEEN 31 AND 33)  
-		   OR  
 		   (@ShowNG=1 AND typeid BETWEEN 81 AND 120)       
 		   OR   
 		   (@ShowVS=1 AND typeid BETWEEN 1201 AND 1299)  
 	  )  
 	 ORDER BY BettypeName  
 END  
-GO
-
-GRANT EXECUTE ON [dbo].[Lrf_BetTypesGetAll] TO [bodbLicenseeNet] 
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_BetTypesGetAll] TO [vnteam]    
+GO   
