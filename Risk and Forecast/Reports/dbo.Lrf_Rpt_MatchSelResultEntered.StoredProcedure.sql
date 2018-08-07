@@ -19,11 +19,12 @@ Revisions:
 	- 20161115@Jim: LRF - Integrate new product Fishing World [RedmineID : #66737]
 	- 20170627@Harper: LRF - Integrate new product Betradar Virtual Sports [RedmineID: #78241]
 	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
+	- 20180807@Amanda: Remove Racing [RedmineID: #99378]
 */
 
 	SET NOCOUNT ON
 	
-	DECLARE @ShowNG BIT, @ShowVS BIT, @ShowRB BIT, @ShowVS2 BIT
+	DECLARE @ShowNG BIT, @ShowVS BIT, @ShowVS2 BIT
 	
     SELECT  @isShowAll = CASE @isShowAll
                            WHEN 1 THEN NULL
@@ -56,18 +57,6 @@ Revisions:
 						EventDate ,
 						matchid--, awayid
 				UNION ALL
-				SELECT  m.LeagueID ,
-						EventDate ,
-						MAX(OddsStatus) AS EventStatus
-				FROM      Outright m WITH ( NOLOCK )
-						INNER JOIN League WITH ( NOLOCK ) ON m.LeagueId = League.LeagueId
-															 AND League.Sporttype BETWEEN 151 AND 153  
-				WHERE     EventDate BETWEEN @FromDate AND @ToDate
-						AND m.OddsStatus <> 'closed'
-				GROUP BY  m.LeagueID ,
-						EventDate ,
-						GroupMatch
-				UNION ALL
 				SELECT  r.LeagueID
 						,o.EventDate
 						,MAX(o.EventStatus)
@@ -88,14 +77,12 @@ Revisions:
 
 	IF @LicenseeID <> 0
 	BEGIN
-		SELECT @ShowNG=0, @ShowVS=0, @ShowRB=0, @ShowVS2=0
+		SELECT @ShowNG=0, @ShowVS=0, @ShowVS2=0
 	
-		IF EXISTS(SELECT 1 FROM bodb_licensee.dbo.LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=1) SET @ShowRB=1
 		IF EXISTS(SELECT 1 FROM bodb_licensee.dbo.LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=2) SET @ShowNG=1
 		IF EXISTS(SELECT 1 FROM bodb_licensee.dbo.LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=5) SET @ShowVS=1
 		IF EXISTS(SELECT 1 FROM bodb_licensee.dbo.LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=27) SET @ShowVS2=1
 		
-		IF @ShowRB=0 DELETE FROM @Result WHERE Sporttype IN (151,152,153)
 		IF @ShowNG=0 DELETE FROM @Result WHERE Sporttype = 161
 		IF @ShowVS=0 DELETE FROM @Result WHERE Sporttype BETWEEN 180 AND 189
 		IF @ShowVS2=0 DELETE FROM @Result WHERE Sporttype BETWEEN 190 AND 199
@@ -106,8 +93,4 @@ Revisions:
 	ORDER BY EventDate, sporttype
 
  
-GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_MatchSelResultEntered] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_MatchSelResultEntered] TO [vnteam]
 GO
