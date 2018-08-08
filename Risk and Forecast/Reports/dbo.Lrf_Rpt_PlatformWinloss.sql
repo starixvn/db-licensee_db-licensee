@@ -4,7 +4,6 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_PlatformWinloss]
 	@FromDate	SMALLDATETIME,  
 	@ToDate		SMALLDATETIME,   
 	@showSB		BIT=0,  
-	@ShowRB		BIT=0,  
 	@ShowNG		BIT=0, 
 	@ShowBA		BIT=0,
 	@ShowVS		BIT=0,
@@ -43,6 +42,7 @@ AS
 		- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 		- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
 		- 20180418@Amanda: LAP - Update VB bet type range and integrate PP [RedmineID: #92318]
+		- 20180808@Amanda: Remove Racing [RedmineID: #99378]
 
 	Param's Explanation:  
 	  + @PlatformType:  0: All  
@@ -55,7 +55,6 @@ AS
 						7: New Asia (x)
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover onlly)
 	  + @showSB: Show SportsBook bets
-	  + @ShowRB: Show RB bets
 	  + @ShowNG: Show Number game bets
 	  + @ShowBA: Show Bet Aggregator bets (combined WITH Sportsbook or Number Game)
 	  + @ShowCS: Show RNG Casino (OneRNG)
@@ -166,16 +165,6 @@ BEGIN
 	IF @ShowSB = 1  
 	BEGIN
 		SET @SportTypeSQL = @SportTypeSQL + ', (0, ''SB'')'
-	END
-
-	IF @ShowRB = 1  
-	BEGIN
-		SET @SportTypeSQL = @SportTypeSQL + ', (151, ''RB'')'
-
-		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 31 AND 33 THEN ''RB''
-				'
-
-		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 31 AND 33)'
 	END
 
 	IF @ShowNG = 1	
@@ -393,7 +382,7 @@ BEGIN
 				tma.currency,
 				'SB' AS ProductPrefix,
 				pl.PlatformType,
-				SUM( CASE WHEN b.bettype in (33,34) AND b.liveawayscore=0 THEN b.stake/2 ELSE b.stake END
+				SUM( CASE WHEN b.bettype = 34 AND b.liveawayscore=0 THEN b.stake/2 ELSE b.stake END
 						*
 						CASE WHEN @drawfilter IN (2,3) THEN
 							CASE WHEN b.statusID = 111 THEN 0
@@ -402,7 +391,7 @@ BEGIN
 						ELSE 1 END
 					) turnover,
 				SUM(b.winlost-b.actual_stake) AS Winlost,	
-				- SUM(CASE WHEN (b.bettype NOT BETWEEN 31 AND 33)  THEN (b.winlost - b.actual_stake) ELSE 0 END) AS LicenseeWL ,
+				- SUM(b.winlost - b.actual_stake) AS LicenseeWL ,
 				SUM (   b.playercomm ) as PlayerComm,
 				--------BetCount-----------
 				COUNT(b.transid) 
@@ -417,7 +406,7 @@ BEGIN
 			WHERE
 				b.statusID  IN (111, 112, 113)
 				AND b.winlostdate BETWEEN @TempFromDate AND @TDate
-				AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
+				AND (b.bettype<=30 OR (b.bettype BETWEEN 121 AND 999)
 								  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 				) 
 				AND (b.bettype < 901 OR b.bettype > 904)
@@ -427,7 +416,7 @@ BEGIN
 		END
 	
 	
-		IF (@ShowRB=1 or @ShowNG=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @showMGCLC =1 OR @showMGCRnG =1 OR @ShowVB = 1 OR @ShowAB =1  OR @ShowFW =1 OR @ShowVS2 = 1 OR @ShowLT = 1 OR @ShowPP = 1)
+		IF (@ShowNG=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @showMGCLC =1 OR @showMGCRnG =1 OR @ShowVB = 1 OR @ShowAB =1  OR @ShowFW =1 OR @ShowVS2 = 1 OR @ShowLT = 1 OR @ShowPP = 1)
 		BEGIN
 			INSERT INTO #WinLoss (Winlostdate, Currency, ProductPrefix, PlatformType, Turnover, Winlost, LicenseeWL, playercomm, BetCount)
 			SELECT 
@@ -436,7 +425,7 @@ BEGIN
 				bt.ProductPrefix AS ProductPrefix,
 				pl.PlatformType,
 
-				SUM( CASE WHEN b.bettype in (33,34) AND b.liveawayscore=0 THEN b.stake/2 ELSE b.stake END
+				SUM( CASE WHEN b.bettype = 34 AND b.liveawayscore=0 THEN b.stake/2 ELSE b.stake END
 						*
 						CASE WHEN @drawfilter IN (2,3) THEN
 							CASE WHEN b.statusID = 111 THEN 0
@@ -445,7 +434,7 @@ BEGIN
 						ELSE 1 END
 					) turnover,
 				SUM(b.winlost-b.actual_stake) AS Winlost,	
-				- SUM(CASE WHEN (b.bettype NOT BETWEEN 31 AND 33)  THEN (b.winlost - b.actual_stake) ELSE 0 END) AS LicenseeWL ,
+				- SUM(b.winlost - b.actual_stake) AS LicenseeWL ,
 				SUM (   b.playercomm ) as PlayerComm,
 				--------BetCount-----------
 				COUNT(b.transid) 
@@ -489,7 +478,7 @@ BEGIN
 					ELSE 1 END
 				) AS Turnover,
 				SUM(b.winlost) AS Winlost,
-				- SUM(CASE WHEN (b.sporttype <> 151)  THEN b.winlost ELSE 0 END) AS LicenseeWL ,
+				- SUM(b.winlost) AS LicenseeWL ,
 				SUM ( b.playercomm ) as PlayerComm,
 				--------BetCount-----------
 				SUM(b.betcount)
@@ -533,7 +522,7 @@ BEGIN
 			
 		END
 
-		IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @showMGCLC =1 OR @showMGCRnG =1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW =1 OR @ShowVS2 = 1 OR @ShowLT = 1 OR @ShowPP = 1)
+		IF (@showSB = 1 or @ShowNG = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @showMGCLC =1 OR @showMGCRnG =1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW =1 OR @ShowVS2 = 1 OR @ShowLT = 1 OR @ShowPP = 1)
 		BEGIN
 			INSERT INTO #WinLoss (Winlostdate, Currency, ProductPrefix, PlatformType, Turnover, Winlost, LicenseeWL, playercomm, BetCount)
 			SELECT 
