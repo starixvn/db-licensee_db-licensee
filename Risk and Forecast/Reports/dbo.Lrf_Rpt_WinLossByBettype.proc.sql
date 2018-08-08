@@ -52,6 +52,7 @@ Revisions:
 	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
 	- 20180423@Harper: Fix bug group VS2: BasketBall - Virual Soccer [RedmineID: #93844]
+	- 20180808@Amanda: Remove Racing [RedmineID: #99378]
 
 Param's Explanation: 
 	+ @AgentList: xml structure
@@ -123,12 +124,8 @@ CREATE TABLE #AgWinLoss (
 	TurnOver MONEY
 	, MemberWinLost MONEY
 	, LicenseeWL MONEY
-	, --Sportbook and NumberGame
-	WinlossRB MONEY
 	, AmtDueToBA MONEY
-	, AmtDueToRB MONEY
 	, CommBA MONEY
-	, CommRB MONEY
 	, PlayerComm MONEY	
 	)
 
@@ -176,12 +173,7 @@ BEGIN
 		,
 		b.winlostdate,
 		b.currency,
-		SUM(CASE 
-				WHEN b.liveawayscore = 0
-					AND bettype IN (33, 43)
-					THEN stake / 2
-				ELSE stake
-				END)
+		stake
 		, SUM(winlost - actual_stake)
 		, - SUM(CASE 
 				WHEN ISNULL(BA.transid, 0) = 0
@@ -200,38 +192,23 @@ BEGIN
 					THEN (b.winlost - b.actual_stake)
 				ELSE 0
 				END) AS LicenseeWL
-		, SUM(CASE 
-				WHEN b.bettype IN (31, 32, 33)
-					THEN b.awinlost
-				ELSE 0
-				END) AS WinlossRB
 		, - SUM(CASE 
 				WHEN ISNULL(BA.transid, 0) <> 0
 					THEN (b.winlost - b.actual_stake + awinlost + comm)
 				ELSE 0
 				END) AS AmountDueToBA
-		, - SUM(CASE 
-				WHEN b.bettype IN (31, 32, 33)
-					THEN (b.winlost - b.actual_stake + awinlost + comm)
-				ELSE 0
-				END) AS AmountDueToRB
 		, SUM(CASE 
 				WHEN ISNULL(BA.transid, 0) <> 0
 					THEN comm
 				ELSE 0
 				END) AS CommBA
-		, SUM(CASE 
-				WHEN b.bettype IN (31, 32, 33)
-					THEN comm
-				ELSE 0
-				END) AS CommRB
 		, SUM(playercomm) AS PlayerComm		
 	FROM dbo.bettrans b WITH (NOLOCK)
 	INNER JOIN #TempSAg s ON b.srecommend = s.srecommend AND b.currency = s.currency
 	LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON b.transid = BA.transid	 
 	WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
 		AND (bettype <= 1599 OR (b.bettype >= 2701 AND b.bettype <= 2829))
-		AND (bettype NOT IN (71, 73,901,902,903,904,911,912,913,914) AND bettype NOT BETWEEN 1011 AND 1020 AND b.bettype NOT BETWEEN 1101 AND 1199) -- Remove LC
+		AND (bettype NOT IN (71, 73,901,902,903,904,911,912,913,914,31,32,33,41,42,43) AND bettype NOT BETWEEN 1011 AND 1020 AND b.bettype NOT BETWEEN 1101 AND 1199) -- Remove LC
 		AND b.ruben = 1
 		AND statusID NOT IN (101, 102, 103)
 	GROUP BY bettype
@@ -264,12 +241,7 @@ BEGIN
 		,
 		b.winlostdate,
 		b.currency,
-		SUM(CASE 
-				WHEN b.liveawayscore = 0
-					AND bettype IN (33, 43)
-					THEN stake / 2
-				ELSE stake
-				END)
+		stake
 		, SUM(winlost - actual_stake)
 		, - SUM(CASE 
 				WHEN ISNULL(BA.transid, 0) = 0
@@ -289,31 +261,16 @@ BEGIN
 					THEN (b.winlost - b.actual_stake)
 				ELSE 0
 				END) AS LicenseeWL
-		, SUM(CASE 
-				WHEN b.bettype IN (31, 32, 33)
-					THEN b.awinlost
-				ELSE 0
-				END) AS WinlossRB
 		, - SUM(CASE 
 				WHEN ISNULL(BA.transid, 0) <> 0
 					THEN (b.winlost - b.actual_stake + awinlost + comm)
 				ELSE 0
 				END) AS AmountDueToBA
-		, - SUM(CASE 
-				WHEN b.bettype IN (31, 32, 33)
-					THEN (b.winlost - b.actual_stake + awinlost + comm)
-				ELSE 0
-				END) AS AmountDueToRB
 		, SUM(CASE 
 				WHEN ISNULL(BA.transid, 0) <> 0
 					THEN comm
 				ELSE 0
 				END) AS CommBA
-		, SUM(CASE 
-				WHEN b.bettype IN (31, 32, 33)
-					THEN comm
-				ELSE 0
-				END) AS CommRB
 		, SUM(playercomm) AS PlayerComm		
 	FROM Bettrans14 b WITH (NOLOCK)
 	INNER JOIN @TempAg s ON b.recommend = s.CustId AND b.currency = s.currency
@@ -321,7 +278,7 @@ BEGIN
 	WHERE b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
 		AND statusID NOT IN (101, 102, 103)
 		AND (bettype <= 1599 OR (b.bettype >= 2701 AND b.bettype <= 2829)) 
-		AND (bettype NOT IN (71, 73,901,902,903,904,911,912,913,914) 
+		AND (bettype NOT IN (71, 73,901,902,903,904,911,912,913,914,31,32,33,41,42,43) 
 				AND bettype NOT BETWEEN 1011 AND 1020 
 				AND bettype NOT BETWEEN 1101 AND 1199
 			)
@@ -356,18 +313,10 @@ FROM (
 		, CAST(SUM(LicenseeWL*e.EUR) AS MONEY) AS LicenseeWLEUR
 		, CAST(SUM(LicenseeWL*e.USD) AS MONEY) AS LicenseeWLUSD
 		, CAST(SUM(LicenseeWL*e.GBP) AS MONEY) AS LicenseeWLGBP
-		, SUM(WinlossRB) AS WinlossRB
-		, CAST(SUM(WinlossRB*e.EUR) AS MONEY) AS WinlossRBEUR
-		, CAST(SUM(WinlossRB*e.USD) AS MONEY) AS WinlossRBUSD
-		, CAST(SUM(WinlossRB*e.GBP) AS MONEY) AS WinlossRBGBP
 		, SUM(CommBA) AS CommBA
 		, CAST(SUM(CommBA*e.EUR) AS MONEY) AS CommBAEUR
 		, CAST(SUM(CommBA*e.USD) AS MONEY) AS CommBAUSD
 		, CAST(SUM(CommBA*e.GBP) AS MONEY) AS CommBAGBP
-		, SUM(commRB) AS commRB
-		, CAST(SUM(commRB*e.EUR) AS MONEY) AS commRBEUR
-		, CAST(SUM(commRB*e.USD) AS MONEY) AS commRBUSD
-		, CAST(SUM(commRB*e.GBP) AS MONEY) AS commRBGBP
 		, SUM(PlayerComm) AS PlayerComm
 		, CAST(SUM(PlayerComm*e.EUR) AS MONEY) AS PlayerCommEUR
 		, CAST(SUM(PlayerComm*e.USD) AS MONEY) AS PlayerCommUSD
@@ -376,10 +325,6 @@ FROM (
 		, CAST(SUM(AmtDuetoBA*e.EUR) AS MONEY) AS AmtDuetoBAEUR
 		, CAST(SUM(AmtDuetoBA*e.USD) AS MONEY) AS AmtDuetoBAUSD
 		, CAST(SUM(AmtDuetoBA*e.GBP) AS MONEY) AS AmtDuetoBAGBP
-		, SUM(AmtDuetoRB) AS AmtDuetoRB
-		, CAST(SUM(AmtDuetoRB*e.EUR) AS MONEY) AS AmtDuetoRBEUR
-		, CAST(SUM(AmtDuetoRB*e.USD) AS MONEY) AS AmtDuetoRBUSD
-		, CAST(SUM(AmtDuetoRB*e.GBP) AS MONEY) AS AmtDuetoRBGBP
 		, ROW_NUMBER() OVER (
 			ORDER BY CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.grouptypeId
 						  WHEN ISNULL(vs.Bettype, 0) <> 0 THEN vs.GroupTypeId 
@@ -401,9 +346,4 @@ WHERE wl.RowNum BETWEEN @RowStart AND @RowEnd
 
 DROP TABLE #AgWinLoss
 DROP TABLE #TempSAg
-GO
-
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinLossByBettype] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_WinLossByBettype] TO [vnteam]
 GO
