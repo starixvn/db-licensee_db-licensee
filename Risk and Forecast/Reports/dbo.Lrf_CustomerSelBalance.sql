@@ -1,11 +1,10 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_CustomerSelBalance]
 	@LicenseeID INT,
 	@MoveBetsDay SMALLDATETIME,
 	@FromDate SMALLDATETIME,
 	@ToDate SMALLDATETIME,
-	@IsOld BIT = 0,
 	@AgentList	VARCHAR(MAX)
 AS
 /*
@@ -56,6 +55,7 @@ Revisions:
 	- 20170329@Paul: Implement Cash Out [RedmineID: #71727]
 	- 20180205@Harper: Remove LC from product list [RedmineID: #85965]
 	- 20180418@Amanda: LAP - Update VB bet type range and integrate PP [RedmineID: #92318]
+	- 20180808@Amanda: Remove Racing, Bingo and Old(@IsOld) data [RedmineID: #99378]
 */
 
 BEGIN
@@ -67,27 +67,15 @@ BEGIN
 			@SelectedMonthLicenseeWLUSD MONEY,
 			@SelectedMonthLicenseeWLEUR MONEY,
 			@SelectedMonthLicenseeWLGBP MONEY,
-			@SelectedMonthWinlossRB MONEY,
-			@SelectedMonthWinlossRBUSD MONEY,
-			@SelectedMonthWinlossRBEUR MONEY,
-			@SelectedMonthWinlossRBGBP MONEY,
 			@SelectedMonthAmtDuetoBA MONEY,
 			@SelectedMonthAmtDuetoBAUSD MONEY,
 			@SelectedMonthAmtDuetoBAEUR MONEY,
 			@SelectedMonthAmtDuetoBAGBP MONEY,
-			@SelectedMonthAmtDuetoRB MONEY,
-			@SelectedMonthAmtDuetoRBUSD MONEY,
-			@SelectedMonthAmtDuetoRBEUR MONEY,
-			@SelectedMonthAmtDuetoRBGBP MONEY,
 			@SelectedMonthCommBA MONEY,
-			@SelectedMonthCommRB MONEY,
 			@SelectedMonthCommBAUSD MONEY,
 			@SelectedMonthCommBAEUR MONEY,
 			@SelectedMonthCommBAGBP MONEY,
 			@SelectedMonthPlayerComm MONEY,
-			@SelectedMonthCommRBUSD MONEY,
-			@SelectedMonthCommRBEUR MONEY,
-			@SelectedMonthCommRBGBP MONEY,
 			@SelectedMonthPlayerCommUSD MONEY,
 			@SelectedMonthPlayerCommEUR MONEY,
 			@SelectedMonthPlayerCommGBP MONEY,
@@ -104,26 +92,14 @@ BEGIN
 			@TodayLicenseeWLUSD MONEY,
 			@TodayLicenseeWLEUR MONEY,
 			@TodayLicenseeWLGBP MONEY,
-			@TodayWinlossRB MONEY,
-			@TodayWinlossRBUSD MONEY,
-			@TodayWinlossRBEUR MONEY,
-			@TodayWinlossRBGBP MONEY,
 			@TodayAmtDuetoBA MONEY,
 			@TodayAmtDuetoBAUSD MONEY,
 			@TodayAmtDuetoBAEUR MONEY,
 			@TodayAmtDuetoBAGBP MONEY,
-			@TodayAmtDuetoRB MONEY,
-			@TodayAmtDuetoRBUSD MONEY,
-			@TodayAmtDuetoRBEUR MONEY,
-			@TodayAmtDuetoRBGBP MONEY,
 			@TodayCommBA  MONEY,
 			@TodayCommBAUSD MONEY,
 			@TodayCommBAEUR MONEY,
 			@TodayCommBAGBP MONEY,
-			@TodayCommRB  MONEY,
-			@TodayCommRBUSD MONEY,
-			@TodayCommRBEUR MONEY,
-			@TodayCommRBGBP MONEY,
 			@TodayPlayerComm 	  MONEY,
 			@TodayPlayerCommUSD MONEY,
 			@TodayPlayerCommEUR MONEY,
@@ -141,26 +117,14 @@ BEGIN
 			@YesterdayLicenseeWLUSD MONEY,
 			@YesterdayLicenseeWLEUR MONEY,
 			@YesterdayLicenseeWLGBP MONEY,
-			@YesterdayWinlossRB MONEY,
-			@YesterdayWinlossRBUSD MONEY,
-			@YesterdayWinlossRBEUR MONEY,
-			@YesterdayWinlossRBGBP MONEY,
 			@YesterdayAmtDuetoBA MONEY,
 			@YesterdayAmtDuetoBAUSD MONEY,
 			@YesterdayAmtDuetoBAEUR MONEY,
 			@YesterdayAmtDuetoBAGBP MONEY,
-			@YesterdayAmtDuetoRB MONEY,
-			@YesterdayAmtDuetoRBUSD MONEY,
-			@YesterdayAmtDuetoRBEUR MONEY,
-			@YesterdayAmtDuetoRBGBP MONEY,--
 			@YesterdayCommBA  MONEY,
 			@YesterdayCommBAUSD MONEY,
 			@YesterdayCommBAEUR MONEY,
 			@YesterdayCommBAGBP MONEY,
-			@YesterdayCommRB  MONEY,
-			@YesterdayCommRBUSD MONEY,
-			@YesterdayCommRBEUR MONEY,
-			@YesterdayCommRBGBP MONEY,
 			@YesterdayPlayerComm    MONEY,
 			@YesterdayPlayerCommUSD MONEY,
 			@YesterdayPlayerCommEUR MONEY,
@@ -193,10 +157,7 @@ BEGIN
 		currency INT,
 		SelectedMonthLicenseeWL MONEY,
 		SelectedMonthAmtDuetoBA MONEY,
-		SelectedMonthAmtDuetoRB MONEY,
-		SelectedMonthWinlossRB MONEY,
 		SelectedMonthCommBA MONEY,
-		SelectedMonthCommRB MONEY,
 		SelectedMonthPlayerComm MONEY,
 		SelectedMonthBetTradeComm MONEY,
 		SelectedMonthWLBetTicket MONEY ,	
@@ -215,10 +176,7 @@ BEGIN
 		currency INT,
 		LicenseeWL MONEY,
 		AmtDuetoBA MONEY,
-		AmtDuetoRB MONEY,
-		WinlossRB MONEY,
 		CommBA MONEY,
-		CommRB MONEY,
 		PlayerComm MONEY,
 		WLBetTicket MONEY,
 		BetTradeComm MONEY,
@@ -371,12 +329,12 @@ BEGIN
 		AND b.bettype NOT BETWEEN 1101 AND 1199 -- Remove LC
 		AND b.statusID IN (111,112,113)
 
-	INSERT INTO @LicenseeWL(winlostdate, currency, LicenseeWL, AmtDuetoBA, AmtDuetoRB, WinlossRB, CommBA, CommRB, PlayerComm, WLBetTicket, BetTradeComm, WLBoughtTicket)
+	INSERT INTO @LicenseeWL(winlostdate, currency, LicenseeWL, AmtDuetoBA, CommBA, PlayerComm, WLBetTicket, BetTradeComm, WLBoughtTicket)
 	SELECT  b.winlostdate,a.currency,
 			ISNULL(-SUM(
 					CASE WHEN (
 						(
-							(bettype < 31 OR bettype BETWEEN 121 AND 999 OR (bettype BETWEEN 1301 AND 1399)) 
+							(bettype <= 30 OR bettype BETWEEN 121 AND 999 OR (bettype BETWEEN 1301 AND 1399)) 
 							AND b.tpositiontaking <> 0 AND bettype NOT IN (901, 902, 903, 904)
 							AND (b.bettype < 911 OR b.bettype > 914)
 						) 
@@ -386,31 +344,26 @@ BEGIN
 							OR b.bettype BETWEEN 1201 AND 1299 
 							OR b.bettype BETWEEN 1501 AND 1599 --Keno
 							OR b.bettype BETWEEN 4001 AND 4300 -- Voidbridge & PP
-							OR b.bettype IN (73)
 						)
 						) THEN (b.winlost - b.actual_stake)  
-						WHEN b.bettype BETWEEN 31 AND 33 THEN awinlost
 						ELSE 0 
 					END), 0) AS LicenseeWL,	--20130619@Daniel: Fix more bug regconize BA tickets
 		ISNULL(-SUM(CASE WHEN b.tpositiontaking = 0 
 							AND (
-								(b.bettype NOT BETWEEN 31 AND 120 AND b.bettype <= 999 AND b.bettype NOT IN (901, 902, 903, 904) AND (b.bettype < 911 OR b.bettype > 914)) 
+								((b.bettype <= 30 OR b.bettype >= 121) AND b.bettype <= 999 AND b.bettype NOT IN (901, 902, 903, 904) AND (b.bettype < 911 OR b.bettype > 914)) 
 								OR (b.bettype BETWEEN 1301 and 1399)
 							) THEN (b.winlost - b.actual_stake + awinlost + comm)
 						ELSE 0 
 					END), 0) AS AmtDuetoBA,
-		ISNULL(-SUM(CASE WHEN b.bettype IN (31, 32, 33) THEN (b.winlost - b.actual_stake + awinlost + comm) ELSE 0 END), 0) AS AmtDuetoRB,
-		ISNULL(SUM(CASE WHEN b.bettype IN (31, 32, 33) THEN b.awinlost ELSE 0 END), 0) AS WinlossRB,
 		ISNULL(SUM(CASE WHEN b.tpositiontaking = 0 
 							AND (
-								(b.bettype NOT BETWEEN 31 AND 120 AND b.bettype <= 999 AND b.bettype NOT IN (901, 902, 903, 904) AND (b.bettype < 911 OR b.bettype > 914)) 
+								((b.bettype <= 30 OR b.bettype >= 121) AND b.bettype <= 999 AND b.bettype NOT IN (901, 902, 903, 904) AND (b.bettype < 911 OR b.bettype > 914)) 
 								OR (b.bettype BETWEEN 1301 AND 1399)
 							) THEN  comm  
 						ELSE 0 
 					END), 0) AS CommBA,
-		ISNULL(SUM(CASE WHEN b.bettype IN (31, 32, 33) THEN comm  ELSE 0 END),0) AS CommRB,
 		ISNULL(SUM(playercomm), 0) AS PlayerComm,
-		SUM(CASE WHEN (bettype < 31 OR bettype BETWEEN 121 AND 999 OR (bettype BETWEEN 1301 AND 1399)) 
+		SUM(CASE WHEN (bettype <= 30 OR bettype BETWEEN 121 AND 999 OR (bettype BETWEEN 1301 AND 1399)) 
 					AND bettype NOT IN (901, 902, 903, 904) AND (b.bettype < 911 OR b.bettype > 914)
 					AND betdaqid = 0 THEN (b.winlost - b.actual_stake)
 				ELSE 0 END) AS WLBetTicket,
@@ -430,22 +383,10 @@ BEGIN
 			@YesterdayAmtDuetoBAUSD = SUM(AmtDuetoBA * e.USD),
 			@YesterdayAmtDuetoBAEUR = SUM(AmtDuetoBA * e.EUR),
 			@YesterdayAmtDuetoBAGBP = SUM(AmtDuetoBA * e.GBP),
-			@YesterdayAmtDuetoRB = SUM(AmtDuetoRB),
-			@YesterdayAmtDuetoRBUSD = SUM(AmtDuetoRB * e.USD),
-			@YesterdayAmtDuetoRBEUR = SUM(AmtDuetoRB * e.EUR),
-			@YesterdayAmtDuetoRBGBP = SUM(AmtDuetoRB * e.GBP),
-			@YesterdayWinlossRB = SUM(WinlossRB),
-			@YesterdayWinlossRBUSD = SUM(WinlossRB * e.USD),
-			@YesterdayWinlossRBEUR = SUM(WinlossRB * e.EUR),
-			@YesterdayWinlossRBGBP = SUM(WinlossRB * e.GBP),
 			@YesterdayCommBA = SUM(CommBA),
 			@YesterdayCommBAUSD = SUM(CommBA * e.USD),
 			@YesterdayCommBAEUR = SUM(CommBA * e.EUR),
 			@YesterdayCommBAGBP = SUM(CommBA * e.GBP),
-			@YesterdayCommRB = SUM(CommRB),
-			@YesterdayCommRBUSD = SUM(CommRB * e.USD),
-			@YesterdayCommRBEUR = SUM(CommRB * e.EUR),--
-			@YesterdayCommRBGBP = SUM(CommRB * e.GBP),--
 			@YesterdayPlayerComm    = SUM(PlayerComm),
 			@YesterdayPlayerCommUSD = SUM(PlayerComm * e.USD),
 			@YesterdayPlayerCommEUR = SUM(PlayerComm * e.EUR), -- yesterday
@@ -471,23 +412,11 @@ BEGIN
 			@TodayAmtDuetoBAUSD = SUM(AmtDuetoBA * e.USD),
 			@TodayAmtDuetoBAEUR = SUM(AmtDuetoBA * e.EUR),
 			@TodayAmtDuetoBAGBP = SUM(AmtDuetoBA * e.GBP),
-			@TodayAmtDuetoRB = SUM(AmtDuetoRB),
-			@TodayAmtDuetoRBUSD = SUM(AmtDuetoRB * e.USD),
-			@TodayAmtDuetoRBEUR = SUM(AmtDuetoRB * e.EUR),
-			@TodayAmtDuetoRBGBP = SUM(AmtDuetoRB * e.GBP),
-			@TodayWinlossRB = SUM(WinlossRB),
-			@TodayWinlossRBUSD = SUM(WinlossRB * e.USD),
-			@TodayWinlossRBEUR = SUM(WinlossRB * e.EUR),
-			@TodayWinlossRBGBP = SUM(WinlossRB * e.GBP),
 	
 			@TodayCommBA = SUM(CommBA),
 			@TodayCommBAUSD = SUM(CommBA * e.USD),
 			@TodayCommBAEUR = SUM(CommBA * e.EUR),
 			@TodayCommBAGBP = SUM(CommBA * e.GBP),
-			@TodayCommRB = SUM(CommRB),
-			@TodayCommRBUSD = SUM(CommRB * e.USD),
-			@TodayCommRBEUR = SUM(CommRB * e.EUR),
-			@TodayCommRBGBP = SUM(CommRB * e.GBP),
 			@TodayPlayerComm=ISNULL(SUM(playercomm),0),
 			@TodayPlayerCommUSD=ISNULL(SUM(Playercomm * e.USD),0),
 			@TodayPlayerCommEUR=ISNULL(SUM((Playercomm) * e.EUR),0),
@@ -524,10 +453,7 @@ BEGIN
 			currency,
 			SelectedMonthLicenseeWL,
 			SelectedMonthAmtDuetoBA,
-			SelectedMonthAmtDuetoRB,
-			SelectedMonthWinlossRB,
 			SelectedMonthCommBA,
-			SelectedMonthCommRB,
 			SelectedMonthPlayerComm,
 			SelectedMonthBetTradeComm,
 			SelectedMonthWLBetTicket,
@@ -536,10 +462,7 @@ BEGIN
 		SELECT  b.currency,
 				ISNULL(SUM(LicenseeWL), 0),
 				ISNULL(SUM(AmtDuetoBA), 0),
-				ISNULL(SUM(AmtDuetoRB), 0),
-				ISNULL(SUM (WinlossRB), 0),
 				ISNULL(SUM (CommBA), 0),
-				ISNULL(SUM (CommRB), 0),
 				ISNULL(SUM (playercomm), 0),
 				ISNULL(SUM (BetTradeComm), 0),
 				ISNULL(SUM (b.WLBetTicket), 0),
@@ -549,7 +472,7 @@ BEGIN
 		GROUP by b.currency
 	END
 
-	IF @_FromDate <= @MoveBetsDay AND @IsOld = 0
+	IF @_FromDate <= @MoveBetsDay
 	BEGIN
 		IF @_ToDate >= @MoveBetsDay
 			SET @TempToDate = @MoveBetsDay
@@ -561,23 +484,17 @@ BEGIN
 			currency,
 			SelectedMonthLicenseeWL,
 			SelectedMonthAmtDuetoBA,
-			SelectedMonthAmtDuetoRB,
-			SelectedMonthWinlossRB,
 			SelectedMonthCommBA,
-			SelectedMonthCommRB,
 			SelectedMonthPlayerComm,
 			SelectedMonthBetTradeComm,
 			SelectedMonthWLBetTicket,
 			SelectedMonthWLBoughtTicket
 		)
 		SELECT  ag.currency,
-				ISNULL(-SUM(CASE WHEN ISNULL(b.isBA, 0) = 0 AND (b.sporttype IN (0, 161, 180, 251, 252, 202)) THEN b.winlost 
+				ISNULL(-SUM(CASE WHEN ISNULL(b.isBA, 0) = 0 AND (b.sporttype IN (0, 161, 180, 251, 202)) THEN b.winlost 
 								ELSE 0 END), 0) AS SelectedMonthLicenseeWL,
 				ISNULL(-SUM(CASE WHEN ISNULL(b.isBA, 0) = 1 THEN (b.winlost + b.awinlost + b.comm) ELSE 0 END), 0) AS SelectedMonthAmtDuetoBA,
-				ISNULL(-SUM(CASE WHEN b.sporttype = 151 THEN (b.winlost + b.awinlost + b.comm) ELSE 0 END), 0) AS SelectedMonthAmtDuetoRB,
-				ISNULL(SUM(CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END), 0) AS SelectedMonthWinlossRB,
 				ISNULL(SUM(CASE WHEN ISNULL(b.isBA,0) = 1 THEN  comm  ELSE 0 END), 0) AS SelectedMonthCommBA,
-				ISNULL(SUM(CASE WHEN b.sporttype = 151 THEN comm ELSE 0 END), 0) AS SelectedMonthCommRB,
 				ISNULL(SUM(playercomm), 0) AS SelectedMonthPlayerComm,
 				SUM(CASE WHEN b.bettype = 903 THEN b.awinlost
 						ELSE 0 END) AS SelectedMonthBetTradeComm,
@@ -594,34 +511,6 @@ BEGIN
 			AND	roleID = 1
 			AND b.statusID <> 101 --exclude REJECT bets
 		GROUP BY ag.currency	
-	END	
-	ELSE IF @IsOld = 1
-	BEGIN
-		INSERT INTO @SumTemp
-		SELECT 
-			ag.currency,
-			ISNULL(- SUM(CASE WHEN ISNULL(b.isBA,0) = 0 AND ( b.sporttype IN (0,161,180,251,252,202 ))  THEN b.winlost ELSE 0 END),0) AS SelectedMonthLicenseeWL,
-			ISNULL(- SUM ( CASE WHEN ISNULL(b.isBA,0) = 1 THEN  (b.winlost+b.awinlost+b.comm) ELSE 0 END),0) AS SelectedMonthAmtDuetoBA,
-			ISNULL(- SUM ( CASE WHEN b.sporttype = 151 THEN (b.winlost+b.awinlost+b.comm) ELSE 0 END),0) AS SelectedMonthAmtDuetoRB,
-			ISNULL(SUM (CASE WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END),0) AS SelectedMonthWinlossRB,
-			ISNULL(SUM ( CASE WHEN ISNULL(b.isBA,0) = 1 THEN  comm  ELSE 0 END),0) AS SelectedMonthCommBA,
-			ISNULL(SUM ( CASE WHEN b.sporttype = 151 THEN comm  ELSE 0 END),0)  AS SelectedMonthCommRB,
-			ISNULL(SUM ( playercomm ),0) AS SelectedMonthPlayerComm,
-			SUM(CASE WHEN b.bettype =903 THEN b.awinlost
-					ELSE 0 END) AS SelectedMonthBetTradeComm,
-			ISNULL(SUM(CASE WHEN (b.sporttype =0 AND b.bettype NOT IN (901,902,903,904)) AND bt.Custid IS NOT NULL THEN b.winlost ELSE 0 END),0) AS SelectedMonthWLBetTicket,			
-			SUM(CASE WHEN b.bettype =902 THEN (b.winlost)
-					ELSE 0 END) AS SelectedMonthWLBoughtTicket
-		FROM 
-			bodb_Licenseereport.dbo.rptLicWinloss_old b WITH(NOLOCK)
-			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency	
-			LEFT JOIN f_GetBetTradeCustList(@LicenseeName) bt ON b.custid=bt.Custid AND b.Currency = bt.currency
-		WHERE
-			b.Winlostdate BETWEEN @_FromDate AND @_ToDate AND	
-			roleID = 1 AND 
-			b.statusID <> 101 --exclude REJECT bets
-		--GROUP BY winlostdate,currency
-		GROUP BY ag.currency
 	END
 
 
@@ -633,22 +522,10 @@ BEGIN
 			@SelectedMonthAmtDuetoBAUSD = SUM(SelectedMonthAmtDuetoBA * e.USD),
 			@SelectedMonthAmtDuetoBAEUR = SUM(SelectedMonthAmtDuetoBA * e.EUR),
 			@SelectedMonthAmtDuetoBAGBP = SUM(SelectedMonthAmtDuetoBA * e.GBP),
-			@SelectedMonthAmtDuetoRB = SUM(SelectedMonthAmtDuetoRB),
-			@SelectedMonthAmtDuetoRBUSD =  SUM(SelectedMonthAmtDuetoRB * e.USD),
-			@SelectedMonthAmtDuetoRBEUR = SUM(SelectedMonthAmtDuetoRB * e.EUR),
-			@SelectedMonthAmtDuetoRBGBP = SUM(SelectedMonthAmtDuetoRB * e.GBP),
-			@SelectedMonthWinlossRB = SUM(SelectedMonthWinlossRB),
-			@SelectedMonthWinlossRBUSD = SUM(SelectedMonthWinlossRB * e.USD),
-			@SelectedMonthWinlossRBEUR = SUM(SelectedMonthWinlossRB * e.EUR),
-			@SelectedMonthWinlossRBGBP = SUM(SelectedMonthWinlossRB * e.GBP),
 			@SelectedMonthCommBA = SUM(SelectedMonthCommBA),
 			@SelectedMonthCommBAUSD = SUM(SelectedMonthCommBA * e.USD),
 			@SelectedMonthCommBAEUR =  SUM(SelectedMonthCommBA * e.EUR),
 			@SelectedMonthCommBAGBP =  SUM(SelectedMonthCommBA * e.GBP),
-			@SelectedMonthCommRB = SUM(SelectedMonthCommRB),
-			@SelectedMonthCommRBUSD = SUM(SelectedMonthCommRB * e.USD),
-			@SelectedMonthCommRBEUR = SUM(SelectedMonthCommRB * e.EUR),----
-			@SelectedMonthCommRBGBP = SUM(SelectedMonthCommRB * e.GBP),----
 			@SelectedMonthPlayerComm = SUM(SelectedMonthPLayerComm),
 			@SelectedMonthPlayerCommUSD = SUM(SelectedMonthPlayerComm * e.USD),
 			@SelectedMonthPlayerCommEUR =  SUM(SelectedMonthPlayerComm * e.EUR),
@@ -672,19 +549,11 @@ BEGIN
 			ISNULL(@SelectedMonthLicenseeWLUSD, 0) AS SelectedMonthLicenseeWLUSD,
 			ISNULL(@SelectedMonthLicenseeWLEUR, 0) AS SelectedMonthLicenseeWLEUR,
 			ISNULL(@SelectedMonthLicenseeWLGBP,0) AS SelectedMonthLicenseeWLGBP,
-			ISNULL(@SelectedMonthWinlossRB, 0) AS SelectedMonthWinlossRB,
-			ISNULL(@SelectedMonthWinlossRBUSD, 0) AS SelectedMonthWinlossRBUSD,
-			ISNULL(@SelectedMonthWinlossRBEUR, 0) AS SelectedMonthWinlossRBEUR,
-			ISNULL(@SelectedMonthWinlossRBGBP, 0) AS SelectedMonthWinlossRBGBP,
 			--Month Comm
 			ISNULL(@SelectedMonthCommBA, 0) AS SelectedMonthCommBA,
 			ISNULL(@SelectedMonthCommBAUSD, 0) AS SelectedMonthCommBAUSD,
 			ISNULL(@SelectedMonthCommBAEUR, 0) AS SelectedMonthCommBAEUR,
 			ISNULL(@SelectedMonthCommBAGBP, 0) AS SelectedMonthCommBAGBP,
-			ISNULL(@SelectedMonthCommRB, 0) AS SelectedMonthCommRB,
-			ISNULL(@SelectedMonthCommRBUSD, 0) AS SelectedMonthCommRBUSD,
-			ISNULL(@SelectedMonthCommRBEUR, 0) AS SelectedMonthCommRBEUR,---
-			ISNULL(@SelectedMonthCommRBGBP, 0) AS SelectedMonthCommRBGBP,---
 			ISNULL(@SelectedMonthPlayerComm, 0) AS SelectedMonthPlayerComm,
 			ISNULL(@SelectedMonthPlayerCommUSD, 0) AS SelectedMonthPlayerCommUSD,
 			ISNULL(@SelectedMonthPlayerCommEUR, 0) AS SelectedMonthPlayerCommEUR,
@@ -695,10 +564,6 @@ BEGIN
 			ISNULL(@SelectedMonthAmtDuetoBAUSD, 0) AS SelectedMonthAmtDuetoBAUSD,
 			ISNULL(@SelectedMonthAmtDuetoBAEUR, 0) AS SelectedMonthAmtDuetoBAEUR,
 			ISNULL(@SelectedMonthAmtDuetoBAGBP, 0) AS SelectedMonthAmtDuetoBAGBP,
-			ISNULL(@SelectedMonthAmtDuetoRB, 0) AS SelectedMonthAmtDuetoRB,
-			ISNULL(@SelectedMonthAmtDuetoRBUSD, 0) AS SelectedMonthAmtDuetoRBUSD,
-			ISNULL(@SelectedMonthAmtDuetoRBEUR, 0) AS SelectedMonthAmtDuetoRBEUR,
-			ISNULL(@SelectedMonthAmtDuetoRBGBP, 0) AS SelectedMonthAmtDuetoRBGBP,
 			-- Month Bettrade 
 			ISNULL(@SelectedMonthBetTradeComm, 0) AS SelectedMonthBetTradeComm,
 			ISNULL(@SelectedMonthBetTradeCommUSD, 0) AS SelectedMonthBetTradeCommUSD,
@@ -714,19 +579,11 @@ BEGIN
 			ISNULL(@YesterdayLicenseeWLUSD, 0) AS YesterdayLicenseeWLUSD,
 			ISNULL(@YesterdayLicenseeWLEUR, 0) AS YesterdayLicenseeWLEUR,
 			ISNULL(@YesterdayLicenseeWLGBP, 0) AS YesterdayLicenseeWLGBP,
-			ISNULL(@YesterdayWinlossRB, 0) AS YesterdayWinlossRB,
-			ISNULL(@YesterdayWinlossRBUSD, 0) AS YesterdayWinlossRBUSD,
-			ISNULL(@YesterdayWinlossRBEUR, 0) AS YesterdayWinlossRBEUR,
-			ISNULL(@YesterdayWinlossRBGBP, 0) AS YesterdayWinlossRBGBP,
 			--Yesterday Comm
 			ISNULL(@YesterdayCommBA, 0) AS YesterdayCommBA,
 			ISNULL(@YesterdayCommBAUSD, 0) AS YesterdayCommBAUSD,
 			ISNULL(@YesterdayCommBAEUR, 0) AS YesterdayCommBAEUR,
 			ISNULL(@YesterdayCommBAGBP, 0) AS YesterdayCommBAGBP,
-			ISNULL(@YesterdayCommRB, 0) AS YesterdayCommRB,
-			ISNULL(@YesterdayCommRBUSD, 0) AS YesterdayCommRBUSD,
-			ISNULL(@YesterdayCommRBEUR, 0) AS YesterdayCommRBEUR,
-			ISNULL(@YesterdayCommRBGBP, 0) AS YesterdayCommRBGBP,
 			ISNULL(@YesterdayPlayerComm, 0) AS YesterdayPlayerComm,
 			ISNULL(@YesterdayPlayerCommUSD, 0) AS YesterdayPlayerCommUSD,
 			ISNULL(@YesterdayPlayerCommEUR, 0) AS YesterdayPlayerCommEUR,
@@ -737,10 +594,6 @@ BEGIN
 			ISNULL(@YesterdayAmtDuetoBAUSD, 0) AS YesterdayAmtDuetoBAUSD,
 			ISNULL(@YesterdayAmtDuetoBAEUR, 0) AS YesterdayAmtDuetoBAEUR,
 			ISNULL(@YesterdayAmtDuetoBAGBP, 0) AS YesterdayAmtDuetoBAGBP,
-			ISNULL(@YesterdayAmtDuetoRB, 0) AS YesterdayAmtDuetoRB,
-			ISNULL(@YesterdayAmtDuetoRBUSD, 0) AS YesterdayAmtDuetoRBUSD,
-			ISNULL(@YesterdayAmtDuetoRBEUR, 0) AS YesterdayAmtDuetoRBEUR,
-			ISNULL(@YesterdayAmtDuetoRBGBP, 0) AS YesterdayAmtDuetoRBGBP,
 
 			-- yesterday bettrade
 			ISNULL(@YesterdayBetTradeComm, 0) AS YesterdayBetTradeComm,
@@ -757,19 +610,11 @@ BEGIN
 			ISNULL(@TodayLicenseeWLUSD, 0) AS TodayLicenseeWLUSD,
 			ISNULL(@TodayLicenseeWLEUR, 0) AS TodayLicenseeWLEUR,
 			ISNULL(@TodayLicenseeWLGBP, 0) AS TodayLicenseeWLGBP,
-			ISNULL(@TodayWinlossRB, 0) AS TodayWinlossRB,
-			ISNULL(@TodayWinlossRBUSD, 0) AS TodayWinlossRBUSD,
-			ISNULL(@TodayWinlossRBEUR, 0) AS TodayWinlossRBEUR,
-			ISNULL(@TodayWinlossRBGBP, 0) AS TodayWinlossRBGBP,
 			--TodayComm
 			ISNULL(@TodayCommBA, 0) AS TodayCommBA,
 			ISNULL(@TodayCommBAUSD, 0) AS TodayCommBAUSD,
 			ISNULL(@TodayCommBAEUR, 0) AS TodayCommBAEUR,
 			ISNULL(@TodayCommBAGBP, 0) AS TodayCommBAGBP,
-			ISNULL(@TodayCommRB, 0) AS TodayCommRB,
-			ISNULL(@TodayCommRBUSD, 0) AS TodayCommRBUSD,
-			ISNULL(@TodayCommRBEUR, 0) AS TodayCommRBEUR,---
-			ISNULL(@TodayCommRBGBP, 0) AS TodayCommRBGBP,---
 			ISNULL(@TodayPlayerComm, 0) AS TodayPlayerComm,
 			ISNULL(@TodayPlayerCommUSD, 0) AS TodayPlayerCommUSD,
 			ISNULL(@TodayPlayerCommEUR, 0) AS TodayPlayerCommEUR,
@@ -780,10 +625,6 @@ BEGIN
 			ISNULL(@TodayAmtDuetoBAUSD, 0) AS TodayAmtDuetoBAUSD,
 			ISNULL(@TodayAmtDuetoBAEUR, 0) AS TodayAmtDuetoBAEUR,
 			ISNULL(@TodayAmtDuetoBAGBP, 0) AS TodayAmtDuetoBAGBP,
-			ISNULL(@TodayAmtDuetoRB, 0) AS TodayAmtDuetoRB,
-			ISNULL(@TodayAmtDuetoRBUSD, 0) AS TodayAmtDuetoRBUSD,
-			ISNULL(@TodayAmtDuetoRBEUR, 0) AS TodayAmtDuetoRBEUR,
-			ISNULL(@TodayAmtDuetoRBGBP, 0) AS TodayAmtDuetoRBGBP,
 
 			-- Today bettrade
 			ISNULL(@TodayBetTradeComm, 0)	AS TodayBetTradeComm,
