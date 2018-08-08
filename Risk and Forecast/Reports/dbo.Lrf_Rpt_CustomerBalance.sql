@@ -8,12 +8,10 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerBalance]
 	, @PageSize		INT = 1000
 	, @PageIndex	INT = 1
 	, @showSB		BIT = 0
-	, @ShowRB		BIT = 0
 	, @ShowNG		BIT = 0	
 	, @ShowVS		BIT = 0
 	, @ShowCS		BIT = 0
-	, @ShowBG		BIT = 0 -- RNG Casino  	
-	, @ShowKN		BIT = 0 -- Bingo     	
+	, @ShowKN		BIT = 0   	
 	, @ShowBT		BIT = 0 -- Keno 	
 	, @ShowMGCLC	BIT = 0-- Bet Trade ,	
 	, @ShowMGCRnG	BIT = 0
@@ -65,6 +63,7 @@ Revisions:
 	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 	- 20180412@Harper: Integrate Bonus wallet [RedmineID: 91740]
 	- 20180418@Amanda: LAP - Integrate PP [RedmineID: #92318]
+	- 20180808@Amanda: Remove Racing, Bingo [RedmineID: #99378]
 
 Param's Explanation:  
 	+ @excludeTest: remove currency UUS  
@@ -112,9 +111,6 @@ BEGIN
 	IF @ShowSB = 1
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'SB', 'SB')
 
-	IF @ShowRB = 1
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'RB', 'RB')	
-
 	IF @ShowNG = 1
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'NG', 'NG')	
 		
@@ -123,9 +119,6 @@ BEGIN
 
 	IF @ShowCS = 1
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'CS', 'CS')
-
-	IF @ShowBG = 1
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'BG', 'BG')
 
 	IF @ShowKN = 1
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'KN', 'KN')    
