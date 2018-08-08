@@ -1,5 +1,4 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
-
 ALTER PROCEDURE [dbo].[Lrf_Rpt_Outstanding]
     @showSB			BIT = 0,  
     @ShowRB			BIT = 0,  
@@ -121,22 +120,21 @@ BEGIN
 
 		RETURN
 	END CATCH;
-		
-    DECLARE @Outstanding TABLE
+
+
+	DECLARE @Outstanding TABLE
 	(
 		username	NVARCHAR(50),
 		custid		INT,
 		currency	INT,
 		outstanding MONEY,
-		BetCounts	INT       
-	)       
-
-	CREATE TABLE #AgentBettype (CustId INT, Currency TINYINT, Bettype SMALLINT, PRIMARY KEY (CustId, Currency, bettype))
-
-    DECLARE @i BIGINT = 10000000
+		BetCounts	INT , 
+		IsBA		BIT DEFAULT (0)
+	) 
 	
-	DECLARE @SportBettype		TABLE (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))
-	DECLARE @ProductList		VARCHAR (500)
+	
+	CREATE TABLE #SportBettype (bettype SMALLINT, RefTable TINYINT, ProductID TINYINT)
+	DECLARE @ProductList VARCHAR (500)
 	
 	DECLARE @IsTest BIT = 0
 	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
@@ -191,6 +189,11 @@ BEGIN
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'AGC', 'AGC')
 	END
 
+	IF @ShowCB = 1
+	BEGIN
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'CB', 'CB')
+	END
+	
 	IF @ShowVB = 1
 	BEGIN
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'VB', 'VB')
@@ -218,180 +221,91 @@ BEGIN
 	IF LEN(ISNULL(@ProductList, '')) > 0 
 	BEGIN
 		-- Insert Bettype
-		INSERT INTO @SportBettype ( bettype, ProductCode )
-		SELECT DISTINCT BetType, ProductPrefix
-		FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
-
-		/*
-		IF CHARINDEX('CS', @ProductList) > 0
-			DELETE @bettype
-			WHERE bettype = 72 AND ProductCode = 'CS'
-
-		IF CHARINDEX('SB', @ProductList) > 0 OR CHARINDEX('RB', @ProductList) > 0
-			DELETE @bettype
-			WHERE ProductCode IN ('SB', 'RB')		
-		*/
+		INSERT INTO #SportBettype ( bettype, RefTable, ProductID )
+		SELECT DISTINCT BetType, RefTable, ProductID
+		FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)	
 	END	
+			 
 
-	
-	--1. bettrans --  
-	--1.1
-	INSERT INTO #AgentBettype (CustId, Currency, Bettype)
-	SELECT DISTINCT CustId, Currency, Bettype 
-	FROM @TempAg 
-	CROSS JOIN @SportBettype b WITH (NOLOCK) 
-	WHERE 
-			(@showSB = 1 AND (b.Bettype < 31 OR (b.Bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 and 1399))) --new tennis's bettypes
-			OR (@showRB = 1 AND b.Bettype IN (31,32,33))
-			OR (@showNG = 1 AND b.Bettype BETWEEN 81 AND 120)
-			OR (@ShowVS = 1 AND b.Bettype BETWEEN 1201 AND 1299)
-			OR (@ShowVS2 = 1 AND b.Bettype BETWEEN 2701 AND 2829)
-			OR (@ShowBG = 1 AND b.Bettype = 73)
-			AND b.Bettype <= 2829
-			AND (b.Bettype NOT BETWEEN 2101 AND 2399 OR b.Bettype NOT BETWEEN 2901 AND 2999) -- exclude OWRnG
-			AND b.Bettype NOT BETWEEN 4001 AND 7999 -- exclude Voidbridge 	
-	
-	--1.2
-	INSERT INTO @Outstanding
+
+	--1. bettrans --
+	INSERT INTO @Outstanding (custid, currency, Outstanding, BetCounts, isBA)
 	SELECT 
-		b.username,
 		b.custid,                    
 		b.currency,
 		SUM(actual_stake) Outstanding,
-		COUNT(1) AS BetCounts		   
-	FROM #AgentBettype a
-		INNER JOIN dbo.bettrans AS b WITH(NOLOCK)	
-			ON  b.recommend = a.CustId AND b.Currency = a.Currency AND b.bettype = a.bettype 
-	WHERE b.StatusID IN (0,1)	
-		AND NOT EXISTS (SELECT 1 FROM bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) WHERE b.transid = BA.transid )				 	              
-	GROUP BY
-		b.username,
+		COUNT(1) AS BetCount,
+		CASE WHEN BA.TransID IS NULL THEN 0 ELSE 1 END AS isBA 	   
+	FROM dbo.bettrans AS b WITH(NOLOCK)	
+		INNER JOIN @TempAg a
+			ON b.recommend = a.CustId AND b.Currency = a.Currency 	
+		LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) on b.transid = BA.transid
+	WHERE b.StatusID IN (0,1) 
+		AND EXISTS (SELECT 1 FROM #SportBettype s WHERE s.RefTable = 0 AND s.bettype  = b.bettype)	
+	             
+	GROUP BY		
 		b.custid,
-		b.currency	 
-
+		b.currency, CASE WHEN BA.TransID IS NULL THEN 0 ELSE 1 END  
+		
 
 	--2. translog --
-	--2.1
-	DELETE #AgentBettype 
-
-	INSERT INTO #AgentBettype (CustId, Currency, Bettype)
-	SELECT DISTINCT CustId, Currency, Bettype 
-	FROM @TempAg 
-	CROSS JOIN SportbettypeMatrix b WITH (NOLOCK) 
-			WHERE 
-			(
-			(@ShowKN = 1 AND b.Bettype BETWEEN 1501 AND 1599)
-			OR (@ShowMGCLC = 1 AND b.Bettype BETWEEN 2001 AND 2007)
-			OR (@ShowCB =1 AND b.Bettype = 18000)
-			OR (@ShowLT = 1 AND b.Bettype BETWEEN 1021 AND 1049)
-			)
-		
-	--2.2		
-	INSERT INTO @Outstanding
+	INSERT INTO @Outstanding (custid, currency, Outstanding, BetCounts)
 	SELECT
-		t.Username,
 		t.custid,
 		t.currency,
 		SUM(t.actual_stake) Outstanding,
 		COUNT(1) BetCounts 
-	FROM
-		dbo.translog t WITH (NOLOCK) 
-		INNER JOIN #AgentBettype a ON t.recommend = a.CustId AND t.Currency = a.Currency AND t.gameID = a.bettype
-	WHERE
-		t.StatusID IN (0,1)	
+	FROM dbo.translog t WITH (NOLOCK) 
+		INNER JOIN @TempAg a
+			ON t.recommend = a.CustId AND t.Currency = a.Currency 	
+	WHERE t.StatusID IN (0,1)	
+		AND EXISTS (SELECT 1 FROM #SportBettype s WHERE s.RefTable = 3 AND s.bettype = t.gameid)
 	GROUP BY
-		t.Username,
 		t.custid,
 		t.currency     
 	
 
-	-- 3. bettrans RNG --
-	-- 3.1
-	DELETE #AgentBettype 
-
-	INSERT INTO #AgentBettype (CustId, Currency, Bettype)
-	SELECT DISTINCT CustId, Currency, Bettype 
-	FROM @TempAg 
-	CROSS JOIN SportbettypeMatrix b WITH (NOLOCK) 
-	WHERE 			
-		(
-			(@ShowMGCRnG = 1 AND b.Bettype BETWEEN 2008 AND 2009)
-			OR (@ShowCS  = 1 AND (b.Bettype BETWEEN 2101 AND 2399 OR b.Bettype BETWEEN 2901 AND 2999)) -- AND bettrans.matchID IN (208, 209, 210)
-			OR (@ShowVB  = 1 AND b.Bettype BETWEEN 4001 AND 7999)
-			OR (@ShowFW  = 1 AND b.Bettype BETWEEN  1011 AND 1020)
-		)
-
-	--3.2
-	INSERT INTO @Outstanding
+	-- 3. bettrans RNG -- 
+	INSERT INTO @Outstanding (custid, currency, Outstanding, BetCounts)
 	SELECT
-		g.Username,
 		g.custid,
 		g.currency,
-		SUM(g.actual_stake) Outstanding,
-		COUNT(DISTINCT CASE WHEN gameID BETWEEN 2101 AND 2399 
-								OR g.gameID BETWEEN 2901 AND 2999
-								OR gameID BETWEEN 4001 AND 7999 
-								OR gameID BETWEEN 1011 AND 1020 THEN refno -- count sum tickets for RNG Casino, Voidridge, FW
-						    WHEN gameID BETWEEN 2008 AND 2009 THEN transid
+		SUM(g.actual_stake) Outstanding, 
+		COUNT(DISTINCT CASE WHEN s.PRoductID IN (6,22,24) THEN refno -- count sum tickets for RNG Casino, Voidridge, FW
+					WHEN s.ProductID = 17 THEN 1
 					END) BetCounts
-	FROM
-		dbo.BettransRNG g WITH (NOLOCK) 
-		INNER JOIN #AgentBettype a ON g.recommend = a.CustId AND g.Currency = a.Currency AND g.gameID = a.bettype	
-	WHERE
-		statusid IN (0, 1) -- AND IsSum = 0		
-	GROUP BY g.Username, g.custid, g.currency
-
+	FROM dbo.BettransRNG g WITH (NOLOCK) 
+		INNER JOIN @TempAg a
+			ON g.recommend = a.CustId AND g.Currency = a.Currency 	
+		INNER JOIN #SportBettype s ON s.RefTable = 1 AND s.bettype = g.gameID 
+	WHERE statusid IN (0,1) 
+		---AND EXISTS (SELECT 1 FROM #SportBettype s WHERE s.RefTable = 1 AND s.bettype = g.gameID)
+	GROUP BY g.custid, g.currency
+	 
 
 	-- 4. bettransLC --
-	--4.1
-	DELETE #AgentBettype 
-
-	INSERT INTO #AgentBettype (CustId, Currency, Bettype)
-	SELECT DISTINCT CustId, Currency, Bettype 
-	FROM @TempAg 
-	CROSS JOIN SportbettypeMatrix b WITH (NOLOCK) 
-	WHERE 			
-		(
-		(@ShowAGC = 1   AND b.bettype BETWEEN 1800 AND 1804)
-		OR (@ShowAB = 1   AND b.bettype BETWEEN 2401 AND 2499)
-		)
-
 	--4.2
-	INSERT INTO @Outstanding
-	SELECT
-		g.Username,
+	INSERT INTO @Outstanding (custid, currency, Outstanding, BetCounts)
+	SELECT		
 		g.custid,
 		g.currency,
 		SUM(g.actual_stake) Outstanding,
 		COUNT(1) BetCounts 
-	FROM
-		dbo.bettransLC g WITH (NOLOCK) 
-		INNER JOIN #AgentBettype a ON g.recommend = a.CustId AND g.Currency = a.Currency AND g.gameID = a.bettype			
+	FROM dbo.bettransLC g WITH (NOLOCK) 
+		INNER JOIN @TempAg a
+			ON g.recommend = a.CustId AND g.Currency = a.Currency 			
 	WHERE
-		statusid IN (0, 1) -- AND IsSum = 0		
-	GROUP BY g.Username, g.custid, g.currency
+		statusid IN (0, 1) 
+		AND EXISTS (SELECT 1 FROM #SportBettype s WHERE s.RefTable = 1 AND s.bettype = g.gameid)		
+	GROUP BY g.custid, g.currency
 
 	-- 5. BA	
-	IF @ShowBA = 1
-	BEGIN
-		INSERT INTO @Outstanding
-        SELECT  
-			b.username,
-            b.custid,      
-            b.currency,              
-            SUM(actual_stake) Outstanding,
-            COUNT(1) AS BetCounts
-        FROM
-			dbo.bettrans AS b WITH (NOLOCK)
-			INNER JOIN @TempAg a ON b.recommend = a.CustId AND b.Currency = a.Currency           
-        WHERE   
-			(b.bettype <= 999 OR b.bettype BETWEEN 1301 and 1399)
-			AND b.StatusID IN (0,1)			
-			AND EXISTS (SELECT 1 FROM bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) WHERE b.transid = BA.transid)
-        GROUP BY 
-			b.username,
-            b.custid,
-            b.currency            
+	IF @ShowBA = 0 				
+	BEGIN 
+
+		DELETE @Outstanding
+		WHERE IsBA = 1
+			       
 	END
 	
 	IF @OrderItem IN (1, 4) AND @IsAscSort = 1
@@ -407,14 +321,13 @@ BEGIN
 				b.* 
 			FROM
 			(
-				SELECT b.*,
+				SELECT b.*, c.username,
 					SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,
 					LEN(c.username2) - CHARINDEX('$', c.username2)) AS nickname
 				FROM
 				(
 					SELECT 
-						b.custid
-						,b.username
+						b.custid						
 						,SUM(b.Outstanding) AS Outstanding
 						,SUM(b.Outstanding * e.USD) AS OutstandingUSD
 						,SUM(b.Outstanding * e.EUR) AS OutstandingEUR
@@ -423,11 +336,11 @@ BEGIN
 					FROM  
 						@Outstanding b
 						INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today, @Today)) e ON e.exchangeid = b.currency							
-					GROUP BY b.custid, b.username
+					GROUP BY b.custid
 				) AS b
 				INNER JOIN Customer c WITH (NOLOCK) ON b.custid = c.custid
 			) b
-		)        
+		)     
 		SELECT * 
 		FROM Paging
 		WHERE RowNum BETWEEN @RowStart AND @RowEnd
@@ -452,14 +365,13 @@ BEGIN
 				b.* 
 			FROM
 			(
-				SELECT b.*,
+				SELECT b.*, c.username,
 					SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,
 					LEN(c.username2) - CHARINDEX('$', c.username2)) AS nickname
 				FROM
 				(
 					SELECT 
-						b.custid
-						,b.username
+						b.custid						
 						,SUM(b.Outstanding) AS Outstanding
 						,SUM(b.Outstanding * e.USD) AS OutstandingUSD
 						,SUM(b.Outstanding * e.EUR) AS OutstandingEUR
@@ -468,7 +380,7 @@ BEGIN
 					FROM  
 						@Outstanding b
 						INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today, @Today)) e ON e.exchangeid = b.currency							
-					GROUP BY b.custid, b.username
+					GROUP BY b.custid
 				) AS b
 				INNER JOIN Customer c WITH (NOLOCK) ON b.custid = c.custid
 			) b
@@ -491,14 +403,13 @@ BEGIN
 				b.* 
 			FROM
 			(
-				SELECT b.*,
+				SELECT b.*, c.username,
 					SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,
 					LEN(c.username2) - CHARINDEX('$', c.username2)) AS nickname
 				FROM
 				(
 					SELECT 
-						b.custid
-						,b.username
+						b.custid						 
 						,SUM(b.Outstanding) AS Outstanding
 						,SUM(b.Outstanding * e.USD) AS OutstandingUSD
 						,SUM(b.Outstanding * e.EUR) AS OutstandingEUR
@@ -507,7 +418,7 @@ BEGIN
 					FROM  
 						@Outstanding b
 						INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today, @Today)) e ON e.exchangeid = b.currency							
-					GROUP BY b.custid, b.username
+					GROUP BY b.custid 
 				) AS b
 				INNER JOIN Customer c WITH (NOLOCK) ON b.custid = c.custid
 			) b
@@ -536,14 +447,13 @@ BEGIN
 				b.* 
 			FROM
 			(
-				SELECT b.*,
+				SELECT b.*, c.username,
 					SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,
 					LEN(c.username2) - CHARINDEX('$', c.username2)) AS nickname
 				FROM
 				(
 					SELECT 
-						b.custid
-						,b.username
+						b.custid						 
 						,SUM(b.Outstanding) AS Outstanding
 						,SUM(b.Outstanding * e.USD) AS OutstandingUSD
 						,SUM(b.Outstanding * e.EUR) AS OutstandingEUR
@@ -552,7 +462,7 @@ BEGIN
 					FROM  
 						@Outstanding b
 						INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today, @Today)) e ON e.exchangeid = b.currency							
-					GROUP BY b.custid, b.username
+					GROUP BY b.custid 
 				) AS b
 				INNER JOIN Customer c WITH (NOLOCK) ON b.custid = c.custid
 			) b
@@ -572,6 +482,9 @@ BEGIN
     FROM
 		@Outstanding b
 		INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today, @Today)) e ON e.exchangeid = b.currency
+
+		DROP TABLE #SportBettype
+
 END
 
 GO
