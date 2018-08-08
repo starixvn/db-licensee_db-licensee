@@ -5,12 +5,10 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_MatchWinLoss]
 	@Date		SMALLDATETIME,  
 	@MoveBetsDay SMALLDATETIME,  
 	@showSB		BIT = 0,  
-	@showRB		BIT = 0,  
 	@showNG		BIT = 0,  
 	@showBA		BIT = 0,  
 	@ShowVS		BIT = 0,  
 	@ShowCS		BIT = 0, --- RNG Casino  
-	@ShowBG		BIT = 0, --- Bingo  
 	@showAGC	BIT = 0,
 	@showVS2	BIT = 0,
 	@AgentList	VARCHAR(MAX)      
@@ -42,6 +40,7 @@ Revisions:
 	- 20170327@Paul: Implement Cash Out [RedmineID :#71727]
 	- 20170704@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
 	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
+	- 20180808@Amanda: Remove Racing, Bingo [RedmineID: #99378]
 
 Param's Explanation:  
 	 + @AgentList: xml structure
@@ -53,7 +52,7 @@ Param's Explanation:
 */  
   
 /* demo script  
-exec Lrf_Rpt_MatchWinLoss @LicenseeID=3,@LicenseeType=default,@CurrencyName=default,@Date='May 19 2012 12:00:00:000AM',@MoveBetsDay='May 21 2012 12:00:00:000AM',@showSB=1,@showRB=0,@showNG=0,@showBA=0  
+exec Lrf_Rpt_MatchWinLoss @LicenseeID=3,@LicenseeType=default,@CurrencyName=default,@Date='May 19 2012 12:00:00:000AM',@MoveBetsDay='May 21 2012 12:00:00:000AM',@showSB=1,@showNG=0,@showBA=0  
 */  
 
 BEGIN
@@ -107,11 +106,8 @@ BEGIN
 		 turnover        MONEY,  
 		 MemberWinLost   MONEY,  
 		 LicenseeWL     MONEY, --Sportbook and NumberGame  
-		 WinlossRB MONEY,  
 		 AmtDueToBA MONEY,     
-		 AmtDueToRB MONEY,  
 		 CommBA  MONEY,     
-		 CommRB  MONEY,  
 		 PlayerComm  MONEY,    
 		 race        NVARCHAR(20),  
 		 matchcode   NVARCHAR(50),  
@@ -206,11 +202,8 @@ BEGIN
 					SUM(stake),  
 					SUM(Winlost),   
 					0 AS LicenseeWL,  
-					0 AS WinlossRB,  
 					-SUM (Winlost +  awinlost + comm) AS AmtDueToBA,  
-					0 AS AmountDueToRB,  
 					SUM (comm ) as CommBA,  
-					0 as CommRB,  
 					SUM(playerComm) AS PlayerComm,  
 					'',  
 					m.matchcode,  
@@ -282,11 +275,8 @@ BEGIN
 					SUM(stake),  
 					SUM(winlost),  
 					-SUM(b.winlost) AS LicenseeWL,  
-					0 AS WinlossRB,  
 					0 AS AmountDueToBA,  
-					0 AS AmountDueToRB,  
 					0 AS CommBA,  
-					0 as CommRB,  
 					SUM(b.playercomm)  as PlayerComm,  
 					'',  
 					m.matchcode,  
@@ -328,11 +318,8 @@ BEGIN
 					SUM(stake),  
 					SUM(winlost),  
 					-SUM(b.winlost) AS LicenseeWL,  
-					0 AS WinlossRB,  
 					0 AS AmountDueToBA,  
-					0 AS AmountDueToRB,  
 					0 AS CommBA,  
-					0 as CommRB,  
 					SUM(b.playercomm)  as PlayerComm,  
 					'',  
 					m.matchcode,  
@@ -371,11 +358,8 @@ BEGIN
 						SUM(b.stake),  
 						SUM(b.winlost),  
 						-SUM(b.winlost) AS LicenseeWL,  
-						0 AS WinlossRB,  
 						0 AS AmountDueToBA,  
-						0 AS AmountDueToRB,  
 						0 AS CommBA,  
-						0 as CommRB,  
 						SUM(b.playercomm)  as PlayerComm,  
 						b.oddsid as race,  
 						CONVERT(VARCHAR(50),o.RacerNum) as matchcode,  
@@ -401,45 +385,7 @@ BEGIN
 						r.sporttype
 			END	
 		END  
-   
-		IF @showRB=1  
-		BEGIN  
-			INSERT INTO @AgMatchWLDetails  
-			SELECT  b.Winlostdate,
-					NULL,
-					b.currency,  
-					0 AS matchid,  
-					0 AS homeid,  
-					0 AS awayid,  
-					b.bettype,  
-					'RB', --bettype,  
-					m.leagueid,  
-					SUM(CASE WHEN b.liveawayscore = 0 AND b.bettype = 33 THEN b.stake / 2 ELSE b.stake END),  
-					SUM(b.winlost) ,  
-					0 AS LicenseeWL,  
-					SUM(b.awinlost) AS WinlossRB,  
-					0 AS AmountDueToBA,  
-					- SUM(b.winlost + awinlost + comm) AS AmountDueToRB,  
-					0 AS CommBA,  
-					SUM(comm ) as CommRB,  
-					SUM(b.playerComm) AS PlayerComm,   
-					m.groupmatch AS race,  
-					'ZZZZ' AS matchcode,  
-					CONVERT(BIT, 0) AS IsNeutral,  
-					l.sporttype,  
-					'' as showtime ,
-					sum(b.betcount) betcount
-			FROM #TempBetList b  
-			   INNER JOIN outright m WITH ( NOLOCK ) ON m.orid = b.matchid  
-			   LEFT JOIN league l WITH (NOLOCK) ON m.leagueID=l.leagueID  
-			WHERE b.bettype IN (31,32,33)  
-			GROUP BY b.Winlostdate,  
-					b.currency,  
-					b.bettype,  
-					m.groupmatch,  
-					m.leagueid,  
-					l.sporttype       
-		END     
+
 	END  
   
 	IF @_Date <= @MoveBetsDay   
@@ -492,11 +438,8 @@ BEGIN
 					SUM(stake),  
 					SUM(Winlost),  
 					0 AS LicenseeWL,  
-					0 AS WinlossRB,  
 					-SUM (Winlost +  awinlost + comm) AS AmtDueToBA,  
-					0 AS AmountDueToRB,  
 					SUM (comm ) as CommBA,  
-					0 as CommRB,  
 					SUM(b.playerComm) AS PlayerComm,  
 					'' AS race,  
 					m.matchcode,  
@@ -567,11 +510,8 @@ BEGIN
 					SUM(stake),  
 					SUM(winlost),  
 					-SUM(b.winlost) AS LicenseeWL,  
-					0 AS WinlossRB,  
 					0 AS AmountDueToBA,  
-					0 AS AmountDueToRB,  
 					0 AS CommBA,  
-					0 as CommRB,  
 					SUM(b.playercomm)  as playercomm,  
 					'' AS race,  
 					m.matchcode,  
@@ -613,11 +553,8 @@ BEGIN
 					SUM(stake),  
 					SUM(winlost),  
 					-SUM(b.winlost) AS LicenseeWL,  
-					0 AS WinlossRB,  
 					0 AS AmountDueToBA,  
-					0 AS AmountDueToRB,  
 					0 AS CommBA,  
-					0 as CommRB,  
 					SUM(b.playercomm)  as playercomm,  
 					'' AS race,  
 					m.matchcode,  
@@ -657,11 +594,8 @@ BEGIN
 						SUM(b.stake),  
 						SUM(b.winlost),  
 						-SUM(b.winlost) AS LicenseeWL,  
-						0 AS WinlossRB,  
 						0 AS AmountDueToBA,  
-						0 AS AmountDueToRB,  
 						0 AS CommBA,  
-						0 as CommRB,  
 						SUM(b.playercomm)  as PlayerComm,  
 						b.oddsid as race,  
 						CONVERT(VARCHAR(50),o.RacerNum) as matchcode,  
@@ -687,45 +621,7 @@ BEGIN
 						r.EventTime
 			END		
 		END      
-  
-		IF @showRB=1  
-		BEGIN  
-			INSERT INTO @AgMatchWLDetails  
-			SELECT  b.Winlostdate,
-					NULL,			
-					b.currency,  
-					0 AS matchid,  
-					0 AS homeid,  
-					0 AS awayid,  
-					b.bettype,   
-					'RB', --bettype,  
-					m.leagueid,  
-					SUM(CASE WHEN b.liveawayscore = 0 AND b.bettype = 33 THEN b.stake / 2 ELSE b.stake END),  
-					SUM(winlost),  
-					0 AS LicenseeWL,  
-					SUM(b.awinlost) AS WinlossRB,  
-					0 AS AmountDueToBA,  
-					- SUM(b.winlost + awinlost + comm) AS AmountDueToRB,  
-					0 AS CommBA,  
-					SUM(b.comm ) AS CommRB,  
-					SUM(b.playercomm) AS playercomm,  
-					m.groupmatch AS race,  
-					'ZZZZ' AS matchcode,  
-					CONVERT(BIT, 0) AS IsNeutral,  
-					l.sporttype,   
-					'' as showtime,
-					sum(b.betcount) betcount
-			FROM #TempBetList b  
-				INNER JOIN outright14 m WITH ( NOLOCK ) ON m.orid = b.matchid  
-				LEFT  JOIN league l WITH (NOLOCK) ON m.leagueID=l.leagueID  
-			WHERE b.bettype IN (31,32,33)  
-			GROUP BY b.Winlostdate,  
-					b.currency,  
-					b.bettype,  
-					m.groupmatch,  
-					m.leagueid ,  
-					l.sporttype       
-		END  
+
 	END  
   
 	INSERT INTO @ExchangeDaily  
@@ -754,18 +650,10 @@ BEGIN
 			CAST(SUM(LicenseeWL * e.USD) AS MONEY) AS LicenseeWLUSD,  
 			CAST(SUM(LicenseeWL * e.EUR) AS MONEY) AS LicenseeWLEUR,  
 			CAST(SUM(LicenseeWL * e.GBP) AS MONEY) AS LicenseeWLGBP,
-			CAST(SUM(WinlossRB) AS MONEY) AS WinlossRB,  
-			CAST(SUM(WinlossRB * e.USD) AS MONEY) AS WinlossRBUSD,  
-			CAST(SUM(WinlossRB * e.EUR) AS MONEY) AS WinlossRBEUR,  
-			CAST(SUM(WinlossRB * e.GBP) AS MONEY) AS WinlossRBGBP,  
 			CAST(SUM(CommBA) AS MONEY) AS CommBA,  
 			CAST(SUM(CommBA * e.USD) AS MONEY) AS CommBAUSD,  
 			CAST(SUM(CommBA * e.EUR) AS MONEY) AS CommBAEUR,  
 			CAST(SUM(CommBA * e.GBP) AS MONEY) AS CommBAGBP, 
-			CAST(SUM(commRB) AS MONEY) AS commRB,  
-			CAST(SUM(commRB * e.USD) AS MONEY) AS commRBUSD,  
-			CAST(SUM(commRB * E.EUR) AS MONEY) AS commRBEUR,  
-			CAST(SUM(commRB * E.GBP) AS MONEY) AS commRBGBP,
 			CAST(SUM(PlayerComm)AS MONEY)     AS PlayerComm,  
 			CAST(SUM(PlayerComm*e.USD)AS MONEY)     AS PlayerCommUSD,  
 			CAST(SUM(PlayerComm*e.EUR)AS MONEY)     AS PlayerCommEUR,  
@@ -774,10 +662,6 @@ BEGIN
 			CAST(SUM((AmtDuetoBA) * e.USD) AS MONEY) AS AmtDuetoBAUSD,  
 			CAST(SUM((AmtDuetoBA) * e.EUR) AS MONEY) AS AmtDuetoBAEUR,  
 			CAST(SUM((AmtDuetoBA) * e.GBP) AS MONEY) AS AmtDuetoBAGBP,
-			CAST(SUM(AmtDuetoRB) AS MONEY) AS AmtDuetoRB,  
-			CAST(SUM((AmtDuetoRB) * e.USD) AS MONEY) AS AmtDuetoRBUSD,  
-			CAST(SUM((AmtDuetoRB) * e.EUR) AS MONEY) AS AmtDuetoRBEUR,  
-			CAST(SUM((AmtDuetoRB) * e.GBP) AS MONEY) AS AmtDuetoRBGBP,  
 			CASE WHEN b.sporttype IN (181,182,183,184,185) THEN '' ELSE race END race,  
 			CASE WHEN b.sporttype IN (181,182,183,184,185) THEN '' ELSE matchcode END matchcode,  
 			isNeutral,  
@@ -802,9 +686,4 @@ BEGIN
 	SET NOCOUNT OFF
 END
 GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_MatchWinLoss] TO [bodbLicenseeNet] AS [dbo]
-GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_MatchWinLoss] TO [bodbDownlineNetView] AS [dbo]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_MatchWinLoss] TO [vnteam] AS [dbo]
 
