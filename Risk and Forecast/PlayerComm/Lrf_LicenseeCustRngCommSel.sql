@@ -1,4 +1,6 @@
 
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -16,6 +18,8 @@ AS
  *  
  * Revisions:   
 	20141114@Victor: use f_SelLicenseeCust instead of licenseecust (#Redmine 25864)
+	- 20180809@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
+
  * Parameter's Explaination:
   • @IBCCustID: ID of the IBC customer
   • @RNGComm: RNG Casino Commission
@@ -31,9 +35,9 @@ BEGIN
 
 	-- get LicenseeID of @IBCCustID
 	SELECT TOP 1 @LicenseeID = lc.LicenseeID 
-	FROM bodb_licensee.dbo.LicenseeCustInfo lci WITH (NOLOCK)
-		INNER JOIN bodb_licensee.dbo.f_SelLicenseeCust(0) lc ON lc.CustID = lci.recommend
-			WHERE lci.custID = @IBCCustID
+	FROM Customer c WITH (NOLOCK)
+		INNER JOIN bodb_licensee.dbo.f_SelLicenseeCust(0) lc ON lc.CustID = c.recommend AND c.roleid = 1
+			WHERE c.custID = @IBCCustID
 
 	SET @RNGComm = 0
 	IF ISNULL(@LicenseeID,0)>0
@@ -57,8 +61,7 @@ BEGIN
 
 		IF NOT EXISTS(
 			SELECT * 
-			FROM bodb02.dbo.Customer c WITH (NOLOCK) 				
-				INNER JOIN bodb_licensee.dbo.LicenseeCustInfo lci WITH (NOLOCK) ON c.custid = lci.custid
+			FROM bodb02.dbo.Customer c WITH (NOLOCK)
 				INNER JOIN bodb_licensee.dbo.LicenseeCustComm cc WITH (NOLOCK) ON c.custid = cc.custid 
 					AND cc.Licenseeid=@LicenseeID AND cc.CustID =@IBCCustID
 		)
@@ -80,6 +83,3 @@ BEGIN
 	END
 END
 GO
-GRANT EXECUTE ON [dbo].[Lrf_LicenseeCustRngCommSel] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_LicenseeCustRngCommSel] TO [vnteam] 
