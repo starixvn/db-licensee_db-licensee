@@ -80,6 +80,7 @@ AS
 		- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
 		- 20180420@Amanda: Include more cash out tickets [RedmineID: #93919]
 		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
+		- 20180809@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
 
 	Param's Explanation:  
 	  + @CustID: SuperID  
@@ -1742,7 +1743,7 @@ BEGIN
 		CAST(SUM(CashOutComm*e.eGBP)	AS MONEY)	AS CashOutCommGBP
 	FROM
 		#SAgWinLoss w   
-		INNER JOIN bodb_licensee.dbo.licenseecustinfo c WITH (NOLOCK) ON w.custid = c.custid		
+		INNER JOIN Customer c WITH (NOLOCK) ON w.custid = c.custid		
 		INNER JOIN @Exchange e ON w.Currency = e.CurrencyID
 	GROUP BY w.custid, c.username, c.username2, w.currency
 

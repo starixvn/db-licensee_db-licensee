@@ -32,6 +32,7 @@ AS
 		- 20160413@Victor: support MKK currency code [Redmine: #55745]
 		- 20170302@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest [Redmine: #71679]
 		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
+		- 20180809@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
 	Param's Explanation:  
 	  + @excludeTest: remove currency UUS
 */  
@@ -138,7 +139,6 @@ BEGIN
 			,SUM(r.LicenseeWinlost*e.GBP) AS LicenseeWinlostGBP
 	FROM #tmpResult r
 		INNER JOIN #TempExchange e ON r.Winlostdate = e.ExchangeDate AND r.currency = e.ExchangeId
-		--INNER JOIN DBLIC.bodb_licensee.dbo.licenseecustinfo c WITH (NOLOCK) ON r.CustID = c.CustID
 		INNER JOIN dbo.customer c WITH  (NOLOCK) ON c.CustID = r.CustID
 	GROUP BY SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2))
 			 ,c.Username

@@ -21,6 +21,7 @@ AS
 		- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest [Redmine: #71679]
 		- 20180305@Harper: Implement CB free play ticket [RedmineID: #90768]
 		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
+		- 20180809@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
 
 	Param's Explanation:  
 	   - @excludeTest: remove currency UUS
@@ -268,10 +269,10 @@ BEGIN
 		DECLARE @tmpCust AS TABLE (CustID INT)
 
 		INSERT INTO @tmpCust (CustID)
-		SELECT lci.CustID
-		FROM DBLIC.bodb_licensee.dbo.LicenseeCustInfo lci WITH (NOLOCK)
+		SELECT c.CustID
+		FROM Customer c WITH (NOLOCK)
 		INNER JOIN @tempAg t
-			ON lci.recommend = t.CustID
+			ON c.recommend = t.CustID AND c.roleid = 1
 
 		INSERT INTO @tmpRawData (
 			rptDate
@@ -358,7 +359,7 @@ BEGIN
 	INNER JOIN #TempExchange e
 		ON t.rptDate = e.ExchangeDate
 			AND t.CurrencyId = e.ExchangeID
-	INNER JOIN bodb_licensee.dbo.licenseecustinfo c WITH (NOLOCK)
+	INNER JOIN Customer c WITH (NOLOCK)
 		ON t.custid = c.custid
 	GROUP BY t.CustID
 		, CASE 
