@@ -85,6 +85,7 @@ BEGIN
 		Betcount		BIGINT
 	)  
 
+	CREATE TABLE #tmpVS			(Orid INT, SportType TINYINT)
 	DECLARE @bettype			TABLE (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))
 	DECLARE @sporttype			TABLE (sporttype INT, ProductCode VARCHAR(10))
 	DECLARE @RecommendID		INT
@@ -222,55 +223,55 @@ BEGIN
 		END
 	
 		---#3.2: Begin: Get data for VS, VS2 product
-		IF EXISTS (SELECT 1 FROM @bettype WHERE ProductCode IN ('VS', 'VS2'))
-		BEGIN
-			SELECT 
-				DISTINCT
-				o.Orid,
-				r.SportType
-			INTO #tmpVS	
-			FROM VSOutright o with (nolock)
-				INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
-			WHERE EventDate BETWEEN @TempFromDate AND @TDate 
+		IF EXISTS (SELECT 1 FROM @bettype WHERE ProductCode = 'VS2')
+		BEGIN					
+			INSERT INTO #SAgWinLoss
+			SELECT   
+				b.winlostdate,
+				b.recommend,
+				b.currency,
+				'VS2' + CONVERT(varchar(10), s.sporttype) AS ProductCode,
+				SUM(stake *			
+					CASE WHEN b.statusID = 111 THEN 0|@sumTurnOver
+						ELSE 1 END
+				) AS Turnover, 
+				SUM(b.winlost - b.actual_stake) AS Winlost,  
+				- SUM(b.winlost - b.actual_stake) AS LicenseeWL,
+				SUM(comm) as Comm,
+				SUM(PlayerComm) AS PlayerComm,
+				- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd,
+				COUNT(1 * (CASE WHEN b.statusID = 111 THEN 0|@sumBetCount ELSE 1 END)) AS BetCount	
+			FROM 
+				dbo.bettrans b WITH (NOLOCK)
+				CROSS APPLY (	SELECT TOP 1 m.sporttype
+								FROM bodb02.dbo.bettransm bm WITH (NOLOCK)
+									INNER JOIN bodb02.dbo.match m WITH (NOLOCK) ON bm.matchid = m.matchid
+								WHERE b.refno = bm.refno AND b.custid = bm.custid
+							) AS s
+				INNER JOIN @TempAg a ON b.recommend = a.custid AND b.Currency = a.Currency 							
+			WHERE b.bettype = 2799 -- Betradar VS Parlay
+				AND b.winlostdate BETWEEN @TempFromDate AND @TDate   
+				AND (@CustId = 0 OR (@CustId <> 0 AND b.CustId = @CustID)) 
+				AND b.statusID  IN (111, 112, 113)
+				AND b.matchid = 2799
+			GROUP BY b.winlostdate,	b.recommend, b.currency, 'VS2' + CONVERT(varchar(10), s.sporttype)
+		END		
 
-			IF EXISTS (SELECT 1 FROM @bettype WHERE ProductCode = 'VS2')
-			BEGIN					
-				INSERT INTO #SAgWinLoss
-				SELECT   
-					b.winlostdate,
-					b.recommend,
-					b.currency,
-					'VS2' + CONVERT(varchar(10), s.sporttype) AS ProductCode,
-					SUM(stake *			
-						CASE WHEN b.statusID = 111 THEN 0|@sumTurnOver
-							ELSE 1 END
-					) AS Turnover, 
-					SUM(b.winlost - b.actual_stake) AS Winlost,  
-					- SUM(b.winlost - b.actual_stake) AS LicenseeWL,
-					SUM(comm) as Comm,
-					SUM(PlayerComm) AS PlayerComm,
-					- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd,
-					COUNT(1 * (CASE WHEN b.statusID = 111 THEN 0|@sumBetCount ELSE 1 END)) AS BetCount	
-				FROM 
-					dbo.bettrans b WITH (NOLOCK)
-					CROSS APPLY (	SELECT TOP 1 m.sporttype
-									FROM bodb02.dbo.bettransm bm WITH (NOLOCK)
-										INNER JOIN bodb02.dbo.match m WITH (NOLOCK) ON bm.matchid = m.matchid
-									WHERE b.refno = bm.refno AND b.custid = bm.custid
-								) AS s
-					INNER JOIN @TempAg a ON b.recommend = a.custid AND b.Currency = a.Currency 							
-				WHERE b.bettype = 2799 -- Betradar VS Parlay
-					AND b.winlostdate BETWEEN @TempFromDate AND @TDate   
-					AND (@CustId = 0 OR (@CustId <> 0 AND b.CustId = @CustID)) 
-					AND b.statusID  IN (111, 112, 113)
-					AND b.matchid = 2799
-				GROUP BY b.winlostdate,	b.recommend, b.currency, 'VS2' + CONVERT(varchar(10), s.sporttype)
-			END					
-		END
-	
 		---#3.3: Begin: Get data for all products, Exclude VS2 parlay ticket and BA
 		IF EXISTS (SELECT 1 FROM @bettype)
 		BEGIN	
+			IF EXISTS (SELECT 1 FROM @bettype WHERE ProductCode IN ('VS', 'VS2'))
+			BEGIN
+				INSERT INTO #tmpVS ( Orid, SportType )				
+				SELECT 
+					DISTINCT
+					o.Orid,
+					r.SportType				
+				FROM VSOutright o with (nolock)
+					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
+				WHERE EventDate BETWEEN @TempFromDate AND @TDate 
+			END
+
 			INSERT INTO #SAgWinLoss
 			SELECT   
 				b.winlostdate, 
@@ -307,6 +308,7 @@ BEGIN
 				AND (CASE WHEN bt.ProductCode ='SB' THEN b.tpositiontaking ELSE 1 END <> 0 )  --- EXCLUDE BA 
 			GROUP BY   
 				b.winlostdate
+				,b.recommend
 				,a.currency
 				,CASE WHEN bt.ProductCode LIKE 'VS%' THEN
 					CASE WHEN ISNULL(vs.sporttype, 0) = 0  
@@ -315,7 +317,7 @@ BEGIN
 					END					
 				ELSE bt.ProductCode END	
 			
-			DROP TABLE #tmpVS	
+			DROP TABLE #tmpVS					
 		END			
 	END  
 	---#3: END: Get Sum data from bettrans After Move Bets Day
@@ -574,6 +576,7 @@ BEGIN
 			INSERT INTO #SAgWinLoss  
 			SELECT
 				b.winlostdate,  
+				b.recommend,
 				b.currency,
 				'BA' ProductCode,
 				SUM(b.turnover
@@ -603,7 +606,7 @@ BEGIN
 				AND b.statusID <> 101 --exclude REJECT bets
 				AND b.bettype NOT IN (901,902,903,904)
 				AND ISNULL(b.isBA,0) = 1
-			GROUP BY  b.winlostdate,  b.currency
+			GROUP BY  b.winlostdate,  b.currency, b.recommend
 		END
 
 		--exclude BA tickets
@@ -612,6 +615,7 @@ BEGIN
 			INSERT INTO #SAgWinLoss  
 			SELECT 
 				b.winlostdate,  
+				b.recommend,
 				b.currency,
 				t.ProductCode,
 				SUM(b.turnover
@@ -643,6 +647,7 @@ BEGIN
 				AND ISNULL(b.isBA,0) = 0
 			GROUP BY  
 				b.winlostdate,  
+				b.recommend,
 				b.currency, 
 				t.ProductCode				
 		END	

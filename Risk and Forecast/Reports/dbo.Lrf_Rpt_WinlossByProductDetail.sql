@@ -112,6 +112,7 @@ BEGIN
 		Betcount		BIGINT
 	)  
 
+	CREATE TABLE #tmpVS		(Orid INT, SportType TINYINT)
 	DECLARE @bettype		TABLE (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))
 	DECLARE @sporttype		TABLE (sporttype INT, ProductCode VARCHAR(10))
 	
@@ -310,99 +311,99 @@ BEGIN
 		END
 	
 		---#4.2: Begin: Get data for VS, VS2 product
-		IF EXISTS (SELECT 1 FROM @bettype WHERE ProductCode IN ('VS', 'VS2'))
-		BEGIN
-			SELECT 
-				DISTINCT
-				o.Orid,
-				r.SportType
-			INTO #tmpVS	
-			FROM VSOutright o with (nolock)
-				INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
-			WHERE EventDate BETWEEN @TempFromDate AND @TDate 
+		IF EXISTS (SELECT 1 FROM @bettype WHERE ProductCode = 'VS2')
+		BEGIN					
+			INSERT INTO #SAgWinLoss
+			SELECT   					
+				b.custid,
+				b.currency,
+				'VS2' + CONVERT(varchar(10), s.sporttype) AS ProductCode,
+				SUM(stake *			
+					CASE WHEN b.statusID = 111 THEN 0|@sumTurnOver
+						ELSE 1 END
+				) AS Turnover, 
+				SUM(b.winlost - b.actual_stake) AS Winlost,  
+				- SUM(b.winlost - b.actual_stake) AS LicenseeWL,
+				SUM(comm) as Comm,
+				SUM(PlayerComm) AS PlayerComm,
+				- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd,
 
-			IF EXISTS (SELECT 1 FROM @bettype WHERE ProductCode = 'VS2')
-			BEGIN					
-				INSERT INTO #SAgWinLoss
-				SELECT   					
-					b.custid,
-					b.currency,
-					'VS2' + CONVERT(varchar(10), s.sporttype) AS ProductCode,
-					SUM(stake *			
-						CASE WHEN b.statusID = 111 THEN 0|@sumTurnOver
-							ELSE 1 END
-					) AS Turnover, 
-					SUM(b.winlost - b.actual_stake) AS Winlost,  
-					- SUM(b.winlost - b.actual_stake) AS LicenseeWL,
-					SUM(comm) as Comm,
-					SUM(PlayerComm) AS PlayerComm,
-					- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd,
+				------------------EUR
+				SUM( stake
+					*				
+					CASE WHEN b.statusID = 111 THEN 0|@sumTurnOver
+						WHEN (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0)
+						ELSE 1 END
+					* e.EUR
+				) turnoverEUR, 
+				SUM((b.winlost - b.actual_stake) * e.EUR) AS WinlostEUR,  
+				0 as LicenseeWLEUR,
+				SUM (comm * e.EUR) as CommEUR,
+				SUM ( PlayerComm * e.EUR ) AS PlayerCommEUR,
+				- SUM((b.awinlost + b.winlost - b.actual_stake + b.comm) * e.EUR) AmountDueTo3rdEUR  ,
 
-					------------------EUR
-					SUM( stake
-						*				
-						CASE WHEN b.statusID = 111 THEN 0|@sumTurnOver
-							WHEN (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0)
-							ELSE 1 END
-						* e.EUR
-					) turnoverEUR, 
-					SUM((b.winlost - b.actual_stake) * e.EUR) AS WinlostEUR,  
-					0 as LicenseeWLEUR,
-					SUM (comm * e.EUR) as CommEUR,
-					SUM ( PlayerComm * e.EUR ) AS PlayerCommEUR,
-					- SUM((b.awinlost + b.winlost - b.actual_stake + b.comm) * e.EUR) AmountDueTo3rdEUR  ,
+				------------------USD
+				SUM( stake
+					*				
+					CASE WHEN b.statusID = 111 THEN 0|@sumTurnOver
+						WHEN (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0)
+						ELSE 1 END
+					* e.USD
+				) turnoverUSD, 
+				SUM((b.winlost - b.actual_stake) * e.USD) AS WinlostUSD,  
+				0 as LicenseeWLUSD,
+				SUM (comm * e.USD) as CommUSD,
+				SUM ( PlayerComm * e.USD ) AS PlayerCommUSD,
+				- SUM((b.awinlost + b.winlost - b.actual_stake + b.comm) * e.USD) AmountDueTo3rdUSD  ,
 
-					------------------USD
-					SUM( stake
-						*				
-						CASE WHEN b.statusID = 111 THEN 0|@sumTurnOver
-							WHEN (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0)
-							ELSE 1 END
-						* e.USD
-					) turnoverUSD, 
-					SUM((b.winlost - b.actual_stake) * e.USD) AS WinlostUSD,  
-					0 as LicenseeWLUSD,
-					SUM (comm * e.USD) as CommUSD,
-					SUM ( PlayerComm * e.USD ) AS PlayerCommUSD,
-					- SUM((b.awinlost + b.winlost - b.actual_stake + b.comm) * e.USD) AmountDueTo3rdUSD  ,
+				---------------GBP
+				SUM( stake
+					*				
+					CASE WHEN b.statusID = 111 THEN 0|@sumTurnOver
+						WHEN (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0)
+						ELSE 1 END
+					* e.GBP
+				) turnoverGBP, 
+				SUM((b.winlost - b.actual_stake) * e.GBP) AS WinlostGBP,  
+				0 as LicenseeWLGBP,
+				SUM (comm * e.GBP) as CommGBP,
+				SUM ( PlayerComm * e.GBP ) AS PlayerCommGBP,
+				- SUM((b.awinlost + b.winlost - b.actual_stake + b.comm) * e.GBP) AmountDueTo3rdGBP  ,	
 
-					---------------GBP
-					SUM( stake
-						*				
-						CASE WHEN b.statusID = 111 THEN 0|@sumTurnOver
-							WHEN (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0)
-							ELSE 1 END
-						* e.GBP
-					) turnoverGBP, 
-					SUM((b.winlost - b.actual_stake) * e.GBP) AS WinlostGBP,  
-					0 as LicenseeWLGBP,
-					SUM (comm * e.GBP) as CommGBP,
-					SUM ( PlayerComm * e.GBP ) AS PlayerCommGBP,
-					- SUM((b.awinlost + b.winlost - b.actual_stake + b.comm) * e.GBP) AmountDueTo3rdGBP  ,	
+				COUNT(1 * (CASE WHEN b.statusID = 111 THEN 0|@sumBetCount ELSE 1 END)) AS BetCount	
+			FROM 
+				dbo.bettrans b WITH (NOLOCK)
+				CROSS APPLY (	SELECT TOP 1 m.sporttype
+								FROM bodb02.dbo.bettransm bm WITH (NOLOCK)
+									INNER JOIN bodb02.dbo.match m WITH (NOLOCK) ON bm.matchid = m.matchid
+								WHERE b.refno = bm.refno AND b.custid = bm.custid
+							) AS s
+				INNER JOIN @TempAg a ON b.recommend = a.custid AND b.Currency = a.Currency 	
+				INNER JOIN #Exchange e  
+					ON e.ExchangeID = b.Currency AND b.winlostdate BETWEEN e.FirstExchangeDateByMonth AND e.LastExchangeDateByMonth				
+			WHERE b.bettype = 2799 -- Betradar VS Parlay
+				AND b.winlostdate BETWEEN @TempFromDate AND @TDate   
+				AND (@MemberID = 0 OR (@MemberID <> 0 AND b.CustId = @MemberID)) 
+				AND b.statusID  IN (111, 112, 113)
+				AND b.matchid = 2799
+			GROUP BY b.custid, b.currency, 'VS2' + CONVERT(varchar(10), s.sporttype)
+		END	
 
-					COUNT(1 * (CASE WHEN b.statusID = 111 THEN 0|@sumBetCount ELSE 1 END)) AS BetCount	
-				FROM 
-					dbo.bettrans b WITH (NOLOCK)
-					CROSS APPLY (	SELECT TOP 1 m.sporttype
-									FROM bodb02.dbo.bettransm bm WITH (NOLOCK)
-										INNER JOIN bodb02.dbo.match m WITH (NOLOCK) ON bm.matchid = m.matchid
-									WHERE b.refno = bm.refno AND b.custid = bm.custid
-								) AS s
-					INNER JOIN @TempAg a ON b.recommend = a.custid AND b.Currency = a.Currency 	
-					INNER JOIN #Exchange e  
-						ON e.ExchangeID = b.Currency AND b.winlostdate BETWEEN e.FirstExchangeDateByMonth AND e.LastExchangeDateByMonth				
-				WHERE b.bettype = 2799 -- Betradar VS Parlay
-					AND b.winlostdate BETWEEN @TempFromDate AND @TDate   
-					AND (@MemberID = 0 OR (@MemberID <> 0 AND b.CustId = @MemberID)) 
-					AND b.statusID  IN (111, 112, 113)
-					AND b.matchid = 2799
-				GROUP BY b.custid, b.currency, 'VS2' + CONVERT(varchar(10), s.sporttype)
-			END					
-		END
-	
 		---#4.3: Begin: Get data for all products, Exclude VS2 parlay ticket and BA
 		IF EXISTS (SELECT 1 FROM @bettype)
 		BEGIN	
+			IF EXISTS (SELECT 1 FROM @bettype WHERE ProductCode IN ('VS', 'VS2'))
+			BEGIN
+				INSERT INTO #tmpVS( Orid, SportType )				
+				SELECT 
+					DISTINCT
+					o.Orid,
+					r.SportType				
+				FROM VSOutright o with (nolock)
+					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
+				WHERE EventDate BETWEEN @TempFromDate AND @TDate
+			END
+
 			INSERT INTO #SAgWinLoss
 			SELECT  
 				b.custid,
