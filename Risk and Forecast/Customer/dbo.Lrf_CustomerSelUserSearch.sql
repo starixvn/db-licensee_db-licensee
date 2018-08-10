@@ -20,6 +20,7 @@ Param's Explanation:
 	20141112@Victor: use f_SelLicenseeCust instead of licenseecust (#Redmine 25864)
 	20170228@Paul: remove @LicenseeID, @CurrencyID, @LicenseeType and add @AgentList due to logic change [Redmine: #71679]
 	20180416@Joseph: Increase column size of table @tmpUsername (column username) to fix error [Redmine: #98294]
+	20180810@Sophia: HA - remove LicenseeCustinfo table [Redmine: #99464]
 */
 
 BEGIN
@@ -61,9 +62,10 @@ BEGIN
 		SELECT TOP 10 
 				SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, LEN(c.username2)-CHARINDEX('$',c.username2)), 
 				-1 AS searchcount
-		FROM LicenseeCustinfo c WITH (NOLOCK)
+		FROM bodb02.dbo.Customer c WITH (NOLOCK)
 			INNER JOIN @TempAg lc ON c.recommend = lc.custid AND c.currency = lc.Currency
 		WHERE (c.username2 LIKE + '%$' + @Username + '%' OR c.username LIKE @Username + '%')
+				AND c.RoleId = 1
 		ORDER BY username
 	END
 

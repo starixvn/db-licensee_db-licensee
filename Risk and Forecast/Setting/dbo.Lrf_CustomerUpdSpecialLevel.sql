@@ -1,7 +1,4 @@
-﻿set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
-
+﻿/*<info serverAlias="DBCUST-CustDB" executers="bodbLicenseeNet,bodbDownlineNet" viewers="vnteam" isFunction="0"></info>*/
 ALTER  PROCEDURE [dbo].[Lrf_CustomerUpdSpecialLevel]
 	@CustID INT,
 	@UserID INT,
@@ -15,11 +12,12 @@ AS
 /*
 Created: 20111222@Henry
 Task : Update Special Level of member
-DB: DB052.bodb_Licensee
+DB: DBCUST.CustDB
 
 
 Revisions:
-	-20130413@Jim: support multi language
+	- 20130413@Jim: support multi language
+	- 20180810@Sophia: Change the way to update/insert SpecialLevel, use new table Dep_CustSpecialLevel [redmine: #99464] 
 	
 Param's Explanation:
 
@@ -42,6 +40,7 @@ BEGIN
 					END, @ErrCode = 100
 END
 ELSE
+IF @SpecialLevel => 1 AND @SpecialLevel <= 10
 BEGIN
 	SELECT @OldSpecialLevel=SpecialLevel FROM LicenseeCustinfo (NOLOCK)
 	WHERE CustID = @CustID
@@ -108,3 +107,4 @@ GO
 GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdSpecialLevel] TO [bodbLicenseeNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerUpdSpecialLevel] TO [vnteam]   
+GO
