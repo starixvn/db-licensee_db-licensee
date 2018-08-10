@@ -1,3 +1,4 @@
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 USE [bodb02]
 GO
 ALTER PROCEDURE [dbo].[Lrf_Rpt_CasinoProgressiveWins] 
@@ -16,6 +17,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_CasinoProgressiveWins]
     Revisions:
 		- 20160714@Percy: Enhance Performance - using OPENQUERY instead of linked-server [RedmineID: #60208]
 		- 20170302@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest [Redmine: #71679]
+		- 20180810@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
 
 	Param's Explanation: 
 	 
@@ -85,8 +87,8 @@ BEGIN
 	SELECT winlostDate, p.CustId, c.username2, p.Username, Refno, WinAmount, GameId, ProductId, tma.currency
 	FROM
 		DBACC.bodb02.dbo.PayOutTrans p WITH (NOLOCK)
-		INNER JOIN bodb_licensee.dbo.Licenseecustinfo c WITH (NOLOCK) ON c.CustId = p.CustId
-		INNER JOIN @TempAg tma ON tma.CustID=c.recommend --AND c.currency = tma.currency
+		INNER JOIN Customer c WITH (NOLOCK) ON c.CustId = p.CustId
+		INNER JOIN @TempAg tma ON tma.CustID=c.recommend AND c.roleid = 1
 	WHERE
 		Winlostdate BETWEEN @FromDate AND @ToDate
 		AND ProductId IN (SELECT sporttype FROM @sporttype)
