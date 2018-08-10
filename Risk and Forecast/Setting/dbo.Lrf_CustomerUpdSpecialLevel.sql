@@ -1,5 +1,5 @@
-﻿/*<info serverAlias="DBCUST-CustDB" executers="bodbLicenseeNet,bodbDownlineNet" viewers="vnteam" isFunction="0"></info>*/
-CREATE  PROCEDURE [dbo].[Lrf_CustomerUpdSpecialLevel]
+﻿/*<info serverAlias="DBCUST-CustDB" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
+ALTER PROCEDURE [dbo].[Lrf_CustomerUpdSpecialLevel]
 	@CustID INT,
 	@UserID INT,
 	@SpecialLevel INT,
@@ -135,7 +135,7 @@ SELECT @LogSPData2 = '<Lrf_CustomerUpdSpecialLevel CustID="'+ COALESCE(CAST(@Cus
 SET @endRun = GETDATE()
 SET @duration  = datediff (millisecond,@startRun,@endRun)
 
-EXEC bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP 
+EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP 
 		@UserID = @UserID,
 		@CustID = @CustID,
 		@ActionID = 2407,
@@ -144,8 +144,4 @@ EXEC bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
 		@duration = @duration
 
 
-GO
-GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdSpecialLevel] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerUpdSpecialLevel] TO [vnteam]   
-GO
+GO 
