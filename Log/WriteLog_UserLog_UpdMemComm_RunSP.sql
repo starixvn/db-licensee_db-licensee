@@ -14,6 +14,7 @@ ALTER PROCEDURE [dbo].[WriteLog_UserLog_UpdMemComm_RunSP]
 	Revisions:
 		- 20171026@Johnson: offer Allbet commision [Redmine: #82036]
 		- 20180228@Vicky: Remove LC from product list [Redmine: #85965]
+		- 20180809@Amanda: Remove Racing [RedmineID: #99378]
 		
     Param's Explaination:    	
 		- @UserID: UserId perform this action
@@ -48,7 +49,6 @@ BEGIN
 			   'LicenseeID="'+ COALESCE(CAST(ISNULL(lcc.LicenseeID,0) as VARCHAR(50)),SPACE(1)) + '" ' +
 			   'SBComm="'+ COALESCE(CAST(ISNULL(lcc.SBComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
 			   'NGComm="'+ COALESCE(CAST(ISNULL(lcc.NGComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
-			   'RacingComm="'+ COALESCE(CAST(ISNULL(lcc.RacingComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
 			   --'LCComm="'+ COALESCE(CAST(ISNULL(lcc.LCComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
 			   'RNGComm="'+ COALESCE(CAST(ISNULL(lcc.RNGComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
 			   'AllbetComm="'+ COALESCE(CAST(ISNULL(lcc.AllbetComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +

@@ -3,11 +3,9 @@ ALTER PROCEDURE [dbo].[Acc_ExecRep_Cust_02]
 	@IDs VARCHAR(MAX),
 	@SBComm DECIMAL(9,8) ,
 	@NGComm DECIMAL(9,8)=0,	
-	@RacingComm DECIMAL(9,8)=0,
 	@ParlayComm DECIMAL(9,8)=0,
 	@AllbetComm DECIMAL(9,8)=0,
 	@IsUpdateNG BIT = 0,
-	@IsUpdateRacing BIT = 0,
 	@IsUpdateAllbet BIT = 0
 AS
 /*
@@ -25,6 +23,7 @@ Revisions:
 	- 20171020@Johnson: offer Allbet commision [Redmine: #82036]
 	- 20171201@Johnson: enhance AB comm setting, dont move individual setting if not change comm AB [Redmine: #87352]
 	- 20180228@Vicky: Remove LC from product list [Redmine: #85965]
+	- 20180809@Amanda: Remove Racing [RedmineID: #99378]
 	
 Param's Explanation:
 • @ErrCode:
@@ -32,7 +31,7 @@ Param's Explanation:
     > 0: Specific Error.
     
 • @ErrMsg: Error description.
-*/
+*/s
 BEGIN
 	SET NOCOUNT ON;
 	
@@ -89,15 +88,6 @@ BEGIN
 			AND playerdiscount <> @NGComm
 			AND sporttype = 161  	
 	END
-
-	IF (@IsUpdateRacing=1) --update racing
-	BEGIN
-		UPDATE [dbo].Dep_CustSetting3rd WITH (ROWLOCK, UPDLOCK)
-		SET playerdiscount = @RacingComm 
-		WHERE custid IN (SELECT CustID FROM @res)
-			AND playerdiscount <> @RacingComm
-			AND sporttype IN (151,152,153)
-	END		
 	
 	IF (@IsUpdateAllbet=1)
 	BEGIN

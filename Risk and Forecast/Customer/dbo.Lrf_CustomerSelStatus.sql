@@ -14,6 +14,7 @@ Revisions:
    - 20131023@Jim: Allow users to enable/ disable Casino games for specific players 
    - 20180228@Vicky: Remove LC from product list [Redmine: #85965]
    - 20180420@Akex : Return more currencyId [Redmine:93961]
+   - 20180809@Amanda: Remove Racing [RedmineID: #99378]
    
 Param's Explanation:
     - @CustID: customer id.   
@@ -44,7 +45,6 @@ BEGIN
             ISNULL (closed,0) As Closed,
             ISNULL (autosuspend,0) As AutoSuspend,  
             ISNULL (cm.DisableAutoMPT ,0) As DisableAutoMPT,    
-            ISNULL(DisableHorseracing,0) AS DisableHorseracing,
             ISNULL(DisableOpenTote,0) AS DisableOpenTote,
             ISNULL(DisableFinancial,0) AS DisableFI,
             ISNULL(SyncCasino,0) AS SyncCasino,

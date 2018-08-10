@@ -18,14 +18,14 @@ Revisions:
 	- 20131126@Hannah: offer RNG Casino commission
 	- 20171024@Johnson: offer Allbet commision [Redmine: #82036]
 	- 20180228@Vicky: Remove LC from product list [Redmine: #85965]
+	- 20180809@Amanda: Remove Racing [RedmineID: #99378]
 Param's Explanation:
 */ 
 BEGIN
 	SET NOCOUNT ON 
 	
 	DECLARE @GroupCommID INT, 
-		@IsUpdateNG BIT, 
-		@IsUpdateRacing BIT,
+		@IsUpdateNG BIT,
 		@IsUpdateRNG BIT, 
 		@IsUpdateAllbet BIT,
 		@LicenseeID INT, 
@@ -45,11 +45,6 @@ BEGIN
 				SELECT @IsUpdateNG = 1
 			ELSE
 				SELECT @IsUpdateNG = 0
-				
-			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=1)
-				SELECT @IsUpdateRacing = 1
-			ELSE
-				SELECT @IsUpdateRacing = 0		
 
 			/*IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=4)
 				SELECT @IsUpdateLC = 1
@@ -74,7 +69,6 @@ BEGIN
 				,@UserID=0
 				,@GroupCommID=@GroupCommID
 				,@IsUpdateNG=@IsUpdateNG
-				,@IsUpdateRacing=@IsUpdateRacing
 				--,@IsUpdateLC=@IsUpdateLC
 				,@IsUpdateRNG=@IsUpdateRNG
 				,@IsUpdateAllbet=@IsUpdateAllbet

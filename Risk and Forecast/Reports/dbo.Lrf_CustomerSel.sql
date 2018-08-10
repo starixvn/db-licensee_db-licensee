@@ -59,6 +59,7 @@ AS
 		- 20180130@Johnson: exclude cashout dummy from result [Redmine:#90168]
 		- 20180228@Vicky: Remove LC from product list [Redmine: #85965]
 		- 20180810@Sophia: HA - remove LicenseeCustinfo table [Redmine: #99464]
+		- 20180809@Amanda: Remove Racing [RedmineID: #99378]
 		
 	Param's Explanation:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
@@ -587,7 +588,6 @@ BEGIN
 		ISNULL(lg.color, '') AS GroupColor,
 		ISNULL(lg.GroupName, '') AS GroupName,
 		ISNULL(lc.SBComm, 0) AS SBComm,
-		ISNULL(lc.RacingComm, 0) AS RacingComm,
 		ISNULL(lc.NGComm, 0) AS NGComm,
 		ISNULL(lc.RNGComm, 0) AS RNGComm,
 		ISNULL(lc.ParlayComm, 0) AS ParlayComm,
