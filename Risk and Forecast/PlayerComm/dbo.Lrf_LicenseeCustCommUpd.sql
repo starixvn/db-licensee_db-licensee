@@ -7,11 +7,9 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeCustCommUpd]
 	@SBComm DECIMAL(9,8),
 	@ParlayComm DECIMAL(9,8),
 	@NGComm DECIMAL(9,8),	
-	@RacingComm DECIMAL(9,8),
 	@RNGComm DECIMAL(9,8),	
 	@AllbetComm DECIMAL(9,8)=0,
 	@IsUpdateNG BIT = 0,
-	@IsUpdateRacing BIT = 0,
 	@IsUpdateRNG BIT = 0,
 	@IsUpdateAllbet BIT = 0,
 	@IP VARCHAR(40),
@@ -34,6 +32,7 @@ Revisions:
     - 20160805@Jim: LRF - Offer different member commission for parlay tickets [RedmineID:#61897]
 	- 20171017@Johnson: offer Allbet commision [Redmine: #82036]
 	- 20180228@Vicky: Remove LC from product list [Redmine: #85965]
+	- 20180809@Amanda: Remove Racing [RedmineID: #99378]
 	
 Param's Explanation:
 */ 
@@ -54,11 +53,9 @@ BEGIN
 		,@SBComm=@SBComm
 		,@ParlayComm = @ParlayComm
 		,@NGComm=@NGComm
-		,@RacingComm=@RacingComm
 		,@RNGComm=@RNGComm
 		,@AllbetComm=@AllbetComm
 		,@IsUpdateNG=@IsUpdateNG
-		,@IsUpdateRacing=@IsUpdateRacing
 		,@IsUpdateRNG=@IsUpdateRNG
 		,@IsUpdateAllbet=@IsUpdateAllbet
 		,@IP=@IP

@@ -14,6 +14,7 @@ AS
 	- 20160805@Jim: LRF - Offer different member commission for parlay tickets [RedmineID:#61897]	
 	- 20171025@Johnson: offer Allbet commision [Redmine: #82036]
 	- 20180228@Vicky: Remove LC from product list [Redmine: #85965]
+	- 20180809@Amanda: Remove Racing [RedmineID: #99378]
 */  
 BEGIN  
 SET NOCOUNT ON;  
@@ -21,7 +22,6 @@ SET NOCOUNT ON;
 SELECT g.ID AS GroupCommID,
 	g.GroupName,
 	g.SBComm,
-	g.RacingComm,
 	g.NGComm,
 	g.RNGComm,
 	g.Parlaycomm,

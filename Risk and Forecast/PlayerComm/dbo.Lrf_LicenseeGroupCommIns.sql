@@ -4,7 +4,6 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeGroupCommIns]
 	@GroupName VARCHAR(100),
 	@SBComm DECIMAL(9,8),
 	@ParlayComm DECIMAL(9,8),
-	@RacingComm DECIMAL(9,8),
 	@NGComm DECIMAL (9,8),
 	@RNGComm DECIMAL (9,8),
 	@AllbetComm DECIMAL(9,8)=0,
@@ -33,6 +32,7 @@ Revisions:
 	- 20160805@Jim: LRF - Offer different member commission for parlay tickets [RedmineID:#61897]
 	- 20171023@Johnson: offer Allbet commision [Redmine: #82036]
 	- 20180228@Vicky: Remove LC from product list [Redmine: #85965]
+	- 20180809@Amanda: Remove Racing [RedmineID: #99378]
 	
 Param's Explanation:
 
@@ -52,7 +52,6 @@ BEGIN
 
 	--Validate data 
 	IF @SBComm>0.15 
-		OR @RacingComm>0.15 
 		OR @NGComm>0.15 
 		OR @RNGComm>0.15 
 		OR @ParlayComm > 0.15
@@ -84,8 +83,8 @@ BEGIN
 			
 		END
 		
-		INSERT INTO dbo.LicenseeGroupComm (LicenseeID,GroupName,SBComm,RacingComm,NGComm,color,isDefault,RNGComm,ParlayComm,AllbetComm)
-		VALUES (@LicenseeID,@GroupName,@SBComm,@RacingComm,@NGComm,@GroupColor,@IsDefault,@RNGComm,@ParlayComm,@AllbetComm)
+		INSERT INTO dbo.LicenseeGroupComm (LicenseeID,GroupName,SBComm,NGComm,color,isDefault,RNGComm,ParlayComm,AllbetComm)
+		VALUES (@LicenseeID,@GroupName,@SBComm,@NGComm,@GroupColor,@IsDefault,@RNGComm,@ParlayComm,@AllbetComm)
 		
 		IF (@@ERROR <> 0)
 		BEGIN
@@ -106,7 +105,6 @@ BEGIN
 		'GroupName="'+ COALESCE(CAST(@GroupName as VARCHAR(100)),SPACE(1)) + '" ' +
 		'SBComm="'+ COALESCE(CAST(@SBComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'NGComm="'+ COALESCE(CAST(@NGComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		'RacingComm="'+ COALESCE(CAST(@RacingComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'RNGComm="'+ COALESCE(CAST(@RNGComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'ParlayComm="'+ COALESCE(CAST(@ParlayComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'AllbetComm="'+ COALESCE(CAST(@AllbetComm as VARCHAR(50)),SPACE(1)) + '" ' +
@@ -122,7 +120,6 @@ BEGIN
 		'GroupName="'+ COALESCE(CAST(@GroupName as VARCHAR(100)),SPACE(1)) + '" ' +
 		'SBComm="'+ COALESCE(CAST(@SBComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'NGComm="'+ COALESCE(CAST(@NGComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		'RacingComm="'+ COALESCE(CAST(@RacingComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'RNGComm="'+ COALESCE(CAST(@RNGComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'ParlayComm="'+ COALESCE(CAST(@ParlayComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'AllbetComm="'+ COALESCE(CAST(@AllbetComm as VARCHAR(50)),SPACE(1)) + '" ' +
