@@ -27,6 +27,7 @@ Revision:
 		1. Basketball (603-607, 609-613, 615-617)
 		2. Virtual Sports 2 (2701-2707)
 	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
+	- 20180810@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
 
 Parameter's Explanation:
 			
@@ -166,8 +167,6 @@ BEGIN
 				FROM bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)--, INDEX=CIX_winlostdate)
 					INNER JOIN #recommend rec
 					ON b.Recommend	= rec.CustID
-					INNER JOIN bodb_licensee.dbo.LicenseeCustinfo  c WITH (NOLOCK)
-					ON b.custid 	= c.custid
 					INNER JOIN #bettype bt
 					ON b.bettype 	=  bt.typeid
 					INNER JOIN #Status st
@@ -195,8 +194,6 @@ BEGIN
 				FROM bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)--, INDEX=CIX_winlostdate)
 					INNER JOIN #recommend rec
 					ON b.Recommend	= rec.CustID
-					INNER JOIN bodb_licensee.dbo.LicenseeCustinfo  c WITH (NOLOCK)
-					ON b.custid 	= c.custid
 					INNER JOIN #bettype bt
 					ON b.bettype 	=  bt.typeid
 					INNER JOIN #Status st
