@@ -74,6 +74,7 @@ Revision:
 	- 20180424@Joseph: Fix bug group VS2: BasketBall - Virual Soccer [RedmineID: #93844]
 	- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 	- 20180810@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
+	- 20180810@Paul: Enhance performance [Redmine: #98260]
 
 Parameter's Explanation:
 	- @ReportBy:  1: daily, 2: monthly
@@ -106,8 +107,9 @@ BEGIN
 	CREATE TABLE #custData
 	(
 		rowno				INT
-		, winlostdate 		DATE
+		, winlostdate 		SMALLDATETIME
 		, custid 			INT
+		, username			VARCHAR(50)
 		, currency			INT
 		, sporttype			SMALLINT
 		, bettype			INT
@@ -116,12 +118,11 @@ BEGIN
 		, winlost			MONEY
 		, BetEffective      MONEY
 		, playercomm		MONEY
-		, whticket			TINYINT
 	)
 	
 	CREATE TABLE #tempCust 
 	(
-		custid			INT
+		custid			INT PRIMARY KEY
 		, username		NVARCHAR(30)
 	)
 	
@@ -129,8 +130,9 @@ BEGIN
 	(
 		rowno			INT
 		, whticket		TINYINT
-		, winlostdate	DATETIME
+		, winlostdate	SMALLDATETIME
 		, custid		INT
+		, username		VARCHAR(50)
 		, totalrow		INT
 	)
 	
@@ -180,7 +182,8 @@ BEGIN
 	
 	SELECT VAL AS sportId 
 	INTO #ProductID 
-	FROM dbo.strSplit(@Product,',')
+	FROM dbo.f_StringSplit(@Product,',')
+	OPTION(MAXRECURSION 0)
 	
 	IF  NOT EXISTS (SELECT TOP 1 1  FROM #ProductID )
 	BEGIN 
@@ -218,7 +221,8 @@ BEGIN
 	
 	SELECT VAL AS typeID
 	INTO #BettypeID
-	FROM dbo.strSplit(@Bettype,',') AS b
+	FROM dbo.f_StringSplit(@Bettype,',') AS b
+	OPTION(MAXRECURSION 0)
 
 	INSERT INTO #BettypeID
 	SELECT ss.bettype AS typeID
@@ -235,13 +239,12 @@ BEGIN
 	WHERE bt.bettype NOT IN (SELECT typeID FROM #BettypeID)	
 	
 	SELECT 
-		bt.typeID
+		b.typeID
 		, sp.ProductId
 		, sp.EventType
 	INTO #bettype	
-	FROM #BettypeID bt 
-		INNER JOIN @SportBettype sp 
-		ON bt.typeid 	=  sp.bettype
+	FROM #BettypeID b 
+		INNER JOIN @SportBettype sp ON b.typeid 	=  sp.bettype
 		
 	DROP TABLE #BettypeID
 		
@@ -287,18 +290,19 @@ BEGIN
 		INSERT INTO #tempCust
 		SELECT c.custid
 			, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS username
-		FROM  Customer  c WITH (NOLOCK) 
+		FROM  dbo.Customer  c WITH (NOLOCK) 
 		  
 		WHERE   c.recommend		IN (SELECT custid FROM #recommend)
 			AND (
 				c.username2 	LIKE '%$%' 	+ @Username + '%'
 				OR c.username	LIKE '%' 	+ @Username + '%'
 			) AND c.roleid = 1
+			AND c.roleid = 1
 		IF(@@ROWCOUNT = 0) GOTO OutputResult;
 		
 		SET @searchCust  	= 1
 	END
-	
+
 	IF (@ToDate > @MoveBetsDay)
 	BEGIN
 
@@ -317,7 +321,9 @@ BEGIN
 			AND b.matchid = 2799
 
 		INSERT INTO #tempBettrans
-		SELECT b.winlostdate
+		SELECT CASE WHEN @ReportBy =  2 THEN DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) 
+						ELSE b.winlostdate
+					END AS winlostdate 
 			, b.custid
 			, recommend
 			, CASE WHEN bt.EventType = 0 THEN
@@ -670,7 +676,7 @@ BEGIN
 	BEGIN
 		WITH CTE_Bettype AS
 		(
-			SELECT b.bettype
+			SELECT b.typeID
 				,CASE 
 					WHEN @Langkey =  'zh-CN'	AND ISNULL(bt.typenamecn, '')	<> '' THEN bt.typenamecn
 					WHEN @Langkey =  'zh-TW'	AND ISNULL(bt.typenamecn, '')	<> '' THEN bt.typenamecn
@@ -682,16 +688,16 @@ BEGIN
 					WHEN @Langkey =  'vi-VN'	AND ISNULL(bt.typenamee, '')	<> '' THEN bt.typenamee
 					ELSE typenamee 
 				END AS typenamee
-			FROM #custData b
+			FROM #bettype b
 				LEFT JOIN dbo.f_GroupBettype() ss 
-				ON b.bettype 	= ss.bettype
+				ON b.typeID 	= ss.bettype
 				LEFT JOIN dbo.f_GroupBettype3rd() ss2
-				ON b.bettype 	= ss2.bettype
+				ON b.typeID 	= ss2.bettype
 				INNER JOIN dbo.bettype bt WITH(NOLOCK)
-				ON ISNULL(COALESCE(ss.GroupTypeID, ss2.GroupTypeID), b.bettype) = bt.typeid
+				ON ISNULL(COALESCE(ss.GroupTypeID, ss2.GroupTypeID), b.typeID) = bt.typeid
 				
 			GROUP BY 
-				b.bettype
+				b.typeID
 				,CASE 
 					WHEN @Langkey =  'zh-CN'	AND ISNULL(bt.typenamecn, '')	<> '' THEN bt.typenamecn
 					WHEN @Langkey =  'zh-TW'	AND ISNULL(bt.typenamecn, '')	<> '' THEN bt.typenamecn
@@ -709,8 +715,8 @@ BEGIN
 			, CASE WHEN @ReportBy =  2 THEN CONVERT(VARCHAR(6), b.winlostdate, 112)
 				ELSE CONVERT(VARCHAR(8), b.winlostdate, 112)
 			END AS ReportBy
-			, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS username
-			, e.exchangeid as currencyid
+			, b.username
+			, b.currency AS currencyid
 			, b.sporttype
 			, CASE WHEN b.bettype BETWEEN 81 AND 120 THEN  N'NG - ' + bt.typenamee
 				 WHEN (b.bettype BETWEEN 1201 AND 1299) THEN  N'VS - '+bt.typenamee + CASE WHEN b.bettype = 1204 THEN '(Soccer)'
@@ -727,20 +733,17 @@ BEGIN
 			, SUM(b.playercomm) AS playercomm
 
 		FROM #custData b
-			INNER JOIN Customer c WITH (NOLOCK) 
-			ON b.CustID		= c.CustID 
 			INNER JOIN CTE_Bettype bt
-			ON b.bettype = bt.bettype
-			INNER JOIN dbo.exchange e WITH (NOLOCK) 
-			ON b.currency = e.exchangeid
+			ON b.bettype = bt.typeID
+			
 			
 		GROUP BY
 			b.RowNo
 			, CASE WHEN @ReportBy =  2 THEN CONVERT(VARCHAR(6), b.winlostdate, 112)
 				ELSE CONVERT(VARCHAR(8), b.winlostdate, 112)
 			END
-			, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username)
-			, e.exchangeid
+			, b.username
+			, b.currency
 			, b.sporttype
 			, CASE WHEN b.bettype BETWEEN 81 AND 120 THEN  N'NG - ' + bt.typenamee
 				 WHEN (b.bettype BETWEEN 1201 AND 1299) THEN  N'VS - '+bt.typenamee + CASE WHEN b.bettype = 1204 THEN '(Soccer)'

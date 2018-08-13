@@ -33,6 +33,7 @@ Revision:
 	- 20180129@Percy: Hotfix page size, page index [RedmineID: #90104]
 	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
 	- 20180810@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
+	- 20180810@Paul: Enhance performance [Redmine: #98260]
 
 Parameter's Explanation:
 			
@@ -40,7 +41,15 @@ Parameter's Explanation:
 BEGIN
 	SET NOCOUNT ON;
 
-	DECLARE @offsetRow INT, @maxRow INT, @topRow INT 
+	DECLARE @offsetRow INT, @maxRow INT, @topRow INT
+
+	CREATE TABLE #tempPagingData (
+		sporttype		SMALLINT, 
+		bettype			SMALLINT, 
+		custid			INT, 
+		StatusID		TINYINT,
+		winlostdate		SMALLDATETIME
+	)
 	
 	SELECT
 		@offsetRow = (((@PageIndex - 1) * @PageSize) + 1)
@@ -67,6 +76,7 @@ BEGIN
 										)
 					, b.winlostdate
 					, c.Custid
+					, c.username
 					, TotalRow = COUNT(1) OVER()
 					
 				FROM #tempBettrans b	
@@ -86,6 +96,7 @@ BEGIN
 				, 1 AS whTicket
 				, p.winlostdate
 				, p.custid
+				, p.username
 				, p.TotalRow
 			FROM CTE_Paging p
 			WHERE (p.RowIdx BETWEEN @offsetRow AND @maxRow)
@@ -109,7 +120,18 @@ BEGIN
 		BEGIN
 			IF ( @odds = 0 )
 			BEGIN
-				WITH CTE_Paging AS 
+				INSERT INTO #tempPagingData(winlostdate, sporttype, bettype, custid, StatusID)
+				SELECT	winlostdate, 
+						CASE WHEN b.bettype IN (9, 10, 29) THEN 1
+							ELSE b.sporttype 
+						END AS sporttype, bettype, b.custid, StatusID
+				FROM #recommend rec
+					JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)
+						ON b.Recommend	= rec.CustID
+				WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
+				OPTION(RECOMPILE)
+
+				;WITH CTE_Paging AS 
 				(
 					SELECT 
 						RowIdx = ROW_NUMBER() OVER ( ORDER BY 
@@ -118,11 +140,10 @@ BEGIN
 											) + ISNULL(@totalBettrans,0)
 						, b.winlostdate
 						, c.Custid
+						, c.username
 						, TotalRow = COUNT(1) OVER()
 						
-					FROM bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)--, INDEX=CIX_winlostdate)
-						INNER JOIN #recommend rec
-						ON b.Recommend	= rec.CustID
+					FROM #tempPagingData b
 						INNER JOIN #tempCust c
 						ON b.custid 	= c.custid
 						INNER JOIN #bettype bt
@@ -130,11 +151,7 @@ BEGIN
 						INNER JOIN #Status st
 						ON b.StatusID 	=  st.StatusID
 						INNER JOIN #ProductID p 
-						ON CASE	WHEN b.bettype IN (9, 10, 29) THEN 1
-								ELSE b.sporttype 
-							END			= p.sportID
-					WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
-							
+						ON b.sporttype = p.sportID							
 					GROUP BY 
 						b.winlostdate
 						, c.custid
@@ -146,6 +163,7 @@ BEGIN
 					, 2 AS whTicket
 					, p.winlostdate
 					, p.custid
+					, p.username
 					, p.TotalRow
 				FROM CTE_Paging p
 				WHERE (p.RowIdx BETWEEN @offsetRow AND @maxRow)
@@ -157,31 +175,15 @@ BEGIN
 			-- Has Odds Value
 			IF (@odds > 0)
 			BEGIN
-				WITH CTE_Paging AS
-				(
-					SELECT 
-						RowIdx = ROW_NUMBER() OVER ( ORDER BY 
-												b.winlostdate DESC
-												, c.username
-											) + ISNULL(@totalBettrans,0)
-						, b.winlostdate
-						, c.Custid
-						, TotalRow = COUNT(1) OVER()
-						
-					FROM bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)--, INDEX=CIX_winlostdate)
-						INNER JOIN #recommend rec
+				INSERT INTO #tempPagingData(winlostdate, sporttype, bettype, custid, StatusID)
+				SELECT	winlostdate, 
+						CASE WHEN b.bettype IN (9, 10, 29) THEN 1
+							ELSE b.sporttype 
+						END AS sporttype, bettype, b.custid, StatusID
+				FROM #recommend rec
+					JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)
 						ON b.Recommend	= rec.CustID
-						INNER JOIN #tempCust c
-						ON b.custid 	= c.custid
-						INNER JOIN #bettype bt
-						ON b.bettype 	=  bt.typeid
-						INNER JOIN #Status st
-						ON b.StatusID 	=  st.StatusID
-						INNER JOIN #ProductID p 
-						ON CASE	WHEN b.bettype IN (9, 10, 29) THEN 1
-								ELSE b.sporttype 
-							END			= p.sportID
-					WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
+				WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
 						AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
 										OR b.bettype BETWEEN 81 AND 88
 										OR b.bettype BETWEEN 90 AND 120
@@ -205,9 +207,31 @@ BEGIN
 																	WHEN (b.odds * 100) % 2 = 0 THEN 2
 																	WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
 												END 
-								ELSE b.Odds
-							END >= @odds
+									ELSE b.Odds
+								END >= @odds
+				OPTION(RECOMPILE)
+
+				;WITH CTE_Paging AS
+				(
+					SELECT 
+						RowIdx = ROW_NUMBER() OVER ( ORDER BY 
+												b.winlostdate DESC
+												, c.username
+											) + ISNULL(@totalBettrans,0)
+						, b.winlostdate
+						, c.Custid
+						, c.username
+						, TotalRow = COUNT(1) OVER()
 						
+					FROM #tempPagingData b
+						INNER JOIN #tempCust c
+						ON b.custid 	= c.custid
+						INNER JOIN #bettype bt
+						ON b.bettype 	=  bt.typeid
+						INNER JOIN #Status st
+						ON b.StatusID 	=  st.StatusID
+						INNER JOIN #ProductID p 
+						ON b.sporttype = p.sportID	
 					GROUP BY 
 						b.winlostdate
 						, c.custid
@@ -220,6 +244,7 @@ BEGIN
 					, 2 AS whTicket
 					, p.winlostdate
 					, p.custid
+					, p.username
 					, p.TotalRow
 				FROM CTE_Paging p
 				WHERE (p.RowIdx BETWEEN @offsetRow AND @maxRow)
@@ -255,11 +280,12 @@ BEGIN
 										)
 					, b.winlostdate
 					, c.Custid
+					, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS username
 					, TotalRow = COUNT(1) OVER()
 				FROM #tempBettrans b	
 					INNER JOIN #recommend rec 
 					ON b.Recommend	= rec.CustID 
-					INNER JOIN Customer  c WITH (NOLOCK)
+					INNER JOIN dbo.Customer  c WITH (NOLOCK, INDEX = IX_custid)
 					ON b.custid 	= c.custid
 				
 				GROUP BY
@@ -273,6 +299,7 @@ BEGIN
 				, 1 AS whTicket
 				, p.winlostdate
 				, p.custid
+				, p.username
 				, p.TotalRow
 			FROM CTE_Paging p
 			WHERE (p.RowIdx BETWEEN @offsetRow AND @maxRow)
@@ -296,7 +323,18 @@ BEGIN
 		BEGIN
 			IF(@odds = 0)
 			BEGIN
-				WITH CTE_Paging AS 
+				INSERT INTO #tempPagingData(winlostdate, sporttype, bettype, custid, StatusID)
+				SELECT	winlostdate, 
+						CASE WHEN b.bettype IN (9, 10, 29) THEN 1
+							ELSE b.sporttype 
+						END AS sporttype, bettype, b.custid, StatusID
+				FROM #recommend rec
+					JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)
+						ON b.Recommend	= rec.CustID
+				WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
+				OPTION(RECOMPILE)
+
+				;WITH CTE_Paging AS 
 				(
 					SELECT 
 						RowIdx = ROW_NUMBER() OVER ( ORDER BY 
@@ -305,22 +343,17 @@ BEGIN
 											) + ISNULL(@totalBettrans,0)
 						, b.winlostdate
 						, c.Custid
+						, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS username
 						, TotalRow = COUNT(1) OVER()
-					FROM bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)--, INDEX=CIX_winlostdate)
-						INNER JOIN #recommend rec
-						ON b.Recommend	= rec.CustID
-						INNER JOIN Customer  c WITH (NOLOCK)
+					FROM #tempPagingData b
+						INNER JOIN dbo.Customer  c WITH (NOLOCK, INDEX = IX_custid)
 						ON b.custid 	= c.custid
 						INNER JOIN #bettype bt
 						ON b.bettype 	=  bt.typeid
 						INNER JOIN #Status st
 						ON b.StatusID 	=  st.StatusID
 						INNER JOIN #ProductID p 
-						ON CASE	WHEN b.bettype IN (9, 10, 29) THEN 1
-								ELSE b.sporttype 
-							END			= p.sportID
-					WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
-						
+						ON b.sporttype = p.sportID				
 					GROUP BY 
 						b.winlostdate
 						, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username)
@@ -332,6 +365,7 @@ BEGIN
 					, 2 AS whTicket
 					, p.winlostdate
 					, p.custid
+					, p.username
 					, p.TotalRow
 				FROM CTE_Paging p
 				WHERE (p.RowIdx BETWEEN @offsetRow AND @maxRow )
@@ -344,30 +378,15 @@ BEGIN
 			-- Has Odds Value
 			IF ( @odds > 0 )
 			BEGIN
-				WITH CTE_Paging AS 
-				(	
-					SELECT 
-						RowIdx = ROW_NUMBER() OVER ( ORDER BY 
-												b.winlostdate DESC
-												, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username)
-											) + ISNULL(@totalBettrans,0)
-						, b.winlostdate
-						, c.Custid
-						, TotalRow = COUNT(1) OVER()
-					FROM bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)--, INDEX=CIX_winlostdate)
-						INNER JOIN #recommend rec
+				INSERT INTO #tempPagingData(winlostdate, sporttype, bettype, custid, StatusID)
+				SELECT	winlostdate, 
+						CASE WHEN b.bettype IN (9, 10, 29) THEN 1
+							ELSE b.sporttype 
+						END AS sporttype, bettype, b.custid, StatusID
+				FROM #recommend rec
+					JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)
 						ON b.Recommend	= rec.CustID
-						INNER JOIN Customer  c WITH (NOLOCK)
-						ON b.custid 	= c.custid
-						INNER JOIN #bettype bt
-						ON b.bettype 	=  bt.typeid
-						INNER JOIN #Status st
-						ON b.StatusID 	=  st.StatusID
-						INNER JOIN #ProductID p 
-						ON CASE	WHEN b.bettype IN (9, 10, 29) THEN 1
-								ELSE b.sporttype 
-							END			= p.sportID
-					WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
+				WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
 						AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
 										OR b.bettype BETWEEN 81 AND 88
 										OR b.bettype BETWEEN 90 AND 120
@@ -393,7 +412,28 @@ BEGIN
 												END 
 									ELSE b.Odds
 								END >= @odds
-						
+				OPTION(RECOMPILE)
+
+				;WITH CTE_Paging AS 
+				(	
+					SELECT 
+						RowIdx = ROW_NUMBER() OVER ( ORDER BY 
+												b.winlostdate DESC
+												, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username)
+											) + ISNULL(@totalBettrans,0)
+						, b.winlostdate
+						, c.Custid
+						, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS username
+						, TotalRow = COUNT(1) OVER()
+					FROM #tempPagingData b
+						INNER JOIN dbo.Customer  c WITH (NOLOCK, INDEX = IX_custid)
+						ON b.custid 	= c.custid
+						INNER JOIN #bettype bt
+						ON b.bettype 	=  bt.typeid
+						INNER JOIN #Status st
+						ON b.StatusID 	=  st.StatusID
+						INNER JOIN #ProductID p 
+						ON b.sporttype = p.sportID				
 					GROUP BY 
 						b.winlostdate
 						, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username)
@@ -405,6 +445,7 @@ BEGIN
 					, 2 AS whTicket
 					, p.winlostdate
 					, p.custid
+					, p.username
 					, p.TotalRow
 				FROM CTE_Paging p
 				WHERE (p.RowIdx BETWEEN @offsetRow AND @maxRow )
