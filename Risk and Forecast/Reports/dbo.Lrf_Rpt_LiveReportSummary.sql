@@ -219,7 +219,7 @@ BEGIN
 			WHERE
 				b.winlostdate BETWEEN @TempFromDate AND @TDate
 				AND (
-					b.bettype < 31
+					b.bettype <= 30
 					OR (b.bettype BETWEEN 121 AND 999)
 					OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 					)

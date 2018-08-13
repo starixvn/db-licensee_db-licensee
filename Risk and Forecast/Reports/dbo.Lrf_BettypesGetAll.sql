@@ -32,7 +32,7 @@ BEGIN
 		  typeid NOT IN (11,17,18,19,22,23) --currently not offer Total corners, 2nd HDP, 2nd Over/Under, Substitutes, Next Goal, Next Corner  
 		  AND  
 		  (  
-		   ((@ShowSB=1 OR @ShowBA=1) AND (typeid < 31 OR typeid BETWEEN 121 AND 999))  
+		   ((@ShowSB=1 OR @ShowBA=1) AND (typeid <= 30 OR typeid BETWEEN 121 AND 999))  
 		   OR  
 		   (@ShowNG=1 AND typeid BETWEEN 81 AND 120)       
 		   OR   

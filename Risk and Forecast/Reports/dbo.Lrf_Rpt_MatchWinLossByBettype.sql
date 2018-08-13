@@ -234,6 +234,41 @@ BEGIN
 	 --Get general data  
 	 TRUNCATE TABLE #TempBetList  
 	 
+	INSERT INTO #TempBetList  
+	SELECT    
+		 b.Winlostdate,  
+		 b.currency,  
+		 b.bettype,  
+		 SUM(stake) as Stake,  
+		 SUM(winlost - actual_stake) as Winlost,  
+		 SUM(b.awinlost) AS awinlost,  
+		 SUM(b.comm) AS comm,
+		 b.oddsid, 	
+		 SUM(b.playercomm) AS playercomm,  
+		 b.matchid,  
+		 b.Liveawayscore,  
+		 CASE WHEN b.bettype BETWEEN 81 AND 120 THEN b.liveindicator ELSE 0 END AS liveindicator,  
+		 b.tpositiontaking ,
+		 COUNT(1) betcount
+	FROM  dbo.bettrans b WITH(NOLOCK)  
+		INNER JOIN @TempAg t ON b.recommend = t.CustId AND b.Currency = t.Currency
+	WHERE     
+	 b.winlostdate = @_Date  
+	 AND b.statusID IN (111,112,113)  
+	 AND (b.bettype < 901 OR b.bettype > 904)
+	 AND (b.bettype < 911 OR b.bettype > 914)
+	 AND  b.matchid = @MatchID 
+
+	GROUP BY  
+	 b.Winlostdate,  
+	 b.currency,
+	 b.oddsid,		 
+	 b.bettype,  
+	 b.matchid,  
+	 b.Liveawayscore,  
+	 CASE WHEN b.bettype BETWEEN 81 AND 120 THEN b.liveindicator ELSE 0 END,  
+	 b.tpositiontaking  
+	 
 	 IF (@showSB=1)  
 	 BEGIN  
 	  --exclude BA tickets  
@@ -445,7 +480,39 @@ BEGIN
 
  --Get general data  
  TRUNCATE TABLE #TempBetList  
-    
+
+	INSERT INTO #TempBetList  
+	SELECT 	b.Winlostdate,  
+			b.currency,  
+			b.bettype,  
+			SUM(stake) as Stake,  
+			SUM(winlost - actual_stake) as Winlost,  
+			SUM(b.awinlost) AS awinlost,  
+			SUM(b.comm) AS comm, 
+			b.oddsid,	
+			SUM(b.playercomm  ) AS playercomm,  
+			b.matchid,  
+			b.Liveawayscore ,  
+			CASE WHEN b.bettype BETWEEN 81 AND 120 THEN b.liveindicator ELSE 0 END AS liveindicator,  
+			b.tpositiontaking,
+			COUNT(1) betcount  
+	FROM dbo.bettrans14 b WITH(NOLOCK)  
+		INNER JOIN @TempAg ag ON b.recommend = ag.custid  AND b.Currency = ag.Currency
+	WHERE b.winlostdate = @_Date  
+		AND b.statusID NOT IN ( 101, 102, 103 )  
+		AND (b.bettype < 901 OR b.bettype > 904)
+		AND (b.bettype < 911 OR b.bettype > 914)
+		AND b.matchid = @MatchID  
+	GROUP BY  
+		b.Winlostdate,  
+		b.currency,
+		b.oddsid,	
+		b.bettype,  
+		b.matchid,  
+		b.Liveawayscore,  
+		CASE WHEN b.bettype BETWEEN 81 AND 120 THEN b.liveindicator ELSE 0 END,  
+		b.tpositiontaking  
+
  IF (@ShowSB=1)  
 	BEGIN  
 		INSERT  INTO @AgMatchWLDetails  

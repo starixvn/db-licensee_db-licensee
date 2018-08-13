@@ -23,7 +23,6 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss_BySourced]
 	@ShowPP			BIT = 0, -- PP
 	@ReportType		TINYINT = 1,  
 	@MoveBetsDay	SMALLDATETIME,
-	@IsOld			BIT = 0,
 	@drawfilter		SMALLINT = 1,
 	@AgentList		VARCHAR(MAX)
 AS 
@@ -45,7 +44,6 @@ AS
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
-	  + @IsOld: 0 - query in table rptLicWinloss, 1 - query in table rptLicWinloss_old. 	  
 	  + @MoveBetsDay: The day we move tickets to bettrans14
 	  + @AgentList: xml structure
 					  <ROOT>
@@ -341,7 +339,7 @@ BEGIN
 				AND b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 				AND  
 				(
-					b.bettype < 31
+					b.bettype <= 30
 					OR b.bettype BETWEEN 121 AND 999
 					OR b.Bettype BETWEEN 1301 and 1399 --new tennis's bettypes
 				)
@@ -577,7 +575,7 @@ BEGIN
 				) AS turnover,
 				0 AS BTActualStake,
 				SUM(CASE WHEN RAND() + 1 > 0 THEN b.winlost ELSE 0 END),
-				-SUM(CASE WHEN RAND() + 1 > 0 THEN CASE WHEN b.sporttype = 151 THEN -b.awinlost ELSE b.winlost END ELSE 0 END) AS LicenseeWL,
+				-SUM(CASE WHEN RAND() + 1 > 0 THEN b.winlost ELSE 0 END) AS LicenseeWL,
 				0 AS AmountDueToBA,
 				0 AS CommBA,
 				SUM(ISNULL(CASE WHEN RAND() + 1 > 0 THEN playercomm ELSE 0 END, 0)) AS PlayerComm,
