@@ -508,6 +508,7 @@ BEGIN
 			SUM(winlost),
 			- SUM(b.winlost) AS LicenseeWL,
 			0 AS AmountDueToBA,
+			0 AS CommBA,
 			SUM(playercomm) AS PlayerComm,
 			m.groupmatch AS race,
 			'ZZZZ' AS matchcode,

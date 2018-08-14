@@ -170,10 +170,9 @@ BEGIN
 				THEN b.liveindicator
 			ELSE 0
 			END AS liveindicator
-		,
-		b.winlostdate,
-		b.currency,
-		stake
+		, b.winlostdate
+		, b.currency
+		, SUM(stake)
 		, SUM(winlost - actual_stake)
 		, - SUM(CASE 
 				WHEN ISNULL(BA.transid, 0) = 0
@@ -238,10 +237,9 @@ BEGIN
 				THEN b.liveindicator
 			ELSE 0
 			END AS liveindicator
-		,
-		b.winlostdate,
-		b.currency,
-		stake
+		, b.winlostdate
+		, b.currency
+		, SUM(stake)
 		, SUM(winlost - actual_stake)
 		, - SUM(CASE 
 				WHEN ISNULL(BA.transid, 0) = 0
