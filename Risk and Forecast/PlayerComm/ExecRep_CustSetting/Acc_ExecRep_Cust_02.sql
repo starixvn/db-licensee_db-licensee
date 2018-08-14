@@ -31,7 +31,7 @@ Param's Explanation:
     > 0: Specific Error.
     
 • @ErrMsg: Error description.
-*/s
+*/
 BEGIN
 	SET NOCOUNT ON;
 	
