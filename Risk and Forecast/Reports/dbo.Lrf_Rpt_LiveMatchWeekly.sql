@@ -299,4 +299,7 @@ SET @query='select  sporttype, sportname,' + @cols + '
  DROP TABLE #tblMatchHedge
  --DROP TABLE #tmpRptMatch
 
-GO
+GO 
+GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LiveMatchWeekly] TO [vnteam]
+GO 
+GRANT EXECUTE ON [dbo].[Lrf_Rpt_LiveMatchWeekly] TO [bodbLicenseeNet]
