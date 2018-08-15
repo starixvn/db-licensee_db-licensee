@@ -158,7 +158,10 @@ BEGIN
 
 	----Get Data
 
-	SELECT j.WinlostDate, J.CustId, j.ExternalId, j.SystemID, 
+	SELECT j.WinlostDate,
+		  J.CustId,
+		  SUBSTRING(j.ExternalId, CHARINDEX('$', j.ExternalId) + 1,LEN(j.ExternalId) - CHARINDEX('$',j.ExternalId)) AS ExternalId,
+		  j.SystemID, 
 		  j.RefNo, j.WinAmount, j.Bettype, j.Sporttype, j.transdesc, j.currency, j.TranId3rd,
 		  j.WinAmount * e.EUR AS WinAmountEUR,
 		  j.WinAmount * e.USD AS WinAmountUSD,
