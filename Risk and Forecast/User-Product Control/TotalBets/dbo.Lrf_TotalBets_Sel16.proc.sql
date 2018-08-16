@@ -10,7 +10,7 @@ AS
 /*
 Created: 20101201@Henry
 Task: Retrieve Total Bet values for HT/FT.
-DB: DB052.bodb02
+DB: DB042.bodb02
 Original: [Age_TotalBets_Sel16_Ag]
 
 Revisions:
@@ -23,6 +23,7 @@ Revisions:
 	- 20150123@Jim: support base on Currency GBP
 	- 20150617@Jim:  Enhance Total Bets with sum values of running stakes  (Feature #36839)
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+	- 20180802@Sophia: HA - Status IN (0,1) to use new index on DB042 [Redmine: #98631]
 
 Param's Explanation:
 	+ @AgentList: xml structure
@@ -270,7 +271,7 @@ SELECT
 		INNER JOIN @TempAg ag ON b.recommend = ag.CustId AND b.currency = ag.Currency
 	WHERE    
 		b.bettype = 16 AND
-		b.statusID =0 AND
+		b.statusID IN (0,1) AND
 		m.matchid>0 AND
 		m.eventstatus='running' AND
 		b.tpositiontaking<>	0

@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+﻿/*<info serverAlias="DB042-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 USE bodb02
 GO
 
@@ -13,7 +13,7 @@ AS
 /*
 Created: 20101201@Henry
 Task : Retrieve Total Bet values for bettype 1,3,7,8
-DB: DB052.bodb02
+DB: DB042.bodb02
 Original: Age_TotalBets_Sel1378_Ag
 
 Revisions:
@@ -29,6 +29,7 @@ Revisions:
  - 20150617@Jim:  Enhance Total Bets with sum values of running stakes  (Feature #36839)
  - 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
  - 20180727@Sophia: HA - remove Bodog [Redmine: #98631]
+ - 20180802@Sophia: HA - remove ruben to use new index on DB042 [Redmine: #98631]
 
 Param's Explanation:
 	+ @AgentList: xml structure
@@ -290,8 +291,7 @@ SELECT
        	INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e ON e.exchangeid = b.currency
 		INNER JOIN @TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
 		WHERE	bettype IN (1,3,7,8)
-				AND statusID IN (0,1)
-				AND ruben = 0
+				AND statusID IN (0,1)				
 				AND tpositiontaking <> 0
 		GROUP BY matchid, bettype, betteam, liveindicator, livehomescore, liveawayscore) AS b
 		INNER JOIN match 	m  WITH (NOLOCK) ON m.matchid       = b.matchid 	

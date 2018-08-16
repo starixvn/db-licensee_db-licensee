@@ -12,7 +12,7 @@ ALTER PROCEDURE [dbo].[Lrf_Forecast1x2_SelByLeague]
 AS /*
 Created: 20101207@Henry
 Task: Forecast for 1x2 bettype according to league.
-DB: DB052.bodb02
+DB: DB042.bodb02
 Original: Age_Forecast1x2_SelByLeague_Ag
 Revisions: 
 	- 20110303@Jacob: Allow to choose all type of licensee AND all currency + suppport based currency	
@@ -24,6 +24,7 @@ Revisions:
 	- 20150123@Jim: support base on Currency GBP
 	- 20150414@Jim: add more bettype Extra Time 1H 1X2 (feature #32844)
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+	- 20180802@Sophia: HA - remove ruben to use new index on DB042 [Redmine: #98631]
 
 Param's Explanation:
 	+ @AgentList: xml structure
@@ -708,8 +709,7 @@ Param's Explanation:
 						AND b.bettype IN ( @Bettype1x2, @BettypeHT1x2 ,@BetTypeExHT1x2 )
                         
                         AND LeagueID = @LeagueID
-                        AND b.statusID IN ( 0, 1 )
-                        AND b.ruben = 0
+                        AND b.statusID IN ( 0, 1 )                     
                         AND b.tpositiontaking <> 0
               GROUP BY  liveindicator ,
                         b.currency ,

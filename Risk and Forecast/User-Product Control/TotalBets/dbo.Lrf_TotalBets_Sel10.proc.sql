@@ -11,7 +11,7 @@ ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel10]
 /*
 Created: 20101201@Henry
 Task : Retrieve Total Bet values for bettype 10
-DB: DB052.bodb02
+DB: DB042.bodb02
 Original: Age_TotalBets_Sel10_Ag
 
 Revisions:
@@ -23,7 +23,8 @@ Revisions:
    - 20130514@Jim:Restrict permission of Licensee Users by currency
    - 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
    - 20150123@Jim: support base on Currency GBP
-	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+   - 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+   - 20180802@Sophia: HA - Status IN (0,1) to use new index on DB042 [Redmine: #98631]
 
 Param's Explanation:
 	+ @AgentList: xml structure
@@ -118,13 +119,12 @@ SELECT
 		CONVERT(BIT,0) as IsNeutral
 	FROM
 		bettrans AS a  WITH (NOLOCK)
-		INNER JOIN outright AS m  WITH (NOLOCK) ON m.orid     = a.matchid 
-									AND a.statusID = 0
+		INNER JOIN outright AS m  WITH (NOLOCK) ON m.orid     = a.matchid 									
 		INNER JOIN @TempAg t ON a.recommend = t.custid AND t.Currency = a.currency
 		INNER JOIN #TempExchange e ON e.exchangeid = a.currency
 	WHERE
 		a.bettype = 10 AND
-		a.statusID=0 AND
+		a.statusID IN (0,1) AND
 		a.tpositiontaking <>0
 			
 	GROUP BY 
@@ -152,12 +152,12 @@ SELECT
 						SUM(stake*e.gbp) as totalbalancegbp
 					FROM
 						bettrans AS a  WITH (NOLOCK)
-						INNER JOIN outright AS m  WITH (NOLOCK) ON m.orid = a.matchid  AND a.statusID = 0
+						INNER JOIN outright AS m  WITH (NOLOCK) ON m.orid = a.matchid  
 						INNER JOIN 	@TempAg t ON a.recommend = t.custid AND t.Currency = a.currency
 						INNER JOIN #TempExchange e ON e.exchangeid = a.currency
 					WHERE						
 						a.bettype = 10 AND
-						 a.statusID = 0 AND
+						a.statusID IN (0,1) AND
 						a.tpositiontaking <>0
 						
 					GROUP BY  m.leagueid
