@@ -45,17 +45,7 @@ BEGIN
 	SELECT @OldSpecialLevel=SpecialLevel 
 	FROM  dbo.Dep_CustSpecialLevel (NOLOCK)
 	WHERE CustID = @CustID
-			
-	/*
-	IF ISNULL(@OldSpecialLevel,-1) = -1
-	BEGIN
-		SELECT @ErrMsg =
-			CASE @Langkey 
-				WHEN 'en-US' THEN 'Invalid member !'
-				ELSE [dbo].[Lrf_f_Get_MsgNamebyMsgID](200009,@Langkey)
-			END, @ErrCode = 101
-	END
-	*/
+	
 	--- Not exists then insert new
 	IF ISNULL(@OldSpecialLevel,0) = 0
 	BEGIN 	
@@ -86,15 +76,6 @@ BEGIN
 	FROM dbo.Dep_CustSpecialLevel WITH (NOLOCK)
 	WHERE CustID = @CustID
 	
-	/*IF ISNULL(@OldSpecialLevel,-1) = -1
-	BEGIN
-		SELECT @ErrMsg =
-			CASE @Langkey 
-				WHEN 'en-US' THEN 'Invalid member !'
-				ELSE [dbo].[Lrf_f_Get_MsgNamebyMsgID](200009,@Langkey)
-			END, @ErrCode = 101
-	END
-	*/
 	--- Not exists then insert new
 	IF ISNULL(@OldSpecialLevel,0) <> 0
 	BEGIN
