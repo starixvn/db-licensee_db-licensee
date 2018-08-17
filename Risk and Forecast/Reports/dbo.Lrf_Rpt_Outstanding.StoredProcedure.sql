@@ -139,7 +139,7 @@ BEGIN
 	DECLARE @IsTest BIT = 0
 	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
 	
-	IF @ShowSB = 1  
+	IF @ShowSB = 1  OR @ShowBA = 1 
 	BEGIN  
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'SB', 'SB')		
 	END  
@@ -246,7 +246,18 @@ BEGIN
 	GROUP BY		
 		b.custid,
 		b.currency, CASE WHEN BA.TransID IS NULL THEN 0 ELSE 1 END  
-		
+	
+	IF @ShowSB = 0 
+		BEGIN 
+			DELETE @Outstanding
+			WHERE IsBA = 0 
+		END 
+ 	
+	IF @ShowBA = 0 				
+		BEGIN 
+			DELETE @Outstanding
+			WHERE IsBA = 1			       
+		END
 
 	--2. translog --
 	INSERT INTO @Outstanding (custid, currency, Outstanding, BetCounts)
