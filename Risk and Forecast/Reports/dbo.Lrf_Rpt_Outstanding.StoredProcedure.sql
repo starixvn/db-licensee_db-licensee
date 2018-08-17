@@ -1,12 +1,10 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_Rpt_Outstanding]
     @showSB			BIT = 0,  
-    @ShowRB			BIT = 0,  
     @showNG			BIT = 0,   
     @ShowBA			BIT = 0,
 	@ShowVS			BIT = 0,
-	@ShowCS			BIT = 0, --- RNG Casino
-	@ShowBG			BIT = 0, --- Bingo 
+	@ShowCS			BIT = 0, --- RNG Casino	
 	@ShowKN			BIT = 0, --- Keno
 	@ShowMGCLC		BIT = 0,
 	@ShowMGCRnG		BIT = 0,
@@ -27,7 +25,7 @@ AS
 /*
 Created: 20101201@Jacob
 Task : Report Outstanding
-DB: DBEXT.bodb02
+DB: DB042.bodb02
 Original Age_Rpt_Outstanding_Ag
 
 Revisions:
@@ -129,7 +127,8 @@ BEGIN
 		currency	INT,
 		outstanding MONEY,
 		BetCounts	INT , 
-		IsBA		BIT DEFAULT (0)
+		IsBA		BIT DEFAULT (0),
+		ProductID   INT 
 	) 
 	
 	
@@ -139,14 +138,9 @@ BEGIN
 	DECLARE @IsTest BIT = 0
 	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
 	
-	IF @ShowSB = 1  OR @ShowBA = 1 
+	IF @ShowSB = 1 OR @ShowBA = 1 
 	BEGIN  
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'SB', 'SB')		
-	END  
-
-	IF @ShowRB = 1  
-	BEGIN  
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'RB', 'RB')		
 	END  
 
 	IF @ShowNG = 1
@@ -163,11 +157,6 @@ BEGIN
 	BEGIN
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'CS', 'CS')
 	END
-
-	IF @ShowBG = 1 -- Bingo
-	BEGIN 
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'BG', 'BG')
-	END 
 
 	IF @ShowKN = 1 -- Keno
 	BEGIN 
@@ -229,34 +218,36 @@ BEGIN
 
 
 	--1. bettrans --
-	INSERT INTO @Outstanding (custid, currency, Outstanding, BetCounts, isBA)
+	INSERT INTO @Outstanding (custid, currency, Outstanding, BetCounts, isBA, ProductID)
 	SELECT 
 		b.custid,                    
 		b.currency,
 		SUM(actual_stake) Outstanding,
 		COUNT(1) AS BetCount,
-		CASE WHEN BA.TransID IS NULL THEN 0 ELSE 1 END AS isBA 	   
+		CASE WHEN BA.TransID IS NULL THEN 0 ELSE 1 END AS isBA,
+		s.ProductID		
 	FROM dbo.bettrans AS b WITH(NOLOCK)	
+		INNER JOIN #SportBettype s ON  s.bettype  = b.bettype 
 		INNER JOIN @TempAg a
 			ON b.recommend = a.CustId AND b.Currency = a.Currency 	
-		LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) on b.transid = BA.transid
+		LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) on b.transid = BA.transid		
 	WHERE b.StatusID IN (0,1) 
-		AND EXISTS (SELECT 1 FROM #SportBettype s WHERE s.RefTable = 0 AND s.bettype  = b.bettype)	
-	             
+		AND s.RefTable = 0     
 	GROUP BY		
 		b.custid,
-		b.currency, CASE WHEN BA.TransID IS NULL THEN 0 ELSE 1 END  
+		b.currency, CASE WHEN BA.TransID IS NULL THEN 0 ELSE 1 END,
+		s.ProductID	
 	
 	IF @ShowSB = 0 
 		BEGIN 
 			DELETE @Outstanding
-			WHERE IsBA = 0 
+			WHERE IsBA = 0 AND ProductID = 1 
 		END 
  	
 	IF @ShowBA = 0 				
 		BEGIN 
 			DELETE @Outstanding
-			WHERE IsBA = 1			       
+			WHERE IsBA = 1  			       
 		END
 
 	--2. translog --
