@@ -18,7 +18,6 @@ ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver_Pagination]
 	,@totalBettrans	INT = 0 OUTPUT
 	,@totalSumRpt	INT = 0 OUTPUT
 ) 
-WITH RECOMPILE
 AS
 /*	
 Created: 20150603@Bobby
@@ -43,12 +42,22 @@ BEGIN
 
 	DECLARE @offsetRow INT, @maxRow INT, @topRow INT
 
-	CREATE TABLE #tempPagingData (
+	CREATE TABLE #tempData (
 		sporttype		SMALLINT, 
 		bettype			SMALLINT, 
 		custid			INT, 
+		username		VARCHAR(50),
 		StatusID		TINYINT,
 		winlostdate		SMALLDATETIME
+	)
+
+	CREATE TABLE #tempPagingData 
+	(
+		RowIdx			INT IDENTITY(1, 1) PRIMARY KEY
+		, winlostdate	SMALLDATETIME
+		, custid		INT
+		, username		VARCHAR(50)
+		, whticket		TINYINT
 	)
 	
 	SELECT
@@ -60,130 +69,60 @@ BEGIN
 	-- VIEW specific members
 	IF( @searchCust = 1 )
 	BEGIN
-		IF( @totalBettrans = 0 -- no caching
-			OR (
-				@totalBettrans > 0
-				AND (@offsetRow <= @totalBettrans)
-			)
-		)
+		IF @ToDate > @MoveBetsDay
 		BEGIN
-			WITH CTE_Paging AS
-			(
-				SELECT 
-					RowIdx = ROW_NUMBER() OVER ( ORDER BY 
-											b.winlostdate DESC
-											, c.username
-										)
-					, b.winlostdate
+			INSERT INTO #tempPagingData(winlostdate, custid, username, whticket)
+			SELECT b.winlostdate
 					, c.Custid
 					, c.username
-					, TotalRow = COUNT(1) OVER()
-					
-				FROM #tempBettrans b	
-					INNER JOIN #recommend rec 
-					ON b.Recommend	= rec.CustID 
-					INNER JOIN #tempCust  c
-					ON b.custid 	= c.custid
-					
-				GROUP BY 
-					b.winlostdate
-					, c.custid
-					, c.username
-			)
-			INSERT INTO #tempCustPaging 
-			SELECT
-				p.RowIdx AS rowno
-				, 1 AS whTicket
-				, p.winlostdate
-				, p.custid
-				, p.username
-				, p.TotalRow
-			FROM CTE_Paging p
-			WHERE (p.RowIdx BETWEEN @offsetRow AND @maxRow)
-				OR (@totalBettrans = 0 AND p.RowIdx = 1)
-				OR @IsExportExcel = 1
+					, 1 AS whticket
+			FROM #tempBettrans b	
+				INNER JOIN #tempCust  c
+					ON b.custid 	= c.custid					
+			GROUP BY 
+				b.winlostdate
+				, c.custid
+				, c.username
+			ORDER BY b.winlostdate DESC, username
 
-			OPTION (RECOMPILE)
-			
-			--SET totalBettrans
-			SELECT TOP 1 @totalBettrans = TotalRow
-			FROM #tempCustPaging p
-			WHERE whTicket = 1
+			SET @totalBettrans = @@ROWCOUNT
 		END
 		
-		IF( @totalSumRpt = 0 -- no caching
-			OR (
-				@totalSumRpt > 0
-				AND (@maxRow > @totalBettrans)
-			)
-		)
+		IF @FromDate <= @MoveBetsDay AND (@totalBettrans < @maxRow OR @IsExportExcel = 1)
 		BEGIN
 			IF ( @odds = 0 )
 			BEGIN
-				INSERT INTO #tempPagingData(winlostdate, sporttype, bettype, custid, StatusID)
-				SELECT	winlostdate, 
-						CASE WHEN b.bettype IN (9, 10, 29) THEN 1
-							ELSE b.sporttype 
-						END AS sporttype, bettype, b.custid, StatusID
-				FROM #recommend rec
-					JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)
-						ON b.Recommend	= rec.CustID
-				WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
-				OPTION(RECOMPILE)
-
-				;WITH CTE_Paging AS 
-				(
-					SELECT 
-						RowIdx = ROW_NUMBER() OVER ( ORDER BY 
-												b.winlostdate DESC
-												, c.username
-											) + ISNULL(@totalBettrans,0)
-						, b.winlostdate
-						, c.Custid
-						, c.username
-						, TotalRow = COUNT(1) OVER()
-						
-					FROM #tempPagingData b
-						INNER JOIN #tempCust c
+				INSERT INTO #tempData(winlostdate, sporttype, bettype, custid, username, StatusID)
+				SELECT winlostdate, sporttype, bettype, b.custid, c.username, StatusID
+				FROM (
+					SELECT DISTINCT	winlostdate, 
+							CASE WHEN b.bettype IN (9, 10, 29) THEN 1
+								ELSE b.sporttype 
+							END AS sporttype, bettype, b.custid, StatusID
+					FROM #recommend rec
+						JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)
+							ON b.Recommend	= rec.CustID						
+					WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
+					) b
+					INNER JOIN #tempCust c
 						ON b.custid 	= c.custid
-						INNER JOIN #bettype bt
-						ON b.bettype 	=  bt.typeid
-						INNER JOIN #Status st
-						ON b.StatusID 	=  st.StatusID
-						INNER JOIN #ProductID p 
-						ON b.sporttype = p.sportID							
-					GROUP BY 
-						b.winlostdate
-						, c.custid
-						, c.username
-				)
-				INSERT INTO #tempCustPaging 
-				SELECT
-					p.RowIdx AS rowno
-					, 2 AS whTicket
-					, p.winlostdate
-					, p.custid
-					, p.username
-					, p.TotalRow
-				FROM CTE_Paging p
-				WHERE (p.RowIdx BETWEEN @offsetRow AND @maxRow)
-					OR ( @totalSumRpt = 0 AND p.RowIdx = (@totalBettrans+ 1))
-					OR @IsExportExcel = 1
-				
-				OPTION (RECOMPILE)
-			END	
+				OPTION(RECOMPILE)
+			END
+
 			-- Has Odds Value
 			IF (@odds > 0)
 			BEGIN
-				INSERT INTO #tempPagingData(winlostdate, sporttype, bettype, custid, StatusID)
-				SELECT	winlostdate, 
-						CASE WHEN b.bettype IN (9, 10, 29) THEN 1
-							ELSE b.sporttype 
-						END AS sporttype, bettype, b.custid, StatusID
-				FROM #recommend rec
-					JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)
-						ON b.Recommend	= rec.CustID
-				WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
+				INSERT INTO #tempData(winlostdate, sporttype, bettype, custid, username, StatusID)
+				SELECT winlostdate, sporttype, bettype, b.custid, c.username, StatusID
+				FROM (
+					SELECT DISTINCT	winlostdate, 
+							CASE WHEN b.bettype IN (9, 10, 29) THEN 1
+								ELSE b.sporttype 
+							END AS sporttype, bettype, b.custid, StatusID
+					FROM #recommend rec
+						JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)
+							ON b.Recommend	= rec.CustID						
+					WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
 						AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
 										OR b.bettype BETWEEN 81 AND 88
 										OR b.bettype BETWEEN 90 AND 120
@@ -209,184 +148,90 @@ BEGIN
 												END 
 									ELSE b.Odds
 								END >= @odds
-				OPTION(RECOMPILE)
-
-				;WITH CTE_Paging AS
-				(
-					SELECT 
-						RowIdx = ROW_NUMBER() OVER ( ORDER BY 
-												b.winlostdate DESC
-												, c.username
-											) + ISNULL(@totalBettrans,0)
-						, b.winlostdate
-						, c.Custid
-						, c.username
-						, TotalRow = COUNT(1) OVER()
-						
-					FROM #tempPagingData b
-						INNER JOIN #tempCust c
+					) b
+					INNER JOIN #tempCust c
 						ON b.custid 	= c.custid
-						INNER JOIN #bettype bt
-						ON b.bettype 	=  bt.typeid
-						INNER JOIN #Status st
-						ON b.StatusID 	=  st.StatusID
-						INNER JOIN #ProductID p 
-						ON b.sporttype = p.sportID	
-					GROUP BY 
-						b.winlostdate
-						, c.custid
-						, c.username
-					
-				)
-				INSERT INTO #tempCustPaging 
-				SELECT
-					p.RowIdx AS rowno
-					, 2 AS whTicket
-					, p.winlostdate
-					, p.custid
-					, p.username
-					, p.TotalRow
-				FROM CTE_Paging p
-				WHERE (p.RowIdx BETWEEN @offsetRow AND @maxRow)
-					OR ( @totalSumRpt = 0 AND p.RowIdx = (@totalBettrans+ 1))
-					OR @IsExportExcel = 1
-				
-				OPTION (RECOMPILE)
+				OPTION(RECOMPILE)
 			END
-			
-			--SET totalSumRpt
-			SELECT TOP 1 @totalSumRpt = TotalRow
-			FROM #tempCustPaging p
-			WHERE whTicket = 2
-		END
+
+			INSERT INTO #tempPagingData(winlostdate, custid, username)
+			SELECT b.winlostdate
+					, b.Custid
+					, b.username						
+			FROM #tempData b
+				INNER JOIN #bettype bt
+				ON b.bettype 	=  bt.typeid
+				INNER JOIN #Status st
+				ON b.StatusID 	=  st.StatusID
+				INNER JOIN #ProductID p 
+				ON b.sporttype = p.sportID							
+			GROUP BY 
+				b.winlostdate
+				, b.custid
+				, b.username
+			ORDER BY winlostdate DESC, username
+				
+			SET @totalSumRpt = @@ROWCOUNT						
+		END		
 	END
 
 	-- VIEW all members
 	IF (@searchCust = 0)
 	BEGIN
-		IF( @totalBettrans = 0 -- no caching
-			OR (
-				@totalBettrans > 0
-				AND (@offsetRow <= @totalBettrans)
-			)
-		)
+		IF @ToDate > @MoveBetsDay
 		BEGIN
-			WITH CTE_Paging AS 
-			(
-				SELECT 
-					RowIdx = ROW_NUMBER() OVER ( ORDER BY 
-											b.winlostdate DESC
-											, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username)
-										)
-					, b.winlostdate
+			INSERT INTO #tempPagingData(winlostdate, custid, username, whticket)
+			SELECT b.winlostdate
 					, c.Custid
 					, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS username
-					, TotalRow = COUNT(1) OVER()
-				FROM #tempBettrans b	
-					INNER JOIN #recommend rec 
-					ON b.Recommend	= rec.CustID 
-					INNER JOIN dbo.Customer  c WITH (NOLOCK, INDEX = IX_custid)
-					ON b.custid 	= c.custid
-				
-				GROUP BY
-					b.winlostdate
-					, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username)
-					, c.custid
-			)
-			INSERT INTO #tempCustPaging 
-			SELECT
-				p.RowIdx AS rowno
-				, 1 AS whTicket
-				, p.winlostdate
-				, p.custid
-				, p.username
-				, p.TotalRow
-			FROM CTE_Paging p
-			WHERE (p.RowIdx BETWEEN @offsetRow AND @maxRow)
-				OR (@totalBettrans = 0 AND p.RowIdx = 1)
-				OR @IsExportExcel = 1
+					, 1 AS whticket
+			FROM #tempBettrans b	
+				INNER JOIN dbo.Customer  c WITH (NOLOCK, INDEX = IX_custid)
+					ON b.custid 	= c.custid				
+			GROUP BY
+				b.winlostdate
+				, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username)
+				, c.custid
+			ORDER BY b.winlostdate DESC, username
 			
-			OPTION (RECOMPILE)
-			
-			-- SET totalBettrans
-			SELECT TOP 1 @totalBettrans = TotalRow
-			FROM #tempCustPaging p
-			WHERE whticket = 1
+			SET @totalBettrans = @@ROWCOUNT
 		END	
 
-		IF( @totalSumRpt = 0 -- no caching
-			OR (
-				@totalSumRpt > 0
-				AND (@maxRow > @totalBettrans)
-			)
-		)
+		IF @FromDate <= @MoveBetsDay AND (@totalBettrans < @maxRow OR @IsExportExcel = 1)
 		BEGIN
 			IF(@odds = 0)
 			BEGIN
-				INSERT INTO #tempPagingData(winlostdate, sporttype, bettype, custid, StatusID)
-				SELECT	winlostdate, 
-						CASE WHEN b.bettype IN (9, 10, 29) THEN 1
-							ELSE b.sporttype 
-						END AS sporttype, bettype, b.custid, StatusID
-				FROM #recommend rec
-					JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)
-						ON b.Recommend	= rec.CustID
-				WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
-				OPTION(RECOMPILE)
-
-				;WITH CTE_Paging AS 
-				(
-					SELECT 
-						RowIdx = ROW_NUMBER() OVER ( ORDER BY 
-												b.winlostdate DESC
-												, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username)
-											) + ISNULL(@totalBettrans,0)
-						, b.winlostdate
-						, c.Custid
-						, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS username
-						, TotalRow = COUNT(1) OVER()
-					FROM #tempPagingData b
-						INNER JOIN dbo.Customer  c WITH (NOLOCK, INDEX = IX_custid)
+				INSERT INTO #tempData(winlostdate, sporttype, bettype, custid, username, StatusID)
+				SELECT winlostdate, sporttype, bettype, b.custid, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS username, StatusID
+				FROM (
+					SELECT DISTINCT	winlostdate, 
+							CASE WHEN b.bettype IN (9, 10, 29) THEN 1
+								ELSE b.sporttype 
+							END AS sporttype, bettype, b.custid, StatusID
+					FROM #recommend rec
+						JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)
+							ON b.Recommend	= rec.CustID						
+					WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
+					) b
+					INNER JOIN dbo.Customer  c WITH (NOLOCK, INDEX = IX_custid)
 						ON b.custid 	= c.custid
-						INNER JOIN #bettype bt
-						ON b.bettype 	=  bt.typeid
-						INNER JOIN #Status st
-						ON b.StatusID 	=  st.StatusID
-						INNER JOIN #ProductID p 
-						ON b.sporttype = p.sportID				
-					GROUP BY 
-						b.winlostdate
-						, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username)
-						, c.custid
-				)
-				INSERT INTO #tempCustPaging 
-				SELECT
-					p.RowIdx AS rowno
-					, 2 AS whTicket
-					, p.winlostdate
-					, p.custid
-					, p.username
-					, p.TotalRow
-				FROM CTE_Paging p
-				WHERE (p.RowIdx BETWEEN @offsetRow AND @maxRow )
-					OR ( @totalSumRpt = 0 AND p.RowIdx = (@totalBettrans+ 1))
-					OR @IsExportExcel = 1
-				
-				OPTION (RECOMPILE)
+				OPTION(RECOMPILE)
 			END
-			
+
 			-- Has Odds Value
 			IF ( @odds > 0 )
 			BEGIN
-				INSERT INTO #tempPagingData(winlostdate, sporttype, bettype, custid, StatusID)
-				SELECT	winlostdate, 
-						CASE WHEN b.bettype IN (9, 10, 29) THEN 1
-							ELSE b.sporttype 
-						END AS sporttype, bettype, b.custid, StatusID
-				FROM #recommend rec
-					JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)
-						ON b.Recommend	= rec.CustID
-				WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
+				INSERT INTO #tempData(winlostdate, sporttype, bettype, custid, username, StatusID)
+				SELECT winlostdate, sporttype, bettype, b.custid, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS username, StatusID
+				FROM (
+					SELECT DISTINCT	winlostdate, 
+							CASE WHEN b.bettype IN (9, 10, 29) THEN 1
+								ELSE b.sporttype 
+							END AS sporttype, bettype, b.custid, StatusID
+					FROM #recommend rec
+						JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)
+							ON b.Recommend	= rec.CustID						
+					WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
 						AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
 										OR b.bettype BETWEEN 81 AND 88
 										OR b.bettype BETWEEN 90 AND 120
@@ -412,59 +257,57 @@ BEGIN
 												END 
 									ELSE b.Odds
 								END >= @odds
-				OPTION(RECOMPILE)
-
-				;WITH CTE_Paging AS 
-				(	
-					SELECT 
-						RowIdx = ROW_NUMBER() OVER ( ORDER BY 
-												b.winlostdate DESC
-												, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username)
-											) + ISNULL(@totalBettrans,0)
-						, b.winlostdate
-						, c.Custid
-						, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS username
-						, TotalRow = COUNT(1) OVER()
-					FROM #tempPagingData b
-						INNER JOIN dbo.Customer  c WITH (NOLOCK, INDEX = IX_custid)
+					) b
+					INNER JOIN dbo.Customer  c WITH (NOLOCK, INDEX = IX_custid)
 						ON b.custid 	= c.custid
-						INNER JOIN #bettype bt
-						ON b.bettype 	=  bt.typeid
-						INNER JOIN #Status st
-						ON b.StatusID 	=  st.StatusID
-						INNER JOIN #ProductID p 
-						ON b.sporttype = p.sportID				
-					GROUP BY 
-						b.winlostdate
-						, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username)
-						, c.custid
-				)
-				INSERT INTO #tempCustPaging 
-				SELECT
-					p.RowIdx AS rowno
-					, 2 AS whTicket
-					, p.winlostdate
-					, p.custid
-					, p.username
-					, p.TotalRow
-				FROM CTE_Paging p
-				WHERE (p.RowIdx BETWEEN @offsetRow AND @maxRow )
-					OR ( @totalSumRpt = 0 AND p.RowIdx = (@totalBettrans+ 1))
-					OR @IsExportExcel = 1
-				
-				OPTION (RECOMPILE)
+				OPTION(RECOMPILE)
 			END
-			-- SET totalSumRpt
-			SELECT TOP 1 @totalSumRpt = TotalRow
-			FROM #tempCustPaging p
-			WHERE whTicket = 2
+
+			INSERT INTO #tempPagingData(winlostdate, custid, username, whticket)
+			SELECT b.winlostdate
+					, b.Custid
+					, b.username
+					, 2 AS whticket						
+			FROM #tempData b
+				INNER JOIN #bettype bt
+				ON b.bettype 	=  bt.typeid
+				INNER JOIN #Status st
+				ON b.StatusID 	=  st.StatusID
+				INNER JOIN #ProductID p 
+				ON b.sporttype = p.sportID							
+			GROUP BY 
+				b.winlostdate
+				, b.custid
+				, b.username
+			ORDER BY winlostdate DESC, username
+				
+			SET @totalSumRpt = @@ROWCOUNT
 		END
 	END
-	-- Reset paging
-	IF @IsExportExcel = 0
-		DELETE p
-		FROM #tempCustPaging p
-		WHERE (p.rowno < @offsetRow OR p.rowno > @maxRow)
+	
+	IF @IsExportExcel = 1
+	BEGIN
+		INSERT INTO #tempCustPaging 
+		SELECT
+			p.RowIdx AS rowno
+			, p.whTicket
+			, p.winlostdate
+			, p.custid
+			, p.username
+		FROM #tempPagingData p
+	END
+	ELSE
+	BEGIN
+		INSERT INTO #tempCustPaging 
+		SELECT
+			p.RowIdx AS rowno
+			, p.whTicket
+			, p.winlostdate
+			, p.custid
+			, p.username
+		FROM #tempPagingData p
+		WHERE p.RowIdx BETWEEN @offsetRow AND @maxRow
+	END
 
 	RETURN;
 END

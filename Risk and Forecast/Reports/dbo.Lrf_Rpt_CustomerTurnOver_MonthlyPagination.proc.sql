@@ -18,7 +18,6 @@ ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver_MonthlyPagination]
 	,@totalBettrans	INT = 0 OUTPUT
 	,@totalSumRpt	INT = 0 OUTPUT
 ) 
-WITH RECOMPILE
 AS
 /*	
 Created: 20150603@Bobby
@@ -59,7 +58,6 @@ BEGIN
 	(
 		winlostdate	SMALLDATETIME
 		,custid			INT
-		--,TotalRow		INT
 		,whticket		TINYINT
 	)
 	
@@ -68,7 +66,7 @@ BEGIN
 	-- VIEW specific members
 	IF( @searchCust = 1 )
 	BEGIN
-		IF( @ToDate > @MoveBetsDay )
+		IF @ToDate > @MoveBetsDay
 		BEGIN
 			WITH CTE_Paging AS
 			(
@@ -90,7 +88,7 @@ BEGIN
 			SELECT @totalBettrans = @@ROWCOUNT			
 		END
 		
-		IF( @FromDate <= @MoveBetsDay )
+		IF @FromDate <= @MoveBetsDay AND (@totalBettrans < @maxRow OR @IsExportExcel = 1)
 		BEGIN
 			IF ( @odds = 0 )
 			BEGIN				
@@ -126,8 +124,7 @@ BEGIN
 				INSERT INTO #tempPaging
 				SELECT p.*
 					,2 AS whticket
-				FROM CTE_Paging p				
-				OPTION (RECOMPILE)
+				FROM CTE_Paging p		
 
 				SELECT @totalSumRpt = @@ROWCOUNT
 			END	
@@ -194,8 +191,7 @@ BEGIN
 				INSERT INTO #tempPaging
 				SELECT p.*
 					,2 AS whticket
-				FROM CTE_Paging p				
-				OPTION (RECOMPILE)
+				FROM CTE_Paging p	
 
 				SELECT @totalSumRpt = @@ROWCOUNT
 			END
@@ -206,7 +202,7 @@ BEGIN
 	-- VIEW all members
 	IF (@searchCust = 0)
 	BEGIN
-		IF( @ToDate > @MoveBetsDay )
+		IF @ToDate > @MoveBetsDay
 		BEGIN
 			WITH CTE_Paging AS 
 			(
@@ -228,7 +224,7 @@ BEGIN
 			SELECT @totalBettrans = @@ROWCOUNT
 		END	
 
-		IF( @FromDate <= @MoveBetsDay )
+		IF @FromDate <= @MoveBetsDay AND (@totalBettrans < @maxRow OR @IsExportExcel = 1)
 		BEGIN
 			IF(@odds = 0)
 			BEGIN
@@ -264,8 +260,7 @@ BEGIN
 				INSERT INTO #tempPaging
 				SELECT p.*
 					,2 AS whticket
-				FROM CTE_Paging p				
-				OPTION (RECOMPILE)
+				FROM CTE_Paging p			
 
 				SELECT @totalSumRpt = @@ROWCOUNT
 			END
@@ -314,9 +309,7 @@ BEGIN
 						winlostdate
 						, b.custid
 						
-					FROM bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)
-						INNER JOIN #recommend rec
-						ON b.Recommend	= rec.CustID
+					FROM #tempPagingData b
 						INNER JOIN #bettype bt
 						ON b.bettype 	=  bt.typeid
 						INNER JOIN #Status st
@@ -330,8 +323,7 @@ BEGIN
 				INSERT INTO #tempPaging
 				SELECT p.*
 					,2 AS whticket
-				FROM CTE_Paging p				
-				OPTION (RECOMPILE)
+				FROM CTE_Paging p		
 
 				SELECT @totalSumRpt = @@ROWCOUNT
 			END
@@ -339,49 +331,74 @@ BEGIN
 		END
 	END
 	--CREATE INDEXERS
-	CREATE CLUSTERED INDEX [CIX_tempPaging] ON #tempPaging (custid, winlostdate, whticket)		
-	
-	--REMOVE duplicate rows
-	DELETE p
-	FROM #tempPaging p
-		LEFT JOIN #tempPaging t ON p.custid = t.custid AND p.winlostdate = t.winlostdate AND t.whticket = 1
-	WHERE p.whticket = 2
-		AND t.custid > 0
+	CREATE CLUSTERED INDEX [CIX_tempPaging] ON #tempPaging (custid)	
 	
 	--GET paging item
-	;WITH CTE_MixPaging AS 
-	(
-		SELECT RowIdx = ROW_NUMBER() OVER ( ORDER BY 
-							t.winlostdate DESC
-							, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username)
-						)
-			, t.winlostdate
-			, t.Custid 	
-			, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS username
-			, t.whticket
+	IF @IsExportExcel = 1
+	BEGIN
+		;WITH CTE_MixPaging AS 
+		(
+			SELECT RowIdx = ROW_NUMBER() OVER ( ORDER BY 
+								t.winlostdate DESC
+								, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username)
+							)
+				, t.winlostdate
+				, t.Custid 	
+				, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS username
+				, t.whticket
 			
-		FROM #tempPaging t
-			INNER JOIN dbo.Customer  c WITH (NOLOCK, INDEX = IX_custid)
-			ON t.custid = c.custid
+			FROM #tempPaging t
+				INNER JOIN dbo.Customer  c WITH (NOLOCK, INDEX = IX_custid)
+				ON t.custid = c.custid
 			
-		GROUP BY 
-			t.winlostdate
-			, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username)
-			, t.Custid
-			, t.whticket			
-	)
-	INSERT INTO #tempCustPaging 
-	SELECT
-		p.RowIdx AS rowno
-		, p.whTicket
-		, p.winlostdate
-		, p.custid
-		, p.username
-		, NULL
-	FROM CTE_MixPaging p
-	WHERE p.RowIdx BETWEEN @offsetRow AND @maxRow
-		OR @IsExportExcel = 1	
-	OPTION (RECOMPILE);
+			GROUP BY 
+				t.winlostdate
+				, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username)
+				, t.Custid
+				, t.whticket			
+		)
+		INSERT INTO #tempCustPaging 
+		SELECT
+			p.RowIdx AS rowno
+			, p.whTicket
+			, p.winlostdate
+			, p.custid
+			, p.username
+		FROM CTE_MixPaging p
+	END
+	ELSE
+	BEGIN
+		;WITH CTE_MixPaging AS 
+		(
+			SELECT RowIdx = ROW_NUMBER() OVER ( ORDER BY 
+								t.winlostdate DESC
+								, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username)
+							)
+				, t.winlostdate
+				, t.Custid 	
+				, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS username
+				, t.whticket
+			
+			FROM #tempPaging t
+				INNER JOIN dbo.Customer  c WITH (NOLOCK, INDEX = IX_custid)
+				ON t.custid = c.custid
+			
+			GROUP BY 
+				t.winlostdate
+				, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username)
+				, t.Custid
+				, t.whticket			
+		)
+		INSERT INTO #tempCustPaging 
+		SELECT
+			p.RowIdx AS rowno
+			, p.whTicket
+			, p.winlostdate
+			, p.custid
+			, p.username
+		FROM CTE_MixPaging p
+		WHERE p.RowIdx BETWEEN @offsetRow AND @maxRow
+	END
 	
 	DROP TABLE #tempPaging;
 

@@ -10,7 +10,6 @@ ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver_SumMember]
 	,@Odds 			FLOAT
 	,@ReportBy  	TINYINT
 ) 
-WITH RECOMPILE
 AS
 /*	
 Created: 20150603@Bobby
@@ -67,7 +66,7 @@ BEGIN
 			, c.winlostdate 
 			, c.custid
 			, c.username
-			, rec.currency
+			, b.currency
 			, b.sporttype
 			, b.bettype
 			, SUM(1) 			as betcount
@@ -76,13 +75,9 @@ BEGIN
 			, SUM (b.BetEffective) as BetEffective
 			, SUM(b.playercomm) as playercomm
 		FROM #tempBettrans b
-			INNER JOIN #recommend rec
-			ON b.Recommend	= rec.CustID
 			INNER JOIN #tempCustPaging c 
 			ON  b.custid		= c.custid 
-			AND c.winlostdate 	= CASE WHEN @ReportBy =  2 THEN DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0)
-									ELSE b.winlostdate
-								END
+			AND c.winlostdate 	= b.winlostdate
 		
 		WHERE b.winlostdate BETWEEN @tempFromDate AND @pEndDate
 		
@@ -91,11 +86,9 @@ BEGIN
 			,c.winlostdate 
 			,c.custid
 			,c.username
-			,rec.currency
+			,b.currency
 			,b.sporttype
 			,b.bettype
-			
-		OPTION (RECOMPILE)
 	END
 
 	IF(@pStartDate <= @MoveBetsDay)
@@ -136,41 +129,7 @@ BEGIN
 					CASE WHEN b.bettype IN (9, 10, 29) THEN 1
 						ELSE b.sporttype 
 					END, bettype, StatusID
-			OPTION(RECOMPILE)
-
-			INSERT INTO #custData
-			SELECT 
-				c.rowno
-				, b.winlostdate 
-				, b.custid
-				, c.username
-				, b.currency
-				, b.sporttype  
-				, b.bettype
-				, SUM(b.betcount) as betcount
-				, SUM(b.stake) as turnover 
-				, SUM(b.winlost) as winlost
-				, SUM(b.BetEffective) As BetEffective
-				, SUM(b.playercomm) as playercomm
-				
-			FROM #tempCustData b
-				INNER JOIN #tempCustPaging c 
-					ON  b.custid	= c.custid AND c.winlostdate 	= b.winlostdate
-				INNER JOIN #bettype bt
-					ON b.bettype 	=  bt.typeid
-				INNER JOIN #Status st
-					ON b.StatusID 	=  st.StatusID
-				INNER JOIN #ProductID p 
-					ON b.sporttype = p.sportID				
-			GROUP BY
-				c.rowno
-				, b.winlostdate 
-				, b.custid
-				, c.username
-				, b.currency
-				, b.sporttype 
-				,b.bettype			
-			OPTION (RECOMPILE)
+			OPTION(RECOMPILE)	
 		END
 		
 		--Has Odds Value
@@ -236,41 +195,40 @@ BEGIN
 						ELSE b.sporttype 
 					END, bettype, StatusID
 			OPTION(RECOMPILE)
-
-			INSERT INTO #custData
-			SELECT 
-				c.rowno
-				, b.winlostdate 
-				, b.custid
-				, c.username
-				, b.currency
-				, b.sporttype  
-				, b.bettype
-				, SUM(b.betcount) as betcount
-				, SUM(b.stake) as turnover 
-				, SUM(b.winlost) as winlost
-				, SUM(b.BetEffective) As BetEffective
-				, SUM(b.playercomm) as playercomm
-				
-			FROM #tempCustData b
-				INNER JOIN #tempCustPaging c 
-					ON  b.custid	= c.custid AND c.winlostdate 	= b.winlostdate
-				INNER JOIN #bettype bt
-					ON b.bettype 	=  bt.typeid
-				INNER JOIN #Status st
-					ON b.StatusID 	=  st.StatusID
-				INNER JOIN #ProductID p 
-					ON b.sporttype = p.sportID				
-			GROUP BY
-				c.rowno
-				, b.winlostdate 
-				, b.custid
-				, c.username
-				, b.currency
-				, b.sporttype 
-				,b.bettype			
-			OPTION (RECOMPILE)
 		END
+
+		INSERT INTO #custData
+		SELECT 
+			c.rowno
+			, b.winlostdate 
+			, b.custid
+			, c.username
+			, b.currency
+			, b.sporttype  
+			, b.bettype
+			, SUM(b.betcount) as betcount
+			, SUM(b.stake) as turnover 
+			, SUM(b.winlost) as winlost
+			, SUM(b.BetEffective) As BetEffective
+			, SUM(b.playercomm) as playercomm
+				
+		FROM #tempCustData b
+			INNER JOIN #tempCustPaging c 
+				ON  b.custid	= c.custid AND c.winlostdate 	= b.winlostdate
+			INNER JOIN #bettype bt
+				ON b.bettype 	=  bt.typeid
+			INNER JOIN #Status st
+				ON b.StatusID 	=  st.StatusID
+			INNER JOIN #ProductID p 
+				ON b.sporttype = p.sportID				
+		GROUP BY
+			c.rowno
+			, b.winlostdate 
+			, b.custid
+			, c.username
+			, b.currency
+			, b.sporttype 
+			, b.bettype		
 	END
 
 	RETURN;
