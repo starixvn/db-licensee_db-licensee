@@ -301,14 +301,6 @@ BEGIN
 		AND EXISTS (SELECT 1 FROM #SportBettype s WHERE s.RefTable = 1 AND s.bettype = g.gameid)		
 	GROUP BY g.custid, g.currency
 
-	-- 5. BA	
-	IF @ShowBA = 0 				
-	BEGIN 
-
-		DELETE @Outstanding
-		WHERE IsBA = 1
-			       
-	END
 	
 	IF @OrderItem IN (1, 4) AND @IsAscSort = 1
 	BEGIN
