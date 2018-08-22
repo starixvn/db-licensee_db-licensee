@@ -274,7 +274,7 @@ BEGIN
 		g.currency,
 		SUM(g.actual_stake) Outstanding, 
 		COUNT(DISTINCT CASE WHEN s.PRoductID IN (6,22,24) THEN refno -- count sum tickets for RNG Casino, Voidridge, FW
-					WHEN s.ProductID = 17 THEN 1
+					WHEN s.ProductID = 17 THEN transid
 					END) BetCounts
 	FROM dbo.BettransRNG g WITH (NOLOCK) 
 		INNER JOIN @TempAg a
