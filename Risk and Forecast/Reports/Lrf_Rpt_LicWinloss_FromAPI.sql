@@ -4,7 +4,7 @@ CREATE PROCEDURE [dbo].[Lrf_Rpt_LicWinloss_FromAPI]
 	@LicenseeID		INT,
 	@FromDate		SMALLDATETIME,  
 	@ToDate			SMALLDATETIME,
-	@ProductCodes	VARCHAR(MAX),
+	@ProductCodes	VARCHAR(100),
 	@Currency		INT,
 	@ReportType		TINYINT = 1,
 	@AgentList		VARCHAR(MAX)
@@ -91,9 +91,8 @@ BEGIN
 
 	CREATE TABLE #SAgWinLoss
 	(  
-		winlostdate			DATETIME,
+		winlostdate			DATE,
 		Currency			INT,
-		ProductCode			VARCHAR(10),
 		TurnoverSB			MONEY,
 		TurnoverNG			MONEY,
 		Winlost				MONEY,
@@ -102,51 +101,30 @@ BEGIN
 		Betcount			BIGINT
 	)
 
-	-- Retrive data from rptDep_atTickets
-	IF EXISTS (SELECT 1 FROM @Product WHERE ProductCode  IN ('', 'SB'))
-	BEGIN		
-		INSERT INTO #SAgWinLoss
-			(  
-				winlostdate, Currency, ProductCode, TurnoverSB, TurnoverNG,
-				Winlost, LicenseeWLSB, LicenseeWLNG, Betcount
-			)
-		SELECT	a.Settlement_date,
-				c.Currency,
-				'SB',
-				SUM(a.Bet_Amount),
-				0,
-				- SUM(a.Net_Amount),
-				SUM(a.Net_Amount),
-				0,
-				COUNT(a.Transaction_Id)
-		FROM bodb_LicenseeReport.dbo.rptDep_atTickets a
-		INNER JOIN #tmpCust c ON a.player_no = c.CustID AND a.Settlement_date >= c.EffectiveDate AND a.Settlement_date <= c.EndDate
-		WHERE a.Game_Type = 'SB'
-		GROUP BY a.Settlement_date, c.Currency
-	END
+	DECLARE @showSB BIT = 0,
+			@showNG BIT = 0
 	
-	IF EXISTS (SELECT 1 FROM @Product WHERE ProductCode  IN ('', 'NG'))
-	BEGIN		
-		INSERT INTO #SAgWinLoss
-			(  
-				winlostdate, Currency, ProductCode, TurnoverSB, TurnoverNG,
-				Winlost, LicenseeWLSB, LicenseeWLNG, Betcount
-			)
-		SELECT	a.Settlement_date,
-				c.Currency,
-				'NG',
-				0,
-				SUM(a.Bet_Amount),
-				- SUM(a.Net_Amount),
-				0,
-				SUM(a.Net_Amount),
-				COUNT(a.Transaction_Id)
-		FROM bodb_LicenseeReport.dbo.rptDep_atTickets a
-		INNER JOIN #tmpCust c ON a.player_no = c.CustID AND a.Settlement_date >= c.EffectiveDate AND a.Settlement_date <= c.EndDate
-		WHERE a.Game_Type = 'NG'
-		GROUP BY a.Settlement_date, c.Currency
-	END
-	
+	SELECT @showSB = 1 FROM @Product WHERE ProductCode = '' OR ProductCode = 'SB'
+	SELECT @showNG = 1 FROM @Product WHERE ProductCode = '' OR ProductCode = 'NG'
+
+	-- Retrive data from rptDep_atTickets		
+	INSERT INTO #SAgWinLoss
+		(  
+			winlostdate, Currency, TurnoverSB, TurnoverNG, Winlost, LicenseeWLSB, LicenseeWLNG, Betcount
+		)
+	SELECT	a.Settlement_date,
+			c.Currency,			
+			SUM(CASE WHEN a.game_type = 'SB' THEN a.bet_amount ELSE 0 END),
+			SUM(CASE WHEN a.game_type = 'NG' THEN a.bet_amount ELSE 0 END),
+			- SUM(a.net_amount),
+			SUM(CASE WHEN a.game_type = 'SB' THEN a.net_amount ELSE 0 END),
+			SUM(CASE WHEN a.game_type = 'NG' THEN a.net_amount ELSE 0 END),
+			COUNT(a.Transaction_Id)
+	FROM bodb_LicenseeReport.dbo.rptDep_atTickets a
+	INNER JOIN #tmpCust c ON a.player_no = c.CustID AND a.Settlement_date >= c.EffectiveDate AND a.Settlement_date <= c.EndDate
+	WHERE (@showSB = 1 AND a.Game_Type = 'SB') OR (@showNG = 1 AND a.game_type = 'NG')
+	GROUP BY a.Settlement_date, c.Currency
+
 	-- Exchange Rate
 	CREATE TABLE #Exchange (ExFromDate DATE, ExToDate DATE, ExchangeID INT, RateUSD FLOAT, RateMYR FLOAT, RateEUR FLOAT)
 	
@@ -163,7 +141,6 @@ BEGIN
 			EUR
 	FROM dbo.Lrf_f_GetSubExchangeDaily(@FromDate, @ToDate) exc
 	INNER JOIN Currency_CTE cur ON exc.ExchangeId = cur.CurrencyID
-	
 	
 	-- Return data
 	SELECT
