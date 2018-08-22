@@ -112,10 +112,8 @@ AS
 			9: commRB
 			10: PlayerComm
 			11: AmtDuetoBA
-			12: AmtDuetoRB
 			13: BetCount
 			14: CustomerTotalWL
-			15: RacingRevenue
 
 		@IsAscSort:
 			1: ASC
@@ -125,7 +123,7 @@ AS
 BEGIN
 	SET NOCOUNT ON
 
-	IF @OrderItem < 1 OR @OrderItem > 15
+	IF @OrderItem < 1 OR @OrderItem > 14
 	BEGIN
 		SET @OrderItem = 1
 	END
