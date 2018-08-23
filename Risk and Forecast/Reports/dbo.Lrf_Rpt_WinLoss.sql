@@ -99,6 +99,7 @@ AS
 		- 20171009@Percy: Add @Username filter [RedmineID: #84551]
 		- 20171109@Paul: Support sorting [RedmineID: #86214]
 		- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
+		- 20180809@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
 
 	Param's Explanation:
 		@OrderItem:
@@ -313,13 +314,13 @@ BEGIN
 	BEGIN
 		INSERT INTO #tmpCust
 		SELECT c.custid
-		FROM  bodb_licensee.dbo.LicenseeCustinfo  c WITH (NOLOCK) 
+		FROM  Customer  c WITH (NOLOCK) 
 		  
 		WHERE   c.recommend		IN (SELECT custid FROM @TempAg)
 			AND (
 				c.username2 	LIKE '%$%' 	+ @Username + '%'
 				OR c.username	LIKE '%' 	+ @Username + '%'
-			)
+			) And c.roleid = 1
 		
 		SELECT @isSearchCust = 1
 	END
@@ -709,7 +710,7 @@ BEGIN
 		SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS nickname
 	FROM      
 		#TempCustIDFull w
-		INNER JOIN bodb_Licensee.dbo.licenseecustinfo c WITH (NOLOCK) ON w.CustID = c.CustID	
+		INNER JOIN Customer c WITH (NOLOCK) ON w.CustID = c.CustID	
 
 	CREATE CLUSTERED INDEX IX_TempData_cl ON #TempData(custID, rptdate, currency)
 

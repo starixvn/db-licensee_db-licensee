@@ -40,6 +40,7 @@ AS
 		- 20171020@Harper: LRF - Add "New Asia" in platform list [RedmineID: #85203]
 		- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
+		- 20180809@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
 
 	Param's Explanation:  
 	  + @PlatformType:  0: All  
@@ -543,7 +544,7 @@ BEGIN
 		SUM(AmtDuetoRB * e.GBP) AS AmtDuetoRBGBP,
 		SUM(Company * e.GBP) AS CompanyGBP
 	FROM #WinLoss w 
-		INNER JOIN bodb_licensee.dbo.licenseecustinfo c WITH (NOLOCK) ON w.custid = c.custid
+		INNER JOIN Customer c WITH (NOLOCK) ON w.custid = c.custid
 		INNER JOIN  #Exchange e on w.Currency=e.exchangeid AND e.ExchangeDate = w.Winlostdate
 	GROUP BY
 		w.CustID, w.Currency, c.username, c.username2

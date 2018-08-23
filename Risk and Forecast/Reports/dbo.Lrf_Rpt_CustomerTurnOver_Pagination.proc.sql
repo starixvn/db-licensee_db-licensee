@@ -32,6 +32,7 @@ Revision:
 		2. Virtual Sports 2 (2701-2707)
 	- 20180129@Percy: Hotfix page size, page index [RedmineID: #90104]
 	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
+	- 20180810@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
 
 Parameter's Explanation:
 			
@@ -258,7 +259,7 @@ BEGIN
 				FROM #tempBettrans b	
 					INNER JOIN #recommend rec 
 					ON b.Recommend	= rec.CustID 
-					INNER JOIN bodb_licensee.dbo.LicenseeCustinfo  c WITH (NOLOCK)
+					INNER JOIN Customer  c WITH (NOLOCK)
 					ON b.custid 	= c.custid
 				
 				GROUP BY
@@ -308,7 +309,7 @@ BEGIN
 					FROM bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)--, INDEX=CIX_winlostdate)
 						INNER JOIN #recommend rec
 						ON b.Recommend	= rec.CustID
-						INNER JOIN bodb_licensee.dbo.LicenseeCustinfo  c WITH (NOLOCK)
+						INNER JOIN Customer  c WITH (NOLOCK)
 						ON b.custid 	= c.custid
 						INNER JOIN #bettype bt
 						ON b.bettype 	=  bt.typeid
@@ -356,7 +357,7 @@ BEGIN
 					FROM bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)--, INDEX=CIX_winlostdate)
 						INNER JOIN #recommend rec
 						ON b.Recommend	= rec.CustID
-						INNER JOIN bodb_licensee.dbo.LicenseeCustinfo  c WITH (NOLOCK)
+						INNER JOIN Customer  c WITH (NOLOCK)
 						ON b.custid 	= c.custid
 						INNER JOIN #bettype bt
 						ON b.bettype 	=  bt.typeid

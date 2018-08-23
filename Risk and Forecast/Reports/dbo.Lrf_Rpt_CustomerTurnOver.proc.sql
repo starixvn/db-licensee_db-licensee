@@ -73,6 +73,7 @@ Revision:
 	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
 	- 20180424@Joseph: Fix bug group VS2: BasketBall - Virual Soccer [RedmineID: #93844]
 	- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
+	- 20180810@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
 
 Parameter's Explanation:
 	- @ReportBy:  1: daily, 2: monthly
@@ -286,13 +287,13 @@ BEGIN
 		INSERT INTO #tempCust
 		SELECT c.custid
 			, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS username
-		FROM  bodb_licensee.dbo.LicenseeCustinfo  c WITH (NOLOCK) 
+		FROM  Customer  c WITH (NOLOCK) 
 		  
 		WHERE   c.recommend		IN (SELECT custid FROM #recommend)
 			AND (
 				c.username2 	LIKE '%$%' 	+ @Username + '%'
 				OR c.username	LIKE '%' 	+ @Username + '%'
-			)
+			) AND c.roleid = 1
 		IF(@@ROWCOUNT = 0) GOTO OutputResult;
 		
 		SET @searchCust  	= 1
@@ -726,7 +727,7 @@ BEGIN
 			, SUM(b.playercomm) AS playercomm
 
 		FROM #custData b
-			INNER JOIN bodb_licensee.dbo.LicenseeCustinfo c WITH (NOLOCK) 
+			INNER JOIN Customer c WITH (NOLOCK) 
 			ON b.CustID		= c.CustID 
 			INNER JOIN CTE_Bettype bt
 			ON b.bettype = bt.bettype

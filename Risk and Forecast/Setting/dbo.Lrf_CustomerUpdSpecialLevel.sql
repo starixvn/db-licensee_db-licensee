@@ -1,8 +1,5 @@
-﻿set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
-
-ALTER  PROCEDURE [dbo].[Lrf_CustomerUpdSpecialLevel]
+﻿/*<info serverAlias="DBCUST-CustDB" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
+ALTER PROCEDURE [dbo].[Lrf_CustomerUpdSpecialLevel]
 	@CustID INT,
 	@UserID INT,
 	@SpecialLevel INT,
@@ -15,11 +12,12 @@ AS
 /*
 Created: 20111222@Henry
 Task : Update Special Level of member
-DB: DB052.bodb_Licensee
+DB: DBCUST.CustDB
 
 
 Revisions:
-	-20130413@Jim: support multi language
+	- 20130413@Jim: support multi language
+	- 20180810@Sophia: Change the way to update/insert SpecialLevel, use new table Dep_CustSpecialLevel [redmine: #99464] 
 	
 Param's Explanation:
 
@@ -27,7 +25,7 @@ Param's Explanation:
 
 DECLARE @startRun DATETIME
 DECLARE @endRun DATETIME
-DECLARE @duration INT, @OldSpecialLevel INT
+DECLARE @duration INT, @OldSpecialLevel INT = 0
 DECLARE @LogSPData VARCHAR(5000)
 DECLARE @LogSPData2 VARCHAR(5000)
 
@@ -38,25 +36,25 @@ BEGIN
 	SELECT @ErrMsg =
 					CASE @Langkey 
 						WHEN 'en-US' THEN 'Wrong special level !'
-						ELSE [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200008,@Langkey)
+						ELSE [dbo].[Lrf_f_Get_MsgNamebyMsgID](200008,@Langkey)
 					END, @ErrCode = 100
 END
 ELSE
+IF (@SpecialLevel >= 1 AND @SpecialLevel <= 10)
 BEGIN
-	SELECT @OldSpecialLevel=SpecialLevel FROM LicenseeCustinfo (NOLOCK)
+	SELECT @OldSpecialLevel=SpecialLevel 
+	FROM  dbo.Dep_CustSpecialLevel (NOLOCK)
 	WHERE CustID = @CustID
 	
-	IF ISNULL(@OldSpecialLevel,-1) = -1
-	BEGIN
-		SELECT @ErrMsg =
-			CASE @Langkey 
-				WHEN 'en-US' THEN 'Invalid member !'
-				ELSE  [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200009,@Langkey)
-			END, @ErrCode = 101
-	END
+	--- Not exists then insert new
+	IF ISNULL(@OldSpecialLevel,0) = 0
+	BEGIN 	
+		INSERT INTO dbo.Dep_CustSpecialLevel (CustID, SpecialLevel)
+		VALUES (@CustId, @SpecialLevel)			
+	END	
 	ELSE
 	BEGIN
-		UPDATE LicenseeCustinfo WITH(ROWLOCK, UPDLOCK)
+		UPDATE dbo.Dep_CustSpecialLevel WITH(ROWLOCK)
 		SET SpecialLevel = @SpecialLevel 
 		WHERE custid = @custid 
 		
@@ -65,11 +63,34 @@ BEGIN
 			SELECT @ErrMsg =
 				CASE @Langkey 
 					WHEN 'en-US' THEN 'Could not update special level for this member !'
-					ELSE  [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200010,@Langkey)
+					ELSE [dbo].[Lrf_f_Get_MsgNamebyMsgID](200010,@Langkey)
 				END, @ErrCode = 100
 		END
 	END
 	
+END
+ELSE 
+IF @SpecialLevel = 0
+BEGIN 
+	SELECT @OldSpecialLevel=SpecialLevel 
+	FROM dbo.Dep_CustSpecialLevel WITH (NOLOCK)
+	WHERE CustID = @CustID
+	
+	--- Not exists then insert new
+	IF ISNULL(@OldSpecialLevel,0) <> 0
+	BEGIN
+		DELETE dbo.Dep_CustSpecialLevel WITH(ROWLOCK)		
+		WHERE custid = @custid 
+		
+		IF (@@ERROR <> 0)
+		BEGIN
+			SELECT @ErrMsg =
+				CASE @Langkey 
+					WHEN 'en-US' THEN 'Could not update special level for this member !'
+					ELSE [dbo].[Lrf_f_Get_MsgNamebyMsgID](200010,@Langkey)
+				END, @ErrCode = 100
+		END
+	END
 END
 
 
@@ -95,7 +116,7 @@ SELECT @LogSPData2 = '<Lrf_CustomerUpdSpecialLevel CustID="'+ COALESCE(CAST(@Cus
 SET @endRun = GETDATE()
 SET @duration  = datediff (millisecond,@startRun,@endRun)
 
-EXEC bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP 
+EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP 
 		@UserID = @UserID,
 		@CustID = @CustID,
 		@ActionID = 2407,
@@ -104,7 +125,4 @@ EXEC bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
 		@duration = @duration
 
 
-GO
-GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdSpecialLevel] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerUpdSpecialLevel] TO [vnteam]   
+GO 

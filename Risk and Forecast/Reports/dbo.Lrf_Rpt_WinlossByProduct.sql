@@ -75,6 +75,7 @@ AS
 	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
 	- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
+	- 20180810@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
 
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -161,8 +162,8 @@ ELSE
 		SELECT c.CustID
 			   ,c.username		
 			INTO #tblCust
-		FROM bodb_Licensee.dbo.LicenseeCustinfo c WITH (NOLOCK) 
-			INNER JOIN @TempAg t ON c.recommend = t.custid
+		FROM Customer c WITH (NOLOCK) 
+			INNER JOIN @TempAg t ON c.recommend = t.custid AND c.roleid = 1
 		WHERE 
 			(c.username2 LIKE + '%$' + @Username  OR c.username = @Username)
 		SELECT @RCount = @@ROWCOUNT

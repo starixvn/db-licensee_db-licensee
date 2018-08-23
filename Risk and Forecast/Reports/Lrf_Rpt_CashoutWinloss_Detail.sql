@@ -12,6 +12,7 @@ AS
 	DB: DBEXT.bodb02 
 	Revisions: 
 		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
+		- 20180809@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
 
 	Param's Explanation:  
 
@@ -235,7 +236,7 @@ BEGIN
 		, CAST(SUM((r.TicketPayout - (r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm)) * e.GBP) AS MONEY) AS Amount_TotalGBP
 	FROM @Result r
 		INNER JOIN #Exchange e ON r.rptDate = e.ExchageDate AND r.CurrencyID = e.ExchangeID
-		INNER JOIN bodb_licensee.dbo.licenseecustinfo c WITH (NOLOCK) ON r.custid = c.custid
+		INNER JOIN Customer c WITH (NOLOCK) ON r.custid = c.custid
 	GROUP BY 		
 		  r.CurrencyID
 		, r.CustID, c.username, c.username2
