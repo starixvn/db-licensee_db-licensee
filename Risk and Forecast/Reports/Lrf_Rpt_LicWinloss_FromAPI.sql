@@ -107,23 +107,23 @@ BEGIN
 	SELECT @showSB = 1 FROM @Product WHERE ProductCode = '' OR ProductCode = 'SB'
 	SELECT @showNG = 1 FROM @Product WHERE ProductCode = '' OR ProductCode = 'NG'
 
-	-- Retrive data from rptDep_atTickets		
+	-- Retrive data from rptDep_AuditTickets		
 	INSERT INTO #SAgWinLoss
 		(  
 			winlostdate, Currency, TurnoverSB, TurnoverNG, Winlost, LicenseeWLSB, LicenseeWLNG, Betcount
 		)
-	SELECT	a.Settlement_date,
+	SELECT	a.SettlementDate,
 			c.Currency,			
-			SUM(CASE WHEN a.game_type = 'SB' THEN a.bet_amount ELSE 0 END),
-			SUM(CASE WHEN a.game_type = 'NG' THEN a.bet_amount ELSE 0 END),
-			- SUM(a.net_amount),
-			SUM(CASE WHEN a.game_type = 'SB' THEN a.net_amount ELSE 0 END),
-			SUM(CASE WHEN a.game_type = 'NG' THEN a.net_amount ELSE 0 END),
-			COUNT(a.Transaction_Id)
-	FROM bodb_LicenseeReport.dbo.rptDep_atTickets a
-	INNER JOIN #tmpCust c ON a.player_no = c.CustID AND a.Settlement_date >= c.EffectiveDate AND a.Settlement_date <= c.EndDate
-	WHERE (@showSB = 1 AND a.Game_Type = 'SB') OR (@showNG = 1 AND a.game_type = 'NG')
-	GROUP BY a.Settlement_date, c.Currency
+			SUM(CASE WHEN a.GameType = 'SB' THEN a.BetAmount ELSE 0 END),
+			SUM(CASE WHEN a.GameType = 'NG' THEN a.BetAmount ELSE 0 END),
+			- SUM(a.NetAmount),
+			SUM(CASE WHEN a.GameType = 'SB' THEN a.NetAmount ELSE 0 END),
+			SUM(CASE WHEN a.GameType = 'NG' THEN a.NetAmount ELSE 0 END),
+			COUNT(a.TransactionId)
+	FROM bodb_LicenseeReport.dbo.rptDep_AuditTickets a
+	INNER JOIN #tmpCust c ON a.PlayerNo = c.CustID AND a.SettlementDate >= c.EffectiveDate AND a.SettlementDate <= c.EndDate
+	WHERE (@showSB = 1 AND a.GameType = 'SB') OR (@showNG = 1 AND a.GameType = 'NG')
+	GROUP BY a.SettlementDate, c.Currency
 
 	-- Exchange Rate
 	CREATE TABLE #Exchange (ExFromDate DATE, ExToDate DATE, ExchangeID INT, RateUSD FLOAT, RateMYR FLOAT, RateEUR FLOAT)
