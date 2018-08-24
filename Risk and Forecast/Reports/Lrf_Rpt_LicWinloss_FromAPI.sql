@@ -16,6 +16,9 @@ AS
     Revisions:  
 		- 20180820@Amanda: Created new Licensee Winloss SP for Ivorybet and Opal88 [RedmineID: #99777]
 
+	Developer's Notes:
+		- Notes: If product is NG, search tickets with GameType is RNG
+		
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
 	  + @AgentList: xml structure
@@ -115,14 +118,14 @@ BEGIN
 	SELECT	a.SettlementDate,
 			c.Currency,			
 			SUM(CASE WHEN a.GameType = 'SB' THEN a.BetAmount ELSE 0 END),
-			SUM(CASE WHEN a.GameType = 'NG' THEN a.BetAmount ELSE 0 END),
+			SUM(CASE WHEN a.GameType = 'RNG' THEN a.BetAmount ELSE 0 END),
 			- SUM(a.NetAmount),
 			SUM(CASE WHEN a.GameType = 'SB' THEN a.NetAmount ELSE 0 END),
-			SUM(CASE WHEN a.GameType = 'NG' THEN a.NetAmount ELSE 0 END),
+			SUM(CASE WHEN a.GameType = 'RNG' THEN a.NetAmount ELSE 0 END),
 			COUNT(a.TransactionId)
 	FROM bodb_LicenseeReport.dbo.rptDep_AuditTickets a WITH (NOLOCK)
 	INNER JOIN #tmpCust c ON a.PlayerNo = c.CustID AND a.SettlementDate >= c.EffectiveDate AND a.SettlementDate <= c.EndDate
-	WHERE (@showSB = 1 AND a.GameType = 'SB') OR (@showNG = 1 AND a.GameType = 'NG')
+	WHERE (@showSB = 1 AND a.GameType = 'SB') OR (@showNG = 1 AND a.GameType = 'RNG')
 	GROUP BY a.SettlementDate, c.Currency
 
 	-- Exchange Rate
