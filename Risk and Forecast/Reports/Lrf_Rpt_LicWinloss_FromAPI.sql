@@ -120,7 +120,7 @@ BEGIN
 			SUM(CASE WHEN a.GameType = 'SB' THEN a.NetAmount ELSE 0 END),
 			SUM(CASE WHEN a.GameType = 'NG' THEN a.NetAmount ELSE 0 END),
 			COUNT(a.TransactionId)
-	FROM bodb_LicenseeReport.dbo.rptDep_AuditTickets a
+	FROM bodb_LicenseeReport.dbo.rptDep_AuditTickets a WITH (NOLOCK)
 	INNER JOIN #tmpCust c ON a.PlayerNo = c.CustID AND a.SettlementDate >= c.EffectiveDate AND a.SettlementDate <= c.EndDate
 	WHERE (@showSB = 1 AND a.GameType = 'SB') OR (@showNG = 1 AND a.GameType = 'NG')
 	GROUP BY a.SettlementDate, c.Currency
