@@ -43,7 +43,7 @@ BEGIN
 
 	DECLARE @RealAgentCurrency	TABLE(ID INT IDENTITY, Currency INT, AgentID INT)  
 	DECLARE @SourceIDs			TABLE (LicenseeID INT, LicenseeeName NVARCHAR(50), CustID INT, CurrencyID INT, RoleID TINYINT, EffectiveDate SMALLDATETIME, EndDate SMALLDATETIME)
-	CREATE TABLE #tmpCust		(CustID INT, Currency INT, EffectiveDate SMALLDATETIME, EndDate SMALLDATETIME)
+	CREATE TABLE #tmpCust		(CustID INT, Currency INT, EffectiveDate DATE, EndDate DATE)
 
 	-- Get Real Agents for Ivory, Opal88
 	DECLARE @DocHandler INT
@@ -77,18 +77,21 @@ BEGIN
 	END
 	
 	-- Include Real Agents to SourceIDs
+	DECLARE @tempToDate DATETIME
+	SET @tempToDate = DATEADD(DAY, 1, @ToDate)
+	
 	INSERT INTO @SourceIDs (LicenseeID, CustID, RoleID, CurrencyID, EffectiveDate, EndDate)
-	SELECT @LicenseeID, r.AgentID, 2, r.Currency, @FromDate, @ToDate
+	SELECT @LicenseeID, r.AgentID, 2, r.Currency, @FromDate, @tempToDate
 	FROM @RealAgentCurrency r
 	
 	-- Get custId list
 	INSERT INTO #tmpCust (CustID, Currency, EffectiveDate, EndDate)
-	SELECT c.custid, a.CurrencyID, a.EffectiveDate, a.EndDate
+	SELECT c.custid, a.CurrencyID, a.EffectiveDate, DATEADD(DAY, 1, a.EndDate)
 	FROM @SourceIDs a
 	INNER JOIN dbo.custInfo c WITH (NOLOCK) ON a.CustID = c.recommend
 	WHERE a.RoleID = 2
 	UNION ALL
-	SELECT a.custid, a.CurrencyID, a.EffectiveDate, a.EndDate
+	SELECT a.custid, a.CurrencyID, a.EffectiveDate, DATEADD(DAY, 1, a.EndDate)
 	FROM @SourceIDs a
 	WHERE a.RoleID = 1
 
@@ -115,7 +118,10 @@ BEGIN
 		(  
 			winlostdate, Currency, TurnoverSB, TurnoverNG, Winlost, LicenseeWLSB, LicenseeWLNG, Betcount
 		)
-	SELECT	a.SettlementDate,
+	SELECT	CASE
+				WHEN @ReportType = 1 THEN CAST(a.SettlementDate AS DATE)
+				ELSE DATEADD(DAY, 1 - DATEPART(DAY, a.SettlementDate), CAST(a.SettlementDate AS DATE))
+			END,
 			c.Currency,			
 			SUM(CASE WHEN a.GameType = 'SB' THEN a.BetAmount ELSE 0 END),
 			SUM(CASE WHEN a.GameType = 'RNG' THEN a.BetAmount ELSE 0 END),
@@ -126,15 +132,16 @@ BEGIN
 	FROM bodb_LicenseeReport.dbo.rptDep_AuditTickets a WITH (NOLOCK)
 	INNER JOIN #tmpCust c ON a.PlayerNo = c.CustID AND a.SettlementDate >= c.EffectiveDate AND a.SettlementDate <= c.EndDate
 	WHERE (@showSB = 1 AND a.GameType = 'SB') OR (@showNG = 1 AND a.GameType = 'RNG')
-	GROUP BY a.SettlementDate, c.Currency
+	GROUP BY
+		CASE
+			WHEN @ReportType = 1 THEN CAST(a.SettlementDate AS DATE)
+			ELSE DATEADD(DAY, 1 - DATEPART(DAY, a.SettlementDate), CAST(a.SettlementDate AS DATE))
+		END,
+		c.Currency
 
 	-- Exchange Rate
 	CREATE TABLE #Exchange (ExFromDate DATE, ExToDate DATE, ExchangeID INT, RateUSD FLOAT, RateMYR FLOAT, RateEUR FLOAT)
 	
-	;WITH Currency_CTE (CurrencyID) AS (
-											SELECT DISTINCT Currency 
-											FROM #tmpCust
-										)
 	INSERT INTO #Exchange(ExFromDate, ExToDate, ExchangeID, RateUSD, RateMYR, RateEUR)
 	SELECT	FirstExchangeDateByMonth, 
 			LastExchangeDateByMonth,
@@ -143,55 +150,43 @@ BEGIN
 			MYR,
 			EUR
 	FROM dbo.Lrf_f_GetSubExchangeDaily(@FromDate, @ToDate) exc
-	INNER JOIN Currency_CTE cur ON exc.ExchangeId = cur.CurrencyID
 	
 	-- Return data
 	SELECT
-		CASE
-			WHEN @ReportType = 1 THEN w.winlostdate
-			WHEN @ReportType = 2 THEN DATEADD(DAY, 1 - DATEPART(DAY, w.Winlostdate), w.Winlostdate)
-			ELSE '0'
-		END						AS ReportType,
-		Currency,
-		SUM(Betcount)			AS Betcount,
+		w.winlostdate			AS ReportType,
+		w.Currency,
+		w.Betcount			AS Betcount,
 		
 		--- Orginal ---
-		SUM(TurnoverSB)			AS TurnoverSB,
-		SUM(TurnoverNG)			AS TurnoverNG,
-		SUM(LicenseeWLSB)		AS LicenseeWLSB,
-		SUM(LicenseeWLNG)		AS LicenseeWLNG,
-		SUM(Winlost)			AS Winlost,
+		w.TurnoverSB			AS TurnoverSB,
+		w.TurnoverNG			AS TurnoverNG,
+		w.LicenseeWLSB			AS LicenseeWLSB,
+		w.LicenseeWLNG			AS LicenseeWLNG,
+		w.Winlost				AS Winlost,
 		
 		--- USD ---
-		SUM(TurnoverSB*e.RateUSD)		AS TurnoverSBUSD,
-		SUM(TurnoverNG*e.RateUSD)		AS TurnoverNGUSD,
-		SUM(LicenseeWLSB*e.RateUSD)		AS LicenseeWLSBUSD,
-		SUM(LicenseeWLNG*e.RateUSD)		AS LicenseeWLNGUSD,
-		SUM(Winlost*e.RateUSD)			AS WinlostUSD,
+		w.TurnoverSB*e.RateUSD		AS TurnoverSBUSD,
+		w.TurnoverNG*e.RateUSD		AS TurnoverNGUSD,
+		w.LicenseeWLSB*e.RateUSD	AS LicenseeWLSBUSD,
+		w.LicenseeWLNG*e.RateUSD	AS LicenseeWLNGUSD,
+		w.Winlost*e.RateUSD			AS WinlostUSD,
 		
 		--- EUR ---
-		SUM(TurnoverSB*e.RateEUR)		AS TurnoverSBEUR,
-		SUM(TurnoverNG*e.RateEUR)		AS TurnoverNGEUR,
-		SUM(LicenseeWLSB*e.RateEUR)		AS LicenseeWLSBEUR,
-		SUM(LicenseeWLNG*e.RateEUR)		AS LicenseeWLNGEUR,
-		SUM(Winlost*e.RateEUR)			AS WinlostEUR,
+		w.TurnoverSB*e.RateEUR		AS TurnoverSBEUR,
+		w.TurnoverNG*e.RateEUR		AS TurnoverNGEUR,
+		w.LicenseeWLSB*e.RateEUR	AS LicenseeWLSBEUR,
+		w.LicenseeWLNG*e.RateEUR	AS LicenseeWLNGEUR,
+		w.Winlost*e.RateEUR			AS WinlostEUR,
 		
 		--- MYR ---
-		SUM(TurnoverSB*e.RateMYR)		AS TurnoverSBMYR,
-		SUM(TurnoverNG*e.RateMYR)		AS TurnoverNGMYR,
-		SUM(LicenseeWLSB*e.RateMYR)		AS LicenseeWLSBMYR,
-		SUM(LicenseeWLNG*e.RateMYR)		AS LicenseeWLNGMYR,
-		SUM(Winlost*e.RateMYR)			AS WinlostMYR
+		w.TurnoverSB*e.RateMYR		AS TurnoverSBMYR,
+		w.TurnoverNG*e.RateMYR		AS TurnoverNGMYR,
+		w.LicenseeWLSB*e.RateMYR	AS LicenseeWLSBMYR,
+		w.LicenseeWLNG*e.RateMYR	AS LicenseeWLNGMYR,
+		w.Winlost*e.RateMYR			AS WinlostMYR
 
 	FROM #SAgWinLoss w
-	INNER JOIN #Exchange e ON w.winlostdate BETWEEN e.ExFromDate AND e.ExToDate AND w.Currency = e.ExchangeId
-	GROUP BY   
-		Currency,
-		CASE
-			WHEN @ReportType = 1 THEN w.winlostdate
-			WHEN @ReportType = 2 THEN DATEADD(DAY, 1 - DATEPART(DAY, w.Winlostdate), w.Winlostdate)
-			ELSE '0'
-		END		
+	INNER JOIN #Exchange e ON w.winlostdate BETWEEN e.ExFromDate AND e.ExToDate AND w.Currency = e.ExchangeId	
 			
 	DROP TABLE #SAgWinLoss
 	DROP TABLE #Exchange
