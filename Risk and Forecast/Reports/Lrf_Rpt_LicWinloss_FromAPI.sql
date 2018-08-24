@@ -94,7 +94,11 @@ BEGIN
 				WHEN @ReportType = 1 THEN CAST(a.SettlementDate AS DATE)
 				ELSE DATEADD(DAY, 1 - DATEPART(DAY, a.SettlementDate), CAST(a.SettlementDate AS DATE))
 			END,
-			a.CurrencyCode,			
+		    CASE WHEN c.Id =20 THEN 'UUS'
+				 WHEN c.Id =51 THEN 'INH'
+				 WHEN c.Id =70 THEN 'MKK'
+				 ELSE a.CurrencyCode 
+			END AS CurrencyCode	,		
 			SUM(CASE WHEN a.GameType = 'SB' THEN a.BetAmount ELSE 0 END),
 			SUM(CASE WHEN a.GameType = 'RNG' THEN a.BetAmount ELSE 0 END),
 			- SUM(a.NetAmount),
