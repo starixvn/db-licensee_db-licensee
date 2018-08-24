@@ -5,8 +5,8 @@ CREATE PROCEDURE [dbo].[Lrf_Rpt_LicWinloss_FromAPI]
 	@FromDate		 SMALLDATETIME,  
 	@ToDate		 SMALLDATETIME,
 	@ProductCodes	 VARCHAR(100),
-	@CurrencyCodes	 VARCHAR(250),
-	@CurrencyIdList VARCHAR(100),
+    @ProductCodes	 VARCHAR(100)='',	
+	@CurrencyList    VARCHAR(500)='',
 	@ReportType	 TINYINT = 1
 AS 
 /*  Created: 20180820@Amanda
@@ -19,39 +19,50 @@ AS
 	Developer's Notes:
 		- Notes: If product is NG, search tickets with GameType is RNG
 		
-	Param's Explanation:  
+    Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
-	
+	  + @CurrencyList: xml structure
+					  <ROOT>
+					   <Agent Id="13" Code="CNY"/>
+					   <Agent Id="51" Code="IDR"/> 
+					  </ROOT>
 	  EXEC   [dbo].[Lrf_Rpt_LicWinloss_FromAPI]
 		    @SiteName = N'IvorySport',
 		    @FromDate = '2018-08-01',
 		    @ToDate = '2018-08-24',
 		    @ProductCodes = N'SB,NG',
-		    @CurrencyCodes = N'IDR',
-		    @CurrencyIdList = N'15',
-		    @ReportType = 1*/  
+		    @CurrencyList=N'<ROOT><CR Id="13" Code="CNY"/><CR Id="51" Code="IDR"/> </ROOT>'
+		    @ReportType = 1
 BEGIN  
 
-	SET NOCOUNT ON
-	
 	DECLARE @Product TABLE (ProductCode VARCHAR(10))
 
-	DECLARE @Currency TABLE (CurrencyCode VARCHAR(5))
-
-	DECLARE @CurrencyIdInfo TABLE (Currency INT)
+	DECLARE @Currency TABLE (Id INT,Code VARCHAR(5))
 
 	INSERT INTO @Product (ProductCode)
 	SELECT ISNULL(Val,'') 	
 	FROM dbo.strSplit(@ProductCodes,',')
 
-	
-	INSERT INTO @Currency (CurrencyCode)
-	SELECT ISNULL(Val,'') 	
-	FROM dbo.strSplit(@CurrencyCodes,',')
+	-- Get Currency
+	DECLARE @DocHandler INT
 
-	INSERT INTO @CurrencyIdInfo (Currency)
-	SELECT CAST(ISNULL(Val,0) AS INT)	
-	FROM dbo.strSplit(@CurrencyIdList,',')
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+				,@CurrencyList
+		INSERT INTO @Currency (Id, Code)
+		SELECT DISTINCT Id, Code
+		FROM OPENXML(@DocHandler, '/ROOT/CR', 1) WITH (Id [int], Code VARCHAR(5)) AS Data
+
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
+
+	BEGIN CATCH
+		SELECT ErrCode = 100
+				,ErrMsg = N'Paramter invalid.'
+
+		RETURN
+	END CATCH;
+
 
 	DECLARE @TempToDate DATE = DATEADD(DAY, 1, @ToDate)
      
@@ -90,7 +101,7 @@ BEGIN
 			SUM(CASE WHEN a.GameType = 'RNG' THEN a.NetAmount ELSE 0 END),
 			COUNT(a.TransactionId)
 	FROM bodb_LicenseeReport.dbo.rptDep_AuditTickets a WITH (NOLOCK)
-	INNER JOIN @Currency c ON c.CurrencyCode = a.CurrencyCode
+	INNER JOIN @Currency c ON c.Code = a.CurrencyCode
 	WHERE a.SettlementDate >= @FromDate AND a.SettlementDate < @TempToDate 
 	AND Brand = @SiteName
 	AND (@showSB = 1 AND a.GameType = 'SB') OR (@showNG = 1 AND a.GameType = 'RNG')
@@ -108,12 +119,12 @@ BEGIN
 	SELECT	FirstExchangeDateByMonth, 
 			LastExchangeDateByMonth,
 			ExchangeID,
-			Code,
+			c.Code,
 			USD,
 			MYR,
 			EUR
 	FROM dbo.Lrf_f_GetSubExchangeDaily(@FromDate, @ToDate) exc
-	INNER JOIN @CurrencyIdInfo c ON exc.ExchangeId = c.Currency
+	INNER JOIN @Currency c ON exc.ExchangeId = c.Id
 	
 	-- Return data
 	SELECT
