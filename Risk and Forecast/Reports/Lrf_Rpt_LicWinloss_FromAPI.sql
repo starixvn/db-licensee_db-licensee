@@ -32,6 +32,8 @@ AS
 		    @ProductCodes = N'SB,NG',
 		    @CurrencyList=N'<ROOT><CR Id="13" Code="CNY"/><CR Id="51" Code="IDR"/> </ROOT>'
 		    @ReportType = 1
+		    
+*/
 BEGIN  
 
 	DECLARE @Product TABLE (ProductCode VARCHAR(10))
