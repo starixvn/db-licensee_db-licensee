@@ -32,9 +32,6 @@ BEGIN
 
 	SET NOCOUNT ON
 	
-	IF @ProductCodes IS NULL
-		SET @ProductCodes = ''
-	
 	DECLARE @Product TABLE (ProductCode VARCHAR(10))
 
 	INSERT INTO @Product (ProductCode)
@@ -110,8 +107,8 @@ BEGIN
 	DECLARE @showSB BIT = 0,
 			@showNG BIT = 0
 	
-	SELECT @showSB = 1 FROM @Product WHERE ProductCode = '' OR ProductCode = 'SB'
-	SELECT @showNG = 1 FROM @Product WHERE ProductCode = '' OR ProductCode = 'NG'
+	SELECT @showSB = 1 FROM @Product WHERE ProductCode = 'SB'
+	SELECT @showNG = 1 FROM @Product WHERE ProductCode = 'NG'
 
 	-- Retrive data from rptDep_AuditTickets		
 	INSERT INTO #SAgWinLoss
@@ -130,7 +127,7 @@ BEGIN
 			SUM(CASE WHEN a.GameType = 'RNG' THEN a.NetAmount ELSE 0 END),
 			COUNT(a.TransactionId)
 	FROM bodb_LicenseeReport.dbo.rptDep_AuditTickets a WITH (NOLOCK)
-	INNER JOIN #tmpCust c ON a.PlayerNo = c.CustID AND a.SettlementDate >= c.EffectiveDate AND a.SettlementDate <= c.EndDate
+	INNER JOIN #tmpCust c ON a.PlayerNo = c.CustID AND a.SettlementDate >= c.EffectiveDate AND a.SettlementDate < c.EndDate
 	WHERE (@showSB = 1 AND a.GameType = 'SB') OR (@showNG = 1 AND a.GameType = 'RNG')
 	GROUP BY
 		CASE
