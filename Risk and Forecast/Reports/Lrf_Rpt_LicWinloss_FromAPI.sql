@@ -35,7 +35,7 @@ AS
 		    
 */
 BEGIN  
-
+    SET NOCOUNT ON
 	DECLARE @Product TABLE (ProductCode VARCHAR(10))
 
 	DECLARE @Currency TABLE (Id INT,Code VARCHAR(5))
@@ -70,7 +70,7 @@ BEGIN
 	CREATE TABLE #SAgWinLoss
 	(  
 		winlostdate			DATE,
-		CurrencyCode			VARCHAR(5),
+		CurrencyId			INT,
 		TurnoverSB			MONEY,
 		TurnoverNG			MONEY,
 		Winlost				MONEY,
@@ -88,17 +88,13 @@ BEGIN
 	-- Retrive data from rptDep_AuditTickets		
 	INSERT INTO #SAgWinLoss
 		(  
-			winlostdate, CurrencyCode, TurnoverSB, TurnoverNG, Winlost, LicenseeWLSB, LicenseeWLNG, Betcount
+			winlostdate,CurrencyId, TurnoverSB, TurnoverNG, Winlost, LicenseeWLSB, LicenseeWLNG, Betcount
 		)
 	SELECT	CASE
 				WHEN @ReportType = 1 THEN CAST(a.SettlementDate AS DATE)
 				ELSE DATEADD(DAY, 1 - DATEPART(DAY, a.SettlementDate), CAST(a.SettlementDate AS DATE))
 			END,
-		    CASE WHEN c.Id =20 THEN 'UUS'
-				 WHEN c.Id =51 THEN 'INH'
-				 WHEN c.Id =70 THEN 'MKK'
-				 ELSE a.CurrencyCode 
-			END AS CurrencyCode	,		
+			c.Id,
 			SUM(CASE WHEN a.GameType = 'SB' THEN a.BetAmount ELSE 0 END),
 			SUM(CASE WHEN a.GameType = 'RNG' THEN a.BetAmount ELSE 0 END),
 			- SUM(a.NetAmount),
@@ -115,26 +111,25 @@ BEGIN
 			WHEN @ReportType = 1 THEN CAST(a.SettlementDate AS DATE)
 			ELSE DATEADD(DAY, 1 - DATEPART(DAY, a.SettlementDate), CAST(a.SettlementDate AS DATE))
 		END,
-		a.CurrencyCode
+		c.Id
+
 
 	-- Exchange Rate
-	CREATE TABLE #Exchange (ExFromDate DATE, ExToDate DATE, ExchangeID INT,Code VARCHAR(5), RateUSD FLOAT, RateMYR FLOAT, RateEUR FLOAT)
+	CREATE TABLE #Exchange (ExFromDate DATE, ExToDate DATE, ExchangeID INT, RateUSD FLOAT, RateMYR FLOAT, RateEUR FLOAT)
 	
-	INSERT INTO #Exchange(ExFromDate, ExToDate, ExchangeID,Code, RateUSD, RateMYR, RateEUR)
+	INSERT INTO #Exchange(ExFromDate, ExToDate, ExchangeID, RateUSD, RateMYR, RateEUR)
 	SELECT	FirstExchangeDateByMonth, 
 			LastExchangeDateByMonth,
 			ExchangeID,
-			c.Code,
 			USD,
 			MYR,
 			EUR
 	FROM dbo.Lrf_f_GetSubExchangeDaily(@FromDate, @ToDate) exc
-	INNER JOIN @Currency c ON exc.ExchangeId = c.Id
-	
+
 	-- Return data
 	SELECT
 		w.winlostdate			AS ReportType,
-		w.CurrencyCode,
+		w.CurrencyId,
 		w.Betcount			AS Betcount,
 		
 		--- Orginal ---
@@ -166,9 +161,10 @@ BEGIN
 		w.Winlost*e.RateMYR			AS WinlostMYR
 
 	FROM #SAgWinLoss w
-	INNER JOIN #Exchange e ON w.winlostdate BETWEEN e.ExFromDate AND e.ExToDate AND w.CurrencyCode = e.Code	
+	INNER JOIN #Exchange e ON w.winlostdate BETWEEN e.ExFromDate AND e.ExToDate AND w.CurrencyId = e.ExchangeID	
 			
 	DROP TABLE #SAgWinLoss
 	DROP TABLE #Exchange
+
 END
 GO
