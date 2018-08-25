@@ -63,7 +63,15 @@ BEGIN
 
 		RETURN
 	END CATCH;
-
+    
+    UPDATE @Currency
+	SET     Code =  CASE  
+                        WHEN Id = 20 THEN 'UUS' 
+                        WHEN Id = 51 THEN 'VND' 
+                        WHEN Id = 70 THEN 'MMK' 
+                        ELSE Code
+                    END 
+	WHERE   Id IN (20,51,70)
 
 	DECLARE @TempToDate DATE = DATEADD(DAY, 1, @ToDate)
      
