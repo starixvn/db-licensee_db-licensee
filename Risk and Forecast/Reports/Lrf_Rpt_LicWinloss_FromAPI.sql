@@ -1,12 +1,12 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 
 CREATE PROCEDURE [dbo].[Lrf_Rpt_LicWinloss_FromAPI]  	
-	@SiteName		 VARCHAR(50),
-	@FromDate		 SMALLDATETIME,  
-	@ToDate		 SMALLDATETIME,
-     @ProductCodes	 VARCHAR(100)='',	
+	@SiteName		VARCHAR(50),
+	@FromDate		DATE,
+	@ToDate			DATE,
+	@ProductCodes	VARCHAR(100)='',
 	@CurrencyList   VARCHAR(500)='',
-	@ReportType	 TINYINT = 1
+	@ReportType		TINYINT = 1
 AS 
 /*  Created: 20180820@Amanda
     Description: LAP - LAP - Implement new Licensee Win Loss report for Ivorybet and Opal88
@@ -98,10 +98,7 @@ BEGIN
 		(  
 			winlostdate,CurrencyId, TurnoverSB, TurnoverNG, Winlost, LicenseeWLSB, LicenseeWLNG, Betcount
 		)
-	SELECT	CASE
-				WHEN @ReportType = 1 THEN CAST(a.SettlementDate AS DATE)
-				ELSE DATEADD(DAY, 1 - DATEPART(DAY, a.SettlementDate), CAST(a.SettlementDate AS DATE))
-			END,
+	SELECT	CAST(a.SettlementDate AS DATE),
 			c.Id,
 			SUM(CASE WHEN a.GameType = 'SB' THEN a.BetAmount ELSE 0 END),
 			SUM(CASE WHEN a.GameType = 'RNG' THEN a.BetAmount ELSE 0 END),
@@ -111,16 +108,12 @@ BEGIN
 			COUNT(a.TransactionId)
 	FROM bodb_LicenseeReport.dbo.rptDep_AuditTickets a WITH (NOLOCK)
 	INNER JOIN @Currency c ON c.Code = a.CurrencyCode
-	WHERE a.SettlementDate >= @FromDate AND a.SettlementDate < @TempToDate 
-	AND Brand = @SiteName
-	AND (@showSB = 1 AND a.GameType = 'SB') OR (@showNG = 1 AND a.GameType = 'RNG')
+	WHERE Brand = @SiteName
+			AND ((@showSB = 1 AND a.GameType = 'SB') OR (@showNG = 1 AND a.GameType = 'RNG'))
+			AND a.SettlementDate >= @FromDate AND a.SettlementDate < @TempToDate 
 	GROUP BY
-		CASE
-			WHEN @ReportType = 1 THEN CAST(a.SettlementDate AS DATE)
-			ELSE DATEADD(DAY, 1 - DATEPART(DAY, a.SettlementDate), CAST(a.SettlementDate AS DATE))
-		END,
+		CAST(a.SettlementDate AS DATE),
 		c.Id
-
 
 	-- Exchange Rate
 	CREATE TABLE #Exchange (ExFromDate DATE, ExToDate DATE, ExchangeID INT, RateUSD FLOAT, RateMYR FLOAT, RateEUR FLOAT)
@@ -135,41 +128,85 @@ BEGIN
 	FROM dbo.Lrf_f_GetSubExchangeDaily(@FromDate, @ToDate) exc
 
 	-- Return data
-	SELECT
-		w.winlostdate			AS ReportType,
-		w.CurrencyId,
-		w.Betcount			AS Betcount,
-		
-		--- Orginal ---
-		w.TurnoverSB			AS TurnoverSB,
-		w.TurnoverNG			AS TurnoverNG,
-		w.LicenseeWLSB			AS LicenseeWLSB,
-		w.LicenseeWLNG			AS LicenseeWLNG,
-		w.Winlost				AS Winlost,
-		
-		--- USD ---
-		w.TurnoverSB*e.RateUSD		AS TurnoverSBUSD,
-		w.TurnoverNG*e.RateUSD		AS TurnoverNGUSD,
-		w.LicenseeWLSB*e.RateUSD	AS LicenseeWLSBUSD,
-		w.LicenseeWLNG*e.RateUSD	AS LicenseeWLNGUSD,
-		w.Winlost*e.RateUSD			AS WinlostUSD,
-		
-		--- EUR ---
-		w.TurnoverSB*e.RateEUR		AS TurnoverSBEUR,
-		w.TurnoverNG*e.RateEUR		AS TurnoverNGEUR,
-		w.LicenseeWLSB*e.RateEUR	AS LicenseeWLSBEUR,
-		w.LicenseeWLNG*e.RateEUR	AS LicenseeWLNGEUR,
-		w.Winlost*e.RateEUR			AS WinlostEUR,
-		
-		--- MYR ---
-		w.TurnoverSB*e.RateMYR		AS TurnoverSBMYR,
-		w.TurnoverNG*e.RateMYR		AS TurnoverNGMYR,
-		w.LicenseeWLSB*e.RateMYR	AS LicenseeWLSBMYR,
-		w.LicenseeWLNG*e.RateMYR	AS LicenseeWLNGMYR,
-		w.Winlost*e.RateMYR			AS WinlostMYR
+	IF (@ReportType = 1)
+	BEGIN
+		SELECT
+			w.winlostdate			AS ReportType,
+			w.CurrencyId,
+			w.Betcount			AS Betcount,
+			
+			--- Orginal ---
+			w.TurnoverSB			AS TurnoverSB,
+			w.TurnoverNG			AS TurnoverNG,
+			w.LicenseeWLSB			AS LicenseeWLSB,
+			w.LicenseeWLNG			AS LicenseeWLNG,
+			w.Winlost				AS Winlost,
+			
+			--- USD ---
+			w.TurnoverSB*e.RateUSD		AS TurnoverSBUSD,
+			w.TurnoverNG*e.RateUSD		AS TurnoverNGUSD,
+			w.LicenseeWLSB*e.RateUSD	AS LicenseeWLSBUSD,
+			w.LicenseeWLNG*e.RateUSD	AS LicenseeWLNGUSD,
+			w.Winlost*e.RateUSD			AS WinlostUSD,
+			
+			--- EUR ---
+			w.TurnoverSB*e.RateEUR		AS TurnoverSBEUR,
+			w.TurnoverNG*e.RateEUR		AS TurnoverNGEUR,
+			w.LicenseeWLSB*e.RateEUR	AS LicenseeWLSBEUR,
+			w.LicenseeWLNG*e.RateEUR	AS LicenseeWLNGEUR,
+			w.Winlost*e.RateEUR			AS WinlostEUR,
+			
+			--- MYR ---
+			w.TurnoverSB*e.RateMYR		AS TurnoverSBMYR,
+			w.TurnoverNG*e.RateMYR		AS TurnoverNGMYR,
+			w.LicenseeWLSB*e.RateMYR	AS LicenseeWLSBMYR,
+			w.LicenseeWLNG*e.RateMYR	AS LicenseeWLNGMYR,
+			w.Winlost*e.RateMYR			AS WinlostMYR
 
-	FROM #SAgWinLoss w
-	INNER JOIN #Exchange e ON w.winlostdate BETWEEN e.ExFromDate AND e.ExToDate AND w.CurrencyId = e.ExchangeID	
+		FROM #SAgWinLoss w
+		INNER JOIN #Exchange e ON w.winlostdate BETWEEN e.ExFromDate AND e.ExToDate AND w.CurrencyId = e.ExchangeID	
+	END	
+	ELSE
+	BEGIN
+		SELECT
+			DATEADD(DAY, 1 - DATEPART(DAY, w.winlostdate), w.winlostdate)			AS ReportType,
+			w.CurrencyId,
+			SUM(w.Betcount)				AS Betcount,
+			
+			--- Orginal ---
+			SUM(w.TurnoverSB)			AS TurnoverSB,
+			SUM(w.TurnoverNG)			AS TurnoverNG,
+			SUM(w.LicenseeWLSB)			AS LicenseeWLSB,
+			SUM(w.LicenseeWLNG)			AS LicenseeWLNG,
+			SUM(w.Winlost)				AS Winlost,
+			
+			--- USD ---
+			SUM(w.TurnoverSB*e.RateUSD)		AS TurnoverSBUSD,
+			SUM(w.TurnoverNG*e.RateUSD)		AS TurnoverNGUSD,
+			SUM(w.LicenseeWLSB*e.RateUSD)	AS LicenseeWLSBUSD,
+			SUM(w.LicenseeWLNG*e.RateUSD)	AS LicenseeWLNGUSD,
+			SUM(w.Winlost*e.RateUSD)			AS WinlostUSD,
+			
+			--- EUR ---
+			SUM(w.TurnoverSB*e.RateEUR)		AS TurnoverSBEUR,
+			SUM(w.TurnoverNG*e.RateEUR)		AS TurnoverNGEUR,
+			SUM(w.LicenseeWLSB*e.RateEUR)	AS LicenseeWLSBEUR,
+			SUM(w.LicenseeWLNG*e.RateEUR)	AS LicenseeWLNGEUR,
+			SUM(w.Winlost*e.RateEUR)		AS WinlostEUR,
+			
+			--- MYR ---
+			SUM(w.TurnoverSB*e.RateMYR)		AS TurnoverSBMYR,
+			SUM(w.TurnoverNG*e.RateMYR)		AS TurnoverNGMYR,
+			SUM(w.LicenseeWLSB*e.RateMYR)	AS LicenseeWLSBMYR,
+			SUM(w.LicenseeWLNG*e.RateMYR)	AS LicenseeWLNGMYR,
+			SUM(w.Winlost*e.RateMYR)		AS WinlostMYR
+
+		FROM #SAgWinLoss w
+		INNER JOIN #Exchange e ON w.winlostdate BETWEEN e.ExFromDate AND e.ExToDate AND w.CurrencyId = e.ExchangeID
+		GROUP BY
+			DATEADD(DAY, 1 - DATEPART(DAY, w.winlostdate), w.winlostdate),
+			w.CurrencyId
+	END
 			
 	DROP TABLE #SAgWinLoss
 	DROP TABLE #Exchange
