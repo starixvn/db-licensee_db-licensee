@@ -3,10 +3,10 @@
 CREATE PROCEDURE [dbo].[Lrf_Rpt_LicWinloss_FromAPI]  	
 	@SiteName		 VARCHAR(50),
 	@FromDate		 SMALLDATETIME,  
-	@ToDate		     SMALLDATETIME,
-    @ProductCodes	 VARCHAR(100)='',	
-	@CurrencyList    VARCHAR(500)='',
-	@ReportType	     TINYINT = 1
+	@ToDate		 SMALLDATETIME,
+     @ProductCodes	 VARCHAR(100)='',	
+	@CurrencyList   VARCHAR(500)='',
+	@ReportType	 TINYINT = 1
 AS 
 /*  Created: 20180820@Amanda
     Description: LAP - LAP - Implement new Licensee Win Loss report for Ivorybet and Opal88
