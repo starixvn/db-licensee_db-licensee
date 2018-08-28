@@ -98,7 +98,7 @@ BEGIN
 		(  
 			winlostdate,CurrencyId, TurnoverSB, TurnoverNG, Winlost, LicenseeWLSB, LicenseeWLNG, Betcount
 		)
-	SELECT	CAST(a.SettlementDate AS DATE),
+	SELECT	a.WinLostDate,
 			c.Id,
 			SUM(CASE WHEN a.GameType = 'SB' THEN a.BetAmount ELSE 0 END),
 			SUM(CASE WHEN a.GameType = 'RNG' THEN a.BetAmount ELSE 0 END),
@@ -108,11 +108,12 @@ BEGIN
 			COUNT(a.TransactionId)
 	FROM bodb_LicenseeReport.dbo.rptDep_AuditTickets a WITH (NOLOCK)
 	INNER JOIN @Currency c ON c.Code = a.CurrencyCode
-	WHERE Brand = @SiteName
+	WHERE  a.WinLostDate >= @FromDate AND a.WinLostDate < @TempToDate 
+			AND Brand = @SiteName
 			AND ((@showSB = 1 AND a.GameType = 'SB') OR (@showNG = 1 AND a.GameType = 'RNG'))
-			AND a.SettlementDate >= @FromDate AND a.SettlementDate < @TempToDate 
+			
 	GROUP BY
-		CAST(a.SettlementDate AS DATE),
+		a.WinLostDate,
 		c.Id
 
 	-- Exchange Rate
