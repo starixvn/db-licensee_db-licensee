@@ -106,7 +106,7 @@ BEGIN
 			SUM(CASE WHEN a.GameType = 'SB' THEN a.NetAmount ELSE 0 END),
 			SUM(CASE WHEN a.GameType = 'RNG' THEN a.NetAmount ELSE 0 END),
 			COUNT(a.TransactionId)
-	FROM bodb_LicenseeReport.dbo.rptDep_AuditTickets a WITH (NOLOCK)
+	FROM bodb_licenseeReportArchive.dbo.rptDep_AuditTickets a WITH (NOLOCK)
 	INNER JOIN @Currency c ON c.Code = a.CurrencyCode
 	WHERE  a.WinLostDate >= @FromDate AND a.WinLostDate < @TempToDate 
 			AND Brand = @SiteName
