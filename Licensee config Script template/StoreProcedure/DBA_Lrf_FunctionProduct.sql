@@ -24,6 +24,7 @@ ALTER   PROCEDURE [dbo].[DBA_Lrf_FunctionProduct]
 		- 20171208@Harper: add new product CB, LT, VS2
 		- 20171214@Harper: Edit for GMT +8 and Exchange Product
 		- 20180521@Harper: Remove CasinoProgressiveWins report
+		- 20180820@Harper: AG Casino Balance report just using for 12bet
 
 	Param's Explanation:
 		
@@ -164,7 +165,7 @@ BEGIN
 		WHERE FunctionId    IN (
 								3  -- REPORTS
 								,62 -- AG Casino Win Loss
-								,63 -- AG Casino Balance								
+								--,63 -- AG Casino Balance	-- just open for 12bet					
 								)
 		UNION ALL
 		SELECT 10 AS ProductId -- AGC

@@ -43,20 +43,15 @@ BEGIN
 
 	IF ISNULL(@SystemDeactivate, '') <> ''
 	BEGIN
-		IF @SystemDeactivate = 'All'
-		BEGIN
-			INSERT INTO @tblSystem (SystemId, SystemCode, isActive)
-			SELECT DISTINCT ls.SystemID, s.SystemName, 0
-			FROM dbo.SystemLicensee ls WITH (NOLOCK)
-				INNER JOIN dbo.Systems s WITH (NOLOCK) ON ls.SystemID = s.id
-			WHERE ls.IsActive = 1 AND ls.LicenseeID = @LicenseeId
-		END
-		ELSE
-		BEGIN
-			INSERT INTO @tblSystem (SystemId, SystemCode, isActive)
-			SELECT 0, val, 0
-			FROM bodb02.dbo.strSplit(@SystemDeactivate, ',')
-		END
+		INSERT INTO @tblSystem (
+			SystemId
+			, SystemCode
+			, isActive
+			)
+		SELECT 0
+			, val
+			, 0
+		FROM bodb02.dbo.strSplit(@SystemDeactivate, ',')
 	END
 
 	----- Correct Data   

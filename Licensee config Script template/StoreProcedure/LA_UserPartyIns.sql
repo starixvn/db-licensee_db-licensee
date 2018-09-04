@@ -11,6 +11,7 @@ AS
 
 	Revisions:
 		- 20170912@Harper: Clear code [RedmineID: #82673] 
+
 	Param's Explanation:
 */
 BEGIN	
