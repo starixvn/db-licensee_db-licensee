@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="1"></info>*/
+/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02" executers="" viewers="vnteam" isFunction="1"></info>*/
 
 ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]  
 (  
