@@ -1,9 +1,5 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 
-USE [bodb02]
- 
-SET QUOTED_IDENTIFIER ON
-GO
 ALTER PROCEDURE [dbo].[Lrf_CustomerSelBalance]
 	@LicenseeID INT,
 	@MoveBetsDay SMALLDATETIME,
@@ -811,8 +807,3 @@ BEGIN
 	DROP TABLE #Temp_Bettrans
 END
 GO
-GRANT EXECUTE ON [dbo].[Lrf_CustomerSelBalance] TO [bodbDownlineNet] AS [dbo]
-GO
-GRANT EXECUTE ON [dbo].[Lrf_CustomerSelBalance] TO [bodbLicenseeNet] AS [dbo]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerSelBalance] TO [vnteam] AS [dbo]

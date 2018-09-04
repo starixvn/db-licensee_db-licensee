@@ -1,6 +1,4 @@
 ﻿/*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
-USE bodb02
-GO
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerBalance] 
 	@FromDate		SMALLDATETIME
@@ -711,9 +709,3 @@ BEGIN
 	DROP TABLE #SumWinlost
 END
 GO
-
-GO 
- GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CustomerBalance] TO [vnteam]
-GO 
- GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerBalance] TO [bodbLicenseeNet]
-GO 

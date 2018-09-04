@@ -1,6 +1,5 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
  
-
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportBySport] 
 	@LicenseeID		INT,	
 	@ProductCodes	VARCHAR(MAX) = NULL,
@@ -646,6 +645,3 @@ BEGIN
 		EXEC (@sql)
 END
 GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_LiveReportBySport] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LiveReportBySport] TO [vnteam] 
