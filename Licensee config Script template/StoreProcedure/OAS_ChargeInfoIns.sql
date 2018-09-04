@@ -16,6 +16,7 @@ ALTER PROCEDURE [dbo].[OAS_ChargeInfoIns]
 	, @WaiveMonth			INT				= 0
 	, @System				NVARCHAR(10)	= 'OA'
 	, @Remark				NVARCHAR(200)	= NULL
+	, @BasicOfBilling		NVARCHAR(4000)  = NULL
 	, @IsDebug				BIT				= 1
 	, @ChargeId				INT OUTPUT
 AS
@@ -39,7 +40,7 @@ AS
 		- 20170309@Harper: Add BaseCurrencyID For MinFee and PartyDetail
 		- 20170808@Harper: Fix case MinFee = 0 [RedmineID: #81327]
 		- 20170912@Harper: Clear code [RedmineID: #82673] 
-
+		- 20171012@Harper: Add more Basic Of Billing Info [#84772]
 	Param's Explanation:
 */
 BEGIN
@@ -145,7 +146,7 @@ BEGIN
 		IF @ProductId IN (14, 17) -- case Microgaming
 		BEGIN
 			INSERT INTO dbo.OAS_ChargeInfo (ProductID, FromParty, ToParty, ParentChargeID, Rate, ChargeType, FromDate, ToDate, MinAmount, MaxAmount, Remark, BaseCurrencyId, FirstOfBilling, BasisOfBilling)
-			SELECT @ProductID, @FromPartyId, @ToPartyId, @ParentChargeId, NULL, @ChargeType, @FromDate, @ToDate, @MinAmount, @MaxAmount, @Remark, @BaseCurrencyId, @FromDate, ''
+			SELECT @ProductID, @FromPartyId, @ToPartyId, @ParentChargeId, NULL, @ChargeType, @FromDate, @ToDate, @MinAmount, @MaxAmount, @Remark, @BaseCurrencyId, @FromDate, @BasicOfBilling
 
 			SELECT @ChargeId = SCOPE_IDENTITY()
 			-- parse XML
@@ -155,7 +156,7 @@ BEGIN
 			EXEC sp_xml_preparedocument @idoc OUTPUT, @RateSettingXML
 
 			INSERT INTO @ChargeInfoSub(ProductId, BettypeRef, FromParty, ToParty, ParentChargeID, Rate, ChargeType, FromDate, ToDate, MinAmount, MaxAmount, BaseCurrencyId, FirstOfBilling, BasicOfBilling, ChargeIdRef)
-			SELECT @ProductID, BettypeRef, @FromPartyId, @ToPartyId, ParentChargeID, Rate, @ChargeType, FromDate, ToDate, @MinAmount, @MaxAmount, BaseCurrencyId, @FromDate, '', @ChargeId
+			SELECT @ProductID, BettypeRef, @FromPartyId, @ToPartyId, ParentChargeID, Rate, @ChargeType, FromDate, ToDate, @MinAmount, @MaxAmount, BaseCurrencyId, @FromDate, @BasicOfBilling, @ChargeId
 			FROM OPENXML(@idoc, 'ChargeInfoSub/Sub') 
 			WITH (
 				BettypeRef			INT		'BettypeRef'
@@ -194,7 +195,7 @@ BEGIN
 		ELSE
 		BEGIN
 			INSERT INTO dbo.OAS_ChargeInfo (ProductID, FromParty, ToParty, ParentChargeID, Rate, ChargeType, FromDate, ToDate, MinAmount, MaxAmount, Remark, BaseCurrencyId, FirstOfBilling, BasisOfBilling)
-			SELECT @ProductID, @FromPartyId, @ToPartyId, @ParentChargeId, @Rate, @ChargeType, @FromDate, @ToDate, @MinAmount, @MaxAmount, @Remark, @BaseCurrencyId, @FromDate, ''
+			SELECT @ProductID, @FromPartyId, @ToPartyId, @ParentChargeId, @Rate, @ChargeType, @FromDate, @ToDate, @MinAmount, @MaxAmount, @Remark, @BaseCurrencyId, @FromDate, @BasicOfBilling
 
 			SELECT @ChargeId = SCOPE_IDENTITY()
 

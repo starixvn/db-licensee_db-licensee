@@ -1,5 +1,7 @@
 /*<info serverAlias="DBLIC-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
-   
+USE bodb_licensee
+GO  
+
 ALTER PROCEDURE [dbo].[DBA_Lrf_OfferProduct]  
 ( 
 	@ResellerID INT,  
@@ -82,8 +84,9 @@ BEGIN
 								SELECT ProductId   
 								FROM dbo.LicenseeProduct3rd WITH (NOLOCK)   
 								WHERE LicenseeId = @LicenseeID  
-							)  
-
+							) 
+							 
+	-- Open report on LRF/LAP
 	INSERT INTO dbo.LicenseeFunctions (licenseeID, FunctionId)   
 	SELECT  DISTINCT @LicenseeID ,pf.FunctionId  
 	FROM @tblProductFunctions pf   

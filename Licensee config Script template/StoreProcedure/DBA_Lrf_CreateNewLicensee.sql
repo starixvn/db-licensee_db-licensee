@@ -1,4 +1,6 @@
 /*<info serverAlias="DBLIC-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+USE bodb_licensee
+GO
 
 ALTER PROCEDURE [dbo].[DBA_Lrf_CreateNewLicensee] (
 	@LicenseeName VARCHAR(50)
@@ -97,7 +99,7 @@ BEGIN
 	BEGIN
 		INSERT INTO dbo.SystemLicensee (SystemID, LicenseeID, IsActive)
 		SELECT ID, @LicenseeID 
-			, CASE WHEN ID IN (1, 2) THEN 1	ELSE 0 END 
+			, CASE WHEN ID IN (1, 2) THEN 1	ELSE 0 END -- LRF, OA
 		FROM dbo.Systems WITH (NOLOCK)
 	END
 	ELSE
