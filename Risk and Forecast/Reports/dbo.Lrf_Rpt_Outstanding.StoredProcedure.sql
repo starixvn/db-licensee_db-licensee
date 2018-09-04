@@ -15,6 +15,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_Outstanding]
 	@ShowFW			BIT	= 0,
 	@ShowVS2		BIT = 0,
 	@ShowLT			BIT = 0,
+	@ShowPP			BIT = 0,
     @PageSize		INT = 1000,
     @PageIndex		INT = 1,
 	@AgentList		VARCHAR(MAX),
@@ -66,6 +67,7 @@ Revisions:
 	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
 	- 20180802@Sophia: use LicenseeBATransaction_active instead of LicenseeBATransaction, change code to use index on DB042 [Redmind: #98631]
+	- 20180904@Amanda: LAP - Integrate PP [RedmineID: #92318]
 
 Param's Explanation:
 	@OrderItem:
@@ -205,6 +207,11 @@ BEGIN
 	IF @ShowLT = 1 -- Lottery
 	BEGIN
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'LT', 'LT')
+	END
+	
+	IF @ShowPP = 1 -- PP
+	BEGIN
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'PP', 'PP')
 	END
 
 	IF LEN(ISNULL(@ProductList, '')) > 0 
@@ -481,8 +488,4 @@ BEGIN
 
 END
 
-GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_Outstanding] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_Outstanding] TO [vnteam]
 GO
