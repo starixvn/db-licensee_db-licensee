@@ -1,10 +1,12 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_Rpt_SubsidiaryWinloss]  	
-	@FromDate		SMALLDATETIME,  
-	@ToDate			SMALLDATETIME,    
-	@MoveBetsDay	SMALLDATETIME, 
+	@FromDate		DATE,  
+	@ToDate			DATE,    
+	@MoveBetsDay	DATE, 
 	@ProductList	VARCHAR(1000),
-	@AgentList		VARCHAR(MAX)
+	@IncludeRaw		BIT,
+	@AgentList		VARCHAR(MAX),
+	@BaseCurrency	VARCHAR(3)
 AS 
 /*  Created: Sophia  
 	Date: 20170829
@@ -31,7 +33,7 @@ BEGIN
 
 	CREATE TABLE #Subsidiary
 	(  
-		WinlostDate		SMALLDATETIME,
+		WinlostDate		DATE,
 		recommend		INT,
 		Currency		INT,
 		ProductCode		VARCHAR(10),
@@ -43,7 +45,7 @@ BEGIN
 	)
 	
 
-	DECLARE @FDate SMALLDATETIME, @TDate SMALLDATETIME
+	DECLARE @FDate DATE, @TDate DATE
 	SELECT @FDate = @FromDate, @TDate = @ToDate
 
 	-----Begin Get AgentList
@@ -132,7 +134,7 @@ BEGIN
 					ON b.transid = BA.transid 	 	
 			WHERE	
 				b.winlostdate BETWEEN @FDate AND @TDate
-				AND b.statusID IN (111, 112, 113) 				
+				AND (b.statusID IN (112, 113) OR (@IncludeRaw = 1 AND b.statusID = 111))
 			GROUP BY   
 				b.Winlostdate, b.recommend, a.currency
 		END
@@ -155,7 +157,7 @@ BEGIN
 				INNER JOIN @TempAg a 
 					ON a.CustID = b.recommend  					 	
 			WHERE b.winlostdate BETWEEN @FDate AND @TDate
-				  AND b.statusID IN (111, 112, 113) 				
+				  AND (b.statusID IN (112, 113) OR (@IncludeRaw = 1 AND b.statusID = 111))
 				  AND b.bettype IN (901,902,903)
 			GROUP BY   
 				b.Winlostdate, b.recommend, a.currency
@@ -179,7 +181,7 @@ BEGIN
 				INNER JOIN @TempAg a 
 					ON a.CustID = b.recommend  					 	
 			WHERE b.winlostdate BETWEEN @FDate AND @TDate
-				  AND b.statusID IN (111, 112, 113) 				
+				  AND (b.statusID IN (112, 113) OR (@IncludeRaw = 1 AND b.statusID = 111))
 				  AND b.bettype = 913
 			GROUP BY   
 				b.Winlostdate, b.recommend, a.currency
@@ -197,15 +199,15 @@ BEGIN
 				COUNT(CASE WHEN RAND() + 1 > 0 THEN b.transid ELSE 0 END) AS BetCount,
 				SUM (CASE WHEN RAND() + 1 > 0 THEN stake ELSE 0 END) AS Turnover, 
 				SUM (CASE WHEN RAND() + 1 > 0 THEN b.winlost-b.actual_stake ELSE 0 END) AS Winlost,  
-				SUM (CASE WHEN RAND() + 1 > 0 AND p.ProductCode = 'RB' THEN b.Comm ELSE 0 END) AS SubsidiaryComm,
-				- SUM (CASE WHEN RAND() + 1 > 0 AND p.ProductCode <> 'RB' THEN b.winlost - b.actual_stake ELSE 0 END) AS LicenseeWL  ---- Licensee Winlost or RB Comm 
+				0 AS SubsidiaryComm,
+				- SUM (CASE WHEN RAND() + 1 > 0 THEN b.winlost - b.actual_stake ELSE 0 END) AS LicenseeWL  ---- Licensee Winlost or RB Comm 
 			FROM 
 				dbo.bettrans b WITH (NOLOCK)  
 				INNER JOIN @TempAg a ON b.recommend = a.custid 
 				INNER JOIN #BettypeProduct p ON p.bettype = b.bettype
 			WHERE 
 				b.winlostdate BETWEEN @FDate AND @TDate  				
-				AND b.statusID IN (111, 112, 113)	
+				AND (b.statusID IN (112, 113) OR (@IncludeRaw = 1 AND b.statusID = 111))
 				AND b.matchID > 0 
 				AND (CASE WHEN p.ProductCode ='SB' THEN b.tpositiontaking ELSE 1 END <> 0 )  --- EXCLUDE BA 
 				
@@ -244,7 +246,7 @@ BEGIN
 			WHERE 
 				b.winlostdate BETWEEN @FDate AND @TDate  				
 				AND b.roleid = 1   
-				AND b.statusID <> 101 --exclude REJECT bets
+				AND ( b.statusID <> 101 AND (@IncludeRaw = 1 OR b.statusID <> 111 )) --exclude REJECT bets
 				AND b.isBA = 1 
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
@@ -270,7 +272,7 @@ BEGIN
 			WHERE 
 				b.winlostdate BETWEEN @FDate AND @TDate  				
 				AND b.roleid = 1   
-				AND b.statusID IN (111,112,113) --exclude REJECT bets			 
+				AND (b.statusID IN (112, 113) OR (@IncludeRaw = 1 AND b.statusID = 111)) --exclude REJECT bets
 				AND b.bettype IN (901,902,903)
 			GROUP BY   
 				b.Winlostdate, b.recommend, a.currency 
@@ -294,7 +296,7 @@ BEGIN
 			WHERE 
 				b.winlostdate BETWEEN @FDate AND @TDate  				
 				AND b.roleid = 1   
-				AND b.statusID IN (111,112,113) --exclude REJECT bets			
+				AND (b.statusID IN (112, 113) OR (@IncludeRaw = 1 AND b.statusID = 111)) --exclude REJECT bets
 				AND b.bettype = 913
 			GROUP BY   
 				b.Winlostdate, b.recommend, a.currency 
@@ -312,8 +314,8 @@ BEGIN
 						SUM ( b.betcount) AS BetCount,
 						SUM (b.turnover) AS Turnover, 
 						SUM (b.winlost) AS Winlost,  
-						SUM(CASE WHEN p.ProductCode = 'RB' THEN b.comm ELSE 0 END) AS SubsidiaryComm,
-						-SUM(CASE WHEN p.ProductCode <> 'RB' THEN b.winlost ELSE 0 END) AS LicenseeWL						 
+						0 AS SubsidiaryComm,
+						-SUM(b.winlost) AS LicenseeWL
 			FROM	( 
 						SELECT   
 							b.Winlostdate,
@@ -331,7 +333,7 @@ BEGIN
 							AND (b.bettype < 901 OR b.bettype > 904)
 							AND (b.bettype < 911 OR b.bettype > 914)
 							AND b.roleid = 1   
-							AND b.statusID IN (111,112,113,114,115) --exclude REJECT bets
+							AND (b.statusID IN (112,113,114,115) OR (@IncludeRaw = 1 AND b.statusID = 111)) --exclude REJECT bets
 							AND b.isBA = 0 
 						GROUP BY   
 							b.Winlostdate, b.recommend, a.currency, b.sporttype
@@ -341,10 +343,28 @@ BEGIN
 		END	 
 	END
 		
-	SELECT * 
-	INTO #TempExchange 
-	FROM  dbo.Lrf_f_GetExchangeDaily(@FromDate,@ToDate)
-	WHERE exchangeid IN (SELECT DISTINCT Currency FROM #Subsidiary)
+	CREATE TABLE #Exchange (ExFromDate DATE, ExToDate DATE, ExchangeID INT, Rate FLOAT)
+	
+	;WITH Currency_CTE (CurrencyID) AS (
+											SELECT DISTINCT currency
+											FROM @tempAg
+										)
+	INSERT INTO #Exchange(ExFromDate, ExToDate, ExchangeID, Rate)
+	SELECT	FirstExchangeDateByMonth, 
+			LastExchangeDateByMonth,
+			ExchangeID,
+			CASE 
+				WHEN @BaseCurrency = 'USD' THEN USD
+				WHEN @BaseCurrency = 'EUR' THEN EUR
+				WHEN @BaseCurrency = 'GBP' THEN GBP
+				WHEN @BaseCurrency = 'MYR' THEN MYR
+				WHEN @BaseCurrency = 'CNY' THEN CNY
+				WHEN @BaseCurrency = 'THB' THEN THB
+				WHEN @BaseCurrency = 'IDR' THEN IDR
+				ELSE 1
+			END
+	FROM dbo.Lrf_f_GetSubExchangeDaily(@FromDate, @ToDate) e
+	INNER JOIN Currency_CTE c ON e.ExchangeId = c.CurrencyID
 			  
 	SELECT   
 		s.recommend,
@@ -356,47 +376,17 @@ BEGIN
 		SUM(LicenseeWL)	AS LicenseeWL,
 		SUM(SubsidiaryComm)	AS SubsidiaryComm,
 
-		SUM(Turnover*e.USD)	AS TurnoverUSD, 
-		SUM(Winlost*e.USD)	AS WinlostUSD,
-		SUM(LicenseeWL*e.USD) AS LicenseeWLUSD,
-		SUM(SubsidiaryComm*e.USD) AS SubsidiaryCommUSD,
-
-		SUM(Turnover*e.EUR)	AS TurnoverEUR, 
-		SUM(Winlost*e.EUR)	AS WinlostEUR,
-		SUM(LicenseeWL*e.EUR) AS LicenseeWLEUR,
-		SUM(SubsidiaryComm*e.EUR) AS SubsidiaryCommEUR,
-
-		SUM(Turnover*e.GBP)	AS TurnoverGBP, 
-		SUM(Winlost*e.GBP)	AS WinlostGBP,
-		SUM(LicenseeWL*e.GBP) AS LicenseeWLGBP,
-		SUM(SubsidiaryComm*e.GBP) AS SubsidiaryCommGBP,
-
-		SUM(Turnover*e.MYR)	AS TurnoverMYR, 
-		SUM(Winlost*e.MYR)	AS WinlostMYR,
-		SUM(LicenseeWL*e.MYR) AS LicenseeWLMYR,
-		SUM(SubsidiaryComm*e.MYR) AS SubsidiaryCommMYR,
-
-		SUM(Turnover*e.CNY)	AS TurnoverCNY, 
-		SUM(Winlost*e.CNY)	AS WinlostCNY,
-		SUM(LicenseeWL*e.CNY) AS LicenseeWLCNY,
-		SUM(SubsidiaryComm*e.CNY) AS SubsidiaryCommCNY,
-
-		SUM(Turnover*e.THB)	AS TurnoverTHB, 
-		SUM(Winlost*e.THB)	AS WinlostTHB,
-		SUM(LicenseeWL*e.THB) AS LicenseeWLTHB,
-		SUM(SubsidiaryComm*e.THB) AS SubsidiaryCommTHB,
-
-		SUM(Turnover*e.IDR)	AS TurnoverIDR, 
-		SUM(Winlost*e.IDR)	AS WinlostIDR,
-		SUM(LicenseeWL*e.IDR) AS LicenseeWLIDR,
-		SUM(SubsidiaryComm*e.IDR) AS SubsidiaryCommIDR
+		SUM(Turnover*e.Rate)		AS TurnoverBase, 
+		SUM(Winlost*e.Rate)			AS WinlostBase,
+		SUM(LicenseeWL*e.Rate)		AS LicenseeWLBase,
+		SUM(SubsidiaryComm*e.Rate)	AS SubsidiaryCommBase
 	FROM	
 		#Subsidiary s   
-		INNER JOIN #TempExchange e ON s.winlostdate = e.ExchangeDate AND s.currency = e.ExchangeId
+		INNER JOIN #Exchange e ON s.winlostdate BETWEEN e.ExFromDate AND e.ExToDate AND s.currency = e.ExchangeId
 	GROUP BY  s.recommend, s.currency, s.ProductCode
 
 	DROP TABLE #Subsidiary
-	DROP TABLE #TempExchange
+	DROP TABLE #Exchange
 	DROP TABLE #BettypeProduct
 	DROP TABLE #SporttypeProduct
 
