@@ -20,9 +20,9 @@ AS
 BEGIN
 	SET NOCOUNT ON
 	
-	DECLARE @OperatorID VARCHAR(50)
+	DECLARE @OperatorID VARCHAR(50), @SiteName VARCHAR(50)
 	
-	SELECT @UserLevel = UserLevel, @OperatorID = OperatorID
+	SELECT @UserLevel = UserLevel, @OperatorID = OperatorID, @SiteName = SiteName
 	FROM dbo.Users WITH (NOLOCK)
 	WHERE UserSEQ = @UserSEQ
 	
@@ -30,7 +30,7 @@ BEGIN
 	BEGIN
 		SELECT AgentID, Currency
 		FROM dbo.Operator WITH (NOLOCK)
-		WHERE OperatorID = @OperatorID
+		WHERE OperatorID = @OperatorID AND SiteName = @SiteName
 	END
 END
 GO
