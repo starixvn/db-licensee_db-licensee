@@ -354,8 +354,7 @@ BEGIN
 	FROM dbo.Lrf_f_GetSubExchangeDaily(@FromDate, @ToDate) e
 	INNER JOIN Currency_CTE c ON e.ExchangeId = c.CurrencyID
 			  
-	SELECT   
-		s.custid,
+	SELECT
 		s.Currency,
 		c.username,  
 		SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS nickname,	 
@@ -373,7 +372,7 @@ BEGIN
 		#Subsidiary s
 		INNER JOIN Customer c WITH (NOLOCK) ON s.custid = c.custid	
 		INNER JOIN #Exchange e ON s.winlostdate BETWEEN e.ExFromDate AND e.ExToDate AND s.currency = e.ExchangeId
-	GROUP BY s.custid, c.username, c.username2, s.currency
+	GROUP BY c.username, c.username2, s.currency
 	
 	DROP TABLE #Subsidiary
 	DROP TABLE #Exchange
