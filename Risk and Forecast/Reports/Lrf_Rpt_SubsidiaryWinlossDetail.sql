@@ -309,7 +309,7 @@ BEGIN
 					AND b.roleid = 1
 					AND (b.statusID IN (112,113,114,115) OR (@IncludeRaw = 1 AND b.statusID = 111)) --exclude REJECT bets
 					AND b.isBA = 0
-				GROUP BY b.Winlostdate, b.custid, b.currency
+				GROUP BY b.Winlostdate, b.custid, a.currency
 		END
 	END
 		
