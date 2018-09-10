@@ -76,7 +76,6 @@ BEGIN
 	INSERT INTO @productCodes
 	SELECT val 
 	FROM strSplit(@ProductList, ',')
-	
 	----- End Get Product code
 
 	----- Get SportBettypeMatrix
@@ -113,6 +112,13 @@ BEGIN
 
 		IF EXISTS (SELECT 1 FROM @productCodes WHERE Code = 'BA')  ---- BA Product
 		BEGIN
+			;WITH BA AS
+			(
+				SELECT DISTINCT transid
+				FROM
+					bodb_licensee.dbo.LicenseeBATransaction_active BA WITH(NOLOCK)
+					INNER JOIN @tempAg r ON BA.recommend = r.custID
+			)
 			INSERT INTO #Subsidiary (Winlostdate, custid, Currency, BetCount, Turnover, Winlost, SubsidiaryComm, LicenseeWL)
 			SELECT
 				b.Winlostdate,
@@ -123,9 +129,9 @@ BEGIN
 				SUM (b.winlost-b.actual_stake) AS Winlost,
 				SUM (b.comm) AS SubsidiaryComm,  ---- BA Comm
 				0 AS LicenseeWL
-			FROM bodb_licensee.dbo.LicenseeBATransaction_active BA WITH(NOLOCK) 
-				INNER JOIN @TempAg a ON BA.recommend = a.custID
-				INNER JOIN dbo.bettrans b WITH (NOLOCK) ON b.transid = BA.transid AND b.recommend = BA.recommend
+			FROM dbo.bettrans b WITH (NOLOCK)
+				INNER JOIN @TempAg a ON a.CustID = b.recommend
+				INNER JOIN BA WITH (NOLOCK) ON b.transid = BA.transid
 			WHERE
 				b.winlostdate BETWEEN @FDate AND @TDate
 				AND (b.statusID IN (112, 113) OR (@IncludeRaw = 1 AND b.statusID = 111))
@@ -141,10 +147,10 @@ BEGIN
 				b.Winlostdate,
 				b.custid,
 				a.currency,
-				COUNT(CASE WHEN b.bettype = 903 THEN 0 ELSE b.transid END) AS BetCount,
+				COUNT(CASE WHEN RAND() + 1 > 0 AND b.bettype = 903 THEN 0 ELSE b.transid END) AS BetCount,
 				0 AS Turnover,
-				SUM(CASE WHEN b.bettype = 903 THEN 0 ELSE b.winlost-b.actual_stake END) AS Winlost,
-				SUM(CASE WHEN b.bettype = 903 THEN b.awinlost ELSE 0 END) AS SubsidiaryComm,   ----BetTradeComm
+				SUM(CASE WHEN RAND() + 1 > 0 AND b.bettype = 903 THEN 0 ELSE b.winlost-b.actual_stake END) AS Winlost,
+				SUM(CASE WHEN RAND() + 1 > 0 AND b.bettype = 903 THEN b.awinlost ELSE 0 END) AS SubsidiaryComm,   ----BetTradeComm
 				0 AS LicenseeWL
 			FROM dbo.bettrans b WITH (NOLOCK)
 				INNER JOIN @TempAg a ON a.CustID = b.recommend
@@ -232,7 +238,7 @@ BEGIN
 			WHERE
 				b.winlostdate BETWEEN @FDate AND @TDate
 				AND b.roleid = 1
-				AND ( b.statusID <> 101 AND (@IncludeRaw = 1 OR b.statusID <> 111 )) --exclude REJECT bets
+				AND (b.statusID <> 101 AND (@IncludeRaw = 1 OR b.statusID <> 111 )) --exclude REJECT bets
 				AND b.isBA = 1
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
@@ -247,10 +253,10 @@ BEGIN
 				b.Winlostdate,
 				b.custid,
 				a.currency,
-				SUM(CASE WHEN b.bettype = 903 THEN 0 ELSE b.BetCount END) AS BetCount,
+				SUM(CASE WHEN RAND() + 1 > 0 AND b.bettype = 903 THEN 0 ELSE b.BetCount END) AS BetCount,
 				0 AS Turnover,
-				SUM(CASE WHEN b.bettype = 903 THEN 0 ELSE b.winlost END) AS Winlost,
-				SUM(CASE WHEN b.bettype = 903 THEN b.awinlost ELSE 0 END) AS SubsidiaryComm,
+				SUM(CASE WHEN RAND() + 1 > 0 AND b.bettype = 903 THEN 0 ELSE b.winlost END) AS Winlost,
+				SUM(CASE WHEN RAND() + 1 > 0 AND b.bettype = 903 THEN b.awinlost ELSE 0 END) AS SubsidiaryComm,
 				0 AS LicenseeWL
 			FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)
 				INNER JOIN @TempAg a ON b.recommend = a.custid
