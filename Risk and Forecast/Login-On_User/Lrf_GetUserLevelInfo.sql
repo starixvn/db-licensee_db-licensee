@@ -1,9 +1,9 @@
 /*<info serverAlias="DBCUST-SiteConfig" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 
 CREATE PROCEDURE [dbo].[Lrf_GetUserLevelInfo]  	
-	@UserSEQ	INT,
-	@UserLevel	INT OUTPUT,
-	@HasSubsidiary	INT OUTPUT
+	@UserSEQ		INT,
+	@UserLevel		INT OUTPUT,
+	@HasSubsidiary	BIT OUTPUT
 AS 
 /*  Created: 20180905@Amanda
     Description: LAP - Get user level info
@@ -33,8 +33,6 @@ BEGIN
 		SELECT AgentID, Currency
 		FROM dbo.Operator WITH (NOLOCK)
 		WHERE OperatorID = @OperatorID AND SiteName = @SiteName
-		
-		SET @HasSubsidiary = 1
 	END
 	ELSE
 	BEGIN
