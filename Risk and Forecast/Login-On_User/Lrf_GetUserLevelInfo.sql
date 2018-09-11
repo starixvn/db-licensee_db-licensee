@@ -2,7 +2,8 @@
 
 CREATE PROCEDURE [dbo].[Lrf_GetUserLevelInfo]  	
 	@UserSEQ	INT,
-	@UserLevel	INT OUTPUT
+	@UserLevel	INT OUTPUT,
+	@HasSubsidiary	INT OUTPUT
 AS 
 /*  Created: 20180905@Amanda
     Description: LAP - Get user level info
@@ -21,6 +22,7 @@ BEGIN
 	SET NOCOUNT ON
 	
 	DECLARE @OperatorID VARCHAR(50), @SiteName VARCHAR(50)
+	SET @HasSubsidiary = 0
 	
 	SELECT @UserLevel = UserLevel, @OperatorID = OperatorID, @SiteName = SiteName
 	FROM dbo.Users WITH (NOLOCK)
@@ -31,6 +33,14 @@ BEGIN
 		SELECT AgentID, Currency
 		FROM dbo.Operator WITH (NOLOCK)
 		WHERE OperatorID = @OperatorID AND SiteName = @SiteName
+		
+		SET @HasSubsidiary = 1
+	END
+	ELSE
+	BEGIN
+		SELECT TOP 1 @HasSubsidiary = 1
+		FROM dbo.Operator WITH (NOLOCK)
+		WHERE SiteName = @SiteName
 	END
 END
 GO
