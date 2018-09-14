@@ -33,13 +33,13 @@ BEGIN
 	BEGIN
 		SELECT AgentID, Currency
 		FROM dbo.Operator WITH (NOLOCK)
-		WHERE OperatorID = @OperatorID AND SiteName = @SiteName
+		WHERE OperatorID = @OperatorID AND SiteName = @SiteName AND OperatorID <> '' AND OperatorID IS NOT NULL
 	END
 	ELSE
 	BEGIN
 		SELECT TOP 1 @HasSubsidiary = 1
 		FROM dbo.Operator WITH (NOLOCK)
-		WHERE SiteName = @SiteName
+		WHERE SiteName = @SiteName AND OperatorID <> '' AND OperatorID IS NOT NULL
 	END
 END
 GO

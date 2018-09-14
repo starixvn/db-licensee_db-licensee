@@ -16,10 +16,6 @@ AS
 BEGIN
 	 SELECT AgentID, OperatorID, Currency
 	 FROM Operator WITH(NOLOCK)
-	 WHERE SiteName = @LicenseeName
+	 WHERE SiteName = @LicenseeName AND OperatorID <> '' AND OperatorID IS NOT NULL
 END
-GO
-GRANT EXECUTE ON [dbo].[Lrf_SubsidiarySel] TO [bodbLicenseeNet]
-GO
-GRANT VIEW definition ON [dbo].[Lrf_SubsidiarySel] TO vnteam
 GO
