@@ -281,7 +281,6 @@ BEGIN
 				c.username2 	LIKE '%$%' 	+ @Username + '%'
 				OR c.username	LIKE '%' 	+ @Username + '%'
 			) AND c.roleid = 1
-			AND c.roleid = 1
 		OPTION(RECOMPILE)
 
 		IF(@@ROWCOUNT = 0) GOTO OutputResult;
