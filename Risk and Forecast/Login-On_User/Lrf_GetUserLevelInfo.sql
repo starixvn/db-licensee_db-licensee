@@ -37,7 +37,7 @@ BEGIN
 	END
 	ELSE
 	BEGIN
-		SELECT TOP 1 @HasSubsidiary = 1
+		SELECT TOP(1) @HasSubsidiary = 1
 		FROM dbo.Operator WITH (NOLOCK)
 		WHERE SiteName = @SiteName AND OperatorID <> '' AND OperatorID IS NOT NULL
 	END

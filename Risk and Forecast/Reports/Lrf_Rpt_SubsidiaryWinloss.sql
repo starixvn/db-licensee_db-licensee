@@ -41,10 +41,8 @@ BEGIN
 		Betcount		INT,
 		Turnover		MONEY,		
 		Winlost			MONEY,
-		LicenseeWL	MONEY,
-		SubsidiaryComm	MONEY
+		LicenseeWL		MONEY
 	)
-	
 
 	DECLARE @FDate DATE, @TDate DATE
 	SELECT @FDate = @FromDate, @TDate = @ToDate
@@ -112,92 +110,10 @@ BEGIN
 			SET @FDate = DATEADD(DAY,1,@MoveBetsDay)
 		ELSE
 			SET @FDate = @FromDate
-	   
-
-		IF EXISTS (SELECT 1 FROM @productCodes WHERE Code = 'BA')  ---- BA Product
-		BEGIN
-			;WITH BA AS
-			(
-				SELECT DISTINCT transid
-				FROM
-					bodb_licensee.dbo.LicenseeBATransaction_active BA WITH(NOLOCK)
-					INNER JOIN @tempAg r ON BA.recommend = r.custID
-			)
-			INSERT INTO #Subsidiary (Winlostdate, recommend, Currency, ProductCode, BetCount, Turnover, Winlost, SubsidiaryComm, LicenseeWL)
-			SELECT
-				b.Winlostdate,	
-				b.recommend,
-				a.currency,
-				'BA' ProductCode,  
-				COUNT(b.transid) AS BetCount,
-				SUM(stake) AS Turnover, 
-				SUM(b.winlost-b.actual_stake) AS Winlost,
-				SUM(b.comm) AS SubsidiaryComm,  ---- BA Comm
-				0 AS LicenseeWL
-			FROM dbo.bettrans b WITH (NOLOCK)
-				INNER JOIN @TempAg a 
-					ON a.CustID = b.recommend   
-				INNER JOIN BA WITH (NOLOCK) 
-					ON b.transid = BA.transid 	 	
-			WHERE	
-				b.winlostdate BETWEEN @FDate AND @TDate
-				AND (b.statusID IN (112, 113) OR (@IncludeRaw = 1 AND b.statusID = 111))
-			GROUP BY   
-				b.Winlostdate, b.recommend, a.currency
-		END
-
-
-		IF EXISTS (SELECT 1 FROM @productCodes WHERE Code = 'BT')  ---- Bettrade Product
-		BEGIN
-			INSERT INTO #Subsidiary (Winlostdate, recommend, Currency, ProductCode, BetCount, Turnover, Winlost, SubsidiaryComm, LicenseeWL)
-			SELECT
-				b.Winlostdate,	
-				b.recommend,
-				a.currency,
-				'BT' ProductCode,  
-				COUNT(CASE WHEN RAND() + 1 > 0 AND b.bettype = 903 THEN NULL ELSE b.transid END) AS BetCount,
-				0 AS Turnover, 
-				SUM(CASE WHEN RAND() + 1 > 0 AND b.bettype = 903 THEN 0 ELSE b.winlost-b.actual_stake END) AS Winlost,
-				SUM(CASE WHEN RAND() + 1 > 0 AND b.bettype = 903 THEN b.awinlost ELSE 0 END) AS SubsidiaryComm,   ----BetTradeComm
-				0 AS LicenseeWL
-			FROM dbo.bettrans b WITH (NOLOCK)
-				INNER JOIN @TempAg a 
-					ON a.CustID = b.recommend  					 	
-			WHERE b.winlostdate BETWEEN @FDate AND @TDate
-				  AND (b.statusID IN (112, 113) OR (@IncludeRaw = 1 AND b.statusID = 111))
-				  AND b.bettype IN (901,902,903)
-			GROUP BY   
-				b.Winlostdate, b.recommend, a.currency
-		END
-
-
-		IF EXISTS (SELECT 1 FROM @productCodes WHERE Code = 'CO')  ---- Cashout Product
-		BEGIN
-			INSERT INTO #Subsidiary (Winlostdate, recommend, Currency, ProductCode, BetCount, Turnover, Winlost, SubsidiaryComm, LicenseeWL)
-			SELECT
-				b.Winlostdate,	
-				b.recommend,
-				a.currency,
-				'CO' ProductCode,  
-				COUNT(b.transid) AS BetCount,
-				0 AS Turnover, 
-				0 AS Winlost,
-				SUM (b.awinlost) AS SubsidiaryComm,   ----Cashout Comm
-				0 AS LicenseeWL
-			FROM dbo.bettrans b WITH (NOLOCK)
-				INNER JOIN @TempAg a 
-					ON a.CustID = b.recommend  					 	
-			WHERE b.winlostdate BETWEEN @FDate AND @TDate
-				  AND (b.statusID IN (112, 113) OR (@IncludeRaw = 1 AND b.statusID = 111))
-				  AND b.bettype = 913
-			GROUP BY   
-				b.Winlostdate, b.recommend, a.currency
-		END
-
 		
 		IF EXISTS (SELECT TOP 1 1 FROM #BettypeProduct)  ---- exclude BA , BT, CO
 		BEGIN
-			INSERT INTO #Subsidiary (Winlostdate, recommend, Currency, ProductCode, BetCount, Turnover, Winlost, SubsidiaryComm, LicenseeWL)
+			INSERT INTO #Subsidiary (Winlostdate, recommend, Currency, ProductCode, BetCount, Turnover, Winlost, LicenseeWL)
 			SELECT
 				b.Winlostdate,   
 				b.recommend,
@@ -205,8 +121,7 @@ BEGIN
 				p.ProductCode,
 				COUNT(b.transid) AS BetCount,
 				SUM(stake) AS Turnover, 
-				SUM(b.winlost-b.actual_stake) AS Winlost,  
-				0 AS SubsidiaryComm,
+				SUM(b.winlost-b.actual_stake) AS Winlost,
 				- SUM(b.winlost - b.actual_stake) AS LicenseeWL
 			FROM 
 				dbo.bettrans b WITH (NOLOCK)  
@@ -221,9 +136,7 @@ BEGIN
 			GROUP BY   
 				b.Winlostdate, b.recommend, a.currency, 
 				p.ProductCode
-		END	
-
-		 
+		END
 	END
 		
 	IF @FromDate <= @MoveBetsDay 
@@ -233,86 +146,10 @@ BEGIN
 				SET @TDate = @MoveBetsDay
 			ELSE
 				SET @TDate = @ToDate
-	
-
-		IF EXISTS (SELECT 1 FROM @productCodes WHERE Code = 'BA')  ---- BA 
-		BEGIN
-			INSERT INTO #Subsidiary (Winlostdate, recommend, Currency, ProductCode, BetCount, Turnover, Winlost, SubsidiaryComm, LicenseeWL)
-			SELECT  
-				b.Winlostdate, 
-				b.recommend,
-				a.currency,
-				'BA' AS ProductCode,
-				SUM (b.betcount) AS BetCount,
-				SUM (b.turnover) AS Turnover, 
-				SUM (b.winlost) AS Winlost,  
-				SUM (b.comm) AS SubsidiaryComm,
-				0 AS LicenseeWL
-			FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)  				
-				INNER JOIN @TempAg a ON b.recommend = a.custid 
-			WHERE 
-				b.winlostdate BETWEEN @FDate AND @TDate  				
-				AND b.roleid = 1   
-				AND ( b.statusID <> 101 AND (@IncludeRaw = 1 OR b.statusID <> 111 )) --exclude REJECT bets
-				AND b.isBA = 1 
-				AND (b.bettype < 901 OR b.bettype > 904)
-				AND (b.bettype < 911 OR b.bettype > 914)
-			GROUP BY   
-				b.Winlostdate, b.recommend, a.currency 
-		END	
-
-		IF EXISTS (SELECT 1 FROM @productCodes WHERE Code = 'BT')  
-		BEGIN
-			INSERT INTO #Subsidiary (Winlostdate, recommend, Currency, ProductCode, BetCount, Turnover, Winlost, SubsidiaryComm, LicenseeWL)
-			SELECT  
-				b.Winlostdate, 
-				b.recommend,
-				a.currency,
-				'BT' AS ProductCode,
-				SUM(CASE WHEN RAND() + 1 > 0 AND b.bettype = 903 THEN 0 ELSE b.BetCount END) AS BetCount,
-				0 AS Turnover, 
-				SUM(CASE WHEN RAND() + 1 > 0 AND b.bettype = 903 THEN 0 ELSE b.winlost END) AS Winlost,     
-				SUM(CASE WHEN RAND() + 1 > 0 AND b.bettype = 903 THEN b.awinlost ELSE 0 END) AS SubsidiaryComm,
-				0 AS LicenseeWL
-			FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)  				
-				INNER JOIN @TempAg a ON b.recommend = a.custid 
-			WHERE 
-				b.winlostdate BETWEEN @FDate AND @TDate  				
-				AND b.roleid = 1   
-				AND (b.statusID IN (112, 113) OR (@IncludeRaw = 1 AND b.statusID = 111)) --exclude REJECT bets
-				AND b.bettype IN (901,902,903)
-			GROUP BY   
-				b.Winlostdate, b.recommend, a.currency 
-		END	
-
-		IF EXISTS (SELECT 1 FROM @productCodes WHERE Code = 'CO') 
-		BEGIN
-			INSERT INTO #Subsidiary (Winlostdate, recommend, Currency, ProductCode, BetCount, Turnover, Winlost, SubsidiaryComm, LicenseeWL)
-			SELECT  
-				b.Winlostdate, 
-				b.recommend,
-				a.currency,
-				'CO' AS ProductCode,
-				SUM(b.BetCount) AS BetCount,
-				0 AS Turnover, 
-				0 AS Winlost,  
-				SUM(b.awinlost) AS SubsidiaryComm,
-				0 AS LicenseeWL
-			FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)  				
-				INNER JOIN @TempAg a ON b.recommend = a.custid 
-			WHERE 
-				b.winlostdate BETWEEN @FDate AND @TDate  				
-				AND b.roleid = 1   
-				AND (b.statusID IN (112, 113) OR (@IncludeRaw = 1 AND b.statusID = 111)) --exclude REJECT bets
-				AND b.bettype = 913
-			GROUP BY   
-				b.Winlostdate, b.recommend, a.currency 
-		END	
-
 
 		IF EXISTS (SELECT TOP 1 1 FROM #BettypeProduct)     --- exclude BA , BT, CO
 		BEGIN
-				INSERT INTO #Subsidiary (Winlostdate, recommend, Currency, ProductCode, BetCount, Turnover, Winlost, SubsidiaryComm, LicenseeWL)
+				INSERT INTO #Subsidiary (Winlostdate, recommend, Currency, ProductCode, BetCount, Turnover, Winlost, LicenseeWL)
 				SELECT   
 					b.Winlostdate,
 					b.recommend,
@@ -321,7 +158,6 @@ BEGIN
 					SUM (b.betcount) AS BetCount,
 					SUM (b.turnover) AS Turnover,
 					SUM (b.winlost) AS Winlost,
-					0 AS SubsidiaryComm,
 					-SUM(b.winlost) AS LicenseeWL
 				FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)
 					INNER JOIN #SporttypeProduct p ON b.sporttype = p.sporttype
@@ -364,17 +200,15 @@ BEGIN
 	SELECT   
 		s.recommend,
 		s.Currency,
-		s.ProductCode,		 
+		s.ProductCode,
 		SUM (BetCount)	AS BetCount,
 		SUM(Turnover)	AS Turnover, 
 		SUM(Winlost)	AS Winlost,
 		SUM(LicenseeWL)	AS LicenseeWL,
-		SUM(SubsidiaryComm)	AS SubsidiaryComm,
 
 		SUM(Turnover*e.Rate)		AS TurnoverBase, 
 		SUM(Winlost*e.Rate)			AS WinlostBase,
-		SUM(LicenseeWL*e.Rate)		AS LicenseeWLBase,
-		SUM(SubsidiaryComm*e.Rate)	AS SubsidiaryCommBase
+		SUM(LicenseeWL*e.Rate)		AS LicenseeWLBase
 	FROM	
 		#Subsidiary s   
 		INNER JOIN #Exchange e ON s.winlostdate BETWEEN e.ExFromDate AND e.ExToDate AND s.currency = e.ExchangeId
