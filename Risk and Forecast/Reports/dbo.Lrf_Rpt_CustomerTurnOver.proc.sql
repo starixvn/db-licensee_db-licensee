@@ -15,7 +15,6 @@ ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
 	,@Odds 			FLOAT
 	,@ReportBy  	TINYINT   =  1 
 	,@MoveBetsDay 	SMALLDATETIME
-	,@BalanceUpDay 	SMALLDATETIME
 	,@Langkey 		NVARCHAR(10) =  'en-US'
 	,@PageSize 		INT =  1000
 	,@PageIndex 	INT =  1
@@ -81,7 +80,6 @@ Parameter's Explanation:
 	- @SportID   : Sport type ID  
 	- @bettype   : Bet type ID  
 	- @MoveBetsDay: The day we move tickets to bettrans14
-	- @BalanceUpDay: The day we move tickets to bettrans_bk	
 			
 */
 BEGIN
