@@ -78,9 +78,6 @@ BEGIN
 			INNER JOIN #tempCustPaging c 
 			ON  b.custid		= c.custid 
 			AND c.winlostdate 	= b.winlostdate
-		
-		WHERE b.winlostdate BETWEEN @tempFromDate AND @pEndDate
-		
 		GROUP BY
 			c.rowno
 			,c.winlostdate 
