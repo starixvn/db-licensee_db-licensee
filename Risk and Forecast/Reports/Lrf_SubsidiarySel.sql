@@ -10,6 +10,7 @@ AS
 
 	 Revisions:
 	  - 20171226@Walter: Select Operator By Licensee Name [Redmine: #88398]
+	  - 20180914@Amanda: Remove empty OperatorId from returned data [Redmine: #95177]
 
 	 Example:
 	  exec Lrf_SubsidiarySel @LicenseeName='12bet'
