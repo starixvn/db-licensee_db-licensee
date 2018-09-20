@@ -9,7 +9,6 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail]
 	 @ToDate		SMALLDATETIME,   
 	 @ProductList	VARCHAR(MAX) = '',
 	 @MoveBetsDay	SMALLDATETIME,
-	 @IsOld			BIT = 0,
 	 @drawfilter	SMALLINT = 1  ,
 	 @AgentList		VARCHAR(MAX)
 WITH RECOMPILE
@@ -65,7 +64,6 @@ AS
 
 	Param's Explanation:  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
-	  + @IsOld: 0 - query in table rptLicWinloss, 1 - query in table rptLicWinloss_old. 
 	  + @excludeTest: remove currency UUS	  
 	  + @MoveBetsDay: The day we move tickets to bettrans14
 	  + @AgentList: xml structure
@@ -310,7 +308,7 @@ BEGIN
 				b.custid, ba.currency
 		END
 	
-		---#4.2: Begin: Get data for VS, VS2 product
+		---#4.2: Begin: Get data for VS Parlay
 		IF EXISTS (SELECT 1 FROM @bettype WHERE ProductCode = 'VS2')
 		BEGIN					
 			INSERT INTO #SAgWinLoss
@@ -414,7 +412,7 @@ BEGIN
 						ELSE bt.ProductCode + CONVERT(varchar(10), vs.sporttype)
 					END					
 				ELSE bt.ProductCode END AS ProductCode,
-				SUM(CASE WHEN b.bettype in (33, 43) AND b.liveawayscore = 0 THEN stake/2 ELSE stake END *			
+				SUM(stake *			
 					CASE WHEN b.statusID = 111 THEN 0|@sumTurnOver
 							WHEN bt.ProductCode = 'SB' AND (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0)
 						ELSE 1 END
@@ -847,185 +845,6 @@ BEGIN
 		END	
 	END 
 	---#5: END: Get Sum data from Sum Table Before Move Bets Day 
-
-	---#6: BEGIN: Handle for old data
-	IF @IsOld = 1 
-	BEGIN
-		SELECT @MaxOldDate = MAX(winlostdate) FROM bodb_Licenseereport.dbo.rptLicWinloss_old (NOLOCK)
-		IF @TDate >= @MaxOldDate
-				SET @TempToDate = @MaxOldDate
-			ELSE
-				SET  @TempToDate = @TDate
-
-		IF EXISTS (SELECT val FROM strSplit(@ProductList, ',') WHERE Val = 'BA') 
-		BEGIN
-			INSERT INTO #SAgWinLoss  
-			SELECT
-				b.custid,				
-				b.currency,
-				'BA' ProductCode,
-				SUM(b.turnover
-				*	
-					CASE WHEN b.statusID = 111  THEN 0|@sumTurnOver
-						WHEN b.statusID IN (114,115) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0)
-						ELSE 1 END
-				
-				),     
-				SUM(b.winlost),  
-				0 as LicenseeWL,
-				SUM (comm) as Comm,
-				SUM( PlayerComm ) AS PlayerComm, 
-				- SUM (b.awinlost + b.winlost + b.comm) as AmountDueTo3rd,
-
-				------------------EUR
-				SUM(b.turnover
-				*			
-					CASE WHEN b.statusID = 111  THEN 0|@sumTurnOver
-						WHEN b.statusID IN (114, 115) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0)
-						ELSE 1 END
-					* e.EUR
-				) turnoverEUR, 
-				SUM((b.winlost) * e.EUR) AS WinlostEUR,  
-				0 as LicenseeWLEUR,
-				SUM (comm * e.EUR) as CommEUR,
-				SUM ( PlayerComm * e.EUR ) AS PlayerCommEUR,
-				- SUM((b.awinlost + b.winlost + b.comm) * e.EUR) AmountDueTo3rdEUR  ,
-
-				------------------USD
-				SUM(b.turnover
-				*			
-					CASE WHEN b.statusID = 111  THEN 0|@sumTurnOver
-						WHEN b.statusID IN (114, 115) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0)
-						ELSE 1 END
-					* e.USD
-				) turnoverUSD, 
-				SUM(b.winlost * e.USD) AS WinlostUSD,  
-				0 as LicenseeWLUSD,
-				SUM (comm * e.USD) as CommUSD,
-				SUM ( PlayerComm * e.USD ) AS PlayerCommUSD,
-				- SUM((b.awinlost + b.winlost + b.comm) * e.USD) AmountDueTo3rdUSD  ,
-
-				---------------GBP
-				SUM(b.turnover
-				*			
-					CASE WHEN b.statusID = 111  THEN 0|@sumTurnOver
-						WHEN b.statusID IN (114, 115) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0)
-						ELSE 1 END
-					* e.GBP
-				) turnoverGBP, 
-				SUM(b.winlost * e.GBP) AS WinlostGBP,  
-				0 as LicenseeWLGBP,
-				SUM (comm * e.GBP) as CommGBP,
-				SUM ( PlayerComm * e.GBP ) AS PlayerCommGBP,
-				- SUM((b.awinlost + b.winlost + b.comm) * e.GBP) AmountDueTo3rdGBP  ,
-
-				SUM(b.betcount
-				* 
-					CASE WHEN b.statusID = 111 THEN 0|@sumBetCount
-						ELSE 1 END
-				)
-			FROM 
-				bodb_licenseereport.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
-				INNER JOIN @TempAg ag ON b.recommend = ag.custID AND ag.Currency = b.Currency
-				INNER JOIN #Exchange e  
-					ON e.ExchangeID = b.Currency AND b.winlostdate BETWEEN e.FirstExchangeDateByMonth AND e.LastExchangeDateByMonth	
-			WHERE  
-				b.Winlostdate BETWEEN @FDate AND @TempToDate  
-				AND (@MemberID = 0 OR (@MemberID <> 0 AND b.CustId = @MemberID)) 
-				AND b.roleid = 1   
-				AND b.statusID <> 101 --exclude REJECT bets
-				AND b.bettype NOT IN (901,902,903,904)
-				AND ISNULL(b.isBA,0) = 1
-			GROUP BY  b.custid,  b.currency
-		END
-
-		--exclude BA tickets
-		IF EXISTS (SELECT 1 FROM @bettype)
-		BEGIN
-			INSERT INTO #SAgWinLoss  
-			SELECT 
-				b.custid,  
-				b.currency,
-				t.ProductCode,
-				SUM(b.turnover
-				*			
-					CASE WHEN b.statusID = 111  THEN 0|@sumTurnOver
-						WHEN b.statusID IN (114,115) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0)
-						ELSE 1 END			
-				),     
-				SUM(b.winlost),  
-				SUM(CASE WHEN (b.sporttype in(0,161,180,190,193,251,252,202,203,205,208,209,210,212 ))  THEN -1 * b.winlost WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END) AS LicenseeWL ,
-				SUM(comm) as Comm,
-				SUM( playerComm  ) AS PlayerComm,
-				- SUM (b.awinlost + b.winlost + b.comm) as AmountDueTo3rd,
-
-				------------------EUR
-				SUM(b.turnover
-				*			
-					CASE WHEN b.statusID = 111  THEN 0|@sumTurnOver
-						WHEN b.statusID IN (114, 115) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0)
-						ELSE 1 END
-					* e.EUR
-				) turnoverEUR, 
-				SUM((b.winlost) * e.EUR) AS WinlostEUR,  
-				0 as LicenseeWLEUR,
-				SUM (comm * e.EUR) as CommEUR,
-				SUM ( PlayerComm * e.EUR ) AS PlayerCommEUR,
-				- SUM((b.awinlost + b.winlost + b.comm) * e.EUR) AmountDueTo3rdEUR  ,
-
-				------------------USD
-				SUM(b.turnover
-				*			
-					CASE WHEN b.statusID = 111  THEN 0|@sumTurnOver
-						WHEN b.statusID IN (114, 115) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0)
-						ELSE 1 END
-					* e.USD
-				) turnoverUSD, 
-				SUM(b.winlost * e.USD) AS WinlostUSD,  
-				0 as LicenseeWLUSD,
-				SUM (comm * e.USD) as CommUSD,
-				SUM ( PlayerComm * e.USD ) AS PlayerCommUSD,
-				- SUM((b.awinlost + b.winlost + b.comm) * e.USD) AmountDueTo3rdUSD  ,
-
-				---------------GBP
-				SUM(b.turnover
-				*			
-					CASE WHEN b.statusID = 111  THEN 0|@sumTurnOver
-						WHEN b.statusID IN (114, 115) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0)
-						ELSE 1 END
-					* e.GBP
-				) turnoverGBP, 
-				SUM(b.winlost * e.GBP) AS WinlostGBP,  
-				0 as LicenseeWLGBP,
-				SUM (comm * e.GBP) as CommGBP,
-				SUM ( PlayerComm * e.GBP ) AS PlayerCommGBP,
-				- SUM((b.awinlost + b.winlost + b.comm) * e.GBP) AmountDueTo3rdGBP  ,
-
-				SUM(b.betcount
-				* 
-					CASE WHEN b.statusID = 111 THEN 0|@sumBetCount
-						ELSE 1 END 
-				)
-			FROM 
-				bodb_licenseereport.dbo.rptLicWinloss_old b WITH ( NOLOCK )  
-				INNER JOIN @TempAg ag  ON b.recommend = ag.custID AND b.Currency = ag.Currency
-				INNER JOIN @sporttype t ON b.sporttype = t.sporttype
-				INNER JOIN #Exchange e  
-					ON e.ExchangeID = b.Currency AND b.winlostdate BETWEEN e.FirstExchangeDateByMonth AND e.LastExchangeDateByMonth
-			WHERE  
-				  b.Winlostdate BETWEEN @FDate AND @TempToDate  
-				AND (@MemberID = 0 OR (@MemberID <> 0 AND b.CustId = @MemberID))
-				AND b.roleid = 1   
-				AND b.statusID <> 101 --exclude REJECT bets
-				AND b.bettype NOT IN (901,902,903,904)
-				AND ISNULL(b.isBA,0) = 0
-			GROUP BY  
-				b.custid,  
-				b.currency, 
-				t.ProductCode				
-		END	
-	END
-	---#6: END: Handle for old data
 
 
 SELECT   
