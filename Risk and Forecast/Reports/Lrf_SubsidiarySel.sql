@@ -4,12 +4,13 @@ ALTER PROCEDURE [dbo].[Lrf_SubsidiarySel]
 	@LicenseeName NVARCHAR(50)
 AS
 /*
-	 Created by: [20171226@Walter]
-	 Task: Implement Subsidiary Performance report (phase 2)
+	 Created: [20171226@Walter]
+	 Description: Implement Subsidiary Performance report (phase 2)
 	 DB: DBCUST.SiteConfig
-	 Param's Explanation:  
+
 	 Revisions:
 	  - 20171226@Walter: Select Operator By Licensee Name [Redmine: #88398]
+
 	 Example:
 	  exec Lrf_SubsidiarySel @LicenseeName='12bet'
 */

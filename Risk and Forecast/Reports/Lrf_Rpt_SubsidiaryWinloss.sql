@@ -43,6 +43,9 @@ BEGIN
 		Winlost			MONEY,
 		LicenseeWL		MONEY
 	)
+	CREATE TABLE #BettypeProduct (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))
+	CREATE TABLE #SporttypeProduct (sporttype INT, ProductCode VARCHAR(10))
+	CREATE TABLE #Exchange (ExFromDate DATE, ExToDate DATE, ExchangeID INT, Rate FLOAT)
 
 	DECLARE @FDate DATE, @TDate DATE
 	SELECT @FDate = @FromDate, @TDate = @ToDate
@@ -81,25 +84,19 @@ BEGIN
 	----- End Get Product code
 
 	----- Get SportBettypeMatrix
-	BEGIN
-		CREATE TABLE #BettypeProduct (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))
-		CREATE TABLE #SporttypeProduct (sporttype INT, ProductCode VARCHAR(10))
+	DECLARE @IsTest BIT = 0
+	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID) 
+		
+	-- Insert Bettype
+	INSERT INTO #BettypeProduct ( bettype, ProductCode)		--- Don't have ProductCode IN (BA, BT, CO)
+	SELECT DISTINCT BetType, ProductPrefix
+	FROM dbo.f_SportBettypeMatrix_Sel (0, 0, 0, 2, '', @ProductList, @IsTest)
+	WHERE Bettype NOT IN (901, 902, 903, 904, 911, 912, 913, 914)
 
-		DECLARE @IsTest BIT = 0
-		SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID) 
-			
-		-- Insert Bettype
-		INSERT INTO #BettypeProduct ( bettype, ProductCode)		--- Don't have ProductCode IN (BA, BT, CO)
-		SELECT DISTINCT BetType, ProductPrefix
-		FROM dbo.f_SportBettypeMatrix_Sel (0, 0, 0, 2, '', @ProductList, @IsTest)
-		WHERE Bettype NOT IN (901, 902, 903, 904, 911, 912, 913, 914)
-
-		-- Insert Sport Type
-		INSERT INTO #SporttypeProduct ( sporttype, ProductCode )   --- Don't have ProductCode IN (BA, BT, CO)
-		SELECT DISTINCT sporttype, ProductCode
-		FROM dbo.f_LicWinLoss_ProductSportType_Sel(@ProductList)   
-			 
-	END	
+	-- Insert Sport Type
+	INSERT INTO #SporttypeProduct ( sporttype, ProductCode )   --- Don't have ProductCode IN (BA, BT, CO)
+	SELECT DISTINCT sporttype, ProductCode
+	FROM dbo.f_LicWinLoss_ProductSportType_Sel(@ProductList)   
 	-----End Get SportBettypeMatrix
 	
 
@@ -173,9 +170,7 @@ BEGIN
 					b.Winlostdate, b.recommend, a.currency, p.ProductCode
 		END	 
 	END
-		
-	CREATE TABLE #Exchange (ExFromDate DATE, ExToDate DATE, ExchangeID INT, Rate FLOAT)
-	
+
 	;WITH Currency_CTE (CurrencyID) AS (
 											SELECT DISTINCT currency
 											FROM @tempAg
