@@ -24,9 +24,13 @@ BEGIN
 	
 	DECLARE @SiteName VARCHAR(50)
 	
-	SELECT @UserLevel = UserLevel, @OperatorID = OperatorID, @SiteName = SiteName, @HasSubsidiary = SubsidiaryEnabled
+	SELECT @UserLevel = UserLevel, @OperatorID = OperatorID, @SiteName = SiteName
 	FROM dbo.Users WITH (NOLOCK)
 	WHERE UserSEQ = @UserSEQ
+	
+	SELECT @HasSubsidiary = SubsidiaryEnabled
+	FROM dbo.LicVendorProfile WITH (NOLOCK)
+	WHERE SiteName = @SiteName
 	
 	IF @UserLevel = 2
 	BEGIN
