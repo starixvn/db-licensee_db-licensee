@@ -23,9 +23,8 @@ BEGIN
 	SET NOCOUNT ON
 	
 	DECLARE @SiteName VARCHAR(50)
-	SET @HasSubsidiary = 0
 	
-	SELECT @UserLevel = UserLevel, @OperatorID = OperatorID, @SiteName = SiteName
+	SELECT @UserLevel = UserLevel, @OperatorID = OperatorID, @SiteName = SiteName, @HasSubsidiary = SubsidiaryEnabled
 	FROM dbo.Users WITH (NOLOCK)
 	WHERE UserSEQ = @UserSEQ
 	
@@ -34,12 +33,6 @@ BEGIN
 		SELECT AgentID, Currency
 		FROM dbo.Operator WITH (NOLOCK)
 		WHERE OperatorID = @OperatorID AND SiteName = @SiteName AND OperatorID <> '' AND OperatorID IS NOT NULL
-	END
-	ELSE
-	BEGIN
-		SELECT TOP(1) @HasSubsidiary = 1
-		FROM dbo.Operator WITH (NOLOCK)
-		WHERE SiteName = @SiteName AND OperatorID <> '' AND OperatorID IS NOT NULL
 	END
 END
 GO
