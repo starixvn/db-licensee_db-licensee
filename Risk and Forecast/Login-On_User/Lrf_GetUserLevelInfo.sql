@@ -1,10 +1,11 @@
 /*<info serverAlias="DBCUST-SiteConfig" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 
 CREATE PROCEDURE [dbo].[Lrf_GetUserLevelInfo]  	
-	@UserSEQ		INT,
-	@UserLevel		INT OUTPUT,
-	@HasSubsidiary	BIT OUTPUT,
-	@OperatorID VARCHAR(50) OUTPUT
+	@UserSEQ			INT,
+	@VendorID			VARCHAR(50),
+	@UserLevel			INT OUTPUT,
+	@SubsidiaryEnabled	BIT OUTPUT,
+	@OperatorID			VARCHAR(50) OUTPUT
 AS 
 /*  Created: 20180905@Amanda
     Description: LAP - Get user level info
@@ -28,9 +29,9 @@ BEGIN
 	FROM dbo.Users WITH (NOLOCK)
 	WHERE UserSEQ = @UserSEQ
 	
-	SELECT @HasSubsidiary = SubsidiaryEnabled
+	SELECT @SubsidiaryEnabled = SubsidiaryEnabled
 	FROM dbo.LicVendorProfile WITH (NOLOCK)
-	WHERE SiteName = @SiteName
+	WHERE VendorID = @VendorID
 	
 	IF @UserLevel = 2
 	BEGIN
