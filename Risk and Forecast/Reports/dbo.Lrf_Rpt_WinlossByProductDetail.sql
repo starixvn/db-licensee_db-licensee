@@ -129,7 +129,7 @@ BEGIN
 		INSERT INTO @TempAg (custID, currency)
 		SELECT AgentId, Currency
 		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
-		WHERE AgentId = @CustID
+		WHERE @CustID = 0 OR AgentId = @CustID
 
 		EXEC sp_xml_removedocument @DocHandler
 	END TRY
