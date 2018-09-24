@@ -2,7 +2,7 @@
 USE [bodb_licensee]
 GO
 
-ALTER PROCEDURE [dbo].[WriteLog_UserLog_Login]
+ALTER PROCEDURE [dbo].[WriteLog_UserLog_Login] -- not used, change to used WriteLog_UserLog_Login_Lrf on DBLOG.bodb_CustomerLog
     @UserID			INT,  
     @ServerID		INT,   
     @LoginIP		VARCHAR(20)		= '', 
