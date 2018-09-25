@@ -1,6 +1,4 @@
-USE [bodb_licensee]
-GO
-
+/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_ActiveDomainUpd]
 	@Id INT
 AS
@@ -8,8 +6,9 @@ AS
  Created : <Jacob.Phan>    
  Date : <12/20/2012>
     Task : Update Domain Status (Zone A, Zone B)
-    DB  : DB052.bodb_licensee
+    DB  : DBCUST-bodb_Licensee
     Revisions:      
+	- 20180925@Joseph: Migrate to DBCUST [Feature #99855]
 */
 
 	SET NOCOUNT ON
@@ -18,6 +17,3 @@ AS
 	SET IsActive = CASE WHEN Id = @Id THEN 1 ELSE 0 END
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_ActiveDomainUpd] TO [bodbLicenseeNet] 
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_ActiveDomainUpd] TO [vnteam] 
