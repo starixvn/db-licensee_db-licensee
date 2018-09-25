@@ -33,11 +33,5 @@ BEGIN
 	FROM dbo.LicVendorProfile WITH (NOLOCK)
 	WHERE VendorID = @VendorID
 	
-	IF @UserLevel = 2
-	BEGIN
-		SELECT AgentID, Currency
-		FROM dbo.Operator WITH (NOLOCK)
-		WHERE OperatorID = @OperatorID AND SiteName = @SiteName AND OperatorID <> '' AND OperatorID IS NOT NULL
-	END
 END
 GO
