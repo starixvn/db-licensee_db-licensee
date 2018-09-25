@@ -23,14 +23,14 @@ AS
 		- 20180924@Elodie: Insert log when user login
  
 	Param's Explanation:  
-		â€¢ @UserID: main account login.  
-		â€¢ @ServerID: serverID.  
-		â€¢ @DomainName: Domain user login.  
-		â€¢ @LoginIP: IP user login.  
-		â€¢ @BrowserName: Browser user using.  
-		â€¢ @Platform: Platform user login. 
-		â€¢ @CountryCode: CountryCode user login.  
-		â€¢ @Duration: Time process login
+		• @UserID: main account login.  
+		• @ServerID: serverID.  
+		• @DomainName: Domain user login.  
+		• @LoginIP: IP user login.  
+		• @BrowserName: Browser user using.  
+		• @Platform: Platform user login. 
+		• @CountryCode: CountryCode user login.  
+		• @Duration: Time process login
 */  
 BEGIN
 	SET NOCOUNT ON 
@@ -40,7 +40,7 @@ BEGIN
 				@ServerID = @ServerID,
 				@LoginIP = @LoginIP,
 				@DomainName = @DomainName,	
-				@ActionID = 2301,
+				@ActionID = @ActionID,
 				@Doing = @Doing,
 				@BrowserName = @BrowserName,
 				@Platform = @Platform,

@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet,bodbDownlineNet,bodbExtAccNet,Dot_Member,vnteam" viewers="vnteam" isFunction="0"></info>*/
+﻿/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet,bodbDownlineNet,bodbExtAccNet,Dot_Member" viewers="vnteam" isFunction="0"></info>*/
  ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberBAStatus]
 	@LicenseeID INT,
 	@CustID INT,
@@ -15,8 +15,7 @@ AS
 /*
 Created: 20110606@Henry
 Task : Update Bet Aggregator ON/OFF for member
-DB: DBTXN/CustDB
-
+DB: DBCUST/CustDB
 
 Revisions:
 	- 20110728@Henry: Add new bettypes: Warrior, NextCombo, Number Group + remove Over/Under Dead Ball
@@ -52,6 +51,7 @@ Revisions:
 	- 20151015@Jim: Integrate Sportbook2 (Feature #44759)
 	- 20170509@Winnie: LRF-Set back VR setting=0 for BA members [RedmineID:#76231]
 	- 20171012@Winnie: LRF - Edit for Bonus system [RedmineID: #72792]
+	- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
 
 Param's Explanation:
 
@@ -74,7 +74,7 @@ DECLARE @EnableVirtualrate BIT=0
 IF @IsAdmin = 0 --This is only for LRF system
 BEGIN
 	--For Power BA users, no need to call function [Lrf_BATimeCheck]
-	IF EXISTS (SELECT 1 FROM DBLIC.bodb_licensee.dbo.LicenseeUserFunctions WITH (NOLOCK) WHERE FunctionID = 54 AND UserID = @ModifyBy)	
+	IF EXISTS (SELECT 1 FROM bodb_licensee.dbo.LicenseeUserFunctions WITH (NOLOCK) WHERE FunctionID = 54 AND UserID = @ModifyBy)	
 	BEGIN
 		SELECT @IsAllow = 1	
 		SELECT @IsPowerBAUser = 1
@@ -744,12 +744,4 @@ SET QUOTED_IDENTIFIER OFF
 GO
 SET ANSI_NULLS ON 
 GO
-
-
-GO 
- GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerUpdMemberBAStatus] TO [vnteam]
-GO 
- GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMemberBAStatus] TO [bodbLicenseeNet]
-GO 
- GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMemberBAStatus] TO [bodbAdminNet]
-GO  
+  
