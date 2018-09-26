@@ -207,7 +207,7 @@ BEGIN
 				SUM (comm) as Comm,
 				SUM(PlayerComm) AS PlayerComm,
 				- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd,
-				COUNT(1 * (CASE WHEN b.statusID = 111 THEN 0|@sumBetCount ELSE 1 END)) AS BetCount	
+				SUM(1 * (CASE WHEN b.statusID = 111 THEN 0|@sumBetCount ELSE 1 END)) AS BetCount	
 			FROM 
 				#tmpBA ba
 				CROSS APPLY (	SELECT TOP 1 tmp.winlostdate, tmp.statusID, tmp.modds, tmp.bettype
@@ -240,7 +240,7 @@ BEGIN
 				SUM(comm) as Comm,
 				SUM(PlayerComm) AS PlayerComm,
 				- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd,
-				COUNT(1 * (CASE WHEN b.statusID = 111 THEN 0|@sumBetCount ELSE 1 END)) AS BetCount	
+				SUM(1 * (CASE WHEN b.statusID = 111 THEN 0|@sumBetCount ELSE 1 END)) AS BetCount	
 			FROM 
 				dbo.bettrans b WITH (NOLOCK)
 				CROSS APPLY (	SELECT TOP 1 m.sporttype
@@ -293,7 +293,7 @@ BEGIN
 				SUM(comm) as Comm,
 				SUM(PlayerComm) AS PlayerComm,
 				- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd,
-				COUNT(1 * (CASE WHEN b.statusID = 111 THEN 0|@sumBetCount ELSE 1 END)) AS BetCount	
+				SUM(1 * (CASE WHEN b.statusID = 111 THEN 0|@sumBetCount ELSE 1 END)) AS BetCount	
 			FROM 
 				dbo.bettrans b WITH (NOLOCK)
 				INNER JOIN @TempAg a ON b.recommend = a.custid AND b.Currency = a.Currency 
