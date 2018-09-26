@@ -21,7 +21,12 @@ BEGIN
 	SELECT @CurrencyID = ExchangeID 
 	FROM bodb02.dbo.Exchange WITH (NOLOCK)
 	WHERE Code ='SGD'
-
+	
+	DECLARE @LicenseeID INT
+	SELECT @LicenseeID = LicenseeID
+	FROM dbo.Licensees WITH (NOLOCK)
+	WHERE LicenseeName = 'Wawabet'
+	
 	INSERT INTO @tblLicenseeCurrency (LicenseeID, CurrencyID)
 	SELECT LicenseeId,@CurrencyID AS CurrencyID
 	FROM dbo.Licensees WITH (NOLOCK) 
@@ -37,6 +42,13 @@ BEGIN
 							,'ITCbet'
 							,'Ae88'
 							)
+	UNION ALL 
+	SELECT @LicenseeID AS LicenseeID,ExchangeID AS CurrencyID
+	FROM bodb02.dbo.exchange WITH (NOLOCK)
+	WHERE Code IN (
+					 'EUR','HKD' 
+					)	
+							
 	RETURN						
 END	
 
