@@ -221,7 +221,7 @@ BEGIN
 			SET @TempFromDate = @FDate			
 
 		---#3.1: Begin: Get data for BA product
-		IF EXISTS (SELECT val FROM strSplit(@ProductList, ',') WHERE Val = 'BA')  ---- BA Product
+		IF PATINDEX('%,BA,%', ',' + @ProductList + ',') > 0  ---- BA Product
 		BEGIN	
 					
 			SELECT DISTINCT transid, r.Currency	
@@ -255,7 +255,7 @@ BEGIN
 								WHERE tmp.transid = ba.TransID AND tmp.currency = ba.Currency	
 									AND tmp.winlostdate BETWEEN @TempFromDate AND @TDate 
 									AND tmp.statusID IN (111, 112, 113) 								
-									AND (@CustId = 0 OR (@CustId <> 0 AND tmp.CustId = @CustID))				
+									AND (@CustId = 0 OR tmp.CustId = @CustID)			
 							) AS b	
 			GROUP BY   
 				b.winlostdate,ba.currency					
@@ -289,7 +289,7 @@ BEGIN
 				INNER JOIN @TempAg a ON b.recommend = a.custid AND b.Currency = a.Currency 							
 			WHERE b.bettype = 2799 -- Betradar VS Parlay
 				AND b.winlostdate BETWEEN @TempFromDate AND @TDate   
-				AND (@CustId = 0 OR (@CustId <> 0 AND b.CustId = @CustID)) 
+				AND (@CustId = 0 OR b.CustId = @CustID)
 				AND b.statusID  IN (111, 112, 113)
 				AND b.matchid = 2799
 			GROUP BY b.winlostdate,	a.currency, 'VS2' + CONVERT(varchar(10), s.sporttype)
@@ -339,7 +339,7 @@ BEGIN
 				LEFT JOIN #tmpVS vs ON b.oddsid = vs.Orid AND b.bettype IN (1231,1232,1233,1237,1238,1220,1235,1236)	
 			WHERE 
 				b.winlostdate BETWEEN @TempFromDate AND @TDate 				
-				AND (@CustId = 0 OR (@CustId <> 0 AND b.CustId = @CustID)) 
+				AND (@CustId = 0 OR b.CustId = @CustID)
 				AND b.statusID  IN (111, 112, 113)
 				AND b.matchID > 0 
 				AND (CASE WHEN bt.ProductCode ='SB' THEN b.tpositiontaking ELSE 1 END <> 0 )  --- EXCLUDE BA 
@@ -368,7 +368,7 @@ BEGIN
 				SET  @TempToDate = @TDate
 		
 		---#4.1: Begin: Get data for BA product
-		IF EXISTS (SELECT val FROM strSplit(@ProductList, ',') WHERE Val = 'BA')
+		IF PATINDEX('%,BA,%', ',' + @ProductList + ',') > 0
 		BEGIN
 			INSERT INTO #SAgWinLoss  
 			SELECT 
@@ -392,7 +392,7 @@ BEGIN
 				INNER JOIN @TempAg ag ON b.Currency = ag.Currency AND b.recommend= ag.custID
 			WHERE  
 				  b.Winlostdate BETWEEN @FDate AND @TempToDate  
-				AND (@CustId = 0 OR (@CustId <> 0 AND b.CustId = @CustID))  
+				AND (@CustId = 0 OR b.CustId = @CustID)  
 				AND b.roleid = 1   
 				AND b.statusID <> 101 --exclude REJECT bets
 				AND (b.bettype < 901 OR b.bettype > 904)
@@ -429,7 +429,7 @@ BEGIN
 				INNER JOIN @TempAg ag ON b.recommend = ag.custID AND b.Currency = ag.Currency
 			WHERE  
 				 b.Winlostdate BETWEEN @FDate AND @TempToDate  
-				AND (@CustId = 0 OR (@CustId <> 0 AND b.CustId = @CustID))
+				AND (@CustId = 0 OR b.CustId = @CustID)
 				AND b.roleid = 1   
 				AND b.statusID <> 101 --exclude REJECT bets
 				AND (b.bettype < 901 OR b.bettype > 904)
@@ -591,7 +591,7 @@ BEGIN
 	END 
 	---#4: END: Get Sum data from Sum Table Before Move Bets Day
 
-	---#6: BEGIN: Return final data set
+	---#5: BEGIN: Return final data set
 	DECLARE @MinDate SMALLDATETIME, @MaxDate SMALLDATETIME
 	
 	SELECT @MinDate = MIN (winlostdate),
@@ -603,6 +603,7 @@ BEGIN
 	INSERT INTO #Exchange(FirstExchangeDateByMonth, LastExchangeDateByMonth, ExchangeID, Code, MYR, USD, EUR, CNY, GBP, HKD, THB, IDR)
 	SELECT FirstExchangeDateByMonth, LastExchangeDateByMonth, ExchangeID, Code, MYR, USD, EUR, CNY, GBP, HKD, THB, IDR
 	FROM dbo.Lrf_f_GetSubExchangeDaily(@MinDate, @MaxDate)
+	WHERE exchangeid IN (SELECT Currency FROM @TempAg)	
 
 	SELECT   
 	   CASE WHEN @ReportType = 1 THEN CONVERT(VARCHAR(8),w.winlostdate,112)  
