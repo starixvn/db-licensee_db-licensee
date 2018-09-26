@@ -74,7 +74,7 @@ SELECT @LogSPData ='<Lrf_UserPwdReset custid="'+ COALESCE(CAST(@UserID as VARCHA
 SET @endRun = GETDATE()  
 SET @duration  = datediff (millisecond,@startRun,@endRun)   
 ---------------------------  
-EXEC bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP  
+EXEC LAP_WriteLog_UserLog_RunSP
  @UserID = @UpdateBy,   
  @CustID = @UserID,  
  @ActionID = 2500,  

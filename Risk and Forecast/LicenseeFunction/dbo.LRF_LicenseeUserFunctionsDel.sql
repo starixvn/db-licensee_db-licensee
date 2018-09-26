@@ -48,7 +48,7 @@ IF (@@ERROR<>0)
 		SELECT @ErrMsg = 
 				CASE @Langkey 
 					WHEN 'en-US' THEN 'Delete process is unsuccessful!'
-					ELSE [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200048,@Langkey)
+					ELSE [CustDB].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200048,@Langkey)
 				END, @ErrCode = 101
 	RETURN 			
 	END 
@@ -65,7 +65,7 @@ SELECT @TrackingValue = '<Lrf_LicenseeUserFunctionsDel CustID="'+ COALESCE(CAST(
 SET @endRun = GETDATE()
 SET @duration  = DATEDIFF (MILLISECOND,@startRun,@endRun)	 
 
-EXEC bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
+EXEC LAP_WriteLog_UserLog_RunSP
 	@UserID = @UserID,
 	@CustID = @CustID,
 	@ActionID = 2405,

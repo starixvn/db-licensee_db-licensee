@@ -58,7 +58,7 @@ BEGIN
 				SELECT @ErrMsg = 
 						CASE @Langkey 
 							WHEN 'en-US' THEN 'Update process is unsuccessful!'
-							ELSE [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](90001,@Langkey)
+							ELSE [CustDB].[dbo].[Lrf_f_Get_MsgNamebyMsgID](90001,@Langkey)
 						END, @ErrCode = 101
 			RETURN			
 			END 
@@ -77,7 +77,7 @@ BEGIN
 	SET @endRun = GETDATE()
 	SET @duration  = DATEDIFF (MILLISECOND,@startRun,@endRun)	 
 
-	EXEC bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
+	EXEC LAP_WriteLog_UserLog_RunSP
 		@UserID = @UserID,
 		@CustID = @CustID,
 		@ActionID = 2404,
