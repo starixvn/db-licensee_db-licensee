@@ -1,7 +1,4 @@
-﻿set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
-
+﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_UserPasswordUpd]  
  @UserName VARCHAR(50),    
  @OldPwd VARCHAR(50),   
@@ -12,16 +9,16 @@ ALTER PROCEDURE [dbo].[Lrf_UserPasswordUpd]
  @ErrCode INT = 0 OUTPUT,  
  @ErrMsg nvarchar(4000) = '' OUTPUT  
    
-  
 AS  
 /*  
  * Created: 20101201@ Johnny
  * Task : User change password
- * DB: DB052.bodb_Licensee  
+ * DB: DBCUST-bodb_Licensee
  *  
  * Revisions:     
  - 20111004@Henry: check only LRF pure users (isInternal=0)
  - 20130413@jim: support multi language 
+ - 20180925@Joseph: Migrate to DBCUST [Feature #99855]
 */  
 BEGIN  
 SET NOCOUNT ON;  
@@ -33,7 +30,7 @@ SELECT @UserId = UserId from Users with (nolock) WHERE Username = @UserName AND 
 If isnull(@UserId, 0) = 0
 Begin
 	SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN 'Wrong password.'  
-								   ELSE [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](80001,@Langkey)  
+								   ELSE [CustDB].[dbo].[Lrf_f_Get_MsgNamebyMsgID](80001,@Langkey)  
 								   	
         END ,@ErrCode=101    
     RETURN 
@@ -42,7 +39,7 @@ END
 if exists (SELECT 1 from Users with (nolock) WHERE @UserId = UserId AND Status <> 'Open')
 Begin
 	SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN 'This user is not active.'  
-								   ELSE [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200022,@Langkey)
+								   ELSE [CustDB].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200022,@Langkey)
         END ,@ErrCode=102
     RETURN 
 END
@@ -56,12 +53,9 @@ AND IsInternal = 0
   
  IF (@@ERROR > 0)  
   SELECT @ErrCode = 100, @ErrMsg = CASE @Langkey WHEN 'en-US' THEN 'Cannot change password'  
-												 ELSE [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200025,@Langkey)
+												 ELSE [CustDB].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200025,@Langkey)
 												 END
 END  
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_UserPasswordUpd] TO [bodbLicenseeNet] 
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_UserPasswordUpd] TO [vnteam] 
 

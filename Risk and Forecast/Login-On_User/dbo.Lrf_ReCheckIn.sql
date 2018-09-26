@@ -1,18 +1,19 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_ReCheckIn]     
+﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
+ALTER PROCEDURE [dbo].[Lrf_ReCheckIn]     
 	@On_UserID INT,    
 	@IsKickedOut BIT = 0 OUTPUT    
 AS    
 SET NOCOUNT ON    
 
-
 /*
 	Task: ReCheckIN
-	DB: DB052.bodb_Licensee
+	DB: DBCUST-bodb_Licensee
 	Original SP: On_UserUpd
 	
 	Revisions:
 		- 20101208@Johnny
 		- 20120904@Henry: Fix SLOW problem
+		- 20180925@Joseph: Migrate to DBCUST [Feature #99855]
 
 */
    
@@ -34,11 +35,5 @@ ELSE IF EXISTS (SELECT 1 FROM @OUTPUT WHERE IsKickedOut = 1)
 ELSE
 	SET @IsKickedOut = 0    
     
-    
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_ReCheckIn] TO [bodbLicenseeNet] 
-GO
-GRANT EXECUTE ON [dbo].[Lrf_ReCheckIn] TO [bodbAdminNet] 
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_ReCheckIn] TO [vnteam] 

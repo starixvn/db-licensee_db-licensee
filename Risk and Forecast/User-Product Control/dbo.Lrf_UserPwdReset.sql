@@ -1,8 +1,4 @@
-﻿set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
-
-
+﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_UserPwdReset]
 	@LicenseeID INT	,
 	@UserID INT,
@@ -18,10 +14,11 @@ AS
 /*
 	Created by: [20110405@Henry]
 	Task: Reset Pwd of a Licensee user
-	DB: DB052.bodb_Licensee
+	DB: DBCUST-bodb_Licensee
 	Revisions:
 	- 20111004@Henry: check only LRF pure users (isInternal=0)
 	- 20130413@Jim: support multi language
+	- 20180925@Joseph: Migrate to DBCUST [Feature #99855]
 */
 
 SET NOCOUNT ON
@@ -39,7 +36,7 @@ SELECT @LicenseeName = LicenseeName FROM Licensees (NOLOCK) WHERE LicenseeID = @
 IF NOT EXISTS (SELECT 1 FROM Users (nolock) WHERE  UserID = @UserID AND IsInternal=0)
 BEGIN
 	SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN 'This user does not exist!'
-								   ELSE [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](40002,@Langkey)
+								   ELSE [CustDB].[dbo].[Lrf_f_Get_MsgNamebyMsgID](40002,@Langkey)
         END ,@ErrCode=102 
     RETURN    
 END
@@ -47,7 +44,7 @@ END
 IF NOT EXISTS (SELECT 1 FROM LicenseeUser (nolock) WHERE LicenseeID = @LicenseeID AND UserID = @UserID)
 BEGIN
 	SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN 'This user does not belong to:'  
-         ELSE [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200026,@Langkey)
+         ELSE [CustDB].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200026,@Langkey)
         END  + @LicenseeName  ,@ErrCode=103 
     RETURN    
 END
@@ -83,10 +80,8 @@ EXEC bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
  @ActionID = 2500,  
  @TrackingValue = @LogSPData,  
  @duration = @duration  
-  GO
-GRANT EXECUTE ON [dbo].[Lrf_UserPwdReset] TO [bodbLicenseeNet]
+
 GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_UserPwdReset] TO [vnteam]
 
 
 

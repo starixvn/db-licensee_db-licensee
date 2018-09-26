@@ -1,4 +1,5 @@
-﻿ALTER  PROCEDURE [dbo].[Lrf_LicenseeUserFunctionsDel]	
+﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
+ALTER PROCEDURE [dbo].[Lrf_LicenseeUserFunctionsDel]	
 	@LicenseeId INT,
 	@UserId INT,
 	@CustID INT,
@@ -11,11 +12,12 @@ AS
 /*
 	Created by: [20111210@Jacob]
 	Task: Break down permission for account management
-	DB: DB052.bodb_Licensee
+	DB: DBCUST-bodb_Licensee
 	Param's Explanation:
 		
-	Revisions: -20160707@Jim: change the way to grant ACCOUNT MANAGEMENT FUNCTIONS permission ( #58537)
-		
+	Revisions: 
+		-20160707@Jim: change the way to grant ACCOUNT MANAGEMENT FUNCTIONS permission ( #58537)
+		- 20180925@Joseph: Migrate to DBCUST [Feature #99855]
 	Example:
 
 */
@@ -33,7 +35,7 @@ IF (@FunctionId<>6)
 			 UserId = @CustID AND
 			 FunctionId = @FunctionId
 	END
-	ELSE IF (@FunctionId=6)
+	ELSE IF (@FunctionId=6) -- ACCOUNT MANAGEMENT
 	BEGIN 
 		DELETE FROM [dbo].[LicenseeUserFunctions]
 		WHERE LicenseeId = @LicenseeId AND 
@@ -59,9 +61,6 @@ SELECT @TrackingValue = '<Lrf_LicenseeUserFunctionsDel CustID="'+ COALESCE(CAST(
 					'UserID="'+ COALESCE(CAST(@UserID AS VARCHAR(50)),SPACE(1)) + '" ' +
 					'FunctionID="'+ COALESCE(CAST(@FunctionId AS VARCHAR(50)),SPACE(1)) + '" ' +
 					'IP="'+ COALESCE(CAST(@IP AS VARCHAR(50)),SPACE(1))+'" />'
-					
-
-
 
 SET @endRun = GETDATE()
 SET @duration  = DATEDIFF (MILLISECOND,@startRun,@endRun)	 
@@ -74,6 +73,3 @@ EXEC bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
 	@duration = @duration
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_LicenseeUserFunctionsDel] TO [bodbLicenseeNet] 
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_LicenseeUserFunctionsDel] TO [vnteam] 

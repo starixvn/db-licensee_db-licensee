@@ -1,4 +1,5 @@
-﻿CREATE PROCEDURE [dbo].[Lrf_CheckIn]
+﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet,bodbAdminNet" viewers="vnteam" isFunction="0"></info>*/
+ALTER PROCEDURE [dbo].[Lrf_CheckIn]
 	@CustID INT,
 	@NetSessionID VARCHAR(30),
 	@ServerID INT,
@@ -8,11 +9,12 @@ AS
 
 /*
 	Task: CheckIN
-	DB: DB052.bodb_Licensee
+	DB: DBCUST-bodb_Licensee
 	Original SP:LoginDownline_OnUser
 	
 	Revisions:
 		- 20101208@Johnny
+		- 20180925@Joseph: Migrate to DBCUST [Feature #99855]
 
 */
 
@@ -28,10 +30,4 @@ values
 
 SELECT @On_UserID = SCOPE_IDENTITY()
 
-
 GO
-GRANT EXECUTE ON [dbo].[Lrf_CheckIn] TO [bodbLicenseeNet] 
-GO
-GRANT EXECUTE ON [dbo].[Lrf_CheckIn] TO [bodbAdminNet] 
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_CheckIn] TO [vnteam] 
