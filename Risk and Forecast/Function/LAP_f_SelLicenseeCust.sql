@@ -38,8 +38,8 @@ BEGIN
 	DECLARE @YUN INT
 
 	SELECT @KeenOceanID = LicenseeID FROM dbo.Licensees WITH (NOLOCK) WHERE LicenseeName LIKE 'KeenOcean'
-	SELECT @RMB = ExchangeID FROM bodb02.dbo.Exchange WITH (NOLOCK) WHERE currency = 'RMB'
-	SELECT @YUN = ExchangeID FROM bodb02.dbo.Exchange WITH (NOLOCK) WHERE currency = 'YUN'
+	SELECT @RMB = ExchangeID FROM CUSTDB.dbo.Exchange WITH (NOLOCK) WHERE currency = 'RMB'
+	SELECT @YUN = ExchangeID FROM CUSTDB.dbo.Exchange WITH (NOLOCK) WHERE currency = 'YUN'
 	
 	IF (@LicenseeID = @KeenOceanID OR ISNULL(@LicenseeID, 0) = 0)
 	BEGIN

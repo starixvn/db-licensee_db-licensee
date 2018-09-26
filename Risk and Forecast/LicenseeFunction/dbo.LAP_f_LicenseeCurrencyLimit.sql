@@ -20,7 +20,7 @@ AS
 BEGIN
 	DECLARE @CurrencyID INT
 	SELECT @CurrencyID = ExchangeID 
-	FROM bodb02.dbo.Exchange WITH (NOLOCK)
+	FROM CUSTDB.dbo.Exchange WITH (NOLOCK)
 	WHERE Code ='SGD'
 	
 	DECLARE @LicenseeID INT
@@ -45,7 +45,7 @@ BEGIN
 							)
 	UNION ALL 
 	SELECT @LicenseeID AS LicenseeID,ExchangeID AS CurrencyID
-	FROM bodb02.dbo.exchange WITH (NOLOCK)
+	FROM CUSTDB.dbo.exchange WITH (NOLOCK)
 	WHERE Code IN (
 					 'EUR','HKD' 
 					)	
