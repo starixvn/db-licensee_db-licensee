@@ -19,6 +19,7 @@ Revisions:
 	- 20171024@Johnson: offer Allbet commision [Redmine: #82036]
 	- 20180228@Vicky: Remove LC from product list [Redmine: #85965]
 	- 20180809@Amanda: Remove Racing [RedmineID: #99378]
+	- 20180927@Winnie: Remove AllBet [RedmineID: #99378]
 Param's Explanation:
 */ 
 BEGIN
@@ -26,8 +27,7 @@ BEGIN
 	
 	DECLARE @GroupCommID INT, 
 		@IsUpdateNG BIT,
-		@IsUpdateRNG BIT, 
-		@IsUpdateAllbet BIT,
+		@IsUpdateRNG BIT, 	
 		@LicenseeID INT, 
 		@strCustID VARCHAR(50)
 
@@ -56,11 +56,6 @@ BEGIN
 			ELSE
 				SELECT @IsUpdateRNG = 0	
 			
-			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=21)
-				SELECT @IsUpdateAllbet = 1
-			ELSE
-				SELECT @IsUpdateAllbet = 0	
-			
 			SELECT @strCustID=CAST (@CustID AS VARCHAR(50))
 			
 			EXEC [Lrf_CustomerUpdMemberComm] 
@@ -70,8 +65,7 @@ BEGIN
 				,@GroupCommID=@GroupCommID
 				,@IsUpdateNG=@IsUpdateNG
 				--,@IsUpdateLC=@IsUpdateLC
-				,@IsUpdateRNG=@IsUpdateRNG
-				,@IsUpdateAllbet=@IsUpdateAllbet
+				,@IsUpdateRNG=@IsUpdateRNG				
 				,@IP=''
 				,@Langkey=@Langkey
 				,@ErrCode=@ErrCode OUTPUT

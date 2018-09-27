@@ -7,7 +7,6 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerMoveGroupComm]
 	@GroupCommID INT,
 	@IsUpdateNG BIT = 0,
 	@IsUpdateRNG BIT = 0,
-	@IsUpdateAllbet BIT = 0,
 	@IP VARCHAR(40),
 	@Langkey VARCHAR(20) = 'en-US',
 	@ErrCode INT = 0 OUTPUT,
@@ -28,6 +27,7 @@ Revisions:
 	- 20171020@Johnson: offer Allbet commision [Redmine: #82036]
 	- 20180228@Vicky: Remove LC from product list [Redmine: #85965]
 	- 20180809@Amanda: Remove Racing [RedmineID: #99378]
+	- 20180924@Winnie: Remove AllBet [RedmineID: #99378]
 Param's Explanation:
 */ 
 BEGIN
@@ -39,8 +39,7 @@ BEGIN
 		,@UserID=@UserID
 		,@GroupCommID=@GroupCommID
 		,@IsUpdateNG=@IsUpdateNG
-		,@IsUpdateRNG=@IsUpdateRNG
-		,@IsUpdateAllbet=@IsUpdateAllbet
+		,@IsUpdateRNG=@IsUpdateRNG		
 		,@Langkey=@Langkey
 		,@IP=@IP
 		,@ErrCode=@ErrCode OUTPUT

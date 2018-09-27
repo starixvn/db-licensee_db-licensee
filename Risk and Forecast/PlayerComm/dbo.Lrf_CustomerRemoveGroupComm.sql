@@ -25,7 +25,7 @@ AS
 	- 20171024@Johnson: offer Allbet commision [Redmine: #82036]
 	- 20180228@Vicky: Remove LC from product list [Redmine: #85965]
 	- 20180809@Amanda: Remove Racing [RedmineID: #99378]
-	
+	- 20180924@Winnie: Remove Allbet [RedmineID: #99378]
 */  
 BEGIN  
 	SET NOCOUNT ON
@@ -33,8 +33,7 @@ BEGIN
 	DECLARE @SBComm DECIMAL(9,8), 
 		@NGComm DECIMAL(9,8),
 		@RNGComm DECIMAL(9,8),
-		@ParlayComm DECIMAL(9,8),
-		@AllbetComm DECIMAL(9,8),
+		@ParlayComm DECIMAL(9,8),	
 		@CustID INT, 
 		@i INT	
 	
@@ -77,8 +76,7 @@ BEGIN
 			SELECT @SBComm=SBComm,
 				@NGComm=NGComm,
 				@RNGComm=RNGComm,
-				@ParlayComm = ParlayComm,
-				@AllbetComm=AllbetComm
+				@ParlayComm = ParlayComm			
 			FROM dbo.LicenseeCustComm WITH (NOLOCK)
 			WHERE LicenseeID = @LicenseeID AND CustID = @CustID
 					
@@ -92,11 +90,9 @@ BEGIN
 				@SBComm=@SBComm,
 				@NGComm=@NGComm,
 				@RNGComm=@RNGComm,
-				@ParlayComm = @ParlayComm,
-				@AllbetComm=@AllbetComm,
+				@ParlayComm = @ParlayComm,			
 				@IsUpdateNG=1,
-				@IsUpdateRNG=1,
-				@IsUpdateAllbet=1,
+				@IsUpdateRNG=1,			
 				@IP=@IP,
 				@Langkey=@Langkey,
 				@ErrCode=@ErrCode OUTPUT,
@@ -123,11 +119,9 @@ BEGIN
 			@SBComm=0,
 			@NGComm=0,
 			@RNGComm=0,
-			@ParlayComm = 0,
-			@AllbetComm=0,
+			@ParlayComm = 0,	
 			@IsUpdateNG=1,
-			@IsUpdateRNG=1,
-			@IsUpdateAllbet=1,
+			@IsUpdateRNG=1,		
 			@IP=@IP,
 			@Langkey=@Langkey,
 			@ErrCode=@ErrCode OUTPUT,
@@ -142,8 +136,7 @@ BEGIN
 			SBComm = 0,
 			ParlayComm = 0,
 			NGComm = 0,
-			RNGComm = 0,
-			AllbetComm=0,
+			RNGComm = 0,			
 			GroupCommID = 0
 		WHERE LicenseeID = @LicenseeID 
 		AND CustID IN (SELECT CustID FROM @TempCustID)

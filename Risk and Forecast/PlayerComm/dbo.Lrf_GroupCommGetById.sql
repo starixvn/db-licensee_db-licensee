@@ -15,6 +15,7 @@ AS
 	- 20171025@Johnson: offer Allbet commision [Redmine: #82036]
 	- 20180228@Vicky: Remove LC from product list [Redmine: #85965]
 	- 20180809@Amanda: Remove Racing [RedmineID: #99378]
+	- 20180927@Winnie: Remove AllBet [RedmineID: #99378]
 */  
 BEGIN  
 SET NOCOUNT ON;  
@@ -24,8 +25,7 @@ SELECT g.ID AS GroupCommID,
 	g.SBComm,
 	g.NGComm,
 	g.RNGComm,
-	g.Parlaycomm,
-	g.AllbetComm, 
+	g.Parlaycomm,	
 	g.color AS GroupColor, 
 	g.IsDefault
 FROM dbo.LicenseeGroupComm g WITH (NOLOCK) 

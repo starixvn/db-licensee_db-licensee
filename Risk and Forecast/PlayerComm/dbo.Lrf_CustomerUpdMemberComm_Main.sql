@@ -4,9 +4,7 @@ CREATE PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Main]
 	,@SBComm DECIMAL(9,8)
 	,@NGComm DECIMAL(9,8) = 0
 	,@ParlayComm DECIMAL(9,8) = 0
-	,@AllbetComm DECIMAL(9,8) = 0
 	,@IsUpdateNG BIT = 0
-	,@IsUpdateAllbet BIT = 0
 AS
 /*
 	Created: 20120907@Viet
@@ -23,7 +21,7 @@ AS
 		- 20171020@Johnson: offer Allbet commision [Redmine: #82036]
 		- 20180228@Vicky: Remove LC from product list [Redmine: #85965]
 		- 20180809@Amanda: Remove Racing [RedmineID: #99378]
-		
+		- 20180927@Winnie: Remove AllBet [RedmineID: #99378]
 	Param's Explanation:
 
 */
@@ -60,11 +58,8 @@ BEGIN
 			@ids = @ids
 			,@SBComm = @SBComm
 			,@NGComm = @NGComm
-			,@ParlayComm = @ParlayComm
-			,@AllbetComm = @AllbetComm
-			,@IsUpdateNG = @IsUpdateNG
-			,@IsUpdateAllbet = @IsUpdateAllbet
-		
+			,@ParlayComm = @ParlayComm			
+			,@IsUpdateNG = @IsUpdateNG			
 		
 		IF @rowcnt < @batchSize BREAK
 		

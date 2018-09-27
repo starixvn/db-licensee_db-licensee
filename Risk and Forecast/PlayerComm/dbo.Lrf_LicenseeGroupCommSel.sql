@@ -17,6 +17,7 @@ AS
  - 20171020@Johnson: offer Allbet commision [Redmine: #82036]
  - 20180228@Vicky: Remove LC from product list [Redmine: #85965]
  - 20180809@Amanda: Remove Racing [RedmineID: #99378]
+ - 20180927@Winnie: Remove AllBet [RedmineID: #99378]
 */  
 BEGIN  
 	SET NOCOUNT ON;  
@@ -28,8 +29,7 @@ BEGIN
 		,g.SBComm
 		,g.NGComm
 		,g.RNGComm
-		,g.Parlaycomm
-		,g.AllbetComm
+		,g.Parlaycomm		
 		,g.color AS GroupColor
 		,ISNULL(c.NumberOfCustomer,0) AS NumberOfCustomer
 		,g.IsDefault  

@@ -60,7 +60,7 @@ AS
 		- 20180228@Vicky: Remove LC from product list [Redmine: #85965]
 		- 20180810@Sophia: HA - remove LicenseeCustinfo table [Redmine: #99464]
 		- 20180809@Amanda: Remove Racing [RedmineID: #99378]
-		
+		- 20180924@Winnie: Remove Allbet [RedmineID: #99378]
 	Param's Explanation:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 		+ @SpecialLevel: default value = -1 (all)
@@ -590,8 +590,7 @@ BEGIN
 		ISNULL(lc.SBComm, 0) AS SBComm,
 		ISNULL(lc.NGComm, 0) AS NGComm,
 		ISNULL(lc.RNGComm, 0) AS RNGComm,
-		ISNULL(lc.ParlayComm, 0) AS ParlayComm,
-		ISNULL(lc.AllbetComm,0) AS AllbetComm,
+		ISNULL(lc.ParlayComm, 0) AS ParlayComm,		
 		ISNULL(lg.id, 0) AS GroupCommID,
 		ISNULL(UPPER(t.ugroup), '') AS OddsGroup
 	FROM #Temp t

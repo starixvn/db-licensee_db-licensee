@@ -7,11 +7,9 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeCustCommUpd]
 	@SBComm DECIMAL(9,8),
 	@ParlayComm DECIMAL(9,8),
 	@NGComm DECIMAL(9,8),	
-	@RNGComm DECIMAL(9,8),	
-	@AllbetComm DECIMAL(9,8)=0,
+	@RNGComm DECIMAL(9,8),		
 	@IsUpdateNG BIT = 0,
 	@IsUpdateRNG BIT = 0,
-	@IsUpdateAllbet BIT = 0,
 	@IP VARCHAR(40),
 	@Langkey NVARCHAR(10)='en-US',
 	@ErrCode INT = 0 OUTPUT,
@@ -33,7 +31,7 @@ Revisions:
 	- 20171017@Johnson: offer Allbet commision [Redmine: #82036]
 	- 20180228@Vicky: Remove LC from product list [Redmine: #85965]
 	- 20180809@Amanda: Remove Racing [RedmineID: #99378]
-	
+	- 20180927@Winnie: Remove AllBet [RedmineID: #99378]
 Param's Explanation:
 */ 
 BEGIN
@@ -53,11 +51,9 @@ BEGIN
 		,@SBComm=@SBComm
 		,@ParlayComm = @ParlayComm
 		,@NGComm=@NGComm
-		,@RNGComm=@RNGComm
-		,@AllbetComm=@AllbetComm
+		,@RNGComm=@RNGComm	
 		,@IsUpdateNG=@IsUpdateNG
-		,@IsUpdateRNG=@IsUpdateRNG
-		,@IsUpdateAllbet=@IsUpdateAllbet
+		,@IsUpdateRNG=@IsUpdateRNG	
 		,@IP=@IP
 		,@Langkey=@Langkey
 		,@ErrCode=@ErrCode OUTPUT

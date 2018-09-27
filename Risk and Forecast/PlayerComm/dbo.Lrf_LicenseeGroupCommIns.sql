@@ -5,8 +5,7 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeGroupCommIns]
 	@SBComm DECIMAL(9,8),
 	@ParlayComm DECIMAL(9,8),
 	@NGComm DECIMAL (9,8),
-	@RNGComm DECIMAL (9,8),
-	@AllbetComm DECIMAL(9,8)=0,
+	@RNGComm DECIMAL (9,8),	
 	@GroupColor VARCHAR(20),
 	@UserID INT,
 	@IP VARCHAR(40),
@@ -33,7 +32,7 @@ Revisions:
 	- 20171023@Johnson: offer Allbet commision [Redmine: #82036]
 	- 20180228@Vicky: Remove LC from product list [Redmine: #85965]
 	- 20180809@Amanda: Remove Racing [RedmineID: #99378]
-	
+	- 20180927@Winnie: Remove AllBet [RedmineID: #99378]
 Param's Explanation:
 
 */
@@ -55,7 +54,7 @@ BEGIN
 		OR @NGComm>0.15 
 		OR @RNGComm>0.15 
 		OR @ParlayComm > 0.15
-		OR @AllbetComm>01.15
+		
 	BEGIN
 		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN  'Player Commission should not greater than 0.15'
 										ELSE [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200002,@Langkey)
@@ -83,8 +82,8 @@ BEGIN
 			
 		END
 		
-		INSERT INTO dbo.LicenseeGroupComm (LicenseeID,GroupName,SBComm,NGComm,color,isDefault,RNGComm,ParlayComm,AllbetComm)
-		VALUES (@LicenseeID,@GroupName,@SBComm,@NGComm,@GroupColor,@IsDefault,@RNGComm,@ParlayComm,@AllbetComm)
+		INSERT INTO dbo.LicenseeGroupComm (LicenseeID,GroupName,SBComm,NGComm,color,isDefault,RNGComm,ParlayComm)
+		VALUES (@LicenseeID,@GroupName,@SBComm,@NGComm,@GroupColor,@IsDefault,@RNGComm,@ParlayComm)
 		
 		IF (@@ERROR <> 0)
 		BEGIN
@@ -106,8 +105,7 @@ BEGIN
 		'SBComm="'+ COALESCE(CAST(@SBComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'NGComm="'+ COALESCE(CAST(@NGComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'RNGComm="'+ COALESCE(CAST(@RNGComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		'ParlayComm="'+ COALESCE(CAST(@ParlayComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		'AllbetComm="'+ COALESCE(CAST(@AllbetComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		'ParlayComm="'+ COALESCE(CAST(@ParlayComm as VARCHAR(50)),SPACE(1)) + '" ' +	
 		'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
 		'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +
 		'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
@@ -121,8 +119,7 @@ BEGIN
 		'SBComm="'+ COALESCE(CAST(@SBComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'NGComm="'+ COALESCE(CAST(@NGComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'RNGComm="'+ COALESCE(CAST(@RNGComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		'ParlayComm="'+ COALESCE(CAST(@ParlayComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		'AllbetComm="'+ COALESCE(CAST(@AllbetComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		'ParlayComm="'+ COALESCE(CAST(@ParlayComm as VARCHAR(50)),SPACE(1)) + '" ' +		
 		'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
 		'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +
 		'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
