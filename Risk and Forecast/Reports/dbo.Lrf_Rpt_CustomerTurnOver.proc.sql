@@ -124,7 +124,6 @@ BEGIN
 	CREATE TABLE #tempCustPaging 
 	(
 		rowno			INT
-		, whticket		TINYINT
 		, winlostdate	SMALLDATETIME
 		, custid		INT
 		, username		VARCHAR(50)

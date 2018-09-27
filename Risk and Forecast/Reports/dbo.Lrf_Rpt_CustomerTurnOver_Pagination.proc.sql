@@ -57,7 +57,6 @@ BEGIN
 		, winlostdate	SMALLDATETIME
 		, custid		INT
 		, username		VARCHAR(50)
-		, whticket		TINYINT
 	)
 	
 	SELECT
@@ -71,11 +70,10 @@ BEGIN
 	BEGIN
 		IF @ToDate > @MoveBetsDay
 		BEGIN
-			INSERT INTO #tempPagingData(winlostdate, custid, username, whticket)
+			INSERT INTO #tempPagingData(winlostdate, custid, username)
 			SELECT b.winlostdate
 					, c.Custid
 					, c.username
-					, 1 AS whticket
 			FROM #tempBettrans b	
 				INNER JOIN #tempCust  c
 					ON b.custid 	= c.custid					
@@ -88,7 +86,7 @@ BEGIN
 			SET @totalBettrans = @@ROWCOUNT
 		END
 		
-		IF @FromDate <= @MoveBetsDay AND (@totalBettrans < @maxRow OR @IsExportExcel = 1)
+		IF @FromDate <= @MoveBetsDay
 		BEGIN
 			IF ( @odds = 0 )
 			BEGIN
@@ -154,24 +152,47 @@ BEGIN
 				OPTION(RECOMPILE)
 			END
 
-			INSERT INTO #tempPagingData(winlostdate, custid, username)
-			SELECT b.winlostdate
-					, b.Custid
-					, b.username						
-			FROM #tempData b
-				INNER JOIN #bettype bt
-				ON b.bettype 	=  bt.typeid
-				INNER JOIN #Status st
-				ON b.StatusID 	=  st.StatusID
-				INNER JOIN #ProductID p 
-				ON b.sporttype = p.sportID							
-			GROUP BY 
-				b.winlostdate
-				, b.custid
-				, b.username
-			ORDER BY winlostdate DESC, username
+			IF @totalBettrans < @maxRow OR @IsExportExcel = 1
+			BEGIN
+				INSERT INTO #tempPagingData(winlostdate, custid, username)
+				SELECT b.winlostdate
+						, b.Custid
+						, b.username						
+				FROM #tempData b
+					INNER JOIN #bettype bt
+					ON b.bettype 	=  bt.typeid
+					INNER JOIN #Status st
+					ON b.StatusID 	=  st.StatusID
+					INNER JOIN #ProductID p 
+					ON b.sporttype = p.sportID							
+				GROUP BY 
+					b.winlostdate
+					, b.custid
+					, b.username
+				ORDER BY winlostdate DESC, username
 				
-			SET @totalSumRpt = @@ROWCOUNT						
+				SET @totalSumRpt = @@ROWCOUNT	
+			END
+			ELSE
+			BEGIN
+				SELECT @totalSumRpt = COUNT(1)
+				FROM (
+					SELECT b.winlostdate
+							, b.Custid
+							, b.username						
+					FROM #tempData b
+						INNER JOIN #bettype bt
+						ON b.bettype 	=  bt.typeid
+						INNER JOIN #Status st
+						ON b.StatusID 	=  st.StatusID
+						INNER JOIN #ProductID p 
+						ON b.sporttype = p.sportID							
+					GROUP BY 
+						b.winlostdate
+						, b.custid
+						, b.username
+				) d
+			END					
 		END		
 	END
 
@@ -180,11 +201,10 @@ BEGIN
 	BEGIN
 		IF @ToDate > @MoveBetsDay
 		BEGIN
-			INSERT INTO #tempPagingData(winlostdate, custid, username, whticket)
+			INSERT INTO #tempPagingData(winlostdate, custid, username)
 			SELECT b.winlostdate
 					, c.Custid
 					, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS username
-					, 1 AS whticket
 			FROM #tempBettrans b	
 				INNER JOIN dbo.Customer  c WITH (NOLOCK, INDEX = IX_custid)
 					ON b.custid 	= c.custid				
@@ -197,7 +217,7 @@ BEGIN
 			SET @totalBettrans = @@ROWCOUNT
 		END	
 
-		IF @FromDate <= @MoveBetsDay AND (@totalBettrans < @maxRow OR @IsExportExcel = 1)
+		IF @FromDate <= @MoveBetsDay
 		BEGIN
 			IF(@odds = 0)
 			BEGIN
@@ -263,25 +283,47 @@ BEGIN
 				OPTION(RECOMPILE)
 			END
 
-			INSERT INTO #tempPagingData(winlostdate, custid, username, whticket)
-			SELECT b.winlostdate
-					, b.Custid
+			IF @totalBettrans < @maxRow OR @IsExportExcel = 1
+			BEGIN
+				INSERT INTO #tempPagingData(winlostdate, custid, username)
+				SELECT b.winlostdate
+						, b.Custid
+						, b.username						
+				FROM #tempData b
+					INNER JOIN #bettype bt
+					ON b.bettype 	=  bt.typeid
+					INNER JOIN #Status st
+					ON b.StatusID 	=  st.StatusID
+					INNER JOIN #ProductID p 
+					ON b.sporttype = p.sportID							
+				GROUP BY 
+					b.winlostdate
+					, b.custid
 					, b.username
-					, 2 AS whticket						
-			FROM #tempData b
-				INNER JOIN #bettype bt
-				ON b.bettype 	=  bt.typeid
-				INNER JOIN #Status st
-				ON b.StatusID 	=  st.StatusID
-				INNER JOIN #ProductID p 
-				ON b.sporttype = p.sportID							
-			GROUP BY 
-				b.winlostdate
-				, b.custid
-				, b.username
-			ORDER BY winlostdate DESC, username
+				ORDER BY winlostdate DESC, username
 				
-			SET @totalSumRpt = @@ROWCOUNT
+				SET @totalSumRpt = @@ROWCOUNT	
+			END
+			ELSE
+			BEGIN
+				SELECT @totalSumRpt = COUNT(1)
+				FROM (
+					SELECT b.winlostdate
+							, b.Custid
+							, b.username						
+					FROM #tempData b
+						INNER JOIN #bettype bt
+						ON b.bettype 	=  bt.typeid
+						INNER JOIN #Status st
+						ON b.StatusID 	=  st.StatusID
+						INNER JOIN #ProductID p 
+						ON b.sporttype = p.sportID							
+					GROUP BY 
+						b.winlostdate
+						, b.custid
+						, b.username
+				) d
+			END
 		END
 	END
 	
@@ -290,7 +332,6 @@ BEGIN
 		INSERT INTO #tempCustPaging 
 		SELECT
 			p.RowIdx AS rowno
-			, p.whTicket
 			, p.winlostdate
 			, p.custid
 			, p.username
@@ -301,7 +342,6 @@ BEGIN
 		INSERT INTO #tempCustPaging 
 		SELECT
 			p.RowIdx AS rowno
-			, p.whTicket
 			, p.winlostdate
 			, p.custid
 			, p.username

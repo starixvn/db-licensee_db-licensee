@@ -88,7 +88,7 @@ BEGIN
 			SELECT @totalBettrans = @@ROWCOUNT			
 		END
 		
-		IF @FromDate <= @MoveBetsDay AND (@totalBettrans < @maxRow OR @IsExportExcel = 1)
+		IF @FromDate <= @MoveBetsDay
 		BEGIN
 			IF ( @odds = 0 )
 			BEGIN				
@@ -102,31 +102,6 @@ BEGIN
 						ON b.Recommend	= rec.CustID
 				WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
 				OPTION(RECOMPILE)
-
-				;WITH CTE_Paging AS 
-				(
-					SELECT winlostdate
-						, b.custid
-						
-					FROM #tempPagingData b
-						INNER JOIN #tempCust c
-						ON b.custid 	= c.custid
-						INNER JOIN #bettype bt
-						ON b.bettype 	=  bt.typeid
-						INNER JOIN #Status st
-						ON b.StatusID 	=  st.StatusID
-						INNER JOIN #ProductID p 
-						ON b.sporttype = p.sportID							
-					GROUP BY 
-						b.winlostdate
-						, b.custid
-				)
-				INSERT INTO #tempPaging
-				SELECT p.*
-					,2 AS whticket
-				FROM CTE_Paging p		
-
-				SELECT @totalSumRpt = @@ROWCOUNT
 			END	
 			
 			-- Has Odds Value
@@ -166,12 +141,14 @@ BEGIN
 												END 
 								ELSE b.Odds
 							END >= @odds
-				OPTION(RECOMPILE)
+				OPTION(RECOMPILE)				
+			END
 
+			IF @totalBettrans < @maxRow OR @IsExportExcel = 1
+			BEGIN
 				;WITH CTE_Paging AS
 				(
-					SELECT 
-						winlostdate
+					SELECT winlostdate
 						, b.custid
 						
 					FROM #tempPagingData b
@@ -186,14 +163,36 @@ BEGIN
 					GROUP BY 
 						b.winlostdate
 						, b.custid
-					
 				)
 				INSERT INTO #tempPaging
 				SELECT p.*
 					,2 AS whticket
-				FROM CTE_Paging p	
+				FROM CTE_Paging p
 
 				SELECT @totalSumRpt = @@ROWCOUNT
+			END
+			ELSE
+			BEGIN
+				;WITH CTE_Paging AS
+				(
+					SELECT winlostdate
+						, b.custid
+						
+					FROM #tempPagingData b
+						INNER JOIN #tempCust c
+						ON b.custid 	= c.custid
+						INNER JOIN #bettype bt
+						ON b.bettype 	=  bt.typeid
+						INNER JOIN #Status st
+						ON b.StatusID 	=  st.StatusID
+						INNER JOIN #ProductID p 
+						ON b.sporttype = p.sportID
+					GROUP BY 
+						b.winlostdate
+						, b.custid
+				)
+				SELECT @totalSumRpt = COUNT(1)
+				FROM CTE_Paging p
 			END
 		END
 	END 
@@ -224,7 +223,7 @@ BEGIN
 			SELECT @totalBettrans = @@ROWCOUNT
 		END	
 
-		IF @FromDate <= @MoveBetsDay AND (@totalBettrans < @maxRow OR @IsExportExcel = 1)
+		IF @FromDate <= @MoveBetsDay
 		BEGIN
 			IF(@odds = 0)
 			BEGIN
@@ -238,32 +237,8 @@ BEGIN
 						ON b.Recommend	= rec.CustID
 				WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
 				OPTION(RECOMPILE)
-
-				;WITH CTE_Paging AS 
-				(
-					SELECT 
-						winlostdate
-						, b.custid
-						
-					FROM #tempPagingData b
-						INNER JOIN #bettype bt
-						ON b.bettype 	=  bt.typeid
-						INNER JOIN #Status st
-						ON b.StatusID 	=  st.StatusID
-						INNER JOIN #ProductID p 
-						ON b.sporttype = p.sportID
-						
-					GROUP BY 
-						b.winlostdate
-						, b.custid
-				)
-				INSERT INTO #tempPaging
-				SELECT p.*
-					,2 AS whticket
-				FROM CTE_Paging p			
-
-				SELECT @totalSumRpt = @@ROWCOUNT
 			END
+
 			-- Has Odds Value
 			IF ( @odds > 0 )
 			BEGIN
@@ -302,11 +277,13 @@ BEGIN
 									ELSE b.Odds
 								END >= @odds
 				OPTION(RECOMPILE)
-
-				;WITH CTE_Paging AS 
-				(	
-					SELECT 
-						winlostdate
+			END
+			
+			IF @totalBettrans < @maxRow OR @IsExportExcel = 1
+			BEGIN
+				;WITH CTE_Paging AS
+				(
+					SELECT winlostdate
 						, b.custid
 						
 					FROM #tempPagingData b
@@ -323,11 +300,31 @@ BEGIN
 				INSERT INTO #tempPaging
 				SELECT p.*
 					,2 AS whticket
-				FROM CTE_Paging p		
+				FROM CTE_Paging p
 
 				SELECT @totalSumRpt = @@ROWCOUNT
 			END
-			
+			ELSE
+			BEGIN
+				;WITH CTE_Paging AS
+				(
+					SELECT winlostdate
+						, b.custid
+						
+					FROM #tempPagingData b
+						INNER JOIN #bettype bt
+						ON b.bettype 	=  bt.typeid
+						INNER JOIN #Status st
+						ON b.StatusID 	=  st.StatusID
+						INNER JOIN #ProductID p 
+						ON b.sporttype = p.sportID
+					GROUP BY 
+						b.winlostdate
+						, b.custid
+				)
+				SELECT @totalSumRpt = COUNT(1)
+				FROM CTE_Paging p
+			END
 		END
 	END
 	--CREATE INDEXERS
@@ -360,7 +357,6 @@ BEGIN
 		INSERT INTO #tempCustPaging 
 		SELECT
 			p.RowIdx AS rowno
-			, p.whTicket
 			, p.winlostdate
 			, p.custid
 			, p.username
@@ -392,7 +388,6 @@ BEGIN
 		INSERT INTO #tempCustPaging 
 		SELECT
 			p.RowIdx AS rowno
-			, p.whTicket
 			, p.winlostdate
 			, p.custid
 			, p.username
