@@ -1,4 +1,7 @@
 ﻿/*<info serverAlias="DBLIC-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/ 
+USE bodb_Licensee
+GO
+
 ALTER PROCEDURE [dbo].[Lrf_CustomerSetDefaultComm]
 	@LicenseeName VARCHAR(50),
 	@CustID INT,--member
@@ -6,21 +9,22 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerSetDefaultComm]
 	@ErrCode INT = 0 OUTPUT,
 	@ErrMsg nvarchar(2000) = '' OUTPUT
 AS
-
 /*
-Created: 20121227@Henry
-Task : Update Default Commission of Player
-DB: DBLIC/bodb_Licensee
+	Created: 20121227@Henry
+	Task : Update Default Commission of Player
+	DB: DBLIC/bodb_Licensee
 
-Revisions:
-	- 20130413@Jim: support multi language
-	- 20131023@Hannah: offer Live Casino Commission
-	- 20131126@Hannah: offer RNG Casino commission
-	- 20171024@Johnson: offer Allbet commision [Redmine: #82036]
-	- 20180228@Vicky: Remove LC from product list [Redmine: #85965]
-	- 20180809@Amanda: Remove Racing [RedmineID: #99378]
-	- 20180927@Winnie: Remove AllBet [RedmineID: #99378]
-Param's Explanation:
+	Revisions:
+		- 20130413@Jim: support multi language
+		- 20131023@Hannah: offer Live Casino Commission
+		- 20131126@Hannah: offer RNG Casino commission
+		- 20171024@Johnson: offer Allbet commision [Redmine: #82036]
+		- 20180228@Vicky: Remove LC from product list [Redmine: #85965]
+		- 20180809@Amanda: Remove Racing [RedmineID: #99378]
+		- 20180927@Winnie: Remove AllBet [RedmineID: #99378]
+		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
+
+	Param's Explanation:
 */ 
 BEGIN
 	SET NOCOUNT ON 

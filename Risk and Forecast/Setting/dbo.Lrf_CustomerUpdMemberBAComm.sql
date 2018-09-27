@@ -256,46 +256,23 @@ BEGIN
 
 	IF @IsAdmin = 0
 	BEGIN
-		BEGIN TRY
-			EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP 
-				@UserID = @ModifyBy,
-				@CustID = @CustID,
-				@ActionID = 2600,
-				@TrackingValue = @LogSPData,
-				@TrackingValue2 = @TrackingValue2,
-				@duration = @duration
-		END TRY
-		BEGIN CATCH
-			EXEC bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP 
-				@UserID = @ModifyBy,
-				@CustID = @CustID,
-				@ActionID = 2600,
-				@TrackingValue = @LogSPData,
-				@TrackingValue2 = @TrackingValue2,
-				@duration = @duration
-		END CATCH			
-			
+		EXEC bodb_Licensee.dbo.LAP_WriteLog_UserLog_RunSP
+			@UserID = @ModifyBy,
+			@CustID = @CustID,
+			@ActionID = 2600,
+			@TrackingValue = @LogSPData,
+			@TrackingValue2 = @TrackingValue2,
+			@duration = @duration						
 	END
 	ELSE
 	BEGIN
-		BEGIN TRY
-			EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP 
-				@UserID = @ModifyBy,
-				@CustID = @CustID,
-				@ActionID = 219,
-				@TrackingValue = @LogSPData,
-				@TrackingValue2 = @TrackingValue2,
-				@duration = @duration
-		END TRY
-		BEGIN CATCH
-			EXEC bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP 
-				@UserID = @ModifyBy,
-				@CustID = @CustID,
-				@ActionID = 219,
-				@TrackingValue = @LogSPData,
-				@TrackingValue2 = @TrackingValue2,
-				@duration = @duration
-		END CATCH				
+		EXEC bodb_Licensee.dbo.LAP_WriteLog_UserLog_RunSP
+			@UserID = @ModifyBy,
+			@CustID = @CustID,
+			@ActionID = 219,
+			@TrackingValue = @LogSPData,
+			@TrackingValue2 = @TrackingValue2,
+			@duration = @duration					
 	END
 END
 GO
