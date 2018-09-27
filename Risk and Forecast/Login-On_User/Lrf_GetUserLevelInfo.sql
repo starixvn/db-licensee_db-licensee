@@ -24,14 +24,15 @@ BEGIN
 	SET NOCOUNT ON
 	
 	DECLARE @SiteName VARCHAR(50)
+	SET @SubsidiaryEnabled = 0
 	
 	SELECT @UserLevel = UserLevel, @OperatorID = OperatorID, @SiteName = SiteName
 	FROM dbo.Users WITH (NOLOCK)
 	WHERE UserSEQ = @UserSEQ
 	
-	SELECT @SubsidiaryEnabled = SubsidiaryEnabled
-	FROM dbo.LicVendorProfile WITH (NOLOCK)
-	WHERE VendorID = @VendorID
+	SELECT TOP(1) @SubsidiaryEnabled = 1
+	FROM dbo.Operator WITH (NOLOCK)
+	WHERE SiteName = @SiteName AND ISNULL(OperatorID,'') <> ''
 	
 END
 GO
