@@ -256,7 +256,7 @@ BEGIN
 
 	IF @IsAdmin = 0
 	BEGIN
-		EXEC bodb_Licensee.dbo.LAP_WriteLog_UserLog_RunSP
+		EXEC dbo.Acc_WriteLog_UserLog_RunSP
 			@UserID = @ModifyBy,
 			@CustID = @CustID,
 			@ActionID = 2600,
@@ -266,7 +266,7 @@ BEGIN
 	END
 	ELSE
 	BEGIN
-		EXEC bodb_Licensee.dbo.LAP_WriteLog_UserLog_RunSP
+		EXEC dbo.Acc_WriteLog_UserLog_RunSP
 			@UserID = @ModifyBy,
 			@CustID = @CustID,
 			@ActionID = 219,
