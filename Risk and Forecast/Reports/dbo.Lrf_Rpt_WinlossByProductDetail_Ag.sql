@@ -422,6 +422,7 @@ BEGIN
 				FROM dbo.SportBettypeMatrix m WITH (NOLOCK)
 					INNER JOIN dbo.Products p WITH (NOLOCK) ON m.ProductID = p.ProductID
 				WHERE p.ProductPrefix IN ('VS', 'VS2')
+					AND m.BetType IN (SELECT bettype FROM @bettype)
 			) s			
 
 			DECLARE  @tblVS AS TABLE 

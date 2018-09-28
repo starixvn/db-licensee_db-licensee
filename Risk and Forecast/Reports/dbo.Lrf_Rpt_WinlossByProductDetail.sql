@@ -97,6 +97,8 @@ BEGIN
 
 	DECLARE @IsTest BIT = 0
 	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
+	
+	SET @ProductList = REPLACE(@ProductList, ' ', '')
 
 	---#1: Begin: Get AgentList
 	DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
@@ -151,7 +153,6 @@ BEGIN
 		
 	SET @sumTurnOver = 1
 	SET @sumBetCount = 1
-	SET @ProductList = REPLACE(@ProductList, ' ', '')
 	
 	IF(@drawfilter=2)
 	BEGIN
@@ -424,6 +425,7 @@ BEGIN
 				FROM dbo.SportBettypeMatrix m WITH (NOLOCK)
 					INNER JOIN dbo.Products p WITH (NOLOCK) ON m.ProductID = p.ProductID
 				WHERE p.ProductPrefix IN ('VS', 'VS2')
+					AND m.BetType IN (SELECT bettype FROM @bettype)
 			) s			
 
 			DECLARE  @tblVS AS TABLE 
