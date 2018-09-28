@@ -96,6 +96,7 @@ BEGIN
 		
 	SET @sumTurnOver = 1
 	SET @sumBetCount = 1
+	SET @ProductList = REPLACE(@ProductList, ' ', '')
 	
 	IF(@drawfilter=2)
 	BEGIN
@@ -149,11 +150,11 @@ BEGIN
 		SELECT DISTINCT BetType, ProductPrefix
 		FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
 
-		IF CHARINDEX('CS', @ProductList) > 0
+		IF PATINDEX('%,CS,%', ',' + @ProductList + ',') > 0
 			DELETE @bettype
 			WHERE bettype = 72 AND ProductCode = 'CS'
 
-		IF CHARINDEX('SB', @ProductList) > 0
+		IF PATINDEX('%,SB,%', ',' + @ProductList + ',') > 0
 			DELETE @bettype
 			WHERE (bettype BETWEEN 901 AND 904) OR (bettype BETWEEN 911 AND 914)
 		
