@@ -256,7 +256,7 @@ BEGIN
 
 	IF @IsAdmin = 0
 	BEGIN
-		EXEC dbo.Acc_WriteLog_UserLog_RunSP
+		EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
 			@UserID = @ModifyBy,
 			@CustID = @CustID,
 			@ActionID = 2600,
@@ -266,7 +266,7 @@ BEGIN
 	END
 	ELSE
 	BEGIN
-		EXEC dbo.Acc_WriteLog_UserLog_RunSP
+		EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
 			@UserID = @ModifyBy,
 			@CustID = @CustID,
 			@ActionID = 219,

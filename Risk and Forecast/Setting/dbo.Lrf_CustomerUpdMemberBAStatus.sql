@@ -380,7 +380,7 @@ BEGIN
 			, @ErrMsg = @ErrMsg OUTPUT
 
 		--- set SB comm of BAmember is zero
-		EXEC dbo.Lrf_LicenseeBACustUpdComm
+		EXEC bodb_Licensee.dbo.Lrf_LicenseeBACustUpdComm
 			@LicenseeID = @LicenseeID ,
 			@CustID     = @CustID ,
 			@IsBA		= 1
@@ -717,7 +717,7 @@ BEGIN
 					, @ErrMsg = @ErrMsg OUTPUT
 						
 				--- get back SB comm of BAmember 
-				EXEC dbo.Lrf_LicenseeBACustUpdComm
+				EXEC bodb_Licensee.dbo.Lrf_LicenseeBACustUpdComm
 					@LicenseeID = @LicenseeID ,
 					@CustID     = @CustID ,
 					@IsBA		= 0
