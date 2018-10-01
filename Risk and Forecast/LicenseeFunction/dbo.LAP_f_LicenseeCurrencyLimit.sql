@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="" isFunction="1" isNested="0"></info>*/
+/*<info serverAlias="DBCUST-bodb_Licensee" selecters="bodbLicenseeNet" viewers="" isFunction="1" isNested="0"></info>*/
 USE bodb_Licensee
 GO 
 CREATE FUNCTION [dbo].[LAP_f_LicenseeCurrencyLimit] 
