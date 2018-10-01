@@ -1,11 +1,8 @@
-
-SET QUOTED_IDENTIFIER ON 
-GO
-SET ANSI_NULLS ON 
+/*<info serverAlias="DBCUST-CUSTDB" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
+USE CustDB 
 GO
  
- 
-CREATE  PROCEDURE [dbo].[Lrf_CustomerUpdUgroup]
+ALTER PROCEDURE [dbo].[Lrf_CustomerUpdUgroup]
 	@CustID INT,
 	@UserID INT,
 	@OddsGroup VARCHAR(3),
@@ -14,17 +11,18 @@ CREATE  PROCEDURE [dbo].[Lrf_CustomerUpdUgroup]
 	@ErrCode INT = 0 OUTPUT,
 	@ErrMsg nvarchar(4000) = '' OUTPUT
 AS
-
 /*
-Created: 20150120@Jim
-Task : Update OddsGroup for member
-DB: DBTXN/CustDB
+	Created: 20150120@Jim
+	Task : Update OddsGroup for member
+	DB: DBCUST/CustDB
 
-Revisions:
-	- 20150211@Jim: check isBA condition
-Param's Explanation:
-	--@ErrCode = 100: Wrong odds group,please have a check'
-	--@ErrCode = 101: Could not update odds group for this member 
+	Revisions:
+		- 20150211@Jim: check isBA condition
+		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
+
+	Param's Explanation:
+		--@ErrCode = 100: Wrong odds group,please have a check'
+		--@ErrCode = 101: Could not update odds group for this member 
 
 */
 
@@ -47,7 +45,7 @@ BEGIN
 					 , @ErrCode = 100
 	RETURN				 
 END
-ELSE IF EXISTS (SELECT 1 FROM DBLIC.bodb_licensee.dbo.LicenseeBAHistory WITH (NOLOCK) WHERE CustID = @CustID AND Status = 'Running')
+ELSE IF EXISTS (SELECT 1 FROM bodb_licensee.dbo.LicenseeBAHistory WITH (NOLOCK) WHERE CustID = @CustID AND Status = 'Running')
 	  BEGIN 
 			SELECT @ErrMsg = 'This is BA member, please check again'
 					 , @ErrCode = 102
@@ -109,17 +107,5 @@ BEGIN
 	END CATCH				
 	
 END
-
 GO
 
-SET QUOTED_IDENTIFIER OFF 
-GO
-SET ANSI_NULLS ON 
-GO
-
-
-GO 
- GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerUpdUgroup] TO [vnteam]
-GO 
- GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdUgroup] TO [bodbLicenseeNet]
-GO 

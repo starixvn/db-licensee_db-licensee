@@ -1,4 +1,7 @@
-﻿/*<info serverAlias="DBLIC-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/ 
+﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
+USE bodb_Licensee
+GO
+
 ALTER PROCEDURE [dbo].[Lrf_CustomerRemoveGroupComm]
 	@LicenseeID INT,
 	@strCustIDOriginal VARCHAR(MAX),--member
@@ -11,38 +14,39 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerRemoveGroupComm]
 	@ErrMsg varchar(8000) = '' OUTPUT
 AS  
 /*  
- * Created: 20120801@Henry
- * Task : Remove Group Comm
- * DB: DBLIC/bodb_Licensee  
- *  
- * Revisions:     
-	- 20130413@Jim: support multi langueges
-	- 20131025@Hannah: offer Live Casino commission
-	- 20131126@Hannah: offer RNG Casino commission
-	- 20140115@Hannah: separate @strCustID INPUT and OUTPUT parameter
-	- 20140612@Victor: fix VARCHAR(4000) issue
-	- 20160805@Jim: LRF - Offer different member commission for parlay tickets [RedmineID:#61897]
-	- 20171024@Johnson: offer Allbet commision [Redmine: #82036]
-	- 20180228@Vicky: Remove LC from product list [Redmine: #85965]
-	- 20180809@Amanda: Remove Racing [RedmineID: #99378]
-	- 20180924@Winnie: Remove Allbet [RedmineID: #99378]
+	Created: 20120801@Henry
+	Task : Remove Group Comm
+	DB: DBCUST/bodb_Licensee  
+   
+	Revisions:     
+		- 20130413@Jim: support multi langueges
+		- 20131025@Hannah: offer Live Casino commission
+		- 20131126@Hannah: offer RNG Casino commission
+		- 20140115@Hannah: separate @strCustID INPUT and OUTPUT parameter
+		- 20140612@Victor: fix VARCHAR(4000) issue
+		- 20160805@Jim: LRF - Offer different member commission for parlay tickets [RedmineID:#61897]
+		- 20171024@Johnson: offer Allbet commision [Redmine: #82036]
+		- 20180228@Vicky: Remove LC from product list [Redmine: #85965]
+		- 20180809@Amanda: Remove Racing [RedmineID: #99378]
+		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
+		- 20180924@Winnie: Remove Allbet [RedmineID: #99378]
 */  
 BEGIN  
 	SET NOCOUNT ON
 	
 	DECLARE @SBComm DECIMAL(9,8), 
-		@NGComm DECIMAL(9,8),
-		@RNGComm DECIMAL(9,8),
+			@NGComm DECIMAL(9,8),
+			@RNGComm DECIMAL(9,8),
 		@ParlayComm DECIMAL(9,8),	
-		@CustID INT, 
-		@i INT	
+			@CustID INT, 
+			@i INT	
 	
 	SELECT @strCustIDOriginal = ltrim(rtrim(@strCustIDOriginal))
 	
 	IF @strCustIDOriginal = ''
 	BEGIN
 		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN 'Wrong input, please check again!'
-				ELSE [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200003,@Langkey)
+				ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200003,@Langkey)
 				END
 		RETURN
 	END
@@ -52,15 +56,13 @@ BEGIN
 	SELECT CustID 
 	FROM dbo.LicenseeCustComm WITH (NOLOCK) 
 	WHERE LicenseeID = @LicenseeID 
-			AND CustID IN (SELECT RTRIM(LTRIM(VAL)) FROM bodb02.dbo.Lrf_f_StringSplit(@strCustIDOriginal,','))
+			AND CustID IN (SELECT RTRIM(LTRIM(VAL)) FROM LAP_f_StringSplit(@strCustIDOriginal,','))
 			AND GroupCommID > 0
 	
-	IF NOT EXISTS(
-		SELECT TOP 1 1 FROM @TempCustID
-	)
+	IF NOT EXISTS(SELECT TOP 1 1 FROM @TempCustID)
 	BEGIN
 		SELECT @ErrMsg= CASE @Langkey WHEN 'en-US' THEN 'Nothing to remove!'
-									  ELSE [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200004,@Langkey)
+									  ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200004,@Langkey)
 									  END			
 		RETURN	
 	END
@@ -101,7 +103,6 @@ BEGIN
 			IF @ErrCode<>0
 			RETURN
 		END
-	
 		
 		UPDATE dbo.LicenseeCustComm WITH (ROWLOCK,UPDLOCK) 
 		SET GroupCommID=0
@@ -145,7 +146,7 @@ BEGIN
 	SELECT @StrCustID = STUFF(
                     (   SELECT  ',' + CONVERT(NVARCHAR(20), b.CustID) 
                         FROM  @TempCustID b  
-						INNER JOIN bodb02.dbo.custinfo a WITH (NOLOCK) ON a.custid = b.CustID
+						INNER JOIN CustDB.dbo.custinfo a WITH (NOLOCK) ON a.custid = b.CustID
 						WHERE a.SyncCasino = 1
                         FOR xml path('')
                     )

@@ -1,9 +1,8 @@
-set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
+/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet,bodbDownlineNet,bodbExtAccNet,Dot_Member,bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
+USE CustDB 
+GO
 
-
-ALTER   PROCEDURE [dbo].[Lrf_CustomerUpdCasinoStatus]
+ALTER PROCEDURE [dbo].[Lrf_CustomerUpdCasinoStatus]
 	@userID INT,
 	@custid INT,
 	@SportID INT,
@@ -14,19 +13,20 @@ ALTER   PROCEDURE [dbo].[Lrf_CustomerUpdCasinoStatus]
 	@ErrMsg nvarchar(4000) = '' OUTPUT
 AS
 /*
-Created: 20131021@Jim
-Task : LRF - Allow users to enable/ disable Casino games for specific players
-DB: DBTXN.bodb02
-Original: 
-Revisions:
+	Created: 20131021@Jim
+	Task : LRF - Allow users to enable/ disable Casino games for specific players
+	DB: DBCUST/CUSTDB
+	Original: 
+	Revisions:
+		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
     
-Param's Explanation:
+	Param's Explanation:
 
 */
 BEGIN
 	DECLARE @UserName VARCHAR(100)
 	SELECT @UserName=UserName
-	FROM DBLIC.bodb_licensee.dbo.Users WITH (NOLOCK)
+	FROM bodb_licensee.dbo.Users WITH (NOLOCK)
 	WHERE UserID=@userID
 	IF @SportID=162 -- Live Casino 
 		BEGIN 
