@@ -64,6 +64,7 @@ AS
 	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
 	- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 	- 20180723@Harper: Improve performance for winloss by product report [RedmineID: #98358]
+	- 20180810@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
 
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
