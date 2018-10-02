@@ -2,7 +2,7 @@
 USE bodb_Licensee
 GO
 
-ALTER PROCEDURE [dbo].[LAP_WriteLog_UserLog_Login]
+ALTER PROCEDURE [dbo].[LAP_WriteLog_UserLog_Login_Wrapper]
     @UserID int,  
     @ServerID int,   
     @LoginIP VARCHAR(20)='', 
