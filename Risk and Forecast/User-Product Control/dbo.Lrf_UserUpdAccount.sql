@@ -89,7 +89,7 @@ SELECT @LogSPData ='<Lrf_UserUpdAccount custid="'+ COALESCE(CAST(@userid as VARC
 SET @endRun = GETDATE()  
 SET @duration  = datediff (millisecond,@startRun,@endRun)   
 ---------------------------  
-EXEC LAP_WriteLog_UserLog_RunSP
+EXEC dbo.LAP_WriteLog_UserLog_RunSP_Wrapper
  @UserID = @UpdateBy,   
  @CustID = @UserID,  
  @ActionID = 2400,  

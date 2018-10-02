@@ -131,7 +131,7 @@ BEGIN
 		SELECT @UserID	= ISNULL(@UserID, 0), @ServerID = 200, @Duration = DATEDIFF(MILLISECOND, @Begin, GETDATE())
 		SELECT @LogData	= 'User: ' + @UserName +  ' - ' + 'Password: ' + @EncryptedPassword + ' - ' + @LogData
 
-		EXEC dbo.LAP_WriteLog_UserLog_Login
+		EXEC dbo.LAP_WriteLog_UserLog_Login_Wrapper
 			@UserID			= @UserID,
 			@ServerID		= @ServerID,
 			@LoginIP		= @LoginIP,
