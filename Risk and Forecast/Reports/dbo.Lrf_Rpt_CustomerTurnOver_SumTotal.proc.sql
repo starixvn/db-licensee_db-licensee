@@ -13,7 +13,6 @@ ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver_SumTotal]
 	,@Odds 			FLOAT
 	,@ReportBy  	TINYINT   =  1 
 ) 
-WITH RECOMPILE
 AS
 /*	
 Created: 20150603@Bobby
@@ -28,6 +27,7 @@ Revision:
 		2. Virtual Sports 2 (2701-2707)
 	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
 	- 20180810@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
+	- 20180810@Paul: Enhance performance [Redmine: #98260]
 
 Parameter's Explanation:
 			
@@ -35,9 +35,21 @@ Parameter's Explanation:
 BEGIN
 	SET NOCOUNT ON;
 
+	CREATE TABLE #tempSumData (
+		sporttype		SMALLINT, 
+		bettype			SMALLINT, 
+		StatusID		TINYINT,
+		betcount		INT,
+		stake			MONEY,
+		winlost			MONEY,
+		BetEffective	MONEY,
+		playercomm		MONEY,
+		odds			MONEY
+	)
+
 	IF( @searchCust = 1 )
 	BEGIN
-		IF( @Todate > @MoveBetsDay AND NOT EXISTS(SELECT TOP 1 1 FROM #tempSumTotal WHERE whticket = 1 ) )
+		IF @Todate > @MoveBetsDay
 		BEGIN
 			INSERT INTO #tempSumTotal
 			SELECT 1				AS WhTicket
@@ -51,10 +63,47 @@ BEGIN
 				
 		END
 		
-		IF(@FromDate <= @MoveBetsDay AND NOT EXISTS(SELECT TOP 1 1 FROM #tempSumTotal WHERE whticket = 2 ) )
+		IF @FromDate <= @MoveBetsDay
 		BEGIN
 			IF( @odds = 0 )
 			BEGIN
+				INSERT INTO #tempSumData(sporttype, bettype, StatusID
+								, betcount
+								, stake
+								, winlost
+								, BetEffective
+								, playercomm)
+				SELECT sporttype, bettype, StatusID
+					, SUM(b.betcount)	AS betcount
+					, SUM(b.stake) 		AS stake
+					, SUM(b.winlost)  	AS winlost
+					, SUM(b.BetEffective) AS BetEffective
+					, SUM(b.playercomm) AS playercomm
+				FROM (
+					SELECT	b.custid, 
+							CASE WHEN b.bettype IN (9, 10, 29) THEN 1
+								ELSE b.sporttype 
+							END AS sporttype,
+							bettype, StatusID
+									, SUM(b.betcount)	AS betcount
+									, SUM(b.stake) 		AS stake
+									, SUM(b.winlost)  	AS winlost
+									, SUM(b.BetEffective) AS BetEffective
+									, SUM(b.playercomm) AS playercomm
+					FROM #recommend rec
+						JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)						
+							ON  b.Recommend	= rec.CustID
+					WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
+					GROUP BY b.custid, 
+							CASE	WHEN b.bettype IN (9, 10, 29) THEN 1
+								ELSE b.sporttype 
+							END, bettype, StatusID
+					) b
+					INNER JOIN #tempCust  c WITH (NOLOCK)
+						ON b.custid 	= c.custid
+				GROUP BY sporttype, bettype, StatusID
+				OPTION(RECOMPILE)
+
 				INSERT INTO #tempSumTotal
 				SELECT 2				AS WhTicket 
 					, SUM(b.betcount)	AS betcount
@@ -63,82 +112,99 @@ BEGIN
 					, SUM (b.BetEffective) AS BetEffective
 					, SUM(b.playercomm) AS playercomm
 					, 0 AS totalrow
-				FROM bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)--, INDEX=CIX_winlostdate)
-					INNER JOIN #recommend rec
-					ON b.Recommend	= rec.CustID
-					INNER JOIN #tempCust  c WITH (NOLOCK)
-					ON b.custid 	= c.custid
+				FROM #tempSumData b
 					INNER JOIN #bettype bt
 					ON b.bettype 	=  bt.typeid
 					INNER JOIN #Status st
 					ON b.StatusID 	=  st.StatusID
 					INNER JOIN #ProductID p 
-					ON CASE	WHEN b.bettype IN (9, 10, 29) THEN 1
-							ELSE b.sporttype 
-						END			= p.sportID
-				WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
-				OPTION (RECOMPILE)
+					ON b.sporttype = p.sportID
 			END 
 			
 			-- Has Odds Value
 			IF( @odds > 0 )
 			BEGIN
+				INSERT INTO #tempSumData(sporttype, bettype, StatusID, odds
+								, betcount
+								, stake
+								, winlost
+								, BetEffective
+								, playercomm)
+				SELECT sporttype, bettype, StatusID, odds
+					, SUM(b.betcount)	AS betcount
+					, SUM(b.stake) 		AS stake
+					, SUM(b.winlost)  	AS winlost
+					, SUM(b.BetEffective) AS BetEffective
+					, SUM(b.playercomm) AS playercomm
+				FROM (
+					SELECT b.custid, CASE	WHEN b.bettype IN (9, 10, 29) THEN 1
+								ELSE b.sporttype 
+							END AS sporttype,
+							bettype, StatusID
+									, b.betcount	AS betcount
+									, b.stake		AS stake
+									, b.winlost  	AS winlost
+									, b.BetEffective AS BetEffective
+									, b.playercomm AS playercomm
+									, CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
+									OR b.bettype BETWEEN 81 AND 88
+									OR b.bettype BETWEEN 90 AND 120
+									OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
+									OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
+									OR b.bettype = 428 -- 2H Odd/Even
+									OR (b.bettype BETWEEN 603 AND 607 OR b.bettype BETWEEN 609 AND 613 OR b.bettype BETWEEN 615 AND 617) -- Basketball bettypes
+									OR b.bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
+									OR b.bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
+								)
+								THEN 
+										CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
+												WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
+												WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
+																	CASE 
+																		WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
+																		WHEN b.odds >=0 THEN (1 + b.odds) END
+												WHEN OddsType = 5 THEN --american odds to decimal
+																CASE
+																WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
+																WHEN (b.odds * 100) % 2 = 0 THEN 2
+																WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
+											END 
+							ELSE b.Odds
+						END AS Odds
+					FROM #recommend rec
+						JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)						
+							ON  b.Recommend	= rec.CustID
+					WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
+					) b
+					INNER JOIN #tempCust  c WITH (NOLOCK)
+						ON b.custid 	= c.custid
+				GROUP BY sporttype, bettype, StatusID, odds
+				OPTION(RECOMPILE)
+
 				INSERT INTO #tempSumTotal
 				SELECT 2				AS WhTicket 
 					, SUM(b.betcount)	AS betcount
 					, SUM(b.stake) 		AS turnover
 					, SUM(b.winlost)  	AS winlost
-					,SUM(b.BetEffective) AS BetEffective
+					, SUM(b.BetEffective) AS BetEffective
 					, SUM(b.playercomm) AS playercomm
 					, 0 AS totalrow
-				FROM bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)--, INDEX=CIX_winlostdate)
-					INNER JOIN #recommend rec
-					ON b.Recommend	= rec.CustID
-					INNER JOIN #tempCust  c WITH (NOLOCK)
-					ON b.custid 	= c.custid
+				FROM #tempSumData b
 					INNER JOIN #bettype bt
 					ON b.bettype 	=  bt.typeid
 					INNER JOIN #Status st
 					ON b.StatusID 	=  st.StatusID
 					INNER JOIN #ProductID p 
-					ON CASE	WHEN b.bettype IN (9, 10, 29) THEN 1
-							ELSE b.sporttype 
-						END			= p.sportID
-				WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
-					AND CASE WHEN (	b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-								OR b.bettype BETWEEN 81 AND 88
-								OR b.bettype BETWEEN 90 AND 120
-								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar
-								OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes	
-								OR b.bettype = 428 -- 2H Odd/Even
-								OR (bettype BETWEEN 603 AND 607 OR bettype BETWEEN 609 AND 613 OR bettype BETWEEN 615 AND 617) -- Basketball bettypes
-								OR bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
-								OR bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
-							)
-							THEN 
-									CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
-											WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
-											WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
-																CASE 
-																	WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
-																	WHEN b.odds >=0 THEN (1 + b.odds) END
-											WHEN OddsType = 5 THEN --american odds to decimal
-															CASE
-															WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
-															WHEN (b.odds * 100) % 2 = 0 THEN 2
-															WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
-										END 
-						ELSE b.Odds
-					END >= @odds
-				OPTION (RECOMPILE)
+					ON b.sporttype = p.sportID	
+				WHERE b.odds >= @odds
 			END
 		END	
 	END
+
 	-- VIEW all member
 	IF (@searchCust = 0)
-	BEGIN
-		
-		IF( @Todate > @MoveBetsDay AND NOT EXISTS(SELECT TOP 1 1 FROM #tempSumTotal WHERE whticket = 1 ) )
+	BEGIN		
+		IF @Todate > @MoveBetsDay
 		BEGIN
 			INSERT INTO #tempSumTotal
 			SELECT 1				AS WhTicket
@@ -151,11 +217,34 @@ BEGIN
 			FROM #tempBettrans b					
 		END
 
-		IF(@FromDate <= @MoveBetsDay AND NOT EXISTS(SELECT TOP 1 1 FROM #tempSumTotal WHERE whticket = 2) )
+		IF @FromDate <= @MoveBetsDay
 		BEGIN
 			IF( @odds = 0 )
 			BEGIN
-			
+				INSERT INTO #tempSumData(sporttype, bettype, StatusID
+								, betcount
+								, stake
+								, winlost
+								, BetEffective
+								, playercomm)
+				SELECT	CASE	WHEN b.bettype IN (9, 10, 29) THEN 1
+							ELSE b.sporttype 
+						END AS sporttype,
+						bettype, StatusID
+								, SUM(b.betcount)	AS betcount
+								, SUM(b.stake) 		AS stake
+								, SUM(b.winlost)  	AS winlost
+								, SUM(b.BetEffective) AS BetEffective
+								, SUM(b.playercomm) AS playercomm
+				FROM #recommend rec
+					JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)						
+						ON  b.Recommend	= rec.CustID
+				WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
+				GROUP BY CASE	WHEN b.bettype IN (9, 10, 29) THEN 1
+							ELSE b.sporttype 
+						END, bettype, StatusID
+				OPTION(RECOMPILE)
+
 				INSERT INTO #tempSumTotal
 				SELECT 2				AS WhTicket 
 					, SUM(b.betcount)	AS betcount
@@ -164,71 +253,89 @@ BEGIN
 					, SUM(b.BetEffective) AS BetEffective
 					, SUM(b.playercomm) AS playercomm
 					, 0 AS totalrow
-				FROM bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)--, INDEX=CIX_winlostdate)
-					INNER JOIN #recommend rec
-					ON b.Recommend	= rec.CustID
+				FROM #tempSumData b
 					INNER JOIN #bettype bt
 					ON b.bettype 	=  bt.typeid
 					INNER JOIN #Status st
 					ON b.StatusID 	=  st.StatusID
 					INNER JOIN #ProductID p 
-					ON CASE	WHEN b.bettype IN (9, 10, 29) THEN 1
-							ELSE b.sporttype 
-						END			= p.sportID
-				WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
-				OPTION (RECOMPILE)
+					ON b.sporttype = p.sportID	
 			END
 	
 			-- Has Odds Value
 			IF (@odds > 0 )
 			BEGIN
-			
+				INSERT INTO #tempSumData(sporttype, bettype, StatusID, odds
+								, betcount
+								, stake
+								, winlost
+								, BetEffective
+								, playercomm)
+				SELECT sporttype, bettype, StatusID, odds
+					, SUM(b.betcount)	AS betcount
+					, SUM(b.stake) 		AS stake
+					, SUM(b.winlost)  	AS winlost
+					, SUM(b.BetEffective) AS BetEffective
+					, SUM(b.playercomm) AS playercomm
+				FROM (
+					SELECT CASE	WHEN b.bettype IN (9, 10, 29) THEN 1
+								ELSE b.sporttype 
+							END AS sporttype,
+							bettype, StatusID
+									, b.betcount	AS betcount
+									, b.stake		AS stake
+									, b.winlost  	AS winlost
+									, b.BetEffective AS BetEffective
+									, b.playercomm AS playercomm
+									, CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
+									OR b.bettype BETWEEN 81 AND 88
+									OR b.bettype BETWEEN 90 AND 120
+									OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
+									OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
+									OR b.bettype = 428 -- 2H Odd/Even
+									OR (b.bettype BETWEEN 603 AND 607 OR b.bettype BETWEEN 609 AND 613 OR b.bettype BETWEEN 615 AND 617) -- Basketball bettypes
+									OR b.bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
+									OR b.bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
+								)
+								THEN 
+										CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
+												WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
+												WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
+																	CASE 
+																		WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
+																		WHEN b.odds >=0 THEN (1 + b.odds) END
+												WHEN OddsType = 5 THEN --american odds to decimal
+																CASE
+																WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
+																WHEN (b.odds * 100) % 2 = 0 THEN 2
+																WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
+											END 
+							ELSE b.Odds
+						END AS Odds
+					FROM #recommend rec
+						JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)						
+							ON  b.Recommend	= rec.CustID
+					WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
+					) b
+				GROUP BY sporttype, bettype, StatusID, odds					
+				OPTION(RECOMPILE)
+
 				INSERT INTO #tempSumTotal
 				SELECT 2				AS WhTicket 
 					, SUM(b.betcount)	AS betcount
 					, SUM(b.stake) 		AS turnover
 					, SUM(b.winlost)  	AS winlost
-					, SUM(b.BetEffective) As BetEffective
+					, SUM(b.BetEffective) AS BetEffective
 					, SUM(b.playercomm) AS playercomm
 					, 0 AS totalrow
-				FROM bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)--, INDEX=CIX_winlostdate)
-					INNER JOIN #recommend rec
-					ON b.Recommend	= rec.CustID
+				FROM #tempSumData b
 					INNER JOIN #bettype bt
 					ON b.bettype 	=  bt.typeid
 					INNER JOIN #Status st
 					ON b.StatusID 	=  st.StatusID
 					INNER JOIN #ProductID p 
-					ON CASE	WHEN b.bettype IN (9, 10, 29) THEN 1
-							ELSE b.sporttype 
-						END			= p.sportID
-				WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
-					AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-								OR b.bettype BETWEEN 81 AND 88
-								OR b.bettype BETWEEN 90 AND 120
-								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
-								OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
-								OR b.bettype = 428 -- 2H Odd/Even
-								OR (bettype BETWEEN 603 AND 607 OR bettype BETWEEN 609 AND 613 OR bettype BETWEEN 615 AND 617) -- Basketball bettypes
-								OR bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
-								OR bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
-							)
-							THEN 
-									CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
-											WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
-											WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
-																CASE 
-																	WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
-																	WHEN b.odds >=0 THEN (1 + b.odds) END
-											WHEN OddsType = 5 THEN --american odds to decimal
-															CASE
-															WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
-															WHEN (b.odds * 100) % 2 = 0 THEN 2
-															WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
-										END 
-						ELSE b.Odds
-					END >= @odds
-				OPTION (RECOMPILE)
+					ON b.sporttype = p.sportID	
+				WHERE b.odds >= @odds
 			END
 		END
 	END

@@ -10,7 +10,6 @@ ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver_SumMember]
 	,@Odds 			FLOAT
 	,@ReportBy  	TINYINT
 ) 
-WITH RECOMPILE
 AS
 /*	
 Created: 20150603@Bobby
@@ -25,6 +24,7 @@ Revision:
 		1. Basketball (603-607, 609-613, 615-617)
 		2. Virtual Sports 2 (2701-2707)
 	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
+	- 20180810@Paul: Enhance performance [Redmine: #98260]
 
 Parameter's Explanation:
 			
@@ -34,6 +34,22 @@ BEGIN
 
 	DECLARE @tempFromDate SMALLDATETIME, 
 			@tempToDate SMALLDATETIME
+
+	CREATE TABLE #tempCustData (
+		winlostdate		SMALLDATETIME,
+		sporttype		SMALLINT, 
+		bettype			SMALLINT, 
+		custid			INT, 
+		currency		INT,
+		StatusID		TINYINT,
+		betcount		INT,
+		stake			MONEY,
+		winlost			MONEY,
+		BetEffective	MONEY,
+		playercomm		MONEY
+	)
+
+	CREATE CLUSTERED INDEX CIX_tempCustData ON #tempCustData(custid, winlostdate)
 
 	SELECT @tempFromDate =  CASE WHEN @pStartDate <= @MoveBetsDay THEN DATEADD(DAY,1,@MoveBetsDay)
 								ELSE @pStartDate
@@ -49,129 +65,100 @@ BEGIN
 		SELECT c.rowno
 			, c.winlostdate 
 			, c.custid
-			, rec.currency
+			, c.username
+			, b.currency
 			, b.sporttype
 			, b.bettype
 			, SUM(1) 			as betcount
 			, SUM(b.stake) 		as turnover 
 			, SUM(b.winlost) 	as winlost
-			,SUM (b.BetEffective) as BetEffective
+			, SUM (b.BetEffective) as BetEffective
 			, SUM(b.playercomm) as playercomm
-			, c.whticket
 		FROM #tempBettrans b
-			INNER JOIN #recommend rec
-			ON b.Recommend	= rec.CustID
 			INNER JOIN #tempCustPaging c 
 			ON  b.custid		= c.custid 
-			AND c.winlostdate 	= CASE WHEN @ReportBy =  2 THEN DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0)
-									ELSE b.winlostdate
-								END
-		
-		WHERE b.winlostdate BETWEEN @tempFromDate AND @pEndDate
-		
+			AND c.winlostdate 	= b.winlostdate
 		GROUP BY
 			c.rowno
 			,c.winlostdate 
 			,c.custid
-			,rec.currency
+			,c.username
+			,b.currency
 			,b.sporttype
 			,b.bettype
-			,c.whticket
-			
-		OPTION (RECOMPILE)
 	END
 
 	IF(@pStartDate <= @MoveBetsDay)
 	BEGIN
 		IF ( @odds = 0 )
 		BEGIN
-			INSERT INTO #custData
-			SELECT 
-				c.rowno
-				, c.winlostdate 
-				, c.custid
-				, rec.currency
-				, CASE	WHEN b.bettype IN (9, 10, 29) THEN 1
+			INSERT INTO #tempCustData (
+				winlostdate,
+				custid, 
+				currency,
+				sporttype, 
+				bettype, 
+				StatusID,
+				betcount,
+				stake,
+				winlost,
+				BetEffective,
+				playercomm
+			)
+			SELECT CASE WHEN @ReportBy =  2 THEN DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) 
+						ELSE winlostdate
+					END AS winlostdate, b.custid, rec.currency,
+					CASE WHEN b.bettype IN (9, 10, 29) THEN 1
 						ELSE b.sporttype 
-					END AS sporttype  
-				, b.bettype
-				, SUM(b.betcount) as betcount
-				, SUM(b.stake) as turnover 
-				, SUM(b.winlost) as winlost
-				, SUM(b.BetEffective) As BetEffective
-				, SUM(b.playercomm) as playercomm
-				, c.whticket
-				
-			FROM bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH (NOLOCK)
-				INNER JOIN #recommend rec
-				ON b.Recommend	= rec.CustID
-				INNER JOIN #tempCustPaging c 
-				ON  b.custid	= c.custid
-				AND c.winlostdate 	= CASE WHEN @ReportBy =  2 THEN DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0)
-										ELSE b.winlostdate
-									END				
-				INNER JOIN #bettype bt
-				ON b.bettype 	=  bt.typeid
-				INNER JOIN #Status st
-				ON b.StatusID 	=  st.StatusID
-				INNER JOIN #ProductID p 
-				ON CASE	WHEN b.bettype IN (9, 10, 29) THEN 1
-						ELSE b.sporttype 
-					END			= p.sportID
-					
+					END AS sporttype, bettype, StatusID
+					, SUM(b.betcount)	AS betcount
+					, SUM(b.stake) 		AS stake
+					, SUM(b.winlost)  	AS winlost
+					, SUM(b.BetEffective) AS BetEffective
+					, SUM(b.playercomm) AS playercomm
+			FROM #recommend rec
+				JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)
+						ON b.Recommend	= rec.CustID
 			WHERE b.winlostdate BETWEEN @pStartDate AND @tempToDate
-				
-			GROUP BY
-				c.rowno
-				, c.winlostdate 
-				, c.custid
-				, rec.currency
-				, CASE	WHEN b.bettype IN (9, 10, 29) THEN 1
+			GROUP BY b.custid, CASE WHEN @ReportBy =  2 THEN DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) 
+						ELSE winlostdate
+					END, rec.currency, 
+					CASE WHEN b.bettype IN (9, 10, 29) THEN 1
 						ELSE b.sporttype 
-					END
-				,b.bettype
-				,c.whticket
-			
-			OPTION (RECOMPILE)
+					END, bettype, StatusID
+			OPTION(RECOMPILE)	
 		END
 		
 		--Has Odds Value
 		IF ( @odds > 0 )
 		BEGIN
-			INSERT INTO #custData
-			SELECT 
-				c.rowno
-				, c.winlostdate 
-				, c.custid
-				, rec.currency
-				, CASE	WHEN b.bettype IN (9, 10, 29) THEN 1
+			INSERT INTO #tempCustData (
+				winlostdate,
+				custid, 
+				currency,
+				sporttype, 
+				bettype, 
+				StatusID,
+				betcount,
+				stake,
+				winlost,
+				BetEffective,
+				playercomm
+			)
+			SELECT CASE WHEN @ReportBy =  2 THEN DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) 
+						ELSE winlostdate
+					END AS winlostdate, b.custid, rec.currency,
+					CASE WHEN b.bettype IN (9, 10, 29) THEN 1
 						ELSE b.sporttype 
-					END AS sporttype  
-				, b.bettype
-				, SUM(b.betcount) as betcount
-				, SUM(b.stake) as turnover 
-				, SUM(b.winlost) as winlost
-				, SUM(b.BetEffective) As BetEffective
-				, SUM(b.playercomm) as playercomm
-				, c.whticket
-				
-			FROM bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH (NOLOCK)
-				INNER JOIN #recommend rec
-				ON b.Recommend	= rec.CustID
-				INNER JOIN #tempCustPaging c 
-				ON  b.custid	= c.custid 
-				AND c.winlostdate 	= CASE WHEN @ReportBy =  2 THEN DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0)
-										ELSE b.winlostdate
-									END
-				INNER JOIN #bettype bt
-				ON b.bettype 	=  bt.typeid
-				INNER JOIN #Status st
-				ON b.StatusID 	=  st.StatusID
-				INNER JOIN #ProductID p 
-				ON CASE	WHEN b.bettype IN (9, 10, 29) THEN 1
-						ELSE b.sporttype 
-					END			= p.sportID
-					
+					END AS sporttype, bettype, StatusID
+					, SUM(b.betcount)	AS betcount
+					, SUM(b.stake) 		AS stake
+					, SUM(b.winlost)  	AS winlost
+					, SUM(b.BetEffective) AS BetEffective
+					, SUM(b.playercomm) AS playercomm
+			FROM #recommend rec
+				JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)
+						ON b.Recommend	= rec.CustID
 			WHERE b.winlostdate BETWEEN @pStartDate AND @tempToDate
 				AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
 								OR b.bettype BETWEEN 81 AND 88
@@ -197,21 +184,48 @@ BEGIN
 															WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
 									 END 
 					  ELSE b.Odds
-				 END >= @odds 
-				
-			GROUP BY
-				c.rowno
-				, c.winlostdate 
-				, c.custid
-				, rec.currency
-				, CASE	WHEN b.bettype IN (9, 10, 29) THEN 1
+				 END >= @odds
+			GROUP BY b.custid, CASE WHEN @ReportBy =  2 THEN DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) 
+						ELSE winlostdate
+					END, rec.currency, 
+					CASE WHEN b.bettype IN (9, 10, 29) THEN 1
 						ELSE b.sporttype 
-					END
-				,b.bettype
-				,c.whticket
-			
-			OPTION (RECOMPILE)
+					END, bettype, StatusID
+			OPTION(RECOMPILE)
 		END
+
+		INSERT INTO #custData
+		SELECT 
+			c.rowno
+			, b.winlostdate 
+			, b.custid
+			, c.username
+			, b.currency
+			, b.sporttype  
+			, b.bettype
+			, SUM(b.betcount) as betcount
+			, SUM(b.stake) as turnover 
+			, SUM(b.winlost) as winlost
+			, SUM(b.BetEffective) As BetEffective
+			, SUM(b.playercomm) as playercomm
+				
+		FROM #tempCustData b
+			INNER JOIN #tempCustPaging c 
+				ON  b.custid	= c.custid AND c.winlostdate 	= b.winlostdate
+			INNER JOIN #bettype bt
+				ON b.bettype 	=  bt.typeid
+			INNER JOIN #Status st
+				ON b.StatusID 	=  st.StatusID
+			INNER JOIN #ProductID p 
+				ON b.sporttype = p.sportID				
+		GROUP BY
+			c.rowno
+			, b.winlostdate 
+			, b.custid
+			, c.username
+			, b.currency
+			, b.sporttype 
+			, b.bettype		
 	END
 
 	RETURN;
