@@ -1,5 +1,3 @@
-Risk and Forecast\PlayerComm\dbo.Lrf_CustomerMoveGroupComm.sql
-Risk and Forecast\PlayerComm\dbo.Lrf_CustomerRemoveGroupComm.sql
-Risk and Forecast\PlayerComm\dbo.Lrf_LicenseeCustCommUpd.sql
-Risk and Forecast\PlayerComm\dbo.Lrf_LicenseeGroupCommDel.sql
-Risk and Forecast\PlayerComm\dbo.Lrf_LicenseeGroupCommUpd.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_WinlossByProduct.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_WinlossByProductDetail_Ag.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_WinlossByProductDetail.sql
