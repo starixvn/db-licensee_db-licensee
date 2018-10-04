@@ -1,6 +1,4 @@
 ﻿/*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
-USE bodb02
-GO
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerBalance] 
 	@FromDate		SMALLDATETIME
@@ -27,6 +25,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerBalance]
 	, @ShowCO		BIT = 0
 	, @ShowVS2		BIT = 0 -- BetRadar VS
 	, @ShowLT		BIT = 0 -- Lottery
+	, @ShowPP		BIT = 0 -- PP
 	,@AgentList		VARCHAR(MAX)
 AS
 /*  
@@ -65,6 +64,7 @@ Revisions:
 	- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
 	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 	- 20180412@Harper: Integrate Bonus wallet [RedmineID: 91740]
+	- 20180418@Amanda: LAP - Integrate PP [RedmineID: #92318]
 
 Param's Explanation:  
 	+ @excludeTest: remove currency UUS  
@@ -177,6 +177,11 @@ BEGIN
 	IF @ShowLT = 1
 	BEGIN
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'LT', 'LT')
+	END
+	
+	IF @ShowPP = 1
+	BEGIN
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'PP', 'PP')
 	END
 
 	IF LEN(ISNULL(@ProductList, '')) > 0 
@@ -704,9 +709,3 @@ BEGIN
 	DROP TABLE #SumWinlost
 END
 GO
-
-GO 
- GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_CustomerBalance] TO [vnteam]
-GO 
- GRANT EXECUTE ON [dbo].[Lrf_Rpt_CustomerBalance] TO [bodbLicenseeNet]
-GO 

@@ -1,6 +1,4 @@
 ﻿/*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
-USE bodb02
-GO
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_TurnOver]
 	@FromDate       SMALLDATETIME,  
@@ -24,6 +22,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_TurnOver]
 	@ShowCO			BIT = 0,
 	@ShowVS2		BIT = 0, -- Bet Radar Virtual Sports
 	@ShowLT			BIT = 0, -- Lottery
+	@ShowPP			BIT = 0, -- PP
 	@AgentList		VARCHAR(MAX)
 AS 
 /*
@@ -69,6 +68,7 @@ Revisions:
    - 20180129@Harper: Remove LC from product list [RedmineID: #85965]
    - 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
    - 20180412@Harper: Integrate Bonus wallet [RedmineID: 91740]
+   - 20180418@Amanda: LAP - Integrate PP [RedmineID: #92318]
 
 Param's Explanation:
     
@@ -131,6 +131,7 @@ BEGIN
 	IF @ShowCO		= 1 INSERT INTO @sporttype(sporttype) VALUES(-6), (-7)
 	IF @ShowVS2	= 1 INSERT INTO @sporttype(sporttype) VALUES(190),(193)
 	IF @ShowLT	= 1 INSERT INTO @sporttype(sporttype) VALUES(220)
+	IF @ShowPP	= 1 INSERT INTO @sporttype(sporttype) VALUES(248)
 
 	IF @username <> ''
 	BEGIN
@@ -589,9 +590,3 @@ BEGIN
 
 END
 GO
-
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_TurnOver] TO [bodbLicenseeNet] 
-GO
-
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_TurnOver] TO [vnteam]
-GO 

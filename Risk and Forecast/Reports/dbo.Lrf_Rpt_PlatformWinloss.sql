@@ -17,6 +17,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_PlatformWinloss]
 	@ShowFW		BIT=0,
 	@ShowVS2	BIT = 0, -- Bet Radar Virtual Sports
 	@ShowLT		BIT = 0, -- Lottery
+	@ShowPP		BIT = 0, -- PP
 	@PlatformType	TINYINT=0, 
 	@MoveBetsDay	SMALLDATETIME,
 	@drawfilter		SMALLINT = 1,
@@ -41,6 +42,7 @@ AS
 		- 20171020@Harper: LRF - Add "New Asia" in platform list [RedmineID: #85203]
 		- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 		- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
+		- 20180418@Amanda: LAP - Update VB bet type range and integrate PP [RedmineID: #92318]
 
 	Param's Explanation:  
 	  + @PlatformType:  0: All  
@@ -63,6 +65,9 @@ AS
 	  + @ShowVB: Show Voidbridge
 	  + @ShowAB: Show Allbet
 	  + @ShowFW : Show Fishing World
+	  + @ShowVS2: Show Virtual sport 2
+	  + @ShowLT: Show Lottery
+	  + @ShowPP : Show PP
 	  + @MoveBetsDay: The day we move tickets to bettrans14
 */
     
@@ -239,10 +244,10 @@ BEGIN
 	BEGIN 
 		SET @SportTypeSQL = @SportTypeSQL + ', (212, ''VB'')'
 
-		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 4001 AND 7999 THEN ''VB''
+		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 4001 AND 4100 THEN ''VB''
 				'
 
-		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 4001 AND 7999)'
+		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 4001 AND 4100)'
 	END
 
 	IF @showAB = 1 -- Allbet
@@ -283,6 +288,16 @@ BEGIN
 				'
 
 		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 1021 AND 1049)'
+	END
+	
+	IF @ShowPP = 1 -- PP
+	BEGIN
+		SET @SportTypeSQL = @SportTypeSQL + ', (248, ''PP'')'
+
+		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 4101 AND 4300 THEN ''PP''
+				'
+
+		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 4101 AND 4300)'
 	END
 
 	SET @SportTypeSQL = STUFF(@SportTypeSQL, 1, 1, '')
@@ -412,7 +427,7 @@ BEGIN
 		END
 	
 	
-		IF (@ShowRB=1 or @ShowNG=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @showMGCLC =1 OR @showMGCRnG =1 OR @ShowVB = 1 OR @ShowAB =1  OR @ShowFW =1 OR @ShowVS2 = 1 OR @ShowLT = 1)
+		IF (@ShowRB=1 or @ShowNG=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @showMGCLC =1 OR @showMGCRnG =1 OR @ShowVB = 1 OR @ShowAB =1  OR @ShowFW =1 OR @ShowVS2 = 1 OR @ShowLT = 1 OR @ShowPP = 1)
 		BEGIN
 			INSERT INTO #WinLoss (Winlostdate, Currency, ProductPrefix, PlatformType, Turnover, Winlost, LicenseeWL, playercomm, BetCount)
 			SELECT 
@@ -518,7 +533,7 @@ BEGIN
 			
 		END
 
-		IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @showMGCLC =1 OR @showMGCRnG =1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW =1 OR @ShowVS2 = 1 OR @ShowLT = 1)
+		IF (@showSB = 1 or @ShowRB = 1 or @ShowNG = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @showMGCLC =1 OR @showMGCRnG =1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW =1 OR @ShowVS2 = 1 OR @ShowLT = 1 OR @ShowPP = 1)
 		BEGIN
 			INSERT INTO #WinLoss (Winlostdate, Currency, ProductPrefix, PlatformType, Turnover, Winlost, LicenseeWL, playercomm, BetCount)
 			SELECT 

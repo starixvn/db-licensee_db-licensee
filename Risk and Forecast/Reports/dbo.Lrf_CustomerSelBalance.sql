@@ -1,9 +1,5 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 
-USE [bodb02]
- 
-SET QUOTED_IDENTIFIER ON
-GO
 ALTER PROCEDURE [dbo].[Lrf_CustomerSelBalance]
 	@LicenseeID INT,
 	@MoveBetsDay SMALLDATETIME,
@@ -59,6 +55,7 @@ Revisions:
 	- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @LicenseeType [Redmine: #71679]
 	- 20170329@Paul: Implement Cash Out [RedmineID: #71727]
 	- 20180205@Harper: Remove LC from product list [RedmineID: #85965]
+	- 20180418@Amanda: LAP - Update VB bet type range and integrate PP [RedmineID: #92318]
 */
 
 BEGIN
@@ -300,12 +297,12 @@ BEGIN
 	WHERE b.statusid = 0 -- running
 	GROUP BY a.currency
 
-	--Voidbridge
+	-- Voidbridge(4001-4100) & PP(4101-4300)
 	INSERT INTO @SumOutstanding (currency, outstanding)
 	SELECT a.currency,ISNULL(SUM(b.actual_stake),0)
 	FROM dbo.bettransRnG b WITH(NOLOCK) 
 		INNER JOIN @TempAg a ON b.recommend = a.custid AND b.currency = a.currency
-	WHERE b.gameID BETWEEN 4001 AND 7999
+	WHERE b.gameID BETWEEN 4001 AND 4300
 		AND b.statusid IN (0,1)
 	GROUP BY a.currency
 	
@@ -368,7 +365,8 @@ BEGIN
 	FROM dbo.bettrans b WITH(NOLOCK) 
 		INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
 	WHERE b.winlostdate BETWEEN @MoveBetsDay AND @Today 
-		AND (b.bettype <= 1599 OR b.bettype BETWEEN 4001 AND 7999)
+		AND (b.bettype <= 1599 
+			OR b.bettype BETWEEN 4001 AND 4300) -- Voidbridge & PP
 		AND b.bettype NOT BETWEEN 1011 AND 1020
 		AND b.bettype NOT BETWEEN 1101 AND 1199 -- Remove LC
 		AND b.statusID IN (111,112,113)
@@ -387,7 +385,7 @@ BEGIN
 							b.bettype BETWEEN 81 AND 120 
 							OR b.bettype BETWEEN 1201 AND 1299 
 							OR b.bettype BETWEEN 1501 AND 1599 --Keno
-							OR b.bettype BETWEEN 4001 AND 7999
+							OR b.bettype BETWEEN 4001 AND 4300 -- Voidbridge & PP
 							OR b.bettype IN (73)
 						)
 						) THEN (b.winlost - b.actual_stake)  
@@ -809,8 +807,3 @@ BEGIN
 	DROP TABLE #Temp_Bettrans
 END
 GO
-GRANT EXECUTE ON [dbo].[Lrf_CustomerSelBalance] TO [bodbDownlineNet] AS [dbo]
-GO
-GRANT EXECUTE ON [dbo].[Lrf_CustomerSelBalance] TO [bodbLicenseeNet] AS [dbo]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerSelBalance] TO [vnteam] AS [dbo]
