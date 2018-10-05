@@ -1,4 +1,4 @@
-/*<info serverAlias="DBLOG-bodb_CustomerLog" executers="bodbLicenseeNet,bodbAdminNet,Dot_Member" viewers="vnteam" isFunction="0"></info>*/
+/*<info serverAlias="DBLOG-bodb_CustomerLog,DBCUST-bodb_CustomerLog" executers="bodbLicenseeNet,bodbAdminNet,Dot_Member" viewers="vnteam" isFunction="0"></info>*/
 USE bodb_CustomerLog
 GO
 
@@ -12,7 +12,7 @@ ALTER PROCEDURE [dbo].[WriteLog_UserLog_UpdMemComm_RunSP]
 /*  
 	Created: 20140703@Francis
     Task: Write log for updating member's commission using batch by batch method
-    DB: DBLOG/bodb_CustomerLog
+    DB: DBLOG/bodb_CustomerLog,DBCUST-bodb_CustomerLog
 
 	Revisions:
 		- 20171026@Johnson: offer Allbet commision [Redmine: #82036]

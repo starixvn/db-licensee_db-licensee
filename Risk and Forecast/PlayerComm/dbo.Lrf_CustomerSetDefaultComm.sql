@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBLIC-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/ 
+﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/ 
 USE bodb_Licensee
 GO
 
@@ -12,7 +12,7 @@ AS
 /*
 	Created: 20121227@Henry
 	Task : Update Default Commission of Player
-	DB: DBLIC/bodb_Licensee
+	DB: DBCUST/bodb_Licensee
 
 	Revisions:
 		- 20130413@Jim: support multi language
