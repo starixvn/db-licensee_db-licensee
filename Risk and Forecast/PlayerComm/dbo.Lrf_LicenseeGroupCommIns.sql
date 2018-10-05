@@ -130,7 +130,7 @@ BEGIN
 		'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
 		'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(8000)),SPACE(1))+ '" />'				
 		
-		EXEC LAP_WriteLog_UserLog_RunSP_Wrapper
+		EXEC Lrf_WriteLog_UserLog_RunSP_Wrapper
 					@UserID = @UserID,
 					@CustID = @GroupCommID,
 					@ActionID = 2609,

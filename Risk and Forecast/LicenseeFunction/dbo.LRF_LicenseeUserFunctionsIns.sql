@@ -77,7 +77,7 @@ BEGIN
 	SET @endRun = GETDATE()
 	SET @duration  = DATEDIFF (MILLISECOND,@startRun,@endRun)	 
 
-	EXEC dbo.LAP_WriteLog_UserLog_RunSP_Wrapper
+	EXEC dbo.Lrf_WriteLog_UserLog_RunSP_Wrapper
 		@UserID = @UserID,
 		@CustID = @CustID,
 		@ActionID = 2404,

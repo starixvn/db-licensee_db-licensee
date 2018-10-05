@@ -45,7 +45,7 @@ BEGIN
 	SELECT CustID 
 	FROM dbo.LicenseeCustComm WITH (NOLOCK) 
 	WHERE LicenseeID = @LicenseeID 
-			AND CustID IN (SELECT RTRIM(LTRIM(VAL)) FROM LAP_f_StringSplit(@strCustIDOriginal,','))
+			AND CustID IN (SELECT RTRIM(LTRIM(VAL)) FROM Lrf_f_StringSplit(@strCustIDOriginal,','))
 
 	EXEC [Lrf_CustomerUpdMemberComm] 
 		@LicenseeID=@LicenseeID

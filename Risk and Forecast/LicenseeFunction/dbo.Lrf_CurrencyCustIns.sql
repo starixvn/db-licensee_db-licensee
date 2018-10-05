@@ -92,7 +92,7 @@ BEGIN
 		SET @endRun = GETDATE()
 		SET @duration  = datediff (millisecond,@startRun,@endRun)
 
-		EXEC LAP_WriteLog_UserLog_RunSP_Wrapper
+		EXEC Lrf_WriteLog_UserLog_RunSP_Wrapper
 			@UserID = @ModifyBy,
 			@CustID = @UserID,
 			@ActionID = 2801,

@@ -55,7 +55,7 @@ BEGIN
 	FROM dbo.LicenseeCustComm b WITH (NOLOCK) 
 		INNER JOIN CustDB.dbo.custinfo a WITH (NOLOCK) ON a.custid = b.custid
 	WHERE LicenseeID = @LicenseeID 
-			AND b.CustID IN (SELECT RTRIM(LTRIM(VAL)) FROM LAP_f_StringSplit(@strCustIDOriginal,','))
+			AND b.CustID IN (SELECT RTRIM(LTRIM(VAL)) FROM Lrf_f_StringSplit(@strCustIDOriginal,','))
 			AND a.SyncCasino = 1
 
 	IF @IsUpdateRNG=0
