@@ -1,4 +1,4 @@
-/*<info serverAlias="DBLIC-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="1"></info>*/
+/*<info serverAlias="DBLIC-bodb_Licensee" selecters="bodbLicenseeNet" viewers="vnteam" isFunction="1"></info>*/
 
 CREATE FUNCTION [dbo].[Lrf_f_GetSportTypeByProduct]  
 (  
