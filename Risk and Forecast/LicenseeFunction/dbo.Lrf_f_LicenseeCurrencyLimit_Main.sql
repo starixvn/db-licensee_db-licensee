@@ -52,7 +52,4 @@ BEGIN
 							
 	RETURN						
 END
-
-GO  
- GRANT SELECT ON [dbo].[Lrf_f_LicenseeCurrencyLimit] TO [bodbLicenseeNet]
-GO 
+GO
