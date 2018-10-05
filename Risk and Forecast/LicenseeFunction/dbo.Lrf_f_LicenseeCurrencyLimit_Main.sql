@@ -1,7 +1,7 @@
 /*<info serverAlias="DBCUST-bodb_Licensee" selecters="bodbLicenseeNet" viewers="" isFunction="1" isNested="0"></info>*/
 USE bodb_Licensee
 GO 
-CREATE FUNCTION [dbo].[LAP_f_LicenseeCurrencyLimit] 
+CREATE FUNCTION [dbo].[Lrf_f_LicenseeCurrencyLimit_Main] 
 (
 )
 RETURNS  @tblLicenseeCurrency TABLE (LicenseeID INT, CurrencyID INT)
@@ -54,5 +54,5 @@ BEGIN
 END
 
 GO  
- GRANT SELECT ON [dbo].[LAP_f_LicenseeCurrencyLimit] TO [bodbLicenseeNet]
+ GRANT SELECT ON [dbo].[Lrf_f_LicenseeCurrencyLimit] TO [bodbLicenseeNet]
 GO 
