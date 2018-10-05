@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-bodb_Licensee" selecters="bodbLicenseeNet,bodbAdminNet" viewers="" isFunction="1" isNested="0"></info>*/
+/*<info serverAlias="DBCUST-bodb_Licensee" selecters="bodbLicenseeNet,bodbAdminNet" viewers="" isFunction="1" isNested="1"></info>*/
 use bodb_Licensee
 GO 
 
