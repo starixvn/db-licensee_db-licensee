@@ -2,7 +2,7 @@
 USE [bodb_Licensee]
 GO
 
-ALTER PROCEDURE [dbo].[LAP_WriteLog_UserLog_RunSP_Wrapper]
+ALTER PROCEDURE [dbo].[Lrf_WriteLog_UserLog_RunSP_Wrapper]
 	@UserID INT,
 	@CustID INT = 0,
 	@ActionID INT = NULL,	

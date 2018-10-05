@@ -2,7 +2,7 @@
 USE [bodb_Licensee]
 GO
 
-ALTER PROCEDURE LAP_WriteLog_UserLog_LicenseeBAConfig_Wrapper
+ALTER PROCEDURE Lrf_WriteLog_UserLog_LicenseeBAConfig_Wrapper
 	@UserID INT,
 	@LicenseeID INT,
 	@1x2Comm DECIMAL(9,8),
