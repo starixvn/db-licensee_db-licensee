@@ -77,8 +77,8 @@ end
 DECLARE @LogSPData VARCHAR(5000)  
 
 SELECT @LogSPData ='<Lrf_UserUpdAccount custid="'+ COALESCE(CAST(@userid as VARCHAR(50)),SPACE(1)) + '" ' +  
- 'fname="'+ dbo.Lrf_f_EncodeXMLValue(COALESCE(CAST(@FirstName as nvarchar(50)),SPACE(1))) + '" ' +  
- 'lname="'+ dbo.Lrf_f_EncodeXMLValue(COALESCE(CAST(@LastName as nvarchar(50)),SPACE(1))) + '" ' +  
+ 'fname="'+ dbo.Lrf_f_EncodeXMLValue_Main(COALESCE(CAST(@FirstName as nvarchar(50)),SPACE(1))) + '" ' +  
+ 'lname="'+ dbo.Lrf_f_EncodeXMLValue_Main(COALESCE(CAST(@LastName as nvarchar(50)),SPACE(1))) + '" ' +  
  'Status="'+ COALESCE(CAST(@Status as VARCHAR(50)),SPACE(1)) + '" ' +  
  --'PageAccess="'+ COALESCE(CAST(@PageAccess as VARCHAR(500)),SPACE(1)) + '" ' +  
  'LicenseeName="'+ COALESCE(CAST(@LicenseeName as VARCHAR(50)),SPACE(1)) + '" ' +  
