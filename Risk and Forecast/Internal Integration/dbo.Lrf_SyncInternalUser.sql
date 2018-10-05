@@ -61,8 +61,8 @@ BEGIN
 	BEGIN
 		INSERT INTO @Currency (CurrencyID)
 		SELECT DISTINCT Currency AS CurrencyID
-		FROM dbo.LAP_f_SelLicenseeCust (@LicenseeID)	
-		WHERE Currency NOT IN (SELECT CurrencyID FROM dbo.LAP_f_LicenseeCurrencyLimit() WHERE LicenseeID = @LicenseeID)
+		FROM dbo.Lrf_f_SelLicenseeCust (@LicenseeID)	
+		WHERE Currency NOT IN (SELECT CurrencyID FROM dbo.Lrf_f_LicenseeCurrencyLimit_Main() WHERE LicenseeID = @LicenseeID)
 
 		-- if user exists --> update new password, if not --> insert new
 		SELECT @UserID = UserID, @UserOldPassWord = UserPwd

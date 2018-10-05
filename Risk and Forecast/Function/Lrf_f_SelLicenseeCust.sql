@@ -2,7 +2,7 @@
 use bodb_Licensee
 GO 
 
-ALTER FUNCTION [dbo].[LAP_f_SelLicenseeCust]
+ALTER FUNCTION [dbo].[Lrf_f_SelLicenseeCust]
 	(@LicenseeID INT = 0)
 RETURNS @tbLicenseeCust TABLE 
 (
