@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBLIC-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/ 
+﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/ 
 ALTER PROCEDURE [dbo].[Lrf_LicenseeGroupCommSel]
 	@LicenseeID INT,
 	@GroupName VARCHAR(100) = ''
@@ -6,7 +6,7 @@ AS
 /*  
  * Created: 20120726@Henry
  * Task : Select Group Commission
- * DB: DBLIC/bodb_Licensee  
+ * DB: DBCUST/bodb_Licensee  
  *  
  * Revisions:     
  - 20121227@Henry: Add column IsDefault
@@ -17,6 +17,7 @@ AS
  - 20171020@Johnson: offer Allbet commision [Redmine: #82036]
  - 20180228@Vicky: Remove LC from product list [Redmine: #85965]
  - 20180809@Amanda: Remove Racing [RedmineID: #99378]
+ - 20181003@Sophia: Migrate SP from DB052 to DBCUST [Redmine: #99855]
  - 20180927@Winnie: Remove AllBet [RedmineID: #99378]
 */  
 BEGIN  
