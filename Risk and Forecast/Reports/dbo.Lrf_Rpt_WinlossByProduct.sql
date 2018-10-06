@@ -63,6 +63,7 @@ AS
 	- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 	- 20180723@Harper: Improve performance for winloss by product report [RedmineID: #98358]
 	- 20180810@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
+	- 20181005@Amanda: Remove Racing, Bingo [RedmineID: #99378]
 
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -416,8 +417,8 @@ BEGIN
 						ELSE 1 END
 				),     
 				SUM(b.winlost),  
-				SUM(CASE WHEN (b.sporttype in(0,161,251,252,202,203,205,208,209,210,212,220))  THEN -1 * b.winlost 
-						WHEN b.sporttype = 151 THEN b.awinlost ELSE 0 END
+				SUM(CASE WHEN (b.sporttype in(0,161,251,202,203,205,208,209,210,212,220))  THEN -1 * b.winlost 
+						ELSE 0 END
 					) AS LicenseeWL,
 				SUM(comm ) as Comm,
 				SUM( PlayerComm  ) AS PlayerComm, 
