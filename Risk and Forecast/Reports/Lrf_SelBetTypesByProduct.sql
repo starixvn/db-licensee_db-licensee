@@ -11,7 +11,7 @@ Task : Get bet types by product code
 DB: DBLIC/bodb_Licensee
 
 Revisions:
-	- 20180703@Amanda: Get bet types by product code multi language
+	- 20180703@Amanda: Get bet types by product code multi language [RedmineID: #80941]
 	
 */
 /* sample test case:
@@ -49,6 +49,3 @@ BEGIN
 END
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_SelBetTypesByProduct] TO [bodbLicenseeNet] 
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_SelBetTypesByProduct] TO [vnteam]

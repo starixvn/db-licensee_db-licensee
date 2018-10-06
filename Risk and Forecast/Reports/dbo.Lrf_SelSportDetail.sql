@@ -186,6 +186,3 @@ BEGIN
 END
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_SelSportDetail] TO [bodbLicenseeNet] 
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_SelSportDetail] TO [vnteam]

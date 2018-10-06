@@ -62,8 +62,3 @@ BEGIN
 RETURN
 END
 GO
-
-GRANT SELECT ON [dbo].[Lrf_f_GetSportTypeByProduct] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_f_GetSportTypeByProduct] TO [vnteam]
-GO
