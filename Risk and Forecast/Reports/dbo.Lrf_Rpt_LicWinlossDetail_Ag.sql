@@ -271,8 +271,7 @@ BEGIN
 	END	
 	
 	DECLARE @TempFromDate	DATETIME, 
-			@TempToDate		DATETIME, 
-			@MaxOldDate		DATETIME,
+			@TempToDate		DATETIME,
 			@FDate			DATETIME,
 			@TDate			DATETIME
 
