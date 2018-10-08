@@ -33,8 +33,9 @@ Revisions:
    - 20170919@Percy: Change way get SportBettypeMatrix [RedmineID: #83442]
    - 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
    - 20180424@Joseph: Fix bug group VS2: BasketBall - Virual Soccer [RedmineID: #93844]
+   - 20180703@Amanda: Refactor code [RedmineID: #80941]
 
-	Param's Explanation:  
+	Param's Explanation:
 Param's Explanation:
 	
 */
