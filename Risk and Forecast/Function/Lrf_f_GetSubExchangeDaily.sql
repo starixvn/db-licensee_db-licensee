@@ -1,12 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet,bodbAdminNet,Dot_Casino" viewers="vnteam" isFunction="1" isNested="0"></info>*/
-USE [bodb02]
-GO
-/****** Object:  UserDefinedFunction [dbo].[Lrf_f_GetSubExchangeDaily]    Script Date: 12/8/2017 9:55:40 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
+/*<info serverAlias="DBACC-bodb02,DB042-bodb02" executers="bodbLicenseeNet,bodbAdminNet,Dot_Casino" viewers="vnteam" isFunction="1" isNested="0"></info>*/
 ALTER FUNCTION [dbo].[Lrf_f_GetSubExchangeDaily]
     (
       @FromDate			SMALLDATETIME,
@@ -31,11 +23,12 @@ AS
 /*  
 	Created: 20171206@Don
 	Task: New way to get exchange rate
-	DB: DBEXT.bodb02
+	DB: DBEXT.bodb02,DBACC-bodb02,DB042.bodb02
 	Revisions:  
 
 	Param's Explanation:  			
 	- 20171206@Don: Initial version
+	- 20181008@Joseph: Deploy to 2 servers DBACC-bodb02,DB042.bodb02 (used by SP betlists) [Redmine #80941]
 
 */
 BEGIN
@@ -121,16 +114,4 @@ BEGIN
 	RETURN
 
 END
-GO
-
-GRANT SELECT ON [dbo].[Lrf_f_GetSubExchangeDaily] TO [bodbAdminNet] AS [dbo]
-GO
-
-GRANT SELECT ON [dbo].[Lrf_f_GetSubExchangeDaily] TO [bodbLicenseeNet] AS [dbo]
-GO
-
-GRANT SELECT ON [dbo].[Lrf_f_GetSubExchangeDaily] TO [Dot_Casino] AS [dbo]
-GO
-
-GRANT VIEW DEFINITION ON [dbo].[Lrf_f_GetSubExchangeDaily] TO [vnteam] AS [dbo]
 GO
