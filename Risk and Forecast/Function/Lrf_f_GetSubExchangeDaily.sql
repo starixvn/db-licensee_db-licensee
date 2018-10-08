@@ -1,4 +1,4 @@
-/*<info serverAlias="DBACC-bodb02,DB042-bodb02" executers="bodbLicenseeNet,bodbAdminNet,Dot_Casino" viewers="vnteam" isFunction="1" isNested="0"></info>*/
+/*<info serverAlias="DBACC-bodb02,DB042-bodb02" selecters="bodbLicenseeNet,bodbAdminNet,Dot_Casino" viewers="vnteam" isFunction="1" isNested="0"></info>*/
 ALTER FUNCTION [dbo].[Lrf_f_GetSubExchangeDaily]
     (
       @FromDate			SMALLDATETIME,
