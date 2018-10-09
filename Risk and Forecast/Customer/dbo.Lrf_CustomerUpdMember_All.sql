@@ -1,12 +1,4 @@
-﻿USE [CustDB]
-GO
-/****** Object:  StoredProcedure [dbo].[Lrf_CustomerUpdMember_All]    Script Date: 2/13/2014 9:35:22 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
-
+﻿/*<info serverAlias="DBCUST-CustDB" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
 ALTER PROC [dbo].[Lrf_CustomerUpdMember_All]  
  @LicenseeID INT,	
  @custid INT,--memberid  
@@ -46,10 +38,6 @@ ALTER PROC [dbo].[Lrf_CustomerUpdMember_All]
  @MaxBetv44 MONEY,  
  @MaxPerMatchv44 MONEY,
  
- @MinBetv154 MONEY,  
- @MaxBetv154 MONEY,  
- @MaxPerMatchv154 MONEY,
- 
  @MinBetv99 MONEY,  
  @MaxBetv99 MONEY,  
  @MaxPerMatchv99 MONEY,  
@@ -67,7 +55,6 @@ ALTER PROC [dbo].[Lrf_CustomerUpdMember_All]
  @UpdateMinMaxBetv10 BIT = 1,  
  @UpdateMinMaxBetv11 BIT = 1,  
  @UpdateMinMaxBetv44 BIT = 1, 
- @UpdateMinMaxBetv154 BIT = 1, 
  @UpdateMinMaxBetv99 BIT = 1,  
  @UpdateMinMaxBetv99MP BIT = 1,  
  
@@ -85,6 +72,7 @@ Revisions:
     - 20130123@Daniel: Change link server alias & failover writelog to DBTXN
 	- 20140207@Jim: support to offer HorseRacingFixedOdds
 	- 20151015@Jim: Integrate Sportbook2 (Feature #44759)
+	- 20181009@Winnie: Remove Racing  (Feature #99378)
 Param's Explanation:  
 • @ErrCode:  
     = 0: Update successfully.  
@@ -125,7 +113,6 @@ if  @UpdateMinMaxBet  = 1 or
  @UpdateMinMaxBetv10  = 1 or  
  @UpdateMinMaxBetv11  = 1 or  
  @UpdateMinMaxBetv44  = 1 or 
- @UpdateMinMaxBetv154  = 1 or 
  @UpdateMinMaxBetv99  = 1 or  
  @UpdateMinMaxBetv99MP = 1
 BEGIN  
@@ -155,10 +142,7 @@ BEGIN
   @maxpermatchv11 = @maxpermatchv11,
   @minbetv44 = @minbetv44,  
   @maxbetv44 = @maxbetv44,  
-  @maxpermatchv44 = @maxpermatchv44,
-  @minbetv154 = @minbetv154,  
-  @maxbetv154 = @maxbetv154,  
-  @maxpermatchv154 = @maxpermatchv154,	
+  @maxpermatchv44 = @maxpermatchv44, 
   @minbetv99 = @minbetv99,  
   @maxbetv99 = @maxbetv99,  
   @maxpermatchv99 = @maxpermatchv99,  
@@ -173,7 +157,6 @@ BEGIN
   @UpdateMinMaxBetv10 = @UpdateMinMaxBetv10,  
   @UpdateMinMaxBetv11 = @UpdateMinMaxBetv11, 
   @UpdateMinMaxBetv44 = @UpdateMinMaxBetv44,
-  @UpdateMinMaxBetv154=@UpdateMinMaxBetv154,	
   @UpdateMinMaxBetv99 = @UpdateMinMaxBetv99,  
   @UpdateMinMaxBetv99MP = @UpdateMinMaxBetv99MP,  
   @UserID = @UserID,  
