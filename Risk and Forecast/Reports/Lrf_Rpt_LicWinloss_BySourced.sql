@@ -226,8 +226,7 @@ BEGIN
 	END	
 
 	DECLARE @TempFromDate	DATETIME,
-			@TempToDate		DATETIME,
-			@MaxOldDate		DATETIME
+			@TempToDate		DATETIME
 
 	IF @_ToDate > @MoveBetsDay
 	BEGIN
