@@ -117,7 +117,7 @@ IF @SportID=251 -- RNG Casino
 	SET @endRun = GETDATE()
 	SET @duration  = datediff (millisecond,@startRun,@endRun)
 
-	EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP 
+	EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
 		@UserID = @UserID,
 		@CustID = @CustID,
 		@ActionID = 2014,
@@ -126,8 +126,4 @@ IF @SportID=251 -- RNG Casino
 		@duration = @duration
 END
 
-GO
-GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdCasinoStatus] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerUpdCasinoStatus] TO vnteam
 
