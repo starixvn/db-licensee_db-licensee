@@ -16,7 +16,7 @@ AS
    
     Revisions:  
 		- 20180905@Amanda: Initial SP [Redmine: #95177]
-		- 20181005@Amanda: Remove used code [RedmineID: #99378]
+		- 20181005@Amanda: Remove unused code [RedmineID: #99378]
 
 	Param's Explanation:  
 	
