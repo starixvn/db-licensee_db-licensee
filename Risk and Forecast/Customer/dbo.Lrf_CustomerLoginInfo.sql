@@ -17,6 +17,7 @@ AS
 		- 20120718@Henry: fix bug display wrong TnxDate
 		- 20131218@winnie: change from db06 to DBARC Alias
 		- 20180711@Amanda: get username of LAP if log data is after LAP launch data [#97994]
+		- 20181010@Sophia: add DBLOG for table UserLog_RunSP [redmine: 99855]
 	Param's Explanation:	
 */
 BEGIN
@@ -26,7 +27,7 @@ BEGIN
 	DECLARE @SpecialLevelUpdateByName VARCHAR(50), @SpecialLevelUpdateDate DATETIME,@SpecialLevelUpdateByID INT
 
 	SELECT TOP 1 @SpecialLevelUpdateByID = UserID, @SpecialLevelUpdateDate = LogDate
-	FROM bodb_CustomerLog.dbo.UserLog_RunSP WITH (NOLOCK)
+	FROM DBLOG.bodb_CustomerLog.dbo.UserLog_RunSP WITH (NOLOCK)
 	WHERE	CustID = @CustID
 			AND ActionID = 2407
 	ORDER BY LogDate DESC
