@@ -1,0 +1,4 @@
+Risk and Forecast\Reports\dbo.Lrf_Rpt_CustomerTurnOver.proc.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_CustomerTurnOver_Pagination.proc.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_CustomerTurnOver_SumMember.proc.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_CustomerTurnOver_SumTotal.proc.sql

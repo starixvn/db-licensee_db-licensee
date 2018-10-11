@@ -33,6 +33,7 @@ Revision:
 	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
 	- 20180810@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
 	- 20180810@Paul: Enhance performance [Redmine: #98260]
+	- 20181008@Paul: Hot Fix. Duplicate data [Redmine: #102850]
 
 Parameter's Explanation:
 			
@@ -330,6 +331,12 @@ BEGIN
 	--CREATE INDEXERS
 	CREATE CLUSTERED INDEX [CIX_tempPaging] ON #tempPaging (custid)	
 	
+	DELETE p
+	FROM #tempPaging p
+		LEFT JOIN #tempPaging t ON p.custid = t.custid AND p.winlostdate = t.winlostdate AND t.whticket = 1
+	WHERE p.whticket = 2
+		AND t.custid > 0
+
 	--GET paging item
 	IF @IsExportExcel = 1
 	BEGIN
