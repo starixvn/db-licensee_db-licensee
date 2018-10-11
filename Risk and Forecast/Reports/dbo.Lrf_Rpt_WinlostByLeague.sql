@@ -46,6 +46,7 @@ exec Lrf_Rpt_WinlostByLeague
 		- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID [Redmine: #71679]
 		- 20170327@Paul: Implement Cash Out [RedmineID :#71727]
 		- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
+		- 20180808@Amanda: Remove Racing [RedmineID: #99378]
 
 	Parameter's Explanation:
 		- @LicenseeID : Licensee ID
@@ -143,12 +144,8 @@ BEGIN
 		,turnover MONEY
 		,MemberWinLost MONEY
 		,LicenseeWL MONEY
-		,--Sportbook and NumberGame  
-		WinlossRB MONEY
 		,AmtDueToBA MONEY
-		,AmtDueToRB MONEY
 		,CommBA MONEY
-		,CommRB MONEY
 		,PlayerComm MONEY
 		,race NVARCHAR(20)
 		,matchcode NVARCHAR(50)
@@ -217,11 +214,8 @@ BEGIN
 					,SUM(stake)
 					,SUM(winlost - b.actual_stake)
 					,0 AS LicenseeWL
-					,0 AS WinlossRB
 					,-SUM(winlost - b.actual_stake + awinlost + comm) AS AmountDueToBA
-					,0 AS AmountDueToRB
 					,SUM(comm) AS CommBA
-					,0 AS CommRB
 					,SUM(b.playercomm) AS PlayerComm
 					,''
 					,m.matchcode
@@ -234,7 +228,7 @@ BEGIN
 				INNER JOIN @TempAg ta ON b.recommend = ta.CustId AND b.Currency = ta.Currency
 				WHERE b.winlostdate BETWEEN @TempFromDate AND @todate
 					AND (
-						b.bettype < 31
+						b.bettype <= 30
 						OR (b.bettype BETWEEN 121 AND 999)		
 						OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes		
 						)
@@ -351,11 +345,8 @@ BEGIN
 					,SUM(stake)
 					,SUM(winlost - b.actual_stake)
 					,- SUM(winlost - b.actual_stake) AS LicenseeWL
-					,0 AS WinlossRB
 					,0 AS AmountDueToBA
-					,0 AS AmountDueToRB
 					,0 AS CommBA
-					,0 AS CommRB
 					,SUM(b.playercomm) AS PlayerComm
 					,''
 					,m.matchcode
@@ -368,7 +359,7 @@ BEGIN
 				INNER JOIN @TempAg ta ON b.recommend = ta.CustId AND b.Currency = ta.Currency
 				WHERE b.winlostdate BETWEEN @TempFromDate AND @todate
 					AND (
-						b.bettype < 31
+						b.bettype <= 30
 						OR (b.bettype BETWEEN 121 AND 999)	
 						OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes			
 						)
@@ -534,11 +525,8 @@ BEGIN
 					,SUM(stake)
 					,SUM(winlost)
 					,0 AS LicenseeWL
-					,0 AS WinlossRB
 					,-sum(Winlost + awinlost + comm) AS AmountDueToBA
-					,0 AS AmountDueToRB
 					,sum(comm) AS CommBA
-					,0 AS CommRB
 					,SUM(b.playercomm) AS playercomm
 					,'' AS race
 					,m.matchcode
@@ -551,7 +539,7 @@ BEGIN
 				INNER JOIN @TempAg ag ON b.recommend = ag.custid AND b.Currency = ag.Currency
 				WHERE winlostdate BETWEEN @fromdate AND @TempToDate
 					AND (
-						b.bettype < 31
+						b.bettype <= 30
 						OR (b.bettype BETWEEN 121 AND 999)			
 						OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes		
 						)
@@ -664,11 +652,8 @@ BEGIN
 					,SUM(stake)
 					,SUM(winlost)
 					,- SUM(b.winlost) AS LicenseeWL
-					,0 AS WinlossRB
 					,0 AS AmountDueToBA
-					,0 AS AmountDueToRB
 					,0 AS CommBA
-					,0 AS CommRB
 					,SUM(b.playercomm) AS playercomm
 					,'' AS race
 					,m.matchcode
@@ -681,7 +666,7 @@ BEGIN
 				INNER JOIN @TempAg ag ON b.recommend = ag.custid AND b.Currency = ag.Currency
 				WHERE winlostdate BETWEEN @fromdate AND @TempToDate
 					AND (
-						b.bettype < 31
+						b.bettype <= 30
 						OR (b.bettype BETWEEN 121 AND 999)	
 						OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes			
 						)
@@ -791,16 +776,10 @@ BEGIN
 		,CAST(SUM(LicenseeWL * e.USD) AS MONEY) AS LicenseeWLUSD
 		,CAST(SUM(LicenseeWL * e.EUR) AS MONEY) AS LicenseeWLEUR
 		,CAST(SUM(LicenseeWL * e.GBP) AS MONEY) AS LicenseeWLGBP
-		--,CAST(SUM(WinlossRB) AS MONEY) AS WinlossRB
-		--,CAST(SUM(WinlossRB * e.USD) AS MONEY) AS WinlossRBUSD
-		--,CAST(SUM(WinlossRB * e.EUR) AS MONEY) AS WinlossRBEUR
 		,CAST(SUM(CommBA) AS MONEY) AS CommBA
 		,CAST(SUM(CommBA * e.USD) AS MONEY) AS CommBAUSD
 		,CAST(SUM(CommBA * e.EUR) AS MONEY) AS CommBAEUR
 		,CAST(SUM(CommBA * e.GBP) AS MONEY) AS CommBAGBP
-		--,CAST(SUM(commRB) AS MONEY) AS commRB
-		--,CAST(SUM(commRB * e.USD) AS MONEY) AS commRBUSD
-		--,CAST(SUM(commRB * E.EUR) AS MONEY) AS commRBEUR
 		,CAST(SUM(PlayerComm) AS MONEY) AS PlayerComm
 		,CAST(SUM(PlayerComm * e.USD) AS MONEY) AS PlayerCommUSD
 		,CAST(SUM(PlayerComm * e.EUR) AS MONEY) AS PlayerCommEUR
@@ -855,6 +834,3 @@ BEGIN
 	DROP TABLE #match
 END
 GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinlostByLeague] TO [bodbLicenseeNet] AS [dbo]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_WinlostByLeague] TO [vnteam] AS [dbo]

@@ -33,19 +33,14 @@ Revisions:
    - 20170919@Percy: Change way get SportBettypeMatrix [RedmineID: #83442]
    - 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
    - 20180424@Joseph: Fix bug group VS2: BasketBall - Virual Soccer [RedmineID: #93844]
+   - 20180703@Amanda: Refactor code [RedmineID: #80941]
 
-	Param's Explanation:  
+	Param's Explanation:
 Param's Explanation:
 	
 */
 BEGIN
 	DECLARE @iDoc     	  INT  
-	DECLARE @checkVS  	  BIT
-	DECLARE @checkNG  	  BIT
-	DECLARE @checkVTennis BIT
-	DECLARE @checkVR 	  BIT 
-	DECLARE @checkVSW 	  BIT --Virtual Speedway
-	DECLARE @checkVS2	  BIT
 	DECLARE @strSport 	  VARCHAR(5000)
 	
 	CREATE TABLE #SportBettype (
@@ -57,18 +52,6 @@ BEGIN
 
 	DECLARE @isTest BIT = 0
 	SELECT  @isTest = dbo.f_CheckSPVersion(@@PROCID)
-	
-	INSERT INTO #SportBettype (SportType, Bettype)
-	SELECT DISTINCT SportType, Bettype
-	FROM bodb02.dbo.SportBettypeMatrix WITH (NOLOCK)
-	WHERE IsTest <= @isTest
-
-	SELECT @checkVS = 0
-		  ,@checkNG = 0
-		  ,@checkVTennis = 0
-		  ,@checkVR = 0
-		  ,@checkVSW = 0
-		  ,@checkVS2 = 0
 
 	EXEC sp_xml_preparedocument @iDoc OUTPUT, @SportList
 
@@ -86,21 +69,20 @@ BEGIN
 	FROM bodb02.dbo.strSplit(@strSport,',')
 	
 	-- Soccer - business logic
-	IF(EXISTS(SELECT 1 FROM @sportFilter WHERE sporttype = 1))
+	IF(EXISTS(SELECT 1 FROM @sportFilter WHERE sporttype = 1) AND NOT EXISTS (SELECT 1 FROM @sportFilter WHERE sporttype = 99))
 	BEGIN
-		INSERT INTO @sportFilter
-		SELECT 99 -- OtherSports
-		WHERE NOT EXISTS (SELECT 1 FROM @sportFilter WHERE sporttype = 99)
+		INSERT INTO @sportFilter(sporttype)
+		VALUES (99) -- OtherSports
 	END
 	
-	DELETE sp
-	FROM #SportBettype sp
-	WHERE NOT EXISTS (SELECT 1 FROM @sportFilter AS f WHERE sp.sporttype = f.sporttype)
-		OR sp.bettype IN (901,902,903,904) -- bettrade
-		OR sp.bettype BETWEEN 301 AND 304 -- MO
-		OR sp.bettype BETWEEN 801 AND 899 -- MG
-		OR sp.bettype IN (500,502) --Criket
-		OR sp.bettype IN (911,912,913,914) -- Cash Out
+	INSERT INTO #SportBettype (SportType, Bettype)
+	SELECT s.SportType, Bettype
+	FROM bodb02.dbo.SportBettypeMatrix s WITH (NOLOCK)
+	INNER JOIN @sportFilter f ON s.SportType = f.sporttype
+	WHERE	IsTest <= @isTest
+			AND s.bettype NOT IN (901,902,903,904/*bettrade*/,500,502/*Criket*/,300,301,302,303,304/*MO*/,911,912,913,914/*Cash out*/)
+			AND (s.bettype < 801 OR s.BetType > 899) -- MG
+	GROUP BY s.SportType, Bettype
 
 	-- Tenis - business logic
 	DELETE sp

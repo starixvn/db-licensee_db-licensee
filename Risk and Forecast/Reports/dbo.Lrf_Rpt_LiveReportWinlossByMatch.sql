@@ -40,6 +40,7 @@ Revisions:
 	- 20170329@Paul: Implement Cash Out [RedmineID: #71727]
 	- 20170710@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]	
 	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
+	- 20180808@Amanda: Remove bet type related to Racing [RedmineID: #99378]
 
 Return 3 tables:
 WinlostBySport
@@ -172,7 +173,7 @@ BEGIN
 		WHERE
 			 b.winlostdate BETWEEN @TempFromDate AND @TDate AND  			
 			b.matchid > 0 AND
-			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
+			(b.bettype <= 30  OR (b.bettype BETWEEN 121 AND 999)
 						  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 			) AND
 			b.bettype NOT IN (9,29,901,902,903,904) AND 
@@ -241,7 +242,7 @@ BEGIN
 			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency	
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
-			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
+			(b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999)
 							OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 			) AND
 			b.bettype NOT IN (9,29,901,902,903,904) AND 
@@ -388,7 +389,7 @@ BEGIN
 			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
 		WHERE
 			b.winlostdate BETWEEN @FDate AND @TempToDate  AND
-			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
+			(b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999)
 						  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 			) AND
 			b.bettype NOT IN (9,29,901,902,903,904) AND 
@@ -458,7 +459,7 @@ BEGIN
 			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency	
 		WHERE
 			b.winlostdate BETWEEN @FDate AND @TempToDate  AND
-			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
+			(b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999)
 			    	 	  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 			) AND
 			b.bettype NOT IN (9,29,901,902,903,904) AND 
@@ -620,7 +621,4 @@ group by b.matchid, b.homeid, b.awayid
 DROP TABLE #TempExchange
 DROP TABLE #tmpWinloss
 	
-GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_LiveReportWinlossByMatch] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LiveReportWinlossByMatch] TO [vnteam]  
+GO 

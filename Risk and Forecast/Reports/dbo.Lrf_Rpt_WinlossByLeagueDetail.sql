@@ -1,5 +1,4 @@
-USE [bodb02]
-GO
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
  
 ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByLeagueDetail]
 	@Odds FLOAT = 0
@@ -35,6 +34,7 @@ Revisions:
 	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
 	- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID [Redmine: #71679]
 	- 20170328@Paul: Implement Cash Out [RedmineID :#71727]
+	- 20180808@Amanda: Remove bet type related to Racing [RedmineID: #99378]
 Param's Explanation:   
    
 */
@@ -197,7 +197,7 @@ BEGIN
 			INNER JOIN match m WITH (NOLOCK) ON m.matchid = b.matchid
 			INNER JOIN @TempAg ta ON b.recommend = ta.CustId AND b.Currency = ta.Currency
 			WHERE (--SportBook
-					b.bettype < 31
+					b.bettype <= 30
 					OR (b.bettype BETWEEN 121 AND 999)
 					OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 					)
@@ -313,7 +313,7 @@ BEGIN
 			INNER JOIN match m WITH (NOLOCK) ON m.matchid = b.matchid
 			INNER JOIN @TempAg ta ON b.recommend = ta.CustId AND b.Currency = ta.Currency
 			WHERE (
-					b.bettype < 31
+					b.bettype <= 30
 					OR (b.bettype BETWEEN 121 AND 999)
 					OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 					)
@@ -441,7 +441,7 @@ BEGIN
 				INNER JOIN @TempAg ta ON b.recommend = ta.CustId AND b.Currency = ta.Currency
 				WHERE b.winlostdate BETWEEN @FromDate AND @TempToDate
 					AND (
-						b.bettype < 31
+						b.bettype <= 30
 						OR (b.bettype BETWEEN 121 AND 999)
 						OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 						)
@@ -549,7 +549,7 @@ BEGIN
 				INNER JOIN @TempAg ta ON b.recommend = ta.CustId AND b.Currency = ta.Currency
 				WHERE b.winlostdate BETWEEN @FromDate AND @TempToDate
 					AND (
-						b.bettype < 31
+						b.bettype <= 30
 						OR (b.bettype BETWEEN 121 AND 999)
 						OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 						)
@@ -729,6 +729,3 @@ BEGIN
 
 END
 GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_WinlossByLeagueDetail] TO [bodbLicenseeNet] AS [dbo]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_WinlossByLeagueDetail] TO [vnteam] AS [dbo]

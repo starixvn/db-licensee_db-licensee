@@ -1,11 +1,5 @@
-﻿USE [CustDB]
-GO
-/****** Object:  StoredProcedure [dbo].[Lrf_CustomerSelEditCustomer]    Script Date: 6/9/2015 12:48:50 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
+﻿
+/*<info serverAlias="DBCUST-CustDB" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_CustomerSelEditCustomer]
     @CustID INT
 AS
@@ -23,6 +17,7 @@ Revisions:
 	- 20140821@Jim: add more value DisableEsports in result
 	- 20150609@Kos: Separate CustDB to DBCUST server (Move SP to DBCUST.CustDB)
 	- 20151015@Jim: Integrate Sportbook2 (Feature #44759)
+	- 20181009@Winnie: Remove Racing  (Feature #99378)
 Param's Explanation:
 • @CustID: member ID
 */
@@ -36,7 +31,6 @@ DECLARE @MinBet_Max MONEY, @MaxBet_Min MONEY, @MaxPerMatch_Min MONEY, @MaxPerMat
         @MinBetv10_Max MONEY, @MaxBetv10_Min MONEY, @MaxPerMatchv10_Min MONEY, @MaxPerMatchv10_Max MONEY,
         @MinBetv11_Max MONEY, @MaxBetv11_Min MONEY, @MaxPerMatchv11_Min MONEY, @MaxPerMatchv11_Max MONEY,
 		@MinBetv44_Max MONEY, @MaxBetv44_Min MONEY, @MaxPerMatchv44_Min MONEY, @MaxPerMatchv44_Max MONEY,
-        @MinBetv154_Max MONEY, @MaxBetv154_Min MONEY, @MaxPerMatchv154_Min MONEY, @MaxPerMatchv154_Max MONEY,
         @MinBetv99_Max MONEY, @MaxBetv99_Min MONEY, @MaxPerMatchv99_Min MONEY, @MaxPerMatchv99_Max MONEY,
         @MinBetv99MP_Max MONEY, @MaxBetv99MP_Min MONEY, @MaxPerMatchv99MP_Min MONEY, @MaxPerMatchv99MP_Max MONEY
         
@@ -126,15 +120,7 @@ from
     INNER JOIN dbo.custinfo AS ci WITH (NOLOCK) ON (cs.CustID = ci.Recommend OR cs.CustID = ci.MRecommend OR cs.CustID = ci.SRecommend)
     AND cs.bettype = 3 AND cs.sporttype=44
 WHERE ci.custid = @CustID
---
-SELECT 
-    @MinBetv154_Max = MAX(CASE WHEN MinBet = 0 THEN NULL ELSE MinBet END), 
-    @MaxBetv154_Min = MIN(CASE WHEN MaxBet = 0 THEN NULL ELSE MaxBet END)
-from 
-    dbo.Dep_CustSetting AS cs WITH (NOLOCK)
-    INNER JOIN dbo.custinfo AS ci WITH (NOLOCK) ON (cs.CustID = ci.Recommend OR cs.CustID = ci.MRecommend OR cs.CustID = ci.SRecommend)
-    AND cs.bettype = 20 AND cs.sporttype=154
-WHERE ci.custid = @CustID
+
 
 SELECT 
     @MinBetv99_Max = MAX(CASE WHEN MinBet = 0 THEN NULL ELSE MinBet END), 
@@ -181,8 +167,6 @@ SELECT
 	@MaxPerMatchv44_Min = 0,
     @MaxPerMatchv44_Max = MIN(CASE WHEN cs.MaxPerMatch44 = 0 THEN NULL ELSE cs.MaxPerMatch44 END), 
 	--
-    @MaxPerMatchv154_Min = 0,
-    @MaxPerMatchv154_Max = MIN(CASE WHEN cs.MaxPerMatch154 = 0 THEN NULL ELSE cs.MaxPerMatch154 END), 
     
     @MaxPerMatchv99_Min = 0,
     @MaxPerMatchv99_Max = MIN(CASE WHEN cs.MaxPerMatch99 = 0 THEN NULL ELSE cs.MaxPerMatch99 END),
@@ -205,7 +189,6 @@ SELECT
     ISNULL(ci.maxpermatch10, 0) AS maxpermatchv10,
     ISNULL(ci.maxpermatch11, 0) AS maxpermatchv11,
 	ISNULL(ci.maxpermatch44, 0) AS maxpermatchv44,
-    ISNULL(ci.maxpermatch154, 0) AS maxpermatchv154,
     ISNULL(ci.maxpermatch99, 0) AS maxpermatchv99,
     ISNULL(ci.maxpermatch99MP, 0) AS maxpermatchv99MP,
     ISNULL(exchange.minbet, 0) AS defaultminbet,
@@ -233,9 +216,7 @@ SELECT
     
 	ISNULL(MAX(CASE WHEN cs.bettype = 3 AND cs.sporttype=44 THEN cs.minbet ELSE 0 END), 0) AS MinBetv44,
     ISNULL(MAX(CASE WHEN cs.bettype = 3 AND cs.sporttype=44 THEN cs.maxbet ELSE 0 END), 0) AS MaxBetv44,
-	
-    ISNULL(MAX(CASE WHEN cs.bettype = 20 AND cs.sporttype=154 THEN cs.minbet ELSE 0 END), 0) AS MinBetv154,
-    ISNULL(MAX(CASE WHEN cs.bettype = 20 AND cs.sporttype=154 THEN cs.maxbet ELSE 0 END), 0) AS MaxBetv154,
+
     
     ISNULL(MAX(CASE WHEN cs.bettype = 1 AND cs.sporttype=99 THEN cs.minbet ELSE 0 END), 0) AS MinBetv99,
     ISNULL(MAX(CASE WHEN cs.bettype = 1 AND cs.sporttype=99 THEN cs.maxbet ELSE 0 END), 0) AS MaxBetv99,
@@ -282,11 +263,7 @@ SELECT
     ISNULL(@MaxBetv44_Min, 0) AS MaxBetv44_Min,    
     ISNULL(@MaxPerMatchv44_Min, 0) AS MaxPerMatchv44_Min,    
     ISNULL(@MaxPerMatchv44_Max, 0) AS MaxPerMatchv44_Max,
-	
-    ISNULL(@MinBetv154_Max, 0) AS MinBetv154_Max,    
-    ISNULL(@MaxBetv154_Min, 0) AS MaxBetv154_Min,    
-    ISNULL(@MaxPerMatchv154_Min, 0) AS MaxPerMatchv154_Min,    
-    ISNULL(@MaxPerMatchv154_Max, 0) AS MaxPerMatchv154_Max,
+
     
     ISNULL(@MinBetv99_Max, 0) AS MinBetv99_Max,    
     ISNULL(@MaxBetv99_Min, 0) AS MaxBetv99_Min,    
@@ -316,7 +293,6 @@ GROUP BY
     ci.maxpermatch10, 
     ci.maxpermatch11,
 	ci.maxpermatch44,  
-    ci.maxpermatch154,
     ci.maxpermatch99,
     ci.maxpermatch99MP,
     exchange.minbet,

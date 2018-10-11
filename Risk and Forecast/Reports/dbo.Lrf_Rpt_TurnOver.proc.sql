@@ -5,11 +5,9 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_TurnOver]
     @ToDate         SMALLDATETIME,   
     @username		VARCHAR(50) = NULL,
     @showSB			BIT = 0,  
-    @ShowRB			BIT = 0,  
     @ShowNG			BIT = 0,     
     @ShowVS			BIT = 0,
     @ShowCS			BIT = 0, -- RNG Casino
-    @ShowBG			BIT = 0, -- Bingo
     @ShowKN			BIT = 0, -- Keno 
 	@ShowBT			BIT = 0, -- Bet Trade 
 	@ShowAB			BIT = 0, -- Allbet
@@ -69,6 +67,7 @@ Revisions:
    - 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
    - 20180412@Harper: Integrate Bonus wallet [RedmineID: 91740]
    - 20180418@Amanda: LAP - Integrate PP [RedmineID: #92318]
+   - 20180808@Amanda: Remove Racing, Bingo [RedmineID: #99378]
 
 Param's Explanation:
     
@@ -110,11 +109,9 @@ BEGIN
 	END CATCH;
     
 	IF @ShowSB		= 1 INSERT INTO @sporttype(sporttype) VALUES(0)
-	IF @ShowRB		= 1 INSERT INTO @sporttype(sporttype) VALUES(151) 
 	IF @ShowNG		= 1 INSERT INTO @sporttype(sporttype) VALUES(161)
 	IF @ShowVS		= 1 INSERT INTO @sporttype(sporttype) VALUES(180)
 	IF @ShowCS		= 1 INSERT INTO @sporttype(sporttype) VALUES(251),(208),(209),(210)
-	IF @ShowBG		= 1 INSERT INTO @sporttype(sporttype) VALUES(252)
 	IF @ShowKN		= 1 INSERT INTO @sporttype(sporttype) VALUES(202)
 	IF @ShowMGCLC	= 1 INSERT INTO @sporttype(sporttype) VALUES(203)
 	IF @ShowMGCRnG	= 1 INSERT INTO @sporttype(sporttype) VALUES(205)

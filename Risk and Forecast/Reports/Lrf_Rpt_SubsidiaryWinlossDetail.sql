@@ -16,6 +16,7 @@ AS
    
     Revisions:  
 		- 20180905@Amanda: Initial SP [Redmine: #95177]
+		- 20181005@Amanda: Remove unused code [RedmineID: #99378]
 
 	Param's Explanation:  
 	
@@ -71,14 +72,6 @@ BEGIN
 		END CATCH;
 	END
 	----- End Get AgentList
-	
-	----- Get Product code
-	DECLARE @productCodes AS TABLE (Code VARCHAR(10))
-	
-	INSERT INTO @productCodes
-	SELECT val 
-	FROM strSplit(@ProductList, ',')
-	----- End Get Product code
 
 	----- Get SportBettypeMatrix
 	DECLARE @IsTest BIT = 0

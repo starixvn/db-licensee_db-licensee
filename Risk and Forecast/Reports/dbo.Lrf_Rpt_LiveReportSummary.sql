@@ -59,6 +59,7 @@ Revisions:
 	- 20180205@Harper: Remove LC from product list [RedmineID: #85965]
 	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
 	- 20180418@Amanda: LAP - Update VB bet type range and integrate PP [RedmineID: #92318]
+	- 20180808@Amanda: Remove Racing, Bingo [RedmineID: #99378]
 
 Param's Explanation:
 	+ @IsLive : indicate that whether the report will get live data or not
@@ -197,35 +198,6 @@ BEGIN
 				t.currency		
 		END
 
-		--RB
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'RB'))
-		BEGIN
-			INSERT INTO #tmpWinloss
-			SELECT
-				b.winlostdate,
-				t.currency,
-				'RB' AS ProductCode,
-				SUM(CASE WHEN b.bettype IN (33, 43)	AND liveawayscore = 0 THEN stake / 2 ELSE stake	END) turnover,
-				SUM(b.winlost - b.actual_stake) AS Winlost,
-				SUM(b.awinlost) AS LicenseeWL,
-				SUM(comm) AS Comm,
-				SUM(playercomm) AS PlayerComm,
-				- SUM((b.winlost - b.actual_stake + awinlost + comm)) AmountDueTo3rd,
-				COUNT(b.transid) BetCount
-			FROM
-				dbo.bettrans b WITH (NOLOCK)
-				INNER JOIN @TempAg t ON b.recommend = t.custid AND t.Currency = b.Currency
-			WHERE
-				b.winlostdate BETWEEN @TempFromDate AND @TDate
-				AND b.bettype BETWEEN 31 AND 33
-				AND b.statusID IN (111, 112, 113)
-				AND (b.liveindicator = @Liveindicator OR @Liveindicator = 2)
-			GROUP BY
-				b.winlostdate,
-				t.currency,
-				b.bettype
-		END
-
 		--SB
 		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'SB'))
 		BEGIN
@@ -247,7 +219,7 @@ BEGIN
 			WHERE
 				b.winlostdate BETWEEN @TempFromDate AND @TDate
 				AND (
-					b.bettype < 31
+					b.bettype <= 30
 					OR (b.bettype BETWEEN 121 AND 999)
 					OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 					)
@@ -324,7 +296,7 @@ BEGIN
 		END
 
 		--Others	
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'NG', 'RB', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP'))			
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'NG', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP'))			
 		BEGIN
 			INSERT INTO #tmpWinloss
 			SELECT
@@ -333,7 +305,6 @@ BEGIN
 				CASE 
 					WHEN b.bettype BETWEEN 81 AND 120 THEN 'NG'
 					WHEN b.bettype BETWEEN 1201 AND 1299 THEN 'VS'
-					WHEN b.bettype = 73	THEN 'BG'
 					WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN' -- Keno
 					WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999 THEN 'CS' -- RNG CASINO
 					WHEN b.bettype BETWEEN 4001 AND 4100 THEN 'VB' -- Voidbridge
@@ -355,12 +326,10 @@ BEGIN
 				INNER JOIN @TempAg t ON b.recommend = t.custid AND t.Currency = b.Currency
 			WHERE
 				b.winlostdate BETWEEN @TempFromDate AND @TDate
-				AND b.bettype NOT IN (31, 32, 33)
 				AND b.statusID IN (111, 112, 113)
 				AND (
 					b.bettype BETWEEN 81 AND 120
 					OR b.bettype BETWEEN 1201 AND 1299
-					OR b.bettype IN (73) -- BINGO
 					OR b.bettype BETWEEN 1501 AND 1599 -- Keno
 					OR (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999) -- RNG CASINO
 					OR b.bettype BETWEEN 4001 AND 4100 -- Voidbridge
@@ -377,7 +346,6 @@ BEGIN
 				CASE 
 					WHEN b.bettype BETWEEN 81 AND 120 THEN 'NG'
 					WHEN b.bettype BETWEEN 1201 AND 1299 THEN 'VS'
-					WHEN b.bettype = 73	THEN 'BG'
 					WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN' -- Keno
 					WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999 THEN 'CS' -- RNG CASINO
 					WHEN b.bettype BETWEEN 4001 AND 4100 THEN 'VB' -- Voidbridge
@@ -468,7 +436,7 @@ BEGIN
 		END
 
 		----Others
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'RB', 'VS', 'BG', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP')	)
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP')	)
 		BEGIN
 			INSERT INTO #tmpWinloss
 			SELECT 
@@ -477,9 +445,7 @@ BEGIN
 				CASE 
 					WHEN b.bettype BETWEEN 81 AND 120 THEN 'NG'
 					WHEN (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 and 1399)) THEN 'SB'
-					WHEN b.bettype BETWEEN 31 AND 33 THEN 'RB'
 					WHEN b.bettype BETWEEN 1201 AND 1299 THEN 'VS'
-					WHEN b.bettype = 73	THEN 'BG'
 					WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN'
 					WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999 THEN 'CS' -- RNG CASINO
 					WHEN b.bettype BETWEEN 4001 AND 4100 THEN 'VB' -- Voidbridge
@@ -489,9 +455,9 @@ BEGIN
 					WHEN b.bettype BETWEEN 1021 AND 1049 THEN 'LT'
 					WHEN b.bettype BETWEEN 4101 AND 4300 THEN 'PP' -- PP
 				END AS ProductCode,
-				SUM(b.turnover * CASE WHEN b.bettype = 33 AND b.status IN (114, 115) THEN 0.5 ELSE 1 END) turnover,
+				SUM(b.turnover) turnover,
 				SUM(b.winloss) winlost,
-				SUM(CASE WHEN bettype BETWEEN 31 AND 33 THEN b.WinlossA ELSE -1 * b.winloss END) AS LicenseeWL,
+				- SUM(b.winloss) AS LicenseeWL,
 				SUM(b.CommissionA) Comm,
 				SUM( b.CommissionP) PlayerComm,
 				- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,
@@ -513,12 +479,11 @@ BEGIN
 				AND b.bettype NOT BETWEEN 2001 AND 2009 -- Exclude Microgamming (#44084)
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
-				AND (b.bettype <= 33
+				AND (b.bettype <= 30
 					OR b.bettype BETWEEN 121 AND 999
 					OR b.Bettype BETWEEN 1301 and 1399 
 					OR b.bettype BETWEEN 81 AND 120
 					OR b.bettype BETWEEN 1201 AND 1299
-					OR b.bettype IN (73) -- BINGO
 					OR b.bettype BETWEEN 1501 AND 1599 -- Keno
 					OR (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999) -- RNG CASINO
 					OR b.bettype BETWEEN 4001 AND 4100 -- Voidbridge
@@ -534,9 +499,7 @@ BEGIN
 				CASE 
 					WHEN b.bettype BETWEEN 81 AND 120 THEN 'NG'
 					WHEN (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 and 1399)) THEN 'SB'
-					WHEN b.bettype BETWEEN 31 AND 33 THEN 'RB'
 					WHEN b.bettype BETWEEN 1201 AND 1299 THEN 'VS'
-					WHEN b.bettype = 73	THEN 'BG'
 					WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN'
 					WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999 THEN 'CS' -- RNG CASINO
 					WHEN b.bettype BETWEEN 4001 AND 4100 THEN 'VB' -- Voidbridge
@@ -636,10 +599,8 @@ BEGIN
 		ProductCode,
 		CASE ProductCode
 			WHEN 'BA' THEN 'BA'
-			WHEN 'RB' THEN 'Racing'
 			WHEN 'NG' THEN 'Number Game'
 			WHEN 'VS' THEN 'Virtual Sports'
-			WHEN 'BG' THEN 'Bingo'
 			WHEN 'KN' THEN 'Keno'
 			WHEN 'CS' THEN 'RNG Casino'
 			WHEN 'VB' THEN 'Voidbridge'
