@@ -104,7 +104,7 @@ BEGIN
 				
 				INSERT INTO @Currency 
 				SELECT DISTINCT  Currency as CurrencyID
-				FROM dbo.f_SelLicenseeCust(@LicenseeID)
+				FROM dbo.Lrf_f_SelLicenseeCust(@LicenseeID)
 				
 				-- Currency User
 				INSERT INTO dbo.CurrencyUser (usrID,LicenseeID,CurrencyID,SystemID,isActive)
