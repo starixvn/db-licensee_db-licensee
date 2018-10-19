@@ -35,6 +35,7 @@ Revisions:
 	- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID [Redmine: #71679]
 	- 20170328@Paul: Implement Cash Out [RedmineID :#71727]
 	- 20180808@Amanda: Remove bet type related to Racing [RedmineID: #99378]
+	- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
 Param's Explanation:   
    
 */
@@ -200,6 +201,7 @@ BEGIN
 					b.bettype <= 30
 					OR (b.bettype BETWEEN 121 AND 999)
 					OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+					OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports
 					)
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
@@ -316,6 +318,7 @@ BEGIN
 					b.bettype <= 30
 					OR (b.bettype BETWEEN 121 AND 999)
 					OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+					OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports
 					)
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)			
@@ -444,6 +447,7 @@ BEGIN
 						b.bettype <= 30
 						OR (b.bettype BETWEEN 121 AND 999)
 						OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+						OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports
 						)
 					AND (b.bettype < 901 OR b.bettype > 904)
 					AND (b.bettype < 911 OR b.bettype > 914)
@@ -552,6 +556,7 @@ BEGIN
 						b.bettype <= 30
 						OR (b.bettype BETWEEN 121 AND 999)
 						OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+						OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports
 						)
 					AND (b.bettype < 901 OR b.bettype > 904)
 					AND (b.bettype < 911 OR b.bettype > 914)

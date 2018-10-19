@@ -41,6 +41,7 @@ Revisions:
 	- 20170704@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
 	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 	- 20180808@Amanda: Remove Racing, Bingo [RedmineID: #99378]
+	- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
 
 Param's Explanation:  
 	 + @AgentList: xml structure
@@ -286,8 +287,10 @@ BEGIN
 					sum(b.betcount) as betcount
 			FROM #TempBetList b  
 				INNER JOIN match m WITH ( NOLOCK ) ON m.matchid = b.matchid  
-			WHERE (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
-				OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+			WHERE (b.bettype<31 
+					OR (b.bettype BETWEEN 121 AND 999)
+					OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+					OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0
 				) AND  
 				b.tpositiontaking <> 0  
 			GROUP BY b.Winlostdate,  
@@ -418,6 +421,7 @@ BEGIN
 				AND tpositiontaking = 0  
 				AND (b.bettype < 31 OR (b.Bettype BETWEEN 121 AND 999)
 									OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+									OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0
 				)  
 			GROUP BY b.Winlostdate,  
 					b.currency, 
@@ -521,8 +525,10 @@ BEGIN
 					sum(b.betcount) betcount
 			FROM #TempBetList b  
 			INNER JOIN match14 m WITH ( NOLOCK ) ON m.matchid = b.matchid  
-			WHERE (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
-							OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+			WHERE (b.bettype<31 
+					OR (b.bettype BETWEEN 121 AND 999)
+					OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+					OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0
 				) AND  
 				b.tpositiontaking <> 0  
 			GROUP BY b.Winlostdate,  

@@ -81,6 +81,7 @@ AS
 		- 20180718@Amanda: Correct CS bet types [RedmineID: #92318]
 		- 20180809@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
 		- 20180807@Amanda: Remove Racing, Bingo and Old(@IsOld) data [RedmineID: #99378]
+		- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
 
 	Param's Explanation:  
 	  + @CustID: SuperID  
@@ -439,6 +440,7 @@ BEGIN
 					b.bettype <= 30
 					OR b.bettype BETWEEN 121 AND 999
 					OR b.Bettype BETWEEN 1301 and 1399 --new tennis's bettypes
+					OR b.Bettype BETWEEN 9001 and 9086 -- E-Sports 2.0
 				) 
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)

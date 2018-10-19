@@ -74,6 +74,7 @@ AS
 		- 20180420@Amanda: Include more cash out tickets [RedmineID: #93919]
 		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 		- 20180807@Amanda: Remove Racing, Bingo and Old(@IsOld) data [RedmineID: #99378]
+		- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
 
 	Param's Explanation:  
 	  + @CustID: SuperID  
@@ -427,6 +428,7 @@ BEGIN
 					b.bettype <= 30
 					OR b.bettype BETWEEN 121 AND 999
 					OR b.Bettype BETWEEN 1301 AND 1399 --new tennis's bettypes
+					OR b.Bettype BETWEEN 9001 and 9086 -- E-Sports 2.0
 				) 
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)

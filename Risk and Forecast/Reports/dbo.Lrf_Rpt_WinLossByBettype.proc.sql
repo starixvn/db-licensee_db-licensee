@@ -53,6 +53,7 @@ Revisions:
 	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
 	- 20180423@Harper: Fix bug group VS2: BasketBall - Virual Soccer [RedmineID: #93844]
 	- 20180808@Amanda: Remove Racing [RedmineID: #99378]
+	- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
 
 Param's Explanation: 
 	+ @AgentList: xml structure
@@ -181,7 +182,8 @@ BEGIN
 							b.bettype < 31
 							OR (b.bettype BETWEEN 121 AND 999)
 							OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
-							)
+							OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0
+						)
 						OR b.bettype BETWEEN 81 AND 120
 						OR b.bettype BETWEEN 1201 AND 1299
 						OR b.bettype BETWEEN 2701 AND 2829 -- Virtual Sport 2
@@ -206,7 +208,7 @@ BEGIN
 	INNER JOIN #TempSAg s ON b.srecommend = s.srecommend AND b.currency = s.currency
 	LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON b.transid = BA.transid	 
 	WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
-		AND (bettype <= 1599 OR (b.bettype >= 2701 AND b.bettype <= 2829))
+		AND (bettype <= 1599 OR (b.bettype >= 2701 AND b.bettype <= 2829) OR (b.Bettype >= 9001 and b.Bettype <= 9086))
 		AND (bettype NOT IN (71, 73,901,902,903,904,911,912,913,914,31,32,33,41,42,43) AND bettype NOT BETWEEN 1011 AND 1020 AND b.bettype NOT BETWEEN 1101 AND 1199) -- Remove LC
 		AND b.ruben = 1
 		AND statusID NOT IN (101, 102, 103)
@@ -248,6 +250,7 @@ BEGIN
 							b.bettype < 31
 							OR (b.bettype BETWEEN 121 AND 999)
 							OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+							OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0
 							)
 						OR b.bettype BETWEEN 81 AND 120
 						OR b.bettype BETWEEN 1201 AND 1299
@@ -275,7 +278,7 @@ BEGIN
 	LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_bk BA WITH (NOLOCK) ON b.transid = BA.transid	
 	WHERE b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
 		AND statusID NOT IN (101, 102, 103)
-		AND (bettype <= 1599 OR (b.bettype >= 2701 AND b.bettype <= 2829)) 
+		AND (bettype <= 1599 OR (b.bettype >= 2701 AND b.bettype <= 2829) OR (b.Bettype >= 9001 and b.Bettype <= 9086)) 
 		AND (bettype NOT IN (71, 73,901,902,903,904,911,912,913,914,31,32,33,41,42,43) 
 				AND bettype NOT BETWEEN 1011 AND 1020 
 				AND bettype NOT BETWEEN 1101 AND 1199
