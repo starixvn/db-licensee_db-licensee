@@ -505,7 +505,7 @@ BEGIN
 				b.currencyID,
 				CASE 
 					WHEN b.bettype BETWEEN 81 AND 120 THEN 'NG'
-					WHEN (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 and 1399)) THEN 'SB'
+					WHEN b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 and 1399) OR (b.Bettype BETWEEN 9001 and 9086) THEN 'SB'
 					WHEN b.bettype BETWEEN 1201 AND 1299 THEN 'VS'
 					WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN'
 					WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999 THEN 'CS' -- RNG CASINO
