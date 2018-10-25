@@ -1,4 +1,7 @@
-﻿/*<info serverAlias="DBLIC-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/ 
+﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
+USE bodb_Licensee
+GO
+
 ALTER PROCEDURE [dbo].[Lrf_LicenseeGroupCommDel]
 	@LicenseeID INT,
 	@GroupCommID INT,
@@ -11,24 +14,23 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeGroupCommDel]
 	@ErrMsg varchar(8000) = '' OUTPUT,
 	@StrCustID VARCHAR(MAX) = '' OUTPUT
 AS
-
 /*
-Created: 20120726@Henry
-Task : Delete Group Commission
-DB: DBLIC/bodb_Licensee
+	Created: 20120726@Henry
+	Task : Delete Group Commission
+	DB: DBCUST/bodb_Licensee
 
-
-Revisions:
-	- 20130413@Jim: support multi language
-	- 20131023@Hannah: offer Live Casino commission
-	- 20131114@Jim: support to write log for delete group comm action
-	- 20131126@Hannah: offer RNG Casino commission
-	- 20160805@Jim: LRF - Offer different member commission for parlay tickets [RedmineID:#61897]	
-	- 20171024@Johnson: offer Allbet commision [Redmine: #82036]
-	- 20180228@Vicky: Remove LC from product list [Redmine: #85965]
-	- 20180809@Amanda: Remove Racing [RedmineID: #99378]
-	- 20180927@Winnie: Remove AllBet [RedmineID: #99378]
-Param's Explanation:
+	Revisions:
+		- 20130413@Jim: support multi language
+		- 20131023@Hannah: offer Live Casino commission
+		- 20131114@Jim: support to write log for delete group comm action
+		- 20131126@Hannah: offer RNG Casino commission
+		- 20160805@Jim: LRF - Offer different member commission for parlay tickets [RedmineID:#61897]	
+		- 20171024@Johnson: offer Allbet commision [Redmine: #82036]
+		- 20180228@Vicky: Remove LC from product list [Redmine: #85965]
+		- 20180809@Amanda: Remove Racing [RedmineID: #99378]
+		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
+		- 20180927@Winnie: Remove AllBet [RedmineID: #99378]
+	Param's Explanation:
 
 */
 BEGIN
@@ -56,7 +58,7 @@ BEGIN
 	)
 	BEGIN
 		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN 'This Group does not exist!'
-										ELSE [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200016,@Langkey) 
+										ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200016,@Langkey) 
 										END, @ErrCode = 100	
 	END
 	ELSE
@@ -76,7 +78,7 @@ BEGIN
 		IF @IsResetDefault=0 AND EXISTS(SELECT TOP 1 1 FROM dbo.LicenseeGroupComm WITH (NOLOCK) WHERE LicenseeID = @LicenseeID AND  IsDefault=1 AND IsActive = 1 AND ID=@GroupCommID)
 		BEGIN
 			SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN 'This is the default group. Do you want to proceed?'
-														ELSE [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200017,@Langkey) 
+														ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200017,@Langkey) 
 														END , @ErrCode = 101	
 			RETURN
 		END
@@ -127,8 +129,8 @@ BEGIN
 					
 				SELECT @StrCustID = STUFF(
 					(   SELECT  ',' + CONVERT(NVARCHAR(20), a.custid) 
-						FROM bodb_Licensee.dbo.LicenseeCustComm b WITH (NOLOCK)
-						INNER JOIN bodb02.dbo.custinfo a WITH (NOLOCK) ON a.custid = b.custid
+						FROM dbo.LicenseeCustComm b WITH (NOLOCK)
+						INNER JOIN CustDB.dbo.custinfo a WITH (NOLOCK) ON a.custid = b.custid
 						WHERE b.LicenseeID = @LicenseeID AND b.GroupCommID = @GroupCommID and a.SyncCasino = 1
 						FOR xml path('')
 					)
@@ -149,52 +151,51 @@ BEGIN
 				RNGComm = 0,
 				ParlayComm = 0,				
 				GroupCommID = 0
-			WHERE GroupCommID = @GroupCommID
-				
+			WHERE GroupCommID = @GroupCommID				
 
 		END
 
 		--write log
-			SET @endRun = GETDATE()
-			SET @duration  = datediff (millisecond,@startRun,@endRun)	
+		SET @endRun = GETDATE()
+		SET @duration  = datediff (millisecond,@startRun,@endRun)	
 		
-			SELECT @LogSPData = '<Lrf_LicenseeGroupCommDel GroupCommID="'+ COALESCE(CAST(@GroupCommID as VARCHAR(50)),SPACE(1)) + '" ' +
-			'LicenseeID="'+ COALESCE(CAST(@LicenseeID as VARCHAR(50)),SPACE(1)) + '" ' +
-			'GroupName="'+ COALESCE(CAST(@GroupName as VARCHAR(100)),SPACE(1)) + '" ' +
-			'SBComm="'+ COALESCE(CAST(@SBComm as VARCHAR(50)),SPACE(1)) + '" ' +
-			'NGComm="'+ COALESCE(CAST(@NGComm as VARCHAR(50)),SPACE(1)) + '" ' +
-			'IsRemovePlayercomm="'+ COALESCE(CAST(@IsRemovePlayercomm as VARCHAR(50)),SPACE(1)) + '" ' +
-			'RNGComm="'+ COALESCE(CAST(@RNGComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		SELECT @LogSPData = '<Lrf_LicenseeGroupCommDel GroupCommID="'+ COALESCE(CAST(@GroupCommID as VARCHAR(50)),SPACE(1)) + '" ' +
+		'LicenseeID="'+ COALESCE(CAST(@LicenseeID as VARCHAR(50)),SPACE(1)) + '" ' +
+		'GroupName="'+ COALESCE(CAST(@GroupName as VARCHAR(100)),SPACE(1)) + '" ' +
+		'SBComm="'+ COALESCE(CAST(@SBComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		'NGComm="'+ COALESCE(CAST(@NGComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		'IsRemovePlayercomm="'+ COALESCE(CAST(@IsRemovePlayercomm as VARCHAR(50)),SPACE(1)) + '" ' +
+		'RNGComm="'+ COALESCE(CAST(@RNGComm as VARCHAR(50)),SPACE(1)) + '" ' +
 			'ParlayComm="'+ COALESCE(CAST(@ParlayComm as VARCHAR(50)),SPACE(1)) + '" ' +			
-			'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
-			'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +
-			'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
-			'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +
-			'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
-			'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(8000)),SPACE(1))+ '" />'
+		'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
+		'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +
+		'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
+		'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +
+		'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
+		'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(8000)),SPACE(1))+ '" />'
 
-			SELECT @TrackingValue2 = '<Lrf_LicenseeGroupCommDel GroupCommID="'+ COALESCE(CAST(@GroupCommID as VARCHAR(50)),SPACE(1)) + '" ' +
-			'LicenseeID="'+ COALESCE(CAST(@LicenseeID as VARCHAR(50)),SPACE(1)) + '" ' +
-			'GroupName="'+ COALESCE(CAST(@GroupName as VARCHAR(100)),SPACE(1)) + '" ' +
-			'SBComm="'+ COALESCE(CAST(@SBComm as VARCHAR(50)),SPACE(1)) + '" ' +
-			'NGComm="'+ COALESCE(CAST(@NGComm as VARCHAR(50)),SPACE(1)) + '" ' +
-			'IsRemovePlayercomm="'+ COALESCE(CAST(@IsRemovePlayercomm as VARCHAR(50)),SPACE(1)) + '" ' +
-			'RNGComm="'+ COALESCE(CAST(@RNGComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		SELECT @TrackingValue2 = '<Lrf_LicenseeGroupCommDel GroupCommID="'+ COALESCE(CAST(@GroupCommID as VARCHAR(50)),SPACE(1)) + '" ' +
+		'LicenseeID="'+ COALESCE(CAST(@LicenseeID as VARCHAR(50)),SPACE(1)) + '" ' +
+		'GroupName="'+ COALESCE(CAST(@GroupName as VARCHAR(100)),SPACE(1)) + '" ' +
+		'SBComm="'+ COALESCE(CAST(@SBComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		'NGComm="'+ COALESCE(CAST(@NGComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		'IsRemovePlayercomm="'+ COALESCE(CAST(@IsRemovePlayercomm as VARCHAR(50)),SPACE(1)) + '" ' +
+		'RNGComm="'+ COALESCE(CAST(@RNGComm as VARCHAR(50)),SPACE(1)) + '" ' +
 			'ParlayComm="'+ COALESCE(CAST(@ParlayComm as VARCHAR(50)),SPACE(1)) + '" ' +			
-			'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
-			'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +
-			'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
-			'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +
-			'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
-			'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(8000)),SPACE(1))+ '" />'
+		'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
+		'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +
+		'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
+		'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +
+		'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
+		'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(8000)),SPACE(1))+ '" />'
 		
-			EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP 
-					@UserID = @UserID,
-					@CustID = @LicenseeID,
-					@ActionID = 2611,
-					@TrackingValue = @LogSPData,
-					@TrackingValue2 = @TrackingValue2,
-					@duration = @duration	
+		EXEC Lrf_WriteLog_UserLog_RunSP_Wrapper
+			@UserID = @UserID,
+			@CustID = @LicenseeID,
+			@ActionID = 2611,
+			@TrackingValue = @LogSPData,
+			@TrackingValue2 = @TrackingValue2,
+			@duration = @duration	
 	END
 END
 GO

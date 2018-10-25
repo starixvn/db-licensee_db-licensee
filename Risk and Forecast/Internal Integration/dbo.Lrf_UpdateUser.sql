@@ -1,4 +1,5 @@
-﻿CREATE  PROCEDURE [dbo].[Lrf_UpdateUser]
+﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
+ALTER PROCEDURE [dbo].[Lrf_UpdateUser]
 	@UserID INT,
 	@LicenseeName VARCHAR (50) = '',
 	@Username VARCHAR(50)='',
@@ -9,7 +10,7 @@ AS
 /*
 	Created by: [20110704@Henry]
 	Task: Update Licensee User thru Internal site
-	DB: DBLIC/bodb_Licensee
+	DB: DBCUST-bodb_Licensee
 	Param's Explanation:
 	- @LicenseeName: if not blank then update to new licensee if different from current
 	- @Username: if not blank then update to new username if different from current
@@ -19,6 +20,7 @@ AS
 	Revisions:
 	- 20130625@Jim: set default currency permission for new licensee's user
 	- 20141112@Victor: use f_SelLicenseeCust instead of licenseecust (#Redmine 25864)
+	- 20180925@Joseph: Migrate to DBCUST [Feature #99855]
 */
 
 SET NOCOUNT ON
@@ -102,7 +104,7 @@ BEGIN
 				
 				INSERT INTO @Currency 
 				SELECT DISTINCT  Currency as CurrencyID
-				FROM dbo.f_SelLicenseeCust(@LicenseeID)
+				FROM dbo.Lrf_f_SelLicenseeCust(@LicenseeID)
 				
 				-- Currency User
 				INSERT INTO dbo.CurrencyUser (usrID,LicenseeID,CurrencyID,SystemID,isActive)
@@ -129,12 +131,4 @@ BEGIN
 	END
 END
 
-
-
-
-
 GO
---wait for confirming with TW team
---GRANT EXECUTE ON [dbo].[Lrf_CreateUser] TO [bodbLicenseeNet] 
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_UpdateUser] TO [vnteam]  

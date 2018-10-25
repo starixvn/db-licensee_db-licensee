@@ -1,14 +1,17 @@
-USE CustDB
+/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet,bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
+USE CustDB 
 GO
 
-CREATE PROCEDURE Lrf_CustBAActive_SynData
+ALTER PROCEDURE Lrf_CustBAActive_SynData
 AS  
 /*
-Created: 20150305@Patrick
-Task : Synchronize data from DB052 to CustDB when turn on/off BA occurs
-DB: DBTXN/CustDB
-Revisions:
-Param's Explanation:
+	Created: 20150305@Patrick
+	Task : Synchronize data from DB052 to CustDB when turn on/off BA occurs
+	DB: DBCUST/CustDB
+	Revisions:
+		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
+
+	Param's Explanation:
 
 */
 BEGIN
@@ -16,7 +19,7 @@ BEGIN
 	CREATE TABLE #BAMemberTemp (CustId INT)
 	DECLARE @sqlQuery VARCHAR(1024) 
 	SELECT @sqlQuery =  'SELECT CustId
-						FROM OPENQUERY(DBLIC, ''SELECT CustId 
+						FROM OPENQUERY(DBCUST, ''SELECT CustId 
 						FROM bodb_Licensee.dbo.LicenseeBAHistory WITH (NOLOCK) 
 						WHERE Status = ''''Running'''' 
 						GROUP BY CustId 
@@ -35,9 +38,5 @@ BEGIN
 
 	DROP TABLE #BAMemberTemp
 END
-GO
-GRANT EXECUTE ON [dbo].[Lrf_CustBAActive_SynData] TO [bodbAdminNet] AS [dbo]
-GO
-GRANT EXECUTE ON [dbo].[Lrf_CustBAActive_SynData] TO [bodbLicenseeNet] AS [dbo]
 GO
 

@@ -1,12 +1,16 @@
+/*<info serverAlias="DBCUST-bodb_Licensee,DBEXT-bodb02" executers="" selecters="bodbLicenseeNet" viewers="vnteam" isFunction="1" isNested="1"></info>*/
 
 ALTER FUNCTION  [dbo].[Lrf_f_StringSplit] ( @string NVARCHAR( MAX), @splitter CHAR( 1) )
 RETURNS @res TABLE ( id INT PRIMARY KEY, rank INT, val NVARCHAR( MAX) )
 AS
- /*
-	Created: 20140612@Victor
+/*
+	Created: 20180924@Elodie
 	Task : Create String Split function that can work with string over 4000 characters
-	DB: DBEXT.bodb02
+	Original: Lrf_f_StringSplit
+	DB: DBCUST/bodb_Licensee,DBEXT-bodb02
+
 	Revisions:	
+		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
 */
 BEGIN
      IF SUBSTRING ( @string, LEN ( @string), 1)<>@splitter
@@ -24,8 +28,4 @@ BEGIN
      END
      RETURN
 END
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_f_StringSplit] TO [vnteam]
-GO
-GRANT SELECT ON [dbo].[Lrf_f_StringSplit] TO [bodbLicenseeNet]
 GO

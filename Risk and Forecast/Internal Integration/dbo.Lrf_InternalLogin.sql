@@ -1,7 +1,4 @@
-﻿/*<info serverAlias="DBLIC-bodb_licensee" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
-USE [bodb_licensee]
-GO
-
+﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[LRF_InternalLogin]
 	@LicenseeName		VARCHAR(50),
 	@Username			VARCHAR(50),
@@ -21,7 +18,7 @@ AS
 /*
 	Created by: [20110704@Henry]
 	Task: Login to LRF thru Internal site
-	DB: DBLIC/bodb_Licensee
+	DB: DBCUST-bodb_Licensee
 	Param's Explanation:
 	
 	Revisions:
@@ -30,6 +27,7 @@ AS
 		- 20141217@Jim: correct error code 
 		- 20151023@Victor: Support New Simplified Chinese
 		- 20171002@Percy: Write more password into log [RedmineID: #83692]
+		- 20180925@Joseph: Migrate to DBCUST [Feature #99855]
 */
 
 BEGIN
@@ -133,7 +131,7 @@ BEGIN
 		SELECT @UserID	= ISNULL(@UserID, 0), @ServerID = 200, @Duration = DATEDIFF(MILLISECOND, @Begin, GETDATE())
 		SELECT @LogData	= 'User: ' + @UserName +  ' - ' + 'Password: ' + @EncryptedPassword + ' - ' + @LogData
 
-		EXEC dbo.WriteLog_UserLog_Login
+		EXEC dbo.Lrf_WriteLog_UserLog_Login_Wrapper
 			@UserID			= @UserID,
 			@ServerID		= @ServerID,
 			@LoginIP		= @LoginIP,

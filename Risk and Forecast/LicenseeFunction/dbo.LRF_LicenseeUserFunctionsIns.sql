@@ -1,4 +1,5 @@
-﻿ALTER  PROCEDURE [dbo].[Lrf_LicenseeUserFunctionsIns]	
+﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
+ALTER PROCEDURE [dbo].[Lrf_LicenseeUserFunctionsIns]	
 	@LicenseeId INT,
 	@UserId INT,
 	@CustID INT,
@@ -12,11 +13,11 @@ AS
 /*
 	Created by: [20111210@Jacob]
 	Task: Break down permission for account management
-	DB: DB052.bodb_Licensee
+	DB: DBCUST-bodb_Licensee
 	Param's Explanation:
 		
 	Revisions: -20160707@Jim: change the way to grant ACCOUNT MANAGEMENT FUNCTIONS permission ( #58537)
-	
+			- 20180925@Joseph: Migrate to DBCUST [Feature #99855]
 	
 */
 
@@ -57,7 +58,7 @@ BEGIN
 				SELECT @ErrMsg = 
 						CASE @Langkey 
 							WHEN 'en-US' THEN 'Update process is unsuccessful!'
-							ELSE [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](90001,@Langkey)
+							ELSE [CustDB].[dbo].[Lrf_f_Get_MsgNamebyMsgID](90001,@Langkey)
 						END, @ErrCode = 101
 			RETURN			
 			END 
@@ -76,17 +77,11 @@ BEGIN
 	SET @endRun = GETDATE()
 	SET @duration  = DATEDIFF (MILLISECOND,@startRun,@endRun)	 
 
-	EXEC bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
+	EXEC dbo.Lrf_WriteLog_UserLog_RunSP_Wrapper
 		@UserID = @UserID,
 		@CustID = @CustID,
 		@ActionID = 2404,
 		@TrackingValue = @TrackingValue,
 		@duration = @duration
 END
-
-
-
 GO
-GRANT EXECUTE ON [dbo].[Lrf_LicenseeUserFunctionsIns] TO [bodbLicenseeNet] 
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_LicenseeUserFunctionsIns] TO [vnteam] 

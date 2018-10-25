@@ -1,4 +1,7 @@
-﻿/*<info serverAlias="DBLIC-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/ 
+﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
+USE bodb_Licensee
+GO
+
 ALTER PROCEDURE [dbo].[Lrf_LicenseeGroupCommUpd]
 	@LicenseeID INT,
 	@GroupCommID INT,
@@ -19,25 +22,24 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeGroupCommUpd]
 	@ErrMsg varchar(8000) = '' OUTPUT,
 	@StrCustID VARCHAR(MAX) = '' OUTPUT
 AS
-
 /*
-Created: 20120726@Henry
-Task : Update Group Commission
-DB: DBLIC/bodb_Licensee
+	Created: 20120726@Henry
+	Task : Update Group Commission
+	DB: DBCUST/bodb_Licensee
 
-
-Revisions:
-	- 20121227@Henry: Add column IsDefault
-	- 20130413@Jim: support multi language 	
-	- 20131023@Hannah: offer Live Casino commission
-	- 20131126@Hannah: offer RNG Casino commission
-	- 20140630@Francis: Remove link-server when calling write log sp
-	- 20160805@Jim: LRF - Offer different member commission for parlay tickets [RedmineID:#61897]
-	- 20171020@Johnson: offer Allbet commision [Redmine: #82036]
-	- 20180228@Vicky: Remove LC from product list [Redmine: #85965]
-	- 20180809@Amanda: Remove Racing [RedmineID: #99378]
-	- 20180927@Winnie: Remove AllBet [RedmineID: #99378]
-Param's Explanation:
+	Revisions:
+		- 20121227@Henry: Add column IsDefault
+		- 20130413@Jim: support multi language 	
+		- 20131023@Hannah: offer Live Casino commission
+		- 20131126@Hannah: offer RNG Casino commission
+		- 20140630@Francis: Remove link-server when calling write log sp
+		- 20160805@Jim: LRF - Offer different member commission for parlay tickets [RedmineID:#61897]
+		- 20171020@Johnson: offer Allbet commision [Redmine: #82036]
+		- 20180228@Vicky: Remove LC from product list [Redmine: #85965]
+		- 20180809@Amanda: Remove Racing [RedmineID: #99378]
+		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
+		- 20180927@Winnie: Remove AllBet [RedmineID: #99378]
+	Param's Explanation:
 
 */
 BEGIN
@@ -45,7 +47,7 @@ BEGIN
 	
 	IF (@IsUpdateNG = 0) AND  (@IsUpdateRNG = 0) 
 	BEGIN
-		UPDATE [bodb_licensee].[dbo].[LicenseeGroupComm]
+		UPDATE [dbo].[LicenseeGroupComm]
 		SET
 			 GroupName = @GroupName,
 			 color = @GroupColor,
@@ -79,7 +81,7 @@ BEGIN
 	IF @SBComm>0.15 OR @NGComm>0.15 OR @RNGComm>0.15 OR @ParlayComm >0.15 
 	BEGIN
 		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN  'Player Commission should not greater than '
-										ELSE [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200002,@Langkey)
+										ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200002,@Langkey)
 										END +'0.15', @ErrCode = 100
 		RETURN
 	END
@@ -90,7 +92,7 @@ BEGIN
 	)
 	BEGIN
 		SELECT @ErrMsg =CASE @Langkey WHEN 'en-US' THEN 'This Group does not exist!'
-									  ELSE [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200016,@Langkey)
+									  ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200016,@Langkey)
 									 END , @ErrCode = 101	
 		RETURN
 	END
@@ -115,7 +117,7 @@ BEGIN
 				IF @IsResetDefault=0 AND EXISTS(SELECT TOP 1 1 FROM LicenseeGroupComm WITH (NOLOCK) WHERE LicenseeID = @LicenseeID AND ID <> @GroupCommID AND IsDefault=1 AND IsActive = 1)
 				BEGIN
 					SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN 'Another group is currently set as default. Wanna set this group as default?'
-													ELSE [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200018,@Langkey)
+													ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200018,@Langkey)
 													END, @ErrCode = 103	
 					RETURN
 				END
@@ -149,7 +151,7 @@ BEGIN
 			)
 			BEGIN
 				SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN  'This group name has been already chosen, please try another name!'
-											   ELSE [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200020,@Langkey)
+											   ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200020,@Langkey)
 											   END , @ErrCode = 102
 				RETURN
 			END
@@ -226,8 +228,8 @@ BEGIN
 					
 				SELECT @StrCustID = STUFF(
 					(   SELECT  ',' + CONVERT(NVARCHAR(20), a.custid) 
-						FROM bodb_Licensee.dbo.LicenseeCustComm b WITH (NOLOCK)
-						INNER JOIN bodb02.dbo.custinfo a WITH (NOLOCK) ON a.custid = b.custid
+						FROM dbo.LicenseeCustComm b WITH (NOLOCK)
+						INNER JOIN CustDB.dbo.custinfo a WITH (NOLOCK) ON a.custid = b.custid
 						WHERE b.LicenseeID = @LicenseeID AND b.GroupCommID = @GroupCommID and a.SyncCasino = 1
 						FOR xml path('')
 					)
@@ -237,10 +239,7 @@ BEGIN
 			END
 					
 			SET @FlagUpdateComm = 1
-		END
-		
-		
-		
+		END						
 
 		IF @FlagUpdateComm=1 OR @FlagUpdateGroupProperty=1 OR @FlagUpdateIsDefault=1 --Writelog
 		BEGIN
@@ -279,7 +278,7 @@ BEGIN
 			'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
 			'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(8000)),SPACE(1))+ '" />'
 		
-			EXEC bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP 
+			EXEC Lrf_WriteLog_UserLog_RunSP_Wrapper
 					@UserID = @UserID,
 					@CustID = @GroupCommID,
 					@ActionID = 2610,

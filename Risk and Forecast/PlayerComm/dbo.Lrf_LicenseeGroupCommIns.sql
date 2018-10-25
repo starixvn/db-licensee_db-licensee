@@ -1,4 +1,7 @@
-﻿/*<info serverAlias="DBLIC-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/ 
+﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
+USE bodb_Licensee
+GO
+
 ALTER PROCEDURE [dbo].[Lrf_LicenseeGroupCommIns]
 	@LicenseeID INT,
 	@GroupName VARCHAR(100),
@@ -20,8 +23,7 @@ AS
 /*
 Created: 20120726@Henry
 Task : Insert new Group Commission
-DB: DBLIC/bodb_Licensee
-
+DB: DBCUST/bodb_Licensee
 
 Revisions:
 	- 20121227@Henry: Add column IsDefault
@@ -32,6 +34,7 @@ Revisions:
 	- 20171023@Johnson: offer Allbet commision [Redmine: #82036]
 	- 20180228@Vicky: Remove LC from product list [Redmine: #85965]
 	- 20180809@Amanda: Remove Racing [RedmineID: #99378]
+	- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
 	- 20180927@Winnie: Remove AllBet [RedmineID: #99378]
 Param's Explanation:
 
@@ -57,7 +60,7 @@ BEGIN
 		
 	BEGIN
 		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN  'Player Commission should not greater than 0.15'
-										ELSE [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200002,@Langkey)
+										ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200002,@Langkey)
 										END, @ErrCode = 100
 	END
 
@@ -71,7 +74,7 @@ BEGIN
 			IF @IsResetDefault=0 AND EXISTS(SELECT TOP 1 1 FROM dbo.LicenseeGroupComm WITH (NOLOCK) WHERE LicenseeID = @LicenseeID AND  IsDefault=1 AND IsActive = 1 )
 			BEGIN
 				SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN  'Another group is currently set as default. Wanna set this group as default?'
-													ELSE [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200018,@Langkey)
+													ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200018,@Langkey)
 													END, @ErrCode = 102	
 				RETURN
 			END
@@ -88,7 +91,7 @@ BEGIN
 		IF (@@ERROR <> 0)
 		BEGIN
 			SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN  'Process create new group commission has been failed!'
-									ELSE [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200019,@Langkey)
+									ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200019,@Langkey)
 									END , @ErrCode = 101
 		END	
 		
@@ -125,11 +128,9 @@ BEGIN
 		'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
 		'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +
 		'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
-		'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(8000)),SPACE(1))+ '" />'
+		'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(8000)),SPACE(1))+ '" />'				
 		
-		
-		
-		EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP 
+		EXEC Lrf_WriteLog_UserLog_RunSP_Wrapper
 					@UserID = @UserID,
 					@CustID = @GroupCommID,
 					@ActionID = 2609,
@@ -141,7 +142,7 @@ BEGIN
 	ELSE
 	BEGIN
 		SELECT @ErrMsg =CASE @Langkey WHEN  'en-US' THEN 'This Group Name has been created before!'
-									  ELSE [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200020,@Langkey)
+									  ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200020,@Langkey)
 									  END, @ErrCode = 102
 	END
 END

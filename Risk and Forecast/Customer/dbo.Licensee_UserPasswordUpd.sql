@@ -1,11 +1,4 @@
-USE [bodb_Licensee]
-GO
-
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
+/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Licensee_UserPasswordUpd]  
  @UserName varchar(50),    
  @OldPwd varchar(50),   
@@ -14,19 +7,19 @@ ALTER PROCEDURE [dbo].[Licensee_UserPasswordUpd]
  @Language varchar(20) = 'en-US',  
  @LoginIP varchar(20),  
  @ErrCode int = 0 OUTPUT,  
- @ErrMsg nvarchar(4000) = '' OUTPUT  
-   
+ @ErrMsg nvarchar(4000) = '' OUTPUT
   
 AS  
 /*  
  * Created: 20101201@ Johnny
  * Task : User change password
- * DB: DBLIC/bodb_Licensee  
+ * DB: DBCUST-bodb_Licensee
  *  
  * Revisions:     
 	20140512@jim: add more filter (status='Open')
 	20151023@Victor: Support New Simplified Chinese
 	20171013@Alex  : only support to change password for it account [RedmineID: #84901]
+  - 20180925@Joseph: Migrate to DBCUST [Feature #99855]
 */  
 BEGIN  
 SET NOCOUNT ON;  
@@ -72,7 +65,4 @@ WHERE Username = @UserName and isInternal=0
   SELECT @ErrCode = 100, @ErrMsg = 'Cannot change password'  
 END  
 GO
-GRANT EXECUTE ON [dbo].[Licensee_UserPasswordUpd] TO [bodbLicenseeNet] 
-GO
-GRANT VIEW DEFINITION ON [dbo].[Licensee_UserPasswordUpd] TO [vnteam] 
 

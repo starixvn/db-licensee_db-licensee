@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBLIC-bodb_licensee" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
 USE [bodb_licensee]
 GO
 
@@ -14,7 +14,7 @@ AS
 /*
 	Created by: [20110704@Henry]
 	Task: Create Licensee User thru Internal site
-	DB: DBLIC/bodb_Licensee
+	DB: DBCUST-bodb_Licensee
 	Param's Explanation:
 	@UserRole: value=Licensee/Admin
 	
@@ -29,6 +29,7 @@ AS
 		- 20160523@Jim: Currency permision restrict (#53882)
 		- 20160818@Jim: LRF - Set "Adjust bet settings" with separate authorization [RedmineID : #61999]
 		- 20171002@Percy: Write more password into log [RedmineID: #83692]
+		- 20180925@Joseph: Migrate to DBCUST [Feature #99855]
 */
 
 BEGIN
@@ -50,7 +51,7 @@ BEGIN
 	IF @LicenseeID IS NULL
 	BEGIN
 		SET @ErrMsg = CASE @Langkey WHEN 'en-US' THEN 'The Licensee: ' + @LicenseeName + ' does not exist!'
-									ELSE [bodb02].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200021, @Langkey)
+									ELSE [CustDB].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200021, @Langkey)
 									END	
 		SET @ErrCode = 101
 		
@@ -60,8 +61,8 @@ BEGIN
 	BEGIN
 		INSERT INTO @Currency (CurrencyID)
 		SELECT DISTINCT Currency AS CurrencyID
-		FROM dbo.f_SelLicenseeCust (@LicenseeID)	
-		WHERE Currency NOT IN (SELECT CurrencyID FROM dbo.Lrf_f_LicenseeCurrencyLimit() WHERE LicenseeID = @LicenseeID)
+		FROM dbo.Lrf_f_SelLicenseeCust (@LicenseeID)	
+		WHERE Currency NOT IN (SELECT CurrencyID FROM dbo.Lrf_f_LicenseeCurrencyLimit_Main() WHERE LicenseeID = @LicenseeID)
 
 		-- if user exists --> update new password, if not --> insert new
 		SELECT @UserID = UserID, @UserOldPassWord = UserPwd
@@ -163,7 +164,7 @@ BEGIN
 	SELECT @UserID = ISNULL(@UserID, 0), @Duration = DATEDIFF(MILLISECOND, @Begin, GETDATE())
 	SELECT @LogData	= 'User: ' + @UserName +  ' - ' + 'Password: ' + @EncryptedPassword + ' - ' + @LogData
 
-	EXEC dbo.WriteLog_UserLog_Login
+	EXEC dbo.Lrf_WriteLog_UserLog_Login_Wrapper
 		@UserID		= @UserID,
 		@ServerID	= 200,
 		@ActionID	= 2303,
