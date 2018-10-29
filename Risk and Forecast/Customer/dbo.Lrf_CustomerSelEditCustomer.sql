@@ -1,5 +1,4 @@
-﻿
-/*<info serverAlias="DBCUST-CustDB" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
+﻿/*<info serverAlias="DBCUST-CustDB" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_CustomerSelEditCustomer]
     @CustID INT
 AS
@@ -18,6 +17,7 @@ Revisions:
 	- 20150609@Kos: Separate CustDB to DBCUST server (Move SP to DBCUST.CustDB)
 	- 20151015@Jim: Integrate Sportbook2 (Feature #44759)
 	- 20181009@Winnie: Remove Racing  (Feature #99378)
+	- 20181029@Winnie: Remove Esports  (Feature #100721)
 Param's Explanation:
 • @CustID: member ID
 */
@@ -39,11 +39,9 @@ DECLARE @MinBet_Max MONEY, @MaxBet_Min MONEY, @MaxPerMatch_Min MONEY, @MaxPerMat
 
 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-DECLARE @mrecommend INT, @recommend INT, @Asuspended BIT ,@ADisableEsports BIT
+DECLARE @mrecommend INT, @recommend INT, @Asuspended BIT 
 SELECT    @mrecommend = mrecommend, @recommend=recommend FROM dbo.custinfo WITH (NOLOCK) WHERE custid = @custid
-SELECT  @ADisableEsports = DisableEsports
-FROM     dbo.custinfo WITH (NOLOCK) 
-WHERE   custid = @recommend
+
 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
                   
@@ -273,10 +271,8 @@ SELECT
     ISNULL(@MinBetv99MP_Max, 0) AS MinBetv99MP_Max,    
     ISNULL(@MaxBetv99MP_Min, 0) AS MaxBetv99MP_Min,    
     ISNULL(@MaxPerMatchv99MP_Min, 0) AS MaxPerMatchv99MP_Min,    
-    ISNULL(@MaxPerMatchv99MP_Max, 0) AS MaxPerMatchv99MP_Max,
-    CASE @ADisableEsports WHEN 1 THEN -1 
-                          ELSE ci.DisableEsports
-                          END DisableEsports
+    ISNULL(@MaxPerMatchv99MP_Max, 0) AS MaxPerMatchv99MP_Max
+    
     
 FROM dbo.CustInfo AS ci WITH (NOLOCK)
     INNER JOIN dbo.Dep_CustSetting AS cs WITH (NOLOCK) on ci.custid = cs.custid
@@ -295,8 +291,7 @@ GROUP BY
 	ci.maxpermatch44,  
     ci.maxpermatch99,
     ci.maxpermatch99MP,
-    exchange.minbet,
-    ci.DisableEsports
+    exchange.minbet
 
 
 GO 
