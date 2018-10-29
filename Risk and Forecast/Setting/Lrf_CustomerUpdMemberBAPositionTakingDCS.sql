@@ -1,5 +1,5 @@
 /*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet,bodbDownlineNet,bodbExtAccNet,Dot_Member,vnteam" viewers="vnteam" isFunction="0"></info>*/
- CREATE PROCEDURE [dbo].[Lrf_CustomerUpdMemberBAPositionTakingDCS]		
+ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberBAPositionTakingDCS]		
 	@CustID		INT,
 	@ModifyBy	INT,
 	@IsBA		BIT,		
@@ -26,7 +26,7 @@ BEGIN
 	DECLARE @LogSPData		VARCHAR(MAX)  
 	DECLARE @TrackingValue2 VARCHAR(MAX)  
 	DECLARE @AgentID		INT
-	CREATE TABLE #Sporttype(SporttypeID INT PRIMARY KEY)
+	CREATE TABLE #Sporttype(SporttypeID INT,BetypeID INT,IsLive INT,PRIMARY KEY(SporttypeID,BetypeID,IsLive))
 	DECLARE  @Dep_CustPTGroupSetting_MemberOLD TABLE	
 	(
 		CustID		INT,
@@ -37,22 +37,7 @@ BEGIN
 		MasterPT	SMALLMONEY,
 		AgentPT		SMALLMONEY
 	)
-	
-	CREATE TABLE #Dep_CustPTGroupSetting_Member(
-		[AgentID]	[int]			NOT NULL,
-		[SportType] [smallint]		NOT NULL,
-		[BetType]	[smallint]		NOT NULL,
-		[IsLive]	[bit]			NOT NULL,
-		[SuperPT]	[smallmoney]	NULL		DEFAULT ((0)),
-		[MasterPT]	[smallmoney]	NULL		DEFAULT ((0)),
-		[AgentPT]	[smallmoney]	NULL		DEFAULT ((0)),
-	PRIMARY KEY CLUSTERED 
-	(
-		[AgentID]		ASC,
-		[SportType]		ASC,
-		[BetType]		ASC,
-		[IsLive]		ASC
-	))
+
 
 	SET @startRun = GETDATE()  
 
@@ -75,8 +60,8 @@ BEGIN
 		WHERE AgentID=@AgentID
 	END
 
-	INSERT INTO #Sporttype(SporttypeID)
-	SELECT DISTINCT SportType
+	INSERT INTO #Sporttype(SporttypeID,BetypeID,IsLive)
+	SELECT SportType,BetType,IsLive
 	FROM Dep_ProductSettingDetail a WITH(NOLOCK)
 		INNER JOIN Dep_ProductSetting b WITH(NOLOCK) ON a.ProductSettingID=b.ProductSettingID
 	WHERE IsApplyBA=1 AND SettingType=1
@@ -103,17 +88,15 @@ BEGIN
 
 	SET @TrackingValue2 = REPLACE(CONVERT(VARCHAR(MAX), @xml), '" />', '"/"')
 
-	INSERT INTO #Dep_CustPTGroupSetting_Member(AgentID,SportType,BetType,IsLive,SuperPT,MasterPT,AgentPT)
-	SELECT AgentID,SportType,BetType,IsLive,SuperPT,MasterPT,AgentPT
-	FROM Dep_CustPTGroupSetting_Member WITH(NOLOCK) WHERE AgentID=@AgentID
-
 	IF(@IsBA=1)
 	BEGIN
-		UPDATE @Dep_CustPTGroupSetting_MemberOLD
+		UPDATE t
 			SET SuperPT=0,
 				MasterPT=0,
 				AgentPT=0
-		WHERE SportType IN(SELECT SportTypeID FROM #Sporttype)
+		FROM @Dep_CustPTGroupSetting_MemberOLD t 
+			INNER JOIN #Sporttype s ON t.Sporttype=s.SporttypeID AND t.Bettype=s.BetypeID AND t.IsLive=s.IsLive
+		
 	END
 	ELSE
 	BEGIN
@@ -123,12 +106,13 @@ BEGIN
 				AgentPT=a.AgentPT
 		FROM @Dep_CustPTGroupSetting_MemberOLD t 
 			INNER JOIN Dep_CustPTSetting_Agent a WITH(NOLOCK) ON t.Sporttype=a.SportType AND t.Bettype=a.BetType AND t.IsLive=a.IsLive
-		WHERE a.CustID=@AgentID AND t.SportType IN(SELECT SportTypeID FROM #Sporttype)
+			INNER JOIN #Sporttype s ON t.Sporttype=s.SporttypeID AND t.Bettype=s.BetypeID AND t.IsLive=s.IsLive
+		WHERE a.CustID=@AgentID 
 	END
 		
 	IF EXISTS(SELECT TOP 1 1 FROM @Dep_CustPTGroupSetting_MemberOLD a 
-								INNER JOIN #Dep_CustPTGroupSetting_Member b ON a.Sporttype=b.SportType AND a.Bettype=b.BetType AND a.IsLive=b.IsLive
-								WHERE a.AgentPT<>b.AgentPT OR a.MasterPT<>b.MasterPT OR a.SuperPT<>b.SuperPT)
+								INNER JOIN Dep_CustPTGroupSetting_Member b ON a.Sporttype=b.SportType AND a.Bettype=b.BetType AND a.IsLive=b.IsLive
+								WHERE (a.AgentPT<>b.AgentPT OR a.MasterPT<>b.MasterPT OR a.SuperPT<>b.SuperPT) AND b.AgentID=@AgentID)
 	BEGIN
 		IF @IsGroupPTOLD=0
 		BEGIN
@@ -136,7 +120,9 @@ BEGIN
 				SET m.SuperPT=o.SuperPT,m.MasterPT=o.MasterPT,m.AgentPT=o.AgentPT
 			FROM  Dep_CustPTSetting_Member m WITH(ROWLOCK,UPDLOCK)
 				INNER JOIN @Dep_CustPTGroupSetting_MemberOLD o ON m.Sporttype=o.SportType AND m.Bettype=o.BetType AND m.IsLive=o.IsLive
-			WHERE m.CustID=@CustID AND m.SportType IN(SELECT SportTypeID FROM #Sporttype)
+				INNER JOIN #Sporttype s ON o.Sporttype=s.SporttypeID AND o.Bettype=s.BetypeID AND o.IsLive=s.IsLive
+			WHERE m.CustID=@CustID 
+
 			IF @@ERROR<>0
 			BEGIN
 				SELECT @ErrCode=100
@@ -161,7 +147,8 @@ BEGIN
 				SET m.SuperPT=o.SuperPT,m.MasterPT=o.MasterPT,m.AgentPT=o.AgentPT
 			FROM  Dep_CustPTSetting_Member m WITH(ROWLOCK,UPDLOCK)
 				INNER JOIN @Dep_CustPTGroupSetting_MemberOLD o ON m.Sporttype=o.SportType AND m.Bettype=o.BetType AND m.IsLive=o.IsLive
-			WHERE m.CustID=@CustID AND m.SportType IN(SELECT SportTypeID FROM #Sporttype)
+				INNER JOIN #Sporttype s ON o.Sporttype=s.SporttypeID AND o.Bettype=s.BetypeID AND o.IsLive=s.IsLive
+			WHERE m.CustID=@CustID 
 
 			IF @@ERROR<>0
 			BEGIN
