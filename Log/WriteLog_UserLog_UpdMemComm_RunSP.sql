@@ -20,7 +20,7 @@ ALTER PROCEDURE [dbo].[WriteLog_UserLog_UpdMemComm_RunSP]
 		- 20180809@Amanda: Remove Racing [RedmineID: #99378]
 		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
 		- 20180927@Winnie: Remove AllBet [RedmineID: #99378]
-		- 20181029@Elodie: Remove link server DBCUST [Redmine:#99855]
+		- 20181029@Lukas: remove linked-server DBcust for performance issue
     Param's Explaination:    	
 		- @UserID: UserId perform this action
 		- @@strCustID: A string of individual CustId separated by ","
