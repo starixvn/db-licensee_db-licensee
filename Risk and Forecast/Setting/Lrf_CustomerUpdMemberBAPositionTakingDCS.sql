@@ -77,8 +77,9 @@ BEGIN
 
 	INSERT INTO #Sporttype(SporttypeID)
 	SELECT DISTINCT SportType
-	FROM Dep_ProductSettingDetail WITH(NOLOCK)
-	WHERE IsApplyBA=1
+	FROM Dep_ProductSettingDetail a WITH(NOLOCK)
+		INNER JOIN Dep_ProductSetting b WITH(NOLOCK) ON a.ProductSettingID=b.ProductSettingID
+	WHERE IsApplyBA=1 AND SettingType=1
 
 	SET @xml = (
 		SELECT	
@@ -119,7 +120,7 @@ BEGIN
 		UPDATE t
 			SET SuperPT=a.SuperPT,
 				MasterPT=a.MasterPT,
-				AgentPT=a.SuperPT
+				AgentPT=a.AgentPT
 		FROM @Dep_CustPTGroupSetting_MemberOLD t 
 			INNER JOIN Dep_CustPTSetting_Agent a WITH(NOLOCK) ON t.Sporttype=a.SportType AND t.Bettype=a.BetType AND t.IsLive=a.IsLive
 		WHERE a.CustID=@AgentID AND t.SportType IN(SELECT SportTypeID FROM #Sporttype)
@@ -127,7 +128,7 @@ BEGIN
 		
 	IF EXISTS(SELECT TOP 1 1 FROM @Dep_CustPTGroupSetting_MemberOLD a 
 								INNER JOIN #Dep_CustPTGroupSetting_Member b ON a.Sporttype=b.SportType AND a.Bettype=b.BetType AND a.IsLive=b.IsLive
-								WHERE a.AgentPT<>b.AgentID OR a.MasterPT<>b.MasterPT OR a.SuperPT<>b.SuperPT)
+								WHERE a.AgentPT<>b.AgentPT OR a.MasterPT<>b.MasterPT OR a.SuperPT<>b.SuperPT)
 	BEGIN
 		IF @IsGroupPTOLD=0
 		BEGIN
@@ -243,11 +244,22 @@ BEGIN
 	SET @endRun = GETDATE()  
 	SET @duration  = DATEDIFF (MILLISECOND,@startRun,@endRun)  
 
-	EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP  
-	 @UserID = @ModifyBy,  
-	 @CustID = @CustID,  
-	 @ActionID = 2718,  
-	 @TrackingValue = @LogSPData,  
-	 @TrackingValue2 = @TrackingValue2,  
-	 @duration = @duration  
+	BEGIN TRY
+		EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP  
+		 @UserID = @ModifyBy,  
+		 @CustID = @CustID,  
+		 @ActionID = 2718,  
+		 @TrackingValue = @LogSPData,  
+		 @TrackingValue2 = @TrackingValue2,  
+		 @duration = @duration  
+	END TRY
+	BEGIN CATCH
+		EXEC bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP  
+		 @UserID = @ModifyBy,  
+		 @CustID = @CustID,  
+		 @ActionID = 2718,  
+		 @TrackingValue = @LogSPData,  
+		 @TrackingValue2 = @TrackingValue2,  
+		 @duration = @duration
+	END CATCH
 END
