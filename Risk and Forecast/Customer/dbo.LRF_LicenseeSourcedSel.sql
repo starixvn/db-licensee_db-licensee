@@ -1,7 +1,4 @@
-/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet,dot_member" viewers="vnteam" isFunction="0" isNested="0"></info>*/
-USE bodb_licensee
-GO
-
+/*<info serverAlias="DBLIC-bodb_Licensee" executers="bodbLicenseeNet,dot_member" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_LicenseeSourcedSel]
 	@SiteName NVARCHAR(50) = ''
 	, @LicenseeID INT = 0 
@@ -12,15 +9,13 @@ AS
 /*
 	Created: 20170925@Sophia
 	Task: Get Sourced Agent list [Redmine: #82797]
-	Note: This SP is only used for API (from TW)
-	DB: DBCUST-bodb_Licensee
+	DB: DBLIC/bodb_Licensee
 	Revisions:
 		- 20170925@Sophia: Initial SP   
 		- 20180313@Sophia: Change the name SourcedID and get RoleId, EffectiveDate [Redmine: #91738]
 		- 20180320@Harper: Add more parameter @ToDate [Redmine: #91738]
 		- 20180323@Sophia: Add more column SourcedLicenseeSitename [Redmine: #92574]
 		- 20180706@Joseph: Add more parameter @FromDate [Redmine: #97913]
-		- 20181019@Joseph: Migrate to DBCUST-bodb_Licensee [Redmine: #99855]
  */
 	 
 BEGIN 
