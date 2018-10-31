@@ -61,6 +61,7 @@ AS
 		- 20180810@Sophia: HA - remove LicenseeCustinfo table [Redmine: #99464]
 		- 20180809@Amanda: Remove Racing [RedmineID: #99378]
 		- 20180924@Winnie: Remove Allbet [RedmineID: #99378]
+		- 20181031@Patrick: DB052 indexes revolution [RedmineID: #103572]
 	Param's Explanation:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 		+ @SpecialLevel: default value = -1 (all)
@@ -562,7 +563,7 @@ BEGIN
 		CAST(ISNULL(SUM(e.GBP * CASE WHEN ruben = 0 THEN ISNULL(b.actual_stake, 0)*(CASE WHEN b.bettype = 71 THEN 0 ELSE 1 END) ELSE 0 END), 0) AS MONEY) AS OutstandingGBP
 	FROM
 		#Temp t
-		INNER JOIN bettrans b WITH(NOLOCK, INDEX=IX_custid_matchid_bettype) ON t.custid = b.custid
+		INNER JOIN bettrans b WITH(NOLOCK) ON t.custid = b.custid
 		LEFT JOIN #ExchangeRate e ON e.exchangeid = b.currency
 	WHERE b.matchid >= 0
 	GROUP BY t.custid

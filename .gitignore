@@ -18,3 +18,4 @@ bk/
 backup/
 .project
 .settings
+*.vs/*
