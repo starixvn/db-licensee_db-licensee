@@ -1,7 +1,6 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 
-ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportSummary]	
-	@LicenseeID		INT,
+ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportSummary]
 	@ProductCodes	VARCHAR(MAX) = '',
 	@FromDate		SMALLDATETIME,
 	@ToDate			SMALLDATETIME,
@@ -60,6 +59,7 @@ Revisions:
 	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
 	- 20180418@Amanda: LAP - Update VB bet type range and integrate PP [RedmineID: #92318]
 	- 20180808@Amanda: Remove Racing, Bingo [RedmineID: #99378]
+	- 20181101@Amanda: Remove parameter @LicenseeId [Redmine: #103935]
 
 Param's Explanation:
 	+ @IsLive : indicate that whether the report will get live data or not
@@ -82,7 +82,7 @@ SELECT @DateFrom = DATEADD(DAY, -15, GETDATE())
 SELECT @DateTo = GETDATE()
 SELECT @MoveBetsDay = MAX(eventdate) FROM match14 WITH(NOLOCK)
 
-EXEC [Lrf_Rpt_LiveReportSummary] @LicenseeId = 1, @CurrencyID = 0, @FromDate=@DateFrom, @ToDate=@DateTo, @MoveBetsDay = @MoveBetsDay, @ProductCode= NULL
+EXEC [Lrf_Rpt_LiveReportSummary] @CurrencyID = 0, @FromDate=@DateFrom, @ToDate=@DateTo, @MoveBetsDay = @MoveBetsDay, @ProductCode= NULL
 
 */
 BEGIN

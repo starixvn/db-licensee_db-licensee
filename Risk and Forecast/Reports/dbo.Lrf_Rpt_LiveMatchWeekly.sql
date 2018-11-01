@@ -1,10 +1,7 @@
-USE [bodb02]
-GO
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveMatchWeekly]
-	@LicenseeID INT =1
-	,@UserID 	INT
-	,@FromDate  DATETIME
+	@FromDate  DATETIME
 	,@ToDate    DATETIME
 	
 AS	
@@ -17,11 +14,10 @@ AS
 			   20160602@Jim: change formula to calculate total match of E-sport and set monday is the first day of week	
 			   20160621@Jim: modify sp to adapt new specs	
 			   20160803@Francis: Revise SP to enhance performance
+			   20181101@Amanda: Remove parameter @LicenseeId & @UserId [Redmine: #103935]
 */
 /*
 [Lrf_Rpt_LiveMatchWeekly]
-	@LicenseeID   =1
-	,@UserID 	=10
 	,@FromDate  ='20160401'
 	,@ToDate    ='20160520'
 */
@@ -299,7 +295,4 @@ SET @query='select  sporttype, sportname,' + @cols + '
  DROP TABLE #tblMatchHedge
  --DROP TABLE #tmpRptMatch
 
-GO 
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_LiveMatchWeekly] TO [vnteam]
-GO 
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_LiveMatchWeekly] TO [bodbLicenseeNet]
+GO
