@@ -1,16 +1,22 @@
-USE bodb_report
+/*<info serverAlias="DBRPT-bodb_Report" executers="" isFunction="0" isNested="0"></info>*/
+USE [bodb_Report]
 GO
-ALTER PROCEDURE dbo.Task_CustomerActive_GenDataFromBettransBK @FromDate DATE
-	, @ToDate DATE
+
+ALTER PROCEDURE dbo.Task_CustomerActive_GenDataFromBettransBK
+	@FromDate	DATE,
+	@ToDate		DATE
 AS
 /*   
- Creator: 20150204@Patrick
- Task: Gen history data from bettrans_bk
- DB: DBACC/bodb_LicenseeReport
- Revisions: 
- Param's Explanation:
-	ProductId: 1: Racing, 2: Number Game, 3: BA, 4: Live Casino, 5: Virtual Sports, 6: RNG Casino
-		, 7: Bingo, 8: Keno, 9: Playtech Casino, 10: AG Casino
+	Creator: 20150204@Patrick
+	Task: Gen history data from bettrans_bk
+	DB: DBACC/bodb_Report
+	
+	Revisions:
+		- 20181031@Percy: Remove linked-server DBLIC [RedmineID: #103660]
+
+	Param's Explanation:
+		ProductId: 1: Racing, 2: Number Game, 3: BA, 4: Live Casino, 5: Virtual Sports, 6: RNG Casino
+			, 7: Bingo, 8: Keno, 9: Playtech Casino, 10: AG Casino
 */
 BEGIN
 	SET NOCOUNT ON
@@ -25,21 +31,10 @@ BEGIN
 	DECLARE @WinlostDate DATE, @MinTransId BIGINT, @MaxTransId BIGINT
 	SELECT	@WinlostDate = @FromDate
 
-	DECLARE @sql VARCHAR(1024)
-
-	--get licensee cust
-	--DECLARE @TmpLicenseeCust AS TABLE ( CustId INT, Currency INT)
-	--SELECT  @sql = 'SELECT CustID, Currency 
-	--				FROM OPENQUERY(DBLIC, ''SELECT CustID, Currency 
-	--										FROM bodb_licensee.dbo.f_SelLicenseeCust(0)'')'
-	--INSERT INTO @TmpLicenseeCust (CustId, Currency)
-	--EXEC (@sql)
-
 	--get licensee who is multi currencies
 	DECLARE @MultiCurrencies TABLE(recommend INT, currency INT, fromDate SMALLDATETIME, toDate SMALLDATETIME)
 	INSERT INTO @MultiCurrencies(recommend, currency, fromDate, toDate)
-	SELECT recommend, currency, fromDate, toDate
-	FROM OPENQUERY(DBLIC, 'SELECT recommend, currency, fromDate, toDate FROM bodb_licensee.dbo.f_LicenseeMultiCurrencyConfigSel()')
+	SELECT recommend, currency, fromDate, toDate FROM bodb_licensee.dbo.f_LicenseeMultiCurrencyConfigSel()
 	
 	CREATE TABLE #LicenseeBATransaction(transid BIGINT)
 	--CREATE TABLE #rptCustomerActiveTmp (TransDate DATE, CustId INT, Recommend INT, CurrencyId INT, ProductId INT)
@@ -53,14 +48,10 @@ BEGIN
 		OPTION (MAXDOP 1)
 
 		--get BA tickets
-		SET @sql = ''
-		SELECT @sql = 'SELECT transid
-						FROM OPENQUERY(DBLIC, ''SELECT transid 
-						FROM bodb_Licensee.dbo.LicenseeBATransaction WITH (NOLOCK) WHERE TransId BETWEEN ' + CAST(@MinTransId AS VARCHAR(20)) 
-																									+ ' AND ' + CAST(@MaxTransId AS VARCHAR(20))
-																									+ ' OPTION (MAXDOP 1)'')'
 		INSERT INTO #LicenseeBATransaction (transid)
-		EXEC (@sql)
+		SELECT transid 
+		FROM bodb_Licensee.dbo.LicenseeBATransaction WITH (NOLOCK) WHERE TransId BETWEEN @MinTransId AND @MaxTransId
+		OPTION (MAXDOP 1)
 
 		--For SportsBook
 		INSERT INTO dbo.rptCustomerActiveTmp(TransDate, CustId, Recommend, CurrencyId, ProductId, WinLostDate)
