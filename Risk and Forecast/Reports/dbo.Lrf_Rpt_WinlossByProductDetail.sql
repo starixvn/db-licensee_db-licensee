@@ -90,7 +90,7 @@ BEGIN
 		Betcount		BIGINT
 	)  
 
-	CREATE TABLE #tmpVS		(Orid INT, SportType TINYINT)
+	--CREATE TABLE #tmpVS		(Orid INT, SportType TINYINT)
 	DECLARE @bettype		TABLE (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))
 	DECLARE @sporttype		TABLE (sporttype INT, ProductCode VARCHAR(10))
 	
@@ -265,17 +265,17 @@ BEGIN
 		---#3.3: Begin: Get data for all products, Exclude VS2 parlay ticket and BA
 		IF EXISTS (SELECT 1 FROM @bettype)
 		BEGIN	
-			IF EXISTS (SELECT 1 FROM @bettype WHERE ProductCode IN ('VS', 'VS2'))
-			BEGIN
-				INSERT INTO #tmpVS( Orid, SportType )				
-				SELECT 
-					DISTINCT
-					o.Orid,
-					r.SportType				
-				FROM VSOutright o with (nolock)
-					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
-				WHERE EventDate BETWEEN @TempFromDate AND @TDate
-			END
+			--IF EXISTS (SELECT 1 FROM @bettype WHERE ProductCode IN ('VS', 'VS2'))
+			--BEGIN
+			--	INSERT INTO #tmpVS( Orid, SportType )				
+			--	SELECT 
+			--		DISTINCT
+			--		o.Orid,
+			--		r.SportType				
+			--	FROM VSOutright o with (nolock)
+			--		INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
+			--	WHERE EventDate BETWEEN @TempFromDate AND @TDate
+			--END
 
 			INSERT INTO #SAgWinLoss
 			SELECT  
@@ -304,7 +304,12 @@ BEGIN
 				INNER JOIN @TempAg a ON b.recommend = a.custid AND b.Currency = a.Currency 
 				INNER JOIN @bettype bt ON b.bettype = bt.bettype AND b.bettype <> 2799
 				LEFT JOIN [match] m WITH(NOLOCK) ON b.matchid = m.matchid AND b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype())
-				LEFT JOIN #tmpVS vs ON b.oddsid = vs.Orid AND b.bettype IN (1231,1232,1233,1237,1238,1220,1235,1236)	
+				LEFT JOIN (
+					SELECT DISTINCT o.Orid, r.SportType				
+					FROM VSOutright o with (nolock)
+					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
+				) vs ON b.oddsid = vs.Orid AND b.bettype IN (1231,1232,1233,1237,1238,1220,1235,1236)
+				--LEFT JOIN #tmpVS vs ON b.oddsid = vs.Orid AND b.bettype IN (1231,1232,1233,1237,1238,1220,1235,1236)	
 			WHERE 
 				b.winlostdate BETWEEN @TempFromDate AND @TDate 				
 				AND (@MemberID = 0 OR b.CustId = @MemberID)
@@ -322,7 +327,7 @@ BEGIN
 					END					
 				ELSE bt.ProductCode END	
 			
-			DROP TABLE #tmpVS	
+			--DROP TABLE #tmpVS	
 		END			
 	END  
 	---#3: END: Get Sum data from bettrans After Move Bets Day  
