@@ -662,6 +662,17 @@ BEGIN
 
 				IF @ErrCode <> 0
 				RETURN
+
+				EXEC Lrf_CustomerUpdMemberBAPositionTakingDCS				
+				@CustID = @CustID,
+				@ModifyBy = @ModifyBy,
+				@IsBA = @IsBA,			
+				@IP = @IP,		
+				@ErrCode = @ErrCode OUTPUT,
+				@ErrMsg = @ErrMsg OUTPUT
+
+				IF @ErrCode <> 0
+				RETURN
 				--restore old dangerous level
 
 				--SELECT @Danger = ISNULL(Danger,0) FROM DBLIC.bodb_licensee.dbo.[LicenseeBAHistory] WITH(NOLOCK) WHERE LicenseeID = @LicenseeID AND CustID = @CustID AND [Status] = 'Running'
