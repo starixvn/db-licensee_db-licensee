@@ -1,5 +1,4 @@
-USE [bodb02]
-GO
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" viewers="vnteam" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_Statement_Mem]  
     @CustID			INT,  
     @FromDate		DATETIME,  
@@ -40,6 +39,7 @@ Revisions:
 	- 20151228@Bobby: Implement RNG Casino sporttype(208,209,210)
 	- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
 	- 20170320@Paul: Implement Cash Out [RedmineID :#71727]
+	- 20181102@Patrick: DB052 indexes revolution [RedmineID :#103572]
  
 Param's Explanation:   
 	• @ErrCode:
@@ -150,7 +150,7 @@ BEGIN
 		WHERE
 			custid = @custid  
 			AND winlostdate BETWEEN @fdate AND @tdate                              
-			AND statusID = 0 -- get only running game _ Keno
+			AND statusID IN (0,1) -- get only running game _ Keno
 		GROUP BY winlostdate, gameID
 		
 		--include running Microgaming + RNG Casino + Voidbridge

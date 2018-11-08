@@ -64,6 +64,7 @@ AS
 	- 20180723@Harper: Improve performance for winloss by product report [RedmineID: #98358]
 	- 20180810@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
 	- 20181005@Amanda: Remove Racing, Bingo [RedmineID: #99378]
+	- 20181031@Patrick: DB052 indexes revolution [RedmineID: #103572]
 
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -332,7 +333,7 @@ BEGIN
 				- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd,
 				SUM(1 * (CASE WHEN b.statusID = 111 THEN 0|@sumBetCount ELSE 1 END)) AS BetCount	
 			FROM 
-				dbo.bettrans b WITH (NOLOCK)
+				dbo.bettrans b WITH (NOLOCK, INDEX=IX_recommend)
 				INNER JOIN @TempAg a ON b.recommend = a.custid AND b.Currency = a.Currency 
 				INNER JOIN @bettype bt ON b.bettype = bt.bettype AND b.bettype <> 2799
 				LEFT JOIN [match] m WITH(NOLOCK) ON b.matchid = m.matchid AND b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype())
