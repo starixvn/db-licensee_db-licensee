@@ -1,12 +1,8 @@
 ﻿/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
-USE [bodb02]
-GO
  
 ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
 (
-	@LicenseeID 	INT
-	,@UserID  		INT
-	,@Username 		VARCHAR(50) =  '' 
+	@Username 		VARCHAR(50) =  '' 
 	,@Product  		VARCHAR(MAX) 
 	,@Bettype  		VARCHAR(MAX)
 	,@CurrencyID 	INT
@@ -73,6 +69,7 @@ Revision:
 	- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 	- 20180810@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
 	- 20180810@Paul: Enhance performance [Redmine: #98260]
+	- 20181101@Amanda: Remove parameter @LicenseeId & @UserId [Redmine: #103935]
 
 Parameter's Explanation:
 	- @ReportBy:  1: daily, 2: monthly

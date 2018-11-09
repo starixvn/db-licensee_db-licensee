@@ -1,7 +1,6 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
-ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportSummaryDetail] 
-	@LicenseeID		INT,	
+ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportSummaryDetail]
 	@ProductCodes	VARCHAR(MAX) = NULL,
 	@FromDate		SMALLDATETIME,
 	@ToDate			SMALLDATETIME,
@@ -69,6 +68,7 @@ Revisions:
 	- 20180515@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 	- 20180418@Amanda: LAP - Update VB bet type range and integrate PP [RedmineID: #92318]
 	- 20180808@Amanda: Remove Racing, Bingo [RedmineID: #99378]
+	- 20181101@Amanda: Remove parameter @LicenseeId [Redmine: #103935]
 
 Param's Explanation:  
 	+ @Liveindicator : indicate that whether the report will get live data or not
@@ -90,7 +90,7 @@ SELECT @FromDate = DATEADD(DAY, -15, GETDATE())
 SELECT @ToDate = GETDATE()  
 SELECT @MoveBetsDay = MAX(eventdate) FROM match14 WITH(NOLOCK)
   
-EXEC [Lrf_Rpt_LiveReportSummaryDetail]  @LicenseeId = 1, @CurrencyID = 0, @FromDate=@FromDate, @ProductCode= NULL, @ToDate=@ToDate, @MoveBetsDay = @MoveBetsDay  
+EXEC [Lrf_Rpt_LiveReportSummaryDetail] @CurrencyID = 0, @FromDate=@FromDate, @ProductCode= NULL, @ToDate=@ToDate, @MoveBetsDay = @MoveBetsDay  
   
 */
 BEGIN
