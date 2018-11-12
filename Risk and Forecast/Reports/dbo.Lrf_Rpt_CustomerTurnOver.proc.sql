@@ -70,6 +70,7 @@ Revision:
 	- 20180810@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
 	- 20180810@Paul: Enhance performance [Redmine: #98260]
 	- 20181101@Amanda: Remove parameter @LicenseeId & @UserId [Redmine: #103935]
+	- 20181109@Paul: Minor enhancement [Redmine: #103886]
 
 Parameter's Explanation:
 	- @ReportBy:  1: daily, 2: monthly
@@ -419,8 +420,10 @@ BEGIN
 		--FILTER product
 		DELETE b
 		FROM #tempBettrans b
-		WHERE b.sporttype NOT IN (
-			SELECT sportid FROM #ProductID
+		WHERE NOT EXISTS (
+			SELECT 1
+			FROM #ProductID p
+			WHERE p.sportId = b.sporttype
 		)
 	END
 

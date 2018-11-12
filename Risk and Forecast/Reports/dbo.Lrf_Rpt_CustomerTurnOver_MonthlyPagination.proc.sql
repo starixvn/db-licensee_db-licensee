@@ -34,6 +34,7 @@ Revision:
 	- 20180810@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
 	- 20180810@Paul: Enhance performance [Redmine: #98260]
 	- 20181008@Paul: Hot Fix. Duplicate data [Redmine: #102850]
+	- 20181109@Paul: Fix wrong count [Redmine: #103886]
 
 Parameter's Explanation:
 			
@@ -145,56 +146,30 @@ BEGIN
 				OPTION(RECOMPILE)				
 			END
 
-			IF @totalBettrans < @maxRow OR @IsExportExcel = 1
-			BEGIN
-				;WITH CTE_Paging AS
-				(
-					SELECT winlostdate
-						, b.custid
+			;WITH CTE_Paging AS
+			(
+				SELECT winlostdate
+					, b.custid
 						
-					FROM #tempPagingData b
-						INNER JOIN #tempCust c
-						ON b.custid 	= c.custid
-						INNER JOIN #bettype bt
-						ON b.bettype 	=  bt.typeid
-						INNER JOIN #Status st
-						ON b.StatusID 	=  st.StatusID
-						INNER JOIN #ProductID p 
-						ON b.sporttype = p.sportID
-					GROUP BY 
-						b.winlostdate
-						, b.custid
-				)
-				INSERT INTO #tempPaging
-				SELECT p.*
-					,2 AS whticket
-				FROM CTE_Paging p
+				FROM #tempPagingData b
+					INNER JOIN #tempCust c
+					ON b.custid 	= c.custid
+					INNER JOIN #bettype bt
+					ON b.bettype 	=  bt.typeid
+					INNER JOIN #Status st
+					ON b.StatusID 	=  st.StatusID
+					INNER JOIN #ProductID p 
+					ON b.sporttype = p.sportID
+				GROUP BY 
+					b.winlostdate
+					, b.custid
+			)
+			INSERT INTO #tempPaging
+			SELECT p.*
+				,2 AS whticket
+			FROM CTE_Paging p
 
-				SELECT @totalSumRpt = @@ROWCOUNT
-			END
-			ELSE
-			BEGIN
-				;WITH CTE_Paging AS
-				(
-					SELECT winlostdate
-						, b.custid
-						
-					FROM #tempPagingData b
-						INNER JOIN #tempCust c
-						ON b.custid 	= c.custid
-						INNER JOIN #bettype bt
-						ON b.bettype 	=  bt.typeid
-						INNER JOIN #Status st
-						ON b.StatusID 	=  st.StatusID
-						INNER JOIN #ProductID p 
-						ON b.sporttype = p.sportID
-					GROUP BY 
-						b.winlostdate
-						, b.custid
-				)
-				SELECT @totalSumRpt = COUNT(1)
-				FROM CTE_Paging p
-			END
+			SELECT @totalSumRpt = @@ROWCOUNT
 		END
 	END 
 	--END searchCust = 1
@@ -280,52 +255,28 @@ BEGIN
 				OPTION(RECOMPILE)
 			END
 			
-			IF @totalBettrans < @maxRow OR @IsExportExcel = 1
-			BEGIN
-				;WITH CTE_Paging AS
-				(
-					SELECT winlostdate
-						, b.custid
+			;WITH CTE_Paging AS
+			(
+				SELECT winlostdate
+					, b.custid
 						
-					FROM #tempPagingData b
-						INNER JOIN #bettype bt
-						ON b.bettype 	=  bt.typeid
-						INNER JOIN #Status st
-						ON b.StatusID 	=  st.StatusID
-						INNER JOIN #ProductID p 
-						ON b.sporttype = p.sportID
-					GROUP BY 
-						b.winlostdate
-						, b.custid
-				)
-				INSERT INTO #tempPaging
-				SELECT p.*
-					,2 AS whticket
-				FROM CTE_Paging p
+				FROM #tempPagingData b
+					INNER JOIN #bettype bt
+					ON b.bettype 	=  bt.typeid
+					INNER JOIN #Status st
+					ON b.StatusID 	=  st.StatusID
+					INNER JOIN #ProductID p 
+					ON b.sporttype = p.sportID
+				GROUP BY 
+					b.winlostdate
+					, b.custid
+			)
+			INSERT INTO #tempPaging
+			SELECT p.*
+				,2 AS whticket
+			FROM CTE_Paging p
 
-				SELECT @totalSumRpt = @@ROWCOUNT
-			END
-			ELSE
-			BEGIN
-				;WITH CTE_Paging AS
-				(
-					SELECT winlostdate
-						, b.custid
-						
-					FROM #tempPagingData b
-						INNER JOIN #bettype bt
-						ON b.bettype 	=  bt.typeid
-						INNER JOIN #Status st
-						ON b.StatusID 	=  st.StatusID
-						INNER JOIN #ProductID p 
-						ON b.sporttype = p.sportID
-					GROUP BY 
-						b.winlostdate
-						, b.custid
-				)
-				SELECT @totalSumRpt = COUNT(1)
-				FROM CTE_Paging p
-			END
+			SELECT @totalSumRpt = @@ROWCOUNT
 		END
 	END
 	--CREATE INDEXERS
@@ -336,6 +287,8 @@ BEGIN
 		LEFT JOIN #tempPaging t ON p.custid = t.custid AND p.winlostdate = t.winlostdate AND t.whticket = 1
 	WHERE p.whticket = 2
 		AND t.custid > 0
+
+	SET @totalSumRpt = @totalSumRpt - @@ROWCOUNT
 
 	--GET paging item
 	IF @IsExportExcel = 1
@@ -349,7 +302,6 @@ BEGIN
 				, t.winlostdate
 				, t.Custid 	
 				, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS username
-				, t.whticket
 			
 			FROM #tempPaging t
 				INNER JOIN dbo.Customer  c WITH (NOLOCK, INDEX = IX_custid)
@@ -358,8 +310,7 @@ BEGIN
 			GROUP BY 
 				t.winlostdate
 				, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username)
-				, t.Custid
-				, t.whticket			
+				, t.Custid		
 		)
 		INSERT INTO #tempCustPaging 
 		SELECT
@@ -380,7 +331,6 @@ BEGIN
 				, t.winlostdate
 				, t.Custid 	
 				, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS username
-				, t.whticket
 			
 			FROM #tempPaging t
 				INNER JOIN dbo.Customer  c WITH (NOLOCK, INDEX = IX_custid)
@@ -389,8 +339,7 @@ BEGIN
 			GROUP BY 
 				t.winlostdate
 				, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username)
-				, t.Custid
-				, t.whticket			
+				, t.Custid			
 		)
 		INSERT INTO #tempCustPaging 
 		SELECT
