@@ -1,3 +1,7 @@
+/*<info serverAlias="DBACC-bodb_Licensee" selecters="bodbAdminNet,bodbLicenseeNet" viewers="" isFunction="1" isNested="1"></info>*/
+USE [bodb_Licensee]
+GO
+
 ALTER FUNCTION [dbo].[f_SelLicenseeCust](@LicenseeID INT = 0)
 
 RETURNS @tbLicenseeCust TABLE 
@@ -10,16 +14,16 @@ RETURNS @tbLicenseeCust TABLE
 	[Description] [varchar](100)
 )
 AS
-/*Created: Victor    
+/*
+	Created: Victor
+	Date: 2014-11-07
+	Task: Get LicenseesCust list
+	DB: DB052.bodb_Licensee, DB053.bodb_Licensee, DB06.bodb_Licensee
 
-Date: 2014-11-07
+	Revisions:
+		- 20181031@Percy: Add DB06.bodb_Licensee [RedmineID: #103660]
 
-TASk : Get LicenseesCust list
-
-DB: DBLIC/bodb_Licensee  
-
-Param's Explanation:   
-
+	Param's Explanation:
 */
 BEGIN
 	-- Get normal LicenseeCust list
@@ -47,10 +51,3 @@ BEGIN
 	RETURN
 END
 GO
-
-GRANT SELECT ON dbo.[f_SelLicenseeCust] TO [bodbLicenseeNet]
-GO
-
-GRANT SELECT ON dbo.[f_SelLicenseeCust] TO [bodbAdminNet]
-GO
-
