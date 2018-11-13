@@ -43,6 +43,7 @@ AS
 		- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
 		- 20180418@Amanda: LAP - Update VB bet type range and integrate PP [RedmineID: #92318]
 		- 20180808@Amanda: Remove Racing [RedmineID: #99378]
+		- 20181113@Joseph: New betfrom Mobile App (o) [RedmineID: #104587]
 
 	Param's Explanation:  
 	  + @PlatformType:  0: All  
@@ -53,6 +54,7 @@ AS
 						5: SMART SITE (s,l)  
 						6: TABLET (r)  
 						7: New Asia (x)
+						8: Mobile App (o)
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover onlly)
 	  + @showSB: Show SportsBook bets
 	  + @ShowNG: Show Number game bets
@@ -158,7 +160,8 @@ BEGIN
 				(6, 'r'),
 				(7, 'x'),
 				(3, 'y'),
-				(2, 'z')
+				(2, 'z'),
+				(8, 'o')
 	) d(PlatformType, betfrom)
 	WHERE d.PlatformType = @PlatformType OR @PlatformType = 0
 

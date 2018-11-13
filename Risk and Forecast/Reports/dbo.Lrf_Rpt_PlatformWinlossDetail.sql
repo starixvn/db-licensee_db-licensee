@@ -43,6 +43,7 @@ AS
 		- 20180418@Amanda: LAP - Integrate PP [RedmineID: #92318]
 		- 20180809@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
 		- 20180808@Amanda: Remove Racing [RedmineID: #99378]
+		- 20181113@Joseph: New betfrom Mobile App (o) [RedmineID: #104587]
 
 	Param's Explanation:  
 	  + @PlatformType:  0: All  
@@ -53,6 +54,7 @@ AS
 						5: SMART SITE (s,l)  
 						6: TABLET (r)   
 						7: New Asia (x)
+						8: Mobile App (o)
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover onlly)
 	  + @excludeTest: remove currency UUS
 	  + @showSB: Show SportsBook bets
@@ -143,7 +145,8 @@ BEGIN
 				(6, 'r'),
 				(7, 'x'),
 				(3, 'y'),
-				(2, 'z')
+				(2, 'z'),
+				(8, 'o')
 	) d(PlatformType, betfrom)
 	WHERE d.PlatformType = @PlatformType OR @PlatformType = 0
 
