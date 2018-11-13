@@ -1,4 +1,4 @@
-/*<info serverAlias="DBACC-bodb_Licensee" selecters="bodbAdminNet,bodbLicenseeNet" viewers="" isFunction="1" isNested="1"></info>*/
+/*<info serverAlias="DBLIC-bodb_Licensee,DBACC-bodb_Licensee" selecters="bodbAdminNet,bodbLicenseeNet" viewers="" isFunction="1" isNested="1"></info>*/
 USE [bodb_Licensee]
 GO
 
@@ -18,7 +18,7 @@ AS
 	Created: Victor
 	Date: 2014-11-07
 	Task: Get LicenseesCust list
-	DB: DB052.bodb_Licensee, DB053.bodb_Licensee, DB06.bodb_Licensee
+	DB: DBLIC.bodb_Licensee, DB06.bodb_Licensee
 
 	Revisions:
 		- 20181031@Percy: Add DB06.bodb_Licensee [RedmineID: #103660]
