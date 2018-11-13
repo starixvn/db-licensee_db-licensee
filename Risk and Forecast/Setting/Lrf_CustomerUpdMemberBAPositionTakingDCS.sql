@@ -132,7 +132,7 @@ BEGIN
 		END
 		ELSE
 		BEGIN
-			UPDATE Dep_CustSettingMode
+			UPDATE Dep_CustSettingMode  WITH(ROWLOCK,UPDLOCK)
 				SET IsGroupedPT=0
 			WHERE CustID=@CustID
 				
@@ -187,7 +187,7 @@ BEGIN
 	BEGIN
 		IF @IsGroupPTOLD=0
 		BEGIN
-			UPDATE Dep_CustSettingMode
+			UPDATE Dep_CustSettingMode WITH(ROWLOCK,UPDLOCK)
 				SET IsGroupedPT=1
 			WHERE CustID=@CustID
 
@@ -198,7 +198,7 @@ BEGIN
 				RETURN
 			END
 				
-			DELETE FROM Dep_CustPTSetting_Member WHERE CustID=@CustID
+			DELETE FROM Dep_CustPTSetting_Member WITH(ROWLOCK) WHERE CustID=@CustID
 		END
 	END					
 
