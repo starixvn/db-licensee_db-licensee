@@ -50,7 +50,7 @@ BEGIN
 		--get BA tickets
 		INSERT INTO #LicenseeBATransaction (transid)
 		SELECT transid 
-		FROM bodb_Licensee.dbo.LicenseeBATransaction WITH (NOLOCK) WHERE TransId BETWEEN @MinTransId AND @MaxTransId
+		FROM bodb_Licensee.dbo.LicenseeBATransaction_bk WITH (NOLOCK) WHERE TransId BETWEEN @MinTransId AND @MaxTransId
 		OPTION (MAXDOP 1)
 
 		--For SportsBook
@@ -102,7 +102,4 @@ BEGIN
 	DROP TABLE #LicenseeBATransaction
 	--DROP TABLE #rptCustomerActiveTmp
 END
-
-GO
-GRANT VIEW DEFINITION ON [dbo].[Task_CustomerActive_GenDataFromBettransBK] TO [vnteam] AS [dbo]
 GO
