@@ -1,5 +1,8 @@
- /*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
-CREATE PROCEDURE [dbo].[Lrf_GetLicenseeTodayWithdrawal]
+/*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+USE [bodb02]
+GO
+
+ALTER PROCEDURE [dbo].[Lrf_GetLicenseeTodayWithdrawal]
     @LicenseeID		INT,
     @CurrencyIDList VARCHAR(500)  = 0,
     @ReportDate		SMALLDATETIME
@@ -15,6 +18,7 @@ AS
 		- 20170613@Paul: return value in THB, IDR rates [RedmineID: #75030]
 		- 20170808@Walter: Support UUS currency [RedmineID: #80855]
 		- 20170814@Alex  : Restrict permission by currency  [RedmineID: #80855]
+		- 20181031@Percy: Remove linked-server DBLIC [RedmineID: #103660]
 */
 
 BEGIN
@@ -26,13 +30,9 @@ BEGIN
 	SELECT	@fdate = @ReportDate;
 
 	DECLARE @Temp TABLE (CustId INT, Currency INT);
-	DECLARE @sql1 VARCHAR(MAX);
-
-	SELECT  @sql1 = 'SELECT CustID, Currency
-					FROM OPENQUERY(DBLIC, ''SELECT LicenseeId,CustID,Currency,Description FROM bodb_licensee.dbo.f_SelLicenseeCust('+CAST(@LicenseeID AS VARCHAR(10))+')'')';
 
 	INSERT INTO @Temp (CustId, Currency)
-	EXEC (@sql1);
+	SELECT CustID,Currency FROM bodb_licensee.dbo.f_SelLicenseeCust(@LicenseeID)
 	
 	INSERT INTO @tmpAg(custID, currency)
 	SELECT CustID, currency 
