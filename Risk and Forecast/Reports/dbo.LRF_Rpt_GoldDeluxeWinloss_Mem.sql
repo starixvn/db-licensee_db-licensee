@@ -82,21 +82,21 @@ BEGIN
 	
 	-- Get Charge rates
 	DECLARE @PartyID	VARCHAR(10)
-	DECLARE @ChargeRates AS TABLE(Rate MONEY, FromDate DATE, ToDate DATE)
+	DECLARE @ChargeRates AS TABLE(Rate MONEY, FromDate DATE, ToDate DATE, ChargeType TINYINT)
 
 	SELECT @PartyID = CAST(PartyID AS VARCHAR)
 	FROM bodb_licensee.dbo.OAS_Party WITH(NOLOCK)
 	WHERE OldRefID = @LicenseeId AND PartyType = 1
 	
-	INSERT INTO @ChargeRates(Rate, FromDate, ToDate)
-	SELECT DI_Rate, Fromdate, Todate
+	INSERT INTO @ChargeRates(Rate, FromDate, ToDate, ChargeType)
+	SELECT DI_Rate, Fromdate, Todate, ChargeType
 	FROM bodb_licensee.dbo.LA_f_ChargeInfo(@PartyID, @FDate, @TDate, @ProductPrefix, 'OA', 1)
 	WHERE (ChargeType = 1 OR ChargeType = 12) AND DI_Rate > 0
 	
 	IF NOT EXISTS (SELECT 1 FROM @ChargeRates)
 	BEGIN
-		INSERT INTO @ChargeRates(Rate, FromDate, ToDate)
-		SELECT DI_Rate, Fromdate, Todate
+		INSERT INTO @ChargeRates(Rate, FromDate, ToDate, ChargeType)
+		SELECT DI_Rate, Fromdate, Todate, ChargeType
 		FROM bodb_licensee.dbo.LA_f_GetChargeInfoWithTrialTime(@PartyID, @FDate, @TDate, @ProductPrefix, 'OA', 1)
 		WHERE (ChargeType = 1 OR ChargeType = 12) AND DI_Rate > 0
 	END
