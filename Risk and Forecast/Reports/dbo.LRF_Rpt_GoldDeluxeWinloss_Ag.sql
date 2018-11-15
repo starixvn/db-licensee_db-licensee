@@ -1,28 +1,17 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
-/****** Object:  StoredProcedure [dbo].[LRF_Rpt_ThirdPartyWinloss_Ag]    Script Date: 3/30/2015 5:19:59 PM ******/
+/****** Object:  StoredProcedure [dbo].[LRF_Rpt_GoldDeluxeWinloss_Ag]    Script Date: 3/30/2015 5:19:59 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
  
-ALTER PROCEDURE [dbo].[LRF_Rpt_ThirdPartyWinloss_Ag] 
-	@ProductID	    INT,
+ALTER PROCEDURE [dbo].[LRF_Rpt_GoldDeluxeWinloss_Ag] 
 	@FromDate		SMALLDATETIME,  
 	@ToDate			SMALLDATETIME,  
 	@AgentList		VARCHAR(MAX)
 AS  
 
-/*
-
- exec [LRF_Rpt_ThirdPartyWinloss_Ag]
- @LicenseeID=1
-,@Currency=0
-,@FromDate='2014-04-01 00:00:00'
-,@ToDate='2014-09-30 00:00:00'
-,@userId=10
-,@excludeTest=0
-*/
 /*  Created: Winnie
 	Date: 2015-03-16
     Task : GD Win Loss report 
@@ -31,19 +20,37 @@ AS
 		- 20160413@Victor: support MKK currency code [Redmine: #55745]
 		- 20170302@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest [Redmine: #71679]
 		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
+		- 20181114@Joseph: Integrate Bidme games (GD product) [#101599]
+
 	Param's Explanation:  
-	  + @excludeTest: remove currency UUS
 */  
 
 BEGIN
-	CREATE TABLE #tmpResult (CustID			  INT
-							 ,WinlostDate	  DATETIME  	
-							 ,Currency 		  INT
-							 ,TurnOver 		  MONEY
-							 ,TotalTrans	  INT	
-							 ,Winlost  		  MONEY
-							 ,LicenseeWinlost MONEY
-							)
+
+	DECLARE @ProductID			INT
+		,	@FDate				DATE
+		,	@TDate				DATE
+		,	@ProductPrefix		VARCHAR(2)
+
+	SELECT @FDate = @FromDate,
+		   @TDate = @ToDate,
+		   @ProductPrefix = 'GD'
+
+	SELECT @ProductID = ProductID
+	FROM bodb_licensee.dbo.Product3rd WITH (NOLOCK)
+	WHERE ProductPrefix = @ProductPrefix
+
+	CREATE TABLE #tmpResult (
+		CustID INT
+		,WinlostDate DATETIME  	
+		,Currency INT
+		,TurnOver MONEY
+		,TotalTrans	INT	
+		,Winlost MONEY
+		,LicenseeWinlost MONEY
+		,TipsAmount MONEY
+		,TipsSharing MONEY
+		,AmountDue MONEY)
 						
 	CREATE TABLE #tmpCust (  Recommend INT
 							,CustId INT
@@ -74,6 +81,30 @@ BEGIN
 		RETURN
 	END CATCH;
 	
+	
+	-- Get Charge rates
+	DECLARE @PartyID	VARCHAR(10)
+	DECLARE @ChargeRates AS TABLE(Rate MONEY, FromDate DATE, ToDate DATE)
+
+	SELECT @PartyID = CAST(PartyID AS VARCHAR)
+	FROM bodb_licensee.dbo.OAS_Party WITH(NOLOCK)
+	WHERE OldRefID = @LicenseeId AND PartyType = 1
+	
+	INSERT INTO @ChargeRates(Rate, FromDate, ToDate)
+	SELECT DI_Rate, Fromdate, Todate
+	FROM bodb_licensee.dbo.LA_f_ChargeInfo(@PartyID, @FDate, @TDate, @ProductPrefix, 'OA', 1)
+	WHERE (ChargeType = 1 OR ChargeType = 12) AND DI_Rate > 0
+
+	IF NOT EXISTS (SELECT 1 FROM @ChargeRates)
+	BEGIN
+		INSERT INTO @ChargeRates(Rate, FromDate, ToDate)
+		SELECT DI_Rate, Fromdate, Todate
+		FROM bodb_licensee.dbo.LA_f_GetChargeInfoWithTrialTime(@PartyID, @FDate, @TDate, @ProductPrefix, 'OA', 1)
+		WHERE (ChargeType = 1 OR ChargeType = 12) AND DI_Rate > 0
+	END
+
+	-- Get data
+
 	INSERT INTO #tmpCust (Recommend,CustID,Currency)	
 	SELECT   lc.CustId AS Recommend
 			 ,co.CustID
@@ -88,19 +119,32 @@ BEGIN
 							 ,TurnOver 	
 							 ,TotalTrans
 							 ,Winlost  	
-							 ,LicenseeWinlost 
-							)
+							 ,LicenseeWinlost
+							 ,TipsAmount
+							 ,TipsSharing
+							 ,AmountDue)
 
 	SELECT ag.recommend AS CustID
-		   ,c.Winlostdate		
-		   ,ag.Currency
-		   ,SUM(c.TurnOver) AS TurnOver
-		   ,SUM(c.BetCount) AS TotalTrans
-		   ,SUM(c.Winlost)  AS Winlost
-		   ,-SUM(c.Winlost) AS LicenseeWinlost
+		    ,c.Winlostdate		
+		    ,ag.Currency
+		    ,SUM(c.TurnOver) AS TurnOver
+		    ,SUM(c.BetCount) AS TotalTrans
+		    , SUM(CASE WHEN c.bettype = 1706 -- GD Tips
+					THEN 0 ELSE c.Winlost END) AS Winlost
+			,-SUM(CASE WHEN c.bettype = 1706 -- GD Tips
+					THEN 0 ELSE c.Winlost END) AS LicenseeWinlost
+			,SUM(CASE WHEN c.bettype = 1706 -- GD Tips
+					THEN c.Winlost ELSE 0 END) AS TipsAmount
+			,SUM(CASE WHEN c.bettype = 1706 -- GD Tips
+					THEN c.Winlost * (1-ISNULL(rateTip.Rate,1)) ELSE 0 END) AS TipsSharing
+			,SUM(CASE WHEN c.bettype = 1706 -- GD Tips
+					THEN c.Winlost * ISNULL(rateTip.Rate,1)
+					ELSE -c.Winlost * (1-ISNULL(rate.Rate,1)) END) AS AmountDue
 	FROM  [bodb_LicenseeReport].dbo.rptDepWinlost_ThirdParty c  WITH (NOLOCK)
 		  INNER JOIN #tmpCust ag ON c.CustID = ag.CustID AND c.Currency = ag.Currency
-	WHERE c.ProductId=@ProductId AND c.Winlostdate BETWEEN @FromDate AND @ToDate 
+		  LEFT JOIN @ChargeRates rateTip ON c.Winlostdate BETWEEN rateTip.FromDate AND rateTip.ToDate AND rateTip.ChargeType = 12
+		  LEFT JOIN @ChargeRates rate ON c.Winlostdate BETWEEN rate.FromDate AND rate.ToDate AND rate.ChargeType = 1
+	WHERE c.ProductId=@ProductId AND c.Winlostdate BETWEEN @FDate AND @TDate 
 	GROUP BY ag.recommend
 			,c.Winlostdate
 		    ,ag.Currency
@@ -112,7 +156,7 @@ BEGIN
 		   ,EUR
 		   ,GBP
 	INTO #TempExchange 
-	FROM Lrf_f_GetExchangeDaily(@FromDate, @ToDate)
+	FROM Lrf_f_GetExchangeDaily(@FDate, @TDate)
 	WHERE exchangeid IN (SELECT DISTINCT Currency FROM #tmpResult)
 	
 	SELECT r.CustID
@@ -122,6 +166,9 @@ BEGIN
 		   ,SUM(r.TotalTrans) 	 AS TotalTrans
 		   ,SUM(r.Winlost)		 AS Winlost
 		   ,SUM(r.LicenseeWinlost) AS LicenseeWinlost
+		   ,SUM(r.TipsAmount)			AS TipsAmount
+		   ,SUM(r.TipsSharing)		AS TipsSharing
+		   ,SUM(r.AmountDue)			AS AmountDue
 		---USD
 			,SUM(r.TurnOver*e.USD)   	 	AS TurnOverUSD
 			,SUM(r.Winlost*e.USD)		 	AS WinlostUSD

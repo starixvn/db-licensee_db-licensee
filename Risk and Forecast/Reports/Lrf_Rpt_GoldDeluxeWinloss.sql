@@ -5,11 +5,8 @@ GO
 SET ANSI_NULLS ON 
 GO
 
-/****** Object:  Stored Procedure dbo.Lrf_Rpt_ThirdPartyWinloss    Script Date: 4/7/2015 10:01:49 AM ******/
- 
-ALTER PROCEDURE [dbo].[Lrf_Rpt_ThirdPartyWinloss]
-	  @ProductID	INT
-	, @FromDate		SMALLDATETIME
+CREATE PROCEDURE [dbo].[Lrf_Rpt_GoldDeluxeWinloss]
+	  @FromDate		SMALLDATETIME
 	, @ToDate		SMALLDATETIME
 	, @ReportType	TINYINT			= 1
 	, @AgentList	VARCHAR(MAX)
@@ -27,23 +24,25 @@ AS
 		- 20181114@Joseph: Integrate Bidme games (GD product) [#101599]
 
 	Param's Explanation:  
-	  
-	  + @excludeTest: remove currency UUS
+
 	  + @ReportType : 1 Daily, 2 Monthly
 */  
 
-
-/*
- exec [Lrf_Rpt_GoldDeluxeWinloss] 
- @LicenseeID=1
-,@Currency=0
-,@FromDate='2014-04-01 00:00:00'
-,@ToDate='2014-09-30 00:00:00'
-,@excludeTest=0
-,@UserId=10
-*/
 SET NOCOUNT ON
 BEGIN
+	DECLARE @ProductID			INT
+		,	@FDate				DATE
+		,	@TDate				DATE
+		,	@ProductPrefix		VARCHAR(2)
+
+	SELECT @FDate = @FromDate,
+		   @TDate = @ToDate,
+		   @ProductPrefix = 'GD'
+
+	SELECT @ProductID = ProductID
+	FROM bodb_licensee.dbo.Product3rd WITH (NOLOCK)
+	WHERE ProductPrefix = @ProductPrefix	
+
 	CREATE   TABLE #tmpResult (
 		Winlostdate DATETIME, 
 		Currency INT,
@@ -88,14 +87,14 @@ BEGIN
 	
 	INSERT INTO @ChargeRates(Rate, FromDate, ToDate)
 	SELECT DI_Rate, Fromdate, Todate
-	FROM bodb_licensee.dbo.LA_f_ChargeInfo(@PartyID, @FromDate, @ToDate, 'GD', 'OA', 1)
+	FROM bodb_licensee.dbo.LA_f_ChargeInfo(@PartyID, @FDate, @TDate, @ProductPrefix, 'OA', 1)
 	WHERE (ChargeType = 1 OR ChargeType = 12) AND DI_Rate > 0
 	
 	IF NOT EXISTS (SELECT 1 FROM @ChargeRates)
 	BEGIN
 		INSERT INTO @ChargeRates(Rate, FromDate, ToDate)
 		SELECT DI_Rate, Fromdate, Todate
-		FROM bodb_licensee.dbo.LA_f_GetChargeInfoWithTrialTime(@PartyID, @FromDate, @ToDate, 'GD', 'OA', 1)
+		FROM bodb_licensee.dbo.LA_f_GetChargeInfoWithTrialTime(@PartyID, @FDate, @TDate, @ProductPrefix, 'OA', 1)
 		WHERE (ChargeType = 1 OR ChargeType = 12) AND DI_Rate > 0
 	END
 	
@@ -124,14 +123,14 @@ BEGIN
 				INNER JOIN @tmpCust ct ON c.Custid = ct.CustId AND c.Currency = ct.Currency
 				LEFT JOIN @ChargeRates rateTip ON c.Winlostdate BETWEEN rateTip.FromDate AND rateTip.ToDate AND rateTip.ChargeType = 12
 				LEFT JOIN @ChargeRates rate ON c.Winlostdate BETWEEN rate.FromDate AND rate.ToDate AND rate.ChargeType = 1
-			WHERE c.ProductId=@ProductID AND c.Winlostdate BETWEEN @FromDate AND @ToDate 
+			WHERE c.ProductId=@ProductID AND c.Winlostdate BETWEEN @FDate AND @TDate 
 			GROUP BY c.Winlostdate, ct.Currency
 		)
 
 	INSERT INTO @TempExchange(ExchangeDate, ExchangeId, Code, USD, EUR,GBP)
 		(
 			SELECT ExchangeDate, ExchangeId, Code, USD, EUR	,GBP 
-			FROM dbo.Lrf_f_GetExchangeDaily(@FromDate, @ToDate)
+			FROM dbo.Lrf_f_GetExchangeDaily(@FDate, @TDate)
 			WHERE ExchangeId IN (SELECT DISTINCT Currency FROM #tmpResult)
 		)
 	
