@@ -7,6 +7,7 @@ SET QUOTED_IDENTIFIER ON
 GO
  
 ALTER PROCEDURE [dbo].[LRF_Rpt_GoldDeluxeWinloss_Ag] 
+	@LicenseeId		INT, 
 	@FromDate		SMALLDATETIME,  
 	@ToDate			SMALLDATETIME,  
 	@AgentList		VARCHAR(MAX)

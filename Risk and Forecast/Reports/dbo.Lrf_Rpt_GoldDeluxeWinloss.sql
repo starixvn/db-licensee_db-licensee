@@ -6,7 +6,8 @@ SET ANSI_NULLS ON
 GO
 
 CREATE PROCEDURE [dbo].[Lrf_Rpt_GoldDeluxeWinloss]
-	  @FromDate		SMALLDATETIME
+	@LicenseeId		INT
+	, @FromDate		SMALLDATETIME
 	, @ToDate		SMALLDATETIME
 	, @ReportType	TINYINT			= 1
 	, @AgentList	VARCHAR(MAX)
@@ -78,6 +79,7 @@ BEGIN
 		RETURN
 	END CATCH;
 
+	-- Get Charge rates
 	DECLARE @PartyID	VARCHAR(10)
 	DECLARE @ChargeRates AS TABLE(Rate MONEY, FromDate DATE, ToDate DATE)
 
@@ -98,12 +100,22 @@ BEGIN
 		WHERE (ChargeType = 1 OR ChargeType = 12) AND DI_Rate > 0
 	END
 	
+	-- Get data
 	INSERT INTO @tmpCust (CustID, Currency)
 	SELECT co.CustID, lc.Currency 
 	FROM dbo.custInfo co WITH (NOLOCK)
 		INNER JOIN @Temp lc ON co.recommend = lc.CustId AND lc.Currency = co.Currency	
 
-	INSERT INTO #tmpResult (Winlostdate, Currency, TurnOver, TotalTrans, Winlost, LicenseeWinlost, TipsAmount, TipsSharing, AmountDue)
+	INSERT INTO #tmpResult (
+		Winlostdate
+		,Currency
+		,TurnOver
+		,TotalTrans
+		,Winlost
+		,LicenseeWinlost
+		,TipsAmount
+		,TipsSharing
+		,AmountDue)
 		(
 			SELECT c.Winlostdate, ct.Currency
 					, SUM(c.TurnOver) AS TurnOver
