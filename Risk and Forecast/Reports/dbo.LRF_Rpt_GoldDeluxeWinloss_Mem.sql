@@ -169,14 +169,23 @@ BEGIN
 			,SUM(r.TurnOver*e.USD)   	 	AS TurnOverUSD
 			,SUM(r.Winlost*e.USD)		 	AS WinlostUSD
 			,SUM(r.LicenseeWinlost*e.USD) AS LicenseeWinlostUSD
+			,SUM(r.TipsAmount*e.USD)		AS TipsAmountUSD
+			,SUM(r.TipsSharing*e.USD)		AS TipsSharingUSD
+			,SUM(r.AmountDue*e.USD)		AS AmountDueUSD
 		---EUR
 			,SUM(r.TurnOver*e.EUR)   	 	AS TurnOverEUR
 			,SUM(r.Winlost*e.EUR)		 	AS WinlostEUR
 			,SUM(r.LicenseeWinlost*e.EUR) AS LicenseeWinlostEUR
+			,SUM(r.TipsAmount*e.EUR)		AS TipsAmountEUR
+			,SUM(r.TipsSharing*e.EUR)		AS TipsSharingEUR
+			,SUM(r.AmountDue*e.EUR)		AS AmountDueEUR
 		---GBP
 			,SUM(r.TurnOver*e.GBP)   	 	AS TurnOverGBP
 			,SUM(r.Winlost*e.GBP)		 	AS WinlostGBP
 			,SUM(r.LicenseeWinlost*e.GBP) AS LicenseeWinlostGBP
+			,SUM(r.TipsAmount*e.GBP)		AS TipsAmountGBP
+			,SUM(r.TipsSharing*e.GBP)		AS TipsSharingGBP
+			,SUM(r.AmountDue*e.GBP)		AS AmountDueGBP
 	FROM #tmpResult r
 		INNER JOIN #TempExchange e ON r.Winlostdate = e.ExchangeDate AND r.currency = e.ExchangeId
 		INNER JOIN dbo.customer c WITH  (NOLOCK) ON c.CustID = r.CustID
