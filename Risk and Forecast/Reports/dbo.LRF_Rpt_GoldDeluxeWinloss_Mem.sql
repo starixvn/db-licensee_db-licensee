@@ -6,7 +6,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
  
-ALTER PROCEDURE [dbo].[LRF_Rpt_GoldDeluxWinloss_Mem] 
+ALTER PROCEDURE [dbo].[LRF_Rpt_GoldDeluxeWinloss_Mem] 
 	@LicenseeId	INT, 
 	@CustID		INT, --- recommend
 	@FromDate	SMALLDATETIME,  
