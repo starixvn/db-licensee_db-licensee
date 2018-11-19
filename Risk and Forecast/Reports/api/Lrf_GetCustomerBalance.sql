@@ -1,4 +1,4 @@
-/*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet,vnteam" viewers="" isFunction="0" isNested="0"></info>*/
 USE [bodb02]
 GO
 
@@ -79,6 +79,7 @@ BEGIN
 		INNER JOIN @tmpAg a ON b.recommend = a.CustId AND b.Currency = a.Currency
 		INNER JOIN #Exchange e ON e.exchangeid = a.currency
 	WHERE b.winlostdate = @ReportDate
+	option (maxdop 1, loop join, force order)
 
 	SET NOCOUNT OFF
 END
