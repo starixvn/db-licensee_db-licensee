@@ -5,7 +5,7 @@ GO
 SET ANSI_NULLS ON 
 GO
 
-CREATE PROCEDURE [dbo].[Lrf_Rpt_GoldDeluxeWinloss]
+ALTER PROCEDURE [dbo].[Lrf_Rpt_GoldDeluxeWinloss]
 	@LicenseeId		INT
 	, @FromDate		SMALLDATETIME
 	, @ToDate		SMALLDATETIME
@@ -118,23 +118,27 @@ BEGIN
 		,AmountDue)
 		(
 			SELECT c.Winlostdate, ct.Currency
-					, SUM(c.TurnOver) AS TurnOver
-					, SUM(c.BetCount) AS TotalTrans
+					, SUM(CASE WHEN c.bettype = -1
+									THEN c.TurnOver ELSE 0 END) AS TurnOver
+					, SUM(CASE WHEN c.bettype = -1
+									THEN c.BetCount ELSE 0 END) AS TotalTrans
+					, SUM(CASE WHEN c.bettype = -1 
+									THEN c.Winlost ELSE 0 END) AS Winlost
+					, -SUM(CASE WHEN c.bettype = -1 
+									THEN c.Winlost ELSE 0 END) AS LicenseeWinlost
 					, SUM(CASE WHEN c.bettype = 1706 -- GD Tips
-							THEN 0 ELSE c.Winlost END) AS Winlost
-					, -SUM(CASE WHEN c.bettype = 1706 -- GD Tips
-							THEN 0 ELSE c.Winlost END) AS LicenseeWinlost
+									THEN c.Winlost ELSE 0 END) AS TipsAmount
 					, SUM(CASE WHEN c.bettype = 1706 -- GD Tips
-							THEN c.Winlost ELSE 0 END) AS TipsAmount
-					, SUM(CASE WHEN c.bettype = 1706 -- GD Tips
-						  	THEN c.Winlost * (1-ISNULL(rateTip.Rate,1)) ELSE 0 END) AS TipsSharing
-					, SUM(CASE WHEN c.bettype = 1706 -- GD Tips
-							THEN c.Winlost * ISNULL(rateTip.Rate,1)
-						  	ELSE -c.Winlost * (1-ISNULL(rate.Rate,1)) END) AS AmountDue
+						  			THEN c.Winlost * (1-ISNULL(rate.Rate,1)) ELSE 0 END) AS TipsSharing
+					, SUM(CASE WHEN c.bettype = -1 
+									THEN -c.Winlost * (1-ISNULL(rate.Rate,1)) -- LicenseeWL * ChargeRate
+							   WHEN c.bettype = 1706 -- GD Tips
+									THEN c.Winlost * ISNULL(rate.Rate,1)	 	-- Tips Amount - Tips Sharing
+						  	   ELSE 0 END) AS AmountDue
 			FROM [bodb_LicenseeReport].dbo.rptDepWinlost_ThirdParty c WITH (NOLOCK)
 				INNER JOIN @tmpCust ct ON c.Custid = ct.CustId AND c.Currency = ct.Currency
-				LEFT JOIN @ChargeRates rateTip ON c.Winlostdate BETWEEN rateTip.FromDate AND rateTip.ToDate AND rateTip.ChargeType = 12
-				LEFT JOIN @ChargeRates rate ON c.Winlostdate BETWEEN rate.FromDate AND rate.ToDate AND rate.ChargeType = 1
+				LEFT JOIN @ChargeRates rate ON c.Winlostdate BETWEEN rate.FromDate AND rate.ToDate AND 
+						((c.bettype = -1 AND rate.ChargeType = 1) OR (c.bettype = 1706 AND rate.ChargeType = 12))
 			WHERE c.ProductId=@ProductID AND c.Winlostdate BETWEEN @FDate AND @TDate 
 			GROUP BY c.Winlostdate, ct.Currency
 		)
