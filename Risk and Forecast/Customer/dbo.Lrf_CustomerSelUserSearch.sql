@@ -2,7 +2,8 @@
 ALTER PROCEDURE [dbo].[Lrf_CustomerSelUserSearch]
 	@UserID		INT,
 	@username VARCHAR(50),
-	@AgentList		VARCHAR(MAX)
+	@AgentList		VARCHAR(MAX),
+	@IsIncludeDormant BIT = 0
 AS 
 
 /*
@@ -22,6 +23,7 @@ Param's Explanation:
 	20180416@Joseph: Increase column size of table @tmpUsername (column username) to fix error [Redmine: #98294]
 	20180810@Sophia: HA - remove LicenseeCustinfo table [Redmine: #99464]
 	- 20180925@Joseph: Remove table CustSearch [Feature #99855]
+	- 20181121@Joseph: Remove table CustSearch [Feature #99855]
 */
 
 BEGIN
@@ -49,11 +51,36 @@ BEGIN
 		RETURN
 	END CATCH;
 	
-	SELECT TOP 10 SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, LEN(c.username2)-CHARINDEX('$',c.username2))
-	FROM bodb02.dbo.Customer c WITH (NOLOCK)
-		INNER JOIN @TempAg lc ON c.recommend = lc.custid AND c.currency = lc.Currency
-	WHERE (c.username2 LIKE + '%$' + @Username + '%' OR c.username LIKE @Username + '%') AND c.RoleId = 1
-	ORDER BY username
+	IF (@IsIncludeDormant = 1)
+	BEGIN
+
+		SELECT TOP 10 username
+		FROM (
+			SELECT TOP 10 SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, LEN(c.username2)-CHARINDEX('$',c.username2)) as username
+			FROM bodb02.dbo.Customer c WITH (NOLOCK)
+				INNER JOIN @TempAg lc ON c.recommend = lc.custid AND c.currency = lc.Currency
+			WHERE (c.username2 LIKE + '%$' + @Username + '%' OR c.username LIKE @Username + '%') AND c.RoleId = 1
+			ORDER BY username
+
+			UNION ALL
+
+			SELECT TOP 10 SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, LEN(c.username2)-CHARINDEX('$',c.username2)) as username
+			FROM bodb02.dbo.Dep_Customer_Archived c WITH (NOLOCK)
+				INNER JOIN @TempAg lc ON c.recommend = lc.custid AND c.currency = lc.Currency
+			WHERE (c.username2 LIKE + '%$' + @Username + '%' OR c.username LIKE @Username + '%') AND c.RoleId = 1
+			ORDER BY username
+			) as customer
+		ORDER BY username
+	END
+	ELSE
+	BEGIN
+		SELECT TOP 10 SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, LEN(c.username2)-CHARINDEX('$',c.username2))
+			FROM bodb02.dbo.Customer c WITH (NOLOCK)
+				INNER JOIN @TempAg lc ON c.recommend = lc.custid AND c.currency = lc.Currency
+			WHERE (c.username2 LIKE + '%$' + @Username + '%' OR c.username LIKE @Username + '%') AND c.RoleId = 1
+			ORDER BY username
+	END
+
 END
 
 GO
