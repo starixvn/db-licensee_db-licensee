@@ -51,23 +51,25 @@ BEGIN
 		RETURN
 	END CATCH;
 	
+	DECLARE @tmpUsername TABLE(Username VARCHAR(50))
+	INSERT INTO @tmpUsername (Username)
+	SELECT top 10 SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, LEN(c.username2)-CHARINDEX('$',c.username2)) as username
+	FROM bodb02.dbo.Customer c WITH (NOLOCK)
+		INNER JOIN @TempAg lc ON c.recommend = lc.custid AND c.currency = lc.Currency
+	WHERE (c.username2 LIKE + '%$' + @Username + '%' OR c.username LIKE @Username + '%') AND c.RoleId = 1
+	ORDER BY username
+
 	IF (@IsIncludeDormant = 1)
 	BEGIN
-
 		SELECT TOP 10 username
 		FROM (
-			SELECT TOP 10 SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, LEN(c.username2)-CHARINDEX('$',c.username2)) as username
-			FROM bodb02.dbo.Customer c WITH (NOLOCK)
-				INNER JOIN @TempAg lc ON c.recommend = lc.custid AND c.currency = lc.Currency
-			WHERE (c.username2 LIKE + '%$' + @Username + '%' OR c.username LIKE @Username + '%') AND c.RoleId = 1
-			ORDER BY username
-
+			SELECT username from @tmpUsername
 			UNION ALL
-
 			SELECT TOP 10 SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, LEN(c.username2)-CHARINDEX('$',c.username2)) as username
 			FROM bodb02.dbo.Dep_Customer_Archived c WITH (NOLOCK)
 				INNER JOIN @TempAg lc ON c.recommend = lc.custid 
 			WHERE (c.username2 LIKE + '%$' + @Username + '%' OR c.username LIKE @Username + '%')
+					AND SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, LEN(c.username2)-CHARINDEX('$',c.username2)) NOT IN (SELECT username from @tmpUsername)
 			ORDER BY username
 			) as customer
 		ORDER BY username
