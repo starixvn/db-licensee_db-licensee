@@ -66,8 +66,8 @@ BEGIN
 
 			SELECT TOP 10 SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, LEN(c.username2)-CHARINDEX('$',c.username2)) as username
 			FROM bodb02.dbo.Dep_Customer_Archived c WITH (NOLOCK)
-				INNER JOIN @TempAg lc ON c.recommend = lc.custid AND c.currency = lc.Currency
-			WHERE (c.username2 LIKE + '%$' + @Username + '%' OR c.username LIKE @Username + '%') AND c.RoleId = 1
+				INNER JOIN @TempAg lc ON c.recommend = lc.custid 
+			WHERE (c.username2 LIKE + '%$' + @Username + '%' OR c.username LIKE @Username + '%')
 			ORDER BY username
 			) as customer
 		ORDER BY username
