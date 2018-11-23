@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet,bodbDownlineNet,bodbExtAccNet,Dot_Member,vnteam" viewers="vnteam" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet,bodbDownlineNet,bodbExtAccNet,Dot_Member,vnteam,bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
  ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberBAPositionTakingDCS]		
 	@CustID		INT,
 	@ModifyBy	INT,
