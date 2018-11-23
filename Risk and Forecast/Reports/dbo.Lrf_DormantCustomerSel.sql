@@ -51,11 +51,12 @@ BEGIN
 
 	CREATE TABLE #ResultData
 	(
-		custid					INT PRIMARY KEY,
-		username				NVARCHAR (50),
-		nickname				NVARCHAR (50),
-        Balance                 MONEY,
-		RowNumber				INT
+		custid			INT PRIMARY KEY,
+		username		NVARCHAR (50),
+		nickname		NVARCHAR (50),
+        Balance         MONEY,
+		Currency		TINYINT,
+		RowNumber		INT
 	)
 
 	CREATE TABLE #AllMember
@@ -63,7 +64,8 @@ BEGIN
 		CustID			INT PRIMARY KEY CLUSTERED,
 		username2		VARCHAR(50),
 		username		VARCHAR(50),
-        Balance         MONEY
+        Balance         MONEY,
+		Currency		TINYINT
 	)
 
 
@@ -71,22 +73,24 @@ BEGIN
 
 	SET @username = LTRIM(RTRIM(@username))
 			
-    INSERT INTO #AllMember (CustID, username2, username, Balance)
-            SELECT c.custid, c.username2, c.username, c.ClosingBalance
-            FROM #AgentData t
-                INNER JOIN dbo.Dep_Customer_Archived c WITH (NOLOCK) ON c.recommend = t.custid	
-            WHERE (c.username2 LIKE '%$' + @Username + '%'  OR c.username LIKE  @Username + '%')
+    INSERT INTO #AllMember (CustID, username2, username, Balance, Currency)
+            SELECT dc.custid, dc.username2, dc.username, dc.ClosingBalance, c.currency
+            FROM #AgentData a
+                INNER JOIN dbo.Dep_Customer_Archived dc WITH (NOLOCK) ON dc.recommend = a.custid	
+				INNER JOIN dbo.Customer c WITH (NOLOCK) ON dc.recommend = c.custid 
+            WHERE (dc.username2 LIKE '%$' + @Username + '%'  OR dc.username LIKE  @Username + '%')
     
     SELECT @TotalRows = COUNT(custid) FROM #AllMember
 
-    INSERT INTO #ResultData (custid, username, nickname, Balance, RowNumber)
-    SELECT a.custid, a.username, a.nickname, a.Balance, a.RowNumber
+    INSERT INTO #ResultData (custid, username, nickname, Balance, Currency, RowNumber)
+    SELECT a.custid, a.username, a.nickname, a.Balance, a.Currency, a.RowNumber
     FROM 
         (
             SELECT m.custid, 
                 m.username, 
                 SUBSTRING(m.username2,  CHARINDEX('$',m.username2)+1, LEN(m.username2)-CHARINDEX('$',m.username2)) AS nickname,
                 m.Balance,
+				m.Currency,
                 ROW_NUMBER() OVER (ORDER BY m.custid ASC) AS RowNumber 
             FROM #AllMember m
         ) a 
@@ -101,8 +105,12 @@ BEGIN
 		username,
 		nickname,
         RowNumber,
-		ISNULL(t.Balance, 0) AS Balance
+		ISNULL(t.Balance, 0) AS Balance,
+		ISNULL(t.Balance, 0) * ISNULL(e.USD,0) AS BalanceUSD,
+		ISNULL(t.Balance, 0) * ISNULL(e.EUR,0) AS BalanceEUR,
+		ISNULL(t.Balance, 0) * ISNULL(e.GBP,0) AS BalanceGBP
 	FROM #ResultData t
+	LEFT JOIN #ExchangeRate e ON t.Currency = e.exchangeid
 	ORDER BY t.username
 
 	DROP TABLE #AgentData
