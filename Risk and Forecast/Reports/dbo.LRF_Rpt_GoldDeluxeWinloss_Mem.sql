@@ -131,15 +131,11 @@ BEGIN
 							THEN c.Winlost ELSE 0 END) AS Winlost
 			, -SUM(CASE WHEN c.bettype = -1 
 							THEN c.Winlost ELSE 0 END) AS LicenseeWinlost
-			, SUM(CASE WHEN c.bettype = 1706 -- GD Tips
+			, -SUM(CASE WHEN c.bettype = 1706 -- GD Tips
 							THEN c.Winlost ELSE 0 END) AS TipsAmount
-			, SUM(CASE WHEN c.bettype = 1706 -- GD Tips
+			, -SUM(CASE WHEN c.bettype = 1706 -- GD Tips
 							THEN c.Winlost * (1-ISNULL(rate.Rate,1)) ELSE 0 END) AS TipsSharing
-			, SUM(CASE WHEN c.bettype = -1 
-							THEN -c.Winlost * (1-ISNULL(rate.Rate,1)) -- LicenseeWL * ChargeRate
-						WHEN c.bettype = 1706 -- GD Tips
-							THEN c.Winlost * ISNULL(rate.Rate,1)	 	-- Tips Amount - Tips Sharing
-						ELSE 0 END) AS AmountDue
+			, SUM(-c.Winlost * ISNULL(rate.Rate,1)) AS AmountDue
 	FROM  [bodb_LicenseeReport].dbo.rptDepWinlost_ThirdParty c  WITH (NOLOCK)
 		INNER JOIN #tmpCust ag ON c.CustID = ag.CustID AND c.Currency = ag.Currency 	
 		LEFT JOIN @ChargeRates rate ON c.Winlostdate BETWEEN rate.FromDate AND rate.ToDate AND 
