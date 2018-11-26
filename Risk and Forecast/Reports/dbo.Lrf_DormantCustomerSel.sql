@@ -55,6 +55,7 @@ BEGIN
 		username		NVARCHAR (50),
 		nickname		NVARCHAR (50),
         Balance         MONEY,
+		ArchivedDate	DATETIME,
 		Currency		TINYINT,
 		RowNumber		INT
 	)
@@ -65,16 +66,14 @@ BEGIN
 		username2		VARCHAR(50),
 		username		VARCHAR(50),
         Balance         MONEY,
+		ArchivedDate	DATETIME,
 		Currency		TINYINT
 	)
 
-
-	DECLARE @CustID INT, @i INT, @max INT, @LastOffBy INT
-
 	SET @username = LTRIM(RTRIM(@username))
 			
-    INSERT INTO #AllMember (CustID, username2, username, Balance, Currency)
-            SELECT dc.custid, dc.username2, dc.username, dc.ClosingBalance, c.currency
+    INSERT INTO #AllMember (CustID, username2, username, Balance, ArchivedDate, Currency)
+            SELECT dc.custid, dc.username2, dc.username, dc.ClosingBalance, dc.ArchivedDate, c.currency
             FROM #AgentData a
                 INNER JOIN dbo.Dep_Customer_Archived dc WITH (NOLOCK) ON dc.recommend = a.custid	
 				INNER JOIN dbo.Customer c WITH (NOLOCK) ON dc.recommend = c.custid 
@@ -82,14 +81,15 @@ BEGIN
     
     SELECT @TotalRows = COUNT(custid) FROM #AllMember
 
-    INSERT INTO #ResultData (custid, username, nickname, Balance, Currency, RowNumber)
-    SELECT a.custid, a.username, a.nickname, a.Balance, a.Currency, a.RowNumber
+    INSERT INTO #ResultData (custid, username, nickname, Balance, ArchivedDate, Currency, RowNumber)
+    SELECT a.custid, a.username, a.nickname, a.Balance, a.ArchivedDate, a.Currency, a.RowNumber
     FROM 
         (
             SELECT m.custid, 
                 m.username, 
                 SUBSTRING(m.username2,  CHARINDEX('$',m.username2)+1, LEN(m.username2)-CHARINDEX('$',m.username2)) AS nickname,
                 m.Balance,
+				m.ArchivedDate,
 				m.Currency,
                 ROW_NUMBER() OVER (ORDER BY m.custid ASC) AS RowNumber 
             FROM #AllMember m
@@ -104,6 +104,7 @@ BEGIN
 		t.custid,
 		username,
 		nickname,
+		ArchivedDate,
         RowNumber,
 		ISNULL(t.Balance, 0) AS Balance,
 		ISNULL(t.Balance, 0) * ISNULL(e.USD,0) AS BalanceUSD,
