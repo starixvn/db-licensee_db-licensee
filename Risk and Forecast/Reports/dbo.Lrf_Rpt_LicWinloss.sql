@@ -1,4 +1,6 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+USE bodb02
+GO
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]  	
 	@LicenseeID		INT,
@@ -74,6 +76,7 @@ AS
 	- 20180420@Amanda: Include more cash out tickets [RedmineID: #93919]
 	- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 	- 20180807@Amanda: Remove Racing, Bingo and Old(@IsOld) data [RedmineID: #99378]
+	- 20181126@Paul: Add OPTION(RECOMPILE) [RedmineID: #105304]
 
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -307,6 +310,7 @@ BEGIN
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
 			GROUP BY b.winlostdate, tma.currency 
+			OPTION(RECOMPILE)
 		END
 	
 		IF @ShowSB = 1
