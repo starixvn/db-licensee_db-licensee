@@ -1,10 +1,10 @@
-/*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet,vnteam" viewers="" isFunction="0" isNested="0"></info>*/
 USE [bodb02]
 GO
 
 ALTER PROCEDURE [dbo].[Lrf_GetCustomerBalance] 
 	@LicenseeID		INT,
-	@CurrencyIDList	VARCHAR(500)='',
+	@CurrencyIDList	VARCHAR(500)	= '',
 	@ReportDate		SMALLDATETIME
 AS
 
@@ -20,6 +20,7 @@ AS
 		- 20170808@Walter: Support UUS currency [RedmineID: #80855]
 		- 20170814@Alex  : Restrict permission by currency  [RedmineID: #80855]
 		- 20181031@Percy: Remove linked-server DBLIC [RedmineID: #103660]
+		- 20181120@Kathy: Tunning SP - got timeout error [RedmineId:#104824]
 
 	Param's Explanation:  
 */
@@ -28,58 +29,75 @@ BEGIN
 	SET NOCOUNT ON
 
 	DECLARE @tmpAg TABLE (
-		custID INT,
-		Currency INT
+		custID		INT
+		,Currency	INT
+		,EUR		FLOAT
+		,USD		FLOAT
+		,GBP		FLOAT 
+		,CNY		FLOAT 
+		,MYR		FLOAT 
+		,THB		FLOAT 
+		,IDR		FLOAT
 	)
 
 	DECLARE @Temp TABLE (
-		CustId INT,
-		Currency INT
+		CustId		INT
+		,Currency	INT
 	)
 
 	INSERT INTO @Temp (CustId,Currency)
 	SELECT CustID,Currency FROM bodb_licensee.dbo.f_SelLicenseeCust(@LicenseeID)
 
 	INSERT INTO @tmpAg (
-		CustId,
-		Currency
+		CustId
+		,Currency
 	)
-	SELECT	CustID,
-			Currency
-	FROM @Temp lc
-	WHERE Currency IN
+	SELECT	CustID
+			,Currency
+	FROM	@Temp lc
+	WHERE	Currency IN
                 (
-                    SELECT val
-                    FROM dbo.strSplit(@CurrencyIDList, ',')
+                    SELECT	val
+                    FROM	dbo.strSplit(@CurrencyIDList, ',')
                 );
 
-	CREATE TABLE #Exchange (ExchangeDate SMALLDATETIME, ExchangeId INT,  EUR FLOAT,USD FLOAT,GBP FLOAT, CNY FLOAT, MYR FLOAT, THB FLOAT, IDR FLOAT, Code VARCHAR(10), PRIMARY KEY(ExchangeDate,ExchangeId));
-
-	INSERT INTO #Exchange (exchangedate, exchangeid, eur, usd, gbp, cny, myr, thb, idr, code)
-	SELECT exchangedate, exchangeid, eur, usd, gbp, cny, myr, thb, idr, code
-	FROM Lrf_f_GetExchangeDaily(@ReportDate, @ReportDate) t_ex
-	WHERE EXISTS (SELECT 1 FROM @tmpAg t_ag WHERE t_ag.Currency = t_ex.ExchangeId);
+	UPDATE	a  
+		SET EUR = t_ex.EUR
+			,USD = t_ex.USD
+			,GBP = t_ex.GBP
+			,CNY = t_ex.CNY
+			,MYR = t_ex.MYR
+			,THB = t_ex.THB
+			,IDR = t_ex.IDR
+	FROM	@tmpAg a
+		INNER JOIN Lrf_f_GetExchangeDaily(@ReportDate, @ReportDate) t_ex
+			ON	a.Currency = t_ex.ExchangeId
 
 	SELECT	SUM(b.ClosingBalance) AS ClosingBalance,		
 			--BASE EUR
-			SUM(b.ClosingBalance * e.EUR)	AS ClosingBalanceEUR,	
+			SUM(b.ClosingBalance * a.EUR)	AS ClosingBalanceEUR,	
 			--BASE USD
-			SUM(b.ClosingBalance * e.USD)	AS ClosingBalanceUSD,
+			SUM(b.ClosingBalance * a.USD)	AS ClosingBalanceUSD,
 			--BASE GBP
-			SUM(b.ClosingBalance * e.GBP)	AS ClosingBalanceGBP,
+			SUM(b.ClosingBalance * a.GBP)	AS ClosingBalanceGBP,
 			--BASE CNY
-			SUM(b.ClosingBalance * e.CNY)	AS ClosingBalanceCNY,
+			SUM(b.ClosingBalance * a.CNY)	AS ClosingBalanceCNY,
 			--BASE MYR
-			SUM(b.ClosingBalance * e.MYR)	AS ClosingBalanceMYR,
+			SUM(b.ClosingBalance * a.MYR)	AS ClosingBalanceMYR,
 			--BASE THB
-			SUM(b.ClosingBalance * e.THB)	AS ClosingBalanceTHB,
+			SUM(b.ClosingBalance * a.THB)	AS ClosingBalanceTHB,
 			--BASE IDR
-			SUM(b.ClosingBalance * e.IDR)	AS ClosingBalanceIDR
-	FROM bodb_Report.dbo.rptDepWinlost b WITH (NOLOCK)
-		INNER JOIN @tmpAg a ON b.recommend = a.CustId AND b.Currency = a.Currency
-		INNER JOIN #Exchange e ON e.exchangeid = a.currency
-	WHERE b.winlostdate = @ReportDate
+			SUM(b.ClosingBalance * a.IDR)	AS ClosingBalanceIDR
+	FROM	@tmpAg a 
+		CROSS APPLY (
+			SELECT	TOP (1) SUM(b.ClosingBalance) AS ClosingBalance
+			FROM	bodb_Report.dbo.rptDepWinlost b WITH (NOLOCK)
+			WHERE	b.winlostdate = @ReportDate
+					AND b.recommend = a.CustId 
+					AND b.Currency = a.Currency
+		) b
 
 	SET NOCOUNT OFF
 END
+
 GO
