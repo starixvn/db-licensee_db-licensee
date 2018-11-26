@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_DormantCustomerSel]
 	@username		VARCHAR(50) = NULL,
 	@PageSize		INT = 50,
