@@ -75,11 +75,7 @@ BEGIN
 	END
 	ELSE
 	BEGIN
-		SELECT TOP 10 SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, LEN(c.username2)-CHARINDEX('$',c.username2))
-			FROM bodb02.dbo.Customer c WITH (NOLOCK)
-				INNER JOIN #TempAg lc ON c.recommend = lc.custid AND c.currency = lc.Currency
-			WHERE (c.username2 LIKE + '%$' + @Username + '%' OR c.username LIKE @Username + '%') AND c.RoleId = 1
-			ORDER BY username
+		SELECT username from #tmpUsername
 	END
 
 END
