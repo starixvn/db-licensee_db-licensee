@@ -1,4 +1,6 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+USE bodb02
+GO
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportSummary]
 	@ProductCodes	VARCHAR(MAX) = '',
@@ -60,6 +62,7 @@ Revisions:
 	- 20180418@Amanda: LAP - Update VB bet type range and integrate PP [RedmineID: #92318]
 	- 20180808@Amanda: Remove Racing, Bingo [RedmineID: #99378]
 	- 20181101@Amanda: Remove parameter @LicenseeId [Redmine: #103935]
+	- 20181127@Paul: Add OPTION(RECOMPILE) [RedmineID: #105398]
 
 Param's Explanation:
 	+ @IsLive : indicate that whether the report will get live data or not
@@ -195,7 +198,8 @@ BEGIN
 				AND (b.bettype < 911 OR b.bettype > 914)
 			GROUP BY
 				b.winlostdate,
-				t.currency		
+				t.currency	
+			OPTION(RECOMPILE)	
 		END
 
 		--SB
