@@ -22,7 +22,7 @@ BEGIN
 	DECLARE @currentDate DATETIME   
 	SELECT  @currentDate = CONVERT(DATE, GETDATE())
 
-	DECLARE @RowCount INT, @RowStart INT, @RowEnd INT
+	DECLARE @RowStart INT, @RowEnd INT
 	SELECT  @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
 
 	CREATE TABLE #AgentData (custid INT)
