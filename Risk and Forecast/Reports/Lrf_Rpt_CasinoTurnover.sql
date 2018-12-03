@@ -5,7 +5,7 @@ CREATE PROCEDURE [dbo].[Lrf_Rpt_CasinoTurnover]
 	@ToDate			DATE,
 	@BaseCurrency	VARCHAR(3),
 	@UserName		VARCHAR(50)='',
-	@Statuses		VARCHAR(50),
+	@StatusList		VARCHAR(50),
 	@ProductCodes	VARCHAR(50),
 	@MoveBetsDay	DATE,
 	@AgentList		VARCHAR(MAX),
@@ -36,11 +36,11 @@ BEGIN
 	DECLARE @Product TABLE (ProductCode VARCHAR(10), ProductId INT)
 	DECLARE @Exchange TABLE (ExFromDate DATE, ExToDate DATE, ExchangeID INT, Rate MONEY)
 	DECLARE @Status TABLE (Id INT)
-	DECLARE @tmpToDate DATE, @tmpFromDate DATE, @custId INT
+	DECLARE @tmpToDate DATE, @tmpFromDate DATE, @custId INT, @totalRows INT
 
 	CREATE TABLE #data(
-		RowNum			INT,
 		[Date]			DATE,
+		CustId			INT,
 		UserName		VARCHAR(50),
 		NickName		VARCHAR(50),
 		ProductCode		VARCHAR(5),
@@ -49,6 +49,12 @@ BEGIN
 		ValidBetAmount	MONEY,
 		Winlost			MONEY,
 		CurrencyId		INT
+	)
+	
+	CREATE TABLE #pagingData(
+		RowNum			INT,
+		[Date]			DATE,
+		CustId			VARCHAR(50)
 	)
 
 	-- Parse XML to agent table
@@ -78,7 +84,7 @@ BEGIN
 
 	INSERT INTO @Status (Id)
 	SELECT ISNULL(Val,'') 	
-	FROM dbo.strSplit(@Statuses,',')
+	FROM dbo.strSplit(@StatusList,',')
 
 	-- process string
     SET @UserName = LTRIM(RTRIM(ISNULL(@UserName,'')))			
@@ -93,19 +99,6 @@ BEGIN
 		ELSE
 			SET @tmpFromDate = @FromDate
 
-		CREATE TABLE #tmpData(
-			RowNum			INT,
-			[Date]			DATE,
-			UserName		VARCHAR(50),
-			NickName		VARCHAR(50),
-			ProductCode		VARCHAR(5),
-			BetCount		INT,
-			Turnover		MONEY,
-			ValidBetAmount	MONEY,
-			Winlost			MONEY,
-			CurrencyId		INT
-		)
-
 		IF EXISTS (SELECT 1 FROM @Product WHERE ProductCode = 'AB')
 		BEGIN
 			DECLARE @productId INT
@@ -113,8 +106,9 @@ BEGIN
 			FROM dbo.Products WITH(NOLOCK)
 			WHERE ProductPrefix = 'AB'
 
-			INSERT INTO #tmpData(
+			INSERT INTO #Data(
 				[Date],
+				CustId,
 				UserName,
 				NickName,
 				ProductCode,
@@ -125,6 +119,7 @@ BEGIN
 				CurrencyId
 			)
 			SELECT	b.WinlostDate,
+					b.custId,
 					c.username,
 					SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS NickName,
 					'AB',
@@ -142,7 +137,7 @@ BEGIN
 					AND b.WinlostDate <= @tmpToDate
 					AND m.ProductID = @productId
 					AND (@UserName = '' OR c.username2 LIKE '%$%' + @Username + '%' OR c.username LIKE '%' + @Username + '%')
-			GROUP BY b.WinlostDate, c.username, c.username2, b.currency
+			GROUP BY b.WinlostDate, b.custId, c.username, c.username2, b.currency
 		END
 
 		IF EXISTS (SELECT 1 FROM @Product WHERE ProductCode = 'CS' OR ProductCode = 'VB')
@@ -157,8 +152,9 @@ BEGIN
 			FROM dbo.Products WITH(NOLOCK)
 			WHERE ProductPrefix = 'VB'
 		
-			INSERT INTO #tmpData(
+			INSERT INTO #Data(
 				[Date],
+				CustId,
 				UserName,
 				NickName,
 				ProductCode,
@@ -169,6 +165,7 @@ BEGIN
 				CurrencyId
 			)
 			SELECT	b.WinlostDate,
+					b.custId,
 					c.username,
 					SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS NickName,
 					CASE WHEN b.productID = @productCS THEN 'CS' ELSE 'VB' END,
@@ -186,35 +183,8 @@ BEGIN
 					AND b.WinlostDate <= @tmpToDate
 					AND (m.ProductID = @productCS OR m.ProductID = @productVB)
 					AND (@UserName = '' OR c.username2 LIKE '%$%' + @Username + '%' OR c.username LIKE '%' + @Username + '%')
-			GROUP BY b.WinlostDate, c.username, c.username2, b.currency, b.ProductID
+			GROUP BY b.WinlostDate, b.custId, c.username, c.username2, b.currency, b.ProductID
 		END
-
-		INSERT INTO #data(
-			RowNum,
-			[Date],
-			UserName,
-			NickName,
-			ProductCode,
-			BetCount,
-			Turnover,
-			ValidBetAmount,
-			Winlost,
-			CurrencyId
-		)
-		SELECT	ROW_NUMBER() OVER (ORDER BY d.WinlostDate ASC),
-				d.[Date],
-				d.username,
-				d.NickName,
-				d.ProductCode,
-				d.BetCount,
-				d.Turnover,
-				d.ValidBetAmount,
-				d.Winlost,
-				d.CurrencyId
-		FROM #tmpData d
-		ORDER BY d.[Date]
-
-		DROP TABLE #tmpData
 	END
 
 	-- Get date from @FromDate to @MoveBetsDay
@@ -227,8 +197,8 @@ BEGIN
 			SET @tmpToDate = @ToDate
 
 		INSERT INTO #data(
-			RowNum,
 			[Date],
+			CustId,
 			UserName,
 			NickName,
 			ProductCode,
@@ -238,8 +208,8 @@ BEGIN
 			Winlost,
 			CurrencyId
 		)
-		SELECT	ROW_NUMBER() OVER (ORDER BY rpt.WinlostDate ASC),
-				rpt.WinlostDate,
+		SELECT	rpt.WinlostDate,
+				rpt.custId,
 				c.username,
 				SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS NickName,
 				p.ProductCode,
@@ -256,9 +226,23 @@ BEGIN
 		WHERE rpt.WinlostDate >= @tmpFromDate 
 				AND rpt.WinlostDate <= @tmpToDate
 				AND (@UserName = '' OR c.username2 LIKE '%$%' + @Username + '%' OR c.username LIKE '%' + @Username + '%')
-	END	
+	END
 
-	-- Start: Get Exchange Rate	
+	INSERT INTO #pagingData(
+		RowNum,
+		[Date],
+		CustId
+	)
+	SELECT
+		ROW_NUMBER() OVER (ORDER BY [Date] ASC, UserName ASC),
+		[Date],
+		CustId
+	FROM #data
+	GROUP BY [Date], CustId, UserName
+	
+	SET @totalRows = @@ROWCOUNT	
+
+	-- Get Exchange Rate	
 	;WITH Currency_CTE (CurrencyID) AS (
 											SELECT DISTINCT currency
 											FROM @tempAg
@@ -298,12 +282,24 @@ BEGIN
 		d.ValidBetAmount * e.Rate	AS ValidBetAmountBase,
 		d.Winlost * e.Rate			AS WinlostBase
 	FROM #data d
+	INNER JOIN #pagingData p ON p.[Date] = d.[Date] AND p.CustId = d.CustId
 	INNER JOIN @Exchange e ON d.CurrencyId = e.ExchangeID AND d.[Date] >= e.ExFromDate AND d.[Date] <= e.ExToDate
-	WHERE d.RowNum >= @FromRow AND d.RowNum < @ToRow
+	WHERE p.RowNum >= @FromRow AND p.RowNum < @ToRow
 
-	SELECT COUNT(1) AS TotalRows
-	FROM #data
+	-- Return Total
+	SELECT
+		SUM(d.BetCount),
+		SUM(d.Turnover),
+		SUM(d.ValidBetAmount),
+		SUM(d.Winlost),
+		SUM(d.Turnover * e.Rate	)		AS TurnoverBase,
+		SUM(d.ValidBetAmount * e.Rate)	AS ValidBetAmountBase,
+		SUM(d.Winlost * e.Rate)			AS WinlostBase,
+		@totalRows						AS TotalRows
+	FROM #data d
+	INNER JOIN @Exchange e ON d.CurrencyId = e.ExchangeID AND d.[Date] >= e.ExFromDate AND d.[Date] <= e.ExToDate
 
 	DROP TABLE #data
+	DROP TABLE #pagingData
 END
 GO
