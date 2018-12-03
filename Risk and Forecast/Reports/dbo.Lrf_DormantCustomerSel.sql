@@ -77,7 +77,7 @@ BEGIN
             FROM #AgentData a
                 INNER JOIN dbo.Dep_Customer_Archived dc WITH (NOLOCK) ON dc.recommend = a.custid	
 				INNER JOIN dbo.Customer c WITH (NOLOCK) ON dc.recommend = c.custid 
-            WHERE (dc.username2 LIKE '%$' + @Username + '%'  OR dc.username LIKE  @Username + '%')
+            WHERE (dc.username2 LIKE '%$' + @Username + '%'  OR dc.username LIKE  @Username + '%') AND dc.status = 'completed'
     
     SELECT @TotalRows = COUNT(custid) FROM #AllMember
 
