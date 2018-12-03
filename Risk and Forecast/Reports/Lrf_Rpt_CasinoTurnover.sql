@@ -110,8 +110,8 @@ BEGIN
 		BEGIN
 			DECLARE @productId INT
 			SELECT @productId = ProductId
-			FROM @Product
-			WHERE ProductCode = 'AB'
+			FROM dbo.Products WITH(NOLOCK)
+			WHERE ProductPrefix = 'AB'
 
 			INSERT INTO #tmpData(
 				[Date],
@@ -136,16 +136,27 @@ BEGIN
 			FROM dbo.bettransLC b WITH (NOLOCK)
 			INNER JOIN @tempAg a ON b.Recommend = a.custID
 			INNER JOIN @status s ON b.StatusId = s.Id
+			INNER JOIN dbo.SportBettypeMatrix m WITH (NOLOCK) ON b.productID = m.SportType
 			INNER JOIN dbo.Customer c WITH (NOLOCK) ON b.CustId = c.CustId
-			WHERE b.productID = @productId
-					AND	b.WinlostDate >= @tmpFromDate 
+			WHERE	b.WinlostDate >= @tmpFromDate 
 					AND b.WinlostDate <= @tmpToDate
+					AND m.ProductID = @productId
 					AND (@UserName = '' OR c.username2 LIKE '%$%' + @Username + '%' OR c.username LIKE '%' + @Username + '%')
 			GROUP BY b.WinlostDate, c.username, c.username2, b.currency
 		END
 
 		IF EXISTS (SELECT 1 FROM @Product WHERE ProductCode = 'CS' OR ProductCode = 'VB')
 		BEGIN
+			DECLARE @productCS INT, @productVB INT
+			
+			SELECT @productCS = ProductId
+			FROM dbo.Products WITH(NOLOCK)
+			WHERE ProductPrefix = 'CS'
+			
+			SELECT @productVB = ProductId
+			FROM dbo.Products WITH(NOLOCK)
+			WHERE ProductPrefix = 'VB'
+		
 			INSERT INTO #tmpData(
 				[Date],
 				UserName,
@@ -160,7 +171,7 @@ BEGIN
 			SELECT	b.WinlostDate,
 					c.username,
 					SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS NickName,
-					p.ProductCode,
+					CASE WHEN b.productID = @productCS THEN 'CS' ELSE 'VB' END,
 					COUNT(b.transid),
 					SUM(b.stake),
 					SUM(b.stake),
@@ -168,14 +179,14 @@ BEGIN
 					b.currency
 			FROM dbo.bettransRNG b WITH (NOLOCK)
 			INNER JOIN @tempAg a ON b.Recommend = a.custID
-			INNER JOIN @Product p ON b.productID = p.ProductId
 			INNER JOIN @status s ON b.StatusId = s.Id
+			INNER JOIN dbo.SportBettypeMatrix m WITH (NOLOCK) ON b.productID = m.SportType
 			INNER JOIN dbo.Customer c WITH (NOLOCK) ON b.CustId = c.CustId
-			WHERE p.ProductCode <> 'AB'
-					AND	b.WinlostDate >= @tmpFromDate 
+			WHERE	b.WinlostDate >= @tmpFromDate 
 					AND b.WinlostDate <= @tmpToDate
+					AND (m.ProductID = @productCS OR m.ProductID = @productVB)
 					AND (@UserName = '' OR c.username2 LIKE '%$%' + @Username + '%' OR c.username LIKE '%' + @Username + '%')
-			GROUP BY b.WinlostDate, c.username, c.username2, b.currency, p.ProductCode
+			GROUP BY b.WinlostDate, c.username, c.username2, b.currency, b.ProductID
 		END
 
 		INSERT INTO #data(
