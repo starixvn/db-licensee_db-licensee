@@ -55,7 +55,7 @@ BEGIN
 		username		NVARCHAR (50),
 		nickname		NVARCHAR (50),
         Balance         MONEY,
-		ArchivedDate	DATETIME,
+		ArchivedDate	DATE,
 		Currency		TINYINT,
 		RowNumber		INT
 	)
@@ -66,7 +66,7 @@ BEGIN
 		username2		VARCHAR(50),
 		username		VARCHAR(50),
         Balance         MONEY,
-		ArchivedDate	DATETIME,
+		ArchivedDate	DATE,
 		Currency		TINYINT
 	)
 
