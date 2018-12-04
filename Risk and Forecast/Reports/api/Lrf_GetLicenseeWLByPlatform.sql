@@ -19,6 +19,7 @@ AS
 		- 20170802@Sophia: Add new Flatfrom [redmine: #80687]
 		- 20170814@Alex  : Restrict permission by currency  [RedmineID: #80855]
 		- 20171020@Harper: LRF - Add "New Asia" in platform list [RedmineID: #85203]
+		- 20181113@Joseph: New betfrom Mobile App (o) [RedmineID: #104587]
 
 	Param's Explanation: 
 */  
@@ -73,7 +74,8 @@ BEGIN
 				(6, 'r'),
 				(7, 'x'),
 				(3, 'y'),
-				(2, 'z')
+				(2, 'z'),
+				(8, 'o')
 	) d(PlatformType, betfrom);
 	
 	CREATE TABLE #Exchange (ExchangeDate SMALLDATETIME, ExchangeId INT,  EUR FLOAT,USD FLOAT,GBP FLOAT, CNY FLOAT, MYR FLOAT, THB FLOAT, IDR FLOAT, Code VARCHAR(10), PRIMARY KEY(ExchangeDate,ExchangeId));
