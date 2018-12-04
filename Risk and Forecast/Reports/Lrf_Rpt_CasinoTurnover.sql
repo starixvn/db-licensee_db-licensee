@@ -10,7 +10,8 @@ CREATE PROCEDURE [dbo].[Lrf_Rpt_CasinoTurnover]
 	@MoveBetsDay	DATE,
 	@AgentList		VARCHAR(MAX),
 	@PageSize		INT = 50,
-	@PageIndex		INT = 1
+	@PageIndex		INT = 1,
+	@TotalRows		INT = 0 OUTPUT
 AS 
 /*  Created: 20181127@Amanda
     Description: LAP - Casino Turnover Report
@@ -36,7 +37,7 @@ BEGIN
 	DECLARE @Product TABLE (ProductCode VARCHAR(10), ProductId INT)
 	DECLARE @Exchange TABLE (ExFromDate DATE, ExToDate DATE, ExchangeID INT, Rate MONEY)
 	DECLARE @Status TABLE (Id INT)
-	DECLARE @tmpToDate DATE, @tmpFromDate DATE, @custId INT, @totalRows INT
+	DECLARE @tmpToDate DATE, @tmpFromDate DATE, @custId INT
 
 	CREATE TABLE #data(
 		[Date]			DATE,
@@ -240,7 +241,7 @@ BEGIN
 	FROM #data
 	GROUP BY [Date], CustId, UserName
 	
-	SET @totalRows = @@ROWCOUNT	
+	SET @TotalRows = @@ROWCOUNT	
 
 	-- Get Exchange Rate	
 	;WITH Currency_CTE (CurrencyID) AS (
@@ -288,14 +289,10 @@ BEGIN
 
 	-- Return Total
 	SELECT
-		SUM(d.BetCount),
-		SUM(d.Turnover),
-		SUM(d.ValidBetAmount),
-		SUM(d.Winlost),
-		SUM(d.Turnover * e.Rate	)		AS TurnoverBase,
-		SUM(d.ValidBetAmount * e.Rate)	AS ValidBetAmountBase,
-		SUM(d.Winlost * e.Rate)			AS WinlostBase,
-		@totalRows						AS TotalRows
+		SUM(d.BetCount)					AS BetCount,
+		SUM(d.Turnover * e.Rate	)		AS Turnover,
+		SUM(d.ValidBetAmount * e.Rate)	AS ValidBetAmount,
+		SUM(d.Winlost * e.Rate)			AS Winlost
 	FROM #data d
 	INNER JOIN @Exchange e ON d.CurrencyId = e.ExchangeID AND d.[Date] >= e.ExFromDate AND d.[Date] <= e.ExToDate
 
