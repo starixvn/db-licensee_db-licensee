@@ -267,8 +267,8 @@ BEGIN
 
 	-- Return Data
 	DECLARE @FromRow INT, @ToRow INT
-	SET @FromRow = (@PageIndex - 1) * @PageSize
-	SET @ToRow = @FromRow + @PageSize 
+	SET @FromRow = (@PageIndex - 1) * @PageSize + 1
+	SET @ToRow = @FromRow + @PageSize - 1
 
 	SELECT 
 		d.[Date],
@@ -285,7 +285,7 @@ BEGIN
 	FROM #data d
 	INNER JOIN #pagingData p ON p.[Date] = d.[Date] AND p.CustId = d.CustId
 	INNER JOIN @Exchange e ON d.CurrencyId = e.ExchangeID AND d.[Date] >= e.ExFromDate AND d.[Date] <= e.ExToDate
-	WHERE p.RowNum >= @FromRow AND p.RowNum < @ToRow
+	WHERE p.RowNum BETWEEN @FromRow AND @ToRow
 
 	-- Return Total
 	SELECT
