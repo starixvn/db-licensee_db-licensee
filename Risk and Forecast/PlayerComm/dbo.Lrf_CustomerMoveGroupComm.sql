@@ -31,12 +31,28 @@ AS
 		- 20180809@Amanda: Remove Racing [RedmineID: #99378]
 		- 20180924@Winnie: Remove AllBet [RedmineID: #99378]
 		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
+		- 20181205@Winnie: LAP-Security Risks found_settings [RedmineID: #105701]
 
 	Param's Explanation:
 */ 
 BEGIN
 	SET NOCOUNT ON 
-	
+	CREATE TABLE #tempCust (CustID INT)
+	INSERT INTO #tempCust(CustID)
+	SELECT RTRIM(LTRIM(VAL)) 
+	FROM Lrf_f_StringSplit(@strCustIDOriginal,',')
+
+	IF EXISTS(	
+		SELECT 1
+		FROM #tempCust t
+			LEFT JOIN LicenseeCustComm b WITH (NOLOCK) ON t.CustID=b.CustID AND b.LicenseeID=@LicenseeID
+		WHERE b.CustID IS NULL)
+	BEGIN
+		SELECT @ErrCode=100
+		SELECT @ErrMsg='Customer does not belong to licensee'
+		RETURN 
+	END
+
 	EXEC [Lrf_CustomerUpdMemberComm] 
 		@LicenseeID=@LicenseeID
 		,@strCustID=@strCustIDOriginal
@@ -55,7 +71,7 @@ BEGIN
 	FROM dbo.LicenseeCustComm b WITH (NOLOCK) 
 		INNER JOIN CustDB.dbo.custinfo a WITH (NOLOCK) ON a.custid = b.custid
 	WHERE LicenseeID = @LicenseeID 
-			AND b.CustID IN (SELECT RTRIM(LTRIM(VAL)) FROM Lrf_f_StringSplit(@strCustIDOriginal,','))
+			AND b.CustID IN (SELECT CustID FROM #tempCust)
 			AND a.SyncCasino = 1
 
 	IF @IsUpdateRNG=0
