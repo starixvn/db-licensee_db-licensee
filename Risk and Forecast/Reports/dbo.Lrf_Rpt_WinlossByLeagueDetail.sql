@@ -149,6 +149,7 @@ BEGIN
 				,b.currency
 				,CASE 
 					WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
+								OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
 								OR b.bettype BETWEEN 81 AND 88
 								OR b.bettype BETWEEN 90 AND 120
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
@@ -224,6 +225,7 @@ BEGIN
 				,b.tpositiontaking
 				,CASE 
 					WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
+								OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
 								OR b.bettype BETWEEN 81 AND 88
 								OR b.bettype BETWEEN 90 AND 120
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
@@ -266,6 +268,7 @@ BEGIN
 				,b.currency
 				,CASE 
 					WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
+								OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
 								OR b.bettype BETWEEN 81 AND 88
 								OR b.bettype BETWEEN 90 AND 120
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
@@ -340,6 +343,7 @@ BEGIN
 				,b.tpositiontaking
 				,CASE 
 					WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
+								OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
 								OR b.bettype BETWEEN 81 AND 88
 								OR b.bettype BETWEEN 90 AND 120
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
@@ -392,6 +396,7 @@ BEGIN
 					,ta.currency
 					,CASE 
 						WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
+								OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
 								OR b.bettype BETWEEN 81 AND 88
 								OR b.bettype BETWEEN 90 AND 120
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
@@ -464,6 +469,7 @@ BEGIN
 					,b.isBA
 					,CASE 
 						WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
+								OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
 								OR b.bettype BETWEEN 81 AND 88
 								OR b.bettype BETWEEN 90 AND 120
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
@@ -504,6 +510,7 @@ BEGIN
 					,ta.currency
 					,CASE 
 						WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
+								OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
 								OR b.bettype BETWEEN 81 AND 88
 								OR b.bettype BETWEEN 90 AND 120
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
@@ -574,6 +581,7 @@ BEGIN
 					,b.isBA
 					,CASE 
 						WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
+								OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
 								OR b.bettype BETWEEN 81 AND 88
 								OR b.bettype BETWEEN 90 AND 120
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
