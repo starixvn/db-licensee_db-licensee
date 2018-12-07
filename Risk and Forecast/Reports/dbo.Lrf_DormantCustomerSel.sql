@@ -13,7 +13,7 @@ AS
 	DB: DBEXT/bodb02
 
 	Revisions:
-	- 20181121@Joseph: Create
+	- 20181121@Joseph: Create [#102680]
 */
 
 BEGIN
