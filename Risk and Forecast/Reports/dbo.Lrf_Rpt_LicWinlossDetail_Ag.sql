@@ -75,7 +75,8 @@ AS
 		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 		- 20180807@Amanda: Remove Racing, Bingo and Old(@IsOld) data [RedmineID: #99378]
 		- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
-
+		- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
+		
 	Param's Explanation:  
 	  + @CustID: SuperID  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -511,7 +512,7 @@ BEGIN
 				a.currency, 
 				0 AS turnoverSB, 
 				0 AS turnoverBA,
-				SUM(CASE WHEN b.bettype BETWEEN 81 AND 120 THEN
+				SUM(CASE WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) THEN
 						stake * (CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END)
 						
 					ELSE 0 END
@@ -581,7 +582,7 @@ BEGIN
 				SUM(b.winlost - b.actual_stake) AS Winlost,
 				0 AS LicenseeWLSB,
 				0 AS LicenseeWLBA,
-				-SUM(CASE WHEN b.bettype BETWEEN 81 AND 120
+				-SUM(CASE WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120)
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLNG,
 				-SUM(CASE WHEN b.bettype BETWEEN 1201 AND 1299
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLVS,
@@ -794,7 +795,7 @@ BEGIN
 						ELSE 1 END
 					ELSE 0 END) AS turnoverSB,
 				0 AS turnoverBA,
-				SUM(CASE WHEN b.sporttype = 161 THEN
+				SUM(CASE WHEN b.sporttype IN (161, 164) THEN
 					b.turnover
 					*
 					CASE WHEN @drawfilter IN (2,3) THEN
@@ -928,7 +929,7 @@ BEGIN
 				SUM(b.winlost),
 				-SUM(CASE WHEN b.sporttype =   0 THEN b.winlost ELSE 0 END) AS LicenseeWLSB,
 				0 AS LicenseeWLBA,
-				-SUM(CASE WHEN b.sporttype = 161 THEN b.winlost ELSE 0 END) AS LicenseeWLNG,
+				-SUM(CASE WHEN b.sporttype IN (161, 164) THEN b.winlost ELSE 0 END) AS LicenseeWLNG,
 				-SUM(CASE WHEN b.sporttype = 180 THEN b.winlost ELSE 0 END) AS LicenseeWLVS,
 				-SUM(CASE WHEN b.sporttype IN (251, 208, 209, 210) THEN b.winlost ELSE 0 END) AS LicenseeWLCS,
 				-SUM(CASE WHEN b.sporttype = 202 THEN b.winlost ELSE 0 END) AS LicenseeWLKN,

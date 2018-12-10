@@ -54,6 +54,7 @@ Revisions:
 	- 20180423@Harper: Fix bug group VS2: BasketBall - Virual Soccer [RedmineID: #93844]
 	- 20180808@Amanda: Remove Racing [RedmineID: #99378]
 	- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
+	- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
 
 Param's Explanation: 
 	+ @AgentList: xml structure
@@ -167,7 +168,7 @@ BEGIN
 	INSERT INTO #AgWinLoss
 	SELECT bettype
 		, CASE 
-			WHEN b.bettype BETWEEN 81 AND 120
+			WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120)
 				THEN b.liveindicator
 			ELSE 0
 			END AS liveindicator
@@ -184,7 +185,8 @@ BEGIN
 							OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 							OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0
 						)
-						OR b.bettype BETWEEN 81 AND 120
+						OR b.bettype BETWEEN 81 AND 120 -- Number Game
+						OR b.bettype BETWEEN 8101 AND 8120 -- Number Game: Happy 5
 						OR b.bettype BETWEEN 1201 AND 1299
 						OR b.bettype BETWEEN 2701 AND 2829 -- Virtual Sport 2
 						OR b.bettype BETWEEN 1501 AND 1599 --Keno
@@ -214,7 +216,7 @@ BEGIN
 		AND statusID NOT IN (101, 102, 103)
 	GROUP BY bettype
 		, CASE 
-			WHEN b.bettype BETWEEN 81 AND 120
+			WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120)
 				THEN b.liveindicator
 			ELSE 0
 			END
@@ -235,7 +237,7 @@ BEGIN
 	INSERT INTO #AgWinLoss
 	SELECT bettype
 		, CASE 
-			WHEN b.bettype BETWEEN 81 AND 120
+			WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120)
 				THEN b.liveindicator
 			ELSE 0
 			END AS liveindicator
@@ -253,6 +255,7 @@ BEGIN
 							OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0
 							)
 						OR b.bettype BETWEEN 81 AND 120
+						OR b.bettype BETWEEN 8101 AND 8120 -- Number Game: Happy 5
 						OR b.bettype BETWEEN 1201 AND 1299
 						OR b.bettype BETWEEN 2701 AND 2829
 						OR b.bettype BETWEEN 1501 AND 1599 --Keno products
@@ -285,7 +288,7 @@ BEGIN
 			)
 	GROUP BY bettype
 		, CASE 
-			WHEN b.bettype BETWEEN 81 AND 120
+			WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120)
 				THEN b.liveindicator
 			ELSE 0
 			END , b.winlostdate, b.currency	
