@@ -68,6 +68,7 @@ Revisions:
    - 20180412@Harper: Integrate Bonus wallet [RedmineID: 91740]
    - 20180418@Amanda: LAP - Integrate PP [RedmineID: #92318]
    - 20180808@Amanda: Remove Racing, Bingo [RedmineID: #99378]
+   - 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
 
 Param's Explanation:
     
@@ -109,7 +110,7 @@ BEGIN
 	END CATCH;
     
 	IF @ShowSB		= 1 INSERT INTO @sporttype(sporttype) VALUES(0)
-	IF @ShowNG		= 1 INSERT INTO @sporttype(sporttype) VALUES(161)
+	IF @ShowNG		= 1 INSERT INTO @sporttype(sporttype) VALUES(161),(164)
 	IF @ShowVS		= 1 INSERT INTO @sporttype(sporttype) VALUES(180)
 	IF @ShowCS		= 1 INSERT INTO @sporttype(sporttype) VALUES(251),(208),(209),(210)
 	IF @ShowKN		= 1 INSERT INTO @sporttype(sporttype) VALUES(202)

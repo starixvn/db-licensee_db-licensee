@@ -57,6 +57,7 @@ Revisions:
 	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 	- 20180808@Amanda: Remove Racing, Bingo [RedmineID: #99378]
 	- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
+	- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
 
 Param's Explanation:   
 	+ @AgentList: xml structure
@@ -369,7 +370,7 @@ BEGIN
 				SUM(b.playercomm) AS playercomm,  
 				b.matchid,  
 				b.Liveawayscore ,  
-				CASE WHEN b.bettype BETWEEN 81 AND 120 THEN b.liveindicator ELSE 0 END AS liveindicator,  
+				CASE WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) THEN b.liveindicator ELSE 0 END AS liveindicator,  
 				b.tpositiontaking,
 				count(1) betcount
 		FROM bettrans b WITH(NOLOCK)
@@ -385,7 +386,7 @@ BEGIN
 				b.bettype ,  
 				b.matchid,  
 				b.Liveawayscore,  
-				CASE WHEN b.bettype BETWEEN 81 AND 120 THEN b.liveindicator ELSE 0 END,  
+				CASE WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) THEN b.liveindicator ELSE 0 END,  
 				b.tpositiontaking  
          
 		IF (@ShowSB = 1)  
@@ -857,7 +858,7 @@ BEGIN
 				SUM( b.playercomm ) AS playercomm,  
 				b.matchid,  
 				b.Liveawayscore ,  
-				CASE WHEN b.bettype BETWEEN 81 AND 120 THEN b.liveindicator ELSE 0 END AS liveindicator,  
+				CASE WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) THEN b.liveindicator ELSE 0 END AS liveindicator,  
 				b.tpositiontaking,
 				count(1) betcount  
 		FROM bettrans14 b WITH(NOLOCK)
@@ -873,7 +874,7 @@ BEGIN
 				b.bettype ,  
 				b.matchid,  
 				b.Liveawayscore,  
-				CASE WHEN b.bettype BETWEEN 81 AND 120 THEN b.liveindicator ELSE 0 END,  
+				CASE WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) THEN b.liveindicator ELSE 0 END,  
 				b.tpositiontaking  
   
 		IF (@ShowSB=1)  

@@ -572,7 +572,7 @@ BEGIN
 			, b.username
 			, b.currency AS currencyid
 			, b.sporttype
-			, CASE WHEN b.bettype BETWEEN 81 AND 120 THEN  N'NG - ' + bt.typenamee
+			, CASE WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) THEN  N'NG - ' + bt.typenamee
 				 WHEN (b.bettype BETWEEN 1201 AND 1299) THEN  N'VS - '+bt.typenamee + CASE WHEN b.bettype = 1204 THEN '(Soccer)'
 																					WHEN b.bettype = 1235 THEN '(Tennis)'
 																					ELSE ''
@@ -599,7 +599,7 @@ BEGIN
 			, b.username
 			, b.currency
 			, b.sporttype
-			, CASE WHEN b.bettype BETWEEN 81 AND 120 THEN  N'NG - ' + bt.typenamee
+			, CASE WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) THEN  N'NG - ' + bt.typenamee
 				 WHEN (b.bettype BETWEEN 1201 AND 1299) THEN  N'VS - '+bt.typenamee + CASE WHEN b.bettype = 1204 THEN '(Soccer)'
 																					WHEN b.bettype = 1235 THEN '(Tennis)'
 																					ELSE ''

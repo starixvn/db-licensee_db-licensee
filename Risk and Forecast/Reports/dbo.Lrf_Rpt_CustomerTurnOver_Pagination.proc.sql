@@ -34,6 +34,7 @@ Revision:
 	- 20180810@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
 	- 20180810@Paul: Enhance performance [Redmine: #98260]
 	- 20181219@Joseph: Add new bet types for E-Sports 2.0 for report Customer Turnover [RedmineID: #106666]
+	- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
 
 Parameter's Explanation:
 			
@@ -126,6 +127,7 @@ BEGIN
 										OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
 										OR b.bettype BETWEEN 81 AND 88
 										OR b.bettype BETWEEN 90 AND 120
+										OR b.bettype BETWEEN 8101 AND 8120 -- Number Game: Happy 5
 										OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
 										OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
 										OR b.bettype = 428 -- 2H Odd/Even
@@ -258,6 +260,7 @@ BEGIN
 										OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
 										OR b.bettype BETWEEN 81 AND 88
 										OR b.bettype BETWEEN 90 AND 120
+										OR b.bettype BETWEEN 8101 AND 8120 -- Number Game: Happy 5
 										OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
 										OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
 										OR b.bettype = 428 -- 2H Odd/Even

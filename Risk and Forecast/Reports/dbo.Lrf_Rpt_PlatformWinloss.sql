@@ -46,6 +46,7 @@ AS
 		- 20181113@Joseph: New betfrom Mobile App (o) [RedmineID: #104587]
 		- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
 		- 20181211@Joseph: New betfrom Mobile China View (c) [RedmineID: #106088]
+		- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
 
 	Param's Explanation:  
 	  + @PlatformType:  0: All  
@@ -176,12 +177,12 @@ BEGIN
 
 	IF @ShowNG = 1	
 	BEGIN
-		SET @SportTypeSQL = @SportTypeSQL + ', (161, ''NG'')'
+		SET @SportTypeSQL = @SportTypeSQL + ', (161, ''NG''), (164, ''NG'')'
 
-		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 81 AND 120 THEN ''NG''
+		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN (typeid BETWEEN 81 AND 120) OR (typeid BETWEEN 8101 AND 8120) THEN ''NG''
 				'
 
-		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 81 AND 120)'
+		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 81 AND 120) OR (typeid BETWEEN 8101 AND 8120)'
 	END
 
 	IF @ShowVS = 1	
