@@ -37,7 +37,11 @@ BEGIN
 	DECLARE @Product TABLE (ProductCode VARCHAR(10), ProductId INT)
 	DECLARE @Exchange TABLE (ExFromDate DATE, ExToDate DATE, ExchangeID INT, Rate MONEY)
 	DECLARE @Status TABLE (Id INT)
+	DECLARE @bettype TABLE (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))
+
 	DECLARE @tmpToDate DATE, @tmpFromDate DATE, @custId INT
+	DECLARE @IsTest BIT = 0
+	
 
 	CREATE TABLE #data(
 		[Date]			DATE,
@@ -94,6 +98,19 @@ BEGIN
     -- Get date from @MoveBetsDay + 1 to @ToDate
     IF @ToDate > @MoveBetsDay
 	BEGIN
+		SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
+		IF LEN(ISNULL(@ProductCodes, '')) > 0 
+		BEGIN
+			-- Insert Bettype
+			INSERT INTO @bettype ( bettype, ProductCode )
+			SELECT DISTINCT BetType, ProductPrefix
+			FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductCodes, @IsTest)
+
+			IF EXISTS (SELECT 1 FROM @Product WHERE ProductCode = 'CS')
+				DELETE @bettype
+				WHERE bettype = 72 AND ProductCode = 'CS'
+		END	
+
 		SET @tmpToDate = @ToDate	
 		IF @FromDate <= @MoveBetsDay 
 			SET @tmpFromDate = DATEADD(DAY,1,@MoveBetsDay)
@@ -102,11 +119,6 @@ BEGIN
 
 		IF EXISTS (SELECT 1 FROM @Product WHERE ProductCode = 'AB')
 		BEGIN
-			DECLARE @productId INT
-			SELECT @productId = ProductId
-			FROM dbo.Products WITH(NOLOCK)
-			WHERE ProductPrefix = 'AB'
-
 			INSERT INTO #Data(
 				[Date],
 				CustId,
@@ -131,28 +143,18 @@ BEGIN
 					b.currency
 			FROM dbo.bettransLC b WITH (NOLOCK)
 			INNER JOIN @tempAg a ON b.Recommend = a.custID
+			INNER JOIN @bettype t ON b.gameID = t.bettype
 			INNER JOIN @status s ON b.StatusId = s.Id
-			INNER JOIN dbo.SportBettypeMatrix m WITH (NOLOCK) ON b.productID = m.SportType
 			INNER JOIN dbo.Customer c WITH (NOLOCK) ON b.CustId = c.CustId
 			WHERE	b.WinlostDate >= @tmpFromDate 
 					AND b.WinlostDate <= @tmpToDate
-					AND m.ProductID = @productId
+					AND t.ProductCode = 'AB'
 					AND (@UserName = '' OR c.username2 LIKE '%$%' + @Username + '%' OR c.username LIKE '%' + @Username + '%')
 			GROUP BY b.WinlostDate, b.custId, c.username, c.username2, b.currency
 		END
 
 		IF EXISTS (SELECT 1 FROM @Product WHERE ProductCode = 'CS' OR ProductCode = 'VB')
 		BEGIN
-			DECLARE @productCS INT, @productVB INT
-			
-			SELECT @productCS = ProductId
-			FROM dbo.Products WITH(NOLOCK)
-			WHERE ProductPrefix = 'CS'
-			
-			SELECT @productVB = ProductId
-			FROM dbo.Products WITH(NOLOCK)
-			WHERE ProductPrefix = 'VB'
-		
 			INSERT INTO #Data(
 				[Date],
 				CustId,
@@ -169,7 +171,7 @@ BEGIN
 					b.custId,
 					c.username,
 					SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS NickName,
-					CASE WHEN b.productID = @productCS THEN 'CS' ELSE 'VB' END,
+					t.ProductCode,
 					COUNT(b.transid),
 					SUM(b.stake),
 					SUM(b.stake),
@@ -177,14 +179,14 @@ BEGIN
 					b.currency
 			FROM dbo.bettransRNG b WITH (NOLOCK)
 			INNER JOIN @tempAg a ON b.Recommend = a.custID
+			INNER JOIN @bettype t ON b.gameID = t.bettype
 			INNER JOIN @status s ON b.StatusId = s.Id
-			INNER JOIN dbo.SportBettypeMatrix m WITH (NOLOCK) ON b.productID = m.SportType
 			INNER JOIN dbo.Customer c WITH (NOLOCK) ON b.CustId = c.CustId
-			WHERE	b.WinlostDate >= @tmpFromDate 
+			WHERE	b.WinlostDate >= @tmpFromDate
 					AND b.WinlostDate <= @tmpToDate
-					AND (m.ProductID = @productCS OR m.ProductID = @productVB)
+					AND (t.ProductCode = 'CS' OR t.ProductCode = 'VB')
 					AND (@UserName = '' OR c.username2 LIKE '%$%' + @Username + '%' OR c.username LIKE '%' + @Username + '%')
-			GROUP BY b.WinlostDate, b.custId, c.username, c.username2, b.currency, b.ProductID
+			GROUP BY b.WinlostDate, b.custId, c.username, c.username2, b.currency, t.ProductCode
 		END
 	END
 
@@ -286,6 +288,7 @@ BEGIN
 	INNER JOIN #pagingData p ON p.[Date] = d.[Date] AND p.CustId = d.CustId
 	INNER JOIN @Exchange e ON d.CurrencyId = e.ExchangeID AND d.[Date] >= e.ExFromDate AND d.[Date] <= e.ExToDate
 	WHERE p.RowNum BETWEEN @FromRow AND @ToRow
+	ORDER BY p.RowNum
 
 	-- Return Total
 	SELECT
