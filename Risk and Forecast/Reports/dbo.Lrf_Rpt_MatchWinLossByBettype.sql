@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
  
 ALTER PROCEDURE [dbo].[Lrf_Rpt_MatchWinLossByBettype]  	
@@ -45,6 +45,7 @@ Revisions:
 	- 20170731@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
 	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 	- 20180808@Amanda: Remove Racing, Bingo [RedmineID: #99378]
+	- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
 
 Param's Explanation:   
 	+ @AgentList: xml structure
@@ -298,6 +299,7 @@ BEGIN
 		  WHERE  
 			   (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
 							 OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+							 OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0
 			   ) AND  
 			   b.tpositiontaking <> 0  
 			  GROUP BY  
@@ -434,6 +436,7 @@ BEGIN
 			   AND tpositiontaking = 0  
 			   AND (b.bettype < 31 OR (b.Bettype BETWEEN 121 AND 999)
 								   OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+								   OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0
 			   )  
 		  GROUP BY  
 			   b.Winlostdate,  
@@ -541,6 +544,7 @@ BEGIN
 		WHERE     
 			(b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
 						  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+						  OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0
 			) AND  
 			b.tpositiontaking <> 0   
 		GROUP BY  

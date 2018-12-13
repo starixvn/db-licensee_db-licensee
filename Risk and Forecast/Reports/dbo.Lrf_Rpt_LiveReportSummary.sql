@@ -63,6 +63,7 @@ Revisions:
 	- 20180808@Amanda: Remove Racing, Bingo [RedmineID: #99378]
 	- 20181101@Amanda: Remove parameter @LicenseeId [Redmine: #103935]
 	- 20181127@Paul: Add OPTION(RECOMPILE) [RedmineID: #105398]
+	- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
 
 Param's Explanation:
 	+ @IsLive : indicate that whether the report will get live data or not
@@ -226,6 +227,7 @@ BEGIN
 					b.bettype <= 30
 					OR (b.bettype BETWEEN 121 AND 999)
 					OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+					OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0
 					)
 				AND (b.bettype NOT IN (9,29))
 				AND (b.bettype < 901 OR b.bettype > 904)
@@ -448,7 +450,7 @@ BEGIN
 				b.currencyID,
 				CASE 
 					WHEN b.bettype BETWEEN 81 AND 120 THEN 'NG'
-					WHEN (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 and 1399)) THEN 'SB'
+					WHEN (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 and 1399) OR (b.Bettype BETWEEN 9001 and 9086)) THEN 'SB'
 					WHEN b.bettype BETWEEN 1201 AND 1299 THEN 'VS'
 					WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN'
 					WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999 THEN 'CS' -- RNG CASINO
@@ -485,7 +487,8 @@ BEGIN
 				AND (b.bettype < 911 OR b.bettype > 914)
 				AND (b.bettype <= 30
 					OR b.bettype BETWEEN 121 AND 999
-					OR b.Bettype BETWEEN 1301 and 1399 
+					OR b.Bettype BETWEEN 1301 and 1399
+					OR b.Bettype BETWEEN 9001 and 9086
 					OR b.bettype BETWEEN 81 AND 120
 					OR b.bettype BETWEEN 1201 AND 1299
 					OR b.bettype BETWEEN 1501 AND 1599 -- Keno
@@ -502,7 +505,7 @@ BEGIN
 				b.currencyID,
 				CASE 
 					WHEN b.bettype BETWEEN 81 AND 120 THEN 'NG'
-					WHEN (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 and 1399)) THEN 'SB'
+					WHEN b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 and 1399) OR (b.Bettype BETWEEN 9001 and 9086) THEN 'SB'
 					WHEN b.bettype BETWEEN 1201 AND 1299 THEN 'VS'
 					WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN'
 					WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999 THEN 'CS' -- RNG CASINO

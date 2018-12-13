@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+﻿/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportWinlossByMatch]   	
     @ShowSB			BIT	= 0,
@@ -41,6 +41,7 @@ Revisions:
 	- 20170710@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]	
 	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 	- 20180808@Amanda: Remove bet type related to Racing [RedmineID: #99378]
+	- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
 
 Return 3 tables:
 WinlostBySport
@@ -175,6 +176,7 @@ BEGIN
 			b.matchid > 0 AND
 			(b.bettype <= 30  OR (b.bettype BETWEEN 121 AND 999)
 						  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+						  OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0
 			) AND
 			b.bettype NOT IN (9,29,901,902,903,904) AND 
 			(b.bettype < 911 OR b.bettype > 914) AND
@@ -244,6 +246,7 @@ BEGIN
 			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
 			(b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999)
 							OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+							OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0
 			) AND
 			b.bettype NOT IN (9,29,901,902,903,904) AND 
 			(b.bettype < 911 OR b.bettype > 914) AND
@@ -391,6 +394,7 @@ BEGIN
 			b.winlostdate BETWEEN @FDate AND @TempToDate  AND
 			(b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999)
 						  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+						  OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0
 			) AND
 			b.bettype NOT IN (9,29,901,902,903,904) AND 
 			(b.bettype < 911 OR b.bettype > 914) AND
@@ -461,6 +465,7 @@ BEGIN
 			b.winlostdate BETWEEN @FDate AND @TempToDate  AND
 			(b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999)
 			    	 	  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+			    	 	  OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0
 			) AND
 			b.bettype NOT IN (9,29,901,902,903,904) AND 
 			(b.bettype < 911 OR b.bettype > 914) AND

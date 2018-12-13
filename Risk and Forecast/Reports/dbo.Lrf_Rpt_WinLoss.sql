@@ -98,6 +98,7 @@ AS
 		- 20180418@Amanda: LAP - Integrate PP [RedmineID: #92318]
 		- 20180809@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
 		- 20180808@Amanda: Remove Racing, Bingo and Old(@IsOld) data [RedmineID: #99378]
+		- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
 
 	Param's Explanation:
 		@OrderItem:
@@ -405,6 +406,7 @@ BEGIN
 						b.bettype <= 30
 						OR b.bettype BETWEEN 121 AND 999
 						OR b.Bettype BETWEEN 1301 AND 1399
+						OR b.Bettype BETWEEN 9001 AND 9086 -- E-Sports 2.0
 					)
 					AND b.statusID IN (111, 112, 113)
 					AND b.tpositiontaking <> 0

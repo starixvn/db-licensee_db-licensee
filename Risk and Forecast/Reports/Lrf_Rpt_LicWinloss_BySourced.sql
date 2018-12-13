@@ -51,6 +51,9 @@ AS
 					   <Agent AgentId="12345" Currency="5"/>  
 					  </ROOT>
 	exec Lrf_Rpt_LicWinloss_BySourced @reporttype=1,@licenseeid=185,@AgentList=N'<ROOT><Agent AgentId="24942757" Currency="9"/><Agent AgentId="0" Currency="13"/><Agent AgentId="24942816" Currency="41"/><Agent AgentId="0" Currency="15"/><Agent AgentId="24942841" Currency="51"/><Agent AgentId="0" Currency="51"/><Agent AgentId="24942791" Currency="2"/><Agent AgentId="0" Currency="2"/><Agent AgentId="24942774" Currency="4"/><Agent AgentId="0" Currency="4"/></ROOT>',@fromdate='2018-01-01 00:00:00',@todate='2018-03-01 00:00:00',@isold=0,@drawfilter=1,@movebetsday='2018-03-03 00:00:00',@showSB=1,@showNG=1
+	
+	Developer' Note:
+		- This SP use for urgent request. DO NOT DELETE THIS SP.
 */  
 BEGIN  
 

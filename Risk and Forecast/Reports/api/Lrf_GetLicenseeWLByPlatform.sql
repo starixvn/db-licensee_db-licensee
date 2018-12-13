@@ -1,4 +1,4 @@
- /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+ /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_GetLicenseeWLByPlatform]
 	@LicenseeID INT,  
 	@CurrencyIDList VARCHAR(500)  = 0,
@@ -20,6 +20,7 @@ AS
 		- 20170814@Alex  : Restrict permission by currency  [RedmineID: #80855]
 		- 20171020@Harper: LRF - Add "New Asia" in platform list [RedmineID: #85203]
 		- 20181113@Joseph: New betfrom Mobile App (o) [RedmineID: #104587]
+		- 20181212@Joseph: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
 
 	Param's Explanation: 
 */  
@@ -113,6 +114,7 @@ BEGIN
 			AND b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
 								OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+								OR (b.Bettype BETWEEN 9001 and 9086) --E-Sports 2.0
 			) 
 			AND (b.bettype < 901 OR b.bettype > 904)
 			AND (b.bettype < 911 OR b.bettype > 914)

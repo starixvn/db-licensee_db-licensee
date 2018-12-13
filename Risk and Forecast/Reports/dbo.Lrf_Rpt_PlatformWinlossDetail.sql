@@ -44,6 +44,7 @@ AS
 		- 20180809@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
 		- 20180808@Amanda: Remove Racing [RedmineID: #99378]
 		- 20181113@Joseph: New betfrom Mobile App (o) [RedmineID: #104587]
+		- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
 
 	Param's Explanation:  
 	  + @PlatformType:  0: All  
@@ -327,6 +328,7 @@ BEGIN
 				AND b.winlostdate BETWEEN @TempFromDate AND @TDate
 				AND (b.bettype<=30 OR (b.bettype BETWEEN 121 AND 999)
 								  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
+								  OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0
 				) 
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
