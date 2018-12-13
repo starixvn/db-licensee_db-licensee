@@ -336,7 +336,7 @@ BEGIN
 				AND b.statusID IN (111, 112, 113)
 				AND (
 					b.bettype BETWEEN 81 AND 120
-					b.bettype BETWEEN 8101 AND 8120 -- Number Game: Happy 5
+					OR b.bettype BETWEEN 8101 AND 8120 -- Number Game: Happy 5
 					OR b.bettype BETWEEN 1201 AND 1299
 					OR b.bettype BETWEEN 1501 AND 1599 -- Keno
 					OR (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999) -- RNG CASINO
