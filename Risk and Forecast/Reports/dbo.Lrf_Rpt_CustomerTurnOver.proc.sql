@@ -72,6 +72,7 @@ Revision:
 	- 20181101@Amanda: Remove parameter @LicenseeId & @UserId [Redmine: #103935]
 	- 20181109@Paul: Minor enhancement [Redmine: #103886]
 	- 2018118@Joseph: Add Esport2 bettypes [Redmine: #100721]
+	- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
 
 Parameter's Explanation:
 	- @ReportBy:  1: daily, 2: monthly
