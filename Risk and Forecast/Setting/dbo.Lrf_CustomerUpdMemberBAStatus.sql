@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet,bodbDownlineNet,bodbExtAccNet,Dot_Member" viewers="vnteam" isFunction="0"></info>*/
+﻿/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet,bodbDownlineNet,bodbExtAccNet,Dot_Member,bodbLicenseeNet" viewers="" isFunction="0"></info>*/
 USE CustDB 
 GO
 
@@ -54,7 +54,7 @@ Revisions:
 	- 20170509@Winnie: LRF-Set back VR setting=0 for BA members [RedmineID:#76231]
 	- 20171012@Winnie: LRF - Edit for Bonus system [RedmineID: #72792]
 	- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
-
+	- 20181024@Winnie: PT DCS for BA member [RedmineID: #1000721]
 Param's Explanation:
 
 */
@@ -311,6 +311,18 @@ BEGIN
 			@IP = @IP,
 			@ErrCode = @ErrCode OUTPUT,
 			@ErrMsg = @ErrMsg OUTPUT
+
+		IF @ErrCode <> 0
+		RETURN
+
+		
+		EXEC Lrf_CustomerUpdMemberBAPositionTakingDCS				
+				@CustID = @CustID,
+				@ModifyBy = @ModifyBy,
+				@IsBA = @IsBA,			
+				@IP = @IP,		
+				@ErrCode = @ErrCode OUTPUT,
+				@ErrMsg = @ErrMsg OUTPUT
 
 		IF @ErrCode <> 0
 		RETURN
@@ -647,6 +659,17 @@ BEGIN
 					@IP = @IP,
 					@ErrCode = @ErrCode OUTPUT,
 					@ErrMsg = @ErrMsg OUTPUT
+
+				IF @ErrCode <> 0
+				RETURN
+
+				EXEC Lrf_CustomerUpdMemberBAPositionTakingDCS				
+				@CustID = @CustID,
+				@ModifyBy = @ModifyBy,
+				@IsBA = @IsBA,			
+				@IP = @IP,		
+				@ErrCode = @ErrCode OUTPUT,
+				@ErrMsg = @ErrMsg OUTPUT
 
 				IF @ErrCode <> 0
 				RETURN
