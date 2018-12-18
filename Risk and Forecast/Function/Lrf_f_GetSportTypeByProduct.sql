@@ -1,4 +1,4 @@
-/*<info serverAlias="DBLIC-bodb_Licensee" selecters="bodbLicenseeNet" viewers="vnteam" isFunction="1"></info>*/
+/*<info serverAlias="DBLIC-bodb_Licensee" selecters="bodbLicenseeNet" viewers="" isFunction="1"></info>*/
 
 CREATE FUNCTION [dbo].[Lrf_f_GetSportTypeByProduct]  
 (  
@@ -11,6 +11,7 @@ CREATE FUNCTION [dbo].[Lrf_f_GetSportTypeByProduct]
     
 	Revisions:
 		- 20180207@Amanda: Get sports by product code [Redmine: #80941]
+		- 20181218@Joseph: Add New Sport Virtual Soccer Asian Cup [Redmine: #105409]
 
 	Paramters Explanation:
 		@ProductCode: Product code
@@ -50,7 +51,8 @@ BEGIN
 		(190),
 		(191),
 		(192),
-		(193)
+		(193),
+		(194)
 	END
 	-- NG --
 	IF @ProductCode = 'NG'

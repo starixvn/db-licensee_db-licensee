@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02" selecters="bodbLicenseeNet" viewers="vnteam" isFunction="1"></info>*/
+/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02" selecters="bodbLicenseeNet" viewers="" isFunction="1"></info>*/
 
 ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]  
 (  
@@ -16,6 +16,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 		- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
 		- 20180418@Amanda: LAP - Integrate PP [RedmineID: #92381]
 		- 20180807@Amanda: Remove Racing, Bingo [RedmineID: #99378]
+		- 20181218@Joseph: Add New Sport Virtual Soccer Asian Cup [Redmine: #105409]
 
 	Paramters Explanation:  
 		@ProductID: list of products  
@@ -40,6 +41,7 @@ RETURN
 					(22, 'VB', 212, 0), -- Macau Games 
 					(24, 'FW', 219, 0), -- Fishing World  
 					(27, 'VS2', 190, 0), (27, 'VS2', 193, 0),-- Betradar Virtual Sports  
+					(27, 'VS2', 194, 0), --  Virtual Soccer Asian Cup
 					(28, 'LT', 220, 0),	-- Lottery
 					(32, 'PP', 248, 0)	-- PP
 			) d(ProductID, ProductCode, SportType, BetType)  
