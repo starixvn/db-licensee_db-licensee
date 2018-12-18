@@ -21,6 +21,7 @@ AS
 		- 20171020@Harper: LRF - Add "New Asia" in platform list [RedmineID: #85203]
 		- 20181113@Joseph: New betfrom Mobile App (o) [RedmineID: #104587]
 		- 20181212@Joseph: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
+		- 20181211@Joseph: New betfrom Mobile China View (c) [RedmineID: #106088]
 
 	Param's Explanation: 
 */  
@@ -76,7 +77,8 @@ BEGIN
 				(7, 'x'),
 				(3, 'y'),
 				(2, 'z'),
-				(8, 'o')
+				(8, 'o'),
+				(9, 'c')
 	) d(PlatformType, betfrom);
 	
 	CREATE TABLE #Exchange (ExchangeDate SMALLDATETIME, ExchangeId INT,  EUR FLOAT,USD FLOAT,GBP FLOAT, CNY FLOAT, MYR FLOAT, THB FLOAT, IDR FLOAT, Code VARCHAR(10), PRIMARY KEY(ExchangeDate,ExchangeId));

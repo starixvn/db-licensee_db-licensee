@@ -45,6 +45,7 @@ AS
 		- 20180808@Amanda: Remove Racing [RedmineID: #99378]
 		- 20181113@Joseph: New betfrom Mobile App (o) [RedmineID: #104587]
 		- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
+		- 20181211@Joseph: New betfrom Mobile China View (c) [RedmineID: #106088]
 
 	Param's Explanation:  
 	  + @PlatformType:  0: All  
@@ -56,6 +57,7 @@ AS
 						6: TABLET (r)  
 						7: New Asia (x)
 						8: Mobile App (o)
+						9: Mobile China View (c)
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover onlly)
 	  + @showSB: Show SportsBook bets
 	  + @ShowNG: Show Number game bets
@@ -162,7 +164,8 @@ BEGIN
 				(7, 'x'),
 				(3, 'y'),
 				(2, 'z'),
-				(8, 'o')
+				(8, 'o'),
+				(9, 'c')
 	) d(PlatformType, betfrom)
 	WHERE d.PlatformType = @PlatformType OR @PlatformType = 0
 
