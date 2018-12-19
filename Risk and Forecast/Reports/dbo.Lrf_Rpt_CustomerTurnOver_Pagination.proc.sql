@@ -33,6 +33,7 @@ Revision:
 	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
 	- 20180810@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
 	- 20180810@Paul: Enhance performance [Redmine: #98260]
+	- 20181219@Joseph: Add new bet types for E-Sports 2.0 for report Customer Turnover [RedmineID: #106666]
 
 Parameter's Explanation:
 			
