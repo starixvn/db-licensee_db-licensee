@@ -220,7 +220,7 @@ BEGIN
 				SUM(rpt.Turnover),
 				SUM(rpt.ValidBetAmount),
 				SUM(rpt.Winlost),
-				SUM(rpt.Currency)
+				rpt.Currency
 		FROM bodb_LicenseeReport.dbo.rptCasinoTurnover rpt WITH (NOLOCK)
 		INNER JOIN @tempAg a ON rpt.Recommend = a.custID
 		INNER JOIN @Product p ON rpt.ProductId = p.ProductId
@@ -229,7 +229,7 @@ BEGIN
 		WHERE rpt.WinlostDate >= @tmpFromDate 
 				AND rpt.WinlostDate <= @tmpToDate
 				AND (@UserName = '' OR c.username2 LIKE '%$%' + @Username + '%' OR c.username LIKE '%' + @Username + '%')
-		GROUP BY rpt.WinlostDate, rpt.custId, c.username, c.username2, p.ProductCode
+		GROUP BY rpt.WinlostDate, rpt.custId, c.username, c.username2, rpt.Currency, p.ProductCode
 	END
 
 	INSERT INTO #pagingData(
