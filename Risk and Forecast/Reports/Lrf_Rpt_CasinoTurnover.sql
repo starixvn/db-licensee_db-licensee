@@ -35,7 +35,7 @@ BEGIN
 
 	DECLARE @tempAg	TABLE(custID INT, currency INT)
 	DECLARE @Product TABLE (ProductCode VARCHAR(10), ProductId INT)
-	DECLARE @Exchange TABLE (ExFromDate DATE, ExToDate DATE, ExchangeID INT, Rate MONEY)
+	DECLARE @Exchange TABLE (ExFromDate SMALLDATETIME, ExToDate SMALLDATETIME, ExchangeID INT, Rate FLOAT)
 	DECLARE @Status TABLE (Id INT)
 	DECLARE @bettype TABLE (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))
 
@@ -134,7 +134,7 @@ BEGIN
 			SELECT	b.WinlostDate,
 					b.custId,
 					c.username,
-					SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS NickName,
+					c.username2,
 					'AB',
 					COUNT(b.transid),
 					SUM(b.stake),
@@ -170,7 +170,7 @@ BEGIN
 			SELECT	b.WinlostDate,
 					b.custId,
 					c.username,
-					SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS NickName,
+					c.username2,
 					t.ProductCode,
 					COUNT(b.transid),
 					SUM(b.stake),
@@ -214,13 +214,13 @@ BEGIN
 		SELECT	rpt.WinlostDate,
 				rpt.custId,
 				c.username,
-				SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS NickName,
+				c.username2,
 				p.ProductCode,
-				rpt.BetCount,
-				rpt.Turnover,
-				rpt.ValidBetAmount,
-				rpt.Winlost,
-				rpt.Currency
+				SUM(rpt.BetCount),
+				SUM(rpt.Turnover),
+				SUM(rpt.ValidBetAmount),
+				SUM(rpt.Winlost),
+				SUM(rpt.Currency)
 		FROM bodb_LicenseeReport.dbo.rptCasinoTurnover rpt WITH (NOLOCK)
 		INNER JOIN @tempAg a ON rpt.Recommend = a.custID
 		INNER JOIN @Product p ON rpt.ProductId = p.ProductId
@@ -229,6 +229,7 @@ BEGIN
 		WHERE rpt.WinlostDate >= @tmpFromDate 
 				AND rpt.WinlostDate <= @tmpToDate
 				AND (@UserName = '' OR c.username2 LIKE '%$%' + @Username + '%' OR c.username LIKE '%' + @Username + '%')
+		GROUP BY rpt.WinlostDate, rpt.custId, c.username, c.username2, p.ProductCode
 	END
 
 	INSERT INTO #pagingData(
@@ -274,8 +275,9 @@ BEGIN
 
 	SELECT 
 		d.[Date],
+		d.CustId,
 		d.UserName,
-		d.NickName,
+		SUBSTRING(d.NickName, CHARINDEX('$', d.NickName) + 1,LEN(d.NickName) - CHARINDEX('$',d.NickName)) AS NickName,
 		d.ProductCode,
 		d.BetCount,
 		d.Turnover,
