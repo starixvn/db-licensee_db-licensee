@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="1"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="1"></info>*/
 USE [bodb02]
 GO
  
@@ -25,6 +25,7 @@ Revision:
 		2. Virtual Sports 2 (2701-2707)
 	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
 	- 20180810@Paul: Enhance performance [Redmine: #98260]
+	- 20181219@Joseph: Add new bet types for E-Sports 2.0 for report Customer Turnover [RedmineID: #106666]
 
 Parameter's Explanation:
 			
@@ -161,6 +162,7 @@ BEGIN
 						ON b.Recommend	= rec.CustID
 			WHERE b.winlostdate BETWEEN @pStartDate AND @tempToDate
 				AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
+								OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
 								OR b.bettype BETWEEN 81 AND 88
 								OR b.bettype BETWEEN 90 AND 120
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
