@@ -275,7 +275,6 @@ BEGIN
 
 	SELECT 
 		d.[Date],
-		d.CustId,
 		d.UserName,
 		SUBSTRING(d.NickName, CHARINDEX('$', d.NickName) + 1,LEN(d.NickName) - CHARINDEX('$',d.NickName)) AS NickName,
 		d.ProductCode,
