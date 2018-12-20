@@ -24,6 +24,7 @@ Param's Explanation:
 	20180810@Sophia: HA - remove LicenseeCustinfo table [Redmine: #99464]
 	- 20180925@Joseph: Remove table CustSearch [Feature #99855]
 	- 20181121@Joseph: Imlement search for dormant customer [#102680]
+	- 20181219@Joseph: Force index hint IX_agent [#105409]
 */
 
 BEGIN
@@ -54,7 +55,7 @@ BEGIN
 	CREATE TABLE #tmpUsername (Username VARCHAR(50))
 	INSERT INTO #tmpUsername (Username)
 	SELECT top 10 SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, LEN(c.username2)-CHARINDEX('$',c.username2)) as username
-	FROM bodb02.dbo.Customer c WITH (NOLOCK)
+	FROM bodb02.dbo.Customer c WITH (NOLOCK, INDEX(IX_agent))
 		INNER JOIN #TempAg lc ON c.recommend = lc.custid AND c.currency = lc.Currency
 	WHERE (c.username2 LIKE + '%$' + @Username + '%' OR c.username LIKE @Username + '%') AND c.RoleId = 1
 	ORDER BY username
@@ -77,6 +78,9 @@ BEGIN
 	BEGIN
 		SELECT username from #tmpUsername
 	END
+
+	DROP TABLE #TempAg
+	DROP TABLE #tmpUsername
 
 END
 
