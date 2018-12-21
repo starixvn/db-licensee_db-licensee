@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProductDetail_Ag]  
 	 @CustID		INT = 0, --memberID
@@ -57,6 +57,7 @@ AS
 	- 20180723@Harper: Improve performance for winloss by product report [RedmineID: #98358]
 	- 20181005@Amanda: Remove Racing, Bingo [RedmineID: #99378]
 	- 20181031@Patrick: DB052 indexes revolution [RedmineID: #103572]
+	- 20181221@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
 
 	Param's Explanation:  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -382,7 +383,7 @@ BEGIN
 						ELSE 1 END
 				),     
 				SUM(b.winlost),  
-				SUM(CASE WHEN (b.sporttype in(0,161,251,202,203,205,208,209,210,212,220))  THEN -1 * b.winlost 
+				SUM(CASE WHEN (b.sporttype in(0,161,164,251,202,203,205,208,209,210,212,220))  THEN -1 * b.winlost 
 						ELSE 0 END
 					) AS LicenseeWL,
 				SUM(comm ) as Comm,
