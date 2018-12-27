@@ -1,1 +1,2 @@
-Risk and Forecast\Reports\xxx
+Risk and Forecast\Reports\dbo.Lrf_Rpt_PlatformWinlossDetail.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_WinLoss.sql
