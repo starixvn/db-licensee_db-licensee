@@ -24,6 +24,7 @@ Revisions:
 	- 20150123@Jim: support base on Currency GBP
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
 	- 20180802@Sophia: HA - remove ruben to use new index on DB042 [Redmine: #98631]
+    - 20190102@Joseph: Incorporate changes for E-Sports phase 2b [Redmine: #106553]
 
 Param's Explanation:
 	+ @AgentList: xml structure
@@ -673,166 +674,74 @@ Param's Explanation:
                                                 - b.liveawayscore AS score ,
                                                 b.liveindicator ,
                                                 SUM(CASE WHEN betteam = 'h'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN 1
-                                                              ELSE odds
-                                                              END ) * stake
-                                                              
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake
                                                          ELSE 0
                                                     END) AS homewin ,
                                                 SUM(CASE WHEN betteam = 'h'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN 1
-                                                              ELSE odds
-                                                              END ) * stake
-                                                              
-                                                              * e.USD
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.USD
                                                          ELSE 0
                                                     END) AS homewinUSD ,
                                                 SUM(CASE WHEN betteam = 'h'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN 1
-                                                              ELSE odds
-                                                              END ) * stake
-                                                              
-                                                              * e.EUR
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.EUR
                                                          ELSE 0
                                                     END) AS homewinEUR ,
 													-- GBP
 													SUM(CASE WHEN betteam = 'h'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN 1
-                                                              ELSE odds
-                                                              END ) * stake
-                                                              
-                                                              * e.GBP
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.GBP
                                                          ELSE 0
                                                     END) AS homewinGBP ,
 													
                                                 SUM(CASE WHEN betteam = 'a'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN 1
-                                                              ELSE odds
-                                                              END ) * stake
-                                                              
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake 
                                                          ELSE 0
                                                     END) AS awaywin ,
                                                 SUM(CASE WHEN betteam = 'a'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN 1
-                                                              ELSE odds
-                                                              END ) * stake
-                                                              
-                                                              * e.USD
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.USD
                                                          ELSE 0
                                                     END) AS awaywinUSD ,
                                                 SUM(CASE WHEN betteam = 'a'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN 1
-                                                              ELSE odds
-                                                              END ) * stake
-                                                              
-                                                              * e.EUR
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.EUR
                                                          ELSE 0
                                                     END) AS awaywinEUR ,
 													-- GBP
 													SUM(CASE WHEN betteam = 'a'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN 1
-                                                              ELSE odds
-                                                              END ) * stake
-                                                              
-                                                              * e.GBP
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.GBP
                                                          ELSE 0
                                                     END) AS awaywinGBP,
 													
                                                 SUM(CASE WHEN betteam = 'h'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN ABS(odds)
-                                                              ELSE 1
-                                                              END ) * stake
-                                                              
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake 
                                                          ELSE 0
                                                     END) AS homelose ,
                                                 SUM(CASE WHEN betteam = 'h'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN ABS(odds)
-                                                              ELSE 1
-                                                              END ) * stake
-                                                              
-                                                              * e.USD
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.USD
                                                          ELSE 0
                                                     END) AS homeloseUSD ,
                                                 SUM(CASE WHEN betteam = 'h'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN ABS(odds)
-                                                              ELSE 1
-                                                              END ) * stake
-                                                              
-                                                              * e.EUR
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.EUR
                                                          ELSE 0
                                                     END) AS homeloseEUR ,
 													--GBP
 												SUM(CASE WHEN betteam = 'h'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN ABS(odds)
-                                                              ELSE 1
-                                                              END ) * stake
-                                                              
-                                                              * e.GBP
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.GBP
                                                          ELSE 0
                                                     END) AS homeloseGBP,	
 													
                                                 SUM(CASE WHEN betteam = 'a'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN ABS(odds)
-                                                              ELSE 1
-                                                              END ) * stake
-                                                              
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake 
                                                          ELSE 0
                                                     END) AS awaylose ,
                                                 SUM(CASE WHEN betteam = 'a'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN ABS(odds)
-                                                              ELSE 1
-                                                              END ) * stake
-                                                              
-                                                              * e.USD
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.USD
                                                          ELSE 0
                                                     END) AS awayloseUSD ,
                                                 SUM(CASE WHEN betteam = 'a'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN ABS(odds)
-                                                              ELSE 1
-                                                              END ) * stake
-                                                              
-                                                              * e.EUR
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.EUR
                                                          ELSE 0
                                                     END) AS awayloseEUR ,
 													--GBP
 												SUM(CASE WHEN betteam = 'a'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN ABS(odds)
-                                                              ELSE 1
-                                                              END ) * stake
-                                                              
-                                                              * e.GBP
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.GBP
                                                          ELSE 0
                                                     END) AS awayloseGBP ,	
 													
@@ -888,166 +797,74 @@ Param's Explanation:
                                                 b.hdp1 AS hdp ,
                                                 0 AS score ,
                                                 SUM(CASE WHEN betteam = 'h'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN 1
-                                                              ELSE odds
-                                                              END ) * stake
-                                                              
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake 
                                                          ELSE 0
                                                     END) AS homewin ,
                                                 SUM(CASE WHEN betteam = 'h'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN 1
-                                                              ELSE odds
-                                                              END ) * stake
-                                                              
-                                                              * e.USD
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.USD
                                                          ELSE 0
                                                     END) AS homewinUSD ,
                                                 SUM(CASE WHEN betteam = 'h'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN 1
-                                                              ELSE odds
-                                                              END ) * stake
-                                                              
-                                                              * e.EUR
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.EUR
                                                          ELSE 0
                                                     END) AS homewinEUR ,
 													---GBP
 												SUM(CASE WHEN betteam = 'h'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN 1
-                                                              ELSE odds
-                                                              END ) * stake
-                                                              
-                                                              * e.GBP
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.GBP
                                                          ELSE 0
                                                     END) AS homewinGBP ,
 													
                                                 SUM(CASE WHEN betteam = 'a'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN 1
-                                                              ELSE odds
-                                                              END ) * stake
-                                                              
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake 
                                                          ELSE 0
                                                     END) AS awaywin ,
                                                 SUM(CASE WHEN betteam = 'a'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN 1
-                                                              ELSE odds
-                                                              END ) * stake
-                                                              
-                                                              * e.USD
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.USD
                                                          ELSE 0
                                                     END) AS awaywinUSD ,
                                                 SUM(CASE WHEN betteam = 'a'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN 1
-                                                              ELSE odds
-                                                              END ) * stake
-                                                              
-                                                              * e.EUR
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.EUR
                                                          ELSE 0
                                                     END) AS awaywinEUR ,
 													--GBP
 												SUM(CASE WHEN betteam = 'a'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN 1
-                                                              ELSE odds
-                                                              END ) * stake
-                                                              
-                                                              * e.GBP
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.GBP
                                                          ELSE 0
                                                     END) AS awaywinGBP ,	
 													
                                                 SUM(CASE WHEN betteam = 'h'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN ABS(odds)
-                                                              ELSE 1
-                                                              END ) * stake
-                                                              
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake 
                                                          ELSE 0
                                                     END) AS homelose ,
                                                 SUM(CASE WHEN betteam = 'h'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN ABS(odds)
-                                                              ELSE 1
-                                                              END ) * stake
-                                                              
-                                                              * e.USD
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.USD
                                                          ELSE 0
                                                     END) AS homeloseUSD ,
                                                 SUM(CASE WHEN betteam = 'h'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN ABS(odds)
-                                                              ELSE 1
-                                                              END ) * stake
-                                                              
-                                                              * e.EUR
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.EUR
                                                          ELSE 0
                                                     END) AS homeloseEUR ,
 													--GBP
 													SUM(CASE WHEN betteam = 'h'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN ABS(odds)
-                                                              ELSE 1
-                                                              END ) * stake
-                                                              
-                                                              * e.GBP
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.GBP
                                                          ELSE 0
                                                     END) AS homeloseGBP ,
 													
                                                 SUM(CASE WHEN betteam = 'a'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN ABS(odds)
-                                                              ELSE 1
-                                                              END ) * stake
-                                                              
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake 
                                                          ELSE 0
                                                     END) AS awaylose ,
                                                 SUM(CASE WHEN betteam = 'a'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN ABS(odds)
-                                                              ELSE 1
-                                                              END ) * stake
-                                                              
-                                                              * e.USD
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.USD
                                                          ELSE 0
                                                     END) AS awayloseUSD ,
                                                 SUM(CASE WHEN betteam = 'a'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN ABS(odds)
-                                                              ELSE 1
-                                                              END ) * stake
-                                                              
-                                                              * e.EUR
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.EUR
                                                          ELSE 0
                                                     END) AS awayloseEUR ,
 													---GBP
 												SUM(CASE WHEN betteam = 'a'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN ABS(odds)
-                                                              ELSE 1
-                                                              END ) * stake
-                                                              
-                                                              * e.GBP
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.GBP
                                                          ELSE 0
                                                     END) AS awayloseGBP ,
 													
@@ -1108,153 +925,74 @@ Param's Explanation:
                                                 - b.liveawayscore AS score ,
                                                 b.liveindicator ,
                                                 SUM(CASE WHEN betteam = 'h'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN 1
-                                                              ELSE odds
-                                                              END ) * stake
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake
                                                          ELSE 0
                                                     END) AS homewin ,
                                                 SUM(CASE WHEN betteam = 'h'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN 1
-                                                              ELSE odds
-                                                              END ) * stake
-                                                              * e.USD
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.USD
                                                          ELSE 0
                                                     END) AS homewinUSD ,
                                                 SUM(CASE WHEN betteam = 'h'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN 1
-                                                              ELSE odds
-                                                              END ) * stake
-                                                              * e.EUR
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.EUR
                                                          ELSE 0
                                                     END) AS homewinEUR ,
 													--GBP
 												SUM(CASE WHEN betteam = 'h'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN 1
-                                                              ELSE odds
-                                                              END ) * stake
-                                                              * e.GBP
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.GBP
                                                          ELSE 0
                                                     END) AS homewinGBP ,
 													
                                                 SUM(CASE WHEN betteam = 'a'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN 1
-                                                              ELSE odds
-                                                              END ) * stake
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake 
                                                          ELSE 0
                                                     END) AS awaywin ,
                                                 SUM(CASE WHEN betteam = 'a'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN 1
-                                                              ELSE odds
-                                                              END ) * stake
-                                                              * e.USD
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.USD
                                                          ELSE 0
                                                     END) AS awaywinUSD ,
                                                 SUM(CASE WHEN betteam = 'a'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN 1
-                                                              ELSE odds
-                                                              END ) * stake
-                                                              * e.EUR
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.EUR
                                                          ELSE 0
                                                     END) AS awaywinEUR ,
 													---GBP
 												SUM(CASE WHEN betteam = 'a'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN 1
-                                                              ELSE odds
-                                                              END ) * stake
-                                                              * e.GBP
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.GBP
                                                          ELSE 0
                                                     END) AS awaywinGBP ,
 													
                                                 SUM(CASE WHEN betteam = 'h'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN ABS(odds)
-                                                              ELSE 1
-                                                              END ) * stake
-                                                              
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake 
                                                          ELSE 0
                                                     END) AS homelose ,
                                                 SUM(CASE WHEN betteam = 'h'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN ABS(odds)
-                                                              ELSE 1
-                                                              END ) * stake
-                                                              * e.USD
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.USD
                                                          ELSE 0
                                                     END) AS homeloseUSD ,
                                                 SUM(CASE WHEN betteam = 'h'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN ABS(odds)
-                                                              ELSE 1
-                                                              END ) * stake
-                                                              * e.EUR
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.EUR
                                                          ELSE 0
                                                     END) AS homeloseEUR ,
 												--GBP
 												SUM(CASE WHEN betteam = 'h'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN ABS(odds)
-                                                              ELSE 1
-                                                              END ) * stake
-                                                              * e.GBP
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.GBP
                                                          ELSE 0
                                                     END) AS homeloseGBP ,
 													
                                                 SUM(CASE WHEN betteam = 'a'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN ABS(odds)
-                                                              ELSE 1
-                                                              END ) * stake
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake
                                                          ELSE 0
                                                     END) AS awaylose ,
                                                 SUM(CASE WHEN betteam = 'a'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN ABS(odds)
-                                                              ELSE 1
-                                                              END ) * stake
-                                                              * e.USD
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.USD
                                                          ELSE 0
                                                     END) AS awayloseUSD ,
                                                 SUM(CASE WHEN betteam = 'a'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN ABS(odds)
-                                                              ELSE 1
-                                                              END ) * stake
-                                                              
-                                                              * e.EUR
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.EUR
                                                          ELSE 0
                                                     END) AS awayloseEUR ,
 													---GBP
 												SUM(CASE WHEN betteam = 'a'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN ABS(odds)
-                                                              ELSE 1
-                                                              END ) * stake
-                                                              
-                                                              * e.GBP
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.GBP
                                                          ELSE 0
                                                     END) AS awayloseGBP ,
 													
@@ -1316,165 +1054,73 @@ Param's Explanation:
                                                 b.hdp1 AS hdp ,
                                                 0 AS score ,
                                                 SUM(CASE WHEN betteam = 'h'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN 1
-                                                              ELSE odds
-                                                              END ) * stake
-                                                              
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake 
                                                          ELSE 0
                                                     END) AS homewin ,
                                                 SUM(CASE WHEN betteam = 'h'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN 1
-                                                              ELSE odds
-                                                              END ) * stake
-                                                              
-                                                              * e.USD
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.USD
                                                          ELSE 0
                                                     END) AS homewinUSD ,
                                                 SUM(CASE WHEN betteam = 'h'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN 1
-                                                              ELSE odds
-                                                              END ) * stake
-                                                              
-                                                              * e.EUR
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.EUR
                                                          ELSE 0
                                                     END) AS homewinEUR ,
 												SUM(CASE WHEN betteam = 'h'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN 1
-                                                              ELSE odds
-                                                              END ) * stake
-                                                              
-                                                              * e.GBP
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.GBP
                                                          ELSE 0
                                                     END) AS homewinGBP ,
 													
                                                 SUM(CASE WHEN betteam = 'a'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN 1
-                                                              ELSE odds
-                                                              END ) * stake
-                                                              
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake 
                                                          ELSE 0
                                                     END) AS awaywin ,
                                                 SUM(CASE WHEN betteam = 'a'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN 1
-                                                              ELSE odds
-                                                              END ) * stake
-                                                              
-                                                              * e.USD
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.USD
                                                          ELSE 0
                                                     END) AS awaywinUSD ,
                                                 SUM(CASE WHEN betteam = 'a'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN 1
-                                                              ELSE odds
-                                                              END ) * stake
-                                                              
-                                                              * e.EUR
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.EUR
                                                          ELSE 0
                                                     END) AS awaywinEUR ,
 												SUM(CASE WHEN betteam = 'a'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN 1
-                                                              ELSE odds
-                                                              END ) * stake
-                                                              
-                                                              * e.GBP
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.GBP
                                                          ELSE 0
                                                     END) AS awaywinGBP ,
 													
 													
                                                 SUM(CASE WHEN betteam = 'h'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN ABS(odds)
-                                                              ELSE 1
-                                                              END ) * stake
-                                                              
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake 
                                                          ELSE 0
                                                     END) AS homelose ,
                                                 SUM(CASE WHEN betteam = 'h'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN ABS(odds)
-                                                              ELSE 1
-                                                              END ) * stake
-                                                              
-                                                              * e.USD
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.USD
                                                          ELSE 0
                                                     END) AS homeloseUSD ,
                                                 SUM(CASE WHEN betteam = 'h'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN ABS(odds)
-                                                              ELSE 1
-                                                              END ) * stake
-                                                              
-                                                              * e.EUR
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.EUR
                                                          ELSE 0
                                                     END) AS homeloseEUR ,
 													---GBP
 												SUM(CASE WHEN betteam = 'h'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN ABS(odds)
-                                                              ELSE 1
-                                                              END ) * stake
-                                                              
-                                                              * e.GBP
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.GBP
                                                          ELSE 0
                                                     END) AS homeloseGBP ,
 													
                                                 SUM(CASE WHEN betteam = 'a'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN ABS(odds)
-                                                              ELSE 1
-                                                              END ) * stake
-                                                              
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake 
                                                          ELSE 0
                                                     END) AS awaylose ,
                                                 SUM(CASE WHEN betteam = 'a'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN ABS(odds)
-                                                              ELSE 1
-                                                              END ) * stake
-                                                              
-                                                              * e.USD
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.USD
                                                          ELSE 0
                                                     END) AS awayloseUSD ,
                                                 SUM(CASE WHEN betteam = 'a'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN ABS(odds)
-                                                              ELSE 1
-                                                              END ) * stake
-                                                              
-                                                              * e.EUR
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.EUR
                                                          ELSE 0
                                                     END) AS awayloseEUR ,
 												--- GBP
 												SUM(CASE WHEN betteam = 'a'
-                                                         THEN ( CASE
-                                                              WHEN odds < 0
-                                                              THEN ABS(odds)
-                                                              ELSE 1
-                                                              END ) * stake
-                                                              
-                                                              * e.GBP
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.GBP
                                                          ELSE 0
                                                     END) AS awayloseGBP ,	
 													
@@ -1567,3 +1213,4 @@ GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_Forecast_SelByLeague] TO [vnteam]
 GO
 
+ 
