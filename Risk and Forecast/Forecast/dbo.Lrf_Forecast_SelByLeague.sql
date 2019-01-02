@@ -1,6 +1,4 @@
-﻿USE bodb02
-GO
-
+﻿/*<info serverAlias="DB042-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER  PROCEDURE [dbo].[Lrf_Forecast_SelByLeague]    
     @BaseOffsetHDP		INT ,
     @BaseOffsetOU		INT ,
@@ -8,7 +6,8 @@ ALTER  PROCEDURE [dbo].[Lrf_Forecast_SelByLeague]
     @BaseOffsetHTOU		INT ,
     @LeagueID			INT ,
 	@AgentList			VARCHAR(MAX)
-AS /*
+AS 
+/*
 Created: 20101207@Henry
 Task: Forecast for bettype according to league.
 DB: DB042.bodb02
@@ -769,6 +768,110 @@ Param's Explanation:
                                                 M.MatchID ,
                                                 o.livehomescore ,
                                                 o.liveawayscore
+                                    UNION ALL 
+                                    -- OddsES
+                                    SELECT    b.currency , -- begin X1
+                                                b.hdp2 - b.hdp1 AS hdp ,
+                                                b.livehomescore
+                                                - b.liveawayscore AS score ,
+                                                b.liveindicator ,
+                                                SUM(CASE WHEN betteam = 'h'
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake
+                                                         ELSE 0
+                                                    END) AS homewin ,
+                                                SUM(CASE WHEN betteam = 'h'
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.USD
+                                                         ELSE 0
+                                                    END) AS homewinUSD ,
+                                                SUM(CASE WHEN betteam = 'h'
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.EUR
+                                                         ELSE 0
+                                                    END) AS homewinEUR ,
+													-- GBP
+													SUM(CASE WHEN betteam = 'h'
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.GBP
+                                                         ELSE 0
+                                                    END) AS homewinGBP ,
+													
+                                                SUM(CASE WHEN betteam = 'a'
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake 
+                                                         ELSE 0
+                                                    END) AS awaywin ,
+                                                SUM(CASE WHEN betteam = 'a'
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.USD
+                                                         ELSE 0
+                                                    END) AS awaywinUSD ,
+                                                SUM(CASE WHEN betteam = 'a'
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.EUR
+                                                         ELSE 0
+                                                    END) AS awaywinEUR ,
+													-- GBP
+													SUM(CASE WHEN betteam = 'a'
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.GBP
+                                                         ELSE 0
+                                                    END) AS awaywinGBP,
+													
+                                                SUM(CASE WHEN betteam = 'h'
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake 
+                                                         ELSE 0
+                                                    END) AS homelose ,
+                                                SUM(CASE WHEN betteam = 'h'
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.USD
+                                                         ELSE 0
+                                                    END) AS homeloseUSD ,
+                                                SUM(CASE WHEN betteam = 'h'
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.EUR
+                                                         ELSE 0
+                                                    END) AS homeloseEUR ,
+													--GBP
+												SUM(CASE WHEN betteam = 'h'
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.GBP
+                                                         ELSE 0
+                                                    END) AS homeloseGBP,	
+													
+                                                SUM(CASE WHEN betteam = 'a'
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake 
+                                                         ELSE 0
+                                                    END) AS awaylose ,
+                                                SUM(CASE WHEN betteam = 'a'
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.USD
+                                                         ELSE 0
+                                                    END) AS awayloseUSD ,
+                                                SUM(CASE WHEN betteam = 'a'
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.EUR
+                                                         ELSE 0
+                                                    END) AS awayloseEUR ,
+													--GBP
+												SUM(CASE WHEN betteam = 'a'
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.GBP
+                                                         ELSE 0
+                                                    END) AS awayloseGBP ,	
+													
+                                                M.MatchID ,
+                                                ISNULL(o.livehomescore, 0)
+                                                - ISNULL(o.liveawayscore, 0) AS VScoreHDP ,
+                                                ISNULL(o.livehomescore, 0)
+                                                + ISNULL(o.liveawayscore, 0) AS VScoreOU
+                                      FROM      bettrans AS b WITH ( NOLOCK )
+                                                INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
+														ON e.exchangeid = b.currency
+                                                INNER JOIN Match AS M WITH ( NOLOCK ) ON b.MatchID = M.MatchID
+                                                INNER JOIN OddsES AS O WITH ( NOLOCK ) ON b.OddsID = O.OddsID
+                                                INNER JOIN League AS L WITH ( NOLOCK ) ON M.LeagueID = L.LeagueID
+                                                              AND L.LeagueID = @LeagueID
+                                      WHERE     b.recommend IN ( SELECT custid FROM @TempAg )
+                                                AND b.bettype = @BetTypeHDP
+                                                AND b.statusID IN ( 0, 1 )                                               
+                                                AND b.tpositiontaking <>0
+                                      GROUP BY  b.currency ,
+                                                b.hdp2 - b.hdp1 ,
+                                                b.livehomescore
+                                                - b.liveawayscore ,
+                                                b.liveindicator ,
+                                                M.MatchID ,
+                                                o.livehomescore ,
+                                                o.liveawayscore
+
                                     ) AS x -- end X1
                           GROUP BY  -x.hdp + score ,
                                     x.liveindicator ,
@@ -891,6 +994,107 @@ Param's Explanation:
                                                 M.MatchID ,
                                                 o.livehomescore ,
                                                 o.liveawayscore
+                                    UNION ALL 
+                                    -- OddsES
+                                    SELECT    b.liveindicator ,  -- begin X2
+                                                b.currency ,
+                                                b.hdp1 AS hdp ,
+                                                0 AS score ,
+                                                SUM(CASE WHEN betteam = 'h'
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake 
+                                                         ELSE 0
+                                                    END) AS homewin ,
+                                                SUM(CASE WHEN betteam = 'h'
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.USD
+                                                         ELSE 0
+                                                    END) AS homewinUSD ,
+                                                SUM(CASE WHEN betteam = 'h'
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.EUR
+                                                         ELSE 0
+                                                    END) AS homewinEUR ,
+													---GBP
+												SUM(CASE WHEN betteam = 'h'
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.GBP
+                                                         ELSE 0
+                                                    END) AS homewinGBP ,
+													
+                                                SUM(CASE WHEN betteam = 'a'
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake 
+                                                         ELSE 0
+                                                    END) AS awaywin ,
+                                                SUM(CASE WHEN betteam = 'a'
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.USD
+                                                         ELSE 0
+                                                    END) AS awaywinUSD ,
+                                                SUM(CASE WHEN betteam = 'a'
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.EUR
+                                                         ELSE 0
+                                                    END) AS awaywinEUR ,
+													--GBP
+												SUM(CASE WHEN betteam = 'a'
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.GBP
+                                                         ELSE 0
+                                                    END) AS awaywinGBP ,	
+													
+                                                SUM(CASE WHEN betteam = 'h'
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake 
+                                                         ELSE 0
+                                                    END) AS homelose ,
+                                                SUM(CASE WHEN betteam = 'h'
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.USD
+                                                         ELSE 0
+                                                    END) AS homeloseUSD ,
+                                                SUM(CASE WHEN betteam = 'h'
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.EUR
+                                                         ELSE 0
+                                                    END) AS homeloseEUR ,
+													--GBP
+													SUM(CASE WHEN betteam = 'h'
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.GBP
+                                                         ELSE 0
+                                                    END) AS homeloseGBP ,
+													
+                                                SUM(CASE WHEN betteam = 'a'
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake 
+                                                         ELSE 0
+                                                    END) AS awaylose ,
+                                                SUM(CASE WHEN betteam = 'a'
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.USD
+                                                         ELSE 0
+                                                    END) AS awayloseUSD ,
+                                                SUM(CASE WHEN betteam = 'a'
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.EUR
+                                                         ELSE 0
+                                                    END) AS awayloseEUR ,
+													---GBP
+												SUM(CASE WHEN betteam = 'a'
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.GBP
+                                                         ELSE 0
+                                                    END) AS awayloseGBP ,
+													
+                                                M.MatchID ,
+                                                ISNULL(o.livehomescore, 0)
+                                                - ISNULL(o.liveawayscore, 0) AS VScoreHDP ,
+                                                ISNULL(o.livehomescore, 0)
+                                                + ISNULL(o.liveawayscore, 0) AS VScoreOU
+                                      FROM      bettrans AS b WITH ( NOLOCK )
+                                                INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
+														ON  e.exchangeid = b.currency
+                                                INNER JOIN Match AS M WITH ( NOLOCK ) ON b.MatchID = M.MatchID
+                                                              AND M.EventStatus = 'running'
+                                                INNER JOIN OddsES AS O WITH ( NOLOCK ) ON b.OddsID = O.OddsID
+                                                INNER JOIN League AS L WITH ( NOLOCK ) ON M.LeagueID = L.LeagueID
+                                                              AND L.LeagueID = @LeagueID
+                                      WHERE     b.recommend IN ( SELECT custid FROM @TempAg )
+                                                AND b.bettype = @BetTypeOU
+                                                AND b.statusID IN ( 0, 1 )
+                                                AND b.tpositiontaking <> 0
+                                      GROUP BY  b.currency ,
+                                                b.hdp1 ,
+                                                b.liveindicator ,
+                                                M.MatchID ,
+                                                o.livehomescore ,
+                                                o.liveawayscore
                                     ) AS x --- end X2
                           GROUP BY  liveindicator ,
                                     x.score ,
@@ -918,7 +1122,6 @@ Param's Explanation:
                                     VScoreHDP ,
                                     VScoreOU
                           FROM      ( SELECT --begin x3
-				--			status, 
                                                 b.currency ,
                                                 b.hdp2 - b.hdp1 hdp ,
                                                 b.livehomescore
@@ -1013,7 +1216,111 @@ Param's Explanation:
                                                 AND b.statusID IN ( 0, 1 )                                                
                                                 AND b.tpositiontaking <> 0
                                       GROUP BY 
-				--			status, 
+                                                b.currency ,
+                                                b.hdp2 - b.hdp1 ,
+                                                b.livehomescore
+                                                - b.liveawayscore ,
+                                                b.liveindicator ,
+                                                M.MatchID ,
+                                                o.livehomescore ,
+                                                o.liveawayscore
+                                    UNION ALL
+                                    -- OddsES
+                                    SELECT --begin x3
+                                                b.currency ,
+                                                b.hdp2 - b.hdp1 hdp ,
+                                                b.livehomescore
+                                                - b.liveawayscore AS score ,
+                                                b.liveindicator ,
+                                                SUM(CASE WHEN betteam = 'h'
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake
+                                                         ELSE 0
+                                                    END) AS homewin ,
+                                                SUM(CASE WHEN betteam = 'h'
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.USD
+                                                         ELSE 0
+                                                    END) AS homewinUSD ,
+                                                SUM(CASE WHEN betteam = 'h'
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.EUR
+                                                         ELSE 0
+                                                    END) AS homewinEUR ,
+													--GBP
+												SUM(CASE WHEN betteam = 'h'
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.GBP
+                                                         ELSE 0
+                                                    END) AS homewinGBP ,
+													
+                                                SUM(CASE WHEN betteam = 'a'
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake 
+                                                         ELSE 0
+                                                    END) AS awaywin ,
+                                                SUM(CASE WHEN betteam = 'a'
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.USD
+                                                         ELSE 0
+                                                    END) AS awaywinUSD ,
+                                                SUM(CASE WHEN betteam = 'a'
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.EUR
+                                                         ELSE 0
+                                                    END) AS awaywinEUR ,
+													---GBP
+												SUM(CASE WHEN betteam = 'a'
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.GBP
+                                                         ELSE 0
+                                                    END) AS awaywinGBP ,
+													
+                                                SUM(CASE WHEN betteam = 'h'
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake 
+                                                         ELSE 0
+                                                    END) AS homelose ,
+                                                SUM(CASE WHEN betteam = 'h'
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.USD
+                                                         ELSE 0
+                                                    END) AS homeloseUSD ,
+                                                SUM(CASE WHEN betteam = 'h'
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.EUR
+                                                         ELSE 0
+                                                    END) AS homeloseEUR ,
+												--GBP
+												SUM(CASE WHEN betteam = 'h'
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.GBP
+                                                         ELSE 0
+                                                    END) AS homeloseGBP ,
+													
+                                                SUM(CASE WHEN betteam = 'a'
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake
+                                                         ELSE 0
+                                                    END) AS awaylose ,
+                                                SUM(CASE WHEN betteam = 'a'
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.USD
+                                                         ELSE 0
+                                                    END) AS awayloseUSD ,
+                                                SUM(CASE WHEN betteam = 'a'
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.EUR
+                                                         ELSE 0
+                                                    END) AS awayloseEUR ,
+													---GBP
+												SUM(CASE WHEN betteam = 'a'
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.GBP
+                                                         ELSE 0
+                                                    END) AS awayloseGBP ,
+													
+                                                M.MatchID ,
+                                                ISNULL(o.livehomescore, 0)
+                                                - ISNULL(o.liveawayscore, 0) AS VScoreHDP ,
+                                                ISNULL(o.livehomescore, 0)
+                                                + ISNULL(o.liveawayscore, 0) AS VScoreOU
+                                      FROM      bettrans AS b WITH ( NOLOCK )
+                                                INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
+															ON e.exchangeid = b.currency
+                                                INNER JOIN Match AS M WITH ( NOLOCK ) ON b.MatchID = M.MatchID
+                                                INNER JOIN OddsES AS O WITH ( NOLOCK ) ON b.OddsID = O.OddsID
+                                                INNER JOIN League AS L WITH ( NOLOCK ) ON M.LeagueID = L.LeagueID
+                                                              AND L.LeagueID = @LeagueID
+                                      WHERE     b.recommend IN ( SELECT custid FROM @TempAg )
+                                                AND b.bettype = @BetTypeHTHDP
+                                                AND b.statusID IN ( 0, 1 )                                                
+                                                AND b.tpositiontaking <> 0
+                                      GROUP BY 
                                                 b.currency ,
                                                 b.hdp2 - b.hdp1 ,
                                                 b.livehomescore
@@ -1147,6 +1454,107 @@ Param's Explanation:
                                                 M.MatchID ,
                                                 o.livehomescore ,
                                                 o.liveawayscore
+                                    
+                                    UNION ALL
+                                    -- OddsES
+                                    SELECT    b.liveindicator , -- begin x4
+                                                b.currency ,
+                                                b.hdp1 AS hdp ,
+                                                0 AS score ,
+                                                SUM(CASE WHEN betteam = 'h'
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake 
+                                                         ELSE 0
+                                                    END) AS homewin ,
+                                                SUM(CASE WHEN betteam = 'h'
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.USD
+                                                         ELSE 0
+                                                    END) AS homewinUSD ,
+                                                SUM(CASE WHEN betteam = 'h'
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.EUR
+                                                         ELSE 0
+                                                    END) AS homewinEUR ,
+												SUM(CASE WHEN betteam = 'h'
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.GBP
+                                                         ELSE 0
+                                                    END) AS homewinGBP ,
+													
+                                                SUM(CASE WHEN betteam = 'a'
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake 
+                                                         ELSE 0
+                                                    END) AS awaywin ,
+                                                SUM(CASE WHEN betteam = 'a'
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.USD
+                                                         ELSE 0
+                                                    END) AS awaywinUSD ,
+                                                SUM(CASE WHEN betteam = 'a'
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.EUR
+                                                         ELSE 0
+                                                    END) AS awaywinEUR ,
+												SUM(CASE WHEN betteam = 'a'
+                                                         THEN ( CASE WHEN odds < 0 THEN 1 ELSE odds END ) * stake * e.GBP
+                                                         ELSE 0
+                                                    END) AS awaywinGBP ,
+													
+													
+                                                SUM(CASE WHEN betteam = 'h'
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake 
+                                                         ELSE 0
+                                                    END) AS homelose ,
+                                                SUM(CASE WHEN betteam = 'h'
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.USD
+                                                         ELSE 0
+                                                    END) AS homeloseUSD ,
+                                                SUM(CASE WHEN betteam = 'h'
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.EUR
+                                                         ELSE 0
+                                                    END) AS homeloseEUR ,
+													---GBP
+												SUM(CASE WHEN betteam = 'h'
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.GBP
+                                                         ELSE 0
+                                                    END) AS homeloseGBP ,
+													
+                                                SUM(CASE WHEN betteam = 'a'
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake 
+                                                         ELSE 0
+                                                    END) AS awaylose ,
+                                                SUM(CASE WHEN betteam = 'a'
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.USD
+                                                         ELSE 0
+                                                    END) AS awayloseUSD ,
+                                                SUM(CASE WHEN betteam = 'a'
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.EUR
+                                                         ELSE 0
+                                                    END) AS awayloseEUR ,
+												--- GBP
+												SUM(CASE WHEN betteam = 'a'
+                                                         THEN ( CASE WHEN odds < 0 THEN ABS(odds) ELSE 1 END ) * stake * e.GBP
+                                                         ELSE 0
+                                                    END) AS awayloseGBP ,	
+													
+                                                M.MatchID ,
+                                                ISNULL(o.livehomescore, 0)
+                                                - ISNULL(o.liveawayscore, 0) AS VScoreHDP ,
+                                                ISNULL(o.livehomescore, 0)
+                                                + ISNULL(o.liveawayscore, 0) AS VScoreOU
+                                      FROM      bettrans AS b WITH ( NOLOCK )
+                                                INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
+															ON e.exchangeid = b.currency
+                                                INNER JOIN Match AS M WITH ( NOLOCK ) ON b.MatchID = M.MatchID
+                                                              AND M.EventStatus = 'running'
+                                                INNER JOIN OddsES AS O WITH ( NOLOCK ) ON b.OddsID = O.OddsID
+                                                INNER JOIN League AS L WITH ( NOLOCK ) ON M.LeagueID = L.LeagueID
+                                                              AND L.LeagueID = @LeagueID
+                                      WHERE     b.recommend IN ( SELECT custid FROM @TempAg )
+                                                AND b.bettype = @BetTypeHTOU
+                                                AND b.statusID IN ( 0, 1 )                                              
+                                                AND b.tpositiontaking <> 0
+                                      GROUP BY  b.currency ,
+                                                b.hdp1 ,
+                                                b.liveindicator ,
+                                                M.MatchID ,
+                                                o.livehomescore ,
+                                                o.liveawayscore
                                     ) AS x -- end x4
                           GROUP BY  liveindicator ,
                                     x.score ,
@@ -1208,9 +1616,4 @@ Param's Explanation:
 
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_Forecast_SelByLeague] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Forecast_SelByLeague] TO [vnteam]
-GO
-
  

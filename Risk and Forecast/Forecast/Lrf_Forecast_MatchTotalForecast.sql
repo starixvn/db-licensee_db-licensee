@@ -1,10 +1,4 @@
-USE bodb02
-GO
-
-SET ANSI_NULLS ON
-SET QUOTED_IDENTIFIER ON
-GO
-
+/*<info serverAlias="DB042-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE Lrf_Forecast_MatchTotalForecast
 (	
 	@MatchID	INT,
@@ -29,6 +23,7 @@ Revisions:
 	20150123@Jim: support base on Currency GBP
 	20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
 	20180802@Sophia: HA - remove ruben to use new index on DB042 [Redmine: #98631]
+	20190102@Joseph: Incorporate changes for E-Sports phase 2b [Redmine: #106553]
 
 Param's Explanation:
 	+ @AgentList: xml structure
@@ -283,8 +278,17 @@ BEGIN
 			ISNULL(CASE WHEN bettype IN (3,8) THEN hdp1
 					ELSE hdp2 - hdp1
 				END,0) AS hdp
-		FROM odds o
+		FROM odds
 		WHERE oddsstatus LIKE 'running'  AND bettype IN (1,3,7,8) AND matchid = @MatchID
+
+		UNION ALL
+		SELECT 
+			bettype,
+			ISNULL(CASE WHEN bettype IN (3,8) THEN hdp1
+					ELSE hdp2 - hdp1
+				END,0) AS hdp
+		FROM oddsES
+		WHERE oddsstatus LIKE 'running'  AND bettype IN (1,3,7,8) AND matchid = @MatchID 
 	)
 
 	INSERT INTO #SecondRS
@@ -301,9 +305,4 @@ BEGIN
 	DROP TABLE #SecondRS
 
 END
-GO
-
-GRANT EXECUTE ON [dbo].[Lrf_Forecast_MatchTotalForecast] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Forecast_MatchTotalForecast] TO vnteam
 GO
