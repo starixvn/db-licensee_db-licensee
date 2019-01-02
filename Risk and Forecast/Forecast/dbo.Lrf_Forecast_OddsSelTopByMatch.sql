@@ -13,57 +13,50 @@ AS /*
 			
 		
 */
-    SET NOCOUNT ON
-    SELECT TOP 1 
-    hdp1 ,
-            hdp2 ,
-            odds1a ,
-            odds2a ,
-            livehomescore ,
-            liveawayscore ,
-            switch ,
-            oddsstatus ,
-            homeid ,
-            awayid ,
-            IsNeutral
-    FROM(
-        SELECT TOP 1
-                hdp1 ,
-                hdp2 ,
-                odds1a ,
-                odds2a ,
-                odds.livehomescore ,
-                odds.liveawayscore ,
-                switch ,
-                oddsstatus ,
-                m.homeid ,
-                m.awayid ,
-                ISNULL(m.isNeutral, CONVERT(BIT, 0)) AS IsNeutral
-        FROM    odds WITH ( NOLOCK )
-                LEFT JOIN match M WITH ( NOLOCK ) ON odds.matchid = M.matchid
-        WHERE   bettype = @bettype
-                AND odds.matchid = @matchid
+        SET NOCOUNT ON
+        SELECT TOP 1 *
+        FROM (
+                SELECT TOP 1
+                        hdp1 ,
+                        hdp2 ,
+                        odds1a ,
+                        odds2a ,
+                        odds.livehomescore ,
+                        odds.liveawayscore ,
+                        switch ,
+                        oddsstatus ,
+                        m.homeid ,
+                        m.awayid ,
+                        ISNULL(m.isNeutral, CONVERT(BIT, 0)) AS IsNeutral
+                FROM    odds WITH ( NOLOCK )
+                        LEFT JOIN match M WITH ( NOLOCK ) ON odds.matchid = M.matchid
+                WHERE   bettype = @bettype
+                        AND odds.matchid = @matchid
+                ORDER BY oddsid DESC
+        ) as odds
 
         UNION ALL
 
-        SELECT TOP 1
-                hdp1 ,
-                hdp2 ,
-                odds1a ,
-                odds2a ,
-                odds.livehomescore ,
-                odds.liveawayscore ,
-                switch ,
-                oddsstatus ,
-                m.homeid ,
-                m.awayid ,
-                ISNULL(m.isNeutral, CONVERT(BIT, 0)) AS IsNeutral
-        FROM    oddsES as odds WITH ( NOLOCK )
-                LEFT JOIN match M WITH ( NOLOCK ) ON odds.matchid = M.matchid
-        WHERE   bettype = @bettype
-                AND odds.matchid = @matchid
-    ) Odds
-    Order by oddsid DESC
+        SELECT TOP 1 * 
+        FROM (
+                SELECT TOP 1
+                        hdp1 ,
+                        hdp2 ,
+                        odds1a ,
+                        odds2a ,
+                        odds.livehomescore ,
+                        odds.liveawayscore ,
+                        switch ,
+                        oddsstatus ,
+                        m.homeid ,
+                        m.awayid ,
+                        ISNULL(m.isNeutral, CONVERT(BIT, 0)) AS IsNeutral
+                FROM    oddsES as odds WITH ( NOLOCK )
+                        LEFT JOIN match M WITH ( NOLOCK ) ON odds.matchid = M.matchid
+                WHERE   bettype = @bettype
+                        AND odds.matchid = @matchid
+                ORDER BY oddsid DESC
+       ) as oddsES
 
 GO
 
