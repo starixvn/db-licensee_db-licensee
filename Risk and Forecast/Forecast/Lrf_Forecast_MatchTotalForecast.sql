@@ -87,9 +87,8 @@ BEGIN
 								ELSE NULL
 							END,
 			@IsLive = CASE WHEN eventstatus = 'running' AND kickofftime <= GETDATE() THEN 1 ELSE 0 END
-	FROM bodb02.dbo.match (NOLOCK)	
+	FROM bodb02.dbo.match WITH (NOLOCK)	
 	WHERE matchid = @MatchID
-
 	
 	DECLARE @MatchSportType INT
 	SELECT @MatchSportType = sporttype FROM match where matchid = @MatchId
@@ -107,7 +106,7 @@ BEGIN
 		ISNULL(livehomescore,0) AS livehomescore,  
 		ISNULL(liveawayscore,0) AS liveawayscore
 	INTO #Data
-	FROM bodb02.dbo.bettrans b (NOLOCK)
+	FROM bodb02.dbo.bettrans b WITH (NOLOCK)
 	WHERE	b.recommend IN ( SELECT custid FROM   @TempAg )
 			AND b.matchid = @MatchID
 			AND b.statusID IN ( 0, 1 )
@@ -278,7 +277,7 @@ BEGIN
 			ISNULL(CASE WHEN bettype IN (3,8) THEN hdp1
 					ELSE hdp2 - hdp1
 				END,0) AS hdp
-		FROM odds
+		FROM odds WITH (NOLOCK) 
 		WHERE oddsstatus LIKE 'running'  AND bettype IN (1,3,7,8) AND matchid = @MatchID
 
 		UNION ALL
@@ -287,7 +286,7 @@ BEGIN
 			ISNULL(CASE WHEN bettype IN (3,8) THEN hdp1
 					ELSE hdp2 - hdp1
 				END,0) AS hdp
-		FROM oddsES
+		FROM oddsES WITH (NOLOCK) 
 		WHERE oddsstatus LIKE 'running'  AND bettype IN (1,3,7,8) AND matchid = @MatchID 
 	)
 
