@@ -1,16 +1,10 @@
-USE [bodb_licensee]
-GO
- 
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
+/*<info serverAlias="DBLIC-bodb_Licensee" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_SelLeagueBySport] 
 	@sportId INT
 	,@Fromdate SMALLDATETIME
 	,@Todate SMALLDATETIME
 	,@AgentList	VARCHAR(MAX)
+	,@IsIncludeTestLeague BIT = 0
 AS
 /*
 Created: 20140102@Florent
@@ -22,6 +16,7 @@ Revisions:
 	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 	- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID [Redmine: #71679]
 	- 20180319: Enhance SP because of timeout issue [Redmine: #92292] 
+	- 20190104@Joseph: Add param @IsIncludeTestLeague to exclude test leagues[Redmine: #107473]
 Param's Explanation:	
 */
 SET NOCOUNT ON
@@ -103,10 +98,8 @@ BEGIN
 		,l.sporttype sportid
 	FROM #tblLeagueid m
 	INNER JOIN bodb02.dbo.League AS l WITH (NOLOCK) ON m.leagueid = l.leagueid
-	WHERE (
-			(@sportId = 0)
-			OR (l.sporttype = @sportId)
-			)
+	WHERE (@IsIncludeTestLeague = 1 OR l.isTest = 0 )
+		AND	(@sportId = 0 OR l.sporttype = @sportId)
 		AND (l.sporttype < 100 or l.sporttype=154)
 		and l.leagueid>0
 	group by l.leagueid	,l.sporttype
@@ -115,15 +108,6 @@ BEGIN
 	DROP TABLE #tblBalanceDate
 END
 
-GO
-GRANT EXECUTE
-	ON [dbo].[Lrf_SelLeagueBySport]
-	TO [bodbLicenseeNet] AS [dbo]
-GO
-
-GRANT VIEW DEFINITION
-	ON [dbo].[Lrf_SelLeagueBySport]
-	TO [vnteam] AS [dbo]
 GO
 
 
