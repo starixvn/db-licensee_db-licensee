@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
+﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
 USE bodb_Licensee
 GO
 
@@ -35,17 +35,36 @@ AS
 		- 20180809@Amanda: Remove Racing [RedmineID: #99378]
 		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
 		- 20180927@Winnie: Remove AllBet [RedmineID: #99378]
+		- 20181205@Winnie: LAP-Security Risks found_settings [RedmineID: #105701]
 	Param's Explanation:
 */ 
 BEGIN
 	SET NOCOUNT ON
+
+	CREATE TABLE #tempCust (CustID INT)
+	INSERT INTO #tempCust(CustID)
+	SELECT RTRIM(LTRIM(VAL)) 
+	FROM Lrf_f_StringSplit(@strCustIDOriginal,',')
+
+	IF EXISTS(	
+		SELECT 1
+		FROM #tempCust t
+			LEFT JOIN LicenseeCustComm b WITH (NOLOCK) ON t.CustID=b.CustID AND b.LicenseeID=@LicenseeID
+		WHERE b.CustID IS NULL)
+	BEGIN
+		SELECT @ErrCode=100
+		SELECT @ErrMsg='Customer does not belong to licensee'
+		RETURN 
+	END
+
 	
 	DECLARE @TempCustID  AS TABLE (ID int IDENTITY(1,1),CustID INT)
+
 	INSERT INTO @TempCustID (CustID)
 	SELECT CustID 
 	FROM dbo.LicenseeCustComm WITH (NOLOCK) 
 	WHERE LicenseeID = @LicenseeID 
-			AND CustID IN (SELECT RTRIM(LTRIM(VAL)) FROM Lrf_f_StringSplit(@strCustIDOriginal,','))
+			AND CustID IN (SELECT CustID FROM #tempCust)
 
 	EXEC [Lrf_CustomerUpdMemberComm] 
 		@LicenseeID=@LicenseeID

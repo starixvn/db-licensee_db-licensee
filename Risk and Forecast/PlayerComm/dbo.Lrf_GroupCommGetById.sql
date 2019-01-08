@@ -1,6 +1,8 @@
-﻿/*<info serverAlias="DBLIC-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/ 
+﻿/*<info serverAlias="DBLIC-bodb_Licensee" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/ 
 ALTER PROCEDURE [dbo].[Lrf_GroupCommGetById]
-	@GroupCommID INT
+	@GroupCommID	INT,
+	@LicenseeID		INT
+
 AS  
 /*  
  * Created: 20120801@Henry
@@ -16,6 +18,7 @@ AS
 	- 20180228@Vicky: Remove LC from product list [Redmine: #85965]
 	- 20180809@Amanda: Remove Racing [RedmineID: #99378]
 	- 20180927@Winnie: Remove AllBet [RedmineID: #99378]
+	- 20181205@Winnie: LAP-Security Risks found_settings [RedmineID: #105701]
 */  
 BEGIN  
 SET NOCOUNT ON;  
@@ -32,6 +35,6 @@ FROM dbo.LicenseeGroupComm g WITH (NOLOCK)
 WHERE 
 	IsActive = 1 
 	AND Id = @GroupCommID
-
+	AND Licenseeid=@LicenseeID
 END
 GO   
