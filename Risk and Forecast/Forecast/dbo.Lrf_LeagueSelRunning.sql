@@ -1,9 +1,8 @@
-﻿USE bodb02
-GO
-
+﻿/*<info serverAlias="DB042-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_LeagueSelRunning]
 	@AgentList		VARCHAR(MAX),   
-    @Bettypes		VARCHAR(100) = '0'--0: all, 1:1,3,7,8; 5:5,15 
+    	@Bettypes		VARCHAR(100) = '0',--0: all, 1:1,3,7,8; 5:5,15 
+    	@IsIncludeTestLeague 	BIT = 0
 AS     
 
 /*
@@ -18,6 +17,7 @@ Revisions:
 	- 20141110@Winnie: Change from LicenseeCust table to [f_SelLicenseeCust] function
 	- 20150414@Jim: add more bettype Extra Time 1H 1X2 (feature #32844)
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+	- 20190104@Joseph: Add param @IsIncludeTestLeague to exclude test leagues[Redmine: #107473]
 
 Param's Explanation:
 	+ @AgentList: xml structure
@@ -55,27 +55,23 @@ Param's Explanation:
 		RETURN
 	END CATCH; 
 
-    SELECT  match.leagueid ,
-            match.sporttype
-    FROM    league WITH ( NOLOCK )
-            INNER JOIN match WITH ( NOLOCK ) ON league.leagueid = match.leagueid
-    WHERE   match.eventstatus IN ( 'running' )
-            AND match.matchid IN (
-            SELECT DISTINCT
-                    matchid
-            FROM    bettrans b WITH ( NOLOCK )
-            WHERE   b.recommend IN ( SELECT custid
+    	SELECT  match.leagueid ,
+            	match.sporttype
+    	FROM    league WITH ( NOLOCK )
+            	INNER JOIN match WITH ( NOLOCK ) ON league.leagueid = match.leagueid
+    	WHERE   (@IsIncludeTestLeague = 1 OR league.isTest = 0 )
+    		AND match.eventstatus IN ( 'running' )
+            	AND match.matchid IN (
+            	SELECT DISTINCT
+                    	matchid
+            	FROM    bettrans b WITH ( NOLOCK )
+            	WHERE   b.recommend IN ( SELECT custid
                                      FROM   @TempAg )
-                    AND bettype IN ( SELECT val
+                    	AND bettype IN ( SELECT val
                                      FROM   dbo.strSplit_Key(@Bettypes, ',') )
-                    AND statusid IN ( 0, 1 ) )
-    GROUP BY match.leagueid ,
-            league.leaguename ,
-            match.sporttype
-    ORDER BY league.leaguename
-GO
-
-GRANT EXECUTE ON [dbo].[Lrf_LeagueSelRunning] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_LeagueSelRunning] TO [vnteam]
+                    	AND statusid IN ( 0, 1 ) )
+    	GROUP BY match.leagueid ,
+            	league.leaguename ,
+            	match.sporttype
+    	ORDER BY league.leaguename
 GO
