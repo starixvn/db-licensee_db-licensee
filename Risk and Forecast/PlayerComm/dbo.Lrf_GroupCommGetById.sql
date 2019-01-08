@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBLIC-bodb_Licensee" executers="bodbLicenseeNet" viewers="bodbLicenseeNet" isFunction="0"></info>*/ 
+﻿/*<info serverAlias="DBLIC-bodb_Licensee" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/ 
 ALTER PROCEDURE [dbo].[Lrf_GroupCommGetById]
 	@GroupCommID	INT,
 	@LicenseeID		INT
