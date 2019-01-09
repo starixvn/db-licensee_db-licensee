@@ -133,11 +133,8 @@ BEGIN
 		DISTINCT typeID AS BettypeID
 		, CASE 
 			WHEN (typeid BETWEEN 81 AND 120) OR (typeid BETWEEN 8101 AND 8120) 
-				THEN  N'NG - ' + typenamee + CASE WHEN typeid = 8102 THEN '(Happy 5)' ELSE '' END -- Happy 5 - Odd/Even 
-			WHEN (typeid BETWEEN 1201 AND 1299) THEN  N'VS - '+typenamee + CASE WHEN typeid = 1204 THEN '(Soccer)'
-																				WHEN typeid = 1235 THEN '(Tennis)'
-																				ELSE '' 
-																			END
+				THEN  N'NG - ' + typenamee 
+			WHEN (typeid BETWEEN 1201 AND 1299) THEN  N'VS - '+typenamee
 			WHEN (typeid BETWEEN 2701 AND 2829) THEN  N'VS2 - ' + typenamee
 			ELSE typenamee 																 
 		END AS BettypeName
