@@ -12,6 +12,7 @@ CREATE FUNCTION [dbo].[Lrf_f_GetSportTypeByProduct]
 	Revisions:
 		- 20180207@Amanda: Get sports by product code [Redmine: #80941]
 		- 20181218@Joseph: Add New Sport Virtual Soccer Asian Cup [Redmine: #105409]
+		- 20181213@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
 
 	Paramters Explanation:
 		@ProductCode: Product code
@@ -58,7 +59,7 @@ BEGIN
 	IF @ProductCode = 'NG'
 	BEGIN
 		INSERT INTO @sports(ID)
-		VALUES (161)
+		VALUES (161),(164)
 	END
 
 RETURN

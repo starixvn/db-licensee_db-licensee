@@ -22,6 +22,7 @@ Revisions:
 	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
 	- 20180629@Amanda: Add new param @ProductCodes and use Lrf_f_GetSportTypeByProduct to get sports for product [Redmine: #80941]
 	- 20181218@Joseph: Remove vnteam [Redmine: #105409]
+	- 20181213@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
 	
 Param's Explanation:
 	- @ProductCodes = '' - Get all
@@ -143,19 +144,22 @@ BEGIN
 	IF EXISTS (SELECT 1 FROM @Product3rds WHERE Code = 'NG')
 	BEGIN
 		INSERT INTO @ProductSport(ID, Name, ParentID)
-		VALUES
-		(161,
-		 CASE @Langkey
-			WHEN 'zh-CN'	THEN N'百練賽'
-			WHEN 'zh-TW'	THEN N'百练赛'
-			WHEN 'zh-Hans'	THEN N'百練賽'
-			WHEN 'th-TH'	THEN N'เกมหมายเลข'
-			WHEN 'ja-JP'	THEN N'番号ゲーム'
-			WHEN 'ko-KR'	THEN N'라이브빙고'
-			WHEN 'es'  	    THEN N'Number Game'
-			WHEN 'vi-VN'	THEN N'Number Game'
-			ELSE N'Number Game' END,
-		 NULL)
+		SELECT
+			161,
+		 	CASE @Langkey
+				WHEN 'zh-CN'	THEN N'百練賽'
+				WHEN 'zh-TW'	THEN N'百练赛'
+				WHEN 'zh-Hans'	THEN N'百練賽'
+				WHEN 'th-TH'	THEN N'เกมหมายเลข'
+				WHEN 'ja-JP'	THEN N'番号ゲーム'
+				WHEN 'ko-KR'	THEN N'라이브빙고'
+				WHEN 'es'  	    THEN N'Number Game'
+				WHEN 'vi-VN'	THEN N'Number Game'
+				ELSE N'Number Game' END,
+		 	NULL
+		UNION ALL
+		SELECT ID, NULL, 161
+		FROM dbo.Lrf_f_GetSportTypeByProduct('NG')
 	END
 
 	SELECT ps.ID, ps.ParentID, ps.Name

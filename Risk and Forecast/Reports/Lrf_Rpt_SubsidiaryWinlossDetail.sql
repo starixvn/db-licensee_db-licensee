@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 CREATE PROCEDURE [dbo].[Lrf_Rpt_SubsidiaryWinlossDetail]
 	@FromDate		DATE,
@@ -17,6 +17,7 @@ AS
     Revisions:  
 		- 20180905@Amanda: Initial SP [Redmine: #95177]
 		- 20181005@Amanda: Remove unused code [RedmineID: #99378]
+		- 20181228@Joseph: Remove vnteam [RedmineID: #103698]
 
 	Param's Explanation:  
 	

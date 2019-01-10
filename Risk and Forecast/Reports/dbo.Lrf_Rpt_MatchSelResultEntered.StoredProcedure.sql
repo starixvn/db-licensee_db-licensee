@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_MatchSelResultEntered] 
 	@isShowAll BIT = 1, -- 1: Show All; 0: is NOT show Test
@@ -20,6 +20,7 @@ Revisions:
 	- 20170627@Harper: LRF - Integrate new product Betradar Virtual Sports [RedmineID: #78241]
 	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 	- 20180807@Amanda: Remove Racing [RedmineID: #99378]
+	- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
 */
 
 	SET NOCOUNT ON
@@ -83,7 +84,7 @@ Revisions:
 		IF EXISTS(SELECT 1 FROM bodb_licensee.dbo.LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=5) SET @ShowVS=1
 		IF EXISTS(SELECT 1 FROM bodb_licensee.dbo.LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=27) SET @ShowVS2=1
 		
-		IF @ShowNG=0 DELETE FROM @Result WHERE Sporttype = 161
+		IF @ShowNG=0 DELETE FROM @Result WHERE Sporttype IN (161, 164)
 		IF @ShowVS=0 DELETE FROM @Result WHERE Sporttype BETWEEN 180 AND 189
 		IF @ShowVS2=0 DELETE FROM @Result WHERE Sporttype BETWEEN 190 AND 199
 	END

@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_Rpt_SubsidiaryWinloss]  	
 	@FromDate		DATE,  
 	@ToDate			DATE,    
@@ -19,6 +19,7 @@ AS
 		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 		- 20180808@Amanda: Remove Racing [RedmineID: #99378]
 		- 20180905@Amanda: Add new params [Redmine: #95177]
+		- 20181228@Joseph: Remove vnteam [RedmineID: #103698]
 
 	Param's Explanation:  
 	

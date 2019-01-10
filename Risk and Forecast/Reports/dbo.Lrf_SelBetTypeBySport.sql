@@ -1,4 +1,4 @@
-/*<info serverAlias="DBLIC-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBLIC-bodb_Licensee" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 USE [bodb_licensee]
 GO
 
@@ -34,6 +34,7 @@ Revisions:
    - 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
    - 20180424@Joseph: Fix bug group VS2: BasketBall - Virual Soccer [RedmineID: #93844]
    - 20180703@Amanda: Refactor code [RedmineID: #80941]
+   - 20181214@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
 
 	Param's Explanation:
 Param's Explanation:
@@ -131,11 +132,9 @@ BEGIN
 	SELECT   
 		DISTINCT typeID AS BettypeID
 		, CASE 
-			WHEN typeid BETWEEN 81 AND 120 THEN  N'NG - ' + typenamee
-			WHEN (typeid BETWEEN 1201 AND 1299) THEN  N'VS - '+typenamee + CASE WHEN typeid = 1204 THEN '(Soccer)'
-																				WHEN typeid = 1235 THEN '(Tennis)'
-																				ELSE '' 
-																			END
+			WHEN (typeid BETWEEN 81 AND 120) OR (typeid BETWEEN 8101 AND 8120) 
+				THEN  N'NG - ' + typenamee 
+			WHEN (typeid BETWEEN 1201 AND 1299) THEN  N'VS - '+typenamee
 			WHEN (typeid BETWEEN 2701 AND 2829) THEN  N'VS2 - ' + typenamee
 			ELSE typenamee 																 
 		END AS BettypeName
