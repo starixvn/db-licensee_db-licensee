@@ -1,6 +1,0 @@
-Risk and Forecast\Reports\dbo.Lrf_Rpt_PlatformWinlossDetail.sql
-Risk and Forecast\Reports\dbo.Lrf_Rpt_WinLoss.sql
-Risk and Forecast\Reports\dbo.Lrf_Rpt_LicWinloss.sql
-Risk and Forecast\Reports\Lrf_Rpt_SubsidiaryWinloss.sql
-Risk and Forecast\Reports\Lrf_Rpt_SubsidiaryWinlossDetail.sql
-Risk and Forecast\Reports\Lrf_Rpt_LicWinlossByTimeZone.sql
