@@ -63,6 +63,7 @@ AS
 	- 20181005@Amanda: Remove Racing, Bingo [RedmineID: #99378]
 	- 20181031@Patrick: DB052 indexes revolution [RedmineID: #103572]
 	- 20181221@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
+	- 20190215@Joseph: HotFix: Licensee WL data isn't included PP ( range: rptLicWinloss2) [RedmineID: #108934]
 
 	Param's Explanation:  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -392,7 +393,7 @@ BEGIN
 						ELSE 1 END
 				),     
 				SUM(b.winlost),  
-				SUM(CASE WHEN (b.sporttype in(0,161,164,251,202,203,205,208,209,210,212,220))  THEN -1 * b.winlost 
+				SUM(CASE WHEN (b.sporttype in(0,161,164,251,202,203,205,208,209,210,212,220,248))  THEN -1 * b.winlost 
 						ELSE 0 END
 					) AS LicenseeWL,
 				SUM(comm ) as Comm,
