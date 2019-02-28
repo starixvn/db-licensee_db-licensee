@@ -35,10 +35,13 @@ BEGIN
 		WHERE ProductPrefix = @ProductCode AND l.LicenseeID = @LicenseeID)
 	BEGIN
 
-		SELECT distinct [BetType]
+		SELECT DISTINCT [BetType]
 			FROM [bodb02].[dbo].[SportBettypeMatrix] matrix
-			inner join [bodb02].[dbo].[Products] p on p.ProductID = matrix.ProductID
-			where p.ProductPrefix = @ProductCode and matrix.Enabled = 1
+			INNER JOIN [bodb02].[dbo].[Products] p ON p.ProductID = matrix.ProductID
+			WHERE p.ProductPrefix = @ProductCode 
+				AND matrix.Enabled = 1
+				AND [BetType] NOT IN (913, 914) -- for Cash Out (only show 911, 912)
+
 	END
 
 END
