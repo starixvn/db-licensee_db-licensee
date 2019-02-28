@@ -2,7 +2,6 @@
 
 CREATE PROCEDURE [dbo].[Lrf_SelBetTypesByProduct]
 	@LicenseeID		INT,
-	@Langkey		VARCHAR(20)='en-US',
 	@ProductCode	VARCHAR(10)=''
 AS 
 /*
@@ -12,10 +11,11 @@ DB: DBLIC/bodb_Licensee
 
 Revisions:
 	- 20180703@Amanda: Get bet types by product code multi language [RedmineID: #80941]
+	- 20190228@Joseph: Betting ticket center phase 3b [RedmineID: #108221]
 	
 */
 /* sample test case:
-	[Lrf_SelSportDetail]
+	[Lrf_SelBetTypesByProduct]
 	@LicenseeID=1,
 	@ProductCode='SB'
 
@@ -23,27 +23,17 @@ Revisions:
 BEGIN
 	SET NOCOUNT ON
 
-	IF @ProductCode = 'SB' 
-		OR EXISTS (
+	IF EXISTS (
 		SELECT 1 
 		FROM dbo.Product3rd p WITH (NOLOCK)
 		INNER JOIN dbo.LicenseeProduct3rd l WITH (NOLOCK) ON p.Productid = l.ProductID 
 		WHERE ProductPrefix = @ProductCode AND l.LicenseeID = @LicenseeID)
 	BEGIN
-		DECLARE @Sports NVARCHAR(4000)
-	
-		SELECT @Sports = (
-				SELECT	'0' AS 'product/@ID',
-						STUFF((
-						SELECT ',' + CAST(ID AS VARCHAR(8))	
-						FROM dbo.Lrf_f_GetSportTypeByProduct(@ProductCode)
-						FOR XML PATH('')),1,1,'') AS 'product/@Sport',
-						'' AS 'product'
-				FOR XML PATH('products'))
-		
-		EXEC dbo.Lrf_SelBetTypeBySport	@LicenseeID = @LicenseeID,
-										@SportList = @Sports,
-										@Langkey = @Langkey
+
+		SELECT distinct [BetType]
+			FROM [bodb02].[dbo].[SportBettypeMatrix] matrix
+			inner join [bodb02].[dbo].[Products] p on p.ProductID = matrix.ProductID
+			where p.ProductPrefix = @ProductCode and matrix.Enabled = 1
 	END
 
 END
