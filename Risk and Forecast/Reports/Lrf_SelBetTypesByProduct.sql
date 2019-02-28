@@ -23,7 +23,12 @@ Revisions:
 BEGIN
 	SET NOCOUNT ON
 
-	IF EXISTS (
+	IF @ProductCode = 'BA'
+	BEGIN
+		SET @ProductCode = 'SB'
+	END
+
+	IF @ProductCode = 'SB' OR EXISTS (
 		SELECT 1 
 		FROM dbo.Product3rd p WITH (NOLOCK)
 		INNER JOIN dbo.LicenseeProduct3rd l WITH (NOLOCK) ON p.Productid = l.ProductID 
