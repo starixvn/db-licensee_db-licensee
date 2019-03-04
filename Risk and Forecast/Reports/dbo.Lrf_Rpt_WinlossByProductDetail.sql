@@ -64,6 +64,7 @@ AS
 	- 20181031@Patrick: DB052 indexes revolution [RedmineID: #103572]
 	- 20181221@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
 	- 20190215@Joseph: HotFix: Licensee WL data isn't included PP ( range: rptLicWinloss2) [RedmineID: #108934]
+	- 20190304@Amanda: Integrate PP Promotion Prize [RedmineID: #109471]
 
 	Param's Explanation:  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -299,7 +300,7 @@ BEGIN
 				- SUM(b.winlost - b.actual_stake) AS LicenseeWL,
 				SUM(comm) as Comm,
 				SUM(PlayerComm) AS PlayerComm,
-				- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd,
+				- SUM(CASE WHEN b.bettype = 4300 THEN b.winlost - b.actual_stake ELSE b.awinlost + b.winlost - b.actual_stake + b.comm END) as AmountDueTo3rd,
 				SUM(1 * (CASE WHEN b.statusID = 111 THEN 0|@sumBetCount ELSE 1 END)) AS BetCount	
 			FROM 
 				dbo.bettrans b WITH (NOLOCK, INDEX=IX_recommend)
@@ -398,7 +399,7 @@ BEGIN
 					) AS LicenseeWL,
 				SUM(comm ) as Comm,
 				SUM( PlayerComm  ) AS PlayerComm, 
-				- SUM (b.awinlost + b.winlost + b.comm) as AmountDueTo3rd,
+				- SUM(CASE WHEN b.bettype = 4300 THEN b.winlost ELSE b.awinlost + b.winlost + b.comm END) as AmountDueTo3rd,
 				SUM(b.betcount * CASE WHEN b.statusID = 111 THEN 0|@sumBetCount ELSE 1 END)
 			FROM 
 				bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )  

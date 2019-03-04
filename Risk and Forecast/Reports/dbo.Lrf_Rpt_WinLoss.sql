@@ -99,6 +99,7 @@ AS
 		- 20180809@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
 		- 20180808@Amanda: Remove Racing, Bingo and Old(@IsOld) data [RedmineID: #99378]
 		- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
+		- 20190304@Amanda: Integrate PP Promotion Prize [RedmineID: #109471]
 
 	Param's Explanation:
 		@OrderItem:
@@ -330,6 +331,7 @@ BEGIN
 		PlayerComm		MONEY,
 		betcount		INT,
 		currency		INT,
+		PromotionPrize  INT
 	)
 
 	CREATE TABLE #TempCustID
@@ -367,7 +369,8 @@ BEGIN
 					SUM (comm) AS CommBA,
 					SUM(PlayerComm ) AS PlayerComm ,
 					SUM(CASE WHEN @DrawFilter = 2 AND b.statusid = 111 THEN 0 ELSE 1 END) AS betcount,
-					b.currency	
+					b.currency,
+					0 AS PromotionPrize	
 				FROM    
 					bettrans b WITH (NOLOCK)   
 					INNER JOIN @TempAg ag ON b.recommend = ag.CustId AND b.currency=ag.Currency
@@ -395,7 +398,8 @@ BEGIN
 					0 AS CommBA,
 					SUM(b.PlayerComm) AS PlayerComm ,
 					SUM(CASE WHEN @DrawFilter = 2 AND b.statusid = 111 THEN 0 ELSE 1 END) AS betcount,
-					b.currency	
+					b.currency,
+					0 AS PromotionPrize
 				FROM    
 					Bettrans b WITH (NOLOCK)
 					INNER JOIN @TempAg a ON b.recommend = a.custid  AND b.currency=a.Currency
@@ -432,7 +436,8 @@ BEGIN
 					0 AS CommBA,
 					SUM( b.PlayerComm) AS PlayerComm ,
 					SUM(CASE WHEN @DrawFilter = 2 AND b.statusid = 111 THEN 0 ELSE 1 END) AS betcount,
-					b.currency	
+					b.currency
+					COUNT(CASE WHEN b.bettype =  4300 THEN 1 ELSE 0) AS PromotionPrize	
 				FROM    
 					bettrans b WITH (NOLOCK)
 					INNER JOIN @TempAg a   ON b.recommend = a.custid AND b.currency = a.Currency
@@ -465,7 +470,8 @@ BEGIN
 					SUM (comm) AS CommBA,
 					SUM(b.PlayerComm) AS PlayerComm ,
 					SUM(CASE WHEN @DrawFilter IN (2) AND b.statusid = 111 THEN 0 ELSE b.BetCount END) AS betcount,
-					b.currency		 
+					b.currency,
+					0 AS PromotionPrize		 
 				FROM    
 					bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)
 					INNER JOIN @TempAg ag ON ag.custid = b.recommend AND b.Currency = ag.Currency
@@ -494,7 +500,8 @@ BEGIN
 					0 AS CommBA,
 					SUM(b.PlayerComm) AS PlayerComm,
 					SUM(CASE WHEN @DrawFilter IN (2) AND b.statusid = 111 THEN 0 ELSE b.BetCount END) as betcount,
-					b.currency		 
+					b.currency,
+					COUNT(CASE WHEN b.bettype =  4300 THEN 1 ELSE 0) AS PromotionPrize	 
 				FROM    
 					bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)
 					INNER JOIN @TempAg ag   ON ag.custid = b.recommend AND b.Currency = ag.Currency
@@ -524,7 +531,8 @@ BEGIN
 					0 AS CommBA,
 					SUM(b.PlayerComm) AS PlayerComm ,
 					SUM(CASE WHEN @DrawFilter IN (2) AND b.statusid = 111 THEN 0 ELSE b.BetCount END) as betcount,
-					b.currency		 
+					b.currency,
+					0 AS PromotionPrize
 				FROM    
 					bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)
 					INNER JOIN @TempAg ag ON ag.custid = b.recommend AND b.Currency = ag.Currency			
@@ -551,7 +559,8 @@ BEGIN
 					0 AS CommBA,
 					SUM(b.PlayerComm) AS PlayerComm ,
 					SUM(CASE WHEN @DrawFilter IN (2) AND b.statusid = 111 THEN 0 ELSE b.BetCount END) as betcount,
-					b.currency		 
+					b.currency,
+					0 AS PromotionPrize	 
 				FROM    
 					bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)
 					INNER JOIN @TempAg ag ON ag.custid = b.recommend AND b.Currency = ag.Currency			
@@ -975,7 +984,8 @@ BEGIN
 		SUM(MemberWinLost + PlayerComm)				 AS SumCustomerTotalWL,
 		CAST(SUM((MemberWinLost + PlayerComm)*e.USD) AS MONEY) AS SumCustomerTotalWLUSD,
 		CAST(SUM((MemberWinLost + PlayerComm)*e.EUR) AS MONEY) AS SumCustomerTotalWLEUR,
-		CAST(SUM((MemberWinLost + PlayerComm)*e.GBP) AS MONEY) AS SumCustomerTotalWLGBP
+		CAST(SUM((MemberWinLost + PlayerComm)*e.GBP) AS MONEY) AS SumCustomerTotalWLGBP,
+		SUM(PromotionPrize)							 AS SumPromotionPrize
 	FROM
 		#TempData b
 		LEFT JOIN @Exchange e ON e.ExchangeDate = b.rptdate AND e.exchangeid = b.currency
