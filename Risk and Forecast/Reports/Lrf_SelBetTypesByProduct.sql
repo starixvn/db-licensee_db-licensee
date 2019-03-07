@@ -36,8 +36,8 @@ BEGIN
 	BEGIN
 
 		SELECT DISTINCT [BetType]
-			FROM [bodb02].[dbo].[SportBettypeMatrix] matrix
-			INNER JOIN [bodb02].[dbo].[Products] p ON p.ProductID = matrix.ProductID
+			FROM [bodb02].[dbo].[SportBettypeMatrix] matrix WITH (NOLOCK)
+			INNER JOIN [bodb02].[dbo].[Products] p WITH (NOLOCK) ON p.ProductID = matrix.ProductID
 			WHERE p.ProductPrefix = @ProductCode 
 				AND matrix.Enabled = 1
 				AND [BetType] NOT IN (913, 914) -- for Cash Out (only show 911, 912)
