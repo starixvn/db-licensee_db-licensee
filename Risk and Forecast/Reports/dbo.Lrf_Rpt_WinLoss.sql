@@ -430,7 +430,7 @@ BEGIN
 						END
 					) AS Turnover,
 					SUM(winlost - actual_stake) AS MemberWinlost ,
-					SUM(ABS(winlost - actual_stake)) AS BetEffective,
+					SUM(CASE WHEN b.bettype = 4300 THEN 0 ELSE ABS(winlost - actual_stake) END) AS BetEffective, -- exclude Promotion Prize from BetEffective
 					- SUM(b.winlost - b.actual_stake) AS LicenseeWL,
 					0 AS AmountDueToBA,
 					0 AS CommBA,
@@ -494,7 +494,7 @@ BEGIN
 					b.winlostdate AS rptdate,
 					SUM(CASE WHEN (@DrawFilter IN (2, 3) AND b.statusid = 111) OR b.bettype IN (901, 902) THEN 0 ELSE b.turnover END) AS Turnover,
 					SUM(winlost) MemberWinlost,
-					CASE WHEN winlostdate < @BetEffectiveDate THEN 0 ELSE SUM(ISNULL(BetEffective, 0)) END AS BetEffective,
+					CASE WHEN winlostdate < @BetEffectiveDate THEN 0 ELSE SUM(ISNULL(BetEffective, 0)) END AS BetEffective, -- exclude Promotion Prize from BetEffective
 					- SUM(b.winlost) AS LicenseeWL ,
 					0 AS AmountDueToBA,
 					0 AS CommBA,
