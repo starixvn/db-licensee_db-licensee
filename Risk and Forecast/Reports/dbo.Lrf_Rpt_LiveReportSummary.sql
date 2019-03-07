@@ -469,7 +469,6 @@ BEGIN
 				- SUM(b.winloss) AS LicenseeWL,
 				SUM(b.CommissionA) Comm,
 				SUM( b.CommissionP) PlayerComm,
-				- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,
 				- SUM(CASE WHEN b.bettype = 4300 THEN b.winloss ELSE b.winloss + b.WinlossA + b.CommissionA END) as AmountDueTo3rd,
 				SUM(b.betcount) BetCount
 			FROM

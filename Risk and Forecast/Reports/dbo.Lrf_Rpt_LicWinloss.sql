@@ -482,7 +482,7 @@ BEGIN
 				0 AS BuyBackAmtSB,
 				0 AS BuyBackAmtBA,
 				0 AS CashOutComm,
-				COUNT (CASE WHEN b.bettype = 4300 THEN 1 ELSE 0 END) AS PromotionPrize
+				SUM (CASE WHEN b.bettype = 4300 THEN 1 ELSE 0 END) AS PromotionPrize
 			FROM 
 				Bettrans b WITH (NOLOCK)
 				INNER JOIN @tempAg a   ON b.recommend = a.custID AND b.Currency = a.Currency
@@ -614,7 +614,7 @@ BEGIN
 				0 AS BuyBackAmtSB,
 				0 AS BuyBackAmtBA,
 				0 AS CashOutComm,
-				COUNT(CASE WHEN b.bettype = 4300 THEN 1 ELSE 0 END)
+				SUM(CASE WHEN b.bettype = 4300 THEN 1 ELSE 0 END) AS PromotionPrize
 			FROM
 				bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
 				INNER JOIN @TempAg ag   ON b.recommend = ag.custID AND ag.currency = b.Currency
@@ -798,7 +798,8 @@ BEGIN
 		BetTradeComm,  
 		WLBetTicket, WLBoughtTicket,
 		BuyBackAmtSB, BuyBackAmtBA,
-		CashOutComm
+		CashOutComm,
+		PromotionPrize
 	)
 	SELECT
 		winlostdate,

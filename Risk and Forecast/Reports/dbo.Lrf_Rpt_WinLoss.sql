@@ -436,8 +436,8 @@ BEGIN
 					0 AS CommBA,
 					SUM( b.PlayerComm) AS PlayerComm ,
 					SUM(CASE WHEN @DrawFilter = 2 AND b.statusid = 111 THEN 0 ELSE 1 END) AS betcount,
-					b.currency
-					COUNT(CASE WHEN b.bettype =  4300 THEN 1 ELSE 0) AS PromotionPrize	
+					b.currency,
+					SUM(CASE WHEN b.bettype = 4300 THEN 1 ELSE 0 END) AS PromotionPrize	
 				FROM    
 					bettrans b WITH (NOLOCK)
 					INNER JOIN @TempAg a   ON b.recommend = a.custid AND b.currency = a.Currency
@@ -501,7 +501,7 @@ BEGIN
 					SUM(b.PlayerComm) AS PlayerComm,
 					SUM(CASE WHEN @DrawFilter IN (2) AND b.statusid = 111 THEN 0 ELSE b.BetCount END) as betcount,
 					b.currency,
-					COUNT(CASE WHEN b.bettype =  4300 THEN 1 ELSE 0) AS PromotionPrize	 
+					SUM(CASE WHEN b.bettype =  4300 THEN 1 ELSE 0 END) AS PromotionPrize	 
 				FROM    
 					bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)
 					INNER JOIN @TempAg ag   ON ag.custid = b.recommend AND b.Currency = ag.Currency

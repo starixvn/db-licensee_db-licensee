@@ -493,7 +493,7 @@ BEGIN
 								+ '- SUM(b.winloss) AS LicenseeWL,' + CHAR(13)
 								+ 'SUM(b.CommissionA) Comm,' + CHAR(13)
 								+ 'SUM(b.CommissionP  ) PlayerComm,' + CHAR(13)
-								+ '- SUM(CASE WHEN b.bettype THEN b.winloss ELSE b.winloss+b.WinlossA+b.CommissionA END) AmountDueTo3rd,' + CHAR(13)
+								+ '- SUM(CASE WHEN b.bettype = 4300 THEN b.winloss ELSE b.winloss+b.WinlossA+b.CommissionA END) AmountDueTo3rd,' + CHAR(13)
 								+ 'SUM(b.betcount) BetCount' + CHAR(13)
 								+ 'FROM bodb_licenseereport.dbo.rpt_Betting b WITH ( NOLOCK )' + CHAR(13)
 								+ 'INNER JOIN #LicenseeList ll ON b.SiteID = ll.LicenseeID AND b.CurrencyID = ll.Currency' + CHAR(13)
