@@ -44,6 +44,7 @@ Revisions:
 	- 20180808@Amanda: Remove bet type related to Racing [RedmineID: #99378]
 	- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
 	- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
+	- 20190312@Amanda: Add new bet types Single Match Parlay (ID: 38) [RedmineID: #108298]
 
 Return 3 tables:
 WinlostBySport
@@ -179,6 +180,7 @@ BEGIN
 			(b.bettype <= 30  OR (b.bettype BETWEEN 121 AND 999)
 						  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 						  OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0
+						  OR b.Bettype = 38					   -- Single Match Parlay
 			) AND
 			b.bettype NOT IN (9,29,901,902,903,904) AND 
 			(b.bettype < 911 OR b.bettype > 914) AND
@@ -249,6 +251,7 @@ BEGIN
 			(b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999)
 							OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 							OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0
+							OR b.Bettype = 38					 -- Single Match Parlay
 			) AND
 			b.bettype NOT IN (9,29,901,902,903,904) AND 
 			(b.bettype < 911 OR b.bettype > 914) AND
@@ -397,6 +400,7 @@ BEGIN
 			(b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999)
 						  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 						  OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0
+						  OR b.Bettype = 38					   -- Single Match Parlay
 			) AND
 			b.bettype NOT IN (9,29,901,902,903,904) AND 
 			(b.bettype < 911 OR b.bettype > 914) AND
@@ -468,6 +472,7 @@ BEGIN
 			(b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999)
 			    	 	  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 			    	 	  OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0
+			    	 	  OR b.Bettype = 38					   -- Single Match Parlay
 			) AND
 			b.bettype NOT IN (9,29,901,902,903,904) AND 
 			(b.bettype < 911 OR b.bettype > 914) AND

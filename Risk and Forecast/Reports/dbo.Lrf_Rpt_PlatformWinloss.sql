@@ -55,6 +55,7 @@ AS
 		- 20190923@Amanda: Change the way to handle Half Won/ Half Lose bet types [RedmineID: #119879]
 		- 20191121@Amanda: Exclude PP Promotion and Tournament Prize [RedmineID: #123804]
 		- 20191219@Amanda: Add platform v [RedmineID: #125553]
+		- 20190312@Amanda: Add new bet types Single Match Parlay (ID: 38) [RedmineID: #108298]
 
 	Param's Explanation:  
 	  + @PlatformType:  0: All  
@@ -420,6 +421,7 @@ BEGIN
 				AND (b.bettype<=30 OR (b.bettype BETWEEN 121 AND 999)
 								  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 								  OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0
+								  OR b.Bettype = 38					 -- Single Match Parlay
 				) 
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
