@@ -13,6 +13,7 @@ CREATE FUNCTION [dbo].[Lrf_f_GetSportTypeByProduct]
 		- 20180207@Amanda: Get sports by product code [Redmine: #80941]
 		- 20181218@Joseph: Add New Sport Virtual Soccer Asian Cup [Redmine: #105409]
 		- 20181213@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
+		- 20190227@Joseph: Betting ticket center phase 3b [RedmineID: #108221]
 
 	Paramters Explanation:
 		@ProductCode: Product code
@@ -60,6 +61,26 @@ BEGIN
 	BEGIN
 		INSERT INTO @sports(ID)
 		VALUES (161),(164)
+	END
+	-- Keno --
+	IF @ProductCode = 'KN'
+	BEGIN
+		INSERT INTO @sports(ID)
+		VALUES (202)
+	END
+
+	-- Lottery --
+	IF @ProductCode = 'LT'
+	BEGIN
+		INSERT INTO @sports(ID)
+		VALUES (220)
+	END
+
+	-- Cash Out --
+	IF @ProductCode = 'CO'
+	BEGIN
+		INSERT INTO @sports(ID)
+		VALUES (1)
 	END
 
 RETURN

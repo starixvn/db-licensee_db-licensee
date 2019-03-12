@@ -23,6 +23,7 @@ Revisions:
 	- 20180629@Amanda: Add new param @ProductCodes and use Lrf_f_GetSportTypeByProduct to get sports for product [Redmine: #80941]
 	- 20181218@Joseph: Remove vnteam [Redmine: #105409]
 	- 20181213@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
+	- 20190227@Joseph: Betting ticket center phase 3b [RedmineID: #108221]
 	
 Param's Explanation:
 	- @ProductCodes = '' - Get all
@@ -49,7 +50,7 @@ BEGIN
 		SELECT p.ProductPrefix
 		FROM dbo.Product3rd p WITH (NOLOCK)
 		INNER JOIN dbo.LicenseeProduct3rd l WITH (NOLOCK) ON p.Productid = l.ProductID
-		WHERE l.LicenseeID = @LicenseeID AND p.ProductPrefix IN ('BA', 'NG', 'VS', 'VS2')
+		WHERE l.LicenseeID = @LicenseeID AND p.ProductPrefix IN ('BA', 'NG', 'VS', 'VS2', 'KN', 'LT', 'CO')
 	END
 	ELSE
 	BEGIN
@@ -58,7 +59,7 @@ BEGIN
 		FROM @Products po
 		INNER JOIN dbo.Product3rd p WITH (NOLOCK) ON p.ProductPrefix = po.Code
 		INNER JOIN dbo.LicenseeProduct3rd l WITH (NOLOCK) ON p.Productid = l.ProductID
-		WHERE l.LicenseeID = @LicenseeID AND p.ProductPrefix IN ('BA', 'NG', 'VS', 'VS2')
+		WHERE l.LicenseeID = @LicenseeID AND p.ProductPrefix IN ('BA', 'NG', 'VS', 'VS2', 'KN', 'LT', 'CO')
 	END
 
 	DECLARE @ProductSport TABLE (
@@ -160,6 +161,42 @@ BEGIN
 		UNION ALL
 		SELECT ID, NULL, 161
 		FROM dbo.Lrf_f_GetSportTypeByProduct('NG')
+	END
+
+	-- KN --
+	IF EXISTS (SELECT 1 FROM @Product3rds WHERE Code = 'KN')
+	BEGIN
+		INSERT INTO @ProductSport(ID, Name, ParentID)
+		SELECT 202, N'Keno', NULL
+		UNION ALL
+		SELECT ID, NULL, 202
+		FROM dbo.Lrf_f_GetSportTypeByProduct('KN')
+	END
+
+	-- LT --
+	IF EXISTS (SELECT 1 FROM @Product3rds WHERE Code = 'LT')
+	BEGIN
+		INSERT INTO @ProductSport(ID, Name, ParentID)
+		SELECT 220, N'Lottery', NULL
+		UNION ALL
+		SELECT ID, NULL, 220
+		FROM dbo.Lrf_f_GetSportTypeByProduct('LT')
+	END
+
+	-- CO --
+	IF EXISTS (SELECT 1 FROM @Product3rds WHERE Code = 'CO')
+	BEGIN
+		INSERT INTO @ProductSport(ID, Name, ParentID)
+		SELECT 1, 
+		 	CASE @Langkey
+				WHEN 'zh-CN'	THEN N'即时兑现'
+				WHEN 'zh-TW'	THEN N'即時兌現'
+				WHEN 'zh-Hans'	THEN N'即时兑现'
+				ELSE N'Cash Out' END,
+			NULL
+		UNION ALL
+		SELECT ID, NULL, 1
+		FROM dbo.Lrf_f_GetSportTypeByProduct('CO')
 	END
 
 	SELECT ps.ID, ps.ParentID, ps.Name
