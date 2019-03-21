@@ -1,5 +1,4 @@
-USE [CustDB]
-GO
+/*<info serverAlias="DBCUST-CustDB" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
 
 ALTER PROCEDURE	[dbo].[Lrf_3rdProductUpdCustStatus]  
 	@CustID		INT,
@@ -19,7 +18,8 @@ AS
 		-20150609@Jim: support product microgaming
 		-20151022@Jim: support #44780
 		-20151108@Jim: Separated MicroGaming into 2 product
-		- 20160909@Winnie: support colossusBet RedmineID: #63785
+		-20160909@Winnie: support colossusBet RedmineID: #63785
+		-20190321@Winnie: LAP-Remove MGC & Korea Language RedmineID: #107704
 	Param's Explanation:
 */
 BEGIN
@@ -94,40 +94,17 @@ BEGIN
 	SELECT @ErrMsg='Could not update'
 	RETURN
 	END
-	IF @ProductId NOT IN (14,17)
+
+	INSERT INTO dbo.Dep_CustProductSetting (CustID, ProductId, IsEnabled)
+	SELECT CustID, @ProductId, @IsEnabled	
+	FROM #CustList c
+	WHERE NOT EXISTS(SELECT 1 FROM dbo.Dep_CustProductSetting cs WITH (NOLOCK) WHERE cs.CustID = c.CustID AND cs.ProductId=@ProductId)
+	IF(@@ERROR<>0)
 	BEGIN
-		INSERT INTO dbo.Dep_CustProductSetting (CustID, ProductId, IsEnabled)
-		SELECT CustID, @ProductId, @IsEnabled	
-		FROM #CustList c
-		WHERE NOT EXISTS(SELECT 1 FROM dbo.Dep_CustProductSetting cs WITH (NOLOCK) WHERE cs.CustID = c.CustID AND cs.ProductId=@ProductId)
-		IF(@@ERROR<>0)
-		BEGIN
-			SELECT @ErrMsg='Could not insert'
-			RETURN
-		END
+		SELECT @ErrMsg='Could not insert'
+		RETURN
 	END
-	--- MicroGaming
-	ELSE IF (@ProductID = 14)
-		BEGIN 
-			SELECT @IsEnable_Old =  CASE ISNULL(DisableMicrogameLC,0) WHEN 1 THEN 0 ELSE 1 END
-			FROM dbo.CustInfo WITH (NOLOCK)
-			WHERE CustID = @CustId  
-			
-			UPDATE dbo.CustInfo WITH (ROWLOCK,UPDLOCK)
-			SET DisableMicrogameLC = CASE @IsEnabled WHEN 1 THEN 0 ELSE 1 END
-			WHERE CustID = @CustID	
-		END
-	ELSE IF (@ProductID = 17)
-		BEGIN 
-			SELECT @IsEnable_Old = CASE ISNULL(DisableMicrogameRnG,0) WHEN 1 THEN 0 ELSE 1 END
-			FROM dbo.CustInfo WITH (NOLOCK)
-			WHERE CustID = @CustId 
-			
-			UPDATE dbo.CustInfo WITH (ROWLOCK,UPDLOCK)
-			SET DisableMicrogameRnG = CASE @IsEnabled WHEN 1 THEN 0 ELSE 1 END
-			WHERE CustID = @CustID	
-		END	
-		
+
 	END
 	-- Write log
 	SET @endRun = GETDATE()
