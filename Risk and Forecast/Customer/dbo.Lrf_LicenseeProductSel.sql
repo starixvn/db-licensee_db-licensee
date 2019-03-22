@@ -22,6 +22,7 @@ AS
 		- 20180315@Winnie: Bet Setting - Cash Out product is not listed in Product dropdown box [HotFix #92097]
 		- 20180405@Amanda: Bet Setting - Hide RB product [Redmine #92291]
 		- 20180620@Johnson: Integrate Pragmatic [Redmine: #92318]
+		- 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
 	Param's Explanation:
 */
 
@@ -51,7 +52,7 @@ BEGIN
 			p.ProductId
 			,p.ProductName
 			,p.ProductPrefix AS  ProductCode
-			,CASE WHEN p.ProductID IN (10,11,12,14,17) OR ApplyDCS = 1 THEN 0 ELSE 1 END 
+			,CASE WHEN p.ProductID IN (10,11,12) OR ApplyDCS = 1 THEN 0 ELSE 1 END 
 		FROM dbo.Product3rd p WITH (NOLOCK) 
 			INNER JOIN dbo.LicenseeProduct3rd lp WITH (NOLOCK) ON p.ProductId = lp.ProductId 	
 		WHERE lp.LicenseeID  = @LicenseeID
@@ -84,20 +85,6 @@ BEGIN
 					SET isEnable =1
 					WHERE ProductID = 12
 			END
-		IF EXISTS (SELECT 1 FROM @tblProductActive WHERE ProductID = 14)	---Microgaming
-			BEGIN 
-				IF EXISTS (SELECT 1 FROM  bodb02.dbo.CustInfo ci WITH (NOLOCK) INNER JOIN @tblSuper r ON ci.srecommend = r.SrecommendID WHERE ci.DisableMicrogameLC = 0)
-					UPDATE @tblProductActive
-					SET isEnable =1
-					WHERE ProductID = 14	
-			END
-		IF EXISTS (SELECT 1 FROM @tblProductActive WHERE ProductID = 17)	---Microgaming
-			BEGIN 
-				IF EXISTS (SELECT 1 FROM  bodb02.dbo.CustInfo ci WITH (NOLOCK) INNER JOIN @tblSuper r ON ci.srecommend = r.SrecommendID WHERE ci.DisableMicrogameRNG = 0)
-					UPDATE @tblProductActive
-					SET isEnable =1
-					WHERE ProductID = 17	
-			END	
 		
 		--check DCS setting
 		;WITH tmp AS(
@@ -118,7 +105,7 @@ BEGIN
 		   ,ProductCode
 		   ,isEnable
 	FROM @tblProductActive t 
-	WHERE ProductID NOT IN (3,7,9,4,1)-- Hide Setting for CashOut and LC and RB
+	WHERE ProductID NOT IN (3,7,9,4,1,14,17)-- Hide Setting for CashOut and LC and RB and Microgaming
 	ORDER BY ProductID ASC
 	
 END
