@@ -13,8 +13,6 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerBalance]
 	, @ShowCS		BIT = 0
 	, @ShowKN		BIT = 0   	
 	, @ShowBT		BIT = 0 -- Keno 	
-	, @ShowMGCLC	BIT = 0-- Bet Trade ,	
-	, @ShowMGCRnG	BIT = 0
 	, @ShowAGC		BIT = 0
 	, @ShowVB		BIT = 0
 	, @ShowAB		BIT = 0
@@ -65,6 +63,7 @@ Revisions:
 	- 20180418@Amanda: LAP - Integrate PP [RedmineID: #92318]
 	- 20180808@Amanda: Remove Racing, Bingo [RedmineID: #99378]
 	- 20181228@Joseph: Remove vnteam [RedmineID: #103698]
+	- 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
 
 Param's Explanation:  
 	+ @excludeTest: remove currency UUS  
@@ -123,12 +122,6 @@ BEGIN
 
 	IF @ShowKN = 1
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'KN', 'KN')    
-
-	IF @ShowMGCLC = 1
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'MGCLC', 'MGCLC')
-
-	IF @ShowMGCRnG = 1
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'MGCRNG', 'MGCRNG')
 
 	IF @ShowAGC = 1
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'AGC', 'AGC')
