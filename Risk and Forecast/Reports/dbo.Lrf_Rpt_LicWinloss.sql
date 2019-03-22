@@ -12,8 +12,6 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]
 	@ShowVS			BIT = 0,
 	@ShowCS   		BIT = 0, -- RNG Casino
 	@ShowKN			BIT = 0, -- Keno
-	@showMGCLC		BIT = 0, -- MicroGamming
-	@showMGCRnG		BIT = 0, -- MicroGamming
 	@ShowBT 		BIT = 0, -- licenseeWLBT
 	@ShowAGC		BIT = 0, -- AGCasino
 	@ShowVB			BIT = 0, -- Voidbridge
@@ -79,6 +77,7 @@ AS
 	- 20181126@Paul: Add OPTION(RECOMPILE) [RedmineID: #105304]
 	- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
 	- 20190304@Amanda: Integrate PP Promotion Prize [RedmineID: #109471]
+	- 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
 
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -177,16 +176,6 @@ BEGIN
 	IF @ShowKN = 1 -- Keno
 	BEGIN 
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'KN', 'KN')
-	END
-
-	IF @showMGCLC = 1 -- MicroGamming
-	BEGIN 
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'MGCLC', 'MGCLC')
-	END 
-
-	IF @showMGCRnG = 1 -- MicroGamming
-	BEGIN 
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'MGCRNG', 'MGCRNG')
 	END
 
 	IF @ShowAGC = 1 -- AGCasino
@@ -454,7 +443,7 @@ BEGIN
 			GROUP BY b.winlostdate, a.currency  
 		END
 
-		IF 1 IN (@ShowNG, @ShowVS, @ShowCS, @ShowKN, @showMGCLC, @showMGCRnG, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowVS2, @ShowLT, @ShowPP)
+		IF 1 IN (@ShowNG, @ShowVS, @ShowCS, @ShowKN, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowVS2, @ShowLT, @ShowPP)
 		BEGIN
 			INSERT INTO #SAgWinLoss
 			(  
@@ -578,7 +567,7 @@ BEGIN
 		END
 	
 		--exclude BA tickets
-		IF 1 IN (@showSB, @ShowNG, @ShowVS, @ShowCS, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowVS2, @ShowLT, @ShowPP)
+		IF 1 IN (@showSB, @ShowNG, @ShowVS, @ShowCS, @ShowKN, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowVS2, @ShowLT, @ShowPP)
 		BEGIN
 			INSERT INTO #SAgWinLoss 
 			(  
@@ -739,8 +728,6 @@ BEGIN
 		TurnoverVS			MONEY,
 		TurnoverCS 			MONEY,
 		TurnoverKN			MONEY,
-		turnoverMGCLC		MONEY, 
-		turnoverMGCRnG		MONEY, 
 		turnoverAGC			MONEY,
 		turnoverVB			MONEY, 
 		turnoverAB			MONEY,
@@ -757,8 +744,6 @@ BEGIN
 		LicenseeWLVS		MONEY,
 		LicenseeWLCS		MONEY,
 		LicenseeWLKN		MONEY,
-		LicenseeWLMGCLC	    MONEY,
-		LicenseeWLMGCRnG	MONEY,
 		LicenseeWLAGC		MONEY,
 		LicenseeWLVB		MONEY,
 		LicenseeWLAB		MONEY,
@@ -786,10 +771,10 @@ BEGIN
 	(  
 		winlostdate, Currency,
 		TurnoverSB, TurnoverBA, TurnoverNG, TurnoverVS, TurnoverCS,
-		TurnoverKN, turnoverMGCLC, turnoverMGCRnG, turnoverAGC, turnoverVB, turnoverAB, turnoverFW, turnoverCO, TurnoverVS2, TurnoverLT, TurnoverPP,
+		TurnoverKN, turnoverAGC, turnoverVB, turnoverAB, turnoverFW, turnoverCO, TurnoverVS2, TurnoverLT, TurnoverPP,
 		BTActualStake, Winlost,
 		LicenseeWLSB, LicenseeWLBA, LicenseeWLNG, LicenseeWLVS, LicenseeWLCS,
-		LicenseeWLKN, LicenseeWLMGCLC, LicenseeWLMGCRnG, LicenseeWLAGC, LicenseeWLVB, LicenseeWLAB, LicenseeWLFW, LicenseeWLCO, LicenseeWLVS2, LicenseeWLLT, LicenseeWLPP,
+		LicenseeWLKN, LicenseeWLAGC, LicenseeWLVB, LicenseeWLAB, LicenseeWLFW, LicenseeWLCO, LicenseeWLVS2, LicenseeWLLT, LicenseeWLPP,
 		AmtDueToBA,
 		CommBA,
 		PlayerComm,
@@ -810,8 +795,6 @@ BEGIN
 		SUM(CASE ProductCode WHEN 'VS'		THEN Turnover ELSE 0 END)	AS TurnoverVS,   
 		SUM(CASE ProductCode WHEN 'CS'		THEN Turnover ELSE 0 END)	AS TurnoverCS,
 		SUM(CASE ProductCode WHEN 'KN'		THEN Turnover ELSE 0 END)	AS TurnoverKN,
-		SUM(CASE ProductCode WHEN 'MGCLC'	THEN Turnover ELSE 0 END)   AS TurnoverMGCLC,
-		SUM(CASE ProductCode WHEN 'MGCRnG'	THEN Turnover ELSE 0 END)   AS TurnoverMGCRnG,
 		SUM(CASE ProductCode WHEN 'AGC'		THEN Turnover ELSE 0 END)	AS TurnoverAGC,
 		SUM(CASE ProductCode WHEN 'VB'		THEN Turnover ELSE 0 END)	AS TurnoverVB,
 		SUM(CASE ProductCode WHEN 'AB'		THEN Turnover ELSE 0 END)	AS TurnoverAB,
@@ -828,8 +811,6 @@ BEGIN
 		SUM(CASE ProductCode WHEN 'VS'		THEN LicenseeWL ELSE 0 END)	AS LicenseeWLVS,   
 		SUM(CASE ProductCode WHEN 'CS'		THEN LicenseeWL ELSE 0 END)	AS LicenseeWLCS,
 		SUM(CASE ProductCode WHEN 'KN'		THEN LicenseeWL ELSE 0 END)	AS LicenseeWLKN,
-		SUM(CASE ProductCode WHEN 'MGCLC'	THEN LicenseeWL ELSE 0 END) AS LicenseeWLMGCLC,
-		SUM(CASE ProductCode WHEN 'MGCRnG'	THEN LicenseeWL ELSE 0 END) AS LicenseeWLMGCRnG,
 		SUM(CASE ProductCode WHEN 'AGC'		THEN LicenseeWL ELSE 0 END)	AS LicenseeWLAGC,
 		SUM(CASE ProductCode WHEN 'VB'		THEN LicenseeWL ELSE 0 END)	AS LicenseeWLVB,
 		SUM(CASE ProductCode WHEN 'AB'		THEN LicenseeWL ELSE 0 END)	AS LicenseeWLAB,
@@ -874,8 +855,6 @@ BEGIN
 		SUM(TurnoverVS)			AS TurnoverVS,   
 		SUM(TurnoverCS)			AS TurnoverCS,
 		SUM(TurnoverKN)			AS TurnoverKN,
-		SUM(TurnoverMGCLC)      AS TurnoverMGCLC,
-		SUM(TurnoverMGCRnG)     AS TurnoverMGCRnG,
 		SUM(TurnoverAGC)		AS TurnoverAGC,
 		SUM(TurnoverVB)			AS TurnoverVB,
 		SUM(TurnoverAB)			AS TurnoverAB,
@@ -892,8 +871,6 @@ BEGIN
 		SUM(LicenseeWLVS)		AS LicenseeWLVS,   
 		SUM(LicenseeWLCS)		AS LicenseeWLCS,
 		SUM(LicenseeWLKN)		AS LicenseeWLKN,
-		SUM(LicenseeWLMGCLC)	AS LicenseeWLMGCLC,
-		SUM(LicenseeWLMGCRnG)	AS LicenseeWLMGCRnG,
 		SUM(LicenseeWLAGC)		AS LicenseeWLAGC,
 		SUM(LicenseeWLVB)		AS LicenseeWLVB,
 		SUM(LicenseeWLAB)		AS LicenseeWLAB,
@@ -918,8 +895,6 @@ BEGIN
 		CAST(SUM(TurnoverVS*e.USD)			AS MONEY)	AS TurnoverVSUSD,
 		CAST(SUM(TurnoverCS*e.USD)			AS MONEY)   AS TurnoverCSUSD,
 		CAST(SUM(TurnoverKN*e.USD)			AS MONEY)   AS TurnoverKNUSD,
-		CAST(SUM(TurnoverMGCLC*e.USD)		AS MONEY)   AS TurnoverMGCLCUSD,
-		CAST(SUM(TurnoverMGCRnG*e.USD)		AS MONEY)   AS TurnoverMGCRnGUSD,
 		CAST(SUM(TurnoverAGC*e.USD)			AS MONEY)   AS TurnoverAGCUSD,
 		CAST(SUM(TurnoverVB*e.USD)			AS MONEY)   AS TurnoverVBUSD,
 		CAST(SUM(TurnoverAB*e.USD)			AS MONEY)   AS TurnoverABUSD,
@@ -936,8 +911,6 @@ BEGIN
 		CAST(SUM(LicenseeWLVS*e.USD)		AS MONEY)	AS LicenseeWLVSUSD,
 		CAST(SUM(LicenseeWLCS*e.USD)		AS MONEY)	AS LicenseeWLCSUSD,
 		CAST(SUM(LicenseeWLKN*e.USD)		AS MONEY)	AS LicenseeWLKNUSD,
-		CAST(SUM(LicenseeWLMGCLC*e.USD)		AS MONEY)	AS LicenseeWLMGCLCUSD,
-		CAST(SUM(LicenseeWLMGCRnG*e.USD)	AS MONEY)	AS LicenseeWLMGCRnGUSD,
 		CAST(SUM(LicenseeWLAGC*e.USD)		AS MONEY)	AS LicenseeWLAGCUSD,
 		CAST(SUM(LicenseeWLVB*e.USD)		AS MONEY)	AS LicenseeWLVBUSD,
 		CAST(SUM(LicenseeWLAB*e.USD)		AS MONEY)	AS LicenseeWLABUSD,
@@ -961,8 +934,6 @@ BEGIN
 		CAST(SUM(TurnoverVS*e.EUR)			AS MONEY)   AS TurnoverVSEUR,  
 		CAST(SUM(TurnoverCS*e.EUR)			AS MONEY)   AS TurnoverCSEUR,
 		CAST(SUM(TurnoverKN*e.EUR)			AS MONEY)   AS TurnoverKNEUR,
-		CAST(SUM(TurnoverMGCLC*e.EUR)		AS MONEY)   AS TurnoverMGCLCEUR,
-		CAST(SUM(TurnoverMGCRnG*e.EUR)		AS MONEY)   AS TurnoverMGCRnGEUR,
 		CAST(SUM(TurnoverAGC*e.EUR)			AS MONEY)   AS TurnoverAGCEUR,
 		CAST(SUM(TurnoverVB*e.EUR)			AS MONEY)   AS TurnoverVBEUR,
 		CAST(SUM(TurnoverAB*e.EUR)			AS MONEY)   AS TurnoverABEUR,
@@ -979,8 +950,6 @@ BEGIN
 		CAST(SUM(LicenseeWLVS*e.EUR)		AS MONEY)	AS LicenseeWLVSEUR,
 		CAST(SUM(LicenseeWLCS*e.EUR)		AS MONEY)	AS LicenseeWLCSEUR,
 		CAST(SUM(LicenseeWLKN*e.EUR)		AS MONEY)	AS LicenseeWLKNEUR,
-		CAST(SUM(LicenseeWLMGCLC*e.EUR)		AS MONEY)	AS LicenseeWLMGCLCEUR,
-		CAST(SUM(LicenseeWLMGCRnG*e.EUR)	AS MONEY)	AS LicenseeWLMGCRnGEUR,
 		CAST(SUM(LicenseeWLAGC*e.EUR)		AS MONEY)	AS LicenseeWLAGCEUR,
 		CAST(SUM(LicenseeWLVB*e.EUR)		AS MONEY)	AS LicenseeWLVBEUR,
 		CAST(SUM(LicenseeWLAB*e.EUR)		AS MONEY)	AS LicenseeWLABEUR,
@@ -1004,8 +973,6 @@ BEGIN
 		CAST(SUM(TurnoverVS*e.GBP)			AS MONEY)   AS TurnoverVSGBP,  
 		CAST(SUM(TurnoverCS*e.GBP)			AS MONEY)   AS TurnoverCSGBP,
 		CAST(SUM(TurnoverKN*e.GBP)			AS MONEY)   AS TurnoverKNGBP,
-		CAST(SUM(TurnoverMGCLC*e.GBP)		AS MONEY)   AS TurnoverMGCLCGBP,
-		CAST(SUM(TurnoverMGCRnG*e.GBP)		AS MONEY)   AS TurnoverMGCRnGGBP,
 		CAST(SUM(TurnoverAGC*e.GBP)			AS MONEY)   AS TurnoverAGCGBP,
 		CAST(SUM(TurnoverVB*e.GBP)			AS MONEY)   AS TurnoverVBGBP,
 		CAST(SUM(TurnoverAB*e.GBP)			AS MONEY)   AS TurnoverABGBP,
@@ -1022,8 +989,6 @@ BEGIN
 		CAST(SUM(LicenseeWLVS*e.GBP)		AS MONEY)	AS LicenseeWLVSGBP,
 		CAST(SUM(LicenseeWLCS*e.GBP)		AS MONEY)	AS LicenseeWLCSGBP,
 		CAST(SUM(LicenseeWLKN*e.GBP)		AS MONEY)	AS LicenseeWLKNGBP,
-		CAST(SUM(LicenseeWLMGCLC*e.GBP)		AS MONEY)	AS LicenseeWLMGCLCGBP,
-		CAST(SUM(LicenseeWLMGCRnG*e.GBP)	AS MONEY)	AS LicenseeWLMGCRnGGBP,
 		CAST(SUM(LicenseeWLAGC*e.GBP)		AS MONEY)	AS LicenseeWLAGCGBP,
 		CAST(SUM(LicenseeWLVB*e.GBP)		AS MONEY)	AS LicenseeWLVBGBP,
 		CAST(SUM(LicenseeWLAB*e.GBP)		AS MONEY)	AS LicenseeWLABGBP,
