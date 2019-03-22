@@ -11,8 +11,6 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_TurnOver]
     @ShowKN			BIT = 0, -- Keno 
 	@ShowBT			BIT = 0, -- Bet Trade 
 	@ShowAB			BIT = 0, -- Allbet
-	@ShowMGCLC 		BIT = 0,
-	@ShowMGCRnG 	BIT = 0,
 	@ShowAGC		BIT = 0,
 	@ShowVB			BIT = 0,
 	@ShowCB			BIT = 0,
@@ -69,6 +67,7 @@ Revisions:
    - 20180418@Amanda: LAP - Integrate PP [RedmineID: #92318]
    - 20180808@Amanda: Remove Racing, Bingo [RedmineID: #99378]
    - 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
+   - 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
 
 Param's Explanation:
     
@@ -114,8 +113,6 @@ BEGIN
 	IF @ShowVS		= 1 INSERT INTO @sporttype(sporttype) VALUES(180)
 	IF @ShowCS		= 1 INSERT INTO @sporttype(sporttype) VALUES(251),(208),(209),(210)
 	IF @ShowKN		= 1 INSERT INTO @sporttype(sporttype) VALUES(202)
-	IF @ShowMGCLC	= 1 INSERT INTO @sporttype(sporttype) VALUES(203)
-	IF @ShowMGCRnG	= 1 INSERT INTO @sporttype(sporttype) VALUES(205)
 	IF @ShowAGC		= 1 INSERT INTO @sporttype(sporttype) VALUES(250)
 	IF @ShowVB		= 1 INSERT INTO @sporttype(sporttype) VALUES(212)
 	IF @ShowAB		= 1 INSERT INTO @sporttype(sporttype) VALUES(211)
