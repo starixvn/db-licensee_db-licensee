@@ -7,8 +7,6 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_Outstanding]
 	@ShowVS			BIT = 0,
 	@ShowCS			BIT = 0, --- RNG Casino	
 	@ShowKN			BIT = 0, --- Keno
-	@ShowMGCLC		BIT = 0,
-	@ShowMGCRnG		BIT = 0,
 	@ShowAGC		BIT = 0,
 	@ShowVB			BIT = 0,
 	@ShowAB			BIT = 0,
@@ -71,6 +69,7 @@ Revisions:
 	- 20180904@Amanda: LAP - Integrate PP [RedmineID: #92318]
 	- 20190329@Amanda: Missing PP data for Bet count column [RedmineID: #109471]
 	- 20190327@Amanda: Fix bug - Add AB back to SP (AB has been deleted before) [RedmineID: #110927]
+	- 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
 
 Param's Explanation:
 	@OrderItem:
@@ -166,16 +165,6 @@ BEGIN
 	IF @ShowKN = 1 -- Keno
 	BEGIN 
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'KN', 'KN')
-	END
-
-	IF @showMGCLC = 1 -- MicroGamming
-	BEGIN 
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'MGCLC', 'MGCLC')
-	END 
-
-	IF @showMGCRnG = 1 -- MicroGamming
-	BEGIN 
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'MGCRNG', 'MGCRNG')
 	END
 
 	IF @ShowAGC = 1 -- AGCasino
@@ -283,9 +272,7 @@ BEGIN
 		g.custid,
 		g.currency,
 		SUM(g.actual_stake) Outstanding, 
-		COUNT(DISTINCT CASE WHEN s.PRoductID IN (6,22,24,32) THEN refno -- count sum tickets for RNG Casino, Voidridge, FW, PP
-					WHEN s.ProductID = 17 THEN transid
-					END) BetCounts
+		COUNT(DISTINCT CASE WHEN s.PRoductID IN (6,22,24, 32) THEN refno END) BetCounts -- count sum tickets for RNG Casino, Voidridge, FW, PP
 	FROM dbo.BettransRNG g WITH (NOLOCK) 
 		INNER JOIN @TempAg a
 			ON g.recommend = a.CustId AND g.Currency = a.Currency 	
