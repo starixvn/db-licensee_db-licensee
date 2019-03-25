@@ -1,1 +1,1 @@
-Risk and Forecast\Setting\Lrf_CustomerUpdMemberBAStatus.sql
+Risk and Forecast\Setting\dbo.Lrf_CustomerUpdMemberBAStatus.sql
