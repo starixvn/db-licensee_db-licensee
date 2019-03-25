@@ -1,0 +1,1 @@
+Risk and Forecast\Setting\Lrf_CustomerUpdMemberBAStatus.sql

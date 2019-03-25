@@ -80,6 +80,7 @@ Revisions:
  - 20151015@Jim: Integrate Sportbook2 (Feature #44759)
  - 20170809@Winnie: Change Data Type of Sporttype [RedmineID: #73545]
  - 20180326@Winnie: Customer Setting - urgent fix to support for long bettype name. [RedmineID: #91216]		
+ - 20190325@Winnie: Update PT of Sportsbook for All Licensee. [RedmineID: #110111]
 Param's Explanation:  
 • @ErrCode:  
     = 0: Update successfully.  
@@ -321,20 +322,20 @@ if
  OR @alivepositiontaking_7  <0  
  OR @alivepositiontaking_8  <0    
  OR @apositiontaking_10 <0  
- OR @apositiontaking_1  >0.9  
- OR @apositiontaking_2  >0.9  
- OR @apositiontaking_3  >0.9  
- OR @apositiontaking_4  >0.9  
- OR @apositiontaking_5  >0.9  
- OR @apositiontaking_6  >0.9  
- OR @apositiontaking_7  >0.9  
- OR @apositiontaking_8  >0.9  
- OR @apositiontaking_9  >0.9  
- OR @apositiontaking_10 >0.9  
- OR @alivepositiontaking_1  >0.9  
- OR @alivepositiontaking_3  >0.9  
- OR @alivepositiontaking_7  >0.9  
- OR @alivepositiontaking_8  >0.9    
+ OR @apositiontaking_1  >1
+ OR @apositiontaking_2  >1
+ OR @apositiontaking_3  >1
+ OR @apositiontaking_4  >1
+ OR @apositiontaking_5  >1  
+ OR @apositiontaking_6  >1
+ OR @apositiontaking_7  >1 
+ OR @apositiontaking_8  >1
+ OR @apositiontaking_9  >1
+ OR @apositiontaking_10 >1  
+ OR @alivepositiontaking_1  >1
+ OR @alivepositiontaking_3  >1  
+ OR @alivepositiontaking_7  >1 
+ OR @alivepositiontaking_8  >1   
    
 BEGIN  
  SELECT @ErrCode = 5  
@@ -396,12 +397,12 @@ if
  OR @v2apositiontaking_8  <0  
  OR @v2apositiontaking_20  <0    
   
- OR @v2apositiontaking_1  >0.9  
- OR @v2apositiontaking_2  >0.9  
- OR @v2apositiontaking_3  >0.9  
- OR @v2apositiontaking_7  >0.9  
- OR @v2apositiontaking_8  >0.9  
- OR @v2apositiontaking_20  >0.9  
+ OR @v2apositiontaking_1  >1 
+ OR @v2apositiontaking_2  >1
+ OR @v2apositiontaking_3  >1
+ OR @v2apositiontaking_7  >1 
+ OR @v2apositiontaking_8  >1
+ OR @v2apositiontaking_20  >1
   
 BEGIN  
  SELECT @ErrCode = 8  
@@ -459,10 +460,10 @@ if
  OR @v3apositiontaking_2  <0  
  OR @v3apositiontaking_3  <0  
  OR @v3apositiontaking_20  <0    
- OR @v3apositiontaking_1  >0.9  
- OR @v3apositiontaking_2  >0.9  
- OR @v3apositiontaking_3  >0.9  
- OR @v3apositiontaking_20  >0.9  
+ OR @v3apositiontaking_1  >1
+ OR @v3apositiontaking_2  >1
+ OR @v3apositiontaking_3  >1 
+ OR @v3apositiontaking_20  >1
    
 BEGIN  
  SELECT @ErrCode = 11  
@@ -515,10 +516,10 @@ if
  OR @v5apositiontaking_2  <0  
  OR @v5apositiontaking_3  <0  
  OR @v5apositiontaking_20  <0    
- OR @v5apositiontaking_1  >0.9  
- OR @v5apositiontaking_2  >0.9  
- OR @v5apositiontaking_3  >0.9  
- OR @v5apositiontaking_20  >0.9  
+ OR @v5apositiontaking_1  >1 
+ OR @v5apositiontaking_2  >1 
+ OR @v5apositiontaking_3  >1
+ OR @v5apositiontaking_20  >1 
    
 BEGIN  
  SELECT @ErrCode = 8  
@@ -569,9 +570,9 @@ if
  @v8apositiontaking_1  <0  
  OR @v8apositiontaking_3  <0  
  OR @v8apositiontaking_20  <0    
- OR @v8apositiontaking_1  >0.9  
- OR @v8apositiontaking_3  >0.9  
- OR @v8apositiontaking_20  >0.9  
+ OR @v8apositiontaking_1  >1  
+ OR @v8apositiontaking_3  >1
+ OR @v8apositiontaking_20  >1  
    
 BEGIN  
  SELECT @ErrCode =16  
@@ -622,10 +623,10 @@ if
  OR @v10apositiontaking_2  <0  
  OR @v10apositiontaking_3  <0  
  OR @v10apositiontaking_20  <0    
- OR @v10apositiontaking_1  >0.9  
- OR @v10apositiontaking_2  >0.9  
- OR @v10apositiontaking_3  >0.9  
- OR @v10apositiontaking_20  >0.9  
+ OR @v10apositiontaking_1  >1
+ OR @v10apositiontaking_2  >1
+ OR @v10apositiontaking_3  >1 
+ OR @v10apositiontaking_20  >1
    
 BEGIN  
  SELECT @ErrCode = 19  
@@ -675,8 +676,8 @@ END
 if   
  @v11apositiontaking_1  <0  
  OR @v11apositiontaking_20  <0    
- OR @v11apositiontaking_1  >0.9  
- OR @v11apositiontaking_20  >0.9  
+ OR @v11apositiontaking_1  >1 
+ OR @v11apositiontaking_20  >1
    
 BEGIN  
  SELECT @ErrCode = 22  
@@ -725,10 +726,10 @@ if
  OR @v99apositiontaking_2  <0  
  OR @v99apositiontaking_3  <0  
  OR @v99apositiontaking_20  <0    
- OR @v99apositiontaking_1  >0.9  
- OR @v99apositiontaking_2  >0.9  
- OR @v99apositiontaking_3  >0.9  
- OR @v99apositiontaking_20  >0.9  
+ OR @v99apositiontaking_1  >1
+ OR @v99apositiontaking_2  >1  
+ OR @v99apositiontaking_3  >1  
+ OR @v99apositiontaking_20  >1
    
 BEGIN  
  SELECT @ErrCode = 25  
@@ -777,7 +778,7 @@ END
 --HR Fixed Odds  
 if   
  @v154apositiontaking_20  <0  
- OR @v154apositiontaking_20  >0.9  
+ OR @v154apositiontaking_20  >1
    
 BEGIN  
  SELECT @ErrCode = 25  
@@ -821,7 +822,7 @@ END
 --- SB2
   if   
  @v44apositiontaking_3  <0  
- OR @v44apositiontaking_3  >0.9  
+ OR @v44apositiontaking_3  >1
    
 BEGIN  
 	 SELECT @ErrCode = 25  
@@ -865,7 +866,7 @@ END
 --Mix Parlay Mixed Sports  
 if   
  @v99apositiontaking_9  <0  
- OR @v99apositiontaking_9  >0.9  
+ OR @v99apositiontaking_9  >1
 BEGIN  
  SELECT @ErrCode = 28  
  SELECT @ErrMsg =  CASE @Language   
