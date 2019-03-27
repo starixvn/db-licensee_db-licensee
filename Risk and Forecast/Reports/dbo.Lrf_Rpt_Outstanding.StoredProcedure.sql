@@ -70,6 +70,7 @@ Revisions:
 	- 20180802@Sophia: use LicenseeBATransaction_active instead of LicenseeBATransaction, change code to use index on DB042 [Redmind: #98631]
 	- 20180904@Amanda: LAP - Integrate PP [RedmineID: #92318]
 	- 20190329@Amanda: Missing PP data for Bet count column [RedmineID: #109471]
+	- 20190327@Amanda: Fix bug - Add AB back to SP (AB has been deleted before) [RedmineID: #110927]
 
 Param's Explanation:
 	@OrderItem:
@@ -303,11 +304,11 @@ BEGIN
 		SUM(g.actual_stake) Outstanding,
 		COUNT(1) BetCounts 
 	FROM dbo.bettransLC g WITH (NOLOCK) 
-		INNER JOIN @TempAg a
-			ON g.recommend = a.CustId AND g.Currency = a.Currency 			
+		INNER JOIN @TempAg a ON g.recommend = a.CustId AND g.Currency = a.Currency
+		INNER JOIN #SportBettype s ON s.bettype = g.gameid
 	WHERE
-		statusid IN (0, 1) 
-		AND EXISTS (SELECT 1 FROM #SportBettype s WHERE s.RefTable = 1 AND s.bettype = g.gameid)		
+		statusid IN (0, 1) AND
+		(s.RefTable = 1 OR s.RefTable = 2) -- AGC & AB
 	GROUP BY g.custid, g.currency
 
 	
