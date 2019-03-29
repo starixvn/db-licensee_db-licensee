@@ -1,4 +1,4 @@
-/*<info serverAlias="DB042-bodb02,DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DB042-bodb02,DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_Outstanding]
     @showSB			BIT = 0,  
