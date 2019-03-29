@@ -69,6 +69,7 @@ Revisions:
 	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
 	- 20180802@Sophia: use LicenseeBATransaction_active instead of LicenseeBATransaction, change code to use index on DB042 [Redmind: #98631]
 	- 20180904@Amanda: LAP - Integrate PP [RedmineID: #92318]
+	- 20190329@Amanda: Missing PP data for Bet count column [RedmineID: #109471]
 
 Param's Explanation:
 	@OrderItem:
@@ -281,7 +282,7 @@ BEGIN
 		g.custid,
 		g.currency,
 		SUM(g.actual_stake) Outstanding, 
-		COUNT(DISTINCT CASE WHEN s.PRoductID IN (6,22,24) THEN refno -- count sum tickets for RNG Casino, Voidridge, FW
+		COUNT(DISTINCT CASE WHEN s.PRoductID IN (6,22,24,32) THEN refno -- count sum tickets for RNG Casino, Voidridge, FW, PP
 					WHEN s.ProductID = 17 THEN transid
 					END) BetCounts
 	FROM dbo.BettransRNG g WITH (NOLOCK) 
