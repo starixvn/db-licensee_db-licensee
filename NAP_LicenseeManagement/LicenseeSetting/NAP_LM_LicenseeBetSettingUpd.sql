@@ -1,3 +1,6 @@
+/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet,bodbDownlineNet,bodbExtAccNet,bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
+USE CustDB
+GO
 ALTER PROCEDURE [dbo].[NAP_LM_LicenseeBetSettingUpd] 
 	@CustID INT
 	,@Sporttype INT
@@ -23,7 +26,7 @@ AS
 	Original:
 
 	Revisions:
-
+		- 20190412@Winnie: Licesee Management-Licensee setting - Cannot update betting limit SMA only for big line  - Redmine: 96951
 	Param's Explanation:
 	Example:	DECLARE @ErrCode INT = 0, @ErrMsg NVARCHAR(4000) = ''
 				EXEC NAP_LM_LicenseeBetSettingUpd @CustID = 16947245, @Sporttype = 151, @Bettype = 31, @MinBet = 25, @MaxBet = 205, @MaxPerMatch = 2005, @ExistedMember = 1, @ErrCode = @ErrCode OUTPUT, @ErrMsg = @ErrMsg OUTPUT
@@ -38,11 +41,14 @@ BEGIN
 	SET @startRun = getdate()
 	SELECT @ErrCode = 0, @ErrMsg =''
 
-	EXEC DBEXT.bodb02.dbo.NAP_LM_CustomerSelCheckAllowedDownlines
-		@custid = @CustID
-		,@Language = 'E'
-		,@ErrMsg = @ErrMsg OUTPUT
-		,@ErrCode=@ErrCode OUTPUT
+	IF @ExistedMember=1
+	BEGIN
+		EXEC DBEXT.bodb02.dbo.NAP_LM_CustomerSelCheckAllowedDownlines
+			@custid = @CustID
+			,@Language = 'E'
+			,@ErrMsg = @ErrMsg OUTPUT
+			,@ErrCode=@ErrCode OUTPUT
+	END
 
 	IF @ErrCode <> 0 
 		RETURN 
