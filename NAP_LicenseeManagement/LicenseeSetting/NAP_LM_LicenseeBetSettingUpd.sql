@@ -317,8 +317,4 @@ BEGIN
 	END CATCH		
 
 END
-GRANT EXECUTE ON [dbo].[NAP_LM_LicenseeBetSettingUpd] TO [bodbadminNet] AS [dbo]
 GO
-GRANT EXECUTE ON [dbo].[NAP_LM_LicenseeBetSettingUpd] TO [bodbLicenseeNet] AS [dbo]
-GO
-GRANT VIEW DEFINITION ON [dbo].[NAP_LM_LicenseeBetSettingUpd] TO [vnteam] AS [dbo]
