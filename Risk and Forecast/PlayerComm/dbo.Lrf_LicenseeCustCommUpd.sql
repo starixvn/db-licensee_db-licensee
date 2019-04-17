@@ -36,6 +36,7 @@ AS
 		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
 		- 20180927@Winnie: Remove AllBet [RedmineID: #99378]
 		- 20181205@Winnie: LAP-Security Risks found_settings [RedmineID: #105701]
+		- 20190417@Winnie: Customer Comm - Cannot move customer to selected group comm in case member have 'None' group [RedmineID: #111980]
 	Param's Explanation:
 */ 
 BEGIN
@@ -46,10 +47,16 @@ BEGIN
 	SELECT RTRIM(LTRIM(VAL)) 
 	FROM Lrf_f_StringSplit(@strCustIDOriginal,',')
 
+	CREATE TABLE #tempAgent (CustID INT PRIMARY KEY)
+	INSERT INTO #tempAgent(CustID)
+	SELECT DISTINCT recommend
+	FROM CustDB.dbo.Customer c WITH(NOLOCK) 
+		INNER JOIN #tempCust t ON c.custid=t.CustID
+
 	IF EXISTS(	
 		SELECT 1
-		FROM #tempCust t
-			LEFT JOIN LicenseeCustComm b WITH (NOLOCK) ON t.CustID=b.CustID AND b.LicenseeID=@LicenseeID
+		FROM #tempAgent t
+			LEFT JOIN LicenseeCust b WITH (NOLOCK) ON t.CustID=b.CustID AND b.LicenseeID=@LicenseeID
 		WHERE b.CustID IS NULL)
 	BEGIN
 		SELECT @ErrCode=100
