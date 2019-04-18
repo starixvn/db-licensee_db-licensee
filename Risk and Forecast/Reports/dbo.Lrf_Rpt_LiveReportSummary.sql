@@ -65,6 +65,7 @@ Revisions:
 	- 20181127@Paul: Add OPTION(RECOMPILE) [RedmineID: #105398]
 	- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
 	- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
+	- 20190304@Amanda: Integrate PP Promotion Prize [RedmineID: #109471]
 
 Param's Explanation:
 	+ @IsLive : indicate that whether the report will get live data or not
@@ -326,7 +327,7 @@ BEGIN
 				SUM(- 1 * (b.winlost - b.actual_stake)) AS LicenseeWL,
 				SUM(comm) AS Comm,
 				SUM(b.playercomm) AS PlayerComm,
-				- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd,
+				- SUM(CASE WHEN b.bettype = 4300 THEN b.winlost - b.actual_stake ELSE b.awinlost + b.winlost - b.actual_stake + b.comm END) as AmountDueTo3rd,
 				COUNT(b.transid) BetCount
 			FROM
 				dbo.bettrans b WITH (NOLOCK)
@@ -468,7 +469,7 @@ BEGIN
 				- SUM(b.winloss) AS LicenseeWL,
 				SUM(b.CommissionA) Comm,
 				SUM( b.CommissionP) PlayerComm,
-				- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,
+				- SUM(CASE WHEN b.bettype = 4300 THEN b.winloss ELSE b.winloss + b.WinlossA + b.CommissionA END) as AmountDueTo3rd,
 				SUM(b.betcount) BetCount
 			FROM
 				bodb_licenseereport.dbo.rpt_Betting b WITH ( NOLOCK )

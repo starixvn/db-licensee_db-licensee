@@ -66,6 +66,7 @@ Revisions:
 	- 20181101@Amanda: Remove parameter @LicenseeId [Redmine: #103935]
 	- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
 	- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
+	- 20190304@Amanda: Integrate PP Promotion Prize [RedmineID: #109471]
 
 Param's Explanation:
 	@Liveindicator : indicate that whether the report will get live data or not
@@ -268,7 +269,7 @@ BEGIN
 								+ '- SUM(b.winlost - b.actual_stake) AS LicenseeWL,' + CHAR(13)
 								+ 'SUM (comm) AS Comm,' + CHAR(13)
 								+ 'SUM (playercomm) AS PlayerComm,' + CHAR(13)
-								+ '- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd,' + CHAR(13)
+								+ '- SUM(CASE WHEN b.bettype = 4300 THEN b.winlost - b.actual_stake ELSE b.awinlost + b.winlost - b.actual_stake + b.comm END) AmountDueTo3rd,' + CHAR(13)
 								+ 'COUNT(b.transid) BetCount' + CHAR(13)
 
 				SELECT	@sql = @sql + 'FROM bettrans b  WITH (NOLOCK)' + CHAR(13)
@@ -492,7 +493,7 @@ BEGIN
 								+ '- SUM(b.winloss) AS LicenseeWL,' + CHAR(13)
 								+ 'SUM(b.CommissionA) Comm,' + CHAR(13)
 								+ 'SUM(b.CommissionP  ) PlayerComm,' + CHAR(13)
-								+ '- SUM(b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13)
+								+ '- SUM(CASE WHEN b.bettype = 4300 THEN b.winloss ELSE b.winloss+b.WinlossA+b.CommissionA END) AmountDueTo3rd,' + CHAR(13)
 								+ 'SUM(b.betcount) BetCount' + CHAR(13)
 								+ 'FROM bodb_licenseereport.dbo.rpt_Betting b WITH ( NOLOCK )' + CHAR(13)
 								+ 'INNER JOIN #LicenseeList ll ON b.SiteID = ll.LicenseeID AND b.CurrencyID = ll.Currency' + CHAR(13)

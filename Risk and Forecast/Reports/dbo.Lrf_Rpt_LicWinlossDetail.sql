@@ -83,6 +83,7 @@ AS
 		- 20180807@Amanda: Remove Racing, Bingo and Old(@IsOld) data [RedmineID: #99378]
 		- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
 		- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
+		- 20190304@Amanda: Integrate PP Promotion Prize [RedmineID: #109471]
 
 	Param's Explanation:  
 	  + @CustID: SuperID  
@@ -151,7 +152,8 @@ BEGIN
 		WLBoughtTicket		MONEY,
 		BuyBackAmtSB		MONEY,
 		BuyBackAmtBA		MONEY,
-		CashOutComm			MONEY
+		CashOutComm			MONEY,
+		PromotionPrize		INT
 	)
 
 	DECLARE @tempAg			TABLE (custID INT, Currency INT)
@@ -358,7 +360,8 @@ BEGIN
 				0 AS WLBoughtTicket,
 				0 AS BuyBackAmtSB,
 				0 AS BuyBackAmtBA,
-				0 AS CashOutComm
+				0 AS CashOutComm,
+				0 AS PromotionPrize
 			FROM 
 				dbo.bettrans b WITH ( NOLOCK) 
 				INNER JOIN @TempAg tma ON tma.CustID = b.recommend AND tma.Currency = b.currency
@@ -430,7 +433,8 @@ BEGIN
 				0 AS WLBoughtTicket,
 				0 AS BuyBackAmtSB,
 				0 AS BuyBackAmtBA,
-				0 AS CashOutComm
+				0 AS CashOutComm,
+				0 AS PromotionPrize
 			FROM 	
 				bettrans b WITH ( NOLOCK)
 				INNER JOIN @TempAg a ON b.recommend = a.custid AND b.currency = a.currency 
@@ -501,7 +505,8 @@ BEGIN
 				SUM(CASE WHEN b.bettype = 902 THEN b.winlost-b.actual_stake ELSE 0 END) AS WLBoughtTicket,
 				SUM(CASE WHEN b.bettype = 902 AND transid2 = 0 THEN b.actual_stake ELSE 0 END) AS BuyBackAmtSB,
 				SUM(CASE WHEN b.bettype = 902 AND transid2 = 1 THEN b.actual_stake ELSE 0 END) AS BuyBackAmtBA,
-				0 AS CashOutComm
+				0 AS CashOutComm,
+				0 AS PromotionPrize
 			FROM 	
 				Bettrans b WITH (NOLOCK)
 				INNER JOIN @TempAg a ON b.recommend = a.custid AND b.currency = a.currency 
@@ -562,7 +567,8 @@ BEGIN
 				0 AS WLBoughtTicket,
 				0 AS BuyBackAmtSB,
 				0 AS BuyBackAmtBA,
-				SUM(CASE WHEN b.bettype = 913 THEN b.awinlost ELSE 0 END) AS CashOutComm
+				SUM(CASE WHEN b.bettype = 913 THEN b.awinlost ELSE 0 END) AS CashOutComm,
+				0 AS PromotionPrize
 			FROM 	
 				Bettrans b WITH (NOLOCK)
 				INNER JOIN @TempAg a ON b.recommend = a.custid AND b.currency = a.currency 
@@ -697,7 +703,8 @@ BEGIN
 				0 AS WLBoughtTicket,
 				0 AS BuyBackAmtSB,
 				0 AS BuyBackAmtBA,
-				0 AS CashOutComm
+				0 AS CashOutComm,
+				SUM(CASE WHEN b.bettype = 4300 THEN 1 ELSE 0 END) AS PromotionPrize
 			FROM 	
 				Bettrans b WITH ( NOLOCK)
 				INNER JOIN @TempAg a   ON b.recommend = a.custid AND a.Currency = b.currency
@@ -776,7 +783,8 @@ BEGIN
 				0 AS WLBoughtTicket,
 				0 AS BuyBackAmtSB,
 				0 AS BuyBackAmtBA,
-				0 AS CashOutComm
+				0 AS CashOutComm,
+				0 AS PromotionPrize
 			FROM 
 				bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
 				INNER JOIN @TempAg a ON b.recommend = a.custID AND b.Currency = a.Currency 
@@ -983,7 +991,8 @@ BEGIN
 				0 AS WLBoughtTicket,
 				0 AS BuyBackAmtSB,
 				0 AS BuyBackAmtBA,
-				0 AS CashOutComm
+				0 AS CashOutComm,
+				SUM(CASE WHEN b.bettype = 4300 THEN 1 ELSE 0 END) AS PromotionPrize
 			FROM
 				bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
 				INNER JOIN @TempAg a    ON b.recommend = a.custID AND b.Currency = a.Currency 
@@ -1050,7 +1059,8 @@ BEGIN
 				SUM(CASE WHEN b.bettype = 902 THEN b.winlost ELSE 0 END) AS WLBoughtTicket,
 				SUM(CASE WHEN b.bettype = 902 THEN BuyBackAmt ELSE 0 END) AS BuyBackAmtSB,
 				SUM(CASE WHEN b.bettype = 902 THEN BABuyBackAmt ELSE 0 END) AS BuyBackAmtBA,
-				0 AS CashOutComm
+				0 AS CashOutComm,
+				0 AS PromotionPrize
 			FROM 
 				bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
 				INNER JOIN @TempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
@@ -1112,7 +1122,8 @@ BEGIN
 				0 AS WLBoughtTicket,
 				0 AS BuyBackAmtSB,
 				0 AS BuyBackAmtBA,
-				SUM(CASE WHEN b.bettype = 913 THEN b.awinlost ELSE 0 END) AS CashOutComm
+				SUM(CASE WHEN b.bettype = 913 THEN b.awinlost ELSE 0 END) AS CashOutComm,
+				0 AS PromotionPrize
 			FROM 
 				bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
 				INNER JOIN @TempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
@@ -1302,7 +1313,9 @@ BEGIN
 		CAST(SUM(WLBetTicket+WLBoughtTicket-BetTradeComm*e.eGBP) AS MONEY)	AS AmtDueToBTGBP, 
 		CAST(SUM(BuyBackAmtSB*e.eGBP)		AS MONEY)	AS BuyBackAmtSBGBP,
 		CAST(SUM(BuyBackAmtBA*e.eGBP)		AS MONEY)	AS BuyBackAmtBAGBP,
-		CAST(SUM(CashOutComm*e.eGBP)	AS MONEY)	AS CashOutCommGBP
+		CAST(SUM(CashOutComm*e.eGBP)	AS MONEY)	AS CashOutCommGBP,
+		
+		SUM(PromotionPrize)								AS PromotionPrize
 	FROM
 		#SAgWinLoss w   
 		INNER JOIN Customer c WITH (NOLOCK) ON w.custid = c.custid		
