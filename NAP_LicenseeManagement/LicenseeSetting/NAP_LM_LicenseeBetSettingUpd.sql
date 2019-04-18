@@ -1,4 +1,7 @@
-ALTER PROCEDURE [dbo].[NAP_LM_LicenseeBetSettingUpd] 
+/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet,bodbLicenseeNet" viewers="" isFunction="0"></info>*/
+USE CustDB
+GO
+CREATE PROCEDURE [dbo].[NAP_LM_LicenseeBetSettingUpd] 
 	@CustID INT
 	,@Sporttype INT
 	,@Bettype INT = 0
@@ -23,7 +26,8 @@ AS
 	Original:
 
 	Revisions:
-
+	   - 20150630@Daniel: Migrate custDB to new server DBCus [Redmine:#36216] - Separate exec sp	update cust info
+	   - 20190412@Winnie: Licesee Management-Licensee setting - Cannot update betting limit SMA only for big line  - Redmine: 96951
 	Param's Explanation:
 	Example:	DECLARE @ErrCode INT = 0, @ErrMsg NVARCHAR(4000) = ''
 				EXEC NAP_LM_LicenseeBetSettingUpd @CustID = 16947245, @Sporttype = 151, @Bettype = 31, @MinBet = 25, @MaxBet = 205, @MaxPerMatch = 2005, @ExistedMember = 1, @ErrCode = @ErrCode OUTPUT, @ErrMsg = @ErrMsg OUTPUT
@@ -37,13 +41,14 @@ BEGIN
 	DECLARE @duration INT
 	SET @startRun = getdate()
 	SELECT @ErrCode = 0, @ErrMsg =''
-
-	EXEC DBEXT.bodb02.dbo.NAP_LM_CustomerSelCheckAllowedDownlines
+	IF @ExistedMember=1
+	BEGIN
+		EXEC DBEXT.bodb02.dbo.NAP_LM_CustomerSelCheckAllowedDownlines
 		@custid = @CustID
 		,@Language = 'E'
 		,@ErrMsg = @ErrMsg OUTPUT
 		,@ErrCode=@ErrCode OUTPUT
-
+	END
 	IF @ErrCode <> 0 
 		RETURN 
 	
@@ -67,8 +72,29 @@ BEGIN
 			WHERE isfinished = 0
 
 			SELECT @rowcnt = @@rowcount	
-
-			EXEC Acc_CustSetting3rd_11 @ids = @ids, @srecommend = @CustID, @Sporttype = @Sporttype, @Bettype = @Bettype, @MinBet = @MinBet, @MaxBet = @MaxBet, @MaxPerMatch = @MaxPerMatch, @MaxPerBall = @MaxPerBall, @ExistedMember = @ExistedMember, @Enable = @Enable, @EnableDownline = @EnableDownline
+		  
+			 --add update cust info exec rep
+			 			 			 			 EXEC [dbo].[Acc_CustomerInfo_Execrep_07]
+				 @ids = @ids
+				 ,@Sporttype = @Sporttype
+				 ,@Bettype = @Bettype
+				 ,@MaxPerMatch = @MaxPerMatch
+				 ,@MaxPerBall = @MaxPerBall
+				 ,@ExistedMember = @ExistedMember
+				 ,@Enable = @Enable
+				 ,@EnableDownline = @EnableDownline
+				 
+												EXEC Acc_CustSetting3rd_11 
+				@ids = @ids, 
+				@srecommend = @CustID, 
+				@Sporttype = @Sporttype, 
+				@Bettype = @Bettype, 
+				@MinBet = @MinBet, 
+				@MaxBet = @MaxBet, 
+				@MaxPerMatch = @MaxPerMatch, 
+				@ExistedMember = @ExistedMember, 
+				@Enable = @Enable, 
+				@EnableDownline = @EnableDownline
 
 			IF @rowcnt < 10000 BREAK
 
@@ -134,10 +160,4 @@ BEGIN
 			@duration = @duration	
 	END CATCH		
 END
-
 GO
-GRANT EXECUTE ON [dbo].[NAP_LM_LicenseeBetSettingUpd] TO [bodbadminNet] AS [dbo]
-GO
-GRANT EXECUTE ON [dbo].[NAP_LM_LicenseeBetSettingUpd] TO [bodbLicenseeNet] AS [dbo]
-GO
-GRANT VIEW DEFINITION ON [dbo].[NAP_LM_LicenseeBetSettingUpd] TO [vnteam] AS [dbo]
