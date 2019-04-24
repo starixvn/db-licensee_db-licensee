@@ -64,7 +64,7 @@ BEGIN
 			INNER JOIN dbo.LogAction a WITH(NOLOCK) ON a.actionid = l.actionid
 		WHERE l.Logdate >= @FromDate AND l.logdate < @logDataToDate AND l.actionid = 2611 AND l.custid = @Licenseeid
 	END
-	IF @ToDate < @__archiveDate
+	ELSE IF @ToDate < @__archiveDate
 	BEGIN
 		INSERT INTO #log (LogId, LogDate, UserId, ActionId, ActionName, TrackingValue, TrackingValueOld)
 		SELECT	l.Logid,
