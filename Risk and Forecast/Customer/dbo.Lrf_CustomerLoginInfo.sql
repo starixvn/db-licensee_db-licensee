@@ -1,5 +1,4 @@
 ﻿/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
-
 ALTER PROCEDURE [dbo].[Lrf_CustomerLoginInfo]
 	@LicenseeID		INT,
 	@CustID			INT,
@@ -18,6 +17,7 @@ AS
 		- 20131218@winnie: change from db06 to DBARC Alias
 		- 20180711@Amanda: get username of LAP if log data is after LAP launch data [#97994]
 		- 20181010@Sophia: add DBLOG for table UserLog_RunSP [redmine: 99855]
+		- 20190411@Lukas: archive a part of old log records to new database
 	Param's Explanation:	
 */
 BEGIN
@@ -31,6 +31,15 @@ BEGIN
 	WHERE	CustID = @CustID
 			AND ActionID = 2407
 	ORDER BY LogDate DESC
+
+	IF @SpecialLevelUpdateByID IS NULL --- read further from log archive
+	BEGIN
+		SELECT TOP 1 @SpecialLevelUpdateByID = UserID, @SpecialLevelUpdateDate = LogDate
+		FROM DBLOG.bodb_CustomerLog_Archive.dbo.UserLog_RunSP WITH (NOLOCK)
+		WHERE	CustID = @CustID
+				AND ActionID = 2407
+		ORDER BY LogDate DESC
+	END
 	
 	IF ISNULL(@SpecialLevelUpdateByID,0) <> 0
 	BEGIN
@@ -127,5 +136,3 @@ BEGIN
 	FROM dbo.Customer WITH(NOLOCK)
 	WHERE CustID = @CustID
 END
-GO
-
