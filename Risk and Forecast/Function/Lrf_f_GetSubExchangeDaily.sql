@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02,DB042-bodb02" selecters="bodbLicenseeNet,bodbAdminNet,Dot_Casino" viewers="vnteam" isFunction="1" isNested="0"></info>*/
+/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02,DB042-bodb02" selecters="bodbLicenseeNet,bodbAdminNet,Dot_Casino" viewers="" isFunction="1" isNested="0"></info>*/
 ALTER FUNCTION [dbo].[Lrf_f_GetSubExchangeDaily]
     (
       @FromDate			SMALLDATETIME,
@@ -17,6 +17,7 @@ RETURNS @tempDate TABLE (
 	HKD									FLOAT, 
 	THB									FLOAT, 
 	IDR									FLOAT, 
+	INH									FLOAT, 
 	Actualrate							FLOAT
 	)
 AS
@@ -29,6 +30,7 @@ AS
 	Param's Explanation:  			
 	- 20171206@Don: Initial version
 	- 20181008@Joseph: Deploy to 2 servers DBACC-bodb02,DB042.bodb02 (used by SP betlists) [Redmine #80941]
+	- 20190426@Joseph: Add INH base currency [Redmine: #112603]
 
 */
 BEGIN
@@ -92,6 +94,7 @@ BEGIN
 			HKD, 
 			THB, 
 			IDR, 
+			INH,
 			Actualrate
 	) 
 		SELECT 
@@ -107,6 +110,7 @@ BEGIN
 			ex.HKD, 
 			ex.THB, 
 			ex.IDR / 1000 AS IDR, 
+			ex.VND / 1000 AS INH, 
 			ex.Actualrate
 		FROM dbo.ExchangeDailyOanda ex WITH(NOLOCK)
 			INNER JOIN @tblDate dt ON ex.ExchangeDate = dt.lastexchangeday
