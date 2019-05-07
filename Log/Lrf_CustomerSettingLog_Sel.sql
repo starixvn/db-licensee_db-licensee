@@ -205,20 +205,19 @@ BEGIN
 	END
 	ELSE IF @FromDate >= @LapLaunchDate
 	BEGIN
-		SELECT Logid, LogDate, u.UserID AS Editedby, Actionid, actionnameen AS ActionName, trackingvalue, trackingvalue2 AS trackingvalueold
+		SELECT Logid, LogDate, u.Editedby AS Editedby, Actionid, actionnameen AS ActionName, trackingvalue, trackingvalue2 AS trackingvalueold
 		FROM #__logData l
 			INNER JOIN #__lapUsers u ON u.UserId = l.userid
 		ORDER BY l.logid DESC
 	END
 	ELSE
 	BEGIN
-		SELECT Logid, LogDate, u.UserID AS Editedby, Actionid, actionnameen AS ActionName, trackingvalue, trackingvalue2 AS trackingvalueold
+		SELECT Logid, LogDate, u.username AS Editedby, Actionid, actionnameen AS ActionName, trackingvalue, trackingvalue2 AS trackingvalueold
 		FROM #__logData l
-			INNER JOIN #__lapUsers u ON u.UserId = l.userid
-		WHERE l.LogDate < @LapLaunchDate
+			INNER JOIN bodb_licensee.dbo.users u WITH(NOLOCK) ON u.userid = l.userid
 
 		UNION ALL
-		SELECT Logid, LogDate, u.UserID AS Editedby, Actionid, actionnameen AS ActionName, trackingvalue, trackingvalue2 AS trackingvalueold
+		SELECT Logid, LogDate, u.Editedby AS Editedby, Actionid, actionnameen AS ActionName, trackingvalue, trackingvalue2 AS trackingvalueold
 		FROM #__logData l
 			INNER JOIN #__lapUsers u ON u.UserId = l.userid
 		WHERE l.LogDate >= @LapLaunchDate
