@@ -68,6 +68,7 @@ AS
 	- 20181221@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
 	- 20190215@Joseph: HotFix: Licensee WL data isn't included PP ( range: rptLicWinloss2) [RedmineID: #108934]
 	- 20190304@Amanda: Integrate PP Promotion Prize [RedmineID: #109471]
+	- 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
 
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -420,7 +421,7 @@ BEGIN
 						ELSE 1 END
 				),     
 				SUM(b.winlost),  
-				SUM(CASE WHEN (b.sporttype in(0,161,164,251,202,203,205,208,209,210,212,220,248))  THEN -1 * b.winlost 
+				SUM(CASE WHEN (b.sporttype in(0,161,164,251,202,208,209,210,212,220,248))  THEN -1 * b.winlost 
 						ELSE 0 END
 					) AS LicenseeWL,
 				SUM(comm ) as Comm,

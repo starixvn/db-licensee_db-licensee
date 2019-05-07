@@ -10,8 +10,6 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
 	@ShowVS			BIT = 0,
 	@ShowCS			BIT = 0, -- RNG Casino
 	@ShowKN			BIT = 0,
-	@ShowMGCLC		BIT = 0,
-	@ShowMGCRnG		BIT = 0,
 	@ShowBT			BIT = 0,
 	@ShowAGC		BIT = 0,
 	@ShowVB			BIT = 0,
@@ -100,6 +98,7 @@ AS
 		- 20180808@Amanda: Remove Racing, Bingo and Old(@IsOld) data [RedmineID: #99378]
 		- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
 		- 20190304@Amanda: Integrate PP Promotion Prize [RedmineID: #109471]
+		- 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
 
 	Param's Explanation:
 		@OrderItem:
@@ -217,16 +216,6 @@ BEGIN
 	IF @ShowKN = 1 -- Keno
 	BEGIN 
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'KN', 'KN')
-	END
-
-	IF @ShowMGCLC = 1 -- MicroGamming
-	BEGIN 
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'MGCLC', 'MGCLC')
-	END
-
-	IF @ShowMGCRnG = 1 -- MicroGamming
-	BEGIN 
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'MGCRNG', 'MGCRNG')
 	END
 
 	IF @ShowBT = 1 -- bettrade
@@ -419,7 +408,7 @@ BEGIN
 				GROUP BY b.CustID, b.winlostdate, b.currency	 
 			END
 
-			IF 1 IN (@ShowNG, @ShowVS, @ShowCS, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowBT, @ShowAGC, @ShowVb,@ShowAB,@ShowFW, @ShowCO, @ShowVS2, @ShowLT, @ShowPP)
+			IF 1 IN (@ShowNG, @ShowVS, @ShowCS, @ShowKN, @ShowBT, @ShowAGC, @ShowVb,@ShowAB,@ShowFW, @ShowCO, @ShowVS2, @ShowLT, @ShowPP)
 			BEGIN
 				INSERT INTO #TempData
 				SELECT
@@ -486,7 +475,7 @@ BEGIN
 			END
 
 			--exclude BA tickets
-			IF 1 IN (@ShowSB, @ShowNG, @ShowVS, @ShowCS, @ShowKN, @ShowMGCLC, @ShowMGCRnG, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowVS2, @ShowLT, @ShowPP)
+			IF 1 IN (@ShowSB, @ShowNG, @ShowVS, @ShowCS, @ShowKN, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowVS2, @ShowLT, @ShowPP)
 			BEGIN
 				INSERT INTO #TempData
 				SELECT

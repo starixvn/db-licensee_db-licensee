@@ -18,6 +18,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 		- 20180807@Amanda: Remove Racing, Bingo [RedmineID: #99378]
 		- 20181218@Joseph: Add New Sport Virtual Soccer Asian Cup [Redmine: #105409]
 		- 20181227@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
+		- 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
 
 	Paramters Explanation:  
 		@ProductID: list of products  
@@ -34,10 +35,8 @@ RETURN
 					(9, 'P2P', 253, 0),	-- P2P
 					(11, 'AGC', 250, 0), -- AG Casino
 					(12, 'GD ', 255, 0), -- Gold Deluxe 
-					(13, 'MGCLC', 203, 0),	-- Microgaming - Live Casino 
 					(14, 'VG', 249, 0),	 -- Macau
-					(15, 'CB', 204, 0),	 -- Colossus Bets  
-					(17, 'MGCRNG', 205, 0),	-- Microgaming - Live Casino					
+					(15, 'CB', 204, 0),	 -- Colossus Bets
 					(21, 'AB', 211, 0),	-- Allbet  
 					(22, 'VB', 212, 0), -- Macau Games 
 					(24, 'FW', 219, 0), -- Fishing World  

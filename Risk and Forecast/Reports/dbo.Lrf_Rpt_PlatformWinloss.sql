@@ -9,8 +9,6 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_PlatformWinloss]
 	@ShowVS		BIT=0,
 	@ShowKN		BIT=0,
 	@ShowCS		BIT=0,
-	@ShowMGCLC	BIT=0,
-	@ShowMGCRNG	BIT=0,
 	@ShowVB		BIT=0,		
 	@ShowAB		BIT=0,
 	@ShowFW		BIT=0,
@@ -47,6 +45,7 @@ AS
 		- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
 		- 20181211@Joseph: New betfrom Mobile China View (c) [RedmineID: #106088]
 		- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
+		- 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
 
 	Param's Explanation:  
 	  + @PlatformType:  0: All  
@@ -64,8 +63,6 @@ AS
 	  + @ShowNG: Show Number game bets
 	  + @ShowBA: Show Bet Aggregator bets (combined WITH Sportsbook or Number Game)
 	  + @ShowCS: Show RNG Casino (OneRNG)
-	  + @ShowMGCLC: Show MicroGamming Live Casino
-	  + @ShowMGCRNG: Show MicroGamming RNG Casino
 	  + @ShowKN: Show Keno
 	  + @ShowVB: Show Voidbridge
 	  + @ShowAB: Show Allbet
@@ -215,26 +212,6 @@ BEGIN
 				'
 
 		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 1501 AND 1599)'
-	END 
-
-	IF @showMGCLC =1 -- MicroGamming LC
-	BEGIN 
-		SET @SportTypeSQL = @SportTypeSQL + ', (203, ''MGCLC'')'
-
-		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 2001 AND 2007 THEN ''MGCLC''
-				'
-
-		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 2001 AND 2007)'
-	END 
-
-	IF @showMGCRnG =1 -- MicroGamming RNG
-	BEGIN 
-		SET @SportTypeSQL = @SportTypeSQL + ', (205, ''MGCRNG'')'
-
-		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 2008 AND 2009 THEN ''MGCRNG''
-				'
-
-		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 2008 AND 2009)'
 	END
 
 	IF @showVB = 1 -- Voidbridge
@@ -425,7 +402,7 @@ BEGIN
 		END
 	
 	
-		IF (@ShowNG=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @showMGCLC =1 OR @showMGCRnG =1 OR @ShowVB = 1 OR @ShowAB =1  OR @ShowFW =1 OR @ShowVS2 = 1 OR @ShowLT = 1 OR @ShowPP = 1)
+		IF (@ShowNG=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @ShowVB = 1 OR @ShowAB =1  OR @ShowFW =1 OR @ShowVS2 = 1 OR @ShowLT = 1 OR @ShowPP = 1)
 		BEGIN
 			INSERT INTO #WinLoss (Winlostdate, Currency, ProductPrefix, PlatformType, Turnover, Winlost, LicenseeWL, playercomm, BetCount)
 			SELECT 
@@ -531,7 +508,7 @@ BEGIN
 			
 		END
 
-		IF (@showSB = 1 or @ShowNG = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @showMGCLC =1 OR @showMGCRnG =1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW =1 OR @ShowVS2 = 1 OR @ShowLT = 1 OR @ShowPP = 1)
+		IF (@showSB = 1 or @ShowNG = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW =1 OR @ShowVS2 = 1 OR @ShowLT = 1 OR @ShowPP = 1)
 		BEGIN
 			INSERT INTO #WinLoss (Winlostdate, Currency, ProductPrefix, PlatformType, Turnover, Winlost, LicenseeWL, playercomm, BetCount)
 			SELECT 
