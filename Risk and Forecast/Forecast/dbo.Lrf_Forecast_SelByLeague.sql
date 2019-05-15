@@ -754,7 +754,6 @@ Param's Explanation:
                                                 INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
 														ON e.exchangeid = b.currency
                                                 INNER JOIN Match AS M WITH ( NOLOCK ) ON b.MatchID = M.MatchID
-                                                INNER JOIN Odds AS O WITH ( NOLOCK ) ON b.OddsID = O.OddsID
                                                 INNER JOIN League AS L WITH ( NOLOCK ) ON M.LeagueID = L.LeagueID
                                                               AND L.LeagueID = @LeagueID
                                       WHERE     b.recommend IN ( SELECT custid FROM @TempAg )
@@ -982,7 +981,6 @@ Param's Explanation:
 														ON  e.exchangeid = b.currency
                                                 INNER JOIN Match AS M WITH ( NOLOCK ) ON b.MatchID = M.MatchID
                                                               AND M.EventStatus = 'running'
-                                                INNER JOIN Odds AS O WITH ( NOLOCK ) ON b.OddsID = O.OddsID
                                                 INNER JOIN League AS L WITH ( NOLOCK ) ON M.LeagueID = L.LeagueID
                                                               AND L.LeagueID = @LeagueID
                                       WHERE     b.recommend IN ( SELECT custid FROM @TempAg )
@@ -1209,7 +1207,6 @@ Param's Explanation:
                                                 INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
 															ON e.exchangeid = b.currency
                                                 INNER JOIN Match AS M WITH ( NOLOCK ) ON b.MatchID = M.MatchID
-                                                INNER JOIN Odds AS O WITH ( NOLOCK ) ON b.OddsID = O.OddsID
                                                 INNER JOIN League AS L WITH ( NOLOCK ) ON M.LeagueID = L.LeagueID
                                                               AND L.LeagueID = @LeagueID
                                       WHERE     b.recommend IN ( SELECT custid FROM @TempAg )
@@ -1442,7 +1439,6 @@ Param's Explanation:
 															ON e.exchangeid = b.currency
                                                 INNER JOIN Match AS M WITH ( NOLOCK ) ON b.MatchID = M.MatchID
                                                               AND M.EventStatus = 'running'
-                                                INNER JOIN Odds AS O WITH ( NOLOCK ) ON b.OddsID = O.OddsID
                                                 INNER JOIN League AS L WITH ( NOLOCK ) ON M.LeagueID = L.LeagueID
                                                               AND L.LeagueID = @LeagueID
                                       WHERE     b.recommend IN ( SELECT custid FROM @TempAg )
