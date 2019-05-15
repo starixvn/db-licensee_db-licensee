@@ -1,5 +1,4 @@
-﻿/*<info serverAlias="DBLOG-bodb_CustomerLog" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
-
+﻿/*<info serverAlias="DBLOG-bodb_CustomerLog" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE  [dbo].[Lrf_CustomerSettingLog_Sel]    
 	@LicenseeID			INT,
 	@SiteName			VARCHAR(50),
@@ -20,6 +19,7 @@ Revisions:
 	20131126@Jim: return result-table with NULL value if search condition are not match
     20170321@Harper: Add more Currency permission [#73677]
     20180711@Amanda: get username of LAP if log data is after LAP launch data [#97994]
+	20190405@Patrick: Support archive date range [Redmine: #111476]
 	   
 Param's Explaination:          
  - @UserName: customer name type in textbox to search      
@@ -114,12 +114,18 @@ BEGIN
 	
 	DECLARE @logDataToDate DATE
 	SELECT @logDataToDate = DATEADD(DAY, 1, @ToDate)
-	
-	IF @ToDate < @LapLaunchDate
+
+	DECLARE @__archiveDate DATETIME
+	SELECT @__archiveDate = DATEADD(DAY, 1, dbo.f_CustomerLog_GetArchiveDate())
+
+	CREATE TABLE #__logData (Logid BIGINT, userId INT, LogDate DATETIME, Actionid INT, actionnameen NVARCHAR(512), trackingvalue NVARCHAR(MAX), trackingvalue2 NVARCHAR(MAX))
+
+	IF @FromDate >= @__archiveDate
 	BEGIN
+		INSERT INTO #__logData(Logid, userId, LogDate, Actionid, actionnameen, trackingvalue, trackingvalue2)
 		SELECT	l.Logid,
+				l.userid,
 				l.LogDate,
-				u.username AS Editedby,
 				l.Actionid,
 				CASE	WHEN l.Actionid = 2401 then 'Turn On BA'
 						WHEN l.Actionid = 2403 then 'Turn Off BA'
@@ -128,78 +134,97 @@ BEGIN
 				trackingvalue2 as trackingvalueold
 		FROM dbo.UserLog_RunSP l WITH(NOLOCK)
 			INNER JOIN @RowFilter r ON r.actionid = l.actionid
-			INNER JOIN bodb_licensee.dbo.users u WITH(NOLOCK) ON u.userid = l.userid
 			INNER JOIN dbo.LogAction a WITH(NOLOCK) ON a.actionid = l.actionid
 		WHERE l.custid = @custid And l.Logdate >= @FromDate AND l.logdate < @logDataToDate
+	END
+	ELSE IF @ToDate < @__archiveDate
+	BEGIN
+		INSERT INTO #__logData(Logid, userId, LogDate, Actionid, actionnameen, trackingvalue, trackingvalue2)
+		SELECT	l.Logid,
+				l.userid,
+				l.LogDate,
+				l.Actionid,
+				CASE	WHEN l.Actionid = 2401 then 'Turn On BA'
+						WHEN l.Actionid = 2403 then 'Turn Off BA'
+				ELSE a.actionnameen END ActionName,
+				trackingvalue,
+				trackingvalue2 as trackingvalueold
+		FROM bodb_CustomerLog_Archive.dbo.UserLog_RunSP l WITH(NOLOCK)
+			INNER JOIN @RowFilter r ON r.actionid = l.actionid
+			INNER JOIN dbo.LogAction a WITH(NOLOCK) ON a.actionid = l.actionid
+		WHERE l.custid = @custid And l.Logdate >= @FromDate AND l.logdate < @logDataToDate
+	END
+	ELSE
+	BEGIN
+		INSERT INTO #__logData(Logid, userId, LogDate, Actionid, actionnameen, trackingvalue, trackingvalue2)
+		SELECT	l.Logid,
+				l.userid,
+				l.LogDate,
+				l.Actionid,
+				CASE	WHEN l.Actionid = 2401 then 'Turn On BA'
+						WHEN l.Actionid = 2403 then 'Turn Off BA'
+				ELSE a.actionnameen END ActionName,
+				trackingvalue,
+				trackingvalue2 as trackingvalueold
+		FROM dbo.UserLog_RunSP l WITH(NOLOCK)
+			INNER JOIN @RowFilter r ON r.actionid = l.actionid
+			INNER JOIN dbo.LogAction a WITH(NOLOCK) ON a.actionid = l.actionid
+		WHERE l.custid = @custid And l.Logdate >= @FromDate AND l.logdate < @logDataToDate
+
+		UNION ALL
+		SELECT	l.Logid,
+				l.userid,
+				l.LogDate,
+				l.Actionid,
+				CASE	WHEN l.Actionid = 2401 then 'Turn On BA'
+						WHEN l.Actionid = 2403 then 'Turn Off BA'
+				ELSE a.actionnameen END ActionName,
+				trackingvalue,
+				trackingvalue2 as trackingvalueold
+		FROM bodb_CustomerLog_Archive.dbo.UserLog_RunSP l WITH(NOLOCK)
+			INNER JOIN @RowFilter r ON r.actionid = l.actionid
+			INNER JOIN dbo.LogAction a WITH(NOLOCK) ON a.actionid = l.actionid
+		WHERE l.custid = @custid And l.Logdate >= @FromDate AND l.logdate < @logDataToDate
+	END
+
+	CREATE TABLE #__lapUsers (UserId INT, Editedby NVARCHAR(20))
+	IF @ToDate >= @LapLaunchDate
+	BEGIN
+		INSERT INTO #__lapUsers (UserId, Editedby)
+		SELECT UserSEQ, UserID
+		FROM DBCUST.SiteConfig.dbo.users WITH(NOLOCK)
+		WHERE SiteName = @SiteName
+	END
+
+	IF @ToDate < @LapLaunchDate
+	BEGIN
+		SELECT Logid, LogDate, u.username AS Editedby, Actionid, actionnameen AS ActionName, trackingvalue, trackingvalue2 AS trackingvalueold
+		FROM #__logData l
+			INNER JOIN bodb_licensee.dbo.users u WITH(NOLOCK) ON u.userid = l.userid
 		ORDER BY l.logid DESC
 	END
 	ELSE IF @FromDate >= @LapLaunchDate
 	BEGIN
-		CREATE TABLE #lapUsers1 (UserId INT, Editedby NVARCHAR(20))
-		INSERT INTO #lapUsers1 (UserId, Editedby)
-		SELECT UserSEQ, UserID
-		FROM DBCUST.SiteConfig.dbo.users WITH(NOLOCK)
-		WHERE SiteName = @SiteName
-	
-		SELECT	l.Logid,
-				l.LogDate,
-				u.Editedby,
-				l.Actionid,
-				CASE	WHEN l.Actionid = 2401 then 'Turn On BA'
-						WHEN l.Actionid = 2403 then 'Turn Off BA'
-				ELSE a.actionnameen END ActionName,
-				trackingvalue,
-				trackingvalue2 as trackingvalueold
-		FROM dbo.UserLog_RunSP l WITH(NOLOCK)
-			INNER JOIN @RowFilter r ON r.actionid = l.actionid
-			INNER JOIN #lapUsers1 u ON u.UserId = l.userid
-			INNER JOIN dbo.LogAction a WITH(NOLOCK) ON a.actionid = l.actionid
-		WHERE l.custid = @custid AND l.Logdate >= @FromDate AND l.logdate < @logDataToDate
+		SELECT Logid, LogDate, u.Editedby AS Editedby, Actionid, actionnameen AS ActionName, trackingvalue, trackingvalue2 AS trackingvalueold
+		FROM #__logData l
+			INNER JOIN #__lapUsers u ON u.UserId = l.userid
 		ORDER BY l.logid DESC
-		
-		DROP TABLE #lapUsers1
 	END
 	ELSE
 	BEGIN
+		SELECT Logid, LogDate, u.username AS Editedby, Actionid, actionnameen AS ActionName, trackingvalue, trackingvalue2 AS trackingvalueold
+		FROM #__logData l
+			INNER JOIN bodb_licensee.dbo.users u WITH(NOLOCK) ON u.userid = l.userid
 
-		CREATE TABLE #lapUsers2 (UserId INT, Editedby NVARCHAR(20))
-		INSERT INTO #lapUsers2 (UserId, Editedby)
-		SELECT UserSEQ, UserID
-		FROM DBCUST.SiteConfig.dbo.users WITH(NOLOCK)
-		WHERE SiteName = @SiteName
-	
-		SELECT	l.Logid,
-				l.LogDate,
-				u.username AS Editedby,
-				l.Actionid,
-				CASE	WHEN l.Actionid = 2401 then 'Turn On BA'
-						WHEN l.Actionid = 2403 then 'Turn Off BA'
-				ELSE a.actionnameen END ActionName,
-				l.trackingvalue,
-				l.trackingvalue2 as trackingvalueold
-		FROM dbo.UserLog_RunSP l WITH(NOLOCK)
-			INNER JOIN @RowFilter r ON r.actionid = l.actionid
-			INNER JOIN  bodb_licensee.dbo.users u WITH(NOLOCK) ON u.userid = l.userid
-			INNER JOIN dbo.LogAction a WITH(NOLOCK) ON a.actionid = l.actionid
-		WHERE l.custid = @custid And l.Logdate >= @FromDate AND l.logdate < @LapLaunchDate
 		UNION ALL
-		SELECT	l.Logid,
-				l.LogDate,
-				u.Editedby,
-				l.Actionid,
-				CASE	WHEN l.Actionid = 2401 then 'Turn On BA'
-						WHEN l.Actionid = 2403 then 'Turn Off BA'
-				ELSE a.actionnameen END ActionName,
-				trackingvalue,
-				trackingvalue2 as trackingvalueold
-		FROM dbo.UserLog_RunSP l WITH(NOLOCK)
-			INNER JOIN @RowFilter r ON r.actionid = l.actionid
-			INNER JOIN #lapUsers2 u ON u.UserId = l.userid
-			INNER JOIN dbo.LogAction a WITH(NOLOCK) ON a.actionid = l.actionid
-		WHERE l.custid = @custid AND l.Logdate >= @LapLaunchDate AND l.logdate < @logDataToDate
+		SELECT Logid, LogDate, u.Editedby AS Editedby, Actionid, actionnameen AS ActionName, trackingvalue, trackingvalue2 AS trackingvalueold
+		FROM #__logData l
+			INNER JOIN #__lapUsers u ON u.UserId = l.userid
+		WHERE l.LogDate >= @LapLaunchDate
 		ORDER BY l.logid DESC
-
-		DROP TABLE #lapUsers2
 	END
+
+	DROP TABLE #__logData
+	DROP TABLE #__lapUsers
 END
 GO
