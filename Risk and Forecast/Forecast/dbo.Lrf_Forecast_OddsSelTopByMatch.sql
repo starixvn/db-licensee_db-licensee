@@ -2,15 +2,16 @@
 ALTER PROCEDURE [dbo].[Lrf_Forecast_OddsSelTopByMatch]
     @matchid INT ,
     @bettype INT = 1
-AS /*
+AS
+/*
 	Created: 20101207@Henry
 	Task: Forecast at Lrf Site 
 	DB: DB042.bodb02
 	Original:Age_Forecast_OddsSelTopByMatch
 	
 	Revisions: 
-                - 20190102@Joseph: Incorporate changes for E-Sports phase 2b [Redmine: #106553]
-			
+        - 20190102@Joseph: Incorporate changes for E-Sports phase 2b [Redmine: #106553]
+		- 20190415@Percy: Get livehomescore/liveawayscore data from match table instead of odds table [RedmineID: #113303]
 		
 */
         SET NOCOUNT ON
@@ -21,8 +22,8 @@ AS /*
                         hdp2 ,
                         odds1a ,
                         odds2a ,
-                        odds.livehomescore ,
-                        odds.liveawayscore ,
+                        ISNULL(m.livehomescore, 0) AS livehomescore ,
+                        ISNULL(m.liveawayscore, 0) AS liveawayscore ,
                         switch ,
                         oddsstatus ,
                         m.homeid ,

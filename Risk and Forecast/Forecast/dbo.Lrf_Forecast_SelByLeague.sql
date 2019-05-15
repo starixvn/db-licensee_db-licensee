@@ -24,6 +24,7 @@ Revisions:
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
 	- 20180802@Sophia: HA - remove ruben to use new index on DB042 [Redmine: #98631]
     - 20190102@Joseph: Incorporate changes for E-Sports phase 2b [Redmine: #106553]
+	- 20190415@Percy: Get livehomescore/liveawayscore data from match table instead of odds table [RedmineID: #113303]
 
 Param's Explanation:
 	+ @AgentList: xml structure
@@ -745,15 +746,14 @@ Param's Explanation:
                                                     END) AS awayloseGBP ,	
 													
                                                 M.MatchID ,
-                                                ISNULL(o.livehomescore, 0)
-                                                - ISNULL(o.liveawayscore, 0) AS VScoreHDP ,
-                                                ISNULL(o.livehomescore, 0)
-                                                + ISNULL(o.liveawayscore, 0) AS VScoreOU
+                                                ISNULL(m.livehomescore, 0)
+                                                - ISNULL(m.liveawayscore, 0) AS VScoreHDP ,
+                                                ISNULL(m.livehomescore, 0)
+                                                + ISNULL(m.liveawayscore, 0) AS VScoreOU
                                       FROM      bettrans AS b WITH ( NOLOCK )
                                                 INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
 														ON e.exchangeid = b.currency
                                                 INNER JOIN Match AS M WITH ( NOLOCK ) ON b.MatchID = M.MatchID
-                                                INNER JOIN Odds AS O WITH ( NOLOCK ) ON b.OddsID = O.OddsID
                                                 INNER JOIN League AS L WITH ( NOLOCK ) ON M.LeagueID = L.LeagueID
                                                               AND L.LeagueID = @LeagueID
                                       WHERE     b.recommend IN ( SELECT custid FROM @TempAg )
@@ -766,8 +766,8 @@ Param's Explanation:
                                                 - b.liveawayscore ,
                                                 b.liveindicator ,
                                                 M.MatchID ,
-                                                o.livehomescore ,
-                                                o.liveawayscore
+                                                m.livehomescore ,
+                                                m.liveawayscore
                                     UNION ALL 
                                     -- OddsES
                                     SELECT    b.currency , -- begin X1
@@ -972,16 +972,15 @@ Param's Explanation:
                                                     END) AS awayloseGBP ,
 													
                                                 M.MatchID ,
-                                                ISNULL(o.livehomescore, 0)
-                                                - ISNULL(o.liveawayscore, 0) AS VScoreHDP ,
-                                                ISNULL(o.livehomescore, 0)
-                                                + ISNULL(o.liveawayscore, 0) AS VScoreOU
+                                                ISNULL(m.livehomescore, 0)
+                                                - ISNULL(m.liveawayscore, 0) AS VScoreHDP ,
+                                                ISNULL(m.livehomescore, 0)
+                                                + ISNULL(m.liveawayscore, 0) AS VScoreOU
                                       FROM      bettrans AS b WITH ( NOLOCK )
                                                 INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
 														ON  e.exchangeid = b.currency
                                                 INNER JOIN Match AS M WITH ( NOLOCK ) ON b.MatchID = M.MatchID
                                                               AND M.EventStatus = 'running'
-                                                INNER JOIN Odds AS O WITH ( NOLOCK ) ON b.OddsID = O.OddsID
                                                 INNER JOIN League AS L WITH ( NOLOCK ) ON M.LeagueID = L.LeagueID
                                                               AND L.LeagueID = @LeagueID
                                       WHERE     b.recommend IN ( SELECT custid FROM @TempAg )
@@ -992,8 +991,8 @@ Param's Explanation:
                                                 b.hdp1 ,
                                                 b.liveindicator ,
                                                 M.MatchID ,
-                                                o.livehomescore ,
-                                                o.liveawayscore
+                                                m.livehomescore ,
+                                                m.liveawayscore
                                     UNION ALL 
                                     -- OddsES
                                     SELECT    b.liveindicator ,  -- begin X2
@@ -1200,15 +1199,14 @@ Param's Explanation:
                                                     END) AS awayloseGBP ,
 													
                                                 M.MatchID ,
-                                                ISNULL(o.livehomescore, 0)
-                                                - ISNULL(o.liveawayscore, 0) AS VScoreHDP ,
-                                                ISNULL(o.livehomescore, 0)
-                                                + ISNULL(o.liveawayscore, 0) AS VScoreOU
+                                                ISNULL(m.livehomescore, 0)
+                                                - ISNULL(m.liveawayscore, 0) AS VScoreHDP ,
+                                                ISNULL(m.livehomescore, 0)
+                                                + ISNULL(m.liveawayscore, 0) AS VScoreOU
                                       FROM      bettrans AS b WITH ( NOLOCK )
                                                 INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
 															ON e.exchangeid = b.currency
                                                 INNER JOIN Match AS M WITH ( NOLOCK ) ON b.MatchID = M.MatchID
-                                                INNER JOIN Odds AS O WITH ( NOLOCK ) ON b.OddsID = O.OddsID
                                                 INNER JOIN League AS L WITH ( NOLOCK ) ON M.LeagueID = L.LeagueID
                                                               AND L.LeagueID = @LeagueID
                                       WHERE     b.recommend IN ( SELECT custid FROM @TempAg )
@@ -1222,8 +1220,8 @@ Param's Explanation:
                                                 - b.liveawayscore ,
                                                 b.liveindicator ,
                                                 M.MatchID ,
-                                                o.livehomescore ,
-                                                o.liveawayscore
+                                                m.livehomescore ,
+                                                m.liveawayscore
                                     UNION ALL
                                     -- OddsES
                                     SELECT --begin x3
@@ -1432,16 +1430,15 @@ Param's Explanation:
                                                     END) AS awayloseGBP ,	
 													
                                                 M.MatchID ,
-                                                ISNULL(o.livehomescore, 0)
-                                                - ISNULL(o.liveawayscore, 0) AS VScoreHDP ,
-                                                ISNULL(o.livehomescore, 0)
-                                                + ISNULL(o.liveawayscore, 0) AS VScoreOU
+                                                ISNULL(m.livehomescore, 0)
+                                                - ISNULL(m.liveawayscore, 0) AS VScoreHDP ,
+                                                ISNULL(m.livehomescore, 0)
+                                                + ISNULL(m.liveawayscore, 0) AS VScoreOU
                                       FROM      bettrans AS b WITH ( NOLOCK )
                                                 INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
 															ON e.exchangeid = b.currency
                                                 INNER JOIN Match AS M WITH ( NOLOCK ) ON b.MatchID = M.MatchID
                                                               AND M.EventStatus = 'running'
-                                                INNER JOIN Odds AS O WITH ( NOLOCK ) ON b.OddsID = O.OddsID
                                                 INNER JOIN League AS L WITH ( NOLOCK ) ON M.LeagueID = L.LeagueID
                                                               AND L.LeagueID = @LeagueID
                                       WHERE     b.recommend IN ( SELECT custid FROM @TempAg )
@@ -1452,8 +1449,8 @@ Param's Explanation:
                                                 b.hdp1 ,
                                                 b.liveindicator ,
                                                 M.MatchID ,
-                                                o.livehomescore ,
-                                                o.liveawayscore
+                                                m.livehomescore ,
+                                                m.liveawayscore
                                     
                                     UNION ALL
                                     -- OddsES
