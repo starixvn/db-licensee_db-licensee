@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb_Licensee" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBLIC-bodb_Licensee" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 CREATE PROCEDURE [dbo].[Lrf_LicenseeBaseCurrencySel]
 	@LicenseeId	INT
@@ -7,7 +7,7 @@ AS
 
 	Created: 20190517@Amanda
 	Task : Get base currency of Licensee used for billing
-	DB: DBEXT/bodb_Licensee
+	DB: DBLIC/bodb_Licensee
 
 	Revisions:
 		- 20190517@Amanda: Create SP [RedmineID: #112173]
