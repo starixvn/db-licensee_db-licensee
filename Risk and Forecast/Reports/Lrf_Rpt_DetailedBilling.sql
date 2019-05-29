@@ -21,6 +21,8 @@ BEGIN
 	DECLARE @PartyID INT, @ProductCode VARCHAR(1000)
 	DECLARE @GD_Tip SMALLINT = 1706
 	DECLARE @ProductId INT
+	DECLARE @IsTest BIT = 0
+	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
 
 	CREATE TABLE #Result
 	(
@@ -54,7 +56,7 @@ BEGIN
 	DECLARE @Bettype AS TABLE
 	(
 		Bettype		INT,
-		ProductId	INT
+		ProductCode	VARCHAR(10)
 	)
 	
 	DECLARE @Product AS TABLE
@@ -258,8 +260,8 @@ BEGIN
 	
 		INSERT INTO @Bettype (Bettype)
 		(
-			SELECT Bettype
-			FROM bodb_licensee.dbo.LA_f_BettypeProductMapping(0, 'BA')
+			SELECT DISTINCT BetType
+			FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', 'BA', @IsTest)
 		)
 	
 		INSERT INTO #Result( ProductCode, Turnover, CustomerWL, LicenseeNetWL, AmountDue)
@@ -453,10 +455,10 @@ BEGIN
 			FOR XML PATH('')
 		), 1, 1, '')
 		
-		INSERT INTO @Bettype (Bettype, ProductId)
+		INSERT INTO @Bettype (Bettype, ProductCode)
 		(
-			SELECT Bettype, ProductID
-			FROM bodb_licensee.dbo.LA_f_BettypeProductMapping(0, @ProductCode)
+			SELECT DISTINCT BetType, ProductPrefix
+			FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductCode, @IsTest)
 		)
 	
 		INSERT INTO #Result( ProductCode, Turnover, CustomerWL, LicenseeNetWL, AmountDue)
@@ -467,8 +469,8 @@ BEGIN
 			,	- SUM((b.winloss * c.Rate + ISNULL(b.CommissionA, 0))	* e.Rate)	AS AmountDue
 		FROM bodb_licenseereport.dbo.rpt_Betting b WITH (NOLOCK)
 		INNER JOIN @Bettype bt ON b.Bettype = bt.Bettype
-		INNER JOIN @ChargeInfo c ON b.rptDate BETWEEN c.Fromdate AND c.Todate
-		INNER JOIn @Product p ON c.ProductID = p.Id
+		INNER JOIn @Product p ON bt.ProductCode = p.Code
+		INNER JOIN @ChargeInfo c ON p.Id = c.ProductID AND b.rptDate BETWEEN c.Fromdate AND c.Todate
 		INNER JOIN #Exchange e ON b.CurrencyId = e.ExchangeID
 		WHERE
 			b.SiteID = @LicenseeID
@@ -478,7 +480,7 @@ BEGIN
 			AND b.customercategory NOT IN (27, 28)
 			AND c.Rate > 0
 			AND b.rptDate BETWEEN e.ExFromDate AND e.ExToDate
-		GROUP BY p.Id
+		GROUP BY p.Code
 	END
 	
 	INSERT INTO @InvoiceHeader(Id)
