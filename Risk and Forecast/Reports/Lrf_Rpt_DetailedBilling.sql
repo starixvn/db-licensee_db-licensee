@@ -24,7 +24,7 @@ BEGIN
 
 	CREATE TABLE #Result
 	(
-		ProductId		INT,
+		ProductCode		VARCHAR(10),
 		Turnover		MONEY,
 		CustomerWL		MONEY,
 		LicenseeNetWL	MONEY,
@@ -172,9 +172,9 @@ BEGIN
 		INSERT INTO #DataWinloss3rd(Recommend, Winlostdate, Currency, TurnOver, Winloss)
 		EXECUTE (@SQL)
 		
-		INSERT INTO #Result(ProductId, Turnover, CustomerWL, LicenseeNetWL, AmountDue)
+		INSERT INTO #Result(ProductCode, Turnover, CustomerWL, LicenseeNetWL, AmountDue)
 		SELECT
-				@ProductId
+				'AGC'
 			,	SUM(r.Turnover					* e.Rate)	AS Turnover
 			,	SUM(r.WinLoss					* e.Rate)	AS CustomerWL
 			,	- SUM(r.Winloss * ( 1 - c.Rate) * e.Rate)	AS LicenseeNetWL
@@ -195,9 +195,9 @@ BEGIN
 	BEGIN
 		SELECT @ProductId = Id FROM @Product WHERE Code = 'VG'
 		
-		INSERT INTO #Result(ProductId, Turnover, CustomerWL, LicenseeNetWL, AmountDue)
+		INSERT INTO #Result(ProductCode, Turnover, CustomerWL, LicenseeNetWL, AmountDue)
 		SELECT
-				@ProductId
+				'VG'
 			,	SUM(r.TurnOver					* e.Rate)	AS TurnOver
 			,	SUM(r.Winlost					* e.Rate)	AS CustomerWL
 			,	- SUM(r.Winlost* ( 1 - c.Rate)	* e.Rate)	AS LicenseeNetWL
@@ -235,9 +235,9 @@ BEGIN
 				AND b.SiteId = @LicenseeID
 			GROUP BY b.rptDate, b.CurrencyId, b.Bettype
 		)
-		INSERT INTO #Result( ProductId, Turnover, CustomerWL, LicenseeNetWL, AmountDue)
+		INSERT INTO #Result( ProductCode, Turnover, CustomerWL, LicenseeNetWL, AmountDue)
 		SELECT
-				@ProductId
+				'GD'
 			,	SUM(b.Turnover											* e.Rate)	AS Turnover
 			,	SUM(b.MemberWL											* e.Rate)	AS CustomerWL
 			,	- SUM(b.MemberWL * (1 - c.Rate)							* e.Rate)	AS LicenseeNetWL
@@ -262,9 +262,9 @@ BEGIN
 			FROM bodb_licensee.dbo.LA_f_BettypeProductMapping(0, 'BA')
 		)
 	
-		INSERT INTO #Result( ProductId, Turnover, CustomerWL, LicenseeNetWL, AmountDue)
+		INSERT INTO #Result( ProductCode, Turnover, CustomerWL, LicenseeNetWL, AmountDue)
 		SELECT
-				@ProductId
+				'BA'
 			,	SUM(b.turnover * e.Rate *
 						CASE
 							WHEN b.[Status] = 111			THEN 0
@@ -342,9 +342,9 @@ BEGIN
 		JOIN @ChargeInfo AS ci ON ci.ChargeType = @CashInShareChargeType AND (td.rptDate BETWEEN ci.FromDate AND ci.ToDate)
 		WHERE cm.ProductID = @ProductId AND ci.ProductID = @ProductId
 
-		INSERT INTO #Result(ProductId, Turnover, CustomerWL, LicenseeNetWL, AmountDue)
+		INSERT INTO #Result(ProductCode, Turnover, CustomerWL, LicenseeNetWL, AmountDue)
 		SELECT 
-				@ProductId
+				'CB'
 			,	SUM(td.Turnover																			* e.Rate) AS Turnover
 			,	SUM((td.WinningPrize + td.CashOut)														* e.Rate) AS CustomerWL
 			,	SUM((td.CommisionShare + td.CashInShare)												* e.Rate) AS LicenseeNetWL
@@ -362,8 +362,8 @@ BEGIN
 	BEGIN
 		SELECT @ProductId = Id FROM @Product WHERE Code = 'CO'
 	
-		INSERT INTO #Result( ProductId, Turnover, CustomerWL, LicenseeNetWL, AmountDue)
-		SELECT	@ProductId
+		INSERT INTO #Result( ProductCode, Turnover, CustomerWL, LicenseeNetWL, AmountDue)
+		SELECT	'CO'
 			,	0																							AS Turnover
 			,	SUM((b.TicketPayout + b.BuyBackAmt + b.BABuyBackAmt)							* e.Rate)	AS CustomerWL
 			,	SUM((b.BuyBackAmt * c.Rate)														* e.Rate)	AS LicenseeNetWL
@@ -386,8 +386,8 @@ BEGIN
 	BEGIN
 		SELECT @ProductId = Id FROM @Product WHERE Code = 'BX'
 	
-		INSERT INTO #Result( ProductId, Turnover, CustomerWL, LicenseeNetWL, AmountDue)
-		SELECT @ProductId
+		INSERT INTO #Result( ProductCode, Turnover, CustomerWL, LicenseeNetWL, AmountDue)
+		SELECT 'BX'
 			, SUM(b.turnover												* e.Rate)	AS Turnover
 			, SUM((b.MemberWL + b.CommissionP)								* e.Rate)	AS CustomerWL
 			, SUM((-b.MemberWL * (1 - c.Rate) + b.CommissionA)				* e.Rate)	AS LicenseeNetWL
@@ -426,8 +426,8 @@ BEGIN
 					AND b.[StatusId] NOT IN (-1, 101, 102, 103)
 				GROUP BY b.rptdate, b.CurrencyID
 		)
-		INSERT INTO #Result( ProductId, Turnover, CustomerWL, LicenseeNetWL, AmountDue)
-		SELECT	@ProductID
+		INSERT INTO #Result( ProductCode, Turnover, CustomerWL, LicenseeNetWL, AmountDue)
+		SELECT	'PP'
 			,	SUM(Turnover							* e.Rate)	AS Turnover
 			,	SUM((WinLoss + WinningPrize)			* e.Rate)	AS CustomerWL
 			,	SUM(-Winloss * ( 1 - c.Rate)			* e.Rate)	AS LicenseeNetWL
@@ -459,8 +459,8 @@ BEGIN
 			FROM bodb_licensee.dbo.LA_f_BettypeProductMapping(0, @ProductCode)
 		)
 	
-		INSERT INTO #Result( ProductId, Turnover, CustomerWL, LicenseeNetWL, AmountDue)
-		SELECT p.Id
+		INSERT INTO #Result( ProductCode, Turnover, CustomerWL, LicenseeNetWL, AmountDue)
+		SELECT p.Code
 			,	SUM(b.turnover											* e.Rate)	AS Turnover
 			,	SUM(b.winloss											* e.Rate)	AS CustomerWL
 			,	- SUM(b.winloss * ( 1 - c.Rate)							* e.Rate)	AS LicenseeNetWL
@@ -501,9 +501,9 @@ BEGIN
 		ORDER BY s.InvItemTypeId
 	END
 
-	SELECT ProductId, Turnover, CustomerWL, LicenseeNetWL, AmountDue
+	SELECT ProductCode, Turnover, CustomerWL, LicenseeNetWL, AmountDue
 	FROM #Result
-	ORDER BY ProductId
+	ORDER BY ProductCode
 	
 	SELECT ExchangeID AS CurrencyId, Rate
 	FROM #Exchange
