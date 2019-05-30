@@ -66,6 +66,7 @@ Revisions:
 	- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
 	- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
 	- 20190304@Amanda: Integrate PP Promotion Prize [RedmineID: #109471]
+	- 20190516@Amanda: Remove hard code for product name [RedmineID: #113398]
 
 Param's Explanation:
 	+ @IsLive : indicate that whether the report will get live data or not
@@ -608,20 +609,6 @@ BEGIN
 
 	SELECT
 		ProductCode,
-		CASE ProductCode
-			WHEN 'BA' THEN 'BA'
-			WHEN 'NG' THEN 'Number Game'
-			WHEN 'VS' THEN 'Virtual Sports'
-			WHEN 'KN' THEN 'Keno'
-			WHEN 'CS' THEN 'RNG Casino'
-			WHEN 'VB' THEN 'Voidbridge'
-			WHEN 'FW' THEN 'Fishing World'
-			WHEN 'AB' THEN 'AllBet'
-			WHEN 'VS2' THEN 'Virtual Sports 2'
-			WHEN 'LT' THEN 'Lottery'
-			WHEN 'PP' THEN 'PP'
-			ELSE 'Sportsbook'
-			END AS ProductName,
 		SUM(TurnOver) AS Turnover,
 		SUM(Winlost) AS Winlost,
 		SUM(LicenseeWL) AS LicenseeWL,
@@ -655,7 +642,7 @@ BEGIN
 		INNER JOIN #TempExchange e ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
 	WHERE b.ProductCode IS NOT NULL
 	GROUP BY ProductCode
-	ORDER BY ProductName
+	ORDER BY ProductCode
 
 	DROP TABLE #tmpWinloss
 	DROP TABLE #TempExchange

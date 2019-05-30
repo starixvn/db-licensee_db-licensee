@@ -24,6 +24,7 @@ Revisions:
 	- 20181218@Joseph: Remove vnteam [Redmine: #105409]
 	- 20181213@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
 	- 20190227@Joseph: Betting ticket center phase 3b [RedmineID: #108221]
+	- 20190516@Amanda: Rename product Keno [RedmineID: #113398]
 	
 Param's Explanation:
 	- @ProductCodes = '' - Get all
@@ -167,7 +168,13 @@ BEGIN
 	IF EXISTS (SELECT 1 FROM @Product3rds WHERE Code = 'KN')
 	BEGIN
 		INSERT INTO @ProductSport(ID, Name, ParentID)
-		SELECT 202, N'Keno', NULL
+		SELECT 202,
+			CASE @Langkey
+				WHEN 'zh-CN'	THEN N'快乐彩'
+				WHEN 'zh-TW'	THEN N'快樂彩'
+				WHEN 'zh-Hans'	THEN N'快乐彩'
+				ELSE N'RNG Keno' END,
+			NULL
 		UNION ALL
 		SELECT ID, NULL, 202
 		FROM dbo.Lrf_f_GetSportTypeByProduct('KN')
