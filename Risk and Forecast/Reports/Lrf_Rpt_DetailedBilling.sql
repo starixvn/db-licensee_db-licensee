@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBLIC-bodb_licensee" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 CREATE PROCEDURE [dbo].[Lrf_Rpt_DetailedBilling]  	
 	@LicenseeID		INT,
@@ -10,7 +10,7 @@ AS
 /*  Created: Amanda  
 	Date: 2019-05-21
     Task : Get data for detailed Billing report
-    DB: DBEXT.bodb02  
+    DB: DBLIC.bodb_licensee  
    
     Revisions:  
     - 20190521@Amanda: Create SP [RedmineID: #107704]
@@ -81,15 +81,15 @@ BEGIN
 	)
 	
 	SELECT @PartyID = PartyID
-	FROM bodb_licensee.dbo.OAS_Party WITH(NOLOCK)
+	FROM dbo.OAS_Party WITH(NOLOCK)
 	WHERE OldRefID = @LicenseeId AND PartyType = 1
 	
 	INSERT INTO @Product(Id, Code)
 	SELECT DISTINCT
 		c.ProductID,
 		CASE WHEN c.ProductID = 0 THEN 'SB' ELSE p.ProductPrefix END
-	FROM bodb_licensee.dbo.OAS_ChargeInfo c WITH (NOLOCK)
-		LEFT JOIN bodb_licensee.dbo.Product3rd p WITH (NOLOCK) ON c.ProductID = p.Productid AND p.ProductPrefix NOT IN ('BT', 'MGCLC', 'MGCRNG')
+	FROM dbo.OAS_ChargeInfo c WITH (NOLOCK)
+		LEFT JOIN dbo.Product3rd p WITH (NOLOCK) ON c.ProductID = p.Productid AND p.ProductPrefix NOT IN ('BT', 'MGCLC', 'MGCRNG')
 	WHERE c.FromParty = @PartyID
 		AND c.FromDate <= c.ToDate
 		AND c.ToDate >= @FromDate
@@ -116,12 +116,12 @@ BEGIN
 			Fromdate,
 			Todate,
 			ChargeType
-	FROM bodb_licensee.dbo.LA_f_ChargeInfo(@PartyID, @FromDate, @ToDate, @ProductCode, 'OA', 1)
+	FROM dbo.LA_f_ChargeInfo(@PartyID, @FromDate, @ToDate, @ProductCode, 'OA', 1)
 	--WHERE DI_Rate > 0
 	
 	INSERT INTO @TempAG(CustId, CurrencyId)
 	SELECT CustID, Currency
-	FROM bodb_licensee.dbo.f_SelLicenseeCust(@LicenseeID)
+	FROM dbo.f_SelLicenseeCust(@LicenseeID)
 	WHERE Currency <> 20 AND RoleID = 2
 	
 	;WITH CTE_CurrencyList AS (
@@ -143,7 +143,7 @@ BEGIN
 				WHEN @BaseCurrency = 'INH' THEN INH
 				ELSE 1
 			END
-	FROM dbo.Lrf_f_GetSubExchangeDaily(@FromDate, @ToDate) e
+	FROM bodb02.dbo.Lrf_f_GetSubExchangeDaily(@FromDate, @ToDate) e
 	INNER JOIN CTE_CurrencyList c ON e.ExchangeId = c.CurrencyID 
 	
 	IF EXISTS (SELECT 1 FROM @Product WHERE Code = 'AGC')
@@ -205,7 +205,7 @@ BEGIN
 			,	- SUM(r.Winlost* ( 1 - c.Rate)	* e.Rate)	AS LicenseeNetWL
 			,	- SUM(r.Winlost  * c.Rate		* e.Rate)	AS AmountDue
 		FROM bodb_LicenseeReport.dbo.rptDepWinlost_ThirdParty r WITH (NOLOCK)
-			INNER JOIN dbo.Custinfo co WITH (NOLOCK) ON r.CustID = co.CustID
+			INNER JOIN bodb02.dbo.Custinfo co WITH (NOLOCK) ON r.CustID = co.CustID
 			INNER JOIN @TempAG ag ON co.recommend = ag.CustId AND r.Currency = ag.CurrencyId
 			INNER JOIN @ChargeInfo c ON r.Winlostdate BETWEEN c.Fromdate AND c.Todate
 			INNER JOIN #Exchange e ON r.Currency = e.ExchangeID
@@ -261,7 +261,7 @@ BEGIN
 		INSERT INTO @Bettype (Bettype)
 		(
 			SELECT DISTINCT BetType
-			FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', 'BA', @IsTest)
+			FROM bodb02.dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', 'BA', @IsTest)
 		)
 	
 		INSERT INTO #Result( ProductCode, Turnover, CustomerWL, LicenseeNetWL, AmountDue)
@@ -458,7 +458,7 @@ BEGIN
 		INSERT INTO @Bettype (Bettype, ProductCode)
 		(
 			SELECT DISTINCT BetType, ProductPrefix
-			FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductCode, @IsTest)
+			FROM bodb02.dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductCode, @IsTest)
 		)
 	
 		INSERT INTO #Result( ProductCode, Turnover, CustomerWL, LicenseeNetWL, AmountDue)
@@ -485,7 +485,7 @@ BEGIN
 	
 	INSERT INTO @InvoiceHeader(Id)
 	SELECT InvoiceHeaderId
-	FROM bodb_licensee.dbo.LA_InvoiceHeader WITH(NOLOCK)
+	FROM dbo.LA_InvoiceHeader WITH(NOLOCK)
 		WHERE PartyId = @PartyID
 		AND StatusId = 0
 		AND FromDate = @FromDate
@@ -497,7 +497,7 @@ BEGIN
 	BEGIN
 		INSERT INTO @Total([Description], Amount)
 		SELECT s.[Description], ISNULL(Income,0) - ISNULL(Expense,0) AS Amount
-		FROM bodb_licensee.dbo.LA_InvoiceStatement s WITH (NOLOCK)
+		FROM dbo.LA_InvoiceStatement s WITH (NOLOCK)
 		INNER JOIN @InvoiceHeader h ON s.InvoiceHeaderId = h.Id
 		WHERE s.StatusID = 0 AND InvItemTypeId IN (4,5,26)
 		ORDER BY s.InvItemTypeId
