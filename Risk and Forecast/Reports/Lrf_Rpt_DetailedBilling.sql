@@ -440,7 +440,6 @@ BEGIN
 		WHERE c.Rate > 0
 			AND c.ProductID = @ProductId
 			AND d.rptDate BETWEEN e.ExFromDate AND e.ExToDate
-		GROUP BY rptDate, CurrencyID
 
 		DELETE FROM @Product WHERE Code = 'PP'
 	END
@@ -449,9 +448,8 @@ BEGIN
 	BEGIN
 		SELECT @ProductCode = STUFF(
 		(
-			SELECT ',' + p.ProductPrefix
-			FROM @Product i
-			INNER JOIN bodb_licensee.dbo.Product3rd p (NOLOCK) ON i.Id = p.Productid
+			SELECT ',' + Code
+			FROM @Product
 			FOR XML PATH('')
 		), 1, 1, '')
 		
