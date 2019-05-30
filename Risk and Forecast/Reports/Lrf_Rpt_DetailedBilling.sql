@@ -507,6 +507,7 @@ BEGIN
 	
 	SELECT ExchangeID AS CurrencyId, Rate
 	FROM #Exchange
+	ORDER BY ExchangeID
 	
 	SELECT [Description], Amount FROM @Total
 	
