@@ -22,6 +22,8 @@ BEGIN
 	DECLARE @GD_Tip SMALLINT = 1706
 	DECLARE @ProductId INT
 	DECLARE @IsTest BIT = 0
+	DECLARE @InvoiceHeaderId INT
+
 	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
 
 	CREATE TABLE #Result
@@ -32,7 +34,7 @@ BEGIN
 		LicenseeNetWL	MONEY,
 		AmountDue		MONEY
 	)
-	
+
 	CREATE TABLE #Exchange
 	(
 		ExFromDate		SMALLDATETIME,
@@ -40,50 +42,47 @@ BEGIN
 		ExchangeID		INT,
 		Rate			FLOAT
 	)
-	
+
 	DECLARE @ChargeInfo AS TABLE
 	(
-		PartyId		INT,
-		LicenseeId	INT,
-		ProductID	INT,
-		Bettype		INT,
-		Rate		MONEY,
-		FromDate	SMALLDATETIME,
-		ToDate		SMALLDATETIME,
-		ChargeType	TINYINT
+		PartyId			INT,
+		LicenseeId		INT,
+		ProductID		INT,
+		Bettype			INT,
+		Rate			MONEY,
+		FromDate		SMALLDATETIME,
+		ToDate			SMALLDATETIME,
+		ChargeType		TINYINT
 	)
-	
+
 	DECLARE @Bettype AS TABLE
 	(
-		Bettype		INT,
-		ProductCode	VARCHAR(10)
+		Bettype			INT,
+		ProductCode		VARCHAR(10)
 	)
-	
+
 	DECLARE @Product AS TABLE
 	(
-		Id		INT,
-		Code	VARCHAR(10)
+		Id				INT,
+		Code			VARCHAR(10)
 	)
-	
+
 	DECLARE @TempAG AS TABLE
 	(
-		CustId INT,
-		CurrencyId INT
+		CustId			INT,
+		CurrencyId		INT
 	)
-	
+
 	DECLARE @Total AS TABLE (
-		[Description]	NVARCHAR(500),
-		Amount			MONEY
+		TypeId			SMALLINT,
+		Amount			MONEY,
+		ProductId		INT
 	)
-	
-	DECLARE @InvoiceHeader AS TABLE (
-		Id				BIGINT
-	)
-	
+
 	SELECT @PartyID = PartyID
 	FROM dbo.OAS_Party WITH(NOLOCK)
 	WHERE OldRefID = @LicenseeId AND PartyType = 1
-	
+
 	INSERT INTO @Product(Id, Code)
 	SELECT DISTINCT
 		c.ProductID,
@@ -102,7 +101,7 @@ BEGIN
 				FROM @Product i
 				FOR XML PATH('')
 			), 1, 1, '')
-	
+
 	INSERT INTO @ChargeInfo(PartyId, LicenseeId, ProductID, Bettype, Rate, Fromdate, Todate, ChargeType)
 	SELECT DISTINCT
 			PartyID,
@@ -117,13 +116,12 @@ BEGIN
 			Todate,
 			ChargeType
 	FROM dbo.LA_f_ChargeInfo(@PartyID, @FromDate, @ToDate, @ProductCode, 'OA', 1)
-	--WHERE DI_Rate > 0
-	
+
 	INSERT INTO @TempAG(CustId, CurrencyId)
 	SELECT CustID, Currency
 	FROM dbo.f_SelLicenseeCust(@LicenseeID)
 	WHERE Currency <> 20 AND RoleID = 2
-	
+
 	;WITH CTE_CurrencyList AS (
 		SELECT DISTINCT CurrencyId
 		FROM @TempAG
@@ -145,7 +143,7 @@ BEGIN
 			END
 	FROM bodb02.dbo.Lrf_f_GetSubExchangeDaily(@FromDate, @ToDate) e
 	INNER JOIN CTE_CurrencyList c ON e.ExchangeId = c.CurrencyID 
-	
+
 	IF EXISTS (SELECT 1 FROM @Product WHERE Code = 'AGC')
 	BEGIN
 		CREATE TABLE #DataWinloss3rd
@@ -156,10 +154,10 @@ BEGIN
 			Turnover		MONEY,
 			Winloss			MONEY
 		)
-	
+
 		SELECT @ProductId = Id FROM @Product WHERE Code = 'AGC'
 		DECLARE @SQL VARCHAR(4000) = ''
-		
+
 		SELECT @SQL = 'SELECT Recommend, Winlostdate, Currency, TurnOver, Winloss '
 					+ 'FROM OPENQUERY(DBACC,''SELECT c.recommend, r.Winlostdate, r.Currency, SUM(r.TurnOver) AS TurnOver, SUM(r.Winlost) AS Winloss'
 					+						' FROM bodb_report.dbo.rptDepWinlost_AGCasino r WITH (NOLOCK)'
@@ -173,7 +171,7 @@ BEGIN
 	
 		INSERT INTO #DataWinloss3rd(Recommend, Winlostdate, Currency, TurnOver, Winloss)
 		EXECUTE (@SQL)
-		
+
 		INSERT INTO #Result(ProductCode, Turnover, CustomerWL, LicenseeNetWL, AmountDue)
 		SELECT
 				'AGC'
@@ -192,11 +190,11 @@ BEGIN
 		DELETE FROM @Product WHERE Code = 'AGC'
 		DROP TABLE #DataWinloss3rd
 	END
-	
+
 	IF EXISTS (SELECT 1 FROM @Product WHERE Code = 'VG')
 	BEGIN
 		SELECT @ProductId = Id FROM @Product WHERE Code = 'VG'
-		
+
 		INSERT INTO #Result(ProductCode, Turnover, CustomerWL, LicenseeNetWL, AmountDue)
 		SELECT
 				'VG'
@@ -214,10 +212,10 @@ BEGIN
 			AND c.Rate > 0
 			AND c.ProductID = @ProductId
 			AND r.Winlostdate BETWEEN e.ExFromDate AND e.ExToDate
-		
+
 		DELETE FROM @Product WHERE Code = 'VG'
 	END
-	
+
 	IF EXISTS (SELECT 1 FROM @Product WHERE Code = 'GD')
 	BEGIN
 		SELECT @ProductId = Id FROM @Product WHERE Code = 'GD'
@@ -250,20 +248,20 @@ BEGIN
 		WHERE c.ProductID = @ProductId
 			AND c.Rate > 0
 			AND b.rptDate BETWEEN e.ExFromDate AND e.ExToDate
-		
+
 		DELETE FROM @Product WHERE Code = 'GD'
 	END
-	
+
 	IF EXISTS (SELECT 1 FROM @Product WHERE Code = 'BA')
 	BEGIN
 		SELECT @ProductId = Id FROM @Product WHERE Code = 'BA'
-	
+
 		INSERT INTO @Bettype (Bettype)
 		(
 			SELECT DISTINCT BetType
 			FROM bodb02.dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', 'BA', @IsTest)
 		)
-	
+
 		INSERT INTO #Result( ProductCode, Turnover, CustomerWL, LicenseeNetWL, AmountDue)
 		SELECT
 				'BA'
@@ -288,11 +286,11 @@ BEGIN
 			AND c.Rate > 0
 			AND c.ProductID = @ProductId
 			AND b.rptDate BETWEEN e.ExFromDate AND e.ExToDate
-			
+
 		DELETE FROM @Bettype
 		DELETE FROM @Product WHERE Code = 'BA'
 	END
-	
+
 	IF EXISTS (SELECT 1 FROM @Product WHERE Code = 'CB')
 	BEGIN
 		-- Local variables
@@ -359,7 +357,7 @@ BEGIN
 		DROP TABLE #TempData
 		DELETE FROM @Product WHERE Code = 'CB'
 	END
-	
+
 	IF EXISTS (SELECT 1 FROM @Product WHERE Code = 'CO')
 	BEGIN
 		SELECT @ProductId = Id FROM @Product WHERE Code = 'CO'
@@ -383,11 +381,11 @@ BEGIN
 		
 		DELETE FROM @Product WHERE Code = 'CO'
 	END
-	
+
 	IF EXISTS (SELECT 1 FROM @Product WHERE Code = 'BX')
 	BEGIN
 		SELECT @ProductId = Id FROM @Product WHERE Code = 'BX'
-	
+
 		INSERT INTO #Result( ProductCode, Turnover, CustomerWL, LicenseeNetWL, AmountDue)
 		SELECT 'BX'
 			, SUM(b.turnover												* e.Rate)	AS Turnover
@@ -405,10 +403,10 @@ BEGIN
 			AND c.Rate > 0
 			AND c.ProductID = @ProductId
 			AND b.rptDate BETWEEN e.ExFromDate AND e.ExToDate
-		
+
 		DELETE FROM @Product WHERE Code = 'BX'
 	END
-	
+
 	IF EXISTS (SELECT 1 FROM @Product WHERE Code = 'PP')
 	BEGIN
 		SELECT @ProductId = Id FROM @Product WHERE Code = 'PP'
@@ -443,7 +441,7 @@ BEGIN
 
 		DELETE FROM @Product WHERE Code = 'PP'
 	END
-	
+
 	IF EXISTS (SELECT TOP 1 1 FROM @Product)
 	BEGIN
 		SELECT @ProductCode = STUFF(
@@ -452,13 +450,13 @@ BEGIN
 			FROM @Product
 			FOR XML PATH('')
 		), 1, 1, '')
-		
+
 		INSERT INTO @Bettype (Bettype, ProductCode)
 		(
 			SELECT DISTINCT BetType, ProductPrefix
 			FROM bodb02.dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductCode, @IsTest)
 		)
-	
+
 		INSERT INTO #Result( ProductCode, Turnover, CustomerWL, LicenseeNetWL, AmountDue)
 		SELECT p.Code
 			,	SUM(b.turnover											* e.Rate)	AS Turnover
@@ -480,37 +478,64 @@ BEGIN
 			AND b.rptDate BETWEEN e.ExFromDate AND e.ExToDate
 		GROUP BY p.Code
 	END
-	
-	INSERT INTO @InvoiceHeader(Id)
-	SELECT InvoiceHeaderId
+
+	SELECT @InvoiceHeaderId = MAX(InvoiceHeaderId)
 	FROM dbo.LA_InvoiceHeader WITH(NOLOCK)
-		WHERE PartyId = @PartyID
-		AND StatusId = 0
-		AND FromDate = @FromDate
-		AND ToDate = @ToDate
+	WHERE PartyId = @PartyID
+		AND ISNULL(StatusId,0) = 0
+		AND InvoiceType = 1
+		AND FromDate >= @FromDate
+		AND ToDate <= @ToDate
 		AND ((@Environment = 'PRO' AND Environment IS NULL) OR Environment = @Environment)
-	
-	IF EXISTS (SELECT TOP 1 1 FROM @InvoiceHeader
-	)
+
+	IF ISNULL(@InvoiceHeaderId,0) <> 0
 	BEGIN
-		INSERT INTO @Total([Description], Amount)
-		SELECT s.[Description], ISNULL(Income,0) - ISNULL(Expense,0) AS Amount
+		DECLARE @InvoiceCurrency INT
+		SELECT @InvoiceCurrency = CurrencyId
+		FROM dbo.LA_InvoiceHeader WITH(NOLOCK)
+		WHERE InvoiceHeaderId = @InvoiceHeaderId
+
+		DECLARE @ExchangeRate FLOAT
+		SELECT @ExchangeRate = Rate
+		FROM #Exchange
+		WHERE ExchangeID = @InvoiceCurrency
+
+		IF ISNULL(@ExchangeRate, 0) = 0
+		BEGIN
+			SELECT	@ExchangeRate = CASE 
+										WHEN @BaseCurrency = 'USD' THEN USD
+										WHEN @BaseCurrency = 'EUR' THEN EUR
+										WHEN @BaseCurrency = 'GBP' THEN GBP
+										WHEN @BaseCurrency = 'MYR' THEN MYR
+										WHEN @BaseCurrency = 'CNY' THEN CNY
+										WHEN @BaseCurrency = 'THB' THEN THB
+										WHEN @BaseCurrency = 'IDR' THEN IDR
+										WHEN @BaseCurrency = 'INH' THEN INH
+										ELSE 1
+									END
+			FROM bodb02.dbo.Lrf_f_GetSubExchangeDaily(@FromDate, @ToDate) e
+			WHERE e.ExchangeId = @InvoiceCurrency
+		END
+
+		INSERT INTO @Total(TypeId, Amount, ProductId)
+		SELECT s.InvItemTypeId, (ISNULL(Income,0) - ISNULL(Expense,0)) * @ExchangeRate AS Amount, s.ProductId
 		FROM dbo.LA_InvoiceStatement s WITH (NOLOCK)
-		INNER JOIN @InvoiceHeader h ON s.InvoiceHeaderId = h.Id
-		WHERE s.StatusID = 0 AND InvItemTypeId IN (4,5,26)
+		WHERE s.InvoiceHeaderId = @InvoiceHeaderId AND ISNULL(s.StatusID,0) = 0 AND s.InvItemTypeId IN (4,5,26)
 		ORDER BY s.InvItemTypeId
 	END
 
 	SELECT ProductCode, Turnover, CustomerWL, LicenseeNetWL, AmountDue
 	FROM #Result
 	ORDER BY ProductCode
-	
+
 	SELECT ExchangeID AS CurrencyId, Rate
 	FROM #Exchange
 	ORDER BY ExchangeID
-	
-	SELECT [Description], Amount FROM @Total
-	
+
+	SELECT TypeId, Amount, CASE WHEN t.ProductId = 0 THEN 'SB' ELSE p.ProductPrefix END AS ProductCode
+	FROM @Total t
+	LEFT JOIN dbo.Product3rd p WITH (NOLOCK) ON t.ProductId = p.Productid
+
 	DROP TABLE #Result
 	DROP TABLE #Exchange
 END
