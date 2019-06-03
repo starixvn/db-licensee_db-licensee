@@ -535,7 +535,7 @@ BEGIN
 			SELECT b.typeID
 				,CASE 
 					WHEN @Langkey =  'zh-CN'	AND ISNULL(bt.typenamecn, '')		<> '' THEN bt.typenamecn
-					WHEN @Langkey =  'zh-TW'	AND ISNULL(bt.typenamec_uni, '')	<> '' THEN bt.typenamecn
+					WHEN @Langkey =  'zh-TW'	AND ISNULL(bt.typenamec_uni, '')	<> '' THEN bt.typenamec_uni
 					WHEN @Langkey =  'zh-Hans'	AND ISNULL(bt.typenamecn, '')		<> '' THEN bt.typenamecn
 					WHEN @Langkey =  'th-TH'	AND ISNULL(bt.typenameth, '')		<> '' THEN bt.typenameth
 					WHEN @Langkey =  'ja-JP'	AND ISNULL(bt.typenamej, '')		<> '' THEN bt.typenamej
@@ -556,7 +556,7 @@ BEGIN
 				b.typeID
 				,CASE 
 					WHEN @Langkey =  'zh-CN'	AND ISNULL(bt.typenamecn, '')		<> '' THEN bt.typenamecn
-					WHEN @Langkey =  'zh-TW'	AND ISNULL(bt.typenamec_uni, '')	<> '' THEN bt.typenamecn
+					WHEN @Langkey =  'zh-TW'	AND ISNULL(bt.typenamec_uni, '')	<> '' THEN bt.typenamec_uni
 					WHEN @Langkey =  'zh-Hans'	AND ISNULL(bt.typenamecn, '')		<> '' THEN bt.typenamecn
 					WHEN @Langkey =  'th-TH'	AND ISNULL(bt.typenameth, '')		<> '' THEN bt.typenameth
 					WHEN @Langkey =  'ja-JP'	AND ISNULL(bt.typenamej, '')		<> '' THEN bt.typenamej
