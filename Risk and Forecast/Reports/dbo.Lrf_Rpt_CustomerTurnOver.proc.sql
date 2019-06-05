@@ -73,6 +73,7 @@ Revision:
 	- 20181109@Paul: Minor enhancement [Redmine: #103886]
 	- 2018118@Joseph: Add Esport2 bettypes [Redmine: #100721]
 	- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
+	- 20190531@Amanda: Get correct translation [RedmineID: #114464]
 
 Parameter's Explanation:
 	- @ReportBy:  1: daily, 2: monthly
@@ -533,14 +534,14 @@ BEGIN
 		(
 			SELECT b.typeID
 				,CASE 
-					WHEN @Langkey =  'zh-CN'	AND ISNULL(bt.typenamecn, '')	<> '' THEN bt.typenamecn
-					WHEN @Langkey =  'zh-TW'	AND ISNULL(bt.typenamecn, '')	<> '' THEN bt.typenamecn
-					WHEN @Langkey =  'zh-Hans'	AND ISNULL(bt.typenamecn, '')	<> '' THEN bt.typenamecn
-					WHEN @Langkey =  'th-TH'	AND ISNULL(bt.typenameth, '')	<> '' THEN bt.typenameth
-					WHEN @Langkey =  'ja-JP'	AND ISNULL(bt.typenamej, '')	<> '' THEN bt.typenamej
-					WHEN @Langkey =  'ko-KR'	AND ISNULL(bt.typenameko, '')	<> '' THEN bt.typenameko
-					WHEN @Langkey =  'es'  		AND ISNULL(bt.typenameES, '')	<> '' THEN bt.typenameES
-					WHEN @Langkey =  'vi-VN'	AND ISNULL(bt.typenamee, '')	<> '' THEN bt.typenamee
+					WHEN @Langkey =  'zh-CN'	AND ISNULL(bt.typenamecn, '')		<> '' THEN bt.typenamecn
+					WHEN @Langkey =  'zh-TW'	AND ISNULL(bt.typenamec_uni, '')	<> '' THEN bt.typenamec_uni
+					WHEN @Langkey =  'zh-Hans'	AND ISNULL(bt.typenamecn, '')		<> '' THEN bt.typenamecn
+					WHEN @Langkey =  'th-TH'	AND ISNULL(bt.typenameth, '')		<> '' THEN bt.typenameth
+					WHEN @Langkey =  'ja-JP'	AND ISNULL(bt.typenamej, '')		<> '' THEN bt.typenamej
+					WHEN @Langkey =  'ko-KR'	AND ISNULL(bt.typenameko, '')		<> '' THEN bt.typenameko
+					WHEN @Langkey =  'es'  		AND ISNULL(bt.typenameES, '')		<> '' THEN bt.typenameES
+					WHEN @Langkey =  'vi-VN'	AND ISNULL(bt.typenamee, '')		<> '' THEN bt.typenamee
 					ELSE typenamee 
 				END AS typenamee
 			FROM #bettype b
@@ -554,14 +555,14 @@ BEGIN
 			GROUP BY 
 				b.typeID
 				,CASE 
-					WHEN @Langkey =  'zh-CN'	AND ISNULL(bt.typenamecn, '')	<> '' THEN bt.typenamecn
-					WHEN @Langkey =  'zh-TW'	AND ISNULL(bt.typenamecn, '')	<> '' THEN bt.typenamecn
-					WHEN @Langkey =  'zh-Hans'	AND ISNULL(bt.typenamecn, '')	<> '' THEN bt.typenamecn
-					WHEN @Langkey =  'th-TH'	AND ISNULL(bt.typenameth, '')	<> '' THEN bt.typenameth
-					WHEN @Langkey =  'ja-JP'	AND ISNULL(bt.typenamej, '')	<> '' THEN bt.typenamej
-					WHEN @Langkey =  'ko-KR'	AND ISNULL(bt.typenameko, '')	<> '' THEN bt.typenameko
-					WHEN @Langkey =  'es'  		AND ISNULL(bt.typenameES, '')	<> '' THEN bt.typenameES
-					WHEN @Langkey =  'vi-VN'	AND ISNULL(bt.typenamee, '')	<> '' THEN bt.typenamee
+					WHEN @Langkey =  'zh-CN'	AND ISNULL(bt.typenamecn, '')		<> '' THEN bt.typenamecn
+					WHEN @Langkey =  'zh-TW'	AND ISNULL(bt.typenamec_uni, '')	<> '' THEN bt.typenamec_uni
+					WHEN @Langkey =  'zh-Hans'	AND ISNULL(bt.typenamecn, '')		<> '' THEN bt.typenamecn
+					WHEN @Langkey =  'th-TH'	AND ISNULL(bt.typenameth, '')		<> '' THEN bt.typenameth
+					WHEN @Langkey =  'ja-JP'	AND ISNULL(bt.typenamej, '')		<> '' THEN bt.typenamej
+					WHEN @Langkey =  'ko-KR'	AND ISNULL(bt.typenameko, '')		<> '' THEN bt.typenameko
+					WHEN @Langkey =  'es'  		AND ISNULL(bt.typenameES, '')		<> '' THEN bt.typenameES
+					WHEN @Langkey =  'vi-VN'	AND ISNULL(bt.typenamee, '')		<> '' THEN bt.typenamee
 					ELSE bt.typenamee 
 				END
 		)

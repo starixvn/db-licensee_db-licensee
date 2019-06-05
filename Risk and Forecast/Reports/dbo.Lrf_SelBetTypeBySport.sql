@@ -35,6 +35,7 @@ Revisions:
    - 20180424@Joseph: Fix bug group VS2: BasketBall - Virual Soccer [RedmineID: #93844]
    - 20180703@Amanda: Refactor code [RedmineID: #80941]
    - 20181214@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
+   - 20190531@Amanda: Get correct translation [RedmineID: #114464]
 
 	Param's Explanation:
 Param's Explanation:
@@ -105,25 +106,17 @@ BEGIN
 	)
 	SELECT 
 		b.typeID,
-		CASE @Langkey
-					WHEN 'zh-CN'	THEN CASE  WHEN (ISNULL(typenamecn,'')='' OR LEN(typenamecn)=0) THEN typenamee 
-										   ELSE typenamecn END
-					WHEN 'zh-TW'	THEN CASE  WHEN (ISNULL(typenamecn,'')='' OR LEN(typenamecn)=0) THEN typenamee 
-										   ELSE typenamecn END
-					WHEN 'zh-Hans'	THEN CASE  WHEN (ISNULL(typenamecn,'')='' OR LEN(typenamecn)=0) THEN typenamee 
-										   ELSE typenamecn END
-					WHEN 'th-TH'	THEN CASE  WHEN (ISNULL(typenameth,'')='' OR LEN(typenameth)=0) THEN typenamee 
-										   ELSE typenameth END
-					WHEN 'ja-JP'	THEN CASE  WHEN (ISNULL(typenamej,'')='' OR LEN(typenamej)=0) THEN typenamee 
-										   ELSE typenamej END
-					WHEN 'ko-KR'	THEN CASE  WHEN (ISNULL(typenameko,'')='' OR LEN(typenameko)=0) THEN typenamee 
-										   ELSE typenameko END
-					WHEN 'es'  	    THEN CASE  WHEN (ISNULL(typenameES,'')='' OR LEN(typenameES)=0) THEN typenamee 
-										   ELSE typenameES END
-					WHEN 'vi-VN'	THEN CASE  WHEN (ISNULL(typenamee,'')='' OR LEN(typenamee)=0) THEN typenamee 
-										   ELSE typenamee END
-					ELSE typenamee END typenamee
-					
+		CASE
+			WHEN @Langkey = 'zh-CN'		AND ISNULL(typenamecn,'')		<> ''	THEN typenamecn
+			WHEN @Langkey = 'zh-TW'		AND ISNULL(typenamec_uni,'')	<> ''	THEN typenamec_uni
+			WHEN @Langkey = 'zh-Hans'	AND ISNULL(typenamecn,'')		<> ''	THEN typenamecn
+			WHEN @Langkey = 'th-TH'		AND ISNULL(typenameth,'')		<> ''	THEN typenameth
+			WHEN @Langkey = 'ja-JP'		AND ISNULL(typenamej,'')		<> ''	THEN typenamej
+			WHEN @Langkey = 'ko-KR'		AND ISNULL(typenameko,'')		<> ''	THEN typenameko
+			WHEN @Langkey = 'es'		AND ISNULL(typenameES,'')		<> ''	THEN typenameES
+			WHEN @Langkey = 'vi-VN'		AND ISNULL(typenamee,'')		<> ''	THEN typenamee
+			ELSE typenamee 
+		END typenamee
 	INTO #bettype		
 	FROM bodb02.dbo.bettype  b WITH (NOLOCK)
 		INNER JOIN CTE_GroupBettype bt 
