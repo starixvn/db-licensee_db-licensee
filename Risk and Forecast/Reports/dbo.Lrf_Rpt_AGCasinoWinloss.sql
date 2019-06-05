@@ -23,6 +23,7 @@ AS
 		- 20170301@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest [Redmine: #71679]
 		- 20170524@Harper: Make sure data correct between two stages of Balance up process [RedmineID: #77065]
 		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
+		- 20190604@Amanda: Fix bug - Dummy balance data is displayed in report [RedmineID: #114611]
 
 	Param's Explanation:  
 	  
@@ -43,7 +44,7 @@ AS
 SET NOCOUNT ON
 BEGIN
 	CREATE TABLE #tmpResult (Winlostdate DATETIME, Currency INT,TurnOver MONEY,TotalTrans INT,Winlost MONEY,LicenseeWinlost MONEY)	
-	CREATE TABLE #tmpCust (CustId INT, Currency INT, srecommend INT)
+	CREATE TABLE #tmpCust (CustId INT, Currency INT)
 	CREATE TABLE #TempExchange(ExchangeDate DATETIME, ExchangeId INT, Code NVARCHAR(5), USD FLOAT, EUR FLOAT,GBP FLOAT)
 		
 	DECLARE @sql NVARCHAR(1000)
@@ -70,8 +71,8 @@ BEGIN
 		RETURN
 	END CATCH;
 	
-	INSERT INTO #tmpCust (CustID, Currency, srecommend)	
-	SELECT co.CustID, lc.Currency , co.srecommend
+	INSERT INTO #tmpCust (CustID, Currency)	
+	SELECT co.CustID, lc.Currency
 	FROM dbo.custInfo co WITH (NOLOCK)
 		INNER JOIN @Temp lc ON co.recommend = lc.CustId AND lc.Currency = co.Currency
 	
@@ -136,9 +137,9 @@ BEGIN
 									, SUM(c.Winlost)  AS Winlost
 									, -SUM(c.Winlost) AS LicenseeWinlost
 							FROM DBLIC.bodb_licenseereport.dbo.rptLicWinloss2 c WITH (NOLOCK)
-								INNER JOIN (SELECT DISTINCT srecommend, Currency FROM #tmpCust) ct ON c.Custid = ct.srecommend AND c.Currency = ct.Currency
+								INNER JOIN @Temp ag ON c.recommend = ag.Custid AND c.Currency = ag.Currency
 							WHERE c.Winlostdate BETWEEN @TempFromDate AND @ToDate2 
-								AND c.roleid = 4
+								AND c.roleid = 2
 								AND c.sporttype = 250 -- AG Casino
 								AND c.statusID <> 101								
 							GROUP BY c.Winlostdate, c.Currency
