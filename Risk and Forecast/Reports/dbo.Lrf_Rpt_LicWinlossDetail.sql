@@ -1082,7 +1082,7 @@ BEGIN
  		
 		SELECT @SQL = 'SELECT FirstExchangeDateByMonth, LastExchangeDateByMonth, ExchangeID, USD, EUR, GBP, ' + @Rate + ' AS Rate, ' + @DefaultRate + ' AS DefaultRate '
 					+ 'FROM Lrf_f_GetSubExchangeDaily(' + CONVERT( VARCHAR(10),@FDate, 120) + ',' + CONVERT( VARCHAR(10),@TDate, 120) + ') e '
-					+ 'WHERE EXISTS (SELECT TOP 1 1 FROM #tempAg a WHERE e.ExchangeID = a.Currency'
+					+ 'WHERE EXISTS (SELECT TOP 1 1 FROM #tempAg a WHERE e.ExchangeID = a.Currency)'
 
 		INSERT INTO @ExchangeRate(FirstExMonth, LastExMonth, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
 		EXECUTE (@SQL)
