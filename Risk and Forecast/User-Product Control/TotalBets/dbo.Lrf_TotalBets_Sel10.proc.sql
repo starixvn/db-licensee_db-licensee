@@ -131,10 +131,7 @@ SELECT
 DECLARE @Temp2 as TABLE
 (
 	leagueid INT,
-	totalbalance MONEY,
-	totalbalanceusd MONEY,
-	totalbalanceeur MONEY,
-	totalbalancegbp MONEY
+	totalbalance MONEY
 )
 INSERT INTO  @Temp2
 SELECT 
