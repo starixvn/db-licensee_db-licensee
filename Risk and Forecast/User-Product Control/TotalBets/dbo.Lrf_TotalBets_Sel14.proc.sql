@@ -248,7 +248,7 @@ SELECT
 	--
 	SUM(WinLost_1HAwayLG_ori) WinLost_1HAwayLG,
 	--
-	SUM(WinLost_1HNoGoal_ori) WinLost_1HNoGoal,
+	SUM(WinLost_1HNoGoal_ori) WinLost_1HNoGoal
 FROM @Data	
 
 DROP TABLE #tempAg
