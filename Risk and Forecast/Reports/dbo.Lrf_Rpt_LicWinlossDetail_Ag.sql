@@ -1101,7 +1101,7 @@ BEGIN
 		CAST(SUM(BuyBackAmtSB	*e.Rate)	AS MONEY)		AS BuyBackAmtSB,
 		CAST(SUM(BuyBackAmtBA	*e.Rate)	AS MONEY)		AS BuyBackAmtBA,
 		CAST(SUM(CashOutComm	*e.Rate)	AS MONEY)		AS CashOutComm,
-		
+		SUM(Betcount)										AS Betcount,
 		SUM(PromotionPrize)									AS PromotionPrize  
 	FROM
 		#SAgWinLoss w
@@ -1270,7 +1270,9 @@ BEGIN
 		CAST(SUM((WLBetTicket+WLBoughtTicket-BetTradeComm) *e.DefaultRate)  AS MONEY)	AS AmtDueToBT,
 		CAST(SUM(BuyBackAmtSB	*e.DefaultRate)	AS MONEY)		AS BuyBackAmtSB,
 		CAST(SUM(BuyBackAmtBA	*e.DefaultRate)	AS MONEY)		AS BuyBackAmtBA,
-		CAST(SUM(CashOutComm	*e.DefaultRate)	AS MONEY)		AS CashOutComm
+		CAST(SUM(CashOutComm	*e.DefaultRate)	AS MONEY)		AS CashOutComm,
+
+		SUM(Betcount)											AS Betcount
 	FROM
 		#SAgWinLoss w   
 		INNER JOIN @ExchangeRate e ON w.winlostdate BETWEEN e.FirstExMonth AND e.LastExMonth AND w.currency = e.ExchangeId
