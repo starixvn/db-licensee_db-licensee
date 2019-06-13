@@ -252,7 +252,7 @@ BEGIN
 			SET @TempFromDate = @_FromDate
 	
 		DECLARE @transid BIGINT
-		SELECT TOP 1 @transid = transid FROM dbo.bettrans WITH(NOLOCK) WHERE matchid > 0 ORDER BY transid
+		SELECT TOP (1) @transid = transid FROM dbo.bettrans WITH(NOLOCK) WHERE matchid > 0 ORDER BY transid
 
 		IF @ShowBA = 1 
 		BEGIN
@@ -848,7 +848,7 @@ BEGIN
 		INNER JOIN (SELECT SUM(WLBetTicket) WLBetTicket, winlostdate, currency FROM @WLBetTicket GROUP BY winlostdate, currency ) w
 			ON s.winlostdate = w.winlostdate AND s.currency = w.currency-- AND s.statusID = w.statusID
 
-	IF EXISTS (SELECT TOP 1 1 FROM #SAgWinLoss)
+	IF EXISTS (SELECT TOP (1) 1 FROM #SAgWinLoss)
 	BEGIN
 		DECLARE @SQL VARCHAR(500) = ''
 		DECLARE @Rate VARCHAR(3) = '1', @DefaultRate VARCHAR(3) = '1'
@@ -864,8 +864,8 @@ BEGIN
 		END
 
 		SELECT @SQL = 'SELECT FirstExchangeDateByMonth, LastExchangeDateByMonth, ExchangeID, USD, EUR, GBP, ' + @Rate + ' AS Rate, ' + @DefaultRate + ' AS DefaultRate '
-					+ 'FROM Lrf_f_GetSubExchangeDaily(' + CONVERT( VARCHAR(10),@FromDate, 120) + ',' + CONVERT( VARCHAR(10),@_ToDate, 120) + ') e '
-					+ 'WHERE EXISTS (SELECT TOP 1 1 FROM #tempAg a WHERE e.ExchangeID = a.Currency)'
+					+ 'FROM Lrf_f_GetSubExchangeDaily(''' + CONVERT( VARCHAR(10),@_FromDate, 120) + ''',''' + CONVERT( VARCHAR(10),@_ToDate, 120) + ''') e '
+					+ 'WHERE EXISTS (SELECT TOP (1) 1 FROM #tempAg a WHERE e.ExchangeID = a.Currency)'
 
 		INSERT INTO @ExchangeRate(FirstExMonth, LastExMonth, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
 		EXECUTE (@SQL)

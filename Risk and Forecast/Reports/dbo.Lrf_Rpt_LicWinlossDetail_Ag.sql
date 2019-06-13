@@ -1035,7 +1035,7 @@ BEGIN
 
 	CREATE NONCLUSTERED INDEX IDX_Index_SA ON #SAgWinLoss(Currency)
 
-	IF EXISTS (SELECT TOP 1 1 FROM #SAgWinLoss)
+	IF EXISTS (SELECT TOP (1) 1 FROM #SAgWinLoss)
 	BEGIN
 		DECLARE @SQL VARCHAR(500) = ''
 		DECLARE @Rate VARCHAR(3) = '1', @DefaultRate VARCHAR(3) = '1'
@@ -1051,8 +1051,8 @@ BEGIN
 		END
 		
 		SELECT @SQL = 'SELECT FirstExchangeDateByMonth, LastExchangeDateByMonth, ExchangeID, USD, EUR, GBP, ' + @Rate + ' AS Rate, ' + @DefaultRate + ' AS DefaultRate '
-					+ 'FROM Lrf_f_GetSubExchangeDaily(' + CONVERT( VARCHAR(10),@FDate, 120) + ',' + CONVERT( VARCHAR(10),@TDate, 120) + ') e '
-					+ 'WHERE EXISTS (SELECT TOP 1 1 FROM #SAgWinLoss s WHERE e.ExchangeId = s.Currency)'
+					+ 'FROM Lrf_f_GetSubExchangeDaily(''' + CONVERT( VARCHAR(10),@FDate, 120) + ''',''' + CONVERT( VARCHAR(10),@TDate, 120) + ''') e '
+					+ 'WHERE EXISTS (SELECT TOP (1) 1 FROM #SAgWinLoss s WHERE e.ExchangeId = s.Currency)'
 
 		INSERT INTO @ExchangeRate(FirstExMonth, LastExMonth, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
 		EXECUTE (@SQL)
