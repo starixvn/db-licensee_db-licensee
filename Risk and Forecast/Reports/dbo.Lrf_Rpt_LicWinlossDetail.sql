@@ -274,10 +274,10 @@ BEGIN
 
 	END	
 
-	DECLARE @TempFromDate	DATETIME,
-			@TempToDate		DATETIME,
-			@FDate			DATETIME,
-			@TDate			DATETIME
+	DECLARE @TempFromDate	SMALLDATETIME,
+			@TempToDate		SMALLDATETIME,
+			@FDate			SMALLDATETIME,
+			@TDate			SMALLDATETIME
 
 	--to Deal With Parameter Sniffing
 	SELECT @FDate = @FromDate, @TDate = @ToDate
@@ -337,8 +337,7 @@ BEGIN
 				-SUM(b.winlost-b.actual_stake+awinlost+comm ) AS AmountDueToBA,
 				SUM(comm) AS CommBA,
 				SUM(playercomm) AS PlayerComm,
-				COUNT(b.transid)
-					* CASE WHEN @drawfilter = 2 AND b.statusID = 111 THEN 0 ELSE 1 END BetCount,
+				SUM(CASE WHEN @drawfilter = 2 AND b.statusID = 111 THEN 0 ELSE 1 END) BetCount,
 				0 AS licenseeWLBT,
 				0 AS BetTradeComm,
 				SUM(CASE WHEN b.betdaqid = 0 THEN (b.winlost-b.actual_stake) ELSE 0 END) AS WLBetTicket,
@@ -407,8 +406,7 @@ BEGIN
 				0 AS AmountDueToBA,
 				0 AS CommBA,
 				SUM(b.playercomm) AS PlayerComm,
-				COUNT(b.transid)
-					* CASE WHEN @drawfilter = 2 AND b.statusID = 111 THEN 0 ELSE 1 END BetCount,
+				SUM(CASE WHEN @drawfilter = 2 AND b.statusID = 111 THEN 0 ELSE 1 END) BetCount,
 				0 AS licenseeWLBT,
 				0 AS BetTradeComm,	
 				SUM(CASE WHEN b.betdaqid = 0 THEN (b.winlost-b.actual_stake) ELSE 0 END) AS WLBetTicket,
@@ -476,8 +474,7 @@ BEGIN
 				0 AS AmountDueToBA,
 				0 AS CommBA,
 				0 AS PlayerComm,		
-				COUNT(CASE WHEN b.bettype = 903 THEN NULL ELSE b.transid END)
-					* CASE WHEN @drawfilter = 2 AND b.statusID = 111 THEN 0 ELSE 1 END BetCount,
+				SUM(CASE WHEN b.bettype = 903 OR (@drawfilter = 2 AND b.statusID = 111) THEN 0 ELSE 1 END) BetCount,
 				-SUM(CASE WHEN b.bettype IN (901, 902) THEN b.winlost-b.actual_stake ELSE 0 END) AS licenseeWLBT,
 				SUM(CASE WHEN b.bettype = 903 THEN b.awinlost ELSE 0 END) AS BetTradeComm,
 				0 WLBetTicket,
@@ -656,8 +653,7 @@ BEGIN
 				0 as AmountDueToBA,
 				0 AS CommBA,
 				SUM(b.playercomm) AS PlayerComm,
-				COUNT(b.transid)
-					* CASE WHEN @drawfilter = 2 AND b.statusID = 111 THEN 0 ELSE 1 END AS BetCount,
+				SUM(CASE WHEN @drawfilter = 2 AND b.statusID = 111 THEN 0 ELSE 1 END) AS BetCount,
 				0 AS licenseeWLBT,
 				0 AS BetTradeComm,	
 				0 AS WLBetTicket,
@@ -733,8 +729,7 @@ BEGIN
 				-SUM(b.winlost+b.awinlost+b.comm) AS AmountDueToBA,
 				SUM(comm) AS CommBA,
 				SUM(playercomm) AS PlayerComm,
-				SUM(b.betcount)
-					* CASE WHEN @drawfilter = 2 AND b.statusID = 111 THEN 0 ELSE 1 END AS BetCount,
+				SUM(CASE WHEN @drawfilter = 2 AND b.statusID = 111 THEN 0 ELSE b.betcount END) AS BetCount,
 				0 AS licenseeWLBT,
 				0 AS BetTradeComm,	
 				SUM(CASE WHEN bt.CustId IS NOT NULL THEN b.winlost ELSE 0 END) AS WLBetTicket,
@@ -918,8 +913,7 @@ BEGIN
 				0 AS AmountDueToBA,
 				0 AS CommBA,
 				SUM(playercomm) AS PlayerComm,
-				SUM(b.betcount)
-					* CASE WHEN @drawfilter = 2 AND b.statusID = 111 THEN 0 ELSE 1 END AS BetCount,
+				SUM(CASE WHEN @drawfilter = 2 AND b.statusID = 111 THEN 0 ELSE b.betcount END) AS BetCount,
 				0 AS licenseeWLBT,
 				0 AS BetTradeComm,	
 				SUM(CASE WHEN (bt.CustId IS NOT NULL) AND t.sporttype = 0 THEN b.winlost ELSE 0 END) AS WLBetTicket,
@@ -983,8 +977,7 @@ BEGIN
 				0 AS AmountDueToBA,
 				0 AS CommBA,
 				0 AS PlayerComm,
-				SUM(CASE WHEN b.bettype = 903 THEN NULL ELSE b.BetCount END)
-					* CASE WHEN @drawfilter = 2 AND b.statusID = 111 THEN 0 ELSE 1 END BetCount,
+				SUM(CASE WHEN b.bettype = 903 OR (@drawfilter = 2 AND b.statusID = 111) THEN 0 ELSE b.BetCount END) BetCount,
 				-SUM(CASE WHEN b.bettype IN (901, 902) THEN b.winlost ELSE 0 END) AS licenseeWLBT,
 				SUM(CASE WHEN b.bettype = 903 THEN b.awinlost ELSE 0 END) AS BetTradeComm,
 				0 WLBetTicket,

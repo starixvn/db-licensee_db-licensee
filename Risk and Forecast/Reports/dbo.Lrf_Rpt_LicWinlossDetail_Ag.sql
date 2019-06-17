@@ -263,10 +263,10 @@ BEGIN
 
 	END	
 	
-	DECLARE @TempFromDate	DATETIME, 
-			@TempToDate		DATETIME,
-			@FDate			DATETIME,
-			@TDate			DATETIME
+	DECLARE @TempFromDate	SMALLDATETIME, 
+			@TempToDate		SMALLDATETIME,
+			@FDate			SMALLDATETIME,
+			@TDate			SMALLDATETIME
 
 	--to Deal With Parameter Sniffing
 	SELECT @FDate = @FromDate, @TDate = @ToDate 

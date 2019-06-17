@@ -98,7 +98,7 @@ BEGIN
 	)  
 	
 	CREATE TABLE #tempAg (CustId INT,Currency INT)
-	CREATE TABLE #Exchange	(FirstExchangeDateByMonth SMALLDATETIME, LastExchangeDateByMonth SMALLDATETIME, ExchangeID INT, USD FLOAT, EUR FLOAT, GBP FLOAT, Rate FLOAT, DefaultRate FLOAT)
+	CREATE TABLE #Exchange	(FirstExchangeDateByMonth DATETIME, LastExchangeDateByMonth DATETIME, ExchangeID INT, USD FLOAT, EUR FLOAT, GBP FLOAT, Rate FLOAT, DefaultRate FLOAT)
 
 	--CREATE TABLE #tmpVS		(Orid INT, SportType TINYINT)
 	DECLARE @bettype		TABLE (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))

@@ -130,7 +130,7 @@ BEGIN
 	DECLARE @bettype		TABLE (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))
 	DECLARE @sporttype		TABLE (sporttype INT, ProductCode VARCHAR(10))
 	DECLARE @LicenseeName	VARCHAR(50)
-	DECLARE @WLBetTicket	TABLE (winlostdate DATETIME, currency INT, WLBetTicket MONEY)
+	DECLARE @WLBetTicket	TABLE (winlostdate SMALLDATETIME, currency INT, WLBetTicket MONEY)
 	DECLARE @ProductList	VARCHAR (500)
 
 	DECLARE @_FromDate SMALLDATETIME, @_ToDate SMALLDATETIME
@@ -241,8 +241,8 @@ BEGIN
 
 	END	
 
-	DECLARE @TempFromDate	DATETIME,
-			@TempToDate		DATETIME
+	DECLARE @TempFromDate	SMALLDATETIME,
+			@TempToDate		SMALLDATETIME
 
 	IF @_ToDate > @MoveBetsDay
 	BEGIN
@@ -727,7 +727,7 @@ BEGIN
 
 	DECLARE @SAgWL TABLE
 	(  
-		winlostdate			DATETIME,  
+		winlostdate			SMALLDATETIME,  
 		Currency			INT,
 		TurnoverSB			MONEY,
 		TurnoverBA			MONEY,
