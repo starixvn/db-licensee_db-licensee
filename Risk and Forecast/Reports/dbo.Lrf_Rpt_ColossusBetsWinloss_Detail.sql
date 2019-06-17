@@ -350,12 +350,12 @@ BEGIN
 		, CurrencyID
 		, SUM(TotalTrans)				AS TotalTrans
 		
-		, SUM(TurnOver * e.Rate)		AS TurnOver
-		, SUM(WinningPrize * e.Rate)	AS WinningPrize
-		, SUM(CashOutAmt * e.Rate)		AS CashOutAmt
-		, SUM(CashInAmt * e.Rate)		AS CashInAmt
-		, SUM(CommAmt * e.Rate)			AS CommAmt
-		, SUM(GrandAmt * e.Rate)		AS GrandAmt
+		, CAST(SUM(TurnOver * e.Rate) AS MONEY)		AS TurnOver
+		, CAST(SUM(WinningPrize * e.Rate) AS MONEY)	AS WinningPrize
+		, CAST(SUM(CashOutAmt * e.Rate) AS MONEY)	AS CashOutAmt
+		, CAST(SUM(CashInAmt * e.Rate) AS MONEY)	AS CashInAmt
+		, CAST(SUM(CommAmt * e.Rate) AS MONEY)		AS CommAmt
+		, CAST(SUM(GrandAmt * e.Rate) AS MONEY)		AS GrandAmt
 		---USD
 		, CAST(SUM(TurnOver * e.USD) AS MONEY)		AS TurnOverUSD
 		, CAST(SUM(WinningPrize * e.USD) AS MONEY)	AS WinningPrizeUSD

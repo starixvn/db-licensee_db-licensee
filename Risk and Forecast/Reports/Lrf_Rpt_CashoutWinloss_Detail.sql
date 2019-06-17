@@ -4,7 +4,9 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_CashoutWinloss_Detail]
 	@FromDate		SMALLDATETIME,
 	@ToDate			SMALLDATETIME,
 	@MoveBetsDay	SMALLDATETIME,	
-	@AgentList		VARCHAR(MAX)
+	@AgentList		VARCHAR(MAX),
+	@BaseCurrency	VARCHAR(3) = '',
+	@DefaultBaseCurrency	VARCHAR(3) = ''
 AS
 /*
 	Created: 20170330@Harper
@@ -13,6 +15,7 @@ AS
 	Revisions: 
 		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 		- 20180809@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
+		- 20190617@Amanda: Add Base currency param [RedmineID: #112531]
 
 	Param's Explanation:  
 
@@ -31,13 +34,13 @@ BEGIN
 		   @TDate = @ToDate
 	
 	DECLARE @DocHandler INT
-	DECLARE @tempAg AS TABLE (custID INT, currency INT)
+	CREATE TABLE #tempAg (custID INT, currency INT)
 
 	BEGIN TRY
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT
 			,@AgentList
 	
-		INSERT INTO @TempAg(CustId, Currency)
+		INSERT INTO #tempAg(CustId, Currency)
 		SELECT AgentId, Currency 
 		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
@@ -51,11 +54,7 @@ BEGIN
 		RETURN
 	END CATCH;
 
-	CREATE TABLE #Exchange(ExchangeID INT, ExchageDate SMALLDATETIME, Code VARCHAR(5), USD FLOAT, EUR FLOAT, GBP FLOAT)
-
-	INSERT INTO #Exchange(ExchangeID, ExchageDate, Code, USD, EUR, GBP)
-	SELECT ExchangeId, exchangedate, Code, USD, EUR, GBP	
-	FROM Lrf_f_GetExchangeDaily(@FDate, @TDate)	
+	CREATE TABLE #Exchange(FirstExMonth SMALLDATETIME, LastExMonth SMALLDATETIME, ExchangeId INT, Rate FLOAT, USD FLOAT, EUR FLOAT, GBP FLOAT, DefaultRate FLOAT)
 
 	CREATE TABLE #CashoutCust (CustId INT PRIMARY KEY)
 	INSERT INTO #CashoutCust(CustId)
@@ -101,7 +100,7 @@ BEGIN
 		INSERT INTO #TempData ( rptDate ,CurrencyID ,Bettype ,Transid ,Refno ,Actual_stake ,winlost ,awinlost ,transid2, CustID)			
 		SELECT b.winlostdate, b.currency, b.bettype, b.transid, b.refno, b.actual_stake, b.winlost, b.awinlost, b.transid2, b.custid
 		FROM dbo.bettrans b WITH (NOLOCK)
-			INNER JOIN @tempAg ag ON b.recommend = ag.custID AND b.currency = ag.currency
+			INNER JOIN #tempAg ag ON b.recommend = ag.custID AND b.currency = ag.currency
 		WHERE b.bettype IN (911, 913)
 			AND b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND b.statusID IN (111, 112, 113)
@@ -180,11 +179,35 @@ BEGIN
 			, SUM(b.CashoutComm)
 			, SUM(b.TicketPayout)
 		FROM bodb_LicenseeReport.dbo.rptLicCashoutSummary b WITH (NOLOCK)			
-			INNER JOIN @tempAg ag ON b.Recommend = ag.custID AND b.Currency = ag.currency
+			INNER JOIN #tempAg ag ON b.Recommend = ag.custID AND b.Currency = ag.currency
 		WHERE b.winlostdate BETWEEN @FDate AND @TempToDate		
 			AND b.ProductID = 25	
 			AND b.RoleID = 1
 		GROUP BY b.winlostdate, b.Currency, b.custid
+	END
+	
+	--Get Exchange rate
+	IF EXISTS (SELECT TOP (1) 1 FROM @Result)
+	BEGIN
+		DECLARE @SQL VARCHAR(500) = ''
+		DECLARE @Rate VARCHAR(3) = '1', @DefaultRate VARCHAR(3) = '1'
+		
+		IF ISNULL(@BaseCurrency, '') <> ''
+		BEGIN
+			SET @Rate = @BaseCurrency
+		END
+		
+		IF ISNULL(@DefaultBaseCurrency, '') <> ''
+		BEGIN
+			SET @DefaultRate = @DefaultBaseCurrency
+		END
+
+		SELECT @SQL = 'SELECT FirstExchangeDateByMonth, LastExchangeDateByMonth, ExchangeID, USD, EUR, GBP, ' + @Rate + ' AS Rate, ' + @DefaultRate + ' AS DefaultRate '
+					+ 'FROM Lrf_f_GetSubExchangeDaily(''' + CONVERT( VARCHAR(10),@FDate, 120) + ''',''' + CONVERT( VARCHAR(10),@TDate, 120) + ''') e '
+					+ 'WHERE EXISTS (SELECT TOP (1) 1 FROM #tempAg a WHERE e.ExchangeID = a.Currency)'
+
+		INSERT INTO #Exchange(FirstExMonth, LastExMonth, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
+		EXECUTE (@SQL)
 	END
 
 	-- Select Result
@@ -195,48 +218,59 @@ BEGIN
 		, SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1, LEN(c.username2) - CHARINDEX('$', c.username2)) AS ExternalID
 		, SUM(r.CashoutTime) AS CashoutTime
 		, SUM(r.CashoutTicket) AS CashoutTicket
-		, SUM(r.CashoutValue) AS CashoutValue
-		, SUM(r.BuyBackAmountSB) AS BuyBackAmountSB
-		, SUM(r.BuyBackAmountBA) AS BuyBackAmountBA
-		, SUM(r.BuyBackAmountSB + r.BuyBackAmountBA) AS BuyBackAmount
-		, SUM(r.TicketPayout) AS TicketPayout
-		, SUM(r.CashoutComm) AS CashoutComm
-		, SUM(r.TicketPayout) AS AmountDue_TicketPayout
-		, SUM(r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm) AS AmountDue_Comm
-		, SUM(r.TicketPayout - (r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm)) AS Amount_Total
+		
+		, CAST(SUM(r.CashoutValue * e.Rate) AS MONEY)													AS CashoutValue
+		, CAST(SUM(r.BuyBackAmountSB * e.Rate) AS MONEY)												AS BuyBackAmountSB
+		, CAST(SUM(r.BuyBackAmountBA * e.Rate) AS MONEY)												AS BuyBackAmountBA
+		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA) * e.Rate) AS MONEY)							AS BuyBackAmount
+		, CAST(SUM(r.TicketPayout * e.Rate) AS MONEY)													AS TicketPayout
+		, CAST(SUM(r.CashoutComm * e.Rate) AS MONEY)													AS CashoutComm
+		, CAST(SUM(r.TicketPayout * e.Rate) AS MONEY)													AS AmountDue_TicketPayout
+		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm) * e.Rate) AS MONEY)			AS AmountDue_Comm
+		, CAST(SUM((r.TicketPayout - (r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm)) * e.Rate) AS MONEY) AS Amount_Total
 		--- USD		
-		, CAST(SUM(r.CashoutValue * e.USD) AS MONEY) AS CashoutValueUSD
-		, CAST(SUM(r.BuyBackAmountSB * e.USD) AS MONEY) AS BuyBackAmountSBUSD
-		, CAST(SUM(r.BuyBackAmountBA * e.USD) AS MONEY) AS BuyBackAmountBAUSD
-		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA) * e.USD) AS MONEY) AS BuyBackAmountUSD
-		, CAST(SUM(r.TicketPayout * e.USD) AS MONEY) AS TicketPayoutUSD
-		, CAST(SUM(r.CashoutComm * e.USD) AS MONEY) AS CashoutCommUSD
-		, CAST(SUM(r.TicketPayout * e.USD) AS MONEY) AS AmountDue_TicketPayoutUSD
-		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm) * e.USD) AS MONEY) AS AmountDue_CommUSD
+		, CAST(SUM(r.CashoutValue * e.USD) AS MONEY)													AS CashoutValueUSD
+		, CAST(SUM(r.BuyBackAmountSB * e.USD) AS MONEY)													AS BuyBackAmountSBUSD
+		, CAST(SUM(r.BuyBackAmountBA * e.USD) AS MONEY)													AS BuyBackAmountBAUSD
+		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA) * e.USD) AS MONEY)							AS BuyBackAmountUSD
+		, CAST(SUM(r.TicketPayout * e.USD) AS MONEY)													AS TicketPayoutUSD
+		, CAST(SUM(r.CashoutComm * e.USD) AS MONEY)														AS CashoutCommUSD
+		, CAST(SUM(r.TicketPayout * e.USD) AS MONEY)													AS AmountDue_TicketPayoutUSD
+		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm) * e.USD) AS MONEY)			AS AmountDue_CommUSD
 		, CAST(SUM((r.TicketPayout - (r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm)) * e.USD) AS MONEY) AS Amount_TotalUSD
 		--- EUR		
-		, CAST(SUM(r.CashoutValue * e.EUR) AS MONEY) AS CashoutValueEUR
-		, CAST(SUM(r.BuyBackAmountSB * e.EUR) AS MONEY) AS BuyBackAmountSBEUR
-		, CAST(SUM(r.BuyBackAmountBA * e.EUR) AS MONEY) AS BuyBackAmountBAEUR
-		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA) * e.EUR) AS MONEY) AS BuyBackAmountEUR
-		, CAST(SUM(r.TicketPayout * e.EUR) AS MONEY) AS TicketPayoutEUR
-		, CAST(SUM(r.CashoutComm * e.EUR) AS MONEY) AS CashoutCommEUR
-		, CAST(SUM(r.TicketPayout * e.EUR) AS MONEY) AS AmountDue_TicketPayoutEUR
-		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm) * e.EUR) AS MONEY) AS AmountDue_CommEUR
+		, CAST(SUM(r.CashoutValue * e.EUR) AS MONEY)													AS CashoutValueEUR
+		, CAST(SUM(r.BuyBackAmountSB * e.EUR) AS MONEY)													AS BuyBackAmountSBEUR
+		, CAST(SUM(r.BuyBackAmountBA * e.EUR) AS MONEY)													AS BuyBackAmountBAEUR
+		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA) * e.EUR) AS MONEY)							AS BuyBackAmountEUR
+		, CAST(SUM(r.TicketPayout * e.EUR) AS MONEY)													AS TicketPayoutEUR
+		, CAST(SUM(r.CashoutComm * e.EUR) AS MONEY)														AS CashoutCommEUR
+		, CAST(SUM(r.TicketPayout * e.EUR) AS MONEY)													AS AmountDue_TicketPayoutEUR
+		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm) * e.EUR) AS MONEY)			AS AmountDue_CommEUR
 		, CAST(SUM((r.TicketPayout - (r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm)) * e.EUR) AS MONEY) AS Amount_TotalEUR
 		--- GBP		
-		, CAST(SUM(r.CashoutValue * e.GBP) AS MONEY) AS CashoutValueGBP
-		, CAST(SUM(r.BuyBackAmountSB * e.GBP) AS MONEY) AS BuyBackAmountSBGBP
-		, CAST(SUM(r.BuyBackAmountBA * e.GBP) AS MONEY) AS BuyBackAmountBAGBP
-		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA) * e.GBP) AS MONEY) AS BuyBackAmountGBP
-		, CAST(SUM(r.TicketPayout * e.GBP) AS MONEY) AS TicketPayoutGBP
-		, CAST(SUM(r.CashoutComm * e.GBP) AS MONEY) AS CashoutCommGBP
-		, CAST(SUM(r.TicketPayout * e.GBP) AS MONEY) AS AmountDue_TicketPayoutGBP
-		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm) * e.GBP) AS MONEY) AS AmountDue_CommGBP
+		, CAST(SUM(r.CashoutValue * e.GBP) AS MONEY)													AS CashoutValueGBP
+		, CAST(SUM(r.BuyBackAmountSB * e.GBP) AS MONEY)													AS BuyBackAmountSBGBP
+		, CAST(SUM(r.BuyBackAmountBA * e.GBP) AS MONEY)													AS BuyBackAmountBAGBP
+		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA) * e.GBP) AS MONEY)							AS BuyBackAmountGBP
+		, CAST(SUM(r.TicketPayout * e.GBP) AS MONEY)													AS TicketPayoutGBP
+		, CAST(SUM(r.CashoutComm * e.GBP) AS MONEY)														AS CashoutCommGBP
+		, CAST(SUM(r.TicketPayout * e.GBP) AS MONEY)													AS AmountDue_TicketPayoutGBP
+		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm) * e.GBP) AS MONEY)			AS AmountDue_CommGBP
 		, CAST(SUM((r.TicketPayout - (r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm)) * e.GBP) AS MONEY) AS Amount_TotalGBP
+		--- Default base currency		
+		, CAST(SUM(r.CashoutValue * e.DefaultRate) AS MONEY)													AS CashoutValueBase
+		, CAST(SUM(r.BuyBackAmountSB * e.DefaultRate) AS MONEY)													AS BuyBackAmountSBBase
+		, CAST(SUM(r.BuyBackAmountBA * e.DefaultRate) AS MONEY)													AS BuyBackAmountBABase
+		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA) * e.DefaultRate) AS MONEY)							AS BuyBackAmountBase
+		, CAST(SUM(r.TicketPayout * e.DefaultRate) AS MONEY)													AS TicketPayoutBase
+		, CAST(SUM(r.CashoutComm * e.DefaultRate) AS MONEY)														AS CashoutCommBase
+		, CAST(SUM(r.TicketPayout * e.DefaultRate) AS MONEY)													AS AmountDue_TicketPayoutBase
+		, CAST(SUM((r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm) * e.DefaultRate) AS MONEY)			AS AmountDue_CommBase
+		, CAST(SUM((r.TicketPayout - (r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm)) * e.DefaultRate) AS MONEY) AS Amount_TotalBase
 	FROM @Result r
-		INNER JOIN #Exchange e ON r.rptDate = e.ExchageDate AND r.CurrencyID = e.ExchangeID
 		INNER JOIN Customer c WITH (NOLOCK) ON r.custid = c.custid
+		INNER JOIN #Exchange e ON r.rptDate BETWEEN e.FirstExMonth AND e.LastExMonth AND r.CurrencyID = e.ExchangeID	
 	GROUP BY 		
 		  r.CurrencyID
 		, r.CustID, c.username, c.username2
@@ -244,5 +278,6 @@ BEGIN
 	DROP TABLE #TempData
 	DROP TABLE #Exchange
 	DROP TABLE #CashoutCust
+	DROP TABLE #tempAg
 END
 GO
