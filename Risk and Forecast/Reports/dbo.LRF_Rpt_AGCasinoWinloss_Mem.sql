@@ -1,10 +1,12 @@
 /*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
  
 ALTER PROCEDURE [dbo].[LRF_Rpt_AGCasinoWinloss_Mem] 
-	@CustID		INT, --- recommend
-	@FromDate	SMALLDATETIME,  
-	@ToDate		SMALLDATETIME,
-	@AgentList	VARCHAR(MAX)
+	@CustID					INT, --- recommend
+	@FromDate				SMALLDATETIME,  
+	@ToDate					SMALLDATETIME,
+	@AgentList				VARCHAR(MAX),
+	@BaseCurrency			VARCHAR(3) = '',
+	@DefaultBaseCurrency	VARCHAR(3) = ''
 AS  
 /*
 
@@ -32,6 +34,7 @@ AS
 			- 20170302@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest [Redmine: #71679]
 			- 20170524@Harper: Make sure data correct between two stages of Balance up process [RedmineID: #77065]
 			- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
+			- 20190617@Amanda: Add Base currency param [RedmineID: #112531]
 
 	Param's Explanation:  
 	  + @excludeTest: remove currency UUS
@@ -50,11 +53,10 @@ BEGIN
 	CREATE TABLE #tmpCust (  CustId INT
 							,Currency INT	
 							)
-		
-		
-	DECLARE @sql NVARCHAR(1000)
 
-	DECLARE @Temp AS TABLE ( CustId INT,Currency INT )
+	CREATE TABLE #tempAg ( CustId INT,Currency INT )
+	
+	CREATE TABLE #TempExchange(FirstExMonth DATETIME, LastExMonth DATETIME, ExchangeId INT, Rate FLOAT, USD FLOAT, EUR FLOAT, GBP FLOAT, DefaultRate FLOAT)
 
 	DECLARE @DocHandler INT
 
@@ -62,7 +64,7 @@ BEGIN
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT
 			,@AgentList
 	
-		INSERT INTO @Temp(CustId, Currency)
+		INSERT INTO #tempAg(CustId, Currency)
 		SELECT AgentId, Currency 
 		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
@@ -81,7 +83,7 @@ BEGIN
 			 ,lc.Currency
 	FROM 
 		dbo.CustInfo co WITH (NOLOCK)
-		INNER JOIN @Temp lc ON lc.CustId = co.Recommend AND co.Currency = lc.Currency
+		INNER JOIN #tempAg lc ON lc.CustId = co.Recommend AND co.Currency = lc.Currency
 	WHERE lc.CustId =  @CustID
 	
 	DECLARE @TempFromDate	DATETIME 
@@ -182,39 +184,57 @@ BEGIN
 		END
 	END
 
-	SELECT ExchangeDate
-		   ,ExchangeId
-		   ,Code
-		   ,USD
-		   ,EUR
-		   ,GBP
-	INTO #TempExchange 
-	FROM Lrf_f_GetExchangeDaily(@FromDate, @ToDate)
-	WHERE exchangeid IN (SELECT DISTINCT Currency FROM #tmpResult)
+	IF EXISTS (SELECT TOP (1) 1 FROM #tmpResult)
+	BEGIN
+		DECLARE @SQL VARCHAR(500) = ''
+		DECLARE @Rate VARCHAR(3) = '1', @DefaultRate VARCHAR(3) = '1'
+		
+		IF ISNULL(@BaseCurrency, '') <> ''
+		BEGIN
+			SET @Rate = @BaseCurrency
+		END
+		
+		IF ISNULL(@DefaultBaseCurrency, '') <> ''
+		BEGIN
+			SET @DefaultRate = @DefaultBaseCurrency
+		END
+
+		SELECT @SQL = 'SELECT FirstExchangeDateByMonth, LastExchangeDateByMonth, ExchangeID, USD, EUR, GBP, ' + @Rate + ' AS Rate, ' + @DefaultRate + ' AS DefaultRate '
+					+ 'FROM Lrf_f_GetSubExchangeDaily(''' + CONVERT( VARCHAR(10),@FromDate, 120) + ''',''' + CONVERT( VARCHAR(10),@ToDate, 120) + ''') e '
+					+ 'WHERE EXISTS (SELECT TOP (1) 1 FROM #tempAg a WHERE e.ExchangeID = a.Currency)'
+
+		INSERT INTO #TempExchange(FirstExMonth, LastExMonth, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
+		EXECUTE (@SQL)
+	END
 	
 	SELECT  SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS nickname
 			,c.Username
-			,r.Currency	
-		    ,SUM(r.TurnOver)   	 AS TurnOver
-		    ,SUM(r.TotalTrans) 	 AS TotalTrans
-		    ,SUM(r.Winlost)		 AS Winlost
-		    ,SUM(r.LicenseeWinlost) AS LicenseeWinlost
+			,r.Currency
+			,SUM(r.TotalTrans) 	 AS TotalTrans
+			
+		    ,SUM(r.TurnOver*e.Rate)   		AS TurnOver
+		    ,SUM(r.Winlost*e.Rate)			AS Winlost
+		    ,SUM(r.LicenseeWinlost*e.Rate)	AS LicenseeWinlost
 		---USD
 			,SUM(r.TurnOver*e.USD)   	 	AS TurnOverUSD
 			,SUM(r.Winlost*e.USD)		 	AS WinlostUSD
-			,SUM(r.LicenseeWinlost*e.USD) AS LicenseeWinlostUSD
+			,SUM(r.LicenseeWinlost*e.USD)	AS LicenseeWinlostUSD
 		---EUR
 			,SUM(r.TurnOver*e.EUR)   	 	AS TurnOverEUR
 			,SUM(r.Winlost*e.EUR)		 	AS WinlostEUR
-			,SUM(r.LicenseeWinlost*e.EUR) AS LicenseeWinlostEUR
+			,SUM(r.LicenseeWinlost*e.EUR)	AS LicenseeWinlostEUR
 		---GBP
 			,SUM(r.TurnOver*e.GBP)   	 	AS TurnOverGBP
 			,SUM(r.Winlost*e.GBP)		 	AS WinlostGBP
-			,SUM(r.LicenseeWinlost*e.GBP) AS LicenseeWinlostGBP
+			,SUM(r.LicenseeWinlost*e.GBP)	AS LicenseeWinlostGBP
+		---Base Currency
+			,SUM(r.TurnOver*e.DefaultRate)   	 	AS TurnOverBase
+			,SUM(r.Winlost*e.DefaultRate)		 	AS WinlostBase
+			,SUM(r.LicenseeWinlost*e.DefaultRate)	AS LicenseeWinlostBase
 	FROM #tmpResult r
-		INNER JOIN #TempExchange e ON r.Winlostdate = e.ExchangeDate AND r.currency = e.ExchangeId
-		--INNER JOIN DBLIC.bodb_licensee.dbo.licenseecustinfo c WITH (NOLOCK) ON r.CustID = c.CustID
 		INNER JOIN dbo.customer c WITH  (NOLOCK) ON c.CustID = r.CustID
+		INNER JOIN #TempExchange e ON r.Winlostdate BETWEEN e.FirstExMonth AND e.LastExMonth AND r.currency = e.ExchangeId
+		--INNER JOIN DBLIC.bodb_licensee.dbo.licenseecustinfo c WITH (NOLOCK) ON r.CustID = c.CustID		
 	GROUP BY SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2))
 			 ,c.Username
 			 ,r.Currency		
@@ -223,6 +243,7 @@ BEGIN
 	---------
 	DROP TABLE #tmpCust
 	DROP TABLE #tmpResult
-	DROP TABLE #TempExchange 	
+	DROP TABLE #TempExchange
+	DROP TABLE #tempAg
 END
 GO
