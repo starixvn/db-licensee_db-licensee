@@ -1,22 +1,15 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
-
 USE bodb02
 GO
-
-SET QUOTED_IDENTIFIER ON 
-GO
-SET ANSI_NULLS ON 
-GO
-
-/****** Object:  Stored Procedure dbo.Lrf_Rpt_ColossusBetsWinloss    Script Date: 11/18/2016 5:30:33 PM ******/
-
 ALTER PROCEDURE [dbo].[Lrf_Rpt_ColossusBetsWinloss] 
-	@FromDate		SMALLDATETIME
-	, @ToDate		SMALLDATETIME
-	, @MoveBetsDay	SMALLDATETIME
-	, @ReportType	TINYINT = 1
-	, @AgentList	VARCHAR(MAX)
-	, @TicketType	INT = -1
+	@FromDate				SMALLDATETIME
+	, @ToDate				SMALLDATETIME
+	, @MoveBetsDay			SMALLDATETIME
+	, @ReportType			TINYINT = 1
+	, @AgentList			VARCHAR(MAX)
+	, @TicketType			INT = -1
+	, @BaseCurrency			VARCHAR(3) = ''
+	, @DefaultBaseCurrency	VARCHAR(3) = ''
 AS
 	
 /*  
@@ -31,6 +24,7 @@ AS
 		- 20180305@Harper: Implement CB free play ticket [RedmineID: #90768]
 		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 		- 20180809@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
+		- 20190617@Amanda: Add Base currency param [RedmineID: #112531]
 
 	Param's Explanation:  
 	   - @excludeTest: remove currency UUS
@@ -56,12 +50,12 @@ BEGIN
 		, @TempFromDate SMALLDATETIME
 		, @TempToDate	SMALLDATETIME
 
-	DECLARE @tempAg AS TABLE (
-								custID		INT
-								, currency	INT
-							)
+	CREATE TABLE #tempAg (
+		custID		INT
+		, currency	INT
+	)
 
-	DECLARE @tmpRawData AS TABLE (
+	CREATE TABLE #tmpRawData (
 		rptDate			DATETIME
 		, CurrencyID	INT
 		, TurnOver		MONEY
@@ -71,7 +65,9 @@ BEGIN
 		, CashInAmt		MONEY
 		, CommAmt		MONEY
 		, GrandAmt		MONEY
-		)
+	)
+	
+	CREATE TABLE #TempExchange(FirstExMonth DATETIME, LastExMonth DATETIME, ExchangeId INT, Rate FLOAT, USD FLOAT, EUR FLOAT, GBP FLOAT, DefaultRate FLOAT)
 
 	---Section 2 : INIT VARIABLE
 	SELECT @_FromDate = @FromDate
@@ -83,7 +79,7 @@ BEGIN
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT
 			,@AgentList
 	
-		INSERT INTO @TempAg(CustId, Currency)
+		INSERT INTO #tempAg(CustId, Currency)
 		SELECT AgentId, Currency 
 		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
@@ -162,7 +158,7 @@ BEGIN
 			, b.STATUS
 			, SUM(a.GrandAmt) AS GrandAmt
 		FROM dbo.bettrans b WITH (NOLOCK)
-		INNER JOIN @tempAg t
+		INNER JOIN #tempAg t
 			ON b.recommend = t.CustID
 				AND b.Currency = t.Currency
 		LEFT JOIN @tmpGrandAmt a
@@ -180,7 +176,7 @@ BEGIN
 			, b.Actual_stake
 			, b.STATUS
 
-		INSERT INTO @tmpRawData (
+		INSERT INTO #tmpRawData (
 			rptDate
 			, CurrencyID
 			, TurnOver
@@ -250,7 +246,7 @@ BEGIN
 		UPDATE d
 		SET TurnOver = s.TurnOver
 			,GrandAmt = s.GrandAmt
-		FROM @tmpRawData d
+		FROM #tmpRawData d
 		INNER JOIN cte_TO s
 			ON d.CurrencyID = s.Currency
 				AND d.rptDate = s.Winlostdate
@@ -268,10 +264,10 @@ BEGIN
 		INSERT INTO @tmpCust (CustID)
 		SELECT c.CustID
 		FROM Customer c WITH (NOLOCK)
-		INNER JOIN @tempAg t
+		INNER JOIN #tempAg t
 			ON c.recommend = t.CustID AND c.roleid = 1
 
-		INSERT INTO @tmpRawData (
+		INSERT INTO #tmpRawData (
 			rptDate
 			, CurrencyID
 			, TurnOver
@@ -304,13 +300,28 @@ BEGIN
 
 	----
 
-	SELECT *
-	INTO #TempExchange
-	FROM Lrf_f_GetExchangeDaily(@_FromDate, @_ToDate)
-	WHERE exchangeid IN (
-			SELECT DISTINCT CurrencyID
-			FROM @tmpRawData
-			)
+	IF EXISTS (SELECT TOP (1) 1 FROM #tmpRawData)
+	BEGIN
+		DECLARE @SQL VARCHAR(500) = ''
+		DECLARE @Rate VARCHAR(3) = '1', @DefaultRate VARCHAR(3) = '1'
+		
+		IF ISNULL(@BaseCurrency, '') <> ''
+		BEGIN
+			SET @Rate = @BaseCurrency
+		END
+		
+		IF ISNULL(@DefaultBaseCurrency, '') <> ''
+		BEGIN
+			SET @DefaultRate = @DefaultBaseCurrency
+		END
+
+		SELECT @SQL = 'SELECT FirstExchangeDateByMonth, LastExchangeDateByMonth, ExchangeID, USD, EUR, GBP, ' + @Rate + ' AS Rate, ' + @DefaultRate + ' AS DefaultRate '
+					+ 'FROM Lrf_f_GetSubExchangeDaily(''' + CONVERT( VARCHAR(10),@_FromDate, 120) + ''',''' + CONVERT( VARCHAR(10),@_ToDate, 120) + ''') e '
+					+ 'WHERE EXISTS (SELECT TOP (1) 1 FROM #tempAg a WHERE e.ExchangeID = a.Currency)'
+
+		INSERT INTO #TempExchange(FirstExMonth, LastExMonth, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
+		EXECUTE (@SQL)
+	END
 
 	SELECT CASE 
 			WHEN @ReportType = 1
@@ -320,37 +331,45 @@ BEGIN
 			ELSE '0'
 			END ReportType
 		, CurrencyID
-		, SUM(TurnOver) TurnOver
 		, SUM(TotalTrans) TotalTrans
-		, SUM(WinningPrize) WinningPrize
-		, SUM(CashOutAmt) CashOutAmt
-		, SUM(CashInAmt) CashInAmt
-		, SUM(CommAmt) CommAmt
-		, SUM(GrandAmt) GrandAmt
+		
+		, CAST(SUM(TurnOver * e.Rate) AS MONEY)		AS TurnOver
+		, CAST(SUM(WinningPrize * e.Rate) AS MONEY) AS WinningPrize
+		, CAST(SUM(CashOutAmt * e.Rate) AS MONEY)	AS CashOutAmt
+		, CAST(SUM(CashInAmt * e.Rate) AS MONEY)	AS CashInAmt
+		, CAST(SUM(CommAmt * e.Rate) AS MONEY)		AS CommAmt
+		, CAST(SUM(GrandAmt * e.Rate) AS MONEY)		AS GrandAmt
 		---USD
-		, CAST(SUM(TurnOver * e.USD) AS MONEY) TurnOverUSD
-		, CAST(SUM(WinningPrize * e.USD) AS MONEY) WinningPrizeUSD
-		, CAST(SUM(CashOutAmt * e.USD) AS MONEY) CashOutAmtUSD
-		, CAST(SUM(CashInAmt * e.USD) AS MONEY) CashInAmtUSD
-		, CAST(SUM(CommAmt * e.USD) AS MONEY) CommAmtUSD
-		, CAST(SUM(GrandAmt * e.USD) AS MONEY) GrandAmtUSD
+		, CAST(SUM(TurnOver * e.USD) AS MONEY)		AS TurnOverUSD
+		, CAST(SUM(WinningPrize * e.USD) AS MONEY)	AS WinningPrizeUSD
+		, CAST(SUM(CashOutAmt * e.USD) AS MONEY)	AS CashOutAmtUSD
+		, CAST(SUM(CashInAmt * e.USD) AS MONEY)		AS CashInAmtUSD
+		, CAST(SUM(CommAmt * e.USD) AS MONEY)		AS CommAmtUSD
+		, CAST(SUM(GrandAmt * e.USD) AS MONEY)		AS GrandAmtUSD
 		---EUR
-		, CAST(SUM(TurnOver * e.EUR) AS MONEY) TurnOverEUR
-		, CAST(SUM(WinningPrize * e.EUR) AS MONEY) WinningPrizeEUR
-		, CAST(SUM(CashOutAmt * e.EUR) AS MONEY) CashOutAmtEUR
-		, CAST(SUM(CashInAmt * e.EUR) AS MONEY) CashInAmtEUR
-		, CAST(SUM(CommAmt * e.EUR) AS MONEY) CommAmtEUR
-		, CAST(SUM(GrandAmt * e.EUR) AS MONEY) GrandAmtEUR
+		, CAST(SUM(TurnOver * e.EUR) AS MONEY)		AS TurnOverEUR
+		, CAST(SUM(WinningPrize * e.EUR) AS MONEY)	AS WinningPrizeEUR
+		, CAST(SUM(CashOutAmt * e.EUR) AS MONEY)	AS CashOutAmtEUR
+		, CAST(SUM(CashInAmt * e.EUR) AS MONEY)		AS CashInAmtEUR
+		, CAST(SUM(CommAmt * e.EUR) AS MONEY)		AS CommAmtEUR
+		, CAST(SUM(GrandAmt * e.EUR) AS MONEY)		AS GrandAmtEUR
 		---GBP
-		, CAST(SUM(TurnOver * e.GBP) AS MONEY) TurnOverGBP
-		, CAST(SUM(WinningPrize * e.GBP) AS MONEY) WinningPrizeGBP
-		, CAST(SUM(CashOutAmt * e.GBP) AS MONEY) CashOutAmtGBP
-		, CAST(SUM(CashInAmt * e.GBP) AS MONEY) CashInAmtGBP
-		, CAST(SUM(CommAmt * e.GBP) AS MONEY) CommAmtGBP
-		, CAST(SUM(GrandAmt * e.GBP) AS MONEY) GrandAmtGBP
-	FROM @tmpRawData t
+		, CAST(SUM(TurnOver * e.GBP) AS MONEY)		AS TurnOverGBP
+		, CAST(SUM(WinningPrize * e.GBP) AS MONEY)	AS WinningPrizeGBP
+		, CAST(SUM(CashOutAmt * e.GBP) AS MONEY)	AS CashOutAmtGBP
+		, CAST(SUM(CashInAmt * e.GBP) AS MONEY)		AS CashInAmtGBP
+		, CAST(SUM(CommAmt * e.GBP) AS MONEY)		AS CommAmtGBP
+		, CAST(SUM(GrandAmt * e.GBP) AS MONEY)		AS GrandAmtGBP
+		---Base Currency
+		, CAST(SUM(TurnOver * e.DefaultRate) AS MONEY)		AS TurnOverBase
+		, CAST(SUM(WinningPrize * e.DefaultRate) AS MONEY)	AS WinningPrizeBase
+		, CAST(SUM(CashOutAmt * e.DefaultRate) AS MONEY)	AS CashOutAmtBase
+		, CAST(SUM(CashInAmt * e.DefaultRate) AS MONEY)		AS CashInAmtBase
+		, CAST(SUM(CommAmt * e.DefaultRate) AS MONEY)		AS CommAmtBase
+		, CAST(SUM(GrandAmt * e.DefaultRate) AS MONEY)		AS GrandAmtBase
+	FROM #tmpRawData t
 	INNER JOIN #TempExchange e
-		ON t.rptDate = e.ExchangeDate
+		ON t.rptDate BETWEEN e.FirstExMonth AND e.LastExMonth
 			AND t.CurrencyId = e.ExchangeID
 	GROUP BY CASE 
 			WHEN @ReportType = 1
@@ -368,12 +387,9 @@ BEGIN
 			ELSE '0'
 			END
 
+	DROP TABLE #tmpRawData
+	DROP TABLE #tempAg
 	DROP TABLE #TempExchange		
 END
 
-GO
-
-SET QUOTED_IDENTIFIER OFF 
-GO
-SET ANSI_NULLS ON 
 GO
