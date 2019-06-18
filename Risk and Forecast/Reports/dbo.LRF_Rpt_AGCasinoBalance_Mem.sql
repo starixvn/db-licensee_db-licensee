@@ -238,7 +238,7 @@ BEGIN
 			a.TransferOut					*e.USD	AS TransferOutUSD,
 			TurnOver						*e.USD	AS TurnOverUSD,
 			Winlost							*e.USD	AS WinlostUSD,
-			LicenseeWinlost					*e.USD	AS LicenseeWinlostUSD
+			LicenseeWinlost					*e.USD	AS LicenseeWinlostUSD,
 
 			a.OpeningBalance				*e.EUR	AS OpeningBalanceEUR,
 			a.ClosingBalance				*e.EUR	AS ClosingBalanceEUR,
@@ -256,13 +256,13 @@ BEGIN
 			Winlost							*e.GBP	AS WinlostGBP,
 			LicenseeWinlost					*e.GBP	AS LicenseeWinlostGBP,
 			
-			a.OpeningBalance				*e.GBP	AS OpeningBalanceGBP,
-			a.ClosingBalance				*e.GBP	AS ClosingBalanceGBP,
-			a.TransferIn					*e.GBP	AS TransferInGBP,
-			a.TransferOut					*e.GBP	AS TransferOutGBP,
-			TurnOver						*e.GBP	AS TurnOverGBP,
-			Winlost							*e.GBP	AS WinlostGBP,
-			LicenseeWinlost					*e.GBP	AS LicenseeWinlostGBP
+			a.OpeningBalance				*e.DefaultRate	AS OpeningBalanceBase,
+			a.ClosingBalance				*e.DefaultRate	AS ClosingBalanceBase,
+			a.TransferIn					*e.DefaultRate	AS TransferInBase,
+			a.TransferOut					*e.DefaultRate	AS TransferOutBase,
+			TurnOver						*e.DefaultRate	AS TurnOverBase,
+			Winlost							*e.DefaultRate	AS WinlostBase,
+			LicenseeWinlost					*e.DefaultRate	AS LicenseeWinlostBase
 		FROM CTE a LEFT JOIN #tmpResult b ON a.Custid=b.CustID AND a.currency=b.Currency
 		INNER JOIN bodb02.dbo.Customer c WITH (NOLOCK) ON a.CustID = c.CustID
 		LEFT JOIN #TempExchange e ON a.currency = e.ExchangeId
