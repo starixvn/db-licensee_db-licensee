@@ -95,7 +95,7 @@ BEGIN
 	END
 
 	SELECT @SQL = 'SELECT ExchangeID, USD, EUR, GBP, ' + @Rate + ' AS Rate, ' + @DefaultRate + ' AS DefaultRate '
-				+ 'FROM Lrf_f_GetExchangeDaily(''' + CONVERT( VARCHAR(10),@FromDate, 120) + ''',''' + CONVERT( VARCHAR(10),@FromDate, 120) + ''') e '
+				+ 'FROM bodb02.dbo.Lrf_f_GetExchangeDaily(''' + CONVERT( VARCHAR(10),@FromDate, 120) + ''',''' + CONVERT( VARCHAR(10),@FromDate, 120) + ''') e '
 				+ 'WHERE EXISTS (SELECT TOP (1) 1 FROM #tempAg a WHERE e.ExchangeID = a.Currency)'
 
 	INSERT INTO #TempExchange(ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
