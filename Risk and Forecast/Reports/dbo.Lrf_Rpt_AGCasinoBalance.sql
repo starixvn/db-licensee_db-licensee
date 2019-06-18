@@ -208,6 +208,7 @@ BEGIN
 	END
 
 	SELECT	a.[date],a.currency
+			,TotalTrans
 			
 			,a.OpeningBalance*e.Rate	AS OpeningBalance
 			,a.ClosingBalance *e.Rate	AS ClosingBalance
