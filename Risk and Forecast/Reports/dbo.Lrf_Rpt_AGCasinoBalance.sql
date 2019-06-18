@@ -1,9 +1,11 @@
 /*<info serverAlias="DBPTCS-bodb_PlaytechCS" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_AGCasinoBalance] 
-	@FromDate	SMALLDATETIME,  
-	@ToDate		SMALLDATETIME,   
-	@AgentList	VARCHAR(MAX)
+	@FromDate				SMALLDATETIME,  
+	@ToDate					SMALLDATETIME,   
+	@AgentList				VARCHAR(MAX),
+	@BaseCurrency			VARCHAR(3) = '',
+	@DefaultBaseCurrency	VARCHAR(3) = ''
 /*  Created: Winnie
 	Date: 2015-01-20
     Task : AG balance report 
@@ -15,22 +17,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_AGCasinoBalance]
 		- 20170302@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest [Redmine: #71679]
 		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 		- 20180529@Joseph: Add OPTION RECOMPILE to fix performance issue
-	Param's Explanation:  
-	  + @ReportType: 1-Daily; 2-Monthly;  
-	  + @excludeTest: remove currency UUS
-*/  
-
-
-/*
-  exec Lrf_Rpt_AGCasinoBalance 
- @LicenseeID=1
-,@Currency=0
-,@FromDate='2014-04-01 00:00:00'
-,@ToDate='2014-04-30 00:00:00'
-,@excludeTest=0
-,@reportType=2
-,@UserId=10
-*/
+		- 20190617@Amanda: Add Base currency param [RedmineID: #112531]
+*/ 
 AS
 BEGIN
 	IF (MONTH ( @FromDate )<>MONTH (@ToDate))
@@ -61,6 +49,8 @@ BEGIN
 		ClosingBalance	MONEY
 	)
 
+	CREATE TABLE #tempAg ( CustId INT,Currency INT )
+
 	CREATE TABLE #tmpCust (
 		CustId INT
 		,Currency INT
@@ -75,11 +65,11 @@ BEGIN
 	
 	CREATE CLUSTERED INDEX ix_#BalanceAGCasino_cl ON #BalanceAGCasino(WinlostDate, Currency, CustId)
 
+	CREATE TABLE #TempExchange(ExchangeId INT, Rate FLOAT, USD FLOAT, EUR FLOAT, GBP FLOAT, DefaultRate FLOAT)
+
 	DECLARE @minWinlostdate SMALLDATETIME,@tmpCurrency INT,@tmpOpeningBalance MONEY
 	
 	SELECT @minWinlostdate = MIN(winlostdate) FROM DBRPT.bodb_report.dbo.rptDepWinlost_Transfer3rdOthers WITH(NOLOCK)
-
-	DECLARE @Temp AS TABLE ( CustId INT,Currency INT )
 
 	DECLARE @DocHandler INT
 
@@ -87,7 +77,7 @@ BEGIN
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT
 			,@AgentList
 	
-		INSERT INTO @Temp(CustId, Currency)
+		INSERT INTO #tempAg(CustId, Currency)
 		SELECT AgentId, Currency 
 		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
@@ -107,7 +97,7 @@ BEGIN
 	FROM bodb02.dbo.Custinfo co WITH (NOLOCK)
 	WHERE EXISTS (
 			SELECT 1
-			FROM @Temp lc
+			FROM #tempAg lc
 			WHERE co.recommend = lc.CustId AND lc.Currency = co.Currency
 		)
 	
@@ -144,15 +134,6 @@ BEGIN
 	GROUP BY c.Winlostdate	
 		    ,ct.Currency	
 			,ct.CustId
-
-	SELECT ExchangeDate
-		   ,ExchangeId
-		   ,Code
-		   ,USD
-		   ,EUR
-		   ,GBP
-	INTO #TempExchange 
-	FROM bodb02.dbo.Lrf_f_GetExchangeDaily(@ToDate, @ToDate) a
 
 	IF(@FromDate>=@minWinlostdate)--get from transfer3rdOthers
 	BEGIN
@@ -203,11 +184,70 @@ BEGIN
 				,b.currency
 	END 
 
-	SELECT	a.date,a.currency
-			,a.OpeningBalance,a.ClosingBalance,a.TransferIn,a.TransferOut,TurnOver,TotalTrans,Winlost,LicenseeWinlost 
-			,a.OpeningBalance*e.USD AS OpeningBalanceUSD ,a.ClosingBalance *e.USD AS ClosingBalanceUSD,a.TransferIn*e.USD AS TransferInUSD,a.TransferOut * e.USD AS TransferOutUSD,TurnOver*e.USD AS TurnOverUSD,Winlost*e.USD AS WinlostUSD ,LicenseeWinlost*e.USD AS LicenseeWinlostUSD
-			,a.OpeningBalance*e.EUR AS OpeningBalanceEUR ,a.ClosingBalance *e.EUR AS ClosingBalanceEUR,a.TransferIn*e.EUR AS TransferInEUR,a.TransferOut * e.EUR AS TransferOutEUR,TurnOver*e.EUR AS TurnOverEUR,Winlost*e.EUR AS WinlostEUR ,LicenseeWinlost*e.EUR AS LicenseeWinlostEUR
-			,a.OpeningBalance*e.GBP AS OpeningBalanceGBP ,a.ClosingBalance *e.GBP AS ClosingBalanceGBP,a.TransferIn*e.GBP AS TransferInGBP,a.TransferOut * e.GBP AS TransferOutGBP,TurnOver*e.GBP AS TurnOverGBP,Winlost*e.GBP AS WinlostGBP ,LicenseeWinlost*e.GBP AS LicenseeWinlostGBP
+	IF EXISTS (SELECT TOP (1) 1 FROM @TmpCTECalc)
+	BEGIN
+		DECLARE @SQL VARCHAR(500) = ''
+		DECLARE @Rate VARCHAR(3) = '1', @DefaultRate VARCHAR(3) = '1'
+		
+		IF ISNULL(@BaseCurrency, '') <> ''
+		BEGIN
+			SET @Rate = @BaseCurrency
+		END
+		
+		IF ISNULL(@DefaultBaseCurrency, '') <> ''
+		BEGIN
+			SET @DefaultRate = @DefaultBaseCurrency
+		END
+
+		SELECT @SQL = 'SELECT ExchangeID, USD, EUR, GBP, ' + @Rate + ' AS Rate, ' + @DefaultRate + ' AS DefaultRate '
+					+ 'FROM Lrf_f_GetExchangeDaily(''' + CONVERT( VARCHAR(10),@ToDate, 120) + ''',''' + CONVERT( VARCHAR(10),@ToDate, 120) + ''') e '
+					+ 'WHERE EXISTS (SELECT TOP (1) 1 FROM #tempAg a WHERE e.ExchangeID = a.Currency)'
+
+		INSERT INTO #TempExchange(ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
+		EXECUTE (@SQL)
+	END
+
+	SELECT	a.[date],a.currency
+			
+			,a.OpeningBalance*e.Rate	AS OpeningBalance
+			,a.ClosingBalance *e.Rate	AS ClosingBalance
+			,a.TransferIn*e.Rate		AS TransferIn
+			,a.TransferOut * e.Rate		AS TransferOut
+			,TurnOver*e.Rate			AS TurnOver
+			,Winlost*e.Rate				AS Winlost
+			,LicenseeWinlost*e.Rate		AS LicenseeWinlost
+			
+			,a.OpeningBalance*e.USD		AS OpeningBalanceUSD 
+			,a.ClosingBalance *e.USD	AS ClosingBalanceUSD
+			,a.TransferIn*e.USD			AS TransferInUSD
+			,a.TransferOut * e.USD		AS TransferOutUSD
+			,TurnOver*e.USD				AS TurnOverUSD
+			,Winlost*e.USD				AS WinlostUSD 
+			,LicenseeWinlost*e.USD		AS LicenseeWinlostUSD
+			
+			,a.OpeningBalance*e.EUR		AS OpeningBalanceEUR 
+			,a.ClosingBalance *e.EUR	AS ClosingBalanceEUR
+			,a.TransferIn*e.EUR			AS TransferInEUR
+			,a.TransferOut * e.EUR		AS TransferOutEUR
+			,TurnOver*e.EUR				AS TurnOverEUR
+			,Winlost*e.EUR				AS WinlostEUR 
+			,LicenseeWinlost*e.EUR		AS LicenseeWinlostEUR
+			
+			,a.OpeningBalance*e.GBP		AS OpeningBalanceGBP 
+			,a.ClosingBalance *e.GBP	AS ClosingBalanceGBP
+			,a.TransferIn*e.GBP			AS TransferInGBP
+			,a.TransferOut * e.GBP		AS TransferOutGBP
+			,TurnOver*e.GBP				AS TurnOverGBP
+			,Winlost*e.GBP				AS WinlostGBP 
+			,LicenseeWinlost*e.GBP		AS LicenseeWinlostGBP
+			
+			,a.OpeningBalance*e.DefaultRate		AS OpeningBalanceBase
+			,a.ClosingBalance *e.DefaultRate	AS ClosingBalanceBase
+			,a.TransferIn*e.DefaultRate			AS TransferInBase
+			,a.TransferOut * e.DefaultRate		AS TransferOutBase
+			,TurnOver*e.DefaultRate				AS TurnOverBase
+			,Winlost*e.DefaultRate				AS WinlostBase 
+			,LicenseeWinlost*e.DefaultRate		AS LicenseeWinlostBase
 	FROM @TmpCTECalc a 
 		LEFT JOIN (
 			SELECT  Winlostdate,Currency, SUM(TurnOver) AS TurnOver,
@@ -223,6 +263,7 @@ BEGIN
 	---------
 	DROP TABLE #tmpResult
 	DROP TABLE #tmpCust
+	DROP TABLE #tempAg
 	DROP TABLE #TempExchange
 	
 END
