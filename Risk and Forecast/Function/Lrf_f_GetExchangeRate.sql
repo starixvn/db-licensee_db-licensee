@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02,DB042-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="1" isNested="0"></info>*/
+/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02,DB042-bodb02" selecters="bodbLicenseeNet" viewers="" isFunction="1" isNested="0"></info>*/
 
 CREATE FUNCTION [dbo].[Lrf_f_GetExchangeRate]
 (
