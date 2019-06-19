@@ -37,13 +37,13 @@ SET NOCOUNT ON
 DECLARE @Today SMALLDATETIME 
 SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
 
-CREATE TABLE #tempAg ( CustId INT,Currency INT )
+DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
 DECLARE @DocHandler INT
 
 BEGIN TRY
 	EXEC sp_xml_preparedocument @DocHandler OUTPUT
 			,@AgentList
-	INSERT INTO #tempAg (custID, currency)
+	INSERT INTO @TempAg (custID, currency)
 	SELECT AgentId, Currency
 	FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
@@ -114,7 +114,7 @@ SELECT
 	FROM
 		bettrans AS b  WITH (NOLOCK)
 		INNER JOIN match AS m  WITH (NOLOCK) ON m.matchid = b.matchid and m.eventstatus='running'
-		INNER JOIN #tempAg ag ON b.recommend = ag.CustId AND b.currency = ag.Currency
+		INNER JOIN @TempAg ag ON b.recommend = ag.CustId AND b.currency = ag.Currency
 	WHERE  	
 		b.bettype in (25,121,122)
 		AND b.statusID in (0,1)
@@ -139,14 +139,11 @@ BEGIN
 END
 
 DECLARE @ExchangeRate AS TABLE (ExchangeId INT, Rate FLOAT)
-DECLARE @SQL VARCHAR(200)
 
-SELECT @SQL =	'SELECT ExchangeId, ' + CASE WHEN ISNULL(@BaseCurrency, '') <> '' THEN @BaseCurrency ELSE '1' END + ' AS Rate ' +
-				'FROM Lrf_f_GetExchangeDaily(''' + CONVERT(VARCHAR(10), @Today, 120) + ''',''' + CONVERT(VARCHAR(10), @Today, 120) + ''') e ' +
-				'WHERE EXISTS (SELECT TOP (1) 1 FROM #TempAg a WHERE a.Currency = e.ExchangeId)'
-			
 INSERT INTO @ExchangeRate(ExchangeId, Rate)
-EXECUTE(@SQL)
+SELECT ExchangeId, Rate
+FROM dbo.Lrf_f_GetExchangeRate(@Today, @Today, @BaseCurrency, '') e
+WHERE EXISTS (SELECT 1 FROM @TempAg a WHERE a.Currency = e.ExchangeId)
 
 SELECT c.* FROM
 (
@@ -183,8 +180,6 @@ SELECT c.* FROM
 	FROM @Data b
 	INNER JOIN @ExchangeRate e ON b.currency = e.exchangeid
 ) c WHERE c.RowNum BETWEEN @RowStart AND @RowEnd
-
-DROP TABLE #tempAg
 
 GO
  

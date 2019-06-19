@@ -48,13 +48,13 @@ SET NOCOUNT ON
 DECLARE @Today SMALLDATETIME 
 SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
 
-CREATE TABLE #tempAg ( CustId INT,Currency INT )
+DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
 DECLARE @DocHandler INT
 
 BEGIN TRY
 	EXEC sp_xml_preparedocument @DocHandler OUTPUT
 			,@AgentList
-	INSERT INTO #tempAg (custID, currency)
+	INSERT INTO @TempAg (custID, currency)
 	SELECT AgentId, Currency
 	FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
@@ -106,14 +106,11 @@ DECLARE @Data AS TABLE
 )
 
 DECLARE @ExchangeRate AS TABLE (ExchangeId INT, Rate FLOAT)
-DECLARE @SQL VARCHAR(200)
 
-SELECT @SQL =	'SELECT ExchangeId, ' + CASE WHEN ISNULL(@BaseCurrency, '') <> '' THEN @BaseCurrency ELSE '1' END + ' AS Rate ' +
-				'FROM Lrf_f_GetExchangeDaily(''' + CONVERT(VARCHAR(10), @Today, 120) + ''',''' + CONVERT(VARCHAR(10), @Today, 120) + ''') e ' +
-				'WHERE EXISTS (SELECT TOP (1) 1 FROM #tempAg a WHERE a.Currency = e.ExchangeId)'
-			
 INSERT INTO @ExchangeRate(ExchangeId, Rate)
-EXECUTE(@SQL)
+SELECT ExchangeId, Rate
+FROM dbo.Lrf_f_GetExchangeRate(@Today, @Today, @BaseCurrency, '') e
+WHERE EXISTS (SELECT 1 FROM @TempAg a WHERE a.Currency = e.ExchangeId)
 
 INSERT INTO @Data
 SELECT
@@ -155,7 +152,7 @@ SELECT
 			SUM(stake * e.Rate) Stake_ori,
 			COUNT(*) BetCount
 		FROM bettrans b WITH (NOLOCK)
-		INNER JOIN #tempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
+		INNER JOIN @TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
        	INNER JOIN @ExchangeRate e ON e.exchangeid = b.currency
 		WHERE	bettype IN (1,3,7,8)
 				AND statusID IN (0,1)				
@@ -283,6 +280,4 @@ END
 			SUM(BetCount_OU) AS BetCount_OU,
 			SUM(BetCount_HTOU) AS BetCount_HTOU	
 	FROM @Data
-
-	DROP TABLE #tempAg
 GO

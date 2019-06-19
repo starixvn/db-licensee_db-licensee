@@ -42,13 +42,13 @@ SET NOCOUNT ON
 DECLARE @Today smalldatetime 
 SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
 
-CREATE TABLE #tempAg ( CustId INT,Currency INT )
+DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
 DECLARE @DocHandler INT
 
 BEGIN TRY
 	EXEC sp_xml_preparedocument @DocHandler OUTPUT
 			,@AgentList
-	INSERT INTO #tempAg (custID, currency)
+	INSERT INTO @TempAg (custID, currency)
 	SELECT AgentId, Currency
 	FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
@@ -91,14 +91,11 @@ DECLARE @Temp1 as TABLE
 )
 
 DECLARE @ExchangeRate AS TABLE (ExchangeId INT, Rate FLOAT)
-DECLARE @SQL VARCHAR(200)
 
-SELECT @SQL =	'SELECT ExchangeId, ' + CASE WHEN ISNULL(@BaseCurrency, '') <> '' THEN @BaseCurrency ELSE '1' END + ' AS Rate ' +
-				'FROM Lrf_f_GetExchangeDaily(''' + CONVERT(VARCHAR(10), @Today, 120) + ''',''' + CONVERT(VARCHAR(10), @Today, 120) + ''') e ' +
-				'WHERE EXISTS (SELECT TOP (1) 1 FROM #TempAg a WHERE a.Currency = e.ExchangeId)'
-			
 INSERT INTO @ExchangeRate(ExchangeId, Rate)
-EXECUTE(@SQL)
+SELECT ExchangeId, Rate
+FROM dbo.Lrf_f_GetExchangeRate(@Today, @Today, @BaseCurrency, '') e
+WHERE EXISTS (SELECT 1 FROM @TempAg a WHERE a.Currency = e.ExchangeId)
 
 INSERT INTO @Temp1
 SELECT
@@ -113,7 +110,7 @@ SELECT
 	FROM
 		bettrans AS a  WITH (NOLOCK)
 		INNER JOIN outright AS m  WITH (NOLOCK) ON m.orid     = a.matchid 									
-		INNER JOIN #tempAg t ON a.recommend = t.custid AND t.Currency = a.currency
+		INNER JOIN @TempAg t ON a.recommend = t.custid AND t.Currency = a.currency
 		INNER JOIN @ExchangeRate e ON e.exchangeid = a.currency
 	WHERE
 		a.bettype = 10 AND
@@ -140,7 +137,7 @@ SELECT
 	FROM
 		bettrans AS a  WITH (NOLOCK)
 		INNER JOIN outright AS m  WITH (NOLOCK) ON m.orid = a.matchid  
-		INNER JOIN 	#tempAg t ON a.recommend = t.custid AND t.Currency = a.currency
+		INNER JOIN 	@TempAg t ON a.recommend = t.custid AND t.Currency = a.currency
 		INNER JOIN @ExchangeRate e ON e.exchangeid = a.currency
 	WHERE						
 		a.bettype = 10 AND
@@ -171,7 +168,5 @@ FROM
 		* FROM @Data
 ) as c
 WHERE RowNum BETWEEN @RowStart AND @RowEnd
-
-DROP TABLE #tempAg
 
 GO
