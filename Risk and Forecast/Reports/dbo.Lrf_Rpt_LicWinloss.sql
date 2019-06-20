@@ -120,13 +120,9 @@ BEGIN
 		PromotionPrize		INT
 	)
 
-	CREATE TABLE #tempAg
-	(	
-		custID				INT,
-		currency			INT
-	)
+	DECLARE @tempAg				TABLE(custID INT, currency INT)  
 
-	DECLARE @ExchangeRate	TABLE (FirstExMonth SMALLDATETIME, LastExMonth SMALLDATETIME, ExchangeId INT, Rate FLOAT, USD FLOAT, EUR FLOAT, GBP FLOAT, DefaultRate FLOAT)
+	DECLARE @ExchangeRate	TABLE (FromDate SMALLDATETIME, ToDate SMALLDATETIME, ExchangeId INT, Rate FLOAT, USD FLOAT, EUR FLOAT, GBP FLOAT, DefaultRate FLOAT)
 	DECLARE @bettype		TABLE (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))
 	DECLARE @sporttype		TABLE (sporttype INT, ProductCode VARCHAR(10))
 	DECLARE @LicenseeName	VARCHAR(50)
@@ -144,7 +140,7 @@ BEGIN
 	BEGIN TRY
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT
 				,@AgentList
-		INSERT INTO #tempAg (custID, currency)
+		INSERT INTO @tempAg (custID, currency)
 		SELECT AgentId, Currency
 		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
@@ -261,7 +257,7 @@ BEGIN
 				SELECT DISTINCT transid
 				FROM
 					bodb_licensee.dbo.LicenseeBATransaction_active BA WITH(NOLOCK)
-					INNER JOIN #tempAg r ON BA.recommend = r.custID
+					INNER JOIN @tempAg r ON BA.recommend = r.custID
 				UNION
 				SELECT NULL
 			)
@@ -303,7 +299,7 @@ BEGIN
 			FROM
 				CTE
 				INNER JOIN dbo.bettrans b WITH (NOLOCK) ON CTE.transid = b.transid
-				INNER JOIN #tempAg tma ON tma.custID = b.recommend AND b.currency = tma.currency
+				INNER JOIN @tempAg tma ON tma.custID = b.recommend AND b.currency = tma.currency
 			WHERE 
 				b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 				AND b.statusID  IN (111, 112, 113)
@@ -352,7 +348,7 @@ BEGIN
 				0 AS PromotionPrize
 			FROM 
 				Bettrans b WITH (NOLOCK)
-				INNER JOIN #tempAg a ON b.recommend = a.custID AND b.currency = a.currency
+				INNER JOIN @tempAg a ON b.recommend = a.custID AND b.currency = a.currency
 			WHERE 
 				b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 				AND  
@@ -401,7 +397,7 @@ BEGIN
 				0 AS PromotionPrize
 			FROM 
 				Bettrans b WITH (NOLOCK)
-				INNER JOIN #tempAg a ON b.recommend = a.custID AND b.currency = a.currency
+				INNER JOIN @tempAg a ON b.recommend = a.custID AND b.currency = a.currency
 			WHERE 
 				b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 				AND b.bettype IN (901, 902, 903)
@@ -441,7 +437,7 @@ BEGIN
 				0 AS PromotionPrize
 			FROM 
 				Bettrans b WITH (NOLOCK)
-				INNER JOIN #tempAg a ON b.recommend = a.custID AND b.currency = a.currency
+				INNER JOIN @tempAg a ON b.recommend = a.custID AND b.currency = a.currency
 			WHERE 
 				b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 				AND b.bettype IN (911, 912, 913)
@@ -481,7 +477,7 @@ BEGIN
 				SUM (CASE WHEN b.bettype = 4300 THEN 1 ELSE 0 END) AS PromotionPrize
 			FROM 
 				Bettrans b WITH (NOLOCK)
-				INNER JOIN #tempAg a   ON b.recommend = a.custID AND b.Currency = a.Currency
+				INNER JOIN @tempAg a   ON b.recommend = a.custID AND b.Currency = a.Currency
 				INNER JOIN @bettype bt ON b.bettype = bt.bettype
 			WHERE 
 				b.winlostdate BETWEEN @TempFromDate AND @_ToDate
@@ -545,7 +541,7 @@ BEGIN
 				0 AS PromotionPrize
 			FROM 
 				  bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
-				  INNER JOIN #tempAg ag ON b.recommend = ag.custID AND b.Currency = ag.currency
+				  INNER JOIN @tempAg ag ON b.recommend = ag.custID AND b.Currency = ag.currency
 			WHERE  
 				 b.Winlostdate BETWEEN @_FromDate AND @TempToDate  
 				AND (b.bettype < 901 OR b.bettype > 904)
@@ -613,7 +609,7 @@ BEGIN
 				SUM(CASE WHEN b.bettype = 4300 THEN 1 ELSE 0 END) AS PromotionPrize
 			FROM
 				bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
-				INNER JOIN #tempAg ag   ON b.recommend = ag.custID AND ag.currency = b.Currency
+				INNER JOIN @tempAg ag   ON b.recommend = ag.custID AND ag.currency = b.Currency
 				INNER JOIN @sporttype t ON b.sporttype = t.sporttype
 			WHERE  
 				b.Winlostdate BETWEEN @_FromDate AND @TempToDate
@@ -675,7 +671,7 @@ BEGIN
 				0 AS PromotionPrize
 			FROM 
 				bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
-				INNER JOIN #tempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
+				INNER JOIN @tempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
 			WHERE 
 				b.Winlostdate BETWEEN @_FromDate AND @TempToDate
 				AND b.bettype IN (901, 902, 903)
@@ -715,7 +711,7 @@ BEGIN
 				0 AS PromotionPrize
 			FROM 
 				bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
-				INNER JOIN #tempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
+				INNER JOIN @tempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
 			WHERE 
 				b.Winlostdate BETWEEN @_FromDate AND @TempToDate
 				AND b.bettype IN (911, 912, 913) 
@@ -850,25 +846,10 @@ BEGIN
 
 	IF EXISTS (SELECT TOP (1) 1 FROM #SAgWinLoss)
 	BEGIN
-		DECLARE @SQL VARCHAR(500) = ''
-		DECLARE @Rate VARCHAR(3) = '1', @DefaultRate VARCHAR(3) = '1'
-		
-		IF ISNULL(@BaseCurrency, '') <> ''
-		BEGIN
-			SET @Rate = @BaseCurrency
-		END
-		
-		IF ISNULL(@DefaultBaseCurrency, '') <> ''
-		BEGIN
-			SET @DefaultRate = @DefaultBaseCurrency
-		END
-
-		SELECT @SQL = 'SELECT FirstExchangeDateByMonth, LastExchangeDateByMonth, ExchangeID, USD, EUR, GBP, ' + @Rate + ' AS Rate, ' + @DefaultRate + ' AS DefaultRate '
-					+ 'FROM Lrf_f_GetSubExchangeDaily(''' + CONVERT( VARCHAR(10),@_FromDate, 120) + ''',''' + CONVERT( VARCHAR(10),@_ToDate, 120) + ''') e '
-					+ 'WHERE EXISTS (SELECT TOP (1) 1 FROM #tempAg a WHERE e.ExchangeID = a.Currency)'
-
-		INSERT INTO @ExchangeRate(FirstExMonth, LastExMonth, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
-		EXECUTE (@SQL)
+		INSERT INTO @ExchangeRate(FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
+		SELECT FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate
+		FROM dbo.Lrf_f_GetExchangeRate(@_FromDate, @_ToDate, @BaseCurrency, @DefaultRate) e
+		WHERE EXISTS (SELECT 1 FROM @tempAg a WHERE e.ExchangeID = a.Currency)
 	END
 
 	SELECT   
@@ -920,7 +901,7 @@ BEGIN
 		SUM(PromotionPrize)								AS PromotionPrize
 	FROM	
 		@SAgWL w   
-		INNER JOIN @ExchangeRate e ON w.winlostdate BETWEEN e.FirstExMonth AND e.LastExMonth AND w.currency = e.ExchangeId
+		INNER JOIN @ExchangeRate e ON w.winlostdate BETWEEN e.FromDate AND e.ToDate AND w.currency = e.ExchangeId
 	GROUP BY   
 		Currency,
 		CASE	WHEN @ReportType = 1 THEN CONVERT(VARCHAR(8),w.winlostdate,112)  
@@ -1092,9 +1073,8 @@ BEGIN
 		SUM(Betcount)										AS Betcount
 	FROM	
 		@SAgWL w   
-		INNER JOIN @ExchangeRate e ON w.winlostdate BETWEEN e.FirstExMonth AND e.LastExMonth AND w.currency = e.ExchangeId
+		INNER JOIN @ExchangeRate e ON w.winlostdate BETWEEN e.FromDate AND e.ToDate AND w.currency = e.ExchangeId
 
 	DROP TABLE #SAgWinLoss
-	DROP TABLE #tempAg
 END
 GO

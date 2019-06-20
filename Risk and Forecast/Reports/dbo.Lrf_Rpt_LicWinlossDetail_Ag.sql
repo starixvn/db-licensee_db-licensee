@@ -151,7 +151,7 @@ BEGIN
 	)  
 
 	DECLARE @TempAg				TABLE (custID INT, currency INT)
-	DECLARE @ExchangeRate		TABLE (FirstExMonth SMALLDATETIME, LastExMonth SMALLDATETIME, ExchangeId INT, Rate FLOAT, USD FLOAT, EUR FLOAT, GBP FLOAT, DefaultRate FLOAT)
+	DECLARE @ExchangeRate		TABLE (FromDate SMALLDATETIME, ToDate SMALLDATETIME, ExchangeId INT, Rate FLOAT, USD FLOAT, EUR FLOAT, GBP FLOAT, DefaultRate FLOAT)
 	DECLARE @LicenseeName		VARCHAR(50)
 	DECLARE @bettype			TABLE (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))
 	DECLARE @sporttype			TABLE (sporttype INT, ProductCode VARCHAR(10))
@@ -1037,25 +1037,10 @@ BEGIN
 
 	IF EXISTS (SELECT TOP (1) 1 FROM #SAgWinLoss)
 	BEGIN
-		DECLARE @SQL VARCHAR(500) = ''
-		DECLARE @Rate VARCHAR(3) = '1', @DefaultRate VARCHAR(3) = '1'
-		
-		IF ISNULL(@BaseCurrency, '') <> ''
-		BEGIN
-			SET @Rate = @BaseCurrency
-		END
-		
-		IF ISNULL(@DefaultBaseCurrency, '') <> ''
-		BEGIN
-			SET @DefaultRate = @DefaultBaseCurrency
-		END
-		
-		SELECT @SQL = 'SELECT FirstExchangeDateByMonth, LastExchangeDateByMonth, ExchangeID, USD, EUR, GBP, ' + @Rate + ' AS Rate, ' + @DefaultRate + ' AS DefaultRate '
-					+ 'FROM Lrf_f_GetSubExchangeDaily(''' + CONVERT( VARCHAR(10),@FDate, 120) + ''',''' + CONVERT( VARCHAR(10),@TDate, 120) + ''') e '
-					+ 'WHERE EXISTS (SELECT TOP (1) 1 FROM #SAgWinLoss s WHERE e.ExchangeId = s.Currency)'
-
-		INSERT INTO @ExchangeRate(FirstExMonth, LastExMonth, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
-		EXECUTE (@SQL)
+		INSERT INTO @ExchangeRate(FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
+		SELECT FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate
+		FROM dbo.Lrf_f_GetExchangeRate(@FDate, @TDate, @BaseCurrency, @DefaultRate) e
+		WHERE EXISTS (SELECT TOP 1 FROM #SAgWinLoss s WHERE e.ExchangeID = s.Currency)
 	END
  
 	SELECT   
@@ -1106,7 +1091,7 @@ BEGIN
 	FROM
 		#SAgWinLoss w
 		INNER JOIN Customer c WITH(NOLOCK) ON w.custid = c.custid
-		INNER JOIN @ExchangeRate e ON w.winlostdate BETWEEN e.FirstExMonth AND e.LastExMonth AND w.currency = e.ExchangeId
+		INNER JOIN @ExchangeRate e ON w.winlostdate BETWEEN e.FromDate AND e.ToDate AND w.currency = e.ExchangeId
 	GROUP BY
 		w.currency, w.custid, c.username
 	ORDER BY w.currency
@@ -1275,7 +1260,7 @@ BEGIN
 		SUM(Betcount)											AS Betcount
 	FROM
 		#SAgWinLoss w   
-		INNER JOIN @ExchangeRate e ON w.winlostdate BETWEEN e.FirstExMonth AND e.LastExMonth AND w.currency = e.ExchangeId
+		INNER JOIN @ExchangeRate e ON w.winlostdate BETWEEN e.FromDate AND e.ToDate AND w.currency = e.ExchangeId
 
 	DROP TABLE #SAgWinLoss
 END 

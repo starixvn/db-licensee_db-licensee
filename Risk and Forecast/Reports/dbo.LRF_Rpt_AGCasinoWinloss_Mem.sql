@@ -54,17 +54,16 @@ BEGIN
 							,Currency INT	
 							)
 
-	CREATE TABLE #tempAg ( CustId INT,Currency INT )
-	
-	CREATE TABLE #TempExchange(FirstExMonth DATETIME, LastExMonth DATETIME, ExchangeId INT, Rate FLOAT, USD FLOAT, EUR FLOAT, GBP FLOAT, DefaultRate FLOAT)
+	CREATE TABLE #TempExchange(FromDate DATETIME, ToDate DATETIME, ExchangeId INT, Rate FLOAT, USD FLOAT, EUR FLOAT, GBP FLOAT, DefaultRate FLOAT)
 
+	DECLARE @Temp AS TABLE ( CustId INT,Currency INT )
 	DECLARE @DocHandler INT
 
 	BEGIN TRY
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT
 			,@AgentList
 	
-		INSERT INTO #tempAg(CustId, Currency)
+		INSERT INTO @Temp(CustId, Currency)
 		SELECT AgentId, Currency 
 		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
@@ -83,7 +82,7 @@ BEGIN
 			 ,lc.Currency
 	FROM 
 		dbo.CustInfo co WITH (NOLOCK)
-		INNER JOIN #tempAg lc ON lc.CustId = co.Recommend AND co.Currency = lc.Currency
+		INNER JOIN @Temp lc ON lc.CustId = co.Recommend AND co.Currency = lc.Currency
 	WHERE lc.CustId =  @CustID
 	
 	DECLARE @TempFromDate	DATETIME 
@@ -186,25 +185,10 @@ BEGIN
 
 	IF EXISTS (SELECT TOP (1) 1 FROM #tmpResult)
 	BEGIN
-		DECLARE @SQL VARCHAR(500) = ''
-		DECLARE @Rate VARCHAR(3) = '1', @DefaultRate VARCHAR(3) = '1'
-		
-		IF ISNULL(@BaseCurrency, '') <> ''
-		BEGIN
-			SET @Rate = @BaseCurrency
-		END
-		
-		IF ISNULL(@DefaultBaseCurrency, '') <> ''
-		BEGIN
-			SET @DefaultRate = @DefaultBaseCurrency
-		END
-
-		SELECT @SQL = 'SELECT FirstExchangeDateByMonth, LastExchangeDateByMonth, ExchangeID, USD, EUR, GBP, ' + @Rate + ' AS Rate, ' + @DefaultRate + ' AS DefaultRate '
-					+ 'FROM Lrf_f_GetSubExchangeDaily(''' + CONVERT( VARCHAR(10),@FromDate, 120) + ''',''' + CONVERT( VARCHAR(10),@ToDate, 120) + ''') e '
-					+ 'WHERE EXISTS (SELECT TOP (1) 1 FROM #tempAg a WHERE e.ExchangeID = a.Currency)'
-
-		INSERT INTO #TempExchange(FirstExMonth, LastExMonth, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
-		EXECUTE (@SQL)
+		INSERT INTO #TempExchange(FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
+		SELECT FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate
+		FROM dbo.Lrf_f_GetExchangeRate(@FromDate, @ToDate, @BaseCurrency, @DefaultRate) e
+		WHERE EXISTS (SELECT 1 FROM @Temp a WHERE e.ExchangeID = a.Currency)
 	END
 	
 	SELECT  SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS nickname
@@ -233,7 +217,7 @@ BEGIN
 			,SUM(r.LicenseeWinlost*e.DefaultRate)	AS LicenseeWinlostBase
 	FROM #tmpResult r
 		INNER JOIN dbo.customer c WITH  (NOLOCK) ON c.CustID = r.CustID
-		INNER JOIN #TempExchange e ON r.Winlostdate BETWEEN e.FirstExMonth AND e.LastExMonth AND r.currency = e.ExchangeId
+		INNER JOIN #TempExchange e ON r.Winlostdate BETWEEN e.FromDate AND e.ToDate AND r.currency = e.ExchangeId
 		--INNER JOIN DBLIC.bodb_licensee.dbo.licenseecustinfo c WITH (NOLOCK) ON r.CustID = c.CustID		
 	GROUP BY SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2))
 			 ,c.Username
@@ -244,6 +228,5 @@ BEGIN
 	DROP TABLE #tmpCust
 	DROP TABLE #tmpResult
 	DROP TABLE #TempExchange
-	DROP TABLE #tempAg
 END
 GO

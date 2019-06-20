@@ -32,9 +32,7 @@ BEGIN
 		, Winlost  			MONEY
 		, LicenseeWinlost	MONEY
 	)
-	
-	CREATE TABLE #tempAg ( CustId INT,Currency INT )
-						
+
 	CREATE TABLE #tmpCust ( 
 		Recommend			INT
 		, CustId			INT
@@ -51,13 +49,15 @@ BEGIN
 	DECLARE @minWinlostdate SMALLDATETIME
 	SELECT @minWinlostdate = MIN(winlostdate) FROM DBRPT.bodb_report.dbo.rptDepWinlost_Transfer3rdOthers WITH(NOLOCK)
 
+	DECLARE @Temp AS TABLE ( CustId INT,Currency INT )
+
 	DECLARE @DocHandler INT
 
 	BEGIN TRY
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT
 			,@AgentList
 	
-		INSERT INTO #tempAg(CustId, Currency)
+		INSERT INTO @Temp(CustId, Currency)
 		SELECT AgentId, Currency 
 		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
@@ -77,29 +77,14 @@ BEGIN
 			 ,lc.Currency
 	FROM 
 		bodb02.dbo.CustInfo co WITH (NOLOCK)
-		INNER JOIN #tempAg lc ON lc.CustId = co.Recommend AND co.Currency = lc.Currency
+		INNER JOIN @Temp lc ON lc.CustId = co.Recommend AND co.Currency = lc.Currency
 		INNER JOIN [dbo].[BalanceAGCasino] d WITH ( NOLOCK) ON co.custid=d.CustId
 	WHERE d.WinlostDate BETWEEN @FromDate AND @ToDate
 
-	DECLARE @SQL VARCHAR(500) = ''
-	DECLARE @Rate VARCHAR(3) = '1', @DefaultRate VARCHAR(3) = '1'
-	
-	IF ISNULL(@BaseCurrency, '') <> ''
-	BEGIN
-		SET @Rate = @BaseCurrency
-	END
-	
-	IF ISNULL(@DefaultBaseCurrency, '') <> ''
-	BEGIN
-		SET @DefaultRate = @DefaultBaseCurrency
-	END
-
-	SELECT @SQL = 'SELECT ExchangeID, USD, EUR, GBP, ' + @Rate + ' AS Rate, ' + @DefaultRate + ' AS DefaultRate '
-				+ 'FROM bodb02.dbo.Lrf_f_GetExchangeDaily(''' + CONVERT( VARCHAR(10),@FromDate, 120) + ''',''' + CONVERT( VARCHAR(10),@FromDate, 120) + ''') e '
-				+ 'WHERE EXISTS (SELECT TOP (1) 1 FROM #tempAg a WHERE e.ExchangeID = a.Currency)'
-
 	INSERT INTO #TempExchange(ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
-	EXECUTE (@SQL)
+	SELECT ExchangeID, USD, EUR, GBP, Rate, DefaultRate
+	FROM bodb02.dbo.Lrf_f_GetExchangeRate(@FromDate, @FromDate, @BaseCurrency, @DefaultRate) e
+	WHERE EXISTS (SELECT 1 FROM @Temp a WHERE e.ExchangeID = a.Currency)
 
 		
 	INSERT INTO #tmpResult (CustId 							
@@ -290,7 +275,6 @@ BEGIN
 	DROP TABLE #tmpCust
 	DROP TABLE #TempOpeningBalance
 	DROP TABLE #TempExchange
-	DROP TABLE #tempAg
 END
 
 GO

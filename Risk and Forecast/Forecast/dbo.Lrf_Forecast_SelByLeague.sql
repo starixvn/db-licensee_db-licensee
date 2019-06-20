@@ -52,13 +52,13 @@ Param's Explanation:
     DECLARE @Today SMALLDATETIME 
     SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
 	
-	CREATE TABLE #tempAg ( CustId INT,Currency INT )
+	DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
 	DECLARE @DocHandler INT
 
 	BEGIN TRY
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT
 				,@AgentList
-		INSERT INTO #tempAg (custID, currency)
+		INSERT INTO @TempAg (custID, currency)
 		SELECT AgentId, Currency
 		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
@@ -73,14 +73,11 @@ Param's Explanation:
 	END CATCH;
 	
 	DECLARE @ExchangeRate AS TABLE (ExchangeId INT, Rate FLOAT)
-	DECLARE @SQL VARCHAR(200)
 
-	SELECT @SQL =	'SELECT ExchangeId, ' + CASE WHEN ISNULL(@BaseCurrency, '') <> '' THEN @BaseCurrency ELSE '1' END + ' AS Rate ' +
-					'FROM Lrf_f_GetExchangeDaily(''' + CONVERT(VARCHAR(10), @Today, 120) + ''',''' + CONVERT(VARCHAR(10), @Today, 120) + ''') e ' +
-					'WHERE EXISTS (SELECT TOP (1) 1 FROM #TempAg a WHERE a.Currency = e.ExchangeId)'
-				
 	INSERT INTO @ExchangeRate(ExchangeId, Rate)
-	EXECUTE(@SQL)
+	SELECT ExchangeId, Rate
+	FROM dbo.Lrf_f_GetExchangeRate(@Today, @Today, @BaseCurrency, '') e
+	WHERE EXISTS (SELECT 1 FROM @TempAg a WHERE a.Currency = e.ExchangeId)
 
 --WinlostStatus: 
 --	1: home win 1/2
@@ -299,7 +296,7 @@ Param's Explanation:
                                                 INNER JOIN Match AS M WITH ( NOLOCK ) ON b.MatchID = M.MatchID
                                                 INNER JOIN League AS L WITH ( NOLOCK ) ON M.LeagueID = L.LeagueID
                                                               AND L.LeagueID = @LeagueID
-                                      WHERE     EXISTS ( SELECT 1 FROM #tempAg ag WHERE ag.custid = b.recommend )
+                                      WHERE     EXISTS ( SELECT 1 FROM @TempAg ag WHERE ag.custid = b.recommend )
                                                 AND b.bettype = @BetTypeHDP
                                                 AND b.statusID IN ( 0, 1 )                                               
                                                 AND b.tpositiontaking <>0
@@ -346,7 +343,7 @@ Param's Explanation:
                                                 INNER JOIN OddsES AS O WITH ( NOLOCK ) ON b.OddsID = O.OddsID
                                                 INNER JOIN League AS L WITH ( NOLOCK ) ON M.LeagueID = L.LeagueID
                                                               AND L.LeagueID = @LeagueID
-                                      WHERE     EXISTS ( SELECT 1 FROM #tempAg ag WHERE ag.custid = b.recommend )
+                                      WHERE     EXISTS ( SELECT 1 FROM @TempAg ag WHERE ag.custid = b.recommend )
                                                 AND b.bettype = @BetTypeHDP
                                                 AND b.statusID IN ( 0, 1 )                                               
                                                 AND b.tpositiontaking <>0
@@ -408,7 +405,7 @@ Param's Explanation:
                                                               AND M.EventStatus = 'running'
                                                 INNER JOIN League AS L WITH ( NOLOCK ) ON M.LeagueID = L.LeagueID
                                                               AND L.LeagueID = @LeagueID
-                                      WHERE     EXISTS ( SELECT 1 FROM #tempAg ag WHERE ag.custid = b.recommend )
+                                      WHERE     EXISTS ( SELECT 1 FROM @TempAg ag WHERE ag.custid = b.recommend )
                                                 AND b.bettype = @BetTypeOU
                                                 AND b.statusID IN ( 0, 1 )
                                                 AND b.tpositiontaking <> 0
@@ -453,7 +450,7 @@ Param's Explanation:
                                                 INNER JOIN OddsES AS O WITH ( NOLOCK ) ON b.OddsID = O.OddsID
                                                 INNER JOIN League AS L WITH ( NOLOCK ) ON M.LeagueID = L.LeagueID
                                                               AND L.LeagueID = @LeagueID
-                                      WHERE     EXISTS ( SELECT 1 FROM #tempAg ag WHERE ag.custid = b.recommend )
+                                      WHERE     EXISTS ( SELECT 1 FROM @TempAg ag WHERE ag.custid = b.recommend )
                                                 AND b.bettype = @BetTypeOU
                                                 AND b.statusID IN ( 0, 1 )
                                                 AND b.tpositiontaking <> 0
@@ -516,7 +513,7 @@ Param's Explanation:
                                                 INNER JOIN Match AS M WITH ( NOLOCK ) ON b.MatchID = M.MatchID
                                                 INNER JOIN League AS L WITH ( NOLOCK ) ON M.LeagueID = L.LeagueID
                                                               AND L.LeagueID = @LeagueID
-                                      WHERE     EXISTS ( SELECT 1 FROM #tempAg ag WHERE ag.custid = b.recommend )
+                                      WHERE     EXISTS ( SELECT 1 FROM @TempAg ag WHERE ag.custid = b.recommend )
                                                 AND b.bettype = @BetTypeHTHDP
                                                 AND b.statusID IN ( 0, 1 )                                                
                                                 AND b.tpositiontaking <> 0
@@ -565,7 +562,7 @@ Param's Explanation:
                                                 INNER JOIN OddsES AS O WITH ( NOLOCK ) ON b.OddsID = O.OddsID
                                                 INNER JOIN League AS L WITH ( NOLOCK ) ON M.LeagueID = L.LeagueID
                                                               AND L.LeagueID = @LeagueID
-                                      WHERE     EXISTS ( SELECT 1 FROM #tempAg ag WHERE ag.custid = b.recommend )
+                                      WHERE     EXISTS ( SELECT 1 FROM @TempAg ag WHERE ag.custid = b.recommend )
                                                 AND b.bettype = @BetTypeHTHDP
                                                 AND b.statusID IN ( 0, 1 )                                                
                                                 AND b.tpositiontaking <> 0
@@ -632,7 +629,7 @@ Param's Explanation:
                                                               AND M.EventStatus = 'running'
                                                 INNER JOIN League AS L WITH ( NOLOCK ) ON M.LeagueID = L.LeagueID
                                                               AND L.LeagueID = @LeagueID
-                                      WHERE     EXISTS ( SELECT 1 FROM #tempAg ag WHERE ag.custid = b.recommend )
+                                      WHERE     EXISTS ( SELECT 1 FROM @TempAg ag WHERE ag.custid = b.recommend )
                                                 AND b.bettype = @BetTypeHTOU
                                                 AND b.statusID IN ( 0, 1 )                                              
                                                 AND b.tpositiontaking <> 0
@@ -679,7 +676,7 @@ Param's Explanation:
                                                 INNER JOIN OddsES AS O WITH ( NOLOCK ) ON b.OddsID = O.OddsID
                                                 INNER JOIN League AS L WITH ( NOLOCK ) ON M.LeagueID = L.LeagueID
                                                               AND L.LeagueID = @LeagueID
-                                      WHERE     EXISTS ( SELECT 1 FROM #tempAg ag WHERE ag.custid = b.recommend )
+                                      WHERE     EXISTS ( SELECT 1 FROM @TempAg ag WHERE ag.custid = b.recommend )
                                                 AND b.bettype = @BetTypeHTOU
                                                 AND b.statusID IN ( 0, 1 )                                              
                                                 AND b.tpositiontaking <> 0
@@ -746,8 +743,5 @@ Param's Explanation:
             m.isNeutral
     ORDER BY R.LiveIndicator DESC ,
             M.MatchCode
-
-
-	DROP TABLE #tempAg
 GO
  

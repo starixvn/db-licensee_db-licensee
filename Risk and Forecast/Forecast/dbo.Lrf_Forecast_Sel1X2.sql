@@ -50,13 +50,13 @@ Param's explanation:
     DECLARE @Today SMALLDATETIME 
     SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
 	
-	CREATE TABLE #tempAg ( CustId INT,Currency INT )
+	DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
 	DECLARE @DocHandler INT
 
 	BEGIN TRY
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT
 				,@AgentList
-		INSERT INTO #tempAg (custID, currency)
+		INSERT INTO @TempAg (custID, currency)
 		SELECT AgentId, Currency
 		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
@@ -71,14 +71,11 @@ Param's explanation:
 	END CATCH;
 	
 	DECLARE @ExchangeRate AS TABLE (ExchangeId INT, Rate FLOAT)
-	DECLARE @SQL VARCHAR(200)
 
-	SELECT @SQL =	'SELECT ExchangeId, ' + CASE WHEN ISNULL(@BaseCurrency, '') <> '' THEN @BaseCurrency ELSE '1' END + ' AS Rate ' +
-					'FROM Lrf_f_GetExchangeDaily(''' + CONVERT(VARCHAR(10), @Today, 120) + ''',''' + CONVERT(VARCHAR(10), @Today, 120) + ''') e ' +
-					'WHERE EXISTS (SELECT TOP (1) 1 FROM #TempAg a WHERE a.Currency = e.ExchangeId)'
-				
 	INSERT INTO @ExchangeRate(ExchangeId, Rate)
-	EXECUTE(@SQL)
+	SELECT ExchangeId, Rate
+	FROM dbo.Lrf_f_GetExchangeRate(@Today, @Today, @BaseCurrency, '') e
+	WHERE EXISTS (SELECT 1 FROM @TempAg a WHERE a.Currency = e.ExchangeId)
 	
     SELECT  x.MatchID ,
             x.homeid ,
@@ -266,7 +263,7 @@ Param's explanation:
                         INNER JOIN @ExchangeRate e 
 						ON e.exchangeid = b.currency
               WHERE     
-						EXISTS (SELECT 1 from #tempAg ag WHERE ag.custid = b.recommend)
+						EXISTS (SELECT 1 from @TempAg ag WHERE ag.custid = b.recommend)
 						AND b.bettype = @bettype
                         AND b.matchid = @MatchID
                         AND b.statusID IN ( 0, 1 )                     
@@ -284,8 +281,7 @@ Param's explanation:
                         isNeutral
 						,b.bettype
             ) x
-            
-    DROP TABLE #tempAg
+
 GO
 
 

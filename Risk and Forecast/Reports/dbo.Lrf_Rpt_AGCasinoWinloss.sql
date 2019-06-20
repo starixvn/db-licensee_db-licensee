@@ -47,17 +47,18 @@ AS
 SET NOCOUNT ON
 BEGIN
 	CREATE TABLE #tmpResult (Winlostdate DATETIME, Currency INT,TurnOver MONEY,TotalTrans INT,Winlost MONEY,LicenseeWinlost MONEY)
-	CREATE TABLE #tempAg ( CustId INT,Currency INT )
 	CREATE TABLE #tmpCust (CustId INT, Currency INT)
-	CREATE TABLE #TempExchange(FirstExMonth DATETIME, LastExMonth DATETIME, ExchangeId INT, Rate FLOAT, USD FLOAT, EUR FLOAT, GBP FLOAT, DefaultRate FLOAT)
+	CREATE TABLE #TempExchange(FromDate DATETIME, ToDate DATETIME, ExchangeId INT, Rate FLOAT, USD FLOAT, EUR FLOAT, GBP FLOAT, DefaultRate FLOAT)
 
+	DECLARE @Temp AS TABLE ( CustId INT,Currency INT )
+	
 	DECLARE @DocHandler INT
 
 	BEGIN TRY
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT
 			,@AgentList
 	
-		INSERT INTO #tempAg(CustId, Currency)
+		INSERT INTO @Temp(CustId, Currency)
 		SELECT AgentId, Currency 
 		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
@@ -74,7 +75,7 @@ BEGIN
 	INSERT INTO #tmpCust (CustID, Currency)	
 	SELECT co.CustID, lc.Currency
 	FROM dbo.custInfo co WITH (NOLOCK)
-		INNER JOIN #tempAg lc ON co.recommend = lc.CustId AND lc.Currency = co.Currency
+		INNER JOIN @Temp lc ON co.recommend = lc.CustId AND lc.Currency = co.Currency
 	
 	DECLARE @TempFromDate	DATETIME 
 	DECLARE @TempToDate		DATETIME 
@@ -137,7 +138,7 @@ BEGIN
 									, SUM(c.Winlost)  AS Winlost
 									, -SUM(c.Winlost) AS LicenseeWinlost
 							FROM DBLIC.bodb_licenseereport.dbo.rptLicWinloss2 c WITH (NOLOCK)
-								INNER JOIN #tempAg ag ON c.recommend = ag.Custid AND c.Currency = ag.Currency
+								INNER JOIN @Temp ag ON c.recommend = ag.Custid AND c.Currency = ag.Currency
 							WHERE c.Winlostdate BETWEEN @TempFromDate AND @ToDate2 
 								AND c.roleid = 2
 								AND c.sporttype = 250 -- AG Casino
@@ -174,25 +175,10 @@ BEGIN
 
 	IF EXISTS (SELECT TOP (1) 1 FROM #tmpResult)
 	BEGIN
-		DECLARE @SQL VARCHAR(500) = ''
-		DECLARE @Rate VARCHAR(3) = '1', @DefaultRate VARCHAR(3) = '1'
-		
-		IF ISNULL(@BaseCurrency, '') <> ''
-		BEGIN
-			SET @Rate = @BaseCurrency
-		END
-		
-		IF ISNULL(@DefaultBaseCurrency, '') <> ''
-		BEGIN
-			SET @DefaultRate = @DefaultBaseCurrency
-		END
-
-		SELECT @SQL = 'SELECT FirstExchangeDateByMonth, LastExchangeDateByMonth, ExchangeID, USD, EUR, GBP, ' + @Rate + ' AS Rate, ' + @DefaultRate + ' AS DefaultRate '
-					+ 'FROM Lrf_f_GetSubExchangeDaily(''' + CONVERT( VARCHAR(10),@FromDate, 120) + ''',''' + CONVERT( VARCHAR(10),@ToDate, 120) + ''') e '
-					+ 'WHERE EXISTS (SELECT TOP (1) 1 FROM #tempAg a WHERE e.ExchangeID = a.Currency)'
-
-		INSERT INTO #TempExchange(FirstExMonth, LastExMonth, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
-		EXECUTE (@SQL)
+		INSERT INTO #TempExchange(FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
+		SELECT FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate
+		FROM dbo.Lrf_f_GetExchangeRate(@FromDate, @ToDate, @BaseCurrency, @DefaultRate) e
+		WHERE EXISTS (SELECT 1 FROM @Temp a WHERE e.ExchangeID = a.Currency)
 	END
 	
 	SELECT --r.Winlostdate
@@ -226,7 +212,7 @@ BEGIN
 		, SUM(r.Winlost * e.DefaultRate)			AS WinlostBase
 		, SUM(r.LicenseeWinlost * e.DefaultRate)	AS LicenseeWinlostBase
 	FROM #tmpResult r
-	INNER JOIN #TempExchange e ON r.Winlostdate BETWEEN e.FirstExMonth AND e.LastExMonth AND r.Currency = e.ExchangeId
+	INNER JOIN #TempExchange e ON r.Winlostdate BETWEEN e.FromDate AND e.ToDate AND r.Currency = e.ExchangeId
 	GROUP BY --r.Winlostdate
 		 CASE 
 				WHEN @ReportType = 1
@@ -247,8 +233,7 @@ BEGIN
 	---------
 	DROP TABLE #tmpResult
 	DROP TABLE #tmpCust
-	DROP TABLE #TempExchange 
-	DROP TABLE #tempAg
+	DROP TABLE #TempExchange
 	
 END
 GO

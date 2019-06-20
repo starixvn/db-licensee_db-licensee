@@ -51,7 +51,7 @@ BEGIN
 		, @TempFromDate SMALLDATETIME
 		, @TempToDate	SMALLDATETIME
 
-	CREATE TABLE #tempAg (
+	DECLARE @tempAg AS TABLE (
 		custID		INT
 		, currency	INT
 	)
@@ -69,7 +69,7 @@ BEGIN
 		, GrandAmt		MONEY
 	)
 
-	CREATE TABLE #TempExchange(FirstExMonth DATETIME, LastExMonth DATETIME, ExchangeId INT, Rate FLOAT, USD FLOAT, EUR FLOAT, GBP FLOAT, DefaultRate FLOAT)
+	CREATE TABLE #TempExchange(FromDate DATETIME, ToDate DATETIME, ExchangeId INT, Rate FLOAT, USD FLOAT, EUR FLOAT, GBP FLOAT, DefaultRate FLOAT)
 
 	---Section 2 : INIT VARIABLE
 	SELECT @_FromDate = @FromDate
@@ -81,7 +81,7 @@ BEGIN
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT
 			,@AgentList
 	
-		INSERT INTO #tempAg(CustId, Currency)
+		INSERT INTO @tempAg(CustId, Currency)
 		SELECT AgentId, Currency 
 		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
@@ -163,7 +163,7 @@ BEGIN
 			, b.STATUS
 			, SUM(a.GrandAmt) AS GrandAmt
 		FROM dbo.bettrans b WITH (NOLOCK)
-		INNER JOIN #tempAg t
+		INNER JOIN @tempAg t
 			ON b.recommend = t.CustID
 				AND b.Currency = t.Currency
 		LEFT JOIN @tmpGrandAmt a
@@ -276,7 +276,7 @@ BEGIN
 		INSERT INTO @tmpCust (CustID)
 		SELECT c.CustID
 		FROM Customer c WITH (NOLOCK)
-		INNER JOIN #tempAg t
+		INNER JOIN @tempAg t
 			ON c.recommend = t.CustID AND c.roleid = 1
 
 		INSERT INTO #tmpRawData (
@@ -315,25 +315,10 @@ BEGIN
 
 	IF EXISTS (SELECT TOP (1) 1 FROM #tmpRawData)
 	BEGIN
-		DECLARE @SQL VARCHAR(500) = ''
-		DECLARE @Rate VARCHAR(3) = '1', @DefaultRate VARCHAR(3) = '1'
-		
-		IF ISNULL(@BaseCurrency, '') <> ''
-		BEGIN
-			SET @Rate = @BaseCurrency
-		END
-		
-		IF ISNULL(@DefaultBaseCurrency, '') <> ''
-		BEGIN
-			SET @DefaultRate = @DefaultBaseCurrency
-		END
-
-		SELECT @SQL = 'SELECT FirstExchangeDateByMonth, LastExchangeDateByMonth, ExchangeID, USD, EUR, GBP, ' + @Rate + ' AS Rate, ' + @DefaultRate + ' AS DefaultRate '
-					+ 'FROM Lrf_f_GetSubExchangeDaily(''' + CONVERT( VARCHAR(10),@_FromDate, 120) + ''',''' + CONVERT( VARCHAR(10),@_ToDate, 120) + ''') e '
-					+ 'WHERE EXISTS (SELECT TOP (1) 1 FROM #tempAg a WHERE e.ExchangeID = a.Currency)'
-
-		INSERT INTO #TempExchange(FirstExMonth, LastExMonth, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
-		EXECUTE (@SQL)
+		INSERT INTO #TempExchange(FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
+		SELECT FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate
+		FROM dbo.Lrf_f_GetExchangeRate(@_FromDate, @_ToDate, @BaseCurrency, @DefaultRate) e
+		WHERE EXISTS (SELECT 1 FROM @tempAg a WHERE e.ExchangeID = a.Currency)
 	END
 
 	
@@ -388,7 +373,7 @@ BEGIN
 	INNER JOIN Customer c WITH (NOLOCK)
 		ON t.custid = c.custid
 	INNER JOIN #TempExchange e
-		ON t.rptDate BETWEEN e.FirstExMonth AND e.LastExMonth
+		ON t.rptDate BETWEEN e.FromDate AND e.ToDate
 			AND t.CurrencyId = e.ExchangeID
 	GROUP BY t.CustID
 		, CASE 
@@ -403,7 +388,6 @@ BEGIN
 		, c.username2
 
 	DROP TABLE #tmpRawData
-	DROP TABLE #tempAg
 	DROP TABLE #TempExchange
 END
 

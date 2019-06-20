@@ -51,19 +51,18 @@ BEGIN
 		TipsAmount MONEY,
 		TipsSharing MONEY,
 		AmountDue MONEY)
-		
-	CREATE TABLE #tempAg ( CustId INT,Currency INT )
-					
-	DECLARE  @tmpCust		TABLE (CustId INT, Currency INT)
-	DECLARE  @TempExchange	TABLE (FirstExMonth DATE, LastExMonth DATE, ExchangeId INT, Rate FLOAT, USD FLOAT, EUR FLOAT, GBP FLOAT, DefaultRate FLOAT)
 
+	DECLARE  @tmpCust		TABLE (CustId INT, Currency INT)
+	DECLARE  @TempExchange	TABLE (FromDate DATE, ToDate DATE, ExchangeId INT, Rate FLOAT, USD FLOAT, EUR FLOAT, GBP FLOAT, DefaultRate FLOAT)
+
+	DECLARE @Temp AS TABLE ( CustId INT,Currency INT )
 	DECLARE @DocHandler INT
 
 	BEGIN TRY
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT
 			,@AgentList
 	
-		INSERT INTO #tempAg(CustId, Currency)
+		INSERT INTO @Temp(CustId, Currency)
 		SELECT AgentId, Currency 
 		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
@@ -102,7 +101,7 @@ BEGIN
 	INSERT INTO @tmpCust (CustID, Currency)
 	SELECT co.CustID, lc.Currency 
 	FROM dbo.custInfo co WITH (NOLOCK)
-		INNER JOIN #tempAg lc ON co.recommend = lc.CustId AND lc.Currency = co.Currency	
+		INNER JOIN @Temp lc ON co.recommend = lc.CustId AND lc.Currency = co.Currency	
 
 	INSERT INTO #tmpResult (
 		Winlostdate
@@ -139,25 +138,10 @@ BEGIN
 
 	IF EXISTS (SELECT TOP (1) 1 FROM #tmpResult)
 	BEGIN
-		DECLARE @SQL VARCHAR(500) = ''
-		DECLARE @Rate VARCHAR(3) = '1', @DefaultRate VARCHAR(3) = '1'
-		
-		IF ISNULL(@BaseCurrency, '') <> ''
-		BEGIN
-			SET @Rate = @BaseCurrency
-		END
-		
-		IF ISNULL(@DefaultBaseCurrency, '') <> ''
-		BEGIN
-			SET @DefaultRate = @DefaultBaseCurrency
-		END
-
-		SELECT @SQL = 'SELECT FirstExchangeDateByMonth, LastExchangeDateByMonth, ExchangeID, USD, EUR, GBP, ' + @Rate + ' AS Rate, ' + @DefaultRate + ' AS DefaultRate '
-					+ 'FROM Lrf_f_GetSubExchangeDaily(''' + CONVERT( VARCHAR(10),@FDate, 120) + ''',''' + CONVERT( VARCHAR(10),@TDate, 120) + ''') e '
-					+ 'WHERE EXISTS (SELECT TOP (1) 1 FROM #tempAg a WHERE e.ExchangeID = a.Currency)'
-
-		INSERT INTO @TempExchange(FirstExMonth, LastExMonth, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
-		EXECUTE (@SQL)
+		INSERT INTO @TempExchange(FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
+		SELECT FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate
+		FROM dbo.Lrf_f_GetExchangeRate(@FDate, @TDate, @BaseCurrency, @DefaultRate) e
+		WHERE EXISTS (SELECT 1 FROM @Temp a WHERE e.ExchangeID = a.Currency)
 	END
 	
 	SELECT --r.Winlostdate
@@ -206,7 +190,7 @@ BEGIN
 		, SUM(r.TipsSharing * e.DefaultRate)		AS TipsSharingBase
 		, SUM(r.AmountDue * e.DefaultRate)			AS AmountDueBase
 	FROM #tmpResult r
-	INNER JOIN @TempExchange e ON r.Winlostdate BETWEEN e.FirstExMonth AND e.LastExMonth AND r.Currency = e.ExchangeId
+	INNER JOIN @TempExchange e ON r.Winlostdate BETWEEN e.FromDate AND e.ToDate AND r.Currency = e.ExchangeId
 	GROUP BY --r.Winlostdate
 		 CASE 
 				WHEN @ReportType = 1
@@ -227,6 +211,5 @@ BEGIN
 	---------
 	
 	DROP TABLE #tmpResult
-	DROP TABLE #tempAg
 END
 GO

@@ -34,13 +34,13 @@ BEGIN
 		   @TDate = @ToDate
 	
 	DECLARE @DocHandler INT
-	CREATE TABLE #tempAg (custID INT, currency INT)
+	DECLARE @tempAg AS TABLE (custID INT, currency INT)
 
 	BEGIN TRY
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT
 			,@AgentList
 	
-		INSERT INTO #tempAg(CustId, Currency)
+		INSERT INTO @tempAg(CustId, Currency)
 		SELECT AgentId, Currency 
 		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
@@ -54,7 +54,7 @@ BEGIN
 		RETURN
 	END CATCH;
 
-	CREATE TABLE #Exchange(FirstExMonth SMALLDATETIME, LastExMonth SMALLDATETIME, ExchangeId INT, Rate FLOAT, USD FLOAT, EUR FLOAT, GBP FLOAT, DefaultRate FLOAT)
+	CREATE TABLE #Exchange(FromDate SMALLDATETIME, ToDate SMALLDATETIME, ExchangeId INT, Rate FLOAT, USD FLOAT, EUR FLOAT, GBP FLOAT, DefaultRate FLOAT)
 
 	CREATE TABLE #CashoutCust (CustId INT PRIMARY KEY)
 	INSERT INTO #CashoutCust(CustId)
@@ -100,7 +100,7 @@ BEGIN
 		INSERT INTO #TempData ( rptDate ,CurrencyID ,Bettype ,Transid ,Refno ,Actual_stake ,winlost ,awinlost ,transid2, CustID)			
 		SELECT b.winlostdate, b.currency, b.bettype, b.transid, b.refno, b.actual_stake, b.winlost, b.awinlost, b.transid2, b.custid
 		FROM dbo.bettrans b WITH (NOLOCK)
-			INNER JOIN #tempAg ag ON b.recommend = ag.custID AND b.currency = ag.currency
+			INNER JOIN @tempAg ag ON b.recommend = ag.custID AND b.currency = ag.currency
 		WHERE b.bettype IN (911, 913)
 			AND b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND b.statusID IN (111, 112, 113)
@@ -179,7 +179,7 @@ BEGIN
 			, SUM(b.CashoutComm)
 			, SUM(b.TicketPayout)
 		FROM bodb_LicenseeReport.dbo.rptLicCashoutSummary b WITH (NOLOCK)			
-			INNER JOIN #tempAg ag ON b.Recommend = ag.custID AND b.Currency = ag.currency
+			INNER JOIN @tempAg ag ON b.Recommend = ag.custID AND b.Currency = ag.currency
 		WHERE b.winlostdate BETWEEN @FDate AND @TempToDate		
 			AND b.ProductID = 25	
 			AND b.RoleID = 1
@@ -189,25 +189,10 @@ BEGIN
 	--Get Exchange rate
 	IF EXISTS (SELECT TOP (1) 1 FROM @Result)
 	BEGIN
-		DECLARE @SQL VARCHAR(500) = ''
-		DECLARE @Rate VARCHAR(3) = '1', @DefaultRate VARCHAR(3) = '1'
-		
-		IF ISNULL(@BaseCurrency, '') <> ''
-		BEGIN
-			SET @Rate = @BaseCurrency
-		END
-		
-		IF ISNULL(@DefaultBaseCurrency, '') <> ''
-		BEGIN
-			SET @DefaultRate = @DefaultBaseCurrency
-		END
-
-		SELECT @SQL = 'SELECT FirstExchangeDateByMonth, LastExchangeDateByMonth, ExchangeID, USD, EUR, GBP, ' + @Rate + ' AS Rate, ' + @DefaultRate + ' AS DefaultRate '
-					+ 'FROM Lrf_f_GetSubExchangeDaily(''' + CONVERT( VARCHAR(10),@FDate, 120) + ''',''' + CONVERT( VARCHAR(10),@TDate, 120) + ''') e '
-					+ 'WHERE EXISTS (SELECT TOP (1) 1 FROM #tempAg a WHERE e.ExchangeID = a.Currency)'
-
 		INSERT INTO #Exchange(FirstExMonth, LastExMonth, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
-		EXECUTE (@SQL)
+		SELECT FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate
+		FROM dbo.Lrf_f_GetExchangeRate(@FDate, @TDate, @BaseCurrency, @DefaultRate) e
+		WHERE EXISTS (SELECT 1 FROM @tempAg a WHERE e.ExchangeID = a.Currency)
 	END
 
 	-- Select Result
@@ -270,7 +255,7 @@ BEGIN
 		, CAST(SUM((r.TicketPayout - (r.BuyBackAmountSB + r.BuyBackAmountBA + r.CashoutComm)) * e.DefaultRate) AS MONEY) AS Amount_TotalBase
 	FROM @Result r
 		INNER JOIN Customer c WITH (NOLOCK) ON r.custid = c.custid
-		INNER JOIN #Exchange e ON r.rptDate BETWEEN e.FirstExMonth AND e.LastExMonth AND r.CurrencyID = e.ExchangeID	
+		INNER JOIN #Exchange e ON r.rptDate BETWEEN e.FromDate AND e.ToDate AND r.CurrencyID = e.ExchangeID	
 	GROUP BY 		
 		  r.CurrencyID
 		, r.CustID, c.username, c.username2
@@ -278,6 +263,5 @@ BEGIN
 	DROP TABLE #TempData
 	DROP TABLE #Exchange
 	DROP TABLE #CashoutCust
-	DROP TABLE #tempAg
 END
 GO

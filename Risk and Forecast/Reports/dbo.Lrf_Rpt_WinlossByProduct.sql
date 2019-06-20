@@ -106,9 +106,8 @@ BEGIN
 		Betcount		BIGINT
 	)  
 
-	CREATE TABLE #tempAg		(CustId INT,Currency INT)
 	CREATE TABLE #tmpVS			(EventID INT, SportType TINYINT)
-	CREATE TABLE #Exchange		(FirstExchangeDateByMonth DATETIME, LastExchangeDateByMonth DATETIME, ExchangeID INT, EUR FLOAT, USD FLOAT, GBP FLOAT, Rate FLOAT, DefaultRate FLOAT )	
+	CREATE TABLE #Exchange		(FromDate DATETIME, ToDate DATETIME, ExchangeID INT, EUR FLOAT, USD FLOAT, GBP FLOAT, Rate FLOAT, DefaultRate FLOAT )	
 
 	DECLARE @bettype			TABLE (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))
 	DECLARE @sporttype			TABLE (sporttype INT, ProductCode VARCHAR(10))
@@ -132,12 +131,13 @@ BEGIN
 	END	
 
 	---#1: Begin: Get AgentList
+	DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
 	DECLARE @DocHandler INT
 
 	BEGIN TRY
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT
 				,@AgentList
-		INSERT INTO #tempAg (custID, currency)
+		INSERT INTO @TempAg (custID, currency)
 		SELECT AgentId, Currency
 		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
@@ -161,7 +161,7 @@ BEGIN
 		SELECT c.CustID, c.username	
 		INTO #tblCust
 		FROM dbo.Customer c WITH (NOLOCK) 
-			INNER JOIN #tempAg t ON c.recommend = t.custid AND c.roleid = 1
+			INNER JOIN @TempAg t ON c.recommend = t.custid AND c.roleid = 1
 		WHERE (c.username2 LIKE + '%$' + @Username  OR c.username = @Username)
 		
 		SELECT @RCount = @@ROWCOUNT
@@ -238,7 +238,7 @@ BEGIN
 			INTO #tmpBA		
 			FROM 
 				bodb_licensee.dbo.LicenseeBATransaction_active BA WITH(NOLOCK)
-				INNER JOIN #tempAg r ON BA.recommend = r.custID 
+				INNER JOIN @TempAg r ON BA.recommend = r.custID 
 			
 			INSERT INTO #SAgWinLoss  
 			SELECT   
@@ -296,7 +296,7 @@ BEGIN
 									INNER JOIN bodb02.dbo.match m WITH (NOLOCK) ON bm.matchid = m.matchid
 								WHERE b.refno = bm.refno AND b.custid = bm.custid
 							) AS s
-				INNER JOIN #tempAg a ON b.recommend = a.custid AND b.Currency = a.Currency 							
+				INNER JOIN @TempAg a ON b.recommend = a.custid AND b.Currency = a.Currency 							
 			WHERE b.bettype = 2799 -- Betradar VS Parlay
 				AND b.winlostdate BETWEEN @TempFromDate AND @TDate   
 				AND (@CustId = 0 OR b.CustId = @CustID)
@@ -343,7 +343,7 @@ BEGIN
 				SUM(1 * (CASE WHEN b.statusID = 111 THEN 0|@sumBetCount ELSE 1 END)) AS BetCount	
 			FROM 
 				dbo.bettrans b WITH (NOLOCK, INDEX=IX_recommend)
-				INNER JOIN #tempAg a ON b.recommend = a.custid AND b.Currency = a.Currency 
+				INNER JOIN @TempAg a ON b.recommend = a.custid AND b.Currency = a.Currency 
 				INNER JOIN @bettype bt ON b.bettype = bt.bettype AND b.bettype <> 2799
 				LEFT JOIN [match] m WITH(NOLOCK) ON b.matchid = m.matchid AND b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype())
 				LEFT JOIN #tmpVS vs ON b.matchid = vs.EventID AND b.bettype IN (1231,1232,1233,1237,1238,1220,1235,1236)	
@@ -399,7 +399,7 @@ BEGIN
 				SUM(b.betcount * CASE WHEN b.statusID = 111 THEN 0|@sumBetCount ELSE 1 END)
 			FROM 
 				bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
-				INNER JOIN #tempAg ag ON b.Currency = ag.Currency AND b.recommend= ag.custID
+				INNER JOIN @TempAg ag ON b.Currency = ag.Currency AND b.recommend= ag.custID
 			WHERE  
 				  b.Winlostdate BETWEEN @FDate AND @TempToDate  
 				AND (@CustId = 0 OR b.CustId = @CustID)  
@@ -436,7 +436,7 @@ BEGIN
 			FROM 
 				bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
 				INNER JOIN @sporttype t ON b.sporttype = t.sporttype
-				INNER JOIN #tempAg ag ON b.recommend = ag.custID AND b.Currency = ag.Currency
+				INNER JOIN @TempAg ag ON b.recommend = ag.custID AND b.Currency = ag.Currency
 			WHERE  
 				 b.Winlostdate BETWEEN @FDate AND @TempToDate  
 				AND (@CustId = 0 OR b.CustId = @CustID)
@@ -500,7 +500,7 @@ BEGIN
 					,SUM(commissionP) 
 					,SUM(WinlossA)  	
 					,SUM(Betcount)  
-				FROM #tempAg t  
+				FROM @TempAg t  
 					CROSS APPLY ( 
 									SELECT TOP (@n) 
 										CASE WHEN @ReportType = 1 THEN b.rptDate  
@@ -551,7 +551,7 @@ BEGIN
 					,SUM(commissionP) 
 					,SUM(WinlossA)  	
 					,SUM(Betcount)  
-				FROM #tempAg t  
+				FROM @TempAg t  
 					CROSS APPLY ( 
 									SELECT TOP (@n)
 										CASE WHEN @ReportType = 1 THEN b.rptDate  
@@ -606,29 +606,15 @@ BEGIN
 	IF EXISTS (SELECT TOP (1) 1 FROM #SAgWinLoss)
 	BEGIN
 		DECLARE @MinDate SMALLDATETIME, @MaxDate SMALLDATETIME
-		DECLARE @SQL VARCHAR(500) = ''
-		DECLARE @Rate VARCHAR(3) = '1', @DefaultRate VARCHAR(3) = '1'
 		
 		SELECT @MinDate = MIN (winlostdate),
 			   @MaxDate = MAX (winlostdate)
 		FROM   #SAgWinLoss
-		
-		IF ISNULL(@BaseCurrency, '') <> ''
-		BEGIN
-			SET @Rate = @BaseCurrency
-		END
-		
-		IF ISNULL(@DefaultBaseCurrency, '') <> ''
-		BEGIN
-			SET @DefaultRate = @DefaultBaseCurrency
-		END
 
-		SELECT @SQL = 'SELECT FirstExchangeDateByMonth, LastExchangeDateByMonth, ExchangeID, USD, EUR, GBP, ' + @Rate + ' AS Rate, ' + @DefaultRate + ' AS DefaultRate '
-					+ 'FROM dbo.Lrf_f_GetSubExchangeDaily(''' + CONVERT( VARCHAR(10),@MinDate, 120) + ''',''' + CONVERT( VARCHAR(10),@MaxDate, 120) + ''') e '
-					+ 'WHERE EXISTS (SELECT TOP (1) 1 FROM #tempAg a WHERE e.ExchangeID = a.Currency)'
-					
-		INSERT INTO #Exchange(FirstExchangeDateByMonth, LastExchangeDateByMonth, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
-		EXECUTE (@SQL)
+		INSERT INTO #Exchange(FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
+		SELECT FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate
+		FROM dbo.Lrf_f_GetExchangeRate(@MinDate, @MaxDate, @BaseCurrency, @DefaultRate) e
+		WHERE EXISTS (SELECT 1 FROM @TempAg a WHERE e.ExchangeID = a.Currency)
 	END
 
 	SELECT   
@@ -681,7 +667,7 @@ BEGIN
 	FROM	
 		#SAgWinLoss w   
 		INNER JOIN #Exchange e
-			ON e.ExchangeID = w.Currency AND w.winlostdate BETWEEN e.FirstExchangeDateByMonth AND e.LastExchangeDateByMonth	
+			ON e.ExchangeID = w.Currency AND w.winlostdate BETWEEN e.FromDate AND e.ToDate	
 	GROUP BY   
 		Currency,
 		Productcode,
@@ -693,7 +679,5 @@ BEGIN
 
 	DROP TABLE #SAgWinLoss
 	DROP TABLE #Exchange
-	DROP TABLE #tempAg
- 
 END
 GO
