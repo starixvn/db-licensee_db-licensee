@@ -147,8 +147,9 @@ BEGIN
 		ExchangeID	INT,
 		Rate		FLOAT
 	)
-	SELECT	ExchangeID,
-			Rate
+	
+	INSERT INTO @Exchange(ExchangeID, Rate)
+	SELECT	ExchangeID, Rate
 	FROM dbo.Lrf_f_GetExchangeRate(@Today, @Today, @BaseCurrency, '') e
 	WHERE EXISTS (SELECT 1 FROM @TempAg a WHERE a.Currency = e.ExchangeId)
 	
