@@ -99,6 +99,7 @@ AS
 		- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
 		- 20190304@Amanda: Integrate PP Promotion Prize [RedmineID: #109471]
 		- 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
+		- 20190620@Amanda: Centralize function to get exchange rate [Redmine: #112531]
 
 	Param's Explanation:
 		@OrderItem:
@@ -144,13 +145,10 @@ BEGIN
 	DECLARE @ProductList	VARCHAR (500)
 	DECLARE @Exchange		TABLE
 	(
-		ExchangeDate SMALLDATETIME,
-		ExchangeId	 INT,
-		MYR			 FLOAT,
-		USD			 FLOAT,
-		EUR			 FLOAT,
-		GBP			 FLOAT,
-		PRIMARY KEY(ExchangeDate, ExchangeId)
+		FromDate	SMALLDATETIME,
+		ToDate		SMALLDATETIME,
+		ExchangeId	INT,
+		Rate		FLOAT
 	)
 
 	SELECT	@_FromDate		  = @FromDate,
@@ -188,10 +186,10 @@ BEGIN
 
 	-------End Get AgentList
 	
-	INSERT INTO @Exchange(ExchangeDate, ExchangeId, MYR, USD, EUR, GBP)
-	SELECT ExchangeDate, ExchangeId, MYR, USD, EUR, GBP
-	FROM Lrf_f_GetExchangeDaily(@_FromDate, @_ToDate)
-	WHERE exchangeid IN (SELECT DISTINCT Currency FROM @TempAg)
+	INSERT INTO @Exchange(FromDate, ToDate, ExchangeId, Rate)
+	SELECT FromDate, ToDate, ExchangeID, Rate
+	FROM dbo.Lrf_f_GetExchangeRate(@_FromDate, @_ToDate, @BaseCurrency, '') e
+	WHERE EXISTS (SELECT 1 FROM @TempAg a WHERE a.Currency = e.ExchangeID)
 
 	IF @ShowSB = 1 
 	BEGIN
@@ -599,44 +597,20 @@ BEGIN
 				SELECT 
 					w.CustID,
 					t.username,
-					t.UserName2 AS nickname, 
-					SUM(TurnOver)			 AS TurnOver ,  
-					SUM(TurnOver*e.USD)      AS TurnOverUSD ,  
-					SUM(TurnOver*e.EUR)      AS TurnOverEUR ,  
-					SUM(TurnOver*e.GBP)      AS TurnOverGBP , 
-					SUM(MemberWinLost)		 AS MemberWinLost ,
-					SUM(MemberWinLost*e.USD) AS MemberWinLostUSD ,  
-					SUM(MemberWinLost*e.EUR) AS MemberWinLostEUR , 
-					SUM(MemberWinLost*e.GBP) AS MemberWinLostGBP , 
-					SUM(BetEffective)		 AS BetEffective,
-					SUM(BetEffective*e.USD)  AS BetEffectiveUSD,
-					SUM(BetEffective*e.EUR)  AS BetEffectiveEUR,
-					SUM(BetEffective*e.GBP)  AS BetEffectiveGBP,
-					SUM(LicenseeWL)			 AS LicenseeWL,  
-					SUM(LicenseeWL*e.USD) 	 AS LicenseeWLUSD,  
-					SUM(LicenseeWL*e.EUR)    AS LicenseeWLEUR,  
-					SUM(LicenseeWL*e.GBP)    AS LicenseeWLGBP,  
-					SUM(CommBA)				 AS CommBA,  
-					SUM(CommBA*e.USD)        AS CommBAUSD,  
-					SUM(CommBA*e.EUR)        AS CommBAEUR,  
-					SUM(CommBA*e.GBP)        AS CommBAGBP,
-					SUM(playerComm)			 AS PlayerComm,  
-					SUM(playerComm*e.USD)    AS PlayerCommUSD,  
-					SUM(playerComm*e.EUR)    AS PlayerCommEUR,  
-					SUM(playerComm*e.GBP)    AS PlayerCommGBP,
-					SUM(AmtDuetoBA)			 AS AmtDuetoBA,  
-					SUM(AmtDuetoBA*e.USD)    AS AmtDuetoBAUSD,  
-					SUM(AmtDuetoBA*e.EUR)    AS AmtDuetoBAEUR,  
-					SUM(AmtDuetoBA*e.GBP)    AS AmtDuetoBAGBP,
-					SUM(w.betcount)			 AS BetCount,
-					SUM(MemberWinLost + PlayerComm)				 AS CustomerTotalWL,
-					CAST(SUM((MemberWinLost + PlayerComm)*e.USD) AS MONEY) AS CustomerTotalWLUSD,
-					CAST(SUM((MemberWinLost + PlayerComm)*e.EUR) AS MONEY) AS CustomerTotalWLEUR,
-					CAST(SUM((MemberWinLost + PlayerComm)*e.GBP) AS MONEY) AS CustomerTotalWLGBP
+					t.UserName2 AS nickname,  
+					SUM(TurnOver		*e.Rate)    AS TurnOver, 
+					SUM(MemberWinLost	*e.Rate)	AS MemberWinLost, 
+					SUM(BetEffective	*e.Rate)	AS BetEffective,
+					SUM(LicenseeWL		*e.Rate) 	AS LicenseeWL,  
+					SUM(CommBA			*e.Rate)	AS CommBA,
+					SUM(playerComm		*e.Rate)    AS PlayerComm,
+					SUM(AmtDuetoBA		*e.Rate)    AS AmtDuetoBA,
+					SUM(w.betcount)					AS BetCount,
+					CAST(SUM((MemberWinLost + PlayerComm)*e.Rate) AS MONEY) AS CustomerTotalWL
 				FROM		
 					#TempData w
 					INNER JOIN #TempCustID t ON w.CustID = t.CustID
-					LEFT JOIN @Exchange e  ON e.ExchangeDate = w.rptdate AND e.exchangeid = w.currency
+					LEFT JOIN @Exchange e  ON e.exchangeid = w.currency AND w.rptdate BETWEEN e.FromDate AND e.ToDate
 				GROUP BY w.CustID, t.username, t.UserName2
 			) b
 		)
@@ -650,63 +624,15 @@ BEGIN
 		WITH PAGING AS (
 			SELECT	ROW_NUMBER() OVER (
 						ORDER BY CASE @OrderItem
-							WHEN 3 THEN
-								CASE @BaseCurrency
-									WHEN 'USD' THEN TurnOverUSD
-									WHEN 'EUR' THEN TurnOverEUR
-									WHEN 'GBP' THEN TurnOverGBP
-									ELSE TurnOver
-								END
-							WHEN 4 THEN
-								CASE @BaseCurrency
-									WHEN 'USD' THEN MemberWinLostUSD
-									WHEN 'EUR' THEN MemberWinLostEUR
-									WHEN 'GBP' THEN MemberWinLostGBP
-									ELSE MemberWinLost
-								END
-							WHEN 5 THEN
-								CASE @BaseCurrency
-									WHEN 'USD' THEN BetEffectiveUSD
-									WHEN 'EUR' THEN BetEffectiveEUR
-									WHEN 'GBP' THEN BetEffectiveGBP
-									ELSE BetEffective
-								END
-							WHEN 6 THEN
-								CASE @BaseCurrency
-									WHEN 'USD' THEN LicenseeWLUSD
-									WHEN 'EUR' THEN LicenseeWLEUR
-									WHEN 'GBP' THEN LicenseeWLGBP
-									ELSE LicenseeWL
-								END
-							WHEN 8 THEN
-								CASE @BaseCurrency
-									WHEN 'USD' THEN CommBAUSD
-									WHEN 'EUR' THEN CommBAEUR
-									WHEN 'GBP' THEN CommBAGBP
-									ELSE CommBA
-								END
-							WHEN 10 THEN
-								CASE @BaseCurrency
-									WHEN 'USD' THEN PlayerCommUSD
-									WHEN 'EUR' THEN PlayerCommEUR
-									WHEN 'GBP' THEN PlayerCommGBP
-									ELSE PlayerComm
-								END
-							WHEN 11 THEN
-								CASE @BaseCurrency
-									WHEN 'USD' THEN AmtDuetoBAUSD
-									WHEN 'EUR' THEN AmtDuetoBAEUR
-									WHEN 'GBP' THEN AmtDuetoBAGBP
-									ELSE AmtDuetoBA
-								END
+							WHEN 3 THEN TurnOver
+							WHEN 4 THEN MemberWinLost
+							WHEN 5 THEN BetEffective
+							WHEN 6 THEN LicenseeWL
+							WHEN 8 THEN CommBA
+							WHEN 10 THEN PlayerComm
+							WHEN 11 THEN AmtDuetoBA
 							WHEN 13 THEN BetCount
-							WHEN 14 THEN
-								CASE @BaseCurrency
-									WHEN 'USD' THEN CustomerTotalWLUSD
-									WHEN 'EUR' THEN CustomerTotalWLEUR
-									WHEN 'GBP' THEN CustomerTotalWLGBP
-									ELSE CustomerTotalWL
-								END
+							WHEN 14 THEN CustomerTotalWL
 						END, b.CustID) AS RowNum,
 					b.*
 			FROM
@@ -715,43 +641,19 @@ BEGIN
 					w.CustID,
 					t.username,
 					t.UserName2 AS nickname, 
-					SUM(TurnOver)			 AS TurnOver ,  
-					SUM(TurnOver*e.USD)      AS TurnOverUSD ,  
-					SUM(TurnOver*e.EUR)      AS TurnOverEUR ,  
-					SUM(TurnOver*e.GBP)      AS TurnOverGBP , 
-					SUM(MemberWinLost)		 AS MemberWinLost ,
-					SUM(MemberWinLost*e.USD) AS MemberWinLostUSD ,  
-					SUM(MemberWinLost*e.EUR) AS MemberWinLostEUR , 
-					SUM(MemberWinLost*e.GBP) AS MemberWinLostGBP , 
-					SUM(BetEffective)		 AS BetEffective,
-					SUM(BetEffective*e.USD)  AS BetEffectiveUSD,
-					SUM(BetEffective*e.EUR)  AS BetEffectiveEUR,
-					SUM(BetEffective*e.GBP)  AS BetEffectiveGBP,
-					SUM(LicenseeWL)			 AS LicenseeWL,  
-					SUM(LicenseeWL*e.USD) 	 AS LicenseeWLUSD,  
-					SUM(LicenseeWL*e.EUR)    AS LicenseeWLEUR,  
-					SUM(LicenseeWL*e.GBP)    AS LicenseeWLGBP,  
-					SUM(CommBA)				 AS CommBA,  
-					SUM(CommBA*e.USD)        AS CommBAUSD,  
-					SUM(CommBA*e.EUR)        AS CommBAEUR,  
-					SUM(CommBA*e.GBP)        AS CommBAGBP,
-					SUM(playerComm)			 AS PlayerComm,  
-					SUM(playerComm*e.USD)    AS PlayerCommUSD,  
-					SUM(playerComm*e.EUR)    AS PlayerCommEUR,  
-					SUM(playerComm*e.GBP)    AS PlayerCommGBP,
-					SUM(AmtDuetoBA)			 AS AmtDuetoBA,  
-					SUM(AmtDuetoBA*e.USD)    AS AmtDuetoBAUSD,  
-					SUM(AmtDuetoBA*e.EUR)    AS AmtDuetoBAEUR,  
-					SUM(AmtDuetoBA*e.GBP)    AS AmtDuetoBAGBP,
-					SUM(w.betcount)			 AS BetCount,
-					SUM(MemberWinLost + PlayerComm)				 AS CustomerTotalWL,
-					CAST(SUM((MemberWinLost + PlayerComm)*e.USD) AS MONEY) AS CustomerTotalWLUSD,
-					CAST(SUM((MemberWinLost + PlayerComm)*e.EUR) AS MONEY) AS CustomerTotalWLEUR,
-					CAST(SUM((MemberWinLost + PlayerComm)*e.GBP) AS MONEY) AS CustomerTotalWLGBP
+					SUM(TurnOver		*e.Rate)	AS TurnOver, 
+					SUM(MemberWinLost	*e.Rate)	AS MemberWinLost,
+					SUM(BetEffective	*e.Rate)	AS BetEffective,  
+					SUM(LicenseeWL		*e.Rate) 	AS LicenseeWL,  
+					SUM(CommBA			*e.Rate)	AS CommBA,  
+					SUM(playerComm		*e.Rate)	AS PlayerComm,  
+					SUM(AmtDuetoBA		*e.Rate)	AS AmtDuetoBA,
+					SUM(w.betcount)					AS BetCount,
+					CAST(SUM((MemberWinLost + PlayerComm)*e.Rate) AS MONEY) AS CustomerTotalWL
 				FROM		
 					#TempData w
 					INNER JOIN #TempCustID t ON w.CustID = t.CustID
-					LEFT JOIN @Exchange e  ON e.ExchangeDate = w.rptdate AND e.exchangeid = w.currency
+					LEFT JOIN @Exchange e  ON e.exchangeid = w.currency AND w.rptdate BETWEEN e.FromDate AND e.ToDate
 				GROUP BY w.CustID, t.username, t.UserName2
 			) b
 		)
@@ -774,44 +676,20 @@ BEGIN
 				SELECT 
 					w.CustID,
 					t.username,
-					t.UserName2 AS nickname, 
-					SUM(TurnOver)			 AS TurnOver ,  
-					SUM(TurnOver*e.USD)      AS TurnOverUSD ,  
-					SUM(TurnOver*e.EUR)      AS TurnOverEUR ,  
-					SUM(TurnOver*e.GBP)      AS TurnOverGBP , 
-					SUM(MemberWinLost)		 AS MemberWinLost ,
-					SUM(MemberWinLost*e.USD) AS MemberWinLostUSD ,  
-					SUM(MemberWinLost*e.EUR) AS MemberWinLostEUR , 
-					SUM(MemberWinLost*e.GBP) AS MemberWinLostGBP , 
-					SUM(BetEffective)		 AS BetEffective,
-					SUM(BetEffective*e.USD)  AS BetEffectiveUSD,
-					SUM(BetEffective*e.EUR)  AS BetEffectiveEUR,
-					SUM(BetEffective*e.GBP)  AS BetEffectiveGBP,
-					SUM(LicenseeWL)			 AS LicenseeWL,  
-					SUM(LicenseeWL*e.USD) 	 AS LicenseeWLUSD,  
-					SUM(LicenseeWL*e.EUR)    AS LicenseeWLEUR,  
-					SUM(LicenseeWL*e.GBP)    AS LicenseeWLGBP,  
-					SUM(CommBA)				 AS CommBA,  
-					SUM(CommBA*e.USD)        AS CommBAUSD,  
-					SUM(CommBA*e.EUR)        AS CommBAEUR,  
-					SUM(CommBA*e.GBP)        AS CommBAGBP,
-					SUM(playerComm)			 AS PlayerComm,  
-					SUM(playerComm*e.USD)    AS PlayerCommUSD,  
-					SUM(playerComm*e.EUR)    AS PlayerCommEUR,  
-					SUM(playerComm*e.GBP)    AS PlayerCommGBP,
-					SUM(AmtDuetoBA)			 AS AmtDuetoBA,  
-					SUM(AmtDuetoBA*e.USD)    AS AmtDuetoBAUSD,  
-					SUM(AmtDuetoBA*e.EUR)    AS AmtDuetoBAEUR,  
-					SUM(AmtDuetoBA*e.GBP)    AS AmtDuetoBAGBP,
-					SUM(w.betcount)			 AS BetCount,
-					SUM(MemberWinLost + PlayerComm)				 AS CustomerTotalWL,
-					CAST(SUM((MemberWinLost + PlayerComm)*e.USD) AS MONEY) AS CustomerTotalWLUSD,
-					CAST(SUM((MemberWinLost + PlayerComm)*e.EUR) AS MONEY) AS CustomerTotalWLEUR,
-					CAST(SUM((MemberWinLost + PlayerComm)*e.GBP) AS MONEY) AS CustomerTotalWLGBP
+					t.UserName2						AS nickname,  
+					SUM(TurnOver		*e.Rate)    AS TurnOver,
+					SUM(MemberWinLost	*e.Rate)	AS MemberWinLost,
+					SUM(BetEffective	*e.Rate)	AS BetEffective,  
+					SUM(LicenseeWL		*e.Rate) 	AS LicenseeWL,  
+					SUM(CommBA			*e.Rate)    AS CommBA,  
+					SUM(playerComm		*e.Rate)    AS PlayerComm,  
+					SUM(AmtDuetoBA		*e.Rate)    AS AmtDuetoBA,
+					SUM(w.betcount)					AS BetCount,
+					CAST(SUM((MemberWinLost + PlayerComm)*e.Rate) AS MONEY) AS CustomerTotalWL
 				FROM		
 					#TempData w
 					INNER JOIN #TempCustID t ON w.CustID = t.CustID
-					LEFT JOIN @Exchange e  ON e.ExchangeDate = w.rptdate AND e.exchangeid = w.currency
+					LEFT JOIN @Exchange e  ON e.exchangeid = w.currency AND w.rptdate BETWEEN e.FromDate AND e.ToDate
 				GROUP BY w.CustID, t.username, t.UserName2
 			) b
 		)
@@ -825,63 +703,15 @@ BEGIN
 		WITH PAGING AS (
 			SELECT	ROW_NUMBER() OVER (
 						ORDER BY CASE @OrderItem
-							WHEN 3 THEN
-								CASE @BaseCurrency
-									WHEN 'USD' THEN TurnOverUSD
-									WHEN 'EUR' THEN TurnOverEUR
-									WHEN 'GBP' THEN TurnOverGBP
-									ELSE TurnOver
-								END
-							WHEN 4 THEN
-								CASE @BaseCurrency
-									WHEN 'USD' THEN MemberWinLostUSD
-									WHEN 'EUR' THEN MemberWinLostEUR
-									WHEN 'GBP' THEN MemberWinLostGBP
-									ELSE MemberWinLost
-								END
-							WHEN 5 THEN
-								CASE @BaseCurrency
-									WHEN 'USD' THEN BetEffectiveUSD
-									WHEN 'EUR' THEN BetEffectiveEUR
-									WHEN 'GBP' THEN BetEffectiveGBP
-									ELSE BetEffective
-								END
-							WHEN 6 THEN
-								CASE @BaseCurrency
-									WHEN 'USD' THEN LicenseeWLUSD
-									WHEN 'EUR' THEN LicenseeWLEUR
-									WHEN 'GBP' THEN LicenseeWLGBP
-									ELSE LicenseeWL
-								END
-							WHEN 8 THEN
-								CASE @BaseCurrency
-									WHEN 'USD' THEN CommBAUSD
-									WHEN 'EUR' THEN CommBAEUR
-									WHEN 'GBP' THEN CommBAGBP
-									ELSE CommBA
-								END
-							WHEN 10 THEN
-								CASE @BaseCurrency
-									WHEN 'USD' THEN PlayerCommUSD
-									WHEN 'EUR' THEN PlayerCommEUR
-									WHEN 'GBP' THEN PlayerCommGBP
-									ELSE PlayerComm
-								END
-							WHEN 11 THEN
-								CASE @BaseCurrency
-									WHEN 'USD' THEN AmtDuetoBAUSD
-									WHEN 'EUR' THEN AmtDuetoBAEUR
-									WHEN 'GBP' THEN AmtDuetoBAGBP
-									ELSE AmtDuetoBA
-								END
+							WHEN 3 THEN TurnOver
+							WHEN 4 THEN MemberWinLost
+							WHEN 5 THEN BetEffective
+							WHEN 6 THEN LicenseeWL
+							WHEN 8 THEN CommBA
+							WHEN 10 THEN PlayerComm
+							WHEN 11 THEN AmtDuetoBA
 							WHEN 13 THEN BetCount
-							WHEN 14 THEN
-								CASE @BaseCurrency
-									WHEN 'USD' THEN CustomerTotalWLUSD
-									WHEN 'EUR' THEN CustomerTotalWLEUR
-									WHEN 'GBP' THEN CustomerTotalWLGBP
-									ELSE CustomerTotalWL
-								END
+							WHEN 14 THEN CustomerTotalWL
 						END DESC, b.CustID) AS RowNum,
 					b.*
 			FROM
@@ -889,44 +719,20 @@ BEGIN
 				SELECT 
 					w.CustID,
 					t.username,
-					t.UserName2 AS nickname, 
-					SUM(TurnOver)			 AS TurnOver ,  
-					SUM(TurnOver*e.USD)      AS TurnOverUSD ,  
-					SUM(TurnOver*e.EUR)      AS TurnOverEUR ,  
-					SUM(TurnOver*e.GBP)      AS TurnOverGBP , 
-					SUM(MemberWinLost)		 AS MemberWinLost ,
-					SUM(MemberWinLost*e.USD) AS MemberWinLostUSD ,  
-					SUM(MemberWinLost*e.EUR) AS MemberWinLostEUR , 
-					SUM(MemberWinLost*e.GBP) AS MemberWinLostGBP , 
-					SUM(BetEffective)		 AS BetEffective,
-					SUM(BetEffective*e.USD)  AS BetEffectiveUSD,
-					SUM(BetEffective*e.EUR)  AS BetEffectiveEUR,
-					SUM(BetEffective*e.GBP)  AS BetEffectiveGBP,
-					SUM(LicenseeWL)			 AS LicenseeWL,  
-					SUM(LicenseeWL*e.USD) 	 AS LicenseeWLUSD,  
-					SUM(LicenseeWL*e.EUR)    AS LicenseeWLEUR,  
-					SUM(LicenseeWL*e.GBP)    AS LicenseeWLGBP,  
-					SUM(CommBA)				 AS CommBA,  
-					SUM(CommBA*e.USD)        AS CommBAUSD,  
-					SUM(CommBA*e.EUR)        AS CommBAEUR,  
-					SUM(CommBA*e.GBP)        AS CommBAGBP,
-					SUM(playerComm)			 AS PlayerComm,  
-					SUM(playerComm*e.USD)    AS PlayerCommUSD,  
-					SUM(playerComm*e.EUR)    AS PlayerCommEUR,  
-					SUM(playerComm*e.GBP)    AS PlayerCommGBP,
-					SUM(AmtDuetoBA)			 AS AmtDuetoBA,  
-					SUM(AmtDuetoBA*e.USD)    AS AmtDuetoBAUSD,  
-					SUM(AmtDuetoBA*e.EUR)    AS AmtDuetoBAEUR,  
-					SUM(AmtDuetoBA*e.GBP)    AS AmtDuetoBAGBP,
-					SUM(w.betcount)			 AS BetCount,
-					SUM(MemberWinLost + PlayerComm)				 AS CustomerTotalWL,
-					CAST(SUM((MemberWinLost + PlayerComm)*e.USD) AS MONEY) AS CustomerTotalWLUSD,
-					CAST(SUM((MemberWinLost + PlayerComm)*e.EUR) AS MONEY) AS CustomerTotalWLEUR,
-					CAST(SUM((MemberWinLost + PlayerComm)*e.GBP) AS MONEY) AS CustomerTotalWLGBP
+					t.UserName2 AS nickname,   
+					SUM(TurnOver		*e.Rate)	AS TurnOver,
+					SUM(MemberWinLost	*e.Rate)	AS MemberWinLost,
+					SUM(BetEffective	*e.Rate)	AS BetEffective,  
+					SUM(LicenseeWL		*e.Rate) 	AS LicenseeWL,  
+					SUM(CommBA			*e.Rate)    AS CommBA,  
+					SUM(playerComm		*e.Rate)    AS PlayerComm,  
+					SUM(AmtDuetoBA		*e.Rate)    AS AmtDuetoBA,
+					SUM(w.betcount)					AS BetCount,
+					CAST(SUM((MemberWinLost + PlayerComm)*e.Rate) AS MONEY) AS CustomerTotalWL
 				FROM		
 					#TempData w
 					INNER JOIN #TempCustID t ON w.CustID = t.CustID
-					LEFT JOIN @Exchange e  ON e.ExchangeDate = w.rptdate AND e.exchangeid = w.currency
+					LEFT JOIN @Exchange e  ON e.exchangeid = w.currency AND w.rptdate BETWEEN e.FromDate AND e.ToDate
 				GROUP BY w.CustID, t.username, t.UserName2
 			) b
 		)
@@ -939,45 +745,21 @@ BEGIN
 	SELECT @TotalRow = COUNT(DISTINCT b.custid) FROM #TempData b
  
 	--- return data
-	SELECT  
-		SUM(TurnOver) 								 AS SumTurnOver ,
-		CAST(SUM(TurnOver*e.USD)		AS MONEY)	 AS SumTurnOverUSD ,
-		CAST(SUM(TurnOver*e.EUR)        AS MONEY)	 AS SumTurnOverEUR ,
-		CAST(SUM(TurnOver*e.GBP)        AS MONEY)	 AS SumTurnOverGBP ,
-		SUM(MemberWinLost) 							 AS SumMemberWinLost ,
-		SUM(BetEffective)						     AS SumBetEffective,
-		CAST(SUM(MemberWinLost*e.USD)   AS MONEY)	 AS SumMemberWinLostUSD ,
-		CAST(SUM(BetEffective*e.USD)    AS MONEY)	 AS SumBetEffectiveUSD ,
-		CAST(SUM(MemberWinLost*e.EUR)   AS MONEY)	 AS SumMemberWinLostEUR,
-		CAST(SUM(BetEffective*e.EUR) 	AS MONEY)	 AS SumBetEffectiveEUR  ,
-		CAST(SUM(MemberWinLost*e.GBP)   AS MONEY)	 AS SumMemberWinLostGBP,
-		CAST(SUM(BetEffective*e.GBP) 	AS MONEY)	 AS SumBetEffectiveGBP,
-		SUM(LicenseeWL) 							 AS SumLicenseeWL,
-		CAST(SUM(LicenseeWL*e.USD) 	    AS MONEY)	 AS SumLicenseeWLUSD,
-		CAST(SUM(LicenseeWL*e.EUR)      AS MONEY)	 AS SumLicenseeWLEUR,
-		CAST(SUM(LicenseeWL*e.GBP)      AS MONEY)	 AS SumLicenseeWLGBP,
-		SUM(CommBA) 								 AS SumCommBA,
-		CAST(SUM(CommBA*e.USD) 		    AS MONEY)	 AS SumCommBAUSD,
-		CAST(SUM(CommBA*e.EUR) 		    AS MONEY)	 AS SumCommBAEUR,
-		CAST(SUM(CommBA*e.GBP) 		    AS MONEY)	 AS SumCommBAGBP,
-		SUM(PlayerComm)       						 AS SumPlayerComm,
-		CAST(SUM(PlayerComm*e.USD)      AS MONEY)	 AS SumPlayerCommUSD,
-		CAST(SUM(PlayerComm*e.EUR)      AS MONEY)	 AS SumPlayerCommEUR,
-		CAST(SUM(PlayerComm*e.GBP)      AS MONEY)	 AS SumPlayerCommGBP,
-		SUM(AmtDuetoBA) 				    		 AS SumAmtDuetoBA,
-		CAST(SUM(AmtDuetoBA*e.USD)      AS MONEY)	 AS SumAmtDuetoBAUSD,
-		CAST(SUM(AmtDuetoBA*e.EUR)      AS MONEY)	 AS SumAmtDuetoBAEUR,
-		CAST(SUM(AmtDuetoBA*e.GBP)      AS MONEY)	 AS SumAmtDuetoBAGBP,
-		@TotalRow 									 AS TotalRows,
-		SUM(b.betcount) 							 AS SumBetCount,
-		SUM(MemberWinLost + PlayerComm)				 AS SumCustomerTotalWL,
-		CAST(SUM((MemberWinLost + PlayerComm)*e.USD) AS MONEY) AS SumCustomerTotalWLUSD,
-		CAST(SUM((MemberWinLost + PlayerComm)*e.EUR) AS MONEY) AS SumCustomerTotalWLEUR,
-		CAST(SUM((MemberWinLost + PlayerComm)*e.GBP) AS MONEY) AS SumCustomerTotalWLGBP,
-		SUM(PromotionPrize)							 AS SumPromotionPrize
+	SELECT
+		CAST(SUM(TurnOver		*e.Rate)	AS MONEY)	AS SumTurnOver,
+		CAST(SUM(MemberWinLost	*e.Rate)	AS MONEY)	AS SumMemberWinLost,
+		CAST(SUM(BetEffective	*e.Rate)    AS MONEY)	AS SumBetEffective,
+		CAST(SUM(LicenseeWL		*e.Rate) 	AS MONEY)	AS SumLicenseeWL,
+		CAST(SUM(CommBA			*e.Rate) 	AS MONEY)	AS SumCommBA,
+		CAST(SUM(PlayerComm		*e.Rate)    AS MONEY)	AS SumPlayerComm,
+		CAST(SUM(AmtDuetoBA		*e.Rate)    AS MONEY)	AS SumAmtDuetoBA,
+		@TotalRow										AS TotalRows,
+		SUM(b.betcount) 								AS SumBetCount,
+		CAST(SUM((MemberWinLost + PlayerComm)*e.Rate) AS MONEY) AS SumCustomerTotalWL,
+		SUM(PromotionPrize)								AS SumPromotionPrize
 	FROM
 		#TempData b
-		LEFT JOIN @Exchange e ON e.ExchangeDate = b.rptdate AND e.exchangeid = b.currency
+		LEFT JOIN @Exchange e ON e.exchangeid = b.currency AND b.rptdate BETWEEN e.FromDate AND e.ToDate
 
 	DROP TABLE #TempData    
 	DROP TABLE #TempCustID
