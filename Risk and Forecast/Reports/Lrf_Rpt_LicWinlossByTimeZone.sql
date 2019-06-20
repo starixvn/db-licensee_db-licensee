@@ -517,7 +517,6 @@ BEGIN
 	
 	DROP TABLE #WinLoss 
 	DROP TABLE #Exchange
-	DROP TABLE @TempAg
  
 	-- #End: Get Report
 
