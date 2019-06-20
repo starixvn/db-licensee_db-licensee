@@ -8,7 +8,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportSummary]
 	@ToDate			SMALLDATETIME,
 	@MoveBetsDay	SMALLDATETIME,
 	@Liveindicator	INT = 1,
-	@AgentList		VARCHAR(MAX)
+	@AgentList		VARCHAR(MAX),
+	@BaseCurrency	VARCHAR(3) = ''
 AS 
 /*
 Created: 20111031@Henry
@@ -67,6 +68,7 @@ Revisions:
 	- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
 	- 20190304@Amanda: Integrate PP Promotion Prize [RedmineID: #109471]
 	- 20190516@Amanda: Remove hard code for product name [RedmineID: #113398]
+	- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
 
 Param's Explanation:
 	+ @IsLive : indicate that whether the report will get live data or not
@@ -602,44 +604,24 @@ BEGIN
 
 	CREATE NONCLUSTERED INDEX IX_tmpWinloss ON #tmpWinloss (Currency)
 
-	SELECT *
+	SELECT FromDate, ToDate, ExchangeID, Rate
 	INTO #TempExchange
-	FROM Lrf_f_GetExchangeDaily(@FDate, @TDate)
-	--WHERE exchangeid IN (SELECT DISTINCT Currency FROM #tmpWinloss)
+	FROM dbo.Lrf_f_GetExchangeRate(@FDate, @TDate, @BaseCurrency, '') e
+	WHERE EXISTS (SELECT 1 FROM @TempAg a WHERE e.ExchangeID = a.Currency)
 
 	SELECT
 		ProductCode,
-		SUM(TurnOver) AS Turnover,
-		SUM(Winlost) AS Winlost,
-		SUM(LicenseeWL) AS LicenseeWL,
-		SUM(Comm) AS Comm,
-		SUM(playercomm) AS PlayerComm,
-		SUM(AmtDueto3rd) AS AmtDueto3rd,
 		SUM(Betcount) AS Betcount,
-		--BaseEUR  
-		CAST(SUM(TurnOver * e.EUR) AS MONEY) AS TurnoverEUR,
-		CAST(SUM(Winlost * e.EUR) AS MONEY) AS WinlostEUR,
-		CAST(SUM(LicenseeWL * e.EUR) AS MONEY) AS LicenseeWLEUR,
-		CAST(SUM(Comm * e.EUR) AS MONEY) AS CommEUR,
-		CAST(SUM(playercomm * e.EUR) AS MONEY) AS PlayerCommEUR,
-		CAST(SUM(AmtDueto3rd * e.EUR) AS MONEY) AS AmtDueto3rdEUR,
-		-- BaseUSD
-		CAST(SUM(TurnOver * e.USD) AS MONEY) AS TurnoverUSD,
-		CAST(SUM(Winlost * e.USD) AS MONEY) AS WinlostUSD,
-		CAST(SUM(LicenseeWL * e.USD) AS MONEY) AS LicenseeWLUSD,
-		CAST(SUM(Comm * e.USD) AS MONEY) AS CommUSD,
-		CAST(SUM(playercomm * e.USD) AS MONEY) AS PlayerCommUSD,
-		CAST(SUM(AmtDueto3rd * e.USD) AS MONEY) AS AmtDueto3rdUSD,
-		-- BaseGBP
-		CAST(SUM(TurnOver * e.GBP) AS MONEY) AS TurnoverGBP,
-		CAST(SUM(Winlost * e.GBP) AS MONEY) AS WinlostGBP,
-		CAST(SUM(LicenseeWL * e.GBP) AS MONEY) AS LicenseeWLGBP,
-		CAST(SUM(Comm * e.GBP) AS MONEY) AS CommGBP,
-		CAST(SUM(playercomm * e.GBP) AS MONEY) AS PlayerCommGBP,
-		CAST(SUM(AmtDueto3rd * e.GBP) AS MONEY) AS AmtDueto3rdGBP		
+
+		CAST(SUM(TurnOver		* e.Rate) AS MONEY) AS Turnover,
+		CAST(SUM(Winlost		* e.Rate) AS MONEY) AS Winlost,
+		CAST(SUM(LicenseeWL		* e.Rate) AS MONEY) AS LicenseeWL,
+		CAST(SUM(Comm			* e.Rate) AS MONEY) AS Comm,
+		CAST(SUM(playercomm		* e.Rate) AS MONEY) AS PlayerComm,
+		CAST(SUM(AmtDueto3rd	* e.Rate) AS MONEY) AS AmtDueto3rd
 	FROM
 		#tmpWinloss b
-		INNER JOIN #TempExchange e ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
+		INNER JOIN #TempExchange e ON e.ExchangeID = b.currency AND b.winlostdate BETWEEN e.FromDate AND e.ToDate
 	WHERE b.ProductCode IS NOT NULL
 	GROUP BY ProductCode
 	ORDER BY ProductCode

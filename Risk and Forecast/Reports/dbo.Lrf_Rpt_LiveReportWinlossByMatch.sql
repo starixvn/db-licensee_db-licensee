@@ -10,7 +10,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportWinlossByMatch]
 	@ToDate			SMALLDATETIME,
 	@MoveBetsDay	SMALLDATETIME,
 	@Liveindicator	INT = 1,
-	@AgentList		VARCHAR(MAX)
+	@AgentList		VARCHAR(MAX),
+	@BaseCurrency	VARCHAR(3) = ''
 AS 
 /*
 Created: 20111031@
@@ -42,6 +43,7 @@ Revisions:
 	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 	- 20180808@Amanda: Remove bet type related to Racing [RedmineID: #99378]
 	- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
+	- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
 
 Return 3 tables:
 WinlostBySport
@@ -577,9 +579,9 @@ END
 -- Get winlost by match 
 CREATE NONCLUSTERED INDEX IX_tmpWinloss on #tmpWinloss (Currency)
 
-SELECT * INTO #TempExchange
-FROM Lrf_f_GetExchangeDaily(@FDate,@TDate)
-WHERE exchangeid IN (SELECT DISTINCT Currency FROM #tmpWinloss)
+SELECT FromDate, ToDate, ExchangeId, Rate INTO #TempExchange
+FROM Lrf_f_GetExchangeRate(@FDate,@TDate, @BaseCurrency, '')
+WHERE ExchangeId IN (SELECT DISTINCT Currency FROM #tmpWinloss)
 
 SELECT
 	b.matchid,	
@@ -588,39 +590,18 @@ SELECT
 	--b.bettype,
 	0 AS bettype,
 	'' AS ShowTime ,
-	SUM(TurnOver)	AS Turnover,   
-	SUM(Winlost)		AS Winlost,  
-	SUM(LicenseeWL) AS LicenseeWL,
-	SUM(Comm) AS Comm,
-	SUM(PlayerComm) AS PlayerComm,
-	SUM(AmtDueto3rd) AS AmtDueto3rd,
 	SUM(Betcount)	AS Betcount,
 	
 	--BaseEUR  
-	CAST(SUM(TurnOver*e.EUR) AS MONEY)	AS TurnoverEUR,   
-	CAST(SUM(Winlost*e.EUR) AS MONEY)	AS WinlostEUR,  
-	CAST(SUM(LicenseeWL*e.EUR) AS MONEY) AS LicenseeWLEUR,
-	CAST(SUM(Comm * e.EUR) AS MONEY) AS CommEUR,
-	CAST(SUM(PlayerComm * e.EUR) AS MONEY) AS PlayerCommEUR,
-	CAST(SUM(AmtDueto3rd*e.EUR) AS MONEY) AS AmtDueto3rdEUR,
-	-- baseUSD
-	CAST(SUM(TurnOver*e.USD) AS MONEY)	AS TurnoverUSD,   
-	CAST(SUM(Winlost*e.USD) AS MONEY)	AS WinlostUSD,  
-	CAST(SUM(LicenseeWL*e.USD) AS MONEY) AS LicenseeWLUSD,
-	CAST(SUM(Comm * e.USD) AS MONEY) AS CommUSD,
-	CAST(SUM(PlayerComm * e.USD) AS MONEY) AS PlayerCommUSD,
-	CAST(SUM(AmtDueto3rd*e.USD) AS MONEY) AS AmtDueto3rdUSD,
-	-- baseGBP
-	CAST(SUM(TurnOver*e.GBP) AS MONEY)	AS TurnoverGBP,   
-	CAST(SUM(Winlost*e.GBP) AS MONEY)	AS WinlostGBP,  
-	CAST(SUM(LicenseeWL*e.GBP) AS MONEY) AS LicenseeWLGBP,
-	CAST(SUM(Comm * e.GBP) AS MONEY) AS CommGBP,
-	CAST(SUM(PlayerComm * e.GBP) AS MONEY) AS PlayerCommGBP,
-	CAST(SUM(AmtDueto3rd*e.GBP) AS MONEY) AS AmtDueto3rdGBP
-	
+	CAST(SUM(TurnOver*e.Rate) AS MONEY)	AS Turnover,   
+	CAST(SUM(Winlost*e.Rate) AS MONEY)	AS Winlost,  
+	CAST(SUM(LicenseeWL*e.Rate) AS MONEY) AS LicenseeWL,
+	CAST(SUM(Comm * e.Rate) AS MONEY) AS Comm,
+	CAST(SUM(PlayerComm * e.Rate) AS MONEY) AS PlayerComm,
+	CAST(SUM(AmtDueto3rd*e.Rate) AS MONEY) AS AmtDueto3rd
 FROM #tmpWinloss b  WITH (NOLOCK) 	
 	INNER JOIN  #TempExchange e
-	ON e.ExchangeDate = b.winlostdate  AND e.exchangeid = b.currency
+	ON b.winlostdate BETWEEN e.FromDate AND e.ToDate AND e.exchangeid = b.currency
 group by b.matchid, b.homeid, b.awayid
 
 DROP TABLE #TempExchange
