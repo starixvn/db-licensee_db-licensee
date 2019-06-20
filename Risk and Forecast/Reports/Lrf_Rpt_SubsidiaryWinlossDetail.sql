@@ -18,6 +18,7 @@ AS
 		- 20180905@Amanda: Initial SP [Redmine: #95177]
 		- 20181005@Amanda: Remove unused code [RedmineID: #99378]
 		- 20181228@Joseph: Remove vnteam [RedmineID: #103698]
+		- 20190620@Amanda: Centralize function to get exchange rate [Redmine: #112531]
 
 	Param's Explanation:  
 	
@@ -164,20 +165,11 @@ BEGIN
 											FROM @tempAg
 										)
 	INSERT INTO #Exchange(ExFromDate, ExToDate, ExchangeID, Rate)
-	SELECT	FirstExchangeDateByMonth,
-			LastExchangeDateByMonth,
+	SELECT	FromDate,
+			ToDate,
 			ExchangeID,
-			CASE
-				WHEN @BaseCurrency = 'USD' THEN USD
-				WHEN @BaseCurrency = 'EUR' THEN EUR
-				WHEN @BaseCurrency = 'GBP' THEN GBP
-				WHEN @BaseCurrency = 'MYR' THEN MYR
-				WHEN @BaseCurrency = 'CNY' THEN CNY
-				WHEN @BaseCurrency = 'THB' THEN THB
-				WHEN @BaseCurrency = 'IDR' THEN IDR
-				ELSE 1
-			END
-	FROM dbo.Lrf_f_GetSubExchangeDaily(@FromDate, @ToDate) e
+			Rate
+	FROM dbo.Lrf_f_GetExchangeRate(@FromDate, @ToDate, @BaseCurrency, '') e
 	INNER JOIN Currency_CTE c ON e.ExchangeId = c.CurrencyID
 			  
 	SELECT
