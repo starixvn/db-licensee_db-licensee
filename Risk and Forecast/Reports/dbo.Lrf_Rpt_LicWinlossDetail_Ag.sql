@@ -1040,7 +1040,7 @@ BEGIN
 		INSERT INTO @ExchangeRate(FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
 		SELECT FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate
 		FROM dbo.Lrf_f_GetExchangeRate(@FDate, @TDate, @BaseCurrency, @DefaultBaseCurrency) e
-		WHERE EXISTS (SELECT TOP 1 FROM #SAgWinLoss s WHERE e.ExchangeID = s.Currency)
+		WHERE EXISTS (SELECT 1 FROM #SAgWinLoss s WHERE e.ExchangeID = s.Currency)
 	END
  
 	SELECT   
