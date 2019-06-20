@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
  
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_MatchWinLossByOutrightParlay]    
@@ -570,7 +570,7 @@ END
 
 INSERT INTO @ExchangeDaily(ExchangeId, Rate)
     SELECT ExchangeID, Rate
-    FROM Lrf_f_GetExchangeRate(@_Date,@_Date, @BaseCurrency, '')
+    FROM dbo.Lrf_f_GetExchangeRate(@_Date,@_Date, @BaseCurrency, '')
     
 
 -- Result    
