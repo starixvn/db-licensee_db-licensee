@@ -186,7 +186,7 @@ BEGIN
 	BEGIN
 		INSERT INTO #TempExchange(FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
 		SELECT FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate
-		FROM dbo.Lrf_f_GetExchangeRate(@FromDate, @ToDate, @BaseCurrency, @DefaultRate) e
+		FROM dbo.Lrf_f_GetExchangeRate(@FromDate, @ToDate, @BaseCurrency, @DefaultBaseCurrency) e
 		WHERE EXISTS (SELECT 1 FROM @Temp a WHERE e.ExchangeID = a.Currency)
 	END
 	
