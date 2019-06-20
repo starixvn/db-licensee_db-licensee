@@ -189,7 +189,7 @@ BEGIN
 	--Get Exchange rate
 	IF EXISTS (SELECT TOP (1) 1 FROM @Result)
 	BEGIN
-		INSERT INTO #Exchange(FirstExMonth, LastExMonth, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
+		INSERT INTO #Exchange(FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
 		SELECT FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate
 		FROM dbo.Lrf_f_GetExchangeRate(@FDate, @TDate, @BaseCurrency, @DefaultBaseCurrency) e
 		WHERE EXISTS (SELECT 1 FROM @tempAg a WHERE e.ExchangeID = a.Currency)
