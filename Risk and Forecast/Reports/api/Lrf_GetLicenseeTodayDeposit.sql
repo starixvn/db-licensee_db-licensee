@@ -65,7 +65,7 @@ BEGIN
 	
 	INSERT INTO #TempExchange(ExchangeID, Rate)
 	SELECT ExchangeID, Rate
-	FROM dbo.Lrf_f_GetExchangeRate(@fdate, @fdate, @BaseCurrency, '')
+	FROM dbo.Lrf_f_GetExchangeRate(@fdate, @fdate, @BaseCurrency, '') e
 	WHERE EXISTS (SELECT 1 FROM @Currency c WHERE e.ExchangeID = c.Currency)
 
 	SELECT  CAST(SUM(b.Deposit * e.Rate) AS MONEY) AS Deposit
