@@ -1,11 +1,12 @@
-/*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 USE [bodb02]
 GO
 
 ALTER PROCEDURE [dbo].[Lrf_GetLicenseeTodayWithdrawal]
     @LicenseeID		INT,
     @CurrencyIDList VARCHAR(500)  = 0,
-    @ReportDate		SMALLDATETIME
+    @ReportDate		SMALLDATETIME,
+    @BaseCurrency	VARCHAR(3) = ''
 AS 
 
 /*
@@ -19,6 +20,7 @@ AS
 		- 20170808@Walter: Support UUS currency [RedmineID: #80855]
 		- 20170814@Alex  : Restrict permission by currency  [RedmineID: #80855]
 		- 20181031@Percy: Remove linked-server DBLIC [RedmineID: #103660]
+		- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
 */
 
 BEGIN
@@ -29,19 +31,15 @@ BEGIN
  
 	SELECT	@fdate = @ReportDate;
 
-	DECLARE @Temp TABLE (CustId INT, Currency INT);
-
-	INSERT INTO @Temp (CustId, Currency)
-	SELECT CustID,Currency FROM bodb_licensee.dbo.f_SelLicenseeCust(@LicenseeID)
+	DECLARE @Currency TABLE (Currency INT);
 	
-	INSERT INTO @tmpAg(custID, currency)
-	SELECT CustID, currency 
-	FROM @Temp lc
-	WHERE Currency IN
-                (
-                    SELECT val
-                    FROM dbo.strSplit(@CurrencyIDList, ',')
-                );
+	INSERT INTO @Currency(Currency)
+	SELECT val
+    FROM dbo.strSplit(@CurrencyIDList, ',')
+
+	INSERT INTO @tmpAg (CustId, Currency)
+	SELECT CustID,Currency FROM bodb_licensee.dbo.f_SelLicenseeCust(@LicenseeID) a
+	WHERE EXISTS (SELECT 1 FROM @Currency c WHERE a.Currency = c.Currency)
 
 	CREATE TABLE #tmpRpt
 	(
@@ -60,28 +58,19 @@ BEGIN
 	WHERE b.winlostdate = @fdate
 	GROUP BY b.currency;
 
-	SELECT * INTO #TempExchange
-	FROM Lrf_f_GetExchangeDaily(@fdate, @fdate)
-	WHERE exchangeid IN (SELECT DISTINCT Currency FROM #tmpRpt);
+	CREATE TABLE #TempExchange(
+		ExchangeID	INT,
+		Rate		FLOAT
+	)
+	
+	INSERT INTO #TempExchange(ExchangeID, Rate)
+	SELECT ExchangeID, Rate
+	FROM dbo.Lrf_f_GetExchangeRate(@fdate, @fdate, @BaseCurrency, '')
+	WHERE EXISTS (SELECT 1 FROM @Currency c WHERE e.ExchangeID = c.Currency)
 
-	SELECT  SUM(b.Withdrawal) AS Withdrawal,
-			--- EUR
-			CAST(SUM(b.Withdrawal * e.EUR) AS MONEY) AS WithdrawalEUR,
-			--- USD
-			CAST(SUM(b.Withdrawal * e.USD) AS MONEY) AS WithdrawalUSD,
-			--- GBP
-			CAST(SUM(b.Withdrawal * e.GBP) AS MONEY) AS WithdrawalGBP,
-			--- CNY
-			CAST(SUM(b.Withdrawal * e.CNY) AS MONEY) AS WithdrawalCNY,
-			--- MYR
-			CAST(SUM(b.Withdrawal * e.MYR) AS MONEY) AS WithdrawalMYR,
-			--- THB
-			CAST(SUM(b.Withdrawal * e.THB) AS MONEY) AS WithdrawalTHB,
-			--- IDR
-			CAST(SUM(b.Withdrawal * e.IDR) AS MONEY) AS WithdrawalIDR
+	SELECT  CAST(SUM(b.Withdrawal * e.Rate) AS MONEY) AS Withdrawal
 	FROM #tmpRpt b
 		INNER JOIN #TempExchange e ON e.exchangeid = b.currency
-	WHERE e.ExchangeDate = @fdate;
 
 	DROP TABLE #TempExchange;
 	DROP TABLE #tmpRpt;
