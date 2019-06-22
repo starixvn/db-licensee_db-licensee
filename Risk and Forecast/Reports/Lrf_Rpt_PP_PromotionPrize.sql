@@ -6,7 +6,8 @@ CREATE PROCEDURE [dbo].[Lrf_Rpt_PP_PromotionPrize]
 	@FromDate		SMALLDATETIME,  
 	@ToDate			SMALLDATETIME, 
 	@MoveBetsDay	SMALLDATETIME,
-	@AgentList		VARCHAR(MAX)
+	@AgentList		VARCHAR(MAX),
+	@DefaultBaseCurrency	VARCHAR(3)
 AS 
 /*  Created: Amanda  
 	Date: 2019-03-04
@@ -15,6 +16,7 @@ AS
    
     Revisions:  
 	- 20190304@Amanda: Get PP Promotion Prize data [RedmineID: #109471]
+	- 20190621@Amanda: Add @@DefaultBaseCurrency parameter [Redmine: #112531]
 
 	Param's Explanation:
 	  + @MoveBetsDay: The day we move tickets to bettrans14
@@ -35,7 +37,7 @@ BEGIN
 		Winlost				MONEY,
 		CustId				INT
 	) 
-	CREATE TABLE #Exchange(FirstExchangeDateByMonth SMALLDATETIME, LastExchangeDateByMonth SMALLDATETIME, ExchangeID INT, Code VARCHAR(5), USD FLOAT, EUR FLOAT, GBP FLOAT)
+	CREATE TABLE #Exchange(FromDate SMALLDATETIME, ToDate SMALLDATETIME, ExchangeID INT, USD FLOAT, EUR FLOAT, GBP FLOAT, DefaultRate FLOAT)
 	CREATE TABLE #tmpCust(CustId INT)
 	
 	DECLARE @tempAg	TABLE(custID INT, currency INT)  
@@ -150,9 +152,9 @@ BEGIN
 		   @MaxDate = MAX (winlostdate)
 	FROM   #PPData
 	
-	INSERT INTO #Exchange(FirstExchangeDateByMonth, LastExchangeDateByMonth, ExchangeID, Code, USD, EUR, GBP)
-	SELECT FirstExchangeDateByMonth, LastExchangeDateByMonth, ExchangeID, Code, USD, EUR, GBP
-	FROM dbo.Lrf_f_GetSubExchangeDaily(@MinDate, @MaxDate)
+	INSERT INTO #Exchange(FromDate, ToDate, ExchangeID, USD, EUR, GBP, DefaultRate)
+	SELECT FromDate, ToDate, ExchangeID, USD, EUR, GBP, DefaultRate
+	FROM dbo.Lrf_f_GetExchangeRate(@MinDate, @MaxDate, '', @DefaultBaseCurrency)
 
 	-- #Region: Return data
 
@@ -168,9 +170,10 @@ BEGIN
 	
 	SELECT	SUM(p.Winlost * e.USD) AS SumAmountUSD,
 			SUM(p.Winlost * e.EUR) AS SumAmountEUR,
-			SUM(p.Winlost * e.GBP) AS SumAmountGBP
+			SUM(p.Winlost * e.GBP) AS SumAmountGBP,
+			SUM(p.Winlost * e.DefaultRate) AS SumAmountBase
 	FROM #PPData p
-	INNER JOIN #Exchange e ON e.ExchangeID = p.CurrencyId AND p.winlostdate BETWEEN e.FirstExchangeDateByMonth AND e.LastExchangeDateByMonth
+	INNER JOIN #Exchange e ON e.ExchangeID = p.CurrencyId AND p.winlostdate BETWEEN e.FromDate AND e.ToDate
 	
 	DROP TABLE #PPData
 	DROP TABLE #Exchange
