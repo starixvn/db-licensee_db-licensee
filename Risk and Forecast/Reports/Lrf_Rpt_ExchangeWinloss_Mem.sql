@@ -6,6 +6,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_ExchangeWinloss_Mem]
 	, @ToDate		DATE
 	, @LicenseeId	INT
 	, @AgentList	VARCHAR(MAX)
+	, @BaseCurrency	VARCHAR(3)
+	, @DefaultBaseCurrency	VARCHAR(3)
 AS
 
 /*
@@ -17,6 +19,7 @@ AS
 		- 20180302@Harper: Return CustID for Support Bet List [RedmineID: #91048]
 		- 20180323@Amanda: Get data from raw table that data is not sum [Redmine: #92495]
 		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
+		- 20190621@Amanda: Add @BaseCurrency parameter [Redmine: #112531]
 
 	Param's Explanation:  		
 
@@ -43,10 +46,13 @@ BEGIN
 	
 	CREATE TABLE #Exchange (
 		ExchangeID INT,
-		ExchageDate DATE,
+		FromDate DATE,
+		ToDate DATE,
 		GBP FLOAT,
 		USD FLOAT,
-		EUR FLOAT
+		EUR FLOAT,
+		Rate FLOAT,
+		DefaultRate FLOAT
 	)
 	
 	DECLARE @ProductID			INT
@@ -263,33 +269,36 @@ BEGIN
 											FROM #tmpResult
 										)
 	INSERT INTO #Exchange( ExchangeID ,
-							ExchageDate ,
+							FromDate ,
+							ToDate ,
 							GBP ,
 							USD ,
-							EUR
+							EUR ,
+							Rate ,
+							DefaultRate
 						)
-	SELECT ExchangeId, ExchangeDate, GBP, USD, EUR
-	FROM dbo.Lrf_f_GetExchangeDaily(@FDate, @ToDate) exc
-	INNER JOIN Currency_CTE cur ON exc.ExchangeId = cur.CurrencyID
+	SELECT ExchangeID, FromDate, ToDate, GBP, USD, EUR, Rate, DefaultRate
+	FROM dbo.Lrf_f_GetExchangeRate(@FDate, @ToDate, @BaseCurrency, @DefaultBaseCurrency) exc
+	INNER JOIN Currency_CTE cur ON exc.ExchangeID = cur.CurrencyID
 	
 	-- #Region: Return data
 	SELECT SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS nickname
 		, c.username		
 		, c.CustID
 		, r.CurrencyID
-		, SUM(r.TurnOver)			AS TurnOver
-		, SUM(r.NETTurnOver)		AS NetTurnOver
 		, SUM(r.TotalTrans)			AS TotalTrans
-		, SUM(r.Winlost)			AS Winlost
-		, SUM(r.CustComm)			AS CustComm
-		, SUM(r.LicWinlost)			AS LicenseeWinlost
-		, SUM(r.AmountDueTo)		AS AmountDueTo
-		, SUM(r.AgentComm)			AS AgentComm
-		, SUM(r.LicNetWL)			AS LicNetWL
+		
+		, SUM(r.TurnOver * e.Rate)			AS TurnOver
+		, SUM(r.NETTurnOver * e.Rate)		AS NetTurnOver
+		, SUM(r.Winlost * e.Rate)			AS Winlost
+		, SUM(r.CustComm * e.Rate)			AS CustComm
+		, SUM(r.LicWinlost * e.Rate)		AS LicenseeWinlost
+		, SUM(r.AmountDueTo * e.Rate)		AS AmountDueTo
+		, SUM(r.AgentComm * e.Rate)			AS AgentComm
+		, SUM(r.LicNetWL * e.Rate)			AS LicNetWL
 		---USD
 		, SUM(r.TurnOver * e.USD)			AS TurnOverUSD
 		, SUM(r.NETTurnOver * e.USD)		AS NetTurnOverUSD
-		, SUM(r.TotalTrans * e.USD)			AS TotalTransUSD
 		, SUM(r.Winlost * e.USD)			AS WinlostUSD
 		, SUM(r.CustComm * e.USD)			AS CustCommUSD
 		, SUM(r.LicWinlost * e.USD)			AS LicenseeWinlostUSD
@@ -299,7 +308,6 @@ BEGIN
 		---EUR
 		, SUM(r.TurnOver * e.EUR)			AS TurnOverEUR
 		, SUM(r.NETTurnOver * e.EUR)		AS NetTurnOverEUR
-		, SUM(r.TotalTrans * e.EUR)			AS TotalTransEUR
 		, SUM(r.Winlost * e.EUR)			AS WinlostEUR
 		, SUM(r.CustComm * e.EUR)			AS CustCommEUR
 		, SUM(r.LicWinlost * e.EUR)			AS LicenseeWinlostEUR
@@ -309,15 +317,23 @@ BEGIN
 		---GBP
 		, SUM(r.TurnOver * e.GBP)			AS TurnOverGBP
 		, SUM(r.NETTurnOver * e.GBP)		AS NetTurnOverGBP
-		, SUM(r.TotalTrans * e.GBP)			AS TotalTransGBP
 		, SUM(r.Winlost * e.GBP)			AS WinlostGBP
 		, SUM(r.CustComm * e.GBP)			AS CustCommGBP
 		, SUM(r.LicWinlost * e.GBP)			AS LicenseeWinlostGBP
 		, SUM(r.AmountDueTo * e.GBP)		AS AmountDueToGBP
 		, SUM(r.AgentComm * e.GBP)			AS AgentCommGBP
 		, SUM(r.LicNetWL * e.GBP)			AS LicNetWLGBP
+		---Default Base currency
+		, SUM(r.TurnOver * e.DefaultRate)			AS TurnOverBase
+		, SUM(r.NETTurnOver * e.DefaultRate)		AS NetTurnOverBase
+		, SUM(r.Winlost * e.DefaultRate)			AS WinlostBase
+		, SUM(r.CustComm * e.DefaultRate)			AS CustCommBase
+		, SUM(r.LicWinlost * e.DefaultRate)			AS LicenseeWinlostBase
+		, SUM(r.AmountDueTo * e.DefaultRate)		AS AmountDueToBase
+		, SUM(r.AgentComm * e.DefaultRate)			AS AgentCommBase
+		, SUM(r.LicNetWL * e.DefaultRate)			AS LicNetWLBase
 	FROM #tmpResult r
-		INNER JOIN #Exchange e ON r.Winlostdate = e.ExchageDate AND r.CurrencyID = e.ExchangeId
+		INNER JOIN #Exchange e ON r.CurrencyID = e.ExchangeId AND r.Winlostdate BETWEEN e.FromDate AND e.ToDate
 		INNER JOIN dbo.customer c WITH  (NOLOCK) ON c.CustID = r.CustID
 	GROUP BY SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2))
 		, c.username
