@@ -131,7 +131,7 @@ BEGIN
 			EUR,
 			Rate,
 			DefaultRate
-	FROM dbo.Lrf_f_GetExchangeDaily(@FromDate, @ToDate, @BaseCurrency, @DefaultBaseCurrency) exc
+	FROM dbo.Lrf_f_GetExchangeRate(@FromDate, @ToDate, @BaseCurrency, @DefaultBaseCurrency) exc
 
 	-- Return data
 	IF (@ReportType = 1)
