@@ -395,7 +395,7 @@ BEGIN
 	SELECT  @FromDate = CONVERT(DATE, @FromDate)
  
 	SELECT CONVERT(DATETIME, FromDate) AS FromDate, CONVERT(DATETIME, DATEADD(DAY, 1, ToDate)) AS ToDate, Rate INTO #TempExchange 
-	FROM Lrf_f_GetExchangeRate(@FromDate, @Today, @BalanceUpDay, '')
+	FROM Lrf_f_GetExchangeRate(@FromDate, @Today, @BaseCurrency, '')
 	WHERE ExchangeID = @currency
   
     SELECT  c.*  
