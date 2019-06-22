@@ -19,7 +19,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_TurnOver]
 	@ShowVS2		BIT = 0, -- Bet Radar Virtual Sports
 	@ShowLT			BIT = 0, -- Lottery
 	@ShowPP			BIT = 0, -- PP
-	@AgentList		VARCHAR(MAX)
+	@AgentList		VARCHAR(MAX),
+	@BaseCurrency	VARCHAR(3)
 AS 
 /*
 Created: 20111017@Henry
@@ -68,6 +69,7 @@ Revisions:
    - 20180808@Amanda: Remove Racing, Bingo [RedmineID: #99378]
    - 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
    - 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
+   - 20190621@Amanda: Add @BaseCurrency parameter [Redmine: #112531]
 
 Param's Explanation:
     
@@ -177,57 +179,7 @@ BEGIN
 	BEGIN
 		SELECT
 			'0'  AS reporttype,
-			b.*,
-			NULL AS OpeningBalanceEUR,
-			NULL AS DepositEUR,
-			NULL AS WithdrawalEUR,
-			NULL AS AffiliateTransferEUR,
-			NULL AS BonusEUR,
-			NULL AS AdjustmentEUR,
-			NULL AS TurnoverEUR,
-			NULL AS PendingFundEUR,
-			NULL AS WinlossEUR,
-			NULL AS ClosingBalanceEUR,
-			NULL AS Transfer3rdEUR,
-			NULL AS DrawGameEUR,
-			NULL AS TurnoverBAEUR,
-			NULL AS CommBAEUR,
-			NULL AS PlayerCommEUR,
-			NULL AS AmountDueToBAEUR,
-			--
-			NULL AS OpeningBalanceUSD,
-			NULL AS DepositUSD,
-			NULL AS WithdrawalUSD,
-			NULL AS AffiliateTransferUSD,
-			NULL AS BonusUSD,
-			NULL AS AdjustmentUSD,
-			NULL AS TurnoverUSD,
-			NULL AS PendingFundUSD,
-			NULL AS WinlossUSD,
-			NULL AS ClosingBalanceUSD,
-			NULL AS Transfer3rdUSD,
-			NULL AS DrawGameUSD,
-			NULL AS TurnoverBAUSD,
-			NULL AS CommBAUSD,
-			NULL AS PlayerCommUSD,
-			NULL AS AmountDueToBAUSD,
-			--
-			NULL AS OpeningBalanceGBP,
-			NULL AS DepositGBP,
-			NULL AS WithdrawalGBP,
-			NULL AS AffiliateTransferGBP,
-			NULL AS BonusGBP,
-			NULL AS AdjustmentGBP,
-			NULL AS TurnoverGBP,
-			NULL AS PendingFundGBP,
-			NULL AS WinlossGBP,
-			NULL AS ClosingBalanceGBP,
-			NULL AS Transfer3rdGBP,
-			NULL AS DrawGameGBP,
-			NULL AS TurnoverBAGBP,
-			NULL AS CommBAGBP,
-			NULL AS PlayerCommGBP,
-			NULL AS AmountDueToBAGBP
+			b.*
 		FROM #tmpRpt b
 	END
 	ELSE
@@ -500,83 +452,32 @@ BEGIN
 			END
 		END    
 
-		SELECT * INTO #TempExchange
-		FROM Lrf_f_GetExchangeDaily(@FromDate, @ToDate)
-		WHERE exchangeid IN (SELECT DISTINCT Currency FROM #tmpRpt)
+		SELECT FromDate, ToDate, ExchangeID, Rate INTO #TempExchange
+		FROM Lrf_f_GetExchangeRate(@FromDate, @ToDate, @BaseCurrency, '') e
+		WHERE EXISTS (SELECT 1 FROM @tmpAg a WHERE a.currency = e.ExchangeID)
 
 		SELECT    
-			b.winlostdate,    
-			SUM(b.OpeningBalance) AS OpeningBalance,
-			SUM(b.Deposit) AS Deposit,
-			SUM(b.Withdrawal) AS Withdrawal,
-			SUM(b.AffiliateTransfer) AS AffiliateTransfer,
-			SUM(b.Bonus) AS Bonus,
-			SUM(b.Adjustment) AS Adjustment,
-			SUM(b.Turnover) AS Turnover,
-			SUM(b.PendingFund) AS PendingFund,
-			SUM(b.Winloss) AS Winloss,    
-			SUM(b.ClosingBalance) AS ClosingBalance,
-			SUM(b.Transfer3rd) AS Transfer3rd,
-			SUM(b.DrawGame) AS DrawGame,
-			CASE WHEN @showSB=1 THEN SUM(b.Turnover_BA) ELSE 0 END AS TurnoverBA,
-			CASE WHEN @showSB=1 THEN SUM(b.Comm_BA) ELSE 0 END AS CommBA,
-			SUM(b.PlayerComm) AS PlayerComm,
-			CASE WHEN @showSB=1 THEN SUM(b.AmountDueTo_BA) ELSE 0 END AS AmountDueToBA,
+			b.winlostdate,
 			--- EUR
-			CAST(SUM(b.OpeningBalance * e.EUR) AS MONEY) AS OpeningBalanceEUR,
-			CAST(SUM(b.Deposit * e.EUR) AS MONEY) AS DepositEUR,
-			CAST(SUM(b.Withdrawal * e.EUR) AS MONEY) AS WithdrawalEUR,
-			CAST(SUM(b.AffiliateTransfer * e.EUR) AS MONEY) AS AffiliateTransferEUR,
-			CAST(SUM(b.Bonus * e.EUR) AS MONEY) AS BonusEUR,
-			CAST(SUM(b.Adjustment * e.EUR) AS MONEY) AS AdjustmentEUR,
-			CAST(SUM(b.Turnover * e.EUR )AS MONEY) AS TurnoverEUR,
-			CAST(SUM(b.PendingFund * e.EUR) AS MONEY) AS PendingFundEUR,
-			CAST(SUM(b.Winloss * e.EUR) AS MONEY) AS WinlossEUR,
-			CAST(SUM(b.ClosingBalance * e.EUR) AS MONEY) AS ClosingBalanceEUR,
-			CAST(SUM(b.Transfer3rd * e.EUR) AS MONEY) AS Transfer3rdEUR,
-			CAST(SUM(b.DrawGame * e.EUR) AS MONEY) AS DrawGameEUR,
-			CAST(SUM(b.PlayerComm * e.EUR) AS MONEY) AS PlayerCommEUR,
-			CASE WHEN @showSB=1 THEN CAST(SUM(b.Turnover_BA * e.EUR) AS MONEY) ELSE 0 END  AS TurnoverBAEUR,
-			CASE WHEN @showSB=1 THEN CAST(SUM(b.Comm_BA * e.EUR) AS MONEY) ELSE 0 END AS CommBAEUR,
-			CASE WHEN @showSB=1 THEN CAST(SUM(b.AmountDueTo_BA * e.EUR) AS MONEY) ELSE 0 END AS AmountDueToBAEUR,
-			--- USD
-			CAST(SUM(b.OpeningBalance * e.USD) AS MONEY) AS OpeningBalanceUSD,
-			CAST(SUM(b.Deposit * e.USD) AS MONEY) AS DepositUSD,
-			CAST(SUM(b.Withdrawal * e.USD) AS MONEY) AS WithdrawalUSD,
-			CAST(SUM(b.AffiliateTransfer * e.USD) AS MONEY) AS AffiliateTransferUSD,
-			CAST(SUM(b.Bonus * e.USD) AS MONEY) AS BonusUSD,
-			CAST(SUM(b.Adjustment * e.USD) AS MONEY) AS AdjustmentUSD,
-			CAST(SUM(b.Turnover * e.USD )AS MONEY) AS TurnoverUSD,
-			CAST(SUM(b.PendingFund * e.USD) AS MONEY) AS PendingFundUSD,
-			CAST(SUM(b.Winloss * e.USD) AS MONEY) AS WinlossUSD,
-			CAST(SUM(b.ClosingBalance * e.USD) AS MONEY) AS ClosingBalanceUSD,
-			CAST(SUM(b.Transfer3rd * e.USD) AS MONEY) AS Transfer3rdUSD,
-			CAST(SUM(b.DrawGame * e.USD) AS MONEY) AS DrawGameUSD,
-			CAST(SUM(b.PlayerComm * e.USD) AS MONEY) AS PlayerCommUSD,
-			CASE WHEN @showSB=1 THEN CAST(SUM(b.Turnover_BA * e.USD) AS MONEY) ELSE 0 END  AS TurnoverBAUSD,
-			CASE WHEN @showSB=1 THEN CAST(SUM(b.Comm_BA * e.USD) AS MONEY) ELSE 0 END AS CommBAUSD,
-			CASE WHEN @showSB=1 THEN CAST(SUM(b.AmountDueTo_BA * e.USD) AS MONEY) ELSE 0 END AS AmountDueToBAUSD,
-			--- GBP
-			CAST(SUM(b.OpeningBalance * e.GBP) AS MONEY) AS OpeningBalanceGBP,
-			CAST(SUM(b.Deposit * e.GBP) AS MONEY) AS DepositGBP,
-			CAST(SUM(b.Withdrawal * e.GBP) AS MONEY) AS WithdrawalGBP,
-			CAST(SUM(b.AffiliateTransfer * e.GBP) AS MONEY) AS AffiliateTransferGBP,
-			CAST(SUM(b.Bonus * e.GBP) AS MONEY) AS BonusGBP,
-			CAST(SUM(b.Adjustment * e.GBP) AS MONEY) AS AdjustmentGBP,
-			CAST(SUM(b.Turnover * e.GBP )AS MONEY) AS TurnoverGBP,
-			CAST(SUM(b.PendingFund * e.GBP) AS MONEY) AS PendingFundGBP,
-			CAST(SUM(b.Winloss * e.GBP) AS MONEY) AS WinlossGBP,
-			CAST(SUM(b.ClosingBalance * e.GBP) AS MONEY) AS ClosingBalanceGBP,
-			CAST(SUM(b.Transfer3rd * e.GBP) AS MONEY) AS Transfer3rdGBP,
-			CAST(SUM(b.DrawGame * e.GBP) AS MONEY) AS DrawGameGBP,
-			CAST(SUM(b.PlayerComm * e.GBP) AS MONEY) AS PlayerCommGBP,
-			CASE WHEN @showSB=1 THEN CAST(SUM(b.Turnover_BA * e.GBP) AS MONEY) ELSE 0 END  AS TurnoverBAGBP,
-			CASE WHEN @showSB=1 THEN CAST(SUM(b.Comm_BA * e.GBP) AS MONEY) ELSE 0 END AS CommBAGBP,
-			CASE WHEN @showSB=1 THEN CAST(SUM(b.AmountDueTo_BA * e.GBP) AS MONEY) ELSE 0 END AS AmountDueToBAGBP
-    
+			CAST(SUM(b.OpeningBalance		* e.Rate) AS MONEY) AS OpeningBalance,
+			CAST(SUM(b.Deposit				* e.Rate) AS MONEY) AS Deposit,
+			CAST(SUM(b.Withdrawal			* e.Rate) AS MONEY) AS Withdrawal,
+			CAST(SUM(b.AffiliateTransfer	* e.Rate) AS MONEY) AS AffiliateTransfer,
+			CAST(SUM(b.Bonus				* e.Rate) AS MONEY) AS Bonus,
+			CAST(SUM(b.Adjustment			* e.Rate) AS MONEY) AS Adjustment,
+			CAST(SUM(b.Turnover				* e.Rate )AS MONEY) AS Turnover,
+			CAST(SUM(b.PendingFund			* e.Rate) AS MONEY) AS PendingFund,
+			CAST(SUM(b.Winloss				* e.Rate) AS MONEY) AS Winloss,
+			CAST(SUM(b.ClosingBalance		* e.Rate) AS MONEY) AS ClosingBalance,
+			CAST(SUM(b.Transfer3rd			* e.Rate) AS MONEY) AS Transfer3rd,
+			CAST(SUM(b.DrawGame				* e.Rate) AS MONEY) AS DrawGame,
+			CAST(SUM(b.PlayerComm			* e.Rate) AS MONEY) AS PlayerComm,
+			CASE WHEN @showSB=1 THEN CAST(SUM(b.Turnover_BA		* e.Rate) AS MONEY) ELSE 0 END  AS TurnoverBA,
+			CASE WHEN @showSB=1 THEN CAST(SUM(b.Comm_BA			* e.Rate) AS MONEY) ELSE 0 END AS CommBA,
+			CASE WHEN @showSB=1 THEN CAST(SUM(b.AmountDueTo_BA	* e.Rate) AS MONEY) ELSE 0 END AS AmountDueToBA
 		FROM #tmpRpt b
 			INNER JOIN #TempExchange e
-			ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency
+			ON e.exchangeid = b.currency AND b.winlostdate BETWEEN e.FromDate AND e.ToDate
 		GROUP BY b.winlostdate
 		DROP TABLE #TempExchange
 	END
