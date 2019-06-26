@@ -1,4 +1,4 @@
-/*<info serverAlias="DBLIC-bodb_Licensee" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" viewers="vnteam" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_CustomerSelUserSearchByOption]	
 	@username VARCHAR(50),
 	@searchOption 	TINYINT,	
@@ -7,7 +7,7 @@ AS
 /*
 Created: 20190625@Johnson
 Task : Suggest for user search 
-DB: DBLIC/bodb_Licensee
+DB: DBEXT/bodb02
 Original:Lrf_CustomerSelUserSearch 
 
 Revisions:

@@ -64,8 +64,6 @@ BEGIN
 	SELECT val
 	FROM dbo.strSplit(@custids,',')
 	
-	SET @Username = ISNULL(@Username, '')
-
 	CREATE TABLE #Temp
 	(
 		custid					INT PRIMARY KEY,
