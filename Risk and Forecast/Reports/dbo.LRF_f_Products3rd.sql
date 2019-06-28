@@ -1,16 +1,18 @@
+/*<info serverAlias="DBLIC-bodb_Licensee,DBCUST-bodb_Licensee" selecters="bodbAdminNet" isFunction="1" isNested="1"></info>*/
 USE [bodb_licensee]
 GO
- 
 
 ALTER FUNCTION [dbo].[LRF_f_Products3rd] (@Products VARCHAR(1000))
-RETURNS @tbProducts TABLE (ProductID INT, InvoiceProductID INT, ProductPrefix VARCHAR(10), ProductName VARCHAR(100))
+	RETURNS @tbProducts TABLE (ProductID INT, InvoiceProductID INT, ProductPrefix VARCHAR(10), ProductName VARCHAR(100))
 AS
-/*  Created: 20150129@Florent  
-    Task : Get Product Information
-    DB: DB052/bodb_Licensee  
-    Revision : - 20160915@Jim: hard-code for testing Colossus Bets on UAT
-    Param's Explanation:       
-	select * FROM dbo.LRF_f_Products3rd('NG,SB')
+
+/*
+	Created: 20150129@Florent  
+    Task: Get Product Information
+	DB: DBLIC.bodb_Licensee, DBCUST.bodb_Licensee
+    
+	Revisions:
+		- 20160915@Jim: hard-code for testing Colossus Bets on UAT
 */
 
 BEGIN     
@@ -28,7 +30,7 @@ BEGIN
 		INSERT INTO @tbProducts(ProductID, ProductPrefix, ProductName)
 		SELECT p.Productid, p.ProductPrefix, p.ProductName
 		FROM dbo.strSplit(@Products,',') s
-			LEFT JOIN bodb_licensee.dbo.Product3rd p WITH(NOLOCK) ON s.val = p.ProductPrefix
+			LEFT JOIN dbo.Product3rd p WITH(NOLOCK) ON s.val = p.ProductPrefix
 	END
 
 	UPDATE @tbProducts
@@ -41,3 +43,4 @@ BEGIN
 	DELETE @tbProducts WHERE ProductID IS NULL
 	RETURN
 END
+GO
