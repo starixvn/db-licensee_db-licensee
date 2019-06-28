@@ -263,7 +263,7 @@ BEGIN
 	)
 
 	INSERT INTO #SecondRS
-	SELECT bettype,hdp,0,0,0,0,0,0,0,0 
+	SELECT bettype,hdp,0,0
 	FROM BetLines l
 	WHERE NOT EXISTS (SELECT 1 FROM #SecondRS s WHERE s.bettype = l.bettype AND s.hdp = l.hdp)
 
