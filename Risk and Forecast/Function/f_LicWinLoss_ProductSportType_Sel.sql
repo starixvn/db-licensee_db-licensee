@@ -1,5 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02" selecters="bodbLicenseeNet" viewers="" isFunction="1"></info>*/
-
+/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02" selecters="bodbLicenseeNet" isFunction="1" isNested="1"></info>*/
 ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]  
 (  
 	@ProductCodes VARCHAR(500) = ''  
@@ -7,7 +6,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 /*  
 	Create: 20170703@Harper  
 	Description: Get sum_winloss condition  
-	DB: DBEXT.bodb02/ DBACC.bodb02
+	DB: DBEXT.bodb02, DBACC.bodb02
     
 	Revisions:  	  
 		- 20170703@Harper: Get SportType by Product follow job sum [Redmine: #78241]

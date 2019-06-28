@@ -1,6 +1,5 @@
-/*<info serverAlias="DBCUST-bodb_Licensee,DBEXT-bodb02" executers="" selecters="bodbLicenseeNet" viewers="vnteam" isFunction="1" isNested="1"></info>*/
-
-ALTER FUNCTION  [dbo].[Lrf_f_StringSplit] ( @string NVARCHAR( MAX), @splitter CHAR( 1) )
+/*<info serverAlias="DBCUST-bodb_Licensee,DBEXT-bodb02,DBACC-bodb02" selecters="bodbAdminNet,bodbLicenseeNet" isFunction="1" isNested="1"></info>*/
+CREATE FUNCTION  [dbo].[Lrf_f_StringSplit] ( @string NVARCHAR( MAX), @splitter CHAR( 1) )
 RETURNS @res TABLE ( id INT PRIMARY KEY, rank INT, val NVARCHAR( MAX) )
 AS
 /*
@@ -29,3 +28,5 @@ BEGIN
      RETURN
 END
 GO
+
+GRANT SELECT ON [Lrf_f_StringSplit] TO bodbAdminNet AS dbo
