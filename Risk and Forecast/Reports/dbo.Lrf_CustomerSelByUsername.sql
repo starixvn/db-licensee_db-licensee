@@ -7,7 +7,7 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerSelByUsername]
 	@PageIndex		INT = 1,
 	@BAFilter		SMALLINT = 0,	
 	@TotalRows		INT = 0  OUTPUT,
-	@SpecialLevel	INT = -1, --ALL	
+	@SpecialLevel	VARCHAR(100) = '', 
 	@OddsGroups		VARCHAR(100) = '',
 	@AgentList		VARCHAR(MAX)
 AS
@@ -23,7 +23,7 @@ AS
 	
 	Parameter's explanations:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
-		+ @SpecialLevel: default value = -1 (all)
+		+ @SpecialLevel: '1,2,3,4,5,6,7,8,9,10' (all)
 		+ @OddsGroups: Member's Odds Group
 		+ @searchOption: 1- Quick search
 						 2- Match prefix
@@ -145,7 +145,7 @@ BEGIN
 				 WHERE lci.RoleID = 1 
 				 ) lc ON lc.custid = c.custid				
 			WHERE 
-				(' + CONVERT(VARCHAR(10),@SpecialLevel) + ' = -1 OR ISNULL(lc.speciallevel,0) = ' +  CONVERT(VARCHAR(10),@SpecialLevel) + ')'				
+				ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ')'				
 			
 			--EXEC sp_executesql @strSQL
 			EXEC (@strSQL)
@@ -188,7 +188,7 @@ BEGIN
 							 WHERE lb.LicenseeID = ' + CONVERT(VARCHAR(10),@LicenseeID) + '
 								AND lb.[Status] = ''Running''								  
 								AND (''' + @OddsGroups + ''' = '''' OR RIGHT(cu.ugroup,1) IN (' + @OddsGroupsC + '))
-								AND (' + CONVERT(VARCHAR(10),@SpecialLevel) + ' = -1 OR ISNULL(lc.speciallevel,0) = ' +  CONVERT(VARCHAR(10),@SpecialLevel) + ')'								
+								AND ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ')'				
 			
 			--EXEC sp_executesql @strSQL
 			EXEC (@strSQL)
@@ -241,7 +241,7 @@ BEGIN
 				 ) lc ON lc.custid = c.custid
 				LEFT JOIN bodb_Licensee.dbo.LicenseeBAHistory lb WITH(NOLOCK) ON lb.LicenseeID = ' + CONVERT(VARCHAR(10),@LicenseeID) + ' AND c.custid = lb.custid AND lb.[Status] = ''Running''				
 			WHERE ISNULL (lb.CustID, 0) = 0
-				AND (' + CONVERT(VARCHAR(10),@SpecialLevel) + ' = -1 OR ISNULL(lc.speciallevel,0) = ' +  CONVERT(VARCHAR(10),@SpecialLevel) + ')'
+				AND ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ')'				
 				
 		
 			--EXEC sp_executesql @strSQL
@@ -291,7 +291,7 @@ BEGIN
 						OR c.username LIKE ''' + @Username + '''' + ')
 					AND c.username NOT LIKE ''%CashOut%''					
 					AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))
-					AND (' + CONVERT(VARCHAR(10),@SpecialLevel) + ' = -1 OR ISNULL(lc.SpecialLevel,0) = ' +  CONVERT(VARCHAR(10),@SpecialLevel) + ')'					
+					AND ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ')'				
 		END
 		ELSE
 		BEGIN
@@ -311,7 +311,7 @@ BEGIN
 						OR c.username LIKE ''' + @Username + '''' + ')
 					AND c.username NOT LIKE ''%CashOut%''					
 					AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))
-					AND (' + CONVERT(VARCHAR(10),@SpecialLevel) + ' = -1 OR ISNULL(lc.SpecialLevel,0) = ' +  CONVERT(VARCHAR(10),@SpecialLevel) + ')					
+					AND ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ')				
 					AND ((' + CONVERT(VARCHAR(10),@BAFilter) + ' = 1 AND ISNULL(lb.[Status],'''') = ''Running'')'
 					+ ' OR ('+ CONVERT(VARCHAR(10),@BAFilter) + '= 2 AND ISNULL(lb.[Status],'''') != ''Running''))'
 		END			

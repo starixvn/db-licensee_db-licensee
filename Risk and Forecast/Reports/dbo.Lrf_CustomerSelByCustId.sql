@@ -146,7 +146,7 @@ BEGIN
 			 WHERE lci.RoleID = 1 
 			 ) lc ON lc.custid = c.custid				
 		WHERE 
-			(' + CONVERT(VARCHAR(10),@SpecialLevel) + ' = -1 OR ISNULL(lc.speciallevel,0) = ' +  CONVERT(VARCHAR(10),@SpecialLevel) + ')'				
+			ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ')'
 		
 		--EXEC sp_executesql @strSQL
 		EXEC (@strSQL)
@@ -190,7 +190,7 @@ BEGIN
 							AND lb.[Status] = ''Running''
 							AND ci.custid IN (SELECT custid FROM #tblCustList)		
 							AND (''' + @OddsGroups + ''' = '''' OR RIGHT(cu.ugroup,1) IN (' + @OddsGroupsC + '))
-							AND (' + CONVERT(VARCHAR(10),@SpecialLevel) + ' = -1 OR ISNULL(lc.speciallevel,0) = ' +  CONVERT(VARCHAR(10),@SpecialLevel) + ')'								
+							AND ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ')'
 		
 		--EXEC sp_executesql @strSQL
 		EXEC (@strSQL)
@@ -244,7 +244,7 @@ BEGIN
 			 ) lc ON lc.custid = c.custid
 			LEFT JOIN bodb_Licensee.dbo.LicenseeBAHistory lb WITH(NOLOCK) ON lb.LicenseeID = ' + CONVERT(VARCHAR(10),@LicenseeID) + ' AND c.custid = lb.custid AND lb.[Status] = ''Running''				
 		WHERE ISNULL (lb.CustID, 0) = 0
-			AND (' + CONVERT(VARCHAR(10),@SpecialLevel) + ' = -1 OR ISNULL(lc.speciallevel,0) = ' +  CONVERT(VARCHAR(10),@SpecialLevel) + ')'
+			AND ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ')'
 			
 	
 		--EXEC sp_executesql @strSQL
@@ -432,3 +432,4 @@ BEGIN
 	DROP TABLE #tmpCust
 	DROP TABLE #TempMember	
 END
+GO
