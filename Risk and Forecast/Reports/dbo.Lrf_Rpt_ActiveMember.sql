@@ -162,7 +162,3 @@ BEGIN
 END     
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_ActiveMember] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_ActiveMember] TO [vnteam]
-GO
