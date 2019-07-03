@@ -69,6 +69,7 @@ AS
 	- 20190215@Joseph: HotFix: Licensee WL data isn't included PP ( range: rptLicWinloss2) [RedmineID: #108934]
 	- 20190304@Amanda: Integrate PP Promotion Prize [RedmineID: #109471]
 	- 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
+	- 20190703@Percy: Enhance performance (#tmpVS) - work arround [RedmineID: #116231]
 
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -308,7 +309,7 @@ BEGIN
 				INSERT INTO #tmpVS ( Orid, SportType )				
 				SELECT 
 					DISTINCT
-					o.Orid,
+					o.EventID,
 					r.SportType				
 				FROM VSOutright o with (nolock)
 					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
@@ -341,7 +342,7 @@ BEGIN
 				INNER JOIN @TempAg a ON b.recommend = a.custid AND b.Currency = a.Currency 
 				INNER JOIN @bettype bt ON b.bettype = bt.bettype AND b.bettype <> 2799
 				LEFT JOIN [match] m WITH(NOLOCK) ON b.matchid = m.matchid AND b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype())
-				LEFT JOIN #tmpVS vs ON b.oddsid = vs.Orid AND b.bettype IN (1231,1232,1233,1237,1238,1220,1235,1236)	
+				LEFT JOIN #tmpVS vs ON b.EventID = vs.Orid AND b.bettype IN (1231,1232,1233,1237,1238,1220,1235,1236)	
 			WHERE 
 				b.winlostdate BETWEEN @TempFromDate AND @TDate 				
 				AND (@CustId = 0 OR b.CustId = @CustID)
