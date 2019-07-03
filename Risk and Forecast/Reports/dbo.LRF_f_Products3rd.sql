@@ -1,4 +1,4 @@
-/*<info serverAlias="DBLIC-bodb_Licensee,DBCUST-bodb_Licensee" selecters="bodbAdminNet" isFunction="1" isNested="1"></info>*/
+/*<info serverAlias="DBLIC-bodb_Licensee,DBCUST-bodb_Licensee" selecters="bodbAdminNet,bodbLicenseeNet" isFunction="1" isNested="1"></info>*/
 USE [bodb_licensee]
 GO
 
@@ -13,6 +13,7 @@ AS
     
 	Revisions:
 		- 20160915@Jim: hard-code for testing Colossus Bets on UAT
+		- 20190702@Amanda: Remove wrong hard-code [RedmineID: #116107]
 */
 
 BEGIN     
@@ -35,11 +36,7 @@ BEGIN
 
 	UPDATE @tbProducts
 	SET InvoiceProductID = ProductID + 1
-	IF   (CHARINDEX('CB',@Products)>0 )
-		BEGIN 
-			INSERT INTO @tbProducts (ProductID, ProductPrefix, ProductName)
-			SELECT 15,'CB','Colossus Bets'
-		END
+
 	DELETE @tbProducts WHERE ProductID IS NULL
 	RETURN
 END
