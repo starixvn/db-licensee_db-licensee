@@ -50,6 +50,7 @@ exec Lrf_Rpt_WinlostByLeague
 		- 20180808@Amanda: Remove Racing [RedmineID: #99378]
 		- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
 		- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
+		- 20181019@Amanda: Add new bet types (PH AIO - Phase 4a) [RedmineID: #115448]
 
 	Parameter's Explanation:
 		- @LicenseeID : Licensee ID
@@ -183,15 +184,16 @@ BEGIN
 								OR b.bettype BETWEEN 90 AND 120
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
 								OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
-								OR b.bettype = 428 -- 2H Odd/Even  
+								OR b.bettype = 428 -- 2H Odd/Even
+								OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 							)
 							THEN CASE 
 									WHEN b.OddsType = 1
 										THEN b.odds + 1 --decimal
 									WHEN b.OddsType = 2
 										THEN b.Odds + 1 --hongkong to decimal
-									WHEN b.OddsType IN (3, 4)
-										THEN --malay and indo to decimal
+									WHEN b.OddsType IN (3, 4, 7)
+										THEN --malay and indo and new oddstype to decimal
 											CASE 
 												WHEN b.odds < 0
 													THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
@@ -267,15 +269,16 @@ BEGIN
 								OR b.bettype BETWEEN 90 AND 120
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
 								OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
-								OR b.bettype = 428 -- 2H Odd/Even  
+								OR b.bettype = 428 -- 2H Odd/Even
+								OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 							)
 							THEN CASE 
 									WHEN b.OddsType = 1
 										THEN b.odds + 1 --decimal
 									WHEN b.OddsType = 2
 										THEN b.Odds + 1 --hongkong to decimal
-									WHEN b.OddsType IN (3, 4)
-										THEN --malay and indo to decimal
+									WHEN b.OddsType IN (3, 4, 7)
+										THEN --malay and indo and new oddstype to decimal
 											CASE 
 												WHEN b.odds < 0
 													THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
@@ -318,14 +321,15 @@ BEGIN
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
 								OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
 								OR b.bettype = 428 -- 2H Odd/Even  
+								OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 							)
 							THEN CASE 
 									WHEN b.OddsType = 1
 										THEN b.odds + 1 --decimal
 									WHEN b.OddsType = 2
 										THEN b.Odds + 1 --hongkong to decimal
-									WHEN b.OddsType IN (3, 4)
-										THEN --malay and indo to decimal
+									WHEN b.OddsType IN (3, 4, 7)
+										THEN --malay and indo and new oddstype to decimal
 											CASE 
 												WHEN b.odds < 0
 													THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
@@ -398,14 +402,15 @@ BEGIN
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
 								OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
 								OR b.bettype = 428 -- 2H Odd/Even  
+								OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 							)
 							THEN CASE 
 									WHEN b.OddsType = 1
 										THEN b.odds + 1 --decimal
 									WHEN b.OddsType = 2
 										THEN b.Odds + 1 --hongkong to decimal
-									WHEN b.OddsType IN (3, 4)
-										THEN --malay and indo to decimal
+									WHEN b.OddsType IN (3, 4, 7)
+										THEN --malay and indo and new oddstype to decimal
 											CASE 
 												WHEN b.odds < 0
 													THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
@@ -501,14 +506,15 @@ BEGIN
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
 								OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
 								OR b.bettype = 428 -- 2H Odd/Even  
+								OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 							)
 							THEN CASE 
 									WHEN b.OddsType = 1
 										THEN b.odds + 1 --decimal
 									WHEN b.OddsType = 2
 										THEN b.Odds + 1 --hongkong to decimal
-									WHEN b.OddsType IN (3, 4)
-										THEN --malay and indo to decimal
+									WHEN b.OddsType IN (3, 4, 7)
+										THEN --malay and indo and new oddstype to decimal
 											CASE 
 												WHEN b.odds < 0
 													THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
@@ -582,14 +588,15 @@ BEGIN
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
 								OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
 								OR b.bettype = 428 -- 2H Odd/Even  
+								OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 							)
 							THEN CASE 
 									WHEN b.OddsType = 1
 										THEN b.odds + 1 --decimal
 									WHEN b.OddsType = 2
 										THEN b.Odds + 1 --hongkong to decimal
-									WHEN b.OddsType IN (3, 4)
-										THEN --malay and indo to decimal
+									WHEN b.OddsType IN (3, 4, 7)
+										THEN --malay and indo and new oddstype to decimal
 											CASE 
 												WHEN b.odds < 0
 													THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
@@ -631,14 +638,15 @@ BEGIN
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
 								OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
 								OR b.bettype = 428 -- 2H Odd/Even  
+								OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 							)
 							THEN CASE 
 									WHEN b.OddsType = 1
 										THEN b.odds + 1 --decimal
 									WHEN b.OddsType = 2
 										THEN b.Odds + 1 --hongkong to decimal
-									WHEN b.OddsType IN (3, 4)
-										THEN --malay and indo to decimal
+									WHEN b.OddsType IN (3, 4, 7)
+										THEN --malay and indo and new oddstype to decimal
 											CASE 
 												WHEN b.odds < 0
 													THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
@@ -712,14 +720,15 @@ BEGIN
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
 								OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
 								OR b.bettype = 428 -- 2H Odd/Even  
+								OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 							)
 							THEN CASE 
 									WHEN b.OddsType = 1
 										THEN b.odds + 1 --decimal
 									WHEN b.OddsType = 2
 										THEN b.Odds + 1 --hongkong to decimal
-									WHEN b.OddsType IN (3, 4)
-										THEN --malay and indo to decimal
+									WHEN b.OddsType IN (3, 4, 7)
+										THEN --malay and indo and new oddstype to decimal
 											CASE 
 												WHEN b.odds < 0
 													THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))

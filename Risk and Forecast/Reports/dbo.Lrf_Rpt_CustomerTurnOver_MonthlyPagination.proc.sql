@@ -37,6 +37,7 @@ Revision:
 	- 20181109@Paul: Fix wrong count [Redmine: #103886]
 	- 20181219@Joseph: Add new bet types for E-Sports 2.0 for report Customer Turnover [RedmineID: #106666]
 	- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
+	- 20181019@Amanda: Add new bet types (PH AIO - Phase 4a) [RedmineID: #115448]
 
 Parameter's Explanation:
 			
@@ -131,11 +132,12 @@ BEGIN
 										OR (bettype BETWEEN 603 AND 607 OR bettype BETWEEN 609 AND 613 OR bettype BETWEEN 615 AND 617) -- Basketball bettypes
 										OR bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
 										OR bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
+										OR bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 									)
 									THEN 
 											CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
 													WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
-													WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
+													WHEN b.OddsType IN (3,4,7) THEN --malay and indo and new oddstype to decimal
 																		CASE 
 																			WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
 																			WHEN b.odds >=0 THEN (1 + b.odds) END
@@ -242,11 +244,12 @@ BEGIN
 										OR (bettype BETWEEN 603 AND 607 OR bettype BETWEEN 609 AND 613 OR bettype BETWEEN 615 AND 617) -- Basketball bettypes
 										OR bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
 										OR bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
+										OR bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 									)
 									THEN 
 											CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
 													WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
-													WHEN b.OddsType IN (3,4) THEN --malay and indo to decimal
+													WHEN b.OddsType IN (3,4,7) THEN --malay and indo and new oddstype to decimal
 																		CASE 
 																			WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
 																			WHEN b.odds >=0 THEN (1 + b.odds) END
