@@ -7,7 +7,7 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerSelByCustid]
 	@PageIndex		INT = 1,
 	@BAFilter		SMALLINT = 0,	
 	@TotalRows		INT = 0  OUTPUT,
-	@SpecialLevel	INT = -1, --ALL	
+	@SpecialLevel	VARCHAR(100) = '',
 	@OddsGroups		VARCHAR(100) = '',
 	@AgentList		VARCHAR(MAX)
 AS
@@ -22,7 +22,7 @@ AS
 	
 	Parameter's explanations:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
-		+ @SpecialLevel: default value = -1 (all)
+		+ @SpecialLevel: default value '1,2,3,4,5,6,7,8,9,10' (all)
 		+ @OddsGroups: Member's Odds Group
 		+ @searchOption: 1- Quick search
 						 2- Match case
@@ -67,6 +67,7 @@ BEGIN
 	CREATE TABLE #Temp
 	(
 		custid					INT PRIMARY KEY,
+		currency				TINYINT,
 		username				NVARCHAR (50),
 		closed					BIT,
 		suspended				BIT,
@@ -97,6 +98,7 @@ BEGIN
 	CREATE TABLE #TempMember
 	(
 		CustID			INT PRIMARY KEY CLUSTERED,
+		currency		TINYINT,
 		speciallevel	int,
 		username2		VARCHAR(50),
 		username		VARCHAR(50),
@@ -134,12 +136,12 @@ BEGIN
 		--EXEC sp_executesql @strSQL
 		EXEC (@strSQL)
 	
-		SELECT @strSQL = 'INSERT INTO #TempMember (CustID, speciallevel, username2, username, ugroup, closed, reject)
-		SELECT c.CustID, lc.speciallevel, lc.username2, lc.username, c.ugroup, c.closed, c.reject
+		SELECT @strSQL = 'INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject)
+		SELECT c.CustID, lc.currency, lc.speciallevel, lc.username2, lc.username, c.ugroup, c.closed, c.reject
 		FROM
 			#tmpCust c
 			INNER JOIN 
-			(SELECT lci.custid, ISNULL(lc.speciallevel,0) as speciallevel , lci.username, lci.username2 
+			(SELECT lci.custid, lci.currency, ISNULL(lc.speciallevel,0) as speciallevel , lci.username, lci.username2 
 			 FROM dbo.Customer lci WITH(NOLOCK) 
 				 INNER JOIN #TempAg t ON lci.recommend = t.custid
 				 LEFT JOIN dbo.Dep_CustSpecialLevel lc WITH (NOLOCK) ON lc.CustID = lci.CustID
@@ -154,15 +156,16 @@ BEGIN
 		IF ISNULL(@TotalRows, 0) = 0
 			SELECT @TotalRows = COUNT(c.custid) FROM #TempMember c
 
-		INSERT INTO #Temp (custid, username, closed, suspended, nickname, BAStatus, SpecialLevel, ugroup, RowNumber)
-		SELECT t.custid, t.username, t.closed, t.suspended, t.nickname, CASE WHEN lb.CustID IS NULL THEN 0 ELSE 1 END AS BAStatus, t.speciallevel, t.ugroup, t.RowNumber  
+		INSERT INTO #Temp (custid, currency, username, closed, suspended, nickname, BAStatus, SpecialLevel, ugroup, RowNumber)
+		SELECT t.custid, t.currency, t.username, t.closed, t.suspended, t.nickname, CASE WHEN lb.CustID IS NULL THEN 0 ELSE 1 END AS BAStatus, t.speciallevel, t.ugroup, t.RowNumber  
 		FROM
 			(
-				SELECT a.custid, a.username, a.closed, a.suspended, a.nickname, a.speciallevel, a.ugroup, a.RowNumber  
+				SELECT a.custid, a.currency, a.username, a.closed, a.suspended, a.nickname, a.speciallevel, a.ugroup, a.RowNumber  
 				FROM
 				(
 					SELECT 
 						m.custid, 
+						m.currency,
 						m.username, 
 						m.closed,
 						ISNULL(m.reject,0) AS suspended,
@@ -179,8 +182,8 @@ BEGIN
 	END
 	ELSE IF @BAFilter = 1
 	BEGIN
-		SELECT @strSQL = 'INSERT INTO #TempMember (CustID, speciallevel, username2, username, ugroup, closed, reject)
-						  SELECT ci.CustID, ISNULL(lc.speciallevel,0)  as speciallevel, cu.username2, cu.username, RIGHT(cu.ugroup, 1), ci.closed, ci.reject
+		SELECT @strSQL = 'INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject)
+						  SELECT ci.CustID, ci.currency, ISNULL(lc.speciallevel,0)  as speciallevel, cu.username2, cu.username, RIGHT(cu.ugroup, 1), ci.closed, ci.reject
 						  FROM bodb_Licensee.dbo.LicenseeBAHistory lb WITH(NOLOCK)
 							INNER JOIN CustInfo ci (NOLOCK) ON lb.custid = ci.custid
 							INNER JOIN Customer cu WITH (NOLOCK) ON ci.CustID = cu.custid 
@@ -198,11 +201,12 @@ BEGIN
 		IF ISNULL(@TotalRows, 0) = 0
 			SELECT @TotalRows = COUNT(c.custid) FROM #TempMember c
 
-		INSERT INTO #Temp (custid, username, closed, suspended, nickname, BAStatus, SpecialLevel, ugroup, RowNumber)
+		INSERT INTO #Temp (custid, currency, username, closed, suspended, nickname, BAStatus, SpecialLevel, ugroup, RowNumber)
 		SELECT * FROM 
 		(
 			SELECT 
 				m.custid, 
+				m.currency,
 				m.username, 
 				m.closed,
 				ISNULL(m.reject, 0) AS suspended,
@@ -231,8 +235,8 @@ BEGIN
 		--EXEC sp_executesql @strSQL
 		EXEC (@strSQL)
 
-		SELECT @strSQL = 'INSERT INTO #TempMember (CustID, speciallevel, username2, username, ugroup, closed, reject)
-		SELECT c.CustID, lc.speciallevel, lc.username2, lc.username, c.ugroup, c.closed, c.reject
+		SELECT @strSQL = 'INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject)
+		SELECT c.CustID, lc.currency, lc.speciallevel, lc.username2, lc.username, c.ugroup, c.closed, c.reject
 		FROM
 			#tmpCust c
 			INNER JOIN 
@@ -253,11 +257,12 @@ BEGIN
 		IF ISNULL(@TotalRows, 0) = 0
 			SELECT @TotalRows = COUNT(c.custid) FROM #TempMember c
 
-		INSERT INTO #Temp (custid, username, closed, suspended, nickname, BAStatus, SpecialLevel, ugroup, RowNumber)
+		INSERT INTO #Temp (custid, currency, username, closed, suspended, nickname, BAStatus, SpecialLevel, ugroup, RowNumber)
 		SELECT * FROM 
 		(
 			SELECT 
 				m.custid, 
+				m.currency,
 				m.username, 
 				m.closed,
 				ISNULL(m.reject,0) AS suspended,
@@ -395,7 +400,7 @@ BEGIN
 
 	SELECT
 		t.custid,
-		e.code as currency,
+		ex.currency,
 		username,
 		closed,
 		suspended,
@@ -414,6 +419,7 @@ BEGIN
 		CAST((ISNULL(d.OutstandingGBP, 0)	+ ISNULL(tl.actual_stake,0) * ISNULL(e.GBP,0))	 AS MONEY) AS OutstandingGBP,
 		ISNULL(UPPER(t.ugroup), '') AS OddsGroup
 	FROM #Temp t
+		INNER JOIN Exchange ex WITH(NOLOCK) ON t.currency = ex.exchangeid
 		LEFT JOIN #Data d ON t.custid = d.custid
 		LEFT JOIN
 		(
