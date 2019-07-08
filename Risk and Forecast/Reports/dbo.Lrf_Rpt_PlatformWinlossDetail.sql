@@ -15,6 +15,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_PlatformWinlossDetail]
 	@ShowVS2	BIT = 0, -- Bet Radar Virtual Sports
 	@ShowLT		BIT = 0, -- Lottery
 	@ShowPP		BIT = 0, -- PP
+	@ShowCC		BIT = 0, -- Card club
 	@PlatformType	TINYINT=0, 
 	@MoveBetsDay	SMALLDATETIME,
 	@drawfilter		SMALLINT = 1,
@@ -47,6 +48,7 @@ AS
 		- 20181211@Joseph: New betfrom Mobile China View (c) [RedmineID: #106088]
 		- 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
 		- 20190619@Amanda: Add Base currency param [RedmineID: #112531]
+		- 20190708@Amanda: Add new product Card Club [RedmineID: #115449]
 
 	Param's Explanation:  
 	  + @PlatformType:  0: All  
@@ -72,6 +74,7 @@ AS
 	  + @ShowVS2: Show Virtual sport 2
 	  + @ShowLT: Show Lottery
 	  + @ShowPP : Show PP
+	  + @ShowCC : Show Card club
 	  + @MoveBetsDay: The day we move tickets to bettrans14
 */
     
@@ -207,6 +210,11 @@ BEGIN
 	BEGIN
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'PP', 'PP')
 	END
+	
+	IF @ShowCC = 1 -- Card Club
+	BEGIN
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'CC', 'CC')
+	END
 
 	IF LEN(ISNULL(@ProductList, '')) > 0 
 	BEGIN
@@ -329,7 +337,7 @@ BEGIN
 		END
 	
 	
-		IF (@ShowNG = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW = 1 OR @ShowVS2 = 1 OR @ShowLT = 1 OR @ShowPP = 1)
+		IF (@ShowNG = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW = 1 OR @ShowVS2 = 1 OR @ShowLT = 1 OR @ShowPP = 1 OR @ShowCC = 1)
 		BEGIN
 			INSERT INTO #WinLoss (Winlostdate, CustID, Currency, Turnover, Winlost, LicenseeWL, playercomm, AmtDueToBA, CommBA, Company, BetCount)
 			SELECT 
@@ -417,7 +425,7 @@ BEGIN
 			
 		END
 
-		IF (@showSB = 1 or @ShowNG = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW =1 OR @ShowVS2 = 1 OR @ShowLT = 1 OR @ShowPP = 1)
+		IF (@showSB = 1 or @ShowNG = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW =1 OR @ShowVS2 = 1 OR @ShowLT = 1 OR @ShowPP = 1 OR @showCC)
 		BEGIN
 			INSERT INTO #WinLoss (Winlostdate, CustID, Currency, Turnover, Winlost, LicenseeWL, playercomm, AmtDueToBA, CommBA, Company, BetCount)
 			SELECT 

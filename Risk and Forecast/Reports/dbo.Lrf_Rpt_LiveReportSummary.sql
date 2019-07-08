@@ -69,6 +69,7 @@ Revisions:
 	- 20190304@Amanda: Integrate PP Promotion Prize [RedmineID: #109471]
 	- 20190516@Amanda: Remove hard code for product name [RedmineID: #113398]
 	- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
+	- 20190708@Amanda: Add new product Card Club [RedmineID: #115449]
 
 Param's Explanation:
 	+ @IsLive : indicate that whether the report will get live data or not
@@ -307,7 +308,7 @@ BEGIN
 		END
 
 		--Others	
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'NG', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP'))			
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'NG', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP', 'CC'))
 		BEGIN
 			INSERT INTO #tmpWinloss
 			SELECT
@@ -324,6 +325,7 @@ BEGIN
 					WHEN (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) THEN 'VS2'
 					WHEN b.bettype BETWEEN 1021 AND 1049 THEN 'LT'
 					WHEN b.bettype BETWEEN 4101 AND 4300 THEN 'PP' -- PP
+					WHEN b.bettype BETWEEN 1901 AND 1999 THEN 'CC' -- CC
 					END AS ProductCode,
 				SUM(stake) turnover,
 				SUM(b.winlost - b.actual_stake) AS Winlost,
@@ -350,6 +352,7 @@ BEGIN
 					OR (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) -- BetRadar VS
 					OR b.bettype BETWEEN 1021 AND 1049 -- LT
 					OR b.bettype BETWEEN 4101 AND 4300 -- PP
+					OR b.bettype BETWEEN 1901 AND 1999 -- CC
 				)
 				AND (b.liveindicator = @Liveindicator OR @Liveindicator = 2)
 			GROUP BY
@@ -366,6 +369,7 @@ BEGIN
 					WHEN (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) THEN 'VS2'
 					WHEN b.bettype BETWEEN 1021 AND 1049 THEN 'LT'
 					WHEN b.bettype BETWEEN 4101 AND 4300 THEN 'PP' -- PP
+					WHEN b.bettype BETWEEN 1901 AND 1999 THEN 'PP' -- CC
 				END
 			END
 	END
@@ -448,7 +452,7 @@ BEGIN
 		END
 
 		----Others
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP')	)
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP', 'CC'))
 		BEGIN
 			INSERT INTO #tmpWinloss
 			SELECT 
@@ -466,6 +470,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 2701 AND 2829 THEN 'VS2'
 					WHEN b.bettype BETWEEN 1021 AND 1049 THEN 'LT'
 					WHEN b.bettype BETWEEN 4101 AND 4300 THEN 'PP' -- PP
+					WHEN b.bettype BETWEEN 1901 AND 1999 THEN 'CC'
 				END AS ProductCode,
 				SUM(b.turnover) turnover,
 				SUM(b.winloss) winlost,
@@ -506,6 +511,7 @@ BEGIN
 					OR b.bettype BETWEEN 2701 AND 2829 -- VS2
 					OR b.bettype BETWEEN 1021 AND 1049 -- LT
 					OR b.bettype BETWEEN 4101 AND 4300 -- PP
+					OR b.bettype BETWEEN 1901 AND 1999 -- CC
 					)
 			GROUP BY
 				b.rptDate,
@@ -522,6 +528,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 2701 AND 2829 THEN 'VS2'
 					WHEN b.bettype BETWEEN 1021 AND 1049 THEN 'LT'
 					WHEN b.bettype BETWEEN 4101 AND 4300 THEN 'PP'
+					WHEN b.bettype BETWEEN 1901 AND 1999 THEN 'CC'
 				END
 		END
 

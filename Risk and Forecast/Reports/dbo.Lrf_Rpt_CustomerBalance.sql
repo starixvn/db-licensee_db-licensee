@@ -22,6 +22,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerBalance]
 	, @ShowVS2		BIT = 0 -- BetRadar VS
 	, @ShowLT		BIT = 0 -- Lottery
 	, @ShowPP		BIT = 0 -- PP
+	, @ShowCC		BIT = 0, -- Card club
 	,@AgentList		VARCHAR(MAX)
 AS
 /*  
@@ -64,6 +65,7 @@ Revisions:
 	- 20180808@Amanda: Remove Racing, Bingo [RedmineID: #99378]
 	- 20181228@Joseph: Remove vnteam [RedmineID: #103698]
 	- 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
+	- 20190708@Amanda: Add new product Card Club [RedmineID: #115449]
 
 Param's Explanation:  
 	+ @excludeTest: remove currency UUS  
@@ -169,6 +171,11 @@ BEGIN
 	IF @ShowPP = 1
 	BEGIN
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'PP', 'PP')
+	END
+	
+	IF @ShowCC = 1
+	BEGIN
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'CC', 'CC')
 	END
 
 	IF LEN(ISNULL(@ProductList, '')) > 0 
