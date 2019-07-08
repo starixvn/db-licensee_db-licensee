@@ -22,7 +22,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerBalance]
 	, @ShowVS2		BIT = 0 -- BetRadar VS
 	, @ShowLT		BIT = 0 -- Lottery
 	, @ShowPP		BIT = 0 -- PP
-	, @ShowCC		BIT = 0, -- Card club
+	, @ShowCC		BIT = 0 -- Card club
 	,@AgentList		VARCHAR(MAX)
 AS
 /*  
