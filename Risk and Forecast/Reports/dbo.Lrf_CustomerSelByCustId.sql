@@ -40,14 +40,25 @@ BEGIN
 	CREATE TABLE #TempAg (custid INT)
 	CREATE TABLE #tblCustList (custid INT)
 	
-	INSERT INTO #TempAg(custid)
-	SELECT custID
-	FROM bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc
-	WHERE Currency IN
-                (
-                    SELECT val
-                    FROM dbo.strSplit(@CurrencyList, ',')
-                );
+	DECLARE @DocHandler INT
+
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
+	
+		INSERT INTO #TempAg(CustId)
+		SELECT AgentId
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
+
+	BEGIN CATCH
+		SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+		RETURN
+	END CATCH;
 	
 	INSERT INTO #tblCustList(custid)
 	SELECT val
