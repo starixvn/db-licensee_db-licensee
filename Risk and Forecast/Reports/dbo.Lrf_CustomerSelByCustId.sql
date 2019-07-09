@@ -40,25 +40,14 @@ BEGIN
 	CREATE TABLE #TempAg (custid INT)
 	CREATE TABLE #tblCustList (custid INT)
 	
-	DECLARE @DocHandler INT
-
-	BEGIN TRY
-		EXEC sp_xml_preparedocument @DocHandler OUTPUT
-			,@AgentList
-	
-		INSERT INTO #TempAg(CustId)
-		SELECT AgentId
-		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
-
-		EXEC sp_xml_removedocument @DocHandler
-	END TRY
-
-	BEGIN CATCH
-		SELECT ErrCode = 100
-			,ErrMsg = N'Paramter invalid.'
-
-		RETURN
-	END CATCH;
+	INSERT INTO #TempAg(custid)
+	SELECT custID
+	FROM bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc
+	WHERE Currency IN
+                (
+                    SELECT val
+                    FROM dbo.strSplit(@CurrencyList, ',')
+                );
 	
 	INSERT INTO #tblCustList(custid)
 	SELECT val
@@ -364,37 +353,20 @@ BEGIN
 	WHERE g.statusID IN (0, 1)  --running and Waiting		
 	GROUP BY g.custid, g.currency, statusID
 
-	SELECT *
-	INTO #ExchangeRate
-	FROM Lrf_f_GetExchangeDaily(@currentDate, @currentDate)
-
 	CREATE TABLE #data(
 		custid int PRIMARY KEY,
-		TotalBalance money,
-		TotalBalanceUSD money,
-		TotalBalanceEUR money,
-		TotalBalanceGBP money,
-		Outstanding money,
-		OutstandingUSD money,
-		OutstandingEUR money,
-		OutstandingGBP money,
+		TotalBalance money,		
+		Outstanding money
 	)
 
-	INSERT INTO #data(custid, TotalBalance, TotalBalanceUSD, TotalBalanceEUR, TotalBalanceGBP, Outstanding, OutstandingUSD, OutstandingEUR, OutstandingGBP)
+	INSERT INTO #data(custid, TotalBalance, Outstanding)
 	SELECT 
 		t.custid,
 		ISNULL(SUM(ISNULL(b.winlost-b.actual_stake + b.playercomm, 0)), 0) AS TotalBalance,
-		CAST(ISNULL(SUM(e.USD*ISNULL(b.winlost-b.actual_stake + b.playercomm,0)),0) AS MONEY) AS TotalBalanceUSD,
-		CAST(ISNULL(SUM(e.EUR*ISNULL(b.winlost-b.actual_stake + b.playercomm,0)),0) AS MONEY) AS TotalBalanceEUR,
-		CAST(ISNULL(SUM(e.GBP*ISNULL(b.winlost-b.actual_stake + b.playercomm,0)),0) AS MONEY) AS TotalBalanceGBP,
-		ISNULL(SUM(CASE WHEN ruben = 0 THEN ISNULL(b.actual_stake, 0)*(CASE WHEN b.bettype = 71 THEN 0 ELSE 1 END) ELSE 0 END), 0) AS Outstanding,
-		CAST(ISNULL(SUM(e.USD * CASE WHEN ruben = 0 THEN ISNULL(b.actual_stake, 0)*(CASE WHEN b.bettype = 71 THEN 0 ELSE 1 END) ELSE 0 END), 0) AS MONEY) AS OutstandingUSD,
-		CAST(ISNULL(SUM(e.EUR * CASE WHEN ruben = 0 THEN ISNULL(b.actual_stake, 0)*(CASE WHEN b.bettype = 71 THEN 0 ELSE 1 END) ELSE 0 END), 0) AS MONEY) AS OutstandingEUR,
-		CAST(ISNULL(SUM(e.GBP * CASE WHEN ruben = 0 THEN ISNULL(b.actual_stake, 0)*(CASE WHEN b.bettype = 71 THEN 0 ELSE 1 END) ELSE 0 END), 0) AS MONEY) AS OutstandingGBP
+		ISNULL(SUM(CASE WHEN ruben = 0 THEN ISNULL(b.actual_stake, 0)*(CASE WHEN b.bettype = 71 THEN 0 ELSE 1 END) ELSE 0 END), 0) AS Outstanding		
 	FROM
 		#Temp t
-		INNER JOIN bettrans b WITH(NOLOCK) ON t.custid = b.custid
-		LEFT JOIN #ExchangeRate e ON e.exchangeid = b.currency
+		INNER JOIN bettrans b WITH(NOLOCK) ON t.custid = b.custid		
 	WHERE b.matchid >= 0
 	GROUP BY t.custid
 
@@ -409,14 +381,8 @@ BEGIN
 		SpecialLevel,
 		IsPowerBAUserTurnoff,
 		RowNumber,
-		CAST((ISNULL(d.TotalBalance, 0)	- isnULL(tl.actual_stake,0))					 AS MONEY) AS TotalBalance ,
-		CAST((ISNULL(d.TotalBalanceUSD, 0) - isnULL(tl.actual_stake,0) * ISNULL(e.USD,0))	 AS MONEY) AS TotalBalanceUSD ,	
-		CAST((ISNULL(d.TotalBalanceEUR, 0) - isnULL(tl.actual_stake,0) * ISNULL(e.EUR,0))	 AS MONEY) AS TotalBalanceEUR,
-		CAST((ISNULL(d.TotalBalanceGBP, 0) - isnULL(tl.actual_stake,0) * ISNULL(e.GBP,0))	 AS MONEY) AS TotalBalanceGBP,
-		CAST((ISNULL(d.Outstanding, 0)		+ ISNULL(tl.actual_stake,0))					 AS MONEY) AS Outstanding,
-		CAST((ISNULL(d.OutstandingEUR, 0)	+ ISNULL(tl.actual_stake,0) * ISNULL(e.EUR,0))	 AS MONEY) AS OutstandingEUR,
-		CAST((ISNULL(d.OutstandingUSD, 0)	+ ISNULL(tl.actual_stake,0) * ISNULL(e.USD,0))	 AS MONEY) AS OutstandingUSD,
-		CAST((ISNULL(d.OutstandingGBP, 0)	+ ISNULL(tl.actual_stake,0) * ISNULL(e.GBP,0))	 AS MONEY) AS OutstandingGBP,
+		CAST((ISNULL(d.TotalBalance, 0)	- isnULL(tl.actual_stake,0)) AS MONEY) AS TotalBalance ,
+		CAST((ISNULL(d.Outstanding, 0) + ISNULL(tl.actual_stake,0)) AS MONEY) AS Outstanding,
 		ISNULL(UPPER(t.ugroup), '') AS OddsGroup
 	FROM #Temp t
 		INNER JOIN Exchange ex WITH(NOLOCK) ON t.currency = ex.exchangeid
@@ -426,15 +392,13 @@ BEGIN
 			SELECT SUM(actual_stake) actual_stake, Custid, Currency
 			FROM #OutstandingTranslog
 			GROUP BY Custid, Currency
-		)tl ON t.custid = tl.Custid
-		LEFT JOIN #ExchangeRate e ON tl.Currency = e.exchangeid		
+		)tl ON t.custid = tl.Custid		
 	ORDER BY t.username
 
 	DROP TABLE #TempAg
 	DROP TABLE #Temp
 	DROP TABLE #OutstandingTranslog
-	DROP TABLE #Data
-	DROP TABLE #ExchangeRate
+	DROP TABLE #Data	
 	DROP TABLE #tmpCust
 	DROP TABLE #TempMember	
 END
