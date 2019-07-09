@@ -253,7 +253,7 @@ BEGIN
 	
 	IF @ShowCC = 1 -- Card club
 	BEGIN 
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'PP', 'PP')
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'CC', 'CC')
 	END
 
 	IF LEN(ISNULL(@ProductList, '')) > 0 

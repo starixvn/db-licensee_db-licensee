@@ -288,7 +288,7 @@ BEGIN
 		g.custid,
 		g.currency,
 		SUM(g.actual_stake) Outstanding, 
-		COUNT(DISTINCT CASE WHEN s.PRoductID IN (6,22,24, 32) THEN refno END) BetCounts -- count sum tickets for RNG Casino, Voidridge, FW, PP
+		COUNT(DISTINCT CASE WHEN s.PRoductID IN (6,22,24,32,34) THEN refno END) BetCounts -- count sum tickets for RNG Casino, Voidridge, FW, PP, CC
 	FROM dbo.BettransRNG g WITH (NOLOCK) 
 		INNER JOIN @TempAg a
 			ON g.recommend = a.CustId AND g.Currency = a.Currency 	
