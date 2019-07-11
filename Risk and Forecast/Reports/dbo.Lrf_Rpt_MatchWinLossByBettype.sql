@@ -2,17 +2,18 @@
 
  
 ALTER PROCEDURE [dbo].[Lrf_Rpt_MatchWinLossByBettype]  	
-	@MatchID 	  INT, -- in case of Racing, this param is 'race'  
-	@LeagueID     INT = 0, -- in case of Racing, this param is '>0'  
-	@Date 		  SMALLDATETIME,  
-	@MoveBetsDay  SMALLDATETIME,  
-	@showSB BIT = 0,  
-	@showNG BIT = 0,  
-	@showBA BIT = 0,  
-	@showVS BIT = 0,
-	@ShowCS BIT = 0, --- RNG Casino  
-	@ShowVS2 BIT = 0, -- Bet Radar Virtual Sports
-	@AgentList	VARCHAR(MAX)
+	@MatchID 		INT, -- in case of Racing, this param is 'race'  
+	@LeagueID		INT = 0, -- in case of Racing, this param is '>0'  
+	@Date 			SMALLDATETIME,  
+	@MoveBetsDay	SMALLDATETIME,  
+	@showSB			BIT = 0,  
+	@showNG			BIT = 0,  
+	@showBA			BIT = 0,  
+	@showVS			BIT = 0,
+	@ShowCS			BIT = 0, --- RNG Casino  
+	@ShowVS2		BIT = 0, -- Bet Radar Virtual Sports
+	@AgentList		VARCHAR(MAX),
+	@BaseCurrency	VARCHAR(3) = ''
       
 AS   
 /*  
@@ -47,6 +48,7 @@ Revisions:
 	- 20180808@Amanda: Remove Racing, Bingo [RedmineID: #99378]
 	- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
 	- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
+	- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
 
 Param's Explanation:   
 	+ @AgentList: xml structure
@@ -61,7 +63,7 @@ exec [Lrf_Rpt_MatchWinLossByBettype] @LicenseeID=3,@LicenseeType=default,@MatchI
 */  
 SET NOCOUNT ON  
   
-DECLARE @ExchangeDaily TABLE(ExchangeDate SMALLDATETIME, ExchangeId INT, USD FLOAT, EUR FLOAT,GBP FLOAT, PRIMARY KEY(ExchangeDate,ExchangeId))  
+DECLARE @ExchangeDaily TABLE(ExchangeId INT, Rate FLOAT)  
   
 DECLARE @bettype		TABLE (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))     
 DECLARE @ProductList	VARCHAR (500)
@@ -652,9 +654,9 @@ BEGIN
   
 END  
   
-INSERT INTO @ExchangeDaily  
-SELECT ExchangeDate, ExchangeId, USD, EUR,GBP  
-FROM Lrf_f_GetExchangeDaily(@_Date,@_Date)  
+INSERT INTO @ExchangeDaily(ExchangeId, Rate)
+SELECT ExchangeID, Rate
+FROM Lrf_f_GetExchangeRate(@_Date,@_Date, @BaseCurrency, '')  
 -- Result  
 SELECT      
 	matchid,
@@ -666,37 +668,19 @@ SELECT
 		END bettype,  
 	sporttype,	
 	leagueid,  
-	CAST(SUM(turnover) AS MONEY) AS turnover,  
-	CAST(SUM(turnover * e.USD) AS MONEY) AS turnoverUSD,  
-	CAST(SUM(turnover * e.EUR) AS MONEY) AS turnoverEUR,  
-	CAST(SUM(turnover * e.GBP) AS MONEY) AS turnoverGBP,
-	CAST(SUM(MemberWinLost) AS MONEY) AS MemberWinLost,  
-	CAST(SUM(MemberWinLost * e.USD) AS MONEY) AS MemberWinLostUSD,  
-	CAST(SUM(MemberWinLost * e.EUR) AS MONEY) AS MemberWinLostEUR,  
-	CAST(SUM(MemberWinLost * e.GBP) AS MONEY) AS MemberWinLostGBP,
+	CAST(SUM(turnover		* e.Rate) AS MONEY) AS turnover,
+	CAST(SUM(MemberWinLost	* e.Rate) AS MONEY) AS MemberWinLost,
 	--- licenseeWL  
-	CAST(SUM(LicenseeWL) AS MONEY) AS LicenseeWL,  
-	CAST(SUM(LicenseeWL * e.USD) AS MONEY) AS LicenseeWLUSD,  
-	CAST(SUM(LicenseeWL * e.EUR) AS MONEY) AS LicenseeWLEUR,  
-	CAST(SUM(LicenseeWL * e.GBP) AS MONEY) AS LicenseeWLGBP,
-	CAST(SUM(CommBA) AS MONEY) AS CommBA,  
-	CAST(SUM(CommBA * e.USD) AS MONEY) AS CommBAUSD,  
-	CAST(SUM(CommBA * e.EUR) AS MONEY) AS CommBAEUR,  
-	CAST(SUM(CommBA * e.GBP) AS MONEY) AS CommBAGBP,
-	CAST(SUM(PlayerComm) AS MONEY) AS PlayerComm,  
-	CAST(SUM(PlayerComm*e.USD) AS MONEY) AS PlayerCommUSD,  
-	CAST(SUM(PlayerComm*e.EUR) AS MONEY) AS PlayerCommEUR,  
-	CAST(SUM(PlayerComm*e.GBP) AS MONEY) AS PlayerCommGBP, 
-	CAST(SUM(AmtDuetoBA) AS MONEY) AS AmtDuetoBA,  
-	CAST(SUM((AmtDuetoBA) * e.USD) AS MONEY) AS AmtDuetoBAUSD,  
-	CAST(SUM((AmtDuetoBA) * e.EUR) AS MONEY) AS AmtDuetoBAEUR,  
-	CAST(SUM((AmtDuetoBA) * e.GBP) AS MONEY) AS AmtDuetoBAGBP,  
+	CAST(SUM(LicenseeWL		* e.Rate) AS MONEY) AS LicenseeWL,
+	CAST(SUM(CommBA			* e.Rate) AS MONEY) AS CommBA,
+	CAST(SUM(PlayerComm		* e.Rate) AS MONEY) AS PlayerComm, 
+	CAST(SUM((AmtDuetoBA)	* e.Rate) AS MONEY) AS AmtDuetoBA,  
 	 CASE WHEN b.sporttype IN (181,182,183,184,185) THEN '' ELSE race END race,  
 	CASE WHEN b.sporttype IN (180,181,182,183,184,185) THEN '' ELSE matchcode END matchcode ,  
 	isNeutral,  
 	liveindicator  
 FROM @AgMatchWLDetails b  
-	INNER JOIN @ExchangeDaily e ON b.winlostdate = e.ExchangeDate AND b.currency = e.ExchangeId 
+	INNER JOIN @ExchangeDaily e ON b.currency = e.ExchangeId 
 	LEFT JOIN dbo.f_GroupBettype() ss ON b.bettype = ss.bettype 		
 GROUP BY    
     matchid,  

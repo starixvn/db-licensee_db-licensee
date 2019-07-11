@@ -12,7 +12,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinlossByTimeZone]
 	@CurrencyId 		INT = 0,
 	@IncludeDraw		BIT = 0,	
 	@ReportBy			TINYINT = 1,  
-	@GroupBy 			TINYINT = 1
+	@GroupBy 			TINYINT = 1,
+	@BaseCurrency		VARCHAR(3) = ''
 AS
 
 /*  Created: 20171201@Sophia
@@ -24,6 +25,7 @@ AS
 		- 20171201@Sophia: initial version. Apply for Sportsbook first [redmine: #84932]
 		- 20171226@Percy: Remove redundant code [RedmineID: #88704] 
 		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
+		- 20190614@Amanda: Add Base currency param [RedmineID: #112531]
 
 	Param's Explanation:  
 	  + @TimeZone: =-4: GMT-4
@@ -60,7 +62,9 @@ BEGIN
 		LicenseeWL			MONEY,
 		PlayerComm			MONEY,		
 		LicenseeComm		MONEY
-	) 
+	)
+	
+	CREATE TABLE #Exchange	(FromDate SMALLDATETIME, ToDate SMALLDATETIME, ExchangeID INT, Rate FLOAT )
 	
 	---#1: Begin: Get AgentList 	
 	DECLARE @TempAg AS TABLE(custID INT, currency INT)  
@@ -224,7 +228,7 @@ BEGIN
 				(
 					SELECT DISTINCT transid
 					FROM bodb_licensee.dbo.LicenseeBATransaction_active BA WITH(NOLOCK)
-						INNER JOIN @tempAg r ON BA.recommend = r.custID
+						INNER JOIN @TempAg r ON BA.recommend = r.custID
 				)
 				INSERT INTO #WinLoss (RptDateGMT, RptDate, CurrencyId, ProductCode, BetCount, Turnover, LicenseeWL, PlayerComm, LicenseeComm)
 				SELECT	b.Winlostdate,
@@ -389,7 +393,7 @@ BEGIN
 				(
 					SELECT DISTINCT transid
 					FROM bodb_licensee.dbo.LicenseeBATransaction_active BA WITH(NOLOCK)
-						INNER JOIN @tempAg r ON BA.recommend = r.custID
+						INNER JOIN @TempAg r ON BA.recommend = r.custID
 				)
 				INSERT INTO #WinLoss (RptDateGMT, RptDate, CurrencyId, ProductCode, BetCount, Turnover, LicenseeWL, PlayerComm, LicenseeComm)
 				SELECT	CONVERT(DATE,DATEADD(HOUR, @TimeZone + 4, ISNULL(m.GlobalShowTime, b.Winlostdate))), 
@@ -463,18 +467,18 @@ BEGIN
 	----------#############################---------------
 	 
 	---3#: Start: Get Exchange Rate	
+	IF EXISTS (SELECT TOP (1) 1 FROM #WinLoss)
+	BEGIN
+		DECLARE @MinDate SMALLDATETIME, @MaxDate SMALLDATETIME
+		
+		SELECT @MinDate = MIN (RptDate),
+			   @MaxDate = MAX (RptDate)
+		FROM   #WinLoss
 
-	DECLARE @MinDate SMALLDATETIME, @MaxDate SMALLDATETIME
-	
-	SELECT @MinDate = MIN (RptDate),
-		   @MaxDate = MAX (RptDate)
-	FROM   #WinLoss
-	
-	CREATE TABLE #Exchange	(FirstExchangeDateByMonth SMALLDATETIME, LastExchangeDateByMonth SMALLDATETIME, ExchangeID INT, Code VARCHAR(5) , MYR FLOAT, USD FLOAT, EUR FLOAT, CNY FLOAT, GBP FLOAT, HKD FLOAT, THB FLOAT, IDR FLOAT )
-	
-	INSERT INTO #Exchange(FirstExchangeDateByMonth, LastExchangeDateByMonth, ExchangeID, Code, MYR, USD, EUR, CNY, GBP, HKD, THB, IDR)
-	SELECT FirstExchangeDateByMonth, LastExchangeDateByMonth, ExchangeID, Code, MYR, USD, EUR, CNY, GBP, HKD, THB, IDR
-	FROM dbo.Lrf_f_GetSubExchangeDaily(@MinDate, @MaxDate)
+		INSERT INTO #Exchange(FromDate, ToDate, ExchangeID, Rate)
+		SELECT FromDate, ToDate, ExchangeID, Rate
+		FROM dbo.Lrf_f_GetExchangeRate(@MinDate, @MaxDate, @BaseCurrency, '')
+	END
 	-- #End: Get Exchange Rate
 
 	-- #Start: Get Report
@@ -494,48 +498,13 @@ BEGIN
 			SUM(LicenseeWL) AS LicenseeWL, 
 			SUM(LicenseeComm) AS LicenseeComm,
 
-			SUM(Turnover*MYR) AS TurnoverMYR,
-			SUM(PlayerComm*MYR) AS PlayerCommMYR, 
-			SUM(LicenseeWL*MYR) AS LicenseeWLMYR, 
-			SUM(LicenseeComm*MYR) AS LicenseeCommMYR,
-
-			SUM(Turnover*USD) AS TurnoverUSD,
-			SUM(PlayerComm*USD) AS PlayerCommUSD, 
-			SUM(LicenseeWL*USD) AS LicenseeWLUSD, 
-			SUM(LicenseeComm*USD) AS LicenseeCommUSD,
-
-			SUM(Turnover*EUR) AS TurnoverEUR,
-			SUM(PlayerComm*EUR) AS PlayerCommEUR, 
-			SUM(LicenseeWL*EUR) AS LicenseeWLEUR, 
-			SUM(LicenseeComm*EUR) AS LicenseeCommEUR,
-
-			SUM(Turnover*CNY) AS TurnoverCNY,
-			SUM(PlayerComm*CNY) AS PlayerCommCNY, 
-			SUM(LicenseeWL*CNY) AS LicenseeWLCNY, 
-			SUM(LicenseeComm*CNY) AS LicenseeCommCNY,
-
-			SUM(Turnover*GBP) AS TurnoverGBP,
-			SUM(PlayerComm*GBP) AS PlayerCommGBP, 
-			SUM(LicenseeWL*GBP) AS LicenseeWLGBP, 
-			SUM(LicenseeComm*GBP) AS LicenseeCommGBP,
-
-			SUM(Turnover*HKD) AS TurnoverHKD,
-			SUM(PlayerComm*HKD) AS PlayerCommHKD, 
-			SUM(LicenseeWL*HKD) AS LicenseeWLHKD, 
-			SUM(LicenseeComm*HKD) AS LicenseeCommHKD,
-
-			SUM(Turnover*THB) AS TurnoverTHB,
-			SUM(PlayerComm*THB) AS PlayerCommTHB, 
-			SUM(LicenseeWL*THB) AS LicenseeWLTHB, 
-			SUM(LicenseeComm*THB) AS LicenseeCommTHB,
-
-			SUM(Turnover*IDR) AS TurnoverIDR,
-			SUM(PlayerComm*IDR) AS PlayerCommIDR, 
-			SUM(LicenseeWL*IDR) AS LicenseeWLIDR, 
-			SUM(LicenseeComm*IDR) AS LicenseeCommIDR	
+			SUM(Turnover*e.Rate) AS TurnoverBase,
+			SUM(PlayerComm*e.Rate) AS PlayerCommBase, 
+			SUM(LicenseeWL*e.Rate) AS LicenseeWLBase, 
+			SUM(LicenseeComm*e.Rate) AS LicenseeCommBase	
 	FROM   #WinLoss w
 		LEFT JOIN #Exchange e
-			ON e.ExchangeID = w.CurrencyId AND w.RptDate BETWEEN e.FirstExchangeDateByMonth AND e.LastExchangeDateByMonth		
+			ON e.ExchangeID = w.CurrencyId AND w.RptDate BETWEEN e.FromDate AND e.ToDate		
 	GROUP BY 
 			CASE WHEN @ReportBy = 2 THEN CONVERT(VARCHAR(8),w.RptDateGMT,112)  ---- Daily
 				 WHEN @ReportBy = 3 THEN CONVERT(VARCHAR(6),w.RptDateGMT,112)   ---Monthly

@@ -7,7 +7,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportSummaryDetail]
 	@MoveBetsDay	SMALLDATETIME,
 	@Debug			BIT = 0,
 	@Liveindicator	INT = 1,
-	@AgentList		VARCHAR(MAX)
+	@AgentList		VARCHAR(MAX),
+	@BaseCurrency	VARCHAR(3) = ''
 AS 
 /*  
 Created: 20111115@Henry  
@@ -72,6 +73,7 @@ Revisions:
 	- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
 	- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
 	- 20190304@Amanda: Integrate PP Promotion Prize [RedmineID: #109471]
+	- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
 	
 Param's Explanation:  
 	+ @Liveindicator : indicate that whether the report will get live data or not
@@ -519,76 +521,40 @@ BEGIN
 	-- Get winlost by currency  
 	SELECT	@sql = @sql + 'CREATE NONCLUSTERED INDEX IX_tmpWinloss ON #tmpWinloss (Currency)' + CHAR(13)
 
-	SELECT	@sql = @sql + ' SELECT * INTO #TempExchange FROM Lrf_f_GetExchangeDaily(''' + CONVERT(VARCHAR(10), @FDate, 120) + ''',''' + CONVERT(VARCHAR(10), @TDate, 120) + ''')' + CHAR(13)
-						+ 'WHERE exchangeid IN (SELECT DISTINCT Currency FROM #tmpWinloss ) ' + CHAR(13)
+	SELECT	@sql = @sql + ' SELECT FromDate, ToDate, ExchangeID, Rate INTO #TempExchange FROM Lrf_f_GetExchangeRate(''' + CONVERT(VARCHAR(10), @FDate, 120) + ''',''' + CONVERT(VARCHAR(10), @TDate, 120) + ''',''' + @BaseCurrency + ''','''''  + ')' + CHAR(13)
+						+ 'WHERE ExchangeID IN (SELECT DISTINCT Currency FROM #tmpWinloss ) ' + CHAR(13)
 
 	SELECT	@sql = @sql + '-- Get winlost by currency  ' + CHAR(13)
 
 	SELECT	@sql = @sql + 'SELECT b.currency AS Currency, ' + CHAR(13)
-						+ 'SUM(TurnOver) AS Turnover,' + CHAR(13)
-						+ 'SUM(Winlost)  AS Winlost,' + CHAR(13)
-						+ 'SUM(LicenseeWL) AS LicenseeWL,' + CHAR(13)
-						+ 'SUM(Comm) AS Comm,' + CHAR(13)
-						+ 'SUM(PlayerComm) AS PlayerComm,' + CHAR(13)
-						+ 'SUM(AmtDueto3rd) AS AmtDueto3rd, ' + CHAR(13)
 						+ 'SUM(Betcount) AS Betcount,' + CHAR(13)
-						+ 'CAST(SUM(TurnOver*e.EUR) AS MONEY) AS TurnoverEUR,' + CHAR(13)
-						+ 'CAST(SUM(Winlost*e.EUR) AS MONEY) AS WinlostEUR,' + CHAR(13)
-						+ 'CAST(SUM(LicenseeWL*e.EUR) AS MONEY) AS LicenseeWLEUR,' + CHAR(13)
-						+ 'CAST(SUM(Comm * e.EUR) AS MONEY) AS CommEUR,' + CHAR(13)
-						+ 'CAST(SUM(PlayerComm * e.EUR) AS MONEY) AS PlayerCommEUR,' + CHAR(13)
-						+ 'CAST(SUM(AmtDueto3rd*e.EUR) AS MONEY) AS AmtDueto3rdEUR,' + CHAR(13)
-						+ 'CAST(SUM(TurnOver*e.USD) AS MONEY) AS TurnoverUSD,' + CHAR(13)
-						+ 'CAST(SUM(Winlost*e.USD) AS MONEY) AS WinlostUSD,' + CHAR(13)
-						+ 'CAST(SUM(LicenseeWL*e.USD) AS MONEY) AS LicenseeWLUSD,' + CHAR(13)
-						+ 'CAST(SUM(Comm * e.USD) AS MONEY) AS CommUSD, ' + CHAR(13)
-						+ 'CAST(SUM(PlayerComm * e.USD) AS MONEY) AS PlayerCommUSD, ' + CHAR(13)
-						+ 'CAST(SUM(AmtDueto3rd*e.USD) AS MONEY) AS AmtDueto3rdUSD, ' + CHAR(13)
-						+ 'CAST(SUM(TurnOver*e.GBP) AS MONEY) AS TurnoverGBP,' + CHAR(13)
-						+ 'CAST(SUM(Winlost*e.GBP) AS MONEY) AS WinlostGBP,' + CHAR(13)
-						+ 'CAST(SUM(LicenseeWL*e.GBP) AS MONEY) AS LicenseeWLGBP,' + CHAR(13)
-						+ 'CAST(SUM(Comm * e.GBP) AS MONEY) AS CommGBP,' + CHAR(13)
-						+ 'CAST(SUM(PlayerComm * e.GBP) AS MONEY) AS PlayerCommGBP,' + CHAR(13)
-						+ 'CAST(SUM(AmtDueto3rd*e.GBP) AS MONEY) AS AmtDueto3rdGBP' + CHAR(13)
+						+ 'CAST(SUM(TurnOver*e.Rate) AS MONEY) AS Turnover,' + CHAR(13)
+						+ 'CAST(SUM(Winlost*e.Rate) AS MONEY) AS Winlost,' + CHAR(13)
+						+ 'CAST(SUM(LicenseeWL*e.Rate) AS MONEY) AS LicenseeWL,' + CHAR(13)
+						+ 'CAST(SUM(Comm * e.Rate) AS MONEY) AS Comm,' + CHAR(13)
+						+ 'CAST(SUM(PlayerComm * e.Rate) AS MONEY) AS PlayerComm,' + CHAR(13)
+						+ 'CAST(SUM(AmtDueto3rd*e.Rate) AS MONEY) AS AmtDueto3rd' + CHAR(13)
 						+ 'FROM #tmpWinloss b WITH (NOLOCK)' + CHAR(13)
 						+ 'INNER JOIN #TempExchange e ' + CHAR(13)
-						+ 'ON e.ExchangeDate = b.winlostdate   AND e.exchangeid = b.currency ' + CHAR(13)
+						+ 'ON b.winlostdate BETWEEN e.FromDate AND e.ToDate AND e.exchangeid = b.currency ' + CHAR(13)
 						+ 'GROUP BY b.currency' + CHAR(13)
 
 	-- Get winlost by bettype   
 	SELECT	@sql = @sql + '-- Get winlost by bettype  ' + CHAR(13)
 
 	SELECT	@sql = @sql + 'SELECT b.ProductCode, CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.GroupTypeID ELSE b.bettype END bettype,' + CHAR(13)
-						+ 'SUM(TurnOver) AS Turnover,' + CHAR(13)
-						+ 'SUM(Winlost)  AS Winlost,' + CHAR(13)
-						+ 'SUM(LicenseeWL) AS LicenseeWL,' + CHAR(13)
-						+ 'SUM(Comm) AS Comm,' + CHAR(13)
-						+ 'SUM(PlayerComm) AS PlayerComm,' + CHAR(13)
-						+ 'SUM(AmtDueto3rd) AS AmtDueto3rd,' + CHAR(13)
 						+ 'SUM(Betcount) AS Betcount,' + CHAR(13)
-						+ 'CAST(SUM(TurnOver*e.EUR) AS MONEY) AS TurnoverEUR, ' + CHAR(13)
-						+ 'CAST(SUM(Winlost*e.EUR) AS MONEY) AS WinlostEUR,' + CHAR(13)
-						+ 'CAST(SUM(LicenseeWL*e.EUR) AS MONEY) AS LicenseeWLEUR,' + CHAR(13)
-						+ 'CAST(SUM(Comm * e.EUR) AS MONEY) AS CommEUR,' + CHAR(13)
-						+ 'CAST(SUM(PlayerComm * e.EUR) AS MONEY) AS PlayerCommEUR,' + CHAR(13)
-						+ 'CAST(SUM(AmtDueto3rd*e.EUR) AS MONEY) AS AmtDueto3rdEUR,' + CHAR(13)
-						+ 'CAST(SUM(TurnOver*e.USD) AS MONEY) AS TurnoverUSD,' + CHAR(13)
-						+ 'CAST(SUM(Winlost*e.USD) AS MONEY) AS WinlostUSD,' + CHAR(13)
-						+ 'CAST(SUM(LicenseeWL*e.USD) AS MONEY) AS LicenseeWLUSD,' + CHAR(13)
-						+ 'CAST(SUM(Comm * e.USD) AS MONEY) AS CommUSD,' + CHAR(13)
-						+ 'CAST(SUM(PlayerComm * e.USD) AS MONEY) AS PlayerCommUSD,' + CHAR(13)
-						+ 'CAST(SUM(AmtDueto3rd*e.USD) AS MONEY) AS AmtDueto3rdUSD,' + CHAR(13)
-						+ 'CAST(SUM(TurnOver*e.GBP) AS MONEY) AS TurnoverGBP,' + CHAR(13)
-						+ 'CAST(SUM(Winlost*e.GBP) AS MONEY) AS WinlostGBP,' + CHAR(13)
-						+ 'CAST(SUM(LicenseeWL*e.GBP) AS MONEY) AS LicenseeWLGBP,' + CHAR(13)
-						+ 'CAST(SUM(Comm * e.GBP) AS MONEY) AS CommGBP,' + CHAR(13)
-						+ 'CAST(SUM(PlayerComm * e.GBP) AS MONEY) AS PlayerCommGBP,' + CHAR(13)
-						+ 'CAST(SUM(AmtDueto3rd*e.GBP) AS MONEY) AS AmtDueto3rdGBP' + CHAR(13)
+						+ 'CAST(SUM(TurnOver*e.Rate) AS MONEY) AS Turnover, ' + CHAR(13)
+						+ 'CAST(SUM(Winlost*e.Rate) AS MONEY) AS Winlost,' + CHAR(13)
+						+ 'CAST(SUM(LicenseeWL*e.Rate) AS MONEY) AS LicenseeWL,' + CHAR(13)
+						+ 'CAST(SUM(Comm * e.Rate) AS MONEY) AS Comm,' + CHAR(13)
+						+ 'CAST(SUM(PlayerComm * e.Rate) AS MONEY) AS PlayerComm,' + CHAR(13)
+						+ 'CAST(SUM(AmtDueto3rd*e.Rate) AS MONEY) AS AmtDueto3rd' + CHAR(13)
 						+ 'FROM #tmpWinloss b  WITH (NOLOCK) ' + CHAR(13)
 						+ 'LEFT JOIN dbo.f_GroupBettype() ss ON b.bettype = ss.bettype'+CHAR(13)
 						+ 'INNER JOIN bettype bt WITH (nolock) ON b.bettype = bt.typeid ' + CHAR(13)
 						+ 'INNER JOIN #TempExchange e' + CHAR(13)
-						+ 'ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency ' + CHAR(13)
+						+ 'ON b.winlostdate BETWEEN e.FromDate AND e.ToDate AND e.exchangeid = b.currency ' + CHAR(13)
 						+ 'GROUP BY b.ProductCode, CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.grouptypeId ELSE b.bettype END' + CHAR(13)
 						+ 'ORDER BY CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.GroupTypeID ELSE b.bettype END' + CHAR(13)
 						+ 'DROP TABLE #tmpWinloss' + CHAR(13)

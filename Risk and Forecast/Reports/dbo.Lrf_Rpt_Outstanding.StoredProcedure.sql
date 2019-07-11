@@ -70,6 +70,7 @@ Revisions:
 	- 20190329@Amanda: Missing PP data for Bet count column [RedmineID: #109471]
 	- 20190327@Amanda: Fix bug - Add AB back to SP (AB has been deleted before) [RedmineID: #110927]
 	- 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
+	- 20190620@Amanda: Centralize function to get exchange rate [Redmine: #112531]
 
 Param's Explanation:
 	@OrderItem:
@@ -133,14 +134,24 @@ BEGIN
 		BetCounts	INT , 
 		IsBA		BIT DEFAULT (0),
 		ProductID   INT 
-	) 
-	
+	)
 	
 	CREATE TABLE #SportBettype (bettype SMALLINT, RefTable TINYINT, ProductID TINYINT)
 	DECLARE @ProductList VARCHAR (500)
 	
 	DECLARE @IsTest BIT = 0
 	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
+	
+	DECLARE @Exchange TABLE
+	(
+		ExchangeID	INT,
+		Rate		FLOAT
+	)
+	
+	INSERT INTO @Exchange(ExchangeID, Rate)
+	SELECT	ExchangeID, Rate
+	FROM dbo.Lrf_f_GetExchangeRate(@Today, @Today, @BaseCurrency, '') e
+	WHERE EXISTS (SELECT 1 FROM @TempAg a WHERE a.Currency = e.ExchangeId)
 	
 	IF @ShowSB = 1 OR @ShowBA = 1 
 	BEGIN  
@@ -213,8 +224,6 @@ BEGIN
 		SELECT DISTINCT BetType, RefTable, ProductID
 		FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)	
 	END	
-			 
-
 
 	--1. bettrans --
 	INSERT INTO @Outstanding (custid, currency, Outstanding, BetCounts, isBA, ProductID)
@@ -319,14 +328,11 @@ BEGIN
 				(
 					SELECT 
 						b.custid						
-						,SUM(b.Outstanding) AS Outstanding
-						,SUM(b.Outstanding * e.USD) AS OutstandingUSD
-						,SUM(b.Outstanding * e.EUR) AS OutstandingEUR
-						,SUM(b.Outstanding * e.GBP) AS OutstandingGBP
+						,SUM(b.Outstanding * e.Rate) AS Outstanding
 						,SUM(BetCounts) AS BetCounts					                   
 					FROM  
 						@Outstanding b
-						INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today, @Today)) e ON e.exchangeid = b.currency							
+						INNER JOIN @Exchange e ON e.exchangeid = b.currency
 					GROUP BY b.custid
 				) AS b
 				INNER JOIN Customer c WITH (NOLOCK) ON b.custid = c.custid
@@ -344,13 +350,7 @@ BEGIN
 			SELECT
 				ROW_NUMBER() OVER (
 					ORDER BY CASE @orderItem 
-						WHEN 2 THEN 
-							CASE @BaseCurrency
-								WHEN 'USD' THEN b.OutstandingUSD
-								WHEN 'EUR' THEN b.OutstandingEUR
-								WHEN 'GBP' THEN b.OutstandingGBP
-								ELSE Outstanding
-							END
+						WHEN 2 THEN Outstanding
 						WHEN 3 THEN b.BetCounts
 					END, b.custid) AS RowNum,
 				b.* 
@@ -363,14 +363,11 @@ BEGIN
 				(
 					SELECT 
 						b.custid						
-						,SUM(b.Outstanding) AS Outstanding
-						,SUM(b.Outstanding * e.USD) AS OutstandingUSD
-						,SUM(b.Outstanding * e.EUR) AS OutstandingEUR
-						,SUM(b.Outstanding * e.GBP) AS OutstandingGBP
+						,SUM(b.Outstanding * e.Rate) AS Outstanding
 						,SUM(BetCounts) AS BetCounts					                   
 					FROM  
 						@Outstanding b
-						INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today, @Today)) e ON e.exchangeid = b.currency							
+						INNER JOIN @Exchange e ON e.exchangeid = b.currency
 					GROUP BY b.custid
 				) AS b
 				INNER JOIN Customer c WITH (NOLOCK) ON b.custid = c.custid
@@ -401,14 +398,11 @@ BEGIN
 				(
 					SELECT 
 						b.custid						 
-						,SUM(b.Outstanding) AS Outstanding
-						,SUM(b.Outstanding * e.USD) AS OutstandingUSD
-						,SUM(b.Outstanding * e.EUR) AS OutstandingEUR
-						,SUM(b.Outstanding * e.GBP) AS OutstandingGBP
+						,SUM(b.Outstanding * e.Rate) AS Outstanding
 						,SUM(BetCounts) AS BetCounts					                   
 					FROM  
 						@Outstanding b
-						INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today, @Today)) e ON e.exchangeid = b.currency							
+						INNER JOIN @Exchange e ON e.exchangeid = b.currency
 					GROUP BY b.custid 
 				) AS b
 				INNER JOIN Customer c WITH (NOLOCK) ON b.custid = c.custid
@@ -426,13 +420,7 @@ BEGIN
 			SELECT
 				ROW_NUMBER() OVER (
 					ORDER BY CASE @orderItem 
-						WHEN 2 THEN 
-							CASE @BaseCurrency
-								WHEN 'USD' THEN b.OutstandingUSD
-								WHEN 'EUR' THEN b.OutstandingEUR
-								WHEN 'GBP' THEN b.OutstandingGBP
-								ELSE Outstanding
-							END
+						WHEN 2 THEN Outstanding
 						WHEN 3 THEN b.BetCounts
 					END DESC, b.custid) AS RowNum,
 				b.* 
@@ -445,14 +433,11 @@ BEGIN
 				(
 					SELECT 
 						b.custid						 
-						,SUM(b.Outstanding) AS Outstanding
-						,SUM(b.Outstanding * e.USD) AS OutstandingUSD
-						,SUM(b.Outstanding * e.EUR) AS OutstandingEUR
-						,SUM(b.Outstanding * e.GBP) AS OutstandingGBP
+						,SUM(b.Outstanding * e.Rate) AS Outstanding
 						,SUM(BetCounts) AS BetCounts					                   
 					FROM  
 						@Outstanding b
-						INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today, @Today)) e ON e.exchangeid = b.currency							
+						INNER JOIN @Exchange e ON e.exchangeid = b.currency
 					GROUP BY b.custid 
 				) AS b
 				INNER JOIN Customer c WITH (NOLOCK) ON b.custid = c.custid
@@ -464,15 +449,12 @@ BEGIN
     END
 
     SELECT  
-		ISNULL(SUM(Outstanding),0.00) AS SumOutstanding,
-        ISNULL(SUM(Outstanding * e.USD),0.00) AS SumOutstandingUSD,
-        ISNULL(SUM(Outstanding * e.EUR),0.00) AS SumOutstandingEUR,
-		ISNULL(SUM(Outstanding * e.GBP),0.00) AS SumOutstandingGBP,
+        ISNULL(SUM(Outstanding * e.Rate),0.00) AS SumOutstanding,
         SUM(BetCounts) AS SumBetCounts,
         COUNT(1) AS TotalRows
     FROM
 		@Outstanding b
-		INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today, @Today)) e ON e.exchangeid = b.currency
+		INNER JOIN @Exchange e ON e.exchangeid = b.currency
 
 		DROP TABLE #SportBettype
 

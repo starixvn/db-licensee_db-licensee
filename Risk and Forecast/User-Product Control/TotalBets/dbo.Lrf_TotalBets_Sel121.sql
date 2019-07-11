@@ -1,11 +1,13 @@
-﻿USE bodb02
+﻿/*<info serverAlias="DB042-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+USE bodb02
 GO
 
 ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel121] 	
-	@PageSize	INT=50,
-	@PageIndex	INT=0,
-	@TotalRows	INT=0 OUTPUT,
-	@AgentList	VARCHAR(MAX)
+	@PageSize		INT=50,
+	@PageIndex		INT=0,
+	@TotalRows		INT=0 OUTPUT,
+	@AgentList		VARCHAR(MAX),
+	@BaseCurrency	VARCHAR(3)= ''
  AS
 
 /*
@@ -21,6 +23,7 @@ Revisions:
 	 - 20150123@Jim: support base on Currency GBP
 	 - 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
 	 - 20180802@Sophia: HA - remove ruben to use new index on DB042 [Redmine: #98631]
+	 - 20190611@Amanda: Add Base Currency parameter [Redmine: #112531]
 
 Param's Explanation:
 	+ @AgentList: xml structure
@@ -135,47 +138,48 @@ BEGIN
 	SELECT @TotalRows = COUNT(matchid) FROM @Data
 END
 
-SELECT * INTO #TempExchange 
-FROM Lrf_f_GetExchangeDaily(@Today,@Today)
-WHERE exchangeid IN (SELECT DISTINCT Currency FROM @Data)
+DECLARE @ExchangeRate AS TABLE (ExchangeId INT, Rate FLOAT)
+
+INSERT INTO @ExchangeRate(ExchangeId, Rate)
+SELECT ExchangeId, Rate
+FROM dbo.Lrf_f_GetExchangeRate(@Today, @Today, @BaseCurrency, '') e
+WHERE EXISTS (SELECT 1 FROM @TempAg a WHERE a.Currency = e.ExchangeId)
 
 SELECT c.* FROM
 (
 	SELECT 
 		ROW_NUMBER() over (ORDER BY matchcode) AS RowNum ,
-		*,
-		home_odds_DNB * e.USD home_odds_DNBUSD,
-		home_odds_DNB * e.EUR home_odds_DNBEUR,
-		home_odds_DNB * e.GBP home_odds_DNBGBP,
+		currency,
+		showtime,
+		leagueid,
+		matchcode,
+		liveindicator,
+		livehomescore,
+		liveawayscore,
+		matchid,
+		homeID,
+		awayID,
+
+		home_odds_DNB * e.Rate home_odds_DNB,
 		
-		away_odds_DNB * e.USD away_odds_DNBUSD,
-		away_odds_DNB * e.EUR away_odds_DNBEUR,
-		away_odds_DNB * e.GBP away_odds_DNBGBP,
+		away_odds_DNB * e.Rate away_odds_DNB,
 		
-		home_odds_HNB * e.USD home_odds_HNBUSD,
-		home_odds_HNB * e.EUR home_odds_HNBEUR,
-		home_odds_HNB * e.GBP home_odds_HNBGBP,
+		home_odds_HNB * e.Rate home_odds_HNB,
 		
-		away_odds_HNB * e.USD away_odds_HNBUSD,
-		away_odds_HNB * e.EUR away_odds_HNBEUR,
-		away_odds_HNB * e.GBP away_odds_HNBGBP,
+		away_odds_HNB * e.Rate away_odds_HNB,
 		
-		home_odds_ANB * e.USD home_odds_ANBUSD,
-		home_odds_ANB * e.EUR home_odds_ANBEUR,
-		home_odds_ANB * e.GBP home_odds_ANBGBP,
+		home_odds_ANB * e.Rate home_odds_ANB,
 		
-		away_odds_ANB * e.USD away_odds_ANBUSD,
-		away_odds_ANB * e.EUR away_odds_ANBEUR,
-		away_odds_ANB * e.GBP away_odds_ANBGBP
+		away_odds_ANB * e.Rate away_odds_ANB,
+		
+		BetCount_DNB,
+		BetCount_HNB,
+		BetCount_ANB,
+		isNeutral
 		
 	FROM @Data b
-	INNER JOIN #TempExchange e ON b.currency = e.exchangeid
+	INNER JOIN @ExchangeRate e ON b.currency = e.exchangeid
 ) c WHERE c.RowNum BETWEEN @RowStart AND @RowEnd
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_TotalBets_Sel121] TO [bodbLicenseeNet]
-
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_TotalBets_Sel121] TO [vnteam]
-
  

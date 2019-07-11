@@ -12,7 +12,9 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProduct]
 	 @AgentList		VARCHAR(MAX),
 	 @SystemName	VARCHAR(50)='' OUTPUT,
 	 @ErrCode		TINYINT = 0OUTPUT,
-	 @ErrMsg		VARCHAR(400)='' OUTPUT
+	 @ErrMsg		VARCHAR(400)='' OUTPUT,
+	 @BaseCurrency	VARCHAR(3) = '',
+	 @DefaultBaseCurrency	VARCHAR(3) = ''
 	 WITH RECOMPILE
 AS    
 /*  Created: Henry  
@@ -70,6 +72,7 @@ AS
 	- 20190304@Amanda: Integrate PP Promotion Prize [RedmineID: #109471]
 	- 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
 	- 20190703@Percy: Enhance performance (#tmpVS) - work arround [RedmineID: #116231]
+	- 20190614@Amanda: Add Base currency param [RedmineID: #112531]
 
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -103,14 +106,15 @@ BEGIN
 		Betcount		BIGINT
 	)  
 
-	CREATE TABLE #tmpVS			(EventID INT, SportType TINYINT)					
+	CREATE TABLE #tmpVS			(EventID INT, SportType TINYINT)
+	CREATE TABLE #Exchange		(FromDate DATETIME, ToDate DATETIME, ExchangeID INT, EUR FLOAT, USD FLOAT, GBP FLOAT, Rate FLOAT, DefaultRate FLOAT )	
 
 	DECLARE @bettype			TABLE (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))
 	DECLARE @sporttype			TABLE (sporttype INT, ProductCode VARCHAR(10))
 	DECLARE @sumTurnOver		BIT
 	DECLARE @sumBetCount		BIT
 	DECLARE @RCount				INT
-		
+
 	SET @sumTurnOver = 1
 	SET @sumBetCount = 1
 	SET @ProductList = REPLACE(@ProductList, ' ', '')
@@ -234,7 +238,7 @@ BEGIN
 			INTO #tmpBA		
 			FROM 
 				bodb_licensee.dbo.LicenseeBATransaction_active BA WITH(NOLOCK)
-				INNER JOIN @tempAg r ON BA.recommend = r.custID 
+				INNER JOIN @TempAg r ON BA.recommend = r.custID 
 			
 			INSERT INTO #SAgWinLoss  
 			SELECT   
@@ -496,7 +500,7 @@ BEGIN
 					,SUM(commissionP) 
 					,SUM(WinlossA)  	
 					,SUM(Betcount)  
-				FROM @tempAg t  
+				FROM @TempAg t  
 					CROSS APPLY ( 
 									SELECT TOP (@n) 
 										CASE WHEN @ReportType = 1 THEN b.rptDate  
@@ -547,7 +551,7 @@ BEGIN
 					,SUM(commissionP) 
 					,SUM(WinlossA)  	
 					,SUM(Betcount)  
-				FROM @tempAg t  
+				FROM @TempAg t  
 					CROSS APPLY ( 
 									SELECT TOP (@n)
 										CASE WHEN @ReportType = 1 THEN b.rptDate  
@@ -599,41 +603,36 @@ BEGIN
 	---#4: END: Get Sum data from Sum Table Before Move Bets Day
 
 	---#5: BEGIN: Return final data set
-	DECLARE @MinDate SMALLDATETIME, @MaxDate SMALLDATETIME
-	
-	SELECT @MinDate = MIN (winlostdate),
-		   @MaxDate = MAX (winlostdate)
-	FROM   #SAgWinLoss
-	
-	CREATE TABLE #Exchange	(FirstExchangeDateByMonth SMALLDATETIME, LastExchangeDateByMonth SMALLDATETIME, ExchangeID INT, Code VARCHAR(5) , MYR FLOAT, USD FLOAT, EUR FLOAT, CNY FLOAT, GBP FLOAT, HKD FLOAT, THB FLOAT, IDR FLOAT )
-	
-	INSERT INTO #Exchange(FirstExchangeDateByMonth, LastExchangeDateByMonth, ExchangeID, Code, MYR, USD, EUR, CNY, GBP, HKD, THB, IDR)
-	SELECT FirstExchangeDateByMonth, LastExchangeDateByMonth, ExchangeID, Code, MYR, USD, EUR, CNY, GBP, HKD, THB, IDR
-	FROM dbo.Lrf_f_GetSubExchangeDaily(@MinDate, @MaxDate)
-	WHERE exchangeid IN (SELECT Currency FROM @TempAg)	
+	IF EXISTS (SELECT TOP (1) 1 FROM #SAgWinLoss)
+	BEGIN
+		DECLARE @MinDate SMALLDATETIME, @MaxDate SMALLDATETIME
+		
+		SELECT @MinDate = MIN (winlostdate),
+			   @MaxDate = MAX (winlostdate)
+		FROM   #SAgWinLoss
+
+		INSERT INTO #Exchange(FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
+		SELECT FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate
+		FROM dbo.Lrf_f_GetExchangeRate(@MinDate, @MaxDate, @BaseCurrency, @DefaultBaseCurrency) e
+		WHERE EXISTS (SELECT 1 FROM @TempAg a WHERE e.ExchangeID = a.Currency)
+	END
 
 	SELECT   
 	   CASE WHEN @ReportType = 1 THEN CONVERT(VARCHAR(8),w.winlostdate,112)  
 			WHEN @ReportType = 2 THEN CONVERT(VARCHAR(6),w.winlostdate,112)  
 			ELSE '0' END ReportType,  
-	   Currency , 
+	   Currency ,
 	   ProductCode,			
-	   SUM(TurnOver)	AS Turnover,   
-	   SUM(Winlost)		AS Winlost,  
-	   SUM(LicenseeWL) AS LicenseeWL,
-	   SUM(Comm) AS Comm,
-	   SUM(PlayerComm) AS PlayerComm,
-	   SUM(AmtDueto3rd) AS AmtDueto3rd,
+
 	   SUM(Betcount)	AS Betcount,
-   
-	   --BaseRM  
-	   CAST(SUM(TurnOver * e.MYR)			AS MONEY)	AS TurnoverMYR,   
-	   CAST(SUM(Winlost * e.MYR)			AS MONEY)	AS WinlostMYR,  
-	   CAST(SUM(LicenseeWL * e.MYR) 		AS MONEY)	AS LicenseeWLMYR,
-	   CAST(SUM(Comm * e.MYR) 				AS MONEY)	AS CommMYR,
-	   CAST(SUM(PlayerComm * e.MYR) 		AS MONEY)	AS PlayerCommMYR,
-	   CAST(SUM(AmtDueto3rd * e.MYR) 		AS MONEY)	AS AmtDueto3rdMYR,
-      
+
+	   CAST(SUM(TurnOver * e.Rate)			AS MONEY)	AS Turnover,   
+	   CAST(SUM(Winlost * e.Rate)			AS MONEY)	AS Winlost,  
+	   CAST(SUM(LicenseeWL * e.Rate) 		AS MONEY)	AS LicenseeWL,
+	   CAST(SUM(Comm * e.Rate) 				AS MONEY)	AS Comm,
+	   CAST(SUM(PlayerComm * e.Rate) 		AS MONEY)	AS PlayerComm,
+	   CAST(SUM(AmtDueto3rd * e.Rate) 		AS MONEY)	AS AmtDueto3rd,
+	  
 	   --BaseUSD  
 	   CAST(SUM(TurnOver * e.USD)			AS MONEY)	AS TurnoverUSD,   
 	   CAST(SUM(Winlost * e.USD)			AS MONEY)	AS WinlostUSD,  
@@ -641,7 +640,7 @@ BEGIN
 	   CAST(SUM(Comm * e.USD) 				AS MONEY)	AS CommUSD,
 	   CAST(SUM(PlayerComm * e.USD)  		AS MONEY)	AS PlayerCommUSD,
 	   CAST(SUM(AmtDueto3rd * e.USD) 		AS MONEY)	AS AmtDueto3rdUSD,
-   
+
 		--BaseEUR  
 	   CAST(SUM(TurnOver * e.EUR)			AS MONEY)	AS TurnoverEUR,   
 	   CAST(SUM(Winlost * e.EUR)			AS MONEY)	AS WinlostEUR,  
@@ -656,11 +655,19 @@ BEGIN
 	   CAST(SUM(LicenseeWL * e.GBP) 		AS MONEY)	AS LicenseeWLGBP,
 	   CAST(SUM(Comm * e.GBP) 				AS MONEY)	AS CommGBP,
 	   CAST(SUM(PlayerComm * e.GBP) 		AS MONEY)	AS PlayerCommGBP,
-	   CAST(SUM(AmtDueto3rd * e.GBP) 		AS MONEY)	AS AmtDueto3rdGBP
+	   CAST(SUM(AmtDueto3rd * e.GBP) 		AS MONEY)	AS AmtDueto3rdGBP,
+	   
+	    --Default Base Currency  
+	   CAST(SUM(TurnOver * e.DefaultRate)			AS MONEY)	AS TurnoverBase,   
+	   CAST(SUM(Winlost * e.DefaultRate)			AS MONEY)	AS WinlostBase,  
+	   CAST(SUM(LicenseeWL * e.DefaultRate) 		AS MONEY)	AS LicenseeWLBase,
+	   CAST(SUM(Comm * e.DefaultRate) 				AS MONEY)	AS CommBase,
+	   CAST(SUM(PlayerComm * e.DefaultRate) 		AS MONEY)	AS PlayerCommBase,
+	   CAST(SUM(AmtDueto3rd * e.DefaultRate) 		AS MONEY)	AS AmtDueto3rdBase
 	FROM	
 		#SAgWinLoss w   
 		INNER JOIN #Exchange e
-			ON e.ExchangeID = w.Currency AND w.winlostdate BETWEEN e.FirstExchangeDateByMonth AND e.LastExchangeDateByMonth	
+			ON e.ExchangeID = w.Currency AND w.winlostdate BETWEEN e.FromDate AND e.ToDate	
 	GROUP BY   
 		Currency,
 		Productcode,
@@ -672,6 +679,5 @@ BEGIN
 
 	DROP TABLE #SAgWinLoss
 	DROP TABLE #Exchange
- 
 END
 GO

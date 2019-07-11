@@ -1,11 +1,13 @@
-﻿USE [bodb02]
+﻿/*<info serverAlias="DB042-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+USE [bodb02]
 GO
 
 ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel10]
-@PageSize	INT=50,
-@PageIndex	INT=0,
-@TotalRows	INT=0 OUTPUT,
-@AgentList	VARCHAR(MAX)
+	@PageSize		INT=50,
+	@PageIndex		INT=0,
+	@TotalRows		INT=0 OUTPUT,
+	@AgentList		VARCHAR(MAX),
+	@BaseCurrency	VARCHAR(3)= ''
  AS
  
 /*
@@ -25,6 +27,7 @@ Revisions:
    - 20150123@Jim: support base on Currency GBP
    - 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
    - 20180802@Sophia: HA - Status IN (0,1) to use new index on DB042 [Redmine: #98631]
+   - 20190611@Amanda: Add Base Currency parameter [Redmine: #112531]
 
 Param's Explanation:
 	+ @AgentList: xml structure
@@ -69,14 +72,8 @@ DECLARE @Data as TABLE
 	teamid INT,
 	orid INT,
 	balance MONEY,
-	balanceusd MONEY,
-	balanceeur MONEY,
-	balancegbp MONEY,
 	betcount INT,
 	totalwinlost MONEY,
-	totalwinlostusd MONEY,
-	totalwinlosteur MONEY,
-	totalwinlostgbp MONEY,
 	IsNeutral BIT
 	
 )
@@ -88,18 +85,17 @@ DECLARE @Temp1 as TABLE
 	teamid INT,
 	orid INT,
 	balance MONEY,
-	balanceusd MONEY,
-	balanceeur MONEY,
-	balancegbp MONEY,
 	betcount INT,
 	wl MONEY,
-	wlusd MONEY,
-	wleur MONEY,
-	wlgbp MONEY,
 	IsNeutral BIT
 )
-SELECT * INTO #TempExchange 
-FROM Lrf_f_GetExchangeDaily(@Today,@Today)
+
+DECLARE @ExchangeRate AS TABLE (ExchangeId INT, Rate FLOAT)
+
+INSERT INTO @ExchangeRate(ExchangeId, Rate)
+SELECT ExchangeId, Rate
+FROM dbo.Lrf_f_GetExchangeRate(@Today, @Today, @BaseCurrency, '') e
+WHERE EXISTS (SELECT 1 FROM @TempAg a WHERE a.Currency = e.ExchangeId)
 
 INSERT INTO @Temp1
 SELECT
@@ -107,21 +103,15 @@ SELECT
 		m.leagueid, 
 		m.teamid,
 		m.orid,
-		SUM(stake) AS balance,
-		SUM(stake*e.usd) AS balanceusd,
-		SUM(stake*e.eur) AS balanceeur,
-		SUM(stake*e.gbp) AS balancegbp,
+		SUM(stake*e.Rate) AS balance,
 		SUM(1) as BetCount,
-		SUM(stake*a.odds) AS wl,
-		SUM(stake*a.odds*e.usd) AS wlusd,
-		SUM(stake*a.odds*e.eur) AS wleur,
-		SUM(stake*a.odds*e.gbp) AS wlgbp,
+		SUM(stake*a.odds*e.Rate) AS wl,
 		CONVERT(BIT,0) as IsNeutral
 	FROM
 		bettrans AS a  WITH (NOLOCK)
 		INNER JOIN outright AS m  WITH (NOLOCK) ON m.orid     = a.matchid 									
 		INNER JOIN @TempAg t ON a.recommend = t.custid AND t.Currency = a.currency
-		INNER JOIN #TempExchange e ON e.exchangeid = a.currency
+		INNER JOIN @ExchangeRate e ON e.exchangeid = a.currency
 	WHERE
 		a.bettype = 10 AND
 		a.statusID IN (0,1) AND
@@ -138,48 +128,35 @@ SELECT
 DECLARE @Temp2 as TABLE
 (
 	leagueid INT,
-	totalbalance MONEY,
-	totalbalanceusd MONEY,
-	totalbalanceeur MONEY,
-	totalbalancegbp MONEY
+	totalbalance MONEY
 )
 INSERT INTO  @Temp2
 SELECT 
-						m.leagueid, 
-						SUM(stake) as totalbalance,
-						SUM(stake*e.usd) as totalbalanceusd,
-						SUM(stake*e.eur) as totalbalanceeur,
-						SUM(stake*e.gbp) as totalbalancegbp
-					FROM
-						bettrans AS a  WITH (NOLOCK)
-						INNER JOIN outright AS m  WITH (NOLOCK) ON m.orid = a.matchid  
-						INNER JOIN 	@TempAg t ON a.recommend = t.custid AND t.Currency = a.currency
-						INNER JOIN #TempExchange e ON e.exchangeid = a.currency
-					WHERE						
-						a.bettype = 10 AND
-						a.statusID IN (0,1) AND
-						a.tpositiontaking <>0
-						
-					GROUP BY  m.leagueid
-					ORDER BY   m.leagueid ASC 
-
+		m.leagueid, 
+		SUM(stake*e.Rate) as totalbalance
+	FROM
+		bettrans AS a  WITH (NOLOCK)
+		INNER JOIN outright AS m  WITH (NOLOCK) ON m.orid = a.matchid  
+		INNER JOIN 	@TempAg t ON a.recommend = t.custid AND t.Currency = a.currency
+		INNER JOIN @ExchangeRate e ON e.exchangeid = a.currency
+	WHERE						
+		a.bettype = 10 AND
+		a.statusID IN (0,1) AND
+		a.tpositiontaking <>0
+		
+	GROUP BY  m.leagueid
+	ORDER BY   m.leagueid ASC 
 
 INSERT INTO @Data
 SELECT 
-A.matchcode,
-A.leagueid,
-A.teamid,
-A.orid,
-A.balance,
-A.balanceusd,
-A.balanceeur,
-A.balancegbp,
-A.BetCount,
-A.wl - B.totalbalance as totalwinlost,
-A.wlusd - B.totalbalanceusd as totalwinlostusd,
-A.wleur - B.totalbalanceeur as totalwinlosteur,
-A.wleur - B.totalbalancegbp as totalwinlostgbp,
-A.IsNeutral 
+	A.matchcode,
+	A.leagueid,
+	A.teamid,
+	A.orid,
+	A.balance,
+	A.BetCount,
+	A.wl - B.totalbalance as totalwinlost,
+	A.IsNeutral 
 FROM @Temp1 A
 INNER JOIN @Temp2 B on A.leagueid = B.leagueid
 
@@ -193,6 +170,3 @@ FROM
 WHERE RowNum BETWEEN @RowStart AND @RowEnd
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_TotalBets_Sel10] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_TotalBets_Sel10] TO [vnteam]

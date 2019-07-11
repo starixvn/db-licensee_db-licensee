@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" viewers="vnteam" isFunction="0"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_CustomerSel]
 	@LicenseeID		INT,
 	@username		VARCHAR(50) = NULL,
@@ -10,7 +10,8 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerSel]
 	@SpecialLevel	INT = -1, --ALL
 	@GroupCommID	INT = -1, --ALL
 	@OddsGroups		VARCHAR(100) = '',
-	@AgentList		VARCHAR(MAX)
+	@AgentList		VARCHAR(MAX),
+	@BaseCurrency	VARCHAR(3)
 AS
 
 /*
@@ -62,6 +63,7 @@ AS
 		- 20180809@Amanda: Remove Racing [RedmineID: #99378]
 		- 20180924@Winnie: Remove Allbet [RedmineID: #99378]
 		- 20181031@Patrick: DB052 indexes revolution [RedmineID: #103572]
+		- 20190621@Amanda: Add @BaseCurrency parameter [Redmine: #112531]
 	Param's Explanation:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 		+ @SpecialLevel: default value = -1 (all)
@@ -534,37 +536,25 @@ BEGIN
 	WHERE g.statusID IN (0, 1)  --running and Waiting		
 	GROUP BY g.custid, g.currency, statusID
 
-	SELECT *
+	SELECT ExchangeID, Rate
 	INTO #ExchangeRate
-	FROM Lrf_f_GetExchangeDaily(@currentDate, @currentDate)
+	FROM Lrf_f_GetExchangeRate(@currentDate, @currentDate, @BaseCurrency, '')
 
 	CREATE TABLE #data(
 		custid int PRIMARY KEY,
 		TotalBalance money,
-		TotalBalanceUSD money,
-		TotalBalanceEUR money,
-		TotalBalanceGBP money,
-		Outstanding money,
-		OutstandingUSD money,
-		OutstandingEUR money,
-		OutstandingGBP money,
+		Outstanding money
 	)
 
-	INSERT INTO #data(custid, TotalBalance, TotalBalanceUSD, TotalBalanceEUR, TotalBalanceGBP, Outstanding, OutstandingUSD, OutstandingEUR, OutstandingGBP)
+	INSERT INTO #data(custid, TotalBalance, Outstanding)
 	SELECT 
 		t.custid,
-		ISNULL(SUM(ISNULL(b.winlost-b.actual_stake + b.playercomm, 0)), 0) AS TotalBalance,
-		CAST(ISNULL(SUM(e.USD*ISNULL(b.winlost-b.actual_stake + b.playercomm,0)),0) AS MONEY) AS TotalBalanceUSD,
-		CAST(ISNULL(SUM(e.EUR*ISNULL(b.winlost-b.actual_stake + b.playercomm,0)),0) AS MONEY) AS TotalBalanceEUR,
-		CAST(ISNULL(SUM(e.GBP*ISNULL(b.winlost-b.actual_stake + b.playercomm,0)),0) AS MONEY) AS TotalBalanceGBP,
-		ISNULL(SUM(CASE WHEN ruben = 0 THEN ISNULL(b.actual_stake, 0)*(CASE WHEN b.bettype = 71 THEN 0 ELSE 1 END) ELSE 0 END), 0) AS Outstanding,
-		CAST(ISNULL(SUM(e.USD * CASE WHEN ruben = 0 THEN ISNULL(b.actual_stake, 0)*(CASE WHEN b.bettype = 71 THEN 0 ELSE 1 END) ELSE 0 END), 0) AS MONEY) AS OutstandingUSD,
-		CAST(ISNULL(SUM(e.EUR * CASE WHEN ruben = 0 THEN ISNULL(b.actual_stake, 0)*(CASE WHEN b.bettype = 71 THEN 0 ELSE 1 END) ELSE 0 END), 0) AS MONEY) AS OutstandingEUR,
-		CAST(ISNULL(SUM(e.GBP * CASE WHEN ruben = 0 THEN ISNULL(b.actual_stake, 0)*(CASE WHEN b.bettype = 71 THEN 0 ELSE 1 END) ELSE 0 END), 0) AS MONEY) AS OutstandingGBP
+		CAST(ISNULL(SUM(e.Rate*ISNULL(b.winlost-b.actual_stake + b.playercomm,0)),0) AS MONEY) AS TotalBalance,
+		CAST(ISNULL(SUM(e.Rate * CASE WHEN ruben = 0 THEN ISNULL(b.actual_stake, 0)*(CASE WHEN b.bettype = 71 THEN 0 ELSE 1 END) ELSE 0 END), 0) AS MONEY) AS Outstanding
 	FROM
 		#Temp t
 		INNER JOIN bettrans b WITH(NOLOCK) ON t.custid = b.custid
-		LEFT JOIN #ExchangeRate e ON e.exchangeid = b.currency
+		LEFT JOIN #ExchangeRate e ON e.ExchangeID = b.currency
 	WHERE b.matchid >= 0
 	GROUP BY t.custid
 
@@ -578,14 +568,8 @@ BEGIN
 		SpecialLevel,
 		IsPowerBAUserTurnoff,
 		RowNumber,
-		CAST((ISNULL(d.TotalBalance, 0)	- isnULL(tl.actual_stake,0))					 AS MONEY) AS TotalBalance ,
-		CAST((ISNULL(d.TotalBalanceUSD, 0) - isnULL(tl.actual_stake,0) * ISNULL(e.USD,0))	 AS MONEY) AS TotalBalanceUSD ,	
-		CAST((ISNULL(d.TotalBalanceEUR, 0) - isnULL(tl.actual_stake,0) * ISNULL(e.EUR,0))	 AS MONEY) AS TotalBalanceEUR,
-		CAST((ISNULL(d.TotalBalanceGBP, 0) - isnULL(tl.actual_stake,0) * ISNULL(e.GBP,0))	 AS MONEY) AS TotalBalanceGBP,
-		CAST((ISNULL(d.Outstanding, 0)		+ ISNULL(tl.actual_stake,0))					 AS MONEY) AS Outstanding,
-		CAST((ISNULL(d.OutstandingEUR, 0)	+ ISNULL(tl.actual_stake,0) * ISNULL(e.EUR,0))	 AS MONEY) AS OutstandingEUR,
-		CAST((ISNULL(d.OutstandingUSD, 0)	+ ISNULL(tl.actual_stake,0) * ISNULL(e.USD,0))	 AS MONEY) AS OutstandingUSD,
-		CAST((ISNULL(d.OutstandingGBP, 0)	+ ISNULL(tl.actual_stake,0) * ISNULL(e.GBP,0))	 AS MONEY) AS OutstandingGBP,
+		CAST((ISNULL(d.TotalBalance, 0) - isnULL(tl.actual_stake,0) * ISNULL(e.Rate,0))	 AS MONEY) AS TotalBalance,
+		CAST((ISNULL(d.Outstanding, 0)	+ ISNULL(tl.actual_stake,0) * ISNULL(e.Rate,0))	 AS MONEY) AS Outstanding,
 		ISNULL(lg.color, '') AS GroupColor,
 		ISNULL(lg.GroupName, '') AS GroupName,
 		ISNULL(lc.SBComm, 0) AS SBComm,
@@ -602,7 +586,7 @@ BEGIN
 			FROM #OutstandingTranslog
 			GROUP BY Custid, Currency
 		)tl ON t.custid = tl.Custid
-		LEFT JOIN #ExchangeRate e ON tl.Currency = e.exchangeid
+		LEFT JOIN #ExchangeRate e ON tl.Currency = e.ExchangeID
 		LEFT JOIN bodb_Licensee.dbo.LicenseeCustComm lc WITH (NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
 		LEFT JOIN bodb_Licensee.dbo.LicenseeGroupComm lg WITH (NOLOCK) ON lc.GroupCommID = lg.id
 	ORDER BY t.username

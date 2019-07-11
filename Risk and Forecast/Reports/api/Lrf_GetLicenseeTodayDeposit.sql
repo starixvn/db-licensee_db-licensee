@@ -5,7 +5,8 @@ GO
 ALTER PROCEDURE [dbo].[Lrf_GetLicenseeTodayDeposit]
     @LicenseeID		INT,
     @CurrencyIDList VARCHAR(500)  = 0,
-    @ReportDate		SMALLDATETIME
+    @ReportDate		SMALLDATETIME,
+    @BaseCurrency	VARCHAR(3) = ''
 AS 
 
 /*
@@ -19,6 +20,7 @@ AS
 		- 20170808@Walter: Support UUS currency [RedmineID: #80855]
 		- 20170814@Alex  : Restrict permission by currency  [RedmineID: #80855]
 		- 20181031@Percy: Remove linked-server DBLIC [RedmineID: #103660]
+		- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
 */
 
 BEGIN
@@ -29,19 +31,15 @@ BEGIN
  
 	SELECT	@fdate = @ReportDate;
 
-	DECLARE @Temp TABLE (CustId INT, Currency INT);
-
-	INSERT INTO @Temp (CustId, Currency)
-	SELECT CustID,Currency FROM bodb_licensee.dbo.f_SelLicenseeCust(@LicenseeID)
+	DECLARE @Currency TABLE (Currency INT);
 	
-	INSERT INTO @tmpAg(custID, currency)
-	SELECT CustID, currency 
-	FROM @Temp lc
-	WHERE Currency IN
-                (
-                    SELECT val
-                    FROM dbo.strSplit(@CurrencyIDList, ',')
-                );
+	INSERT INTO @Currency(Currency)
+	SELECT val
+    FROM dbo.strSplit(@CurrencyIDList, ',')
+
+	INSERT INTO @tmpAg (CustId, Currency)
+	SELECT CustID,Currency FROM bodb_licensee.dbo.f_SelLicenseeCust(@LicenseeID) a
+	WHERE EXISTS (SELECT 1 FROM @Currency c WHERE a.Currency = c.Currency)
 
 	CREATE TABLE #tmpRpt
 	(
@@ -60,28 +58,19 @@ BEGIN
 	WHERE b.winlostdate = @fdate
 	GROUP BY b.currency;
 
-	SELECT * INTO #TempExchange
-	FROM Lrf_f_GetExchangeDaily(@fdate, @fdate)
-	WHERE exchangeid IN (SELECT DISTINCT Currency FROM #tmpRpt);
+	CREATE TABLE #TempExchange(
+		ExchangeID	INT,
+		Rate		FLOAT
+	)
+	
+	INSERT INTO #TempExchange(ExchangeID, Rate)
+	SELECT ExchangeID, Rate
+	FROM dbo.Lrf_f_GetExchangeRate(@fdate, @fdate, @BaseCurrency, '') e
+	WHERE EXISTS (SELECT 1 FROM @Currency c WHERE e.ExchangeID = c.Currency)
 
-	SELECT  SUM(b.Deposit) AS Deposit,
-			--- EUR
-			CAST(SUM(b.Deposit * e.EUR) AS MONEY) AS DepositEUR,
-			--- USD
-			CAST(SUM(b.Deposit * e.USD) AS MONEY) AS DepositUSD,
-			--- GBP
-			CAST(SUM(b.Deposit * e.GBP) AS MONEY) AS DepositGBP,
-			--- CNY
-			CAST(SUM(b.Deposit * e.CNY) AS MONEY) AS DepositCNY,
-			--- MYR
-			CAST(SUM(b.Deposit * e.MYR) AS MONEY) AS DepositMYR,
-			--- THB
-			CAST(SUM(b.Deposit * e.THB) AS MONEY) AS DepositTHB,
-			--- IDR
-			CAST(SUM(b.Deposit * e.IDR) AS MONEY) AS DepositIDR
+	SELECT  CAST(SUM(b.Deposit * e.Rate) AS MONEY) AS Deposit
 	FROM #tmpRpt b
 		INNER JOIN #TempExchange e ON e.exchangeid = b.currency
-	WHERE e.ExchangeDate = @fdate;
 
 	DROP TABLE #TempExchange;
 	DROP TABLE #tmpRpt;

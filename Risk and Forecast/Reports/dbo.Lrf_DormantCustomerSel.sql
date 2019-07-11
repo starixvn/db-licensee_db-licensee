@@ -4,7 +4,8 @@ ALTER PROCEDURE [dbo].[Lrf_DormantCustomerSel]
 	@PageSize		INT = 50,
 	@PageIndex		INT = 1,
 	@TotalRows		INT = 0  OUTPUT,
-	@AgentList		VARCHAR(MAX)
+	@AgentList		VARCHAR(MAX),
+	@BaseCurrency	VARCHAR(3)
 AS
 
 /*
@@ -14,6 +15,7 @@ AS
 
 	Revisions:
 	- 20181121@Joseph: Create [#102680]
+	- 20190621@Amanda: Add @BaseCurrency parameter [Redmine: #112531]
 */
 
 BEGIN
@@ -97,9 +99,9 @@ BEGIN
         ) a 
     WHERE a.rownumber BETWEEN @rowstart AND @rowend
 
-	SELECT *
+	SELECT ExchangeID, Rate
 	INTO #ExchangeRate
-	FROM Lrf_f_GetExchangeDaily(@currentDate, @currentDate)
+	FROM Lrf_f_GetExchangeRate(@currentDate, @currentDate, @BaseCurrency, '')
 
 	SELECT
 		t.custid,
@@ -107,12 +109,9 @@ BEGIN
 		nickname,
 		ArchivedDate,
         RowNumber,
-		ISNULL(t.Balance, 0) AS Balance,
-		ISNULL(t.Balance, 0) * ISNULL(e.USD,0) AS BalanceUSD,
-		ISNULL(t.Balance, 0) * ISNULL(e.EUR,0) AS BalanceEUR,
-		ISNULL(t.Balance, 0) * ISNULL(e.GBP,0) AS BalanceGBP
+		ISNULL(t.Balance, 0) * ISNULL(e.Rate,0) AS Balance
 	FROM #ResultData t
-	LEFT JOIN #ExchangeRate e ON t.Currency = e.exchangeid
+	LEFT JOIN #ExchangeRate e ON t.Currency = e.ExchangeID
 	ORDER BY t.username
 
 	DROP TABLE #AgentData

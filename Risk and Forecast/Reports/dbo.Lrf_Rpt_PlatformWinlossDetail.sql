@@ -18,7 +18,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_PlatformWinlossDetail]
 	@PlatformType	TINYINT=0, 
 	@MoveBetsDay	SMALLDATETIME,
 	@drawfilter		SMALLINT = 1,
-	@AgentList		VARCHAR(MAX)
+	@AgentList		VARCHAR(MAX),
+	@BaseCurrency	VARCHAR(3) = ''
 AS
 
 /*  Created: 20160406@Victor
@@ -45,6 +46,7 @@ AS
 		- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
 		- 20181211@Joseph: New betfrom Mobile China View (c) [RedmineID: #106088]
 		- 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
+		- 20190619@Amanda: Add Base currency param [RedmineID: #112531]
 
 	Param's Explanation:  
 	  + @PlatformType:  0: All  
@@ -151,7 +153,7 @@ BEGIN
 	) d(PlatformType, betfrom)
 	WHERE d.PlatformType = @PlatformType OR @PlatformType = 0
 
-	CREATE TABLE #Exchange (ExchangeDate SMALLDATETIME, ExchangeId INT,  EUR FLOAT,USD FLOAT,GBP FLOAT,Code VARCHAR(10), PRIMARY KEY(ExchangeDate,ExchangeId))
+	CREATE TABLE #Exchange (FromDate SMALLDATETIME, ToDate SMALLDATETIME, ExchangeId INT, Rate FLOAT)
 
 	IF @ShowSB = 1  
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'SB', 'SB')	
@@ -228,10 +230,10 @@ BEGIN
 
 	END	
 
-	INSERT INTO #Exchange (exchangedate,exchangeid,eur,usd,gbp,code)
-	SELECT exchangedate,exchangeid,eur,usd,gbp,code
-		FROM Lrf_f_GetExchangeDaily(@FDate,@TDate)
-		WHERE exchangeid IN (SELECT Currency FROM #tempAg)	
+	INSERT INTO #Exchange (FromDate, ToDate, ExchangeId, Rate)
+	SELECT FromDate, ToDate, ExchangeId, Rate
+		FROM Lrf_f_GetExchangeRate(@FDate, @TDate, @BaseCurrency, '') e
+		WHERE EXISTS (SELECT 1 FROM #tempAg ag WHERE e.ExchangeId = ag.Currency)
 
 	IF @TDate>@MoveBetsDay
 	BEGIN
@@ -475,42 +477,16 @@ BEGIN
 		w.Currency,
 		SUM(Betcount)	AS Betcount,
 
-		SUM(TurnOver)	AS Turnover,
-		SUM(Winlost)		AS Winlost,
-		SUM(LicenseeWL) AS LicenseeWL,
-		SUM(PlayerComm) AS PlayerComm,
-		SUM(CommBA) AS CommBA,
-		SUM(AmtDuetoBA) AS AmtDuetoBA,
-		SUM(Company) AS Company,
-			
-		--BASE EUR
-		SUM(TurnOver * e.EUR)	AS TurnoverEUR,
-		SUM(Winlost * e.EUR)		AS WinlostEUR,
-		SUM(LicenseeWL * e.EUR) AS LicenseeWLEUR,
-		SUM(PlayerComm * e.EUR) AS PlayerCommEUR,
-		SUM(CommBA * e.EUR) AS CommBAEUR,
-		SUM(AmtDuetoBA * e.EUR) AS AmtDuetoBAEUR,
-		SUM(Company * e.EUR) AS CompanyEUR,
-	
-		--BASE USD
-		SUM(TurnOver * e.USD)	AS TurnoverUSD,
-		SUM(Winlost * e.USD)		AS WinlostUSD,
-		SUM(LicenseeWL * e.USD) AS LicenseeWLUSD,
-		SUM(PlayerComm * e.USD) AS PlayerCommUSD,
-		SUM(CommBA * e.USD) AS CommBAUSD,
-		SUM(AmtDuetoBA * e.USD) AS AmtDuetoBAUSD,
-		SUM(Company * e.USD) AS CompanyUSD,
-		--BASE GBP
-		SUM(TurnOver * e.GBP)	AS TurnoverGBP,
-		SUM(Winlost * e.GBP)		AS WinlostGBP,
-		SUM(LicenseeWL * e.GBP) AS LicenseeWLGBP,
-		SUM(PlayerComm * e.GBP) AS PlayerCommGBP,
-		SUM(CommBA * e.GBP) AS CommBAGBP,
-		SUM(AmtDuetoBA * e.GBP) AS AmtDuetoBAGBP,
-		SUM(Company * e.GBP) AS CompanyGBP
+		SUM(TurnOver	* e.Rate)	AS Turnover,
+		SUM(Winlost		* e.Rate)	AS Winlost,
+		SUM(LicenseeWL	* e.Rate)	AS LicenseeWL,
+		SUM(PlayerComm	* e.Rate)	AS PlayerComm,
+		SUM(CommBA		* e.Rate)	AS CommBA,
+		SUM(AmtDuetoBA	* e.Rate)	AS AmtDuetoBA,
+		SUM(Company		* e.Rate)	AS Company
 	FROM #WinLoss w 
 		INNER JOIN Customer c WITH (NOLOCK) ON w.custid = c.custid
-		INNER JOIN  #Exchange e on w.Currency=e.exchangeid AND e.ExchangeDate = w.Winlostdate
+		INNER JOIN  #Exchange e on w.Currency=e.exchangeid AND w.Winlostdate BETWEEN e.FromDate AND e.ToDate
 	GROUP BY
 		w.CustID, w.Currency, c.username, c.username2
 	ORDER BY 5,2

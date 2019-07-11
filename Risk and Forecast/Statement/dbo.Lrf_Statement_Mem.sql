@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" viewers="vnteam" isFunction="0"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_Statement_Mem]  
     @CustID			INT,  
     @FromDate		DATETIME,  
@@ -7,7 +7,8 @@ ALTER PROCEDURE [dbo].[Lrf_Statement_Mem]
     @MoveBetsDay	DATETIME = NULL,  
     @PageSize		INT = 50,  
     @PageIndex		INT = 1,  
-    @TotalRows		INT = 0 OUTPUT  
+    @BaseCurrency	VARCHAR(3) = '',
+    @TotalRows		INT = 0 OUTPUT 
 AS
 /*  
 Created:   
@@ -40,6 +41,7 @@ Revisions:
 	- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
 	- 20170320@Paul: Implement Cash Out [RedmineID :#71727]
 	- 20181102@Patrick: DB052 indexes revolution [RedmineID :#103572]
+	- 20190622@Amanda: Add Base currency param [RedmineID: #112531]
  
 Param's Explanation:   
 	• @ErrCode:
@@ -392,9 +394,9 @@ BEGIN
  
 	SELECT  @FromDate = CONVERT(DATE, @FromDate)
  
-	SELECT * INTO #TempExchange 
-	FROM Lrf_f_GetExchangeDaily(@FromDate, @Today)
-	WHERE exchangeid = @currency
+	SELECT CONVERT(DATETIME, FromDate) AS FromDate, CONVERT(DATETIME, DATEADD(DAY, 1, ToDate)) AS ToDate, Rate INTO #TempExchange 
+	FROM Lrf_f_GetExchangeRate(@FromDate, @Today, @BaseCurrency, '')
+	WHERE ExchangeID = @currency
   
     SELECT  c.*  
     FROM
@@ -404,21 +406,12 @@ BEGIN
             winlostdate,
             transtype,
             transdesc,
-            turnover,
-            turnover * e.USD turnoverUSD,
-            turnover * e.EUR turnoverEUR,
-			turnover * e.GBP turnoverGBP,
-            totalAmt,
-            totalAmt * e.USD totalAmtUSD,
-            totalAmt * e.EUR totalAmtEUR,
-			totalAmt * e.GBP totalAmtGBP,
-            commission,
-            commission * e.USD commissionUSD,
-            commission * e.EUR commissionEUR,
-			commission * e.GBP commissionGBP
+            turnover * e.Rate turnover,
+            totalAmt * e.Rate totalAmt,
+            commission * e.Rate commission
 		FROM        
 			@Data b
-			INNER JOIN #TempExchange e ON e.exchangedate = CONVERT(DATE, b.winlostdate)    
+			INNER JOIN #TempExchange e ON b.winlostdate >= e.FromDate AND b.winlostdate < e.ToDate
     ) c  
     WHERE c.RowNum BETWEEN @RowStart AND @RowEnd
     
@@ -427,8 +420,3 @@ BEGIN
 END
 
 GO
-GRANT EXECUTE ON [dbo].[Lrf_Statement_Mem] TO [bodbDownlineNet] AS [dbo]
-GO
-GRANT EXECUTE ON [dbo].[Lrf_Statement_Mem] TO [bodbLicenseeNet] AS [dbo]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Statement_Mem] TO [vnteam] AS [dbo]

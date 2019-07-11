@@ -1,14 +1,10 @@
-﻿USE [bodb02]
-GO
-
-/****** Object:  StoredProcedure [dbo].[Lrf_Forecast1x2_SelByLeague]    Script Date: 04/29/2015 14:15:21 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
+﻿/*<info serverAlias="DB042-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+USE [bodb02]
 GO
 ALTER PROCEDURE [dbo].[Lrf_Forecast1x2_SelByLeague]    
-    @leagueid	INT,
-	@AgentList	VARCHAR(MAX)
+    @leagueid		INT,
+	@AgentList		VARCHAR(MAX),
+	@BaseCurrency	VARCHAR(3)= ''
 AS /*
 Created: 20101207@Henry
 Task: Forecast for 1x2 bettype according to league.
@@ -25,6 +21,7 @@ Revisions:
 	- 20150414@Jim: add more bettype Extra Time 1H 1X2 (feature #32844)
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
 	- 20180802@Sophia: HA - remove ruben to use new index on DB042 [Redmine: #98631]
+	- 20190611@Amanda: Add Base Currency parameter [Redmine: #112531]
 
 Param's Explanation:
 	+ @AgentList: xml structure
@@ -67,6 +64,13 @@ Param's Explanation:
 		RETURN
 	END CATCH;
 
+	DECLARE @ExchangeRate AS TABLE (ExchangeId INT, Rate FLOAT)
+
+	INSERT INTO @ExchangeRate(ExchangeId, Rate)
+	SELECT ExchangeId, Rate
+	FROM dbo.Lrf_f_GetExchangeRate(@Today, @Today, @BaseCurrency, '') e
+	WHERE EXISTS (SELECT 1 FROM @TempAg a WHERE a.Currency = e.ExchangeId)
+
     SELECT  x.MatchID ,
             x.homeid ,
             x.awayid ,
@@ -78,43 +82,16 @@ Param's Explanation:
             isNeutral ,
 			--FT.1X2
             SUM( x.awaywin - x.homelose - x.drawlose ) 'al' ,
-            SUM( x.awaywinUSD - x.homeloseUSD - x.drawloseUSD ) 'alUSD' ,
-            SUM( x.awaywinEUR - x.homeloseEUR - x.drawloseEUR ) 'alEUR' ,
-			SUM( x.awaywinGBP - x.homeloseGBP - x.drawloseGBP ) 'alGBP' ,
             SUM( x.homewin - x.awaylose - x.drawlose ) 'hl' ,
-            SUM( x.homewinUSD - x.awayloseUSD - x.drawloseUSD ) 'hlUSD' ,
-            SUM( x.homewinEUR - x.awayloseEUR - x.drawloseEUR ) 'hlEUR' ,
-			SUM( x.homewinGBP - x.awayloseGBP - x.drawloseGBP ) 'hlGBP' ,
             SUM( x.drawwin - x.awaylose - x.homelose ) 'dl' ,
-            SUM( x.drawwinUSD - x.awayloseUSD - x.homeloseUSD ) 'dlUSD' ,
-            SUM( x.drawwinEUR - x.awayloseEUR - x.homeloseEUR ) 'dlEUR' ,
-			SUM( x.drawwinGBP - x.awayloseGBP - x.homeloseGBP ) 'dlGBP' ,
 			--1H 1X2
             SUM( x.ht_awaywin - x.ht_drawlose - x.ht_homelose ) 'ht_al' ,
-            SUM( x.ht_awaywinUSD - x.ht_drawloseUSD - x.ht_homeloseUSD ) 'ht_alUSD' ,
-            SUM( x.ht_awaywinEUR - x.ht_drawloseEUR - x.ht_homeloseEUR ) 'ht_alEUR' ,
-			SUM( x.ht_awaywinGBP - x.ht_drawloseGBP - x.ht_homeloseGBP ) 'ht_alGBP' ,
             SUM( x.ht_homewin - x.ht_drawlose - x.ht_awaylose ) 'ht_hl' ,
-            SUM( x.ht_homewinUSD - x.ht_drawloseUSD - x.ht_awayloseUSD ) 'ht_hlUSD' ,
-            SUM( x.ht_homewinEUR - x.ht_drawloseEUR - x.ht_awayloseEUR ) 'ht_hlEUR' ,
-			SUM( x.ht_homewinGBP - x.ht_drawloseGBP - x.ht_awayloseGBP ) 'ht_hlGBP' ,
             SUM( x.ht_drawwin - x.ht_awaylose - x.ht_homelose ) 'ht_dl' ,
-            SUM( x.ht_drawwinUSD - x.ht_awayloseUSD - x.ht_homeloseUSD ) 'ht_dlUSD' ,
-            SUM( x.ht_drawwinEUR - x.ht_awayloseEUR - x.ht_homeloseEUR ) 'ht_dlEUR' ,
-			SUM( x.ht_drawwinGBP - x.ht_awayloseGBP - x.ht_homeloseGBP ) 'ht_dlGBP' ,
 			---Extra Time 1H 1X2
 			SUM( x.x_awaywin - x.x_drawlose - x.x_homelose ) 'x_al' ,
-			SUM( x.x_awaywinUSD - x.x_drawloseUSD - x.x_homeloseUSD ) 'x_alUSD' ,
-            SUM( x.x_awaywinEUR - x.x_drawloseEUR - x.x_homeloseEUR ) 'x_alEUR' ,
-			SUM( x.x_awaywinGBP - x.x_drawloseGBP - x.x_homeloseGBP ) 'x_alGBP' ,
             SUM( x.x_homewin	 - x.x_drawlose	   - x.x_awaylose )	   'x_hl' ,
-            SUM( x.x_homewinUSD - x.x_drawloseUSD - x.x_awayloseUSD ) 'x_hlUSD' ,
-            SUM( x.x_homewinEUR - x.x_drawloseEUR - x.x_awayloseEUR ) 'x_hlEUR' ,
-			SUM( x.x_homewinGBP - x.x_drawloseGBP - x.x_awayloseGBP ) 'x_hlGBP' ,
             SUM( x.x_drawwin    - x.x_awaylose	   - x.x_homelose )	   'x_dl' ,
-            SUM( x.x_drawwinUSD - x.x_awayloseUSD - x.x_homeloseUSD ) 'x_dlUSD' ,
-            SUM( x.x_drawwinEUR - x.x_awayloseEUR - x.x_homeloseEUR ) 'x_dlEUR' ,
-			SUM( x.x_drawwinGBP - x.x_awayloseGBP - x.x_homeloseGBP ) 'x_dlGBP',
 			CASE WHEN x.bettype =167 THEN 1 ELSE 0 END  isExtra
 			
     FROM    ( SELECT    m.MatchID ,
@@ -132,580 +109,154 @@ Param's Explanation:
                                  THEN ( CASE WHEN odds < 0 THEN 1
                                              ELSE odds - 1
                                         END ) * stake 
+                                      * e.Rate
                                  ELSE 0
                             END) homewin ,
-                        SUM(CASE WHEN betteam = '1'
-                                      AND bettype = @BetType1x2
-                                 THEN ( CASE WHEN odds < 0 THEN 1
-                                             ELSE odds - 1
-                                        END ) * stake 
-                                      * e.USD
-                                 ELSE 0
-                            END) homewinUSD ,
-                        SUM(CASE WHEN betteam = '1'
-                                      AND bettype = @BetType1x2
-                                 THEN ( CASE WHEN odds < 0 THEN 1
-                                             ELSE odds - 1
-                                        END ) * stake 
-                                      * e.EUR
-                                 ELSE 0
-                            END) homewinEUR ,
-						 SUM(CASE WHEN betteam = '1'
-								  AND bettype = @BetType1x2
-							 THEN ( CASE WHEN odds < 0 THEN 1
-										 ELSE odds - 1
-									END ) * stake 
-								  * e.GBP
-							 ELSE 0
-						END) homewinGBP ,
-							
                         SUM(CASE WHEN betteam = '2'
                                       AND bettype = @BetType1x2
                                  THEN ( CASE WHEN odds < 0 THEN 1
                                              ELSE odds - 1
                                         END ) * stake 
+                                      * e.Rate
                                  ELSE 0
                             END) awaywin ,
-                        SUM(CASE WHEN betteam = '2'
-                                      AND bettype = @BetType1x2
-                                 THEN ( CASE WHEN odds < 0 THEN 1
-                                             ELSE odds - 1
-                                        END ) * stake 
-                                      * e.USD
-                                 ELSE 0
-                            END) awaywinUSD ,
-                        SUM(CASE WHEN betteam = '2'
-                                      AND bettype = @BetType1x2
-                                 THEN ( CASE WHEN odds < 0 THEN 1
-                                             ELSE odds - 1
-                                        END ) * stake 
-                                      * e.EUR
-                                 ELSE 0
-                            END) awaywinEUR ,
-						SUM(CASE WHEN betteam = '2'
-                                      AND bettype = @BetType1x2
-                                 THEN ( CASE WHEN odds < 0 THEN 1
-                                             ELSE odds - 1
-                                        END ) * stake 
-                                      * e.GBP
-                                 ELSE 0
-                            END) awaywinGBP ,
-							
                         SUM(CASE WHEN betteam = 'x'
                                       AND bettype = @BetType1x2
                                  THEN ( CASE WHEN odds < 0 THEN 1
                                              ELSE odds - 1
                                         END ) * stake 
+                                      * e.Rate
                                  ELSE 0
                             END) drawwin ,
-                        SUM(CASE WHEN betteam = 'x'
-                                      AND bettype = @BetType1x2
-                                 THEN ( CASE WHEN odds < 0 THEN 1
-                                             ELSE odds - 1
-                                        END ) * stake 
-                                      * e.USD
-                                 ELSE 0
-                            END) drawwinUSD ,
-                        SUM(CASE WHEN betteam = 'x'
-                                      AND bettype = @BetType1x2
-                                 THEN ( CASE WHEN odds < 0 THEN 1
-                                             ELSE odds - 1
-                                        END ) * stake 
-                                      * e.EUR
-                                 ELSE 0
-                            END) drawwinEUR ,
-						SUM(CASE WHEN betteam = 'x'
-                                      AND bettype = @BetType1x2
-                                 THEN ( CASE WHEN odds < 0 THEN 1
-                                             ELSE odds - 1
-                                        END ) * stake 
-                                      * e.GBP
-                                 ELSE 0
-                            END) drawwinGBP ,	
                         SUM(CASE WHEN betteam = '1'
                                       AND bettype = @BetType1x2
                                  THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
                                              ELSE 1
                                         END ) * stake 
+                                      * e.Rate
                                  ELSE 0
                             END) homelose ,
-                        SUM(CASE WHEN betteam = '1'
-                                      AND bettype = @BetType1x2
-                                 THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
-                                             ELSE 1
-                                        END ) * stake 
-                                      * e.USD
-                                 ELSE 0
-                            END) homeloseUSD ,
-                        SUM(CASE WHEN betteam = '1'
-                                      AND bettype = @BetType1x2
-                                 THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
-                                             ELSE 1
-                                        END ) * stake 
-                                      * e.EUR
-                                 ELSE 0
-                            END) homeloseEUR ,
-						SUM(CASE WHEN betteam = '1'
-                                      AND bettype = @BetType1x2
-                                 THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
-                                             ELSE 1
-                                        END ) * stake 
-                                      * e.GBP
-                                 ELSE 0
-                            END) homeloseGBP,	
                         SUM(CASE WHEN betteam = '2'
                                       AND bettype = @BetType1x2
                                  THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
                                              ELSE 1
-                                        END ) * stake 
+                                        END ) * stake * e.Rate
                                  ELSE 0
                             END) awaylose ,
-                        SUM(CASE WHEN betteam = '2'
-                                      AND bettype = @BetType1x2
-                                 THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
-                                             ELSE 1
-                                        END ) * stake * e.USD
-                                 ELSE 0
-                            END) awayloseUSD ,
-                        SUM(CASE WHEN betteam = '2'
-                                      AND bettype = @BetType1x2
-                                 THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
-                                             ELSE 1
-                                        END ) * stake 
-                                      * e.EUR
-                                 ELSE 0
-                            END) awayloseEUR ,
-						SUM(CASE WHEN betteam = '2'
-                                      AND bettype = @BetType1x2
-                                 THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
-                                             ELSE 1
-                                        END ) * stake 
-                                      * e.GBP
-                                 ELSE 0
-                            END) awayloseGBP ,
-							
                         SUM(CASE WHEN betteam = 'x'
                                       AND bettype = @BetType1x2
                                  THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
                                              ELSE 1
                                         END ) * stake 
+                                      * e.Rate
                                  ELSE 0
                             END) drawlose ,
-                        SUM(CASE WHEN betteam = 'x'
-                                      AND bettype = @BetType1x2
-                                 THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
-                                             ELSE 1
-                                        END ) * stake 
-                                      * e.USD
-                                 ELSE 0
-                            END) drawloseUSD ,
-                        SUM(CASE WHEN betteam = 'x'
-                                      AND bettype = @BetType1x2
-                                 THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
-                                             ELSE 1
-                                        END ) * stake 
-                                      * e.EUR
-                                 ELSE 0
-                            END) drawloseEUR ,
-						SUM(CASE WHEN betteam = 'x'
-                                      AND bettype = @BetType1x2
-                                 THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
-                                             ELSE 1
-                                        END ) * stake 
-                                      * e.GBP
-                                 ELSE 0
-                            END) drawloseGBP ,
 					--- 1H 1X2
                         SUM(CASE WHEN betteam = '1'
                                       AND bettype = @BetTypeHT1x2
                                  THEN ( CASE WHEN odds < 0 THEN 1
                                              ELSE odds - 1
                                         END ) * stake 
+                                      * e.Rate
                                  ELSE 0
                             END) ht_homewin ,
-                        SUM(CASE WHEN betteam = '1'
-                                      AND bettype = @BetTypeHT1x2
-                                 THEN ( CASE WHEN odds < 0 THEN 1
-                                             ELSE odds - 1
-                                        END ) * stake 
-                                      * e.USD
-                                 ELSE 0
-                            END) ht_homewinUSD ,
-                        SUM(CASE WHEN betteam = '1'
-                                      AND bettype = @BetTypeHT1x2
-                                 THEN ( CASE WHEN odds < 0 THEN 1
-                                             ELSE odds - 1
-                                        END ) * stake 
-                                      * e.EUR
-                                 ELSE 0
-                            END) ht_homewinEUR ,
-						SUM(CASE WHEN betteam = '1'
-                                      AND bettype = @BetTypeHT1x2
-                                 THEN ( CASE WHEN odds < 0 THEN 1
-                                             ELSE odds - 1
-                                        END ) * stake 
-                                      * e.GBP
-                                 ELSE 0
-                            END) ht_homewinGBP ,
-							
                         SUM(CASE WHEN betteam = '2'
                                       AND bettype = @BetTypeHT1x2
                                  THEN ( CASE WHEN odds < 0 THEN 1
                                              ELSE odds - 1
                                         END ) * stake 
+                                      * e.Rate
                                  ELSE 0
                             END) ht_awaywin ,
-                        SUM(CASE WHEN betteam = '2'
-                                      AND bettype = @BetTypeHT1x2
-                                 THEN ( CASE WHEN odds < 0 THEN 1
-                                             ELSE odds - 1
-                                        END ) * stake 
-                                      * e.USD
-                                 ELSE 0
-                            END) ht_awaywinUSD ,
-                        SUM(CASE WHEN betteam = '2'
-                                      AND bettype = @BetTypeHT1x2
-                                 THEN ( CASE WHEN odds < 0 THEN 1
-                                             ELSE odds - 1
-                                        END ) * stake 
-                                      * e.EUR
-                                 ELSE 0
-                            END) ht_awaywinEUR ,
-						SUM(CASE WHEN betteam = '2'
-                                      AND bettype = @BetTypeHT1x2
-                                 THEN ( CASE WHEN odds < 0 THEN 1
-                                             ELSE odds - 1
-                                        END ) * stake 
-                                      * e.GBP
-                                 ELSE 0
-                            END) ht_awaywinGBP ,
-							
                         SUM(CASE WHEN betteam = 'x'
                                       AND bettype = @BetTypeHT1x2
                                  THEN ( CASE WHEN odds < 0 THEN 1
                                              ELSE odds - 1
                                         END ) * stake 
+                                      * e.Rate
                                  ELSE 0
                             END) ht_drawwin ,
-                        SUM(CASE WHEN betteam = 'x'
-                                      AND bettype = @BetTypeHT1x2
-                                 THEN ( CASE WHEN odds < 0 THEN 1
-                                             ELSE odds - 1
-                                        END ) * stake 
-                                      * e.USD
-                                 ELSE 0
-                            END) ht_drawwinUSD ,
-                        SUM(CASE WHEN betteam = 'x'
-                                      AND bettype = @BetTypeHT1x2
-                                 THEN ( CASE WHEN odds < 0 THEN 1
-                                             ELSE odds - 1
-                                        END ) * stake 
-                                      * e.EUR
-                                 ELSE 0
-                            END) ht_drawwinEUR ,
-						SUM(CASE WHEN betteam = 'x'
-                                      AND bettype = @BetTypeHT1x2
-                                 THEN ( CASE WHEN odds < 0 THEN 1
-                                             ELSE odds - 1
-                                        END ) * stake 
-                                      * e.GBP
-                                 ELSE 0
-                            END) ht_drawwinGBP ,
-							
                         SUM(CASE WHEN betteam = '1'
                                       AND bettype = @BetTypeHT1x2
                                  THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
                                              ELSE 1
                                         END ) * stake 
+                                      * e.Rate
                                  ELSE 0
                             END) ht_homelose ,
-                        SUM(CASE WHEN betteam = '1'
-                                      AND bettype = @BetTypeHT1x2
-                                 THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
-                                             ELSE 1
-                                        END ) * stake 
-                                      * e.USD
-                                 ELSE 0
-                            END) ht_homeloseUSD ,
-                        SUM(CASE WHEN betteam = '1'
-                                      AND bettype = @BetTypeHT1x2
-                                 THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
-                                             ELSE 1
-                                        END ) * stake 
-                                      * e.EUR
-                                 ELSE 0
-                            END) ht_homeloseEUR ,
-						SUM(CASE WHEN betteam = '1'
-                                      AND bettype = @BetTypeHT1x2
-                                 THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
-                                             ELSE 1
-                                        END ) * stake 
-                                      * e.GBP
-                                 ELSE 0
-                            END) ht_homeloseGBP ,
-							
                         SUM(CASE WHEN betteam = '2'
                                       AND bettype = @BetTypeHT1x2
                                  THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
                                              ELSE 1
                                         END ) * stake 
+                                      * e.Rate
                                  ELSE 0
                             END) ht_awaylose ,
-                        SUM(CASE WHEN betteam = '2'
-                                      AND bettype = @BetTypeHT1x2
-                                 THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
-                                             ELSE 1
-                                        END ) * stake 
-                                      * e.USD
-                                 ELSE 0
-                            END) ht_awayloseUSD ,
-                        SUM(CASE WHEN betteam = '2'
-                                      AND bettype = @BetTypeHT1x2
-                                 THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
-                                             ELSE 1
-                                        END ) * stake 
-                                      * e.EUR
-                                 ELSE 0
-                            END) ht_awayloseEUR ,
-						SUM(CASE WHEN betteam = '2'
-                                      AND bettype = @BetTypeHT1x2
-                                 THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
-                                             ELSE 1
-                                        END ) * stake 
-                                      * e.GBP
-                                 ELSE 0
-                            END) ht_awayloseGBP ,
-							
                         SUM(CASE WHEN betteam = 'x'
                                       AND bettype = @BetTypeHT1x2
                                  THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
                                              ELSE 1
                                         END ) * stake 
+                                      * e.Rate
                                  ELSE 0
                             END) ht_drawlose ,
-                        SUM(CASE WHEN betteam = 'x'
-                                      AND bettype = @BetTypeHT1x2
-                                 THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
-                                             ELSE 1
-                                        END ) * stake 
-                                      * e.USD
-                                 ELSE 0
-                            END) ht_drawloseUSD ,
-                        SUM(CASE WHEN betteam = 'x'
-                                      AND bettype = @BetTypeHT1x2
-                                 THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
-                                             ELSE 1
-                                        END ) * stake 
-                                      * e.EUR
-                                 ELSE 0
-                            END) ht_drawloseEUR,
-							SUM(CASE WHEN betteam = 'x'
-                                      AND bettype = @BetTypeHT1x2
-                                 THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
-                                             ELSE 1
-                                        END ) * stake 
-                                      * e.GBP
-                                 ELSE 0
-                            END) ht_drawloseGBP,
 					---	Extra Time 1H 1X2
 						SUM(CASE WHEN betteam = '1'
-								  AND bettype = @BetTypeExHT1x2
-							 THEN ( CASE WHEN odds < 0 THEN 1
-										 ELSE odds - 1
-									END ) * stake 
-							 ELSE 0
-						END) x_homewin ,
-						SUM(CASE WHEN betteam = '1'
 									  AND bettype = @BetTypeExHT1x2
 								 THEN ( CASE WHEN odds < 0 THEN 1
 											 ELSE odds - 1
 										END ) * stake 
-									  * e.USD
+									  * e.Rate
 								 ELSE 0
-							END) x_homewinUSD ,
-						SUM(CASE WHEN betteam = '1'
-									  AND bettype = @BetTypeExHT1x2
-								 THEN ( CASE WHEN odds < 0 THEN 1
-											 ELSE odds - 1
-										END ) * stake 
-									  * e.EUR
-								 ELSE 0
-							END) x_homewinEUR ,
-						 SUM(CASE WHEN betteam = '1'
-								  AND bettype = @BetTypeExHT1x2
-							 THEN ( CASE WHEN odds < 0 THEN 1
-										 ELSE odds - 1
-									END ) * stake 
-								  * e.GBP
-							 ELSE 0
-						END) x_homewinGBP ,
-							
+							END) x_homewin ,
 						SUM(CASE WHEN betteam = '2'
 									  AND bettype = @BetTypeExHT1x2
 								 THEN ( CASE WHEN odds < 0 THEN 1
 											 ELSE odds - 1
 										END ) * stake 
+									  * e.Rate
 								 ELSE 0
 							END) x_awaywin ,
-						SUM(CASE WHEN betteam = '2'
-									  AND bettype = @BetTypeExHT1x2
-								 THEN ( CASE WHEN odds < 0 THEN 1
-											 ELSE odds - 1
-										END ) * stake 
-									  * e.USD
-								 ELSE 0
-							END) x_awaywinUSD ,
-						SUM(CASE WHEN betteam = '2'
-									  AND bettype = @BetTypeExHT1x2
-								 THEN ( CASE WHEN odds < 0 THEN 1
-											 ELSE odds - 1
-										END ) * stake 
-									  * e.EUR
-								 ELSE 0
-							END) x_awaywinEUR ,
-						SUM(CASE WHEN betteam = '2'
-									  AND bettype = @BetTypeExHT1x2
-								 THEN ( CASE WHEN odds < 0 THEN 1
-											 ELSE odds - 1
-										END ) * stake 
-									  * e.GBP
-								 ELSE 0
-							END) x_awaywinGBP ,
-							
 						SUM(CASE WHEN betteam = 'x'
 									  AND bettype = @BetTypeExHT1x2
 								 THEN ( CASE WHEN odds < 0 THEN 1
 											 ELSE odds - 1
 										END ) * stake 
+									  * e.Rate
 								 ELSE 0
 							END) x_drawwin ,
-						SUM(CASE WHEN betteam = 'x'
-									  AND bettype = @BetTypeExHT1x2
-								 THEN ( CASE WHEN odds < 0 THEN 1
-											 ELSE odds - 1
-										END ) * stake 
-									  * e.USD
-								 ELSE 0
-							END) x_drawwinUSD ,
-						SUM(CASE WHEN betteam = 'x'
-									  AND bettype = @BetTypeExHT1x2
-								 THEN ( CASE WHEN odds < 0 THEN 1
-											 ELSE odds - 1
-										END ) * stake 
-									  * e.EUR
-								 ELSE 0
-							END) x_drawwinEUR ,
-						SUM(CASE WHEN betteam = 'x'
-									  AND bettype = @BetTypeExHT1x2
-								 THEN ( CASE WHEN odds < 0 THEN 1
-											 ELSE odds - 1
-										END ) * stake 
-									  * e.GBP
-								 ELSE 0
-							END) x_drawwinGBP ,	
 						SUM(CASE WHEN betteam = '1'
 									  AND bettype = @BetTypeExHT1x2
 								 THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
 											 ELSE 1
 										END ) * stake 
+									  * e.Rate
 								 ELSE 0
 							END) x_homelose ,
-						SUM(CASE WHEN betteam = '1'
-									  AND bettype = @BetTypeExHT1x2
-								 THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
-											 ELSE 1
-										END ) * stake 
-									  * e.USD
-								 ELSE 0
-							END) x_homeloseUSD ,
-						SUM(CASE WHEN betteam = '1'
-									  AND bettype = @BetTypeExHT1x2
-								 THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
-											 ELSE 1
-										END ) * stake 
-									  * e.EUR
-								 ELSE 0
-							END) x_homeloseEUR ,
-						SUM(CASE WHEN betteam = '1'
-									  AND bettype = @BetTypeExHT1x2
-								 THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
-											 ELSE 1
-										END ) * stake 
-									  * e.GBP
-								 ELSE 0
-							END) x_homeloseGBP,	
 						SUM(CASE WHEN betteam = '2'
 									  AND bettype = @BetTypeExHT1x2
 								 THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
 											 ELSE 1
-										END ) * stake 
+										END ) * stake * e.Rate
 								 ELSE 0
 							END) x_awaylose ,
-						SUM(CASE WHEN betteam = '2'
-									  AND bettype = @BetTypeExHT1x2
-								 THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
-											 ELSE 1
-										END ) * stake * e.USD
-								 ELSE 0
-							END) x_awayloseUSD ,
-						SUM(CASE WHEN betteam = '2'
-									  AND bettype = @BetTypeExHT1x2
-								 THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
-											 ELSE 1
-										END ) * stake 
-									  * e.EUR
-								 ELSE 0
-							END) x_awayloseEUR ,
-						SUM(CASE WHEN betteam = '2'
-									  AND bettype = @BetTypeExHT1x2
-								 THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
-											 ELSE 1
-										END ) * stake 
-									  * e.GBP
-								 ELSE 0
-							END) x_awayloseGBP ,
-							
 						SUM(CASE WHEN betteam = 'x'
 									  AND bettype = @BetTypeExHT1x2
 								 THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
 											 ELSE 1
 										END ) * stake 
+									  * e.Rate
 								 ELSE 0
-							END) x_drawlose ,
-						SUM(CASE WHEN betteam = 'x'
-									  AND bettype = @BetTypeExHT1x2
-								 THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
-											 ELSE 1
-										END ) * stake 
-									  * e.USD
-								 ELSE 0
-							END) x_drawloseUSD ,
-						SUM(CASE WHEN betteam = 'x'
-									  AND bettype = @BetTypeExHT1x2
-								 THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
-											 ELSE 1
-										END ) * stake 
-									  * e.EUR
-								 ELSE 0
-							END) x_drawloseEUR ,
-						SUM(CASE WHEN betteam = 'x'
-									  AND bettype = @BetTypeExHT1x2
-								 THEN ( CASE WHEN odds < 0 THEN ABS(odds - 1)
-											 ELSE 1
-										END ) * stake 
-									  * e.GBP
-								 ELSE 0
-							END) x_drawloseGBP
+							END) x_drawlose
 							,b.bettype
 							
               FROM      bettrans b WITH ( NOLOCK )
                         INNER JOIN Match M WITH ( NOLOCK ) ON b.MatchID = M.MatchID
                                                               AND M.EventStatus = 'running'
-                        INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today))e 
+                        INNER JOIN @ExchangeRate e 
 									ON e.exchangeid = b.currency
               WHERE     
-						b.recommend IN ( SELECT custid
-                                             FROM   @TempAg )
+						EXISTS ( SELECT 1 FROM @TempAg ag WHERE ag.custid = b.recommend )
 						AND b.bettype IN ( @Bettype1x2, @BettypeHT1x2 ,@BetTypeExHT1x2 )
                         
                         AND LeagueID = @LeagueID
@@ -734,8 +285,4 @@ Param's Explanation:
 					x.MatchCode ,
 					isNeutral,
 					CASE WHEN x.bettype =167 THEN 1 ELSE 0 END
-GO
-GRANT EXECUTE ON [Lrf_Forecast1x2_SelByLeague] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Forecast1x2_SelByLeague] TO [vnteam]
-GO					
+GO				

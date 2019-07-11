@@ -5,7 +5,8 @@ CREATE PROCEDURE [dbo].[Lrf_GetUserLevelInfo]
 	@VendorID			VARCHAR(50),
 	@UserLevel			INT OUTPUT,
 	@SubsidiaryEnabled	BIT OUTPUT,
-	@OperatorID			VARCHAR(50) OUTPUT
+	@OperatorID			VARCHAR(50) OUTPUT,
+	@BaseCurrency       VARCHAR(3) OUTPUT
 AS 
 /*  Created: 20180905@Amanda
     Description: LAP - Get user level info
@@ -13,7 +14,7 @@ AS
    
     Revisions:  
 		- 20180905@Amanda: Created SP [RedmineID: #95177]
-
+		- 20190606@Alex   : Return base currency setting of user [RedmineID: #114797]
 	Developer's Notes:
 		- Notes: User level = 0 --- Oneworks
 							= 1 --- Licensee
@@ -30,6 +31,10 @@ BEGIN
 	FROM dbo.Users WITH (NOLOCK)
 	WHERE UserSEQ = @UserSEQ
 	
+	SELECT TOP(1) @BaseCurrency= BasedCurrencyCode
+	FROM dbo.UserDefaultSettings WITH(NOLOCK)
+	WHERE UserSEQ=@UserSEQ
+
 	SELECT TOP(1) @SubsidiaryEnabled = 1
 	FROM dbo.Operator WITH (NOLOCK)
 	WHERE SiteName = @SiteName AND ISNULL(OperatorID,'') <> ''

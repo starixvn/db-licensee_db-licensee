@@ -1,11 +1,12 @@
 /*<info serverAlias="DB042-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE Lrf_Forecast_MatchTotalForecast
 (	
-	@MatchID	INT,
-	@HomeScore	INT OUTPUT,
-	@AwayScore	INT OUTPUT,
-	@MatchTime	DATETIME = NULL OUTPUT,
-	@AgentList	VARCHAR(MAX)
+	@MatchID		INT,
+	@HomeScore		INT OUTPUT,
+	@AwayScore		INT OUTPUT,
+	@MatchTime		DATETIME = NULL OUTPUT,
+	@AgentList		VARCHAR(MAX),
+	@BaseCurrency	VARCHAR(3)= ''
 )
 AS
 
@@ -24,6 +25,7 @@ Revisions:
 	20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
 	20180802@Sophia: HA - remove ruben to use new index on DB042 [Redmine: #98631]
 	20190102@Joseph: Incorporate changes for E-Sports phase 2b [Redmine: #106553]
+	20190611@Amanda: Add Base Currency parameter [Redmine: #112531]
 
 Param's Explanation:
 	+ @AgentList: xml structure
@@ -42,13 +44,7 @@ BEGIN
 		Bettype INT,	
 		hdp SMALLMONEY,
 		HomeWinloss MONEY,
-		HomeWinlossUSD MONEY,
-		HomeWinlossEUR MONEY,
-		HomeWinlossGBP MONEY,
-		AwayWinloss MONEY,
-		AwayWinlossUSD MONEY,
-		AwayWinlossEUR MONEY,
-		AwayWinlossGBP MONEY,
+		AwayWinloss MONEY
 	)
 	DECLARE @Today SMALLDATETIME 
 	DECLARE @CurScore INT
@@ -77,6 +73,12 @@ BEGIN
 	END CATCH;
 
 	DECLARE @IsLive BIT
+	DECLARE @ExchangeRate AS TABLE (ExchangeId INT, Rate FLOAT)
+
+	INSERT INTO @ExchangeRate(ExchangeId, Rate)
+	SELECT ExchangeId, Rate
+	FROM dbo.Lrf_f_GetExchangeRate(@Today, @Today, @BaseCurrency, '') e
+	WHERE EXISTS (SELECT 1 FROM @TempAg a WHERE a.Currency = e.ExchangeId)
 
 	-- Update Output values
 	SELECT  @HomeScore = ISNULL(livehomescore,0), 
@@ -107,7 +109,7 @@ BEGIN
 		ISNULL(liveawayscore,0) AS liveawayscore
 	INTO #Data
 	FROM bodb02.dbo.bettrans b WITH (NOLOCK)
-	WHERE	b.recommend IN ( SELECT custid FROM   @TempAg )
+	WHERE	EXISTS ( SELECT 1 FROM @TempAg ag WHERE ag.CustId = b.recommend )
 			AND b.matchid = @MatchID
 			AND b.statusID IN ( 0, 1 )
 			AND b.bettype IN (1,3,7,8) -- Handicap & Over/Under		
@@ -136,16 +138,10 @@ BEGIN
 		INSERT INTO #SecondRS
 		SELECT bettype, 
 			hdp, 
-			SUM(HWinLCWinloss) AS HomeWinloss,
-			SUM(HWinLCWinloss*e.USD) AS HomeWinlossUSD,
-			SUM(HWinLCWinloss*e.EUR) AS HomeWinlossEUR,
-			SUM(HWinLCWinloss*e.GBP) AS HomeWinlossGBP,
-			SUM(AWinLCWinloss) AS AwayWinloss,
-			SUM(AWinLCWinloss*e.USD) AS AwayWinlossUSD,
-			SUM(AWinLCWinloss*e.EUR) AS AwayWinlossEUR,
-			SUM(AWinLCWinloss*e.GBP) AS AwayWinlossGBP
+			SUM(HWinLCWinloss*e.Rate) AS HomeWinloss,
+			SUM(AWinLCWinloss*e.Rate) AS AwayWinloss
 		FROM LCWinloss lc
-			INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today)) e ON e.exchangeid = lc.currency
+			INNER JOIN @ExchangeRate e ON e.exchangeid = lc.currency
 		GROUP BY bettype, hdp
 		ORDER BY 2
 
@@ -193,16 +189,10 @@ BEGIN
 		INSERT INTO #SecondRS
 		SELECT bettype, 
 			hdp, 
-			SUM(HomeWL) AS HomeWinloss,
-			SUM(HomeWL*e.USD) AS HomeWinlossUSD,
-			SUM(HomeWL*e.EUR) AS HomeWinlossEUR,
-			SUM(HomeWL*e.GBP) AS HomeWinlossGBP,
-			SUM(AwayWL) AS AwayWinloss,
-			SUM(AwayWL * e.USD) AS AwayWinlossUSD,
-			SUM(AwayWL * e.EUR) AS AwayWinlossEUR,
-			SUM(AwayWL * e.GBP) AS AwayWinlossGBP
+			SUM(HomeWL*e.Rate) AS HomeWinloss,
+			SUM(AwayWL * e.Rate) AS AwayWinloss
 		FROM HomeAwayWL lc
-			INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today)) e ON e.exchangeid = lc.currency
+			INNER JOIN @ExchangeRate e ON e.exchangeid = lc.currency
 		GROUP BY bettype, hdp
 		ORDER BY 2
 	END
@@ -228,16 +218,10 @@ BEGIN
 	INSERT INTO #SecondRS
 	SELECT bettype, 
 		hdp, 
-		SUM(HWinLCWinloss) AS HomeWinloss,
-		SUM(HWinLCWinloss*e.USD) AS HomeWinlossUSD,
-		SUM(HWinLCWinloss*e.EUR) AS HomeWinlossEUR,
-		SUM(HWinLCWinloss*e.GBP) AS HomeWinlossGBP,
-		SUM(AWinLCWinloss) AS AwayWinloss,
-		SUM(AWinLCWinloss*e.USD) AS AwayWinlossUSD,
-		SUM(AWinLCWinloss*e.EUR) AS AwayWinlossEUR,
-		SUM(AWinLCWinloss*e.GBP) AS AwayWinlossGBP
+		SUM(HWinLCWinloss*e.Rate) AS HomeWinloss,
+		SUM(AWinLCWinloss*e.Rate) AS AwayWinloss
 	FROM LCWinloss lc
-		INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today)) e ON e.exchangeid = lc.currency
+		INNER JOIN @ExchangeRate e ON e.exchangeid = lc.currency
 	GROUP BY bettype, hdp
 	ORDER BY 2
 
@@ -245,26 +229,14 @@ BEGIN
 	SELECT 
 		d.[Type],
 		COUNT(*) AS TotalTickets,
-		SUM(CASE WHEN bettype IN (1,7) AND betteam LIKE 'h' THEN stake ELSE 0 END) AS HomeTurnover,
-		SUM(CASE WHEN bettype IN (1,7) AND betteam LIKE 'h' THEN stake*e.USD ELSE 0 END) AS HomeTurnoverUSD,
-		SUM(CASE WHEN bettype IN (1,7) AND betteam LIKE 'h' THEN stake*e.EUR ELSE 0 END) AS HomeTurnoverEUR,
-		SUM(CASE WHEN bettype IN (1,7) AND betteam LIKE 'h' THEN stake*e.GBP ELSE 0 END) AS HomeTurnoverGBP,
-		SUM(CASE WHEN bettype IN (1,7) AND betteam LIKE 'a' THEN stake ELSE 0 END) AS AwayTurnover,
-		SUM(CASE WHEN bettype IN (1,7) AND betteam LIKE 'a' THEN stake*e.USD ELSE 0 END) AS AwayTurnoverUSD,
-		SUM(CASE WHEN bettype IN (1,7) AND betteam LIKE 'a' THEN stake*e.EUR ELSE 0 END) AS AwayTurnoverEUR,
-		SUM(CASE WHEN bettype IN (1,7) AND betteam LIKE 'a' THEN stake*e.GBP ELSE 0 END) AS AwayTurnoverGBP,
+		SUM(CASE WHEN bettype IN (1,7) AND betteam LIKE 'h' THEN stake*e.Rate ELSE 0 END) AS HomeTurnover,
+		SUM(CASE WHEN bettype IN (1,7) AND betteam LIKE 'a' THEN stake*e.Rate ELSE 0 END) AS AwayTurnover,
 
-		SUM(CASE WHEN bettype IN (3,8) AND betteam LIKE 'h' THEN stake ELSE 0 END) AS OverTurnover,
-		SUM(CASE WHEN bettype IN (3,8) AND betteam LIKE 'h' THEN stake*e.USD ELSE 0 END) AS OverTurnoverUSD,
-		SUM(CASE WHEN bettype IN (3,8) AND betteam LIKE 'h' THEN stake*e.EUR ELSE 0 END) AS OverTurnoverEUR,
-		SUM(CASE WHEN bettype IN (3,8) AND betteam LIKE 'h' THEN stake*e.GBP ELSE 0 END) AS OverTurnoverGBP,
-		SUM(CASE WHEN bettype IN (3,8) AND betteam LIKE 'a' THEN stake ELSE 0 END) AS UnderTurnover,
-		SUM(CASE WHEN bettype IN (3,8) AND betteam LIKE 'a' THEN stake*e.USD ELSE 0 END) AS UnderTurnoverUSD,
-		SUM(CASE WHEN bettype IN (3,8) AND betteam LIKE 'a' THEN stake*e.EUR ELSE 0 END) AS UnderTurnoverEUR,
-		SUM(CASE WHEN bettype IN (3,8) AND betteam LIKE 'a' THEN stake*e.GBP ELSE 0 END) AS UnderTurnoverGBP
+		SUM(CASE WHEN bettype IN (3,8) AND betteam LIKE 'h' THEN stake*e.Rate ELSE 0 END) AS OverTurnover,
+		SUM(CASE WHEN bettype IN (3,8) AND betteam LIKE 'a' THEN stake*e.Rate ELSE 0 END) AS UnderTurnover
 
 		FROM #Data d
-		INNER JOIN (SELECT * FROM Lrf_f_GetExchangeDaily(@Today,@Today)) e ON e.exchangeid = d.currency
+		INNER JOIN @ExchangeRate e ON e.exchangeid = d.currency
 	GROUP BY d.[Type]
 	ORDER BY 1
 
@@ -291,7 +263,7 @@ BEGIN
 	)
 
 	INSERT INTO #SecondRS
-	SELECT bettype,hdp,0,0,0,0,0,0,0,0 
+	SELECT bettype,hdp,0,0
 	FROM BetLines l
 	WHERE NOT EXISTS (SELECT 1 FROM #SecondRS s WHERE s.bettype = l.bettype AND s.hdp = l.hdp)
 
@@ -302,6 +274,5 @@ BEGIN
 	-- Drop temp tables
 	DROP TABLE #Data
 	DROP TABLE #SecondRS
-
 END
 GO

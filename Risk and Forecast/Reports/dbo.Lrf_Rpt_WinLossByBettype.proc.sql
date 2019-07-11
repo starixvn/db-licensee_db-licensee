@@ -8,6 +8,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLossByBettype]
 	, @PageSize		INT = 1000
 	, @PageIndex	INT = 1
 	, @AgentList	VARCHAR(MAX)
+	, @BaseCurrency	VARCHAR(3) = ''
 AS
 /*
 Created: 20101201@Jacob
@@ -55,6 +56,7 @@ Revisions:
 	- 20180808@Amanda: Remove Racing [RedmineID: #99378]
 	- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
 	- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
+	- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
 
 Param's Explanation: 
 	+ @AgentList: xml structure
@@ -70,15 +72,10 @@ DECLARE @RowStart INT
 	, @TotalRows INT
 	, @Today SMALLDATETIME
 DECLARE @Exchange TABLE (
-	ExchangeDate SMALLDATETIME
+	FromDate SMALLDATETIME
+	, ToDate SMALLDATETIME
 	, ExchangeId INT
-	, EUR FLOAT
-	, USD FLOAT
-	, GBP FLOAT
-	, PRIMARY KEY (
-		ExchangeDate
-		, ExchangeId
-		)
+	, Rate FLOAT
 	)
 
 SELECT @PageIndex = @PageIndex - 1
@@ -141,21 +138,20 @@ SELECT @FDate = @FromDate
 	, @TDate = @ToDate
 
 INSERT INTO @Exchange (
-	exchangedate
-	, exchangeid
-	, eur
-	, usd
-	,GBP
+	FromDate
+	, ToDate
+	, ExchangeId
+	, Rate
 	)
-SELECT exchangedate
-	, exchangeid
-	, eur
-	, usd
-	, GBP
-FROM Lrf_f_GetExchangeDaily(@FDate, @TDate)
-WHERE exchangeid IN (
+SELECT FromDate
+	, ToDate
+	, ExchangeId
+	, Rate
+FROM dbo.Lrf_f_GetExchangeRate(@FDate, @TDate, @BaseCurrency, '') e
+WHERE EXISTS (
 		SELECT Currency
-		FROM @TempAg
+		FROM @TempAg a
+		WHERE a.Currency = e.ExchangeId
 		)
 
 IF @Tdate > @MoveBetsDay
@@ -305,30 +301,12 @@ FROM (
 				ELSE b.bettype
 			END bettype
 		, liveindicator
-		, SUM(TurnOver) AS TurnOver
-		, CAST(SUM(TurnOver*e.EUR) AS MONEY) AS TurnOverEUR
-		, CAST(SUM(TurnOver*e.USD) AS MONEY) AS TurnOverUSD
-		, CAST(SUM(TurnOver*e.GBP) AS MONEY) AS TurnOverGBP
-		, SUM(MemberWinLost) AS MemberWinLost
-		, CAST(SUM(MemberWinLost*e.EUR) AS MONEY) AS MemberWinLostEUR
-		, CAST(SUM(MemberWinLost*e.USD) AS MONEY) AS MemberWinLostUSD
-		, CAST(SUM(MemberWinLost*e.GBP) AS MONEY) AS MemberWinLostGBP
-		, SUM(LicenseeWL) AS LicenseeWL
-		, CAST(SUM(LicenseeWL*e.EUR) AS MONEY) AS LicenseeWLEUR
-		, CAST(SUM(LicenseeWL*e.USD) AS MONEY) AS LicenseeWLUSD
-		, CAST(SUM(LicenseeWL*e.GBP) AS MONEY) AS LicenseeWLGBP
-		, SUM(CommBA) AS CommBA
-		, CAST(SUM(CommBA*e.EUR) AS MONEY) AS CommBAEUR
-		, CAST(SUM(CommBA*e.USD) AS MONEY) AS CommBAUSD
-		, CAST(SUM(CommBA*e.GBP) AS MONEY) AS CommBAGBP
-		, SUM(PlayerComm) AS PlayerComm
-		, CAST(SUM(PlayerComm*e.EUR) AS MONEY) AS PlayerCommEUR
-		, CAST(SUM(PlayerComm*e.USD) AS MONEY) AS PlayerCommUSD
-		, CAST(SUM(PlayerComm*e.GBP) AS MONEY) AS PlayerCommGBP
-		, SUM(AmtDuetoBA) AS AmtDuetoBA
-		, CAST(SUM(AmtDuetoBA*e.EUR) AS MONEY) AS AmtDuetoBAEUR
-		, CAST(SUM(AmtDuetoBA*e.USD) AS MONEY) AS AmtDuetoBAUSD
-		, CAST(SUM(AmtDuetoBA*e.GBP) AS MONEY) AS AmtDuetoBAGBP
+		, CAST(SUM(TurnOver			*e.Rate) AS MONEY)		AS TurnOver
+		, CAST(SUM(MemberWinLost	*e.Rate) AS MONEY)		AS MemberWinLost
+		, CAST(SUM(LicenseeWL		*e.Rate) AS MONEY)		AS LicenseeWL
+		, CAST(SUM(CommBA			*e.Rate) AS MONEY)		AS CommBA
+		, CAST(SUM(PlayerComm		*e.Rate) AS MONEY)		AS PlayerComm
+		, CAST(SUM(AmtDuetoBA		*e.Rate) AS MONEY)		AS AmtDuetoBA
 		, ROW_NUMBER() OVER (
 			ORDER BY CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.grouptypeId
 						  WHEN ISNULL(vs.Bettype, 0) <> 0 THEN vs.GroupTypeId 
@@ -336,7 +314,7 @@ FROM (
 				END
 			) AS RowNum
 	FROM #AgWinLoss b
-		LEFT JOIN @Exchange e ON b.winlostdate = e.ExchangeDate AND b.currency = e.ExchangeId
+		LEFT JOIN @Exchange e ON b.currency = e.ExchangeId AND b.winlostdate BETWEEN e.FromDate AND e.ToDate
 		LEFT JOIN dbo.f_GroupBettype() ss ON b.bettype = ss.bettype 	
 		LEFT JOIN dbo.f_GroupBetType3rd() vs ON b.bettype = vs.Bettype
 	GROUP BY CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.grouptypeId

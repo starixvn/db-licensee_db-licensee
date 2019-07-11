@@ -1,7 +1,8 @@
-/*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_GetLicenseePendingFunds]
     @LicenseeID		INT,
-    @CurrencyIDList VARCHAR(500) = ''
+    @CurrencyIDList VARCHAR(500) = '',
+    @BaseCurrency	VARCHAR(3) = ''
 AS 
 
 /*
@@ -16,6 +17,7 @@ AS
 		- 20170808@Walter: Support UUS currency [RedmineID: #80855]
 		- 20170814@Alex  : Restrict permission by currency  [RedmineID: #80855]
 		- 20181031@Percy: Remove linked-server DBLIC [RedmineID: #103660]
+		- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
 
 	Param's Explanation:
 	
@@ -26,20 +28,16 @@ BEGIN
    
 	CREATE TABLE #tmpAg (custID INT, currency INT);
 
-	DECLARE @Temp TABLE (CustId INT, Currency INT);
+	DECLARE @Currency TABLE (Currency INT);
+	
+	INSERT INTO @Currency(Currency)
+	SELECT val
+    FROM dbo.strSplit(@CurrencyIDList, ',')
 
-	INSERT INTO @Temp (CustId, Currency)
-	SELECT CustID,Currency FROM bodb_licensee.dbo.f_SelLicenseeCust(@LicenseeID)
+	INSERT INTO #tmpAg (CustId, Currency)
+	SELECT CustID,Currency FROM bodb_licensee.dbo.f_SelLicenseeCust(@LicenseeID) a
+	WHERE EXISTS (SELECT 1 FROM @Currency c WHERE a.Currency = c.Currency)
  
-	INSERT INTO #tmpAg(CustId, Currency)
-	SELECT CustID, currency 
-	FROM @Temp lc
-	WHERE Currency IN
-                (
-                    SELECT val
-                    FROM dbo.strSplit(@CurrencyIDList, ',')
-                );
-
 	CREATE TABLE #tmpRpt
 	(
 		Winlostdate   SMALLDATETIME,
@@ -75,53 +73,28 @@ BEGIN
 	GROUP BY p.winlostdate, a.currency
 	HAVING SUM(ISNULL(p.outstanding,0)) > 0;
 
-	CREATE TABLE #WinLossDate(
-		WinLossDate SMALLDATETIME
-	);
-
-	INSERT INTO #WinLossDate(WinLossDate)
-	SELECT DISTINCT winlostdate
-	FROM #tmpRpt;
-
 	CREATE TABLE #TempExchange(
-		ExchangeDate SMALLDATETIME,
-		exchangeid INT,
-		EUR FLOAT,
-		USD FLOAT,
-		GBP FLOAT,
-		CNY FLOAT,
-		MYR FLOAT,
-		THB FLOAT,
-		IDR FLOAT
+		FromDate	SMALLDATETIME,
+		ToDate		SMALLDATETIME,
+		ExchangeID	INT,
+		Rate		FLOAT
 	);
 
-	INSERT INTO #TempExchange(ExchangeDate, exchangeid, EUR, USD,GBP, CNY, MYR, THB, IDR)
-	SELECT ExchangeDate, exchangeid, EUR, USD,GBP, CNY, MYR, THB, IDR
-	FROM #WinLossDate w
-		CROSS APPLY Lrf_f_GetExchangeDaily(w.WinLossDate, w.WinLossDate) e
-	WHERE exchangeid IN (SELECT DISTINCT Currency FROM #tmpRpt);
+	DECLARE @MinDate SMALLDATETIME, @MaxDate SMALLDATETIME
+	SELECT @MinDate = MIN(winlostdate), @MaxDate = MAX(winlostdate)
+	FROM #tmpRpt
 
-	SELECT  SUM(b.PendingFund) AS PendingFund,
-			--- EUR
-			CAST(SUM(b.PendingFund * e.EUR) AS MONEY) AS PendingFundEUR,
-			--- USD
-			CAST(SUM(b.PendingFund * e.USD) AS MONEY) AS PendingFundUSD,
-			--- GBP
-			CAST(SUM(b.PendingFund * e.GBP) AS MONEY) AS PendingFundGBP,
-			--- CNY
-			CAST(SUM(b.PendingFund * e.CNY) AS MONEY) AS PendingFundCNY,
-			--- MYR
-			CAST(SUM(b.PendingFund * e.MYR) AS MONEY) AS PendingFundMYR,
-			--- THB
-			CAST(SUM(b.PendingFund * e.THB) AS MONEY) AS PendingFundTHB,
-			--- IDR
-			CAST(SUM(b.PendingFund * e.IDR) AS MONEY) AS PendingFundIDR
+	INSERT INTO #TempExchange(FromDate, ToDate, ExchangeID, Rate)
+	SELECT FromDate, ToDate, ExchangeID, Rate
+	FROM dbo.Lrf_f_GetExchangeRate(@MinDate, @MaxDate, @BaseCurrency, '') e
+	WHERE EXISTS (SELECT 1 FROM @Currency c WHERE e.ExchangeID = c.Currency)
+
+	SELECT  CAST(SUM(b.PendingFund * e.Rate) AS MONEY) AS PendingFund
 	FROM #tmpRpt b
-		INNER JOIN #TempExchange e ON e.ExchangeDate = b.winlostdate AND e.exchangeid = b.currency;
+		INNER JOIN #TempExchange e ON e.exchangeid = b.currency AND b.winlostdate BETWEEN e.FromDate AND e.ToDate
 
 	DROP TABLE #TempExchange;
 	DROP TABLE #tmpRpt;
 	DROP TABLE #tmpAg;
-	DROP TABLE #WinLossDate;
 END
 GO

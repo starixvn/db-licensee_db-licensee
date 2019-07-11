@@ -3,7 +3,8 @@ ALTER PROCEDURE [dbo].[Lrf_GetLicenseeWLByPlatform]
 	@LicenseeID INT,  
 	@CurrencyIDList VARCHAR(500)  = 0,
 	@FromDate	SMALLDATETIME,    
-	@ToDate		SMALLDATETIME
+	@ToDate		SMALLDATETIME,
+	@BaseCurrency	VARCHAR(3) = ''
 AS  
   
 /*  
@@ -22,6 +23,7 @@ AS
 		- 20181113@Joseph: New betfrom Mobile App (o) [RedmineID: #104587]
 		- 20181212@Joseph: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
 		- 20181211@Joseph: New betfrom Mobile China View (c) [RedmineID: #106088]
+		- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
 
 	Param's Explanation: 
 */  
@@ -48,17 +50,19 @@ BEGIN
 
 	CREATE CLUSTERED INDEX ix_tempAg_cl ON #tempAg(Currency, custID);
 
+	DECLARE @Currency AS TABLE (Currency INT)
+	
 	--to Deal WITH Parameter Sniffing
 	SELECT @FDate = @FromDate, @TDate = @ToDate;
+
+	INSERT INTO @Currency(Currency)
+	SELECT val
+    FROM dbo.strSplit(@CurrencyIDList, ',')
 
 	INSERT INTO #tempAg (custID, currency) 
 	SELECT custID, currency 
 	FROM bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc
-	WHERE Currency IN
-                (
-                    SELECT val
-                    FROM dbo.strSplit(@CurrencyIDList, ',')
-                );
+	WHERE EXISTS (SELECT 1 FROM @Currency c WHERE lc.Currency = c.Currency)
 
 	CREATE TABLE #PlatformList (betfrom NVARCHAR(1), PlatformType TINYINT);
 
@@ -80,13 +84,13 @@ BEGIN
 				(8, 'o'),
 				(9, 'c')
 	) d(PlatformType, betfrom);
-	
-	CREATE TABLE #Exchange (ExchangeDate SMALLDATETIME, ExchangeId INT,  EUR FLOAT,USD FLOAT,GBP FLOAT, CNY FLOAT, MYR FLOAT, THB FLOAT, IDR FLOAT, Code VARCHAR(10), PRIMARY KEY(ExchangeDate,ExchangeId));
 
-	INSERT INTO #Exchange (exchangedate, exchangeid, eur, usd, gbp, cny, myr, thb, idr, code)
-	SELECT exchangedate, exchangeid, eur, usd, gbp, cny, myr, thb, idr, code
-	FROM Lrf_f_GetExchangeDaily(@FDate, @TDate) t_ex
-	WHERE EXISTS (SELECT 1 FROM #tempAg t_ag WHERE t_ag.Currency = t_ex.ExchangeId);
+	CREATE TABLE #Exchange (FromDate SMALLDATETIME, ToDate SMALLDATETIME, ExchangeID INT, Rate FLOAT);
+
+	INSERT INTO #Exchange (FromDate, ToDate, ExchangeID, Rate)
+	SELECT FromDate, ToDate, ExchangeID, Rate
+	FROM dbo.Lrf_f_GetExchangeRate(@FDate, @TDate, @BaseCurrency, '') ex
+	WHERE EXISTS (SELECT 1 FROM @Currency c WHERE ex.ExchangeID = c.Currency)
 
 	DECLARE @MoveBetsDay SMALLDATETIME;
 
@@ -151,24 +155,10 @@ BEGIN
 				pl.PlatformType;
 	END			
 
-	SELECT  w.PlatformType, 	
-			SUM(LicenseeWL)		AS LicenseeWL,		
-			--BASE EUR
-			SUM(LicenseeWL * e.EUR)	AS LicenseeWLEUR,	
-			--BASE USD
-			SUM(LicenseeWL * e.USD)	AS LicenseeWLUSD,
-			--BASE GBP
-			SUM(LicenseeWL * e.GBP)	AS LicenseeWLGBP,
-			--BASE CNY
-			SUM(LicenseeWL * e.CNY)	AS LicenseeWLCNY,
-			--BASE MYR
-			SUM(LicenseeWL * e.MYR)	AS LicenseeWLMYR,
-			--BASE THB
-			SUM(LicenseeWL * e.THB)	AS LicenseeWLTHB,
-			--BASE IDR
-			SUM(LicenseeWL * e.IDR)	AS LicenseeWLIDR
+	SELECT  w.PlatformType,
+			SUM(LicenseeWL * e.Rate)	AS LicenseeWL
 	FROM #WinLoss w 
-		INNER JOIN  #Exchange e on w.Currency = e.exchangeid AND e.ExchangeDate = w.Winlostdate
+		INNER JOIN  #Exchange e on w.Currency = e.exchangeid AND w.Winlostdate BETWEEN e.FromDate AND e.ToDate
 	GROUP BY w.PlatformType
 	ORDER BY w.PlatformType;
 
