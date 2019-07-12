@@ -1196,7 +1196,7 @@ BEGIN
 		CAST(SUM(TurnoverVS2	*e.EUR)	AS MONEY)		AS TurnoverVS2EUR,
 		CAST(SUM(TurnoverLT		*e.EUR)	AS MONEY)		AS TurnoverLTEUR,
 		CAST(SUM(TurnoverPP		*e.EUR)	AS MONEY)		AS TurnoverPPEUR,
-		CAST(SUM(TurnoverCC		*e.EUR)	AS MONEY)		AS TurnoverCCEUR
+		CAST(SUM(TurnoverCC		*e.EUR)	AS MONEY)		AS TurnoverCCEUR,
 		CAST(SUM(BTActualStake	*e.EUR)	AS MONEY)		AS BTActualStakeEUR,
 		CAST(SUM(Winlost		*e.EUR)	AS MONEY)       AS WinlostEUR,
 		CAST(SUM(LicenseeWLSB	*e.EUR)	AS MONEY)		AS LicenseeWLSBEUR,
