@@ -1,8 +1,7 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_CustomerSelByCustid]
 	@LicenseeID		INT,
-	@custids		VARCHAR(MAX) = NULL,
-	@SearchOption	TINYINT = 0,
+	@custids		VARCHAR(MAX) = NULL,	
 	@PageSize		INT = 50,
 	@PageIndex		INT = 1,
 	@BAFilter		SMALLINT = 0,	
@@ -23,10 +22,7 @@ AS
 	Parameter's explanations:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 		+ @SpecialLevel: default value '1,2,3,4,5,6,7,8,9,10' (all)
-		+ @OddsGroups: Member's Odds Group
-		+ @searchOption: 1- Quick search
-						 2- Match case
-						 3- Match prefix
+		+ @OddsGroups: Member's Odds Group		
 */
 BEGIN
 	SET NOCOUNT ON

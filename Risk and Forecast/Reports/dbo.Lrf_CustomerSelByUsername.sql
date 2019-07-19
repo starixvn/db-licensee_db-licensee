@@ -25,9 +25,9 @@ AS
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 		+ @SpecialLevel: '1,2,3,4,5,6,7,8,9,10' (all)
 		+ @OddsGroups: Member's Odds Group
-		+ @searchOption: 1- Quick search
+		+ @searchOption: 1- Match case
 						 2- Match prefix
-						 3- Match case
+						 3- Quick search
 */
 BEGIN
 	SET NOCOUNT ON
@@ -291,9 +291,9 @@ BEGIN
 					LEFT JOIN dbo.Dep_CustSpecialLevel lc WITH(NOLOCK) ON c.custid = lc.custid					
 				WHERE 
 					c.RoleID = 1
-					AND ((1= '+ CONVERT(VARCHAR(10),@searchOption) +' AND c.username2 LIKE ''%$' + @Username + ''') 
+					AND ((1= '+CONVERT(VARCHAR(10),@searchOption)+ ' AND c.username2 LIKE ''%' + @Username + '%'') 
 						OR (2= '+CONVERT(VARCHAR(10),@searchOption)+ ' AND c.username2 LIKE ''%$' + @Username + '%'') 
-						OR (3= '+CONVERT(VARCHAR(10),@searchOption)+ ' AND c.username2 LIKE ''%' + @Username + '%'') 
+						OR (3= '+ CONVERT(VARCHAR(10),@searchOption) +' AND c.username2 LIKE ''%$' + @Username + ''') 
 						OR c.username LIKE ''' + @Username + '''' + ')
 					AND c.username NOT LIKE ''%CashOut%''					
 					AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))
@@ -311,9 +311,9 @@ BEGIN
 					' AND ci.custid = lb.custid AND lb.[Status] = ''Running''
 				WHERE 
 					c.roleId = 1 
-					AND ((1= '+ CONVERT(VARCHAR(10),@searchOption) +' AND c.username2 LIKE ''%$' + @Username + ''') 
+					AND ((1= '+CONVERT(VARCHAR(10),@searchOption)+ ' AND c.username2 LIKE ''%' + @Username + '%'') 
 						OR (2= '+CONVERT(VARCHAR(10),@searchOption)+ ' AND c.username2 LIKE ''%$' + @Username + '%'') 
-						OR (3= '+CONVERT(VARCHAR(10),@searchOption)+ ' AND c.username2 LIKE ''%' + @Username + '%'') 
+						OR (3= '+ CONVERT(VARCHAR(10),@searchOption) +' AND c.username2 LIKE ''%$' + @Username + ''') 
 						OR c.username LIKE ''' + @Username + '''' + ')
 					AND c.username NOT LIKE ''%CashOut%''					
 					AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))

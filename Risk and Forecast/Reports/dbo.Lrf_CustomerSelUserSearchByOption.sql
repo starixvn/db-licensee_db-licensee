@@ -14,9 +14,9 @@ Revisions:
 	- 20190625@Johnson: initial sp [redmine: #112658]
 
 Parameter's explantions:	
-	+ @searchOption: 1- Quick search
-						 2- Match prefix
-						 3- Match case	
+	+ @searchOption: 1- Match prefix
+						 2- Match case
+						 3- Quick search	
 */
 BEGIN
 	SET NOCOUNT ON
@@ -46,9 +46,9 @@ BEGIN
 	SELECT top 10 SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, LEN(c.username2)-CHARINDEX('$',c.username2)) as username
 	FROM bodb02.dbo.Customer c WITH (NOLOCK, INDEX(IX_agent))
 		INNER JOIN #TempAg lc ON c.recommend = lc.custid AND c.currency = lc.Currency
-	WHERE ((@searchOption = 1 AND c.username2 LIKE '%$' + @Username) 
+	WHERE ((@searchOption = 1 AND c.username2 LIKE '%' + @Username + '%') 
 			OR (@searchOption = 2 AND c.username2 LIKE '%$' + @Username + '%') 
-			OR (@searchOption = 3 AND c.username2 LIKE '%' + @Username + '%') 
+			OR (@searchOption = 3 AND c.username2 LIKE '%$' + @Username) 
 			OR c.username LIKE @Username +'%')
 		AND c.RoleId = 1	
 	ORDER BY username
