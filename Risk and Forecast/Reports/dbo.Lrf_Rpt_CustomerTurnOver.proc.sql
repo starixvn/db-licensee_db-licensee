@@ -74,6 +74,7 @@ Revision:
 	- 2018118@Joseph: Add Esport2 bettypes [Redmine: #100721]
 	- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
 	- 20190531@Amanda: Get correct translation [RedmineID: #114464]
+	- 20181019@Amanda: Add new bet types (PH AIO - Phase 4a) [RedmineID: #115448]
 
 Parameter's Explanation:
 	- @ReportBy:  1: daily, 2: monthly
@@ -342,7 +343,7 @@ BEGIN
 		UPDATE #tempBettrans 
 		SET Odds = CASE WHEN OddsType = 1 THEN odds + 1 --decimal
 						 WHEN OddsType = 2 THEN Odds + 1 --hongkong to decimal
-						 WHEN OddsType IN (3,4) THEN --malay and indo to decimal
+						 WHEN OddsType IN (3,4,7) THEN --malay and indo and new oddstype to decimal
 												CASE 
 													WHEN odds < 0 THEN (1 -  cast(1 as float) / cast(odds AS float))
 													WHEN odds >=0 THEN (1 + odds) END
@@ -362,6 +363,7 @@ BEGIN
 						OR (bettype BETWEEN 603 AND 607 OR bettype BETWEEN 609 AND 613 OR bettype BETWEEN 615 AND 617) -- Basketball bettypes
 						OR bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
 						OR bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
+						OR bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 			
 		-- CREATE INDEXERS
 		CREATE CLUSTERED 	INDEX [CIX_tempBettrans] 			ON #tempBettrans (custid, winlostdate)
