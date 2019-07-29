@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" viewers="" isFunction="1" isNested="1"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="" viewers="" isFunction="1" isNested="1"></info>*/
 ALTER FUNCTION dbo.LAP_f_Statement_Mem_Summary(
 	@CustID			INT,
 	@FromDate		SMALLDATETIME,
