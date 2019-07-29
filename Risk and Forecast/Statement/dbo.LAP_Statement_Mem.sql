@@ -80,13 +80,15 @@ BEGIN
 	FROM dbo.custinfo (NOLOCK) 
 	WHERE custid = @custid  
 	
-	IF (@currency IS NULL)
+	-- validate time range & custid
+	IF (@startDate > @endDate 
+		OR @BalanceUpDay > @MoveBetsDay 
+		OR @currency IS NULL)
 	BEGIN
 		SELECT RowNum,winlostdate,transtype,transdesc,TurnOver,TotalAmt,Commission
 		FROM #tempStatementRpt
 		RETURN
 	END
-
 
 	SELECT TOP 1 @isCOMember = 1
 	FROM dbo.TradeCust WITH(NOLOCK)
@@ -116,9 +118,6 @@ BEGIN
 	FROM bodb02.dbo.bettype (NOLOCK)
 	WHERE typeid > 20000
 
-	-- validate time range
-	IF (@startDate > @endDate OR @BalanceUpDay > @MoveBetsDay) RETURN
-	
 	-- INIT: OPENING BALANCE
 	IF (@startDate < @BalanceUpDay)
 	BEGIN
@@ -438,10 +437,6 @@ BEGIN
             @RowStart		= @PageSize * @PageIndex + 1,
             @RowEnd			= @RowStart + @PageSize - 1
 	
-	
-
-	
-
 	-- PRE/UPDATE accumulating balance
 	INSERT INTO #tempStatementRpt (winlostdate, OrderKey, transtype, transdesc, TurnOver, TotalAmt, Commission, Balance)
 	SELECT winlostdate, OrderKey, transtype, transdesc, TurnOver, TotalAmt, Commission, Balance
