@@ -1,7 +1,6 @@
-﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
+﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
 USE bodb_Licensee
 GO
-
 ALTER PROCEDURE [dbo].[Lrf_LicenseeGroupCommDel]
 	@LicenseeID INT,
 	@GroupCommID INT,
@@ -110,7 +109,7 @@ BEGIN
 				, 1
 				, 1
 				, '')
-			
+	
 			IF LTRIM(RTRIM(@StrCustID)) <> ''
 			BEGIN
 				--Update List of affected Customers               
@@ -129,16 +128,21 @@ BEGIN
 					@ErrCode=@ErrCode OUTPUT,
 					@ErrMsg=@ErrMsg OUTPUT
 					
-				SELECT @StrCustID = STUFF(
-					(   SELECT  ',' + CONVERT(NVARCHAR(20), a.custid) 
-						FROM dbo.LicenseeCustComm b WITH (NOLOCK)
-						INNER JOIN CustDB.dbo.custinfo a WITH (NOLOCK) ON a.custid = b.custid
-						WHERE b.LicenseeID = @LicenseeID AND b.GroupCommID = @GroupCommID and a.SyncCasino = 1
-						FOR xml path('')
-					)
-					, 1
-					, 1
-					, '')
+				IF EXISTS( SELECT TOP 1 1	FROM dbo.LicenseeCustComm b WITH (NOLOCK)
+												INNER JOIN CustDB.dbo.custinfo a WITH (NOLOCK) ON a.custid = b.custid
+											WHERE b.LicenseeID = @LicenseeID AND b.GroupCommID = @GroupCommID and a.SyncCasino = 1)
+				BEGIN
+					SELECT @StrCustID = STUFF(
+						(   SELECT  ',' + CONVERT(NVARCHAR(20), a.custid) 
+							FROM dbo.LicenseeCustComm b WITH (NOLOCK)
+							INNER JOIN CustDB.dbo.custinfo a WITH (NOLOCK) ON a.custid = b.custid
+							WHERE b.LicenseeID = @LicenseeID AND b.GroupCommID = @GroupCommID and a.SyncCasino = 1
+							FOR xml path('')
+						)
+						, 1
+						, 1
+						, '')
+				END
 
 			END
 			
