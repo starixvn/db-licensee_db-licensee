@@ -97,12 +97,24 @@ BEGIN
 			UPDATE dbo.LicenseeGroupComm WITH (ROWLOCK,UPDLOCK) SET IsActive = 0
 			WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID AND IsActive=1		
 			
+			--get list of affected Customers
+			SELECT @StrCustID=''
+			
 			--Remove commission of players in group
 			--get list of affected Customers		
 			SELECT CustID
 			INTO #temp
 			FROM LicenseeCustComm WITH (NOLOCK)
-			WHERE LicenseeID = @LicenseeID AND GroupCommID = @GroupCommID					
+			WHERE LicenseeID = @LicenseeID AND GroupCommID = @GroupCommID	
+			
+			SELECT @StrCustID = STUFF(
+				(   SELECT  ',' + CONVERT(NVARCHAR(20), custid) 
+					FROM #temp			
+					FOR xml path('')
+				)
+				, 1
+				, 1
+				, '')				
 	
 			IF EXISTS(SELECT TOP 1 1 FROM #temp)
 			BEGIN
