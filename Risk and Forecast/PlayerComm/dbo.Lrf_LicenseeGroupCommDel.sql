@@ -30,6 +30,7 @@ AS
 		- 20180809@Amanda: Remove Racing [RedmineID: #99378]
 		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
 		- 20180927@Winnie: Remove AllBet [RedmineID: #99378]
+		- 20190731@Winnie: Commission Group - RNG Casino Comm of Members are not cleared when deleting Group Comm [RedmineID: #117845]
 	Param's Explanation:
 
 */
@@ -99,6 +100,7 @@ BEGIN
 			
 			--Remove commission of players in group
 			--get list of affected Customers
+			SELECT @StrCustID=''
 			SELECT @StrCustID = STUFF(
 				(   SELECT  ',' + CONVERT(NVARCHAR(20), custid) 
 					FROM LicenseeCustComm WITH (NOLOCK)
