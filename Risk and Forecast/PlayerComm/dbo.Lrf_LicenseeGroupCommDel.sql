@@ -98,19 +98,13 @@ BEGIN
 			WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID AND IsActive=1		
 			
 			--Remove commission of players in group
-			--get list of affected Customers
-			SELECT @StrCustID=''
-			SELECT @StrCustID = STUFF(
-				(   SELECT  ',' + CONVERT(NVARCHAR(20), custid) 
-					FROM LicenseeCustComm WITH (NOLOCK)
-					WHERE LicenseeID = @LicenseeID AND GroupCommID = @GroupCommID
-					FOR xml path('')
-				)
-				, 1
-				, 1
-				, '')
+			--get list of affected Customers		
+			SELECT CustID
+			INTO #temp
+			FROM LicenseeCustComm WITH (NOLOCK)
+			WHERE LicenseeID = @LicenseeID AND GroupCommID = @GroupCommID					
 	
-			IF LTRIM(RTRIM(@StrCustID)) <> ''
+			IF EXISTS(SELECT TOP 1 1 FROM #temp)
 			BEGIN
 				--Update List of affected Customers               
 				EXEC [Lrf_CustomerUpdMemberComm] 
@@ -128,23 +122,21 @@ BEGIN
 					@ErrCode=@ErrCode OUTPUT,
 					@ErrMsg=@ErrMsg OUTPUT
 					
-				IF EXISTS( SELECT TOP 1 1	FROM dbo.LicenseeCustComm b WITH (NOLOCK)
-												INNER JOIN CustDB.dbo.custinfo a WITH (NOLOCK) ON a.custid = b.custid
-											WHERE b.LicenseeID = @LicenseeID AND b.GroupCommID = @GroupCommID and a.SyncCasino = 1)
-				BEGIN
+					SELECT @StrCustID=''
 					SELECT @StrCustID = STUFF(
 						(   SELECT  ',' + CONVERT(NVARCHAR(20), a.custid) 
 							FROM dbo.LicenseeCustComm b WITH (NOLOCK)
 							INNER JOIN CustDB.dbo.custinfo a WITH (NOLOCK) ON a.custid = b.custid
-							WHERE b.LicenseeID = @LicenseeID AND b.GroupCommID = @GroupCommID and a.SyncCasino = 1
+							INNER JOIN #temp t ON a.custid=t.CustID
+							WHERE b.LicenseeID = @LicenseeID and a.SyncCasino = 1
 							FOR xml path('')
 						)
 						, 1
 						, 1
 						, '')
-				END
-
 			END
+
+		
 			
 			IF @ErrCode<>0
 				RETURN
