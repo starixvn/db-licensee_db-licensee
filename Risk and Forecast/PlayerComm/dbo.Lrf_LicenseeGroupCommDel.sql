@@ -137,10 +137,9 @@ BEGIN
 					SELECT @StrCustID=''
 					SELECT @StrCustID = STUFF(
 						(   SELECT  ',' + CONVERT(NVARCHAR(20), a.custid) 
-							FROM dbo.LicenseeCustComm b WITH (NOLOCK)
-							INNER JOIN CustDB.dbo.custinfo a WITH (NOLOCK) ON a.custid = b.custid
-							INNER JOIN #temp t ON a.custid=t.CustID
-							WHERE b.LicenseeID = @LicenseeID AND a.SyncCasino = 1
+							FROM dbo.#temp b WITH (NOLOCK)
+							INNER JOIN CustDB.dbo.custinfo a WITH (NOLOCK) ON a.custid = b.custid							
+							WHERE a.SyncCasino = 1
 							FOR xml path('')
 						)
 						, 1
