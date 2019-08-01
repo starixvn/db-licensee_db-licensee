@@ -4,13 +4,12 @@ CREATE PROCEDURE [dbo].[Lrf_CheckBelonging_GetAgentInfo]
 	@transId	BIGINT = NULL
 AS
 /*
-Created: Amanda
-Date: 2019-07-30
-Task : Get agent info which customer/bet ticket belongs to
-DB: DBEXT.bodb02
-	
-Revisions:
-   - 20190730: Create SP to replace SP Lrf_CustomerSelCheckBelonging[redmine: #112658]
+	Created: 20190730@Amanda
+	Description: LAP - Get agent info which customer/bet ticket belongs to
+	DB: DBEXT.bodb02
+   
+	Revisions:
+		- 20190730@Amanda: Create SP to replace SP Lrf_CustomerSelCheckBelonging[Redmine: #112658]
 */
 BEGIN
 	SET NOCOUNT ON
