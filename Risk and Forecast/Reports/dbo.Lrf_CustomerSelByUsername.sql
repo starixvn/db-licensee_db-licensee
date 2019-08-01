@@ -1,6 +1,6 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_CustomerSelByUsername]
-	@LicenseeID		INT,
+	@LicenseeName	VARCHAR(50),
 	@username		VARCHAR(50) = NULL,
 	@SearchOption	TINYINT = 0,
 	@PageSize		INT = 50,
@@ -32,7 +32,9 @@ AS
 BEGIN
 	SET NOCOUNT ON
 
-	DECLARE @currentDate DATETIME   
+	DECLARE @currentDate DATETIME,
+			@LicenseeID	INT
+			
 	SELECT  @currentDate = CONVERT(DATE, GETDATE())
 
 	DECLARE @RowCount INT, @RowStart INT, @RowEnd INT
@@ -41,7 +43,11 @@ BEGIN
 	CREATE TABLE #TempAg (custid INT)
 	
 	DECLARE @DocHandler INT
-
+	
+	SELECT @LicenseeID	= LicenseeID
+	FROM bodb_Licensee.dbo.Licensees WITH(NOLOCK)
+	WHERE LicenseeName = @LicenseeName
+	
 	BEGIN TRY
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT
 			,@AgentList

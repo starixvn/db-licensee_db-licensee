@@ -2,7 +2,8 @@
 USE CustDB
 GO
 ALTER PROC [dbo].[Lrf_CustomerUpdMember_All]  
-	@LicenseeID INT,	
+	@LicenseeID INT = 0,	
+	@LicenseeName VARCHAR(50) = '',	
 	@custid INT,--memberid  
 	@UserID INT,      
 	@IP varchar(15)='',   
@@ -76,7 +77,7 @@ AS
 		- 20151015@Jim: Integrate Sportbook2 (Feature #44759)
 		- 20181009@Winnie: Remove Racing  (Feature #99378)
 		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
-
+		- 20190801@Johnson: add @LicenseeName for LAP [redmine:#112658]
 	Param's Explanation:  
 	• @ErrCode:  
 		= 0: Update successfully.  
@@ -90,7 +91,14 @@ BEGIN
 	-- ***Check Downline Belonging***  
 	declare @status int, @roleid TINYINT, @ErrCode_Cur int, @ErrMsg_Cur nvarchar(4000)  
 	Select @ErrCode_Cur = 0, @ErrMsg_Cur = '', @ErrCode = '', @ErrMsg = ''  
-  
+	
+	IF ISNULL(@LicenseeID,0) = 0
+	BEGIN
+		SELECT @LicenseeID	= LicenseeID
+		FROM bodb_Licensee.dbo.Licensees WITH(NOLOCK)
+		WHERE LicenseeName = @LicenseeName
+	END
+	
 	SELECT @roleid = c.RoleID
 	FROM bodb_Licensee.dbo.LicenseeCust lc (NOLOCK)
 		INNER join custinfo c WITH (NOLOCK) ON lc.custid = c.custid

@@ -3,7 +3,8 @@ USE CustDB
 GO
 
 ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberBAStatus]
-	@LicenseeID INT,
+	@LicenseeID INT = 0,
+	@LicenseeName VARCHAR(50) = '',
 	@CustID INT,
 	@ModifyBy INT,
 	@IsBA BIT,
@@ -55,6 +56,7 @@ Revisions:
 	- 20171012@Winnie: LRF - Edit for Bonus system [RedmineID: #72792]
 	- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
 	- 20181024@Winnie: PT DCS for BA member [RedmineID: #1000721]
+	- 20190801@Johnson: add @LicenseeName for LAP [redmine:#112658]
 Param's Explanation:
 
 */
@@ -74,6 +76,14 @@ BEGIN
 	DECLARE @VirtualMultiplier VARCHAR(MAX)
 	DECLARE @virtualmultiplierXML XML
 	DECLARE @EnableVirtualrate BIT=0
+	
+	IF ISNULL(@LicenseeID,0) = 0
+	BEGIN
+		SELECT @LicenseeID	= LicenseeID
+		FROM bodb_Licensee.dbo.Licensees WITH(NOLOCK)
+		WHERE LicenseeName = @LicenseeName
+	END
+	
 	IF @IsAdmin = 0 --This is only for LRF system
 	BEGIN
 		--For Power BA users, no need to call function [Lrf_BATimeCheck]

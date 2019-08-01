@@ -1,7 +1,7 @@
 /*<info serverAlias="DBLIC-bodb_licensee" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE	[dbo].[Lrf_LicenseeProductByBetLimitSel]
 (
-	@LicenseeID	INT
+	@LicenseeName VARCHAR(50)
 )	
 AS
 /*
@@ -17,22 +17,23 @@ AS
 
  /*
  EXEC Lrf_LicenseeProductByBetLimitSel
-	@LicenseeID=2
+	@LicenseeID='12bet'
  */
  
 BEGIN
-	DECLARE @site VARCHAR(20)
+	DECLARE @LicenseeID	INT
+			
 	DECLARE @tblSuper AS TABLE (SrecommendID INT)
 	DECLARE @tblProductActive AS TABLE (ProductID INT,ProductName VARCHAR(50) ,ProductCode VARCHAR(10),isEnable BIT)
 		
-	SELECT @Site = LicenseeName
+	SELECT @LicenseeiD = LicenseeiD
 	FROM dbo.Licensees WITH (NOLOCK) 
-	WHERE LicenseeID = @LicenseeiD 
+	WHERE LicenseeName = @LicenseeName 
 	
 	INSERT INTO @tblSuper (SrecommendID)
 	SELECT CustID
 	FROM DBCUST.CUSTDB.dbo.Dep_CustSuper WITH (NOLOCK)
-	WHERE Site = @Site
+	WHERE Site = @LicenseeName
 				
 	IF EXISTS(SELECT 1 FROM @tblSuper ) 
 	BEGIN

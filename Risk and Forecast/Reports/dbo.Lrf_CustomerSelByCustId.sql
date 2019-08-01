@@ -1,6 +1,6 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_CustomerSelByCustid]
-	@LicenseeID		INT,
+	@LicenseeName	VARCHAR(50),
 	@custids		VARCHAR(MAX) = NULL,	
 	@PageSize		INT = 50,
 	@PageIndex		INT = 1,
@@ -27,9 +27,11 @@ AS
 BEGIN
 	SET NOCOUNT ON
 
-	DECLARE @currentDate DATETIME   
+	DECLARE @currentDate DATETIME,
+			@LicenseeID	INT
+			
 	SELECT  @currentDate = CONVERT(DATE, GETDATE())
-
+	
 	DECLARE @RowCount INT, @RowStart INT, @RowEnd INT
 	SELECT  @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
 	
@@ -38,6 +40,10 @@ BEGIN
 	
 	DECLARE @DocHandler INT
 
+	SELECT @LicenseeID	= LicenseeID
+	FROM bodb_Licensee.dbo.Licensees WITH(NOLOCK)
+	WHERE LicenseeName = @LicenseeName
+	
 	BEGIN TRY
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT
 			,@AgentList
