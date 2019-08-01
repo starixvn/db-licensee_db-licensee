@@ -140,7 +140,7 @@ BEGIN
 							FROM dbo.LicenseeCustComm b WITH (NOLOCK)
 							INNER JOIN CustDB.dbo.custinfo a WITH (NOLOCK) ON a.custid = b.custid
 							INNER JOIN #temp t ON a.custid=t.CustID
-							WHERE b.LicenseeID = @LicenseeID AND b.GroupCommID = @GroupCommID and a.SyncCasino = 1
+							WHERE b.LicenseeID = @LicenseeID AND a.SyncCasino = 1
 							FOR xml path('')
 						)
 						, 1
