@@ -1,7 +1,6 @@
-﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
+﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
 USE bodb_Licensee
 GO
-
 ALTER PROCEDURE [dbo].[Lrf_LicenseeGroupCommDel]
 	@LicenseeID INT,
 	@GroupCommID INT,
@@ -30,6 +29,7 @@ AS
 		- 20180809@Amanda: Remove Racing [RedmineID: #99378]
 		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
 		- 20180927@Winnie: Remove AllBet [RedmineID: #99378]
+		- 20190731@Winnie: Commission Group - RNG Casino Comm of Members are not cleared when deleting Group Comm [RedmineID: #117845]
 	Param's Explanation:
 
 */
@@ -97,19 +97,26 @@ BEGIN
 			UPDATE dbo.LicenseeGroupComm WITH (ROWLOCK,UPDLOCK) SET IsActive = 0
 			WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID AND IsActive=1		
 			
-			--Remove commission of players in group
 			--get list of affected Customers
+			SELECT @StrCustID=''
+			
+			--Remove commission of players in group
+			--get list of affected Customers		
+			SELECT CustID
+			INTO #temp
+			FROM LicenseeCustComm WITH (NOLOCK)
+			WHERE LicenseeID = @LicenseeID AND GroupCommID = @GroupCommID	
+			
 			SELECT @StrCustID = STUFF(
 				(   SELECT  ',' + CONVERT(NVARCHAR(20), custid) 
-					FROM LicenseeCustComm WITH (NOLOCK)
-					WHERE LicenseeID = @LicenseeID AND GroupCommID = @GroupCommID
+					FROM #temp			
 					FOR xml path('')
 				)
 				, 1
 				, 1
-				, '')
-			
-			IF LTRIM(RTRIM(@StrCustID)) <> ''
+				, '')				
+	
+			IF EXISTS(SELECT TOP 1 1 FROM #temp)
 			BEGIN
 				--Update List of affected Customers               
 				EXEC [Lrf_CustomerUpdMemberComm] 
@@ -127,18 +134,20 @@ BEGIN
 					@ErrCode=@ErrCode OUTPUT,
 					@ErrMsg=@ErrMsg OUTPUT
 					
-				SELECT @StrCustID = STUFF(
-					(   SELECT  ',' + CONVERT(NVARCHAR(20), a.custid) 
-						FROM dbo.LicenseeCustComm b WITH (NOLOCK)
-						INNER JOIN CustDB.dbo.custinfo a WITH (NOLOCK) ON a.custid = b.custid
-						WHERE b.LicenseeID = @LicenseeID AND b.GroupCommID = @GroupCommID and a.SyncCasino = 1
-						FOR xml path('')
-					)
-					, 1
-					, 1
-					, '')
-
+					SELECT @StrCustID=''
+					SELECT @StrCustID = STUFF(
+						(   SELECT  ',' + CONVERT(NVARCHAR(20), a.custid) 
+							FROM dbo.#temp b WITH (NOLOCK)
+							INNER JOIN CustDB.dbo.custinfo a WITH (NOLOCK) ON a.custid = b.custid							
+							WHERE a.SyncCasino = 1
+							FOR xml path('')
+						)
+						, 1
+						, 1
+						, '')
 			END
+
+		
 			
 			IF @ErrCode<>0
 				RETURN
