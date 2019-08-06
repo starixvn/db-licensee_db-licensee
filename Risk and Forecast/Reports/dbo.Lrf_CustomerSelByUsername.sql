@@ -461,6 +461,7 @@ BEGIN
 	SELECT
 		t.custid,
 		ex.currency,
+		ex.exchangeid,
 		username,
 		closed,
 		suspended,
