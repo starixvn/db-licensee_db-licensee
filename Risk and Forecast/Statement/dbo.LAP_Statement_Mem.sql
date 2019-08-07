@@ -205,8 +205,7 @@ BEGIN
 						WHEN statusID IN (0, 1) THEN 0
 						ELSE 131 END AS statusID,  
 					CASE WHEN bettype <= 19999 THEN NULL ELSE transdate END,
-					'' AS transdesc, -- Range time > BU : Remark do not show from bettrans.transdesc
-					--CASE WHEN bettype <= 19999 THEN '' ELSE transdesc END AS transdesc,
+					CASE WHEN bettype <= 19999 THEN '' ELSE transdesc END AS transdesc,
 					SUM(CASE 
 						WHEN bettype IN (33, 43) AND liveawayscore = 0 AND livehomescore <> 0 AND ruben = 1 THEN stake/2 
 						ELSE stake END
@@ -228,8 +227,8 @@ BEGIN
 						WHEN statusID IN (101, 102) THEN 102
 						WHEN statusID IN (0, 1) THEN 0
 						ELSE 131 END,
-					CASE WHEN bettype <= 19999 THEN NULL ELSE transdate END
-					--CASE WHEN bettype <= 19999 THEN '' ELSE transdesc END
+					CASE WHEN bettype <= 19999 THEN NULL ELSE transdate END,
+					CASE WHEN bettype <= 19999 THEN '' ELSE transdesc END
 			
 				--include running Keno bet
 				INSERT INTO @betTicket(winlostdate, bettype, statusID, transdate, transdesc, stake, actual_stake, winlost, playercomm, outstanding)
