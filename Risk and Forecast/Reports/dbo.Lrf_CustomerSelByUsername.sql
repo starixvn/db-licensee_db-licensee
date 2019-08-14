@@ -297,8 +297,8 @@ BEGIN
 					LEFT JOIN dbo.Dep_CustSpecialLevel lc WITH(NOLOCK) ON c.custid = lc.custid					
 				WHERE 
 					c.RoleID = 1
-					AND ((1= '+CONVERT(VARCHAR(10),@searchOption)+ ' AND c.username2 LIKE ''%' + @Username + '%'') 
-						OR (2= '+CONVERT(VARCHAR(10),@searchOption)+ ' AND c.username2 LIKE ''%$' + @Username + '%'') 
+					AND ((1= '+CONVERT(VARCHAR(10),@searchOption)+ ' AND c.username2 LIKE ''%$' + @Username + '%'') 
+						OR (2= '+CONVERT(VARCHAR(10),@searchOption)+ ' AND c.username2 LIKE ''%' + @Username + '%'') 
 						OR (3= '+ CONVERT(VARCHAR(10),@searchOption) +' AND c.username2 LIKE ''%$' + @Username + ''') 
 						OR c.username LIKE ''' + @Username + '''' + ')
 					AND c.username NOT LIKE ''%CashOut%''					
@@ -317,8 +317,8 @@ BEGIN
 					' AND ci.custid = lb.custid AND lb.[Status] = ''Running''
 				WHERE 
 					c.roleId = 1 
-					AND ((1= '+CONVERT(VARCHAR(10),@searchOption)+ ' AND c.username2 LIKE ''%' + @Username + '%'') 
-						OR (2= '+CONVERT(VARCHAR(10),@searchOption)+ ' AND c.username2 LIKE ''%$' + @Username + '%'') 
+					AND ((1= '+CONVERT(VARCHAR(10),@searchOption)+ ' AND c.username2 LIKE ''%$' + @Username + '%'') 
+						OR (2= '+CONVERT(VARCHAR(10),@searchOption)+ ' AND c.username2 LIKE ''%' + @Username + '%'') 
 						OR (3= '+ CONVERT(VARCHAR(10),@searchOption) +' AND c.username2 LIKE ''%$' + @Username + ''') 
 						OR c.username LIKE ''' + @Username + '''' + ')
 					AND c.username NOT LIKE ''%CashOut%''					
