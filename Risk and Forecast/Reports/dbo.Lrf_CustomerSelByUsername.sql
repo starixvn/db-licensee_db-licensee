@@ -460,7 +460,14 @@ BEGIN
 
 	SELECT
 		t.custid,
-		ex.currency,
+		CASE ex.exchangeid
+				WHEN 20 THEN 'UUS' 
+				WHEN 51 THEN 'INH'
+				WHEN 70 THEN 'MKK'
+				WHEN 75 THEN 'PTU'
+				WHEN 76 THEN 'PS'
+				WHEN 77 THEN 'PTH'
+				ELSE ex.Code as currency,
 		ex.exchangeid,
 		username,
 		closed,
