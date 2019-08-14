@@ -467,7 +467,7 @@ BEGIN
 				WHEN 75 THEN 'PTU'
 				WHEN 76 THEN 'PS'
 				WHEN 77 THEN 'PTH'
-				ELSE ex.Code as currency,
+				ELSE ex.Code END as currency,
 		ex.exchangeid,
 		username,
 		closed,
