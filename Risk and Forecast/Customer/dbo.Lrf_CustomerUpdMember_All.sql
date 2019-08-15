@@ -1,6 +1,4 @@
-﻿/*<info serverAlias="DBCUST-CustDB" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/ 
-USE CustDB
-GO
+﻿/*<info serverAlias="DBCUST-CustDB" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/ 
 ALTER PROC [dbo].[Lrf_CustomerUpdMember_All]  
 	@LicenseeID INT = 0,	
 	@LicenseeName VARCHAR(50) = '',	
