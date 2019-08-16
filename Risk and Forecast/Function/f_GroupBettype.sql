@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbAdminNet" viewers="" isFunction="1" isNested="1"></info>*/
+/*<info serverAlias="DBEXT-bodb02" selecters="bodbAdminNet" viewers="" isFunction="1" isNested="1"></info>*/
 USE [bodb02]
 GO
 
