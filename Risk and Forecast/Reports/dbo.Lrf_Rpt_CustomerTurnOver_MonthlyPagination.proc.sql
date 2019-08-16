@@ -37,7 +37,8 @@ Revision:
 	- 20181109@Paul: Fix wrong count [Redmine: #103886]
 	- 20181219@Joseph: Add new bet types for E-Sports 2.0 for report Customer Turnover [RedmineID: #106666]
 	- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
-	- 20181019@Amanda: Add new bet types (PH AIO - Phase 4a) [RedmineID: #115448]
+	- 20190407@Amanda: Add new bet types (PH AIO - Phase 4a) [RedmineID: #115448]
+	- 20191608@Amanda: Add new bet types (PH AIO - Phase 4b) [RedmineID: #118300]
 
 Parameter's Explanation:
 			
@@ -129,10 +130,11 @@ BEGIN
 										OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
 										OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
 										OR b.bettype = 428 -- 2H Odd/Even
-										OR (bettype BETWEEN 603 AND 607 OR bettype BETWEEN 609 AND 613 OR bettype BETWEEN 615 AND 617) -- Basketball bettypes
-										OR bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
-										OR bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
-										OR bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
+										OR (b.bettype BETWEEN 603 AND 607 OR b.bettype BETWEEN 609 AND 613 OR b.bettype BETWEEN 615 AND 617) -- Basketball bettypes
+										OR b.bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
+										OR b.bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
+										OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
+										OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 									)
 									THEN 
 											CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
@@ -141,7 +143,7 @@ BEGIN
 																		CASE 
 																			WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
 																			WHEN b.odds >=0 THEN (1 + b.odds) END
-													WHEN OddsType = 5 THEN --american odds to decimal
+													WHEN b.OddsType = 5 THEN --american odds to decimal
 																	CASE
 																	WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
 																	WHEN (b.odds * 100) % 2 = 0 THEN 2
@@ -241,10 +243,11 @@ BEGIN
 										OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
 										OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
 										OR b.bettype = 428 -- 2H Odd/Even
-										OR (bettype BETWEEN 603 AND 607 OR bettype BETWEEN 609 AND 613 OR bettype BETWEEN 615 AND 617) -- Basketball bettypes
-										OR bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
-										OR bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
-										OR bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
+										OR (b.bettype BETWEEN 603 AND 607 OR b.bettype BETWEEN 609 AND 613 OR b.bettype BETWEEN 615 AND 617) -- Basketball bettypes
+										OR b.bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
+										OR b.bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
+										OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
+										OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 									)
 									THEN 
 											CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
@@ -253,7 +256,7 @@ BEGIN
 																		CASE 
 																			WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
 																			WHEN b.odds >=0 THEN (1 + b.odds) END
-													WHEN OddsType = 5 THEN --american odds to decimal
+													WHEN b.OddsType = 5 THEN --american odds to decimal
 																	CASE
 																	WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
 																	WHEN (b.odds * 100) % 2 = 0 THEN 2
