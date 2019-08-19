@@ -43,7 +43,7 @@ BEGIN
 			LEFT JOIN bodb02.dbo.f_GroupBettype3rd() bt on sp.bettype = bt.bettype
 			WHERE p.ProductPrefix = @ProductCode 
 				AND sp.[Enabled] = 1
-				AND (@ProductCode <> 'CO' OR sp.bettype NOT IN (913, 914))
+				AND sp.bettype NOT IN (913, 914)
 				AND sp.bettype NOT IN (901,902,903,904/*bettrade*/,500,502/*Criket*/,300,301,302,303,304/*MO*/)
 				AND (sp.bettype < 801 OR sp.BetType > 899) -- MG
 			GROUP BY ISNULL(COALESCE(ss.GroupTypeId, bt.GroupTypeId), sp.bettype)
