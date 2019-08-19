@@ -298,7 +298,7 @@ BEGIN
 				WHERE 
 					c.RoleID = 1
 					AND ((1= '+CONVERT(VARCHAR(10),@searchOption)+ ' AND c.username2 LIKE ''%$' + @Username + '%'') 
-						OR (2= '+CONVERT(VARCHAR(10),@searchOption)+ ' AND c.username2 LIKE ''%' + @Username + '%'') 
+						OR (2= '+CONVERT(VARCHAR(10),@searchOption)+ ' AND SUBSTRING(c.username2,CHARINDEX(''$'',c.username2)+1,len(c.username2)) LIKE ''%' + @Username + '%'') 
 						OR (3= '+ CONVERT(VARCHAR(10),@searchOption) +' AND c.username2 LIKE ''%$' + @Username + ''') ' 
 						+ ')
 					AND c.username NOT LIKE ''%CashOut%''					
@@ -318,7 +318,7 @@ BEGIN
 				WHERE 
 					c.roleId = 1 
 					AND ((1= '+CONVERT(VARCHAR(10),@searchOption)+ ' AND c.username2 LIKE ''%$' + @Username + '%'') 
-						OR (2= '+CONVERT(VARCHAR(10),@searchOption)+ ' AND c.username2 LIKE ''%' + @Username + '%'') 
+						OR (2= '+CONVERT(VARCHAR(10),@searchOption)+ ' AND SUBSTRING(c.username2,CHARINDEX(''$'',c.username2)+1,len(c.username2)) LIKE ''%' + @Username + '%'') 
 						OR (3= '+ CONVERT(VARCHAR(10),@searchOption) +' AND c.username2 LIKE ''%$' + @Username + ''') '
 						+ ')
 					AND c.username NOT LIKE ''%CashOut%''					
