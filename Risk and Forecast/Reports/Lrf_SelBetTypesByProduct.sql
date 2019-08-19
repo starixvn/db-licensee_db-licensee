@@ -29,20 +29,7 @@ BEGIN
 		SET @ProductCode = 'SB'
 	END
 
-	IF (@ProductCode = 'CO' AND EXISTS (
-		SELECT 1 
-		FROM dbo.Product3rd p WITH (NOLOCK)
-		INNER JOIN dbo.LicenseeProduct3rd l WITH (NOLOCK) ON p.Productid = l.ProductID 
-		WHERE ProductPrefix = @ProductCode AND l.LicenseeID = @LicenseeID))
-	BEGIN
-		SELECT DISTINCT matrix.BetType
-			FROM [bodb02].[dbo].[SportBettypeMatrix] matrix WITH (NOLOCK)
-			INNER JOIN [bodb02].[dbo].[Products] p WITH (NOLOCK) ON p.ProductID = matrix.ProductID
-			WHERE p.ProductPrefix = @ProductCode 
-				AND matrix.[Enabled] = 1
-				AND matrix.BetType NOT IN (913, 914) -- for Cash Out (only show 911, 912)
-	END
-	ELSE IF (@ProductCode = 'SB' OR EXISTS (
+	IF (@ProductCode = 'SB' OR EXISTS (
 		SELECT 1 
 		FROM dbo.Product3rd p WITH (NOLOCK)
 		INNER JOIN dbo.LicenseeProduct3rd l WITH (NOLOCK) ON p.Productid = l.ProductID 
@@ -56,7 +43,8 @@ BEGIN
 			LEFT JOIN bodb02.dbo.f_GroupBettype3rd() bt on sp.bettype = bt.bettype
 			WHERE p.ProductPrefix = @ProductCode 
 				AND sp.[Enabled] = 1
-				AND sp.bettype NOT IN (901,902,903,904/*bettrade*/,500,502/*Criket*/,300,301,302,303,304/*MO*/,911,912,913,914/*Cash out*/)
+				AND (@ProductCode <> 'CO' OR sp.bettype NOT IN (913, 914))
+				AND sp.bettype NOT IN (901,902,903,904/*bettrade*/,500,502/*Criket*/,300,301,302,303,304/*MO*/)
 				AND (sp.bettype < 801 OR sp.BetType > 899) -- MG
 			GROUP BY ISNULL(COALESCE(ss.GroupTypeId, bt.GroupTypeId), sp.bettype)
 	END
