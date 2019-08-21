@@ -102,6 +102,8 @@ AS
 		- 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
 		- 20190620@Amanda: Centralize function to get exchange rate [Redmine: #112531]
 		- 20190708@Amanda: Add new product Card Club [RedmineID: #115449]
+		- 20190821@Bobby: Do optimization for SQL code [Redmine: #118990]
+		
 
 	Param's Explanation:
 		@OrderItem:
@@ -141,7 +143,7 @@ BEGIN
 			@TempFromDate		DATETIME,
 			@TempToDate			DATETIME
 
-	DECLARE @TempAg			TABLE (CustId INT, Currency INT)
+	DECLARE @TempAg			TABLE (CustId INT PRIMARY KEY, Currency INT)
 	DECLARE @bettype		TABLE (bettype INT, ProductCode VARCHAR(10))
 	DECLARE @sporttype		TABLE (sporttype INT, ProductCode VARCHAR(10))
 	DECLARE @ProductList	VARCHAR (500)
@@ -415,6 +417,9 @@ BEGIN
 
 			IF 1 IN (@ShowNG, @ShowVS, @ShowCS, @ShowKN, @ShowBT, @ShowAGC, @ShowVb,@ShowAB,@ShowFW, @ShowCO, @ShowVS2, @ShowLT, @ShowPP, @ShowCC)
 			BEGIN
+				WITH CTE_Bettype AS (
+					SELECT DISTINCT bettype FROM @bettype
+				)
 				INSERT INTO #TempData
 				SELECT
 					b.CustID ,
@@ -433,13 +438,13 @@ BEGIN
 					b.currency,
 					SUM(CASE WHEN b.bettype = 4300 THEN 1 ELSE 0 END) AS PromotionPrize	
 				FROM    
-					bettrans b WITH (NOLOCK)
+					dbo.bettrans b WITH (NOLOCK)
 					INNER JOIN @TempAg a   ON b.recommend = a.custid AND b.currency = a.Currency
-					INNER JOIN @bettype bt ON b.bettype = bt.bettype	 
 				WHERE   
-					winlostdate BETWEEN @TempFromDate AND @_ToDate
+					b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 					AND b.statusID IN (111, 112, 113)			
-				GROUP BY b.CustID, b.winlostdate, b.currency	
+					AND EXISTS(SELECT TOP 1 1 FROM CTE_Bettype bt WHERE bt.bettype = b.bettype)
+				GROUP BY b.CustID, b.winlostdate, b.currency		
 			END
 		END
 
