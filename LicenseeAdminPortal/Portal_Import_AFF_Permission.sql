@@ -1,6 +1,5 @@
-/*<info serverAlias="DBCUST-SiteConfig" executers="Dot_Admin_Portal" viewers="vnteam" isFunction="0" isNested="0"></info>*/
-
-CREATE PROCEDURE [dbo].[Portal_Import_AFF_Permission]
+/*<info serverAlias="DBCUST-SiteConfig" executers="Dot_Admin_Portal" isFunction="0" isNested="0"></info>*/
+ALTER PROCEDURE [dbo].[Portal_Import_AFF_Permission]
 	@UserSEQ INT,
 	@UserID NVARCHAR(20),
 	@SiteName NVARCHAR (50)
@@ -14,6 +13,7 @@ AS
 		- 20171206@Walter : Import AFF permission
 		- 20180131@Walter : Fix issue import both individual permissions and group permissions
 		- 20180928@Amanda: Migrate table from DBLIC.bodb_Licensee to DBCust.bodb_Licensee - [Redmine: #99855]
+		- 20190822@Percy: Remove DBLIC - Using on DBCUST [RedmineID: #103658]
 	  
 	 Parameter's Explaination:
 	  - @Example:   exec Portal_Import_AFF_Permission @UserSEQ=3443, @UserID='walter', @SiteName='Athena000'
@@ -32,7 +32,7 @@ BEGIN
 	
 	SELECT @affUserID = u.UserId, @groupID = l.GroupID
 	FROM bodb_licensee.dbo.Users AS u WITH (nolock)
-		 INNER JOIN DBLIC.bodb_licensee.dbo.Aff_LicenseeUser AS l WITH (nolock)
+		 INNER JOIN bodb_licensee.dbo.Aff_LicenseeUser AS l WITH (nolock)
 		 ON u.UserID = l.UserID AND 
 			u.isInternal = 1 AND
 			u.Username = @UserID AND 
@@ -56,10 +56,10 @@ BEGIN
 			INSERT INTO #allowedFunctions(FunctionId, FunctionName,ActualPolicy)
 			
 		   SELECT f.functionId,f.functionName, ISNULL(uf.Policy,0)|ISNULL(gf.Policy,0) 
-		   FROM DBLIC.bodb_licensee.dbo.Aff_FunctionInfo f WITH(NOLOCK)  
-		   LEFT JOIN DBLIC.bodb_licensee.dbo.Aff_UserPolicy uf WITH(NOLOCK) on uf.UserID=@affUserID and uf.LicenseeID=@licenseeID
+		   FROM bodb_licensee.dbo.Aff_FunctionInfo f WITH(NOLOCK)  
+		   LEFT JOIN bodb_licensee.dbo.Aff_UserPolicy uf WITH(NOLOCK) on uf.UserID=@affUserID and uf.LicenseeID=@licenseeID
 			AND f.FunctionId = uf.FunctionId
-		   LEFT JOIN  DBLIC.bodb_licensee.dbo.Aff_GroupPolicy gf WITH(NOLOCK) on gf.GroupID=@groupID and f.FunctionId = gf.FunctionId
+		   LEFT JOIN  bodb_licensee.dbo.Aff_GroupPolicy gf WITH(NOLOCK) on gf.GroupID=@groupID and f.FunctionId = gf.FunctionId
 		   WHERE f.FunctionName in (select FunctionName from @affActiveFunction)
 			
 			-- DELETE FUNCTION WITHOUT POLICY
@@ -89,7 +89,7 @@ BEGIN
 			
 			SELECT FunctionId FROM #allowedFunctions
 
-			SELECT u.FunctionId FROM DBLIC.bodb_licensee.dbo.Aff_FunctionInfo u WITH(NOLOCK)  
+			SELECT u.FunctionId FROM bodb_licensee.dbo.Aff_FunctionInfo u WITH(NOLOCK)  
 			WHERE u.FunctionId NOT IN (select FunctionId from #allowedFunctions)
 			
 			DROP TABLE #allowedFunctions
