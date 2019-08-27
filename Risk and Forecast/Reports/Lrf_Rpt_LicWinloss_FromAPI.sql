@@ -17,6 +17,7 @@ AS
     Revisions:  
 		- 20180820@Amanda: Created new Licensee Winloss SP for Ivorybet and Opal88 [RedmineID: #99777]
 		- 20190622@Amanda: Add Base currency param [RedmineID: #112531]
+		- 20190815@Amanda: Add product CS & LC [RedmineID: #117900]
 
 	Developer's Notes:
 		- Notes: If product is NG, search tickets with GameType is RNG
@@ -84,37 +85,64 @@ BEGIN
 		CurrencyId			INT,
 		TurnoverSB			MONEY,
 		TurnoverNG			MONEY,
+		TurnoverCS			MONEY,
+		TurnoverLC			MONEY,
 		Winlost				MONEY,
 		LicenseeWLSB		MONEY,
 		LicenseeWLNG		MONEY,
+		LicenseeWLCS		MONEY,
+		LicenseeWLLC		MONEY,
 		Betcount			BIGINT
 	)
 
 	DECLARE @showSB BIT = 0,
-			@showNG BIT = 0
+			@showNG BIT = 0,
+			@showCS BIT = 0,
+			@showLC BIT = 0
 	
 	SELECT @showSB = 1 FROM @Product WHERE ProductCode = 'SB'
 	SELECT @showNG = 1 FROM @Product WHERE ProductCode = 'NG'
+	SELECT @showCS = 1 FROM @Product WHERE ProductCode = 'CS'
+	SELECT @showLC = 1 FROM @Product WHERE ProductCode = 'LC'
 
 	-- Retrive data from rptDep_AuditTickets		
 	INSERT INTO #SAgWinLoss
 		(  
-			winlostdate,CurrencyId, TurnoverSB, TurnoverNG, Winlost, LicenseeWLSB, LicenseeWLNG, Betcount
+			winlostdate,
+			CurrencyId,
+			TurnoverSB,
+			TurnoverNG,
+			TurnoverCS,
+			TurnoverLC,
+			Winlost,
+			LicenseeWLSB,
+			LicenseeWLNG,
+			LicenseeWLCS,
+			LicenseeWLLC,
+			Betcount
 		)
 	SELECT	a.WinLostDate,
 			c.Id,
 			SUM(CASE WHEN a.GameType = 'SB' THEN a.BetAmount ELSE 0 END),
-			SUM(CASE WHEN a.GameType = 'RNG' THEN a.BetAmount ELSE 0 END),
+			SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode = '161' THEN a.BetAmount ELSE 0 END),
+			SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode <> '161' THEN a.BetAmount ELSE 0 END),
+			SUM(CASE WHEN a.GameType = 'CA' THEN a.BetAmount ELSE 0 END),
 			- SUM(a.NetAmount),
 			SUM(CASE WHEN a.GameType = 'SB' THEN a.NetAmount ELSE 0 END),
-			SUM(CASE WHEN a.GameType = 'RNG' THEN a.NetAmount ELSE 0 END),
+			SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode = '161' THEN a.NetAmount ELSE 0 END),
+			SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode <> '161' THEN a.NetAmount ELSE 0 END),
+			SUM(CASE WHEN a.GameType = 'CA' THEN a.NetAmount ELSE 0 END),
 			COUNT(a.TransactionId)
 	FROM bodb_licenseeReportArchive.dbo.rptDep_AuditTickets a WITH (NOLOCK)
 	INNER JOIN @Currency c ON c.Code = a.CurrencyCode
 	WHERE  a.WinLostDate >= @FromDate AND a.WinLostDate < @TempToDate 
 			AND Brand = @SiteName
-			AND ((@showSB = 1 AND a.GameType = 'SB') OR (@showNG = 1 AND a.GameType = 'RNG'))
-			
+			AND (
+					(@showSB = 1 AND a.GameType = 'SB') 
+				OR	(@showNG = 1 AND a.GameType = 'RNG' AND a.GameCode = '161')
+				OR	(@showCS = 1 AND a.GameType = 'RNG' AND a.GameCode <> '161')
+				OR	(@showLC = 1 AND a.GameType = 'CA')
+			)
 	GROUP BY
 		a.WinLostDate,
 		c.Id
@@ -144,36 +172,56 @@ BEGIN
 			--- Orginal ---
 			w.TurnoverSB*e.Rate		AS TurnoverSB,
 			w.TurnoverNG*e.Rate		AS TurnoverNG,
+			w.TurnoverCS*e.Rate		AS TurnoverCS,
+			w.TurnoverLC*e.Rate		AS TurnoverLC,
 			w.LicenseeWLSB*e.Rate	AS LicenseeWLSB,
 			w.LicenseeWLNG*e.Rate	AS LicenseeWLNG,
+			w.LicenseeWLCS*e.Rate	AS LicenseeWLCS,
+			w.LicenseeWLLC*e.Rate	AS LicenseeWLLC,
 			w.Winlost*e.Rate		AS Winlost,
 			
 			--- USD ---
 			w.TurnoverSB*e.USD		AS TurnoverSBUSD,
 			w.TurnoverNG*e.USD		AS TurnoverNGUSD,
+			w.TurnoverCS*e.USD		AS TurnoverCSUSD,
+			w.TurnoverLC*e.USD		AS TurnoverLCUSD,
 			w.LicenseeWLSB*e.USD	AS LicenseeWLSBUSD,
 			w.LicenseeWLNG*e.USD	AS LicenseeWLNGUSD,
+			w.LicenseeWLCS*e.USD	AS LicenseeWLCSUSD,
+			w.LicenseeWLLC*e.USD	AS LicenseeWLLCUSD,
 			w.Winlost*e.USD			AS WinlostUSD,
 			
 			--- EUR ---
 			w.TurnoverSB*e.EUR		AS TurnoverSBEUR,
 			w.TurnoverNG*e.EUR		AS TurnoverNGEUR,
+			w.TurnoverCS*e.EUR		AS TurnoverCSEUR,
+			w.TurnoverLC*e.EUR		AS TurnoverLCEUR,
 			w.LicenseeWLSB*e.EUR	AS LicenseeWLSBEUR,
 			w.LicenseeWLNG*e.EUR	AS LicenseeWLNGEUR,
+			w.LicenseeWLCS*e.EUR	AS LicenseeWLCSEUR,
+			w.LicenseeWLLC*e.EUR	AS LicenseeWLLCEUR,
 			w.Winlost*e.EUR			AS WinlostEUR,
 			
 			--- GBP ---
 			w.TurnoverSB*e.GBP		AS TurnoverSBGBP,
 			w.TurnoverNG*e.GBP		AS TurnoverNGGBP,
+			w.TurnoverCS*e.GBP		AS TurnoverCSGBP,
+			w.TurnoverLC*e.GBP		AS TurnoverLCGBP,
 			w.LicenseeWLSB*e.GBP	AS LicenseeWLSBGBP,
 			w.LicenseeWLNG*e.GBP	AS LicenseeWLNGGBP,
+			w.LicenseeWLCS*e.GBP	AS LicenseeWLCSGBP,
+			w.LicenseeWLLC*e.GBP	AS LicenseeWLLCGBP,
 			w.Winlost*e.GBP			AS WinlostGBP,
 
 			--- Default Base currency ---
 			w.TurnoverSB*e.DefaultRate		AS TurnoverSBBase,
 			w.TurnoverNG*e.DefaultRate		AS TurnoverNGBase,
+			w.TurnoverCS*e.DefaultRate		AS TurnoverCSBase,
+			w.TurnoverLC*e.DefaultRate		AS TurnoverLCBase,
 			w.LicenseeWLSB*e.DefaultRate	AS LicenseeWLSBBase,
 			w.LicenseeWLNG*e.DefaultRate	AS LicenseeWLNGBase,
+			w.LicenseeWLCS*e.DefaultRate	AS LicenseeWLCSBase,
+			w.LicenseeWLLC*e.DefaultRate	AS LicenseeWLLCBase,
 			w.Winlost*e.DefaultRate			AS WinlostBase
 		FROM #SAgWinLoss w
 		INNER JOIN #Exchange e ON w.winlostdate BETWEEN e.ExFromDate AND e.ExToDate AND w.CurrencyId = e.ExchangeID	
@@ -188,36 +236,56 @@ BEGIN
 			--- Orginal ---
 			SUM(w.TurnoverSB*e.Rate)	AS TurnoverSB,
 			SUM(w.TurnoverNG*e.Rate)	AS TurnoverNG,
+			SUM(w.TurnoverCS*e.Rate)	AS TurnoverCS,
+			SUM(w.TurnoverLC*e.Rate)	AS TurnoverLC,
 			SUM(w.LicenseeWLSB*e.Rate)	AS LicenseeWLSB,
 			SUM(w.LicenseeWLNG*e.Rate)	AS LicenseeWLNG,
+			SUM(w.LicenseeWLCS*e.Rate)	AS LicenseeWLCS,
+			SUM(w.LicenseeWLLC*e.Rate)	AS LicenseeWLLC,
 			SUM(w.Winlost*e.Rate)		AS Winlost,
 			
 			--- USD ---
 			SUM(w.TurnoverSB*e.USD)		AS TurnoverSBUSD,
 			SUM(w.TurnoverNG*e.USD)		AS TurnoverNGUSD,
+			SUM(w.TurnoverCS*e.USD)		AS TurnoverCSUSD,
+			SUM(w.TurnoverLC*e.USD)		AS TurnoverLCUSD,
 			SUM(w.LicenseeWLSB*e.USD)	AS LicenseeWLSBUSD,
 			SUM(w.LicenseeWLNG*e.USD)	AS LicenseeWLNGUSD,
+			SUM(w.LicenseeWLCS*e.USD)	AS LicenseeWLCSUSD,
+			SUM(w.LicenseeWLLC*e.USD)	AS LicenseeWLLCUSD,
 			SUM(w.Winlost*e.USD)		AS WinlostUSD,
 			
 			--- EUR ---
 			SUM(w.TurnoverSB*e.EUR)		AS TurnoverSBEUR,
 			SUM(w.TurnoverNG*e.EUR)		AS TurnoverNGEUR,
+			SUM(w.TurnoverCS*e.EUR)		AS TurnoverCSEUR,
+			SUM(w.TurnoverLC*e.EUR)		AS TurnoverLCEUR,
 			SUM(w.LicenseeWLSB*e.EUR)	AS LicenseeWLSBEUR,
 			SUM(w.LicenseeWLNG*e.EUR)	AS LicenseeWLNGEUR,
+			SUM(w.LicenseeWLCS*e.EUR)	AS LicenseeWLCSEUR,
+			SUM(w.LicenseeWLLC*e.EUR)	AS LicenseeWLLCEUR,
 			SUM(w.Winlost*e.EUR)		AS WinlostEUR,
 			
 			--- GBP ---
 			SUM(w.TurnoverSB*e.GBP)		AS TurnoverSBGBP,
 			SUM(w.TurnoverNG*e.GBP)		AS TurnoverNGGBP,
+			SUM(w.TurnoverCS*e.GBP)		AS TurnoverCSGBP,
+			SUM(w.TurnoverLC*e.GBP)		AS TurnoverLCGBP,
 			SUM(w.LicenseeWLSB*e.GBP)	AS LicenseeWLSBGBP,
 			SUM(w.LicenseeWLNG*e.GBP)	AS LicenseeWLNGGBP,
+			SUM(w.LicenseeWLCS*e.GBP)	AS LicenseeWLCSGBP,
+			SUM(w.LicenseeWLLC*e.GBP)	AS LicenseeWLLCGBP,
 			SUM(w.Winlost*e.GBP)		AS WinlostGBP,
 			
 			--- Default Base currency ---
 			SUM(w.TurnoverSB*e.DefaultRate)		AS TurnoverSBBase,
 			SUM(w.TurnoverNG*e.DefaultRate)		AS TurnoverNGBase,
+			SUM(w.TurnoverCS*e.DefaultRate)		AS TurnoverCSBase,
+			SUM(w.TurnoverLC*e.DefaultRate)		AS TurnoverLCBase,
 			SUM(w.LicenseeWLSB*e.DefaultRate)	AS LicenseeWLSBBase,
 			SUM(w.LicenseeWLNG*e.DefaultRate)	AS LicenseeWLNGBase,
+			SUM(w.LicenseeWLCS*e.DefaultRate)	AS LicenseeWLCSBase,
+			SUM(w.LicenseeWLLC*e.DefaultRate)	AS LicenseeWLLCBase,
 			SUM(w.Winlost*e.DefaultRate)		AS WinlostBase
 
 		FROM #SAgWinLoss w
