@@ -15,6 +15,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_Outstanding]
 	@ShowVS2		BIT = 0,
 	@ShowLT			BIT = 0,
 	@ShowPP			BIT = 0,
+	@ShowCC			BIT = 0, -- Card club
     @PageSize		INT = 1000,
     @PageIndex		INT = 1,
 	@AgentList		VARCHAR(MAX),
@@ -71,6 +72,7 @@ Revisions:
 	- 20190327@Amanda: Fix bug - Add AB back to SP (AB has been deleted before) [RedmineID: #110927]
 	- 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
 	- 20190620@Amanda: Centralize function to get exchange rate [Redmine: #112531]
+	- 20190708@Amanda: Add new product Card Club [RedmineID: #115449]
 
 Param's Explanation:
 	@OrderItem:
@@ -216,6 +218,11 @@ BEGIN
 	BEGIN
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'PP', 'PP')
 	END
+	
+	IF @ShowCC = 1 -- CC
+	BEGIN
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'CC', 'CC')
+	END
 
 	IF LEN(ISNULL(@ProductList, '')) > 0 
 	BEGIN
@@ -281,7 +288,7 @@ BEGIN
 		g.custid,
 		g.currency,
 		SUM(g.actual_stake) Outstanding, 
-		COUNT(DISTINCT CASE WHEN s.PRoductID IN (6,22,24, 32) THEN refno END) BetCounts -- count sum tickets for RNG Casino, Voidridge, FW, PP
+		COUNT(DISTINCT CASE WHEN s.PRoductID IN (6,22,24,32,34) THEN refno END) BetCounts -- count sum tickets for RNG Casino, Voidridge, FW, PP, CC
 	FROM dbo.BettransRNG g WITH (NOLOCK) 
 		INNER JOIN @TempAg a
 			ON g.recommend = a.CustId AND g.Currency = a.Currency 	

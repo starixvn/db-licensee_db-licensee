@@ -19,6 +19,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_TurnOver]
 	@ShowVS2		BIT = 0, -- Bet Radar Virtual Sports
 	@ShowLT			BIT = 0, -- Lottery
 	@ShowPP			BIT = 0, -- PP
+	@ShowCC			BIT = 0, -- Card club
 	@AgentList		VARCHAR(MAX),
 	@BaseCurrency	VARCHAR(3)
 AS 
@@ -70,6 +71,7 @@ Revisions:
    - 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
    - 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
    - 20190621@Amanda: Add @BaseCurrency parameter [Redmine: #112531]
+   - 20190708@Amanda: Add new product Card Club [RedmineID: #115449]
 
 Param's Explanation:
     
@@ -129,6 +131,7 @@ BEGIN
 	IF @ShowVS2	= 1 INSERT INTO @sporttype(sporttype) VALUES(190),(193)
 	IF @ShowLT	= 1 INSERT INTO @sporttype(sporttype) VALUES(220)
 	IF @ShowPP	= 1 INSERT INTO @sporttype(sporttype) VALUES(248)
+	IF @ShowCC	= 1 INSERT INTO @sporttype(sporttype) VALUES(165)
 
 	IF @username <> ''
 	BEGIN

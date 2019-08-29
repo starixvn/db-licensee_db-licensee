@@ -19,6 +19,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
 	@ShowVS2		BIT = 0, -- Bet Radar Virtual Sports
 	@ShowLT			BIT = 0, -- Lottery
 	@ShowPP			BIT = 0, -- PP
+	@ShowCC			BIT = 0, -- Card club
     @MoveBetsDay	DATETIME,
     @PageSize		INT = 1000,
     @PageIndex		INT = 1,
@@ -100,6 +101,7 @@ AS
 		- 20190304@Amanda: Integrate PP Promotion Prize [RedmineID: #109471]
 		- 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
 		- 20190620@Amanda: Centralize function to get exchange rate [Redmine: #112531]
+		- 20190708@Amanda: Add new product Card Club [RedmineID: #115449]
 
 	Param's Explanation:
 		@OrderItem:
@@ -262,6 +264,11 @@ BEGIN
 	BEGIN
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'PP', 'PP')
 	END
+	
+	IF @ShowCC = 1 -- CC
+	BEGIN
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'CC', 'CC')
+	END
 
 	IF LEN(ISNULL(@ProductList, '')) > 0 
 	BEGIN
@@ -406,7 +413,7 @@ BEGIN
 				GROUP BY b.CustID, b.winlostdate, b.currency	 
 			END
 
-			IF 1 IN (@ShowNG, @ShowVS, @ShowCS, @ShowKN, @ShowBT, @ShowAGC, @ShowVb,@ShowAB,@ShowFW, @ShowCO, @ShowVS2, @ShowLT, @ShowPP)
+			IF 1 IN (@ShowNG, @ShowVS, @ShowCS, @ShowKN, @ShowBT, @ShowAGC, @ShowVb,@ShowAB,@ShowFW, @ShowCO, @ShowVS2, @ShowLT, @ShowPP, @ShowCC)
 			BEGIN
 				INSERT INTO #TempData
 				SELECT
@@ -473,7 +480,7 @@ BEGIN
 			END
 
 			--exclude BA tickets
-			IF 1 IN (@ShowSB, @ShowNG, @ShowVS, @ShowCS, @ShowKN, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowVS2, @ShowLT, @ShowPP)
+			IF 1 IN (@ShowSB, @ShowNG, @ShowVS, @ShowCS, @ShowKN, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowVS2, @ShowLT, @ShowPP, @ShowCC)
 			BEGIN
 				INSERT INTO #TempData
 				SELECT
