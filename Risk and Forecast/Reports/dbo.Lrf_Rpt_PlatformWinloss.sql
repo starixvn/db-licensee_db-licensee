@@ -50,18 +50,20 @@ AS
 		- 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
 		- 20190619@Amanda: Add Base currency param [RedmineID: #112531]
 		- 20190708@Amanda: Add new product Card Club [RedmineID: #115449]
+		- 20190829@Amanda: Remove platform y,s and add platform t [RedmineID: #119010]
 
 	Param's Explanation:  
 	  + @PlatformType:  0: All  
 						1: Asia (d, g)  
 						2: China (a, z)
-						3: Euro (e, u , y) (and Euro 12bet (u))
+						3: Euro (e, u) (and Euro 12bet (u))
 						4: WAP (m)    
-						5: SMART SITE (s,l)  
+						5: MOBILE (l)  
 						6: TABLET (r)  
 						7: New Asia (x)
 						8: Mobile App (o)
 						9: Mobile China View (c)
+						10: Deep Link (t)
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover onlly)
 	  + @showSB: Show SportsBook bets
 	  + @ShowNG: Show Number game bets
@@ -159,16 +161,15 @@ BEGIN
 				(2, 'a'),
 				(3, 'e'),
 				(4, 'm'),
-				(5, 's'),
 				(3, 'u'),
 				(5, 'l'),
 				(1, 'g'),
 				(6, 'r'),
 				(7, 'x'),
-				(3, 'y'),
 				(2, 'z'),
 				(8, 'o'),
-				(9, 'c')
+				(9, 'c'),
+				(10, 't')
 	) d(PlatformType, betfrom)
 	WHERE d.PlatformType = @PlatformType OR @PlatformType = 0
 
