@@ -19,6 +19,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
 	@ShowVS2		BIT = 0, -- Bet Radar Virtual Sports
 	@ShowLT			BIT = 0, -- Lottery
 	@ShowPP			BIT = 0, -- PP
+	@ShowCC			BIT = 0, -- Card club
     @MoveBetsDay	DATETIME,
     @PageSize		INT = 1000,
     @PageIndex		INT = 1,
@@ -100,6 +101,7 @@ AS
 		- 20190304@Amanda: Integrate PP Promotion Prize [RedmineID: #109471]
 		- 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
 		- 20190620@Amanda: Centralize function to get exchange rate [Redmine: #112531]
+		- 20190708@Amanda: Add new product Card Club [RedmineID: #115449]
 		- 20190821@Bobby: Do optimization for SQL code [Redmine: #118990]
 		
 
@@ -137,6 +139,8 @@ BEGIN
 			@_AgentList			VARCHAR(MAX),
 			@_ShowBA			BIT,
 			@_ShowSB			BIT,
+			@_ShowBT			BIT,
+			@_ShowCO			BIT,
 			@_DrawFilter		SMALLINT,
 			@BetEffectiveDate	SMALLDATETIME,
 			@RowStart			INT,
@@ -153,7 +157,7 @@ BEGIN
 
 	DECLARE @Products		TABLE (Code VARCHAR(10))
 	DECLARE @TempAg			TABLE (CustId INT PRIMARY KEY, Currency INT)
-	DECLARE @bettype		TABLE (bettype SMALLINT PRIMARY KEY, ProductCode VARCHAR(10))
+	DECLARE @bettype		TABLE (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))
 	DECLARE @sporttype		TABLE (sporttype INT PRIMARY KEY, ProductCode VARCHAR(10))
 	DECLARE @Exchange		TABLE
 	(
@@ -186,7 +190,9 @@ BEGIN
 			@_ToDate			= @ToDate,
 			@_AgentList			= @AgentList,
 			@_ShowBA			= ISNULL(@ShowBA, 0),
-			@_ShowSB			= @ShowSB,
+			@_ShowSB			= ISNULL(@ShowSB, 0),
+			@_ShowBT			= ISNULL(@ShowBT, 0),
+			@_ShowCO			= ISNULL(@ShowCO, 0),
 			@_DrawFilter		= ISNULL(@DrawFilter, 1),
 			@BetEffectiveDate	= '2014-09-01'
 
@@ -228,8 +234,8 @@ BEGIN
 	BEGIN
 		INSERT INTO #tmpCust
 		SELECT c.custid
-		FROM dbo.Customer  c WITH (NOLOCK) 
-		  
+		FROM 
+			dbo.Customer  c WITH (NOLOCK) 
 		WHERE
 			EXISTS(SELECT TOP 1 1 FROM @TempAg t WHERE c.recommend = t.CustId)
 			AND (
@@ -283,6 +289,8 @@ BEGIN
 	SELECT 'LT' AS Code WHERE @ShowLT = 1
 	UNION ALL
 	SELECT 'PP' AS Code WHERE @ShowPP = 1
+	UNION ALL
+	SELECT 'CC' AS Code WHERE @ShowCC = 1
 
 	SELECT @ProductList = COALESCE(@ProductList + ',' + Code, Code)
 	FROM @Products
@@ -320,8 +328,15 @@ BEGIN
 	-- Insert Sport Type
 	INSERT INTO @sporttype ( sporttype, ProductCode )
 	SELECT DISTINCT sporttype, ProductCode
-	FROM dbo.f_LicWinLoss_ProductSportType_Sel(@ProductList)
-	
+	FROM (
+		SELECT sporttype, ProductCode
+		FROM dbo.f_LicWinLoss_ProductSportType_Sel(@ProductList)
+		UNION
+		SELECT 0, 'SB' 
+		FROM @Products p
+		WHERE Code IN ('CO', 'BT')
+	) AS t
+
 	--End bettype/sporttype/product list
 
 	-- Optimze for reducing IO/CPU/Elapsed times
@@ -338,6 +353,7 @@ BEGIN
 		, [awinlost] [money] NULL
 		, [currency] [tinyint] NULL
 		, [IsBA] [bit] NULL
+		, [BetCount] [int] NULL
 	)
 
 	-- PROCESS bettrans range
@@ -359,15 +375,26 @@ BEGIN
            ,[playercomm]
            ,[awinlost]
            ,[currency]
-           ,[IsBA])
+           ,[IsBA]
+		   ,[BetCount])
 		SELECT b.custid, b.winlostdate, b.statusid,b.bettype,b.stake,b.actual_stake,b.winlost,b.comm,b.playercomm,b.awinlost,b.currency
-			,CAST(CASE WHEN b.tpositiontaking = 0 THEN 1 ELSE 0 END AS BIT) IsBA -- total positiontaking
-
+			,ba.IsBA
+			,1 AS BetCount
 		FROM 
 			dbo.bettrans b WITH (NOLOCK)
 		INNER JOIN @bettype bt 
 			ON b.bettype = bt.bettype
-
+		CROSS APPLY (
+			SELECT CAST(
+				CASE 
+					WHEN bt.ProductCode = 'SB' THEN 
+						CASE
+						WHEN b.tpositiontaking = 0 AND b.bettype NOT IN (901,902,911,912) THEN 1
+						ELSE 0 
+						END
+					ELSE 0
+				END AS BIT) AS IsBA
+		) AS ba
 		WHERE 
 			EXISTS(SELECT TOP 1 1 FROM @TempAg c WHERE c.CustID = b.recommend)
 			AND b.winlostdate >= @TempFromDate AND b.winlostdate <= @_ToDate
@@ -376,13 +403,11 @@ BEGIN
 			AND 1 = (CASE 
 						WHEN bt.ProductCode = 'SB' THEN 
 							CASE 
-								WHEN @_ShowBA = 1 AND b.tpositiontaking = 0 THEN 1 -- BA ticket
-								WHEN @_ShowSB = 1 AND b.tpositiontaking <> 0 THEN 1 -- NOT BA ticket
+								WHEN @_ShowBA = 1 AND ba.IsBA = 1 THEN 1 -- BA ticket
+								WHEN @_ShowSB = 1 AND ba.IsBA = 0 THEN 1 -- NOT BA ticket
 								ELSE 0 END
 						ELSE 1
 					END)
-
-		
 	END
 	-- END bettrans range
 
@@ -405,12 +430,17 @@ BEGIN
            ,[playercomm]
            ,[awinlost]
            ,[currency]
-           ,[IsBA])
+           ,[IsBA]
+		   ,[BetCount])
 		SELECT b.custid, b.winlostdate, b.statusid,b.bettype,b.turnover AS stake,0 AS actual_stake,b.winlost,b.comm,b.playercomm,b.awinlost,b.currency
-			,ISNULL(b.isBA, 0) AS isBA
+			,ba.IsBA
+			,ISNULL(b.BetCount, 0) AS BetCount
 		FROM 
 			bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)
-
+			CROSS APPLY (
+				SELECT 
+					ISNULL(b.isBA, 0) AS IsBA
+			) AS ba
 		WHERE 
 			EXISTS(SELECT TOP 1 1 FROM @TempAg c WHERE c.CustID = b.recommend)
 			AND b.roleid = 1
@@ -421,8 +451,10 @@ BEGIN
 			AND 1 = (CASE 
 						WHEN b.sporttype = 0 THEN -- Is SB 
 							CASE 
-								WHEN @_ShowBA = 1 AND ISNULL(b.isBA, 0) = 1 THEN 1 
-								WHEN @_ShowSB = 1 AND ISNULL(b.isBA, 0) = 0 THEN 1
+								WHEN @_ShowBA = 1 AND ba.IsBA = 1 THEN 1 
+								WHEN @_ShowSB = 1 AND ba.IsBA = 0 AND b.bettype IN(0) THEN 1
+								WHEN @_ShowBT = 1 AND b.bettype IN(901,902) THEN 1
+								WHEN @_ShowCO = 1 AND b.bettype IN(911,912) THEN 1
 								ELSE 0 END
 						ELSE 1
 					END)
@@ -436,6 +468,7 @@ BEGIN
 		WHERE NOT EXISTS(SELECT TOP 1 1 FROM #tmpCust c WHERE c.CustID = b.CustID)
 	END
 
+	--select * from #bettrans_temp
 	-- Apply bussiness rules
 	
 	INSERT INTO #TempData(CustID, winlostdate, currency, Turnover, MemberWinlost, BetEffective, LicenseeWL, AmtDueToBA, CommBA, PlayerComm, betcount, PromotionPrize)
@@ -488,9 +521,9 @@ BEGIN
 						WHEN @_DrawFilter = 2
 							AND b.statusid = 111
 							THEN 0
-						ELSE 1
+						ELSE b.BetCount
 						END
-				END) AS betcount
+				END) AS BetCount
 		, SUM(CASE 
 				WHEN b.bettype = 4300 THEN 1
 				ELSE 0
@@ -588,14 +621,14 @@ BEGIN
 		c.username,
 		SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS nickname,
 		SUM(w.TurnOver * e.Rate)			AS TurnOver, 
-		SUM(w.MemberWinLost * e.Rate)	AS MemberWinLost, 
+		SUM(w.MemberWinLost * e.Rate)		AS MemberWinLost, 
 		SUM(w.BetEffective * e.Rate)		AS BetEffective,
-		SUM(w.LicenseeWL * e.Rate) 		AS LicenseeWL,  
-		SUM(w.CommBA * e.Rate)			AS CommBA,
-		SUM(w.playerComm * e.Rate)		AS PlayerComm,
-		SUM(w.AmtDuetoBA * e.Rate)		AS AmtDuetoBA,
-		SUM(w.betcount * e.Rate)			AS BetCount,
-		CAST(SUM((w.MemberWinLost + w.PlayerComm)) AS MONEY) AS CustomerTotalWL
+		SUM(w.LicenseeWL * e.Rate) 			AS LicenseeWL,  
+		SUM(w.CommBA * e.Rate)				AS CommBA,
+		SUM(w.playerComm * e.Rate)			AS PlayerComm,
+		SUM(w.AmtDuetoBA * e.Rate)			AS AmtDuetoBA,
+		SUM(w.betcount)						AS BetCount,
+		CAST(SUM((w.MemberWinLost + w.PlayerComm) * e.Rate) AS MONEY) AS CustomerTotalWL
 	FROM #tempPaging p
 		INNER JOIN #TempData w ON p.CustID = w.CustID
 		INNER JOIN dbo.Customer c WITH (NOLOCK) ON p.CustID = c.CustID
@@ -610,16 +643,16 @@ BEGIN
 	
 	SELECT
 		CAST(SUM(TurnOver * e.Rate) AS MONEY)		AS SumTurnOver,
-		CAST(SUM(MemberWinLost * e.Rate)	AS MONEY)	AS SumMemberWinLost,
+		CAST(SUM(MemberWinLost * e.Rate) AS MONEY)	AS SumMemberWinLost,
 		CAST(SUM(BetEffective * e.Rate) AS MONEY)	AS SumBetEffective,
 		CAST(SUM(LicenseeWL * e.Rate) AS MONEY)		AS SumLicenseeWL,
 		CAST(SUM(CommBA * e.Rate) AS MONEY)			AS SumCommBA,
 		CAST(SUM(PlayerComm * e.Rate) AS MONEY)		AS SumPlayerComm,
 		CAST(SUM(AmtDuetoBA * e.Rate) AS MONEY)		AS SumAmtDuetoBA,
-		COUNT(DISTINCT w.custid)			AS TotalRows,
-		SUM(w.betcount) 					AS SumBetCount,
+		COUNT(DISTINCT w.custid)					AS TotalRows,
+		SUM(w.betcount) 							AS SumBetCount,
 		CAST(SUM((MemberWinLost + PlayerComm) * e.Rate) AS MONEY) AS SumCustomerTotalWL,
-		SUM(PromotionPrize)					AS SumPromotionPrize
+		SUM(PromotionPrize)							AS SumPromotionPrize
 	FROM
 		#TempData w
 		INNER JOIN @Exchange e ON e.exchangeid = w.currency AND w.winlostdate BETWEEN e.FromDate AND e.ToDate
