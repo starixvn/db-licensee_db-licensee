@@ -10,10 +10,12 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeSelExtInfo]
 	@custId int =0
 AS
 /*
-	Created by: [20161114@Alex]
-	Task: Get detailed of licensee by SiteName
-	DB: DBLIC/bodb_Licensee
-	Revisions:116874 - Build statement service
+	Created: 201908304@Alex
+	Description: LAP - Get Licensee Info
+	DB: DBEXT.bodb02
+
+	Revisions:
+	    - 201908304@Alex": Add new SP [Redmine: #116874]
 		
 */
 --  EXEC Lrf_LicenseeSelExtInfo @siteName=12bet @custid=0
