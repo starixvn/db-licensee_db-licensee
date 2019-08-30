@@ -1,6 +1,6 @@
 ﻿/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_CustomerLoginInfo]
-	@LicenseeID		INT,
+	@LicenseeID		INT = 0,
 	@CustID			INT,
 	@SiteName		VARCHAR(50),
 	@LapLaunchDate	SMALLDATETIME = '2018-07-01'
@@ -18,6 +18,7 @@ AS
 		- 20180711@Amanda: get username of LAP if log data is after LAP launch data [#97994]
 		- 20181010@Sophia: add DBLOG for table UserLog_RunSP [redmine: 99855]
 		- 20190411@Lukas: archive a part of old log records to new database
+		- 20190830@Johnson: Get licenseeID from sitename for LAP [redmine:#112658]
 	Param's Explanation:	
 */
 BEGIN
@@ -25,7 +26,14 @@ BEGIN
 
 ----------- get last updated special level ---------------
 	DECLARE @SpecialLevelUpdateByName VARCHAR(50), @SpecialLevelUpdateDate DATETIME,@SpecialLevelUpdateByID INT
-
+	
+	IF ISNULL(@LicenseeID,0) = 0
+	BEGIN
+		SELECT @LicenseeID	= LicenseeID
+		FROM bodb_Licensee.dbo.Licensees WITH(NOLOCK)
+		WHERE LicenseeName = @SiteName
+	END
+	
 	SELECT TOP 1 @SpecialLevelUpdateByID = UserID, @SpecialLevelUpdateDate = LogDate
 	FROM DBLOG.bodb_CustomerLog.dbo.UserLog_RunSP WITH (NOLOCK)
 	WHERE	CustID = @CustID
