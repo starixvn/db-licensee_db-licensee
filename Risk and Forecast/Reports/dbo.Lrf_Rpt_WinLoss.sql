@@ -292,6 +292,7 @@ BEGIN
 	UNION ALL
 	SELECT 'CC' AS Code WHERE @ShowCC = 1
 
+	-- BT & CO belong to SB
 	SELECT @ProductList = COALESCE(@ProductList + ',' + Code, Code)
 	FROM @Products
 	WHERE Code NOT IN ('BT', 'CO')
@@ -341,19 +342,18 @@ BEGIN
 
 	-- Optimze for reducing IO/CPU/Elapsed times
 	CREATE TABLE #bettrans_temp (
-		[custid] [int] NOT NULL
+		[custid]		[int] NOT NULL
 		, [winlostdate] [smalldatetime] NULL
-		, [statusid] [tinyint] NULL
-		, [bettype] [smallint] NULL
-		, [stake] [money] NOT NULL
-		, [actual_stake] [money] NULL
-		, [winlost] [money] NULL
-		, [comm] [money] NULL
-		, [playercomm] [money] NULL
-		, [awinlost] [money] NULL
-		, [currency] [tinyint] NULL
-		, [IsBA] [bit] NULL
-		, [BetCount] [int] NULL
+		, [statusid]	[tinyint] NULL
+		, [bettype]		[smallint] NULL
+		, [turnover]	[money] NOT NULL
+		, [winlost]		[money] NULL
+		, [comm]		[money] NULL
+		, [playercomm]	[money] NULL
+		, [awinlost]	[money] NULL
+		, [currency]	[tinyint] NULL
+		, [IsBA]		[bit] NULL
+		, [BetCount]	[int] NULL
 	)
 
 	-- PROCESS bettrans range
@@ -368,8 +368,7 @@ BEGIN
            ,[winlostdate]
            ,[statusid]
            ,[bettype]
-           ,[stake]
-           ,[actual_stake]
+           ,[turnover]
            ,[winlost]
            ,[comm]
            ,[playercomm]
@@ -377,7 +376,13 @@ BEGIN
            ,[currency]
            ,[IsBA]
 		   ,[BetCount])
-		SELECT b.custid, b.winlostdate, b.statusid,b.bettype,b.stake,b.actual_stake,b.winlost,b.comm,b.playercomm,b.awinlost,b.currency
+		SELECT b.custid, b.winlostdate, b.statusid,b.bettype
+			,b.stake
+			,b.winlost - b.actual_stake
+			,b.comm
+			,b.playercomm
+			,b.awinlost
+			,b.currency
 			,ba.IsBA
 			,1 AS BetCount
 		FROM 
@@ -423,8 +428,7 @@ BEGIN
            ,[winlostdate]
            ,[statusid]
            ,[bettype]
-           ,[stake]
-           ,[actual_stake]
+           ,[turnover]
            ,[winlost]
            ,[comm]
            ,[playercomm]
@@ -432,12 +436,14 @@ BEGIN
            ,[currency]
            ,[IsBA]
 		   ,[BetCount])
-		SELECT b.custid, b.winlostdate, b.statusid,b.bettype,b.turnover AS stake,0 AS actual_stake,b.winlost,b.comm,b.playercomm,b.awinlost,b.currency
+		SELECT b.custid, b.winlostdate, b.statusid,b.bettype,b.turnover,b.winlost,b.comm,b.playercomm,b.awinlost,b.currency
 			,ba.IsBA
 			,ISNULL(b.BetCount, 0) AS BetCount
 		FROM 
 			bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)
-			CROSS APPLY (
+		INNER JOIN @sporttype st 
+			ON b.sporttype = st.sporttype
+		CROSS APPLY (
 				SELECT 
 					ISNULL(b.isBA, 0) AS IsBA
 			) AS ba
@@ -446,10 +452,10 @@ BEGIN
 			AND b.roleid = 1
 			AND b.Winlostdate >= @_FromDate AND b.Winlostdate <= @TempToDate
 			AND b.statusID <> 101
-			AND EXISTS(SELECT TOP 1 1 FROM @sporttype bt WHERE bt.sporttype = b.sporttype)
+			
 			-- CHECK for BA & SB
 			AND 1 = (CASE 
-						WHEN b.sporttype = 0 THEN -- Is SB 
+						WHEN st.ProductCode = 'SB' THEN -- Is SB 
 							CASE 
 								WHEN @_ShowBA = 1 AND ba.IsBA = 1 THEN 1 
 								WHEN @_ShowSB = 1 AND ba.IsBA = 0 AND b.bettype IN(0) THEN 1
@@ -468,9 +474,7 @@ BEGIN
 		WHERE NOT EXISTS(SELECT TOP 1 1 FROM #tmpCust c WHERE c.CustID = b.CustID)
 	END
 
-	--select * from #bettrans_temp
 	-- Apply bussiness rules
-	
 	INSERT INTO #TempData(CustID, winlostdate, currency, Turnover, MemberWinlost, BetEffective, LicenseeWL, AmtDueToBA, CommBA, PlayerComm, betcount, PromotionPrize)
 	SELECT b.CustID
 		, b.winlostdate
@@ -484,27 +488,27 @@ BEGIN
 								)
 							OR b.bettype IN (901, 902, 911, 912)
 							THEN 0
-						ELSE b.stake
+						ELSE b.turnover
 						END
 				END) AS Turnover
 		, SUM(CASE 
 				WHEN @_ShowBA = 0 AND b.IsBA = 1 THEN 0
-				ELSE (b.winlost - b.actual_stake)
+				ELSE (b.winlost)
 				END) AS MemberWinlost
 		, SUM(CASE 
 				WHEN @_ShowBA = 0 AND b.IsBA = 1 THEN 0
 				ELSE CASE 
 						WHEN b.bettype = 4300 -- exclude Promotion Prize from BetEffective
 							THEN 0
-						ELSE ABS(winlost - actual_stake)
+						ELSE ABS(b.winlost)
 						END
 				END) AS BetEffective 
 		, - SUM(CASE 
 				WHEN b.IsBA = 1 THEN 0 --exclude BA ticket's
-				ELSE (b.winlost - b.actual_stake)
+				ELSE (b.winlost)
 				END) AS LicenseeWL
 		, - SUM(CASE 
-				WHEN @_ShowBA = 1 AND b.IsBA = 1 THEN (b.winlost - b.actual_stake + b.awinlost + b.comm) --COUNT for BA's tickets
+				WHEN @_ShowBA = 1 AND b.IsBA = 1 THEN (b.winlost + b.awinlost + b.comm) --COUNT for BA's tickets
 				ELSE 0
 				END) AS AmtDueToBA
 		, SUM(CASE 
@@ -512,7 +516,7 @@ BEGIN
 				ELSE 0
 				END) AS CommBA
 		, SUM(CASE 
-				WHEN @ShowBA = 0 AND b.IsBA = 1 THEN 0
+				WHEN @_ShowBA = 0 AND b.IsBA = 1 THEN 0
 				ELSE b.PlayerComm
 				END) AS PlayerComm
 		, SUM(CASE 
