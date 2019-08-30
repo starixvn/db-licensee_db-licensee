@@ -301,7 +301,7 @@ BEGIN
 	INSERT INTO @bettype ( bettype, ProductCode )
 	SELECT DISTINCT BetType, ProductPrefix
 	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
-		
+
 	-- bettrade
 	INSERT INTO @bettype(bettype, ProductCode)
 	SELECT bt.bettype, p.Code 
@@ -598,7 +598,10 @@ BEGIN
 					WHEN @OrderItem = 11 THEN w.AmtDuetoBA
 					WHEN @OrderItem = 13 THEN w.BetCount
 					WHEN @OrderItem = 14 THEN (w.MemberWinLost + w.PlayerComm)
-				END * e.Rate) AS OrderCol
+				END * CASE 
+					WHEN @OrderItem = 13 THEN 1 -- BetCount
+					ELSE e.Rate 
+				END) AS OrderCol
 			FROM #TempData w
 			INNER JOIN @Exchange e ON e.exchangeid = w.currency AND w.winlostdate BETWEEN e.FromDate AND e.ToDate
 			GROUP BY w.custid
