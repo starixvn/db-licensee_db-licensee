@@ -88,18 +88,20 @@ BEGIN
 			INNER JOIN @tempAgent a ON b.recommend = a.agentId AND b.currency = a.currency
 		WHERE 
             custid = @CustID
+			AND b.tpositiontaking <> 0
 			AND b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND (b.bettype < 901 OR b.bettype > 904) -- Exclude Cash out
 			AND (b.bettype < 911 OR b.bettype > 914) -- Exclude BetTrade
 			AND b.statusID IN (111,112,113,101,102,103) -- Draw/Won/Lose/Rejected/Void/Refund
 
 		INSERT INTO #tempStatistics
-		SELECT b.winlost as WinLost, b.actual_stake as ActualStake, b.stake as Stake, b.statusID as StatusId, 1 AS BetCount
+		SELECT (b.winlost - b.actual_stake) as WinLost, b.actual_stake as ActualStake, b.stake as Stake, b.statusID as StatusId, 1 AS BetCount
 		FROM
 			bettrans b WITH (NOLOCK)
 			INNER JOIN @tempAgent a ON b.recommend = a.agentId AND b.currency = a.currency
 		WHERE 
             custid = @CustID
+			AND b.tpositiontaking <> 0
 			AND b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND (b.bettype < 901 OR b.bettype > 904) -- Exclude Cash out
 			AND (b.bettype < 911 OR b.bettype > 914) -- Exclude BetTrade
@@ -123,6 +125,7 @@ BEGIN
 			INNER JOIN @tempAgent a ON b.recommend = a.agentId AND b.Currency = a.Currency
 		WHERE  
             custid = @CustID
+			AND b.isBA = 0
 			AND b.Winlostdate BETWEEN @FDate AND @TempToDate
 			AND b.sporttype = 0
 			AND (b.bettype < 901 OR b.bettype > 904) -- Exclude Cash out
@@ -136,6 +139,7 @@ BEGIN
 			INNER JOIN @tempAgent a ON b.recommend = a.agentId AND b.Currency = a.Currency
 		WHERE  
             custid = @CustID
+			AND b.isBA = 0
 			AND b.Winlostdate BETWEEN @FDate AND @TempToDate
 			AND b.sporttype = 0
 			AND (b.bettype < 901 OR b.bettype > 904) -- Exclude Cash out
@@ -143,16 +147,16 @@ BEGIN
 			AND b.statusID IN (111,112,113,101,102,103) -- Draw/Won/Lose/Rejected/Void/Refund
 	END
 
-	SELECT SUM(Won) AS Won,
-		SUM(Lose) AS Lose,
-		SUM(Draw) AS Draw,
-		SUM(Cancelled) AS Cancelled
+	SELECT ISNULL(SUM(Won), 0) AS Won,
+		ISNULL(SUM(Lose), 0) AS Lose,
+		ISNULL(SUM(Draw), 0) AS Draw,
+		ISNULL(SUM(Cancelled), 0) AS Cancelled
 	FROM @tempStatus
 
-	SELECT SUM(WinLost - ActualStake) / SUM(Stake) AS Margin,
-		SUM(Stake) / SUM(BetCount) AS AverageBetSize,
-		SUM(CASE WHEN StatusId = 112 THEN (WinLost - ActualStake) ELSE 0 END) AS Winnings,
-		SUM(CASE WHEN StatusId = 113 THEN (WinLost - ActualStake) ELSE 0 END) AS Loss
+	SELECT ISNULL(SUM(WinLost - ActualStake) / SUM(Stake), 0) AS Margin,
+		ISNULL(SUM(Stake) / SUM(BetCount), 0) AS AverageBetSize,
+		ISNULL(SUM(CASE WHEN StatusId = 112 THEN (WinLost - ActualStake) ELSE 0 END), 0) AS Winnings,
+		ISNULL(SUM(CASE WHEN StatusId = 113 THEN (WinLost - ActualStake) ELSE 0 END), 0) AS Loss
 	FROM #tempStatistics
 
 	DROP TABLE #tempStatistics
