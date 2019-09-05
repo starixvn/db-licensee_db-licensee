@@ -37,6 +37,8 @@ BEGIN
 
 	DECLARE @tempStatus         TABLE (Won INT, Lose INT, Draw INT, Cancelled INT)
 
+	DECLARE @bettype		TABLE (bettype INT PRIMARY KEY)
+
 	CREATE TABLE #tempStatistics 
 	(
 		WinLost MONEY,
@@ -62,6 +64,13 @@ BEGIN
 				, ErrMsg = N'Paramter invalid.'
 		RETURN
 	END CATCH;
+
+	DECLARE @IsTest BIT = 0
+	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
+	-- Insert Bettype
+	INSERT INTO @bettype (bettype)
+	SELECT DISTINCT BetType
+	FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', 'SB', @IsTest)
 
 	DECLARE @TempFromDate	SMALLDATETIME,
 			@TempToDate		SMALLDATETIME,
@@ -93,6 +102,7 @@ BEGIN
 			AND (b.bettype < 901 OR b.bettype > 904) -- Exclude Cash out
 			AND (b.bettype < 911 OR b.bettype > 914) -- Exclude BetTrade
 			AND b.statusID IN (111,112,113,101,102,103) -- Draw/Won/Lose/Rejected/Void/Refund
+			AND b.bettype in (SELECT bettype FROM @bettype)
 
 		INSERT INTO #tempStatistics
 		SELECT (b.winlost - b.actual_stake) as WinLost, b.actual_stake as ActualStake, b.stake as Stake, b.statusID as StatusId, 1 AS BetCount
@@ -106,6 +116,7 @@ BEGIN
 			AND (b.bettype < 901 OR b.bettype > 904) -- Exclude Cash out
 			AND (b.bettype < 911 OR b.bettype > 914) -- Exclude BetTrade
 			AND b.statusID IN (111,112,113,101,102,103) -- Draw/Won/Lose/Rejected/Void/Refund
+			AND b.bettype in (SELECT bettype FROM @bettype)
 	END
 
 	IF @FDate <= @MoveBetsDay 
@@ -116,10 +127,10 @@ BEGIN
 			SET @TempToDate = @TDate
 
 		INSERT INTO @tempStatus
-		SELECT SUM(CASE WHEN b.statusID = 112 THEN 1 ELSE 0 END) AS Won,
-			SUM(CASE WHEN b.statusID = 113 THEN 1 ELSE 0 END) AS Lose,
-			SUM(CASE WHEN b.statusID = 111 THEN 1 ELSE 0 END) AS Draw,
-			SUM(CASE WHEN b.statusID IN (101,102,103) THEN 1 ELSE 0 END) AS Cancelled
+		SELECT SUM(CASE WHEN b.statusID = 112 THEN ISNULL(b.BetCount, 0) ELSE 0 END) AS Won,
+			SUM(CASE WHEN b.statusID = 113 THEN ISNULL(b.BetCount, 0) ELSE 0 END) AS Lose,
+			SUM(CASE WHEN b.statusID = 111 THEN ISNULL(b.BetCount, 0) ELSE 0 END) AS Draw,
+			SUM(CASE WHEN b.statusID IN (101,102,103) THEN ISNULL(b.BetCount, 0) ELSE 0 END) AS Cancelled
 		FROM
 			bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)
 			INNER JOIN @tempAgent a ON b.recommend = a.agentId AND b.Currency = a.Currency
