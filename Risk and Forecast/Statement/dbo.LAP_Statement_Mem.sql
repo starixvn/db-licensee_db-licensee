@@ -18,6 +18,8 @@ Original: [Lrf_Statement_Mem]
 
 Revisions:  
 	- 20190723@Bobby: Initialize [RedmineID: #117534]
+	- 20190904@Bobby: Implement Statement Service - Level 1 [RedmineID: #119648]
+	
 	
 Param's Explanation:     
 */
@@ -26,35 +28,32 @@ BEGIN
 	
 	DECLARE @previousBalanceUpDay	DATE
 		, @isCOMember				BIT --Cash Out member
-		, @startDate				SMALLDATETIME
-		, @endDate					SMALLDATETIME
 		, @currentDate				SMALLDATETIME
 		, @currency					INT  
+		, @_startDate				SMALLDATETIME
+		, @_endDate					SMALLDATETIME
+		, @_tempStartDate			SMALLDATETIME
+		, @_tempEndDate				SMALLDATETIME
+		, @_CustID					INT
+		, @_recommend				INT
 
-	DECLARE @betTicket	TABLE  
-    (
-		winlostdate		DATETIME,
-        bettype			SMALLINT,
-        statusID		SMALLINT,
-        transdate		DATETIME,
-        transdesc		NVARCHAR(300),
-        stake			DECIMAL(15,2),
-        actual_stake	DECIMAL(15,2),
-        winlost			DECIMAL(15,2),
-        playercomm		DECIMAL(15,2),
-		outstanding		DECIMAL(15,2)
-    )
+	DECLARE @BAL_KEY			TINYINT = 0
+			, @VOID_KEY			TINYINT = 2
+			, @BET_KEY			TINYINT = 1
+			, @OUT_KEY			TINYINT = 3
+			, @TRAN_KEY			TINYINT = 2
+			, @CBGP_KEY			TINYINT = 4
+			, @BAL_BETTYPE		INT = 20000
 
-	DECLARE @statementRpt TABLE  
+	CREATE TABLE #statementRpt
     (  
-        OrderKey		INT,
         winlostdate		DATETIME,
+		orderKey		INT,
         transtype		NVARCHAR(100),
         transdesc		NVARCHAR(300),
-        TurnOver		DECIMAL(15,2),
-        TotalAmt		DECIMAL(15,2),
-        Commission		DECIMAL(15,2),
-		Balance			DECIMAL(15,2)
+        turnover		DECIMAL(15,2) DEFAULT(0),
+        totalAmt		DECIMAL(15,2) DEFAULT(0),
+        commission		DECIMAL(15,2) DEFAULT(0)
     )
 
 	DECLARE @transDesc TABLE  
@@ -64,435 +63,369 @@ BEGIN
 		orderkey		TINYINT
     )
 
-	CREATE TABLE #tempStatementRpt (
-		RowNum			INT IDENTITY(1,1) PRIMARY KEY,
-		winlostdate		DATETIME,
-		OrderKey		INT,
-        transtype		NVARCHAR(100),
-        transdesc		NVARCHAR(300),
-        TurnOver		DECIMAL(15,2),
-        TotalAmt		DECIMAL(15,2),
-        Commission		DECIMAL(15,2),
-		Balance			DECIMAL(15,2)
-	)
+	SELECT @TotalRows	= 0
+		, @currentDate	= CURRENT_TIMESTAMP
+		, @isCOMember	= ISNULL(@isCOMember,0)
+		, @_CustID		= ISNULL(@CustID, 0)
+		, @_startDate	= @FromDate
+		, @_endDate		= CASE WHEN @ToDate > @currentDate THEN @currentDate ELSE @ToDate END
 
-	SELECT TOP(1) @currency	= currency 
+	SELECT TOP(1) @currency	= currency, @_recommend = recommend
 	FROM dbo.custinfo (NOLOCK) 
-	WHERE custid = @custid  
+	WHERE custid = @_CustID  
 	
+	SELECT TOP 1 @isCOMember = 1
+	FROM dbo.TradeCust WITH(NOLOCK)
+	WHERE custid = @_CustID
+		AND VendorID = 14
+
+	SELECT @isCOMember	= ISNULL(@isCOMember,0)
+
 	-- validate time range & custid
-	IF (@startDate > @endDate 
+	IF (@_startDate > @_endDate 
+		OR @BalanceUpDay IS NULL
+		OR @MoveBetsDay IS NULL
 		OR @BalanceUpDay > @MoveBetsDay 
-		OR @currency IS NULL)
+		OR @currency IS NULL
+		OR @_CustID <= 0)
 	BEGIN
 		SELECT RowNum,winlostdate,transtype,transdesc,TurnOver,TotalAmt,Commission
 		FROM #tempStatementRpt
 		RETURN
 	END
 
-	SELECT TOP 1 @isCOMember = 1
-	FROM dbo.TradeCust WITH(NOLOCK)
-	WHERE custid = @CustID
-		AND VendorID = 14
-
-	SELECT @TotalRows	= 0
-		, @currentDate	= CURRENT_TIMESTAMP
-		, @isCOMember	= ISNULL(@isCOMember,0)
-		, @startDate	= @FromDate
-		, @endDate		= CASE WHEN @ToDate > @currentDate THEN @currentDate ELSE @ToDate END
-
 	INSERT INTO @transDesc (orderkey, transtype, transdesc)
-	SELECT 0				AS OrderKey
+	SELECT @BAL_KEY			AS OrderKey
 		,'BAL'				AS TransType
-		,'OPENING BALANCE'	AS TransDesc
+		,'Opening_Balance'	AS TransDesc
 	UNION ALL
-	SELECT 1,'BET','Betting Statement'
+	SELECT @BET_KEY,'BET','Bet_Statement'
 	UNION ALL
-	SELECT 2,'BET','Void/Cancelled Bet'
+	SELECT @VOID_KEY,'BET','Void_Cancelled_Bet'
 	UNION ALL
-	SELECT 3,'BET','Outstanding Bet'
+	SELECT @OUT_KEY,'BET','Outstanding_Bet'
 	UNION ALL
-	SELECT 4,'GP','Grand Prize'
+	SELECT @CBGP_KEY,'GP','Grand_Prize'
 	UNION ALL
-	SELECT 2, UPPER(typenamee), ISNULL(typedesc,'')
+	SELECT @TRAN_KEY, UPPER(typenamee), ISNULL(typedesc,'')
 	FROM bodb02.dbo.bettype (NOLOCK)
-	WHERE typeid > 20000
+	WHERE typeid > @BAL_BETTYPE
 
-	-- INIT: OPENING BALANCE
-	IF (@startDate < @BalanceUpDay)
+	------------- START INIT: OPENING BALANCE ---------------
+	IF (@_startDate < @BalanceUpDay)
 	BEGIN
 		-- INSERT the previous BAL transaction
-		INSERT INTO @statementRpt (orderkey, winlostdate, transtype, transdesc, turnover,TotalAmt,commission, balance)
+		INSERT INTO #statementRpt (orderkey, winlostdate, transtype, transdesc, turnover,TotalAmt,commission)
 		SELECT TOP(1)
-			0 AS orderkey
+			@BAL_KEY AS orderkey
 			, rpt.accdate
 			, UPPER(rpt.transtype)
-			, rpt.transdesc
-			, 0 AS turnover, rpt.totalAmt AS TotalAmt , 0 AS commission, rpt.totalAmt AS  balance
-		FROM DBRPT.bodb_report.dbo.[Statement] rpt WITH (NOLOCK)  
-		WHERE rpt.custid = @custid
-			AND rpt.accdate <= @startDate
+			, NULL
+			, 0 AS turnover, rpt.totalAmt AS TotalAmt , 0 AS commission
+		FROM bodb_report.dbo.[Statement] rpt WITH (NOLOCK)  
+		WHERE rpt.custid = @_CustID
+			AND rpt.accdate <= @_startDate
 			AND rpt.transtype = 'BAL'
 		ORDER BY rpt.accdate DESC
 
-		IF(@@ROWCOUNT = 0)
-		BEGIN
-			SELECT @previousBalanceUpDay =  @startDate
-			WHILE(DATEPART(DW,@previousBalanceUpDay) <> 6)
-				SET @previousBalanceUpDay =  DATEADD(DD, -1, @previousBalanceUpDay)
-		END
-
-		-- RESET FromDate
-		SELECT @startDate = @previousBalanceUpDay
+		-- SET @previousBalanceUpDay
+		SELECT @previousBalanceUpDay = winlostdate
+		FROM #statementRpt
 	END
 	ELSE
 	BEGIN
-		INSERT INTO @statementRpt (orderkey, winlostdate, transtype, transdesc, turnover,TotalAmt,commission, balance)
-		SELECT 0,
+		INSERT INTO #statementRpt (orderkey, winlostdate, transtype, transdesc, turnover,TotalAmt,commission)
+		SELECT @BAL_KEY,
 			b.winlostdate
 			,'BAL'
 			,NULL  
 			,0 AS turnover
 			,(b.winlost - b.actual_stake) AS TotalAmt
 			,0 AS commission
-			,(b.winlost - b.actual_stake) AS balance
-		FROM dbo.bettrans b (NOLOCK) 
-		WHERE b.custid = @custid  
-			AND b.bettype = 20000
+		FROM bodb02.dbo.bettrans b (NOLOCK)
+		WHERE b.custid = @_CustID  
+			AND b.bettype = @BAL_BETTYPE
 
-		-- RESET FromDate
-		SELECT @startDate = @BalanceUpDay
-			,@previousBalanceUpDay = @BalanceUpDay
+		-- SET @previousBalanceUpDay
+		SELECT @previousBalanceUpDay = winlostdate
+		FROM #statementRpt
 	END
 
 	-- INSERT dummy OPENING BALANCE transaction for reactive member OR new member without balanceup day
-	IF (NOT EXISTS(SELECT TOP 1 1 FROM @statementRpt))
+	IF (NOT EXISTS(SELECT TOP 1 1 FROM #statementRpt))
 	BEGIN
-		INSERT INTO @statementRpt (orderkey, winlostdate, transtype, transdesc, turnover,TotalAmt,commission, balance)
-		SELECT 0 AS orderkey
+		IF(@previousBalanceUpDay IS NULL)
+		BEGIN
+			SELECT @previousBalanceUpDay =  @_startDate
+			WHILE(DATEPART(DW,@previousBalanceUpDay) <> 6)
+				SET @previousBalanceUpDay =  DATEADD(DD, -1, @previousBalanceUpDay)
+		END
+
+		INSERT INTO #statementRpt (orderkey, winlostdate, transtype, transdesc, turnover,TotalAmt,commission)
+		SELECT @BAL_KEY AS orderkey
 			, @previousBalanceUpDay AS winlostdate
 			, 'BAL' transtype
 			, NULL AS transdesc
-			, 0 AS turnover, 0 AS TotalAmt, 0 AS commission, 0 AS balance
+			, 0 AS turnover, 0 AS TotalAmt, 0 AS commission
 	END
+	------------- END INIT: OPENING BALANCE ---------------
 
-	-- begin statement report data
-	BEGIN
-		-- after BalanceUpDay
-		IF (@endDate >= @BalanceUpDay)
-		BEGIN   
-			-- bet summary - before BalanceUpDay
-			IF (@startDate < @BalanceUpDay)
-			BEGIN 
-				INSERT INTO @statementRpt (orderkey, winlostdate, transtype, transdesc, turnover,TotalAmt,commission, balance)
-				SELECT f.orderkey, f.winlostdate, f.transtype, f.transdesc, f.turnover, f.TotalAmt, f.commission, f.balance
-				FROM dbo.LAP_f_Statement_Mem_Summary(@CustID, @startDate, @BalanceUpDay) AS f
-					LEFT JOIN @statementRpt temp 
-							ON f.winlostdate = temp.winlostdate
-							AND temp.transtype	= 'BAL'
-				WHERE temp.winlostdate IS NULL
-			END  
+	-- RESET FromDate
+	SELECT @_startDate = @previousBalanceUpDay
+	
+	--------------- Start: PROCESS data ------------------------
+	-- after @BalanceUpDay - Mix up
+	IF (@_endDate >= @BalanceUpDay)
+	BEGIN   
+		-- bettrans_bk tickets & [Statement] opening balance - before @BalanceUpDay
+		IF (@_startDate < @BalanceUpDay)
+		BEGIN 
+			SELECT @_tempStartDate	=  @_startDate
+				, @_tempEndDate		= @BalanceUpDay-1
 
-			-- bettrans range -- after BalanceUpDay
-			BEGIN
-				-- bet tickets
-				INSERT INTO @betTicket(winlostdate, bettype, statusID, transdate, transdesc, stake, actual_stake, winlost, playercomm, outstanding)
+			INSERT INTO #statementRpt (orderkey, winlostdate, transtype, transdesc, turnover,TotalAmt,commission)
+			SELECT f.orderkey, f.winlostdate, f.transtype, f.transdesc, f.turnover, f.TotalAmt, f.commission
+			FROM bodb02.dbo.LAP_f_Statement_Mem_Summary(@_CustID, @_tempStartDate, @_tempEndDate) AS f
+			LEFT JOIN #statementRpt temp 
+				ON f.winlostdate = temp.winlostdate AND f.transtype = temp.transtype
+			WHERE temp.winlostdate IS NULL
+		END  
+
+		-- bettrans14 tickets - after @BalanceUpDay
+		IF (@_endDate >= @BalanceUpDay)
+		BEGIN 
+			SELECT @_tempStartDate	=  CASE WHEN @_startDate <= @BalanceUpDay THEN @BalanceUpDay ELSE @_startDate END
+				, @_tempEndDate		= CASE WHEN @_endDate >= @MoveBetsDay THEN @MoveBetsDay ELSE @_endDate END
+
+			-- bet tickets
+			INSERT INTO #statementRpt (orderkey, winlostdate, transtype, transdesc, turnover,totalamt,commission)
+			SELECT 
+				CASE
+					WHEN statusID IN (101, 102, 103) THEN @VOID_KEY
+					ELSE @BET_KEY END AS orderkey, 
+				winlostdate,
+				'BET' AS transtype,
+				NULL AS transdesc,
+				SUM(CASE 
+					WHEN bettype IN (33, 43) AND liveawayscore = 0 AND livehomescore <> 0 AND ruben = 1 THEN stake/2 
+					ELSE stake END
+				) AS turnover,  
+				SUM(winlost-actual_stake) AS totalamt,
+				SUM(playercomm) AS commission
+			FROM bodb02.dbo.bettrans14 b WITH (NOLOCK)  
+			WHERE
+				b.custid = @_CustID  
+				AND b.winlostdate >= @_tempStartDate and winlostdate <= @_tempEndDate
+				AND b.bettype NOT IN (903, 71, 913, 914)
+				AND ((@IsCOMember = 0 AND b.bettype <> 912) OR (@IsCOMember = 1 AND b.bettype <> 911))
+			GROUP BY
+				CASE
+					WHEN statusID IN (101, 102, 103) THEN @VOID_KEY
+					ELSE @BET_KEY END, 
+				winlostdate
+		END  
+
+		-- bettrans tickets -- after @MoveBetsDay
+		IF (@_endDate > @MoveBetsDay)
+		BEGIN
+			SELECT @_tempStartDate  =  CASE WHEN @_startDate <= @MoveBetsDay THEN @MoveBetsDay-1 ELSE @_startDate END
+				, @_tempEndDate		=  @_endDate
+
+			-- bet tickets
+			INSERT INTO #statementRpt (orderkey, winlostdate, transtype, transdesc, turnover,totalamt,commission)
+			SELECT orderkey, winlostdate, transtype, transdesc
+				,SUM(turnover)
+				,SUM(totalamt)
+				,SUM(commission)
+			FROM (
 				SELECT 
-					winlostdate,
-					bettype,
 					CASE
-						WHEN statusID IN (101, 102) THEN 102
-						WHEN statusID IN (0, 1) THEN 0
-						ELSE 131 END AS statusID,  
-					CASE WHEN bettype <= 19999 THEN NULL ELSE transdate END,
-					CASE WHEN bettype <= 19999 THEN '' ELSE transdesc END AS transdesc,
+						WHEN statusID IN (0, 1) THEN @OUT_KEY
+						WHEN statusID IN (101, 102, 103) THEN @VOID_KEY
+						ELSE @BET_KEY END AS orderkey,  
+					winlostdate,
+					'BET' transtype,
+					NULL transdesc,
 					SUM(CASE 
 						WHEN bettype IN (33, 43) AND liveawayscore = 0 AND livehomescore <> 0 AND ruben = 1 THEN stake/2 
+						WHEN statusID IN (0, 1) THEN ABS(actual_stake)
 						ELSE stake END
-					) AS stake,  
-					SUM(actual_stake) AS actual_stake,
-					SUM(winlost) AS winlost,
-					SUM(playercomm) AS playercomm,
-					SUM(CASE WHEN statusID IN (0,1) THEN ABS(actual_stake) ELSE 0 END) AS outstanding
-				FROM bodb02.dbo.bettrans WITH (NOLOCK)  
+					) AS turnover,  
+					SUM(CASE WHEN statusID IN (0, 1) THEN 0 ELSE winlost-actual_stake END) AS totalamt,
+					SUM(playercomm) AS commission
+
+				FROM 
+					bodb02.dbo.bettrans b WITH (NOLOCK)  
+
 				WHERE
-					custid = @custid  
-					AND winlostdate >= @BalanceUpDay and winlostdate <= @endDate
-					AND bettype NOT IN (903, 71, 913, 914)
+					custid = @_CustID  
+					AND winlostdate >= @_tempStartDate and winlostdate <= @_tempEndDate
+					AND b.bettype < 19999
+					AND b.bettype NOT IN (903, 71, 913, 914)
 					AND ((@IsCOMember = 0 AND bettype <> 912) OR (@IsCOMember = 1 AND bettype <> 911))
 				GROUP BY
-					winlostdate,
-					bettype,
 					CASE
-						WHEN statusID IN (101, 102) THEN 102
-						WHEN statusID IN (0, 1) THEN 0
-						ELSE 131 END,
-					CASE WHEN bettype <= 19999 THEN NULL ELSE transdate END,
-					CASE WHEN bettype <= 19999 THEN '' ELSE transdesc END
+						WHEN statusID IN (0, 1) THEN @OUT_KEY
+						WHEN statusID IN (101, 102, 103) THEN @VOID_KEY
+						ELSE @BET_KEY END,  
+					winlostdate
 			
 				--include running Keno bet
-				INSERT INTO @betTicket(winlostdate, bettype, statusID, transdate, transdesc, stake, actual_stake, winlost, playercomm, outstanding)
+				UNION ALL
 				SELECT
+					@OUT_KEY,
 					winlostdate,
-					gameid,
-					0, --running bet
-					NULL,  
+					'BET',  
 					'' AS transdesc, 
-					SUM(stake),  
 					SUM(actual_stake),  
-					0, --winlost
-					0,  --playcomm
-					SUM(actual_stake)
+					0,
+					0 
 				FROM bodb02.dbo.translog WITH (NOLOCK)
 				WHERE
-					custid = @custid  
-					AND winlostdate >= @BalanceUpDay and winlostdate <= @endDate  
-					AND statusID IN (0,1) -- get only running game _ Keno
+					statusID IN (0,1) -- get only running game _ Keno
+					AND custid = @_CustID  
+					AND winlostdate >= @_tempStartDate and winlostdate <= @_tempEndDate  
+						
 				GROUP BY 
 					winlostdate
-					, gameID
 		
 				--include running Microgaming + RNG Casino + Voidbridge
-				INSERT INTO @betTicket(winlostdate, bettype, statusID, transdate, transdesc, stake, actual_stake, winlost, playercomm, outstanding)
+				UNION ALL
 				SELECT
+					@OUT_KEY,
 					winlostdate,
-					gameid,
-					0,
+					'BET',
 					NULL,
-					'' transdesc,
-					SUM(stake),
 					SUM(actual_stake),
-					0, --winlost
-					0,  --playcomm
-					SUM(actual_stake)
+					0,
+					0 
 				FROM bodb02.dbo.bettransRnG WITH (NOLOCK)
 				WHERE
-					custid = @custid  
-					AND winlostdate >= @BalanceUpDay and winlostdate <= @endDate  
+					custid = @_CustID  
+					AND winlostdate >= @_tempStartDate and winlostdate <= @_tempEndDate  
 					AND statusID = 0 -- get only running game _ bettransRnG
 				GROUP BY 
 					winlostdate
-					, gameID
 		
 				-- get only running game _ bettransRnG
-				INSERT INTO @betTicket(winlostdate, bettype, statusID, transdate, transdesc, stake, actual_stake, winlost, playercomm, outstanding)
+				UNION ALL
 				SELECT
+					@OUT_KEY,
 					winlostdate,
-					gameid,
-					0,
+					'BET',
 					NULL,
-					'' transdesc,
-					SUM(stake),
 					SUM(actual_stake),
-					0, --winlost
-					0,  --playcomm
-					SUM(actual_stake)
+					0,
+					0  
 				FROM bodb02.dbo.bettransLC WITH (NOLOCK)
 				WHERE
-					custid = @custid  
-					AND winlostdate >= @BalanceUpDay and winlostdate <= @endDate  
+					recommend = @_recommend
+					AND winlostdate >= @_tempStartDate and winlostdate <= @_tempEndDate  
+					AND custid = @_CustID  
 					AND statusID = 0 
 				GROUP BY 
 					winlostdate
-					, gameID
+			) AS rpt
+			GROUP BY
+				orderkey
+				, winlostdate
+				, transtype
+				, transdesc
+		END
+
+		-- bettrans transfer
+		SELECT @_tempStartDate = @BalanceUpDay;
+		WITH CTE_transfer AS (
+			SELECT 
+				CASE WHEN b.bettype = @BAL_BETTYPE THEN @BAL_KEY ELSE @TRAN_KEY END AS orderkey,
+				CASE WHEN b.bettype = @BAL_BETTYPE THEN b.winlostdate ELSE b.transdate END AS winlostdate,
+				CASE WHEN b.bettype = @BAL_BETTYPE THEN 'BAL' ELSE UPPER(bt.typenamee) END AS transtype ,
+				CASE WHEN b.bettype = @BAL_BETTYPE THEN NULL ELSE b.transdesc END AS transdesc,
+				stake AS turnover,  
+				winlost-actual_stake AS totalamt,
+				playercomm AS commission
+			FROM bodb02.dbo.bettrans b WITH (NOLOCK)  
+			INNER JOIN dbo.bettype bt WITH(NOLOCK) ON b.bettype = bt.typeid
 				
-				-- insert into statement rpt
-				INSERT INTO @statementRpt (orderkey, winlostdate, transtype, transdesc, turnover,TotalAmt,commission)
-				SELECT rpt.orderkey, rpt.winlostdate, rpt.transtype, rpt.transdesc, SUM(rpt.turnover), SUM(rpt.TotalAmt), SUM(rpt.commission)
-				FROM (
-					SELECT
-						1 AS orderkey,
-						winlostdate,
-						'BET' AS transtype,
-						NULL AS transdesc,
-						SUM(CASE WHEN bettype IN (911, 912) THEN 0 ELSE stake END) AS turnover,
-						SUM(winlost - actual_stake) AS TotalAmt,  
-						SUM(playercomm) AS commission
-					FROM @betTicket  
-					WHERE
-						bettype <= 19999  
-						AND statusID = 131  
-					GROUP BY winlostdate    
-     		 
-					-- Outstanding Bet tickets
-					UNION ALL
-					SELECT
-						3,
-						winlostdate,
-						'BET',
-						NULL,
-						SUM(outstanding),
-						0,
-						0
-					FROM @betTicket
-					WHERE
-						statusID = 0 
-						AND bettype NOT IN (23001, 23002, 23101, 23102, 23201, 23202)
-					GROUP BY winlostdate    
+			WHERE
+				b.custid = @_CustID  
+				AND b.winlostdate >= @_tempStartDate and b.winlostdate <= @_tempEndDate
+				AND b.matchid = 0 AND b.bettype >= @BAL_BETTYPE
 					
-
-					-- OPENING BALANCE
-					UNION ALL
-					SELECT
-						0,
-						b.winlostdate,
-						'BAL',
-						NULL,
-						0,
-						SUM(b.winlost-b.actual_stake),
-						0
-					FROM @betTicket b
-					WHERE
-						b.bettype = 20000
-					GROUP BY b.winlostdate    
-
-					-- Transaction
-					UNION ALL
-					SELECT
-						2,
-						transdate,
-						UPPER(typenamee),
-						B.transdesc,
-						0,
-						(winlost - actual_stake),
-						0
-					FROM @betTicket AS B  
-						INNER JOIN bodb02.dbo.bettype (NOLOCK) ON B.bettype = bettype.typeid  
-					WHERE
-						bettype > 20000  
-						AND bettype NOT IN (23001, 23002, 23101, 23102, 23201, 23202)
-						AND winlost <> actual_stake
-				) AS rpt
-					LEFT JOIN @statementRpt temp 
-					ON rpt.winlostdate = temp.winlostdate AND temp.transtype = 'BAL'
-					WHERE
-						temp.winlostdate IS NULL
-				GROUP BY 
-					rpt.winlostdate
-					, rpt.orderkey
-					, rpt.transtype
-					, rpt.transdesc
-			END
-		END
-		
-		-- bet summary - before BalanceUpDay
-		IF (@endDate < @BalanceUpDay)  
-		BEGIN
-			INSERT INTO @statementRpt (orderkey, winlostdate, transtype, transdesc, turnover,TotalAmt,commission, balance)
-			SELECT f.orderkey, f.winlostdate, f.transtype, f.transdesc, f.turnover, f.TotalAmt, f.commission, f.balance
-			FROM dbo.LAP_f_Statement_Mem_Summary(@CustID, @startDate, @endDate) AS f
-				LEFT JOIN @statementRpt temp 
-						ON f.winlostdate = temp.winlostdate
-						AND temp.transtype	= 'BAL'
-			WHERE temp.winlostdate IS NULL
-		END
+		)
+		INSERT INTO #statementRpt (orderkey, winlostdate, transtype, transdesc, turnover,totalamt,commission)
+		SELECT b.orderkey, b.winlostdate, b.transtype, b.transdesc, b.turnover, b.totalamt, b.commission 
+		FROM CTE_transfer b 
+		LEFT JOIN #statementRpt temp
+			ON b.winlostdate = temp.winlostdate AND b.transtype = temp.transtype
+		WHERE temp.winlostdate IS NULL			
 	END
-
-	--------- cancelled/void bet tickets ----------------------------------
-	INSERT INTO @statementRpt(OrderKey, winlostdate, transtype, transdesc, TurnOver, TotalAmt, Commission, Balance)
-	SELECT 2,   
-		winlostdate,
-		'BET',
-		NULL,
-		SUM(stake),
-		0,
-		0,
-		NULL
-	FROM bodb02.dbo.zzzbettrans WITH (NOLOCK)
-	WHERE
-		custid = @CustID   
-		AND bettype BETWEEN 1 AND 19999
-		AND winlostdate >= @startDate and winlostdate <= @endDate  
-		AND bettype NOT IN (903, 913, 914)
-		AND ((@IsCOMember = 0 AND bettype <> 912) OR (@IsCOMember = 1 AND bettype <> 911))
-	GROUP BY winlostdate   
-	-----------------------------------------------------------------------
+		
+	-- before @BalanceUpDay --> bettrans_bk & [Statement] - only
+	IF (@_endDate < @BalanceUpDay)  
+	BEGIN
+		INSERT INTO #statementRpt (orderkey, winlostdate, transtype, transdesc, turnover,TotalAmt,commission)
+		SELECT f.orderkey, f.winlostdate, f.transtype, f.transdesc, f.turnover, f.TotalAmt, f.commission
+		FROM bodb02.dbo.LAP_f_Statement_Mem_Summary(@_CustID, @_startDate, @_endDate) AS f
+		LEFT JOIN #statementRpt temp 
+			ON f.winlostdate = temp.winlostdate AND f.transtype = temp.transtype
+		WHERE temp.winlostdate IS NULL
+	END
 	
+	--------------- End: PROCESS data ------------------------
+
 	---------Get Data of PayOutTrans for Progressive Jackpot Win ----------
-	INSERT INTO @statementRpt(OrderKey, winlostdate, transtype, transdesc, TurnOver, TotalAmt, Commission)
+	INSERT INTO #statementRpt(OrderKey, winlostdate, transtype, transdesc, TurnOver, TotalAmt, Commission)
 	SELECT
-		4 AS OrderKey,
+		@CBGP_KEY AS OrderKey,
 		winlostdate,
 		'GP' AS transtype,
 		NULL AS transdesc,
 		0,
 		SUM (WinAmount) AS TotalAmt,
 		0
-	FROM DBACC.bodb02.dbo.PayoutTrans WITH (NOLOCK)
-	WHERE custid = @custid
-		AND winlostdate BETWEEN @startDate AND @endDate
+	FROM bodb02.dbo.PayoutTrans WITH (NOLOCK)
+	WHERE custid = @_CustID
+		AND winlostdate BETWEEN @_startDate AND @_endDate
 	GROUP BY winlostdate, CustID
 	-----------------------------------------------------------------------------
 
 	DECLARE @rowStart		INT
 		, @rowEnd			INT
-		
 		, @fromExRateDate	SMALLDATETIME
 		, @toExRateDate		SMALLDATETIME
-		, @initBalance		DECIMAL(15,2)
-		, @rowCount			INT
 
     SELECT  @PageIndex		= CASE WHEN @PageIndex > 0 THEN @PageIndex - 1 ELSE 0 END,
             @RowStart		= @PageSize * @PageIndex + 1,
             @RowEnd			= @RowStart + @PageSize - 1
 	
-	-- PRE/UPDATE accumulating balance
-	INSERT INTO #tempStatementRpt (winlostdate, OrderKey, transtype, transdesc, TurnOver, TotalAmt, Commission, Balance)
-	SELECT winlostdate, OrderKey, transtype, transdesc, TurnOver, TotalAmt, Commission, Balance
-	FROM @statementRpt
-	ORDER BY winlostdate, OrderKey, transtype
-
-	-- ignore the first OPENING BALANCE
-	/**SET @rowCount = 1 
-
-	WHILE EXISTS(
-		SELECT TOP 1 1 
-		FROM #tempStatementRpt rpt WHERE rpt.RowNum > @rowCount 
-	)
-	BEGIN
-		UPDATE TOP(1) rpt
-		SET rpt.Balance		= CASE 
-								WHEN transtype = 'BAL'	THEN ISNULL(rpt.Balance,0)  
-								WHEN transtype = 'GP'	THEN ISNULL(temp.Balance,0)
-								WHEN transtype = 'BET' AND OrderKey = 3	THEN ISNULL(temp.Balance,0) - ISNULL(rpt.TurnOver,0)
-								ELSE  ISNULL(rpt.TotalAmt,0) + ISNULL(temp.Balance,0) END
-			,rpt.TotalAmt	= CASE WHEN transtype = 'BAL' THEN 0  ELSE  ISNULL(rpt.TotalAmt,0) END
-		FROM #tempStatementRpt rpt
-			OUTER APPLY (
-				SELECT top 1 Balance 
-				FROM #tempStatementRpt
-				WHERE RowNum = rpt.RowNum - 1
-			) AS temp
-		WHERE rpt.RowNum > @rowCount
-
-		SET @rowCount += 1
-	END**/
-
 	-- SET @TotalRows
 	SELECT @TotalRows		= COUNT(1)
 		,@fromExRateDate	= MIN(winlostdate)
 		,@toExRateDate		= MAX(winlostdate)
-	FROM #tempStatementRpt rpt
+	FROM #statementRpt rpt;
 
-
-	-- RETURN output result
-	;WITH CTE_Exchange AS (
+	 --RETURN output result
+	WITH CTE_Exchange AS (
 		SELECT CONVERT(DATETIME, FromDate) AS FromDate
 			, CONVERT(DATETIME, DATEADD(DAY, 1, ToDate)) AS ToDate
 			, Rate 
 		FROM dbo.Lrf_f_GetExchangeRate(@fromExRateDate, @toExRateDate, @BaseCurrency, '') AS f
 		WHERE f.ExchangeID = @currency
+	), CTE_Paging AS (
+		SELECT ROW_NUMBER() OVER (ORDER BY winlostdate, orderKey, transtype) AS rownum
+			,winlostdate, orderKey, transtype, transdesc, TurnOver, TotalAmt, Commission
+		FROM #statementRpt
 	)
 	SELECT 
-		rpt.RowNum
+		rpt.rownum
 		,rpt.winlostdate
 		,rpt.transtype
 		,ISNULL(rpt.transdesc, dsc.transdesc)	AS transdesc
-		,CAST(rpt.turnover * ISNULL(ex.Rate, 1) AS DECIMAL(15,2))	AS Turnover
-		,CAST(rpt.TotalAmt * ISNULL(ex.Rate, 1) AS DECIMAL(15,2))	AS TotalAmt
-		,CAST(rpt.commission * ISNULL(ex.Rate, 1) AS DECIMAL(15,2))	AS Commission
-		--,CAST(rpt.Balance * ISNULL(ex.Rate, 1) AS DECIMAL(15,2))	AS Balance
-	FROM #tempStatementRpt rpt
+		,CAST(rpt.turnover * ISNULL(ex.Rate, 1) AS DECIMAL(15,2))	AS turnover
+		,CAST(rpt.TotalAmt * ISNULL(ex.Rate, 1) AS DECIMAL(15,2))	AS totalamt
+		,CAST(rpt.commission * ISNULL(ex.Rate, 1) AS DECIMAL(15,2))	AS commission
+	FROM CTE_Paging rpt
 		LEFT JOIN @transDesc dsc 
 			ON rpt.OrderKey		= dsc.orderkey 
 			AND rpt.transtype	= dsc.transtype
@@ -501,7 +434,9 @@ BEGIN
 			AND rpt.winlostdate < ex.ToDate
 	WHERE 
 		rpt.RowNum BETWEEN @RowStart AND @RowEnd
+	ORDER BY 
+		rpt.RowNum
 
-	DROP TABLE #tempStatementRpt
+	DROP TABLE #statementRpt
 END
 GO

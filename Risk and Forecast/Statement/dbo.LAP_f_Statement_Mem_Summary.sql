@@ -1,5 +1,5 @@
 /*<info serverAlias="DBRPT-bodb02" executers="" viewers="" isFunction="1" isNested="1"></info>*/
-CREATE FUNCTION dbo.LAP_f_Statement_Mem_Summary(
+ALTER FUNCTION dbo.LAP_f_Statement_Mem_Summary(
 	@CustID			INT,
 	@FromDate		SMALLDATETIME,
 	@ToDate			SMALLDATETIME
@@ -13,21 +13,20 @@ DB: DBEXT/bodb02
 
 Revisions:  
 	- 20190723@Bobby: Initialize [RedmineID: #117534]
+	- 20190904@Bobby: Implement Statement Service - Level 1 [RedmineID: #119648]
 	
 Param's Explanation:     
 */
 RETURN (
-	SELECT orderkey, winlostdate, transtype, transdesc, turnover,TotalAmt,commission, balance
+	SELECT orderkey, winlostdate, transtype, transdesc, turnover,TotalAmt,commission
 	FROM (
 		SELECT CAST(CAST(@FromDate AS DATE) AS SMALLDATETIME) AS FromDate
 			, DATEADD(MINUTE, -1, DATEADD(DAY, 1, CAST(CAST(@ToDate AS DATE) AS SMALLDATETIME))) AS ToDate
-			, srecommend
-			, mrecommend
-			, recommend
-			, custid
-		FROM bodb02.dbo.custInfo WITH(NOLOCK)
-		WHERE 
-			custid = @CustID
+			, @CustID AS custid
+			, 0 AS BAL_KEY
+			, 2 AS VOID_KEY
+			, 1 AS BET_KEY
+			, 2 AS TRAN_KEY
 	) AS temp
 	CROSS APPLY (
 		SELECT 
@@ -38,58 +37,59 @@ RETURN (
 			, SUM(turnover)		AS turnover
 			, SUM(TotalAmt)		AS TotalAmt
 			, SUM(commission)	AS Commission
-			, SUM(balance)		AS Balance
 		FROM (
 			-- bet TO summary
-			SELECT 1 AS orderkey
+			SELECT 
+				CASE 
+					WHEN b.statusID IN (101,102,103) THEN temp.VOID_KEY --> Void/Reject/Refund
+					ELSE temp.BET_KEY --> Won/Lose/Draw
+				END AS orderkey
 				, winlostdate
 				, 'BET' AS transtype
 				, NULL AS transdesc
 				, SUM(b.stake) AS turnover
-				, 0 AS TotalAmt
-				, 0 AS commission
-				, NULL AS balance
+				, SUM(b.winlost - b.actual_stake) AS TotalAmt
+				, SUM(b.playercomm) AS commission
 			FROM bodb_archive.dbo.bettrans_bk b (NOLOCK)
 			WHERE 
-				b.winlostdate		>= temp.FromDate AND b.winlostdate <= temp.ToDate
-				AND b.custid		= temp.custid
-				--AND rpt.srecommend	= temp.srecommend
-				--AND rpt.mrecommend	= temp.mrecommend
-				--AND rpt.recommend	= temp.recommend
-			GROUP BY b.winlostdate
-				
+				b.custid			= temp.custid
+				AND b.winlostdate	>= temp.FromDate AND b.winlostdate <= temp.ToDate
 
-			-- bet amt/comm summary
+			GROUP BY b.winlostdate
+				, CASE 
+					WHEN b.statusID IN (101,102,103) THEN 2 --> Void/Reject/Refund
+					ELSE 1 --> Won/Lose/Draw
+				END
+
+			-- BAL
 			UNION ALL
-			SELECT 1 
-				, AccDate
-				, 'BET'
+			SELECT temp.BAL_KEY
+				, rpt.AccDate
+				, UPPER(rpt.transtype)
 				, NULL
 				, 0
-				, CASE rpt.transtype WHEN 'BET' THEN rpt.TotalAmt ELSE 0 END
-				, CASE rpt.transtype WHEN 'COM' THEN rpt.TotalAmt ELSE 0 END
-				, NULL
+				, rpt.TotalAmt 
+				, 0
 			FROM bodb_report.dbo.[Statement] rpt WITH (NOLOCK)  
 			WHERE 
 				rpt.custid = @CustID
 				AND rpt.accdate >= temp.FromDate AND rpt.accdate <= temp.ToDate 
-				AND rpt.transtype IN ('BET', 'COM')  
+				AND rpt.transtype IN ('BAL')  
 
 			-- transactions
 			UNION ALL
-			SELECT CASE rpt.transtype WHEN 'BAL' THEN 0 ELSE 2 END 
+			SELECT temp.TRAN_KEY
 				, rpt.AccDate
 				, UPPER(rpt.transtype)
 				, ISNULL(rpt.transdesc,'')
 				, 0
-				, CASE rpt.transtype WHEN 'BAL' THEN NULL ELSE rpt.TotalAmt END 
+				, rpt.TotalAmt 
 				, 0
-				, CASE rpt.transtype WHEN 'BAL' THEN rpt.TotalAmt ELSE NULL END 
 			FROM bodb_report.dbo.[Statement] rpt WITH (NOLOCK)  
 			WHERE 
 				rpt.custid = @CustID
 				AND rpt.accdate >= temp.FromDate AND rpt.accdate <= temp.ToDate 
-				AND rpt.transtype NOT IN ('BET', 'COM')  
+				AND rpt.transtype NOT IN ('BAL', 'BET', 'COM')  
 		) AS rpt
 		GROUP BY 
 			rpt.winlostdate
