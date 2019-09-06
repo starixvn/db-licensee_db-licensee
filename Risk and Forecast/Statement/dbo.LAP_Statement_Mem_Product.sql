@@ -19,7 +19,7 @@ Param's Explanation:
 	- @ModeView: TINYINT
 		+ 1 - Bet_Statement
 		+ 2 - Void_Cancelled_Bet
-		+ 3 - Outstading_Bet
+		+ 3 - Outstanding_Bet
 */
 BEGIN
 	SET NOCOUNT ON

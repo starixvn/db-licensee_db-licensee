@@ -276,7 +276,7 @@ BEGIN
 					@OUT_KEY,
 					winlostdate,
 					'BET',  
-					'' AS transdesc, 
+					NULL AS transdesc, 
 					SUM(actual_stake),  
 					0,
 					0 
