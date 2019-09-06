@@ -18,6 +18,7 @@ Revisions:
 	- 20151015@Jim: Integrate Sportbook2 (Feature #44759)
 	- 20181009@Winnie: Remove Racing  (Feature #99378)
 	- 20181029@Winnie: Remove Esports  (Feature #100721)
+	- 20190906@Eden: 3rd party products - Remove InActive Products Phase 2 [Redmine: #118699]
 Param's Explanation:
 • @CustID: member ID
 */
@@ -30,7 +31,7 @@ DECLARE @MinBet_Max MONEY, @MaxBet_Min MONEY, @MaxPerMatch_Min MONEY, @MaxPerMat
         @MinBetv8_Max MONEY, @MaxBetv8_Min MONEY, @MaxPerMatchv8_Min MONEY, @MaxPerMatchv8_Max MONEY,
         @MinBetv10_Max MONEY, @MaxBetv10_Min MONEY, @MaxPerMatchv10_Min MONEY, @MaxPerMatchv10_Max MONEY,
         @MinBetv11_Max MONEY, @MaxBetv11_Min MONEY, @MaxPerMatchv11_Min MONEY, @MaxPerMatchv11_Max MONEY,
-		@MinBetv44_Max MONEY, @MaxBetv44_Min MONEY, @MaxPerMatchv44_Min MONEY, @MaxPerMatchv44_Max MONEY,
+		@MinBetv44_Max MONEY, @MaxBetv44_Min MONEY,
         @MinBetv99_Max MONEY, @MaxBetv99_Min MONEY, @MaxPerMatchv99_Min MONEY, @MaxPerMatchv99_Max MONEY,
         @MinBetv99MP_Max MONEY, @MaxBetv99MP_Min MONEY, @MaxPerMatchv99MP_Min MONEY, @MaxPerMatchv99MP_Max MONEY
         
@@ -161,9 +162,6 @@ SELECT
     
     @MaxPerMatchv11_Min = 0,
     @MaxPerMatchv11_Max = MIN(CASE WHEN cs.MaxPerMatch11 = 0 THEN NULL ELSE cs.MaxPerMatch11 END), 
-    --
-	@MaxPerMatchv44_Min = 0,
-    @MaxPerMatchv44_Max = MIN(CASE WHEN cs.MaxPerMatch44 = 0 THEN NULL ELSE cs.MaxPerMatch44 END), 
 	--
     
     @MaxPerMatchv99_Min = 0,
@@ -186,7 +184,6 @@ SELECT
     ISNULL(ci.maxpermatch8, 0) AS maxpermatchv8,
     ISNULL(ci.maxpermatch10, 0) AS maxpermatchv10,
     ISNULL(ci.maxpermatch11, 0) AS maxpermatchv11,
-	ISNULL(ci.maxpermatch44, 0) AS maxpermatchv44,
     ISNULL(ci.maxpermatch99, 0) AS maxpermatchv99,
     ISNULL(ci.maxpermatch99MP, 0) AS maxpermatchv99MP,
     ISNULL(exchange.minbet, 0) AS defaultminbet,
@@ -259,8 +256,6 @@ SELECT
     --
 	ISNULL(@MinBetv44_Max, 0) AS MinBetv44_Max,    
     ISNULL(@MaxBetv44_Min, 0) AS MaxBetv44_Min,    
-    ISNULL(@MaxPerMatchv44_Min, 0) AS MaxPerMatchv44_Min,    
-    ISNULL(@MaxPerMatchv44_Max, 0) AS MaxPerMatchv44_Max,
 
     
     ISNULL(@MinBetv99_Max, 0) AS MinBetv99_Max,    
@@ -287,14 +282,10 @@ GROUP BY
     ci.maxpermatch5,
     ci.maxpermatch8,
     ci.maxpermatch10, 
-    ci.maxpermatch11,
-	ci.maxpermatch44,  
+    ci.maxpermatch11, 
     ci.maxpermatch99,
     ci.maxpermatch99MP,
     exchange.minbet
 
 
 GO 
-GRANT EXECUTE ON [dbo].[Lrf_CustomerSelEditCustomer] TO [bodbLicenseeNet]
-GO 
-GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerSelEditCustomer] TO [vnteam]
