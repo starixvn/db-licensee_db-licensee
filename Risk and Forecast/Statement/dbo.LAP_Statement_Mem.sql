@@ -13,7 +13,7 @@ AS
 /*
 Created:Bobby@20190723   
 Task : 112658 - LAP - Customer Daily Statement
-DB: DBEXT/bodb02
+DB: DBACC/bodb02
 Original: [Lrf_Statement_Mem]
 
 Revisions:  

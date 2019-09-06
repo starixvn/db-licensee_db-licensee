@@ -10,7 +10,7 @@ AS
 /*
 Created:Bobby@20190904   
 Task : 119648 - LAP - Implement Statement Service - Level 2
-DB: DBRPT/bodb02
+DB: DBACC/bodb02
 
 Revisions:  
 	- 20190904@Bobby: Implement Statement Service - Level 2 [RedmineID: #119648]

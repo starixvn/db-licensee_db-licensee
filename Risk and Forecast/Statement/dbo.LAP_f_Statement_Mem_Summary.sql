@@ -9,7 +9,7 @@ AS
 /*
 Created:Bobby@20190723   
 Task : 112658 - LAP - Customer Statement - Summary
-DB: DBEXT/bodb02
+DB: DBACC/bodb02
 
 Revisions:  
 	- 20190723@Bobby: Initialize [RedmineID: #117534]
