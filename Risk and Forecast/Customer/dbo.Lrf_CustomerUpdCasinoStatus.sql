@@ -1,7 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet,bodbDownlineNet,bodbExtAccNet,Dot_Member,bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
-USE CustDB 
-GO
-
+/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet,bodbDownlineNet,bodbExtAccNet,Dot_Member,bodbLicenseeNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_CustomerUpdCasinoStatus]
 	@userID INT,
 	@custid INT,
@@ -19,6 +16,7 @@ AS
 	Original: 
 	Revisions:
 		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
+		- 20190909@Eden: 3rd party products - Remove InActive Products Phase 2 [Redmine: #118699]
     
 	Param's Explanation:
 
@@ -28,42 +26,8 @@ BEGIN
 	SELECT @UserName=UserName
 	FROM bodb_licensee.dbo.Users WITH (NOLOCK)
 	WHERE UserID=@userID
-	IF @SportID=162 -- Live Casino 
-		BEGIN 
-				IF EXISTS (SELECT TOP 1 1 FROM dbo.CustInfo WITH (NOLOCK) WHERE custid=@custid )
-					BEGIN 
-						UPDATE dbo.CustInfo WITH (ROWLOCK,UPDLOCK)
-						SET 	disableLiveCasino=@Status 
-						WHERE custid=@custid
-						
-						  SELECT @ErrMsg = @UserName + ': '+
-								CASE @Language 
-									WHEN 'E' THEN 'Update process is successful !'
-									WHEN 'CS' THEN N'??????? !'
-									WHEN 'CT' THEN N'??????? !'
-									WHEN 'TH' THEN N'????????????????????????????????????????????!'
-									WHEN 'J' THEN N'????????????'
-									WHEN 'KO' THEN N'????? ??????.'
-									ELSE N'Update process is successful !'
-								END
-								RETURN	
-					END
-			 ELSE 
-				BEGIN 
-					 SELECT @ErrMsg = @UserName + ': '+
-								CASE @Language 
-									WHEN 'E' THEN 'This customer has never played Live Casino !'
-									WHEN 'CS' THEN N'??????? !'
-									WHEN 'CT' THEN N'??????? !'
-									WHEN 'TH' THEN N'????????????????????????????????????????????!'
-									WHEN 'J' THEN N'????????????'
-									WHEN 'KO' THEN N'????? ??????.'
-									ELSE N'This customer has never played Live Casino!'
-								END, @ErrCode = 115
-								RETURN	
-				END	
-		END
-IF @SportID=251 -- RNG Casino
+
+	IF @SportID=251 -- RNG Casino
 		BEGIN 
 				IF EXISTS (SELECT TOP 1 1 FROM dbo.CustInfo WITH (NOLOCK) WHERE custid=@custid )
 					BEGIN 
@@ -126,4 +90,4 @@ IF @SportID=251 -- RNG Casino
 		@duration = @duration
 END
 
-
+GO
