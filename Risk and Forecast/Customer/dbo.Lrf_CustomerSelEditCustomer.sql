@@ -31,7 +31,6 @@ DECLARE @MinBet_Max MONEY, @MaxBet_Min MONEY, @MaxPerMatch_Min MONEY, @MaxPerMat
         @MinBetv8_Max MONEY, @MaxBetv8_Min MONEY, @MaxPerMatchv8_Min MONEY, @MaxPerMatchv8_Max MONEY,
         @MinBetv10_Max MONEY, @MaxBetv10_Min MONEY, @MaxPerMatchv10_Min MONEY, @MaxPerMatchv10_Max MONEY,
         @MinBetv11_Max MONEY, @MaxBetv11_Min MONEY, @MaxPerMatchv11_Min MONEY, @MaxPerMatchv11_Max MONEY,
-		@MinBetv44_Max MONEY, @MaxBetv44_Min MONEY,
         @MinBetv99_Max MONEY, @MaxBetv99_Min MONEY, @MaxPerMatchv99_Min MONEY, @MaxPerMatchv99_Max MONEY,
         @MinBetv99MP_Max MONEY, @MaxBetv99MP_Min MONEY, @MaxPerMatchv99MP_Min MONEY, @MaxPerMatchv99MP_Max MONEY
         
@@ -109,15 +108,6 @@ from
     dbo.Dep_CustSetting AS cs WITH (NOLOCK)
     INNER JOIN dbo.custinfo AS ci WITH (NOLOCK) ON (cs.CustID = ci.Recommend OR cs.CustID = ci.MRecommend OR cs.CustID = ci.SRecommend)
     AND cs.bettype = 1 AND cs.sporttype=11
-WHERE ci.custid = @CustID
---SB2
-SELECT 
-    @MinBetv44_Max = MAX(CASE WHEN MinBet = 0 THEN NULL ELSE MinBet END), 
-    @MaxBetv44_Min = MIN(CASE WHEN MaxBet = 0 THEN NULL ELSE MaxBet END)
-from 
-    dbo.Dep_CustSetting AS cs WITH (NOLOCK)
-    INNER JOIN dbo.custinfo AS ci WITH (NOLOCK) ON (cs.CustID = ci.Recommend OR cs.CustID = ci.MRecommend OR cs.CustID = ci.SRecommend)
-    AND cs.bettype = 3 AND cs.sporttype=44
 WHERE ci.custid = @CustID
 
 
@@ -209,10 +199,6 @@ SELECT
     ISNULL(MAX(CASE WHEN cs.bettype = 1 AND cs.sporttype=11 THEN cs.minbet ELSE 0 END), 0) AS MinBetv11,
     ISNULL(MAX(CASE WHEN cs.bettype = 1 AND cs.sporttype=11 THEN cs.maxbet ELSE 0 END), 0) AS MaxBetv11,
     
-	ISNULL(MAX(CASE WHEN cs.bettype = 3 AND cs.sporttype=44 THEN cs.minbet ELSE 0 END), 0) AS MinBetv44,
-    ISNULL(MAX(CASE WHEN cs.bettype = 3 AND cs.sporttype=44 THEN cs.maxbet ELSE 0 END), 0) AS MaxBetv44,
-
-    
     ISNULL(MAX(CASE WHEN cs.bettype = 1 AND cs.sporttype=99 THEN cs.minbet ELSE 0 END), 0) AS MinBetv99,
     ISNULL(MAX(CASE WHEN cs.bettype = 1 AND cs.sporttype=99 THEN cs.maxbet ELSE 0 END), 0) AS MaxBetv99,
     
@@ -253,9 +239,6 @@ SELECT
     ISNULL(@MaxBetv11_Min, 0) AS MaxBetv11_Min,    
     ISNULL(@MaxPerMatchv11_Min, 0) AS MaxPerMatchv11_Min,    
     ISNULL(@MaxPerMatchv11_Max, 0) AS MaxPerMatchv11_Max,
-    --
-	ISNULL(@MinBetv44_Max, 0) AS MinBetv44_Max,    
-    ISNULL(@MaxBetv44_Min, 0) AS MaxBetv44_Min,    
 
     
     ISNULL(@MinBetv99_Max, 0) AS MinBetv99_Max,    
