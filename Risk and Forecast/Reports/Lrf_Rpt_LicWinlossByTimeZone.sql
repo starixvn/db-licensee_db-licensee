@@ -26,6 +26,7 @@ AS
 		- 20171226@Percy: Remove redundant code [RedmineID: #88704] 
 		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 		- 20190614@Amanda: Add Base currency param [RedmineID: #112531]
+		- 20190910@Amanda: Add bet types which support Half Won/ Half Lose [RedmineID: #118300]
 
 	Param's Explanation:  
 	  + @TimeZone: =-4: GMT-4
@@ -241,7 +242,7 @@ BEGIN
 							CASE WHEN @IncludeDraw = 0 THEN
 								CASE
 									WHEN b.statusID = 111 THEN 0
-									WHEN (b.statusID = 112 OR b.statusID = 113) AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
+									WHEN (b.statusID = 112 OR b.statusID = 113) AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18,124,125,482,483,484,485) THEN 0.5
 									ELSE 1 END
 							ELSE 1 END) AS Turnover, 
 						0 AS LicenseeWL,
@@ -270,7 +271,7 @@ BEGIN
 						CASE WHEN @IncludeDraw = 0 THEN
 							CASE
 								WHEN b.statusID = 111 THEN 0
-								WHEN (b.statusID = 112 OR b.statusID = 113) AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
+								WHEN (b.statusID = 112 OR b.statusID = 113) AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18,124,125,482,483,484,485) THEN 0.5
 								ELSE 1 END
 						ELSE 1 END) AS Turnover, 
 					- SUM (CASE WHEN RAND() + 1 > 0 THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWL,
@@ -406,7 +407,7 @@ BEGIN
 							CASE WHEN @IncludeDraw = 0 THEN
 								CASE
 									WHEN b.statusID = 111 THEN 0
-									WHEN (b.statusID = 112 OR b.statusID = 113) AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
+									WHEN (b.statusID = 112 OR b.statusID = 113) AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18,124,125,482,483,484,485) THEN 0.5
 									ELSE 1 END
 							ELSE 1 END) AS Turnover, 
 						0 AS LicenseeWL,
@@ -439,7 +440,7 @@ BEGIN
 						CASE WHEN @IncludeDraw = 0 THEN
 							CASE
 								WHEN b.statusID = 111 THEN 0
-								WHEN (b.statusID = 112 OR b.statusID = 113) AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
+								WHEN (b.statusID = 112 OR b.statusID = 113) AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18,124,125,482,483,484,485) THEN 0.5
 								ELSE 1 END
 						ELSE 1 END) AS Turnover, 
 					- SUM (CASE WHEN RAND() + 1 > 0 THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWL,

@@ -83,6 +83,7 @@ AS
 	- 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
 	- 20190605@Amanda: Add Base currency param [RedmineID: #112531]
 	- 20190708@Amanda: Add new product Card Club [RedmineID: #115449]
+	- 20190910@Amanda: Add bet types which support Half Won/ Half Lose [RedmineID: #118300]
 
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -284,7 +285,7 @@ BEGIN
 					CASE WHEN @drawfilter IN (2,3) THEN
 						CASE
 							WHEN b.statusID = 111 THEN 0
-							WHEN (b.statusID = 112 OR b.statusID = 113) AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
+							WHEN (b.statusID = 112 OR b.statusID = 113) AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18,124,125,482,483,484,485) THEN 0.5
 							ELSE 1 END
 					ELSE 1 END
 				) AS turnover, 
@@ -334,7 +335,7 @@ BEGIN
 					CASE WHEN @drawfilter IN (2,3) THEN
 						CASE
 							WHEN b.statusID = 111 THEN 0
-							WHEN (b.statusID = 112 OR b.statusID = 113) AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
+							WHEN (b.statusID = 112 OR b.statusID = 113) AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18,124,125,482,483,484,485) THEN 0.5
 							ELSE 1 END
 					ELSE 1 END
 				) AS turnover,

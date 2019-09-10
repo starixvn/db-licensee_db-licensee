@@ -51,6 +51,7 @@ AS
 		- 20190619@Amanda: Add Base currency param [RedmineID: #112531]
 		- 20190708@Amanda: Add new product Card Club [RedmineID: #115449]
 		- 20190829@Amanda: Remove platform y,s and add platform t [RedmineID: #119010]
+		- 20190910@Amanda: Add bet types which support Half Won/ Half Lose [RedmineID: #118300]
 
 	Param's Explanation:  
 	  + @PlatformType:  0: All  
@@ -349,7 +350,7 @@ BEGIN
 						*
 						CASE WHEN @drawfilter IN (2,3) THEN
 							CASE WHEN b.statusID = 111 THEN 0
-							WHEN (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
+							WHEN (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18,124,125,482,483,484,485) THEN 0.5
 							ELSE 1 END
 						ELSE 1 END
 					) turnover,
@@ -387,7 +388,7 @@ BEGIN
 						*
 						CASE WHEN @drawfilter IN (2,3) THEN
 							CASE WHEN b.statusID = 111 THEN 0
-							WHEN (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
+							WHEN (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18,124,125,482,483,484,485) THEN 0.5
 							ELSE 1 END
 						ELSE 1 END
 					) turnover,
@@ -427,17 +428,14 @@ BEGIN
 				bt.ProductPrefix AS ProductPrefix,
 				pl.PlatformType,
 
-				SUM( CASE WHEN b.bettype = 34 AND b.liveawayscore=0 THEN b.stake/2 ELSE b.stake END
-						*
-						CASE WHEN @drawfilter IN (2,3) THEN
-							CASE WHEN b.statusID = 111 THEN 0
-							WHEN (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN 0.5
-							ELSE 1 END
-						ELSE 1 END
-					) turnover,
+				SUM(
+					CASE WHEN b.bettype = 34 AND b.liveawayscore=0 THEN b.stake/2 ELSE b.stake END
+					*
+					CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
+				) turnover,
 				SUM(b.winlost-b.actual_stake) AS Winlost,	
 				- SUM(b.winlost - b.actual_stake) AS LicenseeWL ,
-				SUM (   b.playercomm ) as PlayerComm,
+				SUM ( b.playercomm ) as PlayerComm,
 				--------BetCount-----------
 				COUNT(b.transid) 
 				* CASE WHEN @drawfilter = 2 THEN
