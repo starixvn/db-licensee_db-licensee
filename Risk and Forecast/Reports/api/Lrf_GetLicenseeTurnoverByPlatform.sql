@@ -24,6 +24,7 @@ AS
 		- 20181212@Joseph: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
 		- 20181211@Joseph: New betfrom Mobile China View (c) [RedmineID: #106088]
 		- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
+		- 20190903@Amanda: Remove platform y,s and add platform t [RedmineID: #119010]
 		
 	Param's Explanation:  
 */
@@ -73,16 +74,15 @@ BEGIN
 				(2, 'a'),
 				(3, 'e'),
 				(4, 'm'),
-				(5, 's'),
 				(3, 'u'),
 				(5, 'l'),
 				(1, 'g'),
 				(6, 'r'),
 				(7, 'x'),
-				(3, 'y'),
 				(2, 'z'),
 				(8, 'o'),
-				(9, 'c')
+				(9, 'c'),
+				(10, 't')
 	) d(PlatformType, betfrom);
 	
 	CREATE TABLE #Exchange (FromDate SMALLDATETIME, ToDate SMALLDATETIME, ExchangeID INT, Rate FLOAT);
