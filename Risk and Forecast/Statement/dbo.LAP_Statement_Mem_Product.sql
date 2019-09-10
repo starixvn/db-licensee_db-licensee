@@ -85,7 +85,7 @@ BEGIN
 		RETURN
 	END
 
-	--------- settled/outstanding/void/reject bet tickets ----------------------
+	--------- bettrans settled/outstanding/void/reject bet tickets -----------------------------
 	IF (@_ModeView IN (1,2,3) AND @_winlostdate > @MoveBetsDay)
 	BEGIN
 		-- bet tickets
@@ -162,8 +162,8 @@ BEGIN
 			gameID
 	END
 	
-	--------- settled/reject/void/refund bet tickets ----------------------------------
-	IF (@_ModeView IN (1,2) AND @_winlostdate BETWEEN @MoveBetsDay AND @BalanceUpDay)
+	--------- bettrans14 settled/reject/void/refund bet tickets --------------------------------
+	IF (@_ModeView IN (1,2) AND @_winlostdate BETWEEN @BalanceUpDay AND @MoveBetsDay)
 	BEGIN
 		INSERT INTO #betTicket(bettype, turnover, winlost, playercomm)
 		SELECT 
@@ -187,7 +187,7 @@ BEGIN
 		GROUP BY b.bettype
 	END
 	
-
+	--------- bettrans_bk settled/reject/void/refund bet tickets -------------------------------
 	IF (@_ModeView IN (1,2) AND @_winlostdate < @BalanceUpDay)
 	BEGIN
 		INSERT INTO #betTicket(bettype, turnover, winlost, playercomm)
