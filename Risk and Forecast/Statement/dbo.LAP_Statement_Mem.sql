@@ -65,7 +65,6 @@ BEGIN
 
 	SELECT @TotalRows	= 0
 		, @currentDate	= CURRENT_TIMESTAMP
-		, @isCOMember	= ISNULL(@isCOMember,0)
 		, @_CustID		= ISNULL(@CustID, 0)
 		, @_startDate	= @FromDate
 		, @_endDate		= CASE WHEN @ToDate > @currentDate THEN @currentDate ELSE @ToDate END

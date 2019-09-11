@@ -50,27 +50,28 @@ BEGIN
         totalamt		DECIMAL(15,2),
         commission		DECIMAL(15,2)
 	)
+	
+	SELECT @_custID		= @CustID
+		, @_winlostdate	= @Winlostdate
+		, @_ModeView	= ISNULL(@ModeView, 1)
 
 	SELECT TOP(1) @currency	= currency, @_recommend = recommend
 	FROM dbo.custinfo WITH(NOLOCK) 
-	WHERE custid = @custid  
+	WHERE custid = @_custID  
 	
 	SELECT TOP 1 @isCOMember = 1
 	FROM dbo.TradeCust WITH(NOLOCK)
 	WHERE custid = @_custID
 		AND VendorID = 14
 
-	SELECT @_custID		= @CustID
-		, @_winlostdate	= @Winlostdate
-		, @_ModeView	= ISNULL(@ModeView, 1)
-		, @CB_ProductID	= 15
-		, @modeDesc		= CASE @_ModeView 
+	SELECT @CB_ProductID	= 15
+		, @modeDesc			= CASE @_ModeView 
 							WHEN 1 THEN 'Bet_Statement'
 							WHEN 2 THEN 'Void_Cancelled_Bet'
 							WHEN 3 THEN 'Outstanding_Bet'
 						END
-		, @IsTest		= dbo.f_CheckSPVersion(@@PROCID)
-		, @IsCOMember    = ISNULL(@IsCOMember,0)
+		, @IsTest			= dbo.f_CheckSPVersion(@@PROCID)
+		, @IsCOMember		= ISNULL(@IsCOMember,0)
 
 	-- validate time range & custid
 	IF (@_custID IS NULL
