@@ -242,7 +242,7 @@ BEGIN
 		FROM
 			#tmpCust c
 			INNER JOIN 
-			(SELECT c.custid, ISNULL(lc.speciallevel,0) as speciallevel , c.username, c.username2 
+			(SELECT c.custid, c.currency, ISNULL(lc.speciallevel,0) as speciallevel , c.username, c.username2 
 			 FROM bodb02.dbo.Customer c WITH (NOLOCK)
 				LEFT JOIN dbo.Dep_CustSpecialLevel lc WITH(NOLOCK) ON c.CustID = lc.CustID			 
 				INNER JOIN #TempAg t ON c.recommend = t.custid

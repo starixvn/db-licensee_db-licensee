@@ -35,9 +35,9 @@ ALTER PROC [dbo].[Lrf_CustomerUpdMember_All]
 	@MaxBetv11 MONEY,  
 	@MaxPerMatchv11 MONEY,  
  
-	@MinBetv44 MONEY,  
-	@MaxBetv44 MONEY,  
-	@MaxPerMatchv44 MONEY,
+	@MinBetv44 MONEY=0,  
+	@MaxBetv44 MONEY=0,  
+	@MaxPerMatchv44 MONEY=0,
  
 	@MinBetv99 MONEY,  
 	@MaxBetv99 MONEY,  
