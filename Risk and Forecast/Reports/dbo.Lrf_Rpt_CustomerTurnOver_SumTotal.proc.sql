@@ -30,7 +30,8 @@ Revision:
 	- 20180810@Paul: Enhance performance [Redmine: #98260]
 	- 20181219@Joseph: Add new bet types for E-Sports 2.0 for report Customer Turnover [RedmineID: #106666]
 	- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
-	- 20181019@Amanda: Add new bet types (PH AIO - Phase 4a) [RedmineID: #115448]
+	- 20190407@Amanda: Add new bet types (PH AIO - Phase 4a) [RedmineID: #115448]
+	- 20191608@Amanda: Add new bet types (PH AIO - Phase 4b) [RedmineID: #118300]
 
 Parameter's Explanation:
 			
@@ -161,6 +162,7 @@ BEGIN
 									OR b.bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
 									OR b.bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
 									OR bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
+									OR bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 								)
 								THEN 
 										CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
@@ -305,6 +307,7 @@ BEGIN
 									OR b.bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
 									OR b.bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
 									OR bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
+									OR bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 								)
 								THEN 
 										CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal

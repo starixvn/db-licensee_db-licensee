@@ -74,7 +74,8 @@ Revision:
 	- 2018118@Joseph: Add Esport2 bettypes [Redmine: #100721]
 	- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
 	- 20190531@Amanda: Get correct translation [RedmineID: #114464]
-	- 20181019@Amanda: Add new bet types (PH AIO - Phase 4a) [RedmineID: #115448]
+	- 20190407@Amanda: Add new bet types (PH AIO - Phase 4a) [RedmineID: #115448]
+	- 20191608@Amanda: Add new bet types (PH AIO - Phase 4b) [RedmineID: #118300]
 
 Parameter's Explanation:
 	- @ReportBy:  1: daily, 2: monthly
@@ -364,6 +365,7 @@ BEGIN
 						OR bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
 						OR bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
 						OR bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
+						OR bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 			
 		-- CREATE INDEXERS
 		CREATE CLUSTERED 	INDEX [CIX_tempBettrans] 			ON #tempBettrans (custid, winlostdate)

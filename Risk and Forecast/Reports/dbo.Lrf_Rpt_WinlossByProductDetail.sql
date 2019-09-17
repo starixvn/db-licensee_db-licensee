@@ -69,6 +69,7 @@ AS
 	- 20190304@Amanda: Integrate PP Promotion Prize [RedmineID: #109471]
 	- 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
 	- 20190614@Amanda: Add Base currency param [RedmineID: #112531]
+	- 20190910@Amanda: Add bet types which support Half Won/ Half Lose [RedmineID: #118300]
 
 	Param's Explanation:  
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -211,7 +212,7 @@ BEGIN
 				SUM( stake
 					*				
 					CASE WHEN b.statusID = 111 THEN 0|@sumTurnOver
-						WHEN (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0)
+						WHEN (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18,124,125,482,483,484,485) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0)
 						ELSE 1 END
 				)Turnover, 
 				SUM(b.winlost - b.actual_stake) AS Winlost,  
@@ -299,7 +300,7 @@ BEGIN
 				ELSE bt.ProductCode END AS ProductCode,
 				SUM(stake *			
 					CASE WHEN b.statusID = 111 THEN 0|@sumTurnOver
-							WHEN bt.ProductCode = 'SB' AND (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0)
+							WHEN bt.ProductCode = 'SB' AND (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18,124,125,482,483,484,485) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0)
 						ELSE 1 END
 				) AS Turnover, 
 				SUM(b.winlost - b.actual_stake) AS Winlost,  

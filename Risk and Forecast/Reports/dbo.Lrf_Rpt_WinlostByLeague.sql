@@ -50,7 +50,8 @@ exec Lrf_Rpt_WinlostByLeague
 		- 20180808@Amanda: Remove Racing [RedmineID: #99378]
 		- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
 		- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
-		- 20181019@Amanda: Add new bet types (PH AIO - Phase 4a) [RedmineID: #115448]
+		- 20190407@Amanda: Add new bet types (PH AIO - Phase 4a) [RedmineID: #115448]
+		- 20191608@Amanda: Add new bet types (PH AIO - Phase 4b) [RedmineID: #118300]
 
 	Parameter's Explanation:
 		- @LicenseeID : Licensee ID
@@ -186,6 +187,7 @@ BEGIN
 								OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
 								OR b.bettype = 428 -- 2H Odd/Even
 								OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
+								OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 							)
 							THEN CASE 
 									WHEN b.OddsType = 1
@@ -271,6 +273,7 @@ BEGIN
 								OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
 								OR b.bettype = 428 -- 2H Odd/Even
 								OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
+								OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 							)
 							THEN CASE 
 									WHEN b.OddsType = 1
@@ -322,6 +325,7 @@ BEGIN
 								OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
 								OR b.bettype = 428 -- 2H Odd/Even  
 								OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
+								OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 							)
 							THEN CASE 
 									WHEN b.OddsType = 1
@@ -403,6 +407,7 @@ BEGIN
 								OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
 								OR b.bettype = 428 -- 2H Odd/Even  
 								OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
+								OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 							)
 							THEN CASE 
 									WHEN b.OddsType = 1
@@ -507,6 +512,7 @@ BEGIN
 								OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
 								OR b.bettype = 428 -- 2H Odd/Even  
 								OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
+								OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 							)
 							THEN CASE 
 									WHEN b.OddsType = 1
@@ -589,6 +595,7 @@ BEGIN
 								OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
 								OR b.bettype = 428 -- 2H Odd/Even  
 								OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
+								OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 							)
 							THEN CASE 
 									WHEN b.OddsType = 1
@@ -639,6 +646,7 @@ BEGIN
 								OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
 								OR b.bettype = 428 -- 2H Odd/Even  
 								OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
+								OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 							)
 							THEN CASE 
 									WHEN b.OddsType = 1
@@ -721,6 +729,7 @@ BEGIN
 								OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
 								OR b.bettype = 428 -- 2H Odd/Even  
 								OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
+								OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 							)
 							THEN CASE 
 									WHEN b.OddsType = 1
