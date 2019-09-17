@@ -55,7 +55,7 @@ ALTER PROC [dbo].[Lrf_CustomerUpdMember_All]
 	@UpdateMinMaxBetv8 BIT = 1,   
 	@UpdateMinMaxBetv10 BIT = 1,  
 	@UpdateMinMaxBetv11 BIT = 1,  
-	@UpdateMinMaxBetv44 BIT = 1, 
+	@UpdateMinMaxBetv44 BIT = 0, 
 	@UpdateMinMaxBetv99 BIT = 1,  
 	@UpdateMinMaxBetv99MP BIT = 1,  
  
