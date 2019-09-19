@@ -42,7 +42,6 @@ BEGIN
 	CREATE TABLE #tempStatistics 
 	(
 		WinLost MONEY,
-		ActualStake MONEY,
 		Stake MONEY,
 		StatusId TINYINT,
 		BetCount INT
@@ -105,7 +104,7 @@ BEGIN
 			AND b.bettype in (SELECT bettype FROM @bettype)
 
 		INSERT INTO #tempStatistics
-		SELECT (b.winlost - b.actual_stake) as WinLost, b.actual_stake as ActualStake, b.stake as Stake, b.statusID as StatusId, 1 AS BetCount
+		SELECT (b.winlost - b.actual_stake) as WinLost, b.stake as Stake, b.statusID as StatusId, 1 AS BetCount
 		FROM
 			bettrans b WITH (NOLOCK)
 			INNER JOIN @tempAgent a ON b.recommend = a.agentId AND b.currency = a.currency
@@ -127,8 +126,8 @@ BEGIN
 			SET @TempToDate = @TDate
 
 		INSERT INTO @tempStatus
-		SELECT SUM(CASE WHEN b.statusID = 112 THEN ISNULL(b.BetCount, 0) ELSE 0 END) AS Won,
-			SUM(CASE WHEN b.statusID = 113 THEN ISNULL(b.BetCount, 0) ELSE 0 END) AS Lose,
+		SELECT SUM(CASE WHEN b.statusID IN (112,114) THEN ISNULL(b.BetCount, 0) ELSE 0 END) AS Won,
+			SUM(CASE WHEN b.statusID IN (113,115) THEN ISNULL(b.BetCount, 0) ELSE 0 END) AS Lose,
 			SUM(CASE WHEN b.statusID = 111 THEN ISNULL(b.BetCount, 0) ELSE 0 END) AS Draw,
 			SUM(CASE WHEN b.statusID IN (101,102,103) THEN ISNULL(b.BetCount, 0) ELSE 0 END) AS Cancelled
 		FROM
@@ -141,10 +140,10 @@ BEGIN
 			AND b.sporttype = 0
 			AND (b.bettype < 901 OR b.bettype > 904) -- Exclude Cash out
 			AND (b.bettype < 911 OR b.bettype > 914) -- Exclude BetTrade			
-			AND b.statusID IN (111,112,113,101,102,103) -- Draw/Won/Lose/Rejected/Void/Refund
+			AND b.statusID IN (111,112,113,101,102,103,114,115) -- Draw/Won/Lose/Rejected/Void/Refund
 
 		INSERT INTO #tempStatistics
-		SELECT b.winlost as WinLost, 0 as ActualStake, b.turnover as Stake, b.statusID as StatusId, b.BetCount
+		SELECT b.winlost as WinLost, b.turnover as Stake, b.statusID as StatusId, b.BetCount
 		FROM
 			bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)
 			INNER JOIN @tempAgent a ON b.recommend = a.agentId AND b.Currency = a.Currency
@@ -155,7 +154,7 @@ BEGIN
 			AND b.sporttype = 0
 			AND (b.bettype < 901 OR b.bettype > 904) -- Exclude Cash out
 			AND (b.bettype < 911 OR b.bettype > 914) -- Exclude BetTrade			
-			AND b.statusID IN (111,112,113,101,102,103) -- Draw/Won/Lose/Rejected/Void/Refund
+			AND b.statusID IN (111,112,113,101,102,103,114,115) -- Draw/Won/Lose/Rejected/Void/Refund
 	END
 
 	SELECT ISNULL(SUM(Won), 0) AS Won,
@@ -164,10 +163,10 @@ BEGIN
 		ISNULL(SUM(Cancelled), 0) AS Cancelled
 	FROM @tempStatus
 
-	SELECT ISNULL(SUM(WinLost - ActualStake) / SUM(Stake), 0) AS Margin,
+	SELECT ISNULL(SUM(WinLost) / SUM(Stake), 0) AS Margin,
 		ISNULL(SUM(Stake) / SUM(BetCount), 0) AS AverageBetSize,
-		ISNULL(SUM(CASE WHEN StatusId = 112 THEN (WinLost - ActualStake) ELSE 0 END), 0) AS Winnings,
-		ISNULL(SUM(CASE WHEN StatusId = 113 THEN (WinLost - ActualStake) ELSE 0 END), 0) AS Loss
+		ISNULL(SUM(CASE WHEN StatusId IN (112,114) THEN WinLost ELSE 0 END), 0) AS Winnings,
+		ISNULL(SUM(CASE WHEN StatusId IN (113,115) THEN WinLost ELSE 0 END), 0) AS Loss
 	FROM #tempStatistics
 
 	DROP TABLE #tempStatistics
