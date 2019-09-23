@@ -19,6 +19,7 @@ Original: [Lrf_Statement_Mem]
 Revisions:  
 	- 20190723@Bobby: Initialize [RedmineID: #117534]
 	- 20190904@Bobby: Implement Statement Service - Level 1 [RedmineID: #119648]
+	- 20190919@Bobby: Enhance Statement Level 1 - show outstanding for future
 	
 	
 Param's Explanation:     
