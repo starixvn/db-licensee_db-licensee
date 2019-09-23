@@ -67,7 +67,7 @@ BEGIN
 		, @currentDate	= CURRENT_TIMESTAMP
 		, @_CustID		= ISNULL(@CustID, 0)
 		, @_startDate	= @FromDate
-		, @_endDate		= CASE WHEN @ToDate > @currentDate THEN @currentDate ELSE @ToDate END
+		, @_endDate		= @ToDate
 
 	SELECT TOP(1) @currency	= currency, @_recommend = recommend
 	FROM dbo.custinfo (NOLOCK) 
@@ -88,8 +88,6 @@ BEGIN
 		OR @currency IS NULL
 		OR @_CustID <= 0)
 	BEGIN
-		SELECT RowNum,winlostdate,transtype,transdesc,TurnOver,TotalAmt,Commission
-		FROM #tempStatementRpt
 		RETURN
 	END
 
@@ -170,11 +168,14 @@ BEGIN
 	------------- END INIT: OPENING BALANCE ---------------
 
 	-- RESET FromDate
-	SELECT @_startDate = @previousBalanceUpDay
+	--SELECT @_startDate = @previousBalanceUpDay
 	
+	DECLARE @isCurrentMonth BIT
+	SELECT @isCurrentMonth = CASE WHEN MONTH(@_endDate) >= MONTH(@currentDate) THEN 1 ELSE 0 END
+
 	--------------- Start: PROCESS data ------------------------
 	-- after @BalanceUpDay - Mix up
-	IF (@_endDate >= @BalanceUpDay)
+	IF (@_endDate >= @BalanceUpDay OR @isCurrentMonth = 1)
 	BEGIN   
 		-- bettrans_bk tickets & [Statement] opening balance - before @BalanceUpDay
 		IF (@_startDate < @BalanceUpDay)
@@ -225,7 +226,7 @@ BEGIN
 		END  
 
 		-- bettrans tickets -- after @MoveBetsDay
-		IF (@_endDate > @MoveBetsDay)
+		IF (@_endDate > @MoveBetsDay OR @isCurrentMonth = 1)
 		BEGIN
 			SELECT @_tempStartDate  =  CASE WHEN @_startDate <= @MoveBetsDay THEN @MoveBetsDay-1 ELSE @_startDate END
 				, @_tempEndDate		=  @_endDate
@@ -258,10 +259,16 @@ BEGIN
 
 				WHERE
 					custid = @_CustID  
-					AND winlostdate >= @_tempStartDate and winlostdate <= @_tempEndDate
+					AND winlostdate >= @_tempStartDate --and winlostdate <= @_tempEndDate
 					AND b.bettype < 19999
 					AND b.bettype NOT IN (903, 71, 913, 914)
 					AND ((@IsCOMember = 0 AND bettype <> 912) OR (@IsCOMember = 1 AND bettype <> 911))
+					AND 1 = CASE 
+								WHEN statusID IN (0, 1) THEN 1
+								WHEN statusID IN (101, 102, 103) THEN 1
+								WHEN b.winlostdate <= @_tempEndDate THEN 1
+								ELSE 0
+							END
 				GROUP BY
 					CASE
 						WHEN statusID IN (0, 1) THEN @OUT_KEY
@@ -283,7 +290,7 @@ BEGIN
 				WHERE
 					statusID IN (0,1) -- get only running game _ Keno
 					AND custid = @_CustID  
-					AND winlostdate >= @_tempStartDate and winlostdate <= @_tempEndDate  
+					AND winlostdate >= @_tempStartDate --and winlostdate <= @_tempEndDate  
 						
 				GROUP BY 
 					winlostdate
@@ -301,7 +308,7 @@ BEGIN
 				FROM bodb02.dbo.bettransRnG WITH (NOLOCK)
 				WHERE
 					custid = @_CustID  
-					AND winlostdate >= @_tempStartDate and winlostdate <= @_tempEndDate  
+					AND winlostdate >= @_tempStartDate --and winlostdate <= @_tempEndDate  
 					AND statusID = 0 -- get only running game _ bettransRnG
 				GROUP BY 
 					winlostdate
@@ -319,7 +326,7 @@ BEGIN
 				FROM bodb02.dbo.bettransLC WITH (NOLOCK)
 				WHERE
 					recommend = @_recommend
-					AND winlostdate >= @_tempStartDate and winlostdate <= @_tempEndDate  
+					AND winlostdate >= @_tempStartDate --and winlostdate <= @_tempEndDate  
 					AND custid = @_CustID  
 					AND statusID = 0 
 				GROUP BY 
@@ -363,6 +370,7 @@ BEGIN
 	-- before @BalanceUpDay --> bettrans_bk & [Statement] - only
 	IF (@_endDate < @BalanceUpDay)  
 	BEGIN
+
 		INSERT INTO #statementRpt (orderkey, winlostdate, transtype, transdesc, turnover,TotalAmt,commission)
 		SELECT f.orderkey, f.winlostdate, f.transtype, f.transdesc, f.turnover, f.TotalAmt, f.commission
 		FROM bodb02.dbo.LAP_f_Statement_Mem_Summary(@_CustID, @_startDate, @_endDate) AS f
