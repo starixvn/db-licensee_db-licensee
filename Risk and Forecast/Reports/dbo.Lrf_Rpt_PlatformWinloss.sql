@@ -337,7 +337,7 @@ BEGIN
 		ELSE
 			SET @TempFromDate = @FDate
 	
-		DECLARE @hwhlCutDate SMALLDATETIME = '2019-10-01' -- half won/ half lose cut date
+		DECLARE @HWHLCutDate SMALLDATETIME = '2019-10-01' -- half won/ half lose cut date
 	
 		IF @ShowBA=1
 		BEGIN
@@ -353,8 +353,8 @@ BEGIN
 						*
 						CASE WHEN @drawfilter IN (2,3) THEN
 							CASE WHEN b.statusID = 111 THEN 0
-							WHEN b.winlostdate < @hwhlCutDate AND (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18,124,125,482,483,484,485) THEN 0.5
-							WHEN b.winlostdate >= @hwhlCutDate AND b.statusID IN (112, 113) AND b.modds IN (-0.25, 0.25) AND b.bettype NOT IN (29,38) THEN 0.5 -- exclude parlay, bet builder
+							WHEN b.winlostdate >= @HWHLCutDate AND b.statusID IN (112, 113) AND b.modds IN (-0.25, 0.25) AND b.bettype NOT IN (29,38) THEN 0.5 -- exclude parlay, bet builder
+							WHEN b.winlostdate < @HWHLCutDate AND (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18,124,125,482,483,484,485) THEN 0.5
 							ELSE 1 END
 						ELSE 1 END
 					) turnover,
@@ -392,8 +392,8 @@ BEGIN
 						*
 						CASE WHEN @drawfilter IN (2,3) THEN
 							CASE WHEN b.statusID = 111 THEN 0
-							WHEN b.winlostdate < @hwhlCutDate AND (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18,124,125,482,483,484,485) THEN 0.5
-							WHEN b.winlostdate >= @hwhlCutDate AND b.statusID IN (112, 113) AND b.modds IN (-0.25, 0.25) AND b.bettype NOT IN (29,38) THEN 0.5 -- exclude parlay, bet builder
+							WHEN b.winlostdate >= @HWHLCutDate AND b.statusID IN (112, 113) AND b.modds IN (-0.25, 0.25) AND b.bettype NOT IN (29,38) THEN 0.5 -- exclude parlay, bet builder
+							WHEN b.winlostdate < @HWHLCutDate AND (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18,124,125,482,483,484,485) THEN 0.5
 							ELSE 1 END
 						ELSE 1 END
 					) turnover,

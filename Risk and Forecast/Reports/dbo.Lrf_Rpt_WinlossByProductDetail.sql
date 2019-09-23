@@ -193,7 +193,7 @@ BEGIN
 		ELSE
 			SET @TempFromDate = @FDate
 
-		DECLARE @hwhlCutDate SMALLDATETIME = '2019-10-01' -- half won/ half lose cut date
+		DECLARE @HWHLCutDate SMALLDATETIME = '2019-10-01' -- half won/ half lose cut date
 
 		---#3.1: Begin: Get data for BA product
 		IF PATINDEX('%,BA,%', ',' + @ProductList + ',') > 0  ---- BA Product
@@ -214,9 +214,10 @@ BEGIN
 				'BA' AS ProductCode,
 				SUM( stake
 					*				
-					CASE WHEN b.statusID = 111 THEN 0|@sumTurnOver
-						WHEN b.winlostdate < @hwhlCutDate AND (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18,124,125,482,483,484,485) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0)
-						WHEN b.winlostdate >= @hwhlCutDate AND b.statusID IN (112, 113) AND b.modds IN (-0.25, 0.25) AND b.bettype NOT IN (29,38) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0) -- exclude parlay, bet builder
+					CASE 
+						WHEN b.statusID = 111 THEN 0|@sumTurnOver
+						WHEN b.winlostdate >= @HWHLCutDate AND b.statusID IN (112, 113) AND b.modds IN (-0.25, 0.25) AND b.bettype NOT IN (29,38) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0) -- exclude parlay, bet builder
+						WHEN b.winlostdate < @HWHLCutDate AND (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18,124,125,482,483,484,485) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0)
 						ELSE 1 END
 				)Turnover, 
 				SUM(b.winlost - b.actual_stake) AS Winlost,  
@@ -303,9 +304,10 @@ BEGIN
 					END					
 				ELSE bt.ProductCode END AS ProductCode,
 				SUM(stake *			
-					CASE WHEN b.statusID = 111 THEN 0|@sumTurnOver
-							WHEN bt.ProductCode = 'SB' AND b.winlostdate < @hwhlCutDate AND (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18,124,125,482,483,484,485) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0)
-							WHEN bt.ProductCode = 'SB' AND b.winlostdate >= @hwhlCutDate AND b.statusID IN (112, 113) AND b.modds IN (-0.25, 0.25) AND b.bettype NOT IN (29,38) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0) -- exclude parlay, bet builder
+					CASE 
+						WHEN b.statusID = 111 THEN 0|@sumTurnOver
+						WHEN bt.ProductCode = 'SB' AND b.winlostdate >= @HWHLCutDate AND b.statusID IN (112, 113) AND b.modds IN (-0.25, 0.25) AND b.bettype NOT IN (29,38) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0) -- exclude parlay, bet builder
+						WHEN bt.ProductCode = 'SB' AND b.winlostdate < @HWHLCutDate AND (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18,124,125,482,483,484,485) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0)
 						ELSE 1 END
 				) AS Turnover, 
 				SUM(b.winlost - b.actual_stake) AS Winlost,  
