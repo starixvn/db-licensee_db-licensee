@@ -1,4 +1,6 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_SportsGetAll]  
+﻿/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+GO
+ALTER PROCEDURE [dbo].[Lrf_SportsGetAll]  
 AS  
 /*      
  Created : Henry      
@@ -10,6 +12,7 @@ AS
     - 20120823@henry: remove Live Casino and virtual soccer  
     - 20130418@Scott: remove order by Sportname
 	- 20140117@Florent: add new sport 154
+	- 20190926@Eden: 3rd party products - Remove InActive Products Phase 2 [Redmine: #118699]
 */    
   
 BEGIN
@@ -18,12 +21,6 @@ BEGIN
 		,SportName
 	FROM Sports WITH (NOLOCK)
 	WHERE sporttype <= 99 
-	or sporttype=154
 END
   
-  
-
 GO
-GRANT EXECUTE ON [dbo].[Lrf_SportsGetAll] TO [bodbLicenseeNet] 
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_SportsGetAll] TO [vnteam]   
