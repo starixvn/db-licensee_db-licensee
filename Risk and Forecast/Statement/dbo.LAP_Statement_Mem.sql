@@ -169,7 +169,7 @@ BEGIN
 	------------- END INIT: OPENING BALANCE ---------------
 
 	-- RESET FromDate
-	--SELECT @_startDate = @previousBalanceUpDay
+	SELECT @_startDate = @previousBalanceUpDay
 	
 	DECLARE @isCurrentMonth BIT
 	SELECT @isCurrentMonth = CASE WHEN MONTH(@_endDate) >= MONTH(@currentDate) THEN 1 ELSE 0 END
@@ -398,6 +398,27 @@ BEGIN
 	GROUP BY winlostdate, CustID
 	-----------------------------------------------------------------------------
 
+	---- Check for RECAL initial OPENNING BALANCE
+	IF (@_startDate	< @FromDate)
+	BEGIN
+		DECLARE @totalInitBalance MONEY
+
+		SELECT @totalInitBalance = SUM(ISNULL(TotalAmt,0) + ISNULL(Commission,0))
+		FROM #statementRpt
+		WHERE winlostdate < @FromDate
+
+		UPDATE rpt
+		SET TotalAmt = @totalInitBalance
+		FROM #statementRpt rpt
+		WHERE transtype = 'BAL'
+		AND winlostdate < @FromDate
+
+		DELETE rpt
+		FROM #statementRpt rpt
+		WHERE transtype <> 'BAL'
+		AND winlostdate < @FromDate
+	END
+
 	DECLARE @rowStart		INT
 		, @rowEnd			INT
 		, @fromExRateDate	SMALLDATETIME
@@ -415,8 +436,8 @@ BEGIN
 
 	 --RETURN output result
 	WITH CTE_Exchange AS (
-		SELECT CONVERT(DATETIME, FromDate) AS FromDate
-			, CONVERT(DATETIME, DATEADD(DAY, 1, ToDate)) AS ToDate
+		SELECT f.FromDate
+			, DATEADD(DAY, 1, f.ToDate) AS ToDate
 			, Rate 
 		FROM dbo.Lrf_f_GetExchangeRate(@fromExRateDate, @toExRateDate, @BaseCurrency, '') AS f
 		WHERE f.ExchangeID = @currency
@@ -430,9 +451,10 @@ BEGIN
 		,rpt.winlostdate
 		,rpt.transtype
 		,ISNULL(rpt.transdesc, dsc.transdesc)	AS transdesc
-		,CAST(rpt.turnover * ISNULL(ex.Rate, 1) AS DECIMAL(15,2))	AS turnover
-		,CAST(rpt.TotalAmt * ISNULL(ex.Rate, 1) AS DECIMAL(15,2))	AS totalamt
-		,CAST(rpt.commission * ISNULL(ex.Rate, 1) AS DECIMAL(15,2))	AS commission
+		,CAST(rpt.turnover * ISNULL(ex.Rate, fex.Rate) AS DECIMAL(15,2))	AS turnover
+		,CAST(rpt.TotalAmt * ISNULL(ex.Rate, fex.Rate) AS DECIMAL(15,2))	AS totalamt
+		,CAST(rpt.commission * ISNULL(ex.Rate, fex.Rate) AS DECIMAL(15,2))	AS commission
+		
 	FROM CTE_Paging rpt
 		LEFT JOIN @transDesc dsc 
 			ON rpt.OrderKey		= dsc.orderkey 
@@ -440,6 +462,12 @@ BEGIN
 		LEFT JOIN CTE_Exchange ex 
 			ON rpt.winlostdate	>= ex.FromDate 
 			AND rpt.winlostdate < ex.ToDate
+		OUTER APPLY (
+			-- future rate usage
+			SELECT Rate
+			FROM CTE_Exchange ex 
+			WHERE ex.ToDate IN (SELECT MAX(ToDate) FROM CTE_Exchange)
+		) AS fex
 	WHERE 
 		rpt.RowNum BETWEEN @RowStart AND @RowEnd
 	ORDER BY 
