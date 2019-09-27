@@ -244,13 +244,21 @@ BEGIN
 		AND @_ModeView = 1
 	HAVING SUM(WinAmount) <> 0
 
+	-- Check exrate for future
+	DECLARE @currentDate	SMALLDATETIME
+		, @fromExRateDate	SMALLDATETIME
+		, @toExRateDate		SMALLDATETIME
+
+	SELECT @currentDate		= CAST(CURRENT_TIMESTAMP AS DATE)
+		,@fromExRateDate	= CASE WHEN @_winlostdate > @currentDate THEN @currentDate ELSE @_winlostdate END
+		,@toExRateDate		= @_winlostdate
 
 	-- RETURN output result
 	;WITH CTE_Exchange AS (
 		SELECT f.FromDate
 			, DATEADD(DAY, 1, f.ToDate) AS ToDate
 			, Rate 
-		FROM bodb02.dbo.Lrf_f_GetExchangeRate(CURRENT_TIMESTAMP, @_winlostdate, @BaseCurrency, '') AS f
+		FROM bodb02.dbo.Lrf_f_GetExchangeRate(@fromExRateDate, @toExRateDate, @BaseCurrency, '') AS f
 		WHERE f.ExchangeID = @currency
 	)
 	SELECT rpt.winlostdate
