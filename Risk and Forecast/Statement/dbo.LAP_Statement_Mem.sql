@@ -19,6 +19,7 @@ Original: [Lrf_Statement_Mem]
 Revisions:  
 	- 20190723@Bobby: Initialize [RedmineID: #117534]
 	- 20190904@Bobby: Implement Statement Service - Level 1 [RedmineID: #119648]
+	- 20190919@Bobby: Enhance Statement Level 1 - show outstanding for future
 	
 	
 Param's Explanation:     
@@ -67,7 +68,7 @@ BEGIN
 		, @currentDate	= CURRENT_TIMESTAMP
 		, @_CustID		= ISNULL(@CustID, 0)
 		, @_startDate	= @FromDate
-		, @_endDate		= CASE WHEN @ToDate > @currentDate THEN @currentDate ELSE @ToDate END
+		, @_endDate		= @ToDate
 
 	SELECT TOP(1) @currency	= currency, @_recommend = recommend
 	FROM dbo.custinfo (NOLOCK) 
@@ -88,8 +89,6 @@ BEGIN
 		OR @currency IS NULL
 		OR @_CustID <= 0)
 	BEGIN
-		SELECT RowNum,winlostdate,transtype,transdesc,TurnOver,TotalAmt,Commission
-		FROM #tempStatementRpt
 		RETURN
 	END
 
@@ -172,9 +171,12 @@ BEGIN
 	-- RESET FromDate
 	SELECT @_startDate = @previousBalanceUpDay
 	
+	DECLARE @isCurrentMonth BIT
+	SELECT @isCurrentMonth = CASE WHEN MONTH(@_endDate) >= MONTH(@currentDate) THEN 1 ELSE 0 END
+
 	--------------- Start: PROCESS data ------------------------
 	-- after @BalanceUpDay - Mix up
-	IF (@_endDate >= @BalanceUpDay)
+	IF (@_endDate >= @BalanceUpDay OR @isCurrentMonth = 1)
 	BEGIN   
 		-- bettrans_bk tickets & [Statement] opening balance - before @BalanceUpDay
 		IF (@_startDate < @BalanceUpDay)
@@ -225,7 +227,7 @@ BEGIN
 		END  
 
 		-- bettrans tickets -- after @MoveBetsDay
-		IF (@_endDate > @MoveBetsDay)
+		IF (@_endDate > @MoveBetsDay OR @isCurrentMonth = 1)
 		BEGIN
 			SELECT @_tempStartDate  =  CASE WHEN @_startDate <= @MoveBetsDay THEN @MoveBetsDay-1 ELSE @_startDate END
 				, @_tempEndDate		=  @_endDate
@@ -258,10 +260,16 @@ BEGIN
 
 				WHERE
 					custid = @_CustID  
-					AND winlostdate >= @_tempStartDate and winlostdate <= @_tempEndDate
+					AND winlostdate >= @_tempStartDate --and winlostdate <= @_tempEndDate
 					AND b.bettype < 19999
 					AND b.bettype NOT IN (903, 71, 913, 914)
 					AND ((@IsCOMember = 0 AND bettype <> 912) OR (@IsCOMember = 1 AND bettype <> 911))
+					AND 1 = CASE 
+								WHEN statusID IN (0, 1) THEN 1
+								WHEN statusID IN (101, 102, 103) THEN 1
+								WHEN b.winlostdate <= @_tempEndDate THEN 1
+								ELSE 0
+							END
 				GROUP BY
 					CASE
 						WHEN statusID IN (0, 1) THEN @OUT_KEY
@@ -283,7 +291,7 @@ BEGIN
 				WHERE
 					statusID IN (0,1) -- get only running game _ Keno
 					AND custid = @_CustID  
-					AND winlostdate >= @_tempStartDate and winlostdate <= @_tempEndDate  
+					AND winlostdate >= @_tempStartDate --and winlostdate <= @_tempEndDate  
 						
 				GROUP BY 
 					winlostdate
@@ -301,7 +309,7 @@ BEGIN
 				FROM bodb02.dbo.bettransRnG WITH (NOLOCK)
 				WHERE
 					custid = @_CustID  
-					AND winlostdate >= @_tempStartDate and winlostdate <= @_tempEndDate  
+					AND winlostdate >= @_tempStartDate --and winlostdate <= @_tempEndDate  
 					AND statusID = 0 -- get only running game _ bettransRnG
 				GROUP BY 
 					winlostdate
@@ -319,7 +327,7 @@ BEGIN
 				FROM bodb02.dbo.bettransLC WITH (NOLOCK)
 				WHERE
 					recommend = @_recommend
-					AND winlostdate >= @_tempStartDate and winlostdate <= @_tempEndDate  
+					AND winlostdate >= @_tempStartDate --and winlostdate <= @_tempEndDate  
 					AND custid = @_CustID  
 					AND statusID = 0 
 				GROUP BY 
@@ -363,6 +371,7 @@ BEGIN
 	-- before @BalanceUpDay --> bettrans_bk & [Statement] - only
 	IF (@_endDate < @BalanceUpDay)  
 	BEGIN
+
 		INSERT INTO #statementRpt (orderkey, winlostdate, transtype, transdesc, turnover,TotalAmt,commission)
 		SELECT f.orderkey, f.winlostdate, f.transtype, f.transdesc, f.turnover, f.TotalAmt, f.commission
 		FROM bodb02.dbo.LAP_f_Statement_Mem_Summary(@_CustID, @_startDate, @_endDate) AS f
@@ -389,6 +398,27 @@ BEGIN
 	GROUP BY winlostdate, CustID
 	-----------------------------------------------------------------------------
 
+	---- Check for RECAL initial OPENNING BALANCE
+	IF (@_startDate	< @FromDate)
+	BEGIN
+		DECLARE @totalInitBalance MONEY
+
+		SELECT @totalInitBalance = SUM(ISNULL(TotalAmt,0) + ISNULL(Commission,0))
+		FROM #statementRpt
+		WHERE winlostdate < @FromDate
+
+		UPDATE rpt
+		SET TotalAmt = @totalInitBalance
+		FROM #statementRpt rpt
+		WHERE transtype = 'BAL'
+		AND winlostdate < @FromDate
+
+		DELETE rpt
+		FROM #statementRpt rpt
+		WHERE transtype <> 'BAL'
+		AND winlostdate < @FromDate
+	END
+
 	DECLARE @rowStart		INT
 		, @rowEnd			INT
 		, @fromExRateDate	SMALLDATETIME
@@ -406,8 +436,8 @@ BEGIN
 
 	 --RETURN output result
 	WITH CTE_Exchange AS (
-		SELECT CONVERT(DATETIME, FromDate) AS FromDate
-			, CONVERT(DATETIME, DATEADD(DAY, 1, ToDate)) AS ToDate
+		SELECT f.FromDate
+			, DATEADD(DAY, 1, f.ToDate) AS ToDate
 			, Rate 
 		FROM dbo.Lrf_f_GetExchangeRate(@fromExRateDate, @toExRateDate, @BaseCurrency, '') AS f
 		WHERE f.ExchangeID = @currency
@@ -421,9 +451,10 @@ BEGIN
 		,rpt.winlostdate
 		,rpt.transtype
 		,ISNULL(rpt.transdesc, dsc.transdesc)	AS transdesc
-		,CAST(rpt.turnover * ISNULL(ex.Rate, 1) AS DECIMAL(15,2))	AS turnover
-		,CAST(rpt.TotalAmt * ISNULL(ex.Rate, 1) AS DECIMAL(15,2))	AS totalamt
-		,CAST(rpt.commission * ISNULL(ex.Rate, 1) AS DECIMAL(15,2))	AS commission
+		,CAST(rpt.turnover * ISNULL(ex.Rate, fex.Rate) AS DECIMAL(15,2))	AS turnover
+		,CAST(rpt.TotalAmt * ISNULL(ex.Rate, fex.Rate) AS DECIMAL(15,2))	AS totalamt
+		,CAST(rpt.commission * ISNULL(ex.Rate, fex.Rate) AS DECIMAL(15,2))	AS commission
+		
 	FROM CTE_Paging rpt
 		LEFT JOIN @transDesc dsc 
 			ON rpt.OrderKey		= dsc.orderkey 
@@ -431,6 +462,12 @@ BEGIN
 		LEFT JOIN CTE_Exchange ex 
 			ON rpt.winlostdate	>= ex.FromDate 
 			AND rpt.winlostdate < ex.ToDate
+		OUTER APPLY (
+			-- future rate usage
+			SELECT Rate
+			FROM CTE_Exchange ex 
+			WHERE ex.ToDate IN (SELECT MAX(ToDate) FROM CTE_Exchange)
+		) AS fex
 	WHERE 
 		rpt.RowNum BETWEEN @RowStart AND @RowEnd
 	ORDER BY 

@@ -14,6 +14,7 @@ DB: DBACC/bodb02
 
 Revisions:  
 	- 20190904@Bobby: Implement Statement Service - Level 2 [RedmineID: #119648]
+	- 20190926@Bobby: Enhance Statement Level 1 - show outstanding for future
 
 Param's Explanation:     
 	- @ModeView: TINYINT
@@ -243,22 +244,29 @@ BEGIN
 		AND @_ModeView = 1
 	HAVING SUM(WinAmount) <> 0
 
+	-- Check exrate for future
+	DECLARE @currentDate	SMALLDATETIME
+		, @fromExRateDate	SMALLDATETIME
+		, @toExRateDate		SMALLDATETIME
+
+	SELECT @currentDate		= CAST(CURRENT_TIMESTAMP AS DATE)
+		,@fromExRateDate	= CASE WHEN @_winlostdate > @currentDate THEN @currentDate ELSE @_winlostdate END
+		,@toExRateDate		= @_winlostdate
 
 	-- RETURN output result
 	;WITH CTE_Exchange AS (
-		SELECT CONVERT(DATETIME, FromDate) AS FromDate
-			, CONVERT(DATETIME, DATEADD(DAY, 1, ToDate)) AS ToDate
+		SELECT f.FromDate
+			, DATEADD(DAY, 1, f.ToDate) AS ToDate
 			, Rate 
-		FROM bodb02.dbo.Lrf_f_GetExchangeRate(@_winlostdate, @_winlostdate, @BaseCurrency, '') AS f
+		FROM bodb02.dbo.Lrf_f_GetExchangeRate(@fromExRateDate, @toExRateDate, @BaseCurrency, '') AS f
 		WHERE f.ExchangeID = @currency
 	)
 	SELECT rpt.winlostdate
 		,p.ProductPrefix AS productcode
 		,@modeDesc AS transdesc
-		,CAST(rpt.turnover * ISNULL(ex.Rate, 1) AS DECIMAL(15,2))	AS turnover
-		,CAST(rpt.TotalAmt * ISNULL(ex.Rate, 1) AS DECIMAL(15,2))	AS totalamt
-		,CAST(rpt.commission * ISNULL(ex.Rate, 1) AS DECIMAL(15,2))	AS commission
-
+		,CAST(rpt.turnover * ISNULL(ex.Rate, fex.Rate) AS DECIMAL(15,2))	AS turnover
+		,CAST(rpt.TotalAmt * ISNULL(ex.Rate, fex.Rate) AS DECIMAL(15,2))	AS totalamt
+		,CAST(rpt.commission * ISNULL(ex.Rate, fex.Rate) AS DECIMAL(15,2))	AS commission
 	FROM 
 		#statementRpt rpt
 	INNER JOIN dbo.Products p WITH (NOLOCK) 
@@ -266,6 +274,12 @@ BEGIN
 	LEFT JOIN CTE_Exchange ex 
 		ON rpt.winlostdate	>= ex.FromDate 
 		AND rpt.winlostdate < ex.ToDate
+	OUTER APPLY (
+		-- future rate usage
+		SELECT Rate
+		FROM CTE_Exchange ex 
+		WHERE ex.ToDate IN (SELECT MAX(ToDate) FROM CTE_Exchange)
+	) AS fex
 	ORDER BY 
 		rpt.ProductID
 
