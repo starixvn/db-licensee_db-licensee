@@ -1,18 +1,19 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
-ALTER PROCEDURE [dbo].[Lrf_PlayerBettingStatistics]
+/*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+CREATE PROCEDURE [dbo].[Lrf_PlayerBettingStatistics]
 	@CustID			INT,
 	@FromDate		SMALLDATETIME,
 	@ToDate			SMALLDATETIME,
 	@MoveBetsDay	SMALLDATETIME,
-	@AgentList		VARCHAR(MAX)
+	@BalanceUpDay	SMALLDATETIME
 AS
 /*  Created: Walter  
 	Date: 2019-09-04
     Task : Get Player Betting Statistics
-    DB: DB052.bodb02  
+    DB: DBACC-bodb02  
    
     Revisions:
 		- 20190903@Walter: Initialize SP [RedmineID: #112658]
+		- 20190930@Walter: Get data from bettrans instead sum table [RedmineID: #112658]
 
 	Param's Explanation:  
 	  + @CustID: MemberId
@@ -25,51 +26,20 @@ AS
 	Sample: 
 	exec Lrf_PlayerBettingStatistics_xtest 
 	@CustID=1026204,
-	@FromDate='2019-08-01 00:00:00',
-	@ToDate='2019-08-30 00:00:00',
-	@MoveBetsDay='2019-08-15 00:00:00',
-	@AgentList='<ROOT><Agent AgentId="1025646" Currency="67"/></ROOT>'
+	@FromDate='2019-09-01 00:00:00',
+	@ToDate='2019-09-30 00:00:00',
+	@MoveBetsDay='2019-09-20 00:00:00',
+	@BalanceUpDay='2019-09-21 00:00:00'
 */
 BEGIN
 	SET NOCOUNT ON
-
-	DECLARE @tempAgent          TABLE (agentId INT, Currency INT)
-
-	DECLARE @tempStatus         TABLE (Won INT, Lose INT, Draw INT, Cancelled INT)
-
-	DECLARE @bettype		TABLE (bettype INT PRIMARY KEY)
 
 	CREATE TABLE #tempStatistics 
 	(
 		WinLost MONEY,
 		Stake MONEY,
-		StatusId TINYINT,
-		BetCount INT
+		StatusId TINYINT
 	)
-
-	DECLARE @DocHandler     INT
-
-	BEGIN TRY
-		EXEC sp_xml_preparedocument @DocHandler OUTPUT, @AgentList
-		INSERT INTO @tempAgent
-		(agentId, currency)
-	SELECT AgentId, Currency
-	FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
-		EXEC sp_xml_removedocument @DocHandler
-	END TRY
-
-	BEGIN CATCH
-		SELECT ErrCode = 100
-				, ErrMsg = N'Paramter invalid.'
-		RETURN
-	END CATCH;
-
-	DECLARE @IsTest BIT = 0
-	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
-	-- Insert Bettype
-	INSERT INTO @bettype (bettype)
-	SELECT DISTINCT BetType
-	FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', 'SB', @IsTest)
 
 	DECLARE @TempFromDate	SMALLDATETIME,
 			@TempToDate		SMALLDATETIME,
@@ -86,87 +56,98 @@ BEGIN
 		ELSE
 			SET @TempFromDate = @FDate
 
-		INSERT INTO @tempStatus
-		SELECT SUM(CASE WHEN b.statusID = 112 THEN 1 ELSE 0 END) AS Won,
-			SUM(CASE WHEN b.statusID = 113 THEN 1 ELSE 0 END) AS Lose,
-			SUM(CASE WHEN b.statusID = 111 THEN 1 ELSE 0 END) AS Draw,
-			SUM(CASE WHEN b.statusID IN (101,102,103) THEN 1 ELSE 0 END) AS Cancelled
-		FROM
-			bettrans b WITH (NOLOCK)
-			INNER JOIN @tempAgent a ON b.recommend = a.agentId AND b.currency = a.currency
-		WHERE 
-            custid = @CustID
-			AND b.tpositiontaking <> 0
-			AND b.winlostdate BETWEEN @TempFromDate AND @TDate
-			AND (b.bettype < 901 OR b.bettype > 904) -- Exclude Cash out
-			AND (b.bettype < 911 OR b.bettype > 914) -- Exclude BetTrade
-			AND b.statusID IN (111,112,113,101,102,103) -- Draw/Won/Lose/Rejected/Void/Refund
-			AND b.bettype in (SELECT bettype FROM @bettype)
-
 		INSERT INTO #tempStatistics
-		SELECT (b.winlost - b.actual_stake) as WinLost, b.stake as Stake, b.statusID as StatusId, 1 AS BetCount
+		SELECT (b.winlost - b.actual_stake) as WinLost, b.stake as Stake, b.statusID as StatusId
 		FROM
-			bettrans b WITH (NOLOCK)
-			INNER JOIN @tempAgent a ON b.recommend = a.agentId AND b.currency = a.currency
+			bodb02.dbo.bettrans b WITH (NOLOCK)
 		WHERE 
             custid = @CustID
-			AND b.tpositiontaking <> 0
-			AND b.winlostdate BETWEEN @TempFromDate AND @TDate
-			AND (b.bettype < 901 OR b.bettype > 904) -- Exclude Cash out
-			AND (b.bettype < 911 OR b.bettype > 914) -- Exclude BetTrade
+            AND b.winlostdate BETWEEN @TempFromDate AND @TDate
+            AND  
+				(
+					b.bettype <= 30
+					OR b.bettype BETWEEN 121 AND 999
+					OR b.Bettype BETWEEN 1301 and 1399 --new tennis's bettypes
+					OR b.Bettype BETWEEN 9001 and 9086 -- E-Sports 2.0
+					OR b.bettype = 38 -- bet builder
+				)
+			AND (b.bettype < 901 OR b.bettype > 904)
+			AND (b.bettype < 911 OR b.bettype > 914)
 			AND b.statusID IN (111,112,113,101,102,103) -- Draw/Won/Lose/Rejected/Void/Refund
-			AND b.bettype in (SELECT bettype FROM @bettype)
+			AND b.tpositiontaking <> 0 -- exclude BA	
 	END
 
-	IF @FDate <= @MoveBetsDay 
+	IF @FDate <= @MoveBetsDay AND @TDate > @BalanceUpDay
 	BEGIN
 		IF @TDate >= @MoveBetsDay
 			SET @TempToDate = @MoveBetsDay
 		ELSE
 			SET @TempToDate = @TDate
-
-		INSERT INTO @tempStatus
-		SELECT SUM(CASE WHEN b.statusID IN (112,114) THEN ISNULL(b.BetCount, 0) ELSE 0 END) AS Won,
-			SUM(CASE WHEN b.statusID IN (113,115) THEN ISNULL(b.BetCount, 0) ELSE 0 END) AS Lose,
-			SUM(CASE WHEN b.statusID = 111 THEN ISNULL(b.BetCount, 0) ELSE 0 END) AS Draw,
-			SUM(CASE WHEN b.statusID IN (101,102,103) THEN ISNULL(b.BetCount, 0) ELSE 0 END) AS Cancelled
-		FROM
-			bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)
-			INNER JOIN @tempAgent a ON b.recommend = a.agentId AND b.Currency = a.Currency
-		WHERE  
-            custid = @CustID
-			AND b.isBA = 0
-			AND b.Winlostdate BETWEEN @FDate AND @TempToDate
-			AND b.sporttype = 0
-			AND (b.bettype < 901 OR b.bettype > 904) -- Exclude Cash out
-			AND (b.bettype < 911 OR b.bettype > 914) -- Exclude BetTrade			
-			AND b.statusID IN (111,112,113,101,102,103,114,115) -- Draw/Won/Lose/Rejected/Void/Refund
+			
+		IF @FDate <= @BalanceUpDay
+			SET @TempFromDate = DATEADD(DAY, 1, @BalanceUpDay)
+		ELSE
+			SET @TempFromDate = @FDate
 
 		INSERT INTO #tempStatistics
-		SELECT b.winlost as WinLost, b.turnover as Stake, b.statusID as StatusId, b.BetCount
+		SELECT (b.winlost - b.actual_stake) as WinLost, b.stake as Stake, b.statusID as StatusId
 		FROM
-			bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)
-			INNER JOIN @tempAgent a ON b.recommend = a.agentId AND b.Currency = a.Currency
-		WHERE  
+			bodb02.dbo.bettrans14 b WITH (NOLOCK)
+		WHERE 
             custid = @CustID
-			AND b.isBA = 0
-			AND b.Winlostdate BETWEEN @FDate AND @TempToDate
-			AND b.sporttype = 0
-			AND (b.bettype < 901 OR b.bettype > 904) -- Exclude Cash out
-			AND (b.bettype < 911 OR b.bettype > 914) -- Exclude BetTrade			
-			AND b.statusID IN (111,112,113,101,102,103,114,115) -- Draw/Won/Lose/Rejected/Void/Refund
+			AND b.winlostdate BETWEEN @TempFromDate AND @TempToDate
+			AND  
+				(
+					b.bettype <= 30
+					OR b.bettype BETWEEN 121 AND 999
+					OR b.Bettype BETWEEN 1301 and 1399 --new tennis's bettypes
+					OR b.Bettype BETWEEN 9001 and 9086 -- E-Sports 2.0
+					OR b.bettype = 38 -- bet builder
+				)
+			AND (b.bettype < 901 OR b.bettype > 904)
+			AND (b.bettype < 911 OR b.bettype > 914)
+			AND b.statusID IN (111,112,113,101,102,103) -- Draw/Won/Lose/Rejected/Void/Refund
+			AND b.tpositiontaking <> 0 -- exclude BA
+	END
+	
+	IF @FDate <= @BalanceUpDay
+	BEGIN
+		IF @TDate >= @BalanceUpDay
+			SET @TempToDate = @BalanceUpDay
+		ELSE
+			SET @TempToDate = @TDate
+
+		INSERT INTO #tempStatistics
+		SELECT (b.winlost - b.actual_stake) as WinLost, b.stake as Stake, b.statusID as StatusId
+		FROM
+			bodb_Archive.dbo.bettrans_bk b WITH (NOLOCK)
+		WHERE
+            custid = @CustID			
+			AND b.winlostdate BETWEEN @FDate AND @TempToDate
+			AND  
+				(
+					b.bettype <= 30
+					OR b.bettype BETWEEN 121 AND 999
+					OR b.Bettype BETWEEN 1301 and 1399 --new tennis's bettypes
+					OR b.Bettype BETWEEN 9001 and 9086 -- E-Sports 2.0
+					OR b.bettype = 38 -- bet builder
+				)
+			AND (b.bettype < 901 OR b.bettype > 904)
+			AND (b.bettype < 911 OR b.bettype > 914)
+			AND b.statusID IN (111,112,113,101,102,103) -- Draw/Won/Lose/Rejected/Void/Refund
+			AND b.tpositiontaking <> 0 -- exclude BA
 	END
 
-	SELECT ISNULL(SUM(Won), 0) AS Won,
-		ISNULL(SUM(Lose), 0) AS Lose,
-		ISNULL(SUM(Draw), 0) AS Draw,
-		ISNULL(SUM(Cancelled), 0) AS Cancelled
-	FROM @tempStatus
+	SELECT SUM(CASE WHEN StatusId = 112 THEN 1 ELSE 0 END) AS Won,
+		 SUM(CASE WHEN StatusId = 113 THEN 1 ELSE 0 END) AS Lose,
+		 SUM(CASE WHEN StatusId = 111 THEN 1 ELSE 0 END) AS Draw,
+		 SUM(CASE WHEN StatusId IN (101, 102, 103) THEN 1 ELSE 0 END) AS Cancelled
+	FROM #tempStatistics
 
 	SELECT ISNULL(SUM(WinLost) / SUM(Stake), 0) AS Margin,
-		ISNULL(SUM(Stake) / SUM(BetCount), 0) AS AverageBetSize,
-		ISNULL(SUM(CASE WHEN StatusId IN (112,114) THEN WinLost ELSE 0 END), 0) AS Winnings,
-		ISNULL(SUM(CASE WHEN StatusId IN (113,115) THEN WinLost ELSE 0 END), 0) AS Loss
+		ISNULL(SUM(Stake) / SUM(1), 0) AS AverageBetSize,
+		ISNULL(SUM(CASE WHEN StatusId = 112 THEN WinLost ELSE 0 END), 0) AS Winnings,
+		ISNULL(SUM(CASE WHEN StatusId = 113 THEN WinLost ELSE 0 END), 0) AS Loss
 	FROM #tempStatistics
 
 	DROP TABLE #tempStatistics
