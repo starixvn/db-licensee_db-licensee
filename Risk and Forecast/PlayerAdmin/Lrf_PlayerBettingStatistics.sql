@@ -13,16 +13,13 @@ AS
    
     Revisions:
 		- 20190903@Walter: Initialize SP [RedmineID: #112658]
-		- 20190930@Walter: Get data from bettrans instead sum table [RedmineID: #112658]
+		- 20190930@Amanda: Get data from bettrans instead sum table [RedmineID: #112658]
 
 	Param's Explanation:  
 	  + @CustID: MemberId
 	  + @MoveBetsDay: The day we move tickets to bettrans14
-	  + @AgentList: xml structure
-					  <ROOT>
-					   <Agent AgentId="12345" Currency="3"/>  
-					   <Agent AgentId="12345" Currency="5"/>  
-					  </ROOT>
+	  + @BalanceUpDay: archive tickets day
+
 	Sample: 
 	exec Lrf_PlayerBettingStatistics_xtest 
 	@CustID=1026204,
@@ -74,7 +71,7 @@ BEGIN
 			AND (b.bettype < 901 OR b.bettype > 904)
 			AND (b.bettype < 911 OR b.bettype > 914)
 			AND b.statusID IN (111,112,113,101,102,103) -- Draw/Won/Lose/Rejected/Void/Refund
-			AND b.tpositiontaking <> 0 -- exclude BA	
+			AND NOT EXISTS (SELECT 1 FROM bodb_licensee.dbo.LicenseeBATransaction_active ba WHERE ba.TransID = b.transid)
 	END
 
 	IF @FDate <= @MoveBetsDay AND @TDate > @BalanceUpDay
@@ -107,7 +104,7 @@ BEGIN
 			AND (b.bettype < 901 OR b.bettype > 904)
 			AND (b.bettype < 911 OR b.bettype > 914)
 			AND b.statusID IN (111,112,113,101,102,103) -- Draw/Won/Lose/Rejected/Void/Refund
-			AND b.tpositiontaking <> 0 -- exclude BA
+			AND NOT EXISTS (SELECT 1 FROM bodb_licensee.dbo.LicenseeBATransaction_bk ba WHERE ba.TransID = b.transid)
 	END
 	
 	IF @FDate <= @BalanceUpDay
@@ -120,7 +117,7 @@ BEGIN
 		INSERT INTO #tempStatistics
 		SELECT (b.winlost - b.actual_stake) as WinLost, b.stake as Stake, b.statusID as StatusId
 		FROM
-			bodb_Archive.dbo.bettrans_bk b WITH (NOLOCK)
+			bodb_Archive.dbo.bettrans_bk b WITH (NOLOCK, INDEX = IX_custId)
 		WHERE
             custid = @CustID			
 			AND b.winlostdate BETWEEN @FDate AND @TempToDate
@@ -135,7 +132,7 @@ BEGIN
 			AND (b.bettype < 901 OR b.bettype > 904)
 			AND (b.bettype < 911 OR b.bettype > 914)
 			AND b.statusID IN (111,112,113,101,102,103) -- Draw/Won/Lose/Rejected/Void/Refund
-			AND b.tpositiontaking <> 0 -- exclude BA
+			AND NOT EXISTS (SELECT 1 FROM bodb_licensee.dbo.LicenseeBATransaction_bk ba WHERE ba.TransID = b.transid)
 	END
 
 	SELECT SUM(CASE WHEN StatusId = 112 THEN 1 ELSE 0 END) AS Won,
