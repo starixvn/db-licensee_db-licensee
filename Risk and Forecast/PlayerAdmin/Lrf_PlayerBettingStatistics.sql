@@ -135,10 +135,10 @@ BEGIN
 			AND NOT EXISTS (SELECT 1 FROM bodb_licensee.dbo.LicenseeBATransaction_bk ba WHERE ba.TransID = b.transid)
 	END
 
-	SELECT SUM(CASE WHEN StatusId = 112 THEN 1 ELSE 0 END) AS Won,
-		 SUM(CASE WHEN StatusId = 113 THEN 1 ELSE 0 END) AS Lose,
-		 SUM(CASE WHEN StatusId = 111 THEN 1 ELSE 0 END) AS Draw,
-		 SUM(CASE WHEN StatusId IN (101, 102, 103) THEN 1 ELSE 0 END) AS Cancelled
+	SELECT ISNULL(SUM(CASE WHEN StatusId = 112 THEN 1 ELSE 0 END),0) AS Won,
+		 ISNULL(SUM(CASE WHEN StatusId = 113 THEN 1 ELSE 0 END),0) AS Lose,
+		 ISNULL(SUM(CASE WHEN StatusId = 111 THEN 1 ELSE 0 END),0) AS Draw,
+		 ISNULL(SUM(CASE WHEN StatusId IN (101, 102, 103) THEN 1 ELSE 0 END),0) AS Cancelled
 	FROM #tempStatistics
 
 	SELECT ISNULL(SUM(WinLost) / SUM(Stake), 0) AS Margin,
