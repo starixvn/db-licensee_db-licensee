@@ -1,4 +1,4 @@
-/*<info serverAlias="DBAGE-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBAGE-bodb_Licensee" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
 GO
 ALTER PROCEDURE	[dbo].[Lrf_3rdProductSelCustStatus]
 	@CustID			INT,
