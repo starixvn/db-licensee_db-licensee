@@ -21,6 +21,7 @@ Revisions:
 	- 20190904@Bobby: Implement Statement Service - Level 1 [RedmineID: #119648]
 	- 20190919@Bobby: Enhance Statement Level 1 - show outstanding for future [RedmineID: #119648]
 	- 20191024@Bobby: Correct running and void [RedmineID: #120690]
+	- 20191003@Bobby: Integrate NPH Promotion product [RedmineID: #120333]
 	
 Param's Explanation:     
 */
@@ -39,9 +40,10 @@ BEGIN
 		, @_recommend				INT
 
 	DECLARE @BAL_KEY			TINYINT = 0
-			, @VOID_KEY			TINYINT = 2
 			, @BET_KEY			TINYINT = 1
+			, @VOID_KEY			TINYINT = 2
 			, @OUT_KEY			TINYINT = 3
+			, @PROMO_KEY		TINYINT = 4
 			, @TRAN_KEY			TINYINT = 2
 			, @CBGP_KEY			TINYINT = 4
 			, @BAL_BETTYPE		INT = 20000
@@ -102,6 +104,8 @@ BEGIN
 	SELECT @VOID_KEY,'BET','Void_Cancelled_Bet'
 	UNION ALL
 	SELECT @OUT_KEY,'BET','Outstanding_Bet'
+	UNION ALL
+	SELECT @PROMO_KEY, 'PROMO', 'Promotion_Prize'
 	UNION ALL
 	SELECT @CBGP_KEY,'GP','Grand_Prize'
 	UNION ALL
@@ -203,9 +207,10 @@ BEGIN
 			SELECT 
 				CASE
 					WHEN statusID IN (101, 102, 103) THEN @VOID_KEY
+					WHEN bettype IN (17000) THEN @PROMO_KEY
 					ELSE @BET_KEY END AS orderkey, 
 				winlostdate,
-				'BET' AS transtype,
+				CASE WHEN bettype IN (17000) THEN 'PROMO' ELSE 'BET' END AS transtype,
 				NULL AS transdesc,
 				SUM(CASE 
 					WHEN bettype IN (33, 43) AND liveawayscore = 0 AND livehomescore <> 0 AND ruben = 1 THEN stake/2 
@@ -222,8 +227,10 @@ BEGIN
 			GROUP BY
 				CASE
 					WHEN statusID IN (101, 102, 103) THEN @VOID_KEY
+					WHEN bettype IN (17000) THEN @PROMO_KEY
 					ELSE @BET_KEY END, 
-				winlostdate
+				winlostdate,
+				CASE WHEN bettype IN (17000) THEN 'PROMO' ELSE 'BET' END
 		END  
 
 		-- bettrans tickets -- after @MoveBetsDay
@@ -243,9 +250,10 @@ BEGIN
 					CASE
 						WHEN statusID IN (0, 1) THEN @OUT_KEY
 						WHEN statusID IN (101, 102, 103) THEN @VOID_KEY
+						WHEN bettype IN (17000) THEN @PROMO_KEY
 						ELSE @BET_KEY END AS orderkey,  
 					winlostdate,
-					'BET' transtype,
+					CASE WHEN bettype IN (17000) THEN 'PROMO' ELSE 'BET' END AS transtype,
 					NULL transdesc,
 					SUM(CASE 
 						WHEN bettype IN (33, 43) AND liveawayscore = 0 AND livehomescore <> 0 AND ruben = 1 THEN stake/2 
@@ -274,8 +282,10 @@ BEGIN
 					CASE
 						WHEN statusID IN (0, 1) THEN @OUT_KEY
 						WHEN statusID IN (101, 102, 103) THEN @VOID_KEY
+						WHEN bettype IN (17000) THEN @PROMO_KEY
 						ELSE @BET_KEY END,  
-					winlostdate
+					winlostdate,
+					CASE WHEN bettype IN (17000) THEN 'PROMO' ELSE 'BET' END
 			
 				--include running Keno bet
 				UNION ALL

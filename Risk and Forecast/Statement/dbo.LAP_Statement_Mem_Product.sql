@@ -14,13 +14,16 @@ DB: DBACC/bodb02
 
 Revisions:  
 	- 20190904@Bobby: Implement Statement Service - Level 2 [RedmineID: #119648]
-	- 20190926@Bobby: Enhance Statement Level 1 - show outstanding for future
+	- 20190926@Bobby: Enhance Statement Level 1 - show outstanding for future [RedmineID: #120690] 
+	- 20191003@Bobby: Integrate NPH Promotion product [RedmineID: #120333]
+	
 
 Param's Explanation:     
 	- @ModeView: TINYINT
 		+ 1 - Bet_Statement
 		+ 2 - Void_Cancelled_Bet
 		+ 3 - Outstanding_Bet
+		+ 4 - Promotion_Prize
 */
 BEGIN
 	SET NOCOUNT ON
@@ -70,6 +73,7 @@ BEGIN
 							WHEN 1 THEN 'Bet_Statement'
 							WHEN 2 THEN 'Void_Cancelled_Bet'
 							WHEN 3 THEN 'Outstanding_Bet'
+							WHEN 4 THEN 'Promotion_Prize'
 						END
 		, @IsTest			= dbo.f_CheckSPVersion(@@PROCID)
 		, @IsCOMember		= ISNULL(@IsCOMember,0)
@@ -88,7 +92,7 @@ BEGIN
 	END
 
 	--------- bettrans settled/outstanding/void/reject bet tickets -----------------------------
-	IF (@_ModeView IN (1,2,3) AND @_winlostdate > @MoveBetsDay)
+	IF (@_ModeView IN (1,2,3,4) AND @_winlostdate > @MoveBetsDay)
 	BEGIN
 		-- bet tickets
 		INSERT INTO #betTicket(bettype, turnover, winlost, playercomm)
@@ -114,7 +118,9 @@ BEGIN
 						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) THEN 1 
 						WHEN @_ModeView = 2 AND b.statusID IN (101,102,103) THEN 1 
 						WHEN @_ModeView = 3 AND b.statusID IN (0,1) THEN 1 
-					ELSE 0 END
+						WHEN @_ModeView = 4 AND b.bettype IN (17000) THEN 1 
+						ELSE 0 
+					END
 		GROUP BY
 			b.bettype
 			
@@ -165,7 +171,7 @@ BEGIN
 	END
 	
 	--------- bettrans14 settled/reject/void/refund bet tickets --------------------------------
-	IF (@_ModeView IN (1,2) AND @_winlostdate BETWEEN @BalanceUpDay AND @MoveBetsDay)
+	IF (@_ModeView IN (1,2,4) AND @_winlostdate BETWEEN @BalanceUpDay AND @MoveBetsDay)
 	BEGIN
 		INSERT INTO #betTicket(bettype, turnover, winlost, playercomm)
 		SELECT 
@@ -184,13 +190,14 @@ BEGIN
 			AND 1 = CASE 
 						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) THEN 1 
 						WHEN @_ModeView = 2 AND b.statusID IN (101,102,103) THEN 1 
+						WHEN @_ModeView = 4 AND b.bettype IN (17000) THEN 1 
 					ELSE 0 END
 
 		GROUP BY b.bettype
 	END
 	
 	--------- bettrans_bk settled/reject/void/refund bet tickets -------------------------------
-	IF (@_ModeView IN (1,2) AND @_winlostdate < @BalanceUpDay)
+	IF (@_ModeView IN (1,2,4) AND @_winlostdate < @BalanceUpDay)
 	BEGIN
 		INSERT INTO #betTicket(bettype, turnover, winlost, playercomm)
 		SELECT 
@@ -209,6 +216,7 @@ BEGIN
 			AND 1 = CASE 
 						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) THEN 1 
 						WHEN @_ModeView = 2 AND b.statusID IN (101,102,103) THEN 1 
+						WHEN @_ModeView = 4 AND b.bettype IN (17000) THEN 1 
 					ELSE 0 END
 
 		GROUP BY b.bettype

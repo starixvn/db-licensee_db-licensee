@@ -14,6 +14,7 @@ DB: DBACC/bodb02
 Revisions:  
 	- 20190723@Bobby: Initialize [RedmineID: #117534]
 	- 20190904@Bobby: Implement Statement Service - Level 1 [RedmineID: #119648]
+	- 20191003@Bobby: Integrate NPH Promotion product [RedmineID: #120333]
 	
 Param's Explanation:     
 */
@@ -27,6 +28,7 @@ RETURN (
 			, 2 AS VOID_KEY
 			, 1 AS BET_KEY
 			, 2 AS TRAN_KEY
+			, 4 AS PROMO_KEY
 	) AS temp
 	CROSS APPLY (
 		SELECT 
@@ -42,10 +44,11 @@ RETURN (
 			SELECT 
 				CASE 
 					WHEN b.statusID IN (101,102,103) THEN temp.VOID_KEY --> Void/Reject/Refund
+					WHEN b.bettype IN (17000) THEN temp.PROMO_KEY
 					ELSE temp.BET_KEY --> Won/Lose/Draw
 				END AS orderkey
 				, winlostdate
-				, 'BET' AS transtype
+				, CASE WHEN bettype IN (17000) THEN 'PROMO' ELSE 'BET' END AS transtype
 				, NULL AS transdesc
 				, SUM(b.stake) AS turnover
 				, SUM(b.winlost - b.actual_stake) AS TotalAmt
@@ -55,11 +58,14 @@ RETURN (
 				b.custid			= temp.custid
 				AND b.winlostdate	>= temp.FromDate AND b.winlostdate <= temp.ToDate
 
-			GROUP BY b.winlostdate
-				, CASE 
+			GROUP BY
+				CASE 
 					WHEN b.statusID IN (101,102,103) THEN 2 --> Void/Reject/Refund
+					WHEN b.bettype IN (17000) THEN temp.PROMO_KEY
 					ELSE 1 --> Won/Lose/Draw
-				END
+				END,
+				 b.winlostdate,
+				CASE WHEN bettype IN (17000) THEN 'PROMO' ELSE 'BET' END
 
 			-- BAL
 			UNION ALL
