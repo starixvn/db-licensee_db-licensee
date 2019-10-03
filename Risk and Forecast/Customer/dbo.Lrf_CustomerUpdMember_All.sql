@@ -1,8 +1,7 @@
-﻿/*<info serverAlias="DBCUST-CustDB" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/ 
-USE CustDB
-GO
+﻿/*<info serverAlias="DBCUST-CustDB" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/ 
 ALTER PROC [dbo].[Lrf_CustomerUpdMember_All]  
-	@LicenseeID INT,	
+	@LicenseeID INT = 0,	
+	@LicenseeName VARCHAR(50) = '',	
 	@custid INT,--memberid  
 	@UserID INT,      
 	@IP varchar(15)='',   
@@ -36,9 +35,9 @@ ALTER PROC [dbo].[Lrf_CustomerUpdMember_All]
 	@MaxBetv11 MONEY,  
 	@MaxPerMatchv11 MONEY,  
  
-	@MinBetv44 MONEY,  
-	@MaxBetv44 MONEY,  
-	@MaxPerMatchv44 MONEY,
+	@MinBetv44 MONEY=0,  
+	@MaxBetv44 MONEY=0,  
+	@MaxPerMatchv44 MONEY=0,
  
 	@MinBetv99 MONEY,  
 	@MaxBetv99 MONEY,  
@@ -56,7 +55,7 @@ ALTER PROC [dbo].[Lrf_CustomerUpdMember_All]
 	@UpdateMinMaxBetv8 BIT = 1,   
 	@UpdateMinMaxBetv10 BIT = 1,  
 	@UpdateMinMaxBetv11 BIT = 1,  
-	@UpdateMinMaxBetv44 BIT = 1, 
+	@UpdateMinMaxBetv44 BIT = 0, 
 	@UpdateMinMaxBetv99 BIT = 1,  
 	@UpdateMinMaxBetv99MP BIT = 1,  
  
@@ -76,7 +75,7 @@ AS
 		- 20151015@Jim: Integrate Sportbook2 (Feature #44759)
 		- 20181009@Winnie: Remove Racing  (Feature #99378)
 		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
-
+		- 20190801@Johnson: add @LicenseeName for LAP [redmine:#112658]
 	Param's Explanation:  
 	• @ErrCode:  
 		= 0: Update successfully.  
@@ -90,7 +89,14 @@ BEGIN
 	-- ***Check Downline Belonging***  
 	declare @status int, @roleid TINYINT, @ErrCode_Cur int, @ErrMsg_Cur nvarchar(4000)  
 	Select @ErrCode_Cur = 0, @ErrMsg_Cur = '', @ErrCode = '', @ErrMsg = ''  
-  
+	
+	IF ISNULL(@LicenseeID,0) = 0
+	BEGIN
+		SELECT @LicenseeID	= LicenseeID
+		FROM bodb_Licensee.dbo.Licensees WITH(NOLOCK)
+		WHERE LicenseeName = @LicenseeName
+	END
+	
 	SELECT @roleid = c.RoleID
 	FROM bodb_Licensee.dbo.LicenseeCust lc (NOLOCK)
 		INNER join custinfo c WITH (NOLOCK) ON lc.custid = c.custid
