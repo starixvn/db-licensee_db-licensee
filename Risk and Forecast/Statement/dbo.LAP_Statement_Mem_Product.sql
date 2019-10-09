@@ -83,11 +83,6 @@ BEGIN
 		OR @_winlostdate IS NULL
 		OR @currency IS NULL)
 	BEGIN
-		SELECT @_winlostdate AS Winlostdate
-			,'' AS ProductCode
-			,'' AS transdesc
-			,TurnOver,TotalAmt,Commission
-		FROM #statementRpt
 		RETURN
 	END
 
@@ -115,8 +110,8 @@ BEGIN
 			AND b.bettype NOT IN (903, 71, 913, 914)
 			AND ((ISNULL(@IsCOMember,0) = 0 AND b.bettype <> 912) OR (@IsCOMember = 1 AND b.bettype <> 911))
 			AND 1 = CASE 
-						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) THEN 1 
-						WHEN @_ModeView = 2 AND b.statusID IN (101,102,103) THEN 1 
+						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) AND b.bettype NOT IN (17000) THEN 1 
+						WHEN @_ModeView = 2 AND b.statusID IN (101,102,103) AND b.bettype NOT IN (17000) THEN 1 
 						WHEN @_ModeView = 3 AND b.statusID IN (0,1) THEN 1 
 						WHEN @_ModeView = 4 AND b.bettype IN (17000) THEN 1 
 						ELSE 0 
@@ -188,8 +183,8 @@ BEGIN
 			AND b.bettype NOT IN (903, 71, 913, 914)
 			AND ((@IsCOMember = 0 AND b.bettype <> 912) OR (@IsCOMember = 1 AND b.bettype <> 911))
 			AND 1 = CASE 
-						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) THEN 1 
-						WHEN @_ModeView = 2 AND b.statusID IN (101,102,103) THEN 1 
+						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) AND b.bettype NOT IN (17000) THEN 1 
+						WHEN @_ModeView = 2 AND b.statusID IN (101,102,103) AND b.bettype NOT IN (17000) THEN 1 
 						WHEN @_ModeView = 4 AND b.bettype IN (17000) THEN 1 
 					ELSE 0 END
 
@@ -214,8 +209,8 @@ BEGIN
 			AND b.bettype NOT IN (903, 71, 913, 914)
 			AND ((@IsCOMember = 0 AND b.bettype <> 912) OR (@IsCOMember = 1 AND b.bettype <> 911))
 			AND 1 = CASE 
-						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) THEN 1 
-						WHEN @_ModeView = 2 AND b.statusID IN (101,102,103) THEN 1 
+						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) AND b.bettype NOT IN (17000) THEN 1 
+						WHEN @_ModeView = 2 AND b.statusID IN (101,102,103) AND b.bettype NOT IN (17000) THEN 1 
 						WHEN @_ModeView = 4 AND b.bettype IN (17000) THEN 1 
 					ELSE 0 END
 

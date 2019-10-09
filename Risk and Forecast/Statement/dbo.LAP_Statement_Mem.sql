@@ -206,7 +206,7 @@ BEGIN
 			INSERT INTO #statementRpt (orderkey, winlostdate, transtype, transdesc, turnover,totalamt,commission)
 			SELECT 
 				CASE
-					WHEN statusID IN (101, 102, 103) THEN @VOID_KEY
+					WHEN statusID IN (101, 102, 103) AND bettype NOT IN (17000) THEN @VOID_KEY
 					WHEN bettype IN (17000) THEN @PROMO_KEY
 					ELSE @BET_KEY END AS orderkey, 
 				winlostdate,
@@ -226,7 +226,7 @@ BEGIN
 				AND ((@IsCOMember = 0 AND b.bettype <> 912) OR (@IsCOMember = 1 AND b.bettype <> 911))
 			GROUP BY
 				CASE
-					WHEN statusID IN (101, 102, 103) THEN @VOID_KEY
+					WHEN statusID IN (101, 102, 103) AND bettype NOT IN (17000) THEN @VOID_KEY
 					WHEN bettype IN (17000) THEN @PROMO_KEY
 					ELSE @BET_KEY END, 
 				winlostdate,
@@ -249,7 +249,7 @@ BEGIN
 				SELECT 
 					CASE
 						WHEN statusID IN (0, 1) THEN @OUT_KEY
-						WHEN statusID IN (101, 102, 103) THEN @VOID_KEY
+						WHEN statusID IN (101, 102, 103) AND bettype NOT IN (17000) THEN @VOID_KEY
 						WHEN bettype IN (17000) THEN @PROMO_KEY
 						ELSE @BET_KEY END AS orderkey,  
 					winlostdate,
@@ -281,7 +281,7 @@ BEGIN
 				GROUP BY
 					CASE
 						WHEN statusID IN (0, 1) THEN @OUT_KEY
-						WHEN statusID IN (101, 102, 103) THEN @VOID_KEY
+						WHEN statusID IN (101, 102, 103) AND bettype NOT IN (17000) THEN @VOID_KEY
 						WHEN bettype IN (17000) THEN @PROMO_KEY
 						ELSE @BET_KEY END,  
 					winlostdate,

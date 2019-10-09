@@ -43,7 +43,7 @@ RETURN (
 			-- bet TO summary
 			SELECT 
 				CASE 
-					WHEN b.statusID IN (101,102,103) THEN temp.VOID_KEY --> Void/Reject/Refund
+					WHEN b.statusID IN (101,102,103) AND b.bettype NOT IN (17000) THEN temp.VOID_KEY --> Void/Reject/Refund
 					WHEN b.bettype IN (17000) THEN temp.PROMO_KEY
 					ELSE temp.BET_KEY --> Won/Lose/Draw
 				END AS orderkey
@@ -60,9 +60,9 @@ RETURN (
 
 			GROUP BY
 				CASE 
-					WHEN b.statusID IN (101,102,103) THEN 2 --> Void/Reject/Refund
+					WHEN b.statusID IN (101,102,103) AND b.bettype NOT IN (17000) THEN 2 --> Void/Reject/Refund
 					WHEN b.bettype IN (17000) THEN temp.PROMO_KEY
-					ELSE 1 --> Won/Lose/Draw
+					ELSE temp.BET_KEY --> Won/Lose/Draw
 				END,
 				 b.winlostdate,
 				CASE WHEN bettype IN (17000) THEN 'PROMO' ELSE 'BET' END
