@@ -1,7 +1,6 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_CustomerSelStatus]
-    @CustID INT,
-    @AdminID INT = 0
+    @CustID INT
 AS 
 /*
 Created: 20101210@Henry
@@ -21,7 +20,7 @@ Param's Explanation:
 */
 BEGIN
     SET NOCOUNT ON
-    DECLARE @agentid INT, @roleid TINYINT, @IsInternal BIT, @IsAdminCanViewVNIP BIT
+    DECLARE @agentid INT, @roleid TINYINT, @IsInternal BIT
     
     SELECT @roleid = roleid, @agentid = recommend
     FROM custinfo WITH (NOLOCK)
@@ -33,14 +32,6 @@ BEGIN
                                       WHEN 1 THEN (SELECT isnull(IsInternal, 0) FROM custAgent WITH (NOLOCK) WHERE custid = @agentid)
                                       ELSE 0 END 
     
-    SELECT @IsAdminCanViewVNIP = 1
-    IF (@AdminID > 0) 
-    BEGIN
-        DECLARE @ErrCode INT
-        EXEC DB03.bodb02.dbo.Acc_Con_CheckPermission_All @custid=@AdminID,@funcname='[ViewIPVN]',@ErrCode=@ErrCode OUTPUT
-        IF @ErrCode<> 0 SELECT @IsAdminCanViewVNIP = 0 ELSE SELECT @IsAdminCanViewVNIP = 1     
-    END
-    
     SELECT  ISNULL (closed,0) As Closed,
             ISNULL (autosuspend,0) As AutoSuspend,  
             ISNULL (cm.DisableAutoMPT ,0) As DisableAutoMPT,    
@@ -50,7 +41,7 @@ BEGIN
             ISNULL(srecommend, 0) AS SRecommend,
             ISNULL(mrecommend, 0) AS MRecommend,
             ISNULL(recommend, 0) as ARecommend,
-            ISNULL(@IsAdminCanViewVNIP,1) AS IsAdminCanViewVNIP,
+            1 AS IsAdminCanViewVNIP,
 		  ci.currency as CurrencyID,
             @IsInternal AS IsInternal
     FROM custinfo AS ci WITH (nolock)
