@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet,bodbDownlineNet,bodbExtAccNet,Dot_Member,bodbLicenseeNet" viewers="" isFunction="0"></info>*/
+﻿/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet,bodbDownlineNet,bodbExtAccNet,Dot_Member,bodbLicenseeNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_CustomerUpdCasinoStatus]
 	@userID INT,
 	@custid INT,
@@ -51,13 +51,13 @@ BEGIN
 				BEGIN 
 					 SELECT @ErrMsg = @UserName + ': '+
 								CASE @Language 
-									WHEN 'E' THEN 'This customer has never played RNG Casino !'
-									WHEN 'CS' THEN N'??????? !'
-									WHEN 'CT' THEN N'??????? !'
+									WHEN 'E' THEN 'This player has never played RNG Casino !'
+									WHEN 'CS' THEN N'该玩家从未在电子游戏下注 !'
+									WHEN 'CT' THEN N'該玩家從未在電子遊戲下注 !'
 									WHEN 'TH' THEN N'????????????????????????????????????????????!'
 									WHEN 'J' THEN N'????????????'
 									WHEN 'KO' THEN N'????? ??????.'
-									ELSE N'This customer has never played RNG Casino !'
+									ELSE N'This player has never played RNG Casino !'
 								END, @ErrCode = 115
 								RETURN	
 				END	
