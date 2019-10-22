@@ -163,7 +163,7 @@ BEGIN
 	DECLARE @TempAg			TABLE (CustId INT PRIMARY KEY, Currency INT)
 	DECLARE @bettype		TABLE (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))
 	DECLARE @sporttype		TABLE (sporttype INT PRIMARY KEY, ProductCode VARCHAR(10))
-	DECLARE	@PromotionPrize	BIT = 0
+	DECLARE	@PromotionPrize	INT = 0
 	DECLARE @Exchange		TABLE
 	(
 		FromDate	SMALLDATETIME,

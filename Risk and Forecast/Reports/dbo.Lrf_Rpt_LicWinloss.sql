@@ -132,7 +132,7 @@ BEGIN
 	DECLARE @LicenseeName	VARCHAR(50)
 	DECLARE @WLBetTicket	TABLE (winlostdate SMALLDATETIME, currency INT, WLBetTicket MONEY)
 	DECLARE @ProductList	VARCHAR (500)
-	DECLARE	@PromotionPrize	BIT = 0
+	DECLARE	@PromotionPrize	INT = 0
 
 	DECLARE @_FromDate SMALLDATETIME, @_ToDate SMALLDATETIME
 	SELECT @_FromDate = @FromDate, @_ToDate = @ToDate

@@ -168,7 +168,7 @@ BEGIN
 	DECLARE @sporttype		TABLE (sporttype INT, ProductCode VARCHAR(10))
 	DECLARE @LicenseeName	VARCHAR(50)
 	DECLARE @ProductList	VARCHAR (500)
-	DECLARE	@PromotionPrize	BIT = 0
+	DECLARE	@PromotionPrize	INT = 0
 
 	SELECT	@LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WHERE LicenseeID = @LicenseeID
 	
