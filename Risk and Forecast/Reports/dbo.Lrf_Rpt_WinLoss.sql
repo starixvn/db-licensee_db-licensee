@@ -107,7 +107,7 @@ AS
 		- 20190708@Amanda: Add new product Card Club [RedmineID: #115449]
 		- 20190821@Bobby: Do optimization for SQL code [Redmine: #118990]
 		- 20191118@Amanda: Use outparam to get error instead of returned table [Redmine: #118874]
-		
+		- 20191017@Amanda: Integrate NPH Promotion [RedmineID: #120333]
 
 	Param's Explanation:
 		@OrderItem:
@@ -163,6 +163,7 @@ BEGIN
 	DECLARE @TempAg			TABLE (CustId INT PRIMARY KEY, Currency INT)
 	DECLARE @bettype		TABLE (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))
 	DECLARE @sporttype		TABLE (sporttype INT PRIMARY KEY, ProductCode VARCHAR(10))
+	DECLARE	@PromotionPrize	BIT = 0
 	DECLARE @Exchange		TABLE
 	(
 		FromDate	SMALLDATETIME,
