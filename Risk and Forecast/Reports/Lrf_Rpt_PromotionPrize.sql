@@ -48,8 +48,8 @@ BEGIN
 			@PPsportType	SMALLINT = 248,
 			@NPHPbetType	SMALLINT = 17000,-- NPH Promotion
 			@NPHPsportType	SMALLINT = 246,
-			@PP				SMALLINT = 'PP',
-			@NPHP			SMALLINT = 'NPHP'
+			@PP				VARCHAR(10) = 'PP',
+			@NPHP			VARCHAR(10) = 'NPHP'
 
 	DECLARE @_FromDate SMALLDATETIME, @_ToDate SMALLDATETIME
 	SELECT @_FromDate = @FromDate, @_ToDate = @ToDate
