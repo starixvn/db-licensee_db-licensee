@@ -1,5 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
-
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" isFunction="0" isNested="0"></info>*/
  ALTER PROCEDURE [dbo].[Lrf_Rpt_MatchWinLoss_ExportExcel]
     @LicenseeID INT,
     @LicenseeType VARCHAR(100) = NULL,
@@ -16,24 +15,23 @@
 	@showVS2 BIT = 0
 AS 
 /*
-Created: 20120702@Henry
-Task : 
-DB: DB052.bodb02
-Original: Lrf_Rpt_MatchWinLoss
-Revisions:
-	- 20120815@Henry: add live casino
-	- 20120831@Jim: add virtual sport
-	- 20121004@Jim: replace @currencyname input param by @currencyID
-	- 20121115@Henry: Only Sportsbook needs to exclude BA
-	- 20130426@Scott : Add more parameter @showCS,@showBG
-	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
-	- 20150123@Jim: support base on Currency GBP
-	- 20150622@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission 
-	- 20170706@Harper: LRF - Integrate Bet Radar Virtual Sports & Cashout[RedmineID: #78241]
-	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
-
-Param's Explanation: 
+	Created: 20120702@Henry
+	DB: DBEXT.bodb02
 	
+	Revisions:
+		- 20120815@Henry: add live casino
+		- 20120831@Jim: add virtual sport
+		- 20121004@Jim: replace @currencyname input param by @currencyID
+		- 20121115@Henry: Only Sportsbook needs to exclude BA
+		- 20130426@Scott : Add more parameter @showCS,@showBG
+		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+		- 20150123@Jim: support base on Currency GBP
+		- 20150622@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission 
+		- 20170706@Harper: LRF - Integrate Bet Radar Virtual Sports & Cashout[RedmineID: #78241]
+		- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
+		- 20191010@Percy: Replace LicenseeBATransaction to LicenseeBATransaction_active [RedmineID: #103656]
+
+	Param's Explanation: 
 */
 
 BEGIN
@@ -148,7 +146,7 @@ BEGIN
 		FROM    
 			bettrans b WITH(NOLOCK )
 			INNER JOIN @TempAg t ON b.recommend = t.CustId AND b.currency = t.Currency
-			INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid 	 				
+			INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON b.transid = BA.transid 	 				
 		WHERE
 		    b.winlostdate = @_Date
 			AND b.statusID IN (111,112,113)
@@ -384,10 +382,8 @@ BEGIN
 			0 AS tpositiontaking,
 			0 AS liveindicator
 		FROM    
-			--bettrans14 b WITH(NOLOCK,INDEX (PK_bettrans14))
 			bettrans14 b WITH(NOLOCK)
 			INNER JOIN @TempAg ag ON b.recommend = ag.custid AND b.currency = ag.Currency
-			--INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
 		WHERE   
 			b.winlostdate = @_Date
 			AND b.statusID IN (111,112,113)
@@ -665,22 +661,6 @@ ORDER BY
     CASE WHEN bettype <31 OR bettype > 120 THEN 0 WHEN bettype BETWEEN 81 and 120 THEN 1 ELSE 2 END
 
 DROP TABLE #TempBetList
-/*
-	[Lrf_Rpt_MatchWinLoss_ExportExcel]
-	@LicenseeID =1,
-	@Date ='2012-09-15',
-	@MoveBetsDay ='2012-09-05',
-	@showSB  = 1,
-	@showRB  = 1,
-	@showNG  = 1,
-	@showBA  = 1,	
-	@showVS  = 1
 
-*/
 END	
 GO
-GRANT EXECUTE ON [dbo].[Lrf_Rpt_MatchWinLoss_ExportExcel] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_Rpt_MatchWinLoss_ExportExcel] TO vnteam
-GO
-
