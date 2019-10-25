@@ -19,8 +19,8 @@ Original: [Lrf_Statement_Mem]
 Revisions:  
 	- 20190723@Bobby: Initialize [RedmineID: #117534]
 	- 20190904@Bobby: Implement Statement Service - Level 1 [RedmineID: #119648]
-	- 20190919@Bobby: Enhance Statement Level 1 - show outstanding for future
-	
+	- 20190919@Bobby: Enhance Statement Level 1 - show outstanding for future [RedmineID: #119648]
+	- 20191024@Bobby: Correct running and void [RedmineID: #120690]
 	
 Param's Explanation:     
 */
@@ -260,13 +260,13 @@ BEGIN
 
 				WHERE
 					custid = @_CustID  
-					AND winlostdate >= @_tempStartDate --and winlostdate <= @_tempEndDate
+					AND winlostdate >= @_tempStartDate
 					AND b.bettype < 19999
 					AND b.bettype NOT IN (903, 71, 913, 914)
 					AND ((@IsCOMember = 0 AND bettype <> 912) OR (@IsCOMember = 1 AND bettype <> 911))
 					AND 1 = CASE 
-								WHEN statusID IN (0, 1) THEN 1
-								WHEN statusID IN (101, 102, 103) THEN 1
+								WHEN statusID IN (0, 1) AND @isCurrentMonth = 1 THEN 1
+								WHEN statusID IN (101, 102, 103) AND @isCurrentMonth = 1 THEN 1
 								WHEN b.winlostdate <= @_tempEndDate THEN 1
 								ELSE 0
 							END
@@ -291,7 +291,12 @@ BEGIN
 				WHERE
 					statusID IN (0,1) -- get only running game _ Keno
 					AND custid = @_CustID  
-					AND winlostdate >= @_tempStartDate --and winlostdate <= @_tempEndDate  
+					AND winlostdate >= @_tempStartDate
+					AND 1 = CASE 
+								WHEN @isCurrentMonth = 1 THEN 1
+								WHEN winlostdate <= @_tempEndDate  THEN 1
+								ELSE 0
+							END
 						
 				GROUP BY 
 					winlostdate
@@ -309,7 +314,12 @@ BEGIN
 				FROM bodb02.dbo.bettransRnG WITH (NOLOCK)
 				WHERE
 					custid = @_CustID  
-					AND winlostdate >= @_tempStartDate --and winlostdate <= @_tempEndDate  
+					AND winlostdate >= @_tempStartDate
+					AND 1 = CASE 
+								WHEN @isCurrentMonth = 1 THEN 1
+								WHEN winlostdate <= @_tempEndDate  THEN 1
+								ELSE 0
+							END 
 					AND statusID = 0 -- get only running game _ bettransRnG
 				GROUP BY 
 					winlostdate
@@ -327,7 +337,12 @@ BEGIN
 				FROM bodb02.dbo.bettransLC WITH (NOLOCK)
 				WHERE
 					recommend = @_recommend
-					AND winlostdate >= @_tempStartDate --and winlostdate <= @_tempEndDate  
+					AND winlostdate >= @_tempStartDate
+					AND 1 = CASE 
+								WHEN @isCurrentMonth = 1 THEN 1
+								WHEN winlostdate <= @_tempEndDate  THEN 1
+								ELSE 0
+							END
 					AND custid = @_CustID  
 					AND statusID = 0 
 				GROUP BY 
