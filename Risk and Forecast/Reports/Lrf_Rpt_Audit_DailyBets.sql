@@ -127,8 +127,9 @@ BEGIN
 			WinLoss,
 			[Status]
 		)
-	SELECT	a.PlayerName,
+	SELECT	a.WinLostDate,
 			c.Id,
+			a.PlayerName,
 			c.Name,
 			a.TransactionId,
 			a.TransactionDate,
@@ -178,7 +179,7 @@ BEGIN
 	DECLARE @Sql NVARCHAR(2000)
 
 	SET @Sql = 
-		N'SELECT a.*
+		N'SELECT a.[Index], a.PlayerName, a.CurrencyName, a.RefNo, a.TransTime, a.ProductCode, a.BetType, a.Turnover, a.WinLoss, a.[Status]
 		FROM
 			(
 				SELECT
@@ -186,8 +187,8 @@ BEGIN
 					d.*
 				FROM #AuditData AS d
 			) AS a
-		WHERE a.RowNum BETWEEN @RowStart AND @RowEnd
-		ORDER BY a.RowNum'
+		WHERE a.[Index] BETWEEN @RowStart AND @RowEnd
+		ORDER BY a.[Index]'
 
 	INSERT INTO #PagingAuditData
 	EXEC sp_executesql @Sql, N'@RowStart INT, @RowEnd INT', @RowStart, @RowEnd;
