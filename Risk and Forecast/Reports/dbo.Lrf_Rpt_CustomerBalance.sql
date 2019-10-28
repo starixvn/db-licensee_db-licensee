@@ -66,6 +66,7 @@ Revisions:
 	- 20181228@Joseph: Remove vnteam [RedmineID: #103698]
 	- 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
 	- 20190708@Amanda: Add new product Card Club [RedmineID: #115449]
+	- 20191025@Amanda: Add new column - Promotion [RedmineID: #120333]
 
 Param's Explanation:  
 	+ @excludeTest: remove currency UUS  
@@ -217,6 +218,7 @@ BEGIN
 		, Winloss MONEY
 		, Bonus MONEY
 		, Adjustment MONEY
+		, Promotion	MONEY
 		, Outstanding MONEY
 		, OpeningBalance MONEY
 		, ClosingBalance MONEY
@@ -244,6 +246,7 @@ BEGIN
 			, 0 AS winloss
 			, SUM(ISNULL(b.Bonus, 0) + ISNULL(bo.Bonus, 0)) AS Bonus
 			, SUM(ISNULL(b.Adjustment, 0) + ISNULL(bo.Adjustment, 0)) AS Adjustment
+			, SUM(b.Promotion) AS Promotion
 			, 0 AS Outstanding
 			, SUM(CASE b.winlostdate
 					WHEN @fdate
@@ -336,6 +339,7 @@ BEGIN
 			, CAST(0 AS MONEY) AS winloss
 			, SUM(ISNULL(b.Bonus, 0) + ISNULL(b.BonusWallet, 0)) AS Bonus
 			, SUM(ISNULL(b.Adjustment, 0) + ISNULL(b.AdjBonusWallet, 0)) AS Adjustment
+			, SUM(b.Promotion) AS Promotion
 			, CAST(0 AS MONEY) AS Outstanding
 			, SUM(CASE b.winlostdate
 					WHEN @fdate
@@ -419,6 +423,7 @@ BEGIN
 			, Winloss = #SumWinlost.Winloss + s.Winloss
 			, Bonus = #SumWinlost.Bonus + s.Bonus
 			, Adjustment = #SumWinlost.Adjustment + s.Adjustment
+			, Promotion = #SumWinlost.Promotion + s.Promotion
 			, Outstanding = #SumWinlost.Outstanding + s.Outstanding
 			, OpeningBalance = #SumWinlost.OpeningBalance + s.OpeningBalance
 			, ClosingBalance = #SumWinlost.ClosingBalance + s.ClosingBalance
@@ -439,6 +444,7 @@ BEGIN
 			, Winloss
 			, Bonus
 			, Adjustment
+			, Promotion
 			, Outstanding
 			, OpeningBalance
 			, ClosingBalance
@@ -483,6 +489,7 @@ BEGIN
 				, SUM(Winloss) AS SumWinloss
 				, SUM(Bonus) AS SumBonus
 				, SUM(Adjustment) AS SumAdjustment
+				, SUM(Promotion) AS SumPromotion
 				, SUM(Outstanding) AS SumOutstanding
 				, SUM(OpeningBalance) AS SumOpeningBalance
 				, SUM(ClosingBalance) AS SumClosingBalance
@@ -520,6 +527,7 @@ BEGIN
 				, SUM(Winloss) AS SumWinloss
 				, SUM(Bonus) AS SumBonus
 				, SUM(Adjustment) AS SumAdjustment
+				, SUM(Promotion) AS SumPromotion
 				, SUM(Outstanding) AS SumOutstanding
 				, SUM(OpeningBalance) AS SumOpeningBalance
 				, SUM(ClosingBalance) AS SumClosingBalance
@@ -589,6 +597,7 @@ BEGIN
 				, SUM(Winloss) AS SumWinloss
 				, SUM(Bonus) AS SumBonus
 				, SUM(Adjustment) AS SumAdjustment
+				, SUM(Promotion) AS SumPromotion
 				, SUM(Outstanding) AS SumOutstanding
 				, SUM(OpeningBalance) AS SumOpeningBalance
 				, SUM(ClosingBalance) AS SumClosingBalance
@@ -657,6 +666,7 @@ BEGIN
 				, SUM(Winloss) AS SumWinloss
 				, SUM(Bonus) AS SumBonus
 				, SUM(Adjustment) AS SumAdjustment
+				, SUM(Promotion) AS SumPromotion
 				, SUM(Outstanding) AS SumOutstanding
 				, SUM(OpeningBalance) AS SumOpeningBalance
 				, SUM(ClosingBalance) AS SumClosingBalance

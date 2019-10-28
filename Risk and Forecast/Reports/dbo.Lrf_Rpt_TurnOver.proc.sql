@@ -72,6 +72,7 @@ Revisions:
    - 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
    - 20190621@Amanda: Add @BaseCurrency parameter [Redmine: #112531]
    - 20190708@Amanda: Add new product Card Club [RedmineID: #115449]
+   - 20191028@Amanda: Add new column - Promotion [RedmineID: #120333]
 
 Param's Explanation:
     
@@ -166,6 +167,7 @@ BEGIN
 		AffiliateTransfer	MONEY,
 		Bonus				MONEY,
 		Adjustment			MONEY,
+		Promotion			MONEY,
 		Turnover			MONEY,    
 		PendingFund			MONEY,    
 		Winloss				MONEY,    
@@ -198,7 +200,7 @@ BEGIN
 				INSERT INTO #tmpRpt
 				(
 					Winlostdate, Currency, OpeningBalance, Deposit, Withdrawal, AffiliateTransfer, Bonus, 
-					Adjustment, Turnover, PendingFund, Winloss, ClosingBalance, Transfer3rd, DrawGame, 
+					Adjustment, Promotion, Turnover, PendingFund, Winloss, ClosingBalance, Transfer3rd, DrawGame, 
 					Turnover_BA, Comm_BA, PlayerComm, AmountDueTo_BA
 				)
 				SELECT 
@@ -210,6 +212,7 @@ BEGIN
 					SUM(ISNULL(b.Aff2MemTransfer, 0)), --AffiliateTransfer
 					SUM(ISNULL(b.Bonus, 0) + ISNULL(bo.Bonus, 0)),
 					SUM(ISNULL(b.Adjustment, 0) + ISNULL(bo.Adjustment, 0)),
+					SUM(b.Promotion),
 					0 AS Turnover,
 					0 AS PendingFund,
 					0 AS Winloss,
@@ -264,7 +267,7 @@ BEGIN
 				INSERT INTO #tmpRpt
 				(
 					Winlostdate, Currency, OpeningBalance, Deposit, Withdrawal, AffiliateTransfer, Bonus, 
-					Adjustment, Turnover, PendingFund, Winloss, ClosingBalance, Transfer3rd, DrawGame, 
+					Adjustment, Promotion, Turnover, PendingFund, Winloss, ClosingBalance, Transfer3rd, DrawGame, 
 					Turnover_BA, Comm_BA, PlayerComm, AmountDueTo_BA
 				)
 				SELECT 
@@ -276,6 +279,7 @@ BEGIN
 					SUM(ISNULL(b.Aff2MemTransfer, 0)), --AffiliateTransfer
 					SUM(ISNULL(b.Bonus, 0) + ISNULL(b.BonusWallet, 0)),
 					SUM(ISNULL(b.Adjustment, 0) + ISNULL(b.AdjBonusWallet, 0)),
+					SUM(b.Promotion),
 					0 AS Turnover,
 					0 AS PendingFund,
 					0 AS Winloss,
@@ -333,7 +337,7 @@ BEGIN
 				INSERT INTO #tmpRpt
 				(
 					Winlostdate, Currency, OpeningBalance, Deposit, Withdrawal, AffiliateTransfer, Bonus, 
-					Adjustment, Turnover, PendingFund, Winloss, ClosingBalance, Transfer3rd, DrawGame, 
+					Adjustment, Promotion, Turnover, PendingFund, Winloss, ClosingBalance, Transfer3rd, DrawGame, 
 					Turnover_BA, Comm_BA, PlayerComm, AmountDueTo_BA
 				)
 				SELECT 
@@ -345,6 +349,7 @@ BEGIN
 					SUM(ISNULL(b.Aff2MemTransfer,0)), --AffiliateTransfer
 					SUM(ISNULL(b.Bonus, 0) + ISNULL(bo.Bonus, 0)),
 					SUM(ISNULL(b.Adjustment, 0) + ISNULL(bo.Adjustment, 0)),
+					SUM(b.Promotion),
 					0 AS Turnover,
 					0 AS PendingFund,
 					0 AS Winloss,
@@ -397,7 +402,7 @@ BEGIN
 				INSERT INTO #tmpRpt
 				(
 					Winlostdate, Currency, OpeningBalance, Deposit, Withdrawal, AffiliateTransfer, Bonus, 
-					Adjustment, Turnover, PendingFund, Winloss, ClosingBalance, Transfer3rd, DrawGame, 
+					Adjustment, Promotion, Turnover, PendingFund, Winloss, ClosingBalance, Transfer3rd, DrawGame, 
 					Turnover_BA, Comm_BA, PlayerComm, AmountDueTo_BA
 				)
 				SELECT 
@@ -409,6 +414,7 @@ BEGIN
 					SUM(ISNULL(b.Aff2MemTransfer,0)), --AffiliateTransfer
 					SUM(ISNULL(b.Bonus,0) + ISNULL(b.BonusWallet, 0)),
 					SUM(ISNULL(b.Adjustment,0) + ISNULL(b.AdjBonusWallet, 0)),
+					SUM(b.Promotion),
 					0 AS Turnover,
 					0 AS PendingFund,
 					0 AS Winloss,
@@ -468,6 +474,7 @@ BEGIN
 			CAST(SUM(b.AffiliateTransfer	* e.Rate) AS MONEY) AS AffiliateTransfer,
 			CAST(SUM(b.Bonus				* e.Rate) AS MONEY) AS Bonus,
 			CAST(SUM(b.Adjustment			* e.Rate) AS MONEY) AS Adjustment,
+			CAST(SUM(b.Promotion			* e.Rate) AS MONEY) AS Promotion,
 			CAST(SUM(b.Turnover				* e.Rate )AS MONEY) AS Turnover,
 			CAST(SUM(b.PendingFund			* e.Rate) AS MONEY) AS PendingFund,
 			CAST(SUM(b.Winloss				* e.Rate) AS MONEY) AS Winloss,
