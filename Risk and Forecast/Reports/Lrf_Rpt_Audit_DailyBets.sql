@@ -207,9 +207,9 @@ BEGIN
 	FROM #PagingAuditData
 
 	SELECT
-		SUM(d.Turnover * e.Rate)	AS Turnover,
-		SUM(d.WinLoss * e.Rate)		AS WinLoss,
-		COUNT(d.RefNo)				AS TotalRows
+		ISNULL(SUM(d.Turnover * e.Rate),0)	AS Turnover,
+		ISNULL(SUM(d.WinLoss * e.Rate),0)	AS WinLoss,
+		COUNT(d.RefNo)						AS TotalRows
 	FROM #AuditData d
 	INNER JOIN #Exchange e ON d.Winlostdate BETWEEN e.ExFromDate AND e.ExToDate AND d.CurrencyId = e.ExchangeID	
 		
