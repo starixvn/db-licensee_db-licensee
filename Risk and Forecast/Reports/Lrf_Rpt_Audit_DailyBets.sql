@@ -9,7 +9,7 @@ CREATE PROCEDURE [dbo].[Lrf_Rpt_Audit_DailyBets]
 	@PageIndex		INT = 1,
 	@PageSize		INT = 50,
 	@SortBy			VARCHAR(10) = 'RefNo',
-	@SortOrder		VARCHAR(3) = 'asc'
+	@SortOrder		VARCHAR(4) = 'asc'
 AS 
 /*  Created: 20191028@Amanda
     Description: LAP - Implement new report for auditing
