@@ -144,8 +144,8 @@ BEGIN
 			a.BetAmount,
 			- a.NetAmount,
 			CASE
-				WHEN a.NetAmount > 0 THEN 1
-				WHEN a.NetAmount < 0 THEN -1
+				WHEN a.NetAmount > 0 THEN -1
+				WHEN a.NetAmount < 0 THEN 1
 				ELSE 0
 			END
 	FROM bodb_licenseeReportArchive.dbo.rptDep_AuditTickets a WITH (NOLOCK)
