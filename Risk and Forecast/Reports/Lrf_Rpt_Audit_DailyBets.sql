@@ -71,6 +71,11 @@ BEGIN
                     END 
 	WHERE   Id IN (20,51,70)
 
+	IF (@SiteName = 'IvoryBet')
+	BEGIN
+		SET @SiteName = 'ivorysport'
+	END
+	
 	DECLARE @TempToDate DATE = DATEADD(DAY, 1, @Date)
      
 	CREATE TABLE #AuditData
