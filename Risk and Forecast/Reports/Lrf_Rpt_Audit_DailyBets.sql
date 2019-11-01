@@ -192,8 +192,7 @@ BEGIN
 					d.*
 				FROM #AuditData AS d
 			) AS a
-		WHERE a.[Index] BETWEEN @RowStart AND @RowEnd
-		ORDER BY a.[Index]'
+		WHERE a.[Index] BETWEEN @RowStart AND @RowEnd'
 
 	INSERT INTO #PagingAuditData
 	EXEC sp_executesql @Sql, N'@RowStart INT, @RowEnd INT', @RowStart, @RowEnd;
@@ -210,6 +209,7 @@ BEGIN
 		WinLoss,
 		[Status]
 	FROM #PagingAuditData
+	ORDER BY [Index] ASC
 
 	SELECT
 		ISNULL(SUM(d.Turnover * e.Rate),0)	AS Turnover,
