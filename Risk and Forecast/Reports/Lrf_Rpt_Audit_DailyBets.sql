@@ -92,20 +92,6 @@ BEGIN
 		WinLoss				MONEY,
 		[Status]			SMALLINT,
 	)
-	
-	CREATE TABLE #PagingAuditData
-	(
-		[Index]				INT,
-		PlayerName			VARCHAR(100),
-		CurrencyName		VARCHAR(10),
-		RefNo				BIGINT,
-		TransTime			DATETIME,
-		ProductCode			VARCHAR(10),
-		BetType				VARCHAR(100),
-		Turnover			MONEY,
-		WinLoss				MONEY,
-		[Status]			SMALLINT
-	)
 
 	DECLARE @showSB BIT = 0,
 			@showNG BIT = 0,
@@ -192,24 +178,10 @@ BEGIN
 					d.*
 				FROM #AuditData AS d
 			) AS a
-		WHERE a.[Index] BETWEEN @RowStart AND @RowEnd'
+		WHERE a.[Index] BETWEEN @RowStart AND @RowEnd
+		ORDER BY a.[Index] ASC'
 
-	INSERT INTO #PagingAuditData
 	EXEC sp_executesql @Sql, N'@RowStart INT, @RowEnd INT', @RowStart, @RowEnd;
-
-	SELECT
-		[Index],
-		PlayerName,
-		CurrencyName,
-		RefNo,
-		TransTime,
-		ProductCode,
-		BetType,
-		Turnover,
-		WinLoss,
-		[Status]
-	FROM #PagingAuditData
-	ORDER BY [Index] ASC
 
 	SELECT
 		ISNULL(SUM(d.Turnover * e.Rate),0)	AS Turnover,
@@ -219,7 +191,6 @@ BEGIN
 	INNER JOIN #Exchange e ON d.Winlostdate BETWEEN e.ExFromDate AND e.ExToDate AND d.CurrencyId = e.ExchangeID	
 		
 	DROP TABLE #AuditData
-	DROP TABLE #PagingAuditData
 	DROP TABLE #Exchange
 END
 GO
