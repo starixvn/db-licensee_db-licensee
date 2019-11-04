@@ -8,7 +8,7 @@ CREATE PROCEDURE [dbo].[Lrf_Rpt_Audit_DailyBets]
 	@BaseCurrency	VARCHAR(3) = '',
 	@PageIndex		INT = 1,
 	@PageSize		INT = 50,
-	@SortBy			VARCHAR(10) = 'RefNo',
+	@SortBy			VARCHAR(10) = 'TransactionId',
 	@SortOrder		VARCHAR(4) = 'asc'
 AS 
 /*  Created: 20191028@Amanda
@@ -36,7 +36,7 @@ BEGIN
     SET NOCOUNT ON
 	DECLARE @Product TABLE (ProductCode VARCHAR(10))
 
-	DECLARE @Currency TABLE (Id INT, Code VARCHAR(5), Name VARCHAR(5))
+	CREATE TABLE #Currency (Id INT, Code VARCHAR(5), Name VARCHAR(5), ExRate FLOAT)
 
 	INSERT INTO @Product (ProductCode)
 	SELECT ISNULL(Val,'') 	
@@ -48,7 +48,7 @@ BEGIN
 	BEGIN TRY
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT
 				,@CurrencyList
-		INSERT INTO @Currency (Id, Code, Name)
+		INSERT INTO #Currency (Id, Code, Name)
 		SELECT DISTINCT Id, Code, Code
 		FROM OPENXML(@DocHandler, '/ROOT/CR', 1) WITH (Id [int], Code VARCHAR(5)) AS Data
 
@@ -62,7 +62,7 @@ BEGIN
 		RETURN
 	END CATCH;
     
-    UPDATE @Currency
+    UPDATE #Currency
 	SET     Code =  CASE  
                         WHEN Id = 20 THEN 'UUS' 
                         WHEN Id = 51 THEN 'VND' 
@@ -70,28 +70,33 @@ BEGIN
                         ELSE Code
                     END 
 	WHERE   Id IN (20,51,70)
+	
+	UPDATE c
+	SET c.ExRate = ISNULL(e.Rate, 1)
+	FROM #Currency c
+	LEFT JOIN dbo.Lrf_f_GetExchangeRate(@Date, @Date, @BaseCurrency, '') e ON c.Id = e.ExchangeId
 
 	IF (@SiteName = 'IvoryBet')
 	BEGIN
 		SET @SiteName = 'ivorysport'
 	END
 	
+	IF (@SortBy = 'Turnover')
+	BEGIN
+		SET @SortBy = 'BetAmount'
+	END
+	ELSE IF (@SortBy = 'WinLoss')
+	BEGIN
+		SET @SortBy = 'NetAmount'
+		SET @SortOrder = CASE WHEN @SortOrder = 'asc' THEN 'desc' ELSE 'asc' END
+	END
+	ELSE
+	BEGIN
+		SET @SortBy = 'TransactionId'
+		SET @SortOrder = 'asc'
+	END
+	
 	DECLARE @TempToDate DATE = DATEADD(DAY, 1, @Date)
-     
-	CREATE TABLE #AuditData
-	(
-		Winlostdate			DATE,
-		CurrencyId			INT,
-		PlayerName			VARCHAR(100),
-		CurrencyName		VARCHAR(10),
-		RefNo				BIGINT,
-		TransTime			DATETIME,
-		ProductCode			VARCHAR(10),
-		BetType				VARCHAR(100),
-		Turnover			MONEY,
-		WinLoss				MONEY,
-		[Status]			SMALLINT,
-	)
 
 	DECLARE @showSB BIT = 0,
 			@showNG BIT = 0,
@@ -103,63 +108,6 @@ BEGIN
 	SELECT @showCS = 1 FROM @Product WHERE ProductCode = 'CS'
 	SELECT @showLC = 1 FROM @Product WHERE ProductCode = 'LC'
 
-	-- Retrive data from rptDep_AuditTickets		
-	INSERT INTO #AuditData
-		(  
-			Winlostdate,
-			CurrencyId,
-			PlayerName,
-			CurrencyName,
-			RefNo,
-			TransTime,
-			ProductCode,
-			BetType,
-			Turnover,
-			WinLoss,
-			[Status]
-		)
-	SELECT	a.WinLostDate,
-			c.Id,
-			a.PlayerName,
-			c.Name,
-			a.TransactionId,
-			a.TransactionDate,
-			CASE
-				WHEN a.GameType = 'SB' THEN 'SB'
-				WHEN a.GameType = 'RNG' AND a.GameCode = '161' THEN 'NG'
-				WHEN a.GameType = 'RNG' AND a.GameCode <> '161' THEN 'CS'
-				WHEN a.GameType = 'CA' THEN 'LC'
-				ELSE ''
-			END,
-			a.BetType,
-			a.BetAmount,
-			- a.NetAmount,
-			CASE
-				WHEN a.NetAmount > 0 THEN -1
-				WHEN a.NetAmount < 0 THEN 1
-				ELSE 0
-			END
-	FROM bodb_licenseeReportArchive.dbo.rptDep_AuditTickets a WITH (NOLOCK)
-	INNER JOIN @Currency c ON c.Code = a.CurrencyCode
-	WHERE  a.WinLostDate >= @Date AND a.WinLostDate < @TempToDate 
-			AND Brand = @SiteName
-			AND (
-					(@showSB = 1 AND a.GameType = 'SB') 
-				OR	(@showNG = 1 AND a.GameType = 'RNG' AND a.GameCode = '161')
-				OR	(@showCS = 1 AND a.GameType = 'RNG' AND a.GameCode <> '161')
-				OR	(@showLC = 1 AND a.GameType = 'CA')
-			)
-
-	-- Exchange Rate
-	CREATE TABLE #Exchange (ExFromDate DATE, ExToDate DATE, ExchangeID INT, USD FLOAT, GBP FLOAT, EUR FLOAT, Rate FLOAT, DefaultRate FLOAT )
-	
-	INSERT INTO #Exchange(ExFromDate, ExToDate, ExchangeID, Rate)
-	SELECT	FromDate, 
-			ToDate,
-			ExchangeID,
-			Rate
-	FROM dbo.Lrf_f_GetExchangeRate(@Date, @Date, @BaseCurrency, '') exc
-
 	-- Return data
 	DECLARE @RowStart INT, @RowEnd INT
 
@@ -169,28 +117,50 @@ BEGIN
 
 	DECLARE @Sql NVARCHAR(2000)
 
-	SET @Sql = 
-		N'SELECT a.[Index], a.PlayerName, a.CurrencyName, a.RefNo, a.TransTime, a.ProductCode, a.BetType, a.Turnover, a.WinLoss, a.[Status]
-		FROM
-			(
-				SELECT
-					ROW_NUMBER() OVER (ORDER BY ' + @SortBy + ' ' + @SortOrder + N') AS [Index],
-					d.*
-				FROM #AuditData AS d
-			) AS a
-		WHERE a.[Index] BETWEEN @RowStart AND @RowEnd
-		ORDER BY a.[Index] ASC'
+	SET @Sql =	
+	N'WITH RowNum_Cte AS (
+		SELECT
+			ROW_NUMBER() OVER (ORDER BY ' + @SortBy + ' ' + @SortOrder + N') AS row_num,
+			c.Name AS CurrencyName,
+			a.TransactionId,
+			a.BetAmount * c.ExRate AS Turnover,
+			(-a.NetAmount) * c.ExRate AS WinLoss
+		FROM bodb_licenseeReportArchive.dbo.rptDep_AuditTickets a WITH (NOLOCK)
+		INNER JOIN #Currency c ON c.Code = a.CurrencyCode
+		WHERE  a.WinLostDate >= @Date AND a.WinLostDate < @TempToDate 
+				AND Brand = @SiteName
+				AND ( 1<>1 '
+	+ CASE WHEN @showSB = 1 THEN 'OR a.GameType = ''SB'' ' ELSE '' END
+	+ CASE WHEN @showNG = 1 THEN 'OR (a.GameType = ''RNG'' AND a.GameCode = ''161'') ' ELSE '' END
+	+ CASE WHEN @showCS = 1 THEN 'OR (a.GameType = ''RNG'' AND a.GameCode <> ''161'') ' ELSE '' END
+	+ CASE WHEN @showLC = 1 THEN 'OR a.GameType = ''CA'' ' ELSE '' END
+	+ N')), Count_Cte AS (SELECT COUNT(1) AS TotalRows, SUM(Turnover) AS TotalTurnover, SUM(WinLoss) AS TotalWinLoss FROM RowNum_Cte)
+	SELECT r.row_num AS [Index], a.PlayerName, r.CurrencyName, a.TransactionId AS RefNo, a.TransactionDate AS TransTime,
+			CASE
+				WHEN a.GameType = ''SB'' THEN ''SB''
+				WHEN a.GameType = ''RNG'' AND a.GameCode = ''161'' THEN ''NG''
+				WHEN a.GameType = ''RNG'' AND a.GameCode <> ''161'' THEN ''CS''
+				WHEN a.GameType = ''CA'' THEN ''LC''
+				ELSE ''''
+			END AS ProductCode,
+			a.BetType,
+			a.BetAmount AS Turnover,
+			-a.NetAmount AS WinLoss,
+			CASE
+				WHEN a.NetAmount > 0 THEN -1
+				WHEN a.NetAmount < 0 THEN 1
+				ELSE 0
+			END AS [Status],
+			c.TotalRows, c.TotalTurnover, c.TotalWinLoss
+	FROM bodb_licenseeReportArchive.dbo.rptDep_AuditTickets a WITH (NOLOCK)
+	INNER JOIN RowNum_Cte r ON a.TransactionId = r.TransactionId
+	CROSS JOIN Count_Cte c
+	WHERE r.row_num BETWEEN @RowStart AND @RowEnd
+	ORDER BY r.row_num'
 
-	EXEC sp_executesql @Sql, N'@RowStart INT, @RowEnd INT', @RowStart, @RowEnd;
-
-	SELECT
-		ISNULL(SUM(d.Turnover * e.Rate),0)	AS Turnover,
-		ISNULL(SUM(d.WinLoss * e.Rate),0)	AS WinLoss,
-		COUNT(d.RefNo)						AS TotalRows
-	FROM #AuditData d
-	INNER JOIN #Exchange e ON d.Winlostdate BETWEEN e.ExFromDate AND e.ExToDate AND d.CurrencyId = e.ExchangeID	
-		
-	DROP TABLE #AuditData
-	DROP TABLE #Exchange
+	EXEC sp_executesql @Sql, N'@SiteName VARCHAR(50), @Date DATE, @TempToDate DATE, @RowStart INT, @RowEnd INT',
+	@SiteName, @Date, @TempToDate, @RowStart, @RowEnd
+	
+	DROP TABLE #Currency
 END
 GO
