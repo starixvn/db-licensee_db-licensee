@@ -116,6 +116,7 @@ BEGIN
 			c.Name									AS CurrencyName,
 			a.TransactionId							AS RefNo,
 			a.TransactionDate						AS TransTime,
+			a.BetType,
 			CASE
 				WHEN a.GameType = 'SB' THEN 'SB'
 				WHEN a.GameType = 'RNG' AND a.GameCode = '161' THEN 'NG'
@@ -158,6 +159,7 @@ BEGIN
 			c.Name									AS CurrencyName,
 			a.TransactionId							AS RefNo,
 			a.TransactionDate						AS TransTime,
+			a.BetType,
 			CASE
 				WHEN a.GameType = 'SB' THEN 'SB'
 				WHEN a.GameType = 'RNG' AND a.GameCode = '161' THEN 'NG'
