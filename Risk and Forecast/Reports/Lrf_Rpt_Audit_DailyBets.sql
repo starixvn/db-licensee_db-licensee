@@ -115,7 +115,7 @@ BEGIN
 		@RowStart = @PageSize * @PageIndex + 1,
 		@RowEnd = @RowStart + @PageSize - 1
 
-	DECLARE @Sql NVARCHAR(2000)
+	DECLARE @Sql NVARCHAR(MAX)
 
 	SET @Sql =	
 	N'WITH RowNum_Cte AS (
@@ -129,12 +129,12 @@ BEGIN
 		INNER JOIN #Currency c ON c.Code = a.CurrencyCode
 		WHERE  a.WinLostDate >= @Date AND a.WinLostDate < @TempToDate 
 				AND Brand = @SiteName
-				AND ( 1<>1 '
-	+ CASE WHEN @showSB = 1 THEN 'OR a.GameType = ''SB'' ' ELSE '' END
-	+ CASE WHEN @showNG = 1 THEN 'OR (a.GameType = ''RNG'' AND a.GameCode = ''161'') ' ELSE '' END
-	+ CASE WHEN @showCS = 1 THEN 'OR (a.GameType = ''RNG'' AND a.GameCode <> ''161'') ' ELSE '' END
-	+ CASE WHEN @showLC = 1 THEN 'OR a.GameType = ''CA'' ' ELSE '' END
-	+ N')), Count_Cte AS (SELECT COUNT(1) AS TotalRows, SUM(Turnover) AS TotalTurnover, SUM(WinLoss) AS TotalWinLoss FROM RowNum_Cte)
+				AND ( 
+					(@showSB = 1 AND a.GameType = ''SB'') 
+					OR (@showNG = 1 AND a.GameType = ''RNG'' AND a.GameCode = ''161'')
+					OR (@showCS = 1 AND a.GameType = ''RNG'' AND a.GameCode <> ''161'')
+					OR (@showLC = 1 AND a.GameType = ''CA'')
+	)), Count_Cte AS (SELECT COUNT(1) AS TotalRows, SUM(Turnover) AS TotalTurnover, SUM(WinLoss) AS TotalWinLoss FROM RowNum_Cte)
 	SELECT r.row_num AS [Index], a.PlayerName, r.CurrencyName, a.TransactionId AS RefNo, a.TransactionDate AS TransTime,
 			CASE
 				WHEN a.GameType = ''SB'' THEN ''SB''
@@ -158,8 +158,8 @@ BEGIN
 	WHERE r.row_num BETWEEN @RowStart AND @RowEnd
 	ORDER BY r.row_num'
 
-	EXEC sp_executesql @Sql, N'@SiteName VARCHAR(50), @Date DATE, @TempToDate DATE, @RowStart INT, @RowEnd INT',
-	@SiteName, @Date, @TempToDate, @RowStart, @RowEnd
+	EXEC sp_executesql @Sql, N'@showSB BIT, @showNG BIT, @showCS BIT, @showLC BIT, @SiteName VARCHAR(50), @Date DATE, @TempToDate DATE, @RowStart INT, @RowEnd INT',
+	@showSB, @showNG, @showCS, @showLC, @SiteName, @Date, @TempToDate, @RowStart, @RowEnd
 	
 	DROP TABLE #Currency
 END
