@@ -8,7 +8,7 @@ CREATE PROCEDURE [dbo].[Lrf_Rpt_Audit_DailyBets]
 	@BaseCurrency	VARCHAR(3) = '',
 	@PageIndex		INT = 1,
 	@PageSize		INT = 50,
-	@SortBy			VARCHAR(10) = 'TransactionId',
+	@SortBy			VARCHAR(13) = 'TransactionId',
 	@SortOrder		VARCHAR(4) = 'asc'
 AS 
 /*  Created: 20191028@Amanda
