@@ -35,10 +35,6 @@ ALTER PROC [dbo].[Lrf_CustomerUpdMember_All]
 	@MaxBetv11 MONEY,  
 	@MaxPerMatchv11 MONEY,  
  
-	@MinBetv44 MONEY=0,  
-	@MaxBetv44 MONEY=0,  
-	@MaxPerMatchv44 MONEY=0,
- 
 	@MinBetv99 MONEY,  
 	@MaxBetv99 MONEY,  
 	@MaxPerMatchv99 MONEY,  
@@ -55,7 +51,6 @@ ALTER PROC [dbo].[Lrf_CustomerUpdMember_All]
 	@UpdateMinMaxBetv8 BIT = 1,   
 	@UpdateMinMaxBetv10 BIT = 1,  
 	@UpdateMinMaxBetv11 BIT = 1,  
-	@UpdateMinMaxBetv44 BIT = 0, 
 	@UpdateMinMaxBetv99 BIT = 1,  
 	@UpdateMinMaxBetv99MP BIT = 1,  
  
@@ -76,6 +71,7 @@ AS
 		- 20181009@Winnie: Remove Racing  (Feature #99378)
 		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
 		- 20190801@Johnson: add @LicenseeName for LAP [redmine:#112658]
+		- 20190909@Eden: 3rd party products - Remove InActive Products Phase 2 [Redmine: #118699]
 	Param's Explanation:  
 	• @ErrCode:  
 		= 0: Update successfully.  
@@ -129,7 +125,6 @@ BEGIN
 		 @UpdateMinMaxBetv8  = 1 or  
 		 @UpdateMinMaxBetv10  = 1 or  
 		 @UpdateMinMaxBetv11  = 1 or  
-		 @UpdateMinMaxBetv44  = 1 or 
 		 @UpdateMinMaxBetv99  = 1 or  
 		 @UpdateMinMaxBetv99MP = 1
 	BEGIN  
@@ -157,9 +152,6 @@ BEGIN
 			@minbetv11 = @minbetv11,  
 			@maxbetv11 = @maxbetv11,  
 			@maxpermatchv11 = @maxpermatchv11,
-			@minbetv44 = @minbetv44,  
-			@maxbetv44 = @maxbetv44,  
-			@maxpermatchv44 = @maxpermatchv44,
 			@minbetv99 = @minbetv99,  
 			@maxbetv99 = @maxbetv99,  
 			@maxpermatchv99 = @maxpermatchv99,  
@@ -173,7 +165,6 @@ BEGIN
 			@UpdateMinMaxBetv8 = @UpdateMinMaxBetv8,  
 			@UpdateMinMaxBetv10 = @UpdateMinMaxBetv10,  
 			@UpdateMinMaxBetv11 = @UpdateMinMaxBetv11, 
-			@UpdateMinMaxBetv44 = @UpdateMinMaxBetv44,
 			@UpdateMinMaxBetv99 = @UpdateMinMaxBetv99,  
 			@UpdateMinMaxBetv99MP = @UpdateMinMaxBetv99MP,  
 			@UserID = @UserID,  
