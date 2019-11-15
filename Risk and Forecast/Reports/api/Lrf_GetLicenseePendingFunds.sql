@@ -90,14 +90,14 @@ BEGIN
 		Rate		FLOAT
 	);
 
-	INSERT INTO @TempExchange(FromDate, ToDate, ExchangeID, Rate)
-	SELECT FromDate, ToDate, ExchangeID, Rate
-	FROM dbo.Lrf_f_GetExchangeRate(@ReportDate, @ReportDate, @BaseCurrency, '') e
-	WHERE EXISTS (SELECT 1 FROM #tmpAg c WHERE e.ExchangeID = c.Currency)
-
 	DECLARE @MinDate SMALLDATETIME, @MaxDate SMALLDATETIME
 	SELECT @MinDate = MIN(winlostdate), @MaxDate = MAX(winlostdate)
 	FROM #tmpRpt
+
+	INSERT INTO #TempExchange(FromDate, ToDate, ExchangeID, Rate)
+	SELECT FromDate, ToDate, ExchangeID, Rate
+	FROM dbo.Lrf_f_GetExchangeRate(@MinDate, @MaxDate, @BaseCurrency, '') e
+	WHERE EXISTS (SELECT 1 FROM #tmpAg c WHERE e.ExchangeID = c.Currency)
 
 	SELECT  CAST(SUM(b.PendingFund * e.Rate) AS MONEY) AS PendingFund
 	FROM #tmpRpt b
