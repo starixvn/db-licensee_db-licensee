@@ -24,6 +24,7 @@ AS
 		- 20181211@Joseph: New betfrom Mobile China View (c) [RedmineID: #106088]
 		- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
 		- 20190903@Amanda: Remove platform y,s and add platform t [RedmineID: #119010]
+		- 20191115@Merlin: Get data by AgentList instead of LicenseeID and CurrentcyList[RedmineID: #123651]
 
 	Param's Explanation: 
 */  
@@ -45,6 +46,8 @@ BEGIN
 			@TempToDate SMALLDATETIME, 
 			@FDate SMALLDATETIME,
 			@TDate SMALLDATETIME;
+	
+	DECLARE @DocHandler INT
 
 	CREATE TABLE #tempAg(custID INT, Currency INT);
 

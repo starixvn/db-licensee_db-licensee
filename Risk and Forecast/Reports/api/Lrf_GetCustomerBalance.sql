@@ -22,6 +22,7 @@ AS
 		- 20181031@Percy: Remove linked-server DBLIC [RedmineID: #103660]
 		- 20181120@Kathy: Tunning SP - got timeout error [RedmineId:#104824]
 		- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
+		- 20191115@Merlin: Get data by AgentList instead of LicenseeID and CurrentcyList[RedmineID: #123651]
 
 	Param's Explanation:  
 */
@@ -38,6 +39,8 @@ BEGIN
 		ExchangeID	INT
 		,Rate		FLOAT
 	)
+	
+	DECLARE @DocHandler INT
 	
 	BEGIN TRY
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT

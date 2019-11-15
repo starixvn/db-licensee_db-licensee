@@ -17,6 +17,7 @@ AS
 		- 20170814@Alex  : Restrict permission by currency  [RedmineID: #80855]
 		- 20181031@Percy: Remove linked-server DBLIC [RedmineID: #103660]
 		- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
+		- 20191115@Merlin: Get data by AgentList instead of LicenseeID and CurrentcyList[RedmineID: #123651]
 
 	Param's Explanation:
 	
@@ -26,6 +27,8 @@ BEGIN
     SET NOCOUNT ON;
    
 	CREATE TABLE #tmpAg (custID INT, currency INT);
+	
+	DECLARE @DocHandler INT
 	
 	BEGIN TRY
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT
@@ -87,14 +90,14 @@ BEGIN
 		Rate		FLOAT
 	);
 
+	INSERT INTO @TempExchange(FromDate, ToDate, ExchangeID, Rate)
+	SELECT FromDate, ToDate, ExchangeID, Rate
+	FROM dbo.Lrf_f_GetExchangeRate(@ReportDate, @ReportDate, @BaseCurrency, '') e
+	WHERE EXISTS (SELECT 1 FROM #tmpAg c WHERE e.ExchangeID = c.Currency)
+
 	DECLARE @MinDate SMALLDATETIME, @MaxDate SMALLDATETIME
 	SELECT @MinDate = MIN(winlostdate), @MaxDate = MAX(winlostdate)
 	FROM #tmpRpt
-
-	INSERT INTO @Exchange(ExchangeID, Rate)
-	SELECT ExchangeID, Rate
-	FROM dbo.Lrf_f_GetExchangeRate(@ReportDate, @ReportDate, @BaseCurrency, '') e
-	WHERE EXISTS (SELECT 1 FROM #tmpAg c WHERE e.ExchangeID = c.Currency)
 
 	SELECT  CAST(SUM(b.PendingFund * e.Rate) AS MONEY) AS PendingFund
 	FROM #tmpRpt b
