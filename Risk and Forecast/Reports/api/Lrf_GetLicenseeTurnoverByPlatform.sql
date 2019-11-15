@@ -1,10 +1,9 @@
  /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_GetLicenseeTurnoverByPlatform]   
-	 @LicenseeID	INT,
-	 @CurrencyIDList VARCHAR(500)  = 0,
 	 @FromDate		SMALLDATETIME,  
 	 @ToDate		SMALLDATETIME,
-	 @BaseCurrency	VARCHAR(3) = ''
+	 @BaseCurrency	VARCHAR(3) = '',
+	@AgentList		VARCHAR(MAX)
 AS
 
 /*
@@ -50,20 +49,27 @@ BEGIN
 	CREATE TABLE #tempAg(custID INT, Currency INT);
 
 	CREATE CLUSTERED INDEX ix_tempAg_cl ON #tempAg(Currency, custID);
-
-	DECLARE @Currency AS TABLE (Currency INT)
 	
 	--to Deal WITH Parameter Sniffing
 	SELECT @FDate = @FromDate, @TDate = @ToDate;
+	
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
+	
+		INSERT INTO #tempAg(CustId, Currency)
+		SELECT AgentId, Currency
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
-	INSERT INTO @Currency(Currency)
-	SELECT val
-    FROM dbo.strSplit(@CurrencyIDList, ',')
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
 
-	INSERT INTO #tempAg (custID, currency) 
-	SELECT custID, currency 
-	FROM bodb_Licensee.dbo.f_SelLicenseeCust(@licenseeID) lc
-	WHERE EXISTS (SELECT 1 FROM @Currency c WHERE lc.Currency = c.Currency)
+	BEGIN CATCH
+		SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+		RETURN
+	END CATCH;
 
 	CREATE TABLE #PlatformList (betfrom NVARCHAR(1), PlatformType TINYINT);
 
@@ -90,7 +96,7 @@ BEGIN
 	INSERT INTO #Exchange (FromDate, ToDate, ExchangeID, Rate)
 	SELECT FromDate, ToDate, ExchangeID, Rate
 	FROM dbo.Lrf_f_GetExchangeRate(@FDate, @TDate, @BaseCurrency, '') ex
-	WHERE EXISTS (SELECT 1 FROM @Currency c WHERE ex.ExchangeID = c.Currency)
+	WHERE EXISTS (SELECT 1 FROM #tempAg c WHERE ex.ExchangeID = c.Currency)
 
 	DECLARE @MoveBetsDay SMALLDATETIME;
 

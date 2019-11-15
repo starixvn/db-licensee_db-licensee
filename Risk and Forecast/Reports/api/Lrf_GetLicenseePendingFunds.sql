@@ -1,8 +1,7 @@
 /*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_GetLicenseePendingFunds]
-    @LicenseeID		INT,
-    @CurrencyIDList VARCHAR(500) = '',
-    @BaseCurrency	VARCHAR(3) = ''
+    @BaseCurrency	VARCHAR(3) = '',
+	@AgentList		VARCHAR(MAX)
 AS 
 
 /*
@@ -27,16 +26,24 @@ BEGIN
     SET NOCOUNT ON;
    
 	CREATE TABLE #tmpAg (custID INT, currency INT);
-
-	DECLARE @Currency TABLE (Currency INT);
 	
-	INSERT INTO @Currency(Currency)
-	SELECT val
-    FROM dbo.strSplit(@CurrencyIDList, ',')
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
+	
+		INSERT INTO #tmpAg(CustId, Currency)
+		SELECT AgentId, Currency
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
-	INSERT INTO #tmpAg (CustId, Currency)
-	SELECT CustID,Currency FROM bodb_licensee.dbo.f_SelLicenseeCust(@LicenseeID) a
-	WHERE EXISTS (SELECT 1 FROM @Currency c WHERE a.Currency = c.Currency)
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
+
+	BEGIN CATCH
+		SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+		RETURN
+	END CATCH;
  
 	CREATE TABLE #tmpRpt
 	(
@@ -84,10 +91,10 @@ BEGIN
 	SELECT @MinDate = MIN(winlostdate), @MaxDate = MAX(winlostdate)
 	FROM #tmpRpt
 
-	INSERT INTO #TempExchange(FromDate, ToDate, ExchangeID, Rate)
-	SELECT FromDate, ToDate, ExchangeID, Rate
-	FROM dbo.Lrf_f_GetExchangeRate(@MinDate, @MaxDate, @BaseCurrency, '') e
-	WHERE EXISTS (SELECT 1 FROM @Currency c WHERE e.ExchangeID = c.Currency)
+	INSERT INTO @Exchange(ExchangeID, Rate)
+	SELECT ExchangeID, Rate
+	FROM dbo.Lrf_f_GetExchangeRate(@ReportDate, @ReportDate, @BaseCurrency, '') e
+	WHERE EXISTS (SELECT 1 FROM #tmpAg c WHERE e.ExchangeID = c.Currency)
 
 	SELECT  CAST(SUM(b.PendingFund * e.Rate) AS MONEY) AS PendingFund
 	FROM #tmpRpt b

@@ -3,10 +3,9 @@ USE [bodb02]
 GO
 
 ALTER PROCEDURE [dbo].[Lrf_GetCustomerBalance] 
-	@LicenseeID		INT,
-	@CurrencyIDList	VARCHAR(500)	= '',
 	@ReportDate		SMALLDATETIME,
-	@BaseCurrency	VARCHAR(3) = ''
+	@BaseCurrency	VARCHAR(3) = '',
+	@AgentList		VARCHAR(MAX)
 AS
 
 /*  
@@ -34,29 +33,34 @@ BEGIN
 		custID		INT
 		,Currency	INT
 	)
-
-	DECLARE @Currency TABLE (
-		Currency	INT
-	)
 	
 	DECLARE @Exchange TABLE (
 		ExchangeID	INT
 		,Rate		FLOAT
 	)
+	
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
+	
+		INSERT INTO @tmpAg(CustId, Currency)
+		SELECT AgentId, Currency
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
-	INSERT INTO @Currency(Currency)
-	SELECT val
-    FROM dbo.strSplit(@CurrencyIDList, ',')
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
 
-	INSERT INTO @tmpAg (CustId,Currency)
-	SELECT CustID,Currency 
-	FROM bodb_licensee.dbo.f_SelLicenseeCust(@LicenseeID) a
-	WHERE EXISTS (SELECT 1 FROM @Currency c WHERE a.Currency = c.Currency)
+	BEGIN CATCH
+		SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+		RETURN
+	END CATCH;
 
 	INSERT INTO @Exchange(ExchangeID, Rate)
 	SELECT ExchangeID, Rate
 	FROM dbo.Lrf_f_GetExchangeRate(@ReportDate, @ReportDate, @BaseCurrency, '') e
-	WHERE EXISTS (SELECT 1 FROM @Currency c WHERE e.ExchangeID = c.Currency)
+	WHERE EXISTS (SELECT 1 FROM @tmpAg c WHERE e.ExchangeID = c.Currency)
 
 	SELECT	SUM(b.ClosingBalance * e.Rate)	AS ClosingBalance
 	FROM	@tmpAg a

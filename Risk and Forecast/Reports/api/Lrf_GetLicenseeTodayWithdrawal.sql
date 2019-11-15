@@ -3,10 +3,9 @@ USE [bodb02]
 GO
 
 ALTER PROCEDURE [dbo].[Lrf_GetLicenseeTodayWithdrawal]
-    @LicenseeID		INT,
-    @CurrencyIDList VARCHAR(500)  = 0,
     @ReportDate		SMALLDATETIME,
-    @BaseCurrency	VARCHAR(3) = ''
+    @BaseCurrency	VARCHAR(3) = '',
+	@AgentList		VARCHAR(MAX)
 AS 
 
 /*
@@ -30,16 +29,24 @@ BEGIN
 	DECLARE @fdate   SMALLDATETIME;
  
 	SELECT	@fdate = @ReportDate;
-
-	DECLARE @Currency TABLE (Currency INT);
 	
-	INSERT INTO @Currency(Currency)
-	SELECT val
-    FROM dbo.strSplit(@CurrencyIDList, ',')
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
+	
+		INSERT INTO @tmpAg(CustId, Currency)
+		SELECT AgentId, Currency
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
-	INSERT INTO @tmpAg (CustId, Currency)
-	SELECT CustID,Currency FROM bodb_licensee.dbo.f_SelLicenseeCust(@LicenseeID) a
-	WHERE EXISTS (SELECT 1 FROM @Currency c WHERE a.Currency = c.Currency)
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
+
+	BEGIN CATCH
+		SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+		RETURN
+	END CATCH;
 
 	CREATE TABLE #tmpRpt
 	(
@@ -66,7 +73,7 @@ BEGIN
 	INSERT INTO #TempExchange(ExchangeID, Rate)
 	SELECT ExchangeID, Rate
 	FROM dbo.Lrf_f_GetExchangeRate(@fdate, @fdate, @BaseCurrency, '') e
-	WHERE EXISTS (SELECT 1 FROM @Currency c WHERE e.ExchangeID = c.Currency)
+	WHERE EXISTS (SELECT 1 FROM @tmpAg c WHERE e.ExchangeID = c.Currency)
 
 	SELECT  CAST(SUM(b.Withdrawal * e.Rate) AS MONEY) AS Withdrawal
 	FROM #tmpRpt b
