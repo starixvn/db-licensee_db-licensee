@@ -2,7 +2,8 @@
 ALTER PROCEDURE [dbo].[Lrf_GetLicenseeWLByPlatform]
 	@FromDate	SMALLDATETIME,    
 	@ToDate		SMALLDATETIME,
-	@BaseCurrency	VARCHAR(3) = ''
+	@BaseCurrency	VARCHAR(3) = '',
+	@AgentList		VARCHAR(MAX)
 AS  
   
 /*  
