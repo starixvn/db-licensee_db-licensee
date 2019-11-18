@@ -27,7 +27,10 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
     @UserName		VARCHAR(50) = '',
 	@OrderItem		TINYINT = 1,
 	@IsAscSort		BIT = 1,
-	@BaseCurrency	VARCHAR(5) = ''
+	@BaseCurrency	VARCHAR(5) = '',
+	@ErrCode		INT = 0 OUTPUT,
+	@ErrMsg			nvarchar(200) = '' OUTPUT
+	
 AS
 /*
     Created: 20101201@Jacob
@@ -103,6 +106,7 @@ AS
 		- 20190620@Amanda: Centralize function to get exchange rate [Redmine: #112531]
 		- 20190708@Amanda: Add new product Card Club [RedmineID: #115449]
 		- 20190821@Bobby: Do optimization for SQL code [Redmine: #118990]
+		- 20191118@Amanda: Use outparam to get error instead of returned table [Redmine: #118874]
 		
 
 	Param's Explanation:
@@ -221,8 +225,8 @@ BEGIN
 	END TRY
 
 	BEGIN CATCH
-		SELECT ErrCode = 100
-			,ErrMsg = N'Paramter invalid.'
+		SELECT @ErrCode = 100
+			,@ErrMsg = N'Paramter invalid.'
 
 		RETURN
 	END CATCH;
@@ -245,8 +249,8 @@ BEGIN
 		
 		IF (@@ROWCOUNT = 0)
 		BEGIN
-			SELECT ErrCode = 102
-				,ErrMsg = N'Username was not found.'
+			SELECT @ErrCode = 102
+				,@ErrMsg = N'Username was not found.'
 
 			RETURN
 		END
