@@ -24,7 +24,23 @@ AS
 		- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
 		- 20191115@Merlin: Get data by AgentList instead of LicenseeID and CurrentcyList[RedmineID: #123651]
 
-	Param's Explanation:  
+	Param's Explanation:
+*/
+
+/*
+	Demo:
+	USE [bodb02]
+	GO
+
+	DECLARE	@return_value int
+
+	EXEC	@return_value = [dbo].[Lrf_GetCustomerBalance]
+			@ReportDate = '10-19-2019',
+			@AgentList = N'<ROOT><Agent AgentId="10842822" Currency="3"/><Agent AgentId="13880633" Currency="3"/></ROOT>'
+
+	SELECT	'Return Value' = @return_value
+
+	GO
 */
 
 BEGIN

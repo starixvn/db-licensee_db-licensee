@@ -23,6 +23,22 @@ AS
 		- 20191115@Merlin: Get data by AgentList instead of LicenseeID and CurrentcyList[RedmineID: #123651]
 */
 
+/*
+	Demo:
+	USE [bodb02]
+	GO
+
+	DECLARE	@return_value int
+
+	EXEC	@return_value = [dbo].[Lrf_GetLicenseeTodayWithdrawal]
+			@ReportDate = '10-19-2019',
+			@AgentList = N'<ROOT><Agent AgentId="6006447" Currency="61"/><Agent AgentId="18811355" Currency="61"/><Agent AgentId="18811408" Currency="61"/></ROOT>'
+
+	SELECT	'Return Value' = @return_value
+
+	GO
+*/
+
 BEGIN
 	SET NOCOUNT ON;
    

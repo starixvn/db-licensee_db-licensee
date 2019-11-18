@@ -23,6 +23,21 @@ AS
 	
 */
 
+/*
+	Demo:
+	USE [bodb02]
+	GO
+
+	DECLARE	@return_value int
+
+	EXEC	@return_value = [dbo].[Lrf_GetLicenseePendingFunds]
+			@AgentList = N'<ROOT><Agent AgentId="10842822" Currency="3"/><Agent AgentId="13880633" Currency="3"/></ROOT>'
+
+	SELECT	'Return Value' = @return_value
+
+	GO
+*/
+
 BEGIN
     SET NOCOUNT ON;
    

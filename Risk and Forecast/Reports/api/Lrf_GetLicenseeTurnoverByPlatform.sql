@@ -28,6 +28,24 @@ AS
 		
 	Param's Explanation:  
 */
+
+/*
+	Demo:
+	USE [bodb02]
+	GO
+
+	DECLARE	@return_value int
+
+	EXEC	@return_value = [dbo].[Lrf_GetLicenseeTurnoverByPlatform]
+			@FromDate = '11-11-2019',
+			@ToDate = '11-15-2019',
+			@BaseCurrency = N'EUR',
+			@AgentList = N'<ROOT><Agent AgentId="14551801" Currency="45"/><Agent AgentId="14554801" Currency="45"/><Agent AgentId="836224" Currency="2"/><Agent AgentId="860386" Currency="2"/><Agent AgentId="2812961" Currency="2"/></ROOT>'
+
+	SELECT	'Return Value' = @return_value
+
+	GO
+*/
     
 BEGIN      
 	SET NOCOUNT ON;
