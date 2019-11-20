@@ -107,6 +107,7 @@ AS
 		- 20190708@Amanda: Add new product Card Club [RedmineID: #115449]
 		- 20190821@Bobby: Do optimization for SQL code [Redmine: #118990]
 		- 20191118@Amanda: Use outparam to get error instead of returned table [Redmine: #118874]
+		- 20191017@Amanda: Integrate NPH Promotion [RedmineID: #120333]
 
 	Param's Explanation:
 		@OrderItem:
@@ -162,6 +163,7 @@ BEGIN
 	DECLARE @TempAg			TABLE (CustId INT PRIMARY KEY, Currency INT)
 	DECLARE @bettype		TABLE (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))
 	DECLARE @sporttype		TABLE (sporttype INT PRIMARY KEY, ProductCode VARCHAR(10))
+	DECLARE	@PromotionPrize	INT = 0
 	DECLARE @Exchange		TABLE
 	(
 		FromDate	SMALLDATETIME,
@@ -416,6 +418,19 @@ BEGIN
 								ELSE 0 END
 						ELSE 1
 					END)
+			
+		-- check promotion prize - PP promotion prize and NPH Promotion prize --
+		IF EXISTS (
+			SELECT TOP(1) 1
+			FROM dbo.bettrans b WITH (NOLOCK)
+			WHERE 
+				EXISTS(SELECT TOP (1) 1 FROM @TempAg c WHERE c.CustID = b.recommend)
+				AND b.winlostdate >= @TempFromDate AND b.winlostdate <= @_ToDate
+				AND b.bettype IN (4300, 17000)
+				AND b.statusID = 112)
+		BEGIN
+			SET @PromotionPrize = 1
+		END
 	END
 	-- END bettrans range
 
@@ -467,6 +482,20 @@ BEGIN
 								ELSE 0 END
 						ELSE 1
 					END)
+					
+		-- check promotion prize - PP promotion prize and NPH Promotion prize --
+		IF @PromotionPrize = 0 AND EXISTS (
+			SELECT TOP(1) 1
+			FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )
+			WHERE EXISTS(SELECT TOP (1) 1 FROM @TempAg c WHERE c.CustID = b.recommend)
+				AND b.Winlostdate BETWEEN @_FromDate AND @TempToDate
+				AND b.bettype IN (4300, 17000)
+				AND b.statusID = 112 
+				AND b.roleid = 2)
+		BEGIN
+			SET @PromotionPrize = 1
+		END
+
 	END
 	-- END MoveBets range
 
@@ -478,7 +507,7 @@ BEGIN
 	END
 
 	-- Apply bussiness rules
-	INSERT INTO #TempData(CustID, winlostdate, currency, Turnover, MemberWinlost, BetEffective, LicenseeWL, AmtDueToBA, CommBA, PlayerComm, betcount, PromotionPrize)
+	INSERT INTO #TempData(CustID, winlostdate, currency, Turnover, MemberWinlost, BetEffective, LicenseeWL, AmtDueToBA, CommBA, PlayerComm, betcount)
 	SELECT b.CustID
 		, b.winlostdate
 		, b.currency
@@ -531,10 +560,6 @@ BEGIN
 						ELSE b.BetCount
 						END
 				END) AS BetCount
-		, SUM(CASE 
-				WHEN b.bettype = 4300 THEN 1
-				ELSE 0
-				END) AS PromotionPrize
 	FROM 
 		#bettrans_temp b
 		
@@ -662,7 +687,7 @@ BEGIN
 		COUNT(DISTINCT w.custid)					AS TotalRows,
 		SUM(w.betcount) 							AS SumBetCount,
 		CAST(SUM((MemberWinLost + PlayerComm) * e.Rate) AS MONEY) AS SumCustomerTotalWL,
-		SUM(PromotionPrize)							AS SumPromotionPrize
+		@PromotionPrize								AS PromotionPrize
 	FROM
 		#TempData w
 		INNER JOIN @Exchange e ON e.exchangeid = w.currency AND w.winlostdate BETWEEN e.FromDate AND e.ToDate
