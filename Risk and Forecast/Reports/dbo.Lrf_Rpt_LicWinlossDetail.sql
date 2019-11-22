@@ -25,7 +25,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinlossDetail]
 	@drawfilter		SMALLINT = 1,
 	@AgentList		VARCHAR(MAX),
 	@BaseCurrency	VARCHAR(3) = '',
-	@DefaultBaseCurrency	VARCHAR(3) = ''
+	@DefaultBaseCurrency	VARCHAR(3) = '',
+	@CheckPromotionPrize	BIT = 0
 
 AS  
 /*  Created: Henry  
@@ -91,6 +92,7 @@ AS
 		- 20190910@Amanda: Add bet types that support Half Won/ Half Lose [RedmineID: #118300]
 		- 20190923@Amanda: Change the way to handle Half Won/ Half Lose bet types [RedmineID: #119879]
 		- 20191022@Amanda: Integrate NPH Promotion [RedmineID: #120333]
+		- 20191121@Amanda: Integrate PP Tournament Prize and exclude PP Promotion, Tournament Prize from result [RedmineID: #123804]
 
 	Param's Explanation:  
 	  + @CustID: SuperID  
@@ -98,6 +100,7 @@ AS
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
 	  + @excludeTest: remove currency UUS
 	  + @MoveBetsDay: The day we move tickets to bettrans14
+	  + @CheckPromotionPrize: = 1 if want to check whether have promotion prize ticket or not
 	  + @AgentList: xml structure
 					  <ROOT>
 					   <Agent AgentId="12345" Currency="3"/>  
@@ -266,13 +269,17 @@ BEGIN
 		SELECT DISTINCT BetType, ProductPrefix
 		FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
 
-		IF CHARINDEX('CS', @ProductList) > 0
+		IF @ShowCS = 1
 			DELETE @bettype
 			WHERE bettype = 72 AND ProductCode = 'CS'
 
-		IF CHARINDEX('SB', @ProductList) > 0
+		IF @showSB = 1
 			DELETE @bettype
 			WHERE ProductCode = 'SB'
+			
+		IF @ShowPP = 1
+			DELETE @bettype
+			WHERE ProductCode = 'PP' AND bettype IN (4300,4299) -- Promotion prize
 		
 		-- Insert Sport Type
 		INSERT INTO @sporttype ( sporttype, ProductCode )
@@ -693,11 +700,11 @@ BEGIN
 		END
 		
 		-- check promotion prize - PP promotion prize and NPH Promotion prize --
-		IF EXISTS (
+		IF @CheckPromotionPrize = 1 AND EXISTS (
 			SELECT TOP(1) 1
 			FROM dbo.bettrans b WITH (NOLOCK)
 			INNER JOIN @tempAg a ON b.recommend = a.custid AND b.currency = a.currency
-			WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate AND b.bettype IN (4300, 17000) AND b.statusID = 112)
+			WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate AND b.bettype IN (4300, 17000, 4299) AND b.statusID = 112)
 		BEGIN
 			SET @PromotionPrize = 1
 		END
@@ -973,6 +980,7 @@ BEGIN
 				b.Winlostdate BETWEEN @FDate AND @TempToDate  
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
+				AND b.bettype NOT IN (4300, 4299) -- PP Promotion Prize, Tournamemt Prize
 				AND b.roleid = 1
 				AND b.statusID <> 101 --exclude REJECT bets
 				AND ISNULL(b.isBA, 0) = 0
@@ -1102,11 +1110,11 @@ BEGIN
 		END		
 	
 		-- check promotion prize - PP promotion prize and NPH Promotion prize --
-		IF @PromotionPrize = 0 AND EXISTS (
+		IF @CheckPromotionPrize = 1 AND @PromotionPrize = 0 AND EXISTS (
 			SELECT TOP(1) 1
 			FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )
 			INNER JOIN @tempAg a ON b.recommend = a.custID AND b.Currency = a.Currency 
-			WHERE b.Winlostdate BETWEEN @FDate AND @TempToDate AND b.bettype IN (4300, 17000) AND b.statusID = 112 AND b.roleid = 2)
+			WHERE b.Winlostdate BETWEEN @FDate AND @TempToDate AND b.bettype IN (4300, 17000, 4299) AND b.statusID = 112 AND b.roleid = 2)
 		BEGIN
 			SET @PromotionPrize = 1
 		END

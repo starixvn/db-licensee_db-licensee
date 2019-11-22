@@ -53,6 +53,7 @@ AS
 		- 20190829@Amanda: Remove platform y,s and add platform t [RedmineID: #119010]
 		- 20190910@Amanda: Add bet types that support Half Won/ Half Lose [RedmineID: #118300]
 		- 20190923@Amanda: Change the way to handle Half Won/ Half Lose bet types [RedmineID: #119879]
+		- 20191121@Amanda: Exclude PP Promotion and Tournament Prize [RedmineID: #123804]
 
 	Param's Explanation:  
 	  + @PlatformType:  0: All  
@@ -272,14 +273,14 @@ BEGIN
 		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 1021 AND 1049)'
 	END
 	
-	IF @ShowPP = 1 -- PP
+	IF @ShowPP = 1 -- PP -- exclude 4300, 4299
 	BEGIN
 		SET @SportTypeSQL = @SportTypeSQL + ', (248, ''PP'')'
 
-		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 4101 AND 4300 THEN ''PP''
+		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 4101 AND 4298 THEN ''PP''
 				'
 
-		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 4101 AND 4300)'
+		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 4101 AND 4298)'
 	END
 	
 	IF @ShowCC = 1 -- Card Club
@@ -499,6 +500,7 @@ BEGIN
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND (b.bettype < 901 OR b.bettype > 904)
 			AND (b.bettype < 911 OR b.bettype > 914)
+			AND b.bettype NOT IN (4300, 4299) -- exclude PP Prize
 		GROUP BY b.currency,
 				b.sporttype,	
 				b.winlostdate,

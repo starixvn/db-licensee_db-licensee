@@ -70,6 +70,7 @@ Revisions:
 	- 20190516@Amanda: Remove hard code for product name [RedmineID: #113398]
 	- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
 	- 20190708@Amanda: Add new product Card Club [RedmineID: #115449]
+	- 20191121@Amanda: Exclude PP Promotion and Tournament Prize [RedmineID: #123804]
 
 Param's Explanation:
 	+ @IsLive : indicate that whether the report will get live data or not
@@ -324,7 +325,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
 					WHEN (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) THEN 'VS2'
 					WHEN b.bettype BETWEEN 1021 AND 1049 THEN 'LT'
-					WHEN b.bettype BETWEEN 4101 AND 4300 THEN 'PP' -- PP
+					WHEN b.bettype BETWEEN 4101 AND 4298 THEN 'PP' -- PP
 					WHEN b.bettype BETWEEN 1901 AND 1999 THEN 'CC' -- CC
 					END AS ProductCode,
 				SUM(stake) turnover,
@@ -332,7 +333,7 @@ BEGIN
 				SUM(- 1 * (b.winlost - b.actual_stake)) AS LicenseeWL,
 				SUM(comm) AS Comm,
 				SUM(b.playercomm) AS PlayerComm,
-				- SUM(CASE WHEN b.bettype = 4300 THEN b.winlost - b.actual_stake ELSE b.awinlost + b.winlost - b.actual_stake + b.comm END) as AmountDueTo3rd,
+				- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) as AmountDueTo3rd,
 				COUNT(b.transid) BetCount
 			FROM
 				dbo.bettrans b WITH (NOLOCK)
@@ -351,7 +352,7 @@ BEGIN
 					OR b.bettype BETWEEN 2401 AND 2499 -- AB
 					OR (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) -- BetRadar VS
 					OR b.bettype BETWEEN 1021 AND 1049 -- LT
-					OR b.bettype BETWEEN 4101 AND 4300 -- PP
+					OR b.bettype BETWEEN 4101 AND 4298 -- PP -- exclude 4300, 4299
 					OR b.bettype BETWEEN 1901 AND 1999 -- CC
 				)
 				AND (b.liveindicator = @Liveindicator OR @Liveindicator = 2)
@@ -368,7 +369,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
 					WHEN (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) THEN 'VS2'
 					WHEN b.bettype BETWEEN 1021 AND 1049 THEN 'LT'
-					WHEN b.bettype BETWEEN 4101 AND 4300 THEN 'PP' -- PP
+					WHEN b.bettype BETWEEN 4101 AND 4298 THEN 'PP' -- PP
 					WHEN b.bettype BETWEEN 1901 AND 1999 THEN 'CC' -- CC
 				END
 			END
@@ -469,7 +470,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
 					WHEN b.bettype BETWEEN 2701 AND 2829 THEN 'VS2'
 					WHEN b.bettype BETWEEN 1021 AND 1049 THEN 'LT'
-					WHEN b.bettype BETWEEN 4101 AND 4300 THEN 'PP' -- PP
+					WHEN b.bettype BETWEEN 4101 AND 4298 THEN 'PP' -- PP
 					WHEN b.bettype BETWEEN 1901 AND 1999 THEN 'CC'
 				END AS ProductCode,
 				SUM(b.turnover) turnover,
@@ -477,7 +478,7 @@ BEGIN
 				- SUM(b.winloss) AS LicenseeWL,
 				SUM(b.CommissionA) Comm,
 				SUM( b.CommissionP) PlayerComm,
-				- SUM(CASE WHEN b.bettype = 4300 THEN b.winloss ELSE b.winloss + b.WinlossA + b.CommissionA END) as AmountDueTo3rd,
+				- SUM(b.winloss + b.WinlossA + b.CommissionA) as AmountDueTo3rd,
 				SUM(b.betcount) BetCount
 			FROM
 				bodb_licenseereport.dbo.rpt_Betting b WITH ( NOLOCK )
@@ -510,7 +511,7 @@ BEGIN
 					OR b.bettype BETWEEN 2401 AND 2499 -- AB
 					OR b.bettype BETWEEN 2701 AND 2829 -- VS2
 					OR b.bettype BETWEEN 1021 AND 1049 -- LT
-					OR b.bettype BETWEEN 4101 AND 4300 -- PP
+					OR b.bettype BETWEEN 4101 AND 4298 -- PP
 					OR b.bettype BETWEEN 1901 AND 1999 -- CC
 					)
 			GROUP BY
@@ -527,7 +528,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
 					WHEN b.bettype BETWEEN 2701 AND 2829 THEN 'VS2'
 					WHEN b.bettype BETWEEN 1021 AND 1049 THEN 'LT'
-					WHEN b.bettype BETWEEN 4101 AND 4300 THEN 'PP'
+					WHEN b.bettype BETWEEN 4101 AND 4298 THEN 'PP'
 					WHEN b.bettype BETWEEN 1901 AND 1999 THEN 'CC'
 				END
 		END

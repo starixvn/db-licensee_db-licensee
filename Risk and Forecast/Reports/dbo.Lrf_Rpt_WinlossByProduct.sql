@@ -75,6 +75,7 @@ AS
 	- 20190614@Amanda: Add Base currency param [RedmineID: #112531]
 	- 20190910@Amanda: Add bet types that support Half Won/ Half Lose [RedmineID: #118300]
 	- 20190923@Amanda: Change the way to handle Half Won/ Half Lose bet types [RedmineID: #119879]
+	- 20191121@Amanda: Exclude PP Promotion and Tournament Prize [RedmineID: #123804]
 
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -208,6 +209,10 @@ BEGIN
 		IF PATINDEX('%,SB,%', ',' + @ProductList + ',') > 0
 			DELETE @bettype
 			WHERE (bettype BETWEEN 901 AND 904) OR (bettype BETWEEN 911 AND 914)
+			
+		IF PATINDEX('%,PP,%', ',' + @ProductList + ',') > 0
+			DELETE @bettype
+			WHERE bettype IN (4300, 4299) AND ProductCode = 'PP' -- Promotion Prize
 		
 		-- Insert Sport Type
 		INSERT INTO @sporttype ( sporttype, ProductCode )
@@ -347,7 +352,7 @@ BEGIN
 				- SUM(b.winlost - b.actual_stake) AS LicenseeWL,
 				SUM(comm) as Comm,
 				SUM(PlayerComm) AS PlayerComm,
-				- SUM(CASE WHEN b.bettype = 4300 THEN b.winlost - b.actual_stake ELSE b.awinlost + b.winlost - b.actual_stake + b.comm END) AmountDueTo3rd,
+				- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd,
 				SUM(1 * (CASE WHEN b.statusID = 111 THEN 0|@sumBetCount ELSE 1 END)) AS BetCount	
 			FROM 
 				dbo.bettrans b WITH (NOLOCK, INDEX=IX_recommend)
@@ -439,7 +444,7 @@ BEGIN
 					) AS LicenseeWL,
 				SUM(comm ) as Comm,
 				SUM( PlayerComm  ) AS PlayerComm, 
-				- SUM(CASE WHEN b.bettype = 4300 THEN b.winlost ELSE b.awinlost + b.winlost + b.comm END) as AmountDueTo3rd,
+				- SUM(b.awinlost + b.winlost + b.comm) as AmountDueTo3rd,
 				SUM(b.betcount * CASE WHEN b.statusID = 111 THEN 0|@sumBetCount ELSE 1 END)
 			FROM 
 				bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
@@ -452,6 +457,7 @@ BEGIN
 				AND b.statusID <> 101 --exclude REJECT bets
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
+				AND b.bettype NOT IN (4300, 4299) -- exclude PP Prize
 				AND ISNULL(b.isBA, 0) = 0				
 			GROUP BY  
 				b.winlostdate,  

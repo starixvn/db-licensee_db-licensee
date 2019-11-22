@@ -52,6 +52,7 @@ AS
 		- 20190829@Amanda: Remove platform y,s and add platform t [RedmineID: #119010]
 		- 20190910@Amanda: Add bet types that support Half Won/ Half Lose [RedmineID: #118300]
 		- 20190923@Amanda: Change the way to handle Half Won/ Half Lose bet types [RedmineID: #119879]
+		- 20191121@Amanda: Exclude PP Promotion and Tournament Prize [RedmineID: #123804]
 
 	Param's Explanation:  
 	  + @PlatformType:  0: All  
@@ -226,13 +227,17 @@ BEGIN
 		SELECT DISTINCT BetType, ProductPrefix
 		FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
 
-		IF CHARINDEX('CS', @ProductList) > 0
+		IF @ShowCS = 1
 			DELETE #bettype
 			WHERE bettype = 72 AND ProductPrefix = 'CS'
 
-		IF CHARINDEX('SB', @ProductList) > 0
+		IF @showSB = 1
 			DELETE #bettype
 			WHERE ProductPrefix IN ('SB')
+			
+		IF @ShowPP = 1
+			DELETE #bettype
+			WHERE bettype IN (4300, 4299) AND ProductPrefix = 'PP' -- exclude PP Prize
 		
 		-- Insert Sport Type
 		INSERT INTO #sporttype ( sporttype, ProductPrefix )
@@ -465,6 +470,7 @@ BEGIN
 				AND b.statusID <> 101 --exclude REJECT bets
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
+				AND b.bettype NOT IN (4300, 4299) -- exclude PP Prize
 				AND ISNULL(b.isBA,0) = 0	
 			GROUP BY b.winlostdate, b.CustID, b.currency, b.statusID
 		END

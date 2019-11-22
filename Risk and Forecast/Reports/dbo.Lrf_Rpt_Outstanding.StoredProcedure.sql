@@ -73,6 +73,7 @@ Revisions:
 	- 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
 	- 20190620@Amanda: Centralize function to get exchange rate [Redmine: #112531]
 	- 20190708@Amanda: Add new product Card Club [RedmineID: #115449]
+	- 20191121@Amanda: Exclude PP Promotion and Tournament Prize [RedmineID: #123804]
 
 Param's Explanation:
 	@OrderItem:
@@ -229,7 +230,11 @@ BEGIN
 		-- Insert Bettype
 		INSERT INTO #SportBettype ( bettype, RefTable, ProductID )
 		SELECT DISTINCT BetType, RefTable, ProductID
-		FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)	
+		FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
+		
+		IF @ShowPP = 1
+		DELETE #SportBettype
+		WHERE bettype IN (4300, 4299) AND ProductID = 32 -- PP
 	END	
 
 	--1. bettrans --

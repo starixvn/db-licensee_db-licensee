@@ -31,8 +31,8 @@ Revisions:
 	- 20130809@Jim: offer Virtual Horse Racing
 	- 20131007@Jim: support Virtual Tennis
 	- 20131129@Jim: support :
-				182 � Virtual Greyhounds
-				184 � Virtual Motor Racing
+				182 Virtual Greyhounds
+				184 Virtual Motor Racing
 	- 20140404@Florent: offer 202 Keno
 	- 20140410@Jim: fix bug #14715 (wrong RNG Casino sporttype)	
 	- 20140602@Hannah: Separate Live/ Non - Live data in Live Report	
@@ -69,6 +69,7 @@ Revisions:
 	- 20190304@Amanda: Integrate PP Promotion Prize [RedmineID: #109471]
 	- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
 	- 20190708@Amanda: Add new product Card Club [RedmineID: #115449]
+	- 20191121@Amanda: Exclude PP Promotion and Tournament Prize [RedmineID: #123804]
 
 Param's Explanation:
 	@Liveindicator : indicate that whether the report will get live data or not
@@ -231,7 +232,7 @@ BEGIN
 		END
  
  
-
+		-- exclude PP Prize 4300, 4299
 		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP', 'CC'))
 		BEGIN
 			SELECT	@sql = @sql + '--Get data from bettrans for non-BA' + CHAR(13)
@@ -264,7 +265,7 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 1011 AND 1020 THEN 219 -- Fishing World' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 2401 AND 2499 THEN 211 -- AllBet' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1021 AND 1049 THEN 220 -- Lottery' + CHAR(13)
-								+ 'WHEN b.bettype BETWEEN 4101 AND 4300 THEN 248 -- PP' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 4101 AND 4298 THEN 248 -- PP' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1901 AND 1999 THEN 165 -- CC' + CHAR(13)
 								+ 'ELSE m.SportType END as Sporttype,' + CHAR(13)
 								+ 'SUM(stake) turnover,' + CHAR(13)
@@ -272,7 +273,7 @@ BEGIN
 								+ '- SUM(b.winlost - b.actual_stake) AS LicenseeWL,' + CHAR(13)
 								+ 'SUM (comm) AS Comm,' + CHAR(13)
 								+ 'SUM (playercomm) AS PlayerComm,' + CHAR(13)
-								+ '- SUM(CASE WHEN b.bettype = 4300 THEN b.winlost - b.actual_stake ELSE b.awinlost + b.winlost - b.actual_stake + b.comm END) AmountDueTo3rd,' + CHAR(13)
+								+ '- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd,' + CHAR(13)
 								+ 'COUNT(b.transid) BetCount' + CHAR(13)
 
 				SELECT	@sql = @sql + 'FROM bettrans b  WITH (NOLOCK)' + CHAR(13)
@@ -299,7 +300,7 @@ BEGIN
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','AB')) = 1 THEN 'OR b.bettype BETWEEN 2401 AND 2499' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VS2')) = 1 THEN 'OR b.bettype BETWEEN 2701 AND 2829' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','LT')) = 1 THEN 'OR b.bettype BETWEEN 1021 AND 1049' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','PP')) = 1 THEN 'OR b.bettype BETWEEN 4101 AND 4300' + CHAR(13) ELSE '' END 
+								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','PP')) = 1 THEN 'OR b.bettype BETWEEN 4101 AND 4298' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','CC')) = 1 THEN 'OR b.bettype BETWEEN 1901 AND 1999' + CHAR(13) ELSE '' END 
 								+ ') ' + CHAR(13)
 								+ 'GROUP BY  b.winlostdate, b.currency,' + CHAR(13)
@@ -322,7 +323,7 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 1011 AND 1020 THEN 219 -- Fishing World' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 2401 AND 2499 THEN 211 -- AllBet' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1021 AND 1049 THEN 220 -- Lottery' + CHAR(13)
-								+ 'WHEN b.bettype BETWEEN 4101 AND 4300 THEN 248 -- PP' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 4101 AND 4298 THEN 248 -- PP' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1901 AND 1999 THEN 165 -- CC' + CHAR(13)
 								+ 'ELSE m.SportType END ' + CHAR(13)
 								 
@@ -470,7 +471,7 @@ BEGIN
 								+ 'END' + CHAR(13)
 		END
 
-		--Not BA	
+		--Not BA, -- exclude PP Prize 4300, 4299
 		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP', 'CC')	)
 		BEGIN			
 			SELECT	@sql = @sql + '--Get data from rpt_Betting for non-BA' + CHAR(13)
@@ -490,7 +491,7 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 1011 AND 1020 THEN 219' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 2401 AND 2499 THEN 211' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1021 AND 1049 THEN 220' + CHAR(13)
-								+ 'WHEN b.bettype BETWEEN 4101 AND 4300 THEN 248' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 4101 AND 4298 THEN 248' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1901 AND 1999 THEN 165' + CHAR(13)
 								+ 'ELSE ISNULL(l.sporttype, 0)' + CHAR(13)
 								+ 'END AS SportType,' + CHAR(13)
@@ -499,7 +500,7 @@ BEGIN
 								+ '- SUM(b.winloss) AS LicenseeWL,' + CHAR(13)
 								+ 'SUM(b.CommissionA) Comm,' + CHAR(13)
 								+ 'SUM(b.CommissionP  ) PlayerComm,' + CHAR(13)
-								+ '- SUM(CASE WHEN b.bettype = 4300 THEN b.winloss ELSE b.winloss+b.WinlossA+b.CommissionA END) AmountDueTo3rd,' + CHAR(13)
+								+ '- SUM(b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13)
 								+ 'SUM(b.betcount) BetCount' + CHAR(13)
 								+ 'FROM bodb_licenseereport.dbo.rpt_Betting b WITH ( NOLOCK )' + CHAR(13)
 								+ 'INNER JOIN #LicenseeList ll ON b.SiteID = ll.LicenseeID AND b.CurrencyID = ll.Currency' + CHAR(13)
@@ -524,7 +525,7 @@ BEGIN
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','AB')) = 1 THEN 'OR b.bettype BETWEEN 2401 AND 2499' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VS2')) = 1 THEN 'OR b.bettype BETWEEN 2701 AND 2829' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','LT')) = 1 THEN 'OR b.bettype BETWEEN 1021 AND 1049' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','PP')) = 1 THEN 'OR b.bettype BETWEEN 4101 AND 4300' + CHAR(13) ELSE '' END
+								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','PP')) = 1 THEN 'OR b.bettype BETWEEN 4101 AND 4298' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','CC')) = 1 THEN 'OR b.bettype BETWEEN 1901 AND 1999' + CHAR(13) ELSE '' END
 								+ ') ' + CHAR(13)
 								+ 'GROUP BY b.rptDate, b.currencyID, ' + CHAR(13)
@@ -541,7 +542,7 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 1011 AND 1020 THEN 219' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 2401 AND 2499 THEN 211' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1021 AND 1049 THEN 220' + CHAR(13)
-								+ 'WHEN b.bettype BETWEEN 4101 AND 4300 THEN 248' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 4101 AND 4298 THEN 248' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1901 AND 1999 THEN 165' + CHAR(13)
 								+ 'ELSE ISNULL(l.sporttype, 0)' + CHAR(13)
 								+ 'END' + CHAR(13)
