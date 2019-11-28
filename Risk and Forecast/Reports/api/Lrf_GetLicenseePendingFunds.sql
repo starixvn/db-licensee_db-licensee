@@ -1,8 +1,7 @@
 /*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_GetLicenseePendingFunds]
-    @LicenseeID		INT,
-    @CurrencyIDList VARCHAR(500) = '',
-    @BaseCurrency	VARCHAR(3) = ''
+    @BaseCurrency	VARCHAR(3) = '',
+	@AgentList		VARCHAR(MAX)
 AS 
 
 /*
@@ -18,25 +17,51 @@ AS
 		- 20170814@Alex  : Restrict permission by currency  [RedmineID: #80855]
 		- 20181031@Percy: Remove linked-server DBLIC [RedmineID: #103660]
 		- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
+		- 20191115@Merlin: Get data by AgentList instead of LicenseeID and CurrentcyList[RedmineID: #123651]
 
 	Param's Explanation:
 	
+*/
+
+/*
+	Demo:
+	USE [bodb02]
+	GO
+
+	DECLARE	@return_value int
+
+	EXEC	@return_value = [dbo].[Lrf_GetLicenseePendingFunds]
+			@AgentList = N'<ROOT><Agent AgentId="10842822" Currency="3"/><Agent AgentId="13880633" Currency="3"/></ROOT>'
+
+	SELECT	'Return Value' = @return_value
+
+	GO
 */
 
 BEGIN
     SET NOCOUNT ON;
    
 	CREATE TABLE #tmpAg (custID INT, currency INT);
-
-	DECLARE @Currency TABLE (Currency INT);
 	
-	INSERT INTO @Currency(Currency)
-	SELECT val
-    FROM dbo.strSplit(@CurrencyIDList, ',')
+	DECLARE @DocHandler INT
+	
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
+	
+		INSERT INTO #tmpAg(CustId, Currency)
+		SELECT AgentId, Currency
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
-	INSERT INTO #tmpAg (CustId, Currency)
-	SELECT CustID,Currency FROM bodb_licensee.dbo.f_SelLicenseeCust(@LicenseeID) a
-	WHERE EXISTS (SELECT 1 FROM @Currency c WHERE a.Currency = c.Currency)
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
+
+	BEGIN CATCH
+		SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+		RETURN
+	END CATCH;
  
 	CREATE TABLE #tmpRpt
 	(
@@ -87,7 +112,7 @@ BEGIN
 	INSERT INTO #TempExchange(FromDate, ToDate, ExchangeID, Rate)
 	SELECT FromDate, ToDate, ExchangeID, Rate
 	FROM dbo.Lrf_f_GetExchangeRate(@MinDate, @MaxDate, @BaseCurrency, '') e
-	WHERE EXISTS (SELECT 1 FROM @Currency c WHERE e.ExchangeID = c.Currency)
+	WHERE EXISTS (SELECT 1 FROM #tmpAg c WHERE e.ExchangeID = c.Currency)
 
 	SELECT  CAST(SUM(b.PendingFund * e.Rate) AS MONEY) AS PendingFund
 	FROM #tmpRpt b

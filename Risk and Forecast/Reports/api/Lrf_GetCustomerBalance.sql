@@ -3,10 +3,9 @@ USE [bodb02]
 GO
 
 ALTER PROCEDURE [dbo].[Lrf_GetCustomerBalance] 
-	@LicenseeID		INT,
-	@CurrencyIDList	VARCHAR(500)	= '',
 	@ReportDate		SMALLDATETIME,
-	@BaseCurrency	VARCHAR(3) = ''
+	@BaseCurrency	VARCHAR(3) = '',
+	@AgentList		VARCHAR(MAX)
 AS
 
 /*  
@@ -23,8 +22,25 @@ AS
 		- 20181031@Percy: Remove linked-server DBLIC [RedmineID: #103660]
 		- 20181120@Kathy: Tunning SP - got timeout error [RedmineId:#104824]
 		- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
+		- 20191115@Merlin: Get data by AgentList instead of LicenseeID and CurrentcyList[RedmineID: #123651]
 
-	Param's Explanation:  
+	Param's Explanation:
+*/
+
+/*
+	Demo:
+	USE [bodb02]
+	GO
+
+	DECLARE	@return_value int
+
+	EXEC	@return_value = [dbo].[Lrf_GetCustomerBalance]
+			@ReportDate = '10-19-2019',
+			@AgentList = N'<ROOT><Agent AgentId="10842822" Currency="3"/><Agent AgentId="13880633" Currency="3"/></ROOT>'
+
+	SELECT	'Return Value' = @return_value
+
+	GO
 */
 
 BEGIN
@@ -34,29 +50,36 @@ BEGIN
 		custID		INT
 		,Currency	INT
 	)
-
-	DECLARE @Currency TABLE (
-		Currency	INT
-	)
 	
 	DECLARE @Exchange TABLE (
 		ExchangeID	INT
 		,Rate		FLOAT
 	)
+	
+	DECLARE @DocHandler INT
+	
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
+	
+		INSERT INTO @tmpAg(CustId, Currency)
+		SELECT AgentId, Currency
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
-	INSERT INTO @Currency(Currency)
-	SELECT val
-    FROM dbo.strSplit(@CurrencyIDList, ',')
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
 
-	INSERT INTO @tmpAg (CustId,Currency)
-	SELECT CustID,Currency 
-	FROM bodb_licensee.dbo.f_SelLicenseeCust(@LicenseeID) a
-	WHERE EXISTS (SELECT 1 FROM @Currency c WHERE a.Currency = c.Currency)
+	BEGIN CATCH
+		SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+		RETURN
+	END CATCH;
 
 	INSERT INTO @Exchange(ExchangeID, Rate)
 	SELECT ExchangeID, Rate
 	FROM dbo.Lrf_f_GetExchangeRate(@ReportDate, @ReportDate, @BaseCurrency, '') e
-	WHERE EXISTS (SELECT 1 FROM @Currency c WHERE e.ExchangeID = c.Currency)
+	WHERE EXISTS (SELECT 1 FROM @tmpAg c WHERE e.ExchangeID = c.Currency)
 
 	SELECT	SUM(b.ClosingBalance * e.Rate)	AS ClosingBalance
 	FROM	@tmpAg a

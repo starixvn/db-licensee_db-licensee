@@ -3,10 +3,9 @@ USE [bodb02]
 GO
 
 ALTER PROCEDURE [dbo].[Lrf_GetLicenseeTodayDeposit]
-    @LicenseeID		INT,
-    @CurrencyIDList VARCHAR(500)  = 0,
     @ReportDate		SMALLDATETIME,
-    @BaseCurrency	VARCHAR(3) = ''
+    @BaseCurrency	VARCHAR(3) = '',
+	@AgentList		VARCHAR(MAX)
 AS 
 
 /*
@@ -21,6 +20,23 @@ AS
 		- 20170814@Alex  : Restrict permission by currency  [RedmineID: #80855]
 		- 20181031@Percy: Remove linked-server DBLIC [RedmineID: #103660]
 		- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
+		- 20191115@Merlin: Get data by AgentList instead of LicenseeID and CurrentcyList[RedmineID: #123651]
+*/
+
+/*
+	Demo:
+	USE [bodb02]
+	GO
+
+	DECLARE	@return_value int
+
+	EXEC	@return_value = [dbo].[Lrf_GetLicenseeTodayDeposit]
+			@ReportDate = '10-19-2019',
+			@AgentList = N'<ROOT><Agent AgentId="860386" Currency="2"/><Agent AgentId="2812961" Currency="2"/><Agent AgentId="3575215" Currency="2"/></ROOT>'
+
+	SELECT	'Return Value' = @return_value
+
+	GO
 */
 
 BEGIN
@@ -30,16 +46,26 @@ BEGIN
 	DECLARE @fdate   SMALLDATETIME;
  
 	SELECT	@fdate = @ReportDate;
-
-	DECLARE @Currency TABLE (Currency INT);
 	
-	INSERT INTO @Currency(Currency)
-	SELECT val
-    FROM dbo.strSplit(@CurrencyIDList, ',')
+	DECLARE @DocHandler INT
+	
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+			,@AgentList
+	
+		INSERT INTO @tmpAg(CustId, Currency)
+		SELECT AgentId, Currency
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
-	INSERT INTO @tmpAg (CustId, Currency)
-	SELECT CustID,Currency FROM bodb_licensee.dbo.f_SelLicenseeCust(@LicenseeID) a
-	WHERE EXISTS (SELECT 1 FROM @Currency c WHERE a.Currency = c.Currency)
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
+
+	BEGIN CATCH
+		SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
+
+		RETURN
+	END CATCH;
 
 	CREATE TABLE #tmpRpt
 	(
@@ -66,7 +92,7 @@ BEGIN
 	INSERT INTO #TempExchange(ExchangeID, Rate)
 	SELECT ExchangeID, Rate
 	FROM dbo.Lrf_f_GetExchangeRate(@fdate, @fdate, @BaseCurrency, '') e
-	WHERE EXISTS (SELECT 1 FROM @Currency c WHERE e.ExchangeID = c.Currency)
+	WHERE EXISTS (SELECT 1 FROM @tmpAg c WHERE e.ExchangeID = c.Currency)
 
 	SELECT  CAST(SUM(b.Deposit * e.Rate) AS MONEY) AS Deposit
 	FROM #tmpRpt b
