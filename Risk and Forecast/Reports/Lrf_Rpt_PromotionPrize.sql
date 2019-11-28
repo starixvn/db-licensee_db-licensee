@@ -176,7 +176,9 @@ BEGIN
 	INNER JOIN #Exchange e ON e.ExchangeID = p.CurrencyId AND p.winlostdate BETWEEN e.FromDate AND e.ToDate
 	GROUP BY p.BetType
 	
-	SELECT	CASE WHEN p.BetType = @NPHPbetType THEN @NPHP ELSE @PP END AS ProductCode,
+	SELECT	
+			p.BetType,
+			CASE WHEN p.BetType = @NPHPbetType THEN @NPHP ELSE @PP END AS ProductCode,
 			p.winlostdate	AS [Date],
 			p.CurrencyId,
 			SUM(p.Winlost)	AS Amount,
