@@ -1,6 +1,4 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
-USE bodb02
-GO
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]  	
 	@LicenseeID		INT,
@@ -85,6 +83,7 @@ AS
 	- 20190708@Amanda: Add new product Card Club [RedmineID: #115449]
 	- 20190910@Amanda: Add bet types that support Half Won/ Half Lose [RedmineID: #118300]
 	- 20190923@Amanda: Change the way to handle Half Won/ Half Lose bet types [RedmineID: #119879]
+	- 20191017@Amanda: Integrate NPH Promotion [RedmineID: #120333]
 
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -120,8 +119,7 @@ BEGIN
 		WLBoughtTicket		MONEY,
 		BuyBackAmtSB		MONEY,
 		BuyBackAmtBA		MONEY,
-		CashOutComm			MONEY,
-		PromotionPrize		INT
+		CashOutComm			MONEY
 	)
 
 	DECLARE @tempAg				TABLE(custID INT, currency INT)  
@@ -132,6 +130,7 @@ BEGIN
 	DECLARE @LicenseeName	VARCHAR(50)
 	DECLARE @WLBetTicket	TABLE (winlostdate SMALLDATETIME, currency INT, WLBetTicket MONEY)
 	DECLARE @ProductList	VARCHAR (500)
+	DECLARE	@PromotionPrize	INT = 0
 
 	DECLARE @_FromDate SMALLDATETIME, @_ToDate SMALLDATETIME
 	SELECT @_FromDate = @FromDate, @_ToDate = @ToDate
@@ -277,7 +276,7 @@ BEGIN
 				winlostdate, Currency, ProductCode, Turnover, BTActualStake,
 				Winlost, LicenseeWL, AmtDueToBA, CommBA,
 				PlayerComm, Betcount, licenseeWLBT, BetTradeComm,  
-				WLBetTicket, WLBoughtTicket, BuyBackAmtSB, BuyBackAmtBA, CashOutComm, PromotionPrize
+				WLBetTicket, WLBoughtTicket, BuyBackAmtSB, BuyBackAmtBA, CashOutComm
 			)
 			SELECT   
 				b.winlostdate,  
@@ -306,8 +305,7 @@ BEGIN
 				0 AS WLBoughtTicket,
 				0 AS BuyBackAmtSB,
 				0 AS BuyBackAmtBA,
-				0 AS CashOutComm,
-				0 AS PromotionPrize
+				0 AS CashOutComm
 			FROM
 				CTE
 				INNER JOIN dbo.bettrans b WITH (NOLOCK) ON CTE.transid = b.transid
@@ -328,7 +326,7 @@ BEGIN
 				winlostdate, Currency, ProductCode, Turnover, BTActualStake,
 				Winlost, LicenseeWL, AmtDueToBA, CommBA,
 				PlayerComm, Betcount, licenseeWLBT, BetTradeComm,  
-				WLBetTicket, WLBoughtTicket, BuyBackAmtSB, BuyBackAmtBA, CashOutComm, PromotionPrize
+				WLBetTicket, WLBoughtTicket, BuyBackAmtSB, BuyBackAmtBA, CashOutComm
 			)
 			SELECT   
 				b.winlostdate,  
@@ -357,8 +355,7 @@ BEGIN
 				0 AS WLBoughtTicket,
 				0 AS BuyBackAmtSB,
 				0 AS BuyBackAmtBA,
-				0 AS CashOutComm,
-				0 AS PromotionPrize
+				0 AS CashOutComm
 			FROM 
 				Bettrans b WITH (NOLOCK)
 				INNER JOIN @tempAg a ON b.recommend = a.custID AND b.currency = a.currency
@@ -386,7 +383,7 @@ BEGIN
 				winlostdate, Currency, ProductCode, Turnover, BTActualStake,
 				Winlost, LicenseeWL, AmtDueToBA, CommBA,
 				PlayerComm, Betcount, licenseeWLBT, BetTradeComm,  
-				WLBetTicket, WLBoughtTicket, BuyBackAmtSB, BuyBackAmtBA, CashOutComm, PromotionPrize
+				WLBetTicket, WLBoughtTicket, BuyBackAmtSB, BuyBackAmtBA, CashOutComm
 			)
 			SELECT   
 				b.winlostdate,  
@@ -406,8 +403,7 @@ BEGIN
 				SUM(CASE WHEN RAND() + 1 > 0 AND b.bettype = 902 THEN b.winlost-b.actual_stake ELSE 0 END) AS WLBoughtTicket,
 				SUM(CASE WHEN RAND() + 1 > 0 AND b.bettype = 902 AND transid2 = 0 THEN b.actual_stake ELSE 0 END) AS BuyBackAmtSB,
 				SUM(CASE WHEN RAND() + 1 > 0 AND b.bettype = 902 AND transid2 = 1 THEN b.actual_stake ELSE 0 END) AS BuyBackAmtBA,
-				0 AS CashOutComm,
-				0 AS PromotionPrize
+				0 AS CashOutComm
 			FROM 
 				Bettrans b WITH (NOLOCK)
 				INNER JOIN @tempAg a ON b.recommend = a.custID AND b.currency = a.currency
@@ -426,7 +422,7 @@ BEGIN
 				winlostdate, Currency, ProductCode, Turnover, BTActualStake,
 				Winlost, LicenseeWL, AmtDueToBA, CommBA,
 				PlayerComm, Betcount, licenseeWLBT, BetTradeComm,  
-				WLBetTicket, WLBoughtTicket, BuyBackAmtSB, BuyBackAmtBA, CashOutComm, PromotionPrize
+				WLBetTicket, WLBoughtTicket, BuyBackAmtSB, BuyBackAmtBA, CashOutComm
 			)
 			SELECT   
 				b.winlostdate,  
@@ -446,8 +442,7 @@ BEGIN
 				0 AS WLBoughtTicket,
 				0 AS BuyBackAmtSB,
 				0 AS BuyBackAmtBA,
-				SUM(CASE WHEN b.bettype = 913 THEN b.awinlost ELSE 0 END) AS CashOutComm,
-				0 AS PromotionPrize
+				SUM(CASE WHEN b.bettype = 913 THEN b.awinlost ELSE 0 END) AS CashOutComm
 			FROM 
 				Bettrans b WITH (NOLOCK)
 				INNER JOIN @tempAg a ON b.recommend = a.custID AND b.currency = a.currency
@@ -466,7 +461,7 @@ BEGIN
 				winlostdate, Currency, ProductCode, Turnover, BTActualStake,
 				Winlost, LicenseeWL, AmtDueToBA, CommBA,
 				PlayerComm, Betcount, licenseeWLBT, BetTradeComm,  
-				WLBetTicket, WLBoughtTicket, BuyBackAmtSB, BuyBackAmtBA, CashOutComm, PromotionPrize
+				WLBetTicket, WLBoughtTicket, BuyBackAmtSB, BuyBackAmtBA, CashOutComm
 			)
 			SELECT   
 				b.winlostdate,  
@@ -486,8 +481,7 @@ BEGIN
 				0 AS WLBoughtTicket,
 				0 AS BuyBackAmtSB,
 				0 AS BuyBackAmtBA,
-				0 AS CashOutComm,
-				SUM (CASE WHEN b.bettype = 4300 THEN 1 ELSE 0 END) AS PromotionPrize
+				0 AS CashOutComm
 			FROM 
 				Bettrans b WITH (NOLOCK)
 				INNER JOIN @tempAg a   ON b.recommend = a.custID AND b.Currency = a.Currency
@@ -499,6 +493,16 @@ BEGIN
 			GROUP BY   
 				b.winlostdate, a.currency,  
 				bt.ProductCode
+		END
+	
+		-- check promotion prize - PP promotion prize and NPH Promotion prize --
+		IF EXISTS (
+			SELECT TOP(1) 1
+			FROM dbo.bettrans b WITH (NOLOCK)
+			INNER JOIN @tempAg a ON b.recommend = a.custID AND b.currency = a.currency
+			WHERE b.winlostdate BETWEEN @TempFromDate AND @_ToDate AND b.bettype IN (4300, 17000) AND b.statusID = 112)
+		BEGIN
+			SET @PromotionPrize = 1
 		END
 	END  
 
@@ -522,7 +526,7 @@ BEGIN
 				winlostdate, Currency, ProductCode, Turnover, BTActualStake,
 				Winlost, LicenseeWL, AmtDueToBA, CommBA,
 				PlayerComm, Betcount, licenseeWLBT, BetTradeComm,  
-				WLBetTicket, WLBoughtTicket, BuyBackAmtSB, BuyBackAmtBA, CashOutComm, PromotionPrize
+				WLBetTicket, WLBoughtTicket, BuyBackAmtSB, BuyBackAmtBA, CashOutComm
 			)
 			SELECT 
 				b.winlostdate,  
@@ -550,8 +554,7 @@ BEGIN
 				0 AS WLBoughtTicket,
 				0 AS BuyBackAmtSB,
 				0 AS BuyBackAmtBA,
-				0 AS CashOutComm,
-				0 AS PromotionPrize
+				0 AS CashOutComm
 			FROM 
 				  bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
 				  INNER JOIN @tempAg ag ON b.recommend = ag.custID AND b.Currency = ag.currency
@@ -590,7 +593,7 @@ BEGIN
 				winlostdate, Currency, ProductCode, Turnover, BTActualStake,
 				Winlost, LicenseeWL, AmtDueToBA, CommBA,
 				PlayerComm, Betcount, licenseeWLBT, BetTradeComm,  
-				WLBetTicket, WLBoughtTicket, BuyBackAmtSB, BuyBackAmtBA, CashOutComm, PromotionPrize
+				WLBetTicket, WLBoughtTicket, BuyBackAmtSB, BuyBackAmtBA, CashOutComm
 			) 
 			SELECT 
 				b.winlostdate,  
@@ -618,8 +621,7 @@ BEGIN
 				0 AS WLBoughtTicket,
 				0 AS BuyBackAmtSB,
 				0 AS BuyBackAmtBA,
-				0 AS CashOutComm,
-				SUM(CASE WHEN b.bettype = 4300 THEN 1 ELSE 0 END) AS PromotionPrize
+				0 AS CashOutComm
 			FROM
 				bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
 				INNER JOIN @tempAg ag   ON b.recommend = ag.custID AND ag.currency = b.Currency
@@ -660,7 +662,7 @@ BEGIN
 				winlostdate, Currency, ProductCode, Turnover, BTActualStake,
 				Winlost, LicenseeWL, AmtDueToBA, CommBA,
 				PlayerComm, Betcount, licenseeWLBT, BetTradeComm,  
-				WLBetTicket, WLBoughtTicket, BuyBackAmtSB, BuyBackAmtBA, CashOutComm, PromotionPrize
+				WLBetTicket, WLBoughtTicket, BuyBackAmtSB, BuyBackAmtBA, CashOutComm
 			)
 			SELECT   
 				b.winlostdate,  
@@ -680,8 +682,7 @@ BEGIN
 				SUM(CASE WHEN RAND() + 1 > 0 AND b.bettype = 902 THEN b.winlost ELSE 0 END) AS WLBoughtTicket,
 				SUM(CASE WHEN RAND() + 1 > 0 AND b.bettype = 902 THEN BuyBackAmt ELSE 0 END) AS BuyBackAmtSB,
 				SUM(CASE WHEN RAND() + 1 > 0 AND b.bettype = 902 THEN BABuyBackAmt ELSE 0 END) AS BuyBackAmtBA,
-				0 AS CashOutComm,
-				0 AS PromotionPrize
+				0 AS CashOutComm
 			FROM 
 				bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
 				INNER JOIN @tempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
@@ -700,7 +701,7 @@ BEGIN
 				winlostdate, Currency, ProductCode, Turnover, BTActualStake,
 				Winlost, LicenseeWL, AmtDueToBA, CommBA,
 				PlayerComm, Betcount, licenseeWLBT, BetTradeComm,  
-				WLBetTicket, WLBoughtTicket, BuyBackAmtSB, BuyBackAmtBA, CashOutComm, PromotionPrize
+				WLBetTicket, WLBoughtTicket, BuyBackAmtSB, BuyBackAmtBA, CashOutComm
 			)
 			SELECT   
 				b.winlostdate,  
@@ -720,8 +721,7 @@ BEGIN
 				0 AS WLBoughtTicket,
 				0 AS BuyBackAmtSB,
 				0 AS BuyBackAmtBA,
-				SUM(CASE WHEN b.bettype = 913 THEN b.awinlost ELSE 0 END) AS CashOutComm,
-				0 AS PromotionPrize
+				SUM(CASE WHEN b.bettype = 913 THEN b.awinlost ELSE 0 END) AS CashOutComm
 			FROM 
 				bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
 				INNER JOIN @tempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
@@ -731,6 +731,16 @@ BEGIN
 				AND b.statusID  IN (111, 112, 113)
 				AND b.roleid = 1 
 			GROUP BY b.winlostdate, ag.currency
+		END
+	
+		-- check promotion prize - PP promotion prize and NPH Promotion prize --
+		IF @PromotionPrize = 0 AND EXISTS (
+			SELECT TOP(1) 1
+			FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )
+			INNER JOIN @tempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
+			WHERE b.Winlostdate BETWEEN @_FromDate AND @TempToDate AND b.bettype IN (4300, 17000) AND b.statusID = 112 AND b.roleid = 2)
+		BEGIN
+			SET @PromotionPrize = 1
 		END
 	END
 
@@ -781,7 +791,6 @@ BEGIN
 		BuyBackAmtSB		MONEY,
 		BuyBackAmtBA		MONEY,
 		CashOutComm			MONEY,
-		PromotionPrize		INT,
 		UNIQUE CLUSTERED (winlostdate, currency)
 	)  
 
@@ -801,8 +810,7 @@ BEGIN
 		BetTradeComm,  
 		WLBetTicket, WLBoughtTicket,
 		BuyBackAmtSB, BuyBackAmtBA,
-		CashOutComm,
-		PromotionPrize
+		CashOutComm
 	)
 	SELECT
 		winlostdate,
@@ -849,8 +857,7 @@ BEGIN
 		SUM(WLBoughtTicket)		AS WLBoughtTicket,
 		SUM(BuyBackAmtSB)		AS BuyBackAmtSB,
 		SUM(BuyBackAmtBA)		AS BuyBackAmtBA,
-		SUM(CashOutComm)		AS CashOutComm,
-		SUM(PromotionPrize)		AS PromotionPrize
+		SUM(CashOutComm)		AS CashOutComm
 	FROM #SAgWinLoss
 	GROUP BY winlostdate, Currency
 
@@ -916,8 +923,7 @@ BEGIN
 		CAST(SUM(BuyBackAmtSB	*e.Rate)	AS MONEY)	AS BuyBackAmtSB,
 		CAST(SUM(BuyBackAmtBA	*e.Rate)	AS MONEY)	AS BuyBackAmtBA,
 		CAST(SUM(CashOutComm	*e.Rate)	AS MONEY)	AS CashOutComm,
-		SUM(Betcount)									AS Betcount,
-		SUM(PromotionPrize)								AS PromotionPrize
+		SUM(Betcount)									AS Betcount
 	FROM	
 		@SAgWL w   
 		INNER JOIN @ExchangeRate e ON w.winlostdate BETWEEN e.FromDate AND e.ToDate AND w.currency = e.ExchangeId
@@ -1096,7 +1102,7 @@ BEGIN
 		CAST(SUM(BuyBackAmtSB	*e.DefaultRate)	AS MONEY)	AS BuyBackAmtSB,
 		CAST(SUM(BuyBackAmtBA	*e.DefaultRate)	AS MONEY)	AS BuyBackAmtBA,
 		CAST(SUM(CashOutComm	*e.DefaultRate)	AS MONEY)	AS CashOutComm,
-
+		@PromotionPrize										AS PromotionPrize,
 		SUM(Betcount)										AS Betcount
 	FROM	
 		@SAgWL w   
