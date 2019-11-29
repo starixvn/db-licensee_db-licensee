@@ -29,6 +29,7 @@ Revision:
 	- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
 	- 20190407@Amanda: Add new bet types (PH AIO - Phase 4a) [RedmineID: #115448]
 	- 20191608@Amanda: Add new bet types (PH AIO - Phase 4b) [RedmineID: #118300]
+	- 20191129@Walter: Add new bet types (BMAIO - Phase 2) [RedmineID: #120336]
 
 Parameter's Explanation:
 			
