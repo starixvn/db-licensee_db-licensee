@@ -1,6 +1,6 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
-CREATE PROCEDURE [dbo].[Lrf_Rpt_PromotionPrize]
+ALTER PROCEDURE [dbo].[Lrf_Rpt_PromotionPrize]
 	@AgentId		INT = 0,	
 	@UserName		VARCHAR(50) = '',
 	@FromDate		SMALLDATETIME,  
@@ -40,7 +40,7 @@ BEGIN
 		CustId				INT,
 		BetType				INT
 	) 
-	CREATE TABLE #Exchange(FromDate SMALLDATETIME, ToDate SMALLDATETIME, ExchangeID INT, USD FLOAT, EUR FLOAT, GBP FLOAT, DefaultRate FLOAT)
+	CREATE TABLE #Exchange(FromDate SMALLDATETIME, ToDate SMALLDATETIME, ExchangeID INT, DefaultRate FLOAT)
 	CREATE TABLE #tmpCust(CustId INT)
 	
 	DECLARE @tempAg	TABLE(custID INT, currency INT)  
@@ -162,20 +162,18 @@ BEGIN
 		   @MaxDate = MAX (winlostdate)
 	FROM   #PromotionData
 	
-	INSERT INTO #Exchange(FromDate, ToDate, ExchangeID, USD, EUR, GBP, DefaultRate)
-	SELECT FromDate, ToDate, ExchangeID, USD, EUR, GBP, DefaultRate
+	INSERT INTO #Exchange(FromDate, ToDate, ExchangeID, DefaultRate)
+	SELECT FromDate, ToDate, ExchangeID, DefaultRate
 	FROM dbo.Lrf_f_GetExchangeRate(@MinDate, @MaxDate, '', @DefaultBaseCurrency)
 
 	-- #Region: Return data
-	SELECT	CASE WHEN p.BetType = @NPHPbetType THEN @NPHP ELSE @PP END AS ProductCode,
-			SUM(p.Winlost * e.USD) AS SumAmountUSD,
-			SUM(p.Winlost * e.EUR) AS SumAmountEUR,
-			SUM(p.Winlost * e.GBP) AS SumAmountGBP,
-			SUM(p.Winlost * e.DefaultRate) AS SumAmountBase
+	SELECT	p.BetType,
+			CASE WHEN p.BetType = @NPHPbetType THEN @NPHP ELSE @PP END AS ProductCode,
+			SUM(p.Winlost * e.DefaultRate) AS SumAmount
 	FROM #PromotionData p
 	INNER JOIN #Exchange e ON e.ExchangeID = p.CurrencyId AND p.winlostdate BETWEEN e.FromDate AND e.ToDate
 	GROUP BY p.BetType
-	
+
 	SELECT	
 			p.BetType,
 			CASE WHEN p.BetType = @NPHPbetType THEN @NPHP ELSE @PP END AS ProductCode,
