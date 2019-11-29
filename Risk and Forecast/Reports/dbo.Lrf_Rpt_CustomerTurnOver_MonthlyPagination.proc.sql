@@ -135,6 +135,7 @@ BEGIN
 										OR b.bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
 										OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 										OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
+										OR (bettype NOT IN (703, 711) AND bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
 									)
 									THEN 
 											CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
@@ -248,6 +249,7 @@ BEGIN
 										OR b.bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
 										OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 										OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
+										OR (bettype NOT IN (703, 711) AND bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
 									)
 									THEN 
 											CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal

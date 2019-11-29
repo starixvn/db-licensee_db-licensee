@@ -7,9 +7,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_MatchWinLoss]
 	@showSB		BIT = 0,  
 	@showNG		BIT = 0,  
 	@showBA		BIT = 0,  
-	@ShowVS		BIT = 0,  
-	@ShowCS		BIT = 0, --- RNG Casino  
-	@showAGC	BIT = 0,
+	@ShowVS		BIT = 0,
 	@showVS2	BIT = 0,
 	@AgentList	VARCHAR(MAX),
 	@BaseCurrency	VARCHAR(3) = ''
@@ -44,6 +42,7 @@ Revisions:
 	- 20180808@Amanda: Remove Racing, Bingo [RedmineID: #99378]
 	- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
 	- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
+	- 20191118@Amanda: Remove unused param [RedmineID: #120336]
 
 Param's Explanation:  
 	 + @AgentList: xml structure
