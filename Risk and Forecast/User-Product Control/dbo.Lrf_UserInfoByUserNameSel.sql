@@ -42,20 +42,15 @@ BEGIN
     SET @UserName = LTRIM(RTRIM(ISNULL(@UserName, '')))
     IF @UserName <> ''
 	BEGIN
-        SELECT c.custid
-        FROM
-            dbo.Customer  c WITH (NOLOCK)
+        SELECT TOP 1 c.custid
+        FROM @TempAg t
+        INNER JOIN dbo.Customer c WITH (NOLOCK) ON c.recommend = t.CustId
         WHERE
-			EXISTS(
-                    SELECT TOP 1 1
-                    FROM @TempAg t
-                    WHERE c.recommend = t.CustId
-            )
+            c.roleid = 1
             AND (
-				c.username = @UserName -- SystemId
+				c.username = @UserName --SystemId
                 OR SUBSTRING(c.username2,  CHARINDEX('$',c.username2) + 1, LEN(c.username2) - CHARINDEX('$',c.username2)) = @UserName --UserName
-			) 
-            AND c.roleid = 1
+			)
     END
 END
  
