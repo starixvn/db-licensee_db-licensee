@@ -1,6 +1,4 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
-USE bodb02
-GO
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportSummary]
 	@ProductCodes	VARCHAR(MAX) = '',
