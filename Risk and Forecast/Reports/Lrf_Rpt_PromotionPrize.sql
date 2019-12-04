@@ -19,6 +19,7 @@ AS
 	- 20190621@Amanda: Add @@DefaultBaseCurrency parameter [Redmine: #112531]
 	- 20191017@Amanda: Rename SP from Lrf_Rpt_PP_PromotionPrize to Lrf_Rpt_PromotionPrize and integrate NPH Promotion [Redmine: #120333]
 	- 20191122@Amanda: Include PP Tournament Prize [Redmine: #123804]
+	- 20191204@Amanda: Change name of NPH Promotion to Saba Promotion [Redmine: #124612]
 
 	Param's Explanation:
 	  + @MoveBetsDay: The day we move tickets to bettrans14
@@ -48,10 +49,10 @@ BEGIN
 	DECLARE @PPPromotion	SMALLINT = 4300,-- PP Promotion Prize
 			@PPTournament	SMALLINT = 4299,-- PP Tournament Prize
 			@PPsportType	SMALLINT = 248,
-			@NPHPbetType	SMALLINT = 17000,-- NPH Promotion
-			@NPHPsportType	SMALLINT = 246,
+			@SPRbetType	SMALLINT = 17000,-- Saba Promotion
+			@SPRsportType	SMALLINT = 246,
 			@PP				VARCHAR(10) = 'PP',
-			@NPHP			VARCHAR(10) = 'NPHP'
+			@SPR			VARCHAR(10) = 'SPR'
 
 	DECLARE @_FromDate SMALLDATETIME, @_ToDate SMALLDATETIME
 	SELECT @_FromDate = @FromDate, @_ToDate = @ToDate
@@ -115,7 +116,7 @@ BEGIN
 			INNER JOIN @tempAg a ON b.recommend = a.custID AND b.Currency = a.Currency
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @_ToDate
-			AND b.bettype IN (@PPPromotion, @PPTournament, @NPHPbetType)
+			AND b.bettype IN (@PPPromotion, @PPTournament, @SPRbetType)
 			AND b.statusID = 112
 	END  
 
@@ -141,8 +142,8 @@ BEGIN
 			INNER JOIN @tempAg a ON b.recommend = a.custID AND b.Currency = a.Currency
 		WHERE 
 			b.winlostdate BETWEEN @_FromDate AND @TempToDate
-			And b.sporttype IN (@PPsportType, @NPHPsportType)
-			AND b.bettype IN (@PPPromotion, @PPTournament, @NPHPbetType)
+			And b.sporttype IN (@PPsportType, @SPRsportType)
+			AND b.bettype IN (@PPPromotion, @PPTournament, @SPRbetType)
 			AND b.statusID = 112
 			AND b.roleID = 1
 	END
@@ -168,7 +169,7 @@ BEGIN
 
 	-- #Region: Return data
 	SELECT	p.BetType,
-			CASE WHEN p.BetType = @NPHPbetType THEN @NPHP ELSE @PP END AS ProductCode,
+			CASE WHEN p.BetType = @SPRbetType THEN @SPR ELSE @PP END AS ProductCode,
 			SUM(p.Winlost * e.DefaultRate) AS SumAmount
 	FROM #PromotionData p
 	INNER JOIN #Exchange e ON e.ExchangeID = p.CurrencyId AND p.winlostdate BETWEEN e.FromDate AND e.ToDate
@@ -176,7 +177,7 @@ BEGIN
 
 	SELECT	
 			p.BetType,
-			CASE WHEN p.BetType = @NPHPbetType THEN @NPHP ELSE @PP END AS ProductCode,
+			CASE WHEN p.BetType = @SPRbetType THEN @SPR ELSE @PP END AS ProductCode,
 			p.winlostdate	AS [Date],
 			p.CurrencyId,
 			SUM(p.Winlost)	AS Amount,
