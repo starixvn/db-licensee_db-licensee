@@ -28,6 +28,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
 	@OrderItem		TINYINT = 1,
 	@IsAscSort		BIT = 1,
 	@BaseCurrency	VARCHAR(5) = '',
+	@CheckPromotionPrize	BIT = 0,
 	@ErrCode		INT = 0 OUTPUT,
 	@ErrMsg			nvarchar(200) = '' OUTPUT
 	
@@ -108,6 +109,7 @@ AS
 		- 20190821@Bobby: Do optimization for SQL code [Redmine: #118990]
 		- 20191118@Amanda: Use outparam to get error instead of returned table [Redmine: #118874]
 		- 20191017@Amanda: Integrate NPH Promotion [RedmineID: #120333]
+		- 20191121@Amanda: Integrate PP Tournament Prize and exclude PP Promotion, Tournament Prize from result [RedmineID: #123804]
 
 	Param's Explanation:
 		@OrderItem:
@@ -128,6 +130,8 @@ AS
 		@IsAscSort:
 			1: ASC
 			2: DESC
+			
+		@CheckPromotionPrize: = 1 if want to check whether have promotion prize ticket or not
 */
 
 BEGIN
@@ -306,6 +310,11 @@ BEGIN
 	INSERT INTO @bettype ( bettype, ProductCode )
 	SELECT DISTINCT BetType, ProductPrefix
 	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
+	
+	-- Exclude PP Prize
+	IF @ShowPP = 1
+	DELETE @bettype
+	WHERE ProductCode = 'PP' AND bettype IN (4300, 4299)
 
 	-- bettrade
 	INSERT INTO @bettype(bettype, ProductCode)
@@ -420,13 +429,13 @@ BEGIN
 					END)
 			
 		-- check promotion prize - PP promotion prize and NPH Promotion prize --
-		IF EXISTS (
+		IF @CheckPromotionPrize = 1 AND EXISTS (
 			SELECT TOP(1) 1
 			FROM dbo.bettrans b WITH (NOLOCK)
 			WHERE 
 				EXISTS(SELECT TOP (1) 1 FROM @TempAg c WHERE c.CustID = b.recommend)
 				AND b.winlostdate >= @TempFromDate AND b.winlostdate <= @_ToDate
-				AND b.bettype IN (4300, 17000)
+				AND b.bettype IN (4300, 17000, 4299)
 				AND b.statusID = 112)
 		BEGIN
 			SET @PromotionPrize = 1
@@ -482,14 +491,16 @@ BEGIN
 								ELSE 0 END
 						ELSE 1
 					END)
+			-- Exclude PP Prize
+			AND b.bettype NOT IN (4300, 4299)
 					
 		-- check promotion prize - PP promotion prize and NPH Promotion prize --
-		IF @PromotionPrize = 0 AND EXISTS (
+		IF @CheckPromotionPrize = 1 AND @PromotionPrize = 0 AND EXISTS (
 			SELECT TOP(1) 1
 			FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )
 			WHERE EXISTS(SELECT TOP (1) 1 FROM @TempAg c WHERE c.CustID = b.recommend)
 				AND b.Winlostdate BETWEEN @_FromDate AND @TempToDate
-				AND b.bettype IN (4300, 17000)
+				AND b.bettype IN (4300, 17000, 4299)
 				AND b.statusID = 112 
 				AND b.roleid = 2)
 		BEGIN
@@ -529,11 +540,7 @@ BEGIN
 				END) AS MemberWinlost
 		, SUM(CASE 
 				WHEN @_ShowBA = 0 AND b.IsBA = 1 THEN 0
-				ELSE CASE 
-						WHEN b.bettype = 4300 -- exclude Promotion Prize from BetEffective
-							THEN 0
-						ELSE ABS(b.winlost)
-						END
+				ELSE ABS(b.winlost)
 				END) AS BetEffective 
 		, - SUM(CASE 
 				WHEN b.IsBA = 1 THEN 0 --exclude BA ticket's

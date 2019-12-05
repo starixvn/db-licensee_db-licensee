@@ -1,6 +1,6 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
-CREATE PROCEDURE [dbo].[Lrf_Rpt_PromotionPrize]
+ALTER PROCEDURE [dbo].[Lrf_Rpt_PromotionPrize]
 	@AgentId		INT = 0,	
 	@UserName		VARCHAR(50) = '',
 	@FromDate		SMALLDATETIME,  
@@ -18,6 +18,7 @@ AS
 	- 20190304@Amanda: Get PP Promotion Prize data [RedmineID: #109471]
 	- 20190621@Amanda: Add @@DefaultBaseCurrency parameter [Redmine: #112531]
 	- 20191017@Amanda: Rename SP from Lrf_Rpt_PP_PromotionPrize to Lrf_Rpt_PromotionPrize and integrate NPH Promotion [Redmine: #120333]
+	- 20191122@Amanda: Include PP Tournament Prize [Redmine: #123804]
 
 	Param's Explanation:
 	  + @MoveBetsDay: The day we move tickets to bettrans14
@@ -39,12 +40,13 @@ BEGIN
 		CustId				INT,
 		BetType				INT
 	) 
-	CREATE TABLE #Exchange(FromDate SMALLDATETIME, ToDate SMALLDATETIME, ExchangeID INT, USD FLOAT, EUR FLOAT, GBP FLOAT, DefaultRate FLOAT)
+	CREATE TABLE #Exchange(FromDate SMALLDATETIME, ToDate SMALLDATETIME, ExchangeID INT, DefaultRate FLOAT)
 	CREATE TABLE #tmpCust(CustId INT)
 	
 	DECLARE @tempAg	TABLE(custID INT, currency INT)  
 
-	DECLARE @PPbetType		SMALLINT = 4300,-- PP Promotion Prize
+	DECLARE @PPPromotion	SMALLINT = 4300,-- PP Promotion Prize
+			@PPTournament	SMALLINT = 4299,-- PP Tournament Prize
 			@PPsportType	SMALLINT = 248,
 			@NPHPbetType	SMALLINT = 17000,-- NPH Promotion
 			@NPHPsportType	SMALLINT = 246,
@@ -113,7 +115,7 @@ BEGIN
 			INNER JOIN @tempAg a ON b.recommend = a.custID AND b.Currency = a.Currency
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @_ToDate
-			AND (b.bettype = @PPbetType OR b.bettype = @NPHPbetType) 
+			AND b.bettype IN (@PPPromotion, @PPTournament, @NPHPbetType)
 			AND b.statusID = 112
 	END  
 
@@ -139,8 +141,8 @@ BEGIN
 			INNER JOIN @tempAg a ON b.recommend = a.custID AND b.Currency = a.Currency
 		WHERE 
 			b.winlostdate BETWEEN @_FromDate AND @TempToDate
-			And (b.sporttype = @PPsportType OR b.sporttype = @NPHPsportType)
-			AND (b.bettype = @PPbetType OR b.bettype = @NPHPbetType) 
+			And b.sporttype IN (@PPsportType, @NPHPsportType)
+			AND b.bettype IN (@PPPromotion, @PPTournament, @NPHPbetType)
 			AND b.statusID = 112
 			AND b.roleID = 1
 	END
@@ -160,21 +162,21 @@ BEGIN
 		   @MaxDate = MAX (winlostdate)
 	FROM   #PromotionData
 	
-	INSERT INTO #Exchange(FromDate, ToDate, ExchangeID, USD, EUR, GBP, DefaultRate)
-	SELECT FromDate, ToDate, ExchangeID, USD, EUR, GBP, DefaultRate
+	INSERT INTO #Exchange(FromDate, ToDate, ExchangeID, DefaultRate)
+	SELECT FromDate, ToDate, ExchangeID, DefaultRate
 	FROM dbo.Lrf_f_GetExchangeRate(@MinDate, @MaxDate, '', @DefaultBaseCurrency)
 
 	-- #Region: Return data
-	SELECT	CASE WHEN p.BetType = @PPbetType THEN @PP ELSE @NPHP END AS ProductCode,
-			SUM(p.Winlost * e.USD) AS SumAmountUSD,
-			SUM(p.Winlost * e.EUR) AS SumAmountEUR,
-			SUM(p.Winlost * e.GBP) AS SumAmountGBP,
-			SUM(p.Winlost * e.DefaultRate) AS SumAmountBase
+	SELECT	p.BetType,
+			CASE WHEN p.BetType = @NPHPbetType THEN @NPHP ELSE @PP END AS ProductCode,
+			SUM(p.Winlost * e.DefaultRate) AS SumAmount
 	FROM #PromotionData p
 	INNER JOIN #Exchange e ON e.ExchangeID = p.CurrencyId AND p.winlostdate BETWEEN e.FromDate AND e.ToDate
 	GROUP BY p.BetType
-	
-	SELECT	CASE WHEN p.BetType = @PPbetType THEN @PP ELSE @NPHP END AS ProductCode,
+
+	SELECT	
+			p.BetType,
+			CASE WHEN p.BetType = @NPHPbetType THEN @NPHP ELSE @PP END AS ProductCode,
 			p.winlostdate	AS [Date],
 			p.CurrencyId,
 			SUM(p.Winlost)	AS Amount,
