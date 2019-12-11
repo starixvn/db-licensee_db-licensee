@@ -53,6 +53,7 @@ AS
 		- 20190910@Amanda: Add bet types that support Half Won/ Half Lose [RedmineID: #118300]
 		- 20190923@Amanda: Change the way to handle Half Won/ Half Lose bet types [RedmineID: #119879]
 		- 20191121@Amanda: Exclude PP Promotion and Tournament Prize [RedmineID: #123804]
+		- 20191212@Amanda: Remove used bettype(34) [RedmineID: #119669]
 
 	Param's Explanation:  
 	  + @PlatformType:  0: All  
@@ -310,7 +311,7 @@ BEGIN
 				b.CustID,
 				tma.currency,
 			
-				SUM( CASE WHEN b.bettype = 34 AND b.liveawayscore=0 THEN b.stake/2 ELSE b.stake END
+				SUM( b.stake
 						*
 						CASE WHEN @drawfilter IN (2,3) THEN
 							CASE WHEN b.statusID = 111 THEN 0
@@ -356,7 +357,7 @@ BEGIN
 				b.winlostdate,
 				b.CustID,
 				tma.currency,
-				SUM( CASE WHEN b.bettype = 34 AND b.liveawayscore=0 THEN b.stake/2 ELSE b.stake END
+				SUM( b.stake
 						*
 						CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
 					) turnover,

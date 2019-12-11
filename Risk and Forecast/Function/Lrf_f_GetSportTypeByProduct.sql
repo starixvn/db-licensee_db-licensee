@@ -14,6 +14,7 @@ CREATE FUNCTION [dbo].[Lrf_f_GetSportTypeByProduct]
 		- 20181218@Joseph: Add New Sport Virtual Soccer Asian Cup [Redmine: #105409]
 		- 20181213@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
 		- 20190227@Joseph: Betting ticket center phase 3b [RedmineID: #108221]
+		- 20191212@Amanda: Remove sport 154(Horse racing Fixed Odds)[Redmine: #119669]
 
 	Paramters Explanation:
 		@ProductCode: Product code
@@ -28,9 +29,6 @@ BEGIN
 		SELECT id
 		FROM cte_tmpSport
 		OPTION (MAXRECURSION 100)
-		
-		INSERT INTO @sports(ID)
-		VALUES (154)
 	END	
 	-- VS --
 	IF @ProductCode = 'VS'

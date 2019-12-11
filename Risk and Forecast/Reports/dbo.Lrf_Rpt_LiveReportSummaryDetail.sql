@@ -76,6 +76,7 @@ Revisions:
 	- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
 	- 20190708@Amanda: Add new product Card Club [RedmineID: #115449]
 	- 20191121@Amanda: Exclude PP Promotion and Tournament Prize [RedmineID: #123804]
+	- 20191212@Amanda: Remove Racing bettype(33) [RedmineID: #119669]
 	
 Param's Explanation:  
 	+ @Liveindicator : indicate that whether the report will get live data or not
@@ -174,7 +175,7 @@ BEGIN
 								+ 'SELECT ' + CHAR(13) + 'b.winlostdate, ' + CHAR(13) + 't.currency,' + CHAR(13) 
 								+ '''BA'' AS ProductCode,' + CHAR(13)
 								+ 'b.bettype,' + CHAR(13) 
-								+ 'SUM(CASE WHEN b.bettype = 33 AND b.liveawayscore = 0 THEN stake/2 ELSE stake END) turnover,' + CHAR(13) 
+								+ 'SUM(stake) turnover,' + CHAR(13) 
 								+ 'SUM(b.winlost - b.actual_stake) AS Winlost,' + CHAR(13) + '0 AS LicenseeWL,' + CHAR(13) 
 								+ 'SUM (comm ) AS Comm,' + CHAR(13) + 'SUM (b.playercomm  ) AS PlayerComm,' + CHAR(13) 
 								+ '- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,  ' + CHAR(13) 

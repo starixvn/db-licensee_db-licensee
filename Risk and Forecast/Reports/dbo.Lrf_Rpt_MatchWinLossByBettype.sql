@@ -10,7 +10,6 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_MatchWinLossByBettype]
 	@showNG			BIT = 0,  
 	@showBA			BIT = 0,  
 	@showVS			BIT = 0,
-	@ShowCS			BIT = 0, --- RNG Casino  
 	@ShowVS2		BIT = 0, -- Bet Radar Virtual Sports
 	@AgentList		VARCHAR(MAX),
 	@BaseCurrency	VARCHAR(3) = ''
@@ -49,6 +48,7 @@ Revisions:
 	- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
 	- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
 	- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
+	- 20191211@Amanda: Remove unused param @ShowCS [RedmineID: #119669]
 
 Param's Explanation:   
 	+ @AgentList: xml structure
