@@ -388,4 +388,7 @@
     <NotInBuild Include="Risk and Forecast\User-Product Control\dbo.Lrf_UserPwdReset.sql" />
     <NotInBuild Include="Risk and Forecast\User-Product Control\dbo.Lrf_UserUpdAccount.sql" />
   </ItemGroup>
+  <ItemGroup>
+    <Build Include="Risk and Forecast\Function\f_LicWinLoss_ProductSportType_Sel.sql" />
+  </ItemGroup>
 </Project>
