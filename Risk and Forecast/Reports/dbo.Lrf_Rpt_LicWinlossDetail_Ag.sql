@@ -261,7 +261,7 @@ BEGIN
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'CC', 'CC')
 	END
 
-	IF @ShowSG = 1 -- Card club
+	IF @ShowSG = 1 -- Spadegaming
 	BEGIN
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'SG', 'SG')
 	END
