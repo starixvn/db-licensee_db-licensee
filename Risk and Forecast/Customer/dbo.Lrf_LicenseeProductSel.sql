@@ -106,7 +106,7 @@ BEGIN
 		   ,ProductCode
 		   ,isEnable
 	FROM @tblProductActive t 
-	WHERE ProductID NOT IN (3,7,9,4,1,14,17,34)-- Hide Setting for CashOut and LC and RB and Microgaming and CC
+	WHERE ProductID NOT IN (3,7,9,4,1,14,17,34,36)-- Hide Setting for CashOut and LC and RB and Microgaming and CC
 	ORDER BY ProductID ASC
 	
 END
