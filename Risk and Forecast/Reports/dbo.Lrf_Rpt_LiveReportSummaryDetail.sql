@@ -289,7 +289,7 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 1021 AND 1049 THEN ''LT''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 4101 AND 4298 THEN ''PP''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1901 AND 1999 THEN ''CC''' + CHAR(13)
-								+ 'WHEN b.bettype BETWEEN 1901 AND 1999 THEN ''SG''' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 4301 AND 4600 THEN ''SG''' + CHAR(13)
 								+ 'END' + CHAR(13)
 			
 
@@ -428,6 +428,7 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 1021 AND 1049 THEN ''LT''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 4101 AND 4298 THEN ''PP''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1901 AND 1999 THEN ''CC''' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 4301 AND 4600 THEN ''SG''' + CHAR(13)
 								+ 'END AS ProductCode,' + CHAR(13)
 								+ 'b.bettype,' + CHAR(13)
 								+ 'SUM(b.turnover) turnover,' + CHAR(13)
@@ -475,7 +476,7 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 1021 AND 1049 THEN ''LT''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 4101 AND 4298 THEN ''PP''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1901 AND 1999 THEN ''CC''' + CHAR(13)
-								+ 'WHEN b.bettype BETWEEN 1901 AND 1999 THEN ''SG''' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 4301 AND 4600 THEN ''SG''' + CHAR(13)
 								+ 'END' + CHAR(13)
 
 

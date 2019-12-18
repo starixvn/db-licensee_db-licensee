@@ -632,7 +632,7 @@ BEGIN
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLPP,	
 				-SUM(CASE WHEN b.bettype BETWEEN 1901 AND 1999
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLCC,
-				SUM(CASE WHEN b.bettype BETWEEN 4301 AND 4600
+				-SUM(CASE WHEN b.bettype BETWEEN 4301 AND 4600
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLSG,
 				0 AS AmountDueToBA,
 				0 AS CommBA,
@@ -977,7 +977,7 @@ BEGIN
 				-SUM(CASE WHEN b.sporttype = 220 THEN b.winlost ELSE 0 END) AS LicenseeWLLT,
 				-SUM(CASE WHEN b.sporttype = 248 THEN b.winlost ELSE 0 END) AS LicenseeWLPP,
 				-SUM(CASE WHEN b.sporttype = 165 THEN b.winlost ELSE 0 END) AS LicenseeWLCC,
-				 SUM(CASE WHEN b.sporttype = 247 THEN b.winlost ELSE 0 END) AS LicenseeWLSG,
+				-SUM(CASE WHEN b.sporttype = 247 THEN b.winlost ELSE 0 END) AS LicenseeWLSG,
 				0 AS AmountDueToBA,
 				0 AS CommBA,
 				SUM(CASE WHEN b.StatusID IN (112,113) THEN playercomm ELSE 0 END) AS PlayerComm,

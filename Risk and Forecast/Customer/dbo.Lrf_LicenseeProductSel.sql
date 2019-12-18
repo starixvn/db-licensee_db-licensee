@@ -18,12 +18,13 @@ AS
 		- 20170517@Winnie: Hide Setting for CashOut - [Redmine: 72171]
 		- 20170302@Helen: Betradar Virtual Sports  -Integration for Cash [Redmine: 77274]
 		- 20170724@Helen: Lottery in DCS Structure - [Redmine:79997]
-		- 20180228@Vicky: Remove LC from product list [Redmine: #85965]
+		- 20180228@Vicky: Remove LC from product list [Redmine: #85965],
 		- 20180315@Winnie: Bet Setting - Cash Out product is not listed in Product dropdown box [HotFix #92097]
 		- 20180405@Amanda: Bet Setting - Hide RB product [Redmine #92291]
 		- 20180620@Johnson: Integrate Pragmatic [Redmine: #92318]
 		- 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
 		- 20190724@Amanda: Bet Setting - Hide CC product [RedmineID: #115449]
+		- 20191212@Vickie: Integrate SpadeGaming [RedmineID: #124103]
 	Param's Explanation:
 */
 
