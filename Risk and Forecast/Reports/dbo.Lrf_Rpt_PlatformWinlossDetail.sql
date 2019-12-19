@@ -53,6 +53,7 @@ AS
 		- 20190910@Amanda: Add bet types that support Half Won/ Half Lose [RedmineID: #118300]
 		- 20190923@Amanda: Change the way to handle Half Won/ Half Lose bet types [RedmineID: #119879]
 		- 20191121@Amanda: Exclude PP Promotion and Tournament Prize [RedmineID: #123804]
+		- 20191219@Amanda: Add platform v [RedmineID: #125553]
 
 	Param's Explanation:  
 	  + @PlatformType:  0: All  
@@ -66,6 +67,7 @@ AS
 						8: Mobile App (o)
 						9: Mobile China View (c)
 						10: Deep Link (t)
+						11: Others (v)
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover onlly)
 	  + @excludeTest: remove currency UUS
 	  + @showSB: Show SportsBook bets
@@ -156,7 +158,8 @@ BEGIN
 				(2, 'z'),
 				(8, 'o'),
 				(9, 'c'),
-				(10, 't')
+				(10, 't'),
+				(11, 'v')
 	) d(PlatformType, betfrom)
 	WHERE d.PlatformType = @PlatformType OR @PlatformType = 0
 

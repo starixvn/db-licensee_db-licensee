@@ -25,6 +25,7 @@ AS
 		- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
 		- 20190903@Amanda: Remove platform y,s and add platform t [RedmineID: #119010]
 		- 20191115@Merlin: Get data by AgentList instead of LicenseeID and CurrentcyList[RedmineID: #123651]
+		- 20191219@Amanda: Add platform v [RedmineID: #125553]
 		
 	Param's Explanation:  
 */
@@ -109,7 +110,8 @@ BEGIN
 				(2, 'z'),
 				(8, 'o'),
 				(9, 'c'),
-				(10, 't')
+				(10, 't'),
+				(11, 'v')
 	) d(PlatformType, betfrom);
 	
 	CREATE TABLE #Exchange (FromDate SMALLDATETIME, ToDate SMALLDATETIME, ExchangeID INT, Rate FLOAT);
