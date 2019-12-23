@@ -1,1 +1,2 @@
 NAP_LicenseeManagement\LicenseeSetting\NAP_LM_LicenseeBetSettingUpd.sql
+NAP_LicenseeManagement\LicenseeSetting\NAP_LM_LicenseePositionTakingUpd.sql
