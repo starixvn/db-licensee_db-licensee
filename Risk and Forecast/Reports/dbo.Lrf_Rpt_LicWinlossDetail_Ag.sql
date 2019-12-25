@@ -691,7 +691,7 @@ BEGIN
 				0 AS LicenseeWLVB,
 				0 AS LicenseeWLAB,
 				0 AS LicenseeWLFW,
-				SUM(CASE WHEN b.bettype = 913 THEN 0 ELSE b.winlost - b.actual_stake END) AS LicenseeWLCO,
+				- SUM(CASE WHEN b.bettype = 913 THEN 0 ELSE b.winlost - b.actual_stake END) AS LicenseeWLCO,
 				0 AS LicenseeWLVS2,
 				0 AS LicenseeWLLT,
 				0 AS LicenseeWLPP,
