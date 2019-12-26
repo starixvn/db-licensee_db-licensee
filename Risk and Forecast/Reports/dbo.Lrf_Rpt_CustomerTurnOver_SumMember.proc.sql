@@ -30,6 +30,7 @@ AS
 		- 20191608@Amanda: Add new bet types (PH AIO - Phase 4b) [RedmineID: #118300]
 		- 20191129@Walter: Add new bet types (BMAIO - Phase 2) [RedmineID: #120336]
 		- 20190102@Vickie: Add new bet types (PH AIO - Phase 5) [RedmineID: #126005]
+		- 20191225@Amanda: Support display SystemID [RedmineID: #123583]
 
 	Parameter's Explanation:
 */
@@ -71,6 +72,7 @@ BEGIN
 			, c.winlostdate 
 			, c.custid
 			, c.username
+			, c.nickname
 			, b.currency
 			, b.sporttype
 			, b.bettype
@@ -88,6 +90,7 @@ BEGIN
 			,c.winlostdate 
 			,c.custid
 			,c.username
+			,c.nickname
 			,b.currency
 			,b.sporttype
 			,b.bettype
@@ -223,6 +226,7 @@ BEGIN
 			, b.winlostdate 
 			, b.custid
 			, c.username
+			, c.nickname
 			, b.currency
 			, b.sporttype  
 			, b.bettype
@@ -242,6 +246,7 @@ BEGIN
 			, b.winlostdate 
 			, b.custid
 			, c.username
+			, c.nickname
 			, b.currency
 			, b.sporttype 
 			, b.bettype

@@ -40,6 +40,7 @@ AS
 		- 20191608@Amanda: Add new bet types (PH AIO - Phase 4b) [RedmineID: #118300]
 		- 20191129@Walter: Add new bet types (BMAIO - Phase 2) [RedmineID: #120336]
 		- 20190102@Vickie: Add new bet types (PH AIO - Phase 5) [RedmineID: #126005]
+		- 20191225@Amanda: Support display SystemID [RedmineID: #123583]
 
 	Parameter's Explanation:
 */
@@ -331,14 +332,16 @@ BEGIN
 								, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username)
 							)
 				, t.winlostdate
-				, t.Custid 	
-				, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS username
+				, t.Custid
+				, c.username	
+				, c.username2
 			FROM #tempPaging t
 				INNER JOIN dbo.Customer AS c WITH (NOLOCK, INDEX = IX_custid)
 				ON t.custid = c.custid
 			GROUP BY 
 				t.winlostdate
-				, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username)
+				, c.username
+				, c.username2
 				, t.Custid		
 		)
 		INSERT INTO #tempCustPaging 
@@ -347,6 +350,7 @@ BEGIN
 			, p.winlostdate
 			, p.custid
 			, p.username
+			, ISNULL(SUBSTRING(p.username2,CHARINDEX ('$',p.username2,1)+1,LEN(p.username2)),p.username) AS nickname AS nickname
 		FROM CTE_MixPaging p
 	END
 	ELSE
@@ -358,13 +362,15 @@ BEGIN
 								, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username)
 							)
 				, t.winlostdate
-				, t.Custid 	
-				, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS username
+				, t.Custid 
+				, c.username
+				, c.username2
 			FROM #tempPaging t
 				INNER JOIN dbo.Customer  c WITH (NOLOCK, INDEX = IX_custid) ON t.custid = c.custid
 			GROUP BY 
 				t.winlostdate
-				, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username)
+				, c.username
+				, c.username2
 				, t.Custid
 		)
 		INSERT INTO #tempCustPaging 
@@ -373,6 +379,7 @@ BEGIN
 			, p.winlostdate
 			, p.custid
 			, p.username
+			, ISNULL(SUBSTRING(p.username2,CHARINDEX ('$',p.username2,1)+1,LEN(p.username2)),p.username) AS nickname
 		FROM CTE_MixPaging p
 		WHERE p.RowIdx BETWEEN @offsetRow AND @maxRow
 	END
