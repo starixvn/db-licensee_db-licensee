@@ -350,7 +350,7 @@ BEGIN
 			, p.winlostdate
 			, p.custid
 			, p.username
-			, ISNULL(SUBSTRING(p.username2,CHARINDEX ('$',p.username2,1)+1,LEN(p.username2)),p.username) AS nickname AS nickname
+			, ISNULL(SUBSTRING(p.username2,CHARINDEX ('$',p.username2,1)+1,LEN(p.username2)),p.username) AS nickname
 		FROM CTE_MixPaging p
 	END
 	ELSE
