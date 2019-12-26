@@ -56,6 +56,7 @@ AS
 		- 20191121@Amanda: Exclude PP Promotion and Tournament Prize [RedmineID: #123804]
 		- 20191219@Amanda: Add platform v [RedmineID: #125553]
 		- 20190312@Amanda: Add new bet types Single Match Parlay (ID: 38) [RedmineID: #108298]
+		- 20191226@Vickie: Add platform 0 and change ID platform v[RedmineID: #125824]
 
 	Param's Explanation:  
 	  + @PlatformType:  0: All  
@@ -69,7 +70,8 @@ AS
 						8: Mobile App (o)
 						9: Mobile China View (c)
 						10: Deep Link (t)
-						11: Others (v)
+						11:	Native App
+						88: Others (v)
 	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover onlly)
 	  + @showSB: Show SportsBook bets
 	  + @ShowNG: Show Number game bets
@@ -161,24 +163,8 @@ BEGIN
 
 	CREATE TABLE #PlatformList (betfrom NVARCHAR(1), PlatformType TINYINT)
 	INSERT INTO #PlatformList (betfrom, PlatformType)
-	SELECT	d.betfrom, d.PlatformType
-	FROM (
-		VALUES	(1, 'd'),
-				(2, 'a'),
-				(3, 'e'),
-				(4, 'm'),
-				(3, 'u'),
-				(5, 'l'),
-				(1, 'g'),
-				(6, 'r'),
-				(7, 'x'),
-				(2, 'z'),
-				(8, 'o'),
-				(9, 'c'),
-				(10, 't'),
-				(11, 'v')
-	) d(PlatformType, betfrom)
-	WHERE d.PlatformType = @PlatformType OR @PlatformType = 0
+	SELECT DISTINCT betfrom, PlatformType
+	FROM f_PlatformWinLoss_BetFromType_Sel(@PlatformType)
 
 	IF @ShowSB = 1  
 	BEGIN

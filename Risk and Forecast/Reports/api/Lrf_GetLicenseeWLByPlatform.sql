@@ -27,6 +27,7 @@ AS
 		- 20191115@Merlin: Get data by AgentList instead of LicenseeID and CurrentcyList[RedmineID: #123651]
 		- 20191219@Amanda: Add platform v [RedmineID: #125553]
 		- 20190312@Amanda: Add new bet types Single Match Parlay (ID: 38) [RedmineID: #108298]
+		- 20191226@Vickie: Add platform 0 and change ID platform v[RedmineID: #125824]
 
 	Param's Explanation: 
 */
@@ -96,23 +97,8 @@ BEGIN
 	CREATE TABLE #PlatformList (betfrom NVARCHAR(1), PlatformType TINYINT);
 
 	INSERT INTO #PlatformList (betfrom, PlatformType)
-	SELECT	d.betfrom, d.PlatformType
-	FROM (
-		VALUES	(1, 'd'),
-				(2, 'a'),
-				(3, 'e'),
-				(4, 'm'),
-				(3, 'u'),
-				(5, 'l'),
-				(1, 'g'),
-				(6, 'r'),
-				(7, 'x'),
-				(2, 'z'),
-				(8, 'o'),
-				(9, 'c'),
-				(10, 't'),
-				(11, 'v')
-	) d(PlatformType, betfrom);
+	SELECT DISTINCT betfrom, PlatformType
+	FROM f_PlatformWinLoss_BetFromType_Sel(0)
 
 	CREATE TABLE #Exchange (FromDate SMALLDATETIME, ToDate SMALLDATETIME, ExchangeID INT, Rate FLOAT);
 
