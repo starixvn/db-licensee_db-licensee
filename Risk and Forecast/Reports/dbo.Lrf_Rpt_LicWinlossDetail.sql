@@ -593,7 +593,7 @@ BEGIN
 			GROUP BY b.custid, b.winlostdate, a.Currency
 		END
 
-		IF 1 IN (@ShowNG, @ShowVS, @ShowCS, @showKN, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowVS2, @ShowLT, @ShowPP, @ShowCC)
+		IF 1 IN (@ShowNG, @ShowVS, @ShowCS, @showKN, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowVS2, @ShowLT, @ShowPP, @ShowCC, @ShowSG)
 		BEGIN
 			INSERT INTO #SAgWinLoss
 			SELECT
