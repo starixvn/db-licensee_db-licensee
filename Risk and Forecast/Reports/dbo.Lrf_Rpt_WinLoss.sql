@@ -20,6 +20,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
 	@ShowLT			BIT = 0, -- Lottery
 	@ShowPP			BIT = 0, -- PP
 	@ShowCC			BIT = 0, -- Card club
+	@ShowSG			BIT = 0, -- SpadeGaming
     @MoveBetsDay	DATETIME,
     @PageSize		INT = 1000,
     @PageIndex		INT = 1,
@@ -110,6 +111,7 @@ AS
 		- 20191118@Amanda: Use outparam to get error instead of returned table [Redmine: #118874]
 		- 20191017@Amanda: Integrate NPH Promotion [RedmineID: #120333]
 		- 20191121@Amanda: Integrate PP Tournament Prize and exclude PP Promotion, Tournament Prize from result [RedmineID: #123804]
+		- 20191230@Amanda: Integrate SpadeGaming [RedmineID: #124103]
 
 	Param's Explanation:
 		@OrderItem:
@@ -300,6 +302,8 @@ BEGIN
 	SELECT 'PP' AS Code WHERE @ShowPP = 1
 	UNION ALL
 	SELECT 'CC' AS Code WHERE @ShowCC = 1
+	UNION ALL
+	SELECT 'SG' AS Code WHERE @ShowSG = 1
 
 	-- BT & CO belong to SB
 	SELECT @ProductList = COALESCE(@ProductList + ',' + Code, Code)
