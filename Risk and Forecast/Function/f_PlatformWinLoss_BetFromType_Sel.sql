@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02" selecters="bodbLicenseeNet" isFunction="1" isNested="1"></info>*/
+﻿/*<info serverAlias="DBEXT-bodb02" selecters="bodbLicenseeNet" isFunction="1" isNested="1"></info>*/
 CREATE FUNCTION [dbo].[f_PlatformWinLoss_BetFromType_Sel]
 (
 	@PlatformType	TINYINT = 0
@@ -6,7 +6,7 @@ CREATE FUNCTION [dbo].[f_PlatformWinLoss_BetFromType_Sel]
 /*  
 	Create: 20191226 
 	Description: Get BetFrom Type  
-	DB: DBEXT.bodb02, DBACC.bodb02
+	DB: DBEXT.bodb02
     
 	Revisions:  	  
 		- 20191226@Vickie: Get BetFrom by PlatformType [Redmine: #125824]
