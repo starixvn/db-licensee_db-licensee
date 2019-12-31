@@ -69,6 +69,7 @@ Revisions:
 	- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
 	- 20190708@Amanda: Add new product Card Club [RedmineID: #115449]
 	- 20191121@Amanda: Exclude PP Promotion and Tournament Prize [RedmineID: #123804]
+	- 20190312@Amanda: Add new bet types Single Match Parlay (ID: 38) [RedmineID: #108298]
 
 Param's Explanation:
 	+ @IsLive : indicate that whether the report will get live data or not
@@ -233,6 +234,7 @@ BEGIN
 					OR (b.bettype BETWEEN 121 AND 999)
 					OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 					OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0
+					OR b.Bettype = 38					 -- Single Match Parlay
 					)
 				AND (b.bettype NOT IN (9,29))
 				AND (b.bettype < 901 OR b.bettype > 904)
@@ -459,7 +461,13 @@ BEGIN
 				b.currencyID,
 				CASE 
 					WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) THEN 'NG'
-					WHEN (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 and 1399) OR (b.Bettype BETWEEN 9001 and 9086)) THEN 'SB'
+					WHEN (b.bettype <= 30 
+							OR (b.bettype BETWEEN 121 AND 999) 
+							OR (b.Bettype BETWEEN 1301 and 1399) 
+							OR (b.Bettype BETWEEN 9001 and 9086) 
+							OR b.Bettype = 38					 -- Single Match Parlay
+						) 
+						THEN 'SB'
 					WHEN b.bettype BETWEEN 1201 AND 1299 THEN 'VS'
 					WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN'
 					WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999 THEN 'CS' -- RNG CASINO
@@ -499,6 +507,7 @@ BEGIN
 					OR b.bettype BETWEEN 121 AND 999
 					OR b.Bettype BETWEEN 1301 and 1399
 					OR b.Bettype BETWEEN 9001 and 9086
+					OR b.Bettype = 38				   -- Single Match Parlay
 					OR b.bettype BETWEEN 81 AND 120
 					OR b.bettype BETWEEN 8101 AND 8120 -- Number Game: Happy 5
 					OR b.bettype BETWEEN 1201 AND 1299
@@ -517,7 +526,12 @@ BEGIN
 				b.currencyID,
 				CASE 
 					WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) THEN 'NG'
-					WHEN b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 and 1399) OR (b.Bettype BETWEEN 9001 and 9086) THEN 'SB'
+					WHEN b.bettype <= 30 
+							OR (b.bettype BETWEEN 121 AND 999) 
+							OR (b.Bettype BETWEEN 1301 and 1399) 
+							OR (b.Bettype BETWEEN 9001 and 9086) 
+							OR b.Bettype = 38					 -- Single Match Parlay
+						THEN 'SB'
 					WHEN b.bettype BETWEEN 1201 AND 1299 THEN 'VS'
 					WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN'
 					WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999 THEN 'CS' -- RNG CASINO

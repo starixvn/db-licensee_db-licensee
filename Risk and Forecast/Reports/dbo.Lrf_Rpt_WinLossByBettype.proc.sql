@@ -57,6 +57,7 @@ Revisions:
 	- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
 	- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
 	- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
+	- 20190312@Amanda: Add new bet types Single Match Parlay (ID: 38) [RedmineID: #108298]
 
 Param's Explanation: 
 	+ @AgentList: xml structure
@@ -180,6 +181,7 @@ BEGIN
 							OR (b.bettype BETWEEN 121 AND 999)
 							OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 							OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0
+							OR b.Bettype = 38					 -- Single Match Parlay
 						)
 						OR b.bettype BETWEEN 81 AND 120 -- Number Game
 						OR b.bettype BETWEEN 8101 AND 8120 -- Number Game: Happy 5
@@ -249,6 +251,7 @@ BEGIN
 							OR (b.bettype BETWEEN 121 AND 999)
 							OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 							OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0
+							OR b.Bettype = 38					 -- Single Match Parlay
 							)
 						OR b.bettype BETWEEN 81 AND 120
 						OR b.bettype BETWEEN 8101 AND 8120 -- Number Game: Happy 5

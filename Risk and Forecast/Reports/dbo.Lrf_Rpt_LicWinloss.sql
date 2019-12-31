@@ -86,6 +86,7 @@ AS
 	- 20190923@Amanda: Change the way to handle Half Won/ Half Lose bet types [RedmineID: #119879]
 	- 20191017@Amanda: Integrate NPH Promotion [RedmineID: #120333]
 	- 20191121@Amanda: Integrate PP Tournament Prize and exclude PP Promotion, Tournament Prize from result [RedmineID: #123804]
+	- 20190312@Amanda: Add new bet types Single Match Parlay (ID: 38) [RedmineID: #108298]
 
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -374,6 +375,7 @@ BEGIN
 					OR b.bettype BETWEEN 121 AND 999
 					OR b.Bettype BETWEEN 1301 and 1399 --new tennis's bettypes
 					OR b.Bettype BETWEEN 9001 and 9086 -- E-Sports 2.0
+					OR b.Bettype = 38				   -- Single Match Parlay
 				)
 				AND b.statusID IN (111, 112, 113)
 				AND b.tpositiontaking <> 0
