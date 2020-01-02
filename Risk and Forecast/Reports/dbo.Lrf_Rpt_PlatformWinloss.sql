@@ -163,8 +163,8 @@ BEGIN
 
 	CREATE TABLE #PlatformList (betfrom NVARCHAR(1), PlatformType TINYINT)
 	INSERT INTO #PlatformList (betfrom, PlatformType)
-	SELECT DISTINCT betfrom, PlatformType
-	FROM f_PlatformWinLoss_BetFromType_Sel(@PlatformType)
+	SELECT betfrom, PlatformType
+	FROM Lrf_f_BetFromType_Sel(@PlatformType)
 
 	IF @ShowSB = 1  
 	BEGIN

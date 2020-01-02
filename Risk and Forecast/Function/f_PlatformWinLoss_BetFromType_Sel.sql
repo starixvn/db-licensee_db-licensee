@@ -1,5 +1,5 @@
 ﻿/*<info serverAlias="DBEXT-bodb02" selecters="bodbLicenseeNet" isFunction="1" isNested="1"></info>*/
-CREATE FUNCTION [dbo].[f_PlatformWinLoss_BetFromType_Sel]
+CREATE FUNCTION [dbo].[Lrf_f_BetFromType_Sel]
 (
 	@PlatformType	TINYINT = 0
 )
@@ -31,5 +31,5 @@ RETURN
 				(11, '0'),
 				(88, 'v')
 	) d(PlatformType, betfrom)
-	WHERE d.PlatformType = @PlatformType OR @PlatformType = 0
+	WHERE @PlatformType = 0 OR d.PlatformType = @PlatformType
 GO
