@@ -53,6 +53,7 @@ exec Lrf_Rpt_WinlostByLeague
 		- 20190407@Amanda: Add new bet types (PH AIO - Phase 4a) [RedmineID: #115448]
 		- 20191608@Amanda: Add new bet types (PH AIO - Phase 4b) [RedmineID: #118300]
 		- 20191118@Amanda: Add new bet types (BM AIO - Phase 2) [RedmineID: #120336]
+		- 20190102@Vickie: Add new bet types (PH AIO - Phase 5) [RedmineID: #126005]
 
 	Parameter's Explanation:
 		- @LicenseeID : Licensee ID
@@ -190,6 +191,7 @@ BEGIN
 								OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 								OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 								OR (b.bettype NOT IN (703, 711) AND b.bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
+								OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
 							)
 							THEN CASE 
 									WHEN b.OddsType = 1
@@ -277,6 +279,7 @@ BEGIN
 								OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 								OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 								OR (b.bettype NOT IN (703, 711) AND b.bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
+								OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
 							)
 							THEN CASE 
 									WHEN b.OddsType = 1
@@ -330,6 +333,7 @@ BEGIN
 								OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 								OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 								OR (b.bettype NOT IN (703, 711) AND b.bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
+								OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
 							)
 							THEN CASE 
 									WHEN b.OddsType = 1
@@ -413,6 +417,7 @@ BEGIN
 								OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 								OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 								OR (b.bettype NOT IN (703, 711) AND b.bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
+								OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
 							)
 							THEN CASE 
 									WHEN b.OddsType = 1
@@ -519,6 +524,7 @@ BEGIN
 								OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 								OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 								OR (b.bettype NOT IN (703, 711) AND b.bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
+								OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
 							)
 							THEN CASE 
 									WHEN b.OddsType = 1
@@ -603,6 +609,7 @@ BEGIN
 								OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 								OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 								OR (b.bettype NOT IN (703, 711) AND b.bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
+								OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
 							)
 							THEN CASE 
 									WHEN b.OddsType = 1
@@ -655,6 +662,7 @@ BEGIN
 								OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 								OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 								OR (b.bettype NOT IN (703, 711) AND b.bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
+								OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
 							)
 							THEN CASE 
 									WHEN b.OddsType = 1
@@ -739,6 +747,7 @@ BEGIN
 								OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 								OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 								OR (b.bettype NOT IN (703, 711) AND b.bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
+								OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
 							)
 							THEN CASE 
 									WHEN b.OddsType = 1

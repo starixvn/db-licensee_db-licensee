@@ -77,6 +77,7 @@ Revision:
 	- 20190407@Amanda: Add new bet types (PH AIO - Phase 4a) [RedmineID: #115448]
 	- 20191608@Amanda: Add new bet types (PH AIO - Phase 4b) [RedmineID: #118300]
 	- 20191129@Walter: Add new bet types (BMAIO - Phase 2) [RedmineID: #120336]
+	- 20190102@Vickie: Add new bet types (PH AIO - Phase 5) [RedmineID: #126005]
 
 Parameter's Explanation:
 	- @ReportBy:  1: daily, 2: monthly
@@ -368,6 +369,7 @@ BEGIN
 						OR bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 						OR bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 						OR (bettype NOT IN (703, 711) AND bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
+						OR bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
 			
 		-- CREATE INDEXERS
 		CREATE CLUSTERED 	INDEX [CIX_tempBettrans] 			ON #tempBettrans (custid, winlostdate)
