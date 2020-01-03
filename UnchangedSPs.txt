@@ -1,1 +1,6 @@
-NAP_LicenseeManagement\LicenseeSetting\NAP_LM_LicenseeBetSettingUpd.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_LiveReportSummaryDetail.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_MatchWinLossByBettype.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_MatchWinLossDetail.StoredProcedure.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_WinLossByBettype.proc.sql
+Risk and Forecast\Reports\dbo.Lrf_SelBetTypeBySport.sql
+Risk and Forecast\Reports\Lrf_SelBetTypesByProduct.sql
