@@ -17,6 +17,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_PlatformWinlossDetail]
 	@ShowPP		BIT = 0, -- PP
 	@ShowCC		BIT = 0, -- Card club
 	@ShowSG		BIT = 0, -- Spadegaming 
+	@ShowVRG	BIT = 0, -- Virtual Games
 	@PlatformType	TINYINT=0, 
 	@MoveBetsDay	SMALLDATETIME,
 	@drawfilter		SMALLINT = 1,
@@ -59,6 +60,7 @@ AS
 		- 20191226@Vickie: Add platform 0 and change ID platform v[RedmineID: #125824]
 		- 20191212@Vickie: Integrate SpadeGaming [RedmineID: #124103]
 		- 20200306@Kos: Enhance performance [RedmineID: #129722]
+		- 20200108@Vickie: Add new product Virtual Games [RedmineID: #124911]
 
 	Param's Explanation:  
 	  + @PlatformType:  0: All  
@@ -218,6 +220,11 @@ BEGIN
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'SG', 'SG')
 	END
 
+	IF @ShowVRG = 1 -- Virtual Games
+	BEGIN
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'VRG', 'VRG')
+	END
+
 	IF LEN(ISNULL(@ProductList, '')) > 0 
 	BEGIN
 		-- Insert Bettype
@@ -348,7 +355,7 @@ BEGIN
 		END
 	
 	
-		IF (@ShowNG = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW = 1 OR @ShowVS2 = 1 OR @ShowLT = 1 OR @ShowPP = 1 OR @ShowCC = 1 OR @ShowSG = 1)
+		IF (@ShowNG = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW = 1 OR @ShowVS2 = 1 OR @ShowLT = 1 OR @ShowPP = 1 OR @ShowCC = 1 OR @ShowSG = 1 OR @ShowVRG = 1)
 		BEGIN
 			INSERT INTO #WinLoss (Winlostdate, CustID, Currency, Turnover, Winlost, LicenseeWL, playercomm, AmtDueToBA, CommBA, Company, BetCount)
 			SELECT 
@@ -432,7 +439,7 @@ BEGIN
 			
 		END
 
-		IF (@showSB = 1 or @ShowNG = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW =1 OR @ShowVS2 = 1 OR @ShowLT = 1 OR @ShowPP = 1 OR @showCC = 1 OR @ShowSG = 1)
+		IF (@showSB = 1 or @ShowNG = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW =1 OR @ShowVS2 = 1 OR @ShowLT = 1 OR @ShowPP = 1 OR @showCC = 1 OR @ShowSG = 1 OR @ShowVRG = 1)
 		BEGIN
 			INSERT INTO #WinLoss (Winlostdate, CustID, Currency, Turnover, Winlost, LicenseeWL, playercomm, AmtDueToBA, CommBA, Company, BetCount)
 			SELECT 

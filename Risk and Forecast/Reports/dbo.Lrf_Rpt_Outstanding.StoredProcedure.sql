@@ -17,6 +17,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_Outstanding]
 	@ShowPP			BIT = 0,
 	@ShowCC			BIT = 0, -- Card club
 	@ShowSG			BIT = 0, -- Spadegaming 
+	@ShowVRG		BIT = 0, -- Virtual Games
     @PageSize		INT = 1000,
     @PageIndex		INT = 1,
 	@AgentList		VARCHAR(MAX),
@@ -76,6 +77,7 @@ Revisions:
 	- 20190708@Amanda: Add new product Card Club [RedmineID: #115449]
 	- 20191121@Amanda: Exclude PP Promotion and Tournament Prize [RedmineID: #123804]
 	- 20191212@Vickie: Integrate SpadeGaming [RedmineID: #124103]
+	- 20200108@Vickie: Add new product Virtual Games [RedmineID: #124911]
 
 Param's Explanation:
 	@OrderItem:
@@ -230,6 +232,11 @@ BEGIN
 	IF @ShowSG = 1 -- SG
 	BEGIN
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'SG', 'SG')
+	END
+
+	IF @ShowVRG = 1 -- VRG
+	BEGIN
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'VRG', 'VRG')
 	END
 
 	IF LEN(ISNULL(@ProductList, '')) > 0 

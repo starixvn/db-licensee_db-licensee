@@ -20,6 +20,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 		- 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
 		- 20190708@Amanda: Add new product Card Club [RedmineID: #115449]
 		- 20191212@Vickie: Integrate SpadeGaming [RedmineID: #124103]
+		- 20200108@Vickie: Add new product Virtual Games [RedmineID: #124911]
 
 	Paramters Explanation:  
 		@ProductID: list of products  
@@ -46,7 +47,8 @@ RETURN
 					(28, 'LT', 220, 0),	-- Lottery
 					(32, 'PP', 248, 0),	-- PP
 					(34, 'CC', 165, 0),	-- Card club
-					(36, 'SG', 247, 0)	-- Spadegaming
+					(36, 'SG', 247, 0),	-- Spadegaming
+					(38, 'VRG', 245, 0)	-- Virtual Games
 			) d(ProductID, ProductCode, SportType, BetType)  
 	WHERE ',' + @ProductCodes + ',' LIKE '%,' + CAST(ProductCode as varchar(10)) + ',%'  
 GO

@@ -21,6 +21,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_TurnOver]
 	@ShowPP			BIT = 0, -- PP
 	@ShowCC			BIT = 0, -- Card club
 	@ShowSG			BIT = 0, -- SpadeGaming 
+	@ShowVRG		BIT = 0, -- Virtual Games
 	@AgentList		VARCHAR(MAX),
 	@BaseCurrency	VARCHAR(3)
 AS 
@@ -75,6 +76,7 @@ Revisions:
    - 20190708@Amanda: Add new product Card Club [RedmineID: #115449]
    - 20191028@Amanda: Add new column - Promotion [RedmineID: #120333]
    - 20191212@Vickie: Integrate SpadeGaming [RedmineID: #124103]
+   - 20200108@Vickie: Add new product Virtual Games [RedmineID: #124911]
 
 Param's Explanation:
     
@@ -136,6 +138,7 @@ BEGIN
 	IF @ShowPP	= 1 INSERT INTO @sporttype(sporttype) VALUES(248)
 	IF @ShowCC	= 1 INSERT INTO @sporttype(sporttype) VALUES(165)
 	IF @ShowSG	= 1 INSERT INTO @sporttype(sporttype) VALUES(247)
+	IF @ShowVRG	= 1 INSERT INTO @sporttype(sporttype) VALUES(245)
 
 	IF @username <> ''
 	BEGIN

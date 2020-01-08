@@ -24,6 +24,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerBalance]
 	, @ShowPP		BIT = 0 -- PP
 	, @ShowCC		BIT = 0 -- Card club
 	, @ShowSG		BIT = 0 -- Spadegaming 
+	, @ShowVRG		BIT = 0 -- Virtual Games
 	,@AgentList		VARCHAR(MAX)
 AS
 /*  
@@ -69,6 +70,7 @@ Revisions:
 	- 20190708@Amanda: Add new product Card Club [RedmineID: #115449]
 	- 20191025@Amanda: Add new column - Promotion [RedmineID: #120333]
 	- 20191212@Vickie: Integrate SpadeGaming [RedmineID: #124103]
+	- 20200108@Vickie: Add new product Virtual Games [RedmineID: #124911]
 
 Param's Explanation:  
 	+ @excludeTest: remove currency UUS  
@@ -184,6 +186,11 @@ BEGIN
 	IF @ShowSG = 1
 	BEGIN
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'SG', 'SG')
+	END
+
+	IF @ShowVRG = 1
+	BEGIN
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'VRG', 'VRG')
 	END
 
 	IF LEN(ISNULL(@ProductList, '')) > 0 
