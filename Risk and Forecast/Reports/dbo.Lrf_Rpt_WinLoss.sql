@@ -21,6 +21,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
 	@ShowPP			BIT = 0, -- PP
 	@ShowCC			BIT = 0, -- Card club
 	@ShowSG			BIT = 0, -- SpadeGaming
+	@ShowVRG		BIT = 0, -- Virtual Games
     @MoveBetsDay	DATETIME,
     @PageSize		INT = 1000,
     @PageIndex		INT = 1,
@@ -112,6 +113,7 @@ AS
 		- 20191017@Amanda: Integrate NPH Promotion [RedmineID: #120333]
 		- 20191121@Amanda: Integrate PP Tournament Prize and exclude PP Promotion, Tournament Prize from result [RedmineID: #123804]
 		- 20191230@Amanda: Integrate SpadeGaming [RedmineID: #124103]
+		- 20200108@Vickie: Add new product Virtual Games [RedmineID: #124911]
 
 	Param's Explanation:
 		@OrderItem:
@@ -304,6 +306,8 @@ BEGIN
 	SELECT 'CC' AS Code WHERE @ShowCC = 1
 	UNION ALL
 	SELECT 'SG' AS Code WHERE @ShowSG = 1
+	UNION ALL
+	SELECT 'VRG' AS Code WHERE @ShowVRG = 1
 
 	-- BT & CO belong to SB
 	SELECT @ProductList = COALESCE(@ProductList + ',' + Code, Code)
