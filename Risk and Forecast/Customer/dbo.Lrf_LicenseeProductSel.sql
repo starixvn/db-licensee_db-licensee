@@ -25,6 +25,7 @@ AS
 		- 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
 		- 20190724@Amanda: Bet Setting - Hide CC product [RedmineID: #115449]
 		- 20191212@Vickie: Integrate SpadeGaming [RedmineID: #124103]
+		- 20200108@Vickie: Bet Setting - Hide VRG product [RedmineID: #124911]
 	Param's Explanation:
 */
 
