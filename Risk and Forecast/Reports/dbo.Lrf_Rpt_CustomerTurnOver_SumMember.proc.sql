@@ -1,7 +1,5 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="1"></info>*/
-USE [bodb02]
-GO
- 
+
 ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver_SumMember]
 (
 	@pStartDate		DATE
@@ -11,30 +9,31 @@ ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver_SumMember]
 	,@ReportBy  	TINYINT
 ) 
 AS
-/*	
-Created: 20150603@Bobby
-Task: Customer Performance Report
-DB: DBEXT/BODB02
-Revision:
-	- 20151127@Bobby: #48081 - Apply PH-AIO new bettypes
-	- 20151223@Jim: Add "Effective Betting Value" in Customer Turnover report [Redmine: #45736]
-	- 20160720@Jim : Implement 67 new bet types (PH All in one - Phase 2) [Redmine : #53520]
-	- 20170615@Harper: Customer Turnover report values are inconsistent [RedmineID: #78391]
-	- 20171006@Percy: Hotfix - Add missing mutilple odds bettypes [RedmineID: #84457]
-		1. Basketball (603-607, 609-613, 615-617)
-		2. Virtual Sports 2 (2701-2707)
-	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
-	- 20180810@Paul: Enhance performance [Redmine: #98260]
-	- 20181219@Joseph: Add new bet types for E-Sports 2.0 for report Customer Turnover [RedmineID: #106666]
-	- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
-	- 20190407@Amanda: Add new bet types (PH AIO - Phase 4a) [RedmineID: #115448]
-	- 20191608@Amanda: Add new bet types (PH AIO - Phase 4b) [RedmineID: #118300]
-	- 20191129@Walter: Add new bet types (BMAIO - Phase 2) [RedmineID: #120336]
-	- 20190102@Vickie: Add new bet types (PH AIO - Phase 5) [RedmineID: #126005]
 
-Parameter's Explanation:
-			
+/*
+	Created: 20150603@Bobby
+	Task: Customer Performance Report
+	DB: DBEXT.bodb02
+	Revision:
+		- 20151127@Bobby: #48081 - Apply PH-AIO new bettypes
+		- 20151223@Jim: Add "Effective Betting Value" in Customer Turnover report [Redmine: #45736]
+		- 20160720@Jim : Implement 67 new bet types (PH All in one - Phase 2) [Redmine : #53520]
+		- 20170615@Harper: Customer Turnover report values are inconsistent [RedmineID: #78391]
+		- 20171006@Percy: Hotfix - Add missing mutilple odds bettypes [RedmineID: #84457]
+			1. Basketball (603-607, 609-613, 615-617)
+			2. Virtual Sports 2 (2701-2707)
+		- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
+		- 20180810@Paul: Enhance performance [Redmine: #98260]
+		- 20181219@Joseph: Add new bet types for E-Sports 2.0 for report Customer Turnover [RedmineID: #106666]
+		- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
+		- 20190407@Amanda: Add new bet types (PH AIO - Phase 4a) [RedmineID: #115448]
+		- 20191608@Amanda: Add new bet types (PH AIO - Phase 4b) [RedmineID: #118300]
+		- 20191129@Walter: Add new bet types (BMAIO - Phase 2) [RedmineID: #120336]
+		- 20190102@Vickie: Add new bet types (PH AIO - Phase 5) [RedmineID: #126005]
+
+	Parameter's Explanation:
 */
+
 BEGIN
 	SET NOCOUNT ON;
 
@@ -94,7 +93,7 @@ BEGIN
 			,b.bettype
 	END
 
-	IF(@pStartDate <= @MoveBetsDay)
+	IF @pStartDate <= @MoveBetsDay
 	BEGIN
 		IF ( @odds = 0 )
 		BEGIN
@@ -151,17 +150,23 @@ BEGIN
 				BetEffective,
 				playercomm
 			)
-			SELECT CASE WHEN @ReportBy =  2 THEN DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) 
-						ELSE winlostdate
-					END AS winlostdate, b.custid, rec.currency,
-					CASE WHEN b.bettype IN (9, 10, 29) THEN 1
-						ELSE b.sporttype 
-					END AS sporttype, bettype, StatusID
-					, SUM(b.betcount)	AS betcount
-					, SUM(b.stake) 		AS stake
-					, SUM(b.winlost)  	AS winlost
-					, SUM(b.BetEffective) AS BetEffective
-					, SUM(b.playercomm) AS playercomm
+			SELECT
+				CASE
+					WHEN @ReportBy =  2 THEN DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) 
+					ELSE winlostdate
+				END AS winlostdate,
+				b.custid,
+				rec.currency,
+				CASE WHEN b.bettype IN (9, 10, 29) THEN 1
+					ELSE b.sporttype 
+				END AS sporttype,
+				bettype,
+				StatusID,
+				SUM(b.betcount)	AS betcount,
+				SUM(b.stake) 		AS stake,
+				SUM(b.winlost)  	AS winlost,
+				SUM(b.BetEffective) AS BetEffective,
+				SUM(b.playercomm) AS playercomm
 			FROM #recommend rec
 				JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)
 						ON b.Recommend	= rec.CustID
@@ -197,12 +202,18 @@ BEGIN
 									 END 
 					  ELSE b.Odds
 				 END >= @odds
-			GROUP BY b.custid, CASE WHEN @ReportBy =  2 THEN DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) 
-						ELSE winlostdate
-					END, rec.currency, 
-					CASE WHEN b.bettype IN (9, 10, 29) THEN 1
-						ELSE b.sporttype 
-					END, bettype, StatusID
+			GROUP BY
+				b.custid,
+				CASE
+					WHEN @ReportBy =  2 THEN DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) 
+					ELSE winlostdate
+				END,
+				rec.currency, 
+				CASE WHEN b.bettype IN (9, 10, 29) THEN 1
+					ELSE b.sporttype 
+				END,
+				bettype,
+				StatusID
 			OPTION(RECOMPILE)
 		END
 
@@ -220,16 +231,12 @@ BEGIN
 			, SUM(b.winlost) as winlost
 			, SUM(b.BetEffective) As BetEffective
 			, SUM(b.playercomm) as playercomm
-				
 		FROM #tempCustData b
 			INNER JOIN #tempCustPaging c 
 				ON  b.custid	= c.custid AND c.winlostdate 	= b.winlostdate
-			INNER JOIN #bettype bt
-				ON b.bettype 	=  bt.typeid
-			INNER JOIN #Status st
-				ON b.StatusID 	=  st.StatusID
-			INNER JOIN #ProductID p 
-				ON b.sporttype = p.sportID				
+			INNER JOIN #bettype bt ON b.bettype 	=  bt.typeid
+			INNER JOIN #Status st ON b.StatusID 	=  st.StatusID
+			INNER JOIN #ProductID p ON b.sporttype = p.sportID
 		GROUP BY
 			c.rowno
 			, b.winlostdate 
@@ -237,7 +244,7 @@ BEGIN
 			, c.username
 			, b.currency
 			, b.sporttype 
-			, b.bettype		
+			, b.bettype
 	END
 
 	RETURN;

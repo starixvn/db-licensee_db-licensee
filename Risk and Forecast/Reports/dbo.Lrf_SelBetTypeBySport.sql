@@ -1,6 +1,4 @@
 /*<info serverAlias="DBLIC-bodb_Licensee" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
-USE [bodb_licensee]
-GO
 
 ALTER PROCEDURE [dbo].[Lrf_SelBetTypeBySport]
 	@LicenseeID int

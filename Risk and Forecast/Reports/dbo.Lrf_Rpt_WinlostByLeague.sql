@@ -1,8 +1,5 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
-USE [bodb02]
-GO
- 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlostByLeague]
 	@FromDate SMALLDATETIME
 	,@ToDate SMALLDATETIME
@@ -19,21 +16,12 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlostByLeague]
 	,@AgentList		VARCHAR(MAX)
 	,@BaseCurrency	VARCHAR(3) = ''
 AS
-/*
-exec Lrf_Rpt_WinlostByLeague 
-@licenseeid=8,@userid=10
-,@currencyid=0,@fromdate='2016-06-01 00:00:00'
-,@todate='2016-06-30 00:00:00',@odds=0,@leagueid=10,@matchid=0
-,@movebetsday='2016-07-11 00:00:00',@balanceupday='2016-07-09 00:00:00',@showwin=1
-,@showloss=1,@showdraw=1,@showsb=1,@showba=1
 
-*/
 /*
 	Created	: Florent
 	Task: Winloss by League
 	Date: 2013-12-30
-	DB: DBEXT/BODB02
-	Original: 
+	DB: DBEXT.bodb02
 	Revision:
 		- 20140207@Florent: Add filter ShowSB , ShowBA
 		- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
@@ -69,8 +57,8 @@ exec Lrf_Rpt_WinlostByLeague
 		- @ShowDraw :Filter show only Draw bet		
 		- @MoveBetsDay: The day we move tickets to bettrans14
 		- @BalanceUpDay: The day we move tickets to bettrans_bk		
-			
 */
+
 BEGIN
 	SET NOCOUNT ON
 
@@ -202,7 +190,7 @@ BEGIN
 										THEN --malay and indo and new oddstype to decimal
 											CASE 
 												WHEN b.odds < 0
-													THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
+													THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
 												WHEN b.odds >= 0
 													THEN (1 + b.odds)
 												END
@@ -210,7 +198,7 @@ BEGIN
 										THEN --american odds to decimal
 											CASE 
 												WHEN (b.odds * 100) < 0
-													THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
+													THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
 												WHEN (b.odds * 100) % 2 = 0
 													THEN 2
 												WHEN (b.odds * 100) > 0
@@ -232,8 +220,8 @@ BEGIN
 					,'' AS ShowTime
 					,count(1) betcount
 				FROM bettrans AS b WITH (NOLOCK)
-				INNER JOIN match m WITH (NOLOCK) ON m.matchid = b.matchid
-				INNER JOIN @TempAg ta ON b.recommend = ta.CustId AND b.Currency = ta.Currency
+					INNER JOIN match m WITH (NOLOCK) ON m.matchid = b.matchid
+					INNER JOIN @TempAg ta ON b.recommend = ta.CustId AND b.Currency = ta.Currency
 				WHERE b.winlostdate BETWEEN @TempFromDate AND @todate
 					AND (
 						b.bettype <= 30
@@ -290,7 +278,7 @@ BEGIN
 										THEN --malay and indo and new oddstype to decimal
 											CASE 
 												WHEN b.odds < 0
-													THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
+													THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
 												WHEN b.odds >= 0
 													THEN (1 + b.odds)
 												END
@@ -298,7 +286,7 @@ BEGIN
 										THEN --american odds to decimal
 											CASE 
 												WHEN (b.odds * 100) < 0
-													THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
+													THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
 												WHEN (b.odds * 100) % 2 = 0
 													THEN 2
 												WHEN (b.odds * 100) > 0
@@ -344,7 +332,7 @@ BEGIN
 										THEN --malay and indo and new oddstype to decimal
 											CASE 
 												WHEN b.odds < 0
-													THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
+													THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
 												WHEN b.odds >= 0
 													THEN (1 + b.odds)
 												END
@@ -352,7 +340,7 @@ BEGIN
 										THEN --american odds to decimal
 											CASE 
 												WHEN (b.odds * 100) < 0
-													THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
+													THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
 												WHEN (b.odds * 100) % 2 = 0
 													THEN 2
 												WHEN (b.odds * 100) > 0
@@ -374,8 +362,8 @@ BEGIN
 					,m.showtime AS ShowTime
 					,count(1) betcount
 				FROM bettrans AS b WITH (NOLOCK)
-				INNER JOIN match m WITH (NOLOCK) ON m.matchid = b.matchid
-				INNER JOIN @TempAg ta ON b.recommend = ta.CustId AND b.Currency = ta.Currency
+					INNER JOIN match m WITH (NOLOCK) ON m.matchid = b.matchid
+					INNER JOIN @TempAg ta ON b.recommend = ta.CustId AND b.Currency = ta.Currency
 				WHERE b.winlostdate BETWEEN @TempFromDate AND @todate
 					AND (
 						b.bettype <= 30
@@ -428,7 +416,7 @@ BEGIN
 										THEN --malay and indo and new oddstype to decimal
 											CASE 
 												WHEN b.odds < 0
-													THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
+													THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
 												WHEN b.odds >= 0
 													THEN (1 + b.odds)
 												END
@@ -436,7 +424,7 @@ BEGIN
 										THEN --american odds to decimal
 											CASE 
 												WHEN (b.odds * 100) < 0
-													THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
+													THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
 												WHEN (b.odds * 100) % 2 = 0
 													THEN 2
 												WHEN (b.odds * 100) > 0
@@ -535,7 +523,7 @@ BEGIN
 										THEN --malay and indo and new oddstype to decimal
 											CASE 
 												WHEN b.odds < 0
-													THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
+													THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
 												WHEN b.odds >= 0
 													THEN (1 + b.odds)
 												END
@@ -543,7 +531,7 @@ BEGIN
 										THEN --american odds to decimal
 											CASE 
 												WHEN (b.odds * 100) < 0
-													THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
+													THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
 												WHEN (b.odds * 100) % 2 = 0
 													THEN 2
 												WHEN (b.odds * 100) > 0
@@ -565,8 +553,8 @@ BEGIN
 					,m.showtime AS showtime
 					,sum(b.betcount) betcount
 				FROM bodb_LicenseeReport.dbo.rptWinlostbyLeague b WITH (NOLOCK, INDEX = IX_recommend)
-				INNER JOIN #match AS m WITH (NOLOCK) ON m.matchid = b.matchid
-				INNER JOIN @TempAg ag ON b.recommend = ag.custid AND b.Currency = ag.Currency
+					INNER JOIN #match AS m WITH (NOLOCK) ON m.matchid = b.matchid
+					INNER JOIN @TempAg ag ON b.recommend = ag.custid AND b.Currency = ag.Currency
 				WHERE winlostdate BETWEEN @fromdate AND @TempToDate
 					AND (
 						b.bettype <= 30
@@ -620,7 +608,7 @@ BEGIN
 										THEN --malay and indo and new oddstype to decimal
 											CASE 
 												WHEN b.odds < 0
-													THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
+													THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
 												WHEN b.odds >= 0
 													THEN (1 + b.odds)
 												END
@@ -628,7 +616,7 @@ BEGIN
 										THEN --american odds to decimal
 											CASE 
 												WHEN (b.odds * 100) < 0
-													THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
+													THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
 												WHEN (b.odds * 100) % 2 = 0
 													THEN 2
 												WHEN (b.odds * 100) > 0
@@ -673,7 +661,7 @@ BEGIN
 										THEN --malay and indo and new oddstype to decimal
 											CASE 
 												WHEN b.odds < 0
-													THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
+													THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
 												WHEN b.odds >= 0
 													THEN (1 + b.odds)
 												END
@@ -681,7 +669,7 @@ BEGIN
 										THEN --american odds to decimal
 											CASE 
 												WHEN (b.odds * 100) < 0
-													THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
+													THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
 												WHEN (b.odds * 100) % 2 = 0
 													THEN 2
 												WHEN (b.odds * 100) > 0
@@ -703,8 +691,8 @@ BEGIN
 					,m.showtime AS showtime
 					,sum(b.betcount) betcount
 				FROM bodb_LicenseeReport.dbo.rptWinlostbyLeague b WITH (NOLOCK, INDEX = IX_recommend)
-				INNER JOIN #match AS m WITH (NOLOCK) ON m.matchid = b.matchid
-				INNER JOIN @TempAg ag ON b.recommend = ag.custid AND b.Currency = ag.Currency
+					INNER JOIN #match AS m WITH (NOLOCK) ON m.matchid = b.matchid
+					INNER JOIN @TempAg ag ON b.recommend = ag.custid AND b.Currency = ag.Currency
 				WHERE winlostdate BETWEEN @fromdate AND @TempToDate
 					AND (
 						b.bettype <= 30
@@ -758,7 +746,7 @@ BEGIN
 										THEN --malay and indo and new oddstype to decimal
 											CASE 
 												WHEN b.odds < 0
-													THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
+													THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
 												WHEN b.odds >= 0
 													THEN (1 + b.odds)
 												END
@@ -766,7 +754,7 @@ BEGIN
 										THEN --american odds to decimal
 											CASE 
 												WHEN (b.odds * 100) < 0
-													THEN (1 - cast(1 AS FLOAT) / cast(b.odds AS FLOAT))
+													THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
 												WHEN (b.odds * 100) % 2 = 0
 													THEN 2
 												WHEN (b.odds * 100) > 0
@@ -774,7 +762,7 @@ BEGIN
 												END
 									END
 						ELSE b.Odds
-						END
+					END
 			END
 		END
 	END
@@ -807,15 +795,10 @@ BEGIN
 		,--bettype,  
 		leagueid
 		,CAST(SUM(turnover * e.Rate) AS MONEY) AS turnover
-
 		,CAST(SUM(MemberWinLost * e.Rate) AS MONEY) AS MemberWinLost
-
 		,CAST(SUM(LicenseeWL * e.Rate) AS MONEY) AS LicenseeWL
-
 		,CAST(SUM(CommBA * e.Rate) AS MONEY) AS CommBA
-
 		,CAST(SUM(PlayerComm * e.Rate) AS MONEY) AS PlayerComm
-
 		,CAST(SUM((AmtDuetoBA) * e.Rate) AS MONEY) AS AmtDuetoBA
 		,CASE 
 			WHEN b.sporttype IN (181, 182, 184)
@@ -829,8 +812,8 @@ BEGIN
 	--,odds2
 	FROM @AgMatchWLDetails b
 	--INNER JOIN (SELECT *  FROM Lrf_f_GetExchangeDaily(@_FromDate,@_ToDate))e   
-	INNER JOIN @ExchangeDaily e ON b.winlostdate BETWEEN e.FromDate AND e.ToDate
-		AND b.currency = e.ExchangeId
+		INNER JOIN @ExchangeDaily e ON b.winlostdate BETWEEN e.FromDate AND e.ToDate
+			AND b.currency = e.ExchangeId
 	WHERE b.odds2 >= @Odds
 	GROUP BY matchid
 		,CASE 
@@ -847,9 +830,9 @@ BEGIN
 			WHEN ISNULL(b.KickoffTime, 0) = 0
 				THEN 0
 			ELSE b.KickoffTime
-			END		
+			END
 		--,ProductName
-		,--bettype,  
+		,--bettype,
 		CASE 
 			WHEN b.sporttype IN (181, 182, 184)
 				THEN ''
@@ -857,7 +840,7 @@ BEGIN
 			END
 		,leagueid
 		,isNeutral
-		,b.sporttype		
+		,b.sporttype
 	
 	DROP TABLE #match
 END
