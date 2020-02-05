@@ -22,70 +22,72 @@ ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
 	,@AgentList		VARCHAR(MAX)
 ) 
 AS
-/*	
-Created	: Henry
-Task: Customer Performance Report
-Date: 2011-12-28
-DB: DBEXT/BODB02
-Original: Lrf_Rpt_CustomerPerformance
-Revision:
-	- 20120214@Henry: Seperate 3 options: Win/Loss/Draw (and all)
-	- 20120801@Jim: add PlayerComm value 
-	- 20130124@Daniel: Change link server alias
-	- 20130618@Jim:  Restrict permission of Licensee Users by currency
-	- 20131021@Jim: Add more products to Customer Turnover Report
-	- 20131130@Florent: turning SP
-	- 20131205@Florent: add more product and search LIKE customer
-	- 20131225@Florent: Remove using bettrans14, use only bettrans and rptCustomerturnover
-	- 20140104@Don: Improve performance -> Replacing table @Status with #Status
-	- 20140120@Florent: using index Non clusered IX_recommend for table rptCustomerturnover
-	- 20140212@Florent : Sorting DESC
-	- 20140716@Jim: fix bug Total row in excel file is incorrect (hotfix #19101)
-	- 20141017@Jim : Apply for the change in Sporting Solution structure (#24478)
-	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
-	- 20141203@Jim : fix issue cannot query data when pass a User belong to CNY Currency (hot fix #27017)
-	- 20141204@Jim : hot fix #27063
-	- 20150415@Jim: support betradar phase 2
-	- 20150528@Jim: add more bettype Betradar and Sporting solution (for support multiple oddstype)
-	- 20150603@Bobby: Revise code & improve performance
-	- 20150618@Bobby: Apply pre-caching sumtotal from rptcustomerturnOver_bobby table
-	- 20150821@Winnie: KeenOcean revert currency
-	- 20151023@Victor: Support New Simplified Chinese
-	- 20151127@Bobby: #48081 - Apply PH-AIO new bettypes
-	- 20151203@Bobby: Database - Change datatype [Redmine: #48660]
-	- 20151209@Bobby: Do rollback step for Bettype & ProductId data type
-	- 20151223@Jim: Add "Effective Betting Value" in Customer Turnover report [Redmine: #45736]
-	- 20160413@Victor: support MKK currency code
-	- 20160720@Jim : Implement 67 new bet types (PH All in one - Phase 2) [Redmine : #53520]
-	- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID [Redmine: #71679]
-	- 20170707@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
-	- 20170919@Percy: Change way get SportBettypeMatrix [RedmineID: #83442]
-	- 20171006@Percy: Hotfix - Add missing mutilple odds bettypes [RedmineID: #84457]
-		1. Basketball (603-607, 609-613, 615-617)
-		2. Virtual Sports 2 (2701-2707)
-	- 20180129@Percy: Hotfix page size, page index [RedmineID: #90104]
-	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
-	- 20180424@Joseph: Fix bug group VS2: BasketBall - Virual Soccer [RedmineID: #93844]
-	- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
-	- 20180810@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
-	- 20180810@Paul: Enhance performance [Redmine: #98260]
-	- 20181101@Amanda: Remove parameter @LicenseeId & @UserId [Redmine: #103935]
-	- 20181109@Paul: Minor enhancement [Redmine: #103886]
-	- 2018118@Joseph: Add Esport2 bettypes [Redmine: #100721]
-	- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
-	- 20190531@Amanda: Get correct translation [RedmineID: #114464]
-	- 20190407@Amanda: Add new bet types (PH AIO - Phase 4a) [RedmineID: #115448]
-	- 20191608@Amanda: Add new bet types (PH AIO - Phase 4b) [RedmineID: #118300]
-	- 20191129@Walter: Add new bet types (BMAIO - Phase 2) [RedmineID: #120336]
 
-Parameter's Explanation:
-	- @ReportBy:  1: daily, 2: monthly
-	- @FilterBy:  1: Win, 2: Loss, 3: Draw
-	- @SportID   : Sport type ID  
-	- @bettype   : Bet type ID  
-	- @MoveBetsDay: The day we move tickets to bettrans14
-			
+/*
+	Created	: Henry
+	Task: Customer Performance Report
+	Date: 2011-12-28
+	DB: DBEXT/BODB02
+	Original: Lrf_Rpt_CustomerPerformance
+	Revision:
+		- 20120214@Henry: Seperate 3 options: Win/Loss/Draw (and all)
+		- 20120801@Jim: add PlayerComm value 
+		- 20130124@Daniel: Change link server alias
+		- 20130618@Jim:  Restrict permission of Licensee Users by currency
+		- 20131021@Jim: Add more products to Customer Turnover Report
+		- 20131130@Florent: turning SP
+		- 20131205@Florent: add more product and search LIKE customer
+		- 20131225@Florent: Remove using bettrans14, use only bettrans and rptCustomerturnover
+		- 20140104@Don: Improve performance -> Replacing table @Status with #Status
+		- 20140120@Florent: using index Non clusered IX_recommend for table rptCustomerturnover
+		- 20140212@Florent : Sorting DESC
+		- 20140716@Jim: fix bug Total row in excel file is incorrect (hotfix #19101)
+		- 20141017@Jim : Apply for the change in Sporting Solution structure (#24478)
+		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+		- 20141203@Jim : fix issue cannot query data when pass a User belong to CNY Currency (hot fix #27017)
+		- 20141204@Jim : hot fix #27063
+		- 20150415@Jim: support betradar phase 2
+		- 20150528@Jim: add more bettype Betradar and Sporting solution (for support multiple oddstype)
+		- 20150603@Bobby: Revise code & improve performance
+		- 20150618@Bobby: Apply pre-caching sumtotal from rptcustomerturnOver_bobby table
+		- 20150821@Winnie: KeenOcean revert currency
+		- 20151023@Victor: Support New Simplified Chinese
+		- 20151127@Bobby: #48081 - Apply PH-AIO new bettypes
+		- 20151203@Bobby: Database - Change datatype [Redmine: #48660]
+		- 20151209@Bobby: Do rollback step for Bettype & ProductId data type
+		- 20151223@Jim: Add "Effective Betting Value" in Customer Turnover report [Redmine: #45736]
+		- 20160413@Victor: support MKK currency code
+		- 20160720@Jim : Implement 67 new bet types (PH All in one - Phase 2) [Redmine : #53520]
+		- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID [Redmine: #71679]
+		- 20170707@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
+		- 20170919@Percy: Change way get SportBettypeMatrix [RedmineID: #83442]
+		- 20171006@Percy: Hotfix - Add missing mutilple odds bettypes [RedmineID: #84457]
+			1. Basketball (603-607, 609-613, 615-617)
+			2. Virtual Sports 2 (2701-2707)
+		- 20180129@Percy: Hotfix page size, page index [RedmineID: #90104]
+		- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
+		- 20180424@Joseph: Fix bug group VS2: BasketBall - Virual Soccer [RedmineID: #93844]
+		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
+		- 20180810@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
+		- 20180810@Paul: Enhance performance [Redmine: #98260]
+		- 20181101@Amanda: Remove parameter @LicenseeId & @UserId [Redmine: #103935]
+		- 20181109@Paul: Minor enhancement [Redmine: #103886]
+		- 2018118@Joseph: Add Esport2 bettypes [Redmine: #100721]
+		- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
+		- 20190531@Amanda: Get correct translation [RedmineID: #114464]
+		- 20190407@Amanda: Add new bet types (PH AIO - Phase 4a) [RedmineID: #115448]
+		- 20191608@Amanda: Add new bet types (PH AIO - Phase 4b) [RedmineID: #118300]
+		- 20191129@Walter: Add new bet types (BMAIO - Phase 2) [RedmineID: #120336]
+		- 20190102@Vickie: Add new bet types (PH AIO - Phase 5) [RedmineID: #126005]
+
+	Parameter's Explanation:
+		- @ReportBy:  1: daily, 2: monthly
+		- @FilterBy:  1: Win, 2: Loss, 3: Draw
+		- @SportID   : Sport type ID  
+		- @bettype   : Bet type ID  
+		- @MoveBetsDay: The day we move tickets to bettrans14
 */
+
 BEGIN
 
 	SET NOCOUNT ON
@@ -368,6 +370,7 @@ BEGIN
 						OR bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 						OR bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 						OR (bettype NOT IN (703, 711) AND bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
+						OR bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
 			
 		-- CREATE INDEXERS
 		CREATE CLUSTERED 	INDEX [CIX_tempBettrans] 			ON #tempBettrans (custid, winlostdate)

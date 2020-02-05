@@ -1,48 +1,47 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="1"></info>*/
-USE [bodb02]
-GO
- 
+
 ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver_MonthlyPagination]
 (
-	@searchCust 	BIT = 0
-	,@FromDate 		SMALLDATETIME
-	,@tempFromDate 	SMALLDATETIME
-	,@ToDate 		SMALLDATETIME
-	,@tempToDate 	SMALLDATETIME
-	,@MoveBetsDay 	SMALLDATETIME
-	,@Odds 			FLOAT
-	,@ReportBy  	TINYINT   =  1 
-	,@PageSize 		INT
-	,@PageIndex 	INT
-	,@IsExportExcel BIT
-	,@totalBettrans	INT = 0 OUTPUT
-	,@totalSumRpt	INT = 0 OUTPUT
-) 
+	@searchCust		BIT				= 0,
+	@FromDate		SMALLDATETIME,
+	@tempFromDate 	SMALLDATETIME,
+	@ToDate			SMALLDATETIME,
+	@tempToDate 	SMALLDATETIME,
+	@MoveBetsDay 	SMALLDATETIME,
+	@Odds			FLOAT,
+	@ReportBy		TINYINT			= 1,
+	@PageSize 		INT,
+	@PageIndex 		INT,
+	@IsExportExcel	BIT,
+	@totalBettrans	INT = 0 OUTPUT,
+	@totalSumRpt	INT = 0 OUTPUT
+)
 AS
-/*	
-Created: 20150603@Bobby
-Task: Customer Performance Report
-DB: DBEXT/BODB02
-Revision:
-	- 20151127@Bobby: #48081 - Apply PH-AIO new bettypes
-	- 20160720@Jim : Implement 67 new bet types (PH All in one - Phase 2) [Redmine : #53520]
-	- 20171006@Percy: Hotfix - Add missing mutilple odds bettypes [RedmineID: #84457]
-		1. Basketball (603-607, 609-613, 615-617)
-		2. Virtual Sports 2 (2701-2707)
-	- 20180129@Percy: Hotfix page size, page index [RedmineID: #90104]
-	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
-	- 20180810@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
-	- 20180810@Paul: Enhance performance [Redmine: #98260]
-	- 20181008@Paul: Hot Fix. Duplicate data [Redmine: #102850]
-	- 20181109@Paul: Fix wrong count [Redmine: #103886]
-	- 20181219@Joseph: Add new bet types for E-Sports 2.0 for report Customer Turnover [RedmineID: #106666]
-	- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
-	- 20190407@Amanda: Add new bet types (PH AIO - Phase 4a) [RedmineID: #115448]
-	- 20191608@Amanda: Add new bet types (PH AIO - Phase 4b) [RedmineID: #118300]
-	- 20191129@Walter: Add new bet types (BMAIO - Phase 2) [RedmineID: #120336]
 
-Parameter's Explanation:
-			
+/*
+	Created: 20150603@Bobby
+	Task: Customer Performance Report
+	DB: DBEXT.bodb02
+	Revision:
+		- 20151127@Bobby: #48081 - Apply PH-AIO new bettypes
+		- 20160720@Jim : Implement 67 new bet types (PH All in one - Phase 2) [Redmine : #53520]
+		- 20171006@Percy: Hotfix - Add missing mutilple odds bettypes [RedmineID: #84457]
+			1. Basketball (603-607, 609-613, 615-617)
+			2. Virtual Sports 2 (2701-2707)
+		- 20180129@Percy: Hotfix page size, page index [RedmineID: #90104]
+		- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
+		- 20180810@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
+		- 20180810@Paul: Enhance performance [Redmine: #98260]
+		- 20181008@Paul: Hot Fix. Duplicate data [Redmine: #102850]
+		- 20181109@Paul: Fix wrong count [Redmine: #103886]
+		- 20181219@Joseph: Add new bet types for E-Sports 2.0 for report Customer Turnover [RedmineID: #106666]
+		- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
+		- 20190407@Amanda: Add new bet types (PH AIO - Phase 4a) [RedmineID: #115448]
+		- 20191608@Amanda: Add new bet types (PH AIO - Phase 4b) [RedmineID: #118300]
+		- 20191129@Walter: Add new bet types (BMAIO - Phase 2) [RedmineID: #120336]
+		- 20190102@Vickie: Add new bet types (PH AIO - Phase 5) [RedmineID: #126005]
+
+	Parameter's Explanation:
 */
 BEGIN
 	SET NOCOUNT ON;
@@ -58,16 +57,16 @@ BEGIN
 	)
 	
 	SELECT
-		@offsetRow = (((@PageIndex - 1) * @PageSize) + 1)
-	   ,@maxRow = (@PageSize * @PageIndex)
-	    
+		@offsetRow = (((@PageIndex - 1) * @PageSize) + 1),
+		@maxRow = (@PageSize * @PageIndex)
+
 	CREATE TABLE #tempPaging 
 	(
 		winlostdate	SMALLDATETIME
 		,custid			INT
 		,whticket		TINYINT
 	)
-	
+
 	SET @topRow = (@maxRow - @offsetRow) + 1
 
 	-- VIEW specific members
@@ -77,12 +76,10 @@ BEGIN
 		BEGIN
 			WITH CTE_Paging AS
 			(
-				SELECT 
-					b.winlostdate
-					, b.custid
-					
-				FROM #tempBettrans b	
-					
+				SELECT
+					b.winlostdate,
+					b.custid
+				FROM #tempBettrans b
 				GROUP BY 
 					b.winlostdate
 					, b.custid
@@ -92,84 +89,97 @@ BEGIN
 				,1 AS whticket
 			FROM CTE_Paging p
 
-			SELECT @totalBettrans = @@ROWCOUNT			
+			SELECT @totalBettrans = @@ROWCOUNT
 		END
 		
 		IF @FromDate <= @MoveBetsDay
 		BEGIN
-			IF ( @odds = 0 )
-			BEGIN				
-				INSERT INTO #tempPagingData(winlostdate, sporttype, bettype, custid, StatusID)
-				SELECT	DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) AS winlostdate, 
-						CASE WHEN b.bettype IN (9, 10, 29) THEN 1
-							ELSE b.sporttype 
-						END AS sporttype, bettype, b.custid, StatusID
+			IF @odds = 0
+			BEGIN
+				INSERT INTO #tempPagingData (
+					winlostdate,
+					sporttype,
+					bettype,
+					custid,
+					StatusID)
+				SELECT
+					DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) AS winlostdate, 
+					CASE WHEN b.bettype IN (9, 10, 29) THEN 1
+						ELSE b.sporttype 
+					END AS sporttype,
+					b.bettype,
+					b.custid,
+					b.statusid
 				FROM #recommend rec
-					JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)
-						ON b.Recommend	= rec.CustID
+					JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK) ON b.Recommend = rec.CustID
 				WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
 				OPTION(RECOMPILE)
-			END	
-			
+			END
+
 			-- Has Odds Value
-			IF (@odds > 0)
+			IF @odds > 0
 			BEGIN
-				INSERT INTO #tempPagingData(winlostdate, sporttype, bettype, custid, StatusID)
-				SELECT	DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) as winlostdate, 
-						CASE WHEN b.bettype IN (9, 10, 29) THEN 1
-							ELSE b.sporttype 
-						END AS sporttype, bettype, b.custid, StatusID
+				INSERT INTO #tempPagingData(
+					winlostdate,
+					sporttype,
+					bettype,
+					custid,
+					StatusID)
+				SELECT
+					DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) AS winlostdate, 
+					CASE WHEN b.bettype IN (9, 10, 29) THEN 1
+						ELSE b.sporttype 
+					END AS sporttype,
+					b.bettype,
+					b.custid,
+					b.statusid
 				FROM #recommend rec
-					JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)
-						ON b.Recommend	= rec.CustID
+					JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK) ON b.Recommend = rec.CustID
 				WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
-						AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-										OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
-										OR b.bettype BETWEEN 81 AND 88
-										OR b.bettype BETWEEN 90 AND 120
-										OR b.bettype BETWEEN 8101 AND 8120 -- Number Game: Happy 5
-										OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
-										OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
-										OR b.bettype = 428 -- 2H Odd/Even
-										OR (b.bettype BETWEEN 603 AND 607 OR b.bettype BETWEEN 609 AND 613 OR b.bettype BETWEEN 615 AND 617) -- Basketball bettypes
-										OR b.bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
-										OR b.bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
-										OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
-										OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
-										OR (bettype NOT IN (703, 711) AND bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
-									)
-									THEN 
-											CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
-													WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
-													WHEN b.OddsType IN (3,4,7) THEN --malay and indo and new oddstype to decimal
-																		CASE 
-																			WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
-																			WHEN b.odds >=0 THEN (1 + b.odds) END
-													WHEN b.OddsType = 5 THEN --american odds to decimal
-																	CASE
-																	WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
-																	WHEN (b.odds * 100) % 2 = 0 THEN 2
-																	WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
-												END 
-								ELSE b.Odds
-							END >= @odds
-				OPTION(RECOMPILE)				
+					AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
+									OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
+									OR b.bettype BETWEEN 81 AND 88
+									OR b.bettype BETWEEN 90 AND 120
+									OR b.bettype BETWEEN 8101 AND 8120 -- Number Game: Happy 5
+									OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
+									OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
+									OR b.bettype = 428 -- 2H Odd/Even
+									OR (b.bettype BETWEEN 603 AND 607 OR b.bettype BETWEEN 609 AND 613 OR b.bettype BETWEEN 615 AND 617) -- Basketball bettypes
+									OR b.bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
+									OR b.bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
+									OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
+									OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
+									OR (bettype NOT IN (703, 711) AND bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
+									OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
+								)
+								THEN 
+										CASE
+											WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
+											WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
+											WHEN b.OddsType IN (3,4,7) THEN --malay and indo and new oddstype to decimal
+																CASE 
+																	WHEN b.odds < 0 THEN (1 -  CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
+																	WHEN b.odds >=0 THEN (1 + b.odds) END
+											WHEN b.OddsType = 5 THEN --american odds to decimal
+															CASE
+															WHEN (b.odds * 100) < 0 THEN (1- CAST (1 AS FLOAT)/ CAST (b.odds AS FLOAT))
+															WHEN (b.odds * 100) % 2 = 0 THEN 2
+															WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
+										END
+							ELSE b.Odds
+						END >= @odds
+				OPTION(RECOMPILE)
 			END
 
 			;WITH CTE_Paging AS
 			(
 				SELECT winlostdate
 					, b.custid
-						
 				FROM #tempPagingData b
-					INNER JOIN #tempCust c
-					ON b.custid 	= c.custid
-					INNER JOIN #bettype bt
-					ON b.bettype 	=  bt.typeid
-					INNER JOIN #Status st
-					ON b.StatusID 	=  st.StatusID
-					INNER JOIN #ProductID p 
-					ON b.sporttype = p.sportID
+					INNER JOIN #tempCust c ON b.custid = c.custid
+					INNER JOIN #bettype bt ON b.bettype =  bt.typeid
+					INNER JOIN #Status st ON b.StatusID =  st.StatusID
+					INNER JOIN #ProductID p ON b.sporttype = p.sportID
 				GROUP BY 
 					b.winlostdate
 					, b.custid
@@ -194,9 +204,7 @@ BEGIN
 				SELECT 
 					b.winlostdate
 					, b.custid
-					
-				FROM #tempBettrans b	
-				
+				FROM #tempBettrans b
 				GROUP BY
 					b.winlostdate
 					, b.custid
@@ -213,14 +221,22 @@ BEGIN
 		BEGIN
 			IF(@odds = 0)
 			BEGIN
-				INSERT INTO #tempPagingData(winlostdate, sporttype, bettype, custid, StatusID)
-				SELECT	DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) AS winlostdate, 
-						CASE WHEN b.bettype IN (9, 10, 29) THEN 1
-							ELSE b.sporttype 
-						END AS sporttype, bettype, b.custid, StatusID
+				INSERT INTO #tempPagingData(
+					winlostdate,
+					sporttype,
+					bettype,
+					custid,
+					StatusID)
+				SELECT
+					DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) AS winlostdate, 
+					CASE WHEN b.bettype IN (9, 10, 29) THEN 1
+						ELSE b.sporttype 
+					END AS sporttype,
+					b.bettype,
+					b.custid,
+					b.statusid
 				FROM #recommend rec
-					JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)
-						ON b.Recommend	= rec.CustID
+					JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK) ON b.Recommend	= rec.CustID
 				WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
 				OPTION(RECOMPILE)
 			END
@@ -251,37 +267,37 @@ BEGIN
 										OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 										OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 										OR (bettype NOT IN (703, 711) AND bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
+										OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
 									)
 									THEN 
-											CASE WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
-													WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
-													WHEN b.OddsType IN (3,4,7) THEN --malay and indo and new oddstype to decimal
-																		CASE 
-																			WHEN b.odds < 0 THEN (1 -  cast(1 as float) / cast(b.odds AS float))
-																			WHEN b.odds >=0 THEN (1 + b.odds) END
-													WHEN b.OddsType = 5 THEN --american odds to decimal
+										CASE
+											WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
+											WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
+											WHEN b.OddsType IN (3,4,7) THEN --malay and indo and new oddstype to decimal
+																CASE 
+																	WHEN b.odds < 0 THEN (1 -  CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
+																	WHEN b.odds >=0 THEN (1 + b.odds)
+																END
+											WHEN b.OddsType = 5 THEN --american odds to decimal
 																	CASE
-																	WHEN (b.odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (b.odds AS float))
-																	WHEN (b.odds * 100) % 2 = 0 THEN 2
-																	WHEN (b.odds * 100) > 0 THEN (1 + b.odds) END 
-												END 
+																		WHEN (b.odds * 100) < 0 THEN (1- CAST (1 AS FLOAT)/ CAST (b.odds AS FLOAT))
+																		WHEN (b.odds * 100) % 2 = 0 THEN 2
+																		WHEN (b.odds * 100) > 0 THEN (1 + b.odds)
+																	END 
+										END 
 									ELSE b.Odds
 								END >= @odds
 				OPTION(RECOMPILE)
 			END
-			
+
 			;WITH CTE_Paging AS
 			(
 				SELECT winlostdate
 					, b.custid
-						
 				FROM #tempPagingData b
-					INNER JOIN #bettype bt
-					ON b.bettype 	=  bt.typeid
-					INNER JOIN #Status st
-					ON b.StatusID 	=  st.StatusID
-					INNER JOIN #ProductID p 
-					ON b.sporttype = p.sportID
+					INNER JOIN #bettype bt ON b.bettype =  bt.typeid
+					INNER JOIN #Status st ON b.StatusID =  st.StatusID
+					INNER JOIN #ProductID p ON b.sporttype = p.sportID
 				GROUP BY 
 					b.winlostdate
 					, b.custid
@@ -317,11 +333,9 @@ BEGIN
 				, t.winlostdate
 				, t.Custid 	
 				, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS username
-			
 			FROM #tempPaging t
-				INNER JOIN dbo.Customer  c WITH (NOLOCK, INDEX = IX_custid)
+				INNER JOIN dbo.Customer AS c WITH (NOLOCK, INDEX = IX_custid)
 				ON t.custid = c.custid
-			
 			GROUP BY 
 				t.winlostdate
 				, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username)
@@ -346,15 +360,12 @@ BEGIN
 				, t.winlostdate
 				, t.Custid 	
 				, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS username
-			
 			FROM #tempPaging t
-				INNER JOIN dbo.Customer  c WITH (NOLOCK, INDEX = IX_custid)
-				ON t.custid = c.custid
-			
+				INNER JOIN dbo.Customer  c WITH (NOLOCK, INDEX = IX_custid) ON t.custid = c.custid
 			GROUP BY 
 				t.winlostdate
 				, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username)
-				, t.Custid			
+				, t.Custid
 		)
 		INSERT INTO #tempCustPaging 
 		SELECT
