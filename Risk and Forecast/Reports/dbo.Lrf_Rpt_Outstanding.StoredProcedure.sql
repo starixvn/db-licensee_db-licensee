@@ -1,4 +1,4 @@
-/*<info serverAlias="DB042-bodb02,DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DB042-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_Outstanding]
     @showSB			BIT = 0,  
@@ -26,7 +26,7 @@ AS
 /*
 Created: 20101201@Jacob
 Task : Report Outstanding
-DB: DB042-bodb02, DBEXT-bodb02
+DB: DB042-bodb02
 Original Age_Rpt_Outstanding_Ag
 
 Revisions:
