@@ -16,6 +16,7 @@ Revisions:
 	- 20190904@Bobby: Implement Statement Service - Level 2 [RedmineID: #119648]
 	- 20190926@Bobby: Enhance Statement Level 1 - show outstanding for future [RedmineID: #120690] 
 	- 20191003@Bobby: Integrate NPH Promotion product [RedmineID: #120333]
+	- 20200210@Bobby: Integrate Saba Promotion monthly games [RedmineID: #127826]
 	
 
 Param's Explanation:     
@@ -37,7 +38,7 @@ BEGIN
 		, @modeDesc					VARCHAR(100)
 		, @CB_ProductID				INT
 		, @IsTest					BIT = 0
-
+	
 
 	CREATE TABLE #betTicket	  
     (
@@ -55,6 +56,11 @@ BEGIN
         commission		DECIMAL(15,2)
 	)
 	
+	DECLARE @SabaBettype TABLE(bettype INT PRIMARY KEY)
+
+	INSERT INTO @SabaBettype(bettype)
+	VALUES(17000),(17001),(17002)
+
 	SELECT @_custID		= @CustID
 		, @_winlostdate	= @Winlostdate
 		, @_ModeView	= ISNULL(@ModeView, 1)
@@ -102,7 +108,9 @@ BEGIN
 			SUM(b.playercomm) AS playercomm
 		FROM 
 			bodb02.dbo.bettrans b WITH (NOLOCK)
-
+		OUTER APPLY (
+				SELECT TOP 1 CAST(1 AS BIT) AS IsPromo FROM @SabaBettype sbt WHERE sbt.bettype = b.bettype
+			) AS bt
 		WHERE
 			b.custid = @_custID  
 			AND b.winlostdate = @_winlostdate
@@ -110,10 +118,10 @@ BEGIN
 			AND b.bettype NOT IN (903, 71, 913, 914)
 			AND ((ISNULL(@IsCOMember,0) = 0 AND b.bettype <> 912) OR (@IsCOMember = 1 AND b.bettype <> 911))
 			AND 1 = CASE 
-						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) AND b.bettype NOT IN (17000) THEN 1 
-						WHEN @_ModeView = 2 AND b.statusID IN (101,102,103) AND b.bettype NOT IN (17000) THEN 1 
+						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) AND ISNULL(bt.IsPromo,0) <> 1 THEN 1 
+						WHEN @_ModeView = 2 AND b.statusID IN (101,102,103) AND ISNULL(bt.IsPromo,0) <> 1 THEN 1 
 						WHEN @_ModeView = 3 AND b.statusID IN (0,1) THEN 1 
-						WHEN @_ModeView = 4 AND b.bettype IN (17000) THEN 1 
+						WHEN @_ModeView = 4 AND ISNULL(bt.IsPromo,0) = 1 THEN 1 
 						ELSE 0 
 					END
 		GROUP BY
@@ -176,16 +184,18 @@ BEGIN
 			SUM(b.playercomm) AS playercomm
 		FROM
 			bodb02.dbo.bettrans14 b WITH (NOLOCK)
-
+		OUTER APPLY (
+				SELECT TOP 1 CAST(1 AS BIT) AS IsPromo FROM @SabaBettype sbt WHERE sbt.bettype = b.bettype
+			) AS bt
 		WHERE 
 			b.custid = @_custid  
 			AND b.winlostdate = @_winlostdate
 			AND b.bettype NOT IN (903, 71, 913, 914)
 			AND ((@IsCOMember = 0 AND b.bettype <> 912) OR (@IsCOMember = 1 AND b.bettype <> 911))
 			AND 1 = CASE 
-						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) AND b.bettype NOT IN (17000) THEN 1 
-						WHEN @_ModeView = 2 AND b.statusID IN (101,102,103) AND b.bettype NOT IN (17000) THEN 1 
-						WHEN @_ModeView = 4 AND b.bettype IN (17000) THEN 1 
+						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) AND ISNULL(bt.IsPromo,0) <> 1 THEN 1 
+						WHEN @_ModeView = 2 AND b.statusID IN (101,102,103) AND ISNULL(bt.IsPromo,0) <> 1 THEN 1 
+						WHEN @_ModeView = 4 AND ISNULL(bt.IsPromo,0) = 1 THEN 1 
 					ELSE 0 END
 
 		GROUP BY b.bettype
@@ -202,16 +212,18 @@ BEGIN
 			SUM(b.playercomm) AS playercomm
 		FROM
 			bodb_archive.dbo.bettrans_bk b WITH (NOLOCK)
-
+		OUTER APPLY (
+				SELECT TOP 1 CAST(1 AS BIT) AS IsPromo FROM @SabaBettype sbt WHERE sbt.bettype = b.bettype
+			) AS bt
 		WHERE 
 			b.custid = @_custid  
 			AND b.winlostdate = @_winlostdate
 			AND b.bettype NOT IN (903, 71, 913, 914)
 			AND ((@IsCOMember = 0 AND b.bettype <> 912) OR (@IsCOMember = 1 AND b.bettype <> 911))
 			AND 1 = CASE 
-						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) AND b.bettype NOT IN (17000) THEN 1 
-						WHEN @_ModeView = 2 AND b.statusID IN (101,102,103) AND b.bettype NOT IN (17000) THEN 1 
-						WHEN @_ModeView = 4 AND b.bettype IN (17000) THEN 1 
+						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) AND ISNULL(bt.IsPromo,0) <> 1 THEN 1 
+						WHEN @_ModeView = 2 AND b.statusID IN (101,102,103) AND ISNULL(bt.IsPromo,0) <> 1 THEN 1 
+						WHEN @_ModeView = 4 AND ISNULL(bt.IsPromo,0) = 1 THEN 1 
 					ELSE 0 END
 
 		GROUP BY b.bettype

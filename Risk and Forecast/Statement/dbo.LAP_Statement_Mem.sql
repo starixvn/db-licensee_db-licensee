@@ -22,6 +22,7 @@ Revisions:
 	- 20190919@Bobby: Enhance Statement Level 1 - show outstanding for future [RedmineID: #119648]
 	- 20191024@Bobby: Correct running and void [RedmineID: #120690]
 	- 20191003@Bobby: Integrate NPH Promotion product [RedmineID: #120333]
+	- 20200210@Bobby: Integrate Saba Promotion monthly games [RedmineID: #127826]
 	
 Param's Explanation:     
 */
@@ -65,6 +66,11 @@ BEGIN
         transdesc		NVARCHAR(300),
 		orderkey		TINYINT
     )
+
+	DECLARE @SabaBettype TABLE(bettype INT PRIMARY KEY)
+
+	INSERT INTO @SabaBettype(bettype)
+	VALUES(17000),(17001),(17002)
 
 	SELECT @TotalRows	= 0
 		, @currentDate	= CURRENT_TIMESTAMP
@@ -206,11 +212,11 @@ BEGIN
 			INSERT INTO #statementRpt (orderkey, winlostdate, transtype, transdesc, turnover,totalamt,commission)
 			SELECT 
 				CASE
-					WHEN statusID IN (101, 102, 103) AND bettype NOT IN (17000) THEN @VOID_KEY
-					WHEN bettype IN (17000) THEN @PROMO_KEY
+					WHEN statusID IN (101, 102, 103) AND ISNULL(bt.IsPromo,0) <> 1 THEN @VOID_KEY
+					WHEN ISNULL(bt.IsPromo,0) = 1 THEN @PROMO_KEY
 					ELSE @BET_KEY END AS orderkey, 
 				winlostdate,
-				CASE WHEN bettype IN (17000) THEN 'PROMO' ELSE 'BET' END AS transtype,
+				CASE WHEN ISNULL(bt.IsPromo,0) = 1 THEN 'PROMO' ELSE 'BET' END AS transtype,
 				NULL AS transdesc,
 				SUM(CASE 
 					WHEN bettype IN (33, 43) AND liveawayscore = 0 AND livehomescore <> 0 AND ruben = 1 THEN stake/2 
@@ -219,6 +225,9 @@ BEGIN
 				SUM(winlost-actual_stake) AS totalamt,
 				SUM(playercomm) AS commission
 			FROM bodb02.dbo.bettrans14 b WITH (NOLOCK)  
+			OUTER APPLY (
+				SELECT TOP 1 CAST(1 AS BIT) AS IsPromo FROM @SabaBettype sbt WHERE sbt.bettype = b.bettype
+			) AS bt
 			WHERE
 				b.custid = @_CustID  
 				AND b.winlostdate >= @_tempStartDate and winlostdate <= @_tempEndDate
@@ -226,11 +235,11 @@ BEGIN
 				AND ((@IsCOMember = 0 AND b.bettype <> 912) OR (@IsCOMember = 1 AND b.bettype <> 911))
 			GROUP BY
 				CASE
-					WHEN statusID IN (101, 102, 103) AND bettype NOT IN (17000) THEN @VOID_KEY
-					WHEN bettype IN (17000) THEN @PROMO_KEY
+					WHEN statusID IN (101, 102, 103) AND ISNULL(bt.IsPromo,0) <> 1 THEN @VOID_KEY
+					WHEN ISNULL(bt.IsPromo,0) = 1 THEN @PROMO_KEY
 					ELSE @BET_KEY END, 
 				winlostdate,
-				CASE WHEN bettype IN (17000) THEN 'PROMO' ELSE 'BET' END
+				CASE WHEN ISNULL(bt.IsPromo,0) = 1 THEN 'PROMO' ELSE 'BET' END
 		END  
 
 		-- bettrans tickets -- after @MoveBetsDay
@@ -249,11 +258,11 @@ BEGIN
 				SELECT 
 					CASE
 						WHEN statusID IN (0, 1) THEN @OUT_KEY
-						WHEN statusID IN (101, 102, 103) AND bettype NOT IN (17000) THEN @VOID_KEY
-						WHEN bettype IN (17000) THEN @PROMO_KEY
+						WHEN statusID IN (101, 102, 103) AND ISNULL(bt.IsPromo,0) <> 1 THEN @VOID_KEY
+						WHEN ISNULL(bt.IsPromo,0) = 1 THEN @PROMO_KEY
 						ELSE @BET_KEY END AS orderkey,  
 					winlostdate,
-					CASE WHEN bettype IN (17000) THEN 'PROMO' ELSE 'BET' END AS transtype,
+					CASE WHEN ISNULL(bt.IsPromo,0) = 1 THEN 'PROMO' ELSE 'BET' END AS transtype,
 					NULL transdesc,
 					SUM(CASE 
 						WHEN bettype IN (33, 43) AND liveawayscore = 0 AND livehomescore <> 0 AND ruben = 1 THEN stake/2 
@@ -265,7 +274,9 @@ BEGIN
 
 				FROM 
 					bodb02.dbo.bettrans b WITH (NOLOCK)  
-
+				OUTER APPLY (
+					SELECT TOP 1 CAST(1 AS BIT) AS IsPromo FROM @SabaBettype sbt WHERE sbt.bettype = b.bettype
+				) AS bt
 				WHERE
 					custid = @_CustID  
 					AND winlostdate >= @_tempStartDate
@@ -281,11 +292,11 @@ BEGIN
 				GROUP BY
 					CASE
 						WHEN statusID IN (0, 1) THEN @OUT_KEY
-						WHEN statusID IN (101, 102, 103) AND bettype NOT IN (17000) THEN @VOID_KEY
-						WHEN bettype IN (17000) THEN @PROMO_KEY
+						WHEN statusID IN (101, 102, 103) AND ISNULL(bt.IsPromo,0) <> 1 THEN @VOID_KEY
+						WHEN ISNULL(bt.IsPromo,0) = 1 THEN @PROMO_KEY
 						ELSE @BET_KEY END,  
 					winlostdate,
-					CASE WHEN bettype IN (17000) THEN 'PROMO' ELSE 'BET' END
+					CASE WHEN ISNULL(bt.IsPromo,0) = 1 THEN 'PROMO' ELSE 'BET' END
 			
 				--include running Keno bet
 				UNION ALL

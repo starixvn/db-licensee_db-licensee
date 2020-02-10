@@ -15,6 +15,7 @@ Revisions:
 	- 20190723@Bobby: Initialize [RedmineID: #117534]
 	- 20190904@Bobby: Implement Statement Service - Level 1 [RedmineID: #119648]
 	- 20191003@Bobby: Integrate NPH Promotion product [RedmineID: #120333]
+	- 20200210@Bobby: Integrate Saba Promotion monthly games [RedmineID: #127826]
 	
 Param's Explanation:     
 */
@@ -30,6 +31,7 @@ RETURN (
 			, 2 AS TRAN_KEY
 			, 4 AS PROMO_KEY
 	) AS temp
+	
 	CROSS APPLY (
 		SELECT 
 			orderkey
@@ -43,29 +45,33 @@ RETURN (
 			-- bet TO summary
 			SELECT 
 				CASE 
-					WHEN b.statusID IN (101,102,103) AND b.bettype NOT IN (17000) THEN temp.VOID_KEY --> Void/Reject/Refund
-					WHEN b.bettype IN (17000) THEN temp.PROMO_KEY
+					WHEN b.statusID IN (101,102,103) AND ISNULL(bt.IsPromo,0) <> 1 THEN temp.VOID_KEY --> Void/Reject/Refund
+					WHEN ISNULL(bt.IsPromo,0) = 1 THEN temp.PROMO_KEY
 					ELSE temp.BET_KEY --> Won/Lose/Draw
 				END AS orderkey
 				, winlostdate
-				, CASE WHEN bettype IN (17000) THEN 'PROMO' ELSE 'BET' END AS transtype
+				, CASE WHEN ISNULL(bt.IsPromo,0) = 1 THEN 'PROMO' ELSE 'BET' END AS transtype
 				, NULL AS transdesc
 				, SUM(b.stake) AS turnover
 				, SUM(b.winlost - b.actual_stake) AS TotalAmt
 				, SUM(b.playercomm) AS commission
 			FROM bodb_archive.dbo.bettrans_bk b (NOLOCK)
+			OUTER APPLY (
+				SELECT CAST(1 AS BIT) AS IsPromo
+				WHERE b.bettype IN(17000,17001,17002)
+			) AS bt
 			WHERE 
 				b.custid			= temp.custid
 				AND b.winlostdate	>= temp.FromDate AND b.winlostdate <= temp.ToDate
 
 			GROUP BY
 				CASE 
-					WHEN b.statusID IN (101,102,103) AND b.bettype NOT IN (17000) THEN 2 --> Void/Reject/Refund
-					WHEN b.bettype IN (17000) THEN temp.PROMO_KEY
+					WHEN b.statusID IN (101,102,103) AND ISNULL(bt.IsPromo,0) <> 1 THEN 2 --> Void/Reject/Refund
+					WHEN ISNULL(bt.IsPromo,0) = 1 THEN temp.PROMO_KEY
 					ELSE temp.BET_KEY --> Won/Lose/Draw
 				END,
 				 b.winlostdate,
-				CASE WHEN bettype IN (17000) THEN 'PROMO' ELSE 'BET' END
+				CASE WHEN ISNULL(bt.IsPromo,0) = 1 THEN 'PROMO' ELSE 'BET' END
 
 			-- BAL
 			UNION ALL
