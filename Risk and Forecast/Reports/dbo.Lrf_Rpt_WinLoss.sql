@@ -110,6 +110,7 @@ AS
 		- 20191118@Amanda: Use outparam to get error instead of returned table [Redmine: #118874]
 		- 20191017@Amanda: Integrate NPH Promotion [RedmineID: #120333]
 		- 20191121@Amanda: Integrate PP Tournament Prize and exclude PP Promotion, Tournament Prize from result [RedmineID: #123804]
+		- 20200210@Vickie: Add new bet type for SABA promotion [Redmine: #127826]
 
 	Param's Explanation:
 		@OrderItem:

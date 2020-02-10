@@ -87,6 +87,7 @@ AS
 	- 20191017@Amanda: Integrate NPH Promotion [RedmineID: #120333]
 	- 20191121@Amanda: Integrate PP Tournament Prize and exclude PP Promotion, Tournament Prize from result [RedmineID: #123804]
 	- 20190312@Amanda: Add new bet types Single Match Parlay (ID: 38) [RedmineID: #108298]
+	- 20200210@Vickie: Add new bet type for SABA promotion [Redmine: #127826]
 
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  

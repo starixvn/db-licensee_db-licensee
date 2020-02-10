@@ -20,6 +20,7 @@ AS
 	- 20191017@Amanda: Rename SP from Lrf_Rpt_PP_PromotionPrize to Lrf_Rpt_PromotionPrize and integrate NPH Promotion [Redmine: #120333]
 	- 20191122@Amanda: Include PP Tournament Prize [Redmine: #123804]
 	- 20191204@Amanda: Change name of NPH Promotion to Saba Promotion [Redmine: #124612]
+	- 20200210@Vickie: Add new bet type for SABA promotion [Redmine: #127826]
 
 	Param's Explanation:
 	  + @MoveBetsDay: The day we move tickets to bettrans14
