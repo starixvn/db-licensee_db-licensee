@@ -49,10 +49,12 @@ BEGIN
 	DECLARE @PPPromotion	SMALLINT = 4300,-- PP Promotion Prize
 			@PPTournament	SMALLINT = 4299,-- PP Tournament Prize
 			@PPsportType	SMALLINT = 248,
-			@SPRbetType	SMALLINT = 17000,-- Saba Promotion
 			@SPRsportType	SMALLINT = 246,
 			@PP				VARCHAR(10) = 'PP',
 			@SPR			VARCHAR(10) = 'SPR'
+
+	DECLARE @SPRbetType table (id int) -- Saba Promotion
+	INSERT @SPRbetType(id) VALUES(17000),(17001),(17002)
 
 	DECLARE @_FromDate SMALLDATETIME, @_ToDate SMALLDATETIME
 	SELECT @_FromDate = @FromDate, @_ToDate = @ToDate
@@ -116,7 +118,8 @@ BEGIN
 			INNER JOIN @tempAg a ON b.recommend = a.custID AND b.Currency = a.Currency
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @_ToDate
-			AND b.bettype IN (@PPPromotion, @PPTournament, @SPRbetType)
+			AND b.bettype IN (@PPPromotion, @PPTournament)
+			OR EXISTS (SELECT id FROM @SPRbetType WHERE b.bettype = id)
 			AND b.statusID = 112
 	END  
 
@@ -143,7 +146,8 @@ BEGIN
 		WHERE 
 			b.winlostdate BETWEEN @_FromDate AND @TempToDate
 			And b.sporttype IN (@PPsportType, @SPRsportType)
-			AND b.bettype IN (@PPPromotion, @PPTournament, @SPRbetType)
+			AND b.bettype IN (@PPPromotion, @PPTournament)
+			OR EXISTS (SELECT id FROM @SPRbetType WHERE b.bettype = id)
 			AND b.statusID = 112
 			AND b.roleID = 1
 	END
@@ -169,7 +173,7 @@ BEGIN
 
 	-- #Region: Return data
 	SELECT	p.BetType,
-			CASE WHEN p.BetType = @SPRbetType THEN @SPR ELSE @PP END AS ProductCode,
+			CASE WHEN EXISTS (SELECT id FROM @SPRbetType WHERE p.BetType = id) THEN @SPR ELSE @PP END AS ProductCode,
 			SUM(p.Winlost * e.DefaultRate) AS SumAmount
 	FROM #PromotionData p
 	INNER JOIN #Exchange e ON e.ExchangeID = p.CurrencyId AND p.winlostdate BETWEEN e.FromDate AND e.ToDate
@@ -177,7 +181,7 @@ BEGIN
 
 	SELECT	
 			p.BetType,
-			CASE WHEN p.BetType = @SPRbetType THEN @SPR ELSE @PP END AS ProductCode,
+			CASE WHEN EXISTS (SELECT id FROM @SPRbetType WHERE p.BetType = id) THEN @SPR ELSE @PP END AS ProductCode,
 			p.winlostdate	AS [Date],
 			p.CurrencyId,
 			SUM(p.Winlost)	AS Amount,

@@ -435,7 +435,7 @@ BEGIN
 			WHERE 
 				EXISTS(SELECT TOP (1) 1 FROM @TempAg c WHERE c.CustID = b.recommend)
 				AND b.winlostdate >= @TempFromDate AND b.winlostdate <= @_ToDate
-				AND b.bettype IN (4300, 17000, 4299)
+				AND b.bettype IN (4300, 17000, 17001, 17002, 4299)
 				AND b.statusID = 112)
 		BEGIN
 			SET @PromotionPrize = 1
@@ -500,7 +500,7 @@ BEGIN
 			FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )
 			WHERE EXISTS(SELECT TOP (1) 1 FROM @TempAg c WHERE c.CustID = b.recommend)
 				AND b.Winlostdate BETWEEN @_FromDate AND @TempToDate
-				AND b.bettype IN (4300, 17000, 4299)
+				AND b.bettype IN (4300, 17000, 17001, 17002, 4299)
 				AND b.statusID = 112 
 				AND b.roleid = 2)
 		BEGIN

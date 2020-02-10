@@ -509,7 +509,7 @@ BEGIN
 			SELECT TOP(1) 1
 				FROM dbo.bettrans b WITH (NOLOCK)
 				INNER JOIN @tempAg a ON b.recommend = a.custID AND b.currency = a.currency
-				WHERE b.winlostdate BETWEEN @TempFromDate AND @_ToDate AND b.bettype IN (4300, 17000, 4299) AND b.statusID = 112)
+				WHERE b.winlostdate BETWEEN @TempFromDate AND @_ToDate AND b.bettype IN (4300, 17000, 17001, 17002, 4299) AND b.statusID = 112)
 		BEGIN
 			SET @PromotionPrize = 1
 		END
@@ -748,7 +748,7 @@ BEGIN
 			SELECT TOP(1) 1
 			FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )
 			INNER JOIN @tempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
-			WHERE b.Winlostdate BETWEEN @_FromDate AND @TempToDate AND b.bettype IN (4300, 17000, 4299) AND b.statusID = 112 AND b.roleid = 2)
+			WHERE b.Winlostdate BETWEEN @_FromDate AND @TempToDate AND b.bettype IN (4300, 17000, 17001, 17002, 4299) AND b.statusID = 112 AND b.roleid = 2)
 		BEGIN
 			SET @PromotionPrize = 1
 		END
