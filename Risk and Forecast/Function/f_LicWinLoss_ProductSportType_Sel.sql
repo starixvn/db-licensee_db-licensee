@@ -19,6 +19,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 		- 20181227@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
 		- 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
 		- 20190708@Amanda: Add new product Card Club [RedmineID: #115449]
+		- 20191212@Vickie: Integrate SpadeGaming [RedmineID: #124103]
 
 	Paramters Explanation:  
 		@ProductID: list of products  
@@ -44,7 +45,8 @@ RETURN
 					(27, 'VS2', 194, 0), --  Virtual Soccer Asian Cup
 					(28, 'LT', 220, 0),	-- Lottery
 					(32, 'PP', 248, 0),	-- PP
-					(34, 'CC', 165, 0)	-- Card club
+					(34, 'CC', 165, 0),	-- Card club
+					(36, 'SG', 247, 0)	-- Spadegaming
 			) d(ProductID, ProductCode, SportType, BetType)  
 	WHERE ',' + @ProductCodes + ',' LIKE '%,' + CAST(ProductCode as varchar(10)) + ',%'  
 GO

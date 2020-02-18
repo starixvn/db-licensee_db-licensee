@@ -1,6 +1,3 @@
-Risk and Forecast\Reports\dbo.Lrf_Rpt_LiveReportSummaryDetail.sql
-Risk and Forecast\Reports\dbo.Lrf_Rpt_MatchWinLossByBettype.sql
-Risk and Forecast\Reports\dbo.Lrf_Rpt_MatchWinLossDetail.StoredProcedure.sql
-Risk and Forecast\Reports\dbo.Lrf_Rpt_WinLossByBettype.proc.sql
-Risk and Forecast\Reports\dbo.Lrf_SelBetTypeBySport.sql
-Risk and Forecast\Reports\Lrf_SelBetTypesByProduct.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_WinlossByProduct.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_WinlossByProductDetail.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_WinlossByProductDetail_Ag.sql

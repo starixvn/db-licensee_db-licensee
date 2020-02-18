@@ -79,6 +79,8 @@ AS
 		- 20191608@Amanda: Add new bet types (PH AIO - Phase 4b) [RedmineID: #118300]
 		- 20191129@Walter: Add new bet types (BMAIO - Phase 2) [RedmineID: #120336]
 		- 20190102@Vickie: Add new bet types (PH AIO - Phase 5) [RedmineID: #126005]
+		- 20191225@Amanda: Support display SystemID [RedmineID: #123583]
+
 
 	Parameter's Explanation:
 		- @ReportBy:  1: daily, 2: monthly
@@ -110,6 +112,7 @@ BEGIN
 		, winlostdate 		SMALLDATETIME
 		, custid 			INT
 		, username			VARCHAR(50)
+		, nickname			VARCHAR(50)
 		, currency			INT
 		, sporttype			SMALLINT
 		, bettype			INT
@@ -124,6 +127,7 @@ BEGIN
 	(
 		custid			INT PRIMARY KEY
 		, username		VARCHAR(50)
+		, nickname		VARCHAR(50)
 		, recommend		INT
 	)
 	
@@ -133,6 +137,7 @@ BEGIN
 		, winlostdate	SMALLDATETIME
 		, custid		INT
 		, username		VARCHAR(50)
+		, nickname		VARCHAR(50)
 	)
 	
 	CREATE TABLE #tempSumTotal 
@@ -275,7 +280,8 @@ BEGIN
 	BEGIN 
 		INSERT INTO #tempCust
 		SELECT c.custid
-			, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS username
+			, c.username
+			, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS nickname
 			, c.recommend
 		FROM  dbo.Customer  c WITH (NOLOCK) 
 		  
@@ -581,6 +587,7 @@ BEGIN
 				ELSE CONVERT(VARCHAR(8), b.winlostdate, 112)
 			END AS ReportBy
 			, b.username
+			, b.nickname
 			, b.currency AS currencyid
 			, b.sporttype
 			, CASE WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) THEN  N'NG - ' + bt.typenamee
@@ -608,6 +615,7 @@ BEGIN
 				ELSE CONVERT(VARCHAR(8), b.winlostdate, 112)
 			END
 			, b.username
+			, b.nickname
 			, b.currency
 			, b.sporttype
 			, CASE WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) THEN  N'NG - ' + bt.typenamee

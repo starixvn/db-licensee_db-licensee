@@ -38,6 +38,7 @@ AS
 		- 20191608@Amanda: Add new bet types (PH AIO - Phase 4b) [RedmineID: #118300]
 		- 20191129@Walter: Add new bet types (BMAIO - Phase 2) [RedmineID: #120336]
 		- 20190102@Vickie: Add new bet types (PH AIO - Phase 5) [RedmineID: #126005]
+		- 20191225@Amanda: Support display SystemID [RedmineID: #123583]
 
 	Parameter's Explanation:
 */
@@ -51,6 +52,7 @@ BEGIN
 		bettype			SMALLINT, 
 		custid			INT, 
 		username		VARCHAR(50),
+		nickname		VARCHAR(50),
 		StatusID		TINYINT,
 		winlostdate		SMALLDATETIME
 	)
@@ -61,6 +63,7 @@ BEGIN
 		, winlostdate	SMALLDATETIME
 		, custid		INT
 		, username		VARCHAR(50)
+		, nickname		VARCHAR(50)
 	)
 
 	SELECT
@@ -74,17 +77,19 @@ BEGIN
 	BEGIN
 		IF @ToDate > @MoveBetsDay
 		BEGIN
-			INSERT INTO #tempPagingData(winlostdate, custid, username)
+			INSERT INTO #tempPagingData(winlostdate, custid, username, nickname)
 			SELECT b.winlostdate
 					, c.Custid
 					, c.username
+					, c.nickname
 			FROM #tempBettrans b	
 				INNER JOIN #tempCust  c ON b.custid = c.custid
 			GROUP BY 
 				b.winlostdate
 				, c.custid
 				, c.username
-			ORDER BY b.winlostdate DESC, username
+				, c.nickname
+			ORDER BY b.winlostdate DESC, nickname
 
 			SET @totalBettrans = @@ROWCOUNT
 		END
@@ -93,8 +98,8 @@ BEGIN
 		BEGIN
 			IF ( @odds = 0 )
 			BEGIN
-				INSERT INTO #tempData(winlostdate, sporttype, bettype, custid, username, StatusID)
-				SELECT winlostdate, sporttype, bettype, b.custid, c.username, StatusID
+				INSERT INTO #tempData(winlostdate, sporttype, bettype, custid, username, nickname, StatusID)
+				SELECT winlostdate, sporttype, bettype, b.custid, c.username, c.nickname, StatusID
 				FROM (
 					SELECT DISTINCT	winlostdate, 
 							CASE WHEN b.bettype IN (9, 10, 29) THEN 1
@@ -111,8 +116,8 @@ BEGIN
 			-- Has Odds Value
 			IF (@odds > 0)
 			BEGIN
-				INSERT INTO #tempData(winlostdate, sporttype, bettype, custid, username, StatusID)
-				SELECT winlostdate, sporttype, bettype, b.custid, c.username, StatusID
+				INSERT INTO #tempData(winlostdate, sporttype, bettype, custid, username, nickname, StatusID)
+				SELECT winlostdate, sporttype, bettype, b.custid, c.username, c.nickname, StatusID
 				FROM (
 					SELECT DISTINCT	winlostdate, 
 							CASE WHEN b.bettype IN (9, 10, 29) THEN 1
@@ -160,10 +165,11 @@ BEGIN
 
 			IF @totalBettrans < @maxRow OR @IsExportExcel = 1
 			BEGIN
-				INSERT INTO #tempPagingData(winlostdate, custid, username)
+				INSERT INTO #tempPagingData(winlostdate, custid, username, nickname)
 				SELECT b.winlostdate
 						, b.Custid
 						, b.username
+						, b.nickname					
 				FROM #tempData b
 					INNER JOIN #bettype bt ON b.bettype =  bt.typeid
 					INNER JOIN #Status st ON b.StatusID =  st.StatusID
@@ -172,7 +178,8 @@ BEGIN
 					b.winlostdate
 					, b.custid
 					, b.username
-				ORDER BY winlostdate DESC, username
+					, b.nickname
+				ORDER BY winlostdate DESC, nickname
 				
 				SET @totalSumRpt = @@ROWCOUNT	
 			END
@@ -202,14 +209,16 @@ BEGIN
 	BEGIN
 		IF @ToDate > @MoveBetsDay
 		BEGIN
-			INSERT INTO #tempPagingData(winlostdate, custid, username)
+			INSERT INTO #tempPagingData(winlostdate, custid, username, nickname)
 			SELECT b.winlostdate
 					, c.Custid
-					, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS username
+					, c.username
+					, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS nickname
 			FROM #tempBettrans b
 				INNER JOIN dbo.Customer  c WITH (NOLOCK, INDEX = IX_custid) ON b.custid = c.custid
 			GROUP BY
 				b.winlostdate
+				, c.username
 				, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username)
 				, c.custid
 			ORDER BY b.winlostdate DESC, username
@@ -221,20 +230,8 @@ BEGIN
 		BEGIN
 			IF(@odds = 0)
 			BEGIN
-				INSERT INTO #tempData(
-					winlostdate,
-					sporttype,
-					bettype,
-					custid,
-					username,
-					StatusID)
-				SELECT
-					winlostdate,
-					sporttype,
-					bettype,
-					b.custid,
-					ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS username,
-					StatusID
+				INSERT INTO #tempData(winlostdate, sporttype, bettype, custid, username, nickname, StatusID)
+				SELECT winlostdate, sporttype, bettype, b.custid, c.username, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS nickname, StatusID
 				FROM (
 					SELECT DISTINCT	winlostdate, 
 							CASE WHEN b.bettype IN (9, 10, 29) THEN 1
@@ -253,8 +250,8 @@ BEGIN
 			-- Has Odds Value
 			IF ( @odds > 0 )
 			BEGIN
-				INSERT INTO #tempData(winlostdate, sporttype, bettype, custid, username, StatusID)
-				SELECT winlostdate, sporttype, bettype, b.custid, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS username, StatusID
+				INSERT INTO #tempData(winlostdate, sporttype, bettype, custid, username, nickname, StatusID)
+				SELECT winlostdate, sporttype, bettype, b.custid, c.username, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS nickname, StatusID
 				FROM (
 					SELECT DISTINCT	winlostdate, 
 							CASE WHEN b.bettype IN (9, 10, 29) THEN 1
@@ -303,10 +300,11 @@ BEGIN
 
 			IF @totalBettrans < @maxRow OR @IsExportExcel = 1
 			BEGIN
-				INSERT INTO #tempPagingData(winlostdate, custid, username)
+				INSERT INTO #tempPagingData(winlostdate, custid, username, nickname)
 				SELECT b.winlostdate
 						, b.Custid
 						, b.username
+						, b.nickname				
 				FROM #tempData b
 					INNER JOIN #bettype bt
 					ON b.bettype 	=  bt.typeid
@@ -318,7 +316,8 @@ BEGIN
 					b.winlostdate
 					, b.custid
 					, b.username
-				ORDER BY winlostdate DESC, username
+					, b.nickname
+				ORDER BY winlostdate DESC, nickname
 				
 				SET @totalSumRpt = @@ROWCOUNT	
 			END
@@ -350,6 +349,7 @@ BEGIN
 			, p.winlostdate
 			, p.custid
 			, p.username
+			, p.nickname
 		FROM #tempPagingData p
 	END
 	ELSE
@@ -360,6 +360,7 @@ BEGIN
 			, p.winlostdate
 			, p.custid
 			, p.username
+			, p.nickname
 		FROM #tempPagingData p
 		WHERE p.RowIdx BETWEEN @offsetRow AND @maxRow
 	END
