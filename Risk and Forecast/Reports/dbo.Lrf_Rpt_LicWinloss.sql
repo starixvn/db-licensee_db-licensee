@@ -826,7 +826,7 @@ BEGIN
 	(  
 		winlostdate, Currency,
 		TurnoverSB, TurnoverBA, TurnoverNG, TurnoverVS, TurnoverCS,
-		TurnoverKN, turnoverAGC, turnoverVB, turnoverAB, turnoverFW, turnoverCO, TurnoverVS2, TurnoverLT, TurnoverPP, TurnoverCC, TurnoverSG, TurnoverVRG
+		TurnoverKN, turnoverAGC, turnoverVB, turnoverAB, turnoverFW, turnoverCO, TurnoverVS2, TurnoverLT, TurnoverPP, TurnoverCC, TurnoverSG, TurnoverVRG,
 		BTActualStake, Winlost,
 		LicenseeWLSB, LicenseeWLBA, LicenseeWLNG, LicenseeWLVS, LicenseeWLCS,
 		LicenseeWLKN, LicenseeWLAGC, LicenseeWLVB, LicenseeWLAB, LicenseeWLFW, LicenseeWLCO, LicenseeWLVS2, LicenseeWLLT, LicenseeWLPP, LicenseeWLCC, LicenseeWLSG, LicenseeWLVRG,
