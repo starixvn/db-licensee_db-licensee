@@ -83,7 +83,8 @@ BEGIN
 		SELECT c.CustId, MIN(tv.CreatedDate) CreatedDate		
 		FROM #CustList c
 			INNER JOIN dbo.TicketVoiding_VoidedTransaction tv WITH (NOLOCK) ON c.CustId = tv.custid			
-		WHERE IssueTypeId = 11			
+		WHERE IssueTypeId = 11	
+		GROUP BY c.CustId
 	)
 	UPDATE c
 	SET c.CreatedDate = CASE WHEN c.CreatedDate < t.CreatedDate THEN c.CreatedDate ELSE t.CreatedDate END
