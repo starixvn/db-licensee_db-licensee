@@ -1,6 +1,5 @@
 /*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
-
-ALTER PROCEDURE Lrf_ProblemAccount_LicenseeProblemPlayerSel	
+ALTER PROCEDURE Lrf_ProblemAccount_LicenseeProblemPlayerSel
 	@FromDate	DATETIME,
 	@ToDate		DATETIME,
 	@Username	VARCHAR(50) = '',
@@ -34,7 +33,7 @@ BEGIN
 	SELECT  @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
 
 	CREATE TABLE #TempAg (custid INT)
-	CREATE TABLE #CustList (CustId INT PRIMARY KEY, CreatedDate DATETIME, username VARCHAR(50), username2 VARCHAR(50))
+	CREATE TABLE #CustList (CustId INT PRIMARY KEY, CreatedDate DATETIME, username VARCHAR(50), username2 VARCHAR(50), isMarkVoid BIT)
 	
 	DECLARE @DocHandler INT
 
@@ -58,9 +57,10 @@ BEGIN
 	
 	IF @Username <> ''
 	BEGIN
-		INSERT INTO #CustList(custid,CreatedDate,username,username2)
+		INSERT INTO #CustList(custid,CreatedDate,username,username2,isMarkVoid)
 		SELECT ci.custid,p.CreatedDate, username, 
-			SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) AS username2
+			SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) AS username2,
+			isMarkVoid
 		FROM customer ci WITH(NOLOCK)
 			INNER JOIN ProblemAccount p WITH(NOLOCK) ON ci.custid = p.custid
 		WHERE ci.recommend IN (SELECT custid FROM #TempAg)
@@ -69,9 +69,10 @@ BEGIN
 	END
 	ELSE
 	BEGIN
-		INSERT INTO #CustList(custid,CreatedDate,username,username2)
+		INSERT INTO #CustList(custid,CreatedDate,username,username2,isMarkVoid)
 		SELECT ci.custid,p.CreatedDate, username, 
-			SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) AS username2
+			SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) AS username2,
+			isMarkVoid
 		FROM customer ci WITH(NOLOCK)
 			INNER JOIN ProblemAccount p WITH(NOLOCK) ON ci.custid = p.custid
 		WHERE ci.recommend IN (SELECT custid FROM #TempAg)

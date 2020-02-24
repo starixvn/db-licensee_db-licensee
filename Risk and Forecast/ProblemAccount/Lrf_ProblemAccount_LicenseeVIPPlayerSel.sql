@@ -1,6 +1,6 @@
 /*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
 
-ALTER PROCEDURE Lrf_ProblemAccount_LicenseeVIPPlayerSel
+ALTER PROCEDURE [dbo].[Lrf_ProblemAccount_LicenseeVIPPlayerSel]
 	@Username	VARCHAR(50) = '',
 	@AgentList	VARCHAR(MAX),
 	@VipOption	TINYINT = 0,
@@ -32,7 +32,7 @@ BEGIN
 	SELECT  @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
 
 	CREATE TABLE #TempAg (custid INT)
-	CREATE TABLE #CustList (CustId INT PRIMARY KEY, username VARCHAR(50), username2 VARCHAR(50))
+	CREATE TABLE #CustList (CustId INT PRIMARY KEY, username VARCHAR(50), username2 VARCHAR(50), isVIP BIT)
 	
 	DECLARE @DocHandler INT
 
@@ -79,7 +79,7 @@ BEGIN
 			SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) AS username2,
 			CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END AS isVIP
 		FROM customer ci WITH(NOLOCK)
-			LEFT JOIN Dep_CustVIP d WITH(NOLOCK) ON ci.custid = d.custid
+			LEFT JOIN Dep_CustVIP d WITH(NOLOCK) ON ci.custid = d.custid			
 		WHERE ci.recommend IN (SELECT custid FROM #TempAg)
 			AND roleid = 1			
 		)
@@ -101,7 +101,9 @@ BEGIN
 											CASE WHEN @SortType = 2 THEN OrderCol END DESC) rn
 	FROM t1
 	)
-	SELECT t2.*, CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END as isVIP
-	FROM t2 		
+	SELECT t2.*,ISNULL(isMarkVoid,0) isMarkVoid			
+	FROM t2 
+		LEFT JOIN ProblemAccount p WITH(NOLOCK) ON t2.custid = p.custid
 	WHERE rn BETWEEN @rowstart AND @rowend
 END	
+GO
