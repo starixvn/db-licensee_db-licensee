@@ -83,10 +83,10 @@ BEGIN
 		dc.ClosingBalance,
 		dc.ArchivedDate,
 		dc.Recommend
-	FROM dbo.Dep_Customer_Archived AS dc WITH (NOLOCK)
-	WHERE EXISTS (SELECT 1 FROM @TempAg WHERE CustId = dc.Recommend)
-		AND (dc.username2 LIKE '%$' + @Username + '%'
-			OR dc.username LIKE  @Username + '%') 
+	FROM dbo.Dep_Customer_Archived AS dc WITH (NOLOCK, INDEX = IX_Recommend)
+		INNER JOIN @TempAg AS a ON dc.Recommend = a.CustId 
+	WHERE dc.username2 LIKE '%$' + @Username + '%'
+		OR dc.username LIKE  @Username + '%'
 
 	DELETE c
 	FROM #AllMember AS c
