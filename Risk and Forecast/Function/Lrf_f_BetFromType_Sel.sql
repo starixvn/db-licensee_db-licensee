@@ -1,19 +1,22 @@
 ﻿/*<info serverAlias="DBEXT-bodb02" selecters="bodbLicenseeNet" isFunction="1" isNested="1"></info>*/
-CREATE FUNCTION [dbo].[Lrf_f_BetFromType_Sel]
+
+ALTER FUNCTION [dbo].[Lrf_f_BetFromType_Sel]
 (
 	@PlatformType	TINYINT = 0
 )
-/*  
+
+/*
 	Create: 20191226 
-	Description: Get BetFrom Type  
+	Description: Get BetFrom Type
 	DB: DBEXT.bodb02
-    
-	Revisions:  	  
+
+	Revisions:
 		- 20191226@Vickie: Get BetFrom by PlatformType [Redmine: #125824]
 		- 20200228@Vickie: Integrate 3 new betffrom [Redmine: #129253]
-*/  
-RETURNS TABLE  
-RETURN  
+*/
+
+RETURNS TABLE
+RETURN
 	SELECT PlatformType, betfrom
 	FROM (
 		VALUES	(1, 'd'),
