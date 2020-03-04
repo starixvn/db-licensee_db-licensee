@@ -1,15 +1,15 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_CustomerSelByUsername]
-	@LicenseeName	VARCHAR(50),
-	@username		VARCHAR(50) = NULL,
-	@SearchOption	TINYINT = 0,
-	@PageSize		INT = 50,
-	@PageIndex		INT = 1,
-	@BAFilter		SMALLINT = 0,	
-	@TotalRows		INT = 0  OUTPUT,
-	@SpecialLevel	VARCHAR(100) = '', 
-	@OddsGroups		VARCHAR(100) = '',
-	@AgentList		VARCHAR(MAX)
+	@LicenseeName		VARCHAR(50),
+	@username			VARCHAR(50) = NULL,
+	@SearchOption		TINYINT = 0,
+	@PageSize			INT = 50,
+	@PageIndex			INT = 1,
+	@BAFilter			SMALLINT = 0,	
+	@TotalRows			INT = 0  OUTPUT,
+	@SpecialLevel		VARCHAR(100) = '', 
+	@OddsGroups			VARCHAR(100) = '',
+	@AgentList			VARCHAR(MAX)
 AS
 
 /*
@@ -21,6 +21,7 @@ AS
 	Revisions:
 		- 20190621@Johnson: initial sp [redmine: #112658]
 		- 20200220@Louis: Cheat currency name for HID Currency [RedmineID: #128816]
+		- 20200304@Louis: Add Match Precise [redmine: #129757]
 	
 	Parameter's explanations:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
@@ -29,6 +30,7 @@ AS
 		+ @searchOption: 1- Match prefix
 						 2- Match case
 						 3- Quick search
+						 4- Match Precise and System ID
 */
 BEGIN
 	SET NOCOUNT ON
@@ -260,8 +262,7 @@ BEGIN
 				LEFT JOIN bodb_Licensee.dbo.LicenseeBAHistory lb WITH(NOLOCK) ON lb.LicenseeID = ' + CONVERT(VARCHAR(10),@LicenseeID) + ' AND c.custid = lb.custid AND lb.[Status] = ''Running''				
 			WHERE ISNULL (lb.CustID, 0) = 0
 				AND ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ')'				
-				
-		
+						
 			--EXEC sp_executesql @strSQL
 			EXEC (@strSQL)
 		
@@ -306,7 +307,8 @@ BEGIN
 					c.RoleID = 1
 					AND ((1= '+CONVERT(VARCHAR(10),@searchOption)+ ' AND c.username2 LIKE ''%$' + @Username + '%'') 
 						OR (2= '+CONVERT(VARCHAR(10),@searchOption)+ ' AND SUBSTRING(c.username2,CHARINDEX(''$'',c.username2)+1,len(c.username2)) LIKE ''%' + @Username + '%'') 
-						OR (3= '+ CONVERT(VARCHAR(10),@searchOption) +' AND c.username2 LIKE ''%$' + @Username + ''') ' 
+						OR (3= '+ CONVERT(VARCHAR(10),@searchOption) +' AND c.username2 LIKE ''%$' + @Username + ''')
+						OR (4= '+ CONVERT(VARCHAR(10),@searchOption) +' AND (c.username2 LIKE ''%$' + @Username + ''' OR c.username = ''' + @Username + ''')) ' 
 						+ ')
 					AND c.username NOT LIKE ''%CashOut%''					
 					AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))
@@ -326,13 +328,14 @@ BEGIN
 					c.roleId = 1 
 					AND ((1= '+CONVERT(VARCHAR(10),@searchOption)+ ' AND c.username2 LIKE ''%$' + @Username + '%'') 
 						OR (2= '+CONVERT(VARCHAR(10),@searchOption)+ ' AND SUBSTRING(c.username2,CHARINDEX(''$'',c.username2)+1,len(c.username2)) LIKE ''%' + @Username + '%'') 
-						OR (3= '+ CONVERT(VARCHAR(10),@searchOption) +' AND c.username2 LIKE ''%$' + @Username + ''') '
+						OR (3= '+ CONVERT(VARCHAR(10),@searchOption) +' AND c.username2 LIKE ''%$' + @Username + ''') 
+						OR (4= '+ CONVERT(VARCHAR(10),@searchOption) +' AND (c.username2 LIKE ''%$' + @Username + ''' OR c.username = ''' + @Username + ''')) '
 						+ ')
 					AND c.username NOT LIKE ''%CashOut%''					
 					AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))
 					AND ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ')				
 					AND ((' + CONVERT(VARCHAR(10),@BAFilter) + ' = 1 AND ISNULL(lb.[Status],'''') = ''Running'')'
-					+ ' OR ('+ CONVERT(VARCHAR(10),@BAFilter) + '= 2 AND ISNULL(lb.[Status],'''') != ''Running''))'
+					+ ' OR ('+ CONVERT(VARCHAR(10),@BAFilter) + '= 2 AND ISNULL(lb.[Status],'''') != ''Running''))'	
 		END			
 					
 		--EXEC sp_executesql @strSQL
