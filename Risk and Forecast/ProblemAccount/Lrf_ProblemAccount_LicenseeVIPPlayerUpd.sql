@@ -30,7 +30,7 @@ BEGIN
 	DECLARE @startRun DATETIME, @endRun DATETIME, @duration INT
 	SET @startRun = GETDATE()
 	
-	CREATE TABLE #tblCust (custid INT, username VARCHAR(50), roleid TINYINT, isVip BIT, isMarkVoid BIT, isLog BIT DEFAULT 0, isUpdate BIT DEFAULT 0)
+	CREATE TABLE #tblCust (custid INT, username VARCHAR(50), roleid TINYINT, isVip BIT, isMarkVoid BIT DEFAULT 0, isLog BIT DEFAULT 0, isUpdate BIT DEFAULT 0)
 	CREATE TABLE #TempAg (custid INT)
 	
 	DECLARE @Result TABLE(ErrCode INT,cnt INT, ErrMsg VARCHAR(MAX))
@@ -63,8 +63,8 @@ BEGIN
 	FROM dbo.strSplit(@username,',')
 	
 	;WITH c AS (
-		SELECT custid,roleid,SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) as username
-		FROM customer WITH(NOLOCK)
+		SELECT custid,roleid, username
+		FROM customer ci WITH(NOLOCK)
 		WHERE recommend IN (SELECT custid FROM #TempAg)
 			AND roleid = 1	
 	)			
@@ -165,6 +165,7 @@ BEGIN
 				
 		EXEC Acc_CustomerInfo_Execrep_03 
 			@CustList = @custList,
+			@UserID = @UserID,
 			@isVip = @isVip,
 			@mode = 'VIPStatus'
 		

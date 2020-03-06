@@ -21,8 +21,8 @@ AS
 			- 20200211@Johnson: initial sp [redmine:#128077]
 			
 		Paramter's Explanations:
-			@OrderCol = 1: sort by external ID
-						= 2: System ID
+			@OrderCol = 1: System ID
+						= 2: sort by external ID
 						= 3: MarkDate
 			@SortType = 1: ASC, 2: DESC			
 	*/
@@ -60,19 +60,19 @@ BEGIN
 		INSERT INTO #CustList(custid,CreatedDate,username,username2,isMarkVoid)
 		SELECT ci.custid,p.CreatedDate, username, 
 			SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) AS username2,
-			isMarkVoid
+			ISNULL(isMarkVoid,0)
 		FROM customer ci WITH(NOLOCK)
 			INNER JOIN ProblemAccount p WITH(NOLOCK) ON ci.custid = p.custid
 		WHERE ci.recommend IN (SELECT custid FROM #TempAg)
 			AND roleid = 1
-			AND (username  LIKE @username + '%' OR username2 LIKE '%$'+@username)			
+			AND (username  LIKE @username + '%' OR username2 LIKE '%$'+@username + '%')			
 	END
 	ELSE
 	BEGIN
 		INSERT INTO #CustList(custid,CreatedDate,username,username2,isMarkVoid)
 		SELECT ci.custid,p.CreatedDate, username, 
 			SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) AS username2,
-			isMarkVoid
+			ISNULL(isMarkVoid,0)
 		FROM customer ci WITH(NOLOCK)
 			INNER JOIN ProblemAccount p WITH(NOLOCK) ON ci.custid = p.custid
 		WHERE ci.recommend IN (SELECT custid FROM #TempAg)

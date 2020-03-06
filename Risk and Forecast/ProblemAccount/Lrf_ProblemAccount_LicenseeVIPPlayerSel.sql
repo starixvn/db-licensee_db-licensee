@@ -21,8 +21,8 @@ AS
 			
 		Paramter's Explanations:
 			- @VipOption: 0: All, 1: Yes, 2 : No
-			- @OrderCol = 1: sort by external ID
-						= 2: System ID						
+			- @OrderCol = 1: sort by System ID	
+						= 2: external ID					
 			- @SortType = 1: ASC, 2: DESC			
 	*/
 BEGIN
@@ -64,7 +64,10 @@ BEGIN
 			LEFT JOIN Dep_CustVIP d WITH(NOLOCK) ON ci.custid = d.custid
 		WHERE ci.recommend IN (SELECT custid FROM #TempAg)
 			AND roleid = 1
-			AND (username  LIKE @username + '%' OR username2 LIKE '$'+@username+'%')
+			AND (username  LIKE @username + '%' OR username2 LIKE '%$'+@username + '%')
+			AND ci.username  NOT LIKE '%CASHOUT%'
+			AND ci.username  NOT LIKE '%ClearBal%'
+			AND ci.username  NOT LIKE '%BetTrade%'
 		)
 		INSERT INTO #CustList(custid,username,username2,isVip)
 		SELECT custid, username, username2, isVip
@@ -81,7 +84,10 @@ BEGIN
 		FROM customer ci WITH(NOLOCK)
 			LEFT JOIN Dep_CustVIP d WITH(NOLOCK) ON ci.custid = d.custid			
 		WHERE ci.recommend IN (SELECT custid FROM #TempAg)
-			AND roleid = 1			
+			AND roleid = 1	
+			AND ci.username  NOT LIKE '%CASHOUT%'	
+			AND ci.username  NOT LIKE '%ClearBal%'
+			AND ci.username  NOT LIKE '%BetTrade%'
 		)
 		INSERT INTO #CustList(custid,username,username2,isVip)
 		SELECT custid, username, username2, isVip
