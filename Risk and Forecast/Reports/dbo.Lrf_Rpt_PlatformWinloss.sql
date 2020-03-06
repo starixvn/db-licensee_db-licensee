@@ -59,6 +59,7 @@ AS
 		- 20190312@Amanda: Add new bet types Single Match Parlay (ID: 38) [RedmineID: #108298]
 		- 20191226@Vickie: Add platform 0 and change ID platform v[RedmineID: #125824]
 		- 20191212@Vickie: Integrate SpadeGaming [RedmineID: #124103]
+		- 20200306@Kos: Enhance performance [RedmineID: #129722]
 
 	Param's Explanation:  
 	  + @PlatformType:  0: All  
@@ -373,7 +374,7 @@ BEGIN
 					   BetCount
 			FROM dbo.bettrans b WITH (NOLOCK)
 				INNER JOIN #tempAg tma ON tma.CustID=b.recommend AND b.currency = tma.currency
-				INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON tma.custid=BA.recommend and b.transid = BA.transid 	 	
+				INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON b.transid = BA.transid 	 	
 				INNER JOIN #PlatformList pl ON pl.betfrom = b.betfrom
 			WHERE
 				b.statusID  IN (111, 112, 113)
