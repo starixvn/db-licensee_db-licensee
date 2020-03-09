@@ -30,7 +30,16 @@ BEGIN
 	DECLARE @startRun DATETIME, @endRun DATETIME, @duration INT
 	SET @startRun = GETDATE()
 	
-	CREATE TABLE #tblCust (custid INT, username VARCHAR(50), roleid TINYINT, isVip BIT, isMarkVoid BIT DEFAULT 0, isLog BIT DEFAULT 0, isUpdate BIT DEFAULT 0)
+	CREATE TABLE #tblCust (custid INT, 
+							username VARCHAR(50), 
+							roleid TINYINT, 
+							isVip BIT, 
+							isMarkVoid BIT DEFAULT 0, 
+							isLog BIT DEFAULT 0, 
+							isUpdate BIT DEFAULT 0,
+							MaxBet MONEY,
+							MaxPerEvent MONEY	
+							)
 	CREATE TABLE #TempAg (custid INT)
 	
 	DECLARE @Result TABLE(ErrCode INT,cnt INT, ErrMsg VARCHAR(MAX))
@@ -59,7 +68,7 @@ BEGIN
 	END CATCH;
 	
 	INSERT INTO #tblCust(username)
-	SELECT val
+	SELECT DISTINCT val
 	FROM dbo.strSplit(@username,',')
 	
 	;WITH c AS (
@@ -115,7 +124,9 @@ BEGIN
 	END
 	
 	UPDATE t
-	SET t.isMarkVoid = ISNULL(p.isMarkVoid,0)
+	SET t.isMarkVoid = ISNULL(p.isMarkVoid,0),
+		t.MaxBet = p.MaxBet,
+		t.MaxPerEvent = p.MaxPerEvent
 	FROM #tblCust t
 		INNER JOIN ProblemAccount p WITH(NOLOCK) ON t.custid = p.custid
 	
@@ -185,30 +196,38 @@ BEGIN
 	-- Write log
 	DECLARE @LogData VARCHAR(500),
 			@LogData_Old VARCHAR(500),
+			@MaxBet MONEY,
+			@MaxPerEvent MONEY,
 			@custid INT
 			
-	SELECT  @LogData = '<R'							
-							+ ' IsVip="' + COALESCE(CAST(@IsVip AS VARCHAR(10)), SPACE(1)) + '"'
-							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
-							+ ' />'	
-							
-	SELECT  @LogData_old = '<R'
-							+ ' IsVip="' + COALESCE(CAST(CASE WHEN @IsVip = 1 THEN 0 ELSE 1 END AS VARCHAR(10)), SPACE(1)) + '"'
-							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
-							+ ' />'
-	
 	WHILE (1=1)
 	BEGIN
 		UPDATE TOP (1) t
 		SET isLog = 1,
-			@custid = custid
+			@custid = custid,
+			@MaxBet = MaxBet,
+			@MaxPerEvent = MaxPerEvent
 		FROM #tblCust t
 		WHERE isLog = 0
 			AND isUpdate = 1
 		
 		IF @@ROWCOUNT = 0
 			BREAK;
-			
+		
+		SELECT  @LogData = '<R'							
+							+ ' IsVip="' + COALESCE(CAST(@IsVip AS VARCHAR(10)), SPACE(1)) + '"'
+							+ ' MB="' + CASE WHEN @isVip = 0 THEN COALESCE(dbo.f_FomatNumber(CAST(@MaxBet AS VARCHAR(10))), SPACE(1)) ELSE '' END + '"'
+							+ ' MPM="' + CASE WHEN @isVip = 0 THEN COALESCE(dbo.f_FomatNumber(CAST(@MaxPerEvent AS VARCHAR(10))), SPACE(1)) ELSE '' END + '"'
+							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
+							+ ' />'	
+							
+		SELECT  @LogData_old = '<R'
+								+ ' IsVip="' + COALESCE(CAST(CASE WHEN @IsVip = 1 THEN 0 ELSE 1 END AS VARCHAR(10)), SPACE(1)) + '"'
+								+ ' MB="' + COALESCE(dbo.f_FomatNumber(CAST(@MaxBet AS VARCHAR(10))), SPACE(1)) + '"'
+								+ ' MPM="' + COALESCE(dbo.f_FomatNumber(CAST(@MaxPerEvent AS VARCHAR(10))), SPACE(1)) + '"'
+								+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
+								+ ' />'
+							
 		EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
 				@UserId				= @UserId,
 				@CustID				= @custid,		
