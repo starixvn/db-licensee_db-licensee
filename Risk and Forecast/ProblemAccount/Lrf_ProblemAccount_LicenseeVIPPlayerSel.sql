@@ -4,8 +4,8 @@ ALTER PROCEDURE [dbo].[Lrf_ProblemAccount_LicenseeVIPPlayerSel]
 	@Username	VARCHAR(50) = '',
 	@AgentList	VARCHAR(MAX),
 	@VipOption	TINYINT = 0,
-	@OrderCol	TINYINT = 0,
-	@SortType	TINYINT = 0,
+	@OrderCol	TINYINT = 1,
+	@SortType	TINYINT = 1,
 	
 	@PageSize	INT = 1000,
 	@PageIndex	INT = 1,
@@ -111,5 +111,6 @@ BEGIN
 	FROM t2 
 		LEFT JOIN ProblemAccount p WITH(NOLOCK) ON t2.custid = p.custid
 	WHERE rn BETWEEN @rowstart AND @rowend
+	ORDER BY rn ASC
 END	
 GO

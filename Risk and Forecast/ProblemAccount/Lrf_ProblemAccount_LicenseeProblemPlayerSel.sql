@@ -5,8 +5,8 @@ ALTER PROCEDURE Lrf_ProblemAccount_LicenseeProblemPlayerSel
 	@Username	VARCHAR(50) = '',
 	@AgentList	VARCHAR(MAX),
 	@IsCheckAll	BIT,
-	@OrderCol	TINYINT = 0,
-	@SortType	TINYINT = 0,
+	@OrderCol	TINYINT = 1,
+	@SortType	TINYINT = 1,
 	
 	@PageSize	INT = 500,
 	@PageIndex	INT = 1,
@@ -114,6 +114,7 @@ BEGIN
 		FROM t2 
 			LEFT JOIN Dep_CustVIP d WITH(NOLOCK) ON t2.custid = d.custid
 		WHERE rn BETWEEN @rowstart AND @rowend
+		ORDER BY rn ASC
 	END
 	ELSE
 	BEGIN
@@ -126,6 +127,7 @@ BEGIN
 		FROM t
 			LEFT JOIN Dep_CustVIP d WITH(NOLOCK) ON t.custid = d.custid
 		WHERE rn BETWEEN @rowstart AND @rowend
+		ORDER BY rn ASC
 	END	
 END
 GO	
