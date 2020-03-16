@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+﻿/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 SET QUOTED_IDENTIFIER ON 
 GO
@@ -21,6 +21,7 @@ Revisions:
 	- 20160523@Jim: Currency permision restrict (#53882)
 	- 20170216@Sophia: Get AgentID, cast isActive as BIT, remove @excludeTest [Redmine: #71679]
 	- 20180509@Joseph: Cheat currency name for special currencies [RedmineID: #94845]
+	- 20200220@Louis: Cheat currency name for HID Currency [RedmineID: #128816]
 Param's Explanation:
 */
 
@@ -41,6 +42,7 @@ BEGIN
 				WHEN 75 THEN 'PTU'
 				WHEN 76 THEN 'PS'
 				WHEN 77 THEN 'PTH'
+				WHEN 92 THEN 'HID'
 				ELSE e.Code 
 			END AS CurrencyName,
 			CASE WHEN ISNULL(c.CurrencyID,0)=0 THEN CAST(0 AS BIT) ELSE CAST(1 AS BIT) END isActive,
@@ -57,6 +59,7 @@ BEGIN
 				WHEN 75 THEN 'PTU'
 				WHEN 76 THEN 'PS'
 				WHEN 77 THEN 'PTH'
+				WHEN 92 THEN 'HID'
 				ELSE e.Code 
 			END
 	
