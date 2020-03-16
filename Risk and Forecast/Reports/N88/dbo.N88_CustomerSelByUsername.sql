@@ -113,7 +113,13 @@ BEGIN
 		closed			BIT,
 		reject			BIT
 	)
-
+	
+	CREATE TABLE #Exchange
+	(
+		Id				INT PRIMARY KEY,
+		Name			VARCHAR(50),
+	)
+	
 	DECLARE @TempBACust TABLE
 	(
 		ID		INT IDENTITY(1, 1),
@@ -454,18 +460,13 @@ BEGIN
 		INNER JOIN bettrans b WITH(NOLOCK) ON t.custid = b.custid		
 	WHERE b.matchid >= 0
 	GROUP BY t.custid
+	
+	INSERT INTO #Exchange(Id, Name)	EXEC Lrf_CurrencySel 
 
 	SELECT
 		t.custid,
-		CASE ex.exchangeid
-				WHEN 20 THEN 'UUS' 
-				WHEN 51 THEN 'INH'
-				WHEN 70 THEN 'MKK'
-				WHEN 75 THEN 'PTU'
-				WHEN 76 THEN 'PS'
-				WHEN 77 THEN 'PTH'
-				ELSE ex.Code END as currency,
-		ex.exchangeid,
+		ex.Name AS currency,
+		ex.Id AS exchangeid,
 		username,
 		closed,
 		suspended,
@@ -478,7 +479,7 @@ BEGIN
 		CAST((ISNULL(d.Outstanding, 0)	+ ISNULL(tl.actual_stake,0)) AS MONEY) AS Outstanding,
 		ISNULL(UPPER(t.ugroup), '') AS OddsGroup
 	FROM #Temp t
-		INNER JOIN Exchange ex WITH(NOLOCK ) ON t.currency = ex.exchangeid
+		INNER JOIN #Exchange ex WITH(NOLOCK ) ON t.currency = ex.id
 		LEFT JOIN #Data d ON t.custid = d.custid
 		LEFT JOIN
 		(
