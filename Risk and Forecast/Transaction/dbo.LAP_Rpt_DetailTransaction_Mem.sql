@@ -1,12 +1,11 @@
-/*<info serverAlias="DBONUSER-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBBAH-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[LAP_Rpt_DetailTransaction_Mem] 
     @CustID			INT = 4759075,  
     @FromDate		DATE = '2020-01-01',  
     @ToDate			DATE = '2020-04-01',
     @PageSize		INT = NULL,  
     @PageIndex		INT = 1,  
-    @BaseCurrency	VARCHAR(3) = '',
-    @TotalRows		INT = 0 OUTPUT 
+    @TotalRow		INT = 0 OUTPUT 
 AS
 /*
 	Created:Bobby@20200313  
@@ -85,8 +84,8 @@ BEGIN
 			AND BalanceChanged <> 0
 	) AS br
 
-	-- SET @TotalRows
-	SELECT @TotalRows		= @@ROWCOUNT
+	-- SET @TotalRow
+	SELECT @TotalRow		= @@ROWCOUNT
 	
 	DECLARE @_rowStart		INT
 		, @_rowEnd			INT
