@@ -25,6 +25,7 @@ AS
 		- 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
 		- 20190724@Amanda: Bet Setting - Hide CC product [RedmineID: #115449]
 		- 20191212@Vickie: Integrate SpadeGaming [RedmineID: #124103]
+		- 20200108@Vickie: Bet Setting - Hide VRG product [RedmineID: #124911]
 	Param's Explanation:
 */
 
@@ -107,7 +108,7 @@ BEGIN
 		   ,ProductCode
 		   ,isEnable
 	FROM @tblProductActive t 
-	WHERE ProductID NOT IN (3,7,9,4,1,14,17,34,36)-- Hide Setting for CashOut and LC and RB and Microgaming and CC
+	WHERE ProductID NOT IN (3,7,9,4,1,14,17,34,36,37,38)-- Hide Setting for CashOut,LC,RB,Microgaming,CC,SG,SPR and VRG
 	ORDER BY ProductID ASC
 	
 END
