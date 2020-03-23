@@ -64,6 +64,7 @@ AS
 		- 20191212@Vickie: Integrate SpadeGaming [RedmineID: #124103]
 		- 20200108@Vickie: Add new product Virtual Games [RedmineID: #124911]
 		- 20200408@Kos: Change to use product list [RedmineID: #131447]
+	- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
 
 	Param's Explanation:
 		@OrderItem:
@@ -150,6 +151,11 @@ BEGIN
 
 	IF @ShowBA = 1
 		SET @ProductList = @ProductList + ',SB'
+
+	IF @ShowI4D = 1 -- VRG
+	BEGIN
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'I4D', 'I4D')
+	END
 
 	IF LEN(ISNULL(@ProductList, '')) > 0 
 	BEGIN

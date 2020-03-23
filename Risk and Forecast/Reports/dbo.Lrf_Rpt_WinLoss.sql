@@ -23,6 +23,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
 	@ShowSG			BIT = 0, -- SpadeGaming
 	@ShowVRG		BIT = 0, -- Virtual Games
 	@ShowTG			BIT = 0, -- Table Games
+	@ShowI4D		BIT = 0, -- Indo 4D
     @MoveBetsDay	DATETIME,
     @PageSize		INT = 1000,
     @PageIndex		INT = 1,
@@ -116,6 +117,7 @@ AS
 		- 20191230@Amanda: Integrate SpadeGaming [RedmineID: #124103]
 		- 20200108@Vickie: Add new product Virtual Games [RedmineID: #124911]
 		- 20200406@Hogan: Add new product Table Games [RedmineID: #131447]
+		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
 
 	Param's Explanation:
 		@OrderItem:
@@ -312,6 +314,8 @@ BEGIN
 	SELECT 'VRG' AS Code WHERE @ShowVRG = 1
 	UNION ALL
 	SELECT 'TG' AS Code WHERE @ShowTG = 1
+	UNION ALL
+	SELECT 'I4D' AS Code WHERE @ShowI4D = 1
 
 	-- BT & CO belong to SB
 	SELECT @ProductList = COALESCE(@ProductList + ',' + Code, Code)

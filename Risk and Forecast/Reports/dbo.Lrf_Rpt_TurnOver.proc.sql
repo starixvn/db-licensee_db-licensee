@@ -23,6 +23,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_TurnOver]
 	@ShowSG			BIT = 0, -- SpadeGaming 
 	@ShowVRG		BIT = 0, -- Virtual Games
 	@ShowTG			BIT = 0, -- Table Games
+	@ShowI4D		BIT = 0, -- Indo 4D
 	@AgentList		VARCHAR(MAX),
 	@BaseCurrency	VARCHAR(3)
 AS 
@@ -79,6 +80,7 @@ Revisions:
    - 20191212@Vickie: Integrate SpadeGaming [RedmineID: #124103]
    - 20200108@Vickie: Add new product Virtual Games [RedmineID: #124911]
    - 20200406@Hogan: Add new product Table Games [RedmineID: #131447]
+   - 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
 
 Param's Explanation:
     
@@ -142,6 +144,7 @@ BEGIN
 	IF @ShowSG	= 1 INSERT INTO @sporttype(sporttype) VALUES(247)
 	IF @ShowVRG	= 1 INSERT INTO @sporttype(sporttype) VALUES(245)
 	IF @ShowTG	= 1 INSERT INTO @sporttype(sporttype) VALUES(222)
+	IF @ShowI4D	= 1 INSERT INTO @sporttype(sporttype) VALUES(233)
 
 	IF @username <> ''
 	BEGIN

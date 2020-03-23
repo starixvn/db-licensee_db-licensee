@@ -13,6 +13,7 @@ AS
 	Revisions:
 		- 20190626@Johnson: initial sp [redmine: #112658]
 		- 20200406@Hogan: Add new product Table Games [RedmineID: #131447]
+		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
 	Param's Explanation:
 */
 
@@ -104,7 +105,8 @@ BEGIN
 			10,--	AG Casino
 			8,--	RNG Keno
 			28,--	Lottery
-			40--	Table
+			40,--	Table
+			43 --	I4D
 			)
 	ORDER BY ProductID ASC
 	

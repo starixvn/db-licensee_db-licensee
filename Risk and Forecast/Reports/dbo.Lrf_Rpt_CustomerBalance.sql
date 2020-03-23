@@ -26,6 +26,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerBalance]
 	, @ShowSG		BIT = 0 -- Spadegaming 
 	, @ShowVRG		BIT = 0 -- Virtual Games
 	, @ShowTG		BIT = 0 -- Table Games
+	, @ShowI4D		BIT = 0 -- Indo 4D
 	,@AgentList		VARCHAR(MAX)
 AS
 /*  
@@ -73,6 +74,7 @@ Revisions:
 	- 20191212@Vickie: Integrate SpadeGaming [RedmineID: #124103]
 	- 20200108@Vickie: Add new product Virtual Games [RedmineID: #124911]
 	- 20200406@Hogan: Add new product Table Games [RedmineID: #131447]
+	- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
 
 Param's Explanation:  
 	+ @excludeTest: remove currency UUS  
@@ -198,6 +200,11 @@ BEGIN
 	IF @ShowTG = 1 -- Table Games
 	BEGIN 
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'TG', 'TG')
+	END
+
+	IF @ShowI4D = 1
+	BEGIN
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'I4D', 'I4D')
 	END
 
 	IF LEN(ISNULL(@ProductList, '')) > 0 
