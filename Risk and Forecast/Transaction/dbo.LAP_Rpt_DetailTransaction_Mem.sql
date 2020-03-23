@@ -10,7 +10,7 @@ AS
 /*
 	Created:Bobby@20200313  
 	Task : 130293 - LAP - Detail Transaction Member
-	DB: DBONUSER/bodb02
+	DB: DBBAH/bodb02
 	Revisions:  
 		- 20200313@Bobby: Initialize [RedmineID: #130293]
 	
