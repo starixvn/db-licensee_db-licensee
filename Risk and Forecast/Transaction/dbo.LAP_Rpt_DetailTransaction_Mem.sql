@@ -1,8 +1,8 @@
 /*<info serverAlias="DBBAH-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[LAP_Rpt_DetailTransaction_Mem] 
-    @CustID			INT = 4759075,  
-    @FromDate		DATE = '2020-01-01',  
-    @ToDate			DATE = '2020-04-01',
+    @CustID			INT,  
+    @FromDate		DATE,  
+    @ToDate			DATE,
     @PageSize		INT = NULL,  
     @PageIndex		INT = 1,  
     @TotalRow		INT = 0 OUTPUT 
