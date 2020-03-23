@@ -1,3 +1,9 @@
+/*
+	Created:	20200322@Bobby
+	Task:		130293 - LAP - Detail Transaction Member
+	DB:			DBBAH.bodb02
+*/
+
 use [bodb02]
 grant select on dbo.BalanceRecord to bodbLicenseeNet
 GO
