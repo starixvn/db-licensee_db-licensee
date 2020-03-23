@@ -63,7 +63,7 @@ BEGIN
 		SELECT transid
 			, bettype
 			, actiondate AS transtime
-			, action AS transremark
+			, REPLACE([action],'TransLog','Ticket') AS transremark
 			, BalanceChanged AS changedAmt
 			, NewBalance AS totalAmt
 		FROM BalanceRecord.dbo.BalanceRecord_bk br WITH(NOLOCK)
@@ -75,7 +75,7 @@ BEGIN
 		SELECT transid
 			, bettype
 			, actiondate AS transtime
-			, action AS transremark
+			, REPLACE([action],'TransLog','Ticket') AS transremark
 			, BalanceChanged AS changedAmt
 			, NewBalance AS totalAmt
 		FROM bodb02.dbo.BalanceRecord WITH(NOLOCK)
