@@ -91,6 +91,7 @@ AS
 		- 20190312@Amanda: Add new bet types Single Match Parlay (ID: 38) [RedmineID: #108298]
 		- 20191212@Vickie: Integrate SpadeGaming [RedmineID: #124103]
 		- 20200108@Vickie: Add new product Virtual Games [RedmineID: #124911]
+		- 20200323@Vickie: Hotfix miss TurnoverVRGUSD [RedmineID: #130896]
 		
 	Param's Explanation:  
 	  + @CustID: SuperID  
@@ -1269,6 +1270,7 @@ BEGIN
 		CAST(SUM(TurnoverPP		*e.USD)	AS MONEY)		AS TurnoverPPUSD,
 		CAST(SUM(TurnoverCC		*e.USD)	AS MONEY)		AS TurnoverCCUSD,
 		CAST(SUM(TurnoverSG		*e.USD)	AS MONEY)		AS TurnoverSGUSD,
+		CAST(SUM(TurnoverVRG	*e.USD)	AS MONEY)		AS TurnoverVRGUSD,
 		CAST(SUM(BTActualStake	*e.USD)	AS MONEY)		AS BTActualStakeUSD,
 		CAST(SUM(Winlost		*e.USD)	AS MONEY)       AS WinlostUSD,
 		CAST(SUM(LicenseeWLSB	*e.USD)	AS MONEY)		AS LicenseeWLSBUSD,
