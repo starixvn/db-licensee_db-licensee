@@ -1059,7 +1059,7 @@ BEGIN
 							ELSE 1 END
 						ELSE 1 END
 					ELSE 0 END) AS turnoverTG,
-				SUM(CASE WHEN b.sporttype = 233 THEN
+				SUM(CASE WHEN b.sporttype = 223 THEN
 					b.turnover
 					*
 					CASE WHEN @drawfilter IN (2,3) THEN
@@ -1088,8 +1088,7 @@ BEGIN
 				-SUM(CASE WHEN b.sporttype = 165 THEN b.winlost ELSE 0 END) AS LicenseeWLCC,
 				-SUM(CASE WHEN b.sporttype = 247 THEN b.winlost ELSE 0 END) AS LicenseeWLSG,
 				-SUM(CASE WHEN b.sporttype = 245 THEN b.winlost ELSE 0 END) AS LicenseeWLVRG,
-				-SUM(CASE WHEN b.sporttype = 222 THEN b.winlost ELSE 0 END) AS LicenseeWLTG,
-				-SUM(CASE WHEN b.sporttype = 233 THEN b.winlost ELSE 0 END) AS LicenseeWLI4D,
+				-SUM(CASE WHEN b.sporttype = 223 THEN b.winlost ELSE 0 END) AS LicenseeWLI4D,
 				0 AS AmountDueToBA,
 				0 AS CommBA,
 				SUM(CASE WHEN b.StatusID IN (112,113) THEN playercomm ELSE 0 END) AS PlayerComm,

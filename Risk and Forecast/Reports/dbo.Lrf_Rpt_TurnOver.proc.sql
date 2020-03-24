@@ -144,7 +144,7 @@ BEGIN
 	IF @ShowSG	= 1 INSERT INTO @sporttype(sporttype) VALUES(247)
 	IF @ShowVRG	= 1 INSERT INTO @sporttype(sporttype) VALUES(245)
 	IF @ShowTG	= 1 INSERT INTO @sporttype(sporttype) VALUES(222)
-	IF @ShowI4D	= 1 INSERT INTO @sporttype(sporttype) VALUES(233)
+	IF @ShowI4D	= 1 INSERT INTO @sporttype(sporttype) VALUES(223)
 
 	IF @username <> ''
 	BEGIN

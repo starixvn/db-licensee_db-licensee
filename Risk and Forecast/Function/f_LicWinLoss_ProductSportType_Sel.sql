@@ -57,7 +57,7 @@ RETURN
 					(36, 'SG', 247, 0),	-- Spadegaming
 					(38, 'VRG', 245, 0),	-- Virtual Games
 					(40, 'TG', 222, 0),	-- Table Games
-					(43, 'I4D', 233, 0)	-- Indo 4D
+					(43, 'I4D', 223, 0)	-- Indo 4D
 			) d(ProductID, ProductCode, SportType, BetType)  
 	WHERE ',' + @ProductCodes + ',' LIKE '%,' + CAST(ProductCode as varchar(10)) + ',%'  
 GO

@@ -304,7 +304,7 @@ BEGIN
 
 	IF @ShowI4D = 1 -- Indo 4D
 	BEGIN
-		SET @SportTypeSQL = @SportTypeSQL + ', (233, ''I4D'')'
+		SET @SportTypeSQL = @SportTypeSQL + ', (223, ''I4D'')'
 
 		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 5001 AND 5099 THEN ''I4D''
 				'
