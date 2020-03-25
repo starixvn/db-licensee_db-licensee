@@ -18,6 +18,7 @@ RETURNS @Sports TABLE (Id SMALLINT)
 		- 20190227@Joseph: Betting ticket center phase 3b [RedmineID: #108221]
 		- 20200326@Vickie: Add New Sport Virtual Soccer English Premier and Virtual Soccer Champions Cup [RedmineID: #131168]
 		- 20200408@Kos: Change to use SportBetTypeMatrix [RedmineID: #131447]
+		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
 
 	Paramters Explanation:
 		@ProductCode: Product code

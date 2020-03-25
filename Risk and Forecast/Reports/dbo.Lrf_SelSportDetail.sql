@@ -26,6 +26,7 @@ Revisions:
 	- 20190227@Joseph: Betting ticket center phase 3b [RedmineID: #108221]
 	- 20190516@Amanda: Rename product Keno [RedmineID: #113398]
 	- 20200406@Hogan: Add new product Table Games [RedmineID: #131447]
+	- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
 	
 Param's Explanation:
 	- @ProductCodes = '' - Get all
@@ -52,7 +53,7 @@ BEGIN
 		SELECT p.ProductPrefix
 		FROM dbo.Product3rd p WITH (NOLOCK)
 		INNER JOIN dbo.LicenseeProduct3rd l WITH (NOLOCK) ON p.Productid = l.ProductID
-		WHERE l.LicenseeID = @LicenseeID AND p.ProductPrefix IN ('BA', 'NG', 'VS', 'VS2', 'KN', 'LT', 'CO', 'TG')
+		WHERE l.LicenseeID = @LicenseeID AND p.ProductPrefix IN ('BA', 'NG', 'VS', 'VS2', 'KN', 'LT', 'CO', 'TG', 'I4D')
 	END
 	ELSE
 	BEGIN
@@ -61,7 +62,7 @@ BEGIN
 		FROM @Products po
 		INNER JOIN dbo.Product3rd p WITH (NOLOCK) ON p.ProductPrefix = po.Code
 		INNER JOIN dbo.LicenseeProduct3rd l WITH (NOLOCK) ON p.Productid = l.ProductID
-		WHERE l.LicenseeID = @LicenseeID AND p.ProductPrefix IN ('BA', 'NG', 'VS', 'VS2', 'KN', 'LT', 'CO', 'TG')
+		WHERE l.LicenseeID = @LicenseeID AND p.ProductPrefix IN ('BA', 'NG', 'VS', 'VS2', 'KN', 'LT', 'CO', 'TG', 'I4D')
 	END
 
 	DECLARE @ProductSport TABLE (
@@ -215,6 +216,16 @@ BEGIN
 		UNION ALL
 		SELECT ID, NULL, 222
 		FROM dbo.Lrf_f_GetSportTypeByProduct('TG')
+	END
+
+	-- I4D --
+	IF EXISTS (SELECT 1 FROM @Product3rds WHERE Code = 'I4D')
+	BEGIN
+		INSERT INTO @ProductSport(ID, Name, ParentID)
+		SELECT 223, N'Indo 4D', NULL
+		UNION ALL
+		SELECT ID, NULL, 223
+		FROM dbo.Lrf_f_GetSportTypeByProduct('I4D')
 	END
 
 	SELECT ps.ID, ps.ParentID, ps.Name
