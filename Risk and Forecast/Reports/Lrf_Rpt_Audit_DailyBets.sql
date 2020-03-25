@@ -1,10 +1,10 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
-
-CREATE PROCEDURE [dbo].[Lrf_Rpt_Audit_DailyBets]  	
+ALTER PROCEDURE [dbo].[Lrf_Rpt_Audit_DailyBets]  	
 	@SiteName		VARCHAR(50),
 	@Date			DATE,
 	@ProductCodes	VARCHAR(100),
 	@CurrencyList   VARCHAR(500),
+	@BaseCurrency	VARCHAR(3) = '',
 	@PageIndex		INT = 1,
 	@PageSize		INT = 50,
 	@SortBy			VARCHAR(50) = 'TransactionId',
@@ -16,6 +16,7 @@ AS
    
     Revisions:  
 		- 20191028@Amanda: Created new SP [RedmineID: #122789]
+		- 20200325@Bobby: Ploutos Integration - [redmine: #125252]
 
 	Developer's Notes:
 		
@@ -32,42 +33,43 @@ AS
 		    @CurrencyList=N'<ROOT><CR Id="13" Code="CNY"/><CR Id="15" Code="IDR"/> </ROOT>'	    
 */
 BEGIN  
-    SET NOCOUNT ON
+    SET NOCOUNT ON;
+	DECLARE @cutoffDate SMALLDATETIME = '2020-01-01';
 	DECLARE @Product TABLE (ProductCode VARCHAR(10))
 
-	DECLARE @Currency AS TABLE (Id INT, Code VARCHAR(5), Name VARCHAR(5))
+	DECLARE @Currency AS TABLE (Id INT, Code VARCHAR(5), Name VARCHAR(5), ExRate FLOAT)
 
 	INSERT INTO @Product (ProductCode)
 	SELECT ISNULL(Val,'') 	
-	FROM dbo.strSplit(@ProductCodes,',')
+	FROM dbo.strSplit(@ProductCodes,',');
 
 	-- Get Currency
-	DECLARE @DocHandler INT
-
-	BEGIN TRY
-		EXEC sp_xml_preparedocument @DocHandler OUTPUT
-				,@CurrencyList
-		INSERT INTO @Currency (Id, Code, Name)
-		SELECT 
-			Id,
-			CASE  
-                WHEN Id = 20 THEN 'UUS' 
-                WHEN Id = 51 THEN 'VND' 
-                WHEN Id = 70 THEN 'MMK' 
-                ELSE Code
-            END,
-            Code
-		FROM OPENXML(@DocHandler, '/ROOT/CR', 1) WITH (Id [int], Code VARCHAR(5)) AS Data
-
-		EXEC sp_xml_removedocument @DocHandler
-	END TRY
-
-	BEGIN CATCH
-		SELECT ErrCode = 100
-				,ErrMsg = N'Paramter invalid.'
-		RETURN
-	END CATCH;
+	WITH CTE_Currency AS (
+		SELECT T.C.value('./@Id', 'INT') AS Id
+			,T.C.value('./@Code', 'VARCHAR(5)') AS Code
+		FROM (
+			VALUES (CAST(@CurrencyList AS XML))
+		) AS xd(dataX)
+		CROSS APPLY xd.dataX.nodes('/ROOT/CR') AS T(C)
+	)
+	INSERT INTO @Currency (Id, Code, Name)
+	SELECT 
+		Id,
+		CASE  
+            WHEN Id = 20 THEN 'UUS' 
+            WHEN Id = 51 THEN 'VND' 
+            WHEN Id = 70 THEN 'MMK' 
+            ELSE Code
+        END,
+        Code
+	FROM CTE_Currency
 	
+	-- GET ExRate
+	UPDATE c
+	SET c.ExRate = ISNULL(e.Rate, 1)
+	FROM @Currency c
+	LEFT JOIN dbo.Lrf_f_GetExchangeRate(@Date, @Date, @BaseCurrency, '') e ON c.Id = e.ExchangeId
+
 	IF (@SiteName = 'IvoryBet')
 	BEGIN
 		SET @SiteName = 'ivorysport'
@@ -103,18 +105,92 @@ BEGIN
 		@RowStart = @PageSize * @PageIndex + 1,
 		@RowEnd = @RowStart + @PageSize - 1
 
-	IF (@SortOrder = 'asc')
-	BEGIN
-		;WITH PagingData_CTE AS (
+	-- GATHER BET Soure
+	SELECT a.TransactionId
+		, a.Name
+		, ROW_NUMBER() OVER (
+				ORDER BY CASE WHEN @SortOrder = 'desc' THEN 
+									CASE 
+										WHEN @SortBy = 'Turnover' THEN a.BetAmount
+										WHEN @SortBy = 'WinLoss' THEN a.NetAmount
+										ELSE a.TransactionId
+									END
+								ELSE 1
+								END DESC
+						, CASE WHEN @SortOrder = 'asc' THEN 
+									CASE
+									WHEN @SortBy = 'Turnover' THEN a.BetAmount
+									WHEN @SortBy = 'WinLoss' THEN a.NetAmount
+									ELSE a.TransactionId
+									END
+								ELSE 1	
+								END ASC
+					) AS rowIdx
+		, TotalRows		= COUNT(1) OVER()
+		, TotalTurnover = SUM(BetAmount_Rate) OVER()
+		, TotalWinLoss	= -SUM(NetAmount_Rate) OVER()
+	INTO #tempPaging
+	FROM (
 		SELECT
-			ROW_NUMBER() OVER (ORDER BY CASE 
-				WHEN @SortBy = 'Turnover' THEN a.BetAmount
-				WHEN @SortBy = 'WinLoss' THEN a.NetAmount
-				ELSE a.TransactionId
-				END ASC )							AS [Index],
+			a.TransactionId
+			, c.Name
+			, a.BetAmount
+			, a.NetAmount
+			, a.BetAmount * c.ExRate AS BetAmount_Rate
+			, a.NetAmount * c.ExRate AS NetAmount_Rate
+			, 'AuditTicket' AS SourceName
+		FROM bodb_licenseeReportArchive.dbo.rptDep_AuditTickets a WITH (NOLOCK)
+		INNER JOIN @Currency c ON c.Code = a.CurrencyCode
+		WHERE  a.WinLostDate >= @Date AND a.WinLostDate < @TempToDate 
+				AND Brand = @SiteName
+				AND ( 
+					(@showSB = 1 AND a.GameType = 'SB') 
+					OR (@showNG = 1 AND a.GameType = 'RNG' AND a.GameCode = '161')
+					OR (@showCS = 1 AND a.GameType = 'RNG' AND a.GameCode <> '161')
+					OR (@showLC = 1 AND a.GameType = 'CA')
+				)
+				AND a.WinLostDate < @cutoffDate
+
+		UNION ALL
+		SELECT
+			a.TransactionId
+			, c.Name
+			, a.BetAmount
+			, a.NetAmount
+			, a.BetAmount * c.ExRate AS BetAmount_Rate
+			, a.NetAmount * c.ExRate AS NetAmount_Rate
+			, 'BetTicket' AS SourceName
+		FROM bodb_Ploutos.dbo.BetTicket a WITH (NOLOCK)
+		INNER JOIN @Currency c ON c.Code = a.CurrencyCode
+		WHERE  a.WinLostDate >= @Date AND a.WinLostDate < @TempToDate 
+				AND BrandCode = @SiteName
+				AND ( 
+					(@showSB = 1 AND a.GamePlatformCode = 'SB') 
+					OR (@showNG = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode = '0161')
+					OR (@showCS = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161')
+					OR (@showLC = 1 AND a.GamePlatformCode = 'CA')
+				)
+				AND a.WinLostDate >= @cutoffDate
+	) AS a
+
+	--select * from #tempPaging
+
+	--- RETURN BET in Detail
+	SELECT p.rowIdx AS [Index]
+		, p.TransactionId AS RefNo
+		, PlayerName
+		, CurrencyName
+		, TransTime
+		, BetType
+		, ProductCode
+		, Turnover
+		, WinLoss
+		, [Status]
+	FROM(
+		SELECT p.rowIdx,
+			p.TransactionId,
 			a.PlayerName,
-			c.Name									AS CurrencyName,
-			a.TransactionId							AS RefNo,
+			p.Name									AS CurrencyName,
 			a.TransactionDate						AS TransTime,
 			a.BetType,
 			CASE
@@ -131,40 +207,22 @@ BEGIN
 				WHEN a.NetAmount < 0 THEN 1
 				ELSE 0
 			END										AS [Status]
-		FROM bodb_licenseeReportArchive.dbo.rptDep_AuditTickets a WITH (NOLOCK)
-		INNER JOIN @Currency c ON c.Code = a.CurrencyCode
-		WHERE  a.WinLostDate >= @Date AND a.WinLostDate < @TempToDate 
-				AND Brand = @SiteName
-				AND ( 
-					(@showSB = 1 AND a.GameType = 'SB') 
-					OR (@showNG = 1 AND a.GameType = 'RNG' AND a.GameCode = '161')
-					OR (@showCS = 1 AND a.GameType = 'RNG' AND a.GameCode <> '161')
-					OR (@showLC = 1 AND a.GameType = 'CA')
-				)
-		)
-		SELECT *
-		FROM PagingData_CTE
-		WHERE [Index] BETWEEN @RowStart AND @RowEnd
-	END
-	ELSE
-	BEGIN
-		;WITH PagingData_CTE AS (
-		SELECT
-			ROW_NUMBER() OVER (ORDER BY CASE 
-				WHEN @SortBy = 'Turnover' THEN a.BetAmount
-				WHEN @SortBy = 'WinLoss' THEN a.NetAmount
-				ELSE a.TransactionId
-				END DESC )							AS [Index],
-			a.PlayerName,
-			c.Name									AS CurrencyName,
-			a.TransactionId							AS RefNo,
+		FROM #tempPaging p
+		INNER JOIN bodb_licenseeReportArchive.dbo.rptDep_AuditTickets a WITH (NOLOCK) ON a.TransactionId = p.TransactionId
+		WHERE p.rowIdx BETWEEN @RowStart AND @RowEnd
+
+		UNION ALL
+		SELECT p.rowIdx,
+			p.TransactionId,
+			pp.Username AS Playername,
+			p.Name									AS CurrencyName,
 			a.TransactionDate						AS TransTime,
-			a.BetType,
+			a.BettypeName							AS BetType,
 			CASE
-				WHEN a.GameType = 'SB' THEN 'SB'
-				WHEN a.GameType = 'RNG' AND a.GameCode = '161' THEN 'NG'
-				WHEN a.GameType = 'RNG' AND a.GameCode <> '161' THEN 'CS'
-				WHEN a.GameType = 'CA' THEN 'LC'
+				WHEN a.GamePlatformCode = 'SB' THEN 'SB'
+				WHEN a.GamePlatformCode = 'RNG' AND a.GameCode = '0161' THEN 'NG'
+				WHEN a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161' THEN 'CS'
+				WHEN a.GamePlatformCode = 'CA' THEN 'LC'
 				ELSE ''
 			END										AS ProductCode,
 			a.BetAmount								AS Turnover,
@@ -174,20 +232,18 @@ BEGIN
 				WHEN a.NetAmount < 0 THEN 1
 				ELSE 0
 			END										AS [Status]
-		FROM bodb_licenseeReportArchive.dbo.rptDep_AuditTickets a WITH (NOLOCK)
-		INNER JOIN @Currency c ON c.Code = a.CurrencyCode
-		WHERE  a.WinLostDate >= @Date AND a.WinLostDate < @TempToDate 
-				AND Brand = @SiteName
-				AND ( 
-					(@showSB = 1 AND a.GameType = 'SB') 
-					OR (@showNG = 1 AND a.GameType = 'RNG' AND a.GameCode = '161')
-					OR (@showCS = 1 AND a.GameType = 'RNG' AND a.GameCode <> '161')
-					OR (@showLC = 1 AND a.GameType = 'CA')
-				)
-		)
-		SELECT *
-		FROM PagingData_CTE
-		WHERE [Index] BETWEEN @RowStart AND @RowEnd
-	END
+		FROM #tempPaging p
+		INNER JOIN bodb_Ploutos.dbo.BetTicket a WITH (NOLOCK) ON a.TransactionId = p.TransactionId
+		INNER JOIN bodb_Ploutos.dbo.PlayerProfile pp WITH(NOLOCK) ON pp.BrandCode = a.BrandCode AND pp.CustID = a.CustId
+		WHERE p.rowIdx BETWEEN @RowStart AND @RowEnd
+			AND a.WinLostDate >= @cutoffDate
+	) AS p
+	ORDER BY p.rowIdx
+
+	--- RETURN - SUM total
+	SELECT TOP(1) TotalRows,TotalTurnover,TotalWinLoss
+	FROM #tempPaging
+
+	DROP TABLE #tempPaging;
 END
 GO

@@ -1,6 +1,5 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
-
-CREATE PROCEDURE [dbo].[Lrf_Rpt_Audit_DailyBets_Total]  	
+ALTER PROCEDURE [dbo].[Lrf_Rpt_Audit_DailyBets_Total]  	
 	@SiteName		VARCHAR(50),
 	@Date			DATE,
 	@ProductCodes	VARCHAR(100),
@@ -13,6 +12,7 @@ AS
    
     Revisions:  
 		- 20191104@Amanda: Created new SP [RedmineID: #122789]
+		- 20200325@Bobby: Ploutos Integration - [redmine: #125252]
 
 	Developer's Notes:
 		
@@ -29,7 +29,9 @@ AS
 		    @CurrencyList=N'<ROOT><CR Id="13" Code="CNY"/><CR Id="15" Code="IDR"/> </ROOT>'	    
 */
 BEGIN  
-    SET NOCOUNT ON
+    SET NOCOUNT ON;
+
+	DECLARE @cutoffDate SMALLDATETIME = '2020-01-01';
 	DECLARE @Product TABLE (ProductCode VARCHAR(10))
 
 	DECLARE @Currency AS TABLE(Id INT, Code VARCHAR(5), ExRate FLOAT)
@@ -39,30 +41,13 @@ BEGIN
 	FROM dbo.strSplit(@ProductCodes,',')
 
 	-- Get Currency
-	DECLARE @DocHandler INT
-
-	BEGIN TRY
-		EXEC sp_xml_preparedocument @DocHandler OUTPUT
-				,@CurrencyList
-		INSERT INTO @Currency (Id, Code)
-		SELECT 
-			Id,
-			CASE  
-                WHEN Id = 20 THEN 'UUS' 
-                WHEN Id = 51 THEN 'VND' 
-                WHEN Id = 70 THEN 'MMK' 
-                ELSE Code
-            END
-		FROM OPENXML(@DocHandler, '/ROOT/CR', 1) WITH (Id [int], Code VARCHAR(5)) AS Data
-
-		EXEC sp_xml_removedocument @DocHandler
-	END TRY
-
-	BEGIN CATCH
-		SELECT ErrCode = 100
-				,ErrMsg = N'Paramter invalid.'
-		RETURN
-	END CATCH;
+	INSERT INTO @Currency (Id, Code)
+	SELECT T.C.value('./@Id', 'INT') AS Id
+		,T.C.value('./@Code', 'VARCHAR(5)') AS Code
+	FROM (
+		VALUES (CAST(@CurrencyList AS XML))
+	) AS xd(dataX)
+	CROSS APPLY xd.dataX.nodes('/ROOT/CR') AS T(C)
 
 	UPDATE c
 	SET c.ExRate = ISNULL(e.Rate, 1)
@@ -86,22 +71,45 @@ BEGIN
 	SELECT @showCS = 1 FROM @Product WHERE ProductCode = 'CS'
 	SELECT @showLC = 1 FROM @Product WHERE ProductCode = 'LC'
 
-	-- Return data
-	DECLARE @Sql NVARCHAR(MAX)
-	
-	SELECT
-		COUNT(a.TransactionId)			AS TotalRows,
-		SUM(a.BetAmount * c.ExRate)		AS TotalTurnover,
-		- SUM(a.NetAmount * c.ExRate)	AS TotalWinLoss
-	FROM bodb_licenseeReportArchive.dbo.rptDep_AuditTickets a WITH (NOLOCK)
-	INNER JOIN @Currency c ON c.Code = a.CurrencyCode
-	WHERE  a.WinLostDate >= @Date AND a.WinLostDate < @TempToDate 
-			AND Brand = @SiteName
-			AND ( 
-				(@showSB = 1 AND a.GameType = 'SB') 
-				OR (@showNG = 1 AND a.GameType = 'RNG' AND a.GameCode = '161')
-				OR (@showCS = 1 AND a.GameType = 'RNG' AND a.GameCode <> '161')
-				OR (@showLC = 1 AND a.GameType = 'CA')
-			)
+	-- Return data	
+	SELECT 
+		SUM(TotalRows) AS TotalRows
+		,SUM(TotalTurnover) AS TotalTurnover
+		,SUM(TotalWinLoss) AS TotalWinLoss
+	FROM (
+		SELECT
+			COUNT(a.TransactionId)			AS TotalRows,
+			SUM(a.BetAmount * c.ExRate)		AS TotalTurnover,
+			- SUM(a.NetAmount * c.ExRate)	AS TotalWinLoss
+		FROM bodb_licenseeReportArchive.dbo.rptDep_AuditTickets a WITH (NOLOCK)
+		INNER JOIN @Currency c ON c.Code = a.CurrencyCode
+		WHERE  a.WinLostDate >= @Date AND a.WinLostDate < @TempToDate 
+				AND Brand = @SiteName
+				AND ( 
+					(@showSB = 1 AND a.GameType = 'SB') 
+					OR (@showNG = 1 AND a.GameType = 'RNG' AND a.GameCode = '161')
+					OR (@showCS = 1 AND a.GameType = 'RNG' AND a.GameCode <> '161')
+					OR (@showLC = 1 AND a.GameType = 'CA')
+				)
+				AND a.WinLostDate < @cutoffDate
+
+		UNION ALL
+		SELECT
+			COUNT(a.TransactionId)			AS TotalRows,
+			SUM(a.BetAmount * c.ExRate)		AS TotalTurnover,
+			- SUM(a.NetAmount * c.ExRate)	AS TotalWinLoss
+		FROM bodb_Ploutos.dbo.BetTicket a WITH (NOLOCK)
+		INNER JOIN @Currency c ON c.Code = a.CurrencyCode
+		WHERE  a.WinLostDate >= @Date AND a.WinLostDate < @TempToDate 
+				AND BrandCode = @SiteName
+				AND ( 
+					(@showSB = 1 AND a.GamePlatformCode = 'SB') 
+					OR (@showNG = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode = '0161')
+					OR (@showCS = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161')
+					OR (@showLC = 1 AND a.GamePlatformCode = 'CA')
+				)
+				AND a.WinLostDate >= @cutoffDate
+	) AS rpt
+
 END
 GO
