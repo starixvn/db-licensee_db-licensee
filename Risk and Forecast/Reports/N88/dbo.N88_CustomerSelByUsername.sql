@@ -132,8 +132,11 @@ BEGIN
 
 	SET @OddsGroups = ISNULL(@OddsGroups, '')
 	--For predicate pushdown
-	DECLARE @OddsGroupsC VARCHAR (100)
-	SELECT @OddsGroupsC = '''' + REPLACE(@OddsGroups, ',', ''',''') + ''''
+	DECLARE @tmpOddsGroups TABLE (OddsGroup VARCHAR(10))
+	
+	INSERT INTO @tmpOddsGroups(OddsGroup)
+	SELECT val 
+	FROM strSplit (@OddsGroups,',')
 		
 	INSERT INTO @tmpSpecial(level)
 	SELECT val
@@ -150,7 +153,7 @@ BEGIN
 				 INNER JOIN Customer c WITH (NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid 
 			WHERE ci.roleid=1
 					AND c.username  NOT LIKE '%CASHOUT%'
-					AND (@OddsGroups = '' OR RIGHT(c.ugroup,1) = @OddsGroupsC )
+					AND (@OddsGroups = '' OR RIGHT(c.ugroup,1) IN (SELECT OddsGroup FROM @tmpOddsGroups) )
 		
 			INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject)
 			SELECT c.CustID, lc.currency, lc.speciallevel, lc.username2, lc.username, c.ugroup, c.closed, c.reject
@@ -204,7 +207,7 @@ BEGIN
 				LEFT JOIN dbo.Dep_CustSpecialLevel lc WITH(NOLOCK) ON ci.custid = lc.custid								
 			WHERE lb.LicenseeID = @LicenseeID
 				AND lb.[Status] = 'Running'								  
-				AND (@OddsGroups = '' OR RIGHT(cu.ugroup,1) = @OddsGroupsC )
+				AND (@OddsGroups = '' OR RIGHT(cu.ugroup,1) IN (SELECT OddsGroup FROM @tmpOddsGroups) )
 				AND ISNULL(lc.speciallevel,0) IN  (SELECT level FROM @tmpSpecial)
 			
 			IF ISNULL(@TotalRows, 0) = 0
@@ -239,7 +242,7 @@ BEGIN
 				 INNER JOIN Customer c WITH (NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid 
 			WHERE ci.roleid=1 
 					AND c.username NOT LIKE '%CashOut%'				
-					AND (@OddsGroups = '' OR RIGHT(c.ugroup,1) =@OddsGroupsC)	
+					AND (@OddsGroups = '' OR RIGHT(c.ugroup,1) IN (SELECT OddsGroup FROM @tmpOddsGroups) )
 		
 			INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject)
 			SELECT c.CustID, lc.currency, lc.speciallevel, lc.username2, lc.username, c.ugroup, c.closed, c.reject
@@ -305,7 +308,7 @@ BEGIN
 							)
 						)	
 					AND c.username NOT LIKE '%CashOut%'				
-					AND (@OddsGroups = '' OR RIGHT(c.ugroup,1) = @OddsGroupsC )
+					AND (@OddsGroups = '' OR RIGHT(c.ugroup,1) IN (SELECT OddsGroup FROM @tmpOddsGroups) )
 					AND ISNULL(lc.speciallevel,0) IN (SELECT level FROM @tmpSpecial)				
 		END
 		ELSE
@@ -328,7 +331,7 @@ BEGIN
 							)
 						)
 					AND c.username NOT LIKE '%CashOut%'					
-					AND (@OddsGroups = '' OR RIGHT(c.ugroup,1) = @OddsGroupsC )
+					AND (@OddsGroups = '' OR RIGHT(c.ugroup,1) IN (SELECT OddsGroup FROM @tmpOddsGroups) )
 					AND ISNULL(lc.speciallevel,0) IN (SELECT level FROM @tmpSpecial)			
 					AND ((@BAFilter = 1 AND ISNULL(lb.[Status],'') = 'Running')
 						OR (@BAFilter = 2 AND ISNULL(lb.[Status],'') != 'Running'))
