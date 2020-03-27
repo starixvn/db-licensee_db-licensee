@@ -289,7 +289,7 @@ BEGIN
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'TG', 'TG')
 	END
 
-	IF @ShowI4D = 1 -- Virtual Games
+	IF @ShowI4D = 1 -- Indo 4D
 	BEGIN
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'I4D', 'I4D')
 	END

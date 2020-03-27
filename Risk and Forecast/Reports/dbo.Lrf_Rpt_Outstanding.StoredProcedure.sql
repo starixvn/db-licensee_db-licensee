@@ -152,7 +152,7 @@ BEGIN
 	IF @ShowBA = 1
 		SET @ProductList = @ProductList + ',SB'
 
-	IF @ShowI4D = 1 -- VRG
+	IF @ShowI4D = 1 -- I4D
 	BEGIN
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'I4D', 'I4D')
 	END
