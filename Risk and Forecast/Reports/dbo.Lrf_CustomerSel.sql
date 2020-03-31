@@ -64,6 +64,7 @@ AS
 		- 20180924@Winnie: Remove Allbet [RedmineID: #99378]
 		- 20181031@Patrick: DB052 indexes revolution [RedmineID: #103572]
 		- 20190621@Amanda: Add @BaseCurrency parameter [Redmine: #112531]
+		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
 	Param's Explanation:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 		+ @SpecialLevel: default value = -1 (all)
@@ -83,6 +84,12 @@ BEGIN
 	CREATE TABLE #TempAg (custid INT)
 
 	DECLARE @DocHandler INT
+
+	DECLARE @sporttype	TABLE (SportType INT)
+
+	INSERT INTO @sporttype ( SportType )
+	SELECT DISTINCT SportType FROM [dbo].[SportBettypeMatrix] WITH (NOLOCK)
+	WHERE reftable = 3
 
 	BEGIN TRY
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT
@@ -513,9 +520,9 @@ BEGIN
 	FROM
 		dbo.translog tl WITH (NOLOCK)
 		INNER JOIN #TempAg lc ON tl.recommend=lc.CustID
+		INNER JOIN @sporttype s ON s.SportType = productID 
 	WHERE
 		statusID IN (0, 1)  --running and Waiting
-		AND productID IN (202, 203,204)
 	GROUP BY tl.custid, tl.currency, productID, statusID
 
 	--- bettransRNG
