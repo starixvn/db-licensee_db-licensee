@@ -12,7 +12,8 @@ AS
 	Task : 130293 - LAP - Detail Transaction Member
 	DB: DBBAH/bodb02
 	Revisions:  
-		- 20200313@Bobby: Initialize [RedmineID: #130293]
+		- 20200313@Bobby: Initialize [RedmineID: #130293] 
+		- 20200330@Louis: Support Statement & Detail Transaction Report in Chinese [RedmineID: #131262]
 	
 	Param's Explanation:     
 */
@@ -58,7 +59,7 @@ BEGIN
 		, br.transremark
 		, br.changedAmt
 		, br.totalAmt
-		, rowIdx = ROW_NUMBER() OVER(ORDER BY transtime ASC)
+		, rowIdx = ROW_NUMBER() OVER(ORDER BY transtime ASC, transid ASC)
 	FROM (
 		SELECT transid
 			, bettype
@@ -100,13 +101,12 @@ BEGIN
 	
 	SELECT 
 		br.transid
-		, bt.typenamee AS transtype
+		, br.bettype
 		, br.transtime
 		, br.transremark
 		, br.changedAmt
 		, br.totalAmt
 	FROM #transactionRpt br
-	INNER JOIN dbo.bettype bt WITH(NOLOCK) ON br.bettype = bt.typeid
 	WHERE 
 		br.rowIdx BETWEEN @_rowStart AND @_rowEnd
 	ORDER BY 
