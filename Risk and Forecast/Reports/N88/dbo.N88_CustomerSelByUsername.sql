@@ -417,6 +417,12 @@ BEGIN
 
 	--Case 3 update the rest
 	UPDATE #Temp SET IsPowerBAUserTurnoff = 0 WHERE IsPowerBAUserTurnoff IS NULL
+	
+	DECLARE @sporttype	TABLE (SportType INT)
+
+	INSERT INTO @sporttype ( SportType )
+	SELECT DISTINCT SportType FROM [dbo].[SportBettypeMatrix] WITH (NOLOCK)
+	WHERE reftable = 3
 
 	-- translog
 	INSERT INTO #OutstandingTranslog
@@ -424,9 +430,9 @@ BEGIN
 	FROM
 		dbo.translog tl WITH (NOLOCK)
 		INNER JOIN #TempAg lc ON tl.recommend=lc.CustID
+		INNER JOIN @sporttype s ON s.SportType = productID
 	WHERE
-		statusID IN (0, 1)  --running and Waiting
-		AND productID IN (202, 203,204)
+		statusID IN (0, 1)  --running and Waiting		
 	GROUP BY tl.custid, tl.currency, productID, statusID
 
 	--- bettransRNG
