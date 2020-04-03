@@ -1,98 +1,102 @@
 ﻿/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProduct]  
-	 @UserName		VARCHAR(50) = NULL,
-	 @FromDate		SMALLDATETIME,  
-	 @ToDate		SMALLDATETIME,   
-	 @ProductList	VARCHAR(MAX) = '',		 
-	 @ReportType	TINYINT=1,  
-	 @MoveBetsDay	SMALLDATETIME,
-	 @drawfilter	SMALLINT = 1  ,
-	 @CustID		INT =0 OUTPUT,
-	 @AgentList		VARCHAR(MAX),
-	 @SystemName	VARCHAR(50)='' OUTPUT,
-	 @ErrCode		TINYINT = 0OUTPUT,
-	 @ErrMsg		VARCHAR(400)='' OUTPUT,
-	 @BaseCurrency	VARCHAR(3) = '',
-	 @DefaultBaseCurrency	VARCHAR(3) = ''
-	 WITH RECOMPILE
-AS    
-/*  Created: Henry  
+	@UserName				VARCHAR(50)		= NULL,
+	@FromDate				SMALLDATETIME,
+	@ToDate					SMALLDATETIME, 
+	@ProductList			VARCHAR(MAX)	= '',
+	@ReportType				TINYINT			=1,
+	@MoveBetsDay			SMALLDATETIME,
+	@drawfilter				SMALLINT		= 1,
+	@CustID					INT				= 0		OUTPUT,
+	@AgentList				VARCHAR(MAX),
+	@SystemName				VARCHAR(50)		=''		OUTPUT,
+	@ErrCode				TINYINT			= 0		OUTPUT,
+	@ErrMsg					VARCHAR(400)	=''		OUTPUT,
+	@BaseCurrency			VARCHAR(3)		= '',
+	@DefaultBaseCurrency	VARCHAR(3)		= ''
+WITH RECOMPILE
+AS
+
+/*
+	Created: Henry  
 	Date: 2011-07-06
 	Task : Winloss By Product Report for Licensee 
-	DB: DB052.bodb02  
+	DB: DBEXT.bodb02  
    
 	Revisions:  
-	- 20111013@Henry: change to use rptLicWinloss2
-	- 20111208@Jim: change bettype condition
-	- 20120214@Jim: change to use  table ExchangeDaily by use function Lrf_f_GetExchangeDaily  	
-	- 20120529@henry: enhance performance
-	- 20120730@Jim: Add Playercomm Value 
-	- 20120814@Henry: add live casino
-	- 20120905@Jim:add virtual sport	
-	- 20121004@Jim: replace @currency input param by @currencyID
-	- 20121115@Henry: Only Sportsbook needs to exclude BA
-	- 20121128@Henry: use new table LicenseeBATransaction_active to get bettrans BA tickets
-	- 20130222@Jim: support RNG Casino ,Bingo
-	- 20130417@Jim: add more product code value in the result 
-	- 20130514@Jim: Restrict permission of Licensee Users by currency
-	- 20130809@Jim: offer Virtual Horse Racing
-	- 20131007@Jim: offer Virtual Tennis	
-	- 20131213@Jim: support to Display win loss of individual sports with Virtual Sports
-	- 20140304@Florent: offer Keno
-	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
-	- 20140915@Florent: hotfix duplicated VS bettype
-	- 20141111@Jim: changing currency for KeenOcean member  (#Redmine 25673)
-	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
-	- 20141229@Winnie: optimize performance 
-	- 20150106@Jim: add more UserName filter
-	- 20150123@Jim: support base on Currency GBP
-	- 20150612@Jim: support MicroGaming
-	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
-	- 20151001@Jim: remove MicroGaming
-	- 20151228@Bobby: Support MBC RNG Casino sporttype(208,209,210)	
-	- 20160331@Walter: Support Voidbridge single wallet [Redmine: #55057]
-	- 20160413@Victor: support MKK currency code [Redmine: #55745]
-	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
-	- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
-	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
-	- 20170327@Paul: Implement Cash Out [RedmineID :#71727]
-	- 20170721@Sophia: Change to call Alias DBWH instead of DBDW2 
-	- 20170704@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
-	- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
-	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
-	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
-	- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
-	- 20180723@Harper: Improve performance for winloss by product report [RedmineID: #98358]
-	- 20180810@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
-	- 20181005@Amanda: Remove Racing, Bingo [RedmineID: #99378]
-	- 20181031@Patrick: DB052 indexes revolution [RedmineID: #103572]
-	- 20181221@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
-	- 20190215@Joseph: HotFix: Licensee WL data isn't included PP ( range: rptLicWinloss2) [RedmineID: #108934]
-	- 20190304@Amanda: Integrate PP Promotion Prize [RedmineID: #109471]
-	- 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
-	- 20190703@Percy: Enhance performance (#tmpVS) - work arround [RedmineID: #116231]
-	- 20190614@Amanda: Add Base currency param [RedmineID: #112531]
-	- 20190910@Amanda: Add bet types that support Half Won/ Half Lose [RedmineID: #118300]
-	- 20190923@Amanda: Change the way to handle Half Won/ Half Lose bet types [RedmineID: #119879]
-	- 20191121@Amanda: Exclude PP Promotion and Tournament Prize [RedmineID: #123804]
+		- 20111013@Henry: change to use rptLicWinloss2
+		- 20111208@Jim: change bettype condition
+		- 20120214@Jim: change to use  table ExchangeDaily by use function Lrf_f_GetExchangeDaily  	
+		- 20120529@henry: enhance performance
+		- 20120730@Jim: Add Playercomm Value 
+		- 20120814@Henry: add live casino
+		- 20120905@Jim:add virtual sport	
+		- 20121004@Jim: replace @currency input param by @currencyID
+		- 20121115@Henry: Only Sportsbook needs to exclude BA
+		- 20121128@Henry: use new table LicenseeBATransaction_active to get bettrans BA tickets
+		- 20130222@Jim: support RNG Casino ,Bingo
+		- 20130417@Jim: add more product code value in the result 
+		- 20130514@Jim: Restrict permission of Licensee Users by currency
+		- 20130809@Jim: offer Virtual Horse Racing
+		- 20131007@Jim: offer Virtual Tennis	
+		- 20131213@Jim: support to Display win loss of individual sports with Virtual Sports
+		- 20140304@Florent: offer Keno
+		- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
+		- 20140915@Florent: hotfix duplicated VS bettype
+		- 20141111@Jim: changing currency for KeenOcean member  (#Redmine 25673)
+		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+		- 20141229@Winnie: optimize performance 
+		- 20150106@Jim: add more UserName filter
+		- 20150123@Jim: support base on Currency GBP
+		- 20150612@Jim: support MicroGaming
+		- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
+		- 20151001@Jim: remove MicroGaming
+		- 20151228@Bobby: Support MBC RNG Casino sporttype(208,209,210)	
+		- 20160331@Walter: Support Voidbridge single wallet [Redmine: #55057]
+		- 20160413@Victor: support MKK currency code [Redmine: #55745]
+		- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
+		- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
+		- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+		- 20170327@Paul: Implement Cash Out [RedmineID :#71727]
+		- 20170721@Sophia: Change to call Alias DBWH instead of DBDW2 
+		- 20170704@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
+		- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
+		- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
+		- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
+		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
+		- 20180723@Harper: Improve performance for winloss by product report [RedmineID: #98358]
+		- 20180810@Joseph: Remove table LicenseeCustInfo [RedmineID: #99464]
+		- 20181005@Amanda: Remove Racing, Bingo [RedmineID: #99378]
+		- 20181031@Patrick: DB052 indexes revolution [RedmineID: #103572]
+		- 20181221@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
+		- 20190215@Joseph: HotFix: Licensee WL data isn't included PP ( range: rptLicWinloss2) [RedmineID: #108934]
+		- 20190304@Amanda: Integrate PP Promotion Prize [RedmineID: #109471]
+		- 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
+		- 20190703@Percy: Enhance performance (#tmpVS) - work arround [RedmineID: #116231]
+		- 20190614@Amanda: Add Base currency param [RedmineID: #112531]
+		- 20190910@Amanda: Add bet types that support Half Won/ Half Lose [RedmineID: #118300]
+		- 20190923@Amanda: Change the way to handle Half Won/ Half Lose bet types [RedmineID: #119879]
+		- 20191121@Amanda: Exclude PP Promotion and Tournament Prize [RedmineID: #123804]
+		- 20200403@Kos: Fix performance issue [RedmineID: #131761]
 
 	Param's Explanation:  
-	  + @ReportType: 1-Daily; 2-Monthly;  
-	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
-	  + @excludeTest: remove currency UUS
-	  + @showSB: Show SportsBook bets
-	  + @ShowRB: Show RB bets
-	  + @ShowNG: Show Number game bets
-	  + @ShowBA: Show Bet Aggregator bets (combined with Sportsbook or Number Game)
-	  +	@ShowVS: Show Virual Sport bets	
-	  + @MoveBetsDay: The day we move tickets to bettrans14
-	  + @AgentList: xml structure
-					  <ROOT>
-					   <Agent AgentId="12345" Currency="3"/>  
-					   <Agent AgentId="12345" Currency="5"/>  
-					  </ROOT> 
-*/  
+		+ @ReportType: 1-Daily; 2-Monthly;  
+		+ @drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
+		+ @excludeTest: remove currency UUS
+		+ @showSB: Show SportsBook bets
+		+ @ShowRB: Show RB bets
+		+ @ShowNG: Show Number game bets
+		+ @ShowBA: Show Bet Aggregator bets (combined with Sportsbook or Number Game)
+		+ @ShowVS: Show Virual Sport bets	
+		+ @MoveBetsDay: The day we move tickets to bettrans14
+		+ @AgentList: xml structure
+				<ROOT>
+					<Agent AgentId="12345" Currency="3"/>
+					<Agent AgentId="12345" Currency="5"/>
+				</ROOT> 
+*/
+
 BEGIN  
 	SET NOCOUNT ON  
 
@@ -109,14 +113,17 @@ BEGIN
 		Betcount		BIGINT
 	)  
 
-	CREATE TABLE #tmpVS			(EventID INT, SportType TINYINT)
-	CREATE TABLE #Exchange		(FromDate DATETIME, ToDate DATETIME, ExchangeID INT, EUR FLOAT, USD FLOAT, GBP FLOAT, Rate FLOAT, DefaultRate FLOAT )	
+	CREATE TABLE #tmpVS (EventID INT, SportType SMALLINT)
 
-	DECLARE @bettype			TABLE (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))
-	DECLARE @sporttype			TABLE (sporttype INT, ProductCode VARCHAR(10))
-	DECLARE @sumTurnOver		BIT
-	DECLARE @sumBetCount		BIT
-	DECLARE @RCount				INT
+	CREATE CLUSTERED INDEX CIX_#tmpVS ON #tmpVS(EventID, SportType)
+
+	CREATE TABLE #Exchange (FromDate DATETIME, ToDate DATETIME, ExchangeID INT, EUR FLOAT, USD FLOAT, GBP FLOAT, Rate FLOAT, DefaultRate FLOAT )	
+
+	DECLARE @bettype		TABLE (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))
+	DECLARE @sporttype		TABLE (sporttype SMALLINT, ProductCode VARCHAR(10))
+	DECLARE @sumTurnOver	BIT
+	DECLARE @sumBetCount	BIT
+	DECLARE @RCount			INT
 
 	SET @sumTurnOver = 1
 	SET @sumBetCount = 1
@@ -134,7 +141,7 @@ BEGIN
 	END	
 
 	---#1: Begin: Get AgentList
-	DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
+	DECLARE @TempAg AS TABLE (CustId INT, Currency INT )
 	DECLARE @DocHandler INT
 
 	BEGIN TRY
@@ -142,7 +149,7 @@ BEGIN
 				,@AgentList
 		INSERT INTO @TempAg (custID, currency)
 		SELECT AgentId, Currency
-		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [INT], Currency INT) AS Data
 
 		EXEC sp_xml_removedocument @DocHandler
 	END TRY
@@ -241,10 +248,9 @@ BEGIN
 
 		---#3.1: Begin: Get data for BA product
 		IF PATINDEX('%,BA,%', ',' + @ProductList + ',') > 0  ---- BA Product
-		BEGIN	
-					
+		BEGIN
 			SELECT DISTINCT transid, r.Currency	
-			INTO #tmpBA		
+			INTO #tmpBA
 			FROM 
 				bodb_licensee.dbo.LicenseeBATransaction_active BA WITH(NOLOCK)
 				INNER JOIN @TempAg r ON BA.recommend = r.custID 
@@ -275,16 +281,18 @@ BEGIN
 								FROM dbo.bettrans tmp WITH ( NOLOCK)
 								WHERE tmp.transid = ba.TransID AND tmp.currency = ba.Currency	
 									AND tmp.winlostdate BETWEEN @TempFromDate AND @TDate 
-									AND tmp.statusID IN (111, 112, 113) 								
+									AND tmp.statusID IN (111, 112, 113)
 									AND (@CustId = 0 OR tmp.CustId = @CustID)			
 							) AS b	
 			GROUP BY   
-				b.winlostdate,ba.currency					
-		END		
+				b.winlostdate,ba.currency
+
+			DROP TABLE #tmpBA
+		END
 
 		---#3.2: Begin: Get data for VS Parlay	
 		IF EXISTS (SELECT 1 FROM @bettype WHERE ProductCode = 'VS2')
-		BEGIN					
+		BEGIN
 			INSERT INTO #SAgWinLoss
 			SELECT   
 				b.winlostdate,
@@ -339,9 +347,9 @@ BEGIN
 					CASE WHEN ISNULL(vs.sporttype, 0) = 0  
 						THEN bt.ProductCode + CONVERT(varchar(10), ISNULL(m.sporttype,0))
 						ELSE bt.ProductCode + CONVERT(varchar(10), vs.sporttype)
-					END					
+					END
 				ELSE bt.ProductCode END AS ProductCode,
-				SUM(stake *			
+				SUM(stake *
 					CASE 
 						WHEN b.statusID = 111 THEN 0|@sumTurnOver
 						WHEN bt.ProductCode = 'SB' AND b.winlostdate >= @HWHLCutDate AND b.statusID IN (112, 113) AND b.modds IN (-0.25, 0.25) AND b.bettype NOT IN (29,38) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0) -- exclude parlay, bet builder
@@ -361,7 +369,7 @@ BEGIN
 				LEFT JOIN [match] m WITH(NOLOCK) ON b.matchid = m.matchid AND b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype())
 				LEFT JOIN #tmpVS vs ON b.matchid = vs.EventID AND b.bettype IN (1231,1232,1233,1237,1238,1220,1235,1236)	
 			WHERE 
-				b.winlostdate BETWEEN @TempFromDate AND @TDate 				
+				b.winlostdate BETWEEN @TempFromDate AND @TDate
 				AND (@CustId = 0 OR b.CustId = @CustID)
 				AND b.statusID  IN (111, 112, 113)
 				AND b.matchID > 0 
@@ -373,12 +381,11 @@ BEGIN
 					CASE WHEN ISNULL(vs.sporttype, 0) = 0  
 						THEN bt.ProductCode + CONVERT(varchar(10), ISNULL(m.sporttype,0))
 						ELSE bt.ProductCode + CONVERT(varchar(10), vs.sporttype)
-					END					
+					END
 				ELSE bt.ProductCode END	
-			
+
 			DROP TABLE #tmpVS
 		END
-			
 	END  
 	---#3: END: Get Sum data from bettrans After Move Bets Day
 
@@ -386,9 +393,9 @@ BEGIN
 	IF @FDate <= @MoveBetsDay 
 	BEGIN
 		IF @TDate >= @MoveBetsDay
-				SET @TempToDate = @MoveBetsDay
-			ELSE
-				SET  @TempToDate = @TDate
+			SET @TempToDate = @MoveBetsDay
+		ELSE
+			SET  @TempToDate = @TDate
 		
 		---#4.1: Begin: Get data for BA product
 		IF PATINDEX('%,BA,%', ',' + @ProductList + ',') > 0
@@ -482,9 +489,9 @@ BEGIN
 			) s			
 
 			DECLARE  @tblVS AS TABLE 
-				(rptdate    datetime
-				,sportID	 int				
-				,currency	 int				
+				(rptdate    DATETIME
+				,sportID	 INT
+				,currency	 INT
 				,turnover MONEY
 				,winloss  MONEY
 				,commissionA MONEY
@@ -534,13 +541,13 @@ BEGIN
 									WHERE t.CustID = b.recommend AND b.Currency = t.Currency 
 										AND rptdate BETWEEN @FDate AND @TempToDate  			 
 										AND status IN (8,3,4)
-										AND b.CustID = @CustID										
+										AND b.CustID = @CustID
 									GROUP BY b.rptDate, b.SportID
 								) AS vs			
 				GROUP BY 
-				winlostDate    
-				,sportID				
-				,t.currency	 		
+				winlostDate
+				,sportID
+				,t.currency
 				OPTION (OPTIMIZE FOR (@n = 1))
 			END
 			ELSE
@@ -557,8 +564,8 @@ BEGIN
 					,betcount)
 				SELECT 
 					 winlostDate    
-					,sportID					
-					,t.currency	 				
+					,sportID
+					,t.currency
 					,SUM(vs.Turnover) 
 					,SUM(winlossp)  
 					,SUM(commissionA) 
@@ -608,9 +615,9 @@ BEGIN
 			FROM @tblVS b	
 				INNER JOIN #tmpSport ts ON b.sportID = ts.SportType			
 			GROUP BY 
-					b.rptdate
-					,b.currency					
-					,ts.ProductPrefix + CONVERT(varchar(10), ISNULL(b.sportID,0))
+				b.rptdate
+				,b.currency					
+				,ts.ProductPrefix + CONVERT(varchar(10), ISNULL(b.sportID,0))
 		
 		END	
 	END 
@@ -632,52 +639,52 @@ BEGIN
 	END
 
 	SELECT   
-	   CASE WHEN @ReportType = 1 THEN CONVERT(VARCHAR(8),w.winlostdate,112)  
+		CASE WHEN @ReportType = 1 THEN CONVERT(VARCHAR(8),w.winlostdate,112)  
 			WHEN @ReportType = 2 THEN CONVERT(VARCHAR(6),w.winlostdate,112)  
 			ELSE '0' END ReportType,  
-	   Currency ,
-	   ProductCode,			
+		Currency ,
+		ProductCode,			
 
-	   SUM(Betcount)	AS Betcount,
+		SUM(Betcount)	AS Betcount,
 
-	   CAST(SUM(TurnOver * e.Rate)			AS MONEY)	AS Turnover,   
-	   CAST(SUM(Winlost * e.Rate)			AS MONEY)	AS Winlost,  
-	   CAST(SUM(LicenseeWL * e.Rate) 		AS MONEY)	AS LicenseeWL,
-	   CAST(SUM(Comm * e.Rate) 				AS MONEY)	AS Comm,
-	   CAST(SUM(PlayerComm * e.Rate) 		AS MONEY)	AS PlayerComm,
-	   CAST(SUM(AmtDueto3rd * e.Rate) 		AS MONEY)	AS AmtDueto3rd,
+		CAST(SUM(TurnOver * e.Rate)			AS MONEY)	AS Turnover,   
+		CAST(SUM(Winlost * e.Rate)			AS MONEY)	AS Winlost,  
+		CAST(SUM(LicenseeWL * e.Rate) 		AS MONEY)	AS LicenseeWL,
+		CAST(SUM(Comm * e.Rate) 				AS MONEY)	AS Comm,
+		CAST(SUM(PlayerComm * e.Rate) 		AS MONEY)	AS PlayerComm,
+		CAST(SUM(AmtDueto3rd * e.Rate) 		AS MONEY)	AS AmtDueto3rd,
 	  
-	   --BaseUSD  
-	   CAST(SUM(TurnOver * e.USD)			AS MONEY)	AS TurnoverUSD,   
-	   CAST(SUM(Winlost * e.USD)			AS MONEY)	AS WinlostUSD,  
-	   CAST(SUM(LicenseeWL * e.USD)			AS MONEY)	AS LicenseeWLUSD,
-	   CAST(SUM(Comm * e.USD) 				AS MONEY)	AS CommUSD,
-	   CAST(SUM(PlayerComm * e.USD)  		AS MONEY)	AS PlayerCommUSD,
-	   CAST(SUM(AmtDueto3rd * e.USD) 		AS MONEY)	AS AmtDueto3rdUSD,
+		--BaseUSD  
+		CAST(SUM(TurnOver * e.USD)			AS MONEY)	AS TurnoverUSD,   
+		CAST(SUM(Winlost * e.USD)			AS MONEY)	AS WinlostUSD,  
+		CAST(SUM(LicenseeWL * e.USD)			AS MONEY)	AS LicenseeWLUSD,
+		CAST(SUM(Comm * e.USD) 				AS MONEY)	AS CommUSD,
+		CAST(SUM(PlayerComm * e.USD)  		AS MONEY)	AS PlayerCommUSD,
+		CAST(SUM(AmtDueto3rd * e.USD) 		AS MONEY)	AS AmtDueto3rdUSD,
 
 		--BaseEUR  
-	   CAST(SUM(TurnOver * e.EUR)			AS MONEY)	AS TurnoverEUR,   
-	   CAST(SUM(Winlost * e.EUR)			AS MONEY)	AS WinlostEUR,  
-	   CAST(SUM(LicenseeWL * e.EUR) 		AS MONEY)	AS LicenseeWLEUR,
-	   CAST(SUM(Comm * e.EUR) 				AS MONEY)	AS CommEUR,
-	   CAST(SUM(PlayerComm * e.EUR) 		AS MONEY)	AS PlayerCommEUR,
-	   CAST(SUM(AmtDueto3rd * e.EUR) 		AS MONEY)	AS AmtDueto3rdEUR,
+		CAST(SUM(TurnOver * e.EUR)			AS MONEY)	AS TurnoverEUR,   
+		CAST(SUM(Winlost * e.EUR)			AS MONEY)	AS WinlostEUR,  
+		CAST(SUM(LicenseeWL * e.EUR) 		AS MONEY)	AS LicenseeWLEUR,
+		CAST(SUM(Comm * e.EUR) 				AS MONEY)	AS CommEUR,
+		CAST(SUM(PlayerComm * e.EUR) 		AS MONEY)	AS PlayerCommEUR,
+		CAST(SUM(AmtDueto3rd * e.EUR) 		AS MONEY)	AS AmtDueto3rdEUR,
 
 		--BaseGBP  
-	   CAST(SUM(TurnOver * e.GBP)			AS MONEY)	AS TurnoverGBP,   
-	   CAST(SUM(Winlost * e.GBP)			AS MONEY)	AS WinlostGBP,  
-	   CAST(SUM(LicenseeWL * e.GBP) 		AS MONEY)	AS LicenseeWLGBP,
-	   CAST(SUM(Comm * e.GBP) 				AS MONEY)	AS CommGBP,
-	   CAST(SUM(PlayerComm * e.GBP) 		AS MONEY)	AS PlayerCommGBP,
-	   CAST(SUM(AmtDueto3rd * e.GBP) 		AS MONEY)	AS AmtDueto3rdGBP,
+		CAST(SUM(TurnOver * e.GBP)			AS MONEY)	AS TurnoverGBP,   
+		CAST(SUM(Winlost * e.GBP)			AS MONEY)	AS WinlostGBP,  
+		CAST(SUM(LicenseeWL * e.GBP) 		AS MONEY)	AS LicenseeWLGBP,
+		CAST(SUM(Comm * e.GBP) 				AS MONEY)	AS CommGBP,
+		CAST(SUM(PlayerComm * e.GBP) 		AS MONEY)	AS PlayerCommGBP,
+		CAST(SUM(AmtDueto3rd * e.GBP) 		AS MONEY)	AS AmtDueto3rdGBP,
 	   
-	    --Default Base Currency  
-	   CAST(SUM(TurnOver * e.DefaultRate)			AS MONEY)	AS TurnoverBase,   
-	   CAST(SUM(Winlost * e.DefaultRate)			AS MONEY)	AS WinlostBase,  
-	   CAST(SUM(LicenseeWL * e.DefaultRate) 		AS MONEY)	AS LicenseeWLBase,
-	   CAST(SUM(Comm * e.DefaultRate) 				AS MONEY)	AS CommBase,
-	   CAST(SUM(PlayerComm * e.DefaultRate) 		AS MONEY)	AS PlayerCommBase,
-	   CAST(SUM(AmtDueto3rd * e.DefaultRate) 		AS MONEY)	AS AmtDueto3rdBase
+		--Default Base Currency  
+		CAST(SUM(TurnOver * e.DefaultRate)			AS MONEY)	AS TurnoverBase,   
+		CAST(SUM(Winlost * e.DefaultRate)			AS MONEY)	AS WinlostBase,  
+		CAST(SUM(LicenseeWL * e.DefaultRate) 		AS MONEY)	AS LicenseeWLBase,
+		CAST(SUM(Comm * e.DefaultRate) 				AS MONEY)	AS CommBase,
+		CAST(SUM(PlayerComm * e.DefaultRate) 		AS MONEY)	AS PlayerCommBase,
+		CAST(SUM(AmtDueto3rd * e.DefaultRate) 		AS MONEY)	AS AmtDueto3rdBase
 	FROM	
 		#SAgWinLoss w   
 		INNER JOIN #Exchange e
