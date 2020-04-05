@@ -1,13 +1,13 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
-ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinlossDetail]  
-	@LicenseeID		INT,		
-	@CustID			INT = 0, --AgentID		
-	@FromDate		SMALLDATETIME,  
-	@ToDate			SMALLDATETIME,   
-	@showSB			BIT = 0,  
+ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinlossDetail]
+	@LicenseeID		INT,
+	@CustID			INT = 0, --AgentID
+	@FromDate		SMALLDATETIME,
+	@ToDate			SMALLDATETIME,
+	@showSB			BIT = 0,
 	@ShowNG			BIT = 0,
-	@ShowBA			BIT = 0,	
+	@ShowBA			BIT = 0,
 	@ShowVS			BIT = 0,
 	@ShowCS			BIT = 0, -- RNG Casino
 	@ShowKN			BIT = 0, -- Keno 
@@ -31,14 +31,15 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinlossDetail]
 	@BaseCurrency	VARCHAR(3) = '',
 	@DefaultBaseCurrency	VARCHAR(3) = '',
 	@CheckPromotionPrize	BIT = 0
+AS
 
-AS  
-/*  Created: Henry  
-	Date: 2012-01-09  
-    Task : Winloss Report for Licensee Member Level
-    DB: DB052.bodb02  
-   
-    Revisions:  
+/*
+	Created: Henry
+	Date: 2012-01-09
+	Task : Winloss Report for Licensee Member Level
+	DB: DBEXT.bodb02
+
+	Revisions:
 		- 20120214@Jim: change table ExchangeDaily by function Lrf_f_GetExchangeDaily  
 		- 20120529@Henry: enhance performance
 		- 20120726@Jim: add playercomm value 
@@ -103,25 +104,25 @@ AS
 		- 20200406@Hogan: Add new product Table Games [RedmineID: #131447]
 		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
 
-	Param's Explanation:  
-	  + @CustID: SuperID  
-	  + @BaseCurrency (input currencyID): 2-MYR ; 3-USD; 6-EUR
-	  +	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
-	  + @excludeTest: remove currency UUS
-	  + @MoveBetsDay: The day we move tickets to bettrans14
-	  + @CheckPromotionPrize: = 1 if want to check whether have promotion prize ticket or not
-	  + @AgentList: xml structure
-					  <ROOT>
-					   <Agent AgentId="12345" Currency="3"/>  
-					   <Agent AgentId="12345" Currency="5"/>  
-					  </ROOT>
-*/  
+	Param's Explanation:
+		+ @CustID: SuperID
+		+ @BaseCurrency (input currencyID): 2-MYR ; 3-USD; 6-EUR
+		+	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
+		+ @excludeTest: remove currency UUS
+		+ @MoveBetsDay: The day we move tickets to bettrans14
+		+ @CheckPromotionPrize: = 1 if want to check whether have promotion prize ticket or not
+		+ @AgentList: xml structure
+						<ROOT>
+						<Agent AgentId="12345" Currency="3"/>  
+						<Agent AgentId="12345" Currency="5"/>  
+						</ROOT>
+*/
 /*
 exec Lrf_Rpt_LicWinlossDetail  @licenseeid=1,@fromdate='2016-07-13 00:00:00',@todate='2016-07-13 00:00:00',@isold=0,@drawfilter=1,@excludetest=1,@movebetsday='2016-07-11 00:00:00',@showSB=1,@showNG=1,@showBA=1,@showVS=1,@showCS=1,@showKN=1,@showAGC=1,@showVB=1
-
 */
-BEGIN  
-	SET NOCOUNT ON  
+
+BEGIN
+	SET NOCOUNT ON
 
 	CREATE TABLE #SAgWinLoss
 	(
@@ -168,13 +169,13 @@ BEGIN
 		LicenseeWLVRG		MONEY,
 		LicenseeWLTG		MONEY,
 		LicenseeWLI4D		MONEY,
-		AmtDueToBA			MONEY,   
-		CommBA				MONEY,   
+		AmtDueToBA			MONEY,
+		CommBA				MONEY,
 		PlayerComm  		MONEY,
 		Betcount			BIGINT,
-		licenseeWLBT		MONEY,   
-		BetTradeComm		MONEY,  
-		WLBetTicket			MONEY, 	
+		licenseeWLBT		MONEY,
+		BetTradeComm		MONEY,
+		WLBetTicket			MONEY,
 		WLBoughtTicket		MONEY,
 		BuyBackAmtSB		MONEY,
 		BuyBackAmtBA		MONEY,
@@ -190,10 +191,12 @@ BEGIN
 	DECLARE @ProductList	VARCHAR (500)
 	DECLARE	@PromotionPrize	INT = 0
 
-	SELECT	@LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WHERE LicenseeID = @LicenseeID
+	SELECT	@LicenseeName = LicenseeName
+	FROM bodb_Licensee.dbo.Licensees (NOLOCK)
+	WHERE LicenseeID = @LicenseeID
 	
 	DECLARE @IsTest BIT = 0
-	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)	
+	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
 
 	DECLARE @DocHandler INT
 
@@ -322,8 +325,7 @@ BEGIN
 		INSERT INTO @sporttype ( sporttype, ProductCode )
 		SELECT DISTINCT sporttype, ProductCode
 		FROM f_LicWinLoss_ProductSportType_Sel(@ProductList)
-
-	END	
+	END
 
 	DECLARE @TempFromDate	SMALLDATETIME,
 			@TempToDate		SMALLDATETIME,
@@ -378,7 +380,7 @@ BEGIN
 				0 AS turnoverTG,
 				0 AS turnoverI4D,
 				0 AS BTActualStake,
-				SUM(b.winlost-b.actual_stake) AS Winlost,  
+				SUM(b.winlost-b.actual_stake) AS Winlost,
 				0 AS LicenseeWLSB,
 				0 AS LicenseeWLBA,
 				0 AS LicenseeWLNG,
@@ -417,14 +419,14 @@ BEGIN
 				b.winlostdate BETWEEN @TempFromDate AND @TDate 
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
-				AND b.statusID IN (111, 112, 113)				
+				AND b.statusID IN (111, 112, 113)
 			GROUP BY b.custid, b.winlostdate, tma.Currency
-		END		
+		END
 
 		IF @ShowSB = 1
 		BEGIN
 			INSERT INTO #SAgWinLoss
-			SELECT  
+			SELECT
 				b.winlostdate,
 				b.custid,
 				a.Currency,
@@ -514,7 +516,7 @@ BEGIN
 			SELECT
 				b.winlostdate,
 				b.custid,
-				a.Currency, 			
+				a.Currency, 
 				0 AS turnoverSB, 
 				0 AS turnoverBA,
 				0 AS turnoverNG, 
@@ -566,11 +568,11 @@ BEGIN
 				SUM(CASE WHEN b.bettype = 902 AND transid2 = 0 THEN b.actual_stake ELSE 0 END) AS BuyBackAmtSB,
 				SUM(CASE WHEN b.bettype = 902 AND transid2 = 1 THEN b.actual_stake ELSE 0 END) AS BuyBackAmtBA,
 				0 AS CashOutComm
-			FROM 	
-				Bettrans b WITH (NOLOCK)
+			FROM
+				dbo.bettrans b WITH (NOLOCK)
 				INNER JOIN @tempAg a ON b.recommend = a.custid AND b.currency = a.currency 
 			WHERE 
-				b.winlostdate BETWEEN @TempFromDate AND @TDate  			
+				b.winlostdate BETWEEN @TempFromDate AND @TDate
 				AND b.bettype IN (901, 902, 903)
 				AND	b.statusID IN (111, 112, 113)
 			GROUP BY  b.custid, b.winlostdate, a.Currency
@@ -582,7 +584,7 @@ BEGIN
 			SELECT
 				b.winlostdate,
 				b.custid,
-				a.Currency, 			
+				a.Currency,
 				0 AS turnoverSB, 
 				0 AS turnoverBA,
 				0 AS turnoverNG, 
@@ -625,7 +627,7 @@ BEGIN
 				0 AS LicenseeWLI4D,
 				0 AS AmountDueToBA,
 				0 AS CommBA,
-				0 AS PlayerComm,		
+				0 AS PlayerComm,
 				SUM(CASE WHEN b.bettype = 913 THEN 0 ELSE 1 END) AS BetCount,
 				0 AS licenseeWLBT,
 				0 AS BetTradeComm,
@@ -634,11 +636,11 @@ BEGIN
 				0 AS BuyBackAmtSB,
 				0 AS BuyBackAmtBA,
 				SUM(CASE WHEN b.bettype = 913 THEN b.awinlost ELSE 0 END) AS CashOutComm
-			FROM 	
+			FROM
 				Bettrans b WITH (NOLOCK)
 				INNER JOIN @tempAg a ON b.recommend = a.custid AND b.currency = a.currency 
 			WHERE 
-				b.winlostdate BETWEEN @TempFromDate AND @TDate  			
+				b.winlostdate BETWEEN @TempFromDate AND @TDate
 				AND b.bettype IN (911, 912, 913)
 				AND	b.statusID IN (111, 112, 113)
 			GROUP BY b.custid, b.winlostdate, a.Currency
@@ -655,56 +657,39 @@ BEGIN
 				0 AS turnoverBA,
 				SUM(CASE WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) THEN
 						stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
-
-						 
 					ELSE 0 END	
 				) AS turnoverNG, 
 				SUM(CASE WHEN b.bettype BETWEEN 1201 AND 1299 THEN
 					stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
-
-						 
 					ELSE 0 END	
 				) AS turnoverVS, 
 				SUM(CASE WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999 THEN
 					stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
-
-						 
 					ELSE 0 END	
 				) AS turnoverCS,
 				SUM(CASE WHEN b.bettype BETWEEN 1501 AND 1599 THEN
 					stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
-
-					 
 					ELSE 0 END	
 				) AS turnoverKN,
 				SUM(CASE WHEN b.bettype BETWEEN 1800 AND 1899 THEN
 					stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
-
-						 
 					ELSE 0 END	
 				) AS turnoverAGC,
 				SUM(CASE WHEN b.bettype BETWEEN 4001 AND 4100 THEN
 					stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
-
-					 
 					ELSE 0 END	
 				) AS turnoverVB,
 				SUM(CASE WHEN b.bettype BETWEEN 2401 AND 2499 THEN
 					stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
-					 
 					ELSE 0 END	
 				) AS turnoverAB,
-				
 				SUM(CASE WHEN b.bettype BETWEEN 1011 AND 1020  THEN
 					stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
-					 
 					ELSE 0 END	
 				) AS turnoverFW,
 				0 AS turnoverCO,
 				SUM(CASE WHEN b.bettype BETWEEN 2701 AND 2829 THEN
 					stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
-
-						 
 					ELSE 0 END	
 				) AS turnoverVS2,
 				SUM(CASE WHEN b.bettype BETWEEN 1021 AND 1049 THEN
@@ -783,27 +768,26 @@ BEGIN
 				0 AS BuyBackAmtSB,
 				0 AS BuyBackAmtBA,
 				0 AS CashOutComm
-			FROM 	
+			FROM
 				Bettrans b WITH ( NOLOCK)
-				INNER JOIN @tempAg a   ON b.recommend = a.custid AND a.Currency = b.currency
+				INNER JOIN @tempAg a ON b.recommend = a.custid AND a.Currency = b.currency
 				INNER JOIN @bettype bt ON b.bettype = bt.bettype
 			WHERE 
 				b.winlostdate BETWEEN @TempFromDate AND @TDate
 				AND b.statusID  IN (111, 112, 113)
 			GROUP BY b.custid, b.winlostdate, a.Currency
 		END
-		
-		-- check promotion prize - PP promotion prize and NPH Promotion prize --
+
+		-- check promotion prize - PP promotion prize and NPH Promotion prize
 		IF @CheckPromotionPrize = 1 AND EXISTS (
 			SELECT TOP(1) 1
 			FROM dbo.bettrans b WITH (NOLOCK)
-			INNER JOIN @tempAg a ON b.recommend = a.custid AND b.currency = a.currency
+				INNER JOIN @tempAg a ON b.recommend = a.custid AND b.currency = a.currency
 			WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate AND b.bettype IN (4300, 17000, 4299) AND b.statusID = 112)
 		BEGIN
 			SET @PromotionPrize = 1
 		END
-
-	END  
+	END
  
 	IF @FDate <= @MoveBetsDay 
 	BEGIN
@@ -828,7 +812,7 @@ BEGIN
 							WHEN b.statusID IN (114,115) THEN 0.5
 							ELSE 1 END
 						ELSE 1 END
-				) AS turnoverBA,     
+				) AS turnoverBA,
 				0 AS turnoverNG,
 				0 AS turnoverVS,
 				0 AS turnoverCS,
@@ -872,7 +856,7 @@ BEGIN
 				SUM(playercomm) AS PlayerComm,
 				SUM(CASE WHEN @drawfilter = 2 AND b.statusID = 111 THEN 0 ELSE b.betcount END) AS BetCount,
 				0 AS licenseeWLBT,
-				0 AS BetTradeComm,	
+				0 AS BetTradeComm,
 				SUM(CASE WHEN bt.CustId IS NOT NULL THEN b.winlost ELSE 0 END) AS WLBetTicket,
 				0 AS WLBoughtTicket,
 				0 AS BuyBackAmtSB,
@@ -1192,7 +1176,7 @@ BEGIN
 				AND	b.statusID IN (111, 112, 113) 
 				AND b.roleid = 1
 				GROUP BY b.custid, b.winlostdate, ag.Currency
-		END		
+		END
 
 		IF @ShowCO = 1
 		BEGIN
@@ -1261,13 +1245,13 @@ BEGIN
 				AND	b.statusID IN (111, 112, 113) 
 				AND b.roleid = 1
 				GROUP BY b.custid, b.winlostdate, ag.Currency
-		END		
+		END
 	
-		-- check promotion prize - PP promotion prize and NPH Promotion prize --
+		-- check promotion prize - PP promotion prize and NPH Promotion prize
 		IF @CheckPromotionPrize = 1 AND @PromotionPrize = 0 AND EXISTS (
 			SELECT TOP(1) 1
 			FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )
-			INNER JOIN @tempAg a ON b.recommend = a.custID AND b.Currency = a.Currency 
+				INNER JOIN @tempAg a ON b.recommend = a.custID AND b.Currency = a.Currency 
 			WHERE b.Winlostdate BETWEEN @FDate AND @TempToDate AND b.bettype IN (4300, 17000, 4299) AND b.statusID = 112 AND b.roleid = 2)
 		BEGIN
 			SET @PromotionPrize = 1
@@ -1283,7 +1267,7 @@ BEGIN
 	END
  
 	SELECT 
-		c.username,  
+		c.username,
 		SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS nickname,
 		w.custid, 
 		w.currency,
@@ -1335,14 +1319,17 @@ BEGIN
 		CAST(SUM(BetTradeComm	*e.Rate)	AS MONEY)	AS BetTradeComm,
 		CAST(SUM(WLBetTicket+WLBoughtTicket-BetTradeComm*e.Rate) AS MONEY)	AS AmtDueToBT,
 		CAST(SUM(BuyBackAmtSB	*e.Rate)	AS MONEY)	AS BuyBackAmtSB,
-		CAST(SUM(BuyBackAmtBA	*e.Rate)	AS MONEY)	AS BuyBackAmtBA,   
+		CAST(SUM(BuyBackAmtBA	*e.Rate)	AS MONEY)	AS BuyBackAmtBA,
 		CAST(SUM(CashOutComm	*e.Rate)	AS MONEY)	AS CashOutComm,
 		SUM(Betcount)									AS Betcount
 	FROM
-		#SAgWinLoss w   
-		INNER JOIN Customer c WITH (NOLOCK) ON w.custid = c.custid		
+		#SAgWinLoss w
+		INNER JOIN Customer c WITH (NOLOCK) ON w.custid = c.custid
 		INNER JOIN @ExchangeRate e ON w.Currency = e.ExchangeId AND w.WinlostDate BETWEEN e.FromDate AND e.ToDate
-	GROUP BY w.custid, c.username, c.username2, w.currency
+	GROUP BY w.custid,
+		c.username,
+		c.username2,
+		w.currency
 
 	SELECT
 		CAST(SUM(TurnoverSB		*e.USD)	AS MONEY)   AS TurnoverSBUSD,
@@ -1542,12 +1529,12 @@ BEGIN
 		CAST(SUM(BetTradeComm	*e.DefaultRate)	AS MONEY)	AS BetTradeComm,
 		CAST(SUM(WLBetTicket+WLBoughtTicket-BetTradeComm*e.DefaultRate) AS MONEY)	AS AmtDueToBT,
 		CAST(SUM(BuyBackAmtSB	*e.DefaultRate)	AS MONEY)	AS BuyBackAmtSB,
-		CAST(SUM(BuyBackAmtBA	*e.DefaultRate)	AS MONEY)	AS BuyBackAmtBA,   
+		CAST(SUM(BuyBackAmtBA	*e.DefaultRate)	AS MONEY)	AS BuyBackAmtBA,
 		CAST(SUM(CashOutComm	*e.DefaultRate)	AS MONEY)	AS CashOutComm,
 		@PromotionPrize										AS PromotionPrize,
 		SUM(Betcount)										AS Betcount
 	FROM
-		#SAgWinLoss w   	
+		#SAgWinLoss w
 		INNER JOIN @ExchangeRate e ON w.Currency = e.ExchangeId AND w.WinlostDate BETWEEN e.FromDate AND e.ToDate
 
 	DROP TABLE #SAgWinLoss

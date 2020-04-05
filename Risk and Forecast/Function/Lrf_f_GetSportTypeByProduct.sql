@@ -1,15 +1,15 @@
 /*<info serverAlias="DBLIC-bodb_Licensee" selecters="bodbLicenseeNet" viewers="" isFunction="1"></info>*/
 
-CREATE FUNCTION [dbo].[Lrf_f_GetSportTypeByProduct]  
-(  
+ALTER FUNCTION [dbo].[Lrf_f_GetSportTypeByProduct]  
+(
 	@ProductCode VARCHAR(10)
 )
-RETURNS @Sports TABLE (Id SMALLINT)
+RETURNS @sports TABLE (ID INT)
 
 /*
 	Create: 20180207@Amanda
 	Description: Get sports by product code
-	DB: DBLIC.bodb_Licensee
+	DB: DBLIC-bodb_Licensee
 
 	Revisions:
 		- 20180207@Amanda: Get sports by product code [Redmine: #80941]
@@ -23,6 +23,7 @@ RETURNS @Sports TABLE (Id SMALLINT)
 	Paramters Explanation:
 		@ProductCode: Product code
 */
+
 BEGIN
 	IF @ProductCode = 'BA'
 		SET @ProductCode = 'SB'

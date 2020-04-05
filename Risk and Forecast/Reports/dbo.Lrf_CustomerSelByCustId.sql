@@ -1,15 +1,17 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" viewers="" isFunction="0"></info>*/
+
 ALTER PROCEDURE [dbo].[Lrf_CustomerSelByCustid]
 	@LicenseeName	VARCHAR(50),
-	@custids		VARCHAR(MAX) = NULL,	
-	@PageSize		INT = 50,
-	@PageIndex		INT = 1,
-	@BAFilter		SMALLINT = 0,	
-	@TotalRows		INT = 0  OUTPUT,
-	@SpecialLevel	VARCHAR(100) = '',
-	@OddsGroups		VARCHAR(100) = '',
+	@custids		VARCHAR(MAX)	= NULL,
+	@PageSize		INT				= 50,
+	@PageIndex		INT				= 1,
+	@BAFilter		SMALLINT		= 0,
+	@TotalRows		INT				= 0 OUTPUT,
+	@SpecialLevel	VARCHAR(100)	= '',
+	@OddsGroups		VARCHAR(100)	= '',
 	@AgentList		VARCHAR(MAX)
 AS
+
 /*
 	Created by: [20190625@Johnson]
 	Task: Get customer list by custids
@@ -24,26 +26,30 @@ AS
 	Parameter's explanations:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 		+ @SpecialLevel: default value '1,2,3,4,5,6,7,8,9,10' (all)
-		+ @OddsGroups: Member's Odds Group		
+		+ @OddsGroups: Member's Odds Group
 */
+
 BEGIN
 	SET NOCOUNT ON
 
 	DECLARE @currentDate DATETIME,
 			@LicenseeID	INT
-			
+
 	SELECT  @currentDate = CONVERT(DATE, GETDATE())
 	
 	DECLARE @RowCount INT, @RowStart INT, @RowEnd INT
-	SELECT  @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
-	
+
+	SELECT  @PageIndex = @PageIndex - 1,
+		@RowStart = @PageSize * @PageIndex + 1,
+		@RowEnd = @RowStart + @PageSize - 1 
+
 	CREATE TABLE #TempAg (custid INT)
 	CREATE TABLE #tblCustList (custid INT)
 	
 	CREATE TABLE #Exchange
 	(
-		Id				INT PRIMARY KEY,
-		Name			VARCHAR(50),
+		Id		INT PRIMARY KEY,
+		Name	VARCHAR(50),
 	)
 	
 	DECLARE @DocHandler INT
@@ -56,7 +62,7 @@ BEGIN
 
 	INSERT INTO @sporttype ( SportType )
 	SELECT DISTINCT SportType FROM [dbo].[SportBettypeMatrix] WITH (NOLOCK)
-	WHERE reftable = 3
+	WHERE RefTable = 3
 
 	BEGIN TRY
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT
@@ -64,7 +70,7 @@ BEGIN
 	
 		INSERT INTO #TempAg(CustId)
 		SELECT AgentId
-		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [INT], Currency INT) AS Data
 
 		EXEC sp_xml_removedocument @DocHandler
 	END TRY
@@ -75,17 +81,17 @@ BEGIN
 
 		RETURN
 	END CATCH;
-	
+
 	INSERT INTO #tblCustList(custid)
 	SELECT val
 	FROM dbo.strSplit(@custids,',')
 	
 	CREATE TABLE #Temp
 	(
-		custid					INT PRIMARY KEY,
-		currency				TINYINT,
-		username				NVARCHAR (50),
-		closed					BIT,
+		CustId					INT PRIMARY KEY,
+		Currency				TINYINT,
+		Username				NVARCHAR (50),
+		Closed					BIT,
 		suspended				BIT,
 		nickname				NVARCHAR (50),
 		BAStatus				BIT,
@@ -97,25 +103,25 @@ BEGIN
 
 	CREATE TABLE #tmpCust
 	(
-		custid		INT PRIMARY KEY,
-		closed		BIT,
-		reject		BIT,
-		ugroup		VARCHAR(3)
+		custid	INT PRIMARY KEY,
+		closed	BIT,
+		reject	BIT,
+		ugroup	VARCHAR(3)
 	)
 
 	CREATE TABLE #OutstandingTranslog
 	(
 		Custid			INT,
 		Currency		INT,
-		statusID		tinyint,
-		actual_stake	money
+		statusID		TINYINT,
+		actual_stake	MONEY
 	)
 
 	CREATE TABLE #TempMember
 	(
 		CustID			INT PRIMARY KEY CLUSTERED,
 		currency		TINYINT,
-		speciallevel	int,
+		speciallevel	INT,
 		username2		VARCHAR(50),
 		username		VARCHAR(50),
 		ugroup			VARCHAR(3),
@@ -146,29 +152,29 @@ BEGIN
 			 INNER JOIN Customer c WITH (NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid 
 		WHERE ci.roleid=1
 				AND ci.custid IN (SELECT custid FROM #tblCustList)
-				AND c.username  NOT LIKE ''%CASHOUT%''					
+				AND c.username  NOT LIKE ''%CASHOUT%''
 				AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))'	
-	
+
 		--EXEC sp_executesql @strSQL
 		EXEC (@strSQL)
-	
+
 		SELECT @strSQL = 'INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject)
 		SELECT c.CustID, lc.currency, lc.speciallevel, lc.username2, lc.username, c.ugroup, c.closed, c.reject
 		FROM
 			#tmpCust c
 			INNER JOIN 
-			(SELECT lci.custid, lci.currency, ISNULL(lc.speciallevel,0) as speciallevel , lci.username, lci.username2 
+			(SELECT lci.custid, lci.currency, ISNULL(lc.speciallevel,0) as speciallevel, lci.username, lci.username2 
 			 FROM dbo.Customer lci WITH(NOLOCK) 
 				 INNER JOIN #TempAg t ON lci.recommend = t.custid
 				 LEFT JOIN dbo.Dep_CustSpecialLevel lc WITH (NOLOCK) ON lc.CustID = lci.CustID
 			 WHERE lci.RoleID = 1 
-			 ) lc ON lc.custid = c.custid				
+			 ) lc ON lc.custid = c.custid
 		WHERE 
 			ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ')'
-		
+
 		--EXEC sp_executesql @strSQL
 		EXEC (@strSQL)
-	
+
 		IF ISNULL(@TotalRows, 0) = 0
 			SELECT @TotalRows = COUNT(c.custid) FROM #TempMember c
 
@@ -256,7 +262,7 @@ BEGIN
 		FROM
 			#tmpCust c
 			INNER JOIN 
-			(SELECT c.custid, c.currency, ISNULL(lc.speciallevel,0) as speciallevel , c.username, c.username2 
+			(SELECT c.custid, c.currency, ISNULL(lc.speciallevel,0) as speciallevel, c.username, c.username2 
 			 FROM bodb02.dbo.Customer c WITH (NOLOCK)
 				LEFT JOIN dbo.Dep_CustSpecialLevel lc WITH(NOLOCK) ON c.CustID = lc.CustID			 
 				INNER JOIN #TempAg t ON c.recommend = t.custid
@@ -265,8 +271,7 @@ BEGIN
 			LEFT JOIN bodb_Licensee.dbo.LicenseeBAHistory lb WITH(NOLOCK) ON lb.LicenseeID = ' + CONVERT(VARCHAR(10),@LicenseeID) + ' AND c.custid = lb.custid AND lb.[Status] = ''Running''				
 		WHERE ISNULL (lb.CustID, 0) = 0
 			AND ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ')'
-			
-	
+
 		--EXEC sp_executesql @strSQL
 		EXEC (@strSQL)
 	
@@ -292,8 +297,7 @@ BEGIN
 		) a 
 		WHERE a.rownumber BETWEEN @rowstart AND @rowend
 	END
-	
-	
+
 	--Case 1: BA is ON
 	UPDATE #Temp SET IsPowerBAUserTurnoff = 0
 	WHERE BAStatus = 1
@@ -345,7 +349,7 @@ BEGIN
 			BEGIN
 				UPDATE #Temp SET IsPowerBAUserTurnoff = 1 WHERE CustID = @CustID
 			END
-		END			
+		END
 	END
 
 	--Case 3 update the rest
@@ -353,84 +357,112 @@ BEGIN
 
 	-- translog
 	INSERT INTO #OutstandingTranslog
-	SELECT tl.custid, tl.currency, statusID, SUM(actual_stake) actual_stacke
+	SELECT
+		tl.custid,
+		tl.currency,
+		tl.statusID,
+		SUM(actual_stake) AS actual_stacke
 	FROM
 		dbo.translog tl WITH (NOLOCK)
-		INNER JOIN #TempAg lc ON tl.recommend=lc.CustID
+		INNER JOIN #TempAg lc ON tl.recommend = lc.CustID
 		INNER JOIN @sporttype s ON s.SportType = productID
-	WHERE
-		statusID IN (0, 1)  --running and Waiting
-	GROUP BY tl.custid, tl.currency, productID, statusID
+	WHERE tl.statusID IN (0, 1)		-- running and Waiting
+	GROUP BY
+		tl.custid,
+		tl.currency,
+		tl.productID,
+		tl.statusID
 
-	--- bettransRNG
+	-- bettransRNG
 	INSERT INTO #OutstandingTranslog
-	SELECT g.custid, g.currency, statusID, SUM(g.actual_stake) actual_stacke
+	SELECT
+		g.custid,
+		g.currency,
+		g.statusID,
+		SUM(g.actual_stake) AS actual_stacke
 	FROM
 		dbo.bettransRnG g WITH (NOLOCK)
 		INNER JOIN #TempAg lc ON g.recommend = lc.CustID
-	WHERE g.statusID IN (0, 1)  --running and Waiting		
-	GROUP BY g.custid, g.currency, statusID
+	WHERE g.statusID IN (0, 1)		-- running and Waiting
+	GROUP BY
+		g.custid,
+		g.currency,
+		g.statusID
 
-	--- bettransLC
+	-- bettransLC
 	INSERT INTO #OutstandingTranslog
-	SELECT g.custid, g.currency, statusID, SUM(g.actual_stake) actual_stacke
+	SELECT
+		g.custid,
+		g.currency,
+		g.statusID,
+		SUM(g.actual_stake) AS actual_stacke
 	FROM
 		dbo.bettransLC g WITH (NOLOCK)
 		INNER JOIN #TempAg lc ON g.recommend = lc.CustID
-	WHERE g.statusID IN (0, 1)  --running and Waiting		
-	GROUP BY g.custid, g.currency, statusID
+	WHERE g.statusID IN (0, 1)  -- running and Waiting
+	GROUP BY
+		g.custid,
+		g.currency,
+		g.statusID
 
 	CREATE TABLE #data(
-		custid int PRIMARY KEY,
-		TotalBalance money,		
-		Outstanding money
+		CustId			INT PRIMARY KEY,
+		TotalBalance	MONEY,
+		Outstanding		MONEY
 	)
 
 	INSERT INTO #data(custid, TotalBalance, Outstanding)
-	SELECT 
+	SELECT
 		t.custid,
-		ISNULL(SUM(ISNULL(b.winlost-b.actual_stake + b.playercomm, 0)), 0) AS TotalBalance,
-		ISNULL(SUM(CASE WHEN ruben = 0 THEN ISNULL(b.actual_stake, 0)*(CASE WHEN b.bettype = 71 THEN 0 ELSE 1 END) ELSE 0 END), 0) AS Outstanding		
+		ISNULL(SUM(ISNULL(b.winlost - b.actual_stake + b.playercomm, 0)), 0) AS TotalBalance,
+		ISNULL(SUM(CASE
+					WHEN b.ruben = 0 THEN ISNULL(b.actual_stake, 0)*(CASE WHEN b.bettype = 71 THEN 0 ELSE 1 END)
+					ELSE 0
+				END), 0) AS Outstanding
 	FROM
 		#Temp t
-		INNER JOIN bettrans b WITH(NOLOCK) ON t.custid = b.custid		
+		INNER JOIN dbo.bettrans b WITH (NOLOCK) ON t.custid = b.custid
 	WHERE b.matchid >= 0
 	GROUP BY t.custid
 
-	INSERT INTO #Exchange(Id, Name)	EXEC Lrf_CurrencySel 
+	INSERT INTO #Exchange(Id, Name)
+	EXEC dbo.Lrf_CurrencySel 
 	
 	SELECT
 		t.custid,
 		ex.Name AS currency,
 		ex.Id AS exchangeid,
-		username,
-		closed,
-		suspended,
-		nickname,
-		BAStatus,
-		SpecialLevel,
-		IsPowerBAUserTurnoff,
-		RowNumber,
-		CAST((ISNULL(d.TotalBalance, 0)	- isnULL(tl.actual_stake,0)) AS MONEY) AS TotalBalance ,
+		t.Username,
+		t.Closed,
+		t.suspended,
+		t.nickname,
+		t.BAStatus,
+		t.SpecialLevel,
+		t.IsPowerBAUserTurnoff,
+		t.RowNumber,
+		CAST((ISNULL(d.TotalBalance, 0)	- ISNULL(tl.actual_stake,0)) AS MONEY) AS TotalBalance,
 		CAST((ISNULL(d.Outstanding, 0) + ISNULL(tl.actual_stake,0)) AS MONEY) AS Outstanding,
 		ISNULL(UPPER(t.ugroup), '') AS OddsGroup
 	FROM #Temp t
-		INNER JOIN #Exchange ex WITH(NOLOCK) ON t.currency = ex.Id
+		INNER JOIN #Exchange ex WITH (NOLOCK) ON t.currency = ex.Id
 		LEFT JOIN #Data d ON t.custid = d.custid
 		LEFT JOIN
 		(
-			SELECT SUM(actual_stake) actual_stake, Custid, Currency
+			SELECT
+				SUM(actual_stake) actual_stake,
+				Custid,
+				Currency
 			FROM #OutstandingTranslog
 			GROUP BY Custid, Currency
-		)tl ON t.custid = tl.Custid		
+		) tl ON t.custid = tl.Custid
 	ORDER BY t.username
 
 	DROP TABLE #TempAg
 	DROP TABLE #Temp
 	DROP TABLE #OutstandingTranslog
-	DROP TABLE #Data	
+	DROP TABLE #Data
 	DROP TABLE #tmpCust
-	DROP TABLE #TempMember	
+	DROP TABLE #TempMember
 	DROP TABLE #Exchange
 END
 GO

@@ -8,99 +8,99 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportSummary]
 	@Liveindicator	INT = 1,
 	@AgentList		VARCHAR(MAX),
 	@BaseCurrency	VARCHAR(3) = ''
-AS 
+AS
+
 /*
-Created: 20111031@Henry
-Task : Live Report Summary
-DB: DBEXT.bodb02
+	Created: 20111031@Henry
+	Task : Live Report Summary
+	DB: DBEXT.bodb02
 
-Revisions:
-	- 20111208@Jim: change bettype condition
-	- 20120109@Henry: enhance performance + remove @LicenseeType + remove currency UUS
-	- 20120214@Jim: change to use  table ExchangeDaily by function Lrf_f_GetExchangeDaily  
-	- 20120614@Jim: optimize code 
-	- 20120726@Jim: add playercomm value 
-	- 20120815@Henry: add Live casino
-	- 20120831@Henry: add Virtual Sports
-	- 20121004@Jim: replace @currency input param by @currencyID
-	- 20121115@Henry: Only Sportsbook needs to exclude BA
-	- 20121128@Henry: use new table LicenseeBATransaction_active to get bettrans BA tickets
-	- 20130328@Scott: Support RNG Casino and Bingo
-	- 20130514@Jim:  Restrict permission of Licensee Users by currency
-	- 20130625@Jim: support to view currency UUS
-	- 20130809@Jim: offer Virtual Horse Racing
-	- 20131007@Jim: support Virtual Tennis
-	- 20140404@Florent: support Keno product
-	- 20140602@Hannah: Separate Live/ Non - Live data in Live Report
-	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
-	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
-	- 20150127@Jim: support base on GBP Currency
-	- 20150618@Patrick: #36263: Fix super balance isue for: AGC, GD & VG
-	- 20150612@Jim: support MicroGaming 
-	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
-	- 20151001@Jim: remove MicroGaming
-	- 20151228@Bobby: Remove RNG Casino
-	- 20151228@Bobby: #50469 - Remove RNG Casino - exclude OneRNG range bettype
-	- 20160120@Victor: Fix bug missing bettrade original tickets [Redmine: #51053]
-	- 20160218@Bobby: #52428 - Intergate RnG Casino product
-	- 20160330@Percy: Support Voidbridge single wallet [Redmine: #55057]
-	- 20160519@Jim: HotFix #57810
-	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
-	- 20160804@Percy: Enhance Performance - using faster index on bettrans [RedmineID: #60770]
-	- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
-	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
-	- 20170328@Paul: Implement Cash Out [RedmineID: #71727]
-	- 20170705@Harper: Hotfix for Cash Out [RedmineID: #79546]
-	- 20170710@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
-	- 20170721@Harper: Hotfix add AB and FW to LiveReport [RedmineID: #80350]
-	- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
-	- 20170814@Harper: One RNG - Offer New Tablet Games [RedmineID: #78424]
-	- 20171009@Sophia: Add ProductCode [RedmineID : #82797]
-	- 20180205@Harper: Remove LC from product list [RedmineID: #85965]
-	- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
-	- 20180418@Amanda: LAP - Update VB bet type range and integrate PP [RedmineID: #92318]
-	- 20180808@Amanda: Remove Racing, Bingo [RedmineID: #99378]
-	- 20181101@Amanda: Remove parameter @LicenseeId [Redmine: #103935]
-	- 20181127@Paul: Add OPTION(RECOMPILE) [RedmineID: #105398]
-	- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
-	- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
-	- 20190304@Amanda: Integrate PP Promotion Prize [RedmineID: #109471]
-	- 20190516@Amanda: Remove hard code for product name [RedmineID: #113398]
-	- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
-	- 20190708@Amanda: Add new product Card Club [RedmineID: #115449]
-	- 20191121@Amanda: Exclude PP Promotion and Tournament Prize [RedmineID: #123804]
-	- 20190312@Amanda: Add new bet types Single Match Parlay (ID: 38) [RedmineID: #108298]
-	- 20191212@Vickie: Integrate SpadeGaming [RedmineID: #124103]
-	- 20200108@Vickie: Add new product Virtual Games [RedmineID: #124911]
-	- 20200406@Hogan: Add new product Table Games [RedmineID: #131447]
-	- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
+	Revisions:
+		- 20111208@Jim: change bettype condition
+		- 20120109@Henry: enhance performance + remove @LicenseeType + remove currency UUS
+		- 20120214@Jim: change to use  table ExchangeDaily by function Lrf_f_GetExchangeDaily  
+		- 20120614@Jim: optimize code 
+		- 20120726@Jim: add playercomm value 
+		- 20120815@Henry: add Live casino
+		- 20120831@Henry: add Virtual Sports
+		- 20121004@Jim: replace @currency input param by @currencyID
+		- 20121115@Henry: Only Sportsbook needs to exclude BA
+		- 20121128@Henry: use new table LicenseeBATransaction_active to get bettrans BA tickets
+		- 20130328@Scott: Support RNG Casino and Bingo
+		- 20130514@Jim:  Restrict permission of Licensee Users by currency
+		- 20130625@Jim: support to view currency UUS
+		- 20130809@Jim: offer Virtual Horse Racing
+		- 20131007@Jim: support Virtual Tennis
+		- 20140404@Florent: support Keno product
+		- 20140602@Hannah: Separate Live/ Non - Live data in Live Report
+		- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
+		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+		- 20150127@Jim: support base on GBP Currency
+		- 20150618@Patrick: #36263: Fix super balance isue for: AGC, GD & VG
+		- 20150612@Jim: support MicroGaming 
+		- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
+		- 20151001@Jim: remove MicroGaming
+		- 20151228@Bobby: Remove RNG Casino
+		- 20151228@Bobby: #50469 - Remove RNG Casino - exclude OneRNG range bettype
+		- 20160120@Victor: Fix bug missing bettrade original tickets [Redmine: #51053]
+		- 20160218@Bobby: #52428 - Intergate RnG Casino product
+		- 20160330@Percy: Support Voidbridge single wallet [Redmine: #55057]
+		- 20160519@Jim: HotFix #57810
+		- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
+		- 20160804@Percy: Enhance Performance - using faster index on bettrans [RedmineID: #60770]
+		- 20161022@Jim:move table to bodb_licenseereport [RedmineID :#60449]
+		- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+		- 20170328@Paul: Implement Cash Out [RedmineID: #71727]
+		- 20170705@Harper: Hotfix for Cash Out [RedmineID: #79546]
+		- 20170710@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
+		- 20170721@Harper: Hotfix add AB and FW to LiveReport [RedmineID: #80350]
+		- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
+		- 20170814@Harper: One RNG - Offer New Tablet Games [RedmineID: #78424]
+		- 20171009@Sophia: Add ProductCode [RedmineID : #82797]
+		- 20180205@Harper: Remove LC from product list [RedmineID: #85965]
+		- 20180409@Joseph: Implement new sports for VS2: BasketBall - Virual Soccer World Cup [Redmine: #90881]
+		- 20180418@Amanda: LAP - Update VB bet type range and integrate PP [RedmineID: #92318]
+		- 20180808@Amanda: Remove Racing, Bingo [RedmineID: #99378]
+		- 20181101@Amanda: Remove parameter @LicenseeId [Redmine: #103935]
+		- 20181127@Paul: Add OPTION(RECOMPILE) [RedmineID: #105398]
+		- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
+		- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
+		- 20190304@Amanda: Integrate PP Promotion Prize [RedmineID: #109471]
+		- 20190516@Amanda: Remove hard code for product name [RedmineID: #113398]
+		- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
+		- 20190708@Amanda: Add new product Card Club [RedmineID: #115449]
+		- 20191121@Amanda: Exclude PP Promotion and Tournament Prize [RedmineID: #123804]
+		- 20190312@Amanda: Add new bet types Single Match Parlay (ID: 38) [RedmineID: #108298]
+		- 20191212@Vickie: Integrate SpadeGaming [RedmineID: #124103]
+		- 20200108@Vickie: Add new product Virtual Games [RedmineID: #124911]
+		- 20200406@Hogan: Add new product Table Games [RedmineID: #131447]
+		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
 
-Param's Explanation:
-	+ @IsLive : indicate that whether the report will get live data or not
-			+ 0: Non - Live data only
-			+ 1: Live data only
-			+ 2: All
+	Param's Explanation:
+		+ @IsLive : indicate that whether the report will get live data or not
+				+ 0: Non - Live data only
+				+ 1: Live data only
+				+ 2: All
 
-	+ @AgentList: xml structure
-					<ROOT>
-					<Agent AgentId="12345" Currency="3"/>  
-					<Agent AgentId="12345" Currency="5"/>  
-					</ROOT> 
+		+ @AgentList: xml structure
+						<ROOT>
+						<Agent AgentId="12345" Currency="3"/>  
+						<Agent AgentId="12345" Currency="5"/>  
+						</ROOT> 
 	
-Example: 
+	Example: 
 	
-DECLARE @DateFrom DATETIME
-DECLARE @DateTo DATETIME
-DECLARE @MoveBetsDay DATETIME
-SELECT @DateFrom = DATEADD(DAY, -15, GETDATE())
-SELECT @DateTo = GETDATE()
-SELECT @MoveBetsDay = MAX(eventdate) FROM match14 WITH(NOLOCK)
+	DECLARE @DateFrom DATETIME
+	DECLARE @DateTo DATETIME
+	DECLARE @MoveBetsDay DATETIME
+	SELECT @DateFrom = DATEADD(DAY, -15, GETDATE())
+	SELECT @DateTo = GETDATE()
+	SELECT @MoveBetsDay = MAX(eventdate) FROM match14 WITH(NOLOCK)
 
-EXEC [Lrf_Rpt_LiveReportSummary] @CurrencyID = 0, @FromDate=@DateFrom, @ToDate=@DateTo, @MoveBetsDay = @MoveBetsDay, @ProductCode= NULL
-
+	EXEC [Lrf_Rpt_LiveReportSummary] @CurrencyID = 0, @FromDate=@DateFrom, @ToDate=@DateTo, @MoveBetsDay = @MoveBetsDay, @ProductCode= NULL
 */
-BEGIN
 
+BEGIN
 	SET NOCOUNT ON
 
 	DECLARE @TempFromDate	DATETIME,
@@ -167,7 +167,7 @@ BEGIN
 
 	INSERT INTO #ProductCodes (ProductCode)
 	SELECT	ISNULL(Val,'') 	
-	FROM	dbo.strSplit(@ProductCodes,',')  
+	FROM	dbo.strSplit(@ProductCodes,',') 
 	
 	IF @TDate > @MoveBetsDay
 	BEGIN
@@ -209,8 +209,8 @@ BEGIN
 				AND (b.bettype < 911 OR b.bettype > 914)
 			GROUP BY
 				b.winlostdate,
-				t.currency	
-			OPTION(RECOMPILE)	
+				t.currency
+			OPTION(RECOMPILE)
 		END
 
 		--SB
@@ -281,7 +281,7 @@ BEGIN
 				t.currency,
 				b.bettype
 		END
-		
+
 		-- Parlay for VS2
 		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'VS2'))
 		BEGIN	
@@ -312,7 +312,7 @@ BEGIN
 				b.bettype
 		END
 
-		--Others	
+		--Others
 		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'NG', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D'))
 		BEGIN
 			INSERT INTO #tmpWinloss
@@ -398,7 +398,7 @@ BEGIN
 		ELSE
 			SET @TempToDate = @TDate
 
-		---- BA		
+		-- BA
 		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'BA'))
 		BEGIN
 			INSERT INTO #tmpWinloss
@@ -428,11 +428,11 @@ BEGIN
 				AND b.bettype NOT IN (9,29,2799)
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
-			GROUP BY 
+			GROUP BY
 				b.rptdate,
 				b.currencyID
 		END
-		
+
 		-- parlay for BA
 		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'BA'))
 		BEGIN
@@ -468,7 +468,7 @@ BEGIN
 				b.currencyID
 		END
 
-		----Others
+		-- Others
 		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D'))
 		BEGIN
 			INSERT INTO #tmpWinloss
@@ -608,8 +608,7 @@ BEGIN
 				b.rptDate,
 				b.currencyID
 		END 
-	
-	
+
 		-- parlay for VS2
 		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'VS2'))
 		BEGIN		
@@ -630,7 +629,7 @@ BEGIN
 				INNER JOIN #LicenseeList l ON b.SiteID = l.LicenseeID AND b.CurrencyID = l.Currency
 			WHERE
 				b.rptDate BETWEEN @FDate AND @TempToDate
-				AND b.status NOT IN (-1,103)			
+				AND b.status NOT IN (-1,103)
 				AND b.Bettype = 2799
 				AND
 				(
@@ -660,7 +659,6 @@ BEGIN
 	SELECT
 		ProductCode,
 		SUM(Betcount) AS Betcount,
-
 		CAST(SUM(TurnOver		* e.Rate) AS MONEY) AS Turnover,
 		CAST(SUM(Winlost		* e.Rate) AS MONEY) AS Winlost,
 		CAST(SUM(LicenseeWL		* e.Rate) AS MONEY) AS LicenseeWL,
@@ -678,6 +676,5 @@ BEGIN
 	DROP TABLE #TempExchange
 	DROP TABLE #ProductCodes
 	DROP TABLE #LicenseeList
-
 END
 GO

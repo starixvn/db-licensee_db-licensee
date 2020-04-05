@@ -1,15 +1,16 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" viewers="" isFunction="0"></info>*/
+
 ALTER PROCEDURE [dbo].[Lrf_CustomerSel]
 	@LicenseeID		INT,
-	@username		VARCHAR(50) = NULL,
-	@PageSize		INT = 50,
-	@PageIndex		INT = 1,
-	@BAFilter		SMALLINT = 0,
-	@CustStatus		varchar(50)= '',
-	@TotalRows		INT = 0  OUTPUT,
-	@SpecialLevel	INT = -1, --ALL
-	@GroupCommID	INT = -1, --ALL
-	@OddsGroups		VARCHAR(100) = '',
+	@username		VARCHAR(50)		= NULL,
+	@PageSize		INT				= 50,
+	@PageIndex		INT				= 1,
+	@BAFilter		SMALLINT		= 0,
+	@CustStatus		VARCHAR(50)		= '',
+	@TotalRows		INT				= 0 OUTPUT,
+	@SpecialLevel	INT				= -1, --ALL
+	@GroupCommID	INT				= -1, --ALL
+	@OddsGroups		VARCHAR(100)	= '',
 	@AgentList		VARCHAR(MAX),
 	@BaseCurrency	VARCHAR(3)
 AS
@@ -51,7 +52,7 @@ AS
 		- 20151108@Jim: Separated MicroGaming into 2 product
 		- 20160104@Bobby: Fixbug#50272 - Remove RNG Casino bettype 71
 		- 20160404@Percy: Support Voidbridge single wallet [Redmine: #55057]
-		- 20160805@Jim: LRF - Offer different member commission for parlay tickets [RedmineID:#61897]	
+		- 20160805@Jim: LRF - Offer different member commission for parlay tickets [RedmineID:#61897]
 		- 20160913@Jim: LRF - Implement Colossus Bets [Redmine: #63785]	
 		- 20161122@Francis: Use dynamic query to enhance performance [Redmine: #66801]
 		- 20161226@Francis: Hotfix BA filter with username syntax error when building dynamic string
@@ -65,17 +66,17 @@ AS
 		- 20181031@Patrick: DB052 indexes revolution [RedmineID: #103572]
 		- 20190621@Amanda: Add @BaseCurrency parameter [Redmine: #112531]
 		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
+
 	Param's Explanation:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 		+ @SpecialLevel: default value = -1 (all)
 		+ @OddsGroups: Member's Odds Group
-	
 */
 
 BEGIN
 	SET NOCOUNT ON
 
-	DECLARE @currentDate DATETIME   
+	DECLARE @currentDate DATETIME
 	SELECT  @currentDate = CONVERT(DATE, GETDATE())
 
 	DECLARE @RowCount INT, @RowStart INT, @RowEnd INT
@@ -85,11 +86,12 @@ BEGIN
 
 	DECLARE @DocHandler INT
 
-	DECLARE @sporttype	TABLE (SportType INT)
+	DECLARE @sporttype	TABLE (SportType SMALLINT)
 
 	INSERT INTO @sporttype ( SportType )
-	SELECT DISTINCT SportType FROM [dbo].[SportBettypeMatrix] WITH (NOLOCK)
-	WHERE reftable = 3
+	SELECT DISTINCT SportType
+	FROM [dbo].[SportBettypeMatrix] WITH (NOLOCK)
+	WHERE RefTable = 3
 
 	BEGIN TRY
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT
@@ -97,14 +99,14 @@ BEGIN
 	
 		INSERT INTO #TempAg(CustId)
 		SELECT AgentId
-		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [INT], Currency INT) AS Data
 
 		EXEC sp_xml_removedocument @DocHandler
 	END TRY
 
 	BEGIN CATCH
 		SELECT ErrCode = 100
-			,ErrMsg = N'Paramter invalid.'
+			,ErrMsg = N'Parameter invalid.'
 
 		RETURN
 	END CATCH;
@@ -137,14 +139,14 @@ BEGIN
 	(
 		Custid			INT,
 		Currency		INT,
-		statusID		tinyint,
-		actual_stake	money
+		statusID		TINYINT,
+		actual_stake	MONEY
 	)
 
 	CREATE TABLE #TempMember
 	(
 		CustID			INT PRIMARY KEY CLUSTERED,
-		speciallevel	int,
+		speciallevel	INT,
 		username2		VARCHAR(50),
 		username		VARCHAR(50),
 		ugroup			VARCHAR(3),
@@ -164,6 +166,7 @@ BEGIN
 	--For predicate pushdown
 	DECLARE @OddsGroupsC VARCHAR (100)
 	SELECT @OddsGroupsC = '''' + REPLACE(@OddsGroups, ',', ''',''') + ''''
+
 	DECLARE @strSQL NVARCHAR(MAX)
 
 	IF LEN(@Username) = 0
@@ -173,8 +176,8 @@ BEGIN
 			SELECT @strSQL = 'INSERT INTO #tmpCust(custid, closed, reject, ugroup)
 			SELECT ci.custid, ci.closed, ci.reject, RIGHT(c.ugroup, 1)
 			FROM #TempAg t 
-				 INNER JOIN custInfo ci WITH(NOLOCK) ON t.custid = ci.recommend
-				 INNER JOIN Customer c WITH (NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid 
+				 INNER JOIN dbo.custInfo ci WITH(NOLOCK) ON t.custid = ci.recommend
+				 INNER JOIN dbo.Customer c WITH (NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid
 			WHERE ci.roleid=1
 					AND c.username  NOT LIKE ''%CASHOUT%''
 					AND
@@ -189,7 +192,7 @@ BEGIN
 						OR (''' + @CustStatus + ''' = ''Open'' AND ISNULL(ci.reject, 0) = 0)
 						OR (''' + @CustStatus + ''' = ''Suspended'' AND ISNULL(ci.reject, 0) = 1)
 					)
-					AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))'	
+					AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))'
 		
 			--EXEC sp_executesql @strSQL
 			EXEC (@strSQL)
@@ -276,11 +279,11 @@ BEGIN
 				SELECT @TotalRows = COUNT(c.custid) FROM #TempMember c
 
 			INSERT INTO #Temp (custid, username, closed, suspended, nickname, BAStatus, SpecialLevel, ugroup, RowNumber)
-			SELECT * FROM 
+			SELECT * FROM
 			(
-				SELECT 
-					m.custid, 
-					m.username, 
+				SELECT
+					m.custid,
+					m.username,
 					m.closed,
 					ISNULL(m.reject, 0) AS suspended,
 					SUBSTRING(m.username2, CHARINDEX('$',m.username2)+1, LEN(m.username2)-CHARINDEX('$',m.username2)) AS nickname,
@@ -314,7 +317,7 @@ BEGIN
 						OR (''' + @CustStatus + ''' = ''Open'' AND ISNULL(ci.reject, 0) = 0)
 						OR (''' + @CustStatus + ''' = ''Suspended'' AND ISNULL(ci.reject, 0) = 1)
 					)
-					AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))'	
+					AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))'
 		
 			--EXEC sp_executesql @strSQL
 			EXEC (@strSQL)
@@ -326,7 +329,7 @@ BEGIN
 				INNER JOIN 
 				(SELECT c.custid, ISNULL(lc.speciallevel,0) as speciallevel , c.username, c.username2 
 				 FROM bodb02.dbo.Customer c WITH (NOLOCK)
-					LEFT JOIN dbo.Dep_CustSpecialLevel lc WITH(NOLOCK) ON c.CustID = lc.CustID			 
+					LEFT JOIN dbo.Dep_CustSpecialLevel lc WITH(NOLOCK) ON c.CustID = lc.CustID
 					INNER JOIN #TempAg t ON c.recommend = t.custid
 				 WHERE c.RoleID = 1
 				 ) lc ON lc.custid = c.custid
@@ -365,7 +368,7 @@ BEGIN
 	ELSE
 	BEGIN
 		SET @username = LTRIM(RTRIM(@username))
-				
+
 		SELECT @username = REPLACE(@username,'''','''''')
 		
 		IF @BAFilter = 0
@@ -374,7 +377,7 @@ BEGIN
 				SELECT ci.custid, ISNULL(lc.SpecialLevel,0) as speciallevel , c.username2, c.username, RIGHT(c.ugroup, 1), ci.closed, ci.reject
 				FROM #TempAg t
 					INNER JOIN dbo.Customer c WITH (NOLOCK) ON c.recommend = t.custid
-					INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = c.custid					
+					INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = c.custid
 					LEFT JOIN dbo.Dep_CustSpecialLevel lc WITH(NOLOCK) ON c.custid = lc.custid
 					LEFT JOIN bodb_licensee.dbo.LicenseeCustComm cc ON c.custid = cc.custid AND cc.Licenseeid = ' + CONVERT(VARCHAR(10),@LicenseeID) + '
 				WHERE 
@@ -429,11 +432,11 @@ BEGIN
 					AND (' + CONVERT(VARCHAR(10),@GroupCommID) + ' = -1 OR ISNULL(cc.GroupCommID, 0) = ' + CONVERT(VARCHAR(10),@GroupCommID) + ')
 					AND ((' + CONVERT(VARCHAR(10),@BAFilter) + ' = 1 AND ISNULL(lb.[Status],'''') = ''Running'')'
 					+ ' OR ('+ CONVERT(VARCHAR(10),@BAFilter) + '= 2 AND ISNULL(lb.[Status],'''') != ''Running''))'
-		END			
-					
+		END
+
 		--EXEC sp_executesql @strSQL
 		EXEC (@strSQL)
-										
+
 		IF ISNULL(@TotalRows, 0) = 0
 			SELECT @TotalRows = COUNT(c.custid) FROM #TempMember c
 	
@@ -451,23 +454,25 @@ BEGIN
 					m.ugroup,
 					ROW_NUMBER() OVER (ORDER BY ci.currency ASC, ci.custid ASC) AS RowNumber 
 				FROM #TempMember m
-				INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON m.CustID = ci.custid
-				LEFT JOIN bodb_Licensee.dbo.LicenseeBAHistory lb WITH (nolock) ON LicenseeID = @LicenseeID AND m.custid = lb.custid AND lb.[Status] = 'Running'
+					INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON m.CustID = ci.custid
+					LEFT JOIN bodb_Licensee.dbo.LicenseeBAHistory lb WITH (NOLOCK) ON LicenseeID = @LicenseeID AND m.custid = lb.custid AND lb.[Status] = 'Running'
 			) a 
 		WHERE a.rownumber BETWEEN @rowstart AND @rowend
 	END
 
 	--Case 1: BA is ON
-	UPDATE #Temp SET IsPowerBAUserTurnoff = 0
+	UPDATE #Temp
+	SET IsPowerBAUserTurnoff = 0
 	WHERE BAStatus = 1
 
 	--Case 2: BA is OFF
 	--Case 2.1: never turn-off BA
-	UPDATE #Temp SET IsPowerBAUserTurnoff = 0
+	UPDATE #Temp
+	SET IsPowerBAUserTurnoff = 0
 	WHERE
 		BAStatus = 0
 		AND CustID NOT IN (
-			SELECT DISTINCT CustID FROM bodb_Licensee.dbo.LicenseeBAHistory lb WITH (nolock)
+			SELECT DISTINCT CustID FROM bodb_Licensee.dbo.LicenseeBAHistory lb WITH (NOLOCK)
 			WHERE LicenseeID = @LicenseeID AND Status = 'Done'
 		)
 
@@ -476,7 +481,7 @@ BEGIN
 	SELECT CustID FROM #Temp
 	WHERE BAStatus = 0 AND IsPowerBAUserTurnoff IS NULL
 
-	IF (SELECT COUNT(*) FROM @TempBACust) > 0
+	IF EXISTS(SELECT 1 FROM @TempBACust)
 	BEGIN
 		SELECT @i = 0
 		SELECT @max = MAX(id) FROM @TempBACust
@@ -506,9 +511,11 @@ BEGIN
 					AND LicenseeID = @LicenseeID
 			) 
 			BEGIN
-				UPDATE #Temp SET IsPowerBAUserTurnoff = 1 WHERE CustID = @CustID
+				UPDATE #Temp
+				SET IsPowerBAUserTurnoff = 1
+				WHERE CustID = @CustID
 			END
-		END			
+		END
 	END
 
 	--Case 3 update the rest
@@ -516,10 +523,14 @@ BEGIN
 
 	-- translog
 	INSERT INTO #OutstandingTranslog
-	SELECT tl.custid, tl.currency, statusID, SUM(actual_stake) actual_stacke
+	SELECT
+		tl.custid,
+		tl.currency,
+		statusID,
+		SUM(actual_stake) AS actual_stacke
 	FROM
 		dbo.translog tl WITH (NOLOCK)
-		INNER JOIN #TempAg lc ON tl.recommend=lc.CustID
+		INNER JOIN #TempAg lc ON tl.recommend = lc.CustID
 		INNER JOIN @sporttype s ON s.SportType = productID 
 	WHERE
 		statusID IN (0, 1)  --running and Waiting
@@ -531,7 +542,7 @@ BEGIN
 	FROM
 		dbo.bettransRnG g WITH (NOLOCK)
 		INNER JOIN #TempAg lc ON g.recommend = lc.CustID
-	WHERE g.statusID IN (0, 1)  --running and Waiting		
+	WHERE g.statusID IN (0, 1)  --running and Waiting
 	GROUP BY g.custid, g.currency, statusID
 
 	--- bettransLC
@@ -540,7 +551,7 @@ BEGIN
 	FROM
 		dbo.bettransLC g WITH (NOLOCK)
 		INNER JOIN #TempAg lc ON g.recommend = lc.CustID
-	WHERE g.statusID IN (0, 1)  --running and Waiting		
+	WHERE g.statusID IN (0, 1)  --running and Waiting
 	GROUP BY g.custid, g.currency, statusID
 
 	SELECT ExchangeID, Rate
@@ -548,9 +559,9 @@ BEGIN
 	FROM Lrf_f_GetExchangeRate(@currentDate, @currentDate, @BaseCurrency, '')
 
 	CREATE TABLE #data(
-		custid int PRIMARY KEY,
-		TotalBalance money,
-		Outstanding money
+		custid INT PRIMARY KEY,
+		TotalBalance MONEY,
+		Outstanding MONEY
 	)
 
 	INSERT INTO #data(custid, TotalBalance, Outstanding)
@@ -560,7 +571,7 @@ BEGIN
 		CAST(ISNULL(SUM(e.Rate * CASE WHEN ruben = 0 THEN ISNULL(b.actual_stake, 0)*(CASE WHEN b.bettype = 71 THEN 0 ELSE 1 END) ELSE 0 END), 0) AS MONEY) AS Outstanding
 	FROM
 		#Temp t
-		INNER JOIN bettrans b WITH(NOLOCK) ON t.custid = b.custid
+		INNER JOIN dbo.bettrans b WITH(NOLOCK) ON t.custid = b.custid
 		LEFT JOIN #ExchangeRate e ON e.ExchangeID = b.currency
 	WHERE b.matchid >= 0
 	GROUP BY t.custid
@@ -582,7 +593,7 @@ BEGIN
 		ISNULL(lc.SBComm, 0) AS SBComm,
 		ISNULL(lc.NGComm, 0) AS NGComm,
 		ISNULL(lc.RNGComm, 0) AS RNGComm,
-		ISNULL(lc.ParlayComm, 0) AS ParlayComm,		
+		ISNULL(lc.ParlayComm, 0) AS ParlayComm,
 		ISNULL(lg.id, 0) AS GroupCommID,
 		ISNULL(UPPER(t.ugroup), '') AS OddsGroup
 	FROM #Temp t
@@ -594,7 +605,7 @@ BEGIN
 			GROUP BY Custid, Currency
 		)tl ON t.custid = tl.Custid
 		LEFT JOIN #ExchangeRate e ON tl.Currency = e.ExchangeID
-		LEFT JOIN bodb_Licensee.dbo.LicenseeCustComm lc WITH (NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
+		LEFT JOIN bodb_Licensee.dbo.LicenseeCustComm lc WITH (NOLOCK) ON t.custid = lc.custid AND lc.Licenseeid = @Licenseeid
 		LEFT JOIN bodb_Licensee.dbo.LicenseeGroupComm lg WITH (NOLOCK) ON lc.GroupCommID = lg.id
 	ORDER BY t.username
 
