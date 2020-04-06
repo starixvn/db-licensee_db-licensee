@@ -1,25 +1,9 @@
 /*<info serverAlias="DBBOF-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_Outstanding]
-    @showSB			BIT = 0,  
-    @showNG			BIT = 0,   
-    @ShowBA			BIT = 0,
-	@ShowVS			BIT = 0,
-	@ShowCS			BIT = 0, --- RNG Casino	
-	@ShowKN			BIT = 0, --- Keno
-	@ShowAGC		BIT = 0,
-	@ShowVB			BIT = 0,
-	@ShowAB			BIT = 0,
-	@ShowCB			BIT = 0,
-	@ShowFW			BIT	= 0,
-	@ShowVS2		BIT = 0,
-	@ShowLT			BIT = 0,
-	@ShowPP			BIT = 0,
-	@ShowCC			BIT = 0, -- Card club
-	@ShowSG			BIT = 0, -- Spadegaming 
-	@ShowVRG		BIT = 0, -- Virtual Games
-    @PageSize		INT = 1000,
-    @PageIndex		INT = 1,
+	@ProductList	VARCHAR (500),
+	@PageSize		INT = 1000,
+	@PageIndex		INT = 1,
 	@AgentList		VARCHAR(MAX),
 	@OrderItem		TINYINT = 1,
 	@IsAscSort		BIT = 1,
@@ -78,6 +62,7 @@ Revisions:
 	- 20191121@Amanda: Exclude PP Promotion and Tournament Prize [RedmineID: #123804]
 	- 20191212@Vickie: Integrate SpadeGaming [RedmineID: #124103]
 	- 20200108@Vickie: Add new product Virtual Games [RedmineID: #124911]
+	- 20200406@Hogan: Add new product Table Games [RedmineID: #131447]
 
 Param's Explanation:
 	@OrderItem:
@@ -144,8 +129,7 @@ BEGIN
 	)
 	
 	CREATE TABLE #SportBettype (bettype SMALLINT, RefTable TINYINT, ProductID TINYINT)
-	DECLARE @ProductList VARCHAR (500)
-	
+
 	DECLARE @IsTest BIT = 0
 	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
 	
@@ -159,85 +143,6 @@ BEGIN
 	SELECT	ExchangeID, Rate
 	FROM dbo.Lrf_f_GetExchangeRate(@Today, @Today, @BaseCurrency, '') e
 	WHERE EXISTS (SELECT 1 FROM @TempAg a WHERE a.Currency = e.ExchangeId)
-	
-	IF @ShowSB = 1 OR @ShowBA = 1 
-	BEGIN  
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'SB', 'SB')		
-	END  
-
-	IF @ShowNG = 1
-	BEGIN
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'NG', 'NG')		
-	END 	
-
-	IF @ShowVS = 1
-	BEGIN
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS', 'VS')
-	END
-
-	IF @ShowCS = 1 -- RNG Casino
-	BEGIN
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'CS', 'CS')
-	END
-
-	IF @ShowKN = 1 -- Keno
-	BEGIN 
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'KN', 'KN')
-	END
-
-	IF @ShowAGC = 1 -- AGCasino
-	BEGIN
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'AGC', 'AGC')
-	END
-
-	IF @ShowCB = 1
-	BEGIN
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'CB', 'CB')
-	END
-	
-	IF @ShowVB = 1
-	BEGIN
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'VB', 'VB')
-	END
-	IF @ShowAB = 1
-	BEGIN
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'AB', 'AB')
-	END
-
-	IF @ShowFW = 1
-	BEGIN 
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'FW', 'FW')
-	END
-
-	IF @ShowVS2 = 1 -- Betradar Virtual Sports
-	BEGIN
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS2', 'VS2')
-	END
-	
-	IF @ShowLT = 1 -- Lottery
-	BEGIN
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'LT', 'LT')
-	END
-	
-	IF @ShowPP = 1 -- PP
-	BEGIN
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'PP', 'PP')
-	END
-	
-	IF @ShowCC = 1 -- CC
-	BEGIN
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'CC', 'CC')
-	END
-
-	IF @ShowSG = 1 -- SG
-	BEGIN
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'SG', 'SG')
-	END
-
-	IF @ShowVRG = 1 -- VRG
-	BEGIN
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'VRG', 'VRG')
-	END
 
 	IF LEN(ISNULL(@ProductList, '')) > 0 
 	BEGIN
