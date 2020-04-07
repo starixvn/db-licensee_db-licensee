@@ -1,11 +1,3 @@
-Risk and Forecast\Reports\dbo.Lrf_Rpt_CustomerBalance.sql
-Risk and Forecast\Reports\dbo.Lrf_Rpt_Winloss.sql
 Risk and Forecast\Reports\dbo.Lrf_Rpt_WinlossByProduct.sql
 Risk and Forecast\Reports\dbo.Lrf_Rpt_WinlossByProductDetail.sql
 Risk and Forecast\Reports\dbo.Lrf_Rpt_WinlossByProductDetail_Ag.sql
-Risk and Forecast\Reports\dbo.Lrf_Rpt_LicWinloss.sql
-Risk and Forecast\Reports\dbo.Lrf_Rpt_LicWinlossDetail.sql
-Risk and Forecast\Reports\dbo.Lrf_Rpt_LicWinlossDetail_Ag.sql
-Risk and Forecast\Reports\dbo.Lrf_SelSportDetail.sql
-Risk and Forecast\Reports\dbo.Lrf_Rpt_PlatformWinlossDetail.sql
-
