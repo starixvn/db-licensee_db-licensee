@@ -151,9 +151,11 @@ BEGIN
 		SELECT DISTINCT BetType, RefTable, ProductID
 		FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
 		
-		IF @ShowPP = 1
-		DELETE #SportBettype
-		WHERE bettype IN (4300, 4299) AND ProductID = 32 -- PP
+		IF CHARINDEX('PP', @ProductList) > 0
+		BEGIN
+			DELETE #SportBettype
+			WHERE bettype IN (4300, 4299) AND ProductID = 32 -- PP
+		END
 	END	
 
 	--1. bettrans --
@@ -175,18 +177,18 @@ BEGIN
 	GROUP BY		
 		b.custid,
 		b.currency, CASE WHEN BA.TransID IS NULL THEN 0 ELSE 1 END,
-		s.ProductID	
+		s.ProductID
 	
-	IF @ShowSB = 0 
-		BEGIN 
+	IF CHARINDEX('SB', @ProductList) > 0
+		BEGIN
 			DELETE @Outstanding
-			WHERE IsBA = 0 AND ProductID = 1 
-		END 
- 	
-	IF @ShowBA = 0 				
-		BEGIN 
+			WHERE IsBA = 0 AND ProductID = 1
+		END
+
+	IF CHARINDEX('BA', @ProductList) > 0
+		BEGIN
 			DELETE @Outstanding
-			WHERE IsBA = 1  			       
+			WHERE IsBA = 1
 		END
 
 	--2. translog --
