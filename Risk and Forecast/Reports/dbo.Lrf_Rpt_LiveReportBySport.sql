@@ -273,7 +273,7 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 1901 AND 1999 THEN 165 -- CC' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 4301 AND 4600 THEN 247 -- SG' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 4601 AND 4900 THEN 245 -- VRG' + CHAR(13)
-								+ 'WHEN b.bettype BETWEEN 4901 AND 5000 THEN 222 -- TG' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 4901 AND 5000 THEN 245 -- TG' + CHAR(13)
 								+ 'ELSE m.SportType END as Sporttype,' + CHAR(13)
 								+ 'SUM(stake) turnover,' + CHAR(13)
 								+ 'SUM(b.winlost - b.actual_stake) AS Winlost,' + CHAR(13)
