@@ -54,7 +54,7 @@ RETURN
 					(32, 'PP', 248, 0),	-- PP
 					(34, 'CC', 165, 0),	-- Card club
 					(36, 'SG', 247, 0),	-- Spadegaming
-					(38, 'VRG', 245, 0)	-- Virtual Games
+					(38, 'VRG', 245, 0),	-- Virtual Games
 					(40, 'TG', 222, 0)	-- Table Games
 			) d(ProductID, ProductCode, SportType, BetType)  
 	WHERE ',' + @ProductCodes + ',' LIKE '%,' + CAST(ProductCode as varchar(10)) + ',%'  
