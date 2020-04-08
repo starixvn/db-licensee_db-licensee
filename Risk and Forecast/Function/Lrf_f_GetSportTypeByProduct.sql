@@ -26,6 +26,13 @@ RETURNS @Sports TABLE (Id SMALLINT)
 BEGIN
 	IF @ProductCode = 'BA'
 		SET @ProductCode = 'SB'
+	END
+
+	-- Table Game --
+	IF @ProductCode = 'TG'
+	BEGIN
+		INSERT INTO @sports(ID)
+		VALUES (222)
 
 	INSERT INTO @Sports(Id)
 	SELECT DISTINCT s.SportType
