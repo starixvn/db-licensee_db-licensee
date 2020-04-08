@@ -15,6 +15,7 @@ CREATE FUNCTION [dbo].[Lrf_f_GetSportTypeByProduct]
 		- 20181213@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
 		- 20190227@Joseph: Betting ticket center phase 3b [RedmineID: #108221]
 		- 20200326@Vickie: Add New Sport Virtual Soccer English Premier and Virtual Soccer Champions Cup [RedmineID: #131168]
+		- 20200408@Vickie: Add New Sport Virtual Soccer Euro Cup [RedmineID: #132064]
 
 	Paramters Explanation:
 		@ProductCode: Product code
@@ -57,7 +58,8 @@ BEGIN
 		(193),
 		(194),
 		(195),
-		(196)
+		(196),
+		(197)
 	END
 	-- NG --
 	IF @ProductCode = 'NG'
