@@ -79,6 +79,7 @@ AS
 		- 20190923@Amanda: Change the way to handle Half Won/ Half Lose bet types [RedmineID: #119879]
 		- 20191121@Amanda: Exclude PP Promotion and Tournament Prize [RedmineID: #123804]
 		- 20200403@Kos: Fix performance issue [RedmineID: #131761]
+		- 20200407@Vickie: HotFix: Licensee WL data isn't included CC, SG, VRG [RedmineID: #131937]
 
 	Param's Explanation:  
 		+ @ReportType: 1-Daily; 2-Monthly;  
@@ -446,7 +447,7 @@ BEGIN
 						ELSE 1 END
 				),     
 				SUM(b.winlost),  
-				SUM(CASE WHEN (b.sporttype in(0,161,164,251,202,208,209,210,212,220,248))  THEN -1 * b.winlost 
+				SUM(CASE WHEN (b.sporttype in(0,161,164,251,202,208,209,210,212,220,248,165,247,245))  THEN -1 * b.winlost 
 						ELSE 0 END
 					) AS LicenseeWL,
 				SUM(comm ) as Comm,
