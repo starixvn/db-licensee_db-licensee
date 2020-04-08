@@ -16,6 +16,7 @@ CREATE FUNCTION [dbo].[Lrf_f_GetSportTypeByProduct]
 		- 20190227@Joseph: Betting ticket center phase 3b [RedmineID: #108221]
 		- 20200326@Vickie: Add New Sport Virtual Soccer English Premier and Virtual Soccer Champions Cup [RedmineID: #131168]
 		- 20200408@Vickie: Add New Sport Virtual Soccer Euro Cup [RedmineID: #132064]
+		- 20200406@Hogan: Add new product Table Games [RedmineID: #131447]
 
 	Paramters Explanation:
 		@ProductCode: Product code
@@ -79,6 +80,13 @@ BEGIN
 	BEGIN
 		INSERT INTO @sports(ID)
 		VALUES (220)
+	END
+
+	-- Table Game --
+	IF @ProductCode = 'TG'
+	BEGIN
+		INSERT INTO @sports(ID)
+		VALUES (222)
 	END
 
 	-- Cash Out --

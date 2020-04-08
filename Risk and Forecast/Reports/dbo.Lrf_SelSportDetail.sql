@@ -25,6 +25,7 @@ Revisions:
 	- 20181213@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
 	- 20190227@Joseph: Betting ticket center phase 3b [RedmineID: #108221]
 	- 20190516@Amanda: Rename product Keno [RedmineID: #113398]
+	- 20200406@Hogan: Add new product Table Games [RedmineID: #131447]
 	
 Param's Explanation:
 	- @ProductCodes = '' - Get all
@@ -51,7 +52,7 @@ BEGIN
 		SELECT p.ProductPrefix
 		FROM dbo.Product3rd p WITH (NOLOCK)
 		INNER JOIN dbo.LicenseeProduct3rd l WITH (NOLOCK) ON p.Productid = l.ProductID
-		WHERE l.LicenseeID = @LicenseeID AND p.ProductPrefix IN ('BA', 'NG', 'VS', 'VS2', 'KN', 'LT', 'CO')
+		WHERE l.LicenseeID = @LicenseeID AND p.ProductPrefix IN ('BA', 'NG', 'VS', 'VS2', 'KN', 'LT', 'CO', 'TG')
 	END
 	ELSE
 	BEGIN
@@ -60,7 +61,7 @@ BEGIN
 		FROM @Products po
 		INNER JOIN dbo.Product3rd p WITH (NOLOCK) ON p.ProductPrefix = po.Code
 		INNER JOIN dbo.LicenseeProduct3rd l WITH (NOLOCK) ON p.Productid = l.ProductID
-		WHERE l.LicenseeID = @LicenseeID AND p.ProductPrefix IN ('BA', 'NG', 'VS', 'VS2', 'KN', 'LT', 'CO')
+		WHERE l.LicenseeID = @LicenseeID AND p.ProductPrefix IN ('BA', 'NG', 'VS', 'VS2', 'KN', 'LT', 'CO', 'TG')
 	END
 
 	DECLARE @ProductSport TABLE (
@@ -204,6 +205,16 @@ BEGIN
 		UNION ALL
 		SELECT ID, NULL, 1
 		FROM dbo.Lrf_f_GetSportTypeByProduct('CO')
+	END
+
+	-- TG --
+	IF EXISTS (SELECT 1 FROM @Product3rds WHERE Code = 'TG')
+	BEGIN
+		INSERT INTO @ProductSport(ID, Name, ParentID)
+		SELECT 222, N'Table Games', NULL
+		UNION ALL
+		SELECT ID, NULL, 222
+		FROM dbo.Lrf_f_GetSportTypeByProduct('TG')
 	END
 
 	SELECT ps.ID, ps.ParentID, ps.Name
