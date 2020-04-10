@@ -9,10 +9,20 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeCustCommUpd]
 	@UserID INT,
 	@SBComm DECIMAL(9,8),
 	@ParlayComm DECIMAL(9,8),
-	@NGComm DECIMAL(9,8),	
-	@RNGComm DECIMAL(9,8),		
+	@NGComm DECIMAL(9,8) = 0,	
+	@RNGComm DECIMAL(9,8) = 0,
+	@AllbetComm DECIMAL(9,8) = 0,
+	@MacauComm DECIMAL(9,8) = 0,
+	@PPComm DECIMAL(9,8) = 0,
+	@GDComm DECIMAL(9,8) = 0,
+	@AGComm DECIMAL(9,8) = 0,
 	@IsUpdateNG BIT = 0,
 	@IsUpdateRNG BIT = 0,
+	@IsUpdateAllbet BIT = 0,
+	@IsUpdateMacau BIT = 0,
+	@IsUpdatePP BIT = 0,
+	@IsUpdateGD BIT = 0,
+	@IsUpdateAG BIT = 0,
 	@IP VARCHAR(40),
 	@Langkey NVARCHAR(10)='en-US',
 	@ErrCode INT = 0 OUTPUT,
@@ -37,6 +47,7 @@ AS
 		- 20180927@Winnie: Remove AllBet [RedmineID: #99378]
 		- 20181205@Winnie: LAP-Security Risks found_settings [RedmineID: #105701]
 		- 20190417@Winnie: Customer Comm - Cannot move customer to selected group comm in case member have 'None' group [RedmineID: #111980]
+		- 20200409@Johnson: Add comm for AB,Macau,PP,GD,AG [redmine:#131774] 
 	Param's Explanation:
 */ 
 BEGIN
@@ -81,8 +92,18 @@ BEGIN
 		,@ParlayComm = @ParlayComm
 		,@NGComm=@NGComm
 		,@RNGComm=@RNGComm	
+		,@AllbetComm = @AllbetComm,
+		,@MacauComm = @MacauComm,
+		,@PPComm = @PPComm
+		,@GDComm = @GDComm
+		,@AGComm = @AGComm
 		,@IsUpdateNG=@IsUpdateNG
 		,@IsUpdateRNG=@IsUpdateRNG	
+		,@IsUpdateAllbet=@IsUpdateAllbet
+		,@IsUpdateMacau=@IsUpdateMacau
+		,@IsUpdatePP=@IsUpdatePP
+		,@IsUpdateGD=@IsUpdateGD
+		,@IsUpdateAG=@IsUpdateAG
 		,@IP=@IP
 		,@Langkey=@Langkey
 		,@ErrCode=@ErrCode OUTPUT

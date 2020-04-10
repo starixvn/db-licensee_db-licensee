@@ -1,7 +1,4 @@
 ﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
-USE bodb_Licensee
-GO
-
 ALTER PROCEDURE [dbo].[Lrf_CustomerMoveGroupComm]
 	@LicenseeID INT,
 	@strCustIDOriginal VARCHAR(MAX),--member
@@ -10,6 +7,11 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerMoveGroupComm]
 	@GroupCommID INT,
 	@IsUpdateNG BIT = 0,
 	@IsUpdateRNG BIT = 0,
+	@IsUpdateAllbet BIT = 0,
+	@IsUpdateMacau BIT = 0,
+	@IsUpdatePP BIT = 0,
+	@IsUpdateGD BIT = 0,
+	@IsUpdateAG BIT = 0,
 	@IP VARCHAR(40),
 	@Langkey VARCHAR(20) = 'en-US',
 	@ErrCode INT = 0 OUTPUT,
@@ -33,7 +35,7 @@ AS
 		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
 		- 20181205@Winnie: LAP-Security Risks found_settings [RedmineID: #105701]
 		- 20190417@Winnie: Customer Comm - Cannot move customer to selected group comm in case member have 'None' group [RedmineID: #111980]
-
+		- 20200410@Johnson: Add comm for AB,Macau,PP,GD,AG [redmine:#131774] 
 	Param's Explanation:
 */ 
 BEGIN
@@ -67,6 +69,11 @@ BEGIN
 		,@GroupCommID=@GroupCommID
 		,@IsUpdateNG=@IsUpdateNG
 		,@IsUpdateRNG=@IsUpdateRNG		
+		,@IsUpdateAllbet=@IsUpdateAllbet
+		,@IsUpdateMacau=@IsUpdateMacau
+		,@IsUpdatePP=@IsUpdatePP
+		,@IsUpdateGD=@IsUpdateGD
+		,@IsUpdateAG=@IsUpdateAG
 		,@Langkey=@Langkey
 		,@IP=@IP
 		,@ErrCode=@ErrCode OUTPUT

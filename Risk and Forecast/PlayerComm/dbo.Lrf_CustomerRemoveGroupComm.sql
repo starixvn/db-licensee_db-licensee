@@ -1,7 +1,4 @@
-﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
-USE bodb_Licensee
-GO
-
+﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_CustomerRemoveGroupComm]
 	@LicenseeID INT,
 	@strCustIDOriginal VARCHAR(MAX),--member
@@ -30,6 +27,7 @@ AS
 		- 20180809@Amanda: Remove Racing [RedmineID: #99378]
 		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
 		- 20180924@Winnie: Remove Allbet [RedmineID: #99378]
+		- 20200409@Johnson: Add comm for AB,Macau,PP,AG,GD [redmine:#131774] 
 */  
 BEGIN  
 	SET NOCOUNT ON
@@ -37,7 +35,12 @@ BEGIN
 	DECLARE @SBComm DECIMAL(9,8), 
 			@NGComm DECIMAL(9,8),
 			@RNGComm DECIMAL(9,8),
-		@ParlayComm DECIMAL(9,8),	
+			@ParlayComm DECIMAL(9,8),
+			@AllbetComm DECIMAL(9,8),
+			@MacauComm DECIMAL(9,8),
+			@PPComm DECIMAL(9,8),
+			@GDComm DECIMAL(9,8),
+			@AGComm DECIMAL(9,8),
 			@CustID INT, 
 			@i INT	
 	
@@ -78,7 +81,12 @@ BEGIN
 			SELECT @SBComm=SBComm,
 				@NGComm=NGComm,
 				@RNGComm=RNGComm,
-				@ParlayComm = ParlayComm			
+				@ParlayComm = ParlayComm,
+				@AllbetComm=AllbetComm,				
+				@MacauComm=MacauComm,
+				@PPComm=PPComm,
+				@GDComm=GDComm,
+				@AGComm=AGComm
 			FROM dbo.LicenseeCustComm WITH (NOLOCK)
 			WHERE LicenseeID = @LicenseeID AND CustID = @CustID
 					
@@ -92,9 +100,19 @@ BEGIN
 				@SBComm=@SBComm,
 				@NGComm=@NGComm,
 				@RNGComm=@RNGComm,
-				@ParlayComm = @ParlayComm,			
+				@ParlayComm = @ParlayComm,	
+				@AllbetComm=@AllbetComm,
+				@MacauComm=@MacauComm,
+				@PPComm=@PPComm,
+				@GDComm=@GDComm,
+				@AGComm=@AGComm,				
 				@IsUpdateNG=1,
 				@IsUpdateRNG=1,			
+				@IsUpdateAllbet=1,
+				@IsUpdateMacau=1,
+				@IsUpdatePP=1,
+				@IsUpdateGD=1,
+				@IsUpdateAG=1,
 				@IP=@IP,
 				@Langkey=@Langkey,
 				@ErrCode=@ErrCode OUTPUT,
@@ -120,9 +138,19 @@ BEGIN
 			@SBComm=0,
 			@NGComm=0,
 			@RNGComm=0,
-			@ParlayComm = 0,	
+			@ParlayComm = 0,
+			@AllbetComm= 0,
+			@MacauComm= 0,
+			@PPComm= 0,
+			@GDComm= 0,
+			@AGComm= 0,			
 			@IsUpdateNG=1,
-			@IsUpdateRNG=1,		
+			@IsUpdateRNG=1,	
+			@IsUpdateAllbet=1,
+			@IsUpdateMacau=1,
+			@IsUpdatePP=1,
+			@IsUpdateGD=1,
+			@IsUpdateAG=1,		
 			@IP=@IP,
 			@Langkey=@Langkey,
 			@ErrCode=@ErrCode OUTPUT,
@@ -137,7 +165,12 @@ BEGIN
 			SBComm = 0,
 			ParlayComm = 0,
 			NGComm = 0,
-			RNGComm = 0,			
+			RNGComm = 0,
+			AllbetComm= 0,
+			MacauComm= 0,
+			PPComm= 0,
+			GDComm= 0,
+			AGComm= 0,	
 			GroupCommID = 0
 		WHERE LicenseeID = @LicenseeID 
 		AND CustID IN (SELECT CustID FROM @TempCustID)

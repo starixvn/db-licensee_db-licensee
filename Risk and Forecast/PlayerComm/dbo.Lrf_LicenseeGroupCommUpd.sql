@@ -1,7 +1,4 @@
-﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
-USE bodb_Licensee
-GO
-
+﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_LicenseeGroupCommUpd]
 	@LicenseeID INT,
 	@GroupCommID INT,
@@ -9,9 +6,19 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeGroupCommUpd]
 	@SBComm decimal(9,8),
 	@ParlayComm decimal(9,8),
 	@NGComm decimal (9,8)=0,
-	@RNGComm decimal(9,8)=0,	
+	@RNGComm decimal(9,8)=0,
+	@AllbetComm decimal (9,8)=0,
+	@MacauComm decimal (9,8)=0,
+	@PPComm decimal (9,8)=0,
+	@GDComm decimal (9,8)=0,
+	@AGComm decimal (9,8)=0,	
 	@IsUpdateNG BIT = 0,
 	@IsUpdateRNG BIT = 0,	
+	@IsUpdateAllbet BIT = 0,
+	@IsUpdateMacau BIT = 0,
+	@IsUpdatePP BIT = 0,
+	@IsUpdateGD BIT = 0,
+	@IsUpdateAG BIT = 0,
 	@GroupColor VARCHAR(20),
 	@IsDefault BIT=0, 
 	@IsResetDefault BIT=0,
@@ -39,6 +46,7 @@ AS
 		- 20180809@Amanda: Remove Racing [RedmineID: #99378]
 		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
 		- 20180927@Winnie: Remove AllBet [RedmineID: #99378]
+		- 20200410@Johnson: Add comm for AB,Macau,PP,GD,AG [redmine:#131774] 
 	Param's Explanation:
 
 */
@@ -66,6 +74,11 @@ BEGIN
 		,@ParlayComm_Old DECIMAL(9,8)
 		,@NGComm_Old DECIMAL(9,8)
 		,@RNGComm_Old DECIMAL(9,8)		
+		,@AllbetComm_Old DECIMAL(9,8)
+		,@MacauComm_Old DECIMAL(9,8)
+		,@PPComm_Old DECIMAL(9,8)
+		,@GDComm_Old DECIMAL(9,8)
+		,@AGComm_Old DECIMAL(9,8)
 		,@IsDefault_Old BIT
 		
 	DECLARE @LogSPData VARCHAR(MAX)
@@ -79,6 +92,7 @@ BEGIN
 
 	--Validate data
 	IF @SBComm>0.15 OR @NGComm>0.15 OR @RNGComm>0.15 OR @ParlayComm >0.15 
+		OR @AllbetComm>0.15 OR @MacauComm>0.15 OR @PPComm>0.15 OR @GDComm>0.15 OR @AGComm>0.15 
 	BEGIN
 		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN  'Player Commission should not greater than '
 										ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200002,@Langkey)
@@ -103,7 +117,12 @@ BEGIN
 			,@SBComm_Old=SBComm
 			,@ParlayComm_Old=ParlayComm
 			,@NGComm_Old=NGComm
-			,@RNGComm_Old=RNGComm			
+			,@RNGComm_Old=RNGComm	
+			,@AllbetComm_Old=AllbetComm
+			,@MacauComm_Old=MacauComm
+			,@PPComm_Old=PPComm
+			,@GDComm_Old=GDComm
+			,@AGComm_Old=AGComm				
 			,@IsDefault_Old=IsDefault			
 		FROM dbo.LicenseeGroupComm WITH (NOLOCK)
 		WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID
@@ -171,7 +190,12 @@ BEGIN
 		IF @SBComm_Old<>@SBComm 
 			OR @ParlayComm_Old<>@ParlayComm 
 			OR @NGComm_Old <> @NGComm 
-			OR @RNGComm_Old <> @RNGComm			
+			OR @RNGComm_Old <> @RNGComm	
+			OR @AllbetComm_Old <> @AllbetComm 
+			OR @MacauComm_Old <> @MacauComm 
+			OR @PPComm_Old <> @PPComm 
+			OR @GDComm_Old <> @GDComm 
+			OR @AGComm_Old <> @AGComm 			
 		BEGIN
 			--Sportsbook
 			Update dbo.LicenseeGroupComm WITH (ROWLOCK,UPDLOCK)
@@ -194,7 +218,47 @@ BEGIN
 				SET RNGComm=@RNGComm
 				WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID
 			END
-
+			
+			--Allbet
+			IF @IsUpdateAllbet=1 
+			BEGIN
+				Update dbo.LicenseeGroupComm WITH (ROWLOCK,UPDLOCK)
+				SET AllbetComm=@AllbetComm
+				WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID
+			END
+			
+			--Macau Game
+			IF @IsUpdateMacau=1 
+			BEGIN
+				Update dbo.LicenseeGroupComm WITH (ROWLOCK,UPDLOCK)
+				SET MacauComm=@MacauComm
+				WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID
+			END
+			
+			--PP
+			IF @IsUpdatePP=1 
+			BEGIN
+				Update dbo.LicenseeGroupComm WITH (ROWLOCK,UPDLOCK)
+				SET PPComm=@PPComm
+				WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID
+			END
+			
+			--GD
+			IF @IsUpdateGD=1 
+			BEGIN
+				Update dbo.LicenseeGroupComm WITH (ROWLOCK,UPDLOCK)
+				SET GDComm=@GDComm
+				WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID
+			END
+			
+			--AG
+			IF @IsUpdateAG=1 
+			BEGIN
+				Update dbo.LicenseeGroupComm WITH (ROWLOCK,UPDLOCK)
+				SET AGComm=@AGComm
+				WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID
+			END
+			
 			--get list of affected Customers
 			SELECT @StrCustID = STUFF(
 				(   SELECT  ',' + CONVERT(NVARCHAR(20), custid) 
@@ -217,9 +281,19 @@ BEGIN
 					,@SBComm=@SBComm
 					,@ParlayComm=@ParlayComm
 					,@NGComm=@NGComm
-					,@RNGComm=@RNGComm					
+					,@RNGComm=@RNGComm
+					,@AllbetComm=@AllbetComm
+					,@MacauComm=@MacauComm
+					,@PPComm=@PPComm
+					,@GDComm=@GDComm
+					,@AGComm=@AGComm	
 					,@IsUpdateNG=@IsUpdateNG
 					,@IsUpdateRNG=@IsUpdateRNG					
+					,@IsUpdateAllbet=@IsUpdateAllbet
+					,@IsUpdateMacau=@IsUpdateMacau
+					,@IsUpdatePP=@IsUpdatePP
+					,@IsUpdateGD=@IsUpdateGD
+					,@IsUpdateAG=@IsUpdateAG
 					,@IP=@IP
 					,@Langkey=@langkey
 					,@ErrCode=@ErrCode OUTPUT
@@ -253,6 +327,11 @@ BEGIN
 			'ParlayComm="'+ COALESCE(CAST(@ParlayComm as VARCHAR(50)),SPACE(1)) + '" ' +
 			'NGComm="'+ COALESCE(CAST(@NGComm as VARCHAR(50)),SPACE(1)) + '" ' +
 			'RNGComm="'+ COALESCE(CAST(@RNGComm as VARCHAR(50)),SPACE(1)) + '" ' +			
+			'AllbetComm="'+ COALESCE(CAST(@AllbetComm as VARCHAR(50)),SPACE(1)) + '" ' +
+			'MacauComm="'+ COALESCE(CAST(@MacauComm as VARCHAR(50)),SPACE(1)) + '" ' +
+			'PPComm="'+ COALESCE(CAST(@PPComm as VARCHAR(50)),SPACE(1)) + '" ' +
+			'GDComm="'+ COALESCE(CAST(@GDComm as VARCHAR(50)),SPACE(1)) + '" ' +
+			'AGComm="'+ COALESCE(CAST(@AGComm as VARCHAR(50)),SPACE(1)) + '" ' +
 			'IsUpdateNG="'+ COALESCE(CAST(@IsUpdateNG as VARCHAR(50)),SPACE(1)) + '" ' +
 			'IsUpdateRNG="'+ COALESCE(CAST(@IsUpdateRNG as VARCHAR(50)),SPACE(1)) + '" ' +			
 			'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
@@ -269,8 +348,18 @@ BEGIN
 			'ParlayComm="'+ COALESCE(CAST(@ParlayComm_Old as VARCHAR(50)),SPACE(1)) + '" ' +
 			'NGComm="'+ COALESCE(CAST(@NGComm_Old as VARCHAR(50)),SPACE(1)) + '" ' +
 			'RNGComm="'+ COALESCE(CAST(@RNGComm_Old as VARCHAR(50)),SPACE(1)) + '" ' +			
+			'AllbetComm="'+ COALESCE(CAST(@AllbetComm_Old as VARCHAR(50)),SPACE(1)) + '" ' +
+			'MacauComm="'+ COALESCE(CAST(@MacauComm_Old as VARCHAR(50)),SPACE(1)) + '" ' +
+			'PPComm="'+ COALESCE(CAST(@PPComm_Old as VARCHAR(50)),SPACE(1)) + '" ' +
+			'GDComm="'+ COALESCE(CAST(@GDComm_Old as VARCHAR(50)),SPACE(1)) + '" ' +
+			'AGComm="'+ COALESCE(CAST(@AGComm_Old as VARCHAR(50)),SPACE(1)) + '" ' +
 			'IsUpdateNG="'+ COALESCE(CAST(@IsUpdateNG as VARCHAR(50)),SPACE(1)) + '" ' +
 			'IsUpdateRNG="'+ COALESCE(CAST(@IsUpdateRNG as VARCHAR(50)),SPACE(1)) + '" ' +			
+			'IsUpdateAllbet="'+ COALESCE(CAST(@IsUpdateAllbet as VARCHAR(50)),SPACE(1)) + '" ' +
+			'IsUpdateMacau="'+ COALESCE(CAST(@IsUpdateMacau as VARCHAR(50)),SPACE(1)) + '" ' +
+			'IsUpdatePP="'+ COALESCE(CAST(@IsUpdatePP as VARCHAR(50)),SPACE(1)) + '" ' +
+			'IsUpdateGD="'+ COALESCE(CAST(@IsUpdateGD as VARCHAR(50)),SPACE(1)) + '" ' +
+			'IsUpdateAG="'+ COALESCE(CAST(@IsUpdateAG as VARCHAR(50)),SPACE(1)) + '" ' +
 			'GroupColor="'+ COALESCE(CAST(@GroupColor_Old as VARCHAR(40)),SPACE(1)) + '" ' +
 			'IsDefault="'+ COALESCE(CAST(@IsDefault_Old as VARCHAR(40)),SPACE(1)) + '" ' +
 			'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +

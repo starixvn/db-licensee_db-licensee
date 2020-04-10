@@ -1,7 +1,4 @@
-﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet,bodbAdminNet,Dot_Member" viewers="vnteam" isFunction="0"></info>*/ 
-USE bodb_Licensee
-GO
-
+﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet,bodbAdminNet,Dot_Member" viewers="" isFunction="0"></info>*/ 
 ALTER PROCEDURE [dbo].[Lrf_CustomerSetDefaultComm]
 	@LicenseeName VARCHAR(50),
 	@CustID INT,--member
@@ -23,7 +20,7 @@ AS
 		- 20180809@Amanda: Remove Racing [RedmineID: #99378]
 		- 20180927@Winnie: Remove AllBet [RedmineID: #99378]
 		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
-
+		- 20200410@Johnson: Add comm for AB,Macau,PP,GD,AG [redmine:#131774] 
 	Param's Explanation:
 */ 
 BEGIN
@@ -31,8 +28,13 @@ BEGIN
 	
 	DECLARE @GroupCommID INT, 
 		@IsUpdateNG BIT,
-		@IsUpdateRNG BIT, 	
-		@LicenseeID INT, 
+		@IsUpdateRNG BIT, 
+		@IsUpdateAllbet BIT,
+		@IsUpdateMacau BIT,
+		@IsUpdatePP BIT,
+		@IsUpdateGD	BIT,
+		@IsUpdateAG BIT,		
+		@LicenseeID INT,		
 		@strCustID VARCHAR(50)
 
 	--Get LicenseeID
@@ -60,6 +62,31 @@ BEGIN
 			ELSE
 				SELECT @IsUpdateRNG = 0	
 			
+			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=21)
+				SELECT @IsUpdateAllbet = 1
+			ELSE
+				SELECT @IsUpdateAllbet = 0
+			
+			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=22)
+				SELECT @IsUpdateMacau = 1
+			ELSE
+				SELECT @IsUpdateMacau = 0
+				
+			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=32)
+				SELECT @IsUpdatePP = 1
+			ELSE
+				SELECT @IsUpdatePP = 0	
+			
+			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=11)
+				SELECT @IsUpdateGD = 1
+			ELSE
+				SELECT @IsUpdateGD = 0	
+			
+			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=10)
+				SELECT @IsUpdateAG = 1
+			ELSE
+				SELECT @IsUpdateAG = 0	
+				
 			SELECT @strCustID=CAST (@CustID AS VARCHAR(50))
 			
 			EXEC [Lrf_CustomerUpdMemberComm] 
@@ -70,6 +97,11 @@ BEGIN
 				,@IsUpdateNG=@IsUpdateNG
 				--,@IsUpdateLC=@IsUpdateLC
 				,@IsUpdateRNG=@IsUpdateRNG				
+				,@IsUpdateAllbet=@IsUpdateAllbet
+				,@IsUpdateMacau=@IsUpdateMacau
+				,@IsUpdatePP=@IsUpdatePP
+				,@IsUpdateGD=@IsUpdateGD
+				,@IsUpdateAG=@IsUpdateAG
 				,@IP=''
 				,@Langkey=@Langkey
 				,@ErrCode=@ErrCode OUTPUT

@@ -1,6 +1,4 @@
 ﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
-USE bodb_Licensee
-GO
 ALTER PROCEDURE [dbo].[Lrf_LicenseeGroupCommDel]
 	@LicenseeID INT,
 	@GroupCommID INT,
@@ -30,6 +28,7 @@ AS
 		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
 		- 20180927@Winnie: Remove AllBet [RedmineID: #99378]
 		- 20190731@Winnie: Commission Group - RNG Casino Comm of Members are not cleared when deleting Group Comm [RedmineID: #117845]
+		- 20200410@Johnson: Add comm for AB,Macau,PP,GD,AG [redmine:#131774] 
 	Param's Explanation:
 
 */
@@ -48,6 +47,11 @@ BEGIN
 		@NGComm DECIMAL(9,8),
 		@RNGComm DECIMAL(9,8),
 		@ParlayComm DECIMAL(9,8), 		
+		@AllbetComm DECIMAL(9,8),
+		@MacauComm DECIMAL(9,8),
+		@PPComm DECIMAL(9,8),
+		@GDComm DECIMAL(9,8),
+		@AGComm DECIMAL(9,8),
 		@GroupColor VARCHAR(20), 
 		@GroupName VARCHAR(100), 
 		@IsDefault BIT
@@ -68,6 +72,11 @@ BEGIN
 			@NGComm=NGComm,
 			@RNGComm=RNGComm,
 			@ParlayComm=ParlayComm,			
+			@AllbetComm=AllbetComm,
+			@MacauComm=MacauComm,
+			@PPComm=PPComm,
+			@GDComm=GDComm,
+			@AGComm=AGComm,
 			@GroupColor=color,
 			@GroupName=GroupName,
 			@IsDefault=IsDefault
@@ -127,9 +136,19 @@ BEGIN
 					@SBComm=0,
 					@NGComm=0,
 					@RNGComm=0,
-					@ParlayComm=0,				
+					@ParlayComm=0,	
+					@AllbetComm=0,
+					@MacauComm=0,
+					@PPComm=0,
+					@GDComm=0,
+					@AGComm=0,						
 					@IsUpdateNG=1,
 					@IsUpdateRNG=1,					
+					@IsUpdateAllbet=1,
+					@IsUpdateMacau=1,
+					@IsUpdatePP=1,
+					@IsUpdateGD=1,
+					@IsUpdateAG=1,
 					@IP=@IP,
 					@ErrCode=@ErrCode OUTPUT,
 					@ErrMsg=@ErrMsg OUTPUT
@@ -158,7 +177,12 @@ BEGIN
 				SBComm = 0,
 				NGComm = 0,
 				RNGComm = 0,
-				ParlayComm = 0,				
+				ParlayComm = 0,	
+				AllbetComm = 0,
+				MacauComm = 0,
+				PPComm = 0,
+				GDComm = 0,
+				AGComm = 0,				
 				GroupCommID = 0
 			WHERE GroupCommID = @GroupCommID				
 
@@ -175,7 +199,12 @@ BEGIN
 		'NGComm="'+ COALESCE(CAST(@NGComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'IsRemovePlayercomm="'+ COALESCE(CAST(@IsRemovePlayercomm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'RNGComm="'+ COALESCE(CAST(@RNGComm as VARCHAR(50)),SPACE(1)) + '" ' +
-			'ParlayComm="'+ COALESCE(CAST(@ParlayComm as VARCHAR(50)),SPACE(1)) + '" ' +			
+		'ParlayComm="'+ COALESCE(CAST(@ParlayComm as VARCHAR(50)),SPACE(1)) + '" ' +			
+		'AllbetComm="'+ COALESCE(CAST(@AllbetComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		'MacauComm="'+ COALESCE(CAST(@MacauComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		'PPComm="'+ COALESCE(CAST(@PPComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		'GDComm="'+ COALESCE(CAST(@GDComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		'AGComm="'+ COALESCE(CAST(@AGComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
 		'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +
 		'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
@@ -190,7 +219,12 @@ BEGIN
 		'NGComm="'+ COALESCE(CAST(@NGComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'IsRemovePlayercomm="'+ COALESCE(CAST(@IsRemovePlayercomm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'RNGComm="'+ COALESCE(CAST(@RNGComm as VARCHAR(50)),SPACE(1)) + '" ' +
-			'ParlayComm="'+ COALESCE(CAST(@ParlayComm as VARCHAR(50)),SPACE(1)) + '" ' +			
+		'ParlayComm="'+ COALESCE(CAST(@ParlayComm as VARCHAR(50)),SPACE(1)) + '" ' +			
+		'AllbetComm="'+ COALESCE(CAST(@AllbetComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		'MacauComm="'+ COALESCE(CAST(@MacauComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		'PPComm="'+ COALESCE(CAST(@PPComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		'GDComm="'+ COALESCE(CAST(@GDComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		'AGComm="'+ COALESCE(CAST(@AGComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
 		'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +
 		'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
