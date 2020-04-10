@@ -22,6 +22,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 		- 20191212@Vickie: Integrate SpadeGaming [RedmineID: #124103]
 		- 20200108@Vickie: Add new product Virtual Games [RedmineID: #124911]
 		- 20200326@Vickie: Add New Sport Virtual Soccer English Premier and Virtual Soccer Champions Cup [RedmineID: #131168]
+		- 20200408@Vickie: Add New Sport Virtual Soccer Euro Cup [RedmineID: #132064]
 
 	Paramters Explanation:  
 		@ProductID: list of products  
@@ -47,6 +48,7 @@ RETURN
 					(27, 'VS2', 194, 0), --  Virtual Soccer Asian Cup
 					(27, 'VS2', 195, 0), --  Virtual Soccer English Premier
 					(27, 'VS2', 196, 0), --  Virtual Soccer Champions Cup
+					(27, 'VS2', 197, 0), --  Virtual Soccer Euro Cup
 					(28, 'LT', 220, 0),	-- Lottery
 					(32, 'PP', 248, 0),	-- PP
 					(34, 'CC', 165, 0),	-- Card club
