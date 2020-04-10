@@ -102,7 +102,8 @@ BEGIN
 			27,--	Virtual Sports 2
 			10,--	AG Casino
 			8,--	RNG Keno
-			28--	Lottery
+			28,--	Lottery
+			40--	Table
 			)
 	ORDER BY ProductID ASC
 	
