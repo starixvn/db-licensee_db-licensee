@@ -22,6 +22,7 @@ Revisions:
 	- 20190919@Bobby: Enhance Statement Level 1 - show outstanding for future [RedmineID: #119648]
 	- 20191024@Bobby: Correct running and void [RedmineID: #120690]
 	- 20191003@Bobby: Integrate NPH Promotion product [RedmineID: #120333]
+	- 20200330@Louis: Support Statement & Detail Transaction Report in Chinese [RedmineID: #131262]
 	
 Param's Explanation:     
 */
@@ -52,8 +53,8 @@ BEGIN
     (  
         winlostdate		DATETIME,
 		orderKey		INT,
-        transtype		NVARCHAR(100),
-        transdesc		NVARCHAR(300),
+        transtype		NVARCHAR(128),
+        transdesc		NVARCHAR(1000),
         turnover		DECIMAL(15,2) DEFAULT(0),
         totalAmt		DECIMAL(15,2) DEFAULT(0),
         commission		DECIMAL(15,2) DEFAULT(0)
@@ -61,9 +62,10 @@ BEGIN
 
 	DECLARE @transDesc TABLE  
     (  
-        transtype		NVARCHAR(100),
-        transdesc		NVARCHAR(300),
-		orderkey		TINYINT
+        transtype		NVARCHAR(128),
+        transdesc		NVARCHAR(1000),
+		orderkey		TINYINT,
+		betTypeId		SMALLINT
     )
 
 	SELECT @TotalRows	= 0
@@ -94,22 +96,20 @@ BEGIN
 		RETURN
 	END
 
-	INSERT INTO @transDesc (orderkey, transtype, transdesc)
-	SELECT @BAL_KEY			AS OrderKey
-		,'BAL'				AS TransType
-		,'Opening_Balance'	AS TransDesc
+	INSERT INTO @transDesc (orderkey, transtype, transdesc, betTypeId)
+	SELECT @BAL_KEY	AS OrderKey, 'BAL' AS TransType, 'Opening_Balance' AS TransDesc, 0 AS betTypeId
 	UNION ALL
-	SELECT @BET_KEY,'BET','Bet_Statement'
+	SELECT @BET_KEY, 'BET', 'Bet_Statement', 0
 	UNION ALL
-	SELECT @VOID_KEY,'BET','Void_Cancelled_Bet'
+	SELECT @VOID_KEY, 'BET', 'Void_Cancelled_Bet', 0
 	UNION ALL
-	SELECT @OUT_KEY,'BET','Outstanding_Bet'
+	SELECT @OUT_KEY, 'BET', 'Outstanding_Bet', 0
 	UNION ALL
-	SELECT @PROMO_KEY, 'PROMO', 'Promotion_Prize'
+	SELECT @PROMO_KEY, 'PROMO', 'Promotion_Prize', 0
 	UNION ALL
-	SELECT @CBGP_KEY,'GP','Grand_Prize'
+	SELECT @CBGP_KEY, 'GP', 'Grand_Prize', 0
 	UNION ALL
-	SELECT @TRAN_KEY, UPPER(typenamee), ISNULL(typedesc,'')
+	SELECT @TRAN_KEY, UPPER(typenamee), ISNULL(typedesc,''), typeid
 	FROM bodb02.dbo.bettype (NOLOCK)
 	WHERE typeid > @BAL_BETTYPE
 
@@ -479,6 +479,7 @@ BEGIN
 		,CAST(rpt.turnover * ISNULL(ex.Rate, fex.Rate) AS DECIMAL(15,2))	AS turnover
 		,CAST(rpt.TotalAmt * ISNULL(ex.Rate, fex.Rate) AS DECIMAL(15,2))	AS totalamt
 		,CAST(rpt.commission * ISNULL(ex.Rate, fex.Rate) AS DECIMAL(15,2))	AS commission
+		, dsc.betTypeId
 		
 	FROM CTE_Paging rpt
 		LEFT JOIN @transDesc dsc 
