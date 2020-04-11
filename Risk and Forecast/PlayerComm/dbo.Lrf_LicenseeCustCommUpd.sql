@@ -1,7 +1,4 @@
 ﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
-USE bodb_Licensee
-GO
-
 ALTER PROCEDURE [dbo].[Lrf_LicenseeCustCommUpd]
 	@LicenseeID INT,
 	@strCustIDOriginal VARCHAR(MAX),--member
@@ -92,8 +89,8 @@ BEGIN
 		,@ParlayComm = @ParlayComm
 		,@NGComm=@NGComm
 		,@RNGComm=@RNGComm	
-		,@AllbetComm = @AllbetComm,
-		,@MacauComm = @MacauComm,
+		,@AllbetComm = @AllbetComm
+		,@MacauComm = @MacauComm
 		,@PPComm = @PPComm
 		,@GDComm = @GDComm
 		,@AGComm = @AGComm
