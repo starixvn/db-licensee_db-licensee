@@ -10,9 +10,9 @@ ALTER PROCEDURE Lrf_ProblemAccount_LicenseeProblemPlayerSel
 	@PageSize	INT = 500,
 	@PageIndex	INT = 1,
 	@TotalItems	INT = 0 OUTPUT,
-	@Language	VARCHAR(10) = 'E',
-	@Currency	INT = 0,
-	@ReasonGroupID	TINYINT = 0
+	@Langkey	VARCHAR(20) = 'en-US',
+	@ReasonGroupID	TINYINT = 0,
+	@BaseCurrency	VARCHAR(3) = ''
 AS
 	/*
 		Created: 20200211@Johnson
@@ -57,31 +57,38 @@ BEGIN
 
 		RETURN
 	END CATCH;
+
+	DECLARE @currentDate DATETIME   
+	SELECT  @currentDate = CONVERT(DATE, GETDATE())
+
+	SELECT ExchangeID, Rate
+	INTO #ExchangeRate
+	FROM Lrf_f_GetExchangeRate(@currentDate, @currentDate, @BaseCurrency, '')
 	
 	IF @Username <> ''
 	BEGIN
 		INSERT INTO #CustList(custid,CreatedDate,username,username2,isMarkVoid,MaxBet,MaxPerEvent,ReasonID)
 		SELECT ci.custid,p.CreatedDate, username,
 			SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) AS username2,
-			ISNULL(isMarkVoid,0), p.MaxBet, p.MaxPerEvent, ReasonID
+			ISNULL(isMarkVoid,0), e.Rate*p.MaxBet AS MaxBet, e.Rate*p.MaxPerEvent AS MaxPerEvent, ReasonID
 		FROM customer ci WITH(NOLOCK)
 			INNER JOIN ProblemAccount p WITH(NOLOCK) ON ci.custid = p.custid
+			LEFT JOIN #ExchangeRate e ON e.ExchangeID = ci.currency
 		WHERE ci.recommend IN (SELECT custid FROM #TempAg)
 			AND roleid = 1
 			AND (username  LIKE @username + '%' OR username2 LIKE '%$'+@username + '%')		
-			AND ci.currency = CASE WHEN @Currency = 0 THEN ci.currency ELSE @Currency END
 	END
 	ELSE
 	BEGIN
 		INSERT INTO #CustList(custid,CreatedDate,username,username2,isMarkVoid,MaxBet,MaxPerEvent,ReasonID)
 		SELECT ci.custid,p.CreatedDate, username,
 			SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) AS username2,
-			ISNULL(isMarkVoid,0), p.MaxBet, p.MaxPerEvent, ReasonID
+			ISNULL(isMarkVoid,0), e.Rate*p.MaxBet AS MaxBet, e.Rate*p.MaxPerEvent AS MaxPerEvent, ReasonID
 		FROM customer ci WITH(NOLOCK)
 			INNER JOIN ProblemAccount p WITH(NOLOCK) ON ci.custid = p.custid
+			LEFT JOIN #ExchangeRate e ON e.ExchangeID = ci.currency
 		WHERE ci.recommend IN (SELECT custid FROM #TempAg)
 			AND roleid = 1
-			AND ci.currency = CASE WHEN @Currency = 0 THEN ci.currency ELSE @Currency END
 	END
 
 	SELECT c.custid, c.CreatedDate , c.ReasonID
@@ -99,7 +106,7 @@ BEGIN
 	SET t.Reason = REVERSE(SUBSTRING(REVERSE(CONVERT(NVARCHAR(MAX),(	SELECT CONVERT(NVARCHAR,tmp.CreatedDate,101) + ': ' + tmp.ReasonName + CHAR(10) 
 											FROM(
 												SELECT MIN(t2.CreatedDate) AS CreatedDate
-													,CASE WHEN @Language = 'SC' THEN REPLACE(MIN(pr.ReasonNameCS),'(M)','') ELSE REPLACE(MIN(pr.ReasonName),'(M)','') END AS ReasonName
+													,CASE WHEN @Langkey = 'zh-CN' THEN REPLACE(MIN(pr.ReasonNameCS),'(M)','') ELSE REPLACE(MIN(pr.ReasonName),'(M)','') END AS ReasonName
 												FROM #temp1 t2 
 													INNER JOIN dbo.ProblemAccountReason pr WITH (NOLOCK) ON pr.ReasonID = t2.ReasonId 
 												WHERE t.custid = t2.custid 

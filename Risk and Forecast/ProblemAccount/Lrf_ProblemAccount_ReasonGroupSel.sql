@@ -1,6 +1,6 @@
 /*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE Lrf_ProblemAccount_ReasonGroupSel
-	@Languages	VARCHAR(10) = 'E'
+	@Langkey	VARCHAR(20) = 'en-US'
 AS
 	/*
 		Created: 20200410@Eden
@@ -15,7 +15,7 @@ AS
 BEGIN
 	SET NOCOUNT ON
 	SELECT ReasonGroupID, 
-		CASE WHEN @Languages = 'E' THEN MIN(ReasonName) ELSE MIN(ReasonNameCS) END AS ReasonGroup 
+		CASE WHEN @Langkey = 'zh-CN' THEN MIN(ReasonNameCS) ELSE MIN(ReasonName) END AS ReasonGroup 
 	FROM ProblemAccountReason WITH(NOLOCK)
 	WHERE ReasonGroupID IS NOT NULL
 	GROUP BY ReasonGroupID
