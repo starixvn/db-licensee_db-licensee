@@ -11,7 +11,7 @@ ALTER PROCEDURE Lrf_ProblemAccount_LicenseeProblemPlayerSel
 	@PageIndex	INT = 1,
 	@TotalItems	INT = 0 OUTPUT,
 	@Langkey	VARCHAR(20) = 'en-US',
-	@ReasonGroupID	TINYINT = 0,
+	@ReasonGroupID	VARCHAR(200) = '',
 	@BaseCurrency	VARCHAR(3) = ''
 AS
 	/*
@@ -65,6 +65,10 @@ BEGIN
 	INTO #ExchangeRate
 	FROM Lrf_f_GetExchangeRate(@currentDate, @currentDate, @BaseCurrency, '')
 	
+	SELECT RTRIM(LTRIM(VAL)) AS ReasonGroupID
+	INTO #ReasonGroup
+	FROM Lrf_f_StringSplit(@ReasonGroupID,',')
+
 	IF @Username <> ''
 	BEGIN
 		INSERT INTO #CustList(custid,CreatedDate,username,username2,isMarkVoid,MaxBet,MaxPerEvent,ReasonID)
@@ -103,15 +107,14 @@ BEGIN
 	CREATE NONCLUSTERED INDEX PK_temp1_custid_CreatedDate ON #temp1(CustID,CreatedDate) INCLUDE (ReasonID)
 
 	UPDATE t
-	SET t.Reason = REVERSE(SUBSTRING(REVERSE(CONVERT(NVARCHAR(MAX),(	SELECT CONVERT(NVARCHAR,tmp.CreatedDate,101) + ': ' + tmp.ReasonName + CHAR(10) 
+	SET t.Reason = REVERSE(SUBSTRING(REVERSE(CONVERT(NVARCHAR(MAX),(	SELECT CONVERT(NVARCHAR,tmp.CreatedDate,101) + ': ' + tmp.ReasonName + '#' 
 											FROM(
 												SELECT MIN(t2.CreatedDate) AS CreatedDate
 													,CASE WHEN @Langkey = 'zh-CN' THEN REPLACE(MIN(pr.ReasonNameCS),'(M)','') ELSE REPLACE(MIN(pr.ReasonName),'(M)','') END AS ReasonName
 												FROM #temp1 t2 
 													INNER JOIN dbo.ProblemAccountReason pr WITH (NOLOCK) ON pr.ReasonID = t2.ReasonId 
-												WHERE t.custid = t2.custid 
-													AND pr.ReasonGroupID IS NOT NULL -- not show reason not in defined group
-													AND pr.ReasonGroupID = CASE WHEN @ReasonGroupID <> 0 THEN @ReasonGroupID ELSE pr.ReasonGroupID END
+													INNER JOIN #ReasonGroup rg ON pr.ReasonGroupID = rg.ReasonGroupID
+												WHERE t.custid = t2.custid
 												GROUP BY PR.ReasonGroupID
 											) tmp
 											ORDER BY tmp.CreatedDate 
@@ -123,18 +126,6 @@ BEGIN
 							WHERE t.custid = t2.custid
 							ORDER BY t2.CreatedDate) --Get MIN(CreatedDate)
 	FROM #CustList t
-
-	--;WITH t AS (
-	--	SELECT c.CustId, MIN(tv.CreatedDate) CreatedDate		
-	--	FROM #CustList c
-	--		INNER JOIN dbo.TicketVoiding_VoidedTransaction tv WITH (NOLOCK) ON c.CustId = tv.custid			
-	--	WHERE IssueTypeId = 11	
-	--	GROUP BY c.CustId
-	--)
-	--UPDATE c
-	--SET c.CreatedDate = CASE WHEN c.CreatedDate < t.CreatedDate THEN c.CreatedDate ELSE t.CreatedDate END
-	--FROM #CustList c
-	--	INNER JOIN t ON c.custid = t.custid
 		
 	IF @IsCheckAll = 0
 	BEGIN
