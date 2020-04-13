@@ -12,6 +12,7 @@ AS
 	
 	Revisions:
 		- 20190626@Johnson: initial sp [redmine: #112658]
+		- 20200406@Hogan: Add new product Table Games [RedmineID: #131447]
 	Param's Explanation:
 */
 

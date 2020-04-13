@@ -80,6 +80,8 @@ AS
 		- 20191121@Amanda: Exclude PP Promotion and Tournament Prize [RedmineID: #123804]
 		- 20200403@Kos: Fix performance issue [RedmineID: #131761]
 		- 20200407@Vickie: HotFix: Licensee WL data isn't included CC, SG, VRG [RedmineID: #131937]
+		- 20200408@Hogan: Add new product Table Games [RedmineID: #131447]
+
 
 	Param's Explanation:  
 		+ @ReportType: 1-Daily; 2-Monthly;  
