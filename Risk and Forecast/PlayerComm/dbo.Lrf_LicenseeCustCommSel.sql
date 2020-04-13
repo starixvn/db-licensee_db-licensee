@@ -21,7 +21,13 @@ BEGIN
 	BEGIN
 		SELECT 
 			lc.CustID,c.username,SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, LEN(c.username2)-CHARINDEX('$',c.username2)) AS nickname,
-			lc.SBComm,lc.ParlayComm,lc.NGComm,ISNULL(lgc.GroupName,'') AS GroupName
+			lc.SBComm,lc.ParlayComm,lc.NGComm,ISNULL(lgc.GroupName,'') AS GroupName,
+			ISNULL(lc.RNGComm, 0) AS RNGComm,						
+			ISNULL(lc.AllbetComm,0) AS AllbetComm,
+			ISNULL(lc.MacauComm,0) AS MacauComm,
+			ISNULL(lc.PPComm,0) AS PPComm,
+			ISNULL(lc.GDComm,0) AS GDComm,
+			ISNULL(lc.AGComm,0) AS AGComm
 		FROM dbo.LicenseeCustComm lc WITH (NOLOCK)	
 			INNER JOIN dbo.LicenseeCustInfo c WITH (NOLOCK)	ON c.custid = lc.custid
 			LEFT JOIN dbo.LicenseeGroupComm lgc WITH (NOLOCK) ON lc.GroupCommID = lgc.id
@@ -30,7 +36,13 @@ BEGIN
 	BEGIN
 		SELECT 
 			lc.CustID,c.username,SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, LEN(c.username2)-CHARINDEX('$',c.username2)) AS nickname,
-			lc.SBComm,lc.ParlayComm,lc.NGComm,ISNULL(lgc.GroupName,'') AS GroupName
+			lc.SBComm,lc.ParlayComm,lc.NGComm,ISNULL(lgc.GroupName,'') AS GroupName,
+			ISNULL(lc.RNGComm, 0) AS RNGComm,						
+			ISNULL(lc.AllbetComm,0) AS AllbetComm,
+			ISNULL(lc.MacauComm,0) AS MacauComm,
+			ISNULL(lc.PPComm,0) AS PPComm,
+			ISNULL(lc.GDComm,0) AS GDComm,
+			ISNULL(lc.AGComm,0) AS AGComm
 		FROM dbo.LicenseeCustComm lc WITH (NOLOCK)	
 			INNER JOIN dbo.LicenseeCustInfo c WITH (NOLOCK)	ON c.custid = lc.custid
 			LEFT JOIN dbo.LicenseeGroupComm lgc WITH (NOLOCK) ON lc.GroupCommID = lgc.id
