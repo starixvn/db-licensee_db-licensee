@@ -27,7 +27,7 @@ AS
 			@OrderCol = 1: System ID
 						= 2: sort by external ID
 						= 3: MarkDate
-			@SortType = 1: ASC, 2: DESC			
+			@SortType = 1: ASC, 2: DESC		 	
 	*/
 BEGIN
 	SET NOCOUNT ON
