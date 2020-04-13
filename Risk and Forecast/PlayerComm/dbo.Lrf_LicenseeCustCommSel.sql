@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBLic-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
+﻿/*<info serverAlias="DBLic-bodb_Licensee" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_LicenseeCustCommSel]
 	@LicenseeID INT,
 	@CustID INT = 0
