@@ -33,19 +33,21 @@ AS
 		- 20170524@Harper: Make sure data correct between two stages of Balance up process [RedmineID: #77065]
 		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 		- 20190617@Amanda: Add Base currency param [RedmineID: #112531]
+		- 20200414@Louis: Support commission for 3rd party products [RedmineID: #131774]
 
 	Param's Explanation:  
 	  + @excludeTest: remove currency UUS
 */  
 
 BEGIN
-	CREATE TABLE #tmpResult (CustID			  INT
-							 ,WinlostDate	  DATETIME  	
-							 ,Currency 		  INT
-							 ,TurnOver 		  MONEY
-							 ,TotalTrans	  INT	
-							 ,Winlost  		  MONEY
-							 ,LicenseeWinlost MONEY
+	CREATE TABLE #tmpResult (CustID			  		INT
+							 ,WinlostDate	  		DATETIME  	
+							 ,Currency 		  		INT
+							 ,TurnOver 		  		MONEY
+							 ,TotalTrans	  		INT	
+							 ,Winlost  		  		MONEY
+							 ,LicenseeWinlost 		MONEY
+							 ,CustomerCommission 	MONEY
 							)
 						
 	CREATE TABLE #tmpCust (  Recommend INT
@@ -113,13 +115,14 @@ BEGIN
 					SET @FromDate2 = @FromDate
 				BEGIN
 					--SELECT @FromDate2, @ToDate															
-					INSERT INTO #tmpResult(CustId, Winlostdate, Currency ,TurnOver, TotalTrans, Winlost, LicenseeWinlost)
+					INSERT INTO #tmpResult(CustId, Winlostdate, Currency ,TurnOver, TotalTrans, Winlost, LicenseeWinlost, CustomerCommission)
 						(							
 							SELECT c.Recommend, c.Winlostdate, c.Currency
 									, SUM(c.stake)		AS TurnOver
 									, COUNT(1)			AS TotalTrans
 									, SUM(c.winlost - c.actual_stake)	AS Winlost
 									, - SUM(c.Winlost - c.actual_stake)	AS LicenseeWinlost
+									, SUM(c.playerComm)	AS CustomerCommission						
 							FROM dbo.bettransLC c WITH (NOLOCK)
 								INNER JOIN #tmpCust ct ON c.Custid = ct.CustId AND c.Currency = ct.Currency
 							WHERE c.Winlostdate BETWEEN @FromDate2 AND @ToDate 
@@ -137,13 +140,14 @@ BEGIN
 						SET @ToDate2 = @ToDate			
 				BEGIN
 					--SELECT @TempFromDate, @ToDate2
-					INSERT INTO #tmpResult(CustId, Winlostdate, Currency ,TurnOver, TotalTrans, Winlost, LicenseeWinlost)
+					INSERT INTO #tmpResult(CustId, Winlostdate, Currency ,TurnOver, TotalTrans, Winlost, LicenseeWinlost, CustomerCommission)
 						(
 							SELECT c.Recommend, c.Winlostdate, c.Currency
 									, SUM(c.TurnOver) AS TurnOver
 									, SUM(c.BetCount) AS TotalTrans
 									, SUM(c.Winlost)  AS Winlost
 									, -SUM(c.Winlost) AS LicenseeWinlost
+									, SUM(c.playerComm)	AS CustomerCommission							
 							FROM DBLIC.bodb_licenseereport.dbo.rptLicWinloss2 c WITH (NOLOCK)
 								INNER JOIN (SELECT DISTINCT Recommend, Currency FROM #tmpCust) ct ON c.Custid = ct.Recommend AND c.Currency = ct.Currency
 							WHERE c.Winlostdate BETWEEN @TempFromDate AND @ToDate2 
@@ -165,7 +169,7 @@ BEGIN
 				SET  @TempToDate = @ToDate			
 		BEGIN
 			--SELECT @FromDate, @TempToDate 
-			INSERT INTO #tmpResult (CustID, Winlostdate, Currency, TurnOver, TotalTrans, Winlost, LicenseeWinlost)
+			INSERT INTO #tmpResult (CustID, Winlostdate, Currency, TurnOver, TotalTrans, Winlost, LicenseeWinlost, CustomerCommission)
 				(
 					SELECT ct.recommend AS CustID
 						   ,c.Winlostdate		
@@ -174,6 +178,7 @@ BEGIN
 						   ,SUM(c.BetCount) AS TotalTrans
 						   ,SUM(c.Winlost)  AS Winlost
 						   ,-SUM(c.Winlost) AS LicenseeWinlost
+						   ,SUM(c.playerComm) AS CustomerCommission
 					FROM  bodb_report.dbo.rptDepWinlost_AGCasino c  WITH (NOLOCK)
 						  INNER JOIN #tmpCust ct ON c.CustID = ct.CustID AND c.Currency = ct.Currency
 					WHERE c.Winlostdate BETWEEN @FromDate AND @TempToDate 
@@ -195,25 +200,30 @@ BEGIN
 		   ,r.Currency
 		   ,SUM(r.TotalTrans) 	 AS TotalTrans
 		   
-		   ,SUM(r.TurnOver*e.Rate)   		AS TurnOver
-		   ,SUM(r.Winlost*e.Rate)			AS Winlost
-		   ,SUM(r.LicenseeWinlost*e.Rate)	AS LicenseeWinlost
+		   ,SUM(r.TurnOver*e.Rate)   			AS TurnOver
+		   ,SUM(r.Winlost*e.Rate)				AS Winlost
+		   ,SUM(r.LicenseeWinlost*e.Rate)		AS LicenseeWinlost
+		   ,SUM(r.CustomerCommission*e.Rate)   	AS CustomerCommission
 		---USD
-			,SUM(r.TurnOver*e.USD)   	 	AS TurnOverUSD
-			,SUM(r.Winlost*e.USD)		 	AS WinlostUSD
-			,SUM(r.LicenseeWinlost*e.USD)   AS LicenseeWinlostUSD
+			,SUM(r.TurnOver*e.USD)   	 		AS TurnOverUSD
+			,SUM(r.Winlost*e.USD)		 		AS WinlostUSD
+			,SUM(r.LicenseeWinlost*e.USD)   	AS LicenseeWinlostUSD
+		    ,SUM(r.CustomerCommission*e.USD)   	AS CustomerCommissionUSD
 		---EUR
-			,SUM(r.TurnOver*e.EUR)   	 	AS TurnOverEUR
-			,SUM(r.Winlost*e.EUR)		 	AS WinlostEUR
-			,SUM(r.LicenseeWinlost*e.EUR)   AS LicenseeWinlostEUR
+			,SUM(r.TurnOver*e.EUR)   	 		AS TurnOverEUR
+			,SUM(r.Winlost*e.EUR)		 		AS WinlostEUR
+			,SUM(r.LicenseeWinlost*e.EUR)   	AS LicenseeWinlostEUR
+		   ,SUM(r.CustomerCommission*e.EUR)   	AS CustomerCommissionEUR
 		---GBP
-			,SUM(r.TurnOver*e.GBP)   	 	AS TurnOverGBP
-			,SUM(r.Winlost*e.GBP)		 	AS WinlostGBP
-			,SUM(r.LicenseeWinlost*e.GBP)   AS LicenseeWinlostGBP
+			,SUM(r.TurnOver*e.GBP)   	 		AS TurnOverGBP
+			,SUM(r.Winlost*e.GBP)		 		AS WinlostGBP
+			,SUM(r.LicenseeWinlost*e.GBP)   	AS LicenseeWinlostGBP
+		   ,SUM(r.CustomerCommission*e.GBP)   	AS CustomerCommissionGBP
 		---Default Base Currency
-			,SUM(r.TurnOver*e.DefaultRate)   	 	AS TurnOverBase
-			,SUM(r.Winlost*e.DefaultRate)		 	AS WinlostBase
-			,SUM(r.LicenseeWinlost*e.DefaultRate)   AS LicenseeWinlostBase
+			,SUM(r.TurnOver*e.DefaultRate)   	 		AS TurnOverBase
+			,SUM(r.Winlost*e.DefaultRate)		 		AS WinlostBase
+			,SUM(r.LicenseeWinlost*e.DefaultRate)   	AS LicenseeWinlostBase
+			,SUM(r.CustomerCommission*e.DefaultRate)   	AS CustomerCommissionBase
 	FROM #tmpResult r
 		INNER JOIN dbo.CustInfo c WITH (NOLOCK) ON r.CustID = c.CustID
 		INNER JOIN #TempExchange e ON r.Winlostdate BETWEEN e.FromDate AND e.ToDate AND r.currency = e.ExchangeId	

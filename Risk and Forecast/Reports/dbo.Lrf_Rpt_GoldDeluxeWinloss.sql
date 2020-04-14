@@ -20,6 +20,7 @@ AS
 		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 		- 20181114@Joseph: Integrate Bidme games (GD product) [#101599]
 		- 20190614@Amanda: Add Base currency param [RedmineID: #112531]
+		- 20200414@Louis: Support commission for 3rd party products [RedmineID: #131774]
 
 	Param's Explanation:  
 
@@ -42,15 +43,16 @@ BEGIN
 	WHERE ProductPrefix = @ProductPrefix	
 
 	CREATE   TABLE #tmpResult (
-		Winlostdate DATE, 
-		Currency INT,
-		TurnOver MONEY,
-		TotalTrans INT,
-		Winlost MONEY,
-		LicenseeWinlost MONEY,
-		TipsAmount MONEY,
-		TipsSharing MONEY,
-		AmountDue MONEY)
+		Winlostdate 			DATE, 
+		Currency 				INT,
+		TurnOver 				MONEY,
+		TotalTrans 				INT,
+		Winlost 				MONEY,
+		CustomerCommission		MONEY,
+		LicenseeWinlost 		MONEY,
+		TipsAmount 				MONEY,
+		TipsSharing 			MONEY,
+		AmountDue 				MONEY)
 
 	DECLARE  @tmpCust		TABLE (CustId INT, Currency INT)
 	DECLARE  @TempExchange	TABLE (FromDate DATE, ToDate DATE, ExchangeId INT, Rate FLOAT, USD FLOAT, EUR FLOAT, GBP FLOAT, DefaultRate FLOAT)
@@ -109,6 +111,7 @@ BEGIN
 		,TurnOver
 		,TotalTrans
 		,Winlost
+		,CustomerCommission
 		,LicenseeWinlost
 		,TipsAmount
 		,TipsSharing
@@ -121,6 +124,8 @@ BEGIN
 									THEN c.BetCount ELSE 0 END) AS TotalTrans
 					, SUM(CASE WHEN c.bettype = -1 
 									THEN c.Winlost ELSE 0 END) AS Winlost
+					, SUM(CASE WHEN c.bettype = -1
+							THEN c.CommissionP ELSE 0 END) AS CustomerCommission
 					, -SUM(CASE WHEN c.bettype = -1 
 									THEN c.Winlost ELSE 0 END) AS LicenseeWinlost
 					, -SUM(CASE WHEN c.bettype = 1706 -- GD Tips
@@ -157,6 +162,7 @@ BEGIN
 
 		, SUM(r.TurnOver*e.Rate)			AS TurnOver
 		, SUM(r.Winlost*e.Rate)				AS Winlost
+		, SUM(r.CustomerCommission*e.Rate)			AS CustomerCommission
 		, SUM(r.LicenseeWinlost*e.Rate)		AS LicenseeWinlost
 		, SUM(r.TipsAmount*e.Rate)			AS TipsAmount
 		, SUM(r.TipsSharing*e.Rate)			AS TipsSharing
@@ -164,6 +170,7 @@ BEGIN
 		---USD
 		, SUM(r.TurnOver * e.USD)			AS TurnOverUSD
 		, SUM(r.Winlost * e.USD)			AS WinlostUSD
+		, SUM(r.CustomerCommission*e.USD)			AS CustomerCommissionUSD
 		, SUM(r.LicenseeWinlost * e.USD)	AS LicenseeWinlostUSD
 		, SUM(r.TipsAmount * e.USD)			AS TipsAmountUSD
 		, SUM(r.TipsSharing * e.USD)		AS TipsSharingUSD
@@ -171,6 +178,7 @@ BEGIN
 		---EUR
 		, SUM(r.TurnOver * e.EUR)			AS TurnOverEUR
 		, SUM(r.Winlost * e.EUR)			AS WinlostEUR
+		, SUM(r.CustomerCommission*e.EUR)			AS CustomerCommissionEUR
 		, SUM(r.LicenseeWinlost * e.EUR)	AS LicenseeWinlostEUR
 		, SUM(r.TipsAmount * e.EUR)			AS TipsAmountEUR
 		, SUM(r.TipsSharing * e.EUR)		AS TipsSharingEUR
@@ -178,6 +186,7 @@ BEGIN
 		---GBP
 		, SUM(r.TurnOver * e.GBP)			AS TurnOverGBP
 		, SUM(r.Winlost * e.GBP)			AS WinlostGBP
+		, SUM(r.CustomerCommission*e.GBP)			AS CustomerCommissionGBP
 		, SUM(r.LicenseeWinlost * e.GBP)	AS LicenseeWinlostGBP
 		, SUM(r.TipsAmount * e.GBP)			AS TipsAmountGBP
 		, SUM(r.TipsSharing * e.GBP)		AS TipsSharingGBP
@@ -185,6 +194,7 @@ BEGIN
 		---Default base currency
 		, SUM(r.TurnOver * e.DefaultRate)			AS TurnOverBase
 		, SUM(r.Winlost * e.DefaultRate)			AS WinlostBase
+		, SUM(r.CustomerCommission*e.DefaultRate)			AS CustomerCommissionBase
 		, SUM(r.LicenseeWinlost * e.DefaultRate)	AS LicenseeWinlostBase
 		, SUM(r.TipsAmount * e.DefaultRate)			AS TipsAmountBase
 		, SUM(r.TipsSharing * e.DefaultRate)		AS TipsSharingBase
