@@ -106,6 +106,21 @@ BEGIN
 
 	CREATE NONCLUSTERED INDEX PK_temp1_custid_CreatedDate ON #temp1(CustID,CreatedDate) INCLUDE (ReasonID)
 
+	IF @IsCheckAll = 0
+	BEGIN
+		DELETE #temp1
+		WHERE CreatedDate NOT BETWEEN @FromDate AND @ToDate
+	END
+
+	DELETE c
+	FROM #CustList c
+	WHERE c.CustId NOT IN (	SELECT t.CustId
+							FROM #temp1 t 
+								INNER JOIN dbo.ProblemAccountReason pr WITH (NOLOCK) ON pr.ReasonID = t.ReasonId
+								INNER JOIN #ReasonGroup rg ON pr.ReasonGroupID = rg.ReasonGroupID
+							) 
+
+
 	UPDATE t
 	SET t.Reason = REVERSE(SUBSTRING(REVERSE(CONVERT(NVARCHAR(MAX),(	SELECT CONVERT(NVARCHAR,tmp.CreatedDate,101) + ': ' + tmp.ReasonName + '#' 
 											FROM(
@@ -113,11 +128,11 @@ BEGIN
 													,CASE WHEN @Langkey = 'zh-CN' THEN REPLACE(MIN(pr.ReasonNameCS),'(M)','') ELSE REPLACE(MIN(pr.ReasonName),'(M)','') END AS ReasonName
 												FROM #temp1 t2 
 													INNER JOIN dbo.ProblemAccountReason pr WITH (NOLOCK) ON pr.ReasonID = t2.ReasonId 
-													INNER JOIN #ReasonGroup rg ON pr.ReasonGroupID = rg.ReasonGroupID
+													--INNER JOIN #ReasonGroup rg ON pr.ReasonGroupID = rg.ReasonGroupID
 												WHERE t.custid = t2.custid
 												GROUP BY PR.ReasonGroupID
 											) tmp
-											ORDER BY tmp.CreatedDate 
+											ORDER BY tmp.CreatedDate DESC
 											FOR XML PATH ('')
 										)
 							)),2,10000))
@@ -126,13 +141,13 @@ BEGIN
 							WHERE t.custid = t2.custid
 							ORDER BY t2.CreatedDate) --Get MIN(CreatedDate)
 	FROM #CustList t
-		
+	
 	IF @IsCheckAll = 0
 	BEGIN
 		DELETE #CustList
 		WHERE CreatedDate NOT BETWEEN @FromDate AND @ToDate
 	END
-	
+
 	SELECT @TotalItems = COUNT(1) FROM #CustList
 	
 	IF @OrderCol IN (1,2)
