@@ -565,7 +565,8 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 4301 AND 4600 THEN 247' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 4601 AND 4900 THEN 245' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 4901 AND 5000 THEN 222' + CHAR(13)
-								+ 'WHEN b.bettype BETWEEN 5001 AND 5099 THEN 223' + CHAR(13)								+ 'ELSE ISNULL(l.sporttype, 0)' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 5001 AND 5099 THEN 223' + CHAR(13)								
+								+ 'ELSE ISNULL(l.sporttype, 0)' + CHAR(13)
 								+ 'END' + CHAR(13)
 
 			IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'SB'))

@@ -9,8 +9,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_Outstanding]
 	@OrderItem		TINYINT			= 1,
 	@IsAscSort		BIT				= 1,
 	@BaseCurrency	VARCHAR(5)		= ''
-AS
-
+AS 
 /*
 	Created: 20101201@Jacob
 	Task : Report Outstanding
@@ -65,7 +64,6 @@ AS
 		- 20191212@Vickie: Integrate SpadeGaming [RedmineID: #124103]
 		- 20200108@Vickie: Add new product Virtual Games [RedmineID: #124911]
 		- 20200408@Kos: Change to use product list [RedmineID: #131447]
-		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
 
 	Param's Explanation:
 		@OrderItem:
@@ -78,7 +76,6 @@ AS
 			1: ASC
 			2: DESC
 */
-
 BEGIN
 	SET NOCOUNT ON
 
@@ -95,8 +92,9 @@ BEGIN
 	SELECT  @PageIndex	= @PageIndex - 1 ,
 			@RowStart	= @PageSize * @PageIndex + 1 ,
 			@RowEnd		= @RowStart + @PageSize - 1 ,
-			@Today		= CONVERT(DATE, GETDATE())
-
+			@Today		= CONVERT(DATE, GETDATE())    
+        
+	
 	DECLARE @TempAg		TABLE (CustId INT, Currency INT)
 	DECLARE @DocHandler INT
 
@@ -113,22 +111,22 @@ BEGIN
 
 	BEGIN CATCH
 		SELECT ErrCode = 100
-			,ErrMsg = N'Parameter invalid.'
+			,ErrMsg = N'Paramter invalid.'
 
 		RETURN
 	END CATCH;
 
 	DECLARE @Outstanding TABLE
 	(
-		Username	NVARCHAR(50),
-		CustId		INT,
-		Currency	TINYINT,
-		Outstanding MONEY,
-		BetCounts	INT,
+		username	NVARCHAR(50),
+		custid		INT,
+		currency	INT,
+		outstanding MONEY,
+		BetCounts	INT , 
 		IsBA		BIT DEFAULT (0),
-		ProductID	INT
+		ProductID   INT 
 	)
-
+	
 	CREATE TABLE #SportBettype (bettype SMALLINT, RefTable TINYINT, ProductID TINYINT)
 	
 	DECLARE @IsTest BIT = 0
@@ -139,9 +137,9 @@ BEGIN
 		ExchangeID	INT,
 		Rate		FLOAT
 	)
-
+	
 	INSERT INTO @Exchange(ExchangeID, Rate)
-	SELECT ExchangeID, Rate
+	SELECT	ExchangeID, Rate
 	FROM dbo.Lrf_f_GetExchangeRate(@Today, @Today, @BaseCurrency, '') e
 	WHERE EXISTS (SELECT 1 FROM @TempAg a WHERE a.Currency = e.ExchangeId)
 
@@ -153,17 +151,8 @@ BEGIN
 	IF @ShowBA = 1
 		SET @ProductList = @ProductList + ',SB'
 
-	IF @ShowI4D = 1 -- I4D
-	BEGIN
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'I4D', 'I4D')
-	END
-
 	IF LEN(ISNULL(@ProductList, '')) > 0 
 	BEGIN
-		DECLARE @IsTest BIT = 0
-
-		SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
-
 		-- Insert Bettype
 		INSERT INTO #SportBettype ( bettype, RefTable, ProductID )
 		SELECT DISTINCT BetType, RefTable, ProductID
@@ -171,32 +160,27 @@ BEGIN
 		WHERE BetType NOT IN (4300, 4299)
 	END
 
-	-- bettrans
-	INSERT INTO @Outstanding (
-		CustId,
-		Currency,
-		Outstanding,
-		BetCounts,
-		IsBA,
-		ProductID)
-	SELECT
-		b.custid,
+	--1. bettrans --
+	INSERT INTO @Outstanding (custid, currency, Outstanding, BetCounts, isBA, ProductID)
+	SELECT 
+		b.custid,                    
 		b.currency,
-		SUM(b.actual_stake) AS Outstanding,
+		SUM(actual_stake) Outstanding,
 		COUNT(1) AS BetCount,
-		CASE WHEN BA.TransID IS NULL THEN 0 ELSE 1 END AS IsBA,
-		s.ProductID
-	FROM dbo.bettrans AS b WITH (NOLOCK)
-		INNER JOIN #SportBettype AS s ON  s.bettype  = b.bettype 
-		INNER JOIN @TempAg AS a ON b.recommend = a.CustId AND b.Currency = a.Currency
-		LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active AS BA WITH (NOLOCK) ON b.transid = BA.transid
-	WHERE b.statusID IN (0,1) AND s.RefTable = 0
-	GROUP BY
+		CASE WHEN BA.TransID IS NULL THEN 0 ELSE 1 END AS isBA,
+		s.ProductID		
+	FROM dbo.bettrans AS b WITH(NOLOCK)	
+		INNER JOIN #SportBettype s ON  s.bettype  = b.bettype 
+		INNER JOIN @TempAg a
+			ON b.recommend = a.CustId AND b.Currency = a.Currency 	
+		LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) on b.transid = BA.transid		
+	WHERE b.StatusID IN (0,1) 
+		AND s.RefTable = 0     
+	GROUP BY		
 		b.custid,
-		b.currency,
-		CASE WHEN BA.TransID IS NULL THEN 0 ELSE 1 END,
-		s.ProductID
-
+		b.currency, CASE WHEN BA.TransID IS NULL THEN 0 ELSE 1 END,
+		s.ProductID	
+	
 	IF @ShowSB = 0 
 	BEGIN 
 		DELETE @Outstanding
@@ -209,65 +193,55 @@ BEGIN
 		WHERE IsBA = 1
 	END
 
-	IF @ShowBA = 0
-	BEGIN 
-		DELETE @Outstanding
-		WHERE IsBA = 1
-	END
-
-	-- translog
-	INSERT INTO @Outstanding (
-		CustId,
-		Currency,
-		Outstanding,
-		BetCounts)
+	--2. translog --
+	INSERT INTO @Outstanding (custid, currency, Outstanding, BetCounts)
 	SELECT
 		t.custid,
 		t.currency,
-		SUM(t.actual_stake) AS Outstanding,
-		COUNT(1) AS BetCounts
-	FROM dbo.translog AS t WITH (NOLOCK)
-		INNER JOIN @TempAg AS a ON t.recommend = a.CustId AND t.Currency = a.Currency
-	WHERE t.StatusID IN (0, 1)
-		AND EXISTS (SELECT 1 FROM #SportBettype AS s WHERE s.RefTable = 3 AND s.bettype = t.gameid)
+		SUM(t.actual_stake) Outstanding,
+		COUNT(1) BetCounts 
+	FROM dbo.translog t WITH (NOLOCK) 
+		INNER JOIN @TempAg a
+			ON t.recommend = a.CustId AND t.Currency = a.Currency 	
+	WHERE t.StatusID IN (0,1)	
+		AND EXISTS (SELECT 1 FROM #SportBettype s WHERE s.RefTable = 3 AND s.bettype = t.gameid)
 	GROUP BY
 		t.custid,
-		t.currency
+		t.currency     
 
-	-- bettransRNG
+	-- 3. bettrans RNG -- 
 	INSERT INTO @Outstanding (custid, currency, Outstanding, BetCounts)
 	SELECT
 		g.custid,
 		g.currency,
-		SUM(g.actual_stake) AS Outstanding,
-		COUNT(DISTINCT refno) AS BetCounts
-	FROM dbo.bettransRnG AS g WITH (NOLOCK)
-		INNER JOIN @TempAg AS a ON g.recommend = a.CustId AND g.Currency = a.Currency
-		INNER JOIN #SportBettype AS s ON s.RefTable = 1 AND s.bettype = g.gameID 
-	WHERE g.statusID IN (0, 1)
-	GROUP BY
-		g.custid,
-		g.currency
+		SUM(g.actual_stake) Outstanding, 
+		COUNT(DISTINCT refno) BetCounts
+	FROM dbo.BettransRNG g WITH (NOLOCK) 
+		INNER JOIN @TempAg a
+			ON g.recommend = a.CustId AND g.Currency = a.Currency 	
+		INNER JOIN #SportBettype s ON s.RefTable = 1 AND s.bettype = g.gameID 
+	WHERE statusid IN (0,1) 
+		---AND EXISTS (SELECT 1 FROM #SportBettype s WHERE s.RefTable = 1 AND s.bettype = g.gameID)
+	GROUP BY g.custid, g.currency
+	 
 
-	-- bettransLC
-	INSERT INTO @Outstanding (
-		CustId,
-		Currency,
-		Outstanding,
-		BetCounts)
-	SELECT
+	-- 4. bettransLC --
+	--4.2
+	INSERT INTO @Outstanding (custid, currency, Outstanding, BetCounts)
+	SELECT		
 		g.custid,
 		g.currency,
-		SUM(g.actual_stake) AS Outstanding,
-		COUNT(1) AS BetCounts 
-	FROM dbo.bettransLC AS g WITH (NOLOCK) 
-		INNER JOIN @TempAg AS a ON g.recommend = a.CustId AND g.Currency = a.Currency
-		INNER JOIN #SportBettype AS s ON s.bettype = g.gameid
-	WHERE g.statusID IN (0, 1)
-		AND (s.RefTable = 1 OR s.RefTable = 2) -- AGC & AB
-	GROUP BY g.custid,
-		g.currency
+		SUM(g.actual_stake) Outstanding,
+		COUNT(1) BetCounts 
+	FROM dbo.bettransLC g WITH (NOLOCK) 
+		INNER JOIN @TempAg a ON g.recommend = a.CustId AND g.Currency = a.Currency
+		INNER JOIN #SportBettype s ON s.bettype = g.gameid
+	WHERE
+		statusid IN (0, 1) AND
+		(s.RefTable = 1 OR s.RefTable = 2) -- AGC & AB
+	GROUP BY g.custid, g.currency
 
+	
 	IF @OrderItem IN (1, 4) AND @IsAscSort = 1
 	BEGIN
 		;WITH Paging AS
@@ -281,24 +255,24 @@ BEGIN
 				b.* 
 			FROM
 			(
-				SELECT b.*,
-					c.username,
-					SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1, LEN(c.username2) - CHARINDEX('$', c.username2)) AS nickname
+				SELECT b.*, c.username,
+					SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,
+					LEN(c.username2) - CHARINDEX('$', c.username2)) AS nickname
 				FROM
 				(
 					SELECT 
-						b.custid
+						b.custid						
 						,SUM(b.Outstanding * e.Rate) AS Outstanding
-						,SUM(BetCounts) AS BetCounts
+						,SUM(BetCounts) AS BetCounts					                   
 					FROM  
 						@Outstanding b
 						INNER JOIN @Exchange e ON e.exchangeid = b.currency
 					GROUP BY b.custid
 				) AS b
-				INNER JOIN dbo.Customer c WITH (NOLOCK) ON b.custid = c.custid
+				INNER JOIN Customer c WITH (NOLOCK) ON b.custid = c.custid
 			) b
-		)
-		SELECT *
+		)     
+		SELECT * 
 		FROM Paging
 		WHERE RowNum BETWEEN @RowStart AND @RowEnd
 	END
@@ -316,23 +290,23 @@ BEGIN
 				b.* 
 			FROM
 			(
-				SELECT b.*,
-					c.username,
-					SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1, LEN(c.username2) - CHARINDEX('$', c.username2)) AS nickname
+				SELECT b.*, c.username,
+					SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,
+					LEN(c.username2) - CHARINDEX('$', c.username2)) AS nickname
 				FROM
 				(
 					SELECT 
-						b.custid
+						b.custid						
 						,SUM(b.Outstanding * e.Rate) AS Outstanding
-						,SUM(BetCounts) AS BetCounts
+						,SUM(BetCounts) AS BetCounts					                   
 					FROM  
 						@Outstanding b
 						INNER JOIN @Exchange e ON e.exchangeid = b.currency
 					GROUP BY b.custid
 				) AS b
-				INNER JOIN dbo.Customer c WITH (NOLOCK) ON b.custid = c.custid
+				INNER JOIN Customer c WITH (NOLOCK) ON b.custid = c.custid
 			) b
-		)
+		)        
 		SELECT * 
 		FROM Paging
 		WHERE RowNum BETWEEN @RowStart AND @RowEnd
@@ -351,23 +325,23 @@ BEGIN
 				b.* 
 			FROM
 			(
-				SELECT b.*,
-					c.username,
-					SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1, LEN(c.username2) - CHARINDEX('$', c.username2)) AS nickname
+				SELECT b.*, c.username,
+					SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,
+					LEN(c.username2) - CHARINDEX('$', c.username2)) AS nickname
 				FROM
 				(
 					SELECT 
-						b.custid
+						b.custid						 
 						,SUM(b.Outstanding * e.Rate) AS Outstanding
-						,SUM(BetCounts) AS BetCounts
+						,SUM(BetCounts) AS BetCounts					                   
 					FROM  
 						@Outstanding b
 						INNER JOIN @Exchange e ON e.exchangeid = b.currency
 					GROUP BY b.custid 
 				) AS b
-				INNER JOIN dbo.Customer c WITH (NOLOCK) ON b.custid = c.custid
+				INNER JOIN Customer c WITH (NOLOCK) ON b.custid = c.custid
 			) b
-		)
+		)        
 		SELECT * 
 		FROM Paging
 		WHERE RowNum BETWEEN @RowStart AND @RowEnd
@@ -386,29 +360,29 @@ BEGIN
 				b.* 
 			FROM
 			(
-				SELECT b.*,
-					c.username,
-					SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1, LEN(c.username2) - CHARINDEX('$', c.username2)) AS nickname
+				SELECT b.*, c.username,
+					SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,
+					LEN(c.username2) - CHARINDEX('$', c.username2)) AS nickname
 				FROM
 				(
 					SELECT 
-						b.custid
+						b.custid						 
 						,SUM(b.Outstanding * e.Rate) AS Outstanding
-						,SUM(BetCounts) AS BetCounts
-					FROM
+						,SUM(BetCounts) AS BetCounts					                   
+					FROM  
 						@Outstanding b
 						INNER JOIN @Exchange e ON e.exchangeid = b.currency
 					GROUP BY b.custid 
 				) AS b
-				INNER JOIN dbo.Customer c WITH (NOLOCK) ON b.custid = c.custid
+				INNER JOIN Customer c WITH (NOLOCK) ON b.custid = c.custid
 			) b
-		)
+		)        
 		SELECT * 
 		FROM Paging
 		WHERE RowNum BETWEEN @RowStart AND @RowEnd
 	END
 
-	SELECT
+	SELECT  
 		ISNULL(SUM(Outstanding * e.Rate),0.00) AS SumOutstanding,
 		SUM(BetCounts) AS SumBetCounts,
 		COUNT(1) AS TotalRows

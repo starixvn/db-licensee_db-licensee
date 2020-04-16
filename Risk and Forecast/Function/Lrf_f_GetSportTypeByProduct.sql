@@ -1,15 +1,15 @@
 /*<info serverAlias="DBLIC-bodb_Licensee" selecters="bodbLicenseeNet" viewers="" isFunction="1"></info>*/
 
-ALTER FUNCTION [dbo].[Lrf_f_GetSportTypeByProduct]  
-(
+CREATE FUNCTION [dbo].[Lrf_f_GetSportTypeByProduct]  
+(  
 	@ProductCode VARCHAR(10)
 )
-RETURNS @sports TABLE (ID INT)
+RETURNS @Sports TABLE (Id SMALLINT)
 
 /*
 	Create: 20180207@Amanda
 	Description: Get sports by product code
-	DB: DBLIC-bodb_Licensee
+	DB: DBLIC.bodb_Licensee
 
 	Revisions:
 		- 20180207@Amanda: Get sports by product code [Redmine: #80941]
@@ -18,12 +18,10 @@ RETURNS @sports TABLE (ID INT)
 		- 20190227@Joseph: Betting ticket center phase 3b [RedmineID: #108221]
 		- 20200326@Vickie: Add New Sport Virtual Soccer English Premier and Virtual Soccer Champions Cup [RedmineID: #131168]
 		- 20200408@Kos: Change to use SportBetTypeMatrix [RedmineID: #131447]
-		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
 
 	Paramters Explanation:
 		@ProductCode: Product code
 */
-
 BEGIN
 	IF @ProductCode = 'BA'
 		SET @ProductCode = 'SB'
