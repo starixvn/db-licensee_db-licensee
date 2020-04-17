@@ -2,6 +2,8 @@
 ALTER PROCEDURE [dbo].[Lrf_ExecRep_00]
 (
 	@strCustId VARCHAR(MAX),
+	@LicenseeID INT,
+	@GroupCommID INT = 0,
 	@MacauLicenseeID INT,
 	@IsUpdateNG BIT = 0,
 	@IsUpdateRNG BIT = 0,	
@@ -38,8 +40,6 @@ BEGIN
 	SET NOCOUNT ON;
 
 	DECLARE @xml XML
-	DECLARE @LicenseeID INT,
-		@GroupCommID INT = 0
 		
 	DECLARE @tmpCommHistory_execrep TABLE(Custid INT,Comm DECIMAL(9,8))
 
