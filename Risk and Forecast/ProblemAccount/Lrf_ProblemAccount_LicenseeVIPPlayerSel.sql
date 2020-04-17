@@ -18,7 +18,8 @@ AS
 		
 		Revisions:
 			- 20200212@Johnson: initial sp [redmine:#128077]
-			
+			- 20200417@Elodie: Unremove VIP if void abnormal [Redmine: #132736]
+
 		Paramter's Explanations:
 			- @VipOption: 0: All, 1: Yes, 2 : No
 			- @OrderCol = 1: sort by System ID	

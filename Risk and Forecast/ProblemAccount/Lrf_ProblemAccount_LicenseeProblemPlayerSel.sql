@@ -22,6 +22,7 @@ AS
 		Revisions:
 			- 20200211@Johnson: initial sp [redmine:#128077]
 			- 20200410@Eden: LAP - Player Segmentation [redmine:#131929]
+			- 20200417@Elodie: Unremove VIP if void abnormal [Redmine: #132736]
 			
 		Paramter's Explanations:
 			@OrderCol = 1: System ID
