@@ -107,7 +107,7 @@ BEGIN
 											CASE WHEN @SortType = 2 THEN OrderCol END DESC) rn
 	FROM t1
 	)
-	SELECT t2.*,ISNULL(isMarkVoid,0) isMarkVoid			
+	SELECT t2.*--,ISNULL(isMarkVoid,0) isMarkVoid			
 	FROM t2 
 		LEFT JOIN ProblemAccount p WITH(NOLOCK) ON t2.custid = p.custid
 	WHERE rn BETWEEN @rowstart AND @rowend

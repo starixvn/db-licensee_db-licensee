@@ -36,7 +36,7 @@ BEGIN
 	SELECT  @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
 
 	CREATE TABLE #TempAg (custid INT)
-	CREATE TABLE #CustList (CustId INT PRIMARY KEY, CreatedDate DATETIME, username VARCHAR(50), username2 VARCHAR(50), isMarkVoid BIT, MaxBet MONEY, MaxPerEvent MONEY, ReasonID TINYINT ,Reason NVARCHAR(4000))
+	CREATE TABLE #CustList (CustId INT PRIMARY KEY, CreatedDate DATETIME, username VARCHAR(50), username2 VARCHAR(50), MaxBet MONEY, MaxPerEvent MONEY, ReasonID TINYINT ,Reason NVARCHAR(4000))
 	
 	DECLARE @DocHandler INT
 
@@ -71,10 +71,10 @@ BEGIN
 
 	IF @Username <> ''
 	BEGIN
-		INSERT INTO #CustList(custid,CreatedDate,username,username2,isMarkVoid,MaxBet,MaxPerEvent,ReasonID)
+		INSERT INTO #CustList(custid,CreatedDate,username,username2,MaxBet,MaxPerEvent,ReasonID)
 		SELECT ci.custid,p.CreatedDate, username,
 			SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) AS username2,
-			ISNULL(isMarkVoid,0), e.Rate*p.MaxBet AS MaxBet, e.Rate*p.MaxPerEvent AS MaxPerEvent, ReasonID
+		        e.Rate*p.MaxBet AS MaxBet, e.Rate*p.MaxPerEvent AS MaxPerEvent, ReasonID
 		FROM customer ci WITH(NOLOCK)
 			INNER JOIN ProblemAccount p WITH(NOLOCK) ON ci.custid = p.custid
 			LEFT JOIN #ExchangeRate e ON e.ExchangeID = ci.currency
@@ -84,10 +84,10 @@ BEGIN
 	END
 	ELSE
 	BEGIN
-		INSERT INTO #CustList(custid,CreatedDate,username,username2,isMarkVoid,MaxBet,MaxPerEvent,ReasonID)
+		INSERT INTO #CustList(custid,CreatedDate,username,username2,MaxBet,MaxPerEvent,ReasonID)
 		SELECT ci.custid,p.CreatedDate, username,
-			SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) AS username2,
-			ISNULL(isMarkVoid,0), e.Rate*p.MaxBet AS MaxBet, e.Rate*p.MaxPerEvent AS MaxPerEvent, ReasonID
+			SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) AS username2
+			e.Rate*p.MaxBet AS MaxBet, e.Rate*p.MaxPerEvent AS MaxPerEvent, ReasonID
 		FROM customer ci WITH(NOLOCK)
 			INNER JOIN ProblemAccount p WITH(NOLOCK) ON ci.custid = p.custid
 			LEFT JOIN #ExchangeRate e ON e.ExchangeID = ci.currency
