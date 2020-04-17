@@ -37,22 +37,25 @@ AS
 BEGIN
 	SET NOCOUNT ON;
 
+	DECLARE @xml XML
 	DECLARE @LicenseeID INT,
 		@GroupCommID INT = 0
+		
+	DECLARE @tmpCommHistory_execrep TABLE(Custid INT,Comm DECIMAL(9,8))
 
-	DECLARE @TempList AS TABLE (CustID INT PRIMARY KEY)
-	DECLARE @tmpCommHistory TABLE(Custid INT,Comm DECIMAL(9,8))
+	CREATE TABLE #@TempList (CustID INT PRIMARY KEY)
 
-	INSERT INTO @TempList (CustID)
-	SELECT val
-	FROM Lrf_f_StringSplit(@strCustId, ',')
-	WHERE val <> ''
-	OPTION (MAXRECURSION 0)
+	SELECT @xml = CONVERT(XML,N'<root><r t="' + REPLACE(@strCustId,',','"/><r t="') + '"/></root>"')
+
+	INSERT INTO #@TempList (CustID)
+	SELECT T.C.value('./@t', 'bigint')			
+	FROM @xml.nodes('/root/r') AS T(C)
+	OPTION (OPTIMIZE FOR (@xml = NULL ))
 	
 	--Update SB
 	MERGE dbo.LicenseeCustComm AS target
 	USING (SELECT @LicenseeID AS LicenseeID, CustID, @SBComm AS SBComm,@ParlayComm AS ParlayComm, @GroupCommID AS GroupCommID 
-			FROM  @TempList --@TempCustID???  
+			FROM  #@TempList
 			WHERE CustID NOT IN (SELECT CustID FROM dbo.LicenseeBAHistory WITH (NOLOCK) WHERE Status ='Running') 
 			) AS source
 		ON (target.CustID = source.CustID)
@@ -73,7 +76,7 @@ BEGIN
 					,@SBComm AS SBComm 
 					,@ParlayComm AS ParlayComm
 					,@GroupCommID AS GroupCommID 
-			FROM @TempList --@TempCustID???   
+			FROM #@TempList  
 			WHERE CustID  IN (SELECT CustID FROM dbo.LicenseeBAHistory WITH (NOLOCK) WHERE Status ='Running') 
 			) AS source
 		ON (target.CustID = source.CustID)
@@ -92,7 +95,7 @@ BEGIN
 	FROM dbo.LicenseeCustComm d WITH  (ROWLOCK,UPDLOCK)
 		INNER JOIN dbo.LicenseeBAHistory s WITH (NOLOCK) ON d.LicenseeId = s.LicenseeId AND d.CustID = s.CustID
 	WHERE s.LicenseeID <>	@MacauLicenseeID
-		AND d.CustiD IN(SELECT CustID FROM @TempList)
+		AND d.CustiD IN(SELECT CustID FROM #@TempList)
 		AND s.Status ='Running'
 
 	--NG
@@ -100,7 +103,7 @@ BEGIN
 	BEGIN
 		UPDATE dbo.LicenseeCustComm WITH (ROWLOCK,UPDLOCK)
 			SET NGComm=@NGComm
-		WHERE CustID IN (SELECT CustID FROM @TempList)
+		WHERE CustID IN (SELECT CustID FROM #@TempList)
 	END
 
 	--RNG 
@@ -108,7 +111,7 @@ BEGIN
 	BEGIN
 		UPDATE dbo.LicenseeCustComm WITH (ROWLOCK,UPDLOCK)
 			SET RNGComm=@RNGComm
-		WHERE CustID IN (SELECT CustID FROM @TempList)
+		WHERE CustID IN (SELECT CustID FROM #@TempList)
 	END			
 			
 	--Allbet 
@@ -116,7 +119,7 @@ BEGIN
 	BEGIN
 		UPDATE dbo.LicenseeCustComm WITH (ROWLOCK,UPDLOCK)
 			SET AllbetComm=@AllbetComm
-		WHERE CustID IN (SELECT CustID FROM @TempList)
+		WHERE CustID IN (SELECT CustID FROM #@TempList)
 	END	
 			
 	--Macau 
@@ -124,7 +127,7 @@ BEGIN
 	BEGIN
 		UPDATE dbo.LicenseeCustComm WITH (ROWLOCK,UPDLOCK)
 			SET MacauComm=@MacauComm
-		WHERE CustID IN (SELECT CustID FROM @TempList)
+		WHERE CustID IN (SELECT CustID FROM #@TempList)
 	END	
 			
 	--PP 
@@ -132,39 +135,41 @@ BEGIN
 	BEGIN
 		UPDATE dbo.LicenseeCustComm WITH (ROWLOCK,UPDLOCK)
 		SET PPComm=@PPComm					
-		WHERE CustID IN (SELECT CustID FROM @TempList)
+		WHERE CustID IN (SELECT CustID FROM #@TempList)
 	END
 			
 	--GD 
 	IF @IsUpdateGD=1
 	BEGIN
-		DELETE @tmpCommHistory
+		DELETE @tmpCommHistory_execrep
 				
 		UPDATE dbo.LicenseeCustComm WITH (ROWLOCK,UPDLOCK)
 		SET GDComm=@GDComm
 		OUTPUT INSERTED.custid, INSERTED.GDComm 
-		INTO @tmpCommHistory(custid,Comm)
-		WHERE CustID IN (SELECT CustID FROM @TempList)
+		INTO @tmpCommHistory_execrep(custid,Comm)
+		WHERE CustID IN (SELECT CustID FROM #@TempList)
 				
 		INSERT INTO LicenseeCustComm_History(CustID,UpdatedTime,ProductID,Comm)
 		SELECT custid,GETDATE(),11,ISNULL(Comm,0)
-		FROM @tmpCommHistory
+		FROM @tmpCommHistory_execrep
 	END
 			
 	--AG 
 	IF @IsUpdateAG=1
 	BEGIN
-		DELETE @tmpCommHistory
+		DELETE @tmpCommHistory_execrep
 				
 		UPDATE dbo.LicenseeCustComm WITH (ROWLOCK,UPDLOCK)
 		SET AGComm=@AGComm
 		OUTPUT INSERTED.custid, INSERTED.AGComm 
-		INTO @tmpCommHistory(custid,Comm)
-		WHERE CustID IN (SELECT CustID FROM @TempList)
+		INTO @tmpCommHistory_execrep(custid,Comm)
+		WHERE CustID IN (SELECT CustID FROM #@TempList)
 				
 		INSERT INTO LicenseeCustComm_History(CustID,UpdatedTime,ProductID,Comm)
 		SELECT custid,GETDATE(),10,ISNULL(Comm,0)
-		FROM @tmpCommHistory
+		FROM @tmpCommHistory_execrep
 	END
+
+	DROP TABLE #@TempList
 END
 GO
