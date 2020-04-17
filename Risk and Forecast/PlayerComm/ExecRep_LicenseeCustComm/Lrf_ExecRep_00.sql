@@ -40,15 +40,14 @@ BEGIN
 	SET NOCOUNT ON;
 
 	DECLARE @xml XML
-		
-	DECLARE @tmpCommHistory_execrep TABLE(Custid INT,Comm DECIMAL(9,8))
 
 	CREATE TABLE #@TempList (CustID INT PRIMARY KEY)
+	CREATE TABLE #tmpCommHistory (Custid INT,Comm DECIMAL(9,8))
 
 	SELECT @xml = CONVERT(XML,N'<root><r t="' + REPLACE(@strCustId,',','"/><r t="') + '"/></root>"')
 
 	INSERT INTO #@TempList (CustID)
-	SELECT T.C.value('./@t', 'bigint')			
+	SELECT T.C.value('./@t', 'int')			
 	FROM @xml.nodes('/root/r') AS T(C)
 	OPTION (OPTIMIZE FOR (@xml = NULL ))
 	
@@ -141,35 +140,36 @@ BEGIN
 	--GD 
 	IF @IsUpdateGD=1
 	BEGIN
-		DELETE @tmpCommHistory_execrep
+		DELETE #tmpCommHistory
 				
 		UPDATE dbo.LicenseeCustComm WITH (ROWLOCK,UPDLOCK)
 		SET GDComm=@GDComm
 		OUTPUT INSERTED.custid, INSERTED.GDComm 
-		INTO @tmpCommHistory_execrep(custid,Comm)
+		INTO #tmpCommHistory(custid,Comm)
 		WHERE CustID IN (SELECT CustID FROM #@TempList)
 				
 		INSERT INTO LicenseeCustComm_History(CustID,UpdatedTime,ProductID,Comm)
 		SELECT custid,GETDATE(),11,ISNULL(Comm,0)
-		FROM @tmpCommHistory_execrep
+		FROM #tmpCommHistory
 	END
 			
 	--AG 
 	IF @IsUpdateAG=1
 	BEGIN
-		DELETE @tmpCommHistory_execrep
+		DELETE #tmpCommHistory
 				
 		UPDATE dbo.LicenseeCustComm WITH (ROWLOCK,UPDLOCK)
 		SET AGComm=@AGComm
 		OUTPUT INSERTED.custid, INSERTED.AGComm 
-		INTO @tmpCommHistory_execrep(custid,Comm)
+		INTO #tmpCommHistory(custid,Comm)
 		WHERE CustID IN (SELECT CustID FROM #@TempList)
 				
 		INSERT INTO LicenseeCustComm_History(CustID,UpdatedTime,ProductID,Comm)
 		SELECT custid,GETDATE(),10,ISNULL(Comm,0)
-		FROM @tmpCommHistory_execrep
+		FROM #tmpCommHistory
 	END
 
 	DROP TABLE #@TempList
+	DROP TABLE #tmpCommHistory
 END
 GO
