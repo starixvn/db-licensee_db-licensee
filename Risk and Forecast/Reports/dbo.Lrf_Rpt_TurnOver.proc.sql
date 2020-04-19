@@ -25,6 +25,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_TurnOver]
 	@ShowTG			BIT = 0, -- Table Games
 	@ShowI4D		BIT = 0, -- Indo 4D
 	@ShowSXG		BIT = 0, -- Sexy Gaming
+	@ShowSBC		BIT = 0, -- Saba club
 	@AgentList		VARCHAR(MAX),
 	@BaseCurrency	VARCHAR(3)
 AS
@@ -84,6 +85,7 @@ AS
 		- 20200406@Hogan: Add new product Table Games [RedmineID: #131447]
 		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
 		- 20200423@Hogan: Add new product Sexy Gaming [RedmineID: #132829]
+		- 20200419@Vickie: Integrate Saba Club [RedmineID: #132702]
 */
 
 BEGIN
@@ -146,6 +148,7 @@ BEGIN
 	IF @ShowTG	= 1 INSERT INTO @sporttype(sporttype) VALUES(222)
 	IF @ShowI4D	= 1 INSERT INTO @sporttype(sporttype) VALUES(223)
 	IF @ShowSXG	= 1 INSERT INTO @sporttype(sporttype) VALUES(243)
+	IF @ShowSBC	= 1 INSERT INTO @sporttype(sporttype) VALUES(200)
 
 	IF @username <> ''
 	BEGIN

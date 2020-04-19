@@ -21,6 +21,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_PlatformWinlossDetail]
 	@ShowTG		BIT = 0, -- Table Games
 	@ShowI4D	BIT = 0, -- Indo 4D
 	@ShowSXG	BIT = 0, -- Sexy Gaming
+	@ShowSBC	BIT = 0, -- Saba club
 	@PlatformType	TINYINT=0, 
 	@MoveBetsDay	SMALLDATETIME,
 	@DrawFilter		SMALLINT		= 1,
@@ -69,6 +70,7 @@ AS
 		- 20200108@Hogan: Add new product Table Games [RedmineID: #131447]
 		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
 		- 20200423@Hogan: Add new product Sexy Gaming [RedmineID: #132829]
+		- 20200419@Vickie: Integrate Saba Club [RedmineID: #132702]
 
 	Param's Explanation:
 		+ @PlatformType:  0: All
@@ -252,6 +254,11 @@ BEGIN
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'SXG', 'SXG')
 	END
 
+	IF @ShowSBC = 1 -- Saba Club
+	BEGIN
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'SBC', 'SBC')
+	END
+
 	IF LEN(ISNULL(@ProductList, '')) > 0 
 	BEGIN
 		-- Insert Bettype
@@ -386,7 +393,7 @@ BEGIN
 				b.statusID
 		END
 
-		IF (@ShowNG = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW = 1 OR @ShowVS2 = 1 OR @ShowLT = 1 OR @ShowPP = 1 OR @ShowCC = 1 OR @ShowSG = 1 OR @ShowVRG = 1 OR @ShowTG = 1 OR @ShowI4D = 1 OR @ShowSXG = 1)
+		IF (@ShowNG = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW = 1 OR @ShowVS2 = 1 OR @ShowLT = 1 OR @ShowPP = 1 OR @ShowCC = 1 OR @ShowSG = 1 OR @ShowVRG = 1 OR @ShowTG = 1 OR @ShowI4D = 1 OR @ShowSXG = 1 OR @ShowSBC = 1)
 		BEGIN
 			INSERT INTO #WinLoss (Winlostdate, CustID, Currency, Turnover, Winlost, LicenseeWL, playercomm, AmtDueToBA, CommBA, Company, BetCount)
 			SELECT 
@@ -472,7 +479,7 @@ BEGIN
 			GROUP BY b.winlostdate, b.CustID, b.currency, b.statusID
 		END
 
-		IF (@showSB = 1 or @ShowNG = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW =1 OR @ShowVS2 = 1 OR @ShowLT = 1 OR @ShowPP = 1 OR @showCC = 1 OR @ShowSG = 1 OR @ShowVRG = 1 OR @ShowTG = 1 OR @ShowI4D = 1 OR @ShowSXG = 1)
+		IF (@showSB = 1 or @ShowNG = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW =1 OR @ShowVS2 = 1 OR @ShowLT = 1 OR @ShowPP = 1 OR @showCC = 1 OR @ShowSG = 1 OR @ShowVRG = 1 OR @ShowTG = 1 OR @ShowI4D = 1 OR @ShowSXG = 1 OR @ShowSBC = 1)
 		BEGIN
 			INSERT INTO #WinLoss (Winlostdate, CustID, Currency, Turnover, Winlost, LicenseeWL, playercomm, AmtDueToBA, CommBA, Company, BetCount)
 			SELECT

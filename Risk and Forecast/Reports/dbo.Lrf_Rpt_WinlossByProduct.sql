@@ -83,7 +83,7 @@ AS
 		- 20200408@Hogan: Add new product Table Games [RedmineID: #131447]
 		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
 		- 20200423@Hogan: Add new product Sexy Gaming [RedmineID: #132829]
-
+		- 20200423@Vickie: Integrate Saba Club [RedmineID: #132702]
 
 	Param's Explanation:  
 		+ @ReportType: 1-Daily; 2-Monthly;  
@@ -451,7 +451,7 @@ BEGIN
 						ELSE 1 END
 				),     
 				SUM(b.winlost),  
-				SUM(CASE WHEN (b.sporttype in(0,161,164,251,202,208,209,210,212,220,248,165,247,245,222,223,243))  THEN -1 * b.winlost 
+				SUM(CASE WHEN (b.sporttype in(0,161,164,251,202,208,209,210,212,220,248,165,247,245,222,223,243,200))  THEN -1 * b.winlost 
 						ELSE 0 END
 					) AS LicenseeWL,
 				SUM(comm ) as Comm,

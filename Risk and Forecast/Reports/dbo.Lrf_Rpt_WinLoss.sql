@@ -22,9 +22,10 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
 	@ShowCC			BIT = 0,	-- Card club
 	@ShowSG			BIT = 0,	-- SpadeGaming
 	@ShowVRG		BIT = 0,	-- Virtual Games
-	@ShowTG			BIT = 0, -- Table Games
+	@ShowTG			BIT = 0,	-- Table Games
 	@ShowI4D		BIT = 0,	-- Indo 4D
-	@ShowSXG		BIT = 0, -- Sexy Gaming
+	@ShowSXG		BIT = 0,	-- Sexy Gaming
+	@ShowSBC		BIT = 0,	-- Saba club
 	@MoveBetsDay	DATETIME,
 	@PageSize		INT = 1000,
 	@PageIndex		INT = 1,
@@ -120,6 +121,7 @@ AS
 		- 20200406@Hogan: Add new product Table Games [RedmineID: #131447]
 		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
 		- 20200423@Hogan: Add new product Sexy Gaming [RedmineID: #132829]
+		- 20200423@Vickie: Integrate Saba Club [RedmineID: #132702]
 
 	Param's Explanation:
 		@OrderItem:
@@ -318,6 +320,8 @@ BEGIN
 	SELECT 'I4D' AS Code WHERE @ShowI4D = 1
 	UNION ALL
 	SELECT 'SXG' AS Code WHERE @ShowSXG = 1
+	UNION ALL
+	SELECT 'SBC' AS Code WHERE @ShowSBC = 1
 
 	-- BT & CO belong to SB
 	SELECT @ProductList = COALESCE(@ProductList + ',' + Code, Code)

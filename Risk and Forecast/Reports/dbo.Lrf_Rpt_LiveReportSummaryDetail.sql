@@ -82,6 +82,7 @@ AS
 		- 20200406@Hogan: Add new product Table Games [RedmineID: #131447]
 		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
 		- 20200423@Hogan: Add new product Sexy Gaming [RedmineID: #132829]
+		- 20200423@Vickie: Integrate Saba Club [RedmineID: #132702]
 
 	Param's Explanation:  
 		+ @Liveindicator : indicate that whether the report will get live data or not
@@ -219,7 +220,7 @@ BEGIN
 		END
 
 		--Not BA, -- exclude PP Prize 4300, 4299
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG'))
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC'))
 		BEGIN
 			SELECT	@sql = @sql + '--Get data from bettrans for non - BA' + CHAR(13)
 
@@ -243,6 +244,7 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 4901 AND 5000 THEN ''TG''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 5001 AND 5099 THEN ''I4D''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 3101 AND 3199 THEN ''SXG''' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 1611 AND 1699 THEN ''SBC''' + CHAR(13)
 								+ 'END AS ProductCode,' + CHAR(13)
 								+ 'b.bettype,' + CHAR(13)
 								+ 'SUM(stake) turnover,' + CHAR(13)
@@ -282,6 +284,7 @@ BEGIN
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','TG')) = 1 THEN 'OR b.bettype BETWEEN 4901 AND 5000' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','I4D')) = 1 THEN 'OR b.bettype BETWEEN 5001 AND 5099' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SXG')) = 1 THEN 'OR b.bettype BETWEEN 3101 AND 3199' + CHAR(13) ELSE '' END
+								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SBC')) = 1 THEN 'OR b.bettype BETWEEN 1611 AND 1699' + CHAR(13) ELSE '' END
 								+ ') ' + CHAR(13)
 								+ 'GROUP BY  b.winlostdate, t.currency, b.bettype,' + CHAR(13)
 								+ 'CASE' + CHAR(13)		
@@ -302,6 +305,7 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 4901 AND 5000 THEN ''TG''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 5001 AND 5099 THEN ''I4D''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 3101 AND 3199 THEN ''SXG''' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 1611 AND 1699 THEN ''SBC''' + CHAR(13)
 								+ 'END' + CHAR(13)
 
 			IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'SB'))
@@ -422,7 +426,7 @@ BEGIN
 		END
 
 		--Not BA, -- exclude PP Prize 4300, 4299
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG'))
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC'))
 		BEGIN
 			SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
 								+ 'SELECT b.rptDate, b.currencyID,' + CHAR(13)
@@ -444,6 +448,7 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 4901 AND 5000 THEN ''TG''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 5001 AND 5099 THEN ''I4D''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 3101 AND 3199 THEN ''SXG''' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 1611 AND 1699 THEN ''SBC''' + CHAR(13)
 								+ 'END AS ProductCode,' + CHAR(13)
 								+ 'b.bettype,' + CHAR(13)
 								+ 'SUM(b.turnover) turnover,' + CHAR(13)
@@ -480,6 +485,7 @@ BEGIN
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','TG')) = 1 THEN 'OR b.bettype BETWEEN 4901 AND 5000' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','I4D')) = 1 THEN 'OR b.bettype BETWEEN 5001 AND 5099' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SXG')) = 1 THEN 'OR b.bettype BETWEEN 3101 AND 3199' + CHAR(13) ELSE '' END
+								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SBC')) = 1 THEN 'OR b.bettype BETWEEN 1611 AND 1699' + CHAR(13) ELSE '' END
 								+ ') ' + CHAR(13)
 								+ 'GROUP BY b.rptDate, b.currencyID, b.bettype,' + CHAR(13)
 								+ 'CASE' + CHAR(13)		
@@ -500,6 +506,7 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 4901 AND 5000 THEN ''TG''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 5001 AND 5099 THEN ''I4D''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 3101 AND 3199 THEN ''SXG''' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 1611 AND 1699 THEN ''SBC''' + CHAR(13)
 								+ 'END' + CHAR(13)
 
 			IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'SB'))
