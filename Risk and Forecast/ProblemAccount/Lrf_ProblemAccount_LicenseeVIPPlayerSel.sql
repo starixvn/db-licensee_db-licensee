@@ -18,7 +18,8 @@ AS
 		
 		Revisions:
 			- 20200212@Johnson: initial sp [redmine:#128077]
-			
+			- 20200417@Elodie: Unremove VIP if void abnormal [Redmine: #132736]
+
 		Paramter's Explanations:
 			- @VipOption: 0: All, 1: Yes, 2 : No
 			- @OrderCol = 1: sort by System ID	
@@ -107,7 +108,7 @@ BEGIN
 											CASE WHEN @SortType = 2 THEN OrderCol END DESC) rn
 	FROM t1
 	)
-	SELECT t2.*,ISNULL(isMarkVoid,0) isMarkVoid			
+	SELECT t2.*--,ISNULL(isMarkVoid,0) isMarkVoid			
 	FROM t2 
 		LEFT JOIN ProblemAccount p WITH(NOLOCK) ON t2.custid = p.custid
 	WHERE rn BETWEEN @rowstart AND @rowend

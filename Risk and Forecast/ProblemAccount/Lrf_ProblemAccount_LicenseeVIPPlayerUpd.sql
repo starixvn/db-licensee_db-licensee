@@ -15,7 +15,8 @@ AS
 		
 		Revisions:
 			- 20200213@Johnson: initial sp [redmine:#128077]
-			
+			- 20200417@Elodie: Unremove VIP if void abnormal [Redmine: #132736]
+
 		Paramter's Explanations:	
 			- @result:
 				ErrCode =100: invalid accounts
@@ -33,8 +34,7 @@ BEGIN
 	CREATE TABLE #tblCust (custid INT, 
 							username VARCHAR(50), 
 							roleid TINYINT, 
-							isVip BIT, 
-							isMarkVoid BIT DEFAULT 0, 
+							isVip BIT, 						
 							isLog BIT DEFAULT 0, 
 							isUpdate BIT DEFAULT 0,
 							MaxBet MONEY,
@@ -124,34 +124,13 @@ BEGIN
 	END
 	
 	UPDATE t
-	SET t.isMarkVoid = ISNULL(p.isMarkVoid,0),
-		t.MaxBet = p.MaxBet,
+	SET t.MaxBet = p.MaxBet,
 		t.MaxPerEvent = p.MaxPerEvent
 	FROM #tblCust t
 		INNER JOIN ProblemAccount p WITH(NOLOCK) ON t.custid = p.custid
 	
-	IF @isVip = 1 AND EXISTS (SELECT 1 FROM #tblCust WHERE isMarkVoid = 1 AND custid IS NOT NULL)
-	BEGIN	
-		SELECT @ErrMsg = ''
-		
-		SELECT @ErrMsg = @ErrMsg + username + ','
-		FROM #tblCust
-		WHERE isMarkVoid = 1
-			AND custid IS NOT NULL		
-		
-		SELECT @cnt = @@ROWCOUNT
-		
-		SELECT @ErrMsg = REVERSE(SUBSTRING(REVERSE(@ErrMsg),2,LEN(@ErrMsg)))
-		
-		--customer has void tickets belong to 2 match
-		--dont set VIP account
-		INSERT INTO @Result(ErrCode,Cnt,ErrMsg)
-		SELECT 102,@cnt,@ErrMsg
-	END	
-	
 	IF NOT EXISTS(SELECT 1 FROM #tblCust 
 				WHERE isVip <> @isVip 
-					AND isMarkVoid = 0 
 					AND custid IS NOT NULL)
 	BEGIN				
 		SELECT * FROM @Result
@@ -170,7 +149,6 @@ BEGIN
 		WHERE isVip <> @isVip
 			AND isUpdate = 0
 			AND custid IS NOT NULL
-			AND isMarkVoid = 0
 		
 		SELECT @cnt = @@ROWCOUNT
 				
