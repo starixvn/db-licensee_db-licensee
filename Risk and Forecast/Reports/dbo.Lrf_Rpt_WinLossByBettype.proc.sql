@@ -192,6 +192,7 @@ BEGIN
 						OR b.bettype BETWEEN 1501 AND 1599 --Keno
 						OR b.bettype BETWEEN 1021 AND 1049 -- Lottery
 						OR b.bettype BETWEEN 4901 AND 5000 -- Table Games
+						OR b.bettype BETWEEN 5001 AND 5099 -- Indo 4D
 						)
 					THEN (b.winlost - b.actual_stake)
 				ELSE 0
@@ -264,7 +265,7 @@ BEGIN
 						OR b.bettype BETWEEN 1501 AND 1599 --Keno products
 						OR b.bettype BETWEEN 1021 AND 1049 --Lottery
 						OR b.bettype BETWEEN 4901 AND 5000 -- Table Games
-						 
+						OR b.bettype BETWEEN 5001 AND 5099 -- Indo 4D
 						)
 					THEN (b.winlost - b.actual_stake)
 				ELSE 0

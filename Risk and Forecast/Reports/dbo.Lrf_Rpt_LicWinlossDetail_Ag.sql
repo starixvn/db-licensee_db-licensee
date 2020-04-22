@@ -1084,6 +1084,7 @@ BEGIN
 				-SUM(CASE WHEN b.sporttype = 165 THEN b.winlost ELSE 0 END) AS LicenseeWLCC,
 				-SUM(CASE WHEN b.sporttype = 247 THEN b.winlost ELSE 0 END) AS LicenseeWLSG,
 				-SUM(CASE WHEN b.sporttype = 245 THEN b.winlost ELSE 0 END) AS LicenseeWLVRG,
+				-SUM(CASE WHEN b.sporttype = 222 THEN b.winlost ELSE 0 END) AS LicenseeWLTG,
 				-SUM(CASE WHEN b.sporttype = 223 THEN b.winlost ELSE 0 END) AS LicenseeWLI4D,
 				0 AS AmountDueToBA,
 				0 AS CommBA,
