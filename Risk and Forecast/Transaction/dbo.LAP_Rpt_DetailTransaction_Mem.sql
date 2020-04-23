@@ -14,6 +14,7 @@ AS
 	Revisions:  
 		- 20200313@Bobby: Initialize [RedmineID: #130293] 
 		- 20200330@Louis: Support Statement & Detail Transaction Report in Chinese [RedmineID: #131262]
+		- 20200420@Louis: Detail Transaction - Change rounding & sorting mechanism [RedmineID: #1328230]
 	
 	Param's Explanation:     
 */
@@ -33,8 +34,8 @@ BEGIN
 		, bettype			INT
 		, transtime			DATETIME
         , transremark		VARCHAR(200)
-        , changedAmt		DECIMAL(15,2) DEFAULT(0)
-        , totalAmt			DECIMAL(15,2) DEFAULT(0)
+        , changedAmt		MONEY DEFAULT(0)
+        , totalAmt			MONEY DEFAULT(0)
 		--, CONSTRAINT PK_Trans PRIMARY KEY (transtime, transid)
 		, rowIdx INT PRIMARY KEY
     )
@@ -59,7 +60,7 @@ BEGIN
 		, br.transremark
 		, br.changedAmt
 		, br.totalAmt
-		, rowIdx = ROW_NUMBER() OVER(ORDER BY transtime ASC, transid ASC)
+		, rowIdx = ROW_NUMBER() OVER(ORDER BY RowID)
 	FROM (
 		SELECT transid
 			, bettype
@@ -67,6 +68,7 @@ BEGIN
 			, REPLACE([action],'TransLog','Ticket') AS transremark
 			, BalanceChanged AS changedAmt
 			, NewBalance AS totalAmt
+			, RowID
 		FROM BalanceRecord.dbo.BalanceRecord_bk br WITH(NOLOCK)
 		WHERE custid = @_custid
 			AND actiondate BETWEEN @_fromDateTime AND @_toDateTime
@@ -79,6 +81,7 @@ BEGIN
 			, REPLACE([action],'TransLog','Ticket') AS transremark
 			, BalanceChanged AS changedAmt
 			, NewBalance AS totalAmt
+			, RowID
 		FROM bodb02.dbo.BalanceRecord WITH(NOLOCK)
 		WHERE custid = @_custid
 			AND actiondate BETWEEN @_fromDateTime AND @_toDateTime
