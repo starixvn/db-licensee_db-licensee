@@ -59,6 +59,7 @@ Revisions:
 	- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
 	- 20190312@Amanda: Add new bet types Single Match Parlay (ID: 38) [RedmineID: #108298]
 	- 20200331@Hogan: Add new product Table Games [RedmineID: #131447]
+	- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
 
 Param's Explanation: 
 	+ @AgentList: xml structure
@@ -191,6 +192,7 @@ BEGIN
 						OR b.bettype BETWEEN 1501 AND 1599 --Keno
 						OR b.bettype BETWEEN 1021 AND 1049 -- Lottery
 						OR b.bettype BETWEEN 4901 AND 5000 -- Table Games
+						OR b.bettype BETWEEN 5001 AND 5099 -- Indo 4D
 						)
 					THEN (b.winlost - b.actual_stake)
 				ELSE 0
@@ -210,7 +212,8 @@ BEGIN
 	INNER JOIN #TempSAg s ON b.srecommend = s.srecommend AND b.currency = s.currency
 	LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON b.transid = BA.transid	 
 	WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
-		AND (bettype <= 1599 OR (b.bettype >= 2701 AND b.bettype <= 2829) OR (b.bettype BETWEEN 8101 AND 8120) OR (b.Bettype >= 9001 and b.Bettype <= 9086) OR (b.Bettype >= 4901  and b.Bettype <= 5000))
+		AND (bettype <= 1599 OR (b.bettype >= 2701 AND b.bettype <= 2829) OR (b.bettype BETWEEN 8101 AND 8120) OR (b.Bettype >= 9001 and b.Bettype <= 9086) 
+		 OR (b.Bettype >= 4901 AND b.Bettype <= 5000) OR (b.Bettype >= 5001 AND b.Bettype <= 5099))
 		AND (bettype NOT IN (71, 73,901,902,903,904,911,912,913,914,31,32,33,41,42,43) AND bettype NOT BETWEEN 1011 AND 1020 AND b.bettype NOT BETWEEN 1101 AND 1199) -- Remove LC
 		AND b.ruben = 1
 		AND statusID NOT IN (101, 102, 103)
@@ -262,7 +265,7 @@ BEGIN
 						OR b.bettype BETWEEN 1501 AND 1599 --Keno products
 						OR b.bettype BETWEEN 1021 AND 1049 --Lottery
 						OR b.bettype BETWEEN 4901 AND 5000 -- Table Games
-						 
+						OR b.bettype BETWEEN 5001 AND 5099 -- Indo 4D
 						)
 					THEN (b.winlost - b.actual_stake)
 				ELSE 0
@@ -283,7 +286,8 @@ BEGIN
 	LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_bk BA WITH (NOLOCK) ON b.transid = BA.transid	
 	WHERE b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
 		AND statusID NOT IN (101, 102, 103)
-		AND (bettype <= 1599 OR (b.bettype >= 2701 AND b.bettype <= 2829) OR (b.bettype BETWEEN 8101 AND 8120) OR (b.Bettype >= 9001 and b.Bettype <= 9086) OR (b.Bettype >= 4901 and b.Bettype <= 5000)) 
+		AND (bettype <= 1599 OR (b.bettype >= 2701 AND b.bettype <= 2829) OR (b.bettype BETWEEN 8101 AND 8120) OR (b.Bettype >= 9001 and b.Bettype <= 9086) 
+		OR (b.Bettype >= 4901 and b.Bettype <= 5000) OR (b.Bettype >= 5001 AND b.Bettype <= 5099)) 
 		AND (bettype NOT IN (71, 73,901,902,903,904,911,912,913,914,31,32,33,41,42,43) 
 				AND bettype NOT BETWEEN 1011 AND 1020 
 				AND bettype NOT BETWEEN 1101 AND 1199

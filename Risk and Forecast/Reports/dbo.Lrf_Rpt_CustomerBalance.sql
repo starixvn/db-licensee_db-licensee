@@ -8,11 +8,11 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerBalance]
 	, @PageSize		INT = 1000
 	, @PageIndex	INT = 1
 	, @showSB		BIT = 0
-	, @ShowNG		BIT = 0	
+	, @ShowNG		BIT = 0
 	, @ShowVS		BIT = 0
 	, @ShowCS		BIT = 0
-	, @ShowKN		BIT = 0   	
-	, @ShowBT		BIT = 0 -- Keno 	
+	, @ShowKN		BIT = 0
+	, @ShowBT		BIT = 0 -- Keno
 	, @ShowAGC		BIT = 0
 	, @ShowVB		BIT = 0
 	, @ShowAB		BIT = 0
@@ -26,68 +26,71 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerBalance]
 	, @ShowSG		BIT = 0 -- Spadegaming 
 	, @ShowVRG		BIT = 0 -- Virtual Games
 	, @ShowTG		BIT = 0 -- Table Games
+	, @ShowI4D		BIT = 0 -- Indo 4D
 	,@AgentList		VARCHAR(MAX)
 AS
-/*  
-Created: 20120917@Henry  
-Task : Report Customer Balance  
-DB: DBACC/bodb02
-Original: Lrf_Rpt_CustomerTurnOver  
-  
-Revisions:  
-	- 20120917@henry: change SP name Lrf_Rpt_CustomerTurnOver to Lrf_Rpt_CustomerBalance + split column  
-	- 20121004@Jim: replace @currency input param by @currencyID  
-	- 20130117@henry: enhance performance  
-	- 20130123@Daniel: Change link server alias  
-	- 20130225@Scott: support RNG Casino ,Bingo     
-	- 20130618@Jim:  Restrict permission of Licensee Users by currency
-	- 20130809@Jim: offer Virtual Horse Racing
-	- 20131007@Jim: offer Virtual Tennis
-	- 20140217@Hannah: add condition for @LicenseeType
-	- 20140305@Florent: support Keno
-	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
-	- 20150612@Jim: support MicroGaming
-	- 20150630@Winnie: support Bettrade
-	- 20150930@Florent: support AGC
-	- 20151108@Jim: Separated MicroGaming into 2 product
-	- 20151228@Patrick: Exclude 901 & 902 for turnover
-	- 20151228@Bobby: Implement RNG Casino sporttype(208,209,210)
-	- 20160408@Percy: Support Voidbridge single wallet [Redmine: #55057]
-	- 20160619@Jim: Allbet - Live Casino Integration for Licensees [Redmine: #59624]
-	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
-	- 20160913@Jim : LRF - Implement Colossus Bets [Redmine: #63785]
-	- 20161115@Jim: LRF - Integrate new product Fishing World [RedmineID : #66737]
-	- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest, @LicenseeType [Redmine: #71679]
-	- 20170328@Paul: Support sorting values for Opening Balance and Closing Balance [RedmineID: #74120]
-	- 20170330@Paul: Implement Cash Out [RedmineID :#71727]
-    - 20170706@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
-	- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
-	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
-	- 20180412@Harper: Integrate Bonus wallet [RedmineID: 91740]
-	- 20180418@Amanda: LAP - Integrate PP [RedmineID: #92318]
-	- 20180808@Amanda: Remove Racing, Bingo [RedmineID: #99378]
-	- 20181228@Joseph: Remove vnteam [RedmineID: #103698]
-	- 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
-	- 20190708@Amanda: Add new product Card Club [RedmineID: #115449]
-	- 20191025@Amanda: Add new column - Promotion [RedmineID: #120333]
-	- 20191212@Vickie: Integrate SpadeGaming [RedmineID: #124103]
-	- 20200108@Vickie: Add new product Virtual Games [RedmineID: #124911]
-	- 20200406@Hogan: Add new product Table Games [RedmineID: #131447]
 
-Param's Explanation:  
-	+ @excludeTest: remove currency UUS  
-	+ @TopCount:   
-		0: get all  
-		100: get 100 top by @OrderItem  
-		500: get 500 top by @OrderItem  
-	+ @OrderItem:  
-		1: Deposit  
-		2: Withdrawal  
-		3: Turnover  
-		4: Winloss desc  
-		5: Winloss asc  
-		6: Opening balance
-		7: Closing balance
+/*
+	Created: 20120917@Henry
+	Task : Report Customer Balance
+	DB: DBACC/bodb02
+	Original: Lrf_Rpt_CustomerTurnOver
+  
+	Revisions:
+		- 20120917@henry: change SP name Lrf_Rpt_CustomerTurnOver to Lrf_Rpt_CustomerBalance + split column
+		- 20121004@Jim: replace @currency input param by @currencyID
+		- 20130117@henry: enhance performance
+		- 20130123@Daniel: Change link server alias
+		- 20130225@Scott: support RNG Casino ,Bingo
+		- 20130618@Jim:  Restrict permission of Licensee Users by currency
+		- 20130809@Jim: offer Virtual Horse Racing
+		- 20131007@Jim: offer Virtual Tennis
+		- 20140217@Hannah: add condition for @LicenseeType
+		- 20140305@Florent: support Keno
+		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+		- 20150612@Jim: support MicroGaming
+		- 20150630@Winnie: support Bettrade
+		- 20150930@Florent: support AGC
+		- 20151108@Jim: Separated MicroGaming into 2 product
+		- 20151228@Patrick: Exclude 901 & 902 for turnover
+		- 20151228@Bobby: Implement RNG Casino sporttype(208,209,210)
+		- 20160408@Percy: Support Voidbridge single wallet [Redmine: #55057]
+		- 20160619@Jim: Allbet - Live Casino Integration for Licensees [Redmine: #59624]
+		- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
+		- 20160913@Jim : LRF - Implement Colossus Bets [Redmine: #63785]
+		- 20161115@Jim: LRF - Integrate new product Fishing World [RedmineID : #66737]
+		- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID, Remove @excludeTest, @LicenseeType [Redmine: #71679]
+		- 20170328@Paul: Support sorting values for Opening Balance and Closing Balance [RedmineID: #74120]
+		- 20170330@Paul: Implement Cash Out [RedmineID :#71727]
+		- 20170706@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
+		- 20170731@Harper: LRF - Integrate Lottery [RedmineID: #79997]
+		- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
+		- 20180412@Harper: Integrate Bonus wallet [RedmineID: 91740]
+		- 20180418@Amanda: LAP - Integrate PP [RedmineID: #92318]
+		- 20180808@Amanda: Remove Racing, Bingo [RedmineID: #99378]
+		- 20181228@Joseph: Remove vnteam [RedmineID: #103698]
+		- 20190322@Amanda: Remove MGCLC & MGRnG [RedmineID: #107704]
+		- 20190708@Amanda: Add new product Card Club [RedmineID: #115449]
+		- 20191025@Amanda: Add new column - Promotion [RedmineID: #120333]
+		- 20191212@Vickie: Integrate SpadeGaming [RedmineID: #124103]
+		- 20200108@Vickie: Add new product Virtual Games [RedmineID: #124911]
+		- 20200406@Hogan: Add new product Table Games [RedmineID: #131447]
+		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
+
+	Param's Explanation:
+		+ @excludeTest: remove currency UUS
+		+ @TopCount:
+			0: get all
+			100: get 100 top by @OrderItem
+			500: get 500 top by @OrderItem
+		+ @OrderItem:
+			1: Deposit
+			2: Withdrawal
+			3: Turnover
+			4: Winloss desc
+			5: Winloss asc
+			6: Opening balance
+			7: Closing balance
 */
 
 BEGIN
@@ -200,13 +203,17 @@ BEGIN
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'TG', 'TG')
 	END
 
+	IF @ShowI4D = 1
+	BEGIN
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'I4D', 'I4D')
+	END
+
 	IF LEN(ISNULL(@ProductList, '')) > 0 
-	BEGIN		
+	BEGIN
 		-- Insert Sport Type
 		INSERT INTO @sporttype ( sporttype, ProductCode )
 		SELECT DISTINCT sporttype, ProductCode
 		FROM dbo.f_LicWinLoss_ProductSportType_Sel(@ProductList)
-
 	END
 
 	DECLARE @DocHandler INT
@@ -224,11 +231,10 @@ BEGIN
 
 	BEGIN CATCH
 		SELECT ErrCode = 100
-			,ErrMsg = N'Paramter invalid.'
+			,ErrMsg = N'Parameter invalid.'
 
 		RETURN
 	END CATCH;
-
 
 	CREATE TABLE #SumWinlost (
 		Custid INT
@@ -253,10 +259,9 @@ BEGIN
 	IF @fdate < @CutDate
 	BEGIN
 		SELECT @tmpdate = CASE 
-				WHEN @tdate >= @CutDate
-					THEN DATEADD(dd, - 1, @CutDate)
-				ELSE @tdate
-				END
+							WHEN @tdate >= @CutDate THEN DATEADD(dd, - 1, @CutDate)
+							ELSE @tdate
+						END
 
 		INSERT INTO #SumWinlost
 		SELECT b.custid
@@ -326,12 +331,8 @@ BEGIN
 			FROM bodb_Report.dbo.rptDepWinlostByProduct_bk p WITH (NOLOCK)
 			INNER JOIN #SumWinlost d
 				ON p.custid = d.custid
-			WHERE p.winlostdate BETWEEN @fdate
-					AND @tmpdate
-				AND sporttype IN (
-					SELECT sporttype
-					FROM @sporttype
-					)
+			WHERE p.winlostdate BETWEEN @fdate AND @tmpdate
+				AND sporttype IN (SELECT sporttype FROM @sporttype)
 			GROUP BY p.custid
 			)
 		UPDATE #SumWinlost

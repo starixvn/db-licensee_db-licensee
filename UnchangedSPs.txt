@@ -1,0 +1,7 @@
+Risk and Forecast\Reports\dbo.Lrf_Rpt_CustomerBalance.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_Winloss.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_WinlossByProduct.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_WinlossByProductDetail.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_WinlossByProductDetail_Ag.sql
+
+
