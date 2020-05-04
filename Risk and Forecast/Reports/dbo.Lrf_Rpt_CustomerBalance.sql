@@ -27,6 +27,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerBalance]
 	, @ShowVRG		BIT = 0 -- Virtual Games
 	, @ShowTG		BIT = 0 -- Table Games
 	, @ShowI4D		BIT = 0 -- Indo 4D
+	, @ShowSXG		BIT = 0 -- Sexy Gaming
 	,@AgentList		VARCHAR(MAX)
 AS
 
@@ -76,6 +77,7 @@ AS
 		- 20200108@Vickie: Add new product Virtual Games [RedmineID: #124911]
 		- 20200406@Hogan: Add new product Table Games [RedmineID: #131447]
 		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
+		- 20200423@Hogan: Add new product Sexy Gaming [RedmineID: #132829]
 
 	Param's Explanation:
 		+ @excludeTest: remove currency UUS
@@ -206,6 +208,11 @@ BEGIN
 	IF @ShowI4D = 1
 	BEGIN
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'I4D', 'I4D')
+	END
+
+	IF @ShowSXG = 1
+	BEGIN
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'SXG', 'SXG')
 	END
 
 	IF LEN(ISNULL(@ProductList, '')) > 0 

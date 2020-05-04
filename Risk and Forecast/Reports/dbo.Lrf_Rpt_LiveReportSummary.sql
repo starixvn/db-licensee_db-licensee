@@ -75,6 +75,7 @@ AS
 		- 20200108@Vickie: Add new product Virtual Games [RedmineID: #124911]
 		- 20200406@Hogan: Add new product Table Games [RedmineID: #131447]
 		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
+		- 20200423@Hogan: Add new product Sexy Gaming [RedmineID: #132829]
 
 	Param's Explanation:
 		+ @IsLive : indicate that whether the report will get live data or not
@@ -313,7 +314,7 @@ BEGIN
 		END
 
 		--Others
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'NG', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D'))
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'NG', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG'))
 		BEGIN
 			INSERT INTO #tmpWinloss
 			SELECT
@@ -335,6 +336,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 4601 AND 4900 THEN 'VRG' -- VRG
 					WHEN b.bettype BETWEEN 4901 AND 5000 THEN 'TG' -- TG
 					WHEN b.bettype BETWEEN 5001 AND 5099 THEN 'I4D' -- I4D
+					WHEN b.bettype BETWEEN 3101 AND 3199 THEN 'SXG' -- SXG
 					END AS ProductCode,
 				SUM(stake) turnover,
 				SUM(b.winlost - b.actual_stake) AS Winlost,
@@ -366,6 +368,7 @@ BEGIN
 					OR b.bettype BETWEEN 4601 AND 4900 -- VRG
 					OR b.bettype BETWEEN 4901 AND 5000 -- TG
 					OR b.bettype BETWEEN 5001 AND 5099 -- I4D
+					OR b.bettype BETWEEN 3101 AND 3199 -- SXG
 				)
 				AND (b.liveindicator = @Liveindicator OR @Liveindicator = 2)
 			GROUP BY
@@ -387,6 +390,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 4601 AND 4900 THEN 'VRG' -- VRG
 					WHEN b.bettype BETWEEN 4901 AND 5000 THEN 'TG' -- TG
 					WHEN b.bettype BETWEEN 5001 AND 5099 THEN 'I4D' -- I4D
+					WHEN b.bettype BETWEEN 3101 AND 3199 THEN 'SXG' -- SXG
 				END
 			END
 	END
@@ -469,7 +473,7 @@ BEGIN
 		END
 
 		-- Others
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D'))
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG'))
 		BEGIN
 			INSERT INTO #tmpWinloss
 			SELECT 
@@ -498,6 +502,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 4601 AND 4900 THEN 'VRG'
 					WHEN b.bettype BETWEEN 4901 AND 5000 THEN 'TG'
 					WHEN b.bettype BETWEEN 5001 AND 5099 THEN 'I4D'
+					WHEN b.bettype BETWEEN 3101 AND 3199 THEN 'SXG' -- SXG
 				END AS ProductCode,
 				SUM(b.turnover) turnover,
 				SUM(b.winloss) winlost,
@@ -544,6 +549,7 @@ BEGIN
 					OR b.bettype BETWEEN 4601 AND 4900 -- VRG
 					OR b.bettype BETWEEN 4901 AND 5000 -- TG
 					OR b.bettype BETWEEN 5001 AND 5099 -- I4D
+					OR b.bettype BETWEEN 3101 AND 3199 -- SXG
 					)
 			GROUP BY
 				b.rptDate,
@@ -570,6 +576,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 4601 AND 4900 THEN 'VRG'
 					WHEN b.bettype BETWEEN 4901 AND 5000 THEN 'TG'
 					WHEN b.bettype BETWEEN 5001 AND 5099 THEN 'I4D'
+					WHEN b.bettype BETWEEN 3101 AND 3199 THEN 'SXG' -- SXG
 				END
 		END
 

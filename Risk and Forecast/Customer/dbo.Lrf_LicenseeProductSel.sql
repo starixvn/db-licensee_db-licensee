@@ -28,6 +28,7 @@ AS
 		- 20200108@Vickie: Bet Setting - Hide VRG product [RedmineID: #124911]
 		- 20200323@Vickie: Bet Setting - Hide Indo 4D product [RedmineID: #130859]
 		- 20200423@Hogan: Bet Setting - Hide Table Game product [RedmineID: #133097]
+		- 20200427@Hogan: Bet Setting - Hide Sexy Gaming product [RedmineID: #132829]
 	Param's Explanation:
 */
 
@@ -110,7 +111,7 @@ BEGIN
 		   ,ProductCode
 		   ,isEnable
 	FROM @tblProductActive t 
-	WHERE ProductID NOT IN (3,7,9,4,1,14,17,34,36,37,38,43,40)-- Hide Setting for CashOut,LC,RB,Microgaming,CC,SG,SPR,VRG,I4D,TG
+	WHERE ProductID NOT IN (3,7,9,4,1,14,17,34,36,37,38,43,40,45)-- Hide Setting for CashOut,LC,RB,Microgaming,CC,SG,SPR,VRG,I4D,TG,SXG
 	ORDER BY ProductID ASC
 	
 END

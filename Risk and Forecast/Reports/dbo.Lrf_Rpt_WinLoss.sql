@@ -24,6 +24,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
 	@ShowVRG		BIT = 0,	-- Virtual Games
 	@ShowTG			BIT = 0, -- Table Games
 	@ShowI4D		BIT = 0,	-- Indo 4D
+	@ShowSXG		BIT = 0, -- Sexy Gaming
 	@MoveBetsDay	DATETIME,
 	@PageSize		INT = 1000,
 	@PageIndex		INT = 1,
@@ -118,6 +119,7 @@ AS
 		- 20200108@Vickie: Add new product Virtual Games [RedmineID: #124911]
 		- 20200406@Hogan: Add new product Table Games [RedmineID: #131447]
 		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
+		- 20200423@Hogan: Add new product Sexy Gaming [RedmineID: #132829]
 
 	Param's Explanation:
 		@OrderItem:
@@ -314,6 +316,8 @@ BEGIN
 	SELECT 'TG' AS Code WHERE @ShowTG = 1
 	UNION ALL
 	SELECT 'I4D' AS Code WHERE @ShowI4D = 1
+	UNION ALL
+	SELECT 'SXG' AS Code WHERE @ShowSXG = 1
 
 	-- BT & CO belong to SB
 	SELECT @ProductList = COALESCE(@ProductList + ',' + Code, Code)
