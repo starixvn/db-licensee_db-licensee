@@ -44,6 +44,7 @@ Revisions:
 	- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
 	- 20191118@Amanda: Remove unused param [RedmineID: #120336]
 	- 20190312@Amanda: Add new bet types Single Match Parlay (ID: 38) [RedmineID: #108298]
+	- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
 
 Param's Explanation:  
 	 + @AgentList: xml structure
@@ -292,7 +293,7 @@ BEGIN
 			WHERE (b.bettype<31 
 					OR (b.bettype BETWEEN 121 AND 999)
 					OR (b.Bettype BETWEEN 1301 and 1399) -- new tennis's bettypes
-					OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0
+					OR (b.Bettype BETWEEN 9001 and 9399) -- E-Sports 2.0
 					OR b.Bettype = 38					 -- Single Match Parlay
 				) AND  
 				b.tpositiontaking <> 0  
@@ -424,7 +425,7 @@ BEGIN
 				AND tpositiontaking = 0  
 				AND (b.bettype < 31 OR (b.Bettype BETWEEN 121 AND 999)
 									OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
-									OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0
+									OR (b.Bettype BETWEEN 9001 and 9399) -- E-Sports 2.0
 									OR b.Bettype = 38					 -- Single Match Parlay
 				)  
 			GROUP BY b.Winlostdate,  
@@ -532,7 +533,7 @@ BEGIN
 			WHERE (b.bettype<31 
 					OR (b.bettype BETWEEN 121 AND 999)
 					OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
-					OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0
+					OR (b.Bettype BETWEEN 9001 and 9399) -- E-Sports 2.0
 					OR b.Bettype = 38					 -- Single Match Parlay
 				) AND  
 				b.tpositiontaking <> 0  

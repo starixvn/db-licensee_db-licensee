@@ -77,6 +77,7 @@ AS
 		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
 		- 20200423@Hogan: Add new product Sexy Gaming [RedmineID: #132829]
 		- 20200423@Vickie: Integrate Saba Club [RedmineID: #132702]
+		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
 
 	Param's Explanation:
 		+ @IsLive : indicate that whether the report will get live data or not
@@ -239,7 +240,7 @@ BEGIN
 					b.bettype <= 30
 					OR (b.bettype BETWEEN 121 AND 999)
 					OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
-					OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0
+					OR (b.Bettype BETWEEN 9001 and 9399) -- E-Sports 2.0
 					OR b.Bettype = 38					 -- Single Match Parlay
 					)
 				AND (b.bettype NOT IN (9,29))
@@ -488,7 +489,7 @@ BEGIN
 					WHEN (b.bettype <= 30 
 							OR (b.bettype BETWEEN 121 AND 999) 
 							OR (b.Bettype BETWEEN 1301 and 1399) 
-							OR (b.Bettype BETWEEN 9001 and 9086) 
+							OR (b.Bettype BETWEEN 9001 and 9399) 
 							OR b.Bettype = 38					 -- Single Match Parlay
 						) 
 						THEN 'SB'
@@ -536,7 +537,7 @@ BEGIN
 				AND (b.bettype <= 30
 					OR b.bettype BETWEEN 121 AND 999
 					OR b.Bettype BETWEEN 1301 and 1399
-					OR b.Bettype BETWEEN 9001 and 9086
+					OR b.Bettype BETWEEN 9001 and 9399
 					OR b.Bettype = 38				   -- Single Match Parlay
 					OR b.bettype BETWEEN 81 AND 120
 					OR b.bettype BETWEEN 8101 AND 8120 -- Number Game: Happy 5
@@ -565,7 +566,7 @@ BEGIN
 					WHEN b.bettype <= 30 
 							OR (b.bettype BETWEEN 121 AND 999) 
 							OR (b.Bettype BETWEEN 1301 and 1399) 
-							OR (b.Bettype BETWEEN 9001 and 9086) 
+							OR (b.Bettype BETWEEN 9001 and 9399) 
 							OR b.Bettype = 38					 -- Single Match Parlay
 						THEN 'SB'
 					WHEN b.bettype BETWEEN 1201 AND 1299 THEN 'VS'

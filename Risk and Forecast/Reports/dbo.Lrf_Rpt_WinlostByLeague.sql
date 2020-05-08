@@ -42,6 +42,7 @@ AS
 		- 20191608@Amanda: Add new bet types (PH AIO - Phase 4b) [RedmineID: #118300]
 		- 20191118@Amanda: Add new bet types (BM AIO - Phase 2) [RedmineID: #120336]
 		- 20190102@Vickie: Add new bet types (PH AIO - Phase 5) [RedmineID: #126005]
+		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
 
 	Parameter's Explanation:
 		- @LicenseeID : Licensee ID
@@ -170,7 +171,7 @@ BEGIN
 					,m.leagueid
 					,CASE 
 						WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-								OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
+								OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 								OR b.bettype BETWEEN 81 AND 88
 								OR b.bettype BETWEEN 90 AND 120
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
@@ -227,7 +228,7 @@ BEGIN
 						b.bettype <= 30
 						OR (b.bettype BETWEEN 121 AND 999)		
 						OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettye
-						OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0	
+						OR (b.Bettype BETWEEN 9001 and 9399) -- E-Sports 2.0	
 						)
 					AND (b.bettype < 901 OR b.bettype > 904)
 					AND (b.bettype < 911 OR b.bettype > 914)
@@ -258,7 +259,7 @@ BEGIN
 					--	END
 					,CASE 
 						WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-								OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
+								OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 								OR b.bettype BETWEEN 81 AND 88
 								OR b.bettype BETWEEN 90 AND 120
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
@@ -312,7 +313,7 @@ BEGIN
 					,m.leagueid
 					,CASE 
 						WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-								OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
+								OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 								OR b.bettype BETWEEN 81 AND 88
 								OR b.bettype BETWEEN 90 AND 120
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
@@ -369,7 +370,7 @@ BEGIN
 						b.bettype <= 30
 						OR (b.bettype BETWEEN 121 AND 999)	
 						OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
-						OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0			
+						OR (b.Bettype BETWEEN 9001 and 9399) -- E-Sports 2.0			
 						)
 					AND (b.bettype < 901 OR b.bettype > 904)
 					AND (b.bettype < 911 OR b.bettype > 914)
@@ -396,7 +397,7 @@ BEGIN
 					,m.showtime
 					,CASE 
 						WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-								OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
+								OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 								OR b.bettype BETWEEN 81 AND 88
 								OR b.bettype BETWEEN 90 AND 120
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
@@ -503,7 +504,7 @@ BEGIN
 					,m.leagueid
 					,CASE 
 						WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-								OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
+								OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 								OR b.bettype BETWEEN 81 AND 88
 								OR b.bettype BETWEEN 90 AND 120
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
@@ -560,7 +561,7 @@ BEGIN
 						b.bettype <= 30
 						OR (b.bettype BETWEEN 121 AND 999)			
 						OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
-						OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0		
+						OR (b.Bettype BETWEEN 9001 and 9399) -- E-Sports 2.0		
 						)
 					AND (b.bettype < 901 OR b.bettype > 904)
 					AND (b.bettype < 911 OR b.bettype > 914)
@@ -588,7 +589,7 @@ BEGIN
 					,m.showtime
 					,CASE 
 						WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-								OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
+								OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 								OR b.bettype BETWEEN 81 AND 88
 								OR b.bettype BETWEEN 90 AND 120
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
@@ -641,7 +642,7 @@ BEGIN
 					,m.leagueid
 					,CASE 
 						WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-								OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
+								OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 								OR b.bettype BETWEEN 81 AND 88
 								OR b.bettype BETWEEN 90 AND 120
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
@@ -698,7 +699,7 @@ BEGIN
 						b.bettype <= 30
 						OR (b.bettype BETWEEN 121 AND 999)	
 						OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
-						OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0	
+						OR (b.Bettype BETWEEN 9001 and 9399) -- E-Sports 2.0	
 						)
 					AND (b.bettype < 901 OR b.bettype > 904)
 					AND (b.bettype < 911 OR b.bettype > 914)
@@ -726,7 +727,7 @@ BEGIN
 					,m.showtime
 					,CASE 
 						WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-								OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
+								OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 								OR b.bettype BETWEEN 81 AND 88
 								OR b.bettype BETWEEN 90 AND 120
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 

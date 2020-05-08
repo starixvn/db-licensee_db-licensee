@@ -80,7 +80,7 @@ AS
 		- 20191129@Walter: Add new bet types (BMAIO - Phase 2) [RedmineID: #120336]
 		- 20190102@Vickie: Add new bet types (PH AIO - Phase 5) [RedmineID: #126005]
 		- 20191225@Amanda: Support display SystemID [RedmineID: #123583]
-
+		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
 
 	Parameter's Explanation:
 		- @ReportBy:  1: daily, 2: monthly
@@ -364,7 +364,7 @@ BEGIN
 											WHEN (odds * 100) > 0 THEN (1 + odds) END 
 					 END 
 		WHERE bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-						OR bettype BETWEEN 9001 AND 9086	-- Esport 2
+						OR bettype BETWEEN 9001 AND 9087	-- Esport 2
 						OR bettype BETWEEN 81 AND 88
 						OR bettype BETWEEN 90 AND 120
 						OR bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 

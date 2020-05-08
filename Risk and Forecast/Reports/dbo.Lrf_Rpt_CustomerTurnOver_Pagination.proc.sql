@@ -39,6 +39,7 @@ AS
 		- 20191129@Walter: Add new bet types (BMAIO - Phase 2) [RedmineID: #120336]
 		- 20190102@Vickie: Add new bet types (PH AIO - Phase 5) [RedmineID: #126005]
 		- 20191225@Amanda: Support display SystemID [RedmineID: #123583]
+		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
 
 	Parameter's Explanation:
 */
@@ -127,7 +128,7 @@ BEGIN
 						JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK) ON b.Recommend = rec.CustID
 					WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
 						AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-										OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
+										OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 										OR b.bettype BETWEEN 81 AND 88
 										OR b.bettype BETWEEN 90 AND 120
 										OR b.bettype BETWEEN 8101 AND 8120 -- Number Game: Happy 5
@@ -262,7 +263,7 @@ BEGIN
 							ON b.Recommend	= rec.CustID
 					WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
 						AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-										OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
+										OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 										OR b.bettype BETWEEN 81 AND 88
 										OR b.bettype BETWEEN 90 AND 120
 										OR b.bettype BETWEEN 8101 AND 8120 -- Number Game: Happy 5
