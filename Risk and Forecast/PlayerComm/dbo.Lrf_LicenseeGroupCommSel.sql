@@ -20,6 +20,7 @@ AS
 	 - 20181003@Sophia: Migrate SP from DB052 to DBCUST [Redmine: #99855]
 	 - 20180927@Winnie: Remove AllBet [RedmineID: #99378]
 	 - 20200408@Johnson: Add comm for AB,Macau,PP,GD,AG [redmine:#131774]
+	 - 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
 
 	Parameter's Explaination: 
 */  
@@ -37,8 +38,9 @@ BEGIN
 		,g.AllbetComm
 		,g.MacauComm
 		,g.PPComm
-		,g.GDComm
-		,g.AGComm
+		--,g.GDComm
+		--,g.AGComm
+		,g.FWComm
 		,g.color AS GroupColor
 		,ISNULL(c.NumberOfCustomer,0) AS NumberOfCustomer
 		,g.IsDefault  

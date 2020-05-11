@@ -19,6 +19,7 @@ ALTER PROCEDURE [dbo].[WriteLog_UserLog_UpdMemComm_RunSP]
 		- 20180927@Winnie: Remove AllBet [RedmineID: #99378]
 		- 20181029@Lukas: remove linked-server DBcust for performance issue
 		- 20200410@Johnson: Add comm for AB,Macau,PP,GD,AG [redmine:#131774] 
+		- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
     Param's Explaination:    	
 		- @UserID: UserId perform this action
 		- @@strCustID: A string of individual CustId separated by ","
@@ -58,8 +59,9 @@ BEGIN
 			   'AllbetComm="'+ COALESCE(CAST(ISNULL(lcc.AllbetComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
 			   'MacauComm="'+ COALESCE(CAST(ISNULL(lcc.MacauComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
 			   'PPComm="'+ COALESCE(CAST(ISNULL(lcc.PPComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
-			   'GDComm="'+ COALESCE(CAST(ISNULL(lcc.GDComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
-			   'AGComm="'+ COALESCE(CAST(ISNULL(lcc.AGComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+			   --'GDComm="'+ COALESCE(CAST(ISNULL(lcc.GDComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+			   --'AGComm="'+ COALESCE(CAST(ISNULL(lcc.AGComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+			   'FWComm="'+ COALESCE(CAST(ISNULL(lcc.FWComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
 			   'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
 			   @LogSPData2 AS TrackingValue2
 		FROM @CustIDTempTable a
