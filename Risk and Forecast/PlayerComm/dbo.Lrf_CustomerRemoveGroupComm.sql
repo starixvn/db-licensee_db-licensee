@@ -178,7 +178,7 @@ BEGIN
 			PPComm= 0,
 			--GDComm= 0,
 			--AGComm= 0,
-			FWComm = 0
+			FWComm = 0,
 			GroupCommID = 0
 		WHERE LicenseeID = @LicenseeID 
 		AND CustID IN (SELECT CustID FROM @TempCustID)
