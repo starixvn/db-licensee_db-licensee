@@ -28,6 +28,7 @@ AS
 		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
 		- 20180924@Winnie: Remove Allbet [RedmineID: #99378]
 		- 20200409@Johnson: Add comm for AB,Macau,PP,AG,GD [redmine:#131774] 
+		- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
 */  
 BEGIN  
 	SET NOCOUNT ON
@@ -41,6 +42,7 @@ BEGIN
 			@PPComm DECIMAL(9,8),
 			@GDComm DECIMAL(9,8),
 			@AGComm DECIMAL(9,8),
+			@FWComm DECIMAL(9,8),
 			@CustID INT, 
 			@i INT	
 	
@@ -85,8 +87,9 @@ BEGIN
 				@AllbetComm=AllbetComm,				
 				@MacauComm=MacauComm,
 				@PPComm=PPComm,
-				@GDComm=GDComm,
-				@AGComm=AGComm
+				--@GDComm=GDComm,
+				--@AGComm=AGComm
+				@FWComm = FWComm
 			FROM dbo.LicenseeCustComm WITH (NOLOCK)
 			WHERE LicenseeID = @LicenseeID AND CustID = @CustID
 					
@@ -104,15 +107,17 @@ BEGIN
 				@AllbetComm=@AllbetComm,
 				@MacauComm=@MacauComm,
 				@PPComm=@PPComm,
-				@GDComm=@GDComm,
-				@AGComm=@AGComm,				
+				--@GDComm=@GDComm,
+				--@AGComm=@AGComm,
+				@FWComm = @FWComm,
 				@IsUpdateNG=1,
 				@IsUpdateRNG=1,			
 				@IsUpdateAllbet=1,
 				@IsUpdateMacau=1,
 				@IsUpdatePP=1,
-				@IsUpdateGD=1,
-				@IsUpdateAG=1,
+				--@IsUpdateGD=1,
+				--@IsUpdateAG=1,
+				@IsUpdateFW=1,
 				@IP=@IP,
 				@Langkey=@Langkey,
 				@ErrCode=@ErrCode OUTPUT,
@@ -142,15 +147,17 @@ BEGIN
 			@AllbetComm= 0,
 			@MacauComm= 0,
 			@PPComm= 0,
-			@GDComm= 0,
-			@AGComm= 0,			
+			--@GDComm= 0,
+			--@AGComm= 0,
+			@FWComm= 0,
 			@IsUpdateNG=1,
 			@IsUpdateRNG=1,	
 			@IsUpdateAllbet=1,
 			@IsUpdateMacau=1,
 			@IsUpdatePP=1,
-			@IsUpdateGD=1,
-			@IsUpdateAG=1,		
+			--@IsUpdateGD=1,
+			--@IsUpdateAG=1,	
+			@IsUpdateFW=1,
 			@IP=@IP,
 			@Langkey=@Langkey,
 			@ErrCode=@ErrCode OUTPUT,
@@ -169,8 +176,9 @@ BEGIN
 			AllbetComm= 0,
 			MacauComm= 0,
 			PPComm= 0,
-			GDComm= 0,
-			AGComm= 0,	
+			--GDComm= 0,
+			--AGComm= 0,
+			FWComm = 0
 			GroupCommID = 0
 		WHERE LicenseeID = @LicenseeID 
 		AND CustID IN (SELECT CustID FROM @TempCustID)

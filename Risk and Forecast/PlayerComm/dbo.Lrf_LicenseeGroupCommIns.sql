@@ -11,6 +11,7 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeGroupCommIns]
 	@PPComm DECIMAL (9,8)=0,
 	@AGComm DECIMAL (9,8)=0,
 	@GDComm DECIMAL (9,8)=0,
+	@FWComm DECIMAL (9,8)=0,
 	@GroupColor VARCHAR(20),
 	@UserID INT,
 	@IP VARCHAR(40),
@@ -39,6 +40,7 @@ Revisions:
 	- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
 	- 20180927@Winnie: Remove AllBet [RedmineID: #99378]
 	- 20200410@Johnson: Add comm for AB,Macau,PP,AG,GD [redmine:#131774] 
+	- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
 Param's Explanation:
 
 */
@@ -63,8 +65,9 @@ BEGIN
 		OR @AllbetComm > 0.15
 		OR @MacauComm > 0.15 
 		OR @PPComm > 0.15 
-		OR @GDComm > 0.15 
-		OR @AGComm > 0.15 
+		--OR @GDComm > 0.15 
+		--OR @AGComm > 0.15 
+		OR @FWComm > 0.15
 	BEGIN
 		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN  'Player Commission should not greater than 0.15'
 										ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200002,@Langkey)
@@ -93,9 +96,13 @@ BEGIN
 		END
 		
 		INSERT INTO dbo.LicenseeGroupComm (LicenseeID,GroupName,SBComm,NGComm,color,isDefault,RNGComm,ParlayComm
-											,AllbetComm,MacauComm,PPComm,GDComm,AGComm)
+											,AllbetComm,MacauComm,PPComm
+											--,GDComm,AGComm
+											,FWComm)
 		VALUES (@LicenseeID,@GroupName,@SBComm,@NGComm,@GroupColor,@IsDefault,@RNGComm,@ParlayComm
-				,@AllbetComm,@MacauComm,@PPComm,@GDComm,@AGComm)
+				,@AllbetComm,@MacauComm,@PPComm
+				--,@GDComm,@AGComm
+				,@FWComm)
 		
 		IF (@@ERROR <> 0)
 		BEGIN
@@ -121,8 +128,9 @@ BEGIN
 		'AllbetComm="'+ COALESCE(CAST(@ALlbetComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'MacauComm="'+ COALESCE(CAST(@MacauComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'PPComm="'+ COALESCE(CAST(@PPComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		'GDComm="'+ COALESCE(CAST(@GDComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		'AGComm="'+ COALESCE(CAST(@AGComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		--'GDComm="'+ COALESCE(CAST(@GDComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		--'AGComm="'+ COALESCE(CAST(@AGComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		'FWComm="'+ COALESCE(CAST(@FWComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
 		'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +
 		'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
@@ -140,8 +148,9 @@ BEGIN
 		'AllbetComm="'+ COALESCE(CAST(@ALlbetComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'MacauComm="'+ COALESCE(CAST(@MacauComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'PPComm="'+ COALESCE(CAST(@PPComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		'GDComm="'+ COALESCE(CAST(@GDComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		'AGComm="'+ COALESCE(CAST(@AGComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		--'GDComm="'+ COALESCE(CAST(@GDComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		--'AGComm="'+ COALESCE(CAST(@AGComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		'FWComm="'+ COALESCE(CAST(@FWComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
 		'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +
 		'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +

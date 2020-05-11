@@ -13,6 +13,7 @@ AS
 	- 20180927@Winnie: Remove AllBet [RedmineID: #99378]
 	- 20181005@Amanda: Remove Racing [RedmineID: #99378]
 	- 20200413@Johnson: add AB,Macau,PP,AG,GD comm [redmine:#131774]
+	- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
 */  
 BEGIN  
 	SET NOCOUNT ON;  
@@ -27,8 +28,9 @@ BEGIN
 		ISNULL(lc.AllbetComm,0) AS AllbetComm,
 		ISNULL(lc.MacauComm,0) AS MacauComm,
 		ISNULL(lc.PPComm,0) AS PPComm,
-		ISNULL(lc.GDComm,0) AS GDComm,
-		ISNULL(lc.AGComm,0) AS AGComm
+		--ISNULL(lc.GDComm,0) AS GDComm,
+		--ISNULL(lc.AGComm,0) AS AGComm,
+		ISNULL(lc.FWComm,0) AS FWComm
 	FROM dbo.LicenseeCustComm lc WITH (NOLOCK)					
 	WHERE lc.CustID = @CustID	
 END

@@ -20,6 +20,7 @@ AS
 	- 20180927@Winnie: Remove AllBet [RedmineID: #99378]
 	- 20181205@Winnie: LAP-Security Risks found_settings [RedmineID: #105701]
 	- 20200410@Johnson: Add comm for AB,Macau,PP,GD,AG [redmine:#131774] 
+	- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
 */  
 BEGIN  
 SET NOCOUNT ON;  
@@ -33,8 +34,9 @@ SELECT g.ID AS GroupCommID,
 	g.AllbetComm,
 	g.MacauComm,
 	g.PPComm,
-	g.GDComm,
-	g.AGComm,
+	--g.GDComm,
+	--g.AGComm,
+	g.FWComm,
 	g.color AS GroupColor, 
 	g.IsDefault
 FROM dbo.LicenseeGroupComm g WITH (NOLOCK) 

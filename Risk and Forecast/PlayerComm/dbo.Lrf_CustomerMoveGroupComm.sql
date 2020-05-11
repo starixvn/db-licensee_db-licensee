@@ -12,6 +12,7 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerMoveGroupComm]
 	@IsUpdatePP BIT = 0,
 	@IsUpdateGD BIT = 0,
 	@IsUpdateAG BIT = 0,
+	@IsUpdateFW BIT = 0,
 	@IP VARCHAR(40),
 	@Langkey VARCHAR(20) = 'en-US',
 	@ErrCode INT = 0 OUTPUT,
@@ -36,6 +37,7 @@ AS
 		- 20181205@Winnie: LAP-Security Risks found_settings [RedmineID: #105701]
 		- 20190417@Winnie: Customer Comm - Cannot move customer to selected group comm in case member have 'None' group [RedmineID: #111980]
 		- 20200410@Johnson: Add comm for AB,Macau,PP,GD,AG [redmine:#131774] 
+		- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
 	Param's Explanation:
 */ 
 BEGIN
@@ -72,8 +74,9 @@ BEGIN
 		,@IsUpdateAllbet=@IsUpdateAllbet
 		,@IsUpdateMacau=@IsUpdateMacau
 		,@IsUpdatePP=@IsUpdatePP
-		,@IsUpdateGD=@IsUpdateGD
-		,@IsUpdateAG=@IsUpdateAG
+		--,@IsUpdateGD=@IsUpdateGD
+		--,@IsUpdateAG=@IsUpdateAG
+		,@IsUpdateFW = @IsUpdateFW
 		,@Langkey=@Langkey
 		,@IP=@IP
 		,@ErrCode=@ErrCode OUTPUT

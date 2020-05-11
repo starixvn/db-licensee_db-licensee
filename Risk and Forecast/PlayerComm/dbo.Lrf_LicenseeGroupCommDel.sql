@@ -52,6 +52,7 @@ BEGIN
 		@PPComm DECIMAL(9,8),
 		@GDComm DECIMAL(9,8),
 		@AGComm DECIMAL(9,8),
+		@FWComm DECIMAL(9,8),
 		@GroupColor VARCHAR(20), 
 		@GroupName VARCHAR(100), 
 		@IsDefault BIT
@@ -75,8 +76,9 @@ BEGIN
 			@AllbetComm=AllbetComm,
 			@MacauComm=MacauComm,
 			@PPComm=PPComm,
-			@GDComm=GDComm,
-			@AGComm=AGComm,
+			--@GDComm=GDComm,
+			--@AGComm=AGComm,
+			@FWComm = FWComm,
 			@GroupColor=color,
 			@GroupName=GroupName,
 			@IsDefault=IsDefault
@@ -140,15 +142,17 @@ BEGIN
 					@AllbetComm=0,
 					@MacauComm=0,
 					@PPComm=0,
-					@GDComm=0,
-					@AGComm=0,						
+					--@GDComm=0,
+					--@AGComm=0,
+					@FWComm = 0,
 					@IsUpdateNG=1,
 					@IsUpdateRNG=1,					
 					@IsUpdateAllbet=1,
 					@IsUpdateMacau=1,
 					@IsUpdatePP=1,
-					@IsUpdateGD=1,
-					@IsUpdateAG=1,
+					--@IsUpdateGD=1,
+					--@IsUpdateAG=1,
+					@IsUpdateFW = 1,
 					@IP=@IP,
 					@ErrCode=@ErrCode OUTPUT,
 					@ErrMsg=@ErrMsg OUTPUT
@@ -181,8 +185,9 @@ BEGIN
 				AllbetComm = 0,
 				MacauComm = 0,
 				PPComm = 0,
-				GDComm = 0,
-				AGComm = 0,				
+				--GDComm = 0,
+				--AGComm = 0,
+				FWComm = 0,
 				GroupCommID = 0
 			WHERE GroupCommID = @GroupCommID				
 
@@ -203,8 +208,9 @@ BEGIN
 		'AllbetComm="'+ COALESCE(CAST(@AllbetComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'MacauComm="'+ COALESCE(CAST(@MacauComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'PPComm="'+ COALESCE(CAST(@PPComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		'GDComm="'+ COALESCE(CAST(@GDComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		'AGComm="'+ COALESCE(CAST(@AGComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		--'GDComm="'+ COALESCE(CAST(@GDComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		--'AGComm="'+ COALESCE(CAST(@AGComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		'FWComm="'+ COALESCE(CAST(@FWComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
 		'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +
 		'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
@@ -223,8 +229,9 @@ BEGIN
 		'AllbetComm="'+ COALESCE(CAST(@AllbetComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'MacauComm="'+ COALESCE(CAST(@MacauComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'PPComm="'+ COALESCE(CAST(@PPComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		'GDComm="'+ COALESCE(CAST(@GDComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		'AGComm="'+ COALESCE(CAST(@AGComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		--'GDComm="'+ COALESCE(CAST(@GDComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		--'AGComm="'+ COALESCE(CAST(@AGComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		'FWComm="'+ COALESCE(CAST(@FWComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
 		'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +
 		'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +

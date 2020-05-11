@@ -12,6 +12,7 @@ ALTER PROCEDURE [dbo].[Lrf_ExecRep_00]
 	@IsUpdatePP BIT = 0,
 	@IsUpdateGD BIT = 0,
 	@IsUpdateAG BIT = 0,
+	@IsUpdateFW BIT = 0,
 	@SBComm DECIMAL(9,8)=0,
 	@NGComm DECIMAL(9,8)=0,	
 	@RNGComm DECIMAL(9,8)=0,
@@ -20,7 +21,8 @@ ALTER PROCEDURE [dbo].[Lrf_ExecRep_00]
 	@MacauComm DECIMAL(9,8)=0,	
 	@PPComm DECIMAL(9,8)=0,	
 	@GDComm DECIMAL(9,8)=0,	
-	@AGComm DECIMAL(9,8)=0
+	@AGComm DECIMAL(9,8)=0,
+	@FWComm DECIMAL(9,8)=0
 
 )
 AS
@@ -31,7 +33,8 @@ AS
 	Original: 
 
 	Revisions:
-		- 20200416@Max: Support commission for 3rd party products - [Redmine: #131774] 
+		- 20200416@Max: Support commission for 3rd party products - [Redmine: #131774]
+		- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
 	
 	Param's Explanation:
 
@@ -136,38 +139,46 @@ BEGIN
 		SET PPComm=@PPComm					
 		WHERE CustID IN (SELECT CustID FROM #@TempList)
 	END
+
+	--Fishing World 
+	IF @IsUpdateFW=1
+	BEGIN
+		UPDATE dbo.LicenseeCustComm WITH (ROWLOCK,UPDLOCK)
+		SET FWComm=@FWComm					
+		WHERE CustID IN (SELECT CustID FROM #@TempList)
+	END
 			
 	--GD 
-	IF @IsUpdateGD=1
-	BEGIN
-		DELETE #tmpCommHistory
+	--IF @IsUpdateGD=1
+	--BEGIN
+	--	DELETE #tmpCommHistory
 				
-		UPDATE dbo.LicenseeCustComm WITH (ROWLOCK,UPDLOCK)
-		SET GDComm=@GDComm
-		OUTPUT INSERTED.custid, INSERTED.GDComm 
-		INTO #tmpCommHistory(custid,Comm)
-		WHERE CustID IN (SELECT CustID FROM #@TempList)
+	--	UPDATE dbo.LicenseeCustComm WITH (ROWLOCK,UPDLOCK)
+	--	SET GDComm=@GDComm
+	--	OUTPUT INSERTED.custid, INSERTED.GDComm 
+	--	INTO #tmpCommHistory(custid,Comm)
+	--	WHERE CustID IN (SELECT CustID FROM #@TempList)
 				
-		INSERT INTO LicenseeCustComm_History(CustID,UpdatedTime,ProductID,Comm)
-		SELECT custid,GETDATE(),11,ISNULL(Comm,0)
-		FROM #tmpCommHistory
-	END
+	--	INSERT INTO LicenseeCustComm_History(CustID,UpdatedTime,ProductID,Comm)
+	--	SELECT custid,GETDATE(),11,ISNULL(Comm,0)
+	--	FROM #tmpCommHistory
+	--END
 			
-	--AG 
-	IF @IsUpdateAG=1
-	BEGIN
-		DELETE #tmpCommHistory
+	----AG 
+	--IF @IsUpdateAG=1
+	--BEGIN
+	--	DELETE #tmpCommHistory
 				
-		UPDATE dbo.LicenseeCustComm WITH (ROWLOCK,UPDLOCK)
-		SET AGComm=@AGComm
-		OUTPUT INSERTED.custid, INSERTED.AGComm 
-		INTO #tmpCommHistory(custid,Comm)
-		WHERE CustID IN (SELECT CustID FROM #@TempList)
+	--	UPDATE dbo.LicenseeCustComm WITH (ROWLOCK,UPDLOCK)
+	--	SET AGComm=@AGComm
+	--	OUTPUT INSERTED.custid, INSERTED.AGComm 
+	--	INTO #tmpCommHistory(custid,Comm)
+	--	WHERE CustID IN (SELECT CustID FROM #@TempList)
 				
-		INSERT INTO LicenseeCustComm_History(CustID,UpdatedTime,ProductID,Comm)
-		SELECT custid,GETDATE(),10,ISNULL(Comm,0)
-		FROM #tmpCommHistory
-	END
+	--	INSERT INTO LicenseeCustComm_History(CustID,UpdatedTime,ProductID,Comm)
+	--	SELECT custid,GETDATE(),10,ISNULL(Comm,0)
+	--	FROM #tmpCommHistory
+	--END
 
 	DROP TABLE #@TempList
 	DROP TABLE #tmpCommHistory

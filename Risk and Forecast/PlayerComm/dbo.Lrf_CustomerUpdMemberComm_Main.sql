@@ -7,10 +7,12 @@ CREATE PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Main]
 	,@AllbetComm DECIMAL(9,8) = 0
 	,@MacauComm DECIMAL(9,8) = 0
 	,@PPComm DECIMAL(9,8) = 0
+	,@FWComm DECIMAL(9,8) = 0
 	,@IsUpdateNG BIT = 0
 	,@IsUpdateAllbet BIT = 0
 	,@IsUpdateMacau BIT = 0
 	,@IsUpdatePP BIT = 0
+	,@IsUpdateFW BIT = 0
 AS
 /*
 	Created: 20120907@Viet
@@ -28,7 +30,8 @@ AS
 		- 20180228@Vicky: Remove LC from product list [Redmine: #85965]
 		- 20180809@Amanda: Remove Racing [RedmineID: #99378]
 		- 20180927@Winnie: Remove AllBet [RedmineID: #99378]
-		- 20200409@Johnson: Add comm for AB,Macau,PP,GD,AG [redmine:#131774] 
+		- 20200409@Johnson: Add comm for AB,Macau,PP,GD,AG [redmine:#131774]
+		- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
 	Param's Explanation:
 
 */
@@ -69,10 +72,12 @@ BEGIN
 			,@AllbetComm = @AllbetComm
 			,@MacauComm = @MacauComm
 			,@PPComm = @PPComm
+			,@FWComm = @FWComm
 			,@IsUpdateNG = @IsUpdateNG			
 			,@IsUpdateAllbet = @IsUpdateAllbet
 			,@IsUpdateMacau = @IsUpdateMacau
 			,@IsUpdatePP = @IsUpdatePP
+			,@IsUpdateFW = @IsUpdateFW
 			
 		IF @rowcnt < @batchSize BREAK
 		

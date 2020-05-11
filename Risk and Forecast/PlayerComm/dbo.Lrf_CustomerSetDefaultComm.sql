@@ -20,7 +20,8 @@ AS
 		- 20180809@Amanda: Remove Racing [RedmineID: #99378]
 		- 20180927@Winnie: Remove AllBet [RedmineID: #99378]
 		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
-		- 20200410@Johnson: Add comm for AB,Macau,PP,GD,AG [redmine:#131774] 
+		- 20200410@Johnson: Add comm for AB,Macau,PP,GD,AG [redmine:#131774]
+		- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
 	Param's Explanation:
 */ 
 BEGIN
@@ -33,7 +34,8 @@ BEGIN
 		@IsUpdateMacau BIT,
 		@IsUpdatePP BIT,
 		@IsUpdateGD	BIT,
-		@IsUpdateAG BIT,		
+		@IsUpdateAG BIT,
+		@IsUpdateFW BIT,
 		@LicenseeID INT,		
 		@strCustID VARCHAR(50)
 
@@ -77,15 +79,20 @@ BEGIN
 			ELSE
 				SELECT @IsUpdatePP = 0	
 			
-			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=11)
-				SELECT @IsUpdateGD = 1
-			ELSE
-				SELECT @IsUpdateGD = 0	
+			--IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=11)
+			--	SELECT @IsUpdateGD = 1
+			--ELSE
+			--	SELECT @IsUpdateGD = 0	
 			
-			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=10)
-				SELECT @IsUpdateAG = 1
+			--IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=10)
+			--	SELECT @IsUpdateAG = 1
+			--ELSE
+			--	SELECT @IsUpdateAG = 0	
+
+			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=24)
+				SELECT @IsUpdateFW = 1
 			ELSE
-				SELECT @IsUpdateAG = 0	
+				SELECT @IsUpdateFW = 0	
 				
 			SELECT @strCustID=CAST (@CustID AS VARCHAR(50))
 			
@@ -100,8 +107,9 @@ BEGIN
 				,@IsUpdateAllbet=@IsUpdateAllbet
 				,@IsUpdateMacau=@IsUpdateMacau
 				,@IsUpdatePP=@IsUpdatePP
-				,@IsUpdateGD=@IsUpdateGD
-				,@IsUpdateAG=@IsUpdateAG
+				--,@IsUpdateGD=@IsUpdateGD
+				--,@IsUpdateAG=@IsUpdateAG
+				,@IsUpdateFW = @IsUpdateFW
 				,@IP=''
 				,@Langkey=@Langkey
 				,@ErrCode=@ErrCode OUTPUT
