@@ -55,7 +55,7 @@ BEGIN
 	DECLARE @ids VARCHAR(MAX), @rowcnt INT, @runningCNT INT, @batchSize int
 
 	SET @runningCNT = 0
-	SET @batchSize = 50
+	SET @batchSize = 1000
 
 	WHILE (1 = 1)
 	BEGIN
