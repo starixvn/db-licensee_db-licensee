@@ -41,9 +41,7 @@ BEGIN
 	SET NOCOUNT ON;
 
 	DECLARE @res AS TABLE (custid INT, isfinished BIT)
-	DECLARE @splitter CHAR(1), @string VARCHAR(MAX), @xml XML
-
-	SELECT @splitter = ',', @string = RTRIM(LTRIM(@strCustID))
+	DECLARE @xml XML
 
 	SET @xml = CONVERT(XML, @strCustID) 
 	
@@ -53,23 +51,34 @@ BEGIN
 	OPTION (OPTIMIZE FOR (@xml = NULL ))
 
 	DECLARE @ids VARCHAR(MAX), @rowcnt INT, @runningCNT INT, @batchSize int
-
+	DECLARE @res_batch_tmp AS TABLE (custid INT)
+	
 	SET @runningCNT = 0
 	SET @batchSize = 1000
-
+	DECLARE  @strCustID_tmp	VARCHAR(MAX)
+	
 	WHILE (1 = 1)
 	BEGIN
-		SELECT @ids = '', @runningCNT = @runningCNT + 1
+		SELECT @runningCNT = @runningCNT + 1
 
-		UPDATE TOP (@batchSize) @res
-		SET @ids = @ids + CASE @ids WHEN '' THEN '' ELSE ',' END + cast(custid AS VARCHAR(12))
-			,isfinished = 1
+		DELETE @res_batch_tmp
+		
+		UPDATE TOP(@batchSize) t
+			SET isfinished = 1
+		OUTPUT deleted.custid
+		INTO @res_batch_tmp(custid)
+		FROM @res t 
 		WHERE isfinished = 0
-
-		SELECT @rowcnt = @@rowcount
-
+			
+		IF @@ROWCOUNT = 0 BREAK
+	
+		SELECT @strCustID_tmp = (SELECT custid AS '@custid'
+							FROM @res_batch_tmp  t
+							FOR XML PATH('r'), ROOT('root')
+						)
+						
 		EXEC [Acc_ExecRep_Cust_02] 
-			@ids = @ids
+			@ids = @strCustID_tmp
 			,@SBComm = @SBComm
 			,@NGComm = @NGComm
 			,@ParlayComm = @ParlayComm
@@ -82,11 +91,10 @@ BEGIN
 			,@IsUpdateMacau = @IsUpdateMacau
 			,@IsUpdatePP = @IsUpdatePP
 			,@IsUpdateFW = @IsUpdateFW
-			
-		IF @rowcnt < @batchSize BREAK
 		
-		-- delay 00.280ms after 20 times continuous running
-		IF @runningCNT % 20 = 0 WAITFOR DELAY '00:00:00.100'		
+		-- delay 00.100ms after 20 times continuous running
+		IF @runningCNT % 20 = 0 WAITFOR DELAY '00:00:00.100'
+				
 	END
 END	
 GO
