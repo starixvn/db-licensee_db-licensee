@@ -70,7 +70,7 @@ AS
 		- 20200108@Hogan: Add new product Table Games [RedmineID: #131447]
 		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
 		- 20200423@Hogan: Add new product Sexy Gaming [RedmineID: #132829]
-		- 20200419@Vickie: Integrate Saba Club [RedmineID: #132702]
+		- 20200423@Vickie: Integrate Saba Club [RedmineID: #132702]
 
 	Param's Explanation:
 		+ @PlatformType:  0: All
