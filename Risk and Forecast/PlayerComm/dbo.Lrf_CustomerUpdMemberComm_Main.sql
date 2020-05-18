@@ -32,6 +32,8 @@ AS
 		- 20180927@Winnie: Remove AllBet [RedmineID: #99378]
 		- 20200409@Johnson: Add comm for AB,Macau,PP,GD,AG [redmine:#131774]
 		- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
+		- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774]
+		
 	Param's Explanation:
 
 */
@@ -42,11 +44,13 @@ BEGIN
 	DECLARE @splitter CHAR(1), @string VARCHAR(MAX), @xml XML
 
 	SELECT @splitter = ',', @string = RTRIM(LTRIM(@strCustID))
-	SET @XML = N'<root><r>' + REPLACE(@string, @splitter, '</r><r>') + '</r></root>'
 
+	SET @xml = CONVERT(XML, @strCustID) 
+	
 	INSERT INTO @res (custid, isfinished)
-	SELECT r.value('.', 'INT'), 0
-	FROM @xml.nodes('//root/r') AS RECORDS(r)
+	SELECT T.C.value('./@custid', 'INT'), 0
+	FROM @xml.nodes('/root/r') AS T(C)
+	OPTION (OPTIMIZE FOR (@xml = NULL ))
 
 	DECLARE @ids VARCHAR(MAX), @rowcnt INT, @runningCNT INT, @batchSize int
 
@@ -82,7 +86,7 @@ BEGIN
 		IF @rowcnt < @batchSize BREAK
 		
 		-- delay 00.280ms after 20 times continuous running
-		IF @runningCNT % 20 = 0 WAITFOR DELAY '00:00:00.280'		
+		IF @runningCNT % 20 = 0 WAITFOR DELAY '00:00:00.100'		
 	END
 END	
 GO
