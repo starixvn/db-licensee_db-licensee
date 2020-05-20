@@ -275,7 +275,7 @@ BEGIN
 					,@Langkey=@langkey
 					,@ErrCode=@ErrCode OUTPUT
 					,@ErrMsg=@ErrMsg OUTPUT 
-				WITH RECOMPILE
+				--WITH RECOMPILE
 					
 				SELECT @StrCustID = STUFF(
 					(   SELECT  ',' + CONVERT(NVARCHAR(20), a.custid) 

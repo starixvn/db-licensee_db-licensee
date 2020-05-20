@@ -57,7 +57,8 @@ BEGIN
 	 )
 		RETURN 
 
-	DECLARE @InputRes_updateComm AS TABLE (custid INT)
+	DECLARE @InputRes_updateComm AS TABLE (custid INT, IsfinishedSB BIT, IsfinishedParlay BIT, IsFinishNG BIT)
+	DECLARE @InputRes_updateComm_batch AS TABLE (custid INT)
 	DECLARE @xml XML
 	DECLARE @AgentID INT 
 	
@@ -70,32 +71,84 @@ BEGIN
 	
 	IF @IsUpdateSB = 1
 	BEGIN
-		UPDATE cs
+		WHILE (1=1)
+		BEGIN
+		
+			DELETE @InputRes_updateComm_batch
+			
+			UPDATE TOP (100) t
+				SET IsfinishedSB = 1
+			OUTPUT deleted.custid
+			INTO @InputRes_updateComm_batch (custid)	
+			FROM @InputRes_updateComm t
+			WHERE t.IsfinishedSB IS NULL	
+			
+			IF @@ROWCOUNT = 0
+				BREAK
+				
+			UPDATE cs
 			SET playerdiscount = @SBComm 
-		FROM @InputRes_updateComm r
-			INNER JOIN dbo.Dep_CustSetting cs WITH (ROWLOCK, UPDLOCK) ON r.custid = cs.custid
-		WHERE playerdiscount <> @SBComm  	
-			AND bettype NOT IN (9,29)
+			FROM @InputRes_updateComm_batch r
+				INNER JOIN dbo.Dep_CustSetting cs WITH (ROWLOCK, UPDLOCK) ON r.custid = cs.custid
+			WHERE playerdiscount <> @SBComm  	
+				AND bettype NOT IN (9,29)
+		END
+		
 	END
 	
 	IF @IsParlayComm = 1
 	BEGIN
-		UPDATE cs
+		WHILE (1=1)
+		BEGIN
+		
+			DELETE @InputRes_updateComm_batch
+			
+			UPDATE TOP (100) t
+				SET IsfinishedParlay = 1
+			OUTPUT deleted.custid
+			INTO @InputRes_updateComm_batch (custid)	
+			FROM @InputRes_updateComm t
+			WHERE t.IsfinishedParlay IS NULL	
+			
+			IF @@ROWCOUNT = 0
+				BREAK
+				
+			UPDATE cs
 			SET playerdiscount = @ParlayComm 
-		FROM @InputRes_updateComm r
-			INNER JOIN dbo.Dep_CustSetting cs WITH (ROWLOCK, UPDLOCK) ON r.custid = cs.custid
-		WHERE playerdiscount <>  @ParlayComm  	
-			AND bettype   IN (9,29)
+			FROM @InputRes_updateComm_batch r
+				INNER JOIN dbo.Dep_CustSetting cs WITH (ROWLOCK, UPDLOCK) ON r.custid = cs.custid
+			WHERE playerdiscount <>  @ParlayComm  	
+				AND bettype   IN (9,29)
+		END
 	END
 		
 	IF (@IsUpdateNG=1) -- update Number Game
-	BEGIN	
-		UPDATE CS 
-			SET playerdiscount = @NGComm 
-		FROM @InputRes_updateComm r 
-			INNER JOIN [dbo].Dep_CustSetting3rd CS WITH (ROWLOCK, UPDLOCK) ON r.custid = cs.custid
-		WHERE playerdiscount <> @NGComm
-			AND sporttype = 161  	
+	BEGIN
+		WHILE (1=1)
+		BEGIN
+		
+			DELETE @InputRes_updateComm_batch
+			
+			UPDATE TOP (500) t
+				SET IsFinishNG = 1
+			OUTPUT deleted.custid
+			INTO @InputRes_updateComm_batch (custid)	
+			FROM @InputRes_updateComm t
+			WHERE t.IsFinishNG IS NULL	
+			
+			IF @@ROWCOUNT = 0
+				BREAK
+				
+			UPDATE CS 
+				SET playerdiscount = @NGComm 
+			FROM @InputRes_updateComm_batch r 
+				INNER JOIN [dbo].Dep_CustSetting3rd CS WITH (ROWLOCK, UPDLOCK) ON r.custid = cs.custid
+			WHERE playerdiscount <> @NGComm
+				AND sporttype = 161 
+				AND bettype BETWEEN 81 AND 90 	
+				
+		END
+		
 	END
 	
 	SET @AgentID = (SELECT TOP (1) recommend 
