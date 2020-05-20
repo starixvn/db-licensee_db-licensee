@@ -86,6 +86,7 @@ BEGIN
 		,@AGComm_Old DECIMAL(9,8)
 		,@FWComm_Old DECIMAL(9,8)
 		,@IsDefault_Old BIT
+	DECLARE @IsexistMember BIT = 0
 		
 	DECLARE @LogSPData VARCHAR(MAX)
 	DECLARE @TrackingValue2 VARCHAR(MAX)
@@ -232,7 +233,12 @@ BEGIN
 					--, AGComm = CASE WHEN @IsUpdateAG =1  THEN @AGComm ELSE AGComm END  
 			WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID
 			
-			IF LTRIM(RTRIM(@StrCustID)) <> ''
+			SET @IsexistMember = (SELECT TOP (1) 1 
+						FROM LicenseeCustComm ls WITH (NOLOCK)
+							INNER JOIN CustDB.dbo.Customer c WITH (NOLOCK) ON ls.CustID = c.custid
+						WHERE LicenseeID = @LicenseeID AND GroupCommID = @GroupCommID)
+						
+			IF @IsexistMember = 1			
 			BEGIN
 				--Update List of affected Customers               
 				EXEC [Lrf_CustomerUpdMemberComm] 
