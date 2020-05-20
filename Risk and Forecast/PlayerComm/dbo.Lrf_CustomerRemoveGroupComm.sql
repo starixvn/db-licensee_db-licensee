@@ -58,11 +58,12 @@ BEGIN
 	
 	DECLARE @TempCustID  AS TABLE (ID int IDENTITY(1,1),CustID INT)
 	INSERT INTO @TempCustID (CustID)
-	SELECT CustID 
-	FROM dbo.LicenseeCustComm WITH (NOLOCK) 
+	SELECT cs.CustID 
+	FROM dbo.LicenseeCustComm cs WITH (NOLOCK) 
+		INNER JOIN dbo.f_SplitString(@strCustIDOriginal,',') AS t ON RTRIM(LTRIM(t.val)) = cs.CustID
 	WHERE LicenseeID = @LicenseeID 
-			AND CustID IN (SELECT RTRIM(LTRIM(VAL)) FROM Lrf_f_StringSplit(@strCustIDOriginal,','))
 			AND GroupCommID > 0
+	OPTION (MAXRECURSION 0)
 	
 	IF NOT EXISTS(SELECT TOP 1 1 FROM @TempCustID)
 	BEGIN

@@ -35,6 +35,7 @@ AS
 	Revisions:
 		- 20200416@Max: Support commission for 3rd party products - [Redmine: #131774]
 		- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
+		- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774]   
 	
 	Param's Explanation:
 
@@ -44,12 +45,11 @@ BEGIN
 
 	DECLARE @xml XML
 
-	CREATE TABLE #@TempList (CustID INT PRIMARY KEY)
-	CREATE TABLE #tmpCommHistory (Custid INT,Comm DECIMAL(9,8))
+	DECLARE @TempList_Input AS TABLE (CustID INT )
 
 	SELECT @xml = CONVERT(XML,N'<root><r t="' + REPLACE(@strCustId,',','"/><r t="') + '"/></root>"')
 
-	INSERT INTO #@TempList (CustID)
+	INSERT INTO @TempList_Input (CustID)
 	SELECT T.C.value('./@t', 'int')			
 	FROM @xml.nodes('/root/r') AS T(C)
 	OPTION (OPTIMIZE FOR (@xml = NULL ))
@@ -57,7 +57,7 @@ BEGIN
 	--Update SB
 	MERGE dbo.LicenseeCustComm AS target
 	USING (SELECT @LicenseeID AS LicenseeID, CustID, @SBComm AS SBComm,@ParlayComm AS ParlayComm, @GroupCommID AS GroupCommID 
-			FROM  #@TempList
+			FROM  @TempList_Input
 			WHERE CustID NOT IN (SELECT CustID FROM dbo.LicenseeBAHistory WITH (NOLOCK) WHERE Status ='Running') 
 			) AS source
 		ON (target.CustID = source.CustID)
@@ -70,7 +70,6 @@ BEGIN
 		INSERT (LicenseeID,CustID,SBComm,ParlayComm,GroupCommID)
 		VALUES (source.LicenseeID,source.CustID,source.SBComm,Source.ParlayComm,source.GroupCommID);
 				
-				
 	-------------for BA member
 	MERGE dbo.LicenseeCustComm AS target
 	USING (SELECT @LicenseeID AS LicenseeID
@@ -78,7 +77,7 @@ BEGIN
 					,@SBComm AS SBComm 
 					,@ParlayComm AS ParlayComm
 					,@GroupCommID AS GroupCommID 
-			FROM #@TempList  
+			FROM @TempList_Input  
 			WHERE CustID  IN (SELECT CustID FROM dbo.LicenseeBAHistory WITH (NOLOCK) WHERE Status ='Running') 
 			) AS source
 		ON (target.CustID = source.CustID)
@@ -96,91 +95,27 @@ BEGIN
 		,ParlayComm = 0
 	FROM dbo.LicenseeCustComm d WITH  (ROWLOCK,UPDLOCK)
 		INNER JOIN dbo.LicenseeBAHistory s WITH (NOLOCK) ON d.LicenseeId = s.LicenseeId AND d.CustID = s.CustID
-	WHERE s.LicenseeID <>	@MacauLicenseeID
-		AND d.CustiD IN(SELECT CustID FROM #@TempList)
+		INNER JOIN @TempList_Input t ON t.CustID = d.CustID
+	WHERE s.LicenseeID <> @MacauLicenseeID
 		AND s.Status ='Running'
 
-	--NG
-	IF @IsUpdateNG=1 
-	BEGIN
-		UPDATE dbo.LicenseeCustComm WITH (ROWLOCK,UPDLOCK)
-			SET NGComm=@NGComm
-		WHERE CustID IN (SELECT CustID FROM #@TempList)
+	IF (@IsUpdateNG = 1
+		OR @IsUpdateRNG = 1
+		OR @IsUpdateAllbet=1
+		OR @IsUpdateMacau=1
+		OR @IsUpdatePP=1
+		OR @IsUpdateFW=1)
+	BEGIN	
+		UPDATE cs
+			SET NGComm=CASE WHEN  @IsUpdateNG = 1 THEN @NGComm ELSE NGComm END
+				, RNGComm=CASE WHEN @IsUpdateRNG = 1 THEN @RNGComm ELSE RNGComm END
+				, AllbetComm=CASE WHEN @IsUpdateAllbet = 1 THEN @AllbetComm ELSE AllbetComm END
+				, MacauComm= CASE WHEN @IsUpdateMacau = 1 THEN @MacauComm ELSE MacauComm END
+				, PPComm= CASE WHEN @IsUpdatePP = 1 THEN @PPComm ELSE PPComm END
+				, FWComm= CASE WHEN @IsUpdateFW = 1 THEN @FWComm ELSE FWComm END
+		FROM dbo.LicenseeCustComm cs WITH (ROWLOCK,UPDLOCK)
+			INNER JOIN @TempList_Input ip ON ip.CustID = cs.CustID
 	END
-
-	--RNG 
-	IF @IsUpdateRNG=1
-	BEGIN
-		UPDATE dbo.LicenseeCustComm WITH (ROWLOCK,UPDLOCK)
-			SET RNGComm=@RNGComm
-		WHERE CustID IN (SELECT CustID FROM #@TempList)
-	END			
-			
-	--Allbet 
-	IF @IsUpdateAllbet=1
-	BEGIN
-		UPDATE dbo.LicenseeCustComm WITH (ROWLOCK,UPDLOCK)
-			SET AllbetComm=@AllbetComm
-		WHERE CustID IN (SELECT CustID FROM #@TempList)
-	END	
-			
-	--Macau 
-	IF @IsUpdateMacau=1
-	BEGIN
-		UPDATE dbo.LicenseeCustComm WITH (ROWLOCK,UPDLOCK)
-			SET MacauComm=@MacauComm
-		WHERE CustID IN (SELECT CustID FROM #@TempList)
-	END	
-			
-	--PP 
-	IF @IsUpdatePP=1
-	BEGIN
-		UPDATE dbo.LicenseeCustComm WITH (ROWLOCK,UPDLOCK)
-		SET PPComm=@PPComm					
-		WHERE CustID IN (SELECT CustID FROM #@TempList)
-	END
-
-	--Fishing World 
-	IF @IsUpdateFW=1
-	BEGIN
-		UPDATE dbo.LicenseeCustComm WITH (ROWLOCK,UPDLOCK)
-		SET FWComm=@FWComm					
-		WHERE CustID IN (SELECT CustID FROM #@TempList)
-	END
-			
-	--GD 
-	--IF @IsUpdateGD=1
-	--BEGIN
-	--	DELETE #tmpCommHistory
-				
-	--	UPDATE dbo.LicenseeCustComm WITH (ROWLOCK,UPDLOCK)
-	--	SET GDComm=@GDComm
-	--	OUTPUT INSERTED.custid, INSERTED.GDComm 
-	--	INTO #tmpCommHistory(custid,Comm)
-	--	WHERE CustID IN (SELECT CustID FROM #@TempList)
-				
-	--	INSERT INTO LicenseeCustComm_History(CustID,UpdatedTime,ProductID,Comm)
-	--	SELECT custid,GETDATE(),11,ISNULL(Comm,0)
-	--	FROM #tmpCommHistory
-	--END
-			
-	----AG 
-	--IF @IsUpdateAG=1
-	--BEGIN
-	--	DELETE #tmpCommHistory
-				
-	--	UPDATE dbo.LicenseeCustComm WITH (ROWLOCK,UPDLOCK)
-	--	SET AGComm=@AGComm
-	--	OUTPUT INSERTED.custid, INSERTED.AGComm 
-	--	INTO #tmpCommHistory(custid,Comm)
-	--	WHERE CustID IN (SELECT CustID FROM #@TempList)
-				
-	--	INSERT INTO LicenseeCustComm_History(CustID,UpdatedTime,ProductID,Comm)
-	--	SELECT custid,GETDATE(),10,ISNULL(Comm,0)
-	--	FROM #tmpCommHistory
-	--END
-
-	DROP TABLE #@TempList
-	DROP TABLE #tmpCommHistory
+	
 END
 GO
