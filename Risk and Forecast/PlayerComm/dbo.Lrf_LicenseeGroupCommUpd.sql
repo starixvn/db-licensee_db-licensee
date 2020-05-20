@@ -50,6 +50,8 @@ AS
 		- 20180927@Winnie: Remove AllBet [RedmineID: #99378]
 		- 20200410@Johnson: Add comm for AB,Macau,PP,GD,AG [redmine:#131774] 
 		- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
+		- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774]
+		
 	Param's Explanation:
 
 */
@@ -191,87 +193,44 @@ BEGIN
 			END	
 		END
 
+		-- Verify changes before update
+		DECLARE @IsUpdateSB BIT = 0, @IsParlayComm BIT = 0
+		
+		SELECT @IsUpdateSB = CASE WHEN @SBComm_Old <> @SBComm THEN 1 ELSE 0 END,
+			@IsParlayComm = CASE WHEN @ParlayComm_Old <> @ParlayComm  THEN 1 ELSE 0 END,
+			@IsUpdateNG  = CASE WHEN @IsUpdateNG = 1 AND @NGComm_Old <> @NGComm  THEN 1 ELSE 0 END,
+			@IsUpdateRNG  = CASE WHEN @IsUpdateRNG = 1 AND @RNGComm_Old <> @RNGComm	  THEN 1 ELSE 0 END,	
+			@IsUpdateAllbet  = CASE WHEN @IsUpdateAllbet = 1 AND @AllbetComm_Old <> @AllbetComm  THEN 1 ELSE 0 END,
+			@IsUpdateMacau  = CASE WHEN @IsUpdateMacau = 1 AND @MacauComm_Old <> @MacauComm  THEN 1 ELSE 0 END,
+			@IsUpdatePP  = CASE WHEN @IsUpdatePP = 1 AND @PPComm_Old <> @PPComm  THEN 1 ELSE 0 END,
+			--@IsUpdateGD  = CASE WHEN @NGComm_Old <> @NGComm  THEN 1 ELSE 0 END,
+			--@IsUpdateAG  = CASE WHEN @NGComm_Old <> @NGComm  THEN 1 ELSE 0 END,
+			@IsUpdateFW  = CASE WHEN @IsUpdateFW = 1 AND @FWComm_Old <> @FWComm  THEN 1 ELSE 0 END
+	
 		--Update Group Comm + Member Comm + all the comm settings
-		IF @SBComm_Old<>@SBComm 
-			OR @ParlayComm_Old<>@ParlayComm 
-			OR @NGComm_Old <> @NGComm 
-			OR @RNGComm_Old <> @RNGComm	
-			OR @AllbetComm_Old <> @AllbetComm 
-			OR @MacauComm_Old <> @MacauComm 
-			OR @PPComm_Old <> @PPComm 
-			--OR @GDComm_Old <> @GDComm 
-			--OR @AGComm_Old <> @AGComm 
-			OR @FWComm_Old <> @FWComm
+		IF (@IsUpdateSB = 1
+			OR @IsParlayComm = 1
+			OR @IsUpdateNG = 1
+			OR @IsUpdateRNG = 1
+			OR @IsUpdateAllbet = 1
+			OR @IsUpdateMacau = 1
+			OR @IsUpdatePP = 1
+			OR @IsUpdateFW = 1)
+		
 		BEGIN
-			--Sportsbook
-			Update dbo.LicenseeGroupComm WITH (ROWLOCK,UPDLOCK)
-			SET SBComm=@SBComm
-				,ParlayComm = @ParlayComm
+			
+			UPDATE dbo.LicenseeGroupComm WITH (ROWLOCK,UPDLOCK)
+				SET SBComm = CASE WHEN @IsUpdateSB = 1 THEN @SBComm ELSE SBComm END
+					,ParlayComm = CASE WHEN @IsParlayComm = 1 THEN @ParlayComm ELSE ParlayComm END
+					, NGComm =CASE WHEN @IsUpdateNG = 1 THEN @NGComm ELSE NGComm END   
+					, RNGComm = CASE WHEN @IsUpdateRNG = 1 THEN @RNGComm ELSE RNGComm END  
+					, AllbetComm =CASE WHEN @IsUpdateAllbet = 1 THEN @AllbetComm ELSE AllbetComm END   
+					, MacauComm = CASE WHEN @IsUpdateMacau = 1 THEN @MacauComm ELSE MacauComm END  
+					, PPComm= CASE WHEN @IsUpdatePP = 1 THEN @PPComm ELSE PPComm END      
+					, FWComm = CASE WHEN @IsUpdateFW = 1 THEN @FWComm ELSE FWComm END 
+					--, GDComm = CASE WHEN @IsUpdateGD = 1 THEN @GDComm ELSE GDComm END  
+					--, AGComm = CASE WHEN @IsUpdateAG =1  THEN @AGComm ELSE AGComm END  
 			WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID
-			
-			--NG
-			IF @IsUpdateNG=1 
-			BEGIN
-				Update dbo.LicenseeGroupComm WITH (ROWLOCK,UPDLOCK)
-				SET NGComm=@NGComm
-				WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID
-			END
-			
-			--RNG
-			IF @IsUpdateRNG=1
-			BEGIN
-				Update dbo.LicenseeGroupComm WITH (ROWLOCK,UPDLOCK)
-				SET RNGComm=@RNGComm
-				WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID
-			END
-			
-			--Allbet
-			IF @IsUpdateAllbet=1 
-			BEGIN
-				Update dbo.LicenseeGroupComm WITH (ROWLOCK,UPDLOCK)
-				SET AllbetComm=@AllbetComm
-				WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID
-			END
-			
-			--Macau Game
-			IF @IsUpdateMacau=1 
-			BEGIN
-				Update dbo.LicenseeGroupComm WITH (ROWLOCK,UPDLOCK)
-				SET MacauComm=@MacauComm
-				WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID
-			END
-			
-			--PP
-			IF @IsUpdatePP=1 
-			BEGIN
-				Update dbo.LicenseeGroupComm WITH (ROWLOCK,UPDLOCK)
-				SET PPComm=@PPComm
-				WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID
-			END
-			
-			----GD
-			--IF @IsUpdateGD=1 
-			--BEGIN
-			--	Update dbo.LicenseeGroupComm WITH (ROWLOCK,UPDLOCK)
-			--	SET GDComm=@GDComm
-			--	WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID
-			--END
-			
-			----AG
-			--IF @IsUpdateAG=1 
-			--BEGIN
-			--	Update dbo.LicenseeGroupComm WITH (ROWLOCK,UPDLOCK)
-			--	SET AGComm=@AGComm
-			--	WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID
-			--END
-
-			--FW
-			IF @IsUpdateFW=1 
-			BEGIN
-				Update dbo.LicenseeGroupComm WITH (ROWLOCK,UPDLOCK)
-				SET FWComm = @FWComm
-				WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID
-			END
 			
 			--get list of affected Customers
 			SELECT @StrCustID = STUFF(
@@ -302,6 +261,8 @@ BEGIN
 					--,@GDComm=@GDComm
 					--,@AGComm=@AGComm	
 					,@FWComm = @FWComm
+					,@IsUpdateSB = @IsUpdateSB
+					,@IsParlayComm = @IsParlayComm
 					,@IsUpdateNG=@IsUpdateNG
 					,@IsUpdateRNG=@IsUpdateRNG					
 					,@IsUpdateAllbet=@IsUpdateAllbet

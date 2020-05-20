@@ -8,6 +8,8 @@ CREATE PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Main]
 	,@MacauComm DECIMAL(9,8) = 0
 	,@PPComm DECIMAL(9,8) = 0
 	,@FWComm DECIMAL(9,8) = 0
+	,@IsUpdateSB BIT = 1
+	,@IsParlayComm BIT = 1
 	,@IsUpdateNG BIT = 0
 	,@IsUpdateAllbet BIT = 0
 	,@IsUpdateMacau BIT = 0
@@ -86,6 +88,8 @@ BEGIN
 			,@MacauComm = @MacauComm
 			,@PPComm = @PPComm
 			,@FWComm = @FWComm
+			,@IsUpdateSB  = @IsUpdateSB
+			,@IsParlayComm  = @IsParlayComm
 			,@IsUpdateNG = @IsUpdateNG			
 			,@IsUpdateAllbet = @IsUpdateAllbet
 			,@IsUpdateMacau = @IsUpdateMacau

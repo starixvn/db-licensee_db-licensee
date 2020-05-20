@@ -8,6 +8,8 @@ ALTER PROCEDURE [dbo].[Acc_ExecRep_Cust_02]
 	@MacauComm DECIMAL(9,8)=0,	
 	@PPComm DECIMAL(9,8)=0,
 	@FWComm DECIMAL(9,8)=0,
+	@IsUpdateSB BIT = 1,
+	@IsParlayComm BIT = 1,
 	@IsUpdateNG BIT = 0,
 	@IsUpdateAllbet BIT = 0,
 	@IsUpdateMacau BIT = 0,
@@ -66,19 +68,25 @@ BEGIN
 	FROM @xml.nodes('/root/r') AS T(C)
 	OPTION (OPTIMIZE FOR (@xml = NULL ))
 	
-	UPDATE cs
-		SET playerdiscount = @SBComm 
-	FROM @InputRes_updateComm r
-		INNER JOIN [dbo].Dep_CustSetting cs WITH (ROWLOCK, UPDLOCK) ON r.custid = cs.custid
-	WHERE playerdiscount <> @SBComm  	
-		AND bettype NOT IN (9,29)
+	IF @IsUpdateSB = 1
+	BEGIN
+		UPDATE cs
+			SET playerdiscount = @SBComm 
+		FROM @InputRes_updateComm r
+			INNER JOIN dbo.Dep_CustSetting cs WITH (ROWLOCK, UPDLOCK) ON r.custid = cs.custid
+		WHERE playerdiscount <> @SBComm  	
+			AND bettype NOT IN (9,29)
+	END
 	
-	UPDATE cs
-		SET playerdiscount = @ParlayComm 
-	FROM @InputRes_updateComm r
-		INNER JOIN [dbo].Dep_CustSetting cs WITH (ROWLOCK, UPDLOCK) ON r.custid = cs.custid
-	WHERE playerdiscount <>  @ParlayComm  	
-		AND bettype   IN (9,29)
+	IF @IsParlayComm = 1
+	BEGIN
+		UPDATE cs
+			SET playerdiscount = @ParlayComm 
+		FROM @InputRes_updateComm r
+			INNER JOIN dbo.Dep_CustSetting cs WITH (ROWLOCK, UPDLOCK) ON r.custid = cs.custid
+		WHERE playerdiscount <>  @ParlayComm  	
+			AND bettype   IN (9,29)
+	END
 		
 	IF (@IsUpdateNG=1) -- update Number Game
 	BEGIN	
