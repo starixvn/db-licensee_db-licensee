@@ -232,23 +232,13 @@ BEGIN
 					--, AGComm = CASE WHEN @IsUpdateAG =1  THEN @AGComm ELSE AGComm END  
 			WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID
 			
-			--get list of affected Customers
-			SELECT @StrCustID = STUFF(
-				(   SELECT  ',' + CONVERT(NVARCHAR(20), custid) 
-					FROM LicenseeCustComm WITH (NOLOCK)
-					WHERE LicenseeID = @LicenseeID AND GroupCommID = @GroupCommID
-					FOR xml path('')
-				)
-				, 1
-				, 1
-				, '')
-			
 			IF LTRIM(RTRIM(@StrCustID)) <> ''
 			BEGIN
 				--Update List of affected Customers               
 				EXEC [Lrf_CustomerUpdMemberComm] 
 					@LicenseeID=@LicenseeID
-					,@StrCustID=@StrCustID
+					,@StrCustID = ''
+					,@IsUpdateGroupComm = 1
 					,@UserID=@UserID
 					,@GroupCommID=@GroupCommID
 					,@SBComm=@SBComm
