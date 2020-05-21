@@ -20,6 +20,7 @@ AS
     Revisions:  
 		- 20181127@Amanda: Created SP [RedmineID: #95178]
 		- 20190620@Amanda: Centralize function to get exchange rate [Redmine: #112531]
+		- 20200423@Hogan: Add new product Sexy Gaming [RedmineID: #132829]
 		
     Param's Explanation:  
 	  + @ProductCodes: "AB,CS,VB"
@@ -118,7 +119,7 @@ BEGIN
 		ELSE
 			SET @tmpFromDate = @FromDate
 
-		IF EXISTS (SELECT 1 FROM @Product WHERE ProductCode = 'AB')
+		IF EXISTS (SELECT 1 FROM @Product WHERE ProductCode IN ('AB','SXG'))
 		BEGIN
 			INSERT INTO #Data(
 				[Date],
@@ -136,7 +137,7 @@ BEGIN
 					b.custId,
 					c.username,
 					c.username2,
-					'AB',
+					t.ProductCode,
 					COUNT(b.transid),
 					SUM(b.stake),
 					SUM(b.NetStake),
@@ -149,9 +150,9 @@ BEGIN
 			INNER JOIN dbo.Customer c WITH (NOLOCK) ON b.CustId = c.CustId
 			WHERE	b.WinlostDate >= @tmpFromDate 
 					AND b.WinlostDate <= @tmpToDate
-					AND t.ProductCode = 'AB'
+					AND t.ProductCode  IN ('AB','SXG')
 					AND (@UserName = '' OR c.username2 LIKE '%$%' + @Username + '%' OR c.username LIKE '%' + @Username + '%')
-			GROUP BY b.WinlostDate, b.custId, c.username, c.username2, b.currency
+			GROUP BY b.WinlostDate, b.custId, c.username, c.username2, b.currency, t.ProductCode
 		END
 
 		IF EXISTS (SELECT 1 FROM @Product WHERE ProductCode = 'CS' OR ProductCode = 'VB')

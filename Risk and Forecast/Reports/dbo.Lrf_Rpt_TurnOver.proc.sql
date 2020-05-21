@@ -1,47 +1,30 @@
 ﻿/*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_TurnOver]
+	@AgentList		VARCHAR(MAX),
 	@FromDate		SMALLDATETIME,
 	@ToDate			SMALLDATETIME,
-	@username		VARCHAR(50) = NULL,
-	@showSB			BIT = 0,
-	@ShowNG			BIT = 0,
-	@ShowVS			BIT = 0,
-	@ShowCS			BIT = 0, -- RNG Casino
-	@ShowKN			BIT = 0, -- Keno 
-	@ShowBT			BIT = 0, -- Bet Trade 
-	@ShowAB			BIT = 0, -- Allbet
-	@ShowAGC		BIT = 0,
-	@ShowVB			BIT = 0,
-	@ShowCB			BIT = 0,
-	@ShowFW 		BIT = 0,
-	@ShowCO			BIT = 0,
-	@ShowVS2		BIT = 0, -- Bet Radar Virtual Sports
-	@ShowLT			BIT = 0, -- Lottery
-	@ShowPP			BIT = 0, -- PP
-	@ShowCC			BIT = 0, -- Card club
-	@ShowSG			BIT = 0, -- SpadeGaming 
-	@ShowVRG		BIT = 0, -- Virtual Games
-	@ShowTG			BIT = 0, -- Table Games
-	@ShowI4D		BIT = 0, -- Indo 4D
-	@AgentList		VARCHAR(MAX),
+	@Username		VARCHAR(50) = NULL,
+	@ProductList	VARCHAR(500),
+	@ShowBT			BIT			= 0,		-- Bet Trade
+	@ShowCO			BIT			= 0,		-- Cash Out
 	@BaseCurrency	VARCHAR(3)
 AS
 
 /*
 	Created: 20111017@Henry
-	Task : Report Turn Over
-	DB: DBACC/bodb02
+	Task: Report Turn Over
+	DB: DBACC.bodb02
 
 	Revisions:
 		- 20111110@Henry: remove group by monthly option
-		- 20120214@Jim: change to use table ExchangeDaily by use function Lrf_f_GetExchangeDaily 
-		- 20120614@Jim: optimize code 
+		- 20120214@Jim: change to use table ExchangeDaily by use function Lrf_f_GetExchangeDaily
+		- 20120614@Jim: optimize code
 		- 20120731@Jim: add player comm value 
 		- 20120917@Henry: split column
 		- 20121004@Jim: replace @currency input param by @currencyID
-		- 20130123@Daniel: Change link server alias 
-		- 20130225@Jim: support RNG Casino , Bingo 
+		- 20130123@Daniel: Change link server alias
+		- 20130225@Jim: support RNG Casino , Bingo
 		- 20130402@Jim: support base currency USD
 		- 20130618@Jim: Restrict permission of Licensee Users by currency
 		- 20130625@Jim: fix bug missing filter currency condition
@@ -82,28 +65,19 @@ AS
 		- 20200108@Vickie: Add new product Virtual Games [RedmineID: #124911]
 		- 20200406@Hogan: Add new product Table Games [RedmineID: #131447]
 		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
+		- 20200423@Hogan: Add new product Sexy Gaming [RedmineID: #132829]
+		- 20200423@Vickie: Integrate Saba Club [RedmineID: #132702]
+						- Change to use @ProductList
 */
 
 BEGIN
 	SET NOCOUNT ON
 
-	DECLARE @tmpAg TABLE (custID INT, currency INT)
-	DECLARE @fdate SMALLDATETIME,
-			@tdate SMALLDATETIME,
-			@tmpdate SMALLDATETIME,
-			@CustID INT
-	DECLARE @sporttype TABLE (sporttype INT)
- 
-	SELECT	@CustID = 0,
-			@username = LTRIM(RTRIM(ISNULL(@username,''))),
-			@fdate = @fromdate,
-			@tdate = @todate
-
+	DECLARE @TmpAg TABLE (CustId INT, Currency INT)
 	DECLARE @DocHandler INT
 
 	BEGIN TRY
-		EXEC sp_xml_preparedocument @DocHandler OUTPUT
-			,@AgentList
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT, @AgentList
 	
 		INSERT INTO @tmpAg(CustId, Currency)
 		SELECT AgentId, Currency 
@@ -119,52 +93,63 @@ BEGIN
 		RETURN
 	END CATCH;
 
-	IF @ShowSB	= 1 INSERT INTO @sporttype(sporttype) VALUES(0)
-	IF @ShowNG	= 1 INSERT INTO @sporttype(sporttype) VALUES(161),(164)
-	IF @ShowVS	= 1 INSERT INTO @sporttype(sporttype) VALUES(180)
-	IF @ShowCS	= 1 INSERT INTO @sporttype(sporttype) VALUES(251),(208),(209),(210)
-	IF @ShowKN	= 1 INSERT INTO @sporttype(sporttype) VALUES(202)
-	IF @ShowAGC	= 1 INSERT INTO @sporttype(sporttype) VALUES(250)
-	IF @ShowVB	= 1 INSERT INTO @sporttype(sporttype) VALUES(212)
-	IF @ShowAB	= 1 INSERT INTO @sporttype(sporttype) VALUES(211)
-	IF @ShowCB	= 1 INSERT INTO @sporttype(sporttype) VALUES(204)
-	IF @ShowBT	= 1 
+	DECLARE @ShowSB BIT = 0
+
+	IF ',' + @ProductList + ',' LIKE '%,SB,%'
+		SET @ShowSB = 1
+
+	DECLARE @SportType TABLE (SportType INT)
+
+	IF LEN(ISNULL(@ProductList, '')) > 0 
 	BEGIN
-		INSERT INTO @sporttype(sporttype) VALUES(-2)
-		INSERT INTO @sporttype(sporttype) VALUES(-3)
+		INSERT INTO @SportType (SportType)
+		SELECT DISTINCT SportType
+		FROM dbo.f_LicWinLoss_ProductSportType_Sel(@ProductList)
 	END
-	IF @ShowFW	= 1 INSERT INTO @sporttype(sporttype) VALUES(219)
-	IF @ShowCO	= 1 INSERT INTO @sporttype(sporttype) VALUES(-6), (-7)
-	IF @ShowVS2	= 1 INSERT INTO @sporttype(sporttype) VALUES(190),(193)
-	IF @ShowLT	= 1 INSERT INTO @sporttype(sporttype) VALUES(220)
-	IF @ShowPP	= 1 INSERT INTO @sporttype(sporttype) VALUES(248)
-	IF @ShowCC	= 1 INSERT INTO @sporttype(sporttype) VALUES(165)
-	IF @ShowSG	= 1 INSERT INTO @sporttype(sporttype) VALUES(247)
-	IF @ShowVRG	= 1 INSERT INTO @sporttype(sporttype) VALUES(245)
-	IF @ShowTG	= 1 INSERT INTO @sporttype(sporttype) VALUES(222)
-	IF @ShowI4D	= 1 INSERT INTO @sporttype(sporttype) VALUES(223)
+
+	IF @ShowBT = 1
+	BEGIN
+		INSERT INTO @SportType (SportType) VALUES(-2), (-3)
+	END
+
+	IF @ShowCO = 1
+	BEGIN
+		INSERT INTO @SportType (SportType) VALUES(-6), (-7)
+	END
+
+	DECLARE @fdate	SMALLDATETIME,
+		@tdate		SMALLDATETIME,
+		@tmpdate	SMALLDATETIME,
+		@CustId		INT
+
+	SELECT
+		@CustId = 0,
+		@username = LTRIM(RTRIM(ISNULL(@username,''))),
+		@fdate = @fromdate,
+		@tdate = @todate
 
 	IF @username <> ''
 	BEGIN
-		SELECT @CustID = CustID
-		FROM Customer c WITH(NOLOCK)
-		WHERE 
-			SUBSTRING(c.username2, CHARINDEX('$',c.username2) + 1, LEN(c.username2)-CHARINDEX('$',c.username2)) = @username
+		SELECT @CustID = custid
+		FROM dbo.Customer WITH (NOLOCK)
+		WHERE
+			SUBSTRING(username2, CHARINDEX('$', username2) + 1, LEN(username2) - CHARINDEX('$', username2)) = @username
 			AND recommend IN (SELECT custid FROM @tmpAg)
 			AND roleid = 1
 			AND currency IN (SELECT currency FROM @tmpAg)
 
-		IF ISNULL(@CustID, 0) = 0
+		IF ISNULL(@CustId, 0) = 0
 		BEGIN
-			SELECT @CustID = CustID
-			FROM dbo.Customer WITH(NOLOCK)
+			SELECT @CustId = custid
+			FROM dbo.Customer WITH (NOLOCK)
 			WHERE username = @username
 				AND recommend IN (SELECT DISTINCT custid FROM @tmpAg)
 				AND roleid = 1
 				AND currency IN (SELECT currency FROM @tmpAg)
 		END
 
-		IF ISNULL(@CustID, 0) = 0 SET @CustID = -1
+		IF ISNULL(@CustId, 0) = 0
+			SET @CustId = -1
 	END
 
 	CREATE TABLE #tmpRpt
@@ -199,7 +184,7 @@ BEGIN
 	END
 	ELSE
 	BEGIN
-		IF @custid <> 0
+		IF @CustId <> 0
 		BEGIN
 			DECLARE @CutDate SMALLDATETIME
 
@@ -213,13 +198,27 @@ BEGIN
 									ELSE @tdate
 								END
 
-				INSERT INTO #tmpRpt
-				(
-					Winlostdate, Currency, OpeningBalance, Deposit, Withdrawal, AffiliateTransfer, Bonus, 
-					Adjustment, Promotion, Turnover, PendingFund, Winloss, ClosingBalance, Transfer3rd, DrawGame, 
-					Turnover_BA, Comm_BA, PlayerComm, AmountDueTo_BA
-				)
-				SELECT 
+				INSERT INTO #tmpRpt (
+					Winlostdate,
+					Currency,
+					OpeningBalance,
+					Deposit,
+					Withdrawal,
+					AffiliateTransfer,
+					Bonus, 
+					Adjustment,
+					Promotion,
+					Turnover,
+					PendingFund,
+					Winloss,
+					ClosingBalance,
+					Transfer3rd,
+					DrawGame, 
+					Turnover_BA,
+					Comm_BA,
+					PlayerComm,
+					AmountDueTo_BA)
+				SELECT
 					b.winlostdate,
 					b.currency,
 					SUM(ISNULL(b.openingbalance, 0)),
@@ -243,9 +242,9 @@ BEGIN
 					bodb_report.dbo.rptdepwinlost_bk b WITH (NOLOCK) 
 					INNER JOIN @tmpAg a ON b.recommend = a.CustId AND b.Currency = a.Currency
 					LEFT JOIN bodb_Report.dbo.rptDepWinlost_BonusWallet bo WITH (NOLOCK) -- New Bonus Wallet
-					ON b.custid = bo.CustID AND b.winlostdate = bo.Winlostdate
+						ON b.custid = bo.CustID AND b.winlostdate = bo.Winlostdate
 				WHERE b.winlostdate BETWEEN @fdate AND @tmpdate
-					AND b.custid = @custid
+					AND b.custid = @CustId
 				GROUP BY b.winlostdate, b.currency
 
 				;WITH sourceDATA AS
@@ -253,7 +252,7 @@ BEGIN
 					SELECT
 						p.winlostdate,
 						c.currency,
-						SUM(ISNULL(CASE WHEN p.sporttype IN (-2,-3,-5,-6,-7) THEN 0 ELSE p.turnover END, 0)) AS Turnover,
+						SUM(ISNULL(CASE WHEN p.sporttype IN (-2, -3, -5, -6, -7) THEN 0 ELSE p.turnover END, 0)) AS Turnover,
 						SUM(ISNULL(p.outstanding, 0)) AS PendingFund,
 						SUM(ISNULL(p.winlost, 0)) AS Winloss, 
 						SUM(ISNULL(p.drawTO, 0)) AS DrawGame,
@@ -263,7 +262,7 @@ BEGIN
 						INNER JOIN dbo.Customer c WITH(NOLOCK) ON p.custid = c.custid
 					WHERE
 						p.winlostdate BETWEEN @fdate AND @tmpdate
-						AND p.custid = @custid
+						AND p.custid = @CustId
 						AND p.sporttype IN (SELECT sporttype FROM @sporttype)
 					GROUP BY p.winlostdate, c.currency
 				)
@@ -315,8 +314,9 @@ BEGIN
 					INNER JOIN @tmpAg a ON b.recommend = a.CustId AND b.Currency = a.Currency
 				WHERE
 					b.winlostdate BETWEEN @tmpdate AND @tdate
-					AND b.custid = @custid
-				GROUP BY b.winlostdate, b.currency
+					AND b.custid = @CustId
+				GROUP BY b.winlostdate,
+					b.currency
 
 				;WITH sourceDATA AS
 				(
@@ -332,17 +332,18 @@ BEGIN
 						bodb_Report.dbo.rptDepWinlostByProduct p WITH(NOLOCK)
 						INNER JOIN dbo.Customer c WITH(NOLOCK) on p.custid = c.custid
 					WHERE p.winlostdate between @tmpdate AND @tdate
-						AND p.custid = @custid
+						AND p.custid = @CustId
 						AND p.sporttype IN (SELECT sporttype FROM @sporttype)
 					GROUP BY p.winlostdate,
 						c.currency
 				)
 				UPDATE #tmpRpt
-				SET turnover	= ISNULL(s.turnover,0),
-					pendingfund = ISNULL(s.pendingfund,0),
-					winloss		= ISNULL(s.winloss,0),
-					drawgame	= ISNULL(s.drawgame,0),
-					playercomm	= ISNULL(s.playercomm, 0)
+				SET
+					Turnover	= ISNULL(s.Turnover, 0),
+					PendingFund = ISNULL(s.PendingFund, 0),
+					Winloss		= ISNULL(s.Winloss, 0),
+					DrawGame	= ISNULL(s.DrawGame, 0),
+					PlayerComm	= ISNULL(s.PlayerComm, 0)
 				FROM sourceDATA s
 				WHERE #tmpRpt.winlostdate = s.winlostdate
 			END
@@ -350,7 +351,9 @@ BEGIN
 		ELSE
 		BEGIN
 			DECLARE @maxdate_SUM SMALLDATETIME
-			SELECT @maxdate_SUM = MAX(winlostdate) FROM bodb_report.dbo.rptdepwinlost_SUM WITH(NOLOCK)
+
+			SELECT @maxdate_SUM = MAX(winlostdate)
+			FROM bodb_report.dbo.rptdepwinlost_SUM WITH (NOLOCK)
 
 			IF @fdate <= @maxdate_SUM
 			BEGIN
@@ -359,13 +362,27 @@ BEGIN
 										ELSE @tdate
 									END
 
-				INSERT INTO #tmpRpt
-				(
-					Winlostdate, Currency, OpeningBalance, Deposit, Withdrawal, AffiliateTransfer, Bonus, 
-					Adjustment, Promotion, Turnover, PendingFund, Winloss, ClosingBalance, Transfer3rd, DrawGame, 
-					Turnover_BA, Comm_BA, PlayerComm, AmountDueTo_BA
-				)
-				SELECT 
+				INSERT INTO #tmpRpt (
+					Winlostdate,
+					Currency,
+					OpeningBalance,
+					Deposit,
+					Withdrawal,
+					AffiliateTransfer,
+					Bonus, 
+					Adjustment,
+					Promotion,
+					Turnover,
+					PendingFund,
+					Winloss,
+					ClosingBalance,
+					Transfer3rd,
+					DrawGame,
+					Turnover_BA,
+					Comm_BA,
+					PlayerComm,
+					AmountDueTo_BA)
+				SELECT
 					b.winlostdate,
 					b.currency,
 					SUM(ISNULL(b.openingbalance,0)),
@@ -379,44 +396,46 @@ BEGIN
 					0 AS PendingFund,
 					0 AS Winloss,
 					SUM(ISNULL(b.ClosingBalance,0)),
-					SUM(ISNULL(b.Transfer3rd+b.Transfer3rdOthers,0)),
+					SUM(ISNULL(b.Transfer3rd + b.Transfer3rdOthers, 0)),
 					0 AS DrawGame,
-					SUM(ISNULL(b.Turnover_BA,0)),
-					SUM(ISNULL(b.Comm_BA,0)),
+					SUM(ISNULL(b.Turnover_BA, 0)),
+					SUM(ISNULL(b.Comm_BA, 0)),
 					0 AS PlayerComm,
-					SUM(ISNULL(b.AmountDueTo_BA,0))
+					SUM(ISNULL(b.AmountDueTo_BA, 0))
 				FROM
 					bodb_report.dbo.rptdepwinlost_SUM b WITH(NOLOCK)
 					INNER JOIN @tmpAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
 					LEFT JOIN bodb_Report.dbo.rptDepWinlost_BonusWallet bo WITH (NOLOCK) -- New Bonus Wallet
-					ON b.custid = bo.CustID AND b.winlostdate = bo.Winlostdate
-				WHERE b.winlostdate BETWEEN @fdate AND @tmpdate 
-				GROUP BY b.winlostdate, b.currency
+						ON b.custid = bo.CustID AND b.winlostdate = bo.Winlostdate
+				WHERE b.winlostdate BETWEEN @fdate AND @tmpdate
+				GROUP BY b.winlostdate,
+					b.currency
 
 				;WITH sourceDATA AS
 				(
 					SELECT
 						p.winlostdate,
 						c.currency,
-						SUM(ISNULL(p.turnover,0)) AS Turnover,
-						SUM(ISNULL(p.outstanding,0)) AS PendingFund,
-						SUM(ISNULL(p.winlost,0)) AS Winloss,
-						SUM(ISNULL(p.drawTO,0)) AS DrawGame,
-						SUM(ISNULL(p.playercomm,0)) AS PlayerComm
+						SUM(ISNULL(p.turnover, 0)) AS Turnover,
+						SUM(ISNULL(p.outstanding, 0)) AS PendingFund,
+						SUM(ISNULL(p.winlost, 0)) AS Winloss,
+						SUM(ISNULL(p.drawTO, 0)) AS DrawGame,
+						SUM(ISNULL(p.playercomm, 0)) AS PlayerComm
 					FROM
 						bodb_Report.dbo.rptdepwinlostbyproduct_SUM p WITH(NOLOCK)
 						INNER JOIN @tmpAg c ON p.custid = c.custid AND p.Currency = c.Currency
 					WHERE
 						p.winlostdate BETWEEN @fdate AND @tmpdate
 						AND p.sporttype IN (SELECT sporttype FROM @sporttype)
-					GROUP BY p.winlostdate, c.currency
+					GROUP BY p.winlostdate,
+						c.currency
 				)
 				UPDATE #tmpRpt
-				SET turnover	= ISNULL(s.turnover,0),
-					pendingfund = ISNULL(s.pendingfund,0),
-					winloss		= ISNULL(s.winloss,0),
-					drawgame	= ISNULL(s.drawgame,0),
-					playercomm	= ISNULL(s.playercomm,0)
+				SET Turnover	= ISNULL(s.Turnover, 0),
+					PendingFund = ISNULL(s.PendingFund, 0),
+					Winloss		= ISNULL(s.Winloss, 0),
+					DrawGame	= ISNULL(s.DrawGame, 0),
+					PlayerComm	= ISNULL(s.PlayerComm, 0)
 				FROM sourceDATA s
 				WHERE #tmpRpt.winlostdate = s.winlostdate AND #tmpRpt.currency = s.currency
 			END
@@ -428,75 +447,95 @@ BEGIN
 									ELSE @fdate
 								END
 
-				INSERT INTO #tmpRpt
-				(
-					Winlostdate, Currency, OpeningBalance, Deposit, Withdrawal, AffiliateTransfer, Bonus, 
-					Adjustment, Promotion, Turnover, PendingFund, Winloss, ClosingBalance, Transfer3rd, DrawGame, 
-					Turnover_BA, Comm_BA, PlayerComm, AmountDueTo_BA
-				)
-				SELECT 
+				INSERT INTO #tmpRpt (
+					Winlostdate,
+					Currency,
+					OpeningBalance,
+					Deposit,
+					Withdrawal,
+					AffiliateTransfer,
+					Bonus,
+					Adjustment,
+					Promotion,
+					Turnover,
+					PendingFund,
+					Winloss,
+					ClosingBalance,
+					Transfer3rd,
+					DrawGame,
+					Turnover_BA,
+					Comm_BA,
+					PlayerComm,
+					AmountDueTo_BA)
+				SELECT
 					b.winlostdate,
 					b.currency,
-					SUM(ISNULL(b.openingbalance,0)),
-					SUM(ISNULL(b.deposit,0)),
-					SUM(ISNULL(b.withdrawal,0)),
-					SUM(ISNULL(b.Aff2MemTransfer,0)), --AffiliateTransfer
-					SUM(ISNULL(b.Bonus,0) + ISNULL(b.BonusWallet, 0)),
-					SUM(ISNULL(b.Adjustment,0) + ISNULL(b.AdjBonusWallet, 0)),
+					SUM(ISNULL(b.openingbalance, 0)),
+					SUM(ISNULL(b.deposit, 0)),
+					SUM(ISNULL(b.withdrawal, 0)),
+					SUM(ISNULL(b.Aff2MemTransfer, 0)), --AffiliateTransfer
+					SUM(ISNULL(b.Bonus, 0) + ISNULL(b.BonusWallet, 0)),
+					SUM(ISNULL(b.Adjustment, 0) + ISNULL(b.AdjBonusWallet, 0)),
 					SUM(b.Promotion),
 					0 AS Turnover,
 					0 AS PendingFund,
 					0 AS Winloss,
-					SUM(ISNULL(b.ClosingBalance,0)),
-					SUM(ISNULL(b.Transfer3rd+b.Transfer3rdOthers,0)),
+					SUM(ISNULL(b.ClosingBalance, 0)),
+					SUM(ISNULL(b.Transfer3rd + b.Transfer3rdOthers, 0)),
 					0 AS DrawGame,
-					SUM(ISNULL(b.Turnover_BA,0)),
-					SUM(ISNULL(b.Comm_BA,0)),
+					SUM(ISNULL(b.Turnover_BA, 0)),
+					SUM(ISNULL(b.Comm_BA, 0)),
 					0 AS PlayerComm,
-					SUM(ISNULL(b.AmountDueTo_BA,0))
+					SUM(ISNULL(b.AmountDueTo_BA, 0))
 				FROM
 					bodb_report.dbo.rptdepwinlost b WITH(NOLOCK)
 					INNER JOIN @tmpAg a ON b.recommend = a.CustId AND b.Currency = a.Currency	
 				WHERE b.winlostdate BETWEEN @tmpdate AND @tdate
-				GROUP BY b.winlostdate, b.currency
+				GROUP BY b.winlostdate,
+					b.currency
 
 				;WITH sourceDATA AS
 				(
 					SELECT
 						p.winlostdate,
 						c.currency,
-						SUM(ISNULL(p.turnover,0)) AS Turnover,
-						SUM(ISNULL(p.outstanding,0)) AS PendingFund,
-						SUM(ISNULL(p.winlost,0)) AS Winloss ,
-						SUM(ISNULL(p.drawTO,0)) AS DrawGame,
-						SUM(ISNULL(p.playercomm,0)) AS PlayerComm
+						SUM(ISNULL(p.Turnover, 0)) AS Turnover,
+						SUM(ISNULL(p.OutStanding, 0)) AS PendingFund,
+						SUM(ISNULL(p.winlost, 0)) AS Winloss,
+						SUM(ISNULL(p.drawTO, 0)) AS DrawGame,
+						SUM(ISNULL(p.playercomm, 0)) AS PlayerComm
 					FROM
-						bodb_Report.dbo.rptDepWinlostByProduct p WITH(NOLOCK)
+						bodb_Report.dbo.rptDepWinlostByProduct p WITH (NOLOCK)
 						INNER JOIN dbo.Customer c WITH(NOLOCK) ON p.custid = c.custid
 						INNER JOIN @tmpAg a ON p.Currency = a.Currency AND a.CustID = c.Recommend
 					WHERE p.winlostdate BETWEEN @tmpdate and @tdate
 						AND c.roleid = 1
-						AND p.sporttype IN (SELECT sporttype FROM @sporttype)
-					GROUP BY p.winlostdate, c.currency
+						AND p.sporttype IN (SELECT SportType FROM @SportType)
+					GROUP BY p.winlostdate,
+						c.currency
 				)
 				UPDATE #tmpRpt
-				SET turnover	= ISNULL(s.turnover,0),
-					pendingfund = ISNULL(s.pendingfund,0),
-					winloss		= ISNULL(s.winloss,0),
-					drawgame	= ISNULL(s.drawgame,0),
-					playercomm	= ISNULL(s.playercomm, 0)
+				SET Turnover	= ISNULL(s.Turnover, 0),
+					PendingFund = ISNULL(s.PendingFund, 0),
+					Winloss		= ISNULL(s.Winloss, 0),
+					DrawGame	= ISNULL(s.DrawGame, 0),
+					PlayerComm	= ISNULL(s.PlayerComm, 0)
 				FROM sourceDATA s
 				WHERE #tmpRpt.winlostdate = s.winlostdate AND #tmpRpt.currency = s.currency
 			END
 		END
 
-		SELECT FromDate, ToDate, ExchangeID, Rate
+		SELECT
+			FromDate,
+			ToDate,
+			ExchangeID,
+			Rate
 		INTO #TempExchange
-		FROM Lrf_f_GetExchangeRate(@FromDate, @ToDate, @BaseCurrency, '') e
-		WHERE EXISTS (SELECT 1 FROM @tmpAg a WHERE a.currency = e.ExchangeID)
+		FROM dbo.Lrf_f_GetExchangeRate(@FromDate, @ToDate, @BaseCurrency, '') e
+		WHERE EXISTS (SELECT 1 FROM @TmpAg a WHERE a.Currency = e.ExchangeId)
 
 		SELECT
-			b.winlostdate,
+			b.Winlostdate,
 			--- EUR
 			CAST(SUM(b.OpeningBalance		* e.Rate) AS MONEY) AS OpeningBalance,
 			CAST(SUM(b.Deposit				* e.Rate) AS MONEY) AS Deposit,
@@ -512,13 +551,13 @@ BEGIN
 			CAST(SUM(b.Transfer3rd			* e.Rate) AS MONEY) AS Transfer3rd,
 			CAST(SUM(b.DrawGame				* e.Rate) AS MONEY) AS DrawGame,
 			CAST(SUM(b.PlayerComm			* e.Rate) AS MONEY) AS PlayerComm,
-			CASE WHEN @showSB=1 THEN CAST(SUM(b.Turnover_BA		* e.Rate) AS MONEY) ELSE 0 END AS TurnoverBA,
-			CASE WHEN @showSB=1 THEN CAST(SUM(b.Comm_BA			* e.Rate) AS MONEY) ELSE 0 END AS CommBA,
-			CASE WHEN @showSB=1 THEN CAST(SUM(b.AmountDueTo_BA	* e.Rate) AS MONEY) ELSE 0 END AS AmountDueToBA
+			CASE WHEN @showSB = 1 THEN CAST(SUM(b.Turnover_BA		* e.Rate) AS MONEY) ELSE 0 END AS TurnoverBA,
+			CASE WHEN @showSB = 1 THEN CAST(SUM(b.Comm_BA			* e.Rate) AS MONEY) ELSE 0 END AS CommBA,
+			CASE WHEN @showSB = 1 THEN CAST(SUM(b.AmountDueTo_BA	* e.Rate) AS MONEY) ELSE 0 END AS AmountDueToBA
 		FROM #tmpRpt b
-			INNER JOIN #TempExchange e
-			ON e.exchangeid = b.currency AND b.winlostdate BETWEEN e.FromDate AND e.ToDate
-		GROUP BY b.winlostdate
+			INNER JOIN #TempExchange e ON e.ExchangeId = b.Currency AND b.Winlostdate BETWEEN e.FromDate AND e.ToDate
+		GROUP BY b.Winlostdate
+
 		DROP TABLE #TempExchange
 	END
 

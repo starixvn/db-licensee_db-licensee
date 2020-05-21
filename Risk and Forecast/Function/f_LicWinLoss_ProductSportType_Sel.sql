@@ -27,6 +27,8 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 		- 20200408@Vickie: Add New Sport Virtual Soccer Euro Cup [RedmineID: #132064]
 		- 20200406@Hogan: Add new product Table Games [RedmineID: #131447]
 		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
+		- 20200423@Hogan: Add new product Sexy Gaming [RedmineID: #132829]
+		- 20200423@Vickie: Integrate Saba Club [RedmineID: #132702]
 
 	Paramters Explanation:  
 		@ProductID: list of products
@@ -58,7 +60,9 @@ RETURN
 					(36, 'SG', 247, 0),	-- Spadegaming
 					(38, 'VRG', 245, 0),	-- Virtual Games
 					(40, 'TG', 222, 0),	-- Table Games
-					(43, 'I4D', 223, 0)	-- Indo 4D
+					(43, 'I4D', 223, 0),	-- Indo 4D
+					(45, 'SXG', 243, 0),		-- Sexy Gaming
+					(42, 'SBC', 200, 0)	-- Saba Club
 			) d(ProductID, ProductCode, SportType, BetType)  
 	WHERE ',' + @ProductCodes + ',' LIKE '%,' + CAST(ProductCode AS VARCHAR(10)) + ',%'  
 GO
