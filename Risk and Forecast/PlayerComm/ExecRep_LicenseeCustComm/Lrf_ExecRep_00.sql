@@ -46,7 +46,8 @@ BEGIN
 	DECLARE @xml XML
 
 	DECLARE @TempList_Input AS TABLE (CustID INT )
-
+	DECLARE @TempLicenseeBA_batch AS TABLE (CustID INT)
+	
 	SELECT @xml = CONVERT(XML,N'<root><r t="' + REPLACE(@strCustId,',','"/><r t="') + '"/></root>"')
 
 	INSERT INTO @TempList_Input (CustID)
@@ -54,11 +55,20 @@ BEGIN
 	FROM @xml.nodes('/root/r') AS T(C)
 	OPTION (OPTIMIZE FOR (@xml = NULL ))
 	
-	--Update SB
+	-- Get list of BA members
+	INSERT INTO @TempLicenseeBA_batch (CustID)
+	SELECT t.CustID 
+	FROM @TempList_Input  t
+		INNER JOIN dbo.LicenseeBAHistory ba WITH (NOLOCK) ON t.CustID=ba.CustID
+	WHERE ba.Status ='Running' AND ba.LicenseeID = @LicenseeID 
+					
+	-- Update SB for Non BA members
 	MERGE dbo.LicenseeCustComm AS target
-	USING (SELECT @LicenseeID AS LicenseeID, CustID, @SBComm AS SBComm,@ParlayComm AS ParlayComm, @GroupCommID AS GroupCommID 
-			FROM  @TempList_Input
-			WHERE CustID NOT IN (SELECT CustID FROM dbo.LicenseeBAHistory WITH (NOLOCK) WHERE Status ='Running') 
+	USING (SELECT @LicenseeID AS LicenseeID, t.CustID, @SBComm AS SBComm,@ParlayComm AS ParlayComm, @GroupCommID AS GroupCommID 
+			FROM  @TempList_Input t
+				LEFT JOIN @TempLicenseeBA_batch ba ON t.custid = ba.custid
+			WHERE ba.custID IS NULL
+			 
 			) AS source
 		ON (target.CustID = source.CustID)
 	WHEN MATCHED THEN 
@@ -70,15 +80,14 @@ BEGIN
 		INSERT (LicenseeID,CustID,SBComm,ParlayComm,GroupCommID)
 		VALUES (source.LicenseeID,source.CustID,source.SBComm,Source.ParlayComm,source.GroupCommID);
 				
-	-------------for BA member
+	-- Update SB for BA members
 	MERGE dbo.LicenseeCustComm AS target
 	USING (SELECT @LicenseeID AS LicenseeID
 					,CustID
-					,@SBComm AS SBComm 
-					,@ParlayComm AS ParlayComm
+					,CASE WHEN @LicenseeID <> @MacauLicenseeID THEN 0 ELSE @SBComm END AS SBComm 
+					,CASE WHEN @LicenseeID <> @MacauLicenseeID THEN 0 ELSE @ParlayComm END AS ParlayComm
 					,@GroupCommID AS GroupCommID 
-			FROM @TempList_Input  
-			WHERE CustID  IN (SELECT CustID FROM dbo.LicenseeBAHistory WITH (NOLOCK) WHERE Status ='Running') 
+			FROM @TempLicenseeBA_batch 
 			) AS source
 		ON (target.CustID = source.CustID)
 	WHEN MATCHED THEN 
@@ -89,16 +98,7 @@ BEGIN
 	WHEN NOT MATCHED THEN	
 		INSERT (LicenseeID,CustID,SBComm,ParlayComm,GroupCommID)
 		VALUES (source.LicenseeID,source.CustID,source.SBComm,Source.ParlayComm,source.GroupCommID);
-				
-	UPDATE d
-	SET SBComm = 0	
-		,ParlayComm = 0
-	FROM dbo.LicenseeCustComm d WITH  (ROWLOCK,UPDLOCK)
-		INNER JOIN dbo.LicenseeBAHistory s WITH (NOLOCK) ON d.LicenseeId = s.LicenseeId AND d.CustID = s.CustID
-		INNER JOIN @TempList_Input t ON t.CustID = d.CustID
-	WHERE s.LicenseeID <> @MacauLicenseeID
-		AND s.Status ='Running'
-
+	
 	IF (@IsUpdateNG = 1
 		OR @IsUpdateRNG = 1
 		OR @IsUpdateAllbet=1

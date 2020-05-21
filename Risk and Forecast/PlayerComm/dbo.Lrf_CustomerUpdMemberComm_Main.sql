@@ -56,7 +56,7 @@ BEGIN
 	DECLARE @res_batch_tmp AS TABLE (custid INT)
 	
 	SET @runningCNT = 0
-	SET @batchSize = 1000
+	SET @batchSize = 4000
 	DECLARE  @strCustID_tmp	VARCHAR(MAX)
 	
 	WHILE (1 = 1)
