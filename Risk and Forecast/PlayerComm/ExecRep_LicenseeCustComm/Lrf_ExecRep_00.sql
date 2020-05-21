@@ -61,7 +61,7 @@ BEGIN
 	FROM @TempList_Input  t
 		INNER JOIN dbo.LicenseeBAHistory ba WITH (NOLOCK) ON t.CustID=ba.CustID
 	WHERE ba.Status ='Running' AND ba.LicenseeID = @LicenseeID 
-					
+	
 	-- Update SB for Non BA members
 	MERGE dbo.LicenseeCustComm AS target
 	USING (SELECT @LicenseeID AS LicenseeID, t.CustID, @SBComm AS SBComm,@ParlayComm AS ParlayComm, @GroupCommID AS GroupCommID 
@@ -81,23 +81,26 @@ BEGIN
 		VALUES (source.LicenseeID,source.CustID,source.SBComm,Source.ParlayComm,source.GroupCommID);
 				
 	-- Update SB for BA members
-	MERGE dbo.LicenseeCustComm AS target
-	USING (SELECT @LicenseeID AS LicenseeID
-					,CustID
-					,CASE WHEN @LicenseeID <> @MacauLicenseeID THEN 0 ELSE @SBComm END AS SBComm 
-					,CASE WHEN @LicenseeID <> @MacauLicenseeID THEN 0 ELSE @ParlayComm END AS ParlayComm
-					,@GroupCommID AS GroupCommID 
-			FROM @TempLicenseeBA_batch 
-			) AS source
-		ON (target.CustID = source.CustID)
-	WHEN MATCHED THEN 
-		UPDATE 
-		SET target.SBComm = source.SBComm,
-			target.ParlayComm = source.ParlayComm,
-			target.GroupCommID = source.GroupCommID
-	WHEN NOT MATCHED THEN	
-		INSERT (LicenseeID,CustID,SBComm,ParlayComm,GroupCommID)
-		VALUES (source.LicenseeID,source.CustID,source.SBComm,Source.ParlayComm,source.GroupCommID);
+	IF EXISTS (SELECT TOP (1) 1 FROM @TempLicenseeBA_batch)
+	BEGIN
+		MERGE dbo.LicenseeCustComm AS target
+		USING (SELECT @LicenseeID AS LicenseeID
+						,CustID
+						,CASE WHEN @LicenseeID <> @MacauLicenseeID THEN 0 ELSE @SBComm END AS SBComm 
+						,CASE WHEN @LicenseeID <> @MacauLicenseeID THEN 0 ELSE @ParlayComm END AS ParlayComm
+						,@GroupCommID AS GroupCommID 
+				FROM @TempLicenseeBA_batch 
+				) AS source
+			ON (target.CustID = source.CustID)
+		WHEN MATCHED THEN 
+			UPDATE 
+			SET target.SBComm = source.SBComm,
+				target.ParlayComm = source.ParlayComm,
+				target.GroupCommID = source.GroupCommID
+		WHEN NOT MATCHED THEN	
+			INSERT (LicenseeID,CustID,SBComm,ParlayComm,GroupCommID)
+			VALUES (source.LicenseeID,source.CustID,source.SBComm,Source.ParlayComm,source.GroupCommID);
+	END	
 	
 	IF (@IsUpdateNG = 1
 		OR @IsUpdateRNG = 1

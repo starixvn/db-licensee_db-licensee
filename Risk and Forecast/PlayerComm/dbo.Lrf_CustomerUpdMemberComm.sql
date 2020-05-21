@@ -286,14 +286,15 @@ BEGIN
 		'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
 		'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(8000)),SPACE(1))+ '" />'
 	
-	DECLARE @tmpCommHistory TABLE(Custid INT,Comm DECIMAL(9,8))
 	
+	DECLARE  @ExecuteSQL NVARCHAR(MAX) = ''
+				, @query NVARCHAR(MAX) = ''
 	WHILE (1=1)
 	BEGIN
 	
 		DELETE FROM @TempList_batch
 		
-		UPDATE TOP (4500) t
+		UPDATE TOP (4000) t
 			SET IsFinished = 1
 		OUTPUT deleted.CustID
 		INTO @TempList_batch (custID)
@@ -304,19 +305,28 @@ BEGIN
 		IF (@@ROWCOUNT = 0)
 			BREAK
 
-		SET @strCustID = ''
-		SELECT @strCustID = @strCustID + CONVERT(varchar(MAX),CustID) + ','
-		FROM @TempList_batch
-		SELECT @strCustID = SUBSTRING(@strCustID, 0, LEN(@strCustID))
+		SET @strCustID = STUFF ((SELECT ',' + CONVERT(VARCHAR(20),CustID) 
+								FROM @TempList_batch
+								FOR XML PATH ('')
+								), 1,1,'')
 		
 		BEGIN TRY
-			EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_UpdMemComm_RunSP
-						@UserID = @UserID,
-						@strCustID = @strCustID,
-						@ActionID = 2612,
-						@LogSPData = @LogSPData,
-						@LogSPData2 = @LogSPData2,
-						@duration = @duration
+			SELECT  @query = N''		
+			SELECT	@query = @query + N'EXEC WriteLog_UserLog_UpdMemComm_RunSP_xtest @UserID,
+						@strCustID,
+						@ActionID,
+						@LogSPData,
+						@LogSPData2,
+						@duration'
+			SELECT	@ExecuteSQL = N'EXECUTE DBLOG.bodb_CustomerLog.dbo.sp_executesql @query, N''@xmlData NVARCHAR(MAX)'',@xmlData'
+
+			EXECUTE	sys.sp_executesql @ExecuteSQL, N'@query NVARCHAR(MAX)
+													, @UserID INT,
+													@strCustID VARCHAR(MAX),
+													@ActionID INT,	
+													@LogSPData nvarchar(4000),
+													@LogSPData2 nvarchar(4000),
+													@Duration INT', @query, @UserID,@strCustID,2612,@LogSPData,@LogSPData2
 		END TRY
 		BEGIN CATCH
 			EXEC bodb_CustomerLog.dbo.WriteLog_UserLog_UpdMemComm_RunSP

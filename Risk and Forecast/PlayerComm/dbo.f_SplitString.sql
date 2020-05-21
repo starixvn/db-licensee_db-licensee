@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-bodb_licensee,DBCUST-CustDB" executers="" viewers="" isFunction="1"></info>*/
+/*<info serverAlias="DBCUST-bodb_licensee,DBCUST-CustDB,DBLOG-bodb_CustomerLog,DBCUST-bodb_CustomerLog" executers="" viewers="" isFunction="1"></info>*/
 CREATE FUNCTION [dbo].[f_SplitString](@string nvarchar(max),@splitter nvarchar(max))
 /*          
 	Created: 20200520@Helen          

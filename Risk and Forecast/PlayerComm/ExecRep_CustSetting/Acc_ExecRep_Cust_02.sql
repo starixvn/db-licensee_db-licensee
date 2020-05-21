@@ -65,6 +65,7 @@ BEGIN
 					, IsfinishedMacau BIT
 					, IsfinishedPP BIT
 					, IsfinishedFishingWorld BIT)
+					
 	DECLARE @InputRes_updateComm_batch AS TABLE (custid INT)
 	DECLARE @xml XML
 	DECLARE @AgentID INT 
@@ -143,8 +144,7 @@ BEGIN
 			FROM @InputRes_updateComm t
 			WHERE t.IsFinishNG IS NULL	
 			
-			IF @@ROWCOUNT = 0
-				BREAK
+			IF @@ROWCOUNT = 0 BREAK
 				
 			UPDATE CS 
 				SET playerdiscount = @NGComm 
@@ -158,11 +158,17 @@ BEGIN
 		
 	END
 	
-	SET @AgentID = (SELECT TOP (1) recommend 
-					FROM dbo.CustInfo ci WITH(NOLOCK)
-						INNER JOIN @InputRes_updateComm r ON ci.custid = r.custid
-					)
-		
+	IF ( @IsUpdateAllbet = 1
+			OR @IsUpdateMacau = 1
+			OR @IsUpdatePP = 1
+			OR @IsUpdateFW = 1)
+	BEGIN		
+		SET @AgentID = (SELECT TOP (1) recommend 
+						FROM dbo.CustInfo ci WITH(NOLOCK)
+							INNER JOIN @InputRes_updateComm r ON ci.custid = r.custid
+						)
+	END	
+	
 	IF (@IsUpdateAllbet=1)
 	BEGIN
 		IF EXISTS(SELECT TOP 1 1 

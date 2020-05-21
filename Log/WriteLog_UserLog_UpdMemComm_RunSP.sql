@@ -20,6 +20,8 @@ ALTER PROCEDURE [dbo].[WriteLog_UserLog_UpdMemComm_RunSP]
 		- 20181029@Lukas: remove linked-server DBcust for performance issue
 		- 20200410@Johnson: Add comm for AB,Macau,PP,GD,AG [redmine:#131774] 
 		- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
+		- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774]      
+		
     Param's Explaination:    	
 		- @UserID: UserId perform this action
 		- @@strCustID: A string of individual CustId separated by ","
@@ -40,7 +42,9 @@ BEGIN
 		DECLARE @LogTempTable AS TABLE (CustID INT, TrackingValue VARCHAR(MAX), TrackingValue2 VARCHAR(MAX))
 
 		INSERT INTO @CustIDTempTable (CustID)
-		SELECT RTRIM(LTRIM(VAL)) FROM dbo.StrSplit(@strCustID,',')
+		SELECT RTRIM(LTRIM(VAL)) 
+		FROM dbo.f_SplitString(@strCustID,',')
+		OPTION (MAXRECURSION 0)
 		
 		INSERT INTO @LogTempTable (CustID, TrackingValue, TrackingValue2)
 		SELECT a.CustID,
