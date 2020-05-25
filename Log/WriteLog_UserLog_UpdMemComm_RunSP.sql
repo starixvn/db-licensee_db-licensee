@@ -1,11 +1,13 @@
 /*<info serverAlias="DBLOG-bodb_CustomerLog,DBCUST-bodb_CustomerLog" executers="bodbLicenseeNet,bodbAdminNet,Dot_Member" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[WriteLog_UserLog_UpdMemComm_RunSP]
-		@UserID INT,
-		@strCustID VARCHAR(MAX) = NULL,
-		@ActionID INT = 2612,	
-		@LogSPData nvarchar(4000) = NULL,
-		@LogSPData2 nvarchar(4000) = NULL,
-		@Duration INT = NULL
+(
+	@UserID INT,
+	@strCustID VARCHAR(MAX) = NULL,
+	@ActionID INT = 2612,	
+	@LogSPData nvarchar(4000) = NULL, -- new value
+	@LogSPData2 nvarchar(4000) = NULL, -- old value
+	@Duration INT = NULL
+)	
 /*  
 	Created: 20140703@Francis
     Task: Write log for updating member's commission using batch by batch method
@@ -20,7 +22,7 @@ ALTER PROCEDURE [dbo].[WriteLog_UserLog_UpdMemComm_RunSP]
 		- 20181029@Lukas: remove linked-server DBcust for performance issue
 		- 20200410@Johnson: Add comm for AB,Macau,PP,GD,AG [redmine:#131774] 
 		- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
-		- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774]      
+		- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774]
 		
     Param's Explaination:    	
 		- @UserID: UserId perform this action
@@ -30,6 +32,7 @@ ALTER PROCEDURE [dbo].[WriteLog_UserLog_UpdMemComm_RunSP]
 		- @LogSPData2: Common info (IP, ErrCode, ErrMsg) in string 
 */
 AS
+
 BEGIN
 	-- SET NOCOUNT ON added to prevent extra result sets from
 		-- interfering with SELECT statements.
@@ -37,12 +40,11 @@ BEGIN
 
 	IF @strCustID IS NOT NULL AND @LogSPData IS NOT NULL AND @LogSPData2 IS NOT NULL
 	BEGIN
-	
 		DECLARE @CustIDTempTable AS TABLE (CustID INT)
 		DECLARE @LogTempTable AS TABLE (CustID INT, TrackingValue VARCHAR(MAX), TrackingValue2 VARCHAR(MAX))
 
 		INSERT INTO @CustIDTempTable (CustID)
-		SELECT RTRIM(LTRIM(VAL)) 
+		SELECT VAL
 		FROM dbo.f_SplitString(@strCustID,',')
 		OPTION (MAXRECURSION 0)
 		
@@ -69,12 +71,13 @@ BEGIN
 			   'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
 			   @LogSPData2 AS TrackingValue2
 		FROM @CustIDTempTable a
-			LEFT JOIN bodb_licensee.dbo.LicenseeCustComm lcc WITH (NOLOCK) ON a.CustID = lcc.CustID
+			INNER JOIN bodb_licensee.dbo.LicenseeCustComm lcc WITH (NOLOCK) ON a.CustID = lcc.CustID
 			
 		INSERT INTO dbo.UserLog_RunSP (UserID, CustID, SPName, Doing, ActionID, TrackingValue, TrackingValue2, Duration)
 		SELECT @UserID, CustID, NULL, NULL, @ActionID, TrackingValue, TrackingValue2, @Duration
-		FROM @LogTempTable					  
+		FROM @LogTempTable
+					  
 	END
 END
-GO
 
+GO

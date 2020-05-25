@@ -148,11 +148,10 @@ BEGIN
 										END +'0.15'
 		RETURN
 	END
-
-	DECLARE @TempList_batch AS TABLE (CustID INT PRIMARY KEY)
 	DECLARE @TempLicenseeBA AS TABLE (CustID INT)
-
-	DECLARE @TempCustID AS TABLE (CustID INT, IsFinished BIT)
+	
+	DECLARE @TempCustID AS TABLE (CustID INT,IsFinished BIT)
+	DECLARE @TempList_batch AS TABLE (CustID INT)
 	
 	IF @IsUpdateGroupComm = 1 AND @strCustID = ''
 	BEGIN
@@ -168,9 +167,10 @@ BEGIN
 	ELSE IF @strCustID <> ''
 	BEGIN
 		INSERT INTO @TempCustID (CustID)
-		SELECT c.CustID 
+		SELECT c.CustID
 		FROM CustDB.dbo.Customer c WITH (NOLOCK) 
 			INNER JOIN dbo.f_SplitString (@strCustID,',') AS tmp ON RTRIM(LTRIM(tmp.val)) = c.custid
+			INNER JOIN dbo.LicenseeCustComm ls WITH (NOLOCK) ON ls.CustID = c.custid
 		OPTION (MAXRECURSION 0)
 		
 		SELECT @TotalMemCount=@@ROWCOUNT
@@ -218,6 +218,7 @@ BEGIN
 							FROM @TempLicenseeBA
 							FOR XML PATH('r'), ROOT('root')
 							)
+							
 			EXEC CustDB.dbo.[Lrf_CustomerUpdMemberComm_Main] 
 				@strCustID=@strBA
 				,@SBComm=0
@@ -234,7 +235,7 @@ BEGIN
 				,@IsUpdateMacau=@IsUpdateMacau
 				,@IsUpdatePP=@IsUpdatePP
 				,@IsUpdateFW = @IsUpdateFW
-									
+								
 			-- Non-BA and BA under Macaubet have got SBcomm=@SBcomm
 			DECLARE  @strNonBA 	VARCHAR(MAX)
 			
@@ -245,7 +246,8 @@ BEGIN
 								ORDER BY t.[CustID]
 								FOR XML PATH('r'), ROOT('root')
 							)
-								
+			
+							
 			EXEC CustDB.dbo.[Lrf_CustomerUpdMemberComm_Main] 
 				@strCustID=@strNonBA
 				,@SBComm=@SBComm
@@ -262,6 +264,7 @@ BEGIN
 				,@IsUpdateMacau=@IsUpdateMacau
 				,@IsUpdatePP=@IsUpdatePP
 				,@IsUpdateFW = @IsUpdateFW
+			
 		END
 	END	
 	
@@ -269,6 +272,7 @@ BEGIN
 	SET @duration  = DATEDIFF (millisecond,@startRun,@endRun)	
 
 	--Write Log
+	-- new value
 	SELECT @LogSPData = 'GroupCommID="'+ COALESCE(CAST(@GroupCommID as VARCHAR(50)),SPACE(1)) + '" ' +
 		'LicenseeID="'+ COALESCE(CAST(@LicenseeID as VARCHAR(50)),SPACE(1)) + '" ' +
 		'SBComm="'+ COALESCE(CAST(@SBComm as VARCHAR(50)),SPACE(1)) + '" ' +
@@ -282,13 +286,14 @@ BEGIN
 		--'GDComm="'+ COALESCE(CAST(@GDComm as VARCHAR(50)),SPACE(1)) + '" '+
 		--'AGComm="'+ COALESCE(CAST(@AGComm as VARCHAR(50)),SPACE(1)) + '" '
 
+	-- old value
 	SELECT @LogSPData2 = 'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +
 		'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
 		'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(8000)),SPACE(1))+ '" />'
 	
-	
 	DECLARE  @ExecuteSQL NVARCHAR(MAX) = ''
 				, @query NVARCHAR(MAX) = ''
+	
 	WHILE (1=1)
 	BEGIN
 	
@@ -296,7 +301,7 @@ BEGIN
 		
 		UPDATE TOP (4000) t
 			SET IsFinished = 1
-		OUTPUT deleted.CustID
+		OUTPUT deleted.CustID 
 		INTO @TempList_batch (custID)
 		FROM @TempCustID t
 		WHERE IsFinished IS NULL
@@ -305,28 +310,27 @@ BEGIN
 		IF (@@ROWCOUNT = 0)
 			BREAK
 
-		SET @strCustID = STUFF ((SELECT ',' + CONVERT(VARCHAR(20),CustID) 
-								FROM @TempList_batch
-								FOR XML PATH ('')
-								), 1,1,'')
-		
+		SET @strCustID = STUFF((SELECT ',' + CAST(custid AS VARCHAR(20))
+						FROM @TempList_batch
+						FOR XML PATH('')
+						),1,1,'')
 		BEGIN TRY
+			
 			SELECT  @query = N''		
-			SELECT	@query = @query + N'EXEC WriteLog_UserLog_UpdMemComm_RunSP_xtest @UserID,
-						@strCustID,
-						@ActionID,
-						@LogSPData,
-						@LogSPData2,
-						@duration'
-			SELECT	@ExecuteSQL = N'EXECUTE DBLOG.bodb_CustomerLog.dbo.sp_executesql @query, N''@xmlData NVARCHAR(MAX)'',@xmlData'
-
-			EXECUTE	sys.sp_executesql @ExecuteSQL, N'@query NVARCHAR(MAX)
-													, @UserID INT,
+			SELECT	@query = @query + N'EXEC WriteLog_UserLog_UpdMemComm_RunSP @UserID,@strCustID,@ActionID,@LogSPData,@LogSPData2,@duration'
+			SELECT	@ExecuteSQL = N'EXECUTE DBLOG.bodb_CustomerLog.dbo.sp_executesql @query, N''@UserID INT,@strCustID VARCHAR(MAX),@ActionID INT,@LogSPData nvarchar(4000),@LogSPData2 nvarchar(4000),@Duration INT ''
+																							,@UserID,@strCustID,2612,@LogSPData,@LogSPData2,@Duration'
+			
+			EXECUTE	sys.sp_executesql @ExecuteSQL, N'@query NVARCHAR(MAX),
+													@UserID INT,
 													@strCustID VARCHAR(MAX),
 													@ActionID INT,	
 													@LogSPData nvarchar(4000),
 													@LogSPData2 nvarchar(4000),
-													@Duration INT', @query, @UserID,@strCustID,2612,@LogSPData,@LogSPData2
+													@Duration INT
+													
+													', @query, @UserID,@strCustID,2612,@LogSPData,@LogSPData2,@Duration
+			
 		END TRY
 		BEGIN CATCH
 			EXEC bodb_CustomerLog.dbo.WriteLog_UserLog_UpdMemComm_RunSP
@@ -337,12 +341,14 @@ BEGIN
 						@LogSPData2 = @LogSPData2,
 						@duration = @duration
 		END CATCH
-
+		
+		
 		--Update LicenseeCustComm
 		IF (@IsUpdateComm = 1)
 		BEGIN
 			BEGIN TRY
-				EXEC dbo.Lrf_ExecRep_00
+			
+			EXEC dbo.Lrf_ExecRep_00
 					@strCustId = @strCustID,
 					@LicenseeID = @LicenseeID,
 					@GroupCommID = @GroupCommID,
@@ -370,8 +376,10 @@ BEGIN
 				SELECT @ErrCode = ERROR_NUMBER()
 					, @ErrMsg = ERROR_MESSAGE()
 			END CATCH
+			
 		END
 		
 	END	
 END
-GO 
+GO
+
