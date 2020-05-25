@@ -66,7 +66,7 @@ BEGIN
 					, IsfinishedPP BIT
 					, IsfinishedFishingWorld BIT)
 					
-	DECLARE @InputRes_updateComm_batch AS TABLE (custid INT)
+	DECLARE @InputRes_updateComm_batch AS TABLE (custid INT PRIMARY KEY)
 	DECLARE @xml XML
 	DECLARE @AgentID INT 
 	

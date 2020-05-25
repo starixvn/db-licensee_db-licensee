@@ -46,7 +46,7 @@ BEGIN
 	DECLARE @xml XML
 
 	DECLARE @TempList_Input AS TABLE (CustID INT )
-	DECLARE @TempLicenseeBA_batch AS TABLE (CustID INT)
+	DECLARE @TempLicenseeBA_batch AS TABLE (CustID INT PRIMARY KEY)
 	
 	SELECT @xml = CONVERT(XML,N'<root><r t="' + REPLACE(@strCustId,',','"/><r t="') + '"/></root>"')
 
