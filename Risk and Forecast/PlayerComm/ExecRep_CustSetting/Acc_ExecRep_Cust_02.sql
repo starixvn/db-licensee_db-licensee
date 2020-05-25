@@ -57,7 +57,7 @@ BEGIN
 	 )
 		RETURN 
 
-	DECLARE @InputRes_updateComm AS TABLE (custid INT
+	DECLARE @InputRes_updateComm AS TABLE (custid INT PRIMARY KEY
 					, IsfinishedSB BIT
 					, IsfinishedParlay BIT
 					, IsFinishNG BIT
