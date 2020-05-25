@@ -64,7 +64,8 @@ BEGIN
 					, IsfinishedAllbet BIT
 					, IsfinishedMacau BIT
 					, IsfinishedPP BIT
-					, IsfinishedFishingWorld BIT)
+					, IsfinishedFishingWorld BIT
+					, IsfinishedSBParlay BIT)
 					
 	DECLARE @InputRes_updateComm_batch AS TABLE (custid INT PRIMARY KEY)
 	DECLARE @xml XML
@@ -77,6 +78,30 @@ BEGIN
 	FROM @xml.nodes('/root/r') AS T(C)
 	OPTION (OPTIMIZE FOR (@xml = NULL ))
 	
+	IF @IsUpdateSB = 1 AND @IsParlayComm = 1
+	BEGIN
+		WHILE (1=1)
+		BEGIN
+		
+			DELETE @InputRes_updateComm_batch
+			
+			UPDATE TOP (100) t
+				SET IsfinishedSBParlay = 1
+			OUTPUT deleted.custid
+			INTO @InputRes_updateComm_batch (custid)	
+			FROM @InputRes_updateComm t
+			WHERE t.IsfinishedSBParlay IS NULL	
+			
+			IF @@ROWCOUNT = 0
+				BREAK
+				
+			UPDATE cs
+				SET playerdiscount = CASE WHEN bettype IN (9,29) THEN @ParlayComm ELSE @SBComm END 
+			FROM @InputRes_updateComm_batch r
+				INNER JOIN dbo.Dep_CustSetting cs WITH (ROWLOCK, UPDLOCK) ON r.custid = cs.custid
+		END
+	END
+	ELSE
 	IF @IsUpdateSB = 1
 	BEGIN
 		WHILE (1=1)
@@ -103,7 +128,7 @@ BEGIN
 		END
 		
 	END
-	
+	ELSE
 	IF @IsParlayComm = 1
 	BEGIN
 		WHILE (1=1)
