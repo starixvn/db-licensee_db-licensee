@@ -1,5 +1,6 @@
 /*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet,bodbAdminNet,Dot_Member" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm]
+(
 	@LicenseeID INT,
 	@strCustID VARCHAR(MAX) = '',--member
 	@UserID INT,
@@ -30,6 +31,7 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm]
 	@Langkey VARCHAR(10) = 'en-US',
 	@ErrCode INT = 0 OUTPUT,
 	@ErrMsg varchar(8000) = '' OUTPUT
+)
 AS
 /*
 	Created: 20120726@Henry
