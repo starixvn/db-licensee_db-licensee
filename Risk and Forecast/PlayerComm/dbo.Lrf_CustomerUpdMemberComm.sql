@@ -216,10 +216,10 @@ BEGIN
 				ORDER BY t.[CustID]
 			END	 
 				 
-			SELECT @strBA = (SELECT CustID as '@custid'
+			SELECT @strBA = STUFF((SELECT ',' + CAST(CustID AS VARCHAR(20))
 							FROM @TempLicenseeBA
-							FOR XML PATH('r'), ROOT('root')
-							)
+							FOR XML PATH('')
+							),1,1,'')
 							
 			EXEC CustDB.dbo.[Lrf_CustomerUpdMemberComm_Main] 
 				@strCustID=@strBA
@@ -241,15 +241,14 @@ BEGIN
 			-- Non-BA and BA under Macaubet have got SBcomm=@SBcomm
 			DECLARE  @strNonBA 	VARCHAR(MAX)
 			
-			SELECT @strNonBA = (SELECT t.[CustID] AS '@custid'
+			SELECT @strNonBA = STUFF((SELECT ',' + CAST(t.[CustID] AS VARCHAR(20))
 								FROM @TempCustID  t
 									LEFT JOIN @TempLicenseeBA ba ON t.CustID = ba.CustID
 								WHERE ba.CustID IS NULL
 								ORDER BY t.[CustID]
-								FOR XML PATH('r'), ROOT('root')
-							)
+								FOR XML PATH('')
+							),1,1,'')
 			
-							
 			EXEC CustDB.dbo.[Lrf_CustomerUpdMemberComm_Main] 
 				@strCustID=@strNonBA
 				,@SBComm=@SBComm
@@ -301,7 +300,7 @@ BEGIN
 	
 		DELETE FROM @TempList_batch
 		
-		UPDATE TOP (4000) t
+		UPDATE TOP (4500) t
 			SET IsFinished = 1
 		OUTPUT deleted.CustID 
 		INTO @TempList_batch (custID)

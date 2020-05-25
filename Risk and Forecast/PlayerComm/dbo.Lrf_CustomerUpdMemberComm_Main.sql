@@ -43,14 +43,11 @@ BEGIN
 	SET NOCOUNT ON;
 
 	DECLARE @res AS TABLE (custid INT, isfinished BIT)
-	DECLARE @xml XML
-
-	SET @xml = CONVERT(XML, @strCustID) 
 	
 	INSERT INTO @res (custid, isfinished)
-	SELECT T.C.value('./@custid', 'INT'), 0
-	FROM @xml.nodes('/root/r') AS T(C)
-	OPTION (OPTIMIZE FOR (@xml = NULL ))
+	SELECT VAL, 0
+	FROM dbo.f_SplitString(@strCustID,',')
+	OPTION (MAXRECURSION 0)
 
 	DECLARE @ids VARCHAR(MAX), @rowcnt INT, @runningCNT INT, @batchSize int
 	DECLARE @res_batch_tmp AS TABLE (custid INT)
