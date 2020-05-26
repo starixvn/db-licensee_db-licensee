@@ -172,7 +172,6 @@ BEGIN
 		SELECT c.CustID
 		FROM CustDB.dbo.Customer c WITH (NOLOCK) 
 			INNER JOIN dbo.f_SplitString (@strCustID,',') AS tmp ON RTRIM(LTRIM(tmp.val)) = c.custid
-			INNER JOIN dbo.LicenseeCustComm ls WITH (NOLOCK) ON ls.CustID = c.custid
 		OPTION (MAXRECURSION 0)
 		
 		SELECT @TotalMemCount=@@ROWCOUNT
@@ -220,24 +219,25 @@ BEGIN
 							FROM @TempLicenseeBA
 							FOR XML PATH('')
 							),1,1,'')
-							
-			EXEC CustDB.dbo.[Lrf_CustomerUpdMemberComm_Main] 
-				@strCustID=@strBA
-				,@SBComm=0
-				,@NGComm=@NGComm
-				,@ParlayComm = 0	
-				,@AllbetComm = @AllbetComm
-				,@MacauComm = @MacauComm
-				,@PPComm = @PPComm
-				,@FWComm = @FWComm
-				,@IsUpdateSB = @IsUpdateSB
-				,@IsParlayComm = @IsParlayComm
-				,@IsUpdateNG=@IsUpdateNG
-				,@IsUpdateAllbet=@IsUpdateAllbet
-				,@IsUpdateMacau=@IsUpdateMacau
-				,@IsUpdatePP=@IsUpdatePP
-				,@IsUpdateFW = @IsUpdateFW
-								
+			IF @strBA  <> ''
+			BEGIN				
+				EXEC CustDB.dbo.[Lrf_CustomerUpdMemberComm_Main] 
+					@strCustID=@strBA
+					,@SBComm=0
+					,@NGComm=@NGComm
+					,@ParlayComm = 0	
+					,@AllbetComm = @AllbetComm
+					,@MacauComm = @MacauComm
+					,@PPComm = @PPComm
+					,@FWComm = @FWComm
+					,@IsUpdateSB = @IsUpdateSB
+					,@IsParlayComm = @IsParlayComm
+					,@IsUpdateNG=@IsUpdateNG
+					,@IsUpdateAllbet=@IsUpdateAllbet
+					,@IsUpdateMacau=@IsUpdateMacau
+					,@IsUpdatePP=@IsUpdatePP
+					,@IsUpdateFW = @IsUpdateFW
+			END					
 			-- Non-BA and BA under Macaubet have got SBcomm=@SBcomm
 			DECLARE  @strNonBA 	VARCHAR(MAX)
 			
@@ -249,23 +249,25 @@ BEGIN
 								FOR XML PATH('')
 							),1,1,'')
 			
-			EXEC CustDB.dbo.[Lrf_CustomerUpdMemberComm_Main] 
-				@strCustID=@strNonBA
-				,@SBComm=@SBComm
-				,@NGComm=@NGComm
-				,@ParlayComm = @ParlayComm					
-				,@AllbetComm = @AllbetComm
-				,@MacauComm = @MacauComm
-				,@PPComm = @PPComm
-				,@FWComm = @FWComm
-				,@IsUpdateSB = @IsUpdateSB
-				,@IsParlayComm = @IsParlayComm
-				,@IsUpdateNG=@IsUpdateNG
-				,@IsUpdateAllbet=@IsUpdateAllbet
-				,@IsUpdateMacau=@IsUpdateMacau
-				,@IsUpdatePP=@IsUpdatePP
-				,@IsUpdateFW = @IsUpdateFW
-			
+			IF @strNonBA  <> ''
+			BEGIN
+				EXEC CustDB.dbo.[Lrf_CustomerUpdMemberComm_Main] 
+					@strCustID=@strNonBA
+					,@SBComm=@SBComm
+					,@NGComm=@NGComm
+					,@ParlayComm = @ParlayComm					
+					,@AllbetComm = @AllbetComm
+					,@MacauComm = @MacauComm
+					,@PPComm = @PPComm
+					,@FWComm = @FWComm
+					,@IsUpdateSB = @IsUpdateSB
+					,@IsParlayComm = @IsParlayComm
+					,@IsUpdateNG=@IsUpdateNG
+					,@IsUpdateAllbet=@IsUpdateAllbet
+					,@IsUpdateMacau=@IsUpdateMacau
+					,@IsUpdatePP=@IsUpdatePP
+					,@IsUpdateFW = @IsUpdateFW
+			END
 		END
 	END	
 	
@@ -291,9 +293,6 @@ BEGIN
 	SELECT @LogSPData2 = 'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +
 		'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
 		'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(8000)),SPACE(1))+ '" />'
-	
-	--DECLARE  @ExecuteSQL NVARCHAR(MAX) = ''
-	--			, @query NVARCHAR(MAX) = ''
 	
 	WHILE (1=1)
 	BEGIN
@@ -324,23 +323,6 @@ BEGIN
 						@LogSPData = @LogSPData,
 						@LogSPData2 = @LogSPData2,
 						@duration = @duration
-						
-			/*
-			SELECT  @query = N''		
-			SELECT	@query = @query + N'EXEC WriteLog_UserLog_UpdMemComm_RunSP @UserID,@strCustID,@ActionID,@LogSPData,@LogSPData2,@duration'
-			SELECT	@ExecuteSQL = N'EXECUTE DBLOG.bodb_CustomerLog.dbo.sp_executesql @query, N''@UserID INT,@strCustID VARCHAR(MAX),@ActionID INT,@LogSPData nvarchar(4000),@LogSPData2 nvarchar(4000),@Duration INT ''
-																							,@UserID,@strCustID,2612,@LogSPData,@LogSPData2,@Duration'
-			
-			EXECUTE	sys.sp_executesql @ExecuteSQL, N'@query NVARCHAR(MAX),
-													@UserID INT,
-													@strCustID VARCHAR(MAX),
-													@ActionID INT,	
-													@LogSPData nvarchar(4000),
-													@LogSPData2 nvarchar(4000),
-													@Duration INT
-													
-													', @query, @UserID,@strCustID,2612,@LogSPData,@LogSPData2,@Duration
-			*/
 		END TRY
 		BEGIN CATCH
 			EXEC bodb_CustomerLog.dbo.WriteLog_UserLog_UpdMemComm_RunSP
