@@ -1,5 +1,5 @@
 /*<info serverAlias="DBCUST-bodb_Licensee" executers="" viewers="" isFunction="0"></info>*/
-ALTER PROCEDURE [dbo].[Lrf_ExecRep_00_xtest]
+ALTER PROCEDURE [dbo].[Lrf_ExecRep_00]
 (
 	@strCustId VARCHAR(MAX) = '',
 	@LicenseeID INT,
