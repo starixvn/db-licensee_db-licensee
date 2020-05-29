@@ -136,7 +136,7 @@ BEGIN
 		
 			DELETE @InputRes_updateComm_batch
 			
-			UPDATE TOP (2000) t
+			UPDATE TOP (500) t
 				SET IsfinishedParlay = 1
 			OUTPUT deleted.custid
 			INTO @InputRes_updateComm_batch (custid)	

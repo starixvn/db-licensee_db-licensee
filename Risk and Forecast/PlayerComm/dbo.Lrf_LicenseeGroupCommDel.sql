@@ -28,7 +28,9 @@ AS
 		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
 		- 20180927@Winnie: Remove AllBet [RedmineID: #99378]
 		- 20190731@Winnie: Commission Group - RNG Casino Comm of Members are not cleared when deleting Group Comm [RedmineID: #117845]
-		- 20200410@Johnson: Add comm for AB,Macau,PP,GD,AG [redmine:#131774] 
+		- 20200410@Johnson: Add comm for AB,Macau,PP,GD,AG [redmine:#131774]
+		- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774]  
+		 
 	Param's Explanation:
 
 */
@@ -42,6 +44,7 @@ BEGIN
 
 	DECLARE @LogSPData VARCHAR(MAX)
 	DECLARE @TrackingValue2 VARCHAR(MAX)
+	DECLARE @IsexistMember BIT = 0
 
 	DECLARE @SBComm DECIMAL(9,8), 
 		@NGComm DECIMAL(9,8),
@@ -93,16 +96,58 @@ BEGIN
 														END , @ErrCode = 101	
 			RETURN
 		END
-
+		--#1 delete group, keep comm of member: @IsRemovePlayercomm = 0
 		IF @IsRemovePlayercomm=0
 		BEGIN
 			UPDATE dbo.LicenseeGroupComm WITH (ROWLOCK,UPDLOCK) SET IsActive = 0
 			WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID
 			
-			UPDATE dbo.LicenseeCustComm WITH (ROWLOCK,UPDLOCK) SET GroupCommID=0
-			WHERE GroupCommID=@GroupCommID
+			DECLARE @TempCustID AS TABLE (CustID INT,IsFinished BIT)
+			DECLARE @TempList_batch AS TABLE (CustID INT)
 			
-		END
+			INSERT INTO @TempCustID (CustID)
+			SELECT ls.custid
+			FROM dbo.LicenseeCustComm ls WITH (NOLOCK)
+				INNER JOIN CustDB.dbo.Customer c WITH (NOLOCK) ON ls.CustID = c.custid
+			WHERE LicenseeID = @LicenseeID AND GroupCommID = @GroupCommID
+			
+			IF @@ROWCOUNT > 0
+			BEGIN
+				WHILE (1=1)
+				BEGIN
+					DELETE FROM @TempList_batch
+					
+					UPDATE TOP (2000) t
+						SET IsFinished = 1
+					OUTPUT deleted.CustID 
+					INTO @TempList_batch (custID)
+					FROM @TempCustID t
+					WHERE IsFinished IS NULL
+					
+					--Check empty batches
+					IF (@@ROWCOUNT = 0)	BREAK
+
+					SET @strCustID = STUFF((SELECT ',' + CAST(custid AS VARCHAR(20))
+									FROM @TempList_batch
+									FOR XML PATH('')
+									),1,1,'')
+					--Update GroupcommID = 0 for LicenseeCustComm
+					BEGIN TRY
+						EXEC dbo.Lrf_ExecRep_00
+								@strCustId = @strCustID,
+								@LicenseeID = @LicenseeID,
+								@GroupCommID = @GroupCommID,
+								@isClearGroupComm = 1
+								
+					END TRY
+					BEGIN CATCH
+						SELECT @ErrCode = ERROR_NUMBER()
+							, @ErrMsg = ERROR_MESSAGE()
+					END CATCH
+				END	
+			END
+		END	
+		--#1 delete group, clear comm of member: @IsRemovePlayercomm = 1
 		ELSE IF @IsRemovePlayercomm=1
 		BEGIN
 			UPDATE dbo.LicenseeGroupComm WITH (ROWLOCK,UPDLOCK) SET IsActive = 0
@@ -112,27 +157,16 @@ BEGIN
 			SELECT @StrCustID=''
 			
 			--Remove commission of players in group
-			--get list of affected Customers		
-			SELECT CustID
-			INTO #temp
-			FROM LicenseeCustComm WITH (NOLOCK)
-			WHERE LicenseeID = @LicenseeID AND GroupCommID = @GroupCommID	
-			
-			SELECT @StrCustID = STUFF(
-				(   SELECT  ',' + CONVERT(NVARCHAR(20), custid) 
-					FROM #temp			
-					FOR xml path('')
-				)
-				, 1
-				, 1
-				, '')				
-	
-			IF EXISTS(SELECT TOP 1 1 FROM #temp)
+			SET @IsexistMember = (SELECT TOP (1) 1 
+								FROM LicenseeCustComm ls WITH (NOLOCK)
+								WHERE LicenseeID = @LicenseeID AND GroupCommID = @GroupCommID)
+						
+			IF @IsexistMember = 1			
 			BEGIN
 				--Update List of affected Customers               
 				EXEC [Lrf_CustomerUpdMemberComm] 
 					@LicenseeID=@LicenseeID,
-					@StrCustID=@StrCustID,
+					@StrCustID='',
 					@UserID=@UserID,
 					@GroupCommID=0,
 					@SBComm=0,
@@ -153,6 +187,9 @@ BEGIN
 					--@IsUpdateGD=1,
 					--@IsUpdateAG=1,
 					@IsUpdateFW = 1,
+					@isClearGroupComm = 1,
+					@ClearGroupCommGroupID = @GroupCommID,
+					@IsUpdateGroupComm = 1,
 					@IP=@IP,
 					@ErrCode=@ErrCode OUTPUT,
 					@ErrMsg=@ErrMsg OUTPUT
@@ -160,37 +197,18 @@ BEGIN
 					SELECT @StrCustID=''
 					SELECT @StrCustID = STUFF(
 						(   SELECT  ',' + CONVERT(NVARCHAR(20), a.custid) 
-							FROM dbo.#temp b WITH (NOLOCK)
-							INNER JOIN CustDB.dbo.custinfo a WITH (NOLOCK) ON a.custid = b.custid							
-							WHERE a.SyncCasino = 1
-							FOR xml path('')
+							FROM dbo.LicenseeCustComm b WITH (NOLOCK)
+								INNER JOIN CustDB.dbo.custinfo a WITH (NOLOCK) ON a.custid = b.custid
+							WHERE a.SyncCasino = 1 AND b.LicenseeID = @LicenseeID AND b.GroupCommID = @GroupCommID	
+							FOR XML PATH('')
 						)
 						, 1
 						, 1
 						, '')
 			END
-
-		
 			
 			IF @ErrCode<>0
 				RETURN
-			
-			--Update players out of LicenseeCustComm GroupCommID
-			UPDATE LicenseeCustComm WITH (ROWLOCK,UPDLOCK)
-			SET 
-				SBComm = 0,
-				NGComm = 0,
-				RNGComm = 0,
-				ParlayComm = 0,	
-				AllbetComm = 0,
-				MacauComm = 0,
-				PPComm = 0,
-				--GDComm = 0,
-				--AGComm = 0,
-				FWComm = 0,
-				GroupCommID = 0
-			WHERE GroupCommID = @GroupCommID				
-
 		END
 
 		--write log

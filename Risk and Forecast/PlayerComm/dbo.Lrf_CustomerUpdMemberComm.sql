@@ -27,6 +27,8 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm]
 	@IsUpdateAG BIT = 0,
 	@IsUpdateFW BIT = 0,
 	@IsUpdateGroupComm BIT = 0,
+	@isClearGroupComm BIT = 0,
+	@ClearGroupCommGroupID INT = 0,
 	@IP VARCHAR(40),
 	@Langkey VARCHAR(10) = 'en-US',
 	@ErrCode INT = 0 OUTPUT,
@@ -78,6 +80,8 @@ BEGIN
 	DECLARE @startRun DATETIME
 	DECLARE @endRun DATETIME
 	DECLARE @duration INT
+	DECLARE	@GroupCommID_tmp INT
+	DECLARE @CustID_Direct INT
 
 	SET @startRun = GETDATE()
 
@@ -155,13 +159,18 @@ BEGIN
 	DECLARE @TempCustID AS TABLE (CustID INT,IsFinished BIT)
 	DECLARE @TempList_batch AS TABLE (CustID INT)
 	
+	IF @isClearGroupComm = 1
+		SET @GroupCommID_tmp = @ClearGroupCommGroupID
+	ELSE
+		SET @GroupCommID_tmp = @GroupCommID
+			
 	IF @IsUpdateGroupComm = 1 AND @strCustID = ''
 	BEGIN
 		INSERT INTO @TempCustID (CustID)
 		SELECT ls.custid
 		FROM LicenseeCustComm ls WITH (NOLOCK)
 			INNER JOIN CustDB.dbo.Customer c WITH (NOLOCK) ON ls.CustID = c.custid
-		WHERE ls.LicenseeID = @LicenseeID AND ls.GroupCommID = @GroupCommID
+		WHERE ls.LicenseeID = @LicenseeID AND ls.GroupCommID = @GroupCommID_tmp
 		
 		SELECT @TotalMemCount=@@ROWCOUNT
 		
@@ -182,8 +191,11 @@ BEGIN
 	IF @IsUpdateComm=1
 	BEGIN
 		IF @TotalMemCount=1
+		BEGIN
+			SET @CustID_Direct =  (SELECT TOP 1 CustID FROM @TempCustID)
+			
 			EXEC CustDB.dbo.[Lrf_CustomerUpdMemberComm_Direct] 
-				@CustID=@strCustID
+				@CustID=@CustID_Direct
 				,@SBComm=@SBComm
 				,@NGComm=@NGComm
 				,@ParlayComm = @ParlayComm
@@ -198,6 +210,7 @@ BEGIN
 				,@IsUpdateMacau=@IsUpdateMacau	
 				,@IsUpdatePP=@IsUpdatePP	
 				,@IsUpdateFW = @IsUpdateFW
+		END		
 		ELSE
 		BEGIN	
 			--- separate BA member with Non-BA
@@ -237,6 +250,7 @@ BEGIN
 					,@IsUpdateMacau=@IsUpdateMacau
 					,@IsUpdatePP=@IsUpdatePP
 					,@IsUpdateFW = @IsUpdateFW
+					
 			END					
 			-- Non-BA and BA under Macaubet have got SBcomm=@SBcomm
 			DECLARE  @strNonBA 	VARCHAR(MAX)
@@ -299,7 +313,7 @@ BEGIN
 	
 		DELETE FROM @TempList_batch
 		
-		UPDATE TOP (4500) t
+		UPDATE TOP (1000) t
 			SET IsFinished = 1
 		OUTPUT deleted.CustID 
 		INTO @TempList_batch (custID)
