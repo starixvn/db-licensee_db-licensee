@@ -4,7 +4,7 @@ ALTER PROCEDURE [dbo].[Lrf_ExecRep_00]
 	@strCustId VARCHAR(MAX) = '',
 	@LicenseeID INT,
 	@GroupCommID INT = 0,
-	@MacauLicenseeID INT,
+	@MacauLicenseeID INT = 0,
 	@IsUpdateNG BIT = 0,
 	@IsUpdateRNG BIT = 0,	
 	@IsUpdateAllbet BIT = 0,

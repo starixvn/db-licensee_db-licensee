@@ -82,7 +82,7 @@ BEGIN
 	DECLARE @TempCustID  AS TABLE (ID int IDENTITY(1,1),CustID INT)
 
 	INSERT INTO @TempCustID (CustID)
-	SELECT CustID 
+	SELECT cs.CustID 
 	FROM dbo.LicenseeCustComm cs WITH (NOLOCK) 
 		INNER JOIN #tempCust t ON cs.CustID = t.CustID
 	WHERE LicenseeID = @LicenseeID 
