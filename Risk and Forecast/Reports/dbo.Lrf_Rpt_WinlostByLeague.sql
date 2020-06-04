@@ -115,7 +115,7 @@ BEGIN
 
 	BEGIN CATCH
 		SELECT ErrCode = 100
-			,ErrMsg = N'Paramter invalid.'
+			,ErrMsg = N'Parameter invalid.'
 
 		RETURN
 	END CATCH;
@@ -220,15 +220,15 @@ BEGIN
 					,m.sporttype
 					,'' AS ShowTime
 					,count(1) betcount
-				FROM bettrans AS b WITH (NOLOCK)
-					INNER JOIN match m WITH (NOLOCK) ON m.matchid = b.matchid
+				FROM dbo.bettrans AS b WITH (NOLOCK)
+					INNER JOIN dbo.match m WITH (NOLOCK) ON m.matchid = b.matchid
 					INNER JOIN @TempAg ta ON b.recommend = ta.CustId AND b.Currency = ta.Currency
 				WHERE b.winlostdate BETWEEN @TempFromDate AND @todate
 					AND (
 						b.bettype <= 30
-						OR (b.bettype BETWEEN 121 AND 999)		
-						OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettye
-						OR (b.Bettype BETWEEN 9001 and 9399) -- E-Sports 2.0	
+						OR (b.bettype BETWEEN 121 AND 999)
+						OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettye
+						OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0	
 						)
 					AND (b.bettype < 901 OR b.bettype > 904)
 					AND (b.bettype < 911 OR b.bettype > 914)
@@ -282,7 +282,7 @@ BEGIN
 													THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
 												WHEN b.odds >= 0
 													THEN (1 + b.odds)
-												END
+											END
 									WHEN OddsType = 5
 										THEN --american odds to decimal
 											CASE 
@@ -292,10 +292,10 @@ BEGIN
 													THEN 2
 												WHEN (b.odds * 100) > 0
 													THEN (1 + b.odds)
-												END
+											END
 									END
 						ELSE b.Odds
-						END
+					END
 			END
 
 			--ShowBA
@@ -331,12 +331,12 @@ BEGIN
 										THEN b.Odds + 1 --hongkong to decimal
 									WHEN b.OddsType IN (3, 4, 7)
 										THEN --malay and indo and new oddstype to decimal
-											CASE 
+											CASE
 												WHEN b.odds < 0
 													THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
 												WHEN b.odds >= 0
 													THEN (1 + b.odds)
-												END
+											END
 									WHEN OddsType = 5
 										THEN --american odds to decimal
 											CASE 
@@ -346,7 +346,7 @@ BEGIN
 													THEN 2
 												WHEN (b.odds * 100) > 0
 													THEN (1 + b.odds)
-												END
+											END
 									END
 						ELSE b.Odds
 						END odds2
@@ -362,15 +362,15 @@ BEGIN
 					,m.sporttype
 					,m.showtime AS ShowTime
 					,count(1) betcount
-				FROM bettrans AS b WITH (NOLOCK)
-					INNER JOIN match m WITH (NOLOCK) ON m.matchid = b.matchid
+				FROM dbo.bettrans AS b WITH (NOLOCK)
+					INNER JOIN dbo.match m WITH (NOLOCK) ON m.matchid = b.matchid
 					INNER JOIN @TempAg ta ON b.recommend = ta.CustId AND b.Currency = ta.Currency
 				WHERE b.winlostdate BETWEEN @TempFromDate AND @todate
 					AND (
 						b.bettype <= 30
 						OR (b.bettype BETWEEN 121 AND 999)	
-						OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
-						OR (b.Bettype BETWEEN 9001 and 9399) -- E-Sports 2.0			
+						OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
+						OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0
 						)
 					AND (b.bettype < 901 OR b.bettype > 904)
 					AND (b.bettype < 911 OR b.bettype > 914)
@@ -420,7 +420,7 @@ BEGIN
 													THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
 												WHEN b.odds >= 0
 													THEN (1 + b.odds)
-												END
+											END
 									WHEN OddsType = 5
 										THEN --american odds to decimal
 											CASE 
@@ -430,13 +430,14 @@ BEGIN
 													THEN 2
 												WHEN (b.odds * 100) > 0
 													THEN (1 + b.odds)
-												END
+											END
 									END
 						ELSE b.Odds
-						END
+					END
 			END
 		END
 	END
+
 	CREATE TABLE #match (
 		matchid INT
 		,homeid INT
@@ -465,7 +466,7 @@ BEGIN
 				,m.sporttype
 				,m.showtime
 				,m.isNeutral
-			FROM match14 AS m WITH (NOLOCK)
+			FROM dbo.match14 AS m WITH (NOLOCK)
 			WHERE m.eventdate BETWEEN @fromdate AND @TempToDate
 				AND m.leagueid = @LeagueID
 				AND (
@@ -559,9 +560,9 @@ BEGIN
 				WHERE winlostdate BETWEEN @fromdate AND @TempToDate
 					AND (
 						b.bettype <= 30
-						OR (b.bettype BETWEEN 121 AND 999)			
-						OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
-						OR (b.Bettype BETWEEN 9001 and 9399) -- E-Sports 2.0		
+						OR (b.bettype BETWEEN 121 AND 999)
+						OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
+						OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0		
 						)
 					AND (b.bettype < 901 OR b.bettype > 904)
 					AND (b.bettype < 911 OR b.bettype > 914)
@@ -612,7 +613,7 @@ BEGIN
 													THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
 												WHEN b.odds >= 0
 													THEN (1 + b.odds)
-												END
+											END
 									WHEN OddsType = 5
 										THEN --american odds to decimal
 											CASE 
@@ -622,10 +623,10 @@ BEGIN
 													THEN 2
 												WHEN (b.odds * 100) > 0
 													THEN (1 + b.odds)
-												END
+											END
 									END
 						ELSE b.Odds
-						END
+					END
 			END
 
 			IF @ShowSB = 1
@@ -698,8 +699,8 @@ BEGIN
 					AND (
 						b.bettype <= 30
 						OR (b.bettype BETWEEN 121 AND 999)	
-						OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
-						OR (b.Bettype BETWEEN 9001 and 9399) -- E-Sports 2.0	
+						OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
+						OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0	
 						)
 					AND (b.bettype < 901 OR b.bettype > 904)
 					AND (b.bettype < 911 OR b.bettype > 914)
@@ -768,13 +769,12 @@ BEGIN
 		END
 	END
 
-	---
 	INSERT INTO @ExchangeDaily(FromDate, ToDate, ExchangeId, Rate)
 	SELECT FromDate, ToDate, ExchangeID, Rate
 	FROM dbo.Lrf_f_GetExchangeRate(@fromDate, @toDate, @BaseCurrency, '') e
 	WHERE EXISTS (SELECT 1 FROM @TempAg a WHERE a.Currency = e.ExchangeID)
 
-	-- Result  
+	-- Result
 	SELECT matchid
 		,CASE 
 			WHEN b.sporttype IN (181, 182, 184)

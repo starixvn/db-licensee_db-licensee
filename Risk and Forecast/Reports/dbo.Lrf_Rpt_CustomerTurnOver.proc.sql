@@ -1,34 +1,33 @@
 ﻿/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
- 
+
 ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
-(
-	@Username 		VARCHAR(50) =  '' 
-	,@Product  		VARCHAR(MAX) 
-	,@Bettype  		VARCHAR(MAX)
-	,@CurrencyID 	INT
-	,@FromDate 		SMALLDATETIME
-	,@ToDate 		SMALLDATETIME
-	,@Odds 			FLOAT
-	,@ReportBy  	TINYINT   =  1 
-	,@MoveBetsDay 	SMALLDATETIME
-	,@Langkey 		NVARCHAR(10) =  'en-US'
-	,@PageSize 		INT =  1000
-	,@PageIndex 	INT =  1
+	@Username		VARCHAR(50)		= ''
+	,@Product		VARCHAR(MAX)
+	,@Bettype		VARCHAR(MAX)
+	,@CurrencyID	INT
+	,@FromDate		SMALLDATETIME
+	,@ToDate		SMALLDATETIME
+	,@Odds			FLOAT
+	,@ReportBy		TINYINT			= 1
+	,@MoveBetsDay	SMALLDATETIME
+	,@Langkey		NVARCHAR(10)	= 'en-US'
+	,@PageSize		INT =  1000
+	,@PageIndex		INT =  1
 	,@IsExportExcel BIT =  0
-	,@ShowWin 		BIT =  1
-	,@ShowLoss 		BIT =  1
-	,@ShowDraw 		BIT =  1
+	,@ShowWin		BIT =  1
+	,@ShowLoss		BIT =  1
+	,@ShowDraw		BIT =  1
 	,@Duration		INT	=  0 OUTPUT
 	,@AgentList		VARCHAR(MAX)
-) 
 AS
 
 /*
-	Created	: Henry
+	Created: Henry
 	Task: Customer Performance Report
 	Date: 2011-12-28
 	DB: DBEXT/BODB02
 	Original: Lrf_Rpt_CustomerPerformance
+
 	Revision:
 		- 20120214@Henry: Seperate 3 options: Win/Loss/Draw (and all)
 		- 20120801@Jim: add PlayerComm value 
@@ -91,14 +90,13 @@ AS
 */
 
 BEGIN
-
 	SET NOCOUNT ON
 	
 	DECLARE @startTime		DATETIME
-		, @tempFromDate 	SMALLDATETIME
-		, @tempToDate 		SMALLDATETIME
+		, @tempFromDate		SMALLDATETIME
+		, @tempToDate		SMALLDATETIME
 		, @TotalRows		INT
-		, @currencyName 	VARCHAR(10)
+		, @currencyName		VARCHAR(10)
 		, @searchCust		BIT
 		, @totalBettrans	INT
 		, @totalSumRpt		INT
@@ -108,19 +106,19 @@ BEGIN
 	
 	CREATE TABLE #custData
 	(
-		rowno				INT
-		, winlostdate 		SMALLDATETIME
-		, custid 			INT
-		, username			VARCHAR(50)
-		, nickname			VARCHAR(50)
-		, currency			INT
-		, sporttype			SMALLINT
-		, bettype			INT
-		, betcount 			INT
-		, turnover			MONEY
-		, winlost			MONEY
-		, BetEffective      MONEY
-		, playercomm		MONEY
+		rowno			INT
+		, winlostdate	SMALLDATETIME
+		, custid 		INT
+		, username		VARCHAR(50)
+		, nickname		VARCHAR(50)
+		, currency		INT
+		, sporttype		SMALLINT
+		, bettype		INT
+		, betcount 		INT
+		, turnover		MONEY
+		, winlost		MONEY
+		, BetEffective	MONEY
+		, playercomm	MONEY
 	)
 	
 	CREATE TABLE #tempCust 
@@ -176,8 +174,8 @@ BEGIN
 	FROM dbo.f_StringSplit(@Product,',')
 	OPTION(MAXRECURSION 0)
 	
-	IF  NOT EXISTS (SELECT TOP 1 1  FROM #ProductID )
-	BEGIN 
+	IF NOT EXISTS (SELECT TOP 1 1 FROM #ProductID )
+	BEGIN
 		RETURN;
 	END 
 	
@@ -203,9 +201,11 @@ BEGIN
 	
 	-- bettype
 	DECLARE @isTest BIT = 0
-	SELECT  @isTest = dbo.f_CheckSPVersion(@@PROCID)
+
+	SELECT @isTest = dbo.f_CheckSPVersion(@@PROCID)
 
 	DECLARE @SportBettype TABLE (ProductID INT, Bettype INT, EventType INT)
+
 	INSERT INTO @SportBettype (ProductID, Bettype, EventType)
 	SELECT ProductID, Bettype, EventType
 	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', '', @isTest)
@@ -218,27 +218,25 @@ BEGIN
 	INSERT INTO #BettypeID
 	SELECT ss.bettype AS typeID
 	FROM dbo.f_GroupBettype() ss
-		INNER JOIN #BettypeID b 
-		ON b.typeid 	=  ss.GroupTypeId
-	WHERE ss.bettype NOT IN (SELECT typeID FROM #BettypeID)	
+		INNER JOIN #BettypeID b ON b.typeid =  ss.GroupTypeId
+	WHERE ss.bettype NOT IN (SELECT typeID FROM #BettypeID)
 
 	INSERT INTO #BettypeID
 	SELECT bt.bettype AS typeID
 	FROM dbo.f_GroupBettype3rd() bt
-		INNER JOIN #BettypeID b 
-		ON b.typeid 	=  bt.GroupTypeId
-	WHERE bt.bettype NOT IN (SELECT typeID FROM #BettypeID)	
+		INNER JOIN #BettypeID b ON b.typeid =  bt.GroupTypeId
+	WHERE bt.bettype NOT IN (SELECT typeID FROM #BettypeID)
 	
 	SELECT 
 		b.typeID
 		, sp.ProductId
 		, sp.EventType
-	INTO #bettype	
-	FROM #BettypeID b 
+	INTO #bettype
+	FROM #BettypeID b
 		INNER JOIN @SportBettype sp ON b.typeid 	=  sp.bettype
-		
+
 	DROP TABLE #BettypeID
-		
+
 	CREATE TABLE #recommend
 	(
 		CustID			INT,
@@ -260,7 +258,7 @@ BEGIN
 
 	BEGIN CATCH
 		SELECT ErrCode = 100
-			,ErrMsg = N'Paramter invalid.'
+			,ErrMsg = N'Parameter invalid.'
 
 		RETURN
 	END CATCH;
@@ -276,20 +274,20 @@ BEGIN
 		, @searchCust	= 0
 		, @Duration		= 0
 	
-	IF ( LEN(@Username) > 0 )
-	BEGIN 
+	IF LEN(@Username) > 0
+	BEGIN
 		INSERT INTO #tempCust
 		SELECT c.custid
 			, c.username
 			, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS nickname
 			, c.recommend
-		FROM  dbo.Customer  c WITH (NOLOCK) 
-		  
-		WHERE   c.recommend		IN (SELECT custid FROM #recommend)
+		FROM dbo.Customer  c WITH (NOLOCK) 
+		WHERE c.recommend IN (SELECT custid FROM #recommend)
 			AND (
 				c.username2 	LIKE '%$%' 	+ @Username + '%'
 				OR c.username	LIKE '%' 	+ @Username + '%'
-			) AND c.roleid = 1
+			)
+			AND c.roleid = 1
 		OPTION(RECOMPILE)
 
 		IF(@@ROWCOUNT = 0) GOTO OutputResult;
@@ -300,12 +298,11 @@ BEGIN
 			ON rec.custid = c.recommend
 		WHERE c.recommend IS NULL
 
-		SET @searchCust  	= 1
+		SET @searchCust = 1
 	END
 
-	IF (@ToDate > @MoveBetsDay)
+	IF @ToDate > @MoveBetsDay
 	BEGIN
-
 		SELECT DISTINCT b.transid, s.sporttype
 		INTO #tmpParlay
 		FROM dbo.bettrans b WITH (NOLOCK)
@@ -316,7 +313,7 @@ BEGIN
 								INNER JOIN dbo.match m WITH (NOLOCK) ON bm.matchid = m.matchid
 							WHERE b.refno = bm.refno AND b.custid = bm.custid
 					) AS s
-		WHERE b.bettype = 2799		
+		WHERE b.bettype = 2799
 			AND b.winlostdate BETWEEN @tempFromDate AND @ToDate
 			AND b.matchid = 2799
 		OPTION(RECOMPILE)
@@ -349,40 +346,40 @@ BEGIN
 			LEFT JOIN #tmpParlay p ON b.transid = p.transid
 		WHERE b.winlostdate BETWEEN @tempFromDate AND @ToDate
 		OPTION(RECOMPILE)
-		
+
 		UPDATE #tempBettrans 
 		SET Odds = CASE WHEN OddsType = 1 THEN odds + 1 --decimal
-						 WHEN OddsType = 2 THEN Odds + 1 --hongkong to decimal
-						 WHEN OddsType IN (3,4,7) THEN --malay and indo and new oddstype to decimal
+						WHEN OddsType = 2 THEN Odds + 1 --hongkong to decimal
+						WHEN OddsType IN (3,4,7) THEN --malay and indo and new oddstype to decimal
 												CASE 
-													WHEN odds < 0 THEN (1 -  cast(1 as float) / cast(odds AS float))
-													WHEN odds >=0 THEN (1 + odds) END
+													WHEN odds < 0 THEN (1 -  CAST(1 AS FLOAT) / CAST(odds AS FLOAT))
+													WHEN odds >= 0 THEN (1 + odds) END
 						 WHEN OddsType = 5 THEN --american odds to decimal
 											CASE
-											WHEN (odds * 100) < 0 THEN (1- cast (1 AS float)/ cast (odds AS float))
+											WHEN (odds * 100) < 0 THEN (1- CAST (1 AS FLOAT)/ CAST (odds AS FLOAT))
 											WHEN (odds * 100) % 2 = 0 THEN 2
 											WHEN (odds * 100) > 0 THEN (1 + odds) END 
 					 END 
 		WHERE bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-						OR bettype BETWEEN 9001 AND 9087	-- Esport 2
-						OR bettype BETWEEN 81 AND 88
-						OR bettype BETWEEN 90 AND 120
-						OR bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
-						OR bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
-						OR bettype = 428 -- 2H Odd/Even
-						OR (bettype BETWEEN 603 AND 607 OR bettype BETWEEN 609 AND 613 OR bettype BETWEEN 615 AND 617) -- Basketball bettypes
-						OR bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
-						OR bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
-						OR bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
-						OR bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
-						OR (bettype NOT IN (703, 711) AND bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
-						OR bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
-			
+			OR bettype BETWEEN 9001 AND 9087	-- Esport 2
+			OR bettype BETWEEN 81 AND 88
+			OR bettype BETWEEN 90 AND 120
+			OR bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
+			OR bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
+			OR bettype = 428 -- 2H Odd/Even
+			OR (bettype BETWEEN 603 AND 607 OR bettype BETWEEN 609 AND 613 OR bettype BETWEEN 615 AND 617) -- Basketball bettypes
+			OR bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
+			OR bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
+			OR bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
+			OR bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
+			OR (bettype NOT IN (703, 711) AND bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
+			OR bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
+
 		-- CREATE INDEXERS
 		CREATE CLUSTERED 	INDEX [CIX_tempBettrans] 			ON #tempBettrans (custid, winlostdate)
 		CREATE NONCLUSTERED INDEX IDX_tempBettrans_EventType 	ON #tempBettrans(matchid, EventType)
 		
-		IF( @searchCust = 1)
+		IF @searchCust = 1
 		BEGIN
 			DELETE b
 			FROM #tempBettrans b
@@ -392,7 +389,7 @@ BEGIN
 		END
 		
 		--FILTER odds value
-		IF(@odds > 0)
+		IF @odds > 0
 		BEGIN
 			DELETE b
 			FROM #tempBettrans b
@@ -409,7 +406,7 @@ BEGIN
 			WHERE b.EventType = 1
 				AND m.eventdate BETWEEN @tempFromDate AND @ToDate 
 		END
-		
+
 		IF(EXISTS(SELECT TOP 1 1 FROM #tempBettrans WHERE EventType = 2 ))
 		BEGIN
 			UPDATE b
@@ -435,7 +432,7 @@ BEGIN
 			WHERE b.EventType = 3
 				AND vs.eventdate BETWEEN @tempFromDate AND @ToDate 
 		END		
-		
+
 		--FILTER product
 		DELETE b
 		FROM #tempBettrans b
@@ -460,8 +457,6 @@ BEGIN
 			,@MoveBetsDay 	= @MoveBetsDay
 			,@Odds 			= @Odds
 			,@ReportBy  	= @ReportBy
-
-		
 	END
 
 	-- CHECK sumtotal
@@ -508,19 +503,19 @@ BEGIN
 		END
 
 		--select @totalBettrans totalBettrans, @totalSumRpt totalSumRpt
-		IF( @totalBettrans > 0 OR @totalSumRpt > 0 )
+		IF @totalBettrans > 0 OR @totalSumRpt > 0
 		BEGIN
 			--UPDATE sumtotal
 			UPDATE s
-			SET s.totalrow = CASE 	WHEN s.whticket = 1 THEN @totalBettrans
-									WHEN s.whticket = 2 THEN @totalSumRpt
-								END
-			FROM #tempSumTotal s 
+			SET s.totalrow = CASE
+								WHEN s.whticket = 1 THEN @totalBettrans
+								WHEN s.whticket = 2 THEN @totalSumRpt
+							END
+			FROM #tempSumTotal s
 			WHERE ISNULL(s.totalrow, 0) = 0
 		END
-		
 	END
-	
+
 	GET_SUMMEMBER:
 	BEGIN
 		DECLARE @pStartDate	DATE
@@ -540,23 +535,22 @@ BEGIN
 			,@Odds 			= @Odds
 			,@ReportBy  	= @ReportBy
 			,@MoveBetsDay 	= @MoveBetsDay
-	END	
-	
- 
+	END
+
 	OutputResult:
 	BEGIN
 		WITH CTE_Bettype AS
 		(
 			SELECT b.typeID
 				,CASE 
-					WHEN @Langkey =  'zh-CN'	AND ISNULL(bt.typenamecn, '')		<> '' THEN bt.typenamecn
-					WHEN @Langkey =  'zh-TW'	AND ISNULL(bt.typenamec_uni, '')	<> '' THEN bt.typenamec_uni
-					WHEN @Langkey =  'zh-Hans'	AND ISNULL(bt.typenamecn, '')		<> '' THEN bt.typenamecn
-					WHEN @Langkey =  'th-TH'	AND ISNULL(bt.typenameth, '')		<> '' THEN bt.typenameth
-					WHEN @Langkey =  'ja-JP'	AND ISNULL(bt.typenamej, '')		<> '' THEN bt.typenamej
-					WHEN @Langkey =  'ko-KR'	AND ISNULL(bt.typenameko, '')		<> '' THEN bt.typenameko
-					WHEN @Langkey =  'es'  		AND ISNULL(bt.typenameES, '')		<> '' THEN bt.typenameES
-					WHEN @Langkey =  'vi-VN'	AND ISNULL(bt.typenamee, '')		<> '' THEN bt.typenamee
+					WHEN @Langkey = 'zh-CN'		AND ISNULL(bt.typenamecn, '')		<> '' THEN bt.typenamecn
+					WHEN @Langkey = 'zh-TW'		AND ISNULL(bt.typenamec_uni, '')	<> '' THEN bt.typenamec_uni
+					WHEN @Langkey = 'zh-Hans'	AND ISNULL(bt.typenamecn, '')		<> '' THEN bt.typenamecn
+					WHEN @Langkey = 'th-TH'		AND ISNULL(bt.typenameth, '')		<> '' THEN bt.typenameth
+					WHEN @Langkey = 'ja-JP'		AND ISNULL(bt.typenamej, '')		<> '' THEN bt.typenamej
+					WHEN @Langkey = 'ko-KR'		AND ISNULL(bt.typenameko, '')		<> '' THEN bt.typenameko
+					WHEN @Langkey = 'es'		AND ISNULL(bt.typenameES, '')		<> '' THEN bt.typenameES
+					WHEN @Langkey = 'vi-VN'		AND ISNULL(bt.typenamee, '')		<> '' THEN bt.typenamee
 					ELSE typenamee 
 				END AS typenamee
 			FROM #bettype b
@@ -566,7 +560,6 @@ BEGIN
 				ON b.typeID 	= ss2.bettype
 				INNER JOIN dbo.bettype bt WITH(NOLOCK)
 				ON ISNULL(COALESCE(ss.GroupTypeID, ss2.GroupTypeID), b.typeID) = bt.typeid
-				
 			GROUP BY 
 				b.typeID
 				,CASE 
@@ -603,12 +596,8 @@ BEGIN
 			, SUM(b.winlost) 	AS winlost
 			, SUM(b.BetEffective) AS BetEffective
 			, SUM(b.playercomm) AS playercomm
-
 		FROM #custData b
-			INNER JOIN CTE_Bettype bt
-			ON b.bettype = bt.typeID
-			
-			
+			INNER JOIN CTE_Bettype bt ON b.bettype = bt.typeID
 		GROUP BY
 			b.RowNo
 			, CASE WHEN @ReportBy =  2 THEN CONVERT(VARCHAR(6), b.winlostdate, 112)
@@ -619,16 +608,15 @@ BEGIN
 			, b.currency
 			, b.sporttype
 			, CASE WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) THEN  N'NG - ' + bt.typenamee
-				 WHEN (b.bettype BETWEEN 1201 AND 1299) THEN  N'VS - '+bt.typenamee + CASE WHEN b.bettype = 1204 THEN '(Soccer)'
+				WHEN (b.bettype BETWEEN 1201 AND 1299) THEN  N'VS - '+bt.typenamee + CASE WHEN b.bettype = 1204 THEN '(Soccer)'
 																					WHEN b.bettype = 1235 THEN '(Tennis)'
 																					ELSE ''
 																				END
-				 WHEN (b.bettype BETWEEN 2701 AND 2829) THEN  N'VS2 - ' + bt.typenamee
-				 ELSE  bt.typenamee
+				WHEN (b.bettype BETWEEN 2701 AND 2829) THEN  N'VS2 - ' + bt.typenamee
+				ELSE  bt.typenamee
 			END
-		ORDER BY 
-			b.rowno ASC
-			
+		ORDER BY b.rowno ASC
+
 		-- OUTPUT sumtotal
 		SELECT 
 			SUM(ISNULL(s.betcount, 0))		AS SumBetCount
@@ -640,7 +628,7 @@ BEGIN
 			
 		FROM #tempSumTotal s
 	END
-		 
+
 	DROP TABLE #tempCust
 	DROP TABLE #ProductID
 	DROP TABLE #bettype 
@@ -650,6 +638,7 @@ BEGIN
 	DROP TABLE #custData
 	DROP TABLE #tempSumTotal
 	DROP TABLE #tempBettrans
+
 	--SET duration time
 	SET @Duration = DATEDIFF(MS, @startTime, GETDATE())
 END

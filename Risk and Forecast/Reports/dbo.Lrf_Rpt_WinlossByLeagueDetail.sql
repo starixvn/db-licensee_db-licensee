@@ -1,5 +1,5 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
- 
+
 ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByLeagueDetail]
 	@Odds FLOAT = 0
 	,@LeagueID INT
@@ -20,10 +20,10 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByLeagueDetail]
 AS
 
 /*
-	Created: 20140102@Florent  
-	Task :   
+	Created: 20140102@Florent
 	DB: DBEXT.bodb02
-	Revisions:  
+
+	Revisions:
 		- 20140207@Florent: Add filter ShowBA and ShowSB
 		- 20140214@Florent: use new sum table rptCustomerMatch
 		- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
@@ -43,7 +43,6 @@ AS
 		- 20191118@Amanda: Add new bet types (BM AIO - Phase 2) [RedmineID: #120336]
 		- 20190102@Vickie: Add new bet types (PH AIO - Phase 5) [RedmineID: #126005]
 		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
-	Param's Explanation:
 */
 
 BEGIN
@@ -79,7 +78,7 @@ BEGIN
 
 	BEGIN CATCH
 		SELECT ErrCode = 100
-			,ErrMsg = N'Paramter invalid.'
+			,ErrMsg = N'Parameter invalid.'
 
 		RETURN
 	END CATCH;
@@ -104,7 +103,7 @@ BEGIN
 		,liveindicator BIT
 		,betcount INT
 		)
-	---
+
 	---
 	DECLARE @Status AS TABLE (StatusID INT)
 
@@ -149,16 +148,16 @@ BEGIN
 				,b.currency
 				,CASE 
 					WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-								OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
-								OR b.bettype BETWEEN 81 AND 88
-								OR b.bettype BETWEEN 90 AND 120
-								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
-								OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
-								OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
-								OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
-								OR (b.bettype NOT IN (703, 711) AND b.bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
-								OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
-							)
+						OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
+						OR b.bettype BETWEEN 81 AND 88
+						OR b.bettype BETWEEN 90 AND 120
+						OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
+						OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
+						OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
+						OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
+						OR (b.bettype NOT IN (703, 711) AND b.bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
+						OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
+						)
 						THEN CASE 
 								WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
 								WHEN b.OddsType = 2 THEN b.Odds + 1 --hongkong to decimal
@@ -195,14 +194,14 @@ BEGIN
 				,COUNT(1) betcount
 			FROM
 				--#TempBetList b  
-				bettrans AS b WITH (NOLOCK)
+				dbo.bettrans AS b WITH (NOLOCK)
 				INNER JOIN match m WITH (NOLOCK) ON m.matchid = b.matchid
 				INNER JOIN @TempAg ta ON b.recommend = ta.CustId AND b.Currency = ta.Currency
 			WHERE (--SportBook
 					b.bettype <= 30
 					OR (b.bettype BETWEEN 121 AND 999)
-					OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
-					OR (b.Bettype BETWEEN 9001 and 9399) -- E-Sports
+					OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
+					OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports
 					)
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
@@ -213,7 +212,7 @@ BEGIN
 					FROM @status
 					)
 				AND m.leagueid = @LeagueID
-				and b.tpositiontaking=0 --GetBA
+				AND b.tpositiontaking=0 --GetBA
 				AND (@matchid=0 or b.matchid = @MatchID)
 			GROUP BY b.custid
 				,b.Winlostdate
@@ -260,7 +259,7 @@ BEGIN
 											END
 								END
 					ELSE b.Odds
-					END
+				END
 			ORDER BY b.winlostdate DESC
 		END
 
@@ -322,25 +321,22 @@ BEGIN
 				,COUNT(1) betcount
 			FROM
 				--#TempBetList b  
-				bettrans AS b WITH (NOLOCK)
+				dbo.bettrans AS b WITH (NOLOCK)
 				INNER JOIN match m WITH (NOLOCK) ON m.matchid = b.matchid
 				INNER JOIN @TempAg ta ON b.recommend = ta.CustId AND b.Currency = ta.Currency
 			WHERE (
 					b.bettype <= 30
 					OR (b.bettype BETWEEN 121 AND 999)
-					OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
-					OR (b.Bettype BETWEEN 9001 and 9399) -- E-Sports
+					OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
+					OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports
 					)
 				AND (b.bettype < 901 OR b.bettype > 904)
-				AND (b.bettype < 911 OR b.bettype > 914)			
+				AND (b.bettype < 911 OR b.bettype > 914)
 				AND b.winlostdate BETWEEN @TempFromDate AND @todate
-				AND b.statusID IN (
-					SELECT *
-					FROM @status
-					)
+				AND b.statusID IN (SELECT * FROM @status)
 				AND m.leagueid = @LeagueID
 				AND b.tpositiontaking <> 0  
-				AND (@matchid=0 or b.matchid = @MatchID)
+				AND (@matchid = 0 or b.matchid = @MatchID)
 			GROUP BY b.custid
 				,b.Winlostdate
 				,b.currency
@@ -398,9 +394,9 @@ BEGIN
 		ELSE
 			SET @TempToDate = @ToDate
 
-		--Get general data  
-		begin
-			IF @ShowBA=1 
+		--Get general data
+		BEGIN
+			IF @ShowBA = 1
 			BEGIN
 				INSERT INTO @AgMatchWLDetails
 				SELECT b.custid
@@ -430,7 +426,7 @@ BEGIN
 													THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
 												WHEN b.odds >= 0
 													THEN (1 + b.odds)
-												END
+											END
 									WHEN OddsType = 5
 										THEN --american odds to decimal
 											CASE 
@@ -440,7 +436,7 @@ BEGIN
 													THEN 2
 												WHEN (b.odds * 100) > 0
 													THEN (1 + b.odds)
-												END
+											END
 									END
 						ELSE b.Odds
 						END odds
@@ -465,18 +461,15 @@ BEGIN
 					AND (
 						b.bettype <= 30
 						OR (b.bettype BETWEEN 121 AND 999)
-						OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
-						OR (b.Bettype BETWEEN 9001 and 9399) -- E-Sports
+						OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
+						OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports
 						)
 					AND (b.bettype < 901 OR b.bettype > 904)
 					AND (b.bettype < 911 OR b.bettype > 914)
 					AND (@matchid=0 or b.matchid = @MatchID)
-					AND b.statusID IN (
-						SELECT *
-						FROM @status
-						)
-					And b.isBA=1
-					AND b.leagueid=@leagueid
+					AND b.statusID IN (SELECT * FROM @status)
+					And b.isBA = 1
+					AND b.leagueid = @leagueid
 				GROUP BY b.custid
 					,b.Winlostdate
 					,ta.Currency
@@ -518,9 +511,10 @@ BEGIN
 												END
 									END
 						ELSE b.Odds
-						END
+					END
 			END
-				IF @ShowSB=1 
+
+			IF @ShowSB = 1 
 			BEGIN
 				INSERT INTO @AgMatchWLDetails
 				SELECT b.custid
@@ -570,7 +564,7 @@ BEGIN
 					,SUM(winlost)
 					,- SUM(b.winlost) AS LicenseeWL
 					,0 AmountDueToBA
-					,0 AS CommBA			
+					,0 AS CommBA
 					,0 AS PlayerComm
 					,0 matchcode
 					,0 AS IsNeutral
@@ -582,19 +576,19 @@ BEGIN
 					AND (
 						b.bettype <= 30
 						OR (b.bettype BETWEEN 121 AND 999)
-						OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
-						OR (b.Bettype BETWEEN 9001 and 9399) -- E-Sports
+						OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
+						OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports
 						)
 					AND (b.bettype < 901 OR b.bettype > 904)
 					AND (b.bettype < 911 OR b.bettype > 914)
 					--AND b.matchid = @MatchID
-					AND (@matchid=0 or b.matchid = @MatchID)
+					AND (@matchid = 0 or b.matchid = @MatchID)
 					AND b.statusID IN (
 						SELECT *
 						FROM @status
 						)
-					AND b.isBA=0
-					and b.leagueid=@leagueid
+					AND b.isBA = 0
+					AND b.leagueid = @leagueid
 				GROUP BY b.custid
 					,b.Winlostdate
 					,ta.currency
@@ -636,7 +630,7 @@ BEGIN
 												END
 									END
 						ELSE b.Odds
-						END
+					END
 			END
 		end
 	END
@@ -663,8 +657,6 @@ BEGIN
 			,leagueid
 		) A
 
-	--SELECT @TotalRow TotalRow 
-	-- Result  
 	SELECT A.*
 	FROM (
 		SELECT ROW_NUMBER() OVER (
@@ -681,7 +673,6 @@ BEGIN
 			,leagueid
 			,CAST(SUM(turnover * e.Rate) AS MONEY) AS turnover
 			,CAST(SUM(MemberWinLost * e.Rate) AS MONEY) AS MemberWinLost
-
 			--- licenseeWL  
 			,CAST(SUM(LicenseeWL * e.Rate) AS MONEY) AS LicenseeWL
 			,CAST(SUM(CommBA * e.Rate) AS MONEY) AS CommBA
@@ -689,7 +680,7 @@ BEGIN
 			,CAST(SUM((AmtDuetoBA) * e.Rate) AS MONEY) AS AmtDuetoBA
 			,SUM(b.betcount) betcount
 		FROM @AgMatchWLDetails b
-			INNER JOIN Customer c WITH (NOLOCK) ON b.custid = c.custid
+			INNER JOIN dbo.Customer c WITH (NOLOCK) ON b.custid = c.custid
 			INNER JOIN @ExchangeDaily e ON b.winlostdate BETWEEN e.FromDate AND e.ToDate
 				AND b.currency = e.ExchangeId
 		WHERE odds >= @odds
@@ -712,7 +703,7 @@ BEGIN
 		,CAST(SUM((AmtDuetoBA) * e.Rate) AS MONEY) AS AmtDuetoBA
 		,SUM(b.betcount) betcount
 	FROM @AgMatchWLDetails b
-		INNER JOIN Customer c(NOLOCK) ON b.custid = c.custid
+		INNER JOIN dbo.Customer c WITH (NOLOCK) ON b.custid = c.custid
 		INNER JOIN @ExchangeDaily e ON b.winlostdate BETWEEN e.FromDate AND e.ToDate
 			AND b.currency = e.ExchangeId
 	WHERE odds >= @odds

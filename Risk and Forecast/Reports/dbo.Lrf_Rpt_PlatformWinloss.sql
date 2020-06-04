@@ -22,7 +22,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_PlatformWinloss]
 	@ShowSXG	BIT = 0, -- Sexy Gaming
 	@ShowI4D	BIT = 0,
 	@ShowSBC	BIT = 0, -- Saba Club
-	@PlatformType	TINYINT=0,
+	@PlatformType	TINYINT			= 0,
 	@MoveBetsDay	SMALLDATETIME,
 	@drawfilter		SMALLINT		= 1,
 	@AgentList		VARCHAR(MAX),
@@ -397,8 +397,14 @@ BEGIN
 						*
 						CASE WHEN @drawfilter IN (2,3) THEN
 							CASE WHEN b.statusID = 111 THEN 0
-							WHEN b.winlostdate >= @HWHLCutDate AND b.statusID IN (112, 113) AND b.modds IN (-0.25, 0.25) AND b.bettype NOT IN (29,38) THEN 0.5 -- exclude parlay, bet builder
-							WHEN b.winlostdate < @HWHLCutDate AND (b.statusID = 112 OR b.statusID = 113) AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18,124,125,482,483,484,485) THEN 0.5
+							WHEN b.winlostdate >= @HWHLCutDate
+								AND b.statusID IN (112, 113)
+								AND b.modds IN (-0.25, 0.25)
+								AND b.bettype NOT IN (29,38) THEN 0.5 -- exclude parlay, bet builder
+							WHEN b.winlostdate < @HWHLCutDate
+								AND (b.statusID = 112 OR b.statusID = 113)
+								AND ABS(modds) = 0.25
+								AND b.bettype IN(1,3,7,8,17,18,124,125,482,483,484,485) THEN 0.5
 							ELSE 1 END
 						ELSE 1 END
 					) turnover,
@@ -414,7 +420,7 @@ BEGIN
 					   BetCount
 			FROM dbo.bettrans AS b WITH (NOLOCK)
 				INNER JOIN #tempAg AS tma ON tma.CustID = b.recommend AND b.currency = tma.currency
-				INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active AS BA WITH (NOLOCK) ON b.transid = BA.transid 	 	
+				INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active AS BA WITH (NOLOCK) ON b.transid = BA.transid
 				INNER JOIN #PlatformList AS pl ON pl.betfrom = b.betfrom
 			WHERE
 				b.statusID IN (111, 112, 113)
@@ -461,10 +467,11 @@ BEGIN
 			WHERE
 				b.statusID IN (111, 112, 113)
 				AND b.winlostdate BETWEEN @TempFromDate AND @TDate
-				AND (b.bettype<=30 OR (b.bettype BETWEEN 121 AND 999)
-								 OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
-								 OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0
-								 OR b.Bettype = 38					 -- Single Match Parlay
+				AND (b.bettype <= 30
+					OR (b.bettype BETWEEN 121 AND 999)
+					OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
+					OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0
+					OR b.Bettype = 38					 -- Single Match Parlay
 				) 
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
@@ -475,8 +482,7 @@ BEGIN
 				b.statusID,
 				pl.PlatformType
 		END
-	
-	
+
 		IF (@ShowNG=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @ShowVB = 1 OR @ShowAB =1  OR @ShowFW =1 OR @ShowVS2 = 1 OR @ShowLT = 1 OR @ShowPP = 1 OR @ShowCC = 1 OR @ShowSG = 1 OR @ShowVRG = 1 OR @ShowTG = 1 OR @ShowI4D = 1 OR @ShowSXG = 1 OR @ShowSBC = 1)
 		BEGIN
 			INSERT INTO #WinLoss (Winlostdate, Currency, ProductPrefix, PlatformType, Turnover, Winlost, LicenseeWL, playercomm, BetCount)
@@ -531,7 +537,7 @@ BEGIN
 			b.isBA,
 			pl.PlatformType,
 			SUM(b.turnover
-			*
+				*
 				CASE WHEN @drawfilter IN (2,3) THEN
 					CASE WHEN b.statusID = 111 THEN 0
 					WHEN b.statusID IN (114,115) THEN 0.5
@@ -548,7 +554,7 @@ BEGIN
 					ELSE 1 END
 				ELSE 1 END AS BetCount
 		FROM bodb_licenseereport.dbo.rptLicWinloss2 AS b WITH (NOLOCK)
-			INNER JOIN 	#tempAg AS ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
+			INNER JOIN #tempAg AS ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
 			INNER JOIN #PlatformList AS pl ON pl.betfrom = b.betfrom
 		WHERE b.winlostdate BETWEEN @FDate AND @TempToDate
 			AND b.roleid = 1  
