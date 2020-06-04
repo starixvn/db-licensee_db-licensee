@@ -86,6 +86,7 @@ BEGIN
 		,@AGComm_Old DECIMAL(9,8)
 		,@FWComm_Old DECIMAL(9,8)
 		,@IsDefault_Old BIT
+		,@custID_cnt INT = 0
 	DECLARE @IsexistMember BIT = 0
 		
 	DECLARE @LogSPData VARCHAR(MAX)
@@ -107,6 +108,14 @@ BEGIN
 		RETURN
 	END
 
+	SET @custID_cnt = (SELECT COUNT(1) FROM LicenseeCustComm WITH (NOLOCK) WHERE LicenseeID = @LicenseeID AND GroupCommID = @GroupCommID)
+	
+	IF @custID_cnt > 200000
+	BEGIN
+		SELECT @ErrMsg = 'Not support for big line for update commission group, please contact IT for help.'
+		RETURN
+	END
+		
 	IF NOT EXISTS(
 		SELECT TOP 1 1 FROM dbo.LicenseeGroupComm WITH (NOLOCK)
 		WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID
