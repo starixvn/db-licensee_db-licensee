@@ -1,26 +1,32 @@
-ï»¿/*<info serverAlias="DBCUST-CustDB" executers="" viewers="vnteam" isFunction="0"></info>*/
-ALTER PROCEDURE [dbo].[Acc_ExecRep_Cust_02]
+/*<info serverAlias="DBCUST-CUSTDB" executers="" viewers="" isFunction="0"></info>*/
+ALTER PROCEDURE [dbo].[Acc_CustSetting3rd_16]
 	@IDs VARCHAR(MAX),
-	@SBComm DECIMAL(9,8) ,
+	@SBComm DECIMAL(9,8) = 0,
 	@NGComm DECIMAL(9,8)=0,	
 	@ParlayComm DECIMAL(9,8)=0,
 	@AllbetComm DECIMAL(9,8)=0,	
 	@MacauComm DECIMAL(9,8)=0,	
 	@PPComm DECIMAL(9,8)=0,
 	@FWComm DECIMAL(9,8)=0,
-	@IsUpdateSB BIT = 1,
-	@IsParlayComm BIT = 1,
+	@IsUpdateSB BIT = 0,
+	@IsParlayComm BIT = 0,
 	@IsUpdateNG BIT = 0,
 	@IsUpdateAllbet BIT = 0,
 	@IsUpdateMacau BIT = 0,
 	@IsUpdatePP BIT = 0,
-	@IsUpdateFW BIT = 0
+	@IsUpdateFW BIT = 0,
+	@AgentID INT = NULL,
+	@AllbetComm_Group DECIMAL(9,8)=0,	
+	@MacauComm_Group DECIMAL(9,8)=0,	
+	@PPComm_Group DECIMAL(9,8)=0,
+	@FWComm_Group DECIMAL(9,8)=0	
+	
 AS
 /*
 Created: 20120730@Henry
 Task : Update Licensee's players commission
 DB: DBCUST/CustDB
-Original: 
+Original: Acc_ExecRep_Cust_02
 
 Revisions:
 	- 20131023@Hannah: offer Live Casino commission
@@ -38,11 +44,11 @@ Revisions:
 	- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774]
 	
 Param's Explanation:
-â€¢ @ErrCode:
+• @ErrCode:
     = 0: Transaction recorded successfully.
     > 0: Specific Error.
     
-â€¢ @ErrMsg: Error description.
+• @ErrMsg: Error description.
 */
 BEGIN
 	SET NOCOUNT ON;
@@ -60,16 +66,19 @@ BEGIN
 	DECLARE @InputRes_updateComm AS TABLE (custid INT PRIMARY KEY
 					, IsfinishedSB BIT
 					, IsfinishedParlay BIT
-					, IsFinishNG BIT
-					, IsfinishedAllbet BIT
-					, IsfinishedMacau BIT
-					, IsfinishedPP BIT
-					, IsfinishedFishingWorld BIT
-					, IsfinishedSBParlay BIT)
+					, IsfinishedSBParlay BIT
+					--, IsFinishNG BIT
+					--, IsfinishedAllbet BIT
+					--, IsfinishedMacau BIT
+					--, IsfinishedPP BIT
+					--, IsfinishedFishingWorld BIT
 					
+					)
+	
+			
 	DECLARE @InputRes_updateComm_batch AS TABLE (custid INT PRIMARY KEY)
 	DECLARE @xml XML
-	DECLARE @AgentID INT 
+	--DECLARE @AgentID INT 
 	
 	SET @xml = CONVERT(XML, @IDs) 
 	
@@ -85,7 +94,7 @@ BEGIN
 		
 			DELETE @InputRes_updateComm_batch
 			
-			UPDATE TOP (100) t
+			UPDATE TOP (120) t
 				SET IsfinishedSBParlay = 1
 			OUTPUT deleted.custid
 			INTO @InputRes_updateComm_batch (custid)	
@@ -109,7 +118,7 @@ BEGIN
 		
 			DELETE @InputRes_updateComm_batch
 			
-			UPDATE TOP (100) t
+			UPDATE TOP (120) t
 				SET IsfinishedSB = 1
 			OUTPUT deleted.custid
 			INTO @InputRes_updateComm_batch (custid)	
@@ -126,74 +135,62 @@ BEGIN
 			WHERE playerdiscount <> @SBComm  	
 				AND bettype NOT IN (9,29)
 		END
-		
 	END
 	ELSE
 	IF @IsParlayComm = 1
 	BEGIN
-		WHILE (1=1)
-		BEGIN
+		--WHILE (1=1)
+		--BEGIN
 		
-			DELETE @InputRes_updateComm_batch
+		--	DELETE @InputRes_updateComm_batch
 			
-			UPDATE TOP (500) t
-				SET IsfinishedParlay = 1
-			OUTPUT deleted.custid
-			INTO @InputRes_updateComm_batch (custid)	
-			FROM @InputRes_updateComm t
-			WHERE t.IsfinishedParlay IS NULL	
+		--	UPDATE TOP (500) t
+		--		SET IsfinishedParlay = 1
+		--	OUTPUT deleted.custid
+		--	INTO @InputRes_updateComm_batch (custid)	
+		--	FROM @InputRes_updateComm t
+		--	WHERE t.IsfinishedParlay IS NULL	
 			
-			IF @@ROWCOUNT = 0
-				BREAK
+		--	IF @@ROWCOUNT = 0
+		--		BREAK
 				
 			UPDATE cs
 				SET playerdiscount = @ParlayComm 
-			FROM @InputRes_updateComm_batch r
+			FROM @InputRes_updateComm r
 				INNER JOIN dbo.Dep_CustSetting cs WITH (ROWLOCK, UPDLOCK) ON r.custid = cs.custid
 			WHERE playerdiscount <>  @ParlayComm  	
 				AND bettype  IN (9,29)
-		END
+		--END
 	END
 		
 	IF (@IsUpdateNG=1) -- update Number Game
 	BEGIN
-		WHILE (1=1)
-		BEGIN
+		--WHILE (1=1)
+		--BEGIN
 		
-			DELETE @InputRes_updateComm_batch
+		--	DELETE @InputRes_updateComm_batch
 			
-			UPDATE TOP (500) t
-				SET IsFinishNG = 1
-			OUTPUT deleted.custid
-			INTO @InputRes_updateComm_batch (custid)	
-			FROM @InputRes_updateComm t
-			WHERE t.IsFinishNG IS NULL	
+		--	UPDATE TOP (500) t
+		--		SET IsFinishNG = 1
+		--	OUTPUT deleted.custid
+		--	INTO @InputRes_updateComm_batch (custid)	
+		--	FROM @InputRes_updateComm t
+		--	WHERE t.IsFinishNG IS NULL	
 			
-			IF @@ROWCOUNT = 0 BREAK
+		--	IF @@ROWCOUNT = 0 BREAK
 				
 			UPDATE CS 
 				SET playerdiscount = @NGComm 
-			FROM @InputRes_updateComm_batch r 
+			FROM @InputRes_updateComm r 
 				INNER JOIN [dbo].Dep_CustSetting3rd CS WITH (ROWLOCK, UPDLOCK) ON r.custid = cs.custid
 			WHERE playerdiscount <> @NGComm
 				AND sporttype = 161 
 				AND bettype BETWEEN 81 AND 90 	
 				
-		END
+		--END
 		
 	END
-	
-	IF ( @IsUpdateAllbet = 1
-			OR @IsUpdateMacau = 1
-			OR @IsUpdatePP = 1
-			OR @IsUpdateFW = 1)
-	BEGIN		
-		SET @AgentID = (SELECT TOP (1) recommend 
-						FROM dbo.CustInfo ci WITH(NOLOCK)
-							INNER JOIN @InputRes_updateComm r ON ci.custid = r.custid
-						)
-	END	
-	
+																													
 	IF (@IsUpdateAllbet=1)
 	BEGIN
 		IF EXISTS(SELECT TOP 1 1 
@@ -202,29 +199,23 @@ BEGIN
 					WHERE isGroupedComm = 1)
 		BEGIN
 			--check if setting change really or not before move
-			IF EXISTS(SELECT 1
-					FROM dbo.Dep_CustDiscountGroupSetting_Member grp WITH(NOLOCK)
-					WHERE AgentID = @AgentID
-						AND sporttype = 211
-						AND bettype = 2401
-						AND playerdiscount <> @AllbetComm
-					)
+			IF @AllbetComm_Group <> @AllbetComm
 			BEGIN		
 				--move to individual setting
-				WHILE (1=1)
-				BEGIN
+				--WHILE (1=1)
+				--BEGIN
 				
-					DELETE @InputRes_updateComm_batch
+				--	DELETE @InputRes_updateComm_batch
 					
-					UPDATE TOP (500) t
-						SET IsfinishedAllbet = 1
-					OUTPUT deleted.custid
-					INTO @InputRes_updateComm_batch (custid)	
-					FROM @InputRes_updateComm t
-					WHERE t.IsfinishedAllbet IS NULL	
+				--	UPDATE TOP (500) t
+				--		SET IsfinishedAllbet = 1
+				--	OUTPUT deleted.custid
+				--	INTO @InputRes_updateComm_batch (custid)	
+				--	FROM @InputRes_updateComm t
+				--	WHERE t.IsfinishedAllbet IS NULL	
 					
-					IF @@ROWCOUNT = 0
-						BREAK
+				--	IF @@ROWCOUNT = 0
+				--		BREAK
 						
 					INSERT INTO dbo.Dep_CustDiscountSetting_Member
 						(CustID
@@ -244,14 +235,14 @@ BEGIN
 					FROM dbo.Dep_CustDiscountGroupSetting_Member grp WITH(NOLOCK)
 					CROSS APPLY (SELECT csm.custid
 								FROM dbo.Dep_CustSettingMode csm WITH(NOLOCK)
-									INNER JOIN @InputRes_updateComm_batch r ON r.custid = csm.CustID
+									INNER JOIN @InputRes_updateComm r ON r.custid = csm.CustID
 								WHERE isGroupedComm = 1) t
 					LEFT JOIN dbo.Dep_CustDiscountSetting_Member cs WITH(NOLOCK) ON cs.custid = t.custid
 																				AND cs.sporttype = grp.sporttype
 																				AND cs.bettype = grp.bettype
 					WHERE AgentID = @AgentID
 						AND cs.custid IS NULL
-				END
+				--END
 				
 				UPDATE csm 
 					SET	isGroupedComm = 0	
@@ -280,29 +271,23 @@ BEGIN
 					WHERE isGroupedComm = 1)
 		BEGIN
 			--check if setting change really or not before move
-			IF EXISTS(SELECT 1
-					FROM dbo.Dep_CustDiscountGroupSetting_Member grp WITH(NOLOCK)
-					WHERE AgentID = @AgentID
-						AND sporttype = 212
-						AND bettype = 4001
-						AND playerdiscount <> @MacauComm
-					)
+			IF @MacauComm_Group <> @MacauComm
 			BEGIN		
-				--move to individual setting
-				WHILE (1=1)
-				BEGIN
+				----move to individual setting
+				--WHILE (1=1)
+				--BEGIN
 				
-					DELETE @InputRes_updateComm_batch
+				--	DELETE @InputRes_updateComm_batch
 					
-					UPDATE TOP (500) t
-						SET IsfinishedMacau = 1
-					OUTPUT deleted.custid
-					INTO @InputRes_updateComm_batch (custid)	
-					FROM @InputRes_updateComm t
-					WHERE t.IsfinishedMacau IS NULL	
+				--	UPDATE TOP (500) t
+				--		SET IsfinishedMacau = 1
+				--	OUTPUT deleted.custid
+				--	INTO @InputRes_updateComm_batch (custid)	
+				--	FROM @InputRes_updateComm t
+				--	WHERE t.IsfinishedMacau IS NULL	
 					
-					IF @@ROWCOUNT = 0
-						BREAK
+				--	IF @@ROWCOUNT = 0
+				--		BREAK
 						
 					INSERT INTO dbo.Dep_CustDiscountSetting_Member
 						(CustID
@@ -322,7 +307,7 @@ BEGIN
 					FROM dbo.Dep_CustDiscountGroupSetting_Member grp WITH(NOLOCK)
 					CROSS APPLY (SELECT csm.custid
 								FROM dbo.Dep_CustSettingMode csm WITH(NOLOCK)
-									INNER JOIN @InputRes_updateComm_batch r ON csm.CustID = r.custid
+									INNER JOIN @InputRes_updateComm r ON csm.CustID = r.custid
 								WHERE isGroupedComm = 1) t
 					LEFT JOIN dbo.Dep_CustDiscountSetting_Member cs WITH(NOLOCK) ON cs.custid = t.custid
 																				AND cs.sporttype = grp.sporttype
@@ -330,7 +315,7 @@ BEGIN
 					WHERE AgentID = @AgentID
 						AND cs.custid IS NULL
 						
-				END
+				--END
 				
 				UPDATE csm
 					SET	isGroupedComm = 0	
@@ -357,29 +342,23 @@ BEGIN
 					WHERE isGroupedComm = 1)
 		BEGIN
 			--check if setting change really or not before move
-			IF EXISTS(SELECT TOP (1) 1
-					FROM dbo.Dep_CustDiscountGroupSetting_Member grp WITH(NOLOCK)
-					WHERE AgentID = @AgentID
-						AND sporttype = 248
-						AND bettype = 4101
-						AND playerdiscount <> @PPComm
-					)
+			IF @PPComm_Group <> @PPComm
 			BEGIN		
-				--move to individual setting
-				WHILE (1=1)
-				BEGIN
+				----move to individual setting
+				--WHILE (1=1)
+				--BEGIN
 				
-					DELETE @InputRes_updateComm_batch
+				--	DELETE @InputRes_updateComm_batch
 					
-					UPDATE TOP (500) t
-						SET IsfinishedPP = 1
-					OUTPUT deleted.custid
-					INTO @InputRes_updateComm_batch (custid)	
-					FROM @InputRes_updateComm t
-					WHERE t.IsfinishedPP IS NULL	
+				--	UPDATE TOP (500) t
+				--		SET IsfinishedPP = 1
+				--	OUTPUT deleted.custid
+				--	INTO @InputRes_updateComm_batch (custid)	
+				--	FROM @InputRes_updateComm t
+				--	WHERE t.IsfinishedPP IS NULL	
 					
-					IF @@ROWCOUNT = 0
-						BREAK
+				--	IF @@ROWCOUNT = 0
+				--		BREAK
 						
 					INSERT INTO dbo.Dep_CustDiscountSetting_Member
 						(CustID
@@ -399,7 +378,7 @@ BEGIN
 					FROM dbo.Dep_CustDiscountGroupSetting_Member grp WITH(NOLOCK)
 					CROSS APPLY (SELECT csm.custid
 								FROM dbo.Dep_CustSettingMode csm WITH(NOLOCK)
-									INNER JOIN @InputRes_updateComm_batch r ON csm.CustID = r.custid
+									INNER JOIN @InputRes_updateComm r ON csm.CustID = r.custid
 								WHERE isGroupedComm = 1) t
 					LEFT JOIN dbo.Dep_CustDiscountSetting_Member cs WITH(NOLOCK) ON cs.custid = t.custid
 																				AND cs.sporttype = grp.sporttype
@@ -407,7 +386,7 @@ BEGIN
 					WHERE AgentID = @AgentID
 						AND cs.custid IS NULL
 						
-				END
+				--END
 				
 				UPDATE csm
 					SET	isGroupedComm = 0
@@ -435,29 +414,23 @@ BEGIN
 					WHERE isGroupedComm = 1)
 		BEGIN
 			--check if setting change really or not before move
-			IF EXISTS(SELECT TOP (1) 1
-					FROM dbo.Dep_CustDiscountGroupSetting_Member grp WITH(NOLOCK)
-					WHERE AgentID = @AgentID
-						AND sporttype = 219
-						AND bettype = 1011
-						AND playerdiscount <> @FWComm
-					)
+			IF @FWComm_Group <> @FWComm
 			BEGIN		
 				--move to individual setting
-				WHILE (1=1)
-				BEGIN
+				--WHILE (1=1)
+				--BEGIN
 				
-					DELETE @InputRes_updateComm_batch
+				--	DELETE @InputRes_updateComm_batch
 					
-					UPDATE TOP (500) t
-						SET IsfinishedFishingWorld = 1
-					OUTPUT deleted.custid
-					INTO @InputRes_updateComm_batch (custid)	
-					FROM @InputRes_updateComm t
-					WHERE t.IsfinishedFishingWorld IS NULL	
+				--	UPDATE TOP (500) t
+				--		SET IsfinishedFishingWorld = 1
+				--	OUTPUT deleted.custid
+				--	INTO @InputRes_updateComm_batch (custid)	
+				--	FROM @InputRes_updateComm t
+				--	WHERE t.IsfinishedFishingWorld IS NULL	
 					
-					IF @@ROWCOUNT = 0
-						BREAK
+				--	IF @@ROWCOUNT = 0
+				--		BREAK
 						
 					INSERT INTO dbo.Dep_CustDiscountSetting_Member
 						(CustID
@@ -477,7 +450,7 @@ BEGIN
 					FROM dbo.Dep_CustDiscountGroupSetting_Member grp WITH(NOLOCK)
 					CROSS APPLY (SELECT csm.custid
 								FROM dbo.Dep_CustSettingMode csm WITH(NOLOCK)
-									INNER JOIN @InputRes_updateComm_batch r ON csm.CustID = r.custid
+									INNER JOIN @InputRes_updateComm r ON csm.CustID = r.custid
 								WHERE isGroupedComm = 1) t
 					LEFT JOIN dbo.Dep_CustDiscountSetting_Member cs WITH(NOLOCK) ON cs.custid = t.custid
 																				AND cs.sporttype = grp.sporttype
@@ -485,7 +458,7 @@ BEGIN
 					WHERE AgentID = @AgentID
 						AND cs.custid IS NULL
 						
-				END
+				--END
 				
 				UPDATE csm
 					SET	isGroupedComm = 0
@@ -505,3 +478,5 @@ BEGIN
 	END
 END
 GO
+
+

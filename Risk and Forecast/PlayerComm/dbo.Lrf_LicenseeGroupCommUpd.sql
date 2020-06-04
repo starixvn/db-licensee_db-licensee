@@ -1,5 +1,5 @@
 ﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
-ALTER PROCEDURE [dbo].[Lrf_LicenseeGroupCommUpd]
+CREATE PROCEDURE [dbo].[Lrf_LicenseeGroupCommUpd]
 	@LicenseeID INT,
 	@GroupCommID INT,
 	@GroupName VARCHAR(100),
@@ -354,5 +354,4 @@ BEGIN
 		SELECT @StrCustID = ''
 	END
 END	
-GO 
-  
+GO

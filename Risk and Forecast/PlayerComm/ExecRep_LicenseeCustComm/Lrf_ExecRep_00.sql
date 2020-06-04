@@ -23,7 +23,8 @@ ALTER PROCEDURE [dbo].[Lrf_ExecRep_00]
 	@GDComm DECIMAL(9,8)=0,	
 	@AGComm DECIMAL(9,8)=0,
 	@FWComm DECIMAL(9,8)=0,
-	@isClearGroupComm BIT = 0
+	@isClearGroupComm BIT = 0,
+	@IsUpdateGroupComm BIT = 0
 
 )
 AS
@@ -48,7 +49,7 @@ BEGIN
 		RETURN
 	
 	DECLARE @TempList_Input AS TABLE (CustID INT PRIMARY KEY )
-	DECLARE @xml XML
+	DECLARE @xml XML, @BA_cnt INT
 	
 	DECLARE @TempLicenseeBA_batch AS TABLE (CustID INT PRIMARY KEY)
 	
@@ -59,23 +60,44 @@ BEGIN
 	FROM @xml.nodes('/root/r') AS T(C)
 	OPTION (OPTIMIZE FOR (@xml = NULL ))
 	
-	
 	IF @isClearGroupComm = 1
 	BEGIN
 		UPDATE lc
 			SET GroupCommID = 0
 		FROM dbo.LicenseeCustComm lc WITH (ROWLOCK,UPDLOCK) 
 			INNER JOIN @TempList_Input t ON lc.CustID = t.CustID
+		
+		RETURN	
+	END
+	-- Get list of BA members
+	INSERT INTO @TempLicenseeBA_batch (CustID)
+	SELECT t.CustID 
+	FROM @TempList_Input  t
+		INNER JOIN dbo.LicenseeBAHistory ba WITH (NOLOCK) ON t.CustID=ba.CustID
+	WHERE ba.Status ='Running' AND ba.LicenseeID = @LicenseeID 
+	
+	SET @BA_cnt = @@ROWCOUNT
+	
+	-- performance tuning for update comm group
+	IF @IsUpdateGroupComm = 1
+	BEGIN
+		UPDATE cs
+			 SET 
+				SBComm = CASE WHEN ba.custID IS NOT NULL AND @LicenseeID <> @MacauLicenseeID THEN 0 ELSE @SBComm END
+				, ParlayComm = CASE WHEN ba.custID IS NOT NULL AND @LicenseeID <> @MacauLicenseeID THEN 0 ELSE @ParlayComm END
+				, GroupCommID = @GroupCommID
+				, NGComm=CASE WHEN  @IsUpdateNG = 1 THEN @NGComm ELSE NGComm END
+				, RNGComm=CASE WHEN @IsUpdateRNG = 1 THEN @RNGComm ELSE RNGComm END
+				, AllbetComm=CASE WHEN @IsUpdateAllbet = 1 THEN @AllbetComm ELSE AllbetComm END
+				, MacauComm= CASE WHEN @IsUpdateMacau = 1 THEN @MacauComm ELSE MacauComm END
+				, PPComm= CASE WHEN @IsUpdatePP = 1 THEN @PPComm ELSE PPComm END
+				, FWComm= CASE WHEN @IsUpdateFW = 1 THEN @FWComm ELSE FWComm END
+		FROM dbo.LicenseeCustComm cs WITH (ROWLOCK,UPDLOCK)
+			INNER JOIN @TempList_Input ip ON cs.CustID = ip.CustID
+			LEFT JOIN @TempLicenseeBA_batch ba ON ba.custid = ip.custid
 	END
 	ELSE
 	BEGIN
-		-- Get list of BA members
-		INSERT INTO @TempLicenseeBA_batch (CustID)
-		SELECT t.CustID 
-		FROM @TempList_Input  t
-			INNER JOIN dbo.LicenseeBAHistory ba WITH (NOLOCK) ON t.CustID=ba.CustID
-		WHERE ba.Status ='Running' AND ba.LicenseeID = @LicenseeID 
-		
 		-- Update SB for Non BA members
 		MERGE dbo.LicenseeCustComm AS target
 		USING (SELECT @LicenseeID AS LicenseeID, t.CustID, @SBComm AS SBComm,@ParlayComm AS ParlayComm, @GroupCommID AS GroupCommID 
@@ -95,7 +117,7 @@ BEGIN
 			VALUES (source.LicenseeID,source.CustID,source.SBComm,Source.ParlayComm,source.GroupCommID);
 					
 		-- Update SB for BA members
-		IF EXISTS (SELECT TOP (1) 1 FROM @TempLicenseeBA_batch)
+		IF @BA_cnt > 0
 		BEGIN
 			MERGE dbo.LicenseeCustComm AS target
 			USING (SELECT @LicenseeID AS LicenseeID
@@ -114,7 +136,7 @@ BEGIN
 			WHEN NOT MATCHED THEN	
 				INSERT (LicenseeID,CustID,SBComm,ParlayComm,GroupCommID)
 				VALUES (source.LicenseeID,source.CustID,source.SBComm,Source.ParlayComm,source.GroupCommID);
-		END	
+		END
 		
 		IF (@IsUpdateNG = 1
 			OR @IsUpdateRNG = 1
@@ -133,6 +155,11 @@ BEGIN
 			FROM dbo.LicenseeCustComm cs WITH (ROWLOCK,UPDLOCK)
 				INNER JOIN @TempList_Input ip ON ip.CustID = cs.CustID
 		END
+		
 	END
+	
 END
+
 GO
+
+

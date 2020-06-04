@@ -1,5 +1,5 @@
 /*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet,bodbAdminNet,Dot_Member" viewers="" isFunction="0"></info>*/
-ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm]
+CREATE PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm]
 (
 	@LicenseeID INT,
 	@strCustID VARCHAR(MAX) = '',--member
@@ -308,12 +308,14 @@ BEGIN
 		'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
 		'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(8000)),SPACE(1))+ '" />'
 	
+	DECLARE @runningCNT INT = 0
 	WHILE (1=1)
 	BEGIN
-	
+		SELECT @runningCNT = @runningCNT + 1
+
 		DELETE FROM @TempList_batch
 		
-		UPDATE TOP (1000) t
+		UPDATE TOP (2500) t
 			SET IsFinished = 1
 		OUTPUT deleted.CustID 
 		INTO @TempList_batch (custID)
@@ -376,7 +378,8 @@ BEGIN
 					@PPComm = @PPComm,	
 					--@GDComm = @GDComm,	
 					--@AGComm = @AGComm,
-					@FWComm = @FWComm
+					@FWComm = @FWComm,
+					@IsUpdateGroupComm = @IsUpdateGroupComm
 			END TRY
 			BEGIN CATCH
 				SELECT @ErrCode = ERROR_NUMBER()
@@ -384,8 +387,9 @@ BEGIN
 			END CATCH
 			
 		END
+		IF @runningCNT % 5 = 0 
+			WAITFOR DELAY '00:00:00.280'
 		
 	END	
 END
-GO
 

@@ -1,5 +1,5 @@
 ﻿/*<info serverAlias="DBCUST-CustDB" executers="bodbLicenseeNet,bodbAdminNet,Dot_Member" viewers="vnteam" isFunction="0"></info>*/
-CREATE PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Main] 
+ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Main] 
 	@strCustID VARCHAR(MAX)
 	,@SBComm DECIMAL(9,8)
 	,@NGComm DECIMAL(9,8) = 0
@@ -49,17 +49,43 @@ BEGIN
 	FROM dbo.f_SplitString(@strCustID,',')
 	OPTION (MAXRECURSION 0)
 
-	DECLARE @ids VARCHAR(MAX), @rowcnt INT, @runningCNT INT, @batchSize int
-	DECLARE @res_batch_tmp AS TABLE (custid INT)
+	DECLARE @ids VARCHAR(MAX), @rowcnt INT, @runningCNT INT, @batchSize INT
+	DECLARE @res_batch_tmp AS TABLE (custid INT 
+									--, IsfinishedSB BIT
+									--, IsfinishedSBParlay BIT
+									)
 	
 	SET @runningCNT = 0
-	SET @batchSize = 1000
-	DECLARE  @strCustID_tmp	VARCHAR(MAX)
+	SET @batchSize = 750
 	
+	DECLARE @InputRes_updateComm_batch AS TABLE (custid INT PRIMARY KEY)
+	DECLARE @AgentID INT = 0
+	DECLARE @AllbetComm_Group DECIMAL(9,8)=0,	
+			@MacauComm_Group DECIMAL(9,8)=0,	
+			@PPComm_Group DECIMAL(9,8)=0,
+			@FWComm_Group DECIMAL(9,8)=0
+	
+	IF (@IsUpdateAllbet = 1 OR @IsUpdateFW = 1 OR @IsUpdateMacau = 1 OR @IsUpdatePP = 1)
+	BEGIN		
+		SET @AgentID = (SELECT TOP (1) recommend 
+							FROM dbo.CustInfo ci WITH(NOLOCK)
+								INNER JOIN @res r ON ci.custid = r.custid
+							)
+		
+		SELECT 
+			@AllbetComm_Group = MAX(CASE WHEN BetType = 2401 THEN playerdiscount ELSE 0 END)
+			,@MacauComm_Group = MAX(CASE WHEN BetType = 4001 THEN playerdiscount ELSE 0 END)
+			,@PPComm_Group = MAX(CASE WHEN BetType = 4101 THEN playerdiscount ELSE 0 END)
+			,@FWComm_Group = MAX(CASE WHEN BetType = 1011 THEN playerdiscount ELSE 0 END)
+		FROM dbo.Dep_CustDiscountGroupSetting_Member grp WITH(NOLOCK)
+		WHERE AgentID = @AgentID
+			AND sporttype IN (211,212,248,219)
+	END	
+								
 	WHILE (1 = 1)
 	BEGIN
-		SELECT @runningCNT = @runningCNT + 1
-
+		SELECT @ids = '', @runningCNT = @runningCNT + 1
+		
 		DELETE @res_batch_tmp
 		
 		UPDATE TOP(@batchSize) t
@@ -71,13 +97,12 @@ BEGIN
 			
 		IF @@ROWCOUNT = 0 BREAK
 	
-		SELECT @strCustID_tmp = (SELECT custid AS '@custid'
-							FROM @res_batch_tmp  t
-							FOR XML PATH('r'), ROOT('root')
-						)
-						
-		EXEC [Acc_ExecRep_Cust_02] 
-			@ids = @strCustID_tmp
+		SET @ids = (SELECT custid AS '@custid'
+						FROM @res_batch_tmp  t
+						FOR XML PATH('r'), ROOT('root')
+						)	
+		EXEC [Acc_CustSetting3rd_16] 
+			@ids = @ids
 			,@SBComm = @SBComm
 			,@NGComm = @NGComm
 			,@ParlayComm = @ParlayComm
@@ -92,12 +117,14 @@ BEGIN
 			,@IsUpdateMacau = @IsUpdateMacau
 			,@IsUpdatePP = @IsUpdatePP
 			,@IsUpdateFW = @IsUpdateFW
-		
-		-- delay 00.100ms after 20 times continuous running
-		IF @runningCNT % 20 = 0 WAITFOR DELAY '00:00:00.100'
-				
+			,@AgentID = @AgentID
+			,@AllbetComm_Group = @AllbetComm_Group
+			,@MacauComm_Group = @MacauComm_Group	
+			,@PPComm_Group = @PPComm_Group
+			,@FWComm_Group = @FWComm_Group
+			
+		-- delay 00.100ms after 5 times continuous running
+		IF @runningCNT % 5 = 0 WAITFOR DELAY '00:00:00.280'
 	END
+	
 END	
-GO
-
-
