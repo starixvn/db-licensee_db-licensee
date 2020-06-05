@@ -112,7 +112,10 @@ BEGIN
 	
 	IF @custID_cnt > 200000
 	BEGIN
-		SELECT @ErrMsg = 'Reaching limit on updating customers commission. Please contact IT to process your request.',@ErrCode = 100	
+		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN  'You have reached the maximum number of updating customers'' commission. Please contact Customer Service to process your request.'
+										ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200049,@Langkey)
+										END, @ErrCode = 100
+		
 		RETURN
 	END
 		
