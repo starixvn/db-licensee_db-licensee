@@ -112,7 +112,7 @@ BEGIN
 	
 	IF @custID_cnt > 200000
 	BEGIN
-		SELECT @ErrMsg = 'Not support for big line for update commission group, please contact IT for help.',@ErrCode = 100	
+		SELECT @ErrMsg = 'Reaching limit on updating customers commission. Please contact IT to process your request.',@ErrCode = 100	
 		RETURN
 	END
 		
