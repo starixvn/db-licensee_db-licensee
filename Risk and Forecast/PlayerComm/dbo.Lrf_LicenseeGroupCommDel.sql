@@ -39,7 +39,7 @@ BEGIN
 		
 	DECLARE @startRun DATETIME
 	DECLARE @endRun DATETIME
-	DECLARE @duration INT
+	DECLARE @duration INT, @custID_cnt INT
 	SET @startRun = GETDATE()
 
 	DECLARE @LogSPData VARCHAR(MAX)
@@ -59,7 +59,17 @@ BEGIN
 		@GroupColor VARCHAR(20), 
 		@GroupName VARCHAR(100), 
 		@IsDefault BIT
-
+	
+	IF @IsRemovePlayercomm = 1
+	BEGIN
+		SET @custID_cnt = (SELECT COUNT(1) FROM LicenseeCustComm WITH (NOLOCK) WHERE LicenseeID = @LicenseeID AND GroupCommID = @GroupCommID)
+		
+		IF @custID_cnt > 200000
+		BEGIN
+			SELECT @ErrMsg = 'Not support for big line for update commission group, please contact IT for help.'
+			RETURN
+		END
+	END
 	IF NOT EXISTS(
 		SELECT TOP 1 1 FROM dbo.LicenseeGroupComm WITH (NOLOCK)
 		WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID
