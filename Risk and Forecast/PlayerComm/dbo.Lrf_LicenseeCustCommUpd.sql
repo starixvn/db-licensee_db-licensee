@@ -25,7 +25,7 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeCustCommUpd]
 	@IP VARCHAR(40),
 	@Langkey NVARCHAR(10)='en-US',
 	@ErrCode INT = 0 OUTPUT,
-	@ErrMsg NVARCHAR(8000) = '' OUTPUT
+	@ErrMsg NVARCHAR(4000) = '' OUTPUT
 AS
 /*
 	Created: 20120726@Henry

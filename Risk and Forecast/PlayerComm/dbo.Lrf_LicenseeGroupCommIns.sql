@@ -20,7 +20,7 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeGroupCommIns]
 	@IsResetDefault BIT=0,
 	@Langkey VARCHAR(20) = 'en-US',
 	@ErrCode INT = 0 OUTPUT,
-	@ErrMsg NVARCHAR(8000) = '' OUTPUT
+	@ErrMsg NVARCHAR(4000) = '' OUTPUT
 AS
 
 /*

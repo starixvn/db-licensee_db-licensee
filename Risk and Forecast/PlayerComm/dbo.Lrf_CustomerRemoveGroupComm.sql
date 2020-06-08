@@ -8,7 +8,7 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerRemoveGroupComm]
 	@IsRemovePlayercomm BIT,
 	@Langkey VARCHAR(10) = 'en-US',
 	@ErrCode INT = 0 OUTPUT,
-	@ErrMsg NVARCHAR(8000) = '' OUTPUT
+	@ErrMsg NVARCHAR(4000) = '' OUTPUT
 AS  
 /*  
 	Created: 20120801@Henry

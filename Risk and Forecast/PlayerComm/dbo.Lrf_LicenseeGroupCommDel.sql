@@ -8,7 +8,7 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeGroupCommDel]
 	@IsResetDefault BIT=0,
 	@Langkey NVARCHAR(10)='en-US'	,
 	@ErrCode INT = 0 OUTPUT,
-	@ErrMsg NVARCHAR(8000) = '' OUTPUT,
+	@ErrMsg NVARCHAR(4000) = '' OUTPUT,
 	@StrCustID VARCHAR(MAX) = '' OUTPUT
 AS
 /*

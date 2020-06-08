@@ -28,7 +28,7 @@ CREATE PROCEDURE [dbo].[Lrf_LicenseeGroupCommUpd]
 	@IP varchar(40),
 	@Langkey VARCHAR(20) = 'en-US',
 	@ErrCode INT = 0 OUTPUT,
-	@ErrMsg NVARCHAR(8000) = '' OUTPUT,
+	@ErrMsg NVARCHAR(4000) = '' OUTPUT,
 	@StrCustID VARCHAR(MAX) = '' OUTPUT
 AS
 /*

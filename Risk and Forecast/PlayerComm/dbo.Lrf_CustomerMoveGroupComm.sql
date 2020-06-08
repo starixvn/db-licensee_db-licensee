@@ -16,7 +16,7 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerMoveGroupComm]
 	@IP VARCHAR(40),
 	@Langkey VARCHAR(20) = 'en-US',
 	@ErrCode INT = 0 OUTPUT,
-	@ErrMsg NVARCHAR(8000) = '' OUTPUT
+	@ErrMsg NVARCHAR(4000) = '' OUTPUT
 AS
 /*
 	Created: 20120726@Henry
