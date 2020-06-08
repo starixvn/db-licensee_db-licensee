@@ -1,21 +1,19 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="1"></info>*/
 
-ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver_Pagination]
-(
-	@searchCust 	BIT = 0
-	,@FromDate 		SMALLDATETIME
-	,@tempFromDate 	SMALLDATETIME
-	,@ToDate 		SMALLDATETIME
-	,@tempToDate 	SMALLDATETIME
-	,@MoveBetsDay 	SMALLDATETIME
-	,@Odds 			FLOAT
-	,@ReportBy  	TINYINT   =  1
-	,@PageSize 		INT
-	,@PageIndex 	INT
-	,@IsExportExcel BIT
-	,@totalBettrans	INT = 0 OUTPUT
-	,@totalSumRpt	INT = 0 OUTPUT
-) 
+ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerTurnOver_Pagination]
+	@searchCust		BIT = 0
+	,@FromDate		SMALLDATETIME
+	,@tempFromDate	SMALLDATETIME
+	,@ToDate		SMALLDATETIME
+	,@tempToDate	SMALLDATETIME
+	,@MoveBetsDay	SMALLDATETIME
+	,@Odds			FLOAT
+	,@ReportBy		TINYINT		= 1
+	,@PageSize		INT
+	,@PageIndex		INT
+	,@IsExportExcel	BIT
+	,@totalBettrans	INT			= 0 OUTPUT
+	,@totalSumRpt	INT			= 0 OUTPUT
 AS
 
 /*
@@ -39,9 +37,9 @@ AS
 		- 20191129@Walter: Add new bet types (BMAIO - Phase 2) [RedmineID: #120336]
 		- 20190102@Vickie: Add new bet types (PH AIO - Phase 5) [RedmineID: #126005]
 		- 20191225@Amanda: Support display SystemID [RedmineID: #123583]
-
-	Parameter's Explanation:
+		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
 */
+
 BEGIN
 	SET NOCOUNT ON;
 
@@ -57,7 +55,7 @@ BEGIN
 		winlostdate		SMALLDATETIME
 	)
 
-	CREATE TABLE #tempPagingData 
+	CREATE TABLE #tempPagingData
 	(
 		RowIdx			INT IDENTITY(1, 1) PRIMARY KEY
 		, winlostdate	SMALLDATETIME
@@ -73,7 +71,7 @@ BEGIN
 	SET @topRow = (@maxRow - @offsetRow) + 1
 
 	-- VIEW specific members
-	IF( @searchCust = 1 )
+	IF @searchCust = 1
 	BEGIN
 		IF @ToDate > @MoveBetsDay
 		BEGIN
@@ -83,28 +81,34 @@ BEGIN
 					, c.username
 					, c.nickname
 			FROM #tempBettrans b	
-				INNER JOIN #tempCust  c ON b.custid = c.custid
+				INNER JOIN #tempCust c ON b.custid = c.custid
 			GROUP BY 
 				b.winlostdate
 				, c.custid
 				, c.username
 				, c.nickname
-			ORDER BY b.winlostdate DESC, nickname
+			ORDER BY b.winlostdate DESC,
+				nickname
 
 			SET @totalBettrans = @@ROWCOUNT
 		END
 		
 		IF @FromDate <= @MoveBetsDay
 		BEGIN
-			IF ( @odds = 0 )
+			IF @odds = 0
 			BEGIN
 				INSERT INTO #tempData(winlostdate, sporttype, bettype, custid, username, nickname, StatusID)
 				SELECT winlostdate, sporttype, bettype, b.custid, c.username, c.nickname, StatusID
 				FROM (
-					SELECT DISTINCT	winlostdate, 
-							CASE WHEN b.bettype IN (9, 10, 29) THEN 1
-								ELSE b.sporttype 
-							END AS sporttype, bettype, b.custid, StatusID
+					SELECT DISTINCT
+						winlostdate, 
+						CASE
+							WHEN b.bettype IN (9, 10, 29) THEN 1
+							ELSE b.sporttype 
+						END AS sporttype,
+						bettype,
+						b.custid,
+						StatusID
 					FROM #recommend rec
 						JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK) ON b.Recommend	= rec.CustID
 					WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
@@ -127,7 +131,7 @@ BEGIN
 						JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK) ON b.Recommend = rec.CustID
 					WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
 						AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-										OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
+										OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 										OR b.bettype BETWEEN 81 AND 88
 										OR b.bettype BETWEEN 90 AND 120
 										OR b.bettype BETWEEN 8101 AND 8120 -- Number Game: Happy 5
@@ -167,9 +171,9 @@ BEGIN
 			BEGIN
 				INSERT INTO #tempPagingData(winlostdate, custid, username, nickname)
 				SELECT b.winlostdate
-						, b.Custid
-						, b.username
-						, b.nickname					
+					, b.Custid
+					, b.username
+					, b.nickname
 				FROM #tempData b
 					INNER JOIN #bettype bt ON b.bettype =  bt.typeid
 					INNER JOIN #Status st ON b.StatusID =  st.StatusID
@@ -180,8 +184,8 @@ BEGIN
 					, b.username
 					, b.nickname
 				ORDER BY winlostdate DESC, nickname
-				
-				SET @totalSumRpt = @@ROWCOUNT	
+
+				SET @totalSumRpt = @@ROWCOUNT
 			END
 			ELSE
 			BEGIN
@@ -211,11 +215,11 @@ BEGIN
 		BEGIN
 			INSERT INTO #tempPagingData(winlostdate, custid, username, nickname)
 			SELECT b.winlostdate
-					, c.Custid
-					, c.username
-					, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS nickname
+				, c.Custid
+				, c.username
+				, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS nickname
 			FROM #tempBettrans b
-				INNER JOIN dbo.Customer  c WITH (NOLOCK, INDEX = IX_custid) ON b.custid = c.custid
+				INNER JOIN dbo.Customer c WITH (NOLOCK, INDEX = IX_custid) ON b.custid = c.custid
 			GROUP BY
 				b.winlostdate
 				, c.username
@@ -224,7 +228,7 @@ BEGIN
 			ORDER BY b.winlostdate DESC, username
 
 			SET @totalBettrans = @@ROWCOUNT
-		END	
+		END
 
 		IF @FromDate <= @MoveBetsDay
 		BEGIN
@@ -243,12 +247,12 @@ BEGIN
 					WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
 					) b
 					INNER JOIN dbo.Customer  c WITH (NOLOCK, INDEX = IX_custid)
-						ON b.custid 	= c.custid
+						ON b.custid = c.custid
 				OPTION(RECOMPILE)
 			END
 
 			-- Has Odds Value
-			IF ( @odds > 0 )
+			IF @odds > 0
 			BEGIN
 				INSERT INTO #tempData(winlostdate, sporttype, bettype, custid, username, nickname, StatusID)
 				SELECT winlostdate, sporttype, bettype, b.custid, c.username, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS nickname, StatusID
@@ -262,7 +266,7 @@ BEGIN
 							ON b.Recommend	= rec.CustID
 					WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
 						AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-										OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
+										OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 										OR b.bettype BETWEEN 81 AND 88
 										OR b.bettype BETWEEN 90 AND 120
 										OR b.bettype BETWEEN 8101 AND 8120 -- Number Game: Happy 5
@@ -302,14 +306,14 @@ BEGIN
 			BEGIN
 				INSERT INTO #tempPagingData(winlostdate, custid, username, nickname)
 				SELECT b.winlostdate
-						, b.Custid
-						, b.username
-						, b.nickname				
+					, b.Custid
+					, b.username
+					, b.nickname
 				FROM #tempData b
 					INNER JOIN #bettype bt
-					ON b.bettype 	=  bt.typeid
+					ON b.bettype =  bt.typeid
 					INNER JOIN #Status st
-					ON b.StatusID 	=  st.StatusID
+					ON b.StatusID =  st.StatusID
 					INNER JOIN #ProductID p 
 					ON b.sporttype = p.sportID
 				GROUP BY 
@@ -318,8 +322,8 @@ BEGIN
 					, b.username
 					, b.nickname
 				ORDER BY winlostdate DESC, nickname
-				
-				SET @totalSumRpt = @@ROWCOUNT	
+
+				SET @totalSumRpt = @@ROWCOUNT
 			END
 			ELSE
 			BEGIN

@@ -15,8 +15,8 @@ AS
 	Created: 20111115@Henry
 	Task : Live Report Summary by Sport  
 	DB: DBEXT.bodb02
-  
-	Revisions:  
+
+	Revisions:
 		Return 3 tables:
 		WinlostBySport
 		WinlostByCurrency
@@ -83,27 +83,28 @@ AS
 		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
 		- 20200423@Hogan: Add new product Sexy Gaming [RedmineID: #132829]
 		- 20200423@Vickie: Integrate Saba Club [RedmineID: #132702]
+		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
 
 	Param's Explanation:  
 		+ @Liveindicator : indicate that whether the report will get live data or not
 			+ 0: Non - Live data only
 			+ 1: Live data only
-			+ 2: All  
-
+			+ 2: All
 		+ @AgentList: xml structure
-					<ROOT>
+				<ROOT>
 					<Agent AgentId="12345" Currency="3"/>  
 					<Agent AgentId="12345" Currency="5"/>  
-					</ROOT> 
-	Example:  
-  
+				</ROOT>
+
+	Example:
+
 	DECLARE @FromDate DATETIME  
 	DECLARE @ToDate DATETIME  
 	DECLARE @MoveBetsDay DATETIME  
 	SELECT @FromDate = DATEADD(DAY, -15, GETDATE())  
 	SELECT @ToDate = GETDATE()  
 	SELECT @MoveBetsDay = MAX(eventdate) FROM match14 WITH(NOLOCK)
-  
+
 	EXEC [Lrf_Rpt_LiveReportSummaryDetail] @CurrencyID = 0, @FromDate=@FromDate, @ProductCode= NULL, @ToDate=@ToDate, @MoveBetsDay = @MoveBetsDay  
 */
 
@@ -127,7 +128,7 @@ BEGIN
 
 	SELECT	@sql = @sql + 'DECLARE @TempAg TABLE (CustId INT, Currency INT)' + CHAR(13)
 						+ 'CREATE TABLE #tmpWinloss (winlostdate DATETIME, Currency INT, ProductCode VARCHAR(10), BetType INT, TurnOver MONEY, Winlost MONEY, LicenseeWL MONEY, Comm MONEY, PlayerComm MONEY, AmtDueTo3rd MONEY, Betcount INT)' + CHAR(13)
-						+ 'DECLARE @DocHandler INT' + CHAR(13)	
+						+ 'DECLARE @DocHandler INT' + CHAR(13)
 
 	--insert agentIds to temp table
 	SELECT	@sql = @sql + 'BEGIN TRY' + CHAR(13)
@@ -151,7 +152,7 @@ BEGIN
 						+ '		   FROM @TempAg t' + CHAR(13)
 						+ '		   WHERE t.CustId = lc.CustID' + CHAR(13)
 						+ '			   AND t.Currency = lc.Currency' + CHAR(13)
-						+ '	   )' + CHAR(13)
+						+ ')' + CHAR(13)
 
 	IF @ProductCodes IS NULL
 		SET @ProductCodes = ''
@@ -190,9 +191,9 @@ BEGIN
 								+ 'AND b.statusID IN (111,112,113)'  + CHAR(13)
 								+ 'AND b.bettype NOT IN (9,29,2799,901,902,903,904)'  + CHAR(13)
 								+ 'AND (b.bettype < 911 OR b.bettype > 914)'  + CHAR(13)
-								+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.liveindicator = 0)' + CHAR(13)
-								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.liveindicator = 1)' + CHAR(13)
-								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
+								+ 'AND ((' + CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.liveindicator = 0)' + CHAR(13)
+								+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.liveindicator = 1)' + CHAR(13)
+								+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
 								+ 'GROUP BY  b.winlostdate, t.currency, b.bettype' + CHAR(13)
 
 			--BA for parlay
@@ -213,9 +214,9 @@ BEGIN
 								+ 'WHERE b.winlostdate BETWEEN ''' + convert(VARCHAR(10), @TempFromDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TDate, 120) + '''' + CHAR(13)
 								+ 'AND b.statusID IN (111,112,113)'  + CHAR(13)
 								+ 'AND b.bettype IN (9,29,2799)'  + CHAR(13)
-								+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.livehomescore = 0)' + CHAR(13)
-								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.livehomescore = 1)' + CHAR(13)
-								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
+								+ 'AND ((' + CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.livehomescore = 0)' + CHAR(13)
+								+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.livehomescore = 1)' + CHAR(13)
+								+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
 								+ 'GROUP BY  b.winlostdate, t.currency, b.bettype' + CHAR(13)
 		END
 
@@ -227,7 +228,7 @@ BEGIN
 			SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
 								+ 'SELECT b.winlostdate, t.currency, '
 								+ 'CASE' + CHAR(13)		
-								+ 'WHEN b.bettype <= 30 OR b.bettype BETWEEN 121 AND 999 OR b.Bettype BETWEEN 1301 and 1399 OR b.Bettype BETWEEN 9001 and 9086 OR b.Bettype = 38 THEN ''SB''' + CHAR(13)
+								+ 'WHEN b.bettype <= 30 OR b.bettype BETWEEN 121 AND 999 OR b.Bettype BETWEEN 1301 and 1399 OR b.Bettype BETWEEN 9001 and 9399 OR b.Bettype = 38 THEN ''SB''' + CHAR(13)
 								+ 'WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) THEN ''NG''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1201 AND 1299 THEN ''VS''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1501 AND 1599 THEN ''KN'' -- Keno' + CHAR(13)
@@ -263,12 +264,12 @@ BEGIN
 								+ 'AND b.statusID IN (111,112,113)' + CHAR(13)
 								+ 'AND b.bettype NOT IN (9,29,2799,901,902,903,904,1700,1800,1900,18000)' + CHAR(13)
 								+ 'AND (b.bettype < 911 OR b.bettype > 914)' + CHAR(13)
-								+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.liveindicator = 0)' + CHAR(13)
-								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.liveindicator = 1)' + CHAR(13)
-								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
+								+ 'AND ((' + CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.liveindicator = 0)' + CHAR(13)
+								+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.liveindicator = 1)' + CHAR(13)
+								+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
 								+ 'AND BA.transid IS NULL' + CHAR(13) + 'AND (1 <> 1' + CHAR(13)
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','NG')) = 1 THEN 'OR (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) '+ CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SB')) = 1 THEN 'OR (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 and 1399) OR (b.Bettype BETWEEN 9001 and 9086) OR b.Bettype = 38)' + CHAR(13) ELSE '' END
+								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SB')) = 1 THEN 'OR (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 and 1399) OR (b.Bettype BETWEEN 9001 and 9399) OR b.Bettype = 38)' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VS')) = 1 THEN 'OR b.bettype BETWEEN 1201 AND 1299' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','KN')) = 1 THEN 'OR b.bettype BETWEEN 1501 AND 1599' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','CS')) = 1 THEN 'OR (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999)' + CHAR(13) ELSE '' END 
@@ -288,7 +289,7 @@ BEGIN
 								+ ') ' + CHAR(13)
 								+ 'GROUP BY  b.winlostdate, t.currency, b.bettype,' + CHAR(13)
 								+ 'CASE' + CHAR(13)		
-								+ 'WHEN b.bettype <= 30 OR b.bettype BETWEEN 121 AND 999 OR b.Bettype BETWEEN 1301 and 1399 OR b.Bettype BETWEEN 9001 and 9086 OR b.Bettype = 38 THEN ''SB''' + CHAR(13)
+								+ 'WHEN b.bettype <= 30 OR b.bettype BETWEEN 121 AND 999 OR b.Bettype BETWEEN 1301 and 1399 OR b.Bettype BETWEEN 9001 and 9399 OR b.Bettype = 38 THEN ''SB''' + CHAR(13)
 								+ 'WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) THEN ''NG''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1201 AND 1299 THEN ''VS''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1501 AND 1599 THEN ''KN'' -- Keno' + CHAR(13)
@@ -329,9 +330,9 @@ BEGIN
 									+ 'WHERE b.winlostdate BETWEEN ''' + convert(VARCHAR(10), @TempFromDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TDate, 120) + '''' + CHAR(13)
 									+ 'AND b.statusID IN (111,112,113)' + CHAR(13)
 									+ 'AND b.bettype IN (9,29)' + CHAR(13)
-									+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.livehomescore = 0)' + CHAR(13)
-									+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.livehomescore = 1)' + CHAR(13)
-									+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
+									+ 'AND ((' + CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.livehomescore = 0)' + CHAR(13)
+									+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.livehomescore = 1)' + CHAR(13)
+									+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
 									+ 'AND BA.transid IS NULL' + CHAR(13)								
 								+ 'GROUP BY  b.winlostdate, t.currency, b.bettype	' + CHAR(13)
 			END
@@ -357,9 +358,9 @@ BEGIN
 									+ 'WHERE b.winlostdate BETWEEN ''' + convert(VARCHAR(10), @TempFromDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TDate, 120) + '''' + CHAR(13)
 									+ 'AND b.statusID IN (111,112,113)' + CHAR(13)
 									+ 'AND b.bettype IN (2799)' + CHAR(13)
-									+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.livehomescore = 0)' + CHAR(13)
-									+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.livehomescore = 1)' + CHAR(13)
-									+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
+									+ 'AND ((' + CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.livehomescore = 0)' + CHAR(13)
+									+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.livehomescore = 1)' + CHAR(13)
+									+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
 									+ 'AND BA.transid IS NULL' + CHAR(13)									
 									+ 'GROUP BY  b.winlostdate, t.currency, b.bettype	' + CHAR(13)
 			END
@@ -395,9 +396,9 @@ BEGIN
 								+ 'AND b.status NOT IN (-1,103)' + CHAR(13)
 								+ 'AND b.bettype NOT IN (9,29,2799,901,902,903,904)' + CHAR(13)
 								+ 'AND (b.bettype < 911 OR b.bettype > 914)' + CHAR(13)
-								+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13)
-								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13)
-								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)								
+								+ 'AND ((' + CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13)
+								+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13)
+								+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)								
 								+ 'GROUP BY b.rptDate, b.currencyID, b.bettype' + CHAR(13)
 
 			SELECT	@sql = @sql + '--Get data from rpt_BettingParlay for BA' + CHAR(13)
@@ -419,9 +420,9 @@ BEGIN
 								+ 'AND b.status NOT IN (-1,103)' + CHAR(13)
 								+ 'AND b.bettype IN (9,29,2799)' + CHAR(13)
 								+ 'AND b.isBA = 1' + CHAR(13)
-								+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13)
-								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13)
-								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
+								+ 'AND ((' + CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13)
+								+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13)
+								+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
 								+ 'GROUP BY b.rptDate, b.currencyID, b.bettype' + CHAR(13)
 		END
 
@@ -431,7 +432,7 @@ BEGIN
 			SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
 								+ 'SELECT b.rptDate, b.currencyID,' + CHAR(13)
 								+ 'CASE' + CHAR(13)		
-								+ 'WHEN b.bettype <= 30 OR b.bettype BETWEEN 121 AND 999 OR b.Bettype BETWEEN 1301 and 1399 OR b.Bettype BETWEEN 9001 and 9086 OR b.Bettype = 38 THEN ''SB''' + CHAR(13)
+								+ 'WHEN b.bettype <= 30 OR b.bettype BETWEEN 121 AND 999 OR b.Bettype BETWEEN 1301 and 1399 OR b.Bettype BETWEEN 9001 and 9399 OR b.Bettype = 38 THEN ''SB''' + CHAR(13)
 								+ 'WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) THEN ''NG''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1201 AND 1299 THEN ''VS''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1501 AND 1599 THEN ''KN'' -- Keno' + CHAR(13)
@@ -464,12 +465,12 @@ BEGIN
 								+ 'AND b.bettype NOT IN (9,29,2799,1700,1800,1900,901,902,903,904,18000)' + CHAR(13)
 								+ 'AND (b.bettype < 911 OR b.bettype > 914)' + CHAR(13)
 								+ 'AND b.CustomerCategory IN (-1, 1001, 1003)' + CHAR(13)
-								+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13)
-								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13)
-								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
+								+ 'AND ((' + CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13)
+								+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13)
+								+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
 								+ 'AND (1 <> 1' + CHAR(13)
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','NG')) = 1 THEN 'OR (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) '+ CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SB')) = 1 THEN 'OR (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 and 1399) OR (b.Bettype BETWEEN 9001 and 9086) OR b.Bettype = 38)' + CHAR(13) ELSE '' END
+								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SB')) = 1 THEN 'OR (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 and 1399) OR (b.Bettype BETWEEN 9001 and 9399) OR b.Bettype = 38)' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VS')) = 1 THEN 'OR b.bettype BETWEEN 1201 AND 1299' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','KN')) = 1 THEN 'OR b.bettype BETWEEN 1501 AND 1599' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','CS')) = 1 THEN 'OR (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999)' + CHAR(13) ELSE '' END 
@@ -489,7 +490,7 @@ BEGIN
 								+ ') ' + CHAR(13)
 								+ 'GROUP BY b.rptDate, b.currencyID, b.bettype,' + CHAR(13)
 								+ 'CASE' + CHAR(13)		
-								+ 'WHEN b.bettype <= 30 OR b.bettype BETWEEN 121 AND 999 OR b.Bettype BETWEEN 1301 and 1399 OR b.Bettype BETWEEN 9001 and 9086 OR b.Bettype = 38 THEN ''SB''' + CHAR(13)
+								+ 'WHEN b.bettype <= 30 OR b.bettype BETWEEN 121 AND 999 OR b.Bettype BETWEEN 1301 and 1399 OR b.Bettype BETWEEN 9001 and 9399 OR b.Bettype = 38 THEN ''SB''' + CHAR(13)
 								+ 'WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) THEN ''NG''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1201 AND 1299 THEN ''VS''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1501 AND 1599 THEN ''KN'' -- Keno' + CHAR(13)
@@ -529,9 +530,9 @@ BEGIN
 									+ 'AND b.status NOT IN (-1,103)' + CHAR(13)
 									+ 'AND b.bettype IN (9,29)' + CHAR(13)
 									+ 'AND b.isBA = 0' + CHAR(13)
-									+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13)
-									+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13)
-									+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)					
+									+ 'AND ((' + CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13)
+									+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13)
+									+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)					
 									+ 'GROUP BY b.rptDate, b.currencyID, b.bettype' + CHAR(13)
 			END
 
@@ -555,9 +556,9 @@ BEGIN
 									+ 'AND b.status NOT IN (-1,103)' + CHAR(13)
 									+ 'AND b.bettype IN (2799)' + CHAR(13)
 									+ 'AND b.isBA = 0' + CHAR(13)
-									+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13)
-									+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13)
-									+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)		
+									+ 'AND ((' + CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13)
+									+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13)
+									+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)		
 									+ 'GROUP BY b.rptDate, b.currencyID, b.bettype' + CHAR(13)
 			END
 		END
@@ -611,5 +612,4 @@ BEGIN
 	ELSE
 		EXEC (@sql)
 END
-GO
 GO

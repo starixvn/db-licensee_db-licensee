@@ -1,17 +1,17 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="1"></info>*/
 
-ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver_MonthlyPagination]
+ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerTurnOver_MonthlyPagination]
 (
 	@searchCust		BIT				= 0,
 	@FromDate		SMALLDATETIME,
-	@tempFromDate 	SMALLDATETIME,
+	@tempFromDate	SMALLDATETIME,
 	@ToDate			SMALLDATETIME,
-	@tempToDate 	SMALLDATETIME,
-	@MoveBetsDay 	SMALLDATETIME,
+	@tempToDate		SMALLDATETIME,
+	@MoveBetsDay	SMALLDATETIME,
 	@Odds			FLOAT,
 	@ReportBy		TINYINT			= 1,
-	@PageSize 		INT,
-	@PageIndex 		INT,
+	@PageSize		INT,
+	@PageIndex		INT,
 	@IsExportExcel	BIT,
 	@totalBettrans	INT = 0 OUTPUT,
 	@totalSumRpt	INT = 0 OUTPUT
@@ -41,13 +41,13 @@ AS
 		- 20191129@Walter: Add new bet types (BMAIO - Phase 2) [RedmineID: #120336]
 		- 20190102@Vickie: Add new bet types (PH AIO - Phase 5) [RedmineID: #126005]
 		- 20191225@Amanda: Support display SystemID [RedmineID: #123583]
-
-	Parameter's Explanation:
+		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
 */
+
 BEGIN
 	SET NOCOUNT ON;
 
-	DECLARE @offsetRow INT, @maxRow INT, @topRow INT 
+	DECLARE @offsetRow INT, @maxRow INT, @topRow INT
 
 	CREATE TABLE #tempPagingData (
 		sporttype		SMALLINT, 
@@ -56,7 +56,7 @@ BEGIN
 		StatusID		TINYINT,
 		winlostdate		SMALLDATETIME
 	)
-	
+
 	SELECT
 		@offsetRow = (((@PageIndex - 1) * @PageSize) + 1),
 		@maxRow = (@PageSize * @PageIndex)
@@ -64,14 +64,14 @@ BEGIN
 	CREATE TABLE #tempPaging 
 	(
 		winlostdate	SMALLDATETIME
-		,custid			INT
-		,whticket		TINYINT
+		,custid		INT
+		,whticket	TINYINT
 	)
 
 	SET @topRow = (@maxRow - @offsetRow) + 1
 
 	-- VIEW specific members
-	IF( @searchCust = 1 )
+	IF @searchCust = 1
 	BEGIN
 		IF @ToDate > @MoveBetsDay
 		BEGIN
@@ -138,7 +138,7 @@ BEGIN
 					JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK) ON b.Recommend = rec.CustID
 				WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
 					AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-									OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
+									OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 									OR b.bettype BETWEEN 81 AND 88
 									OR b.bettype BETWEEN 90 AND 120
 									OR b.bettype BETWEEN 8101 AND 8120 -- Number Game: Happy 5
@@ -196,7 +196,7 @@ BEGIN
 	--END searchCust = 1
 
 	-- VIEW all members
-	IF (@searchCust = 0)
+	IF @searchCust = 0
 	BEGIN
 		IF @ToDate > @MoveBetsDay
 		BEGIN
@@ -216,7 +216,7 @@ BEGIN
 			FROM CTE_Paging p
 
 			SELECT @totalBettrans = @@ROWCOUNT
-		END	
+		END
 
 		IF @FromDate <= @MoveBetsDay
 		BEGIN
@@ -243,7 +243,7 @@ BEGIN
 			END
 
 			-- Has Odds Value
-			IF ( @odds > 0 )
+			IF @odds > 0
 			BEGIN
 				INSERT INTO #tempPagingData(winlostdate, sporttype, bettype, custid, StatusID)
 				SELECT	DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) AS winlostdate, 
@@ -255,7 +255,7 @@ BEGIN
 						ON b.Recommend	= rec.CustID
 				WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
 						AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-										OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
+										OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 										OR b.bettype BETWEEN 81 AND 88
 										OR b.bettype BETWEEN 90 AND 120
 										OR b.bettype BETWEEN 8101 AND 8120 -- Number Game: Happy 5
@@ -342,7 +342,7 @@ BEGIN
 				t.winlostdate
 				, c.username
 				, c.username2
-				, t.Custid		
+				, t.Custid
 		)
 		INSERT INTO #tempCustPaging 
 		SELECT
@@ -383,7 +383,7 @@ BEGIN
 		FROM CTE_MixPaging p
 		WHERE p.RowIdx BETWEEN @offsetRow AND @maxRow
 	END
-	
+
 	DROP TABLE #tempPaging;
 
 	RETURN;

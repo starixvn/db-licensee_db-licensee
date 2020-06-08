@@ -1,16 +1,17 @@
- /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
-ALTER PROCEDURE [dbo].[Lrf_GetLicenseeTurnoverByPlatform]   
-	 @FromDate		SMALLDATETIME,  
-	 @ToDate		SMALLDATETIME,
-	 @BaseCurrency	VARCHAR(3) = '',
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+
+ALTER PROCEDURE [dbo].[Lrf_GetLicenseeTurnoverByPlatform]
+	@FromDate		SMALLDATETIME,
+	@ToDate			SMALLDATETIME,
+	@BaseCurrency	VARCHAR(3) = '',
 	@AgentList		VARCHAR(MAX)
 AS
 
 /*
 	Created: 20170207@Paul
-	Task: 
 	DB: DBEXT.bodb02
 	Original: Lrf_Rpt_PlatformWinloss
+
 	Revisions:
 		- 20170207@Paul: Create new [RedmineID: #70616]
 		- 20170323@Paul: Implement Cash Out [RedmineID: #71727]
@@ -28,8 +29,7 @@ AS
 		- 20191219@Amanda: Add platform v [RedmineID: #125553]
 		- 20190312@Amanda: Add new bet types Single Match Parlay (ID: 38) [RedmineID: #108298]
 		- 20191226@Vickie: Add platform 0 and change ID platform v[RedmineID: #125824]
-		
-	Param's Explanation:  
+		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
 */
 
 /*
@@ -49,18 +49,18 @@ AS
 
 	GO
 */
-    
-BEGIN      
+
+BEGIN
 	SET NOCOUNT ON;
 
-	IF DATEDIFF(MONTH,@FromDate,@ToDate) > 0
+	IF DATEDIFF(MONTH, @FromDate, @ToDate) > 0
 		RETURN;
 
 	CREATE TABLE #WinLoss (
-		Winlostdate DATE,
-		Currency	INT ,
+		Winlostdate		DATE,
+		Currency		INT ,
 		PlatformType	TINYINT,
-		Turnover	MONEY
+		Turnover		MONEY
 	);
 
 	DECLARE @TempFromDate SMALLDATETIME,
@@ -73,7 +73,7 @@ BEGIN
 	CREATE TABLE #tempAg(custID INT, Currency INT);
 
 	CREATE CLUSTERED INDEX ix_tempAg_cl ON #tempAg(Currency, custID);
-	
+
 	--to Deal WITH Parameter Sniffing
 	SELECT @FDate = @FromDate, @TDate = @ToDate;
 	
@@ -125,58 +125,63 @@ BEGIN
 			SET @TempFromDate = @FDate;
 	
 		INSERT INTO #WinLoss (Winlostdate, Currency, PlatformType, Turnover)
-		SELECT  b.winlostdate, 
-				tma.currency,
-				pl.PlatformType,
-				SUM(b.stake) turnover
+		SELECT
+			b.winlostdate, 
+			tma.currency,
+			pl.PlatformType,
+			SUM(b.stake) turnover
 		FROM dbo.bettrans b WITH (NOLOCK)
 			INNER JOIN #tempAg tma ON tma.CustID = b.recommend AND b.currency = tma.currency
 			INNER JOIN #PlatformList pl ON pl.betfrom = b.betfrom
 		WHERE b.statusID  IN (111, 112, 113)
 			AND b.winlostdate BETWEEN @TempFromDate AND @TDate
-			AND (b.bettype<31 OR (b.bettype BETWEEN 121 AND 999)
-								OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
-								OR (b.Bettype BETWEEN 9001 and 9086) --E-Sports 2.0
-								OR b.Bettype = 38					 -- Single Match Parlay
-								
-			) 
+			AND (b.bettype < 31
+				OR (b.bettype BETWEEN 121 AND 999)
+				OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
+				OR (b.Bettype BETWEEN 9001 AND 9399) --E-Sports 2.0
+				OR b.Bettype = 38					 -- Single Match Parlay
+			)
 			AND (b.bettype < 901 OR b.bettype > 904)
 			AND (b.bettype < 911 OR b.bettype > 914)
 			AND b.tpositiontaking <> 0
-		GROUP BY  b.winlostdate, 
-				tma.currency, 
-				pl.PlatformType;
-	END		
-				
+		GROUP BY
+			b.winlostdate, 
+			tma.currency, 
+			pl.PlatformType;
+	END
+
 	IF @FDate <= @MoveBetsDay 
 	BEGIN
 		IF @TDate >= @MoveBetsDay
-				SET @TempToDate = @MoveBetsDay;
-			ELSE
-				SET  @TempToDate = @TDate;
+			SET @TempToDate = @MoveBetsDay;
+		ELSE
+			SET @TempToDate = @TDate;
 
 		INSERT INTO #WinLoss (Winlostdate, Currency, PlatformType, Turnover)
-		SELECT	b.winlostdate,
-				b.currency,
-				pl.PlatformType,
-				SUM(b.turnover) AS Turnover
+		SELECT
+			b.winlostdate,
+			b.currency,
+			pl.PlatformType,
+			SUM(b.turnover) AS Turnover
 		FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )
 			INNER JOIN 	#tempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
 			INNER JOIN #PlatformList pl ON pl.betfrom = b.betfrom
 		WHERE b.Winlostdate BETWEEN @FDate AND @TempToDate
-			AND b.roleid = 1   
+			AND b.roleid = 1
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND b.sporttype = 0 AND b.bettype = 0 --Sportbooks
 			AND (b.isBA = 0 OR b.isBA IS NULL)
-		GROUP BY b.currency,
-				b.winlostdate,
-				pl.PlatformType;
-	END			
+		GROUP BY
+			b.currency,
+			b.winlostdate,
+			pl.PlatformType;
+	END
 
-	SELECT  w.PlatformType,
-			SUM(Turnover * e.Rate)	AS Turnover
-	FROM #WinLoss w 
-		INNER JOIN  #Exchange e on w.Currency = e.exchangeid AND w.Winlostdate BETWEEN e.FromDate AND e.ToDate
+	SELECT
+		w.PlatformType,
+		SUM(Turnover * e.Rate)	AS Turnover
+	FROM #WinLoss w
+		INNER JOIN #Exchange e on w.Currency = e.exchangeid AND w.Winlostdate BETWEEN e.FromDate AND e.ToDate
 	GROUP BY w.PlatformType
 	ORDER BY w.PlatformType;
 

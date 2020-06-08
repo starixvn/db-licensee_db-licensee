@@ -1,7 +1,6 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="1"></info>*/
- 
+
 ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver_SumTotal]
-(
 	@searchCust		BIT				= 0,
 	@FromDate		SMALLDATETIME,
 	@tempFromDate	SMALLDATETIME,
@@ -10,7 +9,6 @@ ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver_SumTotal]
 	@MoveBetsDay	SMALLDATETIME,
 	@Odds			FLOAT,
 	@ReportBy		TINYINT			= 1
-)
 AS
 
 /*
@@ -33,8 +31,7 @@ AS
 		- 20191608@Amanda: Add new bet types (PH AIO - Phase 4b) [RedmineID: #118300]
 		- 20191129@Walter: Add new bet types (BMAIO - Phase 2) [RedmineID: #120336]
 		- 20190102@Vickie: Add new bet types (PH AIO - Phase 5) [RedmineID: #126005]
-
-	Parameter's Explanation:
+		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
 */
 
 BEGIN
@@ -59,8 +56,8 @@ BEGIN
 			INSERT INTO #tempSumTotal
 			SELECT 1				AS WhTicket
 				, SUM(1)			AS betcount
-				, SUM(stake) 		AS turnover
-				, SUM(winlost) 		AS winlost
+				, SUM(stake)		AS turnover
+				, SUM(winlost)		AS winlost
 				, SUM(BetEffective) AS BetEffective
 				, SUM(b.playercomm) AS playercomm
 				, 0 AS totalrow
@@ -146,24 +143,31 @@ BEGIN
 					winlost,
 					BetEffective,
 					playercomm)
-				SELECT sporttype, bettype, StatusID, odds
+				SELECT
+					sporttype,
+					bettype,
+					StatusID,
+					odds
 					, SUM(b.betcount)	AS betcount
 					, SUM(b.stake) 		AS stake
 					, SUM(b.winlost)  	AS winlost
 					, SUM(b.BetEffective) AS BetEffective
 					, SUM(b.playercomm) AS playercomm
 				FROM (
-					SELECT b.custid, CASE	WHEN b.bettype IN (9, 10, 29) THEN 1
+					SELECT
+						b.custid,
+						CASE	WHEN b.bettype IN (9, 10, 29) THEN 1
 								ELSE b.sporttype 
 							END AS sporttype,
-							bettype, StatusID
-									, b.betcount	AS betcount
-									, b.stake		AS stake
-									, b.winlost  	AS winlost
-									, b.BetEffective AS BetEffective
-									, b.playercomm AS playercomm
-									, CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-									OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
+						bettype,
+						StatusID
+						, b.betcount	AS betcount
+						, b.stake		AS stake
+						, b.winlost  	AS winlost
+						, b.BetEffective AS BetEffective
+						, b.playercomm AS playercomm
+						, CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
+									OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 									OR b.bettype BETWEEN 81 AND 88
 									OR b.bettype BETWEEN 90 AND 120
 									OR b.bettype BETWEEN 8101 AND 8120 -- Number Game: Happy 5
@@ -198,14 +202,18 @@ BEGIN
 					WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
 					) b
 					INNER JOIN #tempCust AS c WITH (NOLOCK) ON b.custid = c.custid
-				GROUP BY sporttype, bettype, StatusID, odds
+				GROUP BY
+					sporttype,
+					bettype,
+					StatusID,
+					odds
 				OPTION(RECOMPILE)
 
 				INSERT INTO #tempSumTotal
 				SELECT 2				AS WhTicket 
 					, SUM(b.betcount)	AS betcount
-					, SUM(b.stake) 		AS turnover
-					, SUM(b.winlost)  	AS winlost
+					, SUM(b.stake)		AS turnover
+					, SUM(b.winlost)	AS winlost
 					, SUM(b.BetEffective) AS BetEffective
 					, SUM(b.playercomm) AS playercomm
 					, 0 AS totalrow
@@ -236,14 +244,17 @@ BEGIN
 
 		IF @FromDate <= @MoveBetsDay
 		BEGIN
-			IF( @odds = 0 )
+			IF @odds = 0
 			BEGIN
-				INSERT INTO #tempSumData(sporttype, bettype, StatusID
-								, betcount
-								, stake
-								, winlost
-								, BetEffective
-								, playercomm)
+				INSERT INTO #tempSumData(
+					sporttype,
+					bettype,
+					StatusID
+					, betcount
+					, stake
+					, winlost
+					, BetEffective
+					, playercomm)
 				SELECT
 					CASE
 						WHEN b.bettype IN (9, 10, 29) THEN 1
@@ -283,14 +294,18 @@ BEGIN
 			END
 	
 			-- Has Odds Value
-			IF (@odds > 0 )
+			IF @odds > 0
 			BEGIN
-				INSERT INTO #tempSumData(sporttype, bettype, StatusID, odds
-								, betcount
-								, stake
-								, winlost
-								, BetEffective
-								, playercomm)
+				INSERT INTO #tempSumData(
+					sporttype,
+					bettype,
+					StatusID,
+					odds
+					, betcount
+					, stake
+					, winlost
+					, BetEffective
+					, playercomm)
 				SELECT sporttype, bettype, StatusID, odds
 					, SUM(b.betcount)	AS betcount
 					, SUM(b.stake) 		AS stake
@@ -308,7 +323,7 @@ BEGIN
 									, b.BetEffective AS BetEffective
 									, b.playercomm AS playercomm
 									, CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-									OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
+									OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 									OR b.bettype BETWEEN 81 AND 88
 									OR b.bettype BETWEEN 90 AND 120
 									OR b.bettype BETWEEN 8101 AND 8120 -- Number Game: Happy 5

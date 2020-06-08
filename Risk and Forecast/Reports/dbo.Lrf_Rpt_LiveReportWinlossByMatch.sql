@@ -1,615 +1,616 @@
 ﻿/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
-ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportWinlossByMatch]   	
-    @ShowSB			BIT	= 0,
-    @ShowBA			BIT	= 0,	
+ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportWinlossByMatch]
+	@ShowSB			BIT	= 0,
+	@ShowBA			BIT	= 0,
 	@ShowVS			BIT = 0,
-	@ShowVS2		BIT = 0,	
-    @SportId		INT = 0,
-    @FromDate		SMALLDATETIME,  
+	@ShowVS2		BIT = 0,
+	@SportId		INT = 0,
+	@FromDate		SMALLDATETIME,
 	@ToDate			SMALLDATETIME,
 	@MoveBetsDay	SMALLDATETIME,
 	@Liveindicator	INT = 1,
 	@AgentList		VARCHAR(MAX),
 	@BaseCurrency	VARCHAR(3) = ''
-AS 
+AS
+
 /*
-Created: 20111031@
-Task : Live Report Summary by Sport 
-DB: DB052.bodb02
+	Created: 20111031@
+	Task: Live Report Summary by Sport 
+	DB: DBEXT.bodb02
 
-Revisions:
-	- 20120110@Henry: remove @LicenseeType + enhance performance + remove currency UUS
-	- 20120214@Jim: change to use table ExchangeDaily by use function Lrf_f_GetExchangeDaily  
-	- 20120614@Jim: optimize code 
-	- 20120726@Jim: add player commission value 
-	- 20120820@Jim : add live casino 
-	- 20120830@Henry: split column for clearer + Add Virtual Sports
-	- 20121004@Jim: replace @currency input param by @currencyID
-	- 20121115@Henry: Only Sportsbook needs to exclude BA
-	- 20130618@Jim:  Restrict permission of Licensee Users by currency
-	- 20130625@Jim: support to view currency UUS 
-	- 20140602@Hannah: Separate Live/ Non - Live data in Live Report
-	- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
-	- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
-	- 20150127@Jim: support base on GBP Currency
-	- 20150612@Jim: support MicroGaming
-	- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
-	- 20151001@Jim: remove MicroGaming
-	- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
-	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
-	- 20170329@Paul: Implement Cash Out [RedmineID: #71727]
-	- 20170710@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]	
-	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
-	- 20180808@Amanda: Remove bet type related to Racing [RedmineID: #99378]
-	- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
-	- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
-	- 20190312@Amanda: Add new bet types Single Match Parlay (ID: 38) [RedmineID: #108298]
+	Revisions:
+		- 20120110@Henry: remove @LicenseeType + enhance performance + remove currency UUS
+		- 20120214@Jim: change to use table ExchangeDaily by use function Lrf_f_GetExchangeDaily  
+		- 20120614@Jim: optimize code 
+		- 20120726@Jim: add player commission value 
+		- 20120820@Jim : add live casino 
+		- 20120830@Henry: split column for clearer + Add Virtual Sports
+		- 20121004@Jim: replace @currency input param by @currencyID
+		- 20121115@Henry: Only Sportsbook needs to exclude BA
+		- 20130618@Jim:  Restrict permission of Licensee Users by currency
+		- 20130625@Jim: support to view currency UUS 
+		- 20140602@Hannah: Separate Live/ Non - Live data in Live Report
+		- 20140620@Florent: offer 14 new bettypes and Sporting Solution (36 new bettypes)
+		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+		- 20150127@Jim: support base on GBP Currency
+		- 20150612@Jim: support MicroGaming
+		- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
+		- 20151001@Jim: remove MicroGaming
+		- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
+		- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
+		- 20170329@Paul: Implement Cash Out [RedmineID: #71727]
+		- 20170710@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]	
+		- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
+		- 20180808@Amanda: Remove bet type related to Racing [RedmineID: #99378]
+		- 20181019@Amanda: Add new bet types for E-Sports 2.0 [RedmineID: #100721]
+		- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
+		- 20190312@Amanda: Add new bet types Single Match Parlay (ID: 38) [RedmineID: #108298]
+		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
 
-Return 3 tables:
-WinlostBySport
-WinlostByCurrency
-WinlostByBetType
-Param's Explanation:
-	@SportId: Not includes mixparlay, outright, numbergame, horseracing
-	@Liveindicator : indicate that whether the report will get live data or not
-		+ 0: Non - Live data only
-		+ 1: Live data only
-		+ 2: All
+	Return 3 tables:
+	WinlostBySport
+	WinlostByCurrency
+	WinlostByBetType
+	Param's Explanation:
+		@SportId: Not includes mixparlay, outright, numbergame, horseracing
+		@Liveindicator : indicate that whether the report will get live data or not
+			+ 0: Non - Live data only
+			+ 1: Live data only
+			+ 2: All
 
-	+ @AgentList: xml structure
-					<ROOT>
-					<Agent AgentId="12345" Currency="3"/>  
-					<Agent AgentId="12345" Currency="5"/>  
-					</ROOT> 
-Example:
+		+ @AgentList: xml structure
+						<ROOT>
+						<Agent AgentId="12345" Currency="3"/>  
+						<Agent AgentId="12345" Currency="5"/>  
+						</ROOT> 
+	Example:
 
-DECLARE @FromDate DATETIME
-DECLARE @ToDate DATETIME
-DECLARE @MoveBetsDay DATETIME
-SELECT @FromDate = DATEADD(DAY, -15, GETDATE())
-SELECT @ToDate = GETDATE()
-SELECT @MoveBetsDay = MAX(eventdate) FROM match14 WITH(NOLOCK)
+	DECLARE @FromDate DATETIME
+	DECLARE @ToDate DATETIME
+	DECLARE @MoveBetsDay DATETIME
+	SELECT @FromDate = DATEADD(DAY, -15, GETDATE())
+	SELECT @ToDate = GETDATE()
+	SELECT @MoveBetsDay = MAX(eventdate) FROM match14 WITH(NOLOCK)
 
-EXEC [Lrf_Rpt_LiveReportWinlossByMatch]	 @LicenseeId = 1, @CurrencyID = 0, @FromDate=@FromDate, @SportId =1, @ToDate=@ToDate, @MoveBetsDay = @MoveBetsDay
-
+	EXEC [Lrf_Rpt_LiveReportWinlossByMatch]	 @LicenseeId = 1, @CurrencyID = 0, @FromDate=@FromDate, @SportId =1, @ToDate=@ToDate, @MoveBetsDay = @MoveBetsDay
 */
-SET NOCOUNT ON
 
-DECLARE @TempFromDate DATETIME 
-DECLARE @TempToDate DATETIME 
-DECLARE @FDate SMALLDATETIME  
-DECLARE @TDate SMALLDATETIME 
+BEGIN
+	SET NOCOUNT ON
+
+	DECLARE @TempFromDate DATETIME 
+	DECLARE @TempToDate DATETIME 
+	DECLARE @FDate SMALLDATETIME  
+	DECLARE @TDate SMALLDATETIME 
 	
---to Deal With Parameter Sniffing
-SELECT @FDate = @FromDate, @TDate = @ToDate 
+	--to Deal With Parameter Sniffing
+	SELECT @FDate = @FromDate, @TDate = @ToDate 
 
-DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
-DECLARE @DocHandler INT
+	DECLARE @TempAg AS TABLE ( CustId INT, Currency INT )
+	DECLARE @DocHandler INT
 
-BEGIN TRY
-	EXEC sp_xml_preparedocument @DocHandler OUTPUT
-			,@AgentList
-	INSERT INTO @TempAg (custID, currency)
-	SELECT AgentId, Currency
-	FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+				,@AgentList
+		INSERT INTO @TempAg (custID, currency)
+		SELECT AgentId, Currency
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
-	EXEC sp_xml_removedocument @DocHandler
-END TRY
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
 
-BEGIN CATCH
-	SELECT ErrCode = 100
-			,ErrMsg = N'Paramter invalid.'
+	BEGIN CATCH
+		SELECT ErrCode = 100
+				,ErrMsg = N'Parameter invalid.'
 
-	RETURN
-END CATCH; 
-    
-DECLARE @bettype AS TABLE (bettype INT PRIMARY KEY)
-DECLARE @ProductList VARCHAR (500)
+		RETURN
+	END CATCH; 
 
-DECLARE @IsTest BIT = 0
-SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
+	DECLARE @bettype AS TABLE (bettype INT PRIMARY KEY)
+	DECLARE @ProductList VARCHAR (500)
 
-IF @ShowVS = 1
-BEGIN
-	SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS', 'VS')
-END  
+	DECLARE @IsTest BIT = 0
+	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
 
-IF @ShowVS2 = 1
-BEGIN
-	SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS2', 'VS2')
-END 
-
-IF LEN(ISNULL(@ProductList, '')) > 0 
-BEGIN
-	-- Insert Bettype
-	INSERT INTO @bettype ( bettype )
-	SELECT DISTINCT BetType
-	FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
-
-END	
-
-CREATE TABLE #tmpWinloss (
-	winlostdate		DATETIME,  
-	Currency		INT,
-	MatchId			INT,	
-	HomeId			INT,
-	AwayId			INT,
-	TurnOver		MONEY,   	
-	Winlost			MONEY,  
-	LicenseeWL		MONEY, 
-	Comm			MONEY,  
-	PlayerComm		MONEY,	
-	AmtDueTo3rd		MONEY,
-	Betcount		INT,
-	Bettype			INT,
-	showtime 		NVARCHAR(50) -- table - shoe - hand of Live Casino
-)	
-
-IF @TDate > @MoveBetsDay
-BEGIN
-	IF @FDate <= @MoveBetsDay 
-		SET @TempFromDate =  DATEADD(DAY,1,@MoveBetsDay)
-	ELSE
-		SET @TempFromDate = @FDate	
-
-	IF @ShowBA = 1 
-	BEGIN		
-		INSERT INTO #tmpWinloss			
-		SELECT
-			b.winlostdate,  
-			b.currency,
-			m.matchid, 		
-			m.homeid, 
-			m.awayid,
-			SUM(stake) turnover, 
-			SUM(b.winlost - b.actual_stake) AS Winlost,  		
-			0 AS LicenseeWL,
-			SUM (comm ) as Comm,
-			SUM (  b.playercomm  ) as PlayerComm,
-			- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,
-			COUNT(b.transid) BetCount,
-			b.bettype,
-			'' AS ShowTime 
-		FROM bettrans b  WITH (NOLOCK) 
-			INNER JOIN [match] m WITH(NOLOCK) ON b.matchid=m.matchid	
-			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency 
-		WHERE
-			 b.winlostdate BETWEEN @TempFromDate AND @TDate AND  			
-			b.matchid > 0 AND
-			(b.bettype <= 30  OR (b.bettype BETWEEN 121 AND 999)
-						  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
-						  OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0
-						  OR b.Bettype = 38					   -- Single Match Parlay
-			) AND
-			b.bettype NOT IN (9,29,901,902,903,904) AND 
-			(b.bettype < 911 OR b.bettype > 914) AND
-			b.statusID IN (111,112,113) AND
-			b.tpositiontaking=0 AND
-			m.sporttype = @SportId AND
-			((@Liveindicator = 0 and b.liveindicator = 0)
-			OR (@Liveindicator = 1 and b.liveindicator = 1)
-			OR (@Liveindicator = 2))
-		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype				
-
-		-- BA for parlay
-		INSERT INTO #tmpWinloss			
-		SELECT
-			b.winlostdate,  
-			b.currency,
-			m.matchid, 		
-			m.homeid, 
-			m.awayid,
-			SUM(stake) turnover, 
-			SUM(b.winlost - b.actual_stake) AS Winlost,  		
-			0 AS LicenseeWL,
-			SUM (comm ) as Comm,
-			SUM (  b.playercomm  ) as PlayerComm,
-			- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,
-			COUNT(b.transid) BetCount,
-			b.bettype,
-			'' AS ShowTime 
-		FROM bettrans b  WITH (NOLOCK) 
-			INNER JOIN [match] m WITH(NOLOCK) ON b.matchid=m.matchid	
-			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency		
-		WHERE
-			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  			
-			b.matchid > 0 AND
-			b.bettype IN (9,29) AND
-			b.statusID IN (111,112,113) AND
-			b.tpositiontaking=0 AND
-			m.sporttype = @SportId AND
-			((@Liveindicator = 0 and b.livehomescore = 0)
-			OR (@Liveindicator = 1 and b.livehomescore = 1)
-			OR (@Liveindicator = 2))
-		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
-	END
-	
-	IF (@ShowSB=1)
+	IF @ShowVS = 1
 	BEGIN
-		INSERT INTO #tmpWinloss			
-		SELECT
-			b.winlostdate,  
-			b.currency,
-			m.matchid, 		
-			m.homeid, 
-			m.awayid,
-			SUM(stake) turnover, 
-			SUM(b.winlost - b.actual_stake) AS Winlost,  	
-			SUM(-1 * (b.winlost - b.actual_stake)) AS LicenseeWL,
-			SUM (comm ) as Comm,
-			SUM (  b.playercomm  ) as PlayerComm,
-			- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,
-			COUNT(b.transid) BetCount,
-			b.bettype, 
-			'' AS ShowTime 
-		FROM bettrans b  WITH (NOLOCK) 
-			INNER JOIN [match] m WITH(NOLOCK) ON b.matchid=m.matchid	
-			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency	
-		WHERE
-			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
-			(b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999)
-							OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
-							OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0
-							OR b.Bettype = 38					 -- Single Match Parlay
-			) AND
-			b.bettype NOT IN (9,29,901,902,903,904) AND 
-			(b.bettype < 911 OR b.bettype > 914) AND
-			b.matchid > 0 AND
-			b.statusID IN (111,112,113) AND
-			m.sporttype = @SportId AND
-			b.tpositiontaking<>0 AND
-			((@Liveindicator = 0 and b.liveindicator = 0)
-			OR (@Liveindicator = 1 and b.liveindicator = 1)
-			OR (@Liveindicator = 2))
-		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
-
-		-- SB for parlay
-		INSERT INTO #tmpWinloss			
-		SELECT
-			b.winlostdate,  
-			b.currency,
-			m.matchid, 		
-			m.homeid, 
-			m.awayid,
-			SUM(stake) turnover, 
-			SUM(b.winlost - b.actual_stake) AS Winlost,  	
-			SUM(-1 * (b.winlost - b.actual_stake)) AS LicenseeWL,
-			SUM (comm ) as Comm,
-			SUM (  b.playercomm  ) as PlayerComm,
-			- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,
-			COUNT(b.transid) BetCount,
-			b.bettype, 
-			'' AS ShowTime 
-		FROM bettrans b  WITH (NOLOCK) 
-			INNER JOIN [match] m WITH(NOLOCK) ON b.matchid=m.matchid
-			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency	
-		WHERE
-			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
-			b.bettype IN (9,29) AND
-			b.matchid > 0 AND
-			b.statusID IN (111,112,113) AND
-			m.sporttype = @SportId AND
-			b.tpositiontaking<>0 AND
-			((@Liveindicator = 0 and b.livehomescore = 0)
-			OR (@Liveindicator = 1 and b.livehomescore = 1)
-			OR (@Liveindicator = 2))
-		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS', 'VS')
 	END
 
-	IF ( @ShowVS = 1 OR @ShowVS2 = 1)
+	IF @ShowVS2 = 1
 	BEGIN
-		INSERT INTO #tmpWinloss			
-		SELECT
-			b.winlostdate,  
-			b.currency,
-			m.matchid, 		
-			m.homeid, 
-			m.awayid,
-			SUM(stake) turnover, 
-			SUM(b.winlost - b.actual_stake) AS Winlost,  	
-			SUM(-1 * (b.winlost - b.actual_stake)) AS LicenseeWL,
-			SUM (comm ) as Comm,
-			SUM (  b.playercomm  ) as PlayerComm,
-			- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,
-			COUNT(b.transid) BetCount,
-			b.bettype, 
-			'' AS ShowTime 
-		FROM bettrans b  WITH (NOLOCK) 
-			INNER JOIN [match] m WITH(NOLOCK) ON b.matchid=m.matchid				
-			INNER JOIN @bettype bt ON b.bettype = bt.bettype
-			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
-		WHERE
-			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
-			b.matchid > 0 AND
-			b.statusID IN (111,112,113) AND
-			b.bettype <> 2799 AND
-			m.sporttype = @SportId AND
-			((@Liveindicator = 0 and b.liveindicator = 0)
-			OR (@Liveindicator = 1 and b.liveindicator = 1)
-			OR (@Liveindicator = 2))
-		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS2', 'VS2')
+	END
+
+	IF LEN(ISNULL(@ProductList, '')) > 0 
+	BEGIN
+		-- Insert Bettype
+		INSERT INTO @bettype ( bettype )
+		SELECT DISTINCT BetType
+		FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
+	END
+
+	CREATE TABLE #tmpWinloss (
+		winlostdate		DATETIME,
+		Currency		INT,
+		MatchId			INT,
+		HomeId			INT,
+		AwayId			INT,
+		TurnOver		MONEY,
+		Winlost			MONEY,
+		LicenseeWL		MONEY,
+		Comm			MONEY,
+		PlayerComm		MONEY,
+		AmtDueTo3rd		MONEY,
+		Betcount		INT,
+		Bettype			INT,
+		showtime 		NVARCHAR(50) -- table - shoe - hand of Live Casino
+	)
+
+	IF @TDate > @MoveBetsDay
+	BEGIN
+		IF @FDate <= @MoveBetsDay 
+			SET @TempFromDate =  DATEADD(DAY,1,@MoveBetsDay)
+		ELSE
+			SET @TempFromDate = @FDate	
+
+		IF @ShowBA = 1 
+		BEGIN
+			INSERT INTO #tmpWinloss
+			SELECT
+				b.winlostdate,
+				b.currency,
+				m.matchid,
+				m.homeid, 
+				m.awayid,
+				SUM(stake) turnover, 
+				SUM(b.winlost - b.actual_stake) AS Winlost,
+				0 AS LicenseeWL,
+				SUM(comm) AS Comm,
+				SUM(b.playercomm) AS PlayerComm,
+				- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd,
+				COUNT(b.transid) BetCount,
+				b.bettype,
+				'' AS ShowTime 
+			FROM bettrans b WITH (NOLOCK) 
+				INNER JOIN [match] m WITH(NOLOCK) ON b.matchid = m.matchid
+				INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency 
+			WHERE
+				b.winlostdate BETWEEN @TempFromDate AND @TDate AND
+				b.matchid > 0 AND
+				(b.bettype <= 30
+					OR (b.bettype BETWEEN 121 AND 999)
+					OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
+					OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0
+					OR b.Bettype = 38					   -- Single Match Parlay
+				) AND
+				b.bettype NOT IN (9,29,901,902,903,904) AND 
+				(b.bettype < 911 OR b.bettype > 914) AND
+				b.statusID IN (111,112,113) AND
+				b.tpositiontaking=0 AND
+				m.sporttype = @SportId AND
+				((@Liveindicator = 0 AND b.liveindicator = 0)
+				OR (@Liveindicator = 1 AND b.liveindicator = 1)
+				OR (@Liveindicator = 2))
+			GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
+
+			-- BA for parlay
+			INSERT INTO #tmpWinloss
+			SELECT
+				b.winlostdate,  
+				b.currency,
+				m.matchid, 
+				m.homeid, 
+				m.awayid,
+				SUM(stake) turnover, 
+				SUM(b.winlost - b.actual_stake) AS Winlost,
+				0 AS LicenseeWL,
+				SUM (comm ) AS Comm,
+				SUM (  b.playercomm  ) AS PlayerComm,
+				- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd,
+				COUNT(b.transid) BetCount,
+				b.bettype,
+				'' AS ShowTime 
+			FROM bettrans b  WITH (NOLOCK) 
+				INNER JOIN [match] m WITH(NOLOCK) ON b.matchid=m.matchid	
+				INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
+			WHERE
+				b.winlostdate BETWEEN @TempFromDate AND @TDate AND
+				b.matchid > 0 AND
+				b.bettype IN (9,29) AND
+				b.statusID IN (111,112,113) AND
+				b.tpositiontaking=0 AND
+				m.sporttype = @SportId AND
+				((@Liveindicator = 0 AND b.livehomescore = 0)
+				OR (@Liveindicator = 1 AND b.livehomescore = 1)
+				OR (@Liveindicator = 2))
+			GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
+		END
+	
+		IF (@ShowSB=1)
+		BEGIN
+			INSERT INTO #tmpWinloss			
+			SELECT
+				b.winlostdate,  
+				b.currency,
+				m.matchid, 		
+				m.homeid, 
+				m.awayid,
+				SUM(stake) turnover, 
+				SUM(b.winlost - b.actual_stake) AS Winlost,  	
+				SUM(-1 * (b.winlost - b.actual_stake)) AS LicenseeWL,
+				SUM (comm ) AS Comm,
+				SUM (  b.playercomm  ) AS PlayerComm,
+				- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,
+				COUNT(b.transid) BetCount,
+				b.bettype, 
+				'' AS ShowTime 
+			FROM bettrans b  WITH (NOLOCK) 
+				INNER JOIN [match] m WITH(NOLOCK) ON b.matchid=m.matchid	
+				INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency	
+			WHERE
+				b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
+				(b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999)
+								OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
+								OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0
+								OR b.Bettype = 38					 -- Single Match Parlay
+				) AND
+				b.bettype NOT IN (9,29,901,902,903,904) AND 
+				(b.bettype < 911 OR b.bettype > 914) AND
+				b.matchid > 0 AND
+				b.statusID IN (111,112,113) AND
+				m.sporttype = @SportId AND
+				b.tpositiontaking<>0 AND
+				((@Liveindicator = 0 AND b.liveindicator = 0)
+				OR (@Liveindicator = 1 AND b.liveindicator = 1)
+				OR (@Liveindicator = 2))
+			GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
+
+			-- SB for parlay
+			INSERT INTO #tmpWinloss			
+			SELECT
+				b.winlostdate,  
+				b.currency,
+				m.matchid, 		
+				m.homeid, 
+				m.awayid,
+				SUM(stake) turnover, 
+				SUM(b.winlost - b.actual_stake) AS Winlost,  	
+				SUM(-1 * (b.winlost - b.actual_stake)) AS LicenseeWL,
+				SUM (comm ) AS Comm,
+				SUM (  b.playercomm  ) AS PlayerComm,
+				- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,
+				COUNT(b.transid) BetCount,
+				b.bettype, 
+				'' AS ShowTime 
+			FROM bettrans b  WITH (NOLOCK) 
+				INNER JOIN [match] m WITH(NOLOCK) ON b.matchid=m.matchid
+				INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency	
+			WHERE
+				b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
+				b.bettype IN (9,29) AND
+				b.matchid > 0 AND
+				b.statusID IN (111,112,113) AND
+				m.sporttype = @SportId AND
+				b.tpositiontaking<>0 AND
+				((@Liveindicator = 0 AND b.livehomescore = 0)
+				OR (@Liveindicator = 1 AND b.livehomescore = 1)
+				OR (@Liveindicator = 2))
+			GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
+		END
+
+		IF ( @ShowVS = 1 OR @ShowVS2 = 1)
+		BEGIN
+			INSERT INTO #tmpWinloss			
+			SELECT
+				b.winlostdate,  
+				b.currency,
+				m.matchid, 		
+				m.homeid, 
+				m.awayid,
+				SUM(stake) turnover, 
+				SUM(b.winlost - b.actual_stake) AS Winlost,
+				SUM(-1 * (b.winlost - b.actual_stake)) AS LicenseeWL,
+				SUM (comm ) AS Comm,
+				SUM (  b.playercomm  ) AS PlayerComm,
+				- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd,
+				COUNT(b.transid) BetCount,
+				b.bettype, 
+				'' AS ShowTime 
+			FROM bettrans b  WITH (NOLOCK) 
+				INNER JOIN [match] m WITH(NOLOCK) ON b.matchid=m.matchid
+				INNER JOIN @bettype bt ON b.bettype = bt.bettype
+				INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
+			WHERE
+				b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
+				b.matchid > 0 AND
+				b.statusID IN (111,112,113) AND
+				b.bettype <> 2799 AND
+				m.sporttype = @SportId AND
+				((@Liveindicator = 0 AND b.liveindicator = 0)
+				OR (@Liveindicator = 1 AND b.liveindicator = 1)
+				OR (@Liveindicator = 2))
+			GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
 		
-		-- Parlay for Betradar
-		INSERT INTO #tmpWinloss			
-		SELECT
-			b.winlostdate,  
-			b.currency,
-			m.matchid, 		
-			m.homeid, 
-			m.awayid,
-			SUM(stake) turnover, 
-			SUM(b.winlost - b.actual_stake) AS Winlost,  	
-			SUM(-1 * (b.winlost - b.actual_stake)) AS LicenseeWL,
-			SUM (comm ) as Comm,
-			SUM (  b.playercomm  ) as PlayerComm,
-			- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,
-			COUNT(b.transid) BetCount,
-			b.bettype, 
-			'' AS ShowTime 
-		FROM bettrans b  WITH (NOLOCK) 
-			INNER JOIN [match] m WITH(NOLOCK) ON b.matchid=m.matchid
-			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency	
-		WHERE
-			b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
-			b.bettype IN (2799) AND
-			b.matchid > 0 AND
-			b.statusID IN (111,112,113) AND
-			m.sporttype = @SportId AND
-			b.tpositiontaking<>0 AND
-			((@Liveindicator = 0 and b.livehomescore = 0)
-			OR (@Liveindicator = 1 and b.livehomescore = 1)
-			OR (@Liveindicator = 2))
-		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
+			-- Parlay for Betradar
+			INSERT INTO #tmpWinloss
+			SELECT
+				b.winlostdate,
+				b.currency,
+				m.matchid, 
+				m.homeid, 
+				m.awayid,
+				SUM(stake) turnover, 
+				SUM(b.winlost - b.actual_stake) AS Winlost,
+				SUM(-1 * (b.winlost - b.actual_stake)) AS LicenseeWL,
+				SUM (comm ) AS Comm,
+				SUM (  b.playercomm  ) AS PlayerComm,
+				- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd,
+				COUNT(b.transid) BetCount,
+				b.bettype, 
+				'' AS ShowTime 
+			FROM bettrans b  WITH (NOLOCK) 
+				INNER JOIN [match] m WITH(NOLOCK) ON b.matchid=m.matchid
+				INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency	
+			WHERE
+				b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
+				b.bettype IN (2799) AND
+				b.matchid > 0 AND
+				b.statusID IN (111,112,113) AND
+				m.sporttype = @SportId AND
+				b.tpositiontaking<>0 AND
+				((@Liveindicator = 0 AND b.livehomescore = 0)
+				OR (@Liveindicator = 1 AND b.livehomescore = 1)
+				OR (@Liveindicator = 2))
+			GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
+		END
+	END
 
-	END	
-END
-
-	
-IF @FDate <= @MoveBetsDay 
-BEGIN
-	IF @TDate >= @MoveBetsDay
+	IF @FDate <= @MoveBetsDay 
+	BEGIN
+		IF @TDate >= @MoveBetsDay
 			SET @TempToDate = @MoveBetsDay
 		ELSE
 			SET  @TempToDate = @TDate
-			
-	IF @ShowBA = 1
-	BEGIN		
-		INSERT INTO #tmpWinloss			
-		SELECT
-			b.winlostdate,  
-			b.currency,
-			m.matchid, 		
-			m.homeid, 
-			m.awayid,	
-			SUM(stake) turnover, 
-			SUM(b.winlost - b.actual_stake) AS Winlost,  		
-			0 AS LicenseeWL,
-			SUM (comm ) as Comm,
-			SUM (  playercomm  ) as PlayerComm,
-			- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,
-			COUNT(b.transid) BetCount,
-			b.bettype,
-			'' AS ShowTime 
-		FROM bettrans14 b  WITH (NOLOCK) 
-			--INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
-			INNER JOIN [match14] m WITH(NOLOCK) ON b.matchid = m.matchid
-			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
-		WHERE
-			b.winlostdate BETWEEN @FDate AND @TempToDate  AND
-			(b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999)
-						  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
-						  OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0
-						  OR b.Bettype = 38					   -- Single Match Parlay
-			) AND
-			b.bettype NOT IN (9,29,901,902,903,904) AND 
-			(b.bettype < 911 OR b.bettype > 914) AND
-			b.tpositiontaking=0 AND
-			b.statusID IN (111,112,113) AND
-			m.sporttype = @SportId 	AND
-			((@Liveindicator = 0 and b.liveindicator = 0)
-			OR (@Liveindicator = 1 and b.liveindicator = 1)
-			OR (@Liveindicator = 2))
-		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
+
+		IF @ShowBA = 1
+		BEGIN		
+			INSERT INTO #tmpWinloss
+			SELECT
+				b.winlostdate,  
+				b.currency,
+				m.matchid, 		
+				m.homeid, 
+				m.awayid,	
+				SUM(stake) turnover, 
+				SUM(b.winlost - b.actual_stake) AS Winlost,
+				0 AS LicenseeWL,
+				SUM (comm ) AS Comm,
+				SUM (  playercomm  ) AS PlayerComm,
+				- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,
+				COUNT(b.transid) BetCount,
+				b.bettype,
+				'' AS ShowTime 
+			FROM bettrans14 b  WITH (NOLOCK) 
+				--INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
+				INNER JOIN [match14] m WITH(NOLOCK) ON b.matchid = m.matchid
+				INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
+			WHERE
+				b.winlostdate BETWEEN @FDate AND @TempToDate  AND
+				(b.bettype <= 30
+					OR (b.bettype BETWEEN 121 AND 999)
+					OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
+					OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0
+					OR b.Bettype = 38					   -- Single Match Parlay
+				) AND
+				b.bettype NOT IN (9,29,901,902,903,904) AND 
+				(b.bettype < 911 OR b.bettype > 914) AND
+				b.tpositiontaking=0 AND
+				b.statusID IN (111,112,113) AND
+				m.sporttype = @SportId 	AND
+				((@Liveindicator = 0 AND b.liveindicator = 0)
+				OR (@Liveindicator = 1 AND b.liveindicator = 1)
+				OR (@Liveindicator = 2))
+			GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
 		
-		-- BA for parlay
-		INSERT INTO #tmpWinloss			
-		SELECT
-			b.winlostdate,  
-			b.currency,
-			m.matchid, 		
-			m.homeid, 
-			m.awayid,	
-			SUM(stake) turnover, 
-			SUM(b.winlost - b.actual_stake) AS Winlost,  		
-			0 AS LicenseeWL,
-			SUM (comm ) as Comm,
-			SUM (  playercomm  ) as PlayerComm,
-			- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,
-			COUNT(b.transid) BetCount,
-			b.bettype,
-			'' AS ShowTime 
-		FROM bettrans14 b  WITH (NOLOCK) 
-			--INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
-			INNER JOIN [match14] m WITH(NOLOCK) ON b.matchid = m.matchid
-			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
-		WHERE
-			b.winlostdate BETWEEN @FDate AND @TempToDate  AND
-			b.bettype IN (9,29) AND
-			b.tpositiontaking=0 AND
-			b.statusID IN (111,112,113) AND
-			m.sporttype = @SportId 	AND
-			((@Liveindicator = 0 and b.livehomescore = 0)
-			OR (@Liveindicator = 1 and b.livehomescore = 1)
-			OR (@Liveindicator = 2))
-		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
+			-- BA for parlay
+			INSERT INTO #tmpWinloss			
+			SELECT
+				b.winlostdate,  
+				b.currency,
+				m.matchid, 		
+				m.homeid, 
+				m.awayid,	
+				SUM(stake) turnover, 
+				SUM(b.winlost - b.actual_stake) AS Winlost,  		
+				0 AS LicenseeWL,
+				SUM (comm ) AS Comm,
+				SUM (  playercomm  ) AS PlayerComm,
+				- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,
+				COUNT(b.transid) BetCount,
+				b.bettype,
+				'' AS ShowTime 
+			FROM bettrans14 b  WITH (NOLOCK) 
+				--INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction BA WITH (NOLOCK) ON b.transid = BA.transid
+				INNER JOIN [match14] m WITH(NOLOCK) ON b.matchid = m.matchid
+				INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
+			WHERE
+				b.winlostdate BETWEEN @FDate AND @TempToDate  AND
+				b.bettype IN (9,29) AND
+				b.tpositiontaking=0 AND
+				b.statusID IN (111,112,113) AND
+				m.sporttype = @SportId 	AND
+				((@Liveindicator = 0 AND b.livehomescore = 0)
+				OR (@Liveindicator = 1 AND b.livehomescore = 1)
+				OR (@Liveindicator = 2))
+			GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
+		END
 
-	END			
-			
-	IF (@ShowSB=1)
-	BEGIN
-		INSERT INTO #tmpWinloss			
-		SELECT
-			b.winlostdate,  
-			b.currency,
-			m.matchid, 		
-			m.homeid, 
-			m.awayid,	
-			SUM(stake) turnover, 
-			SUM(b.winlost - b.actual_stake) AS Winlost,  		
-			SUM(-1 * (b.winlost - b.actual_stake)) AS LicenseeWL,
-			SUM (comm ) as Comm,
-			SUM (playercomm  ) as PlayerComm,
-			- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,
-			COUNT(b.transid) BetCount,
-			b.bettype,
-			'' AS ShowTime 
-		FROM bettrans14 b  WITH (NOLOCK) 
-			INNER JOIN [match14] m WITH(NOLOCK) ON b.matchid = m.matchid
-			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency	
-		WHERE
-			b.winlostdate BETWEEN @FDate AND @TempToDate  AND
-			(b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999)
-			    	 	  OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
-			    	 	  OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0
-			    	 	  OR b.Bettype = 38					   -- Single Match Parlay
-			) AND
-			b.bettype NOT IN (9,29,901,902,903,904) AND 
-			(b.bettype < 911 OR b.bettype > 914) AND
-			b.tpositiontaking<>0 AND
-			b.statusID IN (111,112,113) AND
-			m.sporttype = @SportId AND
-			((@Liveindicator = 0 and b.liveindicator = 0)
-			OR (@Liveindicator = 1 and b.liveindicator = 1)
-			OR (@Liveindicator = 2))			
-		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype				
+		IF (@ShowSB=1)
+		BEGIN
+			INSERT INTO #tmpWinloss			
+			SELECT
+				b.winlostdate,  
+				b.currency,
+				m.matchid, 		
+				m.homeid, 
+				m.awayid,	
+				SUM(stake) turnover, 
+				SUM(b.winlost - b.actual_stake) AS Winlost,  		
+				SUM(-1 * (b.winlost - b.actual_stake)) AS LicenseeWL,
+				SUM (comm ) AS Comm,
+				SUM (playercomm  ) AS PlayerComm,
+				- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,
+				COUNT(b.transid) BetCount,
+				b.bettype,
+				'' AS ShowTime 
+			FROM bettrans14 b  WITH (NOLOCK) 
+				INNER JOIN [match14] m WITH(NOLOCK) ON b.matchid = m.matchid
+				INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency	
+			WHERE
+				b.winlostdate BETWEEN @FDate AND @TempToDate  AND
+				(b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999)
+			    	 		  OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
+			    	 		  OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0
+			    	 		  OR b.Bettype = 38					   -- Single Match Parlay
+				) AND
+				b.bettype NOT IN (9,29,901,902,903,904) AND 
+				(b.bettype < 911 OR b.bettype > 914) AND
+				b.tpositiontaking<>0 AND
+				b.statusID IN (111,112,113) AND
+				m.sporttype = @SportId AND
+				((@Liveindicator = 0 AND b.liveindicator = 0)
+				OR (@Liveindicator = 1 AND b.liveindicator = 1)
+				OR (@Liveindicator = 2))			
+			GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
 
-		-- SB for parlay
-		INSERT INTO #tmpWinloss			
-		SELECT
-			b.winlostdate,  
-			b.currency,
-			m.matchid, 		
-			m.homeid, 
-			m.awayid,	
-			SUM(stake) turnover, 
-			SUM(b.winlost - b.actual_stake) AS Winlost,  		
-			SUM(-1 * (b.winlost - b.actual_stake)) AS LicenseeWL,
-			SUM (comm ) as Comm,
-			SUM (playercomm  ) as PlayerComm,
-			- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,
-			COUNT(b.transid) BetCount,
-			b.bettype,
-			'' AS ShowTime 
-		FROM bettrans14 b  WITH (NOLOCK) 
-			INNER JOIN [match14] m WITH(NOLOCK) ON b.matchid = m.matchid
-			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency	
-		WHERE
-			b.winlostdate BETWEEN @FDate AND @TempToDate  AND
-			b.bettype IN (9,29) AND
-			b.tpositiontaking<>0 AND
-			b.statusID IN (111,112,113) AND
-			m.sporttype = @SportId AND
-			((@Liveindicator = 0 and b.livehomescore = 0)
-			OR (@Liveindicator = 1 and b.livehomescore = 1)
-			OR (@Liveindicator = 2))			
-		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
-	END		
-			
-	IF (@ShowVS = 1 OR @ShowVS2 = 1)
-	BEGIN		
-		INSERT INTO #tmpWinloss			
-		SELECT
-			b.winlostdate,  
-			b.currency,
-			m.matchid, 		
-			m.homeid, 
-			m.awayid,	
-			SUM(stake) turnover, 
-			SUM(b.winlost - b.actual_stake) AS Winlost,  		
-			SUM(-1 * (b.winlost - b.actual_stake)) AS LicenseeWL,
-			SUM (comm ) as Comm,
-			SUM (playercomm  ) as PlayerComm,
-			- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,
-			COUNT(b.transid) BetCount,
-			b.bettype,
-			'' AS ShowTime 
-		FROM bettrans14 b  WITH (NOLOCK) 
-			INNER JOIN [match14] m WITH(NOLOCK) ON b.matchid = m.matchid
-			INNER JOIN @bettype bt ON b.bettype = bt.bettype	
-			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency	
-		WHERE
-			b.winlostdate BETWEEN @FDate AND @TempToDate  AND
-			b.statusID IN (111,112,113) AND
-			m.sporttype = @SportId AND
-			b.bettype <> 2799 AND
-			((@Liveindicator = 0 and b.liveindicator = 0)
-			OR (@Liveindicator = 1 and b.liveindicator = 1)
-			OR (@Liveindicator = 2))
-		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
-		
-		-- Parlay of Betradar
-		INSERT INTO #tmpWinloss			
-		SELECT
-			b.winlostdate,  
-			b.currency,
-			m.matchid, 		
-			m.homeid, 
-			m.awayid,	
-			SUM(stake) turnover, 
-			SUM(b.winlost - b.actual_stake) AS Winlost,  		
-			SUM(-1 * (b.winlost - b.actual_stake)) AS LicenseeWL,
-			SUM (comm ) as Comm,
-			SUM (playercomm  ) as PlayerComm,
-			- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,
-			COUNT(b.transid) BetCount,
-			b.bettype,
-			'' AS ShowTime 
-		FROM bettrans14 b  WITH (NOLOCK) 
-			INNER JOIN [match14] m WITH(NOLOCK) ON b.matchid = m.matchid
-			INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency	
-		WHERE
-			b.winlostdate BETWEEN @FDate AND @TempToDate  AND
-			b.bettype IN (2799) AND
-			b.tpositiontaking<>0 AND
-			b.statusID IN (111,112,113) AND
-			m.sporttype = @SportId AND
-			((@Liveindicator = 0 and b.livehomescore = 0)
-			OR (@Liveindicator = 1 and b.livehomescore = 1)
-			OR (@Liveindicator = 2))			
-		GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
-	END		
+			-- SB for parlay
+			INSERT INTO #tmpWinloss
+			SELECT
+				b.winlostdate,  
+				b.currency,
+				m.matchid, 		
+				m.homeid, 
+				m.awayid,	
+				SUM(stake) turnover, 
+				SUM(b.winlost - b.actual_stake) AS Winlost,
+				SUM(-1 * (b.winlost - b.actual_stake)) AS LicenseeWL,
+				SUM (comm ) AS Comm,
+				SUM (playercomm  ) AS PlayerComm,
+				- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,
+				COUNT(b.transid) BetCount,
+				b.bettype,
+				'' AS ShowTime 
+			FROM bettrans14 b  WITH (NOLOCK) 
+				INNER JOIN [match14] m WITH(NOLOCK) ON b.matchid = m.matchid
+				INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency	
+			WHERE
+				b.winlostdate BETWEEN @FDate AND @TempToDate  AND
+				b.bettype IN (9,29) AND
+				b.tpositiontaking<>0 AND
+				b.statusID IN (111,112,113) AND
+				m.sporttype = @SportId AND
+				((@Liveindicator = 0 AND b.livehomescore = 0)
+				OR (@Liveindicator = 1 AND b.livehomescore = 1)
+				OR (@Liveindicator = 2))			
+			GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
+		END
+
+		IF (@ShowVS = 1 OR @ShowVS2 = 1)
+		BEGIN		
+			INSERT INTO #tmpWinloss
+			SELECT
+				b.winlostdate,  
+				b.currency,
+				m.matchid, 		
+				m.homeid, 
+				m.awayid,	
+				SUM(stake) turnover, 
+				SUM(b.winlost - b.actual_stake) AS Winlost,
+				SUM(-1 * (b.winlost - b.actual_stake)) AS LicenseeWL,
+				SUM (comm ) AS Comm,
+				SUM (playercomm  ) AS PlayerComm,
+				- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,
+				COUNT(b.transid) BetCount,
+				b.bettype,
+				'' AS ShowTime 
+			FROM bettrans14 b  WITH (NOLOCK) 
+				INNER JOIN [match14] m WITH(NOLOCK) ON b.matchid = m.matchid
+				INNER JOIN @bettype bt ON b.bettype = bt.bettype	
+				INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency	
+			WHERE
+				b.winlostdate BETWEEN @FDate AND @TempToDate  AND
+				b.statusID IN (111,112,113) AND
+				m.sporttype = @SportId AND
+				b.bettype <> 2799 AND
+				((@Liveindicator = 0 AND b.liveindicator = 0)
+				OR (@Liveindicator = 1 AND b.liveindicator = 1)
+				OR (@Liveindicator = 2))
+			GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
+
+			-- Parlay of Betradar
+			INSERT INTO #tmpWinloss
+			SELECT
+				b.winlostdate,  
+				b.currency,
+				m.matchid, 		
+				m.homeid, 
+				m.awayid,	
+				SUM(stake) turnover, 
+				SUM(b.winlost - b.actual_stake) AS Winlost,  		
+				SUM(-1 * (b.winlost - b.actual_stake)) AS LicenseeWL,
+				SUM (comm ) AS Comm,
+				SUM (playercomm  ) AS PlayerComm,
+				- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,
+				COUNT(b.transid) BetCount,
+				b.bettype,
+				'' AS ShowTime 
+			FROM bettrans14 b  WITH (NOLOCK) 
+				INNER JOIN [match14] m WITH(NOLOCK) ON b.matchid = m.matchid
+				INNER JOIN 	@TempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency	
+			WHERE
+				b.winlostdate BETWEEN @FDate AND @TempToDate  AND
+				b.bettype IN (2799) AND
+				b.tpositiontaking<>0 AND
+				b.statusID IN (111,112,113) AND
+				m.sporttype = @SportId AND
+				((@Liveindicator = 0 AND b.livehomescore = 0)
+				OR (@Liveindicator = 1 AND b.livehomescore = 1)
+				OR (@Liveindicator = 2))			
+			GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
+		END
+	END
+
+	-- Get winlost by match 
+	CREATE NONCLUSTERED INDEX IX_tmpWinloss on #tmpWinloss (Currency)
+
+	SELECT FromDate, ToDate, ExchangeId, Rate INTO #TempExchange
+	FROM Lrf_f_GetExchangeRate(@FDate,@TDate, @BaseCurrency, '')
+	WHERE ExchangeId IN (SELECT DISTINCT Currency FROM #tmpWinloss)
+
+	SELECT
+		b.matchid,	
+		b.homeid,	
+		b.awayid,
+		--b.bettype,
+		0 AS bettype,
+		'' AS ShowTime ,
+		SUM(Betcount)	AS Betcount,
 	
-END	
--- Get winlost by match 
-CREATE NONCLUSTERED INDEX IX_tmpWinloss on #tmpWinloss (Currency)
+		--BaseEUR  
+		CAST(SUM(TurnOver*e.Rate) AS MONEY)	AS Turnover,   
+		CAST(SUM(Winlost*e.Rate) AS MONEY)	AS Winlost,  
+		CAST(SUM(LicenseeWL*e.Rate) AS MONEY) AS LicenseeWL,
+		CAST(SUM(Comm * e.Rate) AS MONEY) AS Comm,
+		CAST(SUM(PlayerComm * e.Rate) AS MONEY) AS PlayerComm,
+		CAST(SUM(AmtDueto3rd*e.Rate) AS MONEY) AS AmtDueto3rd
+	FROM #tmpWinloss b  WITH (NOLOCK) 	
+		INNER JOIN  #TempExchange e
+		ON b.winlostdate BETWEEN e.FromDate AND e.ToDate AND e.exchangeid = b.currency
+	GROUP BY b.matchid, b.homeid, b.awayid
 
-SELECT FromDate, ToDate, ExchangeId, Rate INTO #TempExchange
-FROM Lrf_f_GetExchangeRate(@FDate,@TDate, @BaseCurrency, '')
-WHERE ExchangeId IN (SELECT DISTINCT Currency FROM #tmpWinloss)
-
-SELECT
-	b.matchid,	
-	b.homeid,	
-	b.awayid,
-	--b.bettype,
-	0 AS bettype,
-	'' AS ShowTime ,
-	SUM(Betcount)	AS Betcount,
-	
-	--BaseEUR  
-	CAST(SUM(TurnOver*e.Rate) AS MONEY)	AS Turnover,   
-	CAST(SUM(Winlost*e.Rate) AS MONEY)	AS Winlost,  
-	CAST(SUM(LicenseeWL*e.Rate) AS MONEY) AS LicenseeWL,
-	CAST(SUM(Comm * e.Rate) AS MONEY) AS Comm,
-	CAST(SUM(PlayerComm * e.Rate) AS MONEY) AS PlayerComm,
-	CAST(SUM(AmtDueto3rd*e.Rate) AS MONEY) AS AmtDueto3rd
-FROM #tmpWinloss b  WITH (NOLOCK) 	
-	INNER JOIN  #TempExchange e
-	ON b.winlostdate BETWEEN e.FromDate AND e.ToDate AND e.exchangeid = b.currency
-group by b.matchid, b.homeid, b.awayid
-
-DROP TABLE #TempExchange
-DROP TABLE #tmpWinloss
-	
+	DROP TABLE #TempExchange
+	DROP TABLE #tmpWinloss
+END
 GO 

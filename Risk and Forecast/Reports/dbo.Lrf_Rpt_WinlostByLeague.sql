@@ -42,6 +42,7 @@ AS
 		- 20191608@Amanda: Add new bet types (PH AIO - Phase 4b) [RedmineID: #118300]
 		- 20191118@Amanda: Add new bet types (BM AIO - Phase 2) [RedmineID: #120336]
 		- 20190102@Vickie: Add new bet types (PH AIO - Phase 5) [RedmineID: #126005]
+		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
 
 	Parameter's Explanation:
 		- @LicenseeID : Licensee ID
@@ -114,7 +115,7 @@ BEGIN
 
 	BEGIN CATCH
 		SELECT ErrCode = 100
-			,ErrMsg = N'Paramter invalid.'
+			,ErrMsg = N'Parameter invalid.'
 
 		RETURN
 	END CATCH;
@@ -170,7 +171,7 @@ BEGIN
 					,m.leagueid
 					,CASE 
 						WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-								OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
+								OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 								OR b.bettype BETWEEN 81 AND 88
 								OR b.bettype BETWEEN 90 AND 120
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
@@ -219,15 +220,15 @@ BEGIN
 					,m.sporttype
 					,'' AS ShowTime
 					,count(1) betcount
-				FROM bettrans AS b WITH (NOLOCK)
-					INNER JOIN match m WITH (NOLOCK) ON m.matchid = b.matchid
+				FROM dbo.bettrans AS b WITH (NOLOCK)
+					INNER JOIN dbo.match m WITH (NOLOCK) ON m.matchid = b.matchid
 					INNER JOIN @TempAg ta ON b.recommend = ta.CustId AND b.Currency = ta.Currency
 				WHERE b.winlostdate BETWEEN @TempFromDate AND @todate
 					AND (
 						b.bettype <= 30
-						OR (b.bettype BETWEEN 121 AND 999)		
-						OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettye
-						OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0	
+						OR (b.bettype BETWEEN 121 AND 999)
+						OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettye
+						OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0	
 						)
 					AND (b.bettype < 901 OR b.bettype > 904)
 					AND (b.bettype < 911 OR b.bettype > 914)
@@ -258,7 +259,7 @@ BEGIN
 					--	END
 					,CASE 
 						WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-								OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
+								OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 								OR b.bettype BETWEEN 81 AND 88
 								OR b.bettype BETWEEN 90 AND 120
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
@@ -281,7 +282,7 @@ BEGIN
 													THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
 												WHEN b.odds >= 0
 													THEN (1 + b.odds)
-												END
+											END
 									WHEN OddsType = 5
 										THEN --american odds to decimal
 											CASE 
@@ -291,10 +292,10 @@ BEGIN
 													THEN 2
 												WHEN (b.odds * 100) > 0
 													THEN (1 + b.odds)
-												END
+											END
 									END
 						ELSE b.Odds
-						END
+					END
 			END
 
 			--ShowBA
@@ -312,7 +313,7 @@ BEGIN
 					,m.leagueid
 					,CASE 
 						WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-								OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
+								OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 								OR b.bettype BETWEEN 81 AND 88
 								OR b.bettype BETWEEN 90 AND 120
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
@@ -330,12 +331,12 @@ BEGIN
 										THEN b.Odds + 1 --hongkong to decimal
 									WHEN b.OddsType IN (3, 4, 7)
 										THEN --malay and indo and new oddstype to decimal
-											CASE 
+											CASE
 												WHEN b.odds < 0
 													THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
 												WHEN b.odds >= 0
 													THEN (1 + b.odds)
-												END
+											END
 									WHEN OddsType = 5
 										THEN --american odds to decimal
 											CASE 
@@ -345,7 +346,7 @@ BEGIN
 													THEN 2
 												WHEN (b.odds * 100) > 0
 													THEN (1 + b.odds)
-												END
+											END
 									END
 						ELSE b.Odds
 						END odds2
@@ -361,15 +362,15 @@ BEGIN
 					,m.sporttype
 					,m.showtime AS ShowTime
 					,count(1) betcount
-				FROM bettrans AS b WITH (NOLOCK)
-					INNER JOIN match m WITH (NOLOCK) ON m.matchid = b.matchid
+				FROM dbo.bettrans AS b WITH (NOLOCK)
+					INNER JOIN dbo.match m WITH (NOLOCK) ON m.matchid = b.matchid
 					INNER JOIN @TempAg ta ON b.recommend = ta.CustId AND b.Currency = ta.Currency
 				WHERE b.winlostdate BETWEEN @TempFromDate AND @todate
 					AND (
 						b.bettype <= 30
 						OR (b.bettype BETWEEN 121 AND 999)	
-						OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
-						OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0			
+						OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
+						OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0
 						)
 					AND (b.bettype < 901 OR b.bettype > 904)
 					AND (b.bettype < 911 OR b.bettype > 914)
@@ -396,7 +397,7 @@ BEGIN
 					,m.showtime
 					,CASE 
 						WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-								OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
+								OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 								OR b.bettype BETWEEN 81 AND 88
 								OR b.bettype BETWEEN 90 AND 120
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
@@ -419,7 +420,7 @@ BEGIN
 													THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
 												WHEN b.odds >= 0
 													THEN (1 + b.odds)
-												END
+											END
 									WHEN OddsType = 5
 										THEN --american odds to decimal
 											CASE 
@@ -429,13 +430,14 @@ BEGIN
 													THEN 2
 												WHEN (b.odds * 100) > 0
 													THEN (1 + b.odds)
-												END
+											END
 									END
 						ELSE b.Odds
-						END
+					END
 			END
 		END
 	END
+
 	CREATE TABLE #match (
 		matchid INT
 		,homeid INT
@@ -464,7 +466,7 @@ BEGIN
 				,m.sporttype
 				,m.showtime
 				,m.isNeutral
-			FROM match14 AS m WITH (NOLOCK)
+			FROM dbo.match14 AS m WITH (NOLOCK)
 			WHERE m.eventdate BETWEEN @fromdate AND @TempToDate
 				AND m.leagueid = @LeagueID
 				AND (
@@ -503,7 +505,7 @@ BEGIN
 					,m.leagueid
 					,CASE 
 						WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-								OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
+								OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 								OR b.bettype BETWEEN 81 AND 88
 								OR b.bettype BETWEEN 90 AND 120
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
@@ -558,9 +560,9 @@ BEGIN
 				WHERE winlostdate BETWEEN @fromdate AND @TempToDate
 					AND (
 						b.bettype <= 30
-						OR (b.bettype BETWEEN 121 AND 999)			
-						OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
-						OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0		
+						OR (b.bettype BETWEEN 121 AND 999)
+						OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
+						OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0		
 						)
 					AND (b.bettype < 901 OR b.bettype > 904)
 					AND (b.bettype < 911 OR b.bettype > 914)
@@ -588,7 +590,7 @@ BEGIN
 					,m.showtime
 					,CASE 
 						WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-								OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
+								OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 								OR b.bettype BETWEEN 81 AND 88
 								OR b.bettype BETWEEN 90 AND 120
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
@@ -611,7 +613,7 @@ BEGIN
 													THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
 												WHEN b.odds >= 0
 													THEN (1 + b.odds)
-												END
+											END
 									WHEN OddsType = 5
 										THEN --american odds to decimal
 											CASE 
@@ -621,10 +623,10 @@ BEGIN
 													THEN 2
 												WHEN (b.odds * 100) > 0
 													THEN (1 + b.odds)
-												END
+											END
 									END
 						ELSE b.Odds
-						END
+					END
 			END
 
 			IF @ShowSB = 1
@@ -641,7 +643,7 @@ BEGIN
 					,m.leagueid
 					,CASE 
 						WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-								OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
+								OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 								OR b.bettype BETWEEN 81 AND 88
 								OR b.bettype BETWEEN 90 AND 120
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
@@ -697,8 +699,8 @@ BEGIN
 					AND (
 						b.bettype <= 30
 						OR (b.bettype BETWEEN 121 AND 999)	
-						OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
-						OR (b.Bettype BETWEEN 9001 and 9086) -- E-Sports 2.0	
+						OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
+						OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0	
 						)
 					AND (b.bettype < 901 OR b.bettype > 904)
 					AND (b.bettype < 911 OR b.bettype > 914)
@@ -726,7 +728,7 @@ BEGIN
 					,m.showtime
 					,CASE 
 						WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156)	 -- add more Sportting Solution bettype 
-								OR b.bettype BETWEEN 9001 AND 9086	-- Esport 2
+								OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 								OR b.bettype BETWEEN 81 AND 88
 								OR b.bettype BETWEEN 90 AND 120
 								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
@@ -767,13 +769,12 @@ BEGIN
 		END
 	END
 
-	---
 	INSERT INTO @ExchangeDaily(FromDate, ToDate, ExchangeId, Rate)
 	SELECT FromDate, ToDate, ExchangeID, Rate
 	FROM dbo.Lrf_f_GetExchangeRate(@fromDate, @toDate, @BaseCurrency, '') e
 	WHERE EXISTS (SELECT 1 FROM @TempAg a WHERE a.Currency = e.ExchangeID)
 
-	-- Result  
+	-- Result
 	SELECT matchid
 		,CASE 
 			WHEN b.sporttype IN (181, 182, 184)

@@ -102,6 +102,7 @@ AS
 		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
 		- 20200423@Hogan: Add new product Sexy Gaming [RedmineID: #132829]
 		- 20200423@Vickie: Integrate Saba Club [RedmineID: #132702]
+		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
 
 	Param's Explanation:
 		+ @CustID: SuperID
@@ -184,15 +185,16 @@ BEGIN
 		BuyBackAmtSB		MONEY,
 		BuyBackAmtBA		MONEY,
 		CashOutComm			MONEY
-	)  
+	)
 
-	DECLARE @TempAg				TABLE (custID INT, currency INT)
-	DECLARE @ExchangeRate		TABLE (FromDate SMALLDATETIME, ToDate SMALLDATETIME, ExchangeId INT, Rate FLOAT, USD FLOAT, EUR FLOAT, GBP FLOAT, DefaultRate FLOAT)
-	DECLARE @LicenseeName		VARCHAR(50)
-	DECLARE @bettype			TABLE (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))
-	DECLARE @sporttype			TABLE (sporttype INT, ProductCode VARCHAR(10))
-	DECLARE @ProductList		VARCHAR (500)
-	DECLARE	@PromotionPrize		INT = 0
+	DECLARE @TempAg			TABLE (custID INT, currency INT)
+	DECLARE @ExchangeRate	TABLE (FromDate SMALLDATETIME, ToDate SMALLDATETIME, ExchangeId INT, Rate FLOAT, USD FLOAT, EUR FLOAT, GBP FLOAT, DefaultRate FLOAT)	
+	DECLARE @bettype		TABLE (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))
+	DECLARE @sporttype		TABLE (sporttype INT, ProductCode VARCHAR(10))
+
+	DECLARE @LicenseeName VARCHAR(50)
+	DECLARE @ProductList VARCHAR (500)
+	DECLARE	@PromotionPrize INT = 0
 
 	SELECT	@LicenseeName = LicenseeName
 	FROM bodb_Licensee.dbo.Licensees (NOLOCK)
@@ -215,7 +217,7 @@ BEGIN
 
 	BEGIN CATCH
 		SELECT ErrCode = 100
-				,ErrMsg = N'Paramter invalid.'
+			,ErrMsg = N'Parameter invalid.'
 
 		RETURN
 	END CATCH;
@@ -228,7 +230,7 @@ BEGIN
 	IF @ShowNG = 1
 	BEGIN
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'NG', 'NG')		
-	END	
+	END
 
 	IF @ShowVS = 1
 	BEGIN
@@ -333,7 +335,7 @@ BEGIN
 		IF @showPP = 1
 			DELETE @bettype
 			WHERE ProductCode = 'PP' AND bettype IN (4300,4299)
-		
+
 		-- Insert Sport Type
 		INSERT INTO @sporttype ( sporttype, ProductCode )
 		SELECT DISTINCT sporttype, ProductCode
@@ -346,7 +348,8 @@ BEGIN
 			@TDate			SMALLDATETIME
 
 	--to Deal With Parameter Sniffing
-	SELECT @FDate = @FromDate, @TDate = @ToDate 
+	SELECT @FDate = @FromDate,
+		@TDate = @ToDate 
 
 	IF @TDate > @MoveBetsDay
 	BEGIN
@@ -359,92 +362,102 @@ BEGIN
 
 		IF @ShowBA = 1
 		BEGIN
-		INSERT INTO #SAgWinLoss
-		SELECT
-			b.winlostdate,
-			b.recommend,
-			tma.currency, 
-			0 AS turnoverSB,
-			SUM(stake
-				*
-				CASE WHEN @drawfilter IN (2,3) THEN
-					CASE
-						WHEN b.statusID = 111 THEN 0
-						WHEN b.winlostdate >= @HWHLCutDate AND b.statusID IN (112, 113) AND b.modds IN (-0.25, 0.25) AND b.bettype NOT IN (29,38) THEN 0.5 -- exclude parlay, bet builder
-						WHEN b.winlostdate < @HWHLCutDate AND (b.statusID = 112 OR b.statusID = 113) AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18,124,125,482,483,484,485) THEN 0.5
-						ELSE 1 END
-				ELSE 1 END
-			) AS turnoverBA, 
-			0 AS turnoverNG,
-			0 AS turnoverVS,
-			0 AS tunroverCS,
-			0 AS tunroverKN,
-			0 AS tunroverAGC,
-			0 AS tunroverVB,
-			0 AS tunroverAB,
-			0 AS tunroverFW,
-			0 AS tunroverCO,
-			0 AS tunroverVS2,
-			0 AS tunroverLT,
-			0 AS tunroverPP,
-			0 AS tunroverCC,
-			0 AS tunroverSG,
-			0 AS tunroverVRG,
-			0 AS tunroverTG,
-			0 AS tunroverI4D,
-			0 AS tunroverSXG,
-			0 AS tunroverSBC,
-			0 AS BTActualStake,
-			SUM(b.winlost - b.actual_stake) AS Winlost,
-			0 AS LicenseeWLSB,
-			0 AS LicenseeWLBA,
-			0 AS LicenseeWLNG,
-			0 AS LicenseeWLVS,
-			0 AS LicenseeWLCS,
-			0 AS LicenseeWLKN,
-			0 AS LicenseeWLAGC,
-			0 AS LicenseeWLVB,
-			0 AS LicenseeWLAB,
-			0 AS LicenseeWLFW,
-			0 AS LicenseeWLCO,
-			0 AS LicenseeWLVS2,
-			0 AS LicenseeWLLT,
-			0 AS LicenseeWLPP,
-			0 AS LicenseeWLCC,
-			0 AS LicenseeWLSG,
-			0 AS LicenseeWLVRG,
-			0 AS LicenseeWLTG,
-			0 AS LicenseeWLI4D,
-			0 AS LicenseeWLSXG,
-			0 AS LicenseeWLSBC,
-			- SUM(b.winlost - b.actual_stake + awinlost + comm) AS AmountDueToBA,
-			SUM(comm) AS CommBA,
-			CASE WHEN b.StatusID=111 THEN 0 ELSE SUM(playercomm) END  AS PlayerComm,
-			COUNT(CASE WHEN @drawfilter = 2 AND b.statusID = 111 THEN NULL ELSE b.transid END) AS BetCount,
-			0 AS licenseeWLBT,
-			0 AS BetTradeComm,			
-			SUM(CASE WHEN b.betdaqid = 0 THEN (b.winlost-b.actual_stake) ELSE 0 END) AS WLBetTicket,
-			0 AS WLBoughtTicket,
-			0 AS BuyBackAmtSB,
-			0 AS BuyBackAmtBA,
-			0 AS CashOutComm
-		FROM 
-			dbo.bettrans b WITH ( NOLOCK) 
-			INNER JOIN @TempAg tma ON tma.CustID = b.recommend AND tma.currency = b.currency
-			INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON tma.custid = BA.recommend and b.transid = BA.transid 	 	
-		WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate   
-			AND (b.bettype < 901 OR b.bettype > 904)
-			AND (b.bettype < 911 OR b.bettype > 914)
-			AND b.statusID IN (111, 112, 113) 
-		GROUP BY
-			b.winlostdate, tma.currency, b.recommend, b.statusID	
+			INSERT INTO #SAgWinLoss
+			SELECT
+				b.winlostdate,
+				b.recommend,
+				tma.currency, 
+				0 AS turnoverSB,
+				SUM(stake
+					*
+					CASE WHEN @drawfilter IN (2,3) THEN
+						CASE
+							WHEN b.statusID = 111 THEN 0
+							WHEN b.winlostdate >= @HWHLCutDate
+								AND b.statusID IN (112, 113)
+								AND b.modds IN (-0.25, 0.25)
+								AND b.bettype NOT IN (29,38) THEN 0.5 -- exclude parlay, bet builder
+							WHEN b.winlostdate < @HWHLCutDate
+								AND (b.statusID = 112 OR b.statusID = 113)
+								AND ABS(modds) = 0.25
+								AND b.bettype IN (1,3,7,8,17,18,124,125,482,483,484,485) THEN 0.5
+							ELSE 1
+						END
+					ELSE 1 END
+				) AS turnoverBA, 
+				0 AS turnoverNG,
+				0 AS turnoverVS,
+				0 AS tunroverCS,
+				0 AS tunroverKN,
+				0 AS tunroverAGC,
+				0 AS tunroverVB,
+				0 AS tunroverAB,
+				0 AS tunroverFW,
+				0 AS tunroverCO,
+				0 AS tunroverVS2,
+				0 AS tunroverLT,
+				0 AS tunroverPP,
+				0 AS tunroverCC,
+				0 AS tunroverSG,
+				0 AS tunroverVRG,
+				0 AS tunroverTG,
+				0 AS tunroverI4D,
+				0 AS tunroverSXG,
+				0 AS tunroverSBC,
+				0 AS BTActualStake,
+				SUM(b.winlost - b.actual_stake) AS Winlost,
+				0 AS LicenseeWLSB,
+				0 AS LicenseeWLBA,
+				0 AS LicenseeWLNG,
+				0 AS LicenseeWLVS,
+				0 AS LicenseeWLCS,
+				0 AS LicenseeWLKN,
+				0 AS LicenseeWLAGC,
+				0 AS LicenseeWLVB,
+				0 AS LicenseeWLAB,
+				0 AS LicenseeWLFW,
+				0 AS LicenseeWLCO,
+				0 AS LicenseeWLVS2,
+				0 AS LicenseeWLLT,
+				0 AS LicenseeWLPP,
+				0 AS LicenseeWLCC,
+				0 AS LicenseeWLSG,
+				0 AS LicenseeWLVRG,
+				0 AS LicenseeWLTG,
+				0 AS LicenseeWLI4D,
+				0 AS LicenseeWLSXG,
+				0 AS LicenseeWLSBC,
+				- SUM(b.winlost - b.actual_stake + awinlost + comm) AS AmountDueToBA,
+				SUM(comm) AS CommBA,
+				CASE WHEN b.StatusID=111 THEN 0 ELSE SUM(playercomm) END  AS PlayerComm,
+				COUNT(CASE WHEN @drawfilter = 2 AND b.statusID = 111 THEN NULL ELSE b.transid END) AS BetCount,
+				0 AS licenseeWLBT,
+				0 AS BetTradeComm,
+				SUM(CASE WHEN b.betdaqid = 0 THEN (b.winlost-b.actual_stake) ELSE 0 END) AS WLBetTicket,
+				0 AS WLBoughtTicket,
+				0 AS BuyBackAmtSB,
+				0 AS BuyBackAmtBA,
+				0 AS CashOutComm
+			FROM 
+				dbo.bettrans b WITH ( NOLOCK) 
+				INNER JOIN @TempAg tma ON tma.CustID = b.recommend AND tma.currency = b.currency
+				INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON tma.custid = BA.recommend and b.transid = BA.transid
+			WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
+				AND (b.bettype < 901 OR b.bettype > 904)
+				AND (b.bettype < 911 OR b.bettype > 914)
+				AND b.statusID IN (111, 112, 113) 
+			GROUP BY
+				b.winlostdate,
+				tma.currency,
+				b.recommend,
+				b.statusID
 		END
 
 		IF @ShowSB = 1
 		BEGIN
 			INSERT INTO #SAgWinLoss
-			SELECT   
-				b.winlostdate,  
+			SELECT
+				b.winlostdate,
 				b.recommend,
 				a.currency, 
 				SUM(stake
@@ -452,9 +465,16 @@ BEGIN
 					CASE WHEN @drawfilter IN (2,3) THEN
 						CASE
 							WHEN b.statusID = 111 THEN 0
-							WHEN b.winlostdate >= @HWHLCutDate AND b.statusID IN (112, 113) AND b.modds IN (-0.25, 0.25) AND b.bettype NOT IN (29,38) THEN 0.5 -- exclude parlay, bet builder
-							WHEN b.winlostdate < @HWHLCutDate AND (b.statusID = 112 OR b.statusID = 113) AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18,124,125,482,483,484,485) THEN 0.5
-							ELSE 1 END
+							WHEN b.winlostdate >= @HWHLCutDate
+								AND b.statusID IN (112, 113)
+								AND b.modds IN (-0.25, 0.25)
+								AND b.bettype NOT IN (29,38) THEN 0.5 -- exclude parlay, bet builder
+							WHEN b.winlostdate < @HWHLCutDate
+								AND (b.statusID = 112 OR b.statusID = 113)
+								AND ABS(modds) = 0.25
+								AND b.bettype IN(1,3,7,8,17,18,124,125,482,483,484,485) THEN 0.5
+							ELSE 1
+						END
 					ELSE 1 END
 				) AS turnoverSB, 
 				0 AS turnoverBA,
@@ -521,7 +541,7 @@ BEGIN
 					b.bettype <= 30
 					OR b.bettype BETWEEN 121 AND 999
 					OR b.Bettype BETWEEN 1301 AND 1399 --new tennis's bettypes
-					OR b.Bettype BETWEEN 9001 and 9086 -- E-Sports 2.0
+					OR b.Bettype BETWEEN 9001 and 9399 -- E-Sports 2.0
 					OR b.Bettype = 38				   -- Single Match Parlay
 				) 
 				AND (b.bettype < 901 OR b.bettype > 904)
@@ -599,7 +619,7 @@ BEGIN
 				SUM(CASE WHEN b.bettype = 902 AND transid2 = 1 THEN b.actual_stake ELSE 0 END) AS BuyBackAmtBA,
 				0 AS CashOutComm
 			FROM 
-				dbo.bettrans b WITH ( NOLOCK) 
+				dbo.bettrans b WITH (NOLOCK)
 				INNER JOIN @TempAg a ON b.recommend = a.custid AND a.currency = b.currency
 			WHERE 
 				b.winlostdate BETWEEN @TempFromDate AND @TDate
@@ -680,7 +700,6 @@ BEGIN
 				) AS turnoverVRG,
 				SUM(CASE WHEN b.bettype BETWEEN 4901 AND 5000 THEN
 					stake * (CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END)
-						
 					ELSE 0 END
 				) AS turnoverTG,
 				SUM(CASE WHEN b.bettype BETWEEN 5001 AND 5099 THEN
@@ -693,7 +712,6 @@ BEGIN
 				) AS TurnoverSXG,
 				SUM(CASE WHEN b.bettype BETWEEN 1611 AND 1699 THEN
 					stake * (CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END)
-						
 					ELSE 0 END
 				) AS turnoverSBC,
 				0 AS BTActualStake,
@@ -825,7 +843,7 @@ BEGIN
 				0 AS BuyBackAmtBA,
 				SUM(CASE WHEN b.bettype = 913 THEN b.awinlost ELSE 0 END) AS CashOutComm
 			FROM 
-				dbo.bettrans b WITH ( NOLOCK) 
+				dbo.bettrans b WITH (NOLOCK)
 				INNER JOIN @TempAg a ON b.recommend = a.custid AND a.currency = b.currency
 			WHERE 
 				b.winlostdate BETWEEN @TempFromDate AND @TDate
@@ -839,13 +857,15 @@ BEGIN
 		IF @CheckPromotionPrize = 1 AND EXISTS (
 			SELECT 1
 			FROM dbo.bettrans b WITH (NOLOCK)
-			INNER JOIN @TempAg a ON b.recommend = a.custid AND b.currency = a.currency
-			WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate AND b.bettype IN (4300, 17000, 4299) AND b.statusID = 112)
+				INNER JOIN @TempAg a ON b.recommend = a.custid AND b.currency = a.currency
+			WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
+				AND b.bettype IN (4300, 17000, 4299)
+				AND b.statusID = 112)
 		BEGIN
 			SET @PromotionPrize = 1
 		END
 	END
- 
+
 	IF @FDate <= @MoveBetsDay 
 	BEGIN
 		IF @TDate >= @MoveBetsDay
@@ -856,7 +876,7 @@ BEGIN
 		IF @ShowBA = 1
 		BEGIN
 			INSERT INTO #SAgWinLoss
-			SELECT 
+			SELECT
 				b.winlostdate,
 				b.recommend,
 				b.currency,
@@ -867,7 +887,8 @@ BEGIN
 						CASE
 							WHEN b.statusID = 111 THEN 0
 							WHEN b.statusID IN (114,115) THEN 0.5
-							ELSE 1 END
+							ELSE 1
+						END
 					ELSE 1 END
 				) AS turnoverBA,
 				0 AS turnoverNG,
@@ -924,24 +945,28 @@ BEGIN
 				0 AS BuyBackAmtBA,
 				0 AS CashOutComm
 			FROM
-				bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
+				bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)
 				INNER JOIN @TempAg a ON b.recommend = a.custID AND b.Currency = a.currency
 				LEFT JOIN f_GetBetTradeCustList(@LicenseeName) bt ON b.custid = bt.Custid AND b.Currency = bt.currency
 			WHERE  
 				b.Winlostdate BETWEEN @FDate AND @TempToDate  
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
-				AND b.roleid = 1   
+				AND b.roleid = 1
 				AND b.statusID <> 101 --exclude REJECT bets
 				AND ISNULL(b.isBA, 0) = 1
-			GROUP BY b.winlostdate, b.currency, b.recommend, b.statusID
+			GROUP BY
+				b.winlostdate,
+				b.currency,
+				b.recommend,
+				b.statusID
 		END
 	
 		--exclude BA tickets
 		IF 1 IN (@showSB, @ShowNG, @ShowVS, @ShowCS, @ShowKN, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowVS2, @ShowLT, @ShowPP, @ShowCC, @ShowSG, @ShowVRG, @ShowTG, @ShowI4D, @ShowSXG, @ShowSBC)
 		BEGIN
-			INSERT INTO #SAgWinLoss  
-			SELECT 
+			INSERT INTO #SAgWinLoss
+			SELECT
 				b.winlostdate,
 				b.recommend,
 				b.currency,
@@ -1015,7 +1040,7 @@ BEGIN
 							ELSE 1 END
 						ELSE 1 END
 					ELSE 0 END) AS turnoverVB,
-					SUM(CASE WHEN b.sporttype = 211 THEN 
+				SUM(CASE WHEN b.sporttype = 211 THEN 
 					b.turnover
 					*
 					CASE WHEN @drawfilter IN (2,3) THEN
@@ -1025,7 +1050,7 @@ BEGIN
 							ELSE 1 END
 						ELSE 1 END
 					ELSE 0 END) AS turnoverAB,
-					SUM(CASE WHEN b.sporttype = 219 THEN 
+				SUM(CASE WHEN b.sporttype = 219 THEN 
 					b.turnover
 					*
 					CASE WHEN @drawfilter IN (2,3) THEN
@@ -1164,26 +1189,30 @@ BEGIN
 				SUM(CASE WHEN b.StatusID IN (112,113) THEN playercomm ELSE 0 END) AS PlayerComm,
 				SUM(b.betcount) * CASE WHEN @drawfilter = 2 AND b.statusID = 111 THEN 0 ELSE 1 END AS BetCount,
 				0 AS licenseeWLBT,
-				0 AS BetTradeComm,	
+				0 AS BetTradeComm,
 				SUM(CASE WHEN (bt.CustId IS NOT NULL) AND t.sporttype = 0 THEN b.winlost ELSE 0 END) AS WLBetTicket,
 				0 AS WLBoughtTicket,
 				0 AS BuyBackAmtSB,
 				0 AS BuyBackAmtBA,
 				0 AS CashOutComm
 			FROM 
-				bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)  
-				INNER JOIN @TempAg a    ON b.recommend = a.custID AND b.Currency = a.currency
+				bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)
+				INNER JOIN @TempAg a ON b.recommend = a.custID AND b.Currency = a.currency
 				INNER JOIN @sporttype t ON b.sporttype = t.sporttype
 				LEFT JOIN f_GetBetTradeCustList(@LicenseeName) bt ON b.custid = bt.Custid AND b.Currency = bt.currency
-			WHERE  
-				b.Winlostdate BETWEEN @FDate AND @TempToDate  
+			WHERE
+				b.Winlostdate BETWEEN @FDate AND @TempToDate
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
 				AND b.bettype NOT IN (4300, 4299) -- PP Promotion Prize, Tournamemt Prize
-				AND b.roleid = 1   
+				AND b.roleid = 1
 				AND b.statusID <> 101 --exclude REJECT bets
 				AND ISNULL(b.isBA, 0) = 0
-			GROUP BY b.winlostdate, b.currency, b.recommend, b.statusID
+			GROUP BY
+				b.winlostdate,
+				b.currency,
+				b.recommend,
+				b.statusID
 		END
 
 		IF @ShowBT = 1
@@ -1254,17 +1283,21 @@ BEGIN
 				INNER JOIN @TempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
 			WHERE 
 				b.Winlostdate BETWEEN @FDate AND @TempToDate
-				AND b.bettype IN (901, 902, 903)	
+				AND b.bettype IN (901, 902, 903)
 				AND b.statusID IN (111, 112, 113)
 				AND b.roleid = 1 
-				GROUP BY b.winlostdate, b.currency, b.recommend, b.statusID
+			GROUP BY
+				b.winlostdate,
+				b.currency,
+				b.recommend,
+				b.statusID
 		END
 
 		IF @ShowCO = 1
 		BEGIN
 			INSERT INTO #SAgWinLoss
-			SELECT   
-				b.winlostdate,  
+			SELECT
+				b.winlostdate,
 				b.recommend,
 				b.currency,
 				0 AS turnoverSB, 
@@ -1330,19 +1363,27 @@ BEGIN
 				AND b.bettype IN (911, 912, 913)
 				AND b.statusID IN (111, 112, 113)
 				AND b.roleid = 1 
-				GROUP BY b.winlostdate, b.currency, b.recommend, b.statusID
+			GROUP BY
+				b.winlostdate,
+				b.currency,
+				b.recommend,
+				b.statusID
 		END
 		
 		-- check promotion prize - PP promotion prize and NPH Promotion prize --
-		IF @CheckPromotionPrize = 1 AND @PromotionPrize = 0 AND EXISTS (
-			SELECT TOP(1) 1
-			FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )
-			INNER JOIN @TempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
-			WHERE b.Winlostdate BETWEEN @FDate AND @TempToDate AND b.bettype IN (4300, 17000, 4299) AND b.statusID = 112 AND b.roleid = 2)
+		IF @CheckPromotionPrize = 1
+			AND @PromotionPrize = 0
+			AND EXISTS (	SELECT TOP(1) 1
+							FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )
+								INNER JOIN @TempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
+							WHERE b.Winlostdate BETWEEN @FDate AND @TempToDate
+								AND b.bettype IN (4300, 17000, 4299)
+								AND b.statusID = 112
+								AND b.roleid = 2)
 		BEGIN
 			SET @PromotionPrize = 1
 		END
-	 END
+	END
 
 	CREATE NONCLUSTERED INDEX IDX_Index_SA ON #SAgWinLoss(Currency)
 
@@ -1402,9 +1443,9 @@ BEGIN
 		CAST(SUM(LicenseeWLI4D	*e.Rate)	AS MONEY)		AS LicenseeWLI4D,
 		CAST(SUM(LicenseeWLSXG	*e.Rate)	AS MONEY)		AS LicenseeWLSXG,
 		CAST(SUM(LicenseeWLSBC	*e.Rate)	AS MONEY)		AS LicenseeWLSBC,
-		CAST(SUM(CommBA			*e.Rate)	AS MONEY)       AS CommBA,
-		CAST(SUM(PlayerComm		*e.Rate)	AS MONEY)       AS PlayerComm,
-		CAST(SUM(AmtDuetoBA		*e.Rate)	AS MONEY)       AS AmtDuetoBA,
+		CAST(SUM(CommBA			*e.Rate)	AS MONEY)		AS CommBA,
+		CAST(SUM(PlayerComm		*e.Rate)	AS MONEY)		AS PlayerComm,
+		CAST(SUM(AmtDuetoBA		*e.Rate)	AS MONEY)		AS AmtDuetoBA,
 		CAST(SUM(licenseeWLBT	*e.Rate)	AS MONEY)		AS licenseeWLBT,
 		CAST(SUM(BetTradeComm	*e.Rate)	AS MONEY)		AS BetTradeComm,
 		CAST(SUM((WLBetTicket+WLBoughtTicket-BetTradeComm)* e.Rate)  AS MONEY)	AS AmtDueToBT,
@@ -1414,10 +1455,12 @@ BEGIN
 		SUM(Betcount)										AS Betcount
 	FROM
 		#SAgWinLoss w
-		INNER JOIN Customer c WITH(NOLOCK) ON w.custid = c.custid
+		INNER JOIN dbo.Customer c WITH(NOLOCK) ON w.custid = c.custid
 		INNER JOIN @ExchangeRate e ON w.winlostdate BETWEEN e.FromDate AND e.ToDate AND w.currency = e.ExchangeId
 	GROUP BY
-		w.currency, w.custid, c.username
+		w.currency,
+		w.custid,
+		c.username
 	ORDER BY w.currency
 
 	SELECT

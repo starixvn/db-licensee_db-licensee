@@ -38,7 +38,7 @@ AS
 /*
 	Created: Henry
 	Date: 2012-01-09
-	Task : Winloss Report for Licensee 
+	Task: Winloss Report for Licensee
 	DB: DBEXT.bodb02
 
 	Revisions:
@@ -101,6 +101,7 @@ AS
 	- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
 	- 20200423@Hogan: Add new product Sexy Gaming [RedmineID: #132829]
 	- 20200423@Vickie: Integrate Saba Club [RedmineID: #132702]
+	- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
 
 	Param's Explanation:
 		+ @ReportType: 1-Daily; 2-Monthly;
@@ -331,7 +332,7 @@ BEGIN
 
 		DECLARE @HWHLCutDate SMALLDATETIME = '2019-10-01' -- half won/ half lose cut date
 
-		IF @ShowBA = 1 
+		IF @ShowBA = 1
 		BEGIN
 			;WITH CTE AS
 			(
@@ -346,7 +347,7 @@ BEGIN
 			(
 				winlostdate, Currency, ProductCode, Turnover, BTActualStake,
 				Winlost, LicenseeWL, AmtDueToBA, CommBA,
-				PlayerComm, Betcount, licenseeWLBT, BetTradeComm,  
+				PlayerComm, Betcount, licenseeWLBT, BetTradeComm,
 				WLBetTicket, WLBoughtTicket, BuyBackAmtSB, BuyBackAmtBA, CashOutComm
 			)
 			SELECT
@@ -386,7 +387,9 @@ BEGIN
 				AND b.statusID IN (111, 112, 113)
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
-			GROUP BY b.winlostdate, tma.currency 
+			GROUP BY
+				b.winlostdate,
+				tma.currency 
 			OPTION(RECOMPILE)
 		END
 	
@@ -421,7 +424,7 @@ BEGIN
 				SUM(CASE WHEN RAND() + 1 > 0 THEN b.playerComm ELSE 0 END) AS PlayerComm,
 				COUNT(CASE WHEN RAND() + 1 > 0 AND @drawfilter = 2 AND b.statusID = 111 THEN NULL ELSE b.transid END)AS BetCount,
 				0 AS licenseeWLBT,
-				0 AS BetTradeComm,	
+				0 AS BetTradeComm,
 				SUM(CASE WHEN RAND() + 1 > 0 AND b.betdaqid = 0 THEN b.winlost-b.actual_stake ELSE 0 END) AS WLBetTicket,
 				0 AS WLBoughtTicket,
 				0 AS BuyBackAmtSB,
@@ -437,7 +440,7 @@ BEGIN
 					b.bettype <= 30
 					OR b.bettype BETWEEN 121 AND 999
 					OR b.Bettype BETWEEN 1301 AND 1399 --new tennis's bettypes
-					OR b.Bettype BETWEEN 9001 AND 9086 -- E-Sports 2.0
+					OR b.Bettype BETWEEN 9001 AND 9399 -- E-Sports 2.0
 					OR b.Bettype = 38				   -- Single Match Parlay
 				)
 				AND b.statusID IN (111, 112, 113)
@@ -445,7 +448,9 @@ BEGIN
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
 				AND b.transid >= @transid
-			GROUP BY b.winlostdate, a.currency --, statusID, b.bettype
+			GROUP BY
+				b.winlostdate,
+				a.currency --, statusID, b.bettype
 		END
 
 		IF @ShowBT = 1
@@ -484,7 +489,9 @@ BEGIN
 				AND b.bettype IN (901, 902, 903)
 				AND b.statusID IN (111, 112, 113)
 				AND b.transid >= @transid
-			GROUP BY b.winlostdate, a.currency  
+			GROUP BY
+				b.winlostdate,
+				a.currency
 		END
 
 		IF @ShowCO = 1
@@ -523,16 +530,19 @@ BEGIN
 				AND b.bettype IN (911, 912, 913)
 				AND b.statusID IN (111, 112, 113)
 				AND b.transid >= @transid
-			GROUP BY b.winlostdate, a.currency
+			GROUP BY
+				b.winlostdate,
+				a.currency
 		END
 
-		IF 1 IN (@ShowNG, @ShowVS, @ShowCS, @ShowKN, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowVS2, @ShowLT, @ShowPP, @ShowCC, @ShowSG, @ShowVRG, @ShowTG, @ShowI4D, @ShowSXG, @ShowSBC)
+		IF 1 IN (@ShowNG, @ShowVS, @ShowCS, @ShowKN, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowVS2, @ShowLT, @ShowPP, @ShowCC, 
+			@ShowSG, @ShowVRG, @ShowTG, @ShowI4D, @ShowSXG, @ShowSBC)
 		BEGIN
 			INSERT INTO #SAgWinLoss
 			(
 				winlostdate, Currency, ProductCode, Turnover, BTActualStake,
 				Winlost, LicenseeWL, AmtDueToBA, CommBA,
-				PlayerComm, Betcount, licenseeWLBT, BetTradeComm,  
+				PlayerComm, Betcount, licenseeWLBT, BetTradeComm,
 				WLBetTicket, WLBoughtTicket, BuyBackAmtSB, BuyBackAmtBA, CashOutComm
 			)
 			SELECT
@@ -598,7 +608,7 @@ BEGIN
 		FROM f_GetBetTradeCustList(@LicenseeName) bt
 			INNER JOIN dbo.Customer c WITH(NOLOCK) ON bt.custID = c.custid AND c.roleid = 1
 
-		IF @ShowBA = 1 
+		IF @ShowBA = 1
 		BEGIN
 			INSERT INTO #SAgWinLoss
 			(
@@ -644,7 +654,9 @@ BEGIN
 				AND b.roleid = 1
 				AND b.statusID <> 101 --exclude REJECT bets
 				AND b.isBA = 1 
-			GROUP BY b.winlostdate, b.currency
+			GROUP BY
+				b.winlostdate,
+				b.currency
 
 			INSERT INTO @WLBetTicket (
 				WinLostDate,
@@ -661,13 +673,15 @@ BEGIN
 					AND b.custid = ag.custid
 					AND b.Currency = ag.currency
 			WHERE
-				 b.Winlostdate BETWEEN @_FromDate AND @TempToDate
+				b.Winlostdate BETWEEN @_FromDate AND @TempToDate
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
 				AND b.roleid = 1
 				AND b.statusID <> 101 --exclude REJECT bets
 				AND b.isBA = 1
-			GROUP BY b.winlostdate, b.currency
+			GROUP BY
+				b.winlostdate,
+				b.currency
 		END
 	
 		--exclude BA tickets
@@ -708,7 +722,7 @@ BEGIN
 				0 AS BuyBackAmtBA,
 				0 AS CashOutComm
 			FROM
-				bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )
+				bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)
 				INNER JOIN @tempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
 				INNER JOIN @SportType t ON b.sporttype = t.SportType
 			WHERE
@@ -733,7 +747,7 @@ BEGIN
 				b.currency,
 				SUM(b.winlost)
 			FROM 
-				bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )
+				bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)
 				INNER JOIN @CustBettrade ag
 					ON b.recommend = ag.recommend
 					AND b.custid = ag.custid
@@ -741,12 +755,14 @@ BEGIN
 			WHERE
 				b.Winlostdate BETWEEN @_FromDate AND @TempToDate
 				AND (b.bettype < 901 OR b.bettype > 904)
-				AND (b.bettype < 911 OR b.bettype > 914) 
+				AND (b.bettype < 911 OR b.bettype > 914)
 				AND b.roleid = 1
 				AND b.statusID <> 101 --exclude REJECT bets
-				AND b.isBA = 0 
+				AND b.isBA = 0
 				AND b.sporttype = 0
-			GROUP BY b.winlostdate, b.currency
+			GROUP BY
+				b.winlostdate,
+				b.currency
 		END
 
 		IF @ShowBT = 1
@@ -826,7 +842,9 @@ BEGIN
 				AND b.bettype IN (911, 912, 913) 
 				AND b.statusID IN (111, 112, 113)
 				AND b.roleid = 1 
-			GROUP BY b.winlostdate, ag.currency
+			GROUP BY
+				b.winlostdate,
+				ag.currency
 		END
 	
 		-- check promotion prize - PP promotion prize and NPH Promotion prize --
@@ -907,7 +925,7 @@ BEGIN
 	)
 
 	INSERT INTO @SAgWL
-	( 
+	(
 		winlostdate, Currency,
 		TurnoverSB, TurnoverBA, TurnoverNG, TurnoverVS, TurnoverCS, TurnoverKN, turnoverAGC, turnoverVB, turnoverAB, 
 		turnoverFW, turnoverCO, TurnoverVS2, TurnoverLT, TurnoverPP, TurnoverCC, TurnoverSG, TurnoverVRG, TurnoverTG, TurnoverI4D, TurnoverSXG, TurnoverSBC,
@@ -1081,32 +1099,32 @@ BEGIN
 	ORDER BY ReportType
 
 	SELECT
-		CAST(SUM(TurnoverSB		*e.USD)	AS MONEY)   AS TurnoverSBUSD, 
-		CAST(SUM(TurnoverBA		*e.USD)	AS MONEY)   AS TurnoverBAUSD,  
-		CAST(SUM(TurnoverNG		*e.USD)	AS MONEY)   AS TurnoverNGUSD,  
+		CAST(SUM(TurnoverSB		*e.USD)	AS MONEY)	AS TurnoverSBUSD,
+		CAST(SUM(TurnoverBA		*e.USD)	AS MONEY)	AS TurnoverBAUSD,
+		CAST(SUM(TurnoverNG		*e.USD)	AS MONEY)	AS TurnoverNGUSD,
 		CAST(SUM(TurnoverVS		*e.USD)	AS MONEY)	AS TurnoverVSUSD,
-		CAST(SUM(TurnoverCS		*e.USD)	AS MONEY)   AS TurnoverCSUSD,
-		CAST(SUM(TurnoverKN		*e.USD)	AS MONEY)   AS TurnoverKNUSD,
-		CAST(SUM(TurnoverAGC	*e.USD)	AS MONEY)   AS TurnoverAGCUSD,
-		CAST(SUM(TurnoverVB		*e.USD)	AS MONEY)   AS TurnoverVBUSD,
-		CAST(SUM(TurnoverAB		*e.USD)	AS MONEY)   AS TurnoverABUSD,
-		CAST(SUM(TurnoverFW		*e.USD)	AS MONEY)   AS TurnoverFWUSD,
-		CAST(SUM(TurnoverCO		*e.USD)	AS MONEY)   AS TurnoverCOUSD,
-		CAST(SUM(TurnoverVS2	*e.USD)	AS MONEY)   AS TurnoverVS2USD,
-		CAST(SUM(TurnoverLT		*e.USD)	AS MONEY)   AS TurnoverLTUSD,
-		CAST(SUM(TurnoverPP		*e.USD)	AS MONEY)   AS TurnoverPPUSD,
-		CAST(SUM(TurnoverCC		*e.USD)	AS MONEY)   AS TurnoverCCUSD,
-		CAST(SUM(TurnoverSG		*e.USD)	AS MONEY)   AS TurnoverSGUSD,
-		CAST(SUM(TurnoverVRG	*e.USD)	AS MONEY)   AS TurnoverVRGUSD,
-		CAST(SUM(TurnoverTG		*e.USD)	AS MONEY)   AS TurnoverTGUSD,
-		CAST(SUM(TurnoverI4D	*e.USD)	AS MONEY)   AS TurnoverI4DUSD,
-		CAST(SUM(TurnoverSXG	*e.USD)	AS MONEY)   AS TurnoverSXGUSD,
-		CAST(SUM(TurnoverSBC	*e.USD)	AS MONEY)   AS TurnoverSBCUSD,
-		CAST(SUM(BTActualStake	*e.USD)	AS MONEY)   AS BTActualStakeUSD,
+		CAST(SUM(TurnoverCS		*e.USD)	AS MONEY)	AS TurnoverCSUSD,
+		CAST(SUM(TurnoverKN		*e.USD)	AS MONEY)	AS TurnoverKNUSD,
+		CAST(SUM(TurnoverAGC	*e.USD)	AS MONEY)	AS TurnoverAGCUSD,
+		CAST(SUM(TurnoverVB		*e.USD)	AS MONEY)	AS TurnoverVBUSD,
+		CAST(SUM(TurnoverAB		*e.USD)	AS MONEY)	AS TurnoverABUSD,
+		CAST(SUM(TurnoverFW		*e.USD)	AS MONEY)	AS TurnoverFWUSD,
+		CAST(SUM(TurnoverCO		*e.USD)	AS MONEY)	AS TurnoverCOUSD,
+		CAST(SUM(TurnoverVS2	*e.USD)	AS MONEY)	AS TurnoverVS2USD,
+		CAST(SUM(TurnoverLT		*e.USD)	AS MONEY)	AS TurnoverLTUSD,
+		CAST(SUM(TurnoverPP		*e.USD)	AS MONEY)	AS TurnoverPPUSD,
+		CAST(SUM(TurnoverCC		*e.USD)	AS MONEY)	AS TurnoverCCUSD,
+		CAST(SUM(TurnoverSG		*e.USD)	AS MONEY)	AS TurnoverSGUSD,
+		CAST(SUM(TurnoverVRG	*e.USD)	AS MONEY)	AS TurnoverVRGUSD,
+		CAST(SUM(TurnoverTG		*e.USD)	AS MONEY)	AS TurnoverTGUSD,
+		CAST(SUM(TurnoverI4D	*e.USD)	AS MONEY)	AS TurnoverI4DUSD,
+		CAST(SUM(TurnoverSXG	*e.USD)	AS MONEY)	AS TurnoverSXGUSD,
+		CAST(SUM(TurnoverSBC	*e.USD)	AS MONEY)	AS TurnoverSBCUSD,
+		CAST(SUM(BTActualStake	*e.USD)	AS MONEY)	AS BTActualStakeUSD,
 		CAST(SUM(Winlost		*e.USD)	AS MONEY)	AS WinlostUSD,
 		CAST(SUM(LicenseeWLSB	*e.USD)	AS MONEY)	AS LicenseeWLSBUSD,
 		CAST(SUM(LicenseeWLBA	*e.USD)	AS MONEY)	AS LicenseeWLBAUSD,
-		CAST(SUM(LicenseeWLNG	*e.USD)	AS MONEY) 	AS LicenseeWLNGUSD,
+		CAST(SUM(LicenseeWLNG	*e.USD)	AS MONEY)	AS LicenseeWLNGUSD,
 		CAST(SUM(LicenseeWLVS	*e.USD)	AS MONEY)	AS LicenseeWLVSUSD,
 		CAST(SUM(LicenseeWLCS	*e.USD)	AS MONEY)	AS LicenseeWLCSUSD,
 		CAST(SUM(LicenseeWLKN	*e.USD)	AS MONEY)	AS LicenseeWLKNUSD,
@@ -1135,28 +1153,28 @@ BEGIN
 		CAST(SUM(BuyBackAmtBA	*e.USD)	AS MONEY)	AS BuyBackAmtBAUSD,
 		CAST(SUM(CashOutComm	*e.USD)	AS MONEY)	AS CashOutCommUSD,
 	
-		CAST(SUM(TurnoverSB		*e.EUR)	AS MONEY)   AS TurnoverSBEUR, 
-		CAST(SUM(TurnoverBA		*e.EUR)	AS MONEY)   AS TurnoverBAEUR,  
-		CAST(SUM(TurnoverNG		*e.EUR)	AS MONEY)   AS TurnoverNGEUR,  
+		CAST(SUM(TurnoverSB		*e.EUR)	AS MONEY)	AS TurnoverSBEUR,
+		CAST(SUM(TurnoverBA		*e.EUR)	AS MONEY)	AS TurnoverBAEUR,
+		CAST(SUM(TurnoverNG		*e.EUR)	AS MONEY)	AS TurnoverNGEUR,
 		CAST(SUM(TurnoverVS		*e.EUR)	AS MONEY)	AS TurnoverVSEUR,
-		CAST(SUM(TurnoverCS		*e.EUR)	AS MONEY)   AS TurnoverCSEUR,
-		CAST(SUM(TurnoverKN		*e.EUR)	AS MONEY)   AS TurnoverKNEUR,
-		CAST(SUM(TurnoverAGC	*e.EUR)	AS MONEY)   AS TurnoverAGCEUR,
-		CAST(SUM(TurnoverVB		*e.EUR)	AS MONEY)   AS TurnoverVBEUR,
-		CAST(SUM(TurnoverAB		*e.EUR)	AS MONEY)   AS TurnoverABEUR,
-		CAST(SUM(TurnoverFW		*e.EUR)	AS MONEY)   AS TurnoverFWEUR,
-		CAST(SUM(TurnoverCO		*e.EUR)	AS MONEY)   AS TurnoverCOEUR,
-		CAST(SUM(TurnoverVS2	*e.EUR)	AS MONEY)   AS TurnoverVS2EUR,
-		CAST(SUM(TurnoverLT		*e.EUR)	AS MONEY)   AS TurnoverLTEUR,
-		CAST(SUM(TurnoverPP		*e.EUR)	AS MONEY)   AS TurnoverPPEUR,
-		CAST(SUM(TurnoverCC		*e.EUR)	AS MONEY)   AS TurnoverCCEUR,
+		CAST(SUM(TurnoverCS		*e.EUR)	AS MONEY)	AS TurnoverCSEUR,
+		CAST(SUM(TurnoverKN		*e.EUR)	AS MONEY)	AS TurnoverKNEUR,
+		CAST(SUM(TurnoverAGC	*e.EUR)	AS MONEY)	AS TurnoverAGCEUR,
+		CAST(SUM(TurnoverVB		*e.EUR)	AS MONEY)	AS TurnoverVBEUR,
+		CAST(SUM(TurnoverAB		*e.EUR)	AS MONEY)	AS TurnoverABEUR,
+		CAST(SUM(TurnoverFW		*e.EUR)	AS MONEY)	AS TurnoverFWEUR,
+		CAST(SUM(TurnoverCO		*e.EUR)	AS MONEY)	AS TurnoverCOEUR,
+		CAST(SUM(TurnoverVS2	*e.EUR)	AS MONEY)	AS TurnoverVS2EUR,
+		CAST(SUM(TurnoverLT		*e.EUR)	AS MONEY)	AS TurnoverLTEUR,
+		CAST(SUM(TurnoverPP		*e.EUR)	AS MONEY)	AS TurnoverPPEUR,
+		CAST(SUM(TurnoverCC		*e.EUR)	AS MONEY)	AS TurnoverCCEUR,
 		CAST(SUM(TurnoverSG		*e.EUR)	AS MONEY)	AS TurnoverSGEUR,
-		CAST(SUM(TurnoverVRG	*e.EUR)	AS MONEY)   AS TurnoverVRGEUR,
-		CAST(SUM(TurnoverTG		*e.EUR)	AS MONEY)   AS TurnoverTGEUR,
-		CAST(SUM(TurnoverI4D	*e.EUR)	AS MONEY)   AS TurnoverI4DEUR,
-		CAST(SUM(TurnoverSXG	*e.EUR)	AS MONEY)   AS TurnoverSXGEUR,
-		CAST(SUM(TurnoverSBC	*e.EUR)	AS MONEY)   AS TurnoverSBCEUR,
-		CAST(SUM(BTActualStake	*e.EUR)	AS MONEY)   AS BTActualStakeEUR,
+		CAST(SUM(TurnoverVRG	*e.EUR)	AS MONEY)	AS TurnoverVRGEUR,
+		CAST(SUM(TurnoverTG		*e.EUR)	AS MONEY)	AS TurnoverTGEUR,
+		CAST(SUM(TurnoverI4D	*e.EUR)	AS MONEY)	AS TurnoverI4DEUR,
+		CAST(SUM(TurnoverSXG	*e.EUR)	AS MONEY)	AS TurnoverSXGEUR,
+		CAST(SUM(TurnoverSBC	*e.EUR)	AS MONEY)	AS TurnoverSBCEUR,
+		CAST(SUM(BTActualStake	*e.EUR)	AS MONEY)	AS BTActualStakeEUR,
 		CAST(SUM(Winlost		*e.EUR)	AS MONEY)	AS WinlostEUR,
 		CAST(SUM(LicenseeWLSB	*e.EUR)	AS MONEY)	AS LicenseeWLSBEUR,
 		CAST(SUM(LicenseeWLBA	*e.EUR)	AS MONEY)	AS LicenseeWLBAEUR,
@@ -1189,32 +1207,32 @@ BEGIN
 		CAST(SUM(BuyBackAmtBA	*e.EUR)	AS MONEY)	AS BuyBackAmtBAEUR,
 		CAST(SUM(CashOutComm	*e.EUR)	AS MONEY)	AS CashOutCommEUR,
 		
-		CAST(SUM(TurnoverSB		*e.GBP)	AS MONEY)   AS TurnoverSBGBP, 
-		CAST(SUM(TurnoverBA		*e.GBP)	AS MONEY)   AS TurnoverBAGBP,
-		CAST(SUM(TurnoverNG		*e.GBP)	AS MONEY)   AS TurnoverNGGBP,
+		CAST(SUM(TurnoverSB		*e.GBP)	AS MONEY)	AS TurnoverSBGBP, 
+		CAST(SUM(TurnoverBA		*e.GBP)	AS MONEY)	AS TurnoverBAGBP,
+		CAST(SUM(TurnoverNG		*e.GBP)	AS MONEY)	AS TurnoverNGGBP,
 		CAST(SUM(TurnoverVS		*e.GBP)	AS MONEY)	AS TurnoverVSGBP,
-		CAST(SUM(TurnoverCS		*e.GBP)	AS MONEY)   AS TurnoverCSGBP,
-		CAST(SUM(TurnoverKN		*e.GBP)	AS MONEY)   AS TurnoverKNGBP,
-		CAST(SUM(TurnoverAGC	*e.GBP)	AS MONEY)   AS TurnoverAGCGBP,
-		CAST(SUM(TurnoverVB		*e.GBP)	AS MONEY)   AS TurnoverVBGBP,
-		CAST(SUM(TurnoverAB		*e.GBP)	AS MONEY)   AS TurnoverABGBP,
-		CAST(SUM(TurnoverFW		*e.GBP)	AS MONEY)   AS TurnoverFWGBP,
-		CAST(SUM(TurnoverCO		*e.GBP)	AS MONEY)   AS TurnoverCOGBP,
-		CAST(SUM(TurnoverVS2	*e.GBP)	AS MONEY)   AS TurnoverVS2GBP,
-		CAST(SUM(TurnoverLT		*e.GBP)	AS MONEY)   AS TurnoverLTGBP,
-		CAST(SUM(TurnoverPP		*e.GBP)	AS MONEY)   AS TurnoverPPGBP,
-		CAST(SUM(TurnoverCC		*e.GBP)	AS MONEY)   AS TurnoverCCGBP,
-		CAST(SUM(TurnoverSG		*e.GBP)	AS MONEY)   AS TurnoverSGGBP,
-		CAST(SUM(TurnoverVRG	*e.GBP)	AS MONEY)   AS TurnoverVRGGBP,
-		CAST(SUM(TurnoverTG		*e.GBP)	AS MONEY)   AS TurnoverTGGBP,
-		CAST(SUM(TurnoverI4D	*e.GBP)	AS MONEY)   AS TurnoverI4DGBP,
-		CAST(SUM(TurnoverSXG	*e.GBP)	AS MONEY)   AS TurnoverSXGGBP,
-		CAST(SUM(TurnoverSBC	*e.GBP)	AS MONEY)   AS TurnoverSBCGBP,
-		CAST(SUM(BTActualStake	*e.GBP)	AS MONEY)   AS BTActualStakeGBP,
+		CAST(SUM(TurnoverCS		*e.GBP)	AS MONEY)	AS TurnoverCSGBP,
+		CAST(SUM(TurnoverKN		*e.GBP)	AS MONEY)	AS TurnoverKNGBP,
+		CAST(SUM(TurnoverAGC	*e.GBP)	AS MONEY)	AS TurnoverAGCGBP,
+		CAST(SUM(TurnoverVB		*e.GBP)	AS MONEY)	AS TurnoverVBGBP,
+		CAST(SUM(TurnoverAB		*e.GBP)	AS MONEY)	AS TurnoverABGBP,
+		CAST(SUM(TurnoverFW		*e.GBP)	AS MONEY)	AS TurnoverFWGBP,
+		CAST(SUM(TurnoverCO		*e.GBP)	AS MONEY)	AS TurnoverCOGBP,
+		CAST(SUM(TurnoverVS2	*e.GBP)	AS MONEY)	AS TurnoverVS2GBP,
+		CAST(SUM(TurnoverLT		*e.GBP)	AS MONEY)	AS TurnoverLTGBP,
+		CAST(SUM(TurnoverPP		*e.GBP)	AS MONEY)	AS TurnoverPPGBP,
+		CAST(SUM(TurnoverCC		*e.GBP)	AS MONEY)	AS TurnoverCCGBP,
+		CAST(SUM(TurnoverSG		*e.GBP)	AS MONEY)	AS TurnoverSGGBP,
+		CAST(SUM(TurnoverVRG	*e.GBP)	AS MONEY)	AS TurnoverVRGGBP,
+		CAST(SUM(TurnoverTG		*e.GBP)	AS MONEY)	AS TurnoverTGGBP,
+		CAST(SUM(TurnoverI4D	*e.GBP)	AS MONEY)	AS TurnoverI4DGBP,
+		CAST(SUM(TurnoverSXG	*e.GBP)	AS MONEY)	AS TurnoverSXGGBP,
+		CAST(SUM(TurnoverSBC	*e.GBP)	AS MONEY)	AS TurnoverSBCGBP,
+		CAST(SUM(BTActualStake	*e.GBP)	AS MONEY)	AS BTActualStakeGBP,
 		CAST(SUM(Winlost		*e.GBP)	AS MONEY)	AS WinlostGBP,
 		CAST(SUM(LicenseeWLSB	*e.GBP)	AS MONEY)	AS LicenseeWLSBGBP,
 		CAST(SUM(LicenseeWLBA	*e.GBP)	AS MONEY)	AS LicenseeWLBAGBP,
-		CAST(SUM(LicenseeWLNG	*e.GBP)	AS MONEY) 	AS LicenseeWLNGGBP,
+		CAST(SUM(LicenseeWLNG	*e.GBP)	AS MONEY)	AS LicenseeWLNGGBP,
 		CAST(SUM(LicenseeWLVS	*e.GBP)	AS MONEY)	AS LicenseeWLVSGBP,
 		CAST(SUM(LicenseeWLCS	*e.GBP)	AS MONEY)	AS LicenseeWLCSGBP,
 		CAST(SUM(LicenseeWLKN	*e.GBP)	AS MONEY)	AS LicenseeWLKNGBP,
@@ -1236,39 +1254,39 @@ BEGIN
 		CAST(SUM(CommBA			*e.GBP)	AS MONEY)	AS CommBAGBP,
 		CAST(SUM(PlayerComm		*e.GBP)	AS MONEY)	AS PlayerCommGBP,
 		CAST(SUM(AmtDuetoBA		*e.GBP)	AS MONEY)	AS AmtDuetoBAGBP,
-		CAST(SUM(licenseeWLBT	*e.GBP)	AS MONEY)   AS licenseeWLBTGBP,
+		CAST(SUM(licenseeWLBT	*e.GBP)	AS MONEY)	AS licenseeWLBTGBP,
 		CAST(SUM(BetTradeComm	*e.GBP)	AS MONEY)	AS BetTradeCommGBP,
 		CAST(SUM((WLBetTicket+WLBoughtTicket-BetTradeComm)* e.GBP) AS MONEY)	AS AmtDueToBTGBP,
 		CAST(SUM(BuyBackAmtSB	*e.GBP)	AS MONEY)	AS BuyBackAmtSBGBP,
 		CAST(SUM(BuyBackAmtBA	*e.GBP)	AS MONEY)	AS BuyBackAmtBAGBP,
 		CAST(SUM(CashOutComm	*e.GBP)	AS MONEY)	AS CashOutCommGBP,
 	
-		CAST(SUM(TurnoverSB		*e.DefaultRate)	AS MONEY)   AS TurnoverSB,
-		CAST(SUM(TurnoverBA		*e.DefaultRate)	AS MONEY)   AS TurnoverBA,
-		CAST(SUM(TurnoverNG		*e.DefaultRate)	AS MONEY)   AS TurnoverNG,
+		CAST(SUM(TurnoverSB		*e.DefaultRate)	AS MONEY)	AS TurnoverSB,
+		CAST(SUM(TurnoverBA		*e.DefaultRate)	AS MONEY)	AS TurnoverBA,
+		CAST(SUM(TurnoverNG		*e.DefaultRate)	AS MONEY)	AS TurnoverNG,
 		CAST(SUM(TurnoverVS		*e.DefaultRate)	AS MONEY)	AS TurnoverVS,
-		CAST(SUM(TurnoverCS		*e.DefaultRate)	AS MONEY)   AS TurnoverCS,
-		CAST(SUM(TurnoverKN		*e.DefaultRate)	AS MONEY)   AS TurnoverKN,
-		CAST(SUM(TurnoverAGC	*e.DefaultRate)	AS MONEY)   AS TurnoverAGC,
-		CAST(SUM(TurnoverVB		*e.DefaultRate)	AS MONEY)   AS TurnoverVB,
-		CAST(SUM(TurnoverAB		*e.DefaultRate)	AS MONEY)   AS TurnoverAB,
-		CAST(SUM(TurnoverFW		*e.DefaultRate)	AS MONEY)   AS TurnoverFW,
-		CAST(SUM(TurnoverCO		*e.DefaultRate)	AS MONEY)   AS TurnoverCO,
-		CAST(SUM(TurnoverVS2	*e.DefaultRate)	AS MONEY)   AS TurnoverVS2,
-		CAST(SUM(TurnoverLT		*e.DefaultRate)	AS MONEY)   AS TurnoverLT,
-		CAST(SUM(TurnoverPP		*e.DefaultRate)	AS MONEY)   AS TurnoverPP,
-		CAST(SUM(TurnoverCC		*e.DefaultRate)	AS MONEY)   AS TurnoverCC,
-		CAST(SUM(TurnoverSG		*e.DefaultRate)	AS MONEY)   AS TurnoverSG,
-		CAST(SUM(TurnoverVRG	*e.DefaultRate)	AS MONEY)   AS TurnoverVRG,
-		CAST(SUM(TurnoverTG		*e.DefaultRate)	AS MONEY)   AS TurnoverTG,
-		CAST(SUM(TurnoverI4D	*e.DefaultRate)	AS MONEY)   AS TurnoverI4D,
-		CAST(SUM(TurnoverSXG	*e.DefaultRate)	AS MONEY)   AS TurnoverSXG,
-		CAST(SUM(TurnoverSBC	*e.DefaultRate)	AS MONEY)   AS TurnoverSBC,
-		CAST(SUM(BTActualStake	*e.DefaultRate)	AS MONEY)   AS BTActualStake,
+		CAST(SUM(TurnoverCS		*e.DefaultRate)	AS MONEY)	AS TurnoverCS,
+		CAST(SUM(TurnoverKN		*e.DefaultRate)	AS MONEY)	AS TurnoverKN,
+		CAST(SUM(TurnoverAGC	*e.DefaultRate)	AS MONEY)	AS TurnoverAGC,
+		CAST(SUM(TurnoverVB		*e.DefaultRate)	AS MONEY)	AS TurnoverVB,
+		CAST(SUM(TurnoverAB		*e.DefaultRate)	AS MONEY)	AS TurnoverAB,
+		CAST(SUM(TurnoverFW		*e.DefaultRate)	AS MONEY)	AS TurnoverFW,
+		CAST(SUM(TurnoverCO		*e.DefaultRate)	AS MONEY)	AS TurnoverCO,
+		CAST(SUM(TurnoverVS2	*e.DefaultRate)	AS MONEY)	AS TurnoverVS2,
+		CAST(SUM(TurnoverLT		*e.DefaultRate)	AS MONEY)	AS TurnoverLT,
+		CAST(SUM(TurnoverPP		*e.DefaultRate)	AS MONEY)	AS TurnoverPP,
+		CAST(SUM(TurnoverCC		*e.DefaultRate)	AS MONEY)	AS TurnoverCC,
+		CAST(SUM(TurnoverSG		*e.DefaultRate)	AS MONEY)	AS TurnoverSG,
+		CAST(SUM(TurnoverVRG	*e.DefaultRate)	AS MONEY)	AS TurnoverVRG,
+		CAST(SUM(TurnoverTG		*e.DefaultRate)	AS MONEY)	AS TurnoverTG,
+		CAST(SUM(TurnoverI4D	*e.DefaultRate)	AS MONEY)	AS TurnoverI4D,
+		CAST(SUM(TurnoverSXG	*e.DefaultRate)	AS MONEY)	AS TurnoverSXG,
+		CAST(SUM(TurnoverSBC	*e.DefaultRate)	AS MONEY)	AS TurnoverSBC,
+		CAST(SUM(BTActualStake	*e.DefaultRate)	AS MONEY)	AS BTActualStake,
 		CAST(SUM(Winlost		*e.DefaultRate)	AS MONEY)	AS Winlost,
 		CAST(SUM(LicenseeWLSB	*e.DefaultRate)	AS MONEY)	AS LicenseeWLSB,
 		CAST(SUM(LicenseeWLBA	*e.DefaultRate)	AS MONEY)	AS LicenseeWLBA,
-		CAST(SUM(LicenseeWLNG	*e.DefaultRate)	AS MONEY) 	AS LicenseeWLNG,
+		CAST(SUM(LicenseeWLNG	*e.DefaultRate)	AS MONEY)	AS LicenseeWLNG,
 		CAST(SUM(LicenseeWLVS	*e.DefaultRate)	AS MONEY)	AS LicenseeWLVS,
 		CAST(SUM(LicenseeWLCS	*e.DefaultRate)	AS MONEY)	AS LicenseeWLCS,
 		CAST(SUM(LicenseeWLKN	*e.DefaultRate)	AS MONEY)	AS LicenseeWLKN,
@@ -1290,7 +1308,7 @@ BEGIN
 		CAST(SUM(CommBA			*e.DefaultRate)	AS MONEY)	AS CommBA,
 		CAST(SUM(PlayerComm		*e.DefaultRate)	AS MONEY)	AS PlayerComm,
 		CAST(SUM(AmtDuetoBA		*e.DefaultRate)	AS MONEY)	AS AmtDuetoBA,
-		CAST(SUM(licenseeWLBT	*e.DefaultRate)	AS MONEY)   AS licenseeWLBT,
+		CAST(SUM(licenseeWLBT	*e.DefaultRate)	AS MONEY)	AS licenseeWLBT,
 		CAST(SUM(BetTradeComm	*e.DefaultRate)	AS MONEY)	AS BetTradeComm,
 		CAST(SUM((WLBetTicket + WLBoughtTicket - BetTradeComm)* e.DefaultRate) AS MONEY)	AS AmtDueToBT,
 		CAST(SUM(BuyBackAmtSB	*e.DefaultRate)	AS MONEY)	AS BuyBackAmtSB,
