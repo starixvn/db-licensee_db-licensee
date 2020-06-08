@@ -8,7 +8,7 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerRemoveGroupComm]
 	@IsRemovePlayercomm BIT,
 	@Langkey VARCHAR(10) = 'en-US',
 	@ErrCode INT = 0 OUTPUT,
-	@ErrMsg varchar(8000) = '' OUTPUT
+	@ErrMsg NVARCHAR(8000) = '' OUTPUT
 AS  
 /*  
 	Created: 20120801@Henry
@@ -68,7 +68,7 @@ BEGIN
 	
 	IF NOT EXISTS(SELECT TOP 1 1 FROM @TempCustID)
 	BEGIN
-		SELECT @ErrMsg= CASE @Langkey WHEN 'en-US' THEN 'Nothing to remove!'
+		SELECT @ErrMsg= CASE @Langkey WHEN 'en-US' THEN 'Selected customer(s) do not belong to any group.'
 									  ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200004,@Langkey)
 									  END
 				,@ErrCode = 100					  			

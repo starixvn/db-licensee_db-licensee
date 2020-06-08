@@ -32,7 +32,7 @@ CREATE PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm]
 	@IP VARCHAR(40),
 	@Langkey VARCHAR(10) = 'en-US',
 	@ErrCode INT = 0 OUTPUT,
-	@ErrMsg varchar(8000) = '' OUTPUT
+	@ErrMsg NVARCHAR(8000) = '' OUTPUT
 )
 AS
 /*
