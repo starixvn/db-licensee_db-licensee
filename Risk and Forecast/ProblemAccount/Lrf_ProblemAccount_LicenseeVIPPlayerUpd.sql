@@ -166,10 +166,15 @@ BEGIN
 		SELECT @ErrMsg = ''
 		
 		SELECT @ErrMsg = @ErrMsg + username2 + ','
-		FROM #tblCust
+		FROM #tblCust t
 		WHERE isVip = @isVip
 			AND custid IS NOT NULL		
 			AND username2 IS NOT NULL
+			AND NOT EXISTS( SELECT 1 
+							FROM #tblCust t2
+							WHERE t2.isVip = @isVip
+								AND t.custid =t2.custid
+								AND t2.username IS NOT NULL )
 		
 		SELECT @cnt = @@ROWCOUNT
 		
