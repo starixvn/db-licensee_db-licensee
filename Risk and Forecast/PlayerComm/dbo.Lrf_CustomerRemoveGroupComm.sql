@@ -53,6 +53,7 @@ BEGIN
 		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN 'Wrong input, please check again!'
 				ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200003,@Langkey)
 				END
+				,@ErrCode = 100
 		RETURN
 	END
 	
@@ -69,7 +70,8 @@ BEGIN
 	BEGIN
 		SELECT @ErrMsg= CASE @Langkey WHEN 'en-US' THEN 'Nothing to remove!'
 									  ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200004,@Langkey)
-									  END			
+									  END
+				,@ErrCode = 100					  			
 		RETURN	
 	END
 	
