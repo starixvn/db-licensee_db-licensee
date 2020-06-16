@@ -34,6 +34,10 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMember_MinMaxBet]
 	@maxbetv99 MONEY,
 	@maxpermatchv99 MONEY,	
 	
+	@minbetv1MP MONEY=0,
+	@maxbetv1MP MONEY=0,
+	@maxpermatchv1MP MONEY=0,
+	
 	@minbetv99MP MONEY,
 	@maxbetv99MP MONEY,
 	@maxpermatchv99MP MONEY,	
@@ -48,6 +52,7 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMember_MinMaxBet]
 	@UpdateMinMaxBetv11 BIT = 1,
 		
 	@UpdateMinMaxBetv99 BIT = 1,
+	@UpdateMinMaxBetv1MP BIT = 0,
 	@UpdateMinMaxBetv99MP BIT = 1,
 	
 	@UserID INT = 0,	
@@ -73,6 +78,7 @@ Revisions:
    - 20160329@Jim: correct setting for MuayThai (RedmineID #55036)
    - 20181009@Winnie: Remove Racing  (Feature #99378)
    - 20190909@Eden: 3rd party products - Remove InActive Products Phase 2 [Redmine: #118699]
+   - 20200615@Johnson: add soccer parlay [redmine:#135261]
 Param's Explanation:
 • @ErrCode:
     = 0: Update successfully.
@@ -96,6 +102,7 @@ DECLARE
 	@MinMinBetv10 MONEY, @MaxMaxBetv10 MONEY, @MaxMaxPerMatchv10 MONEY,
 	@MinMinBetv11 MONEY, @MaxMaxBetv11 MONEY, @MaxMaxPerMatchv11 MONEY,
 	@MinMinBetv99 MONEY, @MaxMaxBetv99 MONEY, @MaxMaxPerMatchv99 MONEY,
+	@MinMinBetv1MP MONEY, @MaxMaxBetv1MP MONEY, @MaxMaxPerMatchv1MP MONEY,
 	@MinMinBetv99MP MONEY, @MaxMaxBetv99MP MONEY, @MaxMaxPerMatchv99MP MONEY
 	
 DECLARE 
@@ -107,6 +114,7 @@ DECLARE
 	@Old_MinBetv10 MONEY, @Old_MaxBetv10 MONEY, @Old_MaxPerMatchv10 MONEY,
 	@Old_MinBetv11 MONEY, @Old_MaxBetv11 MONEY, @Old_MaxPerMatchv11 MONEY,
 	@Old_MinBetv99 MONEY, @Old_MaxBetv99 MONEY, @Old_MaxPerMatchv99 MONEY,
+	@Old_MinBetv1MP MONEY, @Old_MaxBetv1MP MONEY, @Old_MaxPerMatchv1MP MONEY,
 	@Old_MinBetv99MP MONEY, @Old_MaxBetv99MP MONEY, @Old_MaxPerMatchv99MP MONEY
 	
 	
@@ -135,6 +143,7 @@ SELECT
 	@MaxMaxPerMatchv11 = Min(CASE WHEN cs.MaxPerMatch11 = 0 THEN NULL ELSE cs.MaxPerMatch11 END), 
 	
 	@MaxMaxPerMatchv99 = Min(CASE WHEN cs.MaxPerMatch99 = 0 THEN NULL ELSE cs.MaxPerMatch99 END),
+	@MaxMaxPerMatchv1MP = Min(CASE WHEN cs.MaxPerMatch1MP = 0 THEN NULL ELSE cs.MaxPerMatch1MP END),
 	@MaxMaxPerMatchv99MP = Min(CASE WHEN cs.MaxPerMatch99MP = 0 THEN NULL ELSE cs.MaxPerMatch99MP END)
 	
 from 
@@ -968,6 +977,109 @@ BEGIN
 	END
 END
 
+
+if @UpdateMinMaxBetv1MP = 1
+BEGIN
+	if 
+		@MinBetv1MP <0
+		or @MaxBetv1MP <0
+		or @MaxPerMatchv1MP <0		
+	BEGIN
+		SELECT @ErrCode = 3
+		SELECT @ErrMsg = 	CASE @Language 
+							WHEN 'en-us' THEN 'Wrong Min bet/ Max bet/ Max per match (for Soccer Parlay).'
+							WHEN 'zh-cn' THEN N'最低投注/最高投注/单场最高投注不正确(供混合体育过关).'
+							WHEN 'zh-tw' THEN N'最低投注/最高投注/單場最高投注不正確(供混合體育過關).'
+							WHEN 'zh-Hans' THEN N'最低投注/最高投注/单场最高投注不正确(供混合体育过关).'
+							WHEN 'TH' THEN N'การกำหนดจำนวนเงินสำหรับการวางเดิมพันต่ำสุด/ สูงสุด/สูงสดต่อรายการไม่ถูกต้อง (สำหรับกีฬาบอลชุด).'
+							WHEN 'Ja' THEN N'Wrong Min bet/ Max bet/ Max per match (for Soccer Parlay).'
+							WHEN 'KO' THEN N'잘못된 최소 배팅/최대 배팅/경기당 최대 (for Soccer Parlay).'
+							ELSE N'Wrong Min bet/ Max bet/ Max per match (for Soccer Parlay).'
+					END
+		RETURN
+	END
+	
+	SELECT 
+		@MinMinBetv1MP = Max(CASE WHEN MinBet = 0 THEN NULL ELSE MinBet END), 
+		@MaxMaxBetv1MP = Min(CASE WHEN MaxBet = 0 THEN NULL ELSE MaxBet END)
+	from 
+		Dep_CustSetting as cs WITH (NOLOCK)
+		INNER JOIN custinfo as ci WITH (NOLOCK) on (cs.CustID = ci.Recommend or cs.CustID = ci.MRecommend or cs.CustID = ci.SRecommend)
+		AND cs.bettype = 9 AND cs.sporttype=1
+	WHERE ci.custid = @recommend
+	
+	if (@MinBetv1MP <> 0 AND @MaxBetv1MP <> 0 AND @MinBetv1MP>@MaxBetv1MP) or (@MaxBetv1MP <> 0 AND @MaxPerMatchv1MP <> 0 AND @MaxBetv1MP>@MaxPerMatchv1MP)
+	BEGIN
+		SELECT @ErrMsg =	@UserName + ': '+
+						CASE @Language 
+							WHEN 'en-us' THEN 'min bet must be less than max bet AND max bet must be less than max bet per match (for Soccer Parlay)'
+							WHEN 'zh-cn' THEN N'最低投注不能高于最高投注，最高投注不能高于单场最高投注设定(供混合体育过关)'
+							WHEN 'zh-tw' THEN N'最低投注不能高於最高投注,最高投注不能高於單場最高投注設定(供混合體育過關)'
+							WHEN 'zh-Hans' THEN N'最低投注不能高于最高投注，最高投注不能高于单场最高投注设定(供混合体育过关)'
+							WHEN 'TH' THEN N'จำนวนเงินต่ำสุดที่วางเดิมพันได้ต้องน้อยกว่าจำนวนเงินสูงสุดในการวางเดิมพันและจำนวนเงินสูงสุดในการวางเดิมพันต้องน้อยกว่าจำนวนเงินสูงสุดของเงินเดิมพันต่อเกม (สำหรับกีฬาบอลชุด)'
+							WHEN 'Ja' THEN N'min bet must be less than max bet AND max bet must be less than max bet per match (for Soccer Parlay)'
+							WHEN 'KO' THEN N'최소 배팅은 최대 배팅 이하이여야 하고 최대 배팅은 경기당 최대 배팅보다 작아야 합니다 (for Soccer Parlay)'
+							ELSE N'min bet must be less than max bet AND max bet must be less than max bet per match (for Soccer Parlay)'
+						END						
+						+ char(13) + char(10) + convert(VARCHAR(20), @MinBetv1MP) + '-' + convert(VARCHAR(20), @MaxBetv1MP) + '-' + convert(VARCHAR(20), @MaxPerMatchv1MP), @ErrCode = 111
+				
+		RETURN
+	END
+	
+	IF (@MinMinBetv1MP>0 AND @MinBetv1MP>0 AND @MinBetv1MP<@MinMinBetv1MP)
+	BEGIN
+		SELECT @ErrMsg =	@UserName + ': '+
+						CASE @Language 
+							WHEN 'en-us' THEN 'min bet must be equal to or greater than Agent min bet (for Mix Sports Parlay)'
+							WHEN 'zh-cn' THEN N'最低投注需相等于或少于代理最低投注(供混合体育过关)'
+							WHEN 'zh-tw' THEN N'最低投注需相等於或少於代理最低投注(供混合體育過關)'
+							WHEN 'zh-Hans' THEN N'最低投注需相等于或少于代理最低投注(供混合体育过关)'
+							WHEN 'TH' THEN N'จำนวนเงินต่ำสุดในการเล่นต้องเท่ากับหรือมากกว่าจำนวนเงินขั้นต่ำในการเล่นที่กำหนดไว้ของตัวแทน (สำหรับกีฬาบอลชุด)'
+							WHEN 'Ja' THEN N'min bet must be equal to or greater than Agent min bet (for Soccer Parlay)'
+							WHEN 'KO' THEN N'최소 배팅은 에이전트의 최소 배팅 이상이여야 합니다 (for Soccer Parlay)'
+							ELSE N'min bet must be equal to or greater than Agent min bet (for Soccer Parlay)'
+						END						
+						+' (' + CONVERT(VARCHAR(20), @MinMinBetv1MP) + ').', @ErrCode = 112
+				
+		RETURN
+	END	
+	IF (@MaxMaxBetv1MP>0 AND @MaxBetv1MP>0 AND @MaxBetv1MP>@MaxMaxBetv1MP)
+	BEGIN
+		SELECT @ErrMsg =	@UserName + ': '+
+						CASE @Language 
+							WHEN 'en-us' THEN 'max bet must be equal to or less than Agent max bet (for Soccer Parlay)'
+							WHEN 'zh-cn' THEN N'最高投注需相等于或少于代理最高投注(供混合体育过关)'
+							WHEN 'zh-tw' THEN N'最高投注需相等於或少於代理最高投注(供混合體育過關)'
+							WHEN 'zh-Hans' THEN N'最高投注需相等于或少于代理最高投注(供混合体育过关)'
+							WHEN 'TH' THEN N'จำนวนการวางเดิมพันสูงสุดต้องเท่ากับ หรือ น้อยกว่าราคาเดิมพันสูงสุดของตัวแทน (สำหรับกีฬาบอลชุด)'
+							WHEN 'Ja' THEN N'max bet must be equal to or less than Agent max bet (for Soccer Parlay)'
+							WHEN 'KO' THEN N'최대 배팅은 에이전트의 최대 배팅 이하이여야 합니다 (for Soccer Parlay)'
+							ELSE N'max bet must be equal to or less than Agent max bet (for Soccer Parlay)'
+						END						
+						+' (' + CONVERT(VARCHAR(20), @MaxMaxBetv1MP) + ').', @ErrCode = 113
+				
+		RETURN
+	END
+	
+	IF (@MaxMaxPerMatchv1MP>0 AND @MaxPerMatchv1MP>0 AND @MaxPerMatchv1MP>@MaxMaxPerMatchv1MP)
+	BEGIN
+		SELECT @ErrMsg =	@UserName + ': '+
+						CASE @Language 
+							WHEN 'en-us' THEN 'Max Per Match must be equal to or less than Agent Max Per Match (for Soccer Parlay)'
+							WHEN 'zh-cn' THEN N'单场最高投注需相等于或少于代理单场最高投注(供混合体育过关)'
+							WHEN 'zh-tw' THEN N'單場最高投注需相等於或少於代理單場最高投注(供混合體育過關)'
+							WHEN 'zh-Hans' THEN N'单场最高投注需相等于或少于代理单场最高投注(供混合体育过关)'
+							WHEN 'TH' THEN N'จำนวนเงินสูงสุดในการเล่นต่อรายการต้องเท่ากับหรือน้อยกว่าจำนวนเงินสูงสุดต่อรายการที่กำหนดไว้ของตัวแทน (สำหรับกีฬาบอลชุด) '
+							WHEN 'Ja' THEN N'Max Per Match must be equal to or less than Agent Max Per Match (for Soccer Parlay)'
+							WHEN 'KO' THEN N'최대 경기는 에이전트의 최대 경기보다 작아야 합니다 (for Soccer Parlay)'
+							ELSE N'Max Per Match must be equal to or less than Agent Max Per Match (for Soccer Parlay)'
+						END						
+						+' (' + CONVERT(VARCHAR(20), @MaxMaxPerMatchv1MP) + ').', @ErrCode = 113
+				
+		RETURN
+	END
+END
+
 if @UpdateMinMaxBetv99MP = 1
 BEGIN
 	if 
@@ -1111,6 +1223,11 @@ FROM Dep_CustSetting WITH(NOLOCK)
 WHERE custid = @custid AND bettype = 1 AND sporttype=99
 
 --
+SELECT @Old_MinBetv1MP = MinBet, @Old_MaxBetv1MP = MaxBet
+FROM Dep_CustSetting WITH(NOLOCK)
+WHERE custid = @custid AND bettype = 9 AND sporttype=1
+
+--
 SELECT @Old_MinBetv99MP = MinBet, @Old_MaxBetv99MP = MaxBet
 FROM Dep_CustSetting WITH(NOLOCK)
 WHERE custid = @custid AND bettype = 9 AND sporttype=99
@@ -1125,6 +1242,7 @@ SELECT
 	@Old_MaxPerMatchv10 = maxpermatch10,
 	@Old_MaxPerMatchv11 = maxpermatch11,
 	@Old_MaxPerMatchv99 = maxpermatch99,
+	@Old_MaxPerMatchv1MP = maxpermatch1MP,
 	@Old_MaxPerMatchv99MP = maxpermatch99MP
 FROM custinfo WITH (NOLOCK)
 WHERE custid = @custid
@@ -1135,7 +1253,7 @@ WHERE custid = @custid
 ----------
 UPDATE Dep_CustSetting WITH (ROWLOCK, UPDLOCK)
 SET
-	MinBet=CASE WHEN ((@UpdateMinMaxBet = 0 AND sporttype=1)
+	MinBet=CASE WHEN ((@UpdateMinMaxBet = 0 AND sporttype=1 AND bettype <> 9)
 												OR (@UpdateMinMaxBetv2 = 0 AND sporttype=2)
 												OR (@UpdateMinMaxBetv3 = 0 AND sporttype=3)
 												OR (@UpdateMinMaxBetv5 = 0 AND sporttype=5)
@@ -1143,9 +1261,10 @@ SET
 												OR (@UpdateMinMaxBetv10 = 0 AND sporttype=10)
 												OR (@UpdateMinMaxBetv11 = 0 AND sporttype=11)											
 												OR (@UpdateMinMaxBetv99 = 0 AND sporttype=99 AND bettype<>9)
+												OR (@UpdateMinMaxBetv1MP = 0 AND sporttype=1 AND bettype=9)
 												OR (@UpdateMinMaxBetv99MP = 0 AND sporttype=99 AND bettype=9)
-												) THEN MinBet ELSE CASE sporttype WHEN 1 THEN @MinBet WHEN 2 THEN @MinBetv2 WHEN 3 THEN @MinBetv3 WHEN 5 THEN @MinBetv5 WHEN 8 THEN @MinBetv8 WHEN 10 THEN @MinBetv10 WHEN 11 THEN @MinBetv11  WHEN  99 THEN (CASE bettype WHEN 9 THEN @MinBetv99MP ELSE @MinBetv99 END) ELSE minbet END END,
-	MaxBet=CASE WHEN  ((@UpdateMinMaxBet = 0 AND sporttype=1)
+												) THEN MinBet ELSE CASE sporttype WHEN 1 THEN CASE WHEN bettype <> 9 THEN @MinBet ELSE @MinBetV1MP END WHEN 2 THEN @MinBetv2 WHEN 3 THEN @MinBetv3 WHEN 5 THEN @MinBetv5 WHEN 8 THEN @MinBetv8 WHEN 10 THEN @MinBetv10 WHEN 11 THEN @MinBetv11  WHEN  99 THEN (CASE bettype WHEN 9 THEN @MinBetv99MP ELSE @MinBetv99 END) ELSE minbet END END,
+	MaxBet=CASE WHEN  ((@UpdateMinMaxBet = 0 AND sporttype=1 AND bettype <> 9)
 												OR (@UpdateMinMaxBetv2 = 0 AND sporttype=2)
 												OR (@UpdateMinMaxBetv3 = 0 AND sporttype=3)
 												OR (@UpdateMinMaxBetv5 = 0 AND sporttype=5)
@@ -1153,8 +1272,9 @@ SET
 												OR (@UpdateMinMaxBetv10 = 0 AND sporttype=10)
 												OR (@UpdateMinMaxBetv11 = 0 AND sporttype=11)									
 												OR (@UpdateMinMaxBetv99 = 0 AND sporttype=99 AND bettype<>9)
+												OR (@UpdateMinMaxBetv99MP = 0 AND sporttype=1 AND bettype=9)
 												OR (@UpdateMinMaxBetv99MP = 0 AND sporttype=99 AND bettype=9)
-												) THEN MaxBet ELSE CASE sporttype WHEN 1 THEN @MaxBet WHEN 2 THEN @MaxBetv2 WHEN 3 THEN @MaxBetv3 WHEN 5 THEN @MaxBetv5 WHEN 8 THEN @MaxBetv8 WHEN 10 THEN @MaxBetv10 WHEN 11 THEN @MaxBetv11 WHEN 99 THEN (CASE bettype WHEN 9 THEN @MaxBetv99MP ELSE @MaxBetv99 END) ELSE maxbet END END
+												) THEN MaxBet ELSE CASE sporttype WHEN 1 THEN CASE WHEN bettype <> 9 THEN @MaxBet ELSE @MaxBetv1MP END WHEN 2 THEN @MaxBetv2 WHEN 3 THEN @MaxBetv3 WHEN 5 THEN @MaxBetv5 WHEN 8 THEN @MaxBetv8 WHEN 10 THEN @MaxBetv10 WHEN 11 THEN @MaxBetv11 WHEN 99 THEN (CASE bettype WHEN 9 THEN @MaxBetv99MP ELSE @MaxBetv99 END) ELSE maxbet END END
 WHERE custid=@custid
 
 
@@ -1186,6 +1306,7 @@ EXEC dbo.Lrf_CustomerUpdMaxPerMatch
 	@maxpermatchv10 = @maxpermatchv10,
 	@maxpermatchv11 = @maxpermatchv11,
 	@maxpermatchv99 = @maxpermatchv99,
+	@maxpermatchv1MP = @maxpermatchv1MP,
 	@maxpermatchv99MP = @maxpermatchv99MP,
 	@UpdateMinMaxBet = @UpdateMinMaxBet,
 	@UpdateMinMaxBetv2 = @UpdateMinMaxBetv2,
@@ -1195,6 +1316,7 @@ EXEC dbo.Lrf_CustomerUpdMaxPerMatch
 	@UpdateMinMaxBetv10 = @UpdateMinMaxBetv10,
 	@UpdateMinMaxBetv11 = @UpdateMinMaxBetv11,
 	@UpdateMinMaxBetv99 = @UpdateMinMaxBetv99,
+	@UpdateMinMaxBetv1MP = @UpdateMinMaxBetv1MP,
 	@UpdateMinMaxBetv99MP = @UpdateMinMaxBetv99MP,
 	@Language = @Language,
 	@ErrCode = @ErrCode OUTPUT,
@@ -1261,6 +1383,13 @@ BEGIN
 	SET @maxpermatchv99 = @Old_maxpermatchv99
 END
 
+IF @UpdateMinMaxBetv1MP = 0
+BEGIN
+	SET @minbetv1MP = @Old_minbetv1MP
+	SET @maxbetv1MP = @Old_maxbetv1MP
+	SET @maxpermatchv1MP = @Old_maxpermatchv1MP
+END
+
 IF @UpdateMinMaxBetv99MP = 0
 BEGIN
 	SET @minbetv99MP = @Old_minbetv99MP
@@ -1297,6 +1426,9 @@ SELECT @TrackingValue ='<Lrf_CustomerUpdMember_MinMaxBet custid="'+ COALESCE(CAS
 'MinBv99="'+ COALESCE(CAST(@minbetv99 as VARCHAR(50)),SPACE(1)) + '" ' +
 'MaxBv99="'+ COALESCE(CAST(@maxbetv99 as VARCHAR(50)),SPACE(1)) + '" ' +
 'MPMv99="'+ COALESCE(CAST(@maxpermatchv99 as VARCHAR(50)),SPACE(1)) + '" ' +
+'MinBv1MP="'+ COALESCE(CAST(@minbetv1MP as VARCHAR(50)),SPACE(1)) + '" ' +
+'MaxBv1MP="'+ COALESCE(CAST(@maxbetv1MP as VARCHAR(50)),SPACE(1)) + '" ' +
+'MPMv1MP="'+ COALESCE(CAST(@maxpermatchv1MP as VARCHAR(50)),SPACE(1)) + '" ' +
 'MinBv99MP="'+ COALESCE(CAST(@minbetv99MP as VARCHAR(50)),SPACE(1)) + '" ' +
 'MaxBv99MP="'+ COALESCE(CAST(@maxbetv99MP as VARCHAR(50)),SPACE(1)) + '" ' +
 'MPMv99MP="'+ COALESCE(CAST(@maxpermatchv99MP as VARCHAR(50)),SPACE(1)) + '" ' +
@@ -1308,6 +1440,7 @@ SELECT @TrackingValue ='<Lrf_CustomerUpdMember_MinMaxBet custid="'+ COALESCE(CAS
 'UMMBv10="'+ COALESCE(CAST(@UpdateMinMaxBetv10 as VARCHAR(50)),SPACE(1)) + '" ' +
 'UMMBv11="'+ COALESCE(CAST(@UpdateMinMaxBetv11 as VARCHAR(50)),SPACE(1)) + '" ' +
 'UMMBv99="'+ COALESCE(CAST(@UpdateMinMaxBetv99 as VARCHAR(50)),SPACE(1)) + '" ' +
+'UMMBv1MP="'+ COALESCE(CAST(@UpdateMinMaxBetv1MP as VARCHAR(50)),SPACE(1)) + '" ' +
 'UMMBv99MP="'+ COALESCE(CAST(@UpdateMinMaxBetv99MP as VARCHAR(50)),SPACE(1)) + '" ' +
 'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
 'Language="'+ COALESCE(CAST(@Language as VARCHAR(10)),SPACE(1)) + '" ' +
@@ -1341,6 +1474,9 @@ SELECT @TrackingValue2 ='<Lrf_CustomerUpdMember_MinMaxBet custid="'+ COALESCE(CA
 'MinBv99="'+ COALESCE(CAST(@Old_minbetv99 as VARCHAR(50)),SPACE(1)) + '" ' +
 'MaxBv99="'+ COALESCE(CAST(@Old_maxbetv99 as VARCHAR(50)),SPACE(1)) + '" ' +
 'MPMv99="'+ COALESCE(CAST(@Old_maxpermatchv99 as VARCHAR(50)),SPACE(1)) + '" ' +
+'MinBv1MP="'+ COALESCE(CAST(@Old_minbetv1MP as VARCHAR(50)),SPACE(1)) + '" ' +
+'MaxBv1MP="'+ COALESCE(CAST(@Old_maxbetv1MP as VARCHAR(50)),SPACE(1)) + '" ' +
+'MPMv1MP="'+ COALESCE(CAST(@Old_maxpermatchv1MP as VARCHAR(50)),SPACE(1)) + '" ' +
 'MinBv99MP="'+ COALESCE(CAST(@Old_minbetv99MP as VARCHAR(50)),SPACE(1)) + '" ' +
 'MaxBv99MP="'+ COALESCE(CAST(@Old_maxbetv99MP as VARCHAR(50)),SPACE(1)) + '" ' +
 'MPMv99MP="'+ COALESCE(CAST(@Old_maxpermatchv99MP as VARCHAR(50)),SPACE(1)) + '" ' +
@@ -1352,6 +1488,7 @@ SELECT @TrackingValue2 ='<Lrf_CustomerUpdMember_MinMaxBet custid="'+ COALESCE(CA
 'UMMBv10="'+ COALESCE(CAST(@UpdateMinMaxBetv10 as VARCHAR(50)),SPACE(1)) + '" ' +
 'UMMBv11="'+ COALESCE(CAST(@UpdateMinMaxBetv11 as VARCHAR(50)),SPACE(1)) + '" ' +
 'UMMBv99="'+ COALESCE(CAST(@UpdateMinMaxBetv99 as VARCHAR(50)),SPACE(1)) + '" ' +
+'UMMBv1MP="'+ COALESCE(CAST(@UpdateMinMaxBetv1MP as VARCHAR(50)),SPACE(1)) + '" ' +
 'UMMBv99MP="'+ COALESCE(CAST(@UpdateMinMaxBetv99MP as VARCHAR(50)),SPACE(1)) + '" ' +
 'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
 'Language="'+ COALESCE(CAST(@Language as VARCHAR(10)),SPACE(1)) + '" ' +
