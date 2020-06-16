@@ -1,5 +1,5 @@
 ﻿/*<info serverAlias="DBCUST-CustDB" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
-ALTER PROCEDURE [dbo].[Lrf_CustomerSelEditCustomer]
+ALTER PROCEDURE [dbo].[Lrf_CustomerSelEditCustomer_xtest]
     @CustID INT
 AS
 ---- exec Lrf_CustomerSelEditCustomer_20744 @CustID=4351589
@@ -167,7 +167,7 @@ SELECT
     @MaxPerMatchv99_Max = MIN(CASE WHEN cs.MaxPerMatch99 = 0 THEN NULL ELSE cs.MaxPerMatch99 END),
     
 	@MaxPerMatchv1MP_Min = 0,
-    @MaxPerMatchv1MP_Max = MIN(CASE WHEN cs.MaxPerMatch1MP = 0 THEN NULL ELSE cs.MaxPerMatch1MP END)
+    @MaxPerMatchv1MP_Max = MIN(CASE WHEN cs.MaxPerMatch1MP = 0 THEN NULL ELSE cs.MaxPerMatch1MP END),
     	
     @MaxPerMatchv99MP_Min = 0,
     @MaxPerMatchv99MP_Max = MIN(CASE WHEN cs.MaxPerMatch99MP = 0 THEN NULL ELSE cs.MaxPerMatch99MP END)
