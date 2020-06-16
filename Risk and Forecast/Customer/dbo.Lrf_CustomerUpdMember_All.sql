@@ -56,7 +56,7 @@ ALTER PROC [dbo].[Lrf_CustomerUpdMember_All]
 	@UpdateMinMaxBetv10 BIT = 1,  
 	@UpdateMinMaxBetv11 BIT = 1,  
 	@UpdateMinMaxBetv99 BIT = 1,  
-	@UpdateMinMaxBetv99MP BIT = 0, 
+	@UpdateMinMaxBetv1MP BIT = 0, 
 	@UpdateMinMaxBetv99MP BIT = 1,  
  
 	@ErrCode varchar(300) = '' OUTPUT,  
