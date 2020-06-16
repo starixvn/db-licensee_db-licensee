@@ -1,5 +1,5 @@
 ﻿/*<info serverAlias="DBCUST-CustDB" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
-ALTER PROCEDURE [dbo].[Lrf_CustomerSelEditCustomer_xtest]
+ALTER PROCEDURE [dbo].[Lrf_CustomerSelEditCustomer]
     @CustID INT
 AS
 ---- exec Lrf_CustomerSelEditCustomer_20744 @CustID=4351589
