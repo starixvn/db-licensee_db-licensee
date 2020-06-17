@@ -1272,7 +1272,7 @@ SET
 												OR (@UpdateMinMaxBetv10 = 0 AND sporttype=10)
 												OR (@UpdateMinMaxBetv11 = 0 AND sporttype=11)									
 												OR (@UpdateMinMaxBetv99 = 0 AND sporttype=99 AND bettype<>9)
-												OR (@UpdateMinMaxBetv99MP = 0 AND sporttype=1 AND bettype=9)
+												OR (@UpdateMinMaxBetv1MP = 0 AND sporttype=1 AND bettype=9)
 												OR (@UpdateMinMaxBetv99MP = 0 AND sporttype=99 AND bettype=9)
 												) THEN MaxBet ELSE CASE sporttype WHEN 1 THEN CASE WHEN bettype <> 9 THEN @MaxBet ELSE @MaxBetv1MP END WHEN 2 THEN @MaxBetv2 WHEN 3 THEN @MaxBetv3 WHEN 5 THEN @MaxBetv5 WHEN 8 THEN @MaxBetv8 WHEN 10 THEN @MaxBetv10 WHEN 11 THEN @MaxBetv11 WHEN 99 THEN (CASE bettype WHEN 9 THEN @MaxBetv99MP ELSE @MaxBetv99 END) ELSE maxbet END END
 WHERE custid=@custid
