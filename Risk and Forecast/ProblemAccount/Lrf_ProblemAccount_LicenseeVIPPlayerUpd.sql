@@ -1,12 +1,11 @@
 /*<info serverAlias="DBCUST-CUSTDB" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
-
 ALTER PROCEDURE Lrf_ProblemAccount_LicenseeVipPlayerUpd
 	@AgentList VARCHAR(MAX),
 	@Username VARCHAR(MAX),
 	@IsVip	BIT,
-	
 	@UserID INT,
-	@IP	VARCHAR(15) = ''
+	@IP	VARCHAR(15) = '',
+	@Username2 VARCHAR(MAX) = ''
 AS
 	/*
 		Created: 20200213@Johnson
@@ -16,14 +15,18 @@ AS
 		Revisions:
 			- 20200213@Johnson: initial sp [redmine:#128077]
 			- 20200417@Elodie: Unremove VIP if void abnormal [Redmine: #132736]
+			- 20200605@Eden:LAP - Upload VIP list by ExternalID #135410
 
 		Paramter's Explanations:	
 			- @result:
-				ErrCode =100: invalid accounts
-						101: dont change status
+				ErrCode =
+						100: invalid SystemID
+						101: dont change status SystemID
 						102: dont set vip status coz of void tickets
 						0: total accounts update successfully 
 						1000: Invalid parameter.
+						103: invalid ExternalID
+						104: dont change status ExternalID
 	*/
 BEGIN
 	SET NOCOUNT ON
@@ -38,7 +41,8 @@ BEGIN
 							isLog BIT DEFAULT 0, 
 							isUpdate BIT DEFAULT 0,
 							MaxBet MONEY,
-							MaxPerEvent MONEY	
+							MaxPerEvent MONEY,
+							username2 VARCHAR(50)	
 							)
 	CREATE TABLE #TempAg (custid INT)
 	
@@ -70,19 +74,34 @@ BEGIN
 	INSERT INTO #tblCust(username)
 	SELECT DISTINCT val
 	FROM dbo.strSplit(@username,',')
+	WHERE val <> '' 
+
+	INSERT INTO #tblCust(username2)
+	SELECT DISTINCT val
+	FROM dbo.strSplit(@username2,',')
+	WHERE val <> ''
 	
-	;WITH c AS (
-		SELECT custid,roleid, username
-		FROM customer ci WITH(NOLOCK)
-		WHERE recommend IN (SELECT custid FROM #TempAg)
-			AND roleid = 1	
-	)			
+	SELECT custid,roleid, username,
+		SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) AS username2
+	INTO #tempUser
+	FROM customer ci WITH(NOLOCK)
+	WHERE recommend IN (SELECT custid FROM #TempAg)
+		AND roleid = 1	
+			
 	UPDATE t
 	SET t.custid = c.custid,
 		t.roleid = c.roleid
 	FROM #tblCust t
-		INNER JOIN c ON t.username = c.username
-	
+		INNER JOIN #tempUser c 
+			ON t.username = c.username 
+
+	UPDATE t
+	SET t.custid = c.custid,
+		t.roleid = c.roleid
+	FROM #tblCust t
+		INNER JOIN #tempUser c 
+			ON t.username2 = c.username2 
+
 	IF EXISTS (SELECT 1 FROM #tblCust WHERE custid IS NULL)
 	BEGIN	
 		SELECT @ErrMsg = ''
@@ -90,14 +109,32 @@ BEGIN
 		SELECT @ErrMsg = @ErrMsg + username + ','
 		FROM #tblCust
 		WHERE custid IS NULL
+			AND username IS NOT NULL
 		
 		SELECT @cnt = @@ROWCOUNT
 		
 		SELECT @ErrMsg = REVERSE(SUBSTRING(REVERSE(@ErrMsg),2,LEN(@ErrMsg)))
 		
-		--invalid accounts
-		INSERT INTO @Result(ErrCode,Cnt,ErrMsg)
-		SELECT 100,@cnt,@ErrMsg
+		--invalid accounts by Username
+		IF @cnt > 0
+			INSERT INTO @Result(ErrCode,Cnt,ErrMsg)
+			SELECT 100,@cnt,@ErrMsg
+
+		SELECT @ErrMsg = ''
+		
+		SELECT @ErrMsg = @ErrMsg + username2 + ','
+		FROM #tblCust
+		WHERE custid IS NULL
+			AND username2 IS NOT NULL
+		
+		SELECT @cnt = @@ROWCOUNT
+		
+		SELECT @ErrMsg = REVERSE(SUBSTRING(REVERSE(@ErrMsg),2,LEN(@ErrMsg)))
+		
+		--invalid accounts by Username2
+		IF @cnt > 0
+			INSERT INTO @Result(ErrCode,Cnt,ErrMsg)
+			SELECT 103,@cnt,@ErrMsg
 	END
 	
 	UPDATE t
@@ -107,29 +144,60 @@ BEGIN
 	
 	IF EXISTS (SELECT 1 FROM #tblCust WHERE isVip = @isVip AND custid IS NOT NULL)
 	BEGIN	
+		--By UserName
 		SELECT @ErrMsg = ''
 		
 		SELECT @ErrMsg = @ErrMsg + username + ','
 		FROM #tblCust
 		WHERE isVip = @isVip
-			AND custid IS NOT NULL		
+			AND custid IS NOT NULL	
+			AND username IS NOT NULL	
 		
 		SELECT @cnt = @@ROWCOUNT
 		
 		SELECT @ErrMsg = REVERSE(SUBSTRING(REVERSE(@ErrMsg),2,LEN(@ErrMsg)))
 		
 		--no change vip status
-		INSERT INTO @Result(ErrCode,Cnt,ErrMsg)
-		SELECT 101,@cnt,@ErrMsg
+		IF @cnt > 0
+			INSERT INTO @Result(ErrCode,Cnt,ErrMsg)
+			SELECT 101,@cnt,@ErrMsg
+
+		--By UserName2
+		SELECT @ErrMsg = ''
+		
+		SELECT @ErrMsg = @ErrMsg + username2 + ','
+		FROM #tblCust t
+		WHERE isVip = @isVip
+			AND custid IS NOT NULL		
+			AND username2 IS NOT NULL
+			AND NOT EXISTS( SELECT 1 
+							FROM #tblCust t2
+							WHERE t2.isVip = @isVip
+								AND t.custid =t2.custid
+								AND t2.username IS NOT NULL )
+		
+		SELECT @cnt = @@ROWCOUNT
+		
+		SELECT @ErrMsg = REVERSE(SUBSTRING(REVERSE(@ErrMsg),2,LEN(@ErrMsg)))
+		
+		--no change vip status
+		IF @cnt > 0 
+			INSERT INTO @Result(ErrCode,Cnt,ErrMsg)
+			SELECT 104,@cnt,@ErrMsg
 	END
 	
+	--> Distinct custid to update and write log
+	SELECT DISTINCT custid,t.isLog,t.isUpdate,t.isVip,t.MaxBet,t.MaxPerEvent,t.roleid
+	INTO #tblCust2
+	FROM #tblCust t
+
 	UPDATE t
 	SET t.MaxBet = p.MaxBet,
 		t.MaxPerEvent = p.MaxPerEvent
-	FROM #tblCust t
+	FROM #tblCust2 t
 		INNER JOIN ProblemAccount p WITH(NOLOCK) ON t.custid = p.custid
 	
-	IF NOT EXISTS(SELECT 1 FROM #tblCust 
+	IF NOT EXISTS(SELECT 1 FROM #tblCust2 
 				WHERE isVip <> @isVip 
 					AND custid IS NOT NULL)
 	BEGIN				
@@ -145,7 +213,7 @@ BEGIN
 		UPDATE TOP (5000) t
 		SET @custList = @custList + CAST(custid AS VARCHAR(10)) + ',',
 			isUpdate = 1
-		FROM #tblCust t
+		FROM #tblCust2 t
 		WHERE isVip <> @isVip
 			AND isUpdate = 0
 			AND custid IS NOT NULL
@@ -157,7 +225,7 @@ BEGIN
 			@UserID = @UserID,
 			@isVip = @isVip,
 			@mode = 'VIPStatus'
-		
+
 		IF @cnt < 5000
 			BREAK;
 	END
@@ -165,7 +233,7 @@ BEGIN
 	--total customer update successfully
 	INSERT INTO @Result(ErrCode,Cnt, ErrMsg)
 	SELECT 0, count(1),''
-	FROM #tblCust
+	FROM #tblCust2
 	WHERE isUpdate = 1
 	
 	--write log
@@ -177,7 +245,7 @@ BEGIN
 			@MaxBet MONEY,
 			@MaxPerEvent MONEY,
 			@custid INT
-			
+	
 	WHILE (1=1)
 	BEGIN
 		UPDATE TOP (1) t
@@ -185,13 +253,13 @@ BEGIN
 			@custid = custid,
 			@MaxBet = MaxBet,
 			@MaxPerEvent = MaxPerEvent
-		FROM #tblCust t
+		FROM #tblCust2 t
 		WHERE isLog = 0
 			AND isUpdate = 1
 		
 		IF @@ROWCOUNT = 0
 			BREAK;
-		
+
 		SELECT  @LogData = '<R'							
 							+ ' IsVip="' + COALESCE(CAST(@IsVip AS VARCHAR(10)), SPACE(1)) + '"'
 							+ ' MB="' + CASE WHEN @isVip = 0 THEN COALESCE(dbo.f_FomatNumber(CAST(@MaxBet AS VARCHAR(10))), SPACE(1)) ELSE '' END + '"'
