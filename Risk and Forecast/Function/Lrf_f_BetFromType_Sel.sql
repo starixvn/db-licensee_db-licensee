@@ -12,7 +12,8 @@ ALTER FUNCTION [dbo].[Lrf_f_BetFromType_Sel]
 
 	Revisions:
 		- 20191226@Vickie: Get BetFrom by PlatformType [Redmine: #125824]
-		- 20200228@Vickie: Integrate 3 new betffrom [Redmine: #129253]
+		- 20200228@Vickie: Integrate 3 new betfrom [Redmine: #129253]
+		- 20200622@Hogan: Integrate 3 new betfrom 4, 5, 6 [Redmine: #136107]
 */
 
 RETURNS TABLE
@@ -36,7 +37,10 @@ RETURN
 				(12, '1'),
 				(13, '2'),
 				(14, '3'),
-				(88, 'v')
+				(88, 'v'),
+				(12, '4'),
+				(13, '5'),
+				(14, '6')
 	) d(PlatformType, betfrom)
 	WHERE @PlatformType = 0 OR d.PlatformType = @PlatformType
 GO

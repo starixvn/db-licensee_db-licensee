@@ -66,12 +66,13 @@ AS
 		- 20191212@Vickie: Integrate SpadeGaming [RedmineID: #124103]
 		- 20200306@Kos: Enhance performance [RedmineID: #129722]
 		- 20200108@Vickie: Add new product Virtual Games [RedmineID: #124911]
-		- 20200306@Vickie: Update Param's Explanation for 3 new betffrom [Redmine: #129253]
+		- 20200306@Vickie: Update Param's Explanation for 3 new betfrom [Redmine: #129253]
 		- 20200108@Hogan: Add new product Table Games [RedmineID: #131447]
 		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
 		- 20200423@Hogan: Add new product Sexy Gaming [RedmineID: #132829]
 		- 20200423@Vickie: Integrate Saba Club [RedmineID: #132702]
 		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
+		- 20200622@Hogan: Update Param's Explanation for 3 new betfrom 4, 5, 6 [Redmine: #136107]
 
 	Param's Explanation:
 		+ @PlatformType:  0: All
@@ -86,9 +87,9 @@ AS
 						9: Mobile China View (c)
 						10: Deep Link (t)
 						11:	Native App
-						12: E-Sports Web Desktop (1)
-						13: E-Sports Web Mobile (2)
-						14: E-Sports App (3)
+						12: E-Sports Web Desktop (1, 4)
+						13: E-Sports Web Mobile (2, 5)
+						14: E-Sports App (3, 6)
 						88: Others (v)
 		+ @drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover onlly)
 		+ @excludeTest: remove currency UUS
