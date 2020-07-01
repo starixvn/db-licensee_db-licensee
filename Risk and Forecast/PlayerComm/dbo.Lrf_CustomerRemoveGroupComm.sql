@@ -29,6 +29,7 @@ AS
 		- 20180924@Winnie: Remove Allbet [RedmineID: #99378]
 		- 20200409@Johnson: Add comm for AB,Macau,PP,AG,GD [redmine:#131774] 
 		- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
+		- 20200701@Helen: Remove Allbet - [Redmine: #131774]
 */  
 BEGIN  
 	SET NOCOUNT ON
@@ -37,7 +38,7 @@ BEGIN
 			@NGComm DECIMAL(9,8),
 			@RNGComm DECIMAL(9,8),
 			@ParlayComm DECIMAL(9,8),
-			@AllbetComm DECIMAL(9,8),
+			--@AllbetComm DECIMAL(9,8),
 			@MacauComm DECIMAL(9,8),
 			@PPComm DECIMAL(9,8),
 			@GDComm DECIMAL(9,8),
@@ -87,7 +88,7 @@ BEGIN
 				@NGComm=NGComm,
 				@RNGComm=RNGComm,
 				@ParlayComm = ParlayComm,
-				@AllbetComm=AllbetComm,				
+				--@AllbetComm=AllbetComm,				
 				@MacauComm=MacauComm,
 				@PPComm=PPComm,
 				--@GDComm=GDComm,
@@ -107,7 +108,7 @@ BEGIN
 				@NGComm=@NGComm,
 				@RNGComm=@RNGComm,
 				@ParlayComm = @ParlayComm,	
-				@AllbetComm=@AllbetComm,
+				--@AllbetComm=@AllbetComm,
 				@MacauComm=@MacauComm,
 				@PPComm=@PPComm,
 				--@GDComm=@GDComm,
@@ -115,7 +116,7 @@ BEGIN
 				@FWComm = @FWComm,
 				@IsUpdateNG=1,
 				@IsUpdateRNG=1,			
-				@IsUpdateAllbet=1,
+				--@IsUpdateAllbet=1,
 				@IsUpdateMacau=1,
 				@IsUpdatePP=1,
 				--@IsUpdateGD=1,
@@ -147,7 +148,7 @@ BEGIN
 			@NGComm=0,
 			@RNGComm=0,
 			@ParlayComm = 0,
-			@AllbetComm= 0,
+			--@AllbetComm= 0,
 			@MacauComm= 0,
 			@PPComm= 0,
 			--@GDComm= 0,
@@ -155,7 +156,7 @@ BEGIN
 			@FWComm= 0,
 			@IsUpdateNG=1,
 			@IsUpdateRNG=1,	
-			@IsUpdateAllbet=1,
+			--@IsUpdateAllbet=1,
 			@IsUpdateMacau=1,
 			@IsUpdatePP=1,
 			--@IsUpdateGD=1,

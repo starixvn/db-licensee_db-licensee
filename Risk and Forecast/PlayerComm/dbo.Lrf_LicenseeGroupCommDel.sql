@@ -29,7 +29,8 @@ AS
 		- 20180927@Winnie: Remove AllBet [RedmineID: #99378]
 		- 20190731@Winnie: Commission Group - RNG Casino Comm of Members are not cleared when deleting Group Comm [RedmineID: #117845]
 		- 20200410@Johnson: Add comm for AB,Macau,PP,GD,AG [redmine:#131774]
-		- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774]  
+		- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774]
+		- 20200701@Helen: Remove Allbet - [Redmine: #131774]  
 		 
 	Param's Explanation:
 
@@ -50,11 +51,11 @@ BEGIN
 		@NGComm DECIMAL(9,8),
 		@RNGComm DECIMAL(9,8),
 		@ParlayComm DECIMAL(9,8), 		
-		@AllbetComm DECIMAL(9,8),
+		--@AllbetComm DECIMAL(9,8),
 		@MacauComm DECIMAL(9,8),
 		@PPComm DECIMAL(9,8),
-		@GDComm DECIMAL(9,8),
-		@AGComm DECIMAL(9,8),
+		--@GDComm DECIMAL(9,8),
+		--@AGComm DECIMAL(9,8),
 		@FWComm DECIMAL(9,8),
 		@GroupColor VARCHAR(20), 
 		@GroupName VARCHAR(100), 
@@ -88,7 +89,7 @@ BEGIN
 			@NGComm=NGComm,
 			@RNGComm=RNGComm,
 			@ParlayComm=ParlayComm,			
-			@AllbetComm=AllbetComm,
+			--@AllbetComm=AllbetComm,
 			@MacauComm=MacauComm,
 			@PPComm=PPComm,
 			--@GDComm=GDComm,
@@ -185,7 +186,7 @@ BEGIN
 					@NGComm=0,
 					@RNGComm=0,
 					@ParlayComm=0,	
-					@AllbetComm=0,
+					--@AllbetComm=0,
 					@MacauComm=0,
 					@PPComm=0,
 					--@GDComm=0,
@@ -193,7 +194,7 @@ BEGIN
 					@FWComm = 0,
 					@IsUpdateNG=1,
 					@IsUpdateRNG=1,					
-					@IsUpdateAllbet=1,
+					--@IsUpdateAllbet=1,
 					@IsUpdateMacau=1,
 					@IsUpdatePP=1,
 					--@IsUpdateGD=1,
@@ -235,7 +236,7 @@ BEGIN
 		'IsRemovePlayercomm="'+ COALESCE(CAST(@IsRemovePlayercomm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'RNGComm="'+ COALESCE(CAST(@RNGComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'ParlayComm="'+ COALESCE(CAST(@ParlayComm as VARCHAR(50)),SPACE(1)) + '" ' +			
-		'AllbetComm="'+ COALESCE(CAST(@AllbetComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		--'AllbetComm="'+ COALESCE(CAST(@AllbetComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'MacauComm="'+ COALESCE(CAST(@MacauComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'PPComm="'+ COALESCE(CAST(@PPComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		--'GDComm="'+ COALESCE(CAST(@GDComm as VARCHAR(50)),SPACE(1)) + '" ' +
@@ -256,7 +257,7 @@ BEGIN
 		'IsRemovePlayercomm="'+ COALESCE(CAST(@IsRemovePlayercomm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'RNGComm="'+ COALESCE(CAST(@RNGComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'ParlayComm="'+ COALESCE(CAST(@ParlayComm as VARCHAR(50)),SPACE(1)) + '" ' +			
-		'AllbetComm="'+ COALESCE(CAST(@AllbetComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		--'AllbetComm="'+ COALESCE(CAST(@AllbetComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'MacauComm="'+ COALESCE(CAST(@MacauComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'PPComm="'+ COALESCE(CAST(@PPComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		--'GDComm="'+ COALESCE(CAST(@GDComm as VARCHAR(50)),SPACE(1)) + '" ' +

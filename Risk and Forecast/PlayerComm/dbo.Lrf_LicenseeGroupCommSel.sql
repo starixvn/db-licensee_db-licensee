@@ -21,6 +21,7 @@ AS
 	 - 20180927@Winnie: Remove AllBet [RedmineID: #99378]
 	 - 20200408@Johnson: Add comm for AB,Macau,PP,GD,AG [redmine:#131774]
 	 - 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
+	 - 20200701@Helen: Remove Allbet - [Redmine: #131774]  
 
 	Parameter's Explaination: 
 */  
@@ -35,7 +36,7 @@ BEGIN
 		,g.NGComm
 		,g.RNGComm
 		,g.Parlaycomm	
-		,g.AllbetComm
+		--,g.AllbetComm
 		,g.MacauComm
 		,g.PPComm
 		--,g.GDComm

@@ -22,6 +22,8 @@ AS
 		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
 		- 20200410@Johnson: Add comm for AB,Macau,PP,GD,AG [redmine:#131774]
 		- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
+		- 20200701@Helen: Remove Allbet - [Redmine: #131774]
+		
 	Param's Explanation:
 */ 
 BEGIN
@@ -30,11 +32,11 @@ BEGIN
 	DECLARE @GroupCommID INT, 
 		@IsUpdateNG BIT,
 		@IsUpdateRNG BIT, 
-		@IsUpdateAllbet BIT,
+		--@IsUpdateAllbet BIT,
 		@IsUpdateMacau BIT,
 		@IsUpdatePP BIT,
-		@IsUpdateGD	BIT,
-		@IsUpdateAG BIT,
+		--@IsUpdateGD	BIT,
+		--@IsUpdateAG BIT,
 		@IsUpdateFW BIT,
 		@LicenseeID INT,		
 		@strCustID VARCHAR(50)
@@ -64,10 +66,10 @@ BEGIN
 			ELSE
 				SELECT @IsUpdateRNG = 0	
 			
-			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=21)
-				SELECT @IsUpdateAllbet = 1
-			ELSE
-				SELECT @IsUpdateAllbet = 0
+			--IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=21)
+			--	SELECT @IsUpdateAllbet = 1
+			--ELSE
+			--	SELECT @IsUpdateAllbet = 0
 			
 			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=22)
 				SELECT @IsUpdateMacau = 1
@@ -104,7 +106,7 @@ BEGIN
 				,@IsUpdateNG=@IsUpdateNG
 				--,@IsUpdateLC=@IsUpdateLC
 				,@IsUpdateRNG=@IsUpdateRNG				
-				,@IsUpdateAllbet=@IsUpdateAllbet
+				--,@IsUpdateAllbet=@IsUpdateAllbet
 				,@IsUpdateMacau=@IsUpdateMacau
 				,@IsUpdatePP=@IsUpdatePP
 				--,@IsUpdateGD=@IsUpdateGD

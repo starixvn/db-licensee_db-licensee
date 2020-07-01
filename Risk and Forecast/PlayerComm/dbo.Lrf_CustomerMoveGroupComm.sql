@@ -7,11 +7,11 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerMoveGroupComm]
 	@GroupCommID INT,
 	@IsUpdateNG BIT = 0,
 	@IsUpdateRNG BIT = 0,
-	@IsUpdateAllbet BIT = 0,
+	--@IsUpdateAllbet BIT = 0,
 	@IsUpdateMacau BIT = 0,
 	@IsUpdatePP BIT = 0,
-	@IsUpdateGD BIT = 0,
-	@IsUpdateAG BIT = 0,
+	--@IsUpdateGD BIT = 0,
+	--@IsUpdateAG BIT = 0,
 	@IsUpdateFW BIT = 0,
 	@IP VARCHAR(40),
 	@Langkey VARCHAR(20) = 'en-US',
@@ -39,7 +39,7 @@ AS
 		- 20200410@Johnson: Add comm for AB,Macau,PP,GD,AG [redmine:#131774] 
 		- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
 		- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774]   
-		
+		- 20200701@Helen: Remove Allbet - [Redmine: #131774] 
 	Param's Explanation:
 */ 
 BEGIN
@@ -74,7 +74,7 @@ BEGIN
 		,@GroupCommID=@GroupCommID
 		,@IsUpdateNG=@IsUpdateNG
 		,@IsUpdateRNG=@IsUpdateRNG		
-		,@IsUpdateAllbet=@IsUpdateAllbet
+		--,@IsUpdateAllbet=@IsUpdateAllbet
 		,@IsUpdateMacau=@IsUpdateMacau
 		,@IsUpdatePP=@IsUpdatePP
 		--,@IsUpdateGD=@IsUpdateGD

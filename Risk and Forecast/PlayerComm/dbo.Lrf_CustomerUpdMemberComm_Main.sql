@@ -4,14 +4,14 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Main]
 	,@SBComm DECIMAL(9,8)
 	,@NGComm DECIMAL(9,8) = 0
 	,@ParlayComm DECIMAL(9,8) = 0
-	,@AllbetComm DECIMAL(9,8) = 0
+	--,@AllbetComm DECIMAL(9,8) = 0
 	,@MacauComm DECIMAL(9,8) = 0
 	,@PPComm DECIMAL(9,8) = 0
 	,@FWComm DECIMAL(9,8) = 0
 	,@IsUpdateSB BIT = 1
 	,@IsParlayComm BIT = 1
 	,@IsUpdateNG BIT = 0
-	,@IsUpdateAllbet BIT = 0
+	--,@IsUpdateAllbet BIT = 0
 	,@IsUpdateMacau BIT = 0
 	,@IsUpdatePP BIT = 0
 	,@IsUpdateFW BIT = 0
@@ -35,6 +35,7 @@ AS
 		- 20200409@Johnson: Add comm for AB,Macau,PP,GD,AG [redmine:#131774]
 		- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
 		- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774]
+		- 20200701@Helen: Remove Allbet - [Redmine: #131774]
 		
 	Param's Explanation:
 
@@ -50,22 +51,20 @@ BEGIN
 	OPTION (MAXRECURSION 0)
 
 	DECLARE @ids VARCHAR(MAX), @rowcnt INT, @runningCNT INT, @batchSize INT
-	DECLARE @res_batch_tmp AS TABLE (custid INT 
-									--, IsfinishedSB BIT
-									--, IsfinishedSBParlay BIT
-									)
+	DECLARE @res_batch_tmp AS TABLE (custid INT )
 	
 	SET @runningCNT = 0
 	SET @batchSize = 750
 	
 	DECLARE @InputRes_updateComm_batch AS TABLE (custid INT PRIMARY KEY)
 	DECLARE @AgentID INT = 0
-	DECLARE @AllbetComm_Group DECIMAL(9,8)=0,	
-			@MacauComm_Group DECIMAL(9,8)=0,	
+	DECLARE @MacauComm_Group DECIMAL(9,8)=0,	
 			@PPComm_Group DECIMAL(9,8)=0,
 			@FWComm_Group DECIMAL(9,8)=0
+			--,@AllbetComm_Group DECIMAL(9,8)=0
 	
-	IF (@IsUpdateAllbet = 1 OR @IsUpdateFW = 1 OR @IsUpdateMacau = 1 OR @IsUpdatePP = 1)
+	IF (	--@IsUpdateAllbet = 1 OR 
+		@IsUpdateFW = 1 OR @IsUpdateMacau = 1 OR @IsUpdatePP = 1)
 	BEGIN		
 		SET @AgentID = (SELECT TOP (1) recommend 
 							FROM dbo.CustInfo ci WITH(NOLOCK)
@@ -73,13 +72,13 @@ BEGIN
 							)
 		
 		SELECT 
-			@AllbetComm_Group = MAX(CASE WHEN BetType = 2401 THEN playerdiscount ELSE 0 END)
-			,@MacauComm_Group = MAX(CASE WHEN BetType = 4001 THEN playerdiscount ELSE 0 END)
+			--@AllbetComm_Group = MAX(CASE WHEN BetType = 2401 THEN playerdiscount ELSE 0 END),
+			@MacauComm_Group = MAX(CASE WHEN BetType = 4001 THEN playerdiscount ELSE 0 END)
 			,@PPComm_Group = MAX(CASE WHEN BetType = 4101 THEN playerdiscount ELSE 0 END)
 			,@FWComm_Group = MAX(CASE WHEN BetType = 1011 THEN playerdiscount ELSE 0 END)
 		FROM dbo.Dep_CustDiscountGroupSetting_Member grp WITH(NOLOCK)
 		WHERE AgentID = @AgentID
-			AND sporttype IN (211,212,248,219)
+			AND sporttype IN (212,248,219) -- remove 211
 	END	
 								
 	WHILE (1 = 1)
@@ -106,19 +105,19 @@ BEGIN
 			,@SBComm = @SBComm
 			,@NGComm = @NGComm
 			,@ParlayComm = @ParlayComm
-			,@AllbetComm = @AllbetComm
+			--,@AllbetComm = @AllbetComm
 			,@MacauComm = @MacauComm
 			,@PPComm = @PPComm
 			,@FWComm = @FWComm
 			,@IsUpdateSB  = @IsUpdateSB
 			,@IsParlayComm  = @IsParlayComm
 			,@IsUpdateNG = @IsUpdateNG			
-			,@IsUpdateAllbet = @IsUpdateAllbet
+			--,@IsUpdateAllbet = @IsUpdateAllbet
 			,@IsUpdateMacau = @IsUpdateMacau
 			,@IsUpdatePP = @IsUpdatePP
 			,@IsUpdateFW = @IsUpdateFW
 			,@AgentID = @AgentID
-			,@AllbetComm_Group = @AllbetComm_Group
+			--,@AllbetComm_Group = @AllbetComm_Group
 			,@MacauComm_Group = @MacauComm_Group	
 			,@PPComm_Group = @PPComm_Group
 			,@FWComm_Group = @FWComm_Group

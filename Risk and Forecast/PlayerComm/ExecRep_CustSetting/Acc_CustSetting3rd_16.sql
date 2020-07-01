@@ -11,7 +11,7 @@ ALTER PROCEDURE [dbo].[Acc_CustSetting3rd_16]
 	@IsUpdateSB BIT = 0,
 	@IsParlayComm BIT = 0,
 	@IsUpdateNG BIT = 0,
-	@IsUpdateAllbet BIT = 0,
+	--@IsUpdateAllbet BIT = 0,
 	@IsUpdateMacau BIT = 0,
 	@IsUpdatePP BIT = 0,
 	@IsUpdateFW BIT = 0,
@@ -42,6 +42,7 @@ Revisions:
 	- 20200409@Johnson: Add comm for AB,Macau,PP [redmine:#131774]
 	- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
 	- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774]
+	- 20200701@Helen: Remove Allbet - [Redmine: #131774]
 	
 Param's Explanation:
 • @ErrCode:
@@ -72,7 +73,6 @@ BEGIN
 			
 	DECLARE @InputRes_updateComm_batch AS TABLE (custid INT PRIMARY KEY)
 	DECLARE @xml XML
-	--DECLARE @AgentID INT 
 	
 	SET @xml = CONVERT(XML, @IDs) 
 	
@@ -151,7 +151,7 @@ BEGIN
 			AND sporttype = 161 
 			AND bettype BETWEEN 81 AND 90 	
 	END
-																													
+	/*																												
 	IF (@IsUpdateAllbet=1)
 	BEGIN
 		IF EXISTS(SELECT TOP 1 1 
@@ -206,7 +206,7 @@ BEGIN
 			AND bettype = 2401
 			AND playerdiscount <> @AllbetComm
 	END
-	
+	*/
 	--Macau game
 	IF (@IsUpdateMacau=1)
 	BEGIN

@@ -14,6 +14,7 @@ AS
 	- 20181005@Amanda: Remove Racing [RedmineID: #99378]
 	- 20200413@Johnson: add AB,Macau,PP,AG,GD comm [redmine:#131774]
 	- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
+	- 20200701@Helen: Remove Allbet - [Redmine: #131774]
 */  
 BEGIN  
 	SET NOCOUNT ON;  
@@ -25,7 +26,7 @@ BEGIN
 		lc.NGComm,
 		lc.GroupCommID,		
 		ISNULL(lc.RNGComm, 0) AS RNGComm,						
-		ISNULL(lc.AllbetComm,0) AS AllbetComm,
+		--ISNULL(lc.AllbetComm,0) AS AllbetComm,
 		ISNULL(lc.MacauComm,0) AS MacauComm,
 		ISNULL(lc.PPComm,0) AS PPComm,
 		--ISNULL(lc.GDComm,0) AS GDComm,

@@ -8,19 +8,19 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeCustCommUpd]
 	@ParlayComm DECIMAL(9,8),
 	@NGComm DECIMAL(9,8) = 0,	
 	@RNGComm DECIMAL(9,8) = 0,
-	@AllbetComm DECIMAL(9,8) = 0,
+	--@AllbetComm DECIMAL(9,8) = 0,
 	@MacauComm DECIMAL(9,8) = 0,
 	@PPComm DECIMAL(9,8) = 0,
-	@GDComm DECIMAL(9,8) = 0,
-	@AGComm DECIMAL(9,8) = 0,
+	--@GDComm DECIMAL(9,8) = 0,
+	--@AGComm DECIMAL(9,8) = 0,
 	@FWComm DECIMAL(9,8) = 0,
 	@IsUpdateNG BIT = 0,
 	@IsUpdateRNG BIT = 0,
-	@IsUpdateAllbet BIT = 0,
+	--@IsUpdateAllbet BIT = 0,
 	@IsUpdateMacau BIT = 0,
 	@IsUpdatePP BIT = 0,
-	@IsUpdateGD BIT = 0,
-	@IsUpdateAG BIT = 0,
+	--@IsUpdateGD BIT = 0,
+	--@IsUpdateAG BIT = 0,
 	@IsUpdateFW BIT = 0,
 	@IP VARCHAR(40),
 	@Langkey NVARCHAR(10)='en-US',
@@ -48,7 +48,8 @@ AS
 		- 20190417@Winnie: Customer Comm - Cannot move customer to selected group comm in case member have 'None' group [RedmineID: #111980]
 		- 20200409@Johnson: Add comm for AB,Macau,PP,GD,AG [redmine:#131774]
 		- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
-		- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774]   
+		- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774]
+		- 20200701@Helen: Remove Allbet - [Redmine: #131774]   
 		
 	Param's Explanation:
 */ 
@@ -95,7 +96,7 @@ BEGIN
 		,@ParlayComm = @ParlayComm
 		,@NGComm=@NGComm
 		,@RNGComm=@RNGComm	
-		,@AllbetComm = @AllbetComm
+		--,@AllbetComm = @AllbetComm
 		,@MacauComm = @MacauComm
 		,@PPComm = @PPComm
 		--,@GDComm = @GDComm
@@ -103,7 +104,7 @@ BEGIN
 		,@FWComm = @FWComm
 		,@IsUpdateNG=@IsUpdateNG
 		,@IsUpdateRNG=@IsUpdateRNG	
-		,@IsUpdateAllbet=@IsUpdateAllbet
+		--,@IsUpdateAllbet=@IsUpdateAllbet
 		,@IsUpdateMacau=@IsUpdateMacau
 		,@IsUpdatePP=@IsUpdatePP
 		--,@IsUpdateGD=@IsUpdateGD

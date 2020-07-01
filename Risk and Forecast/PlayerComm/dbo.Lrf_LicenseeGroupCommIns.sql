@@ -6,11 +6,11 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeGroupCommIns]
 	@ParlayComm DECIMAL(9,8)=0,
 	@NGComm DECIMAL (9,8)=0,
 	@RNGComm DECIMAL (9,8)=0,	
-	@AllbetComm DECIMAL (9,8)=0,
+	--@AllbetComm DECIMAL (9,8)=0,
 	@MacauComm DECIMAL (9,8)=0,
 	@PPComm DECIMAL (9,8)=0,
-	@AGComm DECIMAL (9,8)=0,
-	@GDComm DECIMAL (9,8)=0,
+	--@AGComm DECIMAL (9,8)=0,
+	--@GDComm DECIMAL (9,8)=0,
 	@FWComm DECIMAL (9,8)=0,
 	@GroupColor VARCHAR(20),
 	@UserID INT,
@@ -62,7 +62,7 @@ BEGIN
 		OR @NGComm>0.15 
 		OR @RNGComm>0.15 
 		OR @ParlayComm > 0.15
-		OR @AllbetComm > 0.15
+		--OR @AllbetComm > 0.15
 		OR @MacauComm > 0.15 
 		OR @PPComm > 0.15 
 		--OR @GDComm > 0.15 
@@ -96,11 +96,13 @@ BEGIN
 		END
 		
 		INSERT INTO dbo.LicenseeGroupComm (LicenseeID,GroupName,SBComm,NGComm,color,isDefault,RNGComm,ParlayComm
-											,AllbetComm,MacauComm,PPComm
+											--,AllbetComm
+											,MacauComm,PPComm
 											--,GDComm,AGComm
 											,FWComm)
 		VALUES (@LicenseeID,@GroupName,@SBComm,@NGComm,@GroupColor,@IsDefault,@RNGComm,@ParlayComm
-				,@AllbetComm,@MacauComm,@PPComm
+				--,@AllbetComm
+				,@MacauComm,@PPComm
 				--,@GDComm,@AGComm
 				,@FWComm)
 		
@@ -125,7 +127,7 @@ BEGIN
 		'NGComm="'+ COALESCE(CAST(@NGComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'RNGComm="'+ COALESCE(CAST(@RNGComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'ParlayComm="'+ COALESCE(CAST(@ParlayComm as VARCHAR(50)),SPACE(1)) + '" ' +	
-		'AllbetComm="'+ COALESCE(CAST(@ALlbetComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		--'AllbetComm="'+ COALESCE(CAST(@ALlbetComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'MacauComm="'+ COALESCE(CAST(@MacauComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'PPComm="'+ COALESCE(CAST(@PPComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		--'GDComm="'+ COALESCE(CAST(@GDComm as VARCHAR(50)),SPACE(1)) + '" ' +
@@ -145,7 +147,7 @@ BEGIN
 		'NGComm="'+ COALESCE(CAST(@NGComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'RNGComm="'+ COALESCE(CAST(@RNGComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'ParlayComm="'+ COALESCE(CAST(@ParlayComm as VARCHAR(50)),SPACE(1)) + '" ' +		
-		'AllbetComm="'+ COALESCE(CAST(@ALlbetComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		--'AllbetComm="'+ COALESCE(CAST(@ALlbetComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'MacauComm="'+ COALESCE(CAST(@MacauComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'PPComm="'+ COALESCE(CAST(@PPComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		--'GDComm="'+ COALESCE(CAST(@GDComm as VARCHAR(50)),SPACE(1)) + '" ' +

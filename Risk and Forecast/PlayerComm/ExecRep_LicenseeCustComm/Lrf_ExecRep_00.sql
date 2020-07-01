@@ -7,7 +7,7 @@ ALTER PROCEDURE [dbo].[Lrf_ExecRep_00]
 	@MacauLicenseeID INT = 0,
 	@IsUpdateNG BIT = 0,
 	@IsUpdateRNG BIT = 0,	
-	@IsUpdateAllbet BIT = 0,
+	--@IsUpdateAllbet BIT = 0,
 	@IsUpdateMacau BIT = 0,
 	@IsUpdatePP BIT = 0,
 	@IsUpdateGD BIT = 0,
@@ -17,7 +17,7 @@ ALTER PROCEDURE [dbo].[Lrf_ExecRep_00]
 	@NGComm DECIMAL(9,8)=0,	
 	@RNGComm DECIMAL(9,8)=0,
 	@ParlayComm DECIMAL(9,8)=0,	
-	@AllbetComm DECIMAL(9,8)=0,	
+	--@AllbetComm DECIMAL(9,8)=0,	
 	@MacauComm DECIMAL(9,8)=0,	
 	@PPComm DECIMAL(9,8)=0,	
 	@GDComm DECIMAL(9,8)=0,	
@@ -37,7 +37,8 @@ AS
 	Revisions:
 		- 20200416@Max: Support commission for 3rd party products - [Redmine: #131774]
 		- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
-		- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774]   
+		- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774] 
+		- 20200701@Helen: Remove Allbet - [Redmine: #131774]  
 	
 	Param's Explanation:
 
@@ -88,7 +89,7 @@ BEGIN
 				, GroupCommID = @GroupCommID
 				, NGComm=CASE WHEN  @IsUpdateNG = 1 THEN @NGComm ELSE NGComm END
 				, RNGComm=CASE WHEN @IsUpdateRNG = 1 THEN @RNGComm ELSE RNGComm END
-				, AllbetComm=CASE WHEN @IsUpdateAllbet = 1 THEN @AllbetComm ELSE AllbetComm END
+				--, AllbetComm=CASE WHEN @IsUpdateAllbet = 1 THEN @AllbetComm ELSE AllbetComm END
 				, MacauComm= CASE WHEN @IsUpdateMacau = 1 THEN @MacauComm ELSE MacauComm END
 				, PPComm= CASE WHEN @IsUpdatePP = 1 THEN @PPComm ELSE PPComm END
 				, FWComm= CASE WHEN @IsUpdateFW = 1 THEN @FWComm ELSE FWComm END
@@ -140,7 +141,7 @@ BEGIN
 		
 		IF (@IsUpdateNG = 1
 			OR @IsUpdateRNG = 1
-			OR @IsUpdateAllbet=1
+			--OR @IsUpdateAllbet=1
 			OR @IsUpdateMacau=1
 			OR @IsUpdatePP=1
 			OR @IsUpdateFW=1)
@@ -148,7 +149,7 @@ BEGIN
 			UPDATE cs
 				SET NGComm=CASE WHEN  @IsUpdateNG = 1 THEN @NGComm ELSE NGComm END
 					, RNGComm=CASE WHEN @IsUpdateRNG = 1 THEN @RNGComm ELSE RNGComm END
-					, AllbetComm=CASE WHEN @IsUpdateAllbet = 1 THEN @AllbetComm ELSE AllbetComm END
+					--, AllbetComm=CASE WHEN @IsUpdateAllbet = 1 THEN @AllbetComm ELSE AllbetComm END
 					, MacauComm= CASE WHEN @IsUpdateMacau = 1 THEN @MacauComm ELSE MacauComm END
 					, PPComm= CASE WHEN @IsUpdatePP = 1 THEN @PPComm ELSE PPComm END
 					, FWComm= CASE WHEN @IsUpdateFW = 1 THEN @FWComm ELSE FWComm END
