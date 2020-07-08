@@ -988,10 +988,10 @@ BEGIN
 		SELECT @ErrCode = 3
 		SELECT @ErrMsg = 	CASE @Language 
 							WHEN 'en-us' THEN 'Wrong Min bet/ Max bet/ Max per match (for Soccer Parlay).'
-							WHEN 'zh-cn' THEN N'最低投注/最高投注/单场最高投注不正确(供混合体育过关).'
-							WHEN 'zh-tw' THEN N'最低投注/最高投注/單場最高投注不正確(供混合體育過關).'
-							WHEN 'zh-Hans' THEN N'最低投注/最高投注/单场最高投注不正确(供混合体育过关).'
-							WHEN 'TH' THEN N'การกำหนดจำนวนเงินสำหรับการวางเดิมพันต่ำสุด/ สูงสุด/สูงสดต่อรายการไม่ถูกต้อง (สำหรับกีฬาบอลชุด).'
+							WHEN 'zh-cn' THEN N'最低投注/最高投注/单场最高投注不正确(供足球串关).'
+							WHEN 'zh-tw' THEN N'最低投注/最高投注/單場最高投注不正確(for Soccer Parlay).'
+							WHEN 'zh-Hans' THEN N'最低投注/最高投注/单场最高投注不正确(for Soccer Parlay).'
+							WHEN 'TH' THEN N'การกำหนดจำนวนเงินสำหรับการวางเดิมพันต่ำสุด/ สูงสุด/สูงสดต่อรายการไม่ถูกต้อง (for Soccer Parlay).'
 							WHEN 'Ja' THEN N'Wrong Min bet/ Max bet/ Max per match (for Soccer Parlay).'
 							WHEN 'KO' THEN N'잘못된 최소 배팅/최대 배팅/경기당 최대 (for Soccer Parlay).'
 							ELSE N'Wrong Min bet/ Max bet/ Max per match (for Soccer Parlay).'
@@ -1013,10 +1013,10 @@ BEGIN
 		SELECT @ErrMsg =	@UserName + ': '+
 						CASE @Language 
 							WHEN 'en-us' THEN 'min bet must be less than max bet AND max bet must be less than max bet per match (for Soccer Parlay)'
-							WHEN 'zh-cn' THEN N'最低投注不能高于最高投注，最高投注不能高于单场最高投注设定(供混合体育过关)'
-							WHEN 'zh-tw' THEN N'最低投注不能高於最高投注,最高投注不能高於單場最高投注設定(供混合體育過關)'
-							WHEN 'zh-Hans' THEN N'最低投注不能高于最高投注，最高投注不能高于单场最高投注设定(供混合体育过关)'
-							WHEN 'TH' THEN N'จำนวนเงินต่ำสุดที่วางเดิมพันได้ต้องน้อยกว่าจำนวนเงินสูงสุดในการวางเดิมพันและจำนวนเงินสูงสุดในการวางเดิมพันต้องน้อยกว่าจำนวนเงินสูงสุดของเงินเดิมพันต่อเกม (สำหรับกีฬาบอลชุด)'
+							WHEN 'zh-cn' THEN N'最低投注不能高于最高投注，最高投注不能高于单场最高投注设定(供足球串关)'
+							WHEN 'zh-tw' THEN N'最低投注不能高於最高投注,最高投注不能高於單場最高投注設定(for Soccer Parlay)'
+							WHEN 'zh-Hans' THEN N'最低投注不能高于最高投注，最高投注不能高于单场最高投注设定(for Soccer Parlay)'
+							WHEN 'TH' THEN N'จำนวนเงินต่ำสุดที่วางเดิมพันได้ต้องน้อยกว่าจำนวนเงินสูงสุดในการวางเดิมพันและจำนวนเงินสูงสุดในการวางเดิมพันต้องน้อยกว่าจำนวนเงินสูงสุดของเงินเดิมพันต่อเกม (for Soccer Parlay)'
 							WHEN 'Ja' THEN N'min bet must be less than max bet AND max bet must be less than max bet per match (for Soccer Parlay)'
 							WHEN 'KO' THEN N'최소 배팅은 최대 배팅 이하이여야 하고 최대 배팅은 경기당 최대 배팅보다 작아야 합니다 (for Soccer Parlay)'
 							ELSE N'min bet must be less than max bet AND max bet must be less than max bet per match (for Soccer Parlay)'
@@ -1031,10 +1031,10 @@ BEGIN
 		SELECT @ErrMsg =	@UserName + ': '+
 						CASE @Language 
 							WHEN 'en-us' THEN 'min bet must be equal to or greater than Agent min bet (for Mix Sports Parlay)'
-							WHEN 'zh-cn' THEN N'最低投注需相等于或少于代理最低投注(供混合体育过关)'
-							WHEN 'zh-tw' THEN N'最低投注需相等於或少於代理最低投注(供混合體育過關)'
-							WHEN 'zh-Hans' THEN N'最低投注需相等于或少于代理最低投注(供混合体育过关)'
-							WHEN 'TH' THEN N'จำนวนเงินต่ำสุดในการเล่นต้องเท่ากับหรือมากกว่าจำนวนเงินขั้นต่ำในการเล่นที่กำหนดไว้ของตัวแทน (สำหรับกีฬาบอลชุด)'
+							WHEN 'zh-cn' THEN N'最低投注需相等于或少于代理最低投注(供足球串关)'
+							WHEN 'zh-tw' THEN N'最低投注需相等於或少於代理最低投注(for Soccer Parlay)'
+							WHEN 'zh-Hans' THEN N'最低投注需相等于或少于代理最低投注(for Soccer Parlay)'
+							WHEN 'TH' THEN N'จำนวนเงินต่ำสุดในการเล่นต้องเท่ากับหรือมากกว่าจำนวนเงินขั้นต่ำในการเล่นที่กำหนดไว้ของตัวแทน (for Soccer Parlay)'
 							WHEN 'Ja' THEN N'min bet must be equal to or greater than Agent min bet (for Soccer Parlay)'
 							WHEN 'KO' THEN N'최소 배팅은 에이전트의 최소 배팅 이상이여야 합니다 (for Soccer Parlay)'
 							ELSE N'min bet must be equal to or greater than Agent min bet (for Soccer Parlay)'
@@ -1048,10 +1048,10 @@ BEGIN
 		SELECT @ErrMsg =	@UserName + ': '+
 						CASE @Language 
 							WHEN 'en-us' THEN 'max bet must be equal to or less than Agent max bet (for Soccer Parlay)'
-							WHEN 'zh-cn' THEN N'最高投注需相等于或少于代理最高投注(供混合体育过关)'
-							WHEN 'zh-tw' THEN N'最高投注需相等於或少於代理最高投注(供混合體育過關)'
-							WHEN 'zh-Hans' THEN N'最高投注需相等于或少于代理最高投注(供混合体育过关)'
-							WHEN 'TH' THEN N'จำนวนการวางเดิมพันสูงสุดต้องเท่ากับ หรือ น้อยกว่าราคาเดิมพันสูงสุดของตัวแทน (สำหรับกีฬาบอลชุด)'
+							WHEN 'zh-cn' THEN N'最高投注需相等于或少于代理最高投注(供足球串关)'
+							WHEN 'zh-tw' THEN N'最高投注需相等於或少於代理最高投注(for Soccer Parlay)'
+							WHEN 'zh-Hans' THEN N'最高投注需相等于或少于代理最高投注(for Soccer Parlay)'
+							WHEN 'TH' THEN N'จำนวนการวางเดิมพันสูงสุดต้องเท่ากับ หรือ น้อยกว่าราคาเดิมพันสูงสุดของตัวแทน (for Soccer Parlay)'
 							WHEN 'Ja' THEN N'max bet must be equal to or less than Agent max bet (for Soccer Parlay)'
 							WHEN 'KO' THEN N'최대 배팅은 에이전트의 최대 배팅 이하이여야 합니다 (for Soccer Parlay)'
 							ELSE N'max bet must be equal to or less than Agent max bet (for Soccer Parlay)'
@@ -1066,10 +1066,10 @@ BEGIN
 		SELECT @ErrMsg =	@UserName + ': '+
 						CASE @Language 
 							WHEN 'en-us' THEN 'Max Per Match must be equal to or less than Agent Max Per Match (for Soccer Parlay)'
-							WHEN 'zh-cn' THEN N'单场最高投注需相等于或少于代理单场最高投注(供混合体育过关)'
-							WHEN 'zh-tw' THEN N'單場最高投注需相等於或少於代理單場最高投注(供混合體育過關)'
-							WHEN 'zh-Hans' THEN N'单场最高投注需相等于或少于代理单场最高投注(供混合体育过关)'
-							WHEN 'TH' THEN N'จำนวนเงินสูงสุดในการเล่นต่อรายการต้องเท่ากับหรือน้อยกว่าจำนวนเงินสูงสุดต่อรายการที่กำหนดไว้ของตัวแทน (สำหรับกีฬาบอลชุด) '
+							WHEN 'zh-cn' THEN N'单场最高投注需相等于或少于代理单场最高投注(供足球串关)'
+							WHEN 'zh-tw' THEN N'單場最高投注需相等於或少於代理單場最高投注(for Soccer Parlay)'
+							WHEN 'zh-Hans' THEN N'单场最高投注需相等于或少于代理单场最高投注(for Soccer Parlay)'
+							WHEN 'TH' THEN N'จำนวนเงินสูงสุดในการเล่นต่อรายการต้องเท่ากับหรือน้อยกว่าจำนวนเงินสูงสุดต่อรายการที่กำหนดไว้ของตัวแทน (for Soccer Parlay) '
 							WHEN 'Ja' THEN N'Max Per Match must be equal to or less than Agent Max Per Match (for Soccer Parlay)'
 							WHEN 'KO' THEN N'최대 경기는 에이전트의 최대 경기보다 작아야 합니다 (for Soccer Parlay)'
 							ELSE N'Max Per Match must be equal to or less than Agent Max Per Match (for Soccer Parlay)'
