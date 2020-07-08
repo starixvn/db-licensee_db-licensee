@@ -206,6 +206,7 @@ BEGIN
 					@IP=@IP,
 					@ErrCode=@ErrCode OUTPUT,
 					@ErrMsg=@ErrMsg OUTPUT
+				WITH RECOMPILE
 					
 					SELECT @StrCustID=''
 					SELECT @StrCustID = STUFF(

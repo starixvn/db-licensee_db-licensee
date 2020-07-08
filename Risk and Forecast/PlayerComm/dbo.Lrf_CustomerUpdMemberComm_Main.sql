@@ -54,7 +54,7 @@ BEGIN
 	DECLARE @res_batch_tmp AS TABLE (custid INT )
 	
 	SET @runningCNT = 0
-	SET @batchSize = 750
+	SET @batchSize = 600
 	
 	DECLARE @InputRes_updateComm_batch AS TABLE (custid INT PRIMARY KEY)
 	DECLARE @AgentID INT = 0
@@ -123,7 +123,7 @@ BEGIN
 			,@FWComm_Group = @FWComm_Group
 			
 		-- delay 00.100ms after 5 times continuous running
-		IF @runningCNT % 5 = 0 WAITFOR DELAY '00:00:00.280'
+		IF @runningCNT % 2 = 0 WAITFOR DELAY '00:00:00.280'
 	END
 	
 END	

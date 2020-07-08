@@ -16,7 +16,7 @@ ALTER PROCEDURE [dbo].[Acc_CustSetting3rd_16]
 	@IsUpdatePP BIT = 0,
 	@IsUpdateFW BIT = 0,
 	@AgentID INT = NULL,
-	@AllbetComm_Group DECIMAL(9,8)=0,	
+	--@AllbetComm_Group DECIMAL(9,8)=0,	
 	@MacauComm_Group DECIMAL(9,8)=0,	
 	@PPComm_Group DECIMAL(9,8)=0,
 	@FWComm_Group DECIMAL(9,8)=0	
@@ -151,62 +151,7 @@ BEGIN
 			AND sporttype = 161 
 			AND bettype BETWEEN 81 AND 90 	
 	END
-	/*																												
-	IF (@IsUpdateAllbet=1)
-	BEGIN
-		IF EXISTS(SELECT TOP 1 1 
-					FROM dbo.Dep_CustSettingMode cs WITH(NOLOCK)
-						INNER JOIN @InputRes_updateComm r ON r.custid = cs.custid
-					WHERE isGroupedComm = 1)
-		BEGIN
-			--check if setting change really or not before move
-			IF @AllbetComm_Group <> @AllbetComm
-			BEGIN		
-						
-				INSERT INTO dbo.Dep_CustDiscountSetting_Member
-					(CustID
-					,SportType
-					,BetType
-					,PlayerDiscount
-					,AgentDiscount
-					,MasterDiscount
-					,SuperDiscount)
-				SELECT t.CustID
-					,grp.SportType
-					,grp.BetType
-					,CASE WHEN grp.SportType = 211 AND grp.BetType = 2401 THEN @AllbetComm ELSE grp.PlayerDiscount END
-					,grp.AgentDiscount
-					,grp.MasterDiscount
-					,grp.SuperDiscount
-				FROM dbo.Dep_CustDiscountGroupSetting_Member grp WITH(NOLOCK)
-				CROSS APPLY (SELECT csm.custid
-							FROM dbo.Dep_CustSettingMode csm WITH(NOLOCK)
-								INNER JOIN @InputRes_updateComm r ON r.custid = csm.CustID
-							WHERE isGroupedComm = 1) t
-				LEFT JOIN dbo.Dep_CustDiscountSetting_Member cs WITH(NOLOCK) ON cs.custid = t.custid
-																			AND cs.sporttype = grp.sporttype
-																			AND cs.bettype = grp.bettype
-				WHERE AgentID = @AgentID
-					AND cs.custid IS NULL
-				
-				UPDATE csm 
-					SET	isGroupedComm = 0	
-				FROM @InputRes_updateComm r 
-					INNER JOIN dbo.Dep_CustSettingMode csm WITH(UPDLOCK,ROWLOCK) ON csm.CustID = r.custid	
-				WHERE isGroupedComm = 1
-				
-			END		
-		END		
-		
-		UPDATE cs
-			SET playerdiscount = @AllbetComm
-		FROM @InputRes_updateComm r
-			INNER JOIN dbo.Dep_CustDiscountSetting_Member cs WITH(UPDLOCK,ROWLOCK) ON cs.CustID = r.custid
-		WHERE sporttype = 211
-			AND bettype = 2401
-			AND playerdiscount <> @AllbetComm
-	END
-	*/
+	
 	--Macau game
 	IF (@IsUpdateMacau=1)
 	BEGIN

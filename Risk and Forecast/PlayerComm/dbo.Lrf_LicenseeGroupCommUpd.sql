@@ -216,11 +216,8 @@ BEGIN
 			@IsParlayComm = CASE WHEN @ParlayComm_Old <> @ParlayComm  THEN 1 ELSE 0 END,
 			@IsUpdateNG  = CASE WHEN @IsUpdateNG = 1 AND @NGComm_Old <> @NGComm  THEN 1 ELSE 0 END,
 			@IsUpdateRNG  = CASE WHEN @IsUpdateRNG = 1 AND @RNGComm_Old <> @RNGComm	  THEN 1 ELSE 0 END,	
-			--@IsUpdateAllbet  = CASE WHEN @IsUpdateAllbet = 1 AND @AllbetComm_Old <> @AllbetComm  THEN 1 ELSE 0 END,
 			@IsUpdateMacau  = CASE WHEN @IsUpdateMacau = 1 AND @MacauComm_Old <> @MacauComm  THEN 1 ELSE 0 END,
 			@IsUpdatePP  = CASE WHEN @IsUpdatePP = 1 AND @PPComm_Old <> @PPComm  THEN 1 ELSE 0 END,
-			--@IsUpdateGD  = CASE WHEN @NGComm_Old <> @NGComm  THEN 1 ELSE 0 END,
-			--@IsUpdateAG  = CASE WHEN @NGComm_Old <> @NGComm  THEN 1 ELSE 0 END,
 			@IsUpdateFW  = CASE WHEN @IsUpdateFW = 1 AND @FWComm_Old <> @FWComm  THEN 1 ELSE 0 END
 	
 		--Update Group Comm + Member Comm + all the comm settings
@@ -286,7 +283,7 @@ BEGIN
 					,@Langkey=@langkey
 					,@ErrCode=@ErrCode OUTPUT
 					,@ErrMsg=@ErrMsg OUTPUT 
-				--WITH RECOMPILE
+				WITH RECOMPILE
 					
 				SELECT @StrCustID = STUFF(
 					(   SELECT  ',' + CONVERT(NVARCHAR(20), a.custid) 
