@@ -9,6 +9,7 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMaxPerMatch]
 	@maxpermatchv10 MONEY,
 	@maxpermatchv11 MONEY,
 	@maxpermatchv99 MONEY,
+	@maxpermatchv1MP MONEY = 0,
 	@maxpermatchv99MP MONEY,	
 	@UpdateMinMaxBet BIT = 1,
 	@UpdateMinMaxBetv2 BIT = 1,
@@ -18,6 +19,7 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMaxPerMatch]
 	@UpdateMinMaxBetv10 BIT = 1,
 	@UpdateMinMaxBetv11 BIT = 1,
 	@UpdateMinMaxBetv99 BIT = 1,
+	@UpdateMinMaxBetv1MP BIT = 0,
 	@UpdateMinMaxBetv99MP BIT = 1,
 	@Language VARCHAR(10) = 'en-us',
 	@ErrCode INT = 0 OUTPUT,
@@ -38,7 +40,7 @@ Revisions:
 	- 20151015@Jim: Integrate Sportbook2 (Feature #44759)
 	- 20181009@Winnie: Remove Racing  (Feature #99378)
 	- 20190909@Eden: 3rd party products - Remove InActive Products Phase 2 [Redmine: #118699]
-	
+	- 20200615@Johnson: add soccer parlay [redmine:#135261]
 Param's Explanation:
 • @ErrCode:
     = 0: Update successfully.
@@ -57,6 +59,7 @@ SET
 	MaxPerMatch10=CASE WHEN @UpdateMinMaxBetv10=1 THEN @MaxPerMatchv10 ELSE MaxPerMatch10 END,
 	MaxPerMatch11=CASE WHEN @UpdateMinMaxBetv11=1 THEN @MaxPerMatchv11 ELSE MaxPerMatch11 END,	
 	MaxPerMatch99=CASE WHEN @UpdateMinMaxBetv99=1 THEN @MaxPerMatchv99 ELSE MaxPerMatch99 END,
+	MaxPerMatch1MP=CASE WHEN @UpdateMinMaxBetv1MP=1 THEN @MaxPerMatchv1MP ELSE MaxPerMatch1MP END,
 	MaxPerMatch99MP=CASE WHEN @UpdateMinMaxBetv99MP=1 THEN @MaxPerMatchv99MP ELSE MaxPerMatch99MP END
 WHERE custid = @custid 
 if (@@error <> 0)

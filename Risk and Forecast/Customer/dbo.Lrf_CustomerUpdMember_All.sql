@@ -39,7 +39,11 @@ ALTER PROC [dbo].[Lrf_CustomerUpdMember_All]
 	@MaxBetv99 MONEY,  
 	@MaxPerMatchv99 MONEY,  
    
-	--Mix Parlay Mixed Sports  
+	--Mix Parlay Mixed Sports 
+	@MinBetv1MP MONEY=0,  
+	@MaxBetv1MP MONEY=0,  
+	@MaxPerMatchv1MP MONEY=0, 
+	
 	@MinBetv99MP MONEY,  
 	@MaxBetv99MP MONEY,  
 	@MaxPerMatchv99MP MONEY,  
@@ -52,6 +56,7 @@ ALTER PROC [dbo].[Lrf_CustomerUpdMember_All]
 	@UpdateMinMaxBetv10 BIT = 1,  
 	@UpdateMinMaxBetv11 BIT = 1,  
 	@UpdateMinMaxBetv99 BIT = 1,  
+	@UpdateMinMaxBetv1MP BIT = 0, 
 	@UpdateMinMaxBetv99MP BIT = 1,  
  
 	@ErrCode varchar(300) = '' OUTPUT,  
@@ -72,6 +77,7 @@ AS
 		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
 		- 20190801@Johnson: add @LicenseeName for LAP [redmine:#112658]
 		- 20190909@Eden: 3rd party products - Remove InActive Products Phase 2 [Redmine: #118699]
+		- 20200615@Johnson: add soccer parlay [redmine:#135261]
 	Param's Explanation:  
 	• @ErrCode:  
 		= 0: Update successfully.  
@@ -126,6 +132,7 @@ BEGIN
 		 @UpdateMinMaxBetv10  = 1 or  
 		 @UpdateMinMaxBetv11  = 1 or  
 		 @UpdateMinMaxBetv99  = 1 or  
+		 @UpdateMinMaxBetv1MP  = 1 or 
 		 @UpdateMinMaxBetv99MP = 1
 	BEGIN  
 		SELECT @ErrCode_Cur = 0, @ErrMsg_Cur = ''  
@@ -155,6 +162,9 @@ BEGIN
 			@minbetv99 = @minbetv99,  
 			@maxbetv99 = @maxbetv99,  
 			@maxpermatchv99 = @maxpermatchv99,  
+			@minbetv1MP = @minbetv1MP,  
+			@maxbetv1MP = @maxbetv1MP,  
+			@maxpermatchv1MP = @maxpermatchv1MP, 
 			@minbetv99MP = @minbetv99MP,  
 			@maxbetv99MP = @maxbetv99MP,  
 			@maxpermatchv99MP = @maxpermatchv99MP,   
@@ -166,6 +176,7 @@ BEGIN
 			@UpdateMinMaxBetv10 = @UpdateMinMaxBetv10,  
 			@UpdateMinMaxBetv11 = @UpdateMinMaxBetv11, 
 			@UpdateMinMaxBetv99 = @UpdateMinMaxBetv99,  
+			@UpdateMinMaxBetv1MP = @UpdateMinMaxBetv1MP,
 			@UpdateMinMaxBetv99MP = @UpdateMinMaxBetv99MP,  
 			@UserID = @UserID,  
 			@Language = @Language,  
