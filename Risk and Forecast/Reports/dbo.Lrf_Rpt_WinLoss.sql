@@ -336,7 +336,7 @@ BEGIN
 	-- Exclude PP Prize
 	IF @ShowPP = 1
 	DELETE @bettype
-	WHERE ProductCode = 'PP' AND bettype IN (4300, 4299)
+	WHERE ProductCode = 'PP' AND bettype IN (4300, 4299, 4298, 4297) -- Promotion Prize, Jackpot Prize, Contribution
 
 	-- bettrade
 	INSERT INTO @bettype(bettype, ProductCode)
@@ -456,7 +456,7 @@ BEGIN
 			WHERE 
 				EXISTS(SELECT TOP (1) 1 FROM @TempAg c WHERE c.CustID = b.recommend)
 				AND b.winlostdate >= @TempFromDate AND b.winlostdate <= @_ToDate
-				AND b.bettype IN (4300, 17000, 4299)
+				AND b.bettype IN (4300, 17000, 4299, 4298, 4297) -- Promotion Prize, Jackpot Prize, Contribution
 				AND b.statusID = 112)
 		BEGIN
 			SET @PromotionPrize = 1
@@ -521,7 +521,7 @@ BEGIN
 						ELSE 1
 					END)
 			-- Exclude PP Prize
-			AND b.bettype NOT IN (4300, 4299)
+			AND b.bettype NOT IN (4300, 4299, 4298, 4297)
 
 		-- check promotion prize - PP promotion prize and NPH Promotion prize --
 		IF @CheckPromotionPrize = 1 AND @PromotionPrize = 0 AND EXISTS (
@@ -529,7 +529,7 @@ BEGIN
 			FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )
 			WHERE EXISTS(SELECT TOP (1) 1 FROM @TempAg c WHERE c.CustID = b.recommend)
 				AND b.Winlostdate BETWEEN @_FromDate AND @TempToDate
-				AND b.bettype IN (4300, 17000, 4299)
+				AND b.bettype IN (4300, 17000, 4299, 4298, 4297) -- Promotion Prize, Jackpot Prize, Contribution
 				AND b.statusID = 112 
 				AND b.roleid = 2)
 		BEGIN

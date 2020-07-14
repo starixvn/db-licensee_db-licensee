@@ -73,6 +73,7 @@ AS
 		- 20200423@Vickie: Integrate Saba Club [RedmineID: #132702]
 		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
 		- 20200622@Hogan: Update Param's Explanation for 3 new betfrom 4, 5, 6 [Redmine: #136107]
+		- 20200714@Hogan: Add 7 games for Jackpot and 2 bettype for Contribution (4297) and Jackpot Prize (4298) [RedmineID: #137290]
 
 	Param's Explanation:
 		+ @PlatformType:  0: All
@@ -278,7 +279,7 @@ BEGIN
 			
 		IF @ShowPP = 1
 			DELETE #bettype
-			WHERE bettype IN (4300, 4299) AND ProductPrefix = 'PP' -- exclude PP Prize
+			WHERE bettype IN (4300, 4299, 4298, 4297) AND ProductPrefix = 'PP' -- exclude PP Prize, Jackpot Prize, Contribution
 
 		-- Insert Sport Type
 		INSERT INTO #sporttype ( sporttype, ProductPrefix )

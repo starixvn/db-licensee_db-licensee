@@ -74,6 +74,7 @@ AS
 		- 20200423@Vickie: Integrate Saba Club [RedmineID: #132702]
 		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
 		- 20200622@Hogan: Update Param's Explanation for 3 new betfrom 4, 5, 6 [Redmine: #136107]
+		- 20200714@Hogan: Add 7 games for Jackpot and 2 bettype for Contribution (4297) and Jackpot Prize (4298) [RedmineID: #137290]
 
 	Param's Explanation:
 		+ @PlatformType: 0: All
@@ -264,12 +265,12 @@ BEGIN
 		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 1021 AND 1049)'
 	END
 	
-	IF @ShowPP = 1 -- PP -- exclude 4300, 4299
+	IF @ShowPP = 1 -- PP -- exclude 4300, 4299, 4298, 4297
 	BEGIN
 		SET @SportTypeSQL = @SportTypeSQL + ', (248, ''PP'')'
-		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 4101 AND 4298 THEN ''PP''
+		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 4101 AND 4296 THEN ''PP''
 				'
-		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 4101 AND 4298)'
+		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 4101 AND 4296)'
 	END
 	
 	IF @ShowCC = 1 -- Card Club
