@@ -96,7 +96,7 @@ BEGIN
 			
 		IF @@ROWCOUNT = 0 BREAK
 	
-		SET @ids = (SELECT custid AS '@custid'
+		SET @ids = (SELECT custid AS '@id'
 						FROM @res_batch_tmp  t
 						FOR XML PATH('r'), ROOT('root')
 						)	

@@ -78,7 +78,7 @@ BEGIN
 	SET @xml = CONVERT(XML, @IDs) 
 	
 	INSERT INTO @InputRes_updateComm (custid)
-	SELECT T.C.value('./@custid', 'INT')
+	SELECT T.C.value('./@id', 'INT')
 	FROM @xml.nodes('/root/r') AS T(C)
 	OPTION (OPTIMIZE FOR (@xml = NULL ))
 	
