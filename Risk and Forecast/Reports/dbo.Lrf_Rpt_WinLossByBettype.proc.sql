@@ -62,6 +62,7 @@ AS
 		- 20200331@Hogan: Add new product Table Games [RedmineID: #131447]
 		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
 		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
+		- 20200715@Louis: Add new bet types for Keno/Lottery/TableGame [RedmineID: #137625]		
 
 	Param's Explanation: 
 		+ @AgentList: xml structure
@@ -193,7 +194,7 @@ BEGIN
 							OR b.bettype BETWEEN 1201 AND 1299
 							OR b.bettype BETWEEN 2701 AND 2829 -- Virtual Sport 2
 							OR b.bettype BETWEEN 1501 AND 1599 --Keno
-							OR b.bettype BETWEEN 1021 AND 1049 -- Lottery
+							OR b.bettype BETWEEN 1021 AND 1099 -- Lottery
 							OR b.bettype BETWEEN 4901 AND 5000 -- Table Games
 							OR b.bettype BETWEEN 5001 AND 5099 -- Indo 4D
 							)
@@ -270,7 +271,7 @@ BEGIN
 							OR b.bettype BETWEEN 1201 AND 1299
 							OR b.bettype BETWEEN 2701 AND 2829
 							OR b.bettype BETWEEN 1501 AND 1599 --Keno products
-							OR b.bettype BETWEEN 1021 AND 1049 --Lottery
+							OR b.bettype BETWEEN 1021 AND 1099 --Lottery
 							OR b.bettype BETWEEN 4901 AND 5000 -- Table Games
 							OR b.bettype BETWEEN 5001 AND 5099 -- Indo 4D
 							)
