@@ -57,7 +57,8 @@ BEGIN
 			@SPRbetType		SMALLINT = 17000,-- Saba Promotion
 			@SPRsportType	SMALLINT = 246,
 			@PP				VARCHAR(10) = 'PP',
-			@SPR			VARCHAR(10) = 'SPR'
+			@SPR			VARCHAR(10) = 'SPR',
+			@PPC			VARCHAR(10) = 'PPC'
 
 	DECLARE @_FromDate SMALLDATETIME, @_ToDate SMALLDATETIME
 	SELECT @_FromDate = @FromDate, @_ToDate = @ToDate
@@ -114,7 +115,7 @@ BEGIN
 			b.winlostdate,
 			b.currency,
 			b.winlost,
-			b.awinlost,
+			ABS(b.awinlost),
 			b.oddsspread,
 			b.custid,
 			b.bettype
@@ -142,7 +143,7 @@ BEGIN
 			b.winlostdate,
 			b.currency,
 			b.winlost,
-			b.awinlost,
+			ABS(b.awinlost),
 			b.BuyBackAmt,
 			b.custid,
 			b.bettype
@@ -178,22 +179,22 @@ BEGIN
 
 	-- #Region: Return data
 	SELECT	p.BetType,
-			CASE WHEN p.BetType = @SPRbetType THEN @SPR ELSE @PP END AS ProductCode,
+			CASE WHEN p.BetType = @SPRbetType THEN @SPR WHEN p.BetType = @PPContribution THEN @PPC ELSE @PP END AS ProductCode,
 			SUM(p.Winlost * e.DefaultRate)		AS SumAmount,
-			SUM(p.Awinlost * e.DefaultRate)		AS SumTurnover,
-			SUM(p.Oddsspread * e.DefaultRate)	AS SumContributionAmount
+			SUM(p.Awinlost * e.DefaultRate)		AS SumContributionAmount,
+			SUM(p.Oddsspread * e.DefaultRate)	AS SumTurnover
 	FROM #PromotionData p
 	INNER JOIN #Exchange e ON e.ExchangeID = p.CurrencyId AND p.winlostdate BETWEEN e.FromDate AND e.ToDate
 	GROUP BY p.BetType
 
 	SELECT	
 			p.BetType,
-			CASE WHEN p.BetType = @SPRbetType THEN @SPR ELSE @PP END AS ProductCode,
+			CASE WHEN p.BetType = @SPRbetType THEN @SPR WHEN p.BetType = @PPContribution THEN @PPC ELSE @PP END AS ProductCode,
 			p.winlostdate		AS [Date],
 			p.CurrencyId,
 			SUM(p.Winlost)		AS Amount,
-			SUM(p.Awinlost)		AS Turnover,
-			SUM(p.Oddsspread)	AS ContributionAmount,
+			SUM(p.Awinlost)		AS ContributionAmount,
+			SUM(p.Oddsspread)	AS Turnover,
 			c.username			AS UserName,
 			SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS NickName
 	FROM #PromotionData p
