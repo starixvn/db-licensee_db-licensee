@@ -563,7 +563,7 @@ BEGIN
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND (b.bettype < 901 OR b.bettype > 904)
 			AND (b.bettype < 911 OR b.bettype > 914)
-			AND b.bettype NOT IN (4300, 4299) -- exclude PP Prize
+			AND b.bettype NOT IN (4300, 4299, 4298, 4297) -- exclude PP Prize, Jackpot Prize, Contribution
 		GROUP BY
 			b.currency,
 			b.sporttype,
