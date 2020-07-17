@@ -19,7 +19,7 @@ AS
 		Revisions:
 			- 20200212@Johnson: initial sp [redmine:#128077]
 			- 20200417@Elodie: Unremove VIP if void abnormal [Redmine: #132736]
-
+			- 20200717@Johnson: return agentid to support subsidiary [redmine:#136974]
 		Paramter's Explanations:
 			- @VipOption: 0: All, 1: Yes, 2 : No
 			- @OrderCol = 1: sort by System ID	
@@ -33,7 +33,7 @@ BEGIN
 	SELECT  @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
 
 	CREATE TABLE #TempAg (custid INT)
-	CREATE TABLE #CustList (CustId INT PRIMARY KEY, username VARCHAR(50), username2 VARCHAR(50), isVIP BIT)
+	CREATE TABLE #CustList (CustId INT PRIMARY KEY, AgentID INT, username VARCHAR(50), username2 VARCHAR(50), isVIP BIT)
 	
 	DECLARE @DocHandler INT
 
@@ -58,7 +58,7 @@ BEGIN
 	IF @Username <> ''
 	BEGIN
 		;WITH t AS (
-		SELECT ci.custid, username, 
+		SELECT ci.custid, ci.recommend as AgentID, username, 
 			SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) AS username2,
 			CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END AS isVIP
 		FROM customer ci WITH(NOLOCK)
@@ -70,8 +70,8 @@ BEGIN
 			AND ci.username  NOT LIKE '%ClearBal%'
 			AND ci.username  NOT LIKE '%BetTrade%'
 		)
-		INSERT INTO #CustList(custid,username,username2,isVip)
-		SELECT custid, username, username2, isVip
+		INSERT INTO #CustList(custid,AgentID,username,username2,isVip)
+		SELECT custid,AgentID, username, username2, isVip
 		FROM t
 		WHERE isVIP = CASE WHEN @VipOption = 1 THEN 1
 							WHEN @VipOption = 2 THEN 0 ELSE isVip END 
@@ -79,7 +79,7 @@ BEGIN
 	ELSE
 	BEGIN
 		;WITH t AS (
-		SELECT ci.custid, username, 
+		SELECT ci.custid, ci.recommend as AgentID, username, 
 			SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) AS username2,
 			CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END AS isVIP
 		FROM customer ci WITH(NOLOCK)
@@ -90,8 +90,8 @@ BEGIN
 			AND ci.username  NOT LIKE '%ClearBal%'
 			AND ci.username  NOT LIKE '%BetTrade%'
 		)
-		INSERT INTO #CustList(custid,username,username2,isVip)
-		SELECT custid, username, username2, isVip
+		INSERT INTO #CustList(custid,AgentID,username,username2,isVip)
+		SELECT custid, AgentID, username, username2, isVip
 		FROM t
 		WHERE isVIP = CASE WHEN @VipOption = 1 THEN 1
 							WHEN @VipOption = 2 THEN 0 ELSE isVip END 
