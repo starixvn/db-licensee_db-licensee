@@ -10,6 +10,7 @@ AS
    
 	Revisions:
 		- 20190730@Amanda: Create SP to replace SP Lrf_CustomerSelCheckBelonging[Redmine: #112658]
+		- 20200714@Hogan: add check transid in bettransRnG table [RedmineID: #137290]
 */
 BEGIN
 	SET NOCOUNT ON
@@ -28,6 +29,21 @@ BEGIN
 		IF @recommend IS NULL
 		BEGIN
 			SELECT @recommend = recommend FROM  DBARC.bodb_archive.dbo.Bettrans_bk WITH (NOLOCK) WHERE transid = @transId
+		END
+
+		IF @recommend IS NULL
+		BEGIN
+			SELECT @recommend = recommend FROM dbo.bettransRnG WITH (NOLOCK) WHERE transid = @transId
+		END
+
+		IF @recommend IS NULL
+		BEGIN
+			SELECT @recommend = recommend FROM dbo.bettransRnG14 WITH (NOLOCK) WHERE transid = @transId
+		END
+
+		IF @recommend IS NULL
+		BEGIN
+			SELECT @recommend = recommend FROM  DBARC.bodb_archive.dbo.bettransRnG_bk WITH (NOLOCK) WHERE custid = @custId AND transid = @transId
 		END
 	END
 	ELSE

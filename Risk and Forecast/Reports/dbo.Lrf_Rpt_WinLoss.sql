@@ -122,6 +122,7 @@ AS
 		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
 		- 20200423@Hogan: Add new product Sexy Gaming [RedmineID: #132829]
 		- 20200423@Vickie: Integrate Saba Club [RedmineID: #132702]
+		- 20200714@Hogan: Add 7 games for Jackpot and 2 bettype for Contribution (4297) and Jackpot Prize (4298) [RedmineID: #137290]
 
 	Param's Explanation:
 		@OrderItem:
