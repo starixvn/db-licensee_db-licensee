@@ -108,6 +108,7 @@ AS
 		- 20200423@Hogan: Add new product Sexy Gaming [RedmineID: #132829]
 		- 20200423@Vickie: Integrate Saba Club [RedmineID: #132702]
 		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
+		- 20200714@Hogan: Add 7 games for Jackpot and 2 bettype for Contribution (4297) and Jackpot Prize (4298) [RedmineID: #137290]
 
 	Param's Explanation:
 		+ @CustID: SuperID
@@ -339,7 +340,7 @@ BEGIN
 
 		IF @ShowPP = 1
 			DELETE @bettype
-			WHERE ProductCode = 'PP' AND bettype IN (4300,4299) -- Promotion prize
+			WHERE ProductCode = 'PP' AND bettype IN (4300, 4299, 4298, 4297) -- Promotion Prize, Jackpot Prize, Contribution
 
 		-- Insert Sport Type
 		INSERT INTO @sporttype ( sporttype, ProductCode )
@@ -847,7 +848,7 @@ BEGIN
 			FROM dbo.bettrans b WITH (NOLOCK)
 				INNER JOIN @tempAg a ON b.recommend = a.custid AND b.currency = a.currency
 			WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
-				AND b.bettype IN (4300, 17000, 4299)
+				AND b.bettype IN (4300, 17000, 4299, 4298, 4297) -- Promotion Prize, Jackpot Prize, Contribution
 				AND b.statusID = 112)
 		BEGIN
 			SET @PromotionPrize = 1
@@ -1210,7 +1211,7 @@ BEGIN
 				b.Winlostdate BETWEEN @FDate AND @TempToDate  
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
-				AND b.bettype NOT IN (4300, 4299) -- PP Promotion Prize, Tournamemt Prize
+				AND b.bettype NOT IN (4300, 4299, 4298, 4297) -- PP Promotion Prize, Tournamemt Prize, Jackpot Prize, Contribution
 				AND b.roleid = 1
 				AND b.statusID <> 101 --exclude REJECT bets
 				AND ISNULL(b.isBA, 0) = 0
@@ -1378,7 +1379,7 @@ BEGIN
 			FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )
 				INNER JOIN @tempAg a ON b.recommend = a.custID AND b.Currency = a.Currency 
 			WHERE b.Winlostdate BETWEEN @FDate AND @TempToDate
-				AND b.bettype IN (4300, 17000, 4299)
+				AND b.bettype IN (4300, 17000, 4299, 4298, 4297) -- Promotion Prize, Jackpot Prize, Contribution
 				AND b.statusID = 112
 				AND b.roleid = 2)
 		BEGIN

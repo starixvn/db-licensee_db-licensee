@@ -20,6 +20,7 @@ AS
 	- 20191017@Amanda: Rename SP from Lrf_Rpt_PP_PromotionPrize to Lrf_Rpt_PromotionPrize and integrate NPH Promotion [Redmine: #120333]
 	- 20191122@Amanda: Include PP Tournament Prize [Redmine: #123804]
 	- 20191204@Amanda: Change name of NPH Promotion to Saba Promotion [Redmine: #124612]
+	- 20200714@Hogan: Add 7 games for Jackpot and 2 bettype for Contribution (4297) and Jackpot Prize (4298) [RedmineID: #137290]
 
 	Param's Explanation:
 	  + @MoveBetsDay: The day we move tickets to bettrans14
@@ -29,15 +30,17 @@ AS
 					   <Agent AgentId="12345" Currency="5"/>
 					  </ROOT>
 */  
-BEGIN  
+BEGIN
 
-	SET NOCOUNT ON  
+	SET NOCOUNT ON
 
 	CREATE TABLE #PromotionData
-	(  
-		winlostdate			DATETIME,  
+	(
+		winlostdate			DATETIME,
 		CurrencyId			INT,
 		Winlost				MONEY,
+		Awinlost			MONEY,
+		Oddsspread			MONEY,
 		CustId				INT,
 		BetType				INT
 	) 
@@ -48,11 +51,14 @@ BEGIN
 
 	DECLARE @PPPromotion	SMALLINT = 4300,-- PP Promotion Prize
 			@PPTournament	SMALLINT = 4299,-- PP Tournament Prize
+			@PPContribution	SMALLINT = 4297,-- PP Contribution
+			@PPJackpot		SMALLINT = 4298,-- PP Jackpot Prize
 			@PPsportType	SMALLINT = 248,
-			@SPRbetType	SMALLINT = 17000,-- Saba Promotion
+			@SPRbetType		SMALLINT = 17000,-- Saba Promotion
 			@SPRsportType	SMALLINT = 246,
 			@PP				VARCHAR(10) = 'PP',
-			@SPR			VARCHAR(10) = 'SPR'
+			@SPR			VARCHAR(10) = 'SPR',
+			@PPC			VARCHAR(10) = 'PPC'
 
 	DECLARE @_FromDate SMALLDATETIME, @_ToDate SMALLDATETIME
 	SELECT @_FromDate = @FromDate, @_ToDate = @ToDate
@@ -87,7 +93,7 @@ BEGIN
 		INSERT INTO #tmpCust
 		SELECT c.custid
 		FROM dbo.Customer c WITH (NOLOCK)
-		INNER JOIN @TempAg a ON a.custID = c.recommend 
+		INNER JOIN @TempAg a ON a.custID = c.recommend
 		WHERE (c.username2 	LIKE '%$%' + @Username + '%' OR c.username	LIKE '%' + @Username + '%') And c.roleid = 1
 	END
 
@@ -102,13 +108,15 @@ BEGIN
 			SET @TempFromDate = @_FromDate
 
 		INSERT INTO #PromotionData
-		(  
-			winlostdate, CurrencyId, Winlost, CustId, BetType
+		(
+			winlostdate, CurrencyId, Winlost, Awinlost, Oddsspread, CustId, BetType
 		)
-		SELECT   
-			b.winlostdate,  
+		SELECT
+			b.winlostdate,
 			b.currency,
 			b.winlost,
+			ABS(b.awinlost),
+			b.oddsspread,
 			b.custid,
 			b.bettype
 		FROM
@@ -116,9 +124,9 @@ BEGIN
 			INNER JOIN @tempAg a ON b.recommend = a.custID AND b.Currency = a.Currency
 		WHERE 
 			b.winlostdate BETWEEN @TempFromDate AND @_ToDate
-			AND b.bettype IN (@PPPromotion, @PPTournament, @SPRbetType)
-			AND b.statusID = 112
-	END  
+			AND((b.bettype IN (@PPPromotion, @PPTournament, @SPRbetType, @PPJackpot) AND b.statusID = 112)
+				OR (b.bettype = @PPContribution AND b.statusID = 111))
+	END
 
 	IF @_FromDate <= @MoveBetsDay 
 	BEGIN
@@ -128,13 +136,15 @@ BEGIN
 			SET @TempToDate = @_ToDate
 	
 		INSERT INTO #PromotionData
-		(  
-			winlostdate, CurrencyId, Winlost, CustId, BetType
+		(
+			winlostdate, CurrencyId, Winlost, Awinlost, Oddsspread, CustId, BetType
 		)
-		SELECT   
-			b.winlostdate,  
+		SELECT
+			b.winlostdate,
 			b.currency,
 			b.winlost,
+			ABS(b.awinlost),
+			b.BuyBackAmt,
 			b.custid,
 			b.bettype
 		FROM 
@@ -143,8 +153,8 @@ BEGIN
 		WHERE 
 			b.winlostdate BETWEEN @_FromDate AND @TempToDate
 			And b.sporttype IN (@PPsportType, @SPRsportType)
-			AND b.bettype IN (@PPPromotion, @PPTournament, @SPRbetType)
-			AND b.statusID = 112
+			AND((b.bettype IN (@PPPromotion, @PPTournament, @SPRbetType, @PPJackpot) AND b.statusID = 112)
+				OR (b.bettype = @PPContribution AND b.statusID = 111))
 			AND b.roleID = 1
 	END
 	
@@ -169,19 +179,23 @@ BEGIN
 
 	-- #Region: Return data
 	SELECT	p.BetType,
-			CASE WHEN p.BetType = @SPRbetType THEN @SPR ELSE @PP END AS ProductCode,
-			SUM(p.Winlost * e.DefaultRate) AS SumAmount
+			CASE WHEN p.BetType = @SPRbetType THEN @SPR WHEN p.BetType = @PPContribution THEN @PPC ELSE @PP END AS ProductCode,
+			SUM(p.Winlost * e.DefaultRate)		AS SumAmount,
+			SUM(p.Awinlost * e.DefaultRate)		AS SumContributionAmount,
+			SUM(p.Oddsspread * e.DefaultRate)	AS SumTurnover
 	FROM #PromotionData p
 	INNER JOIN #Exchange e ON e.ExchangeID = p.CurrencyId AND p.winlostdate BETWEEN e.FromDate AND e.ToDate
 	GROUP BY p.BetType
 
 	SELECT	
 			p.BetType,
-			CASE WHEN p.BetType = @SPRbetType THEN @SPR ELSE @PP END AS ProductCode,
-			p.winlostdate	AS [Date],
+			CASE WHEN p.BetType = @SPRbetType THEN @SPR WHEN p.BetType = @PPContribution THEN @PPC ELSE @PP END AS ProductCode,
+			p.winlostdate		AS [Date],
 			p.CurrencyId,
-			SUM(p.Winlost)	AS Amount,
-			c.username		AS UserName,
+			SUM(p.Winlost)		AS Amount,
+			SUM(p.Awinlost)		AS ContributionAmount,
+			SUM(p.Oddsspread)	AS Turnover,
+			c.username			AS UserName,
 			SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS NickName
 	FROM #PromotionData p
 	INNER JOIN dbo.Customer c WITH (NOLOCK) ON p.CustId = c.custid
