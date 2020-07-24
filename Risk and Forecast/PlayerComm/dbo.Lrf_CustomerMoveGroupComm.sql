@@ -1,7 +1,4 @@
 ﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
-USE bodb_Licensee
-GO
-
 ALTER PROCEDURE [dbo].[Lrf_CustomerMoveGroupComm]
 	@LicenseeID INT,
 	@strCustIDOriginal VARCHAR(MAX),--member
@@ -10,10 +7,16 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerMoveGroupComm]
 	@GroupCommID INT,
 	@IsUpdateNG BIT = 0,
 	@IsUpdateRNG BIT = 0,
+	--@IsUpdateAllbet BIT = 0,
+	@IsUpdateMacau BIT = 0,
+	@IsUpdatePP BIT = 0,
+	--@IsUpdateGD BIT = 0,
+	--@IsUpdateAG BIT = 0,
+	@IsUpdateFW BIT = 0,
 	@IP VARCHAR(40),
 	@Langkey VARCHAR(20) = 'en-US',
 	@ErrCode INT = 0 OUTPUT,
-	@ErrMsg varchar(8000) = '' OUTPUT
+	@ErrMsg NVARCHAR(4000) = '' OUTPUT
 AS
 /*
 	Created: 20120726@Henry
@@ -33,7 +36,10 @@ AS
 		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
 		- 20181205@Winnie: LAP-Security Risks found_settings [RedmineID: #105701]
 		- 20190417@Winnie: Customer Comm - Cannot move customer to selected group comm in case member have 'None' group [RedmineID: #111980]
-
+		- 20200410@Johnson: Add comm for AB,Macau,PP,GD,AG [redmine:#131774] 
+		- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
+		- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774]   
+		- 20200701@Helen: Remove Allbet - [Redmine: #131774] 
 	Param's Explanation:
 */ 
 BEGIN
@@ -41,8 +47,9 @@ BEGIN
 	CREATE TABLE #tempCust (CustID INT)
 	INSERT INTO #tempCust(CustID)
 	SELECT RTRIM(LTRIM(VAL)) 
-	FROM Lrf_f_StringSplit(@strCustIDOriginal,',')
-
+	FROM dbo.f_SplitString(@strCustIDOriginal,',')
+	OPTION (MAXRECURSION 0)
+	
 	CREATE TABLE #tempAgent (CustID INT PRIMARY KEY)
 	INSERT INTO #tempAgent(CustID)
 	SELECT DISTINCT recommend
@@ -67,6 +74,12 @@ BEGIN
 		,@GroupCommID=@GroupCommID
 		,@IsUpdateNG=@IsUpdateNG
 		,@IsUpdateRNG=@IsUpdateRNG		
+		--,@IsUpdateAllbet=@IsUpdateAllbet
+		,@IsUpdateMacau=@IsUpdateMacau
+		,@IsUpdatePP=@IsUpdatePP
+		--,@IsUpdateGD=@IsUpdateGD
+		--,@IsUpdateAG=@IsUpdateAG
+		,@IsUpdateFW = @IsUpdateFW
 		,@Langkey=@Langkey
 		,@IP=@IP
 		,@ErrCode=@ErrCode OUTPUT
@@ -77,8 +90,8 @@ BEGIN
 	SELECT b.CustID 
 	FROM dbo.LicenseeCustComm b WITH (NOLOCK) 
 		INNER JOIN CustDB.dbo.custinfo a WITH (NOLOCK) ON a.custid = b.custid
+		INNER JOIN #tempCust t ON t.CustID = b.CustID
 	WHERE LicenseeID = @LicenseeID 
-			AND b.CustID IN (SELECT CustID FROM #tempCust)
 			AND a.SyncCasino = 1
 
 	IF @IsUpdateRNG=0

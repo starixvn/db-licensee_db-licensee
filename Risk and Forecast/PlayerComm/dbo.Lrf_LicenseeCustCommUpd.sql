@@ -1,7 +1,4 @@
 ﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
-USE bodb_Licensee
-GO
-
 ALTER PROCEDURE [dbo].[Lrf_LicenseeCustCommUpd]
 	@LicenseeID INT,
 	@strCustIDOriginal VARCHAR(MAX),--member
@@ -9,14 +6,26 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeCustCommUpd]
 	@UserID INT,
 	@SBComm DECIMAL(9,8),
 	@ParlayComm DECIMAL(9,8),
-	@NGComm DECIMAL(9,8),	
-	@RNGComm DECIMAL(9,8),		
+	@NGComm DECIMAL(9,8) = 0,	
+	@RNGComm DECIMAL(9,8) = 0,
+	--@AllbetComm DECIMAL(9,8) = 0,
+	@MacauComm DECIMAL(9,8) = 0,
+	@PPComm DECIMAL(9,8) = 0,
+	--@GDComm DECIMAL(9,8) = 0,
+	--@AGComm DECIMAL(9,8) = 0,
+	@FWComm DECIMAL(9,8) = 0,
 	@IsUpdateNG BIT = 0,
 	@IsUpdateRNG BIT = 0,
+	--@IsUpdateAllbet BIT = 0,
+	@IsUpdateMacau BIT = 0,
+	@IsUpdatePP BIT = 0,
+	--@IsUpdateGD BIT = 0,
+	--@IsUpdateAG BIT = 0,
+	@IsUpdateFW BIT = 0,
 	@IP VARCHAR(40),
 	@Langkey NVARCHAR(10)='en-US',
 	@ErrCode INT = 0 OUTPUT,
-	@ErrMsg varchar(8000) = '' OUTPUT
+	@ErrMsg NVARCHAR(4000) = '' OUTPUT
 AS
 /*
 	Created: 20120726@Henry
@@ -37,16 +46,23 @@ AS
 		- 20180927@Winnie: Remove AllBet [RedmineID: #99378]
 		- 20181205@Winnie: LAP-Security Risks found_settings [RedmineID: #105701]
 		- 20190417@Winnie: Customer Comm - Cannot move customer to selected group comm in case member have 'None' group [RedmineID: #111980]
+		- 20200409@Johnson: Add comm for AB,Macau,PP,GD,AG [redmine:#131774]
+		- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
+		- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774]
+		- 20200701@Helen: Remove Allbet - [Redmine: #131774]   
+		
 	Param's Explanation:
 */ 
 BEGIN
 	SET NOCOUNT ON
 
 	CREATE TABLE #tempCust (CustID INT)
+	
 	INSERT INTO #tempCust(CustID)
-	SELECT RTRIM(LTRIM(VAL)) 
-	FROM Lrf_f_StringSplit(@strCustIDOriginal,',')
-
+	SELECT RTRIM(LTRIM(val)) 
+	FROM dbo.f_SplitString(@strCustIDOriginal,',')
+	OPTION (MAXRECURSION 0)
+		
 	CREATE TABLE #tempAgent (CustID INT PRIMARY KEY)
 	INSERT INTO #tempAgent(CustID)
 	SELECT DISTINCT recommend
@@ -64,14 +80,13 @@ BEGIN
 		RETURN 
 	END
 
-	
 	DECLARE @TempCustID  AS TABLE (ID int IDENTITY(1,1),CustID INT)
 
 	INSERT INTO @TempCustID (CustID)
-	SELECT CustID 
-	FROM dbo.LicenseeCustComm WITH (NOLOCK) 
+	SELECT cs.CustID 
+	FROM dbo.LicenseeCustComm cs WITH (NOLOCK) 
+		INNER JOIN #tempCust t ON cs.CustID = t.CustID
 	WHERE LicenseeID = @LicenseeID 
-			AND CustID IN (SELECT CustID FROM #tempCust)
 
 	EXEC [Lrf_CustomerUpdMemberComm] 
 		@LicenseeID=@LicenseeID
@@ -81,17 +96,30 @@ BEGIN
 		,@ParlayComm = @ParlayComm
 		,@NGComm=@NGComm
 		,@RNGComm=@RNGComm	
+		--,@AllbetComm = @AllbetComm
+		,@MacauComm = @MacauComm
+		,@PPComm = @PPComm
+		--,@GDComm = @GDComm
+		--,@AGComm = @AGComm
+		,@FWComm = @FWComm
 		,@IsUpdateNG=@IsUpdateNG
 		,@IsUpdateRNG=@IsUpdateRNG	
+		--,@IsUpdateAllbet=@IsUpdateAllbet
+		,@IsUpdateMacau=@IsUpdateMacau
+		,@IsUpdatePP=@IsUpdatePP
+		--,@IsUpdateGD=@IsUpdateGD
+		--,@IsUpdateAG=@IsUpdateAG
+		,@IsUpdateFW = @IsUpdateFW
 		,@IP=@IP
 		,@Langkey=@Langkey
 		,@ErrCode=@ErrCode OUTPUT
 		,@ErrMsg=@ErrMsg OUTPUT
 
-	UPDATE dbo.LicenseeCustComm WITH (ROWLOCK,UPDLOCK)
-	SET GroupCommID=0
+	UPDATE cs
+		SET GroupCommID=0
+	FROM dbo.LicenseeCustComm cs WITH (ROWLOCK,UPDLOCK)
+		INNER JOIN @TempCustID t ON cs.CustID = t.CustID
 	WHERE LicenseeID = @LicenseeID 
-		 AND CustID IN (SELECT CustID FROM @TempCustID)
 
 	IF @IsUpdateRNG=0
 	BEGIN

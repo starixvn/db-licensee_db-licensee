@@ -9,16 +9,21 @@ AS
  * DB: DBCUST/bodb_Licensee  
  *  
  * Revisions:     
- - 20121227@Henry: Add column IsDefault
- - 20131023@Hannah: Offer Live Casino commission
- - 20131126@Hannah: offer RNG Casino commission
- - 20151106@Francis: Revise SP to enhance performance [Redmine: #47080]
- - 20160805@Jim: LRF - Offer different member commission for parlay tickets [RedmineID:#61897]		
- - 20171020@Johnson: offer Allbet commision [Redmine: #82036]
- - 20180228@Vicky: Remove LC from product list [Redmine: #85965]
- - 20180809@Amanda: Remove Racing [RedmineID: #99378]
- - 20181003@Sophia: Migrate SP from DB052 to DBCUST [Redmine: #99855]
- - 20180927@Winnie: Remove AllBet [RedmineID: #99378]
+	 - 20121227@Henry: Add column IsDefault
+	 - 20131023@Hannah: Offer Live Casino commission
+	 - 20131126@Hannah: offer RNG Casino commission
+	 - 20151106@Francis: Revise SP to enhance performance [Redmine: #47080]
+	 - 20160805@Jim: LRF - Offer different member commission for parlay tickets [RedmineID:#61897]		
+	 - 20171020@Johnson: offer Allbet commision [Redmine: #82036]
+	 - 20180228@Vicky: Remove LC from product list [Redmine: #85965]
+	 - 20180809@Amanda: Remove Racing [RedmineID: #99378]
+	 - 20181003@Sophia: Migrate SP from DB052 to DBCUST [Redmine: #99855]
+	 - 20180927@Winnie: Remove AllBet [RedmineID: #99378]
+	 - 20200408@Johnson: Add comm for AB,Macau,PP,GD,AG [redmine:#131774]
+	 - 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
+	 - 20200701@Helen: Remove Allbet - [Redmine: #131774]  
+
+	Parameter's Explaination: 
 */  
 BEGIN  
 	SET NOCOUNT ON;  
@@ -30,7 +35,13 @@ BEGIN
 		,g.SBComm
 		,g.NGComm
 		,g.RNGComm
-		,g.Parlaycomm		
+		,g.Parlaycomm	
+		--,g.AllbetComm
+		,g.MacauComm
+		,g.PPComm
+		--,g.GDComm
+		--,g.AGComm
+		,g.FWComm
 		,g.color AS GroupColor
 		,ISNULL(c.NumberOfCustomer,0) AS NumberOfCustomer
 		,g.IsDefault  

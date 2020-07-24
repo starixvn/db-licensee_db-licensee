@@ -24,7 +24,7 @@ AS
 		- 20200220@Louis: Cheat currency name for HID Currency [RedmineID: #128816]
 		- 20200304@Louis: Add Match Precise [redmine: #129757]
 		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
-	
+		- 20200408@Johnson: add group comm [redmine:#131774]
 	Parameter's explanations:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 		+ @SpecialLevel: '1,2,3,4,5,6,7,8,9,10' (all)
@@ -494,6 +494,7 @@ BEGIN
 		BAStatus,
 		SpecialLevel,
 		IsPowerBAUserTurnoff,
+		ISNULL(lg.GroupName, '') AS GroupName,		
 		RowNumber,
 		CAST((ISNULL(d.TotalBalance, 0)	- ISNULL(tl.actual_stake,0)) AS MONEY) AS TotalBalance ,
 		CAST((ISNULL(d.Outstanding, 0)	+ ISNULL(tl.actual_stake,0)) AS MONEY) AS Outstanding,
@@ -510,6 +511,8 @@ BEGIN
 			FROM #OutstandingTranslog
 			GROUP BY Custid, Currency
 		)tl ON t.custid = tl.Custid
+		LEFT JOIN bodb_Licensee.dbo.LicenseeCustComm lc WITH (NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
+		LEFT JOIN bodb_Licensee.dbo.LicenseeGroupComm lg WITH (NOLOCK) ON lc.GroupCommID = lg.id	
 	ORDER BY t.username
 
 	DROP TABLE #TempAg

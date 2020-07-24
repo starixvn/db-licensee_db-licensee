@@ -1,7 +1,4 @@
-﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
-USE bodb_Licensee
-GO
-
+﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_CustomerRemoveGroupComm]
 	@LicenseeID INT,
 	@strCustIDOriginal VARCHAR(MAX),--member
@@ -11,7 +8,7 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerRemoveGroupComm]
 	@IsRemovePlayercomm BIT,
 	@Langkey VARCHAR(10) = 'en-US',
 	@ErrCode INT = 0 OUTPUT,
-	@ErrMsg varchar(8000) = '' OUTPUT
+	@ErrMsg NVARCHAR(4000) = '' OUTPUT
 AS  
 /*  
 	Created: 20120801@Henry
@@ -30,6 +27,9 @@ AS
 		- 20180809@Amanda: Remove Racing [RedmineID: #99378]
 		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
 		- 20180924@Winnie: Remove Allbet [RedmineID: #99378]
+		- 20200409@Johnson: Add comm for AB,Macau,PP,AG,GD [redmine:#131774] 
+		- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
+		- 20200701@Helen: Remove Allbet - [Redmine: #131774]
 */  
 BEGIN  
 	SET NOCOUNT ON
@@ -37,7 +37,13 @@ BEGIN
 	DECLARE @SBComm DECIMAL(9,8), 
 			@NGComm DECIMAL(9,8),
 			@RNGComm DECIMAL(9,8),
-		@ParlayComm DECIMAL(9,8),	
+			@ParlayComm DECIMAL(9,8),
+			--@AllbetComm DECIMAL(9,8),
+			@MacauComm DECIMAL(9,8),
+			@PPComm DECIMAL(9,8),
+			@GDComm DECIMAL(9,8),
+			@AGComm DECIMAL(9,8),
+			@FWComm DECIMAL(9,8),
 			@CustID INT, 
 			@i INT	
 	
@@ -48,22 +54,25 @@ BEGIN
 		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN 'Wrong input, please check again!'
 				ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200003,@Langkey)
 				END
+				,@ErrCode = 100
 		RETURN
 	END
 	
 	DECLARE @TempCustID  AS TABLE (ID int IDENTITY(1,1),CustID INT)
 	INSERT INTO @TempCustID (CustID)
-	SELECT CustID 
-	FROM dbo.LicenseeCustComm WITH (NOLOCK) 
+	SELECT cs.CustID 
+	FROM dbo.LicenseeCustComm cs WITH (NOLOCK) 
+		INNER JOIN dbo.f_SplitString(@strCustIDOriginal,',') AS t ON RTRIM(LTRIM(t.val)) = cs.CustID
 	WHERE LicenseeID = @LicenseeID 
-			AND CustID IN (SELECT RTRIM(LTRIM(VAL)) FROM Lrf_f_StringSplit(@strCustIDOriginal,','))
 			AND GroupCommID > 0
+	OPTION (MAXRECURSION 0)
 	
 	IF NOT EXISTS(SELECT TOP 1 1 FROM @TempCustID)
 	BEGIN
-		SELECT @ErrMsg= CASE @Langkey WHEN 'en-US' THEN 'Nothing to remove!'
+		SELECT @ErrMsg= CASE @Langkey WHEN 'en-US' THEN 'Selected customer(s) do not belong to any group.'
 									  ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200004,@Langkey)
-									  END			
+									  END
+				,@ErrCode = 100					  			
 		RETURN	
 	END
 	
@@ -78,7 +87,13 @@ BEGIN
 			SELECT @SBComm=SBComm,
 				@NGComm=NGComm,
 				@RNGComm=RNGComm,
-				@ParlayComm = ParlayComm			
+				@ParlayComm = ParlayComm,
+				--@AllbetComm=AllbetComm,				
+				@MacauComm=MacauComm,
+				@PPComm=PPComm,
+				--@GDComm=GDComm,
+				--@AGComm=AGComm
+				@FWComm = FWComm
 			FROM dbo.LicenseeCustComm WITH (NOLOCK)
 			WHERE LicenseeID = @LicenseeID AND CustID = @CustID
 					
@@ -92,9 +107,21 @@ BEGIN
 				@SBComm=@SBComm,
 				@NGComm=@NGComm,
 				@RNGComm=@RNGComm,
-				@ParlayComm = @ParlayComm,			
+				@ParlayComm = @ParlayComm,	
+				--@AllbetComm=@AllbetComm,
+				@MacauComm=@MacauComm,
+				@PPComm=@PPComm,
+				--@GDComm=@GDComm,
+				--@AGComm=@AGComm,
+				@FWComm = @FWComm,
 				@IsUpdateNG=1,
 				@IsUpdateRNG=1,			
+				--@IsUpdateAllbet=1,
+				@IsUpdateMacau=1,
+				@IsUpdatePP=1,
+				--@IsUpdateGD=1,
+				--@IsUpdateAG=1,
+				@IsUpdateFW=1,
 				@IP=@IP,
 				@Langkey=@Langkey,
 				@ErrCode=@ErrCode OUTPUT,
@@ -120,9 +147,21 @@ BEGIN
 			@SBComm=0,
 			@NGComm=0,
 			@RNGComm=0,
-			@ParlayComm = 0,	
+			@ParlayComm = 0,
+			--@AllbetComm= 0,
+			@MacauComm= 0,
+			@PPComm= 0,
+			--@GDComm= 0,
+			--@AGComm= 0,
+			@FWComm= 0,
 			@IsUpdateNG=1,
-			@IsUpdateRNG=1,		
+			@IsUpdateRNG=1,	
+			--@IsUpdateAllbet=1,
+			@IsUpdateMacau=1,
+			@IsUpdatePP=1,
+			--@IsUpdateGD=1,
+			--@IsUpdateAG=1,	
+			@IsUpdateFW=1,
 			@IP=@IP,
 			@Langkey=@Langkey,
 			@ErrCode=@ErrCode OUTPUT,
@@ -137,7 +176,13 @@ BEGIN
 			SBComm = 0,
 			ParlayComm = 0,
 			NGComm = 0,
-			RNGComm = 0,			
+			RNGComm = 0,
+			AllbetComm= 0,
+			MacauComm= 0,
+			PPComm= 0,
+			--GDComm= 0,
+			--AGComm= 0,
+			FWComm = 0,
 			GroupCommID = 0
 		WHERE LicenseeID = @LicenseeID 
 		AND CustID IN (SELECT CustID FROM @TempCustID)
