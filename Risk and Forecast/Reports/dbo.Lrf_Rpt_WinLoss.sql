@@ -123,6 +123,7 @@ AS
 		- 20200423@Hogan: Add new product Sexy Gaming [RedmineID: #132829]
 		- 20200423@Vickie: Integrate Saba Club [RedmineID: #132702]
 		- 20200714@Hogan: Add 7 games for Jackpot and 2 bettype for Contribution (4297) and Jackpot Prize (4298) [RedmineID: #137290]
+		- 20200724@Hogan: Get correct status for bettype Contribution (4297) [RedmineID: #138271]
 
 	Param's Explanation:
 		@OrderItem:
@@ -457,8 +458,8 @@ BEGIN
 			WHERE 
 				EXISTS(SELECT TOP (1) 1 FROM @TempAg c WHERE c.CustID = b.recommend)
 				AND b.winlostdate >= @TempFromDate AND b.winlostdate <= @_ToDate
-				AND b.bettype IN (4300, 17000, 4299, 4298, 4297) -- Promotion Prize, Jackpot Prize, Contribution
-				AND b.statusID = 112)
+				AND((b.bettype IN (4300, 17000, 4299, 4298) AND b.statusID = 112)
+					OR (b.bettype = 4297 AND b.statusID = 111)))  -- Promotion Prize, Jackpot Prize, Contribution
 		BEGIN
 			SET @PromotionPrize = 1
 		END
@@ -530,9 +531,8 @@ BEGIN
 			FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )
 			WHERE EXISTS(SELECT TOP (1) 1 FROM @TempAg c WHERE c.CustID = b.recommend)
 				AND b.Winlostdate BETWEEN @_FromDate AND @TempToDate
-				AND b.bettype IN (4300, 17000, 4299, 4298, 4297) -- Promotion Prize, Jackpot Prize, Contribution
-				AND b.statusID = 112 
-				AND b.roleid = 2)
+				AND ((b.bettype IN (4300, 17000, 4299, 4298) AND b.statusID = 112)
+					OR (b.bettype = 4297 AND b.statusID = 111)) AND b.roleid = 2)  -- Promotion Prize, Jackpot Prize, Contribution
 		BEGIN
 			SET @PromotionPrize = 1
 		END
