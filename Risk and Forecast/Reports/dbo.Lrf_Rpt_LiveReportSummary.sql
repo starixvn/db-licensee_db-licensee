@@ -79,6 +79,7 @@ AS
 		- 20200423@Vickie: Integrate Saba Club [RedmineID: #132702]
 		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
 		- 20200714@Hogan: Add 7 games for Jackpot and 2 bettype for Contribution (4297) and Jackpot Prize (4298) [RedmineID: #137290]
+		- 20200715@Louis: Add new bet types for Keno/Lottery/TableGame [RedmineID: #137625]		
 
 	Param's Explanation:
 		+ @IsLive : indicate that whether the report will get live data or not
@@ -330,7 +331,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 1011 AND 1020 THEN 'FW' -- Fishing World
 					WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
 					WHEN (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) THEN 'VS2'
-					WHEN b.bettype BETWEEN 1021 AND 1049 THEN 'LT'
+					WHEN b.bettype BETWEEN 1021 AND 1099 THEN 'LT'
 					WHEN b.bettype BETWEEN 4101 AND 4296 THEN 'PP' -- PP -- exclude 4300, 4299, 4298, 4297
 					WHEN b.bettype BETWEEN 1901 AND 1999 THEN 'CC' -- CC
 					WHEN b.bettype BETWEEN 4301 AND 4600 THEN 'SG' -- SG
@@ -363,7 +364,7 @@ BEGIN
 					OR b.bettype BETWEEN 1011 AND 1020 -- FW
 					OR b.bettype BETWEEN 2401 AND 2499 -- AB
 					OR (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) -- BetRadar VS
-					OR b.bettype BETWEEN 1021 AND 1049 -- LT
+					OR b.bettype BETWEEN 1021 AND 1099 -- LT
 					OR b.bettype BETWEEN 4101 AND 4296 -- PP -- exclude 4300, 4299, 4298, 4297
 					OR b.bettype BETWEEN 1901 AND 1999 -- CC
 					OR b.bettype BETWEEN 4301 AND 4600 -- SG
@@ -386,7 +387,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 1011 AND 1020 THEN 'FW' -- Fishing World
 					WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
 					WHEN (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) THEN 'VS2'
-					WHEN b.bettype BETWEEN 1021 AND 1049 THEN 'LT'
+					WHEN b.bettype BETWEEN 1021 AND 1099 THEN 'LT'
 					WHEN b.bettype BETWEEN 4101 AND 4296 THEN 'PP' -- PP -- exclude 4300, 4299, 4298, 4297
 					WHEN b.bettype BETWEEN 1901 AND 1999 THEN 'CC' -- CC
 					WHEN b.bettype BETWEEN 4301 AND 4600 THEN 'SG' -- SG
@@ -499,7 +500,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 1011 AND 1020 THEN 'FW' -- Fishing World
 					WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
 					WHEN b.bettype BETWEEN 2701 AND 2829 THEN 'VS2'
-					WHEN b.bettype BETWEEN 1021 AND 1049 THEN 'LT'
+					WHEN b.bettype BETWEEN 1021 AND 1099 THEN 'LT'
 					WHEN b.bettype BETWEEN 4101 AND 4296 THEN 'PP' -- PP -- exclude 4300, 4299, 4298, 4297
 					WHEN b.bettype BETWEEN 1901 AND 1999 THEN 'CC'
 					WHEN b.bettype BETWEEN 4301 AND 4600 THEN 'SG' -- SG
@@ -547,7 +548,7 @@ BEGIN
 					OR b.bettype BETWEEN 1011 AND 1020 -- FW
 					OR b.bettype BETWEEN 2401 AND 2499 -- AB
 					OR b.bettype BETWEEN 2701 AND 2829 -- VS2
-					OR b.bettype BETWEEN 1021 AND 1049 -- LT
+					OR b.bettype BETWEEN 1021 AND 1099 -- LT
 					OR b.bettype BETWEEN 4101 AND 4296 -- PP -- exclude 4300, 4299, 4298, 4297
 					OR b.bettype BETWEEN 1901 AND 1999 -- CC
 					OR b.bettype BETWEEN 4301 AND 4600 -- SG
@@ -575,7 +576,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 1011 AND 1020 THEN 'FW' -- Fishing World
 					WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
 					WHEN b.bettype BETWEEN 2701 AND 2829 THEN 'VS2'
-					WHEN b.bettype BETWEEN 1021 AND 1049 THEN 'LT'
+					WHEN b.bettype BETWEEN 1021 AND 1099 THEN 'LT'
 					WHEN b.bettype BETWEEN 4101 AND 4296 THEN 'PP' -- exclude 4300, 4299, 4298, 4297
 					WHEN b.bettype BETWEEN 1901 AND 1999 THEN 'CC'
 					WHEN b.bettype BETWEEN 4301 AND 4600 THEN 'SG' -- SG

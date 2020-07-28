@@ -75,6 +75,7 @@ AS
 		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
 		- 20200622@Hogan: Update Param's Explanation for 3 new betfrom 4, 5, 6 [Redmine: #136107]
 		- 20200714@Hogan: Add 7 games for Jackpot and 2 bettype for Contribution (4297) and Jackpot Prize (4298) [RedmineID: #137290]
+		- 20200715@Louis: Add new bet types for Keno/Lottery/TableGame [RedmineID: #137625]		
 
 	Param's Explanation:
 		+ @PlatformType: 0: All
@@ -260,9 +261,9 @@ BEGIN
 	IF @ShowLT = 1 -- Lottery
 	BEGIN
 		SET @SportTypeSQL = @SportTypeSQL + ', (220, ''LT'')'
-		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 1021 AND 1049 THEN ''LT''
+		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 1021 AND 1099 THEN ''LT''
 				'
-		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 1021 AND 1049)'
+		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 1021 AND 1099)'
 	END
 	
 	IF @ShowPP = 1 -- PP -- exclude 4300, 4299, 4298, 4297

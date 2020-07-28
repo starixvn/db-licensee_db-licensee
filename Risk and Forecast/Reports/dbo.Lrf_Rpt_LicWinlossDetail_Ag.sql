@@ -105,6 +105,7 @@ AS
 		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
 		- 20200714@Hogan: Add 7 games for Jackpot and 2 bettype for Contribution (4297) and Jackpot Prize (4298) [RedmineID: #137290]
 		- 20200724@Hogan: Get correct status for bettype Contribution (4297) [RedmineID: #138271]
+		- 20200727@Louis: Add new bet types for Keno/Lottery/TableGame [RedmineID: #137625]
 
 	Param's Explanation:
 		+ @CustID: SuperID
@@ -680,7 +681,7 @@ BEGIN
 					stake * (CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END)
 					ELSE 0 END
 				) AS turnoverVS2,
-				SUM(CASE WHEN b.bettype BETWEEN 1021 AND 1049 THEN
+				SUM(CASE WHEN b.bettype BETWEEN 1021 AND 1099 THEN
 					stake * (CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END)
 					ELSE 0 END
 				) AS turnoverLT,
@@ -739,7 +740,7 @@ BEGIN
 				0 AS LicenseeWLCO,
 				-SUM(CASE WHEN b.bettype BETWEEN 2701 AND 2829
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLVS2,	
-				-SUM(CASE WHEN b.bettype BETWEEN 1021 AND 1049
+				-SUM(CASE WHEN b.bettype BETWEEN 1021 AND 1099
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLLT,
 				-SUM(CASE WHEN b.bettype BETWEEN 4101 AND 4300
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLPP,	
