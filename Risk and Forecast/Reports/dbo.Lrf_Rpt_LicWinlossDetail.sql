@@ -111,6 +111,7 @@ AS
 		- 20200714@Hogan: Add 7 games for Jackpot and 2 bettype for Contribution (4297) and Jackpot Prize (4298) [RedmineID: #137290]
 		- 20200724@Hogan: Get correct status for bettype Contribution (4297) [RedmineID: #138271]
 		- 20200727@Louis: Add new bet types for Keno/Lottery/TableGame [RedmineID: #137625]
+		- 20200803@Kos: Support Saba Loyalty [RedmineID: #138493]
 
 	Param's Explanation:
 		+ @CustID: SuperID
@@ -850,7 +851,7 @@ BEGIN
 			FROM dbo.bettrans b WITH (NOLOCK)
 				INNER JOIN @tempAg a ON b.recommend = a.custid AND b.currency = a.currency
 			WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
-				AND((b.bettype IN (4300, 17000, 4299, 4298) AND b.statusID = 112)
+				AND((b.bettype IN (4300, 4299, 4298, 17000, 17003) AND b.statusID = 112)
 					OR (b.bettype = 4297 AND b.statusID = 111)))  -- Promotion Prize, Jackpot Prize, Contribution
 		BEGIN
 			SET @PromotionPrize = 1
@@ -1381,7 +1382,7 @@ BEGIN
 			FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )
 				INNER JOIN @tempAg a ON b.recommend = a.custID AND b.Currency = a.Currency 
 			WHERE b.Winlostdate BETWEEN @FDate AND @TempToDate
-				AND ((b.bettype IN (4300, 17000, 4299, 4298) AND b.statusID = 112)
+				AND ((b.bettype IN (4300, 4299, 4298, 17000, 17003) AND b.statusID = 112)
 					OR (b.bettype = 4297 AND b.statusID = 111)) AND b.roleid = 2)  -- Promotion Prize, Jackpot Prize, Contribution
 		BEGIN
 			SET @PromotionPrize = 1
