@@ -23,7 +23,7 @@ AS
 			- 20200211@Johnson: initial sp [redmine:#128077]
 			- 20200410@Eden: LAP - Player Segmentation [redmine:#131929]
 			- 20200417@Elodie: Unremove VIP if void abnormal [Redmine: #132736]
-			
+			- 20200717@Johnson: return agentid to support subsidiary [redmine:#136974]
 		Paramter's Explanations:
 			@OrderCol = 1: System ID
 						= 2: sort by external ID
@@ -37,7 +37,7 @@ BEGIN
 	SELECT  @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
 
 	CREATE TABLE #TempAg (custid INT)
-	CREATE TABLE #CustList (CustId INT PRIMARY KEY, CreatedDate DATETIME, username VARCHAR(50), username2 VARCHAR(50), MaxBet MONEY, MaxPerEvent MONEY, ReasonID TINYINT ,Reason NVARCHAR(4000))
+	CREATE TABLE #CustList (CustId INT PRIMARY KEY, AgentID INT, CreatedDate DATETIME, username VARCHAR(50), username2 VARCHAR(50), MaxBet MONEY, MaxPerEvent MONEY, ReasonID TINYINT ,Reason NVARCHAR(4000))
 	
 	DECLARE @DocHandler INT
 
@@ -72,8 +72,8 @@ BEGIN
 
 	IF @Username <> ''
 	BEGIN
-		INSERT INTO #CustList(custid,CreatedDate,username,username2,MaxBet,MaxPerEvent,ReasonID)
-		SELECT ci.custid,p.CreatedDate, username,
+		INSERT INTO #CustList(custid,AgentID,CreatedDate,username,username2,MaxBet,MaxPerEvent,ReasonID)
+		SELECT ci.custid,ci.recommend,p.CreatedDate, username,
 			SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) AS username2,
 		        e.Rate*p.MaxBet AS MaxBet, e.Rate*p.MaxPerEvent AS MaxPerEvent, ReasonID
 		FROM customer ci WITH(NOLOCK)
@@ -85,8 +85,8 @@ BEGIN
 	END
 	ELSE
 	BEGIN
-		INSERT INTO #CustList(custid,CreatedDate,username,username2,MaxBet,MaxPerEvent,ReasonID)
-		SELECT ci.custid,p.CreatedDate, username,
+		INSERT INTO #CustList(custid,AgentID,CreatedDate,username,username2,MaxBet,MaxPerEvent,ReasonID)
+		SELECT ci.custid,ci.recommend,p.CreatedDate, username,
 			SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) AS username2,
 			e.Rate*p.MaxBet AS MaxBet, e.Rate*p.MaxPerEvent AS MaxPerEvent, ReasonID
 		FROM customer ci WITH(NOLOCK)
