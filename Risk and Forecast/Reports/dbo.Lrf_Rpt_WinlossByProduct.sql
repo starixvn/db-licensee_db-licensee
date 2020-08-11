@@ -87,6 +87,7 @@ AS
 		- 20200714@Hogan: Add 7 games for Jackpot and 2 bettype for Contribution (4297) and Jackpot Prize (4298) [RedmineID: #137290]
 		- 20200728@Hogan: Integrate SA Gaming [RedmineID: #128493]
 		- 20201016@Hogan: Integrate Arcadia Gaming Bonus [RedmineID: #143648]
+		- 20201022@Louis: Integrate PG Soft [RedmineID: #139182]
 
 	Param's Explanation:
 		+ @ReportType: 1-Daily; 2-Monthly;
@@ -469,7 +470,7 @@ BEGIN
 						ELSE 1 END
 				),
 				SUM(b.winlost),
-				SUM(CASE WHEN (b.sporttype in(0,161,164,251,202,208,209,210,212,220,248,165,247,245,222,223,243,200,244))  THEN -1 * b.winlost 
+				SUM(CASE WHEN (b.sporttype in(0,161,164,251,202,208,209,210,212,220,248,165,247,245,222,223,243,200,244,232))  THEN -1 * b.winlost 
 						ELSE 0 END
 					) AS LicenseeWL,
 				SUM(comm ) AS Comm,
