@@ -210,6 +210,7 @@ BEGIN
 		FROM #tempPaging p
 		INNER JOIN bodb_licenseeReportArchive.dbo.rptDep_AuditTickets a WITH (NOLOCK) ON a.TransactionId = p.TransactionId
 		WHERE p.rowIdx BETWEEN @RowStart AND @RowEnd
+			AND a.WinLostDate < @cutoffDate
 
 		UNION ALL
 		SELECT p.rowIdx,
