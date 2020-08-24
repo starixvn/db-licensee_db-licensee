@@ -15,10 +15,10 @@ AS
 	- 20200413@Johnson: add AB,Macau,PP,AG,GD comm [redmine:#131774]
 	- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
 	- 20200701@Helen: Remove Allbet - [Redmine: #131774]
+	- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238] 
 */  
 BEGIN  
 	SET NOCOUNT ON;  
-
 	SELECT 
 		lc.CustID,
 		lc.SBComm,
@@ -31,7 +31,14 @@ BEGIN
 		ISNULL(lc.PPComm,0) AS PPComm,
 		--ISNULL(lc.GDComm,0) AS GDComm,
 		--ISNULL(lc.AGComm,0) AS AGComm,
-		ISNULL(lc.FWComm,0) AS FWComm
+		ISNULL(lc.FWComm,0) AS FWComm,
+		ISNULL(SexyGamingComm,0) AS SexyGamingComm ,
+		ISNULL(SpadeGamingComm ,0) AS SpadeGamingComm,
+		ISNULL(KenoComm,0) AS KenoComm,
+		ISNULL(LotteryComm,0) AS LotteryComm,
+		ISNULL(VSComm,0) AS VSComm, 
+		ISNULL(VS2Comm,0) AS VS2Comm,
+		ISNULL(TableGameComm,0) AS TableGameComm
 	FROM dbo.LicenseeCustComm lc WITH (NOLOCK)					
 	WHERE lc.CustID = @CustID	
 END

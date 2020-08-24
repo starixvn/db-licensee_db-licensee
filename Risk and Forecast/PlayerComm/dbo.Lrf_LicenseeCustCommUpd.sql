@@ -22,6 +22,22 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeCustCommUpd]
 	--@IsUpdateGD BIT = 0,
 	--@IsUpdateAG BIT = 0,
 	@IsUpdateFW BIT = 0,
+	--start param of phase 2 
+	@IsUpdateSexyGaming BIT = 0,	
+	@SexyGamingComm DECIMAL(9,8) = 0,
+	@IsUpdateSpadeGaming BIT = 0,	
+	@SpadeGamingComm DECIMAL(9,8) = 0,
+	@IsUpdateKeno BIT = 0,	
+	@KenoComm DECIMAL(9,8) = 0,
+	@IsUpdateLottery BIT = 0,	
+	@LotteryComm DECIMAL(9,8) = 0,
+	@IsUpdateVS BIT = 0,	
+	@VSComm DECIMAL(9,8) = 0,
+	@IsUpdateVS2 BIT = 0,	
+	@VS2Comm DECIMAL(9,8) = 0,
+	@IsUpdateTableGame BIT = 0,	
+	@TableGameComm DECIMAL(9,8) = 0,
+	-- end of phase 2
 	@IP VARCHAR(40),
 	@Langkey NVARCHAR(10)='en-US',
 	@ErrCode INT = 0 OUTPUT,
@@ -50,6 +66,7 @@ AS
 		- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
 		- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774]
 		- 20200701@Helen: Remove Allbet - [Redmine: #131774]   
+		- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 [Redmine: #139238]   
 		
 	Param's Explanation:
 */ 
@@ -110,6 +127,22 @@ BEGIN
 		--,@IsUpdateGD=@IsUpdateGD
 		--,@IsUpdateAG=@IsUpdateAG
 		,@IsUpdateFW = @IsUpdateFW
+		---start param of phase 2
+		,@IsUpdateSexyGaming = @IsUpdateSexyGaming	
+		,@SexyGamingComm = @SexyGamingComm
+		,@IsUpdateSpadeGaming = @IsUpdateSpadeGaming	
+		,@SpadeGamingComm =  @SpadeGamingComm
+		,@IsUpdateKeno = @IsUpdateKeno
+		,@KenoComm =  @KenoComm
+		,@IsUpdateLottery  = @IsUpdateLottery	
+		,@LotteryComm =  @LotteryComm
+		,@IsUpdateVS = @IsUpdateVS 	
+		,@VSComm =  @VSComm
+		,@IsUpdateVS2 =  @IsUpdateVS2	
+		,@VS2Comm = @VS2Comm 
+		,@IsUpdateTableGame = @IsUpdateTableGame
+		,@TableGameComm = @TableGameComm
+		---end of phase 2
 		,@IP=@IP
 		,@Langkey=@Langkey
 		,@ErrCode=@ErrCode OUTPUT

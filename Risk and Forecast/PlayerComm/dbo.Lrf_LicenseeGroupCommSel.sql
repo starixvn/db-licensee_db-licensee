@@ -22,6 +22,7 @@ AS
 	 - 20200408@Johnson: Add comm for AB,Macau,PP,GD,AG [redmine:#131774]
 	 - 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
 	 - 20200701@Helen: Remove Allbet - [Redmine: #131774]  
+	 - 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238] 
 
 	Parameter's Explaination: 
 */  
@@ -45,6 +46,13 @@ BEGIN
 		,g.color AS GroupColor
 		,ISNULL(c.NumberOfCustomer,0) AS NumberOfCustomer
 		,g.IsDefault  
+		,g.SexyGamingComm
+		,g.SpadeGamingComm
+		,g.LotteryComm
+		,g.KenoComm
+		,g.VSComm
+		,g.VS2Comm
+		,g.TableGameComm
 	FROM dbo.LicenseeGroupComm g WITH (NOLOCK)   
 		LEFT JOIN (	SELECT COUNT(1) AS NumberOfCustomer, GroupCommID
 					FROM LicenseeCustComm (NOLOCK)

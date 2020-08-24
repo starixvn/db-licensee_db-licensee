@@ -23,6 +23,22 @@ ALTER PROCEDURE [dbo].[Lrf_ExecRep_00]
 	@GDComm DECIMAL(9,8)=0,	
 	@AGComm DECIMAL(9,8)=0,
 	@FWComm DECIMAL(9,8)=0,
+	--start param of phase 2 
+	@IsUpdateSexyGaming BIT = 0,	
+	@SexyGamingComm DECIMAL(9,8) = 0,
+	@IsUpdateSpadeGaming BIT = 0,	
+	@SpadeGamingComm DECIMAL(9,8) = 0,
+	@IsUpdateKeno BIT = 0,	
+	@KenoComm DECIMAL(9,8) = 0,
+	@IsUpdateLottery BIT = 0,	
+	@LotteryComm DECIMAL(9,8) = 0,
+	@IsUpdateVS BIT = 0,	
+	@VSComm DECIMAL(9,8) = 0,
+	@IsUpdateVS2 BIT = 0,	
+	@VS2Comm DECIMAL(9,8) = 0,
+	@IsUpdateTableGame BIT = 0,	
+	@TableGameComm DECIMAL(9,8) = 0,
+	-- end of phase 2
 	@isClearGroupComm BIT = 0,
 	@IsUpdateGroupComm BIT = 0
 
@@ -39,6 +55,7 @@ AS
 		- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
 		- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774] 
 		- 20200701@Helen: Remove Allbet - [Redmine: #131774]  
+		- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238]   
 	
 	Param's Explanation:
 
@@ -93,6 +110,14 @@ BEGIN
 				, MacauComm= CASE WHEN @IsUpdateMacau = 1 THEN @MacauComm ELSE MacauComm END
 				, PPComm= CASE WHEN @IsUpdatePP = 1 THEN @PPComm ELSE PPComm END
 				, FWComm= CASE WHEN @IsUpdateFW = 1 THEN @FWComm ELSE FWComm END
+				-- phase 2
+				, SexyGamingComm  = CASE WHEN @IsUpdateSexyGaming = 1 THEN @SexyGamingComm ELSE SexyGamingComm END 
+				, SpadeGamingComm  = CASE WHEN @IsUpdateSpadeGaming = 1 THEN @SpadeGamingComm ELSE SpadeGamingComm END
+				, KenoComm  = CASE WHEN @IsUpdateKeno = 1 THEN @KenoComm ELSE KenoComm END
+				, LotteryComm  = CASE WHEN @IsUpdateLottery = 1 THEN @LotteryComm ELSE LotteryComm END
+				, VSComm  = CASE WHEN @IsUpdateVS = 1 THEN @VSComm ELSE VSComm END
+				, VS2Comm = CASE WHEN @IsUpdateVS2 = 1 THEN @VS2Comm ELSE VS2Comm END
+				, TableGameComm  = CASE WHEN @IsUpdateTableGame = 1 THEN @TableGameComm ELSE TableGameComm END
 		FROM dbo.LicenseeCustComm cs WITH (ROWLOCK,UPDLOCK)
 			INNER JOIN @TempList_Input ip ON cs.CustID = ip.CustID
 			LEFT JOIN @TempLicenseeBA_batch ba ON ba.custid = ip.custid
@@ -144,7 +169,16 @@ BEGIN
 			--OR @IsUpdateAllbet=1
 			OR @IsUpdateMacau=1
 			OR @IsUpdatePP=1
-			OR @IsUpdateFW=1)
+			OR @IsUpdateFW=1
+			-- phase 2
+			OR @IsUpdateSexyGaming = 1
+			OR @IsUpdateSpadeGaming = 1
+			OR @IsUpdateKeno = 1
+			OR @IsUpdateLottery = 1
+			OR @IsUpdateVS = 1
+			OR @IsUpdateVS2 = 1
+			OR @IsUpdateTableGame = 1
+			)
 		BEGIN	
 			UPDATE cs
 				SET NGComm=CASE WHEN  @IsUpdateNG = 1 THEN @NGComm ELSE NGComm END
@@ -153,6 +187,14 @@ BEGIN
 					, MacauComm= CASE WHEN @IsUpdateMacau = 1 THEN @MacauComm ELSE MacauComm END
 					, PPComm= CASE WHEN @IsUpdatePP = 1 THEN @PPComm ELSE PPComm END
 					, FWComm= CASE WHEN @IsUpdateFW = 1 THEN @FWComm ELSE FWComm END
+					-- phase 2
+					, SexyGamingComm  = CASE WHEN @IsUpdateSexyGaming = 1 THEN @SexyGamingComm ELSE SexyGamingComm END 
+					, SpadeGamingComm  = CASE WHEN @IsUpdateSpadeGaming = 1 THEN @SpadeGamingComm ELSE SpadeGamingComm END
+					, KenoComm  = CASE WHEN @IsUpdateKeno = 1 THEN @KenoComm ELSE KenoComm END
+					, LotteryComm  = CASE WHEN @IsUpdateLottery = 1 THEN @LotteryComm ELSE LotteryComm END
+					, VSComm  = CASE WHEN @IsUpdateVS = 1 THEN @VSComm ELSE VSComm END
+					, VS2Comm = CASE WHEN @IsUpdateVS2 = 1 THEN @VS2Comm ELSE VS2Comm END
+					, TableGameComm  = CASE WHEN @IsUpdateTableGame = 1 THEN @TableGameComm ELSE TableGameComm END
 			FROM dbo.LicenseeCustComm cs WITH (ROWLOCK,UPDLOCK)
 				INNER JOIN @TempList_Input ip ON ip.CustID = cs.CustID
 		END

@@ -15,6 +15,21 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Main]
 	,@IsUpdateMacau BIT = 0
 	,@IsUpdatePP BIT = 0
 	,@IsUpdateFW BIT = 0
+	--start param of phase 2 
+	,@IsUpdateSexyGaming BIT = 0	
+	,@SexyGamingComm DECIMAL(9,8) = 0
+	,@IsUpdateSpadeGaming BIT = 0	
+	,@SpadeGamingComm DECIMAL(9,8) = 0
+	,@IsUpdateKeno BIT = 0	
+	,@KenoComm DECIMAL(9,8) = 0
+	,@IsUpdateLottery BIT = 0	
+	,@LotteryComm DECIMAL(9,8) = 0
+	,@IsUpdateVS BIT = 0	
+	,@VSComm DECIMAL(9,8) = 0
+	,@IsUpdateVS2 BIT = 0	
+	,@VS2Comm DECIMAL(9,8) = 0
+	,@IsUpdateTableGame BIT = 0	
+	,@TableGameComm DECIMAL(9,8) = 0
 AS
 /*
 	Created: 20120907@Viet
@@ -36,6 +51,7 @@ AS
 		- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
 		- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774]
 		- 20200701@Helen: Remove Allbet - [Redmine: #131774]
+		- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238] 
 		
 	Param's Explanation:
 
@@ -60,25 +76,47 @@ BEGIN
 	DECLARE @AgentID INT = 0
 	DECLARE @MacauComm_Group DECIMAL(9,8)=0,	
 			@PPComm_Group DECIMAL(9,8)=0,
-			@FWComm_Group DECIMAL(9,8)=0
+			@FWComm_Group DECIMAL(9,8)=0,
+			-- phase 2
+			@SexyGamingComm_Group DECIMAL(9,8)=0,
+			@SpadeGamingComm_Group DECIMAL(9,8)=0,
+			@KenoComm_Group DECIMAL(9,8)=0,
+			@LotteryComm_Group DECIMAL(9,8)=0,
+			@VSComm_Group DECIMAL(9,8)=0,
+			@VS2Comm_Group DECIMAL(9,8)=0,
+			@TableGameComm_Group DECIMAL(9,8)=0
+			
 			--,@AllbetComm_Group DECIMAL(9,8)=0
 	
 	IF (	--@IsUpdateAllbet = 1 OR 
-		@IsUpdateFW = 1 OR @IsUpdateMacau = 1 OR @IsUpdatePP = 1)
+		@IsUpdateFW = 1 OR @IsUpdateMacau = 1 OR @IsUpdatePP = 1
+		OR @IsUpdateSexyGaming = 1
+		OR @IsUpdateSpadeGaming = 1
+		OR @IsUpdateLottery = 1
+		OR @IsUpdateVS = 1
+		OR @IsUpdateVS2 = 1
+		OR @IsUpdateTableGame = 1)
 	BEGIN		
 		SET @AgentID = (SELECT TOP (1) recommend 
 							FROM dbo.CustInfo ci WITH(NOLOCK)
 								INNER JOIN @res r ON ci.custid = r.custid
 							)
-		
 		SELECT 
 			--@AllbetComm_Group = MAX(CASE WHEN BetType = 2401 THEN playerdiscount ELSE 0 END),
 			@MacauComm_Group = MAX(CASE WHEN BetType = 4001 THEN playerdiscount ELSE 0 END)
 			,@PPComm_Group = MAX(CASE WHEN BetType = 4101 THEN playerdiscount ELSE 0 END)
 			,@FWComm_Group = MAX(CASE WHEN BetType = 1011 THEN playerdiscount ELSE 0 END)
+			-- phase 2
+			,@SexyGamingComm_Group = MAX(CASE WHEN BetType = 3101 THEN playerdiscount ELSE 0 END)
+			,@SpadeGamingComm_Group = MAX(CASE WHEN BetType = 4301 THEN playerdiscount ELSE 0 END)
+			,@LotteryComm_Group = MAX(CASE WHEN BetType = 1021 THEN playerdiscount ELSE 0 END)
+			,@VSComm_Group = MAX(CASE WHEN BetType = 1201 THEN playerdiscount ELSE 0 END)
+			,@VS2Comm_Group = MAX(CASE WHEN BetType = 2701 THEN playerdiscount ELSE 0 END)
+			,@TableGameComm_Group = MAX(CASE WHEN BetType = 4901 THEN playerdiscount ELSE 0 END)
+			
 		FROM dbo.Dep_CustDiscountGroupSetting_Member grp WITH(NOLOCK)
 		WHERE AgentID = @AgentID
-			AND sporttype IN (212,248,219) -- remove 211
+			AND sporttype IN (212,248,219,243,247,220,180,190,222 ) -- remove 211
 	END	
 								
 	WHILE (1 = 1)
@@ -118,9 +156,31 @@ BEGIN
 			,@IsUpdateFW = @IsUpdateFW
 			,@AgentID = @AgentID
 			--,@AllbetComm_Group = @AllbetComm_Group
+			---start param of phase 2 - group 
 			,@MacauComm_Group = @MacauComm_Group	
 			,@PPComm_Group = @PPComm_Group
 			,@FWComm_Group = @FWComm_Group
+			,@SexyGamingComm_Group = @SexyGamingComm_Group
+			,@SpadeGamingComm_Group = @SpadeGamingComm_Group 
+			,@LotteryComm_Group = @LotteryComm_Group
+			,@VSComm_Group = @VSComm_Group
+			,@VS2Comm_Group = @VS2Comm_Group
+			,@TableGameComm_Group = @TableGameComm_Group
+			---start param of phase 2 - update value setting
+			,@IsUpdateSexyGaming = @IsUpdateSexyGaming	
+			,@SexyGamingComm = @SexyGamingComm
+			,@IsUpdateSpadeGaming = @IsUpdateSpadeGaming	
+			,@SpadeGamingComm =  @SpadeGamingComm
+			,@IsUpdateKeno = @IsUpdateKeno
+			,@KenoComm =  @KenoComm
+			,@IsUpdateLottery  = @IsUpdateLottery	
+			,@LotteryComm =  @LotteryComm
+			,@IsUpdateVS = @IsUpdateVS 	
+			,@VSComm =  @VSComm
+			,@IsUpdateVS2 =  @IsUpdateVS2	
+			,@VS2Comm = @VS2Comm 
+			,@IsUpdateTableGame = @IsUpdateTableGame
+			,@TableGameComm = @TableGameComm
 			
 		-- delay 00.100ms after 5 times continuous running
 		IF @runningCNT % 2 = 0 WAITFOR DELAY '00:00:00.280'

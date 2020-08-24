@@ -29,6 +29,22 @@ CREATE PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm]
 	@IsUpdateGroupComm BIT = 0,
 	@isClearGroupComm BIT = 0,
 	@ClearGroupCommGroupID INT = 0,
+	--start param of phase 2 
+	@IsUpdateSexyGaming BIT = 0,	
+	@SexyGamingComm DECIMAL(9,8) = 0,
+	@IsUpdateSpadeGaming BIT = 0,	
+	@SpadeGamingComm DECIMAL(9,8) = 0,
+	@IsUpdateKeno BIT = 0,	
+	@KenoComm DECIMAL(9,8) = 0,
+	@IsUpdateLottery BIT = 0,	
+	@LotteryComm DECIMAL(9,8) = 0,
+	@IsUpdateVS BIT = 0,	
+	@VSComm DECIMAL(9,8) = 0,
+	@IsUpdateVS2 BIT = 0,	
+	@VS2Comm DECIMAL(9,8) = 0,
+	@IsUpdateTableGame BIT = 0,	
+	@TableGameComm DECIMAL(9,8) = 0,
+	-- end of phase 2
 	@IP VARCHAR(40),
 	@Langkey VARCHAR(10) = 'en-US',
 	@ErrCode INT = 0 OUTPUT,
@@ -66,6 +82,7 @@ AS
 		- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
 		- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774]
 		- 20200701@Helen: Remove Allbet - [Redmine: #131774]
+		- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238]   
 
 	Param's Explanation:
 		1. To update a member/batch members without GroupCommID
@@ -129,6 +146,15 @@ BEGIN
 			--,@GDComm = GDComm
 			--,@AGComm = AGComm
 			,@FWComm = FWComm
+			-- phase 2
+			,@SexyGamingComm  = SexyGamingComm 
+			,@SpadeGamingComm  = SpadeGamingComm
+			,@KenoComm  = KenoComm
+			,@LotteryComm  = LotteryComm
+			,@VSComm  = VSComm
+			,@VS2Comm = VS2Comm
+			,@TableGameComm  = TableGameComm
+
 		FROM dbo.LicenseeGroupComm WITH (NOLOCK)
 		WHERE LicenseeID = @LicenseeID AND id = @GroupCommID AND IsActive=1
 	END
@@ -142,13 +168,29 @@ BEGIN
 		,@PPComm = ISNULL(@PPComm,0)
 		--,@GDComm = ISNULL(@GDComm,0)
 		--,@AGComm = ISNULL(@AGComm,0)
+		-- phase 2
 		,@FWComm = ISNULL(@FWComm,0)
+		,@SexyGamingComm  =  ISNULL (@SexyGamingComm, 0)
+		,@SpadeGamingComm  = ISNULL (@SpadeGamingComm, 0)
+		,@KenoComm  = ISNULL (@KenoComm, 0)
+		,@LotteryComm  = ISNULL (@LotteryComm, 0)
+		,@VSComm  = ISNULL (@VSComm, 0)
+		,@VS2Comm = ISNULL (@VS2Comm, 0)
+		,@TableGameComm  = ISNULL (@TableGameComm, 0)
+			
 		--Validate data
 	IF @SBComm>0.15 OR @NGComm>0.15 OR @RNGComm>0.15 OR @ParlayComm > 0.15
 		--OR @AllbetComm > 0.15 
 		OR @MacauComm > 0.15 OR @PPComm > 0.15 
 		--OR @GDComm > 0.15 OR @AGComm > 0.15
 		OR @FWComm > 0.15
+		OR @SexyGamingComm  > 0.15
+		OR @SpadeGamingComm  > 0.15
+		OR @KenoComm  > 0.15
+		OR @LotteryComm  > 0.15
+		OR @VSComm  > 0.15
+		OR @VS2Comm > 0.15
+		OR @TableGameComm  > 0.15
 	BEGIN
 		SELECT @ErrCode=101
 		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN 'Player commission should not be greater than'
@@ -212,6 +254,22 @@ BEGIN
 				,@IsUpdateMacau=@IsUpdateMacau	
 				,@IsUpdatePP=@IsUpdatePP	
 				,@IsUpdateFW = @IsUpdateFW
+				---start param of phase 2
+				,@IsUpdateSexyGaming = @IsUpdateSexyGaming	
+				,@SexyGamingComm = @SexyGamingComm
+				,@IsUpdateSpadeGaming = @IsUpdateSpadeGaming	
+				,@SpadeGamingComm =  @SpadeGamingComm
+				,@IsUpdateKeno = @IsUpdateKeno
+				,@KenoComm =  @KenoComm
+				,@IsUpdateLottery  = @IsUpdateLottery	
+				,@LotteryComm =  @LotteryComm
+				,@IsUpdateVS = @IsUpdateVS 	
+				,@VSComm =  @VSComm
+				,@IsUpdateVS2 =  @IsUpdateVS2	
+				,@VS2Comm = @VS2Comm 
+				,@IsUpdateTableGame = @IsUpdateTableGame
+				,@TableGameComm = @TableGameComm
+				---end of phase 2
 		END		
 		ELSE
 		BEGIN	
@@ -252,6 +310,22 @@ BEGIN
 					,@IsUpdateMacau=@IsUpdateMacau
 					,@IsUpdatePP=@IsUpdatePP
 					,@IsUpdateFW = @IsUpdateFW
+					---start param of phase 2
+					,@IsUpdateSexyGaming = @IsUpdateSexyGaming	
+					,@SexyGamingComm = @SexyGamingComm
+					,@IsUpdateSpadeGaming = @IsUpdateSpadeGaming	
+					,@SpadeGamingComm =  @SpadeGamingComm
+					,@IsUpdateKeno = @IsUpdateKeno
+					,@KenoComm =  @KenoComm
+					,@IsUpdateLottery  = @IsUpdateLottery	
+					,@LotteryComm =  @LotteryComm
+					,@IsUpdateVS = @IsUpdateVS 	
+					,@VSComm =  @VSComm
+					,@IsUpdateVS2 =  @IsUpdateVS2	
+					,@VS2Comm = @VS2Comm 
+					,@IsUpdateTableGame = @IsUpdateTableGame
+					,@TableGameComm = @TableGameComm
+					---end of phase 2
 					
 			END					
 			-- Non-BA and BA under Macaubet have got SBcomm=@SBcomm
@@ -283,6 +357,22 @@ BEGIN
 					,@IsUpdateMacau=@IsUpdateMacau
 					,@IsUpdatePP=@IsUpdatePP
 					,@IsUpdateFW = @IsUpdateFW
+					---start param of phase 2
+					,@IsUpdateSexyGaming = @IsUpdateSexyGaming	
+					,@SexyGamingComm = @SexyGamingComm
+					,@IsUpdateSpadeGaming = @IsUpdateSpadeGaming	
+					,@SpadeGamingComm =  @SpadeGamingComm
+					,@IsUpdateKeno = @IsUpdateKeno
+					,@KenoComm =  @KenoComm
+					,@IsUpdateLottery  = @IsUpdateLottery	
+					,@LotteryComm =  @LotteryComm
+					,@IsUpdateVS = @IsUpdateVS 	
+					,@VSComm =  @VSComm
+					,@IsUpdateVS2 =  @IsUpdateVS2	
+					,@VS2Comm = @VS2Comm 
+					,@IsUpdateTableGame = @IsUpdateTableGame
+					,@TableGameComm = @TableGameComm
+					---end of phase 2
 			END
 		END
 	END	
@@ -301,10 +391,17 @@ BEGIN
 		--'AllbetComm="'+ COALESCE(CAST(@AllbetComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'MacauComm="'+ COALESCE(CAST(@MacauComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'PPComm="'+ COALESCE(CAST(@PPComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'FWComm="'+ COALESCE(CAST(@FWComm as VARCHAR(50)),SPACE(1)) + '" '
+		'FWComm="'+ COALESCE(CAST(@FWComm as VARCHAR(50)),SPACE(1)) + '" '+
 		--'GDComm="'+ COALESCE(CAST(@GDComm as VARCHAR(50)),SPACE(1)) + '" '+
 		--'AGComm="'+ COALESCE(CAST(@AGComm as VARCHAR(50)),SPACE(1)) + '" '
-
+		-- phase 2
+		'SexyGamingComm="'+ COALESCE(CAST(@SexyGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'SpadeGamingComm="'+ COALESCE(CAST(@SpadeGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'KenoComm="'+ COALESCE(CAST(@KenoComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'LotteryComm="'+ COALESCE(CAST(@LotteryComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'VSComm="'+ COALESCE(CAST(@VSComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'VS2Comm="'+ COALESCE(CAST(@VS2Comm as VARCHAR(50)),SPACE(1)) + '" '+
+		'TableGameComm="'+ COALESCE(CAST(@TableGameComm as VARCHAR(50)),SPACE(1)) + '" '
 	-- old value
 	SELECT @LogSPData2 = 'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +
 		'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
@@ -382,6 +479,21 @@ BEGIN
 					--@AGComm = @AGComm,
 					@FWComm = @FWComm,
 					@IsUpdateGroupComm = @IsUpdateGroupComm
+					---start param of phase 2
+					,@IsUpdateSexyGaming = @IsUpdateSexyGaming	
+					,@SexyGamingComm = @SexyGamingComm
+					,@IsUpdateSpadeGaming = @IsUpdateSpadeGaming	
+					,@SpadeGamingComm =  @SpadeGamingComm
+					,@IsUpdateKeno = @IsUpdateKeno
+					,@KenoComm =  @KenoComm
+					,@IsUpdateLottery  = @IsUpdateLottery	
+					,@LotteryComm =  @LotteryComm
+					,@IsUpdateVS = @IsUpdateVS 	
+					,@VSComm =  @VSComm
+					,@IsUpdateVS2 =  @IsUpdateVS2	
+					,@VS2Comm = @VS2Comm 
+					,@IsUpdateTableGame = @IsUpdateTableGame
+					,@TableGameComm = @TableGameComm
 			END TRY
 			BEGIN CATCH
 				SELECT @ErrCode = ERROR_NUMBER()
