@@ -32,7 +32,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]
 	@AgentList		VARCHAR(MAX),
 	@BaseCurrency	VARCHAR(3) = '',
 	@DefaultBaseCurrency	VARCHAR(3) = '',
-	@CheckPromotionPrize	BIT = 0
+	@CheckPromotionPrize	BIT = 0,
+	@VIPPlayerOnly	BIT = 0
 AS
 
 /*
@@ -105,6 +106,7 @@ AS
 	- 20200714@Hogan: Add 7 games for Jackpot and 2 bettype for Contribution (4297) and Jackpot Prize (4298) [RedmineID: #137290]
 	- 20200724@Hogan: Get correct status for bettype Contribution (4297) [RedmineID: #138271]
 	- 20200803@Kos: Support Saba Loyalty [RedmineID: #138493]
+	- 20200820@Hogan: Support filter by VIP player [RedmineID: #138371]
 
 	Param's Explanation:
 		+ @ReportType: 1-Daily; 2-Monthly;
@@ -117,6 +119,7 @@ AS
 							<Agent AgentId="12345" Currency="3"/>
 							<Agent AgentId="12345" Currency="5"/>
 						</ROOT>
+		+ @VIPPlayerOnly: = 1 if want to generate data of VIP players only
 */
 
 BEGIN
@@ -159,6 +162,7 @@ BEGIN
 	DECLARE @BetType TABLE (BetType INT PRIMARY KEY, ProductCode VARCHAR(10))
 	DECLARE @SportType TABLE (SportType INT, ProductCode VARCHAR(10))
 	DECLARE @WLBetTicket TABLE (WinLostDate SMALLDATETIME, Currency INT, WLBetTicket MONEY)
+	DECLARE @VIPCust TABLE (CustId INT)
 
 	DECLARE @LicenseeName	VARCHAR(50),
 		@ProductList		VARCHAR (500),
@@ -298,6 +302,17 @@ BEGIN
 		SELECT DISTINCT BetType, ProductPrefix
 		FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
 
+		-- Insert VIPCust
+		IF @VIPPlayerOnly = 1
+		BEGIN
+			INSERT INTO @VIPCust (CustId)
+			SELECT c.custid
+			FROM dbo.customer c WITH(NOLOCK)
+				INNER JOIN @tempAg tma ON tma.CustID = c.recommend
+				INNER JOIN Dep_CustVIP d WITH(NOLOCK) ON c.custid = d.custid
+			WHERE c.roleid = 1
+		END
+
 		IF @ShowCS = 1
 			DELETE @BetType
 			WHERE BetType = 72 AND ProductCode = 'CS'
@@ -385,11 +400,13 @@ BEGIN
 				CTE
 				INNER JOIN dbo.bettrans b WITH (NOLOCK) ON CTE.transid = b.transid
 				INNER JOIN @tempAg tma ON tma.custID = b.recommend AND b.currency = tma.currency
+				LEFT JOIN @VIPCust v ON b.custid = v.CustID
 			WHERE 
 				b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 				AND b.statusID IN (111, 112, 113)
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
+				AND (@VIPPlayerOnly = 0 OR (@VIPPlayerOnly = 1 AND v.custid IS NOT NULL))
 			GROUP BY
 				b.winlostdate,
 				tma.currency 
@@ -436,6 +453,7 @@ BEGIN
 			FROM
 				dbo.bettrans b WITH (NOLOCK)
 				INNER JOIN @tempAg a ON b.recommend = a.CustId AND b.currency = a.Currency
+				LEFT JOIN @VIPCust v ON b.custid = v.CustID
 			WHERE 
 				b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 				AND
@@ -451,6 +469,7 @@ BEGIN
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
 				AND b.transid >= @transid
+				AND (@VIPPlayerOnly = 0 OR (@VIPPlayerOnly = 1 AND v.custid IS NOT NULL))
 			GROUP BY
 				b.winlostdate,
 				a.currency --, statusID, b.bettype
@@ -487,11 +506,13 @@ BEGIN
 			FROM
 				dbo.bettrans b WITH (NOLOCK)
 				INNER JOIN @tempAg a ON b.recommend = a.custID AND b.currency = a.currency
+				LEFT JOIN @VIPCust v ON b.custid = v.CustID
 			WHERE
 				b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 				AND b.bettype IN (901, 902, 903)
 				AND b.statusID IN (111, 112, 113)
 				AND b.transid >= @transid
+				AND (@VIPPlayerOnly = 0 OR (@VIPPlayerOnly = 1 AND v.custid IS NOT NULL))
 			GROUP BY
 				b.winlostdate,
 				a.currency
@@ -528,11 +549,13 @@ BEGIN
 			FROM
 				dbo.bettrans b WITH (NOLOCK)
 				INNER JOIN @tempAg a ON b.recommend = a.custID AND b.currency = a.currency
+				LEFT JOIN @VIPCust v ON b.custid = v.CustID
 			WHERE
 				b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 				AND b.bettype IN (911, 912, 913)
 				AND b.statusID IN (111, 112, 113)
 				AND b.transid >= @transid
+				AND (@VIPPlayerOnly = 0 OR (@VIPPlayerOnly = 1 AND v.custid IS NOT NULL))
 			GROUP BY
 				b.winlostdate,
 				a.currency
@@ -571,10 +594,12 @@ BEGIN
 				dbo.bettrans b WITH (NOLOCK)
 				INNER JOIN @tempAg a ON b.recommend = a.custID AND b.Currency = a.Currency
 				INNER JOIN @bettype bt ON b.bettype = bt.bettype
+				LEFT JOIN @VIPCust v ON b.custid = v.CustID
 			WHERE 
 				b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 				AND b.statusID IN (111, 112, 113)
 				AND b.transid >= @transid
+				AND (@VIPPlayerOnly = 0 OR (@VIPPlayerOnly = 1 AND v.custid IS NOT NULL))
 			GROUP BY
 				b.winlostdate,
 				a.currency,
@@ -586,9 +611,11 @@ BEGIN
 			SELECT TOP(1) 1
 			FROM dbo.bettrans b WITH (NOLOCK)
 				INNER JOIN @tempAg a ON b.recommend = a.custID AND b.currency = a.currency
+				LEFT JOIN @VIPCust v ON b.custid = v.CustID
 			WHERE b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 				AND((b.bettype IN (4300, 4299, 4298, 17000, 17003) AND b.statusID = 112)
-					OR (b.bettype = 4297 AND b.statusID = 111)))  -- Promotion Prize, Jackpot Prize, Contribution
+					OR (b.bettype = 4297 AND b.statusID = 111))  -- Promotion Prize, Jackpot Prize, Contribution
+				AND (@VIPPlayerOnly = 0 OR (@VIPPlayerOnly = 1 AND v.custid IS NOT NULL)))
 		BEGIN
 			SET @PromotionPrize = 1
 		END
@@ -650,6 +677,7 @@ BEGIN
 			FROM
 				bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)
 				INNER JOIN @tempAg ag ON b.recommend = ag.custID AND b.Currency = ag.currency
+				LEFT JOIN @VIPCust v ON b.custid = v.CustID
 			WHERE
 				b.Winlostdate BETWEEN @_FromDate AND @TempToDate
 				AND (b.bettype < 901 OR b.bettype > 904)
@@ -657,6 +685,7 @@ BEGIN
 				AND b.roleid = 1
 				AND b.statusID <> 101 --exclude REJECT bets
 				AND b.isBA = 1 
+				AND (@VIPPlayerOnly = 0 OR (@VIPPlayerOnly = 1 AND v.custid IS NOT NULL))
 			GROUP BY
 				b.winlostdate,
 				b.currency
@@ -675,6 +704,7 @@ BEGIN
 					ON b.recommend = ag.recommend
 					AND b.custid = ag.custid
 					AND b.Currency = ag.currency
+				LEFT JOIN @VIPCust v ON b.custid = v.CustID
 			WHERE
 				b.Winlostdate BETWEEN @_FromDate AND @TempToDate
 				AND (b.bettype < 901 OR b.bettype > 904)
@@ -682,6 +712,7 @@ BEGIN
 				AND b.roleid = 1
 				AND b.statusID <> 101 --exclude REJECT bets
 				AND b.isBA = 1
+				AND (@VIPPlayerOnly = 0 OR (@VIPPlayerOnly = 1 AND v.custid IS NOT NULL))
 			GROUP BY
 				b.winlostdate,
 				b.currency
@@ -728,6 +759,7 @@ BEGIN
 				bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)
 				INNER JOIN @tempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
 				INNER JOIN @SportType t ON b.sporttype = t.SportType
+				LEFT JOIN @VIPCust v ON b.custid = v.CustID
 			WHERE
 				b.Winlostdate BETWEEN @_FromDate AND @TempToDate
 				AND (b.bettype < 901 OR b.bettype > 904)
@@ -736,6 +768,7 @@ BEGIN
 				AND b.roleid = 1
 				AND b.statusID <> 101 --exclude REJECT bets
 				AND b.isBA = 0 
+				AND (@VIPPlayerOnly = 0 OR (@VIPPlayerOnly = 1 AND v.custid IS NOT NULL))
 			GROUP BY
 				b.winlostdate,
 				b.currency,
@@ -755,6 +788,7 @@ BEGIN
 					ON b.recommend = ag.recommend
 					AND b.custid = ag.custid
 					AND b.Currency = ag.currency
+				LEFT JOIN @VIPCust v ON b.custid = v.CustID
 			WHERE
 				b.Winlostdate BETWEEN @_FromDate AND @TempToDate
 				AND (b.bettype < 901 OR b.bettype > 904)
@@ -763,6 +797,7 @@ BEGIN
 				AND b.statusID <> 101 --exclude REJECT bets
 				AND b.isBA = 0
 				AND b.sporttype = 0
+				AND (@VIPPlayerOnly = 0 OR (@VIPPlayerOnly = 1 AND v.custid IS NOT NULL))
 			GROUP BY
 				b.winlostdate,
 				b.currency
@@ -799,11 +834,13 @@ BEGIN
 			FROM
 				bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)
 				INNER JOIN @tempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
+				LEFT JOIN @VIPCust v ON b.custid = v.CustID
 			WHERE 
 				b.Winlostdate BETWEEN @_FromDate AND @TempToDate
 				AND b.bettype IN (901, 902, 903)
 				AND b.statusID IN (111, 112, 113)
 				AND b.roleid = 1 
+				AND (@VIPPlayerOnly = 0 OR (@VIPPlayerOnly = 1 AND v.custid IS NOT NULL))
 			GROUP BY b.winlostdate,
 				ag.currency,
 				b.bettype
@@ -840,11 +877,13 @@ BEGIN
 			FROM 
 				bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )
 				INNER JOIN @tempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
+				LEFT JOIN @VIPCust v ON b.custid = v.CustID
 			WHERE 
 				b.Winlostdate BETWEEN @_FromDate AND @TempToDate
 				AND b.bettype IN (911, 912, 913) 
 				AND b.statusID IN (111, 112, 113)
 				AND b.roleid = 1 
+				AND (@VIPPlayerOnly = 0 OR (@VIPPlayerOnly = 1 AND v.custid IS NOT NULL))
 			GROUP BY
 				b.winlostdate,
 				ag.currency
@@ -856,9 +895,12 @@ BEGIN
 			AND EXISTS (	SELECT TOP(1) 1
 							FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)
 								INNER JOIN @tempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
+								LEFT JOIN @VIPCust v ON b.custid = v.CustID
 							WHERE b.Winlostdate BETWEEN @_FromDate AND @TempToDate
 								AND ((b.bettype IN (4300, 4299, 4298, 17000, 17003) AND b.statusID = 112)
-									OR (b.bettype = 4297 AND b.statusID = 111)) AND b.roleid = 2)  -- Promotion Prize, Jackpot Prize, Contribution
+									OR (b.bettype = 4297 AND b.statusID = 111)) -- Promotion Prize, Jackpot Prize, Contribution
+								AND b.roleid = 1
+								AND (@VIPPlayerOnly = 0 OR (@VIPPlayerOnly = 1 AND v.custid IS NOT NULL)))
 		BEGIN
 			SET @PromotionPrize = 1
 		END

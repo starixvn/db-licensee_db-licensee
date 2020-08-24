@@ -7,7 +7,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_PromotionPrize]
 	@ToDate					SMALLDATETIME,
 	@MoveBetsDay			SMALLDATETIME,
 	@AgentList				VARCHAR(MAX),
-	@DefaultBaseCurrency	VARCHAR(3)
+	@DefaultBaseCurrency	VARCHAR(3),
+	@VIPPlayerOnly	BIT = 0
 AS
 
 /*
@@ -23,6 +24,7 @@ AS
 		- 20191204@Amanda: Change name of NPH Promotion to Saba Promotion [Redmine: #124612]
 		- 20200714@Hogan: Add 7 games for Jackpot and 2 bettype for Contribution (4297) and Jackpot Prize (4298) [RedmineID: #137290]
 		- 20200803@Kos: Support Saba Loyalty [RedmineID: #138493]
+		- 20200820@Hogan: Support filter by VIP player [RedmineID: #138371]
 
 	Param's Explanation:
 		+ @MoveBetsDay: The day we move tickets to bettrans14
@@ -51,6 +53,7 @@ BEGIN
 	CREATE TABLE #tmpCust(CustId INT)
 	
 	DECLARE @tempAg	TABLE(custID INT, currency INT)
+	DECLARE @VIPCust TABLE (CustId INT)
 
 	DECLARE @PPPromotion	SMALLINT = 4300,-- PP Promotion Prize
 			@PPTournament	SMALLINT = 4299,-- PP Tournament Prize
@@ -105,6 +108,17 @@ BEGIN
 			AND c.roleid = 1
 	END
 
+		-- Insert VIPCust
+		IF @VIPPlayerOnly = 1
+		BEGIN
+			INSERT INTO @VIPCust (CustId)
+			SELECT c.custid
+			FROM dbo.customer c WITH(NOLOCK)
+				INNER JOIN @tempAg tma ON tma.CustID = c.recommend
+				INNER JOIN Dep_CustVIP d WITH(NOLOCK) ON c.custid = d.custid
+			WHERE c.roleid = 1
+		END
+
 	DECLARE @TempFromDate	DATETIME,
 		@TempToDate		DATETIME
 
@@ -135,10 +149,12 @@ BEGIN
 		FROM
 			dbo.bettrans b WITH (NOLOCK)
 			INNER JOIN @tempAg a ON b.recommend = a.custID AND b.Currency = a.Currency
+			LEFT JOIN @VIPCust v ON b.custid = v.CustID
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 			AND((b.bettype IN (@PPPromotion, @PPTournament, @PPJackpot, 17000, 17003) AND b.statusID = 112)
 				OR (b.bettype = @PPContribution AND b.statusID = 111))
+			AND (@VIPPlayerOnly = 0 OR (@VIPPlayerOnly = 1 AND v.custid IS NOT NULL))
 	END
 
 	IF @_FromDate <= @MoveBetsDay 
@@ -168,12 +184,14 @@ BEGIN
 		FROM 
 			bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)
 			INNER JOIN @tempAg a ON b.recommend = a.custID AND b.Currency = a.Currency
+			LEFT JOIN @VIPCust v ON b.custid = v.CustID
 		WHERE 
 			b.winlostdate BETWEEN @_FromDate AND @TempToDate
 			AND b.sporttype IN (@PPsportType, @SPRsportType)
 			AND((b.bettype IN (@PPPromotion, @PPTournament, @PPJackpot, 17000, 17003) AND b.statusID = 112)
 				OR (b.bettype = @PPContribution AND b.statusID = 111))
 			AND b.roleID = 1
+			AND (@VIPPlayerOnly = 0 OR (@VIPPlayerOnly = 1 AND v.custid IS NOT NULL))
 	END
 
 	IF @Username <> ''
