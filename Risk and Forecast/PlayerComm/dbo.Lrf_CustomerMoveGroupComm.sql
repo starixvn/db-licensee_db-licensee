@@ -55,6 +55,9 @@ AS
 */ 
 BEGIN
 	SET NOCOUNT ON 
+	
+	DECLARE @custID_cnt INT = 0
+	
 	CREATE TABLE #tempCust (CustID INT)
 	INSERT INTO #tempCust(CustID)
 	SELECT RTRIM(LTRIM(VAL)) 
@@ -77,7 +80,18 @@ BEGIN
 		SELECT @ErrMsg='Customer does not belong to licensee'
 		RETURN 
 	END
-
+	
+	SET @custID_cnt = (SELECT COUNT(1) FROM bodb_licensee.dbo.LicenseeCustComm WITH (NOLOCK) WHERE LicenseeID = @LicenseeID AND GroupCommID = @GroupCommID)
+	
+	IF @custID_cnt >= 100000
+	BEGIN
+		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN  'You have reached the maximum number of updating customers'' commission. Please contact Customer Service to process your request.'
+										ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200049,@Langkey)
+										END, @ErrCode = 100
+		
+		RETURN
+	END
+		
 	EXEC [Lrf_CustomerUpdMemberComm] 
 		@LicenseeID=@LicenseeID
 		,@strCustID=@strCustIDOriginal

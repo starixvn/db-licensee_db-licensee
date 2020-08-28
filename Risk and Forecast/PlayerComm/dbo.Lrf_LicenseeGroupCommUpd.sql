@@ -145,7 +145,7 @@ BEGIN
 
 	SET @custID_cnt = (SELECT COUNT(1) FROM LicenseeCustComm WITH (NOLOCK) WHERE LicenseeID = @LicenseeID AND GroupCommID = @GroupCommID)
 	
-	IF @custID_cnt > 200000
+	IF @custID_cnt >= 100000
 	BEGIN
 		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN  'You have reached the maximum number of updating customers'' commission. Please contact Customer Service to process your request.'
 										ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200049,@Langkey)
