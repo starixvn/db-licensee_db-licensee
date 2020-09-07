@@ -414,7 +414,7 @@ BEGIN
 
 		DELETE FROM @TempList_batch
 		
-		UPDATE TOP (2500) t
+		UPDATE TOP (1000) t
 			SET IsFinished = 1
 		OUTPUT deleted.CustID 
 		INTO @TempList_batch (custID)
@@ -429,26 +429,80 @@ BEGIN
 						FROM @TempList_batch
 						FOR XML PATH('')
 						),1,1,'')
-		BEGIN TRY
-		
-			EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_UpdMemComm_RunSP
-						@UserID = @UserID,
-						@strCustID = @strCustID,
-						@ActionID = 2612,
-						@LogSPData = @LogSPData,
-						@LogSPData2 = @LogSPData2,
-						@duration = @duration
-		END TRY
-		BEGIN CATCH
-			EXEC bodb_CustomerLog.dbo.WriteLog_UserLog_UpdMemComm_RunSP
-						@UserID = @UserID,
-						@strCustID = @strCustID,
-						@ActionID = 2612,
-						@LogSPData = @LogSPData,
-						@LogSPData2 = @LogSPData2,
-						@duration = @duration
-		END CATCH
-		
+		---------- write log for servicebroker
+		DECLARE @log xml, @SB_Error BIT = 0, @currentdate DATETIME = GETDATE ()
+		SELECT @log = (
+					SELECT a.CustID AS '@CustID'
+							, @UserID AS	'@UserID'	
+							, 2612 '@ActionID'
+							--TrackingValue
+							, '<Lrf_CustomerUpdMemberComm custid="'+ COALESCE(CAST(a.CustID as VARCHAR(50)),SPACE(1)) + '" ' + 
+						   @LogSPData +  
+						   'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
+						   @LogSPData2 AS '@TrackingValue'
+						   --TrackingValue2
+						   ,'<Lrf_CustomerUpdMemberComm custid="'+ COALESCE(CAST(a.CustID as VARCHAR(50)),SPACE(1)) + '" ' +
+						   'GroupCommID="'+ COALESCE(CAST(ISNULL(lcc.GroupCommID,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+						   'LicenseeID="'+ COALESCE(CAST(ISNULL(lcc.LicenseeID,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+						   'SBComm="'+ COALESCE(CAST(ISNULL(lcc.SBComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+						   'ParlayComm="'+ COALESCE(CAST(ISNULL(lcc.ParlayComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+						   'NGComm="'+ COALESCE(CAST(ISNULL(lcc.NGComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+						   --'LCComm="'+ COALESCE(CAST(ISNULL(lcc.LCComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+						   'RNGComm="'+ COALESCE(CAST(ISNULL(lcc.RNGComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +			 
+						   --'AllbetComm="'+ COALESCE(CAST(ISNULL(lcc.AllbetComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+						   'MacauComm="'+ COALESCE(CAST(ISNULL(lcc.MacauComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+						   'PPComm="'+ COALESCE(CAST(ISNULL(lcc.PPComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+						   --'GDComm="'+ COALESCE(CAST(ISNULL(lcc.GDComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+						   --'AGComm="'+ COALESCE(CAST(ISNULL(lcc.AGComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+						   'FWComm="'+ COALESCE(CAST(ISNULL(lcc.FWComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+						    -- phase 2
+							'SexyGamingComm="'+ COALESCE(CAST(ISNULL(lcc.SexyGamingComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+							'SpadeGamingComm="'+ COALESCE(CAST(ISNULL(lcc.SpadeGamingComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+							'KenoComm="'+ COALESCE(CAST(ISNULL(lcc.KenoComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+							'LotteryComm="'+ COALESCE(CAST(ISNULL(lcc.LotteryComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+							'VSComm="'+ COALESCE(CAST(ISNULL(lcc.VSComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+							'VS2Comm="'+ COALESCE(CAST(ISNULL(lcc.VS2Comm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+							'TableGameComm="'+ COALESCE(CAST(ISNULL(lcc.TableGameComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+			
+						   'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
+						   @LogSPData2 AS '@TrackingValue2'
+						   , @currentdate AS '@LogDate'
+						   , @duration AS '@Duration'
+						   
+					FROM @TempList_batch a
+						INNER JOIN dbo.LicenseeCustComm lcc WITH (NOLOCK) ON a.CustID = lcc.CustID
+					FOR XML PATH('Row')	
+					)
+	
+		EXEC bodb_CustomerLog.sb.CustomerLog_SendMessage @xml = @log, 
+													@MessageType='MessageType_CustomerLog_UserLog_RunSP', 
+													@functionName = 'UserLog_Others',
+													@SB_Error = @SB_Error OUT
+
+
+		--SELECT @SB_Error
+		IF @SB_Error = 1
+		BEGIN
+			BEGIN TRY
+			
+				EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_UpdMemComm_RunSP
+							@UserID = @UserID,
+							@strCustID = @strCustID,
+							@ActionID = 2612,
+							@LogSPData = @LogSPData,
+							@LogSPData2 = @LogSPData2,
+							@duration = @duration
+			END TRY
+			BEGIN CATCH
+				EXEC bodb_CustomerLog.dbo.WriteLog_UserLog_UpdMemComm_RunSP
+							@UserID = @UserID,
+							@strCustID = @strCustID,
+							@ActionID = 2612,
+							@LogSPData = @LogSPData,
+							@LogSPData2 = @LogSPData2,
+							@duration = @duration
+			END CATCH
+		END
 		
 		--Update LicenseeCustComm
 		IF (@IsUpdateComm = 1)
