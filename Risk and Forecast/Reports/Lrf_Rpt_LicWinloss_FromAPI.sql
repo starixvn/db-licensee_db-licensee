@@ -38,7 +38,7 @@ AS
 BEGIN  
     SET NOCOUNT ON;
 
-	DECLARE @cutoffDate DATE = '2020-04-01';
+	DECLARE @cutoffDate DATE = '2020-01-01';
 
 	DECLARE @Product TABLE (ProductCode VARCHAR(10))
 
