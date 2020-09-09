@@ -15,6 +15,7 @@ AS
 		- 20200313@Bobby: Initialize [RedmineID: #130293] 
 		- 20200330@Louis: Support Statement & Detail Transaction Report in Chinese [RedmineID: #131262]
 		- 20200420@Louis: Detail Transaction - Change rounding & sorting mechanism [RedmineID: #1328230]
+		- 20200907@Sol: show lost record for some cases [RedmineID: #140884]
 	
 	Param's Explanation:     
 */
@@ -72,7 +73,12 @@ BEGIN
 		FROM BalanceRecord.dbo.BalanceRecord_bk br WITH(NOLOCK)
 		WHERE custid = @_custid
 			AND actiondate BETWEEN @_fromDateTime AND @_toDateTime
-			AND BalanceChanged <> 0
+			AND 
+			(
+				BalanceChanged <> 0
+				OR 
+				(BalanceChanged = 0 AND ActionID NOT IN (20, 21, 100, 255)) --excluded Reject Bet, Accept Bet, Bet SUM insert, Balance insert
+			)
 	
 		UNION ALL
 		SELECT transid
@@ -85,7 +91,12 @@ BEGIN
 		FROM bodb02.dbo.BalanceRecord WITH(NOLOCK)
 		WHERE custid = @_custid
 			AND actiondate BETWEEN @_fromDateTime AND @_toDateTime
-			AND BalanceChanged <> 0
+			AND 
+			(
+				BalanceChanged <> 0
+				OR 
+				(BalanceChanged = 0 AND ActionID NOT IN (20, 21, 100, 255)) --excluded Reject Bet, Accept Bet, Bet SUM insert, Balance insert
+			)
 	) AS br
 
 	-- SET @TotalRow
