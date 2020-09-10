@@ -13,7 +13,7 @@ AS
 BEGIN
 	SET NOCOUNT ON
 	
-	DECLARE @siteID INT 
+	DECLARE @siteID VARCHAR(7) 
 	
 	SELECT @siteID = siteID 
 	FROM SiteConfig.dbo.LicVendorProfile WITH(NOLOCK)
