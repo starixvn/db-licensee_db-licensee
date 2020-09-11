@@ -24,6 +24,7 @@ AS
 			- 20200410@Eden: LAP - Player Segmentation [redmine:#131929]
 			- 20200417@Elodie: Unremove VIP if void abnormal [Redmine: #132736]
 			- 20200717@Johnson: return agentid to support subsidiary [redmine:#136974]
+			- 20200909@Johnson: add customer class [redmine:#141157]
 		Paramter's Explanations:
 			@OrderCol = 1: System ID
 						= 2: sort by external ID
@@ -162,8 +163,9 @@ BEGIN
 												CASE WHEN @SortType = 2 THEN OrderCol END DESC ) rn
 		FROM t1
 		)
-		SELECT t2.*, CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END as isVIP
+		SELECT t2.*, ci.CustomerClass, CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END as isVIP
 		FROM t2 
+			INNER JOIN custinfo ci WITH(NOLOCK) ON ci.custid = t2.custid
 			LEFT JOIN Dep_CustVIP d WITH(NOLOCK) ON t2.custid = d.custid
 		WHERE rn BETWEEN @rowstart AND @rowend
 		ORDER BY rn ASC
@@ -175,8 +177,9 @@ BEGIN
 												CASE WHEN @SortType = 2 THEN CreatedDate END DESC) rn
 		FROM #CustList
 		)
-		SELECT t.*, CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END as isVIP
+		SELECT t.*, ci.CustomerClass, CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END as isVIP
 		FROM t
+			INNER JOIN custinfo ci WITH(NOLOCK) ON ci.custid = t2.custid
 			LEFT JOIN Dep_CustVIP d WITH(NOLOCK) ON t.custid = d.custid
 		WHERE rn BETWEEN @rowstart AND @rowend
 		ORDER BY rn ASC
