@@ -25,6 +25,7 @@ AS
 			- 20200417@Elodie: Unremove VIP if void abnormal [Redmine: #132736]
 			- 20200717@Johnson: return agentid to support subsidiary [redmine:#136974]
 			- 20200909@Johnson: add customer class [redmine:#141157]
+			- 20200914@Johnson: fix sort MarkDate [redmine:#141525]
 		Paramter's Explanations:
 			@OrderCol = 1: System ID
 						= 2: sort by external ID
@@ -179,7 +180,7 @@ BEGIN
 		)
 		SELECT t.*, ci.CustomerClass, CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END as isVIP
 		FROM t
-			INNER JOIN custinfo ci WITH(NOLOCK) ON ci.custid = t2.custid
+			INNER JOIN custinfo ci WITH(NOLOCK) ON ci.custid = t.custid
 			LEFT JOIN Dep_CustVIP d WITH(NOLOCK) ON t.custid = d.custid
 		WHERE rn BETWEEN @rowstart AND @rowend
 		ORDER BY rn ASC
