@@ -38,11 +38,14 @@ AS
 BEGIN  
     SET NOCOUNT ON;
 
-	DECLARE @cutoffDate DATE = '2020-01-01';
-
+	DECLARE @cutoffDate DATE;
 	DECLARE @Product TABLE (ProductCode VARCHAR(10))
-
 	DECLARE @Currency TABLE (Id INT,Code VARCHAR(5))
+
+	--get cutoffDate
+	SELECT @cutoffDate = f.CutOffDate 
+	FROM Lrf_f_GetCutOffDateBySite() f
+	WHERE f.ReportType = 1 AND f.SiteName = @SiteName
 
 	INSERT INTO @Product (ProductCode)
 	SELECT ISNULL(Val,'') 	
