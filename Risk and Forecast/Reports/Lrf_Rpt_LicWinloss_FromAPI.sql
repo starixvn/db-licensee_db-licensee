@@ -18,6 +18,7 @@ AS
 		- 20190622@Amanda: Add Base currency param [RedmineID: #112531]
 		- 20190815@Amanda: Add product CS & LC [RedmineID: #117900]
 		- 20200320@Bobby: Ploutos Integration - [redmine: #125252]
+		- 20200917@Sol: Joinning with playerProfile - [redmine: #125252]
 
 	Developer's Notes:
 		- Notes: If product is NG, search tickets with GameType is RNG
@@ -160,7 +161,8 @@ BEGIN
 			COUNT(1),
 			'BetTicket' AS SourceName
 	FROM bodb_Ploutos.dbo.BetTicket a WITH (NOLOCK)
-	INNER JOIN @Currency c ON c.Code = a.CurrencyCode
+		INNER JOIN @Currency c ON c.Code = a.CurrencyCode
+		INNER JOIN bodb_Ploutos.dbo.PlayerProfile pp WITH(NOLOCK) ON pp.BrandCode = a.BrandCode AND pp.CustID = a.CustId
 	WHERE  a.WinLostDate >= @FromDate AND a.WinLostDate < @TempToDate 
 			AND a.BrandCode = @SiteName
 			AND (

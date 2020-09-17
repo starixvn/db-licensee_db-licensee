@@ -13,6 +13,7 @@ AS
     Revisions:  
 		- 20191104@Amanda: Created new SP [RedmineID: #122789]
 		- 20200325@Bobby: Ploutos Integration - [redmine: #125252]
+		- 20200917@Sol: Joinning with playerProfile - [redmine: #125252]
 
 	Developer's Notes:
 		
@@ -104,8 +105,9 @@ BEGIN
 			- SUM(a.NetAmount * c.ExRate)	AS TotalWinLoss
 		FROM bodb_Ploutos.dbo.BetTicket a WITH (NOLOCK)
 		INNER JOIN @Currency c ON c.Code = a.CurrencyCode
+		INNER JOIN bodb_Ploutos.dbo.PlayerProfile pp WITH(NOLOCK) ON pp.BrandCode = a.BrandCode AND pp.CustID = a.CustId
 		WHERE  a.WinLostDate >= @Date AND a.WinLostDate < @TempToDate 
-				AND BrandCode = @SiteName
+				AND a.BrandCode = @SiteName
 				AND ( 
 					(@showSB = 1 AND a.GamePlatformCode = 'SB') 
 					OR (@showNG = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode = '0161')
