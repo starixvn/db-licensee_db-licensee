@@ -19,9 +19,9 @@ RETURN (
 		(
 			VALUES 
 				(1, '12Bet', '2020-01-01'),
-				(1, 'Ivorysport', '2025-01-01'),
-				(1, 'Nova88', '2025-01-01'),
-				(1, 'Opal88', '2025-01-01')
+				(1, 'Ivorysport', '2020-09-01'),
+				(1, 'Nova88', '2020-09-01'),
+				(1, 'Opal88', '2020-09-01')
 		) AS tbl (ReportType, SiteName, CutOffDate)
 	
 )
