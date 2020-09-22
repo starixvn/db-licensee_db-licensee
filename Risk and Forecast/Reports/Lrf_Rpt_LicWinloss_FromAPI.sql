@@ -11,7 +11,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss_FromAPI]
 AS 
 /*  Created: 20180820@Amanda
     Description: LAP - LAP - Implement new Licensee Win Loss report for Ivorybet and Opal88
-    DB: DBEXT.bodb02
+    DB: DBPLO.bodb02
    
     Revisions:  
 		- 20180820@Amanda: Created new Licensee Winloss SP for Ivorybet and Opal88 [RedmineID: #99777]

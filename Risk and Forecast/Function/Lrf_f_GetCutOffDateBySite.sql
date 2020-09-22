@@ -5,7 +5,7 @@ AS
 /*
 	Created:20200916@Sol
 	Task: Cut Off Date By Site name
-	DB: DBEXT-bodb02
+	DB: DBPLO-bodb02
 	Revisions:
 		- 20200916@Sol: Initialize [redmine: #125252]
 

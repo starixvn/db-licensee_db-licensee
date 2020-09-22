@@ -12,7 +12,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_Audit_DailyBets]
 AS 
 /*  Created: 20191028@Amanda
     Description: LAP - Implement new report for auditing
-    DB: DBEXT.bodb02
+    DB: DBPLO.bodb02
    
     Revisions:  
 		- 20191028@Amanda: Created new SP [RedmineID: #122789]
