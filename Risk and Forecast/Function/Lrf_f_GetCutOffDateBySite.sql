@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" selectors="bodbLicenseeNet" viewers="" isFunction="1" isNested="0"></info>*/
+/*<info serverAlias="DBPLO-bodb02" selectors="bodbLicenseeNet" viewers="" isFunction="1" isNested="0"></info>*/
 CREATE FUNCTION [dbo].[Lrf_f_GetCutOffDateBySite]()
 RETURNS TABLE
 AS
