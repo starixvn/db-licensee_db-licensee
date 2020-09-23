@@ -1,6 +1,5 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
-
-CREATE PROCEDURE [dbo].[Lrf_Rpt_LicWinloss_FromAPI]  	
+/*<info serverAlias="DBPLO-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss_FromAPI]  	
 	@SiteName		VARCHAR(50),
 	@FromDate		DATE,
 	@ToDate			DATE,
@@ -12,23 +11,22 @@ CREATE PROCEDURE [dbo].[Lrf_Rpt_LicWinloss_FromAPI]
 AS 
 /*  Created: 20180820@Amanda
     Description: LAP - LAP - Implement new Licensee Win Loss report for Ivorybet and Opal88
-    DB: DBEXT.bodb02
+    DB: DBPLO.bodb02
    
     Revisions:  
 		- 20180820@Amanda: Created new Licensee Winloss SP for Ivorybet and Opal88 [RedmineID: #99777]
 		- 20190622@Amanda: Add Base currency param [RedmineID: #112531]
 		- 20190815@Amanda: Add product CS & LC [RedmineID: #117900]
+		- 20200320@Bobby: Ploutos Integration - [redmine: #125252]
+		- 20200917@Sol: Joinning with playerProfile - [redmine: #125252]
 
 	Developer's Notes:
 		- Notes: If product is NG, search tickets with GameType is RNG
 		
     Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
-	  + @CurrencyList: xml structure
-					  <ROOT>
-					   <Agent Id="13" Code="CNY"/>
-					   <Agent Id="51" Code="IDR"/> 
-					  </ROOT>
+	  + @CurrencyList: XML(<ROOT><CR Id="13" Code="CNY"/><CR Id="51" Code="IDR"/> </ROOT>)
+
 	  EXEC   [dbo].[Lrf_Rpt_LicWinloss_FromAPI]
 		    @SiteName = N'IvorySport',
 		    @FromDate = '2018-08-01',
@@ -39,34 +37,29 @@ AS
 		    
 */
 BEGIN  
-    SET NOCOUNT ON
-	DECLARE @Product TABLE (ProductCode VARCHAR(10))
+    SET NOCOUNT ON;
 
+	DECLARE @cutoffDate DATE;
+	DECLARE @Product TABLE (ProductCode VARCHAR(10))
 	DECLARE @Currency TABLE (Id INT,Code VARCHAR(5))
+
+	--get cutoffDate
+	SELECT @cutoffDate = f.CutOffDate 
+	FROM Lrf_f_GetCutOffDateBySite() f
+	WHERE f.ReportType = 1 AND f.SiteName = @SiteName
 
 	INSERT INTO @Product (ProductCode)
 	SELECT ISNULL(Val,'') 	
-	FROM dbo.strSplit(@ProductCodes,',')
+	FROM bodb02.dbo.strSplit(@ProductCodes,',')
 
 	-- Get Currency
-	DECLARE @DocHandler INT
-
-	BEGIN TRY
-		EXEC sp_xml_preparedocument @DocHandler OUTPUT
-				,@CurrencyList
-		INSERT INTO @Currency (Id, Code)
-		SELECT DISTINCT Id, Code
-		FROM OPENXML(@DocHandler, '/ROOT/CR', 1) WITH (Id [int], Code VARCHAR(5)) AS Data
-
-		EXEC sp_xml_removedocument @DocHandler
-	END TRY
-
-	BEGIN CATCH
-		SELECT ErrCode = 100
-				,ErrMsg = N'Paramter invalid.'
-
-		RETURN
-	END CATCH;
+	INSERT INTO @Currency (Id, Code)
+	SELECT T.C.value('./@Id', 'INT') AS Id
+		,T.C.value('./@Code', 'VARCHAR(5)') AS Code
+	FROM (
+		VALUES (CAST(@CurrencyList AS XML))
+	) AS xd(dataX)
+	CROSS APPLY xd.dataX.nodes('/ROOT/CR') AS T(C)
     
     UPDATE @Currency
 	SET     Code =  CASE  
@@ -92,8 +85,11 @@ BEGIN
 		LicenseeWLNG		MONEY,
 		LicenseeWLCS		MONEY,
 		LicenseeWLLC		MONEY,
-		Betcount			BIGINT
+		Betcount			BIGINT,
+		SourceName			VARCHAR(20)
 	)
+
+	CREATE CLUSTERED INDEX CIX_Winlostdate ON #SAgWinLoss (Winlostdate DESC)
 
 	DECLARE @showSB BIT = 0,
 			@showNG BIT = 0,
@@ -119,20 +115,22 @@ BEGIN
 			LicenseeWLNG,
 			LicenseeWLCS,
 			LicenseeWLLC,
-			Betcount
+			Betcount,
+			SourceName
 		)
 	SELECT	a.WinLostDate,
-			c.Id,
-			SUM(CASE WHEN a.GameType = 'SB' THEN a.BetAmount ELSE 0 END),
-			SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode = '161' THEN a.BetAmount ELSE 0 END),
-			SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode <> '161' THEN a.BetAmount ELSE 0 END),
-			SUM(CASE WHEN a.GameType = 'CA' THEN a.BetAmount ELSE 0 END),
-			- SUM(a.NetAmount),
-			SUM(CASE WHEN a.GameType = 'SB' THEN a.NetAmount ELSE 0 END),
-			SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode = '161' THEN a.NetAmount ELSE 0 END),
-			SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode <> '161' THEN a.NetAmount ELSE 0 END),
-			SUM(CASE WHEN a.GameType = 'CA' THEN a.NetAmount ELSE 0 END),
-			COUNT(a.TransactionId)
+			c.Id AS CurrencyId,
+			SUM(CASE WHEN a.GameType = 'SB' THEN a.BetAmount ELSE 0 END) AS TurnoverSB,
+			SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode = '161' THEN a.BetAmount ELSE 0 END) AS TurnoverNG,
+			SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode <> '161' THEN a.BetAmount ELSE 0 END) AS TurnoverCS,
+			SUM(CASE WHEN a.GameType = 'CA' THEN a.BetAmount ELSE 0 END) AS TurnoverLC,
+			- SUM(a.NetAmount) AS Winlost,
+			SUM(CASE WHEN a.GameType = 'SB' THEN a.NetAmount ELSE 0 END) AS LicenseeWLSB,
+			SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode = '161' THEN a.NetAmount ELSE 0 END) AS LicenseeWLNG,
+			SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode <> '161' THEN a.NetAmount ELSE 0 END) AS LicenseeWLCS,
+			SUM(CASE WHEN a.GameType = 'CA' THEN a.NetAmount ELSE 0 END) AS LicenseeWLLC,
+			COUNT(1) AS Betcount,
+			'AuditTicket' AS SourceName
 	FROM bodb_licenseeReportArchive.dbo.rptDep_AuditTickets a WITH (NOLOCK)
 	INNER JOIN @Currency c ON c.Code = a.CurrencyCode
 	WHERE  a.WinLostDate >= @FromDate AND a.WinLostDate < @TempToDate 
@@ -143,6 +141,37 @@ BEGIN
 				OR	(@showCS = 1 AND a.GameType = 'RNG' AND a.GameCode <> '161')
 				OR	(@showLC = 1 AND a.GameType = 'CA')
 			)
+			AND a.WinlostDate < @cutoffDate
+	GROUP BY
+		a.WinLostDate,
+		c.Id
+
+	UNION ALL
+	SELECT	a.WinLostDate,
+			c.Id,
+			SUM(CASE WHEN a.GamePlatformCode = 'SB' THEN a.BetAmount ELSE 0 END),
+			SUM(CASE WHEN a.GamePlatformCode = 'RNG' AND a.GameCode = '0161' THEN a.BetAmount ELSE 0 END),
+			SUM(CASE WHEN a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161' THEN a.BetAmount ELSE 0 END),
+			SUM(CASE WHEN a.GamePlatformCode = 'CA' THEN a.BetAmount ELSE 0 END),
+			- SUM(a.NetAmount),
+			SUM(CASE WHEN a.GamePlatformCode = 'SB' THEN a.NetAmount ELSE 0 END),
+			SUM(CASE WHEN a.GamePlatformCode = 'RNG' AND a.GameCode = '0161' THEN a.NetAmount ELSE 0 END),
+			SUM(CASE WHEN a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161' THEN a.NetAmount ELSE 0 END),
+			SUM(CASE WHEN a.GamePlatformCode = 'CA' THEN a.NetAmount ELSE 0 END),
+			COUNT(1),
+			'BetTicket' AS SourceName
+	FROM bodb_Ploutos.dbo.BetTicket a WITH (NOLOCK)
+		INNER JOIN @Currency c ON c.Code = a.CurrencyCode
+		INNER JOIN bodb_Ploutos.dbo.PlayerProfile pp WITH(NOLOCK) ON pp.BrandCode = a.BrandCode AND pp.CustID = a.CustId
+	WHERE  a.WinLostDate >= @FromDate AND a.WinLostDate < @TempToDate 
+			AND a.BrandCode = @SiteName
+			AND (
+					(@showSB = 1 AND a.GamePlatformCode = 'SB') 
+				OR	(@showNG = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode = '0161')
+				OR	(@showCS = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161')
+				OR	(@showLC = 1 AND a.GamePlatformCode = 'CA')
+			)
+			AND a.WinlostDate >= @cutoffDate
 	GROUP BY
 		a.WinLostDate,
 		c.Id
@@ -159,7 +188,7 @@ BEGIN
 			EUR,
 			Rate,
 			DefaultRate
-	FROM dbo.Lrf_f_GetExchangeRate(@FromDate, @ToDate, @BaseCurrency, @DefaultBaseCurrency) exc
+	FROM bodb02.dbo.Lrf_f_GetExchangeRate(@FromDate, @ToDate, @BaseCurrency, @DefaultBaseCurrency) exc
 
 	-- Return data
 	IF (@ReportType = 1)

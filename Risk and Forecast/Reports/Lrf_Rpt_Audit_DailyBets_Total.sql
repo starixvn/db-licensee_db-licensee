@@ -1,6 +1,5 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
-
-CREATE PROCEDURE [dbo].[Lrf_Rpt_Audit_DailyBets_Total]  	
+/*<info serverAlias="DBPLO-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+ALTER PROCEDURE [dbo].[Lrf_Rpt_Audit_DailyBets_Total]  	
 	@SiteName		VARCHAR(50),
 	@Date			DATE,
 	@ProductCodes	VARCHAR(100),
@@ -9,10 +8,12 @@ CREATE PROCEDURE [dbo].[Lrf_Rpt_Audit_DailyBets_Total]
 AS 
 /*  Created: 20191104@Amanda
     Description: LAP - Implement new report for auditing
-    DB: DBEXT.bodb02
+    DB: DBPLO.bodb02
    
     Revisions:  
 		- 20191104@Amanda: Created new SP [RedmineID: #122789]
+		- 20200325@Bobby: Ploutos Integration - [redmine: #125252]
+		- 20200917@Sol: Joinning with playerProfile - [redmine: #125252]
 
 	Developer's Notes:
 		
@@ -29,40 +30,29 @@ AS
 		    @CurrencyList=N'<ROOT><CR Id="13" Code="CNY"/><CR Id="15" Code="IDR"/> </ROOT>'	    
 */
 BEGIN  
-    SET NOCOUNT ON
-	DECLARE @Product TABLE (ProductCode VARCHAR(10))
+    SET NOCOUNT ON;
 
+	DECLARE @cutoffDate DATE;
+	DECLARE @Product TABLE (ProductCode VARCHAR(10))
 	DECLARE @Currency AS TABLE(Id INT, Code VARCHAR(5), ExRate FLOAT)
+
+	--get cutoffDate
+	SELECT @cutoffDate = f.CutOffDate 
+	FROM Lrf_f_GetCutOffDateBySite() f
+	WHERE f.ReportType = 1 AND f.SiteName = @SiteName
 
 	INSERT INTO @Product (ProductCode)
 	SELECT ISNULL(Val,'') 	
 	FROM dbo.strSplit(@ProductCodes,',')
 
 	-- Get Currency
-	DECLARE @DocHandler INT
-
-	BEGIN TRY
-		EXEC sp_xml_preparedocument @DocHandler OUTPUT
-				,@CurrencyList
-		INSERT INTO @Currency (Id, Code)
-		SELECT 
-			Id,
-			CASE  
-                WHEN Id = 20 THEN 'UUS' 
-                WHEN Id = 51 THEN 'VND' 
-                WHEN Id = 70 THEN 'MMK' 
-                ELSE Code
-            END
-		FROM OPENXML(@DocHandler, '/ROOT/CR', 1) WITH (Id [int], Code VARCHAR(5)) AS Data
-
-		EXEC sp_xml_removedocument @DocHandler
-	END TRY
-
-	BEGIN CATCH
-		SELECT ErrCode = 100
-				,ErrMsg = N'Paramter invalid.'
-		RETURN
-	END CATCH;
+	INSERT INTO @Currency (Id, Code)
+	SELECT T.C.value('./@Id', 'INT') AS Id
+		,T.C.value('./@Code', 'VARCHAR(5)') AS Code
+	FROM (
+		VALUES (CAST(@CurrencyList AS XML))
+	) AS xd(dataX)
+	CROSS APPLY xd.dataX.nodes('/ROOT/CR') AS T(C)
 
 	UPDATE c
 	SET c.ExRate = ISNULL(e.Rate, 1)
@@ -86,22 +76,46 @@ BEGIN
 	SELECT @showCS = 1 FROM @Product WHERE ProductCode = 'CS'
 	SELECT @showLC = 1 FROM @Product WHERE ProductCode = 'LC'
 
-	-- Return data
-	DECLARE @Sql NVARCHAR(MAX)
-	
-	SELECT
-		COUNT(a.TransactionId)			AS TotalRows,
-		SUM(a.BetAmount * c.ExRate)		AS TotalTurnover,
-		- SUM(a.NetAmount * c.ExRate)	AS TotalWinLoss
-	FROM bodb_licenseeReportArchive.dbo.rptDep_AuditTickets a WITH (NOLOCK)
-	INNER JOIN @Currency c ON c.Code = a.CurrencyCode
-	WHERE  a.WinLostDate >= @Date AND a.WinLostDate < @TempToDate 
-			AND Brand = @SiteName
-			AND ( 
-				(@showSB = 1 AND a.GameType = 'SB') 
-				OR (@showNG = 1 AND a.GameType = 'RNG' AND a.GameCode = '161')
-				OR (@showCS = 1 AND a.GameType = 'RNG' AND a.GameCode <> '161')
-				OR (@showLC = 1 AND a.GameType = 'CA')
-			)
+	-- Return data	
+	SELECT 
+		SUM(TotalRows) AS TotalRows
+		,SUM(TotalTurnover) AS TotalTurnover
+		,SUM(TotalWinLoss) AS TotalWinLoss
+	FROM (
+		SELECT
+			COUNT(a.TransactionId)			AS TotalRows,
+			SUM(a.BetAmount * c.ExRate)		AS TotalTurnover,
+			- SUM(a.NetAmount * c.ExRate)	AS TotalWinLoss
+		FROM bodb_licenseeReportArchive.dbo.rptDep_AuditTickets a WITH (NOLOCK)
+		INNER JOIN @Currency c ON c.Code = a.CurrencyCode
+		WHERE  a.WinLostDate >= @Date AND a.WinLostDate < @TempToDate 
+				AND Brand = @SiteName
+				AND ( 
+					(@showSB = 1 AND a.GameType = 'SB') 
+					OR (@showNG = 1 AND a.GameType = 'RNG' AND a.GameCode = '161')
+					OR (@showCS = 1 AND a.GameType = 'RNG' AND a.GameCode <> '161')
+					OR (@showLC = 1 AND a.GameType = 'CA')
+				)
+				AND a.WinLostDate < @cutoffDate
+
+		UNION ALL
+		SELECT
+			COUNT(a.TransactionId)			AS TotalRows,
+			SUM(a.BetAmount * c.ExRate)		AS TotalTurnover,
+			- SUM(a.NetAmount * c.ExRate)	AS TotalWinLoss
+		FROM bodb_Ploutos.dbo.BetTicket a WITH (NOLOCK)
+		INNER JOIN @Currency c ON c.Code = a.CurrencyCode
+		INNER JOIN bodb_Ploutos.dbo.PlayerProfile pp WITH(NOLOCK) ON pp.BrandCode = a.BrandCode AND pp.CustID = a.CustId
+		WHERE  a.WinLostDate >= @Date AND a.WinLostDate < @TempToDate 
+				AND a.BrandCode = @SiteName
+				AND ( 
+					(@showSB = 1 AND a.GamePlatformCode = 'SB') 
+					OR (@showNG = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode = '0161')
+					OR (@showCS = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161')
+					OR (@showLC = 1 AND a.GamePlatformCode = 'CA')
+				)
+				AND a.WinLostDate >= @cutoffDate
+	) AS rpt
+
 END
 GO
