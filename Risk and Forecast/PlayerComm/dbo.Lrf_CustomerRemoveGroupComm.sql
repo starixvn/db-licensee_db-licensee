@@ -193,6 +193,21 @@ BEGIN
 			--@IsUpdateGD=1,
 			--@IsUpdateAG=1,	
 			@IsUpdateFW=1,
+			---start param of phase 2
+			@IsUpdateSexyGaming = 1,	
+			@SexyGamingComm = 0,
+			@IsUpdateSpadeGaming = 1,	
+			@SpadeGamingComm = 0,
+			@IsUpdateKeno = 1,
+			@KenoComm = 0,
+			@IsUpdateLottery = 1,	
+			@LotteryComm = 0,
+			@IsUpdateVS = 1,
+			@VSComm = 0,
+			@IsUpdateVS2 = 1,	
+			@VS2Comm = 0, 
+			@IsUpdateTableGame = 1,
+			@TableGameComm = 0,
 			@IP=@IP,
 			@Langkey=@Langkey,
 			@ErrCode=@ErrCode OUTPUT,
@@ -214,7 +229,16 @@ BEGIN
 			--GDComm= 0,
 			--AGComm= 0,
 			FWComm = 0,
+			-- phase 2
+			SexyGamingComm = 0 ,
+			SpadeGamingComm = 0,
+			KenoComm = 0,
+			LotteryComm = 0,
+			VSComm = 0,
+			VS2Comm = 0,
+			TableGameComm = 0,
 			GroupCommID = 0
+			
 		WHERE LicenseeID = @LicenseeID 
 		AND CustID IN (SELECT CustID FROM @TempCustID)
 	END
