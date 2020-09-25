@@ -14,6 +14,7 @@ AS
 		- 20191104@Amanda: Created new SP [RedmineID: #122789]
 		- 20200325@Bobby: Ploutos Integration - [redmine: #125252]
 		- 20200917@Sol: Joinning with playerProfile - [redmine: #125252]
+		- 20200924@Sol: Convert INH to VND - [redmine: #139910]
 
 	Developer's Notes:
 		
@@ -21,7 +22,7 @@ AS
 	  + @CurrencyList: xml structure
 					  <ROOT>
 					   <Agent Id="13" Code="CNY"/>
-					   <Agent Id="51" Code="IDR"/> 
+					   <Agent Id="51" Code="INH"/> 
 					  </ROOT>
 	  EXEC   [dbo].[Lrf_Rpt_Audit_DailyBets]
 		    @SiteName = N'Opal88',
@@ -46,13 +47,24 @@ BEGIN
 	FROM dbo.strSplit(@ProductCodes,',')
 
 	-- Get Currency
+	;WITH CTE_Currency AS (
+		SELECT T.C.value('./@Id', 'INT') AS Id
+			,T.C.value('./@Code', 'VARCHAR(5)') AS Code
+		FROM (
+			VALUES (CAST(@CurrencyList AS XML))
+		) AS xd(dataX)
+		CROSS APPLY xd.dataX.nodes('/ROOT/CR') AS T(C)
+	)
 	INSERT INTO @Currency (Id, Code)
-	SELECT T.C.value('./@Id', 'INT') AS Id
-		,T.C.value('./@Code', 'VARCHAR(5)') AS Code
-	FROM (
-		VALUES (CAST(@CurrencyList AS XML))
-	) AS xd(dataX)
-	CROSS APPLY xd.dataX.nodes('/ROOT/CR') AS T(C)
+	SELECT 
+		Id,
+		CASE  
+            WHEN Id = 20 THEN 'UUS' 
+            WHEN Id = 51 THEN 'VND' 
+            WHEN Id = 70 THEN 'MMK' 
+            ELSE Code
+        END
+	FROM CTE_Currency
 
 	UPDATE c
 	SET c.ExRate = ISNULL(e.Rate, 1)
