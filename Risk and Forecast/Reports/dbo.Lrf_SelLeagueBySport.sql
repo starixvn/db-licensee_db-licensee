@@ -100,7 +100,8 @@ BEGIN
 		AND l.sporttype < 100
 		AND l.leagueid > 0
 	GROUP BY l.leagueid,
-		l.sporttype
+		l.sporttype,
+		l.LeagueGroupID
 	ORDER BY l.sporttype
 
 	DROP TABLE #tblLeagueid
