@@ -68,17 +68,16 @@ BEGIN
 	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', 'SB,CO', @IsTest)
 	WHERE BetType NOT IN (9, 29, 914, 901, 902, 903, 904)
 
-	DECLARE @SabaVirtualSporsLeague TABLE (LeagueId INT)
+	DECLARE @SabaVirtualSportsLeague TABLE (LeagueId INT)
 
-	INSERT INTO @SabaVirtualSporsLeague
+	INSERT INTO @SabaVirtualSportsLeague
 	SELECT leagueid
 	FROM dbo.League WITH (NOLOCK)
 	WHERE (@LeagueId = 0 OR leagueid = @LeagueId)
 		AND (@SportType = 0 OR sporttype = @SportType)
-		AND ((sporttype = 1 AND LeagueGroupID IN (42, 74))
+		AND ((sporttype = 1 AND LeagueGroupID IN (42, 74, 108))
 			OR (sporttype = 2 AND LeagueGroupID IN (42))
-			OR (sporttype = 50 AND LeagueGroupID IN (42))
-			OR (sporttype = 49 AND LeagueGroupID IN (108)))
+			OR (sporttype = 50 AND LeagueGroupID IN (42)))
 
 	DECLARE @Data TABLE (
 		CustId			INT,
@@ -190,7 +189,7 @@ BEGIN
 			INNER JOIN @TempAg AS a ON a.CustId = b.recommend
 			INNER JOIN @BetType AS bt ON bt.bettype = b.bettype
 			INNER JOIN dbo.match AS m WITH (NOLOCK) ON m.MatchId = b.matchid
-			INNER JOIN @SabaVirtualSporsLeague AS l ON l.LeagueId = m.leagueid
+			INNER JOIN @SabaVirtualSportsLeague AS l ON l.LeagueId = m.leagueid
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 			AND b.statusID IN (111, 112, 113)
@@ -266,7 +265,7 @@ BEGIN
 			dbo.bettrans AS b WITH (NOLOCK)
 			INNER JOIN @TempAg AS a ON a.CustId = b.recommend
 			INNER JOIN dbo.outright AS o WITH (NOLOCK) ON o.orid = b.matchid
-			INNER JOIN @SabaVirtualSporsLeague AS l ON l.LeagueId = o.leagueid
+			INNER JOIN @SabaVirtualSportsLeague AS l ON l.LeagueId = o.leagueid
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 			AND b.statusID IN (111, 112, 113)
@@ -350,7 +349,7 @@ BEGIN
 		FROM
 			bodb_licenseereport.dbo.rptCustomerMatch AS b WITH (NOLOCK)
 			INNER JOIN @TempAg AS ag ON ag.CustId = b.recommend AND ag.currency = b.Currency
-			INNER JOIN @SabaVirtualSporsLeague AS l ON l.LeagueId = b.leagueid
+			INNER JOIN @SabaVirtualSportsLeague AS l ON l.LeagueId = b.leagueid
 		WHERE
 			b.winlostdate BETWEEN @_FromDate AND @TempToDate
 			AND b.statusID <> 101	--exclude REJECT
@@ -360,6 +359,8 @@ BEGIN
 			b.Currency,
 			b.winlostdate
 	END
+
+	DELETE FROM @Data WHERE BetCount = 0
 
 	DECLARE @ExchangeRate TABLE (
 		FromDate	SMALLDATETIME,
