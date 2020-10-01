@@ -470,7 +470,7 @@ BEGIN
 						   , @duration AS '@Duration'
 						   
 					FROM @TempList_batch a
-						INNER JOIN dbo.LicenseeCustComm lcc WITH (NOLOCK) ON a.CustID = lcc.CustID
+						LEFT JOIN dbo.LicenseeCustComm lcc WITH (NOLOCK) ON a.CustID = lcc.CustID
 					FOR XML PATH('Row')	
 					)
 	
