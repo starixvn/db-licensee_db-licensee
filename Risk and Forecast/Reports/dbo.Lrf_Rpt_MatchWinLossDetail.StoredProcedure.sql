@@ -63,6 +63,7 @@ AS
 		- 20190312@Amanda: Add new bet types Single Match Parlay (ID: 38) [RedmineID: #108298]
 		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
 		- 20200623@Kos: Integrate archive process for table VSRaceInfo [Redmine: #136285]
+		- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]	
 
 	Param's Explanation:
 		+ @AgentList: xml structure
@@ -101,6 +102,12 @@ BEGIN
 		@RowEnd = @RowStart + @PageSize - 1,
 		@Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120)
 
+	
+	DECLARE @ExcludedBetType TABLE (ProductId TINYINT, BetType INT)
+	-- Insert Excluded BetType
+	INSERT INTO @ExcludedBetType (ProductId, BetType)
+	SELECT ProductId, BetType FROM Lrf_f_SelExcludedBetType()
+	
 	DECLARE @TempAg AS TABLE (CustId INT, Currency INT)
 	DECLARE @DocHandler INT
 
@@ -222,6 +229,7 @@ BEGIN
 				AND b.statusID IN (111, 112, 113)
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 			GROUP BY
 				b.Winlostdate,
 				b.currency,
@@ -261,11 +269,13 @@ BEGIN
 				SUM(b.Betcount) betcount
 			FROM @TempBetList b  
 				INNER JOIN match m WITH ( NOLOCK ) ON m.matchid = b.matchid  
-			WHERE b.bettype < 31
+			WHERE (b.bettype < 31
 				OR (b.Bettype BETWEEN 121 AND 999) 
 				OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
 				OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0
 				OR b.Bettype = 38					 -- Single Match Parlay
+				)
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 			GROUP BY
 				b.Winlostdate,
 				b.currency,
@@ -374,6 +384,7 @@ BEGIN
 			AND b.statusID IN (111,112,113)  
 			AND (b.bettype < 901 OR b.bettype > 904)
 			AND (b.bettype < 911 OR b.bettype > 914)
+			AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 			AND b.matchid > 0  
 		GROUP BY
 			b.Winlostdate,  
@@ -423,8 +434,9 @@ BEGIN
 					OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
 					OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0
 					OR b.Bettype = 38					 -- Single Match Parlay
-				) AND  
-				b.tpositiontaking <> 0  
+				) 
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
+				AND  b.tpositiontaking <> 0  
 			GROUP BY
 				b.Winlostdate,  
 				b.currency,  
@@ -673,6 +685,7 @@ BEGIN
 				AND b.statusID IN (111,112,113)  
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 			GROUP BY
 				b.Winlostdate,  
 				b.currency,  
@@ -711,11 +724,13 @@ BEGIN
 				SUM(b.Betcount) betcount 
 			FROM @TempBetList b  
 				INNER JOIN dbo.match14 m WITH ( NOLOCK ) ON m.matchid = b.matchid  
-			WHERE b.bettype < 31
+			WHERE (b.bettype < 31
 				OR (b.Bettype BETWEEN 121 AND 999)  
 				OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
 				OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0
 				OR b.Bettype = 38					 -- Single Match Parlay
+				)
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 			GROUP BY
 				b.Winlostdate,  
 				b.currency,   
@@ -822,6 +837,7 @@ BEGIN
 			AND b.statusID NOT IN ( 101, 102, 103 )  
 			AND (b.bettype < 901 OR b.bettype > 904)
 			AND (b.bettype < 911 OR b.bettype > 914)
+			AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 		GROUP BY
 			b.Winlostdate,  
 			b.currency,
@@ -869,8 +885,9 @@ BEGIN
 					OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
 					OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0
 					OR b.Bettype = 38					 -- Single Match Parlay
-				) AND  
-				b.tpositiontaking<>0   
+				) 
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
+				AND  b.tpositiontaking<>0   
 			GROUP BY
 				b.Winlostdate,  
 				b.currency,   

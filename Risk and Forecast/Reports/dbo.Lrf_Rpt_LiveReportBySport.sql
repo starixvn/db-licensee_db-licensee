@@ -84,6 +84,7 @@ AS
 		- 20201016@Hogan: Integrate Arcadia Gaming Bonus [RedmineID: #143648]
 		- 20201022@Louis: Integrate PG Soft [RedmineID: #139182]
 		- 20201126@Hogan: Integrate Joker [RedmineID: #141408]
+		- 20201202@Louis: Licensee Spread Setting [RedmineID: #142532]	
 
 	Param's Explanation:
 		@Liveindicator : indicate that whether the report will get live data or not
@@ -127,6 +128,10 @@ BEGIN
 
 	--declare
 	SELECT	@sql = @sql + '--Declare variable:' + CHAR(13)
+	
+	SELECT	@sql = @sql + 'DECLARE @ExcludedBetType TABLE (ProductId TINYINT, BetType INT)' + CHAR(13)
+	SELECT	@sql = @sql + 'INSERT INTO @ExcludedBetType (ProductId, BetType)' + CHAR(13)
+	SELECT	@sql = @sql + 'SELECT ProductId, BetType FROM Lrf_f_SelExcludedBetType()' + CHAR(13)
 
 	SELECT	@sql = @sql + 'DECLARE @TempAg AS TABLE (CustId INT, Currency INT)' + CHAR(13)
 						+ 'CREATE TABLE #tmpWinloss (winlostdate DATETIME, Currency INT, SportType INT, TurnOver MONEY, Winlost MONEY, LicenseeWL MONEY, Comm MONEY, PlayerComm MONEY, AmtDueTo3rd MONEY, Betcount INT)' + CHAR(13)
@@ -198,6 +203,7 @@ BEGIN
 								+ 'WHERE b.winlostdate BETWEEN ''' + CONVERT(VARCHAR(10), @TempFromDate, 120) + ''' AND ''' + CONVERT(VARCHAR(10), @TDate, 120) + '''' + CHAR(13)
 								+ 'AND b.statusID IN (111,112,113)' + CHAR(13)
 								+ 'AND b.bettype NOT IN (9,29,2799,901,902,903,904)' + CHAR(13)
+								+ 'AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)' + CHAR(13)
 								+ 'AND (b.bettype < 911 OR b.bettype > 914)' + CHAR(13)
 								+ 'AND (('+CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.liveindicator = 0)' + CHAR(13)
 								+ 'OR ('+CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.liveindicator = 1)' + CHAR(13)
@@ -307,6 +313,7 @@ BEGIN
 								+ 'AND b.bettype NOT IN (9,29,2799,901,902,903,904,1700,1800,1900,18000)' + CHAR(13)
 								+ 'AND (b.bettype < 911 OR b.bettype > 914)' + CHAR(13)
 								+ 'AND b.bettype NOT BETWEEN 1101 AND 1199' + CHAR(13)
+								+ 'AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)' + CHAR(13)
 								+ 'AND b.statusID IN (111,112,113)' + CHAR(13) + 'AND BA.transid IS NULL' + CHAR(13) + 'AND (1 <> 1' + CHAR(13)
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','NG')) = 1 THEN 'OR (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) '+ CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SB')) = 1 THEN 'OR (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 and 1399) OR (b.Bettype BETWEEN 9001 and 9399) OR b.Bettype = 38)' + CHAR(13) ELSE '' END 
@@ -462,6 +469,7 @@ BEGIN
 								+ 'AND b.status NOT IN (-1,103)' + CHAR(13)
 								+ 'AND b.bettype NOT IN (9,29,2799,901,902,903,904)' + CHAR(13)
 								+ 'AND (b.bettype < 911 OR b.bettype > 914)' + CHAR(13)
+								+ 'AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)' + CHAR(13)
 								+ 'AND ((' + CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13)
 								+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13)
 								+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
@@ -556,6 +564,7 @@ BEGIN
 								+ 'AND b.bettype NOT IN (9,29,2799,1700,1800,1900,901,902,903,904,18000)' + CHAR(13)
 								+ 'AND (b.bettype < 911 OR b.bettype > 914)' + CHAR(13)
 								+ 'AND b.bettype NOT BETWEEN 1101 AND 1199' + CHAR(13)
+								+ 'AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)' + CHAR(13)
 								+ 'AND b.CustomerCategory IN (-1, 1001, 1003)' + CHAR(13)
 								+ 'AND (1 <> 1' + CHAR(13)	
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','NG')) = 1 THEN 'OR (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) '+ CHAR(13) ELSE '' END 

@@ -17,6 +17,7 @@ Revisions:
 	- 20190926@Bobby: Enhance Statement Level 1 - show outstanding for future [RedmineID: #120690] 
 	- 20191003@Bobby: Integrate NPH Promotion product [RedmineID: #120333]
 	- 20200803@Sophia: add Saba Loyalty [Redmine: #138493]
+	- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]	
 	
 
 Param's Explanation:     
@@ -56,6 +57,11 @@ BEGIN
         commission		DECIMAL(15,2)
 	)
 	
+	DECLARE @ExcludedBetType TABLE (ProductId TINYINT, BetType INT)
+	-- Insert Excluded BetType
+	INSERT INTO @ExcludedBetType (ProductId, BetType)
+	SELECT ProductId, BetType FROM Lrf_f_SelExcludedBetType()
+
 	SELECT @_custID		= @CustID
 		, @_winlostdate	= @Winlostdate
 		, @_ModeView	= ISNULL(@ModeView, 1)
@@ -109,6 +115,7 @@ BEGIN
 			AND b.winlostdate = @_winlostdate
 			AND b.bettype < 19999 -- bet tickets 
 			AND b.bettype NOT IN (903, 71, 913, 914)
+			AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 			AND ((ISNULL(@IsCOMember,0) = 0 AND b.bettype <> 912) OR (@IsCOMember = 1 AND b.bettype <> 911))
 			AND 1 = CASE 
 						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) AND b.bettype NOT IN (17000, 17003) THEN 1 
@@ -182,6 +189,7 @@ BEGIN
 			b.custid = @_custid  
 			AND b.winlostdate = @_winlostdate
 			AND b.bettype NOT IN (903, 71, 913, 914)
+			AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 			AND ((@IsCOMember = 0 AND b.bettype <> 912) OR (@IsCOMember = 1 AND b.bettype <> 911))
 			AND 1 = CASE 
 						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) AND b.bettype NOT IN (17000, 17003) THEN 1 
@@ -208,6 +216,7 @@ BEGIN
 			b.custid = @_custid  
 			AND b.winlostdate = @_winlostdate
 			AND b.bettype NOT IN (903, 71, 913, 914)
+			AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 			AND ((@IsCOMember = 0 AND b.bettype <> 912) OR (@IsCOMember = 1 AND b.bettype <> 911))
 			AND 1 = CASE 
 						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) AND b.bettype NOT IN (17000, 17003) THEN 1 

@@ -37,8 +37,9 @@ AS
 		- 20191129@Walter: Add new bet types (BMAIO - Phase 2) [RedmineID: #120336]
 		- 20190102@Vickie: Add new bet types (PH AIO - Phase 5) [RedmineID: #126005]
 		- 20191225@Amanda: Support display SystemID [RedmineID: #123583]
-		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
+		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548] 
 		- 20201023@Hogan: Integrate new bet type Time Machine OU [RedmineID: #142692]
+		- 20201027@Louis: Licensee Spread Setting [RedmineID: #142532]	
 */
 
 BEGIN
@@ -70,7 +71,12 @@ BEGIN
 		,@maxRow = (@PageSize * @PageIndex)
 
 	SET @topRow = (@maxRow - @offsetRow) + 1
-
+ 
+	DECLARE @ExcludedBetType TABLE (ProductId TINYINT, BetType INT)
+	-- Insert Excluded BetType
+	INSERT INTO @ExcludedBetType (ProductId, BetType)
+	SELECT ProductId, BetType FROM Lrf_f_SelExcludedBetType()
+	
 	-- VIEW specific members
 	IF @searchCust = 1
 	BEGIN
@@ -112,7 +118,8 @@ BEGIN
 						StatusID
 					FROM #recommend rec
 						JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK) ON b.Recommend	= rec.CustID
-					WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
+					WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate 
+						AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 					) b
 					INNER JOIN #tempCust c ON b.custid = c.custid
 				OPTION(RECOMPILE)
@@ -130,7 +137,8 @@ BEGIN
 							END AS sporttype, bettype, b.custid, StatusID
 					FROM #recommend rec
 						JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK) ON b.Recommend = rec.CustID
-					WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
+					WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate 
+						AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 						AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156,228)	 -- add more Sportting Solution bettype 
 										OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 										OR b.bettype BETWEEN 81 AND 88
@@ -265,7 +273,8 @@ BEGIN
 					FROM #recommend rec
 						JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)
 							ON b.Recommend	= rec.CustID
-					WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
+					WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate 
+						AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 						AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156,228)	 -- add more Sportting Solution bettype 
 										OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 										OR b.bettype BETWEEN 81 AND 88

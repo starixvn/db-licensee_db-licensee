@@ -79,6 +79,7 @@ AS
 		- 20201016@Hogan: Integrate Arcadia Gaming Bonus [RedmineID: #143648]
 		- 20201022@Louis: Integrate PG Soft [RedmineID: #139182]
 		- 20201126@Hogan: Integrate Joker [RedmineID: #141408]
+		- 20201202@Louis: Licensee Spread Setting [RedmineID: #142532]	
 
 	Param's Explanation:  
 		+ @drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -117,6 +118,11 @@ BEGIN
 	DECLARE @sumTurnOver		BIT
 	DECLARE @sumBetCount		BIT
 	DECLARE @RCount				INT
+	
+	DECLARE @ExcludedBetType TABLE (ProductId TINYINT, BetType INT)
+	-- Insert Excluded BetType
+	INSERT INTO @ExcludedBetType (ProductId, BetType)
+	SELECT ProductId, BetType FROM Lrf_f_SelExcludedBetType()
 
 	SET @sumTurnOver = 1
 	SET @sumBetCount = 1
@@ -259,6 +265,7 @@ BEGIN
 									AND tmp.winlostdate BETWEEN @TempFromDate AND @TDate
 									AND tmp.statusID IN (111, 112, 113)
 									AND (@CustId = 0 OR tmp.CustId = @CustID)
+									AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = tmp.BetType)			
 							) AS b	
 			GROUP BY
 				b.winlostdate,
@@ -355,6 +362,7 @@ BEGIN
 				AND b.statusID  IN (111, 112, 113)
 				AND b.matchID > 0 
 				AND (CASE WHEN bt.ProductCode ='SB' THEN b.tpositiontaking ELSE 1 END <> 0 )  --- EXCLUDE BA 
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 			GROUP BY
 				b.winlostdate
 				,b.recommend
@@ -411,6 +419,7 @@ BEGIN
 				AND b.statusID <> 101 --exclude REJECT bets
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 				AND ISNULL(b.isBA, 0) = 1
 			GROUP BY  b.winlostdate,  b.currency, b.recommend
 		END
@@ -449,7 +458,7 @@ BEGIN
 				AND b.statusID <> 101 --exclude REJECT bets
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
-				AND b.bettype NOT IN (4300, 4299, 4298, 4297, 3007, 1906) -- Promotion Prize, Jackpot Prize, Contribution
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 				AND ISNULL(b.isBA, 0) = 0
 			GROUP BY
 				b.winlostdate,

@@ -30,6 +30,7 @@ AS
 		- 20170706@Harper: LRF - Integrate Bet Radar Virtual Sports & Cashout[RedmineID: #78241]
 		- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 		- 20191010@Percy: Replace LicenseeBATransaction to LicenseeBATransaction_active [RedmineID: #103656]
+		- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]	
 
 	Param's Explanation: 
 */
@@ -50,6 +51,11 @@ SELECT @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120)
 
 DECLARE @IsTest BIT = 0
 SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
+
+DECLARE @ExcludedBetType TABLE (ProductId TINYINT, BetType INT)
+-- Insert Excluded BetType
+INSERT INTO @ExcludedBetType (ProductId, BetType)
+SELECT ProductId, BetType FROM Lrf_f_SelExcludedBetType()
 
 DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
 
@@ -151,6 +157,7 @@ BEGIN
 		    b.winlostdate = @_Date
 			AND b.statusID IN (111,112,113)
 			AND b.bettype NOT IN (901,902,903,904,911,912,913,914)
+			AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 		GROUP BY
 			b.Winlostdate,
 			b.currency,
@@ -222,6 +229,7 @@ BEGIN
 		 b.winlostdate = @_Date
 		AND b.statusID IN (111,112,113)
 		AND b.bettype NOT IN (901,902,903,904,911,912,913,914)
+		AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 		AND b.matchid>0
 	GROUP BY
 		b.Winlostdate,
@@ -390,6 +398,7 @@ BEGIN
 			 AND b.bettype NOT IN (901,902,903,904,911,912,913,914)
 			AND tpositiontaking = 0
 			AND (b.bettype < 31 OR (b.Bettype BETWEEN 121 AND 999))
+			AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 		GROUP BY
 			b.Winlostdate,
 			b.currency,
@@ -460,6 +469,7 @@ BEGIN
 		b.winlostdate = @_Date
 		AND b.statusID IN (111,112,113)
 		AND b.bettype NOT IN (901,902,903,904,911,912,913,914)
+		AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 		AND b.matchid>0
 	GROUP BY
 		b.Winlostdate,
