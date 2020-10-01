@@ -75,7 +75,8 @@ AS
 */
 BEGIN
 	SET NOCOUNT ON
-	
+	-- fix bug: #142797
+	/*
 	IF (@IsUpdateNG = 0) AND  (@IsUpdateRNG = 0) 
 	BEGIN
 		UPDATE [dbo].[LicenseeGroupComm]
@@ -86,6 +87,7 @@ BEGIN
 		WHERE id = @GroupCommID AND Licenseeid = @LicenseeID
 		RETURN
 	END
+	*/
 	DECLARE @startRun DATETIME
 	DECLARE @endRun DATETIME
 	DECLARE @duration INT
