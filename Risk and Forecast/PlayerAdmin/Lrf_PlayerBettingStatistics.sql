@@ -1,7 +1,7 @@
 /*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_PlayerBettingStatistics]
-	@CustID			INT,
+	@CustId			INT,
 	@FromDate		SMALLDATETIME,
 	@ToDate			SMALLDATETIME,
 	@MoveBetsDay	SMALLDATETIME,
@@ -18,13 +18,14 @@ AS
 		- 20190903@Walter: Initialize SP [RedmineID: #112658]
 		- 20190930@Amanda: Get data from bettrans instead sum table [RedmineID: #112658]
 		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
+		- 20201006@Kos: Fix issue divide by zero [RedmineID: #143061]
 
 	Param's Explanation:
 		+ @CustID: MemberId
 		+ @MoveBetsDay: The day we move tickets to bettrans14
 		+ @BalanceUpDay: archive tickets day
 
-	Sample: exec Lrf_PlayerBettingStatistics_xtest 
+	Sample: exec Lrf_PlayerBettingStatistics_xtest
 				@CustID=1026204,
 				@FromDate='2019-09-01 00:00:00',
 				@ToDate='2019-09-30 00:00:00',
@@ -35,7 +36,7 @@ AS
 BEGIN
 	SET NOCOUNT ON
 
-	CREATE TABLE #tempStatistics 
+	CREATE TABLE #tempStatistics
 	(
 		WinLost MONEY,
 		Stake MONEY,
@@ -62,9 +63,9 @@ BEGIN
 			(b.winlost - b.actual_stake) AS WinLost,
 			b.stake AS Stake,
 			b.statusID AS StatusId
-		FROM dbo.bettrans b WITH (NOLOCK)
+		FROM dbo.bettrans AS b WITH (NOLOCK)
 		WHERE
-			custid = @CustID
+			b.custid = @CustId
 			AND b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND
 				(
@@ -77,7 +78,7 @@ BEGIN
 			AND (b.bettype < 901 OR b.bettype > 904)
 			AND (b.bettype < 911 OR b.bettype > 914)
 			AND b.statusID IN (111, 112, 113, 101, 102, 103) -- Draw/Won/Lose/Rejected/Void/Refund
-			AND NOT EXISTS (SELECT 1 FROM bodb_licensee.dbo.LicenseeBATransaction_active ba WITH (NOLOCK) WHERE ba.TransID = b.transid)
+			AND NOT EXISTS (SELECT 1 FROM bodb_licensee.dbo.LicenseeBATransaction_active AS ba WITH (NOLOCK) WHERE ba.TransID = b.transid)
 	END
 
 	IF @FDate <= @MoveBetsDay AND @TDate >= @BalanceUpDay
@@ -86,7 +87,7 @@ BEGIN
 			SET @TempToDate = @MoveBetsDay
 		ELSE
 			SET @TempToDate = @TDate
-			
+
 		IF @FDate < @BalanceUpDay
 			SET @TempFromDate = @BalanceUpDay
 		ELSE
@@ -97,9 +98,9 @@ BEGIN
 			(b.winlost - b.actual_stake) AS WinLost,
 			b.stake AS Stake,
 			b.statusID AS StatusId
-		FROM bodb02.dbo.bettrans14 b WITH (NOLOCK)
+		FROM dbo.bettrans14 AS b WITH (NOLOCK)
 		WHERE
-			custid = @CustID
+			b.custid = @CustId
 			AND b.winlostdate BETWEEN @TempFromDate AND @TempToDate
 			AND
 				(
@@ -112,7 +113,7 @@ BEGIN
 			AND (b.bettype < 901 OR b.bettype > 904)
 			AND (b.bettype < 911 OR b.bettype > 914)
 			AND b.statusID IN (111, 112, 113, 101, 102, 103) -- Draw/Won/Lose/Rejected/Void/Refund
-			AND NOT EXISTS (SELECT 1 FROM bodb_licensee.dbo.LicenseeBATransaction_bk ba WITH (NOLOCK) WHERE ba.TransID = b.transid)
+			AND NOT EXISTS (SELECT 1 FROM bodb_licensee.dbo.LicenseeBATransaction_bk AS ba WITH (NOLOCK) WHERE ba.TransID = b.transid)
 	END
 	
 	IF @FDate < @BalanceUpDay
@@ -127,9 +128,9 @@ BEGIN
 			(b.winlost - b.actual_stake) AS WinLost,
 			b.stake AS Stake,
 			b.statusID AS StatusId
-		FROM bodb_Archive.dbo.bettrans_bk b WITH (NOLOCK, INDEX = IX_custId)
+		FROM bodb_Archive.dbo.bettrans_bk AS b WITH (NOLOCK, INDEX = IX_custId)
 		WHERE
-			custid = @CustID
+			b.custid = @CustID
 			AND b.winlostdate BETWEEN @FDate AND @TempToDate
 			AND
 				(
@@ -151,7 +152,7 @@ BEGIN
 		ISNULL(SUM(CASE WHEN StatusId IN (101, 102, 103) THEN 1 ELSE 0 END),0) AS Cancelled
 	FROM #tempStatistics
 
-	SELECT ISNULL(SUM(WinLost) / SUM(Stake), 0) AS Margin,
+	SELECT ISNULL(SUM(WinLost) / NULLIF(SUM(Stake), 0), 0) AS Margin,
 		ISNULL(SUM(Stake) / SUM(1), 0) AS AverageBetSize,
 		ISNULL(SUM(CASE WHEN StatusId = 112 THEN WinLost ELSE 0 END), 0) AS Winnings,
 		ISNULL(SUM(CASE WHEN StatusId = 113 THEN WinLost ELSE 0 END), 0) AS Loss
