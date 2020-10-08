@@ -3,6 +3,8 @@ ALTER PROCEDURE [dbo].[LAP_Rpt_DetailTransaction_Mem]
     @CustID			INT,  
     @FromDate		DATE,  
     @ToDate			DATE,
+	@TransactionId	BIGINT = NULL,
+	@IsResettled	BIT = 0,
     @PageSize		INT = NULL,  
     @PageIndex		INT = 1,  
     @TotalRow		INT = 0 OUTPUT 
@@ -15,7 +17,8 @@ AS
 		- 20200313@Bobby: Initialize [RedmineID: #130293] 
 		- 20200330@Louis: Support Statement & Detail Transaction Report in Chinese [RedmineID: #131262]
 		- 20200420@Louis: Detail Transaction - Change rounding & sorting mechanism [RedmineID: #1328230]
-		- 20200907@Sol: show lost record for some cases [RedmineID: #140884]
+		- 20200907@Sol: Show lost record for some cases [RedmineID: #140884]
+		- 20201008@Sol: Show new column to determine re-settle tickets - [RedmineID: #142346]
 	
 	Param's Explanation:     
 */
@@ -28,6 +31,8 @@ BEGIN
 		, @_fromDateTime	SMALLDATETIME
 		, @_toDateTime		SMALLDATETIME
 		, @_custID			INT
+		, @_TransactionId	BIGINT
+		, @_IsResettled		BIT
 
 	CREATE TABLE #transactionRpt
     (  
@@ -38,13 +43,16 @@ BEGIN
         , changedAmt		MONEY DEFAULT(0)
         , totalAmt			MONEY DEFAULT(0)
 		--, CONSTRAINT PK_Trans PRIMARY KEY (transtime, transid)
-		, rowIdx INT PRIMARY KEY
+		, rowIdx			INT PRIMARY KEY
+		, IsResettled		BIT
     )
 
 	SELECT @_fromDateTime	= @FromDate
 	, @_toDateTime			= @ToDate
 	, @_toDateTime			= DATEADD(DAY, 1, @_toDateTime)
 	, @_custID				= @custID
+	, @_TransactionId		= @TransactionId
+	, @_IsResettled			= @IsResettled
 
 	INSERT INTO #transactionRpt (
 		transid
@@ -54,6 +62,7 @@ BEGIN
 		, changedAmt
 		, totalAmt
 		, rowIdx
+		, IsResettled
 	)
 	SELECT br.transid
 		, br.bettype
@@ -62,6 +71,7 @@ BEGIN
 		, br.changedAmt
 		, br.totalAmt
 		, rowIdx = ROW_NUMBER() OVER(ORDER BY RowID)
+		, br.IsResettled
 	FROM (
 		SELECT transid
 			, bettype
@@ -70,14 +80,22 @@ BEGIN
 			, BalanceChanged AS changedAmt
 			, NewBalance AS totalAmt
 			, RowID
+			, CASE WHEN br.SettlementType IN (2,3) THEN 1 ELSE 0 END AS IsResettled
 		FROM BalanceRecord.dbo.BalanceRecord_bk br WITH(NOLOCK)
-		WHERE custid = @_custid
+		WHERE
+			br.transid = ISNULL(@_TransactionId, br.transid)
+			AND 1 = CASE 
+						WHEN @_IsResettled = 1 AND br.SettlementType IN (2,3) THEN 1 -- get re-settled tickets only
+						WHEN @_IsResettled = 0 THEN 1 -- get all tickets
+						ELSE 0
+					END
+			AND custid = @_custid
 			AND actiondate BETWEEN @_fromDateTime AND @_toDateTime
 			AND 
 			(
 				BalanceChanged <> 0
 				OR 
-				(BalanceChanged = 0 AND ActionID NOT IN (20, 21, 100, 255)) --excluded Reject Bet, Accept Bet, Bet SUM insert, Balance insert
+				(BalanceChanged = 0 AND ActionID NOT IN (1, 20, 21, 100, 255)) --excluded others (won/lose->won/lose...), Reject Bet, Accept Bet, Bet SUM insert, Balance insert
 			)
 	
 		UNION ALL
@@ -88,14 +106,22 @@ BEGIN
 			, BalanceChanged AS changedAmt
 			, NewBalance AS totalAmt
 			, RowID
+			, CASE WHEN SettlementType IN (2,3) THEN 1 ELSE 0 END AS IsResettled
 		FROM bodb02.dbo.BalanceRecord WITH(NOLOCK)
-		WHERE custid = @_custid
+		WHERE 
+			transid = ISNULL(@_TransactionId, transid)
+			AND 1 = CASE 
+						WHEN @_IsResettled = 1 AND SettlementType IN (2,3) THEN 1 -- get re-settled tickets only
+						WHEN @_IsResettled = 0 THEN 1 -- get all tickets
+						ELSE 0
+					END
+			AND custid = @_custid
 			AND actiondate BETWEEN @_fromDateTime AND @_toDateTime
 			AND 
 			(
 				BalanceChanged <> 0
 				OR 
-				(BalanceChanged = 0 AND ActionID NOT IN (20, 21, 100, 255)) --excluded Reject Bet, Accept Bet, Bet SUM insert, Balance insert
+				(BalanceChanged = 0 AND ActionID NOT IN (1, 20, 21, 100, 255)) --excluded others (won/lose->won/lose...), Reject Bet, Accept Bet, Bet SUM insert, Balance insert
 			)
 	) AS br
 
@@ -120,6 +146,7 @@ BEGIN
 		, br.transremark
 		, br.changedAmt
 		, br.totalAmt
+		, br.IsResettled
 	FROM #transactionRpt br
 	WHERE 
 		br.rowIdx BETWEEN @_rowStart AND @_rowEnd
