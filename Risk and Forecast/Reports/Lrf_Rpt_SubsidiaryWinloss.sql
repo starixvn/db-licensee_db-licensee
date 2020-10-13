@@ -1,12 +1,12 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_SubsidiaryWinloss]
-	@FromDate		DATE,
-	@ToDate			DATE,
-	@MoveBetsDay	DATE,
+	@AgentList		VARCHAR(MAX),
+	@FromDate		SMALLDATETIME,
+	@ToDate			SMALLDATETIME,
+	@MoveBetsDay	SMALLDATETIME,
 	@ProductList	VARCHAR(1000),
 	@IncludeRaw		BIT,
-	@AgentList		VARCHAR(MAX),
 	@BaseCurrency	VARCHAR(3)
 AS
 
@@ -25,14 +25,15 @@ AS
 		- 20190620@Amanda: Centralize function to get exchange rate [Redmine: #112531]
 		- 20200707@Kos: Support all products [Redmine: #136568]
 		- 20200714@Hogan: Add 7 games for Jackpot and 2 bettype for Contribution (4297) and Jackpot Prize (4298) [RedmineID: #137290]
+		- 20200924@Louis: Control BA status for subsidiary [RedmineID: #142038]
 
 	Param's Explanation:
 		+ @MoveBetsDay: The day we move tickets to bettrans14
-		+ @AgentList: xml structure
-					<ROOT>
-						<Agent AgentId="12345" Currency="3"/>  
-						<Agent AgentId="12345" Currency="5"/>  
-					</ROOT>
+		+ @AgentList: XML structure
+			<ROOT>
+				<Agent AgentId="12345" Currency="3"/>
+				<Agent AgentId="12345" Currency="5"/>
+			</ROOT>
 */
 
 BEGIN
@@ -40,7 +41,7 @@ BEGIN
 
 	CREATE TABLE #Subsidiary
 	(
-		WinLostDate	DATE,
+		WinLostDate	SMALLDATETIME,
 		Recommend	INT,
 		Currency	INT,
 		ProductCode	VARCHAR(10),
@@ -50,15 +51,15 @@ BEGIN
 		LicenseeWL	MONEY
 	)
 	CREATE TABLE #BettypeProduct (BetType INT PRIMARY KEY, ProductCode VARCHAR(10))
-	CREATE TABLE #SporttypeProduct (SportType INT, ProductCode VARCHAR(10))
+	CREATE TABLE #SporttypeProduct (SportType SMALLINT, ProductCode VARCHAR(10))
 
 	CREATE TABLE #Exchange (
-		ExFromDate	DATE,
-		ExToDate	DATE,
+		ExFromDate	SMALLDATETIME,
+		ExToDate	SMALLDATETIME,
 		ExchangeId	INT,
 		Rate		FLOAT)
 
-	DECLARE @FDate DATE, @TDate DATE
+	DECLARE @FDate SMALLDATETIME, @TDate SMALLDATETIME
 
 	SELECT @FDate = @FromDate,
 		@TDate = @ToDate
@@ -88,17 +89,25 @@ BEGIN
 
 	-- Get SportBettypeMatrix
 	DECLARE @IsTest BIT = 0
+	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
 
-	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID) 
+	DECLARE @ShowBA BIT = 0,
+		@ShowSB BIT = 0
+
+	SELECT @ShowBA = CASE WHEN ',' + @ProductList + ',' LIKE '%,BA,%' THEN 1 ELSE 0 END
+	SELECT @ShowSB = CASE WHEN ',' + @ProductList + ',' LIKE '%,SB,%' THEN 1 ELSE 0 END
+
+	IF @ShowBA = 1
+		SET @ProductList = @ProductList + ',SB'
 
 	-- Insert Bettype
-	INSERT INTO #BettypeProduct (BetType, ProductCode)		-- Don't have ProductCode IN (BA, BT, CO)
+	INSERT INTO #BettypeProduct (BetType, ProductCode)		-- Don't have ProductCode IN (BT, CO)
 	SELECT DISTINCT BetType, ProductPrefix
 	FROM dbo.f_SportBettypeMatrix_Sel (0, 0, 0, 2, '', @ProductList, @IsTest)
 	WHERE BetType NOT IN (901, 902, 903, 904, 911, 912, 913, 914, 4299, 4300, 17000, 17001, 17002, 4298, 4297)		-- Exclude PP Promotion Prize, Saba Promotion Prize
 
 	-- Insert Sport Type
-	INSERT INTO #SporttypeProduct (SportType, ProductCode )		-- Don't have ProductCode IN (BA, BT, CO)
+	INSERT INTO #SporttypeProduct (SportType, ProductCode )		-- Don't have ProductCode IN (BT, CO)
 	SELECT DISTINCT SportType, ProductCode
 	FROM dbo.f_LicWinLoss_ProductSportType_Sel(@ProductList)
 	-----End Get SportBettypeMatrix
@@ -108,11 +117,11 @@ BEGIN
 		SET @TDate = @ToDate
 
 		IF @FromDate <= @MoveBetsDay
-			SET @FDate = DATEADD(DAY,1,@MoveBetsDay)
+			SET @FDate = DATEADD(DAY, 1, @MoveBetsDay)
 		ELSE
 			SET @FDate = @FromDate
 		
-		IF EXISTS (SELECT TOP(1) 1 FROM #BettypeProduct)	-- exclude BA , BT, CO
+		IF EXISTS (SELECT TOP(1) 1 FROM #BettypeProduct)	-- exclude BT, CO
 		BEGIN
 			INSERT INTO #Subsidiary (
 				WinLostDate,
@@ -127,11 +136,17 @@ BEGIN
 				b.winlostdate,
 				b.recommend,
 				a.currency,
-				p.ProductCode,
+				CASE
+					WHEN p.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 'BA'
+					ELSE p.ProductCode
+				END AS ProductCode,
 				COUNT(b.transid) AS BetCount,
 				SUM(b.stake) AS Turnover,
 				SUM(b.winlost - b.actual_stake) AS Winlost,
-				- SUM(b.winlost - b.actual_stake) AS LicenseeWL
+				- SUM(CASE
+						WHEN p.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 0
+						ELSE b.winlost - b.actual_stake
+					END) AS LicenseeWL
 			FROM
 				dbo.bettrans AS b WITH (NOLOCK)
 				INNER JOIN @TempAg AS a ON b.recommend = a.custid 
@@ -140,13 +155,20 @@ BEGIN
 				b.winlostdate BETWEEN @FDate AND @TDate
 				AND (b.statusID IN (112, 113)
 					OR (@IncludeRaw = 1 AND b.statusID = 111))
-				AND b.matchid > 0 
-				AND (CASE WHEN p.ProductCode ='SB' THEN b.tpositiontaking ELSE 1 END <> 0)		-- EXCLUDE BA
+				AND b.matchid > 0
+				AND (CASE
+						WHEN @ShowBA = 0 AND p.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 0
+						WHEN @ShowSB = 0 AND p.ProductCode = 'SB' AND b.tpositiontaking <> 0 THEN 0
+						ELSE 1
+					END <> 0)
 			GROUP BY
 				b.winlostdate,
 				b.recommend,
 				a.currency,
-				p.ProductCode
+				CASE
+					WHEN p.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 'BA'
+					ELSE p.ProductCode
+				END
 		END
 	END
 
@@ -159,7 +181,7 @@ BEGIN
 		ELSE
 			SET @TDate = @ToDate
 
-		IF EXISTS (SELECT TOP(1) 1 FROM #BettypeProduct)		-- exclude BA , BT, CO
+		IF EXISTS (SELECT TOP(1) 1 FROM #BettypeProduct)		-- exclude BT, CO
 		BEGIN
 			INSERT INTO #Subsidiary (
 				WinLostDate,
@@ -174,11 +196,17 @@ BEGIN
 				b.winlostdate,
 				b.recommend,
 				a.currency,
-				p.ProductCode,
+				CASE
+					WHEN p.ProductCode = 'SB' AND b.isBA = 1 THEN 'BA'
+					ELSE p.ProductCode
+				END AS ProductCode,
 				SUM(b.BetCount) AS BetCount,
 				SUM(b.turnover) AS Turnover,
 				SUM(b.winlost) AS Winlost,
-				-SUM(b.winlost) AS LicenseeWL
+				- SUM(CASE
+						WHEN p.ProductCode = 'SB' AND b.isBA = 1 THEN 0
+						ELSE b.winlost
+					END) AS LicenseeWL
 			FROM bodb_LicenseeReport.dbo.rptLicWinloss2 AS b WITH (NOLOCK)
 				INNER JOIN #SporttypeProduct AS p ON b.sporttype = p.sporttype
 				INNER JOIN @TempAg AS a ON b.recommend = a.custid
@@ -190,12 +218,20 @@ BEGIN
 				AND b.roleid = 1
 				AND (b.statusID IN (112, 113, 114, 115)
 					OR (@IncludeRaw = 1 AND b.statusID = 111)) --exclude REJECT bets
-				AND b.isBA = 0
+				AND (b.isBA = 0 OR (b.isBA = 1 AND @ShowBA = 1))
+				AND (CASE
+						WHEN @ShowBA = 0 AND p.ProductCode = 'SB' AND b.isBA = 1 THEN 0
+						WHEN @ShowSB = 0 AND p.ProductCode = 'SB' AND b.isBA = 0 THEN 0
+						ELSE 1
+					END <> 0)
 			GROUP BY
 				b.Winlostdate,
 				b.recommend,
 				a.currency,
-				p.ProductCode
+				CASE
+					WHEN p.ProductCode = 'SB' AND b.isBA = 1 THEN 'BA'
+					ELSE p.ProductCode
+				END
 		END
 	END
 
@@ -217,7 +253,7 @@ BEGIN
 		INNER JOIN Currency_CTE c ON e.ExchangeId = c.CurrencyID
 
 	SELECT
-		s.recommend,
+		s.Recommend,
 		s.Currency,
 		s.ProductCode,
 		SUM(s.BetCount)		AS BetCount,
