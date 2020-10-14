@@ -1,1 +1,3 @@
-NAP_LicenseeManagement\LicenseeSetting\NAP_LM_LicenseeBetSettingUpd.sql
+Risk and Forecast\Reports\Lrf_Rpt_LicWinloss_FromAPI.sql
+Risk and Forecast\Reports\Lrf_Rpt_Audit_DailyBets.sql
+Risk and Forecast\Reports\Lrf_Rpt_Audit_DailyBets_Total.sql
