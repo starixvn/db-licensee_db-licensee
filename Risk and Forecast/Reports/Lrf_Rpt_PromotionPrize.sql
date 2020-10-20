@@ -25,6 +25,7 @@ AS
 		- 20200714@Hogan: Add 7 games for Jackpot and 2 bettype for Contribution (4297) and Jackpot Prize (4298) [RedmineID: #137290]
 		- 20200803@Kos: Support Saba Loyalty [RedmineID: #138493]
 		- 20200820@Hogan: Support filter by VIP player [RedmineID: #138371]
+		- 20201013@Hogan: Integrate SA Gaming [RedmineID: #128493]
 
 	Param's Explanation:
 		+ @MoveBetsDay: The day we move tickets to bettrans14
@@ -61,9 +62,12 @@ BEGIN
 			@PPJackpot		SMALLINT = 4298,-- PP Jackpot Prize
 			@PPsportType	SMALLINT = 248,
 			@SPRsportType	SMALLINT = 246,
+			@SAGbetType	 	SMALLINT = 3007,-- Tip ticket of SA Gaming
+			@SAGsportType	SMALLINT = 244,
 			@PP				VARCHAR(10) = 'PP',
 			@SPR			VARCHAR(10) = 'SPR',
-			@PPC			VARCHAR(10) = 'PPC'
+			@PPC			VARCHAR(10) = 'PPC',
+			@SAG			VARCHAR(10) = 'SAG'
 
 	DECLARE @_FromDate SMALLDATETIME,
 		@_ToDate SMALLDATETIME
@@ -153,7 +157,8 @@ BEGIN
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 			AND((b.bettype IN (@PPPromotion, @PPTournament, @PPJackpot, 17000, 17003) AND b.statusID = 112)
-				OR (b.bettype = @PPContribution AND b.statusID = 111))
+				OR (b.bettype = @PPContribution AND b.statusID = 111)
+				OR (b.bettype = @SAGbetType AND b.statusID = 113))
 			AND (@VIPPlayerOnly = 0 OR (@VIPPlayerOnly = 1 AND v.custid IS NOT NULL))
 	END
 
@@ -187,9 +192,10 @@ BEGIN
 			LEFT JOIN @VIPCust v ON b.custid = v.CustID
 		WHERE 
 			b.winlostdate BETWEEN @_FromDate AND @TempToDate
-			AND b.sporttype IN (@PPsportType, @SPRsportType)
+			AND b.sporttype IN (@PPsportType, @SPRsportType, @SAGsportType)
 			AND((b.bettype IN (@PPPromotion, @PPTournament, @PPJackpot, 17000, 17003) AND b.statusID = 112)
-				OR (b.bettype = @PPContribution AND b.statusID = 111))
+				OR (b.bettype = @PPContribution AND b.statusID = 111)
+				OR (b.bettype = @SAGbetType AND b.statusID = 113))
 			AND b.roleID = 1
 			AND (@VIPPlayerOnly = 0 OR (@VIPPlayerOnly = 1 AND v.custid IS NOT NULL))
 	END
@@ -219,11 +225,15 @@ BEGIN
 		CASE
 			WHEN p.BetType IN (17000, 17003) THEN @SPR
 			WHEN p.BetType = @PPContribution THEN @PPC
+			WHEN p.BetType = @SAGbetType THEN @SAG
 			ELSE @PP
 		END AS ProductCode,
 		SUM(p.Winlost * e.DefaultRate)		AS SumAmount,
 		SUM(p.Awinlost * e.DefaultRate)		AS SumContributionAmount,
-		SUM(p.Oddsspread * e.DefaultRate)	AS SumTurnover
+		SUM(p.Oddsspread * e.DefaultRate)	AS SumTurnover,
+		CASE 
+			WHEN p.BetType = @SAGbetType THEN SUM(p.AWinlost* e.DefaultRate) 
+			ELSE 0 END AS SumTipSharing
 	FROM #PromotionData p
 		INNER JOIN #Exchange e ON e.ExchangeID = p.CurrencyId AND p.winlostdate BETWEEN e.FromDate AND e.ToDate
 	GROUP BY p.BetType
@@ -233,12 +243,14 @@ BEGIN
 		CASE
 			WHEN p.BetType IN (17000, 17003) THEN @SPR
 			WHEN p.BetType = @PPContribution THEN @PPC
+			WHEN p.BetType = @SAGbetType THEN @SAG
 			ELSE @PP
 		END AS ProductCode,
 		p.winlostdate		AS [Date],
 		p.CurrencyId,
 		SUM(p.Winlost)		AS Amount,
 		SUM(p.Awinlost)		AS ContributionAmount,
+		CASE WHEN p.BetType = @SAGbetType THEN SUM(p.AWinlost) ELSE 0 END AS TipSharing,
 		SUM(p.Oddsspread)	AS Turnover,
 		c.username			AS UserName,
 		SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS NickName

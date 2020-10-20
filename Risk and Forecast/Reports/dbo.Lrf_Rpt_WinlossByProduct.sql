@@ -1,35 +1,35 @@
 ﻿/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
-ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProduct]  
+ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProduct]
 	@UserName				VARCHAR(50)		= NULL,
 	@FromDate				SMALLDATETIME,
-	@ToDate					SMALLDATETIME, 
+	@ToDate					SMALLDATETIME,
 	@ProductList			VARCHAR(MAX)	= '',
-	@ReportType				TINYINT			=1,
+	@ReportType				TINYINT			= 1,
 	@MoveBetsDay			SMALLDATETIME,
 	@drawfilter				SMALLINT		= 1,
 	@CustID					INT				= 0		OUTPUT,
 	@AgentList				VARCHAR(MAX),
-	@SystemName				VARCHAR(50)		=''		OUTPUT,
+	@SystemName				VARCHAR(50)		= ''	OUTPUT,
 	@ErrCode				TINYINT			= 0		OUTPUT,
-	@ErrMsg					VARCHAR(400)	=''		OUTPUT,
+	@ErrMsg					VARCHAR(400)	= ''	OUTPUT,
 	@BaseCurrency			VARCHAR(3)		= '',
 	@DefaultBaseCurrency	VARCHAR(3)		= ''
 WITH RECOMPILE
 AS
 
 /*
-	Created: Henry  
+	Created: Henry
 	Date: 2011-07-06
 	Task : Winloss By Product Report for Licensee 
-	DB: DBEXT.bodb02  
-   
-	Revisions:  
+	DB: DBEXT.bodb02
+
+	Revisions:
 		- 20111013@Henry: change to use rptLicWinloss2
 		- 20111208@Jim: change bettype condition
-		- 20120214@Jim: change to use  table ExchangeDaily by use function Lrf_f_GetExchangeDaily  	
+		- 20120214@Jim: change to use  table ExchangeDaily by use function Lrf_f_GetExchangeDaily
 		- 20120529@henry: enhance performance
-		- 20120730@Jim: Add Playercomm Value 
+		- 20120730@Jim: Add Playercomm Value
 		- 20120814@Henry: add live casino
 		- 20120905@Jim:add virtual sport	
 		- 20121004@Jim: replace @currency input param by @currencyID
@@ -52,7 +52,7 @@ AS
 		- 20150612@Jim: support MicroGaming
 		- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
 		- 20151001@Jim: remove MicroGaming
-		- 20151228@Bobby: Support MBC RNG Casino sporttype(208,209,210)	
+		- 20151228@Bobby: Support MBC RNG Casino sporttype(208,209,210)
 		- 20160331@Walter: Support Voidbridge single wallet [Redmine: #55057]
 		- 20160413@Victor: support MKK currency code [Redmine: #55745]
 		- 20160727@Jim:  LRF - Commercial terms changed for Bet Trade [Redmine: #61342]
@@ -85,9 +85,10 @@ AS
 		- 20200423@Hogan: Add new product Sexy Gaming [RedmineID: #132829]
 		- 20200423@Vickie: Integrate Saba Club [RedmineID: #132702]
 		- 20200714@Hogan: Add 7 games for Jackpot and 2 bettype for Contribution (4297) and Jackpot Prize (4298) [RedmineID: #137290]
+		- 20200728@Hogan: Integrate SA Gaming [RedmineID: #128493]
 
-	Param's Explanation:  
-		+ @ReportType: 1-Daily; 2-Monthly;  
+	Param's Explanation:
+		+ @ReportType: 1-Daily; 2-Monthly;
 		+ @drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
 		+ @excludeTest: remove currency UUS
 		+ @showSB: Show SportsBook bets
@@ -103,21 +104,21 @@ AS
 				</ROOT> 
 */
 
-BEGIN  
-	SET NOCOUNT ON  
+BEGIN
+	SET NOCOUNT ON
 
-	CREATE TABLE #SAgWinLoss (  
-		winlostdate		DATETIME,  
+	CREATE TABLE #SAgWinLoss (
+		winlostdate		DATETIME,
 		Currency		INT,
 		ProductCode		VARCHAR(10),
-		TurnOver		MONEY,   	
-		Winlost			MONEY,  
-		LicenseeWL		MONEY, 
-		Comm			MONEY,  
-		PlayerComm 		MONEY, 	
+		TurnOver		MONEY,
+		Winlost			MONEY,
+		LicenseeWL		MONEY,
+		Comm			MONEY,
+		PlayerComm 		MONEY,
 		AmtDueTo3rd		MONEY,
 		Betcount		BIGINT
-	)  
+	)
 
 	CREATE TABLE #tmpVS (EventID INT, SportType SMALLINT)
 
@@ -135,16 +136,16 @@ BEGIN
 	SET @sumBetCount = 1
 	SET @ProductList = REPLACE(@ProductList, ' ', '')
 	
-	IF(@drawfilter=2)
+	IF @drawfilter = 2
 	BEGIN
 		SET @sumTurnOver = 0
 		SET @sumBetCount = 0
 	END
 
-	IF(@drawfilter=3)
+	IF @drawfilter = 3
 	BEGIN
 		SET @sumTurnOver = 0
-	END	
+	END
 
 	---#1: Begin: Get AgentList
 	DECLARE @TempAg AS TABLE (CustId INT, Currency INT )
@@ -162,7 +163,7 @@ BEGIN
 
 	BEGIN CATCH
 		SELECT ErrCode = 100
-				,ErrMsg = N'Paramter invalid.'
+				,ErrMsg = N'Parameter invalid.'
 		RETURN
 	END CATCH;
 
@@ -170,8 +171,8 @@ BEGIN
 
 	IF LEN(@UserName) = 0
 		SET @CustID = 0
-	ELSE 
-	BEGIN 
+	ELSE
+	BEGIN
 		SET @UserName = LTRIM(RTRIM(@UserName))
 		
 		SELECT c.CustID, c.username	
@@ -179,29 +180,29 @@ BEGIN
 		FROM dbo.Customer c WITH (NOLOCK) 
 			INNER JOIN @TempAg t ON c.recommend = t.custid AND c.roleid = 1
 		WHERE (c.username2 LIKE + '%$' + @Username  OR c.username = @Username)
-		
+
 		SELECT @RCount = @@ROWCOUNT
-		
+
 		IF @RCount < 1
 		BEGIN
 			SELECT @ErrCode = 100
 					,@ErrMsg = 'No customer found'	
-			RETURN;	   
+			RETURN;
 		END
 		ELSE IF	@RCount > 1
 		BEGIN
 			IF (SELECT COUNT(1) FROM #tblCust) <> 1	
 				SELECT @ErrCode = 101
-						,@ErrMsg = 'More than 1 customer found. Please search for 1 customer only'	
-				RETURN;	   
+					,@ErrMsg = 'More than 1 customer found. Please search for 1 customer only'	
+				RETURN;
 		END
 		ELSE 
 			SELECT @CustID = CustID
 					,@SystemName = username
 			FROM #tblCust
 
-		DROP TABLE 	#tblCust	
-	END	
+		DROP TABLE #tblCust
+	END
 	---#1: End: Get AgentList
 
 	---#2: Begin: Get SportBettypeMatrix
@@ -222,11 +223,15 @@ BEGIN
 		IF PATINDEX('%,SB,%', ',' + @ProductList + ',') > 0
 			DELETE @bettype
 			WHERE (bettype BETWEEN 901 AND 904) OR (bettype BETWEEN 911 AND 914)
-			
+
 		IF PATINDEX('%,PP,%', ',' + @ProductList + ',') > 0
 			DELETE @bettype
 			WHERE bettype IN (4300, 4299, 4298, 4297) AND ProductCode = 'PP' -- Promotion Prize, Jackpot Prize, Contribution
-		
+
+		IF PATINDEX('%,SAG,%', ',' + @ProductList + ',') > 0
+			DELETE @bettype
+			WHERE bettype = 3007 AND ProductCode = 'SAG' -- SAG Tip ticket
+
 		-- Insert Sport Type
 		INSERT INTO @sporttype ( sporttype, ProductCode )
 		SELECT DISTINCT sporttype, ProductCode
@@ -248,35 +253,35 @@ BEGIN
 		IF @FDate <= @MoveBetsDay 
 			SET @TempFromDate =  DATEADD(DAY,1,@MoveBetsDay)
 		ELSE
-			SET @TempFromDate = @FDate			
+			SET @TempFromDate = @FDate
 
 		DECLARE @HWHLCutDate SMALLDATETIME = '2019-10-01' -- half won/ half lose cut date
 
 		---#3.1: Begin: Get data for BA product
 		IF PATINDEX('%,BA,%', ',' + @ProductList + ',') > 0  ---- BA Product
 		BEGIN
-			SELECT DISTINCT transid, r.Currency	
+			SELECT DISTINCT transid, r.Currency
 			INTO #tmpBA
-			FROM 
+			FROM
 				bodb_licensee.dbo.LicenseeBATransaction_active BA WITH(NOLOCK)
-				INNER JOIN @TempAg r ON BA.recommend = r.custID 
-			
-			INSERT INTO #SAgWinLoss  
-			SELECT   
-				b.winlostdate,  
+				INNER JOIN @TempAg r ON BA.recommend = r.custID
+
+			INSERT INTO #SAgWinLoss
+			SELECT
+				b.winlostdate,
 				ba.currency,
 				'BA' ProductCode,
 				SUM( stake
-					*				
+					*
 					CASE 
 						WHEN b.statusID = 111 THEN 0|@sumTurnOver
 						WHEN b.winlostdate >= @HWHLCutDate AND b.statusID IN (112, 113) AND b.modds IN (-0.25, 0.25) AND b.bettype NOT IN (29,38,911,912,913,914) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0) -- exclude parlay, bet builder, cashout
 						WHEN b.winlostdate < @HWHLCutDate AND (b.statusID = 112 OR b.statusID = 113)  AND ABS(modds) = 0.25 AND b.bettype IN(1,3,7,8,17,18,124,125,482,483,484,485) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0)
 						ELSE 1 END
 				)Turnover, 
-				SUM(b.winlost - b.actual_stake) AS Winlost,  
-				0 as LicenseeWL,
-				SUM (comm) as Comm,
+				SUM(b.winlost - b.actual_stake) AS Winlost,
+				0 AS LicenseeWL,
+				SUM (comm) AS Comm,
 				SUM(PlayerComm) AS PlayerComm,
 				- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd,
 				SUM(1 * (CASE WHEN b.statusID = 111 THEN 0|@sumBetCount ELSE 1 END)) AS BetCount	
@@ -285,13 +290,15 @@ BEGIN
 				CROSS APPLY (	SELECT TOP 1 tmp.winlostdate, tmp.statusID, tmp.modds, tmp.bettype
 											, tmp.winlost, tmp.actual_stake, tmp.comm, tmp.playercomm, tmp.awinlost, tmp.stake
 								FROM dbo.bettrans tmp WITH ( NOLOCK)
-								WHERE tmp.transid = ba.TransID AND tmp.currency = ba.Currency	
-									AND tmp.winlostdate BETWEEN @TempFromDate AND @TDate 
+								WHERE tmp.transid = ba.TransID
+									AND tmp.currency = ba.Currency
+									AND tmp.winlostdate BETWEEN @TempFromDate AND @TDate
 									AND tmp.statusID IN (111, 112, 113)
-									AND (@CustId = 0 OR tmp.CustId = @CustID)			
-							) AS b	
-			GROUP BY   
-				b.winlostdate,ba.currency
+									AND (@CustId = 0 OR tmp.CustId = @CustID)
+							) AS b
+			GROUP BY
+				b.winlostdate,
+				ba.currency
 
 			DROP TABLE #tmpBA
 		END
@@ -300,20 +307,20 @@ BEGIN
 		IF EXISTS (SELECT 1 FROM @bettype WHERE ProductCode = 'VS2')
 		BEGIN
 			INSERT INTO #SAgWinLoss
-			SELECT   
+			SELECT
 				b.winlostdate,
 				a.currency,
-				'VS2' + CONVERT(varchar(10), s.sporttype) AS ProductCode,
-				SUM(stake *			
+				'VS2' + CONVERT(VARCHAR(10), s.sporttype) AS ProductCode,
+				SUM(stake *
 					CASE WHEN b.statusID = 111 THEN 0|@sumTurnOver
 						ELSE 1 END
 				) AS Turnover, 
 				SUM(b.winlost - b.actual_stake) AS Winlost,  
 				- SUM(b.winlost - b.actual_stake) AS LicenseeWL,
-				SUM(comm) as Comm,
+				SUM(comm) AS Comm,
 				SUM(PlayerComm) AS PlayerComm,
 				- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd,
-				SUM(1 * (CASE WHEN b.statusID = 111 THEN 0|@sumBetCount ELSE 1 END)) AS BetCount	
+				SUM(1 * (CASE WHEN b.statusID = 111 THEN 0|@sumBetCount ELSE 1 END)) AS BetCount
 			FROM 
 				dbo.bettrans b WITH (NOLOCK)
 				CROSS APPLY (	SELECT TOP 1 m.sporttype
@@ -321,38 +328,41 @@ BEGIN
 									INNER JOIN bodb02.dbo.match m WITH (NOLOCK) ON bm.matchid = m.matchid
 								WHERE b.refno = bm.refno AND b.custid = bm.custid
 							) AS s
-				INNER JOIN @TempAg a ON b.recommend = a.custid AND b.Currency = a.Currency 							
+				INNER JOIN @TempAg a ON b.recommend = a.custid AND b.Currency = a.Currency
 			WHERE b.bettype = 2799 -- Betradar VS Parlay
 				AND b.winlostdate BETWEEN @TempFromDate AND @TDate   
 				AND (@CustId = 0 OR b.CustId = @CustID)
 				AND b.statusID  IN (111, 112, 113)
 				AND b.matchid = 2799
-			GROUP BY b.winlostdate,	a.currency, 'VS2' + CONVERT(varchar(10), s.sporttype)
-		END		
-	
+			GROUP BY
+				b.winlostdate,
+				a.currency,
+				'VS2' + CONVERT(VARCHAR(10), s.sporttype)
+		END
+
 		---#3.3: Begin: Get data for all products, Exclude VS2 parlay ticket and BA
 		IF EXISTS (SELECT 1 FROM @bettype)
 		BEGIN
 			IF EXISTS (SELECT 1 FROM @bettype WHERE ProductCode IN ('VS','VS2'))
-			BEGIN	
-				INSERT INTO #tmpVS ( EventID, SportType )				
+			BEGIN
+				INSERT INTO #tmpVS ( EventID, SportType )
 				SELECT 
 					DISTINCT
 					o.EventID,
-					r.SportType				
-				FROM VSOutright o with (nolock)
+					r.SportType
+				FROM VSOutright o WITH (NOLOCK)
 					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
 				WHERE EventDate BETWEEN @TempFromDate AND @TDate 
 			END
 
 			INSERT INTO #SAgWinLoss
-			SELECT   
+			SELECT
 				b.winlostdate, 
 				a.currency,
 				CASE WHEN bt.ProductCode LIKE 'VS%' THEN
 					CASE WHEN ISNULL(vs.sporttype, 0) = 0  
-						THEN bt.ProductCode + CONVERT(varchar(10), ISNULL(m.sporttype,0))
-						ELSE bt.ProductCode + CONVERT(varchar(10), vs.sporttype)
+						THEN bt.ProductCode + CONVERT(VARCHAR(10), ISNULL(m.sporttype,0))
+						ELSE bt.ProductCode + CONVERT(VARCHAR(10), vs.sporttype)
 					END
 				ELSE bt.ProductCode END AS ProductCode,
 				SUM(stake *
@@ -364,7 +374,7 @@ BEGIN
 				) AS Turnover, 
 				SUM(b.winlost - b.actual_stake) AS Winlost,  
 				- SUM(b.winlost - b.actual_stake) AS LicenseeWL,
-				SUM(comm) as Comm,
+				SUM(comm) AS Comm,
 				SUM(PlayerComm) AS PlayerComm,
 				- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd,
 				SUM(1 * (CASE WHEN b.statusID = 111 THEN 0|@sumBetCount ELSE 1 END)) AS BetCount	
@@ -385,14 +395,14 @@ BEGIN
 				,a.currency
 				,CASE WHEN bt.ProductCode LIKE 'VS%' THEN
 					CASE WHEN ISNULL(vs.sporttype, 0) = 0  
-						THEN bt.ProductCode + CONVERT(varchar(10), ISNULL(m.sporttype,0))
-						ELSE bt.ProductCode + CONVERT(varchar(10), vs.sporttype)
+						THEN bt.ProductCode + CONVERT(VARCHAR(10), ISNULL(m.sporttype,0))
+						ELSE bt.ProductCode + CONVERT(VARCHAR(10), vs.sporttype)
 					END
 				ELSE bt.ProductCode END	
 
 			DROP TABLE #tmpVS
 		END
-	END  
+	END
 	---#3: END: Get Sum data from bettrans After Move Bets Day
 
 	---#4: BEGIN: Get Sum data from Sum Table Before Move Bets Day
@@ -401,42 +411,44 @@ BEGIN
 		IF @TDate >= @MoveBetsDay
 			SET @TempToDate = @MoveBetsDay
 		ELSE
-			SET  @TempToDate = @TDate
-		
+			SET @TempToDate = @TDate
+
 		---#4.1: Begin: Get data for BA product
 		IF PATINDEX('%,BA,%', ',' + @ProductList + ',') > 0
 		BEGIN
-			INSERT INTO #SAgWinLoss  
-			SELECT 
-				b.winlostdate,  
+			INSERT INTO #SAgWinLoss
+			SELECT
+				b.winlostdate,
 				b.currency,
 				'BA' AS ProductCode,
 				SUM(b.turnover
-				*			
+				*
 					CASE WHEN b.statusID = 111  THEN 0|@sumTurnOver
 						WHEN b.statusID IN (114, 115) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0)
 						ELSE 1 END
-				),     
-				SUM(b.winlost),  
-				0 as LicenseeWL,
-				SUM (comm) as Comm,
+				),
+				SUM(b.winlost),
+				0 AS LicenseeWL,
+				SUM (comm) AS Comm,
 				SUM( PlayerComm ) AS PlayerComm,
-				- SUM (b.awinlost + b.winlost + b.comm) as AmountDueTo3rd,
+				- SUM (b.awinlost + b.winlost + b.comm) AS AmountDueTo3rd,
 				SUM(b.betcount * CASE WHEN b.statusID = 111 THEN 0|@sumBetCount ELSE 1 END)
-			FROM 
-				bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
+			FROM
+				bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)
 				INNER JOIN @TempAg ag ON b.Currency = ag.Currency AND b.recommend= ag.custID
-			WHERE  
-				  b.Winlostdate BETWEEN @FDate AND @TempToDate  
-				AND (@CustId = 0 OR b.CustId = @CustID)  
-				AND b.roleid = 1   
+			WHERE
+				b.Winlostdate BETWEEN @FDate AND @TempToDate
+				AND (@CustId = 0 OR b.CustId = @CustID)
+				AND b.roleid = 1
 				AND b.statusID <> 101 --exclude REJECT bets
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
 				AND ISNULL(b.isBA, 0) = 1
-			GROUP BY  b.winlostdate,  b.currency
+			GROUP BY
+				b.winlostdate,
+				b.currency
 		END
-		
+
 		---#4.2: Begin: Get data for all products exclude VS, VS2
 		IF EXISTS (SELECT 1 FROM @sporttype)
 		BEGIN
@@ -446,53 +458,55 @@ BEGIN
 				b.currency,
 				t.ProductCode,
 				SUM(b.turnover
-				*				
+				*
 					CASE WHEN b.statusID = 111  THEN 0|@sumTurnOver
 						WHEN b.statusID IN (114,115) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0)
 						ELSE 1 END
-				),     
-				SUM(b.winlost),  
-				SUM(CASE WHEN (b.sporttype in(0,161,164,251,202,208,209,210,212,220,248,165,247,245,222,223,243,200))  THEN -1 * b.winlost 
+				),
+				SUM(b.winlost),
+				SUM(CASE WHEN (b.sporttype in(0,161,164,251,202,208,209,210,212,220,248,165,247,245,222,223,243,200,244))  THEN -1 * b.winlost 
 						ELSE 0 END
 					) AS LicenseeWL,
-				SUM(comm ) as Comm,
+				SUM(comm ) AS Comm,
 				SUM( PlayerComm  ) AS PlayerComm, 
-				- SUM(b.awinlost + b.winlost + b.comm) as AmountDueTo3rd,
+				- SUM(b.awinlost + b.winlost + b.comm) AS AmountDueTo3rd,
 				SUM(b.betcount * CASE WHEN b.statusID = 111 THEN 0|@sumBetCount ELSE 1 END)
 			FROM 
-				bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )  
+				bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)
 				INNER JOIN @sporttype t ON b.sporttype = t.sporttype
 				INNER JOIN @TempAg ag ON b.recommend = ag.custID AND b.Currency = ag.Currency
 			WHERE  
 				 b.Winlostdate BETWEEN @FDate AND @TempToDate  
 				AND (@CustId = 0 OR b.CustId = @CustID)
-				AND b.roleid = 1   
+				AND b.roleid = 1
 				AND b.statusID <> 101 --exclude REJECT bets
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
-				AND b.bettype NOT IN (4300, 4299, 4298, 4297) -- exclude PP Prize, Jackpot Prize, Contribution
+				AND b.bettype NOT IN (4300, 4299, 4298, 4297, 3007) -- exclude PP Prize, Jackpot Prize, Contribution, SAG tip ticket
 				AND ISNULL(b.isBA, 0) = 0
-			GROUP BY  
-				b.winlostdate,  
+			GROUP BY
+				b.winlostdate,
 				b.currency,
 				t.ProductCode
 		END
 
 		---#4.3: Begin: Get data for VS, VS2 from DW
 		IF EXISTS (SELECT 1 FROM @bettype WHERE ProductCode IN ('VS', 'VS2'))
-		BEGIN		
-			DECLARE @n INT = 2147483647	
-			
-			SELECT s.SportType, s.ProductPrefix
+		BEGIN
+			DECLARE @n INT = 2147483647
+
+			SELECT
+				s.SportType,
+				s.ProductPrefix
 			INTO #tmpSport
 			FROM 
 			(
-				SELECT DISTINCT m.SportType, p.ProductPrefix		
+				SELECT DISTINCT m.SportType, p.ProductPrefix
 				FROM dbo.SportBettypeMatrix m WITH (NOLOCK)
 					INNER JOIN dbo.Products p WITH (NOLOCK) ON m.ProductID = p.ProductID
 				WHERE p.ProductPrefix IN ('VS', 'VS2')
 					AND m.BetType IN (SELECT bettype FROM @bettype)
-			) s			
+			) s
 
 			DECLARE  @tblVS AS TABLE 
 				(rptdate    DATETIME
@@ -504,29 +518,29 @@ BEGIN
 				,commissionP MONEY
 				,WinlossA  	MONEY
 				,betcount INT )
-			
+
 			IF @CustID <> 0
 			BEGIN
 				INSERT INTO @tblVS 
-					(rptdate    
+					(rptdate
 					,sportID	
 					,currency	
 					,turnover 
 					,winloss  
 					,commissionA 
 					,commissionP 
-					,WinlossA  	
+					,WinlossA
 					,betcount)
 				SELECT 
-					 winlostDate    
-					,sportID					
-					,t.currency	 				
-					,SUM(vs.Turnover) 
-					,SUM(winlossp)  
-					,SUM(commissionA) 
-					,SUM(commissionP) 
-					,SUM(WinlossA)  	
-					,SUM(Betcount)  
+					 winlostDate
+					,sportID
+					,t.currency
+					,SUM(vs.Turnover)
+					,SUM(winlossp)
+					,SUM(commissionA)
+					,SUM(commissionP)
+					,SUM(WinlossA)
+					,SUM(Betcount)
 				FROM @TempAg t  
 					CROSS APPLY ( 
 									SELECT TOP (@n) 
@@ -534,7 +548,7 @@ BEGIN
 											 WHEN @ReportType = 2 THEN DATEADD(MONTH, DATEDIFF(MONTH, 0, b.rptDate), 0)
 										ELSE '0' END winlostDate
 										, b.SportID
-										, SUM(b.Stake *					
+										, SUM(b.Stake *
 												CASE WHEN b.[status] = 3  THEN 0|@sumTurnOver
 													 WHEN b.[Status] IN (13,12) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0)
 												ELSE 1 END
@@ -544,48 +558,49 @@ BEGIN
 										, SUM(b.betcount * 
 												CASE WHEN b.status = 3 THEN 0|@sumBetCount ELSE 1 END) AS Betcount
 									FROM DBWH.bodb_Account.dbo.mcCustVirtualSport b WITH (NOLOCK) 
-									WHERE t.CustID = b.recommend AND b.Currency = t.Currency 
-										AND rptdate BETWEEN @FDate AND @TempToDate  			 
+									WHERE t.CustID = b.recommend
+										AND b.Currency = t.Currency
+										AND rptdate BETWEEN @FDate AND @TempToDate
 										AND status IN (8,3,4)
 										AND b.CustID = @CustID
 									GROUP BY b.rptDate, b.SportID
-								) AS vs			
+								) AS vs
 				GROUP BY 
-				winlostDate
-				,sportID
-				,t.currency
+					winlostDate
+					,sportID
+					,t.currency
 				OPTION (OPTIMIZE FOR (@n = 1))
 			END
 			ELSE
 			BEGIN
 				INSERT INTO @tblVS 
-					(rptdate    
-					,sportID	
-					,currency	
-					,turnover 
-					,winloss  
-					,commissionA 
-					,commissionP 
-					,WinlossA  	
+					(rptdate
+					,sportID
+					,currency
+					,turnover
+					,winloss
+					,commissionA
+					,commissionP
+					,WinlossA
 					,betcount)
 				SELECT 
-					 winlostDate    
+					 winlostDate
 					,sportID
 					,t.currency
-					,SUM(vs.Turnover) 
-					,SUM(winlossp)  
-					,SUM(commissionA) 
-					,SUM(commissionP) 
-					,SUM(WinlossA)  	
-					,SUM(Betcount)  
-				FROM @TempAg t  
-					CROSS APPLY ( 
+					,SUM(vs.Turnover)
+					,SUM(winlossp)
+					,SUM(commissionA)
+					,SUM(commissionP)
+					,SUM(WinlossA)
+					,SUM(Betcount)
+				FROM @TempAg t
+					CROSS APPLY (
 									SELECT TOP (@n)
 										CASE WHEN @ReportType = 1 THEN b.rptDate  
 											 WHEN @ReportType = 2 THEN DATEADD(MONTH, DATEDIFF(MONTH, 0, b.rptDate), 0)
 										ELSE '0' END winlostDate
 										, b.SportID
-										, SUM(b.Stake *					
+										, SUM(b.Stake *
 												CASE WHEN b.[status] = 3  THEN 0|@sumTurnOver
 													 WHEN b.[Status] IN (13,12) THEN (1|@sumTurnOver)/(~@sumTurnOver+1.0)
 												ELSE 1 END
@@ -596,36 +611,38 @@ BEGIN
 												CASE WHEN b.status = 3 THEN 0|@sumBetCount ELSE 1 END) AS Betcount
 									FROM DBWH.bodb_Account.dbo.mcCustVirtualSport b WITH (NOLOCK) 
 									WHERE t.CustID = b.recommend AND b.Currency = t.Currency 
-										AND rptdate BETWEEN @FDate AND @TempToDate  			 
-										AND status IN (8,3,4)										
-									GROUP BY b.rptDate, b.SportID
-								) AS vs			
-				GROUP BY 
-				winlostDate    
-				,sportID				
-				,t.currency	 		
+										AND rptdate BETWEEN @FDate AND @TempToDate
+										AND status IN (8,3,4)
+									GROUP BY
+										b.rptDate,
+										b.SportID
+								) AS vs
+				GROUP BY
+					winlostDate
+					,sportID
+					,t.currency
 				OPTION (OPTIMIZE FOR (@n = 1))
 			END
 
-			INSERT INTO #SAgWinLoss  
-			SELECT 	b.rptdate
-					,b.currency
-					,ts.ProductPrefix + CONVERT(varchar(10), ISNULL(b.sportID,0)) AS ProductCode				
-					,SUM(b.turnover)
-					,SUM(b.winloss)
-					,-SUM(b.winloss) AS LicenseeWL
-					,SUM(commissionA) AS Comm
-					,SUM( commissionP ) AS PlayerComm,
-					- SUM (b.WinlossA + b.Winloss + b.commissionA) as AmountDueTo3rd,
-					SUM(b.betcount)					
+			INSERT INTO #SAgWinLoss
+			SELECT
+				b.rptdate
+				,b.currency
+				,ts.ProductPrefix + CONVERT(VARCHAR(10), ISNULL(b.sportID,0)) AS ProductCode
+				,SUM(b.turnover)
+				,SUM(b.winloss)
+				,-SUM(b.winloss) AS LicenseeWL
+				,SUM(commissionA) AS Comm
+				,SUM( commissionP ) AS PlayerComm,
+				- SUM (b.WinlossA + b.Winloss + b.commissionA) AS AmountDueTo3rd,
+				SUM(b.betcount)
 			FROM @tblVS b	
-				INNER JOIN #tmpSport ts ON b.sportID = ts.SportType			
+				INNER JOIN #tmpSport ts ON b.sportID = ts.SportType
 			GROUP BY 
 				b.rptdate
-				,b.currency					
-				,ts.ProductPrefix + CONVERT(varchar(10), ISNULL(b.sportID,0))
-		
-		END	
+				,b.currency
+				,ts.ProductPrefix + CONVERT(VARCHAR(10), ISNULL(b.sportID,0))
+		END
 	END 
 	---#4: END: Get Sum data from Sum Table Before Move Bets Day
 
@@ -633,10 +650,10 @@ BEGIN
 	IF EXISTS (SELECT TOP (1) 1 FROM #SAgWinLoss)
 	BEGIN
 		DECLARE @MinDate SMALLDATETIME, @MaxDate SMALLDATETIME
-		
+
 		SELECT @MinDate = MIN (winlostdate),
-			   @MaxDate = MAX (winlostdate)
-		FROM   #SAgWinLoss
+			@MaxDate = MAX (winlostdate)
+		FROM #SAgWinLoss
 
 		INSERT INTO #Exchange(FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
 		SELECT FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate
@@ -644,29 +661,29 @@ BEGIN
 		WHERE EXISTS (SELECT 1 FROM @TempAg a WHERE e.ExchangeID = a.Currency)
 	END
 
-	SELECT   
+	SELECT
 		CASE WHEN @ReportType = 1 THEN CONVERT(VARCHAR(8),w.winlostdate,112)  
 			WHEN @ReportType = 2 THEN CONVERT(VARCHAR(6),w.winlostdate,112)  
-			ELSE '0' END ReportType,  
+			ELSE '0' END ReportType,
 		Currency ,
-		ProductCode,			
+		ProductCode,
 
 		SUM(Betcount)	AS Betcount,
 
-		CAST(SUM(TurnOver * e.Rate)			AS MONEY)	AS Turnover,   
-		CAST(SUM(Winlost * e.Rate)			AS MONEY)	AS Winlost,  
+		CAST(SUM(TurnOver * e.Rate)			AS MONEY)	AS Turnover,
+		CAST(SUM(Winlost * e.Rate)			AS MONEY)	AS Winlost,
 		CAST(SUM(LicenseeWL * e.Rate) 		AS MONEY)	AS LicenseeWL,
-		CAST(SUM(Comm * e.Rate) 				AS MONEY)	AS Comm,
+		CAST(SUM(Comm * e.Rate) 			AS MONEY)	AS Comm,
 		CAST(SUM(PlayerComm * e.Rate) 		AS MONEY)	AS PlayerComm,
 		CAST(SUM(AmtDueto3rd * e.Rate) 		AS MONEY)	AS AmtDueto3rd,
-	  
+
 		--BaseUSD  
-		CAST(SUM(TurnOver * e.USD)			AS MONEY)	AS TurnoverUSD,   
-		CAST(SUM(Winlost * e.USD)			AS MONEY)	AS WinlostUSD,  
-		CAST(SUM(LicenseeWL * e.USD)			AS MONEY)	AS LicenseeWLUSD,
-		CAST(SUM(Comm * e.USD) 				AS MONEY)	AS CommUSD,
-		CAST(SUM(PlayerComm * e.USD)  		AS MONEY)	AS PlayerCommUSD,
-		CAST(SUM(AmtDueto3rd * e.USD) 		AS MONEY)	AS AmtDueto3rdUSD,
+		CAST(SUM(TurnOver * e.USD)			AS MONEY)	AS TurnoverUSD,
+		CAST(SUM(Winlost * e.USD)			AS MONEY)	AS WinlostUSD,
+		CAST(SUM(LicenseeWL * e.USD)		AS MONEY)	AS LicenseeWLUSD,
+		CAST(SUM(Comm * e.USD)				AS MONEY)	AS CommUSD,
+		CAST(SUM(PlayerComm * e.USD)		AS MONEY)	AS PlayerCommUSD,
+		CAST(SUM(AmtDueto3rd * e.USD)		AS MONEY)	AS AmtDueto3rdUSD,
 
 		--BaseEUR  
 		CAST(SUM(TurnOver * e.EUR)			AS MONEY)	AS TurnoverEUR,   
@@ -677,31 +694,36 @@ BEGIN
 		CAST(SUM(AmtDueto3rd * e.EUR) 		AS MONEY)	AS AmtDueto3rdEUR,
 
 		--BaseGBP  
-		CAST(SUM(TurnOver * e.GBP)			AS MONEY)	AS TurnoverGBP,   
+		CAST(SUM(TurnOver * e.GBP)			AS MONEY)	AS TurnoverGBP,
 		CAST(SUM(Winlost * e.GBP)			AS MONEY)	AS WinlostGBP,  
 		CAST(SUM(LicenseeWL * e.GBP) 		AS MONEY)	AS LicenseeWLGBP,
 		CAST(SUM(Comm * e.GBP) 				AS MONEY)	AS CommGBP,
 		CAST(SUM(PlayerComm * e.GBP) 		AS MONEY)	AS PlayerCommGBP,
 		CAST(SUM(AmtDueto3rd * e.GBP) 		AS MONEY)	AS AmtDueto3rdGBP,
-	   
+
 		--Default Base Currency  
-		CAST(SUM(TurnOver * e.DefaultRate)			AS MONEY)	AS TurnoverBase,   
+		CAST(SUM(TurnOver * e.DefaultRate)			AS MONEY)	AS TurnoverBase,
 		CAST(SUM(Winlost * e.DefaultRate)			AS MONEY)	AS WinlostBase,  
 		CAST(SUM(LicenseeWL * e.DefaultRate) 		AS MONEY)	AS LicenseeWLBase,
 		CAST(SUM(Comm * e.DefaultRate) 				AS MONEY)	AS CommBase,
 		CAST(SUM(PlayerComm * e.DefaultRate) 		AS MONEY)	AS PlayerCommBase,
 		CAST(SUM(AmtDueto3rd * e.DefaultRate) 		AS MONEY)	AS AmtDueto3rdBase
-	FROM	
-		#SAgWinLoss w   
+	FROM
+		#SAgWinLoss w
 		INNER JOIN #Exchange e
-			ON e.ExchangeID = w.Currency AND w.winlostdate BETWEEN e.FromDate AND e.ToDate	
-	GROUP BY   
+			ON e.ExchangeID = w.Currency AND w.winlostdate BETWEEN e.FromDate AND e.ToDate
+	GROUP BY
 		Currency,
 		Productcode,
-		CASE WHEN @ReportType = 1 THEN CONVERT(VARCHAR(8),w.winlostdate,112)  
-			  WHEN @ReportType = 2 THEN CONVERT(VARCHAR(6),w.winlostdate,112)  
-			  ELSE '0' END 
-	ORDER BY ReportType, Currency, ProductCode
+		CASE
+			WHEN @ReportType = 1 THEN CONVERT(VARCHAR(8),w.winlostdate,112)
+			WHEN @ReportType = 2 THEN CONVERT(VARCHAR(6),w.winlostdate,112)
+			ELSE '0'
+		END
+	ORDER BY
+		ReportType,
+		Currency,
+		ProductCode
 	---#6: END: Return final data set
 
 	DROP TABLE #SAgWinLoss
