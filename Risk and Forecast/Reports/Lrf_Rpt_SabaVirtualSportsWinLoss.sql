@@ -20,6 +20,7 @@ AS
 
 	Revisions:
 		- 20200925@Kos: New SP [RedmineID: #141454]
+		- 20201019@Kos: Change to use new table to check performance [RedmineID: #143310]
 
 	Param's Explanation:
 		+ @ReportType: 1: Daily, 2: Monthly
@@ -34,14 +35,14 @@ AS
 BEGIN
 	SET NOCOUNT ON
 
-	DECLARE @TempAg TABLE (CustId INT, Currency INT)
+	CREATE TABLE #TempAg (CustId INT, Currency INT, PRIMARY KEY (CustId, Currency))
 
 	DECLARE @DocHandler INT
 
 	BEGIN TRY
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT, @AgentList
 
-		INSERT INTO @TempAg (CustId, Currency)
+		INSERT INTO #TempAg (CustId, Currency)
 		SELECT AgentId, Currency
 		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId INT, Currency INT) AS Data
 
@@ -66,9 +67,9 @@ BEGIN
 	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', 'SB,CO', @IsTest)
 	WHERE BetType NOT IN (9, 29, 914, 901, 902, 903, 904)
 
-	DECLARE @SabaVirtualSportsLeague TABLE (LeagueId INT)
+	CREATE TABLE #SabaVirtualSportsLeague (LeagueId INT, PRIMARY KEY (LeagueId))
 
-	INSERT INTO @SabaVirtualSportsLeague
+	INSERT INTO #SabaVirtualSportsLeague
 	SELECT leagueid
 	FROM dbo.League WITH (NOLOCK)
 	WHERE (@LeagueId = 0 OR leagueid = @LeagueId)
@@ -182,10 +183,10 @@ BEGIN
 			SUM(CASE WHEN b.bettype = 913 THEN b.awinlost ELSE 0 END) AS CashOutComm
 		FROM
 			dbo.bettrans AS b WITH (NOLOCK)
-			INNER JOIN @TempAg AS a ON a.CustId = b.recommend
+			INNER JOIN #TempAg AS a ON a.CustId = b.recommend
 			INNER JOIN @BetType AS bt ON bt.bettype = b.bettype
 			INNER JOIN dbo.match AS m WITH (NOLOCK) ON m.MatchId = b.matchid
-			INNER JOIN @SabaVirtualSportsLeague AS l ON l.LeagueId = m.leagueid
+			INNER JOIN #SabaVirtualSportsLeague AS l ON l.LeagueId = m.leagueid
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 			AND b.statusID IN (111, 112, 113)
@@ -256,9 +257,9 @@ BEGIN
 			0 AS CashOutComm
 		FROM
 			dbo.bettrans AS b WITH (NOLOCK)
-			INNER JOIN @TempAg AS a ON a.CustId = b.recommend
+			INNER JOIN #TempAg AS a ON a.CustId = b.recommend
 			INNER JOIN dbo.outright AS o WITH (NOLOCK) ON o.orid = b.matchid
-			INNER JOIN @SabaVirtualSportsLeague AS l ON l.LeagueId = o.leagueid
+			INNER JOIN #SabaVirtualSportsLeague AS l ON l.LeagueId = o.leagueid
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 			AND b.statusID IN (111, 112, 113)
@@ -275,6 +276,12 @@ BEGIN
 							ELSE @_ToDate
 						END
 
+		CREATE TABLE #Date (Date SMALLDATETIME, PRIMARY KEY(Date))
+
+		INSERT INTO #Date
+		SELECT [Date]
+		FROM f_GetDateBetweenTwoDates (@_FromDate, @TempToDate)
+
 		INSERT INTO @Data (
 			WinLostDate,
 			Currency,
@@ -288,65 +295,72 @@ BEGIN
 			BAComm,
 			AmtDueToBA,
 			CashOutComm )
-		SELECT
-			b.winlostdate,
-			b.currency,
-			SUM(CASE
-					WHEN (@DrawFilter = 2 AND b.statusID = 111) OR b.bettype = 913 THEN 0
-					ELSE b.betcount
-				END) AS BetCount,
-			SUM(CASE
-					WHEN b.isBA = 0
-						AND b.bettype NOT IN (911, 912, 913)
-						AND @DrawFilter = 1
-						THEN b.stake
-					WHEN b.isBA = 0
-						AND b.bettype NOT IN (911, 912, 913)
-						AND @DrawFilter IN (2, 3)
-						AND b.statusID IN (112, 113)
-						THEN b.stake
-					WHEN b.isBA = 0
-						AND b.bettype NOT IN (911, 912, 913)
-						AND @DrawFilter IN (2, 3)
-						AND b.statusID IN (114, 115)
-						THEN 0.5 * b.stake
-					ELSE 0
-				END) AS TurnoverSB,
-			SUM(CASE
-					WHEN b.isBA = 1
-						AND b.bettype NOT IN (911, 912, 913)
-						AND @DrawFilter = 1
-						THEN b.stake
-					WHEN b.isBA = 1
-						AND b.bettype NOT IN (911, 912, 913)
-						AND @DrawFilter IN (2, 3)
-						AND b.statusID IN (112, 113)
-						THEN b.stake
-					WHEN b.isBA = 1
-						AND b.bettype NOT IN (911, 912, 913)
-						AND @DrawFilter IN (2, 3)
-						AND b.statusID IN (114, 115)
-						THEN 0.5 * b.stake
-					ELSE 0
-				END) AS TurnoverBA,
-			SUM(CASE WHEN b.bettype = 913 THEN 0 ELSE b.winlost END) AS WinLost,
-			-SUM(CASE WHEN b.isBA = 0 AND b.bettype NOT IN (911, 912, 913) THEN b.winlost ELSE 0 END) AS LicenseeWLSB,
-			-SUM(CASE WHEN b.bettype IN (911, 912) THEN b.winlost ELSE 0 END) AS LicenseeWLCO,
-			SUM(CASE WHEN b.bettype IN (911, 912, 913) THEN 0 ELSE b.playercomm END) AS PlayerComm,
-			SUM(CASE WHEN b.isBA = 1 THEN b.comm ELSE 0 END) AS BAComm,
-			-SUM(CASE WHEN b.isBA = 1 THEN b.winlost + b.awinlost + b.comm ELSE 0 END) AS AmountDueToBA,
-			SUM(CASE WHEN b.bettype = 913 THEN b.awinlost ELSE 0 END) AS CashOutComm
+		SELECT b.*
 		FROM
-			bodb_licenseereport.dbo.rptWinlostbyLeague AS b WITH (NOLOCK)
-			INNER JOIN @TempAg AS ag ON ag.CustId = b.recommend AND ag.currency = b.Currency
-			INNER JOIN @SabaVirtualSportsLeague AS l ON l.LeagueId = b.leagueid
-		WHERE
-			b.winlostdate BETWEEN @_FromDate AND @TempToDate
-			AND b.statusID <> 101	--exclude REJECT
-			AND b.bettype NOT IN (901, 902, 903, 904, 914, 9, 29)
-		GROUP BY
-			b.winlostdate,
-			b.Currency
+			#Date AS d
+			CROSS APPLY (
+				SELECT
+					b.winlostdate,
+					b.currency,
+					SUM(CASE
+							WHEN (@DrawFilter = 2 AND b.statusID = 111) OR b.bettype = 913 THEN 0
+							ELSE b.betcount
+						END) AS BetCount,
+					SUM(CASE
+							WHEN b.isBA = 0
+								AND b.bettype NOT IN (911, 912, 913)
+								AND @DrawFilter = 1
+								THEN b.stake
+							WHEN b.isBA = 0
+								AND b.bettype NOT IN (911, 912, 913)
+								AND @DrawFilter IN (2, 3)
+								AND b.statusID IN (112, 113)
+								THEN b.stake
+							WHEN b.isBA = 0
+								AND b.bettype NOT IN (911, 912, 913)
+								AND @DrawFilter IN (2, 3)
+								AND b.statusID IN (114, 115)
+								THEN 0.5 * b.stake
+							ELSE 0
+						END) AS TurnoverSB,
+					SUM(CASE
+							WHEN b.isBA = 1
+								AND b.bettype NOT IN (911, 912, 913)
+								AND @DrawFilter = 1
+								THEN b.stake
+							WHEN b.isBA = 1
+								AND b.bettype NOT IN (911, 912, 913)
+								AND @DrawFilter IN (2, 3)
+								AND b.statusID IN (112, 113)
+								THEN b.stake
+							WHEN b.isBA = 1
+								AND b.bettype NOT IN (911, 912, 913)
+								AND @DrawFilter IN (2, 3)
+								AND b.statusID IN (114, 115)
+								THEN 0.5 * b.stake
+							ELSE 0
+						END) AS TurnoverBA,
+					SUM(CASE WHEN b.bettype = 913 THEN 0 ELSE b.winlost END) AS WinLost,
+					-SUM(CASE WHEN b.isBA = 0 AND b.bettype NOT IN (911, 912, 913) THEN b.winlost ELSE 0 END) AS LicenseeWLSB,
+					-SUM(CASE WHEN b.bettype IN (911, 912) THEN b.winlost ELSE 0 END) AS LicenseeWLCO,
+					SUM(CASE WHEN b.bettype IN (911, 912, 913) THEN 0 ELSE b.playercomm END) AS PlayerComm,
+					SUM(CASE WHEN b.isBA = 1 THEN b.comm ELSE 0 END) AS BAComm,
+					-SUM(CASE WHEN b.isBA = 1 THEN b.winlost + b.awinlost + b.comm ELSE 0 END) AS AmountDueToBA,
+					SUM(CASE WHEN b.bettype = 913 THEN b.awinlost ELSE 0 END) AS CashOutComm
+				FROM
+					bodb_licenseereport.dbo.rptWinlostbyLeague AS b WITH (NOLOCK)
+					INNER JOIN #TempAg AS ag ON ag.CustId = b.recommend AND ag.currency = b.Currency
+					INNER JOIN #SabaVirtualSportsLeague AS l ON l.LeagueId = b.leagueid
+				WHERE
+					b.winlostdate = d.Date
+					AND b.statusID <> 101	--exclude REJECT
+					AND b.bettype NOT IN (901, 902, 903, 904, 914, 9, 29)
+				GROUP BY
+					b.winlostdate,
+					b.currency
+			) AS b
+
+		DROP TABLE #Date
 	END
 
 	DELETE FROM @Data WHERE BetCount = 0
@@ -366,7 +380,7 @@ BEGIN
 		INSERT INTO @ExchangeRate(FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
 		SELECT FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate
 		FROM dbo.Lrf_f_GetExchangeRate(@_FromDate, @_ToDate, @BaseCurrency, @DefaultBaseCurrency) e
-		WHERE EXISTS (SELECT 1 FROM @TempAg a WHERE e.ExchangeID = a.Currency)
+		WHERE EXISTS (SELECT 1 FROM #TempAg a WHERE e.ExchangeID = a.Currency)
 	END
 
 	SELECT
@@ -476,5 +490,8 @@ BEGIN
 		INNER JOIN @ExchangeRate AS e
 			ON w.WinLostDate BETWEEN e.FromDate AND e.ToDate
 				AND w.currency = e.ExchangeId
+
+	DROP TABLE #TempAg
+	DROP TABLE #SabaVirtualSportsLeague
 END
 GO
