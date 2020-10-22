@@ -7,7 +7,7 @@ AS
 /*
 	Created: 20150608@Jim
 	Task: Get Product list which offered for selected licensees
-	DB: DBLIC/bodb_licensee
+	DB: DBLIC.bodb_licensee
 
 	Revisions:
 		- 20150722@Jim: apply new DBCust structure
@@ -30,6 +30,7 @@ AS
 		- 20200423@Hogan: Bet Setting - Hide Table Game product [RedmineID: #133097]
 		- 20200427@Hogan: Bet Setting - Hide Sexy Gaming product [RedmineID: #132829]
 		- 20200427@Vickie: Bet Setting - Hide SBC product [RedmineID: #132702]
+		- 20200615@Hogan: Integrate SA Gaming [RedmineID: #128493]
 
 	EXEC Lrf_LicenseeProductSel @LicenseeID = 2
 */
@@ -124,19 +125,20 @@ BEGIN
 		WHERE ps.ProductID IN (SELECT productID FROM dbo.Product3rd p WITH (NOLOCK) WHERE applyDCS = 1)
 		)
 		UPDATE t
-		SET isEnable = 1
+		SET IsEnable = 1
 		FROM @tblProductActive t
 		WHERE productID IN (SELECT productID FROM tmp)
 	END
-	
-	SELECT ProductID
-		   ,ProductName
-		   ,ProductCode
-		   ,isEnable
-	FROM @tblProductActive t 
-	WHERE ProductID NOT IN (3,7,9,4,1,14,17,34,36,37,38,43,40,45,42)-- Hide Setting for CashOut,LC,RB,Microgaming,CC,SG,SPR,VRG,I4D,TG,SXG,SBC
+
+	SELECT
+		ProductID,
+		ProductName,
+		ProductCode,
+		IsEnable
+	FROM @tblProductActive
+	WHERE ProductID NOT IN (1, 3, 4, 7, 9, 14, 17)
+		AND ProductID < 34
 	ORDER BY ProductID ASC
-	
 END
 
 GO 

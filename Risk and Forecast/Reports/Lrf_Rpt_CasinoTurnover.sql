@@ -21,6 +21,7 @@ AS
 		- 20181127@Amanda: Created SP [RedmineID: #95178]
 		- 20190620@Amanda: Centralize function to get exchange rate [Redmine: #112531]
 		- 20200423@Hogan: Add new product Sexy Gaming [RedmineID: #132829]
+		- 20200615@Hogan: Integrate SA Gaming [RedmineID: #128493]
 		
     Param's Explanation:  
 	  + @ProductCodes: "AB,CS,VB"
@@ -111,6 +112,10 @@ BEGIN
 			IF EXISTS (SELECT 1 FROM @Product WHERE ProductCode = 'CS')
 				DELETE @bettype
 				WHERE bettype = 72 AND ProductCode = 'CS'
+
+			IF EXISTS (SELECT 1 FROM @Product WHERE ProductCode = 'SAG')
+				DELETE @bettype
+				WHERE bettype = 3007 AND ProductCode = 'SAG' 	-- SAG Tip ticket
 		END	
 
 		SET @tmpToDate = @ToDate	
@@ -119,7 +124,7 @@ BEGIN
 		ELSE
 			SET @tmpFromDate = @FromDate
 
-		IF EXISTS (SELECT 1 FROM @Product WHERE ProductCode IN ('AB','SXG'))
+		IF EXISTS (SELECT 1 FROM @Product WHERE ProductCode IN ('AB','SXG','SAG'))
 		BEGIN
 			INSERT INTO #Data(
 				[Date],
@@ -150,7 +155,7 @@ BEGIN
 			INNER JOIN dbo.Customer c WITH (NOLOCK) ON b.CustId = c.CustId
 			WHERE	b.WinlostDate >= @tmpFromDate 
 					AND b.WinlostDate <= @tmpToDate
-					AND t.ProductCode  IN ('AB','SXG')
+					AND t.ProductCode  IN ('AB','SXG','SAG')
 					AND (@UserName = '' OR c.username2 LIKE '%$%' + @Username + '%' OR c.username LIKE '%' + @Username + '%')
 			GROUP BY b.WinlostDate, b.custId, c.username, c.username2, b.currency, t.ProductCode
 		END
