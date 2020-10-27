@@ -1,11 +1,12 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlostByLeague]
-	@FromDate SMALLDATETIME
+	@AgentList		VARCHAR(MAX)
+	,@FromDate SMALLDATETIME
 	,@ToDate SMALLDATETIME
 	,@Odds FLOAT = 0
 	,@LeagueID INT
-	,@MatchID INT =0
+	,@MatchID INT = 0
 	,@MoveBetsDay SMALLDATETIME
 	,@BalanceUpDay SMALLDATETIME
 	,@ShowWin BIT = 1
@@ -13,7 +14,6 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlostByLeague]
 	,@ShowDraw BIT = 1
 	,@ShowSB BIT = 1
 	,@ShowBA BIT = 1
-	,@AgentList		VARCHAR(MAX)
 	,@BaseCurrency	VARCHAR(3) = ''
 AS
 
@@ -44,6 +44,7 @@ AS
 		- 20190102@Vickie: Add new bet types (PH AIO - Phase 5) [RedmineID: #126005]
 		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
 		- 20201023@Hogan: Integrate new bet type Time Machine OU [RedmineID: #142692]
+		- 20201027@Kos: Change to use new table to check performance [RedmineID: #143310]
 
 	Parameter's Explanation:
 		- @LicenseeID : Licensee ID
@@ -99,7 +100,7 @@ BEGIN
 		INSERT INTO @status
 		SELECT 111
 
-	DECLARE @TempAg AS TABLE (CustId INT,Currency int)
+	CREATE TABLE #TempAg (CustId INT, Currency INT, PRIMARY KEY (CustId, Currency))
 
 	DECLARE @DocHandler INT
 
@@ -107,7 +108,7 @@ BEGIN
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT
 			,@AgentList
 	
-		INSERT INTO @TempAg(CustId, Currency)
+		INSERT INTO #TempAg(CustId, Currency)
 		SELECT AgentId, Currency 
 		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
@@ -223,7 +224,7 @@ BEGIN
 					,count(1) betcount
 				FROM dbo.bettrans AS b WITH (NOLOCK)
 					INNER JOIN dbo.match m WITH (NOLOCK) ON m.matchid = b.matchid
-					INNER JOIN @TempAg ta ON b.recommend = ta.CustId AND b.Currency = ta.Currency
+					INNER JOIN #TempAg ta ON b.recommend = ta.CustId AND b.Currency = ta.Currency
 				WHERE b.winlostdate BETWEEN @TempFromDate AND @todate
 					AND (
 						b.bettype <= 30
@@ -365,7 +366,7 @@ BEGIN
 					,count(1) betcount
 				FROM dbo.bettrans AS b WITH (NOLOCK)
 					INNER JOIN dbo.match m WITH (NOLOCK) ON m.matchid = b.matchid
-					INNER JOIN @TempAg ta ON b.recommend = ta.CustId AND b.Currency = ta.Currency
+					INNER JOIN #TempAg ta ON b.recommend = ta.CustId AND b.Currency = ta.Currency
 				WHERE b.winlostdate BETWEEN @TempFromDate AND @todate
 					AND (
 						b.bettype <= 30
@@ -492,291 +493,307 @@ BEGIN
 					OR @MatchID = 0
 					)
 
+			CREATE TABLE #Date (Date SMALLDATETIME, PRIMARY KEY(Date))
+
+			INSERT INTO #Date
+			SELECT [Date]
+			FROM f_GetDateBetweenTwoDates (@fromdate, @TempToDate)
+
 			IF @ShowBA = 1
 			BEGIN
 				INSERT INTO @AgMatchWLDetails
-				SELECT b.Winlostdate
-					,NULL
-					,ag.currency
-					,m.matchid
-					,m.homeid
-					,m.awayid
-					,b.bettype
-					,'BA'
-					,m.leagueid
-					,CASE 
-						WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156,228)	 -- add more Sportting Solution bettype 
-								OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
-								OR b.bettype BETWEEN 81 AND 88
-								OR b.bettype BETWEEN 90 AND 120
-								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
-								OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
-								OR b.bettype = 428 -- 2H Odd/Even  
-								OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
-								OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
-								OR (b.bettype NOT IN (703, 711) AND b.bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
-								OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
+				SELECT b.*
+				FROM #Date AS d
+					CROSS APPLY (
+					SELECT b.Winlostdate
+						,NULL AS KickoffTime
+						,ag.currency
+						,m.matchid
+						,m.homeid
+						,m.awayid
+						,b.bettype
+						,'BA' AS ProductName
+						,m.leagueid
+						,CASE 
+							WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156,228)	 -- add more Sportting Solution bettype 
+									OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
+									OR b.bettype BETWEEN 81 AND 88
+									OR b.bettype BETWEEN 90 AND 120
+									OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
+									OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
+									OR b.bettype = 428 -- 2H Odd/Even  
+									OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
+									OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
+									OR (b.bettype NOT IN (703, 711) AND b.bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
+									OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
+								)
+								THEN CASE 
+										WHEN b.OddsType = 1
+											THEN b.odds + 1 --decimal
+										WHEN b.OddsType = 2
+											THEN b.Odds + 1 --hongkong to decimal
+										WHEN b.OddsType IN (3, 4, 7)
+											THEN --malay and indo and new oddstype to decimal
+												CASE 
+													WHEN b.odds < 0
+														THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
+													WHEN b.odds >= 0
+														THEN (1 + b.odds)
+													END
+										WHEN OddsType = 5
+											THEN --american odds to decimal
+												CASE 
+													WHEN (b.odds * 100) < 0
+														THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
+													WHEN (b.odds * 100) % 2 = 0
+														THEN 2
+													WHEN (b.odds * 100) > 0
+														THEN (1 + b.odds)
+													END
+										END
+							ELSE b.Odds
+							END odds2
+						,SUM(stake) AS Stake
+						,SUM(winlost) AS WinLost
+						,0 AS LicenseeWL
+						,-sum(Winlost + awinlost + comm) AS AmountDueToBA
+						,sum(comm) AS CommBA
+						,SUM(b.playercomm) AS playercomm
+						,'' AS race
+						,m.matchcode
+						,ISNULL(m.isNeutral, CONVERT(BIT, 0)) AS IsNeutral
+						,m.sporttype
+						,m.showtime AS showtime
+						,sum(b.betcount) betcount
+					FROM bodb_LicenseeReport.dbo.rptWinlostbyLeague b WITH (NOLOCK)
+						INNER JOIN #match AS m WITH (NOLOCK) ON m.matchid = b.matchid
+						INNER JOIN #TempAg ag ON b.recommend = ag.custid AND b.Currency = ag.Currency
+					WHERE winlostdate = d.Date
+						AND (
+							b.bettype <= 30
+							OR (b.bettype BETWEEN 121 AND 999)
+							OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
+							OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0		
 							)
-							THEN CASE 
-									WHEN b.OddsType = 1
-										THEN b.odds + 1 --decimal
-									WHEN b.OddsType = 2
-										THEN b.Odds + 1 --hongkong to decimal
-									WHEN b.OddsType IN (3, 4, 7)
-										THEN --malay and indo and new oddstype to decimal
-											CASE 
-												WHEN b.odds < 0
-													THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
-												WHEN b.odds >= 0
-													THEN (1 + b.odds)
-												END
-									WHEN OddsType = 5
-										THEN --american odds to decimal
-											CASE 
-												WHEN (b.odds * 100) < 0
-													THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
-												WHEN (b.odds * 100) % 2 = 0
-													THEN 2
-												WHEN (b.odds * 100) > 0
-													THEN (1 + b.odds)
-												END
-									END
-						ELSE b.Odds
-						END odds2
-					,SUM(stake)
-					,SUM(winlost)
-					,0 AS LicenseeWL
-					,-sum(Winlost + awinlost + comm) AS AmountDueToBA
-					,sum(comm) AS CommBA
-					,SUM(b.playercomm) AS playercomm
-					,'' AS race
-					,m.matchcode
-					,ISNULL(m.isNeutral, CONVERT(BIT, 0)) AS IsNeutral
-					,m.sporttype
-					,m.showtime AS showtime
-					,sum(b.betcount) betcount
-				FROM bodb_LicenseeReport.dbo.rptWinlostbyLeague b WITH (NOLOCK, INDEX = IX_recommend)
-					INNER JOIN #match AS m WITH (NOLOCK) ON m.matchid = b.matchid
-					INNER JOIN @TempAg ag ON b.recommend = ag.custid AND b.Currency = ag.Currency
-				WHERE winlostdate BETWEEN @fromdate AND @TempToDate
-					AND (
-						b.bettype <= 30
-						OR (b.bettype BETWEEN 121 AND 999)
-						OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
-						OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0		
-						)
-					AND (b.bettype < 901 OR b.bettype > 904)
-					AND (b.bettype < 911 OR b.bettype > 914)
-					AND b.leagueid = @LeagueID
-					AND (
-						m.matchid = @MatchID
-						OR @MatchID = 0
-						)
-					AND b.statusID IN (
-						SELECT *
-						FROM @status
-						)
-					AND b.isba = 1
-				GROUP BY b.Winlostdate
-					,ag.currency
-					,m.matchid
-					,m.homeid
-					,m.awayid
-					,b.bettype
-					,m.leagueid
-					,m.matchcode
-					,m.isNeutral
-					,b.bettype
-					,m.sporttype
-					,m.showtime
-					,CASE 
-						WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156,228)	 -- add more Sportting Solution bettype 
-								OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
-								OR b.bettype BETWEEN 81 AND 88
-								OR b.bettype BETWEEN 90 AND 120
-								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
-								OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
-								OR b.bettype = 428 -- 2H Odd/Even  
-								OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
-								OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
-								OR (b.bettype NOT IN (703, 711) AND b.bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
-								OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
+						AND (b.bettype < 901 OR b.bettype > 904)
+						AND (b.bettype < 911 OR b.bettype > 914)
+						AND b.leagueid = @LeagueID
+						AND (
+							m.matchid = @MatchID
+							OR @MatchID = 0
 							)
-							THEN CASE 
-									WHEN b.OddsType = 1
-										THEN b.odds + 1 --decimal
-									WHEN b.OddsType = 2
-										THEN b.Odds + 1 --hongkong to decimal
-									WHEN b.OddsType IN (3, 4, 7)
-										THEN --malay and indo and new oddstype to decimal
-											CASE 
-												WHEN b.odds < 0
-													THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
-												WHEN b.odds >= 0
-													THEN (1 + b.odds)
-											END
-									WHEN OddsType = 5
-										THEN --american odds to decimal
-											CASE 
-												WHEN (b.odds * 100) < 0
-													THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
-												WHEN (b.odds * 100) % 2 = 0
-													THEN 2
-												WHEN (b.odds * 100) > 0
-													THEN (1 + b.odds)
-											END
-									END
-						ELSE b.Odds
-					END
+						AND b.statusID IN (
+							SELECT *
+							FROM @status
+							)
+						AND b.isba = 1
+					GROUP BY b.Winlostdate
+						,ag.currency
+						,m.matchid
+						,m.homeid
+						,m.awayid
+						,b.bettype
+						,m.leagueid
+						,m.matchcode
+						,m.isNeutral
+						,b.bettype
+						,m.sporttype
+						,m.showtime
+						,CASE 
+							WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156,228)	 -- add more Sportting Solution bettype 
+									OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
+									OR b.bettype BETWEEN 81 AND 88
+									OR b.bettype BETWEEN 90 AND 120
+									OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
+									OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
+									OR b.bettype = 428 -- 2H Odd/Even  
+									OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
+									OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
+									OR (b.bettype NOT IN (703, 711) AND b.bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
+									OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
+								)
+								THEN CASE 
+										WHEN b.OddsType = 1
+											THEN b.odds + 1 --decimal
+										WHEN b.OddsType = 2
+											THEN b.Odds + 1 --hongkong to decimal
+										WHEN b.OddsType IN (3, 4, 7)
+											THEN --malay and indo and new oddstype to decimal
+												CASE 
+													WHEN b.odds < 0
+														THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
+													WHEN b.odds >= 0
+														THEN (1 + b.odds)
+												END
+										WHEN OddsType = 5
+											THEN --american odds to decimal
+												CASE 
+													WHEN (b.odds * 100) < 0
+														THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
+													WHEN (b.odds * 100) % 2 = 0
+														THEN 2
+													WHEN (b.odds * 100) > 0
+														THEN (1 + b.odds)
+												END
+										END
+							ELSE b.Odds
+						END
+				) AS b
 			END
 
 			IF @ShowSB = 1
 			BEGIN
 				INSERT INTO @AgMatchWLDetails
-				SELECT b.Winlostdate
-					,NULL
-					,ag.currency
-					,m.matchid
-					,m.homeid
-					,m.awayid
-					,b.bettype
-					,'SB'
-					,m.leagueid
-					,CASE 
-						WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156,228)	 -- add more Sportting Solution bettype 
-								OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
-								OR b.bettype BETWEEN 81 AND 88
-								OR b.bettype BETWEEN 90 AND 120
-								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
-								OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
-								OR b.bettype = 428 -- 2H Odd/Even  
-								OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
-								OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
-								OR (b.bettype NOT IN (703, 711) AND b.bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
-								OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
-							)
-							THEN CASE 
-									WHEN b.OddsType = 1
-										THEN b.odds + 1 --decimal
-									WHEN b.OddsType = 2
-										THEN b.Odds + 1 --hongkong to decimal
-									WHEN b.OddsType IN (3, 4, 7)
-										THEN --malay and indo and new oddstype to decimal
-											CASE 
-												WHEN b.odds < 0
-													THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
-												WHEN b.odds >= 0
-													THEN (1 + b.odds)
-												END
-									WHEN OddsType = 5
-										THEN --american odds to decimal
-											CASE 
-												WHEN (b.odds * 100) < 0
-													THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
-												WHEN (b.odds * 100) % 2 = 0
-													THEN 2
-												WHEN (b.odds * 100) > 0
-													THEN (1 + b.odds)
-												END
-									END
-						ELSE b.Odds
-						END odds2
-					,SUM(stake)
-					,SUM(winlost)
-					,- SUM(b.winlost) AS LicenseeWL
-					,0 AS AmountDueToBA
-					,0 AS CommBA
-					,SUM(b.playercomm) AS playercomm
-					,'' AS race
-					,m.matchcode
-					,ISNULL(m.isNeutral, CONVERT(BIT, 0)) AS IsNeutral
-					,m.sporttype
-					,m.showtime AS showtime
-					,sum(b.betcount) betcount
-				FROM bodb_LicenseeReport.dbo.rptWinlostbyLeague b WITH (NOLOCK, INDEX = IX_recommend)
-					INNER JOIN #match AS m WITH (NOLOCK) ON m.matchid = b.matchid
-					INNER JOIN @TempAg ag ON b.recommend = ag.custid AND b.Currency = ag.Currency
-				WHERE winlostdate BETWEEN @fromdate AND @TempToDate
-					AND (
-						b.bettype <= 30
-						OR (b.bettype BETWEEN 121 AND 999)	
-						OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
-						OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0	
-						)
-					AND (b.bettype < 901 OR b.bettype > 904)
-					AND (b.bettype < 911 OR b.bettype > 914)
-					AND b.leagueid = @LeagueID
-					AND (
-						m.matchid = @MatchID
-						OR @MatchID = 0
-						)
-					AND b.statusID IN (
-						SELECT *
-						FROM @status
-						)
-					AND b.isba = 0
-				GROUP BY b.Winlostdate
-					,ag.currency
-					,m.matchid
-					,m.homeid
-					,m.awayid
-					,b.bettype
-					,m.leagueid
-					,m.matchcode
-					,m.isNeutral
-					,b.bettype
-					,m.sporttype
-					,m.showtime
-					,CASE 
-						WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156,228)	 -- add more Sportting Solution bettype 
-								OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
-								OR b.bettype BETWEEN 81 AND 88
-								OR b.bettype BETWEEN 90 AND 120
-								OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
-								OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
-								OR b.bettype = 428 -- 2H Odd/Even  
-								OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
-								OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
-								OR (b.bettype NOT IN (703, 711) AND b.bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
-								OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
-							)
-							THEN CASE 
-									WHEN b.OddsType = 1
-										THEN b.odds + 1 --decimal
-									WHEN b.OddsType = 2
-										THEN b.Odds + 1 --hongkong to decimal
-									WHEN b.OddsType IN (3, 4, 7)
-										THEN --malay and indo and new oddstype to decimal
-											CASE 
-												WHEN b.odds < 0
-													THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
-												WHEN b.odds >= 0
-													THEN (1 + b.odds)
-												END
-									WHEN OddsType = 5
-										THEN --american odds to decimal
-											CASE 
-												WHEN (b.odds * 100) < 0
-													THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
-												WHEN (b.odds * 100) % 2 = 0
-													THEN 2
-												WHEN (b.odds * 100) > 0
-													THEN (1 + b.odds)
-												END
-									END
-						ELSE b.Odds
-					END
+				SELECT b.*
+				FROM #Date AS d
+					CROSS APPLY (
+						SELECT b.Winlostdate
+							,NULL AS KickoffTime
+							,ag.currency
+							,m.matchid
+							,m.homeid
+							,m.awayid
+							,b.bettype
+							,'SB' AS ProductName
+							,m.leagueid
+							,CASE 
+								WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156,228)	 -- add more Sportting Solution bettype 
+										OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
+										OR b.bettype BETWEEN 81 AND 88
+										OR b.bettype BETWEEN 90 AND 120
+										OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
+										OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
+										OR b.bettype = 428 -- 2H Odd/Even  
+										OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
+										OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
+										OR (b.bettype NOT IN (703, 711) AND b.bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
+										OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
+									)
+									THEN CASE 
+											WHEN b.OddsType = 1
+												THEN b.odds + 1 --decimal
+											WHEN b.OddsType = 2
+												THEN b.Odds + 1 --hongkong to decimal
+											WHEN b.OddsType IN (3, 4, 7)
+												THEN --malay and indo and new oddstype to decimal
+													CASE 
+														WHEN b.odds < 0
+															THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
+														WHEN b.odds >= 0
+															THEN (1 + b.odds)
+														END
+											WHEN OddsType = 5
+												THEN --american odds to decimal
+													CASE 
+														WHEN (b.odds * 100) < 0
+															THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
+														WHEN (b.odds * 100) % 2 = 0
+															THEN 2
+														WHEN (b.odds * 100) > 0
+															THEN (1 + b.odds)
+														END
+											END
+								ELSE b.Odds
+								END odds2
+							,SUM(stake) AS Stake
+							,SUM(winlost) AS WinLost
+							,- SUM(b.winlost) AS LicenseeWL
+							,0 AS AmountDueToBA
+							,0 AS CommBA
+							,SUM(b.playercomm) AS playercomm
+							,'' AS race
+							,m.matchcode
+							,ISNULL(m.isNeutral, CONVERT(BIT, 0)) AS IsNeutral
+							,m.sporttype
+							,m.showtime AS showtime
+							,sum(b.betcount) betcount
+						FROM bodb_LicenseeReport.dbo.rptWinlostbyLeague b WITH (NOLOCK)
+							INNER JOIN #match AS m WITH (NOLOCK) ON m.matchid = b.matchid
+							INNER JOIN #TempAg ag ON b.recommend = ag.custid AND b.Currency = ag.Currency
+						WHERE winlostdate = d.Date
+							AND (
+								b.bettype <= 30
+								OR (b.bettype BETWEEN 121 AND 999)	
+								OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
+								OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0	
+								)
+							AND (b.bettype < 901 OR b.bettype > 904)
+							AND (b.bettype < 911 OR b.bettype > 914)
+							AND b.leagueid = @LeagueID
+							AND (
+								m.matchid = @MatchID
+								OR @MatchID = 0
+								)
+							AND b.statusID IN (
+								SELECT *
+								FROM @status
+								)
+							AND b.isba = 0
+						GROUP BY b.Winlostdate
+							,ag.currency
+							,m.matchid
+							,m.homeid
+							,m.awayid
+							,b.bettype
+							,m.leagueid
+							,m.matchcode
+							,m.isNeutral
+							,b.bettype
+							,m.sporttype
+							,m.showtime
+							,CASE 
+								WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156,228)	 -- add more Sportting Solution bettype 
+										OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
+										OR b.bettype BETWEEN 81 AND 88
+										OR b.bettype BETWEEN 90 AND 120
+										OR b.bettype IN (157,178,183,184,194,197,198,203,204,205) -- add more bettype BetRadar 
+										OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
+										OR b.bettype = 428 -- 2H Odd/Even  
+										OR b.bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
+										OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
+										OR (b.bettype NOT IN (703, 711) AND b.bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
+										OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
+									)
+									THEN CASE 
+											WHEN b.OddsType = 1
+												THEN b.odds + 1 --decimal
+											WHEN b.OddsType = 2
+												THEN b.Odds + 1 --hongkong to decimal
+											WHEN b.OddsType IN (3, 4, 7)
+												THEN --malay and indo and new oddstype to decimal
+													CASE 
+														WHEN b.odds < 0
+															THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
+														WHEN b.odds >= 0
+															THEN (1 + b.odds)
+														END
+											WHEN OddsType = 5
+												THEN --american odds to decimal
+													CASE 
+														WHEN (b.odds * 100) < 0
+															THEN (1 - CAST(1 AS FLOAT) / CAST(b.odds AS FLOAT))
+														WHEN (b.odds * 100) % 2 = 0
+															THEN 2
+														WHEN (b.odds * 100) > 0
+															THEN (1 + b.odds)
+														END
+											END
+								ELSE b.Odds
+							END
+					) AS b
 			END
+
+			DROP TABLE #Date
 		END
 	END
 
 	INSERT INTO @ExchangeDaily(FromDate, ToDate, ExchangeId, Rate)
 	SELECT FromDate, ToDate, ExchangeID, Rate
 	FROM dbo.Lrf_f_GetExchangeRate(@fromDate, @toDate, @BaseCurrency, '') e
-	WHERE EXISTS (SELECT 1 FROM @TempAg a WHERE a.Currency = e.ExchangeID)
+	WHERE EXISTS (SELECT 1 FROM #TempAg a WHERE a.Currency = e.ExchangeID)
 
 	-- Result
-	SELECT matchid
+	SELECT b.matchid
 		,CASE 
 			WHEN b.sporttype IN (181, 182, 184)
 				THEN 0
@@ -793,27 +810,23 @@ BEGIN
 			ELSE b.KickoffTime
 			END KickoffTime
 		, 0 AS bettype
-		--,ProductName
-		,--bettype,  
-		leagueid
-		,CAST(SUM(turnover * e.Rate) AS MONEY) AS turnover
-		,CAST(SUM(MemberWinLost * e.Rate) AS MONEY) AS MemberWinLost
-		,CAST(SUM(LicenseeWL * e.Rate) AS MONEY) AS LicenseeWL
-		,CAST(SUM(CommBA * e.Rate) AS MONEY) AS CommBA
-		,CAST(SUM(PlayerComm * e.Rate) AS MONEY) AS PlayerComm
-		,CAST(SUM((AmtDuetoBA) * e.Rate) AS MONEY) AS AmtDuetoBA
+		, b.leagueid
+		,CAST(SUM(b.turnover * e.Rate) AS MONEY) AS turnover
+		,CAST(SUM(b.MemberWinLost * e.Rate) AS MONEY) AS MemberWinLost
+		,CAST(SUM(b.LicenseeWL * e.Rate) AS MONEY) AS LicenseeWL
+		,CAST(SUM(b.CommBA * e.Rate) AS MONEY) AS CommBA
+		,CAST(SUM(b.PlayerComm * e.Rate) AS MONEY) AS PlayerComm
+		,CAST(SUM((b.AmtDueToBA) * e.Rate) AS MONEY) AS AmtDuetoBA
 		,CASE 
 			WHEN b.sporttype IN (181, 182, 184)
 				THEN ''
 			ELSE matchcode
 			END matchcode
-		,isNeutral
+		,b.isNeutral
 		,b.sporttype
 		,'' AS showtime
 		,sum(b.betcount) betcount
-	--,odds2
 	FROM @AgMatchWLDetails b
-	--INNER JOIN (SELECT *  FROM Lrf_f_GetExchangeDaily(@_FromDate,@_ToDate))e   
 		INNER JOIN @ExchangeDaily e ON b.winlostdate BETWEEN e.FromDate AND e.ToDate
 			AND b.currency = e.ExchangeId
 	WHERE b.odds2 >= @Odds
@@ -833,17 +846,16 @@ BEGIN
 				THEN 0
 			ELSE b.KickoffTime
 			END
-		--,ProductName
-		,--bettype,
-		CASE 
+		,CASE 
 			WHEN b.sporttype IN (181, 182, 184)
 				THEN ''
 			ELSE matchcode
 			END
-		,leagueid
-		,isNeutral
+		,b.leagueid
+		,b.isNeutral
 		,b.sporttype
-	
+
 	DROP TABLE #match
+	DROP TABLE #TempAg
 END
 GO
