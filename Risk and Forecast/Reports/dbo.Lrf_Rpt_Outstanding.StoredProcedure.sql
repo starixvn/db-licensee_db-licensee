@@ -66,6 +66,7 @@ AS
 		- 20200408@Kos: Change to use product list [RedmineID: #131447]
 		- 20200714@Hogan: Add 7 games for Jackpot and 2 bettype for Contribution (4297) and Jackpot Prize (4298) [RedmineID: #137290]
 		- 20200728@Hogan: Integrate SA Gaming [RedmineID: #128493]
+		- 20201016@Hogan: Integrate Arcadia Gaming Bonus [RedmineID: #143648]
 
 	Param's Explanation:
 		@OrderItem:
@@ -159,7 +160,7 @@ BEGIN
 		INSERT INTO #SportBettype ( bettype, RefTable, ProductID )
 		SELECT DISTINCT BetType, RefTable, ProductID
 		FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
-		WHERE BetType NOT IN (4300, 4299, 4298, 4297, 3007) -- Promotion Prize, Jackpot Prize, Contribution
+		WHERE BetType NOT IN (4300, 4299, 4298, 4297, 3007, 1906) -- Promotion Prize, Jackpot Prize, Contribution
 	END
 
 	--1. bettrans --

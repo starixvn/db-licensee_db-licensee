@@ -76,6 +76,7 @@ AS
 		- 20200622@Hogan: Update Param's Explanation for 3 new betfrom 4, 5, 6 [Redmine: #136107]
 		- 20200714@Hogan: Add 7 games for Jackpot and 2 bettype for Contribution (4297) and Jackpot Prize (4298) [RedmineID: #137290]
 		- 20200728@Hogan: Integrate SA Gaming [RedmineID: #128493]
+		- 20201016@Hogan: Integrate Arcadia Gaming Bonus [RedmineID: #143648]
 
 	Param's Explanation:
 		+ @PlatformType:  0: All
@@ -287,10 +288,14 @@ BEGIN
 		IF @ShowPP = 1
 			DELETE #bettype
 			WHERE bettype IN (4300, 4299, 4298, 4297) AND ProductPrefix = 'PP' -- exclude PP Prize, Jackpot Prize, Contribution
-
+		
 		IF @ShowSAG = 1
 			DELETE #bettype
 			WHERE bettype = 3007 AND ProductPrefix = 'SAG' -- exclude SAG Tip ticket
+	
+		IF @ShowCC = 1
+			DELETE #bettype
+			WHERE ProductPrefix = 'CC' AND bettype = 1906
 
 		-- Insert Sport Type
 		INSERT INTO #sporttype ( sporttype, ProductPrefix )
@@ -541,7 +546,7 @@ BEGIN
 				AND b.statusID <> 101 --exclude REJECT bets
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
-				AND b.bettype NOT IN (4300, 4299, 4298, 4297, 3007) -- exclude PP Prize, Jackpot Prize, Contribution, SAG Tip ticket
+				AND b.bettype NOT IN (4300, 4299, 4298, 4297, 3007, 1906) -- exclude PP Prize, Jackpot Prize, Contribution, SAG Tip ticket
 				AND ISNULL(b.isBA,0) = 0	
 			GROUP BY
 				b.winlostdate,

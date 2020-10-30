@@ -81,6 +81,7 @@ AS
 		- 20200423@Vickie: Integrate Saba Club [RedmineID: #132702]
 	- 20200714@Hogan: Add 7 games for Jackpot and 2 bettype for Contribution (4297) and Jackpot Prize (4298) [RedmineID: #137290]
 	- 20200728@Hogan: Integrate SA Gaming [RedmineID: #128493]
+	- 20201016@Hogan: Integrate Arcadia Gaming Bonus [RedmineID: #143648]
 
 	Param's Explanation:  
 		+	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -170,6 +171,10 @@ BEGIN
 			DELETE @bettype
 			WHERE bettype = 3007 AND ProductCode = 'SAG'
 
+		IF PATINDEX('%,CC,%', ',' + @ProductList + ',') > 0
+			DELETE @bettype
+			WHERE bettype = 1906 AND ProductCode = 'CC'
+		
 		-- Insert Sport Type
 		INSERT INTO @sporttype ( sporttype, ProductCode )
 		SELECT DISTINCT sporttype, ProductCode
@@ -455,7 +460,7 @@ BEGIN
 				AND b.statusID <> 101 --exclude REJECT bets
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
-				AND b.bettype NOT IN (4300, 4299, 4298, 4297, 3007) -- exclude PP Prize, Jackpot Prize, Contribution, SAG Tip ticket
+				AND b.bettype NOT IN (4300, 4299, 4298, 4297, 3007, 1906) -- exclude PP Prize, Jackpot Prize, Contribution, SAG Tip ticket
 				AND ISNULL(b.isBA, 0) = 0
 			GROUP BY 
 				b.winlostdate,
