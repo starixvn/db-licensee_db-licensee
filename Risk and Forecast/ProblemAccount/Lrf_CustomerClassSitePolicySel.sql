@@ -1,5 +1,5 @@
 /*<info serverAlias="DBCUST-CUSTDB" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
-ALTER PROCEDURE Lrf_ProblemAccount_CustomerClassSitePolicySel
+ALTER PROCEDURE Lrf_CustomerClassSitePolicySel
 	@site VARCHAR(50)
 AS
 	/*
