@@ -9,7 +9,7 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerSelByCustid]
 	@TotalRows		INT				= 0 OUTPUT,
 	@SpecialLevel	VARCHAR(100)	= '',
 	@OddsGroups		VARCHAR(100)	= '',
-	@CustomerClass	VARCHAR(100)	= '',
+	@CustomerClass	VARCHAR(100)	= NULL,
 	@AgentList		VARCHAR(MAX)
 AS
 
@@ -160,10 +160,13 @@ BEGIN
 		WHERE ci.roleid=1
 				AND ci.custid IN (SELECT custid FROM #tblCustList)
 				AND c.username  NOT LIKE ''%CASHOUT%''
-				AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))
-				AND ISNULL(ci.CustomerClass,0) IN  (' +  @CustomerClass + ')
-				'	
-
+				AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))'
+				
+		IF ISNULL(@CustomerClass, '') <> ''
+		BEGIN
+			SET @strSQL = @strSQL + 'AND ISNULL(ci.CustomerClass,0) IN  (' +  @CustomerClass + ')'	
+		END 		
+			
 		--EXEC sp_executesql @strSQL
 		EXEC (@strSQL)
 
@@ -225,8 +228,12 @@ BEGIN
 							AND lb.[Status] = ''Running''
 							AND ci.custid IN (SELECT custid FROM #tblCustList)		
 							AND (''' + @OddsGroups + ''' = '''' OR RIGHT(cu.ugroup,1) IN (' + @OddsGroupsC + '))
-							AND ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ')
-							AND ISNULL(ci.CustomerClass,0) IN  (' +  @CustomerClass + ') '
+							AND ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ') '
+							
+		IF ISNULL(@CustomerClass, '') <> ''
+		BEGIN
+			SET @strSQL = @strSQL + 'AND ISNULL(ci.CustomerClass,0) IN  (' +  @CustomerClass + ')'	
+		END 
 		
 		--EXEC sp_executesql @strSQL
 		EXEC (@strSQL)
@@ -264,8 +271,13 @@ BEGIN
 		WHERE ci.roleid=1 
 				AND ci.custid IN (SELECT custid FROM #tblCustList)
 				AND c.username NOT LIKE ''%CashOut%''					
-				AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))
-				AND ISNULL(ci.CustomerClass,0) IN  (' +  @CustomerClass + ')'	
+				AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + ')) '
+				
+		IF ISNULL(@CustomerClass, '') <> ''
+		BEGIN
+			SET @strSQL = @strSQL + 'AND ISNULL(ci.CustomerClass,0) IN  (' +  @CustomerClass + ')'	
+		END 		
+			
 	
 		--EXEC sp_executesql @strSQL
 		EXEC (@strSQL)

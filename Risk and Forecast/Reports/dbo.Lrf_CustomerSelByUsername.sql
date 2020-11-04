@@ -10,7 +10,7 @@ Alter PROCEDURE [dbo].[Lrf_CustomerSelByUsername]
 	@TotalRows		INT				= 0 OUTPUT,
 	@SpecialLevel	VARCHAR(100)	= '',
 	@OddsGroups		VARCHAR(100)	= '',
-	@CustomerClass	VARCHAR(100)	= '',
+	@CustomerClass	VARCHAR(100)	= NULL,
 	@AgentList		VARCHAR(MAX)
 AS
 
@@ -164,9 +164,12 @@ BEGIN
 				 INNER JOIN Customer c WITH (NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid 
 			WHERE ci.roleid=1
 					AND c.username  NOT LIKE ''%CASHOUT%''
-					AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))
-					AND ISNULL(ci.CustomerClass,0) IN  (' +  @CustomerClass + ')
-					'
+					AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + ')) '
+					
+			IF ISNULL(@CustomerClass, '') <> ''
+			BEGIN
+				SET @strSQL = @strSQL + 'AND ISNULL(ci.CustomerClass,0) IN  (' +  @CustomerClass + ')'	
+			END 
 
 			--EXEC sp_executesql @strSQL
 			EXEC (@strSQL)
@@ -228,8 +231,12 @@ BEGIN
 							 WHERE lb.LicenseeID = ' + CONVERT(VARCHAR(10),@LicenseeID) + '
 								AND lb.[Status] = ''Running''
 								AND (''' + @OddsGroups + ''' = '''' OR RIGHT(cu.ugroup,1) IN (' + @OddsGroupsC + '))
-								AND ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ')
-								AND ISNULL(ci.CustomerClass,0) IN  (' +  @CustomerClass + ') '
+								AND ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ') '
+			
+			IF ISNULL(@CustomerClass, '') <> ''
+			BEGIN
+				SET @strSQL = @strSQL + 'AND ISNULL(ci.CustomerClass,0) IN  (' +  @CustomerClass + ')'	
+			END 
 
 			--EXEC sp_executesql @strSQL
 			EXEC (@strSQL)
@@ -266,8 +273,12 @@ BEGIN
 				 INNER JOIN Customer c WITH (NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid 
 			WHERE ci.roleid=1 
 					AND c.username NOT LIKE ''%CashOut%''
-					AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))
-					AND ISNULL(ci.CustomerClass,0) IN  (' +  @CustomerClass + ')'	
+					AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + ')) '
+			
+			IF ISNULL(@CustomerClass, '') <> ''
+			BEGIN
+				SET @strSQL = @strSQL + 'AND ISNULL(ci.CustomerClass,0) IN  (' +  @CustomerClass + ')'	
+			END 
 
 			--EXEC sp_executesql @strSQL
 			EXEC (@strSQL)
@@ -337,8 +348,12 @@ BEGIN
 						+ ')
 					AND c.username NOT LIKE ''%CashOut%''
 					AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))
-					AND ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ')
-					AND ISNULL(ci.CustomerClass,0) IN  (' +  @CustomerClass + ')'
+					AND ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ') '
+			
+			IF ISNULL(@CustomerClass, '') <> ''
+			BEGIN
+				SET @strSQL = @strSQL + 'AND ISNULL(ci.CustomerClass,0) IN  (' +  @CustomerClass + ')'	
+			END 
 		END
 		ELSE
 		BEGIN
@@ -351,8 +366,7 @@ BEGIN
 					LEFT JOIN bodb_Licensee.dbo.LicenseeBAHistory lb WITH(NOLOCK) ON lb.LicenseeID = ' + CONVERT(VARCHAR(10),@LicenseeID) + 
 					' AND ci.custid = lb.custid AND lb.[Status] = ''Running''
 				WHERE 
-					c.roleId = 1 
-					AND ISNULL(ci.CustomerClass,0) IN  (' +  @CustomerClass + ')
+					c.roleId = 1
 					AND ((1= '+CONVERT(VARCHAR(10),@searchOption)+ ' AND c.username2 LIKE ''%$' + @Username + '%'') 
 						OR (2= '+CONVERT(VARCHAR(10),@searchOption)+ ' AND SUBSTRING(c.username2,CHARINDEX(''$'',c.username2)+1,len(c.username2)) LIKE ''%' + @Username + '%'') 
 						OR (3= '+ CONVERT(VARCHAR(10),@searchOption) +' AND c.username2 LIKE ''%$' + @Username + ''') 
@@ -362,7 +376,12 @@ BEGIN
 					AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))
 					AND ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ')
 					AND ((' + CONVERT(VARCHAR(10),@BAFilter) + ' = 1 AND ISNULL(lb.[Status],'''') = ''Running'')'
-					+ ' OR ('+ CONVERT(VARCHAR(10),@BAFilter) + '= 2 AND ISNULL(lb.[Status],'''') != ''Running''))'	
+					+ ' OR ('+ CONVERT(VARCHAR(10),@BAFilter) + '= 2 AND ISNULL(lb.[Status],'''') != ''Running'')) '
+					
+					IF ISNULL(@CustomerClass, '') <> ''
+					BEGIN
+						SET @strSQL = @strSQL + 'AND ISNULL(ci.CustomerClass,0) IN  (' +  @CustomerClass + ')'	
+					END 	
 		END
 
 		--EXEC sp_executesql @strSQL
