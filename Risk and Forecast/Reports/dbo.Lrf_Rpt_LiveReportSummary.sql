@@ -80,7 +80,8 @@ AS
 		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
 		- 20200714@Hogan: Add 7 games for Jackpot and 2 bettype for Contribution (4297) and Jackpot Prize (4298) [RedmineID: #137290]
 		- 20200715@Louis: Add new bet types for Keno/Lottery/TableGame [RedmineID: #137625]
-		- 20200728@Hogan: Integrate SA Gaming [RedmineID: #128493]		
+		- 20200728@Hogan: Integrate SA Gaming [RedmineID: #128493]
+		- 20201016@Hogan: Integrate Arcadia Gaming Bonus [RedmineID: #143648]
 
 	Param's Explanation:
 		+ @IsLive : indicate that whether the report will get live data or not
@@ -334,7 +335,7 @@ BEGIN
 					WHEN (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) THEN 'VS2'
 					WHEN b.bettype BETWEEN 1021 AND 1099 THEN 'LT'
 					WHEN b.bettype BETWEEN 4101 AND 4296 THEN 'PP' -- PP -- exclude 4300, 4299, 4298, 4297
-					WHEN b.bettype BETWEEN 1901 AND 1999 THEN 'CC' -- CC
+					WHEN (b.bettype BETWEEN 1901 AND 1999) AND b.bettype <> 1906 THEN 'CC' -- CC
 					WHEN b.bettype BETWEEN 4301 AND 4600 THEN 'SG' -- SG
 					WHEN b.bettype BETWEEN 4601 AND 4900 THEN 'VRG' -- VRG
 					WHEN b.bettype BETWEEN 4901 AND 5000 THEN 'TG' -- TG
@@ -368,7 +369,7 @@ BEGIN
 					OR (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) -- BetRadar VS
 					OR b.bettype BETWEEN 1021 AND 1099 -- LT
 					OR b.bettype BETWEEN 4101 AND 4296 -- PP -- exclude 4300, 4299, 4298, 4297
-					OR b.bettype BETWEEN 1901 AND 1999 -- CC
+					OR (b.bettype BETWEEN 1901 AND 1999 AND b.bettype <> 1906) -- CC
 					OR b.bettype BETWEEN 4301 AND 4600 -- SG
 					OR b.bettype BETWEEN 4601 AND 4900 -- VRG
 					OR b.bettype BETWEEN 4901 AND 5000 -- TG
@@ -392,7 +393,7 @@ BEGIN
 					WHEN (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) THEN 'VS2'
 					WHEN b.bettype BETWEEN 1021 AND 1099 THEN 'LT'
 					WHEN b.bettype BETWEEN 4101 AND 4296 THEN 'PP' -- PP -- exclude 4300, 4299, 4298, 4297
-					WHEN b.bettype BETWEEN 1901 AND 1999 THEN 'CC' -- CC
+					WHEN (b.bettype BETWEEN 1901 AND 1999) AND b.bettype <> 1906 THEN 'CC' -- CC
 					WHEN b.bettype BETWEEN 4301 AND 4600 THEN 'SG' -- SG
 					WHEN b.bettype BETWEEN 4601 AND 4900 THEN 'VRG' -- VRG
 					WHEN b.bettype BETWEEN 4901 AND 5000 THEN 'TG' -- TG
@@ -506,7 +507,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 2701 AND 2829 THEN 'VS2'
 					WHEN b.bettype BETWEEN 1021 AND 1099 THEN 'LT'
 					WHEN b.bettype BETWEEN 4101 AND 4296 THEN 'PP' -- PP -- exclude 4300, 4299, 4298, 4297
-					WHEN b.bettype BETWEEN 1901 AND 1999 THEN 'CC'
+					WHEN (b.bettype BETWEEN 1901 AND 1999) AND b.bettype <> 1906 THEN 'CC'
 					WHEN b.bettype BETWEEN 4301 AND 4600 THEN 'SG' -- SG
 					WHEN b.bettype BETWEEN 4601 AND 4900 THEN 'VRG'
 					WHEN b.bettype BETWEEN 4901 AND 5000 THEN 'TG'
@@ -555,7 +556,7 @@ BEGIN
 					OR b.bettype BETWEEN 2701 AND 2829 -- VS2
 					OR b.bettype BETWEEN 1021 AND 1099 -- LT
 					OR b.bettype BETWEEN 4101 AND 4296 -- PP -- exclude 4300, 4299, 4298, 4297
-					OR b.bettype BETWEEN 1901 AND 1999 -- CC
+					OR (b.bettype BETWEEN 1901 AND 1999 AND b.bettype <> 1906) -- CC
 					OR b.bettype BETWEEN 4301 AND 4600 -- SG
 					OR b.bettype BETWEEN 4601 AND 4900 -- VRG
 					OR b.bettype BETWEEN 4901 AND 5000 -- TG
@@ -584,7 +585,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 2701 AND 2829 THEN 'VS2'
 					WHEN b.bettype BETWEEN 1021 AND 1099 THEN 'LT'
 					WHEN b.bettype BETWEEN 4101 AND 4296 THEN 'PP' -- exclude 4300, 4299, 4298, 4297
-					WHEN b.bettype BETWEEN 1901 AND 1999 THEN 'CC'
+					WHEN (b.bettype BETWEEN 1901 AND 1999) AND b.bettype <> 1906 THEN 'CC'
 					WHEN b.bettype BETWEEN 4301 AND 4600 THEN 'SG' -- SG
 					WHEN b.bettype BETWEEN 4601 AND 4900 THEN 'VRG'
 					WHEN b.bettype BETWEEN 4901 AND 5000 THEN 'TG'

@@ -26,6 +26,7 @@ AS
 		- 20200803@Kos: Support Saba Loyalty [RedmineID: #138493]
 		- 20200820@Hogan: Support filter by VIP player [RedmineID: #138371]
 		- 20201013@Hogan: Integrate SA Gaming [RedmineID: #128493]
+		- 20201016@Hogan: Integrate Arcadia Gaming Bonus [RedmineID: #143648]
 
 	Param's Explanation:
 		+ @MoveBetsDay: The day we move tickets to bettrans14
@@ -60,14 +61,17 @@ BEGIN
 			@PPTournament	SMALLINT = 4299,-- PP Tournament Prize
 			@PPContribution	SMALLINT = 4297,-- PP Contribution
 			@PPJackpot		SMALLINT = 4298,-- PP Jackpot Prize
+			@CCBonus		SMALLINT = 1906,-- Arcadia Gaming Bonus
 			@PPsportType	SMALLINT = 248,
 			@SPRsportType	SMALLINT = 246,
 			@SAGbetType	 	SMALLINT = 3007,-- Tip ticket of SA Gaming
+			@CCsportType	SMALLINT = 165,
 			@SAGsportType	SMALLINT = 244,
 			@PP				VARCHAR(10) = 'PP',
 			@SPR			VARCHAR(10) = 'SPR',
 			@PPC			VARCHAR(10) = 'PPC',
-			@SAG			VARCHAR(10) = 'SAG'
+			@SAG			VARCHAR(10) = 'SAG',
+			@CCB			VARCHAR(10) = 'CCB'
 
 	DECLARE @_FromDate SMALLDATETIME,
 		@_ToDate SMALLDATETIME
@@ -156,7 +160,7 @@ BEGIN
 			LEFT JOIN @VIPCust v ON b.custid = v.CustID
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @_ToDate
-			AND((b.bettype IN (@PPPromotion, @PPTournament, @PPJackpot, 17000, 17003) AND b.statusID = 112)
+			AND((b.bettype IN (@PPPromotion, @PPTournament, @PPJackpot, 17000, 17003, @CCBonus) AND b.statusID = 112)
 				OR (b.bettype = @PPContribution AND b.statusID = 111)
 				OR (b.bettype = @SAGbetType AND b.statusID = 113))
 			AND (@VIPPlayerOnly = 0 OR (@VIPPlayerOnly = 1 AND v.custid IS NOT NULL))
@@ -192,8 +196,8 @@ BEGIN
 			LEFT JOIN @VIPCust v ON b.custid = v.CustID
 		WHERE 
 			b.winlostdate BETWEEN @_FromDate AND @TempToDate
-			AND b.sporttype IN (@PPsportType, @SPRsportType, @SAGsportType)
-			AND((b.bettype IN (@PPPromotion, @PPTournament, @PPJackpot, 17000, 17003) AND b.statusID = 112)
+			AND b.sporttype IN (@PPsportType, @SPRsportType, @SAGsportType, @CCsportType)
+			AND((b.bettype IN (@PPPromotion, @PPTournament, @PPJackpot, 17000, 17003, @CCBonus) AND b.statusID = 112)
 				OR (b.bettype = @PPContribution AND b.statusID = 111)
 				OR (b.bettype = @SAGbetType AND b.statusID = 113))
 			AND b.roleID = 1
@@ -226,6 +230,7 @@ BEGIN
 			WHEN p.BetType IN (17000, 17003) THEN @SPR
 			WHEN p.BetType = @PPContribution THEN @PPC
 			WHEN p.BetType = @SAGbetType THEN @SAG
+			WHEN p.BetType = @CCBonus THEN @CCB
 			ELSE @PP
 		END AS ProductCode,
 		SUM(p.Winlost * e.DefaultRate)		AS SumAmount,
@@ -244,6 +249,7 @@ BEGIN
 			WHEN p.BetType IN (17000, 17003) THEN @SPR
 			WHEN p.BetType = @PPContribution THEN @PPC
 			WHEN p.BetType = @SAGbetType THEN @SAG
+			WHEN p.BetType = @CCBonus THEN @CCB
 			ELSE @PP
 		END AS ProductCode,
 		p.winlostdate		AS [Date],

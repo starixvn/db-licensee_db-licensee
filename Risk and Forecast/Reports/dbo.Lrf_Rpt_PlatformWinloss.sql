@@ -78,6 +78,7 @@ AS
 		- 20200714@Hogan: Add 7 games for Jackpot and 2 bettype for Contribution (4297) and Jackpot Prize (4298) [RedmineID: #137290]
 		- 20200715@Louis: Add new bet types for Keno/Lottery/TableGame [RedmineID: #137625]
 		- 20200728@Hogan: Integrate SA Gaming [RedmineID: #128493]		
+		- 20201016@Hogan: Integrate Arcadia Gaming Bonus [RedmineID: #143648]		
 
 	Param's Explanation:
 		+ @PlatformType: 0: All
@@ -276,12 +277,12 @@ BEGIN
 		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 4101 AND 4296)'
 	END
 	
-	IF @ShowCC = 1 -- Card Club
+	IF @ShowCC = 1 -- Card Club -- exclude 1906
 	BEGIN
 		SET @SportTypeSQL = @SportTypeSQL + ', (165, ''CC'')'
-		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 1901 AND 1999 THEN ''CC''
+		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN (typeid BETWEEN 1901 AND 1999) AND typeid <> 1906 THEN ''CC''
 				'
-		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 1901 AND 1999)'
+		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 1901 AND 1999 AND typeid <> 1906)'
 	END
 
 	IF @ShowSG = 1 -- Spadegaming 
@@ -577,7 +578,7 @@ BEGIN
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND (b.bettype < 901 OR b.bettype > 904)
 			AND (b.bettype < 911 OR b.bettype > 914)
-			AND b.bettype NOT IN (4300, 4299, 4298, 4297, 3007) -- exclude PP Prize, Jackpot Prize, Contribution
+			AND b.bettype NOT IN (4300, 4299, 4298, 4297, 3007, 1906) -- exclude PP Prize, Jackpot Prize, Contribution
 		GROUP BY
 			b.currency,
 			b.sporttype,

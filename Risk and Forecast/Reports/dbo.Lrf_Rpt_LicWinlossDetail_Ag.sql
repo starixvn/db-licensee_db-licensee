@@ -111,6 +111,7 @@ AS
 		- 20200803@Kos: Support Saba Loyalty [RedmineID: #138493]
 		- 20200820@Hogan: Support filter by VIP player [RedmineID: #138371]
 		- 20201013@Hogan: Integrate SA Gaming [RedmineID: #128493]
+		- 20201016@Hogan: Integrate Arcadia Gaming Bonus [RedmineID: #143648]
 
 	Param's Explanation:
 		+ @CustID: SuperID
@@ -368,6 +369,10 @@ BEGIN
 			DELETE @bettype
 			WHERE ProductCode = 'SAG' AND bettype = 3007
 
+		IF @ShowCC = 1
+			DELETE @BetType
+			WHERE ProductCode = 'CC' AND bettype = 1906
+		
 		-- Insert Sport Type
 		INSERT INTO @sporttype ( sporttype, ProductCode )
 		SELECT DISTINCT sporttype, ProductCode
@@ -917,7 +922,7 @@ BEGIN
 				INNER JOIN @TempAg a ON b.recommend = a.custid AND b.currency = a.currency
 				LEFT JOIN @VIPCust v ON b.custid = v.CustID
 			WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
-				AND((b.bettype IN (4300, 4299, 4298, 17000, 17003) AND b.statusID = 112)
+				AND((b.bettype IN (4300, 4299, 4298, 17000, 17003, 1906) AND b.statusID = 112)
 					OR (b.bettype = 4297 AND b.statusID = 111)
 					OR (b.bettype = 3007 AND b.statusID = 113))  -- Promotion Prize, Jackpot Prize, Contribution
 					AND (@VIPPlayerOnly = 0 OR (@VIPPlayerOnly = 1 AND v.custid IS NOT NULL)))
@@ -1463,7 +1468,7 @@ BEGIN
 								INNER JOIN @TempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
 								LEFT JOIN @VIPCust v ON b.custid = v.CustID
 							WHERE b.Winlostdate BETWEEN @FDate AND @TempToDate
-								AND ((b.bettype IN (4300, 4299, 4298, 17000, 17003) AND b.statusID = 112)
+								AND ((b.bettype IN (4300, 4299, 4298, 17000, 17003, 1906) AND b.statusID = 112)
 									OR (b.bettype = 4297 AND b.statusID = 111)
 									OR (b.bettype = 3007 AND b.statusID = 113))
 								AND b.roleid = 1 -- Promotion Prize, Jackpot Prize, Contribution

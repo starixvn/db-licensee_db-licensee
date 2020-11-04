@@ -127,6 +127,7 @@ AS
 		- 20200724@Hogan: Get correct status for bettype Contribution (4297) [RedmineID: #138271]
 		- 20200803@Kos: Support Saba Loyalty [RedmineID: #138493]
 		- 20201013@Hogan: Integrate SA Gaming [RedmineID: #128493]
+		- 20201016@Hogan: Integrate Arcadia Gaming Bonus [RedmineID: #143648]
 
 	Param's Explanation:
 		@OrderItem:
@@ -344,12 +345,16 @@ BEGIN
 	IF @ShowPP = 1
 	DELETE @bettype
 	WHERE ProductCode = 'PP' AND bettype IN (4300, 4299, 4298, 4297) -- Promotion Prize, Jackpot Prize, Contribution
-
+	
 	-- Exclude SAG Tip ticket
 	IF @ShowSAG = 1
 	DELETE @bettype
 	WHERE ProductCode = 'SAG' AND bettype = 3007
-
+	
+	-- Exclude Bonus
+	IF @ShowCC = 1
+	DELETE @BetType
+	WHERE ProductCode = 'CC' AND bettype = 1906
 	-- bettrade
 	INSERT INTO @bettype(bettype, ProductCode)
 	SELECT bt.bettype, p.Code 
@@ -468,7 +473,7 @@ BEGIN
 			WHERE 
 				EXISTS(SELECT TOP (1) 1 FROM @TempAg c WHERE c.CustID = b.recommend)
 				AND b.winlostdate >= @TempFromDate AND b.winlostdate <= @_ToDate
-				AND((b.bettype IN (4300, 4299, 4298, 17000, 17003) AND b.statusID = 112)
+				AND((b.bettype IN (4300, 4299, 4298, 17000, 17003, 1906) AND b.statusID = 112)
 					OR (b.bettype = 4297 AND b.statusID = 111)
 					OR (b.bettype = 3007 AND b.statusID = 113)))  -- Promotion Prize, Jackpot Prize, Contribution
 		BEGIN
@@ -534,7 +539,7 @@ BEGIN
 						ELSE 1
 					END)
 			-- Exclude PP Prize, SAG Tip ticket
-			AND b.bettype NOT IN (4300, 4299, 4298, 4297, 3007)
+			AND b.bettype NOT IN (4300, 4299, 4298, 4297, 3007, 1906)
 
 		-- check promotion prize - PP promotion prize and NPH Promotion prize and Tips --
 		IF @CheckPromotionPrize = 1 AND @PromotionPrize = 0 AND EXISTS (
@@ -542,7 +547,7 @@ BEGIN
 			FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )
 			WHERE EXISTS(SELECT TOP (1) 1 FROM @TempAg c WHERE c.CustID = b.recommend)
 				AND b.Winlostdate BETWEEN @_FromDate AND @TempToDate
-				AND ((b.bettype IN (4300, 4299, 4298, 17000, 17003) AND b.statusID = 112)
+				AND ((b.bettype IN (4300, 4299, 4298, 17000, 17003, 1906) AND b.statusID = 112)
 					OR (b.bettype = 4297 AND b.statusID = 111)
 					OR (b.bettype = 3007 AND b.statusID = 113)) AND b.roleid = 2)  -- Promotion Prize, Jackpot Prize, Contribution
 		BEGIN

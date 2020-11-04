@@ -110,6 +110,7 @@ AS
 		- 20200820@Hogan: Support filter by VIP player [RedmineID: #138371]
 		- 20200831@Kos: Enhance performance [RedmineID: #140174]
 		- 20201013@Hogan: Integrate SA Gaming [RedmineID: #128493
+		- 20201016@Hogan: Integrate Arcadia Gaming Bonus [RedmineID: #143648]
 
 	Param's Explanation:
 		+ @ReportType: 1-Daily; 2-Monthly;
@@ -335,7 +336,11 @@ BEGIN
 			
 		IF @ShowSAG = 1
 			DELETE @bettype
-			WHERE ProductCode = 'SAG' AND bettype = 3007 -- SAG Tip ticket 
+			WHERE ProductCode = 'SAG' AND bettype = 3007 -- SAG Tip ticket
+
+		IF @ShowCC = 1
+			DELETE @BetType
+			WHERE ProductCode = 'CC' AND BetType = 1906
 		
 		-- Insert Sport Type
 		INSERT INTO @SportType ( SportType, ProductCode )
@@ -616,7 +621,7 @@ BEGIN
 				FROM dbo.bettrans b WITH (NOLOCK)
 					INNER JOIN @tempAg a ON b.recommend = a.custID AND b.currency = a.currency
 				WHERE b.winlostdate BETWEEN @TempFromDate AND @_ToDate
-					AND((b.bettype IN (4300, 4299, 4298, 17000, 17003) AND b.statusID = 112)
+					AND((b.bettype IN (4300, 4299, 4298, 17000, 17003, 1906) AND b.statusID = 112)
 					OR (b.bettype = 4297 AND b.statusID = 111)
 					OR (b.bettype = 3007 AND b.statusID = 113)))  -- Promotion Prize, Jackpot Prize, Contribution
 			BEGIN
@@ -877,7 +882,7 @@ BEGIN
 				FROM dbo.bettrans b WITH (NOLOCK)
 					INNER JOIN @VIPCust v ON b.custid = v.CustID
 				WHERE b.winlostdate BETWEEN @TempFromDate AND @_ToDate
-					AND((b.bettype IN (4300, 4299, 4298, 17000, 17003) AND b.statusID = 112)
+					AND((b.bettype IN (4300, 4299, 4298, 17000, 17003, 1906) AND b.statusID = 112)
 						OR (b.bettype = 4297 AND b.statusID = 111)))  -- Promotion Prize, Jackpot Prize, Contribution
 			BEGIN
 				SET @PromotionPrize = 1
@@ -1150,7 +1155,7 @@ BEGIN
 								FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)
 									INNER JOIN @tempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
 								WHERE b.Winlostdate BETWEEN @_FromDate AND @TempToDate
-									AND ((b.bettype IN (4300, 4299, 4298, 17000, 17003) AND b.statusID = 112)
+									AND ((b.bettype IN (4300, 4299, 4298, 17000, 17003, 1906) AND b.statusID = 112)
 									OR (b.bettype = 4297 AND b.statusID = 111)
 									OR (b.bettype = 3007 AND b.statusID = 113)) AND b.roleid = 2)  -- Promotion Prize, Jackpot Prize, Contribution
 			BEGIN
@@ -1407,7 +1412,7 @@ BEGIN
 								FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)
 									INNER JOIN @VIPCust v ON b.custid = v.CustID
 								WHERE b.Winlostdate BETWEEN @_FromDate AND @TempToDate
-									AND ((b.bettype IN (4300, 4299, 4298, 17000, 17003) AND b.statusID = 112)
+									AND ((b.bettype IN (4300, 4299, 4298, 17000, 17003, 1906) AND b.statusID = 112)
 										OR (b.bettype = 4297 AND b.statusID = 111)) -- Promotion Prize, Jackpot Prize, Contribution
 									AND b.roleid = 1)
 			BEGIN

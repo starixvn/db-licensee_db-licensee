@@ -26,6 +26,7 @@ AS
 		- 20200707@Kos: Support all products [Redmine: #136568]
 		- 20200714@Hogan: Add 7 games for Jackpot and 2 bettype for Contribution (4297) and Jackpot Prize (4298) [RedmineID: #137290]
 		- 20200924@Louis: Control BA status for subsidiary [RedmineID: #142038]
+		- 20201016@Hogan: Integrate Arcadia Gaming Bonus [RedmineID: #143648]
 
 	Param's Explanation:
 		+ @MoveBetsDay: The day we move tickets to bettrans14
@@ -104,7 +105,7 @@ BEGIN
 	INSERT INTO #BettypeProduct (BetType, ProductCode)		-- Don't have ProductCode IN (BT, CO)
 	SELECT DISTINCT BetType, ProductPrefix
 	FROM dbo.f_SportBettypeMatrix_Sel (0, 0, 0, 2, '', @ProductList, @IsTest)
-	WHERE BetType NOT IN (901, 902, 903, 904, 911, 912, 913, 914, 4299, 4300, 17000, 17001, 17002, 4298, 4297)		-- Exclude PP Promotion Prize, Saba Promotion Prize
+	WHERE BetType NOT IN (901, 902, 903, 904, 911, 912, 913, 914, 4299, 4300, 17000, 17001, 17002, 4298, 4297, 1906)		-- Exclude PP Promotion Prize, Saba Promotion Prize
 
 	-- Insert Sport Type
 	INSERT INTO #SporttypeProduct (SportType, ProductCode )		-- Don't have ProductCode IN (BT, CO)
@@ -214,7 +215,7 @@ BEGIN
 				b.winlostdate BETWEEN @FDate AND @TDate
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
-				AND b.bettype NOT IN (4299, 4300, 17000, 17001, 17002, 4298, 4297)		-- Exclude PP Promotion Prize, Saba Promotion Prize
+				AND b.bettype NOT IN (4299, 4300, 17000, 17001, 17002, 4298, 4297, 1906)		-- Exclude PP Promotion Prize, Saba Promotion Prize
 				AND b.roleid = 1
 				AND (b.statusID IN (112, 113, 114, 115)
 					OR (@IncludeRaw = 1 AND b.statusID = 111)) --exclude REJECT bets
