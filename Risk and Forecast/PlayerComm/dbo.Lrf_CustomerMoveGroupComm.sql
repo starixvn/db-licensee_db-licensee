@@ -13,6 +13,15 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerMoveGroupComm]
 	--@IsUpdateGD BIT = 0,
 	--@IsUpdateAG BIT = 0,
 	@IsUpdateFW BIT = 0,
+	--start param of phase 2 
+	@IsUpdateSexyGaming BIT = 0,	
+	@IsUpdateSpadeGaming BIT = 0,	
+	@IsUpdateKeno BIT = 0,	
+	@IsUpdateLottery BIT = 0,	
+	@IsUpdateVS BIT = 0,	
+	@IsUpdateVS2 BIT = 0,	
+	@IsUpdateTableGame BIT = 0,	
+	-- end of phase 2
 	@IP VARCHAR(40),
 	@Langkey VARCHAR(20) = 'en-US',
 	@ErrCode INT = 0 OUTPUT,
@@ -39,11 +48,16 @@ AS
 		- 20200410@Johnson: Add comm for AB,Macau,PP,GD,AG [redmine:#131774] 
 		- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
 		- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774]   
-		- 20200701@Helen: Remove Allbet - [Redmine: #131774] 
+		- 20200701@Helen: Remove Allbet - [Redmine: #131774]
+		- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238]   
+		 
 	Param's Explanation:
 */ 
 BEGIN
 	SET NOCOUNT ON 
+	
+	DECLARE @custID_cnt INT = 0
+	
 	CREATE TABLE #tempCust (CustID INT)
 	INSERT INTO #tempCust(CustID)
 	SELECT RTRIM(LTRIM(VAL)) 
@@ -66,7 +80,18 @@ BEGIN
 		SELECT @ErrMsg='Customer does not belong to licensee'
 		RETURN 
 	END
-
+	
+	SET @custID_cnt = (SELECT COUNT(1) FROM bodb_licensee.dbo.LicenseeCustComm WITH (NOLOCK) WHERE LicenseeID = @LicenseeID AND GroupCommID = @GroupCommID)
+	
+	IF @custID_cnt >= 100000
+	BEGIN
+		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN  'You have reached the maximum number of updating customers'' commission. Please contact Customer Service to process your request.'
+										ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200049,@Langkey)
+										END, @ErrCode = 100
+		
+		RETURN
+	END
+		
 	EXEC [Lrf_CustomerUpdMemberComm] 
 		@LicenseeID=@LicenseeID
 		,@strCustID=@strCustIDOriginal
@@ -80,6 +105,15 @@ BEGIN
 		--,@IsUpdateGD=@IsUpdateGD
 		--,@IsUpdateAG=@IsUpdateAG
 		,@IsUpdateFW = @IsUpdateFW
+		---start param of phase 2
+		,@IsUpdateSexyGaming = @IsUpdateSexyGaming	
+		,@IsUpdateSpadeGaming = @IsUpdateSpadeGaming	
+		,@IsUpdateKeno = @IsUpdateKeno
+		,@IsUpdateLottery  = @IsUpdateLottery	
+		,@IsUpdateVS = @IsUpdateVS 	
+		,@IsUpdateVS2 =  @IsUpdateVS2	
+		,@IsUpdateTableGame = @IsUpdateTableGame
+		-- end of param phase 2
 		,@Langkey=@Langkey
 		,@IP=@IP
 		,@ErrCode=@ErrCode OUTPUT

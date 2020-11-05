@@ -24,6 +24,7 @@ ALTER PROCEDURE [dbo].[WriteLog_UserLog_UpdMemComm_RunSP]
 		- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
 		- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774]
 		- 20200701@Helen: Remove Allbet - [Redmine: #131774] 
+		- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238] 
 		
     Param's Explaination:    	
 		- @UserID: UserId perform this action
@@ -69,10 +70,18 @@ BEGIN
 			   --'GDComm="'+ COALESCE(CAST(ISNULL(lcc.GDComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
 			   --'AGComm="'+ COALESCE(CAST(ISNULL(lcc.AGComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
 			   'FWComm="'+ COALESCE(CAST(ISNULL(lcc.FWComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+			   -- phase 2
+				'SexyGamingComm="'+ COALESCE(CAST(ISNULL(lcc.SexyGamingComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+				'SpadeGamingComm="'+ COALESCE(CAST(ISNULL(lcc.SpadeGamingComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+				'KenoComm="'+ COALESCE(CAST(ISNULL(lcc.KenoComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+				'LotteryComm="'+ COALESCE(CAST(ISNULL(lcc.LotteryComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+				'VSComm="'+ COALESCE(CAST(ISNULL(lcc.VSComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+				'VS2Comm="'+ COALESCE(CAST(ISNULL(lcc.VS2Comm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+				'TableGameComm="'+ COALESCE(CAST(ISNULL(lcc.TableGameComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
 			   'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
 			   @LogSPData2 AS TrackingValue2
 		FROM @CustIDTempTable a
-			INNER JOIN bodb_licensee.dbo.LicenseeCustComm lcc WITH (NOLOCK) ON a.CustID = lcc.CustID
+			LEFT JOIN bodb_licensee.dbo.LicenseeCustComm lcc WITH (NOLOCK) ON a.CustID = lcc.CustID
 			
 		INSERT INTO dbo.UserLog_RunSP (UserID, CustID, SPName, Doing, ActionID, TrackingValue, TrackingValue2, Duration)
 		SELECT @UserID, CustID, NULL, NULL, @ActionID, TrackingValue, TrackingValue2, @Duration

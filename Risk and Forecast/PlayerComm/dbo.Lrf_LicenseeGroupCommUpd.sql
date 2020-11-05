@@ -21,6 +21,22 @@ CREATE PROCEDURE [dbo].[Lrf_LicenseeGroupCommUpd]
 	--@IsUpdateGD BIT = 0,
 	--@IsUpdateAG BIT = 0,
 	@IsUpdateFW BIT = 0,
+	--start param of phase 2 
+	@IsUpdateSexyGaming BIT = 0,	
+	@SexyGamingComm DECIMAL(9,8) = 0,
+	@IsUpdateSpadeGaming BIT = 0,	
+	@SpadeGamingComm DECIMAL(9,8) = 0,
+	@IsUpdateKeno BIT = 0,	
+	@KenoComm DECIMAL(9,8) = 0,
+	@IsUpdateLottery BIT = 0,	
+	@LotteryComm DECIMAL(9,8) = 0,
+	@IsUpdateVS BIT = 0,	
+	@VSComm DECIMAL(9,8) = 0,
+	@IsUpdateVS2 BIT = 0,	
+	@VS2Comm DECIMAL(9,8) = 0,
+	@IsUpdateTableGame BIT = 0,	
+	@TableGameComm DECIMAL(9,8) = 0,
+	-- end param of phase 2
 	@GroupColor VARCHAR(20),
 	@IsDefault BIT=0, 
 	@IsResetDefault BIT=0,
@@ -52,13 +68,15 @@ AS
 		- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
 		- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774]
 		- 20200701@Helen: Remove Allbet - [Redmine: #131774]  
+		- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238] 
 		
 	Param's Explanation:
 
 */
 BEGIN
 	SET NOCOUNT ON
-	
+	-- fix bug: #142797
+	/*
 	IF (@IsUpdateNG = 0) AND  (@IsUpdateRNG = 0) 
 	BEGIN
 		UPDATE [dbo].[LicenseeGroupComm]
@@ -69,6 +87,7 @@ BEGIN
 		WHERE id = @GroupCommID AND Licenseeid = @LicenseeID
 		RETURN
 	END
+	*/
 	DECLARE @startRun DATETIME
 	DECLARE @endRun DATETIME
 	DECLARE @duration INT
@@ -86,6 +105,14 @@ BEGIN
 		--,@GDComm_Old DECIMAL(9,8)
 		--,@AGComm_Old DECIMAL(9,8)
 		,@FWComm_Old DECIMAL(9,8)
+		,@SexyGamingComm_Old DECIMAL(9,8)=0
+		,@SpadeGamingComm_Old DECIMAL(9,8)=0
+		,@LotteryComm_Old DECIMAL(9,8)=0
+		,@KenoComm_Old DECIMAL(9,8)=0
+		,@VSComm_Old DECIMAL(9,8)=0
+		,@VS2Comm_Old DECIMAL(9,8)=0
+		,@TableGameComm_Old DECIMAL(9,8)=0
+		
 		,@IsDefault_Old BIT
 		,@custID_cnt INT = 0
 	DECLARE @IsexistMember BIT = 0
@@ -103,7 +130,14 @@ BEGIN
 	IF @SBComm>0.15 OR @NGComm>0.15 OR @RNGComm>0.15 OR @ParlayComm >0.15 
 		--OR @AllbetComm>0.15 
 		OR @MacauComm>0.15 OR @PPComm>0.15 
-		--OR @GDComm>0.15 OR @AGComm>0.15 
+		--OR @GDComm>0.15 OR @AGComm>0.15
+		OR @SexyGamingComm  > 0.15
+		OR @SpadeGamingComm  > 0.15
+		OR @KenoComm  > 0.15
+		OR @LotteryComm  > 0.15
+		OR @VSComm  > 0.15
+		OR @VS2Comm > 0.15
+		OR @TableGameComm  > 0.15 
 	BEGIN
 		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN  'Player Commission should not greater than '
 										ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200002,@Langkey)
@@ -113,7 +147,7 @@ BEGIN
 
 	SET @custID_cnt = (SELECT COUNT(1) FROM LicenseeCustComm WITH (NOLOCK) WHERE LicenseeID = @LicenseeID AND GroupCommID = @GroupCommID)
 	
-	IF @custID_cnt > 200000
+	IF @custID_cnt >= 100000
 	BEGIN
 		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN  'You have reached the maximum number of updating customers'' commission. Please contact Customer Service to process your request.'
 										ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200049,@Langkey)
@@ -146,6 +180,13 @@ BEGIN
 			--,@GDComm_Old=GDComm
 			--,@AGComm_Old=AGComm
 			,@FWComm_Old = FWComm
+			,@SexyGamingComm_Old = SexyGamingComm
+			,@SpadeGamingComm_Old = SpadeGamingComm
+			,@LotteryComm_Old = LotteryComm
+			,@KenoComm_Old = KenoComm
+			,@VSComm_Old = VSComm
+			,@VS2Comm_Old = VS2Comm
+			,@TableGameComm_Old =TableGameComm
 			,@IsDefault_Old=IsDefault			
 		FROM dbo.LicenseeGroupComm WITH (NOLOCK)
 		WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID
@@ -218,8 +259,16 @@ BEGIN
 			@IsUpdateRNG  = CASE WHEN @IsUpdateRNG = 1 AND @RNGComm_Old <> @RNGComm	  THEN 1 ELSE 0 END,	
 			@IsUpdateMacau  = CASE WHEN @IsUpdateMacau = 1 AND @MacauComm_Old <> @MacauComm  THEN 1 ELSE 0 END,
 			@IsUpdatePP  = CASE WHEN @IsUpdatePP = 1 AND @PPComm_Old <> @PPComm  THEN 1 ELSE 0 END,
-			@IsUpdateFW  = CASE WHEN @IsUpdateFW = 1 AND @FWComm_Old <> @FWComm  THEN 1 ELSE 0 END
-	
+			@IsUpdateFW  = CASE WHEN @IsUpdateFW = 1 AND @FWComm_Old <> @FWComm  THEN 1 ELSE 0 END,
+			--- phase 2
+			@IsUpdateSexyGaming  = CASE WHEN @IsUpdateSexyGaming = 1 AND @SexyGamingComm_Old <> @SexyGamingComm  THEN 1 ELSE 0 END,
+			@IsUpdateSpadeGaming  = CASE WHEN @IsUpdateSpadeGaming = 1 AND @SpadeGamingComm_Old <> @SpadeGamingComm  THEN 1 ELSE 0 END,
+			@IsUpdateLottery  = CASE WHEN @IsUpdateLottery = 1 AND @LotteryComm_Old <> @LotteryComm  THEN 1 ELSE 0 END,
+			@IsUpdateKeno  = CASE WHEN @IsUpdateKeno = 1 AND @KenoComm_Old <> @KenoComm  THEN 1 ELSE 0 END,
+			@IsUpdateVS  = CASE WHEN @IsUpdateVS = 1 AND @VSComm_Old <> @VSComm  THEN 1 ELSE 0 END,
+			@IsUpdateVS2  = CASE WHEN @IsUpdateVS2 = 1 AND @VS2Comm_Old <> @VS2Comm  THEN 1 ELSE 0 END,
+			@IsUpdateTableGame  = CASE WHEN @IsUpdateTableGame = 1 AND @TableGameComm_Old <> @TableGameComm  THEN 1 ELSE 0 END
+			
 		--Update Group Comm + Member Comm + all the comm settings
 		IF (@IsUpdateSB = 1
 			OR @IsParlayComm = 1
@@ -228,7 +277,15 @@ BEGIN
 			--OR @IsUpdateAllbet = 1
 			OR @IsUpdateMacau = 1
 			OR @IsUpdatePP = 1
-			OR @IsUpdateFW = 1)
+			OR @IsUpdateFW = 1
+			OR @IsUpdateSexyGaming = 1
+			OR @IsUpdateSpadeGaming = 1
+			OR @IsUpdateKeno = 1
+			OR @IsUpdateLottery = 1
+			OR @IsUpdateVS = 1
+			OR @IsUpdateVS2 = 1
+			OR @IsUpdateTableGame = 1
+			)
 		
 		BEGIN
 			
@@ -241,6 +298,14 @@ BEGIN
 					, MacauComm = CASE WHEN @IsUpdateMacau = 1 THEN @MacauComm ELSE MacauComm END  
 					, PPComm= CASE WHEN @IsUpdatePP = 1 THEN @PPComm ELSE PPComm END      
 					, FWComm = CASE WHEN @IsUpdateFW = 1 THEN @FWComm ELSE FWComm END 
+					-- phase 2
+					, SexyGamingComm  = CASE WHEN @IsUpdateSexyGaming = 1 THEN @SexyGamingComm ELSE SexyGamingComm END 
+					, SpadeGamingComm  = CASE WHEN @IsUpdateSpadeGaming = 1 THEN @SpadeGamingComm ELSE SpadeGamingComm END
+					, KenoComm  = CASE WHEN @IsUpdateKeno = 1 THEN @KenoComm ELSE KenoComm END
+					, LotteryComm  = CASE WHEN @IsUpdateLottery = 1 THEN @LotteryComm ELSE LotteryComm END
+					, VSComm  = CASE WHEN @IsUpdateVS = 1 THEN @VSComm ELSE VSComm END
+					, VS2Comm = CASE WHEN @IsUpdateVS2 = 1 THEN @VS2Comm ELSE VS2Comm END
+					, TableGameComm  = CASE WHEN @IsUpdateTableGame = 1 THEN @TableGameComm ELSE TableGameComm END
 					--, GDComm = CASE WHEN @IsUpdateGD = 1 THEN @GDComm ELSE GDComm END  
 					--, AGComm = CASE WHEN @IsUpdateAG =1  THEN @AGComm ELSE AGComm END  
 			WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID
@@ -279,6 +344,22 @@ BEGIN
 					--,@IsUpdateGD=@IsUpdateGD
 					--,@IsUpdateAG=@IsUpdateAG
 					,@IsUpdateFW = @IsUpdateFW
+					---start param of phase 2
+					,@IsUpdateSexyGaming = @IsUpdateSexyGaming	
+					,@SexyGamingComm = @SexyGamingComm
+					,@IsUpdateSpadeGaming = @IsUpdateSpadeGaming	
+					,@SpadeGamingComm =  @SpadeGamingComm
+					,@IsUpdateKeno = @IsUpdateKeno
+					,@KenoComm =  @KenoComm
+					,@IsUpdateLottery  = @IsUpdateLottery	
+					,@LotteryComm =  @LotteryComm
+					,@IsUpdateVS = @IsUpdateVS 	
+					,@VSComm =  @VSComm
+					,@IsUpdateVS2 =  @IsUpdateVS2	
+					,@VS2Comm = @VS2Comm 
+					,@IsUpdateTableGame = @IsUpdateTableGame
+					,@TableGameComm = @TableGameComm
+					-- end of param phase 2
 					,@IP=@IP
 					,@Langkey=@langkey
 					,@ErrCode=@ErrCode OUTPUT
@@ -318,6 +399,15 @@ BEGIN
 			--'GDComm="'+ COALESCE(CAST(@GDComm as VARCHAR(50)),SPACE(1)) + '" ' +
 			--'AGComm="'+ COALESCE(CAST(@AGComm as VARCHAR(50)),SPACE(1)) + '" ' +
 			'FWComm="'+ COALESCE(CAST(@FWComm as VARCHAR(50)),SPACE(1)) + '" ' +
+				-- phase 2
+			'SexyGamingComm="'+ COALESCE(CAST(@SexyGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
+			'SpadeGamingComm="'+ COALESCE(CAST(@SpadeGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
+			'KenoComm="'+ COALESCE(CAST(@KenoComm as VARCHAR(50)),SPACE(1)) + '" '+
+			'LotteryComm="'+ COALESCE(CAST(@LotteryComm as VARCHAR(50)),SPACE(1)) + '" '+
+			'VSComm="'+ COALESCE(CAST(@VSComm as VARCHAR(50)),SPACE(1)) + '" '+
+			'VS2Comm="'+ COALESCE(CAST(@VS2Comm as VARCHAR(50)),SPACE(1)) + '" '+
+			'TableGameComm="'+ COALESCE(CAST(@TableGameComm as VARCHAR(50)),SPACE(1)) + '" ' +
+			
 			'IsUpdateNG="'+ COALESCE(CAST(@IsUpdateNG as VARCHAR(50)),SPACE(1)) + '" ' +
 			'IsUpdateRNG="'+ COALESCE(CAST(@IsUpdateRNG as VARCHAR(50)),SPACE(1)) + '" ' +			
 			'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
@@ -340,6 +430,15 @@ BEGIN
 			--'GDComm="'+ COALESCE(CAST(@GDComm_Old as VARCHAR(50)),SPACE(1)) + '" ' +
 			--'AGComm="'+ COALESCE(CAST(@AGComm_Old as VARCHAR(50)),SPACE(1)) + '" ' +
 			'FWComm="'+ COALESCE(CAST(@FWComm_Old as VARCHAR(50)),SPACE(1)) + '" ' +
+			-- phase 2
+			'SexyGamingComm="'+ COALESCE(CAST(@SexyGamingComm_old as VARCHAR(50)),SPACE(1)) + '" '+
+			'SpadeGamingComm="'+ COALESCE(CAST(@SpadeGamingComm_old as VARCHAR(50)),SPACE(1)) + '" '+
+			'KenoComm="'+ COALESCE(CAST(@KenoComm_old as VARCHAR(50)),SPACE(1)) + '" '+
+			'LotteryComm="'+ COALESCE(CAST(@LotteryComm_old as VARCHAR(50)),SPACE(1)) + '" '+
+			'VSComm="'+ COALESCE(CAST(@VSComm_old as VARCHAR(50)),SPACE(1)) + '" '+
+			'VS2Comm="'+ COALESCE(CAST(@VS2Comm_old as VARCHAR(50)),SPACE(1)) + '" '+
+			'TableGameComm="'+ COALESCE(CAST(@TableGameComm_old as VARCHAR(50)),SPACE(1)) + '" ' +
+			
 			'IsUpdateNG="'+ COALESCE(CAST(@IsUpdateNG as VARCHAR(50)),SPACE(1)) + '" ' +
 			'IsUpdateRNG="'+ COALESCE(CAST(@IsUpdateRNG as VARCHAR(50)),SPACE(1)) + '" ' +			
 			--'IsUpdateAllbet="'+ COALESCE(CAST(@IsUpdateAllbet as VARCHAR(50)),SPACE(1)) + '" ' +

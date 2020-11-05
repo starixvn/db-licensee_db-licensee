@@ -23,6 +23,7 @@ AS
 		- 20200410@Johnson: Add comm for AB,Macau,PP,GD,AG [redmine:#131774]
 		- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
 		- 20200701@Helen: Remove Allbet - [Redmine: #131774]
+		- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238] 
 		
 	Param's Explanation:
 */ 
@@ -30,14 +31,23 @@ BEGIN
 	SET NOCOUNT ON 
 	
 	DECLARE @GroupCommID INT, 
-		@IsUpdateNG BIT,
-		@IsUpdateRNG BIT, 
+		@IsUpdateNG BIT = 0,
+		@IsUpdateRNG BIT = 0, 
 		--@IsUpdateAllbet BIT,
-		@IsUpdateMacau BIT,
-		@IsUpdatePP BIT,
+		@IsUpdateMacau BIT = 0,
+		@IsUpdatePP BIT = 0,
 		--@IsUpdateGD	BIT,
 		--@IsUpdateAG BIT,
-		@IsUpdateFW BIT,
+		@IsUpdateFW BIT = 0,
+		-- phase 2
+		@IsUpdateSexyGaming BIT = 0,
+		@IsUpdateSpadeGaming BIT = 0,
+		@IsUpdateKeno BIT = 0,
+		@IsUpdateLottery BIT = 0,
+		@IsUpdateVS BIT = 0,
+		@IsUpdateVS2 BIT = 0,
+		@IsUpdateTableGame BIT = 0,
+		
 		@LicenseeID INT,		
 		@strCustID VARCHAR(50)
 
@@ -53,8 +63,7 @@ BEGIN
 		BEGIN
 			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=2)
 				SELECT @IsUpdateNG = 1
-			ELSE
-				SELECT @IsUpdateNG = 0
+		
 
 			/*IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=4)
 				SELECT @IsUpdateLC = 1
@@ -63,9 +72,7 @@ BEGIN
 
 			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=6)
 				SELECT @IsUpdateRNG = 1
-			ELSE
-				SELECT @IsUpdateRNG = 0	
-			
+						
 			--IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=21)
 			--	SELECT @IsUpdateAllbet = 1
 			--ELSE
@@ -73,14 +80,10 @@ BEGIN
 			
 			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=22)
 				SELECT @IsUpdateMacau = 1
-			ELSE
-				SELECT @IsUpdateMacau = 0
-				
+							
 			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=32)
 				SELECT @IsUpdatePP = 1
-			ELSE
-				SELECT @IsUpdatePP = 0	
-			
+						
 			--IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=11)
 			--	SELECT @IsUpdateGD = 1
 			--ELSE
@@ -93,9 +96,29 @@ BEGIN
 
 			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=24)
 				SELECT @IsUpdateFW = 1
-			ELSE
-				SELECT @IsUpdateFW = 0	
-				
+			-- phase 2
+			-- 45,36,8,28,5,27,40	
+			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=45)
+				SET @IsUpdateSexyGaming = 1
+			
+			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=36)		
+				SET @IsUpdateSpadeGaming = 1
+			
+			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=8)
+				SET @IsUpdateKeno = 1
+			
+			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=28)
+				SET @IsUpdateLottery = 1
+			
+			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=5)
+				SET @IsUpdateVS = 1
+			
+			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=27)
+				SET @IsUpdateVS2 = 1
+			
+			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=40)
+				SET @IsUpdateTableGame = 1
+			
 			SELECT @strCustID=CAST (@CustID AS VARCHAR(50))
 			
 			EXEC [Lrf_CustomerUpdMemberComm] 
@@ -112,6 +135,15 @@ BEGIN
 				--,@IsUpdateGD=@IsUpdateGD
 				--,@IsUpdateAG=@IsUpdateAG
 				,@IsUpdateFW = @IsUpdateFW
+				-- phase 2
+				,@IsUpdateSexyGaming = @IsUpdateSexyGaming	
+				,@IsUpdateSpadeGaming = @IsUpdateSpadeGaming	
+				,@IsUpdateKeno = @IsUpdateKeno
+				,@IsUpdateLottery  = @IsUpdateLottery	
+				,@IsUpdateVS = @IsUpdateVS 	
+				,@IsUpdateVS2 =  @IsUpdateVS2	
+				,@IsUpdateTableGame = @IsUpdateTableGame
+				
 				,@IP=''
 				,@Langkey=@Langkey
 				,@ErrCode=@ErrCode OUTPUT
