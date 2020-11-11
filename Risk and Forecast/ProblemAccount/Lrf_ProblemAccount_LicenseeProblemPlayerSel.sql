@@ -26,10 +26,13 @@ AS
 			- 20200717@Johnson: return agentid to support subsidiary [redmine:#136974]
 			- 20200909@Johnson: add customer class [redmine:#141157]
 			- 20200914@Johnson: fix sort MarkDate [redmine:#141525]
+			- 20201103@Winfred: sort customer Class [redmine:#144706]
+			
 		Paramter's Explanations:
 			@OrderCol = 1: System ID
 						= 2: sort by external ID
 						= 3: MarkDate
+						= 4: customer Class
 			@SortType = 1: ASC, 2: DESC		 	
 	*/
 BEGIN
@@ -168,6 +171,20 @@ BEGIN
 		FROM t2 
 			INNER JOIN custinfo ci WITH(NOLOCK) ON ci.custid = t2.custid
 			LEFT JOIN Dep_CustVIP d WITH(NOLOCK) ON t2.custid = d.custid
+		WHERE rn BETWEEN @rowstart AND @rowend
+		ORDER BY rn ASC
+	END
+	ELSE IF @OrderCol IN (4)
+	BEGIN
+		;WITH t AS (
+		SELECT a.*,ci.CustomerClass, ROW_NUMBER () OVER (ORDER BY CASE WHEN @SortType = 1 THEN ci.CustomerClass END ASC,	
+												CASE WHEN @SortType = 2 THEN ci.CustomerClass END DESC) rn
+		FROM #CustList a
+		INNER JOIN custinfo ci WITH(NOLOCK) ON ci.custid = a.custid
+		)
+		SELECT t.*, CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END as isVIP
+		FROM t
+			LEFT JOIN Dep_CustVIP d WITH(NOLOCK) ON t.custid = d.custid
 		WHERE rn BETWEEN @rowstart AND @rowend
 		ORDER BY rn ASC
 	END
