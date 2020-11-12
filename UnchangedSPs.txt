@@ -1,3 +1,10 @@
-Risk and Forecast\Reports\Lrf_Rpt_LicWinloss_FromAPI.sql
-Risk and Forecast\Reports\Lrf_Rpt_Audit_DailyBets.sql
-Risk and Forecast\Reports\Lrf_Rpt_Audit_DailyBets_Total.sql
+Risk and Forecast\Reports\Lrf_Rpt_LicWinlossByTimeZone.sql
+Risk and Forecast\Reports\Lrf_Rpt_SubsidiaryWinloss.sql
+Risk and Forecast\Reports\Lrf_Rpt_SubsidiaryWinlossDetail.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_CustomerBalance.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_TurnOver.proc.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_WinlossByProduct.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_WinlossByProductDetail.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_WinlossByProductDetail_Ag.sql
+Risk and Forecast\Reports\Lrf_Rpt_LicWinloss_BySourced.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_Outstanding.StoredProcedure.sql
