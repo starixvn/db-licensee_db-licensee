@@ -31,7 +31,8 @@ AS
 		- 20200410@Johnson: Add comm for AB,Macau,PP,GD,AG [redmine:#131774]
 		- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774]
 		- 20200701@Helen: Remove Allbet - [Redmine: #131774]  
-		- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238]   
+		- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238]
+		- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012]   
 		 
 	Param's Explanation:
 
@@ -52,7 +53,7 @@ BEGIN
 		@NGComm DECIMAL(9,8),
 		@RNGComm DECIMAL(9,8),
 		@ParlayComm DECIMAL(9,8), 		
-		--@AllbetComm DECIMAL(9,8),
+		@AllbetComm DECIMAL(9,8),
 		@MacauComm DECIMAL(9,8),
 		@PPComm DECIMAL(9,8),
 		--@GDComm DECIMAL(9,8),
@@ -66,7 +67,12 @@ BEGIN
 		@VSComm DECIMAL(9,8),
 		@VS2Comm DECIMAL(9,8),
 		@TableGameComm DECIMAL(9,8),
-		
+		--phase 3
+		@VirtualGamesComm DECIMAL(9,8) ,
+		@ArcadiaGamingComm DECIMAL(9,8),
+		@SabaclubComm DECIMAL(9,8),
+		@SAGamingComm DECIMAL(9,8),
+		@PGSoftComm DECIMAL(9,8),
 		@GroupColor VARCHAR(20), 
 		@GroupName VARCHAR(100), 
 		@IsDefault BIT
@@ -99,7 +105,7 @@ BEGIN
 			@NGComm=NGComm,
 			@RNGComm=RNGComm,
 			@ParlayComm=ParlayComm,			
-			--@AllbetComm=AllbetComm,
+			@AllbetComm=AllbetComm,
 			@MacauComm=MacauComm,
 			@PPComm=PPComm,
 			--@GDComm=GDComm,
@@ -112,6 +118,12 @@ BEGIN
 			@VSComm = VSComm,
 			@VS2Comm = VS2Comm,
 			@TableGameComm = TableGameComm,
+			
+			@VirtualGamesComm = VirtualGamesComm,
+			@ArcadiaGamingComm = ArcadiaGamingComm,
+			@SabaclubComm = SabaclubComm,
+			@SAGamingComm = SAGamingComm,
+			@PGSoftComm = PGSoftComm,
 			
 			@GroupColor=color,
 			@GroupName=GroupName,
@@ -204,7 +216,7 @@ BEGIN
 					@NGComm=0,
 					@RNGComm=0,
 					@ParlayComm=0,	
-					--@AllbetComm=0,
+					@AllbetComm=0,
 					@MacauComm=0,
 					@PPComm=0,
 					--@GDComm=0,
@@ -212,7 +224,7 @@ BEGIN
 					@FWComm = 0,
 					@IsUpdateNG=1,
 					@IsUpdateRNG=1,					
-					--@IsUpdateAllbet=1,
+					@IsUpdateAllbet=1,
 					@IsUpdateMacau=1,
 					@IsUpdatePP=1,
 					--@IsUpdateGD=1,
@@ -233,7 +245,20 @@ BEGIN
 					@VS2Comm = 0, 
 					@IsUpdateTableGame = 1,
 					@TableGameComm = 0,
-				
+					-- phase 3
+					@IsUpdateVirtualGames = 1,
+					@IsUpdateArcadiaGaming = 1,
+					@IsUpdateSabaclub  = 1,
+					@IsUpdateSAGaming  = 1,
+					@IsUpdatePGSoft  = 1,
+					
+					@VirtualGamesComm = 0,
+					@ArcadiaGamingComm = 0,
+					@SabaclubComm = 0,
+					@SAGamingComm = 0,
+					@PGSoftComm = 0,
+
+					
 					@isClearGroupComm = 1,
 					@ClearGroupCommGroupID = @GroupCommID,
 					@IsUpdateGroupComm = 1,
@@ -271,7 +296,7 @@ BEGIN
 		'IsRemovePlayercomm="'+ COALESCE(CAST(@IsRemovePlayercomm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'RNGComm="'+ COALESCE(CAST(@RNGComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'ParlayComm="'+ COALESCE(CAST(@ParlayComm as VARCHAR(50)),SPACE(1)) + '" ' +			
-		--'AllbetComm="'+ COALESCE(CAST(@AllbetComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		'AllbetComm="'+ COALESCE(CAST(@AllbetComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'MacauComm="'+ COALESCE(CAST(@MacauComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'PPComm="'+ COALESCE(CAST(@PPComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		--'GDComm="'+ COALESCE(CAST(@GDComm as VARCHAR(50)),SPACE(1)) + '" ' +
@@ -285,6 +310,12 @@ BEGIN
 		'VSComm="'+ COALESCE(CAST(@VSComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'VS2Comm="'+ COALESCE(CAST(@VS2Comm as VARCHAR(50)),SPACE(1)) + '" '+
 		'TableGameComm="'+ COALESCE(CAST(@TableGameComm as VARCHAR(50)),SPACE(1)) + '" '+
+		-- phase 3
+		'VirtualGamesComm="'+ COALESCE(CAST(@VirtualGamesComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'ArcadiaGamingComm="'+ COALESCE(CAST(@ArcadiaGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'SabaclubComm="'+ COALESCE(CAST(@SabaclubComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'SAGamingComm="'+ COALESCE(CAST(@SAGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'PGSoftComm="'+ COALESCE(CAST(@PGSoftComm as VARCHAR(50)),SPACE(1)) + '" '+
 		
 		'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
 		'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +
@@ -315,6 +346,12 @@ BEGIN
 		'VSComm="'+ COALESCE(CAST(@VSComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'VS2Comm="'+ COALESCE(CAST(@VS2Comm as VARCHAR(50)),SPACE(1)) + '" '+
 		'TableGameComm="'+ COALESCE(CAST(@TableGameComm as VARCHAR(50)),SPACE(1)) + '" '+
+		-- phase 3
+		'VirtualGamesComm="'+ COALESCE(CAST(@VirtualGamesComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'ArcadiaGamingComm="'+ COALESCE(CAST(@ArcadiaGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'SabaclubComm="'+ COALESCE(CAST(@SabaclubComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'SAGamingComm="'+ COALESCE(CAST(@SAGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'PGSoftComm="'+ COALESCE(CAST(@PGSoftComm as VARCHAR(50)),SPACE(1)) + '" '+
 		
 		'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
 		'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +

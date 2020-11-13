@@ -7,7 +7,7 @@ ALTER PROCEDURE [dbo].[Lrf_ExecRep_00]
 	@MacauLicenseeID INT = 0,
 	@IsUpdateNG BIT = 0,
 	@IsUpdateRNG BIT = 0,	
-	--@IsUpdateAllbet BIT = 0,
+	@IsUpdateAllbet BIT = 0,
 	@IsUpdateMacau BIT = 0,
 	@IsUpdatePP BIT = 0,
 	@IsUpdateGD BIT = 0,
@@ -17,7 +17,7 @@ ALTER PROCEDURE [dbo].[Lrf_ExecRep_00]
 	@NGComm DECIMAL(9,8)=0,	
 	@RNGComm DECIMAL(9,8)=0,
 	@ParlayComm DECIMAL(9,8)=0,	
-	--@AllbetComm DECIMAL(9,8)=0,	
+	@AllbetComm DECIMAL(9,8)=0,	
 	@MacauComm DECIMAL(9,8)=0,	
 	@PPComm DECIMAL(9,8)=0,	
 	@GDComm DECIMAL(9,8)=0,	
@@ -39,6 +39,18 @@ ALTER PROCEDURE [dbo].[Lrf_ExecRep_00]
 	@IsUpdateTableGame BIT = 0,	
 	@TableGameComm DECIMAL(9,8) = 0,
 	-- end of phase 2
+	-- PHASE 3
+	@IsUpdateVirtualGames BIT = 0,
+	@IsUpdateArcadiaGaming BIT = 0,
+	@IsUpdateSabaclub BIT = 0,
+	@IsUpdateSAGaming BIT = 0,
+	@IsUpdatePGSoft BIT = 0,
+	@VirtualGamesComm DECIMAL(9,8) = 0,
+	@ArcadiaGamingComm DECIMAL(9,8) = 0,
+	@SabaclubComm DECIMAL(9,8) = 0,
+	@SAGamingComm DECIMAL(9,8) = 0,
+	@PGSoftComm DECIMAL(9,8) = 0,
+
 	@isClearGroupComm BIT = 0,
 	@IsUpdateGroupComm BIT = 0
 
@@ -55,7 +67,8 @@ AS
 		- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
 		- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774] 
 		- 20200701@Helen: Remove Allbet - [Redmine: #131774]  
-		- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238]   
+		- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238] 
+		- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012]   
 	
 	Param's Explanation:
 
@@ -106,7 +119,7 @@ BEGIN
 				, GroupCommID = @GroupCommID
 				, NGComm=CASE WHEN  @IsUpdateNG = 1 THEN @NGComm ELSE NGComm END
 				, RNGComm=CASE WHEN @IsUpdateRNG = 1 THEN @RNGComm ELSE RNGComm END
-				--, AllbetComm=CASE WHEN @IsUpdateAllbet = 1 THEN @AllbetComm ELSE AllbetComm END
+				, AllbetComm=CASE WHEN @IsUpdateAllbet = 1 THEN @AllbetComm ELSE AllbetComm END
 				, MacauComm= CASE WHEN @IsUpdateMacau = 1 THEN @MacauComm ELSE MacauComm END
 				, PPComm= CASE WHEN @IsUpdatePP = 1 THEN @PPComm ELSE PPComm END
 				, FWComm= CASE WHEN @IsUpdateFW = 1 THEN @FWComm ELSE FWComm END
@@ -118,6 +131,14 @@ BEGIN
 				, VSComm  = CASE WHEN @IsUpdateVS = 1 THEN @VSComm ELSE VSComm END
 				, VS2Comm = CASE WHEN @IsUpdateVS2 = 1 THEN @VS2Comm ELSE VS2Comm END
 				, TableGameComm  = CASE WHEN @IsUpdateTableGame = 1 THEN @TableGameComm ELSE TableGameComm END
+				-- PHASE 3
+				, VirtualGamesComm  = CASE WHEN @IsUpdateVirtualGames = 1 THEN @VirtualGamesComm  ELSE VirtualGamesComm END
+				, ArcadiaGamingComm  = CASE WHEN @IsUpdateArcadiaGaming = 1 THEN @ArcadiaGamingComm  ELSE ArcadiaGamingComm END
+				, SabaclubComm  = CASE WHEN @IsUpdateSabaclub = 1 THEN @SabaclubComm ELSE SabaclubComm END
+				, SAGamingComm  = CASE WHEN @IsUpdateSAGaming = 1 THEN @SAGamingComm ELSE SAGamingComm END	
+				, PGSoftComm  = CASE WHEN @IsUpdatePGSoft = 1 THEN @PGSoftComm ELSE PGSoftComm END
+				
+			
 		FROM dbo.LicenseeCustComm cs WITH (ROWLOCK,UPDLOCK)
 			INNER JOIN @TempList_Input ip ON cs.CustID = ip.CustID
 			LEFT JOIN @TempLicenseeBA_batch ba ON ba.custid = ip.custid
@@ -166,7 +187,7 @@ BEGIN
 		
 		IF (@IsUpdateNG = 1
 			OR @IsUpdateRNG = 1
-			--OR @IsUpdateAllbet=1
+			OR @IsUpdateAllbet=1
 			OR @IsUpdateMacau=1
 			OR @IsUpdatePP=1
 			OR @IsUpdateFW=1
@@ -178,12 +199,19 @@ BEGIN
 			OR @IsUpdateVS = 1
 			OR @IsUpdateVS2 = 1
 			OR @IsUpdateTableGame = 1
+			--PHASE 3
+			OR @IsUpdateVirtualGames  = 1
+			OR @IsUpdateArcadiaGaming  = 1
+			OR @IsUpdateSabaclub  = 1
+			OR @IsUpdateSAGaming  = 1
+			OR @IsUpdatePGSoft  = 1
+			
 			)
 		BEGIN	
 			UPDATE cs
 				SET NGComm=CASE WHEN  @IsUpdateNG = 1 THEN @NGComm ELSE NGComm END
 					, RNGComm=CASE WHEN @IsUpdateRNG = 1 THEN @RNGComm ELSE RNGComm END
-					--, AllbetComm=CASE WHEN @IsUpdateAllbet = 1 THEN @AllbetComm ELSE AllbetComm END
+					, AllbetComm=CASE WHEN @IsUpdateAllbet = 1 THEN @AllbetComm ELSE AllbetComm END
 					, MacauComm= CASE WHEN @IsUpdateMacau = 1 THEN @MacauComm ELSE MacauComm END
 					, PPComm= CASE WHEN @IsUpdatePP = 1 THEN @PPComm ELSE PPComm END
 					, FWComm= CASE WHEN @IsUpdateFW = 1 THEN @FWComm ELSE FWComm END
@@ -195,6 +223,12 @@ BEGIN
 					, VSComm  = CASE WHEN @IsUpdateVS = 1 THEN @VSComm ELSE VSComm END
 					, VS2Comm = CASE WHEN @IsUpdateVS2 = 1 THEN @VS2Comm ELSE VS2Comm END
 					, TableGameComm  = CASE WHEN @IsUpdateTableGame = 1 THEN @TableGameComm ELSE TableGameComm END
+					-- PHASE 3
+					, VirtualGamesComm  = CASE WHEN @IsUpdateVirtualGames = 1 THEN @VirtualGamesComm  ELSE VirtualGamesComm END
+					, ArcadiaGamingComm  = CASE WHEN @IsUpdateArcadiaGaming = 1 THEN @ArcadiaGamingComm  ELSE ArcadiaGamingComm END
+					, SabaclubComm  = CASE WHEN @IsUpdateSabaclub = 1 THEN @SabaclubComm ELSE SabaclubComm END
+					, SAGamingComm  = CASE WHEN @IsUpdateSAGaming = 1 THEN @SAGamingComm ELSE SAGamingComm END	
+					, PGSoftComm  = CASE WHEN @IsUpdatePGSoft = 1 THEN @PGSoftComm ELSE PGSoftComm END
 			FROM dbo.LicenseeCustComm cs WITH (ROWLOCK,UPDLOCK)
 				INNER JOIN @TempList_Input ip ON ip.CustID = cs.CustID
 		END

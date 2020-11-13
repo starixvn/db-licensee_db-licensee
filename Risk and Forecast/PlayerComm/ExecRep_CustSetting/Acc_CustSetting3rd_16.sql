@@ -11,12 +11,12 @@ ALTER PROCEDURE [dbo].[Acc_CustSetting3rd_16]
 	@IsUpdateSB BIT = 0,
 	@IsParlayComm BIT = 0,
 	@IsUpdateNG BIT = 0,
-	--@IsUpdateAllbet BIT = 0,
+	@IsUpdateAllbet BIT = 0,
 	@IsUpdateMacau BIT = 0,
 	@IsUpdatePP BIT = 0,
 	@IsUpdateFW BIT = 0,
 	@AgentID INT = NULL,
-	--@AllbetComm_Group DECIMAL(9,8)=0,	
+	@AllbetComm_Group DECIMAL(9,8)=0,	
 	@MacauComm_Group DECIMAL(9,8)=0,	
 	@PPComm_Group DECIMAL(9,8)=0,
 	@FWComm_Group DECIMAL(9,8)=0,
@@ -41,7 +41,23 @@ ALTER PROCEDURE [dbo].[Acc_CustSetting3rd_16]
 	@IsUpdateVS2 BIT = 0,	
 	@VS2Comm DECIMAL(9,8) = 0,
 	@IsUpdateTableGame BIT = 0,	
-	@TableGameComm DECIMAL(9,8) = 0
+	@TableGameComm DECIMAL(9,8) = 0,
+	-- phase 3
+	@IsUpdateVirtualGames BIT = 0,	
+	@IsUpdateArcadiaGaming BIT = 0,	
+	@IsUpdateSabaclub BIT = 0,	
+	@IsUpdateSAGaming BIT = 0,	
+	@IsUpdatePGSoft BIT = 0,	
+	@VirtualGamesComm DECIMAL(9,8) = 0,	
+	@ArcadiaGamingComm DECIMAL(9,8) = 0,	
+	@SabaclubComm DECIMAL(9,8) = 0,	
+	@SAGamingComm DECIMAL(9,8) = 0,	
+	@PGSoftComm DECIMAL(9,8) = 0,
+	@VirtualGamesComm_Group DECIMAL(9,8) = 0,	
+	@ArcadiaGamingComm_Group DECIMAL(9,8) = 0,	
+	@SabaclubComm_Group DECIMAL(9,8) = 0,	
+	@SAGamingComm_Group DECIMAL(9,8) = 0,	
+	@PGSoftComm_Group DECIMAL(9,8) = 0
 	
 AS
 /*
@@ -66,6 +82,7 @@ Revisions:
 	- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774]
 	- 20200701@Helen: Remove Allbet - [Redmine: #131774]
 	- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238] 
+	- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012]   
 	
 Param's Explanation:
 • @ErrCode:
@@ -215,6 +232,12 @@ BEGIN
 		OR @IsUpdateVS = 1
 		OR @IsUpdateVS2 = 1
 		OR @IsUpdateTableGame = 1
+		OR @IsUpdateVirtualGames = 1
+		OR @IsUpdateArcadiaGaming = 1
+		OR @IsUpdateSabaclub  = 1
+		OR @IsUpdateSAGaming  = 1
+		OR @IsUpdatePGSoft  = 1
+		OR @IsUpdateAllbet = 1
 	)
 	BEGIN
 		INSERT INTO @tblSettingDCS_tmp (IsUpdated,sporttype,Bettype,CommGroup, Comm)
@@ -228,6 +251,13 @@ BEGIN
 				,(@IsUpdateVS ,180,1201,@VSComm_Group, @VSComm )
 				,(@IsUpdateVS2 ,190,2701,@VS2Comm_Group, @VS2Comm )
 				,(@IsUpdateTableGame ,222,4901,@TableGameComm_Group, @TableGameComm )
+				-- Phase 3
+				,(@IsUpdateVirtualGames,245,4601,@VirtualGamesComm_Group,@VirtualGamesComm)
+				,(@IsUpdateArcadiaGaming,165,1901,@ArcadiaGamingComm_Group,@ArcadiaGamingComm)
+				,(@IsUpdateSabaclub,200,1611,@SabaclubComm_Group,@SabaclubComm)
+				,(@IsUpdateSAGaming,244,3001,@SAGamingComm_Group,@SAGamingComm)
+				,(@IsUpdatePGSoft,232,6001,@PGSoftComm_Group,@PGSoftComm)
+				,(@IsUpdateAllbet,211,2401,@AllbetComm_Group,@AllbetComm)
 			
 	END
 	

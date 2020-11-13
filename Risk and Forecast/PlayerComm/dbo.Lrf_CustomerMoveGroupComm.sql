@@ -7,7 +7,7 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerMoveGroupComm]
 	@GroupCommID INT,
 	@IsUpdateNG BIT = 0,
 	@IsUpdateRNG BIT = 0,
-	--@IsUpdateAllbet BIT = 0,
+	@IsUpdateAllbet BIT = 0,
 	@IsUpdateMacau BIT = 0,
 	@IsUpdatePP BIT = 0,
 	--@IsUpdateGD BIT = 0,
@@ -22,6 +22,13 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerMoveGroupComm]
 	@IsUpdateVS2 BIT = 0,	
 	@IsUpdateTableGame BIT = 0,	
 	-- end of phase 2
+	-- phase 3
+	@IsUpdateVirtualGames BIT = 0,
+	@IsUpdateArcadiaGaming BIT = 0,
+	@IsUpdateSabaclub BIT = 0,
+	@IsUpdateSAGaming BIT = 0,
+	@IsUpdatePGSoft BIT = 0,
+
 	@IP VARCHAR(40),
 	@Langkey VARCHAR(20) = 'en-US',
 	@ErrCode INT = 0 OUTPUT,
@@ -50,6 +57,7 @@ AS
 		- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774]   
 		- 20200701@Helen: Remove Allbet - [Redmine: #131774]
 		- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238]   
+		- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012] 
 		 
 	Param's Explanation:
 */ 
@@ -114,6 +122,13 @@ BEGIN
 		,@IsUpdateVS2 =  @IsUpdateVS2	
 		,@IsUpdateTableGame = @IsUpdateTableGame
 		-- end of param phase 2
+		-- phase 3
+		,@IsUpdateVirtualGames = @IsUpdateVirtualGames
+		,@IsUpdateArcadiaGaming = @IsUpdateArcadiaGaming
+		,@IsUpdateSabaclub  = @IsUpdateSabaclub
+		,@IsUpdateSAGaming  = @IsUpdateSAGaming
+		,@IsUpdatePGSoft  = @IsUpdatePGSoft
+				
 		,@Langkey=@Langkey
 		,@IP=@IP
 		,@ErrCode=@ErrCode OUTPUT

@@ -8,7 +8,7 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeCustCommUpd]
 	@ParlayComm DECIMAL(9,8),
 	@NGComm DECIMAL(9,8) = 0,	
 	@RNGComm DECIMAL(9,8) = 0,
-	--@AllbetComm DECIMAL(9,8) = 0,
+	@AllbetComm DECIMAL(9,8) = 0,
 	@MacauComm DECIMAL(9,8) = 0,
 	@PPComm DECIMAL(9,8) = 0,
 	--@GDComm DECIMAL(9,8) = 0,
@@ -16,7 +16,7 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeCustCommUpd]
 	@FWComm DECIMAL(9,8) = 0,
 	@IsUpdateNG BIT = 0,
 	@IsUpdateRNG BIT = 0,
-	--@IsUpdateAllbet BIT = 0,
+	@IsUpdateAllbet BIT = 0,
 	@IsUpdateMacau BIT = 0,
 	@IsUpdatePP BIT = 0,
 	--@IsUpdateGD BIT = 0,
@@ -38,6 +38,18 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeCustCommUpd]
 	@IsUpdateTableGame BIT = 0,	
 	@TableGameComm DECIMAL(9,8) = 0,
 	-- end of phase 2
+	-- phase 3
+	@IsUpdateVirtualGames BIT = 0 ,
+	@IsUpdateArcadiaGaming BIT = 0,
+	@IsUpdateSabaclub BIT = 0,
+	@IsUpdateSAGaming BIT = 0,
+	@IsUpdatePGSoft BIT = 0,
+	@VirtualGamesComm DECIMAL(9,8) = 0,
+	@ArcadiaGamingComm DECIMAL(9,8) = 0,
+	@SabaclubComm DECIMAL(9,8) = 0,
+	@SAGamingComm DECIMAL(9,8) = 0,
+	@PGSoftComm DECIMAL(9,8) = 0,
+	
 	@IP VARCHAR(40),
 	@Langkey NVARCHAR(10)='en-US',
 	@ErrCode INT = 0 OUTPUT,
@@ -67,6 +79,7 @@ AS
 		- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774]
 		- 20200701@Helen: Remove Allbet - [Redmine: #131774]   
 		- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 [Redmine: #139238]   
+		- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012]   
 		
 	Param's Explanation:
 */ 
@@ -113,7 +126,7 @@ BEGIN
 		,@ParlayComm = @ParlayComm
 		,@NGComm=@NGComm
 		,@RNGComm=@RNGComm	
-		--,@AllbetComm = @AllbetComm
+		,@AllbetComm = @AllbetComm
 		,@MacauComm = @MacauComm
 		,@PPComm = @PPComm
 		--,@GDComm = @GDComm
@@ -121,7 +134,7 @@ BEGIN
 		,@FWComm = @FWComm
 		,@IsUpdateNG=@IsUpdateNG
 		,@IsUpdateRNG=@IsUpdateRNG	
-		--,@IsUpdateAllbet=@IsUpdateAllbet
+		,@IsUpdateAllbet=@IsUpdateAllbet
 		,@IsUpdateMacau=@IsUpdateMacau
 		,@IsUpdatePP=@IsUpdatePP
 		--,@IsUpdateGD=@IsUpdateGD
@@ -143,6 +156,18 @@ BEGIN
 		,@IsUpdateTableGame = @IsUpdateTableGame
 		,@TableGameComm = @TableGameComm
 		---end of phase 2
+		-- phase 3
+		,@IsUpdateVirtualGames = @IsUpdateVirtualGames
+		,@IsUpdateArcadiaGaming = @IsUpdateArcadiaGaming
+		,@IsUpdateSabaclub  = @IsUpdateSabaclub
+		,@IsUpdateSAGaming  = @IsUpdateSAGaming
+		,@IsUpdatePGSoft  = @IsUpdatePGSoft
+		,@VirtualGamesComm = @VirtualGamesComm
+		,@ArcadiaGamingComm = @ArcadiaGamingComm
+		,@SabaclubComm = @SabaclubComm
+		,@SAGamingComm = @SAGamingComm
+		,@PGSoftComm = @PGSoftComm
+
 		,@IP=@IP
 		,@Langkey=@Langkey
 		,@ErrCode=@ErrCode OUTPUT

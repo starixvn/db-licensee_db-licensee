@@ -30,7 +30,8 @@ AS
 		- 20200409@Johnson: Add comm for AB,Macau,PP,AG,GD [redmine:#131774] 
 		- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
 		- 20200701@Helen: Remove Allbet - [Redmine: #131774]
-		- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238]   
+		- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238] 
+		- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012]   
 */  
 BEGIN  
 	SET NOCOUNT ON
@@ -39,7 +40,7 @@ BEGIN
 			@NGComm DECIMAL(9,8),
 			@RNGComm DECIMAL(9,8),
 			@ParlayComm DECIMAL(9,8),
-			--@AllbetComm DECIMAL(9,8),
+			@AllbetComm DECIMAL(9,8),
 			@MacauComm DECIMAL(9,8),
 			@PPComm DECIMAL(9,8),
 			@GDComm DECIMAL(9,8),
@@ -53,6 +54,13 @@ BEGIN
 			@VSComm DECIMAL(9,8),
 			@VS2Comm DECIMAL(9,8),
 			@TableGameComm DECIMAL(9,8),
+			-- phase 3
+			@VirtualGamesComm DECIMAL(9,8) = 0,
+			@ArcadiaGamingComm DECIMAL(9,8) = 0,
+			@SabaclubComm DECIMAL(9,8) = 0,
+			@SAGamingComm DECIMAL(9,8) = 0,
+			@PGSoftComm DECIMAL(9,8) = 0,
+			
 			@CustID INT, 
 			@i INT	
 	
@@ -97,7 +105,7 @@ BEGIN
 				@NGComm=NGComm,
 				@RNGComm=RNGComm,
 				@ParlayComm = ParlayComm,
-				--@AllbetComm=AllbetComm,				
+				@AllbetComm=AllbetComm,				
 				@MacauComm=MacauComm,
 				@PPComm=PPComm,
 				--@GDComm=GDComm,
@@ -109,7 +117,13 @@ BEGIN
 				@LotteryComm = LotteryComm,
 				@VSComm = VSComm,
 				@VS2Comm = VS2Comm,
-				@TableGameComm = TableGameComm
+				@TableGameComm = TableGameComm,
+				@VirtualGamesComm  = VirtualGamesComm,
+				@ArcadiaGamingComm  = ArcadiaGamingComm,
+				@SabaclubComm  = SabaclubComm,
+				@SAGamingComm  = SAGamingComm,
+				@PGSoftComm  = PGSoftComm
+
 			FROM dbo.LicenseeCustComm WITH (NOLOCK)
 			WHERE LicenseeID = @LicenseeID AND CustID = @CustID
 					
@@ -124,7 +138,7 @@ BEGIN
 				@NGComm=@NGComm,
 				@RNGComm=@RNGComm,
 				@ParlayComm = @ParlayComm,	
-				--@AllbetComm=@AllbetComm,
+				@AllbetComm=@AllbetComm,
 				@MacauComm=@MacauComm,
 				@PPComm=@PPComm,
 				--@GDComm=@GDComm,
@@ -132,7 +146,7 @@ BEGIN
 				@FWComm = @FWComm,
 				@IsUpdateNG=1,
 				@IsUpdateRNG=1,			
-				--@IsUpdateAllbet=1,
+				@IsUpdateAllbet=1,
 				@IsUpdateMacau=1,
 				@IsUpdatePP=1,
 				--@IsUpdateGD=1,
@@ -153,6 +167,18 @@ BEGIN
 				@VS2Comm = @VS2Comm, 
 				@IsUpdateTableGame = 1,
 				@TableGameComm = @TableGameComm,
+				-- phase 3
+				@IsUpdateVirtualGames = 1,
+				@IsUpdateArcadiaGaming = 1,
+				@IsUpdateSabaclub  = 1,
+				@IsUpdateSAGaming  = 1,
+				@IsUpdatePGSoft  = 1,
+				@VirtualGamesComm = @VirtualGamesComm,
+				@ArcadiaGamingComm = @ArcadiaGamingComm,
+				@SabaclubComm = @SabaclubComm,
+				@SAGamingComm = @SAGamingComm,
+				@PGSoftComm = @PGSoftComm,
+				
 				@IP=@IP,
 				@Langkey=@Langkey,
 				@ErrCode=@ErrCode OUTPUT,
@@ -179,7 +205,7 @@ BEGIN
 			@NGComm=0,
 			@RNGComm=0,
 			@ParlayComm = 0,
-			--@AllbetComm= 0,
+			@AllbetComm= 0,
 			@MacauComm= 0,
 			@PPComm= 0,
 			--@GDComm= 0,
@@ -187,7 +213,7 @@ BEGIN
 			@FWComm= 0,
 			@IsUpdateNG=1,
 			@IsUpdateRNG=1,	
-			--@IsUpdateAllbet=1,
+			@IsUpdateAllbet=1,
 			@IsUpdateMacau=1,
 			@IsUpdatePP=1,
 			--@IsUpdateGD=1,
@@ -208,6 +234,19 @@ BEGIN
 			@VS2Comm = 0, 
 			@IsUpdateTableGame = 1,
 			@TableGameComm = 0,
+			
+			-- phase 3
+			@IsUpdateVirtualGames = 1,
+			@IsUpdateArcadiaGaming = 1,
+			@IsUpdateSabaclub  = 1,
+			@IsUpdateSAGaming  = 1,
+			@IsUpdatePGSoft  = 1,
+			@VirtualGamesComm = 0,
+			@ArcadiaGamingComm = 0,
+			@SabaclubComm = 0,
+			@SAGamingComm = 0,
+			@PGSoftComm = 0,
+			
 			@IP=@IP,
 			@Langkey=@Langkey,
 			@ErrCode=@ErrCode OUTPUT,
@@ -237,8 +276,14 @@ BEGIN
 			VSComm = 0,
 			VS2Comm = 0,
 			TableGameComm = 0,
-			GroupCommID = 0
+			--phase 3
+			VirtualGamesComm = 0,	
+			ArcadiaGamingComm = 0,	
+			SabaclubComm = 0,	
+			SAGamingComm = 0,	
+			PGSoftComm = 0,
 			
+			GroupCommID = 0
 		WHERE LicenseeID = @LicenseeID 
 		AND CustID IN (SELECT CustID FROM @TempCustID)
 	END

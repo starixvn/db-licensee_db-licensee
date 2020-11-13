@@ -4,14 +4,14 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Main]
 	,@SBComm DECIMAL(9,8)
 	,@NGComm DECIMAL(9,8) = 0
 	,@ParlayComm DECIMAL(9,8) = 0
-	--,@AllbetComm DECIMAL(9,8) = 0
+	,@AllbetComm DECIMAL(9,8) = 0
 	,@MacauComm DECIMAL(9,8) = 0
 	,@PPComm DECIMAL(9,8) = 0
 	,@FWComm DECIMAL(9,8) = 0
 	,@IsUpdateSB BIT = 1
 	,@IsParlayComm BIT = 1
 	,@IsUpdateNG BIT = 0
-	--,@IsUpdateAllbet BIT = 0
+	,@IsUpdateAllbet BIT = 0
 	,@IsUpdateMacau BIT = 0
 	,@IsUpdatePP BIT = 0
 	,@IsUpdateFW BIT = 0
@@ -30,6 +30,18 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Main]
 	,@VS2Comm DECIMAL(9,8) = 0
 	,@IsUpdateTableGame BIT = 0	
 	,@TableGameComm DECIMAL(9,8) = 0
+	
+	-- param of phase 3
+	,@IsUpdateVirtualGames BIT = 0
+	,@IsUpdateArcadiaGaming BIT = 0
+	,@IsUpdateSabaclub BIT = 0
+	,@IsUpdateSAGaming BIT = 0
+	,@IsUpdatePGSoft BIT = 0
+	,@VirtualGamesComm DECIMAL(9,8) = 0
+	,@ArcadiaGamingComm DECIMAL(9,8) = 0
+	,@SabaclubComm DECIMAL(9,8) = 0
+	,@SAGamingComm DECIMAL(9,8) = 0
+	,@PGSoftComm DECIMAL(9,8) = 0
 AS
 /*
 	Created: 20120907@Viet
@@ -52,6 +64,7 @@ AS
 		- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774]
 		- 20200701@Helen: Remove Allbet - [Redmine: #131774]
 		- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238] 
+		- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012] 
 		
 	Param's Explanation:
 
@@ -85,24 +98,36 @@ BEGIN
 			@VSComm_Group DECIMAL(9,8)=0,
 			@VS2Comm_Group DECIMAL(9,8)=0,
 			@TableGameComm_Group DECIMAL(9,8)=0
-			
-			--,@AllbetComm_Group DECIMAL(9,8)=0
+			-- phase 3
+			,@VirtualGamesComm_Group DECIMAL(9,8) = 0	
+			,@ArcadiaGamingComm_Group DECIMAL(9,8) = 0	
+			,@SabaclubComm_Group DECIMAL(9,8) = 0	
+			,@SAGamingComm_Group DECIMAL(9,8) = 0	
+			,@PGSoftComm_Group DECIMAL(9,8) = 0	
+			,@AllbetComm_Group DECIMAL(9,8)=0
 	
-	IF (	--@IsUpdateAllbet = 1 OR 
+	IF (	@IsUpdateAllbet = 1 OR 
 		@IsUpdateFW = 1 OR @IsUpdateMacau = 1 OR @IsUpdatePP = 1
 		OR @IsUpdateSexyGaming = 1
 		OR @IsUpdateSpadeGaming = 1
 		OR @IsUpdateLottery = 1
 		OR @IsUpdateVS = 1
 		OR @IsUpdateVS2 = 1
-		OR @IsUpdateTableGame = 1)
+		OR @IsUpdateTableGame = 1
+		
+		OR @IsUpdateVirtualGames = 1	
+		OR @IsUpdateArcadiaGaming = 1	
+		OR @IsUpdateSabaclub  = 1	
+		OR @IsUpdateSAGaming  = 1	
+		OR @IsUpdatePGSoft  = 1	
+		)
 	BEGIN		
 		SET @AgentID = (SELECT TOP (1) recommend 
 							FROM dbo.CustInfo ci WITH(NOLOCK)
 								INNER JOIN @res r ON ci.custid = r.custid
 							)
 		SELECT 
-			--@AllbetComm_Group = MAX(CASE WHEN BetType = 2401 THEN playerdiscount ELSE 0 END),
+			@AllbetComm_Group = MAX(CASE WHEN BetType = 2401 THEN playerdiscount ELSE 0 END),
 			@MacauComm_Group = MAX(CASE WHEN BetType = 4001 THEN playerdiscount ELSE 0 END)
 			,@PPComm_Group = MAX(CASE WHEN BetType = 4101 THEN playerdiscount ELSE 0 END)
 			,@FWComm_Group = MAX(CASE WHEN BetType = 1011 THEN playerdiscount ELSE 0 END)
@@ -113,10 +138,18 @@ BEGIN
 			,@VSComm_Group = MAX(CASE WHEN BetType = 1201 THEN playerdiscount ELSE 0 END)
 			,@VS2Comm_Group = MAX(CASE WHEN BetType = 2701 THEN playerdiscount ELSE 0 END)
 			,@TableGameComm_Group = MAX(CASE WHEN BetType = 4901 THEN playerdiscount ELSE 0 END)
+			-- phase 3
+			,@VirtualGamesComm_Group = MAX(CASE WHEN BetType = 4601 THEN playerdiscount ELSE 0 END)
+			,@ArcadiaGamingComm_Group = MAX(CASE WHEN BetType = 1901 THEN playerdiscount ELSE 0 END)
+			,@SabaclubComm_Group = MAX(CASE WHEN BetType = 1611 THEN playerdiscount ELSE 0 END)
+			,@SAGamingComm_Group = MAX(CASE WHEN BetType = 3001 THEN playerdiscount ELSE 0 END)
+			,@PGSoftComm_Group = MAX(CASE WHEN BetType = 6001 THEN playerdiscount ELSE 0 END)
 			
 		FROM dbo.Dep_CustDiscountGroupSetting_Member grp WITH(NOLOCK)
 		WHERE AgentID = @AgentID
-			AND sporttype IN (212,248,219,243,247,220,180,190,222 ) -- remove 211
+			AND sporttype IN (212,248,219,243,247,220,180,190,222
+								--phase 3
+							,211, 245,165,200,244,232 )
 	END	
 								
 	WHILE (1 = 1)
@@ -143,19 +176,19 @@ BEGIN
 			,@SBComm = @SBComm
 			,@NGComm = @NGComm
 			,@ParlayComm = @ParlayComm
-			--,@AllbetComm = @AllbetComm
+			,@AllbetComm = @AllbetComm
 			,@MacauComm = @MacauComm
 			,@PPComm = @PPComm
 			,@FWComm = @FWComm
 			,@IsUpdateSB  = @IsUpdateSB
 			,@IsParlayComm  = @IsParlayComm
 			,@IsUpdateNG = @IsUpdateNG			
-			--,@IsUpdateAllbet = @IsUpdateAllbet
+			,@IsUpdateAllbet = @IsUpdateAllbet
 			,@IsUpdateMacau = @IsUpdateMacau
 			,@IsUpdatePP = @IsUpdatePP
 			,@IsUpdateFW = @IsUpdateFW
 			,@AgentID = @AgentID
-			--,@AllbetComm_Group = @AllbetComm_Group
+			,@AllbetComm_Group = @AllbetComm_Group
 			---start param of phase 2 - group 
 			,@MacauComm_Group = @MacauComm_Group	
 			,@PPComm_Group = @PPComm_Group
@@ -181,6 +214,23 @@ BEGIN
 			,@VS2Comm = @VS2Comm 
 			,@IsUpdateTableGame = @IsUpdateTableGame
 			,@TableGameComm = @TableGameComm
+			-- phase 3
+			,@IsUpdateVirtualGames = @IsUpdateVirtualGames
+			,@IsUpdateArcadiaGaming = @IsUpdateArcadiaGaming	
+			,@IsUpdateSabaclub  = @IsUpdateSabaclub	
+			,@IsUpdateSAGaming  = @IsUpdateSAGaming	
+			,@IsUpdatePGSoft  = @IsUpdatePGSoft	
+			,@VirtualGamesComm = @VirtualGamesComm	
+			,@ArcadiaGamingComm = @ArcadiaGamingComm	
+			,@SabaclubComm = @SabaclubComm	
+			,@SAGamingComm = @SAGamingComm	
+			,@PGSoftComm = @PGSoftComm	
+			,@VirtualGamesComm_Group = @VirtualGamesComm_Group	
+			,@ArcadiaGamingComm_Group = @ArcadiaGamingComm_Group	
+			,@SabaclubComm_Group = @SabaclubComm_Group	
+			,@SAGamingComm_Group = @SAGamingComm_Group	
+			,@PGSoftComm_Group =  @PGSoftComm_Group	
+			,@AllbetComm_Group = @AllbetComm_Group
 			
 		-- delay 00.100ms after 5 times continuous running
 		IF @runningCNT % 2 = 0 WAITFOR DELAY '00:00:00.280'
