@@ -629,6 +629,18 @@ BEGIN
 					,@VS2Comm = @VS2Comm 
 					,@IsUpdateTableGame = @IsUpdateTableGame
 					,@TableGameComm = @TableGameComm
+					-------end of phase 2
+					-- phase 3
+					,@IsUpdateVirtualGames = @IsUpdateVirtualGames
+					,@IsUpdateArcadiaGaming = @IsUpdateArcadiaGaming
+					,@IsUpdateSabaclub  = @IsUpdateSabaclub
+					,@IsUpdateSAGaming  = @IsUpdateSAGaming
+					,@IsUpdatePGSoft  = @IsUpdatePGSoft
+					,@VirtualGamesComm = @VirtualGamesComm
+					,@ArcadiaGamingComm = @ArcadiaGamingComm
+					,@SabaclubComm = @SabaclubComm
+					,@SAGamingComm = @SAGamingComm
+					,@PGSoftComm = @PGSoftComm
 			END TRY
 			BEGIN CATCH
 				SELECT @ErrCode = ERROR_NUMBER()
