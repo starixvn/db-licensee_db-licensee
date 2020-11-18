@@ -31,6 +31,7 @@ AS
 		- 20200427@Hogan: Bet Setting - Hide Sexy Gaming product [RedmineID: #132829]
 		- 20200427@Vickie: Bet Setting - Hide SBC product [RedmineID: #132702]
 		- 20200615@Hogan: Integrate SA Gaming [RedmineID: #128493]
+		- 20201118@Louis: Leap Gaming VS - Customer Setting/Initial [RedmineID: #131370]
 
 	EXEC Lrf_LicenseeProductSel @LicenseeID = 2
 */
@@ -137,7 +138,7 @@ BEGIN
 		IsEnable
 	FROM @tblProductActive
 	WHERE ProductID NOT IN (1, 3, 4, 7, 9, 14, 17)
-		AND ProductID < 34
+		AND (ProductID < 34 OR ProductID = 49)
 	ORDER BY ProductID ASC
 END
 
