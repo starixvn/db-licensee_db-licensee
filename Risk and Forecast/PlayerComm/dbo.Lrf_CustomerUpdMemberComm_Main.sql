@@ -230,7 +230,6 @@ BEGIN
 			,@SabaclubComm_Group = @SabaclubComm_Group	
 			,@SAGamingComm_Group = @SAGamingComm_Group	
 			,@PGSoftComm_Group =  @PGSoftComm_Group	
-			,@AllbetComm_Group = @AllbetComm_Group
 			
 		-- delay 00.100ms after 5 times continuous running
 		IF @runningCNT % 2 = 0 WAITFOR DELAY '00:00:00.280'
