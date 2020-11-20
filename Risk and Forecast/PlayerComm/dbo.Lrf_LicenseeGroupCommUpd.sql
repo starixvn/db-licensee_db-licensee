@@ -391,7 +391,7 @@ BEGIN
 					,@IsParlayComm = @IsParlayComm
 					,@IsUpdateNG=@IsUpdateNG
 					,@IsUpdateRNG=@IsUpdateRNG					
-					--,@IsUpdateAllbet=@IsUpdateAllbet
+					,@IsUpdateAllbet=@IsUpdateAllbet
 					,@IsUpdateMacau=@IsUpdateMacau
 					,@IsUpdatePP=@IsUpdatePP
 					--,@IsUpdateGD=@IsUpdateGD
