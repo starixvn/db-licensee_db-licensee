@@ -107,7 +107,7 @@ BEGIN
 		,@GroupCommID=@GroupCommID
 		,@IsUpdateNG=@IsUpdateNG
 		,@IsUpdateRNG=@IsUpdateRNG		
-		--,@IsUpdateAllbet=@IsUpdateAllbet
+		,@IsUpdateAllbet=@IsUpdateAllbet
 		,@IsUpdateMacau=@IsUpdateMacau
 		,@IsUpdatePP=@IsUpdatePP
 		--,@IsUpdateGD=@IsUpdateGD
