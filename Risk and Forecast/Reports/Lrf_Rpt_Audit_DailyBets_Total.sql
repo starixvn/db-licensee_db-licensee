@@ -15,6 +15,7 @@ AS
 		- 20200325@Bobby: Ploutos Integration - [redmine: #125252]
 		- 20200917@Sol: Joinning with playerProfile - [redmine: #125252]
 		- 20200924@Sol: Convert INH to VND - [redmine: #139910]
+		- 20201201@Sol: Audit - Add mode sum by SettlementTime - [Redmine: #146188]
 
 	Developer's Notes:
 		
@@ -100,15 +101,15 @@ BEGIN
 			- SUM(a.NetAmount * c.ExRate)	AS TotalWinLoss
 		FROM bodb_licenseeReportArchive.dbo.rptDep_AuditTickets a WITH (NOLOCK)
 		INNER JOIN @Currency c ON c.Code = a.CurrencyCode
-		WHERE  a.WinLostDate >= @Date AND a.WinLostDate < @TempToDate 
-				AND Brand = @SiteName
+		WHERE  Brand = @SiteName
 				AND ( 
 					(@showSB = 1 AND a.GameType = 'SB') 
 					OR (@showNG = 1 AND a.GameType = 'RNG' AND a.GameCode = '161')
 					OR (@showCS = 1 AND a.GameType = 'RNG' AND a.GameCode <> '161')
 					OR (@showLC = 1 AND a.GameType = 'CA')
 				)
-				AND a.WinLostDate < @cutoffDate
+				AND a.SettlementDate >= @Date AND a.SettlementDate < @TempToDate 
+				AND a.SettlementDate < @cutoffDate
 
 		UNION ALL
 		SELECT
@@ -118,15 +119,17 @@ BEGIN
 		FROM bodb_Ploutos.dbo.BetTicket a WITH (NOLOCK)
 		INNER JOIN @Currency c ON c.Code = a.CurrencyCode
 		INNER JOIN bodb_Ploutos.dbo.PlayerProfile pp WITH(NOLOCK) ON pp.BrandCode = a.BrandCode AND pp.CustID = a.CustId
-		WHERE  a.WinLostDate >= @Date AND a.WinLostDate < @TempToDate 
-				AND a.BrandCode = @SiteName
+		WHERE  a.BrandCode = @SiteName
 				AND ( 
 					(@showSB = 1 AND a.GamePlatformCode = 'SB') 
 					OR (@showNG = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode = '0161')
 					OR (@showCS = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161')
 					OR (@showLC = 1 AND a.GamePlatformCode = 'CA')
 				)
+				AND a.SettlementDate >= @Date AND a.SettlementDate < @TempToDate 
+				AND a.SettlementDate >= @cutoffDate
 				AND a.WinLostDate >= @cutoffDate
+
 	) AS rpt
 
 END
