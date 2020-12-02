@@ -67,6 +67,7 @@ AS
 		- 20200714@Hogan: Add 7 games for Jackpot and 2 bettype for Contribution (4297) and Jackpot Prize (4298) [RedmineID: #137290]
 		- 20200728@Hogan: Integrate SA Gaming [RedmineID: #128493]
 		- 20201016@Hogan: Integrate Arcadia Gaming Bonus [RedmineID: #143648]
+		- 20201104@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369]
 
 	Param's Explanation:
 		@OrderItem:
@@ -173,13 +174,13 @@ BEGIN
 		CASE WHEN BA.TransID IS NULL THEN 0 ELSE 1 END AS isBA,
 		s.ProductID		
 	FROM dbo.bettrans AS b WITH(NOLOCK)	
-		INNER JOIN #SportBettype s ON  s.bettype  = b.bettype 
+		INNER JOIN #SportBettype s ON  s.bettype  = b.bettype
 		INNER JOIN @TempAg a
 			ON b.recommend = a.CustId AND b.Currency = a.Currency 	
 		LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) on b.transid = BA.transid		
-	WHERE b.StatusID IN (0,1) 
-		AND s.RefTable = 0     
-	GROUP BY		
+	WHERE b.StatusID IN (0,1)
+		AND s.RefTable = 0
+	GROUP BY
 		b.custid,
 		b.currency, CASE WHEN BA.TransID IS NULL THEN 0 ELSE 1 END,
 		s.ProductID	
@@ -205,12 +206,12 @@ BEGIN
 		COUNT(1) BetCounts 
 	FROM dbo.translog t WITH (NOLOCK) 
 		INNER JOIN @TempAg a
-			ON t.recommend = a.CustId AND t.Currency = a.Currency 	
-	WHERE t.StatusID IN (0,1)	
+			ON t.recommend = a.CustId AND t.Currency = a.Currency
+	WHERE t.StatusID IN (0,1)
 		AND EXISTS (SELECT 1 FROM #SportBettype s WHERE s.RefTable = 3 AND s.bettype = t.gameid)
 	GROUP BY
 		t.custid,
-		t.currency     
+		t.currency
 
 	-- 3. bettrans RNG -- 
 	INSERT INTO @Outstanding (custid, currency, Outstanding, BetCounts)
@@ -224,6 +225,7 @@ BEGIN
 			ON g.recommend = a.CustId AND g.Currency = a.Currency 	
 		INNER JOIN #SportBettype s ON s.RefTable = 1 AND s.bettype = g.gameID 
 	WHERE statusid IN (0,1) 
+		AND g.productID <> 150
 		---AND EXISTS (SELECT 1 FROM #SportBettype s WHERE s.RefTable = 1 AND s.bettype = g.gameID)
 	GROUP BY g.custid, g.currency
 	 

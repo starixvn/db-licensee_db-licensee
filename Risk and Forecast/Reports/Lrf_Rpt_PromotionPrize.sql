@@ -27,6 +27,7 @@ AS
 		- 20200820@Hogan: Support filter by VIP player [RedmineID: #138371]
 		- 20201013@Hogan: Integrate SA Gaming [RedmineID: #128493]
 		- 20201016@Hogan: Integrate Arcadia Gaming Bonus [RedmineID: #143648]
+		- 20201104@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369]
 
 	Param's Explanation:
 		+ @MoveBetsDay: The day we move tickets to bettrans14
@@ -48,7 +49,8 @@ BEGIN
 		AWinLost			MONEY,
 		OddsSpread			MONEY,
 		CustId				INT,
-		BetType				INT
+		BetType				INT,
+		SportType			SMALLINT
 	)
 
 	CREATE TABLE #Exchange(FromDate SMALLDATETIME, ToDate SMALLDATETIME, ExchangeID INT, DefaultRate FLOAT)
@@ -57,21 +59,23 @@ BEGIN
 	DECLARE @tempAg	TABLE(custID INT, currency INT)
 	DECLARE @VIPCust TABLE (CustId INT)
 
-	DECLARE @PPPromotion	SMALLINT = 4300,-- PP Promotion Prize
-			@PPTournament	SMALLINT = 4299,-- PP Tournament Prize
-			@PPContribution	SMALLINT = 4297,-- PP Contribution
-			@PPJackpot		SMALLINT = 4298,-- PP Jackpot Prize
-			@CCBonus		SMALLINT = 1906,-- Arcadia Gaming Bonus
-			@PPsportType	SMALLINT = 248,
-			@SPRsportType	SMALLINT = 246,
-			@SAGbetType	 	SMALLINT = 3007,-- Tip ticket of SA Gaming
-			@CCsportType	SMALLINT = 165,
-			@SAGsportType	SMALLINT = 244,
-			@PP				VARCHAR(10) = 'PP',
-			@SPR			VARCHAR(10) = 'SPR',
-			@PPC			VARCHAR(10) = 'PPC',
-			@SAG			VARCHAR(10) = 'SAG',
-			@CCB			VARCHAR(10) = 'CCB'
+	DECLARE @PPPromotion			SMALLINT = 4300,-- PP Promotion Prize
+			@PPTournament			SMALLINT = 4299,-- PP Tournament Prize
+			@PPContribution			SMALLINT = 4297,-- PP Contribution
+			@PPJackpot				SMALLINT = 4298,-- PP Jackpot Prize
+			@CCBonus				SMALLINT = 1906,-- Arcadia Gaming Bonus
+			@PPsportType			SMALLINT = 248,
+			@SPRsportType			SMALLINT = 246,
+			@SAGbetType	 			SMALLINT = 3007,-- Tip ticket of SA Gaming
+			@CCsportType			SMALLINT = 165,
+			@SAGsportType			SMALLINT = 244,
+			@SBCFreeBetsSportType	SMALLINT = 150,
+			@PP						VARCHAR(10) = 'PP',
+			@SPR					VARCHAR(10) = 'SPR',
+			@PPC					VARCHAR(10) = 'PPC',
+			@SAG					VARCHAR(10) = 'SAG',
+			@CCB					VARCHAR(10) = 'CCB',
+			@SBCFB					VARCHAR(10) = 'SBCFB'
 
 	DECLARE @_FromDate SMALLDATETIME,
 		@_ToDate SMALLDATETIME
@@ -144,7 +148,8 @@ BEGIN
 			AWinLost,
 			OddsSpread,
 			CustId,
-			BetType
+			BetType,
+			SportType
 		)
 		SELECT
 			b.winlostdate,
@@ -153,7 +158,8 @@ BEGIN
 			ABS(b.awinlost),
 			b.oddsspread,
 			b.custid,
-			b.bettype
+			b.bettype,
+			b.matchid
 		FROM
 			dbo.bettrans b WITH (NOLOCK)
 			INNER JOIN @tempAg a ON b.recommend = a.custID AND b.Currency = a.Currency
@@ -162,7 +168,8 @@ BEGIN
 			b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 			AND((b.bettype IN (@PPPromotion, @PPTournament, @PPJackpot, 17000, 17003, @CCBonus) AND b.statusID = 112)
 				OR (b.bettype = @PPContribution AND b.statusID = 111)
-				OR (b.bettype = @SAGbetType AND b.statusID = 113))
+				OR (b.bettype = @SAGbetType AND b.statusID = 113)
+				OR (b.matchid = @SBCFreeBetsSportType AND b.statusID IN (111,112,113)))
 			AND (@VIPPlayerOnly = 0 OR (@VIPPlayerOnly = 1 AND v.custid IS NOT NULL))
 	END
 
@@ -180,7 +187,8 @@ BEGIN
 			AWinLost,
 			OddsSpread,
 			CustId,
-			BetType
+			BetType,
+			SportType
 		)
 		SELECT
 			b.winlostdate,
@@ -189,17 +197,19 @@ BEGIN
 			ABS(b.awinlost),
 			b.BuyBackAmt,
 			b.custid,
-			b.bettype
+			b.bettype,
+			b.sporttype
 		FROM 
 			bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)
 			INNER JOIN @tempAg a ON b.recommend = a.custID AND b.Currency = a.Currency
 			LEFT JOIN @VIPCust v ON b.custid = v.CustID
 		WHERE 
 			b.winlostdate BETWEEN @_FromDate AND @TempToDate
-			AND b.sporttype IN (@PPsportType, @SPRsportType, @SAGsportType, @CCsportType)
+			AND b.sporttype IN (@PPsportType, @SPRsportType, @SAGsportType, @CCsportType, @SBCFreeBetsSportType)
 			AND((b.bettype IN (@PPPromotion, @PPTournament, @PPJackpot, 17000, 17003, @CCBonus) AND b.statusID = 112)
 				OR (b.bettype = @PPContribution AND b.statusID = 111)
-				OR (b.bettype = @SAGbetType AND b.statusID = 113))
+				OR (b.bettype = @SAGbetType AND b.statusID = 113)
+				OR (b.sporttype = @SBCFreeBetsSportType AND b.statusID IN (111,112,113)))
 			AND b.roleID = 1
 			AND (@VIPPlayerOnly = 0 OR (@VIPPlayerOnly = 1 AND v.custid IS NOT NULL))
 	END
@@ -226,11 +236,13 @@ BEGIN
 	-- #Region: Return data
 	SELECT
 		p.BetType,
+		p.SportType,
 		CASE
 			WHEN p.BetType IN (17000, 17003) THEN @SPR
 			WHEN p.BetType = @PPContribution THEN @PPC
 			WHEN p.BetType = @SAGbetType THEN @SAG
 			WHEN p.BetType = @CCBonus THEN @CCB
+			When p.SportType = @SBCFreeBetsSportType THEN @SBCFB
 			ELSE @PP
 		END AS ProductCode,
 		SUM(p.Winlost * e.DefaultRate)		AS SumAmount,
@@ -241,15 +253,17 @@ BEGIN
 			ELSE 0 END AS SumTipSharing
 	FROM #PromotionData p
 		INNER JOIN #Exchange e ON e.ExchangeID = p.CurrencyId AND p.winlostdate BETWEEN e.FromDate AND e.ToDate
-	GROUP BY p.BetType
+	GROUP BY p.BetType, p.SportType
 
 	SELECT
 		p.BetType,
+		p.SportType,
 		CASE
 			WHEN p.BetType IN (17000, 17003) THEN @SPR
 			WHEN p.BetType = @PPContribution THEN @PPC
 			WHEN p.BetType = @SAGbetType THEN @SAG
 			WHEN p.BetType = @CCBonus THEN @CCB
+			When p.SportType = @SBCFreeBetsSportType THEN @SBCFB
 			ELSE @PP
 		END AS ProductCode,
 		p.winlostdate		AS [Date],
@@ -264,6 +278,7 @@ BEGIN
 		INNER JOIN dbo.Customer c WITH (NOLOCK) ON p.CustId = c.custid
 	GROUP BY
 		p.BetType,
+		p.SportType,
 		p.winlostdate,
 		p.CustId,
 		p.CurrencyId,

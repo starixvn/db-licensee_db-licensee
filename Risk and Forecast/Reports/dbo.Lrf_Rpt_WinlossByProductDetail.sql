@@ -85,6 +85,7 @@ AS
 		- 20201022@Louis: Integrate PG Soft [RedmineID: #139182]
 		- 20201126@Hogan: Integrate Joker [RedmineID: #141408]
 		- 20201202@Louis: Licensee Spread Setting [RedmineID: #142532]	
+		- 20201202@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369]
 
 	Param's Explanation:  
 		+	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -187,7 +188,7 @@ BEGIN
 		INSERT INTO @sporttype ( sporttype, ProductCode )
 		SELECT DISTINCT sporttype, ProductCode
 		FROM dbo.f_LicWinLoss_ProductSportType_Sel(@ProductList)
-		WHERE ProductCode NOT IN ('VS', 'VS2')
+		WHERE ProductCode NOT IN ('VS', 'VS2') AND sporttype <> 150
 	END
 	---#2: End: Get SportBettypeMatrix
 
@@ -373,6 +374,7 @@ BEGIN
 				AND b.matchID > 0 
 				AND (CASE WHEN bt.ProductCode ='SB' THEN b.tpositiontaking ELSE 1 END <> 0 )  --- EXCLUDE BA 
 				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
+				AND b.matchid <> 150
 			GROUP BY
 				b.winlostdate,
 				b.custid

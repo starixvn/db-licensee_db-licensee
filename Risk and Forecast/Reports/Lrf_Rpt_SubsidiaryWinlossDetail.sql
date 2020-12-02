@@ -25,6 +25,7 @@ AS
 		- 20200924@Louis: Control BA status for subsidiary [RedmineID: #142038]
 		- 20201016@Hogan: Integrate Arcadia Gaming Bonus [RedmineID: #143648]
 		- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]	
+		- 20201104@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369]
 
 	Param's Explanation:
 		+ @MoveBetsDay: The day we move tickets to bettrans14
@@ -115,6 +116,7 @@ BEGIN
 	INSERT INTO #SporttypeProduct (SportType, ProductCode)   --- Don't have ProductCode IN (BT, CO)
 	SELECT DISTINCT SportType, ProductCode
 	FROM dbo.f_LicWinLoss_ProductSportType_Sel(@ProductList)
+	WHERE SportType <> 150
 
 	IF @ToDate > @MoveBetsDay
 	BEGIN
@@ -154,7 +156,7 @@ BEGIN
 				b.winlostdate BETWEEN @FDate AND @TDate
 				AND (b.statusID IN (112, 113)
 					OR (@IncludeRaw = 1 AND b.statusID = 111))
-				AND b.matchid > 0
+				AND b.matchid > 0 AND b.matchid <> 150
 				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 				AND (CASE
 						WHEN @ShowBA = 0 AND p.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 0

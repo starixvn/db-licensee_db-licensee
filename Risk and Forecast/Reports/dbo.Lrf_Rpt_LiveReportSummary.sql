@@ -86,6 +86,7 @@ AS
 		- 20201126@Hogan: Integrate Joker [RedmineID: #141408]
 		- 20201202@Louis: Licensee Spread Setting [RedmineID: #142532]	
 		- 20201215@Louis: Licensee Spread Setting - Fix Missing Block [RedmineID: #142532]	
+		- 20201216@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369]
 		
 	Param's Explanation:
 		+ @IsLive : indicate that whether the report will get live data or not
@@ -352,7 +353,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 4901 AND 5000 THEN 'TG' -- TG
 					WHEN b.bettype BETWEEN 5001 AND 5099 THEN 'I4D' -- I4D
 					WHEN b.bettype BETWEEN 3101 AND 3199 THEN 'SXG' -- SXG
-					WHEN b.bettype BETWEEN 1611 AND 1699 THEN 'SBC' -- SBC
+					WHEN (b.bettype BETWEEN 1611 AND 1699) AND b.matchid <> 150 THEN 'SBC' -- SBC
 					WHEN (b.bettype BETWEEN 3001 AND 3099) AND b.bettype <> 3007 THEN 'SAG' -- SAG	
 					WHEN b.bettype BETWEEN 6001 AND 6300 THEN 'PGS' -- PGS
 					WHEN b.bettype BETWEEN 6401 AND 6700 THEN 'JK' -- JK
@@ -388,8 +389,8 @@ BEGIN
 					OR b.bettype BETWEEN 4901 AND 5000 -- TG
 					OR b.bettype BETWEEN 5001 AND 5099 -- I4D
 					OR b.bettype BETWEEN 3101 AND 3199 -- SXG
-					OR b.bettype BETWEEN 1611 AND 1699 -- SBC
-					OR (b.bettype BETWEEN 3001 AND 3099 AND b.bettype <> 3007) -- SAG				
+					OR (b.bettype BETWEEN 1611 AND 1699 AND b.matchid <> 150) -- SBC
+					OR (b.bettype BETWEEN 3001 AND 3099 AND b.bettype <> 3007) -- SAG
 					OR b.bettype BETWEEN 6001 AND 6300 -- PGS
 					OR b.bettype BETWEEN 6401 AND 6700 -- JK					
 				)
@@ -414,7 +415,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 4901 AND 5000 THEN 'TG' -- TG
 					WHEN b.bettype BETWEEN 5001 AND 5099 THEN 'I4D' -- I4D
 					WHEN b.bettype BETWEEN 3101 AND 3199 THEN 'SXG' -- SXG
-					WHEN b.bettype BETWEEN 1611 AND 1699 THEN 'SBC' -- SBC
+					WHEN (b.bettype BETWEEN 1611 AND 1699) AND b.matchid <> 150 THEN 'SBC' -- SBC
 					WHEN (b.bettype BETWEEN 3001 AND 3099) AND b.bettype <> 3007 THEN 'SAG' -- SAG
 					WHEN b.bettype BETWEEN 6001 AND 6300 THEN 'PGS' -- PGS
 					WHEN b.bettype BETWEEN 6401 AND 6700 THEN 'JK' -- JK
@@ -532,7 +533,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 4901 AND 5000 THEN 'TG'
 					WHEN b.bettype BETWEEN 5001 AND 5099 THEN 'I4D'
 					WHEN b.bettype BETWEEN 3101 AND 3199 THEN 'SXG' -- SXG
-					WHEN b.bettype BETWEEN 1611 AND 1699 THEN 'SBC'
+					WHEN (b.bettype BETWEEN 1611 AND 1699) AND b.TicketType <> 2 THEN 'SBC'
 					WHEN (b.bettype BETWEEN 3001 AND 3099) AND b.bettype <> 3007 THEN 'SAG' -- SAG
 					WHEN b.bettype BETWEEN 6001 AND 6300 THEN 'PGS'
 					WHEN b.bettype BETWEEN 6401 AND 6700 THEN 'JK' -- JK
@@ -583,7 +584,7 @@ BEGIN
 					OR b.bettype BETWEEN 4901 AND 5000 -- TG
 					OR b.bettype BETWEEN 5001 AND 5099 -- I4D
 					OR b.bettype BETWEEN 3101 AND 3199 -- SXG
-					OR b.bettype BETWEEN 1611 AND 1699 -- SBC
+					OR (b.bettype BETWEEN 1611 AND 1699 AND b.TicketType <> 2) -- SBC
 					OR (b.bettype BETWEEN 3001 AND 3099 AND b.bettype <> 3007) -- SAG
 					OR b.bettype BETWEEN 6001 AND 6300 -- PGS
 					OR b.bettype BETWEEN 6401 AND 6700 -- JK
@@ -615,7 +616,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 4901 AND 5000 THEN 'TG'
 					WHEN b.bettype BETWEEN 5001 AND 5099 THEN 'I4D'
 					WHEN b.bettype BETWEEN 3101 AND 3199 THEN 'SXG' -- SXG
-					WHEN b.bettype BETWEEN 1611 AND 1699 THEN 'SBC'
+					WHEN (b.bettype BETWEEN 1611 AND 1699) AND b.TicketType <> 2 THEN 'SBC'
 					WHEN (b.bettype BETWEEN 3001 AND 3099) AND b.bettype <> 3007 THEN 'SAG' -- SAG	
 					WHEN b.bettype BETWEEN 6001 AND 6300 THEN 'PGS'
 					WHEN b.bettype BETWEEN 6401 AND 6700 THEN 'JK' -- JK

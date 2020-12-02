@@ -79,11 +79,12 @@ AS
 		- 20200622@Hogan: Update Param's Explanation for 3 new betfrom 4, 5, 6 [Redmine: #136107]
 		- 20200714@Hogan: Add 7 games for Jackpot and 2 bettype for Contribution (4297) and Jackpot Prize (4298) [RedmineID: #137290]
 		- 20200715@Louis: Add new bet types for Keno/Lottery/TableGame [RedmineID: #137625]
-		- 20200728@Hogan: Integrate SA Gaming [RedmineID: #128493]		
-		- 20201016@Hogan: Integrate Arcadia Gaming Bonus [RedmineID: #143648]		
+		- 20200728@Hogan: Integrate SA Gaming [RedmineID: #128493]
+		- 20201016@Hogan: Integrate Arcadia Gaming Bonus [RedmineID: #143648]
 		- 20201022@Louis: Integrate PG Soft [RedmineID: #139182]
 		- 20201126@Hogan: Integrate Joker [RedmineID: #141408]
 		- 20201202@Louis: Licensee Spread Setting [RedmineID: #142532]	
+		- 20201202@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369]
 
 	Param's Explanation:
 		+ @PlatformType: 0: All
@@ -563,6 +564,7 @@ BEGIN
 				b.statusID IN (111, 112, 113)
 				AND b.winlostdate BETWEEN @TempFromDate AND @TDate
 				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
+				AND b.matchid <> 150
 			GROUP BY
 				b.winlostdate,
 				tma.currency,
@@ -612,6 +614,7 @@ BEGIN
 			AND (b.bettype < 901 OR b.bettype > 904)
 			AND (b.bettype < 911 OR b.bettype > 914)
 			AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
+			AND b.sporttype <> 150
 		GROUP BY
 			b.currency,
 			b.sporttype,
