@@ -117,7 +117,7 @@ BEGIN
 	INTO #temp1
 	FROM #CustList c
 	UNION ALL
-	SELECT DISTINCT c.custid, tv.CreatedDate, tv.SubIssueTypeID
+	SELECT DISTINCT t.custid, t.CreatedDate, t.SubIssueTypeID
 	FROM T
 
 	CREATE NONCLUSTERED INDEX PK_temp1_custid_CreatedDate ON #temp1(CustID,CreatedDate) INCLUDE (ReasonID)
