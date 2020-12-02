@@ -31,6 +31,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 		- 20200423@Vickie: Integrate Saba Club [RedmineID: #132702]
 		- 20200615@Hogan: Integrate SA Gaming [RedmineID: #128493]
 		- 20201022@Louis: Integrate PG Soft [RedmineID: #139182]
+		- 20202611@Hogan: Integrate Joker [RedmineID: #141408]
 
 	Paramters Explanation:  
 		@ProductID: list of products
@@ -66,7 +67,8 @@ RETURN
 					(45, 'SXG', 243, 0),	-- Sexy Gaming
 					(42, 'SBC', 200, 0),	-- Saba Club
 					(39, 'SAG', 244, 0),	-- SA Gaming
-					(55, 'PGS', 232, 0)		-- PG Soft
+					(55, 'PGS', 232, 0),	-- PG Soft
+					(56, 'JK', 234, 0)	-- Joker
 			) d(ProductID, ProductCode, SportType, BetType)  
 	WHERE ',' + @ProductCodes + ',' LIKE '%,' + CAST(ProductCode AS VARCHAR(10)) + ',%'  
 GO

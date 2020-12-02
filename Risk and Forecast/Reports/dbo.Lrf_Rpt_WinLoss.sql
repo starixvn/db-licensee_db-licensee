@@ -28,6 +28,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
 	@ShowSBC		BIT = 0,	-- Saba club
 	@ShowSAG		BIT = 0,	-- SA Gaming
 	@ShowPGS		BIT = 0,	-- PG Soft
+	@ShowJK			BIT = 0, 	-- Joker
 	@MoveBetsDay	DATETIME,
 	@PageSize		INT = 1000,
 	@PageIndex		INT = 1,
@@ -130,6 +131,7 @@ AS
 		- 20201013@Hogan: Integrate SA Gaming [RedmineID: #128493]
 		- 20201016@Hogan: Integrate Arcadia Gaming Bonus [RedmineID: #143648]
 		- 20201022@Louis: Integrate PG Soft [RedmineID: #139182]
+		- 20201126@Hogan: Integrate Joker [RedmineID: #141408]
 
 	Param's Explanation:
 		@OrderItem:
@@ -334,6 +336,8 @@ BEGIN
 	SELECT 'SAG' AS Code WHERE @ShowSAG = 1
 	UNION ALL
 	SELECT 'PGS' AS Code WHERE @ShowPGS = 1
+	UNION ALL
+	SELECT 'JK' AS Code WHERE @ShowJK = 1
 
 	-- BT & CO belong to SB
 	SELECT @ProductList = COALESCE(@ProductList + ',' + Code, Code)
