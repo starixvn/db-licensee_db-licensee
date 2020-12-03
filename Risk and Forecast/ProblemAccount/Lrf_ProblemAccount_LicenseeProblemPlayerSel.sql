@@ -26,6 +26,7 @@ AS
 			- 20200717@Johnson: return agentid to support subsidiary [redmine:#136974]
 			- 20200909@Johnson: add customer class [redmine:#141157]
 			- 20200914@Johnson: fix sort MarkDate [redmine:#141525]
+			- 20200916@Johnson: get archive data for TicketVoiding_VoidedTransaction [redmine:#141699] 
 			- 20201103@Winfred: sort customer Class [redmine:#144706]
 			
 		Paramter's Explanations:
@@ -100,15 +101,24 @@ BEGIN
 		WHERE ci.recommend IN (SELECT custid FROM #TempAg)
 			AND roleid = 1
 	END
-
+	
+	;WITH T AS (
+		SELECT c.custid, tv.CreatedDate, tv.SubIssueTypeID
+		FROM #CustList c
+			INNER JOIN dbo.TicketVoiding_VoidedTransaction tv WITH (NOLOCK) ON c.CustId = tv.custid			
+		WHERE IssueTypeId = 11
+		UNION 
+		SELECT c.custid, tv.CreatedDate, tv.SubIssueTypeID
+		FROM #CustList c
+			INNER JOIN DBARC.bodb_Archive.dbo.TicketVoiding_VoidedTransaction_bk tv WITH (NOLOCK) ON c.CustId = tv.custid			
+		WHERE IssueTypeId = 11
+	)
 	SELECT c.custid, c.CreatedDate , c.ReasonID
 	INTO #temp1
 	FROM #CustList c
 	UNION ALL
-	SELECT c.custid, tv.CreatedDate, tv.SubIssueTypeID
-	FROM #CustList c
-		INNER JOIN dbo.TicketVoiding_VoidedTransaction tv WITH (NOLOCK) ON c.CustId = tv.custid			
-	WHERE IssueTypeId = 11	
+	SELECT DISTINCT t.custid, t.CreatedDate, t.SubIssueTypeID
+	FROM T
 
 	CREATE NONCLUSTERED INDEX PK_temp1_custid_CreatedDate ON #temp1(CustID,CreatedDate) INCLUDE (ReasonID)
 
