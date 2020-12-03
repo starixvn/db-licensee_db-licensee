@@ -116,6 +116,7 @@ AS
 		- 20201016@Hogan: Integrate Arcadia Gaming Bonus [RedmineID: #143648]
 		- 20201022@Louis: Integrate PG Soft [RedmineID: #139182]
 		- 20201126@Hogan: Integrate Joker [RedmineID: #141408]
+		- 20201203@Kos: Hotfix - mismatch number of columns [RedmineID: #146528]
 
 	Param's Explanation:
 		+ @CustID: SuperID
@@ -1302,7 +1303,6 @@ BEGIN
 							ELSE 1 END
 						ELSE 1 END
 					ELSE 0 END) AS turnoverPGS,
-				0 AS BTActualStake,
 				SUM(CASE WHEN b.sporttype = 234 THEN
 					b.turnover
 					*
