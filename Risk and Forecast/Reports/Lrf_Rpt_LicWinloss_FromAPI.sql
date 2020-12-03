@@ -165,16 +165,17 @@ BEGIN
 	FROM bodb_Ploutos.dbo.BetTicket a WITH (NOLOCK)
 		INNER JOIN @Currency c ON c.Code = a.CurrencyCode
 		INNER JOIN bodb_Ploutos.dbo.PlayerProfile pp WITH(NOLOCK) ON pp.BrandCode = a.BrandCode AND pp.CustID = a.CustId
-	WHERE  a.BrandCode = @SiteName
-			AND (
-					(@showSB = 1 AND a.GamePlatformCode = 'SB') 
-				OR	(@showNG = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode = '0161')
-				OR	(@showCS = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161')
-				OR	(@showLC = 1 AND a.GamePlatformCode = 'CA')
-			)
-			AND a.SettlementDate >= @FromDate AND a.SettlementDate < @TempToDate 
-			AND a.SettlementDate >= @cutoffDate
-			AND a.WinLostDate >= @cutoffDate
+	WHERE  
+		a.BrandCode = @SiteName
+		AND a.StatusID = 1
+		AND a.SettlementDate >= @FromDate AND a.SettlementDate < @TempToDate 
+		AND a.SettlementDate >= @cutoffDate
+		AND (
+				(@showSB = 1 AND a.GamePlatformCode = 'SB') 
+			OR	(@showNG = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode = '0161')
+			OR	(@showCS = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161')
+			OR	(@showLC = 1 AND a.GamePlatformCode = 'CA')
+		)
 
 	GROUP BY
 		CAST(a.SettlementDate AS DATE),
