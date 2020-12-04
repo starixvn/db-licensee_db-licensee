@@ -28,7 +28,7 @@ AS
 			- 20200914@Johnson: fix sort MarkDate [redmine:#141525]
 			- 20200916@Johnson: get archive data for TicketVoiding_VoidedTransaction [redmine:#141699] 
 			- 20201103@Winfred: sort customer Class [redmine:#144706]
-			
+			- 20201204@Johnson: remove linked server when get data in TicketVoiding_VoidedTransaction_bk [redmine:#141699]
 		Paramter's Explanations:
 			@OrderCol = 1: System ID
 						= 2: sort by external ID
@@ -110,7 +110,7 @@ BEGIN
 		UNION 
 		SELECT c.custid, tv.CreatedDate, tv.SubIssueTypeID
 		FROM #CustList c
-			INNER JOIN DBARC.bodb_Archive.dbo.TicketVoiding_VoidedTransaction_bk tv WITH (NOLOCK) ON c.CustId = tv.custid			
+			INNER JOIN bodb_Archive.dbo.TicketVoiding_VoidedTransaction_bk tv WITH (NOLOCK) ON c.CustId = tv.custid			
 		WHERE IssueTypeId = 11
 	)
 	SELECT c.custid, c.CreatedDate , c.ReasonID
