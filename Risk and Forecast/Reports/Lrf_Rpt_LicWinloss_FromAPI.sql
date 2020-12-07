@@ -19,6 +19,7 @@ AS
 		- 20190815@Amanda: Add product CS & LC [RedmineID: #117900]
 		- 20200320@Bobby: Ploutos Integration - [redmine: #125252]
 		- 20200917@Sol: Joinning with playerProfile - [redmine: #125252]
+		- 20201201@Sol: Audit - Add mode sum by SettlementTime - [Redmine: #146188]
 
 	Developer's Notes:
 		- Notes: If product is NG, search tickets with GameType is RNG
@@ -118,7 +119,7 @@ BEGIN
 			Betcount,
 			SourceName
 		)
-	SELECT	a.WinLostDate,
+	SELECT	CAST(a.SettlementDate AS DATE) WinLostDate,
 			c.Id AS CurrencyId,
 			SUM(CASE WHEN a.GameType = 'SB' THEN a.BetAmount ELSE 0 END) AS TurnoverSB,
 			SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode = '161' THEN a.BetAmount ELSE 0 END) AS TurnoverNG,
@@ -133,21 +134,22 @@ BEGIN
 			'AuditTicket' AS SourceName
 	FROM bodb_licenseeReportArchive.dbo.rptDep_AuditTickets a WITH (NOLOCK)
 	INNER JOIN @Currency c ON c.Code = a.CurrencyCode
-	WHERE  a.WinLostDate >= @FromDate AND a.WinLostDate < @TempToDate 
-			AND Brand = @SiteName
+	WHERE  Brand = @SiteName
 			AND (
 					(@showSB = 1 AND a.GameType = 'SB') 
 				OR	(@showNG = 1 AND a.GameType = 'RNG' AND a.GameCode = '161')
 				OR	(@showCS = 1 AND a.GameType = 'RNG' AND a.GameCode <> '161')
 				OR	(@showLC = 1 AND a.GameType = 'CA')
 			)
-			AND a.WinlostDate < @cutoffDate
+			AND a.SettlementDate >= @FromDate AND a.SettlementDate < @TempToDate 
+			AND a.SettlementDate < @cutoffDate
+
 	GROUP BY
-		a.WinLostDate,
+		CAST(a.SettlementDate AS DATE),
 		c.Id
 
 	UNION ALL
-	SELECT	a.WinLostDate,
+	SELECT	CAST(a.SettlementDate AS DATE) WinLostDate,
 			c.Id,
 			SUM(CASE WHEN a.GamePlatformCode = 'SB' THEN a.BetAmount ELSE 0 END),
 			SUM(CASE WHEN a.GamePlatformCode = 'RNG' AND a.GameCode = '0161' THEN a.BetAmount ELSE 0 END),
@@ -163,17 +165,20 @@ BEGIN
 	FROM bodb_Ploutos.dbo.BetTicket a WITH (NOLOCK)
 		INNER JOIN @Currency c ON c.Code = a.CurrencyCode
 		INNER JOIN bodb_Ploutos.dbo.PlayerProfile pp WITH(NOLOCK) ON pp.BrandCode = a.BrandCode AND pp.CustID = a.CustId
-	WHERE  a.WinLostDate >= @FromDate AND a.WinLostDate < @TempToDate 
-			AND a.BrandCode = @SiteName
-			AND (
-					(@showSB = 1 AND a.GamePlatformCode = 'SB') 
-				OR	(@showNG = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode = '0161')
-				OR	(@showCS = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161')
-				OR	(@showLC = 1 AND a.GamePlatformCode = 'CA')
-			)
-			AND a.WinlostDate >= @cutoffDate
+	WHERE  
+		a.BrandCode = @SiteName
+		AND a.StatusID = 1
+		AND a.SettlementDate >= @FromDate AND a.SettlementDate < @TempToDate 
+		AND a.SettlementDate >= @cutoffDate
+		AND (
+				(@showSB = 1 AND a.GamePlatformCode = 'SB') 
+			OR	(@showNG = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode = '0161')
+			OR	(@showCS = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161')
+			OR	(@showLC = 1 AND a.GamePlatformCode = 'CA')
+		)
+
 	GROUP BY
-		a.WinLostDate,
+		CAST(a.SettlementDate AS DATE),
 		c.Id
 
 	-- Exchange Rate
