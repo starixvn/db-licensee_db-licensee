@@ -169,7 +169,7 @@ BEGIN
 			AND((b.bettype IN (@PPPromotion, @PPTournament, @PPJackpot, 17000, 17003, @CCBonus) AND b.statusID = 112)
 				OR (b.bettype = @PPContribution AND b.statusID = 111)
 				OR (b.bettype = @SAGbetType AND b.statusID = 113)
-				OR (b.matchid = @SBCFreeBetsSportType AND b.statusID IN (111,112,113)))
+				OR (b.bettype BETWEEN 1611 AND 1699 AND b.matchid = @SBCFreeBetsSportType AND b.statusID IN (111,112,113)))
 			AND (@VIPPlayerOnly = 0 OR (@VIPPlayerOnly = 1 AND v.custid IS NOT NULL))
 	END
 

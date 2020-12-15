@@ -374,7 +374,7 @@ BEGIN
 				AND b.matchID > 0 
 				AND (CASE WHEN bt.ProductCode ='SB' THEN b.tpositiontaking ELSE 1 END <> 0 )  --- EXCLUDE BA 
 				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
-				AND b.matchid <> 150
+				AND (b.bettype NOT BETWEEN 1611 AND 1699 OR b.matchid <> 150)
 			GROUP BY
 				b.winlostdate,
 				b.custid

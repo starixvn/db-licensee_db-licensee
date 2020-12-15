@@ -403,7 +403,7 @@ BEGIN
 				b.winlostdate BETWEEN @TempFromDate AND @TDate
 				AND (@CustId = 0 OR b.CustId = @CustID)
 				AND b.statusID  IN (111, 112, 113)
-				AND b.matchID > 0 AND b.matchid <> 150
+				AND b.matchID > 0 AND (b.bettype NOT BETWEEN 1611 AND 1699 OR b.matchid <> 150)
 				AND (CASE WHEN bt.ProductCode ='SB' THEN b.tpositiontaking ELSE 1 END <> 0 )  --- EXCLUDE BA 
 				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 			GROUP BY   

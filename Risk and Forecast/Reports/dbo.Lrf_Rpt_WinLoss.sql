@@ -483,7 +483,7 @@ BEGIN
 								ELSE 0 END
 						ELSE 1
 					END)
-			AND b.matchid <> 150
+			AND (b.bettype NOT BETWEEN 1611 AND 1699 OR b.matchid <> 150)
 
 		-- check promotion prize - PP promotion prize and NPH Promotion prize and Tips --
 		IF @CheckPromotionPrize = 1 AND EXISTS (
@@ -495,7 +495,7 @@ BEGIN
 				AND ((b.bettype IN (4300, 4299, 4298, 17000, 17003, 1906) AND b.statusID = 112)
 					OR (b.bettype = 4297 AND b.statusID = 111)
 					OR (b.bettype = 3007 AND b.statusID = 113)
-					OR (b.matchid = 150 AND b.statusID IN (111,112,113))))  -- Promotion Prize, Jackpot Prize, Contribution
+					OR (b.bettype BETWEEN 1611 AND 1699 AND b.matchid = 150 AND b.statusID IN (111,112,113))))  -- Promotion Prize, Jackpot Prize, Contribution
 		BEGIN
 			SET @PromotionPrize = 1
 		END

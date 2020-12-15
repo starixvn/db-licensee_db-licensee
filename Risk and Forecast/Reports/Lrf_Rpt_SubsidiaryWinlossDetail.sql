@@ -156,7 +156,7 @@ BEGIN
 				b.winlostdate BETWEEN @FDate AND @TDate
 				AND (b.statusID IN (112, 113)
 					OR (@IncludeRaw = 1 AND b.statusID = 111))
-				AND b.matchid > 0 AND b.matchid <> 150
+				AND b.matchid > 0 AND (b.bettype NOT BETWEEN 1611 AND 1699 OR b.matchid <> 150)
 				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 				AND (CASE
 						WHEN @ShowBA = 0 AND p.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 0

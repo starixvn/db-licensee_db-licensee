@@ -635,7 +635,7 @@ BEGIN
 					AND b.statusID IN (111, 112, 113)
 					AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 					AND b.transid >= @transid
-					AND b.matchid <> 150
+					AND (b.bettype NOT BETWEEN 1611 AND 1699 OR b.matchid <> 150)
 				GROUP BY
 					b.winlostdate,
 					a.currency,
@@ -651,7 +651,7 @@ BEGIN
 					AND ((b.bettype IN (4300, 4299, 4298, 17000, 17003, 1906) AND b.statusID = 112)
 					OR (b.bettype = 4297 AND b.statusID = 111)
 					OR (b.bettype = 3007 AND b.statusID = 113)
-					OR (b.matchid = 150 AND b.statusID IN (111,112,113))))  -- Promotion Prize, Jackpot Prize, Contribution, Free Bets
+					OR (b.bettype BETWEEN 1611 AND 1699 AND b.matchid = 150 AND b.statusID IN (111,112,113))))  -- Promotion Prize, Jackpot Prize, Contribution, Free Bets
 			BEGIN
 				SET @PromotionPrize = 1
 			END
@@ -901,7 +901,7 @@ BEGIN
 					AND b.statusID IN (111, 112, 113)
 					AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 					AND b.transid >= @transid
-					AND b.matchid <> 150
+					AND (b.bettype NOT BETWEEN 1611 AND 1699 OR b.matchid <> 150)
 				GROUP BY
 					b.winlostdate,
 					b.currency,
@@ -916,7 +916,7 @@ BEGIN
 				WHERE b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 					AND ((b.bettype IN (4300, 4299, 4298, 17000, 17003, 1906) AND b.statusID = 112)
 						OR (b.bettype = 4297 AND b.statusID = 111)
-						OR (b.matchid = 150 AND b.statusID IN (111,112,113))))  -- Promotion Prize, Jackpot Prize, Contribution, Free Bets
+						OR (b.bettype BETWEEN 1611 AND 1699 AND b.matchid = 150 AND b.statusID IN (111,112,113))))  -- Promotion Prize, Jackpot Prize, Contribution, Free Bets
 			BEGIN
 				SET @PromotionPrize = 1
 			END

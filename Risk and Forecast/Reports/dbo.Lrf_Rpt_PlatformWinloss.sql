@@ -564,7 +564,7 @@ BEGIN
 				b.statusID IN (111, 112, 113)
 				AND b.winlostdate BETWEEN @TempFromDate AND @TDate
 				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
-				AND b.matchid <> 150
+				AND (b.bettype NOT BETWEEN 1611 AND 1699 OR b.matchid <> 150)
 			GROUP BY
 				b.winlostdate,
 				tma.currency,
