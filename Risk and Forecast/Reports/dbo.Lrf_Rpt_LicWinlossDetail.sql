@@ -121,6 +121,7 @@ AS
 		- 20201016@Hogan: Integrate Arcadia Gaming Bonus [RedmineID: #143648]
 		- 20201022@Louis: Integrate PG Soft [RedmineID: #139182]
 		- 20201126@Hogan: Integrate Joker [RedmineID: #141408]
+		- 20201202@Louis: Licensee Spread Setting [RedmineID: #142532]	
 
 	Param's Explanation:
 		+ @CustID: SuperID
@@ -247,6 +248,11 @@ BEGIN
 
 		RETURN
 	END CATCH;
+
+	DECLARE @ExcludedBetType TABLE (ProductId TINYINT, BetType INT)
+	-- Insert Excluded BetType
+	INSERT INTO @ExcludedBetType (ProductId, BetType)
+	SELECT ProductId, BetType FROM Lrf_f_SelExcludedBetType()
 
 	IF @ShowSB = 1
 	BEGIN
@@ -505,6 +511,7 @@ BEGIN
 				b.winlostdate BETWEEN @TempFromDate AND @TDate 
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 				AND b.statusID IN (111, 112, 113)
 				AND (@VIPPlayerOnly = 0 OR (@VIPPlayerOnly = 1 AND v.custid IS NOT NULL))
 			GROUP BY
@@ -606,6 +613,7 @@ BEGIN
 				) 
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.ProductId = 0 AND e.BetType = b.BetType)
 				AND b.statusID IN (111, 112, 113)
 				AND b.tpositiontaking <> 0
 				AND (@VIPPlayerOnly = 0 OR (@VIPPlayerOnly = 1 AND v.custid IS NOT NULL))
@@ -942,6 +950,7 @@ BEGIN
 			WHERE
 				b.winlostdate BETWEEN @TempFromDate AND @TDate
 				AND b.statusID  IN (111, 112, 113)
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 				AND (@VIPPlayerOnly = 0 OR (@VIPPlayerOnly = 1 AND v.custid IS NOT NULL))
 			GROUP BY
 				b.custid,
@@ -1057,6 +1066,7 @@ BEGIN
 				b.Winlostdate BETWEEN @FDate AND @TempToDate
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 				AND b.roleid = 1
 				AND b.statusID <> 101 --exclude REJECT bets
 				AND ISNULL(b.isBA, 0) = 1
@@ -1367,7 +1377,7 @@ BEGIN
 				b.Winlostdate BETWEEN @FDate AND @TempToDate  
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
-				AND b.bettype NOT IN (4300, 4299, 4298, 4297, 3007) -- PP Promotion Prize, Tournamemt Prize, Jackpot Prize, Contribution
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 				AND b.roleid = 1
 				AND b.statusID <> 101 --exclude REJECT bets
 				AND ISNULL(b.isBA, 0) = 0

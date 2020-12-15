@@ -26,6 +26,7 @@ Param's Explanation:
 	- 20181121@Joseph: Imlement search for dormant customer [#102680]
 	- 20181219@Joseph: Force index hint IX_agent [#105409]
 	- 20190626@Elodie: Use table variable to use IX_recommend index [#105409]
+	- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]	
 
 */
 
@@ -59,7 +60,9 @@ BEGIN
 	SELECT top 10 SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, LEN(c.username2)-CHARINDEX('$',c.username2)) as username
 	FROM bodb02.dbo.Customer c WITH (NOLOCK, INDEX(IX_agent))
 		INNER JOIN @TempAg lc ON c.recommend = lc.custid AND c.currency = lc.Currency
-	WHERE (c.username2 LIKE + '%$' + @Username + '%' OR c.username LIKE @Username + '%') AND c.RoleId = 1
+	WHERE (c.username2 LIKE + '%$' + @Username + '%' OR c.username LIKE @Username + '%') 
+		AND c.username NOT LIKE '%01OddsAdj%'
+		AND c.RoleId = 1
 	ORDER BY username
 
 	IF (@IsIncludeDormant = 1)

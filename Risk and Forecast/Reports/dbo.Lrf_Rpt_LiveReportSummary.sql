@@ -84,6 +84,7 @@ AS
 		- 20201016@Hogan: Integrate Arcadia Gaming Bonus [RedmineID: #143648]
 		- 20201022@Louis: Integrate PG Soft [RedmineID: #139182]
 		- 20201126@Hogan: Integrate Joker [RedmineID: #141408]
+		- 20201202@Louis: Licensee Spread Setting [RedmineID: #142532]	
 		
 	Param's Explanation:
 		+ @IsLive : indicate that whether the report will get live data or not
@@ -134,6 +135,11 @@ BEGIN
 		Betcount	INT
 	)
 
+	DECLARE @ExcludedBetType TABLE (ProductId TINYINT, BetType INT)
+	-- Insert Excluded BetType
+	INSERT INTO @ExcludedBetType (ProductId, BetType)
+	SELECT ProductId, BetType FROM Lrf_f_SelExcludedBetType()
+	
 	DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
 	DECLARE @DocHandler INT
 
@@ -214,6 +220,7 @@ BEGIN
 				AND (b.liveindicator = @Liveindicator OR @Liveindicator = 2)
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 			GROUP BY
 				b.winlostdate,
 				t.currency
@@ -250,6 +257,7 @@ BEGIN
 				AND (b.bettype NOT IN (9,29))
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.ProductId = 0 AND e.BetType = b.BetType)
 				AND b.tpositiontaking <> 0
 				AND b.statusID IN (111, 112, 113)
 				AND (b.liveindicator = @Liveindicator OR @Liveindicator = 2)
@@ -450,6 +458,7 @@ BEGIN
 				AND b.bettype NOT IN (9,29,2799)
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 			GROUP BY
 				b.rptdate,
 				b.currencyID
@@ -478,6 +487,7 @@ BEGIN
 				AND b.status NOT IN (-1,103)
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 				AND
 				(
 					(@Liveindicator = 0 AND b.IsLive = 0)
@@ -634,6 +644,7 @@ BEGIN
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
 				AND b.Bettype <> 2799
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 				AND
 				(
 					(@Liveindicator = 0 AND b.IsLive = 0)

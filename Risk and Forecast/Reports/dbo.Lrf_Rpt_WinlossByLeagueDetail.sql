@@ -45,6 +45,7 @@ AS
 		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
 		- 20201023@Hogan: Integrate new bet type Time Machine OU [RedmineID: #142692]
 		- 20201027@Kos: Change to use new table to check performance [RedmineID: #143310]
+		- 20201028@Louis: Licensee Spread Setting [RedmineID: #142532]	
 */
 
 BEGIN
@@ -130,6 +131,11 @@ BEGIN
 	IF @Showdraw = 1
 		INSERT INTO @status
 		SELECT 111
+	
+	DECLARE @ExcludedBetType TABLE (ProductId TINYINT, BetType INT)
+	-- Insert Excluded BetType
+	INSERT INTO @ExcludedBetType (ProductId, BetType)
+	SELECT ProductId, BetType FROM Lrf_f_SelExcludedBetType()
 
 	IF @Todate > @MoveBetsDay
 	BEGIN
@@ -203,6 +209,7 @@ BEGIN
 					)
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 				AND b.winlostdate BETWEEN @TempFromDate AND @todate
 				AND b.statusID IN (
 					SELECT *
@@ -328,6 +335,7 @@ BEGIN
 					)
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.ProductId = 0 AND e.BetType = b.BetType)
 				AND b.winlostdate BETWEEN @TempFromDate AND @todate
 				AND b.statusID IN (SELECT * FROM @status)
 				AND m.leagueid = @LeagueID
@@ -468,6 +476,7 @@ BEGIN
 								)
 							AND (b.bettype < 901 OR b.bettype > 904)
 							AND (b.bettype < 911 OR b.bettype > 914)
+					AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 							AND (@matchid=0 or b.matchid = @MatchID)
 							AND b.statusID IN (SELECT * FROM @status)
 							And b.isBA = 1
@@ -587,6 +596,7 @@ BEGIN
 								)
 							AND (b.bettype < 901 OR b.bettype > 904)
 							AND (b.bettype < 911 OR b.bettype > 914)
+					AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.ProductId = 0 AND e.BetType = b.BetType)
 							AND (@matchid = 0 or b.matchid = @MatchID)
 							AND b.statusID IN (
 								SELECT *

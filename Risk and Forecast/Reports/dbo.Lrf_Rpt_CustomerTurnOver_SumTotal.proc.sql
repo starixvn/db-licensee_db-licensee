@@ -31,13 +31,19 @@ AS
 		- 20191608@Amanda: Add new bet types (PH AIO - Phase 4b) [RedmineID: #118300]
 		- 20191129@Walter: Add new bet types (BMAIO - Phase 2) [RedmineID: #120336]
 		- 20190102@Vickie: Add new bet types (PH AIO - Phase 5) [RedmineID: #126005]
-		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
+		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548] 
 		- 20201023@Hogan: Integrate new bet type Time Machine OU [RedmineID: #142692]
+		- 20201027@Louis: Licensee Spread Setting [RedmineID: #142532]	
 */
 
 BEGIN
 	SET NOCOUNT ON;
-
+ 
+	DECLARE @ExcludedBetType TABLE (ProductId TINYINT, BetType INT)
+	-- Insert Excluded BetType
+	INSERT INTO @ExcludedBetType (ProductId, BetType)
+	SELECT ProductId, BetType FROM Lrf_f_SelExcludedBetType()
+	
 	CREATE TABLE #tempSumData (
 		sporttype		SMALLINT, 
 		bettype			SMALLINT, 
@@ -100,7 +106,8 @@ BEGIN
 						, SUM(b.playercomm) AS playercomm
 					FROM #recommend AS rec
 						JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver AS b WITH (NOLOCK) ON b.Recommend = rec.CustID
-					WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
+					WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate 
+						AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 					GROUP BY
 						b.custid, 
 						CASE
@@ -200,7 +207,8 @@ BEGIN
 						END AS Odds
 					FROM #recommend AS rec
 						JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver AS b WITH(NOLOCK) ON b.Recommend = rec.CustID
-					WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
+					WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate 
+						AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 					) b
 					INNER JOIN #tempCust AS c WITH (NOLOCK) ON b.custid = c.custid
 				GROUP BY
@@ -270,7 +278,8 @@ BEGIN
 					SUM(b.playercomm) AS playercomm
 				FROM #recommend AS rec
 					JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver AS b WITH(NOLOCK) ON b.Recommend = rec.CustID
-				WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
+				WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate 
+					AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 				GROUP BY
 					CASE
 						WHEN b.bettype IN (9, 10, 29) THEN 1
@@ -356,7 +365,8 @@ BEGIN
 						END AS Odds
 					FROM #recommend rec
 						JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK) ON b.Recommend = rec.CustID
-					WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
+					WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate 
+						AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 					) b
 				GROUP BY sporttype, bettype, StatusID, odds
 				OPTION(RECOMPILE)

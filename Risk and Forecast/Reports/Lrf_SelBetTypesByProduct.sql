@@ -13,6 +13,7 @@ Revisions:
 	- 20180703@Amanda: Get bet types by product code multi language [RedmineID: #80941]
 	- 20190228@Joseph: Betting ticket center phase 3b [RedmineID: #108221]
 	- 20190819@Amanda: Apply primary/secondary bet type and remove unsupported bet types [RedmineID: #118300]
+	- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]	
 	
 */
 /* sample test case:
@@ -44,7 +45,7 @@ BEGIN
 			WHERE p.ProductPrefix = @ProductCode 
 				AND sp.[Enabled] = 1
 				AND sp.bettype NOT IN (913, 914)
-				AND sp.bettype NOT IN (901,902,903,904/*bettrade*/,500,502/*Criket*/,300,301,302,303,304/*MO*/)
+				AND sp.bettype NOT IN (901,902,903,904/*bettrade*/,500,502/*Criket*/,300,301,302,303,304/*MO*/,999/*Licensee Spread Setting*/)
 				AND (sp.bettype < 801 OR sp.BetType > 899) -- MG
 			GROUP BY ISNULL(COALESCE(ss.GroupTypeId, bt.GroupTypeId), sp.bettype)
 	END

@@ -18,6 +18,7 @@ AS
 		- 20181121@Joseph: Create [#102680]
 		- 20190621@Amanda: Add @BaseCurrency parameter [Redmine: #112531]
 		- 20200222@Kos: Enhance performance [Redmine: #129003]
+		- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]	
 */
 
 BEGIN
@@ -85,8 +86,8 @@ BEGIN
 		dc.Recommend
 	FROM dbo.Dep_Customer_Archived AS dc WITH (NOLOCK, INDEX = IX_Recommend)
 		INNER JOIN @TempAg AS a ON dc.Recommend = a.CustId 
-	WHERE dc.username2 LIKE '%$' + @Username + '%'
-		OR dc.username LIKE  @Username + '%'
+	WHERE (dc.username2 LIKE '%$' + @Username + '%'	OR dc.username LIKE  @Username + '%')
+		AND dc.username NOT LIKE '%01OddsAdj%'
 
 	DELETE c
 	FROM #AllMember AS c

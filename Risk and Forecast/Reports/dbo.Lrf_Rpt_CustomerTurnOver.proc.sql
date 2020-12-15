@@ -79,8 +79,9 @@ AS
 		- 20191129@Walter: Add new bet types (BMAIO - Phase 2) [RedmineID: #120336]
 		- 20190102@Vickie: Add new bet types (PH AIO - Phase 5) [RedmineID: #126005]
 		- 20191225@Amanda: Support display SystemID [RedmineID: #123583]
-		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
+		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548] 
 		- 20201023@Hogan: Integrate new bet type Time Machine OU [RedmineID: #142692]
+		- 20201027@Louis: Licensee Spread Setting [RedmineID: #142532]	
 
 	Parameter's Explanation:
 		- @ReportBy:  1: daily, 2: monthly
@@ -92,6 +93,11 @@ AS
 
 BEGIN
 	SET NOCOUNT ON
+	 
+	DECLARE @ExcludedBetType TABLE (ProductId TINYINT, BetType INT)
+	-- Insert Excluded BetType
+	INSERT INTO @ExcludedBetType (ProductId, BetType)
+	SELECT ProductId, BetType FROM Lrf_f_SelExcludedBetType()
 	
 	DECLARE @startTime		DATETIME
 		, @tempFromDate		SMALLDATETIME
@@ -345,7 +351,8 @@ BEGIN
 			INNER JOIN #bettype bt ON b.bettype =  bt.typeid
 			INNER JOIN #Status st ON b.StatusID =  st.StatusID
 			LEFT JOIN #tmpParlay p ON b.transid = p.transid
-		WHERE b.winlostdate BETWEEN @tempFromDate AND @ToDate
+		WHERE b.winlostdate BETWEEN @tempFromDate AND @ToDate 
+			AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 		OPTION(RECOMPILE)
 
 		UPDATE #tempBettrans 

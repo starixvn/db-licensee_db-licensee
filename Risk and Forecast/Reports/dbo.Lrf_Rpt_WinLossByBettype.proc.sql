@@ -62,7 +62,8 @@ AS
 		- 20200331@Hogan: Add new product Table Games [RedmineID: #131447]
 		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
 		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
-		- 20200715@Louis: Add new bet types for Keno/Lottery/TableGame [RedmineID: #137625]		
+		- 20200715@Louis: Add new bet types for Keno/Lottery/TableGame [RedmineID: #137625]
+		- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]			
 
 	Param's Explanation: 
 		+ @AgentList: xml structure
@@ -161,6 +162,11 @@ BEGIN
 			WHERE a.Currency = e.ExchangeId
 			)
 
+	DECLARE @ExcludedBetType TABLE (ProductId TINYINT, BetType INT)
+	-- Insert Excluded BetType
+	INSERT INTO @ExcludedBetType (ProductId, BetType)
+	SELECT ProductId, BetType FROM Lrf_f_SelExcludedBetType()
+
 	IF @Tdate > @MoveBetsDay
 	BEGIN
 		IF @FDate <= @MoveBetsDay
@@ -223,6 +229,7 @@ BEGIN
 				OR (b.Bettype >= 4901 AND b.Bettype <= 5000)
 				OR (b.Bettype >= 5001 AND b.Bettype <= 5099))
 			AND (bettype NOT IN (71, 73,901,902,903,904,911,912,913,914,31,32,33,41,42,43) AND bettype NOT BETWEEN 1011 AND 1020 AND b.bettype NOT BETWEEN 1101 AND 1199) -- Remove LC
+			AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 			AND b.ruben = 1
 			AND statusID NOT IN (101, 102, 103)
 		GROUP BY bettype
@@ -304,6 +311,7 @@ BEGIN
 					AND bettype NOT BETWEEN 1011 AND 1020 
 					AND bettype NOT BETWEEN 1101 AND 1199
 				)
+			AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 		GROUP BY
 			bettype
 			, CASE 

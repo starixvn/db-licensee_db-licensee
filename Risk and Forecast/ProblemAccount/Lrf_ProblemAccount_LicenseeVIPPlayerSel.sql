@@ -20,6 +20,7 @@ AS
 			- 20200212@Johnson: initial sp [redmine:#128077]
 			- 20200417@Elodie: Unremove VIP if void abnormal [Redmine: #132736]
 			- 20200717@Johnson: return agentid to support subsidiary [redmine:#136974]
+			- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]	
 		Paramter's Explanations:
 			- @VipOption: 0: All, 1: Yes, 2 : No
 			- @OrderCol = 1: sort by System ID	
@@ -69,6 +70,7 @@ BEGIN
 			AND ci.username  NOT LIKE '%CASHOUT%'
 			AND ci.username  NOT LIKE '%ClearBal%'
 			AND ci.username  NOT LIKE '%BetTrade%'
+			AND ci.username  NOT LIKE '%01OddsAdj%'
 		)
 		INSERT INTO #CustList(custid,AgentID,username,username2,isVip)
 		SELECT custid,AgentID, username, username2, isVip
@@ -89,6 +91,7 @@ BEGIN
 			AND ci.username  NOT LIKE '%CASHOUT%'	
 			AND ci.username  NOT LIKE '%ClearBal%'
 			AND ci.username  NOT LIKE '%BetTrade%'
+			AND ci.username  NOT LIKE '%01OddsAdj%'
 		)
 		INSERT INTO #CustList(custid,AgentID,username,username2,isVip)
 		SELECT custid, AgentID, username, username2, isVip

@@ -40,6 +40,7 @@ AS
 		- 20180323@Sophia: Add more column SourcedLicenseeSitename [Redmine: #92574]
 		- 20180706@Joseph: Add EndDate column to SourcedLicensee [Redmine: #97913]
 		- 20180807@Amanda: Remove Racing, Bingo and Old(@IsOld) data [RedmineID: #99378]
+		- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]	
 
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -136,6 +137,12 @@ BEGIN
 	WHERE a.RoleID = 1 -- Member
 	
 	SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WHERE LicenseeID = @LicenseeID 
+	
+	DECLARE @ExcludedBetType TABLE (ProductId TINYINT, BetType INT)
+	-- Insert Excluded BetType
+	INSERT INTO @ExcludedBetType (ProductId, BetType)
+	SELECT ProductId, BetType FROM Lrf_f_SelExcludedBetType()
+	
 
 	IF @ShowSB = 1  
 	BEGIN  
@@ -295,6 +302,7 @@ BEGIN
 				AND b.statusID  IN (111, 112, 113)
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 			GROUP BY b.winlostdate, tma.currency 
 		END
 	
@@ -349,6 +357,7 @@ BEGIN
 				AND b.tpositiontaking <> 0
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.ProductId = 0 AND e.BetType = b.BetType)
 				AND b.transid >= @transid
 			GROUP BY b.winlostdate, a.currency --, statusID, b.bettype
 		END
@@ -466,6 +475,7 @@ BEGIN
 			WHERE (a.CustID IS NULL OR b.custid = a.CustID)
 				AND b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 				AND b.statusID IN (111, 112, 113)
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 				AND b.transid >= @transid
 			GROUP BY   
 				b.winlostdate, a.currency,  
@@ -529,6 +539,7 @@ BEGIN
 				AND b.Winlostdate BETWEEN @_FromDate AND @TempToDate  
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 				AND b.roleid = 1   
 				AND b.statusID <> 101 --exclude REJECT bets
 				AND b.isBA = 1 
@@ -546,6 +557,7 @@ BEGIN
 				 b.Winlostdate BETWEEN @_FromDate AND @TempToDate  
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 				AND b.roleid = 1   
 				AND b.statusID <> 101 --exclude REJECT bets
 				AND b.isBA = 1
@@ -597,6 +609,7 @@ BEGIN
 				AND b.Winlostdate BETWEEN @_FromDate AND @TempToDate
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 				AND b.roleid = 1   
 				AND b.statusID <> 101 --exclude REJECT bets
 				AND b.isBA = 0 
@@ -615,6 +628,7 @@ BEGIN
 				b.Winlostdate BETWEEN @_FromDate AND @TempToDate
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914) 
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 				AND b.roleid = 1   
 				AND b.statusID <> 101 --exclude REJECT bets
 				AND b.isBA = 0 

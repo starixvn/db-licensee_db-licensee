@@ -34,6 +34,7 @@ Revisions:
    - 20180703@Amanda: Refactor code [RedmineID: #80941]
    - 20181214@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
    - 20190531@Amanda: Get correct translation [RedmineID: #114464]
+	- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]	
 
 	Param's Explanation:
 Param's Explanation:
@@ -80,7 +81,7 @@ BEGIN
 	FROM bodb02.dbo.SportBettypeMatrix s WITH (NOLOCK)
 	INNER JOIN @sportFilter f ON s.SportType = f.sporttype
 	WHERE	IsTest <= @isTest
-			AND s.bettype NOT IN (901,902,903,904/*bettrade*/,500,502/*Criket*/,300,301,302,303,304/*MO*/,911,912,913,914/*Cash out*/)
+			AND s.bettype NOT IN (901,902,903,904/*bettrade*/,500,502/*Criket*/,300,301,302,303,304/*MO*/,911,912,913,914/*Cash out*/, 999/*Licensee Spread Setting*/)
 			AND (s.bettype < 801 OR s.BetType > 899) -- MG
 	GROUP BY s.SportType, Bettype
 

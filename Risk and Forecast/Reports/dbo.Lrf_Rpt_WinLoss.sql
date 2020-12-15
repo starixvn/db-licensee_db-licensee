@@ -132,6 +132,7 @@ AS
 		- 20201016@Hogan: Integrate Arcadia Gaming Bonus [RedmineID: #143648]
 		- 20201022@Louis: Integrate PG Soft [RedmineID: #139182]
 		- 20201126@Hogan: Integrate Joker [RedmineID: #141408]
+		- 20201202@Louis: Licensee Spread Setting [RedmineID: #142532]	
 
 	Param's Explanation:
 		@OrderItem:
@@ -260,6 +261,11 @@ BEGIN
 	
 	-- Start searching by username
 	SELECT @Username = LTRIM(RTRIM(ISNULL(@Username, '')))
+
+	DECLARE @ExcludedBetType TABLE (ProductId TINYINT, BetType INT)
+	-- Insert Excluded BetType
+	INSERT INTO @ExcludedBetType (ProductId, BetType)
+	SELECT ProductId, BetType FROM Lrf_f_SelExcludedBetType()
 
 	IF @Username <> ''
 	BEGIN
@@ -464,6 +470,7 @@ BEGIN
 			EXISTS(SELECT TOP 1 1 FROM @TempAg c WHERE c.CustID = b.recommend)
 			AND b.winlostdate >= @TempFromDate AND b.winlostdate <= @_ToDate
 			AND b.statusID IN (111, 112, 113)
+			AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 			-- CHECK for BA & SB
 			AND 1 = (CASE 
 						WHEN bt.ProductCode = 'SB' THEN 
@@ -547,7 +554,7 @@ BEGIN
 						ELSE 1
 					END)
 			-- Exclude PP Prize, SAG Tip ticket
-			AND b.bettype NOT IN (4300, 4299, 4298, 4297, 3007, 1906)
+			AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 
 		-- check promotion prize - PP promotion prize and NPH Promotion prize and Tips --
 		IF @CheckPromotionPrize = 1 AND @PromotionPrize = 0 AND EXISTS (

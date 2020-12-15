@@ -47,6 +47,7 @@ AS
 		- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
 		- 20190312@Amanda: Add new bet types Single Match Parlay (ID: 38) [RedmineID: #108298]
 		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
+		- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]	
 
 	Return 3 tables:
 	WinlostBySport
@@ -83,6 +84,11 @@ BEGIN
 	DECLARE @TempToDate DATETIME 
 	DECLARE @FDate SMALLDATETIME  
 	DECLARE @TDate SMALLDATETIME 
+	
+	DECLARE @ExcludedBetType TABLE (ProductId TINYINT, BetType INT)
+	-- Insert Excluded BetType
+	INSERT INTO @ExcludedBetType (ProductId, BetType)
+	SELECT ProductId, BetType FROM Lrf_f_SelExcludedBetType()
 	
 	--to Deal With Parameter Sniffing
 	SELECT @FDate = @FromDate, @TDate = @ToDate 
@@ -186,8 +192,9 @@ BEGIN
 					OR b.Bettype = 38					   -- Single Match Parlay
 				) AND
 				b.bettype NOT IN (9,29,901,902,903,904) AND 
-				(b.bettype < 911 OR b.bettype > 914) AND
-				b.statusID IN (111,112,113) AND
+				(b.bettype < 911 OR b.bettype > 914) 
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
+				AND	b.statusID IN (111,112,113) AND
 				b.tpositiontaking=0 AND
 				m.sporttype = @SportId AND
 				((@Liveindicator = 0 AND b.liveindicator = 0)
@@ -257,8 +264,9 @@ BEGIN
 								OR b.Bettype = 38					 -- Single Match Parlay
 				) AND
 				b.bettype NOT IN (9,29,901,902,903,904) AND 
-				(b.bettype < 911 OR b.bettype > 914) AND
-				b.matchid > 0 AND
+				(b.bettype < 911 OR b.bettype > 914) 
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.ProductId = 0 AND e.BetType = b.BetType)
+				AND	b.matchid > 0 AND
 				b.statusID IN (111,112,113) AND
 				m.sporttype = @SportId AND
 				b.tpositiontaking<>0 AND
@@ -326,8 +334,9 @@ BEGIN
 				b.winlostdate BETWEEN @TempFromDate AND @TDate AND  
 				b.matchid > 0 AND
 				b.statusID IN (111,112,113) AND
-				b.bettype <> 2799 AND
-				m.sporttype = @SportId AND
+				b.bettype <> 2799 
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
+				AND	m.sporttype = @SportId AND
 				((@Liveindicator = 0 AND b.liveindicator = 0)
 				OR (@Liveindicator = 1 AND b.liveindicator = 1)
 				OR (@Liveindicator = 2))
@@ -405,8 +414,9 @@ BEGIN
 					OR b.Bettype = 38					   -- Single Match Parlay
 				) AND
 				b.bettype NOT IN (9,29,901,902,903,904) AND 
-				(b.bettype < 911 OR b.bettype > 914) AND
-				b.tpositiontaking=0 AND
+				(b.bettype < 911 OR b.bettype > 914) 
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
+				AND	b.tpositiontaking=0 AND
 				b.statusID IN (111,112,113) AND
 				m.sporttype = @SportId 	AND
 				((@Liveindicator = 0 AND b.liveindicator = 0)
@@ -476,8 +486,9 @@ BEGIN
 			    	 		  OR b.Bettype = 38					   -- Single Match Parlay
 				) AND
 				b.bettype NOT IN (9,29,901,902,903,904) AND 
-				(b.bettype < 911 OR b.bettype > 914) AND
-				b.tpositiontaking<>0 AND
+				(b.bettype < 911 OR b.bettype > 914) 
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.ProductId = 0 AND e.BetType = b.BetType)
+				AND	b.tpositiontaking<>0 AND
 				b.statusID IN (111,112,113) AND
 				m.sporttype = @SportId AND
 				((@Liveindicator = 0 AND b.liveindicator = 0)
@@ -543,8 +554,9 @@ BEGIN
 				b.winlostdate BETWEEN @FDate AND @TempToDate  AND
 				b.statusID IN (111,112,113) AND
 				m.sporttype = @SportId AND
-				b.bettype <> 2799 AND
-				((@Liveindicator = 0 AND b.liveindicator = 0)
+				b.bettype <> 2799 
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
+				AND	((@Liveindicator = 0 AND b.liveindicator = 0)
 				OR (@Liveindicator = 1 AND b.liveindicator = 1)
 				OR (@Liveindicator = 2))
 			GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype

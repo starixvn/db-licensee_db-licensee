@@ -28,6 +28,7 @@ AS
 		- 20190614@Amanda: Add Base currency param [RedmineID: #112531]
 		- 20190910@Amanda: Add bet types that support Half Won/ Half Lose [RedmineID: #118300]
 		- 20190923@Amanda: Change the way to handle Half Won/ Half Lose bet types [RedmineID: #119879]
+		- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]	
 
 	Param's Explanation:  
 	  + @TimeZone: =-4: GMT-4
@@ -67,7 +68,12 @@ BEGIN
 	)
 	
 	CREATE TABLE #Exchange	(FromDate SMALLDATETIME, ToDate SMALLDATETIME, ExchangeID INT, Rate FLOAT )
-	
+
+	DECLARE @ExcludedBetType TABLE (ProductId TINYINT, BetType INT)
+	-- Insert Excluded BetType
+	INSERT INTO @ExcludedBetType (ProductId, BetType)
+	SELECT ProductId, BetType FROM Lrf_f_SelExcludedBetType()
+
 	---#1: Begin: Get AgentList 	
 	DECLARE @TempAg AS TABLE(custID INT, currency INT)  
 	DECLARE @DocHandler INT
@@ -161,6 +167,7 @@ BEGIN
 					AND b.statusID IN (111,112,113,114,115) --exclude REJECT bets
 					AND (b.bettype < 901 OR b.bettype > 904)
 					AND (b.bettype < 911 OR b.bettype > 914)
+					AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 					AND b.isBA = 1 
 				GROUP BY   
 					b.winlostdate, a.currency 
@@ -204,6 +211,7 @@ BEGIN
 								AND b.statusID IN (111,112,113,114,115) --exclude REJECT bets
 								AND (b.bettype < 901 OR b.bettype > 904)
 								AND (b.bettype < 911 OR b.bettype > 914)
+								AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 								AND b.isBA = 0 
 							GROUP BY   
 								b.winlostdate, a.currency, b.sporttype
@@ -257,6 +265,7 @@ BEGIN
 						ON b.transid = BA.transid 	 	
 				WHERE	b.winlostdate BETWEEN @FromDateBettrans AND @ToDateBettrans
 						AND b.statusID IN (111, 112, 113)
+						AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 				GROUP BY b.Winlostdate, b.recommend, b.currency
 			END
 
@@ -287,6 +296,7 @@ BEGIN
 						ON p.bettype = b.bettype
 				WHERE	b.winlostdate BETWEEN @FromDateBettrans AND @ToDateBettrans				
 						AND b.statusID IN (111, 112, 113)
+						AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 						AND b.matchID > 0 
 						AND (CASE WHEN p.ProductCode ='SB' THEN b.tpositiontaking ELSE 1 END <> 0 )  --- EXCLUDE BA 				
 				GROUP BY   
@@ -332,8 +342,7 @@ BEGIN
 					AND b.RptDate <= @MoveBetsDay
 					AND b.roleid = 2   
 					AND b.statusID IN (111,112,113,114,115) --exclude REJECT bets
-					AND (b.bettype < 901 OR b.bettype > 904)
-					AND (b.bettype < 911 OR b.bettype > 914)
+					AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 					AND b.isBA = 1 
 				GROUP BY   
 					b.RptDateGMT, b.RptDate, a.currency 
@@ -378,8 +387,7 @@ BEGIN
 								AND b.RptDate <= @MoveBetsDay
 								AND b.roleid = 2   
 								AND b.statusID IN (111,112,113,114,115) --exclude REJECT bets
-								AND (b.bettype < 901 OR b.bettype > 904)
-								AND (b.bettype < 911 OR b.bettype > 914)
+								AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 								AND b.isBA = 0 
 							GROUP BY   
 								b.RptDateGMT,RptDate, a.currency, b.sporttype
@@ -427,6 +435,7 @@ BEGIN
 						ON b.transid = BA.transid 	 	
 				WHERE	CONVERT(DATE,DATEADD(HOUR, @TimeZone + 4, ISNULL(m.GlobalShowTime, b.Winlostdate))) BETWEEN @FromDate AND @ToDate
 						AND b.statusID IN (111, 112, 113)
+						AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 				GROUP BY CONVERT(DATE,DATEADD(HOUR, @TimeZone + 4, ISNULL(m.GlobalShowTime, b.Winlostdate))), b.Winlostdate, b.recommend, b.currency
 			END
 
@@ -461,6 +470,7 @@ BEGIN
 						ON p.bettype = b.bettype
 				WHERE	CONVERT(DATE,DATEADD(HOUR, @TimeZone + 4, ISNULL(m.GlobalShowTime, b.Winlostdate))) BETWEEN @FromDate AND @ToDate				
 						AND b.statusID IN (111, 112, 113)
+						AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 						AND b.matchID > 0 
 						AND (CASE WHEN p.ProductCode = 'SB' THEN b.tpositiontaking ELSE 1 END <> 0 )  --- EXCLUDE BA 				
 				GROUP BY   
