@@ -85,6 +85,7 @@ AS
 		- 20201022@Louis: Integrate PG Soft [RedmineID: #139182]
 		- 20201126@Hogan: Integrate Joker [RedmineID: #141408]
 		- 20201202@Louis: Licensee Spread Setting [RedmineID: #142532]	
+		- 20201215@Louis: Licensee Spread Setting - Fix Missing Block [RedmineID: #142532]	
 		
 	Param's Explanation:
 		+ @IsLive : indicate that whether the report will get live data or not
@@ -587,6 +588,7 @@ BEGIN
 					OR b.bettype BETWEEN 6001 AND 6300 -- PGS
 					OR b.bettype BETWEEN 6401 AND 6700 -- JK
 					)
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.ProductId = 0 AND e.BetType = b.BetType)
 			GROUP BY
 				b.rptDate,
 				b.currencyID,
