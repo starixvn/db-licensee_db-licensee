@@ -38,6 +38,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 		- 20210305@Hogan: Integrate Sport Lottery [RedmineID: #150872]
 		- 20210416@Hogan: Integrate Habanero RNG Games [RedmineID: #150843]
 		- 20210428@Hogan: Integrate WM Live Casino [RedmineID: #140944]
+		- 20210519@Louis: Integrate Big Gaming product [RedmineID: #146773]
 
 	Paramters Explanation:  
 		@ProductID: list of products
@@ -79,7 +80,8 @@ RETURN
 					(56, 'JK', 234, 0),		-- Joker
 					(59, 'GDG', 236, 0),	-- GDG
 					(63, 'SLT', 169, 0),	-- Sports Lottery
-					(61, 'HB', 238, 0)		-- Habanero RNG Games
+					(61, 'HB', 238, 0),		-- Habanero RNG Games
+					(57, 'BGG', 239, 0)			-- Big Gaming
 			) d(ProductID, ProductCode, SportType, BetType)  
 	WHERE ',' + @ProductCodes + ',' LIKE '%,' + CAST(ProductCode AS VARCHAR(10)) + ',%'  
 GO

@@ -33,6 +33,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
 	@ShowSLT		BIT = 0, 	-- SLT
 	@ShowHB			BIT = 0,	-- Habanero
 	@ShowWM			BIT = 0, -- WM Live Casino
+	@ShowBGG		BIT = 0, 	-- Big Gaming
 	@MoveBetsDay	DATETIME,
 	@PageSize		INT = 1000,
 	@PageIndex		INT = 1,
@@ -145,6 +146,7 @@ AS
 		- 20210416@Hogan: Integrate Habanero RNG Games [RedmineID: #150843]
 		- 20210511@Kos: Split data of God Of Fortune in rptLicWinloss2 [RedmineID: #152908]
 		- 20210513@Hogan: Integrate WM Live Casino [RedmineID: #140944]
+		- 20210519@Louis: Integrate Big Gaming product [RedmineID: #146773]
 
 	Param's Explanation:
 		@OrderItem:
@@ -363,6 +365,8 @@ BEGIN
 	SELECT 'HB' AS Code WHERE @ShowHB = 1
 	UNION ALL
 	SELECT 'WM' AS Code WHERE @ShowWM = 1
+	UNION ALL
+	SELECT 'BGG' AS Code WHERE @ShowBGG = 1
 
 	-- BT & CO belong to SB
 	SELECT @ProductList = COALESCE(@ProductList + ',' + Code, Code)

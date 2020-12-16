@@ -87,6 +87,7 @@ AS
 		- 20210305@Hogan: Integrate Sport Lottery [RedmineID: #150872]
 		- 20210416@Hogan: Integrate Habanero RNG Games [RedmineID: #150843]
 		- 20210428@Hogan: Integrate WM Live Casino [RedmineID: #140944]
+		- 20210519@Louis: Integrate Big Gaming product [RedmineID: #146773]
 
 	Param's Explanation:  
 		+ @drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -435,7 +436,7 @@ BEGIN
 						ELSE 1 END
 				),
 				SUM(b.winlost),  
-				SUM(CASE WHEN (b.sporttype IN (0,161,164,251,202,208,209,210,212,220,248,165,247,245,222,223,243,200,244,232,234,168,236,169,238,233))  THEN -1 * b.winlost 
+				SUM(CASE WHEN (b.sporttype IN (0,161,164,251,202,208,209,210,212,220,248,165,247,245,222,223,243,200,244,232,234,168,236,169,238,233,239))  THEN -1 * b.winlost 
 						ELSE 0 END
 					) AS LicenseeWL,
 				SUM(comm ) AS Comm,
