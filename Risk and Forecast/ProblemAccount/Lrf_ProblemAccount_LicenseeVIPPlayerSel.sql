@@ -21,6 +21,7 @@ AS
 			- 20200417@Elodie: Unremove VIP if void abnormal [Redmine: #132736]
 			- 20200717@Johnson: return agentid to support subsidiary [redmine:#136974]
 			- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]	
+			- 20201209@Winfred: get isBA for Problem player [redmine:#146508]
 		Paramter's Explanations:
 			- @VipOption: 0: All, 1: Yes, 2 : No
 			- @OrderCol = 1: sort by System ID	
@@ -34,7 +35,7 @@ BEGIN
 	SELECT  @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
 
 	CREATE TABLE #TempAg (custid INT)
-	CREATE TABLE #CustList (CustId INT PRIMARY KEY, AgentID INT, username VARCHAR(50), username2 VARCHAR(50), isVIP BIT)
+	CREATE TABLE #CustList (CustId INT PRIMARY KEY, AgentID INT, username VARCHAR(50), username2 VARCHAR(50), isVIP BIT, IsBA BIT)
 	
 	DECLARE @DocHandler INT
 
@@ -62,8 +63,10 @@ BEGIN
 		SELECT ci.custid, ci.recommend as AgentID, username, 
 			SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) AS username2,
 			CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END AS isVIP
+			,CASE WHEN b.custid IS NULL THEN 0 ELSE 1 END AS IsBA
 		FROM customer ci WITH(NOLOCK)
 			LEFT JOIN Dep_CustVIP d WITH(NOLOCK) ON ci.custid = d.custid
+			LEFT JOIN Dep_CustBAActive b WITH(NOLOCK) ON ci.custid = b.custid
 		WHERE ci.recommend IN (SELECT custid FROM #TempAg)
 			AND roleid = 1
 			AND (username  LIKE @username + '%' OR username2 LIKE '%$'+@username + '%')
@@ -72,8 +75,8 @@ BEGIN
 			AND ci.username  NOT LIKE '%BetTrade%'
 			AND ci.username  NOT LIKE '%01OddsAdj%'
 		)
-		INSERT INTO #CustList(custid,AgentID,username,username2,isVip)
-		SELECT custid,AgentID, username, username2, isVip
+		INSERT INTO #CustList(custid,AgentID,username,username2,isVip,IsBA)
+		SELECT custid,AgentID, username, username2, isVip,IsBA
 		FROM t
 		WHERE isVIP = CASE WHEN @VipOption = 1 THEN 1
 							WHEN @VipOption = 2 THEN 0 ELSE isVip END 
@@ -84,8 +87,10 @@ BEGIN
 		SELECT ci.custid, ci.recommend as AgentID, username, 
 			SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) AS username2,
 			CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END AS isVIP
+			,CASE WHEN b.custid IS NULL THEN 0 ELSE 1 END AS IsBA
 		FROM customer ci WITH(NOLOCK)
-			LEFT JOIN Dep_CustVIP d WITH(NOLOCK) ON ci.custid = d.custid			
+			LEFT JOIN Dep_CustVIP d WITH(NOLOCK) ON ci.custid = d.custid
+			LEFT JOIN Dep_CustBAActive b WITH(NOLOCK) ON ci.custid = b.custid			
 		WHERE ci.recommend IN (SELECT custid FROM #TempAg)
 			AND roleid = 1	
 			AND ci.username  NOT LIKE '%CASHOUT%'	
@@ -93,8 +98,8 @@ BEGIN
 			AND ci.username  NOT LIKE '%BetTrade%'
 			AND ci.username  NOT LIKE '%01OddsAdj%'
 		)
-		INSERT INTO #CustList(custid,AgentID,username,username2,isVip)
-		SELECT custid, AgentID, username, username2, isVip
+		INSERT INTO #CustList(custid,AgentID,username,username2,isVip,IsBA)
+		SELECT custid, AgentID, username, username2, isVip,IsBA
 		FROM t
 		WHERE isVIP = CASE WHEN @VipOption = 1 THEN 1
 							WHEN @VipOption = 2 THEN 0 ELSE isVip END 

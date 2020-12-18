@@ -16,7 +16,8 @@ AS
 			- 20200213@Johnson: initial sp [redmine:#128077]
 			- 20200417@Elodie: Unremove VIP if void abnormal [Redmine: #132736]
 			- 20200605@Eden:LAP - Upload VIP list by ExternalID #135410
-
+			- 20201209@Winfred: Check BA when turn on VIP player [redmine:#146508]
+			
 		Paramter's Explanations:	
 			- @result:
 				ErrCode =
@@ -27,6 +28,7 @@ AS
 						1000: Invalid parameter.
 						103: invalid ExternalID
 						104: dont change status ExternalID
+						105: dont change BA Player
 	*/
 BEGIN
 	SET NOCOUNT ON
@@ -37,7 +39,8 @@ BEGIN
 	CREATE TABLE #tblCust (custid INT, 
 							username VARCHAR(50), 
 							roleid TINYINT, 
-							isVip BIT, 						
+							isVip BIT, 	
+							isBA BIT, 					
 							isLog BIT DEFAULT 0, 
 							isUpdate BIT DEFAULT 0,
 							MaxBet MONEY,
@@ -186,8 +189,39 @@ BEGIN
 			SELECT 104,@cnt,@ErrMsg
 	END
 	
+	IF @IsVip = 1
+	BEGIN
+		--Check BA
+		UPDATE t
+		SET t.isBA = CASE WHEN b.custid IS NULL THEN 0 ELSE 1 END 
+		FROM #tblCust t
+			LEFT JOIN Dep_CustBAActive b WITH(NOLOCK) ON t.custid = b.custid
+		
+		IF EXISTS (SELECT 1 FROM #tblCust WHERE isBA = 1 AND custid IS NOT NULL)
+		BEGIN	
+			--By UserName
+			SELECT @ErrMsg = ''
+			
+			SELECT @ErrMsg = @ErrMsg + username + ','
+			FROM #tblCust
+			WHERE isBA = 1
+				AND custid IS NOT NULL	
+				AND username IS NOT NULL	
+			
+			SELECT @cnt = @@ROWCOUNT
+			
+			SELECT @ErrMsg = REVERSE(SUBSTRING(REVERSE(@ErrMsg),2,LEN(@ErrMsg)))
+			
+			--no update BA player
+			IF @cnt > 0
+				INSERT INTO @Result(ErrCode,Cnt,ErrMsg)
+				SELECT 105,@cnt,@ErrMsg
+	
+		END
+	END 
+	
 	--> Distinct custid to update and write log
-	SELECT DISTINCT custid,t.isLog,t.isUpdate,t.isVip,t.MaxBet,t.MaxPerEvent,t.roleid
+	SELECT DISTINCT custid,t.isLog,t.isUpdate,t.isVip,t.isBA,t.MaxBet,t.MaxPerEvent,t.roleid
 	INTO #tblCust2
 	FROM #tblCust t
 
@@ -206,17 +240,39 @@ BEGIN
 		RETURN;
 	END
 	
+	IF @isVip = 1 AND NOT EXISTS(SELECT 1 FROM #tblCust2 WHERE isVip <> @isVip AND isBA = 0)
+	BEGIN
+		SELECT * FROM @Result
+		RETURN;
+	END
+	
+	
 	WHILE(1=1)
 	BEGIN
 		SELECT @custList = ''
+		IF @isVip = 1
+		BEGIN
+			UPDATE TOP (5000) t
+			SET @custList = @custList + CAST(custid AS VARCHAR(10)) + ',',
+				isUpdate = 1
+			FROM #tblCust2 t
+			WHERE isVip <> @isVip
+				AND isBA = 0
+				AND isUpdate = 0
+				AND custid IS NOT NULL
+		END
+		ELSE
+		BEGIN
+			UPDATE TOP (5000) t
+			SET @custList = @custList + CAST(custid AS VARCHAR(10)) + ',',
+				isUpdate = 1
+			FROM #tblCust2 t
+			WHERE isVip <> @isVip
+				AND isUpdate = 0
+				AND custid IS NOT NULL
+			
+		END 
 		
-		UPDATE TOP (5000) t
-		SET @custList = @custList + CAST(custid AS VARCHAR(10)) + ',',
-			isUpdate = 1
-		FROM #tblCust2 t
-		WHERE isVip <> @isVip
-			AND isUpdate = 0
-			AND custid IS NOT NULL
 		
 		SELECT @cnt = @@ROWCOUNT
 				

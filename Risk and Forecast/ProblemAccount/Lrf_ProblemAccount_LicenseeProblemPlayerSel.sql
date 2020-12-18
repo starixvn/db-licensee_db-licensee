@@ -29,6 +29,7 @@ AS
 			- 20200916@Johnson: get archive data for TicketVoiding_VoidedTransaction [redmine:#141699] 
 			- 20201103@Winfred: sort customer Class [redmine:#144706]
 			- 20201204@Johnson: remove linked server when get data in TicketVoiding_VoidedTransaction_bk [redmine:#141699]
+			- 20201209@Winfred: get isBA for Problem player [redmine:#146508]
 		Paramter's Explanations:
 			@OrderCol = 1: System ID
 						= 2: sort by external ID
@@ -177,10 +178,11 @@ BEGIN
 												CASE WHEN @SortType = 2 THEN OrderCol END DESC ) rn
 		FROM t1
 		)
-		SELECT t2.*, ci.CustomerClass, CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END as isVIP
+		SELECT t2.*, ci.CustomerClass, CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END as isVIP,CASE WHEN b.custid IS NULL THEN 0 ELSE 1 END AS IsBA
 		FROM t2 
 			INNER JOIN custinfo ci WITH(NOLOCK) ON ci.custid = t2.custid
 			LEFT JOIN Dep_CustVIP d WITH(NOLOCK) ON t2.custid = d.custid
+			LEFT JOIN Dep_CustBAActive b WITH(NOLOCK) ON t2.custid = b.custid
 		WHERE rn BETWEEN @rowstart AND @rowend
 		ORDER BY rn ASC
 	END
@@ -192,9 +194,10 @@ BEGIN
 		FROM #CustList a
 		INNER JOIN custinfo ci WITH(NOLOCK) ON ci.custid = a.custid
 		)
-		SELECT t.*, CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END as isVIP
+		SELECT t.*, CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END as isVIP,CASE WHEN b.custid IS NULL THEN 0 ELSE 1 END AS IsBA
 		FROM t
 			LEFT JOIN Dep_CustVIP d WITH(NOLOCK) ON t.custid = d.custid
+			LEFT JOIN Dep_CustBAActive b WITH(NOLOCK) ON t.custid = b.custid
 		WHERE rn BETWEEN @rowstart AND @rowend
 		ORDER BY rn ASC
 	END
@@ -205,10 +208,11 @@ BEGIN
 												CASE WHEN @SortType = 2 THEN CreatedDate END DESC) rn
 		FROM #CustList
 		)
-		SELECT t.*, ci.CustomerClass, CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END as isVIP
+		SELECT t.*, ci.CustomerClass, CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END as isVIP,CASE WHEN b.custid IS NULL THEN 0 ELSE 1 END AS IsBA
 		FROM t
 			INNER JOIN custinfo ci WITH(NOLOCK) ON ci.custid = t.custid
 			LEFT JOIN Dep_CustVIP d WITH(NOLOCK) ON t.custid = d.custid
+			LEFT JOIN Dep_CustBAActive b WITH(NOLOCK) ON t.custid = b.custid
 		WHERE rn BETWEEN @rowstart AND @rowend
 		ORDER BY rn ASC
 	END	
