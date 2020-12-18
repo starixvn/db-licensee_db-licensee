@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet,bodbDownlineNet,bodbExtAccNet,Dot_Member,bodbLicenseeNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet,bodbDownlineNet,bodbExtAccNet,Dot_Member,bodbLicenseeNet" viewers="" isFunction="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberBAStatus]
 	@LicenseeID INT = 0,
@@ -55,6 +55,8 @@ Revisions:
 	- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
 	- 20181024@Winnie: PT DCS for BA member [RedmineID: #1000721]
 	- 20190801@Johnson: add @LicenseeName for LAP [redmine:#112658]
+	- 20201209@Winfred: Check VIP player when turn on BA [redmine:#146508]
+	
 Param's Explanation:
 
 */
@@ -170,6 +172,15 @@ BEGIN
 						WHEN 'en-US' THEN 'This licensee is not allowed BA !'
 						ELSE  [dbo].[Lrf_f_Get_MsgNamebyMsgID](200037,@Langkey)
 				END, @ErrCode = 100
+			RETURN
+		END
+		
+		IF  EXISTS (SELECT 1 FROM Dep_CustVIP WITH (NOLOCK) WHERE @CustID=CustID )
+		BEGIN
+			SELECT @ErrMsg = 	CASE @Langkey 
+									WHEN 'en-US' THEN 'This is VIP player. To turn on BA, please turn off VIP for the player first.'
+									ELSE  [dbo].[Lrf_f_Get_MsgNamebyMsgID](200050,@Langkey)
+								END, @ErrCode = 105
 			RETURN
 		END
 
