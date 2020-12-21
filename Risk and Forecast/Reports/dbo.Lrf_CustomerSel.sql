@@ -66,6 +66,7 @@ AS
 		- 20181031@Patrick: DB052 indexes revolution [RedmineID: #103572]
 		- 20190621@Amanda: Add @BaseCurrency parameter [Redmine: #112531]
 		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
+		- 20201005@Winfred: unshow OddsAdj dummy customers [redmine:#142952]
 
 	Param's Explanation:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
@@ -180,6 +181,7 @@ BEGIN
 				 INNER JOIN dbo.Customer c WITH (NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid
 			WHERE ci.roleid=1
 					AND c.username  NOT LIKE ''%CASHOUT%''
+					AND c.username  NOT LIKE ''%01OddsAdj%''
 					AND
 					(
 						(''' + @CustStatus + ''' = '''')
@@ -305,6 +307,7 @@ BEGIN
 				 INNER JOIN Customer c WITH (NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid 
 			WHERE ci.roleid=1 
 					AND c.username NOT LIKE ''%CashOut%''
+					AND c.username  NOT LIKE ''%01OddsAdj%''
 					AND
 					(
 						(''' + @CustStatus + ''' = '''')
@@ -384,6 +387,7 @@ BEGIN
 					c.RoleID = 1
 					AND (c.username2 LIKE ' + '''%$' + @Username + '%''' + ' OR c.username LIKE ''' + @Username + '%''' + ')
 					AND c.username NOT LIKE ''%CashOut%''
+					AND c.username  NOT LIKE ''%01OddsAdj%''
 					AND
 					(
 						(''' + @CustStatus + ''' = '''')
@@ -415,6 +419,7 @@ BEGIN
 					c.roleId = 1 
 					AND (c.username2 LIKE ' + '''%$' + @Username + '%''' + ' OR c.username LIKE ''' + @Username + '%''' + ')
 					AND c.username NOT LIKE ''%CashOut%''
+					AND c.username  NOT LIKE ''%01OddsAdj%''
 					AND
 					(
 						(''' + @CustStatus + ''' = '''')

@@ -27,6 +27,7 @@ AS
 		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
 		- 20200408@Johnson: add group comm [redmine:#131774]
 		- 20201103@Winfred: add customer class [redmine:#144706]
+		- 20201005@Winfred: unshow OddsAdj dummy customers [redmine:#142952]
 		
 	Parameter's explanations:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
@@ -164,6 +165,7 @@ BEGIN
 				 INNER JOIN Customer c WITH (NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid 
 			WHERE ci.roleid=1
 					AND c.username  NOT LIKE ''%CASHOUT%''
+					AND c.username  NOT LIKE ''%01OddsAdj%''
 					AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + ')) '
 					
 			IF ISNULL(@CustomerClass, '') <> ''
@@ -273,6 +275,7 @@ BEGIN
 				 INNER JOIN Customer c WITH (NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid 
 			WHERE ci.roleid=1 
 					AND c.username NOT LIKE ''%CashOut%''
+					AND c.username  NOT LIKE ''%01OddsAdj%''
 					AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + ')) '
 			
 			IF ISNULL(@CustomerClass, '') <> ''
@@ -347,6 +350,7 @@ BEGIN
 						OR (4= '+ CONVERT(VARCHAR(10),@searchOption) +' AND (c.username2 LIKE ''%$' + @Username + ''' OR c.username = ''' + @Username + ''')) ' 
 						+ ')
 					AND c.username NOT LIKE ''%CashOut%''
+					AND c.username  NOT LIKE ''%01OddsAdj%''
 					AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))
 					AND ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ') '
 			
@@ -373,6 +377,7 @@ BEGIN
 						OR (4= '+ CONVERT(VARCHAR(10),@searchOption) +' AND (c.username2 LIKE ''%$' + @Username + ''' OR c.username = ''' + @Username + ''')) '
 						+ ')
 					AND c.username NOT LIKE ''%CashOut%''
+					AND c.username  NOT LIKE ''%01OddsAdj%''
 					AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))
 					AND ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ')
 					AND ((' + CONVERT(VARCHAR(10),@BAFilter) + ' = 1 AND ISNULL(lb.[Status],'''') = ''Running'')'

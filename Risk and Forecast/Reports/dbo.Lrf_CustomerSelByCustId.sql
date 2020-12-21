@@ -23,8 +23,9 @@ AS
 		- 20190621@Johnson: initial sp [redmine: #112658]
 		- 20200220@Louis: Cheat currency name for HID Currency [RedmineID: #128816]
 		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
-		- 20200508@Johnson: add group comm [redmine:#131774]
+		- 20200508@Johnson: add group comm [redmine:#131774] 
 		- 20201103@Winfred: add customer class [redmine:#144706]
+		- 20201005@Winfred: unshow OddsAdj dummy customers [redmine:#142952]
 		
 	Parameter's explanations:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
@@ -160,6 +161,7 @@ BEGIN
 		WHERE ci.roleid=1
 				AND ci.custid IN (SELECT custid FROM #tblCustList)
 				AND c.username  NOT LIKE ''%CASHOUT%''
+				AND c.username  NOT LIKE ''%01OddsAdj%''
 				AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))'
 				
 		IF ISNULL(@CustomerClass, '') <> ''
@@ -270,7 +272,8 @@ BEGIN
 			 INNER JOIN Customer c WITH (NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid 
 		WHERE ci.roleid=1 
 				AND ci.custid IN (SELECT custid FROM #tblCustList)
-				AND c.username NOT LIKE ''%CashOut%''					
+				AND c.username NOT LIKE ''%CashOut%''
+				AND c.username  NOT LIKE ''%01OddsAdj%''					
 				AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + ')) '
 				
 		IF ISNULL(@CustomerClass, '') <> ''
