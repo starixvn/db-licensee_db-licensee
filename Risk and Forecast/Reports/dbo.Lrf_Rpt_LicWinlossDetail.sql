@@ -123,6 +123,7 @@ AS
 		- 20201126@Hogan: Integrate Joker [RedmineID: #141408]
 		- 20201202@Louis: Licensee Spread Setting [RedmineID: #142532]	
 		- 20201202@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369]
+		- 20201221@Kos: Hotfix - Wrong condition [RedmineID: #147484]
 
 	Param's Explanation:
 		+ @CustID: SuperID
@@ -954,7 +955,7 @@ BEGIN
 				AND b.statusID  IN (111, 112, 113)
 				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 				AND (@VIPPlayerOnly = 0 OR (@VIPPlayerOnly = 1 AND v.custid IS NOT NULL))
-				AND (b.bettype BETWEEN 1611 AND 1699 AND b.matchid <> 150)
+				AND (b.bettype NOT BETWEEN 1611 AND 1699 OR b.matchid <> 150)
 			GROUP BY
 				b.custid,
 				b.winlostdate,
