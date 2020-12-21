@@ -82,6 +82,7 @@ AS
 		- 20201022@Louis: Integrate PG Soft [RedmineID: #139182]
 		- 20201126@Hogan: Integrate Joker [RedmineID: #141408]
 		- 20201202@Louis: Licensee Spread Setting [RedmineID: #142532]	
+		- 20201202@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369]
 
 	Param's Explanation:
 		+ @PlatformType:  0: All
@@ -321,6 +322,7 @@ BEGIN
 		INSERT INTO #sporttype ( sporttype, ProductPrefix )
 		SELECT DISTINCT sporttype, ProductCode
 		FROM f_LicWinLoss_ProductSportType_Sel(@ProductList)
+		WHERE sporttype <> 150
 	END
 
 	INSERT INTO #Exchange (FromDate, ToDate, ExchangeId, Rate)
@@ -474,6 +476,7 @@ BEGIN
 				b.statusID IN (111, 112, 113)
 				AND b.winlostdate BETWEEN @TempFromDate AND @TDate
 				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
+				AND (b.bettype NOT BETWEEN 1611 AND 1699 OR b.matchid <> 150)
 			GROUP BY
 				b.winlostdate,
 				b.CustID,
@@ -573,7 +576,7 @@ BEGIN
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
 				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
-				AND ISNULL(b.isBA,0) = 0	
+				AND ISNULL(b.isBA,0) = 0
 			GROUP BY
 				b.winlostdate,
 				b.CustID,

@@ -114,8 +114,9 @@ AS
 		- 20201013@Hogan: Integrate SA Gaming [RedmineID: #128493
 		- 20201016@Hogan: Integrate Arcadia Gaming Bonus [RedmineID: #143648]
 		- 20201022@Louis: Integrate PG Soft [RedmineID: #139182]
-		- 20202611@Hogan: Integrate Joker [RedmineID: #141408]
+		- 20201126@Hogan: Integrate Joker [RedmineID: #141408]
 		- 20201202@Louis: Licensee Spread Setting [RedmineID: #142532]	
+		- 20201202@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369]
 
 	Param's Explanation:
 		+ @ReportType: 1-Daily; 2-Monthly;
@@ -367,6 +368,7 @@ BEGIN
 		INSERT INTO @SportType ( SportType, ProductCode )
 		SELECT DISTINCT sporttype, ProductCode
 		FROM f_LicWinLoss_ProductSportType_Sel(@ProductList)
+		WHERE sporttype <> 150
 	END
 
 	DECLARE @TempFromDate	SMALLDATETIME,
@@ -633,6 +635,7 @@ BEGIN
 					AND b.statusID IN (111, 112, 113)
 					AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 					AND b.transid >= @transid
+					AND (b.bettype NOT BETWEEN 1611 AND 1699 OR b.matchid <> 150)
 				GROUP BY
 					b.winlostdate,
 					a.currency,
@@ -645,9 +648,10 @@ BEGIN
 				FROM dbo.bettrans b WITH (NOLOCK)
 					INNER JOIN @tempAg a ON b.recommend = a.custID AND b.currency = a.currency
 				WHERE b.winlostdate BETWEEN @TempFromDate AND @_ToDate
-					AND((b.bettype IN (4300, 4299, 4298, 17000, 17003, 1906) AND b.statusID = 112)
+					AND ((b.bettype IN (4300, 4299, 4298, 17000, 17003, 1906) AND b.statusID = 112)
 					OR (b.bettype = 4297 AND b.statusID = 111)
-					OR (b.bettype = 3007 AND b.statusID = 113)))  -- Promotion Prize, Jackpot Prize, Contribution
+					OR (b.bettype = 3007 AND b.statusID = 113)
+					OR (b.bettype BETWEEN 1611 AND 1699 AND b.matchid = 150 AND b.statusID IN (111,112,113))))  -- Promotion Prize, Jackpot Prize, Contribution, Free Bets
 			BEGIN
 				SET @PromotionPrize = 1
 			END
@@ -897,6 +901,7 @@ BEGIN
 					AND b.statusID IN (111, 112, 113)
 					AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 					AND b.transid >= @transid
+					AND (b.bettype NOT BETWEEN 1611 AND 1699 OR b.matchid <> 150)
 				GROUP BY
 					b.winlostdate,
 					b.currency,
@@ -909,8 +914,9 @@ BEGIN
 				FROM dbo.bettrans b WITH (NOLOCK)
 					INNER JOIN @VIPCust v ON b.custid = v.CustID
 				WHERE b.winlostdate BETWEEN @TempFromDate AND @_ToDate
-					AND((b.bettype IN (4300, 4299, 4298, 17000, 17003, 1906) AND b.statusID = 112)
-						OR (b.bettype = 4297 AND b.statusID = 111)))  -- Promotion Prize, Jackpot Prize, Contribution
+					AND ((b.bettype IN (4300, 4299, 4298, 17000, 17003, 1906) AND b.statusID = 112)
+						OR (b.bettype = 4297 AND b.statusID = 111)
+						OR (b.bettype BETWEEN 1611 AND 1699 AND b.matchid = 150 AND b.statusID IN (111,112,113))))  -- Promotion Prize, Jackpot Prize, Contribution, Free Bets
 			BEGIN
 				SET @PromotionPrize = 1
 			END
@@ -1061,7 +1067,7 @@ BEGIN
 					AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 					AND b.roleid = 1
 					AND b.statusID <> 101 --exclude REJECT bets
-					AND b.isBA = 0 
+					AND b.isBA = 0
 				GROUP BY
 					b.winlostdate,
 					b.currency,
@@ -1186,7 +1192,8 @@ BEGIN
 								WHERE b.Winlostdate BETWEEN @_FromDate AND @TempToDate
 									AND ((b.bettype IN (4300, 4299, 4298, 17000, 17003, 1906) AND b.statusID = 112)
 									OR (b.bettype = 4297 AND b.statusID = 111)
-									OR (b.bettype = 3007 AND b.statusID = 113)) AND b.roleid = 2)  -- Promotion Prize, Jackpot Prize, Contribution
+									OR (b.bettype = 3007 AND b.statusID = 113)
+									OR (b.sporttype = 150 AND b.statusID IN (111,112,113))) AND b.roleid = 2)  -- Promotion Prize, Jackpot Prize, Contribution. Free Bets
 			BEGIN
 				SET @PromotionPrize = 1
 			END
@@ -1444,7 +1451,8 @@ BEGIN
 									INNER JOIN @VIPCust v ON b.custid = v.CustID
 								WHERE b.Winlostdate BETWEEN @_FromDate AND @TempToDate
 									AND ((b.bettype IN (4300, 4299, 4298, 17000, 17003, 1906) AND b.statusID = 112)
-										OR (b.bettype = 4297 AND b.statusID = 111)) -- Promotion Prize, Jackpot Prize, Contribution
+										OR (b.bettype = 4297 AND b.statusID = 111)
+										OR (b.sporttype = 150 AND b.statusID IN (111,112,113))) -- Promotion Prize, Jackpot Prize, Contribution, Free Bets
 									AND b.roleid = 1)
 			BEGIN
 				SET @PromotionPrize = 1
