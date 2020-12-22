@@ -19,11 +19,14 @@ AS
 	  - 20181120@Amanda: Add Agent/Currency of Licensee [Redmine: #83584]
 	  - 20190418@Amanda: Move code from DBA_CreateLicenseeAgent to this [Redmine: #111321]
 	  - 20190506@Amanda: Add Company Win Limit setting [Redmine: #112684]
+	  - 20201214@Winfred: Adjust SP to cut off spaces for licensee name  [redmine: #147233]	  
 */
 BEGIN
 	SET NOCOUNT ON;
 	
 	DECLARE @LicenseeId INT
+	
+	SET @LicenseeName = LTRIM(RTRIM(@LicenseeName))
 	
 	SELECT @LicenseeId = LicenseeID
 	FROM dbo.Licensees WITH (NOLOCK)
