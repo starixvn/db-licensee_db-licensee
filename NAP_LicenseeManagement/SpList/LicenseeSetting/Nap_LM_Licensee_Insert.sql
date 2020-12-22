@@ -27,10 +27,13 @@ AS
 	  - 20190114@Amanda: add more info for new licensee [redmine: #83584]
 	  - 20190418@Amanda: Move code from DBA_Lrf_CreateNewLicensee to this and use LM's SPs instead of DBA's SPs [Redmine: #111321]
 	  - 20191202@Amanda: Remove OA_ tables [Redmine: #119443]
+	  - 20201214@Winfred: Adjust SP to cut off spaces for licensee name  [redmine: #147233]	  
 */
 BEGIN
 	SET NOCOUNT ON;
 
+	SET @LicenseeName = LTRIM(RTRIM(@LicenseeName))
+	
 	IF EXISTS (SELECT 1 FROM dbo.Licensees WHERE LicenseeName = @LicenseeName)
 	BEGIN
 		SELECT @ErrCode = 50100, @ErrMsg = 'Licensee Name already exists.'
