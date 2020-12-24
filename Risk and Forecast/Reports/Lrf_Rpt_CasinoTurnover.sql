@@ -22,6 +22,7 @@ AS
 		- 20190620@Amanda: Centralize function to get exchange rate [Redmine: #112531]
 		- 20200423@Hogan: Add new product Sexy Gaming [RedmineID: #132829]
 		- 20200615@Hogan: Integrate SA Gaming [RedmineID: #128493]
+		- 20201201@Mark: Casino Turnover Report - Support Saba.club, PP and PG Soft products [RedmineID: #146135]
 		
     Param's Explanation:  
 	  + @ProductCodes: "AB,CS,VB"
@@ -95,7 +96,7 @@ BEGIN
 	FROM dbo.strSplit(@StatusList,',')
 
 	-- process string
-    SET @UserName = LTRIM(RTRIM(ISNULL(@UserName,'')))			
+    SET @UserName = LTRIM(RTRIM(ISNULL(@UserName,'')))
 	SET @UserName = REPLACE(@UserName,'''','''''')
 
     -- Get date from @MoveBetsDay + 1 to @ToDate
@@ -116,6 +117,10 @@ BEGIN
 			IF EXISTS (SELECT 1 FROM @Product WHERE ProductCode = 'SAG')
 				DELETE @bettype
 				WHERE bettype = 3007 AND ProductCode = 'SAG' 	-- SAG Tip ticket
+
+			IF EXISTS (SELECT 1 FROM @Product WHERE ProductCode = 'PP')
+				DELETE @bettype
+				WHERE bettype IN (4300, 4299, 4298, 4297) AND ProductCode = 'PP'
 		END	
 
 		SET @tmpToDate = @ToDate	
@@ -160,7 +165,7 @@ BEGIN
 			GROUP BY b.WinlostDate, b.custId, c.username, c.username2, b.currency, t.ProductCode
 		END
 
-		IF EXISTS (SELECT 1 FROM @Product WHERE ProductCode = 'CS' OR ProductCode = 'VB')
+		IF EXISTS (SELECT 1 FROM @Product WHERE ProductCode IN ('CS', 'VB', 'PP', 'PGS', 'SBC'))
 		BEGIN
 			INSERT INTO #Data(
 				[Date],
@@ -191,7 +196,7 @@ BEGIN
 			INNER JOIN dbo.Customer c WITH (NOLOCK) ON b.CustId = c.CustId
 			WHERE	b.WinlostDate >= @tmpFromDate
 					AND b.WinlostDate <= @tmpToDate
-					AND (t.ProductCode = 'CS' OR t.ProductCode = 'VB')
+					AND ((b.ProductId <> 150 AND t.ProductCode = 'SBC') OR (t.ProductCode IN ('CS', 'VB', 'PP', 'PGS')))
 					AND (@UserName = '' OR c.username2 LIKE '%$%' + @Username + '%' OR c.username LIKE '%' + @Username + '%')
 			GROUP BY b.WinlostDate, b.custId, c.username, c.username2, b.currency, t.ProductCode
 		END
@@ -200,7 +205,7 @@ BEGIN
 	-- Get date from @FromDate to @MoveBetsDay
 	IF @FromDate <= @MoveBetsDay
 	BEGIN
-		SET @tmpFromDate = @FromDate	
+		SET @tmpFromDate = @FromDate
 		IF @ToDate >= @MoveBetsDay 
 			SET @tmpToDate = @MoveBetsDay
 		ELSE
@@ -234,6 +239,7 @@ BEGIN
 		INNER JOIN @status s ON rpt.StatusId = s.Id
 		INNER JOIN dbo.Customer c WITH (NOLOCK) ON rpt.CustId = c.CustId
 		WHERE rpt.WinlostDate >= @tmpFromDate 
+				AND (rpt.TicketType IS NULL OR rpt.TicketType = 0) -- Normal Ticket
 				AND rpt.WinlostDate <= @tmpToDate
 				AND (@UserName = '' OR c.username2 LIKE '%$%' + @Username + '%' OR c.username LIKE '%' + @Username + '%')
 		GROUP BY rpt.WinlostDate, rpt.custId, c.username, c.username2, rpt.Currency, p.ProductCode
