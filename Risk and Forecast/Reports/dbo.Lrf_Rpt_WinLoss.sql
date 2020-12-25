@@ -28,7 +28,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
 	@ShowSBC		BIT = 0,	-- Saba club
 	@ShowSAG		BIT = 0,	-- SA Gaming
 	@ShowPGS		BIT = 0,	-- PG Soft
-	@ShowJK			BIT = 0, 	-- Joker
+	@ShowJK			BIT = 0,	-- Joker
+	@ShowGDG		BIT = 0,	-- GDG
 	@MoveBetsDay	DATETIME,
 	@PageSize		INT = 1000,
 	@PageIndex		INT = 1,
@@ -134,6 +135,7 @@ AS
 		- 20201126@Hogan: Integrate Joker [RedmineID: #141408]
 		- 20201202@Louis: Licensee Spread Setting [RedmineID: #142532]	
 		- 20201202@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369]
+		- 20201224@Hogan: Integrate GDG [RedmineID: #147267]
 
 	Param's Explanation:
 		@OrderItem:
@@ -345,6 +347,8 @@ BEGIN
 	SELECT 'PGS' AS Code WHERE @ShowPGS = 1
 	UNION ALL
 	SELECT 'JK' AS Code WHERE @ShowJK = 1
+	UNION ALL
+	SELECT 'GDG' AS Code WHERE @ShowGDG = 1
 
 	-- BT & CO belong to SB
 	SELECT @ProductList = COALESCE(@ProductList + ',' + Code, Code)
