@@ -17,7 +17,9 @@ AS
 	Original:
 
 	Revisions:
-			20150121@Elodie - Add revision
+		- 20150121@Elodie - Add revision
+		- 20201214@Winfred: Adjust PT value with 4 decimal places for SB  [redmine: #146574]
+		
 	Param's Explanation:
 		@Product:	1: Sportbook
 					161: Number Game
@@ -84,7 +86,7 @@ BEGIN
 
 	SELECT  @LogSPData ='<NAP_LM_LicenseePositionTakingUpd custid="'+ coalesce(cast(@CustID AS VARCHAR(20)),space(1))+ '" ' +
 						'Sporttype="'+ coalesce(cast(@Sporttype AS VARCHAR(20)),space(1))+ '" ' +
-						'PT="'+ coalesce(cast(@ptVALUE AS VARCHAR(50)),space(1))+ '" ' +
+						'PT="'+ coalesce(dbo.f_FomatNumericToChar(@ptVALUE ),space(1))+ '" ' +
 						'UserID="'+ coalesce(cast(@UserID as varchar(50)),space(1))+ '" ' +
 						'Language="'+ coalesce(cast(@Language as varchar(2)),space(1))+ '" ' +
 						'IP="'+ coalesce(cast(@IP as varchar(15)),space(1))+ '" ' +
@@ -105,7 +107,7 @@ BEGIN
 	BEGIN CATCH
 		SELECT  @LogSPData ='<NAP_LM_LicenseePositionTakingUpd custid="'+ coalesce(cast(@CustID AS VARCHAR(20)),space(1))+ '" ' +
 						'Sporttype="'+ coalesce(cast(@Sporttype AS VARCHAR(20)),space(1))+ '" ' +
-						'PT="'+ coalesce(cast(@ptVALUE AS VARCHAR(50)),space(1))+ '" ' +
+						'PT="'+ coalesce(dbo.f_FomatNumericToChar(@ptVALUE),space(1))+ '" ' +
 						'UserID="'+ coalesce(cast(@UserID as varchar(50)),space(1))+ '" ' +
 						'Language="'+ coalesce(cast(@Language as varchar(2)),space(1))+ '" ' +
 						'IP="'+ coalesce(cast(@IP as varchar(15)),space(1))+ '" ' +
