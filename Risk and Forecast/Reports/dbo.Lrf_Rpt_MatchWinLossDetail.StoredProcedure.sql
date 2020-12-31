@@ -64,7 +64,8 @@ AS
 		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
 		- 20200623@Kos: Integrate archive process for table VSRaceInfo [Redmine: #136285]
 		- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]	
-
+		- 20201231@Louis: Integrate Happy 5 Linked Games [RedmineID: #147446]
+		
 	Param's Explanation:
 		+ @AgentList: xml structure
 					<ROOT>
@@ -570,6 +571,41 @@ BEGIN
 				m.isNeutral,  
 				b.liveindicator
 
+				
+			IF @ShowNG = 1 
+			BEGIN
+				INSERT INTO @AgMatchWLDetails  
+				SELECT
+					b.Winlostdate,
+					NULL,	
+					b.currency,  
+					0 AS BetGroup,  
+					168 AS matchid,  
+					0 AS homeid,  
+					0 AS awayid,  
+					b.bettype,
+					168, -- Happy 5 Linked Games
+					0 AS leagueid,  
+					SUM(stake),  
+					SUM(winlost),  
+					-SUM(b.winlost) AS LicenseeWL,  
+					0 AS AmountDueToBA,  
+					0 AS CommBA,  
+					SUM(b.playercomm) AS PlayerComm,  
+					'',  
+					'' AS matchcode,  
+					CONVERT(BIT, 0) AS IsNeutral,
+					0 AS liveindicator,  
+					'' AS ShowTime,
+					SUM(b.Betcount) betcount  
+				FROM @TempBetList b INNER JOIN @bettype bt ON b.bettype = bt.bettype 
+				WHERE b.bettype BETWEEN 3601 AND 3610
+				GROUP BY
+					b.Winlostdate,  
+					b.currency,   
+					b.bettype
+			END
+				
 			IF EXISTS (SELECT 1 FROM @TempBetList WHERE bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()) )
 			BEGIN 
 				INSERT INTO @AgMatchWLDetails
@@ -1020,7 +1056,41 @@ BEGIN
 				m.matchcode,  
 				m.isNeutral,  
 				b.liveindicator
-
+				
+			IF @ShowNG = 1 
+			BEGIN
+				INSERT INTO @AgMatchWLDetails  
+				SELECT
+					b.Winlostdate,
+					NULL,	
+					b.currency,  
+					0 AS BetGroup,  
+					168 AS matchid,  
+					0 AS homeid,  
+					0 AS awayid,  
+					b.bettype,
+					168, -- Happy 5 Linked Games
+					0 AS leagueid,  
+					SUM(stake),  
+					SUM(winlost),  
+					-SUM(b.winlost) AS LicenseeWL,  
+					0 AS AmountDueToBA,  
+					0 AS CommBA,  
+					SUM(b.playercomm) AS PlayerComm,  
+					'',  
+					'' AS matchcode,  
+					CONVERT(BIT, 0) AS IsNeutral,
+					0 AS liveindicator,  
+					'' AS ShowTime,
+					SUM(b.Betcount) betcount  
+				FROM @TempBetList b INNER JOIN @bettype bt ON b.bettype = bt.bettype 
+				WHERE b.bettype BETWEEN 3601 AND 3610
+				GROUP BY
+					b.Winlostdate,  
+					b.currency,   
+					b.bettype
+			END
+						
 			IF EXISTS (SELECT 1 FROM  @TempBetList  WHERE bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()))
 			BEGIN 
 				INSERT INTO @AgMatchWLDetails  

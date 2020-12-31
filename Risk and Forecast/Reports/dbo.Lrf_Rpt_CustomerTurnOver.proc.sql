@@ -81,8 +81,9 @@ AS
 		- 20191225@Amanda: Support display SystemID [RedmineID: #123583]
 		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548] 
 		- 20201023@Hogan: Integrate new bet type Time Machine OU [RedmineID: #142692]
-		- 20201027@Louis: Licensee Spread Setting [RedmineID: #142532]	
-
+		- 20201027@Louis: Licensee Spread Setting [RedmineID: #142532]
+		- 20201231@Louis: Integrate Happy 5 Linked Games [RedmineID: #147446]
+		
 	Parameter's Explanation:
 		- @ReportBy:  1: daily, 2: monthly
 		- @FilterBy:  1: Win, 2: Loss, 3: Draw
@@ -591,7 +592,7 @@ BEGIN
 			, b.nickname
 			, b.currency AS currencyid
 			, b.sporttype
-			, CASE WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) THEN  N'NG - ' + bt.typenamee
+			, CASE WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) OR (b.bettype BETWEEN 3601 AND 3610) THEN  N'NG - ' + bt.typenamee
 				 WHEN (b.bettype BETWEEN 1201 AND 1299) THEN  N'VS - '+bt.typenamee + CASE WHEN b.bettype = 1204 THEN '(Soccer)'
 																					WHEN b.bettype = 1235 THEN '(Tennis)'
 																					ELSE ''
@@ -615,7 +616,7 @@ BEGIN
 			, b.nickname
 			, b.currency
 			, b.sporttype
-			, CASE WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) THEN  N'NG - ' + bt.typenamee
+			, CASE WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) OR (b.bettype BETWEEN 3601 AND 3610) THEN  N'NG - ' + bt.typenamee
 				WHEN (b.bettype BETWEEN 1201 AND 1299) THEN  N'VS - '+bt.typenamee + CASE WHEN b.bettype = 1204 THEN '(Soccer)'
 																					WHEN b.bettype = 1235 THEN '(Tennis)'
 																					ELSE ''

@@ -34,10 +34,10 @@ Revisions:
    - 20180703@Amanda: Refactor code [RedmineID: #80941]
    - 20181214@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
    - 20190531@Amanda: Get correct translation [RedmineID: #114464]
-	- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]	
+	- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]
+	- 20201231@Louis: Integrate Happy 5 Linked Games [RedmineID: #147446]
 
 	Param's Explanation:
-Param's Explanation:
 	
 */
 BEGIN
@@ -124,7 +124,7 @@ BEGIN
 	SELECT   
 		DISTINCT typeID AS BettypeID
 		, CASE 
-			WHEN (typeid BETWEEN 81 AND 120) OR (typeid BETWEEN 8101 AND 8120) 
+			WHEN (typeid BETWEEN 81 AND 120) OR (typeid BETWEEN 8101 AND 8120)  OR (typeid BETWEEN 3601 AND 3610) 
 				THEN  N'NG - ' + typenamee 
 			WHEN (typeid BETWEEN 1201 AND 1299) THEN  N'VS - '+typenamee
 			WHEN (typeid BETWEEN 2701 AND 2829) THEN  N'VS2 - ' + typenamee

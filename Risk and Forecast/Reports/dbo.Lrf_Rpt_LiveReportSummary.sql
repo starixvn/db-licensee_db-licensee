@@ -86,7 +86,8 @@ AS
 		- 20201126@Hogan: Integrate Joker [RedmineID: #141408]
 		- 20201202@Louis: Licensee Spread Setting [RedmineID: #142532]	
 		- 20201215@Louis: Licensee Spread Setting - Fix Missing Block [RedmineID: #142532]	
-		- 20201216@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369]
+		- 20201216@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369] 
+		- 20201231@Louis: Integrate Happy 5 Linked Games [RedmineID: #147446]	
 		
 	Param's Explanation:
 		+ @IsLive : indicate that whether the report will get live data or not
@@ -337,7 +338,7 @@ BEGIN
 				b.winlostdate,
 				t.currency,
 				CASE 
-					WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) THEN 'NG'
+					WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) OR (b.bettype BETWEEN 3601 AND 3610) THEN 'NG'
 					WHEN b.bettype BETWEEN 1201 AND 1299 THEN 'VS'
 					WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN' -- Keno
 					WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999 THEN 'CS' -- RNG CASINO
@@ -374,6 +375,7 @@ BEGIN
 				AND (
 					b.bettype BETWEEN 81 AND 120
 					OR b.bettype BETWEEN 8101 AND 8120 -- Number Game: Happy 5
+					OR b.bettype BETWEEN 3601 AND 3610 -- Happy 5 Linked Games
 					OR b.bettype BETWEEN 1201 AND 1299
 					OR b.bettype BETWEEN 1501 AND 1599 -- Keno
 					OR (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999) -- RNG CASINO
@@ -399,7 +401,7 @@ BEGIN
 				b.winlostdate,
 				t.currency,
 				CASE 
-					WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) THEN 'NG'
+					WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) OR (b.bettype BETWEEN 3601 AND 3610) THEN 'NG'
 					WHEN b.bettype BETWEEN 1201 AND 1299 THEN 'VS'
 					WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN' -- Keno
 					WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999 THEN 'CS' -- RNG CASINO
@@ -510,7 +512,7 @@ BEGIN
 				b.rptDate,
 				b.currencyID,
 				CASE 
-					WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) THEN 'NG'
+					WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) OR (b.bettype BETWEEN 3601 AND 3610) THEN 'NG'
 					WHEN (b.bettype <= 30 
 							OR (b.bettype BETWEEN 121 AND 999) 
 							OR (b.Bettype BETWEEN 1301 and 1399) 
@@ -569,6 +571,7 @@ BEGIN
 					OR b.Bettype = 38				   -- Single Match Parlay
 					OR b.bettype BETWEEN 81 AND 120
 					OR b.bettype BETWEEN 8101 AND 8120 -- Number Game: Happy 5
+					OR b.bettype BETWEEN 3601 AND 3610 -- Happy 5 Linked Games
 					OR b.bettype BETWEEN 1201 AND 1299
 					OR b.bettype BETWEEN 1501 AND 1599 -- Keno
 					OR (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999) -- RNG CASINO
@@ -594,7 +597,7 @@ BEGIN
 				b.rptDate,
 				b.currencyID,
 				CASE 
-					WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) THEN 'NG'
+					WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) OR (b.bettype BETWEEN 3601 AND 3610) THEN 'NG'
 					WHEN b.bettype <= 30 
 							OR (b.bettype BETWEEN 121 AND 999) 
 							OR (b.Bettype BETWEEN 1301 and 1399) 
