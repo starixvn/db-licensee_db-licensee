@@ -6,6 +6,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_SubsidiaryWinloss]
 	@ToDate			SMALLDATETIME,
 	@MoveBetsDay	SMALLDATETIME,
 	@ProductList	VARCHAR(1000),
+	@SeparateSabaVS	BIT				= 0,
 	@IncludeRaw		BIT,
 	@BaseCurrency	VARCHAR(3)
 AS
@@ -27,8 +28,9 @@ AS
 		- 20200714@Hogan: Add 7 games for Jackpot and 2 bettype for Contribution (4297) and Jackpot Prize (4298) [RedmineID: #137290]
 		- 20200924@Louis: Control BA status for subsidiary [RedmineID: #142038]
 		- 20201016@Hogan: Integrate Arcadia Gaming Bonus [RedmineID: #143648]
-		- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]	
+		- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]
 		- 20201104@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369]
+		- 20201229@Kos: Support separate Saba Virtual Sports from SB [RedmineID: #146776]
 
 	Param's Explanation:
 		+ @MoveBetsDay: The day we move tickets to bettrans14
@@ -53,51 +55,46 @@ BEGIN
 		WinLost		MONEY,
 		LicenseeWL	MONEY
 	)
+
 	CREATE TABLE #BettypeProduct (BetType INT PRIMARY KEY, ProductCode VARCHAR(10))
 	CREATE TABLE #SporttypeProduct (SportType SMALLINT, ProductCode VARCHAR(10))
 
-	CREATE TABLE #Exchange (
-		ExFromDate	SMALLDATETIME,
-		ExToDate	SMALLDATETIME,
-		ExchangeId	INT,
-		Rate		FLOAT)
-
-	DECLARE @FDate SMALLDATETIME, @TDate SMALLDATETIME
-		
 	DECLARE @ExcludedBetType TABLE (ProductId TINYINT, BetType INT)
+
 	-- Insert Excluded BetType
 	INSERT INTO @ExcludedBetType (ProductId, BetType)
-	SELECT ProductId, BetType FROM Lrf_f_SelExcludedBetType()
+	SELECT ProductId, BetType
+	FROM Lrf_f_SelExcludedBetType()
 
+	DECLARE @FDate SMALLDATETIME, @TDate SMALLDATETIME
 
 	SELECT @FDate = @FromDate,
 		@TDate = @ToDate
 
 	-- Get AgentList
-	BEGIN 
-		DECLARE @tempAg TABLE (CustId INT, Currency INT)
+	CREATE TABLE #TempAg (CustId INT, Currency INT, PRIMARY KEY (CustId, Currency))
 
-		DECLARE @DocHandler INT
+	DECLARE @DocHandler INT
 
-		BEGIN TRY
-			EXEC sp_xml_preparedocument @DocHandler OUTPUT, @AgentList
-			INSERT INTO @TempAg (CustId, Currency)
-			SELECT AgentId, Currency
-			FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId INT, Currency INT) AS Data
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT, @AgentList
+		INSERT INTO #TempAg (CustId, Currency)
+		SELECT AgentId, Currency
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId INT, Currency INT) AS Data
 
-			EXEC sp_xml_removedocument @DocHandler
-		END TRY
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
 
-		BEGIN CATCH
-			SELECT ErrCode = 100,
-				ErrMsg = N'Parameter invalid.'
+	BEGIN CATCH
+		SELECT ErrCode = 100,
+			ErrMsg = N'Parameter invalid.'
 
-			RETURN
-		END CATCH;
-	END
+		RETURN
+	END CATCH;
 
 	-- Get SportBettypeMatrix
 	DECLARE @IsTest BIT = 0
+
 	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
 
 	DECLARE @ShowBA BIT = 0,
@@ -121,6 +118,15 @@ BEGIN
 	FROM dbo.f_LicWinLoss_ProductSportType_Sel(@ProductList)
 	WHERE SportType <> 150
 	-----End Get SportBettypeMatrix
+
+	CREATE TABLE #SabaVirtualSportsLeague (LeagueId INT, PRIMARY KEY (LeagueId))
+
+	INSERT INTO #SabaVirtualSportsLeague
+	SELECT leagueid
+	FROM dbo.League WITH (NOLOCK)
+	WHERE (sporttype = 1 AND LeagueGroupID IN (42, 74, 108))
+		OR (sporttype = 2 AND LeagueGroupID IN (42))
+		OR (sporttype = 50 AND LeagueGroupID IN (42))
 
 	IF @ToDate > @MoveBetsDay
 	BEGIN
@@ -159,7 +165,7 @@ BEGIN
 					END) AS LicenseeWL
 			FROM
 				dbo.bettrans AS b WITH (NOLOCK)
-				INNER JOIN @TempAg AS a ON b.recommend = a.custid 
+				INNER JOIN #TempAg AS a ON b.recommend = a.custid 
 				INNER JOIN #BettypeProduct AS p ON p.bettype = b.bettype
 			WHERE 
 				b.winlostdate BETWEEN @FDate AND @TDate
@@ -180,6 +186,101 @@ BEGIN
 					WHEN p.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 'BA'
 					ELSE p.ProductCode
 				END
+		END
+
+		IF @ShowSB = 1 AND @SeparateSabaVS = 1
+		BEGIN
+			INSERT INTO #Subsidiary (
+				WinLostDate,
+				Recommend,
+				Currency,
+				ProductCode,
+				BetCount,
+				Turnover,
+				WinLost,
+				LicenseeWL)
+			SELECT
+				b.winlostdate,
+				b.recommend,
+				a.currency,
+				'SBVS' AS ProductCode,
+				COUNT(b.transid) AS BetCount,
+				SUM(b.stake) AS Turnover,
+				SUM(b.winlost - b.actual_stake) AS Winlost,
+				- SUM(b.winlost - b.actual_stake) AS LicenseeWL
+			FROM
+				dbo.bettrans AS b WITH (NOLOCK)
+				INNER JOIN #TempAg AS a ON b.recommend = a.custid
+				INNER JOIN #BettypeProduct AS p ON p.bettype = b.bettype
+				INNER JOIN dbo.match AS m WITH (NOLOCK) ON m.MatchId = b.matchid
+				INNER JOIN #SabaVirtualSportsLeague AS l ON l.LeagueId = m.leagueid
+			WHERE 
+				b.winlostdate BETWEEN @FDate AND @TDate
+				AND (b.statusID IN (112, 113)
+					OR (@IncludeRaw = 1 AND b.statusID = 111))
+				AND b.bettype <> 10
+				AND b.tpositiontaking <> 0
+			GROUP BY
+				b.winlostdate,
+				b.recommend,
+				a.currency
+
+			MERGE INTO #Subsidiary AS t
+			USING (
+				SELECT
+					b.winlostdate,
+					b.recommend,
+					a.currency,
+					'SBVS' AS ProductCode,
+					COUNT(b.transid) AS BetCount,
+					SUM(b.stake) AS Turnover,
+					SUM(b.winlost - b.actual_stake) AS Winlost,
+					- SUM(b.winlost - b.actual_stake) AS LicenseeWL
+				FROM
+					dbo.bettrans AS b WITH (NOLOCK)
+					INNER JOIN #TempAg AS a ON b.recommend = a.custid
+					INNER JOIN dbo.outright AS o WITH (NOLOCK) ON o.orid = b.matchid
+					INNER JOIN #SabaVirtualSportsLeague AS l ON l.LeagueId = o.leagueid
+				WHERE 
+					b.winlostdate BETWEEN @FDate AND @TDate
+					AND (b.statusID IN (112, 113)
+						OR (@IncludeRaw = 1 AND b.statusID = 111))
+					AND b.bettype = 10
+					AND b.tpositiontaking <> 0
+				GROUP BY
+					b.winlostdate,
+					b.recommend,
+					a.currency
+			) AS s ON t.WinLostDate = s.winlostdate
+				AND t.Recommend = s.recommend
+				AND t.Currency = s.Currency
+				AND t.ProductCode = s.ProductCode
+			WHEN MATCHED THEN
+				UPDATE
+				SET
+					t.BetCount = t.BetCount + s.BetCount,
+					t.Turnover = t.Turnover + s.Turnover,
+					t.Winlost = t.Winlost + s.Winlost,
+					t.LicenseeWL = t.LicenseeWL + s.LicenseeWL
+			WHEN NOT MATCHED THEN
+				INSERT (
+					WinLostDate,
+					Recommend,
+					Currency,
+					ProductCode,
+					BetCount,
+					Turnover,
+					WinLost,
+					LicenseeWL)
+				VALUES (
+					s.winlostdate,
+					s.recommend,
+					s.Currency,
+					s.ProductCode,
+					s.BetCount,
+					s.Turnover,
+					s.WinLost,
+					s.LicenseeWL);
 		END
 	END
 
@@ -220,7 +321,7 @@ BEGIN
 					END) AS LicenseeWL
 			FROM bodb_LicenseeReport.dbo.rptLicWinloss2 AS b WITH (NOLOCK)
 				INNER JOIN #SporttypeProduct AS p ON b.sporttype = p.sporttype
-				INNER JOIN @TempAg AS a ON b.recommend = a.custid
+				INNER JOIN #TempAg AS a ON b.recommend = a.custid
 			WHERE
 				b.winlostdate BETWEEN @FDate AND @TDate
 				AND (b.bettype < 901 OR b.bettype > 904)
@@ -244,12 +345,80 @@ BEGIN
 					ELSE p.ProductCode
 				END
 		END
+
+		IF @ShowSB = 1 AND @SeparateSabaVS = 1
+		BEGIN
+			CREATE TABLE #Date (Date SMALLDATETIME, PRIMARY KEY(Date))
+
+			INSERT INTO #Date
+			SELECT [Date]
+			FROM f_GetDateBetweenTwoDates (@FDate, @TDate)
+
+			INSERT INTO #Subsidiary (
+				WinLostDate,
+				Recommend,
+				Currency,
+				ProductCode,
+				BetCount,
+				Turnover,
+				WinLost,
+				LicenseeWL)
+			SELECT b.*
+			FROM
+				#Date AS d
+				CROSS APPLY (
+					SELECT
+						b.winlostdate,
+						b.recommend,
+						a.currency,
+						'SBVS' AS ProductCode,
+						SUM(b.BetCount) AS BetCount,
+						SUM(b.stake) AS Turnover,
+						SUM(b.winlost) AS Winlost,
+						- SUM(b.winlost) AS LicenseeWL
+					FROM bodb_LicenseeReport.dbo.rptWinlostbyLeague AS b WITH (NOLOCK)
+						INNER JOIN #TempAg AS a ON b.recommend = a.custid
+						INNER JOIN #SabaVirtualSportsLeague AS l ON l.LeagueId = b.leagueid
+					WHERE
+						b.winlostdate = d.Date
+						AND b.bettype NOT IN (901, 902, 903, 904, 914, 9, 29)
+						AND (b.statusID IN (112, 113, 114, 115)
+							OR (@IncludeRaw = 1 AND b.statusID = 111)) --exclude REJECT bets
+						AND b.isBA = 0
+					GROUP BY
+						b.Winlostdate,
+						b.recommend,
+						a.currency
+				) AS b
+		END
 	END
 
-	;WITH Currency_CTE (CurrencyID) AS (
-											SELECT DISTINCT currency
-											FROM @tempAg
-										)
+	IF @ShowSB = 1 AND @SeparateSabaVS = 1
+	BEGIN
+		UPDATE d
+		SET
+			d.BetCount = d.BetCount - s.BetCount,
+			d.Turnover = d.Turnover - s.Turnover,
+			d.WinLost = d.WinLost - s.WinLost,
+			d.LicenseeWL = d.LicenseeWL - s.LicenseeWL
+		FROM #Subsidiary AS d
+			INNER JOIN #Subsidiary AS s
+				ON d.WinLostDate = s.WinLostDate
+					AND d.Recommend = s.Recommend
+					AND d.Currency = s.Currency
+		WHERE d.ProductCode = 'SB' AND s.ProductCode = 'SBVS'
+
+		DELETE FROM #Subsidiary
+		WHERE ProductCode = 'SB' AND BetCount = 0
+	END
+
+	CREATE TABLE #Exchange (
+		ExFromDate	SMALLDATETIME,
+		ExToDate	SMALLDATETIME,
+		ExchangeId	INT,
+		Rate		FLOAT)
+
+	;WITH Currency_CTE (CurrencyID) AS ( SELECT DISTINCT currency FROM #TempAg )
 	INSERT INTO #Exchange (
 		ExFromDate,
 		ExToDate,
@@ -278,13 +447,22 @@ BEGIN
 		#Subsidiary AS s
 		INNER JOIN #Exchange AS e ON s.winlostdate BETWEEN e.ExFromDate AND e.ExToDate AND s.currency = e.ExchangeId
 	GROUP BY
-		s.recommend,
-		s.currency,
+		s.Recommend,
+		s.Currency,
 		s.ProductCode
+	ORDER BY
+		s.Recommend ASC,
+		s.Currency ASC,
+		CASE
+			WHEN s.ProductCode = 'SBVS' THEN 'SB0'
+			ELSE s.ProductCode
+		END ASC
 
 	DROP TABLE #Subsidiary
 	DROP TABLE #Exchange
 	DROP TABLE #BettypeProduct
 	DROP TABLE #SporttypeProduct
+	DROP TABLE #TempAg
+	DROP TABLE #SabaVirtualSportsLeague
 END
 GO
