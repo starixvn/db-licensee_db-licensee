@@ -24,6 +24,7 @@ AS
 		- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
 		- 20200701@Helen: Remove Allbet - [Redmine: #131774]
 		- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238] 
+		- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012] 
 		
 	Param's Explanation:
 */ 
@@ -33,7 +34,7 @@ BEGIN
 	DECLARE @GroupCommID INT, 
 		@IsUpdateNG BIT = 0,
 		@IsUpdateRNG BIT = 0, 
-		--@IsUpdateAllbet BIT,
+		@IsUpdateAllbet BIT = 0,
 		@IsUpdateMacau BIT = 0,
 		@IsUpdatePP BIT = 0,
 		--@IsUpdateGD	BIT,
@@ -48,6 +49,12 @@ BEGIN
 		@IsUpdateVS2 BIT = 0,
 		@IsUpdateTableGame BIT = 0,
 		
+		@IsUpdateVirtualGames BIT = 0,
+		@IsUpdateArcadiaGaming BIT = 0,
+		@IsUpdateSabaclub BIT = 0,
+		@IsUpdateSAGaming BIT = 0,
+		@IsUpdatePGSoft BIT = 0,
+
 		@LicenseeID INT,		
 		@strCustID VARCHAR(50)
 
@@ -73,10 +80,8 @@ BEGIN
 			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=6)
 				SELECT @IsUpdateRNG = 1
 						
-			--IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=21)
-			--	SELECT @IsUpdateAllbet = 1
-			--ELSE
-			--	SELECT @IsUpdateAllbet = 0
+			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=21)
+				SELECT @IsUpdateAllbet = 1
 			
 			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=22)
 				SELECT @IsUpdateMacau = 1
@@ -119,6 +124,22 @@ BEGIN
 			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=40)
 				SET @IsUpdateTableGame = 1
 			
+			-- phase 3: 38,34,42,39,55
+			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=38)
+				SET @IsUpdateVirtualGames = 1
+			
+			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=34)
+				SET @IsUpdateArcadiaGaming = 1
+			
+			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=42)
+				SET @IsUpdateSabaclub = 1		
+			
+			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=39)
+				SET @IsUpdateSAGaming = 1
+				
+			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=55)
+				SET @IsUpdatePGSoft = 1
+					
 			SELECT @strCustID=CAST (@CustID AS VARCHAR(50))
 			
 			EXEC [Lrf_CustomerUpdMemberComm] 
@@ -129,7 +150,7 @@ BEGIN
 				,@IsUpdateNG=@IsUpdateNG
 				--,@IsUpdateLC=@IsUpdateLC
 				,@IsUpdateRNG=@IsUpdateRNG				
-				--,@IsUpdateAllbet=@IsUpdateAllbet
+				,@IsUpdateAllbet=@IsUpdateAllbet
 				,@IsUpdateMacau=@IsUpdateMacau
 				,@IsUpdatePP=@IsUpdatePP
 				--,@IsUpdateGD=@IsUpdateGD
@@ -143,6 +164,11 @@ BEGIN
 				,@IsUpdateVS = @IsUpdateVS 	
 				,@IsUpdateVS2 =  @IsUpdateVS2	
 				,@IsUpdateTableGame = @IsUpdateTableGame
+				,@IsUpdateVirtualGames = @IsUpdateVirtualGames
+				,@IsUpdateArcadiaGaming = @IsUpdateArcadiaGaming
+				,@IsUpdateSabaclub  = @IsUpdateSabaclub
+				,@IsUpdateSAGaming  = @IsUpdateSAGaming
+				,@IsUpdatePGSoft  = @IsUpdatePGSoft
 				
 				,@IP=''
 				,@Langkey=@Langkey

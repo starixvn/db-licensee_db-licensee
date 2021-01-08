@@ -23,6 +23,7 @@ AS
 	- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
 	- 20200701@Helen: Remove Allbet - [Redmine: #131774]
 	- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238] 
+	- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012] 
 */  
 BEGIN  
 SET NOCOUNT ON;  
@@ -33,7 +34,7 @@ SELECT g.ID AS GroupCommID,
 	g.NGComm,
 	g.RNGComm,
 	g.Parlaycomm,	
-	--g.AllbetComm,
+	g.AllbetComm,
 	g.MacauComm,
 	g.PPComm,
 	--g.GDComm,
@@ -47,7 +48,13 @@ SELECT g.ID AS GroupCommID,
 	g.KenoComm,
 	g.VSComm,
 	g.VS2Comm,
-	g.TableGameComm
+	g.TableGameComm,
+	g.VirtualGamesComm,	
+	g.ArcadiaGamingComm,	
+	g.SabaclubComm,	
+	g.SAGamingComm,	
+	g.PGSoftComm
+		
 FROM dbo.LicenseeGroupComm g WITH (NOLOCK) 
 WHERE 
 	IsActive = 1 

@@ -16,6 +16,7 @@ AS
 	- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
 	- 20200701@Helen: Remove Allbet - [Redmine: #131774]
 	- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238] 
+	- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012] 
 */  
 BEGIN  
 	SET NOCOUNT ON;  
@@ -26,7 +27,7 @@ BEGIN
 		lc.NGComm,
 		lc.GroupCommID,		
 		ISNULL(lc.RNGComm, 0) AS RNGComm,						
-		--ISNULL(lc.AllbetComm,0) AS AllbetComm,
+		ISNULL(lc.AllbetComm,0) AS AllbetComm,
 		ISNULL(lc.MacauComm,0) AS MacauComm,
 		ISNULL(lc.PPComm,0) AS PPComm,
 		--ISNULL(lc.GDComm,0) AS GDComm,
@@ -38,7 +39,14 @@ BEGIN
 		ISNULL(LotteryComm,0) AS LotteryComm,
 		ISNULL(VSComm,0) AS VSComm, 
 		ISNULL(VS2Comm,0) AS VS2Comm,
-		ISNULL(TableGameComm,0) AS TableGameComm
+		ISNULL(TableGameComm,0) AS TableGameComm,
+		
+		ISNULL(VirtualGamesComm,0) AS VirtualGamesComm,	
+		ISNULL(ArcadiaGamingComm,0) AS  ArcadiaGamingComm,	
+		ISNULL(SabaclubComm,0) AS SabaclubComm,	
+		ISNULL(SAGamingComm,0) AS SAGamingComm,	
+		ISNULL(PGSoftComm,0) AS PGSoftComm	
+		
 	FROM dbo.LicenseeCustComm lc WITH (NOLOCK)					
 	WHERE lc.CustID = @CustID	
 END
