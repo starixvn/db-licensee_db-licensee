@@ -1,66 +1,63 @@
 /*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" viewers="" isFunction="0"></info>*/
-ALTER PROCEDURE [dbo].[LAP_Statement_Mem_Product]  
-    @CustID			INT,  
-    @Winlostdate	SMALLDATETIME,  
-    @MoveBetsDay	SMALLDATETIME,  
-	@BalanceUpDay	SMALLDATETIME,  
-    @BaseCurrency	VARCHAR(3) = '',
+
+ALTER PROCEDURE [dbo].[LAP_Statement_Mem_Product]
+	@CustID			INT,
+	@Winlostdate	SMALLDATETIME,
+	@MoveBetsDay	SMALLDATETIME,
+	@BalanceUpDay	SMALLDATETIME,
+	@BaseCurrency	VARCHAR(3) = '',
 	@ModeView		TINYINT = 1 
 AS
+
 /*
-Created:Bobby@20190904   
-Task : 119648 - LAP - Implement Statement Service - Level 2
-DB: DBACC/bodb02
+	Created:Bobby@20190904   
+	Task : 119648 - LAP - Implement Statement Service - Level 2
+	DB: DBACC/bodb02
 
-Revisions:  
-	- 20190904@Bobby: Implement Statement Service - Level 2 [RedmineID: #119648]
-	- 20190926@Bobby: Enhance Statement Level 1 - show outstanding for future [RedmineID: #120690] 
-	- 20191003@Bobby: Integrate NPH Promotion product [RedmineID: #120333]
-	- 20200803@Sophia: add Saba Loyalty [Redmine: #138493]
-	- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]	
-	
+	Revisions:  
+		- 20190904@Bobby: Implement Statement Service - Level 2 [RedmineID: #119648]
+		- 20190926@Bobby: Enhance Statement Level 1 - show outstanding for future [RedmineID: #120690] 
+		- 20191003@Bobby: Integrate NPH Promotion product [RedmineID: #120333]
+		- 20200803@Sophia: add Saba Loyalty [Redmine: #138493]
+		- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]
+		- 20210111@Kos: Hotfix - not showing Saba Promotion [RedmineID: #148567]
 
-Param's Explanation:     
-	- @ModeView: TINYINT
-		+ 1 - Bet_Statement
-		+ 2 - Void_Cancelled_Bet
-		+ 3 - Outstanding_Bet
-		+ 4 - Promotion_Prize
+	Param's Explanation:
+		- @ModeView: TINYINT
+			+ 1 - Bet_Statement
+			+ 2 - Void_Cancelled_Bet
+			+ 3 - Outstanding_Bet
+			+ 4 - Promotion_Prize
 */
+
 BEGIN
 	SET NOCOUNT ON
-	
-	DECLARE @_winlostdate			SMALLDATETIME
-		, @_custID					INT
-		, @_recommend				INT
-		, @_ModeView				TINYINT
-		, @isCOMember				BIT --Cash Out member
-		, @currency					INT 
-		, @modeDesc					VARCHAR(100)
-		, @CB_ProductID				INT
-		, @IsTest					BIT = 0
 
+	DECLARE @_winlostdate	SMALLDATETIME
+		, @_custID			INT
+		, @_recommend		INT
+		, @_ModeView		TINYINT
+		, @isCOMember		BIT --Cash Out member
+		, @currency			INT 
+		, @modeDesc			VARCHAR(100)
+		, @CB_ProductID		INT
+		, @IsTest			BIT = 0
 
-	CREATE TABLE #betTicket	  
-    (
+	CREATE TABLE #betTicket
+	(
 		bettype			INT,
-        turnover		MONEY DEFAULT(0),
-        winlost			MONEY DEFAULT(0),
-        playercomm		MONEY DEFAULT(0)
-    )
+		turnover		MONEY DEFAULT(0),
+		winlost			MONEY DEFAULT(0),
+		playercomm		MONEY DEFAULT(0)
+	)
 
 	CREATE TABLE #statementRpt (
 		winlostdate		SMALLDATETIME,
 		productid		INT,
-        turnover		DECIMAL(15,2),
-        totalamt		DECIMAL(15,2),
-        commission		DECIMAL(15,2)
+		turnover		DECIMAL(15,2),
+		totalamt		DECIMAL(15,2),
+		commission		DECIMAL(15,2)
 	)
-	
-	DECLARE @ExcludedBetType TABLE (ProductId TINYINT, BetType INT)
-	-- Insert Excluded BetType
-	INSERT INTO @ExcludedBetType (ProductId, BetType)
-	SELECT ProductId, BetType FROM Lrf_f_SelExcludedBetType()
 
 	SELECT @_custID		= @CustID
 		, @_winlostdate	= @Winlostdate
@@ -76,7 +73,7 @@ BEGIN
 		AND VendorID = 14
 
 	SELECT @CB_ProductID	= 15
-		, @modeDesc			= CASE @_ModeView 
+		, @modeDesc		= CASE @_ModeView 
 							WHEN 1 THEN 'Bet_Statement'
 							WHEN 2 THEN 'Void_Cancelled_Bet'
 							WHEN 3 THEN 'Outstanding_Bet'
@@ -109,13 +106,11 @@ BEGIN
 			SUM(b.playercomm) AS playercomm
 		FROM 
 			bodb02.dbo.bettrans b WITH (NOLOCK)
-
 		WHERE
 			b.custid = @_custID  
 			AND b.winlostdate = @_winlostdate
 			AND b.bettype < 19999 -- bet tickets 
-			AND b.bettype NOT IN (903, 71, 913, 914)
-			AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
+			AND b.bettype NOT IN (903, 71, 913, 914, 999)
 			AND ((ISNULL(@IsCOMember,0) = 0 AND b.bettype <> 912) OR (@IsCOMember = 1 AND b.bettype <> 911))
 			AND 1 = CASE 
 						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) AND b.bettype NOT IN (17000, 17003) THEN 1 
@@ -126,7 +121,7 @@ BEGIN
 					END
 		GROUP BY
 			b.bettype
-			
+
 		--include running Keno bet
 		INSERT INTO #betTicket(bettype, turnover)
 		SELECT
@@ -138,9 +133,8 @@ BEGIN
 			AND custid = @_custID  
 			AND winlostdate = @_winlostdate
 			AND @_ModeView = 3
-
 		GROUP BY gameID
-		
+
 		--include running Microgaming + RNG Casino + Voidbridge
 		INSERT INTO #betTicket(bettype, turnover)
 		SELECT
@@ -152,10 +146,9 @@ BEGIN
 			AND winlostdate = @_winlostdate
 			AND statusID = 0 -- get only running game _ bettransRnG
 			AND @_ModeView = 3
-
 		GROUP BY 
 			gameID
-		
+
 		-- get only running game _ bettransRnG
 		INSERT INTO #betTicket(bettype, turnover)
 		SELECT
@@ -168,11 +161,10 @@ BEGIN
 			AND custid = @_custID  
 			AND statusID = 0 
 			AND @_ModeView = 3
-
 		GROUP BY 
 			gameID
 	END
-	
+
 	--------- bettrans14 settled/reject/void/refund bet tickets --------------------------------
 	IF (@_ModeView IN (1,2,4) AND @_winlostdate BETWEEN @BalanceUpDay AND @MoveBetsDay)
 	BEGIN
@@ -184,19 +176,16 @@ BEGIN
 			SUM(b.playercomm) AS playercomm
 		FROM
 			bodb02.dbo.bettrans14 b WITH (NOLOCK)
-
 		WHERE 
 			b.custid = @_custid  
 			AND b.winlostdate = @_winlostdate
-			AND b.bettype NOT IN (903, 71, 913, 914)
-			AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
+			AND b.bettype NOT IN (903, 71, 913, 914, 999)
 			AND ((@IsCOMember = 0 AND b.bettype <> 912) OR (@IsCOMember = 1 AND b.bettype <> 911))
 			AND 1 = CASE 
 						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) AND b.bettype NOT IN (17000, 17003) THEN 1 
 						WHEN @_ModeView = 2 AND b.statusID IN (101,102,103) AND b.bettype NOT IN (17000, 17003) THEN 1 
 						WHEN @_ModeView = 4 AND b.bettype IN (17000, 17003) THEN 1 
 					ELSE 0 END
-
 		GROUP BY b.bettype
 	END
 	
@@ -211,22 +200,17 @@ BEGIN
 			SUM(b.playercomm) AS playercomm
 		FROM
 			bodb_archive.dbo.bettrans_bk b WITH (NOLOCK)
-
 		WHERE 
 			b.custid = @_custid  
 			AND b.winlostdate = @_winlostdate
-			AND b.bettype NOT IN (903, 71, 913, 914)
-			AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
+			AND b.bettype NOT IN (903, 71, 913, 914, 999)
 			AND ((@IsCOMember = 0 AND b.bettype <> 912) OR (@IsCOMember = 1 AND b.bettype <> 911))
 			AND 1 = CASE 
 						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) AND b.bettype NOT IN (17000, 17003) THEN 1 
 						WHEN @_ModeView = 2 AND b.statusID IN (101,102,103) AND b.bettype NOT IN (17000, 17003) THEN 1 
 						WHEN @_ModeView = 4 AND b.bettype IN (17000, 17003) THEN 1 
 					ELSE 0 END
-
 		GROUP BY b.bettype
-
-		
 	END;
 
 	WITH CTE_SportProduct AS (
@@ -297,5 +281,6 @@ BEGIN
 		rpt.ProductID
 
 	DROP TABLE #statementRpt
+	DROP TABLE #betTicket
 END
 GO
