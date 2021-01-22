@@ -63,7 +63,8 @@ AS
 		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
 		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
 		- 20200715@Louis: Add new bet types for Keno/Lottery/TableGame [RedmineID: #137625]
-		- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]			
+		- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]
+		- 20201231@Louis: Integrate Happy 5 Linked Games [RedmineID: #147446]
 
 	Param's Explanation: 
 		+ @AgentList: xml structure
@@ -197,6 +198,7 @@ BEGIN
 							)
 							OR b.bettype BETWEEN 81 AND 120 -- Number Game
 							OR b.bettype BETWEEN 8101 AND 8120 -- Number Game: Happy 5
+							OR b.bettype BETWEEN 3601 AND 3610 -- Happy 5 Linked Games
 							OR b.bettype BETWEEN 1201 AND 1299
 							OR b.bettype BETWEEN 2701 AND 2829 -- Virtual Sport 2
 							OR b.bettype BETWEEN 1501 AND 1599 --Keno
@@ -225,6 +227,7 @@ BEGIN
 			AND (bettype <= 1599
 				OR (b.bettype >= 2701 AND b.bettype <= 2829)
 				OR (b.bettype BETWEEN 8101 AND 8120)
+				OR (b.bettype BETWEEN 3601 AND 3610)
 				OR (b.Bettype >= 9001 AND b.Bettype <= 9399)
 				OR (b.Bettype >= 4901 AND b.Bettype <= 5000)
 				OR (b.Bettype >= 5001 AND b.Bettype <= 5099))
@@ -275,6 +278,7 @@ BEGIN
 								)
 							OR b.bettype BETWEEN 81 AND 120
 							OR b.bettype BETWEEN 8101 AND 8120 -- Number Game: Happy 5
+							OR b.bettype BETWEEN 3601 AND 3610 -- Happy 5 Linked Games
 							OR b.bettype BETWEEN 1201 AND 1299
 							OR b.bettype BETWEEN 2701 AND 2829
 							OR b.bettype BETWEEN 1501 AND 1599 --Keno products
@@ -304,6 +308,7 @@ BEGIN
 			AND (bettype <= 1599
 				OR (b.bettype >= 2701 AND b.bettype <= 2829)
 				OR (b.bettype BETWEEN 8101 AND 8120)
+				OR (b.bettype BETWEEN 3601 AND 3610)
 				OR (b.Bettype >= 9001 AND b.Bettype <= 9399) 
 				OR (b.Bettype >= 4901 AND b.Bettype <= 5000)
 				OR (b.Bettype >= 5001 AND b.Bettype <= 5099)) 

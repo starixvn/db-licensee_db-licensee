@@ -85,6 +85,7 @@ AS
 		- 20201126@Hogan: Integrate Joker [RedmineID: #141408]
 		- 20201202@Louis: Licensee Spread Setting [RedmineID: #142532]	
 		- 20201202@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369]
+		- 20201231@Louis: Integrate Happy 5 Linked Games [RedmineID: #147446]	
 
 	Param's Explanation:
 		+ @PlatformType: 0: All
@@ -206,10 +207,10 @@ BEGIN
 
 	IF @ShowNG = 1
 	BEGIN
-		SET @SportTypeSQL = @SportTypeSQL + ', (161, ''NG''), (164, ''NG'')'
-		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN (typeid BETWEEN 81 AND 120) OR (typeid BETWEEN 8101 AND 8120) THEN ''NG''
+		SET @SportTypeSQL = @SportTypeSQL + ', (161, ''NG''), (164, ''NG''), (168, ''NG'')'
+		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN (typeid BETWEEN 81 AND 120) OR (typeid BETWEEN 8101 AND 8120) OR (typeid BETWEEN 3601 AND 3610) THEN ''NG''
 				'
-		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 81 AND 120) OR (typeid BETWEEN 8101 AND 8120)'
+		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 81 AND 120) OR (typeid BETWEEN 8101 AND 8120) OR (typeid BETWEEN 3601 AND 3610)'
 	END
 
 	IF @ShowVS = 1

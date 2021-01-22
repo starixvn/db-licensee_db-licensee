@@ -123,7 +123,8 @@ AS
 		- 20201126@Hogan: Integrate Joker [RedmineID: #141408]
 		- 20201202@Louis: Licensee Spread Setting [RedmineID: #142532]	
 		- 20201202@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369]
-		- 20201221@Kos: Hotfix - Wrong condition [RedmineID: #147484]
+		- 20201221@Kos: Hotfix - Wrong condition [RedmineID: #147484] 
+		- 20201231@Louis: Integrate Happy 5 Linked Games [RedmineID: #147446]	
 
 	Param's Explanation:
 		+ @CustID: SuperID
@@ -802,7 +803,7 @@ BEGIN
 				a.Currency,
 				0 AS turnoverSB, 
 				0 AS turnoverBA,
-				SUM(CASE WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) THEN
+				SUM(CASE WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) OR (b.bettype BETWEEN 3601 AND 3610) THEN
 						stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
 					ELSE 0 END	
 				) AS turnoverNG, 
@@ -891,7 +892,7 @@ BEGIN
 				SUM(b.winlost-b.actual_stake) AS Winlost,  
 				0 AS LicenseeWLSB,
 				0 AS LicenseeWLBA,
-				-SUM(CASE WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120)
+				-SUM(CASE WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) OR (b.bettype BETWEEN 3601 AND 3610)
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLNG,
 				-SUM(CASE WHEN b.bettype BETWEEN 1201 AND 1299
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLVS,
@@ -1103,7 +1104,7 @@ BEGIN
 					ELSE 0 END
 				) AS turnoverSB,
 				0 AS turnoverBA,
-				SUM(CASE WHEN b.sporttype IN (161, 164) THEN 
+				SUM(CASE WHEN b.sporttype IN (161, 164, 168) THEN 
 					b.turnover
 					*
 					CASE WHEN @drawfilter IN (2,3) THEN
@@ -1339,7 +1340,7 @@ BEGIN
 				SUM(b.winlost),
 				-SUM(CASE WHEN b.sporttype = 0 THEN b.winlost ELSE 0 END) AS LicenseeWLSB,
 				0 AS LicenseeWLBA,
-				-SUM(CASE WHEN b.sporttype IN (161, 164) THEN b.winlost ELSE 0 END) AS LicenseeWLNG,
+				-SUM(CASE WHEN b.sporttype IN (161, 164, 168) THEN b.winlost ELSE 0 END) AS LicenseeWLNG,
 				-SUM(CASE WHEN b.sporttype IN (180, 181, 186) THEN b.winlost ELSE 0 END) AS LicenseeWLVS,
 				-SUM(CASE WHEN b.sporttype IN (251, 208, 209, 210) THEN b.winlost ELSE 0 END) AS LicenseeWLCS,
 				-SUM(CASE WHEN b.sporttype = 202 THEN b.winlost ELSE 0 END) AS LicenseeWLKN,

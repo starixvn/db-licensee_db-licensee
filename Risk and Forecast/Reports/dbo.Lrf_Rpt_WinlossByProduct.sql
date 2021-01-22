@@ -90,7 +90,8 @@ AS
 		- 20201022@Louis: Integrate PG Soft [RedmineID: #139182]
 		- 20200918@Hogan: Integrate Joker [RedmineID: #141408]
 		- 20201202@Louis: Licensee Spread Setting [RedmineID: #142532]	
-		- 20201202@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369]
+		- 20201202@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369] 
+		- 20201231@Louis: Integrate Happy 5 Linked Games [RedmineID: #147446]
 
 	Param's Explanation:
 		+ @ReportType: 1-Daily; 2-Monthly;
@@ -481,7 +482,7 @@ BEGIN
 						ELSE 1 END
 				),
 				SUM(b.winlost),
-				SUM(CASE WHEN (b.sporttype in(0,161,164,251,202,208,209,210,212,220,248,165,247,245,222,223,243,200,244,232,234))  THEN -1 * b.winlost 
+				SUM(CASE WHEN (b.sporttype in(0,161,164,251,202,208,209,210,212,220,248,165,247,245,222,223,243,200,244,232,234,168))  THEN -1 * b.winlost 
 						ELSE 0 END
 					) AS LicenseeWL,
 				SUM(comm ) AS Comm,

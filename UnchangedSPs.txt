@@ -1,2 +1,9 @@
-NAP_LicenseeManagement\SpList\LicenseeSetting\Nap_LM_Licensee_Insert.sql
-NAP_LicenseeManagement\SpList\LicenseeSetting\Dot_Dep_LM_CreateNewLicensee.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_TurnOver.proc.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_CustomerBalance.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_LicWinloss.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_PlatformWinlossDetail.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_WinLoss.sql
+Risk and Forecast\Reports\Lrf_Rpt_LicWinlossByTimeZone.sql
+Risk and Forecast\Reports\Lrf_Rpt_LicWinloss_BySourced.sql
+Risk and Forecast\Reports\Lrf_Rpt_SubsidiaryWinloss.sql
+Risk and Forecast\Reports\Lrf_Rpt_SubsidiaryWinlossDetail.sql

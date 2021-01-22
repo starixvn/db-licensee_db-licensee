@@ -7,6 +7,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_MatchWinLossByOutrightParlay]
     @showSB		BIT = 0,
 	@showBA		BIT = 0,
 	@showVS2	BIT = 0,
+	@showNG		BIT = 0,
 	@AgentList	VARCHAR(MAX),
 	@BaseCurrency	VARCHAR(3) = ''
     
@@ -30,7 +31,8 @@ Revisions:
    - 20170704@Harper: LRF - Integrate Bet Radar Virtual Sports [RedmineID: #78241]
    - 20180808@Amanda: Remove Racing [RedmineID: #99378]
    - 20190620@Amanda: Add Base currency param [RedmineID: #112531]
-
+	- 20201231@Louis: Integrate Happy 5 Linked Games [RedmineID: #147446]
+	
 Param's Explanation: 
 	+ @AgentList: xml structure
 					  <ROOT>
@@ -166,7 +168,7 @@ BEGIN
 			sum(b.betcount) betcount
 		FROM @TempBetList b
 		WHERE   
-			b.bettype IN (9,29) --AND b.matchid IN (9,29)
+			b.bettype IN (9,29)  --AND b.matchid IN (9,29)
         GROUP BY 
 			b.Winlostdate,
 			b.currency,
@@ -299,6 +301,69 @@ BEGIN
 			m.groupmatch
 	END
 
+	IF @showNG=1 
+	BEGIN		
+		--Get general data
+		DELETE FROM @TempBetList
+	
+		INSERT INTO @TempBetList
+		SELECT  
+			b.Winlostdate,
+			b.currency,
+			b.bettype,
+			SUM(stake) as Stake,
+			SUM(winlost - actual_stake) as Winlost,
+			SUM(b.awinlost) AS awinlost,
+			SUM(b.comm) AS comm,
+			SUM(b.playercomm  ) AS playercomm,
+			b.matchid,
+			0 AS Liveawayscore,
+			b.tpositiontaking,
+			count(1) betcount
+		FROM    
+			bettrans b WITH(NOLOCK)
+			INNER JOIN @TempAg ag ON b.recommend = ag.custid AND b.Currency = ag.Currency
+		WHERE   
+			b.winlostdate = @_Date
+			AND b.statusID IN (111,112,113)
+			AND b.bettype BETWEEN 3601 AND 3610
+			AND b.matchid>0
+		GROUP BY
+			b.Winlostdate,
+			b.currency,
+			b.bettype,
+			b.matchid,
+			b.tpositiontaking
+
+		INSERT  INTO @AgMatchWLDetails
+		SELECT  
+			b.Winlostdate,
+			b.currency,
+			168 AS matchid,
+			0 AS homeid,
+			0 AS awayid,
+			b.bettype,
+			0 AS leagueid,
+			SUM(stake),
+			SUM(winlost),
+			-SUM(b.winlost) AS LicenseeWL,
+			0 AS AmountDueToBA,
+			0 AS CommBA,
+			SUM(playercomm) AS PlayerComm,
+			'' AS race,
+			'' AS matchcode ,
+			CONVERT(BIT, 0) AS IsNeutral,
+			sum(b.betcount) betcount
+		FROM    
+			@TempBetList b
+		WHERE  b.bettype BETWEEN 3601 AND 3610
+        GROUP BY 
+			b.Winlostdate,
+			b.currency,
+			b.bettype
+			
+	END
+	
 	IF @showVS2 = 1 
 	BEGIN	
 
@@ -525,6 +590,67 @@ BEGIN
 			b.currency,
 			--bettype,
 			m.groupmatch
+	END
+
+	IF @showNG=1
+	BEGIN		
+		--Get general data
+		DELETE FROM @TempBetList
+	
+		INSERT INTO @TempBetList
+		SELECT  
+			b.Winlostdate,
+			b.currency,
+			b.bettype,
+			SUM(stake) as Stake,
+			SUM(winlost - actual_stake) as Winlost,
+			SUM(b.awinlost) AS awinlost,
+			SUM(b.comm) AS comm,
+			SUM(b.playercomm ) AS playercomm,
+			b.matchid,
+			0 AS Liveawayscore,
+			b.tpositiontaking,
+			count(1) betcount
+		FROM    
+			bettrans14 b WITH(NOLOCK)
+			INNER JOIN @TempAg ag ON b.recommend = ag.custid AND b.Currency = ag.Currency
+		WHERE
+			b.winlostdate = @_Date
+			AND b.statusID NOT IN ( 101, 102, 103 )
+			AND b.bettype BETWEEN 3601 AND 3610
+		GROUP BY
+			b.Winlostdate,
+			b.currency,
+			b.bettype,
+			b.matchid,
+			b.tpositiontaking
+			
+		INSERT INTO @AgMatchWLDetails
+		SELECT  
+			b.Winlostdate,
+			b.currency,
+			168 AS matchid,
+			0 AS homeid,
+			0 AS awayid,
+			b.bettype,
+			0 AS leagueid,
+			SUM(stake) AS stake,
+			SUM(b.winlost),
+			-SUM(b.winlost) AS LicenseeWL,
+			0 AS AmountDueToBA,
+			0 AS CommBA,
+			SUM(playercomm) AS PlayerComm,
+			'' AS race,
+			'' AS matchcode,
+			CONVERT(BIT, 0) AS IsNeutral,
+			sum(b.betcount) betcount
+		FROM    
+			@TempBetList b
+		WHERE  b.bettype BETWEEN 3601 AND 3610
+		GROUP BY
+			b.Winlostdate,
+			b.currency,
+			b.bettype
 	END
 
 	IF @showVS2 = 1 
