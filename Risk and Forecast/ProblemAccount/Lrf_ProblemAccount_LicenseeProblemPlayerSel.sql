@@ -12,6 +12,7 @@ ALTER PROCEDURE Lrf_ProblemAccount_LicenseeProblemPlayerSel
 	@TotalItems	INT = 0 OUTPUT,
 	@Langkey	VARCHAR(20) = 'en-US',
 	@ReasonGroupID	VARCHAR(200) = '',
+	@CustomerClass VARCHAR(1000) = '',
 	@BaseCurrency	VARCHAR(3) = ''
 AS
 	/*
@@ -30,12 +31,14 @@ AS
 			- 20201103@Winfred: sort customer Class [redmine:#144706]
 			- 20201204@Johnson: remove linked server when get data in TicketVoiding_VoidedTransaction_bk [redmine:#141699]
 			- 20201209@Winfred: get isBA for Problem player [redmine:#146508]
+			- 20210128@Johnson: filter customer class [redmine:#]
 		Paramter's Explanations:
 			@OrderCol = 1: System ID
 						= 2: sort by external ID
 						= 3: MarkDate
 						= 4: customer Class
-			@SortType = 1: ASC, 2: DESC		 	
+			@SortType = 1: ASC, 2: DESC	
+			@CustomerClass: '0,1,2,3,4,5,6,7,8,9,10,11,12,13' (all)
 	*/
 BEGIN
 	SET NOCOUNT ON
@@ -44,7 +47,7 @@ BEGIN
 	SELECT  @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
 
 	CREATE TABLE #TempAg (custid INT)
-	CREATE TABLE #CustList (CustId INT PRIMARY KEY, AgentID INT, CreatedDate DATETIME, username VARCHAR(50), username2 VARCHAR(50), MaxBet MONEY, MaxPerEvent MONEY, ReasonID TINYINT ,Reason NVARCHAR(4000))
+	CREATE TABLE #CustList (CustId INT PRIMARY KEY, CustomerClass SMALLINT, AgentID INT, CreatedDate DATETIME, username VARCHAR(50), username2 VARCHAR(50), MaxBet MONEY, MaxPerEvent MONEY, ReasonID TINYINT ,Reason NVARCHAR(4000))
 	
 	DECLARE @DocHandler INT
 
@@ -76,6 +79,10 @@ BEGIN
 	SELECT RTRIM(LTRIM(VAL)) AS ReasonGroupID
 	INTO #ReasonGroup
 	FROM Lrf_f_StringSplit(@ReasonGroupID,',')
+	
+	SELECT RTRIM(LTRIM(VAL)) AS CustomerClass
+	INTO #tblCustomerClass
+	FROM Lrf_f_StringSplit(@CustomerClass,',')
 
 	IF @Username <> ''
 	BEGIN
@@ -139,7 +146,8 @@ BEGIN
 
 
 	UPDATE t
-	SET t.Reason = REVERSE(SUBSTRING(REVERSE(CONVERT(NVARCHAR(MAX),(	SELECT CONVERT(NVARCHAR,tmp.CreatedDate,101) + ': ' + tmp.ReasonName + '#' 
+	SET t.CustomerClass = ISNULL(ci.CustomerClass,0),
+		t.Reason = REVERSE(SUBSTRING(REVERSE(CONVERT(NVARCHAR(MAX),(	SELECT CONVERT(NVARCHAR,tmp.CreatedDate,101) + ': ' + tmp.ReasonName + '#' 
 											FROM(
 												SELECT MIN(t2.CreatedDate) AS CreatedDate
 													,CASE WHEN @Langkey = 'zh-CN' THEN REPLACE(MIN(pr.ReasonNameCS),'(M)','') ELSE REPLACE(MIN(pr.ReasonName),'(M)','') END AS ReasonName
@@ -158,6 +166,10 @@ BEGIN
 							WHERE t.custid = t2.custid
 							ORDER BY t2.CreatedDate) --Get MIN(CreatedDate)
 	FROM #CustList t
+		INNER JOIN custinfo ci WITH(NOLOCK) ON t.custid = ci.custid
+	
+	DELETE #CustList
+	WHERE customerClass NOT IN (SELECT customerClass FROM #tblCustomerClass)
 	
 	IF @IsCheckAll = 0
 	BEGIN
@@ -178,9 +190,8 @@ BEGIN
 												CASE WHEN @SortType = 2 THEN OrderCol END DESC ) rn
 		FROM t1
 		)
-		SELECT t2.*, ci.CustomerClass, CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END as isVIP,CASE WHEN b.custid IS NULL THEN 0 ELSE 1 END AS IsBA
+		SELECT t2.*, CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END as isVIP,CASE WHEN b.custid IS NULL THEN 0 ELSE 1 END AS IsBA
 		FROM t2 
-			INNER JOIN custinfo ci WITH(NOLOCK) ON ci.custid = t2.custid
 			LEFT JOIN Dep_CustVIP d WITH(NOLOCK) ON t2.custid = d.custid
 			LEFT JOIN Dep_CustBAActive b WITH(NOLOCK) ON t2.custid = b.custid
 		WHERE rn BETWEEN @rowstart AND @rowend
@@ -189,10 +200,9 @@ BEGIN
 	ELSE IF @OrderCol IN (4)
 	BEGIN
 		;WITH t AS (
-		SELECT a.*,ci.CustomerClass, ROW_NUMBER () OVER (ORDER BY CASE WHEN @SortType = 1 THEN ci.CustomerClass END ASC,	
-												CASE WHEN @SortType = 2 THEN ci.CustomerClass END DESC) rn
+		SELECT a.*, ROW_NUMBER () OVER (ORDER BY CASE WHEN @SortType = 1 THEN CustomerClass END ASC,	
+												CASE WHEN @SortType = 2 THEN CustomerClass END DESC) rn
 		FROM #CustList a
-		INNER JOIN custinfo ci WITH(NOLOCK) ON ci.custid = a.custid
 		)
 		SELECT t.*, CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END as isVIP,CASE WHEN b.custid IS NULL THEN 0 ELSE 1 END AS IsBA
 		FROM t
@@ -208,9 +218,8 @@ BEGIN
 												CASE WHEN @SortType = 2 THEN CreatedDate END DESC) rn
 		FROM #CustList
 		)
-		SELECT t.*, ci.CustomerClass, CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END as isVIP,CASE WHEN b.custid IS NULL THEN 0 ELSE 1 END AS IsBA
-		FROM t
-			INNER JOIN custinfo ci WITH(NOLOCK) ON ci.custid = t.custid
+		SELECT t.*, CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END as isVIP,CASE WHEN b.custid IS NULL THEN 0 ELSE 1 END AS IsBA
+		FROM t			
 			LEFT JOIN Dep_CustVIP d WITH(NOLOCK) ON t.custid = d.custid
 			LEFT JOIN Dep_CustBAActive b WITH(NOLOCK) ON t.custid = b.custid
 		WHERE rn BETWEEN @rowstart AND @rowend
