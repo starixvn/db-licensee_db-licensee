@@ -88,6 +88,7 @@ AS
 		- 20201215@Louis: Licensee Spread Setting - Fix Missing Block [RedmineID: #142532]	
 		- 20201216@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369] 
 		- 20201231@Louis: Integrate Happy 5 Linked Games [RedmineID: #147446]	
+		- 20200122@Hogan: Integrate GDG [RedmineID: #147267]
 		
 	Param's Explanation:
 		+ @IsLive : indicate that whether the report will get live data or not
@@ -331,7 +332,7 @@ BEGIN
 		END
 
 		--Others
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'NG', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK'))
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'NG', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'GDG'))
 		BEGIN
 			INSERT INTO #tmpWinloss
 			SELECT
@@ -358,6 +359,7 @@ BEGIN
 					WHEN (b.bettype BETWEEN 3001 AND 3099) AND b.bettype <> 3007 THEN 'SAG' -- SAG	
 					WHEN b.bettype BETWEEN 6001 AND 6300 THEN 'PGS' -- PGS
 					WHEN b.bettype BETWEEN 6401 AND 6700 THEN 'JK' -- JK
+					WHEN b.bettype BETWEEN 5701 AND 5799 THEN 'GDG' -- GDG
 					END AS ProductCode,
 				SUM(stake) turnover,
 				SUM(b.winlost - b.actual_stake) AS Winlost,
@@ -394,7 +396,8 @@ BEGIN
 					OR (b.bettype BETWEEN 1611 AND 1699 AND b.matchid <> 150) -- SBC
 					OR (b.bettype BETWEEN 3001 AND 3099 AND b.bettype <> 3007) -- SAG
 					OR b.bettype BETWEEN 6001 AND 6300 -- PGS
-					OR b.bettype BETWEEN 6401 AND 6700 -- JK					
+					OR b.bettype BETWEEN 6401 AND 6700 -- JK
+					OR b.bettype BETWEEN 5701 AND 5799 -- GDG
 				)
 				AND (b.liveindicator = @Liveindicator OR @Liveindicator = 2)
 			GROUP BY
@@ -421,6 +424,7 @@ BEGIN
 					WHEN (b.bettype BETWEEN 3001 AND 3099) AND b.bettype <> 3007 THEN 'SAG' -- SAG
 					WHEN b.bettype BETWEEN 6001 AND 6300 THEN 'PGS' -- PGS
 					WHEN b.bettype BETWEEN 6401 AND 6700 THEN 'JK' -- JK
+					WHEN b.bettype BETWEEN 5701 AND 5799 THEN 'GDG' -- GDG
 				END
 		END
 	END
@@ -505,7 +509,7 @@ BEGIN
 		END
 
 		-- Others
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK'))
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'GDG'))
 		BEGIN
 			INSERT INTO #tmpWinloss
 			SELECT 
@@ -539,6 +543,7 @@ BEGIN
 					WHEN (b.bettype BETWEEN 3001 AND 3099) AND b.bettype <> 3007 THEN 'SAG' -- SAG
 					WHEN b.bettype BETWEEN 6001 AND 6300 THEN 'PGS'
 					WHEN b.bettype BETWEEN 6401 AND 6700 THEN 'JK' -- JK
+					WHEN b.bettype BETWEEN 5701 AND 5799 THEN 'GDG' -- GDG
 				END AS ProductCode,
 				SUM(b.turnover) turnover,
 				SUM(b.winloss) winlost,
@@ -591,6 +596,7 @@ BEGIN
 					OR (b.bettype BETWEEN 3001 AND 3099 AND b.bettype <> 3007) -- SAG
 					OR b.bettype BETWEEN 6001 AND 6300 -- PGS
 					OR b.bettype BETWEEN 6401 AND 6700 -- JK
+					OR b.bettype BETWEEN 5701 AND 5799 -- GDG
 					)
 				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.ProductId = 0 AND e.BetType = b.BetType)
 			GROUP BY
@@ -623,6 +629,7 @@ BEGIN
 					WHEN (b.bettype BETWEEN 3001 AND 3099) AND b.bettype <> 3007 THEN 'SAG' -- SAG	
 					WHEN b.bettype BETWEEN 6001 AND 6300 THEN 'PGS'
 					WHEN b.bettype BETWEEN 6401 AND 6700 THEN 'JK' -- JK
+					WHEN b.bettype BETWEEN 5701 AND 5799 THEN 'GDG' -- GDG
 				END
 		END
 

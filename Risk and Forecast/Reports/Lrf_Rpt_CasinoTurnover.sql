@@ -23,6 +23,7 @@ AS
 		- 20200423@Hogan: Add new product Sexy Gaming [RedmineID: #132829]
 		- 20200615@Hogan: Integrate SA Gaming [RedmineID: #128493]
 		- 20201201@Mark: Casino Turnover Report - Support Saba.club, PP and PG Soft products [RedmineID: #146135]
+		- 20201224@Hogan: Integrate GDG [RedmineID: #147267]
 		
     Param's Explanation:  
 	  + @ProductCodes: "AB,CS,VB"
@@ -129,7 +130,7 @@ BEGIN
 		ELSE
 			SET @tmpFromDate = @FromDate
 
-		IF EXISTS (SELECT 1 FROM @Product WHERE ProductCode IN ('AB','SXG','SAG'))
+		IF EXISTS (SELECT 1 FROM @Product WHERE ProductCode IN ('AB','SXG','SAG','GDG'))
 		BEGIN
 			INSERT INTO #Data(
 				[Date],
@@ -160,7 +161,7 @@ BEGIN
 			INNER JOIN dbo.Customer c WITH (NOLOCK) ON b.CustId = c.CustId
 			WHERE	b.WinlostDate >= @tmpFromDate 
 					AND b.WinlostDate <= @tmpToDate
-					AND t.ProductCode  IN ('AB','SXG','SAG')
+					AND t.ProductCode  IN ('AB','SXG','SAG','GDG')
 					AND (@UserName = '' OR c.username2 LIKE '%$%' + @Username + '%' OR c.username LIKE '%' + @Username + '%')
 			GROUP BY b.WinlostDate, b.custId, c.username, c.username2, b.currency, t.ProductCode
 		END

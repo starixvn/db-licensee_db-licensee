@@ -87,6 +87,7 @@ AS
 		- 20201202@Louis: Licensee Spread Setting [RedmineID: #142532]	
 		- 20201202@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369]
 		- 20201231@Louis: Integrate Happy 5 Linked Games [RedmineID: #147446]
+		- 20200122@Hogan: Integrate GDG [RedmineID: #147267]
 
 	Param's Explanation:  
 		+	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -456,7 +457,7 @@ BEGIN
 						ELSE 1 END
 				),
 				SUM(b.winlost),
-				SUM(CASE WHEN (b.sporttype in(0,161,164,251,202,208,209,210,212,220,248,165,247,245,222,223,243,200,244,232,234,168))  THEN -1 * b.winlost 
+				SUM(CASE WHEN (b.sporttype in(0,161,164,251,202,208,209,210,212,220,248,165,247,245,222,223,243,200,244,232,234,168,236))  THEN -1 * b.winlost 
 						ELSE 0 END
 					) AS LicenseeWL,
 				SUM(comm) AS Comm,
