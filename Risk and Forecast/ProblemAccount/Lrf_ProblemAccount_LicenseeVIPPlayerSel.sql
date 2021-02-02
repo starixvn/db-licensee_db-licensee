@@ -6,6 +6,7 @@ ALTER PROCEDURE [dbo].[Lrf_ProblemAccount_LicenseeVIPPlayerSel]
 	@VipOption	TINYINT = 0,
 	@OrderCol	TINYINT = 1,
 	@SortType	TINYINT = 1,
+	@CustomerClass VARCHAR(1000)='',
 	
 	@PageSize	INT = 1000,
 	@PageIndex	INT = 1,
@@ -22,11 +23,14 @@ AS
 			- 20200717@Johnson: return agentid to support subsidiary [redmine:#136974]
 			- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]	
 			- 20201209@Winfred: get isBA for Problem player [redmine:#146508]
+			- 20210128@Johnson: filter customer class [redmine:#]
 		Paramter's Explanations:
 			- @VipOption: 0: All, 1: Yes, 2 : No
 			- @OrderCol = 1: sort by System ID	
-						= 2: external ID					
-			- @SortType = 1: ASC, 2: DESC			
+						= 2: external ID	
+						= 4: customer Class	(follow Lrf_ProblemAccount_LicenseeProblemPlayerSel)	
+			- @SortType = 1: ASC, 2: DESC
+			- @CustomerClass: '0,1,2,3,4,5,6,7,8,9,10,11,12,13' (all)		
 	*/
 BEGIN
 	SET NOCOUNT ON
@@ -35,7 +39,7 @@ BEGIN
 	SELECT  @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
 
 	CREATE TABLE #TempAg (custid INT)
-	CREATE TABLE #CustList (CustId INT PRIMARY KEY, AgentID INT, username VARCHAR(50), username2 VARCHAR(50), isVIP BIT, IsBA BIT)
+	CREATE TABLE #CustList (CustId INT PRIMARY KEY, CustomerClass SMALLINT, AgentID INT, username VARCHAR(50), username2 VARCHAR(50), isVIP BIT, IsBA BIT)
 	
 	DECLARE @DocHandler INT
 
@@ -104,22 +108,59 @@ BEGIN
 		WHERE isVIP = CASE WHEN @VipOption = 1 THEN 1
 							WHEN @VipOption = 2 THEN 0 ELSE isVip END 
 	END
+		
+	SELECT RTRIM(LTRIM(VAL)) AS CustomerClass
+	INTO #tblCustomerClass
+	FROM Lrf_f_StringSplit(@CustomerClass,',')
+	
+	UPDATE t
+	SET t.customerClass = ISNULL(ci.customerClass,0)
+	FROM #CustList t
+		INNER JOIN custinfo ci WITH(NOLOCK) ON t.custid = ci.custid
+	
+	DELETE #CustList 
+	WHERE customerClass NOT IN (SELECT customerClass FROM #tblCustomerClass)
 	
 	SELECT @TotalItems = COUNT(1) FROM #CustList
 	
-	;WITH t1 AS(
-	SELECT *, CASE WHEN @OrderCol = 1 THEN username ELSE username2 END OrderCol
-	FROM #CustList
-	),
-	t2 AS (
-	SELECT *, ROW_NUMBER () OVER (ORDER BY CASE WHEN @SortType = 1 THEN OrderCol END ASC,	
-											CASE WHEN @SortType = 2 THEN OrderCol END DESC) rn
-	FROM t1
-	)
-	SELECT t2.*--,ISNULL(isMarkVoid,0) isMarkVoid			
-	FROM t2 
-		LEFT JOIN ProblemAccount p WITH(NOLOCK) ON t2.custid = p.custid
-	WHERE rn BETWEEN @rowstart AND @rowend
-	ORDER BY rn ASC
+	IF @OrderCol IN (1,2)
+	BEGIN
+		;WITH t1 AS(
+		SELECT *, CASE WHEN @OrderCol = 1 THEN username 
+						WHEN @OrderCol = 2 THEN username2 END OrderCol
+		FROM #CustList
+		),
+		t2 AS (
+		SELECT *, ROW_NUMBER () OVER (ORDER BY CASE WHEN @SortType = 1 THEN OrderCol END ASC,	
+												CASE WHEN @SortType = 2 THEN OrderCol END DESC) rn
+		FROM t1
+		)
+		SELECT t2.*--,ISNULL(isMarkVoid,0) isMarkVoid			
+		FROM t2 
+			LEFT JOIN ProblemAccount p WITH(NOLOCK) ON t2.custid = p.custid
+		WHERE rn BETWEEN @rowstart AND @rowend
+		ORDER BY rn ASC
+	END
+	ELSE IF @OrderCol = 4
+	BEGIN
+		;WITH t1 AS(
+		SELECT *, CASE WHEN @OrderCol = 4 THEN CustomerClass END OrderCol
+		FROM #CustList
+		),
+		t2 AS (
+		SELECT *, ROW_NUMBER () OVER (ORDER BY CASE WHEN @SortType = 1 THEN OrderCol END ASC,	
+												CASE WHEN @SortType = 2 THEN OrderCol END DESC) rn
+		FROM t1
+		)
+		SELECT t2.*--,ISNULL(isMarkVoid,0) isMarkVoid			
+		FROM t2 
+			LEFT JOIN ProblemAccount p WITH(NOLOCK) ON t2.custid = p.custid
+		WHERE rn BETWEEN @rowstart AND @rowend
+		ORDER BY rn ASC
+	END
+	
+	DROP TABLE #tblCustomerClass
+	DROP TABLE #TempAg	
+	DROP TABLE #CustList
 END	
 GO
