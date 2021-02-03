@@ -121,7 +121,8 @@ AS
 		- 20201204@Louis: Licensee Spread Setting [RedmineID: #142532]	
 		- 20201215@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369] 
 		- 20201231@Louis: Integrate Happy 5 Linked Games [RedmineID: #147446]	
-		- 20200122@Hogan: Integrate GDG [RedmineID: #147267]
+		- 20200122@Hogan: Integrate GDG [RedmineID: #147267] 
+		- 20210203@Louis: Saba Red Envelope [RedmineID: #149923]
 
 	Param's Explanation:
 		+ @CustID: SuperID
@@ -1006,7 +1007,7 @@ BEGIN
 				INNER JOIN @TempAg a ON b.recommend = a.custid AND b.currency = a.currency
 				LEFT JOIN @VIPCust v ON b.custid = v.CustID
 			WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
-				AND ((b.bettype IN (4300, 4299, 4298, 17000, 17003, 1906) AND b.statusID = 112)
+				AND ((b.bettype IN (4300, 4299, 4298, 17000, 17003, 17004, 1906) AND b.statusID = 112)
 					OR (b.bettype = 4297 AND b.statusID = 111)
 					OR (b.bettype = 3007 AND b.statusID = 113)
 					OR (b.bettype BETWEEN 1611 AND 1699 AND b.matchid = 150 AND b.statusID IN (111,112,113)))  -- Promotion Prize, Jackpot Prize, Contribution
@@ -1606,7 +1607,7 @@ BEGIN
 								INNER JOIN @TempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
 								LEFT JOIN @VIPCust v ON b.custid = v.CustID
 							WHERE b.Winlostdate BETWEEN @FDate AND @TempToDate
-								AND ((b.bettype IN (4300, 4299, 4298, 17000, 17003, 1906) AND b.statusID = 112)
+								AND ((b.bettype IN (4300, 4299, 4298, 17000, 17003, 17004, 1906) AND b.statusID = 112)
 									OR (b.bettype = 4297 AND b.statusID = 111)
 									OR (b.bettype = 3007 AND b.statusID = 113)
 									OR (b.sporttype = 150 AND b.statusID IN (111,112,113)))

@@ -16,6 +16,7 @@ Revisions:
 	- 20190904@Bobby: Implement Statement Service - Level 1 [RedmineID: #119648]
 	- 20191003@Bobby: Integrate NPH Promotion product [RedmineID: #120333]
 	- 20200803@Sophia: add Saba Loyalty [Redmine: #138493]
+	- 20210203@Louis: Saba Red Envelope [RedmineID: #149923]
 	
 Param's Explanation:     
 */
@@ -44,12 +45,12 @@ RETURN (
 			-- bet TO summary
 			SELECT 
 				CASE 
-					WHEN b.statusID IN (101,102,103) AND b.bettype NOT IN (17000, 17003) THEN temp.VOID_KEY --> Void/Reject/Refund
-					WHEN b.bettype IN (17000, 17003) THEN temp.PROMO_KEY
+					WHEN b.statusID IN (101,102,103) AND b.bettype NOT IN (17000, 17003, 17004) THEN temp.VOID_KEY --> Void/Reject/Refund
+					WHEN b.bettype IN (17000, 17003, 17004) THEN temp.PROMO_KEY
 					ELSE temp.BET_KEY --> Won/Lose/Draw
 				END AS orderkey
 				, winlostdate
-				, CASE WHEN bettype IN (17000, 17003) THEN 'PROMO' ELSE 'BET' END AS transtype
+				, CASE WHEN bettype IN (17000, 17003, 17004) THEN 'PROMO' ELSE 'BET' END AS transtype
 				, NULL AS transdesc
 				, SUM(b.stake) AS turnover
 				, SUM(b.winlost - b.actual_stake) AS TotalAmt
@@ -61,12 +62,12 @@ RETURN (
 
 			GROUP BY
 				CASE 
-					WHEN b.statusID IN (101,102,103) AND b.bettype NOT IN (17000, 17003) THEN 2 --> Void/Reject/Refund
-					WHEN b.bettype IN (17000, 17003) THEN temp.PROMO_KEY
+					WHEN b.statusID IN (101,102,103) AND b.bettype NOT IN (17000, 17003, 17004) THEN 2 --> Void/Reject/Refund
+					WHEN b.bettype IN (17000, 17003, 17004) THEN temp.PROMO_KEY
 					ELSE temp.BET_KEY --> Won/Lose/Draw
 				END,
 				 b.winlostdate,
-				CASE WHEN bettype IN (17000, 17003) THEN 'PROMO' ELSE 'BET' END
+				CASE WHEN bettype IN (17000, 17003, 17004) THEN 'PROMO' ELSE 'BET' END
 
 			-- BAL
 			UNION ALL

@@ -11,6 +11,7 @@ RETURNS TABLE
 	DB: DBEXT-bodb02
 	Revision:
 		- 20201008@Louis: Licensee Spread Setting [RedmineID: #142532]
+		- 20210203@Louis: Saba Red Envelope [RedmineID: #149923]
 */
 
 RETURN
@@ -27,6 +28,8 @@ RETURN
 	SELECT 37, 17000									--- Saba Loyalty
 	UNION ALL 
 	SELECT 37, 17003									--- Saba Loyalty
+	UNION ALL 
+	SELECT 37, 17004									--- Saba Red Envelope
 	UNION ALL 
 	SELECT 39, 3007										--- SA Gaming Tip ticket
 	UNION ALL 
