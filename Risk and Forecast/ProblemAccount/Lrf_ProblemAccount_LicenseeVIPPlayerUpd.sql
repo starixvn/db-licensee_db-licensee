@@ -17,7 +17,7 @@ AS
 			- 20200417@Elodie: Unremove VIP if void abnormal [Redmine: #132736]
 			- 20200605@Eden:LAP - Upload VIP list by ExternalID #135410
 			- 20201209@Winfred: Check BA when turn on VIP player [redmine:#146508]
-			- 20210129@Johnson: not update VIP for customerClass = 10,13 [redmine:#149492]
+			
 		Paramter's Explanations:	
 			- @result:
 				ErrCode =
@@ -29,7 +29,6 @@ AS
 						103: invalid ExternalID
 						104: dont change status ExternalID
 						105: dont change BA Player
-						106: dont update vip for customerClass 10,13
 	*/
 BEGIN
 	SET NOCOUNT ON
@@ -40,7 +39,6 @@ BEGIN
 	CREATE TABLE #tblCust (custid INT, 
 							username VARCHAR(50), 
 							roleid TINYINT, 
-							customerClass SMALLINT,
 							isVip BIT, 	
 							isBA BIT, 					
 							isLog BIT DEFAULT 0, 
@@ -106,12 +104,7 @@ BEGIN
 	FROM #tblCust t
 		INNER JOIN #tempUser c 
 			ON t.username2 = c.username2 
-			
-	UPDATE t
-	SET t.customerClass = ISNULL(ci.customerClass,0)		
-	FROM #tblCust t
-		INNER JOIN custinfo ci WITH(NOLOCK)	ON t.custid = ci.custid
-					
+
 	IF EXISTS (SELECT 1 FROM #tblCust WHERE custid IS NULL)
 	BEGIN	
 		SELECT @ErrMsg = ''
@@ -225,33 +218,10 @@ BEGIN
 				SELECT 105,@cnt,@ErrMsg
 	
 		END
-		
-		--dont update vip for customerClass = 10,13
-		IF EXISTS(SELECT 1 FROM #tblCust WHERE customerClass IN (10,13) AND custid IS NOT NULL)
-		BEGIN
-			--By UserName
-			SELECT @ErrMsg = ''
-			
-			SELECT @ErrMsg = @ErrMsg + username + ','
-			FROM #tblCust
-			WHERE customerClass IN (10,13)
-				AND custid IS NOT NULL	
-				AND username IS NOT NULL	
-			
-			SELECT @cnt = @@ROWCOUNT
-			
-			SELECT @ErrMsg = REVERSE(SUBSTRING(REVERSE(@ErrMsg),2,LEN(@ErrMsg)))
-			
-			--no update customerClass 10,13
-			IF @cnt > 0
-				INSERT INTO @Result(ErrCode,Cnt,ErrMsg)
-				SELECT 106,@cnt,@ErrMsg
-		END
 	END 
 	
-	
 	--> Distinct custid to update and write log
-	SELECT DISTINCT custid,t.isLog,t.isUpdate,t.isVip,t.isBA,t.MaxBet,t.MaxPerEvent,t.roleid,t.customerClass
+	SELECT DISTINCT custid,t.isLog,t.isUpdate,t.isVip,t.isBA,t.MaxBet,t.MaxPerEvent,t.roleid
 	INTO #tblCust2
 	FROM #tblCust t
 
@@ -270,7 +240,7 @@ BEGIN
 		RETURN;
 	END
 	
-	IF @isVip = 1 AND NOT EXISTS(SELECT 1 FROM #tblCust2 WHERE isVip <> @isVip AND isBA = 0 AND customerClass NOT IN (10,13))
+	IF @isVip = 1 AND NOT EXISTS(SELECT 1 FROM #tblCust2 WHERE isVip <> @isVip AND isBA = 0)
 	BEGIN
 		SELECT * FROM @Result
 		RETURN;
@@ -290,7 +260,6 @@ BEGIN
 				AND isBA = 0
 				AND isUpdate = 0
 				AND custid IS NOT NULL
-				AND customerClass NOT IN (10,13)
 		END
 		ELSE
 		BEGIN
