@@ -22,6 +22,7 @@ AS
 	Revisions:
 		- 20200925@Kos: New SP [RedmineID: #141454]
 		- 20201019@Kos: Change to use new table to check performance [RedmineID: #143310]
+		- 20210204@Kos: Hotfix - wrong turnover [RedmineID: #150090]
 
 	Param's Explanation:
 		+ @ReportType: 1: Daily, 2: Monthly
@@ -320,34 +321,34 @@ BEGIN
 							WHEN b.isBA = 0
 								AND b.bettype NOT IN (911, 912, 913)
 								AND @DrawFilter = 1
-								THEN b.betcount
+								THEN b.stake
 							WHEN b.isBA = 0
 								AND b.bettype NOT IN (911, 912, 913)
 								AND @DrawFilter IN (2, 3)
 								AND b.statusID IN (112, 113)
-								THEN b.betcount
+								THEN b.stake
 							WHEN b.isBA = 0
 								AND b.bettype NOT IN (911, 912, 913)
 								AND @DrawFilter IN (2, 3)
 								AND b.statusID IN (114, 115)
-								THEN 0.5 * b.betcount
+								THEN 0.5 * b.stake
 							ELSE 0
 						END) AS TurnoverSB,
 					SUM(CASE
 							WHEN b.isBA = 1
 								AND b.bettype NOT IN (911, 912, 913)
 								AND @DrawFilter = 1
-								THEN b.betcount
+								THEN b.stake
 							WHEN b.isBA = 1
 								AND b.bettype NOT IN (911, 912, 913)
 								AND @DrawFilter IN (2, 3)
 								AND b.statusID IN (112, 113)
-								THEN b.betcount
+								THEN b.stake
 							WHEN b.isBA = 1
 								AND b.bettype NOT IN (911, 912, 913)
 								AND @DrawFilter IN (2, 3)
 								AND b.statusID IN (114, 115)
-								THEN 0.5 * b.betcount
+								THEN 0.5 * b.stake
 							ELSE 0
 						END) AS TurnoverBA,
 					SUM(CASE WHEN b.bettype = 913 THEN 0 ELSE b.winlost END) AS WinLost,
