@@ -28,6 +28,7 @@ AS
 		- 20201013@Hogan: Integrate SA Gaming [RedmineID: #128493]
 		- 20201016@Hogan: Integrate Arcadia Gaming Bonus [RedmineID: #143648]
 		- 20201104@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369]
+		- 20210203@Louis: Saba Red Envelope [RedmineID: #149923]
 
 	Param's Explanation:
 		+ @MoveBetsDay: The day we move tickets to bettrans14
@@ -166,7 +167,7 @@ BEGIN
 			LEFT JOIN @VIPCust v ON b.custid = v.CustID
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @_ToDate
-			AND((b.bettype IN (@PPPromotion, @PPTournament, @PPJackpot, 17000, 17003, @CCBonus) AND b.statusID = 112)
+			AND((b.bettype IN (@PPPromotion, @PPTournament, @PPJackpot, 17000, 17003, 17004, @CCBonus) AND b.statusID = 112)
 				OR (b.bettype = @PPContribution AND b.statusID = 111)
 				OR (b.bettype = @SAGbetType AND b.statusID = 113)
 				OR (b.bettype BETWEEN 1611 AND 1699 AND b.matchid = @SBCFreeBetsSportType AND b.statusID IN (111,112,113)))
@@ -206,7 +207,7 @@ BEGIN
 		WHERE 
 			b.winlostdate BETWEEN @_FromDate AND @TempToDate
 			AND b.sporttype IN (@PPsportType, @SPRsportType, @SAGsportType, @CCsportType, @SBCFreeBetsSportType)
-			AND((b.bettype IN (@PPPromotion, @PPTournament, @PPJackpot, 17000, 17003, @CCBonus) AND b.statusID = 112)
+			AND((b.bettype IN (@PPPromotion, @PPTournament, @PPJackpot, 17000, 17003, 17004, @CCBonus) AND b.statusID = 112)
 				OR (b.bettype = @PPContribution AND b.statusID = 111)
 				OR (b.bettype = @SAGbetType AND b.statusID = 113)
 				OR (b.sporttype = @SBCFreeBetsSportType AND b.statusID IN (111,112,113)))
@@ -238,7 +239,7 @@ BEGIN
 		p.BetType,
 		p.SportType,
 		CASE
-			WHEN p.BetType IN (17000, 17003) THEN @SPR
+			WHEN p.BetType IN (17000, 17003, 17004) THEN @SPR
 			WHEN p.BetType = @PPContribution THEN @PPC
 			WHEN p.BetType = @SAGbetType THEN @SAG
 			WHEN p.BetType = @CCBonus THEN @CCB
@@ -259,7 +260,7 @@ BEGIN
 		p.BetType,
 		p.SportType,
 		CASE
-			WHEN p.BetType IN (17000, 17003) THEN @SPR
+			WHEN p.BetType IN (17000, 17003, 17004) THEN @SPR
 			WHEN p.BetType = @PPContribution THEN @PPC
 			WHEN p.BetType = @SAGbetType THEN @SAG
 			WHEN p.BetType = @CCBonus THEN @CCB

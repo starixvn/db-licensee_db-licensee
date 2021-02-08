@@ -21,6 +21,7 @@ AS
 		- 20200803@Sophia: add Saba Loyalty [Redmine: #138493]
 		- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]
 		- 20210111@Kos: Hotfix - not showing Saba Promotion [RedmineID: #148567]
+		- 20210203@Louis: Saba Red Envelope [RedmineID: #149923]
 
 	Param's Explanation:
 		- @ModeView: TINYINT
@@ -113,10 +114,10 @@ BEGIN
 			AND b.bettype NOT IN (903, 71, 913, 914, 999)
 			AND ((ISNULL(@IsCOMember,0) = 0 AND b.bettype <> 912) OR (@IsCOMember = 1 AND b.bettype <> 911))
 			AND 1 = CASE 
-						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) AND b.bettype NOT IN (17000, 17003) THEN 1 
-						WHEN @_ModeView = 2 AND b.statusID IN (101,102,103) AND b.bettype NOT IN (17000, 17003) THEN 1 
+						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) AND b.bettype NOT IN (17000, 17003, 17004) THEN 1 
+						WHEN @_ModeView = 2 AND b.statusID IN (101,102,103) AND b.bettype NOT IN (17000, 17003, 17004) THEN 1 
 						WHEN @_ModeView = 3 AND b.statusID IN (0,1) THEN 1 
-						WHEN @_ModeView = 4 AND b.bettype IN (17000, 17003) THEN 1 
+						WHEN @_ModeView = 4 AND b.bettype IN (17000, 17003, 17004) THEN 1 
 						ELSE 0 
 					END
 		GROUP BY
@@ -182,9 +183,9 @@ BEGIN
 			AND b.bettype NOT IN (903, 71, 913, 914, 999)
 			AND ((@IsCOMember = 0 AND b.bettype <> 912) OR (@IsCOMember = 1 AND b.bettype <> 911))
 			AND 1 = CASE 
-						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) AND b.bettype NOT IN (17000, 17003) THEN 1 
-						WHEN @_ModeView = 2 AND b.statusID IN (101,102,103) AND b.bettype NOT IN (17000, 17003) THEN 1 
-						WHEN @_ModeView = 4 AND b.bettype IN (17000, 17003) THEN 1 
+						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) AND b.bettype NOT IN (17000, 17003, 17004) THEN 1 
+						WHEN @_ModeView = 2 AND b.statusID IN (101,102,103) AND b.bettype NOT IN (17000, 17003, 17004) THEN 1 
+						WHEN @_ModeView = 4 AND b.bettype IN (17000, 17003, 17004) THEN 1 
 					ELSE 0 END
 		GROUP BY b.bettype
 	END
@@ -206,9 +207,9 @@ BEGIN
 			AND b.bettype NOT IN (903, 71, 913, 914, 999)
 			AND ((@IsCOMember = 0 AND b.bettype <> 912) OR (@IsCOMember = 1 AND b.bettype <> 911))
 			AND 1 = CASE 
-						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) AND b.bettype NOT IN (17000, 17003) THEN 1 
-						WHEN @_ModeView = 2 AND b.statusID IN (101,102,103) AND b.bettype NOT IN (17000, 17003) THEN 1 
-						WHEN @_ModeView = 4 AND b.bettype IN (17000, 17003) THEN 1 
+						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) AND b.bettype NOT IN (17000, 17003, 17004) THEN 1 
+						WHEN @_ModeView = 2 AND b.statusID IN (101,102,103) AND b.bettype NOT IN (17000, 17003, 17004) THEN 1 
+						WHEN @_ModeView = 4 AND b.bettype IN (17000, 17003, 17004) THEN 1 
 					ELSE 0 END
 		GROUP BY b.bettype
 	END;

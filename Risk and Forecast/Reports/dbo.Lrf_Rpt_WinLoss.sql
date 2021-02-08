@@ -136,6 +136,7 @@ AS
 		- 20201202@Louis: Licensee Spread Setting [RedmineID: #142532]	
 		- 20201202@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369]
 		- 20201224@Hogan: Integrate GDG [RedmineID: #147267]
+		- 20210203@Louis: Saba Red Envelope [RedmineID: #149923]
 
 	Param's Explanation:
 		@OrderItem:
@@ -496,7 +497,7 @@ BEGIN
 			WHERE 
 				EXISTS(SELECT TOP (1) 1 FROM @TempAg c WHERE c.CustID = b.recommend)
 				AND b.winlostdate >= @TempFromDate AND b.winlostdate <= @_ToDate
-				AND ((b.bettype IN (4300, 4299, 4298, 17000, 17003, 1906) AND b.statusID = 112)
+				AND ((b.bettype IN (4300, 4299, 4298, 17000, 17003, 17004, 1906) AND b.statusID = 112)
 					OR (b.bettype = 4297 AND b.statusID = 111)
 					OR (b.bettype = 3007 AND b.statusID = 113)
 					OR (b.bettype BETWEEN 1611 AND 1699 AND b.matchid = 150 AND b.statusID IN (111,112,113))))  -- Promotion Prize, Jackpot Prize, Contribution
@@ -571,7 +572,7 @@ BEGIN
 			FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )
 			WHERE EXISTS(SELECT TOP (1) 1 FROM @TempAg c WHERE c.CustID = b.recommend)
 				AND b.Winlostdate BETWEEN @_FromDate AND @TempToDate
-				AND ((b.bettype IN (4300, 4299, 4298, 17000, 17003, 1906) AND b.statusID = 112)
+				AND ((b.bettype IN (4300, 4299, 4298, 17000, 17003, 17004, 1906) AND b.statusID = 112)
 					OR (b.bettype = 4297 AND b.statusID = 111)
 					OR (b.bettype = 3007 AND b.statusID = 113)
 					OR (b.sporttype = 150 AND b.statusID IN (111,112,113))) AND b.roleid = 2)  -- Promotion Prize, Jackpot Prize, Contribution
