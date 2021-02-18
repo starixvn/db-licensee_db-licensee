@@ -19,6 +19,7 @@ AS
 	Revisions:
 		- 20150121@Elodie - Add revision
 		- 20201214@Winfred: Adjust PT value with 4 decimal places for SB  [redmine: #146574]
+		- 20210208@Eden: exclude BA member when adjust PT for Sportbook [redmine: #150191]
 		
 	Param's Explanation:
 		@Product:	1: Sportbook
@@ -56,6 +57,13 @@ BEGIN
 	WHERE srecommend = @CustID
 			AND mrecommend NOT IN (SELECT custid FROM custinfo WITH(NOLOCK)
 									WHERE srecommend = @CustID AND username LIKE '%Acc%' AND roleid=3)
+	
+	--Exclude BA member for SB
+	IF @Sporttype = 1
+		DELETE t
+		FROM #temp t
+			INNER JOIN Dep_CustBAActive b WITH(NOLOCK)	ON b.CustId = t.custid
+
 	BEGIN TRY
 		DECLARE @ids VARCHAR(MAX), @rowcnt INT
 		WHILE (1=1)
