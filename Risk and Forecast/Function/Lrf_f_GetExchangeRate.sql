@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02,DB042-bodb02" selecters="bodbLicenseeNet" viewers="" isFunction="1" isNested="1"></info>*/
+/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02,DBBOF-bodb02" selecters="bodbLicenseeNet" viewers="" isFunction="1" isNested="1"></info>*/
 
 CREATE FUNCTION [dbo].[Lrf_f_GetExchangeRate]
 (
@@ -28,6 +28,7 @@ AS
 
 	Revisions:	
 		- 20190619@Amanda: Create function[Redmine #112531]
+		- 20210224@Mark: Add BDT and INR as Base Currencies[Redmine #150375]
 */
 
 BEGIN
@@ -104,7 +105,10 @@ BEGIN
 				WHEN @BaseCurrency = 'MYR' THEN ex.MYR
 				WHEN @BaseCurrency = 'CNY' THEN ex.CNY
 				WHEN @BaseCurrency = 'THB' THEN ex.THB
-				WHEN @BaseCurrency = 'IDR' THEN ex.IDR / 1000				WHEN @BaseCurrency = 'INH' THEN ex.VND / 1000
+				WHEN @BaseCurrency = 'IDR' THEN ex.IDR / 1000
+				WHEN @BaseCurrency = 'INH' THEN ex.VND / 1000
+				WHEN @BaseCurrency = 'BDT' THEN ex.BDT
+				WHEN @BaseCurrency = 'INR' THEN ex.INR
 				ELSE 1
 			END AS Rate,
 			CASE
@@ -115,7 +119,10 @@ BEGIN
 				WHEN @DefaultBaseCurrency = 'MYR' THEN ex.MYR
 				WHEN @DefaultBaseCurrency = 'CNY' THEN ex.CNY
 				WHEN @DefaultBaseCurrency = 'THB' THEN ex.THB
-				WHEN @DefaultBaseCurrency = 'IDR' THEN ex.IDR / 1000				WHEN @DefaultBaseCurrency = 'INH' THEN ex.VND / 1000
+				WHEN @DefaultBaseCurrency = 'IDR' THEN ex.IDR / 1000
+				WHEN @DefaultBaseCurrency = 'INH' THEN ex.VND / 1000
+				WHEN @DefaultBaseCurrency = 'BDT' THEN ex.BDT
+				WHEN @DefaultBaseCurrency = 'INR' THEN ex.INR
 				ELSE 1
 			END AS DefaultRate
 		FROM dbo.ExchangeDailyOanda ex WITH(NOLOCK)

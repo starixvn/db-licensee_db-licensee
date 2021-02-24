@@ -1,13 +1,12 @@
-﻿/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02,DB042-bodb02" selecters="bodbLicenseeNet,bodbAdminNet,Dot_Casino" viewers="" isFunction="1" isNested="0"></info>*/
-USE [bodb02]
-GO
+﻿/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02,DBBOF-bodb02" selecters="bodbLicenseeNet,bodbAdminNet,Dot_Casino" viewers="" isFunction="1" isNested="0"></info>*/
+
 ALTER FUNCTION [dbo].[Lrf_f_GetExchangeDaily]
     (
       @fromdate DATETIME,
       @todate DATETIME
       
     )
-RETURNS @tempDate TABLE (exchangedate DATETIME,ExchangeId INT,Code VARCHAR(5),MYR FLOAT, USD FLOAT, EUR FLOAT, CNY FLOAT,GBP FLOAT,HKD FLOAT,THB FLOAT,IDR FLOAT,INH FLOAT, actualrate FLOAT, UNIQUE CLUSTERED(exchangedate,exchangeid))
+RETURNS @tempDate TABLE (exchangedate DATETIME,ExchangeId INT,Code VARCHAR(5),MYR FLOAT, USD FLOAT, EUR FLOAT, CNY FLOAT,GBP FLOAT,HKD FLOAT,THB FLOAT,IDR FLOAT,INH FLOAT, BDT FLOAT, INR FLOAT, actualrate FLOAT, UNIQUE CLUSTERED(exchangedate,exchangeid))
 AS
 
  /*
@@ -23,6 +22,7 @@ AS
 	- 20171031@Harper: Fix rate for IDR currency [RedmineID: #85203]
 	- 20180724@Sophia: HA - remove table ExchangeDaily [Redmine: #98631]
 	- 20190426@Joseph: Add INH base currency [Redmine: #112603]
+	- 20210224@Mark: Add BDT and INR as Base Currencies[Redmine #150375]
 */
 BEGIN
 
@@ -60,8 +60,8 @@ BEGIN
 	
 	WHILE (@tmpDate<=@tmpToDate AND @tmpDate<=@todate)
 	BEGIN
-		INSERT INTO @tempDate (exchangedate,ExchangeId,Code,MYR, USD, EUR, CNY, GBP, HKD, THB, IDR, INH, actualrate)
-		SELECT @tmpDate,ExchangeId,Code,MYR, USD, EUR, CNY, GBP, HKD, THB, IDR / 1000 AS IDR, VND / 1000 AS INH, actualrate
+		INSERT INTO @tempDate (exchangedate,ExchangeId,Code,MYR, USD, EUR, CNY, GBP, HKD, THB, IDR, INH, BDT, INR, actualrate)
+		SELECT @tmpDate,ExchangeId,Code,MYR, USD, EUR, CNY, GBP, HKD, THB, IDR / 1000 AS IDR, VND / 1000 AS INH, BDT, INR, actualrate
 		FROM ExchangeDailyOanda WITH (NOLOCK)
 		WHERE ExchangeDate = CASE WHEN @tmpToDate > @ReferencedExchangeDate THEN @ReferencedExchangeDate ELSE @tmpToDate END
 	
