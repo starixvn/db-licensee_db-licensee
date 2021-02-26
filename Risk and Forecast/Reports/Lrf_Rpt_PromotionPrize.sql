@@ -29,6 +29,7 @@ AS
 		- 20201016@Hogan: Integrate Arcadia Gaming Bonus [RedmineID: #143648]
 		- 20201104@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369]
 		- 20210203@Louis: Saba Red Envelope [RedmineID: #149923]
+		- 20210208@Hogan: Integrate Four Guardians [RedmineID: #148100]
 
 	Param's Explanation:
 		+ @MoveBetsDay: The day we move tickets to bettrans14
@@ -68,15 +69,20 @@ BEGIN
 			@PPsportType			SMALLINT = 248,
 			@SPRsportType			SMALLINT = 246,
 			@SAGbetType	 			SMALLINT = 3007,-- Tip ticket of SA Gaming
+			@SBCContribution		SMALLINT = 1698,-- SBC Contribution
+			@SBCJackpot				SMALLINT = 1699,-- SBC Jackpot Prize
 			@CCsportType			SMALLINT = 165,
 			@SAGsportType			SMALLINT = 244,
 			@SBCFreeBetsSportType	SMALLINT = 150,
+			@SBCsportType			SMALLINT = 200,
 			@PP						VARCHAR(10) = 'PP',
 			@SPR					VARCHAR(10) = 'SPR',
 			@PPC					VARCHAR(10) = 'PPC',
 			@SAG					VARCHAR(10) = 'SAG',
 			@CCB					VARCHAR(10) = 'CCB',
-			@SBCFB					VARCHAR(10) = 'SBCFB'
+			@SBCFB					VARCHAR(10) = 'SBCFB',
+			@SBCC					VARCHAR(10) = 'SBCC',
+			@SBC					VARCHAR(10) = 'SBC'
 
 	DECLARE @_FromDate SMALLDATETIME,
 		@_ToDate SMALLDATETIME
@@ -167,10 +173,8 @@ BEGIN
 			LEFT JOIN @VIPCust v ON b.custid = v.CustID
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @_ToDate
-			AND((b.bettype IN (@PPPromotion, @PPTournament, @PPJackpot, 17000, 17003, 17004, @CCBonus) AND b.statusID = 112)
-				OR (b.bettype = @PPContribution AND b.statusID = 111)
-				OR (b.bettype = @SAGbetType AND b.statusID = 113)
-				OR (b.bettype BETWEEN 1611 AND 1699 AND b.matchid = @SBCFreeBetsSportType AND b.statusID IN (111,112,113)))
+			AND((b.bettype IN (@PPPromotion, @PPTournament, @PPJackpot, 17000, 17003, 17004, @CCBonus, @PPContribution, @SAGbetType, @SBCContribution, @SBCJackpot)
+				OR (b.bettype BETWEEN 1611 AND 1699 AND b.matchid = @SBCFreeBetsSportType)) AND b.statusID IN (111,112,113))
 			AND (@VIPPlayerOnly = 0 OR (@VIPPlayerOnly = 1 AND v.custid IS NOT NULL))
 	END
 
@@ -206,11 +210,9 @@ BEGIN
 			LEFT JOIN @VIPCust v ON b.custid = v.CustID
 		WHERE 
 			b.winlostdate BETWEEN @_FromDate AND @TempToDate
-			AND b.sporttype IN (@PPsportType, @SPRsportType, @SAGsportType, @CCsportType, @SBCFreeBetsSportType)
-			AND((b.bettype IN (@PPPromotion, @PPTournament, @PPJackpot, 17000, 17003, 17004, @CCBonus) AND b.statusID = 112)
-				OR (b.bettype = @PPContribution AND b.statusID = 111)
-				OR (b.bettype = @SAGbetType AND b.statusID = 113)
-				OR (b.sporttype = @SBCFreeBetsSportType AND b.statusID IN (111,112,113)))
+			AND b.sporttype IN (@PPsportType, @SPRsportType, @SAGsportType, @CCsportType, @SBCFreeBetsSportType, @SBCsportType)
+			AND((b.bettype IN (@PPPromotion, @PPTournament, @PPJackpot, 17000, 17003, 17004, @CCBonus, @PPContribution, @SAGbetType, @SBCContribution, @SBCJackpot)
+				OR (b.sporttype = @SBCFreeBetsSportType)) AND b.statusID IN (111,112,113))
 			AND b.roleID = 1
 			AND (@VIPPlayerOnly = 0 OR (@VIPPlayerOnly = 1 AND v.custid IS NOT NULL))
 	END
@@ -243,7 +245,9 @@ BEGIN
 			WHEN p.BetType = @PPContribution THEN @PPC
 			WHEN p.BetType = @SAGbetType THEN @SAG
 			WHEN p.BetType = @CCBonus THEN @CCB
-			When p.SportType = @SBCFreeBetsSportType THEN @SBCFB
+			WHEN p.SportType = @SBCFreeBetsSportType THEN @SBCFB
+			WHEN p.BetType = @SBCJackpot THEN @SBC
+			WHEN p.BetType = @SBCContribution THEN @SBCC
 			ELSE @PP
 		END AS ProductCode,
 		SUM(p.Winlost * e.DefaultRate)		AS SumAmount,
@@ -264,7 +268,9 @@ BEGIN
 			WHEN p.BetType = @PPContribution THEN @PPC
 			WHEN p.BetType = @SAGbetType THEN @SAG
 			WHEN p.BetType = @CCBonus THEN @CCB
-			When p.SportType = @SBCFreeBetsSportType THEN @SBCFB
+			WHEN p.SportType = @SBCFreeBetsSportType THEN @SBCFB
+			WHEN p.BetType = @SBCJackpot THEN @SBC
+			WHEN p.BetType = @SBCContribution THEN @SBCC
 			ELSE @PP
 		END AS ProductCode,
 		p.winlostdate		AS [Date],

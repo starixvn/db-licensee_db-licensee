@@ -24,6 +24,7 @@ AS
 		- 20200615@Hogan: Integrate SA Gaming [RedmineID: #128493]
 		- 20201201@Mark: Casino Turnover Report - Support Saba.club, PP and PG Soft products [RedmineID: #146135]
 		- 20201224@Hogan: Integrate GDG [RedmineID: #147267]
+		- 20210119@Hogan: Integrate Four Guardians [RedmineID: #148100]
 		
     Param's Explanation:  
 	  + @ProductCodes: "AB,CS,VB"
@@ -47,6 +48,10 @@ BEGIN
 	DECLARE @tmpToDate DATE, @tmpFromDate DATE, @custId INT
 	DECLARE @IsTest BIT = 0
 	
+	DECLARE @ExcludedBetType TABLE (ProductCode VARCHAR (10), BetType INT)
+	-- Insert Excluded BetType
+	INSERT INTO @ExcludedBetType (ProductCode, BetType)
+	SELECT ProductCode, BetType FROM Lrf_f_SelExcludedBetType()
 
 	CREATE TABLE #data(
 		[Date]			DATE,
@@ -110,18 +115,11 @@ BEGIN
 			INSERT INTO @bettype ( bettype, ProductCode )
 			SELECT DISTINCT BetType, ProductPrefix
 			FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductCodes, @IsTest)
+			WHERE BetType NOT IN (SELECT BetType FROM @ExcludedBetType e WHERE e.ProductCode = ProductPrefix)
 
 			IF EXISTS (SELECT 1 FROM @Product WHERE ProductCode = 'CS')
 				DELETE @bettype
 				WHERE bettype = 72 AND ProductCode = 'CS'
-
-			IF EXISTS (SELECT 1 FROM @Product WHERE ProductCode = 'SAG')
-				DELETE @bettype
-				WHERE bettype = 3007 AND ProductCode = 'SAG' 	-- SAG Tip ticket
-
-			IF EXISTS (SELECT 1 FROM @Product WHERE ProductCode = 'PP')
-				DELETE @bettype
-				WHERE bettype IN (4300, 4299, 4298, 4297) AND ProductCode = 'PP'
 		END	
 
 		SET @tmpToDate = @ToDate	

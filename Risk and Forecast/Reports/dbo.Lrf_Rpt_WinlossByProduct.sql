@@ -93,6 +93,7 @@ AS
 		- 20201202@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369] 
 		- 20201231@Louis: Integrate Happy 5 Linked Games [RedmineID: #147446]
 		- 20200122@Hogan: Integrate GDG [RedmineID: #147267]
+		- 20210122@Hogan: Integrate Four Guardians [RedmineID: #148100]
 
 	Param's Explanation:
 		+ @ReportType: 1-Daily; 2-Monthly;
@@ -139,10 +140,10 @@ BEGIN
 	DECLARE @sumBetCount	BIT
 	DECLARE @RCount			INT
 
-	DECLARE @ExcludedBetType TABLE (ProductId TINYINT, BetType INT)
+	DECLARE @ExcludedBetType TABLE (ProductCode VARCHAR (10), BetType INT)
 	-- Insert Excluded BetType
-	INSERT INTO @ExcludedBetType (ProductId, BetType)
-	SELECT ProductId, BetType FROM Lrf_f_SelExcludedBetType()
+	INSERT INTO @ExcludedBetType (ProductCode, BetType)
+	SELECT ProductCode, BetType FROM Lrf_f_SelExcludedBetType()
 
 	SET @sumTurnOver = 1
 	SET @sumBetCount = 1
@@ -227,6 +228,7 @@ BEGIN
 		INSERT INTO @bettype ( bettype, ProductCode ) -- exclude BA
 		SELECT DISTINCT BetType, ProductPrefix
 		FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
+		WHERE BetType NOT IN (SELECT BetType FROM @ExcludedBetType e WHERE e.ProductCode = ProductPrefix)
 
 		IF PATINDEX('%,CS,%', ',' + @ProductList + ',') > 0
 			DELETE @bettype
@@ -235,18 +237,6 @@ BEGIN
 		IF PATINDEX('%,SB,%', ',' + @ProductList + ',') > 0
 			DELETE @bettype
 			WHERE (bettype BETWEEN 901 AND 904) OR (bettype BETWEEN 911 AND 914)
-
-		IF PATINDEX('%,PP,%', ',' + @ProductList + ',') > 0
-			DELETE @bettype
-			WHERE bettype IN (4300, 4299, 4298, 4297) AND ProductCode = 'PP' -- Promotion Prize, Jackpot Prize, Contribution
-
-		IF PATINDEX('%,SAG,%', ',' + @ProductList + ',') > 0
-			DELETE @bettype
-			WHERE bettype = 3007 AND ProductCode = 'SAG' -- SAG Tip ticket
-
-		IF PATINDEX('%,CC,%', ',' + @ProductList + ',') > 0
-			DELETE @bettype
-			WHERE bettype = 1906 AND ProductCode = 'CC'
 
 		-- Insert Sport Type
 		INSERT INTO @sporttype ( sporttype, ProductCode )
@@ -406,8 +396,7 @@ BEGIN
 				AND (@CustId = 0 OR b.CustId = @CustID)
 				AND b.statusID  IN (111, 112, 113)
 				AND b.matchID > 0 AND (b.bettype NOT BETWEEN 1611 AND 1699 OR b.matchid <> 150)
-				AND (CASE WHEN bt.ProductCode ='SB' THEN b.tpositiontaking ELSE 1 END <> 0 )  --- EXCLUDE BA 
-				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
+				AND (CASE WHEN bt.ProductCode ='SB' THEN b.tpositiontaking ELSE 1 END <> 0 )  --- EXCLUDE BA
 			GROUP BY   
 				b.winlostdate
 				,a.currency
