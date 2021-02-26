@@ -1,6 +1,4 @@
-﻿/*<info serverAlias="DB042-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
-USE bodb02
-GO
+﻿/*<info serverAlias="DBBOF-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel16]	
 	@PageSize		INT=50,
@@ -12,7 +10,7 @@ AS
 /*
 Created: 20101201@Henry
 Task: Retrieve Total Bet values for HT/FT.
-DB: DB042.bodb02
+DB: DBBOF.bodb02
 Original: [Age_TotalBets_Sel16_Ag]
 
 Revisions:
@@ -27,6 +25,7 @@ Revisions:
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
 	- 20180802@Sophia: HA - Status IN (0,1) to use new index on DB042 [Redmine: #98631]
 	- 20190611@Amanda: Add Base Currency parameter [Redmine: #112531]
+	- 20210224@Mark: Change alias DB042 to DBBOF [Redmine: #150375]
 
 Param's Explanation:
 	+ @AgentList: xml structure
@@ -35,193 +34,191 @@ Param's Explanation:
 					<Agent AgentId="12345" Currency="5"/>  
 					</ROOT>	
 */
+BEGIN
+	SET NOCOUNT ON
 
-SET NOCOUNT ON
+	DECLARE @Today SMALLDATETIME 
+	SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
 
-DECLARE @Today SMALLDATETIME 
-SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
+	DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
+	DECLARE @DocHandler INT
 
-DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
-DECLARE @DocHandler INT
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+				,@AgentList
+		INSERT INTO @TempAg (custID, currency)
+		SELECT AgentId, Currency
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
-BEGIN TRY
-	EXEC sp_xml_preparedocument @DocHandler OUTPUT
-			,@AgentList
-	INSERT INTO @TempAg (custID, currency)
-	SELECT AgentId, Currency
-	FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
 
-	EXEC sp_xml_removedocument @DocHandler
-END TRY
+	BEGIN CATCH
+		SELECT ErrCode = 100
+				,ErrMsg = N'Paramter invalid.'
 
-BEGIN CATCH
-	SELECT ErrCode = 100
-			,ErrMsg = N'Paramter invalid.'
+		RETURN
+	END CATCH;
 
-	RETURN
-END CATCH;
+	DECLARE @RowCount INT, @RowStart INT, @RowEnd INT  
+	SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
 
-DECLARE @RowCount INT, @RowStart INT, @RowEnd INT  
-SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
+	DECLARE @Data AS TABLE
+	(
+		matchid INT,
+		homeID INT,
+		awayID INT,
+		matchcode nvarchar(50),
 
-DECLARE @Data AS TABLE
-(
-	matchid INT,
-	homeID INT,
-	awayID INT,
-	matchcode nvarchar(50),
-
-	totalHH MONEY,
-	--
-	totalHH_ori MONEY,
-	
-	totalHD MONEY,
-	--
-	totalHD_ori MONEY,
-	
-	totalHA MONEY,
-	--
-	totalHA_ori MONEY,
-	
-	totalDH MONEY,
-	---
-	totalDH_ori MONEY,
-	
-	totalDD MONEY,
-	--
-	totalDD_ori MONEY,
-	
-	totalDA MONEY,
-	----
-	totalDA_ori MONEY,
-	
-	totalAH MONEY,
-	---
-	totalAH_ori MONEY,
-	
-	totalAD MONEY,
-	--
-	totalAD_ori MONEY,
-	
-	totalAA MONEY,
-	--
-	totalAA_ori MONEY,
-	
-	isNeutral BIT
-)
-
-DECLARE @ExchangeRate AS TABLE (ExchangeId INT, Rate FLOAT)
-
-INSERT INTO @ExchangeRate(ExchangeId, Rate)
-SELECT ExchangeId, Rate
-FROM dbo.Lrf_f_GetExchangeRate(@Today, @Today, @BaseCurrency, '') e
-WHERE EXISTS (SELECT 1 FROM @TempAg a WHERE a.Currency = e.ExchangeId)
-
-INSERT INTO @Data
-SELECT
-		b.matchid,
-		m.homeid,
-		m.awayid,
-		matchcode,
+		totalHH MONEY,
+		--
+		totalHH_ori MONEY,
 		
-		SUM((CASE WHEN hdp1 = 1 AND hdp2 = 1 THEN (stake*odds)-stake ELSE -stake END )*e.Rate) AS totalHH,
+		totalHD MONEY,
+		--
+		totalHD_ori MONEY,
+		
+		totalHA MONEY,
+		--
+		totalHA_ori MONEY,
+		
+		totalDH MONEY,
 		---
-		SUM( CASE WHEN hdp1 = 1 AND hdp2 = 1 THEN stake*e.Rate END ) AS totalHH_ori,
+		totalDH_ori MONEY,
+		
+		totalDD MONEY,
+		--
+		totalDD_ori MONEY,
+		
+		totalDA MONEY,
+		----
+		totalDA_ori MONEY,
+		
+		totalAH MONEY,
+		---
+		totalAH_ori MONEY,
+		
+		totalAD MONEY,
+		--
+		totalAD_ori MONEY,
+		
+		totalAA MONEY,
+		--
+		totalAA_ori MONEY,
+		
+		isNeutral BIT
+	)
 
-		SUM((CASE WHEN hdp1 = 1 AND hdp2 = 0 THEN (stake*odds)-stake ELSE -stake END )*e.Rate) AS totalHD,
-		--
-		SUM( CASE WHEN hdp1 = 1 AND hdp2 = 0 THEN  stake*e.Rate END ) AS totalHD_ori,
+	DECLARE @ExchangeRate AS TABLE (ExchangeId INT, Rate FLOAT)
 
-		SUM((CASE WHEN hdp1 = 1 AND hdp2 = 2 THEN (stake*odds)-stake ELSE -stake END )*e.Rate) AS totalHA,
-		--
-		SUM( CASE WHEN hdp1 = 1 AND hdp2 = 2 THEN  stake*e.Rate END ) AS totalHA_ori,
-		
-		SUM((CASE WHEN hdp1 = 0 AND hdp2 = 1 THEN (stake*odds)-stake ELSE -stake END )*e.Rate) AS totalDH,
-		--
-		SUM( CASE WHEN hdp1 = 0 AND hdp2 = 1 THEN  stake*e.Rate END ) AS totalDH_ori,
-		
-		
-		SUM((CASE WHEN hdp1 = 0 AND hdp2 = 0 THEN (stake*odds)-stake ELSE -stake END )*e.Rate) AS totalDD,
-		--
-		SUM( CASE WHEN hdp1 = 0 AND hdp2 = 0 THEN  stake*e.Rate END ) AS totalDD_ori,
-		
-		SUM((CASE WHEN hdp1 = 0 AND hdp2 = 2 THEN (stake*odds)-stake ELSE -stake END )*e.Rate) AS totalDA,
-		--
-		SUM( CASE WHEN hdp1 = 0 AND hdp2 = 2 THEN   stake*e.Rate END ) AS totalDA_ori,
-		
-		SUM((CASE WHEN hdp1 = 2 AND hdp2 = 1 THEN (stake*odds)-stake ELSE -stake END )*e.Rate) AS totalAH,
-		--
-		SUM( CASE WHEN hdp1 = 2 AND hdp2 = 1 THEN  stake*e.Rate END ) AS totalAH_ori,
-				
-		SUM((CASE WHEN hdp1 = 2 AND hdp2 = 0 THEN (stake*odds)-stake ELSE -stake END )*e.Rate) AS totalAD,
-		--
-		SUM( CASE WHEN hdp1 = 2 AND hdp2 = 0 THEN  stake*e.Rate END ) AS totalAD_ori,
-		
-		SUM((CASE WHEN hdp1 = 2 AND hdp2 = 2 THEN (stake*odds)-stake ELSE -stake END )*e.Rate) AS totalAA,
-		--
-		SUM( CASE WHEN hdp1 = 2 AND hdp2 = 2 THEN  stake*e.Rate END ) AS totalAA_ori,
+	INSERT INTO @ExchangeRate(ExchangeId, Rate)
+	SELECT ExchangeId, Rate
+	FROM dbo.Lrf_f_GetExchangeRate(@Today, @Today, @BaseCurrency, '') e
+	WHERE EXISTS (SELECT 1 FROM @TempAg a WHERE a.Currency = e.ExchangeId)
 
-		isnull(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral
+	INSERT INTO @Data
+	SELECT
+			b.matchid,
+			m.homeid,
+			m.awayid,
+			matchcode,
+			
+			SUM((CASE WHEN hdp1 = 1 AND hdp2 = 1 THEN (stake*odds)-stake ELSE -stake END )*e.Rate) AS totalHH,
+			---
+			SUM( CASE WHEN hdp1 = 1 AND hdp2 = 1 THEN stake*e.Rate END ) AS totalHH_ori,
+
+			SUM((CASE WHEN hdp1 = 1 AND hdp2 = 0 THEN (stake*odds)-stake ELSE -stake END )*e.Rate) AS totalHD,
+			--
+			SUM( CASE WHEN hdp1 = 1 AND hdp2 = 0 THEN  stake*e.Rate END ) AS totalHD_ori,
+
+			SUM((CASE WHEN hdp1 = 1 AND hdp2 = 2 THEN (stake*odds)-stake ELSE -stake END )*e.Rate) AS totalHA,
+			--
+			SUM( CASE WHEN hdp1 = 1 AND hdp2 = 2 THEN  stake*e.Rate END ) AS totalHA_ori,
+			
+			SUM((CASE WHEN hdp1 = 0 AND hdp2 = 1 THEN (stake*odds)-stake ELSE -stake END )*e.Rate) AS totalDH,
+			--
+			SUM( CASE WHEN hdp1 = 0 AND hdp2 = 1 THEN  stake*e.Rate END ) AS totalDH_ori,
+			
+			
+			SUM((CASE WHEN hdp1 = 0 AND hdp2 = 0 THEN (stake*odds)-stake ELSE -stake END )*e.Rate) AS totalDD,
+			--
+			SUM( CASE WHEN hdp1 = 0 AND hdp2 = 0 THEN  stake*e.Rate END ) AS totalDD_ori,
+			
+			SUM((CASE WHEN hdp1 = 0 AND hdp2 = 2 THEN (stake*odds)-stake ELSE -stake END )*e.Rate) AS totalDA,
+			--
+			SUM( CASE WHEN hdp1 = 0 AND hdp2 = 2 THEN   stake*e.Rate END ) AS totalDA_ori,
+			
+			SUM((CASE WHEN hdp1 = 2 AND hdp2 = 1 THEN (stake*odds)-stake ELSE -stake END )*e.Rate) AS totalAH,
+			--
+			SUM( CASE WHEN hdp1 = 2 AND hdp2 = 1 THEN  stake*e.Rate END ) AS totalAH_ori,
+					
+			SUM((CASE WHEN hdp1 = 2 AND hdp2 = 0 THEN (stake*odds)-stake ELSE -stake END )*e.Rate) AS totalAD,
+			--
+			SUM( CASE WHEN hdp1 = 2 AND hdp2 = 0 THEN  stake*e.Rate END ) AS totalAD_ori,
+			
+			SUM((CASE WHEN hdp1 = 2 AND hdp2 = 2 THEN (stake*odds)-stake ELSE -stake END )*e.Rate) AS totalAA,
+			--
+			SUM( CASE WHEN hdp1 = 2 AND hdp2 = 2 THEN  stake*e.Rate END ) AS totalAA_ori,
+
+			isnull(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral
+			
+		FROM  bettrans b with (nolock)
+			INNER JOIN @TempAg ag ON b.recommend = ag.CustId AND b.currency = ag.Currency
+			INNER JOIN match m with (nolock) on m.matchid = b.matchid 	
+			INNER JOIN @ExchangeRate e ON e.exchangeid = b.currency
+		WHERE    
+			b.bettype = 16 AND
+			b.statusID IN (0,1) AND
+			m.matchid>0 AND
+			m.eventstatus='running' AND
+			b.tpositiontaking<>	0
+		GROUP BY b.matchid,	
+			m.homeid,
+			m.awayid,	
+			matchcode,
+			m.isNeutral	
+		ORDER BY m.matchcode
 		
-	FROM  bettrans b with (nolock)
-		INNER JOIN @TempAg ag ON b.recommend = ag.CustId AND b.currency = ag.Currency
-		INNER JOIN match m with (nolock) on m.matchid = b.matchid 	
-		INNER JOIN @ExchangeRate e ON e.exchangeid = b.currency
-	WHERE    
-		b.bettype = 16 AND
-		b.statusID IN (0,1) AND
-		m.matchid>0 AND
-		m.eventstatus='running' AND
-		b.tpositiontaking<>	0
-	GROUP BY b.matchid,	
-		m.homeid,
-		m.awayid,	
-		matchcode,
-		m.isNeutral	
-	ORDER BY m.matchcode
-	
 
 
-IF @TotalRows = 0  
-BEGIN  
-	SELECT @TotalRows = COUNT(matchid) FROM @Data
+	IF @TotalRows = 0  
+	BEGIN  
+		SELECT @TotalRows = COUNT(matchid) FROM @Data
+	END
+
+	SELECT 
+		c.*
+	FROM
+	(
+		SELECT
+			ROW_NUMBER() over (ORDER BY matchcode) AS RowNum ,
+			* 
+		FROM @Data
+		
+	) c WHERE c.RowNum BETWEEN @RowStart AND @RowEnd
+
+	SELECT 
+		
+		SUM(totalHH_ori) totalHH,
+		--
+		SUM(totalHD_ori) totalHD,
+		
+		SUM(totalHA_ori) totalHA,
+		---
+		SUM(totalDH_ori) totalDH,
+		--
+		SUM(totalDD_ori) totalDD,
+		
+		----
+		SUM(totalDA_ori) totalDA,
+		
+		---
+		SUM(totalAH_ori) totalAH,
+		--
+		SUM(totalAD_ori) totalAD,
+		
+		SUM(totalAA_ori) totalAA
+	FROM @Data
 END
 
-SELECT 
-	c.*
-FROM
-(
-	SELECT
-		ROW_NUMBER() over (ORDER BY matchcode) AS RowNum ,
-		* 
-	FROM @Data
-	
-) c WHERE c.RowNum BETWEEN @RowStart AND @RowEnd
-
-SELECT 
-	 
-	SUM(totalHH_ori) totalHH,
-	--
-	SUM(totalHD_ori) totalHD,
-	
-	SUM(totalHA_ori) totalHA,
-	---
-	SUM(totalDH_ori) totalDH,
-	--
-	SUM(totalDD_ori) totalDD,
-	
-	----
-	SUM(totalDA_ori) totalDA,
-	
-	---
-	SUM(totalAH_ori) totalAH,
-	--
-	SUM(totalAD_ori) totalAD,
-	
-	SUM(totalAA_ori) totalAA
-FROM @Data
-
 GO
-
-
-
