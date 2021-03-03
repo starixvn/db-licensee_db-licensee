@@ -85,6 +85,7 @@ AS
 		- 20201202@Louis: Licensee Spread Setting [RedmineID: #142532]	
 		- 20201202@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369]
 		- 20201224@Hogan: Integrate GDG [RedmineID: #147267]
+		- 20210122@Hogan: Integrate Four Guardians [RedmineID: #148100]
 
 	Param's Explanation:
 		+ @PlatformType:  0: All
@@ -150,10 +151,10 @@ BEGIN
 	CREATE TABLE #bettype (bettype INT PRIMARY KEY, ProductPrefix VARCHAR(10))
 	CREATE TABLE #tempAg (custID INT, Currency INT)
 		
-	DECLARE @ExcludedBetType TABLE (ProductId TINYINT, BetType INT)
+	DECLARE @ExcludedBetType TABLE (ProductCode VARCHAR (10), BetType INT)
 	-- Insert Excluded BetType
-	INSERT INTO @ExcludedBetType (ProductId, BetType)
-	SELECT ProductId, BetType FROM Lrf_f_SelExcludedBetType()
+	INSERT INTO @ExcludedBetType (ProductCode, BetType)
+	SELECT ProductCode, BetType FROM Lrf_f_SelExcludedBetType()
 
 	--to Deal WITH Parameter Sniffing
 	SELECT @FDate = @FromDate,
@@ -304,6 +305,7 @@ BEGIN
 		INSERT INTO #bettype ( bettype, ProductPrefix )
 		SELECT DISTINCT BetType, ProductPrefix
 		FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
+		WHERE BetType NOT IN (SELECT BetType FROM @ExcludedBetType e WHERE e.ProductCode = ProductPrefix)
 
 		IF @ShowCS = 1
 			DELETE #bettype
@@ -312,18 +314,6 @@ BEGIN
 		IF @showSB = 1
 			DELETE #bettype
 			WHERE ProductPrefix IN ('SB')
-			
-		IF @ShowPP = 1
-			DELETE #bettype
-			WHERE bettype IN (4300, 4299, 4298, 4297) AND ProductPrefix = 'PP' -- exclude PP Prize, Jackpot Prize, Contribution
-		
-		IF @ShowSAG = 1
-			DELETE #bettype
-			WHERE bettype = 3007 AND ProductPrefix = 'SAG' -- exclude SAG Tip ticket
-	
-		IF @ShowCC = 1
-			DELETE #bettype
-			WHERE ProductPrefix = 'CC' AND bettype = 1906
 
 		-- Insert Sport Type
 		INSERT INTO #sporttype ( sporttype, ProductPrefix )
@@ -441,7 +431,7 @@ BEGIN
 				) 
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
-				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.ProductId = 0 AND e.BetType = b.BetType)
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.ProductCode = 'SB' AND e.BetType = b.BetType)
 				AND b.tpositiontaking <>0
 			GROUP BY
 				b.winlostdate,
@@ -482,8 +472,7 @@ BEGIN
 			WHERE
 				b.statusID IN (111, 112, 113)
 				AND b.winlostdate BETWEEN @TempFromDate AND @TDate
-				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
-				AND (b.bettype NOT BETWEEN 1611 AND 1699 OR b.matchid <> 150)
+				AND (b.bettype NOT BETWEEN 1611 AND 1697 OR b.matchid <> 150)
 			GROUP BY
 				b.winlostdate,
 				b.CustID,

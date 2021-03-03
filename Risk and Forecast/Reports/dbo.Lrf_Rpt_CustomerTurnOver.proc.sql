@@ -83,6 +83,7 @@ AS
 		- 20201023@Hogan: Integrate new bet type Time Machine OU [RedmineID: #142692]
 		- 20201027@Louis: Licensee Spread Setting [RedmineID: #142532]
 		- 20201231@Louis: Integrate Happy 5 Linked Games [RedmineID: #147446]
+		- 20210119@Hogan: Integrate Four Guardians [RedmineID: #148100]
 		
 	Parameter's Explanation:
 		- @ReportBy:  1: daily, 2: monthly
@@ -95,10 +96,10 @@ AS
 BEGIN
 	SET NOCOUNT ON
 	 
-	DECLARE @ExcludedBetType TABLE (ProductId TINYINT, BetType INT)
+	DECLARE @ExcludedBetType TABLE (ProductCode VARCHAR (10), BetType INT)
 	-- Insert Excluded BetType
-	INSERT INTO @ExcludedBetType (ProductId, BetType)
-	SELECT ProductId, BetType FROM Lrf_f_SelExcludedBetType()
+	INSERT INTO @ExcludedBetType (ProductCode, BetType)
+	SELECT ProductCode, BetType FROM Lrf_f_SelExcludedBetType()
 	
 	DECLARE @startTime		DATETIME
 		, @tempFromDate		SMALLDATETIME
@@ -217,6 +218,7 @@ BEGIN
 	INSERT INTO @SportBettype (ProductID, Bettype, EventType)
 	SELECT ProductID, Bettype, EventType
 	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', '', @isTest)
+	WHERE BetType NOT IN (SELECT BetType FROM @ExcludedBetType e WHERE e.ProductCode = ProductPrefix)
 	
 	SELECT VAL AS typeID
 	INTO #BettypeID
@@ -352,8 +354,7 @@ BEGIN
 			INNER JOIN #bettype bt ON b.bettype =  bt.typeid
 			INNER JOIN #Status st ON b.StatusID =  st.StatusID
 			LEFT JOIN #tmpParlay p ON b.transid = p.transid
-		WHERE b.winlostdate BETWEEN @tempFromDate AND @ToDate 
-			AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
+		WHERE b.winlostdate BETWEEN @tempFromDate AND @ToDate
 		OPTION(RECOMPILE)
 
 		UPDATE #tempBettrans 

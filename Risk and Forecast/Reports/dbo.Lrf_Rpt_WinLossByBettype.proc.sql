@@ -65,6 +65,7 @@ AS
 		- 20200715@Louis: Add new bet types for Keno/Lottery/TableGame [RedmineID: #137625]
 		- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]
 		- 20201231@Louis: Integrate Happy 5 Linked Games [RedmineID: #147446]
+		- 20210119@Hogan: Integrate Four Guardians [RedmineID: #148100]
 
 	Param's Explanation: 
 		+ @AgentList: xml structure
@@ -163,10 +164,10 @@ BEGIN
 			WHERE a.Currency = e.ExchangeId
 			)
 
-	DECLARE @ExcludedBetType TABLE (ProductId TINYINT, BetType INT)
+	DECLARE @ExcludedBetType TABLE (ProductCode VARCHAR (10), BetType INT)
 	-- Insert Excluded BetType
-	INSERT INTO @ExcludedBetType (ProductId, BetType)
-	SELECT ProductId, BetType FROM Lrf_f_SelExcludedBetType()
+	INSERT INTO @ExcludedBetType (ProductCode, BetType)
+	SELECT ProductCode, BetType FROM Lrf_f_SelExcludedBetType()
 
 	IF @Tdate > @MoveBetsDay
 	BEGIN

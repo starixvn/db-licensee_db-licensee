@@ -85,10 +85,10 @@ BEGIN
 	DECLARE @FDate SMALLDATETIME  
 	DECLARE @TDate SMALLDATETIME 
 	
-	DECLARE @ExcludedBetType TABLE (ProductId TINYINT, BetType INT)
+	DECLARE @ExcludedBetType TABLE (ProductCode VARCHAR (10), BetType INT)
 	-- Insert Excluded BetType
-	INSERT INTO @ExcludedBetType (ProductId, BetType)
-	SELECT ProductId, BetType FROM Lrf_f_SelExcludedBetType()
+	INSERT INTO @ExcludedBetType (ProductCode, BetType)
+	SELECT ProductCode, BetType FROM Lrf_f_SelExcludedBetType()
 	
 	--to Deal With Parameter Sniffing
 	SELECT @FDate = @FromDate, @TDate = @ToDate 
@@ -135,6 +135,7 @@ BEGIN
 		INSERT INTO @bettype ( bettype )
 		SELECT DISTINCT BetType
 		FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
+		WHERE BetType NOT IN (SELECT BetType FROM @ExcludedBetType e WHERE e.ProductCode = ProductPrefix)
 	END
 
 	CREATE TABLE #tmpWinloss (
@@ -265,7 +266,7 @@ BEGIN
 				) AND
 				b.bettype NOT IN (9,29,901,902,903,904) AND 
 				(b.bettype < 911 OR b.bettype > 914) 
-				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.ProductId = 0 AND e.BetType = b.BetType)
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.ProductCode = 'SB' AND e.BetType = b.BetType)
 				AND	b.matchid > 0 AND
 				b.statusID IN (111,112,113) AND
 				m.sporttype = @SportId AND
@@ -335,7 +336,6 @@ BEGIN
 				b.matchid > 0 AND
 				b.statusID IN (111,112,113) AND
 				b.bettype <> 2799 
-				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 				AND	m.sporttype = @SportId AND
 				((@Liveindicator = 0 AND b.liveindicator = 0)
 				OR (@Liveindicator = 1 AND b.liveindicator = 1)
@@ -487,7 +487,7 @@ BEGIN
 				) AND
 				b.bettype NOT IN (9,29,901,902,903,904) AND 
 				(b.bettype < 911 OR b.bettype > 914) 
-				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.ProductId = 0 AND e.BetType = b.BetType)
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.ProductCode = 'SB' AND e.BetType = b.BetType)
 				AND	b.tpositiontaking<>0 AND
 				b.statusID IN (111,112,113) AND
 				m.sporttype = @SportId AND
@@ -555,7 +555,6 @@ BEGIN
 				b.statusID IN (111,112,113) AND
 				m.sporttype = @SportId AND
 				b.bettype <> 2799 
-				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 				AND	((@Liveindicator = 0 AND b.liveindicator = 0)
 				OR (@Liveindicator = 1 AND b.liveindicator = 1)
 				OR (@Liveindicator = 2))

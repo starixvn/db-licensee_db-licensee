@@ -89,6 +89,7 @@ AS
 		- 20201216@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369] 
 		- 20201231@Louis: Integrate Happy 5 Linked Games [RedmineID: #147446]	
 		- 20200122@Hogan: Integrate GDG [RedmineID: #147267]
+		- 20210122@Hogan: Integrate Four Guardians [RedmineID: #148100]
 		
 	Param's Explanation:
 		+ @IsLive : indicate that whether the report will get live data or not
@@ -139,10 +140,10 @@ BEGIN
 		Betcount	INT
 	)
 
-	DECLARE @ExcludedBetType TABLE (ProductId TINYINT, BetType INT)
+	DECLARE @ExcludedBetType TABLE (ProductCode VARCHAR (10), BetType INT)
 	-- Insert Excluded BetType
-	INSERT INTO @ExcludedBetType (ProductId, BetType)
-	SELECT ProductId, BetType FROM Lrf_f_SelExcludedBetType()
+	INSERT INTO @ExcludedBetType (ProductCode, BetType)
+	SELECT ProductCode, BetType FROM Lrf_f_SelExcludedBetType()
 	
 	DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
 	DECLARE @DocHandler INT
@@ -261,7 +262,7 @@ BEGIN
 				AND (b.bettype NOT IN (9,29))
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
-				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.ProductId = 0 AND e.BetType = b.BetType)
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.ProductCode = 'SB' AND e.BetType = b.BetType)
 				AND b.tpositiontaking <> 0
 				AND b.statusID IN (111, 112, 113)
 				AND (b.liveindicator = @Liveindicator OR @Liveindicator = 2)
@@ -349,14 +350,14 @@ BEGIN
 					WHEN (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) THEN 'VS2'
 					WHEN b.bettype BETWEEN 1021 AND 1099 THEN 'LT'
 					WHEN b.bettype BETWEEN 4101 AND 4296 THEN 'PP' -- PP -- exclude 4300, 4299, 4298, 4297
-					WHEN (b.bettype BETWEEN 1901 AND 1999) AND b.bettype <> 1906 THEN 'CC' -- CC
+					WHEN b.bettype BETWEEN 1901 AND 1999 THEN 'CC' -- CC
 					WHEN b.bettype BETWEEN 4301 AND 4600 THEN 'SG' -- SG
 					WHEN b.bettype BETWEEN 4601 AND 4900 THEN 'VRG' -- VRG
 					WHEN b.bettype BETWEEN 4901 AND 5000 THEN 'TG' -- TG
 					WHEN b.bettype BETWEEN 5001 AND 5099 THEN 'I4D' -- I4D
 					WHEN b.bettype BETWEEN 3101 AND 3199 THEN 'SXG' -- SXG
-					WHEN (b.bettype BETWEEN 1611 AND 1699) AND b.matchid <> 150 THEN 'SBC' -- SBC
-					WHEN (b.bettype BETWEEN 3001 AND 3099) AND b.bettype <> 3007 THEN 'SAG' -- SAG	
+					WHEN (b.bettype BETWEEN 1611 AND 1697) AND b.matchid <> 150 THEN 'SBC' -- SBC
+					WHEN b.bettype BETWEEN 3001 AND 3099 THEN 'SAG' -- SAG	
 					WHEN b.bettype BETWEEN 6001 AND 6300 THEN 'PGS' -- PGS
 					WHEN b.bettype BETWEEN 6401 AND 6700 THEN 'JK' -- JK
 					WHEN b.bettype BETWEEN 5701 AND 5799 THEN 'GDG' -- GDG
@@ -387,19 +388,20 @@ BEGIN
 					OR (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) -- BetRadar VS
 					OR b.bettype BETWEEN 1021 AND 1099 -- LT
 					OR b.bettype BETWEEN 4101 AND 4296 -- PP -- exclude 4300, 4299, 4298, 4297
-					OR (b.bettype BETWEEN 1901 AND 1999 AND b.bettype <> 1906) -- CC
+					OR b.bettype BETWEEN 1901 AND 1999-- CC
 					OR b.bettype BETWEEN 4301 AND 4600 -- SG
 					OR b.bettype BETWEEN 4601 AND 4900 -- VRG
 					OR b.bettype BETWEEN 4901 AND 5000 -- TG
 					OR b.bettype BETWEEN 5001 AND 5099 -- I4D
 					OR b.bettype BETWEEN 3101 AND 3199 -- SXG
-					OR (b.bettype BETWEEN 1611 AND 1699 AND b.matchid <> 150) -- SBC
-					OR (b.bettype BETWEEN 3001 AND 3099 AND b.bettype <> 3007) -- SAG
+					OR (b.bettype BETWEEN 1611 AND 1697 AND b.matchid <> 150) -- SBC
+					OR b.bettype BETWEEN 3001 AND 3099 -- SAG
 					OR b.bettype BETWEEN 6001 AND 6300 -- PGS
 					OR b.bettype BETWEEN 6401 AND 6700 -- JK
 					OR b.bettype BETWEEN 5701 AND 5799 -- GDG
 				)
 				AND (b.liveindicator = @Liveindicator OR @Liveindicator = 2)
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 			GROUP BY
 				b.winlostdate,
 				t.currency,
@@ -414,14 +416,14 @@ BEGIN
 					WHEN (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) THEN 'VS2'
 					WHEN b.bettype BETWEEN 1021 AND 1099 THEN 'LT'
 					WHEN b.bettype BETWEEN 4101 AND 4296 THEN 'PP' -- PP -- exclude 4300, 4299, 4298, 4297
-					WHEN (b.bettype BETWEEN 1901 AND 1999) AND b.bettype <> 1906 THEN 'CC' -- CC
+					WHEN b.bettype BETWEEN 1901 AND 1999 THEN 'CC' -- CC
 					WHEN b.bettype BETWEEN 4301 AND 4600 THEN 'SG' -- SG
 					WHEN b.bettype BETWEEN 4601 AND 4900 THEN 'VRG' -- VRG
 					WHEN b.bettype BETWEEN 4901 AND 5000 THEN 'TG' -- TG
 					WHEN b.bettype BETWEEN 5001 AND 5099 THEN 'I4D' -- I4D
 					WHEN b.bettype BETWEEN 3101 AND 3199 THEN 'SXG' -- SXG
-					WHEN (b.bettype BETWEEN 1611 AND 1699) AND b.matchid <> 150 THEN 'SBC' -- SBC
-					WHEN (b.bettype BETWEEN 3001 AND 3099) AND b.bettype <> 3007 THEN 'SAG' -- SAG
+					WHEN (b.bettype BETWEEN 1611 AND 1697) AND b.matchid <> 150 THEN 'SBC' -- SBC
+					WHEN b.bettype BETWEEN 3001 AND 3099 THEN 'SAG' -- SAG
 					WHEN b.bettype BETWEEN 6001 AND 6300 THEN 'PGS' -- PGS
 					WHEN b.bettype BETWEEN 6401 AND 6700 THEN 'JK' -- JK
 					WHEN b.bettype BETWEEN 5701 AND 5799 THEN 'GDG' -- GDG
@@ -533,14 +535,14 @@ BEGIN
 					WHEN b.bettype BETWEEN 2701 AND 2829 THEN 'VS2'
 					WHEN b.bettype BETWEEN 1021 AND 1099 THEN 'LT'
 					WHEN b.bettype BETWEEN 4101 AND 4296 THEN 'PP' -- PP -- exclude 4300, 4299, 4298, 4297
-					WHEN (b.bettype BETWEEN 1901 AND 1999) AND b.bettype <> 1906 THEN 'CC'
+					WHEN b.bettype BETWEEN 1901 AND 1999 THEN 'CC'
 					WHEN b.bettype BETWEEN 4301 AND 4600 THEN 'SG' -- SG
 					WHEN b.bettype BETWEEN 4601 AND 4900 THEN 'VRG'
 					WHEN b.bettype BETWEEN 4901 AND 5000 THEN 'TG'
 					WHEN b.bettype BETWEEN 5001 AND 5099 THEN 'I4D'
 					WHEN b.bettype BETWEEN 3101 AND 3199 THEN 'SXG' -- SXG
-					WHEN (b.bettype BETWEEN 1611 AND 1699) AND b.TicketType <> 2 THEN 'SBC'
-					WHEN (b.bettype BETWEEN 3001 AND 3099) AND b.bettype <> 3007 THEN 'SAG' -- SAG
+					WHEN (b.bettype BETWEEN 1611 AND 1697) AND b.TicketType <> 2 THEN 'SBC'
+					WHEN b.bettype BETWEEN 3001 AND 3099 THEN 'SAG' -- SAG
 					WHEN b.bettype BETWEEN 6001 AND 6300 THEN 'PGS'
 					WHEN b.bettype BETWEEN 6401 AND 6700 THEN 'JK' -- JK
 					WHEN b.bettype BETWEEN 5701 AND 5799 THEN 'GDG' -- GDG
@@ -586,19 +588,19 @@ BEGIN
 					OR b.bettype BETWEEN 2701 AND 2829 -- VS2
 					OR b.bettype BETWEEN 1021 AND 1099 -- LT
 					OR b.bettype BETWEEN 4101 AND 4296 -- PP -- exclude 4300, 4299, 4298, 4297
-					OR (b.bettype BETWEEN 1901 AND 1999 AND b.bettype <> 1906) -- CC
+					OR b.bettype BETWEEN 1901 AND 1999 -- CC
 					OR b.bettype BETWEEN 4301 AND 4600 -- SG
 					OR b.bettype BETWEEN 4601 AND 4900 -- VRG
 					OR b.bettype BETWEEN 4901 AND 5000 -- TG
 					OR b.bettype BETWEEN 5001 AND 5099 -- I4D
 					OR b.bettype BETWEEN 3101 AND 3199 -- SXG
-					OR (b.bettype BETWEEN 1611 AND 1699 AND b.TicketType <> 2) -- SBC
-					OR (b.bettype BETWEEN 3001 AND 3099 AND b.bettype <> 3007) -- SAG
+					OR (b.bettype BETWEEN 1611 AND 1697 AND b.TicketType <> 2) -- SBC
+					OR b.bettype BETWEEN 3001 AND 3099 -- SAG
 					OR b.bettype BETWEEN 6001 AND 6300 -- PGS
 					OR b.bettype BETWEEN 6401 AND 6700 -- JK
 					OR b.bettype BETWEEN 5701 AND 5799 -- GDG
 					)
-				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.ProductId = 0 AND e.BetType = b.BetType)
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 			GROUP BY
 				b.rptDate,
 				b.currencyID,
@@ -619,14 +621,14 @@ BEGIN
 					WHEN b.bettype BETWEEN 2701 AND 2829 THEN 'VS2'
 					WHEN b.bettype BETWEEN 1021 AND 1099 THEN 'LT'
 					WHEN b.bettype BETWEEN 4101 AND 4296 THEN 'PP' -- exclude 4300, 4299, 4298, 4297
-					WHEN (b.bettype BETWEEN 1901 AND 1999) AND b.bettype <> 1906 THEN 'CC'
+					WHEN b.bettype BETWEEN 1901 AND 1999 THEN 'CC'
 					WHEN b.bettype BETWEEN 4301 AND 4600 THEN 'SG' -- SG
 					WHEN b.bettype BETWEEN 4601 AND 4900 THEN 'VRG'
 					WHEN b.bettype BETWEEN 4901 AND 5000 THEN 'TG'
 					WHEN b.bettype BETWEEN 5001 AND 5099 THEN 'I4D'
 					WHEN b.bettype BETWEEN 3101 AND 3199 THEN 'SXG' -- SXG
-					WHEN (b.bettype BETWEEN 1611 AND 1699) AND b.TicketType <> 2 THEN 'SBC'
-					WHEN (b.bettype BETWEEN 3001 AND 3099) AND b.bettype <> 3007 THEN 'SAG' -- SAG	
+					WHEN (b.bettype BETWEEN 1611 AND 1697) AND b.TicketType <> 2 THEN 'SBC'
+					WHEN b.bettype BETWEEN 3001 AND 3099 THEN 'SAG' -- SAG	
 					WHEN b.bettype BETWEEN 6001 AND 6300 THEN 'PGS'
 					WHEN b.bettype BETWEEN 6401 AND 6700 THEN 'JK' -- JK
 					WHEN b.bettype BETWEEN 5701 AND 5799 THEN 'GDG' -- GDG

@@ -12,26 +12,31 @@ RETURNS TABLE
 	Revision:
 		- 20201008@Louis: Licensee Spread Setting [RedmineID: #142532]
 		- 20210203@Louis: Saba Red Envelope [RedmineID: #149923]
+		- 20210208@Hogan: Integrate Four Guardians [RedmineID: #148100]
 */
 
 RETURN
-	SELECT 0 AS ProductId, 999 AS BetType				--- Licensee Spread Setting
+	SELECT 'SB' AS ProductCode, 999 AS BetType			--- Licensee Spread Setting
 	UNION ALL 
-	SELECT 32, 4297 									--- Pragmatic Play - Promotion Prize
+	SELECT 'PP', 4297 									--- Pragmatic Play - Promotion Prize
 	UNION ALL 
-	SELECT 32, 4298 									--- Pragmatic Play - Promotion Prize
+	SELECT 'PP', 4298 									--- Pragmatic Play - Promotion Prize
 	UNION ALL 
-	SELECT 32, 4299										--- Pragmatic Play - Promotion Prize
+	SELECT 'PP', 4299									--- Pragmatic Play - Promotion Prize
 	UNION ALL 
-	SELECT 32, 4300	 									--- Pragmatic Play - Promotion Prize
+	SELECT 'PP', 4300	 								--- Pragmatic Play - Promotion Prize
 	UNION ALL 
-	SELECT 37, 17000									--- Saba Loyalty
+	SELECT 'SPR', 17000									--- Saba Loyalty
 	UNION ALL 
-	SELECT 37, 17003									--- Saba Loyalty
+	SELECT 'SPR', 17003									--- Saba Loyalty
 	UNION ALL 
-	SELECT 37, 17004									--- Saba Red Envelope
+	SELECT 'SPR', 17004									--- Saba Red Envelope
 	UNION ALL 
-	SELECT 39, 3007										--- SA Gaming Tip ticket
+	SELECT 'SAG', 3007									--- SA Gaming Tip ticket
 	UNION ALL 
-	SELECT 34, 1906										--- Arcadia Gaming Bonus
+	SELECT 'CC', 1906									--- Arcadia Gaming Bonus
+	UNION ALL 
+	SELECT 'SBC', 1698									--- Saba club Jackpot Contribution
+	UNION ALL 
+	SELECT 'SBC', 1699									--- Saba club Jackpot Prize
 GO

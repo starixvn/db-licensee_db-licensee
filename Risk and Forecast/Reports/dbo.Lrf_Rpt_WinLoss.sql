@@ -137,6 +137,7 @@ AS
 		- 20201202@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369]
 		- 20201224@Hogan: Integrate GDG [RedmineID: #147267]
 		- 20210203@Louis: Saba Red Envelope [RedmineID: #149923]
+		- 20210208@Hogan: Integrate Four Guardians [RedmineID: #148100]
 
 	Param's Explanation:
 		@OrderItem:
@@ -266,10 +267,10 @@ BEGIN
 	-- Start searching by username
 	SELECT @Username = LTRIM(RTRIM(ISNULL(@Username, '')))
 
-	DECLARE @ExcludedBetType TABLE (ProductId TINYINT, BetType INT)
+	DECLARE @ExcludedBetType TABLE (ProductCode VARCHAR (10), BetType INT)
 	-- Insert Excluded BetType
-	INSERT INTO @ExcludedBetType (ProductId, BetType)
-	SELECT ProductId, BetType FROM Lrf_f_SelExcludedBetType()
+	INSERT INTO @ExcludedBetType (ProductCode, BetType)
+	SELECT ProductCode, BetType FROM Lrf_f_SelExcludedBetType()
 
 	IF @Username <> ''
 	BEGIN
@@ -360,21 +361,7 @@ BEGIN
 	INSERT INTO @bettype ( bettype, ProductCode )
 	SELECT DISTINCT BetType, ProductPrefix
 	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
-	
-	-- Exclude PP Prize
-	IF @ShowPP = 1
-	DELETE @bettype
-	WHERE ProductCode = 'PP' AND bettype IN (4300, 4299, 4298, 4297) -- Promotion Prize, Jackpot Prize, Contribution
-	
-	-- Exclude SAG Tip ticket
-	IF @ShowSAG = 1
-	DELETE @bettype
-	WHERE ProductCode = 'SAG' AND bettype = 3007
-	
-	-- Exclude Bonus
-	IF @ShowCC = 1
-	DELETE @BetType
-	WHERE ProductCode = 'CC' AND bettype = 1906
+	WHERE BetType NOT IN (SELECT BetType FROM @ExcludedBetType e WHERE e.ProductCode = ProductPrefix)
 
 	-- bettrade
 	INSERT INTO @bettype(bettype, ProductCode)
@@ -478,7 +465,6 @@ BEGIN
 			EXISTS(SELECT TOP 1 1 FROM @TempAg c WHERE c.CustID = b.recommend)
 			AND b.winlostdate >= @TempFromDate AND b.winlostdate <= @_ToDate
 			AND b.statusID IN (111, 112, 113)
-			AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 			-- CHECK for BA & SB
 			AND 1 = (CASE 
 						WHEN bt.ProductCode = 'SB' THEN 
@@ -497,11 +483,8 @@ BEGIN
 			WHERE 
 				EXISTS(SELECT TOP (1) 1 FROM @TempAg c WHERE c.CustID = b.recommend)
 				AND b.winlostdate >= @TempFromDate AND b.winlostdate <= @_ToDate
-				AND ((b.bettype IN (4300, 4299, 4298, 17000, 17003, 17004, 1906) AND b.statusID = 112)
-					OR (b.bettype = 4297 AND b.statusID = 111)
-					OR (b.bettype = 3007 AND b.statusID = 113)
-					OR (b.bettype BETWEEN 1611 AND 1699 AND b.matchid = 150 AND b.statusID IN (111,112,113))))  -- Promotion Prize, Jackpot Prize, Contribution
-		BEGIN
+				AND ((b.bettype IN (SELECT Bettype FROM @ExcludedBetType WHERE ProductCode <> 'SB') OR (b.bettype BETWEEN 1611 AND 1699 AND b.matchid = 150)) AND b.statusID IN (111,112,113)))
+			BEGIN
 			SET @PromotionPrize = 1
 		END
 	END
@@ -572,10 +555,8 @@ BEGIN
 			FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )
 			WHERE EXISTS(SELECT TOP (1) 1 FROM @TempAg c WHERE c.CustID = b.recommend)
 				AND b.Winlostdate BETWEEN @_FromDate AND @TempToDate
-				AND ((b.bettype IN (4300, 4299, 4298, 17000, 17003, 17004, 1906) AND b.statusID = 112)
-					OR (b.bettype = 4297 AND b.statusID = 111)
-					OR (b.bettype = 3007 AND b.statusID = 113)
-					OR (b.sporttype = 150 AND b.statusID IN (111,112,113))) AND b.roleid = 2)  -- Promotion Prize, Jackpot Prize, Contribution
+				AND ((b.bettype IN (SELECT Bettype FROM @ExcludedBetType WHERE ProductCode <> 'SB') OR b.sporttype = 150) AND b.statusID IN (111,112,113))
+				AND b.roleid = 2)
 		BEGIN
 			SET @PromotionPrize = 1
 		END

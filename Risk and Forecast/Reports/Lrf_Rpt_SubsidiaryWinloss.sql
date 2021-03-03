@@ -31,6 +31,7 @@ AS
 		- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]
 		- 20201104@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369]
 		- 20201229@Kos: Support separate Saba Virtual Sports from SB [RedmineID: #146776]
+		- 20210119@Hogan: Integrate Four Guardians [RedmineID: #148100]
 
 	Param's Explanation:
 		+ @MoveBetsDay: The day we move tickets to bettrans14
@@ -59,12 +60,10 @@ BEGIN
 	CREATE TABLE #BettypeProduct (BetType INT PRIMARY KEY, ProductCode VARCHAR(10))
 	CREATE TABLE #SporttypeProduct (SportType SMALLINT, ProductCode VARCHAR(10))
 
-	DECLARE @ExcludedBetType TABLE (ProductId TINYINT, BetType INT)
-
+	DECLARE @ExcludedBetType TABLE (ProductCode VARCHAR (10), BetType INT)
 	-- Insert Excluded BetType
-	INSERT INTO @ExcludedBetType (ProductId, BetType)
-	SELECT ProductId, BetType
-	FROM Lrf_f_SelExcludedBetType()
+	INSERT INTO @ExcludedBetType (ProductCode, BetType)
+	SELECT ProductCode, BetType FROM Lrf_f_SelExcludedBetType()
 
 	DECLARE @FDate SMALLDATETIME, @TDate SMALLDATETIME
 
@@ -110,7 +109,8 @@ BEGIN
 	INSERT INTO #BettypeProduct (BetType, ProductCode)		-- Don't have ProductCode IN (BT, CO)
 	SELECT DISTINCT BetType, ProductPrefix
 	FROM dbo.f_SportBettypeMatrix_Sel (0, 0, 0, 2, '', @ProductList, @IsTest)
-	WHERE BetType NOT IN (901, 902, 903, 904, 911, 912, 913, 914, 4299, 4300, 17000, 17001, 17002, 4298, 4297, 1906)		-- Exclude PP Promotion Prize, Saba Promotion Prize
+	WHERE BetType NOT IN (901, 902, 903, 904, 911, 912, 913, 914)
+			AND Bettype NOT IN (SELECT BetType FROM @ExcludedBetType e WHERE e.ProductCode = ProductPrefix)
 
 	-- Insert Sport Type
 	INSERT INTO #SporttypeProduct (SportType, ProductCode )		-- Don't have ProductCode IN (BT, CO)
@@ -171,8 +171,7 @@ BEGIN
 				b.winlostdate BETWEEN @FDate AND @TDate
 				AND (b.statusID IN (112, 113)
 					OR (@IncludeRaw = 1 AND b.statusID = 111))
-				AND b.matchid > 0 AND (b.bettype NOT BETWEEN 1611 AND 1699 OR b.matchid <> 150)
-				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
+				AND b.matchid > 0 AND (b.bettype NOT BETWEEN 1611 AND 1697 OR b.matchid <> 150)
 				AND (CASE
 						WHEN @ShowBA = 0 AND p.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 0
 						WHEN @ShowSB = 0 AND p.ProductCode = 'SB' AND b.tpositiontaking <> 0 THEN 0

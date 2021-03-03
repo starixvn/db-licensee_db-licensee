@@ -28,7 +28,8 @@ AS
 		- 20190614@Amanda: Add Base currency param [RedmineID: #112531]
 		- 20190910@Amanda: Add bet types that support Half Won/ Half Lose [RedmineID: #118300]
 		- 20190923@Amanda: Change the way to handle Half Won/ Half Lose bet types [RedmineID: #119879]
-		- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]	
+		- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]
+		- 20210119@Hogan: Integrate Four Guardians [RedmineID: #148100]
 
 	Param's Explanation:  
 	  + @TimeZone: =-4: GMT-4
@@ -69,10 +70,10 @@ BEGIN
 	
 	CREATE TABLE #Exchange	(FromDate SMALLDATETIME, ToDate SMALLDATETIME, ExchangeID INT, Rate FLOAT )
 
-	DECLARE @ExcludedBetType TABLE (ProductId TINYINT, BetType INT)
+	DECLARE @ExcludedBetType TABLE (ProductCode VARCHAR (10), BetType INT)
 	-- Insert Excluded BetType
-	INSERT INTO @ExcludedBetType (ProductId, BetType)
-	SELECT ProductId, BetType FROM Lrf_f_SelExcludedBetType()
+	INSERT INTO @ExcludedBetType (ProductCode, BetType)
+	SELECT ProductCode, BetType FROM Lrf_f_SelExcludedBetType()
 
 	---#1: Begin: Get AgentList 	
 	DECLARE @TempAg AS TABLE(custID INT, currency INT)  
@@ -110,6 +111,7 @@ BEGIN
 		SELECT DISTINCT BetType, ProductPrefix
 		FROM dbo.f_SportBettypeMatrix_Sel (0, 0, 0, 2, '', @ProductList, @IsTest)  --- This phase @ProductList is only ('SB', 'BA')
 		WHERE Bettype NOT IN (901, 902, 903, 904, 911, 912, 913, 914)
+			AND Bettype NOT IN (SELECT BetType FROM @ExcludedBetType e WHERE e.ProductCode = ProductPrefix)
 
 		-- Insert Sport Type
 		INSERT INTO #SporttypeProduct ( sporttype, ProductCode )   --- Don't have ProductCode IN (BA, BT, CO)
@@ -296,7 +298,6 @@ BEGIN
 						ON p.bettype = b.bettype
 				WHERE	b.winlostdate BETWEEN @FromDateBettrans AND @ToDateBettrans				
 						AND b.statusID IN (111, 112, 113)
-						AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 						AND b.matchID > 0 
 						AND (CASE WHEN p.ProductCode ='SB' THEN b.tpositiontaking ELSE 1 END <> 0 )  --- EXCLUDE BA 				
 				GROUP BY   
@@ -470,7 +471,6 @@ BEGIN
 						ON p.bettype = b.bettype
 				WHERE	CONVERT(DATE,DATEADD(HOUR, @TimeZone + 4, ISNULL(m.GlobalShowTime, b.Winlostdate))) BETWEEN @FromDate AND @ToDate				
 						AND b.statusID IN (111, 112, 113)
-						AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 						AND b.matchID > 0 
 						AND (CASE WHEN p.ProductCode = 'SB' THEN b.tpositiontaking ELSE 1 END <> 0 )  --- EXCLUDE BA 				
 				GROUP BY   

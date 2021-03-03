@@ -40,7 +40,8 @@ AS
 		- 20180323@Sophia: Add more column SourcedLicenseeSitename [Redmine: #92574]
 		- 20180706@Joseph: Add EndDate column to SourcedLicensee [Redmine: #97913]
 		- 20180807@Amanda: Remove Racing, Bingo and Old(@IsOld) data [RedmineID: #99378]
-		- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]	
+		- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]
+		- 20210119@Hogan: Integrate Four Guardians [RedmineID: #148100]
 
 	Param's Explanation:  
 	  + @ReportType: 1-Daily; 2-Monthly;  
@@ -138,10 +139,10 @@ BEGIN
 	
 	SELECT @LicenseeName = LicenseeName FROM bodb_Licensee.dbo.Licensees (NOLOCK) WHERE LicenseeID = @LicenseeID 
 	
-	DECLARE @ExcludedBetType TABLE (ProductId TINYINT, BetType INT)
+	DECLARE @ExcludedBetType TABLE (ProductCode VARCHAR (10), BetType INT)
 	-- Insert Excluded BetType
-	INSERT INTO @ExcludedBetType (ProductId, BetType)
-	SELECT ProductId, BetType FROM Lrf_f_SelExcludedBetType()
+	INSERT INTO @ExcludedBetType (ProductCode, BetType)
+	SELECT ProductCode, BetType FROM Lrf_f_SelExcludedBetType()
 	
 
 	IF @ShowSB = 1  
@@ -219,6 +220,7 @@ BEGIN
 		INSERT INTO @bettype ( bettype, ProductCode )
 		SELECT DISTINCT BetType, ProductPrefix
 		FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
+		WHERE BetType NOT IN (SELECT BetType FROM @ExcludedBetType e WHERE e.ProductCode = ProductPrefix)
 
 		IF CHARINDEX('CS', @ProductList) > 0
 			DELETE @bettype
@@ -357,7 +359,7 @@ BEGIN
 				AND b.tpositiontaking <> 0
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
-				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.ProductId = 0 AND e.BetType = b.BetType)
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.ProductCode = 'SB' AND e.BetType = b.BetType)
 				AND b.transid >= @transid
 			GROUP BY b.winlostdate, a.currency --, statusID, b.bettype
 		END
@@ -475,7 +477,6 @@ BEGIN
 			WHERE (a.CustID IS NULL OR b.custid = a.CustID)
 				AND b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 				AND b.statusID IN (111, 112, 113)
-				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 				AND b.transid >= @transid
 			GROUP BY   
 				b.winlostdate, a.currency,  

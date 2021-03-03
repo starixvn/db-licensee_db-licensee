@@ -88,6 +88,7 @@ AS
 		- 20201202@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369]
 		- 20201231@Louis: Integrate Happy 5 Linked Games [RedmineID: #147446]	
 		- 20200122@Hogan: Integrate GDG [RedmineID: #147267]
+		- 20210122@Hogan: Integrate Four Guardians [RedmineID: #148100]
 
 	Param's Explanation:
 		+ @PlatformType: 0: All
@@ -168,10 +169,10 @@ BEGIN
 		PlatformType TINYINT
 	)
 
-	DECLARE @ExcludedBetType TABLE (ProductId TINYINT, BetType INT)
+	DECLARE @ExcludedBetType TABLE (ProductCode VARCHAR (10), BetType INT)
 	-- Insert Excluded BetType
-	INSERT INTO @ExcludedBetType (ProductId, BetType)
-	SELECT ProductId, BetType FROM Lrf_f_SelExcludedBetType()
+	INSERT INTO @ExcludedBetType (ProductCode, BetType)
+	SELECT ProductCode, BetType FROM Lrf_f_SelExcludedBetType()
 
 	--to Deal WITH Parameter Sniffing
 	SELECT @FDate = @FromDate,
@@ -294,9 +295,9 @@ BEGIN
 	IF @ShowCC = 1 -- Card Club -- exclude 1906
 	BEGIN
 		SET @SportTypeSQL = @SportTypeSQL + ', (165, ''CC'')'
-		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN (typeid BETWEEN 1901 AND 1999) AND typeid <> 1906 THEN ''CC''
+		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 1901 AND 1999 THEN ''CC''
 				'
-		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 1901 AND 1999 AND typeid <> 1906)'
+		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 1901 AND 1999)'
 	END
 
 	IF @ShowSG = 1 -- Spadegaming 
@@ -347,24 +348,24 @@ BEGIN
 		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 3101 AND 3199)'
 	END
 
-	IF @ShowSBC = 1 -- Saba Club
+	IF @ShowSBC = 1 -- Saba Club exclude SBC Jackpot(1698, 1699)
 	BEGIN
 		SET @SportTypeSQL = @SportTypeSQL + ', (200, ''SBC'')'
 
-		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 1611 AND 1699 THEN ''SBC''
+		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 1611 AND 1697 THEN ''SBC''
 				'
 
-		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 1611 AND 1699)'
+		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 1611 AND 1697)'
 	END
 
 	IF @ShowSAG = 1 -- SA Gaming 
 	BEGIN
 		SET @SportTypeSQL = @SportTypeSQL + ', (244, ''SAG'')'
 
-		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN (typeid BETWEEN 3001 AND 3099) AND typeid <> 3007 THEN ''SAG''
+		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 3001 AND 3099 THEN ''SAG''
 				'
 
-		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 3001 AND 3099 AND typeid <> 3007)'
+		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 3001 AND 3099)'
 	END
 
 	IF @ShowPGS = 1 -- PG Soft
@@ -536,7 +537,7 @@ BEGIN
 				) 
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
-				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.ProductId = 0 AND e.BetType = b.BetType)
+				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.ProductCode = 'SB' AND e.BetType = b.BetType)
 				AND b.tpositiontaking <>0
 			GROUP BY
 				b.winlostdate,
@@ -577,7 +578,7 @@ BEGIN
 				b.statusID IN (111, 112, 113)
 				AND b.winlostdate BETWEEN @TempFromDate AND @TDate
 				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
-				AND (b.bettype NOT BETWEEN 1611 AND 1699 OR b.matchid <> 150)
+				AND (b.bettype NOT BETWEEN 1611 AND 1697 OR b.matchid <> 150)
 			GROUP BY
 				b.winlostdate,
 				tma.currency,
