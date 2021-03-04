@@ -30,6 +30,7 @@ AS
 		- 20201104@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369]
 		- 20210203@Louis: Saba Red Envelope [RedmineID: #149923]
 		- 20210208@Hogan: Integrate Four Guardians [RedmineID: #148100]
+		- 20210218@Hogan: Enhance Extra Payout excel file [RedmineID: #150292]
 
 	Param's Explanation:
 		+ @MoveBetsDay: The day we move tickets to bettrans14
@@ -52,7 +53,7 @@ BEGIN
 		OddsSpread			MONEY,
 		CustId				INT,
 		BetType				INT,
-		SportType			SMALLINT
+		ProductCode			VARCHAR(10)
 	)
 
 	CREATE TABLE #Exchange(FromDate SMALLDATETIME, ToDate SMALLDATETIME, ExchangeID INT, DefaultRate FLOAT)
@@ -156,7 +157,7 @@ BEGIN
 			OddsSpread,
 			CustId,
 			BetType,
-			SportType
+			ProductCode
 		)
 		SELECT
 			b.winlostdate,
@@ -166,7 +167,16 @@ BEGIN
 			b.oddsspread,
 			b.custid,
 			b.bettype,
-			b.matchid
+			CASE
+				WHEN b.bettype IN (17000, 17003, 17004) THEN @SPR
+				WHEN b.bettype = @PPContribution THEN @PPC
+				WHEN b.bettype = @SAGbetType THEN @SAG
+				WHEN b.bettype = @CCBonus THEN @CCB
+				WHEN b.bettype BETWEEN 1611 AND 1699 AND b.matchid = @SBCFreeBetsSportType THEN @SBCFB
+				WHEN b.bettype = @SBCJackpot THEN @SBC
+				WHEN b.bettype = @SBCContribution THEN @SBCC
+				ELSE @PP
+			END
 		FROM
 			dbo.bettrans b WITH (NOLOCK)
 			INNER JOIN @tempAg a ON b.recommend = a.custID AND b.Currency = a.Currency
@@ -193,7 +203,7 @@ BEGIN
 			OddsSpread,
 			CustId,
 			BetType,
-			SportType
+			ProductCode
 		)
 		SELECT
 			b.winlostdate,
@@ -203,7 +213,16 @@ BEGIN
 			b.BuyBackAmt,
 			b.custid,
 			b.bettype,
-			b.sporttype
+			CASE
+				WHEN b.bettype IN (17000, 17003, 17004) THEN @SPR
+				WHEN b.bettype = @PPContribution THEN @PPC
+				WHEN b.bettype = @SAGbetType THEN @SAG
+				WHEN b.bettype = @CCBonus THEN @CCB
+				WHEN b.sporttype = @SBCFreeBetsSportType THEN @SBCFB
+				WHEN b.bettype = @SBCJackpot THEN @SBC
+				WHEN b.bettype = @SBCContribution THEN @SBCC
+				ELSE @PP
+			END
 		FROM 
 			bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)
 			INNER JOIN @tempAg a ON b.recommend = a.custID AND b.Currency = a.Currency
@@ -239,17 +258,7 @@ BEGIN
 	-- #Region: Return data
 	SELECT
 		p.BetType,
-		p.SportType,
-		CASE
-			WHEN p.BetType IN (17000, 17003, 17004) THEN @SPR
-			WHEN p.BetType = @PPContribution THEN @PPC
-			WHEN p.BetType = @SAGbetType THEN @SAG
-			WHEN p.BetType = @CCBonus THEN @CCB
-			WHEN p.SportType = @SBCFreeBetsSportType THEN @SBCFB
-			WHEN p.BetType = @SBCJackpot THEN @SBC
-			WHEN p.BetType = @SBCContribution THEN @SBCC
-			ELSE @PP
-		END AS ProductCode,
+		p.ProductCode,
 		SUM(p.Winlost * e.DefaultRate)		AS SumAmount,
 		SUM(p.Awinlost * e.DefaultRate)		AS SumContributionAmount,
 		SUM(p.Oddsspread * e.DefaultRate)	AS SumTurnover,
@@ -258,21 +267,26 @@ BEGIN
 			ELSE 0 END AS SumTipSharing
 	FROM #PromotionData p
 		INNER JOIN #Exchange e ON e.ExchangeID = p.CurrencyId AND p.winlostdate BETWEEN e.FromDate AND e.ToDate
-	GROUP BY p.BetType, p.SportType
+	GROUP BY
+		p.BetType,
+		p.ProductCode
+
+	SELECT
+		p.CurrencyId,
+		p.ProductCode,
+		SUM(p.Winlost)		AS SumAmount,
+		SUM(p.Awinlost)		AS SumContributionAmount,
+		SUM(p.AWinlost)		AS SumTipSharing,
+		SUM(p.Oddsspread)	AS SumTurnover
+	FROM #PromotionData p
+	GROUP BY
+		p.CurrencyId,
+		p.ProductCode
+	ORDER BY p.CurrencyId
 
 	SELECT
 		p.BetType,
-		p.SportType,
-		CASE
-			WHEN p.BetType IN (17000, 17003, 17004) THEN @SPR
-			WHEN p.BetType = @PPContribution THEN @PPC
-			WHEN p.BetType = @SAGbetType THEN @SAG
-			WHEN p.BetType = @CCBonus THEN @CCB
-			WHEN p.SportType = @SBCFreeBetsSportType THEN @SBCFB
-			WHEN p.BetType = @SBCJackpot THEN @SBC
-			WHEN p.BetType = @SBCContribution THEN @SBCC
-			ELSE @PP
-		END AS ProductCode,
+		p.ProductCode,
 		p.winlostdate		AS [Date],
 		p.CurrencyId,
 		SUM(p.Winlost)		AS Amount,
@@ -285,7 +299,7 @@ BEGIN
 		INNER JOIN dbo.Customer c WITH (NOLOCK) ON p.CustId = c.custid
 	GROUP BY
 		p.BetType,
-		p.SportType,
+		p.ProductCode,
 		p.winlostdate,
 		p.CustId,
 		p.CurrencyId,
