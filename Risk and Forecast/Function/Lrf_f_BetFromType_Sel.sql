@@ -15,6 +15,7 @@ ALTER FUNCTION [dbo].[Lrf_f_BetFromType_Sel]
 		- 20200228@Vickie: Integrate 3 new betfrom [Redmine: #129253]
 		- 20200622@Hogan: Integrate 3 new betfrom 4, 5, 6 [Redmine: #136107]
 		- 20210120@Mark: Integrate new betfrom 7 [Redmine: #149108]
+		- 20210305@Mark: Integrate new betfrom _, @, %(Mobile Euro) [Redmine: #151019]
 */
 
 RETURNS TABLE
@@ -27,12 +28,14 @@ RETURN
 				(4, 'm'),
 				(3, 'u'),
 				(5, 'l'),
+				(5, '_'),
 				(1, 'g'),
 				(6, 'r'),
 				(7, 'x'),
 				(2, 'z'),
 				(8, 'o'),
 				(9, 'c'),
+				(9, '@'),
 				(10, 't'),
 				(11, '0'),
 				(12, '1'),
@@ -42,6 +45,7 @@ RETURN
 				(12, '4'),
 				(13, '5'),
 				(14, '6'),
+				(15, '%'),
 				(88, '7')
 	) d(PlatformType, betfrom)
 	WHERE @PlatformType = 0 OR d.PlatformType = @PlatformType
