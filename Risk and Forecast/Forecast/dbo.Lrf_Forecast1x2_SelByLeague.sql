@@ -1,6 +1,5 @@
-﻿/*<info serverAlias="DB042-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
-USE [bodb02]
-GO
+﻿/*<info serverAlias="DBBOF-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+
 ALTER PROCEDURE [dbo].[Lrf_Forecast1x2_SelByLeague]    
     @leagueid		INT,
 	@AgentList		VARCHAR(MAX),
@@ -8,7 +7,7 @@ ALTER PROCEDURE [dbo].[Lrf_Forecast1x2_SelByLeague]
 AS /*
 Created: 20101207@Henry
 Task: Forecast for 1x2 bettype according to league.
-DB: DB042.bodb02
+DB: DBBOF.bodb02
 Original: Age_Forecast1x2_SelByLeague_Ag
 Revisions: 
 	- 20110303@Jacob: Allow to choose all type of licensee AND all currency + suppport based currency	
@@ -22,6 +21,7 @@ Revisions:
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
 	- 20180802@Sophia: HA - remove ruben to use new index on DB042 [Redmine: #98631]
 	- 20190611@Amanda: Add Base Currency parameter [Redmine: #112531]
+	- 20210224@Mark: Change alias DB042 to DBBOF [Redmine: #150375]
 
 Param's Explanation:
 	+ @AgentList: xml structure
@@ -30,7 +30,7 @@ Param's Explanation:
 					<Agent AgentId="12345" Currency="5"/>  
 					</ROOT> 
 */
-
+BEGIN
     SET NOCOUNT ON
 
     DECLARE @Today SMALLDATETIME 
@@ -285,4 +285,6 @@ Param's Explanation:
 					x.MatchCode ,
 					isNeutral,
 					CASE WHEN x.bettype =167 THEN 1 ELSE 0 END
-GO				
+END
+
+GO

@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02,DB042-bodb02" selecters="bodbLicenseeNet,bodbAdminNet,Dot_Casino" viewers="" isFunction="1" isNested="0"></info>*/
+/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02,DBBOF-bodb02" selecters="bodbLicenseeNet,bodbAdminNet,Dot_Casino" viewers="" isFunction="1" isNested="0"></info>*/
 ALTER FUNCTION [dbo].[Lrf_f_GetSubExchangeDaily]
     (
       @FromDate			SMALLDATETIME,
@@ -18,19 +18,22 @@ RETURNS @tempDate TABLE (
 	THB									FLOAT, 
 	IDR									FLOAT, 
 	INH									FLOAT, 
+	BDT									FLOAT,
+	INR									FLOAT,
 	Actualrate							FLOAT
 	)
 AS
 /*  
 	Created: 20171206@Don
 	Task: New way to get exchange rate
-	DB: DBEXT.bodb02,DBACC-bodb02,DB042.bodb02
+	DB: DBEXT.bodb02,DBACC-bodb02,DBBOF.bodb02
 	Revisions:  
 
 	Param's Explanation:  			
 	- 20171206@Don: Initial version
 	- 20181008@Joseph: Deploy to 2 servers DBACC-bodb02,DB042.bodb02 (used by SP betlists) [Redmine #80941]
 	- 20190426@Joseph: Add INH base currency [Redmine: #112603]
+	- 20210224@Mark: Add BDT and INR as Base Currencies[Redmine #150375]
 
 */
 BEGIN
@@ -95,6 +98,8 @@ BEGIN
 			THB, 
 			IDR, 
 			INH,
+			BDT,
+			INR,
 			Actualrate
 	) 
 		SELECT 
@@ -111,6 +116,8 @@ BEGIN
 			ex.THB, 
 			ex.IDR / 1000 AS IDR, 
 			ex.VND / 1000 AS INH, 
+			ex.BDT, 
+			ex.INR, 
 			ex.Actualrate
 		FROM dbo.ExchangeDailyOanda ex WITH(NOLOCK)
 			INNER JOIN @tblDate dt ON ex.ExchangeDate = dt.lastexchangeday

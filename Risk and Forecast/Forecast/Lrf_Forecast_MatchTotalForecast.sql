@@ -1,4 +1,4 @@
-/*<info serverAlias="DB042-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBBOF-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE Lrf_Forecast_MatchTotalForecast
 (	
 	@MatchID		INT,
@@ -13,7 +13,7 @@ AS
 /*
 Created: Victor@20130805
 Task : Forecast
-DB: DB042.bodb02
+DB: DBBOF.bodb02
 Original: [Lrf_Forecast_MatchTotalForecast]
 Revisions:    
 	20130930@Victor: Revert back formular for HDP tickets
@@ -26,6 +26,7 @@ Revisions:
 	20180802@Sophia: HA - remove ruben to use new index on DB042 [Redmine: #98631]
 	20190102@Joseph: Incorporate changes for E-Sports phase 2b [Redmine: #106553]
 	20190611@Amanda: Add Base Currency parameter [Redmine: #112531]
+	20210224@Mark: Change alias DB042 to DBBOF [Redmine: #150375]
 
 Param's Explanation:
 	+ @AgentList: xml structure

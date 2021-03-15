@@ -1,6 +1,4 @@
-﻿/*<info serverAlias="DB042-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
-USE bodb02
-GO
+﻿/*<info serverAlias="DBBOF-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel121] 	
 	@PageSize		INT=50,
@@ -13,7 +11,7 @@ ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel121]
 /*
 Created: 20120703@Henry
 Task : Retrieve Total bets for bettype No Bet (Home/Draw/Away No bet)
-DB: DB042.bodb02
+DB: DBBOF.bodb02
 Original:
 Revisions:
 	 - 20121004@Jim: replace @currencyname input param by @currencyID
@@ -24,6 +22,7 @@ Revisions:
 	 - 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
 	 - 20180802@Sophia: HA - remove ruben to use new index on DB042 [Redmine: #98631]
 	 - 20190611@Amanda: Add Base Currency parameter [Redmine: #112531]
+	 - 20210224@Mark: Change alias DB042 to DBBOF [Redmine: #150375]
 
 Param's Explanation:
 	+ @AgentList: xml structure
@@ -32,154 +31,154 @@ Param's Explanation:
 					<Agent AgentId="12345" Currency="5"/>  
 					</ROOT>
 */
+BEGIN
+	SET NOCOUNT ON
+	DECLARE @Today SMALLDATETIME 
+	SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
 
-SET NOCOUNT ON
-DECLARE @Today SMALLDATETIME 
-SET @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120) 
+	DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
+	DECLARE @DocHandler INT
 
-DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
-DECLARE @DocHandler INT
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+				,@AgentList
+		INSERT INTO @TempAg (custID, currency)
+		SELECT AgentId, Currency
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
-BEGIN TRY
-	EXEC sp_xml_preparedocument @DocHandler OUTPUT
-			,@AgentList
-	INSERT INTO @TempAg (custID, currency)
-	SELECT AgentId, Currency
-	FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
 
-	EXEC sp_xml_removedocument @DocHandler
-END TRY
+	BEGIN CATCH
+		SELECT ErrCode = 100
+				,ErrMsg = N'Paramter invalid.'
 
-BEGIN CATCH
-	SELECT ErrCode = 100
-			,ErrMsg = N'Paramter invalid.'
+		RETURN
+	END CATCH;
 
-	RETURN
-END CATCH;
+	DECLARE @RowCount INT, @RowStart INT, @RowEnd INT  
+	SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
 
-DECLARE @RowCount INT, @RowStart INT, @RowEnd INT  
-SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
+	DECLARE @Data AS Table
+	(
+		currency INT,
+		showtime NVARCHAR (50),
+		leagueid INT,
+		matchcode NVARCHAR(50),
+		liveindicator INT,
+		livehomescore INT,
+		liveawayscore INT,
+		matchid INT,
+		homeID INT,
+		awayID INT,
 
-DECLARE @Data AS Table
-(
-	currency INT,
-	showtime NVARCHAR (50),
-	leagueid INT,
-	matchcode NVARCHAR(50),
-	liveindicator INT,
-	livehomescore INT,
-	liveawayscore INT,
-	matchid INT,
-	homeID INT,
-	awayID INT,
+		home_odds_DNB MONEY,
+		away_odds_DNB MONEY,
+		home_odds_HNB MONEY,
+		away_odds_HNB MONEY,
+		home_odds_ANB MONEY,
+		away_odds_ANB MONEY,
 
-	home_odds_DNB MONEY,
-	away_odds_DNB MONEY,
-	home_odds_HNB MONEY,
-	away_odds_HNB MONEY,
-	home_odds_ANB MONEY,
-	away_odds_ANB MONEY,
+		BetCount_DNB INT,
+		BetCount_HNB INT,
+		BetCount_ANB INT,
+		isNeutral BIT
+	)
 
-	BetCount_DNB INT,
-	BetCount_HNB INT,
-	BetCount_ANB INT,
-	isNeutral BIT
-)
+	INSERT INTO @Data
+	SELECT 
+			b.currency,
+			m.showtime, 
+			m.leagueid,
+			m.matchcode, 
+			b.liveindicator, 
+			b.livehomescore,
+			b.liveawayscore,
+			m.matchid,
+			m.homeid,
+			m.awayid,
+			sum(Case when bettype=25 and betteam = 'h' then  stake   else 0 end) AS home_odds_DNB,
+			sum(Case when bettype=25 and betteam = 'a' then  stake   else 0 end) AS away_odds_DNB,
 
-INSERT INTO @Data
-SELECT 
-		b.currency,
-		m.showtime, 
-		m.leagueid,
-		m.matchcode, 
-		b.liveindicator, 
-		b.livehomescore,
-		b.liveawayscore,
-		m.matchid,
-		m.homeid,
-		m.awayid,
-		sum(Case when bettype=25 and betteam = 'h' then  stake   else 0 end) AS home_odds_DNB,
-		sum(Case when bettype=25 and betteam = 'a' then  stake   else 0 end) AS away_odds_DNB,
+			sum(Case when bettype=121 and betteam = 'x' then  stake   else 0 end) AS home_odds_HNB,
+			sum(Case when bettype=121 and betteam = 'a' then  stake   else 0 end) AS away_odds_HNB,
+			
+			sum(Case when bettype=122 and betteam = 'h' then  stake   else 0 end) AS home_odds_ANB,
+			sum(Case when bettype=122 and betteam = 'x' then  stake   else 0 end) AS away_odds_ANB,
 
-		sum(Case when bettype=121 and betteam = 'x' then  stake   else 0 end) AS home_odds_HNB,
-		sum(Case when bettype=121 and betteam = 'a' then  stake   else 0 end) AS away_odds_HNB,
-		
-		sum(Case when bettype=122 and betteam = 'h' then  stake   else 0 end) AS home_odds_ANB,
-		sum(Case when bettype=122 and betteam = 'x' then  stake   else 0 end) AS away_odds_ANB,
+			sum(case when bettype=25 then 1 else 0 end) as BetCount_DNB,
+			sum(case when bettype=121 then 1 else 0 end) as BetCount_HNB,
+			sum(case when bettype=122 then 1 else 0 end) as BetCount_ANB,
+			isnull(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral
+		FROM
+			bettrans AS b  WITH (NOLOCK)
+			INNER JOIN match AS m  WITH (NOLOCK) ON m.matchid = b.matchid and m.eventstatus='running'
+			INNER JOIN @TempAg ag ON b.recommend = ag.CustId AND b.currency = ag.Currency
+		WHERE  	
+			b.bettype in (25,121,122)
+			AND b.statusID in (0,1)
+			AND b.tpositiontaking <> 0
+		GROUP BY 
+			b.currency,
+			b.liveindicator, 
+			b.livehomescore,
+			b.liveawayscore,
+			m.homeid,
+			m.awayid,
+			m.matchid,
+			m.matchcode, 
+			m.leagueid,
+			m.showtime,
+			m.isNeutral
+		ORDER BY m.matchcode
 
-		sum(case when bettype=25 then 1 else 0 end) as BetCount_DNB,
-		sum(case when bettype=121 then 1 else 0 end) as BetCount_HNB,
-		sum(case when bettype=122 then 1 else 0 end) as BetCount_ANB,
-		isnull(m.isNeutral, CONVERT(BIT,0)) AS IsNeutral
-	FROM
-		bettrans AS b  WITH (NOLOCK)
-		INNER JOIN match AS m  WITH (NOLOCK) ON m.matchid = b.matchid and m.eventstatus='running'
-		INNER JOIN @TempAg ag ON b.recommend = ag.CustId AND b.currency = ag.Currency
-	WHERE  	
-		b.bettype in (25,121,122)
-		AND b.statusID in (0,1)
-		AND b.tpositiontaking <> 0
-	GROUP BY 
-		b.currency,
-		b.liveindicator, 
-		b.livehomescore,
-		b.liveawayscore,
-		m.homeid,
-		m.awayid,
-		m.matchid,
-		m.matchcode, 
-		m.leagueid,
-		m.showtime,
-		m.isNeutral
-	ORDER BY m.matchcode
+	IF @TotalRows = 0  
+	BEGIN  
+		SELECT @TotalRows = COUNT(matchid) FROM @Data
+	END
 
-IF @TotalRows = 0  
-BEGIN  
-	SELECT @TotalRows = COUNT(matchid) FROM @Data
+	DECLARE @ExchangeRate AS TABLE (ExchangeId INT, Rate FLOAT)
+
+	INSERT INTO @ExchangeRate(ExchangeId, Rate)
+	SELECT ExchangeId, Rate
+	FROM dbo.Lrf_f_GetExchangeRate(@Today, @Today, @BaseCurrency, '') e
+	WHERE EXISTS (SELECT 1 FROM @TempAg a WHERE a.Currency = e.ExchangeId)
+
+	SELECT c.* FROM
+	(
+		SELECT 
+			ROW_NUMBER() over (ORDER BY matchcode) AS RowNum ,
+			currency,
+			showtime,
+			leagueid,
+			matchcode,
+			liveindicator,
+			livehomescore,
+			liveawayscore,
+			matchid,
+			homeID,
+			awayID,
+
+			home_odds_DNB * e.Rate home_odds_DNB,
+			
+			away_odds_DNB * e.Rate away_odds_DNB,
+			
+			home_odds_HNB * e.Rate home_odds_HNB,
+			
+			away_odds_HNB * e.Rate away_odds_HNB,
+			
+			home_odds_ANB * e.Rate home_odds_ANB,
+			
+			away_odds_ANB * e.Rate away_odds_ANB,
+			
+			BetCount_DNB,
+			BetCount_HNB,
+			BetCount_ANB,
+			isNeutral
+			
+		FROM @Data b
+		INNER JOIN @ExchangeRate e ON b.currency = e.exchangeid
+	) c WHERE c.RowNum BETWEEN @RowStart AND @RowEnd
 END
 
-DECLARE @ExchangeRate AS TABLE (ExchangeId INT, Rate FLOAT)
-
-INSERT INTO @ExchangeRate(ExchangeId, Rate)
-SELECT ExchangeId, Rate
-FROM dbo.Lrf_f_GetExchangeRate(@Today, @Today, @BaseCurrency, '') e
-WHERE EXISTS (SELECT 1 FROM @TempAg a WHERE a.Currency = e.ExchangeId)
-
-SELECT c.* FROM
-(
-	SELECT 
-		ROW_NUMBER() over (ORDER BY matchcode) AS RowNum ,
-		currency,
-		showtime,
-		leagueid,
-		matchcode,
-		liveindicator,
-		livehomescore,
-		liveawayscore,
-		matchid,
-		homeID,
-		awayID,
-
-		home_odds_DNB * e.Rate home_odds_DNB,
-		
-		away_odds_DNB * e.Rate away_odds_DNB,
-		
-		home_odds_HNB * e.Rate home_odds_HNB,
-		
-		away_odds_HNB * e.Rate away_odds_HNB,
-		
-		home_odds_ANB * e.Rate home_odds_ANB,
-		
-		away_odds_ANB * e.Rate away_odds_ANB,
-		
-		BetCount_DNB,
-		BetCount_HNB,
-		BetCount_ANB,
-		isNeutral
-		
-	FROM @Data b
-	INNER JOIN @ExchangeRate e ON b.currency = e.exchangeid
-) c WHERE c.RowNum BETWEEN @RowStart AND @RowEnd
-
 GO
- 

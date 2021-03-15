@@ -1,5 +1,6 @@
-﻿/*<info serverAlias="DB042-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
-ALTER  PROCEDURE [dbo].[Lrf_Forecast_SelByLeague]    
+﻿/*<info serverAlias="DBBOF-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+
+ALTER  PROCEDURE [dbo].[Lrf_Forecast_SelByLeague]
     @BaseOffsetHDP		INT ,
     @BaseOffsetOU		INT ,
     @BaseOffsetHTHDP	INT ,
@@ -11,7 +12,7 @@ AS
 /*
 Created: 20101207@Henry
 Task: Forecast for bettype according to league.
-DB: DB042.bodb02
+DB: DBBOF.bodb02
 Original: [Age_Forecast_SelByLeague_Ag]
 Revisions: 
 
@@ -27,6 +28,7 @@ Revisions:
     - 20190102@Joseph: Incorporate changes for E-Sports phase 2b [Redmine: #106553]
 	- 20190415@Percy: Get livehomescore/liveawayscore data from match table instead of odds table [RedmineID: #113303]
 	- 20190611@Amanda: Add Base Currency parameter [Redmine: #112531]
+	- 20210224@Mark: Change alias DB042 to DBBOF [Redmine: #150375]
 
 Param's Explanation:
 	+ @AgentList: xml structure
@@ -36,7 +38,7 @@ Param's Explanation:
 					</ROOT> 
 */
 
-
+BEGIN
     SET NOCOUNT ON
     DECLARE @BetTypeHDP INT ,
         @BetTypeOU INT ,
@@ -743,5 +745,7 @@ Param's Explanation:
             m.isNeutral
     ORDER BY R.LiveIndicator DESC ,
             M.MatchCode
+END
+
 GO
  
