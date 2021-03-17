@@ -35,6 +35,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 		- 20201202@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369] 
 		- 20201231@Louis: Integrate Happy 5 Linked Games [RedmineID: #147446]
 		- 20200122@Hogan: Integrate GDG [RedmineID: #147267]
+		- 20210305@Hogan: Integrate Sport Lottery [RedmineID: #150872]
 
 	Paramters Explanation:  
 		@ProductID: list of products
@@ -73,7 +74,8 @@ RETURN
 					(39, 'SAG', 244, 0),	-- SA Gaming
 					(55, 'PGS', 232, 0),	-- PG Soft
 					(56, 'JK', 234, 0),	-- Joker
-					(59, 'GDG', 236, 0)	-- GDG
+					(59, 'GDG', 236, 0),	-- GDG
+					(63, 'SLT', 169, 0)		-- Sports Lottery
 			) d(ProductID, ProductCode, SportType, BetType)  
 	WHERE ',' + @ProductCodes + ',' LIKE '%,' + CAST(ProductCode AS VARCHAR(10)) + ',%'  
 GO

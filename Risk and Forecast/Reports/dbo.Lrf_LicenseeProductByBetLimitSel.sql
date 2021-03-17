@@ -14,6 +14,7 @@ AS
 		- 20190626@Johnson: initial sp [redmine: #112658]
 		- 20200406@Hogan: Add new product Table Games [RedmineID: #131447]
 		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
+		- 20210305@Hogan: Add new product Sport Lottery [RedmineID: #150872]
 */
 
  /*
@@ -123,7 +124,8 @@ BEGIN
 			8,--	RNG Keno
 			28,--	Lottery
 			40,--	Table
-			43 --	I4D
+			43,--	I4D
+			63--	SLT
 			)
 	ORDER BY ProductID ASC
 END

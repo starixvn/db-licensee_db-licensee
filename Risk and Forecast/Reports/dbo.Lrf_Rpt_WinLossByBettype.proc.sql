@@ -66,6 +66,7 @@ AS
 		- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]
 		- 20201231@Louis: Integrate Happy 5 Linked Games [RedmineID: #147446]
 		- 20210119@Hogan: Integrate Four Guardians [RedmineID: #148100]
+		- 20210305@Hogan: Integrate Sport Lottery [RedmineID: #150872]
 
 	Param's Explanation: 
 		+ @AgentList: xml structure
@@ -206,6 +207,7 @@ BEGIN
 							OR b.bettype BETWEEN 1021 AND 1099 -- Lottery
 							OR b.bettype BETWEEN 4901 AND 5000 -- Table Games
 							OR b.bettype BETWEEN 5001 AND 5099 -- Indo 4D
+							OR b.bettype BETWEEN 3611 AND 3620 -- SLT
 							)
 						THEN (b.winlost - b.actual_stake)
 					ELSE 0
@@ -231,7 +233,8 @@ BEGIN
 				OR (b.bettype BETWEEN 3601 AND 3610)
 				OR (b.Bettype >= 9001 AND b.Bettype <= 9399)
 				OR (b.Bettype >= 4901 AND b.Bettype <= 5000)
-				OR (b.Bettype >= 5001 AND b.Bettype <= 5099))
+				OR (b.Bettype >= 5001 AND b.Bettype <= 5099)
+				OR (b.Bettype >= 3611 AND b.Bettype <= 3620))
 			AND (bettype NOT IN (71, 73,901,902,903,904,911,912,913,914,31,32,33,41,42,43) AND bettype NOT BETWEEN 1011 AND 1020 AND b.bettype NOT BETWEEN 1101 AND 1199) -- Remove LC
 			AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 			AND b.ruben = 1
@@ -286,6 +289,7 @@ BEGIN
 							OR b.bettype BETWEEN 1021 AND 1099 --Lottery
 							OR b.bettype BETWEEN 4901 AND 5000 -- Table Games
 							OR b.bettype BETWEEN 5001 AND 5099 -- Indo 4D
+							OR b.bettype BETWEEN 3611 AND 3620 -- SLT
 							)
 						THEN (b.winlost - b.actual_stake)
 					ELSE 0
@@ -312,7 +316,8 @@ BEGIN
 				OR (b.bettype BETWEEN 3601 AND 3610)
 				OR (b.Bettype >= 9001 AND b.Bettype <= 9399) 
 				OR (b.Bettype >= 4901 AND b.Bettype <= 5000)
-				OR (b.Bettype >= 5001 AND b.Bettype <= 5099)) 
+				OR (b.Bettype >= 5001 AND b.Bettype <= 5099)
+				OR (b.Bettype >= 3611 AND b.Bettype <= 3620)) 
 			AND (bettype NOT IN (71, 73,901,902,903,904,911,912,913,914,31,32,33,41,42,43) 
 					AND bettype NOT BETWEEN 1011 AND 1020 
 					AND bettype NOT BETWEEN 1101 AND 1199
