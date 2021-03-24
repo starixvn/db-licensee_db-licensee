@@ -47,6 +47,7 @@ AS
 		- 20201027@Kos: Change to use new table to check performance [RedmineID: #143310]
 		- 20201028@Louis: Licensee Spread Setting [RedmineID: #142532]
 		- 20210119@Hogan: Integrate Four Guardians [RedmineID: #148100]
+		- 20210304@Hogan: Offer Decimal Odds Only for Match [RedmineID: #151010]
 */
 
 BEGIN
@@ -111,6 +112,9 @@ BEGIN
 	---
 	DECLARE @Status AS TABLE (StatusID INT)
 
+	--Set cut off date to convert  bettype 501
+	DECLARE @501CutoffDate SMALLDATETIME = '2021-04-08'
+
 	IF @ShowWin = 1
 	BEGIN
 		INSERT INTO @status
@@ -163,6 +167,7 @@ BEGIN
 						OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 						OR (b.bettype NOT IN (703, 711) AND b.bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
 						OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
+						OR (b.bettype = 501 AND b.transdate < @501CutoffDate)
 						)
 						THEN CASE 
 								WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
@@ -238,6 +243,7 @@ BEGIN
 								OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 								OR (b.bettype NOT IN (703, 711) AND b.bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
 								OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
+								OR (b.bettype = 501 AND b.transdate < @501CutoffDate)
 							)
 						THEN CASE 
 								WHEN b.OddsType = 1
@@ -285,6 +291,7 @@ BEGIN
 								OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 								OR (b.bettype NOT IN (703, 711) AND b.bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
 								OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
+								OR (b.bettype = 501 AND b.transdate < @501CutoffDate)
 							)
 						THEN CASE 
 								WHEN b.OddsType = 1
@@ -361,6 +368,7 @@ BEGIN
 								OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 								OR (b.bettype NOT IN (703, 711) AND b.bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
 								OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
+								OR (b.bettype = 501 AND b.transdate < @501CutoffDate)
 							)
 						THEN CASE 
 								WHEN b.OddsType = 1
@@ -427,6 +435,7 @@ BEGIN
 										OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 										OR (b.bettype NOT IN (703, 711) AND b.bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
 										OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
+										OR (b.bettype = 501 AND b.winlostdate < @501CutoffDate)
 									)
 									THEN CASE 
 											WHEN b.OddsType = 1
@@ -497,6 +506,7 @@ BEGIN
 										OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 										OR (b.bettype NOT IN (703, 711) AND b.bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
 										OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
+										OR (b.bettype = 501 AND b.winlostdate < @501CutoffDate)
 									)
 									THEN CASE 
 											WHEN b.OddsType = 1
@@ -547,6 +557,7 @@ BEGIN
 										OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 										OR (b.bettype NOT IN (703, 711) AND b.bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
 										OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
+										OR (b.bettype = 501 AND b.winlostdate < @501CutoffDate)
 									)
 									THEN CASE 
 											WHEN b.OddsType = 1
@@ -620,6 +631,7 @@ BEGIN
 										OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 										OR (b.bettype NOT IN (703, 711) AND b.bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
 										OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
+										OR (b.bettype = 501 AND b.winlostdate < @501CutoffDate)
 									)
 									THEN CASE 
 											WHEN b.OddsType = 1
