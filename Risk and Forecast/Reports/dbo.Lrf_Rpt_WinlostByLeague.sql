@@ -46,6 +46,7 @@ AS
 		- 20201023@Hogan: Integrate new bet type Time Machine OU [RedmineID: #142692]
 		- 20201027@Kos: Change to use new table to check performance [RedmineID: #143310]
 		- 20210304@Hogan: Offer Decimal Odds Only for Match [RedmineID: #151010]
+		- 20210304@Hogan: Integrate Cricket AIO [RedmineID: #150386]
 
 	Parameter's Explanation:
 		- @LicenseeID : Licensee ID
@@ -236,12 +237,14 @@ BEGIN
 						OR (b.bettype BETWEEN 121 AND 999)
 						OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettye
 						OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0	
+						OR (b.Bettype BETWEEN 9400 AND 9699) -- Cricket AIO
 						)
 					AND (b.bettype < 901 OR b.bettype > 904)
 					AND (b.bettype < 911 OR b.bettype > 914)
 					AND (
 						@MatchID = 0
 						OR m.matchid = @MatchID
+						OR (m.sporttype = 50 AND m.ChildMatchType = 200 AND m.ParentID = @MatchID)
 						)
 					AND m.leagueid = @leagueID
 					AND b.statusid IN (
@@ -380,12 +383,14 @@ BEGIN
 						OR (b.bettype BETWEEN 121 AND 999)	
 						OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
 						OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0
+						OR (b.Bettype BETWEEN 9400 AND 9699) -- Cricket AIO
 						)
 					AND (b.bettype < 901 OR b.bettype > 904)
 					AND (b.bettype < 911 OR b.bettype > 914)
 					AND (
 						@MatchID = 0
 						OR m.matchid = @MatchID
+						OR (m.sporttype = 50 AND m.ChildMatchType = 200 AND m.ParentID = @MatchID)
 						)
 					AND m.leagueid = @leagueID
 					AND b.statusid IN (
@@ -457,6 +462,8 @@ BEGIN
 		,sporttype TINYINT
 		,showtime NVARCHAR(50)
 		,isNeutral BIT
+		,ParentID INT
+		,ChildMatchType INT
 		)
 
 	IF @Fromdate <= @MoveBetsDay
@@ -476,6 +483,8 @@ BEGIN
 				,m.sporttype
 				,m.showtime
 				,m.isNeutral
+				,m.ParentID
+				,m.ChildMatchType
 			FROM dbo.match14 AS m WITH (NOLOCK)
 			WHERE m.eventdate BETWEEN @fromdate AND @TempToDate
 				AND m.leagueid = @LeagueID
@@ -493,6 +502,8 @@ BEGIN
 				,m.sporttype
 				,m.showtime
 				,m.isNeutral
+				,m.ParentID
+				,m.ChildMatchType
 			FROM DBARC.bodb_archive.dbo.match_bk AS m WITH (NOLOCK)
 			WHERE m.eventdate BETWEEN @fromdate AND @TempToDate
 				AND m.leagueid = @LeagueID
@@ -583,6 +594,7 @@ BEGIN
 							OR (b.bettype BETWEEN 121 AND 999)
 							OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
 							OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0		
+							OR (b.Bettype BETWEEN 9400 AND 9699) -- Cricket AIO	
 							)
 						AND (b.bettype < 901 OR b.bettype > 904)
 						AND (b.bettype < 911 OR b.bettype > 914)
@@ -590,6 +602,7 @@ BEGIN
 						AND (
 							m.matchid = @MatchID
 							OR @MatchID = 0
+							OR (m.sporttype = 50 AND m.ChildMatchType = 200 AND m.ParentID = @MatchID)
 							)
 						AND b.statusID IN (
 							SELECT *
@@ -727,6 +740,7 @@ BEGIN
 								OR (b.bettype BETWEEN 121 AND 999)	
 								OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
 								OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0	
+								OR (b.Bettype BETWEEN 9400 AND 9699) -- Cricket AIO
 								)
 							AND (b.bettype < 901 OR b.bettype > 904)
 							AND (b.bettype < 911 OR b.bettype > 914)
@@ -734,6 +748,7 @@ BEGIN
 							AND (
 								m.matchid = @MatchID
 								OR @MatchID = 0
+								OR (m.sporttype = 50 AND m.ChildMatchType = 200 AND m.ParentID = @MatchID)
 								)
 							AND b.statusID IN (
 								SELECT *

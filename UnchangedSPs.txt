@@ -1,7 +1,12 @@
 Risk and Forecast\Reports\Lrf_Rpt_LicWinlossByTimeZone.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_TurnOver.proc.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_CustomerBalance.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_Outstanding.StoredProcedure.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_CustomerTurnOver.proc.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_CustomerTurnOver_SumTotal.proc.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_CustomerTurnOver_Pagination.proc.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_CustomerTurnOver_SumMember.proc.sql
+Risk and Forecast\Reports\dbo.Lrf_Rpt_CustomerTurnOver_MonthlyPagination.proc.sql
 Risk and Forecast\Reports\Lrf_Rpt_SubsidiaryWinloss.sql
 Risk and Forecast\Reports\Lrf_Rpt_SubsidiaryWinlossDetail.sql
-Risk and Forecast\Reports\dbo.Lrf_Rpt_CustomerBalance.sql
-Risk and Forecast\Reports\Lrf_Rpt_LicWinloss_BySourced.sql
-Risk and Forecast\Reports\dbo.Lrf_Rpt_Outstanding.StoredProcedure.sql
-Risk and Forecast\Reports\dbo.Lrf_Rpt_TurnOver.proc.sql
+

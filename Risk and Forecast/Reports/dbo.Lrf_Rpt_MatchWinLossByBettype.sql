@@ -52,6 +52,7 @@ AS
 		- 20200623@Kos: Integrate archive process for table VSRaceInfo [Redmine: #136285]
 		- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]
 		- 20210119@Hogan: Integrate Four Guardians [RedmineID: #148100]
+		- 20210304@Hogan: Integrate Cricket AIO [RedmineID: #150386]
 
 	Param's Explanation: 
 		+ @AgentList: xml structure
@@ -310,6 +311,7 @@ BEGIN
 					OR (b.bettype BETWEEN 121 AND 999)
 					OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
 					OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0
+					OR (b.Bettype BETWEEN 9400 AND 9699) -- Cricket AIO
 					OR b.Bettype = 38					  -- Single Match Parlay
 				)
 				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
@@ -450,6 +452,7 @@ BEGIN
 					OR (b.Bettype BETWEEN 121 AND 999)
 					OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
 					OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0
+					OR (b.Bettype BETWEEN 9400 AND 9699) -- Cricket AIO
 					OR b.Bettype = 38					-- Single Match Parlay
 				)
 				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
@@ -564,6 +567,7 @@ BEGIN
 					OR (b.bettype BETWEEN 121 AND 999)
 					OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
 					OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0
+					OR (b.Bettype BETWEEN 9400 AND 9699) -- Cricket AIO
 					OR b.Bettype = 38					   -- Single Match Parlay
 				)
 				AND b.tpositiontaking <> 0

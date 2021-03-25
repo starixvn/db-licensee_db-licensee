@@ -67,6 +67,7 @@ AS
 		- 20201231@Louis: Integrate Happy 5 Linked Games [RedmineID: #147446]
 		- 20210119@Hogan: Integrate Four Guardians [RedmineID: #148100]
 		- 20210305@Hogan: Integrate Sport Lottery [RedmineID: #150872]
+		- 20210330@Hogan: Integrate Cricket AIO [RedmineID: #150386]
 
 	Param's Explanation: 
 		+ @AgentList: xml structure
@@ -196,6 +197,7 @@ BEGIN
 								OR (b.bettype BETWEEN 121 AND 999)
 								OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
 								OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0
+								OR (b.Bettype BETWEEN 9400 AND 9699) -- Cricket AIO
 								OR b.Bettype = 38					 -- Single Match Parlay
 							)
 							OR b.bettype BETWEEN 81 AND 120 -- Number Game
@@ -232,6 +234,7 @@ BEGIN
 				OR (b.bettype BETWEEN 8101 AND 8120)
 				OR (b.bettype BETWEEN 3601 AND 3610)
 				OR (b.Bettype >= 9001 AND b.Bettype <= 9399)
+				OR (b.Bettype >= 9400 AND b.Bettype <= 9699) -- Cricket AIO
 				OR (b.Bettype >= 4901 AND b.Bettype <= 5000)
 				OR (b.Bettype >= 5001 AND b.Bettype <= 5099)
 				OR (b.Bettype >= 3611 AND b.Bettype <= 3620))
@@ -278,6 +281,7 @@ BEGIN
 								OR (b.bettype BETWEEN 121 AND 999)
 								OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
 								OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0
+								OR (b.Bettype BETWEEN 9400 AND 9699) -- Cricket AIO
 								OR b.Bettype = 38					 -- Single Match Parlay
 								)
 							OR b.bettype BETWEEN 81 AND 120
@@ -314,7 +318,8 @@ BEGIN
 				OR (b.bettype >= 2701 AND b.bettype <= 2829)
 				OR (b.bettype BETWEEN 8101 AND 8120)
 				OR (b.bettype BETWEEN 3601 AND 3610)
-				OR (b.Bettype >= 9001 AND b.Bettype <= 9399) 
+				OR (b.Bettype >= 9001 AND b.Bettype <= 9399)
+				OR (b.Bettype >= 9400 AND b.Bettype <= 9699) -- Cricket AIO
 				OR (b.Bettype >= 4901 AND b.Bettype <= 5000)
 				OR (b.Bettype >= 5001 AND b.Bettype <= 5099)
 				OR (b.Bettype >= 3611 AND b.Bettype <= 3620)) 
