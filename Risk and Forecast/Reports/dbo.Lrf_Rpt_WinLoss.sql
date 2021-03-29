@@ -30,6 +30,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
 	@ShowPGS		BIT = 0,	-- PG Soft
 	@ShowJK			BIT = 0,	-- Joker
 	@ShowGDG		BIT = 0,	-- GDG
+	@ShowSLT		BIT = 0, 	-- SLT
 	@MoveBetsDay	DATETIME,
 	@PageSize		INT = 1000,
 	@PageIndex		INT = 1,
@@ -138,6 +139,7 @@ AS
 		- 20201224@Hogan: Integrate GDG [RedmineID: #147267]
 		- 20210203@Louis: Saba Red Envelope [RedmineID: #149923]
 		- 20210208@Hogan: Integrate Four Guardians [RedmineID: #148100]
+		- 20210305@Hogan: Integrate Sport Lottery [RedmineID: #150872]
 
 	Param's Explanation:
 		@OrderItem:
@@ -351,6 +353,8 @@ BEGIN
 	SELECT 'JK' AS Code WHERE @ShowJK = 1
 	UNION ALL
 	SELECT 'GDG' AS Code WHERE @ShowGDG = 1
+	UNION ALL
+	SELECT 'SLT' AS Code WHERE @ShowSLT = 1
 
 	-- BT & CO belong to SB
 	SELECT @ProductList = COALESCE(@ProductList + ',' + Code, Code)
