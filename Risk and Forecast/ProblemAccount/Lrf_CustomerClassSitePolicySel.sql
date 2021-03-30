@@ -37,7 +37,7 @@ BEGIN
 		AND c2.SiteID IS NULL
 		AND NOT EXISTS (SELECT 1
 						FROM T
-						WHERE t.customerClass = c2.customerClass
+						WHERE t.customerClass = c2.customerClass AND t.SpreadGroup = c2.SpreadGroup
 						)
 	ORDER BY CustomerClass , SpreadGroup	
 	
