@@ -39,6 +39,7 @@ BEGIN
 						FROM T
 						WHERE t.customerClass = c2.customerClass
 						)
-	ORDER BY CustomerClass 		
+	ORDER BY CustomerClass , SpreadGroup	
+	
 END
 		
