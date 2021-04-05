@@ -9,6 +9,7 @@ AS
 		
 		Revisions:
 			- 20201103@Winfred: Get SpreadGroup on customer class [redmine:#144706]
+			- 20210329@Winfred: Get Platform on customer class site policy [redmine:#144706]
 	*/
 BEGIN
 	SET NOCOUNT ON
@@ -20,24 +21,25 @@ BEGIN
 	WHERE SiteName = @site
 	-- Get Class for Site
 	;WITH T as (
-	SELECT CustomerClass,c1.Enabled ,c1.SiteID	, c1.SpreadGroup
+	SELECT CustomerClass,c1.Enabled ,c1.SiteID	, c1.SpreadGroup , c1.Platform , c1.CurrencyID
 	FROM CustomerClassSitePolicy c1 WITH(NOLOCK)
 	WHERE c1.isLicensee = 1
 		AND c1.Enabled = 1
 		AND c1.SiteID = @siteID
 	)
-	SELECT CustomerClass,Enabled,siteid ,SpreadGroup 
+	SELECT CustomerClass,Enabled,siteid ,SpreadGroup , Platform , CurrencyID
 	FROM T 
 	UNION ALL
-	SELECT c2.CustomerClass,c2.Enabled	,c2.siteid	,c2.SpreadGroup
+	SELECT c2.CustomerClass,c2.Enabled	,c2.siteid	,c2.SpreadGroup ,c2.Platform  , c2.CurrencyID
 	FROM CustomerClassSitePolicy c2 WITH(NOLOCK)
 	WHERE c2.isLicensee = 1
 		AND c2.Enabled = 1
 		AND c2.SiteID IS NULL
 		AND NOT EXISTS (SELECT 1
 						FROM T
-						WHERE t.customerClass = c2.customerClass
+						WHERE t.customerClass = c2.customerClass AND t.SpreadGroup = c2.SpreadGroup
 						)
-	ORDER BY CustomerClass 		
+	ORDER BY CustomerClass , SpreadGroup	
+	
 END
 		
