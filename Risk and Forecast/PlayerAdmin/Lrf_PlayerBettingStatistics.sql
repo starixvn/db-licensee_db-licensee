@@ -19,6 +19,7 @@ AS
 		- 20190930@Amanda: Get data from bettrans instead sum table [RedmineID: #112658]
 		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
 		- 20201006@Kos: Fix issue divide by zero [RedmineID: #143061]
+		- 20210330@Hogan: Integrate Cricket AIO [RedmineID: #150386]
 
 	Param's Explanation:
 		+ @CustID: MemberId
@@ -73,6 +74,7 @@ BEGIN
 					OR b.bettype BETWEEN 121 AND 999
 					OR b.Bettype BETWEEN 1301 AND 1399 --new tennis's bettypes
 					OR b.Bettype BETWEEN 9001 AND 9399 -- E-Sports 2.0
+					OR b.Bettype BETWEEN 9400 AND 9699 -- Cricket AIO
 					OR b.bettype = 38 -- bet builder
 				)
 			AND (b.bettype < 901 OR b.bettype > 904)
@@ -108,6 +110,7 @@ BEGIN
 					OR b.bettype BETWEEN 121 AND 999
 					OR b.Bettype BETWEEN 1301 AND 1399 --new tennis's bettypes
 					OR b.Bettype BETWEEN 9001 AND 9399 -- E-Sports 2.0
+					OR b.Bettype BETWEEN 9400 AND 9699 -- Cricket AIO
 					OR b.bettype = 38 -- bet builder
 				)
 			AND (b.bettype < 901 OR b.bettype > 904)
@@ -138,6 +141,7 @@ BEGIN
 					OR b.bettype BETWEEN 121 AND 999
 					OR b.Bettype BETWEEN 1301 AND 1399 --new tennis's bettypes
 					OR b.Bettype BETWEEN 9001 AND 9399 -- E-Sports 2.0
+					OR b.Bettype BETWEEN 9400 AND 9699 -- Cricket AIO
 					OR b.bettype = 38 -- bet builder
 				)
 			AND (b.bettype < 901 OR b.bettype > 904)

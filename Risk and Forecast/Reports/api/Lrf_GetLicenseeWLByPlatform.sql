@@ -30,6 +30,7 @@ AS
 		- 20190312@Amanda: Add new bet types Single Match Parlay (ID: 38) [RedmineID: #108298]
 		- 20191226@Vickie: Add platform 0 and change ID platform v[RedmineID: #125824]
 		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
+		- 20210330@Hogan: Integrate Cricket AIO [RedmineID: #150386]
 */
 
 /*
@@ -137,6 +138,7 @@ BEGIN
 				OR (b.bettype BETWEEN 121 AND 999)
 				OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
 				OR (b.Bettype BETWEEN 9001 AND 9399) --E-Sports 2.0
+				OR (b.Bettype BETWEEN 9400 AND 9699) -- Cricket AIO
 				OR b.Bettype = 38					 -- Single Match Parlay
 			)
 			AND (b.bettype < 901 OR b.bettype > 904)
