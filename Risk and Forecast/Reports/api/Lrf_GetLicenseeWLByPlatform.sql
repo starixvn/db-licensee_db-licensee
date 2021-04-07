@@ -1,10 +1,10 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_GetLicenseeWLByPlatform]
+	@AgentList		VARCHAR(MAX),
 	@FromDate		SMALLDATETIME,
 	@ToDate			SMALLDATETIME,
-	@BaseCurrency	VARCHAR(3) = '',
-	@AgentList		VARCHAR(MAX)
+	@BaseCurrency	VARCHAR(3) = ''
 AS
 
 /*
@@ -31,13 +31,10 @@ AS
 		- 20191226@Vickie: Add platform 0 and change ID platform v[RedmineID: #125824]
 		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
 		- 20210330@Hogan: Integrate Cricket AIO [RedmineID: #150386]
+		- 20210407@Kos: Split data of God Of Fortune in rptLicWinloss2 [RedmineID: #152908]
 */
 
 /*
-	Demo:
-	USE [bodb02]
-	GO
-
 	DECLARE	@return_value int
 
 	EXEC	@return_value = [dbo].[Lrf_GetLicenseeWLByPlatform]
@@ -55,8 +52,8 @@ BEGIN
 		RETURN;
 
 	CREATE TABLE #WinLoss (
-		Winlostdate		DATE,
-		Currency		INT ,
+		WinLostDate		SMALLDATETIME,
+		Currency		INT,
 		PlatformType	TINYINT,
 		LicenseeWL		MONEY
 	);
@@ -68,20 +65,19 @@ BEGIN
 	
 	DECLARE @DocHandler INT
 
-	CREATE TABLE #tempAg(custID INT, Currency INT);
+	CREATE TABLE #TempAg (CustId INT, Currency INT);
 
-	CREATE CLUSTERED INDEX ix_tempAg_cl ON #tempAg(Currency, custID);
+	CREATE CLUSTERED INDEX ix_tempAg_cl ON #TempAg (Currency, CustId);
 	
 	--to Deal WITH Parameter Sniffing
 	SELECT @FDate = @FromDate, @TDate = @ToDate;
 
 	BEGIN TRY
-		EXEC sp_xml_preparedocument @DocHandler OUTPUT
-			,@AgentList
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT, @AgentList
 	
-		INSERT INTO #tempAg(CustId, Currency)
+		INSERT INTO #TempAg (CustId, Currency)
 		SELECT AgentId, Currency
-		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId INT, Currency INT) AS Data
 
 		EXEC sp_xml_removedocument @DocHandler
 	END TRY
@@ -93,9 +89,9 @@ BEGIN
 		RETURN
 	END CATCH;
 
-	CREATE TABLE #PlatformList (betfrom NVARCHAR(1), PlatformType TINYINT);
+	CREATE TABLE #PlatformList (BetFrom NVARCHAR(1), PlatformType TINYINT);
 
-	INSERT INTO #PlatformList (betfrom, PlatformType)
+	INSERT INTO #PlatformList (BetFrom, PlatformType)
 	SELECT betfrom, PlatformType
 	FROM Lrf_f_BetFromType_Sel(0)
 
@@ -104,7 +100,7 @@ BEGIN
 	INSERT INTO #Exchange (FromDate, ToDate, ExchangeID, Rate)
 	SELECT FromDate, ToDate, ExchangeID, Rate
 	FROM dbo.Lrf_f_GetExchangeRate(@FDate, @TDate, @BaseCurrency, '') ex
-	WHERE EXISTS (SELECT 1 FROM #tempAg c WHERE ex.ExchangeID = c.Currency)
+	WHERE EXISTS (SELECT 1 FROM #TempAg c WHERE ex.ExchangeID = c.Currency)
 
 	DECLARE @MoveBetsDay SMALLDATETIME;
 
@@ -113,25 +109,29 @@ BEGIN
 	INSERT INTO @MoveBetTable (BalanceUpDay, MoveBetsDay)
 	EXEC bodb02.dbo.Age_SelBalanceUpDay;
 
-	SELECT TOP 1 @MoveBetsDay = MoveBetsDay
+	SELECT TOP(1) @MoveBetsDay = MoveBetsDay
 	FROM @MoveBetTable;
 
 	IF @TDate > @MoveBetsDay
 	BEGIN
-		IF @FDate <= @MoveBetsDay 
-			SET @TempFromDate =  DATEADD(DAY, 1, @MoveBetsDay);
+		IF @FDate <= @MoveBetsDay
+			SET @TempFromDate = DATEADD(DAY, 1, @MoveBetsDay);
 		ELSE
 			SET @TempFromDate = @FDate;
 	
-		INSERT INTO #WinLoss (Winlostdate, Currency, PlatformType, LicenseeWL)
+		INSERT INTO #WinLoss (
+			WinLostDate,
+			Currency,
+			PlatformType,
+			LicenseeWL)
 		SELECT
-			b.winlostdate, 
+			b.winlostdate,
 			tma.currency,
 			pl.PlatformType,
 			- SUM(b.winlost - b.actual_stake) AS LicenseeWL
-		FROM dbo.bettrans b WITH (NOLOCK)
-			INNER JOIN #tempAg tma ON tma.CustID = b.recommend AND b.currency = tma.currency
-			INNER JOIN #PlatformList pl ON pl.betfrom = b.betfrom
+		FROM dbo.bettrans AS b WITH (NOLOCK)
+			INNER JOIN #tempAg AS tma ON tma.CustID = b.recommend AND b.currency = tma.currency
+			INNER JOIN #PlatformList AS pl ON pl.betfrom = b.betfrom
 		WHERE b.statusID  IN (111, 112, 113)
 			AND b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND (b.bettype < 31
@@ -145,8 +145,8 @@ BEGIN
 			AND (b.bettype < 911 OR b.bettype > 914)
 			AND b.tpositiontaking <> 0
 		GROUP BY
-			b.winlostdate, 
-			tma.currency, 
+			b.winlostdate,
+			tma.currency,
 			pl.PlatformType;
 	END
 
@@ -163,13 +163,14 @@ BEGIN
 			b.currency,
 			pl.PlatformType,
 			- SUM(b.winlost) AS LicenseeWL
-		FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )
-			INNER JOIN #tempAg ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
-			INNER JOIN #PlatformList pl ON pl.betfrom = b.betfrom
-		WHERE b.Winlostdate BETWEEN @FDate AND @TempToDate
+		FROM bodb_licenseereport.dbo.rptLicWinloss2 AS b WITH (NOLOCK)
+			INNER JOIN #tempAg AS ag ON b.recommend = ag.CustId AND b.Currency = ag.Currency
+			INNER JOIN #PlatformList AS pl ON pl.betfrom = b.betfrom
+		WHERE b.winlostdate BETWEEN @FDate AND @TempToDate
 			AND b.roleid = 1
 			AND b.statusID <> 101 --exclude REJECT bets
-			AND b.sporttype = 0 AND b.bettype = 0 --Sportbooks
+			AND b.sporttype = 0		-- Sportsbook
+			AND b.bettype IN (0, -29)
 			AND (b.isBA = 0 OR b.isBA IS NULL)
 		GROUP BY
 			b.currency,
@@ -180,15 +181,13 @@ BEGIN
 	SELECT
 		w.PlatformType,
 		SUM(LicenseeWL * e.Rate) AS LicenseeWL
-	FROM #WinLoss w 
-		INNER JOIN  #Exchange e on w.Currency = e.exchangeid AND w.Winlostdate BETWEEN e.FromDate AND e.ToDate
+	FROM #WinLoss AS w
+		INNER JOIN #Exchange AS e ON w.Currency = e.exchangeid AND w.Winlostdate BETWEEN e.FromDate AND e.ToDate
 	GROUP BY w.PlatformType
 	ORDER BY w.PlatformType;
 
 	DROP TABLE #Exchange;
 	DROP TABLE #WinLoss;
 	DROP TABLE #tempAg;
-
-	SET NOCOUNT OFF;
 END
-GO 
+GO
