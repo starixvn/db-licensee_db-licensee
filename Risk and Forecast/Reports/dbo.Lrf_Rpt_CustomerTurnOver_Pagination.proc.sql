@@ -41,6 +41,7 @@ AS
 		- 20201023@Hogan: Integrate new bet type Time Machine OU [RedmineID: #142692]
 		- 20201027@Louis: Licensee Spread Setting [RedmineID: #142532]
 		- 20210119@Hogan: Integrate Four Guardians [RedmineID: #148100]
+		- 20210304@Hogan: Offer Decimal Odds Only for Match [RedmineID: #151010]
 */
 
 BEGIN
@@ -77,7 +78,10 @@ BEGIN
 	-- Insert Excluded BetType
 	INSERT INTO @ExcludedBetType (ProductCode, BetType)
 	SELECT ProductCode, BetType FROM Lrf_f_SelExcludedBetType()
-	
+
+	--Set cut off date to convert  bettype 501
+	DECLARE @501CutoffDate SMALLDATETIME = '2021-04-08'
+
 	-- VIEW specific members
 	IF @searchCust = 1
 	BEGIN
@@ -155,6 +159,7 @@ BEGIN
 										OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 										OR (bettype NOT IN (703, 711) AND bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
 										OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
+										OR (b.bettype = 501 AND b.winlostdate < @501CutoffDate)
 									)
 									THEN 
 										CASE
@@ -291,6 +296,7 @@ BEGIN
 										OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 										OR (bettype NOT IN (703, 711) AND bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
 										OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
+										OR (b.bettype = 501 AND b.winlostdate < @501CutoffDate)
 									)
 									THEN 
 										CASE

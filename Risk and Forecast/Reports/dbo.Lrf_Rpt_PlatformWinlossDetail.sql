@@ -88,6 +88,7 @@ AS
 		- 20201224@Hogan: Integrate GDG [RedmineID: #147267]
 		- 20210122@Hogan: Integrate Four Guardians [RedmineID: #148100]
 		- 20210305@Hogan: Integrate Sport Lottery [RedmineID: #150872]
+		- 20210330@Hogan: Integrate Cricket AIO [RedmineID: #150386]
 
 	Param's Explanation:
 		+ @PlatformType:  0: All
@@ -434,6 +435,7 @@ BEGIN
 					OR (b.bettype BETWEEN 121 AND 999)
 					OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
 					OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0
+					OR (b.Bettype BETWEEN 9400 AND 9699) -- Cricket AIO
 					OR b.Bettype = 38					   -- Single Match Parlay
 				) 
 				AND (b.bettype < 901 OR b.bettype > 904)

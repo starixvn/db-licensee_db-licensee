@@ -47,6 +47,8 @@ AS
 		- 20201027@Kos: Change to use new table to check performance [RedmineID: #143310]
 		- 20201028@Louis: Licensee Spread Setting [RedmineID: #142532]
 		- 20210119@Hogan: Integrate Four Guardians [RedmineID: #148100]
+		- 20210304@Hogan: Offer Decimal Odds Only for Match [RedmineID: #151010]
+		- 20210304@Hogan: Integrate Cricket AIO [RedmineID: #150386]
 */
 
 BEGIN
@@ -111,6 +113,9 @@ BEGIN
 	---
 	DECLARE @Status AS TABLE (StatusID INT)
 
+	--Set cut off date to convert  bettype 501
+	DECLARE @501CutoffDate SMALLDATETIME = '2021-04-08'
+
 	IF @ShowWin = 1
 	BEGIN
 		INSERT INTO @status
@@ -163,6 +168,7 @@ BEGIN
 						OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 						OR (b.bettype NOT IN (703, 711) AND b.bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
 						OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
+						OR (b.bettype = 501 AND b.transdate < @501CutoffDate)
 						)
 						THEN CASE 
 								WHEN b.OddsType = 1 THEN b.odds + 1 --decimal
@@ -207,6 +213,7 @@ BEGIN
 					OR (b.bettype BETWEEN 121 AND 999)
 					OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
 					OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports
+					OR (b.Bettype BETWEEN 9400 AND 9699) -- Cricket AIO
 					)
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
@@ -218,7 +225,11 @@ BEGIN
 					)
 				AND m.leagueid = @LeagueID
 				AND b.tpositiontaking=0 --GetBA
-				AND (@matchid=0 or b.matchid = @MatchID)
+				AND (
+					@matchid=0 
+					OR b.matchid = @MatchID
+					OR (m.sporttype = 50 AND m.ChildMatchType = 200 AND m.ParentID = @MatchID)
+					)
 			GROUP BY b.custid
 				,b.Winlostdate
 				,b.currency
@@ -238,6 +249,7 @@ BEGIN
 								OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 								OR (b.bettype NOT IN (703, 711) AND b.bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
 								OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
+								OR (b.bettype = 501 AND b.transdate < @501CutoffDate)
 							)
 						THEN CASE 
 								WHEN b.OddsType = 1
@@ -285,6 +297,7 @@ BEGIN
 								OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 								OR (b.bettype NOT IN (703, 711) AND b.bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
 								OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
+								OR (b.bettype = 501 AND b.transdate < @501CutoffDate)
 							)
 						THEN CASE 
 								WHEN b.OddsType = 1
@@ -333,6 +346,7 @@ BEGIN
 					OR (b.bettype BETWEEN 121 AND 999)
 					OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
 					OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports
+					OR (b.Bettype BETWEEN 9400 AND 9699) -- Cricket AIO
 					)
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
@@ -341,7 +355,11 @@ BEGIN
 				AND b.statusID IN (SELECT * FROM @status)
 				AND m.leagueid = @LeagueID
 				AND b.tpositiontaking <> 0  
-				AND (@matchid = 0 or b.matchid = @MatchID)
+				AND (
+					@matchid = 0 
+					OR b.matchid = @MatchID
+					OR (m.sporttype = 50 AND m.ChildMatchType = 200 AND m.ParentID = @MatchID)
+					)
 			GROUP BY b.custid
 				,b.Winlostdate
 				,b.currency
@@ -361,6 +379,7 @@ BEGIN
 								OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 								OR (b.bettype NOT IN (703, 711) AND b.bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
 								OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
+								OR (b.bettype = 501 AND b.transdate < @501CutoffDate)
 							)
 						THEN CASE 
 								WHEN b.OddsType = 1
@@ -399,6 +418,57 @@ BEGIN
 		ELSE
 			SET @TempToDate = @ToDate
 
+		CREATE TABLE #match (
+			matchid INT
+			,homeid INT
+			,awayid INT
+			,leagueid INT
+			,matchcode NVARCHAR(50)
+			,sporttype TINYINT
+			,showtime NVARCHAR(50)
+			,isNeutral BIT
+			,ParentID INT
+			,ChildMatchType INT
+		)
+
+		INSERT INTO #match
+		SELECT m.matchid
+			,m.homeid
+			,m.awayid
+			,m.leagueid
+			,m.matchcode
+			,m.sporttype
+			,m.showtime
+			,m.isNeutral
+			,m.ParentID
+			,m.ChildMatchType
+		FROM dbo.match14 AS m WITH (NOLOCK)
+		WHERE m.eventdate BETWEEN @fromdate AND @TempToDate
+			AND m.leagueid = @LeagueID
+			AND (
+				m.matchid = @MatchID
+				OR @MatchID = 0
+				)
+
+		INSERT INTO #match
+		SELECT m.matchid
+			,m.homeid
+			,m.awayid
+			,m.leagueid
+			,m.matchcode
+			,m.sporttype
+			,m.showtime
+			,m.isNeutral
+			,m.ParentID
+			,m.ChildMatchType
+		FROM DBARC.bodb_archive.dbo.match_bk AS m WITH (NOLOCK)
+		WHERE m.eventdate BETWEEN @fromdate AND @TempToDate
+			AND m.leagueid = @LeagueID
+			AND (
+				m.matchid = @MatchID
+				OR @MatchID = 0
+				)
+
 		CREATE TABLE #Date (Date SMALLDATETIME, PRIMARY KEY(Date))
 
 		INSERT INTO #Date
@@ -427,6 +497,7 @@ BEGIN
 										OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 										OR (b.bettype NOT IN (703, 711) AND b.bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
 										OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
+										OR (b.bettype = 501 AND b.winlostdate < @501CutoffDate)
 									)
 									THEN CASE 
 											WHEN b.OddsType = 1
@@ -468,17 +539,23 @@ BEGIN
 							,SUM(b.betcount) betcount
 						FROM bodb_LicenseeReport.dbo.rptCustomerMatch AS b WITH (NOLOCK)
 							INNER JOIN #TempAg ta ON b.recommend = ta.CustId AND b.Currency = ta.Currency
+							INNER JOIN #match AS m WITH (NOLOCK) ON m.matchid = b.matchid
 						WHERE b.winlostdate = d.Date
 							AND (
 								b.bettype <= 30
 								OR (b.bettype BETWEEN 121 AND 999)
 								OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
 								OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports
+								OR (b.Bettype BETWEEN 9400 AND 9699) -- Cricket AIO
 								)
 							AND (b.bettype < 901 OR b.bettype > 904)
 							AND (b.bettype < 911 OR b.bettype > 914)
 					AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
-							AND (@matchid=0 or b.matchid = @MatchID)
+							AND (
+								@matchid=0 
+								OR b.matchid = @MatchID
+								OR (m.sporttype = 50 AND m.ChildMatchType = 200 AND m.ParentID = @MatchID)
+								)
 							AND b.statusID IN (SELECT * FROM @status)
 							And b.isBA = 1
 							AND b.leagueid = @leagueid
@@ -497,6 +574,7 @@ BEGIN
 										OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 										OR (b.bettype NOT IN (703, 711) AND b.bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
 										OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
+										OR (b.bettype = 501 AND b.winlostdate < @501CutoffDate)
 									)
 									THEN CASE 
 											WHEN b.OddsType = 1
@@ -547,6 +625,7 @@ BEGIN
 										OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 										OR (b.bettype NOT IN (703, 711) AND b.bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
 										OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
+										OR (b.bettype = 501 AND b.winlostdate < @501CutoffDate)
 									)
 									THEN CASE 
 											WHEN b.OddsType = 1
@@ -588,17 +667,23 @@ BEGIN
 							,SUM(b.betcount) betcount
 						FROM bodb_LicenseeReport.dbo.rptCustomerMatch b WITH (NOLOCK)
 							INNER JOIN #TempAg ta ON b.recommend = ta.CustId AND b.Currency = ta.Currency
+							INNER JOIN #match AS m WITH (NOLOCK) ON m.matchid = b.matchid
 						WHERE b.winlostdate = d.Date
 							AND (
 								b.bettype <= 30
 								OR (b.bettype BETWEEN 121 AND 999)
 								OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
 								OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports
+								OR (b.Bettype BETWEEN 9400 AND 9699) -- Cricket AIO
 								)
 							AND (b.bettype < 901 OR b.bettype > 904)
 							AND (b.bettype < 911 OR b.bettype > 914)
 							AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.ProductCode = 'SB' AND e.BetType = b.BetType)
-							AND (@matchid = 0 or b.matchid = @MatchID)
+							AND (
+								@matchid = 0 
+								OR b.matchid = @MatchID
+								OR (m.sporttype = 50 AND m.ChildMatchType = 200 AND m.ParentID = @MatchID)
+								)
 							AND b.statusID IN (
 								SELECT *
 								FROM @status
@@ -620,6 +705,7 @@ BEGIN
 										OR b.bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 										OR (b.bettype NOT IN (703, 711) AND b.bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
 										OR b.bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
+										OR (b.bettype = 501 AND b.winlostdate < @501CutoffDate)
 									)
 									THEN CASE 
 											WHEN b.OddsType = 1

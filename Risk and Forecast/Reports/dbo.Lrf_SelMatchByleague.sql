@@ -1,10 +1,10 @@
-/*<info serverAlias="DBLIC-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBLIC-bodb_Licensee" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_SelMatchByleague]
-	@SportId 		INT,
-	@LeagueID		INT,
-	@Fromdate		SMALLDATETIME,
-	@Todate		SMALLDATETIME
+	@SportId 				INT,
+	@LeagueID				INT,
+	@Fromdate				SMALLDATETIME,
+	@Todate					SMALLDATETIME
 AS 
 /*
 WARNING: This SP only gets matches from SB
@@ -15,6 +15,7 @@ DB: DBLIC/bodb_Licensee
 Revisions: 
 		- 20180709@Amanda: Add option @LeagueID = 0 to get all matches for SB [RedmineID: #80941]
 		- 20180712@Joseph: Add param @SportId to get all matches for specific sport [RedmineID: #80941]
+		- 20210304@Hogan: Integrate Cricket AIO [RedmineID: #150386]
 		
 Param's Explanation:
 		- @SportId = 0: all sports
@@ -49,7 +50,8 @@ BEGIN
 		SET @TempFromDate = @FromDate
 
 	INSERT INTO #match
-	SELECT DISTINCT m.matchid,
+	SELECT 
+		DISTINCT CASE WHEN m.sporttype = 50 AND m.ChildMatchType = 200 THEN m.ParentID ELSE m.matchid END AS matchid, -- get main match
 		m.homeid,
 		m.awayid,
 		m.leagueid
@@ -71,7 +73,8 @@ BEGIN
 	IF @BalanceUpDay < @FromDate
 		SELECT @BalanceUpDay = @FromDate
 	INSERT INTO #match
-	SELECT DISTINCT m.matchid
+	SELECT 
+		DISTINCT CASE WHEN m.sporttype = 50 AND m.ChildMatchType = 200 THEN m.ParentID ELSE m.matchid END AS matchid -- get main match
 		,m.homeid
 		,m.awayid
 		,m.leagueid
@@ -96,7 +99,8 @@ BEGIN
 		DECLARE @OPENQUERY nvarchar(4000), @TSQL nvarchar(4000), @LinkedServer nvarchar(4000)				
 		SET @LinkedServer = 'DBARC'
 		SET @OPENQUERY = 'SELECT * FROM OPENQUERY('+ @LinkedServer + ','''
-		SET @TSQL = '	SELECT DISTINCT m.matchid
+		SET @TSQL = '	SELECT 
+						DISTINCT CASE WHEN m.sporttype = 50 AND m.ChildMatchType = 200 THEN m.ParentID ELSE m.matchid END AS matchid
 						,m.homeid
 						,m.awayid
 						,m.leagueid

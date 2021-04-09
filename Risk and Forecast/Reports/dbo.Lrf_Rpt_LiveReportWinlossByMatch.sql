@@ -48,6 +48,7 @@ AS
 		- 20190312@Amanda: Add new bet types Single Match Parlay (ID: 38) [RedmineID: #108298]
 		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
 		- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]	
+		- 20210304@Hogan: Integrate Cricket AIO [RedmineID: #150386]
 
 	Return 3 tables:
 	WinlostBySport
@@ -168,7 +169,7 @@ BEGIN
 			SELECT
 				b.winlostdate,
 				b.currency,
-				m.matchid,
+				CASE WHEN m.sporttype = 50 AND m.ChildMatchType = 200 THEN m.ParentID ELSE m.matchid END AS matchid,
 				m.homeid, 
 				m.awayid,
 				SUM(stake) turnover, 
@@ -190,6 +191,7 @@ BEGIN
 					OR (b.bettype BETWEEN 121 AND 999)
 					OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
 					OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0
+					OR (b.Bettype BETWEEN 9400 AND 9699) -- Cricket AIO
 					OR b.Bettype = 38					   -- Single Match Parlay
 				) AND
 				b.bettype NOT IN (9,29,901,902,903,904) AND 
@@ -201,7 +203,13 @@ BEGIN
 				((@Liveindicator = 0 AND b.liveindicator = 0)
 				OR (@Liveindicator = 1 AND b.liveindicator = 1)
 				OR (@Liveindicator = 2))
-			GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
+			GROUP BY
+				b.winlostdate,
+				b.currency,
+				CASE WHEN m.sporttype = 50 AND m.ChildMatchType = 200 THEN m.ParentID ELSE m.matchid END,
+				m.homeid,
+				m.awayid,
+				b.bettype
 
 			-- BA for parlay
 			INSERT INTO #tmpWinloss
@@ -242,7 +250,7 @@ BEGIN
 			SELECT
 				b.winlostdate,  
 				b.currency,
-				m.matchid, 		
+				CASE WHEN m.sporttype = 50 AND m.ChildMatchType = 200 THEN m.ParentID ELSE m.matchid END AS matchid,	
 				m.homeid, 
 				m.awayid,
 				SUM(stake) turnover, 
@@ -262,6 +270,7 @@ BEGIN
 				(b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999)
 								OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
 								OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0
+								OR (b.Bettype BETWEEN 9400 AND 9699) -- Cricket AIO
 								OR b.Bettype = 38					 -- Single Match Parlay
 				) AND
 				b.bettype NOT IN (9,29,901,902,903,904) AND 
@@ -274,7 +283,13 @@ BEGIN
 				((@Liveindicator = 0 AND b.liveindicator = 0)
 				OR (@Liveindicator = 1 AND b.liveindicator = 1)
 				OR (@Liveindicator = 2))
-			GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
+			GROUP BY
+				b.winlostdate, 
+				b.currency,
+				CASE WHEN m.sporttype = 50 AND m.ChildMatchType = 200 THEN m.ParentID ELSE m.matchid END,
+				m.homeid,
+				m.awayid,
+				b.bettype
 
 			-- SB for parlay
 			INSERT INTO #tmpWinloss			
@@ -389,7 +404,7 @@ BEGIN
 			SELECT
 				b.winlostdate,  
 				b.currency,
-				m.matchid, 		
+				CASE WHEN m.sporttype = 50 AND m.ChildMatchType = 200 THEN m.ParentID ELSE m.matchid END AS matchid,
 				m.homeid, 
 				m.awayid,	
 				SUM(stake) turnover, 
@@ -411,6 +426,7 @@ BEGIN
 					OR (b.bettype BETWEEN 121 AND 999)
 					OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
 					OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0
+					OR (b.Bettype BETWEEN 9400 AND 9699) -- Cricket AIO
 					OR b.Bettype = 38					   -- Single Match Parlay
 				) AND
 				b.bettype NOT IN (9,29,901,902,903,904) AND 
@@ -422,7 +438,13 @@ BEGIN
 				((@Liveindicator = 0 AND b.liveindicator = 0)
 				OR (@Liveindicator = 1 AND b.liveindicator = 1)
 				OR (@Liveindicator = 2))
-			GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
+			GROUP BY
+				b.winlostdate,
+				b.currency,
+				CASE WHEN m.sporttype = 50 AND m.ChildMatchType = 200 THEN m.ParentID ELSE m.matchid END,
+				m.homeid,
+				m.awayid,
+				b.bettype
 		
 			-- BA for parlay
 			INSERT INTO #tmpWinloss			
@@ -463,7 +485,7 @@ BEGIN
 			SELECT
 				b.winlostdate,  
 				b.currency,
-				m.matchid, 		
+				CASE WHEN m.sporttype = 50 AND m.ChildMatchType = 200 THEN m.ParentID ELSE m.matchid END AS matchid,	
 				m.homeid, 
 				m.awayid,	
 				SUM(stake) turnover, 
@@ -483,6 +505,7 @@ BEGIN
 				(b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999)
 			    	 		  OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
 			    	 		  OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0
+							  OR (b.Bettype BETWEEN 9400 AND 9699) -- Cricket AIO
 			    	 		  OR b.Bettype = 38					   -- Single Match Parlay
 				) AND
 				b.bettype NOT IN (9,29,901,902,903,904) AND 
@@ -494,7 +517,13 @@ BEGIN
 				((@Liveindicator = 0 AND b.liveindicator = 0)
 				OR (@Liveindicator = 1 AND b.liveindicator = 1)
 				OR (@Liveindicator = 2))			
-			GROUP BY  b.winlostdate, b.currency, b.matchid, m.matchid, m.homeid, m.awayid,b.bettype
+			GROUP BY
+				b.winlostdate,
+				b.currency,
+				CASE WHEN m.sporttype = 50 AND m.ChildMatchType = 200 THEN m.ParentID ELSE m.matchid END,
+				m.homeid,
+				m.awayid,
+				b.bettype
 
 			-- SB for parlay
 			INSERT INTO #tmpWinloss

@@ -91,6 +91,7 @@ AS
 		- 20200122@Hogan: Integrate GDG [RedmineID: #147267]
 		- 20210122@Hogan: Integrate Four Guardians [RedmineID: #148100]
 		- 20210305@Hogan: Integrate Sport Lottery [RedmineID: #150872]
+		- 20210330@Hogan: Integrate Cricket AIO [RedmineID: #150386]
 		
 	Param's Explanation:
 		+ @IsLive : indicate that whether the report will get live data or not
@@ -258,6 +259,7 @@ BEGIN
 					OR (b.bettype BETWEEN 121 AND 999)
 					OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 					OR (b.Bettype BETWEEN 9001 and 9399) -- E-Sports 2.0
+					OR (b.Bettype BETWEEN 9400 AND 9699) -- Cricket AIO
 					OR b.Bettype = 38					 -- Single Match Parlay
 					)
 				AND (b.bettype NOT IN (9,29))
@@ -527,6 +529,7 @@ BEGIN
 							OR (b.bettype BETWEEN 121 AND 999) 
 							OR (b.Bettype BETWEEN 1301 and 1399) 
 							OR (b.Bettype BETWEEN 9001 and 9399) 
+							OR (b.Bettype BETWEEN 9400 AND 9699) -- Cricket AIO
 							OR b.Bettype = 38					 -- Single Match Parlay
 						) 
 						THEN 'SB'
@@ -580,6 +583,7 @@ BEGIN
 					OR b.bettype BETWEEN 121 AND 999
 					OR b.Bettype BETWEEN 1301 and 1399
 					OR b.Bettype BETWEEN 9001 and 9399
+					OR b.Bettype BETWEEN 9400 AND 9699 -- Cricket AIO
 					OR b.Bettype = 38				   -- Single Match Parlay
 					OR b.bettype BETWEEN 81 AND 120
 					OR b.bettype BETWEEN 8101 AND 8120 -- Number Game: Happy 5
@@ -616,6 +620,7 @@ BEGIN
 							OR (b.bettype BETWEEN 121 AND 999) 
 							OR (b.Bettype BETWEEN 1301 and 1399) 
 							OR (b.Bettype BETWEEN 9001 and 9399) 
+							OR (b.Bettype BETWEEN 9400 AND 9699) -- Cricket AIO
 							OR b.Bettype = 38					 -- Single Match Parlay
 						THEN 'SB'
 					WHEN b.bettype BETWEEN 1201 AND 1299 THEN 'VS'
