@@ -32,6 +32,7 @@ AS
 		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
 		- 20210330@Hogan: Integrate Cricket AIO [RedmineID: #150386]
 		- 20210407@Kos: Split data of God Of Fortune in rptLicWinloss2 [RedmineID: #152908]
+		- 20210518@Mark: Support multiple selection on Platform filter [Redmine: #153102]
 */
 
 /*
@@ -94,7 +95,7 @@ BEGIN
 
 	INSERT INTO #PlatformList (betfrom, PlatformType)
 	SELECT betfrom, PlatformType
-	FROM Lrf_f_BetFromType_Sel(0)
+	FROM Lrf_f_BetFromType_Sel('All')
 	
 	CREATE TABLE #Exchange (FromDate SMALLDATETIME, ToDate SMALLDATETIME, ExchangeID INT, Rate FLOAT);
 

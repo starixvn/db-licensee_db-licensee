@@ -29,7 +29,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_PlatformWinloss]
 	@ShowSLT	BIT = 0, -- SLT
 	@ShowHB		BIT = 0, -- Habanero
 	@ShowWM		BIT = 0, -- WM Live Casino
-	@PlatformType	TINYINT			= 0,
+	@PlatformType	VARCHAR(100)	= 'All',
 	@MoveBetsDay	SMALLDATETIME,
 	@drawfilter		SMALLINT		= 1,
 	@AgentList		VARCHAR(MAX),
@@ -97,9 +97,11 @@ AS
 		- 20210409@Hogan: Integrate AE Casino Lucky Draw [RedmineID: #151984]
 		- 20210416@Hogan: Integrate Habanero RNG Games [RedmineID: #150843]
 		- 20210428@Hogan: Integrate WM Live Casino [RedmineID: #140944]
+		- 20210518@Mark: Support multiple selection on Platform filter [Redmine: #153102]
 
 	Param's Explanation:
-		+ @PlatformType: 0: All
+		+ @PlatformType: List of platform type (ex: 1,2,3,..)
+						All: All
 						1: Asia (d, g)
 						2: China (a, z)
 						3: Euro (e, u) (and Euro 12bet (u))
