@@ -28,6 +28,7 @@ AS
 		- 20201103@Winfred: add customer class [redmine:#144706]
 		- 20201005@Winfred: unshow OddsAdj dummy customers [redmine:#142952]
 		- 202100203@Johnson: Search by Commission Group [redmine:#147477]
+		- 20210413@Johnson: HF Set @CommGroups = NULL when search left panel [redmine:#147477]
 	Parameter's explanations:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 		+ @SpecialLevel: default value '1,2,3,4,5,6,7,8,9,10' (all)
@@ -191,10 +192,13 @@ BEGIN
 		--EXEC sp_executesql @strSQL
 		EXEC (@strSQL)
 		
-		DELETE t
-		FROM #TempMember t
-			LEFT JOIN bodb_Licensee.dbo.LicenseeCustComm lc WITH (NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
-		WHERE ISNULL(lc.GroupCommID,0) NOT IN (SELECT val FROM dbo.strSplit(@CommGroups,','))		
+		IF @CommGroups IS NOT NULL
+		BEGIN
+			DELETE t
+			FROM #TempMember t
+				LEFT JOIN bodb_Licensee.dbo.LicenseeCustComm lc WITH (NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
+			WHERE ISNULL(lc.GroupCommID,0) NOT IN (SELECT val FROM dbo.strSplit(@CommGroups,','))		
+		END 
 		
 		IF ISNULL(@TotalRows, 0) = 0
 			SELECT @TotalRows = COUNT(c.custid) FROM #TempMember c
@@ -246,12 +250,15 @@ BEGIN
 		
 		--EXEC sp_executesql @strSQL
 		EXEC (@strSQL)
-				
-		DELETE t
-		FROM #TempMember t
-			LEFT JOIN bodb_Licensee.dbo.LicenseeCustComm lc WITH (NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
-		WHERE ISNULL(lc.GroupCommID,0) NOT IN (SELECT val FROM dbo.strSplit(@CommGroups,','))		
-				
+		
+		IF @CommGroups IS NOT NULL
+		BEGIN
+			DELETE t
+			FROM #TempMember t
+				LEFT JOIN bodb_Licensee.dbo.LicenseeCustComm lc WITH (NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
+			WHERE ISNULL(lc.GroupCommID,0) NOT IN (SELECT val FROM dbo.strSplit(@CommGroups,','))		
+		END
+		
 		IF ISNULL(@TotalRows, 0) = 0
 			SELECT @TotalRows = COUNT(c.custid) FROM #TempMember c
 
@@ -314,11 +321,14 @@ BEGIN
 
 		--EXEC sp_executesql @strSQL
 		EXEC (@strSQL)
-				
-		DELETE t
-		FROM #TempMember t
-			LEFT JOIN bodb_Licensee.dbo.LicenseeCustComm lc WITH (NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
-		WHERE ISNULL(lc.GroupCommID,0) NOT IN (SELECT val FROM dbo.strSplit(@CommGroups,','))		
+		
+		IF @CommGroups IS NOT NULL
+		BEGIN
+			DELETE t
+			FROM #TempMember t
+				LEFT JOIN bodb_Licensee.dbo.LicenseeCustComm lc WITH (NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
+			WHERE ISNULL(lc.GroupCommID,0) NOT IN (SELECT val FROM dbo.strSplit(@CommGroups,','))		
+		END
 		
 		IF ISNULL(@TotalRows, 0) = 0
 			SELECT @TotalRows = COUNT(c.custid) FROM #TempMember c
