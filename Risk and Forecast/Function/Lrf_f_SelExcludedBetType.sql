@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02,DB042-bodb02" executers="" viewers="" isFunction="1" isNested="1"></info>*/
+/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02,DBBOF-bodb02" executers="" viewers="" isFunction="1" isNested="1"></info>*/
 USE [bodb02]
 GO
 
@@ -13,6 +13,7 @@ RETURNS TABLE
 		- 20201008@Louis: Licensee Spread Setting [RedmineID: #142532]
 		- 20210203@Louis: Saba Red Envelope [RedmineID: #149923]
 		- 20210208@Hogan: Integrate Four Guardians [RedmineID: #148100]
+		- 20210322@Hogan: Integrate AE Casino Lucky Draw [RedmineID: #151984]
 */
 
 RETURN
@@ -39,4 +40,6 @@ RETURN
 	SELECT 'SBC', 1698									--- Saba club Jackpot Contribution
 	UNION ALL 
 	SELECT 'SBC', 1699									--- Saba club Jackpot Prize
+	UNION ALL 
+	SELECT 'SXG', 3150									--- AE Casino Lucky Draw
 GO
