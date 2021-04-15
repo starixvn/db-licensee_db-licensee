@@ -132,6 +132,7 @@ AS
 		- 20210208@Hogan: Integrate Four Guardians [RedmineID: #148100]
 		- 20210305@Hogan: Integrate Sport Lottery [RedmineID: #150872]
 		- 20210330@Hogan: Integrate Cricket AIO [RedmineID: #150386]
+		- 20210409@Hogan: Integrate AE Casino Lucky Draw [RedmineID: #151984]
 
 	Param's Explanation:
 		+ @CustID: SuperID
@@ -895,7 +896,7 @@ BEGIN
 						stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
 					ELSE 0 END
 				) AS turnoverI4D,
-				SUM(CASE WHEN b.bettype BETWEEN 3101 AND 3199 THEN
+				SUM(CASE WHEN b.bettype BETWEEN 3101 AND 3149 THEN
 						stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
 					ELSE 0 END
 				) AS turnoverSXG,
@@ -960,7 +961,7 @@ BEGIN
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLTG,
 				-SUM(CASE WHEN b.bettype BETWEEN 5001 AND 5099
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLI4D,
-				-SUM(CASE WHEN b.bettype BETWEEN 3101 AND 3199
+				-SUM(CASE WHEN b.bettype BETWEEN 3101 AND 3149
 				THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLSXG,
 				-SUM(CASE WHEN b.bettype BETWEEN 1611 AND 1699
 					THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLSBC,

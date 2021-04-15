@@ -92,6 +92,7 @@ AS
 		- 20210122@Hogan: Integrate Four Guardians [RedmineID: #148100]
 		- 20210305@Hogan: Integrate Sport Lottery [RedmineID: #150872]
 		- 20210330@Hogan: Integrate Cricket AIO [RedmineID: #150386]
+		- 20210409@Hogan: Integrate AE Casino Lucky Draw [RedmineID: #151984]
 
 	Param's Explanation:
 		+ @PlatformType: 0: All
@@ -345,10 +346,10 @@ BEGIN
 	BEGIN
 		SET @SportTypeSQL = @SportTypeSQL + ', (243, ''SXG'')'
 
-		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 3101 AND 3199 THEN ''SXG''
+		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 3101 AND 3149 THEN ''SXG''
 				'
 
-		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 3101 AND 3199)'
+		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 3101 AND 3149)'
 	END
 
 	IF @ShowSBC = 1 -- Saba Club exclude SBC Jackpot(1698, 1699)

@@ -97,6 +97,7 @@ AS
 		- 20210122@Hogan: Integrate Four Guardians [RedmineID: #148100]
 		- 20210305@Hogan: Integrate Sport Lottery [RedmineID: #150872]
 		- 20210330@Hogan: Integrate Cricket AIO [RedmineID: #150386]
+		- 20210409@Hogan: Integrate AE Casino Lucky Draw [RedmineID: #151984]
 
 	Param's Explanation:  
 		+ @Liveindicator : indicate that whether the report will get live data or not
@@ -262,7 +263,7 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 4601 AND 4900 THEN ''VRG''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 4901 AND 5000 THEN ''TG''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 5001 AND 5099 THEN ''I4D''' + CHAR(13)
-								+ 'WHEN b.bettype BETWEEN 3101 AND 3199 THEN ''SXG''' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 3101 AND 3149 THEN ''SXG''' + CHAR(13)
 								+ 'WHEN (b.bettype BETWEEN 1611 AND 1697) AND b.matchid <> 150 THEN ''SBC''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 3001 AND 3099 THEN ''SAG''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 6001 AND 6300 THEN ''PGS''' + CHAR(13)
@@ -308,7 +309,7 @@ BEGIN
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VRG')) = 1 THEN 'OR b.bettype BETWEEN 4601 AND 4900' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','TG')) = 1 THEN 'OR b.bettype BETWEEN 4901 AND 5000' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','I4D')) = 1 THEN 'OR b.bettype BETWEEN 5001 AND 5099' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SXG')) = 1 THEN 'OR b.bettype BETWEEN 3101 AND 3199' + CHAR(13) ELSE '' END
+								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SXG')) = 1 THEN 'OR b.bettype BETWEEN 3101 AND 3149' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SBC')) = 1 THEN 'OR (b.bettype BETWEEN 1611 AND 1697 AND b.matchid <> 150)' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SAG')) = 1 THEN 'OR b.bettype BETWEEN 3001 AND 3099' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','PGS')) = 1 THEN 'OR b.bettype BETWEEN 6001 AND 6300' + CHAR(13) ELSE '' END
@@ -334,7 +335,7 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 4601 AND 4900 THEN ''VRG''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 4901 AND 5000 THEN ''TG''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 5001 AND 5099 THEN ''I4D''' + CHAR(13)
-								+ 'WHEN b.bettype BETWEEN 3101 AND 3199 THEN ''SXG''' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 3101 AND 3149 THEN ''SXG''' + CHAR(13)
 								+ 'WHEN (b.bettype BETWEEN 1611 AND 1697) AND b.matchid <> 150 THEN ''SBC''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 3001 AND 3099 THEN ''SAG''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 6001 AND 6300 THEN ''PGS''' + CHAR(13)
@@ -483,7 +484,7 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 4601 AND 4900 THEN ''VRG''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 4901 AND 5000 THEN ''TG''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 5001 AND 5099 THEN ''I4D''' + CHAR(13)
-								+ 'WHEN b.bettype BETWEEN 3101 AND 3199 THEN ''SXG''' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 3101 AND 3149 THEN ''SXG''' + CHAR(13)
 								+ 'WHEN (b.bettype BETWEEN 1611 AND 1697) AND b.TicketType <> 2 THEN ''SBC''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 3001 AND 3099 THEN ''SAG''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 6001 AND 6300 THEN ''PGS''' + CHAR(13)
@@ -526,7 +527,7 @@ BEGIN
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VRG')) = 1 THEN 'OR b.bettype BETWEEN 4601 AND 4900' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','TG')) = 1 THEN 'OR b.bettype BETWEEN 4901 AND 5000' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','I4D')) = 1 THEN 'OR b.bettype BETWEEN 5001 AND 5099' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SXG')) = 1 THEN 'OR b.bettype BETWEEN 3101 AND 3199' + CHAR(13) ELSE '' END
+								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SXG')) = 1 THEN 'OR b.bettype BETWEEN 3101 AND 3149' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SBC')) = 1 THEN 'OR (b.bettype BETWEEN 1611 AND 1697 AND b.TicketType <> 2)' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SAG')) = 1 THEN 'OR b.bettype BETWEEN 3001 AND 3099' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','PGS')) = 1 THEN 'OR b.bettype BETWEEN 6001 AND 6300' + CHAR(13) ELSE '' END
@@ -552,7 +553,7 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 4601 AND 4900 THEN ''VRG''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 4901 AND 5000 THEN ''TG''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 5001 AND 5099 THEN ''I4D''' + CHAR(13)
-								+ 'WHEN b.bettype BETWEEN 3101 AND 3199 THEN ''SXG''' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 3101 AND 3149 THEN ''SXG''' + CHAR(13)
 								+ 'WHEN (b.bettype BETWEEN 1611 AND 1697) AND b.TicketType <> 2 THEN ''SBC''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 3001 AND 3099 THEN ''SAG''' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 6001 AND 6300 THEN ''PGS''' + CHAR(13)
