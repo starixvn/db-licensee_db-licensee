@@ -401,6 +401,9 @@ BEGIN
 			OR	(@showLC = 1 AND a.GamePlatformCode = 'CA')
 		)
 		AND a.SettlementDate >= @ArchivedDate
+	GROUP BY
+		CAST(a.SettlementDate AS DATE),
+		c.Id
 
 	UNION ALL
 
