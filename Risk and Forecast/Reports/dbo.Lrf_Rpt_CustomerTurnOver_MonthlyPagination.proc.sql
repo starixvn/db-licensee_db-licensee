@@ -46,6 +46,7 @@ AS
 		- 20201027@Louis: Licensee Spread Setting [RedmineID: #142532]
 		- 20210119@Hogan: Integrate Four Guardians [RedmineID: #148100]
 		- 20210304@Hogan: Offer Decimal Odds Only for Match [RedmineID: #151010]
+		- 20210420@Mark: Integrate Time Machine HDP [Redmine: #153302]
 */
 
 BEGIN
@@ -151,7 +152,7 @@ BEGIN
 					JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK) ON b.Recommend = rec.CustID
 				WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate 
 					AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
-					AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156,228)	 -- add more Sportting Solution bettype 
+					AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156,228,229)	 -- add more Sportting Solution bettype 
 									OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 									OR b.bettype BETWEEN 81 AND 88
 									OR b.bettype BETWEEN 90 AND 120
@@ -271,7 +272,7 @@ BEGIN
 						ON b.Recommend	= rec.CustID
 				WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate 
 						AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
-						AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156,228)	 -- add more Sportting Solution bettype 
+						AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156,228,229)	 -- add more Sportting Solution bettype 
 										OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 										OR b.bettype BETWEEN 81 AND 88
 										OR b.bettype BETWEEN 90 AND 120

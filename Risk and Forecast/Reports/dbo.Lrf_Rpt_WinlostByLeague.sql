@@ -47,6 +47,7 @@ AS
 		- 20201027@Kos: Change to use new table to check performance [RedmineID: #143310]
 		- 20210304@Hogan: Offer Decimal Odds Only for Match [RedmineID: #151010]
 		- 20210304@Hogan: Integrate Cricket AIO [RedmineID: #150386]
+		- 20210420@Mark: Integrate Time Machine HDP [Redmine: #153302]
 
 	Parameter's Explanation:
 		- @LicenseeID : Licensee ID
@@ -177,7 +178,7 @@ BEGIN
 					,'BA'
 					,m.leagueid
 					,CASE 
-						WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156,228)	 -- add more Sportting Solution bettype 
+						WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156,228,229)	 -- add more Sportting Solution bettype 
 								OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 								OR b.bettype BETWEEN 81 AND 88
 								OR b.bettype BETWEEN 90 AND 120
@@ -268,7 +269,7 @@ BEGIN
 					--	ELSE ''
 					--	END
 					,CASE 
-						WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156,228)	 -- add more Sportting Solution bettype 
+						WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156,228,229)	 -- add more Sportting Solution bettype 
 								OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 								OR b.bettype BETWEEN 81 AND 88
 								OR b.bettype BETWEEN 90 AND 120
@@ -323,7 +324,7 @@ BEGIN
 					,'SB'
 					,m.leagueid
 					,CASE 
-						WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156,228)	 -- add more Sportting Solution bettype 
+						WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156,228,229)	 -- add more Sportting Solution bettype 
 								OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 								OR b.bettype BETWEEN 81 AND 88
 								OR b.bettype BETWEEN 90 AND 120
@@ -410,7 +411,7 @@ BEGIN
 					,m.sporttype
 					,m.showtime
 					,CASE 
-						WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156,228)	 -- add more Sportting Solution bettype 
+						WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156,228,229)	 -- add more Sportting Solution bettype 
 								OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 								OR b.bettype BETWEEN 81 AND 88
 								OR b.bettype BETWEEN 90 AND 120
@@ -534,7 +535,7 @@ BEGIN
 						,'BA' AS ProductName
 						,m.leagueid
 						,CASE 
-							WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156,228)	 -- add more Sportting Solution bettype 
+							WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156,228,229)	 -- add more Sportting Solution bettype 
 									OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 									OR b.bettype BETWEEN 81 AND 88
 									OR b.bettype BETWEEN 90 AND 120
@@ -622,7 +623,7 @@ BEGIN
 						,m.sporttype
 						,m.showtime
 						,CASE 
-							WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156,228)	 -- add more Sportting Solution bettype 
+							WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156,228,229)	 -- add more Sportting Solution bettype 
 									OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 									OR b.bettype BETWEEN 81 AND 88
 									OR b.bettype BETWEEN 90 AND 120
@@ -680,7 +681,7 @@ BEGIN
 							,'SB' AS ProductName
 							,m.leagueid
 							,CASE 
-								WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156,228)	 -- add more Sportting Solution bettype 
+								WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156,228,229)	 -- add more Sportting Solution bettype 
 										OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 										OR b.bettype BETWEEN 81 AND 88
 										OR b.bettype BETWEEN 90 AND 120
@@ -768,7 +769,7 @@ BEGIN
 							,m.sporttype
 							,m.showtime
 							,CASE 
-								WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156,228)	 -- add more Sportting Solution bettype 
+								WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156,228,229)	 -- add more Sportting Solution bettype 
 										OR b.bettype BETWEEN 9001 AND 9087	-- Esport 2
 										OR b.bettype BETWEEN 81 AND 88
 										OR b.bettype BETWEEN 90 AND 120
