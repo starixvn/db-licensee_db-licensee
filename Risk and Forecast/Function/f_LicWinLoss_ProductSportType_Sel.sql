@@ -36,6 +36,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 		- 20201231@Louis: Integrate Happy 5 Linked Games [RedmineID: #147446]
 		- 20200122@Hogan: Integrate GDG [RedmineID: #147267]
 		- 20210305@Hogan: Integrate Sport Lottery [RedmineID: #150872]
+		- 20210416@Hogan: Integrate Habanero RNG Games [RedmineID: #150843]
 
 	Paramters Explanation:  
 		@ProductID: list of products
@@ -66,16 +67,17 @@ RETURN
 					(34, 'CC', 165, 0),	-- Card club
 					(36, 'SG', 247, 0),	-- Spadegaming
 					(38, 'VRG', 245, 0),	-- Virtual Games
-					(40, 'TG', 222, 0),	-- Table Games
+					(40, 'TG', 222, 0),		-- Table Games
 					(43, 'I4D', 223, 0),	-- Indo 4D
 					(45, 'SXG', 243, 0),	-- Sexy Gaming
 					(42, 'SBC', 200, 0),	-- Saba Club
 					(42, 'SBC', 150, 0),	-- Saba Club
 					(39, 'SAG', 244, 0),	-- SA Gaming
 					(55, 'PGS', 232, 0),	-- PG Soft
-					(56, 'JK', 234, 0),	-- Joker
+					(56, 'JK', 234, 0),		-- Joker
 					(59, 'GDG', 236, 0),	-- GDG
-					(63, 'SLT', 169, 0)		-- Sports Lottery
+					(63, 'SLT', 169, 0),	-- Sports Lottery
+					(61, 'HB', 238, 0)		-- Habanero RNG Games
 			) d(ProductID, ProductCode, SportType, BetType)  
 	WHERE ',' + @ProductCodes + ',' LIKE '%,' + CAST(ProductCode AS VARCHAR(10)) + ',%'  
 GO

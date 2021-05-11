@@ -25,6 +25,7 @@ AS
 		- 20201201@Mark: Casino Turnover Report - Support Saba.club, PP and PG Soft products [RedmineID: #146135]
 		- 20201224@Hogan: Integrate GDG [RedmineID: #147267]
 		- 20210119@Hogan: Integrate Four Guardians [RedmineID: #148100]
+		- 20210416@Hogan: Integrate Habanero RNG Games [RedmineID: #150843]
 		
     Param's Explanation:  
 	  + @ProductCodes: "AB,CS,VB"
@@ -164,7 +165,7 @@ BEGIN
 			GROUP BY b.WinlostDate, b.custId, c.username, c.username2, b.currency, t.ProductCode
 		END
 
-		IF EXISTS (SELECT 1 FROM @Product WHERE ProductCode IN ('CS', 'VB', 'PP', 'PGS', 'SBC'))
+		IF EXISTS (SELECT 1 FROM @Product WHERE ProductCode IN ('CS', 'VB', 'PP', 'PGS', 'SBC', 'HB'))
 		BEGIN
 			INSERT INTO #Data(
 				[Date],
@@ -195,7 +196,7 @@ BEGIN
 			INNER JOIN dbo.Customer c WITH (NOLOCK) ON b.CustId = c.CustId
 			WHERE	b.WinlostDate >= @tmpFromDate
 					AND b.WinlostDate <= @tmpToDate
-					AND ((b.ProductId <> 150 AND t.ProductCode = 'SBC') OR (t.ProductCode IN ('CS', 'VB', 'PP', 'PGS')))
+					AND ((b.ProductId <> 150 AND t.ProductCode = 'SBC') OR (t.ProductCode IN ('CS', 'VB', 'PP', 'PGS', 'HB')))
 					AND (@UserName = '' OR c.username2 LIKE '%$%' + @Username + '%' OR c.username LIKE '%' + @Username + '%')
 			GROUP BY b.WinlostDate, b.custId, c.username, c.username2, b.currency, t.ProductCode
 		END

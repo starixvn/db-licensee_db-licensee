@@ -27,6 +27,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_PlatformWinloss]
 	@ShowJK		BIT = 0, -- Joker
 	@ShowGDG	BIT = 0, -- GDG
 	@ShowSLT	BIT = 0, -- SLT
+	@ShowHB		BIT = 0, -- Habanero
 	@PlatformType	TINYINT			= 0,
 	@MoveBetsDay	SMALLDATETIME,
 	@drawfilter		SMALLINT		= 1,
@@ -93,6 +94,7 @@ AS
 		- 20210305@Hogan: Integrate Sport Lottery [RedmineID: #150872]
 		- 20210330@Hogan: Integrate Cricket AIO [RedmineID: #150386]
 		- 20210409@Hogan: Integrate AE Casino Lucky Draw [RedmineID: #151984]
+		- 20210416@Hogan: Integrate Habanero RNG Games [RedmineID: #150843]
 
 	Param's Explanation:
 		+ @PlatformType: 0: All
@@ -412,6 +414,16 @@ BEGIN
 		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 3611 AND 3620)'
 	END
 
+	IF @ShowHB = 1 -- HB
+	BEGIN
+		SET @SportTypeSQL = @SportTypeSQL + ', (238, ''HB'')'
+
+		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 7001 AND 7300 THEN ''HB''
+				'
+
+		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 7001 AND 7300)'
+	END
+
 	SET @SportTypeSQL = STUFF(@SportTypeSQL, 1, 1, '')
 
 	SET @BetTypeWhereSQL = STUFF(@BetTypeWhereSQL, 1, 3, '')
@@ -563,7 +575,7 @@ BEGIN
 
 		IF (@ShowNG=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @ShowVB = 1 OR @ShowAB =1  OR @ShowFW =1 OR @ShowVS2 = 1 OR @ShowLT = 1 
 			OR @ShowSAG = 1 OR @ShowPP = 1 OR @ShowCC = 1 OR @ShowSG = 1 OR @ShowVRG = 1 OR @ShowTG = 1 OR @ShowI4D = 1 OR @ShowSXG = 1 
-			OR @ShowSBC = 1 OR @ShowPGS = 1 OR @ShowJK = 1 OR @ShowGDG = 1 OR @ShowSLT = 1)
+			OR @ShowSBC = 1 OR @ShowPGS = 1 OR @ShowJK = 1 OR @ShowGDG = 1 OR @ShowSLT = 1 OR @ShowHB = 1)
 		BEGIN
 			INSERT INTO #WinLoss (Winlostdate, Currency, ProductPrefix, PlatformType, Turnover, Winlost, LicenseeWL, playercomm, BetCount)
 			SELECT 
@@ -677,7 +689,7 @@ BEGIN
 
 		IF (@showSB = 1 or @ShowNG = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW =1 OR @ShowVS2 = 1 OR @ShowLT = 1 
 			OR @ShowSAG = 1 OR @ShowPP = 1 OR @ShowCC = 1 OR @ShowSG = 1 OR @ShowVRG = 1 OR @ShowTG = 1 OR @ShowI4D = 1 OR @ShowSXG = 1 OR @ShowSBC = 1 
-			OR @ShowPGS = 1 OR @ShowJK = 1 OR @ShowGDG = 1 OR @ShowSLT = 1)
+			OR @ShowPGS = 1 OR @ShowJK = 1 OR @ShowGDG = 1 OR @ShowSLT = 1 OR @ShowHB = 1)
 		BEGIN
 			INSERT INTO #WinLoss (Winlostdate, Currency, ProductPrefix, PlatformType, Turnover, Winlost, LicenseeWL, playercomm, BetCount)
 			SELECT 
