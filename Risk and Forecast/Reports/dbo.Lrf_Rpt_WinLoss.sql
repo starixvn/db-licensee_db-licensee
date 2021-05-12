@@ -142,6 +142,7 @@ AS
 		- 20210208@Hogan: Integrate Four Guardians [RedmineID: #148100]
 		- 20210305@Hogan: Integrate Sport Lottery [RedmineID: #150872]
 		- 20210416@Hogan: Integrate Habanero RNG Games [RedmineID: #150843]
+		- 20210511@Kos: Split data of God Of Fortune in rptLicWinloss2 [RedmineID: #152908]
 
 	Param's Explanation:
 		@OrderItem:
@@ -223,7 +224,7 @@ BEGIN
 		CommBA			MONEY,
 		PlayerComm		MONEY,
 		betcount		INT,
-		PromotionPrize  INT
+		PromotionPrize	INT
 	)
 	CREATE CLUSTERED INDEX IX_TempData_cl ON #TempData(custID)
 
@@ -250,12 +251,11 @@ BEGIN
 	DECLARE @DocHandler INT
 
 	BEGIN TRY
-		EXEC sp_xml_preparedocument @DocHandler OUTPUT
-			,@_AgentList
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT, @_AgentList
 	
 		INSERT INTO @TempAg(CustId, Currency)
 		SELECT AgentId, Currency 
-		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId INT, Currency INT) AS Data
 
 		EXEC sp_xml_removedocument @DocHandler
 	END TRY
@@ -375,11 +375,11 @@ BEGIN
 	INSERT INTO @bettype(bettype, ProductCode)
 	SELECT bt.bettype, p.Code 
 	FROM @Products p
-	CROSS APPLY (
-		SELECT 901 AS bettype
-		UNION ALL 
-		SELECT 902
-	) AS bt
+		CROSS APPLY (
+			SELECT 901 AS bettype
+			UNION ALL 
+			SELECT 902
+		) AS bt
 	WHERE Code IN ('BT')
 	AND NOT EXISTS (SELECT 1 FROM @bettype t WHERE bt.bettype = t.bettype)
 
@@ -387,11 +387,11 @@ BEGIN
 	INSERT INTO @bettype(bettype, ProductCode)
 	SELECT bt.bettype, p.Code 
 	FROM @Products p
-	CROSS APPLY (
-		SELECT 911 AS bettype
-		UNION ALL 
-		SELECT 912	
-	) AS bt
+		CROSS APPLY (
+			SELECT 911 AS bettype
+			UNION ALL 
+			SELECT 912	
+		) AS bt
 	WHERE Code IN ('CO')
 		AND NOT EXISTS (SELECT 1 FROM @bettype t WHERE bt.bettype = t.bettype)
 
@@ -427,9 +427,9 @@ BEGIN
 	)
 
 	-- PROCESS bettrans range
-	IF @_Todate > @MoveBetsDay 
-	BEGIN 
-		IF @_FromDate <= @MoveBetsDay 
+	IF @_Todate > @MoveBetsDay
+	BEGIN
+		IF @_FromDate <= @MoveBetsDay
 			SET @TempFromDate =  DATEADD(DAY,1,@MoveBetsDay)
 		ELSE
 			SET @TempFromDate = @_FromDate
@@ -539,7 +539,7 @@ BEGIN
 						ISNULL(b.isBA, 0) AS IsBA
 				) AS ba
 		WHERE 
-			EXISTS(SELECT TOP 1 1 FROM @TempAg c WHERE c.CustID = b.recommend)
+			EXISTS(SELECT TOP(1) 1 FROM @TempAg c WHERE c.CustID = b.recommend)
 			AND b.roleid = 1
 			AND b.Winlostdate >= @_FromDate AND b.Winlostdate <= @TempToDate
 			AND b.statusID <> 101
@@ -547,10 +547,10 @@ BEGIN
 			AND 1 = (CASE 
 						WHEN st.ProductCode = 'SB' THEN -- Is SB 
 							CASE 
-								WHEN @_ShowBA = 1 AND ba.IsBA = 1 THEN 1 
-								WHEN @_ShowSB = 1 AND ba.IsBA = 0 AND b.bettype IN(0) THEN 1
-								WHEN @_ShowBT = 1 AND b.bettype IN(901,902) THEN 1
-								WHEN @_ShowCO = 1 AND b.bettype IN(911,912) THEN 1
+								WHEN @_ShowBA = 1 AND ba.IsBA = 1 THEN 1
+								WHEN @_ShowSB = 1 AND ba.IsBA = 0 AND b.bettype IN (0, -29) THEN 1		-- -29: God Of Fortune
+								WHEN @_ShowBT = 1 AND b.bettype IN (901, 902) THEN 1
+								WHEN @_ShowCO = 1 AND b.bettype IN (911, 912) THEN 1
 								ELSE 0 END
 						ELSE 1
 					END)
@@ -722,7 +722,7 @@ BEGIN
 		SUM(w.TurnOver * e.Rate)		AS TurnOver, 
 		SUM(w.MemberWinLost * e.Rate)	AS MemberWinLost,
 		SUM(w.BetEffective * e.Rate)	AS BetEffective,
-		SUM(w.LicenseeWL * e.Rate) 		AS LicenseeWL,
+		SUM(w.LicenseeWL * e.Rate)		AS LicenseeWL,
 		SUM(w.CommBA * e.Rate)			AS CommBA,
 		SUM(w.playerComm * e.Rate)		AS PlayerComm,
 		SUM(w.AmtDuetoBA * e.Rate)		AS AmtDuetoBA,
