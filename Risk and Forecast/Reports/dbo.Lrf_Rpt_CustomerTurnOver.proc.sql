@@ -85,6 +85,7 @@ AS
 		- 20201231@Louis: Integrate Happy 5 Linked Games [RedmineID: #147446]
 		- 20210119@Hogan: Integrate Four Guardians [RedmineID: #148100]
 		- 20210304@Hogan: Offer Decimal Odds Only for Match [RedmineID: #151010]
+		- 20210420@Mark: Integrate Time Machine HDP [Redmine: #153302]
 		
 	Parameter's Explanation:
 		- @ReportBy:  1: daily, 2: monthly
@@ -376,7 +377,7 @@ BEGIN
 											WHEN (odds * 100) % 2 = 0 THEN 2
 											WHEN (odds * 100) > 0 THEN (1 + odds) END 
 					 END 
-		WHERE bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156,228)	 -- add more Sportting Solution bettype 
+		WHERE bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156,228,229)	 -- add more Sportting Solution bettype 
 			OR bettype BETWEEN 9001 AND 9087	-- Esport 2
 			OR bettype BETWEEN 81 AND 88
 			OR bettype BETWEEN 90 AND 120
