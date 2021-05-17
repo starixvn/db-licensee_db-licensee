@@ -21,6 +21,7 @@ AS
 		- 20200917@Sol: Joinning with playerProfile - [redmine: #125252]
 		- 20201201@Sol: Audit - Add mode sum by SettlementTime - [Redmine: #146188]
 		- 20210419@Sol: Audit - enhance report - [Redmine: #152537]
+		- 20210517@Sol: Audit - show data with status = 0 orr 1 - [Redmine: #155266]
 
 	Developer's Notes:
 		- Notes: If product is NG, search tickets with GameType is RNG
@@ -146,7 +147,7 @@ BEGIN
 			INNER JOIN bodb_Ploutos.dbo.PlayerProfile pp WITH(NOLOCK) ON pp.BrandCode = a.BrandCode AND pp.CustID = a.CustId
 		WHERE  
 			a.BrandCode = @SiteName
-			AND a.StatusID = 1
+			AND a.StatusID IN (0, 1)
 			AND a.SettlementDate >= @FDate AND a.SettlementDate < @TempToDate 
 			AND (
 					(@showSB = 1 AND a.GamePlatformCode = 'SB') 
@@ -280,7 +281,7 @@ BEGIN
 				INNER JOIN bodb_Ploutos.dbo.PlayerProfile pp WITH(NOLOCK) ON pp.BrandCode = a.BrandCode AND pp.CustID = a.CustId
 			WHERE  
 				a.BrandCode = @SiteName
-				AND a.StatusID = 1
+				AND a.StatusID IN (0, 1)
 				AND a.SettlementDate >= @cutoffDate AND a.SettlementDate < @TempToDate 
 				AND (
 						(@showSB = 1 AND a.GamePlatformCode = 'SB') 
