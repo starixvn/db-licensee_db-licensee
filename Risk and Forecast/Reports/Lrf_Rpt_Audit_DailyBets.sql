@@ -18,6 +18,7 @@ AS
 		- 20191028@Amanda: Created new SP [RedmineID: #122789]
 		- 20200325@Bobby: Ploutos Integration - [redmine: #125252]
 		- 20201201@Sol: Audit - Add mode sum by SettlementTime - [Redmine: #146188]
+		- 20210517@Sol: Audit - show data with status = 0 orr 1 - [Redmine: #155266]
 
 	Developer's Notes:
 		
@@ -172,7 +173,7 @@ BEGIN
 		INNER JOIN bodb_Ploutos.dbo.PlayerProfile pp WITH(NOLOCK) ON pp.BrandCode = a.BrandCode AND pp.CustID = a.CustId
 		WHERE 
 			a.BrandCode = @SiteName
-			AND a.StatusID = 1
+			AND a.StatusID IN (0, 1)
 			AND a.SettlementDate >= @Date AND a.SettlementDate < @TempToDate 
 			AND a.SettlementDate >= @cutoffDate
 			AND ( 
