@@ -155,48 +155,48 @@ BEGIN
 		WHERE  
 			a.BrandCode = @SiteName
 			AND a.StatusID IN (0, 1)
-			AND a.SettlementDate >= @FDate AND a.SettlementDate < @TempToDate 
-	-- Retrive data from rptDep_AuditTickets		
-	INSERT INTO #SAgWinLoss
-		(  
-			winlostdate,
-			CurrencyId,
-			TurnoverSB,
-			TurnoverNG,
-			TurnoverCS,
-			TurnoverLC,
-			Winlost,
-			LicenseeWLSB,
-			LicenseeWLNG,
-			LicenseeWLCS,
-			LicenseeWLLC,
-			Betcount,
-			SourceName
-		)
-	---- main table
-	SELECT	CAST(a.SettlementDate AS DATE) WinLostDate,
-			c.Id AS CurrencyId,
-			SUM(CASE WHEN a.GameType = 'SB' THEN a.BetAmount ELSE 0 END) AS TurnoverSB,
-			SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode = '161' THEN a.BetAmount ELSE 0 END) AS TurnoverNG,
-			SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode <> '161' THEN a.BetAmount ELSE 0 END) AS TurnoverCS,
-			SUM(CASE WHEN a.GameType = 'CA' THEN a.BetAmount ELSE 0 END) AS TurnoverLC,
-			- SUM(a.NetAmount) AS Winlost,
-			SUM(CASE WHEN a.GameType = 'SB' THEN a.NetAmount ELSE 0 END) AS LicenseeWLSB,
-			SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode = '161' THEN a.NetAmount ELSE 0 END) AS LicenseeWLNG,
-			SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode <> '161' THEN a.NetAmount ELSE 0 END) AS LicenseeWLCS,
-			SUM(CASE WHEN a.GameType = 'CA' THEN a.NetAmount ELSE 0 END) AS LicenseeWLLC,
-			COUNT(1) AS Betcount,
-			'AuditTicket' AS SourceName
-	FROM bodb_licenseeReportArchive.dbo.rptDep_AuditTickets a WITH (NOLOCK)
-	INNER JOIN @Currency c ON c.Code = a.CurrencyCode
-	WHERE  Brand = @SiteName
+			AND a.SettlementDate >= @FDate AND a.SettlementDate < @TempToDate
 			AND (
 					(@showSB = 1 AND a.GamePlatformCode = 'SB') 
 				OR	(@showNG = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode = '0161')
 				OR	(@showCS = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161')
 				OR	(@showLC = 1 AND a.GamePlatformCode = 'CA')
 			)
+			AND a.SettlementDate >= @ArchivedDate
 
+		GROUP BY
+			CAST(a.SettlementDate AS DATE),
+			c.Id
+
+		UNION ALL
+
+		SELECT	CAST(a.SettlementDate AS DATE) WinLostDate,
+				c.Id,
+				SUM(CASE WHEN a.GamePlatformCode = 'SB' THEN a.BetAmount ELSE 0 END),
+				SUM(CASE WHEN a.GamePlatformCode = 'RNG' AND a.GameCode = '0161' THEN a.BetAmount ELSE 0 END),
+				SUM(CASE WHEN a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161' THEN a.BetAmount ELSE 0 END),
+				SUM(CASE WHEN a.GamePlatformCode = 'CA' THEN a.BetAmount ELSE 0 END),
+				- SUM(a.NetAmount),
+				SUM(CASE WHEN a.GamePlatformCode = 'SB' THEN a.NetAmount ELSE 0 END),
+				SUM(CASE WHEN a.GamePlatformCode = 'RNG' AND a.GameCode = '0161' THEN a.NetAmount ELSE 0 END),
+				SUM(CASE WHEN a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161' THEN a.NetAmount ELSE 0 END),
+				SUM(CASE WHEN a.GamePlatformCode = 'CA' THEN a.NetAmount ELSE 0 END),
+				COUNT(1),
+				'BetTicket' AS SourceName
+		FROM bodb_Ploutos.dbo.BetTicket_BK a WITH (NOLOCK)
+			INNER JOIN @Currency c ON c.Code = a.CurrencyCode
+			INNER JOIN bodb_Ploutos.dbo.PlayerProfile pp WITH(NOLOCK) ON pp.BrandCode = a.BrandCode AND pp.CustID = a.CustId
+		WHERE  
+			a.BrandCode = @SiteName
+			AND a.StatusID IN (0, 1)
+			AND a.SettlementDate >= @FDate AND a.SettlementDate < @TempToDate 
+			AND (
+					(@showSB = 1 AND a.GamePlatformCode = 'SB') 
+				OR	(@showNG = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode = '0161')
+				OR	(@showCS = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161')
+				OR	(@showLC = 1 AND a.GamePlatformCode = 'CA')
+			)
+			AND a.SettlementDate < @ArchivedDate
 		GROUP BY
 			CAST(a.SettlementDate AS DATE),
 			c.Id
@@ -249,6 +249,38 @@ BEGIN
 						OR	(@showLC = 1 AND a.GameType = 'CA')
 					)
 					AND a.SettlementDate >= @FDate AND a.SettlementDate < @TempToDate
+					AND a.SettlementDate >= @ArchivedDate
+
+			GROUP BY
+				CAST(a.SettlementDate AS DATE),
+				c.Id
+
+			UNION ALL
+
+			SELECT	CAST(a.SettlementDate AS DATE) WinLostDate,
+					c.Id AS CurrencyId,
+					SUM(CASE WHEN a.GameType = 'SB' THEN a.BetAmount ELSE 0 END) AS TurnoverSB,
+					SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode = '161' THEN a.BetAmount ELSE 0 END) AS TurnoverNG,
+					SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode <> '161' THEN a.BetAmount ELSE 0 END) AS TurnoverCS,
+					SUM(CASE WHEN a.GameType = 'CA' THEN a.BetAmount ELSE 0 END) AS TurnoverLC,
+					- SUM(a.NetAmount) AS Winlost,
+					SUM(CASE WHEN a.GameType = 'SB' THEN a.NetAmount ELSE 0 END) AS LicenseeWLSB,
+					SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode = '161' THEN a.NetAmount ELSE 0 END) AS LicenseeWLNG,
+					SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode <> '161' THEN a.NetAmount ELSE 0 END) AS LicenseeWLCS,
+					SUM(CASE WHEN a.GameType = 'CA' THEN a.NetAmount ELSE 0 END) AS LicenseeWLLC,
+					COUNT(1) AS Betcount,
+					'AuditTicket' AS SourceName
+			FROM bodb_licenseeReportArchive.dbo.rptDep_AuditTickets_BK a WITH (NOLOCK)
+			INNER JOIN @Currency c ON c.Code = a.CurrencyCode
+			WHERE  Brand = @SiteName
+					AND (
+							(@showSB = 1 AND a.GameType = 'SB') 
+						OR	(@showNG = 1 AND a.GameType = 'RNG' AND a.GameCode = '161')
+						OR	(@showCS = 1 AND a.GameType = 'RNG' AND a.GameCode <> '161')
+						OR	(@showLC = 1 AND a.GameType = 'CA')
+					)
+					AND a.SettlementDate >= @FromDate AND a.SettlementDate < @TempToDate 
+					AND a.SettlementDate < @ArchivedDate
 
 			GROUP BY
 				CAST(a.SettlementDate AS DATE),
@@ -298,7 +330,38 @@ BEGIN
 						OR	(@showLC = 1 AND a.GameType = 'CA')
 					)
 					AND a.SettlementDate >= @FDate AND a.SettlementDate < @cutoffDate
+					AND a.SettlementDate >= @ArchivedDate
 
+			GROUP BY
+				CAST(a.SettlementDate AS DATE),
+				c.Id
+
+			UNION ALL
+
+			SELECT	CAST(a.SettlementDate AS DATE) WinLostDate,
+					c.Id AS CurrencyId,
+					SUM(CASE WHEN a.GameType = 'SB' THEN a.BetAmount ELSE 0 END) AS TurnoverSB,
+					SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode = '161' THEN a.BetAmount ELSE 0 END) AS TurnoverNG,
+					SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode <> '161' THEN a.BetAmount ELSE 0 END) AS TurnoverCS,
+					SUM(CASE WHEN a.GameType = 'CA' THEN a.BetAmount ELSE 0 END) AS TurnoverLC,
+					- SUM(a.NetAmount) AS Winlost,
+					SUM(CASE WHEN a.GameType = 'SB' THEN a.NetAmount ELSE 0 END) AS LicenseeWLSB,
+					SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode = '161' THEN a.NetAmount ELSE 0 END) AS LicenseeWLNG,
+					SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode <> '161' THEN a.NetAmount ELSE 0 END) AS LicenseeWLCS,
+					SUM(CASE WHEN a.GameType = 'CA' THEN a.NetAmount ELSE 0 END) AS LicenseeWLLC,
+					COUNT(1) AS Betcount,
+					'AuditTicket' AS SourceName
+			FROM bodb_licenseeReportArchive.dbo.rptDep_AuditTickets_BK a WITH (NOLOCK)
+			INNER JOIN @Currency c ON c.Code = a.CurrencyCode
+			WHERE  Brand = @SiteName
+					AND (
+							(@showSB = 1 AND a.GameType = 'SB') 
+						OR	(@showNG = 1 AND a.GameType = 'RNG' AND a.GameCode = '161')
+						OR	(@showCS = 1 AND a.GameType = 'RNG' AND a.GameCode <> '161')
+						OR	(@showLC = 1 AND a.GameType = 'CA')
+					)
+					AND a.SettlementDate >= @FDate AND a.SettlementDate < @cutoffDate
+					AND a.SettlementDate < @ArchivedDate
 			GROUP BY
 				CAST(a.SettlementDate AS DATE),
 				c.Id
@@ -330,7 +393,41 @@ BEGIN
 					OR	(@showCS = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161')
 					OR	(@showLC = 1 AND a.GamePlatformCode = 'CA')
 				)
-			AND a.SettlementDate >= @ArchivedDate
+				AND a.SettlementDate >= @ArchivedDate
+
+			GROUP BY
+				CAST(a.SettlementDate AS DATE),
+				c.Id
+
+			UNION ALL
+
+			SELECT	CAST(a.SettlementDate AS DATE) WinLostDate,
+					c.Id,
+					SUM(CASE WHEN a.GamePlatformCode = 'SB' THEN a.BetAmount ELSE 0 END),
+					SUM(CASE WHEN a.GamePlatformCode = 'RNG' AND a.GameCode = '0161' THEN a.BetAmount ELSE 0 END),
+					SUM(CASE WHEN a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161' THEN a.BetAmount ELSE 0 END),
+					SUM(CASE WHEN a.GamePlatformCode = 'CA' THEN a.BetAmount ELSE 0 END),
+					- SUM(a.NetAmount),
+					SUM(CASE WHEN a.GamePlatformCode = 'SB' THEN a.NetAmount ELSE 0 END),
+					SUM(CASE WHEN a.GamePlatformCode = 'RNG' AND a.GameCode = '0161' THEN a.NetAmount ELSE 0 END),
+					SUM(CASE WHEN a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161' THEN a.NetAmount ELSE 0 END),
+					SUM(CASE WHEN a.GamePlatformCode = 'CA' THEN a.NetAmount ELSE 0 END),
+					COUNT(1),
+					'BetTicket' AS SourceName
+			FROM bodb_Ploutos.dbo.BetTicket_BK a WITH (NOLOCK)
+				INNER JOIN @Currency c ON c.Code = a.CurrencyCode
+				INNER JOIN bodb_Ploutos.dbo.PlayerProfile pp WITH(NOLOCK) ON pp.BrandCode = a.BrandCode AND pp.CustID = a.CustId
+			WHERE  
+				a.BrandCode = @SiteName
+				AND a.StatusID IN (0, 1)
+				AND a.SettlementDate >= @cutoffDate AND a.SettlementDate < @TempToDate 
+				AND (
+						(@showSB = 1 AND a.GamePlatformCode = 'SB') 
+					OR	(@showNG = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode = '0161')
+					OR	(@showCS = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161')
+					OR	(@showLC = 1 AND a.GamePlatformCode = 'CA')
+				)
+				AND a.SettlementDate < @ArchivedDate
 
 			GROUP BY
 				CAST(a.SettlementDate AS DATE),
@@ -338,103 +435,6 @@ BEGIN
 			OPTION (HASH GROUP)
 
 		END
-	UNION ALL
-
-	----archive table
-	SELECT	CAST(a.SettlementDate AS DATE) WinLostDate,
-			c.Id AS CurrencyId,
-			SUM(CASE WHEN a.GameType = 'SB' THEN a.BetAmount ELSE 0 END) AS TurnoverSB,
-			SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode = '161' THEN a.BetAmount ELSE 0 END) AS TurnoverNG,
-			SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode <> '161' THEN a.BetAmount ELSE 0 END) AS TurnoverCS,
-			SUM(CASE WHEN a.GameType = 'CA' THEN a.BetAmount ELSE 0 END) AS TurnoverLC,
-			- SUM(a.NetAmount) AS Winlost,
-			SUM(CASE WHEN a.GameType = 'SB' THEN a.NetAmount ELSE 0 END) AS LicenseeWLSB,
-			SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode = '161' THEN a.NetAmount ELSE 0 END) AS LicenseeWLNG,
-			SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode <> '161' THEN a.NetAmount ELSE 0 END) AS LicenseeWLCS,
-			SUM(CASE WHEN a.GameType = 'CA' THEN a.NetAmount ELSE 0 END) AS LicenseeWLLC,
-			COUNT(1) AS Betcount,
-			'AuditTicket' AS SourceName
-	FROM bodb_licenseeReportArchive.dbo.rptDep_AuditTickets_BK a WITH (NOLOCK)
-	INNER JOIN @Currency c ON c.Code = a.CurrencyCode
-	WHERE  Brand = @SiteName
-			AND (
-					(@showSB = 1 AND a.GameType = 'SB') 
-				OR	(@showNG = 1 AND a.GameType = 'RNG' AND a.GameCode = '161')
-				OR	(@showCS = 1 AND a.GameType = 'RNG' AND a.GameCode <> '161')
-				OR	(@showLC = 1 AND a.GameType = 'CA')
-			)
-			AND a.SettlementDate >= @FromDate AND a.SettlementDate < @TempToDate 
-			AND a.SettlementDate < @cutoffDate
-			AND a.SettlementDate < @ArchivedDate
-
-	GROUP BY
-		CAST(a.SettlementDate AS DATE),
-		c.Id
-
-	UNION ALL
-	---- main table
-	SELECT	CAST(a.SettlementDate AS DATE) WinLostDate,
-			c.Id,
-			SUM(CASE WHEN a.GamePlatformCode = 'SB' THEN a.BetAmount ELSE 0 END),
-			SUM(CASE WHEN a.GamePlatformCode = 'RNG' AND a.GameCode = '0161' THEN a.BetAmount ELSE 0 END),
-			SUM(CASE WHEN a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161' THEN a.BetAmount ELSE 0 END),
-			SUM(CASE WHEN a.GamePlatformCode = 'CA' THEN a.BetAmount ELSE 0 END),
-			- SUM(a.NetAmount),
-			SUM(CASE WHEN a.GamePlatformCode = 'SB' THEN a.NetAmount ELSE 0 END),
-			SUM(CASE WHEN a.GamePlatformCode = 'RNG' AND a.GameCode = '0161' THEN a.NetAmount ELSE 0 END),
-			SUM(CASE WHEN a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161' THEN a.NetAmount ELSE 0 END),
-			SUM(CASE WHEN a.GamePlatformCode = 'CA' THEN a.NetAmount ELSE 0 END),
-			COUNT(1),
-			'BetTicket' AS SourceName
-	FROM bodb_Ploutos.dbo.BetTicket a WITH (NOLOCK)
-		INNER JOIN @Currency c ON c.Code = a.CurrencyCode
-		INNER JOIN bodb_Ploutos.dbo.PlayerProfile pp WITH(NOLOCK) ON pp.BrandCode = a.BrandCode AND pp.CustID = a.CustId
-	WHERE  
-		a.BrandCode = @SiteName
-		AND a.StatusID = 1
-		AND a.SettlementDate >= @FromDate AND a.SettlementDate < @TempToDate 
-		AND a.SettlementDate >= @cutoffDate
-		AND (
-				(@showSB = 1 AND a.GamePlatformCode = 'SB') 
-			OR	(@showNG = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode = '0161')
-			OR	(@showCS = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161')
-			OR	(@showLC = 1 AND a.GamePlatformCode = 'CA')
-		)
-		AND a.SettlementDate >= @ArchivedDate
-	GROUP BY
-		CAST(a.SettlementDate AS DATE),
-		c.Id
-
-	UNION ALL
-
-	SELECT	CAST(a.SettlementDate AS DATE) WinLostDate,
-			c.Id,
-			SUM(CASE WHEN a.GamePlatformCode = 'SB' THEN a.BetAmount ELSE 0 END),
-			SUM(CASE WHEN a.GamePlatformCode = 'RNG' AND a.GameCode = '0161' THEN a.BetAmount ELSE 0 END),
-			SUM(CASE WHEN a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161' THEN a.BetAmount ELSE 0 END),
-			SUM(CASE WHEN a.GamePlatformCode = 'CA' THEN a.BetAmount ELSE 0 END),
-			- SUM(a.NetAmount),
-			SUM(CASE WHEN a.GamePlatformCode = 'SB' THEN a.NetAmount ELSE 0 END),
-			SUM(CASE WHEN a.GamePlatformCode = 'RNG' AND a.GameCode = '0161' THEN a.NetAmount ELSE 0 END),
-			SUM(CASE WHEN a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161' THEN a.NetAmount ELSE 0 END),
-			SUM(CASE WHEN a.GamePlatformCode = 'CA' THEN a.NetAmount ELSE 0 END),
-			COUNT(1),
-			'BetTicket' AS SourceName
-	FROM bodb_Ploutos.dbo.BetTicket_BK a WITH (NOLOCK)
-		INNER JOIN @Currency c ON c.Code = a.CurrencyCode
-		INNER JOIN bodb_Ploutos.dbo.PlayerProfile pp WITH(NOLOCK) ON pp.BrandCode = a.BrandCode AND pp.CustID = a.CustId
-	WHERE  
-		a.BrandCode = @SiteName
-		AND a.StatusID = 1
-		AND a.SettlementDate >= @FromDate AND a.SettlementDate < @TempToDate 
-		AND a.SettlementDate >= @cutoffDate
-		AND (
-				(@showSB = 1 AND a.GamePlatformCode = 'SB') 
-			OR	(@showNG = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode = '0161')
-			OR	(@showCS = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161')
-			OR	(@showLC = 1 AND a.GamePlatformCode = 'CA')
-		)
-		AND a.SettlementDate < @ArchivedDate
 
 	END
 

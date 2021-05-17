@@ -356,7 +356,7 @@ BEGIN
 				ELSE 0
 			END										AS [Status]
 		FROM #tempPaging p
-		INNER JOIN bodb_Ploutos.dbo.BetTicket a WITH (NOLOCK) ON a.TransactionId = p.TransactionId
+		INNER JOIN bodb_Ploutos.dbo.BetTicket_BK a WITH (NOLOCK) ON a.TransactionId = p.TransactionId
 		INNER JOIN bodb_Ploutos.dbo.PlayerProfile pp WITH(NOLOCK) ON pp.BrandCode = a.BrandCode AND pp.CustID = a.CustId
 		WHERE p.rowIdx BETWEEN @RowStart AND @RowEnd
 			AND a.SettlementDate >= @cutoffDate

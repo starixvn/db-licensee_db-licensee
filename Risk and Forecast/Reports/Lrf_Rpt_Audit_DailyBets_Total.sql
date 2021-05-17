@@ -162,7 +162,7 @@ BEGIN
 			COUNT(a.TransactionId)			AS TotalRows,
 			SUM(a.BetAmount * c.ExRate)		AS TotalTurnover,
 			- SUM(a.NetAmount * c.ExRate)	AS TotalWinLoss
-		FROM bodb_Ploutos.dbo.BetTicket a WITH (NOLOCK)
+		FROM bodb_Ploutos.dbo.BetTicket_BK a WITH (NOLOCK)
 		INNER JOIN @Currency c ON c.Code = a.CurrencyCode
 		INNER JOIN bodb_Ploutos.dbo.PlayerProfile pp WITH(NOLOCK) ON pp.BrandCode = a.BrandCode AND pp.CustID = a.CustId
 		WHERE  
