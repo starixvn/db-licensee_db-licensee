@@ -25,7 +25,8 @@ Revisions:
 	- 20200330@Louis: Support Statement & Detail Transaction Report in Chinese [RedmineID: #131262]
 	- 20200803@Sophia: add Saba Loyalty [Redmine: #138493]
 	- 20210203@Louis: Saba Red Envelope [RedmineID: #149923]
-	
+	- 20210518@Percy: Change code to adapt new Move Bets flow [RedmineID: #154866]
+
 Param's Explanation:     
 */
 BEGIN
@@ -118,6 +119,9 @@ BEGIN
 	------------- START INIT: OPENING BALANCE ---------------
 	IF (@_startDate < @BalanceUpDay)
 	BEGIN
+		DECLARE @rptToDate DATETIME = @_startDate
+		DECLARE @rptFromDate DATETIME = DATEADD(DAY, -7, @rptToDate)
+		
 		-- INSERT the previous BAL transaction
 		INSERT INTO #statementRpt (orderkey, winlostdate, transtype, transdesc, turnover,TotalAmt,commission)
 		SELECT TOP(1)
@@ -128,7 +132,7 @@ BEGIN
 			, 0 AS turnover, rpt.totalAmt AS TotalAmt , 0 AS commission
 		FROM bodb_report.dbo.[Statement] rpt WITH (NOLOCK)  
 		WHERE rpt.custid = @_CustID
-			AND rpt.accdate <= @_startDate
+			AND rpt.accdate BETWEEN @rptFromDate AND @rptToDate
 			AND rpt.transtype = 'BAL'
 		ORDER BY rpt.accdate DESC
 
@@ -188,7 +192,7 @@ BEGIN
 		IF (@_startDate < @BalanceUpDay)
 		BEGIN 
 			SELECT @_tempStartDate	=  @_startDate
-				, @_tempEndDate		= @BalanceUpDay-1
+				, @_tempEndDate		= CASE WHEN @_endDate >= @BalanceUpDay THEN DATEADD(DAY, -1, @BalanceUpDay) ELSE @_endDate END
 
 			INSERT INTO #statementRpt (orderkey, winlostdate, transtype, transdesc, turnover,TotalAmt,commission)
 			SELECT f.orderkey, f.winlostdate, f.transtype, f.transdesc, f.turnover, f.TotalAmt, f.commission

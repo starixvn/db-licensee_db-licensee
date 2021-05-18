@@ -1,5 +1,6 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" viewers="" isFunction="0"></info>*/
-
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" isFunction="0"></info>*/
+USE bodb02
+GO
 ALTER PROCEDURE [dbo].[Lrf_CustomerSel]
 	@LicenseeID		INT,
 	@username		VARCHAR(50)		= NULL,
@@ -67,6 +68,7 @@ AS
 		- 20190621@Amanda: Add @BaseCurrency parameter [Redmine: #112531]
 		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
 		- 20201005@Winfred: unshow OddsAdj dummy customers [redmine:#142952]
+		- 20210518@Percy: Change code to adapt new Move Bets flow [RedmineID: #154866]
 
 	Param's Explanation:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
@@ -79,6 +81,13 @@ BEGIN
 
 	DECLARE @currentDate DATETIME
 	SELECT  @currentDate = CONVERT(DATE, GETDATE())
+
+	DECLARE @MBBU TABLE (BalanceUpDay SMALLDATETIME, MoveBetsDay SMALLDATETIME)
+	INSERT INTO @MBBU (BalanceUpDay, MoveBetsDay)
+	EXEC dbo.Age_SelBalanceUpDay
+
+	DECLARE @MoveBetsDay SMALLDATETIME
+	SELECT  @MoveBetsDay = MoveBetsDay FROM @MBBU
 
 	DECLARE @RowCount INT, @RowStart INT, @RowEnd INT
 	SELECT  @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
@@ -579,6 +588,10 @@ BEGIN
 		INNER JOIN dbo.bettrans b WITH(NOLOCK) ON t.custid = b.custid
 		LEFT JOIN #ExchangeRate e ON e.ExchangeID = b.currency
 	WHERE b.matchid >= 0
+		AND 1 = CASE
+					WHEN b.bettype = 19999 AND b.winlostdate > @MoveBetsDay THEN 0
+					WHEN b.bettype < 19999 AND b.winlostdate <= @MoveBetsDay THEN 0
+					ELSE 1 END
 	GROUP BY t.custid
 
 	SELECT
