@@ -37,6 +37,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 		- 20200122@Hogan: Integrate GDG [RedmineID: #147267]
 		- 20210305@Hogan: Integrate Sport Lottery [RedmineID: #150872]
 		- 20210416@Hogan: Integrate Habanero RNG Games [RedmineID: #150843]
+		- 20210428@Hogan: Integrate WM Live Casino [RedmineID: #140944]
 
 	Paramters Explanation:  
 		@ProductID: list of products
@@ -73,6 +74,7 @@ RETURN
 					(42, 'SBC', 200, 0),	-- Saba Club
 					(42, 'SBC', 150, 0),	-- Saba Club
 					(39, 'SAG', 244, 0),	-- SA Gaming
+					(51, 'WM', 233, 0),		-- WM Live Casino
 					(55, 'PGS', 232, 0),	-- PG Soft
 					(56, 'JK', 234, 0),		-- Joker
 					(59, 'GDG', 236, 0),	-- GDG
