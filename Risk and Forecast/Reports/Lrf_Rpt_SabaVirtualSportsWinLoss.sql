@@ -21,6 +21,7 @@ AS
 	Revisions:
 		- 20200925@Kos: New SP [RedmineID: #141454]
 		- 20201019@Kos: Change to use new table to check performance [RedmineID: #143310]
+		- 20210521@Mark: Support Saba Soccer PinGoal [RedmineID: #155335]
 
 	Param's Explanation:
 		+ @ReportType: 1: Daily, 2: Monthly
@@ -73,8 +74,13 @@ BEGIN
 	SELECT leagueid
 	FROM dbo.League WITH (NOLOCK)
 	WHERE (@LeagueId = 0 OR leagueid = @LeagueId)
-		AND (@SportType = 0 OR sporttype = @SportType)
-		AND ((sporttype = 1 AND LeagueGroupID IN (42, 74, 108))
+		AND (@SportType = 0
+			OR sporttype = CASE
+							WHEN @SportType = -1 THEN 1
+							ELSE @SportType
+						END)
+		AND ((@SportType IN (0, 1) AND sporttype = 1 AND LeagueGroupID IN (42, 74, 108))
+			OR (@SportType IN (0, -1) AND sporttype = 1 AND LeagueGroupID IN (113))
 			OR (sporttype = 2 AND LeagueGroupID IN (42))
 			OR (sporttype = 50 AND LeagueGroupID IN (42)))
 

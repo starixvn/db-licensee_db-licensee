@@ -32,6 +32,7 @@ AS
 		- 20201104@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369]
 		- 20201229@Kos: Support separate Saba Virtual Sports from SB [RedmineID: #146776]
 		- 20210119@Hogan: Integrate Four Guardians [RedmineID: #148100]
+		- 20210521@Mark: Support Saba Soccer PinGoal [RedmineID: #155335]
 
 	Param's Explanation:
 		+ @MoveBetsDay: The day we move tickets to bettrans14
@@ -124,7 +125,7 @@ BEGIN
 	INSERT INTO #SabaVirtualSportsLeague
 	SELECT leagueid
 	FROM dbo.League WITH (NOLOCK)
-	WHERE (sporttype = 1 AND LeagueGroupID IN (42, 74, 108))
+	WHERE (sporttype = 1 AND LeagueGroupID IN (42, 74, 108, 113))
 		OR (sporttype = 2 AND LeagueGroupID IN (42))
 		OR (sporttype = 50 AND LeagueGroupID IN (42))
 
