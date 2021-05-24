@@ -1,8 +1,8 @@
-﻿/*<info serverAlias="DBEXT-bodb02" selecters="bodbLicenseeNet" isFunction="1" isNested="1"></info>*/
+﻿/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02,DBBOF-bodb02" selecters="bodbLicenseeNet" isFunction="1" isNested="1"></info>*/
 
 ALTER FUNCTION [dbo].[Lrf_f_BetFromType_Sel]
 (
-	@PlatformType	TINYINT = 0
+	@PlatformTypeList	VARCHAR(100) = 'All'
 )
 
 /*
@@ -17,6 +17,7 @@ ALTER FUNCTION [dbo].[Lrf_f_BetFromType_Sel]
 		- 20210120@Mark: Integrate new betfrom 7 [Redmine: #149108]
 		- 20210305@Mark: Integrate new betfrom _, @, %(Mobile Euro) [Redmine: #151019]
 		- 20210412@Mark: Support Add New Betfrom 8 9 [RedmineID: #152158]
+		- 20210518@Mark: Support multiple selection on Platform filter [Redmine: #153102]
 */
 
 RETURNS TABLE
@@ -27,13 +28,14 @@ RETURN
 				(2, 'a'),
 				(2, 'z'),
 				(3, '9'),
+				(3, '>'),
 				(4, 'l'),
-				(4, '_'),
 				(5, '%'),
 				(6, 'c'),
 				(6, '@'),
 				(7, '7'),
 				(7, '8'),
+				(7, '_'),
 				(8, '1'),
 				(8, '4'),
 				(9, '2'),
@@ -41,6 +43,7 @@ RETURN
 				(10, '3'),
 				(10, '6'),
 				(11, 'o'),
+				(11, '~'),
 				(12, '0'),
 				(13, 'r'),
 				(14, 't'),
@@ -49,7 +52,8 @@ RETURN
 				(88, 'd'),
 				(88, 'g'),
 				(88, 'e'),
-				(88, 'u')
+				(88, 'u'),
+				(88, '^')
 	) d(PlatformType, betfrom)
-	WHERE @PlatformType = 0 OR d.PlatformType = @PlatformType
+	WHERE @PlatformTypeList = 'All' OR (',' + @PlatformTypeList + ',' LIKE '%,' + CONVERT(VARCHAR(3), d.PlatformType) + ',%')
 GO
