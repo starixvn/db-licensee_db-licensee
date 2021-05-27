@@ -93,6 +93,7 @@ AS
 		- 20210416@Hogan: Integrate Habanero RNG Games [RedmineID: #150843]
 		- 20210428@Hogan: Integrate WM Live Casino [RedmineID: #140944]
 		- 20210519@Louis: Integrate Big Gaming product [RedmineID: #146773]
+		- 20210525@Hogan: Integrate Vgaming [RedmineID: #151583]
 
 	Param's Explanation:  
 		+	@drawfilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -184,7 +185,7 @@ BEGIN
 		INSERT INTO @sporttype ( sporttype, ProductCode )
 		SELECT DISTINCT sporttype, ProductCode
 		FROM dbo.f_LicWinLoss_ProductSportType_Sel(@ProductList)
-		WHERE ProductCode NOT IN ('VS', 'VS2') AND sporttype <> 150
+		WHERE ProductCode NOT IN ('VS', 'VS2') AND sporttype NOT IN (150, 173)
 	END
 	---#2: End: Get SportBettypeMatrix
 
@@ -370,6 +371,7 @@ BEGIN
 				AND b.matchID > 0 
 				AND (CASE WHEN bt.ProductCode ='SB' THEN b.tpositiontaking ELSE 1 END <> 0 )  --- EXCLUDE BA 
 				AND (b.bettype NOT BETWEEN 1611 AND 1699 OR b.matchid <> 150)
+				AND (b.bettype NOT BETWEEN 3801 AND 3899 OR b.matchid <> 173)
 			GROUP BY
 				b.winlostdate,
 				b.custid
@@ -450,7 +452,7 @@ BEGIN
 						ELSE 1 END
 				),
 				SUM(b.winlost),
-				SUM(CASE WHEN (b.sporttype in(0,161,164,251,202,208,209,210,212,220,248,165,247,245,222,223,243,200,244,232,234,168,236,169,238,233,239))  THEN -1 * b.winlost 
+				SUM(CASE WHEN (b.sporttype in(0,161,164,251,202,208,209,210,212,220,248,165,247,245,222,223,243,200,244,232,234,168,236,169,238,233,239,171))  THEN -1 * b.winlost 
 						ELSE 0 END
 					) AS LicenseeWL,
 				SUM(comm) AS Comm,

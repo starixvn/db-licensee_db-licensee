@@ -27,6 +27,7 @@ AS
 		- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]	
 		- 20201104@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369]
 		- 20210119@Hogan: Integrate Four Guardians [RedmineID: #148100]
+		- 20210518@Hogan: Integrate Vgaming [RedmineID: #151583]
 
 	Param's Explanation:
 		+ @MoveBetsDay: The day we move tickets to bettrans14
@@ -118,7 +119,7 @@ BEGIN
 	INSERT INTO #SporttypeProduct (SportType, ProductCode)   --- Don't have ProductCode IN (BT, CO)
 	SELECT DISTINCT SportType, ProductCode
 	FROM dbo.f_LicWinLoss_ProductSportType_Sel(@ProductList)
-	WHERE SportType <> 150
+	WHERE SportType NOT IN (150, 173)
 
 	IF @ToDate > @MoveBetsDay
 	BEGIN
@@ -158,7 +159,9 @@ BEGIN
 				b.winlostdate BETWEEN @FDate AND @TDate
 				AND (b.statusID IN (112, 113)
 					OR (@IncludeRaw = 1 AND b.statusID = 111))
-				AND b.matchid > 0 AND (b.bettype NOT BETWEEN 1611 AND 1697 OR b.matchid <> 150)
+				AND b.matchid > 0 
+				AND (b.bettype NOT BETWEEN 1611 AND 1697 OR b.matchid <> 150)
+				AND (b.bettype NOT BETWEEN 3801 AND 3899 OR b.matchid <> 173)
 				AND (CASE
 						WHEN @ShowBA = 0 AND p.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 0
 						WHEN @ShowSB = 0 AND p.ProductCode = 'SB' AND b.tpositiontaking <> 0 THEN 0

@@ -32,8 +32,9 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
 	@ShowGDG		BIT = 0,	-- GDG
 	@ShowSLT		BIT = 0, 	-- SLT
 	@ShowHB			BIT = 0,	-- Habanero
-	@ShowWM			BIT = 0, -- WM Live Casino
+	@ShowWM			BIT = 0, 	-- WM Live Casino
 	@ShowBGG		BIT = 0, 	-- Big Gaming
+	@ShowVGA		BIT = 0, 	-- Vgaming
 	@MoveBetsDay	DATETIME,
 	@PageSize		INT = 1000,
 	@PageIndex		INT = 1,
@@ -147,6 +148,7 @@ AS
 		- 20210511@Kos: Split data of God Of Fortune in rptLicWinloss2 [RedmineID: #152908]
 		- 20210513@Hogan: Integrate WM Live Casino [RedmineID: #140944]
 		- 20210519@Louis: Integrate Big Gaming product [RedmineID: #146773]
+		- 20210525@Hogan: Integrate Vgaming [RedmineID: #151583]
 
 	Param's Explanation:
 		@OrderItem:
@@ -367,6 +369,8 @@ BEGIN
 	SELECT 'WM' AS Code WHERE @ShowWM = 1
 	UNION ALL
 	SELECT 'BGG' AS Code WHERE @ShowBGG = 1
+	UNION ALL
+	SELECT 'VGA' AS Code WHERE @ShowVGA = 1
 
 	-- BT & CO belong to SB
 	SELECT @ProductList = COALESCE(@ProductList + ',' + Code, Code)
@@ -409,7 +413,7 @@ BEGIN
 	FROM (
 		SELECT sporttype, ProductCode
 		FROM dbo.f_LicWinLoss_ProductSportType_Sel(@ProductList)
-		WHERE sporttype <> 150
+		WHERE sporttype NOT IN (150, 173)
 		UNION
 		SELECT 0, 'SB' 
 		FROM @Products p
@@ -491,6 +495,7 @@ BEGIN
 						ELSE 1
 					END)
 			AND (b.bettype NOT BETWEEN 1611 AND 1699 OR b.matchid <> 150)
+			AND (b.bettype NOT BETWEEN 3801 AND 3899 OR b.matchid <> 173)
 
 		-- check promotion prize - PP promotion prize and NPH Promotion prize and Tips --
 		IF @CheckPromotionPrize = 1 AND EXISTS (
@@ -499,7 +504,10 @@ BEGIN
 			WHERE 
 				EXISTS(SELECT TOP (1) 1 FROM @TempAg c WHERE c.CustID = b.recommend)
 				AND b.winlostdate >= @TempFromDate AND b.winlostdate <= @_ToDate
-				AND ((b.bettype IN (SELECT Bettype FROM @ExcludedBetType WHERE ProductCode <> 'SB') OR (b.bettype BETWEEN 1611 AND 1699 AND b.matchid = 150)) AND b.statusID IN (111,112,113)))
+				AND ((b.bettype IN (SELECT Bettype FROM @ExcludedBetType WHERE ProductCode <> 'SB') 
+					OR (b.bettype BETWEEN 1611 AND 1699 AND b.matchid = 150)
+					OR (b.bettype BETWEEN 3801 AND 3899 AND b.matchid = 173)) 
+					AND b.statusID IN (111,112,113)))
 			BEGIN
 			SET @PromotionPrize = 1
 		END
@@ -571,7 +579,8 @@ BEGIN
 			FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )
 			WHERE EXISTS(SELECT TOP (1) 1 FROM @TempAg c WHERE c.CustID = b.recommend)
 				AND b.Winlostdate BETWEEN @_FromDate AND @TempToDate
-				AND ((b.bettype IN (SELECT Bettype FROM @ExcludedBetType WHERE ProductCode <> 'SB') OR b.sporttype = 150) AND b.statusID IN (111,112,113))
+				AND ((b.bettype IN (SELECT Bettype FROM @ExcludedBetType WHERE ProductCode <> 'SB') OR b.sporttype IN (150, 173))
+					AND b.statusID IN (111,112,113))
 				AND b.roleid = 2)
 		BEGIN
 			SET @PromotionPrize = 1

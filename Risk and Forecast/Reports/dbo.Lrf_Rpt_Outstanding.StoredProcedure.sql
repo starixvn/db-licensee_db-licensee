@@ -225,7 +225,7 @@ BEGIN
 			ON g.recommend = a.CustId AND g.Currency = a.Currency 	
 		INNER JOIN #SportBettype s ON s.RefTable = 1 AND s.bettype = g.gameID 
 	WHERE statusid IN (0,1) 
-		AND g.productID <> 150
+		AND g.productID NOT IN (150, 173)
 		---AND EXISTS (SELECT 1 FROM #SportBettype s WHERE s.RefTable = 1 AND s.bettype = g.gameID)
 	GROUP BY g.custid, g.currency
 	 

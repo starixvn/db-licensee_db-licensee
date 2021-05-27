@@ -13,7 +13,8 @@ RETURNS TABLE
 		- 20201008@Louis: Licensee Spread Setting [RedmineID: #142532]
 		- 20210203@Louis: Saba Red Envelope [RedmineID: #149923]
 		- 20210208@Hogan: Integrate Four Guardians [RedmineID: #148100]
-		- 20210322@Hogan: Integrate AE Casino Lucky Draw [RedmineID: #151984]
+		- 20210322@Hogan: Integrate AE Casino Lucky Draw [RedmineID: #151984]		
+		- 20210518@Hogan: Integrate Vgaming [RedmineID: #151583]
 */
 
 RETURN
@@ -42,4 +43,8 @@ RETURN
 	SELECT 'SBC', 1699									--- Saba club Jackpot Prize
 	UNION ALL 
 	SELECT 'SXG', 3150									--- AE Casino Lucky Draw
+	UNION ALL 
+	SELECT 'VGA', 3898									--- Vgaming Jackpot Contribution
+	UNION ALL 
+	SELECT 'VGA', 3899									--- Vgaming Jackpot Prize
 GO
