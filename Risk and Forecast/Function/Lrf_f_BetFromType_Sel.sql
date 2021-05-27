@@ -18,6 +18,7 @@ ALTER FUNCTION [dbo].[Lrf_f_BetFromType_Sel]
 		- 20210305@Mark: Integrate new betfrom _, @, %(Mobile Euro) [Redmine: #151019]
 		- 20210412@Mark: Support Add New Betfrom 8 9 [RedmineID: #152158]
 		- 20210518@Mark: Support multiple selection on Platform filter [Redmine: #153102]
+		- 20210527@Hogan: Support Add 2 New Betfroms # $ [RedmineID: #155922]
 */
 
 RETURNS TABLE
@@ -36,6 +37,8 @@ RETURN
 				(7, '7'),
 				(7, '8'),
 				(7, '_'),
+				(7, '#'),
+				(7, '$'),
 				(8, '1'),
 				(8, '4'),
 				(9, '2'),
