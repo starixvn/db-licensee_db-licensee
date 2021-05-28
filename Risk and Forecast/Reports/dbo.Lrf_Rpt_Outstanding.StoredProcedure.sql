@@ -68,6 +68,7 @@ AS
 		- 20200728@Hogan: Integrate SA Gaming [RedmineID: #128493]
 		- 20201016@Hogan: Integrate Arcadia Gaming Bonus [RedmineID: #143648]
 		- 20201104@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369]
+		- 20210525@Hogan: Integrate Vgaming [RedmineID: #151583]
 
 	Param's Explanation:
 		@OrderItem:
