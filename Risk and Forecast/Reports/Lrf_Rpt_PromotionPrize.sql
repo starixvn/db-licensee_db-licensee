@@ -32,6 +32,7 @@ AS
 		- 20210208@Hogan: Integrate Four Guardians [RedmineID: #148100]
 		- 20210218@Hogan: Enhance Extra Payout excel file [RedmineID: #150292]
 		- 20210322@Hogan: Integrate AE Casino Lucky Draw [RedmineID: #151984]
+		- 20210518@Hogan: Integrate Vgaming [RedmineID: #151583]
 
 	Param's Explanation:
 		+ @MoveBetsDay: The day we move tickets to bettrans14
@@ -72,6 +73,8 @@ BEGIN
 			@SBCContribution		SMALLINT = 1698,-- SBC Contribution
 			@SBCJackpot				SMALLINT = 1699,-- SBC Jackpot Prize
 			@SXGLuckyDraw			SMALLINT = 3150,-- AE Casino Lucky Draw
+			@VGAContribution		SMALLINT = 3898,-- VGA Contribution
+			@VGAJackpot				SMALLINT = 3899,-- VGA Jackpot Prize
 			@PPsportType			SMALLINT = 248,
 			@SPRsportType			SMALLINT = 246,
 			@CCsportType			SMALLINT = 165,
@@ -79,6 +82,8 @@ BEGIN
 			@SBCFreeBetsSportType	SMALLINT = 150,
 			@SBCsportType			SMALLINT = 200,
 			@SXGsportType			SMALLINT = 243,
+			@VGAFreeBetsSportType	SMALLINT = 173,
+			@VGAsportType			SMALLINT = 171,
 			@PP						VARCHAR(10) = 'PP',
 			@SPR					VARCHAR(10) = 'SPR',
 			@PPC					VARCHAR(10) = 'PPC',
@@ -87,7 +92,10 @@ BEGIN
 			@SBCFB					VARCHAR(10) = 'SBCFB',
 			@SBCC					VARCHAR(10) = 'SBCC',
 			@SBC					VARCHAR(10) = 'SBC',
-			@SXG					VARCHAR(10) = 'SXG'
+			@SXG					VARCHAR(10) = 'SXG',
+			@VGA					VARCHAR(10) = 'VGA',
+			@VGAC					VARCHAR(10) = 'VGAC',
+			@VGAFB					VARCHAR(10) = 'VGAFB'
 
 	DECLARE @_FromDate SMALLDATETIME,
 		@_ToDate SMALLDATETIME
@@ -177,9 +185,12 @@ BEGIN
 				WHEN b.bettype = @SAGbetType THEN @SAG
 				WHEN b.bettype = @CCBonus THEN @CCB
 				WHEN b.bettype BETWEEN 1611 AND 1699 AND b.matchid = @SBCFreeBetsSportType THEN @SBCFB
-				WHEN b.bettype = @SBCJackpot THEN @SBC
-				WHEN b.bettype = @SBCContribution THEN @SBCC
+				WHEN b.bettype = @SBCJackpot AND b.matchid <> @SBCFreeBetsSportType THEN @SBC
+				WHEN b.bettype = @SBCContribution AND b.matchid <> @SBCFreeBetsSportType THEN @SBCC
 				WHEN b.bettype = @SXGLuckyDraw THEN @SXG
+				WHEN b.bettype BETWEEN 3801 AND 3899 AND b.matchid = @VGAFreeBetsSportType THEN @VGAFB
+				WHEN b.bettype = @VGAJackpot AND b.matchid <> @VGAFreeBetsSportType THEN @VGA
+				WHEN b.bettype = @VGAContribution AND b.matchid <> @VGAFreeBetsSportType THEN @VGAC
 				ELSE @PP
 			END
 		FROM
@@ -188,8 +199,10 @@ BEGIN
 			LEFT JOIN @VIPCust v ON b.custid = v.CustID
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @_ToDate
-			AND((b.bettype IN (@PPPromotion, @PPTournament, @PPJackpot, 17000, 17003, 17004, @CCBonus, @PPContribution, @SAGbetType, @SBCContribution, @SBCJackpot, @SXGLuckyDraw)
-				OR (b.bettype BETWEEN 1611 AND 1699 AND b.matchid = @SBCFreeBetsSportType)) AND b.statusID IN (111,112,113))
+			AND((b.bettype IN (@PPPromotion, @PPTournament, @PPJackpot, 17000, 17003, 17004, @CCBonus, @PPContribution, @SAGbetType, @SBCContribution, @SBCJackpot, @SXGLuckyDraw, @VGAContribution, @VGAJackpot)
+				OR (b.bettype BETWEEN 1611 AND 1699 AND b.matchid = @SBCFreeBetsSportType)
+				OR (b.bettype BETWEEN 3801 AND 3899 AND b.matchid = @VGAFreeBetsSportType))
+				AND b.statusID IN (111,112,113))
 			AND (@VIPPlayerOnly = 0 OR (@VIPPlayerOnly = 1 AND v.custid IS NOT NULL))
 	END
 
@@ -224,9 +237,12 @@ BEGIN
 				WHEN b.bettype = @SAGbetType THEN @SAG
 				WHEN b.bettype = @CCBonus THEN @CCB
 				WHEN b.sporttype = @SBCFreeBetsSportType THEN @SBCFB
-				WHEN b.bettype = @SBCJackpot THEN @SBC
-				WHEN b.bettype = @SBCContribution THEN @SBCC
+				WHEN b.bettype = @SBCJackpot AND b.sporttype <> @SBCFreeBetsSportType THEN @SBC
+				WHEN b.bettype = @SBCContribution AND b.sporttype <> @SBCFreeBetsSportType THEN @SBCC
 				WHEN b.bettype = @SXGLuckyDraw THEN @SXG
+				WHEN b.sporttype = @VGAFreeBetsSportType THEN @VGAFB
+				WHEN b.bettype = @VGAJackpot AND b.sporttype <> @VGAFreeBetsSportType THEN @VGA
+				WHEN b.bettype = @VGAContribution AND b.sporttype <> @VGAFreeBetsSportType THEN @VGAC
 				ELSE @PP
 			END
 		FROM 
@@ -235,9 +251,11 @@ BEGIN
 			LEFT JOIN @VIPCust v ON b.custid = v.CustID
 		WHERE 
 			b.winlostdate BETWEEN @_FromDate AND @TempToDate
-			AND b.sporttype IN (@PPsportType, @SPRsportType, @SAGsportType, @CCsportType, @SBCFreeBetsSportType, @SBCsportType, @SXGsportType)
-			AND((b.bettype IN (@PPPromotion, @PPTournament, @PPJackpot, 17000, 17003, 17004, @CCBonus, @PPContribution, @SAGbetType, @SBCContribution, @SBCJackpot, @SXGLuckyDraw)
-				OR (b.sporttype = @SBCFreeBetsSportType)) AND b.statusID IN (111,112,113))
+			AND b.sporttype IN (@PPsportType, @SPRsportType, @SAGsportType, @CCsportType, @SBCFreeBetsSportType, @SBCsportType, @SXGsportType, @VGAFreeBetsSportType, @VGAsportType)
+			AND((b.bettype IN (@PPPromotion, @PPTournament, @PPJackpot, 17000, 17003, 17004, @CCBonus, @PPContribution, @SAGbetType, @SBCContribution, @SBCJackpot, @SXGLuckyDraw, @VGAContribution, @VGAJackpot)
+				OR (b.sporttype = @SBCFreeBetsSportType)
+				OR (b.sporttype = @VGAFreeBetsSportType))
+				AND b.statusID IN (111,112,113))
 			AND b.roleID = 1
 			AND (@VIPPlayerOnly = 0 OR (@VIPPlayerOnly = 1 AND v.custid IS NOT NULL))
 	END

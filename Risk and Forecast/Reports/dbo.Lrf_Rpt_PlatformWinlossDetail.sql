@@ -30,6 +30,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_PlatformWinlossDetail]
 	@ShowHB		BIT = 0, -- Habanero
 	@ShowWM		BIT = 0, -- WM Live Casino
 	@ShowBGG	BIT = 0, -- Big Gaming
+	@ShowVGA	BIT = 0, -- Vgaming
 	@PlatformType	VARCHAR(100) = 'All',
 	@MoveBetsDay	SMALLDATETIME,
 	@DrawFilter		SMALLINT		= 1,
@@ -96,6 +97,7 @@ AS
 		- 20210428@Hogan: Integrate WM Live Casino [RedmineID: #140944]
 		- 20210518@Mark: Support multiple selection on Platform filter [Redmine: #153102]
 		- 20210519@Louis: Integrate Big Gaming product [RedmineID: #146773]
+		- 20210525@Hogan: Integrate Vgaming [RedmineID: #151583]
 
 	Param's Explanation:
 		+ @PlatformType: List of platform type (ex: 1,2,3,..)
@@ -330,6 +332,11 @@ BEGIN
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'BGG', 'BGG')
 	END
 
+	IF @ShowVGA = 1 --  Vgaming
+	BEGIN
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'VGA', 'VGA')
+	END
+
 	IF LEN(ISNULL(@ProductList, '')) > 0 
 	BEGIN
 		-- Insert Bettype
@@ -350,7 +357,7 @@ BEGIN
 		INSERT INTO #sporttype ( sporttype, ProductPrefix )
 		SELECT DISTINCT sporttype, ProductCode
 		FROM f_LicWinLoss_ProductSportType_Sel(@ProductList)
-		WHERE sporttype <> 150
+		WHERE sporttype NOT IN (150, 173)
 	END
 
 	INSERT INTO #Exchange (FromDate, ToDate, ExchangeId, Rate)
@@ -473,7 +480,8 @@ BEGIN
 		END
 
 		IF (@ShowNG = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW = 1 OR @ShowVS2 = 1 OR @ShowLT = 1 OR @ShowSAG = 1 OR @ShowPP = 1 OR @ShowCC = 1 OR @ShowSG = 1 
-			OR @ShowVRG = 1 OR @ShowTG = 1 OR @ShowI4D = 1 OR @ShowSXG = 1 OR @ShowSBC = 1 OR @ShowPGS = 1 OR @ShowJK = 1 OR @ShowGDG = 1 OR @ShowSLT = 1 OR @ShowHB = 1 OR @ShowWM = 1 OR @ShowBGG = 1)
+			OR @ShowVRG = 1 OR @ShowTG = 1 OR @ShowI4D = 1 OR @ShowSXG = 1 OR @ShowSBC = 1 OR @ShowPGS = 1 OR @ShowJK = 1 OR @ShowGDG = 1 OR @ShowSLT = 1 OR @ShowHB = 1 OR @ShowWM = 1 OR @ShowBGG = 1
+			OR @ShowVGA = 1)
 		BEGIN
 			INSERT INTO #WinLoss (Winlostdate, CustID, Currency, Turnover, Winlost, LicenseeWL, playercomm, AmtDueToBA, CommBA, Company, BetCount)
 			SELECT 
@@ -505,6 +513,7 @@ BEGIN
 				b.statusID IN (111, 112, 113)
 				AND b.winlostdate BETWEEN @TempFromDate AND @TDate
 				AND (b.bettype NOT BETWEEN 1611 AND 1697 OR b.matchid <> 150)
+				AND (b.bettype NOT BETWEEN 3801 AND 3899 OR b.matchid <> 173)
 			GROUP BY
 				b.winlostdate,
 				b.CustID,
@@ -566,7 +575,7 @@ BEGIN
 		END
 
 		IF (@showSB = 1 or @ShowNG = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW =1 OR @ShowVS2 = 1 OR @ShowLT = 1 OR @ShowSAG = 1 OR @ShowPP = 1 OR @showCC = 1 OR @ShowSG = 1 
-			OR @ShowVRG = 1 OR @ShowTG = 1 OR @ShowI4D = 1 OR @ShowSXG = 1 OR @ShowSBC = 1 OR @ShowPGS = 1 OR @ShowJK = 1 OR @ShowGDG = 1 OR @ShowSLT = 1 OR @ShowHB = 1 OR @ShowWM = 1 OR @ShowBGG = 1)
+			OR @ShowVRG = 1 OR @ShowTG = 1 OR @ShowI4D = 1 OR @ShowSXG = 1 OR @ShowSBC = 1 OR @ShowPGS = 1 OR @ShowJK = 1 OR @ShowGDG = 1 OR @ShowSLT = 1 OR @ShowHB = 1 OR @ShowWM = 1 OR @ShowBGG = 1 OR @ShowVGA = 1)
 		BEGIN
 			INSERT INTO #WinLoss (Winlostdate, CustID, Currency, Turnover, Winlost, LicenseeWL, playercomm, AmtDueToBA, CommBA, Company, BetCount)
 			SELECT

@@ -68,6 +68,7 @@ AS
 		- 20200728@Hogan: Integrate SA Gaming [RedmineID: #128493]
 		- 20201016@Hogan: Integrate Arcadia Gaming Bonus [RedmineID: #143648]
 		- 20201104@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369]
+		- 20210525@Hogan: Integrate Vgaming [RedmineID: #151583]
 
 	Param's Explanation:
 		@OrderItem:
@@ -225,7 +226,7 @@ BEGIN
 			ON g.recommend = a.CustId AND g.Currency = a.Currency 	
 		INNER JOIN #SportBettype s ON s.RefTable = 1 AND s.bettype = g.gameID 
 	WHERE statusid IN (0,1) 
-		AND g.productID <> 150
+		AND g.productID NOT IN (150, 173)
 		---AND EXISTS (SELECT 1 FROM #SportBettype s WHERE s.RefTable = 1 AND s.bettype = g.gameID)
 	GROUP BY g.custid, g.currency
 	 

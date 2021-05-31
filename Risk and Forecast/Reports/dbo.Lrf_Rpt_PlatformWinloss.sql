@@ -30,6 +30,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_PlatformWinloss]
 	@ShowHB		BIT = 0, -- Habanero
 	@ShowWM		BIT = 0, -- WM Live Casino
 	@ShowBGG	BIT = 0, -- Big Gaming
+	@ShowVGA	BIT = 0, -- Vgaming
 	@PlatformType	VARCHAR(100)	= 'All',
 	@MoveBetsDay	SMALLDATETIME,
 	@drawfilter		SMALLINT		= 1,
@@ -100,6 +101,7 @@ AS
 		- 20210428@Hogan: Integrate WM Live Casino [RedmineID: #140944]
 		- 20210518@Mark: Support multiple selection on Platform filter [Redmine: #153102]
 		- 20210519@Louis: Integrate Big Gaming product [RedmineID: #146773]
+		- 20210525@Hogan: Integrate Vgaming [RedmineID: #151583]
 
 	Param's Explanation:
 		+ @PlatformType: List of platform type (ex: 1,2,3,..)
@@ -449,6 +451,17 @@ BEGIN
 		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 3501 AND 3599)'
 	END
 
+
+	IF @ShowVGA = 1 -- VGA
+	BEGIN
+		SET @SportTypeSQL = @SportTypeSQL + ', (171, ''VGA'')'
+
+		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 3801 AND 3899 THEN ''VGA''
+				'
+
+		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 3801 AND 3899)'
+	END
+	
 	SET @SportTypeSQL = STUFF(@SportTypeSQL, 1, 1, '')
 
 	SET @BetTypeWhereSQL = STUFF(@BetTypeWhereSQL, 1, 3, '')
@@ -599,7 +612,8 @@ BEGIN
 		END
 
 		IF (@ShowNG=1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @ShowVB = 1 OR @ShowAB =1  OR @ShowFW =1 OR @ShowVS2 = 1 OR @ShowLT = 1 OR @ShowSAG = 1 OR @ShowPP = 1 OR @ShowCC = 1 OR @ShowSG = 1 
-			OR @ShowVRG = 1 OR @ShowTG = 1 OR @ShowI4D = 1 OR @ShowSXG = 1 OR @ShowSBC = 1 OR @ShowPGS = 1 OR @ShowJK = 1 OR @ShowGDG = 1 OR @ShowSLT = 1 OR @ShowHB = 1 OR @ShowWM = 1 OR @ShowBGG = 1)
+			OR @ShowVRG = 1 OR @ShowTG = 1 OR @ShowI4D = 1 OR @ShowSXG = 1 OR @ShowSBC = 1 OR @ShowPGS = 1 OR @ShowJK = 1 OR @ShowGDG = 1 OR @ShowSLT = 1 OR @ShowHB = 1 OR @ShowWM = 1 OR @ShowBGG = 1
+			OR @ShowVGA = 1)
 		BEGIN
 			INSERT INTO #WinLoss (Winlostdate, Currency, ProductPrefix, PlatformType, Turnover, Winlost, LicenseeWL, playercomm, BetCount)
 			SELECT 
@@ -631,6 +645,7 @@ BEGIN
 				AND b.winlostdate BETWEEN @TempFromDate AND @TDate
 				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 				AND (b.bettype NOT BETWEEN 1611 AND 1697 OR b.matchid <> 150)
+				AND (b.bettype NOT BETWEEN 3801 AND 3899 OR b.matchid <> 173)
 			GROUP BY
 				b.winlostdate,
 				tma.currency,
@@ -680,7 +695,7 @@ BEGIN
 			AND (b.bettype < 901 OR b.bettype > 904)
 			AND (b.bettype < 911 OR b.bettype > 914)
 			AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
-			AND b.sporttype <> 150
+			AND b.sporttype NOT IN (150, 173)
 		GROUP BY
 			b.currency,
 			b.sporttype,
@@ -712,7 +727,7 @@ BEGIN
 		END
 
 		IF (@showSB = 1 OR @ShowNG = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW =1 OR @ShowVS2 = 1 OR @ShowLT = 1 OR @ShowSAG = 1 OR @ShowPP = 1 OR @ShowCC = 1 OR @ShowSG = 1 
-			OR @ShowVRG = 1 OR @ShowTG = 1 OR @ShowI4D = 1 OR @ShowSXG = 1 OR @ShowSBC = 1 OR @ShowPGS = 1 OR @ShowJK = 1 OR @ShowGDG = 1 OR @ShowSLT = 1 OR @ShowHB = 1 OR @ShowWM = 1 OR @ShowBGG = 1)
+			OR @ShowVRG = 1 OR @ShowTG = 1 OR @ShowI4D = 1 OR @ShowSXG = 1 OR @ShowSBC = 1 OR @ShowPGS = 1 OR @ShowJK = 1 OR @ShowGDG = 1 OR @ShowSLT = 1 OR @ShowHB = 1 OR @ShowWM = 1 OR @ShowBGG = 1 OR @ShowVGA = 1)
 		BEGIN
 			INSERT INTO #WinLoss (Winlostdate, Currency, ProductPrefix, PlatformType, Turnover, Winlost, LicenseeWL, playercomm, BetCount)
 			SELECT 
