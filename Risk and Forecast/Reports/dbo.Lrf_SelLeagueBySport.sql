@@ -23,6 +23,7 @@ AS
 		- 20200929@Kos: Return addtional column LeagueGroupId [Redmine: #141454]
 					- Add new param @MoveBetsDay SMALLDATETIME
 		- 20201019@Kos: Change to use new table to check performance [RedmineID: #143310]
+		- 20210521@Mark: Support Saba Soccer PinGoal [RedmineID: #155335]
 */
 
 BEGIN
@@ -109,7 +110,10 @@ BEGIN
 	FROM #tblLeagueid AS m
 		INNER JOIN bodb02.dbo.League AS l WITH (NOLOCK) ON m.LeagueId = l.leagueid
 	WHERE (@IsIncludeTestLeague = 1 OR l.isTest = 0)
-		AND (@SportId = 0 OR l.sporttype = @SportId)
+		AND (@SportId = 0 
+		OR (l.sporttype = @SportId AND l.sporttype <> 1)
+		OR (@SportId = -1 AND l.sporttype = 1 AND l.LeagueGroupID IN (113))
+		OR (@SportId = 1 AND l.sporttype = 1 AND l.LeagueGroupID NOT IN (113)))
 		AND l.sporttype < 100
 		AND l.leagueid > 0
 	GROUP BY l.leagueid,
