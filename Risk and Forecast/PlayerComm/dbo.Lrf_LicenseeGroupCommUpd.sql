@@ -82,7 +82,8 @@ AS
 		- 20200701@Helen: Remove Allbet - [Redmine: #131774]  
 		- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238] 
 		- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012]   
-		
+		- 20210604@Eden: Update Comm Group - Param @IsUpdateSAGaming is wrong [Redmine: #156459] 
+
 	Param's Explanation:
 
 */
@@ -306,7 +307,7 @@ BEGIN
 			@IsUpdateVirtualGames  = CASE WHEN @IsUpdateVirtualGames = 1 AND @VirtualGamesComm_old <> @VirtualGamesComm  THEN 1 ELSE 0 END,
 			@IsUpdateArcadiaGaming  = CASE WHEN @IsUpdateArcadiaGaming = 1 AND @ArcadiaGamingComm_old <> @ArcadiaGamingComm  THEN 1 ELSE 0 END,	
 			@IsUpdateSabaclub  = CASE WHEN @IsUpdateSabaclub = 1 AND @SabaclubComm_old <> @SabaclubComm  THEN 1 ELSE 0 END,	
-			@IsUpdateSAGaming  = CASE WHEN @IsUpdateSAGaming = 1 AND @PGSoftComm_old <> @SAGamingComm  THEN 1 ELSE 0 END,	
+			@IsUpdateSAGaming  = CASE WHEN @IsUpdateSAGaming = 1 AND @SAGamingComm_old <> @SAGamingComm  THEN 1 ELSE 0 END,	
 			@IsUpdatePGSoft  = CASE WHEN @IsUpdatePGSoft = 1 AND @PGSoftComm_old <> @PGSoftComm  THEN 1 ELSE 0 END,
 			@IsUpdateAllbet  = CASE WHEN @IsUpdateAllbet = 1 AND @AllbetComm_Old <> @AllbetComm  THEN 1 ELSE 0 END
 		
