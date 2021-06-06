@@ -1,14 +1,11 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_MatchWinLoss]
+	@AgentList		VARCHAR(MAX),
 	@Date			SMALLDATETIME,
 	@MoveBetsDay	SMALLDATETIME,
-	@showSB			BIT = 0,
-	@showNG			BIT = 0,
-	@showBA			BIT = 0,
-	@ShowVS			BIT = 0,
-	@showVS2		BIT = 0,
-	@AgentList		VARCHAR(MAX),
+	@ProductList	VARCHAR(500),
+	@ShowBA			BIT				= 0,
 	@BaseCurrency	VARCHAR(3) = ''
 AS
 
@@ -47,676 +44,311 @@ AS
 		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
 		- 20200623@Kos: Integrate archive process for table VSRaceInfo [Redmine: #136285]
 		- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]
-		- 20210119@Hogan: Integrate Four Guardians [RedmineID: #148100]
-		- 20210304@Hogan: Integrate Cricket AIO [RedmineID: #150386]
+		- 20210115@Kos: Enhance to remove hard code [RedmineID: #148808]
+					- Remove input params @showSB, @showNG, @ShowVS, @showVS2
+					- Add input param @ProductList VARCHAR(500)
+					- Rename output column from MemberWinLost to WinLost
 
 	Param's Explanation:
-		 + @AgentList: xml structure
-				<ROOT>
-					<Agent AgentId="12345" Currency="3"/>
-					<Agent AgentId="12345" Currency="5"/>
-				</ROOT> 
-*/
-
-/* demo script
-exec Lrf_Rpt_MatchWinLoss @LicenseeID=3,@LicenseeType=default,@CurrencyName=default,@Date='May 19 2012 12:00:00:000AM',@MoveBetsDay='May 21 2012 12:00:00:000AM',@showSB=1,@showNG=0,@showBA=0  
+		+ @AgentList: XML structure
+			<ROOT>
+				<Agent AgentId="12345" Currency="3"/>
+				<Agent AgentId="12345" Currency="5"/>
+			</ROOT> 
 */
 
 BEGIN
 	SET NOCOUNT ON
 
-	DECLARE @ExchangeDaily TABLE(ExchangeId INT, Rate FLOAT)
-
-	DECLARE @bettype		TABLE (bettype INT PRIMARY KEY, ProductCode VARCHAR(10))
-	DECLARE @ProductList	VARCHAR(500)
-
-	DECLARE @_Date AS DATETIME
-	SET @_Date = @Date
-
-	DECLARE @IsTest BIT = 0
-	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
-
-	DECLARE @ExcludedBetType TABLE (ProductCode VARCHAR (10), BetType INT)
-	-- Insert Excluded BetType
-	INSERT INTO @ExcludedBetType (ProductCode, BetType)
-	SELECT ProductCode, BetType FROM Lrf_f_SelExcludedBetType()
-				
-	DECLARE @TempAg AS TABLE ( CustId INT, Currency INT )
+	DECLARE @TempAg AS TABLE (CustId INT, Currency INT)
 	DECLARE @DocHandler INT
 
 	BEGIN TRY
-		EXEC sp_xml_preparedocument @DocHandler OUTPUT
-				,@AgentList
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT, @AgentList
+
 		INSERT INTO @TempAg (custID, currency)
 		SELECT AgentId, Currency
-		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [INT], Currency INT) AS Data
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId INT, Currency INT) AS Data
 
 		EXEC sp_xml_removedocument @DocHandler
 	END TRY
 
 	BEGIN CATCH
-		SELECT ErrCode = 100
-				,ErrMsg = N'Parameter invalid.'
+		SELECT ErrCode = 100,
+			ErrMsg = N'Parameter invalid.'
 
 		RETURN
 	END CATCH;
 
-	DECLARE @AgMatchWLDetails TABLE
-	(
-		Winlostdate		SMALLDATETIME,
-		KickoffTime		DATETIME,
-		Currency		INT,
-		matchid			INT,
-		homeid			INT,
-		awayid			INT,
-		bettype			SMALLINT,
+	DECLARE @ShowSB	BIT = 0
+
+	IF ',' + @ProductList + ',' LIKE '%,SB,%'
+		SET @ShowSB = 1
+
+	IF @ShowBA = 1
+		SET @ProductList = @ProductList + ',SB'
+
+	DECLARE @BetType TABLE (BetType INT PRIMARY KEY, ProductCode VARCHAR(10), EventType TINYINT)
+
+	DECLARE @IsTest BIT = 0
+
+	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
+
+	INSERT INTO @BetType (BetType, ProductCode, EventType)
+	SELECT DISTINCT BetType, ProductPrefix, EventType
+	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
+	WHERE EventType IN (1, 3)
+		AND BetType NOT IN (SELECT BetType FROM dbo.Lrf_f_SelExcludedBetType())
+
+	DECLARE @Data TABLE (
+		MatchId			INT,
+		MatchCode		NVARCHAR(50),
+		HomeId			INT,
+		AwayId			INT,
+		KickOffTime		DATETIME,
+		IsNeutral		BIT,
+		LeagueId		INT,
 		ProductName		VARCHAR(4),
-		leagueid		INT,
-		turnover		MONEY,
-		MemberWinLost	MONEY,
-		LicenseeWL		MONEY, --Sportbook and NumberGame
-		AmtDueToBA		MONEY,
-		CommBA			MONEY,
+		EventType		TINYINT,
+		SportType		SMALLINT,
+		Currency		INT,
+		BetCount		INT,
+		Turnover		MONEY,
+		WinLost			MONEY,
 		PlayerComm		MONEY,
-		race			NVARCHAR(20),
-		matchcode		NVARCHAR(50),
-		isNeutral		BIT,
-		sporttype		SMALLINT,
-		showtime		NVARCHAR(50),
-		betcount		INT
+		LicenseeWL		MONEY,
+		CommBA			MONEY,
+		AmtDueToBA		MONEY
 	)
 
-	CREATE TABLE #TempBetList (
-		Winlostdate		DATETIME,
-		KickoffTime		DATETIME,
-		currency		INT,
-		Bettype			INT,
-		Stake			MONEY,
-		Winlost			MONEY,
-		awinlost		MONEY,
-		comm			MONEY,
-		oddsid			INT,
-		playercomm		MONEY,
-		MatchID			INT,
-		Liveawayscore	SMALLINT,
-		tpositiontaking	SMALLMONEY,
-		betcount		INT
-	)
+	DECLARE @_Date AS SMALLDATETIME
 
-	IF @ShowNG = 1
-	BEGIN
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'NG', 'NG')
-	END
+	SET @_Date = @Date
 
-	IF @ShowVS = 1
-	BEGIN
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS', 'VS') 
-	END
-
-	IF @ShowVS2 = 1 -- Betradar Virtual Sports
-	BEGIN
-		SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS2', 'VS2')
-	END
-
-	IF LEN(ISNULL(@ProductList, '')) > 0 
-	BEGIN
-		-- Insert Bettype
-		INSERT INTO @bettype ( bettype, ProductCode )
-		SELECT DISTINCT BetType, ProductPrefix
-		FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
-	END
-
+	-- bettrans
 	IF @_Date > @MoveBetsDay
 	BEGIN
-		IF @ShowBA = 1
-		BEGIN
-			INSERT INTO #TempBetList
-			SELECT
-				b.Winlostdate,
-				NULL,
-				b.currency,
-				b.bettype,
-				SUM(b.stake) AS Stake,
-				SUM(b.winlost - b.actual_stake) AS Winlost,
-				0 AS awinlost,
-				SUM(b.comm),
-				b.oddsid,
-				SUM(b.playercomm) AS PlayerComm,
-				b.matchid,
-				0 AS Liveawayscore,
-				0 AS tpositiontaking,
-				COUNT(1) betcount
-			FROM dbo.bettrans b WITH(NOLOCK)
-				INNER JOIN @TempAg a ON b.recommend = a.CustId AND b.currency = a.Currency
-				INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON b.recommend = BA.recommend AND b.transid = BA.transid
-			WHERE b.winlostdate = @_Date
-				AND b.statusID IN (111, 112, 113)
-				AND (b.bettype < 901 OR b.bettype > 904)
-				AND (b.bettype < 911 OR b.bettype > 914)
-				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
-			GROUP BY
-				b.Winlostdate,
-				b.currency,
-				b.oddsid,
-				b.bettype,
-				b.matchid
-
-			INSERT INTO @AgMatchWLDetails
-			SELECT
-				b.Winlostdate,
-				NULL,
-				b.currency,
-				m.matchid,
-				m.homeid,
-				m.awayid,
-				b.bettype,
-				'BA', --b.bettype,
-				m.leagueid,
-				SUM(b.Stake),
-				SUM(b.Winlost),
-				0 AS LicenseeWL,
-				-SUM(b.Winlost +  b.awinlost + b.comm) AS AmtDueToBA,
-				SUM(b.comm) AS CommBA,
-				SUM(b.playercomm) AS PlayerComm,
-				'',
-				m.matchcode,
-				ISNULL(m.IsNeutral, CONVERT(BIT, 0)) AS IsNeutral,
-				m.sporttype,
-				m.showtime,
-				SUM(b.betcount) betcount
-			FROM #TempBetList b
-				INNER JOIN match m WITH ( NOLOCK ) ON m.matchid = b.matchid
-			GROUP BY
-				b.Winlostdate,
-				b.currency,
-				m.matchid,
-				m.homeid,
-				m.awayid,
-				b.bettype,
-				m.leagueid,
-				m.matchcode,
-				m.isNeutral,
-				m.sporttype,
-				m.showtime
-		END
-
-		--Get general data
-		TRUNCATE TABLE #TempBetList
-
-		INSERT INTO #TempBetList
+		INSERT INTO @Data (
+			MatchId,
+			ProductName,
+			EventType,
+			Currency,
+			BetCount,
+			Turnover,
+			WinLost,
+			PlayerComm,
+			LicenseeWL,
+			CommBA,
+			AmtDueToBA )
 		SELECT
-			b.Winlostdate,
-			NULL,
+			CASE bt.EventType
+				WHEN 3 THEN b.oddsid
+				ELSE b.matchid
+			END AS MatchId,
+			CASE
+				WHEN bt.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 'BA'
+				ELSE bt.ProductCode
+			END AS ProductName,
+			bt.EventType,
 			b.currency,
-			b.bettype,
-			SUM(b.stake) AS Stake,
-			SUM(b.winlost - b.actual_stake) AS Winlost,
-			SUM(b.awinlost) AS awinlost,
-			SUM(b.comm) AS comm,
-			b.oddsid,
-			SUM(b.playercomm) AS playercomm,
-			b.matchid,
-			b.Liveawayscore,
-			b.tpositiontaking,
-			COUNT(1) betcount
-		FROM dbo.bettrans AS b WITH (NOLOCK )
+			COUNT(1) AS BetCount,
+			SUM(b.stake) AS Turnover,
+			SUM(b.winlost - b.actual_stake) AS WinLost,
+			SUM(b.playercomm) AS PlayerComm,
+			-SUM(CASE
+					WHEN bt.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 0
+					ELSE b.winlost - b.actual_stake
+				END) AS LicenseeWL,
+			SUM(CASE
+					WHEN bt.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN b.comm
+					ELSE 0
+				END) AS CommBA,
+			SUM(CASE
+					WHEN bt.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN b.Winlost + b.awinlost + b.comm
+					ELSE 0
+				END) AS AmountDueToBA
+		FROM dbo.bettrans AS b WITH (NOLOCK)
 			INNER JOIN @TempAg AS a ON b.recommend = a.CustId AND b.currency = a.Currency
+			INNER JOIN @BetType AS bt ON bt.BetType = b.bettype
 		WHERE b.winlostdate = @_Date
 			AND b.statusID IN (111, 112, 113)
-			AND (b.bettype < 901 OR b.bettype > 904)
-			AND (b.bettype < 911 OR b.bettype > 914)
-			AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
-			AND b.matchid > 0
+			AND CASE
+					WHEN @ShowBA = 0 AND bt.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 0
+					WHEN @ShowSB = 0 AND bt.ProductCode = 'SB' AND b.tpositiontaking <> 0 THEN 0
+					ELSE 1
+				END <> 0
 		GROUP BY
-			b.Winlostdate,
-			b.currency,
-			b.bettype,
-			b.oddsid,
-			b.matchid,
-			b.liveawayscore,
-			b.tpositiontaking
+			CASE bt.EventType
+				WHEN 3 THEN b.oddsid
+				ELSE b.matchid
+			END,
+			CASE
+				WHEN bt.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 'BA'
+				ELSE bt.ProductCode
+			END,
+			bt.EventType,
+			b.currency
 
-		IF @showSB = 1
-		BEGIN
-			--exclude BA tickets
-			INSERT INTO @AgMatchWLDetails
-			SELECT
-				b.Winlostdate,
-				NULL,
-				b.currency,
-				m.matchid,
-				m.homeid,
-				m.awayid,
-				b.bettype,
-				'SB', --b.bettype,
-				m.leagueid,
-				SUM(b.Stake),
-				SUM(b.Winlost),
-				-SUM(b.Winlost) AS LicenseeWL,
-				0 AS AmountDueToBA,
-				0 AS CommBA,
-				SUM(b.playercomm) AS PlayerComm,
-				'',
-				m.matchcode,
-				ISNULL(m.isNeutral, CONVERT(BIT, 0)) AS IsNeutral,
-				m.sporttype,
-				'' AS ShowTime,
-				SUM(b.betcount) AS betcount
-			FROM #TempBetList b
-				INNER JOIN dbo.match AS m WITH (NOLOCK) ON m.matchid = b.matchid  
-			WHERE (b.bettype < 31 
-					OR (b.bettype BETWEEN 121 AND 999)
-					OR (b.Bettype BETWEEN 1301 AND 1399) -- new tennis's bettypes
-					OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0
-					OR (b.Bettype BETWEEN 9400 AND 9699) -- Cricket AIO
-					OR b.Bettype = 38					 -- Single Match Parlay
-				)
-				AND b.tpositiontaking <> 0
-			GROUP BY
-				b.Winlostdate,
-				b.currency,
-				m.matchid,
-				m.homeid,
-				m.awayid,
-				b.bettype,
-				m.leagueid,
-				m.matchcode,
-				m.isNeutral,
-				m.sporttype
-		END
+		UPDATE b
+		SET
+			b.HomeId = m.homeid,
+			b.AwayId = m.awayid,
+			b.LeagueId = m.leagueid,
+			b.MatchCode = m.matchcode,
+			b.SportType = m.sporttype,
+			b.IsNeutral = ISNULL(m.IsNeutral, CONVERT(BIT, 0))
+		FROM @Data AS b
+			INNER JOIN dbo.match AS m WITH (NOLOCK) ON m.matchid = b.MatchId
+		WHERE b.EventType = 1
 
-		IF (@showNG = 1 OR @ShowVS = 1 OR @showVS2 = 1)
-		BEGIN
-			--exclude BA tickets
-			INSERT INTO @AgMatchWLDetails
-			SELECT
-				b.Winlostdate,
-				NULL,
-				b.currency,
-				m.matchid,
-				m.homeid,
-				m.awayid,
-				b.bettype,
-				bt.ProductCode,
-				m.leagueid,
-				SUM(b.Stake),
-				SUM(b.Winlost),
-				-SUM(b.winlost) AS LicenseeWL,
-				0 AS AmountDueToBA,
-				0 AS CommBA,
-				SUM(b.playercomm) AS PlayerComm,
-				'',
-				m.matchcode,
-				ISNULL(m.IsNeutral, CONVERT(BIT, 0)) AS IsNeutral,
-				m.sporttype,
-				'' AS ShowTime,
-				SUM(b.betcount) betcount
-			FROM #TempBetList b
-				INNER JOIN dbo.match m WITH (NOLOCK) ON m.matchid = b.matchid 
-				INNER JOIN @bettype bt ON b.bettype = bt.bettype  
-			WHERE b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype())
-			GROUP BY
-				b.Winlostdate,
-				b.currency,
-				m.matchid,
-				m.homeid,
-				m.awayid,
-				b.bettype,
-				bt.ProductCode,
-				m.leagueid,
-				m.matchcode,
-				m.isNeutral,
-				m.sporttype
-
-			IF EXISTS (SELECT 1 FROM #TempBetList WHERE bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()))
-			BEGIN 
-				INSERT INTO @AgMatchWLDetails
-				SELECT
-					b.Winlostdate,
-					r.EventTime,
-					b.currency,
-					o.EventID matchid,
-					o.RacerID AS homeID,
-					0 AS awayid,
-					b.bettype,
-					bt.ProductCode,
-					r.leagueid,
-					SUM(b.stake),
-					SUM(b.winlost),
-					-SUM(b.winlost) AS LicenseeWL,
-					0 AS AmountDueToBA,
-					0 AS CommBA,
-					SUM(b.playercomm) AS PlayerComm,
-					b.oddsid AS race,
-					CONVERT(VARCHAR(50),o.RacerNum) AS matchcode,
-					ISNULL(0, CONVERT(BIT, 0)) AS IsNeutral,
-					r.sporttype,
-					CONVERT(VARCHAR(20),r.EventTime) AS ShowTime,
-					SUM(b.betcount) betcount
-				FROM #TempBetList b
-					INNER JOIN dbo.VSOutright o WITH (NOLOCK) ON b.oddsid = o.Orid
-					INNER JOIN dbo.VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
-					INNER JOIN @bettype bt ON b.bettype = bt.bettype  
-				WHERE b.bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype())
-				GROUP BY
-					b.Winlostdate,
-					r.EventTime,
-					b.currency,
-					o.EventID,
-					o.RacerID,
-					b.oddsid,
-					b.bettype,
-					bt.ProductCode,
-					r.leagueid,
-					o.RacerNum,
-					r.sporttype
-			END
-		END
+		UPDATE b
+		SET
+			b.MatchId = o.EventID,
+			b.HomeId = 0,
+			b.AwayId = 0,
+			b.KickOffTime = r.EventTime,
+			b.LeagueId = r.LeagueID,
+			b.MatchCode = '',
+			b.SportType = r.SportType,
+			b.IsNeutral = 0
+		FROM @Data AS b
+			INNER JOIN dbo.VSOutright AS o WITH (NOLOCK) ON o.Orid = b.MatchId
+			INNER JOIN dbo.VSRaceInfo AS r WITH (NOLOCK) ON r.EventID = o.EventID
+		WHERE b.EventType = 3
 	END
 
+	-- bettrans14
 	IF @_Date <= @MoveBetsDay
 	BEGIN
-		IF @ShowBA = 1
-		BEGIN
-			TRUNCATE TABLE #TempBetList
-
-			INSERT INTO #TempBetList
-			SELECT
-				b.Winlostdate,
-				NULL,
-				b.currency,
-				b.bettype,
-				SUM(b.stake) AS Stake,
-				SUM(b.winlost - b.actual_stake) AS Winlost,
-				0 AS awinlost,
-				SUM(b.comm),
-				b.oddsid,
-				SUM(b.playercomm) AS PlayerComm,
-				b.matchid,
-				0 AS Liveawayscore,
-				0 AS tpositiontaking,
-				COUNT(1) betcount
-			FROM dbo.bettrans14 b WITH(NOLOCK)
-				INNER JOIN @TempAg AS a ON b.recommend = a.CustId AND b.currency = a.Currency
-			WHERE b.winlostdate = @_Date
-				AND b.statusID IN (111,112,113)
-				AND (b.bettype < 901 OR b.bettype > 904)
-				AND (b.bettype < 911 OR b.bettype > 914)
-				AND tpositiontaking = 0  
-				AND (b.bettype < 31
-					OR (b.Bettype BETWEEN 121 AND 999)
-					OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
-					OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0
-					OR (b.Bettype BETWEEN 9400 AND 9699) -- Cricket AIO
-					OR b.Bettype = 38					 -- Single Match Parlay
-				)
-				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
-			GROUP BY
-				b.Winlostdate,
-				b.currency,
-				b.oddsid,
-				b.bettype,
-				b.matchid
-
-			INSERT INTO @AgMatchWLDetails
-			SELECT
-				b.Winlostdate,
-				NULL,
-				b.currency,
-				m.matchid,
-				m.homeid,
-				m.awayid,
-				b.bettype,
-				'BA', --b.bettype,
-				m.leagueid,
-				SUM(b.Stake),
-				SUM(b.Winlost),
-				0 AS LicenseeWL,
-				-SUM(b.Winlost + b.awinlost + b.comm) AS AmtDueToBA,
-				SUM(b.comm) AS CommBA,
-				SUM(b.playerComm) AS PlayerComm,
-				'' AS race,
-				m.matchcode,
-				ISNULL(m.isNeutral, CONVERT(BIT, 0)) AS IsNeutral,
-				m.sporttype,
-				'' AS showtime,
-				SUM(b.betcount) betcount
-			FROM #TempBetList b
-				INNER JOIN dbo.match14 m WITH ( NOLOCK ) ON m.matchid = b.matchid  
-			GROUP BY
-				b.Winlostdate,
-				b.currency,
-				m.matchid,
-				m.homeid,
-				m.awayid,
-				m.leagueid,
-				m.matchcode,
-				m.isNeutral,
-				b.bettype,
-				m.sporttype
-		END
-
-		--Get general data
-		TRUNCATE TABLE #TempBetList
-
-		INSERT INTO #TempBetList
+		INSERT INTO @Data (
+			MatchId,
+			ProductName,
+			EventType,
+			Currency,
+			BetCount,
+			Turnover,
+			WinLost,
+			PlayerComm,
+			LicenseeWL,
+			CommBA,
+			AmtDueToBA )
 		SELECT
-			b.Winlostdate,
-			NULL,
+			CASE bt.EventType
+				WHEN 3 THEN b.oddsid
+				ELSE b.matchid
+			END AS MatchId,
+			CASE
+				WHEN bt.ProductCode = 'SB' AND b.isBA = 1 THEN 'BA'
+				ELSE bt.ProductCode
+			END AS ProductName,
+			bt.EventType,
 			b.currency,
-			b.bettype,
-			SUM(b.stake) AS Stake,
-			SUM(b.winlost - b.actual_stake) AS Winlost,
-			SUM(b.awinlost) AS awinlost,
-			SUM(b.comm) AS comm,
-			b.oddsid,
-			SUM(b.playercomm) AS playercomm,
-			b.matchid,
-			b.Liveawayscore,
-			b.tpositiontaking,
-			COUNT(1) betcount
-		FROM dbo.bettrans14 b WITH(NOLOCK)
-			INNER JOIN @TempAg  a ON b.recommend = a.CustId AND b.currency = a.Currency
+			COUNT(1) AS BetCount,
+			SUM(b.stake) AS Turnover,
+			SUM(b.winlost) AS WinLost,
+			SUM(b.playercomm) AS PlayerComm,
+			-SUM(CASE
+					WHEN bt.ProductCode = 'SB' AND b.isBA = 1 THEN 0
+					ELSE b.winlost
+				END) AS LicenseeWL,
+			SUM(CASE
+					WHEN bt.ProductCode = 'SB' AND b.isBA = 1 THEN b.comm
+					ELSE 0
+				END) AS CommBA,
+			SUM(CASE
+					WHEN bt.ProductCode = 'SB' AND b.isBA = 1 THEN b.Winlost + b.awinlost + b.comm
+					ELSE 0
+				END) AS AmountDueToBA
+		FROM bodb_licenseereport.dbo.rptWinlostbyLeague AS b WITH (NOLOCK)
+			INNER JOIN @TempAg AS a ON a.CustId = b.recommend AND a.Currency = b.currency
+			INNER JOIN @BetType AS bt ON bt.BetType = b.bettype
 		WHERE b.winlostdate = @_Date
-			AND b.statusID IN (111, 112, 113)
-			AND (b.bettype < 901 OR b.bettype > 904)
-			AND (b.bettype < 911 OR b.bettype > 914)
-			AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
-			AND b.matchid > 0
+			AND b.statusID <> 101
+			AND CASE
+					WHEN @ShowBA = 0 AND bt.ProductCode = 'SB' AND b.isBA = 1 THEN 0
+					WHEN @ShowSB = 0 AND bt.ProductCode = 'SB' AND b.isBA = 0 THEN 0
+					ELSE 1
+				END <> 0
 		GROUP BY
-			b.Winlostdate,
-			b.currency,
-			b.bettype,
-			b.oddsid,
-			b.matchid,
-			b.Liveawayscore,
-			b.tpositiontaking
+			CASE bt.EventType
+				WHEN 3 THEN b.oddsid
+				ELSE b.matchid
+			END,
+			CASE
+				WHEN bt.ProductCode = 'SB' AND b.isBA = 1 THEN 'BA'
+				ELSE bt.ProductCode
+			END,
+			bt.EventType,
+			b.currency
 
-		IF @ShowSB = 1
-		BEGIN
-			INSERT INTO @AgMatchWLDetails
-			SELECT
-				b.Winlostdate,
-				NULL,
-				b.currency,
-				m.matchid,
-				m.homeid,
-				m.awayid,
-				b.bettype,
-				'SB', --b.bettype,  
-				m.leagueid,
-				SUM(b.Stake),
-				SUM(b.Winlost),
-				-SUM(b.winlost) AS LicenseeWL,
-				0 AS AmountDueToBA,
-				0 AS CommBA,
-				SUM(b.playercomm)  AS playercomm,
-				'' AS race,
-				m.matchcode,
-				ISNULL(m.isNeutral, CONVERT(BIT, 0)) AS IsNeutral,
-				m.sporttype,
-				'' AS showtime ,
-				SUM(b.betcount) betcount
-			FROM #TempBetList b
-				INNER JOIN dbo.match14 m WITH ( NOLOCK ) ON m.matchid = b.matchid  
-			WHERE (b.bettype < 31 
-					OR (b.bettype BETWEEN 121 AND 999)
-					OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
-					OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0
-					OR (b.Bettype BETWEEN 9400 AND 9699) -- Cricket AIO
-					OR b.Bettype = 38					 -- Single Match Parlay
-				)
-				AND b.tpositiontaking <> 0  
-			GROUP BY
-				b.Winlostdate,
-				b.currency,
-				m.matchid,
-				m.homeid,
-				m.awayid,
-				b.bettype,
-				m.leagueid,
-				m.matchcode,
-				m.isNeutral,
-				b.bettype,
-				m.sporttype
-		END  
-  
-		IF (@showNG = 1 OR @ShowVS = 1 OR @showVS2 = 1)
-		BEGIN  
-			INSERT INTO @AgMatchWLDetails
-			SELECT
-				b.Winlostdate,
-				NULL,
-				b.currency,
-				m.matchid,
-				m.homeid,
-				m.awayid,
-				b.bettype,
-				bt.ProductCode,
-				m.leagueid,
-				SUM(stake),
-				SUM(winlost),
-				-SUM(b.winlost) AS LicenseeWL,
-				0 AS AmountDueToBA,
-				0 AS CommBA,
-				SUM(b.playercomm) AS playercomm,
-				'' AS race,
-				m.matchcode,
-				ISNULL(m.isNeutral, CONVERT(BIT, 0)) AS IsNeutral,
-				m.sporttype,
-				'' AS ShowTime ,
-				SUM(b.betcount) betcount
-			FROM #TempBetList b
-				INNER JOIN dbo.match14 m WITH ( NOLOCK ) ON m.matchid = b.matchid 
-				INNER JOIN @bettype bt ON b.bettype = bt.bettype
-			WHERE b.bettype NOT IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype())
-			GROUP BY
-				b.Winlostdate,
-				b.currency,
-				m.matchid,
-				m.homeid,
-				m.awayid,
-				b.bettype,
-				m.leagueid,
-				m.matchcode,
-				m.isNeutral,
-				b.bettype,
-				bt.ProductCode,
-				m.sporttype
+		UPDATE b
+		SET
+			b.HomeId = m.homeid,
+			b.AwayId = m.awayid,
+			b.LeagueId = m.leagueid,
+			b.MatchCode = m.matchcode,
+			b.SportType = m.sporttype,
+			b.IsNeutral = ISNULL(m.IsNeutral, CONVERT(BIT, 0))
+		FROM @Data AS b
+			INNER JOIN dbo.match14 AS m WITH (NOLOCK) ON m.matchid = b.MatchId
+		WHERE b.EventType = 1
 
-			IF EXISTS (SELECT 1 FROM #TempBetList WHERE bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype()))
-			BEGIN 
-				INSERT INTO @AgMatchWLDetails
-				SELECT
-					b.Winlostdate,
-					r.EventTime,
-					b.currency,
-					o.EventID matchid,
-					o.RacerID AS homeID,
-					0 AS awayid,
-					b.bettype,
-					bt.ProductCode,
-					r.leagueid,
-					SUM(b.stake),
-					SUM(b.winlost),
-					-SUM(b.winlost) AS LicenseeWL,
-					0 AS AmountDueToBA,
-					0 AS CommBA,
-					SUM(b.playercomm) AS PlayerComm,
-					b.oddsid AS race,
-					CONVERT(VARCHAR(50),o.RacerNum) AS matchcode,
-					ISNULL(0, CONVERT(BIT, 0)) AS IsNeutral,
-					r.sporttype,
-					CONVERT(VARCHAR(20),r.EventTime) AS ShowTime,
-					SUM(b.betcount) betcount
-				FROM #TempBetList b
-					INNER JOIN dbo.VSOutright14 o WITH (NOLOCK) ON b.oddsid = o.Orid
-					INNER JOIN dbo.VSRaceInfo14 r WITH (NOLOCK) ON r.EventID = o.EventID
-					INNER JOIN @bettype bt ON b.bettype = bt.bettype  
-				WHERE b.bettype IN (SELECT bettype FROM dbo.f_VSHorseRacingByBettype())
-				GROUP BY
-					b.Winlostdate,
-					o.EventID,
-					b.currency,
-					b.oddsid,
-					o.RacerID,
-					b.bettype,
-					bt.ProductCode,
-					r.leagueid,
-					o.RacerNum,
-					r.sporttype,
-					r.EventTime
-			END
-		END
+		UPDATE b
+		SET
+			b.MatchId = o.EventID,
+			b.HomeId = 0,
+			b.AwayId = 0,
+			b.KickOffTime = r.EventTime,
+			b.LeagueId = r.LeagueID,
+			b.MatchCode = '',
+			b.SportType = r.SportType,
+			b.IsNeutral = 0
+		FROM @Data AS b
+			INNER JOIN dbo.VSOutright14 AS o WITH (NOLOCK) ON o.Orid = b.MatchId
+			INNER JOIN dbo.VSRaceInfo AS r WITH (NOLOCK) ON r.EventID = o.EventID
+		WHERE b.EventType = 3
 	END
+
+	DECLARE @ExchangeDaily TABLE(ExchangeId INT, Rate FLOAT)
 
 	INSERT INTO @ExchangeDaily(ExchangeId, Rate)
 	SELECT ExchangeId, Rate
-	FROM dbo.Lrf_f_GetExchangeRate(@_Date,@_Date, @BaseCurrency, '')
+	FROM dbo.Lrf_f_GetExchangeRate(@_Date, @_Date, @BaseCurrency, '')
 
 	-- Result
 	SELECT
-		matchid,
-		SUM(b.betcount) betcount,
-		CASE WHEN b.sporttype IN (181,182,183,184,185) THEN 0 ELSE homeid END homeID,
-		CASE WHEN b.sporttype IN (181,182,183,184,185) THEN 0 ELSE awayid END awayid,
-		CASE WHEN ISNULL(b.KickoffTime,0) = 0 THEN 0 ELSE b.KickoffTime END KickoffTime,
-		0 AS bettype,
-		ProductName, --bettype,
-		leagueid,  
-		CAST(SUM(b.turnover			* e.Rate) AS MONEY) AS turnover,
-		CAST(SUM(b.MemberWinLost	* e.Rate) AS MONEY) AS MemberWinLost,
-		CAST(SUM(b.LicenseeWL		* e.Rate) AS MONEY) AS LicenseeWL,
-		CAST(SUM(b.CommBA			* e.Rate) AS MONEY) AS CommBA,
-		CAST(SUM(b.PlayerComm		* e.Rate) AS MONEY) AS PlayerComm,
-		CAST(SUM((b.AmtDueToBA)		* e.Rate) AS MONEY) AS AmtDuetoBA,
-		CASE WHEN b.sporttype IN (181,182,183,184,185) THEN '' ELSE race END race,
-		CASE WHEN b.sporttype IN (181,182,183,184,185) THEN '' ELSE matchcode END matchcode,
-		b.isNeutral,
-		b.sporttype,
-		'' AS ShowTime
-	FROM @AgMatchWLDetails b
-		INNER JOIN @ExchangeDaily e ON b.currency = e.ExchangeId  
+		b.MatchId,
+		ISNULL(b.MatchCode, '') AS MatchCode,
+		b.HomeId,
+		b.AwayId,
+		ISNULL(b.KickOffTime, 0) AS KickOffTime,
+		b.IsNeutral,
+		b.LeagueId,
+		b.ProductName,
+		b.SportType,
+		SUM(b.BetCount) AS BetCount,
+		CAST(SUM(b.Turnover		* e.Rate) AS MONEY) AS Turnover,
+		CAST(SUM(b.WinLost		* e.Rate) AS MONEY) AS WinLost,
+		CAST(SUM(b.LicenseeWL	* e.Rate) AS MONEY) AS LicenseeWL,
+		CAST(SUM(b.CommBA		* e.Rate) AS MONEY) AS CommBA,
+		CAST(SUM(b.PlayerComm	* e.Rate) AS MONEY) AS PlayerComm,
+		CAST(SUM((b.AmtDueToBA)	* e.Rate) AS MONEY) AS AmtDuetoBA
+	FROM @Data AS b
+		INNER JOIN @ExchangeDaily AS e ON e.ExchangeId = b.Currency
 	GROUP BY
-		b.matchid,
-		CASE WHEN b.sporttype IN (181,182,183,184,185) THEN 0 ELSE homeid END,
-		CASE WHEN b.sporttype IN (181,182,183,184,185) THEN 0 ELSE awayid END,
-		CASE WHEN ISNULL(b.KickoffTime,0) = 0 THEN 0 ELSE b.KickoffTime END,
-		b.ProductName, --bettype,  
-		CASE WHEN b.sporttype IN (181,182,183,184,185) THEN '' ELSE matchcode END,
-		b.leagueid,
-		b.isNeutral,
-		CASE WHEN b.sporttype IN (181,182,183,184,185) THEN '' ELSE race END,
-		b.sporttype
-	ORDER BY CASE ProductName 
+		b.MatchId,
+		ISNULL(b.MatchCode, ''),
+		b.HomeId,
+		b.AwayId,
+		ISNULL(b.KickOffTime, 0),
+		b.IsNeutral,
+		b.LeagueId,
+		b.ProductName,
+		b.SportType
+	ORDER BY CASE ProductName
 				WHEN 'SB' THEN 0
 				WHEN 'NG' THEN 1
 				ELSE 2
 			END
-
-	DROP TABLE #TempBetList
-
-	SET NOCOUNT OFF
 END
 GO
-
