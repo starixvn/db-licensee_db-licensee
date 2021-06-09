@@ -9,16 +9,16 @@ AS
 		
 		Revisions:
 			- 20200410@Eden: initial sp [redmine:#131929]
-			
+			- 20210607@Johnson: 
 		Paramter's Explanations:		
 	*/
 BEGIN
 	SET NOCOUNT ON
-	SELECT ReasonGroupID, 
-		CASE WHEN @Langkey = 'zh-CN' THEN MIN(ReasonNameCS) ELSE MIN(ReasonName) END AS ReasonGroup 
-	FROM ProblemAccountReason WITH(NOLOCK)
-	WHERE ReasonGroupID IS NOT NULL
-	GROUP BY ReasonGroupID
-	ORDER BY ReasonGroupID
+	
+	SELECT CustomerClass,
+		CategoryID as ReasonGroupID, 
+		CASE WHEN @Langkey = 'zh-CN' THEN CategoryNameCS ELSE CategoryName END AS ReasonGroup 
+	FROM CategoryConfig WITH(NOLOCK)
+	WHERE OfferDeposit = 1
 END
 GO	
