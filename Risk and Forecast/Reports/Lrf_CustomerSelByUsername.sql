@@ -31,6 +31,7 @@ AS
 		- 20201005@Winfred: unshow OddsAdj dummy customers [redmine:#142952]
 		- 202100203@Johnson: Search by Commission Group [redmine:#147477]
 		- 20210518@Percy: Change code to adapt new Move Bets flow [RedmineID: #154866]
+		- 20210611@Johnson: exclude dummy accounts [redmine:#156408]
 		- 20210806@Johnson: extend @CustomerClass VARCHAR(1000) [redmine:#159754]
 	Parameter's explanations:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
@@ -170,6 +171,8 @@ BEGIN
 			WHERE ci.roleid=1
 					AND c.username  NOT LIKE ''%CASHOUT%''
 					AND c.username  NOT LIKE ''%01OddsAdj%''
+					AND c.username  NOT LIKE ''%ClearBal%''
+					AND c.username  NOT LIKE ''%BetTrade%''					
 					AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + ')) '
 					
 			IF ISNULL(@CustomerClass, '') <> ''
@@ -290,6 +293,8 @@ BEGIN
 			WHERE ci.roleid=1 
 					AND c.username NOT LIKE ''%CashOut%''
 					AND c.username  NOT LIKE ''%01OddsAdj%''
+					AND c.username  NOT LIKE ''%ClearBal%''
+					AND c.username  NOT LIKE ''%BetTrade%''	
 					AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + ')) '
 			
 			IF ISNULL(@CustomerClass, '') <> ''
@@ -370,6 +375,8 @@ BEGIN
 						+ ')
 					AND c.username NOT LIKE ''%CashOut%''
 					AND c.username  NOT LIKE ''%01OddsAdj%''
+					AND c.username  NOT LIKE ''%ClearBal%''
+					AND c.username  NOT LIKE ''%BetTrade%''	
 					AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))
 					AND ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ') '
 			
@@ -397,6 +404,8 @@ BEGIN
 						+ ')
 					AND c.username NOT LIKE ''%CashOut%''
 					AND c.username  NOT LIKE ''%01OddsAdj%''
+					AND c.username  NOT LIKE ''%ClearBal%''
+					AND c.username  NOT LIKE ''%BetTrade%''	
 					AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))
 					AND ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ')
 					AND ((' + CONVERT(VARCHAR(10),@BAFilter) + ' = 1 AND ISNULL(lb.[Status],'''') = ''Running'')'
