@@ -19,6 +19,7 @@ AS
 		- 20200325@Bobby: Ploutos Integration - [redmine: #125252]
 		- 20201201@Sol: Audit - Add mode sum by SettlementTime - [Redmine: #146188]
 		- 20210517@Sol: Audit - show data with status = 0 orr 1 - [Redmine: #155266]
+		- 20210416@Sol: Get data from archived table and main table - [Redmine: #152202]
 
 	Developer's Notes:
 		
@@ -41,6 +42,12 @@ BEGIN
 	DECLARE @cutoffDate DATE;
 	DECLARE @Product TABLE (ProductCode VARCHAR(10))
 	DECLARE @Currency AS TABLE (Id INT, Code VARCHAR(5), Name VARCHAR(5), ExRate FLOAT)
+	DECLARE @ArchivedDate DATE
+
+	--get archived date -> last day of archived month => add 1 more day to cover time, such as: 23:59:59 
+	SELECT @ArchivedDate = DATEADD(DAY, 1, CAST(s.VValue AS DATE))
+	FROM dbo.SystemSettings s WITH(NOLOCK)
+	WHERE s.VName = 'PloutosArchivedMonth'
 
 	--get cutoffDate
 	SELECT @cutoffDate = f.CutOffDate 
@@ -158,6 +165,29 @@ BEGIN
 				)
 				AND a.SettlementDate >= @Date AND a.SettlementDate < @TempToDate 
 				AND a.SettlementDate < @cutoffDate
+				AND a.SettlementDate >= @ArchivedDate
+
+		UNION ALL
+		SELECT
+			a.TransactionId
+			, c.Name
+			, a.BetAmount
+			, a.NetAmount
+			, a.BetAmount * c.ExRate AS BetAmount_Rate
+			, a.NetAmount * c.ExRate AS NetAmount_Rate
+			, 'AuditTicket' AS SourceName
+		FROM bodb_licenseeReportArchive.dbo.rptDep_AuditTickets_BK a WITH (NOLOCK)
+		INNER JOIN @Currency c ON c.Code = a.CurrencyCode
+		WHERE Brand = @SiteName
+				AND ( 
+					(@showSB = 1 AND a.GameType = 'SB') 
+					OR (@showNG = 1 AND a.GameType = 'RNG' AND a.GameCode = '161')
+					OR (@showCS = 1 AND a.GameType = 'RNG' AND a.GameCode <> '161')
+					OR (@showLC = 1 AND a.GameType = 'CA')
+				)
+				AND a.SettlementDate >= @Date AND a.SettlementDate < @TempToDate 
+				AND a.SettlementDate < @cutoffDate
+				AND a.SettlementDate < @ArchivedDate
 
 		UNION ALL
 		SELECT
@@ -182,6 +212,31 @@ BEGIN
 				OR (@showCS = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161')
 				OR (@showLC = 1 AND a.GamePlatformCode = 'CA')
 			)
+			AND a.SettlementDate >= @ArchivedDate
+		UNION ALL
+		SELECT
+			a.TransactionId
+			, c.Name
+			, a.BetAmount
+			, a.NetAmount
+			, a.BetAmount * c.ExRate AS BetAmount_Rate
+			, a.NetAmount * c.ExRate AS NetAmount_Rate
+			, 'BetTicket' AS SourceName
+		FROM bodb_Ploutos.dbo.BetTicket_BK a WITH (NOLOCK)
+		INNER JOIN @Currency c ON c.Code = a.CurrencyCode
+		INNER JOIN bodb_Ploutos.dbo.PlayerProfile pp WITH(NOLOCK) ON pp.BrandCode = a.BrandCode AND pp.CustID = a.CustId
+		WHERE 
+			a.BrandCode = @SiteName
+			AND a.StatusID = 1
+			AND a.SettlementDate >= @Date AND a.SettlementDate < @TempToDate 
+			AND a.SettlementDate >= @cutoffDate
+			AND ( 
+				(@showSB = 1 AND a.GamePlatformCode = 'SB') 
+				OR (@showNG = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode = '0161')
+				OR (@showCS = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161')
+				OR (@showLC = 1 AND a.GamePlatformCode = 'CA')
+			)
+			AND a.SettlementDate < @ArchivedDate
 
 	) AS a
 
@@ -223,6 +278,34 @@ BEGIN
 		INNER JOIN bodb_licenseeReportArchive.dbo.rptDep_AuditTickets a WITH (NOLOCK) ON a.TransactionId = p.TransactionId
 		WHERE p.rowIdx BETWEEN @RowStart AND @RowEnd
 			AND a.SettlementDate < @cutoffDate
+			AND a.SettlementDate >= @ArchivedDate
+
+		UNION ALL
+		SELECT p.rowIdx,
+			p.TransactionId,
+			a.PlayerName,
+			p.Name									AS CurrencyName,
+			a.TransactionDate						AS TransTime,
+			a.BetType,
+			CASE
+				WHEN a.GameType = 'SB' THEN 'SB'
+				WHEN a.GameType = 'RNG' AND a.GameCode = '161' THEN 'NG'
+				WHEN a.GameType = 'RNG' AND a.GameCode <> '161' THEN 'CS'
+				WHEN a.GameType = 'CA' THEN 'LC'
+				ELSE ''
+			END										AS ProductCode,
+			a.BetAmount								AS Turnover,
+			-a.NetAmount							AS WinLoss,
+			CASE
+				WHEN a.NetAmount > 0 THEN -1
+				WHEN a.NetAmount < 0 THEN 1
+				ELSE 0
+			END										AS [Status]
+		FROM #tempPaging p
+		INNER JOIN bodb_licenseeReportArchive.dbo.rptDep_AuditTickets_BK a WITH (NOLOCK) ON a.TransactionId = p.TransactionId
+		WHERE p.rowIdx BETWEEN @RowStart AND @RowEnd
+			AND a.SettlementDate < @cutoffDate
+			AND a.SettlementDate < @ArchivedDate
 
 		UNION ALL
 		SELECT p.rowIdx,
@@ -250,6 +333,34 @@ BEGIN
 		INNER JOIN bodb_Ploutos.dbo.PlayerProfile pp WITH(NOLOCK) ON pp.BrandCode = a.BrandCode AND pp.CustID = a.CustId
 		WHERE p.rowIdx BETWEEN @RowStart AND @RowEnd
 			AND a.SettlementDate >= @cutoffDate
+			AND a.SettlementDate >= @ArchivedDate
+		UNION ALL
+		SELECT p.rowIdx,
+			p.TransactionId,
+			pp.Username AS Playername,
+			p.Name									AS CurrencyName,
+			a.TransactionDate						AS TransTime,
+			a.BettypeName							AS BetType,
+			CASE
+				WHEN a.GamePlatformCode = 'SB' THEN 'SB'
+				WHEN a.GamePlatformCode = 'RNG' AND a.GameCode = '0161' THEN 'NG'
+				WHEN a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161' THEN 'CS'
+				WHEN a.GamePlatformCode = 'CA' THEN 'LC'
+				ELSE ''
+			END										AS ProductCode,
+			a.BetAmount								AS Turnover,
+			-a.NetAmount							AS WinLoss,
+			CASE
+				WHEN a.NetAmount > 0 THEN -1
+				WHEN a.NetAmount < 0 THEN 1
+				ELSE 0
+			END										AS [Status]
+		FROM #tempPaging p
+		INNER JOIN bodb_Ploutos.dbo.BetTicket_BK a WITH (NOLOCK) ON a.TransactionId = p.TransactionId
+		INNER JOIN bodb_Ploutos.dbo.PlayerProfile pp WITH(NOLOCK) ON pp.BrandCode = a.BrandCode AND pp.CustID = a.CustId
+		WHERE p.rowIdx BETWEEN @RowStart AND @RowEnd
+			AND a.SettlementDate >= @cutoffDate
+			AND a.SettlementDate < @ArchivedDate
 
 	) AS p
 	ORDER BY p.rowIdx
