@@ -4,7 +4,8 @@ ALTER PROCEDURE [dbo].[Lrf_GetLicenseeWLByPlatform]
 	@AgentList		VARCHAR(MAX),
 	@FromDate		SMALLDATETIME,
 	@ToDate			SMALLDATETIME,
-	@BaseCurrency	VARCHAR(3) = ''
+	@BaseCurrency	VARCHAR(3) = '',
+	@MoveBetsDay SMALLDATETIME
 AS
 
 /*
@@ -33,6 +34,7 @@ AS
 		- 20210330@Hogan: Integrate Cricket AIO [RedmineID: #150386]
 		- 20210407@Kos: Split data of God Of Fortune in rptLicWinloss2 [RedmineID: #152908]
 		- 20210518@Mark: Support multiple selection on Platform filter [Redmine: #153102]
+		- 20210622@Mark: Change on MoveBet - Add param MoveBetsDay [RedmineID: #154866]
 */
 
 /*
@@ -101,17 +103,7 @@ BEGIN
 	INSERT INTO #Exchange (FromDate, ToDate, ExchangeID, Rate)
 	SELECT FromDate, ToDate, ExchangeID, Rate
 	FROM dbo.Lrf_f_GetExchangeRate(@FDate, @TDate, @BaseCurrency, '') ex
-	WHERE EXISTS (SELECT 1 FROM #TempAg c WHERE ex.ExchangeID = c.Currency)
-
-	DECLARE @MoveBetsDay SMALLDATETIME;
-
-	DECLARE @MoveBetTable AS TABLE (BalanceUpDay SMALLDATETIME, MoveBetsDay SMALLDATETIME);
-
-	INSERT INTO @MoveBetTable (BalanceUpDay, MoveBetsDay)
-	EXEC bodb02.dbo.Age_SelBalanceUpDay;
-
-	SELECT TOP(1) @MoveBetsDay = MoveBetsDay
-	FROM @MoveBetTable;
+	WHERE EXISTS (SELECT 1 FROM #TempAg c WHERE ex.ExchangeID = c.Currency);
 
 	IF @TDate > @MoveBetsDay
 	BEGIN

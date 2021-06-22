@@ -6,7 +6,8 @@ ALTER PROCEDURE [dbo].[LRF_Rpt_AGCasinoWinloss_Mem]
 	@ToDate					SMALLDATETIME,
 	@AgentList				VARCHAR(MAX),
 	@BaseCurrency			VARCHAR(3) = '',
-	@DefaultBaseCurrency	VARCHAR(3) = ''
+	@DefaultBaseCurrency	VARCHAR(3) = '',
+	@MoveBetsDay SMALLDATETIME
 AS  
 /*
 
@@ -35,6 +36,7 @@ AS
 			- 20170524@Harper: Make sure data correct between two stages of Balance up process [RedmineID: #77065]
 			- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 			- 20190617@Amanda: Add Base currency param [RedmineID: #112531]
+			- 20210622@Mark: Change on MoveBet - Add param MoveBetsDay [RedmineID: #154866]
 
 	Param's Explanation:  
 	  + @excludeTest: remove currency UUS
@@ -101,11 +103,7 @@ BEGIN
 		BEGIN
 			DECLARE @FromDate2		DATETIME 
 			DECLARE @ToDate2		DATETIME 
-			DECLARE @MoveBetsDay	DATETIME
 
-			--get MoveBetsDay
-			SELECT @MoveBetsDay = MAX(eventdate) FROM dbo.match14 WITH(NOLOCK)
-			--
 			IF @ToDate > @MoveBetsDay
 			BEGIN
 				IF @TempFromDate <= @MoveBetsDay 

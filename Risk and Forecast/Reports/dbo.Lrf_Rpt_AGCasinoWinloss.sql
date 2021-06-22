@@ -7,6 +7,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_AGCasinoWinloss]
 	, @AgentList			VARCHAR(MAX)
 	, @BaseCurrency			VARCHAR(3) = ''
 	, @DefaultBaseCurrency	VARCHAR(3) = ''
+	, @MoveBetsDay SMALLDATETIME
 WITH RECOMPILE
 AS  
 
@@ -27,6 +28,7 @@ AS
 		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 		- 20190604@Amanda: Fix bug - Dummy balance data is displayed in report [RedmineID: #114611]
 		- 20190617@Amanda: Add Base currency param [RedmineID: #112531]
+		- 20210622@Mark: Change on MoveBet - Add param MoveBetsDay [RedmineID: #154866]
 
 	Param's Explanation:  
 	  
@@ -93,11 +95,7 @@ BEGIN
 		BEGIN
 			DECLARE @FromDate2		DATETIME 
 			DECLARE @ToDate2		DATETIME 
-			DECLARE @MoveBetsDay	DATETIME
 
-			--get MoveBetsDay
-			SELECT @MoveBetsDay = MAX(eventdate) FROM dbo.match14 WITH(NOLOCK)
-			--
 			IF @ToDate > @MoveBetsDay
 			BEGIN
 				IF @TempFromDate <= @MoveBetsDay 

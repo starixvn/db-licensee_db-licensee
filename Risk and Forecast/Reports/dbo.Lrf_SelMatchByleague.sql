@@ -4,7 +4,10 @@ ALTER PROCEDURE [dbo].[Lrf_SelMatchByleague]
 	@SportId 				INT,
 	@LeagueID				INT,
 	@Fromdate				SMALLDATETIME,
-	@Todate					SMALLDATETIME
+	@Todate					SMALLDATETIME,
+	@MoveBetsDay SMALLDATETIME,
+	@BalanceUpDay SMALLDATETIME
+
 AS 
 /*
 WARNING: This SP only gets matches from SB
@@ -16,6 +19,7 @@ Revisions:
 		- 20180709@Amanda: Add option @LeagueID = 0 to get all matches for SB [RedmineID: #80941]
 		- 20180712@Joseph: Add param @SportId to get all matches for specific sport [RedmineID: #80941]
 		- 20210304@Hogan: Integrate Cricket AIO [RedmineID: #150386]
+		- 20210622@Mark: Change on MoveBet - Add param MoveBetsDay, BalanceUpDay [RedmineID: #154866]
 		
 Param's Explanation:
 		- @SportId = 0: all sports
@@ -23,17 +27,7 @@ Param's Explanation:
 	
 */
 SET NOCOUNT ON
-DECLARE @BalanceUpDay DATETIME,
-		@MoveBetsDay DATETIME,
-		@TempFromDate DATETIME,
-		@TempToDate DATETIME
-
-CREATE TABLE #tblBalanceDate (BalanceUpDay DATETIME, MoveBetsDay DATETIME)
-	insert into #tblBalanceDate 
-	exec bodb02.dbo.Lrf_SelBalanceUpDay
-
-SELECT @MoveBetsDay = MoveBetsDay,@BalanceUpDay=BalanceUpDay
-FROM #tblBalanceDate
+DECLARE @TempFromDate DATETIME,	@TempToDate DATETIME
 
 CREATE TABLE #match (
 	matchid INT,
