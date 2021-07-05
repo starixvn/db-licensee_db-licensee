@@ -35,6 +35,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]
 	@ShowWM			BIT = 0, -- WM Live Casino
 	@ShowBGG		BIT = 0, -- Big Gaming
 	@ShowVGA		BIT = 0, -- Vgaming
+	@ShowCG			BIT = 0, -- Creative Gaming
 	@ReportType		TINYINT = 1,
 	@MoveBetsDay	SMALLDATETIME,
 	@drawfilter		SMALLINT = 1,
@@ -132,6 +133,7 @@ AS
 		- 20210428@Hogan: Integrate WM Live Casino [RedmineID: #140944]
 		- 20210519@Louis: Integrate Big Gaming product [RedmineID: #146773]
 		- 20210525@Hogan: Integrate Vgaming [RedmineID: #151583]
+		- 20210630@Hogan: Integrate Creative Gaming [RedmineID: #152619]
 
 	Param's Explanation:
 		+ @ReportType: 1-Daily; 2-Monthly;
@@ -370,6 +372,11 @@ BEGIN
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'VGA', 'VGA')
 	END
 	
+	IF @ShowCG = 1 --  Creative Gaming
+	BEGIN
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'CG', 'CG')
+	END
+
 	IF LEN(ISNULL(@ProductList, '')) > 0 
 	BEGIN
 		-- Insert Bettype
@@ -632,7 +639,7 @@ BEGIN
 			END
 
 			IF 1 IN (@ShowNG, @ShowVS, @ShowCS, @ShowKN, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowVS2, @ShowLT, @ShowPP, @ShowCC, @ShowSG, @ShowVRG, @ShowTG, @ShowI4D, 
-				@ShowSXG, @ShowSBC, @ShowSAG, @ShowPGS, @ShowJK, @ShowGDG, @ShowSLT, @ShowHB, @ShowWM, @ShowBGG, @ShowVGA)
+				@ShowSXG, @ShowSBC, @ShowSAG, @ShowPGS, @ShowJK, @ShowGDG, @ShowSLT, @ShowHB, @ShowWM, @ShowBGG, @ShowVGA, @ShowCG)
 			BEGIN
 				INSERT INTO #SAgWinLoss
 				(
@@ -899,7 +906,7 @@ BEGIN
 			END
 
 			IF 1 IN (@ShowNG, @ShowVS, @ShowCS, @ShowKN, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowVS2, @ShowLT, @ShowPP, @ShowCC, @ShowSG, @ShowVRG, @ShowTG, @ShowI4D, 
-				@ShowSXG, @ShowSBC, @ShowJK, @ShowGDG, @ShowSLT, @ShowHB, @ShowWM, @ShowBGG, @ShowVGA)
+				@ShowSXG, @ShowSBC, @ShowJK, @ShowGDG, @ShowSLT, @ShowHB, @ShowWM, @ShowBGG, @ShowVGA, @ShowCG)
 			BEGIN
 				INSERT INTO #SAgWinLoss
 				(
@@ -1057,7 +1064,7 @@ BEGIN
 	
 			--exclude BA tickets
 			IF 1 IN (@showSB, @ShowNG, @ShowVS, @ShowCS, @ShowKN, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowVS2, @ShowLT, @ShowPP, @ShowCC, @ShowSG, @ShowVRG, @ShowTG, @ShowI4D, 
-				@ShowSXG, @ShowSBC, @ShowSAG, @ShowPGS, @ShowJK, @ShowGDG, @ShowSLT, @ShowHB, @ShowWM, @ShowBGG, @ShowVGA)
+				@ShowSXG, @ShowSBC, @ShowSAG, @ShowPGS, @ShowJK, @ShowGDG, @ShowSLT, @ShowHB, @ShowWM, @ShowBGG, @ShowVGA, @ShowCG)
 			BEGIN
 				INSERT INTO #SAgWinLoss
 				(
@@ -1317,7 +1324,7 @@ BEGIN
 	
 			--exclude BA tickets
 			IF 1 IN (@showSB, @ShowNG, @ShowVS, @ShowCS, @ShowKN, @ShowAGC, @ShowVB, @ShowAB, @ShowFW, @ShowVS2, @ShowLT, @ShowPP, @ShowCC, @ShowSG, @ShowVRG, @ShowTG, @ShowI4D, 
-				@ShowSXG, @ShowSBC, @ShowJK, @ShowGDG, @ShowSLT, @ShowHB, @ShowWM, @ShowBGG, @ShowVGA)
+				@ShowSXG, @ShowSBC, @ShowJK, @ShowGDG, @ShowSLT, @ShowHB, @ShowWM, @ShowBGG, @ShowVGA, @ShowCG)
 			BEGIN
 				INSERT INTO #SAgWinLoss
 				(
@@ -1530,6 +1537,7 @@ BEGIN
 		TurnoverWM			MONEY,
 		TurnoverBGG			MONEY,
 		TurnoverVGA			MONEY,
+		TurnoverCG			MONEY,
 		BTActualStake		MONEY,
 		Winlost				MONEY,
 		LicenseeWLSB 		MONEY,
@@ -1562,6 +1570,7 @@ BEGIN
 		LicenseeWLWM		MONEY,
 		LicenseeWLBGG		MONEY,
 		LicenseeWLVGA		MONEY,
+		LicenseeWLCG		MONEY,
 		AmtDueToBA			MONEY,
 		CommBA				MONEY,
 		PlayerComm			MONEY,
@@ -1582,13 +1591,13 @@ BEGIN
 		TurnoverSB, TurnoverBA, TurnoverNG, TurnoverVS, TurnoverCS, TurnoverKN, turnoverAGC, turnoverVB, turnoverAB, 
 		turnoverFW, turnoverCO, TurnoverVS2, TurnoverLT, TurnoverPP, TurnoverCC, TurnoverSG, TurnoverVRG, TurnoverTG,
 		TurnoverI4D, TurnoverSXG, TurnoverSBC, TurnoverSAG,  TurnoverPGS, TurnoverJK, TurnoverGDG, TurnoverSLT, TurnoverHB,
-		TurnoverWM, TurnoverBGG, TurnoverVGA,
+		TurnoverWM, TurnoverBGG, TurnoverVGA, TurnoverCG,
 		BTActualStake, Winlost,
 		LicenseeWLSB, LicenseeWLBA, LicenseeWLNG, LicenseeWLVS, LicenseeWLCS,
 		LicenseeWLKN, LicenseeWLAGC, LicenseeWLVB, LicenseeWLAB, LicenseeWLFW, LicenseeWLCO, LicenseeWLVS2, LicenseeWLLT,
 		LicenseeWLPP, LicenseeWLCC, LicenseeWLSG, LicenseeWLVRG, LicenseeWLTG, LicenseeWLI4D,  LicenseeWLSXG, LicenseeWLSBC, 
 		LicenseeWLSAG, LicenseeWLPGS, LicenseeWLJK, LicenseeWLGDG, LicenseeWLSLT, LicenseeWLHB, LicenseeWLWM, LicenseeWLBGG,
-		LicenseeWLVGA,
+		LicenseeWLVGA, LicenseeWLCG,
 		AmtDueToBA,
 		CommBA,
 		PlayerComm,
@@ -1632,6 +1641,7 @@ BEGIN
 		SUM(CASE ProductCode WHEN 'WM'	THEN Turnover ELSE 0 END)	AS TurnoverWM,
 		SUM(CASE ProductCode WHEN 'BGG'	THEN Turnover ELSE 0 END)	AS TurnoverBGG,
 		SUM(CASE ProductCode WHEN 'VGA'	THEN Turnover ELSE 0 END)	AS TurnoverVGA,
+		SUM(CASE ProductCode WHEN 'CG'	THEN Turnover ELSE 0 END)	AS TurnoverCG,
 		SUM(BTActualStake)	AS BTActualStake,
 		SUM(Winlost)		AS Winlost,
 		SUM(CASE ProductCode WHEN 'SB'	THEN LicenseeWL ELSE 0 END)	AS LicenseeWLSB,
@@ -1664,6 +1674,7 @@ BEGIN
 		SUM(CASE ProductCode WHEN 'WM'	THEN LicenseeWL ELSE 0 END)	AS LicenseeWLWM,
 		SUM(CASE ProductCode WHEN 'BGG'	THEN LicenseeWL ELSE 0 END)	AS LicenseeWLBGG,
 		SUM(CASE ProductCode WHEN 'VGA'	THEN LicenseeWL ELSE 0 END)	AS LicenseeWLVGA,
+		SUM(CASE ProductCode WHEN 'CG'	THEN LicenseeWL ELSE 0 END)	AS LicenseeWLCG,
 		SUM(AmtDuetoBA)		AS AmtDuetoBA,
 		SUM(CommBA)			AS CommBA,
 		SUM(playerComm)		AS PlayerComm,
@@ -1736,6 +1747,7 @@ BEGIN
 		CAST(SUM(TurnoverWM		*e.Rate)	AS MONEY)   AS TurnoverWM,
 		CAST(SUM(TurnoverBGG	*e.Rate)	AS MONEY)   AS TurnoverBGG,
 		CAST(SUM(TurnoverVGA	*e.Rate)	AS MONEY)   AS TurnoverVGA,
+		CAST(SUM(TurnoverCG		*e.Rate)	AS MONEY)   AS TurnoverCG,
 		CAST(SUM(BTActualStake	*e.Rate)	AS MONEY)   AS BTActualStake,
 		CAST(SUM(Winlost		*e.Rate)	AS MONEY)	AS Winlost,
 		CAST(SUM(LicenseeWLSB	*e.Rate)	AS MONEY)	AS LicenseeWLSB,
@@ -1768,6 +1780,7 @@ BEGIN
 		CAST(SUM(LicenseeWLWM	*e.Rate)	AS MONEY)	AS LicenseeWLWM,
 		CAST(SUM(LicenseeWLBGG	*e.Rate)	AS MONEY)	AS LicenseeWLBGG,
 		CAST(SUM(LicenseeWLVGA	*e.Rate)	AS MONEY)	AS LicenseeWLVGA,
+		CAST(SUM(LicenseeWLCG	*e.Rate)	AS MONEY)	AS LicenseeWLCG,
 		CAST(SUM(CommBA			*e.Rate)	AS MONEY)	AS CommBA,
 		CAST(SUM(PlayerComm		*e.Rate)	AS MONEY)	AS PlayerComm,
 		CAST(SUM(AmtDuetoBA		*e.Rate)	AS MONEY)	AS AmtDuetoBA,
@@ -1821,6 +1834,7 @@ BEGIN
 		CAST(SUM(TurnoverWM		*e.USD)	AS MONEY)	AS TurnoverWMUSD,
 		CAST(SUM(TurnoverBGG	*e.USD)	AS MONEY)	AS TurnoverBGGUSD,
 		CAST(SUM(TurnoverVGA	*e.USD)	AS MONEY)	AS TurnoverVGAUSD,
+		CAST(SUM(TurnoverCG		*e.USD)	AS MONEY)	AS TurnoverCGUSD,
 		CAST(SUM(BTActualStake	*e.USD)	AS MONEY)	AS BTActualStakeUSD,
 		CAST(SUM(Winlost		*e.USD)	AS MONEY)	AS WinlostUSD,
 		CAST(SUM(LicenseeWLSB	*e.USD)	AS MONEY)	AS LicenseeWLSBUSD,
@@ -1853,6 +1867,7 @@ BEGIN
 		CAST(SUM(LicenseeWLWM	*e.USD)	AS MONEY)	AS LicenseeWLWMUSD,
 		CAST(SUM(LicenseeWLBGG	*e.USD)	AS MONEY)	AS LicenseeWLBGGUSD,
 		CAST(SUM(LicenseeWLVGA	*e.USD)	AS MONEY)	AS LicenseeWLVGAUSD,
+		CAST(SUM(LicenseeWLCG	*e.USD)	AS MONEY)	AS LicenseeWLCGUSD,
 		CAST(SUM(CommBA			*e.USD)	AS MONEY)	AS CommBAUSD,
 		CAST(SUM(PlayerComm		*e.USD)	AS MONEY)	AS PlayerCommUSD,
 		CAST(SUM(AmtDuetoBA		*e.USD)	AS MONEY)	AS AmtDuetoBAUSD,
@@ -1892,6 +1907,7 @@ BEGIN
 		CAST(SUM(TurnoverWM		*e.EUR)	AS MONEY)	AS TurnoverWMEUR,
 		CAST(SUM(TurnoverBGG	*e.EUR)	AS MONEY)	AS TurnoverBGGEUR,
 		CAST(SUM(TurnoverVGA	*e.EUR)	AS MONEY)	AS TurnoverVGAEUR,
+		CAST(SUM(TurnoverCG		*e.EUR)	AS MONEY)	AS TurnoverCGEUR,
 		CAST(SUM(BTActualStake	*e.EUR)	AS MONEY)	AS BTActualStakeEUR,
 		CAST(SUM(Winlost		*e.EUR)	AS MONEY)	AS WinlostEUR,
 		CAST(SUM(LicenseeWLSB	*e.EUR)	AS MONEY)	AS LicenseeWLSBEUR,
@@ -1924,6 +1940,7 @@ BEGIN
 		CAST(SUM(LicenseeWLWM	*e.EUR)	AS MONEY)	AS LicenseeWLWMEUR,
 		CAST(SUM(LicenseeWLBGG	*e.EUR)	AS MONEY)	AS LicenseeWLBGGEUR,
 		CAST(SUM(LicenseeWLVGA	*e.EUR)	AS MONEY)	AS LicenseeWLVGAEUR,
+		CAST(SUM(LicenseeWLCG	*e.EUR)	AS MONEY)	AS LicenseeWLCGEUR,
 		CAST(SUM(CommBA			*e.EUR)	AS MONEY)	AS CommBAEUR,
 		CAST(SUM(PlayerComm		*e.EUR)	AS MONEY)	AS PlayerCommEUR,
 		CAST(SUM(AmtDuetoBA		*e.EUR)	AS MONEY)	AS AmtDuetoBAEUR,
@@ -1963,6 +1980,7 @@ BEGIN
 		CAST(SUM(TurnoverWM		*e.GBP)	AS MONEY)	AS TurnoverWMGBP,
 		CAST(SUM(TurnoverBGG	*e.GBP)	AS MONEY)	AS TurnoverBGGGBP,
 		CAST(SUM(TurnoverVGA	*e.GBP)	AS MONEY)	AS TurnoverVGAGBP,
+		CAST(SUM(TurnoverCG		*e.GBP)	AS MONEY)	AS TurnoverCGGBP,
 		CAST(SUM(BTActualStake	*e.GBP)	AS MONEY)	AS BTActualStakeGBP,
 		CAST(SUM(Winlost		*e.GBP)	AS MONEY)	AS WinlostGBP,
 		CAST(SUM(LicenseeWLSB	*e.GBP)	AS MONEY)	AS LicenseeWLSBGBP,
@@ -1995,6 +2013,7 @@ BEGIN
 		CAST(SUM(LicenseeWLWM	*e.GBP)	AS MONEY)	AS LicenseeWLWMGBP,
 		CAST(SUM(LicenseeWLBGG	*e.GBP)	AS MONEY)	AS LicenseeWLBGGGBP,
 		CAST(SUM(LicenseeWLVGA	*e.GBP)	AS MONEY)	AS LicenseeWLVGAGBP,
+		CAST(SUM(LicenseeWLCG	*e.GBP)	AS MONEY)	AS LicenseeWLCGGBP,
 		CAST(SUM(CommBA			*e.GBP)	AS MONEY)	AS CommBAGBP,
 		CAST(SUM(PlayerComm		*e.GBP)	AS MONEY)	AS PlayerCommGBP,
 		CAST(SUM(AmtDuetoBA		*e.GBP)	AS MONEY)	AS AmtDuetoBAGBP,
@@ -2034,6 +2053,7 @@ BEGIN
 		CAST(SUM(TurnoverWM		*e.DefaultRate)	AS MONEY)	AS TurnoverWM,
 		CAST(SUM(TurnoverBGG	*e.DefaultRate)	AS MONEY)	AS TurnoverBGG,
 		CAST(SUM(TurnoverVGA	*e.DefaultRate)	AS MONEY)	AS TurnoverVGA,
+		CAST(SUM(TurnoverCG		*e.DefaultRate)	AS MONEY)	AS TurnoverCG,
 		CAST(SUM(BTActualStake	*e.DefaultRate)	AS MONEY)	AS BTActualStake,
 		CAST(SUM(Winlost		*e.DefaultRate)	AS MONEY)	AS Winlost,
 		CAST(SUM(LicenseeWLSB	*e.DefaultRate)	AS MONEY)	AS LicenseeWLSB,
@@ -2066,6 +2086,7 @@ BEGIN
 		CAST(SUM(LicenseeWLWM	*e.DefaultRate)	AS MONEY)	AS LicenseeWLWM,
 		CAST(SUM(LicenseeWLBGG	*e.DefaultRate)	AS MONEY)	AS LicenseeWLBGG,
 		CAST(SUM(LicenseeWLVGA	*e.DefaultRate)	AS MONEY)	AS LicenseeWLVGA,
+		CAST(SUM(LicenseeWLCG	*e.DefaultRate)	AS MONEY)	AS LicenseeWLCG,
 		CAST(SUM(CommBA			*e.DefaultRate)	AS MONEY)	AS CommBA,
 		CAST(SUM(PlayerComm		*e.DefaultRate)	AS MONEY)	AS PlayerComm,
 		CAST(SUM(AmtDuetoBA		*e.DefaultRate)	AS MONEY)	AS AmtDuetoBA,

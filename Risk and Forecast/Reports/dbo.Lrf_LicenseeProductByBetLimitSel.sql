@@ -15,6 +15,7 @@ AS
 		- 20200406@Hogan: Add new product Table Games [RedmineID: #131447]
 		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
 		- 20210305@Hogan: Add new product Sport Lottery [RedmineID: #150872]
+		- 20210630@Hogan: Integrate Creative Gaming [RedmineID: #152619]
 */
 
  /*
@@ -125,7 +126,8 @@ BEGIN
 			28,--	Lottery
 			40,--	Table
 			43,--	I4D
-			63--	SLT
+			63,--	SLT
+			62--	Creative Gaming
 			)
 	ORDER BY ProductID ASC
 END
