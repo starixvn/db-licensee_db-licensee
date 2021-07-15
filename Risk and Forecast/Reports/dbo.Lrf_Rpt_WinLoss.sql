@@ -35,6 +35,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
 	@ShowWM			BIT = 0, 	-- WM Live Casino
 	@ShowBGG		BIT = 0, 	-- Big Gaming
 	@ShowVGA		BIT = 0, 	-- Vgaming
+	@ShowCG			BIT = 0, 	-- Creative Gaming
 	@MoveBetsDay	DATETIME,
 	@PageSize		INT = 1000,
 	@PageIndex		INT = 1,
@@ -149,6 +150,7 @@ AS
 		- 20210513@Hogan: Integrate WM Live Casino [RedmineID: #140944]
 		- 20210519@Louis: Integrate Big Gaming product [RedmineID: #146773]
 		- 20210525@Hogan: Integrate Vgaming [RedmineID: #151583]
+		- 20210630@Hogan: Integrate Creative Gaming [RedmineID: #152619]
 
 	Param's Explanation:
 		@OrderItem:
@@ -371,6 +373,8 @@ BEGIN
 	SELECT 'BGG' AS Code WHERE @ShowBGG = 1
 	UNION ALL
 	SELECT 'VGA' AS Code WHERE @ShowVGA = 1
+	UNION ALL
+	SELECT 'CG' AS Code WHERE @ShowCG = 1
 
 	-- BT & CO belong to SB
 	SELECT @ProductList = COALESCE(@ProductList + ',' + Code, Code)
