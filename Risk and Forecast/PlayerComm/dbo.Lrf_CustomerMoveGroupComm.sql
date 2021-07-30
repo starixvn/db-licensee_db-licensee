@@ -28,6 +28,13 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerMoveGroupComm]
 	@IsUpdateSabaclub BIT = 0,
 	@IsUpdateSAGaming BIT = 0,
 	@IsUpdatePGSoft BIT = 0,
+	--> phase 4
+	@IsUpdateWMCasino		BIT = 0,
+	@IsUpdateBigGaming		BIT = 0,
+	@IsUpdateJoker			BIT = 0,
+	@IsUpdateGDG			BIT = 0,
+	@IsUpdateSportsLottery	BIT = 0,
+	@IsUpdateHabanero		BIT = 0,
 
 	@IP VARCHAR(40),
 	@Langkey VARCHAR(20) = 'en-US',
@@ -57,7 +64,8 @@ AS
 		- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774]   
 		- 20200701@Helen: Remove Allbet - [Redmine: #131774]
 		- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238]   
-		- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012] 
+		- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012]
+		- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048]    
 		 
 	Param's Explanation:
 */ 
@@ -128,7 +136,14 @@ BEGIN
 		,@IsUpdateSabaclub  = @IsUpdateSabaclub
 		,@IsUpdateSAGaming  = @IsUpdateSAGaming
 		,@IsUpdatePGSoft  = @IsUpdatePGSoft
-				
+		--> phase 4
+		,@IsUpdateWMCasino		= @IsUpdateWMCasino		
+		,@IsUpdateBigGaming		= @IsUpdateBigGaming		
+		,@IsUpdateJoker			= @IsUpdateJoker			
+		,@IsUpdateGDG			= @IsUpdateGDG			
+		,@IsUpdateSportsLottery	= @IsUpdateSportsLottery
+		,@IsUpdateHabanero		= @IsUpdateHabanero
+
 		,@Langkey=@Langkey
 		,@IP=@IP
 		,@ErrCode=@ErrCode OUTPUT

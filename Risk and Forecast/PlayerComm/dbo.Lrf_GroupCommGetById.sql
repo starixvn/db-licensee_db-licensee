@@ -24,6 +24,7 @@ AS
 	- 20200701@Helen: Remove Allbet - [Redmine: #131774]
 	- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238] 
 	- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012] 
+	- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048]  
 */  
 BEGIN  
 SET NOCOUNT ON;  
@@ -53,8 +54,14 @@ SELECT g.ID AS GroupCommID,
 	g.ArcadiaGamingComm,	
 	g.SabaclubComm,	
 	g.SAGamingComm,	
-	g.PGSoftComm
-		
+	g.PGSoftComm,
+	--> Phase 4
+	g.WMCasinoComm,
+	g.BigGamingComm,
+	g.JokerComm,
+	g.GDGComm,
+	g.SportsLotteryComm,
+	g.HabaneroComm
 FROM dbo.LicenseeGroupComm g WITH (NOLOCK) 
 WHERE 
 	IsActive = 1 

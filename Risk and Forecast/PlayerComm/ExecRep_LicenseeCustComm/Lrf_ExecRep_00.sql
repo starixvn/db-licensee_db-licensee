@@ -50,6 +50,19 @@ ALTER PROCEDURE [dbo].[Lrf_ExecRep_00]
 	@SabaclubComm DECIMAL(9,8) = 0,
 	@SAGamingComm DECIMAL(9,8) = 0,
 	@PGSoftComm DECIMAL(9,8) = 0,
+	-->phase 4
+	@IsUpdateWMCasino		BIT = 0,
+	@IsUpdateBigGaming		BIT = 0,
+	@IsUpdateJoker			BIT = 0,
+	@IsUpdateGDG			BIT = 0,
+	@IsUpdateSportsLottery	BIT = 0,
+	@IsUpdateHabanero		BIT = 0,
+	@WMCasinoComm		DECIMAL(9,8) = 0,
+	@BigGamingComm		DECIMAL(9,8) = 0,
+	@JokerComm			DECIMAL(9,8) = 0,
+	@GDGComm			DECIMAL(9,8) = 0,
+	@SportsLotteryComm	DECIMAL(9,8) = 0,
+	@HabaneroComm		DECIMAL(9,8) = 0,
 
 	@isClearGroupComm BIT = 0,
 	@IsUpdateGroupComm BIT = 0
@@ -68,7 +81,8 @@ AS
 		- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774] 
 		- 20200701@Helen: Remove Allbet - [Redmine: #131774]  
 		- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238] 
-		- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012]   
+		- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012]
+		- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048]   
 	
 	Param's Explanation:
 
@@ -137,8 +151,13 @@ BEGIN
 				, SabaclubComm  = CASE WHEN @IsUpdateSabaclub = 1 THEN @SabaclubComm ELSE SabaclubComm END
 				, SAGamingComm  = CASE WHEN @IsUpdateSAGaming = 1 THEN @SAGamingComm ELSE SAGamingComm END	
 				, PGSoftComm  = CASE WHEN @IsUpdatePGSoft = 1 THEN @PGSoftComm ELSE PGSoftComm END
-				
-			
+				--> phase 4
+				,WMCasinoComm = CASE WHEN @IsUpdateWMCasino = 1 THEN @WMCasinoComm ELSE WMCasinoComm END
+				,BigGamingComm = CASE WHEN @IsUpdateBigGaming = 1 THEN @BigGamingComm ELSE BigGamingComm END
+				,JokerComm = CASE WHEN @IsUpdateJoker = 1 THEN @JokerComm ELSE JokerComm END
+				,GDGComm = CASE WHEN @IsUpdateGDG = 1 THEN @GDGComm ELSE GDGComm END
+				,SportsLotteryComm = CASE WHEN @IsUpdateSportsLottery = 1 THEN @SportsLotteryComm ELSE SportsLotteryComm END
+				,HabaneroComm = CASE WHEN @IsUpdateHabanero = 1 THEN @HabaneroComm ELSE HabaneroComm END
 		FROM dbo.LicenseeCustComm cs WITH (ROWLOCK,UPDLOCK)
 			INNER JOIN @TempList_Input ip ON cs.CustID = ip.CustID
 			LEFT JOIN @TempLicenseeBA_batch ba ON ba.custid = ip.custid
@@ -205,6 +224,13 @@ BEGIN
 			OR @IsUpdateSabaclub  = 1
 			OR @IsUpdateSAGaming  = 1
 			OR @IsUpdatePGSoft  = 1
+			--Phase 4
+			OR @IsUpdateWMCasino		= 1
+			OR @IsUpdateBigGaming		= 1
+			OR @IsUpdateJoker			= 1
+			OR @IsUpdateGDG				= 1
+			OR @IsUpdateSportsLottery	= 1
+			OR @IsUpdateHabanero		= 1
 			
 			)
 		BEGIN	
@@ -229,6 +255,13 @@ BEGIN
 					, SabaclubComm  = CASE WHEN @IsUpdateSabaclub = 1 THEN @SabaclubComm ELSE SabaclubComm END
 					, SAGamingComm  = CASE WHEN @IsUpdateSAGaming = 1 THEN @SAGamingComm ELSE SAGamingComm END	
 					, PGSoftComm  = CASE WHEN @IsUpdatePGSoft = 1 THEN @PGSoftComm ELSE PGSoftComm END
+					--> phase 4
+					,WMCasinoComm = CASE WHEN @IsUpdateWMCasino = 1 THEN @WMCasinoComm ELSE WMCasinoComm END
+					,BigGamingComm = CASE WHEN @IsUpdateBigGaming = 1 THEN @BigGamingComm ELSE BigGamingComm END
+					,JokerComm = CASE WHEN @IsUpdateJoker = 1 THEN @JokerComm ELSE JokerComm END
+					,GDGComm = CASE WHEN @IsUpdateGDG = 1 THEN @GDGComm ELSE GDGComm END
+					,SportsLotteryComm = CASE WHEN @IsUpdateSportsLottery = 1 THEN @SportsLotteryComm ELSE SportsLotteryComm END
+					,HabaneroComm = CASE WHEN @IsUpdateHabanero = 1 THEN @HabaneroComm ELSE HabaneroComm END
 			FROM dbo.LicenseeCustComm cs WITH (ROWLOCK,UPDLOCK)
 				INNER JOIN @TempList_Input ip ON ip.CustID = cs.CustID
 		END

@@ -27,7 +27,14 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeGroupCommIns]
 	@SabaclubComm DECIMAL(9,8) = 0,
 	@SAGamingComm DECIMAL(9,8) = 0,
 	@PGSoftComm DECIMAL(9,8) = 0,
-	
+	-->phase 4
+	@WMCasinoComm		DECIMAL(9,8) = 0,
+	@BigGamingComm		DECIMAL(9,8) = 0,
+	@JokerComm			DECIMAL(9,8) = 0,
+	@GDGComm			DECIMAL(9,8) = 0,
+	@SportsLotteryComm	DECIMAL(9,8) = 0,
+	@HabaneroComm		DECIMAL(9,8) = 0,
+
 	@GroupColor VARCHAR(20),
 	@UserID INT,
 	@IP VARCHAR(40),
@@ -58,7 +65,8 @@ Revisions:
 	- 20200410@Johnson: Add comm for AB,Macau,PP,AG,GD [redmine:#131774] 
 	- 20200511@Max: Add comm for FW, Remove AG, GD - [Redmine: #131774]
 	- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238]   
-	- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012]   
+	- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012] 
+	- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048]  
 	
 Param's Explanation:
 
@@ -101,6 +109,13 @@ BEGIN
 		OR @SabaclubComm > 0.15
 		OR @SAGamingComm > 0.15
 		OR @PGSoftComm > 0.15
+		--Phase 4
+		OR @WMCasinoComm > 0.15
+		OR @BigGamingComm > 0.15
+		OR @JokerComm > 0.15
+		OR @GDGComm > 0.15
+		OR @SportsLotteryComm > 0.15	
+		OR @HabaneroComm > 0.15
 	BEGIN
 		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN  'Player Commission should not greater than 0.15'
 										ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200002,@Langkey)
@@ -146,6 +161,13 @@ BEGIN
 											,SabaclubComm
 											,SAGamingComm
 											,PGSoftComm 
+											--phase 4
+											,WMCasinoComm
+											,BigGamingComm
+											,JokerComm
+											,GDGComm
+											,SportsLotteryComm
+											,HabaneroComm
 											)
 		VALUES (@LicenseeID,@GroupName,@SBComm,@NGComm,@GroupColor,@IsDefault,@RNGComm,@ParlayComm
 				,@AllbetComm
@@ -166,6 +188,13 @@ BEGIN
 				,@SabaclubComm
 				,@SAGamingComm
 				,@PGSoftComm
+				-->phase 4
+				,@WMCasinoComm		
+				,@BigGamingComm		
+				,@JokerComm			
+				,@GDGComm			
+				,@SportsLotteryComm	
+				,@HabaneroComm		
 				)
 		
 		IF (@@ERROR <> 0)
@@ -209,6 +238,13 @@ BEGIN
 		'SabaclubComm="'+ COALESCE(CAST(@SabaclubComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'SAGamingComm="'+ COALESCE(CAST(@SAGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'PGSoftComm="'+ COALESCE(CAST(@PGSoftComm as VARCHAR(50)),SPACE(1)) + '" '+
+		-->phase 4
+		'WMCasinoComm="'+ COALESCE(CAST(@WMCasinoComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'BigGamingComm="'+ COALESCE(CAST(@BigGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'JokerComm="'+ COALESCE(CAST(@JokerComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'GDGComm="'+ COALESCE(CAST(@GDGComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'SportsLotteryComm="'+ COALESCE(CAST(@SportsLotteryComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'HabaneroComm="'+ COALESCE(CAST(@HabaneroComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		
 		'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
 		'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +
@@ -244,6 +280,14 @@ BEGIN
 		'SabaclubComm="'+ COALESCE(CAST(@SabaclubComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'SAGamingComm="'+ COALESCE(CAST(@SAGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'PGSoftComm="'+ COALESCE(CAST(@PGSoftComm as VARCHAR(50)),SPACE(1)) + '" '+
+		-- phase 4
+		'WMCasinoComm="'+ COALESCE(CAST(@WMCasinoComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'BigGamingComm="'+ COALESCE(CAST(@BigGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'JokerComm="'+ COALESCE(CAST(@JokerComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'GDGComm="'+ COALESCE(CAST(@GDGComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'SportsLotteryComm="'+ COALESCE(CAST(@SportsLotteryComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'HabaneroComm="'+ COALESCE(CAST(@HabaneroComm as VARCHAR(50)),SPACE(1)) + '" ' +
+
 		
 		'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
 		'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +

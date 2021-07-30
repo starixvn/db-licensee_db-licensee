@@ -17,6 +17,7 @@ AS
 	- 20200701@Helen: Remove Allbet - [Redmine: #131774]
 	- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238] 
 	- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012] 
+	- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048] 
 */  
 BEGIN  
 	SET NOCOUNT ON;  
@@ -45,8 +46,14 @@ BEGIN
 		ISNULL(ArcadiaGamingComm,0) AS  ArcadiaGamingComm,	
 		ISNULL(SabaclubComm,0) AS SabaclubComm,	
 		ISNULL(SAGamingComm,0) AS SAGamingComm,	
-		ISNULL(PGSoftComm,0) AS PGSoftComm	
-		
+		ISNULL(PGSoftComm,0) AS PGSoftComm,
+		-->phase 4:
+		ISNULL(WMCasinoComm,0) AS WMCasinoComm,
+		ISNULL(BigGamingComm,0) AS BigGamingComm,	
+		ISNULL(JokerComm,0) AS  JokerComm,	
+		ISNULL(GDGComm,0) AS GDGComm,	
+		ISNULL(SportsLotteryComm,0) AS SportsLotteryComm,	
+		ISNULL(HabaneroComm,0) AS HabaneroComm	
 	FROM dbo.LicenseeCustComm lc WITH (NOLOCK)					
 	WHERE lc.CustID = @CustID	
 END
