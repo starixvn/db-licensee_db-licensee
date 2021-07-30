@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_LicenseeGroupCommDel]
 	@LicenseeID INT,
 	@GroupCommID INT,
@@ -32,7 +32,8 @@ AS
 		- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774]
 		- 20200701@Helen: Remove Allbet - [Redmine: #131774]  
 		- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238]
-		- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012]   
+		- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012] 
+		- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048]  
 		 
 	Param's Explanation:
 
@@ -73,6 +74,14 @@ BEGIN
 		@SabaclubComm DECIMAL(9,8),
 		@SAGamingComm DECIMAL(9,8),
 		@PGSoftComm DECIMAL(9,8),
+		--Phase 4
+		@WMCasinoComm		DECIMAL(9,8),
+		@BigGamingComm		DECIMAL(9,8),
+		@JokerComm			DECIMAL(9,8),
+		@GDGComm			DECIMAL(9,8),
+		@SportsLotteryComm	DECIMAL(9,8),
+		@HabaneroComm		DECIMAL(9,8),
+
 		@GroupColor VARCHAR(20), 
 		@GroupName VARCHAR(100), 
 		@IsDefault BIT
@@ -124,7 +133,14 @@ BEGIN
 			@SabaclubComm = SabaclubComm,
 			@SAGamingComm = SAGamingComm,
 			@PGSoftComm = PGSoftComm,
-			
+			--Phase 4
+			@WMCasinoComm		= WMCasinoComm,
+			@BigGamingComm		= BigGamingComm,
+			@JokerComm			= JokerComm,
+			@GDGComm			= GDGComm,
+			@SportsLotteryComm	= SportsLotteryComm,
+			@HabaneroComm		= HabaneroComm,
+
 			@GroupColor=color,
 			@GroupName=GroupName,
 			@IsDefault=IsDefault
@@ -257,7 +273,19 @@ BEGIN
 					@SabaclubComm = 0,
 					@SAGamingComm = 0,
 					@PGSoftComm = 0,
-
+					--> phase 4
+					@IsUpdateWMCasino		= 1,		
+					@IsUpdateBigGaming		= 1,		
+					@IsUpdateJoker			= 1,			
+					@IsUpdateGDG			= 1,			
+					@IsUpdateSportsLottery	= 1,
+					@IsUpdateHabanero		= 1,		
+					@WMCasinoComm				= 0	,	
+					@BigGamingComm				= 0,		
+					@JokerComm					= 0,			
+					@GDGComm					= 0,			
+					@SportsLotteryComm			= 0,	
+					@HabaneroComm				= 0,	
 					
 					@isClearGroupComm = 1,
 					@ClearGroupCommGroupID = @GroupCommID,
@@ -316,6 +344,13 @@ BEGIN
 		'SabaclubComm="'+ COALESCE(CAST(@SabaclubComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'SAGamingComm="'+ COALESCE(CAST(@SAGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'PGSoftComm="'+ COALESCE(CAST(@PGSoftComm as VARCHAR(50)),SPACE(1)) + '" '+
+		-- phase 4
+		'WMCasinoComm="'+ COALESCE(CAST(@WMCasinoComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'BigGamingComm="'+ COALESCE(CAST(@BigGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'JokerComm="'+ COALESCE(CAST(@JokerComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'GDGComm="'+ COALESCE(CAST(@GDGComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'SportsLotteryComm="'+ COALESCE(CAST(@SportsLotteryComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'HabaneroComm="'+ COALESCE(CAST(@HabaneroComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		
 		'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
 		'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +
@@ -332,7 +367,7 @@ BEGIN
 		'IsRemovePlayercomm="'+ COALESCE(CAST(@IsRemovePlayercomm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'RNGComm="'+ COALESCE(CAST(@RNGComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'ParlayComm="'+ COALESCE(CAST(@ParlayComm as VARCHAR(50)),SPACE(1)) + '" ' +			
-		--'AllbetComm="'+ COALESCE(CAST(@AllbetComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		'AllbetComm="'+ COALESCE(CAST(@AllbetComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'MacauComm="'+ COALESCE(CAST(@MacauComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'PPComm="'+ COALESCE(CAST(@PPComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		--'GDComm="'+ COALESCE(CAST(@GDComm as VARCHAR(50)),SPACE(1)) + '" ' +
@@ -352,6 +387,14 @@ BEGIN
 		'SabaclubComm="'+ COALESCE(CAST(@SabaclubComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'SAGamingComm="'+ COALESCE(CAST(@SAGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'PGSoftComm="'+ COALESCE(CAST(@PGSoftComm as VARCHAR(50)),SPACE(1)) + '" '+
+
+		-- phase 4
+		'WMCasinoComm="'+ COALESCE(CAST(@WMCasinoComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'BigGamingComm="'+ COALESCE(CAST(@BigGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'JokerComm="'+ COALESCE(CAST(@JokerComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'GDGComm="'+ COALESCE(CAST(@GDGComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'SportsLotteryComm="'+ COALESCE(CAST(@SportsLotteryComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'HabaneroComm="'+ COALESCE(CAST(@HabaneroComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		
 		'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
 		'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +

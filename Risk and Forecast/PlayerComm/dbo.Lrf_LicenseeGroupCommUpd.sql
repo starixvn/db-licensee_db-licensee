@@ -47,7 +47,20 @@ CREATE PROCEDURE [dbo].[Lrf_LicenseeGroupCommUpd]
 	@ArcadiaGamingComm DECIMAL(9,8) = 0,	
 	@SabaclubComm DECIMAL(9,8) = 0,	
 	@SAGamingComm DECIMAL(9,8) = 0,	
-	@PGSoftComm DECIMAL(9,8) = 0,	
+	@PGSoftComm DECIMAL(9,8) = 0,
+	-->phase 4
+	@IsUpdateWMCasino		BIT = 0,
+	@IsUpdateBigGaming		BIT = 0,
+	@IsUpdateJoker			BIT = 0,
+	@IsUpdateGDG			BIT = 0,
+	@IsUpdateSportsLottery	BIT = 0,
+	@IsUpdateHabanero		BIT = 0,
+	@WMCasinoComm		DECIMAL(9,8) = 0,
+	@BigGamingComm		DECIMAL(9,8) = 0,
+	@JokerComm			DECIMAL(9,8) = 0,
+	@GDGComm			DECIMAL(9,8) = 0,
+	@SportsLotteryComm	DECIMAL(9,8) = 0,
+	@HabaneroComm		DECIMAL(9,8) = 0,
 	
 	@GroupColor VARCHAR(20),
 	@IsDefault BIT=0, 
@@ -81,8 +94,9 @@ AS
 		- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774]
 		- 20200701@Helen: Remove Allbet - [Redmine: #131774]  
 		- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238] 
-		- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012]   
+		- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012] 
 		- 20210604@Eden: Update Comm Group - Param @IsUpdateSAGaming is wrong [Redmine: #156459] 
+		- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048]  
 
 	Param's Explanation:
 
@@ -132,6 +146,14 @@ BEGIN
 		,@SabaclubComm_old DECIMAL(9,8) = 0	
 		,@SAGamingComm_old DECIMAL(9,8) = 0	
 		,@PGSoftComm_old DECIMAL(9,8) = 0
+
+		--> Phase 4
+		,@WMCasinoComm_Old		DECIMAL(9,8) = 0
+		,@BigGamingComm_Old		DECIMAL(9,8) = 0
+		,@JokerComm_Old			DECIMAL(9,8) = 0
+		,@GDGComm_Old			DECIMAL(9,8) = 0
+		,@SportsLotteryComm_Old	DECIMAL(9,8) = 0
+		,@HabaneroComm_Old		DECIMAL(9,8) = 0
 	
 		,@IsDefault_Old BIT
 		,@custID_cnt INT = 0
@@ -164,8 +186,13 @@ BEGIN
 		OR @SabaclubComm > 0.15
 		OR @SAGamingComm > 0.15
 		OR @PGSoftComm > 0.15
-
-		
+		--Phase 4
+		OR @WMCasinoComm > 0.15
+		OR @BigGamingComm > 0.15
+		OR @JokerComm > 0.15
+		OR @GDGComm > 0.15
+		OR @SportsLotteryComm > 0.15	
+		OR @HabaneroComm > 0.15
 	BEGIN
 		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN  'Player Commission should not greater than '
 										ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200002,@Langkey)
@@ -221,6 +248,13 @@ BEGIN
 			, @SabaclubComm_old = SabaclubComm
 			, @SAGamingComm_old = SAGamingComm
 			, @PGSoftComm_old = PGSoftComm
+			--Phase 4
+			,@WMCasinoComm_Old		= WMCasinoComm
+			,@BigGamingComm_Old		= BigGamingComm
+			,@JokerComm_Old			= JokerComm
+			,@GDGComm_Old			= GDGComm
+			,@SportsLotteryComm_Old	= SportsLotteryComm
+			,@HabaneroComm_Old		= HabaneroComm
 
 			,@IsDefault_Old=IsDefault			
 		FROM dbo.LicenseeGroupComm WITH (NOLOCK)
@@ -309,7 +343,14 @@ BEGIN
 			@IsUpdateSabaclub  = CASE WHEN @IsUpdateSabaclub = 1 AND @SabaclubComm_old <> @SabaclubComm  THEN 1 ELSE 0 END,	
 			@IsUpdateSAGaming  = CASE WHEN @IsUpdateSAGaming = 1 AND @SAGamingComm_old <> @SAGamingComm  THEN 1 ELSE 0 END,	
 			@IsUpdatePGSoft  = CASE WHEN @IsUpdatePGSoft = 1 AND @PGSoftComm_old <> @PGSoftComm  THEN 1 ELSE 0 END,
-			@IsUpdateAllbet  = CASE WHEN @IsUpdateAllbet = 1 AND @AllbetComm_Old <> @AllbetComm  THEN 1 ELSE 0 END
+			@IsUpdateAllbet  = CASE WHEN @IsUpdateAllbet = 1 AND @AllbetComm_Old <> @AllbetComm  THEN 1 ELSE 0 END,
+			-- phase 4
+			@IsUpdateWMCasino  = CASE WHEN @IsUpdateWMCasino = 1 AND @WMCasinoComm_Old <> @WMCasinoComm  THEN 1 ELSE 0 END,
+			@IsUpdateBigGaming  = CASE WHEN @IsUpdateBigGaming = 1 AND @BigGamingComm_Old <> @BigGamingComm  THEN 1 ELSE 0 END,	
+			@IsUpdateJoker  = CASE WHEN @IsUpdateJoker = 1 AND @JokerComm_Old <> @JokerComm  THEN 1 ELSE 0 END,	
+			@IsUpdateGDG  = CASE WHEN @IsUpdateGDG = 1 AND @GDGComm_Old <> @GDGComm  THEN 1 ELSE 0 END,	
+			@IsUpdateSportsLottery  = CASE WHEN @IsUpdateSportsLottery = 1 AND @SportsLotteryComm_Old <> @SportsLotteryComm  THEN 1 ELSE 0 END,
+			@IsUpdateHabanero  = CASE WHEN @IsUpdateHabanero = 1 AND @HabaneroComm_Old <> @HabaneroComm  THEN 1 ELSE 0 END
 		
 		--Update Group Comm + Member Comm + all the comm settings
 		IF (@IsUpdateSB = 1
@@ -332,6 +373,13 @@ BEGIN
 			OR @IsUpdateSabaclub  = 1
 			OR @IsUpdateSAGaming  = 1
 			OR @IsUpdatePGSoft  = 1
+			--Phase 4
+			OR @IsUpdateWMCasino		= 1
+			OR @IsUpdateBigGaming		= 1
+			OR @IsUpdateJoker			= 1
+			OR @IsUpdateGDG				= 1
+			OR @IsUpdateSportsLottery	= 1
+			OR @IsUpdateHabanero		= 1
 			)
 		
 		BEGIN
@@ -361,6 +409,14 @@ BEGIN
 					,SabaclubComm = CASE WHEN @IsUpdateSabaclub = 1 THEN @SabaclubComm ELSE SabaclubComm END
 					,SAGamingComm = CASE WHEN @IsUpdateSAGaming = 1 THEN @SAGamingComm ELSE SAGamingComm END
 					,PGSoftComm = CASE WHEN @IsUpdatePGSoft = 1 THEN @PGSoftComm ELSE PGSoftComm END
+					--> phase 4
+					,WMCasinoComm = CASE WHEN @IsUpdateWMCasino = 1 THEN @WMCasinoComm ELSE WMCasinoComm END
+					,BigGamingComm = CASE WHEN @IsUpdateBigGaming = 1 THEN @BigGamingComm ELSE BigGamingComm END
+					,JokerComm = CASE WHEN @IsUpdateJoker = 1 THEN @JokerComm ELSE JokerComm END
+					,GDGComm = CASE WHEN @IsUpdateGDG = 1 THEN @GDGComm ELSE GDGComm END
+					,SportsLotteryComm = CASE WHEN @IsUpdateSportsLottery = 1 THEN @SportsLotteryComm ELSE SportsLotteryComm END
+					,HabaneroComm = CASE WHEN @IsUpdateHabanero = 1 THEN @HabaneroComm ELSE HabaneroComm END
+
 					
 			WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID
 			
@@ -425,6 +481,19 @@ BEGIN
 					,@SabaclubComm = @SabaclubComm
 					,@SAGamingComm = @SAGamingComm
 					,@PGSoftComm = @PGSoftComm
+					--> phase 4
+					,@IsUpdateWMCasino		= @IsUpdateWMCasino		
+					,@IsUpdateBigGaming		= @IsUpdateBigGaming		
+					,@IsUpdateJoker			= @IsUpdateJoker			
+					,@IsUpdateGDG			= @IsUpdateGDG			
+					,@IsUpdateSportsLottery	= @IsUpdateSportsLottery
+					,@IsUpdateHabanero		= @IsUpdateHabanero		
+					,@WMCasinoComm				= @WMCasinoComm		
+					,@BigGamingComm				= @BigGamingComm		
+					,@JokerComm					= @JokerComm			
+					,@GDGComm					= @GDGComm			
+					,@SportsLotteryComm			= @SportsLotteryComm	
+					,@HabaneroComm				= @HabaneroComm		
 					,@IP=@IP
 					,@Langkey=@langkey
 					,@ErrCode=@ErrCode OUTPUT
@@ -478,7 +547,14 @@ BEGIN
 			'SabaclubComm="'+ COALESCE(CAST(@SabaclubComm as VARCHAR(50)),SPACE(1)) + '" '+
 			'SAGamingComm="'+ COALESCE(CAST(@SAGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
 			'PGSoftComm="'+ COALESCE(CAST(@PGSoftComm as VARCHAR(50)),SPACE(1)) + '" '+
-			
+			-- phase 4
+			'WMCasinoComm="'+ COALESCE(CAST(@WMCasinoComm as VARCHAR(50)),SPACE(1)) + '" '+
+			'BigGamingComm="'+ COALESCE(CAST(@BigGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
+			'JokerComm="'+ COALESCE(CAST(@JokerComm as VARCHAR(50)),SPACE(1)) + '" '+
+			'GDGComm="'+ COALESCE(CAST(@GDGComm as VARCHAR(50)),SPACE(1)) + '" '+
+			'SportsLotteryComm="'+ COALESCE(CAST(@SportsLotteryComm as VARCHAR(50)),SPACE(1)) + '" '+
+			'HabaneroComm="'+ COALESCE(CAST(@HabaneroComm as VARCHAR(50)),SPACE(1)) + '" '+
+
 			'IsUpdateNG="'+ COALESCE(CAST(@IsUpdateNG as VARCHAR(50)),SPACE(1)) + '" ' +
 			'IsUpdateRNG="'+ COALESCE(CAST(@IsUpdateRNG as VARCHAR(50)),SPACE(1)) + '" ' +			
 			'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
@@ -515,6 +591,14 @@ BEGIN
 			'SabaclubComm="'+ COALESCE(CAST(@SabaclubComm_old as VARCHAR(50)),SPACE(1)) + '" '+
 			'SAGamingComm="'+ COALESCE(CAST(@SAGamingComm_old as VARCHAR(50)),SPACE(1)) + '" '+
 			'PGSoftComm="'+ COALESCE(CAST(@PGSoftComm_old as VARCHAR(50)),SPACE(1)) + '" '+
+
+			-- phase 4
+			'WMCasinoComm="'+ COALESCE(CAST(@WMCasinoComm_old as VARCHAR(50)),SPACE(1)) + '" '+
+			'BigGamingComm="'+ COALESCE(CAST(@BigGamingComm_old as VARCHAR(50)),SPACE(1)) + '" '+
+			'JokerComm="'+ COALESCE(CAST(@JokerComm_old as VARCHAR(50)),SPACE(1)) + '" '+
+			'GDGComm="'+ COALESCE(CAST(@GDGComm_old as VARCHAR(50)),SPACE(1)) + '" '+
+			'SportsLotteryComm="'+ COALESCE(CAST(@SportsLotteryComm_old as VARCHAR(50)),SPACE(1)) + '" '+
+			'HabaneroComm="'+ COALESCE(CAST(@HabaneroComm_old as VARCHAR(50)),SPACE(1)) + '" '+
 		
 			'IsUpdateNG="'+ COALESCE(CAST(@IsUpdateNG as VARCHAR(50)),SPACE(1)) + '" ' +
 			'IsUpdateRNG="'+ COALESCE(CAST(@IsUpdateRNG as VARCHAR(50)),SPACE(1)) + '" ' +			

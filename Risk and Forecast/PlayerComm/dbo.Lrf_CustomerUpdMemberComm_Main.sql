@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBCUST-CustDB" executers="bodbLicenseeNet,bodbAdminNet,Dot_Member" viewers="vnteam" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CustDB" executers="bodbLicenseeNet,bodbAdminNet,Dot_Member" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Main] 
 	@strCustID VARCHAR(MAX)
 	,@SBComm DECIMAL(9,8)
@@ -42,6 +42,19 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Main]
 	,@SabaclubComm DECIMAL(9,8) = 0
 	,@SAGamingComm DECIMAL(9,8) = 0
 	,@PGSoftComm DECIMAL(9,8) = 0
+	-->phase 4
+	,@IsUpdateWMCasino		BIT = 0
+	,@IsUpdateBigGaming		BIT = 0
+	,@IsUpdateJoker			BIT = 0
+	,@IsUpdateGDG			BIT = 0
+	,@IsUpdateSportsLottery	BIT = 0
+	,@IsUpdateHabanero		BIT = 0
+	,@WMCasinoComm		DECIMAL(9,8) = 0
+	,@BigGamingComm		DECIMAL(9,8) = 0
+	,@JokerComm			DECIMAL(9,8) = 0
+	,@GDGComm			DECIMAL(9,8) = 0
+	,@SportsLotteryComm	DECIMAL(9,8) = 0
+	,@HabaneroComm		DECIMAL(9,8) = 0
 AS
 /*
 	Created: 20120907@Viet
@@ -65,6 +78,7 @@ AS
 		- 20200701@Helen: Remove Allbet - [Redmine: #131774]
 		- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238] 
 		- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012] 
+		- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048]  
 		
 	Param's Explanation:
 
@@ -105,6 +119,14 @@ BEGIN
 			,@SAGamingComm_Group DECIMAL(9,8) = 0	
 			,@PGSoftComm_Group DECIMAL(9,8) = 0	
 			,@AllbetComm_Group DECIMAL(9,8)=0
+			-->phase 4
+			,@WMCasinoComm_Group		DECIMAL(9,8) = 0
+			,@BigGamingComm_Group		DECIMAL(9,8) = 0
+			,@JokerComm_Group			DECIMAL(9,8) = 0
+			,@GDGComm_Group				DECIMAL(9,8) = 0
+			,@SportsLotteryComm_Group	DECIMAL(9,8) = 0
+			,@HabaneroComm_Group		DECIMAL(9,8) = 0
+
 	
 	IF (	@IsUpdateAllbet = 1 OR 
 		@IsUpdateFW = 1 OR @IsUpdateMacau = 1 OR @IsUpdatePP = 1
@@ -120,6 +142,14 @@ BEGIN
 		OR @IsUpdateSabaclub  = 1	
 		OR @IsUpdateSAGaming  = 1	
 		OR @IsUpdatePGSoft  = 1	
+		--> phase 4
+		OR @IsUpdateWMCasino = 1	
+		OR @IsUpdateBigGaming = 1	
+		OR @IsUpdateJoker  = 1	
+		OR @IsUpdateGDG  = 1	
+		OR @IsUpdateSportsLottery  = 1	
+		OR @IsUpdateHabanero  = 1	
+
 		)
 	BEGIN		
 		SET @AgentID = (SELECT TOP (1) recommend 
@@ -144,12 +174,21 @@ BEGIN
 			,@SabaclubComm_Group = MAX(CASE WHEN BetType = 1611 THEN playerdiscount ELSE 0 END)
 			,@SAGamingComm_Group = MAX(CASE WHEN BetType = 3001 THEN playerdiscount ELSE 0 END)
 			,@PGSoftComm_Group = MAX(CASE WHEN BetType = 6001 THEN playerdiscount ELSE 0 END)
-			
+			-->phase 4
+			,@WMCasinoComm_Group = MAX(CASE WHEN BetType = 3401 THEN playerdiscount ELSE 0 END)
+			,@BigGamingComm_Group = MAX(CASE WHEN BetType = 3501 THEN playerdiscount ELSE 0 END)
+			,@JokerComm_Group = MAX(CASE WHEN BetType = 6401 THEN playerdiscount ELSE 0 END)
+			,@GDGComm_Group = MAX(CASE WHEN BetType = 5701 THEN playerdiscount ELSE 0 END)
+			,@SportsLotteryComm_Group = MAX(CASE WHEN BetType = 3611 THEN playerdiscount ELSE 0 END)
+			,@HabaneroComm_Group = MAX(CASE WHEN BetType = 7001 THEN playerdiscount ELSE 0 END)
 		FROM dbo.Dep_CustDiscountGroupSetting_Member grp WITH(NOLOCK)
 		WHERE AgentID = @AgentID
 			AND sporttype IN (212,248,219,243,247,220,180,190,222
 								--phase 3
-							,211, 245,165,200,244,232 )
+							,211, 245,165,200,244,232 
+							--phase 4
+							,233,239,234,236,169,238
+							)
 	END	
 								
 	WHILE (1 = 1)
@@ -230,9 +269,29 @@ BEGIN
 			,@SabaclubComm_Group = @SabaclubComm_Group	
 			,@SAGamingComm_Group = @SAGamingComm_Group	
 			,@PGSoftComm_Group =  @PGSoftComm_Group	
-			
+			--> phase 4
+			,@IsUpdateWMCasino		= @IsUpdateWMCasino		
+			,@IsUpdateBigGaming		= @IsUpdateBigGaming		
+			,@IsUpdateJoker			= @IsUpdateJoker			
+			,@IsUpdateGDG			= @IsUpdateGDG			
+			,@IsUpdateSportsLottery	= @IsUpdateSportsLottery
+			,@IsUpdateHabanero		= @IsUpdateHabanero		
+			,@WMCasinoComm				= @WMCasinoComm		
+			,@BigGamingComm				= @BigGamingComm		
+			,@JokerComm					= @JokerComm			
+			,@GDGComm					= @GDGComm			
+			,@SportsLotteryComm			= @SportsLotteryComm	
+			,@HabaneroComm				= @HabaneroComm		
+			,@WMCasinoComm_Group		= @WMCasinoComm_Group		
+			,@BigGamingComm_Group		= @BigGamingComm_Group		
+			,@JokerComm_Group			= @JokerComm_Group			
+			,@GDGComm_Group				= @GDGComm_Group				
+			,@SportsLotteryComm_Group	= @SportsLotteryComm_Group	
+			,@HabaneroComm_Group		= @HabaneroComm_Group		
+
 		-- delay 00.100ms after 5 times continuous running
 		IF @runningCNT % 2 = 0 WAITFOR DELAY '00:00:00.280'
 	END
 	
 END	
+GO

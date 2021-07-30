@@ -57,8 +57,26 @@ ALTER PROCEDURE [dbo].[Acc_CustSetting3rd_16]
 	@ArcadiaGamingComm_Group DECIMAL(9,8) = 0,	
 	@SabaclubComm_Group DECIMAL(9,8) = 0,	
 	@SAGamingComm_Group DECIMAL(9,8) = 0,	
-	@PGSoftComm_Group DECIMAL(9,8) = 0
-	
+	@PGSoftComm_Group DECIMAL(9,8) = 0,
+	-->phase 4
+	@IsUpdateWMCasino		BIT = 0,
+	@IsUpdateBigGaming		BIT = 0,
+	@IsUpdateJoker			BIT = 0,
+	@IsUpdateGDG			BIT = 0,
+	@IsUpdateSportsLottery	BIT = 0,
+	@IsUpdateHabanero		BIT = 0,
+	@WMCasinoComm		DECIMAL(9,8) = 0,
+	@BigGamingComm		DECIMAL(9,8) = 0,
+	@JokerComm			DECIMAL(9,8) = 0,
+	@GDGComm			DECIMAL(9,8) = 0,
+	@SportsLotteryComm	DECIMAL(9,8) = 0,
+	@HabaneroComm		DECIMAL(9,8) = 0,
+	@WMCasinoComm_Group			DECIMAL(9,8) = 0,
+	@BigGamingComm_Group		DECIMAL(9,8) = 0,
+	@JokerComm_Group			DECIMAL(9,8) = 0,
+	@GDGComm_Group				DECIMAL(9,8) = 0,
+	@SportsLotteryComm_Group	DECIMAL(9,8) = 0,
+	@HabaneroComm_Group			DECIMAL(9,8) = 0
 AS
 /*
 Created: 20120730@Henry
@@ -82,7 +100,8 @@ Revisions:
 	- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774]
 	- 20200701@Helen: Remove Allbet - [Redmine: #131774]
 	- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238] 
-	- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012]   
+	- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012]
+	- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048]   
 	
 Param's Explanation:
 • @ErrCode:
@@ -238,6 +257,13 @@ BEGIN
 		OR @IsUpdateSAGaming  = 1
 		OR @IsUpdatePGSoft  = 1
 		OR @IsUpdateAllbet = 1
+		--> phase 4
+		OR @IsUpdateWMCasino = 1	
+		OR @IsUpdateBigGaming = 1	
+		OR @IsUpdateJoker  = 1	
+		OR @IsUpdateGDG  = 1	
+		OR @IsUpdateSportsLottery  = 1	
+		OR @IsUpdateHabanero  = 1	
 	)
 	BEGIN
 		INSERT INTO @tblSettingDCS_tmp (IsUpdated,sporttype,Bettype,CommGroup, Comm)
@@ -258,6 +284,13 @@ BEGIN
 				,(@IsUpdateSAGaming,244,3001,@SAGamingComm_Group,@SAGamingComm)
 				,(@IsUpdatePGSoft,232,6001,@PGSoftComm_Group,@PGSoftComm)
 				,(@IsUpdateAllbet,211,2401,@AllbetComm_Group,@AllbetComm)
+				-- Phase 4
+				,(@IsUpdateWMCasino,233,3401,@WMCasinoComm_Group,@WMCasinoComm)
+				,(@IsUpdateBigGaming,239,3501,@BigGamingComm_Group,@BigGamingComm)
+				,(@IsUpdateJoker,234,6401,@JokerComm_Group,@JokerComm)
+				,(@IsUpdateGDG,236,5701,@GDGComm_Group,@GDGComm)
+				,(@IsUpdateSportsLottery,169,3611,@SportsLotteryComm_Group,@SportsLotteryComm)
+				,(@IsUpdateHabanero,238,7001,@HabaneroComm_Group,@HabaneroComm)
 			
 	END
 	
