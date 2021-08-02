@@ -128,7 +128,8 @@ BEGIN
 			40,--	Table
 			43,--	I4D
 			63,--	SLT
-			62--	Creative Gaming
+			62,--	Creative Gaming
+			
 			--20210629@Johnson: add more products
 			6,--	RnG Casino
 			15,--	Colossus Bets
