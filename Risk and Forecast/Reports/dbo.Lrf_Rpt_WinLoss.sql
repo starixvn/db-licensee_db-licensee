@@ -587,7 +587,7 @@ BEGIN
 				AND b.Winlostdate BETWEEN @_FromDate AND @TempToDate
 				AND ((b.bettype IN (SELECT Bettype FROM @ExcludedBetType WHERE ProductCode <> 'SB') OR b.sporttype IN (150, 173))
 					AND b.statusID IN (111,112,113))
-				AND b.roleid = 2
+				AND b.roleid = 1
 				AND (@isSearchCust = 0 OR EXISTS (SELECT TOP 1 1 FROM #tmpCust tc WHERE tc.CustID = b.CustID)))
 		BEGIN
 			SET @PromotionPrize = 1
