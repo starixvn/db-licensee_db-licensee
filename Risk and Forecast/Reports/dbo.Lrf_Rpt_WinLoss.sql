@@ -151,6 +151,7 @@ AS
 		- 20210519@Louis: Integrate Big Gaming product [RedmineID: #146773]
 		- 20210525@Hogan: Integrate Vgaming [RedmineID: #151583]
 		- 20210630@Hogan: Integrate Creative Gaming [RedmineID: #152619]
+		- 20210805@Hogan: Fix bug when search user then export Extra Payout at Customer Winloss report [RedmineID: #159756]
 
 	Param's Explanation:
 		@OrderItem:
@@ -511,7 +512,8 @@ BEGIN
 				AND ((b.bettype IN (SELECT Bettype FROM @ExcludedBetType WHERE ProductCode <> 'SB') 
 					OR (b.bettype BETWEEN 1611 AND 1699 AND b.matchid = 150)
 					OR (b.bettype BETWEEN 3801 AND 3899 AND b.matchid = 173)) 
-					AND b.statusID IN (111,112,113)))
+					AND b.statusID IN (111,112,113))
+					AND (@isSearchCust = 0 OR EXISTS (SELECT TOP 1 1 FROM #tmpCust tc WHERE tc.CustID = b.CustID)))
 			BEGIN
 			SET @PromotionPrize = 1
 		END
@@ -585,7 +587,8 @@ BEGIN
 				AND b.Winlostdate BETWEEN @_FromDate AND @TempToDate
 				AND ((b.bettype IN (SELECT Bettype FROM @ExcludedBetType WHERE ProductCode <> 'SB') OR b.sporttype IN (150, 173))
 					AND b.statusID IN (111,112,113))
-				AND b.roleid = 2)
+				AND b.roleid = 2
+				AND (@isSearchCust = 0 OR EXISTS (SELECT TOP 1 1 FROM #tmpCust tc WHERE tc.CustID = b.CustID)))
 		BEGIN
 			SET @PromotionPrize = 1
 		END
