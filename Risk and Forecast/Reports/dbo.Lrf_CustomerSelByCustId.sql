@@ -9,7 +9,7 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerSelByCustid]
 	@TotalRows		INT				= 0 OUTPUT,
 	@SpecialLevel	VARCHAR(100)	= '',
 	@OddsGroups		VARCHAR(100)	= '',
-	@CustomerClass	VARCHAR(100)	= NULL,
+	@CustomerClass	VARCHAR(1000)	= NULL,
 	@CommGroups		VARCHAR(1000)	= '',
 	@AgentList		VARCHAR(MAX)
 AS
@@ -29,6 +29,7 @@ AS
 		- 20201005@Winfred: unshow OddsAdj dummy customers [redmine:#142952]
 		- 202100203@Johnson: Search by Commission Group [redmine:#147477]
 		- 20210413@Johnson: HF Set @CommGroups = NULL when search left panel [redmine:#147477]
+		- 20210806@Johnson: extend @CustomerClass VARCHAR(1000) [redmine:#159754]
 	Parameter's explanations:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 		+ @SpecialLevel: default value '1,2,3,4,5,6,7,8,9,10' (all)
