@@ -1,5 +1,4 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" viewers="" isFunction="0"></info>*/
-
 ALTER PROCEDURE [dbo].[Lrf_CustomerSelByCustid]
 	@LicenseeName	VARCHAR(50),
 	@custids		VARCHAR(MAX)	= NULL,
@@ -29,7 +28,9 @@ AS
 		- 20201005@Winfred: unshow OddsAdj dummy customers [redmine:#142952]
 		- 202100203@Johnson: Search by Commission Group [redmine:#147477]
 		- 20210413@Johnson: HF Set @CommGroups = NULL when search left panel [redmine:#147477]
+		- 20210518@Percy: Change code to adapt new Move Bets flow [RedmineID: #154866]
 		- 20210806@Johnson: extend @CustomerClass VARCHAR(1000) [redmine:#159754]
+
 	Parameter's explanations:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 		+ @SpecialLevel: default value '1,2,3,4,5,6,7,8,9,10' (all)
@@ -467,6 +468,13 @@ BEGIN
 		TotalBalance	MONEY,
 		Outstanding		MONEY
 	)
+	
+	DECLARE @MBBU TABLE (BalanceUpDay SMALLDATETIME, MoveBetsDay SMALLDATETIME)
+	INSERT INTO @MBBU (BalanceUpDay, MoveBetsDay)
+	EXEC dbo.Age_SelBalanceUpDay
+
+	DECLARE @MoveBetsDay SMALLDATETIME
+	SELECT  @MoveBetsDay = MoveBetsDay FROM @MBBU
 
 	INSERT INTO #data(custid, TotalBalance, Outstanding)
 	SELECT
@@ -480,6 +488,10 @@ BEGIN
 		#Temp t
 		INNER JOIN dbo.bettrans b WITH (NOLOCK) ON t.custid = b.custid
 	WHERE b.matchid >= 0
+		AND 1 = CASE
+					WHEN b.bettype = 19999 AND b.winlostdate > @MoveBetsDay THEN 0
+					WHEN b.bettype < 19999 AND b.winlostdate <= @MoveBetsDay THEN 0
+					ELSE 1 END
 	GROUP BY t.custid
 
 	INSERT INTO #Exchange(Id, Name)
