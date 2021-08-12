@@ -1,5 +1,5 @@
 /*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
-ALTER PROCEDURE Lrf_ProblemAccount_LicenseeProblemPlayerSel
+ALTER PROCEDURE [dbo].[Lrf_ProblemAccount_LicenseeProblemPlayerSel]
 	@FromDate	DATETIME,
 	@ToDate		DATETIME,
 	@Username	VARCHAR(50) = '',
@@ -12,8 +12,7 @@ ALTER PROCEDURE Lrf_ProblemAccount_LicenseeProblemPlayerSel
 	@TotalItems	INT = 0 OUTPUT,
 	@Langkey	VARCHAR(20) = 'en-US',
 	@ReasonGroupID	VARCHAR(200) = '',
-	@CustomerClass VARCHAR(1000) = '',
-	@BaseCurrency	VARCHAR(3) = ''
+	@CustomerClass VARCHAR(1000) = ''
 AS
 	/*
 		Created: 20200211@Johnson
@@ -32,6 +31,7 @@ AS
 			- 20201204@Johnson: remove linked server when get data in TicketVoiding_VoidedTransaction_bk [redmine:#141699]
 			- 20201209@Winfred: get isBA for Problem player [redmine:#146508]
 			- 20210128@Johnson: filter customer class [redmine:#]
+			- 20210607@Johnson: change source for Problem account, remove @BaseCurrency[redmine:#155692]
 		Paramter's Explanations:
 			@OrderCol = 1: System ID
 						= 2: sort by external ID
@@ -47,7 +47,7 @@ BEGIN
 	SELECT  @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
 
 	CREATE TABLE #TempAg (custid INT)
-	CREATE TABLE #CustList (CustId INT PRIMARY KEY, CustomerClass SMALLINT, AgentID INT, CreatedDate DATETIME, username VARCHAR(50), username2 VARCHAR(50), MaxBet MONEY, MaxPerEvent MONEY, ReasonID TINYINT ,Reason NVARCHAR(4000))
+	CREATE TABLE #CustList (CustId INT PRIMARY KEY, CustomerClass SMALLINT, AgentID INT, CreatedDate DATETIME, username VARCHAR(50), username2 VARCHAR(50), Reason NVARCHAR(4000))
 	
 	DECLARE @DocHandler INT
 
@@ -72,12 +72,8 @@ BEGIN
 	DECLARE @currentDate DATETIME   
 	SELECT  @currentDate = CONVERT(DATE, GETDATE())
 
-	SELECT ExchangeID, Rate
-	INTO #ExchangeRate
-	FROM Lrf_f_GetExchangeRate(@currentDate, @currentDate, @BaseCurrency, '')
-	
-	SELECT RTRIM(LTRIM(VAL)) AS ReasonGroupID
-	INTO #ReasonGroup
+	SELECT RTRIM(LTRIM(VAL)) AS CategoryID
+	INTO #tblCategory
 	FROM Lrf_f_StringSplit(@ReasonGroupID,',')
 	
 	SELECT RTRIM(LTRIM(VAL)) AS CustomerClass
@@ -86,62 +82,47 @@ BEGIN
 
 	IF @Username <> ''
 	BEGIN
-		INSERT INTO #CustList(custid,AgentID,CreatedDate,username,username2,MaxBet,MaxPerEvent,ReasonID)
-		SELECT ci.custid,ci.recommend,p.CreatedDate, username,
-			SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) AS username2,
-		        e.Rate*p.MaxBet AS MaxBet, e.Rate*p.MaxPerEvent AS MaxPerEvent, ReasonID
+		INSERT INTO #CustList(custid,AgentID,CreatedDate,username,username2)
+		SELECT ci.custid,ci.recommend,p.ModifiedDate, ci.username,
+			SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) AS username2
 		FROM customer ci WITH(NOLOCK)
-			INNER JOIN ProblemAccount p WITH(NOLOCK) ON ci.custid = p.custid
-			LEFT JOIN #ExchangeRate e ON e.ExchangeID = ci.currency
+			INNER JOIN ProblemAccountClassification p WITH(NOLOCK) ON ci.custid = p.custid			
+			INNER JOIN custinfo c WITH(NOLOCK) ON c.custid = ci.custid
 		WHERE ci.recommend IN (SELECT custid FROM #TempAg)
-			AND roleid = 1
-			AND (username  LIKE @username + '%' OR username2 LIKE '%$'+@username + '%')		
+			AND ci.roleid = 1
+			AND (ci.username  LIKE @username + '%' OR ci.username2 LIKE '%$'+@username + '%')		
+			AND c.CustomerClass IN (SELECT customerClass FROM CategoryConfig WITH(NOLOCK) WHERE OfferDeposit = 1)
+			
 	END
 	ELSE
 	BEGIN
-		INSERT INTO #CustList(custid,AgentID,CreatedDate,username,username2,MaxBet,MaxPerEvent,ReasonID)
-		SELECT ci.custid,ci.recommend,p.CreatedDate, username,
-			SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) AS username2,
-			e.Rate*p.MaxBet AS MaxBet, e.Rate*p.MaxPerEvent AS MaxPerEvent, ReasonID
+		INSERT INTO #CustList(custid,AgentID,CreatedDate,username,username2)
+		SELECT ci.custid,ci.recommend,p.ModifiedDate, ci.username,
+			SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) AS username2			
 		FROM customer ci WITH(NOLOCK)
-			INNER JOIN ProblemAccount p WITH(NOLOCK) ON ci.custid = p.custid
-			LEFT JOIN #ExchangeRate e ON e.ExchangeID = ci.currency
+			INNER JOIN ProblemAccountClassification p WITH(NOLOCK) ON ci.custid = p.custid			
+			INNER JOIN custinfo c WITH(NOLOCK) ON c.custid = ci.custid
 		WHERE ci.recommend IN (SELECT custid FROM #TempAg)
-			AND roleid = 1
+			AND ci.roleid = 1
+			AND c.CustomerClass IN (SELECT customerClass FROM CategoryConfig WITH(NOLOCK) WHERE OfferDeposit = 1)
 	END
-	
-	;WITH T AS (
-		SELECT c.custid, tv.CreatedDate, tv.SubIssueTypeID
-		FROM #CustList c
-			INNER JOIN dbo.TicketVoiding_VoidedTransaction tv WITH (NOLOCK) ON c.CustId = tv.custid			
-		WHERE IssueTypeId = 11
-		UNION 
-		SELECT c.custid, tv.CreatedDate, tv.SubIssueTypeID
-		FROM #CustList c
-			INNER JOIN bodb_Archive.dbo.TicketVoiding_VoidedTransaction_bk tv WITH (NOLOCK) ON c.CustId = tv.custid			
-		WHERE IssueTypeId = 11
-	)
-	SELECT c.custid, c.CreatedDate , c.ReasonID
+		
+	SELECT c.custid, c.CreatedDate, c.CategoryID
 	INTO #temp1
-	FROM #CustList c
-	UNION ALL
-	SELECT DISTINCT t.custid, t.CreatedDate, t.SubIssueTypeID
-	FROM T
+	FROM Dep_CustCategoryHistory c WITH(NOLOCK)
+	WHERE custid IN (SELECT custid FROM #CustList)
+		AND 1 = CASE WHEN @IsCheckAll = 1 THEN 1  
+					WHEN @IsCheckAll = 0 AND CreatedDate BETWEEN @FromDate AND @ToDate THEN 1
+					ELSE 0 END				
 
-	CREATE NONCLUSTERED INDEX PK_temp1_custid_CreatedDate ON #temp1(CustID,CreatedDate) INCLUDE (ReasonID)
+	CREATE NONCLUSTERED INDEX PK_temp1_custid_CreatedDate ON #temp1(CustID,CreatedDate) INCLUDE (CategoryID)
 
-	IF @IsCheckAll = 0
-	BEGIN
-		DELETE #temp1
-		WHERE CreatedDate NOT BETWEEN @FromDate AND @ToDate
-	END
-
+	
 	DELETE c
 	FROM #CustList c
 	WHERE c.CustId NOT IN (	SELECT t.CustId
 							FROM #temp1 t 
-								INNER JOIN dbo.ProblemAccountReason pr WITH (NOLOCK) ON pr.ReasonID = t.ReasonId
-								INNER JOIN #ReasonGroup rg ON pr.ReasonGroupID = rg.ReasonGroupID
+							WHERE CategoryID IN (SELECT CategoryID FROM #tblCategory)
 							) 
 
 
@@ -149,34 +130,23 @@ BEGIN
 	SET t.CustomerClass = ISNULL(ci.CustomerClass,0),
 		t.Reason = REVERSE(SUBSTRING(REVERSE(CONVERT(NVARCHAR(MAX),(	SELECT CONVERT(NVARCHAR,tmp.CreatedDate,101) + ': ' + tmp.ReasonName + '#' 
 											FROM(
-												SELECT MIN(t2.CreatedDate) AS CreatedDate
-													,CASE WHEN @Langkey = 'zh-CN' THEN REPLACE(MIN(pr.ReasonNameCS),'(M)','') ELSE REPLACE(MIN(pr.ReasonName),'(M)','') END AS ReasonName
+												SELECT MAX(t2.CreatedDate) AS CreatedDate
+													,CASE WHEN @Langkey = 'zh-CN' THEN MIN(ISNULL(CategoryNameCS,CategoryName)) ELSE MIN(CategoryName) END AS ReasonName
 												FROM #temp1 t2 
-													INNER JOIN dbo.ProblemAccountReason pr WITH (NOLOCK) ON pr.ReasonID = t2.ReasonId 
-													--INNER JOIN #ReasonGroup rg ON pr.ReasonGroupID = rg.ReasonGroupID
+													INNER JOIN dbo.CategoryConfig c WITH (NOLOCK) ON c.CategoryID = t2.CategoryID 													
 												WHERE t.custid = t2.custid
-												GROUP BY PR.ReasonGroupID
+												GROUP BY c.CategoryID
 											) tmp
 											ORDER BY tmp.CreatedDate DESC
 											FOR XML PATH ('')
 										)
-							)),2,10000))
-		,t.CreatedDate = (	SELECT TOP 1 t2.CreatedDate
-							FROM #temp1 t2 
-							WHERE t.custid = t2.custid
-							ORDER BY t2.CreatedDate) --Get MIN(CreatedDate)
+							)),2,10000))		
 	FROM #CustList t
 		INNER JOIN custinfo ci WITH(NOLOCK) ON t.custid = ci.custid
 	
 	DELETE #CustList
 	WHERE customerClass NOT IN (SELECT customerClass FROM #tblCustomerClass)
 	
-	IF @IsCheckAll = 0
-	BEGIN
-		DELETE #CustList
-		WHERE CreatedDate NOT BETWEEN @FromDate AND @ToDate
-	END
-
 	SELECT @TotalItems = COUNT(1) FROM #CustList
 	
 	IF @OrderCol IN (1,2)
@@ -225,5 +195,10 @@ BEGIN
 		WHERE rn BETWEEN @rowstart AND @rowend
 		ORDER BY rn ASC
 	END	
+	
+	DROP TABLE #tblCategory
+	DROP TABLE #CustList
+	DROP TABLE #tblCustomerClass
+	DROP TABLE #temp1
 END
-GO	
+GO
