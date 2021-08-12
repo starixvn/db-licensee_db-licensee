@@ -17,6 +17,7 @@ AS
 		- 20210305@Hogan: Add new product Sport Lottery [RedmineID: #150872]
 		- 20210629@Johnson: Add more products to support enable status [redmine:#156680]
 		- 20210630@Hogan: Integrate Creative Gaming [RedmineID: #152619]
+		- 20210811@Hogan: Hide Disable/Enable button of products Allbet, Macau games, SA Gaming, AE Sexy, WM, GDG[RedmineID: #160031]
 */
 
  /*
@@ -133,21 +134,14 @@ BEGIN
 			--20210629@Johnson: add more products
 			6,--	RnG Casino
 			15,--	Colossus Bets
-			21,--	Allbet
-			22,--	Macau Games
 			25,--	Cash Out
 			31,--	Exchange
 			32,--	Pragmatic
-			45,--	AE Sexy
-			59,--	GDG
 			61,--	Habanero
 			56,--	Joker
 			42,--	Saba.club
-			45,--	AE Sexy
-			51,--	WM
 			36,--	SG
 			38,--	Virtual Games
-			39,--	SA Gaming
 			34,--	Arcadia Gaming
 			55--	PG Soft
 		)

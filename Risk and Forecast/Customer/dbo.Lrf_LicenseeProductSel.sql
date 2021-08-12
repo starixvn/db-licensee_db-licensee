@@ -32,6 +32,7 @@ AS
 		- 20200427@Vickie: Bet Setting - Hide SBC product [RedmineID: #132702]
 		- 20200615@Hogan: Integrate SA Gaming [RedmineID: #128493]
 		- 20210305@Hogan: Integrate Sport Lottery [RedmineID: #150872]
+		- 20210811@Hogan: Hide Disable/Enable button of products Allbet, Macau games, SA Gaming, AE Sexy, WM, GDG[RedmineID: #160031]
 
 	EXEC Lrf_LicenseeProductSel @LicenseeID = 2
 */
@@ -137,7 +138,7 @@ BEGIN
 		ProductCode,
 		IsEnable
 	FROM @tblProductActive
-	WHERE ProductID NOT IN (1, 3, 4, 7, 9, 14, 17)
+	WHERE ProductID NOT IN (1, 3, 4, 7, 9, 14, 17, 21, 22)
 		AND (ProductID < 34 OR ProductID = 63)
 	ORDER BY ProductID ASC
 END
