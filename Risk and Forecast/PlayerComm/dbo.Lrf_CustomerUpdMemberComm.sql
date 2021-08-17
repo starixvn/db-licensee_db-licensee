@@ -63,12 +63,14 @@ CREATE PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm]
 	@IsUpdateGDG			BIT = 0,
 	@IsUpdateSportsLottery	BIT = 0,
 	@IsUpdateHabanero		BIT = 0,
+	@IsUpdateVgaming		BIT = 0,
 	@WMCasinoComm		DECIMAL(9,8) = 0,
 	@BigGamingComm		DECIMAL(9,8) = 0,
 	@JokerComm			DECIMAL(9,8) = 0,
 	@GDGComm			DECIMAL(9,8) = 0,
 	@SportsLotteryComm	DECIMAL(9,8) = 0,
 	@HabaneroComm		DECIMAL(9,8) = 0,
+	@VGamingComm		DECIMAL(9,8) = 0,
 
 	@IP VARCHAR(40),
 	@Langkey VARCHAR(10) = 'en-US',
@@ -110,7 +112,8 @@ AS
 		- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238] 
 		- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012] 
 		- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048]   
-
+		- 20210813@Johnson: Add VGaming [redmine: #159696]
+		
 	Param's Explanation:
 		1. To update a member/batch members without GroupCommID
 EXEC [Lrf_CustomerUpdMemberComm_907] @LicenseeID=xx,@strCustID,xx,@UserID=xx,@SBComm=xx,@NGComm=xx,@RNGComm=xx, @IsUpdateNG=xx,@IsUpdateRNG=xx,@IP=xx,@ErrCode=@ErrCode OUTPUT,@ErrMsg=@ErrMsg OUTPUT
@@ -194,6 +197,7 @@ BEGIN
 			,@GDGComm			= GDGComm
 			,@SportsLotteryComm	= SportsLotteryComm
 			,@HabaneroComm		= HabaneroComm
+			,@VGamingComm		= VGamingComm
 			
 		FROM dbo.LicenseeGroupComm WITH (NOLOCK)
 		WHERE LicenseeID = @LicenseeID AND id = @GroupCommID AND IsActive=1
@@ -230,6 +234,7 @@ BEGIN
 		,@GDGComm = ISNULL(@GDGComm,0)	
 		,@SportsLotteryComm = ISNULL(@SportsLotteryComm,0)
 		,@HabaneroComm = ISNULL(@HabaneroComm,0)
+		,@VGamingComm = ISNULL(@VGamingComm,0)
 
 	--Validate data
 	IF @SBComm>0.15 OR @NGComm>0.15 OR @RNGComm>0.15 OR @ParlayComm > 0.15
@@ -257,6 +262,7 @@ BEGIN
 		OR @GDGComm > 0.15
 		OR @SportsLotteryComm > 0.15	
 		OR @HabaneroComm > 0.15
+		OR @VGamingComm > 0.15
 	BEGIN
 		SELECT @ErrCode=101
 		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN 'Player commission should not be greater than'
@@ -354,13 +360,15 @@ BEGIN
 				,@IsUpdateJoker			= @IsUpdateJoker			
 				,@IsUpdateGDG			= @IsUpdateGDG			
 				,@IsUpdateSportsLottery	= @IsUpdateSportsLottery
-				,@IsUpdateHabanero		= @IsUpdateHabanero		
+				,@IsUpdateHabanero		= @IsUpdateHabanero	
+				,@IsUpdateVGaming		= @IsUpdateVGaming		
 				,@WMCasinoComm				= @WMCasinoComm		
 				,@BigGamingComm				= @BigGamingComm		
 				,@JokerComm					= @JokerComm			
 				,@GDGComm					= @GDGComm			
 				,@SportsLotteryComm			= @SportsLotteryComm	
-				,@HabaneroComm				= @HabaneroComm		
+				,@HabaneroComm				= @HabaneroComm	
+				,@VGamingComm				= @VGamingComm			
 				
 		END		
 		ELSE
@@ -436,12 +444,14 @@ BEGIN
 					,@IsUpdateGDG			= @IsUpdateGDG			
 					,@IsUpdateSportsLottery	= @IsUpdateSportsLottery
 					,@IsUpdateHabanero		= @IsUpdateHabanero		
+					,@IsUpdateVGaming		= @IsUpdateVGaming
 					,@WMCasinoComm				= @WMCasinoComm		
 					,@BigGamingComm				= @BigGamingComm		
 					,@JokerComm					= @JokerComm			
 					,@GDGComm					= @GDGComm			
 					,@SportsLotteryComm			= @SportsLotteryComm	
-					,@HabaneroComm				= @HabaneroComm	
+					,@HabaneroComm				= @HabaneroComm
+					,@VGamingComm				= @VGamingComm					
 			END					
 			-- Non-BA and BA under Macaubet have got SBcomm=@SBcomm
 			DECLARE  @strNonBA 	VARCHAR(MAX)
@@ -505,13 +515,15 @@ BEGIN
 					,@IsUpdateJoker			= @IsUpdateJoker			
 					,@IsUpdateGDG			= @IsUpdateGDG			
 					,@IsUpdateSportsLottery	= @IsUpdateSportsLottery
-					,@IsUpdateHabanero		= @IsUpdateHabanero		
+					,@IsUpdateHabanero		= @IsUpdateHabanero	
+					,@IsUpdateVGaming		= @IsUpdateVGaming						
 					,@WMCasinoComm				= @WMCasinoComm		
 					,@BigGamingComm				= @BigGamingComm		
 					,@JokerComm					= @JokerComm			
 					,@GDGComm					= @GDGComm			
 					,@SportsLotteryComm			= @SportsLotteryComm	
-					,@HabaneroComm				= @HabaneroComm	
+					,@HabaneroComm				= @HabaneroComm
+					,@VGamingComm				= @VGamingComm					
 			END
 		END
 	END	
@@ -553,7 +565,8 @@ BEGIN
 		'JokerComm="'+ COALESCE(CAST(@JokerComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'GDGComm="'+ COALESCE(CAST(@GDGComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'SportsLotteryComm="'+ COALESCE(CAST(@SportsLotteryComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'HabaneroComm="'+ COALESCE(CAST(@HabaneroComm as VARCHAR(50)),SPACE(1)) + '" '
+		'HabaneroComm="'+ COALESCE(CAST(@HabaneroComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		'VGamingComm="'+ COALESCE(CAST(@VGamingComm as VARCHAR(50)),SPACE(1)) + '" '
 
 		
 	-- old value
@@ -630,6 +643,7 @@ BEGIN
 							'GDGComm="'+ COALESCE(CAST(ISNULL(lcc.GDGComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
 							'SportsLotteryComm="'+ COALESCE(CAST(ISNULL(lcc.SportsLotteryComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
 							'HabaneroComm="'+ COALESCE(CAST(ISNULL(lcc.HabaneroComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
+							'VGamingComm="'+ COALESCE(CAST(ISNULL(lcc.VGamingComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
 
 						   'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
 						   @LogSPData2 AS '@TrackingValue2'
@@ -734,12 +748,14 @@ BEGIN
 					,@IsUpdateGDG			= @IsUpdateGDG			
 					,@IsUpdateSportsLottery	= @IsUpdateSportsLottery
 					,@IsUpdateHabanero		= @IsUpdateHabanero		
+					,@IsUpdateVGaming		= @IsUpdateVGaming		
 					,@WMCasinoComm				= @WMCasinoComm		
 					,@BigGamingComm				= @BigGamingComm		
 					,@JokerComm					= @JokerComm			
 					,@GDGComm					= @GDGComm			
 					,@SportsLotteryComm			= @SportsLotteryComm	
 					,@HabaneroComm				= @HabaneroComm	
+					,@VGamingComm				= @VGamingComm	
 			END TRY
 			BEGIN CATCH
 				SELECT @ErrCode = ERROR_NUMBER()

@@ -49,12 +49,14 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Main]
 	,@IsUpdateGDG			BIT = 0
 	,@IsUpdateSportsLottery	BIT = 0
 	,@IsUpdateHabanero		BIT = 0
+	,@IsUpdateVGaming 		BIT = 0
 	,@WMCasinoComm		DECIMAL(9,8) = 0
 	,@BigGamingComm		DECIMAL(9,8) = 0
 	,@JokerComm			DECIMAL(9,8) = 0
 	,@GDGComm			DECIMAL(9,8) = 0
 	,@SportsLotteryComm	DECIMAL(9,8) = 0
 	,@HabaneroComm		DECIMAL(9,8) = 0
+	,@VGamingComm		DECIMAL(9,8) = 0
 AS
 /*
 	Created: 20120907@Viet
@@ -79,7 +81,7 @@ AS
 		- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238] 
 		- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012] 
 		- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048]  
-		
+		- 20210816@Johnson: Add VGaming [redmine: #159696]
 	Param's Explanation:
 
 */
@@ -126,6 +128,7 @@ BEGIN
 			,@GDGComm_Group				DECIMAL(9,8) = 0
 			,@SportsLotteryComm_Group	DECIMAL(9,8) = 0
 			,@HabaneroComm_Group		DECIMAL(9,8) = 0
+			,@VGamingComm_Group			DECIMAL(9,8) = 0
 
 	
 	IF (	@IsUpdateAllbet = 1 OR 
@@ -148,7 +151,8 @@ BEGIN
 		OR @IsUpdateJoker  = 1	
 		OR @IsUpdateGDG  = 1	
 		OR @IsUpdateSportsLottery  = 1	
-		OR @IsUpdateHabanero  = 1	
+		OR @IsUpdateHabanero  = 1
+		OR @IsUpdateVGaming  = 1		
 
 		)
 	BEGIN		
@@ -181,6 +185,7 @@ BEGIN
 			,@GDGComm_Group = MAX(CASE WHEN BetType = 5701 THEN playerdiscount ELSE 0 END)
 			,@SportsLotteryComm_Group = MAX(CASE WHEN BetType = 3611 THEN playerdiscount ELSE 0 END)
 			,@HabaneroComm_Group = MAX(CASE WHEN BetType = 7001 THEN playerdiscount ELSE 0 END)
+			,@VGamingComm_Group = MAX(CASE WHEN BetType = 3801 THEN playerdiscount ELSE 0 END)
 		FROM dbo.Dep_CustDiscountGroupSetting_Member grp WITH(NOLOCK)
 		WHERE AgentID = @AgentID
 			AND sporttype IN (212,248,219,243,247,220,180,190,222
@@ -188,6 +193,7 @@ BEGIN
 							,211, 245,165,200,244,232 
 							--phase 4
 							,233,239,234,236,169,238
+							,171
 							)
 	END	
 								
@@ -275,19 +281,22 @@ BEGIN
 			,@IsUpdateJoker			= @IsUpdateJoker			
 			,@IsUpdateGDG			= @IsUpdateGDG			
 			,@IsUpdateSportsLottery	= @IsUpdateSportsLottery
-			,@IsUpdateHabanero		= @IsUpdateHabanero		
+			,@IsUpdateHabanero		= @IsUpdateHabanero	
+			,@IsUpdateVGaming		= @IsUpdateVGaming				
 			,@WMCasinoComm				= @WMCasinoComm		
 			,@BigGamingComm				= @BigGamingComm		
 			,@JokerComm					= @JokerComm			
 			,@GDGComm					= @GDGComm			
 			,@SportsLotteryComm			= @SportsLotteryComm	
 			,@HabaneroComm				= @HabaneroComm		
+			,@VGamingComm				= @VGamingComm		
 			,@WMCasinoComm_Group		= @WMCasinoComm_Group		
 			,@BigGamingComm_Group		= @BigGamingComm_Group		
 			,@JokerComm_Group			= @JokerComm_Group			
 			,@GDGComm_Group				= @GDGComm_Group				
 			,@SportsLotteryComm_Group	= @SportsLotteryComm_Group	
-			,@HabaneroComm_Group		= @HabaneroComm_Group		
+			,@HabaneroComm_Group		= @HabaneroComm_Group
+			,@VGamingComm_Group			= @VGamingComm_Group			
 
 		-- delay 00.100ms after 5 times continuous running
 		IF @runningCNT % 2 = 0 WAITFOR DELAY '00:00:00.280'

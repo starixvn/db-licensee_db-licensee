@@ -34,7 +34,7 @@ CREATE PROCEDURE [dbo].[Lrf_LicenseeGroupCommUpd]
 	@VSComm DECIMAL(9,8) = 0,
 	@IsUpdateVS2 BIT = 0,	
 	@VS2Comm DECIMAL(9,8) = 0,
-	@IsUpdateTableGame BIT = 0,	
+	@IsUpdateTableGame BIT = 0,
 	@TableGameComm DECIMAL(9,8) = 0,
 	-- end param of phase 2
 	-- phase 3
@@ -55,12 +55,14 @@ CREATE PROCEDURE [dbo].[Lrf_LicenseeGroupCommUpd]
 	@IsUpdateGDG			BIT = 0,
 	@IsUpdateSportsLottery	BIT = 0,
 	@IsUpdateHabanero		BIT = 0,
+	@IsUpdateVGaming		BIT = 0,
 	@WMCasinoComm		DECIMAL(9,8) = 0,
 	@BigGamingComm		DECIMAL(9,8) = 0,
 	@JokerComm			DECIMAL(9,8) = 0,
 	@GDGComm			DECIMAL(9,8) = 0,
 	@SportsLotteryComm	DECIMAL(9,8) = 0,
 	@HabaneroComm		DECIMAL(9,8) = 0,
+	@VGamingComm		DECIMAL(9,8) = 0,
 	
 	@GroupColor VARCHAR(20),
 	@IsDefault BIT=0, 
@@ -97,7 +99,7 @@ AS
 		- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012] 
 		- 20210604@Eden: Update Comm Group - Param @IsUpdateSAGaming is wrong [Redmine: #156459] 
 		- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048]  
-
+		- 20210813@Johnson: Add VGaming [redmine: #159696]
 	Param's Explanation:
 
 */
@@ -154,6 +156,7 @@ BEGIN
 		,@GDGComm_Old			DECIMAL(9,8) = 0
 		,@SportsLotteryComm_Old	DECIMAL(9,8) = 0
 		,@HabaneroComm_Old		DECIMAL(9,8) = 0
+		,@VGamingComm_Old		DECIMAL(9,8) = 0
 	
 		,@IsDefault_Old BIT
 		,@custID_cnt INT = 0
@@ -193,6 +196,7 @@ BEGIN
 		OR @GDGComm > 0.15
 		OR @SportsLotteryComm > 0.15	
 		OR @HabaneroComm > 0.15
+		OR @VGamingComm > 0.15
 	BEGIN
 		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN  'Player Commission should not greater than '
 										ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200002,@Langkey)
@@ -255,6 +259,7 @@ BEGIN
 			,@GDGComm_Old			= GDGComm
 			,@SportsLotteryComm_Old	= SportsLotteryComm
 			,@HabaneroComm_Old		= HabaneroComm
+			,@VGamingComm_Old 		= VGamingComm
 
 			,@IsDefault_Old=IsDefault			
 		FROM dbo.LicenseeGroupComm WITH (NOLOCK)
@@ -350,7 +355,8 @@ BEGIN
 			@IsUpdateJoker  = CASE WHEN @IsUpdateJoker = 1 AND @JokerComm_Old <> @JokerComm  THEN 1 ELSE 0 END,	
 			@IsUpdateGDG  = CASE WHEN @IsUpdateGDG = 1 AND @GDGComm_Old <> @GDGComm  THEN 1 ELSE 0 END,	
 			@IsUpdateSportsLottery  = CASE WHEN @IsUpdateSportsLottery = 1 AND @SportsLotteryComm_Old <> @SportsLotteryComm  THEN 1 ELSE 0 END,
-			@IsUpdateHabanero  = CASE WHEN @IsUpdateHabanero = 1 AND @HabaneroComm_Old <> @HabaneroComm  THEN 1 ELSE 0 END
+			@IsUpdateHabanero  = CASE WHEN @IsUpdateHabanero = 1 AND @HabaneroComm_Old <> @HabaneroComm  THEN 1 ELSE 0 END,
+			@IsUpdateVGaming  = CASE WHEN @IsUpdateVGaming = 1 AND @VGamingComm_Old <> @VGamingComm  THEN 1 ELSE 0 END
 		
 		--Update Group Comm + Member Comm + all the comm settings
 		IF (@IsUpdateSB = 1
@@ -380,6 +386,7 @@ BEGIN
 			OR @IsUpdateGDG				= 1
 			OR @IsUpdateSportsLottery	= 1
 			OR @IsUpdateHabanero		= 1
+			OR @IsUpdateVGaming			= 1
 			)
 		
 		BEGIN
@@ -416,7 +423,7 @@ BEGIN
 					,GDGComm = CASE WHEN @IsUpdateGDG = 1 THEN @GDGComm ELSE GDGComm END
 					,SportsLotteryComm = CASE WHEN @IsUpdateSportsLottery = 1 THEN @SportsLotteryComm ELSE SportsLotteryComm END
 					,HabaneroComm = CASE WHEN @IsUpdateHabanero = 1 THEN @HabaneroComm ELSE HabaneroComm END
-
+					,VGamingComm = CASE WHEN @IsUpdateVGaming = 1 THEN @VGamingComm ELSE VGamingComm END
 					
 			WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID
 			
@@ -487,13 +494,15 @@ BEGIN
 					,@IsUpdateJoker			= @IsUpdateJoker			
 					,@IsUpdateGDG			= @IsUpdateGDG			
 					,@IsUpdateSportsLottery	= @IsUpdateSportsLottery
-					,@IsUpdateHabanero		= @IsUpdateHabanero		
+					,@IsUpdateHabanero		= @IsUpdateHabanero
+					,@IsUpdateVGaming		= @IsUpdateVGaming				
 					,@WMCasinoComm				= @WMCasinoComm		
 					,@BigGamingComm				= @BigGamingComm		
 					,@JokerComm					= @JokerComm			
 					,@GDGComm					= @GDGComm			
 					,@SportsLotteryComm			= @SportsLotteryComm	
 					,@HabaneroComm				= @HabaneroComm		
+					,@VGamingComm				= @VGamingComm		
 					,@IP=@IP
 					,@Langkey=@langkey
 					,@ErrCode=@ErrCode OUTPUT
@@ -554,6 +563,7 @@ BEGIN
 			'GDGComm="'+ COALESCE(CAST(@GDGComm as VARCHAR(50)),SPACE(1)) + '" '+
 			'SportsLotteryComm="'+ COALESCE(CAST(@SportsLotteryComm as VARCHAR(50)),SPACE(1)) + '" '+
 			'HabaneroComm="'+ COALESCE(CAST(@HabaneroComm as VARCHAR(50)),SPACE(1)) + '" '+
+			'VGamingComm="'+ COALESCE(CAST(@VGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
 
 			'IsUpdateNG="'+ COALESCE(CAST(@IsUpdateNG as VARCHAR(50)),SPACE(1)) + '" ' +
 			'IsUpdateRNG="'+ COALESCE(CAST(@IsUpdateRNG as VARCHAR(50)),SPACE(1)) + '" ' +			
@@ -599,6 +609,7 @@ BEGIN
 			'GDGComm="'+ COALESCE(CAST(@GDGComm_old as VARCHAR(50)),SPACE(1)) + '" '+
 			'SportsLotteryComm="'+ COALESCE(CAST(@SportsLotteryComm_old as VARCHAR(50)),SPACE(1)) + '" '+
 			'HabaneroComm="'+ COALESCE(CAST(@HabaneroComm_old as VARCHAR(50)),SPACE(1)) + '" '+
+			'VGamingComm="'+ COALESCE(CAST(@VGamingComm_Old as VARCHAR(50)),SPACE(1)) + '" '+
 		
 			'IsUpdateNG="'+ COALESCE(CAST(@IsUpdateNG as VARCHAR(50)),SPACE(1)) + '" ' +
 			'IsUpdateRNG="'+ COALESCE(CAST(@IsUpdateRNG as VARCHAR(50)),SPACE(1)) + '" ' +			

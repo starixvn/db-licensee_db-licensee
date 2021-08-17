@@ -34,7 +34,7 @@ AS
 		- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238]
 		- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012] 
 		- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048]  
-		 
+		- 20210817@Johnson: Add VGaming [redmine:#159696]
 	Param's Explanation:
 
 */
@@ -81,6 +81,7 @@ BEGIN
 		@GDGComm			DECIMAL(9,8),
 		@SportsLotteryComm	DECIMAL(9,8),
 		@HabaneroComm		DECIMAL(9,8),
+		@VGamingComm		DECIMAL(9,8),
 
 		@GroupColor VARCHAR(20), 
 		@GroupName VARCHAR(100), 
@@ -140,6 +141,7 @@ BEGIN
 			@GDGComm			= GDGComm,
 			@SportsLotteryComm	= SportsLotteryComm,
 			@HabaneroComm		= HabaneroComm,
+			@VGamingComm		= VGamingComm,
 
 			@GroupColor=color,
 			@GroupName=GroupName,
@@ -279,13 +281,15 @@ BEGIN
 					@IsUpdateJoker			= 1,			
 					@IsUpdateGDG			= 1,			
 					@IsUpdateSportsLottery	= 1,
-					@IsUpdateHabanero		= 1,		
+					@IsUpdateHabanero		= 1,
+					@IsUpdateVGaming		= 1,					
 					@WMCasinoComm				= 0	,	
 					@BigGamingComm				= 0,		
 					@JokerComm					= 0,			
 					@GDGComm					= 0,			
 					@SportsLotteryComm			= 0,	
-					@HabaneroComm				= 0,	
+					@HabaneroComm				= 0,
+					@VGamingComm				= 0,					
 					
 					@isClearGroupComm = 1,
 					@ClearGroupCommGroupID = @GroupCommID,
@@ -351,6 +355,7 @@ BEGIN
 		'GDGComm="'+ COALESCE(CAST(@GDGComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'SportsLotteryComm="'+ COALESCE(CAST(@SportsLotteryComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'HabaneroComm="'+ COALESCE(CAST(@HabaneroComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		'VGamingComm="'+ COALESCE(CAST(@VGamingComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		
 		'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
 		'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +
@@ -395,6 +400,7 @@ BEGIN
 		'GDGComm="'+ COALESCE(CAST(@GDGComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'SportsLotteryComm="'+ COALESCE(CAST(@SportsLotteryComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'HabaneroComm="'+ COALESCE(CAST(@HabaneroComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		'VGamingComm="'+ COALESCE(CAST(@VGamingComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		
 		'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
 		'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +
