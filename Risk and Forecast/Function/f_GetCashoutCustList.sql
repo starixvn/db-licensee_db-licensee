@@ -1,11 +1,7 @@
+/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02,DBBAL-bodb02" isFunction="0" isNested="0"></info>*/
 USE [bodb02]
 GO
-/****** Object:  UserDefinedFunction [dbo].[f_DepSuper_1]    Script Date: 6/25/2015 2:39:35 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
+ 
 ALTER FUNCTION [dbo].[f_GetCashoutCustList]
 (
 	@site varchar(10), @VendorID INT = 14
@@ -17,6 +13,7 @@ ALTER FUNCTION [dbo].[f_GetCashoutCustList]
 	DB: DBEXT.bodb02, DBACC.bodb02
 
 	Revisions:		
+	- 20210816@Sophia: add DBBAL [Redmine: #154300]
 */
 RETURNS TABLE  
 AS
