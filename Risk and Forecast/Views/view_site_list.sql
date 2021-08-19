@@ -1,3 +1,4 @@
+/*<info serverAlias="DBLIC-bodb_licensee,DBBAL-bodb_licensee" selecters="bodbAdminNet" viewers="" isFunction="1" isNested="0"></info>*/
 USE [bodb_Licensee]
 GO
 
@@ -12,6 +13,7 @@ AS
     Revisions:
         + 20120314@Don: Fix bug about licensee and label/site have same name
 		+ 20181031@Percy: Add new server: DBACC.bodb_Licensee [RedmineID: #103660]
+		+ 20210816@Sophia: add DBBAL [Redmine: #154300]
 */
 
 SELECT
@@ -24,11 +26,4 @@ SELECT
 FROM bodb02.dbo.Site s (NOLOCK)
     LEFT JOIN dbo.Licensees lic WITH(NOLOCK) ON s.site = lic.LicenseeName and lic.IsDeposit=1
 GO
-
-GRANT SELECT ON [dbo].[view_site_list] TO [bodbAdminNet] AS [dbo]
-GO
-
-GRANT SELECT ON [dbo].[view_site_list] TO [vnteam] AS [dbo]
-GO
-
-
+ 
