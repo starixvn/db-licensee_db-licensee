@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB,DBPOL-NAP_UserControl,DBCUST-bodb_Licensee,DBBAL-bodb02" selecters="" isFunction="1" isNested="1"></info>*/
+/*<info serverAlias="DBBAL-bodb02" selecters="" isFunction="1" isNested="1"></info>*/
 USE [bodb02]
 GO
  
