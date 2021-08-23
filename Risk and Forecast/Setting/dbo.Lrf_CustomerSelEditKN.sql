@@ -1,3 +1,4 @@
+/*<info serverAlias="DBCUST-CUSTDB" executers="	bodbLicenseeNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_CustomerSelEditKN]
 	@custid INT
 AS
@@ -12,6 +13,7 @@ Revisions:
 	- 20140714@Jim: support to active bettype 	1511,1513 (Kentucky,Michigan : #redmineID :17215)
 	- 20150226@Jim: use Australia setting for all other Keno's countries. (RedmineID: #30921)
 	- 20150609@Kos: Separate CustDB to DBCUST server (Move SP to DBCUST.CustDB, use temp table for GameType table)
+	- 20210823@Johnson: get status for RnG Keno[redmineID:#159696]
 Param's Explanation:
 
 */
@@ -64,6 +66,7 @@ SELECT
 	cg.GameTypeID,
 	gt.IBCBetTypeID,
 	gt.GameTypeName,
+	cg.IsDisabled,
 	ISNULL(MAX(minbet), 0) as MinBet,
 	ISNULL(MAX(maxbet), 0) as MaxBet,
 	@MinBet_Max				as MinBet_Max,
@@ -82,13 +85,11 @@ WHERE ci.custid = @custid
 	--AND gt.IBCBetTypeID NOT IN (1511,1513)  -- for temporarity 
 GROUP BY 
 	ci.UserName, 
-	cg.GameTypeID, 
+	cg.GameTypeID,
+	cg.IsDisabled,
 	gt.IBCBetTypeID, 
 	gt.GameTypeName
 
 
 GO 
- GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerSelEditKN] TO [vnteam]
-GO 
- GRANT EXECUTE ON [dbo].[Lrf_CustomerSelEditKN] TO [bodbLicenseeNet]
-GO 
+

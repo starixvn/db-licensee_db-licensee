@@ -56,12 +56,14 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeCustCommUpd]
 	@IsUpdateGDG			BIT = 0,
 	@IsUpdateSportsLottery	BIT = 0,
 	@IsUpdateHabanero		BIT = 0,
+	@IsUpdateVGaming		BIT = 0,
 	@WMCasinoComm		DECIMAL(9,8) = 0,
 	@BigGamingComm		DECIMAL(9,8) = 0,
 	@JokerComm			DECIMAL(9,8) = 0,
 	@GDGComm			DECIMAL(9,8) = 0,
 	@SportsLotteryComm	DECIMAL(9,8) = 0,
 	@HabaneroComm		DECIMAL(9,8) = 0,
+	@VGamingComm		DECIMAL(9,8) = 0,
 
 	@IP VARCHAR(40),
 	@Langkey NVARCHAR(10)='en-US',
@@ -94,7 +96,7 @@ AS
 		- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 [Redmine: #139238]   
 		- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012]   
 		- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048]
-
+		- 20210823@Johnson: Add VGaming [redmine: #159696]
 	Param's Explanation:
 */ 
 BEGIN
@@ -188,12 +190,14 @@ BEGIN
 		,@IsUpdateGDG			= @IsUpdateGDG			
 		,@IsUpdateSportsLottery	= @IsUpdateSportsLottery
 		,@IsUpdateHabanero		= @IsUpdateHabanero		
+		,@IsUpdateVGaming		= @IsUpdateVGaming		
 		,@WMCasinoComm				= @WMCasinoComm		
 		,@BigGamingComm				= @BigGamingComm		
 		,@JokerComm					= @JokerComm			
 		,@GDGComm					= @GDGComm			
 		,@SportsLotteryComm			= @SportsLotteryComm	
 		,@HabaneroComm				= @HabaneroComm	
+		,@VGamingComm				= @VGamingComm	
 
 		,@IP=@IP
 		,@Langkey=@Langkey
