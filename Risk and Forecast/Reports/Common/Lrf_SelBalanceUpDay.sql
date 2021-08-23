@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBEXT-bodb02" executers="bodbAdminNet,bodbLicenseeNet" isFunction="0" isNested="1"></info>*/
+﻿/*<info serverAlias="DBEXT-bodb02,DBBAL-bodb02" executers="bodbAdminNet,bodbLicenseeNet" isFunction="0" isNested="1"></info>*/
 USE bodb02
 GO
 
@@ -14,6 +14,7 @@ AS
 	Revisions:
 		- 20120504@Henry: temporary remove custid = 3
 		- 20210518@Percy: Change way to get MoveBetsDay [RedmineID: #154866]
+		- 20210816@Sophia: add DBBAL [Redmine: #154300]
 
 	Param's Explanation:
 */

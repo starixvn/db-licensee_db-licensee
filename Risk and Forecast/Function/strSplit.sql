@@ -1,9 +1,4 @@
-/*<info serverAlias="DBBAL-bodb02" selecters="" isFunction="1" isNested="1"></info>*/
-USE [bodb02]
-GO
- 
---deploy on DBCUST, DBCUST replicated servers, casino servers
-
+/*<info serverAlias="DBBAL-bodb02,DBBAL-bodb_Licensee" selecters="" isFunction="1" isNested="1"></info>*/
 ALTER FUNCTION [dbo].[strSplit](@string [nvarchar](MAX), @splitter [char](1))
 RETURNS @res TABLE (
 	[id] [int] NOT NULL,
@@ -19,7 +14,7 @@ AS
 		Created: Helen
 		Date: 2018-03-13
 		Task: Split string
-		DB: DBCUST/CUSTDB, DBCUST/NAP_UserControl, DBCUST/bodb_Licensee
+		DB: DBCUST/CUSTDB, DBCUST/NAP_UserControl, DBCUST/bodb_Licensee, DBBAL-bodb02,DBBAL-bodb_Licensee
 		
 		Revisions:
 			- 20180808@Helen: DB05.DBPOLICY migration - Move to DBCUST [Redmine:99462]
