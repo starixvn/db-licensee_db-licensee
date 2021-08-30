@@ -1,14 +1,14 @@
 ﻿/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLossByBettype]
-	  @FromDate		SMALLDATETIME
-	, @ToDate		SMALLDATETIME
-	, @MoveBetsDay	SMALLDATETIME
-	, @BalanceUpDay SMALLDATETIME
-	, @PageSize		INT = 1000
-	, @PageIndex	INT = 1
-	, @AgentList	VARCHAR(MAX)
-	, @BaseCurrency	VARCHAR(3) = ''
+	@AgentList		VARCHAR(MAX),
+	@FromDate		SMALLDATETIME,
+	@ToDate			SMALLDATETIME,
+	@MoveBetsDay	SMALLDATETIME,
+	@BalanceUpDay	SMALLDATETIME,
+	@PageSize		INT				= 1000,
+	@PageIndex		INT				= 1,
+	@BaseCurrency	VARCHAR(3)		= ''
 AS
 
 /*
@@ -68,43 +68,32 @@ AS
 		- 20210119@Hogan: Integrate Four Guardians [RedmineID: #148100]
 		- 20210305@Hogan: Integrate Sport Lottery [RedmineID: #150872]
 		- 20210330@Hogan: Integrate Cricket AIO [RedmineID: #150386]
+		- 20210830@Kos: Support subsidiary view [RedmineID: #159576]
 
-	Param's Explanation: 
-		+ @AgentList: xml structure
-						<ROOT>
-						<Agent AgentId="12345" Currency="3"/>  
-						<Agent AgentId="12345" Currency="5"/>  
-						</ROOT>
+	Param's Explanation:
+		+ @AgentList: XML structure
+				<ROOT>
+					<Agent AgentId="12345" Currency="3"/>  
+					<Agent AgentId="12345" Currency="5"/>  
+				</ROOT>
 */
 
 BEGIN
 	SET NOCOUNT ON
 
-	DECLARE @RowStart INT
-		, @RowEnd INT
-		, @TotalRows INT
-		, @Today SMALLDATETIME
-	DECLARE @Exchange TABLE (
-		FromDate SMALLDATETIME
-		, ToDate SMALLDATETIME
-		, ExchangeId INT
-		, Rate FLOAT
-		)
+	-- Get agent list
+	CREATE TABLE #TempAg (CustId INT, Currency INT)
 
-	SELECT @PageIndex = @PageIndex - 1
-		, @RowStart = @PageSize * @PageIndex + 1
-		, @RowEnd = @RowStart + @PageSize - 1
-		, @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120)
+	CREATE CLUSTERED INDEX IX_TempAg ON #TempAg(CustId)
 
-	DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
 	DECLARE @DocHandler INT
 
 	BEGIN TRY
-		EXEC sp_xml_preparedocument @DocHandler OUTPUT
-				,@AgentList
-		INSERT INTO @TempAg (custID, currency)
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT, @AgentList
+
+		INSERT INTO #TempAg (CustId, Currency)
 		SELECT AgentId, Currency
-		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId INT, Currency INT) AS Data
 
 		EXEC sp_xml_removedocument @DocHandler
 	END TRY
@@ -116,29 +105,28 @@ BEGIN
 		RETURN
 	END CATCH;
 
-	CREATE TABLE #TempSAg (srecommend INT, currency INT)
-
-	INSERT INTO #TempSAg (srecommend, currency)
-	SELECT DISTINCT
-		c.srecommend, t.currency
-	FROM
-		@TempAg t
-		INNER JOIN dbo.Customer c WITH (NOLOCK) ON t.CustId = c.custid
-	WHERE
-		c.roleid = 2
-
 	CREATE TABLE #AgWinLoss (
-		bettype INT,
-		liveindicator BIT,
-		winlostdate 	SMALLDATETIME,
-		currency 		INT,
-		TurnOver MONEY
-		, MemberWinLost MONEY
-		, LicenseeWL MONEY
-		, AmtDueToBA MONEY
-		, CommBA MONEY
-		, PlayerComm MONEY	
-		)
+		BetType			INT,
+		LiveIndicator	BIT,
+		WinLostDate		SMALLDATETIME,
+		currency		INT,
+		Turnover		MONEY,
+		MemberWinLost	MONEY,
+		LicenseeWL		MONEY,
+		AmtDueToBA		MONEY,
+		CommBA			MONEY,
+		PlayerComm		MONEY
+	)
+
+	DECLARE @RowStart INT
+		, @RowEnd INT
+		, @TotalRows INT
+		, @Today SMALLDATETIME
+
+	SELECT @PageIndex = @PageIndex - 1
+		, @RowStart = @PageSize * @PageIndex + 1
+		, @RowEnd = @RowStart + @PageSize - 1
+		, @Today = CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120)
 
 	DECLARE @TempFromDate DATETIME
 	DECLARE @TempToDate DATETIME
@@ -148,23 +136,6 @@ BEGIN
 	--to Deal With Parameter Sniffing
 	SELECT @FDate = @FromDate
 		, @TDate = @ToDate
-
-	INSERT INTO @Exchange (
-		FromDate
-		, ToDate
-		, ExchangeId
-		, Rate
-		)
-	SELECT FromDate
-		, ToDate
-		, ExchangeId
-		, Rate
-	FROM dbo.Lrf_f_GetExchangeRate(@FDate, @TDate, @BaseCurrency, '') e
-	WHERE EXISTS (
-			SELECT Currency
-			FROM @TempAg a
-			WHERE a.Currency = e.ExchangeId
-			)
 
 	DECLARE @ExcludedBetType TABLE (ProductCode VARCHAR (10), BetType INT)
 	-- Insert Excluded BetType
@@ -179,17 +150,16 @@ BEGIN
 			SET @TempFromDate = @FDate
 
 		INSERT INTO #AgWinLoss
-		SELECT bettype
-			, CASE 
-				WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120)
-					THEN b.liveindicator
+		SELECT b.bettype
+			, CASE
+				WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) THEN b.liveindicator
 				ELSE 0
-				END AS liveindicator
+			END AS liveindicator
 			, b.winlostdate
 			, b.currency
-			, SUM(stake)
-			, SUM(winlost - actual_stake)
-			, - SUM(CASE 
+			, SUM(b.stake)
+			, SUM(b.winlost - b.actual_stake)
+			, - SUM(CASE
 					WHEN ISNULL(BA.transid, 0) = 0
 						AND (
 							(
@@ -214,20 +184,18 @@ BEGIN
 						THEN (b.winlost - b.actual_stake)
 					ELSE 0
 					END) AS LicenseeWL
-			, - SUM(CASE 
-					WHEN ISNULL(BA.transid, 0) <> 0
-						THEN (b.winlost - b.actual_stake + awinlost + comm)
-					ELSE 0
+			, - SUM(CASE
+						WHEN ISNULL(BA.transid, 0) <> 0 THEN (b.winlost - b.actual_stake + b.awinlost + b.comm)
+						ELSE 0
 					END) AS AmountDueToBA
-			, SUM(CASE 
-					WHEN ISNULL(BA.transid, 0) <> 0
-						THEN comm
+			, SUM(CASE
+					WHEN ISNULL(BA.transid, 0) <> 0 THEN comm
 					ELSE 0
-					END) AS CommBA
-			, SUM(playercomm) AS PlayerComm		
-		FROM dbo.bettrans b WITH (NOLOCK)
-			INNER JOIN #TempSAg s ON b.srecommend = s.srecommend AND b.currency = s.currency
-			LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON b.transid = BA.transid	 
+				END) AS CommBA
+			, SUM(b.playercomm) AS PlayerComm
+		FROM dbo.bettrans AS b WITH (NOLOCK)
+			INNER JOIN #TempAg AS ta ON ta.CustId = b.recommend
+			LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active AS BA WITH (NOLOCK) ON b.transid = BA.transid	 
 		WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND (bettype <= 1599
 				OR (b.bettype >= 2701 AND b.bettype <= 2829)
@@ -238,16 +206,16 @@ BEGIN
 				OR (b.Bettype >= 4901 AND b.Bettype <= 5000)
 				OR (b.Bettype >= 5001 AND b.Bettype <= 5099)
 				OR (b.Bettype >= 3611 AND b.Bettype <= 3620))
-			AND (bettype NOT IN (71, 73,901,902,903,904,911,912,913,914,31,32,33,41,42,43) AND bettype NOT BETWEEN 1011 AND 1020 AND b.bettype NOT BETWEEN 1101 AND 1199) -- Remove LC
+			AND (bettype NOT IN (71, 73,901,902,903,904,911,912,913,914,31,32,33,41,42,43)
+				AND bettype NOT BETWEEN 1011 AND 1020
+				AND b.bettype NOT BETWEEN 1101 AND 1199) -- Remove LC
 			AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
-			AND b.ruben = 1
-			AND statusID NOT IN (101, 102, 103)
+			AND b.statusID IN (111, 112, 113)
 		GROUP BY bettype
-			, CASE 
-				WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120)
-					THEN b.liveindicator
+			, CASE
+				WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) THEN b.liveindicator
 				ELSE 0
-				END
+			END
 			,b.winlostdate
 			,b.currency
 	END
@@ -263,16 +231,15 @@ BEGIN
 			SELECT @BalanceUpDay = @FDate
 
 		INSERT INTO #AgWinLoss
-		SELECT bettype
-			, CASE 
-				WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120)
-					THEN b.liveindicator
+		SELECT b.bettype
+			, CASE
+				WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) THEN b.liveindicator
 				ELSE 0
-				END AS liveindicator
+			END AS liveindicator
 			, b.winlostdate
 			, b.currency
-			, SUM(stake)
-			, SUM(winlost - actual_stake)
+			, SUM(b.stake)
+			, SUM(b.winlost - b.actual_stake)
 			, - SUM(CASE 
 					WHEN ISNULL(BA.transid, 0) = 0
 						AND (
@@ -298,22 +265,20 @@ BEGIN
 						THEN (b.winlost - b.actual_stake)
 					ELSE 0
 					END) AS LicenseeWL
-			, - SUM(CASE 
-					WHEN ISNULL(BA.transid, 0) <> 0
-						THEN (b.winlost - b.actual_stake + awinlost + comm)
-					ELSE 0
+			, - SUM(CASE
+						WHEN ISNULL(BA.transid, 0) <> 0 THEN (b.winlost - b.actual_stake + b.awinlost + b.comm)
+						ELSE 0
 					END) AS AmountDueToBA
-			, SUM(CASE 
-					WHEN ISNULL(BA.transid, 0) <> 0
-						THEN comm
+			, SUM(CASE
+					WHEN ISNULL(BA.transid, 0) <> 0 THEN comm
 					ELSE 0
-					END) AS CommBA
-			, SUM(playercomm) AS PlayerComm
-		FROM dbo.bettrans14 b WITH (NOLOCK)
-			INNER JOIN @TempAg s ON b.recommend = s.CustId AND b.currency = s.currency
-			LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_bk BA WITH (NOLOCK) ON b.transid = BA.transid	
+				END) AS CommBA
+			, SUM(b.playercomm) AS PlayerComm
+		FROM dbo.bettrans14 AS b WITH (NOLOCK)
+			INNER JOIN #TempAg AS ta ON ta.CustId = b.recommend
+			LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_bk AS BA WITH (NOLOCK) ON b.transid = BA.transid
 		WHERE b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
-			AND statusID NOT IN (101, 102, 103)
+			AND b.statusID IN (111, 112, 113)
 			AND (bettype <= 1599
 				OR (b.bettype >= 2701 AND b.bettype <= 2829)
 				OR (b.bettype BETWEEN 8101 AND 8120)
@@ -329,52 +294,74 @@ BEGIN
 				)
 			AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 		GROUP BY
-			bettype
-			, CASE 
-				WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120)
-					THEN b.liveindicator
+			b.bettype
+			, CASE
+				WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) THEN b.liveindicator
 				ELSE 0
-				END
+			END
 			, b.winlostdate
-			, b.currency	
+			, b.currency
 	END
 
 	-- Calculate total value
-	SELECT @TotalRows = COUNT(DISTINCT bettype)
+	SELECT @TotalRows = COUNT(DISTINCT BetType)
 	FROM #AgWinLoss
 
+	-- Get exchange rate
+	DECLARE @Exchange TABLE (
+		FromDate	SMALLDATETIME,
+		ToDate		SMALLDATETIME,
+		ExchangeId	INT,
+		Rate		FLOAT
+	)
+
+	INSERT INTO @Exchange (
+		FromDate,
+		ToDate,
+		ExchangeId,
+		Rate )
+	SELECT
+		FromDate,
+		ToDate,
+		ExchangeId,
+		Rate
+	FROM dbo.Lrf_f_GetExchangeRate(@FDate, @TDate, @BaseCurrency, '') e
+	WHERE EXISTS (SELECT Currency FROM #TempAg AS a WHERE a.Currency = e.ExchangeId)
+
+	-- Return result
 	SELECT wl.*
 	FROM (
-		SELECT CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.grouptypeId
+		SELECT CASE WHEN ISNULL(ss.bettype, 0) <> 0 THEN ss.grouptypeId
 					WHEN ISNULL(vs.Bettype, 0) <> 0 THEN vs.GroupTypeId 
 					ELSE b.bettype
 				END bettype
-			, liveindicator
-			, CAST(SUM(TurnOver			*e.Rate) AS MONEY)		AS TurnOver
-			, CAST(SUM(MemberWinLost	*e.Rate) AS MONEY)		AS MemberWinLost
-			, CAST(SUM(LicenseeWL		*e.Rate) AS MONEY)		AS LicenseeWL
-			, CAST(SUM(CommBA			*e.Rate) AS MONEY)		AS CommBA
-			, CAST(SUM(PlayerComm		*e.Rate) AS MONEY)		AS PlayerComm
-			, CAST(SUM(AmtDuetoBA		*e.Rate) AS MONEY)		AS AmtDuetoBA
-			, ROW_NUMBER() OVER (
-				ORDER BY CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.grouptypeId
-							  WHEN ISNULL(vs.Bettype, 0) <> 0 THEN vs.GroupTypeId 
-					ELSE b.bettype 
-					END
-				) AS RowNum
-		FROM #AgWinLoss b
-			LEFT JOIN @Exchange e ON b.currency = e.ExchangeId AND b.winlostdate BETWEEN e.FromDate AND e.ToDate
-			LEFT JOIN dbo.f_GroupBettype() ss ON b.bettype = ss.bettype 	
-			LEFT JOIN dbo.f_GroupBetType3rd() vs ON b.bettype = vs.Bettype
-		GROUP BY CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.grouptypeId
-					  WHEN ISNULL(vs.Bettype, 0) <> 0 THEN vs.GroupTypeId 
-					ELSE b.bettype 
-					END
-				, liveindicator
+			, b.liveindicator
+			, CAST(SUM(b.TurnOver		* e.Rate) AS MONEY)	AS TurnOver
+			, CAST(SUM(b.MemberWinLost	* e.Rate) AS MONEY)	AS MemberWinLost
+			, CAST(SUM(b.LicenseeWL		* e.Rate) AS MONEY)	AS LicenseeWL
+			, CAST(SUM(b.CommBA			* e.Rate) AS MONEY)	AS CommBA
+			, CAST(SUM(b.PlayerComm		* e.Rate) AS MONEY)	AS PlayerComm
+			, CAST(SUM(b.AmtDueToBA		* e.Rate) AS MONEY)	AS AmtDuetoBA
+			, ROW_NUMBER() OVER (ORDER BY CASE
+											WHEN ISNULL(ss.bettype, 0) <> 0 THEN ss.grouptypeId
+											WHEN ISNULL(vs.Bettype, 0) <> 0 THEN vs.GroupTypeId 
+											ELSE b.bettype
+										END
+								) AS RowNum
+		FROM #AgWinLoss AS b
+			LEFT JOIN @Exchange AS e ON b.currency = e.ExchangeId AND b.winlostdate BETWEEN e.FromDate AND e.ToDate
+			LEFT JOIN dbo.f_GroupBettype() AS ss ON b.bettype = ss.bettype
+			LEFT JOIN dbo.f_GroupBetType3rd() AS vs ON b.bettype = vs.Bettype
+		GROUP BY
+			CASE
+				WHEN ISNULL(ss.bettype, 0) <> 0 THEN ss.grouptypeId
+				WHEN ISNULL(vs.Bettype, 0) <> 0 THEN vs.GroupTypeId
+				ELSE b.bettype
+			END,
+			b.liveindicator
 		) wl
 	WHERE wl.RowNum BETWEEN @RowStart AND @RowEnd
 
 	DROP TABLE #AgWinLoss
-	DROP TABLE #TempSAg
 END
 GO
