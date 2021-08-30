@@ -68,7 +68,7 @@ BEGIN
 		WHERE CustID = @CustId 
 			AND GameTypeID = 1 --Australia Acttab
 
-		SELECT @IsEnable_Old = ~ISNULL(IsDisabled,1)
+		SELECT @SEnabled = ~ISNULL(IsDisabled,1)
 		FROM dbo.custgametype WITH (NOLOCK)
 		WHERE CustID = @srecommend 
 			AND GameTypeID = 1 --Australia Acttab
