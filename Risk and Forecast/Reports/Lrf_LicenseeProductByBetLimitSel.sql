@@ -18,6 +18,7 @@ AS
 		- 20210629@Johnson: Add more products to support enable status [redmine:#156680]
 		- 20210630@Hogan: Integrate Creative Gaming [RedmineID: #152619]
 		- 20210811@Hogan: Hide Disable/Enable button of products Allbet, Macau games, SA Gaming, AE Sexy, WM, GDG[RedmineID: #160031]
+		- 20210818@Johnson: Add Vgaming [redmine:#159696]
 */
 
  /*
@@ -143,7 +144,8 @@ BEGIN
 			36,--	SG
 			38,--	Virtual Games
 			34,--	Arcadia Gaming
-			55--	PG Soft
+			55,--	PG Soft
+			66--	VGaming			
 		)
 	ORDER BY ProductID ASC
 END

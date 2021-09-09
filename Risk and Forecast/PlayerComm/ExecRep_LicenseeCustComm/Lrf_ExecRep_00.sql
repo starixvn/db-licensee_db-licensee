@@ -57,12 +57,14 @@ ALTER PROCEDURE [dbo].[Lrf_ExecRep_00]
 	@IsUpdateGDG			BIT = 0,
 	@IsUpdateSportsLottery	BIT = 0,
 	@IsUpdateHabanero		BIT = 0,
+	@IsUpdateVGaming		BIT = 0,
 	@WMCasinoComm		DECIMAL(9,8) = 0,
 	@BigGamingComm		DECIMAL(9,8) = 0,
 	@JokerComm			DECIMAL(9,8) = 0,
 	@GDGComm			DECIMAL(9,8) = 0,
 	@SportsLotteryComm	DECIMAL(9,8) = 0,
 	@HabaneroComm		DECIMAL(9,8) = 0,
+	@VGamingComm		DECIMAL(9,8) = 0,
 
 	@isClearGroupComm BIT = 0,
 	@IsUpdateGroupComm BIT = 0
@@ -83,7 +85,7 @@ AS
 		- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238] 
 		- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012]
 		- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048]   
-	
+		- 20210817@Johnson: Add VGaming [redmine:#159696]
 	Param's Explanation:
 
 */
@@ -158,6 +160,7 @@ BEGIN
 				,GDGComm = CASE WHEN @IsUpdateGDG = 1 THEN @GDGComm ELSE GDGComm END
 				,SportsLotteryComm = CASE WHEN @IsUpdateSportsLottery = 1 THEN @SportsLotteryComm ELSE SportsLotteryComm END
 				,HabaneroComm = CASE WHEN @IsUpdateHabanero = 1 THEN @HabaneroComm ELSE HabaneroComm END
+				,VGamingComm = CASE WHEN @IsUpdateVGaming = 1 THEN @VGamingComm ELSE VGamingComm END
 		FROM dbo.LicenseeCustComm cs WITH (ROWLOCK,UPDLOCK)
 			INNER JOIN @TempList_Input ip ON cs.CustID = ip.CustID
 			LEFT JOIN @TempLicenseeBA_batch ba ON ba.custid = ip.custid
@@ -231,6 +234,7 @@ BEGIN
 			OR @IsUpdateGDG				= 1
 			OR @IsUpdateSportsLottery	= 1
 			OR @IsUpdateHabanero		= 1
+			OR @IsUpdateVGaming			= 1
 			
 			)
 		BEGIN	
@@ -262,6 +266,7 @@ BEGIN
 					,GDGComm = CASE WHEN @IsUpdateGDG = 1 THEN @GDGComm ELSE GDGComm END
 					,SportsLotteryComm = CASE WHEN @IsUpdateSportsLottery = 1 THEN @SportsLotteryComm ELSE SportsLotteryComm END
 					,HabaneroComm = CASE WHEN @IsUpdateHabanero = 1 THEN @HabaneroComm ELSE HabaneroComm END
+					,VGamingComm = CASE WHEN @IsUpdateVGaming = 1 THEN @VGamingComm ELSE VGamingComm END
 			FROM dbo.LicenseeCustComm cs WITH (ROWLOCK,UPDLOCK)
 				INNER JOIN @TempList_Input ip ON ip.CustID = cs.CustID
 		END

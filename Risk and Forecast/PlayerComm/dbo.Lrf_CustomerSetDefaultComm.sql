@@ -26,6 +26,7 @@ AS
 		- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238] 
 		- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012] 
 		- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048] 
+		- 20210817@Johnson: Add VGaming [redmine:#159696]
 		
 	Param's Explanation:
 */ 
@@ -62,6 +63,7 @@ BEGIN
 		@IsUpdateGDG			BIT = 0,
 		@IsUpdateSportsLottery	BIT = 0,
 		@IsUpdateHabanero		BIT = 0,
+		@IsUpdateVGaming		BIT = 0,
 
 		@LicenseeID INT,		
 		@strCustID VARCHAR(50)
@@ -166,7 +168,10 @@ BEGIN
 
 			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=61)
 				SET @IsUpdateHabanero = 1
-					
+			
+			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=66)
+				SET @IsUpdateVGaming = 1
+
 			SELECT @strCustID=CAST (@CustID AS VARCHAR(50))
 			
 			EXEC [Lrf_CustomerUpdMemberComm] 
@@ -202,7 +207,8 @@ BEGIN
 				,@IsUpdateJoker			= @IsUpdateJoker			
 				,@IsUpdateGDG			= @IsUpdateGDG			
 				,@IsUpdateSportsLottery	= @IsUpdateSportsLottery
-				,@IsUpdateHabanero		= @IsUpdateHabanero		
+				,@IsUpdateHabanero		= @IsUpdateHabanero
+				,@IsUpdateVGaming		= @IsUpdateVGaming		
 				
 				,@IP=''
 				,@Langkey=@Langkey

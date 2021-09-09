@@ -65,18 +65,21 @@ ALTER PROCEDURE [dbo].[Acc_CustSetting3rd_16]
 	@IsUpdateGDG			BIT = 0,
 	@IsUpdateSportsLottery	BIT = 0,
 	@IsUpdateHabanero		BIT = 0,
+	@IsUpdateVGaming		BIT = 0,
 	@WMCasinoComm		DECIMAL(9,8) = 0,
 	@BigGamingComm		DECIMAL(9,8) = 0,
 	@JokerComm			DECIMAL(9,8) = 0,
 	@GDGComm			DECIMAL(9,8) = 0,
 	@SportsLotteryComm	DECIMAL(9,8) = 0,
 	@HabaneroComm		DECIMAL(9,8) = 0,
+	@VGamingComm		DECIMAL(9,8) = 0,
 	@WMCasinoComm_Group			DECIMAL(9,8) = 0,
 	@BigGamingComm_Group		DECIMAL(9,8) = 0,
 	@JokerComm_Group			DECIMAL(9,8) = 0,
 	@GDGComm_Group				DECIMAL(9,8) = 0,
 	@SportsLotteryComm_Group	DECIMAL(9,8) = 0,
-	@HabaneroComm_Group			DECIMAL(9,8) = 0
+	@HabaneroComm_Group			DECIMAL(9,8) = 0,
+	@VGamingComm_Group			DECIMAL(9,8) = 0
 AS
 /*
 Created: 20120730@Henry
@@ -102,7 +105,7 @@ Revisions:
 	- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238] 
 	- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012]
 	- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048]   
-	
+	- 20210816@Johnson: Add VGaming [redmine: #159696]
 Param's Explanation:
 • @ErrCode:
     = 0: Transaction recorded successfully.
@@ -263,7 +266,8 @@ BEGIN
 		OR @IsUpdateJoker  = 1	
 		OR @IsUpdateGDG  = 1	
 		OR @IsUpdateSportsLottery  = 1	
-		OR @IsUpdateHabanero  = 1	
+		OR @IsUpdateHabanero  = 1
+		OR @IsUpdateVGaming  = 1		
 	)
 	BEGIN
 		INSERT INTO @tblSettingDCS_tmp (IsUpdated,sporttype,Bettype,CommGroup, Comm)
@@ -291,6 +295,7 @@ BEGIN
 				,(@IsUpdateGDG,236,5701,@GDGComm_Group,@GDGComm)
 				,(@IsUpdateSportsLottery,169,3611,@SportsLotteryComm_Group,@SportsLotteryComm)
 				,(@IsUpdateHabanero,238,7001,@HabaneroComm_Group,@HabaneroComm)
+				,(@IsUpdateVGaming,171,3801,@VGamingComm_Group,@VGamingComm)
 			
 	END
 	

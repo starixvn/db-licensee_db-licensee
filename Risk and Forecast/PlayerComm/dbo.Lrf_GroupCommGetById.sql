@@ -25,6 +25,7 @@ AS
 	- 20200814@Helen: LAP - Offer commission to 3rd party products - Phase 2 - [Redmine: #139238] 
 	- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012] 
 	- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048]  
+	- 20210817@Johnson: Add VGaming [redmine:#159696]
 */  
 BEGIN  
 SET NOCOUNT ON;  
@@ -61,7 +62,8 @@ SELECT g.ID AS GroupCommID,
 	g.JokerComm,
 	g.GDGComm,
 	g.SportsLotteryComm,
-	g.HabaneroComm
+	g.HabaneroComm,
+	g.VGamingComm
 FROM dbo.LicenseeGroupComm g WITH (NOLOCK) 
 WHERE 
 	IsActive = 1 
