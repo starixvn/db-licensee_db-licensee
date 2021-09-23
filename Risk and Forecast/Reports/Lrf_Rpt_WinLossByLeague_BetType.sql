@@ -1,0 +1,467 @@
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+
+ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLossByLeague_BetType]
+	@AgentList		VARCHAR(MAX),
+	@FromDate		SMALLDATETIME,
+	@ToDate			SMALLDATETIME,
+	@MoveBetsDay	SMALLDATETIME,
+	@BalanceUpDay	SMALLDATETIME,
+	@MatchId		INT,
+	@EventType		TINYINT,
+	@ProductList	VARCHAR(100)	= '',
+	@ShowBA			BIT				= 0,
+	@BetTypeList	VARCHAR(MAX)	= '',
+	@StatusIdList	VARCHAR(50)		= '',
+	@BaseCurrency	VARCHAR(3)		= ''
+AS
+
+/*
+	Created: 20210916@Kos
+	Task: LAP - Win Loss By League report - BetType level
+	DB: DBEXT.bodb02
+
+	Revisions:
+		- 20210916@Kos: New SP [RedmineID: #159939]
+
+	Param's Explanation:
+		- @StatusIdList: status ID list separated by ','
+*/
+
+BEGIN
+	SET NOCOUNT ON
+
+	-- Get agent list
+	DECLARE @TempAg TABLE (CustId INT PRIMARY KEY, Currency INT)
+
+	DECLARE @DocHandler INT
+
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT, @AgentList
+
+		INSERT INTO @TempAg (CustId, Currency)
+		SELECT AgentId, Currency
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId INT, Currency INT) AS Data
+
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
+	BEGIN CATCH
+		SELECT ErrCode = 100,
+			ErrMsg = N'Invalid Parameter.'
+
+		RETURN
+	END CATCH;
+
+	DECLARE @ShowSB BIT = 0
+
+	IF ',' + @ProductList + ',' LIKE '%,SB,%'
+		SET @ShowSB = 1
+
+	IF @ShowBA = 1
+		SET @ProductList = @ProductList + ',SB'
+
+	-- Get sport/bettype matrix
+	DECLARE @SportBetType TABLE (BetType SMALLINT PRIMARY KEY, ProductCode VARCHAR(10), EventType TINYINT)
+
+	DECLARE @IsTest BIT = 0
+
+	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
+
+	INSERT INTO @SportBetType (BetType, ProductCode, EventType)
+	SELECT DISTINCT BetType, ProductPrefix, EventType
+	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
+	WHERE BetType NOT IN (901, 902, 903, 904, 999)
+		AND BetType NOT BETWEEN 801 AND 806
+		AND (@BetTypeList = 'All'
+			OR ',' + @BetTypeList + ',' LIKE '%,' + CAST(BetType AS VARCHAR(5)) + ',%')
+			OR BetType IN (SELECT Bettype FROM dbo.f_GroupBettype() WHERE ',' + @BetTypeList + ',' LIKE '%,' + CAST(GroupTypeId AS VARCHAR(5)) + ',%')
+
+	DECLARE @Data TABLE (
+		BetType		INT,
+		WinLostDate	SMALLDATETIME,
+		Currency	INT,
+		BetCount	BIGINT,
+		Turnover	MONEY,
+		WinLost		MONEY,
+		LicenseeWL	MONEY,
+		BAComm		MONEY
+	)
+
+	DECLARE
+		@LeagueId		INT,
+		@MatchSportType	SMALLINT,
+		@ParentId		INT,
+		@EventDate		DATETIME
+
+	DECLARE @_FromDate	SMALLDATETIME,
+		@_ToDate		SMALLDATETIME
+
+	SELECT @_FromDate = @FromDate,
+		@_ToDate = @ToDate
+
+	DECLARE @Match TABLE (MatchId INT, EventDate DATETIME)
+
+	IF @EventType = 1
+	BEGIN
+		SELECT
+			@LeagueId = leagueid,
+			@MatchSportType = sporttype,
+			@ParentId = ParentID,
+			@EventDate = eventdate
+		FROM dbo.match WITH (NOLOCK)
+		WHERE matchid = @MatchId AND eventdate > @MoveBetsDay
+
+		IF @MatchSportType IS NULL
+		BEGIN
+			SELECT
+				@LeagueId = leagueid,
+				@MatchSportType = sporttype,
+				@ParentId = ParentID,
+				@EventDate = eventdate
+			FROM dbo.match14 WITH (NOLOCK)
+			WHERE matchid = @MatchId
+				AND eventdate BETWEEN @BalanceUpDay AND @MoveBetsDay
+		END
+
+		IF @MatchSportType IS NULL
+		BEGIN
+			SELECT
+				@LeagueId = leagueid,
+				@MatchSportType = sporttype,
+				@ParentId = ParentID,
+				@EventDate = eventdate
+			FROM DBARC.bodb_Archive.dbo.match_bk WITH (NOLOCK)
+			WHERE matchid = @MatchId
+		END
+
+		IF @MatchSportType IS NOT NULL
+		BEGIN
+			IF @MatchSportType = 50 AND @ParentId IS NULL	-- Cricket, parent match
+			BEGIN
+				INSERT INTO @Match
+				SELECT
+					@MatchId,
+					@EventDate
+				UNION
+				SELECT DISTINCT
+					MatchId,
+					eventdate
+				FROM dbo.match WITH (NOLOCK)
+				WHERE ParentID = @MatchId
+					AND sporttype = @MatchSportType
+					AND eventdate BETWEEN @_FromDate AND @_ToDate
+					AND ChildMatchType = 200
+				UNION
+				SELECT DISTINCT
+					MatchId,
+					eventdate
+				FROM dbo.match14 WITH (NOLOCK)
+				WHERE ParentID = @MatchId
+					AND sporttype = @MatchSportType
+					AND eventdate BETWEEN @_FromDate AND @_ToDate
+					AND ChildMatchType = 200
+				UNION
+				SELECT DISTINCT
+					MatchId,
+					eventdate
+				FROM DBARC.bodb_Archive.dbo.match_bk WITH (NOLOCK)
+				WHERE ParentID = @MatchId
+					AND sporttype = @MatchSportType
+					AND eventdate BETWEEN @_FromDate AND @_ToDate
+					AND ChildMatchType = 200
+
+				DECLARE @MinEventDate	SMALLDATETIME,
+					@MaxEventDate		SMALLDATETIME
+
+				SELECT
+					@MinEventDate = MIN(EventDate),
+					@MaxEventDate = MAX(EventDate)
+				FROM @Match
+
+				SET @_FromDate = CASE
+									WHEN @_FromDate > @MaxEventDate THEN NULL
+									WHEN @_FromDate > @MinEventDate THEN @_FromDate
+									ELSE @MinEventDate
+								END
+
+				SET @_ToDate = CASE
+								WHEN @_ToDate < @MinEventDate THEN NULL
+								WHEN @_ToDate < @MaxEventDate THEN @_ToDate
+								ELSE @MaxEventDate
+							END
+			END
+			ELSE
+			BEGIN
+				SET @_FromDate = CASE
+									WHEN @EventDate BETWEEN @_FromDate AND @_ToDate THEN @EventDate
+									ELSE NULL
+								END
+
+				SET @_ToDate = CASE
+								WHEN @EventDate BETWEEN @_FromDate AND @_ToDate THEN @EventDate
+								ELSE NULL
+							END
+			END
+		END
+	END
+	
+	IF @EventType = 2	-- outright
+	BEGIN
+		SELECT
+			@LeagueId = leagueid,
+			@EventDate = eventdate
+		FROM dbo.outright WITH (NOLOCK)
+		WHERE orid = @MatchId AND eventdate > @MoveBetsDay
+
+		IF @EventDate IS NULL
+		BEGIN
+			SELECT
+				@LeagueId = leagueid,
+				@EventDate = eventdate
+			FROM dbo.outright14 WITH (NOLOCK)
+			WHERE orid = @MatchId
+				AND eventdate BETWEEN @BalanceUpDay AND @MoveBetsDay
+		END
+
+		IF @EventDate IS NULL
+		BEGIN
+			SELECT
+				@LeagueId = leagueid,
+				@EventDate = eventdate
+			FROM DBARC.bodb_Archive.dbo.outright_bk WITH (NOLOCK)
+			WHERE orid = @MatchId
+		END
+
+		SET @_FromDate = CASE
+							WHEN @EventDate BETWEEN @_FromDate AND @_ToDate THEN @EventDate
+							ELSE NULL
+						END
+
+		SET @_ToDate = CASE
+						WHEN @EventDate BETWEEN @_FromDate AND @_ToDate THEN @EventDate
+						ELSE NULL
+					END
+	END
+
+	DECLARE @TempFromDate	SMALLDATETIME,
+		@TempToDate			SMALLDATETIME
+
+	IF @_FromDate IS NOT NULL AND @_ToDate IS NOT NULL
+	BEGIN
+		-- bettrans range
+		IF @_ToDate > @MoveBetsDay
+		BEGIN
+			SET @TempFromDate = CASE
+									WHEN @_FromDate <= @MoveBetsDay THEN DATEADD(DAY, 1, @MoveBetsDay)
+									ELSE @_FromDate
+								END
+
+			-- Sportsbook (EventType = 1)
+			IF @EventType = 1
+			BEGIN
+				INSERT INTO @Data (
+					BetType,
+					WinLostDate,
+					Currency,
+					BetCount,
+					Turnover,
+					WinLost,
+					LicenseeWL,
+					BAComm )
+				SELECT
+					b.bettype,
+					b.winlostdate,
+					b.currency,
+					COUNT(1) AS BetCount,
+					SUM(CASE
+							WHEN b.statusID IN (112, 113)
+								AND b.modds IN (-0.25, 0.25)
+								AND b.bettype NOT IN (29, 38)
+								THEN 0.5 * b.stake
+							ELSE b.stake
+						END) AS Turnover,
+					SUM(b.winlost - b.actual_stake) AS WinLost,
+					- SUM(CASE
+							WHEN sbt.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 0
+							ELSE b.winlost - b.actual_stake
+						END) AS LicenseeWL,
+					SUM(CASE
+							WHEN sbt.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN b.comm
+							ELSE 0
+						END) AS BAComm
+				FROM
+					dbo.bettrans AS b WITH (NOLOCK)
+					INNER JOIN @TempAg AS a ON a.CustId = b.recommend
+					INNER JOIN @SportBetType AS sbt ON sbt.BetType = b.bettype
+				WHERE
+					b.winlostdate BETWEEN @TempFromDate AND @_ToDate
+					AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
+					AND sbt.EventType = 1
+					AND 1 = CASE
+								WHEN @ShowBA = 0 AND sbt.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 0
+								WHEN @ShowSB = 0 AND sbt.ProductCode = 'SB' AND b.tpositiontaking <> 0 THEN 0
+								ELSE 1
+							END
+					AND (b.matchid = @MatchId
+						OR b.matchid IN (SELECT MatchId FROM @Match))
+				GROUP BY
+					b.bettype,
+					b.winlostdate,
+					b.currency
+			END
+
+			-- Outright
+			IF @EventType = 2
+			BEGIN
+				INSERT INTO @Data (
+					BetType,
+					WinLostDate,
+					Currency,
+					BetCount,
+					Turnover,
+					WinLost,
+					LicenseeWL,
+					BAComm )
+				SELECT
+					b.bettype,
+					b.winlostdate,
+					b.currency,
+					COUNT(1) AS BetCount,
+					SUM(b.stake) AS Turnover,
+					SUM(b.winlost - b.actual_stake) AS WinLost,
+					- SUM(CASE
+							WHEN b.tpositiontaking = 0 THEN 0
+							ELSE b.winlost - b.actual_stake
+						END) AS LicenseeWL,
+					SUM(CASE
+							WHEN b.tpositiontaking = 0 THEN b.comm
+							ELSE 0
+						END) AS BAComm
+				FROM
+					dbo.bettrans AS b WITH (NOLOCK)
+					INNER JOIN @TempAg AS a ON a.CustId = b.recommend
+				WHERE
+					b.winlostdate BETWEEN @TempFromDate AND @_ToDate
+					AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
+					AND b.bettype = 10
+					AND 1 = CASE
+								WHEN @ShowBA = 0 AND b.tpositiontaking = 0 THEN 0
+								WHEN @ShowSB = 0 AND b.tpositiontaking <> 0 THEN 0
+								ELSE 1
+							END
+					AND b.matchid = @MatchId
+				GROUP BY
+					b.bettype,
+					b.winlostdate,
+					b.currency
+			END
+		END
+
+		-- bettrans14 & bettrans_bk range
+		IF @_FromDate <= @MoveBetsDay
+		BEGIN
+			SET @TempToDate = CASE
+								WHEN @_ToDate >= @MoveBetsDay THEN @MoveBetsDay
+								ELSE @_ToDate
+							END
+
+			-- Add HalfWon status ID
+			IF ',' + @StatusIdList + ',' LIKE '%,112,%'
+				SET @StatusIdList = @StatusIdList + ',114'
+
+			-- Add HalfLose status ID
+			IF ',' + @StatusIdList + ',' LIKE '%,113,%'
+				SET @StatusIdList = @StatusIdList + ',115'
+
+			INSERT INTO @Data (
+				BetType,
+				WinLostDate,
+				Currency,
+				BetCount,
+				Turnover,
+				WinLost,
+				LicenseeWL,
+				BAComm )
+			SELECT
+				b.bettype,
+				b.winlostdate,
+				b.currency,
+				SUM(b.betcount) AS BetCount,
+				SUM(CASE
+						WHEN b.statusID IN (114, 115) THEN 0.5 * b.stake
+						ELSE b.stake
+					END) AS Turnover,
+				SUM(b.winlost) AS WinLost,
+				-SUM(CASE WHEN b.isBA = 0 THEN b.winlost ELSE 0 END) AS LicenseeWL,
+				SUM(CASE WHEN b.isBA = 1 THEN b.comm ELSE 0 END) AS BAComm
+			FROM
+				bodb_licenseereport.dbo.rptWinlostbyLeague AS b WITH (NOLOCK)
+				INNER JOIN @TempAg AS a ON a.CustId = b.recommend
+				INNER JOIN @SportBetType AS sbt ON sbt.BetType = b.bettype
+			WHERE
+				b.winlostdate BETWEEN @_FromDate AND @TempToDate
+				AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
+				AND 1 = CASE
+							WHEN @ShowBA = 0 AND sbt.ProductCode = 'SB' AND b.isBA = 1 THEN 0
+							WHEN @ShowSB = 0 AND sbt.ProductCode = 'SB' AND b.isBA = 0 THEN 0
+							ELSE 1
+						END
+				AND b.leagueid = @LeagueId
+				AND (b.matchid = @MatchId
+					OR b.matchid IN (SELECT MatchId FROM @Match))
+			GROUP BY
+				b.bettype,
+				b.winlostdate,
+				b.currency
+		END
+	END
+
+	-- Get exchange rate
+	DECLARE @MinDate	SMALLDATETIME,
+		 @MaxDate		SMALLDATETIME
+
+	SELECT
+		@MinDate = MIN(WinLostDate),
+		@MaxDate = MAX(WinLostDate)
+	FROM @Data
+
+	DECLARE @ExchangeRate TABLE (
+		FromDate	SMALLDATETIME,
+		ToDate		SMALLDATETIME,
+		ExchangeId	INT,
+		Rate		FLOAT,
+		USD			FLOAT,
+		EUR			FLOAT,
+		GBP			FLOAT,
+		DefaultRate	FLOAT)
+
+	IF EXISTS (SELECT TOP(1) 1 FROM @Data)
+	BEGIN
+		INSERT INTO @ExchangeRate(FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
+		SELECT FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate
+		FROM dbo.Lrf_f_GetExchangeRate(@MinDate, @MaxDate, @BaseCurrency, '') e
+		WHERE EXISTS (SELECT 1 FROM @TempAg AS a WHERE e.ExchangeID = a.Currency)
+	END
+
+	-- Return result
+	SELECT
+		CASE
+			WHEN ISNULL(ss.bettype, 0) <> 0 THEN ss.GroupTypeId
+			ELSE d.BetType
+		END AS BetType,
+		SUM(d.BetCount) AS BetCount,
+		CAST(SUM(d.Turnover		* e.Rate) AS MONEY) AS Turnover,
+		CAST(SUM(d.WinLost		* e.Rate) AS MONEY) AS WinLost,
+		CAST(SUM(d.LicenseeWL	* e.Rate) AS MONEY) AS LicenseeWL,
+		CAST(SUM(d.BAComm		* e.Rate) AS MONEY) AS BAComm
+	FROM @Data AS d
+		INNER JOIN @ExchangeRate AS e
+			ON d.WinLostDate BETWEEN e.FromDate AND e.ToDate
+				AND d.Currency = e.ExchangeId
+		LEFT JOIN dbo.f_GroupBettype() AS ss ON ss.bettype = d.BetType
+	GROUP BY CASE
+				WHEN ISNULL(ss.bettype, 0) <> 0 THEN ss.GroupTypeId
+				ELSE d.BetType
+			END
+	ORDER BY BetType ASC
+END
+GO
