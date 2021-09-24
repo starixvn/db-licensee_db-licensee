@@ -35,6 +35,7 @@ AS
 		- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012] 
 		- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048]  
 		- 20210817@Johnson: Add VGaming [redmine:#159696]
+		- 20210922@Elodie: Hotfix-RNG Casino player comm isn't removed in CasinoAdmin DB when deleting a group comm [Redmine: #161802]
 	Param's Explanation:
 
 */
@@ -224,6 +225,18 @@ BEGIN
 						
 			IF @IsexistMember = 1			
 			BEGIN
+				SELECT @StrCustID=''
+				SELECT @StrCustID = STUFF(
+					(   SELECT  ',' + CONVERT(NVARCHAR(20), a.custid) 
+						FROM dbo.LicenseeCustComm b WITH (NOLOCK)
+							INNER JOIN CustDB.dbo.custinfo a WITH (NOLOCK) ON a.custid = b.custid
+						WHERE a.SyncCasino = 1 AND b.LicenseeID = @LicenseeID AND b.GroupCommID = @GroupCommID	
+						FOR XML PATH('')
+					)
+					, 1
+					, 1
+					, '')
+
 				--Update List of affected Customers               
 				EXEC [Lrf_CustomerUpdMemberComm] 
 					@LicenseeID=@LicenseeID,
@@ -298,18 +311,6 @@ BEGIN
 					@ErrCode=@ErrCode OUTPUT,
 					@ErrMsg=@ErrMsg OUTPUT
 				WITH RECOMPILE
-					
-					SELECT @StrCustID=''
-					SELECT @StrCustID = STUFF(
-						(   SELECT  ',' + CONVERT(NVARCHAR(20), a.custid) 
-							FROM dbo.LicenseeCustComm b WITH (NOLOCK)
-								INNER JOIN CustDB.dbo.custinfo a WITH (NOLOCK) ON a.custid = b.custid
-							WHERE a.SyncCasino = 1 AND b.LicenseeID = @LicenseeID AND b.GroupCommID = @GroupCommID	
-							FOR XML PATH('')
-						)
-						, 1
-						, 1
-						, '')
 			END
 			
 			IF @ErrCode<>0
