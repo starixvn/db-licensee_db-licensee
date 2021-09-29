@@ -91,7 +91,7 @@ BEGIN
 	CREATE TABLE #SAgWinLoss
 	(  
 		winlostdate			DATE,
-		CurrencyId			INT,
+		CurrencyCode		VARCHAR(10),
 		TurnoverSB			MONEY,
 		TurnoverNG			MONEY,
 		TurnoverCS			MONEY,
@@ -133,7 +133,7 @@ BEGIN
 				INSERT INTO #SAgWinLoss
 					(  
 						winlostdate,
-						CurrencyId,
+						CurrencyCode,
 						TurnoverSB,
 						TurnoverNG,
 						TurnoverCS,
@@ -147,7 +147,7 @@ BEGIN
 						SourceName
 					)
 				SELECT	CAST(a.SettlementDate AS DATE) WinLostDate,
-						c.Id,
+						a.CurrencyCode,
 						SUM(CASE WHEN a.GamePlatformCode = 'SB' THEN a.BetAmount ELSE 0 END),
 						SUM(CASE WHEN a.GamePlatformCode = 'RNG' AND a.GameCode = '0161' THEN a.BetAmount ELSE 0 END),
 						SUM(CASE WHEN a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161' THEN a.BetAmount ELSE 0 END),
@@ -160,10 +160,10 @@ BEGIN
 						COUNT(1),
 						'BetTicket' AS SourceName
 				FROM bodb_Ploutos.dbo.BetTicket a WITH (NOLOCK)
-					INNER JOIN #Currency c ON c.Code = a.CurrencyCode
 					INNER JOIN bodb_Ploutos.dbo.PlayerProfile pp WITH(NOLOCK) ON pp.BrandCode = a.BrandCode AND pp.CustID = a.CustId
 				WHERE  
 					a.BrandCode = @SiteName
+					AND EXISTS (SELECT 1 FROM #Currency c WHERE c.Code = a.CurrencyCode)
 					AND a.StatusID IN (0, 1)
 					AND a.SettlementDate >= @FDate AND a.SettlementDate < @TempToDate
 					AND (
@@ -174,7 +174,7 @@ BEGIN
 					)
 				GROUP BY
 					CAST(a.SettlementDate AS DATE),
-					c.Id
+					a.CurrencyCode
 				
 			END
 
@@ -197,7 +197,7 @@ BEGIN
 				INSERT INTO #SAgWinLoss
 					(  
 						winlostdate,
-						CurrencyId,
+						CurrencyCode,
 						TurnoverSB,
 						TurnoverNG,
 						TurnoverCS,
@@ -211,7 +211,7 @@ BEGIN
 						SourceName
 					)
 				SELECT	CAST(a.SettlementDate AS DATE) WinLostDate,
-						c.Id,
+						a.CurrencyCode,
 						SUM(CASE WHEN a.GamePlatformCode = 'SB' THEN a.BetAmount ELSE 0 END),
 						SUM(CASE WHEN a.GamePlatformCode = 'RNG' AND a.GameCode = '0161' THEN a.BetAmount ELSE 0 END),
 						SUM(CASE WHEN a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161' THEN a.BetAmount ELSE 0 END),
@@ -224,10 +224,10 @@ BEGIN
 						COUNT(1),
 						'BetTicket' AS SourceName
 				FROM bodb_Ploutos.dbo.BetTicket_BK a WITH (NOLOCK)
-					INNER JOIN #Currency c ON c.Code = a.CurrencyCode
 					INNER JOIN bodb_Ploutos.dbo.PlayerProfile pp WITH(NOLOCK) ON pp.BrandCode = a.BrandCode AND pp.CustID = a.CustId
 				WHERE  
 					a.BrandCode = @SiteName
+					AND EXISTS (SELECT 1 FROM #Currency c WHERE c.Code = a.CurrencyCode)
 					AND a.StatusID IN (0, 1)
 					AND a.SettlementDate >= @FDate AND a.SettlementDate < @TempToDate 
 					AND (
@@ -238,7 +238,7 @@ BEGIN
 					)
 				GROUP BY
 					CAST(a.SettlementDate AS DATE),
-					c.Id
+					a.CurrencyCode
 			END
 
 		END
@@ -257,7 +257,7 @@ BEGIN
 			INSERT INTO #SAgWinLoss
 				(  
 					winlostdate,
-					CurrencyId,
+					CurrencyCode,
 					TurnoverSB,
 					TurnoverNG,
 					TurnoverCS,
@@ -271,7 +271,7 @@ BEGIN
 					SourceName
 				)
 				SELECT	CAST(a.SettlementDate AS DATE) WinLostDate,
-						c.Id,
+						a.CurrencyCode,
 						SUM(CASE WHEN a.GameType = 'SB' THEN a.BetAmount ELSE 0 END) AS TurnoverSB,
 						SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode = '161' THEN a.BetAmount ELSE 0 END) AS TurnoverNG,
 						SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode <> '161' THEN a.BetAmount ELSE 0 END) AS TurnoverCS,
@@ -284,8 +284,8 @@ BEGIN
 						COUNT(1) AS Betcount,
 						'AuditTicket' AS SourceName
 				FROM bodb_licenseeReportArchive.dbo.rptDep_AuditTickets_BK a WITH (NOLOCK)
-					INNER JOIN #Currency c ON c.Code = a.CurrencyCode
 				WHERE  Brand = @SiteName
+						AND EXISTS (SELECT 1 FROM #Currency c WHERE c.Code = a.CurrencyCode)
 						AND (
 								(@showSB = 1 AND a.GameType = 'SB') 
 							OR	(@showNG = 1 AND a.GameType = 'RNG' AND a.GameCode = '161')
@@ -297,7 +297,7 @@ BEGIN
 
 				GROUP BY
 					CAST(a.SettlementDate AS DATE),
-					c.Id
+					a.CurrencyCode
 		END
 
 	END
@@ -317,7 +317,7 @@ BEGIN
 				INSERT INTO #SAgWinLoss
 					(  
 						winlostdate,
-						CurrencyId,
+						CurrencyCode,
 						TurnoverSB,
 						TurnoverNG,
 						TurnoverCS,
@@ -331,7 +331,7 @@ BEGIN
 						SourceName
 					)
 				SELECT	CAST(a.SettlementDate AS DATE) WinLostDate,
-						c.Id,
+						a.CurrencyCode,
 						SUM(CASE WHEN a.GamePlatformCode = 'SB' THEN a.BetAmount ELSE 0 END),
 						SUM(CASE WHEN a.GamePlatformCode = 'RNG' AND a.GameCode = '0161' THEN a.BetAmount ELSE 0 END),
 						SUM(CASE WHEN a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161' THEN a.BetAmount ELSE 0 END),
@@ -344,10 +344,10 @@ BEGIN
 						COUNT(1),
 						'BetTicket' AS SourceName
 				FROM bodb_Ploutos.dbo.BetTicket a WITH (NOLOCK)
-					INNER JOIN #Currency c ON c.Code = a.CurrencyCode
 					INNER JOIN bodb_Ploutos.dbo.PlayerProfile pp WITH(NOLOCK) ON pp.BrandCode = a.BrandCode AND pp.CustID = a.CustId
 				WHERE  
 					a.BrandCode = @SiteName
+					AND EXISTS (SELECT 1 FROM #Currency c WHERE c.Code = a.CurrencyCode)
 					AND a.StatusID IN (0, 1)
 					AND a.SettlementDate >= @FDate AND a.SettlementDate < @TempToDate
 					AND (
@@ -358,7 +358,7 @@ BEGIN
 					)
 				GROUP BY
 					CAST(a.SettlementDate AS DATE),
-					c.Id
+					a.CurrencyCode
 				
 			END
 
@@ -382,7 +382,7 @@ BEGIN
 				INSERT INTO #SAgWinLoss
 					(  
 						winlostdate,
-						CurrencyId,
+						CurrencyCode,
 						TurnoverSB,
 						TurnoverNG,
 						TurnoverCS,
@@ -396,7 +396,7 @@ BEGIN
 						SourceName
 					)
 				SELECT	CAST(a.SettlementDate AS DATE) WinLostDate,
-						c.Id,
+						a.CurrencyCode,
 						SUM(CASE WHEN a.GameType = 'SB' THEN a.BetAmount ELSE 0 END) AS TurnoverSB,
 						SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode = '161' THEN a.BetAmount ELSE 0 END) AS TurnoverNG,
 						SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode <> '161' THEN a.BetAmount ELSE 0 END) AS TurnoverCS,
@@ -409,8 +409,8 @@ BEGIN
 						COUNT(1) AS Betcount,
 						'AuditTicket' AS SourceName
 				FROM bodb_licenseeReportArchive.dbo.rptDep_AuditTickets a WITH (NOLOCK)
-					INNER JOIN #Currency c ON c.Code = a.CurrencyCode
 				WHERE  Brand = @SiteName
+						AND EXISTS (SELECT 1 FROM #Currency c WHERE c.Code = a.CurrencyCode)
 						AND (
 								(@showSB = 1 AND a.GameType = 'SB') 
 							OR	(@showNG = 1 AND a.GameType = 'RNG' AND a.GameCode = '161')
@@ -420,7 +420,7 @@ BEGIN
 						AND a.SettlementDate >= @FDate AND a.SettlementDate < @TempToDate
 				GROUP BY
 					CAST(a.SettlementDate AS DATE),
-					c.Id
+					a.CurrencyCode
 			END
 		END
 
@@ -438,7 +438,7 @@ BEGIN
 			INSERT INTO #SAgWinLoss
 				(  
 					winlostdate,
-					CurrencyId,
+					CurrencyCode,
 					TurnoverSB,
 					TurnoverNG,
 					TurnoverCS,
@@ -452,7 +452,7 @@ BEGIN
 					SourceName
 				)
 				SELECT	CAST(a.SettlementDate AS DATE) WinLostDate,
-						c.Id,
+						a.CurrencyCode,
 						SUM(CASE WHEN a.GameType = 'SB' THEN a.BetAmount ELSE 0 END) AS TurnoverSB,
 						SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode = '161' THEN a.BetAmount ELSE 0 END) AS TurnoverNG,
 						SUM(CASE WHEN a.GameType = 'RNG' AND a.GameCode <> '161' THEN a.BetAmount ELSE 0 END) AS TurnoverCS,
@@ -465,8 +465,8 @@ BEGIN
 						COUNT(1) AS Betcount,
 						'AuditTicket' AS SourceName
 				FROM bodb_licenseeReportArchive.dbo.rptDep_AuditTickets_BK a WITH (NOLOCK)
-					INNER JOIN #Currency c ON c.Code = a.CurrencyCode
 				WHERE  Brand = @SiteName
+						AND EXISTS (SELECT 1 FROM #Currency c WHERE c.Code = a.CurrencyCode)
 						AND (
 								(@showSB = 1 AND a.GameType = 'SB') 
 							OR	(@showNG = 1 AND a.GameType = 'RNG' AND a.GameCode = '161')
@@ -476,7 +476,7 @@ BEGIN
 						AND a.SettlementDate >= @FDate AND a.SettlementDate < @TempToDate 
 				GROUP BY
 					CAST(a.SettlementDate AS DATE),
-					c.Id
+					a.CurrencyCode
 		END
 	END
 
@@ -499,7 +499,7 @@ BEGIN
 	BEGIN
 		SELECT
 			w.winlostdate			AS ReportType,
-			w.CurrencyId,
+			c.Id AS CurrencyId,
 			w.Betcount			AS Betcount,
 			
 			--- Orginal ---
@@ -557,13 +557,15 @@ BEGIN
 			w.LicenseeWLLC*e.DefaultRate	AS LicenseeWLLCBase,
 			w.Winlost*e.DefaultRate			AS WinlostBase
 		FROM #SAgWinLoss w
-			INNER JOIN #Exchange e ON w.winlostdate BETWEEN e.ExFromDate AND e.ExToDate AND w.CurrencyId = e.ExchangeID	
+			INNER JOIN #Currency c
+				ON w.CurrencyCode = c.Code
+			INNER JOIN #Exchange e ON w.winlostdate BETWEEN e.ExFromDate AND e.ExToDate AND c.Id = e.ExchangeID	
 	END	
 	ELSE
 	BEGIN
 		SELECT
 			DATEADD(DAY, 1 - DATEPART(DAY, w.winlostdate), w.winlostdate)			AS ReportType,
-			w.CurrencyId,
+			c.Id AS CurrencyId,
 			SUM(w.Betcount)				AS Betcount,
 			
 			--- Orginal ---
@@ -622,10 +624,12 @@ BEGIN
 			SUM(w.Winlost*e.DefaultRate)		AS WinlostBase
 
 		FROM #SAgWinLoss w
-		INNER JOIN #Exchange e ON w.winlostdate BETWEEN e.ExFromDate AND e.ExToDate AND w.CurrencyId = e.ExchangeID
+			INNER JOIN #Currency c
+				ON w.CurrencyCode = c.Code
+		INNER JOIN #Exchange e ON w.winlostdate BETWEEN e.ExFromDate AND e.ExToDate AND c.Id = e.ExchangeID
 		GROUP BY
 			DATEADD(DAY, 1 - DATEPART(DAY, w.winlostdate), w.winlostdate),
-			w.CurrencyId
+			c.Id
 	END
 			
 	DROP TABLE #SAgWinLoss
