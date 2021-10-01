@@ -18,6 +18,7 @@ AS
 		- 20201201@Sol: Audit - Add mode sum by SettlementTime - [Redmine: #146188]
 		- 20210517@Sol: Audit - show data with status = 0 orr 1 - [Redmine: #155266]
 		- 20210416@Sol: Get data from archived table and main table - [Redmine: #152202]
+		- 20211001@Sol: LAP - Auditing licensees - Enhance Daily Bets - [Redmine: #162355]
 
 	Developer's Notes:
 		
@@ -36,20 +37,16 @@ AS
 BEGIN  
     SET NOCOUNT ON;
 
-	DECLARE @cutoffDate DATE;
 	DECLARE @Product TABLE (ProductCode VARCHAR(10))
 	DECLARE @Currency AS TABLE(Id INT, Code VARCHAR(5), ExRate FLOAT)
-	DECLARE @ArchivedDate DATE
+	DECLARE @ArchivedDate DATETIME, @CurrDate DATETIME
+
+	SET @CurrDate = @Date
 
 	--get archived date -> last day of archived month => add 1 more day to cover time, such as: 23:59:59 
 	SELECT @ArchivedDate = DATEADD(DAY, 1, CAST(s.VValue AS DATE))
 	FROM dbo.SystemSettings s WITH(NOLOCK)
 	WHERE s.VName = 'PloutosArchivedMonth'
-
-	--get cutoffDate
-	SELECT @cutoffDate = f.CutOffDate 
-	FROM Lrf_f_GetCutOffDateBySite() f
-	WHERE f.ReportType = 1 AND f.SiteName = @SiteName
 
 	INSERT INTO @Product (ProductCode)
 	SELECT ISNULL(Val,'') 	
@@ -85,7 +82,7 @@ BEGIN
 		SET @SiteName = 'ivorysport'
 	END
 
-	DECLARE @TempToDate DATE = DATEADD(DAY, 1, @Date)
+	DECLARE @TempToDate DATETIME = DATEADD(DAY, 1, @Date)
 
 	DECLARE @showSB BIT = 0,
 			@showNG BIT = 0,
@@ -98,46 +95,8 @@ BEGIN
 	SELECT @showLC = 1 FROM @Product WHERE ProductCode = 'LC'
 
 	-- Return data	
-	SELECT 
-		SUM(TotalRows) AS TotalRows
-		,SUM(TotalTurnover) AS TotalTurnover
-		,SUM(TotalWinLoss) AS TotalWinLoss
-	FROM (
-		SELECT
-			COUNT(a.TransactionId)			AS TotalRows,
-			SUM(a.BetAmount * c.ExRate)		AS TotalTurnover,
-			- SUM(a.NetAmount * c.ExRate)	AS TotalWinLoss
-		FROM bodb_licenseeReportArchive.dbo.rptDep_AuditTickets a WITH (NOLOCK)
-		INNER JOIN @Currency c ON c.Code = a.CurrencyCode
-		WHERE  Brand = @SiteName
-				AND ( 
-					(@showSB = 1 AND a.GameType = 'SB') 
-					OR (@showNG = 1 AND a.GameType = 'RNG' AND a.GameCode = '161')
-					OR (@showCS = 1 AND a.GameType = 'RNG' AND a.GameCode <> '161')
-					OR (@showLC = 1 AND a.GameType = 'CA')
-				)
-				AND a.SettlementDate >= @Date AND a.SettlementDate < @TempToDate 
-				AND a.SettlementDate < @cutoffDate
-				AND a.SettlementDate >= @ArchivedDate
-		UNION ALL 
-		SELECT
-			COUNT(a.TransactionId)			AS TotalRows,
-			SUM(a.BetAmount * c.ExRate)		AS TotalTurnover,
-			- SUM(a.NetAmount * c.ExRate)	AS TotalWinLoss
-		FROM bodb_licenseeReportArchive.dbo.rptDep_AuditTickets_BK a WITH (NOLOCK)
-		INNER JOIN @Currency c ON c.Code = a.CurrencyCode
-		WHERE  Brand = @SiteName
-				AND ( 
-					(@showSB = 1 AND a.GameType = 'SB') 
-					OR (@showNG = 1 AND a.GameType = 'RNG' AND a.GameCode = '161')
-					OR (@showCS = 1 AND a.GameType = 'RNG' AND a.GameCode <> '161')
-					OR (@showLC = 1 AND a.GameType = 'CA')
-				)
-				AND a.SettlementDate >= @Date AND a.SettlementDate < @TempToDate 
-				AND a.SettlementDate < @cutoffDate
-				AND a.SettlementDate < @ArchivedDate
-
-		UNION ALL
+	IF (@CurrDate >= @ArchivedDate)
+	BEGIN
 		SELECT
 			COUNT(a.TransactionId)			AS TotalRows,
 			SUM(a.BetAmount * c.ExRate)		AS TotalTurnover,
@@ -148,16 +107,17 @@ BEGIN
 		WHERE  
 			a.BrandCode = @SiteName
 			AND a.StatusID IN (0, 1)
-			AND a.SettlementDate >= @Date AND a.SettlementDate < @TempToDate 
-			AND a.SettlementDate >= @cutoffDate
+			AND a.SettlementDate >= @CurrDate AND a.SettlementDate < @TempToDate 
 			AND ( 
 				(@showSB = 1 AND a.GamePlatformCode = 'SB') 
 				OR (@showNG = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode = '0161')
 				OR (@showCS = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161')
 				OR (@showLC = 1 AND a.GamePlatformCode = 'CA')
-			)
-			AND a.SettlementDate >= @ArchivedDate
-		UNION ALL
+				)
+	END
+	ELSE
+	BEGIN
+		
 		SELECT
 			COUNT(a.TransactionId)			AS TotalRows,
 			SUM(a.BetAmount * c.ExRate)		AS TotalTurnover,
@@ -169,16 +129,14 @@ BEGIN
 			a.BrandCode = @SiteName
 			AND a.StatusID = 1
 			AND a.SettlementDate >= @Date AND a.SettlementDate < @TempToDate 
-			AND a.SettlementDate >= @cutoffDate
 			AND ( 
 				(@showSB = 1 AND a.GamePlatformCode = 'SB') 
 				OR (@showNG = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode = '0161')
 				OR (@showCS = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161')
 				OR (@showLC = 1 AND a.GamePlatformCode = 'CA')
 			)
-			AND a.SettlementDate < @ArchivedDate
-
-	) AS rpt
+	END
+		
 
 END
 GO
