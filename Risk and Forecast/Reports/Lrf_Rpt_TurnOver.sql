@@ -68,6 +68,7 @@ AS
 		- 20200423@Hogan: Add new product Sexy Gaming [RedmineID: #132829]
 		- 20200423@Vickie: Integrate Saba Club [RedmineID: #132702]
 						- Change to use @ProductList
+		- 20211001@Kos: Change start date to use rptdepwinlost_SUM table [RedmineID: #162568]
 */
 
 BEGIN
@@ -175,6 +176,11 @@ BEGIN
 		AmountDueTo_BA		MONEY
 	)
 
+	DECLARE @CutDate SMALLDATETIME
+
+	SELECT @CutDate = MIN(Winlostdate)
+	FROM bodb_report.dbo.rptdepwinlost WITH (NOLOCK)
+
 	IF @fdate > @tdate OR @custid = -1
 	BEGIN
 		SELECT
@@ -186,11 +192,6 @@ BEGIN
 	BEGIN
 		IF @CustId <> 0
 		BEGIN
-			DECLARE @CutDate SMALLDATETIME
-
-			SELECT @CutDate = MIN(winlostdate)
-			FROM bodb_report.dbo.rptdepwinlost WITH (NOLOCK) 
-
 			IF @fdate < @CutDate
 			BEGIN 
 				SELECT @tmpdate = CASE
@@ -350,17 +351,12 @@ BEGIN
 		END
 		ELSE
 		BEGIN
-			DECLARE @maxdate_SUM SMALLDATETIME
-
-			SELECT @maxdate_SUM = MAX(winlostdate)
-			FROM bodb_report.dbo.rptdepwinlost_SUM WITH (NOLOCK)
-
-			IF @fdate <= @maxdate_SUM
+			IF @fdate < @CutDate
 			BEGIN
 				SELECT @tmpdate = CASE
-										WHEN @tdate > @maxdate_SUM THEN @maxdate_SUM
-										ELSE @tdate
-									END
+									WHEN @tdate >= @CutDate THEN DATEADD(dd, -1, @CutDate)
+									ELSE @tdate
+								END
 
 				INSERT INTO #tmpRpt (
 					Winlostdate,
@@ -440,10 +436,10 @@ BEGIN
 				WHERE #tmpRpt.winlostdate = s.winlostdate AND #tmpRpt.currency = s.currency
 			END
 
-			IF @tdate > @maxdate_SUM
+			IF @tdate >= @CutDate
 			BEGIN
 				SELECT @tmpdate = CASE
-									WHEN @fdate <= @maxdate_SUM THEN DATEADD(dd,1,@maxdate_SUM)
+									WHEN @fdate < @CutDate THEN @CutDate
 									ELSE @fdate
 								END
 
