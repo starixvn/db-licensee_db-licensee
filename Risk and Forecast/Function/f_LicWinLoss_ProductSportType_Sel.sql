@@ -41,15 +41,13 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 		- 20210519@Louis: Integrate Big Gaming product [RedmineID: #146773]
 		- 20210525@Hogan: Integrate Vgaming [RedmineID: #151583]
 		- 20210630@Hogan: Integrate Creative Gaming [RedmineID: #152619]
-
-	Paramters Explanation:  
-		@ProductID: list of products
+		- 20210727@Percy: Add Exchange, Saba Promotion for LA [RedmineID: #155593]
 */
 RETURNS TABLE
 RETURN
 	SELECT ProductID, ProductCode, SportType, BetType
 	FROM (
-			VALUES (1, 'SB', 0, 0),		-- Sportsbook
+			VALUES (1, 'SB', 0, 0), -- Sportsbook
 					(3, 'NG', 161, 0),(3, 'NG', 164, 0),(3, 'NG', 168, 0),	-- Number Game
 					(5, 'VS', 180, 0),	-- Virtual Sports
 					(6, 'CS', 251, 71), (6, 'CS', 208, 0), (6, 'CS', 209, 0), (6, 'CS', 210, 0), -- RNG Casino
@@ -67,9 +65,11 @@ RETURN
 					(27, 'VS2', 196, 0), --  Virtual Soccer Champions Cup
 					(27, 'VS2', 197, 0), --  Virtual Soccer Euro Cup
 					(28, 'LT', 220, 0),	-- Lottery
+					(31, 'BX', 221, 0), -- Exchange
 					(32, 'PP', 248, 0),	-- PP
 					(34, 'CC', 165, 0),	-- Card club
 					(36, 'SG', 247, 0),	-- Spadegaming
+					(37, 'SPR', 246, 0), -- Saba Promotion
 					(38, 'VRG', 245, 0),	-- Virtual Games
 					(40, 'TG', 222, 0),		-- Table Games
 					(43, 'I4D', 223, 0),	-- Indo 4D
