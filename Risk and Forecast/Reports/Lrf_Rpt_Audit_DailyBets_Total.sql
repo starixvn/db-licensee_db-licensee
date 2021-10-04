@@ -127,7 +127,7 @@ BEGIN
 		INNER JOIN bodb_Ploutos.dbo.PlayerProfile pp WITH(NOLOCK) ON pp.BrandCode = a.BrandCode AND pp.CustID = a.CustId
 		WHERE  
 			a.BrandCode = @SiteName
-			AND a.StatusID = 1
+			AND a.StatusID IN (0, 1)
 			AND a.SettlementDate >= @Date AND a.SettlementDate < @TempToDate 
 			AND ( 
 				(@showSB = 1 AND a.GamePlatformCode = 'SB') 
