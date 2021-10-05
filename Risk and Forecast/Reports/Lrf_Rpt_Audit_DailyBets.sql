@@ -103,13 +103,8 @@ BEGIN
 	BEGIN
 		SET @SiteName = 'ivorysport'
 	END
-	
-	IF (@SortBy = 'WinLoss')
-	BEGIN
-		SET @SortOrder = CASE WHEN @SortOrder = 'asc' THEN 'desc' ELSE 'asc' END
-	END
 
-	IF (@SortBy <> 'WinLoss' AND @SortBy <> 'Turnover')
+	IF (@SortBy <> 'WinLoss' AND @SortBy <> 'Turnover' AND @SortBy <> 'TurnoverBased' AND @SortBy <> 'WinLossBased')
 	BEGIN
 		SET @SortBy = 'TransactionId'
 		SET @SortOrder = 'asc'
@@ -158,6 +153,8 @@ BEGIN
 										CASE 
 											WHEN @SortBy = 'Turnover' THEN a.BetAmount
 											WHEN @SortBy = 'WinLoss' THEN a.NetAmount
+											WHEN @SortBy = 'TurnoverBased' THEN a.TurnoverBased
+											WHEN @SortBy = 'WinLossBased' THEN a.WinLossBased
 											ELSE a.TransactionId
 										END
 									ELSE 1
@@ -166,6 +163,8 @@ BEGIN
 										CASE
 										WHEN @SortBy = 'Turnover' THEN a.BetAmount
 										WHEN @SortBy = 'WinLoss' THEN a.NetAmount
+										WHEN @SortBy = 'TurnoverBased' THEN a.TurnoverBased
+										WHEN @SortBy = 'WinLossBased' THEN a.WinLossBased
 										ELSE a.TransactionId
 										END
 									ELSE 1	
@@ -247,6 +246,8 @@ BEGIN
 											CASE 
 												WHEN @SortBy = 'Turnover' THEN a.BetAmount
 												WHEN @SortBy = 'WinLoss' THEN a.NetAmount
+												WHEN @SortBy = 'TurnoverBased' THEN a.TurnoverBased
+												WHEN @SortBy = 'WinLossBased' THEN a.WinLossBased
 												ELSE a.TransactionId
 											END
 										ELSE 1
@@ -255,6 +256,8 @@ BEGIN
 											CASE
 											WHEN @SortBy = 'Turnover' THEN a.BetAmount
 											WHEN @SortBy = 'WinLoss' THEN a.NetAmount
+											WHEN @SortBy = 'TurnoverBased' THEN a.TurnoverBased
+											WHEN @SortBy = 'WinLossBased' THEN a.WinLossBased
 											ELSE a.TransactionId
 											END
 										ELSE 1	
