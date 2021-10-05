@@ -189,7 +189,7 @@ BEGIN
 					,a.BetAmount					
 					,a.NetAmount					
 					,a.BetAmount * c.ExRate AS TurnoverBased
-					,a.NetAmount * c.ExRate AS WinLossBased
+					,-a.NetAmount * c.ExRate AS WinLossBased
 					,pp.Username AS Playername,
 					a.TransactionDate AS TransTime,
 					a.BettypeName AS BetType,
@@ -282,7 +282,7 @@ BEGIN
 						,a.BetAmount					
 						,a.NetAmount					
 						,a.BetAmount * c.ExRate AS TurnoverBased
-						,a.NetAmount * c.ExRate AS WinLossBased
+						,-a.NetAmount * c.ExRate AS WinLossBased
 						,pp.Username AS Playername,
 						a.TransactionDate AS TransTime,
 						a.BettypeName AS BetType,
@@ -339,7 +339,7 @@ BEGIN
 	--- RETURN - SUM total
 	SELECT TotalRows = COUNT(1) 
 			,TotalTurnover = SUM(TurnoverBased) 
-			,TotalWinLoss = -SUM(WinLossBased) 
+			,TotalWinLoss = SUM(WinLossBased) 
 	FROM #DailyResult
 
 	DROP TABLE #DailyResult;
