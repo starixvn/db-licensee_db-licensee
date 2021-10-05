@@ -24,6 +24,7 @@ AS
 		- 20210517@Sol: Audit - show data with status = 0 orr 1 - [Redmine: #155266]
 		- 20210416@Sol: Get data from archived table and main table - [Redmine: #152202]
 		- 20210928@Sol: Enhance sp - [Redmine: #159449]
+		- 20211005@Sol: Enhance sp - remove sniffing on sitename - [Redmine: #159449]
 
 	Developer's Notes:
 		- Notes: If product is NG, search tickets with GameType is RNG
@@ -47,7 +48,9 @@ BEGIN
 	DECLARE @cutoffDate DATETIME;
 	DECLARE @Product TABLE (ProductCode VARCHAR(10))
 	CREATE TABLE #Currency (Id INT,Code VARCHAR(5) PRIMARY KEY)
-	DECLARE @ArchivedDate DATETIME
+	DECLARE @ArchivedDate DATETIME, @SName VARCHAR(50)
+
+	SET @SName = @SiteName
 
 	--get archived date -> last day of archived month => add 1 more day to cover time, such as: 23:59:59 
 	SELECT @ArchivedDate = DATEADD(DAY, 1, CAST(s.VValue AS DATE))
@@ -57,7 +60,7 @@ BEGIN
 	--get cutoffDate
 	SELECT @cutoffDate = f.CutOffDate 
 	FROM Lrf_f_GetCutOffDateBySite() f
-	WHERE f.ReportType = 1 AND f.SiteName = @SiteName
+	WHERE f.ReportType = 1 AND f.SiteName = @SName
 
 	INSERT INTO @Product (ProductCode)
 	SELECT ISNULL(Val,'') 	
@@ -162,7 +165,7 @@ BEGIN
 				FROM bodb_Ploutos.dbo.BetTicket a WITH (NOLOCK)
 					INNER JOIN bodb_Ploutos.dbo.PlayerProfile pp WITH(NOLOCK) ON pp.BrandCode = a.BrandCode AND pp.CustID = a.CustId
 				WHERE  
-					a.BrandCode = @SiteName
+					a.BrandCode = @SName
 					AND EXISTS (SELECT 1 FROM #Currency c WHERE c.Code = a.CurrencyCode)
 					AND a.StatusID IN (0, 1)
 					AND a.SettlementDate >= @FDate AND a.SettlementDate < @TempToDate
@@ -226,7 +229,7 @@ BEGIN
 				FROM bodb_Ploutos.dbo.BetTicket_BK a WITH (NOLOCK)
 					INNER JOIN bodb_Ploutos.dbo.PlayerProfile pp WITH(NOLOCK) ON pp.BrandCode = a.BrandCode AND pp.CustID = a.CustId
 				WHERE  
-					a.BrandCode = @SiteName
+					a.BrandCode = @SName
 					AND EXISTS (SELECT 1 FROM #Currency c WHERE c.Code = a.CurrencyCode)
 					AND a.StatusID IN (0, 1)
 					AND a.SettlementDate >= @FDate AND a.SettlementDate < @TempToDate 
@@ -284,7 +287,7 @@ BEGIN
 						COUNT(1) AS Betcount,
 						'AuditTicket' AS SourceName
 				FROM bodb_licenseeReportArchive.dbo.rptDep_AuditTickets_BK a WITH (NOLOCK)
-				WHERE  Brand = @SiteName
+				WHERE  Brand = @SName
 						AND EXISTS (SELECT 1 FROM #Currency c WHERE c.Code = a.CurrencyCode)
 						AND (
 								(@showSB = 1 AND a.GameType = 'SB') 
@@ -346,7 +349,7 @@ BEGIN
 				FROM bodb_Ploutos.dbo.BetTicket a WITH (NOLOCK)
 					INNER JOIN bodb_Ploutos.dbo.PlayerProfile pp WITH(NOLOCK) ON pp.BrandCode = a.BrandCode AND pp.CustID = a.CustId
 				WHERE  
-					a.BrandCode = @SiteName
+					a.BrandCode = @SName
 					AND EXISTS (SELECT 1 FROM #Currency c WHERE c.Code = a.CurrencyCode)
 					AND a.StatusID IN (0, 1)
 					AND a.SettlementDate >= @FDate AND a.SettlementDate < @TempToDate
@@ -409,7 +412,7 @@ BEGIN
 						COUNT(1) AS Betcount,
 						'AuditTicket' AS SourceName
 				FROM bodb_licenseeReportArchive.dbo.rptDep_AuditTickets a WITH (NOLOCK)
-				WHERE  Brand = @SiteName
+				WHERE  Brand = @SName
 						AND EXISTS (SELECT 1 FROM #Currency c WHERE c.Code = a.CurrencyCode)
 						AND (
 								(@showSB = 1 AND a.GameType = 'SB') 
@@ -465,7 +468,7 @@ BEGIN
 						COUNT(1) AS Betcount,
 						'AuditTicket' AS SourceName
 				FROM bodb_licenseeReportArchive.dbo.rptDep_AuditTickets_BK a WITH (NOLOCK)
-				WHERE  Brand = @SiteName
+				WHERE  Brand = @SName
 						AND EXISTS (SELECT 1 FROM #Currency c WHERE c.Code = a.CurrencyCode)
 						AND (
 								(@showSB = 1 AND a.GameType = 'SB') 
