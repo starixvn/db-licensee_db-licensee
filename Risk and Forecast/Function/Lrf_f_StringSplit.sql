@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-bodb_Licensee,DBEXT-bodb02,DBACC-bodb02" selecters="bodbAdminNet,bodbLicenseeNet" isFunction="1" isNested="1"></info>*/
+/*<info serverAlias="DBCUST-bodb_Licensee,DBEXT-bodb02,DBACC-bodb02,DBBAL-bodb02" selecters="bodbAdminNet,bodbLicenseeNet" isFunction="1" isNested="1"></info>*/
 CREATE FUNCTION  [dbo].[Lrf_f_StringSplit] ( @string NVARCHAR( MAX), @splitter CHAR( 1) )
 RETURNS @res TABLE ( id INT PRIMARY KEY, rank INT, val NVARCHAR( MAX) )
 AS
@@ -10,6 +10,7 @@ AS
 
 	Revisions:	
 		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
+		- 20210816@Sophia: add DBBAL [Redmine: #154300]
 */
 BEGIN
      IF SUBSTRING ( @string, LEN ( @string), 1)<>@splitter
@@ -27,6 +28,4 @@ BEGIN
      END
      RETURN
 END
-GO
-
-GRANT SELECT ON [Lrf_f_StringSplit] TO bodbAdminNet AS dbo
+GO 
