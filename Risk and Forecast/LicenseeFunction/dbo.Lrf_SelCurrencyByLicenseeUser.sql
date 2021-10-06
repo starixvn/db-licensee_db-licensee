@@ -1,12 +1,5 @@
 ﻿/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
-SET QUOTED_IDENTIFIER ON 
-GO
-SET ANSI_NULLS ON 
-GO
-
-/****** Object:  Stored Procedure dbo.Lrf_SelCurrencyByLicenseeUser    Script Date: 5/30/2016 11:30:30 AM ******/
-
 ALTER PROCEDURE [dbo].[Lrf_SelCurrencyByLicenseeUser]		
 	@LicenseeID int = 0, 
 	@UserID 	INT
@@ -22,11 +15,12 @@ Revisions:
 	- 20170216@Sophia: Get AgentID, cast isActive as BIT, remove @excludeTest [Redmine: #71679]
 	- 20180509@Joseph: Cheat currency name for special currencies [RedmineID: #94845]
 	- 20200220@Louis: Cheat currency name for HID Currency [RedmineID: #128816]
+	- 20211006@Howard: New China View Skin, hard code INH2 Currency [RedmineID: #161966]
 Param's Explanation:
 */
 
-SET NOCOUNT ON
 BEGIN
+	SET NOCOUNT ON
 	
 	SELECT currencyID,LicenseeID 
 	INTO #currency
@@ -43,6 +37,7 @@ BEGIN
 				WHEN 76 THEN 'PS'
 				WHEN 77 THEN 'PTH'
 				WHEN 92 THEN 'HID'
+				WHEN 125 THEN 'INH'
 				ELSE e.Code 
 			END AS CurrencyName,
 			CASE WHEN ISNULL(c.CurrencyID,0)=0 THEN CAST(0 AS BIT) ELSE CAST(1 AS BIT) END isActive,
@@ -60,6 +55,7 @@ BEGIN
 				WHEN 76 THEN 'PS'
 				WHEN 77 THEN 'PTH'
 				WHEN 92 THEN 'HID'
+				WHEN 125 THEN 'INH'
 				ELSE e.Code 
 			END
 	
@@ -69,11 +65,4 @@ BEGIN
  
 
 END
-
-
-GO
-
-SET QUOTED_IDENTIFIER OFF 
-GO
-SET ANSI_NULLS ON 
 GO
