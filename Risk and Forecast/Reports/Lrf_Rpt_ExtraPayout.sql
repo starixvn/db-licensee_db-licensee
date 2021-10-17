@@ -1,0 +1,303 @@
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+
+ALTER PROCEDURE [dbo].[Lrf_Rpt_ExtraPayout]
+	@AgentList			VARCHAR(MAX),
+	@Username			VARCHAR(50)		= '',
+	@FromDate			SMALLDATETIME,
+	@ToDate				SMALLDATETIME,
+	@MoveBetsDay		SMALLDATETIME,
+	@ProductList		VARCHAR(100)	= '',
+	@PromotionTypeList	VARCHAR(500)	= '',
+	@ReportType			TINYINT			= 1,
+	@BaseCurrency		VARCHAR(3)		= ''
+AS
+
+/*
+	Created: 20211016@Kos
+	Task: LAP - Extra Payout WL report
+	DB: DBEXT.bodb02
+
+	Revisions:
+		- 20211016@Kos: Created [RedmineID: #153563]
+
+	Param's Explanation:
+		+ @PromotionTypeList: promotion type list separated by ','
+			- 3201: PP - Tournament Prize (BetType: 4299)
+			- 3202: PP - Promotion Prize (BetType: 4300)
+			- 3203: PP - Jackpot Prize (BetType: 4298)
+			- 3204: PP - Jackpot Contribution (BetType: 4297)
+			- 3401: Arcadia Gaming - Bonus (BetType: 1906)
+			- 3701: Saba Lucky Spin (BetType: 17000)
+			- 3702: Saba Lucky Spot (BetType: 17001)
+			- 3703: Non - Cash Prize (BetType: 17002)
+			- 3704: Saba Loyalty Points Exchange (BetType: 17003)
+			- 3705: Saba Red Envelope (BetType: 17004)
+			- 3901: SA Gaming - Tip (BetType: 3007)
+			- 4201: Saba.club - Free Bets (SportType: 150)
+			- 4202: Saba.club - Jackpot Prize (BetType: 1699)
+			- 4203: Saba.club - Jackpot Contribution (BetType: 1698)
+			- 4501: AE Sexy - Lucky Draw (BetType: 3150)
+			- 6601: Vgaming - Free Bets (SportType: 173)
+			- 6602: Vgaming - Jackpot Prize (BetType: 3899)
+			- 6603: Vgaming - Jackpot Contribution (BetType: 3898)
+		+ @ReportType: 1: Daily, 2: Monthly
+*/
+
+BEGIN
+	SET NOCOUNT ON
+
+	-- Get agent list
+	CREATE TABLE #TempAg (CustId INT, Currency INT)
+
+	CREATE CLUSTERED INDEX IX_TempAg ON #TempAg (CustId)
+
+	DECLARE @DocHandler INT
+
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT, @AgentList
+
+		INSERT INTO #TempAg (CustId, Currency)
+		SELECT AgentId, Currency
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId INT, Currency INT) AS Data
+
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
+	BEGIN CATCH
+		SELECT ErrCode = 100,
+			ErrMsg = N'Invalid Parameter.'
+
+		RETURN
+	END CATCH;
+
+	-- Get member list
+	CREATE TABLE #TempCust (CustId INT PRIMARY KEY)
+
+	IF @Username <> ''
+	BEGIN
+		INSERT INTO #TempCust
+		SELECT c.custid
+		FROM dbo.Customer AS c WITH (NOLOCK, INDEX = IX_agent)
+			INNER JOIN #TempAg AS ta ON ta.CustId = c.recommend
+		WHERE c.roleid = 1
+			AND (c.username2 LIKE '%$%' + @Username + '%'
+				OR c.username LIKE '%' + @Username + '%')
+		
+		IF @@ROWCOUNT = 0
+		BEGIN
+			SELECT ErrCode = 102,
+				ErrMsg = N'Username was not found.'
+
+			RETURN
+		END
+	END
+
+	-- Get sport/bettype matrix
+	CREATE TABLE #SportBetType (BetType SMALLINT, ProductCode VARCHAR(10), EventType TINYINT)
+
+	CREATE CLUSTERED INDEX IX_BetType ON #SportBetType (BetType)
+
+	DECLARE @IsTest BIT = 0
+
+	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
+
+	INSERT INTO #SportBetType (BetType, ProductCode, EventType)
+	SELECT DISTINCT BetType, ProductPrefix, EventType
+	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
+	WHERE 1 = CASE
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3201,%' AND BetType = 4299 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3202,%' AND BetType = 4300 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3203,%' AND BetType = 4298 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3204,%' AND BetType = 4297 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3401,%' AND BetType = 1906 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3701,%' AND BetType = 17000 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3702,%' AND BetType = 17001 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3703,%' AND BetType = 17002 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3704,%' AND BetType = 17003 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3705,%' AND BetType = 17004 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3901,%' AND BetType = 3007 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,4201,%' AND ProductPrefix = 'SBC' AND BetType NOT IN (1698, 1699) THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,4202,%' AND BetType = 1699 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,4203,%' AND BetType = 1698 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,4501,%' AND BetType = 3150 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,6601,%' AND ProductPrefix = 'VGA' AND BetType NOT IN (3899, 3898) THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,6602,%' AND BetType = 3899 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,6603,%' AND BetType = 3898 THEN 1
+				ELSE 0
+			END
+
+	DECLARE @Data TABLE (
+		ProductCode		VARCHAR(10),
+		WinLostDate		SMALLDATETIME,
+		Currency		INT,
+		BetCount		BIGINT,
+		Turnover		MONEY,
+		Amount			MONEY,
+		SharingAmount	MONEY
+	)
+
+	DECLARE @TempFromDate	SMALLDATETIME,
+		@TempToDate			SMALLDATETIME
+
+	-- bettrans range
+	IF @ToDate > @MoveBetsDay
+	BEGIN
+		SET @TempFromDate = CASE
+								WHEN @FromDate <= @MoveBetsDay THEN DATEADD(DAY, 1, @MoveBetsDay)
+								ELSE @FromDate
+							END
+
+		INSERT INTO @Data (
+			ProductCode,
+			WinLostDate,
+			Currency,
+			BetCount,
+			Turnover,
+			Amount,
+			SharingAmount )
+		SELECT
+			sbt.ProductCode,
+			b.winlostdate,
+			b.currency,
+			COUNT(1) AS BetCount,
+			SUM(CASE
+					WHEN b.bettype IN (4297, 1698, 3898) THEN b.oddsspread
+					ELSE b.stake
+				END) AS Turnover,
+			SUM(b.winlost - b.actual_stake) AS Amount,
+			SUM(b.awinlost) AS SharingAmount
+		FROM
+			dbo.bettrans AS b WITH (NOLOCK)
+			INNER JOIN #TempAg AS a ON a.CustId = b.recommend
+			INNER JOIN #SportBetType AS sbt ON sbt.BetType = b.bettype
+			LEFT JOIN #TempCust AS c ON c.CustId = b.custid
+		WHERE
+			b.winlostdate BETWEEN @TempFromDate AND @ToDate
+			AND b.statusID IN (111, 112, 113)
+			AND 1 = CASE
+						WHEN sbt.ProductCode = 'SBC' AND b.bettype NOT IN (1698, 1699) AND b.matchid <> 150 THEN 0
+						WHEN sbt.ProductCode = 'VGA' AND b.bettype NOT IN (3898, 3899) AND b.matchid <> 173 THEN 0
+						ELSE 1
+					END
+			AND (@Username = '' OR c.CustId IS NOT NULL)
+		GROUP BY
+			sbt.ProductCode,
+			b.winlostdate,
+			b.currency
+	END
+
+	-- bettrans14 & bettrans_bk range
+	IF @FromDate <= @MoveBetsDay
+	BEGIN
+		SET @TempToDate = CASE
+							WHEN @ToDate >= @MoveBetsDay THEN @MoveBetsDay
+							ELSE @ToDate
+						END
+
+		DELETE #SportBetType
+		WHERE 1 = CASE
+					WHEN ProductCode = 'SBC' AND BetType NOT IN (1698, 1699) THEN 1
+					WHEN ProductCode = 'VGA' AND BetType NOT IN (3899, 3898) THEN 1
+					ELSE 0
+				END
+
+		INSERT INTO @Data (
+			ProductCode,
+			WinLostDate,
+			Currency,
+			BetCount,
+			Turnover,
+			Amount,
+			SharingAmount )
+		SELECT
+			CASE
+				WHEN sbt.BetType IS NOT NULL THEN sbt.ProductCode
+				WHEN b.sporttype = 150 THEN 'SBC'
+				WHEN b.sporttype = 173 THEN 'VGA'
+				ELSE ''
+			END AS ProductCode,
+			b.winlostdate,
+			b.currency,
+			SUM(b.BetCount) AS BetCount,
+			SUM(CASE
+					WHEN b.bettype IN (4297, 1698, 3898) THEN b.BuyBackAmt
+					ELSE b.turnover
+				END) AS Turnover,
+			SUM(b.winlost) AS Amount,
+			SUM(b.awinlost) AS SharingAmount
+		FROM
+			bodb_LicenseeReport.dbo.rptLicWinloss2 AS b WITH (NOLOCK)
+			INNER JOIN #TempAg AS a ON a.CustId = b.recommend
+			LEFT JOIN #SportBetType AS sbt ON sbt.BetType = b.bettype
+			LEFT JOIN #TempCust AS c ON c.CustId = b.custid
+		WHERE
+			b.winlostdate BETWEEN @FromDate AND @TempToDate
+			AND b.statusID IN (111, 112, 113)
+			AND b.roleid = 1
+			AND 1 = CASE
+						WHEN sbt.BetType IS NOT NULL THEN 1
+						WHEN ',' + @PromotionTypeList + ',' LIKE '%,4201,%' AND b.sporttype = 150 THEN 1
+						WHEN ',' + @PromotionTypeList + ',' LIKE '%,6601,%' AND b.sporttype = 173 THEN 1
+						ELSE 0
+					END
+			AND (@Username = '' OR c.CustId IS NOT NULL)
+		GROUP BY
+			CASE
+				WHEN sbt.BetType IS NOT NULL THEN sbt.ProductCode
+				WHEN b.sporttype = 150 THEN 'SBC'
+				WHEN b.sporttype = 173 THEN 'VGA'
+				ELSE ''
+			END,
+			b.winlostdate,
+			b.currency
+	END
+
+	-- Get exchange rate
+	DECLARE @ExchangeRate TABLE (
+		FromDate	SMALLDATETIME,
+		ToDate		SMALLDATETIME,
+		ExchangeId	INT,
+		Rate		FLOAT)
+
+	IF EXISTS (SELECT TOP(1) 1 FROM @Data)
+	BEGIN
+		INSERT INTO @ExchangeRate(FromDate, ToDate, ExchangeID, Rate)
+		SELECT FromDate, ToDate, ExchangeID, Rate
+		FROM dbo.Lrf_f_GetExchangeRate(@FromDate, @ToDate, @BaseCurrency, '') e
+		WHERE EXISTS (SELECT 1 FROM #TempAg AS a WHERE e.ExchangeID = a.Currency)
+	END
+
+	-- Return result
+	SELECT
+		CASE
+			WHEN @ReportType = 1 THEN CONVERT(VARCHAR(8), d.winlostdate, 112)
+			WHEN @ReportType = 2 THEN CONVERT(VARCHAR(6), d.winlostdate, 112)
+			ELSE '0'
+		END AS ReportType,
+		d.Currency,
+		d.ProductCode,
+		SUM(d.BetCount) AS BetCount,
+		CAST(SUM(d.Turnover)		AS MONEY) AS Turnover,
+		CAST(SUM(d.Amount)			AS MONEY) AS Amount,
+		CAST(SUM(d.SharingAmount)	AS MONEY) AS SharingAmount,
+		CAST(SUM(d.Turnover			* e.Rate) AS MONEY) AS BasedTurnover,
+		CAST(SUM(d.Amount			* e.Rate) AS MONEY) AS BasedAmount,
+		CAST(SUM(d.SharingAmount	* e.Rate) AS MONEY) AS BasedSharingAmount
+	FROM @Data AS d
+		INNER JOIN @ExchangeRate AS e
+			ON d.WinLostDate BETWEEN e.FromDate AND e.ToDate
+				AND d.Currency = e.ExchangeId
+	GROUP BY
+		CASE
+			WHEN @ReportType = 1 THEN CONVERT(VARCHAR(8), d.winlostdate, 112)
+			WHEN @ReportType = 2 THEN CONVERT(VARCHAR(6), d.winlostdate, 112)
+			ELSE '0'
+		END,
+		d.Currency,
+		d.ProductCode
+	ORDER BY ReportType ASC
+
+	DROP TABLE #TempAg
+	DROP TABLE #SportBetType
+	DROP TABLE #TempCust
+END
+GO
