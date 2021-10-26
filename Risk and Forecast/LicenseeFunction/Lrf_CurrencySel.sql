@@ -10,7 +10,7 @@ AS
 	Revisions:
 	    - 20191021@Amanda: Add new SP [Redmine: #120333]
 		- 20200220@Louis: Cheat currency name for HID Currency [RedmineID: #128816]
-		
+		- 20211006@Howard: New China View Skin, hard code INH2 Currency [RedmineID: #161966]
 */
 BEGIN
 	SET NOCOUNT ON
@@ -24,6 +24,7 @@ BEGIN
 				WHEN 76 THEN 'PS'
 				WHEN 77 THEN 'PTH'
 				WHEN 92 THEN 'HID'
+				WHEN 125 THEN 'INH'
 				ELSE e.Code 
 			END AS Name
 		FROM dbo.Exchange e WITH (NOLOCK)
