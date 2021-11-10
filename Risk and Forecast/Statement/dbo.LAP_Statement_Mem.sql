@@ -1,4 +1,7 @@
-/*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" isFunction="0"></info>*/
+USE bodb02
+GO
+
 ALTER PROCEDURE [dbo].[LAP_Statement_Mem]  
     @CustID			INT,  
     @FromDate		SMALLDATETIME,  
@@ -26,14 +29,14 @@ Revisions:
 	- 20200803@Sophia: add Saba Loyalty [Redmine: #138493]
 	- 20210203@Louis: Saba Red Envelope [RedmineID: #149923]
 	- 20210518@Percy: Change code to adapt new Move Bets flow [RedmineID: #154866]
+	- 20211109@Percy: Fix wrong opening balance issue and add ACCUMULATED BALANCE [RedmineID: #164360]
 
 Param's Explanation:     
 */
 BEGIN
 	SET NOCOUNT ON
 	
-	DECLARE @previousBalanceUpDay	DATE
-		, @isCOMember				BIT --Cash Out member
+	DECLARE @isCOMember				BIT --Cash Out member
 		, @currentDate				SMALLDATETIME
 		, @currency					INT  
 		, @_startDate				SMALLDATETIME
@@ -135,10 +138,6 @@ BEGIN
 			AND rpt.accdate BETWEEN @rptFromDate AND @rptToDate
 			AND rpt.transtype = 'BAL'
 		ORDER BY rpt.accdate DESC
-
-		-- SET @previousBalanceUpDay
-		SELECT @previousBalanceUpDay = winlostdate
-		FROM #statementRpt
 	END
 	ELSE
 	BEGIN
@@ -153,36 +152,18 @@ BEGIN
 		FROM bodb02.dbo.bettrans b (NOLOCK)
 		WHERE b.custid = @_CustID  
 			AND b.bettype = @BAL_BETTYPE
-
-		-- SET @previousBalanceUpDay
-		SELECT @previousBalanceUpDay = winlostdate
-		FROM #statementRpt
-	END
-
-	-- INSERT dummy OPENING BALANCE transaction for reactive member OR new member without balanceup day
-	IF (NOT EXISTS(SELECT TOP 1 1 FROM #statementRpt))
-	BEGIN
-		IF(@previousBalanceUpDay IS NULL)
-		BEGIN
-			SELECT @previousBalanceUpDay =  @_startDate
-			WHILE(DATEPART(DW,@previousBalanceUpDay) <> 6)
-				SET @previousBalanceUpDay =  DATEADD(DD, -1, @previousBalanceUpDay)
-		END
-
-		INSERT INTO #statementRpt (orderkey, winlostdate, transtype, transdesc, turnover,TotalAmt,commission)
-		SELECT @BAL_KEY AS orderkey
-			, @previousBalanceUpDay AS winlostdate
-			, 'BAL' transtype
-			, NULL AS transdesc
-			, 0 AS turnover, 0 AS TotalAmt, 0 AS commission
 	END
 	------------- END INIT: OPENING BALANCE ---------------
 
-	-- RESET FromDate
-	SELECT @_startDate = @previousBalanceUpDay
+	-- RESET FromDate for ACCUMULATED BALANCE
+	SET @_startDate = NULL
+	SELECT @_startDate = winlostdate FROM #statementRpt
+
+	IF @_startDate IS NULL
+		SET @_startDate = CASE WHEN @FromDate < @BalanceUpDay THEN DATEADD(DAY, -7, @FromDate) ELSE @BalanceUpDay END
 	
 	DECLARE @isCurrentMonth BIT
-	SELECT @isCurrentMonth = CASE WHEN MONTH(@_endDate) >= MONTH(@currentDate) THEN 1 ELSE 0 END
+	SELECT  @isCurrentMonth = CASE WHEN MONTH(@_endDate) >= MONTH(@currentDate) THEN 1 ELSE 0 END
 
 	--------------- Start: PROCESS data ------------------------
 	-- after @BalanceUpDay - Mix up
@@ -242,7 +223,7 @@ BEGIN
 		-- bettrans tickets -- after @MoveBetsDay
 		IF (@_endDate > @MoveBetsDay OR @isCurrentMonth = 1)
 		BEGIN
-			SELECT @_tempStartDate  =  CASE WHEN @_startDate <= @MoveBetsDay THEN @MoveBetsDay-1 ELSE @_startDate END
+			SELECT @_tempStartDate  =  CASE WHEN @_startDate <= @MoveBetsDay THEN DATEADD(DAY, 1, @MoveBetsDay) ELSE @_startDate END
 				, @_tempEndDate		=  @_endDate
 
 			-- bet tickets
@@ -402,7 +383,6 @@ BEGIN
 	-- before @BalanceUpDay --> bettrans_bk & [Statement] - only
 	IF (@_endDate < @BalanceUpDay)  
 	BEGIN
-
 		INSERT INTO #statementRpt (orderkey, winlostdate, transtype, transdesc, turnover,TotalAmt,commission)
 		SELECT f.orderkey, f.winlostdate, f.transtype, f.transdesc, f.turnover, f.TotalAmt, f.commission
 		FROM bodb02.dbo.LAP_f_Statement_Mem_Summary(@_CustID, @_startDate, @_endDate) AS f
@@ -429,25 +409,17 @@ BEGIN
 	GROUP BY winlostdate, CustID
 	-----------------------------------------------------------------------------
 
-	---- Check for RECAL initial OPENNING BALANCE
+	---- Calculate for ACCUMULATED BALANCE
 	IF (@_startDate	< @FromDate)
 	BEGIN
-		DECLARE @totalInitBalance MONEY
+		IF NOT EXISTS (SELECT 1 FROM #statementRpt WHERE winlostdate = @FromDate AND transtype = 'BAL')
+			INSERT INTO #statementRpt (winlostdate, orderKey, transtype, transdesc, turnover, totalAmt, commission)
+			SELECT NULL, @BAL_KEY, 'BAL', 'Accumulated_Balance', 0 AS turnover, SUM(ISNULL(totalAmt, 0) + ISNULL(commission, 0)), 0 AS commission
+			FROM #statementRpt
+			WHERE winlostdate < @FromDate
+			HAVING COUNT(1) > 0
 
-		SELECT @totalInitBalance = SUM(ISNULL(TotalAmt,0) + ISNULL(Commission,0))
-		FROM #statementRpt
-		WHERE winlostdate < @FromDate
-
-		UPDATE rpt
-		SET TotalAmt = @totalInitBalance
-		FROM #statementRpt rpt
-		WHERE transtype = 'BAL'
-		AND winlostdate < @FromDate
-
-		DELETE rpt
-		FROM #statementRpt rpt
-		WHERE transtype <> 'BAL'
-		AND winlostdate < @FromDate
+		DELETE #statementRpt WHERE winlostdate < @FromDate
 	END
 
 	DECLARE @rowStart		INT
