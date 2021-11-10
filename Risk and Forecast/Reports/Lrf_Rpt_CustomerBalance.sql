@@ -18,7 +18,7 @@ AS
 	Task : Report Customer Balance
 	DB: DBACC.bodb02
 	Original: Lrf_Rpt_CustomerTurnOver
-  
+
 	Revisions:
 		- 20120917@henry: change SP name Lrf_Rpt_CustomerTurnOver to Lrf_Rpt_CustomerBalance + split column
 		- 20121004@Jim: replace @currency input param by @currencyID
@@ -62,9 +62,9 @@ AS
 		- 20200423@Hogan: Add new product Sexy Gaming [RedmineID: #132829]
 		- 20200423@Vickie: Integrate Saba Club [RedmineID: #132702]
 						- Change to use @ProductList
+		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
 
 	Param's Explanation:
-		+ @excludeTest: remove currency UUS
 		+ @TopCount:
 			0: get all
 			100: get 100 top by @OrderItem
@@ -83,13 +83,16 @@ BEGIN
 	SET NOCOUNT ON
 
 	-- Get agent list
-	DECLARE @tmpAg TABLE (CustId INT, Currency INT)
+	CREATE TABLE #TmpAg (CustId INT, Currency INT)
+
+	CREATE CLUSTERED INDEX IX_TmpAg ON #TmpAg (CustId);
+
 	DECLARE @DocHandler INT
 
 	BEGIN TRY
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT, @AgentList
 	
-		INSERT INTO @tmpAg(CustId, Currency)
+		INSERT INTO #TmpAg (CustId, Currency)
 		SELECT AgentId, Currency 
 		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId INT, Currency INT) AS Data
 
@@ -108,30 +111,30 @@ BEGIN
 		SET @ShowSB = 1
 
 	-- Get sport type
-	DECLARE @SportType	TABLE (SportType INT, ProductCode VARCHAR(10))
+	CREATE TABLE #SportType (SportType INT PRIMARY KEY, ProductCode VARCHAR(10))
 
 	IF LEN(ISNULL(@ProductList, '')) > 0 
 	BEGIN
-		INSERT INTO @sporttype (SportType, ProductCode)
+		INSERT INTO #SportType (SportType, ProductCode)
 		SELECT DISTINCT SportType, ProductCode
 		FROM dbo.f_LicWinLoss_ProductSportType_Sel(@ProductList)
 	END
 
 	IF @ShowBT = 1
 	BEGIN
-		INSERT INTO @sporttype (sporttype, ProductCode)
+		INSERT INTO #SportType (SportType, ProductCode)
 		VALUES (- 2, 'BT') -- 901
 
-		INSERT INTO @sporttype (sporttype, ProductCode)
+		INSERT INTO #SportType (SportType, ProductCode)
 		VALUES (- 3, 'BT') -- 902
 	END
 
 	IF @ShowCO = 1
 	BEGIN
-		INSERT INTO @sporttype (sporttype, ProductCode)
+		INSERT INTO #SportType (SportType, ProductCode)
 		VALUES (-6, 'CO') -- 911
 
-		INSERT INTO @sporttype (sporttype, ProductCode)
+		INSERT INTO #SportType (SportType, ProductCode)
 		VALUES (-7, 'CO') -- 912
 	END
 
@@ -141,7 +144,7 @@ BEGIN
 		AffiliateTransfer	MONEY,
 		Withdrawal			MONEY,
 		Turnover			MONEY,
-		Winloss				MONEY,
+		WinLoss				MONEY,
 		Bonus				MONEY,
 		Adjustment			MONEY,
 		Promotion			MONEY,
@@ -167,8 +170,8 @@ BEGIN
 
 	IF @fdate < @CutDate
 	BEGIN
-		SELECT @tmpdate = CASE 
-							WHEN @tdate >= @CutDate THEN DATEADD(dd, - 1, @CutDate)
+		SELECT @tmpdate = CASE
+							WHEN @tdate >= @CutDate THEN DATEADD(dd, -1, @CutDate)
 							ELSE @tdate
 						END
 
@@ -186,11 +189,11 @@ BEGIN
 			, SUM(CASE b.winlostdate
 					WHEN @fdate THEN b.OpeningBalance
 					ELSE 0
-					END) OpeningBalance
+				END) AS OpeningBalance
 			, SUM(CASE b.winlostdate
 					WHEN @tdate THEN b.ClosingBalance
 					ELSE 0
-					END) ClosingBalance
+				END) AS ClosingBalance
 			, 0 AS DrawGame
 			, CASE
 				WHEN @showSB = 1 THEN SUM(ISNULL(Turnover_BA, 0))
@@ -205,9 +208,9 @@ BEGIN
 				WHEN @showSB = 1 THEN SUM(ISNULL(AmountDueTo_BA, 0))
 				ELSE 0
 			END AmountDueToBA
-		FROM bodb_Report.dbo.rptDepWinlost_bk b WITH (NOLOCK)
-			INNER JOIN @tmpAg a ON b.recommend = a.CustId AND b.Currency = a.Currency
-			LEFT JOIN bodb_Report.dbo.rptDepWinlost_BonusWallet bo WITH (NOLOCK) ON b.custid = bo.CustID AND b.winlostdate = bo.Winlostdate
+		FROM bodb_Report.dbo.rptDepWinlost_bk AS b WITH (NOLOCK)
+			INNER JOIN #TmpAg AS a ON b.recommend = a.CustId
+			LEFT JOIN bodb_Report.dbo.rptDepWinlost_BonusWallet AS bo WITH (NOLOCK) ON b.custid = bo.CustID AND b.winlostdate = bo.Winlostdate
 		WHERE b.winlostdate BETWEEN @fdate AND @tmpdate
 		GROUP BY b.CustId;
 
@@ -222,18 +225,18 @@ BEGIN
 				, SUM(ISNULL(p.winlost, 0)) AS Winloss
 				, SUM(ISNULL(p.drawTO, 0)) AS DrawGame
 				, SUM(ISNULL(p.playercomm, 0)) AS PlayerComm
-			FROM bodb_Report.dbo.rptDepWinlostByProduct_bk p WITH (NOLOCK)
-				INNER JOIN #SumWinlost d ON p.custid = d.custid
+			FROM bodb_Report.dbo.rptDepWinlostByProduct_bk AS p WITH (NOLOCK)
+				INNER JOIN #SumWinlost AS d ON p.custid = d.custid
+				INNER JOIN #SportType AS s ON s.SportType = p.sporttype
 			WHERE p.winlostdate BETWEEN @fdate AND @tmpdate
-				AND sporttype IN (SELECT SportType FROM @SportType)
 			GROUP BY p.custid
 			)
 		UPDATE #SumWinlost
-		SET turnover = ISNULL(s.turnover, 0)
-			, outstanding = ISNULL(s.outstanding, 0)
-			, winloss = ISNULL(s.winloss, 0)
-			, drawgame = ISNULL(s.drawgame, 0)
-			, playercomm = ISNULL(s.playercomm, 0)
+		SET Turnover = ISNULL(s.turnover, 0)
+			, Outstanding = ISNULL(s.outstanding, 0)
+			, WinLoss = ISNULL(s.winloss, 0)
+			, DrawGame = ISNULL(s.drawgame, 0)
+			, PlayerComm = ISNULL(s.playercomm, 0)
 		FROM sourceDATA s
 		WHERE #SumWinlost.custid = s.custid
 	END
@@ -258,28 +261,28 @@ BEGIN
 			, SUM(CASE b.winlostdate
 					WHEN @fdate THEN b.OpeningBalance
 					ELSE 0
-					END) OpeningBalance
+				END) AS OpeningBalance
 			, SUM(CASE b.winlostdate
 					WHEN @tdate THEN b.ClosingBalance
 					ELSE 0
-					END) ClosingBalance
+				END) AS ClosingBalance
 			, CAST(0 AS MONEY) AS DrawGame
-			, CASE 
+			, CASE
 				WHEN @showSB = 1 THEN SUM(ISNULL(Turnover_BA, 0))
 				ELSE 0
-				END TurnoverBA
-			, CASE 
+			END TurnoverBA
+			, CASE
 				WHEN @showSB = 1 THEN SUM(ISNULL(Comm_BA, 0))
 				ELSE 0
-				END CommBA
+			END CommBA
 			, CAST(0 AS MONEY) AS PlayerComm
 			, CASE 
 				WHEN @showSB = 1 THEN SUM(ISNULL(AmountDueTo_BA, 0))
 				ELSE 0
-				END AmountDueToBA
+			END AmountDueToBA
 		INTO #SumWinlost2
-		FROM bodb_Report.dbo.rptDepWinlost b WITH (NOLOCK)
-			INNER JOIN @tmpAg a ON b.recommend = a.Custid AND b.Currency = a.Currency
+		FROM bodb_Report.dbo.rptDepWinlost AS b WITH (NOLOCK)
+			INNER JOIN #TmpAg AS a ON b.recommend = a.CustId
 		WHERE b.winlostdate BETWEEN @tmpdate AND @tdate
 		GROUP BY b.CustId;
 
@@ -296,16 +299,16 @@ BEGIN
 				, SUM(ISNULL(p.playercomm, 0)) AS PlayerComm
 			FROM bodb_Report.dbo.rptDepWinlostByProduct p WITH (NOLOCK)
 				INNER JOIN #SumWinlost2 d ON p.custid = d.custid
+				INNER JOIN #SportType AS s ON s.SportType = p.sporttype
 			WHERE p.winlostdate BETWEEN @tmpdate AND @tdate
-				AND sporttype IN (SELECT SportType FROM @SportType)
 			GROUP BY p.custid
 			)
 		UPDATE #SumWinlost2
-		SET turnover = ISNULL(s.turnover, 0)
+		SET Turnover = ISNULL(s.turnover, 0)
 			, outstanding = ISNULL(s.outstanding, 0)
-			, winloss = ISNULL(s.winloss, 0)
-			, drawgame = ISNULL(s.drawgame, 0)
-			, playercomm = ISNULL(s.playercomm, 0)
+			, Winloss = ISNULL(s.winloss, 0)
+			, DrawGame = ISNULL(s.drawgame, 0)
+			, PlayerComm = ISNULL(s.playercomm, 0)
 		FROM sourceDATA s
 		WHERE #SumWinlost2.custid = s.custid
 
@@ -440,30 +443,21 @@ BEGIN
 		IF @TopCount = 0
 		BEGIN
 			SELECT c.username
-				, SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1, LEN(c.username2) - CHARINDEX('$', c.username2)) AS nickname
+				, SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1, LEN(c.username2) - CHARINDEX('$', c.username2)) AS Nickname
 				, toptbl.*
 			FROM (
-				SELECT rpt.*
-					, ROW_NUMBER() OVER (ORDER BY CASE @OrderItem
-													WHEN 1 THEN rpt.Deposit
-													WHEN 2 THEN rpt.Withdrawal
-													WHEN 3 THEN rpt.Turnover
-													WHEN 4 THEN rpt.Winloss
-													WHEN 6 THEN rpt.OpeningBalance
-													WHEN 7 THEN rpt.ClosingBalance
-												END DESC, rpt.Custid) AS RowNum
-				FROM #SumWinlost rpt
-					/*
-				where
-				CASE
-					WHEN @orderItem=1 AND rpt.Deposit > 0 THEN 1  
-					WHEN @orderItem=2 AND rpt.Withdrawal > 0 THEN 1  
-					WHEN @orderItem=3 AND rpt.Turnover > 0 THEN 1  
-					WHEN @orderItem=4 AND rpt.Winloss <> 0 THEN 1  
-					end = 1  
-				*/
+					SELECT rpt.*
+						, ROW_NUMBER() OVER (ORDER BY CASE @OrderItem
+														WHEN 1 THEN rpt.Deposit
+														WHEN 2 THEN rpt.Withdrawal
+														WHEN 3 THEN rpt.Turnover
+														WHEN 4 THEN rpt.Winloss
+														WHEN 6 THEN rpt.OpeningBalance
+														WHEN 7 THEN rpt.ClosingBalance
+													END DESC, rpt.Custid) AS RowNum
+					FROM #SumWinlost rpt
 				) AS toptbl
-				INNER JOIN dbo.Customer c WITH (NOLOCK) ON c.custid = toptbl.custid
+				INNER JOIN dbo.Customer AS c WITH (NOLOCK) ON c.custid = toptbl.custid
 			WHERE toptbl.RowNum BETWEEN @RowStart AND @RowEnd
 			ORDER BY RowNum ASC
 
@@ -485,15 +479,6 @@ BEGIN
 				, SUM(PlayerComm) AS SumPlayerComm
 				, SUM(AmountDueToBA) AS SumAmountDueToBA
 			FROM #SumWinlost
-				/*  
-			where    
-			CASE   
-			WHEN @orderItem=1 AND rpt.Deposit > 0 THEN 1  
-			WHEN @orderItem=2 AND rpt.Withdrawal > 0 THEN 1  
-			WHEN @orderItem=3 AND rpt.Turnover > 0 THEN 1  
-			WHEN @orderItem=4 AND rpt.Winloss <> 0 THEN 1  
-			end = 1   
-			*/
 		END
 		ELSE
 		BEGIN
@@ -501,27 +486,18 @@ BEGIN
 				, SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1, LEN(c.username2) - CHARINDEX('$', c.username2)) AS nickname
 				, toptbl.*
 			FROM (
-				SELECT TOP (@TopCount) rpt.*
-					, ROW_NUMBER() OVER (ORDER BY CASE @OrderItem
-													WHEN 1 THEN rpt.Deposit
-													WHEN 2 THEN rpt.Withdrawal
-													WHEN 3 THEN rpt.Turnover
-													WHEN 4 THEN rpt.Winloss
-													WHEN 6 THEN rpt.OpeningBalance
-													WHEN 7 THEN rpt.ClosingBalance
-												END DESC, rpt.Custid) AS RowNum
-				FROM #SumWinlost rpt
-					/*  
-				where  
-				CASE   
-					WHEN @orderItem=1 AND rpt.Deposit >0 THEN 1  
-					WHEN @orderItem=2 AND rpt.Withdrawal >0 THEN 1  
-					WHEN @orderItem=3 AND rpt.Turnover >0 THEN 1  
-					WHEN @orderItem=4 AND rpt.Winloss <>0 THEN 1  
-					end = 1  
-				*/
+					SELECT TOP (@TopCount) rpt.*
+						, ROW_NUMBER() OVER (ORDER BY CASE @OrderItem
+														WHEN 1 THEN rpt.Deposit
+														WHEN 2 THEN rpt.Withdrawal
+														WHEN 3 THEN rpt.Turnover
+														WHEN 4 THEN rpt.Winloss
+														WHEN 6 THEN rpt.OpeningBalance
+														WHEN 7 THEN rpt.ClosingBalance
+													END DESC, rpt.Custid) AS RowNum
+					FROM #SumWinlost rpt
 				) AS toptbl
-				INNER JOIN bodb02.dbo.Customer c WITH (NOLOCK) ON c.custid = toptbl.custid
+				INNER JOIN dbo.Customer AS c WITH (NOLOCK) ON c.custid = toptbl.custid
 			WHERE toptbl.RowNum BETWEEN @RowStart AND @RowEnd
 			ORDER BY RowNum ASC
 
@@ -554,20 +530,11 @@ BEGIN
 												END DESC, rpt.Custid) AS RowNum
 				FROM #SumWinlost rpt
 				ORDER BY RowNum ASC
-					/*  
-				where  
-				CASE   
-					WHEN @orderItem=1 AND rpt.Deposit >0 THEN 1  
-					WHEN @orderItem=2 AND rpt.Withdrawal >0 THEN 1  
-					WHEN @orderItem=3 AND rpt.Turnover >0 THEN 1  
-					WHEN @orderItem=4 AND rpt.Winloss <>0 THEN 1  
-					end = 1  
-				ORDER BY RowNum ASC  
-				*/
-				) A
+				) AS A
 		END
 	END
 
 	DROP TABLE #SumWinlost
+	DROP TABLE #TmpAg
 END
 GO

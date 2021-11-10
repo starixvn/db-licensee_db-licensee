@@ -1,21 +1,20 @@
 /*<info serverAlias="DBLIC-bodb_Licensee" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_SelSportDetail]
-	@LicenseeID		INT,
-	@langkey		VARCHAR(20)='en-US',
-	@ProductCodes	VARCHAR(500)=''
+	@LicenseeId		INT,
+	@ProductCodes	VARCHAR(500)	= ''
 AS
 
 /*
 	Created: 20131010@Don
-	Task : Add more products to Customer Turnover Report
+	Task: Add more products to Customer Turnover Report
 	DB: DBLIC/bodb_Licensee
 
 	Revisions:
 		- 20131127@Jim: support multi language
 		- 20131205@Florent: add more bettype for V.Tennis, V.Racing
 		- 20140117@Florent: add new sport 154
-		- 20140425@Florent: add new sport 
+		- 20140425@Florent: add new sport
 							+ 183 Virtual Speedway
 							+ 185 Virtual Cycling 
 		- 20151023@Victor: Support New Simplified Chinese
@@ -27,277 +26,150 @@ AS
 		- 20190227@Joseph: Betting ticket center phase 3b [RedmineID: #108221]
 		- 20190516@Amanda: Rename product Keno [RedmineID: #113398]
 		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
-	
+		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
+					- Remove input param @LangKey
+
 	Param's Explanation:
 		- @ProductCodes = '' - Get all
-
-	Sample test case:
-		[Lrf_SelSportDetail]
-		@LicenseeID=1,
-		@ProductCodes='SB,BA'
 */
 
 BEGIN
 	SET NOCOUNT ON
 
-	DECLARE @Products AS TABLE (Code VARCHAR(10))
-
-	INSERT INTO @Products (Code)
-	SELECT ISNULL(Val,'')
-	FROM dbo.strSplit(@ProductCodes,',')
-
 	DECLARE @Product3rds AS TABLE (Code VARCHAR(10))
 
-	IF EXISTS (SELECT 1 FROM @Products WHERE Code = '')
-	BEGIN
-		INSERT INTO @Product3rds(Code)
-		SELECT p.ProductPrefix
-		FROM dbo.Product3rd p WITH (NOLOCK)
-			INNER JOIN dbo.LicenseeProduct3rd l WITH (NOLOCK) ON p.Productid = l.ProductID
-		WHERE l.LicenseeID = @LicenseeID AND p.ProductPrefix IN ('BA', 'NG', 'VS', 'VS2', 'KN', 'LT', 'CO', 'TG', 'I4D')
-	END
-	ELSE
-	BEGIN
-		INSERT INTO @Product3rds(Code)
-		SELECT p.ProductPrefix
-		FROM @Products po
-			INNER JOIN dbo.Product3rd p WITH (NOLOCK) ON p.ProductPrefix = po.Code
-			INNER JOIN dbo.LicenseeProduct3rd l WITH (NOLOCK) ON p.Productid = l.ProductID
-		WHERE l.LicenseeID = @LicenseeID AND p.ProductPrefix IN ('BA', 'NG', 'VS', 'VS2', 'KN', 'LT', 'CO', 'TG', 'I4D')
-	END
+	INSERT INTO @Product3rds(Code)
+	SELECT p.ProductPrefix
+	FROM dbo.Product3rd AS p WITH (NOLOCK)
+		INNER JOIN dbo.LicenseeProduct3rd AS l WITH (NOLOCK) ON p.Productid = l.ProductID
+	WHERE l.LicenseeID = @LicenseeID
+		AND p.ProductPrefix IN ('BA', 'NG', 'VS', 'VS2', 'KN', 'LT', 'CO', 'TG', 'I4D')
+		AND (@ProductCodes = ''
+			OR ',' + @ProductCodes + ',' LIKE '%,' + p.ProductPrefix + ',%')
 
 	DECLARE @ProductSport TABLE (
-		ID INT 
-		,Name NVARCHAR(50)
-		,ParentID SMALLINT
+		Id			INT,
+		Name		NVARCHAR(50),
+		ParentId	SMALLINT
 	)
 
 	-- SB --
-	IF EXISTS (SELECT 1 FROM @Products WHERE Code = '' OR Code = 'SB')
+	IF @ProductCodes = ''
+		OR ',' + @ProductCodes + ',' LIKE '%,SB,%'
 	BEGIN
-		INSERT INTO @ProductSport(ID, Name, ParentID)
-		SELECT	0,
-				CASE @Langkey
-					WHEN 'zh-CN'	THEN N'体育博彩'
-					WHEN 'zh-TW'	THEN N'體育博彩'
-					WHEN 'zh-Hans'	THEN N'体育博彩'
-					WHEN 'th-TH'	THEN N'อัตราค่าตอบแทนจากหน้ากีฬา'
-					WHEN 'ja-JP'	THEN N'スポーツベット '
-					WHEN 'ko-KR'	THEN N'스포츠북 '
-					WHEN 'es'		THEN N'Sportsbook'
-					WHEN 'vi-VN'	THEN N'Thể thao'
-					ELSE N'Sportbook' END,
-				NULL
+		INSERT INTO @ProductSport(Id, Name, ParentId)
+		SELECT 0, 'SB', NULL
 		UNION ALL
-		SELECT ID, NULL, 0
+		SELECT Id, NULL, 0
 		FROM dbo.Lrf_f_GetSportTypeByProduct('SB')
+		UNION ALL
+		SELECT Id, NULL, 0
+		FROM dbo.Lrf_f_GetSportTypeByProduct('SLT')
+		WHERE ',' + @ProductCodes + ',' LIKE '%,SLT,%'
 	END
 
 	-- BA --
 	IF EXISTS (SELECT 1 FROM @Product3rds WHERE Code = 'BA')
 	BEGIN
-		INSERT INTO @ProductSport(ID, Name, ParentID)
-		SELECT
-			3,
-			'Bet Aggregator',
-			NULL
+		INSERT INTO @ProductSport(Id, Name, ParentId)
+		SELECT 3, 'BA', NULL
 		UNION ALL
-		SELECT
-			ID,
-			NULL,
-			0
+		SELECT Id, NULL, 0
 		FROM dbo.Lrf_f_GetSportTypeByProduct('BA')
 	END
 
 	-- VS --
 	IF EXISTS (SELECT 1 FROM @Product3rds WHERE Code = 'VS')
 	BEGIN
-		INSERT INTO @ProductSport(ID, Name, ParentID)
-		SELECT
-			999,
-			CASE @Langkey
-				/*WHEN 'zh-CN'	THEN N'体育博彩'
-				WHEN 'zh-TW'	THEN N'體育博彩'
-				WHEN 'zh-Hans'	THEN N'体育博彩'
-				WHEN 'th-TH'	THEN N'อัตราค่าตอบแทนจากหน้ากีฬา'
-				WHEN 'ja-JP'	THEN N'スポーツベット '
-				WHEN 'ko-KR'	THEN N'스포츠북 '*/
-				WHEN 'es'		THEN N'Virtual Sports'
-				WHEN 'vi-VN'	THEN N'Virtual Sports'
-				ELSE N'Virtual Sports' END,
-			NULL
+		INSERT INTO @ProductSport(Id, Name, ParentId)
+		SELECT 999, 'VS', NULL
 		UNION ALL
-		SELECT
-			ID,
-			NULL,
-			999
+		SELECT Id, NULL, 999
 		FROM dbo.Lrf_f_GetSportTypeByProduct('VS')
 	END
 
 	-- VS2 --
 	IF EXISTS (SELECT 1 FROM @Product3rds WHERE Code = 'VS2')
 	BEGIN
-		INSERT INTO @ProductSport(ID, Name, ParentID)
-		SELECT 
-			990,
-			CASE @Langkey
-				/*WHEN 'zh-CN'	THEN N'体育博彩'
-				WHEN 'zh-TW'	THEN N'體育博彩'
-				WHEN 'zh-Hans'	THEN N'体育博彩'
-				WHEN 'th-TH'	THEN N'อัตราค่าตอบแทนจากหน้ากีฬา'
-				WHEN 'ja-JP'	THEN N'スポーツベット '
-				WHEN 'ko-KR'	THEN N'스포츠북 '*/
-				WHEN 'es'		THEN N'Virtual Sports 2'
-				WHEN 'vi-VN'	THEN N'Virtual Sports 2'
-				ELSE N'Virtual Sports 2' END,
-			NULL
+		INSERT INTO @ProductSport(Id, Name, ParentId)
+		SELECT 990, 'VS2', NULL
 		UNION ALL
-		SELECT
-			ID,
-			NULL,
-			990
+		SELECT Id, NULL, 990
 		FROM dbo.Lrf_f_GetSportTypeByProduct('VS2')
 	END
 
 	-- NG --
 	IF EXISTS (SELECT 1 FROM @Product3rds WHERE Code = 'NG')
 	BEGIN
-		INSERT INTO @ProductSport(ID, Name, ParentID)
-		SELECT
-			161,
-			CASE @Langkey
-				WHEN 'zh-CN'	THEN N'百練賽'
-				WHEN 'zh-TW'	THEN N'百练赛'
-				WHEN 'zh-Hans'	THEN N'百練賽'
-				WHEN 'th-TH'	THEN N'เกมหมายเลข'
-				WHEN 'ja-JP'	THEN N'番号ゲーム'
-				WHEN 'ko-KR'	THEN N'라이브빙고'
-				WHEN 'es'		THEN N'Number Game'
-				WHEN 'vi-VN'	THEN N'Number Game'
-				ELSE N'Number Game' END,
-		 	NULL
+		INSERT INTO @ProductSport(Id, Name, ParentId)
+		SELECT 161, 'NG', NULL
 		UNION ALL
-		SELECT
-			ID,
-			NULL,
-			161
+		SELECT Id, NULL, 161
 		FROM dbo.Lrf_f_GetSportTypeByProduct('NG')
 	END
 
 	-- KN --
 	IF EXISTS (SELECT 1 FROM @Product3rds WHERE Code = 'KN')
 	BEGIN
-		INSERT INTO @ProductSport(ID, Name, ParentID)
-		SELECT
-			202,
-			CASE @Langkey
-				WHEN 'zh-CN'	THEN N'快乐彩'
-				WHEN 'zh-TW'	THEN N'快樂彩'
-				WHEN 'zh-Hans'	THEN N'快乐彩'
-				ELSE N'RNG Keno'
-			END AS Name,
-			NULL
+		INSERT INTO @ProductSport(Id, Name, ParentId)
+		SELECT 202, 'KN', NULL
 		UNION ALL
-		SELECT
-			ID,
-			NULL,
-			202
+		SELECT Id, NULL, 202
 		FROM dbo.Lrf_f_GetSportTypeByProduct('KN')
 	END
 
 	-- LT --
 	IF EXISTS (SELECT 1 FROM @Product3rds WHERE Code = 'LT')
 	BEGIN
-		INSERT INTO @ProductSport(ID, Name, ParentID)
-		SELECT 220, N'Lottery', NULL
+		INSERT INTO @ProductSport(Id, Name, ParentId)
+		SELECT 220, 'LT', NULL
 		UNION ALL
-		SELECT ID, NULL, 220
+		SELECT Id, NULL, 220
 		FROM dbo.Lrf_f_GetSportTypeByProduct('LT')
 	END
 
 	-- CO --
 	IF EXISTS (SELECT 1 FROM @Product3rds WHERE Code = 'CO')
 	BEGIN
-		INSERT INTO @ProductSport(ID, Name, ParentID)
-		SELECT 1, 
-		 	CASE @Langkey
-				WHEN 'zh-CN'	THEN N'即时兑现'
-				WHEN 'zh-TW'	THEN N'即時兌現'
-				WHEN 'zh-Hans'	THEN N'即时兑现'
-				ELSE N'Cash Out' END,
-			NULL
+		INSERT INTO @ProductSport(Id, Name, ParentId)
+		SELECT 1, 'CO', NULL
 		UNION ALL
-		SELECT ID, NULL, 1
+		SELECT Id, NULL, 1
 		FROM dbo.Lrf_f_GetSportTypeByProduct('CO')
 	END
 
 	-- TG --
 	IF EXISTS (SELECT 1 FROM @Product3rds WHERE Code = 'TG')
 	BEGIN
-		INSERT INTO @ProductSport(ID, Name, ParentID)
-		SELECT 222, N'Table Games', NULL
+		INSERT INTO @ProductSport(Id, Name, ParentId)
+		SELECT 222, 'TG', NULL
 		UNION ALL
-		SELECT ID, NULL, 222
+		SELECT Id, NULL, 222
 		FROM dbo.Lrf_f_GetSportTypeByProduct('TG')
 	END
 
 	-- I4D --
 	IF EXISTS (SELECT 1 FROM @Product3rds WHERE Code = 'I4D')
 	BEGIN
-		INSERT INTO @ProductSport(ID, Name, ParentID)
-		SELECT 223, N'Indo 4D', NULL
+		INSERT INTO @ProductSport(Id, Name, ParentId)
+		SELECT 223, 'I4D', NULL
 		UNION ALL
-		SELECT ID, NULL, 223
+		SELECT Id, NULL, 223
 		FROM dbo.Lrf_f_GetSportTypeByProduct('I4D')
 	END
 
 	SELECT
-		ps.ID,
-		ps.ParentID,
+		ps.Id,
+		ps.ParentId,
 		ps.Name
-	FROM @ProductSport ps
+	FROM @ProductSport AS ps
 	WHERE ps.ParentID IS NULL
 	UNION ALL
 	SELECT
-		ps.ID,
-		ps.ParentID,
-		CASE @Langkey
-			WHEN 'zh-CN' THEN CASE
-								WHEN SportNameCs IS NULL OR SportNameCs = '' THEN SportName 
-								ELSE SportNameCs
-							END
-			WHEN 'zh-TW' THEN CASE
-								WHEN SportNameCh IS NULL OR SportNameCh = '' THEN SportName 
-								ELSE SportNameCh
-							END
-			WHEN 'zh-Hans' THEN CASE
-									WHEN SportNameCs IS NULL OR SportNameCs = ''THEN SportName 
-									ELSE SportNameCs
-								END
-			WHEN 'th-TH' THEN CASE
-								WHEN SportNameTh IS NULL OR SportNameTh = '' THEN SportName 
-								ELSE SportNameTh
-							END
-			WHEN 'ja-JP' THEN CASE
-								WHEN SportNameJp IS NULL OR SportNameJp = '' THEN SportName 
-								ELSE SportNameJp
-							END
-			WHEN 'ko-KR' THEN CASE
-								WHEN SportNameKo IS NULL OR SportNameKo = '' THEN SportName 
-								ELSE SportNameKo
-							END
-			WHEN 'es' THEN CASE
-								WHEN SportNameES IS NULL OR SportNameES = '' THEN SportName 
-								ELSE SportNameES
-							END
-			WHEN 'vi-VN' THEN CASE
-								WHEN SportNameVN IS NULL OR SportNameVN = '' THEN SportName 
-								ELSE SportNameVN
-							END
-			ELSE SportName
-		END AS Name
-	FROM @ProductSport ps
+		ps.Id,
+		ps.ParentId,
+		s.SportName AS Name
+	FROM @ProductSport AS ps
 		INNER JOIN bodb02.dbo.Sports AS s WITH (NOLOCK) ON ps.ID = s.SportType AND ps.ParentID IS NOT NULL
 END
-
 GO

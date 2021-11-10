@@ -1,13 +1,13 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportSummary]
-	@ProductCodes	VARCHAR(MAX) = '',
+	@AgentList		VARCHAR(MAX),
+	@ProductCodes	VARCHAR(MAX)	= '',
 	@FromDate		SMALLDATETIME,
 	@ToDate			SMALLDATETIME,
 	@MoveBetsDay	SMALLDATETIME,
-	@Liveindicator	INT = 1,
-	@AgentList		VARCHAR(MAX),
-	@BaseCurrency	VARCHAR(3) = ''
+	@Liveindicator	INT				= 1,
+	@BaseCurrency	VARCHAR(3)		= ''
 AS
 
 /*
@@ -98,32 +98,47 @@ AS
 		- 20210519@Louis: Integrate Big Gaming product [RedmineID: #146773]
 		- 20210525@Hogan: Integrate Vgaming [RedmineID: #151583]
 		- 20210630@Hogan: Integrate Creative Gaming [RedmineID: #152619]
-		
+		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
+
 	Param's Explanation:
 		+ @IsLive : indicate that whether the report will get live data or not
 				+ 0: Non - Live data only
 				+ 1: Live data only
 				+ 2: All
 
-		+ @AgentList: xml structure
-						<ROOT>
-						<Agent AgentId="12345" Currency="3"/>  
-						<Agent AgentId="12345" Currency="5"/>  
-						</ROOT> 
-
-	Example:
-		DECLARE @DateFrom DATETIME
-		DECLARE @DateTo DATETIME
-		DECLARE @MoveBetsDay DATETIME
-		SELECT @DateFrom = DATEADD(DAY, -15, GETDATE())
-		SELECT @DateTo = GETDATE()
-		SELECT @MoveBetsDay = MAX(eventdate) FROM match14 WITH(NOLOCK)
-
-		EXEC [Lrf_Rpt_LiveReportSummary] @CurrencyID = 0, @FromDate=@DateFrom, @ToDate=@DateTo, @MoveBetsDay = @MoveBetsDay, @ProductCode= NULL
+		+ @AgentList: XML structure
+					<ROOT>
+						<Agent AgentId="12345" Currency="3"/>
+						<Agent AgentId="12345" Currency="5"/>
+					</ROOT>
 */
 
 BEGIN
 	SET NOCOUNT ON
+
+	-- Get agent list
+	CREATE TABLE #TempAg (CustId INT, Currency INT)
+
+	CREATE CLUSTERED INDEX CIX_TempAg ON #TempAg (CustId);
+
+	DECLARE @DocHandler INT
+
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT,@AgentList
+
+		INSERT INTO #TempAg (custID, currency)
+		SELECT AgentId, Currency
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId INT, Currency INT) AS Data
+
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
+
+	BEGIN CATCH
+		SELECT ErrCode = 100
+				,ErrMsg = N'Parameter invalid.'
+
+		RETURN
+	END CATCH; 
 
 	DECLARE @TempFromDate	DATETIME,
 			@TempToDate		DATETIME,
@@ -136,42 +151,22 @@ BEGIN
 
 	CREATE TABLE #tmpWinloss
 	(
-		winlostdate DATETIME,
+		WinLostDate DATETIME,
 		Currency	INT,
 		ProductCode VARCHAR(20),
-		TurnOver	MONEY,
-		Winlost		MONEY,
+		Turnover	MONEY,
+		WinLost		MONEY,
 		LicenseeWL	MONEY,
 		Comm		MONEY,
 		PlayerComm	MONEY,
 		AmtDueTo3rd MONEY,
-		Betcount	INT
+		BetCount	INT
 	)
 
 	DECLARE @ExcludedBetType TABLE (ProductCode VARCHAR (10), BetType INT)
 	-- Insert Excluded BetType
 	INSERT INTO @ExcludedBetType (ProductCode, BetType)
 	SELECT ProductCode, BetType FROM Lrf_f_SelExcludedBetType()
-	
-	DECLARE @TempAg AS TABLE ( CustId INT,Currency INT )
-	DECLARE @DocHandler INT
-
-	BEGIN TRY
-		EXEC sp_xml_preparedocument @DocHandler OUTPUT,@AgentList
-
-		INSERT INTO @TempAg (custID, currency)
-		SELECT AgentId, Currency
-		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
-
-		EXEC sp_xml_removedocument @DocHandler
-	END TRY
-
-	BEGIN CATCH
-		SELECT ErrCode = 100
-				,ErrMsg = N'Parameter invalid.'
-
-		RETURN
-	END CATCH; 
 
 	CREATE TABLE #LicenseeList(LicenseeID INT, Currency INT)
 
@@ -181,7 +176,7 @@ BEGIN
 	SELECT DISTINCT LicenseeID, Currency
 	FROM bodb_licensee.dbo.LicenseeCust lc WITH(NOLOCK)
 	WHERE EXISTS (	SELECT 1
-					FROM @TempAg t
+					FROM #TempAg t
 					WHERE t.CustId = lc.CustID AND t.Currency = lc.Currency )
 
 	IF @ProductCodes IS NULL
@@ -207,7 +202,7 @@ BEGIN
 			(
 				SELECT transid
 				FROM bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK)
-					INNER JOIN @TempAg t ON BA.recommend = t.CustId
+					INNER JOIN #TempAg t ON BA.recommend = t.CustId
 				UNION
 				SELECT NULL
 			)
@@ -216,16 +211,16 @@ BEGIN
 				b.winlostdate,
 				t.currency,
 				'BA' AS ProductCode,
-				SUM(stake) turnover,
+				SUM(b.stake) turnover,
 				SUM(b.winlost - b.actual_stake) AS Winlost,
 				0 AS LicenseeWL,
-				SUM(comm) AS Comm,
+				SUM(b.comm) AS Comm,
 				SUM(b.playercomm) AS PlayerComm,
 				- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd,
 				COUNT(b.transid) BetCount
 			FROM
 				dbo.bettrans b WITH (NOLOCK)
-				INNER JOIN @TempAg t ON b.recommend = t.custid AND b.Currency = t.Currency 
+				INNER JOIN #TempAg t ON b.recommend = t.custid
 				INNER JOIN CTE ON b.transid = CTE.TransID
 			WHERE
 				b.winlostdate BETWEEN @TempFromDate AND @TDate
@@ -251,13 +246,13 @@ BEGIN
 				SUM(stake) turnover,
 				SUM(b.winlost - b.actual_stake) AS Winlost,
 				SUM(- 1 * (b.winlost - b.actual_stake)) AS LicenseeWL,
-				SUM(comm) AS Comm,
+				SUM(b.comm) AS Comm,
 				SUM(b.playercomm) AS PlayerComm,
 				- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd,
 				COUNT(b.transid) BetCount
 			FROM
-				dbo.bettrans b WITH (NOLOCK)
-				INNER JOIN @TempAg t ON b.recommend = t.custid AND b.Currency = t.Currency
+				dbo.bettrans AS b WITH (NOLOCK)
+				INNER JOIN #TempAg AS t ON b.recommend = t.custid
 			WHERE
 				b.winlostdate BETWEEN @TempFromDate AND @TDate
 				AND (
@@ -267,6 +262,8 @@ BEGIN
 					OR (b.Bettype BETWEEN 9001 and 9399) -- E-Sports 2.0
 					OR (b.Bettype BETWEEN 9400 AND 9699) -- Cricket AIO
 					OR b.Bettype = 38					 -- Single Match Parlay
+					OR (b.bettype BETWEEN 3611 AND 3620
+						AND EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'SLT')))
 					)
 				AND (b.bettype NOT IN (9,29))
 				AND (b.bettype < 901 OR b.bettype > 904)
@@ -298,7 +295,7 @@ BEGIN
 				COUNT(b.transid) BetCount
 			FROM
 				dbo.bettrans b WITH (NOLOCK)
-				INNER JOIN @TempAg t ON b.recommend = t.custid AND t.Currency = b.Currency
+				INNER JOIN #TempAg t ON b.recommend = t.custid
 			WHERE
 				b.winlostdate BETWEEN @TempFromDate AND @TDate
 				AND b.bettype IN (9,29)
@@ -328,7 +325,7 @@ BEGIN
 				COUNT(b.transid) BetCount
 			FROM
 				dbo.bettrans b WITH (NOLOCK)
-				INNER JOIN @TempAg t ON b.recommend = t.custid AND t.Currency = b.Currency
+				INNER JOIN #TempAg t ON b.recommend = t.custid
 			WHERE
 				b.winlostdate BETWEEN @TempFromDate AND @TDate
 				AND b.bettype = 2799
@@ -342,7 +339,7 @@ BEGIN
 		END
 
 		--Others
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'NG', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'GDG', 'SLT', 'HB', 'WM', 'BGG', 'VGA', 'CG'))
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'NG', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'GDG', 'HB', 'WM', 'BGG', 'VGA', 'CG'))
 		BEGIN
 			INSERT INTO #tmpWinloss
 			SELECT
@@ -370,7 +367,6 @@ BEGIN
 					WHEN b.bettype BETWEEN 6001 AND 6300 THEN 'PGS' -- PGS
 					WHEN b.bettype BETWEEN 6401 AND 6700 THEN 'JK' -- JK
 					WHEN b.bettype BETWEEN 5701 AND 5799 THEN 'GDG' -- GDG
-					WHEN b.bettype BETWEEN 3611 AND 3620 THEN 'SLT' -- SLT
 					WHEN b.bettype BETWEEN 7001 AND 7300 THEN 'HB' -- HB
 					WHEN b.bettype BETWEEN 3401 AND 3499 THEN 'WM' -- WM
 					WHEN b.bettype BETWEEN 3501 AND 3599 THEN 'BGG'
@@ -386,7 +382,7 @@ BEGIN
 				COUNT(b.transid) BetCount
 			FROM
 				dbo.bettrans b WITH (NOLOCK)
-				INNER JOIN @TempAg t ON b.recommend = t.custid AND t.Currency = b.Currency
+				INNER JOIN #TempAg t ON b.recommend = t.custid
 			WHERE
 				b.winlostdate BETWEEN @TempFromDate AND @TDate
 				AND b.statusID IN (111, 112, 113)
@@ -414,10 +410,9 @@ BEGIN
 					OR b.bettype BETWEEN 6001 AND 6300 -- PGS
 					OR b.bettype BETWEEN 6401 AND 6700 -- JK
 					OR b.bettype BETWEEN 5701 AND 5799 -- GDG
-					OR b.bettype BETWEEN 3611 AND 3620 -- SLT
 					OR b.bettype BETWEEN 7001 AND 7300 -- HB
 					OR b.bettype BETWEEN 3401 AND 3499 -- WM
-					OR b.bettype BETWEEN 3501 AND 3599 -- BGG					
+					OR b.bettype BETWEEN 3501 AND 3599 -- BGG
 					OR (b.bettype BETWEEN 3801 AND 3899 AND b.matchid <> 173)-- VGA
 					OR b.bettype BETWEEN 7301 AND 7600 -- CG
 				)
@@ -448,7 +443,6 @@ BEGIN
 					WHEN b.bettype BETWEEN 6001 AND 6300 THEN 'PGS' -- PGS
 					WHEN b.bettype BETWEEN 6401 AND 6700 THEN 'JK' -- JK
 					WHEN b.bettype BETWEEN 5701 AND 5799 THEN 'GDG' -- GDG
-					WHEN b.bettype BETWEEN 3611 AND 3620 THEN 'SLT' -- SLT
 					WHEN b.bettype BETWEEN 7001 AND 7300 THEN 'HB' -- HB
 					WHEN b.bettype BETWEEN 3401 AND 3499 THEN 'WM' -- WM
 					WHEN b.bettype BETWEEN 3501 AND 3599 THEN 'BGG'
@@ -538,7 +532,7 @@ BEGIN
 		END
 
 		-- Others
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'GDG', 'SLT', 'HB', 'WM', 'BGG', 'VGA', 'CG'))
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'GDG', 'HB', 'WM', 'BGG', 'VGA', 'CG'))
 		BEGIN
 			INSERT INTO #tmpWinloss
 			SELECT 
@@ -546,13 +540,13 @@ BEGIN
 				b.currencyID,
 				CASE 
 					WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) OR (b.bettype BETWEEN 3601 AND 3610) THEN 'NG'
-					WHEN (b.bettype <= 30 
-							OR (b.bettype BETWEEN 121 AND 999) 
-							OR (b.Bettype BETWEEN 1301 and 1399) 
-							OR (b.Bettype BETWEEN 9001 and 9399) 
-							OR (b.Bettype BETWEEN 9400 AND 9699) -- Cricket AIO
-							OR b.Bettype = 38					 -- Single Match Parlay
-						) 
+					WHEN b.bettype <= 30 
+						OR (b.bettype BETWEEN 121 AND 999)
+						OR (b.Bettype BETWEEN 1301 and 1399)
+						OR (b.Bettype BETWEEN 9001 and 9399)
+						OR (b.Bettype BETWEEN 9400 AND 9699)	-- Cricket AIO
+						OR b.Bettype = 38						-- Single Match Parlay
+						OR b.bettype BETWEEN 3611 AND 3620		-- Sports Lottery
 						THEN 'SB'
 					WHEN b.bettype BETWEEN 1201 AND 1299 THEN 'VS'
 					WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN'
@@ -574,7 +568,6 @@ BEGIN
 					WHEN b.bettype BETWEEN 6001 AND 6300 THEN 'PGS'
 					WHEN b.bettype BETWEEN 6401 AND 6700 THEN 'JK' -- JK
 					WHEN b.bettype BETWEEN 5701 AND 5799 THEN 'GDG' -- GDG
-					WHEN b.bettype BETWEEN 3611 AND 3620 THEN 'SLT' -- SLT
 					WHEN b.bettype BETWEEN 7001 AND 7300 THEN 'HB' -- HB
 					WHEN b.bettype BETWEEN 3401 AND 3499 THEN 'WM' -- WM
 					WHEN b.bettype BETWEEN 3501 AND 3599 THEN 'BGG' 
@@ -611,6 +604,8 @@ BEGIN
 					OR b.Bettype BETWEEN 9001 and 9399
 					OR b.Bettype BETWEEN 9400 AND 9699 -- Cricket AIO
 					OR b.Bettype = 38				   -- Single Match Parlay
+					OR (b.bettype BETWEEN 3611 AND 3620
+						AND EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'SLT')))
 					OR b.bettype BETWEEN 81 AND 120
 					OR b.bettype BETWEEN 8101 AND 8120 -- Number Game: Happy 5
 					OR b.bettype BETWEEN 3601 AND 3610 -- Happy 5 Linked Games
@@ -634,7 +629,6 @@ BEGIN
 					OR b.bettype BETWEEN 6001 AND 6300 -- PGS
 					OR b.bettype BETWEEN 6401 AND 6700 -- JK
 					OR b.bettype BETWEEN 5701 AND 5799 -- GDG
-					OR b.bettype BETWEEN 3611 AND 3620 -- SLT
 					OR b.bettype BETWEEN 7001 AND 7300 -- HB
 					OR b.bettype BETWEEN 3401 AND 3499 -- WM
 					OR b.bettype BETWEEN 3501 AND 3599 -- BGG
@@ -653,6 +647,7 @@ BEGIN
 							OR (b.Bettype BETWEEN 9001 and 9399) 
 							OR (b.Bettype BETWEEN 9400 AND 9699) -- Cricket AIO
 							OR b.Bettype = 38					 -- Single Match Parlay
+							OR b.bettype BETWEEN 3611 AND 3620		-- Sports Lottery
 						THEN 'SB'
 					WHEN b.bettype BETWEEN 1201 AND 1299 THEN 'VS'
 					WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN'
@@ -674,7 +669,6 @@ BEGIN
 					WHEN b.bettype BETWEEN 6001 AND 6300 THEN 'PGS'
 					WHEN b.bettype BETWEEN 6401 AND 6700 THEN 'JK' -- JK
 					WHEN b.bettype BETWEEN 5701 AND 5799 THEN 'GDG' -- GDG
-					WHEN b.bettype BETWEEN 3611 AND 3620 THEN 'SLT' -- SLT
 					WHEN b.bettype BETWEEN 7001 AND 7300 THEN 'HB' -- HB
 					WHEN b.bettype BETWEEN 3401 AND 3499 THEN 'WM' -- WM
 					WHEN b.bettype BETWEEN 3501 AND 3599 THEN 'BGG'
@@ -732,8 +726,8 @@ BEGIN
 				SUM(b.winloss) winlost,
 				SUM(-1 * b.winloss) AS LicenseeWL,
 				SUM(b.CommissionA) Comm,
-				SUM( b.CommissionP  ) PlayerComm,
-				- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,
+				SUM(b.CommissionP) PlayerComm,
+				- SUM (b.winloss + b.WinlossA + b.CommissionA) AmountDueTo3rd,
 				SUM(b.betcount) BetCount
 			FROM
 				bodb_LicenseeReport.dbo.rpt_BettingParlay b WITH ( NOLOCK )
@@ -754,7 +748,7 @@ BEGIN
 				b.currencyID
 		END
 	END
-	
+
 	----Filter again by ProductCodes
 	DELETE #tmpWinloss 
 	WHERE ProductCode NOT IN (SELECT ProductCode FROM #ProductCodes)
@@ -765,17 +759,17 @@ BEGIN
 	SELECT FromDate, ToDate, ExchangeID, Rate
 	INTO #TempExchange
 	FROM dbo.Lrf_f_GetExchangeRate(@FDate, @TDate, @BaseCurrency, '') e
-	WHERE EXISTS (SELECT 1 FROM @TempAg a WHERE e.ExchangeID = a.Currency)
+	WHERE EXISTS (SELECT 1 FROM #TempAg a WHERE e.ExchangeID = a.Currency)
 
 	SELECT
-		ProductCode,
-		SUM(Betcount) AS Betcount,
-		CAST(SUM(TurnOver		* e.Rate) AS MONEY) AS Turnover,
-		CAST(SUM(Winlost		* e.Rate) AS MONEY) AS Winlost,
-		CAST(SUM(LicenseeWL		* e.Rate) AS MONEY) AS LicenseeWL,
-		CAST(SUM(Comm			* e.Rate) AS MONEY) AS Comm,
-		CAST(SUM(playercomm		* e.Rate) AS MONEY) AS PlayerComm,
-		CAST(SUM(AmtDueto3rd	* e.Rate) AS MONEY) AS AmtDueto3rd
+		b.ProductCode,
+		SUM(b.BetCount) AS Betcount,
+		CAST(SUM(b.Turnover		* e.Rate) AS MONEY) AS Turnover,
+		CAST(SUM(b.WinLost		* e.Rate) AS MONEY) AS Winlost,
+		CAST(SUM(b.LicenseeWL	* e.Rate) AS MONEY) AS LicenseeWL,
+		CAST(SUM(b.Comm			* e.Rate) AS MONEY) AS Comm,
+		CAST(SUM(b.PlayerComm	* e.Rate) AS MONEY) AS PlayerComm,
+		CAST(SUM(b.AmtDueTo3rd	* e.Rate) AS MONEY) AS AmtDueto3rd
 	FROM
 		#tmpWinloss b
 		INNER JOIN #TempExchange e ON e.ExchangeID = b.currency AND b.winlostdate BETWEEN e.FromDate AND e.ToDate
@@ -783,6 +777,7 @@ BEGIN
 	GROUP BY ProductCode
 	ORDER BY ProductCode
 
+	DROP TABLE #TempAg
 	DROP TABLE #tmpWinloss
 	DROP TABLE #TempExchange
 	DROP TABLE #ProductCodes
