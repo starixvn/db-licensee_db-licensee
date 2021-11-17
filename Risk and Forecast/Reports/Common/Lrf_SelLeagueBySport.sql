@@ -16,7 +16,7 @@ AS
 
 	Revisions:
 		- 20140117@Florent: add new sport 154
-		- 20141111@Jim: use  f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
+		- 20141111@Jim: use f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
 		- 20170228@Paul: Get @AgentList by web instead of @UserId, @CurrencyID, @LicenseeID [Redmine: #71679]
 		- 20180319: Enhance SP because of timeout issue [Redmine: #92292] 
 		- 20190104@Joseph: Add param @IsIncludeTestLeague to exclude test leagues [Redmine: #107473]
@@ -24,18 +24,20 @@ AS
 					- Add new param @MoveBetsDay SMALLDATETIME
 		- 20201019@Kos: Change to use new table to check performance [RedmineID: #143310]
 		- 20210521@Mark: Support Saba Soccer PinGoal [RedmineID: #155335]
+		- 20211112@Kos: Exclude league and match which IsDeleted = 1 [RedmineID: #163733]
 */
 
 BEGIN
 	SET NOCOUNT ON
 
-	CREATE TABLE #TempAg (CustId INT, Currency INT, PRIMARY KEY (CustId, Currency))
+	CREATE TABLE #TempAg (CustId INT, Currency INT)
+
+	CREATE CLUSTERED INDEX IX_TempAg ON #TempAg (CustId);
 
 	DECLARE @DocHandler INT
 
 	BEGIN TRY
-		EXEC sp_xml_preparedocument @DocHandler OUTPUT
-			,@AgentList
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT, @AgentList
 	
 		INSERT INTO #TempAg (CustId, Currency)
 		SELECT AgentId, Currency 
@@ -73,6 +75,7 @@ BEGIN
 		SELECT leagueid
 		FROM bodb02.dbo.match WITH (NOLOCK)
 		WHERE eventdate BETWEEN @TempFromDate AND @t
+			AND IsDeleted = 0
 		GROUP BY leagueid
 	END
 
@@ -95,7 +98,7 @@ BEGIN
 			CROSS APPLY (
 				SELECT rwl.leagueid
 				FROM bodb_LicenseeReport.dbo.rptWinlostbyLeague AS rwl WITH (NOLOCK)
-					INNER JOIN #TempAg ta on rwl.recommend = ta.custid AND rwl.currency = ta.currency
+					INNER JOIN #TempAg AS ta on rwl.recommend = ta.custid
 				WHERE rwl.winlostdate = d.Date
 				GROUP BY rwl.leagueid
 			) AS rwl
@@ -105,7 +108,7 @@ BEGIN
 
 	SELECT
 		l.leagueid,
-		l.sporttype sportid,
+		l.sporttype AS sportid,
 		ISNULL(l.LeagueGroupID, 0) AS LeagueGroupID
 	FROM #tblLeagueid AS m
 		INNER JOIN bodb02.dbo.League AS l WITH (NOLOCK) ON m.LeagueId = l.leagueid
@@ -116,6 +119,7 @@ BEGIN
 		OR (@SportId = 1 AND l.sporttype = 1 AND l.LeagueGroupID NOT IN (113)))
 		AND l.sporttype < 100
 		AND l.leagueid > 0
+		AND l.IsDeleted = 0
 	GROUP BY l.leagueid,
 		l.sporttype,
 		l.LeagueGroupID
