@@ -2,6 +2,7 @@
 
 ALTER PROCEDURE [dbo].[Lrf_PlayerBettingStatistics]
 	@CustId			INT,
+	@ProductList	VARCHAR(500),
 	@FromDate		SMALLDATETIME,
 	@ToDate			SMALLDATETIME,
 	@MoveBetsDay	SMALLDATETIME,
@@ -20,14 +21,15 @@ AS
 		- 20200508@Vickie: Add new bet types for E-Sports 2.0 [RedmineID: #132548]
 		- 20201006@Kos: Fix issue divide by zero [RedmineID: #143061]
 		- 20210330@Hogan: Integrate Cricket AIO [RedmineID: #150386]
+		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
+					- Add new param @ProductList VARCHAR(500)
 
 	Param's Explanation:
-		+ @CustID: MemberId
-		+ @MoveBetsDay: The day we move tickets to bettrans14
-		+ @BalanceUpDay: archive tickets day
+		+ @ProductList: SB and all products grouped under SB (SB,SLT,...)
 
 	Sample: exec Lrf_PlayerBettingStatistics_xtest
 				@CustID=1026204,
+				@ProductList='SB,SLT',
 				@FromDate='2019-09-01 00:00:00',
 				@ToDate='2019-09-30 00:00:00',
 				@MoveBetsDay='2019-09-20 00:00:00',
@@ -37,11 +39,22 @@ AS
 BEGIN
 	SET NOCOUNT ON
 
+	DECLARE @BetType TABLE (BetType INT PRIMARY KEY, ProductCode VARCHAR(10))
+
+	DECLARE @IsTest BIT = 0
+
+	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
+
+	INSERT INTO @BetType (BetType, ProductCode)
+	SELECT DISTINCT BetType, ProductPrefix
+	FROM f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
+	WHERE BetType NOT IN (901, 902, 903, 904, 911, 912, 913, 914)
+
 	CREATE TABLE #tempStatistics
 	(
-		WinLost MONEY,
-		Stake MONEY,
-		StatusId TINYINT
+		WinLost		MONEY,
+		Stake		MONEY,
+		StatusId	TINYINT
 	)
 
 	DECLARE @TempFromDate	SMALLDATETIME,
@@ -62,23 +75,13 @@ BEGIN
 		INSERT INTO #tempStatistics
 		SELECT
 			(b.winlost - b.actual_stake) AS WinLost,
-			b.stake AS Stake,
-			b.statusID AS StatusId
+			b.stake,
+			b.statusID
 		FROM dbo.bettrans AS b WITH (NOLOCK)
+			INNER JOIN @BetType AS bt ON bt.BetType = b.bettype
 		WHERE
 			b.custid = @CustId
 			AND b.winlostdate BETWEEN @TempFromDate AND @TDate
-			AND
-				(
-					b.bettype <= 30
-					OR b.bettype BETWEEN 121 AND 999
-					OR b.Bettype BETWEEN 1301 AND 1399 --new tennis's bettypes
-					OR b.Bettype BETWEEN 9001 AND 9399 -- E-Sports 2.0
-					OR b.Bettype BETWEEN 9400 AND 9699 -- Cricket AIO
-					OR b.bettype = 38 -- bet builder
-				)
-			AND (b.bettype < 901 OR b.bettype > 904)
-			AND (b.bettype < 911 OR b.bettype > 914)
 			AND b.statusID IN (111, 112, 113, 101, 102, 103) -- Draw/Won/Lose/Rejected/Void/Refund
 			AND NOT EXISTS (SELECT 1 FROM bodb_licensee.dbo.LicenseeBATransaction_active AS ba WITH (NOLOCK) WHERE ba.TransID = b.transid)
 	END
@@ -98,27 +101,16 @@ BEGIN
 		INSERT INTO #tempStatistics
 		SELECT
 			(b.winlost - b.actual_stake) AS WinLost,
-			b.stake AS Stake,
-			b.statusID AS StatusId
+			b.stake,
+			b.statusID
 		FROM dbo.bettrans14 AS b WITH (NOLOCK)
+			INNER JOIN @BetType AS bt ON bt.BetType = b.bettype
 		WHERE
 			b.custid = @CustId
 			AND b.winlostdate BETWEEN @TempFromDate AND @TempToDate
-			AND
-				(
-					b.bettype <= 30
-					OR b.bettype BETWEEN 121 AND 999
-					OR b.Bettype BETWEEN 1301 AND 1399 --new tennis's bettypes
-					OR b.Bettype BETWEEN 9001 AND 9399 -- E-Sports 2.0
-					OR b.Bettype BETWEEN 9400 AND 9699 -- Cricket AIO
-					OR b.bettype = 38 -- bet builder
-				)
-			AND (b.bettype < 901 OR b.bettype > 904)
-			AND (b.bettype < 911 OR b.bettype > 914)
-			AND b.statusID IN (111, 112, 113, 101, 102, 103) -- Draw/Won/Lose/Rejected/Void/Refund
 			AND NOT EXISTS (SELECT 1 FROM bodb_licensee.dbo.LicenseeBATransaction_bk AS ba WITH (NOLOCK) WHERE ba.TransID = b.transid)
 	END
-	
+
 	IF @FDate < @BalanceUpDay
 	BEGIN
 		IF @TDate >= DATEADD(dd, -1, @BalanceUpDay)
@@ -129,31 +121,20 @@ BEGIN
 		INSERT INTO #tempStatistics
 		SELECT
 			(b.winlost - b.actual_stake) AS WinLost,
-			b.stake AS Stake,
-			b.statusID AS StatusId
+			b.stake,
+			b.statusID
 		FROM bodb_Archive.dbo.bettrans_bk AS b WITH (NOLOCK, INDEX = IX_custId)
+			INNER JOIN @BetType AS bt ON bt.BetType = b.bettype
 		WHERE
 			b.custid = @CustID
 			AND b.winlostdate BETWEEN @FDate AND @TempToDate
-			AND
-				(
-					b.bettype <= 30
-					OR b.bettype BETWEEN 121 AND 999
-					OR b.Bettype BETWEEN 1301 AND 1399 --new tennis's bettypes
-					OR b.Bettype BETWEEN 9001 AND 9399 -- E-Sports 2.0
-					OR b.Bettype BETWEEN 9400 AND 9699 -- Cricket AIO
-					OR b.bettype = 38 -- bet builder
-				)
-			AND (b.bettype < 901 OR b.bettype > 904)
-			AND (b.bettype < 911 OR b.bettype > 914)
-			AND b.statusID IN (111, 112, 113, 101, 102, 103) -- Draw/Won/Lose/Rejected/Void/Refund
-			AND NOT EXISTS (SELECT 1 FROM bodb_licensee.dbo.LicenseeBATransaction_bk ba WITH (NOLOCK) WHERE ba.TransID = b.transid)
+			AND NOT EXISTS (SELECT 1 FROM bodb_licensee.dbo.LicenseeBATransaction_bk AS ba WITH (NOLOCK) WHERE ba.TransID = b.transid)
 	END
 
-	SELECT ISNULL(SUM(CASE WHEN StatusId = 112 THEN 1 ELSE 0 END),0) AS Won,
-		ISNULL(SUM(CASE WHEN StatusId = 113 THEN 1 ELSE 0 END),0) AS Lose,
-		ISNULL(SUM(CASE WHEN StatusId = 111 THEN 1 ELSE 0 END),0) AS Draw,
-		ISNULL(SUM(CASE WHEN StatusId IN (101, 102, 103) THEN 1 ELSE 0 END),0) AS Cancelled
+	SELECT ISNULL(SUM(CASE WHEN StatusId = 112 THEN 1 ELSE 0 END), 0) AS Won,
+		ISNULL(SUM(CASE WHEN StatusId = 113 THEN 1 ELSE 0 END), 0) AS Lose,
+		ISNULL(SUM(CASE WHEN StatusId = 111 THEN 1 ELSE 0 END), 0) AS Draw,
+		ISNULL(SUM(CASE WHEN StatusId IN (101, 102, 103) THEN 1 ELSE 0 END), 0) AS Cancelled
 	FROM #tempStatistics
 
 	SELECT ISNULL(SUM(WinLost) / NULLIF(SUM(Stake), 0), 0) AS Margin,

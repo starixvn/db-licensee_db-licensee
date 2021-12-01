@@ -100,6 +100,7 @@ AS
 		- 20210525@Hogan: Integrate Vgaming [RedmineID: #151583]
 		- 20210630@Hogan: Integrate Creative Gaming [RedmineID: #152619]
 		- 20210831@Kos: Enhance performance [RedmineID: #160981]
+		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
 
 	Param's Explanation:
 		+ @ReportType: 1-Daily; 2-Monthly
@@ -232,6 +233,21 @@ BEGIN
 		SELECT DISTINCT SportType, ProductCode
 		FROM f_LicWinLoss_ProductSportType_Sel(@ProductList)
 		WHERE ProductCode NOT IN ('VS', 'VS2') AND SportType NOT IN (150, 173)
+
+		-- Group products under SB into SB
+		DECLARE @SBProductList VARCHAR(100) = 'SB'
+
+		SET @SBProductList = dbo.Lrf_f_GroupProductCode(@SBProductList)
+
+		UPDATE @BetType
+		SET ProductCode = 'SB'
+		WHERE ProductCode <> 'SB'
+			AND ',' + @SBProductList + ',' LIKE '%,' + ProductCode + ',%'
+
+		UPDATE @SportType
+		SET ProductCode = 'SB'
+		WHERE ProductCode <> 'SB'
+			AND ',' + @SBProductList + ',' LIKE '%,' + ProductCode + ',%'
 	END
 	---#2: End: Get SportBettypeMatrix
 

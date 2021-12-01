@@ -34,6 +34,7 @@ AS
 		- 20210119@Hogan: Integrate Four Guardians [RedmineID: #148100]
 		- 20210521@Mark: Support Saba Soccer PinGoal [RedmineID: #155335]
 		- 20210531@Hogan: Integrate Vgaming [RedmineID: #151583]
+		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
 
 	Param's Explanation:
 		+ @MoveBetsDay: The day we move tickets to bettrans14
@@ -115,11 +116,26 @@ BEGIN
 			AND Bettype NOT IN (SELECT BetType FROM @ExcludedBetType e WHERE e.ProductCode = ProductPrefix)
 
 	-- Insert Sport Type
-	INSERT INTO #SporttypeProduct (SportType, ProductCode )		-- Don't have ProductCode IN (BT, CO)
+	INSERT INTO #SporttypeProduct (SportType, ProductCode)		-- Don't have ProductCode IN (BT, CO)
 	SELECT DISTINCT SportType, ProductCode
 	FROM dbo.f_LicWinLoss_ProductSportType_Sel(@ProductList)
 	WHERE SportType NOT IN (150, 173)
 	-----End Get SportBettypeMatrix
+
+	-- Group products under SB into SB
+	DECLARE @SBProductList VARCHAR(100) = 'SB'
+
+	SET @SBProductList = dbo.Lrf_f_GroupProductCode(@SBProductList)
+
+	UPDATE #BettypeProduct
+	SET ProductCode = 'SB'
+	WHERE ProductCode <> 'SB'
+		AND ',' + @SBProductList + ',' LIKE '%,' + ProductCode + ',%'
+
+	UPDATE #SporttypeProduct
+	SET ProductCode = 'SB'
+	WHERE ProductCode <> 'SB'
+		AND ',' + @SBProductList + ',' LIKE '%,' + ProductCode + ',%'
 
 	CREATE TABLE #SabaVirtualSportsLeague (LeagueId INT, PRIMARY KEY (LeagueId))
 

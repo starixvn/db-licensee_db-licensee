@@ -1,7 +1,8 @@
 ﻿/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
-ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
-	@Username		VARCHAR(50)		= ''
+ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerTurnOver]
+	@AgentList		VARCHAR(MAX)
+	,@Username		VARCHAR(50)		= ''
 	,@Product		VARCHAR(MAX)
 	,@Bettype		VARCHAR(MAX)
 	,@CurrencyID	INT
@@ -18,7 +19,6 @@ ALTER PROCEDURE  [dbo].[Lrf_Rpt_CustomerTurnOver]
 	,@ShowLoss		BIT =  1
 	,@ShowDraw		BIT =  1
 	,@Duration		INT	=  0 OUTPUT
-	,@AgentList		VARCHAR(MAX)
 AS
 
 /*
@@ -86,18 +86,43 @@ AS
 		- 20210119@Hogan: Integrate Four Guardians [RedmineID: #148100]
 		- 20210304@Hogan: Offer Decimal Odds Only for Match [RedmineID: #151010]
 		- 20210420@Mark: Integrate Time Machine HDP [Redmine: #153302]
-		
+		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
+
 	Parameter's Explanation:
 		- @ReportBy:  1: daily, 2: monthly
 		- @FilterBy:  1: Win, 2: Loss, 3: Draw
-		- @SportID   : Sport type ID  
-		- @bettype   : Bet type ID  
+		- @SportID   : Sport type ID
+		- @bettype   : Bet type ID
 		- @MoveBetsDay: The day we move tickets to bettrans14
 */
 
 BEGIN
 	SET NOCOUNT ON
-	 
+
+	-- Get agent list
+	CREATE TABLE #Recommend (CustId INT, Currency INT)
+
+	CREATE CLUSTERED INDEX IX_Recommend ON #Recommend (CustId)
+
+	DECLARE @DocHandler INT
+
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT, @AgentList
+	
+		INSERT INTO #Recommend (CustId, Currency)
+		SELECT AgentId, Currency 
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId INT, Currency INT) AS Data
+
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
+
+	BEGIN CATCH
+		SELECT ErrCode = 100
+			,ErrMsg = N'Parameter invalid.'
+
+		RETURN
+	END CATCH;
+
 	DECLARE @ExcludedBetType TABLE (ProductCode VARCHAR (10), BetType INT)
 	-- Insert Excluded BetType
 	INSERT INTO @ExcludedBetType (ProductCode, BetType)
@@ -134,7 +159,7 @@ BEGIN
 		, BetEffective	MONEY
 		, playercomm	MONEY
 	)
-	
+
 	CREATE TABLE #tempCust 
 	(
 		custid			INT PRIMARY KEY
@@ -151,7 +176,7 @@ BEGIN
 		, username		VARCHAR(50)
 		, nickname		VARCHAR(50)
 	)
-	
+
 	CREATE TABLE #tempSumTotal 
 	(
 		whticket		TINYINT
@@ -162,7 +187,7 @@ BEGIN
 		, playercomm	MONEY
 		, totalrow		INT
 	)
-	
+
 	CREATE TABLE #tempBettrans
 	(
 		winlostdate		SMALLDATETIME
@@ -183,17 +208,17 @@ BEGIN
 		, currency		INT
 		, transdate		SMALLDATETIME
 	)
-	
+
 	SELECT VAL AS sportId 
 	INTO #ProductID 
 	FROM dbo.f_StringSplit(@Product,',')
 	OPTION(MAXRECURSION 0)
-	
+
 	IF NOT EXISTS (SELECT TOP 1 1 FROM #ProductID )
 	BEGIN
 		RETURN;
-	END 
-	
+	END
+
 	SELECT st AS StatusID
 	INTO #Status
 	FROM (
@@ -242,7 +267,7 @@ BEGIN
 	FROM dbo.f_GroupBettype3rd() bt
 		INNER JOIN #BettypeID b ON b.typeid =  bt.GroupTypeId
 	WHERE bt.bettype NOT IN (SELECT typeID FROM #BettypeID)
-	
+
 	SELECT 
 		b.typeID
 		, sp.ProductId
@@ -253,33 +278,6 @@ BEGIN
 
 	DROP TABLE #BettypeID
 
-	CREATE TABLE #recommend
-	(
-		CustID			INT,
-		Currency		INT
-	)
-
-	DECLARE @DocHandler INT
-
-	BEGIN TRY
-		EXEC sp_xml_preparedocument @DocHandler OUTPUT
-			,@AgentList
-	
-		INSERT INTO #recommend(CustId, Currency)
-		SELECT AgentId, Currency 
-		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
-
-		EXEC sp_xml_removedocument @DocHandler
-	END TRY
-
-	BEGIN CATCH
-		SELECT ErrCode = 100
-			,ErrMsg = N'Parameter invalid.'
-
-		RETURN
-	END CATCH;
-	
-	
 	SELECT @Username 	=  LTRIM(RTRIM(ISNULL(@Username,'')))
 		, @tempFromDate =  CASE WHEN @FromDate <= @MoveBetsDay THEN DATEADD(DAY,1,@MoveBetsDay)
 								ELSE @FromDate
@@ -289,7 +287,7 @@ BEGIN
 							END
 		, @searchCust	= 0
 		, @Duration		= 0
-	
+
 	IF LEN(@Username) > 0
 	BEGIN
 		INSERT INTO #tempCust
@@ -307,7 +305,7 @@ BEGIN
 		OPTION(RECOMPILE)
 
 		IF(@@ROWCOUNT = 0) GOTO OutputResult;
-		
+
 		DELETE rec
 		FROM #recommend rec
 			LEFT JOIN (SELECT DISTINCT recommend FROM #tempCust) c
@@ -335,23 +333,29 @@ BEGIN
 		OPTION(RECOMPILE)
 
 		INSERT INTO #tempBettrans
-		SELECT CASE WHEN @ReportBy =  2 THEN DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) 
-						ELSE b.winlostdate
-					END AS winlostdate 
+		SELECT CASE
+					WHEN @ReportBy =  2 THEN DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) 
+					ELSE b.winlostdate
+			END AS winlostdate 
 			, b.custid
 			, recommend
-			, CASE WHEN bt.EventType = 0 THEN
-					CASE WHEN b.bettype = 2799 THEN p.sporttype ELSE 1 END
-			  ELSE 0 END AS sporttype
+			, CASE
+				WHEN bt.EventType = 0 THEN CASE
+												WHEN b.bettype = 2799 THEN p.sporttype
+												WHEN bt.ProductID = 63 THEN b.matchid
+												ELSE 1
+											END
+				ELSE 0
+			END AS SportType
 			, b.matchid
 			, b.bettype
 			, b.oddsid
 			, (b.winlost - b.actual_stake) AS winlost
-			, ABS(b.winlost - b.actual_stake) BetEffective
+			, ABS(b.winlost - b.actual_stake) AS BetEffective
 			, b.stake
 			, b.playercomm
 			, b.Odds
-			, b.oddstype 
+			, b.oddstype
 			, bt.EventType
 			, bt.ProductID
 			, rec.Currency
@@ -396,16 +400,15 @@ BEGIN
 		-- CREATE INDEXERS
 		CREATE CLUSTERED 	INDEX [CIX_tempBettrans] 			ON #tempBettrans (custid, winlostdate)
 		CREATE NONCLUSTERED INDEX IDX_tempBettrans_EventType 	ON #tempBettrans(matchid, EventType)
-		
+
 		IF @searchCust = 1
 		BEGIN
 			DELETE b
 			FROM #tempBettrans b
-				LEFT JOIN #tempCust c
-				ON b.custid = c.custid
+				LEFT JOIN #tempCust c ON b.custid = c.custid
 			WHERE c.custid IS NULL
 		END
-		
+
 		--FILTER odds value
 		IF @odds > 0
 		BEGIN
@@ -414,51 +417,42 @@ BEGIN
 			WHERE b.odds < @odds
 		END
 		
-		IF(EXISTS(SELECT TOP 1 1 FROM #tempBettrans WHERE EventType = 1 ))
+		IF EXISTS(SELECT TOP(1) 1 FROM #tempBettrans WHERE EventType = 1)
 		BEGIN
 			UPDATE b
 			SET b.sporttype = m.sporttype
 			FROM #tempBettrans b
-				INNER JOIN dbo.match m WITH(NOLOCK)
-				ON b.matchid = m.matchid
+				INNER JOIN dbo.match m WITH (NOLOCK) ON b.matchid = m.matchid
 			WHERE b.EventType = 1
-				AND m.eventdate BETWEEN @tempFromDate AND @ToDate 
+				AND m.eventdate BETWEEN @tempFromDate AND @ToDate
 		END
 
-		IF(EXISTS(SELECT TOP 1 1 FROM #tempBettrans WHERE EventType = 2 ))
+		IF EXISTS(SELECT TOP(1) 1 FROM #tempBettrans WHERE EventType = 2)
 		BEGIN
 			UPDATE b
 			SET b.sporttype = l.sporttype
 			FROM #tempBettrans b
-				INNER JOIN dbo.outright o with(nolock) 
-				ON b.matchid 		= o.orid 
-				INNER JOIN dbo.league l with(nolock) 
-				ON o.leagueid 		= l.leagueid
+				INNER JOIN dbo.outright o WITH (NOLOCK) ON b.matchid = o.orid
+				INNER JOIN dbo.league l WITH (NOLOCK) ON o.leagueid = l.leagueid
 			WHERE b.EventType = 2
 				AND o.eventdate BETWEEN @tempFromDate AND @ToDate 
 		END
 
-		IF(EXISTS(SELECT TOP 1 1 FROM #tempBettrans WHERE EventType = 3 ))
+		IF EXISTS(SELECT TOP(1) 1 FROM #tempBettrans WHERE EventType = 3 )
 		BEGIN
 			UPDATE b
 			SET b.sporttype = r.sporttype
 			FROM #tempBettrans b
-				INNER JOIN dbo.VSOutright  vs WITH (NOLOCK)
-				ON b.oddsid			= vs.Orid
-				INNER JOIN dbo.VSRaceInfo r WITH (NOLOCK) 
-				ON vs.EventID  		= r.EventID
+				INNER JOIN dbo.VSOutright AS vs WITH (NOLOCK) ON b.oddsid = vs.Orid
+				INNER JOIN dbo.VSRaceInfo AS r WITH (NOLOCK) ON vs.EventID = r.EventID
 			WHERE b.EventType = 3
 				AND vs.eventdate BETWEEN @tempFromDate AND @ToDate 
-		END		
+		END
 
 		--FILTER product
 		DELETE b
 		FROM #tempBettrans b
-		WHERE NOT EXISTS (
-			SELECT 1
-			FROM #ProductID p
-			WHERE p.sportId = b.sporttype
-		)
+		WHERE NOT EXISTS (SELECT 1 FROM #ProductID p WHERE p.sportId = b.sporttype)
 	END
 
 	GET_SUMTOTAL:
@@ -478,14 +472,15 @@ BEGIN
 	END
 
 	-- CHECK sumtotal
-	IF(NOT EXISTS (SELECT TOP 1 1 FROM #tempSumTotal WHERE betcount > 0 )) GOTO OutputResult;
+	IF NOT EXISTS (SELECT TOP(1) 1 FROM #tempSumTotal WHERE betcount > 0 )
+		GOTO OutputResult;
 	
 	----------------------------------------
 	-----------PAGING CONFIG ---------------
 	----------------------------------------
 	GET_PAGING:
 	BEGIN
-		IF(@ReportBy = 1)
+		IF @ReportBy = 1
 		BEGIN
 			EXEC [dbo].[Lrf_Rpt_CustomerTurnOver_Pagination]
 				@searchCust 	= @searchCust
@@ -502,7 +497,7 @@ BEGIN
 				,@totalBettrans	= @totalBettrans OUTPUT
 				,@totalSumRpt	= @totalSumRpt OUTPUT
 		END
-		ELSE IF(@ReportBy = 2)
+		ELSE IF @ReportBy = 2
 		BEGIN
 			EXEC [dbo].[Lrf_Rpt_CustomerTurnOver_MonthlyPagination]
 				@searchCust 	= @searchCust
