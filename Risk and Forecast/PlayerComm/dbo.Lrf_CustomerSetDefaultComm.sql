@@ -27,6 +27,7 @@ AS
 		- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012] 
 		- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048] 
 		- 20210817@Johnson: Add VGaming [redmine:#159696]
+		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 		
 	Param's Explanation:
 */ 
@@ -205,8 +206,7 @@ BEGIN
 				,@IsUpdateWMCasino		= @IsUpdateWMCasino		
 				,@IsUpdateBigGaming		= @IsUpdateBigGaming		
 				,@IsUpdateJoker			= @IsUpdateJoker			
-				,@IsUpdateGDG			= @IsUpdateGDG			
-				,@IsUpdateSportsLottery	= @IsUpdateSportsLottery
+				,@IsUpdateGDG			= @IsUpdateGDG		
 				,@IsUpdateHabanero		= @IsUpdateHabanero
 				,@IsUpdateVGaming		= @IsUpdateVGaming		
 				

@@ -36,6 +36,7 @@ AS
 		- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048]  
 		- 20210817@Johnson: Add VGaming [redmine:#159696]
 		- 20210922@Elodie: Hotfix-RNG Casino player comm isn't removed in CasinoAdmin DB when deleting a group comm [Redmine: #161802]
+		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 	Param's Explanation:
 
 */
@@ -80,7 +81,6 @@ BEGIN
 		@BigGamingComm		DECIMAL(9,8),
 		@JokerComm			DECIMAL(9,8),
 		@GDGComm			DECIMAL(9,8),
-		@SportsLotteryComm	DECIMAL(9,8),
 		@HabaneroComm		DECIMAL(9,8),
 		@VGamingComm		DECIMAL(9,8),
 
@@ -140,7 +140,6 @@ BEGIN
 			@BigGamingComm		= BigGamingComm,
 			@JokerComm			= JokerComm,
 			@GDGComm			= GDGComm,
-			@SportsLotteryComm	= SportsLotteryComm,
 			@HabaneroComm		= HabaneroComm,
 			@VGamingComm		= VGamingComm,
 
@@ -292,15 +291,13 @@ BEGIN
 					@IsUpdateWMCasino		= 1,		
 					@IsUpdateBigGaming		= 1,		
 					@IsUpdateJoker			= 1,			
-					@IsUpdateGDG			= 1,			
-					@IsUpdateSportsLottery	= 1,
+					@IsUpdateGDG			= 1,
 					@IsUpdateHabanero		= 1,
 					@IsUpdateVGaming		= 1,					
 					@WMCasinoComm				= 0	,	
 					@BigGamingComm				= 0,		
 					@JokerComm					= 0,			
-					@GDGComm					= 0,			
-					@SportsLotteryComm			= 0,	
+					@GDGComm					= 0,
 					@HabaneroComm				= 0,
 					@VGamingComm				= 0,					
 					
@@ -354,7 +351,6 @@ BEGIN
 		'BigGamingComm="'+ COALESCE(CAST(@BigGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'JokerComm="'+ COALESCE(CAST(@JokerComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'GDGComm="'+ COALESCE(CAST(@GDGComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'SportsLotteryComm="'+ COALESCE(CAST(@SportsLotteryComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'HabaneroComm="'+ COALESCE(CAST(@HabaneroComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'VGamingComm="'+ COALESCE(CAST(@VGamingComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		
@@ -399,7 +395,6 @@ BEGIN
 		'BigGamingComm="'+ COALESCE(CAST(@BigGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'JokerComm="'+ COALESCE(CAST(@JokerComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'GDGComm="'+ COALESCE(CAST(@GDGComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'SportsLotteryComm="'+ COALESCE(CAST(@SportsLotteryComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'HabaneroComm="'+ COALESCE(CAST(@HabaneroComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'VGamingComm="'+ COALESCE(CAST(@VGamingComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		

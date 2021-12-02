@@ -33,6 +33,7 @@ Revisions:
 	- 20150121@Jim: return more @OddsGroup param
 	- 20150630@Kathy: add default value for param @OddsGroup 
 	- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
+	- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 	
 Param's Explanation:
 
@@ -147,9 +148,9 @@ BEGIN
 	--update Group commission
 	UPDATE dep_custsetting WITH (ROWLOCK, UPDLOCK)
 	SET
-		discount = @GroupComm,
-		adiscount = @GroupComm,
-		sdiscount = @GroupComm
+		discount =  CASE WHEN bettype = 2 AND sporttype = 2 THEN discount ELSE @GroupComm END,
+		adiscount = CASE WHEN bettype = 2 AND sporttype = 2 THEN adiscount ELSE @GroupComm END,
+		sdiscount = CASE WHEN bettype = 2 AND sporttype = 2 THEN sdiscount ELSE @GroupComm END
 	FROM dep_custsetting cs INNER JOIN custinfo c WITH (NOLOCK) ON cs.custid = c.custid
 	WHERE 
 		c.custid=@custid

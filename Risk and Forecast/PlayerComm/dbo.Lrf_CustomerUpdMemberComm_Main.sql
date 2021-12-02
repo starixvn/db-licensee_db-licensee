@@ -47,14 +47,12 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Main]
 	,@IsUpdateBigGaming		BIT = 0
 	,@IsUpdateJoker			BIT = 0
 	,@IsUpdateGDG			BIT = 0
-	,@IsUpdateSportsLottery	BIT = 0
 	,@IsUpdateHabanero		BIT = 0
 	,@IsUpdateVGaming 		BIT = 0
 	,@WMCasinoComm		DECIMAL(9,8) = 0
 	,@BigGamingComm		DECIMAL(9,8) = 0
 	,@JokerComm			DECIMAL(9,8) = 0
 	,@GDGComm			DECIMAL(9,8) = 0
-	,@SportsLotteryComm	DECIMAL(9,8) = 0
 	,@HabaneroComm		DECIMAL(9,8) = 0
 	,@VGamingComm		DECIMAL(9,8) = 0
 AS
@@ -82,6 +80,7 @@ AS
 		- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012] 
 		- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048]  
 		- 20210816@Johnson: Add VGaming [redmine: #159696]
+		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 	Param's Explanation:
 
 */
@@ -126,7 +125,6 @@ BEGIN
 			,@BigGamingComm_Group		DECIMAL(9,8) = 0
 			,@JokerComm_Group			DECIMAL(9,8) = 0
 			,@GDGComm_Group				DECIMAL(9,8) = 0
-			,@SportsLotteryComm_Group	DECIMAL(9,8) = 0
 			,@HabaneroComm_Group		DECIMAL(9,8) = 0
 			,@VGamingComm_Group			DECIMAL(9,8) = 0
 
@@ -150,7 +148,6 @@ BEGIN
 		OR @IsUpdateBigGaming = 1	
 		OR @IsUpdateJoker  = 1	
 		OR @IsUpdateGDG  = 1	
-		OR @IsUpdateSportsLottery  = 1	
 		OR @IsUpdateHabanero  = 1
 		OR @IsUpdateVGaming  = 1		
 
@@ -183,7 +180,6 @@ BEGIN
 			,@BigGamingComm_Group = MAX(CASE WHEN BetType = 3501 THEN playerdiscount ELSE 0 END)
 			,@JokerComm_Group = MAX(CASE WHEN BetType = 6401 THEN playerdiscount ELSE 0 END)
 			,@GDGComm_Group = MAX(CASE WHEN BetType = 5701 THEN playerdiscount ELSE 0 END)
-			,@SportsLotteryComm_Group = MAX(CASE WHEN BetType = 3611 THEN playerdiscount ELSE 0 END)
 			,@HabaneroComm_Group = MAX(CASE WHEN BetType = 7001 THEN playerdiscount ELSE 0 END)
 			,@VGamingComm_Group = MAX(CASE WHEN BetType = 3801 THEN playerdiscount ELSE 0 END)
 		FROM dbo.Dep_CustDiscountGroupSetting_Member grp WITH(NOLOCK)
@@ -192,7 +188,7 @@ BEGIN
 								--phase 3
 							,211, 245,165,200,244,232 
 							--phase 4
-							,233,239,234,236,169,238
+							,233,239,234,236,238
 							,171
 							)
 	END	
@@ -280,21 +276,18 @@ BEGIN
 			,@IsUpdateBigGaming		= @IsUpdateBigGaming		
 			,@IsUpdateJoker			= @IsUpdateJoker			
 			,@IsUpdateGDG			= @IsUpdateGDG			
-			,@IsUpdateSportsLottery	= @IsUpdateSportsLottery
 			,@IsUpdateHabanero		= @IsUpdateHabanero	
 			,@IsUpdateVGaming		= @IsUpdateVGaming				
 			,@WMCasinoComm				= @WMCasinoComm		
 			,@BigGamingComm				= @BigGamingComm		
 			,@JokerComm					= @JokerComm			
 			,@GDGComm					= @GDGComm			
-			,@SportsLotteryComm			= @SportsLotteryComm	
 			,@HabaneroComm				= @HabaneroComm		
 			,@VGamingComm				= @VGamingComm		
 			,@WMCasinoComm_Group		= @WMCasinoComm_Group		
 			,@BigGamingComm_Group		= @BigGamingComm_Group		
 			,@JokerComm_Group			= @JokerComm_Group			
-			,@GDGComm_Group				= @GDGComm_Group				
-			,@SportsLotteryComm_Group	= @SportsLotteryComm_Group	
+			,@GDGComm_Group				= @GDGComm_Group		
 			,@HabaneroComm_Group		= @HabaneroComm_Group
 			,@VGamingComm_Group			= @VGamingComm_Group			
 

@@ -19,6 +19,7 @@ AS
 	- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012] 
 	- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048] 
 	- 20210813@Johnson: Add VGaming [redmine: #159696]
+		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 */  
 BEGIN  
 	SET NOCOUNT ON;  
@@ -52,8 +53,7 @@ BEGIN
 		ISNULL(WMCasinoComm,0) AS WMCasinoComm,
 		ISNULL(BigGamingComm,0) AS BigGamingComm,	
 		ISNULL(JokerComm,0) AS  JokerComm,	
-		ISNULL(GDGComm,0) AS GDGComm,	
-		ISNULL(SportsLotteryComm,0) AS SportsLotteryComm,	
+		ISNULL(GDGComm,0) AS GDGComm,		
 		ISNULL(HabaneroComm,0) AS HabaneroComm,
 		ISNULL(VGamingComm,0) AS VGamingComm
 	FROM dbo.LicenseeCustComm lc WITH (NOLOCK)					
