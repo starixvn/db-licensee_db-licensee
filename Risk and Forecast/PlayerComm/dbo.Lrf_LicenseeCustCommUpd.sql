@@ -54,14 +54,12 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeCustCommUpd]
 	@IsUpdateBigGaming		BIT = 0,
 	@IsUpdateJoker			BIT = 0,
 	@IsUpdateGDG			BIT = 0,
-	@IsUpdateSportsLottery	BIT = 0,
 	@IsUpdateHabanero		BIT = 0,
 	@IsUpdateVGaming		BIT = 0,
 	@WMCasinoComm		DECIMAL(9,8) = 0,
 	@BigGamingComm		DECIMAL(9,8) = 0,
 	@JokerComm			DECIMAL(9,8) = 0,
 	@GDGComm			DECIMAL(9,8) = 0,
-	@SportsLotteryComm	DECIMAL(9,8) = 0,
 	@HabaneroComm		DECIMAL(9,8) = 0,
 	@VGamingComm		DECIMAL(9,8) = 0,
 
@@ -97,6 +95,7 @@ AS
 		- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012]   
 		- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048]
 		- 20210823@Johnson: Add VGaming [redmine: #159696]
+		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 	Param's Explanation:
 */ 
 BEGIN
@@ -188,14 +187,12 @@ BEGIN
 		,@IsUpdateBigGaming		= @IsUpdateBigGaming		
 		,@IsUpdateJoker			= @IsUpdateJoker			
 		,@IsUpdateGDG			= @IsUpdateGDG			
-		,@IsUpdateSportsLottery	= @IsUpdateSportsLottery
 		,@IsUpdateHabanero		= @IsUpdateHabanero		
 		,@IsUpdateVGaming		= @IsUpdateVGaming		
 		,@WMCasinoComm				= @WMCasinoComm		
 		,@BigGamingComm				= @BigGamingComm		
 		,@JokerComm					= @JokerComm			
 		,@GDGComm					= @GDGComm			
-		,@SportsLotteryComm			= @SportsLotteryComm	
 		,@HabaneroComm				= @HabaneroComm	
 		,@VGamingComm				= @VGamingComm	
 

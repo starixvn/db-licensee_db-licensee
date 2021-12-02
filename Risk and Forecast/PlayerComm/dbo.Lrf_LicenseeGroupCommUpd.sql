@@ -53,14 +53,12 @@ CREATE PROCEDURE [dbo].[Lrf_LicenseeGroupCommUpd]
 	@IsUpdateBigGaming		BIT = 0,
 	@IsUpdateJoker			BIT = 0,
 	@IsUpdateGDG			BIT = 0,
-	@IsUpdateSportsLottery	BIT = 0,
 	@IsUpdateHabanero		BIT = 0,
 	@IsUpdateVGaming		BIT = 0,
 	@WMCasinoComm		DECIMAL(9,8) = 0,
 	@BigGamingComm		DECIMAL(9,8) = 0,
 	@JokerComm			DECIMAL(9,8) = 0,
 	@GDGComm			DECIMAL(9,8) = 0,
-	@SportsLotteryComm	DECIMAL(9,8) = 0,
 	@HabaneroComm		DECIMAL(9,8) = 0,
 	@VGamingComm		DECIMAL(9,8) = 0,
 	
@@ -154,7 +152,6 @@ BEGIN
 		,@BigGamingComm_Old		DECIMAL(9,8) = 0
 		,@JokerComm_Old			DECIMAL(9,8) = 0
 		,@GDGComm_Old			DECIMAL(9,8) = 0
-		,@SportsLotteryComm_Old	DECIMAL(9,8) = 0
 		,@HabaneroComm_Old		DECIMAL(9,8) = 0
 		,@VGamingComm_Old		DECIMAL(9,8) = 0
 	
@@ -194,7 +191,6 @@ BEGIN
 		OR @BigGamingComm > 0.15
 		OR @JokerComm > 0.15
 		OR @GDGComm > 0.15
-		OR @SportsLotteryComm > 0.15	
 		OR @HabaneroComm > 0.15
 		OR @VGamingComm > 0.15
 	BEGIN
@@ -257,7 +253,6 @@ BEGIN
 			,@BigGamingComm_Old		= BigGamingComm
 			,@JokerComm_Old			= JokerComm
 			,@GDGComm_Old			= GDGComm
-			,@SportsLotteryComm_Old	= SportsLotteryComm
 			,@HabaneroComm_Old		= HabaneroComm
 			,@VGamingComm_Old 		= VGamingComm
 
@@ -354,7 +349,6 @@ BEGIN
 			@IsUpdateBigGaming  = CASE WHEN @IsUpdateBigGaming = 1 AND @BigGamingComm_Old <> @BigGamingComm  THEN 1 ELSE 0 END,	
 			@IsUpdateJoker  = CASE WHEN @IsUpdateJoker = 1 AND @JokerComm_Old <> @JokerComm  THEN 1 ELSE 0 END,	
 			@IsUpdateGDG  = CASE WHEN @IsUpdateGDG = 1 AND @GDGComm_Old <> @GDGComm  THEN 1 ELSE 0 END,	
-			@IsUpdateSportsLottery  = CASE WHEN @IsUpdateSportsLottery = 1 AND @SportsLotteryComm_Old <> @SportsLotteryComm  THEN 1 ELSE 0 END,
 			@IsUpdateHabanero  = CASE WHEN @IsUpdateHabanero = 1 AND @HabaneroComm_Old <> @HabaneroComm  THEN 1 ELSE 0 END,
 			@IsUpdateVGaming  = CASE WHEN @IsUpdateVGaming = 1 AND @VGamingComm_Old <> @VGamingComm  THEN 1 ELSE 0 END
 		
@@ -384,7 +378,6 @@ BEGIN
 			OR @IsUpdateBigGaming		= 1
 			OR @IsUpdateJoker			= 1
 			OR @IsUpdateGDG				= 1
-			OR @IsUpdateSportsLottery	= 1
 			OR @IsUpdateHabanero		= 1
 			OR @IsUpdateVGaming			= 1
 			)
@@ -421,7 +414,6 @@ BEGIN
 					,BigGamingComm = CASE WHEN @IsUpdateBigGaming = 1 THEN @BigGamingComm ELSE BigGamingComm END
 					,JokerComm = CASE WHEN @IsUpdateJoker = 1 THEN @JokerComm ELSE JokerComm END
 					,GDGComm = CASE WHEN @IsUpdateGDG = 1 THEN @GDGComm ELSE GDGComm END
-					,SportsLotteryComm = CASE WHEN @IsUpdateSportsLottery = 1 THEN @SportsLotteryComm ELSE SportsLotteryComm END
 					,HabaneroComm = CASE WHEN @IsUpdateHabanero = 1 THEN @HabaneroComm ELSE HabaneroComm END
 					,VGamingComm = CASE WHEN @IsUpdateVGaming = 1 THEN @VGamingComm ELSE VGamingComm END
 					
@@ -492,15 +484,13 @@ BEGIN
 					,@IsUpdateWMCasino		= @IsUpdateWMCasino		
 					,@IsUpdateBigGaming		= @IsUpdateBigGaming		
 					,@IsUpdateJoker			= @IsUpdateJoker			
-					,@IsUpdateGDG			= @IsUpdateGDG			
-					,@IsUpdateSportsLottery	= @IsUpdateSportsLottery
+					,@IsUpdateGDG			= @IsUpdateGDG		
 					,@IsUpdateHabanero		= @IsUpdateHabanero
 					,@IsUpdateVGaming		= @IsUpdateVGaming				
 					,@WMCasinoComm				= @WMCasinoComm		
 					,@BigGamingComm				= @BigGamingComm		
 					,@JokerComm					= @JokerComm			
 					,@GDGComm					= @GDGComm			
-					,@SportsLotteryComm			= @SportsLotteryComm	
 					,@HabaneroComm				= @HabaneroComm		
 					,@VGamingComm				= @VGamingComm		
 					,@IP=@IP
@@ -561,7 +551,6 @@ BEGIN
 			'BigGamingComm="'+ COALESCE(CAST(@BigGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
 			'JokerComm="'+ COALESCE(CAST(@JokerComm as VARCHAR(50)),SPACE(1)) + '" '+
 			'GDGComm="'+ COALESCE(CAST(@GDGComm as VARCHAR(50)),SPACE(1)) + '" '+
-			'SportsLotteryComm="'+ COALESCE(CAST(@SportsLotteryComm as VARCHAR(50)),SPACE(1)) + '" '+
 			'HabaneroComm="'+ COALESCE(CAST(@HabaneroComm as VARCHAR(50)),SPACE(1)) + '" '+
 			'VGamingComm="'+ COALESCE(CAST(@VGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
 
@@ -607,7 +596,6 @@ BEGIN
 			'BigGamingComm="'+ COALESCE(CAST(@BigGamingComm_old as VARCHAR(50)),SPACE(1)) + '" '+
 			'JokerComm="'+ COALESCE(CAST(@JokerComm_old as VARCHAR(50)),SPACE(1)) + '" '+
 			'GDGComm="'+ COALESCE(CAST(@GDGComm_old as VARCHAR(50)),SPACE(1)) + '" '+
-			'SportsLotteryComm="'+ COALESCE(CAST(@SportsLotteryComm_old as VARCHAR(50)),SPACE(1)) + '" '+
 			'HabaneroComm="'+ COALESCE(CAST(@HabaneroComm_old as VARCHAR(50)),SPACE(1)) + '" '+
 			'VGamingComm="'+ COALESCE(CAST(@VGamingComm_Old as VARCHAR(50)),SPACE(1)) + '" '+
 		

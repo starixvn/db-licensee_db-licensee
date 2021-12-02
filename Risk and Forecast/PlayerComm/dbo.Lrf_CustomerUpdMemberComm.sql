@@ -61,14 +61,12 @@ CREATE PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm]
 	@IsUpdateBigGaming		BIT = 0,
 	@IsUpdateJoker			BIT = 0,
 	@IsUpdateGDG			BIT = 0,
-	@IsUpdateSportsLottery	BIT = 0,
 	@IsUpdateHabanero		BIT = 0,
 	@IsUpdateVgaming		BIT = 0,
 	@WMCasinoComm		DECIMAL(9,8) = 0,
 	@BigGamingComm		DECIMAL(9,8) = 0,
 	@JokerComm			DECIMAL(9,8) = 0,
 	@GDGComm			DECIMAL(9,8) = 0,
-	@SportsLotteryComm	DECIMAL(9,8) = 0,
 	@HabaneroComm		DECIMAL(9,8) = 0,
 	@VGamingComm		DECIMAL(9,8) = 0,
 
@@ -113,6 +111,7 @@ AS
 		- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012] 
 		- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048]   
 		- 20210813@Johnson: Add VGaming [redmine: #159696]
+		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 		
 	Param's Explanation:
 		1. To update a member/batch members without GroupCommID
@@ -195,7 +194,6 @@ BEGIN
 			,@BigGamingComm		= BigGamingComm
 			,@JokerComm			= JokerComm
 			,@GDGComm			= GDGComm
-			,@SportsLotteryComm	= SportsLotteryComm
 			,@HabaneroComm		= HabaneroComm
 			,@VGamingComm		= VGamingComm
 			
@@ -232,7 +230,6 @@ BEGIN
 		,@BigGamingComm = ISNULL(@BigGamingComm,0)
 		,@JokerComm = ISNULL(@JokerComm,0)
 		,@GDGComm = ISNULL(@GDGComm,0)	
-		,@SportsLotteryComm = ISNULL(@SportsLotteryComm,0)
 		,@HabaneroComm = ISNULL(@HabaneroComm,0)
 		,@VGamingComm = ISNULL(@VGamingComm,0)
 
@@ -259,8 +256,7 @@ BEGIN
 		OR @WMCasinoComm > 0.15
 		OR @BigGamingComm > 0.15
 		OR @JokerComm > 0.15
-		OR @GDGComm > 0.15
-		OR @SportsLotteryComm > 0.15	
+		OR @GDGComm > 0.15	
 		OR @HabaneroComm > 0.15
 		OR @VGamingComm > 0.15
 	BEGIN
@@ -359,17 +355,14 @@ BEGIN
 				,@IsUpdateBigGaming		= @IsUpdateBigGaming		
 				,@IsUpdateJoker			= @IsUpdateJoker			
 				,@IsUpdateGDG			= @IsUpdateGDG			
-				,@IsUpdateSportsLottery	= @IsUpdateSportsLottery
 				,@IsUpdateHabanero		= @IsUpdateHabanero	
 				,@IsUpdateVGaming		= @IsUpdateVGaming		
 				,@WMCasinoComm				= @WMCasinoComm		
 				,@BigGamingComm				= @BigGamingComm		
 				,@JokerComm					= @JokerComm			
 				,@GDGComm					= @GDGComm			
-				,@SportsLotteryComm			= @SportsLotteryComm	
-				,@HabaneroComm				= @HabaneroComm	
-				,@VGamingComm				= @VGamingComm			
-				
+				,@HabaneroComm				= @HabaneroComm		
+				,@VGamingComm				= @VGamingComm	
 		END		
 		ELSE
 		BEGIN	
@@ -442,14 +435,12 @@ BEGIN
 					,@IsUpdateBigGaming		= @IsUpdateBigGaming		
 					,@IsUpdateJoker			= @IsUpdateJoker			
 					,@IsUpdateGDG			= @IsUpdateGDG			
-					,@IsUpdateSportsLottery	= @IsUpdateSportsLottery
 					,@IsUpdateHabanero		= @IsUpdateHabanero		
 					,@IsUpdateVGaming		= @IsUpdateVGaming
 					,@WMCasinoComm				= @WMCasinoComm		
 					,@BigGamingComm				= @BigGamingComm		
 					,@JokerComm					= @JokerComm			
 					,@GDGComm					= @GDGComm			
-					,@SportsLotteryComm			= @SportsLotteryComm	
 					,@HabaneroComm				= @HabaneroComm
 					,@VGamingComm				= @VGamingComm					
 			END					
@@ -514,14 +505,12 @@ BEGIN
 					,@IsUpdateBigGaming		= @IsUpdateBigGaming		
 					,@IsUpdateJoker			= @IsUpdateJoker			
 					,@IsUpdateGDG			= @IsUpdateGDG			
-					,@IsUpdateSportsLottery	= @IsUpdateSportsLottery
 					,@IsUpdateHabanero		= @IsUpdateHabanero	
 					,@IsUpdateVGaming		= @IsUpdateVGaming						
 					,@WMCasinoComm				= @WMCasinoComm		
 					,@BigGamingComm				= @BigGamingComm		
 					,@JokerComm					= @JokerComm			
 					,@GDGComm					= @GDGComm			
-					,@SportsLotteryComm			= @SportsLotteryComm	
 					,@HabaneroComm				= @HabaneroComm
 					,@VGamingComm				= @VGamingComm					
 			END
@@ -564,7 +553,6 @@ BEGIN
 		'BigGamingComm="'+ COALESCE(CAST(@BigGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'JokerComm="'+ COALESCE(CAST(@JokerComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'GDGComm="'+ COALESCE(CAST(@GDGComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'SportsLotteryComm="'+ COALESCE(CAST(@SportsLotteryComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'HabaneroComm="'+ COALESCE(CAST(@HabaneroComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'VGamingComm="'+ COALESCE(CAST(@VGamingComm as VARCHAR(50)),SPACE(1)) + '" '
 
@@ -641,7 +629,6 @@ BEGIN
 							'BigGamingComm="'+ COALESCE(CAST(ISNULL(lcc.BigGamingComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
 							'JokerComm="'+ COALESCE(CAST(ISNULL(lcc.JokerComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
 							'GDGComm="'+ COALESCE(CAST(ISNULL(lcc.GDGComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
-							'SportsLotteryComm="'+ COALESCE(CAST(ISNULL(lcc.SportsLotteryComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
 							'HabaneroComm="'+ COALESCE(CAST(ISNULL(lcc.HabaneroComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
 							'VGamingComm="'+ COALESCE(CAST(ISNULL(lcc.VGamingComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
 
@@ -745,15 +732,13 @@ BEGIN
 					,@IsUpdateWMCasino		= @IsUpdateWMCasino		
 					,@IsUpdateBigGaming		= @IsUpdateBigGaming		
 					,@IsUpdateJoker			= @IsUpdateJoker			
-					,@IsUpdateGDG			= @IsUpdateGDG			
-					,@IsUpdateSportsLottery	= @IsUpdateSportsLottery
+					,@IsUpdateGDG			= @IsUpdateGDG		
 					,@IsUpdateHabanero		= @IsUpdateHabanero		
 					,@IsUpdateVGaming		= @IsUpdateVGaming		
 					,@WMCasinoComm				= @WMCasinoComm		
 					,@BigGamingComm				= @BigGamingComm		
 					,@JokerComm					= @JokerComm			
 					,@GDGComm					= @GDGComm			
-					,@SportsLotteryComm			= @SportsLotteryComm	
 					,@HabaneroComm				= @HabaneroComm	
 					,@VGamingComm				= @VGamingComm	
 			END TRY

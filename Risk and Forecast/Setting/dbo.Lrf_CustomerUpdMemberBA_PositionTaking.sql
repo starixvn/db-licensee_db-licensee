@@ -59,7 +59,8 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberBA_PositionTaking]
  @UserID INT,   
  @IsAdmin BIT = 0,  
  @IP VARCHAR(40)='',   
- @Language VARCHAR(2)= 'E',   
+ @Language VARCHAR(2)= 'E',
+ @IsBA		BIT = 0,	   
  @ErrCode INT = 0 OUTPUT,  
  @ErrMsg nvarchar(4000) = '' OUTPUT  
 AS  
@@ -81,6 +82,8 @@ Revisions:
  - 20170809@Winnie: Change Data Type of Sporttype [RedmineID: #73545]
  - 20180326@Winnie: Customer Setting - urgent fix to support for long bettype name. [RedmineID: #91216]		
  - 20190325@Winnie: Update PT of Sportsbook for All Licensee. [RedmineID: #110111]
+ - 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
+ 
 Param's Explanation:  
 • @ErrCode:  
     = 0: Update successfully.  
@@ -1233,7 +1236,7 @@ SET
       WHEN sporttype = 1 AND bettype = 10 AND islive = 0 THEN @apositiontaking_10  
   
       WHEN sporttype = 2 AND bettype = 1 THEN @v2apositiontaking_1  
-      WHEN sporttype = 2 AND bettype = 2 THEN @v2apositiontaking_2  
+      --WHEN sporttype = 2 AND bettype = 2 AND @IsBA = 0 THEN @v2apositiontaking_2  
       WHEN sporttype = 2 AND bettype = 3 THEN @v2apositiontaking_3  
       WHEN sporttype = 2 AND bettype = 7 THEN @v2apositiontaking_7  
       WHEN sporttype = 2 AND bettype = 8 THEN @v2apositiontaking_8  
@@ -1275,7 +1278,7 @@ SET
        apositiontaking  
        END  
    
-WHERE custid=@custid  
+WHERE custid=@custid 
   
   
 COMMIT TRANSACTION  
@@ -1306,7 +1309,7 @@ SELECT @LogSPData = '<Lrf_CustomerUpdMemberBA_PositionTaking><info ' +
 'alivept_8="'+ COALESCE(CAST(@alivepositiontaking_8 AS VARCHAR(50)),SPACE(1)) + '" ' +  
   
 'v2apt_1="'+ COALESCE(CAST(@v2apositiontaking_1 AS VARCHAR(50)),SPACE(1)) + '" ' +  
-'v2apt_2="'+ COALESCE(CAST(@v2apositiontaking_2 AS VARCHAR(50)),SPACE(1)) + '" ' +  
+--'v2apt_2="'+ COALESCE(CAST(@v2apositiontaking_2 AS VARCHAR(50)),SPACE(1)) + '" ' +  
 'v2apt_3="'+ COALESCE(CAST(@v2apositiontaking_3 AS VARCHAR(50)),SPACE(1)) + '" ' +  
 'v2apt_7="'+ COALESCE(CAST(@v2apositiontaking_7 AS VARCHAR(50)),SPACE(1)) + '" ' +  
 'v2apt_8="'+ COALESCE(CAST(@v2apositiontaking_8 AS VARCHAR(50)),SPACE(1)) + '" ' +  
@@ -1368,7 +1371,7 @@ SELECT @TrackingValue2 = '<Lrf_CustomerUpdMemberBA_PositionTaking><info ' +
 'alivept_8="'+ COALESCE(CAST(@Old_alivepositiontaking_8 AS VARCHAR(50)),SPACE(1)) + '" ' +  
   
 'v2apt_1="'+ COALESCE(CAST(@Old_v2apositiontaking_1 AS VARCHAR(50)),SPACE(1)) + '" ' +  
-'v2apt_2="'+ COALESCE(CAST(@Old_v2apositiontaking_2 AS VARCHAR(50)),SPACE(1)) + '" ' +  
+--'v2apt_2="'+ COALESCE(CAST(@Old_v2apositiontaking_2 AS VARCHAR(50)),SPACE(1)) + '" ' +  
 'v2apt_3="'+ COALESCE(CAST(@Old_v2apositiontaking_3 AS VARCHAR(50)),SPACE(1)) + '" ' +  
 'v2apt_7="'+ COALESCE(CAST(@Old_v2apositiontaking_7 AS VARCHAR(50)),SPACE(1)) + '" ' +  
 'v2apt_8="'+ COALESCE(CAST(@Old_v2apositiontaking_8 AS VARCHAR(50)),SPACE(1)) + '" ' +  

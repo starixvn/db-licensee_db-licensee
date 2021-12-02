@@ -1,2 +1,3 @@
 Risk and Forecast\Reports\Lrf_CustomerSelByCustId.sql
 Risk and Forecast\Reports\Lrf_CustomerSelByUsername.sql
+BA Admin\Internal\Config\dbo.Acc_BA_LicConfigUpd.sql

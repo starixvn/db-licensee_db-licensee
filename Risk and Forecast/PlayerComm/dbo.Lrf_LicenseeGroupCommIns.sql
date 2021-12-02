@@ -32,7 +32,6 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeGroupCommIns]
 	@BigGamingComm		DECIMAL(9,8) = 0,
 	@JokerComm			DECIMAL(9,8) = 0,
 	@GDGComm			DECIMAL(9,8) = 0,
-	@SportsLotteryComm	DECIMAL(9,8) = 0,
 	@HabaneroComm		DECIMAL(9,8) = 0,
 	@VGamingComm		DECIMAL(9,8) = 0,
 	
@@ -69,6 +68,7 @@ Revisions:
 	- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012] 
 	- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048]  
 	- 20210813@Johnson: Add VGaming [redmine: #159696]
+	- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 	
 Param's Explanation:
 
@@ -116,7 +116,6 @@ BEGIN
 		OR @BigGamingComm > 0.15
 		OR @JokerComm > 0.15
 		OR @GDGComm > 0.15
-		OR @SportsLotteryComm > 0.15	
 		OR @HabaneroComm > 0.15
 		OR @VGamingComm > 0.15
 	BEGIN
@@ -169,7 +168,6 @@ BEGIN
 											,BigGamingComm
 											,JokerComm
 											,GDGComm
-											,SportsLotteryComm
 											,HabaneroComm
 											,VGamingComm
 											)
@@ -197,7 +195,6 @@ BEGIN
 				,@BigGamingComm		
 				,@JokerComm			
 				,@GDGComm			
-				,@SportsLotteryComm	
 				,@HabaneroComm
 				,@VGamingComm		
 				)
@@ -248,7 +245,6 @@ BEGIN
 		'BigGamingComm="'+ COALESCE(CAST(@BigGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'JokerComm="'+ COALESCE(CAST(@JokerComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'GDGComm="'+ COALESCE(CAST(@GDGComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'SportsLotteryComm="'+ COALESCE(CAST(@SportsLotteryComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'HabaneroComm="'+ COALESCE(CAST(@HabaneroComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'VGamingComm="'+ COALESCE(CAST(@VGamingComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		
@@ -291,7 +287,6 @@ BEGIN
 		'BigGamingComm="'+ COALESCE(CAST(@BigGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'JokerComm="'+ COALESCE(CAST(@JokerComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'GDGComm="'+ COALESCE(CAST(@GDGComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'SportsLotteryComm="'+ COALESCE(CAST(@SportsLotteryComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'HabaneroComm="'+ COALESCE(CAST(@HabaneroComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'VGamingComm="'+ COALESCE(CAST(@VGamingComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		

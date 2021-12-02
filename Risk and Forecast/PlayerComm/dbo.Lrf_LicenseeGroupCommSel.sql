@@ -66,7 +66,6 @@ BEGIN
 		,g.BigGamingComm
 		,g.JokerComm
 		,g.GDGComm
-		,g.SportsLotteryComm
 		,g.HabaneroComm
 		,g.VGamingComm
 	FROM dbo.LicenseeGroupComm g WITH (NOLOCK)   

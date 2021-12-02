@@ -56,6 +56,7 @@ Revisions:
 	- 20181024@Winnie: PT DCS for BA member [RedmineID: #1000721]
 	- 20190801@Johnson: add @LicenseeName for LAP [redmine:#112658]
 	- 20201209@Winfred: Check VIP player when turn on BA [redmine:#146508]
+	- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 	
 Param's Explanation:
 
@@ -328,6 +329,7 @@ BEGIN
 
 			@UserID = @ModifyBy,
 			@IP = @IP,
+			@IsBA = @IsBA,
 			@ErrCode = @ErrCode OUTPUT,
 			@ErrMsg = @ErrMsg OUTPUT
 
@@ -676,6 +678,7 @@ BEGIN
 					@UserID = @ModifyBy,
 					@IsAdmin = @IsAdmin,
 					@IP = @IP,
+					@IsBA = @IsBA,
 					@ErrCode = @ErrCode OUTPUT,
 					@ErrMsg = @ErrMsg OUTPUT
 

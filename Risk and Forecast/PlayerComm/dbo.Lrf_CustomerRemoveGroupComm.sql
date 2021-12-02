@@ -34,6 +34,7 @@ AS
 		- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012]   
 		- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048] 
 		- 20210817@Johnson: Add VGaming [redmine: #159696] 
+		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 */  
 BEGIN  
 	SET NOCOUNT ON
@@ -67,7 +68,6 @@ BEGIN
 			@BigGamingComm		DECIMAL(9,8) = 0,
 			@JokerComm			DECIMAL(9,8) = 0,
 			@GDGComm			DECIMAL(9,8) = 0,
-			@SportsLotteryComm	DECIMAL(9,8) = 0,
 			@HabaneroComm		DECIMAL(9,8) = 0,
 			@VGamingComm		DECIMAL(9,8) = 0,
 			
@@ -138,7 +138,6 @@ BEGIN
 				@BigGamingComm		= BigGamingComm,
 				@JokerComm			= JokerComm,
 				@GDGComm			= GDGComm,
-				@SportsLotteryComm	= SportsLotteryComm,
 				@HabaneroComm		= HabaneroComm,
 				@VGamingComm		= VGamingComm
 			FROM dbo.LicenseeCustComm WITH (NOLOCK)
@@ -199,15 +198,13 @@ BEGIN
 				@IsUpdateWMCasino		= 1,		
 				@IsUpdateBigGaming		= 1,		
 				@IsUpdateJoker			= 1,			
-				@IsUpdateGDG			= 1,			
-				@IsUpdateSportsLottery	= 1,
+				@IsUpdateGDG			= 1,
 				@IsUpdateHabanero		= 1,
 				@IsUpdateVGaming		= 1,				
 				@WMCasinoComm				= @WMCasinoComm	,	
 				@BigGamingComm				= @BigGamingComm,		
 				@JokerComm					= @JokerComm,			
-				@GDGComm					= @GDGComm,			
-				@SportsLotteryComm			= @SportsLotteryComm,	
+				@GDGComm					= @GDGComm,				
 				@HabaneroComm				= @HabaneroComm,
 				@VGamingComm				= @VGamingComm,		
 				
@@ -282,15 +279,13 @@ BEGIN
 			@IsUpdateWMCasino		= 1,		
 			@IsUpdateBigGaming		= 1,		
 			@IsUpdateJoker			= 1,			
-			@IsUpdateGDG			= 1,			
-			@IsUpdateSportsLottery	= 1,
+			@IsUpdateGDG			= 1,
 			@IsUpdateHabanero		= 1,
 			@IsUpdateVGaming		= 1,			
 			@WMCasinoComm				= 0	,	
 			@BigGamingComm				= 0,		
 			@JokerComm					= 0,			
-			@GDGComm					= 0,			
-			@SportsLotteryComm			= 0,	
+			@GDGComm					= 0,
 			@HabaneroComm				= 0,
 			@VGamingComm				= 0,			
 
@@ -333,8 +328,7 @@ BEGIN
 			WMCasinoComm		= 0	,	
 			BigGamingComm		= 0,		
 			JokerComm			= 0,			
-			GDGComm				= 0,			
-			SportsLotteryComm	= 0,	
+			GDGComm				= 0,	
 			HabaneroComm		= 0,
 			VGamingComm			= 0,
 
