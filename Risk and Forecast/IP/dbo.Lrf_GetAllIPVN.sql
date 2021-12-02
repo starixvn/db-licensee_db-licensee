@@ -1,4 +1,3 @@
-
 /*<info serverAlias="DBCUST-IPDB" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_GetAllIPVN]
 AS
@@ -9,11 +8,16 @@ AS
 	
 	Revisions:
 		- 20210322@Mark: Get all IPVN [RedmineID: #151085]
+		- 20211018@Elodie: Support IPv6 Phase 1 - Support for 3rd party product bet tickets  [Redmine:#90903]
 */
 BEGIN
 	SET NOCOUNT ON
 
-	SELECT IPFrom, IPTo
-	FROM dbo.IPVN WITH (NOLOCK)
+	SELECT ipFROM,ipTO FROM IPv4Restriction WITH (NOLOCK)  
+	WHERE countrySHORT = 'vn'  
+
+	SELECT CONVERT(VARCHAR(32), ipFROM,2) AS ipFROM, CONVERT(VARCHAR(32), ipTO,2) AS ipTO FROM IPv6Restriction WITH (NOLOCK)  
+	WHERE countrySHORT = 'vn'  
+
 END
 GO
