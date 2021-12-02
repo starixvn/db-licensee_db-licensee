@@ -1,7 +1,4 @@
 /*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" isFunction="0"></info>*/
-USE bodb02
-GO
-
 ALTER PROCEDURE [dbo].[LAP_Statement_Mem]  
     @CustID			INT,  
     @FromDate		SMALLDATETIME,  
@@ -30,6 +27,7 @@ Revisions:
 	- 20210203@Louis: Saba Red Envelope [RedmineID: #149923]
 	- 20210518@Percy: Change code to adapt new Move Bets flow [RedmineID: #154866]
 	- 20211109@Percy: Fix wrong opening balance issue and add ACCUMULATED BALANCE [RedmineID: #164360]
+	- 20211111@Sol: Split Transfer out of bettrans/Support IPv6 - [RedmineID: #164301]
 
 Param's Explanation:     
 */
@@ -149,7 +147,7 @@ BEGIN
 			,0 AS turnover
 			,(b.winlost - b.actual_stake) AS TotalAmt
 			,0 AS commission
-		FROM bodb02.dbo.bettrans b (NOLOCK)
+		FROM bodb02.dbo.Transfer b WITH(NOLOCK)
 		WHERE b.custid = @_CustID  
 			AND b.bettype = @BAL_BETTYPE
 	END
@@ -363,13 +361,12 @@ BEGIN
 				stake AS turnover,  
 				winlost-actual_stake AS totalamt,
 				playercomm AS commission
-			FROM bodb02.dbo.bettrans b WITH (NOLOCK)  
-			INNER JOIN dbo.bettype bt WITH(NOLOCK) ON b.bettype = bt.typeid
-				
+			FROM bodb02.dbo.Transfer b WITH (NOLOCK)  
+				INNER JOIN dbo.bettype bt WITH(NOLOCK) ON b.bettype = bt.typeid
 			WHERE
 				b.custid = @_CustID  
 				AND b.winlostdate >= @_tempStartDate and b.winlostdate <= @_tempEndDate
-				AND b.matchid = 0 AND b.bettype >= @BAL_BETTYPE
+				AND b.bettype >= @BAL_BETTYPE
 					
 		)
 		INSERT INTO #statementRpt (orderkey, winlostdate, transtype, transdesc, turnover,totalamt,commission)
