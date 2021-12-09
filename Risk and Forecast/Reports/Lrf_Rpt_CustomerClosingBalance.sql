@@ -1,9 +1,8 @@
 ﻿/*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
-CREATE PROCEDURE [dbo].[Lrf_Rpt_CustomerClosingBalance]
+ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerClosingBalance]
 (
 	@AgentList VARCHAR(MAX),
-	@MoveBetsDay SMALLDATETIME,
-	@IsNotShowCBZero BIT = 1
+	@MoveBetsDay SMALLDATETIME
 )
 AS
 
@@ -24,15 +23,16 @@ BEGIN
 	SET NOCOUNT ON
 
 	-- Get agent list
-	DECLARE @tmpAg TABLE (CustId INT, Currency INT)
+	DECLARE @tmpAg TABLE (CustId INT, Currency INT, CurrCode VARCHAR(3))
 	DECLARE @DocHandler INT
 
 	BEGIN TRY
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT, @AgentList
 	
-		INSERT INTO @tmpAg(CustId, Currency)
-		SELECT AgentId, Currency 
+		INSERT INTO @tmpAg(CustId, Currency, CurrCode)
+		SELECT data.AgentId, data.Currency , CASE WHEN data.currency = 20 THEN 'UUS' ELSE e.Code END
 		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId INT, Currency INT) AS Data
+			INNER JOIN exchange e WITH(NOLOCK) ON data.currency = e.exchangeid
 
 		EXEC sp_xml_removedocument @DocHandler
 	END TRY
@@ -42,26 +42,22 @@ BEGIN
 		RETURN
 	END CATCH;
 
-	SELECT *
+	SELECT t.Custid, SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS Username2 , c.Username, c.Currency, t.CurrCode CurrencyName, t.ClosingBalance
 	FROM 
-	(
-		SELECT c.custid, c.username2, c.username, c.currency, b.CurrencyName, 
-			ISNULL(SUM(ISNULL(winlost,0) - ISNULL(actual_stake,0) + ISNULL(playercomm,0)),0) AS ClosingBalance
-		FROM @tmpAg ag
-			INNER JOIN dbo.vw_Customer c WITH(NOLOCK)
-				ON ag.CustId = c.Recommend AND c.RoleId = 1
-			LEFT JOIN bettrans b WITH (NOLOCK) ON b.custid = c.custid
-		WHERE 1 = CASE
-                    WHEN bettype = 19999 and winlostdate > @MoveBetsDay THEN 0 --> get data from ticket detail
-                    WHEN bettype < 19999 and winlostdate <= @MoveBetsDay THEN 0 --> get data from sum record
-                ELSE 1 END
-		GROUP BY c.custid, c.username2, c.username, c.currency, b.CurrencyName
-	) t
-	WHERE 1 = CASE 
-				WHEN @IsNotShowCBZero = 1 AND t.ClosingBalance > 0 THEN 1
-				WHEN @IsNotShowCBZero = 0 THEN 1
-				ELSE 0
-			END
-	ORDER BY t.username2
+		(
+			SELECT b.custid, c.CurrCode,
+				ISNULL(SUM(ISNULL(winlost,0) - ISNULL(actual_stake,0) + ISNULL(playercomm,0)),0) AS ClosingBalance
+			FROM @tmpAg c
+				INNER JOIN bettrans b WITH (NOLOCK) ON b.recommend = c.custid
+			WHERE 1 = CASE
+						WHEN bettype = 19999 and winlostdate > @MoveBetsDay THEN 0 --> get data from ticket detail
+						WHEN bettype < 19999 and winlostdate <= @MoveBetsDay THEN 0 --> get data from sum record
+					ELSE 1 END
+			GROUP BY b.custid, c.CurrCode
+		) t
+		INNER JOIN Customer c WITH(NOLOCK) ON c.CustId = t.custid and c.roleid = 1
+	WHERE t.ClosingBalance > 0
+	ORDER BY c.username2
+
 END
 GO
