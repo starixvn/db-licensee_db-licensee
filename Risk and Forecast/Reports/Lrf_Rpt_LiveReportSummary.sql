@@ -99,6 +99,7 @@ AS
 		- 20210525@Hogan: Integrate Vgaming [RedmineID: #151583]
 		- 20210630@Hogan: Integrate Creative Gaming [RedmineID: #152619]
 		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
+		- 20211105@Hogan: Integrate AdvantPlay RNG & Mini [RedmineID: #158186]
 
 	Param's Explanation:
 		+ @IsLive : indicate that whether the report will get live data or not
@@ -339,7 +340,7 @@ BEGIN
 		END
 
 		--Others
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'NG', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'GDG', 'HB', 'WM', 'BGG', 'VGA', 'CG'))
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'NG', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'GDG', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM'))
 		BEGIN
 			INSERT INTO #tmpWinloss
 			SELECT
@@ -372,6 +373,8 @@ BEGIN
 					WHEN b.bettype BETWEEN 3501 AND 3599 THEN 'BGG'
 					WHEN (b.bettype BETWEEN 3801 AND 3899) AND b.matchid <> 173 THEN 'VGA' -- VGA
 					WHEN b.bettype BETWEEN 7301 AND 7600 THEN 'CG'
+					WHEN b.bettype BETWEEN 7701 AND 7799 THEN 'AP'
+					WHEN b.bettype BETWEEN 7801 AND 7899 THEN 'APM'
 					END AS ProductCode,
 				SUM(stake) turnover,
 				SUM(b.winlost - b.actual_stake) AS Winlost,
@@ -415,6 +418,8 @@ BEGIN
 					OR b.bettype BETWEEN 3501 AND 3599 -- BGG
 					OR (b.bettype BETWEEN 3801 AND 3899 AND b.matchid <> 173)-- VGA
 					OR b.bettype BETWEEN 7301 AND 7600 -- CG
+					OR b.bettype BETWEEN 7701 AND 7799 -- AP
+					OR b.bettype BETWEEN 7801 AND 7899 -- APM
 				)
 				AND (b.liveindicator = @Liveindicator OR @Liveindicator = 2)
 				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
@@ -448,6 +453,8 @@ BEGIN
 					WHEN b.bettype BETWEEN 3501 AND 3599 THEN 'BGG'
 					WHEN (b.bettype BETWEEN 3801 AND 3899) AND b.matchid <> 173 THEN 'VGA' -- VGA
 					WHEN b.bettype BETWEEN 7301 AND 7600 THEN 'CG'
+					WHEN b.bettype BETWEEN 7701 AND 7799 THEN 'AP'
+					WHEN b.bettype BETWEEN 7801 AND 7899 THEN 'APM'
 				END
 		END
 	END
@@ -532,7 +539,7 @@ BEGIN
 		END
 
 		-- Others
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'GDG', 'HB', 'WM', 'BGG', 'VGA', 'CG'))
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'GDG', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM'))
 		BEGIN
 			INSERT INTO #tmpWinloss
 			SELECT 
@@ -573,6 +580,8 @@ BEGIN
 					WHEN b.bettype BETWEEN 3501 AND 3599 THEN 'BGG' 
 					WHEN (b.bettype BETWEEN 3801 AND 3899) AND b.TicketType <> 2 THEN 'VGA'
 					WHEN b.bettype BETWEEN 7301 AND 7600 THEN 'CG'
+					WHEN b.bettype BETWEEN 7701 AND 7799 THEN 'AP'
+					WHEN b.bettype BETWEEN 7801 AND 7899 THEN 'APM'
 				END AS ProductCode,
 				SUM(b.turnover) turnover,
 				SUM(b.winloss) winlost,
@@ -634,6 +643,8 @@ BEGIN
 					OR b.bettype BETWEEN 3501 AND 3599 -- BGG
 					OR (b.bettype BETWEEN 3801 AND 3899 AND b.TicketType <> 2) -- VGA
 					OR b.bettype BETWEEN 7301 AND 7600 -- CG
+					OR b.bettype BETWEEN 7701 AND 7799 -- AP
+					OR b.bettype BETWEEN 7801 AND 7899 -- APM
 					)
 				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 			GROUP BY
@@ -674,6 +685,8 @@ BEGIN
 					WHEN b.bettype BETWEEN 3501 AND 3599 THEN 'BGG'
 					WHEN (b.bettype BETWEEN 3801 AND 3899) AND b.TicketType <> 2 THEN 'VGA' -- VGA
 					WHEN b.bettype BETWEEN 7301 AND 7600 THEN 'CG'
+					WHEN b.bettype BETWEEN 7701 AND 7799 THEN 'AP'
+					WHEN b.bettype BETWEEN 7801 AND 7899 THEN 'APM'
 				END
 		END
 

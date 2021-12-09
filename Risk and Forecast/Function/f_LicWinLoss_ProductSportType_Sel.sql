@@ -42,6 +42,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 		- 20210525@Hogan: Integrate Vgaming [RedmineID: #151583]
 		- 20210630@Hogan: Integrate Creative Gaming [RedmineID: #152619]
 		- 20210727@Percy: Add Exchange, Saba Promotion for LA [RedmineID: #155593]
+		- 20211105@Hogan: Integrate AdvantPlay RNG & Mini [RedmineID: #158186]
 */
 RETURNS TABLE
 RETURN
@@ -86,7 +87,9 @@ RETURN
 					(57, 'BGG', 239, 0),	-- Big Gaming
 					(66, 'VGA', 171, 0),	-- Vgaming
 					(66, 'VGA', 173, 0),	-- Vgaming Free Bets
-					(62, 'CG', 167, 0)		-- Creative Gaming
+					(62, 'CG', 167, 0),		-- Creative Gaming
+					(67, 'AP', 172, 0),		-- AdvantPlay
+					(68, 'APM', 174, 0)		-- AdvantPlay Mini
 			) d(ProductID, ProductCode, SportType, BetType)  
 	WHERE ',' + @ProductCodes + ',' LIKE '%,' + CAST(ProductCode AS VARCHAR(10)) + ',%'  
 GO

@@ -36,6 +36,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
 	@ShowBGG		BIT = 0, 	-- Big Gaming
 	@ShowVGA		BIT = 0, 	-- Vgaming
 	@ShowCG			BIT = 0, 	-- Creative Gaming
+	@ShowAP			BIT = 0, -- AdvantPlay
+	@ShowAPM		BIT = 0, -- AdvantPlay Mini
 	@MoveBetsDay	DATETIME,
 	@PageSize		INT = 1000,
 	@PageIndex		INT = 1,
@@ -152,6 +154,7 @@ AS
 		- 20210525@Hogan: Integrate Vgaming [RedmineID: #151583]
 		- 20210630@Hogan: Integrate Creative Gaming [RedmineID: #152619]
 		- 20210805@Hogan: Fix bug when search user then export Extra Payout at Customer Winloss report [RedmineID: #159756]
+		- 20211105@Hogan: Integrate AdvantPlay RNG & Mini [RedmineID: #158186]
 
 	Param's Explanation:
 		@OrderItem:
@@ -376,6 +379,10 @@ BEGIN
 	SELECT 'VGA' AS Code WHERE @ShowVGA = 1
 	UNION ALL
 	SELECT 'CG' AS Code WHERE @ShowCG = 1
+	UNION ALL
+	SELECT 'AP' AS Code WHERE @ShowAP = 1
+	UNION ALL
+	SELECT 'APM' AS Code WHERE @ShowAPM = 1
 
 	-- BT & CO belong to SB
 	SELECT @ProductList = COALESCE(@ProductList + ',' + Code, Code)
