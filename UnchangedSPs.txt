@@ -1,3 +1,8 @@
-Risk and Forecast\Reports\Lrf_CustomerSelByCustId.sql
-Risk and Forecast\Reports\Lrf_CustomerSelByUsername.sql
-BA Admin\Internal\Config\dbo.Acc_BA_LicConfigUpd.sql
+Risk and Forecast\Reports\Lrf_Rpt_SubsidiaryWinloss.sql
+Risk and Forecast\Reports\Lrf_Rpt_SubsidiaryWinlossDetail.sql
+Risk and Forecast\Reports\Lrf_Rpt_CustomerBalance.sql
+Risk and Forecast\Reports\Lrf_Rpt_Outstanding.sql
+Risk and Forecast\Reports\Lrf_Rpt_TurnOver.sql
+Risk and Forecast\Reports\Lrf_Rpt_WinlossByProduct.sql
+Risk and Forecast\Reports\Lrf_Rpt_WinlossByProductDetail.sql
+Risk and Forecast\Reports\Lrf_Rpt_WinlossByProductDetail_Ag.sql

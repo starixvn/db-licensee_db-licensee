@@ -30,6 +30,7 @@ AS
 		- 20210519@Louis: Integrate Big Gaming product [RedmineID: #146773]
 		- 20210525@Hogan: Integrate Vgaming [RedmineID: #151583]
 		- 20210630@Hogan: Integrate Creative Gaming [RedmineID: #152619]
+		- 20211105@Hogan: Integrate AdvantPlay RNG & Mini [RedmineID: #158186]
 		
     Param's Explanation:  
 	  + @ProductCodes: "AB,CS,VB"
@@ -169,7 +170,7 @@ BEGIN
 			GROUP BY b.WinlostDate, b.custId, c.username, c.username2, b.currency, t.ProductCode
 		END
 
-		IF EXISTS (SELECT 1 FROM @Product WHERE ProductCode IN ('CS', 'VB', 'PP', 'PGS', 'SBC', 'HB', 'VGA', 'CG'))
+		IF EXISTS (SELECT 1 FROM @Product WHERE ProductCode IN ('CS', 'VB', 'PP', 'PGS', 'SBC', 'HB', 'VGA', 'CG', 'AP', 'APM'))
 		BEGIN
 			INSERT INTO #Data(
 				[Date],
@@ -200,7 +201,7 @@ BEGIN
 			INNER JOIN dbo.Customer c WITH (NOLOCK) ON b.CustId = c.CustId
 			WHERE	b.WinlostDate >= @tmpFromDate
 					AND b.WinlostDate <= @tmpToDate
-					AND ((b.ProductId <> 150 AND t.ProductCode = 'SBC') OR (b.ProductId <> 173 AND t.ProductCode = 'VGA') OR (t.ProductCode IN ('CS', 'VB', 'PP', 'PGS', 'HB', 'CG')))
+					AND ((b.ProductId <> 150 AND t.ProductCode = 'SBC') OR (b.ProductId <> 173 AND t.ProductCode = 'VGA') OR (t.ProductCode IN ('CS', 'VB', 'PP', 'PGS', 'HB', 'CG', 'AP', 'APM')))
 					AND (@UserName = '' OR c.username2 LIKE '%$%' + @Username + '%' OR c.username LIKE '%' + @Username + '%')
 			GROUP BY b.WinlostDate, b.custId, c.username, c.username2, b.currency, t.ProductCode
 		END

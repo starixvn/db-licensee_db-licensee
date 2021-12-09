@@ -19,6 +19,7 @@ AS
 		- 20210630@Hogan: Integrate Creative Gaming [RedmineID: #152619]
 		- 20210811@Hogan: Hide Disable/Enable button of products Allbet, Macau games, SA Gaming, AE Sexy, WM, GDG[RedmineID: #160031]
 		- 20210818@Johnson: Add Vgaming [redmine:#159696]
+		- 20211105@Hogan: Integrate AdvantPlay RNG & Mini [RedmineID: #158186]
 */
 
  /*
@@ -145,7 +146,9 @@ BEGIN
 			38,--	Virtual Games
 			34,--	Arcadia Gaming
 			55,--	PG Soft
-			66--	VGaming			
+			66,--	VGaming
+			67,--	AdvantPlay 
+			68--	AdvantPlay Mini
 		)
 	ORDER BY ProductID ASC
 END
