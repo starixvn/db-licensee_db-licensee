@@ -108,6 +108,7 @@ AS
 		- 20210630@Hogan: Integrate Creative Gaming [RedmineID: #152619]
 		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
 		- 20211105@Hogan: Integrate AdvantPlay RNG & Mini [RedmineID: #158186]
+		- 20211214@Kos: Integrate PP 20 new games [RedmineID: #165772]
 
 	Param's Explanation:
 		+ @PlatformType: List of platform type (ex: 1,2,3,..)
@@ -309,9 +310,9 @@ BEGIN
 	IF @ShowPP = 1 -- PP -- exclude 4300, 4299, 4298, 4297
 	BEGIN
 		SET @SportTypeSQL = @SportTypeSQL + ', (248, ''PP'')'
-		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 4101 AND 4296 THEN ''PP''
+		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 4101 AND 4296 OR typeid BETWEEN 6701 AND 7000 THEN ''PP''
 				'
-		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 4101 AND 4296)'
+		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 4101 AND 4296) OR typeid BETWEEN 6701 AND 7000'
 	END
 	
 	IF @ShowCC = 1 -- Card Club -- exclude 1906
