@@ -65,11 +65,16 @@ BEGIN
 	ELSE 
 	BEGIN
 		-- get running custid
-		;WITH CustHasRunningTicket AS
+		;WITH CustHasRunningTicket AS	
 		(
-			SELECT b.custid, c.CurrCode
+			SELECT DISTINCT b.custid, c.CurrCode
 			FROM @tmpAg c
 				INNER JOIN bettrans b WITH (NOLOCK) ON b.recommend = c.custid
+			WHERE b.statusID IN (0, 1) --waiting, running
+			UNION
+			SELECT DISTINCT b.custid, c.CurrCode
+			FROM @tmpAg c
+				INNER JOIN dbo.translog b WITH (NOLOCK) ON b.recommend = c.custid
 			WHERE b.statusID IN (0, 1) --waiting, running
 		)
 		SELECT SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS ExternalId , c.Username AS SystemId, t.CurrencyName, t.ClosingBalance
