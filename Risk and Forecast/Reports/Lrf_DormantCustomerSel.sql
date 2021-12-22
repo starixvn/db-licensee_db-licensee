@@ -2,6 +2,7 @@
 
 ALTER PROCEDURE [dbo].[Lrf_DormantCustomerSel]
 	@Username		VARCHAR(50)		= NULL,
+	@SearchOption	TINYINT			= 0,
 	@PageSize		INT				= 50,
 	@PageIndex		INT				= 1,
 	@TotalRows		INT				= 0  OUTPUT,
@@ -19,6 +20,12 @@ AS
 		- 20190621@Amanda: Add @BaseCurrency parameter [Redmine: #112531]
 		- 20200222@Kos: Enhance performance [Redmine: #129003]
 		- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]	
+		- 20211222@Johnson: support search by option for dormant accounts [RedmineID: #164294]
+	Parameter's Explanation:
+		@searchOption: 0- default search on LRF
+						1- Match prefix
+						2- Match case						
+						3- Match Precise
 */
 
 BEGIN
@@ -86,7 +93,11 @@ BEGIN
 		dc.Recommend
 	FROM dbo.Dep_Customer_Archived AS dc WITH (NOLOCK, INDEX = IX_Recommend)
 		INNER JOIN @TempAg AS a ON dc.Recommend = a.CustId 
-	WHERE (dc.username2 LIKE '%$' + @Username + '%'	OR dc.username LIKE  @Username + '%')
+	WHERE 1= CASE WHEN @SearchOption = 0 AND (dc.username2 LIKE '%$' + @Username + '%'	OR dc.username LIKE  @Username + '%') THEN 1
+				WHEN @SearchOption = 1 AND dc.username2 LIKE '%$' + @Username + '%' THEN 1
+				WHEN @SearchOption = 2 AND SUBSTRING(dc.username2,CHARINDEX('$',dc.username2)+1,len(dc.username2)) LIKE '%' + @Username + '%' THEN 1
+				WHEN @SearchOption = 3 AND (dc.username2 LIKE '%$' + @Username + '' OR dc.username = '' + @Username + '') THEN 1
+				ELSE 0 END
 		AND dc.username NOT LIKE '%01OddsAdj%'
 
 	DELETE c
@@ -159,6 +170,7 @@ BEGIN
 		t.Nickname,
 		t.ArchivedDate,
 		t.RowNumber,
+		t.Currency,
 		ISNULL(t.Balance, 0) * ISNULL(e.Rate, 0) AS Balance
 	FROM #ResultData AS t
 		LEFT JOIN @ExchangeRate AS e ON t.Currency = e.ExchangeId
