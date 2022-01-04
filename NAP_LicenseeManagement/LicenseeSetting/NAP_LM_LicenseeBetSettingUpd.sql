@@ -2,14 +2,19 @@
 USE CustDB
 GO
 CREATE PROCEDURE [dbo].[NAP_LM_LicenseeBetSettingUpd] 
-	@CustID INT
+	@CustID INT	
 	,@Sporttype INT
 	,@Bettype INT = 0
-	,@MinBet MONEY
-	,@MaxBet MONEY
-	,@MaxPerMatch MONEY
+	,@MinBet MONEY = 0
+	,@MaxBet MONEY = 0
+	,@MaxPerMatch MONEY = 0
 	,@MaxPerBall MONEY = 0
 	,@ExistedMember BIT
+	,@AgentID INT = 0
+	,@IsAgentOnly BIT = 0
+	,@UpdateMinBet BIT = 0
+	,@UpdateMaxBet BIT = 0
+	,@UpdateMPM BIT = 0
 	,@Enable BIT = 0
 	,@EnableDownline BIT = 0
 	,@UserID INT = 0
@@ -28,6 +33,7 @@ AS
 	Revisions:
 	   - 20150630@Daniel: Migrate custDB to new server DBCus [Redmine:#36216] - Separate exec sp	update cust info
 	   - 20190412@Winnie: Licesee Management-Licensee setting - Cannot update betting limit SMA only for big line  - Redmine: 96951
+	   - 20211224@Johnson: Adjust Bet Limit for Sub Agent [redmine: #165885]
 	Param's Explanation:
 	Example:	DECLARE @ErrCode INT = 0, @ErrMsg NVARCHAR(4000) = ''
 				EXEC NAP_LM_LicenseeBetSettingUpd @CustID = 16947245, @Sporttype = 151, @Bettype = 31, @MinBet = 25, @MaxBet = 205, @MaxPerMatch = 2005, @ExistedMember = 1, @ErrCode = @ErrCode OUTPUT, @ErrMsg = @ErrMsg OUTPUT
@@ -52,13 +58,51 @@ BEGIN
 	IF @ErrCode <> 0 
 		RETURN 
 	
+	IF @sporttype NOT IN (161,202)--checking sportbook
+	BEGIN
+		EXEC NAP_LM_CustomerBetSettingCheck			
+			@CustID = @CustID	
+			,@Sporttype = @Sporttype
+			,@Bettype = @Bettype
+			,@MinBet = @MinBet
+			,@MaxBet = @MaxBet
+			,@MaxPerMatch = @MaxPerMatch
+			
+			,@ExistedMember = @ExistedMember
+			,@AgentID = @AgentID
+			,@IsAgentOnly = @IsAgentOnly
+			,@UpdateMinBet = @UpdateMinBet
+			,@UpdateMaxBet = @UpdateMaxBet
+			,@UpdateMPM = @UpdateMPM
+			,@ErrCode = @ErrCode OUTPUT
+			,@ErrMsg = @ErrMsg OUTPUT
+		
+		IF @ErrCode <> 0 
+			RETURN;
+	END
+	
 	CREATE TABLE #temp(custid INT PRIMARY KEY, isfinished BIT DEFAULT(0))
 	INSERT INTO #temp(custid)
 	SELECT custid
-	FROM custinfo WITH(NOLOCK)	
+	FROM customer c WITH(NOLOCK)	
 	WHERE srecommend = @CustID
 			AND mrecommend NOT IN (SELECT custid FROM custinfo WITH(NOLOCK)
-									WHERE srecommend = @CustID AND username LIKE '%Acc%' AND roleid=3)
+									WHERE srecommend = @CustID 
+										AND (username LIKE '%Acc%' OR username LIKE '%LocalBank%' OR username LIKE '%AFF%' OR username LIKE 'AB88' + 'CAS%')
+										AND roleid=3)
+			AND c.username NOT LIKE '%CashOut%'
+			AND c.username  NOT LIKE '%OddsAdj%'
+			AND c.username  NOT LIKE '%ClearBal%'
+			AND c.username  NOT LIKE '%Bettrade%'			
+			AND 1 =  CASE WHEN @sporttype IN (161,202) THEN 1
+						ELSE 
+						CASE WHEN @IsAgentOnly = 1 AND @ExistedMember = 0 AND custid = @AgentID THEN 1
+							WHEN @IsAgentOnly = 1 AND @ExistedMember = 1 AND recommend = @AgentID THEN 1
+							WHEN @IsAgentOnly = 0 AND @ExistedMember = 0 AND roleid IN (2,3,4) THEN 1
+							WHEN @IsAgentOnly = 0 AND @ExistedMember = 1 THEN 1
+							ELSE 0 END
+						END	
+			
 	BEGIN TRY
 		DECLARE @ids VARCHAR(MAX), @rowcnt INT
 		WHILE (1=1)
@@ -74,27 +118,31 @@ BEGIN
 			SELECT @rowcnt = @@rowcount	
 		  
 			 --add update cust info exec rep
-			 			 			 			 EXEC [dbo].[Acc_CustomerInfo_Execrep_07]
-				 @ids = @ids
-				 ,@Sporttype = @Sporttype
-				 ,@Bettype = @Bettype
-				 ,@MaxPerMatch = @MaxPerMatch
-				 ,@MaxPerBall = @MaxPerBall
-				 ,@ExistedMember = @ExistedMember
-				 ,@Enable = @Enable
-				 ,@EnableDownline = @EnableDownline
-				 
-												EXEC Acc_CustSetting3rd_11 
-				@ids = @ids, 
-				@srecommend = @CustID, 
-				@Sporttype = @Sporttype, 
-				@Bettype = @Bettype, 
-				@MinBet = @MinBet, 
-				@MaxBet = @MaxBet, 
-				@MaxPerMatch = @MaxPerMatch, 
-				@ExistedMember = @ExistedMember, 
-				@Enable = @Enable, 
-				@EnableDownline = @EnableDownline
+			IF @Sporttype IN (161,202) OR @UpdateMPM = 1
+				EXEC [dbo].[Acc_CustomerInfo_Execrep_07]
+					 @ids = @ids
+					 ,@Sporttype = @Sporttype
+					 ,@Bettype = @Bettype
+					 ,@MaxPerMatch = @MaxPerMatch
+					 ,@MaxPerBall = @MaxPerBall
+					 ,@ExistedMember = @ExistedMember
+					 ,@Enable = @Enable
+					 ,@EnableDownline = @EnableDownline
+			
+			IF @Sporttype IN (161,202) OR @UpdateMinBet = 1 OR @UpdateMaxBet = 1
+				EXEC Acc_CustSetting3rd_11 
+					@ids = @ids, 
+					@srecommend = @CustID, 
+					@Sporttype = @Sporttype, 
+					@Bettype = @Bettype, 
+					@MinBet = @MinBet, 
+					@MaxBet = @MaxBet, 					
+					@MaxPerMatch = @MaxPerMatch, 
+					@ExistedMember = @ExistedMember, 
+					@UpdateMinBet = @UpdateMinBet,
+					@UpdateMaxBet = @UpdateMaxBet,
+					@Enable = @Enable, 
+					@EnableDownline = @EnableDownline
 
 			IF @rowcnt < 10000 BREAK
 
@@ -116,6 +164,11 @@ BEGIN
 						'MaxPerMatch="'+ coalesce(cast(@MaxPerMatch AS VARCHAR(50)),space(1))+ '" ' +
 						'MaxPerBall="'+ coalesce(cast(@MaxPerBall AS VARCHAR(50)),space(1))+ '" ' +
 						'ApplyMember="'+ coalesce(cast(@ExistedMember AS VARCHAR(1)),space(1))+ '" ' +
+						'AgentID="'+ coalesce(cast(@AgentID AS VARCHAR(10)),space(1))+ '" ' +
+						'AgentOnly="'+ coalesce(cast(@IsAgentOnly AS VARCHAR(1)),space(1))+ '" ' +
+						'UpdateMinBet="'+ coalesce(cast(@UpdateMinBet AS VARCHAR(1)),space(1))+ '" ' +
+						'UpdateMaxBet="'+ coalesce(cast(@UpdateMinBet AS VARCHAR(1)),space(1))+ '" ' +
+						'UpdateMPM="'+ coalesce(cast(@UpdateMPM AS VARCHAR(1)),space(1))+ '" ' +
 						'Enable="'+ coalesce(cast(@Enable AS VARCHAR(1)),space(1))+ '" ' +
 						'EnableDownline="'+ coalesce(cast(@EnableDownline AS VARCHAR(1)),space(1))+ '" ' +
 						'UserID="'+ coalesce(cast(@UserID as varchar(50)),space(1))+ '" ' +
@@ -144,6 +197,11 @@ BEGIN
 						'MaxPerMatch="'+ coalesce(cast(@MaxPerMatch AS VARCHAR(50)),space(1))+ '" ' +
 						'MaxPerBall="'+ coalesce(cast(@MaxPerBall AS VARCHAR(50)),space(1))+ '" ' +
 						'ApplyMember="'+ coalesce(cast(@ExistedMember AS VARCHAR(1)),space(1))+ '" ' +
+						'AgentID="'+ coalesce(cast(@AgentID AS VARCHAR(10)),space(1))+ '" ' +
+						'AgentOnly="'+ coalesce(cast(@IsAgentOnly AS VARCHAR(1)),space(1))+ '" ' +
+						'UpdateMinBet="'+ coalesce(cast(@UpdateMinBet AS VARCHAR(1)),space(1))+ '" ' +
+						'UpdateMaxBet="'+ coalesce(cast(@UpdateMinBet AS VARCHAR(1)),space(1))+ '" ' +
+						'UpdateMPM="'+ coalesce(cast(@UpdateMPM AS VARCHAR(1)),space(1))+ '" ' +
 						'Enable="'+ coalesce(cast(@Enable AS VARCHAR(1)),space(1))+ '" ' +
 						'EnableDownline="'+ coalesce(cast(@EnableDownline AS VARCHAR(1)),space(1))+ '" ' +
 						'UserID="'+ coalesce(cast(@UserID as varchar(50)),space(1))+ '" ' +
