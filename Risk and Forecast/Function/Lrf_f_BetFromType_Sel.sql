@@ -20,6 +20,7 @@ ALTER FUNCTION [dbo].[Lrf_f_BetFromType_Sel]
 		- 20210518@Mark: Support multiple selection on Platform filter [Redmine: #153102]
 		- 20210527@Hogan: Support Add 2 New Betfroms # $ [RedmineID: #155922]
 		- 20211014@Kos: Support add 2 New Betfroms [ and ] [RedmineID: #162388]
+		- 20211231@Hogan: Using betfrom '.' instead of betfrom '#' [RedmineID: #166689]
 */
 
 RETURNS TABLE
@@ -40,7 +41,7 @@ RETURN
 				(7, '7'),
 				(7, '8'),
 				(7, '_'),
-				(7, '#'),
+				(7, '.'),
 				(7, '$'),
 				(8, '1'),
 				(8, '4'),
