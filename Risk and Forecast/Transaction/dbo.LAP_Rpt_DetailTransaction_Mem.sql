@@ -5,6 +5,7 @@ ALTER PROCEDURE [dbo].[LAP_Rpt_DetailTransaction_Mem]
     @ToDate			DATE,
 	@TransactionId	BIGINT = NULL,
 	@IsResettled	BIT = 0,
+	@IsSingleWalletLic BIT = 0,
     @PageSize		INT = NULL,  
     @PageIndex		INT = 1,  
     @TotalRow		INT = 0 OUTPUT 
@@ -19,6 +20,7 @@ AS
 		- 20200420@Louis: Detail Transaction - Change rounding & sorting mechanism [RedmineID: #1328230]
 		- 20200907@Sol: Show lost record for some cases [RedmineID: #140884]
 		- 20201008@Sol: Show new column to determine re-settle tickets - [RedmineID: #142346]
+		- 20220111@Sophia: Hide transfer ticket of Single Wallet Licensee [RedmineID: #167343]
 	
 	Param's Explanation:     
 */
@@ -124,6 +126,11 @@ BEGIN
 				(BalanceChanged = 0 AND ActionID NOT IN (1, 20, 21, 100, 255)) --excluded others (won/lose->won/lose...), Reject Bet, Accept Bet, Bet SUM insert, Balance insert
 			)
 	) AS br
+	
+	IF @IsSingleWalletLic = 1 
+	BEGIN 
+		DELETE #transactionRpt WHERE Bettype IN (22001, 22002) 		
+	END 
 
 	-- SET @TotalRow
 	SELECT @TotalRow		= @@ROWCOUNT
