@@ -2,9 +2,9 @@
 
 ALTER PROCEDURE [dbo].[Lrf_SelMatchByleague]
 	@SportId 		INT,
-	@LeagueID		INT,
-	@Fromdate		SMALLDATETIME,
-	@Todate			SMALLDATETIME,
+	@LeagueId		INT,
+	@FromDate		SMALLDATETIME,
+	@ToDate			SMALLDATETIME,
 	@MoveBetsDay	SMALLDATETIME,
 	@BalanceUpDay	SMALLDATETIME
 AS
@@ -20,10 +20,11 @@ AS
 		- 20180712@Joseph: Add param @SportId to get all matches for specific sport [RedmineID: #80941]
 		- 20210304@Hogan: Integrate Cricket AIO [RedmineID: #150386]
 		- 20210622@Mark: Change on MoveBet - Add param MoveBetsDay, BalanceUpDay [RedmineID: #154866]
+		- 20211112@Kos: Exclude league and match which IsDeleted = 1 [RedmineID: #163733]
 		
 	Param's Explanation:
 		- @SportId = 0: all sports
-		- @LeagueID = 0 : get all matches
+		- @LeagueId = 0 : get all matches
 */
 
 BEGIN
@@ -56,12 +57,13 @@ BEGIN
 			m.awayid,
 			m.leagueid
 		FROM bodb02.dbo.match AS m WITH (NOLOCK)
-		WHERE m.eventdate BETWEEN @TempFromDate AND @Todate
+		WHERE m.eventdate BETWEEN @TempFromDate AND @ToDate
 			AND ((@LeagueID = 0 AND (m.sporttype < 100 OR m.sporttype = 154))
 				OR m.leagueid = @LeagueID)
 			AND m.leagueid > 0
 			AND m.matchcode NOT LIKE 'hedge%'
 			AND (@SportId = 0 OR m.sporttype = @SportId)
+			AND m.IsDeleted = 0
 	END
 
 	IF @Fromdate <= @MoveBetsDay 
@@ -112,10 +114,10 @@ BEGIN
 							,m.awayid
 							,m.leagueid
 						FROM bodb_archive.dbo.match_bk AS m WITH (NOLOCK)
-						WHERE m.eventdate between '''''+CAST(@fromdate AS VARCHAR)+''''''+' AND '''''+ CAST( @TempToDate AS VARCHAR)+'''''
-							AND (('+CAST(@leagueid AS VARCHAR)+' = 0 AND (m.sporttype < 100 OR m.sporttype=154)) OR m.leagueid = '+CAST(@leagueid AS VARCHAR)+') '+'
+						WHERE m.eventdate between ''''' + CAST(@FromDate AS VARCHAR)+'''''' + ' AND ''''' + CAST(@TempToDate AS VARCHAR) + '''''
+							AND ((' + CAST(@LeagueId AS VARCHAR)+' = 0 AND (m.sporttype < 100 OR m.sporttype=154)) OR m.leagueid = ' + CAST(@leagueid AS VARCHAR)+') ' + '
 							AND m.leagueid > 0 
-							AND m.matchcode NOT LIKE ''''hedge%''''	
+							AND m.matchcode NOT LIKE ''''hedge%''''
 							AND (' + CAST(@SportId AS VARCHAR) + ' = 0 OR m.sporttype = ' + CAST(@SportId AS VARCHAR) + ')
 							'')' 
 
