@@ -18,6 +18,7 @@ AS
 
 	Revisions:
 		- 20211016@Kos: Created [RedmineID: #153563]
+		- 20220126@Kos: Integrate Spadegaming Jackpot [RedmineID: #167035]
 
 	Param's Explanation:
 		+ @PromotionTypeList: promotion type list separated by ','
@@ -26,6 +27,8 @@ AS
 			- 3203: PP - Jackpot Prize (BetType: 4298)
 			- 3204: PP - Jackpot Contribution (BetType: 4297)
 			- 3401: Arcadia Gaming - Bonus (BetType: 1906)
+			- 3601: SG - Jackpot Prize (BetType: 4600)
+			- 3602: SG - Jackpot Contribution (BetType: 4599)
 			- 3701: Saba Lucky Spin (BetType: 17000)
 			- 3702: Saba Lucky Spot (BetType: 17001)
 			- 3703: Non - Cash Prize (BetType: 17002)
@@ -107,6 +110,8 @@ BEGIN
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3203,%' AND BetType = 4298 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3204,%' AND BetType = 4297 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3401,%' AND BetType = 1906 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3601,%' AND BetType = 4600 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3602,%' AND BetType = 4599 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3701,%' AND BetType = 17000 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3702,%' AND BetType = 17001 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3703,%' AND BetType = 17002 THEN 1
@@ -165,6 +170,8 @@ BEGIN
 				WHEN b.bettype = 4298 THEN 3203
 				WHEN b.bettype = 4297 THEN 3204
 				WHEN b.bettype = 1906 THEN 3401
+				WHEN b.bettype = 4600 THEN 3601
+				WHEN b.bettype = 4599 THEN 3602
 				WHEN b.bettype = 17000 THEN 3701
 				WHEN b.bettype = 17001 THEN 3702
 				WHEN b.bettype = 17002 THEN 3703
@@ -212,6 +219,8 @@ BEGIN
 				WHEN b.bettype = 4298 THEN 3203
 				WHEN b.bettype = 4297 THEN 3204
 				WHEN b.bettype = 1906 THEN 3401
+				WHEN b.bettype = 4600 THEN 3601
+				WHEN b.bettype = 4599 THEN 3602
 				WHEN b.bettype = 17000 THEN 3701
 				WHEN b.bettype = 17001 THEN 3702
 				WHEN b.bettype = 17002 THEN 3703
@@ -270,6 +279,8 @@ BEGIN
 				WHEN b.bettype = 4298 THEN 3203
 				WHEN b.bettype = 4297 THEN 3204
 				WHEN b.bettype = 1906 THEN 3401
+				WHEN b.bettype = 4600 THEN 3601
+				WHEN b.bettype = 4599 THEN 3602
 				WHEN b.bettype = 17000 THEN 3701
 				WHEN b.bettype = 17001 THEN 3702
 				WHEN b.bettype = 17002 THEN 3703
@@ -324,6 +335,8 @@ BEGIN
 				WHEN b.bettype = 4298 THEN 3203
 				WHEN b.bettype = 4297 THEN 3204
 				WHEN b.bettype = 1906 THEN 3401
+				WHEN b.bettype = 4600 THEN 3601
+				WHEN b.bettype = 4599 THEN 3602
 				WHEN b.bettype = 17000 THEN 3701
 				WHEN b.bettype = 17001 THEN 3702
 				WHEN b.bettype = 17002 THEN 3703
