@@ -96,10 +96,10 @@ BEGIN
 			AND c.username  NOT LIKE '%Bettrade%'			
 			AND 1 =  CASE WHEN @sporttype IN (161,202) THEN 1
 						ELSE 
-						CASE WHEN @IsAgentOnly = 1 AND @ExistedMember = 0 AND custid = @AgentID THEN 1
-							WHEN @IsAgentOnly = 1 AND @ExistedMember = 1 AND recommend = @AgentID THEN 1
-							WHEN @IsAgentOnly = 0 AND @ExistedMember = 0 AND roleid IN (2,3,4) THEN 1
-							WHEN @IsAgentOnly = 0 AND @ExistedMember = 1 THEN 1
+						CASE WHEN @IsAgentOnly = 1 AND @ExistedMember = 0 AND ((custid = @AgentID AND @AgentID <> 0) OR (roleid = 2 AND @AgentID = 0))THEN 1
+							WHEN @IsAgentOnly = 1 AND @ExistedMember = 1 AND (@AgentID <> 0 AND recommend = @AgentID) OR (@AgentID =0 AND roleid IN (1,2)) THEN 1
+							WHEN @IsAgentOnly = 0 AND @ExistedMember = 0 AND ((@AgentID <> 0 AND (custid = @AgentID OR roleid IN (3,4))) OR (@AgentID = 0 AND roleid IN (2,3,4))) THEN 1
+							WHEN @IsAgentOnly = 0 AND @ExistedMember = 1 AND (@AgentID <> 0 AND (recommend = @AgentID OR roleid IN (3,4)) OR @AgentID =0) THEN 1
 							ELSE 0 END
 						END	
 			

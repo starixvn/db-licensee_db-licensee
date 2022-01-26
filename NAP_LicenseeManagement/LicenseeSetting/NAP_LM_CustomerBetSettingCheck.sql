@@ -32,10 +32,18 @@ AS
 BEGIN
 	SET NOCOUNT ON
 	
+	CREATE TABLE #DummyMaster(custid INT PRIMARY KEY)
+	INSERT INTO #DummyMaster(custid)
+	SELECT custid FROM custinfo WITH(NOLOCK)
+	WHERE srecommend = @CustID AND roleid=3
+		AND (username LIKE '%Acc%' OR username LIKE '%LocalBank%' OR username LIKE '%AFF%' OR username LIKE 'AB88' + 'CAS%')
+
+
 	IF @ExistedMember = 0
 	BEGIN
 		IF EXISTS (SELECT 1 
 			FROM Dep_CustSetting cs WITH(NOLOCK)
+				INNER JOIN custinfo ci WITH(NOLOCK) ON cs.custid = ci.custid
 				CROSS APPLY (SELECT CASE WHEN @sporttype = 1 AND @Bettype <> 9 THEN maxpermatch
 										WHEN @sporttype = 1 AND @Bettype = 9 THEN MaxPerMatch1MP
 										WHEN @sporttype = 1 AND @Bettype = 99 THEN MaxPerMatch99
@@ -47,14 +55,18 @@ BEGIN
 										WHEN @sporttype = 11 THEN maxpermatch11
 										WHEN @sporttype = 99 AND @Bettype = 9 THEN MaxPerMatch99MP
 									END as MaxPerMatch	
-							FROM custinfo WITH(NOLOCK) 
-							WHERE custid = CASE WHEN @IsAgentOnly = 1 THEN @AgentID ELSE @CustID END) b
-			WHERE custid = CASE WHEN @IsAgentOnly = 1 THEN @AgentID ELSE @CustID END
+							FROM custinfo c WITH(NOLOCK) 
+							WHERE c.custid = ci.custid) b
+			WHERE ci.srecommend = @custid
+				AND ci.mrecommend NOT IN (SELECT custid FROM #DummyMaster)
+				AND 1 = CASE WHEN @IsAgentOnly = 1 AND ((@AgentID = 0 AND roleid =2) OR (@AgentID <> 0 AND ci.custid = @AgentID)) THEN 1 
+							WHEN @IsAgentOnly = 0 AND roleid IN (2,3,4) THEN 1
+							ELSE 0 END
 				AND sporttype = @sporttype
 				AND bettype = @bettype
 				AND 1 = CASE WHEN @UpdateMinBet = 1 AND @UpdateMaxBet = 0 AND @UpdateMPM = 0 AND @MinBet <= MinBet THEN 1
 							WHEN @UpdateMinBet = 0 AND @UpdateMaxBet = 1 AND @UpdateMPM = 0 AND @MaxBet >= MaxBet THEN 1
-							WHEN @UpdateMinBet = 0 AND @UpdateMaxBet = 0 AND @UpdateMPM = 1 AND @MaxPerMatch >= MaxPerMatch THEN 1
+							WHEN @UpdateMinBet = 0 AND @UpdateMaxBet = 0 AND @UpdateMPM = 1 AND @MaxPerMatch >= b.MaxPerMatch THEN 1
 							ELSE 0 END
 			)
 		BEGIN
@@ -68,6 +80,7 @@ BEGIN
 
 		IF EXISTS (SELECT 1 
 			FROM Dep_CustSetting cs WITH(NOLOCK)
+				INNER JOIN custinfo ci WITH(NOLOCK) ON cs.custid = ci.custid
 				CROSS APPLY (SELECT CASE WHEN @sporttype = 1 AND @Bettype <> 9 THEN maxpermatch
 										WHEN @sporttype = 1 AND @Bettype = 9 THEN MaxPerMatch1MP
 										WHEN @sporttype = 1 AND @Bettype = 99 THEN MaxPerMatch99
@@ -79,16 +92,20 @@ BEGIN
 										WHEN @sporttype = 11 THEN maxpermatch11
 										WHEN @sporttype = 99 AND @Bettype = 9 THEN MaxPerMatch99MP
 									END as MaxPerMatch	
-							FROM custinfo WITH(NOLOCK) 
-							WHERE custid = CASE WHEN @IsAgentOnly = 1 THEN @AgentID ELSE @CustID END) b
-			WHERE custid = CASE WHEN @IsAgentOnly = 1 THEN @AgentID ELSE @CustID END
+							FROM custinfo c WITH(NOLOCK) 
+							WHERE c.custid = ci.custid) b
+			WHERE ci.srecommend = @custid
+				AND ci.mrecommend NOT IN (SELECT custid FROM #DummyMaster)
+				AND 1 = CASE WHEN @IsAgentOnly = 1 AND ((@AgentID = 0 AND roleid =2) OR (@AgentID <> 0 AND ci.custid = @AgentID)) THEN 1 
+							WHEN @IsAgentOnly = 0 AND roleid IN (2,3,4) THEN 1
+							ELSE 0 END							
 				AND sporttype = @sporttype
 				AND bettype = @bettype
 				AND 1 = CASE WHEN @UpdateMinBet = 1 AND @UpdateMaxBet = 0 AND @UpdateMPM = 0 AND @MinBet > MaxBet THEN 1
-							WHEN @UpdateMinBet = 0 AND @UpdateMaxBet = 1 AND @UpdateMPM = 0 AND (@MaxBet < MinBet OR @MaxBet > MaxPerMatch) THEN 1
+							WHEN @UpdateMinBet = 0 AND @UpdateMaxBet = 1 AND @UpdateMPM = 0 AND (@MaxBet < MinBet OR @MaxBet > b.MaxPerMatch) THEN 1
 							WHEN @UpdateMinBet = 0 AND @UpdateMaxBet = 0 AND @UpdateMPM = 1 AND @MaxPerMatch < MaxBet THEN 1
 							
-							WHEN @UpdateMinBet = 1 AND @UpdateMaxBet = 1 AND @UpdateMPM = 0 AND (@MinBet > @MaxBet OR @MaxBet > MaxPerMatch) THEN 1
+							WHEN @UpdateMinBet = 1 AND @UpdateMaxBet = 1 AND @UpdateMPM = 0 AND (@MinBet > @MaxBet OR @MaxBet > b.MaxPerMatch) THEN 1
 							WHEN @UpdateMinBet = 1 AND @UpdateMaxBet = 0 AND @UpdateMPM = 1 AND (@MinBet > MaxBet OR MaxBet > @MaxPerMatch) THEN 1
 							WHEN @UpdateMinBet = 0 AND @UpdateMaxBet = 1 AND @UpdateMPM = 1 AND (Minbet > @MaxBet OR @MaxPerMatch < @MaxBet) THEN 1
 							
@@ -102,13 +119,7 @@ BEGIN
 		END		
 	END	
 	ELSE 
-	BEGIN
-		CREATE TABLE #DummyMaster(custid INT PRIMARY KEY)
-		INSERT INTO #DummyMaster(custid)
-		SELECT custid FROM custinfo WITH(NOLOCK)
-		WHERE srecommend = @CustID AND roleid=3
-			AND (username LIKE '%Acc%' OR username LIKE '%LocalBank%' OR username LIKE '%AFF%' OR username LIKE 'AB88' + 'CAS%')
-
+	BEGIN		
 		IF @IsAgentOnly = 1
 		BEGIN
 			IF EXISTS (SELECT 1 
@@ -127,12 +138,14 @@ BEGIN
 										END as MaxPerMatch	
 								FROM custinfo c WITH(NOLOCK) 
 								WHERE c.custid = ci.custid) b
-				WHERE ci.recommend = @AgentID
+				WHERE ci.srecommend = @custID
+					AND ci.mrecommend NOT IN (SELECT custid FROM #DummyMaster)
+					AND 1 = CASE WHEN ((@AgentID = 0 AND roleid IN (1,2)) OR (@AgentID <> 0 AND ci.recommend = @AgentID)) THEN 1 
+								ELSE 0 END					
 					AND ci.username NOT LIKE '%CashOut%'
 					AND ci.username  NOT LIKE '%OddsAdj%'
 					AND ci.username  NOT LIKE '%ClearBal%'
-					AND ci.username  NOT LIKE '%Bettrade%'
-					AND ci.mrecommend NOT IN (SELECT custid FROM #DummyMaster)
+					AND ci.username  NOT LIKE '%Bettrade%'					
 					AND sporttype = @sporttype
 					AND bettype = @bettype
 					AND 1 = CASE WHEN @UpdateMinBet = 1 AND @UpdateMaxBet = 0 AND @UpdateMPM = 0 AND @MinBet > MaxBet THEN 1
@@ -172,6 +185,8 @@ BEGIN
 								WHERE c.custid = ci.custid) b
 				WHERE ci.srecommend = @custid
 					AND ci.mrecommend NOT IN (SELECT custid FROM #DummyMaster)
+					AND 1 = CASE WHEN (@AgentID = 0 OR (@AgentID <> 0 AND (ci.recommend = @AgentID OR roleid IN (3,4)))) THEN 1 
+								ELSE 0 END	
 					AND ci.username NOT LIKE '%CashOut%'
 					AND ci.username  NOT LIKE '%OddsAdj%'
 					AND ci.username  NOT LIKE '%ClearBal%'
