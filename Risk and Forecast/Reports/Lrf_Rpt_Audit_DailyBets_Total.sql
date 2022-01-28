@@ -96,10 +96,7 @@ BEGIN
 	FROM @Currency c
 	LEFT JOIN dbo.Lrf_f_GetExchangeRate(@Date, @Date, @BaseCurrency, '') e ON c.Id = e.ExchangeId
 
-	IF (@SiteName = 'IvoryBet')
-	BEGIN
-		SET @SiteName = 'ivorysport'
-	END
+	SELECT @SiteName = dbo.Lrf_f_MappingAuditSite(@SiteName)
 
 	DECLARE @TempToDate DATETIME = DATEADD(DAY, 1, @Date)
 
@@ -133,7 +130,7 @@ BEGIN
 					OR (@showCS = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161')
 					OR (@showLC = 1 AND a.GamePlatformCode = 'CA')
 				)
-			AND a.GameCode IN (SELECT a.GameCode FROM @GameCode)
+			AND a.GameCode IN (SELECT GameCode FROM @GameCode)
 	END
 	ELSE
 	BEGIN
@@ -155,7 +152,7 @@ BEGIN
 					OR (@showCS = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161')
 					OR (@showLC = 1 AND a.GamePlatformCode = 'CA')
 				)
-			AND a.GameCode IN (SELECT a.GameCode FROM @GameCode)
+			AND a.GameCode IN (SELECT GameCode FROM @GameCode)
 	END
 		
 END

@@ -134,10 +134,7 @@ BEGIN
 	FROM @Currency c
 	LEFT JOIN dbo.Lrf_f_GetExchangeRate(@CurrDate, @CurrDate, @BaseCurrency, '') e ON c.Id = e.ExchangeId
 
-	IF (@SiteName = 'IvoryBet')
-	BEGIN
-		SET @SiteName = 'ivorysport'
-	END
+	SELECT @SiteName = dbo.Lrf_f_MappingAuditSite(@SiteName)
 
 	IF (@SortBy <> 'WinLoss' AND @SortBy <> 'Turnover' AND @SortBy <> 'TurnoverBased' AND @SortBy <> 'WinLossBased')
 	BEGIN
@@ -256,7 +253,7 @@ BEGIN
 						OR (@showCS = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161')
 						OR (@showLC = 1 AND a.GamePlatformCode = 'CA')
 					)
-					AND a.GameCode IN (SELECT a.GameCode FROM @GameCode)
+					AND a.GameCode IN (SELECT GameCode FROM @GameCode)
 			) AS a
 	END
 	ELSE
@@ -350,7 +347,7 @@ BEGIN
 							OR (@showCS = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161')
 							OR (@showLC = 1 AND a.GamePlatformCode = 'CA')
 						)
-						AND a.GameCode IN (SELECT a.GameCode FROM @GameCode)
+						AND a.GameCode IN (SELECT GameCode FROM @GameCode)
 				) AS a
 	END
 		
