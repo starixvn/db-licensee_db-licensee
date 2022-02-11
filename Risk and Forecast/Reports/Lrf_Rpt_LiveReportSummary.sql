@@ -102,6 +102,7 @@ AS
 		- 20211105@Hogan: Integrate AdvantPlay RNG & Mini [RedmineID: #158186]
 		- 20211214@Kos: Integrate PP 20 new games [RedmineID: #165772]
 		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
+		- 20220317@Kos: Integrate Cricket phase 2 [RedmineID: #168034]
 
 	Param's Explanation:
 		+ @IsLive : indicate that whether the report will get live data or not
@@ -263,7 +264,7 @@ BEGIN
 					OR (b.bettype BETWEEN 121 AND 999)
 					OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 					OR (b.Bettype BETWEEN 9001 and 9399) -- E-Sports 2.0
-					OR (b.Bettype BETWEEN 9400 AND 9699) -- Cricket AIO
+					OR (b.Bettype BETWEEN 9400 AND 9998) -- Cricket AIO
 					OR b.Bettype = 38					 -- Single Match Parlay
 					OR (b.bettype BETWEEN 3611 AND 3620
 						AND EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'SLT')))
@@ -556,7 +557,7 @@ BEGIN
 						OR (b.bettype BETWEEN 121 AND 999)
 						OR (b.Bettype BETWEEN 1301 and 1399)
 						OR (b.Bettype BETWEEN 9001 and 9399)
-						OR (b.Bettype BETWEEN 9400 AND 9699)	-- Cricket AIO
+						OR (b.Bettype BETWEEN 9400 AND 9998)	-- Cricket AIO
 						OR b.Bettype = 38						-- Single Match Parlay
 						OR b.bettype BETWEEN 3611 AND 3620		-- Sports Lottery
 						THEN 'SB'
@@ -617,7 +618,7 @@ BEGIN
 					OR b.bettype BETWEEN 121 AND 999
 					OR b.Bettype BETWEEN 1301 and 1399
 					OR b.Bettype BETWEEN 9001 and 9399
-					OR b.Bettype BETWEEN 9400 AND 9699 -- Cricket AIO
+					OR b.Bettype BETWEEN 9400 AND 9998 -- Cricket AIO
 					OR b.Bettype = 38				   -- Single Match Parlay
 					OR (b.bettype BETWEEN 3611 AND 3620
 						AND EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'SLT')))
@@ -663,7 +664,7 @@ BEGIN
 							OR (b.bettype BETWEEN 121 AND 999) 
 							OR (b.Bettype BETWEEN 1301 and 1399) 
 							OR (b.Bettype BETWEEN 9001 and 9399) 
-							OR (b.Bettype BETWEEN 9400 AND 9699) -- Cricket AIO
+							OR (b.Bettype BETWEEN 9400 AND 9998) -- Cricket AIO
 							OR b.Bettype = 38					 -- Single Match Parlay
 							OR b.bettype BETWEEN 3611 AND 3620		-- Sports Lottery
 						THEN 'SB'
