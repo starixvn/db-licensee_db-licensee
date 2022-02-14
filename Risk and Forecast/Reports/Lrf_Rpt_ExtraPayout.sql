@@ -224,7 +224,7 @@ BEGIN
 			b.currency,
 			SUM(b.BetCount) AS BetCount,
 			SUM(CASE
-					WHEN b.bettype IN (4297, 1698, 3898) THEN b.BuyBackAmt
+					WHEN b.bettype IN (4297, 1698, 3898, 4599) THEN b.BuyBackAmt
 					ELSE b.turnover
 				END) AS Turnover,
 			SUM(b.winlost) AS Amount,

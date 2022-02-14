@@ -161,7 +161,7 @@ BEGIN
 				ELSE 0
 			END AS PromotionType,
 			CASE
-				WHEN b.bettype IN (4297, 1698, 3898) THEN b.oddsspread
+				WHEN b.bettype IN (4297, 1698, 3898, 4599) THEN b.oddsspread
 				ELSE b.stake
 			END AS Turnover,
 			(b.winlost - b.actual_stake) AS Amount,
@@ -227,7 +227,7 @@ BEGIN
 				ELSE 0
 			END AS PromotionType,
 			CASE
-				WHEN b.bettype IN (4297, 1698, 3898) THEN b.oddsspread
+				WHEN b.bettype IN (4297, 1698, 3898, 4599) THEN b.oddsspread
 				ELSE b.stake
 			END AS Turnover,
 			(b.winlost - b.actual_stake) AS Amount,
@@ -288,7 +288,7 @@ BEGIN
 				ELSE 0
 			END AS PromotionType,
 			CASE
-				WHEN b.bettype IN (4297, 1698, 3898) THEN b.oddsspread
+				WHEN b.bettype IN (4297, 1698, 3898, 4599) THEN b.oddsspread
 				ELSE b.stake
 			END AS Turnover,
 			(b.winlost - b.actual_stake) AS Amount,
