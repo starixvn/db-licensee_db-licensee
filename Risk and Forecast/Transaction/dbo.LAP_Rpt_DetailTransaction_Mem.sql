@@ -133,7 +133,7 @@ BEGIN
 	END 
 
 	-- SET @TotalRow
-	SELECT @TotalRow		= @@ROWCOUNT
+	SELECT @TotalRow = COUNT(1) FROM #transactionRpt
 	
 	DECLARE @_rowStart		INT
 		, @_rowEnd			INT
