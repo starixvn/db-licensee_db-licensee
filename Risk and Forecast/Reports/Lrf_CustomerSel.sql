@@ -163,6 +163,13 @@ BEGIN
 		reject			BIT
 	)
 
+	CREATE TABLE #TotalBalance
+	(
+		custid INT,
+		TotalBalance MONEY,
+		Outstanding MONEY
+	)
+
 	DECLARE @TempBACust TABLE
 	(
 		ID		INT IDENTITY(1, 1),
@@ -577,37 +584,38 @@ BEGIN
 		Outstanding MONEY
 	)
 
-	INSERT INTO #data(custid, TotalBalance, Outstanding)
-	SELECT b.custid, SUM(b.TotalBalance + t.TotalBalance), SUM(b.Outstanding + t.Outstanding)
+	---insert data totalBalance
+	--bettrans
+	INSERT INTO #TotalBalance(custid, TotalBalance, Outstanding)
+	SELECT 
+		t.custid,
+		CAST(ISNULL(SUM(e.Rate*ISNULL(b.winlost-b.actual_stake + b.playercomm,0)),0) AS MONEY) AS TotalBalance,
+		CAST(ISNULL(SUM(e.Rate * CASE WHEN ruben = 0 THEN ISNULL(b.actual_stake, 0)*(CASE WHEN b.bettype = 71 THEN 0 ELSE 1 END) ELSE 0 END), 0) AS MONEY) AS Outstanding
 	FROM
-	(
-		(
-			SELECT 
-				t.custid,
-				CAST(ISNULL(SUM(e.Rate*ISNULL(b.winlost-b.actual_stake + b.playercomm,0)),0) AS MONEY) AS TotalBalance,
-				CAST(ISNULL(SUM(e.Rate * CASE WHEN ruben = 0 THEN ISNULL(b.actual_stake, 0)*(CASE WHEN b.bettype = 71 THEN 0 ELSE 1 END) ELSE 0 END), 0) AS MONEY) AS Outstanding
-			FROM
-				#Temp t
-				INNER JOIN dbo.bettrans b WITH(NOLOCK) ON t.custid = b.custid
-				LEFT JOIN #ExchangeRate e ON e.ExchangeID = b.currency
-			WHERE b.matchid >= 0
-				AND	bettype < 19999 AND winlostdate > @MoveBetsDay
-			GROUP BY t.custid
-		) b INNER JOIN
-		(
-			SELECT 
-				t.custid,
-				CAST(ISNULL(SUM(e.Rate*ISNULL(b.winlost-b.actual_stake + b.playercomm,0)),0) AS MONEY) AS TotalBalance,
-				0 AS Outstanding
-			FROM
-				#Temp t
-				INNER JOIN dbo.Transfer b WITH(NOLOCK) ON t.custid = b.custid
-				LEFT JOIN #ExchangeRate e ON e.ExchangeID = b.currency
-			WHERE (bettype = 19999 AND winlostdate <= @MoveBetsDay OR b.Bettype > 19999)
-			GROUP BY t.custid
-		) t ON b.custid = t.custid
-	) 
-	GROUP BY b.custid
+		#Temp t
+		INNER JOIN dbo.bettrans b WITH(NOLOCK) ON t.custid = b.custid
+		LEFT JOIN #ExchangeRate e ON e.ExchangeID = b.currency
+	WHERE b.matchid >= 0
+		AND	bettype < 19999 AND winlostdate > @MoveBetsDay
+	GROUP BY t.custid
+
+	--transfer
+	INSERT INTO #TotalBalance(custid, TotalBalance, Outstanding)
+	SELECT 
+		t.custid,
+		CAST(ISNULL(SUM(e.Rate*ISNULL(b.winlost-b.actual_stake + b.playercomm,0)),0) AS MONEY) AS TotalBalance,
+		0 AS Outstanding
+	FROM
+		#Temp t
+		INNER JOIN dbo.Transfer b WITH(NOLOCK) ON t.custid = b.custid
+		LEFT JOIN #ExchangeRate e ON e.ExchangeID = b.currency
+	WHERE (bettype = 19999 AND winlostdate <= @MoveBetsDay OR b.Bettype > 19999)
+	GROUP BY t.custid
+
+	INSERT INTO #data(custid, TotalBalance, Outstanding)
+	SELECT t.custid, SUM(t.TotalBalance), SUM(t.Outstanding)
+	FROM #TotalBalance t
+	GROUP BY t.custid
 
 	SELECT
 		t.custid,
@@ -649,5 +657,7 @@ BEGIN
 	DROP TABLE #ExchangeRate
 	DROP TABLE #tmpCust
 	DROP TABLE #TempMember
+	DROP TABLE #TotalBalance
+
 END
 GO
