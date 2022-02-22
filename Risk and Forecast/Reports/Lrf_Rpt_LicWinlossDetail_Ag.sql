@@ -114,6 +114,7 @@ AS
 					- Add input param @ProductList VARCHAR(500)
 		- 20211105@Hogan: Integrate AdvantPlay RNG & Mini [RedmineID: #158186]
 		- 20211214@Kos: Integrate PP 20 new games [RedmineID: #165772]
+		- 20220126@Kos: Integrate Spadegaming Jackpot [RedmineID: #167035]
 
 	Param's Explanation:
 		+ @CustID: SuperID
@@ -732,10 +733,10 @@ BEGIN
 				stake * (CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END)
 				ELSE 0 END
 			) AS turnoverCC,
-			SUM(CASE WHEN b.bettype BETWEEN 4301 AND 4600 THEN
-				stake * (CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END)
-				ELSE 0 END
-			) AS turnoverSG,
+			SUM(CASE
+					WHEN bt.ProductCode = 'SG' THEN b.stake * (CASE WHEN @DrawFilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END)
+					ELSE 0
+				END) AS turnoverSG,
 			SUM(CASE WHEN b.bettype BETWEEN 4601 AND 4900 THEN
 				stake * (CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END)
 				ELSE 0 END
@@ -836,8 +837,10 @@ BEGIN
 				END) AS LicenseeWLPP,
 			-SUM(CASE WHEN b.bettype BETWEEN 1901 AND 1999
 				THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLCC,
-			-SUM(CASE WHEN b.bettype BETWEEN 4301 AND 4600
-				THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLSG,
+			-SUM(CASE
+					WHEN bt.ProductCode = 'SG' THEN b.winlost - b.actual_stake
+					ELSE 0
+				END) AS LicenseeWLSG,
 			-SUM(CASE WHEN b.bettype BETWEEN 4601 AND 4900
 				THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLVRG,
 			-SUM(CASE WHEN b.bettype BETWEEN 4901 AND 5000
