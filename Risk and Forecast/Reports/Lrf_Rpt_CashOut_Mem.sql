@@ -16,6 +16,7 @@ AS
 
 	Revisions:
 		- 20211217@Kos: New SP [RedmineID: #165160]
+		- 20220222@Kos: Hotfix - show agent data [RedmineID: #168905]
 
 	Param's Explanation:
 		+ @AgentList: XML structure
@@ -178,6 +179,7 @@ BEGIN
 			AND b.statusID <> 101	--exclude REJECT
 			AND b.bettype NOT IN (901, 902, 903, 904, 914, 9, 29, 10)
 			AND b.TicketType = 1
+			AND b.roleid = 1
 		GROUP BY
 			b.custid,
 			b.winlostdate,
