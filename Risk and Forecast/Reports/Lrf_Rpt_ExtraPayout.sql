@@ -20,9 +20,11 @@ AS
 	Revisions:
 		- 20211016@Kos: Created [RedmineID: #153563]
 		- 20220126@Kos: Integrate Spadegaming Jackpot [RedmineID: #167035]
+		- 20220223@Kos: Integrate Allbet Promotion [RedmineID: #167524]
 
 	Param's Explanation:
 		+ @PromotionTypeList: promotion type list separated by ','
+			- 2101: Allbet - Promotion (BetType: 2499)
 			- 3201: PP - Tournament Prize (BetType: 4299)
 			- 3202: PP - Promotion Prize (BetType: 4300)
 			- 3203: PP - Jackpot Prize (BetType: 4298)
@@ -52,7 +54,7 @@ BEGIN
 	-- Get agent list
 	CREATE TABLE #TempAg (CustId INT, Currency INT)
 
-	CREATE CLUSTERED INDEX IX_TempAg ON #TempAg (CustId)
+	CREATE CLUSTERED INDEX IX_CustId ON #TempAg (CustId)
 
 	DECLARE @DocHandler INT
 
@@ -107,6 +109,7 @@ BEGIN
 	SELECT DISTINCT BetType, ProductPrefix, EventType
 	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
 	WHERE 1 = CASE
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,2101,%' AND BetType = 2499 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3201,%' AND BetType = 4299 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3202,%' AND BetType = 4300 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3203,%' AND BetType = 4298 THEN 1
