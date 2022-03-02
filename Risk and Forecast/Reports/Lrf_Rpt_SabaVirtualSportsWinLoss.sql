@@ -22,6 +22,7 @@ AS
 		- 20200925@Kos: New SP [RedmineID: #141454]
 		- 20201019@Kos: Change to use new table to check performance [RedmineID: #143310]
 		- 20210521@Mark: Support Saba Soccer PinGoal [RedmineID: #155335]
+		- 20220222@Kos: Support Saba Basketball PinGoal [RedmineID: #167859]
 
 	Param's Explanation:
 		+ @ReportType: 1: Daily, 2: Monthly
@@ -36,7 +37,9 @@ AS
 BEGIN
 	SET NOCOUNT ON
 
-	CREATE TABLE #TempAg (CustId INT, Currency INT, PRIMARY KEY (CustId, Currency))
+	CREATE TABLE #TempAg (CustId INT, Currency INT)
+
+	CREATE CLUSTERED INDEX IX_CustId ON #TempAg (CustId)
 
 	DECLARE @DocHandler INT
 
@@ -77,11 +80,13 @@ BEGIN
 		AND (@SportType = 0
 			OR sporttype = CASE
 							WHEN @SportType = -1 THEN 1
+							WHEN @SportType = -2 THEN 2
 							ELSE @SportType
 						END)
 		AND ((@SportType IN (0, 1) AND sporttype = 1 AND LeagueGroupID IN (42, 74, 108))
 			OR (@SportType IN (0, -1) AND sporttype = 1 AND LeagueGroupID IN (113))
-			OR (sporttype = 2 AND LeagueGroupID IN (42))
+			OR (@SportType IN (0, 2) AND sporttype = 2 AND LeagueGroupID IN (42))
+			OR (@SportType IN (0, -2) AND sporttype = 2 AND LeagueGroupID IN (122))
 			OR (sporttype = 50 AND LeagueGroupID IN (42)))
 
 	DECLARE @Data TABLE (
@@ -355,7 +360,7 @@ BEGIN
 					SUM(CASE WHEN b.bettype = 913 THEN b.awinlost ELSE 0 END) AS CashOutComm
 				FROM
 					bodb_licenseereport.dbo.rptWinlostbyLeague AS b WITH (NOLOCK)
-					INNER JOIN #TempAg AS ag ON ag.CustId = b.recommend AND ag.currency = b.Currency
+					INNER JOIN #TempAg AS ag ON ag.CustId = b.recommend
 					INNER JOIN #SabaVirtualSportsLeague AS l ON l.LeagueId = b.leagueid
 				WHERE
 					b.winlostdate = d.Date

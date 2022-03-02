@@ -25,6 +25,7 @@ AS
 		- 20201019@Kos: Change to use new table to check performance [RedmineID: #143310]
 		- 20210521@Mark: Support Saba Soccer PinGoal [RedmineID: #155335]
 		- 20211112@Kos: Exclude league and match which IsDeleted = 1 [RedmineID: #163733]
+		- 20220222@Kos: Support Saba Basketball PinGoal [RedmineID: #167859]
 */
 
 BEGIN
@@ -32,7 +33,7 @@ BEGIN
 
 	CREATE TABLE #TempAg (CustId INT, Currency INT)
 
-	CREATE CLUSTERED INDEX IX_TempAg ON #TempAg (CustId);
+	CREATE CLUSTERED INDEX IX_CustId ON #TempAg (CustId);
 
 	DECLARE @DocHandler INT
 
@@ -114,9 +115,11 @@ BEGIN
 		INNER JOIN bodb02.dbo.League AS l WITH (NOLOCK) ON m.LeagueId = l.leagueid
 	WHERE (@IsIncludeTestLeague = 1 OR l.isTest = 0)
 		AND (@SportId = 0 
-		OR (l.sporttype = @SportId AND l.sporttype <> 1)
-		OR (@SportId = -1 AND l.sporttype = 1 AND l.LeagueGroupID IN (113))
-		OR (@SportId = 1 AND l.sporttype = 1 AND l.LeagueGroupID NOT IN (113)))
+			OR (l.sporttype = @SportId AND l.sporttype NOT IN (1, 2))
+			OR (@SportId = -1 AND l.sporttype = 1 AND l.LeagueGroupID IN (113))
+			OR (@SportId = 1 AND l.sporttype = 1 AND l.LeagueGroupID NOT IN (113))
+			OR (@SportId = -2 AND l.sporttype = 2 AND l.LeagueGroupID IN (122))
+			OR (@SportId = 2 AND l.sporttype = 2 AND l.LeagueGroupID NOT IN (122)))
 		AND l.sporttype < 100
 		AND l.leagueid > 0
 		AND l.IsDeleted = 0

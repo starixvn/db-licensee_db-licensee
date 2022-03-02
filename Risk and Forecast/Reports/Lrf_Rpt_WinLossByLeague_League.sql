@@ -32,7 +32,8 @@ AS
 			+ -2: Saba Basketball (SportType = 2, LeagueGroupId IN (42))
 			+ -3: Saba Cricket (SportType = 50, LeagueGroupId IN (42))
 			+ -4: Saba Futsal (SportType = 1, LeagueGroupId IN (108))
-			+ -5: Saba Pingoal (SportType = 1, LeagueGroupId IN (113))
+			+ -5: Saba Soccer Pingoal (SportType = 1, LeagueGroupId IN (113))
+			+ -6: Saba Basketball Pingoal (SportType = 2, LeagueGroupId IN (122))
 		- @BetTypeList: bettype list separated by ','
 			+ 'All': all bettypes
 		- @SearchLanguage: search language
@@ -172,7 +173,10 @@ BEGIN
 				AND l.LeagueGroupID IN (108))
 			OR (',' + @SportTypeList + ',' LIKE '%,-5,%'
 				AND l.sporttype = 1
-				AND l.LeagueGroupID IN (113)))
+				AND l.LeagueGroupID IN (113))
+			OR (',' + @SportTypeList + ',' LIKE '%,-6,%'
+				AND l.sporttype = 2
+				AND l.LeagueGroupID IN (122)))
 		AND (@LeagueName = '' OR CASE
 									WHEN @SearchLanguage = 'zh-CN' THEN l.leaguenamecn
 									ELSE l.leaguename
@@ -191,7 +195,7 @@ BEGIN
 		IF ',' + @SportTypeList + ',' NOT LIKE '%,2,%'
 		BEGIN
 			DELETE FROM #League
-			WHERE SportType = 2 AND LeagueGroupId NOT IN (42)
+			WHERE SportType = 2 AND LeagueGroupId NOT IN (42, 122)
 		END
 
 		IF ',' + @SportTypeList + ',' NOT LIKE '%,50,%'
@@ -228,6 +232,12 @@ BEGIN
 		BEGIN
 			DELETE FROM #League
 			WHERE SportType = 1 AND LeagueGroupId IN (113)
+		END
+
+		IF ',' + @SportTypeList + ',' NOT LIKE '%,-6,%'
+		BEGIN
+			DELETE FROM #League
+			WHERE SportType = 2 AND LeagueGroupId IN (122)
 		END
 	END
 
@@ -742,6 +752,7 @@ BEGIN
 			WHEN d.SportType = 50 AND d.LeagueGroupId IN (42) THEN -3
 			WHEN d.SportType = 1 AND d.LeagueGroupId IN (108) THEN -4
 			WHEN d.SportType = 1 AND d.LeagueGroupId IN (113) THEN -5
+			WHEN d.SportType = 2 AND d.LeagueGroupId IN (122) THEN -6
 			ELSE d.SportType
 		END AS SportType,
 		d.LeagueId,
@@ -761,6 +772,7 @@ BEGIN
 			WHEN d.SportType = 50 AND d.LeagueGroupId IN (42) THEN -3
 			WHEN d.SportType = 1 AND d.LeagueGroupId IN (108) THEN -4
 			WHEN d.SportType = 1 AND d.LeagueGroupId IN (113) THEN -5
+			WHEN d.SportType = 2 AND d.LeagueGroupId IN (122) THEN -6
 			ELSE d.SportType
 		END,
 		d.LeagueId
