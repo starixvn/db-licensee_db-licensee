@@ -19,6 +19,7 @@ AS
 		- 20210517@Sol: Audit - show data with status = 0 orr 1 - [Redmine: #155266]
 		- 20210416@Sol: Get data from archived table and main table - [Redmine: #152202]
 		- 20211001@Sol: LAP - Auditing licensees - Enhance Daily Bets - [Redmine: #162355]
+		- 20220302@Sol: temporary prevent Nova88 from viewing data from 1-Mar-2022 - [Redmine: #169131]
 
 	Developer's Notes:
 		
@@ -40,6 +41,16 @@ BEGIN
 	DECLARE @Product TABLE (ProductCode VARCHAR(10))
 	DECLARE @Currency AS TABLE(Id INT, Code VARCHAR(5), ExRate FLOAT)
 	DECLARE @ArchivedDate DATETIME, @CurrDate DATETIME
+
+	----temporary prevent Nova88 from viewing data from 1-Mar-2022
+	IF (@SiteName = 'Nova88' AND @Date >= CAST('20220301' AS DATE))
+	BEGIN
+		--- RETURN - SUM total
+		SELECT TotalRows = 0
+				,TotalTurnover = 0
+				,TotalWinLoss = 0
+		RETURN
+	END
 
 	SET @CurrDate = @Date
 
