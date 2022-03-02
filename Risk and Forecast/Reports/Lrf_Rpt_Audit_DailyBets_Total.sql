@@ -81,8 +81,7 @@ BEGIN
 		CROSS APPLY xd.dataX.nodes('/ROOT/CR') AS T(C)
 	)
 	INSERT INTO @Currency (Id, Code)
-	SELECT 
-		Id,
+	SELECT MIN(Id) AS Id,
 		CASE  
             WHEN Id = 20 THEN 'UUS' 
             WHEN Id = 51 THEN 'VND' 
@@ -90,6 +89,13 @@ BEGIN
             ELSE Code
         END
 	FROM CTE_Currency
+	GROUP BY 
+		CASE  
+            WHEN Id = 20 THEN 'UUS' 
+            WHEN Id = 51 THEN 'VND' 
+            WHEN Id = 70 THEN 'MMK' 
+            ELSE Code
+        END
 
 	UPDATE c
 	SET c.ExRate = ISNULL(e.Rate, 1)

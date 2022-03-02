@@ -77,12 +77,17 @@ BEGIN
 
 	-- Get Currency
 	INSERT INTO #Currency (Id, Code)
-	SELECT T.C.value('./@Id', 'INT') AS Id
-		,T.C.value('./@Code', 'VARCHAR(5)') AS Code
-	FROM (
-		VALUES (CAST(@CurrencyList AS XML))
-	) AS xd(dataX)
-	CROSS APPLY xd.dataX.nodes('/ROOT/CR') AS T(C)
+	SELECT MIN(t.Id) AS Id, t.Code
+	FROM
+	(
+		SELECT T.C.value('./@Id', 'INT') AS Id
+			,T.C.value('./@Code', 'VARCHAR(5)') AS Code
+		FROM (
+			VALUES (CAST(@CurrencyList AS XML))
+		) AS xd(dataX)
+		CROSS APPLY xd.dataX.nodes('/ROOT/CR') AS T(C)
+	) t
+	GROUP BY t.Code
     
     UPDATE #Currency
 	SET     Code =  CASE  
