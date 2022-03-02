@@ -25,6 +25,7 @@ AS
 		- 20210416@Sol: Get data from archived table and main table - [Redmine: #152202]
 		- 20210928@Sol: Enhance sp - [Redmine: #159449]
 		- 20211005@Sol: Enhance sp - remove sniffing on sitename - [Redmine: #159449]
+		- 20220302@Sol: temporary prevent Nova88 from viewing data from 1-Mar-2022 - [Redmine: #169131]
 
 	Developer's Notes:
 		- Notes: If product is NG, search tickets with GameType is RNG
@@ -49,6 +50,12 @@ BEGIN
 	DECLARE @Product TABLE (ProductCode VARCHAR(10))
 	CREATE TABLE #Currency (Id INT,Code VARCHAR(5) PRIMARY KEY)
 	DECLARE @ArchivedDate DATETIME, @SName VARCHAR(50)
+
+	----temporary prevent Nova88 from viewing data from 1-Mar-2022
+	IF (@SiteName = 'Nova88' AND @ToDate >= '20220301')
+	BEGIN
+		SET @ToDate = '20220228'
+	END
 
 	SET @SName = @SiteName
 
