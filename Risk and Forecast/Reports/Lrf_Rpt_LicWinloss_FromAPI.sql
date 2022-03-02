@@ -52,7 +52,7 @@ BEGIN
 	DECLARE @ArchivedDate DATETIME, @SName VARCHAR(50)
 
 	----temporary prevent Nova88 from viewing data from 1-Mar-2022
-	IF (@SiteName = 'Nova88' AND @ToDate >= '20220301')
+	IF (@SiteName = 'Nova88' AND @ToDate >= CAST('20220301' AS DATE))
 	BEGIN
 		SET @ToDate = '20220228'
 	END

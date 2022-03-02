@@ -63,7 +63,7 @@ BEGIN
 	)
 
 	----temporary prevent Nova88 from viewing data from 1-Mar-2022
-	IF (@SiteName = 'Nova88' AND @Date >= '20220301')
+	IF (@SiteName = 'Nova88' AND @Date >= CAST('20220301' AS DATE))
 	BEGIN
 		SELECT p.[Index]
 			,p.RefNo
