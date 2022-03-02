@@ -58,7 +58,6 @@ BEGIN
 		SET @ToDate = '20220228'
 	END
 
-	SET @SName = @SiteName
 	SELECT @SName = dbo.Lrf_f_MappingAuditSite(@SiteName)
 
 	--get archived date -> last day of archived month => add 1 more day to cover time, such as: 23:59:59 
