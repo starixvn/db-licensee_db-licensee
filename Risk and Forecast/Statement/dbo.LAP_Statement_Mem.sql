@@ -421,8 +421,6 @@ BEGIN
 
 	DECLARE @rowStart		INT
 		, @rowEnd			INT
-		, @fromExRateDate	SMALLDATETIME
-		, @toExRateDate		SMALLDATETIME
 
     SELECT  @PageIndex		= CASE WHEN @PageIndex > 0 THEN @PageIndex - 1 ELSE 0 END,
             @RowStart		= @PageSize * @PageIndex + 1,
@@ -430,18 +428,10 @@ BEGIN
 	
 	-- SET @TotalRows
 	SELECT @TotalRows		= COUNT(1)
-		,@fromExRateDate	= MIN(winlostdate)
-		,@toExRateDate		= MAX(winlostdate)
 	FROM #statementRpt rpt;
 
 	 --RETURN output result
-	WITH CTE_Exchange AS (
-		SELECT f.FromDate
-			, DATEADD(DAY, 1, f.ToDate) AS ToDate
-			, Rate 
-		FROM dbo.Lrf_f_GetExchangeRate(@fromExRateDate, @toExRateDate, @BaseCurrency, '') AS f
-		WHERE f.ExchangeID = @currency
-	), CTE_Paging AS (
+	;WITH CTE_Paging AS (
 		SELECT ROW_NUMBER() OVER (ORDER BY winlostdate, orderKey, transtype) AS rownum
 			,winlostdate, orderKey, transtype, transdesc, TurnOver, TotalAmt, Commission
 		FROM #statementRpt
@@ -451,24 +441,15 @@ BEGIN
 		,rpt.winlostdate
 		,rpt.transtype
 		,ISNULL(rpt.transdesc, dsc.transdesc)	AS transdesc
-		,CAST(rpt.turnover * ISNULL(ex.Rate, fex.Rate) AS DECIMAL(15,2))	AS turnover
-		,CAST(rpt.TotalAmt * ISNULL(ex.Rate, fex.Rate) AS DECIMAL(15,2))	AS totalamt
-		,CAST(rpt.commission * ISNULL(ex.Rate, fex.Rate) AS DECIMAL(15,2))	AS commission
+		,CAST(rpt.turnover AS DECIMAL(15,2))	AS turnover
+		,CAST(rpt.TotalAmt AS DECIMAL(15,2))	AS totalamt
+		,CAST(rpt.commission AS DECIMAL(15,2))	AS commission
 		, dsc.betTypeId
 		
 	FROM CTE_Paging rpt
 		LEFT JOIN @transDesc dsc 
 			ON rpt.OrderKey		= dsc.orderkey 
 			AND rpt.transtype	= dsc.transtype
-		LEFT JOIN CTE_Exchange ex 
-			ON rpt.winlostdate	>= ex.FromDate 
-			AND rpt.winlostdate < ex.ToDate
-		OUTER APPLY (
-			-- future rate usage
-			SELECT Rate
-			FROM CTE_Exchange ex 
-			WHERE ex.ToDate IN (SELECT MAX(ToDate) FROM CTE_Exchange)
-		) AS fex
 	WHERE 
 		rpt.RowNum BETWEEN @RowStart AND @RowEnd
 	ORDER BY 
