@@ -26,6 +26,7 @@ AS
 		- 20210928@Sol: Enhance sp - [Redmine: #159449]
 		- 20211005@Sol: Enhance sp - remove sniffing on sitename - [Redmine: #159449]
 		- 20220302@Sol: temporary prevent Nova88 from viewing data from 1-Mar-2022 - [Redmine: #169131]
+		- 20220118@Sol: LAP - Auditing licensees - Daily Bets - Filter by Sport - [RedmineID: #166056]
 
 	Developer's Notes:
 		- Notes: If product is NG, search tickets with GameType is RNG
@@ -57,7 +58,7 @@ BEGIN
 		SET @ToDate = '20220228'
 	END
 
-	SET @SName = @SiteName
+	SELECT @SName = dbo.Lrf_f_MappingAuditSite(@SiteName)
 
 	--get archived date -> last day of archived month => add 1 more day to cover time, such as: 23:59:59 
 	SELECT @ArchivedDate = DATEADD(DAY, 1, CAST(s.VValue AS DATE))
@@ -75,12 +76,17 @@ BEGIN
 
 	-- Get Currency
 	INSERT INTO #Currency (Id, Code)
-	SELECT T.C.value('./@Id', 'INT') AS Id
-		,T.C.value('./@Code', 'VARCHAR(5)') AS Code
-	FROM (
-		VALUES (CAST(@CurrencyList AS XML))
-	) AS xd(dataX)
-	CROSS APPLY xd.dataX.nodes('/ROOT/CR') AS T(C)
+	SELECT MIN(t.Id) AS Id, t.Code
+	FROM
+	(
+		SELECT T.C.value('./@Id', 'INT') AS Id
+			,T.C.value('./@Code', 'VARCHAR(5)') AS Code
+		FROM (
+			VALUES (CAST(@CurrencyList AS XML))
+		) AS xd(dataX)
+		CROSS APPLY xd.dataX.nodes('/ROOT/CR') AS T(C)
+	) t
+	GROUP BY t.Code
     
     UPDATE #Currency
 	SET     Code =  CASE  

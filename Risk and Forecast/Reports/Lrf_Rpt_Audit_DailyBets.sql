@@ -3,6 +3,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_Audit_DailyBets]
 	@SiteName		VARCHAR(50),
 	@Date			DATE,
 	@ProductCodes	VARCHAR(100),
+	@GameCodes		VARCHAR(MAX),
 	@CurrencyList   VARCHAR(500),
 	@BaseCurrency	VARCHAR(3) = '',
 	@PageIndex		INT = 1,
@@ -22,6 +23,7 @@ AS
 		- 20210416@Sol: Get data from archived table and main table - [Redmine: #152202]
 		- 20211001@Sol: LAP - Auditing licensees - Enhance Daily Bets - [Redmine: #162355]
 		- 20220302@Sol: temporary prevent Nova88 from viewing data from 1-Mar-2022 - [Redmine: #169131]
+		- 20220118@Sol: LAP - Auditing licensees - Daily Bets - Filter by Sport - [RedmineID: #166056]
 
 	Developer's Notes:
 		
@@ -35,6 +37,7 @@ AS
 		    @SiteName = N'Opal88',
 		    @Date = '2019-06-20',
 		    @ProductCodes = N'SB,NG',
+			@GameCodes = '01,010,011'
 		    @CurrencyList=N'<ROOT><CR Id="13" Code="CNY"/><CR Id="15" Code="IDR"/> </ROOT>'	    
 */
 BEGIN  
@@ -42,6 +45,7 @@ BEGIN
 	SET NOCOUNT ON;
 	
 	DECLARE @Product TABLE (ProductCode VARCHAR(10))
+	DECLARE @GameCode TABLE (GameCode VARCHAR(10))
 	DECLARE @Currency AS TABLE (Id INT, Code VARCHAR(5), Name VARCHAR(5), ExRate FLOAT)
 	DECLARE @ArchivedDate DATETIME, @CurrDate DATETIME
 	
@@ -98,6 +102,11 @@ BEGIN
 	SELECT ISNULL(Val,'') 	
 	FROM dbo.strSplit(@ProductCodes,',');
 
+	---insert gamecode
+	INSERT INTO @GameCode(GameCode)
+	SELECT ISNULL(Val,'') 	
+	FROM dbo.strSplit(@GameCodes,',');
+
 	-- Get Currency
 	WITH CTE_Currency AS (
 		SELECT T.C.value('./@Id', 'INT') AS Id
@@ -108,8 +117,7 @@ BEGIN
 		CROSS APPLY xd.dataX.nodes('/ROOT/CR') AS T(C)
 	)
 	INSERT INTO @Currency (Id, Code, Name)
-	SELECT 
-		Id,
+	SELECT MIN(Id) AS Id,
 		CASE  
             WHEN Id = 20 THEN 'UUS' 
             WHEN Id = 51 THEN 'VND' 
@@ -118,6 +126,13 @@ BEGIN
         END,
         Code
 	FROM CTE_Currency
+	GROUP BY CASE  
+            WHEN Id = 20 THEN 'UUS' 
+            WHEN Id = 51 THEN 'VND' 
+            WHEN Id = 70 THEN 'MMK' 
+            ELSE Code
+        END,
+        Code
 	
 	-- GET ExRate
 	UPDATE c
@@ -125,10 +140,7 @@ BEGIN
 	FROM @Currency c
 	LEFT JOIN dbo.Lrf_f_GetExchangeRate(@CurrDate, @CurrDate, @BaseCurrency, '') e ON c.Id = e.ExchangeId
 
-	IF (@SiteName = 'IvoryBet')
-	BEGIN
-		SET @SiteName = 'ivorysport'
-	END
+	SELECT @SiteName = dbo.Lrf_f_MappingAuditSite(@SiteName)
 
 	IF (@SortBy <> 'WinLoss' AND @SortBy <> 'Turnover' AND @SortBy <> 'TurnoverBased' AND @SortBy <> 'WinLossBased')
 	BEGIN
@@ -247,6 +259,7 @@ BEGIN
 						OR (@showCS = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161')
 						OR (@showLC = 1 AND a.GamePlatformCode = 'CA')
 					)
+					AND a.GameCode IN (SELECT GameCode FROM @GameCode)
 			) AS a
 	END
 	ELSE
@@ -340,6 +353,7 @@ BEGIN
 							OR (@showCS = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161')
 							OR (@showLC = 1 AND a.GamePlatformCode = 'CA')
 						)
+						AND a.GameCode IN (SELECT GameCode FROM @GameCode)
 				) AS a
 	END
 		
@@ -351,6 +365,7 @@ BEGIN
 		,TransTime
 		,CASE WHEN BetType = '-' THEN g.GameName ELSE p.BetType END BetType
 		,ProductCode
+		,g.GameName AS SportName
 		,Turnover
 		,WinLoss
 		,p.TurnoverBased

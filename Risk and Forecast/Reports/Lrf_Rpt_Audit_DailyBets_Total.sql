@@ -3,6 +3,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_Audit_DailyBets_Total]
 	@SiteName		VARCHAR(50),
 	@Date			DATE,
 	@ProductCodes	VARCHAR(100),
+	@GameCodes		VARCHAR(MAX),
 	@CurrencyList   VARCHAR(500),
 	@BaseCurrency	VARCHAR(3) = ''
 AS 
@@ -20,6 +21,7 @@ AS
 		- 20210416@Sol: Get data from archived table and main table - [Redmine: #152202]
 		- 20211001@Sol: LAP - Auditing licensees - Enhance Daily Bets - [Redmine: #162355]
 		- 20220302@Sol: temporary prevent Nova88 from viewing data from 1-Mar-2022 - [Redmine: #169131]
+		- 20220118@Sol: LAP - Auditing licensees - Daily Bets - Filter by Sport - [RedmineID: #166056]
 
 	Developer's Notes:
 		
@@ -39,6 +41,7 @@ BEGIN
     SET NOCOUNT ON;
 
 	DECLARE @Product TABLE (ProductCode VARCHAR(10))
+	DECLARE @GameCode TABLE (GameCode VARCHAR(10))
 	DECLARE @Currency AS TABLE(Id INT, Code VARCHAR(5), ExRate FLOAT)
 	DECLARE @ArchivedDate DATETIME, @CurrDate DATETIME
 
@@ -63,6 +66,11 @@ BEGIN
 	SELECT ISNULL(Val,'') 	
 	FROM dbo.strSplit(@ProductCodes,',')
 
+	---insert gamecode
+	INSERT INTO @GameCode(GameCode)
+	SELECT ISNULL(Val,'') 	
+	FROM dbo.strSplit(@GameCodes,',');
+
 	-- Get Currency
 	;WITH CTE_Currency AS (
 		SELECT T.C.value('./@Id', 'INT') AS Id
@@ -73,8 +81,7 @@ BEGIN
 		CROSS APPLY xd.dataX.nodes('/ROOT/CR') AS T(C)
 	)
 	INSERT INTO @Currency (Id, Code)
-	SELECT 
-		Id,
+	SELECT MIN(Id) AS Id,
 		CASE  
             WHEN Id = 20 THEN 'UUS' 
             WHEN Id = 51 THEN 'VND' 
@@ -82,16 +89,20 @@ BEGIN
             ELSE Code
         END
 	FROM CTE_Currency
+	GROUP BY 
+		CASE  
+            WHEN Id = 20 THEN 'UUS' 
+            WHEN Id = 51 THEN 'VND' 
+            WHEN Id = 70 THEN 'MMK' 
+            ELSE Code
+        END
 
 	UPDATE c
 	SET c.ExRate = ISNULL(e.Rate, 1)
 	FROM @Currency c
 	LEFT JOIN dbo.Lrf_f_GetExchangeRate(@Date, @Date, @BaseCurrency, '') e ON c.Id = e.ExchangeId
 
-	IF (@SiteName = 'IvoryBet')
-	BEGIN
-		SET @SiteName = 'ivorysport'
-	END
+	SELECT @SiteName = dbo.Lrf_f_MappingAuditSite(@SiteName)
 
 	DECLARE @TempToDate DATETIME = DATEADD(DAY, 1, @Date)
 
@@ -120,11 +131,12 @@ BEGIN
 			AND a.StatusID IN (0, 1)
 			AND a.SettlementDate >= @CurrDate AND a.SettlementDate < @TempToDate 
 			AND ( 
-				(@showSB = 1 AND a.GamePlatformCode = 'SB') 
-				OR (@showNG = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode = '0161')
-				OR (@showCS = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161')
-				OR (@showLC = 1 AND a.GamePlatformCode = 'CA')
+					(@showSB = 1 AND a.GamePlatformCode = 'SB') 
+					OR (@showNG = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode = '0161')
+					OR (@showCS = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161')
+					OR (@showLC = 1 AND a.GamePlatformCode = 'CA')
 				)
+			AND a.GameCode IN (SELECT GameCode FROM @GameCode)
 	END
 	ELSE
 	BEGIN
@@ -141,13 +153,13 @@ BEGIN
 			AND a.StatusID IN (0, 1)
 			AND a.SettlementDate >= @Date AND a.SettlementDate < @TempToDate 
 			AND ( 
-				(@showSB = 1 AND a.GamePlatformCode = 'SB') 
-				OR (@showNG = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode = '0161')
-				OR (@showCS = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161')
-				OR (@showLC = 1 AND a.GamePlatformCode = 'CA')
-			)
+					(@showSB = 1 AND a.GamePlatformCode = 'SB') 
+					OR (@showNG = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode = '0161')
+					OR (@showCS = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161')
+					OR (@showLC = 1 AND a.GamePlatformCode = 'CA')
+				)
+			AND a.GameCode IN (SELECT GameCode FROM @GameCode)
 	END
 		
-
 END
 GO
