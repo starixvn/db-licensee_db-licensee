@@ -36,6 +36,7 @@ AS
 		- 20210304@Hogan: Offer Decimal Odds Only for Match [RedmineID: #151010]
 		- 20210420@Mark: Integrate Time Machine HDP [Redmine: #153302]
 		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
+		- 20220322@Kos: Support Parlay sport [RedmineID: #169282]
 */
 
 BEGIN
@@ -96,8 +97,7 @@ BEGIN
 			, SUM(b.playercomm) AS playercomm
 		FROM #tempBettrans b
 			INNER JOIN #tempCustPaging c
-			ON b.custid		= c.custid 
-			AND c.winlostdate 	= b.winlostdate
+				ON b.custid = c.custid AND c.winlostdate = b.winlostdate
 		GROUP BY
 			c.rowno
 			,c.winlostdate 
@@ -127,12 +127,19 @@ BEGIN
 				playercomm
 			)
 			SELECT
-				CASE WHEN @ReportBy =  2 THEN DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) 
+				CASE
+					WHEN @ReportBy =  2 THEN DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) 
 					ELSE winlostdate
-				END AS winlostdate, b.custid, rec.currency,
-				CASE WHEN b.bettype IN (9, 10, 29) THEN 1
+				END AS winlostdate,
+				b.custid,
+				rec.currency,
+				CASE
+					WHEN b.bettype IN (9, 29, 38) THEN 999
+					WHEN b.bettype IN (10) THEN 1
 					ELSE b.sporttype 
-				END AS sporttype, bettype, StatusID
+				END AS sporttype,
+				b.bettype,
+				b.statusid
 				, SUM(b.betcount)	AS betcount
 				, SUM(b.stake) 		AS stake
 				, SUM(b.winlost)  	AS winlost
@@ -144,15 +151,18 @@ BEGIN
 				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 			GROUP BY
 				b.custid,
-				CASE WHEN @ReportBy =  2 THEN DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) 
-						ELSE winlostdate
-					END,
+				CASE
+					WHEN @ReportBy =  2 THEN DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) 
+					ELSE winlostdate
+				END,
 				rec.currency,
-				CASE WHEN b.bettype IN (9, 10, 29) THEN 1
+				CASE
+					WHEN b.bettype IN (9, 29, 38) THEN 999
+					WHEN b.bettype IN (10) THEN 1
 					ELSE b.sporttype 
 				END,
-				bettype,
-				StatusID
+				b.bettype,
+				b.statusid
 			OPTION(RECOMPILE)
 		END
 
@@ -179,19 +189,20 @@ BEGIN
 				END AS winlostdate,
 				b.custid,
 				rec.currency,
-				CASE WHEN b.bettype IN (9, 10, 29) THEN 1
+				CASE
+					WHEN b.bettype IN (9, 29, 38) THEN 999
+					WHEN b.bettype IN (10) THEN 1
 					ELSE b.sporttype 
 				END AS sporttype,
-				bettype,
-				StatusID,
+				b.bettype,
+				b.statusid,
 				SUM(b.betcount)	AS betcount,
 				SUM(b.stake) 		AS stake,
 				SUM(b.winlost)  	AS winlost,
 				SUM(b.BetEffective) AS BetEffective,
 				SUM(b.playercomm) AS playercomm
 			FROM #recommend rec
-				JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)
-						ON b.Recommend	= rec.CustID
+				JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK) ON b.Recommend	= rec.CustID
 			WHERE b.winlostdate BETWEEN @pStartDate AND @tempToDate 
 				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 				AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156,228,229)	 -- add more Sportting Solution bettype 
@@ -233,12 +244,14 @@ BEGIN
 					WHEN @ReportBy =  2 THEN DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) 
 					ELSE winlostdate
 				END,
-				rec.currency, 
-				CASE WHEN b.bettype IN (9, 10, 29) THEN 1
+				rec.currency,
+				CASE
+					WHEN b.bettype IN (9, 29, 38) THEN 999
+					WHEN b.bettype IN (10) THEN 1
 					ELSE b.sporttype 
 				END,
-				bettype,
-				StatusID
+				b.bettype,
+				b.statusid
 			OPTION(RECOMPILE)
 		END
 

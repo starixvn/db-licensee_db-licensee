@@ -48,6 +48,7 @@ AS
 		- 20210304@Hogan: Offer Decimal Odds Only for Match [RedmineID: #151010]
 		- 20210420@Mark: Integrate Time Machine HDP [Redmine: #153302]
 		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
+		- 20220322@Kos: Support Parlay sport [RedmineID: #169282]
 */
 
 BEGIN
@@ -119,7 +120,9 @@ BEGIN
 					StatusID)
 				SELECT
 					DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) AS winlostdate, 
-					CASE WHEN b.bettype IN (9, 10, 29) THEN 1
+					CASE
+						WHEN b.bettype IN (9, 29, 38) THEN 999
+						WHEN b.bettype IN (10) THEN 1
 						ELSE b.sporttype 
 					END AS sporttype,
 					b.bettype,
@@ -143,7 +146,9 @@ BEGIN
 					StatusID)
 				SELECT
 					DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) AS winlostdate, 
-					CASE WHEN b.bettype IN (9, 10, 29) THEN 1
+					CASE
+						WHEN b.bettype IN (9, 29, 38) THEN 999
+						WHEN b.bettype IN (10) THEN 1
 						ELSE b.sporttype 
 					END AS sporttype,
 					b.bettype,
@@ -248,7 +253,9 @@ BEGIN
 					StatusID)
 				SELECT
 					DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) AS winlostdate, 
-					CASE WHEN b.bettype IN (9, 10, 29) THEN 1
+					CASE
+						WHEN b.bettype IN (9, 29, 38) THEN 999
+						WHEN b.bettype IN (10) THEN 1
 						ELSE b.sporttype 
 					END AS sporttype,
 					b.bettype,
@@ -265,10 +272,16 @@ BEGIN
 			IF @odds > 0
 			BEGIN
 				INSERT INTO #tempPagingData(winlostdate, sporttype, bettype, custid, StatusID)
-				SELECT	DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) AS winlostdate, 
-						CASE WHEN b.bettype IN (9, 10, 29) THEN 1
-							ELSE b.sporttype 
-						END AS sporttype, bettype, b.custid, StatusID
+				SELECT
+					DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) AS winlostdate, 
+					CASE
+						WHEN b.bettype IN (9, 29, 38) THEN 999
+						WHEN b.bettype IN (10) THEN 1
+						ELSE b.sporttype 
+					END AS sporttype,
+					b.bettype,
+					b.custid,
+					b.statusid
 				FROM #recommend rec
 					JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)
 						ON b.Recommend	= rec.CustID
