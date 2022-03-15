@@ -101,6 +101,7 @@ AS
 		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
 		- 20211105@Hogan: Integrate AdvantPlay RNG & Mini [RedmineID: #158186]
 		- 20211214@Kos: Integrate PP 20 new games [RedmineID: #165772]
+		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
 
 	Param's Explanation:
 		+ @IsLive : indicate that whether the report will get live data or not
@@ -341,7 +342,7 @@ BEGIN
 		END
 
 		--Others
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'NG', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'GDG', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM'))
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'NG', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'GDG', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM', 'VS3'))
 		BEGIN
 			INSERT INTO #tmpWinloss
 			SELECT
@@ -376,6 +377,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 7301 AND 7600 THEN 'CG'
 					WHEN b.bettype BETWEEN 7701 AND 7799 THEN 'AP'
 					WHEN b.bettype BETWEEN 7801 AND 7899 THEN 'APM'
+					WHEN b.bettype BETWEEN 5301 AND 5399 THEN 'VS3'
 					END AS ProductCode,
 				SUM(stake) turnover,
 				SUM(b.winlost - b.actual_stake) AS Winlost,
@@ -421,6 +423,7 @@ BEGIN
 					OR b.bettype BETWEEN 7301 AND 7600 -- CG
 					OR b.bettype BETWEEN 7701 AND 7799 -- AP
 					OR b.bettype BETWEEN 7801 AND 7899 -- APM
+					OR b.bettype BETWEEN 5301 AND 5399 -- VS3
 				)
 				AND (b.liveindicator = @Liveindicator OR @Liveindicator = 2)
 				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
@@ -456,6 +459,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 7301 AND 7600 THEN 'CG'
 					WHEN b.bettype BETWEEN 7701 AND 7799 THEN 'AP'
 					WHEN b.bettype BETWEEN 7801 AND 7899 THEN 'APM'
+					WHEN b.bettype BETWEEN 5301 AND 5399 THEN 'VS3'
 				END
 		END
 	END
@@ -540,7 +544,7 @@ BEGIN
 		END
 
 		-- Others
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'GDG', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM'))
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'GDG', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM', 'VS3'))
 		BEGIN
 			INSERT INTO #tmpWinloss
 			SELECT 
@@ -583,6 +587,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 7301 AND 7600 THEN 'CG'
 					WHEN b.bettype BETWEEN 7701 AND 7799 THEN 'AP'
 					WHEN b.bettype BETWEEN 7801 AND 7899 THEN 'APM'
+					WHEN b.bettype BETWEEN 5301 AND 5399 THEN 'VS3'
 				END AS ProductCode,
 				SUM(b.turnover) turnover,
 				SUM(b.winloss) winlost,
@@ -646,6 +651,7 @@ BEGIN
 					OR b.bettype BETWEEN 7301 AND 7600 -- CG
 					OR b.bettype BETWEEN 7701 AND 7799 -- AP
 					OR b.bettype BETWEEN 7801 AND 7899 -- APM
+					OR b.bettype BETWEEN 5301 AND 5399 -- VS3
 					)
 				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 			GROUP BY
@@ -688,6 +694,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 7301 AND 7600 THEN 'CG'
 					WHEN b.bettype BETWEEN 7701 AND 7799 THEN 'AP'
 					WHEN b.bettype BETWEEN 7801 AND 7899 THEN 'APM'
+					WHEN b.bettype BETWEEN 5301 AND 5399 THEN 'VS3'
 				END
 		END
 

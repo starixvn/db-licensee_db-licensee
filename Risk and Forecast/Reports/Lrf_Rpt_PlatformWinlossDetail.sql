@@ -36,6 +36,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_PlatformWinlossDetail]
 	@ShowCG		BIT = 0, -- Creative Gaming
 	@ShowAP		BIT = 0, -- AdvantPlay
 	@ShowAPM	BIT = 0, -- AdvantPlay Mini
+	@ShowVS3	BIT = 0, -- Virtual Sports 3
 	@PlatformType	VARCHAR(100) = 'All',
 	@DrawFilter		SMALLINT		= 1,
 	@BaseCurrency	VARCHAR(3)		= ''
@@ -104,6 +105,7 @@ AS
 		- 20210630@Hogan: Integrate Creative Gaming [RedmineID: #152619]
 		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
 		- 20211105@Hogan: Integrate AdvantPlay RNG & Mini [RedmineID: #158186]
+		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
 
 	Param's Explanation:
 		+ @PlatformType: List of platform type (ex: 1,2,3,..)
@@ -354,6 +356,11 @@ BEGIN
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'APM', 'APM')
 	END
 
+	IF @ShowVS3 = 1 --  Virtual Sports 3
+	BEGIN
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS3', 'VS3')
+	END
+
 	IF LEN(ISNULL(@ProductList, '')) > 0 
 	BEGIN
 		DECLARE @IsTest BIT = 0
@@ -517,7 +524,7 @@ BEGIN
 
 		IF (@ShowNG = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW = 1 OR @ShowVS2 = 1 OR @ShowLT = 1 OR @ShowSAG = 1 OR @ShowPP = 1 OR @ShowCC = 1 OR @ShowSG = 1 
 			OR @ShowVRG = 1 OR @ShowTG = 1 OR @ShowI4D = 1 OR @ShowSXG = 1 OR @ShowSBC = 1 OR @ShowPGS = 1 OR @ShowJK = 1 OR @ShowGDG = 1 OR @ShowSLT = 1 OR @ShowHB = 1 OR @ShowWM = 1 OR @ShowBGG = 1
-			OR @ShowVGA = 1 OR @ShowCG = 1 OR @ShowAP = 1 OR @ShowAPM = 1)
+			OR @ShowVGA = 1 OR @ShowCG = 1 OR @ShowAP = 1 OR @ShowAPM = 1 OR @ShowVS3 = 1)
 		BEGIN
 			INSERT INTO #WinLoss (WinLostdate, CustId, Currency, Turnover, WinLost, LicenseeWL, PlayerComm, AmtDueToBA, CommBA, Company, BetCount)
 			SELECT
@@ -611,7 +618,7 @@ BEGIN
 
 		IF (@showSB = 1 or @ShowNG = 1 OR @ShowVS=1 OR @ShowCS=1 OR @ShowKN=1 OR @ShowVB = 1 OR @ShowAB = 1 OR @ShowFW =1 OR @ShowVS2 = 1 OR @ShowLT = 1 OR @ShowSAG = 1 OR @ShowPP = 1 OR @showCC = 1 OR @ShowSG = 1 
 			OR @ShowVRG = 1 OR @ShowTG = 1 OR @ShowI4D = 1 OR @ShowSXG = 1 OR @ShowSBC = 1 OR @ShowPGS = 1 OR @ShowJK = 1 OR @ShowGDG = 1 OR @ShowSLT = 1 OR @ShowHB = 1 OR @ShowWM = 1 OR @ShowBGG = 1 OR @ShowVGA = 1
-			OR @ShowCG = 1 OR @ShowAP = 1 OR @ShowAPM = 1)
+			OR @ShowCG = 1 OR @ShowAP = 1 OR @ShowAPM = 1 OR @ShowVS3 = 1)
 		BEGIN
 			INSERT INTO #WinLoss (WinLostdate, CustId, Currency, Turnover, WinLost, LicenseeWL, PlayerComm, AmtDueToBA, CommBA, Company, BetCount)
 			SELECT

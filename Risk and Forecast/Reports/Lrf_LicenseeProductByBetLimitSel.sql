@@ -20,6 +20,7 @@ AS
 		- 20210811@Hogan: Hide Disable/Enable button of products Allbet, Macau games, SA Gaming, AE Sexy, WM, GDG[RedmineID: #160031]
 		- 20210818@Johnson: Add Vgaming [redmine:#159696]
 		- 20211105@Hogan: Integrate AdvantPlay RNG & Mini [RedmineID: #158186]
+		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
 */
 
  /*
@@ -148,7 +149,8 @@ BEGIN
 			55,--	PG Soft
 			66,--	VGaming
 			67,--	AdvantPlay 
-			68--	AdvantPlay Mini
+			68,--	AdvantPlay Mini
+			49--	Virtual Sports 3
 		)
 	ORDER BY ProductID ASC
 END

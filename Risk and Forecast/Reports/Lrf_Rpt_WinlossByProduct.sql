@@ -101,6 +101,7 @@ AS
 		- 20210630@Hogan: Integrate Creative Gaming [RedmineID: #152619]
 		- 20210831@Kos: Enhance performance [RedmineID: #160981]
 		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
+		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
 
 	Param's Explanation:
 		+ @ReportType: 1-Daily; 2-Monthly
@@ -391,7 +392,7 @@ BEGIN
 				b.winlostdate,
 				a.currency,
 				CASE
-					WHEN bt.ProductCode LIKE 'VS%' THEN
+					WHEN bt.ProductCode LIKE 'VS%' AND bt.ProductCode <> 'VS3' THEN
 						CASE
 							WHEN ISNULL(vs.sporttype, 0) = 0 THEN bt.ProductCode + CONVERT(VARCHAR(10), ISNULL(m.sporttype,0))
 							ELSE bt.ProductCode + CONVERT(VARCHAR(10), vs.sporttype)
@@ -440,7 +441,7 @@ BEGIN
 				b.winlostdate
 				,a.currency
 				,CASE
-					WHEN bt.ProductCode LIKE 'VS%' THEN
+					WHEN bt.ProductCode LIKE 'VS%' AND bt.ProductCode <> 'VS3'  THEN
 						CASE
 							WHEN ISNULL(vs.sporttype, 0) = 0 THEN bt.ProductCode + CONVERT(VARCHAR(10), ISNULL(m.sporttype, 0))
 							ELSE bt.ProductCode + CONVERT(VARCHAR(10), vs.sporttype)
