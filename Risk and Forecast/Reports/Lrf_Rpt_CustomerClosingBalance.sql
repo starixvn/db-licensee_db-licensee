@@ -15,6 +15,7 @@ AS
   
 	Revisions:
 		- 20211125@Sol: Initial sp - [RedmineID: #165136]
+		- 20220121@Sol: Split Transfer out of bettrans/Support IPv6 - [RedmineID: #164301]
 
 	Param's Explanation:
 		- @AgentList: list agent of licensee
@@ -26,6 +27,9 @@ BEGIN
 	-- Get agent list
 	DECLARE @tmpAg TABLE (CustId INT, Currency INT, CurrCode NVARCHAR(50))
 	DECLARE @DocHandler INT
+
+	CREATE TABLE #ClosingBalance(CustId INT, CurrName NVARCHAR(50), ClosingBalance MONEY)
+	CREATE TABLE #RunningCust(CustId INT, CurrName NVARCHAR(50))
 
 	BEGIN TRY
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT, @AgentList
@@ -45,18 +49,31 @@ BEGIN
 
 	IF (@ReportType = 1)
 	BEGIN
+
+		---from bettrans
+		INSERT INTO #ClosingBalance(CustId, CurrName, ClosingBalance)
+		SELECT b.custid, c.CurrCode AS CurrencyName,
+				ISNULL(SUM(ISNULL(winlost,0) - ISNULL(actual_stake,0) + ISNULL(playercomm,0)),0) AS ClosingBalance
+		FROM @tmpAg c
+			INNER JOIN bettrans b WITH (NOLOCK) ON b.recommend = c.custid
+		WHERE b.bettype < 19999 AND b.winlostdate > @MoveBetsDay
+		GROUP BY b.custid, c.CurrCode
+
+		---from transfer
+		INSERT INTO #ClosingBalance(CustId, CurrName, ClosingBalance)
+		SELECT t.custid, c.CurrCode AS CurrencyName,
+				ISNULL(SUM(ISNULL(winlost,0) - ISNULL(actual_stake,0) + ISNULL(playercomm,0)),0) AS ClosingBalance
+		FROM @tmpAg c
+			INNER JOIN dbo.Transfer t WITH (NOLOCK) ON t.recommend = c.custid
+		WHERE (t.bettype = 19999 AND t.winlostdate <= @MoveBetsDay OR t.Bettype > 19999)
+		GROUP BY t.custid, c.CurrCode
+
 		SELECT SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS ExternalId , c.Username AS SystemId, t.CurrencyName, t.ClosingBalance
 		FROM 
 			(
-				SELECT b.custid, c.CurrCode AS CurrencyName,
-					ISNULL(SUM(ISNULL(winlost,0) - ISNULL(actual_stake,0) + ISNULL(playercomm,0)),0) AS ClosingBalance
-				FROM @tmpAg c
-					INNER JOIN bettrans b WITH (NOLOCK) ON b.recommend = c.custid
-				WHERE 1 = CASE
-							WHEN bettype = 19999 and winlostdate > @MoveBetsDay THEN 0 --> get data from ticket detail
-							WHEN bettype < 19999 and winlostdate <= @MoveBetsDay THEN 0 --> get data from sum record
-						ELSE 1 END
-				GROUP BY b.custid, c.CurrCode
+				SELECT t.custid, t.CurrName AS CurrencyName, ISNULL(SUM(t.ClosingBalance),0) AS ClosingBalance
+				FROM #ClosingBalance t
+				GROUP BY t.custid, t.CurrName
 			) t
 			INNER JOIN Customer c WITH(NOLOCK) ON c.CustId = t.custid and c.roleid = 1
 		WHERE t.ClosingBalance > 0
@@ -77,24 +94,45 @@ BEGIN
 				INNER JOIN dbo.translog b WITH (NOLOCK) ON b.recommend = c.custid
 			WHERE b.statusID IN (0, 1) --waiting, running
 		)
+		INSERT INTO #RunningCust(CustId, CurrName)
+		SELECT c.custid, c.CurrCode
+		FROM CustHasRunningTicket c
+
+		---from bettrans
+		INSERT INTO #ClosingBalance(CustId, CurrName, ClosingBalance)
+		SELECT b.custid, r.CurrName AS CurrencyName,
+				ISNULL(SUM(ISNULL(winlost,0) - ISNULL(actual_stake,0) + ISNULL(playercomm,0)),0) AS ClosingBalance
+		FROM bettrans b WITH (NOLOCK) 
+			INNER JOIN #RunningCust r
+				ON b.custid = r.custid
+		WHERE b.bettype < 19999 AND b.winlostdate > @MoveBetsDay
+		GROUP BY b.custid, r.CurrName
+
+		---from transfer
+		INSERT INTO #ClosingBalance(CustId, CurrName, ClosingBalance)
+		SELECT t.custid, r.CurrName AS CurrencyName,
+				ISNULL(SUM(ISNULL(winlost,0) - ISNULL(actual_stake,0) + ISNULL(playercomm,0)),0) AS ClosingBalance
+		FROM dbo.Transfer t WITH (NOLOCK) 
+			INNER JOIN #RunningCust r
+				ON t.custid = r.custid
+		WHERE (t.bettype = 19999 AND t.winlostdate <= @MoveBetsDay OR t.Bettype > 19999)
+		GROUP BY t.custid, r.CurrName
+
 		SELECT SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS ExternalId , c.Username AS SystemId, t.CurrencyName, t.ClosingBalance
 		FROM 
 			(
-				SELECT b.custid, r.CurrCode AS CurrencyName,
-					ISNULL(SUM(ISNULL(winlost,0) - ISNULL(actual_stake,0) + ISNULL(playercomm,0)),0) AS ClosingBalance
-				FROM bettrans b WITH (NOLOCK) 
-					INNER JOIN CustHasRunningTicket r
-						ON b.custid = r.custid
-				WHERE 1 = CASE
-							WHEN bettype = 19999 and winlostdate > @MoveBetsDay THEN 0 --> get data from ticket detail
-							WHEN bettype < 19999 and winlostdate <= @MoveBetsDay THEN 0 --> get data from sum record
-						ELSE 1 END
-				GROUP BY b.custid, r.CurrCode
+				SELECT t.custid, t.CurrName AS CurrencyName,
+					ISNULL(SUM(t.ClosingBalance),0) AS ClosingBalance
+				FROM #ClosingBalance t
+				GROUP BY t.custid, t.CurrName
 			) t
 			INNER JOIN Customer c WITH(NOLOCK) ON c.CustId = t.custid and c.roleid = 1
 		ORDER BY ExternalId
 
 	END
+
+	DROP TABLE #ClosingBalance
+	DROP TABLE #RunningCust
 
 END
 GO

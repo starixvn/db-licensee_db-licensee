@@ -1,5 +1,4 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" viewers="" isFunction="0"></info>*/
-
 Alter PROCEDURE [dbo].[Lrf_CustomerSelByUsername]
 	@LicenseeName	VARCHAR(50),
 	@username		VARCHAR(50)		= NULL,
@@ -33,6 +32,7 @@ AS
 		- 20210518@Percy: Change code to adapt new Move Bets flow [RedmineID: #154866]
 		- 20210611@Johnson: exclude dummy accounts [redmine:#156408]
 		- 20210806@Johnson: extend @CustomerClass VARCHAR(1000) [redmine:#159754]
+		- 20211111@Sol: Split Transfer out of bettrans/Support IPv6 - [RedmineID: #164301]
 	Parameter's explanations:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 		+ @SpecialLevel: '1,2,3,4,5,6,7,8,9,10' (all)
@@ -143,6 +143,13 @@ BEGIN
 	(
 		Id		INT PRIMARY KEY,
 		Name	VARCHAR(50),
+	)
+
+	CREATE TABLE #TotalBalance
+	(
+		custid INT,
+		TotalBalance MONEY,
+		Outstanding MONEY
 	)
 
 	DECLARE @TempBACust TABLE
@@ -550,7 +557,9 @@ BEGIN
 	DECLARE @MoveBetsDay SMALLDATETIME
 	SELECT  @MoveBetsDay = MoveBetsDay FROM @MBBU
 
-	INSERT INTO #data(custid, TotalBalance,Outstanding)
+	---insert data totalbalance
+	--bettrans
+	INSERT INTO #TotalBalance(custid, TotalBalance, Outstanding)
 	SELECT 
 		t.custid,
 		ISNULL(SUM(ISNULL(b.winlost-b.actual_stake + b.playercomm, 0)), 0) AS TotalBalance,
@@ -559,10 +568,24 @@ BEGIN
 		#Temp t
 		INNER JOIN bettrans b WITH(NOLOCK) ON t.custid = b.custid
 	WHERE b.matchid >= 0
-		AND 1 = CASE
-				WHEN b.bettype = 19999 AND b.winlostdate > @MoveBetsDay THEN 0
-				WHEN b.bettype < 19999 AND b.winlostdate <= @MoveBetsDay THEN 0
-				ELSE 1 END
+		AND	bettype < 19999 AND winlostdate > @MoveBetsDay
+	GROUP BY t.custid
+
+	--transfer
+	INSERT INTO #TotalBalance(custid, TotalBalance, Outstanding)
+	SELECT 
+		t.custid,
+		ISNULL(SUM(ISNULL(b.winlost-b.actual_stake + b.playercomm, 0)), 0) AS TotalBalance,
+		0 AS Outstanding
+	FROM
+		#Temp t
+		INNER JOIN dbo.Transfer b WITH(NOLOCK) ON t.custid = b.custid
+	WHERE (bettype = 19999 AND winlostdate <= @MoveBetsDay OR b.Bettype > 19999)
+	GROUP BY t.custid
+
+	INSERT INTO #data(custid, TotalBalance,Outstanding)
+	SELECT t.custid, SUM(t.TotalBalance), SUM(t.Outstanding)
+	FROM #TotalBalance t
 	GROUP BY t.custid
 
 	INSERT INTO #Exchange(Id, Name)
@@ -608,5 +631,7 @@ BEGIN
 	DROP TABLE #tmpCust
 	DROP TABLE #TempMember
 	DROP TABLE #Exchange
+	DROP TABLE #TotalBalance
+
 END
 GO

@@ -1,7 +1,4 @@
 /*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" isFunction="0"></info>*/
-USE bodb02
-GO
-
 ALTER PROCEDURE [dbo].[LAP_Statement_Mem]  
     @CustID			INT,  
     @FromDate		SMALLDATETIME,  
@@ -30,6 +27,7 @@ Revisions:
 	- 20210203@Louis: Saba Red Envelope [RedmineID: #149923]
 	- 20210518@Percy: Change code to adapt new Move Bets flow [RedmineID: #154866]
 	- 20211109@Percy: Fix wrong opening balance issue and add ACCUMULATED BALANCE [RedmineID: #164360]
+	- 20211111@Sol: Split Transfer out of bettrans/Support IPv6 - [RedmineID: #164301]
 
 Param's Explanation:     
 */
@@ -149,7 +147,7 @@ BEGIN
 			,0 AS turnover
 			,(b.winlost - b.actual_stake) AS TotalAmt
 			,0 AS commission
-		FROM bodb02.dbo.bettrans b (NOLOCK)
+		FROM bodb02.dbo.Transfer b WITH(NOLOCK)
 		WHERE b.custid = @_CustID  
 			AND b.bettype = @BAL_BETTYPE
 	END
@@ -363,13 +361,12 @@ BEGIN
 				stake AS turnover,  
 				winlost-actual_stake AS totalamt,
 				playercomm AS commission
-			FROM bodb02.dbo.bettrans b WITH (NOLOCK)  
-			INNER JOIN dbo.bettype bt WITH(NOLOCK) ON b.bettype = bt.typeid
-				
+			FROM bodb02.dbo.Transfer b WITH (NOLOCK)  
+				INNER JOIN dbo.bettype bt WITH(NOLOCK) ON b.bettype = bt.typeid
 			WHERE
 				b.custid = @_CustID  
 				AND b.winlostdate >= @_tempStartDate and b.winlostdate <= @_tempEndDate
-				AND b.matchid = 0 AND b.bettype >= @BAL_BETTYPE
+				AND b.bettype >= @BAL_BETTYPE
 					
 		)
 		INSERT INTO #statementRpt (orderkey, winlostdate, transtype, transdesc, turnover,totalamt,commission)
@@ -424,8 +421,6 @@ BEGIN
 
 	DECLARE @rowStart		INT
 		, @rowEnd			INT
-		, @fromExRateDate	SMALLDATETIME
-		, @toExRateDate		SMALLDATETIME
 
     SELECT  @PageIndex		= CASE WHEN @PageIndex > 0 THEN @PageIndex - 1 ELSE 0 END,
             @RowStart		= @PageSize * @PageIndex + 1,
@@ -433,18 +428,10 @@ BEGIN
 	
 	-- SET @TotalRows
 	SELECT @TotalRows		= COUNT(1)
-		,@fromExRateDate	= MIN(winlostdate)
-		,@toExRateDate		= MAX(winlostdate)
 	FROM #statementRpt rpt;
 
 	 --RETURN output result
-	WITH CTE_Exchange AS (
-		SELECT f.FromDate
-			, DATEADD(DAY, 1, f.ToDate) AS ToDate
-			, Rate 
-		FROM dbo.Lrf_f_GetExchangeRate(@fromExRateDate, @toExRateDate, @BaseCurrency, '') AS f
-		WHERE f.ExchangeID = @currency
-	), CTE_Paging AS (
+	;WITH CTE_Paging AS (
 		SELECT ROW_NUMBER() OVER (ORDER BY winlostdate, orderKey, transtype) AS rownum
 			,winlostdate, orderKey, transtype, transdesc, TurnOver, TotalAmt, Commission
 		FROM #statementRpt
@@ -454,24 +441,15 @@ BEGIN
 		,rpt.winlostdate
 		,rpt.transtype
 		,ISNULL(rpt.transdesc, dsc.transdesc)	AS transdesc
-		,CAST(rpt.turnover * ISNULL(ex.Rate, fex.Rate) AS DECIMAL(15,2))	AS turnover
-		,CAST(rpt.TotalAmt * ISNULL(ex.Rate, fex.Rate) AS DECIMAL(15,2))	AS totalamt
-		,CAST(rpt.commission * ISNULL(ex.Rate, fex.Rate) AS DECIMAL(15,2))	AS commission
+		,CAST(rpt.turnover AS DECIMAL(15,2))	AS turnover
+		,CAST(rpt.TotalAmt AS DECIMAL(15,2))	AS totalamt
+		,CAST(rpt.commission AS DECIMAL(15,2))	AS commission
 		, dsc.betTypeId
 		
 	FROM CTE_Paging rpt
 		LEFT JOIN @transDesc dsc 
 			ON rpt.OrderKey		= dsc.orderkey 
 			AND rpt.transtype	= dsc.transtype
-		LEFT JOIN CTE_Exchange ex 
-			ON rpt.winlostdate	>= ex.FromDate 
-			AND rpt.winlostdate < ex.ToDate
-		OUTER APPLY (
-			-- future rate usage
-			SELECT Rate
-			FROM CTE_Exchange ex 
-			WHERE ex.ToDate IN (SELECT MAX(ToDate) FROM CTE_Exchange)
-		) AS fex
 	WHERE 
 		rpt.RowNum BETWEEN @RowStart AND @RowEnd
 	ORDER BY 
