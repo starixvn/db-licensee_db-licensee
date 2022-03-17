@@ -28,6 +28,7 @@ AS
 		- 20200323@Vickie: Add new product Indo 4D [RedmineID: #130859]
 		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
 					- Remove input param @LangKey
+		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
 
 	Param's Explanation:
 		- @ProductCodes = '' - Get all
@@ -43,7 +44,7 @@ BEGIN
 	FROM dbo.Product3rd AS p WITH (NOLOCK)
 		INNER JOIN dbo.LicenseeProduct3rd AS l WITH (NOLOCK) ON p.Productid = l.ProductID
 	WHERE l.LicenseeID = @LicenseeID
-		AND p.ProductPrefix IN ('BA', 'NG', 'VS', 'VS2', 'KN', 'LT', 'CO', 'TG', 'I4D')
+		AND p.ProductPrefix IN ('BA', 'NG', 'VS', 'VS2', 'KN', 'LT', 'CO', 'TG', 'I4D', 'VS3')
 		AND (@ProductCodes = ''
 			OR ',' + @ProductCodes + ',' LIKE '%,' + p.ProductPrefix + ',%')
 
@@ -156,6 +157,16 @@ BEGIN
 		UNION ALL
 		SELECT Id, NULL, 223
 		FROM dbo.Lrf_f_GetSportTypeByProduct('I4D')
+	END
+
+	-- VS3 --
+	IF EXISTS (SELECT 1 FROM @Product3rds WHERE Code = 'VS3')
+	BEGIN
+		INSERT INTO @ProductSport(Id, Name, ParentId)
+		SELECT 231, 'VS3', NULL
+		UNION ALL
+		SELECT Id, NULL, 231
+		FROM dbo.Lrf_f_GetSportTypeByProduct('VS3')
 	END
 
 	SELECT

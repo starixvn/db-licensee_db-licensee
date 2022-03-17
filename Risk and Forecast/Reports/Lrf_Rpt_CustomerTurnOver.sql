@@ -87,6 +87,7 @@ AS
 		- 20210304@Hogan: Offer Decimal Odds Only for Match [RedmineID: #151010]
 		- 20210420@Mark: Integrate Time Machine HDP [Redmine: #153302]
 		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
+		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
 
 	Parameter's Explanation:
 		- @ReportBy:  1: daily, 2: monthly
@@ -343,6 +344,7 @@ BEGIN
 				WHEN bt.EventType = 0 THEN CASE
 												WHEN b.bettype = 2799 THEN p.sporttype
 												WHEN bt.ProductID = 63 THEN b.matchid
+												WHEN bt.ProductID = 49 THEN b.matchid
 												ELSE 1
 											END
 				ELSE 0
@@ -391,6 +393,7 @@ BEGIN
 			OR (bettype BETWEEN 603 AND 607 OR bettype BETWEEN 609 AND 613 OR bettype BETWEEN 615 AND 617) -- Basketball bettypes
 			OR bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
 			OR bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
+			OR bettype BETWEEN 5301 AND 5399 -- Virtual Sport 3
 			OR bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 			OR bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 			OR (bettype NOT IN (703, 711) AND bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
@@ -602,6 +605,7 @@ BEGIN
 																					ELSE ''
 																				END
 				WHEN (b.bettype BETWEEN 2701 AND 2829) THEN  N'VS2 - ' + bt.typenamee
+				WHEN (b.bettype BETWEEN 5301 AND 5399) THEN  N'VS3 - ' + bt.typenamee
 				ELSE  bt.typenamee
 			END AS bettype
 			, SUM(b.betcount)	AS betcount
@@ -626,6 +630,7 @@ BEGIN
 																					ELSE ''
 																				END
 				WHEN (b.bettype BETWEEN 2701 AND 2829) THEN  N'VS2 - ' + bt.typenamee
+				WHEN (b.bettype BETWEEN 5301 AND 5399) THEN  N'VS3 - ' + bt.typenamee
 				ELSE  bt.typenamee
 			END
 		ORDER BY b.rowno ASC

@@ -36,6 +36,7 @@ Revisions:
    - 20190531@Amanda: Get correct translation [RedmineID: #114464]
 	- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]
 	- 20201231@Louis: Integrate Happy 5 Linked Games [RedmineID: #147446]
+	- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
 
 	Param's Explanation:
 	
@@ -128,6 +129,7 @@ BEGIN
 				THEN  N'NG - ' + typenamee 
 			WHEN (typeid BETWEEN 1201 AND 1299) THEN  N'VS - '+typenamee
 			WHEN (typeid BETWEEN 2701 AND 2829) THEN  N'VS2 - ' + typenamee
+			WHEN (typeid BETWEEN 5301 AND 5399) THEN  N'VS3 - ' + typenamee
 			ELSE typenamee 																 
 		END AS BettypeName
 	

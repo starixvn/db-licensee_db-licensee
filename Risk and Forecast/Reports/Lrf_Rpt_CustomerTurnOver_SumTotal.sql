@@ -37,6 +37,8 @@ AS
 		- 20210119@Hogan: Integrate Four Guardians [RedmineID: #148100]
 		- 20210304@Hogan: Offer Decimal Odds Only for Match [RedmineID: #151010]
 		- 20210420@Mark: Integrate Time Machine HDP [Redmine: #153302]
+		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
+
 */
 
 BEGIN
@@ -191,6 +193,7 @@ BEGIN
 									OR (b.bettype BETWEEN 603 AND 607 OR b.bettype BETWEEN 609 AND 613 OR b.bettype BETWEEN 615 AND 617) -- Basketball bettypes
 									OR b.bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
 									OR b.bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
+									OR bettype BETWEEN 5301 AND 5399 -- Virtual Sport 3
 									OR bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 									OR bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 									OR (bettype NOT IN (703, 711) AND bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
@@ -350,6 +353,7 @@ BEGIN
 									OR (b.bettype BETWEEN 603 AND 607 OR b.bettype BETWEEN 609 AND 613 OR b.bettype BETWEEN 615 AND 617) -- Basketball bettypes
 									OR b.bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
 									OR b.bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
+									OR bettype BETWEEN 5301 AND 5399 -- Virtual Sport 3
 									OR bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 									OR bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 									OR (bettype NOT IN (703, 711) AND bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
