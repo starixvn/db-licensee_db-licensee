@@ -14,6 +14,7 @@ AS
 		- 20190104@Joseph: Add param @IsIncludeTestLeague to exclude test leagues[Redmine: #107473]
 		- 20210304@Hogan: Integrate Cricket AIO [RedmineID: #150386]
 		- 20211112@Kos: Exclude league and match which IsDeleted = 1 [RedmineID: #163733]
+		- 20220308@Kos: Return league group ID [RedmineID: #167824]
 */
 
 BEGIN
@@ -22,6 +23,7 @@ BEGIN
 	SELECT
 		m.sporttype,
 		m.leagueid,
+		l.LeagueGroupID,
 		m.matchid,
 		m.homeid,
 		m.awayid
@@ -41,6 +43,7 @@ BEGIN
 	SELECT
 		l.sporttype,
 		o.leagueid,
+		l.LeagueGroupID,
 		o.orid,
 		o.teamid,
 		0
