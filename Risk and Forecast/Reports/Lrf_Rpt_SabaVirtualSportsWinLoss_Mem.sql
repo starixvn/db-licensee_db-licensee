@@ -3,6 +3,7 @@
 ALTER PROCEDURE [dbo].[Lrf_Rpt_SabaVirtualSportsWinLoss_Mem]
 	@AgentList				VARCHAR(MAX),
 	@AgentId				INT				= 0,
+	@Username				VARCHAR(50)		= '',
 	@FromDate				SMALLDATETIME,
 	@ToDate					SMALLDATETIME,
 	@MoveBetsDay			SMALLDATETIME,
@@ -25,6 +26,7 @@ AS
 		- 20210204@Kos: Hotfix - wrong turnover [RedmineID: #150090]
 		- 20210521@Mark: Support Saba Soccer PinGoal [RedmineID: #155335]
 		- 20220222@Kos: Support Saba Basketball PinGoal [RedmineID: #167859]
+		- 20220302@Kos: Support filter by customer [RedmineID: #167825]
 
 	Param's Explanation:
 		+ @ReportType: 1: Daily, 2: Monthly
@@ -61,6 +63,30 @@ BEGIN
 
 		RETURN
 	END CATCH;
+
+	DECLARE @CustId INT = -1
+
+	-- Get CustId in case of inputting Username
+	IF @Username <> ''
+	BEGIN
+		SELECT @CustId = c.custid
+		FROM dbo.Customer AS c WITH (NOLOCK)
+			INNER JOIN #TempAg AS ta ON ta.CustId = c.recommend
+		WHERE c.username = @Username
+
+		IF @CustId = -1
+		BEGIN
+			SELECT @CustId = c.custid
+			FROM dbo.Customer AS c WITH (NOLOCK)
+				INNER JOIN #TempAg AS ta ON ta.CustId = c.recommend
+			WHERE c.username2 LIKE + '%$' + @Username
+		END
+
+		IF @CustId = -1
+		BEGIN
+			SET @CustId = 0
+		END
+	END
 
 	DECLARE @BetType TABLE (BetType INT, ProductCode VARCHAR(10))
 
@@ -207,6 +233,7 @@ BEGIN
 			b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 			AND b.statusID IN (111, 112, 113)
 			AND b.bettype <> 10
+			AND (@Username = '' OR b.custid = @CustId)
 		GROUP BY
 			b.custid,
 			b.currency,
@@ -283,6 +310,7 @@ BEGIN
 			b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 			AND b.statusID IN (111, 112, 113)
 			AND b.bettype = 10
+			AND (@Username = '' OR b.custid = @CustId)
 		GROUP BY
 			b.custid,
 			b.currency,
@@ -377,6 +405,7 @@ BEGIN
 					b.winlostdate = d.Date
 					AND b.statusID <> 101	--exclude REJECT
 					AND b.bettype NOT IN (901, 902, 903, 904, 914, 9, 29)
+					AND (@Username = '' OR b.custid = @CustId)
 				GROUP BY
 					b.custid,
 					b.Currency,
