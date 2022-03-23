@@ -121,6 +121,7 @@ AS
 		- 20211214@Kos: Integrate PP 20 new games [RedmineID: #165772]
 		- 20220126@Kos: Integrate Spadegaming Jackpot [RedmineID: #167035]
 		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
+		- 20220317@Kos: Integrate Allbet Promotion [RedmineID: #167524]
 
 	Param's Explanation:
 		+ @CustID: SuperID
@@ -229,7 +230,7 @@ BEGIN
 
 	CREATE TABLE #TempAg (CustId INT, Currency INT)
 
-	CREATE CLUSTERED INDEX IX_TempAg ON #TempAg (CustId);
+	CREATE CLUSTERED INDEX IX_CustId ON #TempAg (CustId);
 
 	DECLARE @ExchangeRate	TABLE (FromDate SMALLDATETIME, ToDate SMALLDATETIME, ExchangeId INT, Rate FLOAT, USD FLOAT, EUR FLOAT, GBP FLOAT, DefaultRate FLOAT)
 	DECLARE @Code			VARCHAR(20)
@@ -810,10 +811,11 @@ BEGIN
 				stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
 				ELSE 0 END	
 			) AS turnoverVB,
-			SUM(CASE WHEN b.bettype BETWEEN 2401 AND 2499 THEN
-				stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
+			SUM(CASE
+					WHEN bt.ProductCode = 'AB' THEN b.stake * CASE WHEN @DrawFilter IN (2, 3) AND b.statusID = 111 THEN 0 ELSE 1
+					END
 				ELSE 0 END
-			) AS turnoverAB,
+			) AS TurnoverAB,
 			SUM(CASE WHEN b.bettype BETWEEN 1011 AND 1020  THEN
 				stake * CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END
 				ELSE 0 END
@@ -927,8 +929,10 @@ BEGIN
 				THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLAGC,
 			-SUM(CASE WHEN b.bettype BETWEEN 4001 AND 4100
 				THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLVB,
-			-SUM(CASE WHEN b.bettype BETWEEN 2401  AND 2499
-				THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLAB,
+			-SUM(CASE
+					WHEN bt.ProductCode = 'AB' THEN b.winlost-b.actual_stake
+					ELSE 0
+				END) AS LicenseeWLAB,
 			-SUM(CASE WHEN b.bettype BETWEEN  1011 AND 1020
 				THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLFW,
 			0 AS LicenseeWLCO,

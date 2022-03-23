@@ -15,6 +15,7 @@ RETURNS TABLE
 		- 20210322@Hogan: Integrate AE Casino Lucky Draw [RedmineID: #151984]
 		- 20210518@Hogan: Integrate Vgaming [RedmineID: #151583]
 		- 20220126@Kos: Integrate Spadegaming Jackpot [RedmineID: #167035]
+		- 20220223@Kos: Integrate Allbet Promotion [RedmineID: #167524]
 */
 
 RETURN
@@ -51,4 +52,6 @@ RETURN
 	SELECT 'SG', 4599									-- Spadegaming Jackpot Contribution
 	UNION ALL
 	SELECT 'SG', 4600									-- Spadegaming Jackpot Prize
+	UNION ALL
+	SELECT 'AB', 2499									-- Allbet Promotion
 GO
