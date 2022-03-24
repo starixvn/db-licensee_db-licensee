@@ -42,8 +42,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
 	@ShowAPM		BIT = 0,	-- AdvantPlay Mini
 	@ShowVS3		BIT = 0, -- Virtual Sports 3
 	@DrawFilter				SMALLINT		= 1,
-	@CustomerClass			VARCHAR(200)	= '',
-	@OddsGroup				VARCHAR(100)	= '',
+	@CustomerClass			VARCHAR(200)	= 'All',
+	@OddsGroup				VARCHAR(100)	= 'All',
 	@CheckPromotionPrize	BIT				= 0,
 	@PageSize				INT				= 1000,
 	@PageIndex				INT				= 1,
@@ -159,6 +159,7 @@ AS
 		- 20211105@Hogan: Integrate AdvantPlay RNG & Mini [RedmineID: #158186]
 		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
 		- 20220302@Kos: Support filter by Customer Class and Odds Group [RedmineID: #167824]
+		- 20220324@Kos: Fix quick link from BTC [RedmineID: #168034]
 
 	Param's Explanation:
 		@OrderItem:
@@ -505,8 +506,10 @@ BEGIN
 					END)
 			AND (b.bettype NOT BETWEEN 1611 AND 1699 OR b.matchid <> 150)
 			AND (b.bettype NOT BETWEEN 3801 AND 3899 OR b.matchid <> 173)
-			AND ',' + @OddsGroup + ',' LIKE '%,' + c.ugroup + ',%'
-			AND ',' + @CustomerClass + ',' LIKE '%,' + CONVERT(VARCHAR(6), ci.CustomerClass) + ',%'
+			AND (@OddsGroup = 'All'
+				OR ',' + @OddsGroup + ',' LIKE '%,' + c.ugroup + ',%')
+			AND (@CustomerClass = 'All'
+				OR ',' + @CustomerClass + ',' LIKE '%,' + CONVERT(VARCHAR(6), ci.CustomerClass) + ',%')
 
 		-- check promotion prize - PP promotion prize and NPH Promotion prize and Tips --
 		IF @CheckPromotionPrize = 1 AND EXISTS (
@@ -586,8 +589,10 @@ BEGIN
 					END)
 			-- Exclude PP Prize, SAG Tip ticket
 			AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
-			AND ',' + @OddsGroup + ',' LIKE '%,' + c.ugroup + ',%'
-			AND ',' + @CustomerClass + ',' LIKE '%,' + CONVERT(VARCHAR(6), ci.CustomerClass) + ',%'
+			AND (@OddsGroup = 'All'
+				OR ',' + @OddsGroup + ',' LIKE '%,' + c.ugroup + ',%')
+			AND (@CustomerClass = 'All'
+				OR ',' + @CustomerClass + ',' LIKE '%,' + CONVERT(VARCHAR(6), ci.CustomerClass) + ',%')
 
 		-- check promotion prize - PP promotion prize and NPH Promotion prize and Tips --
 		IF @CheckPromotionPrize = 1 AND @PromotionPrize = 0 AND EXISTS (
