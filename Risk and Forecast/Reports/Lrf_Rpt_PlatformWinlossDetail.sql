@@ -106,6 +106,7 @@ AS
 		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
 		- 20211105@Hogan: Integrate AdvantPlay RNG & Mini [RedmineID: #158186]
 		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
+		- 20220317@Kos: Integrate Cricket phase 2 [RedmineID: #168034]
 
 	Param's Explanation:
 		+ @PlatformType: List of platform type (ex: 1,2,3,..)
@@ -508,7 +509,7 @@ BEGIN
 					OR (b.bettype BETWEEN 121 AND 999)
 					OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
 					OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0
-					OR (b.Bettype BETWEEN 9400 AND 9699) -- Cricket AIO
+					OR (b.Bettype BETWEEN 9400 AND 9998) -- Cricket AIO
 					OR b.Bettype = 38					   -- Single Match Parlay
 				) 
 				AND (b.bettype < 901 OR b.bettype > 904)

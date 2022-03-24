@@ -70,6 +70,7 @@ AS
 		- 20210330@Hogan: Integrate Cricket AIO [RedmineID: #150386]
 		- 20210830@Kos: Support subsidiary view [RedmineID: #159576]
 		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
+		- 20220317@Kos: Integrate Cricket phase 2 [RedmineID: #168034]
 
 	Param's Explanation:
 		+ @AgentList: XML structure
@@ -168,7 +169,7 @@ BEGIN
 								OR (b.bettype BETWEEN 121 AND 999)
 								OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
 								OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0
-								OR (b.Bettype BETWEEN 9400 AND 9699) -- Cricket AIO
+								OR (b.Bettype BETWEEN 9400 AND 9998) -- Cricket AIO
 								OR b.Bettype = 38					 -- Single Match Parlay
 							)
 							OR b.bettype BETWEEN 81 AND 120 -- Number Game
@@ -204,7 +205,7 @@ BEGIN
 				OR (b.bettype BETWEEN 8101 AND 8120)
 				OR (b.bettype BETWEEN 3601 AND 3610)
 				OR (b.Bettype >= 9001 AND b.Bettype <= 9399)
-				OR (b.Bettype >= 9400 AND b.Bettype <= 9699) -- Cricket AIO
+				OR (b.Bettype >= 9400 AND b.Bettype <= 9998) -- Cricket AIO
 				OR (b.Bettype >= 4901 AND b.Bettype <= 5000)
 				OR (b.Bettype >= 5001 AND b.Bettype <= 5099)
 				OR (b.Bettype >= 3611 AND b.Bettype <= 3620)
@@ -251,7 +252,7 @@ BEGIN
 								OR (b.bettype BETWEEN 121 AND 999)
 								OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
 								OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0
-								OR (b.Bettype BETWEEN 9400 AND 9699) -- Cricket AIO
+								OR (b.Bettype BETWEEN 9400 AND 9998) -- Cricket AIO
 								OR b.Bettype = 38					 -- Single Match Parlay
 								)
 							OR b.bettype BETWEEN 81 AND 120
@@ -288,7 +289,7 @@ BEGIN
 				OR (b.bettype BETWEEN 8101 AND 8120)
 				OR (b.bettype BETWEEN 3601 AND 3610)
 				OR (b.Bettype >= 9001 AND b.Bettype <= 9399)
-				OR (b.Bettype >= 9400 AND b.Bettype <= 9699) -- Cricket AIO
+				OR (b.Bettype >= 9400 AND b.Bettype <= 9998) -- Cricket AIO
 				OR (b.Bettype >= 4901 AND b.Bettype <= 5000)
 				OR (b.Bettype >= 5001 AND b.Bettype <= 5099)
 				OR (b.Bettype >= 3611 AND b.Bettype <= 3620)
