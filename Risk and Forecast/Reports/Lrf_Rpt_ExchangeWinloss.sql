@@ -1,13 +1,14 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_ExchangeWinloss]
-	  @FromDate		DATE
-	, @ToDate		DATE
-	, @ReportType	TINYINT = 1
-	, @LicenseeId	INT
-	, @AgentList	VARCHAR(MAX)
-	, @BaseCurrency	VARCHAR(3)
-	, @DefaultBaseCurrency	VARCHAR(3)
+	@LicenseeId				INT,
+	@AgentList				VARCHAR(MAX),
+	@UserName				VARCHAR(50)	= '',
+	@FromDate				DATE,
+	@ToDate					DATE,
+	@ReportType				TINYINT		= 1,
+	@BaseCurrency			VARCHAR(3),
+	@DefaultBaseCurrency	VARCHAR(3)
 AS
 
 /*
@@ -21,6 +22,7 @@ AS
 		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 		- 20190621@Amanda: Add @BaseCurrency parameter [Redmine: #112531]
 		- 20201110@Kos: Enhance performance [Redmine: #145055]
+		- 20220308@Kos: Support filter by customer [RedmineID: #169283]
 
 	Sample:
 		exec Lrf_Rpt_ExchangeWinloss @fromdate='2017-10-01',@todate='2017-10-24',@ReportType = 1,@LicenseeId = 1,@AgentList=N'<ROOT><Agent AgentId="791088" Currency="3"/><Agent AgentId="860379" Currency="6"/><Agent AgentId="2428981" Currency="6"/><Agent AgentId="2812696" Currency="6"/><Agent AgentId="3575140" Currency="6"/><Agent AgentId="4362999" Currency="6"/></ROOT>'
@@ -29,41 +31,13 @@ AS
 BEGIN
 	SET NOCOUNT ON
 
-	CREATE TABLE #tmpResult (Winlostdate DATE, CurrencyID INT, TotalTrans INT, TurnOver MONEY
-							, NETTurnOver MONEY, Winlost MONEY, LicWinlost MONEY, LicNetWL MONEY, CustComm MONEY, AmountDueTo MONEY, AgentComm MONEY)
-	CREATE TABLE #Exchange (ExchangeID INT, FromDate DATE, ToDate DATE, USD FLOAT, EUR FLOAT, GBP FLOAT, Rate FLOAT, DefaultRate FLOAT)
-	
-	DECLARE @ProductID			INT
-		,	@FDate				DATE
-		,	@TDate				DATE
-		,	@ProductPrefix		VARCHAR(2)
-		
-	DECLARE @RawWinLostDate AS TABLE (WinLostDate DATE, StartWLDate DATETIME, EndWLDate DATETIME)
-
-	SELECT @FDate = @FromDate,
-		   @TDate = @ToDate
-	
-	SET @ProductPrefix = 'BX'
-	
-	INSERT INTO @RawWinLostDate (WinLostDate, StartWLDate, EndWLDate)
-	SELECT DISTINCT WinlostDate, WinlostDate, DATEADD(Day, 1, WinlostDate)
-	FROM bodb_3rdProduct.dbo.Product3rd_SummarizedDateHistory WITH (NOLOCK)
-	WHERE WinlostDate >= @FDate AND WinlostDate <= @TDate 
-		AND SumToThirdPartyDate IS NULL
-
-	SELECT @ProductID = ProductID
-	FROM bodb_licensee.dbo.Product3rd WITH (NOLOCK)
-	WHERE ProductPrefix = @ProductPrefix
-
-	-- #Region: Get list custIDs
-	DECLARE @tmpCust	AS TABLE (CustId INT, Currency INT)
-	DECLARE @tempAg		AS TABLE (CustId INT, Currency INT)
-	DECLARE @DocHandler	INT
+	DECLARE @TempAg AS TABLE (CustId INT, Currency INT)
+	DECLARE @DocHandler INT
 
 	BEGIN TRY
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT, @AgentList
 
-		INSERT INTO @tempAg ( custID, currency )
+		INSERT INTO @tempAg (CustId, Currency)
 		SELECT AgentId, Currency
 		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId INT, Currency INT) AS Data
 
@@ -77,10 +51,68 @@ BEGIN
 		RETURN
 	END CATCH;
 
-	INSERT INTO @tmpCust (CustId, Currency)
-	SELECT ci.custid, ci.currency
-	FROM dbo.Customer AS ci WITH (NOLOCK)
-		INNER JOIN @tempAg AS ag ON ci.recommend = ag.custID AND ci.currency = ag.currency
+	CREATE TABLE #TmpResult (
+		WinLostDate		DATE,
+		CurrencyId		INT,
+		TotalTrans		INT,
+		Turnover		MONEY,
+		NetTurnover		MONEY,
+		WinLost			MONEY,
+		LicWinLost		MONEY,
+		LicNetWL		MONEY,
+		CustComm		MONEY,
+		AmountDueTo		MONEY,
+		AgentComm		MONEY)
+
+	DECLARE @ProductId			INT
+		,	@FDate				DATE
+		,	@TDate				DATE
+		,	@ProductPrefix		VARCHAR(2)
+		
+	DECLARE @RawWinLostDate AS TABLE (WinLostDate DATE, StartWLDate DATETIME, EndWLDate DATETIME)
+
+	SELECT @FDate = @FromDate,
+		@TDate = @ToDate
+
+	SET @ProductPrefix = 'BX'
+	
+	INSERT INTO @RawWinLostDate (WinLostDate, StartWLDate, EndWLDate)
+	SELECT DISTINCT WinlostDate, WinlostDate, DATEADD(DAY, 1, WinlostDate)
+	FROM bodb_3rdProduct.dbo.Product3rd_SummarizedDateHistory WITH (NOLOCK)
+	WHERE WinlostDate >= @FDate AND WinlostDate <= @TDate
+		AND SumToThirdPartyDate IS NULL
+
+	SELECT @ProductID = ProductID
+	FROM bodb_licensee.dbo.Product3rd WITH (NOLOCK)
+	WHERE ProductPrefix = @ProductPrefix
+
+	-- #Region: Get list custIDs
+	DECLARE @TmpCust AS TABLE (CustId INT PRIMARY KEY)
+
+	IF @Username = ''
+	BEGIN
+		INSERT INTO @TmpCust (CustId)
+		SELECT c.custid
+		FROM dbo.Customer AS c WITH (NOLOCK)
+			INNER JOIN @TempAg AS ag ON ag.CustId = c.recommend
+	END
+	ELSE
+	BEGIN
+		INSERT INTO @TmpCust (CustId)
+		SELECT c.custid
+		FROM dbo.Customer AS c WITH (NOLOCK)
+			INNER JOIN @TempAg AS ag ON ag.CustId = c.recommend
+		WHERE c.username = @Username
+
+		IF NOT EXISTS (SELECT 1 FROM @TmpCust)
+		BEGIN
+			INSERT INTO @TmpCust (CustId)
+			SELECT c.custid
+			FROM dbo.Customer AS c WITH (NOLOCK)
+				INNER JOIN @TempAg AS ag ON ag.CustId = c.recommend
+			WHERE c.username2 LIKE + '%$' + @Username
+		END
+	END
 	-- #EndRegion: Get list custIDs
 
 	-- #Region: Get data has not been moved to sum table yet(yesterday and today)
@@ -148,7 +180,7 @@ BEGIN
 			sumbet.ExVirtualRate
 		FROM bodb_3rdProduct.dbo.Sum_winloss_Exchange AS sumbet WITH (NOLOCK)
 			INNER JOIN @RawWinLostDate AS wldate ON sumbet.settledDate >= wldate.StartWLDate AND sumbet.settledDate < wldate.EndWLDate
-			INNER JOIN @tmpCust AS cust ON cust.Custid = sumbet.CustID AND cust.Currency = sumbet.Currency
+			INNER JOIN @tmpCust AS cust ON cust.Custid = sumbet.CustID
 		GROUP BY
 			sumbet.settledDate,
 			sumbet.userId,
@@ -193,13 +225,13 @@ BEGIN
 			bet.marketID
 		
 		INSERT INTO #tmpResult(
-			Winlostdate,
-			CurrencyID,
-			TurnOver,
-			NetTurnOver,
+			WinLostDate,
+			CurrencyId,
+			Turnover,
+			NetTurnover,
 			TotalTrans,
-			Winlost,
-			LicWinlost,
+			WinLost,
+			LicWinLost,
 			LicNetWL,
 			CustComm,
 			AmountDueTo,
@@ -231,17 +263,17 @@ BEGIN
 	END
 	-- #EndRegion: Get data has not been moved to sum table yet(yesterday and today)
 
-	-- #Region: Handle Data	from Sum Table
+	-- #Region: Handle Data from Sum Table
 	IF @FDate <= @TDate
 	BEGIN
 		INSERT INTO #tmpResult(
-			Winlostdate,
-			CurrencyID,
-			TurnOver,
+			WinLostDate,
+			CurrencyId,
+			Turnover,
 			NetTurnOver,
 			TotalTrans,
-			Winlost,
-			LicWinlost,
+			WinLost,
+			LicWinLost,
 			LicNetWL,
 			CustComm,
 			AmountDueTo,
@@ -258,10 +290,10 @@ BEGIN
 			SUM(CommissionP),
 			-SUM(( b.Winlost + b.CommissionP) + ( b.WinLostA + CommissionA)) -- (LicWL - NetLicWL) + (LicComm - NetLicComm)
 			, SUM(CommissionA)
-		FROM bodb_LicenseeReport.dbo.rptDepWinlost_ThirdParty b WITH (NOLOCK)
-			INNER JOIN @tmpCust c ON b.Custid = c.CustID AND b.Currency = c.Currency
-		WHERE b.Winlostdate BETWEEN @FDate AND @TDate 
-			AND b.ProductId = @ProductID 
+		FROM bodb_LicenseeReport.dbo.rptDepWinlost_ThirdParty AS b WITH (NOLOCK)
+			INNER JOIN @tmpCust AS c ON b.Custid = c.CustId
+		WHERE b.Winlostdate BETWEEN @FDate AND @TDate
+			AND b.ProductId = @ProductId
 			AND NOT EXISTS (SELECT 1 FROM @RawWinLostDate r WHERE b.Winlostdate = r.WinLostDate)
 		GROUP BY
 			b.Winlostdate,
@@ -270,14 +302,12 @@ BEGIN
 	-- #EndRegion: Handle Data	from Sum Table
 
 	-- #Region: Handle Exchange Rate
-	;WITH Currency_CTE (CurrencyID) AS (
-											SELECT DISTINCT CurrencyID 
-											FROM #tmpResult
-										)
+	CREATE TABLE #Exchange (ExchangeId INT, FromDate DATE, ToDate DATE, USD FLOAT, EUR FLOAT, GBP FLOAT, Rate FLOAT, DefaultRate FLOAT)
 
+	;WITH Currency_CTE (CurrencyID) AS ( SELECT DISTINCT CurrencyID FROM #tmpResult )
 	INSERT INTO #Exchange (
-		ExchangeID ,
-		FromDate ,
+		ExchangeId,
+		FromDate,
 		ToDate,
 		USD,
 		EUR,
@@ -342,24 +372,24 @@ BEGIN
 		, SUM(r.AmountDueTo * e.DefaultRate)	AS AmountDueToBase
 		, SUM(r.AgentComm * e.DefaultRate)		AS AgentCommBase
 		, SUM(r.LicNetWL * e.DefaultRate)		AS LicNetWLBase
-	FROM #tmpResult r
-		INNER JOIN #Exchange e ON r.CurrencyID = e.ExchangeId AND r.Winlostdate BETWEEN e.FromDate AND e.ToDate
+	FROM #tmpResult AS r
+		INNER JOIN #Exchange AS e ON r.CurrencyId = e.ExchangeId AND r.Winlostdate BETWEEN e.FromDate AND e.ToDate
 	GROUP BY --r.Winlostdate
 		CASE
-			WHEN @ReportType = 1 THEN r.winlostdate
-			WHEN @ReportType = 2 THEN DATEADD(DAY, 1 - DATEPART(DAY, r.Winlostdate), r.Winlostdate)
+			WHEN @ReportType = 1 THEN r.WinLostDate
+			WHEN @ReportType = 2 THEN DATEADD(DAY, 1 - DATEPART(DAY, r.WinLostDate), r.WinLostDate)
 			ELSE '0'
 		END
 		, r.CurrencyID
 	ORDER BY
 		CASE
-			WHEN @ReportType = 1 THEN r.winlostdate
-			WHEN @ReportType = 2 THEN DATEADD(DAY, 1 - DATEPART(DAY, r.Winlostdate), r.Winlostdate)
+			WHEN @ReportType = 1 THEN r.WinLostDate
+			WHEN @ReportType = 2 THEN DATEADD(DAY, 1 - DATEPART(DAY, r.WinLostDate), r.WinLostDate)
 			ELSE '0'
 		END
 	-- #EndRegion: Return data
 
-	DROP TABLE #tmpResult
+	DROP TABLE #TmpResult
 	DROP TABLE #Exchange
 END
 GO
