@@ -16,6 +16,7 @@ AS
 		- 20190819@Amanda: Apply primary/secondary bet type and remove unsupported bet types [RedmineID: #118300]
 		- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]
 		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
+		- 20220329@Hogan: Hide Mix Parlay (bettypeID 9)[RedmineID: #170438]
 */
 
 BEGIN
@@ -41,7 +42,7 @@ BEGIN
 		WHERE ',' + @ProductCode + ',' LIKE '%,' + p.ProductPrefix + ',%'
 			AND sp.[Enabled] = 1
 			AND sp.BetType NOT IN (913, 914)
-			AND sp.BetType NOT IN (901,902,903,904/*bettrade*/,500,502/*Criket*/,300,301,302,303,304/*MO*/,999/*Licensee Spread Setting*/)
+			AND sp.BetType NOT IN (901,902,903,904/*bettrade*/,500,502/*Criket*/,300,301,302,303,304/*MO*/,999/*Licensee Spread Setting*/,9/*Mix Parlay*/)
 			AND (sp.BetType < 801 OR sp.BetType > 899) -- MG
 		GROUP BY ISNULL(COALESCE(ss.GroupTypeId, bt.GroupTypeId), sp.BetType)
 	END
