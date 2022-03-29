@@ -4,8 +4,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerTurnOver]
 	@AgentList		VARCHAR(MAX)
 	,@Username		VARCHAR(50)		= ''
 	,@Product		VARCHAR(MAX)
-	,@Bettype		VARCHAR(MAX)
-	,@CurrencyID	INT
+	,@BetType		VARCHAR(MAX)
+	,@CurrencyId	INT
 	,@FromDate		SMALLDATETIME
 	,@ToDate		SMALLDATETIME
 	,@Odds			FLOAT
@@ -88,12 +88,13 @@ AS
 		- 20210420@Mark: Integrate Time Machine HDP [Redmine: #153302]
 		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
 		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
+		- 20220322@Kos: Support Parlay sport [RedmineID: #169282]
 
 	Parameter's Explanation:
-		- @ReportBy:  1: daily, 2: monthly
-		- @FilterBy:  1: Win, 2: Loss, 3: Draw
-		- @SportID   : Sport type ID
-		- @bettype   : Bet type ID
+		- @ReportBy: 1: daily, 2: monthly
+		- @FilterBy: 1: Win, 2: Loss, 3: Draw
+		- @SportID: Sport type ID
+		- @bettype: Bet type ID
 		- @MoveBetsDay: The day we move tickets to bettrans14
 */
 
@@ -275,7 +276,7 @@ BEGIN
 		, sp.EventType
 	INTO #bettype
 	FROM #BettypeID b
-		INNER JOIN @SportBettype sp ON b.typeid 	=  sp.bettype
+		INNER JOIN @SportBettype sp ON b.typeid =  sp.bettype
 
 	DROP TABLE #BettypeID
 
@@ -341,6 +342,7 @@ BEGIN
 			, b.custid
 			, recommend
 			, CASE
+				WHEN b.bettype IN (9, 29, 38) THEN 999
 				WHEN bt.EventType = 0 THEN CASE
 												WHEN b.bettype = 2799 THEN p.sporttype
 												WHEN bt.ProductID = 63 THEN b.matchid
@@ -428,6 +430,7 @@ BEGIN
 				INNER JOIN dbo.match m WITH (NOLOCK) ON b.matchid = m.matchid
 			WHERE b.EventType = 1
 				AND m.eventdate BETWEEN @tempFromDate AND @ToDate
+				AND b.bettype <> 38
 		END
 
 		IF EXISTS(SELECT TOP(1) 1 FROM #tempBettrans WHERE EventType = 2)
@@ -570,24 +573,21 @@ BEGIN
 					ELSE typenamee 
 				END AS typenamee
 			FROM #bettype b
-				LEFT JOIN dbo.f_GroupBettype() ss 
-				ON b.typeID 	= ss.bettype
-				LEFT JOIN dbo.f_GroupBettype3rd() ss2
-				ON b.typeID 	= ss2.bettype
-				INNER JOIN dbo.bettype bt WITH(NOLOCK)
-				ON ISNULL(COALESCE(ss.GroupTypeID, ss2.GroupTypeID), b.typeID) = bt.typeid
+				LEFT JOIN dbo.f_GroupBettype() ss ON b.typeID 	= ss.bettype
+				LEFT JOIN dbo.f_GroupBettype3rd() ss2 ON b.typeID 	= ss2.bettype
+				INNER JOIN dbo.bettype bt WITH(NOLOCK) ON ISNULL(COALESCE(ss.GroupTypeID, ss2.GroupTypeID), b.typeID) = bt.typeid
 			GROUP BY 
 				b.typeID
 				,CASE 
-					WHEN @Langkey =  'zh-CN'	AND ISNULL(bt.typenamecn, '')		<> '' THEN bt.typenamecn
-					WHEN @Langkey =  'zh-TW'	AND ISNULL(bt.typenamec_uni, '')	<> '' THEN bt.typenamec_uni
-					WHEN @Langkey =  'zh-Hans'	AND ISNULL(bt.typenamecn, '')		<> '' THEN bt.typenamecn
-					WHEN @Langkey =  'th-TH'	AND ISNULL(bt.typenameth, '')		<> '' THEN bt.typenameth
-					WHEN @Langkey =  'ja-JP'	AND ISNULL(bt.typenamej, '')		<> '' THEN bt.typenamej
-					WHEN @Langkey =  'ko-KR'	AND ISNULL(bt.typenameko, '')		<> '' THEN bt.typenameko
-					WHEN @Langkey =  'es'  		AND ISNULL(bt.typenameES, '')		<> '' THEN bt.typenameES
-					WHEN @Langkey =  'vi-VN'	AND ISNULL(bt.typenamee, '')		<> '' THEN bt.typenamee
-					ELSE bt.typenamee 
+					WHEN @Langkey = 'zh-CN'	AND ISNULL(bt.typenamecn, '')		<> '' THEN bt.typenamecn
+					WHEN @Langkey = 'zh-TW'	AND ISNULL(bt.typenamec_uni, '')	<> '' THEN bt.typenamec_uni
+					WHEN @Langkey = 'zh-Hans'	AND ISNULL(bt.typenamecn, '')	<> '' THEN bt.typenamecn
+					WHEN @Langkey = 'th-TH'	AND ISNULL(bt.typenameth, '')		<> '' THEN bt.typenameth
+					WHEN @Langkey = 'ja-JP'	AND ISNULL(bt.typenamej, '')		<> '' THEN bt.typenamej
+					WHEN @Langkey = 'ko-KR'	AND ISNULL(bt.typenameko, '')		<> '' THEN bt.typenameko
+					WHEN @Langkey = 'es'  		AND ISNULL(bt.typenameES, '')	<> '' THEN bt.typenameES
+					WHEN @Langkey = 'vi-VN'	AND ISNULL(bt.typenamee, '')		<> '' THEN bt.typenamee
+					ELSE bt.typenamee
 				END
 		)
 		SELECT 
@@ -617,7 +617,8 @@ BEGIN
 			INNER JOIN CTE_Bettype bt ON b.bettype = bt.typeID
 		GROUP BY
 			b.RowNo
-			, CASE WHEN @ReportBy =  2 THEN CONVERT(VARCHAR(6), b.winlostdate, 112)
+			, CASE
+				WHEN @ReportBy =  2 THEN CONVERT(VARCHAR(6), b.winlostdate, 112)
 				ELSE CONVERT(VARCHAR(8), b.winlostdate, 112)
 			END
 			, b.username

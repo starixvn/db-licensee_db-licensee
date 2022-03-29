@@ -44,6 +44,7 @@ AS
 		- 20210304@Hogan: Offer Decimal Odds Only for Match [RedmineID: #151010]
 		- 20210420@Mark: Integrate Time Machine HDP [Redmine: #153302]
 		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
+		- 20220322@Kos: Support Parlay sport [RedmineID: #169282]
 */
 
 BEGIN
@@ -94,9 +95,9 @@ BEGIN
 					, c.Custid
 					, c.username
 					, c.nickname
-			FROM #tempBettrans b	
+			FROM #tempBettrans b
 				INNER JOIN #tempCust c ON b.custid = c.custid
-			GROUP BY 
+			GROUP BY
 				b.winlostdate
 				, c.custid
 				, c.username
@@ -117,7 +118,8 @@ BEGIN
 					SELECT DISTINCT
 						winlostdate, 
 						CASE
-							WHEN b.bettype IN (9, 10, 29) THEN 1
+							WHEN b.bettype IN (9, 29, 38) THEN 999
+							WHEN b.bettype IN (10) THEN 1
 							ELSE b.sporttype 
 						END AS sporttype,
 						bettype,
@@ -138,10 +140,16 @@ BEGIN
 				INSERT INTO #tempData(winlostdate, sporttype, bettype, custid, username, nickname, StatusID)
 				SELECT winlostdate, sporttype, bettype, b.custid, c.username, c.nickname, StatusID
 				FROM (
-					SELECT DISTINCT	winlostdate, 
-							CASE WHEN b.bettype IN (9, 10, 29) THEN 1
-								ELSE b.sporttype 
-							END AS sporttype, bettype, b.custid, StatusID
+					SELECT DISTINCT
+						b.winlostdate, 
+						CASE
+							WHEN b.bettype IN (9, 29, 38) THEN 999
+							WHEN b.bettype IN (10) THEN 1
+							ELSE b.sporttype 
+						END AS sporttype,
+						b.bettype,
+						b.custid,
+						b.statusid
 					FROM #recommend rec
 						JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK) ON b.Recommend = rec.CustID
 					WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate 
@@ -250,21 +258,26 @@ BEGIN
 
 		IF @FromDate <= @MoveBetsDay
 		BEGIN
-			IF(@odds = 0)
+			IF @odds = 0
 			BEGIN
 				INSERT INTO #tempData(winlostdate, sporttype, bettype, custid, username, nickname, StatusID)
 				SELECT winlostdate, sporttype, bettype, b.custid, c.username, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS nickname, StatusID
 				FROM (
-					SELECT DISTINCT	winlostdate, 
-							CASE WHEN b.bettype IN (9, 10, 29) THEN 1
-								ELSE b.sporttype 
-							END AS sporttype, bettype, b.custid, StatusID
+					SELECT DISTINCT
+						b.winlostdate,
+						CASE
+							WHEN b.bettype IN (9, 29, 38) THEN 999
+							WHEN b.bettype IN (10) THEN 1
+							ELSE b.sporttype 
+						END AS sporttype,
+						b.bettype,
+						b.custid,
+						b.statusid
 					FROM #recommend rec
-						JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)
-							ON b.Recommend	= rec.CustID
+						JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK) ON b.Recommend = rec.CustID
 					WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate
 					) b
-					INNER JOIN dbo.Customer  c WITH (NOLOCK, INDEX = IX_custid)
+					INNER JOIN dbo.Customer c WITH (NOLOCK, INDEX = IX_custid)
 						ON b.custid = c.custid
 				OPTION(RECOMPILE)
 			END
@@ -275,13 +288,18 @@ BEGIN
 				INSERT INTO #tempData(winlostdate, sporttype, bettype, custid, username, nickname, StatusID)
 				SELECT winlostdate, sporttype, bettype, b.custid, c.username, ISNULL(SUBSTRING(c.username2,CHARINDEX ('$',c.username2,1)+1,LEN(c.username2)),c.username) AS nickname, StatusID
 				FROM (
-					SELECT DISTINCT	winlostdate, 
-							CASE WHEN b.bettype IN (9, 10, 29) THEN 1
-								ELSE b.sporttype 
-							END AS sporttype, bettype, b.custid, StatusID
+					SELECT DISTINCT
+						b.winlostdate,
+						CASE
+							WHEN b.bettype IN (9, 29, 38) THEN 999
+							WHEN b.bettype IN (10) THEN 1
+							ELSE b.sporttype 
+						END AS sporttype,
+						b.bettype,
+						b.custid,
+						b.statusid
 					FROM #recommend rec
-						JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK)
-							ON b.Recommend	= rec.CustID
+						JOIN bodb_LicenseeReport.dbo.rptcustomerturnOver b WITH(NOLOCK) ON b.Recommend = rec.CustID
 					WHERE b.winlostdate BETWEEN @fromdate AND @tempToDate 
 						AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 						AND CASE WHEN (b.bettype IN (1,2,3,7,12,8,20,21,1301,1303,1305,1306,1308,1311,1312,1316,1318,1324,153,154,155,156,228,229)	 -- add more Sportting Solution bettype 
