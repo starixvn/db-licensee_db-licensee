@@ -39,6 +39,7 @@ AS
 		- 20220311@Kos: Support Parlay sport [RedmineID: #169282]
 					- Remove input param @LicenseeID, @Langkey
 					- Move SP from DBLIC.bodb_Licensee to DBEXT.bodb02
+		- 20220329@Hogan: Hide Mix Parlay (bettypeID 9)[RedmineID: #170438]
 
 	Param's Explanation:
 		- @SportList: XML format (999: Parlay sport)
@@ -112,7 +113,6 @@ BEGIN
 	BEGIN
 		INSERT INTO #SportBetType (ProductId, BetType)
 		SELECT 1, 38
-		UNION SELECT 1, 9
 		UNION SELECT 1, 29
 	END
 
