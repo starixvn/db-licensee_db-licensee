@@ -116,6 +116,7 @@ AS
 		- 20211214@Kos: Integrate PP 20 new games [RedmineID: #165772]
 		- 20220126@Kos: Integrate Spadegaming Jackpot [RedmineID: #167035]
 		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
+		- 20220328@Hogan: Macau Games Add new Range bettype[RedmineID: #170607]
 
 	Param's Explanation:
 		+ @CustID: SuperID
@@ -713,10 +714,10 @@ BEGIN
 				stake * (CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END)
 				ELSE 0 END
 			) AS turnoverAGC,
-			SUM(CASE WHEN b.bettype BETWEEN 4001 AND 4100 THEN
-				stake * (CASE WHEN @drawfilter IN (2,3) AND b.statusID = 111 THEN 0 ELSE 1 END)
-				ELSE 0 END
-			) AS turnoverVB,
+			SUM(CASE
+					WHEN bt.ProductCode = 'VB' THEN b.stake * (CASE WHEN @DrawFilter IN (2, 3) AND b.statusID = 111 THEN 0 ELSE 1 END)
+					ELSE 0
+				END) AS turnoverVB,
 			SUM(CASE
 					WHEN bt.ProductCode = 'AB' THEN b.stake * (CASE WHEN @DrawFilter IN (2, 3) AND b.statusID = 111 THEN 0 ELSE 1 END)
 					ELSE 0
@@ -833,8 +834,10 @@ BEGIN
 				THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLKN,
 			-SUM(CASE WHEN b.bettype BETWEEN 1800 AND 1899
 				THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLAGC,
-			-SUM(CASE WHEN b.bettype BETWEEN 4001 AND 4100
-				THEN b.winlost-b.actual_stake ELSE 0 END) AS LicenseeWLVB,
+			-SUM(CASE
+					WHEN bt.ProductCode = 'VB' THEN b.winlost-b.actual_stake
+					ELSE 0
+				END) AS LicenseeWLVB,
 			-SUM(CASE
 					WHEN bt.ProductCode = 'AB' THEN b.winlost-b.actual_stake
 					ELSE 0

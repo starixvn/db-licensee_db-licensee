@@ -112,6 +112,7 @@ AS
 		- 20211214@Kos: Integrate PP 20 new games [RedmineID: #165772]
 		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
 		- 20220317@Kos: Integrate Cricket phase 2 [RedmineID: #168034]
+		- 20220328@Hogan: Macau Games Add new Range bettype[RedmineID: #170607]
 
 	Param's Explanation:
 		+ @PlatformType: List of platform type (ex: 1,2,3,..)
@@ -273,9 +274,9 @@ BEGIN
 	IF @showVB = 1 -- Voidbridge
 	BEGIN 
 		SET @SportTypeSQL = @SportTypeSQL + ', (212, ''VB'')'
-		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 4001 AND 4100 THEN ''VB''
+		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN (typeid BETWEEN 4001 AND 4100) OR (typeid BETWEEN 5800 AND 5999) THEN ''VB''
 				'
-		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 4001 AND 4100)'
+		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 4001 AND 4100) OR (typeid BETWEEN 5800 AND 5999)'
 	END
 
 	IF @showAB = 1 -- Allbet

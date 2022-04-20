@@ -101,6 +101,7 @@ AS
 		- 20211214@Kos: Integrate PP 20 new games [RedmineID: #165772]
 		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
 		- 20220317@Kos: Integrate Cricket phase 2 [RedmineID: #168034]
+		- 20220328@Hogan: Macau Games Add new Range bettype[RedmineID: #170607]
 
 	Param's Explanation:
 		@Liveindicator : indicate that whether the report will get live data or not
@@ -293,7 +294,7 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 2101 AND 2199 THEN 208 -- New Casino' + CHAR(13)		
 								+ 'WHEN b.bettype BETWEEN 2201 AND 2299 THEN 209 -- New Casino' + CHAR(13)		
 								+ 'WHEN (b.bettype BETWEEN 2301 AND 2399) OR (b.bettype BETWEEN 2901 AND 2999) THEN 210 -- New Casino' + CHAR(13)
-								+ 'WHEN b.bettype BETWEEN 4001 AND 4100 THEN 212' + CHAR(13)
+								+ 'WHEN (b.bettype BETWEEN 4001 AND 4100) OR (b.bettype BETWEEN 5800 AND 5999) THEN 212 -- Macau Games' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1011 AND 1020 THEN 219 -- Fishing World' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 2401 AND 2499 THEN 211 -- AllBet' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1021 AND 1099 THEN 220 -- Lottery' + CHAR(13)
@@ -348,7 +349,7 @@ BEGIN
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VS')) = 1 THEN 'OR b.bettype BETWEEN 1201 AND 1299' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','KN')) = 1 THEN 'OR b.bettype BETWEEN 1501 AND 1599' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','CS')) = 1 THEN 'OR (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999)' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VB')) = 1 THEN 'OR (b.bettype BETWEEN 4001 AND 4100)' + CHAR(13) ELSE '' END 
+								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VB')) = 1 THEN 'OR (b.bettype BETWEEN 4001 AND 4100) OR (b.bettype BETWEEN 5800 AND 5999)' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','FW')) = 1 THEN 'OR b.bettype BETWEEN 1011 AND 1020' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','AB')) = 1 THEN 'OR b.bettype BETWEEN 2401 AND 2499' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VS2')) = 1 THEN 'OR b.bettype BETWEEN 2701 AND 2829' + CHAR(13) ELSE '' END
@@ -392,7 +393,7 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 2101 AND 2199 THEN 208 -- New Casino' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 2201 AND 2299 THEN 209 -- New Casino' + CHAR(13)
 								+ 'WHEN (b.bettype BETWEEN 2301 AND 2399) OR (b.bettype BETWEEN 2901 AND 2999) THEN 210 -- New Casino' + CHAR(13)
-								+ 'WHEN b.bettype BETWEEN 4001 AND 4100 THEN 212' + CHAR(13)
+								+ 'WHEN (b.bettype BETWEEN 4001 AND 4100) OR (b.bettype BETWEEN 5800 AND 5999) THEN 212 -- Macau Games' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1011 AND 1020 THEN 219 -- Fishing World' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 2401 AND 2499 THEN 211 -- AllBet' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1021 AND 1099 THEN 220 -- Lottery' + CHAR(13)
@@ -579,7 +580,7 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 2101 AND 2199 THEN 208' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 2201 AND 2299 THEN 209' + CHAR(13)
 								+ 'WHEN (b.bettype BETWEEN 2301 AND 2399) OR (b.bettype BETWEEN 2901 AND 2999) THEN 210' + CHAR(13)
-								+ 'WHEN b.bettype BETWEEN 4001 AND 4100 THEN 212' + CHAR(13)
+								+ 'WHEN (b.bettype BETWEEN 4001 AND 4100) OR (b.bettype BETWEEN 5800 AND 5999) THEN 212' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1011 AND 1020 THEN 219' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 2401 AND 2499 THEN 211' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1021 AND 1099 THEN 220' + CHAR(13)
@@ -632,7 +633,7 @@ BEGIN
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VS')) = 1 THEN 'OR b.bettype BETWEEN 1201 AND 1299' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','KN')) = 1 THEN 'OR b.bettype BETWEEN 1501 AND 1599' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','CS')) = 1 THEN 'OR (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999)' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VB')) = 1 THEN 'OR (b.bettype BETWEEN 4001 AND 4100)' + CHAR(13) ELSE '' END 
+								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VB')) = 1 THEN 'OR (b.bettype BETWEEN 4001 AND 4100) OR (b.bettype BETWEEN 5800 AND 5999)' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','FW')) = 1 THEN 'OR b.bettype BETWEEN 1011 AND 1020' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','AB')) = 1 THEN 'OR b.bettype BETWEEN 2401 AND 2499' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VS2')) = 1 THEN 'OR b.bettype BETWEEN 2701 AND 2829' + CHAR(13) ELSE '' END
@@ -670,7 +671,7 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 2101 AND 2199 THEN 208' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 2201 AND 2299 THEN 209' + CHAR(13)
 								+ 'WHEN (b.bettype BETWEEN 2301 AND 2399) OR (b.bettype BETWEEN 2901 AND 2999) THEN 210' + CHAR(13)
-								+ 'WHEN b.bettype BETWEEN 4001 AND 4100 THEN 212' + CHAR(13)
+								+ 'WHEN (b.bettype BETWEEN 4001 AND 4100) OR (b.bettype BETWEEN 5800 AND 5999) THEN 212' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1011 AND 1020 THEN 219' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 2401 AND 2499 THEN 211' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 1021 AND 1099 THEN 220' + CHAR(13)
