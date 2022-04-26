@@ -36,6 +36,7 @@ AS
 		- 20210817@Johnson: Add VGaming [redmine: #159696] 
 		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 		- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217] 
+		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586] 
 */  
 BEGIN  
 	SET NOCOUNT ON
@@ -71,7 +72,12 @@ BEGIN
 			@GDGComm			DECIMAL(9,8) = 0,
 			@HabaneroComm		DECIMAL(9,8) = 0,
 			@VGamingComm		DECIMAL(9,8) = 0,
-			
+			-- phase 4.2
+			@CGComm				DECIMAL(9,8) = 0,
+			@AdvantComm			DECIMAL(9,8) = 0,
+			@AdvantMiniComm		DECIMAL(9,8) = 0,
+			@VS3Comm			DECIMAL(9,8) = 0,
+
 			@CustID INT, 
 			@i INT	
 	
@@ -140,7 +146,12 @@ BEGIN
 				@JokerComm			= JokerComm,
 				@GDGComm			= GDGComm,
 				@HabaneroComm		= HabaneroComm,
-				@VGamingComm		= VGamingComm
+				@VGamingComm		= VGamingComm,
+				-- phase 4.2
+				@CGComm				= @CGComm,
+				@AdvantComm			= @AdvantComm,
+				@AdvantMiniComm		= @AdvantMiniComm,
+				@VS3Comm			= @VS3Comm
 			FROM dbo.LicenseeCustComm WITH (NOLOCK)
 			WHERE LicenseeID = @LicenseeID AND CustID = @CustID
 					
@@ -201,14 +212,24 @@ BEGIN
 				@IsUpdateJoker			= 1,			
 				@IsUpdateGDG			= 1,
 				@IsUpdateHabanero		= 1,
-				@IsUpdateVGaming		= 1,				
-				@WMCasinoComm				= @WMCasinoComm	,	
-				@BigGamingComm				= @BigGamingComm,		
-				@JokerComm					= @JokerComm,			
-				@GDGComm					= @GDGComm,				
-				@HabaneroComm				= @HabaneroComm,
-				@VGamingComm				= @VGamingComm,		
-				
+				@IsUpdateVGaming		= 1,	
+				@IsUpdateCG				= 1,
+				@IsUpdateAdvant			= 1,
+				@IsUpdateAdvantMini		= 1,
+				@IsUpdateVS3			= 1,
+
+				@WMCasinoComm			= @WMCasinoComm	,	
+				@BigGamingComm			= @BigGamingComm,		
+				@JokerComm				= @JokerComm,			
+				@GDGComm				= @GDGComm,				
+				@HabaneroComm			= @HabaneroComm,
+				@VGamingComm			= @VGamingComm,		
+				-- phase 4.2
+				@CGComm					= @CGComm,
+				@AdvantComm				= @AdvantComm,
+				@AdvantMiniComm			= @AdvantMiniComm,
+				@VS3Comm				= @VS3Comm,
+
 				@IP=@IP,
 				@Langkey=@Langkey,
 				@ErrCode=@ErrCode OUTPUT,
@@ -282,14 +303,22 @@ BEGIN
 			@IsUpdateJoker			= 1,			
 			@IsUpdateGDG			= 1,
 			@IsUpdateHabanero		= 1,
-			@IsUpdateVGaming		= 1,			
-			@WMCasinoComm				= 0	,	
-			@BigGamingComm				= 0,		
-			@JokerComm					= 0,			
-			@GDGComm					= 0,
-			@HabaneroComm				= 0,
-			@VGamingComm				= 0,			
-
+			@IsUpdateVGaming		= 1,		
+			@IsUpdateCG				= 1,
+			@IsUpdateAdvant			= 1,
+			@IsUpdateAdvantMini		= 1,
+			@IsUpdateVS3			= 1,		
+			@WMCasinoComm			= 0,	
+			@BigGamingComm			= 0,		
+			@JokerComm				= 0,			
+			@GDGComm				= 0,
+			@HabaneroComm			= 0,
+			@VGamingComm			= 0,			
+			-- phase 4.2
+			@CGComm					= 0,
+			@AdvantComm				= 0,
+			@AdvantMiniComm			= 0,
+			@VS3Comm				= 0,
 			@IP=@IP,
 			@Langkey=@Langkey,
 			@ErrCode=@ErrCode OUTPUT,
@@ -331,7 +360,12 @@ BEGIN
 			JokerComm			= 0,			
 			GDGComm				= 0,	
 			HabaneroComm		= 0,
-			VGamingComm			= 0,
+			VGamingComm			= 0,			
+			-- phase 4.2
+			@CGComm					= 0,
+			@AdvantComm				= 0,
+			@AdvantMiniComm			= 0,
+			@VS3Comm				= 0,
 
 			GroupCommID = 0
 		WHERE LicenseeID = @LicenseeID 

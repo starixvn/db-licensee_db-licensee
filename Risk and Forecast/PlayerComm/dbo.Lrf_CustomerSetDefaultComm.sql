@@ -28,7 +28,8 @@ AS
 		- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048] 
 		- 20210817@Johnson: Add VGaming [redmine:#159696]
 		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
-		
+		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586]   
+				
 	Param's Explanation:
 */ 
 BEGIN
@@ -65,6 +66,11 @@ BEGIN
 		@IsUpdateSportsLottery	BIT = 0,
 		@IsUpdateHabanero		BIT = 0,
 		@IsUpdateVGaming		BIT = 0,
+		-- phase 4.2
+		@IsUpdateCG				BIT = 0,
+		@IsUpdateAdvant			BIT = 0,
+		@IsUpdateAdvantMini		BIT = 0,
+		@IsUpdateVS3			BIT = 0,
 
 		@LicenseeID INT,		
 		@strCustID VARCHAR(50)
@@ -172,6 +178,14 @@ BEGIN
 			
 			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=66)
 				SET @IsUpdateVGaming = 1
+			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=62)
+				SET @IsUpdateCG = 1
+			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=67)
+				SET @IsUpdateAdvant = 1
+			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=68)
+				SET @IsUpdateAdvantMini = 1
+			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=49)
+				SET @IsUpdateVS3 = 1
 
 			SELECT @strCustID=CAST (@CustID AS VARCHAR(50))
 			
@@ -208,8 +222,13 @@ BEGIN
 				,@IsUpdateJoker			= @IsUpdateJoker			
 				,@IsUpdateGDG			= @IsUpdateGDG		
 				,@IsUpdateHabanero		= @IsUpdateHabanero
-				,@IsUpdateVGaming		= @IsUpdateVGaming		
-				
+				,@IsUpdateVGaming		= @IsUpdateVGaming	
+				-- phase 4.2
+				,@IsUpdateCG			= @IsUpdateCG		
+				,@IsUpdateAdvant		= @IsUpdateAdvant		
+				,@IsUpdateAdvantMini	= @IsUpdateAdvantMini		
+				,@IsUpdateVS3			= @IsUpdateVS3	
+
 				,@IP=''
 				,@Langkey=@Langkey
 				,@ErrCode=@ErrCode OUTPUT

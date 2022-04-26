@@ -35,6 +35,10 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerMoveGroupComm]
 	@IsUpdateGDG			BIT = 0,
 	@IsUpdateHabanero		BIT = 0,
 	@IsUpdateVGaming		BIT = 0,
+	@IsUpdateCG				BIT = 0,
+	@IsUpdateAdvant			BIT = 0,
+	@IsUpdateAdvantMini		BIT = 0,
+	@IsUpdateVS3			BIT = 0,
 
 	@IP VARCHAR(40),
 	@Langkey VARCHAR(20) = 'en-US',
@@ -69,6 +73,7 @@ AS
 		- 20210817@Johnson: Add VGaming [redmine: #159696] 
 		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 		- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217] 
+		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586]   
 
 	Param's Explanation:
 */ 
@@ -146,6 +151,11 @@ BEGIN
 		,@IsUpdateGDG			= @IsUpdateGDG			
 		,@IsUpdateHabanero		= @IsUpdateHabanero
 		,@IsUpdateVGaming		= @IsUpdateVGaming
+		--> phase 4.2
+		,@IsUpdateCG			= @IsUpdateCG
+		,@IsUpdateAdvant		= @IsUpdateAdvant
+		,@IsUpdateAdvantMini	= @IsUpdateAdvantMini
+		,@IsUpdateVS3			= @IsUpdateVS3
 
 		,@Langkey=@Langkey
 		,@IP=@IP

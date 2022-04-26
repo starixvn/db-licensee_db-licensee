@@ -65,12 +65,20 @@ ALTER PROCEDURE [dbo].[Acc_CustSetting3rd_16]
 	@IsUpdateGDG			BIT = 0,
 	@IsUpdateHabanero		BIT = 0,
 	@IsUpdateVGaming		BIT = 0,
+	@IsUpdateCG				BIT = 0,
+	@IsUpdateAdvant			BIT = 0,
+	@IsUpdateAdvantMini		BIT = 0,
+	@IsUpdateVS3			BIT = 0,
 	@WMCasinoComm		DECIMAL(9,8) = 0,
 	@BigGamingComm		DECIMAL(9,8) = 0,
 	@JokerComm			DECIMAL(9,8) = 0,
 	@GDGComm			DECIMAL(9,8) = 0,
 	@HabaneroComm		DECIMAL(9,8) = 0,
 	@VGamingComm		DECIMAL(9,8) = 0,
+	@CGComm				DECIMAL(9,8) = 0,
+	@AdvantComm			DECIMAL(9,8) = 0,
+	@AdvantMiniComm		DECIMAL(9,8) = 0,
+	@VS3Comm			DECIMAL(9,8) = 0,
 	@WMCasinoComm_Group			DECIMAL(9,8) = 0,
 	@BigGamingComm_Group		DECIMAL(9,8) = 0,
 	@JokerComm_Group			DECIMAL(9,8) = 0,
@@ -81,6 +89,10 @@ ALTER PROCEDURE [dbo].[Acc_CustSetting3rd_16]
 	@IsUpdateSabaCasino		BIT = 0,
 	@SabaCasinoComm			DECIMAL(9,8) = 0,
 	@SabaCasinoComm_Group	DECIMAL(9,8) = 0
+	@CGComm_Group				DECIMAL(9,8) = 0,
+	@AdvantComm_Group			DECIMAL(9,8) = 0,
+	@AdvantMiniComm_Group		DECIMAL(9,8) = 0,
+	@VS3Comm_Group				DECIMAL(9,8) = 0
 AS
 /*
 Created: 20120730@Henry
@@ -109,7 +121,8 @@ Revisions:
 	- 20210816@Johnson: Add VGaming [redmine: #159696]
 	- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 	- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217] 
-	
+	- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586]   
+
 Param's Explanation:
 • @ErrCode:
     = 0: Transaction recorded successfully.
@@ -270,8 +283,12 @@ BEGIN
 		OR @IsUpdateJoker  = 1	
 		OR @IsUpdateGDG  = 1	
 		OR @IsUpdateHabanero  = 1
-		OR @IsUpdateVGaming  = 1		
+		OR @IsUpdateVGaming  = 1	
 		OR @IsUpdateSabaCasino = 1
+		OR @CGComm_Group	= 1
+		OR @AdvantComm_Group	= 1
+		OR @AdvantMiniComm_Group =1
+		OR @VS3Comm_Group	= 1
 	)
 	BEGIN
 		INSERT INTO @tblSettingDCS_tmp (IsUpdated,sporttype,Bettype,CommGroup, Comm)
@@ -301,7 +318,11 @@ BEGIN
 				,(@IsUpdateVGaming,171,3801,@VGamingComm_Group,@VGamingComm)
 				-- Saba Casino
 				,(@IsUpdateSabaCasino,208,2101,@SabaCasinoComm_Group,@SabaCasinoComm)
-			
+				-- Phase 4.2
+				,(@IsUpdateCG,167,7301,@CGComm_Group,@CGComm)
+				,(@IsUpdateAdvant,172,7701,@AdvantComm_Group,@AdvantComm)
+				,(@IsUpdateAdvantMini,174,7801,@AdvantMiniComm_Group,@AdvantMiniComm)
+				,(@IsUpdateVS3,231,5301,@VS3Comm_Group,@VS3Comm)
 	END
 	
 	IF EXISTS(SELECT TOP (1) 1 FROM @tblSettingDCS_tmp)
