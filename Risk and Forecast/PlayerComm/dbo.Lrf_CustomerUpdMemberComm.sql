@@ -206,6 +206,7 @@ BEGIN
 			,@GDGComm			= GDGComm
 			,@HabaneroComm		= HabaneroComm
 			,@VGamingComm		= VGamingComm
+			--> phase 4.2
 			,@CGComm			= @CGComm
 			,@AdvantComm		= @AdvantComm
 			,@AdvantMiniComm	= @AdvantMiniComm
@@ -277,6 +278,7 @@ BEGIN
 		OR @GDGComm > 0.15	
 		OR @HabaneroComm > 0.15
 		OR @VGamingComm > 0.15
+		--> phase 4.2
 		OR @CGComm > 0.15
 		OR @AdvantComm > 0.15
 		OR @AdvantMiniComm > 0.15
@@ -388,7 +390,7 @@ BEGIN
 				,@JokerComm					= @JokerComm			
 				,@GDGComm					= @GDGComm			
 				,@HabaneroComm				= @HabaneroComm		
-				,@VGamingComm				= @VGamingComm		
+				,@VGamingComm				= @VGamingComm
 				--Saba Casino
 				,@IsUpdateSabaCasino = @IsUpdateRNG
 				,@SabaCasinoComm = @RNGComm
@@ -479,7 +481,7 @@ BEGIN
 					,@JokerComm					= @JokerComm			
 					,@GDGComm					= @GDGComm			
 					,@HabaneroComm				= @HabaneroComm
-					,@VGamingComm				= @VGamingComm		
+					,@VGamingComm				= @VGamingComm	
 					--Saba Casino
 					,@IsUpdateSabaCasino = @IsUpdateRNG
 					,@SabaCasinoComm = @RNGComm			
@@ -809,7 +811,8 @@ BEGIN
 					,@JokerComm					= @JokerComm			
 					,@GDGComm					= @GDGComm			
 					,@HabaneroComm				= @HabaneroComm	
-					,@VGamingComm				= @VGamingComm	
+					,@VGamingComm				= @VGamingComm
+					--> phase 4.2
 					,@CGComm					= @CGComm		
 					,@AdvantComm				= @AdvantComm		
 					,@AdvantMiniComm			= @AdvantMiniComm		

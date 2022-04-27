@@ -532,10 +532,10 @@ BEGIN
 					,@IsUpdateHabanero		= @IsUpdateHabanero
 					,@IsUpdateVGaming		= @IsUpdateVGaming
 					-- phase 4.2
-					@IsUpdateCG				= @IsUpdateCG,
-					@IsUpdateAdvant			= @IsUpdateAdvant,
-					@IsUpdateAdvantMini		= @IsUpdateAdvantMini,
-					@IsUpdateVS3			= @IsUpdateVS3,
+					,@IsUpdateCG			= @IsUpdateCG
+					,@IsUpdateAdvant		= @IsUpdateAdvant
+					,@IsUpdateAdvantMini	= @IsUpdateAdvantMini
+					,@IsUpdateVS3			= @IsUpdateVS3
 
 					,@WMCasinoComm				= @WMCasinoComm		
 					,@BigGamingComm				= @BigGamingComm		
