@@ -71,6 +71,7 @@ AS
 		- 20210830@Kos: Support subsidiary view [RedmineID: #159576]
 		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
 		- 20220317@Kos: Integrate Cricket phase 2 [RedmineID: #168034]
+		- 20210818@Kos: Support Bitcoin [RedmineID: #160160]
 
 	Param's Explanation:
 		+ @AgentList: XML structure
@@ -86,7 +87,7 @@ BEGIN
 	-- Get agent list
 	CREATE TABLE #TempAg (CustId INT, Currency INT)
 
-	CREATE CLUSTERED INDEX IX_TempAg ON #TempAg(CustId)
+	CREATE CLUSTERED INDEX IX_TempAg ON #TempAg (CustId)
 
 	DECLARE @DocHandler INT
 
@@ -144,6 +145,21 @@ BEGIN
 	INSERT INTO @ExcludedBetType (ProductCode, BetType)
 	SELECT ProductCode, BetType FROM Lrf_f_SelExcludedBetType()
 
+	-- Get sport/bettype matrix
+	DECLARE @ProductList VARCHAR(100) = 'SB,NG,VS,VS2,KN,LT,TG,I4D,SLT,BTC'
+
+	DECLARE @BetType TABLE (BetType INT PRIMARY KEY, ProductCode VARCHAR(10))
+
+	DECLARE @IsTest BIT = 0
+
+	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
+
+	INSERT INTO @BetType (BetType, ProductCode)
+	SELECT DISTINCT BetType, ProductPrefix
+	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
+	WHERE BetType NOT IN (SELECT BetType FROM @ExcludedBetType AS e WHERE e.ProductCode = ProductPrefix)
+		AND BetType NOT IN (71, 73, 901, 902, 903, 904, 911, 912, 913, 914)
+
 	IF @Tdate > @MoveBetsDay
 	BEGIN
 		IF @FDate <= @MoveBetsDay
@@ -156,35 +172,13 @@ BEGIN
 			, CASE
 				WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) THEN b.liveindicator
 				ELSE 0
-			END AS liveindicator
+			END AS LiveIndicator
 			, b.winlostdate
 			, b.currency
 			, SUM(b.stake)
-			, SUM(b.winlost - b.actual_stake)
+			, SUM(b.winlost - b.actual_stake) AS MemberWinLost
 			, - SUM(CASE
-					WHEN ISNULL(BA.transid, 0) = 0
-						AND (
-							(
-								b.bettype < 31
-								OR (b.bettype BETWEEN 121 AND 999)
-								OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
-								OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0
-								OR (b.Bettype BETWEEN 9400 AND 9998) -- Cricket AIO
-								OR b.Bettype = 38					 -- Single Match Parlay
-							)
-							OR b.bettype BETWEEN 81 AND 120 -- Number Game
-							OR b.bettype BETWEEN 8101 AND 8120 -- Number Game: Happy 5
-							OR b.bettype BETWEEN 3601 AND 3610 -- Happy 5 Linked Games
-							OR b.bettype BETWEEN 1201 AND 1299
-							OR b.bettype BETWEEN 2701 AND 2829 -- Virtual Sport 2
-							OR b.bettype BETWEEN 1501 AND 1599 --Keno
-							OR b.bettype BETWEEN 1021 AND 1099 -- Lottery
-							OR b.bettype BETWEEN 4901 AND 5000 -- Table Games
-							OR b.bettype BETWEEN 5001 AND 5099 -- Indo 4D
-							OR b.bettype BETWEEN 3611 AND 3620 -- SLT
-							OR b.bettype BETWEEN 5301 AND 5399 -- VS3
-							)
-						THEN (b.winlost - b.actual_stake)
+					WHEN ISNULL(BA.transid, 0) = 0 THEN (b.winlost - b.actual_stake)
 					ELSE 0
 					END) AS LicenseeWL
 			, - SUM(CASE
@@ -198,24 +192,11 @@ BEGIN
 			, SUM(b.playercomm) AS PlayerComm
 		FROM dbo.bettrans AS b WITH (NOLOCK)
 			INNER JOIN #TempAg AS ta ON ta.CustId = b.recommend
+			INNER JOIN @BetType AS bt ON bt.BetType = b.bettype
 			LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active AS BA WITH (NOLOCK) ON b.transid = BA.transid	 
 		WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
-			AND (bettype <= 1599
-				OR (b.bettype >= 2701 AND b.bettype <= 2829)
-				OR (b.bettype BETWEEN 8101 AND 8120)
-				OR (b.bettype BETWEEN 3601 AND 3610)
-				OR (b.Bettype >= 9001 AND b.Bettype <= 9399)
-				OR (b.Bettype >= 9400 AND b.Bettype <= 9998) -- Cricket AIO
-				OR (b.Bettype >= 4901 AND b.Bettype <= 5000)
-				OR (b.Bettype >= 5001 AND b.Bettype <= 5099)
-				OR (b.Bettype >= 3611 AND b.Bettype <= 3620)
-				OR (b.Bettype >= 5301 AND b.Bettype <= 5399))
-			AND (bettype NOT IN (71, 73,901,902,903,904,911,912,913,914,31,32,33,41,42,43)
-				AND bettype NOT BETWEEN 1011 AND 1020
-				AND b.bettype NOT BETWEEN 1101 AND 1199) -- Remove LC
-			AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 			AND b.statusID IN (111, 112, 113)
-		GROUP BY bettype
+		GROUP BY b.bettype
 			, CASE
 				WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) THEN b.liveindicator
 				ELSE 0
@@ -245,31 +226,9 @@ BEGIN
 			, SUM(b.stake)
 			, SUM(b.winlost - b.actual_stake)
 			, - SUM(CASE 
-					WHEN ISNULL(BA.transid, 0) = 0
-						AND (
-							(
-								b.bettype < 31
-								OR (b.bettype BETWEEN 121 AND 999)
-								OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
-								OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0
-								OR (b.Bettype BETWEEN 9400 AND 9998) -- Cricket AIO
-								OR b.Bettype = 38					 -- Single Match Parlay
-								)
-							OR b.bettype BETWEEN 81 AND 120
-							OR b.bettype BETWEEN 8101 AND 8120 -- Number Game: Happy 5
-							OR b.bettype BETWEEN 3601 AND 3610 -- Happy 5 Linked Games
-							OR b.bettype BETWEEN 1201 AND 1299
-							OR b.bettype BETWEEN 2701 AND 2829
-							OR b.bettype BETWEEN 1501 AND 1599 --Keno products
-							OR b.bettype BETWEEN 1021 AND 1099 --Lottery
-							OR b.bettype BETWEEN 4901 AND 5000 -- Table Games
-							OR b.bettype BETWEEN 5001 AND 5099 -- Indo 4D
-							OR b.bettype BETWEEN 3611 AND 3620 -- SLT
-							OR b.bettype BETWEEN 5301 AND 5399 -- VS3
-							)
-						THEN (b.winlost - b.actual_stake)
+					WHEN ISNULL(BA.transid, 0) = 0 THEN (b.winlost - b.actual_stake)
 					ELSE 0
-					END) AS LicenseeWL
+				END) AS LicenseeWL
 			, - SUM(CASE
 						WHEN ISNULL(BA.transid, 0) <> 0 THEN (b.winlost - b.actual_stake + b.awinlost + b.comm)
 						ELSE 0
@@ -281,24 +240,10 @@ BEGIN
 			, SUM(b.playercomm) AS PlayerComm
 		FROM dbo.bettrans14 AS b WITH (NOLOCK)
 			INNER JOIN #TempAg AS ta ON ta.CustId = b.recommend
+			INNER JOIN @BetType AS bt ON bt.BetType = b.bettype
 			LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_bk AS BA WITH (NOLOCK) ON b.transid = BA.transid
 		WHERE b.winlostdate BETWEEN @BalanceUpDay AND @TempToDate
 			AND b.statusID IN (111, 112, 113)
-			AND (bettype <= 1599
-				OR (b.bettype >= 2701 AND b.bettype <= 2829)
-				OR (b.bettype BETWEEN 8101 AND 8120)
-				OR (b.bettype BETWEEN 3601 AND 3610)
-				OR (b.Bettype >= 9001 AND b.Bettype <= 9399)
-				OR (b.Bettype >= 9400 AND b.Bettype <= 9998) -- Cricket AIO
-				OR (b.Bettype >= 4901 AND b.Bettype <= 5000)
-				OR (b.Bettype >= 5001 AND b.Bettype <= 5099)
-				OR (b.Bettype >= 3611 AND b.Bettype <= 3620)
-				OR (b.Bettype >= 5301 AND b.Bettype <= 5399))
-			AND (bettype NOT IN (71, 73,901,902,903,904,911,912,913,914,31,32,33,41,42,43) 
-					AND bettype NOT BETWEEN 1011 AND 1020 
-					AND bettype NOT BETWEEN 1101 AND 1199
-				)
-			AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 		GROUP BY
 			b.bettype
 			, CASE

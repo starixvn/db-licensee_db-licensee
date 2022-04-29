@@ -14,12 +14,13 @@ AS
 
 	Revisions:
 		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
+		- 20220429@Kos: Support Bitcoin [RedmineID: #160160]
 */
 
 BEGIN
 	IF ',' + @ProductCodes + ',' LIKE '%,SB,%'
 	BEGIN
-		SET @ProductCodes = @ProductCodes + ',SLT'
+		SET @ProductCodes = @ProductCodes + ',SLT,BTC'
 	END
 
 	RETURN @ProductCodes

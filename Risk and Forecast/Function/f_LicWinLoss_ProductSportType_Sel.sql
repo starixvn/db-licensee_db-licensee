@@ -7,7 +7,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 
 /*
 	Create: 20170703@Harper
-	Description: Get sum_winloss condition  
+	Description: Get sum_winloss condition
 	DB: DBEXT.bodb02, DBACC.bodb02
 
 	Revisions:
@@ -32,7 +32,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 		- 20200615@Hogan: Integrate SA Gaming [RedmineID: #128493]
 		- 20201022@Louis: Integrate PG Soft [RedmineID: #139182]
 		- 20201126@Hogan: Integrate Joker [RedmineID: #141408]
-		- 20201202@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369] 
+		- 20201202@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369]
 		- 20201231@Louis: Integrate Happy 5 Linked Games [RedmineID: #147446]
 		- 20200122@Hogan: Integrate GDG [RedmineID: #147267]
 		- 20210305@Hogan: Integrate Sport Lottery [RedmineID: #150872]
@@ -44,6 +44,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 		- 20210727@Percy: Add Exchange, Saba Promotion for LA [RedmineID: #155593]
 		- 20211105@Hogan: Integrate AdvantPlay RNG & Mini [RedmineID: #158186]
 		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
+		- 20220429@Kos: Support Bitcoin [RedmineID: #160160]
 */
 RETURNS TABLE
 RETURN
@@ -91,7 +92,8 @@ RETURN
 					(62, 'CG', 167, 0),		-- Creative Gaming
 					(67, 'AP', 172, 0),		-- AdvantPlay
 					(68, 'APM', 174, 0),	-- AdvantPlay Mini
-					(49, 'VS3', 231, 0)		-- Virtual Sports 3
-			) d(ProductID, ProductCode, SportType, BetType)  
-	WHERE ',' + @ProductCodes + ',' LIKE '%,' + CAST(ProductCode AS VARCHAR(10)) + ',%'  
+					(49, 'VS3', 231, 0),		-- Virtual Sports 3
+					(69, 'BTC', 175, 0)		-- Bitcoin
+			) d(ProductID, ProductCode, SportType, BetType)
+	WHERE ',' + @ProductCodes + ',' LIKE '%,' + CAST(ProductCode AS VARCHAR(10)) + ',%'
 GO

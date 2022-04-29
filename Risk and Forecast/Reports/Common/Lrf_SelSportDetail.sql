@@ -29,6 +29,7 @@ AS
 		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
 					- Remove input param @LangKey
 		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
+		- 20220429@Kos: Support Bitcoin [RedmineID: #160160]
 
 	Param's Explanation:
 		- @ProductCodes = '' - Get all
@@ -67,6 +68,10 @@ BEGIN
 		SELECT Id, NULL, 0
 		FROM dbo.Lrf_f_GetSportTypeByProduct('SLT')
 		WHERE ',' + @ProductCodes + ',' LIKE '%,SLT,%'
+		UNION ALL
+		SELECT Id, NULL, 0
+		FROM dbo.Lrf_f_GetSportTypeByProduct('BTC')
+		WHERE ',' + @ProductCodes + ',' LIKE '%,BTC,%'
 	END
 
 	-- BA --

@@ -104,6 +104,7 @@ AS
 		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
 		- 20220317@Kos: Integrate Cricket phase 2 [RedmineID: #168034]
 		- 20220328@Hogan: Macau Games Add new Range bettype[RedmineID: #170607]
+		- 20220429@Kos: Support Bitcoin [RedmineID: #160160]
 
 	Param's Explanation:
 		+ @IsLive : indicate that whether the report will get live data or not
@@ -269,6 +270,8 @@ BEGIN
 					OR b.Bettype = 38					 -- Single Match Parlay
 					OR (b.bettype BETWEEN 3611 AND 3620
 						AND EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'SLT')))
+					OR (b.bettype BETWEEN 7901 AND 7999
+						AND EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'BTC')))
 					)
 				AND (b.bettype NOT IN (9,29))
 				AND (b.bettype < 901 OR b.bettype > 904)
@@ -561,6 +564,7 @@ BEGIN
 						OR (b.Bettype BETWEEN 9400 AND 9998)	-- Cricket AIO
 						OR b.Bettype = 38						-- Single Match Parlay
 						OR b.bettype BETWEEN 3611 AND 3620		-- Sports Lottery
+						OR b.bettype BETWEEN 7901 AND 7999		-- Bitcoin
 						THEN 'SB'
 					WHEN b.bettype BETWEEN 1201 AND 1299 THEN 'VS'
 					WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN'
@@ -623,6 +627,8 @@ BEGIN
 					OR b.Bettype = 38				   -- Single Match Parlay
 					OR (b.bettype BETWEEN 3611 AND 3620
 						AND EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'SLT')))
+					OR (b.bettype BETWEEN 7901 AND 7999
+						AND EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'BTC')))
 					OR b.bettype BETWEEN 81 AND 120
 					OR b.bettype BETWEEN 8101 AND 8120 -- Number Game: Happy 5
 					OR b.bettype BETWEEN 3601 AND 3610 -- Happy 5 Linked Games
@@ -668,6 +674,7 @@ BEGIN
 							OR (b.Bettype BETWEEN 9400 AND 9998) -- Cricket AIO
 							OR b.Bettype = 38					 -- Single Match Parlay
 							OR b.bettype BETWEEN 3611 AND 3620		-- Sports Lottery
+							OR b.bettype BETWEEN 7901 AND 7999		-- Bitcoin
 						THEN 'SB'
 					WHEN b.bettype BETWEEN 1201 AND 1299 THEN 'VS'
 					WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN'
