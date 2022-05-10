@@ -53,7 +53,9 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Direct]
 	@JokerComm			DECIMAL(9,8) = 0,
 	@GDGComm			DECIMAL(9,8) = 0,
 	@HabaneroComm		DECIMAL(9,8) = 0,
-	@VGamingComm		DECIMAL(9,8) = 0
+	@VGamingComm		DECIMAL(9,8) = 0,
+	@IsUpdateSabaCasino	BIT = 0,
+	@SabaCasinoComm		DECIMAL(9,8) =0
 AS
 /*
 	Created: 20130114@Henry
@@ -82,6 +84,7 @@ AS
 		- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048]  
 		- 20210817@Johnson: Add VGaming [redmine: #159696]
 		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
+		- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217] 
 		
 	Param's Explanation:	
 
@@ -170,6 +173,7 @@ BEGIN
 		OR @IsUpdateGDG  = 1	
 		OR @IsUpdateHabanero  = 1
 		OR @IsUpdateVGaming  = 1
+		OR @IsUpdateSabaCasino  = 1
 
 	)
 	BEGIN
@@ -198,6 +202,8 @@ BEGIN
 				,(@IsUpdateGDG,236,5701,@GDGComm)
 				,(@IsUpdateHabanero,238,7001,@HabaneroComm)
 				,(@IsUpdateVGaming,171,3801,@VGamingComm)
+				--Saba Casino
+				,(@IsUpdateSabaCasino,208,2101,@SabaCasinoComm)
 	END
 	
 	IF EXISTS(SELECT TOP (1) 1 FROM @tblSettingDCS_tmp)

@@ -55,6 +55,8 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Main]
 	,@GDGComm			DECIMAL(9,8) = 0
 	,@HabaneroComm		DECIMAL(9,8) = 0
 	,@VGamingComm		DECIMAL(9,8) = 0
+	,@IsUpdateSabaCasino	BIT = 0
+	,@SabaCasinoComm		DECIMAL(9,8) = 0
 AS
 /*
 	Created: 20120907@Viet
@@ -81,6 +83,7 @@ AS
 		- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048]  
 		- 20210816@Johnson: Add VGaming [redmine: #159696]
 		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
+		- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217] 
 	Param's Explanation:
 
 */
@@ -127,6 +130,7 @@ BEGIN
 			,@GDGComm_Group				DECIMAL(9,8) = 0
 			,@HabaneroComm_Group		DECIMAL(9,8) = 0
 			,@VGamingComm_Group			DECIMAL(9,8) = 0
+			,@SabaCasinoComm_Group		DECIMAL(9,8) = 0
 
 	
 	IF (	@IsUpdateAllbet = 1 OR 
@@ -149,7 +153,9 @@ BEGIN
 		OR @IsUpdateJoker  = 1	
 		OR @IsUpdateGDG  = 1	
 		OR @IsUpdateHabanero  = 1
-		OR @IsUpdateVGaming  = 1		
+		OR @IsUpdateVGaming  = 1
+		--SabaCasino
+		OR @IsUpdateSabaCasino = 1		
 
 		)
 	BEGIN		
@@ -182,6 +188,7 @@ BEGIN
 			,@GDGComm_Group = MAX(CASE WHEN BetType = 5701 THEN playerdiscount ELSE 0 END)
 			,@HabaneroComm_Group = MAX(CASE WHEN BetType = 7001 THEN playerdiscount ELSE 0 END)
 			,@VGamingComm_Group = MAX(CASE WHEN BetType = 3801 THEN playerdiscount ELSE 0 END)
+			,@SabaCasinoComm_Group = MAX(CASE WHEN BetType = 2101 THEN playerdiscount ELSE 0 END)
 		FROM dbo.Dep_CustDiscountGroupSetting_Member grp WITH(NOLOCK)
 		WHERE AgentID = @AgentID
 			AND sporttype IN (212,248,219,243,247,220,180,190,222
@@ -190,6 +197,8 @@ BEGIN
 							--phase 4
 							,233,239,234,236,238
 							,171
+							--SabaCasino
+							,208
 							)
 	END	
 								
@@ -289,7 +298,11 @@ BEGIN
 			,@JokerComm_Group			= @JokerComm_Group			
 			,@GDGComm_Group				= @GDGComm_Group		
 			,@HabaneroComm_Group		= @HabaneroComm_Group
-			,@VGamingComm_Group			= @VGamingComm_Group			
+			,@VGamingComm_Group			= @VGamingComm_Group
+			--SabaCasino
+			,@IsUpdateSabaCasino =	@IsUpdateSabaCasino
+			,@SabaCasinoComm = 	@SabaCasinoComm
+			,@SabaCasinoComm_Group = @SabaCasinoComm_Group
 
 		-- delay 00.100ms after 5 times continuous running
 		IF @runningCNT % 2 = 0 WAITFOR DELAY '00:00:00.280'

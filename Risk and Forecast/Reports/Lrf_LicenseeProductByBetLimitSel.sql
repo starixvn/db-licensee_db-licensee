@@ -21,6 +21,7 @@ AS
 		- 20210818@Johnson: Add Vgaming [redmine:#159696]
 		- 20211105@Hogan: Integrate AdvantPlay RNG & Mini [RedmineID: #158186]
 		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
+		- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217] 
 */
 
  /*
@@ -77,17 +78,6 @@ BEGIN
 				UPDATE @tblProductActive
 				SET isEnable = 1
 				WHERE ProductID = 10
-		END
-
-		IF EXISTS (SELECT 1 FROM @tblProductActive WHERE ProductID = 11)   -- Gold Deluxe
-		BEGIN
-			IF EXISTS (SELECT 1
-						FROM bodb02.dbo.CustInfo ci WITH (NOLOCK)
-							INNER JOIN @tblSuper r ON ci.srecommend = r.SrecommendID
-						WHERE ci.DisableGoldDeluxe = 0)
-				UPDATE @tblProductActive
-				SET isEnable = 1
-				WHERE ProductID = 11
 		END
 
 		IF EXISTS (SELECT 1 FROM @tblProductActive WHERE ProductID = 12)	-- Vegas Games

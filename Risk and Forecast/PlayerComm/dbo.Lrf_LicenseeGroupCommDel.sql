@@ -37,6 +37,7 @@ AS
 		- 20210817@Johnson: Add VGaming [redmine:#159696]
 		- 20210922@Elodie: Hotfix-RNG Casino player comm isn't removed in CasinoAdmin DB when deleting a group comm [Redmine: #161802]
 		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
+		- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217] 
 	Param's Explanation:
 
 */
@@ -224,18 +225,6 @@ BEGIN
 						
 			IF @IsexistMember = 1			
 			BEGIN
-				SELECT @StrCustID=''
-				SELECT @StrCustID = STUFF(
-					(   SELECT  ',' + CONVERT(NVARCHAR(20), a.custid) 
-						FROM dbo.LicenseeCustComm b WITH (NOLOCK)
-							INNER JOIN CustDB.dbo.custinfo a WITH (NOLOCK) ON a.custid = b.custid
-						WHERE a.SyncCasino = 1 AND b.LicenseeID = @LicenseeID AND b.GroupCommID = @GroupCommID	
-						FOR XML PATH('')
-					)
-					, 1
-					, 1
-					, '')
-
 				--Update List of affected Customers               
 				EXEC [Lrf_CustomerUpdMemberComm] 
 					@LicenseeID=@LicenseeID,

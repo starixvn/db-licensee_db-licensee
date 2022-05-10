@@ -112,6 +112,7 @@ AS
 		- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048]   
 		- 20210813@Johnson: Add VGaming [redmine: #159696]
 		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
+		- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217] 
 		
 	Param's Explanation:
 		1. To update a member/batch members without GroupCommID
@@ -363,6 +364,9 @@ BEGIN
 				,@GDGComm					= @GDGComm			
 				,@HabaneroComm				= @HabaneroComm		
 				,@VGamingComm				= @VGamingComm	
+				--Saba Casino
+				,@IsUpdateSabaCasino = @IsUpdateRNG
+				,@SabaCasinoComm = @RNGComm
 		END		
 		ELSE
 		BEGIN	
@@ -442,7 +446,10 @@ BEGIN
 					,@JokerComm					= @JokerComm			
 					,@GDGComm					= @GDGComm			
 					,@HabaneroComm				= @HabaneroComm
-					,@VGamingComm				= @VGamingComm					
+					,@VGamingComm				= @VGamingComm	
+					--Saba Casino
+					,@IsUpdateSabaCasino = @IsUpdateRNG
+					,@SabaCasinoComm = @RNGComm			
 			END					
 			-- Non-BA and BA under Macaubet have got SBcomm=@SBcomm
 			DECLARE  @strNonBA 	VARCHAR(MAX)
@@ -512,7 +519,10 @@ BEGIN
 					,@JokerComm					= @JokerComm			
 					,@GDGComm					= @GDGComm			
 					,@HabaneroComm				= @HabaneroComm
-					,@VGamingComm				= @VGamingComm					
+					,@VGamingComm				= @VGamingComm	
+					--Saba Casino
+					,@IsUpdateSabaCasino = @IsUpdateRNG
+					,@SabaCasinoComm = @RNGComm					
 			END
 		END
 	END	

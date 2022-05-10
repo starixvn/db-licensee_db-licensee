@@ -76,7 +76,11 @@ ALTER PROCEDURE [dbo].[Acc_CustSetting3rd_16]
 	@JokerComm_Group			DECIMAL(9,8) = 0,
 	@GDGComm_Group				DECIMAL(9,8) = 0,
 	@HabaneroComm_Group			DECIMAL(9,8) = 0,
-	@VGamingComm_Group			DECIMAL(9,8) = 0
+	@VGamingComm_Group			DECIMAL(9,8) = 0,
+	-- Saba Casino
+	@IsUpdateSabaCasino		BIT = 0,
+	@SabaCasinoComm			DECIMAL(9,8) = 0,
+	@SabaCasinoComm_Group	DECIMAL(9,8) = 0
 AS
 /*
 Created: 20120730@Henry
@@ -104,6 +108,7 @@ Revisions:
 	- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048]   
 	- 20210816@Johnson: Add VGaming [redmine: #159696]
 	- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
+	- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217] 
 	
 Param's Explanation:
 • @ErrCode:
@@ -266,6 +271,7 @@ BEGIN
 		OR @IsUpdateGDG  = 1	
 		OR @IsUpdateHabanero  = 1
 		OR @IsUpdateVGaming  = 1		
+		OR @IsUpdateSabaCasino = 1
 	)
 	BEGIN
 		INSERT INTO @tblSettingDCS_tmp (IsUpdated,sporttype,Bettype,CommGroup, Comm)
@@ -293,6 +299,8 @@ BEGIN
 				,(@IsUpdateGDG,236,5701,@GDGComm_Group,@GDGComm)
 				,(@IsUpdateHabanero,238,7001,@HabaneroComm_Group,@HabaneroComm)
 				,(@IsUpdateVGaming,171,3801,@VGamingComm_Group,@VGamingComm)
+				-- Saba Casino
+				,(@IsUpdateSabaCasino,208,2101,@SabaCasinoComm_Group,@SabaCasinoComm)
 			
 	END
 	
