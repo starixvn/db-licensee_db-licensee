@@ -98,6 +98,7 @@ AS
 		- 20210604@Eden: Update Comm Group - Param @IsUpdateSAGaming is wrong [Redmine: #156459] 
 		- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048]  
 		- 20210813@Johnson: Add VGaming [redmine: #159696]
+		- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217] 
 	Param's Explanation:
 
 */
@@ -498,17 +499,6 @@ BEGIN
 					,@ErrCode=@ErrCode OUTPUT
 					,@ErrMsg=@ErrMsg OUTPUT 
 				WITH RECOMPILE
-					
-				SELECT @StrCustID = STUFF(
-					(   SELECT  ',' + CONVERT(NVARCHAR(20), a.custid) 
-						FROM dbo.LicenseeCustComm b WITH (NOLOCK)
-						INNER JOIN CustDB.dbo.custinfo a WITH (NOLOCK) ON a.custid = b.custid
-						WHERE b.LicenseeID = @LicenseeID AND b.GroupCommID = @GroupCommID and a.SyncCasino = 1
-						FOR xml path('')
-					)
-					, 1
-					, 1
-					, '')
 			END
 					
 			SET @FlagUpdateComm = 1

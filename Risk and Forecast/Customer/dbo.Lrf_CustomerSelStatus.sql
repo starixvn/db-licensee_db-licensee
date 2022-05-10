@@ -15,6 +15,7 @@ Revisions:
    - 20180420@Akex : Return more currencyId [Redmine:93961]
    - 20180809@Amanda: Remove Racing [RedmineID: #99378]
    - 20190926@Eden: 3rd party products - Remove InActive Products Phase 2 [Redmine: #118699]
+   - 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217] 
 Param's Explanation:
     - @CustID: customer id.   
 */
@@ -34,9 +35,7 @@ BEGIN
     
     SELECT  ISNULL (closed,0) As Closed,
             ISNULL (autosuspend,0) As AutoSuspend,  
-            ISNULL (cm.DisableAutoMPT ,0) As DisableAutoMPT,    
-            ISNULL(SyncCasino,0) AS SyncCasino,
-            ISNULL(DisableCasino,0) AS DisableCasino,
+            ISNULL (cm.DisableAutoMPT ,0) As DisableAutoMPT, 
             ISNULL(DisableOutright,0) AS DisableOutright,
             ISNULL(srecommend, 0) AS SRecommend,
             ISNULL(mrecommend, 0) AS MRecommend,

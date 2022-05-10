@@ -96,6 +96,7 @@ AS
 		- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048]
 		- 20210823@Johnson: Add VGaming [redmine: #159696]
 		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
+		- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217] 
 	Param's Explanation:
 */ 
 BEGIN
@@ -206,23 +207,5 @@ BEGIN
 	FROM dbo.LicenseeCustComm cs WITH (ROWLOCK,UPDLOCK)
 		INNER JOIN @TempCustID t ON cs.CustID = t.CustID
 	WHERE LicenseeID = @LicenseeID 
-
-	IF @IsUpdateRNG=0
-	BEGIN
-		SELECT @StrCustID = ''
-	END
-	ELSE
-	BEGIN
-		SELECT @StrCustID = STUFF(
-							(   SELECT  ',' + CONVERT(NVARCHAR(20), b.CustID) 
-								FROM  @TempCustID b
-									INNER JOIN CustDB.dbo.custinfo a WITH (NOLOCK) ON a.custid = b.custid
-								WHERE a.SyncCasino = 1
-								FOR xml path('')
-							)
-							, 1
-							, 1
-							, '')
-	END
 END	
 GO

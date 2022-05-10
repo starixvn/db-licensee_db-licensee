@@ -33,6 +33,7 @@ AS
 		- 20200615@Hogan: Integrate SA Gaming [RedmineID: #128493]
 		- 20210305@Hogan: Integrate Sport Lottery [RedmineID: #150872]
 		- 20210811@Hogan: Hide Disable/Enable button of products Allbet, Macau games, SA Gaming, AE Sexy, WM, GDG[RedmineID: #160031]
+		- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217]
 
 	EXEC Lrf_LicenseeProductSel @LicenseeID = 2
 */
@@ -94,17 +95,6 @@ BEGIN
 				UPDATE @tblProductActive
 				SET IsEnable = 1
 				WHERE ProductId = 10
-		END
-
-		IF EXISTS (SELECT 1 FROM @tblProductActive WHERE ProductId = 11)	-- Gold Deluxe
-		BEGIN
-			IF EXISTS (	SELECT 1
-						FROM bodb02.dbo.CustInfo AS ci WITH (NOLOCK)
-							INNER JOIN @tblSuper AS r ON ci.srecommend = r.SrecommendID
-						WHERE ci.DisableGoldDeluxe = 0)
-				UPDATE @tblProductActive
-				SET IsEnable = 1
-				WHERE ProductId = 11
 		END
 
 		IF EXISTS (SELECT 1 FROM @tblProductActive WHERE ProductId = 12)	-- Vegas Games
