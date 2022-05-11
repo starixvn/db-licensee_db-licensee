@@ -330,7 +330,7 @@ BEGIN
 			,@AdvantComm			= @AdvantComm		
 			,@AdvantMiniComm		= @AdvantMiniComm		
 			,@VS3Comm				= @VS3Comm	
-			,@WMCasinoComm_Group		= @WMCasinoCÐông Thành Vuomm_Group		
+			,@WMCasinoComm_Group		= @WMCasinoComm_Group		
 			,@BigGamingComm_Group		= @BigGamingComm_Group		
 			,@JokerComm_Group			= @JokerComm_Group			
 			,@GDGComm_Group				= @GDGComm_Group		
