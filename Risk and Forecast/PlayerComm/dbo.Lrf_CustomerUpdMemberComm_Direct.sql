@@ -60,7 +60,7 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Direct]
 	@HabaneroComm		DECIMAL(9,8) = 0,
 	@VGamingComm		DECIMAL(9,8) = 0,
 	@IsUpdateSabaCasino	BIT = 0,
-	@SabaCasinoComm		DECIMAL(9,8) =0
+	@SabaCasinoComm		DECIMAL(9,8) =0,
 	@CGComm				DECIMAL(9,8) = 0,
 	@AdvantComm			DECIMAL(9,8) = 0,
 	@AdvantMiniComm		DECIMAL(9,8) = 0,
