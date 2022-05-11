@@ -88,7 +88,7 @@ ALTER PROCEDURE [dbo].[Acc_CustSetting3rd_16]
 	-- Saba Casino
 	@IsUpdateSabaCasino		BIT = 0,
 	@SabaCasinoComm			DECIMAL(9,8) = 0,
-	@SabaCasinoComm_Group	DECIMAL(9,8) = 0
+	@SabaCasinoComm_Group	DECIMAL(9,8) = 0,
 	@CGComm_Group				DECIMAL(9,8) = 0,
 	@AdvantComm_Group			DECIMAL(9,8) = 0,
 	@AdvantMiniComm_Group		DECIMAL(9,8) = 0,
