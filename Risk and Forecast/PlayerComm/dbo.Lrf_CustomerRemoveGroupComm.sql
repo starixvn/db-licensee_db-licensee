@@ -148,10 +148,10 @@ BEGIN
 				@HabaneroComm		= HabaneroComm,
 				@VGamingComm		= VGamingComm,
 				-- phase 4.2
-				@CGComm				= @CGComm,
-				@AdvantComm			= @AdvantComm,
-				@AdvantMiniComm		= @AdvantMiniComm,
-				@VS3Comm			= @VS3Comm
+				@CGComm				= CGComm,
+				@AdvantComm			= AdvantComm,
+				@AdvantMiniComm		= AdvantMiniComm,
+				@VS3Comm			= VS3Comm
 			FROM dbo.LicenseeCustComm WITH (NOLOCK)
 			WHERE LicenseeID = @LicenseeID AND CustID = @CustID
 					
