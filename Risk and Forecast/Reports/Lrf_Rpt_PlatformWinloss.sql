@@ -516,7 +516,17 @@ BEGIN
 
 		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 5301 AND 5399)'
 	END
-	
+
+	IF @ShowBTC = 1 -- Bitcoin
+	BEGIN
+		SET @SportTypeSQL = @SportTypeSQL + ', (175, ''BTC'')'
+
+		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 7901 AND 7999 THEN ''BTC''
+				'
+
+		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 7901 AND 7999)'
+	END
+
 	SET @SportTypeSQL = STUFF(@SportTypeSQL, 1, 1, '')
 
 	SET @BetTypeWhereSQL = STUFF(@BetTypeWhereSQL, 1, 3, '')

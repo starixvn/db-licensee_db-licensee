@@ -364,6 +364,11 @@ BEGIN
 		SELECT @ProductList = COALESCE(@ProductList + ',' + 'VS3', 'VS3')
 	END
 
+	IF @ShowBTC = 1 --  Bitcoin
+	BEGIN
+		SELECT @ProductList = COALESCE(@ProductList + ',' + 'BTC', 'BTC')
+	END
+
 	IF LEN(ISNULL(@ProductList, '')) > 0 
 	BEGIN
 		DECLARE @IsTest BIT = 0
