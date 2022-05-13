@@ -350,7 +350,7 @@ BEGIN
 												WHEN bt.ProductID = 49 THEN b.matchid
 												ELSE 1
 											END
-				WHEN b.bettype BETWEEN 7901 AND 7999 THEN 175
+				WHEN bt.ProductID = 69 THEN 175
 				ELSE 0
 			END AS SportType
 			, b.matchid

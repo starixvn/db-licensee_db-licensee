@@ -22,6 +22,7 @@ AS
 	Revisions:
 		- 20210916@Kos: New SP [RedmineID: #159939]
 		- 20220106@Kos: Support search by username [RedmineID: #165926]
+		- 20220513@Kos: Support Sports Lottery and Bitcoin [RedmineID: #160160]
 
 	Param's Explanation:
 		- @BetTypeList: bettype list separated by ','
@@ -107,9 +108,20 @@ BEGIN
 			OR ',' + @BetTypeList + ',' LIKE '%,' + CAST(BetType AS VARCHAR(5)) + ',%'
 			OR BetType IN (SELECT Bettype FROM dbo.f_GroupBettype() WHERE ',' + @BetTypeList + ',' LIKE '%,' + CAST(GroupTypeId AS VARCHAR(5)) + ',%'))
 
+	-- Parlay
 	IF @LeagueId = -9
 		DELETE FROM #SportBetType
 		WHERE BetType <> 29
+
+	-- Sports Lottery
+	IF @LeagueId = -63
+		DELETE FROM #SportBetType
+		WHERE ProductCode <> 'SLT'
+
+	-- Bitcoin
+	IF @LeagueId = -69
+		DELETE FROM #SportBetType
+		WHERE ProductCode <> 'BTC'
 
 	DECLARE @Data TABLE (
 		Currency	INT,
@@ -234,7 +246,7 @@ BEGIN
 						b.winlostdate
 				END
 			END
-			ELSE IF @LeagueId = -9		-- Parlay
+			ELSE IF @LeagueId IN (-9, -63, -69)		-- Parlay, Sports Lottery, Bitcoin
 			BEGIN
 				INSERT INTO @Data (
 					Currency,
@@ -264,10 +276,10 @@ BEGIN
 					INNER JOIN #SportBetType AS sbt ON sbt.BetType = b.bettype
 				WHERE
 					b.winlostdate BETWEEN @TempFromDate AND @_ToDate
-					AND b.statusID IN (111, 112, 113)
+					AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
 					AND 1 = CASE
-								WHEN @ShowBA = 0 AND b.tpositiontaking = 0 THEN 0
-								WHEN @ShowSB = 0 AND b.tpositiontaking <> 0 THEN 0
+								WHEN sbt.ProductCode = 'SB' AND @ShowBA = 0 AND b.tpositiontaking = 0 THEN 0
+								WHEN sbt.ProductCode = 'SB' AND @ShowSB = 0 AND b.tpositiontaking <> 0 THEN 0
 								ELSE 1
 							END
 				GROUP BY
@@ -371,7 +383,7 @@ BEGIN
 						b.winlostdate
 				END
 			END
-			ELSE IF @LeagueId = -9		-- Parlay
+			ELSE IF @LeagueId IN (-9, -63, -69)		-- Parlay, Sports Lottery, Bitcoin
 			BEGIN
 				INSERT INTO @Data (
 					Currency,
@@ -401,10 +413,10 @@ BEGIN
 				WHERE
 					b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 					AND b.custid = @CustId
-					AND b.statusID IN (111, 112, 113)
+					AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
 					AND 1 = CASE
-								WHEN @ShowBA = 0 AND b.tpositiontaking = 0 THEN 0
-								WHEN @ShowSB = 0 AND b.tpositiontaking <> 0 THEN 0
+								WHEN sbt.ProductCode = 'SB' AND @ShowBA = 0 AND b.tpositiontaking = 0 THEN 0
+								WHEN sbt.ProductCode = 'SB' AND @ShowSB = 0 AND b.tpositiontaking <> 0 THEN 0
 								ELSE 1
 							END
 				GROUP BY
@@ -468,10 +480,10 @@ BEGIN
 					WHERE
 						b.winlostdate = d.Date
 						AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
-						AND b.leagueid = @LeagueId
+						AND (b.leagueid = @LeagueId OR @LeagueId = -69)
 						AND 1 = CASE
-									WHEN @ShowBA = 0 AND sbt.ProductCode = 'SB' AND b.isBA = 1 THEN 0
-									WHEN @ShowSB = 0 AND sbt.ProductCode = 'SB' AND b.isBA = 0 THEN 0
+									WHEN sbt.ProductCode = 'SB' AND @ShowBA = 0 AND sbt.ProductCode = 'SB' AND b.isBA = 1 THEN 0
+									WHEN sbt.ProductCode = 'SB' AND @ShowSB = 0 AND sbt.ProductCode = 'SB' AND b.isBA = 0 THEN 0
 									ELSE 1
 								END
 					GROUP BY
@@ -511,7 +523,7 @@ BEGIN
 						b.winlostdate = d.Date
 						AND b.custid = @CustId
 						AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
-						AND b.leagueid = @LeagueId
+						AND (b.leagueid = @LeagueId OR @LeagueId = -69)
 						AND 1 = CASE
 									WHEN @ShowBA = 0 AND sbt.ProductCode = 'SB' AND b.isBA = 1 THEN 0
 									WHEN @ShowSB = 0 AND sbt.ProductCode = 'SB' AND b.isBA = 0 THEN 0
