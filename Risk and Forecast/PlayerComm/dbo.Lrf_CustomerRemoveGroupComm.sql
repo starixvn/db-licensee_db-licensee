@@ -362,10 +362,10 @@ BEGIN
 			HabaneroComm		= 0,
 			VGamingComm			= 0,			
 			-- phase 4.2
-			@CGComm			 = 0,
-			@AdvantComm		 = 0,
-			@AdvantMiniComm	 = 0,
-			@VS3Comm		 = 0,
+			CGComm			 = 0,
+			AdvantComm		 = 0,
+			AdvantMiniComm	 = 0,
+			VS3Comm		 = 0,
 
 			GroupCommID = 0
 		WHERE LicenseeID = @LicenseeID 
