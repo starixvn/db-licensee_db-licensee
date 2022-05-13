@@ -207,10 +207,10 @@ BEGIN
 			,@HabaneroComm		= HabaneroComm
 			,@VGamingComm		= VGamingComm
 			--> phase 4.2
-			,@CGComm			= @CGComm
-			,@AdvantComm		= @AdvantComm
-			,@AdvantMiniComm	= @AdvantMiniComm
-			,@VS3Comm			= @VS3Comm
+			,@CGComm			= CGComm
+			,@AdvantComm		= AdvantComm
+			,@AdvantMiniComm	= AdvantMiniComm
+			,@VS3Comm			= VS3Comm
 			
 		FROM dbo.LicenseeGroupComm WITH (NOLOCK)
 		WHERE LicenseeID = @LicenseeID AND id = @GroupCommID AND IsActive=1
