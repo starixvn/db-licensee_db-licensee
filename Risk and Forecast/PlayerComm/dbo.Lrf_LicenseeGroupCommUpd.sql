@@ -648,10 +648,10 @@ BEGIN
 			'HabaneroComm="'+ COALESCE(CAST(@HabaneroComm_old as VARCHAR(50)),SPACE(1)) + '" '+
 			'VGamingComm="'+ COALESCE(CAST(@VGamingComm_Old as VARCHAR(50)),SPACE(1)) + '" '+
 			-- phase 4.2
-			'CGComm="'+ COALESCE(CAST(@CGComm as VARCHAR(50)),SPACE(1)) + '" '+
-			'AdvantComm="'+ COALESCE(CAST(@AdvantComm as VARCHAR(50)),SPACE(1)) + '" '+
-			'AdvantMiniComm="'+ COALESCE(CAST(@AdvantMiniComm as VARCHAR(50)),SPACE(1)) + '" '+
-			'VS3Comm="'+ COALESCE(CAST(@VS3Comm as VARCHAR(50)),SPACE(1)) + '" '+
+			'CGComm="'+ COALESCE(CAST(@CGComm_Old as VARCHAR(50)),SPACE(1)) + '" '+
+			'AdvantComm="'+ COALESCE(CAST(@AdvantComm_Old as VARCHAR(50)),SPACE(1)) + '" '+
+			'AdvantMiniComm="'+ COALESCE(CAST(@AdvantMiniComm_Old as VARCHAR(50)),SPACE(1)) + '" '+
+			'VS3Comm="'+ COALESCE(CAST(@VS3Comm_Old as VARCHAR(50)),SPACE(1)) + '" '+
 
 			'IsUpdateNG="'+ COALESCE(CAST(@IsUpdateNG as VARCHAR(50)),SPACE(1)) + '" ' +
 			'IsUpdateRNG="'+ COALESCE(CAST(@IsUpdateRNG as VARCHAR(50)),SPACE(1)) + '" ' +			
