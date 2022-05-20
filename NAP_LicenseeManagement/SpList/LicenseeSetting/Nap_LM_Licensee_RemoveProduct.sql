@@ -1,20 +1,23 @@
 /*<info serverAlias="DBCUST-bodb_licensee" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
-CREATE PROCEDURE [dbo].[Nap_LM_Licensee_RemoveProduct]
+ALTER PROCEDURE [dbo].[Nap_LM_Licensee_RemoveProduct]
 	@LicenseeNameList		VARCHAR(MAX),
 	@ProductCode			VARCHAR(MAX),
 	@IsRemovePullService	BIT = 0
 AS
+
 /*
-	 Created: Amanda
-	 Date: 2018-11-12
-	 Task: Implement "Licensee Setting" function
-	 DB: DBCUST.bodb_licensee
-	 
-	 Revisions:
-	  - 20181112@Amanda: Remove Product from Licensee [Redmine: #83584]
-	  - 20181228@Amanda: Modify to allow remove multi products for multi licensees[Redmine: #83584]
+	Created: Amanda
+	Date: 2018-11-12
+	Task: Implement "Licensee Setting" function
+	DB: DBCUST.bodb_licensee
+
+	Revisions:
+		- 20181112@Amanda: Remove Product from Licensee [Redmine: #83584]
+		- 20181228@Amanda: Modify to allow remove multi products for multi licensees[Redmine: #83584]
+		- 20220518@Kos: Change to use STRING_SPLIT [Redmine: #171831]
 */
+
 BEGIN
 	SET NOCOUNT ON;
 
@@ -32,13 +35,13 @@ BEGIN
 
 	--1-----------------------------------------* GET LICENSEE LIST *-------------------------------------
 	INSERT INTO @tblLicensee (LicenseeName)
-	SELECT DISTINCT val
-	FROM CUSTDB.dbo.strSplit(@LicenseeNameList,',')
+	SELECT DISTINCT value
+	FROM STRING_SPLIT(@LicenseeNameList, ',')
 
-	UPDATE tl  
+	UPDATE tl
 	SET tl.LicenseeId = l.LicenseeID
 	FROM @tblLicensee tl 
-	INNER JOIN dbo.Licensees l WITH (NOLOCK) ON tl.LicenseeName = l.LicenseeName
+		INNER JOIN dbo.Licensees l WITH (NOLOCK) ON tl.LicenseeName = l.LicenseeName
 
 	IF EXISTS (SELECT 1 FROM @tblLicensee WHERE LicenseeId IS NULL)
 	BEGIN
@@ -52,54 +55,55 @@ BEGIN
 	--2-----------------------------------------* GET PRODUCT LIST *-------------------------------------
 
 	INSERT INTO @tblProductPrefix (ProductCode)
-	SELECT DISTINCT val
-	FROM CUSTDB.dbo.strSplit(@ProductCode,',')
-   
+	SELECT DISTINCT value
+	FROM STRING_SPLIT(@ProductCode, ',')
+
 	UPDATE a
 	SET a.ProductId = b.ProductId
 	FROM @tblProductPrefix a
-	INNER JOIN dbo.Product3rd b WITH (NOLOCK) ON a.ProductCode = b.ProductPrefix
+		INNER JOIN dbo.Product3rd b WITH (NOLOCK) ON a.ProductCode = b.ProductPrefix
 
-    UPDATE @tblProductPrefix
+	UPDATE @tblProductPrefix
 	SET ProductId = 0
 	WHERE ProductCode = 'SB'
 
 	SELECT @n = 1
 		,@m = MAX(ID) FROM @tblProductPrefix
-	WHILE (@n <= @m)
+
+	WHILE @n <= @m
 	BEGIN
 		SELECT @ProductName = ProductCode FROM @tblProductPrefix WHERE ID = @n
-    
+
 		INSERT INTO @tblProductFunctions (ProductId, FunctionId, TypeId)
 		EXEC Nap_LM_Function_GetByProduct @ProductCode = @ProductName
-      
+
 		SET @n = @n +1
 	END
-	
+
 	UPDATE f
 	SET f.IsParent = 1 
 	FROM dbo.Functions af WITH (NOLOCK)
-	INNER JOIN @tblProductFunctions f ON af.FunctionId = f.FunctionId
+		INNER JOIN @tblProductFunctions f ON af.FunctionId = f.FunctionId
 	WHERE f.TypeID IN (1, 3) AND af.ParentId = 0
-	
+
 	INSERT INTO @tblParentFunction(FunctionId)
 	SELECT DISTINCT FunctionId
 	FROM @tblProductFunctions
 	WHERE IsParent = 1
-	
+
 	IF EXISTS (SELECT 1 FROM @tblProductPrefix WHERE ProductId IS NULL)
 	BEGIN
 		IF ISNULL(@Error, '') <> ''
 		BEGIN
 			SET @Error = @Error + ';';
 		END
-	
+
 		SELECT @Error = @Error + 'Invalid product(s): ' + STUFF((
 							SELECT ',' + ProductCode
 							FROM @tblProductPrefix
 							WHERE ProductId IS NULL
 						FOR XML PATH('')), 1, 1, '')
-						
+
 		DELETE @tblProductPrefix
 		WHERE ProductId IS NULL
 	END
@@ -107,58 +111,59 @@ BEGIN
 	--3-----------------------------------------* DELETE PRODUCT *-------------------------------------
 	SELECT @n = 1
 		,@m = MAX(ID) FROM @tblLicensee
-	WHILE (@n <= @m)
+
+	WHILE @n <= @m
 	BEGIN
 		SELECT @LicenseeId = LicenseeId, @LicenseeName = LicenseeName
 		FROM @tblLicensee
 		WHERE ID = @n
-	
+
 		IF @LicenseeId IS NOT NULL
 		BEGIN
 			-- delete setting
 			DELETE ld
 			FROM dbo.LicenseeProduct3rd ld WITH(ROWLOCK)
-			INNER JOIN @tblProductPrefix p ON ld.ProductID = p.ProductId
+				INNER JOIN @tblProductPrefix p ON ld.ProductID = p.ProductId
 			WHERE ld.LicenseeID = @LicenseeId
-			
+
 			-- delete permission
 			DELETE lf
 			FROM dbo.LicenseeFunctions lf WITH(ROWLOCK)
-			INNER JOIN @tblProductFunctions f ON f.FunctionId = lf.FunctionId
+				INNER JOIN @tblProductFunctions f ON f.FunctionId = lf.FunctionId
 			WHERE lf.LicenseeId = @LicenseeId AND f.IsParent IS NULL AND f.TypeID IN (1,3) -- LRF
-			
+
 			DELETE luf
 			FROM dbo.LicenseeUserFunctions luf WITH(ROWLOCK)
-			INNER JOIN @tblProductFunctions f ON f.FunctionId = luf.FunctionId
+				INNER JOIN @tblProductFunctions f ON f.FunctionId = luf.FunctionId
 			WHERE luf.LicenseeId = @LicenseeId AND f.IsParent IS NULL AND f.TypeID IN (1,3) -- LRF
-			
-			-- delete parent function			
+
+			-- delete parent function
 			DECLARE @i INT, @j INT, @parentId INT
 			SELECT @i = 1, @j = MAX(Id)
 			FROM @tblParentFunction
-			
-			WHILE (@i <= @j)
+
+			WHILE @i <= @j
 			BEGIN
 				SELECT @parentId = FunctionId
 				FROM @tblParentFunction
 				WHERE Id = @i
-				
+
 				IF NOT EXISTS (
 					SELECT TOP(1) 1
 					FROM dbo.LicenseeFunctions lf WITH (NOLOCK)
-					INNER JOIN dbo.Functions f WITH (NOLOCK) ON lf.FunctionId = f.FunctionId
+						INNER JOIN dbo.Functions f WITH (NOLOCK) ON lf.FunctionId = f.FunctionId
 					WHERE lf.LicenseeId = @LicenseeId AND f.ParentId = @parentId
 				)
 				BEGIN
 					DELETE lf
 					FROM dbo.LicenseeFunctions lf WITH(ROWLOCK)
 					WHERE lf.LicenseeId = @LicenseeId AND lf.FunctionId = @parentId
-					
+
 					DELETE luf
 					FROM dbo.LicenseeUserFunctions luf WITH(ROWLOCK)
 					WHERE luf.LicenseeId = @LicenseeId AND luf.FunctionId = @parentId
-				END		
-				
+				END
+
 				SET @i = @i + 1
 			END
 
@@ -184,6 +189,7 @@ BEGIN
 					@IsDelete = 1
 			END
 		END
+
 		SET @n = @n + 1
 	END
 	
