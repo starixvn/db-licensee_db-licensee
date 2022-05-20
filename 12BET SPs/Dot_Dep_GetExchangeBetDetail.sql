@@ -11,7 +11,7 @@ Revisions:
 --20171127@Walter(Licensee DB) : Create for getting exchange bet detail
 --20180125@Candice(Licensee DB) : remove matchAmount
 --20180222@Candice(Licensee DB) : add betstatus
---20220428@Boren(Licensee DB) : add settledDate from Sum_winloss_Exchange table. (key:eventid/userid/marketid)
+--20220428@Boren(Licensee DB) : add settledDate & resettledDate from Sum_winloss_Exchange table. (key:eventid/userid/marketid)
 */
 
 BEGIN
@@ -22,6 +22,7 @@ BEGIN
 		
 		SELECT 
 		s.settledDate,
+		s.resettledDate,
 		b.currencyType,
 		b.eventType,
 		b.eventTypeName,
@@ -55,6 +56,7 @@ BEGIN
 	BEGIN
 	SELECT top 500
 		s.settledDate,
+		s.resettledDate,
 		b.currencyType,
 		b.eventType,
 		b.eventTypeName,
