@@ -30,6 +30,7 @@ AS
 		- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]
 		- 20210119@Hogan: Integrate Four Guardians [RedmineID: #148100]
 		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
+		- 20220429@Kos: Support Bitcoin [RedmineID: #160160]
 
 	Param's Explanation:
 		+ @TimeZone: = -4: GMT-4
@@ -56,7 +57,6 @@ BEGIN
 
 	-- Get agent list
 	CREATE TABLE #TempAg (CustId INT, Currency INT)
-
 	CREATE CLUSTERED INDEX IX_TempAg ON #TempAg (CustId);
 
 	DECLARE @DocHandler INT
@@ -471,6 +471,7 @@ BEGIN
 				CONVERT(DATE, DATEADD(HOUR, @TimeZone + 4, CASE
 																WHEN p.ProductCode = 'SB' AND p.EventType = 1 THEN ISNULL(m.GlobalShowTime, b.winlostdate)
 																WHEN p.ProductCode = 'SLT' THEN b.transdate
+																WHEN p.ProductCode = 'BTC' THEN ISNULL(m3rd.StartTime, b.winlostdate)
 																ELSE b.winlostdate
 															END)),
 				b.winlostdate,
@@ -502,9 +503,11 @@ BEGIN
 					ON p.ProductCode = 'SB'
 					AND p.EventType = 1
 					AND m.MatchId = b.MatchId
+				LEFT JOIN dbo.Match3rd AS m3rd WITH (NOLOCK) ON p.ProductCode = 'BTC' AND m3rd.Match3rdId = b.MatchId
 			WHERE CONVERT(DATE, DATEADD(HOUR, @TimeZone + 4, CASE
 																WHEN p.ProductCode = 'SB' AND p.EventType = 1 THEN ISNULL(m.GlobalShowTime, b.winlostdate)
 																WHEN p.ProductCode = 'SLT' THEN b.transdate
+																WHEN p.ProductCode = 'BTC' THEN ISNULL(m3rd.StartTime, b.winlostdate)
 																ELSE b.winlostdate
 															END)) BETWEEN @FromDate AND @ToDate
 				AND b.statusID IN (111, 112, 113)
@@ -513,6 +516,7 @@ BEGIN
 				CONVERT(DATE,DATEADD(HOUR, @TimeZone + 4, CASE
 																WHEN p.ProductCode = 'SB' AND p.EventType = 1 THEN ISNULL(m.GlobalShowTime, b.winlostdate)
 																WHEN p.ProductCode = 'SLT' THEN b.transdate
+																WHEN p.ProductCode = 'BTC' THEN ISNULL(m3rd.StartTime, b.winlostdate)
 																ELSE b.winlostdate
 															END)),
 				b.winlostdate,

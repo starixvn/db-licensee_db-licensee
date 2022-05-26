@@ -109,6 +109,7 @@ AS
 		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
 		- 20220317@Kos: Integrate Cricket phase 2 [RedmineID: #168034]
 		- 20220328@Hogan: Macau Games Add new Range bettype[RedmineID: #170607]
+		- 20220429@Kos: Support Bitcoin [RedmineID: #160160]
 
 	Param's Explanation:
 		+ @Liveindicator: indicate that whether the report will get live data or not
@@ -278,6 +279,7 @@ BEGIN
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','AP')) = 1 THEN 'WHEN b.bettype BETWEEN 7701 AND 7799 THEN ''AP''' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','APM')) = 1 THEN 'WHEN b.bettype BETWEEN 7801 AND 7899 THEN ''APM''' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VS3')) = 1 THEN 'WHEN b.bettype BETWEEN 5301 AND 5399 THEN ''VS3''' + CHAR(13) ELSE '' END
+								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','BTC')) = 1 THEN 'WHEN b.bettype BETWEEN 7901 AND 7999 THEN ''SB''' + CHAR(13) ELSE '' END
 								+ 'END AS ProductCode,' + CHAR(13)
 								+ 'b.bettype,' + CHAR(13)
 								+ 'SUM(stake) turnover,' + CHAR(13)
@@ -332,6 +334,7 @@ BEGIN
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','AP')) = 1 THEN 'OR b.bettype BETWEEN 7701 AND 7799' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','APM')) = 1 THEN 'OR b.bettype BETWEEN 7801 AND 7899' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VS3')) = 1 THEN 'OR b.bettype BETWEEN 5301 AND 5399' + CHAR(13) ELSE '' END
+								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','BTC')) = 1 THEN 'OR b.bettype BETWEEN 7901 AND 7999' + CHAR(13) ELSE '' END
 								+ ') ' + CHAR(13)
 								+ 'GROUP BY  b.winlostdate, t.currency, b.bettype,' + CHAR(13)
 								+ 'CASE' + CHAR(13)		
@@ -366,6 +369,7 @@ BEGIN
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','AP')) = 1 THEN 'WHEN b.bettype BETWEEN 7701 AND 7799 THEN ''AP''' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','APM')) = 1 THEN 'WHEN b.bettype BETWEEN 7801 AND 7899 THEN ''APM''' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VS3')) = 1 THEN 'WHEN b.bettype BETWEEN 5301 AND 5399 THEN ''VS3''' + CHAR(13) ELSE '' END
+								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','BTC')) = 1 THEN 'WHEN b.bettype BETWEEN 7901 AND 7999 THEN ''SB''' + CHAR(13) ELSE '' END
 								+ 'END' + CHAR(13)
 
 			--SB for parlay
@@ -523,6 +527,7 @@ BEGIN
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','AP')) = 1 THEN 'WHEN b.bettype BETWEEN 7701 AND 7799 THEN ''AP''' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','APM')) = 1 THEN 'WHEN b.bettype BETWEEN 7801 AND 7899 THEN ''APM''' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VS3')) = 1 THEN 'WHEN b.bettype BETWEEN 5301 AND 5399 THEN ''VS3''' + CHAR(13) ELSE '' END
+								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','BTC')) = 1 THEN 'WHEN b.bettype BETWEEN 7901 AND 7999 THEN ''SB''' + CHAR(13) ELSE '' END
 								+ 'END AS ProductCode,' + CHAR(13)
 								+ 'b.bettype,' + CHAR(13)
 								+ 'SUM(b.turnover) turnover,' + CHAR(13)
@@ -574,6 +579,7 @@ BEGIN
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','AP')) = 1 THEN 'OR b.bettype BETWEEN 7701 AND 7799' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','APM')) = 1 THEN 'OR b.bettype BETWEEN 7801 AND 7899' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VS3')) = 1 THEN 'OR b.bettype BETWEEN 5301 AND 5399' + CHAR(13) ELSE '' END
+								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','BTC')) = 1 THEN 'OR b.bettype BETWEEN 7901 AND 7999' + CHAR(13) ELSE '' END
 								+ ') ' + CHAR(13)
 								+ 'GROUP BY b.rptDate, b.currencyID, b.bettype,' + CHAR(13)
 								+ 'CASE' + CHAR(13)		
@@ -608,6 +614,7 @@ BEGIN
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','AP')) = 1 THEN 'WHEN b.bettype BETWEEN 7701 AND 7799 THEN ''AP''' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','APM')) = 1 THEN 'WHEN b.bettype BETWEEN 7801 AND 7899 THEN ''APM''' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VS3')) = 1 THEN 'WHEN b.bettype BETWEEN 5301 AND 5399 THEN ''VS3''' + CHAR(13) ELSE '' END
+								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','BTC')) = 1 THEN 'WHEN b.bettype BETWEEN 7901 AND 7999 THEN ''SB''' + CHAR(13) ELSE '' END
 								+ 'END' + CHAR(13)
 
 			-- parlay for SB

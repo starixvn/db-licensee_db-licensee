@@ -24,6 +24,7 @@ AS
 	Revisions:
 		- 20210916@Kos: New SP [RedmineID: #159939]
 		- 20220106@Kos: Support search by username [RedmineID: #165926]
+		- 20220513@Kos: Support Sports Lottery and Bitcoin [RedmineID: #160160]
 
 	Param's Explanation:
 		- @SportTypeList: sporttype list separated by ','
@@ -118,6 +119,31 @@ BEGIN
 		AND (@BetTypeList = 'All'
 			OR ',' + @BetTypeList + ',' LIKE '%,' + CAST(BetType AS VARCHAR(5)) + ',%'
 			OR BetType IN (SELECT Bettype FROM dbo.f_GroupBettype() WHERE ',' + @BetTypeList + ',' LIKE '%,' + CAST(GroupTypeId AS VARCHAR(5)) + ',%'))
+
+	IF @SportTypeList <> 'All'
+	BEGIN
+		IF ',' + @SportTypeList + ',' NOT LIKE '%,169,%'		-- Sports Lottery
+		BEGIN
+			DELETE FROM #SportBetType
+			WHERE ProductCode = 'SLT'
+		END
+
+		IF ',' + @SportTypeList + ',' NOT LIKE '%,175,%'		-- Bitcoin
+		BEGIN
+			DELETE FROM #SportBetType
+			WHERE ProductCode = 'BTC'
+		END
+
+		DELETE FROM #SportBetType
+		WHERE BetType = 29
+	END
+
+	IF @LeagueName <> ''
+	BEGIN
+		DELETE FROM #SportBetType
+		WHERE ProductCode IN ('SLT', 'BTC')
+			OR BetType = 29
+	END
 
 	DECLARE @_FromDate	SMALLDATETIME,
 		@_ToDate		SMALLDATETIME
@@ -248,6 +274,20 @@ BEGIN
 	BEGIN
 		INSERT INTO #League (LeagueId, SportType, LeagueGroupId)
 		SELECT -9, 0, 0
+		WHERE EXISTS (SELECT 1 FROM #SportBetType WHERE BetType = 29)
+	END
+
+	-- Insert League for Sports Lottery, Bitcoin
+	IF @LeagueName = ''
+	BEGIN
+		INSERT INTO #League (LeagueId, SportType, LeagueGroupId)
+		SELECT -63, 169, 0
+		WHERE EXISTS (SELECT 1 FROM #SportBetType WHERE ProductCode = 'SLT')
+		UNION ALL
+		SELECT League3rdId, 175, 0
+		FROM dbo.League3rd WITH (NOLOCK)
+		WHERE SportType = 175
+			AND EXISTS (SELECT 1 FROM #SportBetType WHERE ProductCode = 'BTC')
 	END
 
 	DECLARE @Data TABLE (
@@ -320,6 +360,7 @@ BEGIN
 			WHERE
 				b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 				AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
+				AND sbt.ProductCode = 'SB'
 				AND sbt.EventType = 1
 				AND 1 = CASE
 							WHEN @ShowBA = 0 AND sbt.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 0
@@ -386,53 +427,58 @@ BEGIN
 					b.currency
 			END
 
-			-- Parlay
-			IF EXISTS (SELECT 1 FROM #League WHERE LeagueId = -9)
-			BEGIN
-				INSERT INTO @Data (
-					LeagueId,
-					LeagueGroupId,
-					SportType,
-					WinLostDate,
-					Currency,
-					BetCount,
-					Turnover,
-					WinLost,
-					LicenseeWL,
-					BAComm )
-				SELECT
-					-9 AS LeagueId,
-					0 AS LeagueGroupId,
-					0 AS SportType,
-					b.winlostdate,
-					b.currency,
-					COUNT(1) AS BetCount,
-					SUM(b.stake) AS Turnover,
-					SUM(b.winlost - b.actual_stake) AS WinLost,
-					- SUM(CASE
-							WHEN b.tpositiontaking = 0 THEN 0
-							ELSE b.winlost - b.actual_stake
-						END) AS LicenseeWL,
-					SUM(CASE
-							WHEN b.tpositiontaking = 0 THEN b.comm
-							ELSE 0
-						END) AS BAComm
-				FROM
-					dbo.bettrans AS b WITH (NOLOCK)
-					INNER JOIN #TempAg AS a ON a.CustId = b.recommend
-				WHERE
-					b.winlostdate BETWEEN @TempFromDate AND @_ToDate
-					AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
-					AND b.bettype = 29
-					AND 1 = CASE
-								WHEN @ShowBA = 0 AND b.tpositiontaking = 0 THEN 0
-								WHEN @ShowSB = 0 AND b.tpositiontaking <> 0 THEN 0
-								ELSE 1
-							END
-				GROUP BY
-					b.winlostdate,
-					b.currency
-			END
+			-- Parlay, Sports Lottery, Bitcoin
+			INSERT INTO @Data (
+				LeagueId,
+				LeagueGroupId,
+				SportType,
+				WinLostDate,
+				Currency,
+				BetCount,
+				Turnover,
+				WinLost,
+				LicenseeWL,
+				BAComm )
+			SELECT
+				CASE
+					WHEN sbt.ProductCode = 'SB' THEN -9
+					WHEN sbt.ProductCode = 'SLT' THEN -63
+					WHEN sbt.ProductCode = 'BTC' THEN -69
+					ELSE 0
+				END AS LeagueId,
+				0 AS LeagueGroupId,
+				0 AS SportType,
+				b.winlostdate,
+				b.currency,
+				COUNT(1) AS BetCount,
+				SUM(b.stake) AS Turnover,
+				SUM(b.winlost - b.actual_stake) AS WinLost,
+				- SUM(CASE
+						WHEN b.tpositiontaking = 0 THEN 0
+						ELSE b.winlost - b.actual_stake
+					END) AS LicenseeWL,
+				SUM(CASE
+						WHEN b.tpositiontaking = 0 THEN b.comm
+						ELSE 0
+					END) AS BAComm
+			FROM
+				dbo.bettrans AS b WITH (NOLOCK)
+				INNER JOIN #TempAg AS a ON a.CustId = b.recommend
+				INNER JOIN #SportBetType AS sbt ON sbt.BetType = b.bettype
+			WHERE
+				b.winlostdate BETWEEN @TempFromDate AND @_ToDate
+				AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
+				AND (sbt.ProductCode IN ('SLT', 'BTC')
+					OR (sbt.ProductCode = 'SB' AND sbt.EventType = 0))
+				AND 1 = CASE
+							WHEN sbt.ProductCode = 'SB' AND @ShowBA = 0 AND b.tpositiontaking = 0 THEN 0
+							WHEN sbt.ProductCode = 'SB' AND @ShowSB = 0 AND b.tpositiontaking <> 0 THEN 0
+							ELSE 1
+						END
+			GROUP BY
+				sbt.ProductCode,
+				b.winlostdate,
+				b.currency
 		END
 		ELSE IF @CustId <> 0	-- Customer level
 		BEGIN
@@ -480,7 +526,8 @@ BEGIN
 				b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 				AND b.custid = @CustId
 				AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
-				AND sbt.EventType = 1
+				AND (sbt.ProductCode IN ('SLT', 'BTC')
+					OR (sbt.ProductCode = 'SB' AND sbt.EventType = 0))
 				AND 1 = CASE
 							WHEN @ShowBA = 0 AND sbt.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 0
 							WHEN @ShowSB = 0 AND sbt.ProductCode = 'SB' AND b.tpositiontaking <> 0 THEN 0
@@ -546,52 +593,57 @@ BEGIN
 					b.currency
 			END
 
-			-- Parlay
-			IF EXISTS (SELECT 1 FROM #League WHERE LeagueId = -9)
-			BEGIN
-				INSERT INTO @Data (
-					LeagueId,
-					LeagueGroupId,
-					SportType,
-					WinLostDate,
-					Currency,
-					BetCount,
-					Turnover,
-					WinLost,
-					LicenseeWL,
-					BAComm )
-				SELECT
-					-9 AS LeagueId,
-					0 AS LeagueGroupId,
-					0 AS SportType,
-					b.winlostdate,
-					b.currency,
-					COUNT(1) AS BetCount,
-					SUM(b.stake) AS Turnover,
-					SUM(b.winlost - b.actual_stake) AS WinLost,
-					- SUM(CASE
-							WHEN b.tpositiontaking = 0 THEN 0
-							ELSE b.winlost - b.actual_stake
-						END) AS LicenseeWL,
-					SUM(CASE
-							WHEN b.tpositiontaking = 0 THEN b.comm
-							ELSE 0
-						END) AS BAComm
-				FROM dbo.bettrans AS b WITH (NOLOCK)
-				WHERE
-					b.winlostdate BETWEEN @TempFromDate AND @_ToDate
-					AND b.custid = @CustId
-					AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
-					AND b.bettype = 29
-					AND 1 = CASE
-								WHEN @ShowBA = 0 AND b.tpositiontaking = 0 THEN 0
-								WHEN @ShowSB = 0 AND b.tpositiontaking <> 0 THEN 0
-								ELSE 1
-							END
-				GROUP BY
-					b.winlostdate,
-					b.currency
-			END
+			-- Parlay, Sports Lottery, Bitcoin
+			INSERT INTO @Data (
+				LeagueId,
+				LeagueGroupId,
+				SportType,
+				WinLostDate,
+				Currency,
+				BetCount,
+				Turnover,
+				WinLost,
+				LicenseeWL,
+				BAComm )
+			SELECT
+				CASE
+					WHEN sbt.ProductCode = 'SB' THEN -9
+					WHEN sbt.ProductCode = 'SLT' THEN -63
+					WHEN sbt.ProductCode = 'BTC' THEN -69
+					ELSE 0
+				END AS LeagueId,
+				0 AS LeagueGroupId,
+				0 AS SportType,
+				b.winlostdate,
+				b.currency,
+				COUNT(1) AS BetCount,
+				SUM(b.stake) AS Turnover,
+				SUM(b.winlost - b.actual_stake) AS WinLost,
+				- SUM(CASE
+						WHEN b.tpositiontaking = 0 THEN 0
+						ELSE b.winlost - b.actual_stake
+					END) AS LicenseeWL,
+				SUM(CASE
+						WHEN b.tpositiontaking = 0 THEN b.comm
+						ELSE 0
+					END) AS BAComm
+			FROM dbo.bettrans AS b WITH (NOLOCK)
+				INNER JOIN #SportBetType AS sbt ON sbt.BetType = b.bettype
+			WHERE
+				b.winlostdate BETWEEN @TempFromDate AND @_ToDate
+				AND b.custid = @CustId
+				AND (sbt.ProductCode IN ('SLT', 'BTC')
+					OR (sbt.ProductCode = 'SB' AND sbt.EventType = 0))
+				AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
+				AND 1 = CASE
+							WHEN sbt.ProductCode = 'SB' AND @ShowBA = 0 AND b.tpositiontaking = 0 THEN 0
+							WHEN sbt.ProductCode = 'SB' AND @ShowSB = 0 AND b.tpositiontaking <> 0 THEN 0
+							ELSE 1
+						END
+			GROUP BY
+				sbt.ProductCode,
+				b.winlostdate,
+				b.currency
 		END
 	END
 
@@ -635,7 +687,10 @@ BEGIN
 				#Date AS d
 				CROSS APPLY (
 					SELECT
-						b.leagueid,
+						CASE
+							WHEN sbt.ProductCode = 'BTC' THEN -69
+							ELSE b.leagueid
+						END AS LeagueId,
 						l.LeagueGroupId,
 						l.SportType,
 						b.winlostdate,
@@ -649,7 +704,7 @@ BEGIN
 						-SUM(CASE WHEN b.isBA = 0 THEN b.winlost ELSE 0 END) AS LicenseeWL,
 						SUM(CASE WHEN b.isBA = 1 THEN b.comm ELSE 0 END) AS BAComm
 					FROM
-						bodb_licenseereport.dbo.rptWinlostbyLeague AS b WITH (NOLOCK)
+						bodb_LicenseeReport.dbo.rptWinlostbyLeague AS b WITH (NOLOCK)
 						INNER JOIN #TempAg AS a ON a.CustId = b.recommend
 						INNER JOIN #SportBetType AS sbt ON sbt.BetType = b.bettype
 						INNER JOIN #League AS l ON l.LeagueId = b.leagueid
@@ -657,12 +712,15 @@ BEGIN
 						b.winlostdate = d.Date
 						AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
 						AND 1 = CASE
-									WHEN @ShowBA = 0 AND sbt.ProductCode = 'SB' AND b.isBA = 1 THEN 0
-									WHEN @ShowSB = 0 AND sbt.ProductCode = 'SB' AND b.isBA = 0 THEN 0
+									WHEN sbt.ProductCode = 'SB' AND @ShowBA = 0 AND sbt.ProductCode = 'SB' AND b.isBA = 1 THEN 0
+									WHEN sbt.ProductCode = 'SB' AND @ShowSB = 0 AND sbt.ProductCode = 'SB' AND b.isBA = 0 THEN 0
 									ELSE 1
 								END
 					GROUP BY
-						b.leagueid,
+						CASE
+							WHEN sbt.ProductCode = 'BTC' THEN -69
+							ELSE b.leagueid
+						END,
 						l.LeagueGroupId,
 						l.SportType,
 						b.winlostdate,
@@ -687,7 +745,10 @@ BEGIN
 				#Date AS d
 				CROSS APPLY (
 					SELECT
-						b.leagueid,
+						CASE
+							WHEN sbt.ProductCode = 'BTC' THEN -69
+							ELSE b.leagueid
+						END AS LeagueId,
 						l.LeagueGroupId,
 						l.SportType,
 						b.winlostdate,
@@ -709,12 +770,15 @@ BEGIN
 						AND b.custid = @CustId
 						AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
 						AND 1 = CASE
-									WHEN @ShowBA = 0 AND sbt.ProductCode = 'SB' AND b.isBA = 1 THEN 0
-									WHEN @ShowSB = 0 AND sbt.ProductCode = 'SB' AND b.isBA = 0 THEN 0
+									WHEN sbt.ProductCode = 'SB' AND @ShowBA = 0 AND sbt.ProductCode = 'SB' AND b.isBA = 1 THEN 0
+									WHEN sbt.ProductCode = 'SB' AND @ShowSB = 0 AND sbt.ProductCode = 'SB' AND b.isBA = 0 THEN 0
 									ELSE 1
 								END
 					GROUP BY
-						b.leagueid,
+						CASE
+							WHEN sbt.ProductCode = 'BTC' THEN -69
+							ELSE b.leagueid
+						END,
 						l.LeagueGroupId,
 						l.SportType,
 						b.winlostdate,

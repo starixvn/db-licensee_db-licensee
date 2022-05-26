@@ -1,13 +1,13 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportBySport]
+	@AgentList		VARCHAR(MAX),
 	@ProductCodes	VARCHAR(MAX)	= NULL,
 	@FromDate		SMALLDATETIME,
 	@ToDate			SMALLDATETIME,
 	@MoveBetsDay	SMALLDATETIME,
 	@Debug			BIT				= 0,
-	@Liveindicator	INT				= 1,
-	@AgentList		VARCHAR(MAX),
+	@LiveIndicator	INT				= 1,
 	@BaseCurrency	VARCHAR(3)		= ''
 AS
 
@@ -43,7 +43,7 @@ AS
 		- 20150127@Jim: support base on GBP Currency
 		- 20150618@Patrick: #36263: Fix super balance isue for: AGC, GD & VG
 		- 20150612@Jim: support MicroGaming
-		- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission 
+		- 20150623@Winnie: exclude 3 transactions SOLD/BOUGHT/BetTrade Commission
 		- 20151001@Jim: remove MicroGaming
 		- 20151228@Bobby: #50469 - Remove RNG Casino - exclude OneRNG range bettype
 		- 20160201@Victor: Include Bettrade original ticket [Redmine: 51053]
@@ -102,6 +102,7 @@ AS
 		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
 		- 20220317@Kos: Integrate Cricket phase 2 [RedmineID: #168034]
 		- 20220328@Hogan: Macau Games Add new Range bettype[RedmineID: #170607]
+		- 20220429@Kos: Support Bitcoin [RedmineID: #160160]
 
 	Param's Explanation:
 		@Liveindicator : indicate that whether the report will get live data or not
@@ -113,15 +114,6 @@ AS
 				<Agent AgentId="12345" Currency="3"/>
 				<Agent AgentId="12345" Currency="5"/>
 			</ROOT>
-
-	Example:
-	DECLARE @FromDate DATETIME  
-	DECLARE @ToDate DATETIME  
-	DECLARE @MoveBetsDay DATETIME  
-	SELECT @FromDate = DATEADD(DAY, -15, GETDATE())  
-	SELECT @ToDate = GETDATE()  
-	SELECT @MoveBetsDay = MAX(eventdate) FROM match14 WITH(NOLOCK)
-	EXEC [Lrf_Rpt_LiveReportBySport]  @CurrencyID = 0, @FromDate=@FromDate, @ProductCode= NULL, @ToDate=@ToDate, @MoveBetsDay = @MoveBetsDay  
 */
 
 BEGIN
@@ -163,7 +155,7 @@ BEGIN
 						+ 'EXEC sp_xml_removedocument @DocHandler' + CHAR(13)
 						+ 'END TRY' + CHAR(13)
 						+ 'BEGIN CATCH' + CHAR(13)
-						+ 'SELECT ErrCode = 100, ErrMsg = N''Paramter invalid.''' + CHAR(13)
+						+ 'SELECT ErrCode = 100, ErrMsg = N''Parameter invalid.''' + CHAR(13)
 						+ 'RETURN' + CHAR(13)
 						+ 'END CATCH;' + CHAR(13)
 						+ 'CREATE TABLE #LicenseeList(LicenseeID INT, Currency INT)' + CHAR(13)
@@ -319,7 +311,7 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 7701 AND 7799 THEN 172 -- AP' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 7801 AND 7899 THEN 174 -- APM' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 5301 AND 5399 THEN 231 -- VS3' + CHAR(13)
-									
+								+ 'WHEN b.bettype BETWEEN 7901 AND 7999 THEN 175 -- BTC' + CHAR(13)
 								+ 'ELSE m.SportType END as Sporttype,' + CHAR(13)
 								+ 'SUM(stake) turnover,' + CHAR(13)
 								+ 'SUM(b.winlost - b.actual_stake) AS Winlost,' + CHAR(13)
@@ -344,8 +336,8 @@ BEGIN
 								+ 'AND b.bettype NOT BETWEEN 1101 AND 1199' + CHAR(13)
 								+ 'AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)' + CHAR(13)
 								+ 'AND b.statusID IN (111,112,113)' + CHAR(13) + 'AND BA.transid IS NULL' + CHAR(13) + 'AND (1 <> 1' + CHAR(13)
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','NG')) = 1 THEN 'OR (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) OR (b.bettype BETWEEN 3601 AND 3610) '+ CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SB')) = 1 THEN 'OR (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 and 1399) OR (b.Bettype BETWEEN 9001 and 9399) OR (b.Bettype BETWEEN 9400 and 9998) OR b.Bettype = 38)' + CHAR(13) ELSE '' END 
+								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','NG')) = 1 THEN 'OR (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) OR (b.bettype BETWEEN 3601 AND 3610) '+ CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VS')) = 1 THEN 'OR b.bettype BETWEEN 1201 AND 1299' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','KN')) = 1 THEN 'OR b.bettype BETWEEN 1501 AND 1599' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','CS')) = 1 THEN 'OR (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999)' + CHAR(13) ELSE '' END 
@@ -375,6 +367,7 @@ BEGIN
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','AP')) = 1 THEN 'OR b.bettype BETWEEN 7701 AND 7799' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','APM')) = 1 THEN 'OR b.bettype BETWEEN 7801 AND 7899' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VS3')) = 1 THEN 'OR b.bettype BETWEEN 5301 AND 5399' + CHAR(13) ELSE '' END
+								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','BTC')) = 1 THEN 'OR b.bettype BETWEEN 7901 AND 7999' + CHAR(13) ELSE '' END
 								+ ') ' + CHAR(13)
 								+ 'GROUP BY b.winlostdate, b.currency,' + CHAR(13)
 								+ 'CASE' + CHAR(13)
@@ -418,11 +411,12 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 7701 AND 7799 THEN 172 -- AP' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 7801 AND 7899 THEN 174 -- APM' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 5301 AND 5399 THEN 231 -- VS3' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 7901 AND 7999 THEN 175 -- BTC' + CHAR(13)
 								+ 'ELSE m.SportType END ' + CHAR(13)
 
+			--SB for parlay
 			IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'SB'))
 			BEGIN
-				--SB for parlay
 				SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13) 
 									+ 'SELECT b.winlostdate, b.currency,' + CHAR(13)
 									+ 'CASE' + CHAR(13)
@@ -455,9 +449,9 @@ BEGIN
 									+ 'END ' + CHAR(13)
 			END
 
+			-- Betradar for parlay
 			IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'VS2'))
 			BEGIN
-				-- Betradar for parlay
 				SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13) 
 									+ 'SELECT b.winlostdate, b.currency,' + CHAR(13)
 									+ '104 as Sporttype,' + CHAR(13)
@@ -605,6 +599,7 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 7701 AND 7799 THEN 172' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 7801 AND 7899 THEN 174' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 5301 AND 5399 THEN 231' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 7901 AND 7999 THEN 175' + CHAR(13)
 								+ 'ELSE ISNULL(l.sporttype, 0)' + CHAR(13)
 								+ 'END AS SportType,' + CHAR(13)
 								+ 'SUM(b.turnover) turnover,' + CHAR(13)
@@ -628,8 +623,8 @@ BEGIN
 								+ 'AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)' + CHAR(13)
 								+ 'AND b.CustomerCategory IN (-1, 1001, 1003)' + CHAR(13)
 								+ 'AND (1 <> 1' + CHAR(13)	
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','NG')) = 1 THEN 'OR (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) OR (b.bettype BETWEEN 3601 AND 3610) '+ CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SB')) = 1 THEN 'OR (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 and 1399) OR (b.Bettype BETWEEN 9001 and 9399) OR (b.Bettype BETWEEN 9400 and 9998) OR b.Bettype = 38)' + CHAR(13) ELSE '' END 
+								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','NG')) = 1 THEN 'OR (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) OR (b.bettype BETWEEN 3601 AND 3610) '+ CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VS')) = 1 THEN 'OR b.bettype BETWEEN 1201 AND 1299' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','KN')) = 1 THEN 'OR b.bettype BETWEEN 1501 AND 1599' + CHAR(13) ELSE '' END 
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','CS')) = 1 THEN 'OR (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999)' + CHAR(13) ELSE '' END 
@@ -659,6 +654,7 @@ BEGIN
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','AP')) = 1 THEN 'OR b.bettype BETWEEN 7701 AND 7799' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','APM')) = 1 THEN 'OR b.bettype BETWEEN 7801 AND 7899' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VS3')) = 1 THEN 'OR b.bettype BETWEEN 5301 AND 5399' + CHAR(13) ELSE '' END
+								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','BTC')) = 1 THEN 'OR b.bettype BETWEEN 7901 AND 7999' + CHAR(13) ELSE '' END
 								+ ') ' + CHAR(13)
 								+ 'GROUP BY b.rptDate, b.currencyID, ' + CHAR(13)
 								+ 'CASE' + CHAR(13)
@@ -696,12 +692,13 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 7701 AND 7799 THEN 172' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 7801 AND 7899 THEN 174' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 5301 AND 5399 THEN 231' + CHAR(13)
+								+ 'WHEN b.bettype BETWEEN 7901 AND 7999 THEN 175' + CHAR(13)
 								+ 'ELSE ISNULL(l.sporttype, 0)' + CHAR(13)
 								+ 'END' + CHAR(13)
 
+			-- parlay for SB
 			IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'SB'))
 			BEGIN
-				-- parlay for SB
 				SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
 									+ 'SELECT ' + CHAR(13) + 'b.rptDate,' + CHAR(13) + 'b.currencyID,' + CHAR(13)
 									+ 'CASE' + CHAR(13)
@@ -730,9 +727,9 @@ BEGIN
 									+ 'END' + CHAR(13)
 			END
 
+			-- parlay for BetRadar
 			IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'VS2'))
 			BEGIN
-				-- parlay for BetRadar
 				SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
 									+ 'SELECT ' + CHAR(13) + 'b.rptDate,' + CHAR(13) + 'b.currencyID,' + CHAR(13)
 									+ '104 AS SportType,' + CHAR(13)

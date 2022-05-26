@@ -89,6 +89,7 @@ AS
 		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
 		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
 		- 20220322@Kos: Support Parlay sport [RedmineID: #169282]
+		- 20220513@Hogan: Support Bitcoin [RedmineID: #160160]
 
 	Parameter's Explanation:
 		- @ReportBy: 1: daily, 2: monthly
@@ -349,6 +350,7 @@ BEGIN
 												WHEN bt.ProductID = 49 THEN b.matchid
 												ELSE 1
 											END
+				WHEN bt.ProductID = 69 THEN 175
 				ELSE 0
 			END AS SportType
 			, b.matchid
