@@ -34,7 +34,12 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeGroupCommIns]
 	@GDGComm			DECIMAL(9,8) = 0,
 	@HabaneroComm		DECIMAL(9,8) = 0,
 	@VGamingComm		DECIMAL(9,8) = 0,
-	
+	-- phase 4.2
+	@CGComm				DECIMAL(9,8) = 0,
+	@AdvantComm			DECIMAL(9,8) = 0,
+	@AdvantMiniComm		DECIMAL(9,8) = 0,
+	@VS3Comm			DECIMAL(9,8) = 0,
+
 	@GroupColor VARCHAR(20),
 	@UserID INT,
 	@IP VARCHAR(40),
@@ -69,6 +74,7 @@ Revisions:
 	- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048]  
 	- 20210813@Johnson: Add VGaming [redmine: #159696]
 	- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
+	- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586] 
 	
 Param's Explanation:
 
@@ -118,6 +124,11 @@ BEGIN
 		OR @GDGComm > 0.15
 		OR @HabaneroComm > 0.15
 		OR @VGamingComm > 0.15
+		-- Phase 4.2
+		OR @CGComm > 0.15
+		OR @AdvantComm > 0.15
+		OR @AdvantMiniComm > 0.15
+		OR @VS3Comm > 0.15
 	BEGIN
 		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN  'Player Commission should not greater than 0.15'
 										ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200002,@Langkey)
@@ -170,6 +181,11 @@ BEGIN
 											,GDGComm
 											,HabaneroComm
 											,VGamingComm
+											-- Phase 4.2
+											,CGComm
+											,AdvantComm
+											,AdvantMiniComm
+											,VS3Comm
 											)
 		VALUES (@LicenseeID,@GroupName,@SBComm,@NGComm,@GroupColor,@IsDefault,@RNGComm,@ParlayComm
 				,@AllbetComm
@@ -196,7 +212,12 @@ BEGIN
 				,@JokerComm			
 				,@GDGComm			
 				,@HabaneroComm
-				,@VGamingComm		
+				,@VGamingComm	
+				-- Phase 4.2
+				,@CGComm
+				,@AdvantComm
+				,@AdvantMiniComm
+				,@VS3Comm
 				)
 		
 		IF (@@ERROR <> 0)
@@ -247,7 +268,12 @@ BEGIN
 		'GDGComm="'+ COALESCE(CAST(@GDGComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'HabaneroComm="'+ COALESCE(CAST(@HabaneroComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'VGamingComm="'+ COALESCE(CAST(@VGamingComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		
+		-- phase 4.2
+		'CGComm="'+ COALESCE(CAST(@CGComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'AdvantComm="'+ COALESCE(CAST(@AdvantComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'AdvantMiniComm="'+ COALESCE(CAST(@AdvantMiniComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'VS3Comm="'+ COALESCE(CAST(@VS3Comm as VARCHAR(50)),SPACE(1)) + '" '+
+
 		'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
 		'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +
 		'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
@@ -289,7 +315,12 @@ BEGIN
 		'GDGComm="'+ COALESCE(CAST(@GDGComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'HabaneroComm="'+ COALESCE(CAST(@HabaneroComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'VGamingComm="'+ COALESCE(CAST(@VGamingComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		
+		-- phase 4.2
+		'CGComm="'+ COALESCE(CAST(@CGComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'AdvantComm="'+ COALESCE(CAST(@AdvantComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'AdvantMiniComm="'+ COALESCE(CAST(@AdvantMiniComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'VS3Comm="'+ COALESCE(CAST(@VS3Comm as VARCHAR(50)),SPACE(1)) + '" '+
+
 		'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
 		'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +
 		'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +

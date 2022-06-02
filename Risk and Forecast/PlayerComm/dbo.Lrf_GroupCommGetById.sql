@@ -26,7 +26,9 @@ AS
 	- 20201111@Helen: LAP - Offer commission to 3rd party products - Phase 3 - [Redmine: #145012] 
 	- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048]  
 	- 20210817@Johnson: Add VGaming [redmine:#159696]
-		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
+	- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
+	- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586]  
+
 */  
 BEGIN  
 SET NOCOUNT ON;  
@@ -63,7 +65,11 @@ SELECT g.ID AS GroupCommID,
 	g.JokerComm,
 	g.GDGComm,
 	g.HabaneroComm,
-	g.VGamingComm
+	g.VGamingComm,
+	g.CGComm, 			
+	g.AdvantComm, 		
+	g.AdvantMiniComm, 	
+	g.VS3Comm 
 FROM dbo.LicenseeGroupComm g WITH (NOLOCK) 
 WHERE 
 	IsActive = 1 

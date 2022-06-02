@@ -15,6 +15,7 @@ Revisions:
 	20130411@Scott : Check Customer belong Licensee 
 	20180711@Amanda: get username of LAP if log data is after LAP launch data [#97994]
 	20190405@Patrick: Support archive date range [Redmine: #111476]
+	- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586]
        
 Param's Explaination:          
  - @FromDate: date range to view log
@@ -117,7 +118,7 @@ BEGIN
 		FROM dbo.UserLog_RunSP l WITH(NOLOCK)
 			INNER JOIN dbo.LogAction a WITH(NOLOCK) ON a.actionid = l.actionid
 		WHERE l.Logdate >= @__archiveDate AND l.logdate < @logDataToDate AND l.actionid = 2611 AND l.custid = @Licenseeid
-
+		UNION ALL
 		--archive
 		SELECT	l.Logid,
 				l.LogDate,

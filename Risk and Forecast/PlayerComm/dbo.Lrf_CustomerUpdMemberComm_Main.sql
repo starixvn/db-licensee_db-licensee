@@ -49,6 +49,11 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Main]
 	,@IsUpdateGDG			BIT = 0
 	,@IsUpdateHabanero		BIT = 0
 	,@IsUpdateVGaming 		BIT = 0
+	-- phase 4.2
+	,@IsUpdateCG			BIT = 0
+	,@IsUpdateAdvant		BIT = 0
+	,@IsUpdateAdvantMini	BIT = 0
+	,@IsUpdateVS3			BIT = 0
 	,@WMCasinoComm		DECIMAL(9,8) = 0
 	,@BigGamingComm		DECIMAL(9,8) = 0
 	,@JokerComm			DECIMAL(9,8) = 0
@@ -57,6 +62,10 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Main]
 	,@VGamingComm		DECIMAL(9,8) = 0
 	,@IsUpdateSabaCasino	BIT = 0
 	,@SabaCasinoComm		DECIMAL(9,8) = 0
+	,@CGComm			DECIMAL(9,8) = 0
+	,@AdvantComm		DECIMAL(9,8) = 0
+	,@AdvantMiniComm	DECIMAL(9,8) = 0
+	,@VS3Comm			DECIMAL(9,8) = 0
 AS
 /*
 	Created: 20120907@Viet
@@ -84,6 +93,8 @@ AS
 		- 20210816@Johnson: Add VGaming [redmine: #159696]
 		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 		- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217] 
+		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586] 
+
 	Param's Explanation:
 
 */
@@ -131,6 +142,11 @@ BEGIN
 			,@HabaneroComm_Group		DECIMAL(9,8) = 0
 			,@VGamingComm_Group			DECIMAL(9,8) = 0
 			,@SabaCasinoComm_Group		DECIMAL(9,8) = 0
+			-- phase 4.2
+			,@CGComm_Group				DECIMAL(9,8) = 0
+			,@AdvantComm_Group			DECIMAL(9,8) = 0
+			,@AdvantMiniComm_Group		DECIMAL(9,8) = 0
+			,@VS3Comm_Group				DECIMAL(9,8) = 0
 
 	
 	IF (	@IsUpdateAllbet = 1 OR 
@@ -156,7 +172,11 @@ BEGIN
 		OR @IsUpdateVGaming  = 1
 		--SabaCasino
 		OR @IsUpdateSabaCasino = 1		
-
+		-- phase 4.2
+		OR @IsUpdateCG				= 1
+		OR @IsUpdateAdvant			= 1
+		OR @IsUpdateAdvantMini		= 1
+		OR @IsUpdateVS3				= 1
 		)
 	BEGIN		
 		SET @AgentID = (SELECT TOP (1) recommend 
@@ -189,6 +209,11 @@ BEGIN
 			,@HabaneroComm_Group = MAX(CASE WHEN BetType = 7001 THEN playerdiscount ELSE 0 END)
 			,@VGamingComm_Group = MAX(CASE WHEN BetType = 3801 THEN playerdiscount ELSE 0 END)
 			,@SabaCasinoComm_Group = MAX(CASE WHEN BetType = 2101 THEN playerdiscount ELSE 0 END)
+			-- phase 4.2
+			,@CGComm_Group = MAX(CASE WHEN BetType = 7301 THEN playerdiscount ELSE 0 END)
+			,@AdvantComm_Group = MAX(CASE WHEN BetType = 7701 THEN playerdiscount ELSE 0 END)
+			,@AdvantMiniComm_Group = MAX(CASE WHEN BetType = 7801 THEN playerdiscount ELSE 0 END)
+			,@VS3Comm_Group = MAX(CASE WHEN BetType = 5301 THEN playerdiscount ELSE 0 END)
 		FROM dbo.Dep_CustDiscountGroupSetting_Member grp WITH(NOLOCK)
 		WHERE AgentID = @AgentID
 			AND sporttype IN (212,248,219,243,247,220,180,190,222
@@ -199,6 +224,8 @@ BEGIN
 							,171
 							--SabaCasino
 							,208
+							--phase 4.2
+							,231,167,172,174
 							)
 	END	
 								
@@ -286,13 +313,23 @@ BEGIN
 			,@IsUpdateJoker			= @IsUpdateJoker			
 			,@IsUpdateGDG			= @IsUpdateGDG			
 			,@IsUpdateHabanero		= @IsUpdateHabanero	
-			,@IsUpdateVGaming		= @IsUpdateVGaming				
+			,@IsUpdateVGaming		= @IsUpdateVGaming	
+			-- phase 4.2
+			,@IsUpdateCG			= @IsUpdateCG	
+			,@IsUpdateAdvant		= @IsUpdateAdvant	
+			,@IsUpdateAdvantMini	= @IsUpdateAdvantMini	
+			,@IsUpdateVS3			= @IsUpdateVS3	
 			,@WMCasinoComm				= @WMCasinoComm		
 			,@BigGamingComm				= @BigGamingComm		
 			,@JokerComm					= @JokerComm			
 			,@GDGComm					= @GDGComm			
 			,@HabaneroComm				= @HabaneroComm		
 			,@VGamingComm				= @VGamingComm		
+			-- phase 4.2	
+			,@CGComm				= @CGComm		
+			,@AdvantComm			= @AdvantComm		
+			,@AdvantMiniComm		= @AdvantMiniComm		
+			,@VS3Comm				= @VS3Comm	
 			,@WMCasinoComm_Group		= @WMCasinoComm_Group		
 			,@BigGamingComm_Group		= @BigGamingComm_Group		
 			,@JokerComm_Group			= @JokerComm_Group			
@@ -303,7 +340,11 @@ BEGIN
 			,@IsUpdateSabaCasino =	@IsUpdateSabaCasino
 			,@SabaCasinoComm = 	@SabaCasinoComm
 			,@SabaCasinoComm_Group = @SabaCasinoComm_Group
-
+			-- phase 4.2	
+			,@CGComm_Group			= @CGComm_Group	
+			,@AdvantComm_Group		= @AdvantComm_Group	
+			,@AdvantMiniComm_Group	= @AdvantMiniComm_Group	
+			,@VS3Comm_Group			= @VS3Comm_Group	
 		-- delay 00.100ms after 5 times continuous running
 		IF @runningCNT % 2 = 0 WAITFOR DELAY '00:00:00.280'
 	END

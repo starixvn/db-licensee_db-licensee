@@ -48,6 +48,11 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Direct]
 	@IsUpdateGDG			BIT = 0,
 	@IsUpdateHabanero		BIT = 0,
 	@IsUpdateVGaming		BIT = 0,
+	-- phase 4.2
+	@IsUpdateCG				BIT = 0,
+	@IsUpdateAdvant			BIT = 0,
+	@IsUpdateAdvantMini		BIT = 0,
+	@IsUpdateVS3			BIT = 0,
 	@WMCasinoComm		DECIMAL(9,8) = 0,
 	@BigGamingComm		DECIMAL(9,8) = 0,
 	@JokerComm			DECIMAL(9,8) = 0,
@@ -55,7 +60,11 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Direct]
 	@HabaneroComm		DECIMAL(9,8) = 0,
 	@VGamingComm		DECIMAL(9,8) = 0,
 	@IsUpdateSabaCasino	BIT = 0,
-	@SabaCasinoComm		DECIMAL(9,8) =0
+	@SabaCasinoComm		DECIMAL(9,8) =0,
+	@CGComm				DECIMAL(9,8) = 0,
+	@AdvantComm			DECIMAL(9,8) = 0,
+	@AdvantMiniComm		DECIMAL(9,8) = 0,
+	@VS3Comm			DECIMAL(9,8) = 0
 AS
 /*
 	Created: 20130114@Henry
@@ -85,7 +94,8 @@ AS
 		- 20210817@Johnson: Add VGaming [redmine: #159696]
 		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 		- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217] 
-		
+		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586] 
+				
 	Param's Explanation:	
 
 */
@@ -174,6 +184,11 @@ BEGIN
 		OR @IsUpdateHabanero  = 1
 		OR @IsUpdateVGaming  = 1
 		OR @IsUpdateSabaCasino  = 1
+		-- phase 4.2
+		OR @IsUpdateCG			= 1
+		OR @IsUpdateAdvant		= 1
+		OR @IsUpdateAdvantMini	= 1
+		OR @IsUpdateVS3			= 1
 
 	)
 	BEGIN
@@ -204,6 +219,11 @@ BEGIN
 				,(@IsUpdateVGaming,171,3801,@VGamingComm)
 				--Saba Casino
 				,(@IsUpdateSabaCasino,208,2101,@SabaCasinoComm)
+				-- Phase 4.2
+				,(@IsUpdateCG,167,7301,@CGComm)
+				,(@IsUpdateAdvant,172,7701,@AdvantComm)
+				,(@IsUpdateAdvantMini,174,7801,@AdvantMiniComm)
+				,(@IsUpdateVS3,231,5301,@VS3Comm)
 	END
 	
 	IF EXISTS(SELECT TOP (1) 1 FROM @tblSettingDCS_tmp)

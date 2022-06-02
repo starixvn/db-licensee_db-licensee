@@ -56,12 +56,21 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeCustCommUpd]
 	@IsUpdateGDG			BIT = 0,
 	@IsUpdateHabanero		BIT = 0,
 	@IsUpdateVGaming		BIT = 0,
+	-- phase 4.2
+	@IsUpdateCG				BIT = 0,
+	@IsUpdateAdvant			BIT = 0,
+	@IsUpdateAdvantMini		BIT = 0,
+	@IsUpdateVS3			BIT = 0,
 	@WMCasinoComm		DECIMAL(9,8) = 0,
 	@BigGamingComm		DECIMAL(9,8) = 0,
 	@JokerComm			DECIMAL(9,8) = 0,
 	@GDGComm			DECIMAL(9,8) = 0,
 	@HabaneroComm		DECIMAL(9,8) = 0,
 	@VGamingComm		DECIMAL(9,8) = 0,
+	@CGComm				DECIMAL(9,8) = 0,
+	@AdvantComm			DECIMAL(9,8) = 0,
+	@AdvantMiniComm		DECIMAL(9,8) = 0,
+	@VS3Comm			DECIMAL(9,8) = 0,
 
 	@IP VARCHAR(40),
 	@Langkey NVARCHAR(10)='en-US',
@@ -97,6 +106,8 @@ AS
 		- 20210823@Johnson: Add VGaming [redmine: #159696]
 		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 		- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217] 
+		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586]  
+
 	Param's Explanation:
 */ 
 BEGIN
@@ -189,13 +200,22 @@ BEGIN
 		,@IsUpdateJoker			= @IsUpdateJoker			
 		,@IsUpdateGDG			= @IsUpdateGDG			
 		,@IsUpdateHabanero		= @IsUpdateHabanero		
-		,@IsUpdateVGaming		= @IsUpdateVGaming		
+		,@IsUpdateVGaming		= @IsUpdateVGaming	
+		-- phase 4.2
+		,@IsUpdateCG			= @IsUpdateCG		
+		,@IsUpdateAdvant		= @IsUpdateAdvant		
+		,@IsUpdateAdvantMini	= @IsUpdateAdvantMini		
+		,@IsUpdateVS3			= @IsUpdateVS3		
 		,@WMCasinoComm				= @WMCasinoComm		
 		,@BigGamingComm				= @BigGamingComm		
 		,@JokerComm					= @JokerComm			
 		,@GDGComm					= @GDGComm			
 		,@HabaneroComm				= @HabaneroComm	
 		,@VGamingComm				= @VGamingComm	
+		,@CGComm					= @CGComm	
+		,@AdvantComm				= @AdvantComm	
+		,@AdvantMiniComm			= @AdvantMiniComm	
+		,@VS3Comm					= @VS3Comm	
 
 		,@IP=@IP
 		,@Langkey=@Langkey

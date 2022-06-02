@@ -63,12 +63,20 @@ CREATE PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm]
 	@IsUpdateGDG			BIT = 0,
 	@IsUpdateHabanero		BIT = 0,
 	@IsUpdateVgaming		BIT = 0,
+	@IsUpdateCG				BIT = 0,
+	@IsUpdateAdvant			BIT = 0,
+	@IsUpdateAdvantMini		BIT = 0,
+	@IsUpdateVS3			BIT = 0,
 	@WMCasinoComm		DECIMAL(9,8) = 0,
 	@BigGamingComm		DECIMAL(9,8) = 0,
 	@JokerComm			DECIMAL(9,8) = 0,
 	@GDGComm			DECIMAL(9,8) = 0,
 	@HabaneroComm		DECIMAL(9,8) = 0,
 	@VGamingComm		DECIMAL(9,8) = 0,
+	@CGComm				DECIMAL(9,8) = 0,
+	@AdvantComm			DECIMAL(9,8) = 0,
+	@AdvantMiniComm		DECIMAL(9,8) = 0,
+	@VS3Comm			DECIMAL(9,8) = 0,
 
 	@IP VARCHAR(40),
 	@Langkey VARCHAR(10) = 'en-US',
@@ -113,6 +121,7 @@ AS
 		- 20210813@Johnson: Add VGaming [redmine: #159696]
 		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 		- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217] 
+		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586] 
 		
 	Param's Explanation:
 		1. To update a member/batch members without GroupCommID
@@ -197,6 +206,11 @@ BEGIN
 			,@GDGComm			= GDGComm
 			,@HabaneroComm		= HabaneroComm
 			,@VGamingComm		= VGamingComm
+			--> phase 4.2
+			,@CGComm			= CGComm
+			,@AdvantComm		= AdvantComm
+			,@AdvantMiniComm	= AdvantMiniComm
+			,@VS3Comm			= VS3Comm
 			
 		FROM dbo.LicenseeGroupComm WITH (NOLOCK)
 		WHERE LicenseeID = @LicenseeID AND id = @GroupCommID AND IsActive=1
@@ -233,6 +247,10 @@ BEGIN
 		,@GDGComm = ISNULL(@GDGComm,0)	
 		,@HabaneroComm = ISNULL(@HabaneroComm,0)
 		,@VGamingComm = ISNULL(@VGamingComm,0)
+		,@CGComm = ISNULL(@CGComm,0)
+		,@AdvantComm	 = ISNULL(@AdvantComm	,0)
+		,@AdvantMiniComm = ISNULL(@AdvantMiniComm,0)
+		,@VS3Comm = ISNULL(@VS3Comm,0)
 
 	--Validate data
 	IF @SBComm>0.15 OR @NGComm>0.15 OR @RNGComm>0.15 OR @ParlayComm > 0.15
@@ -260,6 +278,11 @@ BEGIN
 		OR @GDGComm > 0.15	
 		OR @HabaneroComm > 0.15
 		OR @VGamingComm > 0.15
+		--> phase 4.2
+		OR @CGComm > 0.15
+		OR @AdvantComm > 0.15
+		OR @AdvantMiniComm > 0.15
+		OR @VS3Comm > 0.15
 	BEGIN
 		SELECT @ErrCode=101
 		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN 'Player commission should not be greater than'
@@ -357,16 +380,24 @@ BEGIN
 				,@IsUpdateJoker			= @IsUpdateJoker			
 				,@IsUpdateGDG			= @IsUpdateGDG			
 				,@IsUpdateHabanero		= @IsUpdateHabanero	
-				,@IsUpdateVGaming		= @IsUpdateVGaming		
+				,@IsUpdateVGaming		= @IsUpdateVGaming	
+				,@IsUpdateCG			= @IsUpdateCG			
+				,@IsUpdateAdvant		= @IsUpdateAdvant		
+				,@IsUpdateAdvantMini	= @IsUpdateAdvantMini		
+				,@IsUpdateVS3			= @IsUpdateVS3			
 				,@WMCasinoComm				= @WMCasinoComm		
 				,@BigGamingComm				= @BigGamingComm		
 				,@JokerComm					= @JokerComm			
 				,@GDGComm					= @GDGComm			
 				,@HabaneroComm				= @HabaneroComm		
-				,@VGamingComm				= @VGamingComm	
+				,@VGamingComm				= @VGamingComm
 				--Saba Casino
 				,@IsUpdateSabaCasino = @IsUpdateRNG
 				,@SabaCasinoComm = @RNGComm
+				,@CGComm					= @CGComm		
+				,@AdvantComm				= @AdvantComm		
+				,@AdvantMiniComm			= @AdvantMiniComm		
+				,@VS3Comm					= @VS3Comm	
 		END		
 		ELSE
 		BEGIN	
@@ -440,7 +471,11 @@ BEGIN
 					,@IsUpdateJoker			= @IsUpdateJoker			
 					,@IsUpdateGDG			= @IsUpdateGDG			
 					,@IsUpdateHabanero		= @IsUpdateHabanero		
-					,@IsUpdateVGaming		= @IsUpdateVGaming
+					,@IsUpdateVGaming		= @IsUpdateVGaming	
+					,@IsUpdateCG			= @IsUpdateCG			
+					,@IsUpdateAdvant		= @IsUpdateAdvant		
+					,@IsUpdateAdvantMini	= @IsUpdateAdvantMini		
+					,@IsUpdateVS3			= @IsUpdateVS3	
 					,@WMCasinoComm				= @WMCasinoComm		
 					,@BigGamingComm				= @BigGamingComm		
 					,@JokerComm					= @JokerComm			
@@ -450,6 +485,10 @@ BEGIN
 					--Saba Casino
 					,@IsUpdateSabaCasino = @IsUpdateRNG
 					,@SabaCasinoComm = @RNGComm			
+					,@CGComm					= @CGComm		
+					,@AdvantComm				= @AdvantComm		
+					,@AdvantMiniComm			= @AdvantMiniComm		
+					,@VS3Comm					= @VS3Comm				
 			END					
 			-- Non-BA and BA under Macaubet have got SBcomm=@SBcomm
 			DECLARE  @strNonBA 	VARCHAR(MAX)
@@ -513,7 +552,11 @@ BEGIN
 					,@IsUpdateJoker			= @IsUpdateJoker			
 					,@IsUpdateGDG			= @IsUpdateGDG			
 					,@IsUpdateHabanero		= @IsUpdateHabanero	
-					,@IsUpdateVGaming		= @IsUpdateVGaming						
+					,@IsUpdateVGaming		= @IsUpdateVGaming		
+					,@IsUpdateCG			= @IsUpdateCG			
+					,@IsUpdateAdvant		= @IsUpdateAdvant		
+					,@IsUpdateAdvantMini	= @IsUpdateAdvantMini		
+					,@IsUpdateVS3			= @IsUpdateVS3						
 					,@WMCasinoComm				= @WMCasinoComm		
 					,@BigGamingComm				= @BigGamingComm		
 					,@JokerComm					= @JokerComm			
@@ -523,6 +566,10 @@ BEGIN
 					--Saba Casino
 					,@IsUpdateSabaCasino = @IsUpdateRNG
 					,@SabaCasinoComm = @RNGComm					
+					,@CGComm					= @CGComm		
+					,@AdvantComm				= @AdvantComm		
+					,@AdvantMiniComm			= @AdvantMiniComm		
+					,@VS3Comm					= @VS3Comm					
 			END
 		END
 	END	
@@ -564,7 +611,12 @@ BEGIN
 		'JokerComm="'+ COALESCE(CAST(@JokerComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'GDGComm="'+ COALESCE(CAST(@GDGComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'HabaneroComm="'+ COALESCE(CAST(@HabaneroComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		'VGamingComm="'+ COALESCE(CAST(@VGamingComm as VARCHAR(50)),SPACE(1)) + '" '
+		'VGamingComm="'+ COALESCE(CAST(@VGamingComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		-- phase 4.2
+		'CGComm="'+ COALESCE(CAST(@CGComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		'AdvantComm="'+ COALESCE(CAST(@AdvantComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		'AdvantMiniComm="'+ COALESCE(CAST(@AdvantMiniComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		'VS3Comm="'+ COALESCE(CAST(@VS3Comm as VARCHAR(50)),SPACE(1)) + '" '
 
 		
 	-- old value
@@ -640,7 +692,12 @@ BEGIN
 							'JokerComm="'+ COALESCE(CAST(ISNULL(lcc.JokerComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
 							'GDGComm="'+ COALESCE(CAST(ISNULL(lcc.GDGComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
 							'HabaneroComm="'+ COALESCE(CAST(ISNULL(lcc.HabaneroComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
-							'VGamingComm="'+ COALESCE(CAST(ISNULL(lcc.VGamingComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
+							'VGamingComm="'+ COALESCE(CAST(ISNULL(lcc.VGamingComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+							-- phase 4.2
+							'CGComm="'+ COALESCE(CAST(@CGComm as VARCHAR(50)),SPACE(1)) + '" ' +
+							'AdvantComm="'+ COALESCE(CAST(@AdvantComm as VARCHAR(50)),SPACE(1)) + '" ' +
+							'AdvantMiniComm="'+ COALESCE(CAST(@AdvantMiniComm as VARCHAR(50)),SPACE(1)) + '" ' +
+							'VS3Comm="'+ COALESCE(CAST(@VS3Comm as VARCHAR(50)),SPACE(1)) + '" ' +
 
 						   'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
 						   @LogSPData2 AS '@TrackingValue2'
@@ -744,13 +801,22 @@ BEGIN
 					,@IsUpdateJoker			= @IsUpdateJoker			
 					,@IsUpdateGDG			= @IsUpdateGDG		
 					,@IsUpdateHabanero		= @IsUpdateHabanero		
-					,@IsUpdateVGaming		= @IsUpdateVGaming		
+					,@IsUpdateVGaming		= @IsUpdateVGaming	
+					,@IsUpdateCG			= @IsUpdateCG			
+					,@IsUpdateAdvant		= @IsUpdateAdvant		
+					,@IsUpdateAdvantMini	= @IsUpdateAdvantMini		
+					,@IsUpdateVS3			= @IsUpdateVS3
 					,@WMCasinoComm				= @WMCasinoComm		
 					,@BigGamingComm				= @BigGamingComm		
 					,@JokerComm					= @JokerComm			
 					,@GDGComm					= @GDGComm			
 					,@HabaneroComm				= @HabaneroComm	
-					,@VGamingComm				= @VGamingComm	
+					,@VGamingComm				= @VGamingComm
+					--> phase 4.2
+					,@CGComm					= @CGComm		
+					,@AdvantComm				= @AdvantComm		
+					,@AdvantMiniComm			= @AdvantMiniComm		
+					,@VS3Comm					= @VS3Comm	
 			END TRY
 			BEGIN CATCH
 				SELECT @ErrCode = ERROR_NUMBER()

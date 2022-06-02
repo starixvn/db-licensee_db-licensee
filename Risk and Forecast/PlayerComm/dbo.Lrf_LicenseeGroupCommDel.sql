@@ -38,6 +38,8 @@ AS
 		- 20210922@Elodie: Hotfix-RNG Casino player comm isn't removed in CasinoAdmin DB when deleting a group comm [Redmine: #161802]
 		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 		- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217] 
+		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586]  
+
 	Param's Explanation:
 
 */
@@ -84,6 +86,11 @@ BEGIN
 		@GDGComm			DECIMAL(9,8),
 		@HabaneroComm		DECIMAL(9,8),
 		@VGamingComm		DECIMAL(9,8),
+		-- phase 4.2
+		@CGComm				DECIMAL(9,8),
+		@AdvantComm			DECIMAL(9,8),
+		@AdvantMiniComm		DECIMAL(9,8),
+		@VS3Comm			DECIMAL(9,8),
 
 		@GroupColor VARCHAR(20), 
 		@GroupName VARCHAR(100), 
@@ -143,6 +150,11 @@ BEGIN
 			@GDGComm			= GDGComm,
 			@HabaneroComm		= HabaneroComm,
 			@VGamingComm		= VGamingComm,
+			-- phase 4.2
+			@CGComm				= CGComm,
+			@AdvantComm			= AdvantComm,
+			@AdvantMiniComm		= AdvantMiniComm,
+			@VS3Comm			= VS3Comm,
 
 			@GroupColor=color,
 			@GroupName=GroupName,
@@ -282,13 +294,23 @@ BEGIN
 					@IsUpdateJoker			= 1,			
 					@IsUpdateGDG			= 1,
 					@IsUpdateHabanero		= 1,
-					@IsUpdateVGaming		= 1,					
-					@WMCasinoComm				= 0	,	
-					@BigGamingComm				= 0,		
-					@JokerComm					= 0,			
-					@GDGComm					= 0,
-					@HabaneroComm				= 0,
-					@VGamingComm				= 0,					
+					@IsUpdateVGaming		= 1,
+					-- phase 4.2
+					@IsUpdateCG				= 1,
+					@IsUpdateAdvant			= 1,
+					@IsUpdateAdvantMini		= 1,
+					@IsUpdateVS3			= 1,
+					@WMCasinoComm			= 0	,	
+					@BigGamingComm			= 0,		
+					@JokerComm				= 0,			
+					@GDGComm				= 0,
+					@HabaneroComm			= 0,
+					@VGamingComm			= 0,	
+					-- phase 4.2
+					@CGComm					= 0,
+					@AdvantComm				= 0,
+					@AdvantMiniComm			= 0,
+					@VS3Comm				= 0,
 					
 					@isClearGroupComm = 1,
 					@ClearGroupCommGroupID = @GroupCommID,
@@ -342,7 +364,12 @@ BEGIN
 		'GDGComm="'+ COALESCE(CAST(@GDGComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'HabaneroComm="'+ COALESCE(CAST(@HabaneroComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'VGamingComm="'+ COALESCE(CAST(@VGamingComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		
+		-- phase 4.2
+		'CGComm="'+ COALESCE(CAST(@CGComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'AdvantComm="'+ COALESCE(CAST(@AdvantComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'AdvantMiniComm="'+ COALESCE(CAST(@AdvantMiniComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'VS3Comm="'+ COALESCE(CAST(@VS3Comm as VARCHAR(50)),SPACE(1)) + '" '+
+
 		'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
 		'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +
 		'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
@@ -386,7 +413,12 @@ BEGIN
 		'GDGComm="'+ COALESCE(CAST(@GDGComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'HabaneroComm="'+ COALESCE(CAST(@HabaneroComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'VGamingComm="'+ COALESCE(CAST(@VGamingComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		
+		-- phase 4.2
+		'CGComm="'+ COALESCE(CAST(@CGComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'AdvantComm="'+ COALESCE(CAST(@AdvantComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'AdvantMiniComm="'+ COALESCE(CAST(@AdvantMiniComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'VS3Comm="'+ COALESCE(CAST(@VS3Comm as VARCHAR(50)),SPACE(1)) + '" '+
+
 		'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
 		'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +
 		'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
