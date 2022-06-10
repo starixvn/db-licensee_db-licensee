@@ -1,13 +1,15 @@
-/*<info serverAlias="DBCUST-bodb_licensee,DBCUST-CustDB,DBLOG-bodb_CustomerLog,DBCUST-bodb_CustomerLog" executers="" viewers="" isFunction="1"></info>*/
-CREATE FUNCTION [dbo].[f_SplitString](@string nvarchar(max),@splitter nvarchar(max))
+/*<info serverAlias="DBCUST-bodb_licensee,DBCUST-CustDB,DBCUST-bodb_CustomerLog" executers="" viewers="" isFunction="1"></info>*/
+ALTER FUNCTION [dbo].[f_SplitString](@string nvarchar(max),@splitter nvarchar(max))
 /*          
 	Created: 20200520@Helen          
 	Task: LAP Tuning      
-	DB: DBCUST/bodb_licensee, DBCUST/CustDB        
+	DB: DBCUST-bodb_licensee,DBCUST-CustDB,DBCUST-bodb_CustomerLog : call string_split , built in function
+		,DBLOG-bodb_CustomerLog : Keep old content
 	Original:          
 	       
 	Revisions: 
 		- 20200518@Helen: Add comm for FW, Remove AG, GD - Tuning performance - [Redmine: #131774]      
+		- 20220517@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831]  
 	      
 	Param's Explanation:    
 	You need to use option: option (maxrecursion 0) at the statement if the lengh of string exceed 100 levels      
@@ -16,16 +18,7 @@ CREATE FUNCTION [dbo].[f_SplitString](@string nvarchar(max),@splitter nvarchar(m
 RETURNS TABLE
 AS
 RETURN
-    WITH cte AS(
-        SELECT	CAST(0 AS BIGINT) as idx1,CHARINDEX(@splitter, @string) idx2
-        UNION ALL
-        SELECT	idx2 + LEN(@splitter), CHARINDEX(@splitter, @string, idx2 + LEN(@splitter))
-        FROM	cte
-        WHERE	idx2 > 0
-    )
-    SELECT	SUBSTRING(@string,idx1,COALESCE(NULLIF(idx2,0),LEN(@string)+1)-idx1) as val
-    FROM	cte
-
+     SELECT value AS val FROM string_split(@String,@splitter)  
 GO
 
 
