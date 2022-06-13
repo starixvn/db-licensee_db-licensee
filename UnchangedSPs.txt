@@ -1,2 +1,2 @@
-NAP_LicenseeManagement\SpList\LicenseeSetting\Nap_LM_Licensee_Insert.sql
-NAP_LicenseeManagement\SpList\LicenseeSetting\Nap_LM_Licensee_Terminate.sql
+Risk and Forecast\PlayerComm\dbo.Lrf_CustomerUpdMemberComm.sql
+Risk and Forecast\PlayerComm\ExecRep_CustSetting\Acc_CustSetting3rd_16.sql
