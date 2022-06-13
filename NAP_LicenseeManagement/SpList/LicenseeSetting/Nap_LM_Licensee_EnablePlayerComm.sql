@@ -1,21 +1,24 @@
 /*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet,Dot_Member" viewers="" isFunction="0"></info>*/
-CREATE PROCEDURE [dbo].[Nap_LM_Licensee_EnablePlayerComm] (@LicenseeName VARCHAR(500))
+
+ALTER PROCEDURE [dbo].[Nap_LM_Licensee_EnablePlayerComm] (@LicenseeName VARCHAR(500))
 AS
-/*  
+
+/*
 	Created: Amanda
-	Date: 2019-04-18 
-	Task : re-structure create new licensee flow 
-	DB: DBCUST.bodb_licensee  
+	Date: 2019-04-18
+	Task: re-structure create new licensee flow 
+	DB: DBCUST.bodb_licensee
 	Original: DBA_Lrf_EnablePlayerComm
-	   
-	Revisions:  
-	   - 20190418@Amanda: Move code from DBA_Lrf_EnablePlayerComm to this and refactor code [Redmine: #111321]
+
+	Revisions:
+		- 20190418@Amanda: Move code from DBA_Lrf_EnablePlayerComm to this and refactor code [Redmine: #111321]
+		- 20220518@Kos: Change to use STRING_SPLIT [Redmine: #171831]
 */
+
 BEGIN
-	DECLARE @tblLicensee AS TABLE (
-		[id] [int] IDENTITY(1, 1)
-		, LicenseeID INT
-		)
+	SET NOCOUNT ON;
+
+	DECLARE @tblLicensee AS TABLE ([id] [int] IDENTITY(1, 1), LicenseeID INT)
 	DECLARE @tblFunctionComm AS TABLE (FunctionID INT)
 
 	DECLARE @LicenseeID INT
@@ -25,15 +28,12 @@ BEGIN
 	INSERT INTO @tblLicensee (LicenseeID)
 	SELECT l.LicenseeID
 	FROM dbo.Licensees l WITH (NOLOCK)
-	WHERE l.licenseename IN (
-			SELECT val AS LicenseeName
-			FROM CUSTDB.dbo.strSplit(@LicenseeName, ',')
-			)
+	WHERE l.licenseename IN (SELECT value AS LicenseeName FROM STRING_SPLIT(@LicenseeName, ','))
 
 	UPDATE dbo.Licensees WITH (ROWLOCK, UPDLOCK)
 	SET IsAllowedMemberComm = 1
 	FROM dbo.Licensees l
-	INNER JOIN @tblLicensee t ON t.licenseeID = l.licenseeID
+		INNER JOIN @tblLicensee t ON t.licenseeID = l.licenseeID
 
 	INSERT INTO @tblFunctionComm (FunctionId)
 	SELECT FunctionId
@@ -44,19 +44,15 @@ BEGIN
 		, @maxID = MAX(ID)
 	FROM @tblLicensee
 
-	WHILE (@i < @maxID + 1)
+	WHILE @i < @maxID + 1
 	BEGIN
 		SELECT @LicenseeID = LicenseeID
 		FROM @tblLicensee
 		WHERE ID = @i
 
-		IF NOT EXISTS (
-				SELECT 1
-				FROM dbo.LicenseeCustComm(NOLOCK)
-				WHERE LicenseeID = @LicenseeID
-				)
+		IF NOT EXISTS (SELECT 1 FROM dbo.LicenseeCustComm(NOLOCK) WHERE LicenseeID = @LicenseeID)
 		BEGIN
-			--- initial data  
+			-- initial data
 			INSERT INTO LicenseeCustComm (
 				LicenseeID
 				, CustID
@@ -78,10 +74,8 @@ BEGIN
 				, 0 AS RNGComm
 				, 0 Parlaycomm
 			FROM @tblLicensee t
-			INNER JOIN dbo.LicenseeCust lc WITH (NOLOCK)
-				ON t.LicenseeID = lc.LicenseeID
-			INNER JOIN CUSTDB.dbo.Customer lci WITH (NOLOCK)
-				ON lc.CustID = lci.recommend
+				INNER JOIN dbo.LicenseeCust lc WITH (NOLOCK) ON t.LicenseeID = lc.LicenseeID
+				INNER JOIN CUSTDB.dbo.Customer lci WITH (NOLOCK) ON lc.CustID = lci.recommend
 			WHERE t.ID = @i
 				AND lci.RoleID = 1
 				AND NOT EXISTS (
@@ -90,7 +84,7 @@ BEGIN
 					WHERE lcc.CustID = lci.CustID
 					)
 
-			--- grant comm function permission   
+			-- grant comm function permission
 			INSERT INTO dbo.LicenseeFunctions (
 				LicenseeId
 				, FunctionId
@@ -103,7 +97,7 @@ BEGIN
 					FROM dbo.LicenseeFunctions lf WITH (NOLOCK)
 					WHERE lf.LicenseeId = @licenseeid AND lf.FunctionId = f.FunctionID
 					)
-			
+
 			INSERT INTO [dbo].[LicenseeUserFunctions] (
 					userid
 					, functionid
@@ -113,8 +107,8 @@ BEGIN
 				, f.FunctionID
 				, @LicenseeID
 			FROM dbo.LicenseeUser lu WITH (NOLOCK)
-			INNER JOIN dbo.Users u WITH (NOLOCK) ON lu.UserID = u.UserID
-			CROSS JOIN @tblFunctioncomm f
+				INNER JOIN dbo.Users u WITH (NOLOCK) ON lu.UserID = u.UserID
+				CROSS JOIN @tblFunctioncomm f
 			WHERE lu.isactive = 1
 				AND lu.licenseeid = @licenseeid
 				AND u.[Status] = 'Open'
@@ -124,8 +118,9 @@ BEGIN
 						WHERE luf.LicenseeId = @LicenseeID
 							AND luf.UserId = lu.UserID
 							AND luf.FunctionId = f.FunctionID
-					)	
+					)
 		END
+
 		SET @i = @i + 1
 	END
 END

@@ -1,25 +1,28 @@
 /*<info serverAlias="DBCUST-bodb_licensee" executers="bodbLicenseeNet,Dot_Member" viewers="" isFunction="0" isNested="0"></info>*/
 
-CREATE PROCEDURE [dbo].[Nap_LM_Licensee_OfferProduct]
-	@LicenseeName		VARCHAR(MAX),
-	@ProductCode		VARCHAR(MAX),
-	@EffectiveDate		DATE ='',
-	@IsPullService		BIT = 1,
-	@ErrMsg				NVARCHAR(MAX) = '' OUTPUT
+ALTER PROCEDURE [dbo].[Nap_LM_Licensee_OfferProduct]
+	@LicenseeName	VARCHAR(MAX),
+	@ProductCode	VARCHAR(MAX),
+	@EffectiveDate	DATE ='',
+	@IsPullService	BIT = 1,
+	@ErrMsg			NVARCHAR(MAX) = '' OUTPUT
 AS
+
 /*
-	 Created: Amanda
-	 Date: 2018-11-12
-	 Task: Implement "Licensee Setting" function
-	 DB: DBCUST.bodb_licensee
-	 Original: DBA_Lrf_OfferProduct
-	 
-	 Revisions:
-	  - 20181112@Amanda: Offer Product from Licensee [Redmine: #83584]
-	  - 20190102@Amanda: Modify to support offer multi products for multi licensees [Redmine: #83584]
-	  - 20190419@Amanda: Move code from DBA_Lrf_OfferProduct to this [Redmine: #111321]
-	  - 20191202@Amanda: Remove OA_ tables [Redmine: #119443]
+	Created: Amanda
+	Date: 2018-11-12
+	Task: Implement "Licensee Setting" function
+	DB: DBCUST.bodb_licensee
+	Original: DBA_Lrf_OfferProduct
+
+	Revisions:
+		- 20181112@Amanda: Offer Product from Licensee [Redmine: #83584]
+		- 20190102@Amanda: Modify to support offer multi products for multi licensees [Redmine: #83584]
+		- 20190419@Amanda: Move code from DBA_Lrf_OfferProduct to this [Redmine: #111321]
+		- 20191202@Amanda: Remove OA_ tables [Redmine: #119443]
+		- 20220518@Kos: Change to use STRING_SPLIT [Redmine: #171831]
 */
+
 BEGIN
 	SET NOCOUNT ON;
 
@@ -31,29 +34,29 @@ BEGIN
 	CREATE TABLE #tblLicenseeProduct (ProductId INT, ProductCode VARCHAR(10))
 	CREATE TABLE #tblLicenseeFunction (FunctionId INT, TypeId INT)
 
-	DECLARE  @ProductName	VARCHAR(10)  
-			,@n				INT  
+	DECLARE  @ProductName	VARCHAR(10)
+			,@n				INT
 			,@m				INT
 			,@tmpEffectiveDate	SMALLDATETIME = NULL
 			,@Licensee		VARCHAR(50) 
 			,@LicenseeId	INT
 			,@ResellerId	INT
-	
+
 	IF ISNULL(@EffectiveDate,'') <> ''
 	BEGIN
 		SET @tmpEffectiveDate = @EffectiveDate
 	END
-	
+
 	--1-----------------------------------------* GET LICENSEE LIST *------------------------------------- 
 
 	INSERT INTO @tblLicensee (LicenseeName)
-	SELECT DISTINCT val
-	FROM CUSTDB.dbo.strSplit(@LicenseeName,',')
+	SELECT DISTINCT value
+	FROM STRING_SPLIT(@LicenseeName, ',')
 
-	UPDATE tl  
+	UPDATE tl
 	SET tl.LicenseeId = l.LicenseeID
-	FROM @tblLicensee tl 
-	INNER JOIN dbo.Licensees l WITH (NOLOCK) ON tl.LicenseeName = l.LicenseeName
+	FROM @tblLicensee tl
+		INNER JOIN dbo.Licensees l WITH (NOLOCK) ON tl.LicenseeName = l.LicenseeName
 
 
 	IF EXISTS (SELECT 1 FROM @tblLicensee WHERE LicenseeId IS NULL)
@@ -68,35 +71,36 @@ BEGIN
 	--2-----------------------------------------* GET PRODUCT LIST *-------------------------------------
 
 	INSERT INTO @tblProductPrefix (ProductCode)
-	SELECT DISTINCT val
-	FROM CUSTDB.dbo.strSplit(@ProductCode,',')
-   
+	SELECT DISTINCT value
+	FROM STRING_SPLIT(@ProductCode, ',')
+
 	UPDATE a
 	SET a.ProductId = b.ProductId
 	FROM @tblProductPrefix a
 	INNER JOIN dbo.Product3rd b WITH (NOLOCK) ON a.ProductCode = b.ProductPrefix
 
-    UPDATE @tblProductPrefix
+	UPDATE @tblProductPrefix
 	SET ProductId = 0
 	WHERE ProductCode = 'SB'
 
 	SELECT @n = 1
 		,@m = MAX(ID) FROM @tblProductPrefix
-	WHILE (@n <= @m)
+
+	WHILE @n <= @m
 	BEGIN
 		SELECT @ProductName = ProductCode FROM @tblProductPrefix WHERE ID = @n
-    
+
 		INSERT INTO @tblProductFunctions
 		EXEC Nap_LM_Function_GetByProduct @ProductCode = @ProductName
-      
+
 		SET @n = @n +1
 	END
-	
+
 	DELETE pf
 	FROM @tblProductFunctions pf
-	INNER JOIN dbo.Functions fs WITH (NOLOCK) ON pf.FunctionId = fs.FunctionId
+		INNER JOIN dbo.Functions fs WITH (NOLOCK) ON pf.FunctionId = fs.FunctionId
 	WHERE (pf.TypeId = 1 OR pf.TypeId = 3) AND fs.IsActive = 0
-	
+
 	IF EXISTS (SELECT 1 FROM @tblProductPrefix WHERE ProductId IS NULL)
 	BEGIN
 		IF ISNULL(@ErrMsg, '') <> ''
@@ -113,7 +117,7 @@ BEGIN
 		DELETE @tblProductPrefix
 		WHERE ProductId IS NULL
 	END
-	
+
 	--3--------------------------------------* OFFER PRODUCT TO LICENSEE *----------------------------------
 	IF EXISTS (SELECT 1 FROM @tblProductPrefix WHERE ProductCode = 'BA')
 	BEGIN 
@@ -127,12 +131,13 @@ BEGIN
 
 	SELECT @n = 1
 		,@m = MAX(ID) FROM @tblLicensee
-	WHILE (@n <= @m)
+
+	WHILE @n <= @m
 	BEGIN
 		SELECT @LicenseeId = LicenseeId, @Licensee = LicenseeName
 		FROM @tblLicensee
 		WHERE ID = @n
-		
+
 		IF @LicenseeId IS NOT NULL
 		BEGIN
 			;WITH LicenseeProduct_CTE AS (
@@ -143,7 +148,7 @@ BEGIN
 			INSERT INTO #tblLicenseeProduct(ProductId, ProductCode)
 			SELECT p.ProductId, p.ProductCode
 			FROM @tblProductPrefix p
-			LEFT JOIN LicenseeProduct_CTE c ON p.ProductId = c.ProductID
+				LEFT JOIN LicenseeProduct_CTE c ON p.ProductId = c.ProductID
 			WHERE c.ProductID IS NULL
 
 			INSERT INTO dbo.LicenseeProduct3rd(LicenseeID, ProductID, Comm, Winloss, EffectiveDate)
@@ -172,13 +177,13 @@ BEGIN
 			;WITH LicenseeUser_CTE AS (
 				SELECT u.UserID
 				FROM dbo.Users u WITH (NOLOCK)
-				INNER JOIN dbo.LicenseeUser lu WITH (NOLOCK) ON u.UserID = lu.UserID
+					INNER JOIN dbo.LicenseeUser lu WITH (NOLOCK) ON u.UserID = lu.UserID
 				WHERE lu.LicenseeID = @LicenseeId AND u.[Status] = 'Open' AND lu.isActive = 1
 			)
 			INSERT INTO dbo.LicenseeUserFunctions(UserId, FunctionId, LicenseeId)
 			SELECT c.UserID, lf.FunctionId, @LicenseeId
 			FROM LicenseeUser_CTE c
-			CROSS JOIN #tblLicenseeFunction lf
+				CROSS JOIN #tblLicenseeFunction lf
 			WHERE lf.TypeId = 1
 				AND NOT EXISTS (
 					SELECT 1
@@ -190,25 +195,25 @@ BEGIN
 
 			-- 3.4 PULL DATA INTO SERVICE
 			IF EXISTS (SELECT 1 FROM #tblLicenseeProduct WHERE ProductCode = 'AGC') AND @IsPullService =1
-			BEGIN   
+			BEGIN
 				EXEC DBPTCS.bodb_PlaytechCS.[dbo].[Nap_LM_PullServiceSetting] @LicenseeID = @LicenseeId, @LicenseeName = @Licensee, @SettingName ='AGCasino_VersionKey'
-			END  
+			END
 
 			IF EXISTS (SELECT 1 FROM #tblLicenseeProduct WHERE ProductCode = 'GD') AND @IsPullService =1  
-			BEGIN   
+			BEGIN
 				EXEC DBPTCS.bodb_PlaytechCS.[dbo].[Nap_LM_PullServiceSetting] @LicenseeID = @LicenseeId, @LicenseeName = @Licensee, @SettingName ='GoldDeluxe_VersionKey'
 			END
 
 			-- 3.5 Config BA
-			IF EXISTS (SELECT 1 FROM #tblLicenseeProduct WHERE ProductCode = 'BA')  
-			BEGIN  
+			IF EXISTS (SELECT 1 FROM #tblLicenseeProduct WHERE ProductCode = 'BA')
+			BEGIN
 				IF NOT EXISTS(SELECT 1 FROM dbo.LicenseeReseller WITH (NOLOCK) WHERE LicenseeID = @LicenseeID AND ResellerID = 3)
 				BEGIN
-					-- Add Licensee to BA reseller  
+					-- Add Licensee to BA reseller
 					INSERT INTO dbo.LicenseeReseller (ResellerID,LicenseeID,TnxRate)
 					VALUES (3, @LicenseeID,0.13)
 				END
-			
+
 				-- Insert BA permission
 				INSERT INTO dbo.LicenseeFunctions (FunctionId, licenseeID)  
 				SELECT f.FunctionId, @LicenseeId
@@ -219,7 +224,7 @@ BEGIN
 					FROM dbo.LicenseeFunctions lf WITH (NOLOCK)
 					WHERE lf.LicenseeId = @LicenseeId AND lf.FunctionId = f.FunctionId 
 					)
-			
+
 				-- Insert SpecialBA for justin,martin,anthony
 				DECLARE @j		INT, 
 						@k		INT,
@@ -229,7 +234,7 @@ BEGIN
 				SELECT @k = MAX(id) FROM @tblAdminUserID
 
 				WHILE @j <= @k
-				BEGIN			
+				BEGIN
 					SELECT @UserID = UserID FROM @tblAdminUserID WHERE id = @j
 
 					IF EXISTS (SELECT 1 FROM dbo.LicenseeUser WITH (NOLOCK) WHERE licenseeid=@LicenseeId AND Userid=@UserId AND isActive = 1)
@@ -246,10 +251,10 @@ BEGIN
 			TRUNCATE TABLE #tblLicenseeProduct
 			TRUNCATE TABLE #tblLicenseeFunction
 		END
-		
+
 		SET @n = @n +1
 	END
-	
+
 	DROP TABLE #tblLicenseeProduct
 	DROP TABLE #tblLicenseeFunction
 END

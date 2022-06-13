@@ -1,6 +1,6 @@
 /*<info serverAlias="DBCUST-bodb_licensee" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
-CREATE PROCEDURE [dbo].[Nap_LM_SourceLicensee_GetSourceData]
+ALTER PROCEDURE [dbo].[Nap_LM_SourceLicensee_GetSourceData]
 	@FromDate			DATE		= '',
 	@ToDate				DATE		= '',
 	@LicenseeId			INT			= 0,
@@ -11,20 +11,23 @@ CREATE PROCEDURE [dbo].[Nap_LM_SourceLicensee_GetSourceData]
 	@PageSize			INT			= 20,
 	@TotalItem			INT			= 0 OUTPUT
 AS
+
 /*
-	 Created: Amanda
-	 Date: 2018-12-11
-	 Task: Implement "Source Licensee Setting" function
-	 DB: DBCUST.bodb_licensee
-	 
-	 Revisions:
-	  - 20181211@Amanda: Select Source Licensees [Redmine: #83584]
-	  - 20180315@Amanda: Fix paging issue [Redmine: #83584]
-	  - 20200117@Amanda: Allow search with multiple currencies [Redmine: #112840]
+	Created: Amanda
+	Date: 2018-12-11
+	Task: Implement "Source Licensee Setting" function
+	DB: DBCUST.bodb_licensee
+
+	Revisions:
+		- 20181211@Amanda: Select Source Licensees [Redmine: #83584]
+		- 20180315@Amanda: Fix paging issue [Redmine: #83584]
+		- 20200117@Amanda: Allow search with multiple currencies [Redmine: #112840]
+		- 20220518@Kos: Change to use STRING_SPLIT [Redmine: #171831]
 */
+
 BEGIN
 	SET NOCOUNT ON;
-	
+
 	CREATE TABLE #data (
 		RowNum		INT,
 		SourceId	INT,
@@ -33,20 +36,21 @@ BEGIN
 		EndDate		SMALLDATETIME,
 		IsActive	BIT
 	)
+
 	DECLARE @currency AS TABLE (
-		Id			INT
+		Id	INT
 	)
-	
+
 	DECLARE @from INT, @to INT
-		
+
 	INSERT INTO @currency(Id)
-	SELECT DISTINCT val
-	FROM CUSTDB.dbo.strSplit(@CurrencyId,',')
-	
+	SELECT DISTINCT value
+	FROM STRING_SPLIT(@CurrencyId, ',')
+
 	IF @RoleId = 2 -- Agent
 	BEGIN
 		;WITH Setting_CTE AS (
-			SELECT l.SourcedId, l.EffectiveDate, l.EndDate 
+			SELECT l.SourcedId, l.EffectiveDate, l.EndDate
 			FROM dbo.LicenseeSourcedSetting l WITH(NOLOCK)
 			WHERE l.LicenseeID = @LicenseeId
 				AND l.SourcedLicenseeID = @SourceLicenseeId
@@ -64,9 +68,12 @@ BEGIN
 				s.EndDate,
 				CASE WHEN s.SourcedId IS NOT NULL THEN 0 ELSE 1 END AS IsActive
 		FROM dbo.LicenseeCust l WITH (NOLOCK)
-		LEFT JOIN Setting_CTE s ON s.SourcedId = l.CustID
-		WHERE l.LicenseeID = @SourceLicenseeId AND l.RoleID = 2 AND EXISTS (SELECT 1 FROM @currency c WHERE c.Id = 0 OR l.Currency = c.Id)
+			LEFT JOIN Setting_CTE s ON s.SourcedId = l.CustID
+		WHERE l.LicenseeID = @SourceLicenseeId
+			AND l.RoleID = 2
+			AND EXISTS (SELECT 1 FROM @currency c WHERE c.Id = 0 OR l.Currency = c.Id)
 	END
+
 	IF @RoleId = 1 -- Member
 	BEGIN
 		;WITH Setting_CTE AS (
@@ -88,9 +95,12 @@ BEGIN
 				s.EndDate,
 				CASE WHEN s.SourcedId IS NOT NULL THEN 0 ELSE 1 END AS IsActive
 		FROM CustDB.dbo.custInfo c WITH (NOLOCK)
-		INNER JOIN dbo.LicenseeCust l WITH (NOLOCK) ON l.CustID = c.recommend AND c.currency = l.currency
-		LEFT JOIN Setting_CTE s ON s.SourcedId = c.custid
-		WHERE l.LicenseeID = @SourceLicenseeId AND l.RoleID = 2 AND c.roleid = 1 AND EXISTS (SELECT 1 FROM @currency cu WHERE cu.Id = 0 OR l.Currency = cu.Id)
+			INNER JOIN dbo.LicenseeCust l WITH (NOLOCK) ON l.CustID = c.recommend AND c.currency = l.currency
+			LEFT JOIN Setting_CTE s ON s.SourcedId = c.custid
+		WHERE l.LicenseeID = @SourceLicenseeId
+			AND l.RoleID = 2
+			AND c.roleid = 1
+			AND EXISTS (SELECT 1 FROM @currency cu WHERE cu.Id = 0 OR l.Currency = cu.Id)
 	END
 
 	SELECT @TotalItem = MAX(RowNum)
@@ -105,13 +115,12 @@ BEGIN
 			@RoleId			AS RoleId,
 			d.EffectiveDate,
 			d.EndDate,
-			d.IsActive		
+			d.IsActive
 	FROM #data d
-	INNER JOIN CustDB.dbo.Exchange e WITH (NOLOCK) ON e.exchangeid = d.CurrencyId
+		INNER JOIN CustDB.dbo.Exchange e WITH (NOLOCK) ON e.exchangeid = d.CurrencyId
 	WHERE d.RowNum BETWEEN @from AND @to
 	ORDER BY d.RowNum
-	
+
 	DROP TABLE #data
-	
 END
 GO
