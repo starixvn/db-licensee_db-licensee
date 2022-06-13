@@ -23,6 +23,7 @@ AS
 		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
 		- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217] 
 		- 20220429@Hogan: Integrate Bitcoin [redmine:#160160]
+		- 20220601@Hogan: Integrate FGG Guaranteed Gaming [RedmineID: #167897]
 */
 
  /*
@@ -142,7 +143,8 @@ BEGIN
 			67,--	AdvantPlay 
 			68,--	AdvantPlay Mini
 			49,--	Virtual Sports 3
-			69--	Bitcoin	
+			69,--	Bitcoin
+			70--	FGG	
 		)
 	ORDER BY ProductID ASC
 END
