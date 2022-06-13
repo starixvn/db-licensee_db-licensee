@@ -77,12 +77,12 @@ BEGIN
 	
 	INSERT INTO #tblCust(username)
 	SELECT DISTINCT value
-	FROM dbo.string_split(@username,',')
+	FROM string_split(@username,',')
 	WHERE value <> '' 
 
 	INSERT INTO #tblCust(username2)
 	SELECT DISTINCT value
-	FROM dbo.string_split(@username2,',')
+	FROM string_split(@username2,',')
 	WHERE value <> ''
 	
 	SELECT custid,roleid, username,
