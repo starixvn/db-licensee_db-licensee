@@ -1,2 +1,2 @@
 Risk and Forecast\PlayerComm\dbo.Lrf_CustomerUpdMemberComm.sql
-Risk and Forecast\PlayerComm\ExecRep_CustSetting\Acc_CustSetting3rd_16.sql
+Risk and Forecast\PlayerComm\dbo.Lrf_CustomerUpdMemberComm_Main.sql
