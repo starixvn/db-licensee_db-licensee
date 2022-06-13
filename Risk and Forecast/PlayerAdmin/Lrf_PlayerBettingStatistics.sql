@@ -23,6 +23,7 @@ AS
 		- 20210330@Hogan: Integrate Cricket AIO [RedmineID: #150386]
 		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
 					- Add new param @ProductList VARCHAR(500)
+		- 20220406@Hogan: Exclude Draw/Void/Reject/Refund tickets from Margin value [RedmineID: #167871]
 
 	Param's Explanation:
 		+ @ProductList: SB and all products grouped under SB (SB,SLT,...)
@@ -54,7 +55,8 @@ BEGIN
 	(
 		WinLost		MONEY,
 		Stake		MONEY,
-		StatusId	TINYINT
+		StatusId	TINYINT,
+		HalfWL		BIT
 	)
 
 	DECLARE @TempFromDate	SMALLDATETIME,
@@ -76,7 +78,13 @@ BEGIN
 		SELECT
 			(b.winlost - b.actual_stake) AS WinLost,
 			b.stake,
-			b.statusID
+			b.statusID,
+			CASE WHEN b.statusID IN (112, 113) THEN
+				CASE
+					WHEN ABS(b.modds) = 0.25 AND b.bettype NOT IN (29,38) THEN 1
+					ELSE 0
+				END
+			ELSE 0 END AS HalfWL
 		FROM dbo.bettrans AS b WITH (NOLOCK)
 			INNER JOIN @BetType AS bt ON bt.BetType = b.bettype
 		WHERE
@@ -102,7 +110,13 @@ BEGIN
 		SELECT
 			(b.winlost - b.actual_stake) AS WinLost,
 			b.stake,
-			b.statusID
+			b.statusID,
+			CASE WHEN b.statusID IN (112, 113) THEN
+				CASE
+					WHEN ABS(b.modds) = 0.25 AND b.bettype NOT IN (29,38) THEN 1
+					ELSE 0
+				END
+			ELSE 0 END AS HalfWL
 		FROM dbo.bettrans14 AS b WITH (NOLOCK)
 			INNER JOIN @BetType AS bt ON bt.BetType = b.bettype
 		WHERE
@@ -122,7 +136,13 @@ BEGIN
 		SELECT
 			(b.winlost - b.actual_stake) AS WinLost,
 			b.stake,
-			b.statusID
+			b.statusID,
+			CASE WHEN b.statusID IN (112, 113) THEN
+				CASE
+					WHEN ABS(b.modds) = 0.25 AND b.bettype NOT IN (29,38) THEN 1
+					ELSE 0
+				END
+			ELSE 0 END AS HalfWL
 		FROM bodb_Archive.dbo.bettrans_bk AS b WITH (NOLOCK, INDEX = IX_custId)
 			INNER JOIN @BetType AS bt ON bt.BetType = b.bettype
 		WHERE
@@ -137,7 +157,7 @@ BEGIN
 		ISNULL(SUM(CASE WHEN StatusId IN (101, 102, 103) THEN 1 ELSE 0 END), 0) AS Cancelled
 	FROM #tempStatistics
 
-	SELECT ISNULL(SUM(WinLost) / NULLIF(SUM(Stake), 0), 0) AS Margin,
+	SELECT ISNULL(SUM(CASE WHEN StatusId IN (112,113) THEN WinLost ELSE 0 END) / NULLIF(SUM(CASE WHEN StatusId IN (112,113) AND HalfWL = 0 THEN Stake WHEN HalfWL = 1 THEN Stake/2 ELSE 0 END), 0), 0) AS Margin,
 		ISNULL(SUM(Stake) / SUM(1), 0) AS AverageBetSize,
 		ISNULL(SUM(CASE WHEN StatusId = 112 THEN WinLost ELSE 0 END), 0) AS Winnings,
 		ISNULL(SUM(CASE WHEN StatusId = 113 THEN WinLost ELSE 0 END), 0) AS Loss
