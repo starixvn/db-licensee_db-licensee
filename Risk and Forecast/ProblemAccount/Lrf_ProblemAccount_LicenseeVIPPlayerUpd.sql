@@ -17,7 +17,8 @@ AS
 			- 20200417@Elodie: Unremove VIP if void abnormal [Redmine: #132736]
 			- 20200605@Eden:LAP - Upload VIP list by ExternalID #135410
 			- 20201209@Winfred: Check BA when turn on VIP player [redmine:#146508]
-			
+			- 20220613@Elodie: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831]  
+
 		Paramter's Explanations:	
 			- @result:
 				ErrCode =
@@ -75,14 +76,14 @@ BEGIN
 	END CATCH;
 	
 	INSERT INTO #tblCust(username)
-	SELECT DISTINCT val
-	FROM dbo.strSplit(@username,',')
-	WHERE val <> '' 
+	SELECT DISTINCT value
+	FROM string_split(@username,',')
+	WHERE value <> '' 
 
 	INSERT INTO #tblCust(username2)
-	SELECT DISTINCT val
-	FROM dbo.strSplit(@username2,',')
-	WHERE val <> ''
+	SELECT DISTINCT value
+	FROM string_split(@username2,',')
+	WHERE value <> ''
 	
 	SELECT custid,roleid, username,
 		SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) AS username2
