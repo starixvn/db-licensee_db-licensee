@@ -1,3 +1,6 @@
 Risk and Forecast\PlayerComm\dbo.Lrf_CustomerUpdMemberComm.sql
 Risk and Forecast\PlayerComm\dbo.Lrf_CustomerUpdMemberComm_Main.sql
 Risk and Forecast\PlayerComm\dbo.Lrf_LicenseeGroupCommUpd.sql
+Risk and Forecast\PlayerComm\dbo.Lrf_CustomerMoveGroupComm.sql
+Risk and Forecast\PlayerComm\dbo.Lrf_CustomerRemoveGroupComm.sql
+Risk and Forecast\PlayerComm\dbo.Lrf_LicenseeGroupCommDel.sql
