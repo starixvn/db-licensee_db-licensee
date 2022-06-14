@@ -48,7 +48,7 @@ BEGIN
 							username2 VARCHAR(50)	
 							)
 	CREATE TABLE #TempAg (custid INT)
-	
+	CREATE TABLE #tempUser (custid INT, roleid TINYINT, username VARCHAR(50), username2 VARCHAR(50))
 	DECLARE @Result TABLE(ErrCode INT,cnt INT, ErrMsg VARCHAR(MAX))
 	DECLARE @DocHandler INT
 			,@custList VARCHAR(MAX)
@@ -84,9 +84,9 @@ BEGIN
 	FROM string_split(@username2,',')
 	WHERE value <> ''
 	
+	INSERT INTO #tempUser (custid,roleid, username, username2)
 	SELECT custid,roleid, username,
 		SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) AS username2
-	INTO #tempUser
 	FROM customer ci WITH(NOLOCK)
 	WHERE recommend IN (SELECT custid FROM #TempAg)
 		AND roleid = 1	
