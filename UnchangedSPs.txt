@@ -1,5 +1,9 @@
-Risk and Forecast\PlayerComm\dbo.Lrf_LicenseeGroupCommDel.sql
-Risk and Forecast\PlayerComm\dbo.Lrf_CustomerSetDefaultComm.sql
-Risk and Forecast\PlayerComm\dbo.Lrf_LicenseeGroupCommUpd.sql
-Risk and Forecast\Customer\AG Casino\Settings\Lrf_AGC_Customer_SetDefaultSetting.sql
-Risk and Forecast\Customer\AG Casino\Settings\Lrf_AGC_UpdCustStatus.sql
+Risk and Forecast\Reports\Lrf_Rpt_CustomerBalance.sql
+Risk and Forecast\Reports\Lrf_Rpt_Outstanding.sql
+Risk and Forecast\Reports\Lrf_Rpt_WinlossByProduct.sql
+Risk and Forecast\Reports\Lrf_Rpt_WinlossByProductDetail.sql
+Risk and Forecast\Reports\Lrf_Rpt_WinlossByProductDetail_Ag.sql
+Risk and Forecast\Reports\Lrf_Rpt_SubsidiaryWinloss.sql
+Risk and Forecast\Reports\Lrf_Rpt_SubsidiaryWinlossDetail.sql
+Risk and Forecast\Reports\Lrf_Rpt_TurnOver.sql
+Risk and Forecast\Reports\Lrf_Rpt_CasinoTurnover.sql

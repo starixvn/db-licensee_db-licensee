@@ -43,6 +43,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
 	@ShowVS3		BIT = 0,	-- Virtual Sports 3
 	@ShowBTC		BIT = 0, 	-- Bitcoin
 	@ShowFGGL		BIT = 0,	-- FGG Guaranteed Gaming
+	@ShowMXG		BIT = 0, 	-- MaxGame
 	@DrawFilter				SMALLINT		= 1,
 	@CustomerClass			VARCHAR(200)	= 'All',
 	@OddsGroup				VARCHAR(100)	= 'All',
@@ -159,6 +160,7 @@ AS
 		- 20220324@Kos: Fix quick link from BTC [RedmineID: #168034]
 		- 20220429@Kos: Support Bitcoin [RedmineID: #154866]
 		- 20220601@Hogan: Integrate FGG Guaranteed Gaming [RedmineID: #167897]
+		- 20220601@Hogan: Integrate MaxGame [RedmineID: #172919]
 
 	Param's Explanation:
 		@OrderItem:
@@ -377,6 +379,8 @@ BEGIN
 	SELECT 'BTC' AS Code WHERE @ShowBTC = 1
 	UNION ALL
 	SELECT 'FGGL' AS Code WHERE @ShowFGGL = 1
+	UNION ALL
+	SELECT 'MXG' AS Code WHERE @ShowMXG = 1
 
 	-- BT & CO belong to SB
 	SELECT @ProductList = COALESCE(@ProductList + ',' + Code, Code)
