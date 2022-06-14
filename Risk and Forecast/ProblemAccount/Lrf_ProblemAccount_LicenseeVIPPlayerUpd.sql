@@ -17,6 +17,7 @@ AS
 			- 20200417@Elodie: Unremove VIP if void abnormal [Redmine: #132736]
 			- 20200605@Eden:LAP - Upload VIP list by ExternalID #135410
 			- 20201209@Winfred: Check BA when turn on VIP player [redmine:#146508]
+			- 20220602@Johnson: remove ProblemAccount [redmine:#173357]
 			- 20220613@Elodie: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831]  
 
 		Paramter's Explanations:	
@@ -43,9 +44,7 @@ BEGIN
 							isVip BIT, 	
 							isBA BIT, 					
 							isLog BIT DEFAULT 0, 
-							isUpdate BIT DEFAULT 0,
-							MaxBet MONEY,
-							MaxPerEvent MONEY,
+							isUpdate BIT DEFAULT 0,						
 							username2 VARCHAR(50)	
 							)
 	CREATE TABLE #TempAg (custid INT)
@@ -222,16 +221,10 @@ BEGIN
 	END 
 	
 	--> Distinct custid to update and write log
-	SELECT DISTINCT custid,t.isLog,t.isUpdate,t.isVip,t.isBA,t.MaxBet,t.MaxPerEvent,t.roleid
+	SELECT DISTINCT custid,t.isLog,t.isUpdate,t.isVip,t.isBA,t.roleid
 	INTO #tblCust2
 	FROM #tblCust t
 
-	UPDATE t
-	SET t.MaxBet = p.MaxBet,
-		t.MaxPerEvent = p.MaxPerEvent
-	FROM #tblCust2 t
-		INNER JOIN ProblemAccount p WITH(NOLOCK) ON t.custid = p.custid
-	
 	IF NOT EXISTS(SELECT 1 FROM #tblCust2 
 				WHERE isVip <> @isVip 
 					AND custid IS NOT NULL)
@@ -298,18 +291,14 @@ BEGIN
 
 	-- Write log
 	DECLARE @LogData VARCHAR(500),
-			@LogData_Old VARCHAR(500),
-			@MaxBet MONEY,
-			@MaxPerEvent MONEY,
+			@LogData_Old VARCHAR(500),			
 			@custid INT
 	
 	WHILE (1=1)
 	BEGIN
 		UPDATE TOP (1) t
 		SET isLog = 1,
-			@custid = custid,
-			@MaxBet = MaxBet,
-			@MaxPerEvent = MaxPerEvent
+			@custid = custid
 		FROM #tblCust2 t
 		WHERE isLog = 0
 			AND isUpdate = 1
@@ -319,15 +308,11 @@ BEGIN
 
 		SELECT  @LogData = '<R'							
 							+ ' IsVip="' + COALESCE(CAST(@IsVip AS VARCHAR(10)), SPACE(1)) + '"'
-							+ ' MB="' + CASE WHEN @isVip = 0 THEN COALESCE(dbo.f_FomatNumber(CAST(@MaxBet AS VARCHAR(10))), SPACE(1)) ELSE '' END + '"'
-							+ ' MPM="' + CASE WHEN @isVip = 0 THEN COALESCE(dbo.f_FomatNumber(CAST(@MaxPerEvent AS VARCHAR(10))), SPACE(1)) ELSE '' END + '"'
 							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 							+ ' />'	
 							
 		SELECT  @LogData_old = '<R'
 								+ ' IsVip="' + COALESCE(CAST(CASE WHEN @IsVip = 1 THEN 0 ELSE 1 END AS VARCHAR(10)), SPACE(1)) + '"'
-								+ ' MB="' + COALESCE(dbo.f_FomatNumber(CAST(@MaxBet AS VARCHAR(10))), SPACE(1)) + '"'
-								+ ' MPM="' + COALESCE(dbo.f_FomatNumber(CAST(@MaxPerEvent AS VARCHAR(10))), SPACE(1)) + '"'
 								+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 								+ ' />'
 							
