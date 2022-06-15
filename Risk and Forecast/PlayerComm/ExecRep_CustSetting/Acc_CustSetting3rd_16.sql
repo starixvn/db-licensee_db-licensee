@@ -121,7 +121,8 @@ Revisions:
 	- 20210816@Johnson: Add VGaming [redmine: #159696]
 	- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 	- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217] 
-	- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586]   
+	- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586] 
+	- 20220613@Winfred: HF LAP - Licensee Commission Group - Player discount don't update when user update Group Comm [Redmine: #174029]   
 
 Param's Explanation:
 • @ErrCode:
@@ -285,10 +286,10 @@ BEGIN
 		OR @IsUpdateHabanero  = 1
 		OR @IsUpdateVGaming  = 1	
 		OR @IsUpdateSabaCasino = 1
-		OR @CGComm_Group	= 1
-		OR @AdvantComm_Group	= 1
-		OR @AdvantMiniComm_Group =1
-		OR @VS3Comm_Group	= 1
+		OR @IsUpdateCG	= 1
+		OR @IsUpdateAdvant	= 1
+		OR @IsUpdateAdvantMini =1
+		OR @IsUpdateVS3	= 1
 	)
 	BEGIN
 		INSERT INTO @tblSettingDCS_tmp (IsUpdated,sporttype,Bettype,CommGroup, Comm)
