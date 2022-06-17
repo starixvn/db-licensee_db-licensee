@@ -94,6 +94,7 @@ AS
 		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 		- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217] 
 		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586] 
+		- 220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 
 	Param's Explanation:
 
@@ -104,9 +105,9 @@ BEGIN
 	DECLARE @res AS TABLE (custid INT, isfinished BIT)
 	
 	INSERT INTO @res (custid, isfinished)
-	SELECT VAL, 0
-	FROM dbo.f_SplitString(@strCustID,',')
-	OPTION (MAXRECURSION 0)
+	SELECT value, 0
+	FROM STRING_SPLIT(@strCustID,',')
+	WHERE value <> ''
 
 	DECLARE @ids VARCHAR(MAX), @rowcnt INT, @runningCNT INT, @batchSize INT
 	DECLARE @res_batch_tmp AS TABLE (custid INT )

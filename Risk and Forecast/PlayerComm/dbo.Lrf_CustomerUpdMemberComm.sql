@@ -1,5 +1,5 @@
 /*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet,bodbAdminNet,Dot_Member" viewers="" isFunction="0"></info>*/
-CREATE PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm]
+ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm]
 (
 	@LicenseeID INT,
 	@strCustID VARCHAR(MAX) = '',--member
@@ -122,6 +122,7 @@ AS
 		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 		- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217] 
 		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586] 
+		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 		
 	Param's Explanation:
 		1. To update a member/batch members without GroupCommID
@@ -317,8 +318,7 @@ BEGIN
 		INSERT INTO @TempCustID (CustID)
 		SELECT c.CustID
 		FROM CustDB.dbo.Customer c WITH (NOLOCK) 
-			INNER JOIN dbo.f_SplitString (@strCustID,',') AS tmp ON RTRIM(LTRIM(tmp.val)) = c.custid
-		OPTION (MAXRECURSION 0)
+			INNER JOIN STRING_SPLIT (@strCustID,',') AS tmp ON RTRIM(LTRIM(tmp.value)) = c.custid
 		
 		SELECT @TotalMemCount=@@ROWCOUNT
 		

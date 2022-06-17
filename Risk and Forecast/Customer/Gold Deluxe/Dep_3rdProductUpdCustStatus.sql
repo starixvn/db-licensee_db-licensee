@@ -1,3 +1,5 @@
+/*<info serverAlias="DBCUST-CustDB" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
+
 ALTER PROCEDURE	dbo.Dep_3rdProductUpdCustStatus  
 	@CustID		INT,
 	@ProductId	INT,
@@ -14,6 +16,7 @@ AS
 	Original:
 	Revisions:
 		-20151022@Jim: support #44780
+		- 20220614@Elodie: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831]
 	Param's Explanation:
 */
 BEGIN
@@ -52,7 +55,7 @@ BEGIN
 			CREATE TABLE #CustList (CustID INT)
 
 			INSERT INTO #CustList (CustID)
-			SELECT val FROM dbo.strSplit(@CustIDs,',')
+			SELECT value FROM string_split(@CustIDs,',') WHERE value <> ''
 			IF(@@ERROR<>0)
 			BEGIN
 			SELECT @ErrMsg='Could not update'

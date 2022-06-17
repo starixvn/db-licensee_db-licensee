@@ -29,7 +29,8 @@ ALTER PROCEDURE [dbo].[WriteLog_UserLog_UpdMemComm_RunSP]
 		- 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048]   
 		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586]   
-		
+		- 20220614@Elodie: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
+
     Param's Explaination:    	
 		- @UserID: UserId perform this action
 		- @@strCustID: A string of individual CustId separated by ","
@@ -50,9 +51,9 @@ BEGIN
 		DECLARE @LogTempTable AS TABLE (CustID INT, TrackingValue VARCHAR(MAX), TrackingValue2 VARCHAR(MAX))
 
 		INSERT INTO @CustIDTempTable (CustID)
-		SELECT VAL
-		FROM dbo.f_SplitString(@strCustID,',')
-		OPTION (MAXRECURSION 0)
+		SELECT VALUE
+		FROM string_split(@strCustID,',')
+		WHERE VALUE <> ''
 		
 		INSERT INTO @LogTempTable (CustID, TrackingValue, TrackingValue2)
 		SELECT a.CustID,

@@ -1,3 +1,5 @@
+/*<info serverAlias="DBCUST-CustDB" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
+
 ALTER PROCEDURE	dbo.Dep_UpdCustSetting_AGC
 	@CustIDs	VARCHAR(MAX),
 	@AGGroup	VARCHAR(20)
@@ -8,6 +10,7 @@ AS
 	DB: DBTXN.CustDB
 	Original:
 	Revisions:
+		- 20220614@Elodie: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 	Param's Explanation:
 */
 BEGIN
@@ -16,7 +19,8 @@ BEGIN
 	CREATE TABLE #CustList (CustID INT)
 
 	INSERT INTO #CustList (CustID)
-	SELECT val FROM dbo.strSplit(@CustIDs,',')
+	SELECT value FROM string_split(@CustIDs,',')
+	WHERE value <> ''
 
 	UPDATE dbo.Dep_CustSetting_AGCasino WITH (ROWLOCK, UPDLOCK)
 	SET AGGroup = @AGGroup
