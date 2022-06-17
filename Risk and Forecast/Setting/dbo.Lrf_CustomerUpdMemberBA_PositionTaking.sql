@@ -83,7 +83,7 @@ Revisions:
  - 20180326@Winnie: Customer Setting - urgent fix to support for long bettype name. [RedmineID: #91216]		
  - 20190325@Winnie: Update PT of Sportsbook for All Licensee. [RedmineID: #110111]
  - 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
- 
+ - 20220617@Johnson: define temp table to avoid dump db [redmine:#174035]
 Param's Explanation:  
 • @ErrCode:  
     = 0: Update successfully.  
@@ -93,33 +93,36 @@ Param's Explanation:
 */  
   
 SET NOCOUNT ON  
-  
+
+CREATE TABLE #tmp_Sports(ID INT, Name NVARCHAR(500),IsDisabled BIT,IBCBettypeID INT)
+CREATE TABLE #tmp_Bettype(ID INT, Name NVARCHAR(500),IsDisabled BIT,IBCBettypeID INT)
+		
 BEGIN TRY
-	SELECT *
-	INTO #tmp_Sports
+	INSERT INTO #tmp_Sports(ID, Name, IsDisabled, IBCBettypeID)
+	SELECT ID, Name, IsDisabled, IBCBettypeID	
 	FROM dbo.f_GetSportTypeBetTypeGameType(1,'DBAGE')	
 END TRY
 BEGIN CATCH
 	IF OBJECT_ID(N'tempdb..#tmp_Sports') IS NOT NULL
 	BEGIN
 		TRUNCATE TABLE #tmp_Sports
-		INSERT INTO #tmp_Sports
-		SELECT *
+		INSERT INTO #tmp_Sports(ID, Name, IsDisabled, IBCBettypeID)
+		SELECT ID, Name, IsDisabled, IBCBettypeID
 		FROM dbo.f_GetSportTypeBetTypeGameType(1,'DBTXN')	
 	END
 END CATCH
 
 BEGIN TRY			
-	SELECT *
-	INTO #tmp_Bettype
+	INSERT INTO #tmp_Bettype(ID, Name, IsDisabled, IBCBettypeID)
+	SELECT ID, Name, IsDisabled, IBCBettypeID	
 	FROM dbo.f_GetSportTypeBetTypeGameType(2,'DBAGE')	
 END TRY
 BEGIN CATCH		
 	IF OBJECT_ID(N'tempdb..#tmp_Bettype') IS NOT NULL
 	BEGIN
 		TRUNCATE TABLE #tmp_Bettype
-		INSERT INTO #tmp_Bettype
-		SELECT *
+		INSERT INTO #tmp_Bettype(ID, Name, IsDisabled, IBCBettypeID)
+		SELECT ID, Name, IsDisabled, IBCBettypeID
 		FROM dbo.f_GetSportTypeBetTypeGameType(2,'DBTXN')	
 	END
 END CATCH
