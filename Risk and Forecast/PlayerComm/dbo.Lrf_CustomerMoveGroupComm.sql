@@ -73,7 +73,8 @@ AS
 		- 20210817@Johnson: Add VGaming [redmine: #159696] 
 		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 		- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217] 
-		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586]   
+		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586] 
+		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 
 	Param's Explanation:
 */ 
@@ -84,9 +85,9 @@ BEGIN
 	
 	CREATE TABLE #tempCust (CustID INT)
 	INSERT INTO #tempCust(CustID)
-	SELECT RTRIM(LTRIM(VAL)) 
-	FROM dbo.f_SplitString(@strCustIDOriginal,',')
-	OPTION (MAXRECURSION 0)
+	SELECT RTRIM(LTRIM(value)) 
+	FROM STRING_SPLIT(@strCustIDOriginal,',')
+	WHERE value <> ''
 	
 	CREATE TABLE #tempAgent (CustID INT PRIMARY KEY)
 	INSERT INTO #tempAgent(CustID)

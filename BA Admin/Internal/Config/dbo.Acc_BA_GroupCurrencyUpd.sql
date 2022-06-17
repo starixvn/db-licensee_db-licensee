@@ -1,8 +1,5 @@
 ﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbAdminNet" viewers="vnteam" isFunction="0"></info>*/ 
 
-USE bodb_Licensee
-GO
-
 ALTER PROCEDURE [dbo].[Acc_BA_GroupCurrencyUpd]
 	@LicenseeID INT,
 	@str  VARCHAR(300),
@@ -27,6 +24,7 @@ AS
 		- 20131113@winnie: Change link server to DBTXN.CustDB
 		- 20150606@Kathy: Change link server DBTXN.CustDB to DBCust.CustDB [Redmine:#36216]
 		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
+		- 20220614@Elodie: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 
 	Param's Explanation:
 
@@ -72,7 +70,7 @@ BEGIN
 				INSERT INTO @SpecialCustIDList(CustID,ugroup)
 				SELECT  custid,ugroup FROM LicenseeSpecialCust (NOLOCK) 
 			
-				INSERT @CurrencyList(strvalue)  SELECT VAL FROM Lrf_f_StringSplit(@str,',')
+				INSERT @CurrencyList(strvalue)  SELECT VALUE FROM STRING_SPLIT(@str,',') WHERE value <> ''
 				SET @i=1
 				WHILE (@i<=(SELECT MAX(ID) FROM @CurrencyList))
 				BEGIN	 

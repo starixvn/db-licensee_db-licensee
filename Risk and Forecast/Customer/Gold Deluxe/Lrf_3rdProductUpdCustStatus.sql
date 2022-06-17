@@ -20,7 +20,8 @@ AS
 		-20151108@Jim: Separated MicroGaming into 2 product
 		-20160909@Winnie: support colossusBet RedmineID: #63785
 		-20190321@Winnie: LAP-Remove MGC & Korea Language RedmineID: #107704
-		- 20210823@Johnson: update status for RnG Keno[redmineID:#159696]
+		-20210823@Johnson: update status for RnG Keno[redmineID:#159696]
+		-20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 	Param's Explanation:
 */
 BEGIN
@@ -106,7 +107,7 @@ BEGIN
 		CREATE TABLE #CustList (CustID INT)
 
 		INSERT INTO #CustList (CustID)
-		SELECT val FROM dbo.strSplit(@CustIDs,',')
+		SELECT value FROM STRING_SPLIT(@CustIDs,',') WHERE value <> ''
 		IF(@@ERROR<>0)
 		BEGIN
 		SELECT @ErrMsg='Could not update'

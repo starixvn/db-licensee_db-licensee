@@ -37,6 +37,7 @@ AS
 		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 		- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217] 
 		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586] 
+		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 */  
 BEGIN  
 	SET NOCOUNT ON
@@ -96,7 +97,7 @@ BEGIN
 	INSERT INTO @TempCustID (CustID)
 	SELECT cs.CustID 
 	FROM dbo.LicenseeCustComm cs WITH (NOLOCK) 
-		INNER JOIN dbo.f_SplitString(@strCustIDOriginal,',') AS t ON RTRIM(LTRIM(t.val)) = cs.CustID
+		INNER JOIN STRING_SPLIT(@strCustIDOriginal,',') AS t ON RTRIM(LTRIM(t.value)) = cs.CustID
 	WHERE LicenseeID = @LicenseeID 
 			AND GroupCommID > 0
 	OPTION (MAXRECURSION 0)
