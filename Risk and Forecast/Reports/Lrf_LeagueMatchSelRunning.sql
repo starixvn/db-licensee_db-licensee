@@ -15,6 +15,7 @@ AS
 		- 20210304@Hogan: Integrate Cricket AIO [RedmineID: #150386]
 		- 20211112@Kos: Exclude league and match which IsDeleted = 1 [RedmineID: #163733]
 		- 20220308@Kos: Return league group ID [RedmineID: #167824]
+		- 20000609@Kos: Remove IsDeleted for League and Team [Redmine: #171991]
 */
 
 BEGIN
@@ -30,11 +31,10 @@ BEGIN
 	FROM dbo.League AS l WITH (NOLOCK)
 		INNER JOIN dbo.match AS m WITH (NOLOCK) ON l.leagueid = m.leagueid
 	WHERE
-		(@IsIncludeTestLeague = 1 OR l.isTest = 0 )
-		AND l.IsDeleted = 0
+		(@IsIncludeTestLeague = 1 OR l.isTest = 0)
 		AND m.IsDeleted = 0
-		AND m.sporttype =  @SportType
-		AND m.eventstatus ='running'
+		AND m.sporttype = @SportType
+		AND m.eventstatus = 'running'
 		AND m.matchcode NOT LIKE '%hedge%'
 		AND (m.sporttype <> 50 OR ISNULL(m.ChildMatchType, 0) <> 200)	-- exclude child match
 
@@ -49,9 +49,8 @@ BEGIN
 		0
 	FROM dbo.outright AS o WITH (NOLOCK)
 		INNER JOIN dbo.League AS l WITH (NOLOCK) ON o.leagueid = l.leagueid
-	WHERE (@IsIncludeTestLeague = 1 OR l.isTest = 0 )
-		AND l.sporttype =  @SportType
-		AND l.IsDeleted = 0
+	WHERE (@IsIncludeTestLeague = 1 OR l.isTest = 0)
+		AND l.sporttype = @SportType
 		AND o.oddsstatus = 'running'
 		AND o.IsDeleted = 0
 END

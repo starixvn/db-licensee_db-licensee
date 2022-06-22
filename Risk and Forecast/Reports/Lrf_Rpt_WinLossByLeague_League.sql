@@ -25,6 +25,7 @@ AS
 		- 20210916@Kos: New SP [RedmineID: #159939]
 		- 20220106@Kos: Support search by username [RedmineID: #165926]
 		- 20220513@Kos: Support Sports Lottery and Bitcoin [RedmineID: #160160]
+		- 20220616@Kos: Fix issue duplicate LeagueId [RedmineID: #171991]
 
 	Param's Explanation:
 		- @SportTypeList: sporttype list separated by ','
@@ -152,8 +153,11 @@ BEGIN
 		@_ToDate = @ToDate
 
 	-- Get league list
-	CREATE TABLE #League (LeagueId INT PRIMARY KEY, SportType SMALLINT, LeagueGroupId SMALLINT)
-	CREATE TABLE #TempLeague (LeagueId INT PRIMARY KEY)
+	CREATE TABLE #League (LeagueId INT, SportType SMALLINT, LeagueGroupId SMALLINT)
+	CREATE TABLE #TempLeague (LeagueId INT)
+
+	CREATE CLUSTERED INDEX IX_LeagueId ON #League (LeagueId)
+	CREATE CLUSTERED INDEX IX_LeagueId ON #TempLeague (LeagueId)
 
 	INSERT INTO #TempLeague
 	SELECT DISTINCT leagueid
@@ -526,8 +530,8 @@ BEGIN
 				b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 				AND b.custid = @CustId
 				AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
-				AND (sbt.ProductCode IN ('SLT', 'BTC')
-					OR (sbt.ProductCode = 'SB' AND sbt.EventType = 0))
+				AND sbt.ProductCode = 'SB'
+				AND sbt.EventType = 1
 				AND 1 = CASE
 							WHEN @ShowBA = 0 AND sbt.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 0
 							WHEN @ShowSB = 0 AND sbt.ProductCode = 'SB' AND b.tpositiontaking <> 0 THEN 0
