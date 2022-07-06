@@ -5,7 +5,8 @@ ALTER PROCEDURE Lrf_ProblemAccount_LicenseeVipPlayerUpd
 	@IsVip	BIT,
 	@UserID INT,
 	@IP	VARCHAR(15) = '',
-	@Username2 VARCHAR(MAX) = ''
+	@Username2 VARCHAR(MAX) = '',
+	@CustIDList VARCHAR(MAX) = '' OUTPUT
 AS
 	/*
 		Created: 20200213@Johnson
@@ -20,7 +21,7 @@ AS
 			- 20220602@Johnson: remove ProblemAccount [redmine:#173357]
 			- 20220613@Elodie: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831]  
 			- 20220624@Eden: LAP - Segmentation - Rework on Upload File [Redmine: #174132] 
-
+			- 20220706@Johnson: output list custids to support sync customerclass [redmine:#174648]
 		Paramter's Explanations:	
 			- @result:
 				ErrCode =
@@ -355,6 +356,14 @@ BEGIN
 				@TrackingValue2		= @LogData_Old,
 				@Duration			= @Duration
 	END		
+	
+	SELECT @CustIDList = ''
+	
+	SELECT @CustIDList = @CustIDList + ',' + CAST(custid AS VARCHAR(20))
+	FROM #tblCust2
+	WHERE isUpdate = 1
+	
+	SELECT @CustIDList = STUFF(@CustIDList,1,1,'')
 	
 	SELECT * FROM @Result
 
