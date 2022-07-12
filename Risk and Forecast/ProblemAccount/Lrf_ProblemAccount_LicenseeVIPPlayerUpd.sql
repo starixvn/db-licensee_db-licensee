@@ -1,7 +1,7 @@
 /*<info serverAlias="DBCUST-CUSTDB" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE Lrf_ProblemAccount_LicenseeVipPlayerUpd
 	@AgentList VARCHAR(MAX),
-	@Username VARCHAR(MAX),
+	@Username VARCHAR(MAX)= '',
 	@IsVip	BIT,
 	@UserID INT,
 	@IP	VARCHAR(15) = '',
@@ -19,6 +19,7 @@ AS
 			- 20201209@Winfred: Check BA when turn on VIP player [redmine:#146508]
 			- 20220602@Johnson: remove ProblemAccount [redmine:#173357]
 			- 20220613@Elodie: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831]  
+			- 20220624@Eden: LAP - Segmentation - Rework on Upload File [Redmine: #174132] 
 
 		Paramter's Explanations:	
 			- @result:
@@ -31,6 +32,14 @@ AS
 						103: invalid ExternalID
 						104: dont change status ExternalID
 						105: dont change BA Player
+
+		exec Lrf_ProblemAccount_LicenseeVipPlayerUpd_XTEST
+	     @AgentList='<ROOT><Agent AgentId="31607889" Currency="2"/></ROOT>'
+		--,@Username='SPONUUS01462,SPONUUS01469,SPONUUS014697,MARSRMB01011,MARSRMB01086'
+		,@Username2='amytest11,william2232018a,william2232018aaa,PTEST6,PMOACC3'
+		,@IsVip = 0
+		,@UserID=338
+		,@IP='10.18.200.204'
 	*/
 BEGIN
 	SET NOCOUNT ON
@@ -39,22 +48,37 @@ BEGIN
 	SET @startRun = GETDATE()
 	
 	CREATE TABLE #tblCust (custid INT, 
-							username VARCHAR(50), 
-							roleid TINYINT, 
+							username VARCHAR(30), 
 							isVip BIT, 	
 							isBA BIT, 					
 							isLog BIT DEFAULT 0, 
 							isUpdate BIT DEFAULT 0,						
-							username2 VARCHAR(50)	
+							username2 VARCHAR(50),
+							Full_username2 VARCHAR(50)
 							)
+	CREATE TABLE #tblCust2 (custid INT, 
+							isVip BIT, 	
+							isBA BIT, 					
+							isLog BIT DEFAULT 0, 
+							isUpdate BIT DEFAULT 0,						
+							)
+
 	CREATE TABLE #TempAg (custid INT)
-	CREATE TABLE #tempUser (custid INT, roleid TINYINT, username VARCHAR(50), username2 VARCHAR(50))
+
 	DECLARE @Result TABLE(ErrCode INT,cnt INT, ErrMsg VARCHAR(MAX))
 	DECLARE @DocHandler INT
 			,@custList VARCHAR(MAX)
 			,@ErrMsg VARCHAR(MAX)
 			,@cnt INT
-			
+	DECLARE @Site varchar(10)
+
+	IF ISNULL(@username,'')<> '' AND ISNULL(@username2,'')<> ''
+	BEGIN 
+		SELECT ErrCode = 1000
+			,ErrMsg = N'Paramter invalid.'
+
+		RETURN
+	END
 			
 	BEGIN TRY
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT
@@ -73,37 +97,44 @@ BEGIN
 
 		RETURN
 	END CATCH;
-	
-	INSERT INTO #tblCust(username)
-	SELECT DISTINCT value
-	FROM string_split(@username,',')
-	WHERE value <> '' 
 
-	INSERT INTO #tblCust(username2)
-	SELECT DISTINCT value
-	FROM string_split(@username2,',')
-	WHERE value <> ''
-	
-	INSERT INTO #tempUser (custid,roleid, username, username2)
-	SELECT custid,roleid, username,
-		SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) AS username2
-	FROM customer ci WITH(NOLOCK)
-	WHERE recommend IN (SELECT custid FROM #TempAg)
-		AND roleid = 1	
-			
-	UPDATE t
-	SET t.custid = c.custid,
-		t.roleid = c.roleid
-	FROM #tblCust t
-		INNER JOIN #tempUser c 
-			ON t.username = c.username 
+	IF @Username2 <> ''
+	BEGIN
+		SELECT TOP (1) @Site = ci.Site 
+		FROM #TempAg t
+			INNER JOIN customer ci WITH(NOLOCK) ON  ci.custid = t.custid
 
-	UPDATE t
-	SET t.custid = c.custid,
-		t.roleid = c.roleid
-	FROM #tblCust t
-		INNER JOIN #tempUser c 
-			ON t.username2 = c.username2 
+		INSERT INTO #tblCust(username2,Full_username2)
+		SELECT DISTINCT value, @site +  '$' + value
+		FROM string_split(@username2,',')
+		WHERE value <> ''
+	
+		UPDATE t
+		SET t.custid = ci.custid
+		FROM #tblCust t
+			INNER JOIN customer ci WITH(NOLOCK)
+				ON t.Full_username2 = ci.username2 
+			INNER JOIN #TempAg a 
+				ON ci.recommend = a.custid
+		WHERE ci.roleid = 1
+	END
+
+	IF @Username <> ''
+	BEGIN
+		INSERT INTO #tblCust(username)
+		SELECT DISTINCT value
+		FROM string_split(@username,',')
+		WHERE value <> '' 
+
+		UPDATE t
+		SET t.custid = ci.custid
+		FROM #tblCust t
+			INNER JOIN customer ci WITH(NOLOCK)
+				ON t.username = ci.username 
+			INNER JOIN #TempAg a 
+				ON ci.recommend = a.custid
+		WHERE ci.roleid = 1
+	END
 
 	IF EXISTS (SELECT 1 FROM #tblCust WHERE custid IS NULL)
 	BEGIN	
@@ -221,8 +252,8 @@ BEGIN
 	END 
 	
 	--> Distinct custid to update and write log
-	SELECT DISTINCT custid,t.isLog,t.isUpdate,t.isVip,t.isBA,t.roleid
-	INTO #tblCust2
+	INSERT INTO #tblCust2(custid,isLog,isUpdate,isVip,isBA)
+	SELECT DISTINCT custid,t.isLog,t.isUpdate,t.isVip,t.isBA
 	FROM #tblCust t
 
 	IF NOT EXISTS(SELECT 1 FROM #tblCust2 
@@ -326,6 +357,9 @@ BEGIN
 	END		
 	
 	SELECT * FROM @Result
-	
+
+	DROP TABLE #tblCust
+	DROP TABLE #tblCust2
+	DROP TABLE #TempAg
 END	
 GO
