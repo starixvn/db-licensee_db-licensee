@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBCUST-CUSTDB" executers="" viewers="" isFunction="0"></info>*/
+﻿/*<info serverAlias="DBCUST-CUSTDB" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMember_MinMaxBet161]
 	@custid INT,-- MemberID
@@ -317,11 +317,3 @@ BEGIN
 		@duration = @duration
 END
 GO
----------------------------------------------------------
-
-
-GO
-GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMember_MinMaxBet161] TO [bodbLicenseeNet]
-
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerUpdMember_MinMaxBet161] TO [vnteam] 
