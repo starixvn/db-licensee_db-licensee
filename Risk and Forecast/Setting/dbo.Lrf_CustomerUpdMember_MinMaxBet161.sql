@@ -261,7 +261,8 @@ BEGIN
 
 	IF EXISTS (SELECT 1	FROM @History_BetSetting)
 	BEGIN 
-		SET @CustList = (SELECT CustID					AS '@CustID',
+		SET @CustList = (SELECT DISTINCT
+								CustID					AS '@CustID',
 								SportType				AS '@SportType',
 								BetType					AS '@BetType',
 								MaxBet					AS '@MaxBet',
