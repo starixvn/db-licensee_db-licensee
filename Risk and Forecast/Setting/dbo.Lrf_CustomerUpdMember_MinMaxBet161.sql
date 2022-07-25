@@ -257,9 +257,9 @@ BEGIN
    	--Insert history bet setting
 	DELETE @History_BetSetting
 	WHERE SportType <> 161
-		OR (MaxBet=@MaxBetv161 AND MaxPerMatch=@MaxPerMatchv161)
+		OR (MaxBet=@MaxBetv161 AND @Old_MaxPerMatchv161=@MaxPerMatchv161)
 
-	IF NOT EXISTS (SELECT 1	FROM @History_BetSetting)
+	IF EXISTS (SELECT 1	FROM @History_BetSetting)
 	BEGIN 
 		SET @CustList = (SELECT CustID					AS '@CustID',
 								SportType				AS '@SportType',
