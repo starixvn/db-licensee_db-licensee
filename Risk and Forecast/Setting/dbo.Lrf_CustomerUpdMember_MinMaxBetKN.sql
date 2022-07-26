@@ -1,4 +1,4 @@
-﻿  
+﻿  /*<info serverAlias="DBCUST-CUSTDB" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMember_MinMaxBetKN]  
  @UserID INT =0,  
  @Custid INT,  
@@ -349,9 +349,4 @@ BEGIN
 END   
   
 DROP TABLE #setting  
-
-GO
-GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMember_MinMaxBetKN] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerUpdMember_MinMaxBetKN] TO [vnteam]
 GO
