@@ -24,6 +24,7 @@ AS
 		- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217] 
 		- 20220429@Hogan: Integrate Bitcoin [redmine:#160160]
 		- 20220601@Hogan: Integrate FGG Guaranteed Gaming [RedmineID: #167897]
+		- 20220601@Hogan: Integrate MaxGame [RedmineID: #172919]
 */
 
  /*
@@ -144,7 +145,8 @@ BEGIN
 			68,--	AdvantPlay Mini
 			49,--	Virtual Sports 3
 			69,--	Bitcoin
-			70--	FGG	
+			70,--	FGG	
+			60--	MaxGame
 		)
 	ORDER BY ProductID ASC
 END

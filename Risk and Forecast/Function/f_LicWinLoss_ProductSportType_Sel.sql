@@ -46,6 +46,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
 		- 20220429@Kos: Support Bitcoin [RedmineID: #160160]
 		- 20220601@Hogan: Integrate FGG Guaranteed Gaming [RedmineID: #167897]
+		- 20220601@Hogan: Integrate MaxGame [RedmineID: #172919]
 */
 RETURNS TABLE
 RETURN
@@ -95,7 +96,8 @@ RETURN
 					(68, 'APM', 174, 0),	-- AdvantPlay Mini
 					(49, 'VS3', 231, 0),	-- Virtual Sports 3
 					(69, 'BTC', 175, 0),	-- Bitcoin
-					(70, 'FGGL', 176, 0)	-- FGG
+					(70, 'FGGL', 176, 0),	-- FGG
+					(60, 'MXG', 237, 0)	-- MaxGame
 			) d(ProductID, ProductCode, SportType, BetType)
 	WHERE ',' + @ProductCodes + ',' LIKE '%,' + CAST(ProductCode AS VARCHAR(10)) + ',%'
 GO
