@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02,DBBOF-bodb02" executers="" isFunction="1" isNested="1"></info>*/
+/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02,DBBOF-bodb02,DBSID-bodb02" executers="" isFunction="1" isNested="1"></info>*/
 
 ALTER FUNCTION [dbo].[Lrf_f_GroupProductCode]
 (
@@ -9,12 +9,13 @@ AS
 
 /*
 	Created: 20211109@Kos
-	DB: DBEXT.bodb02, DBACC.bodb02, DBBOF.bodb02
+	DB: DBEXT.bodb02, DBACC.bodb02, DBBOF.bodb02, DBSID-bodb02
 	Task: Group product code
 
 	Revisions:
 		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
 		- 20220429@Kos: Support Bitcoin [RedmineID: #160160]
+		- 20220801@Victoria: Add DBSID-bodb02 to metadata [Redmine: #175297]
 */
 
 BEGIN

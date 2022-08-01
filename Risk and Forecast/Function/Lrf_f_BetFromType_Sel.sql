@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02,DBBOF-bodb02" selecters="bodbLicenseeNet" isFunction="1" isNested="1"></info>*/
+/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02,DBBOF-bodb02,DBSID-bodb02" selecters="bodbLicenseeNet" isFunction="1" isNested="1"></info>*/
 
 ALTER FUNCTION [dbo].[Lrf_f_BetFromType_Sel]
 (
@@ -22,6 +22,7 @@ ALTER FUNCTION [dbo].[Lrf_f_BetFromType_Sel]
 		- 20211014@Kos: Support add 2 New Betfroms [ and ] [RedmineID: #162388]
 		- 20211231@Hogan: Using betfrom '.' instead of betfrom '#' [RedmineID: #166689]
 		- 20220708@Hogan: Support add new betfrom '}' [RedmineID: #174895]
+		- 20220801@Victoria: Add DBSID-bodb02 to metadata [Redmine: #175297]
 */
 
 RETURNS TABLE
