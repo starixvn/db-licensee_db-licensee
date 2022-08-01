@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DB042-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DB042-bodb02,DBSID-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_Forecast_OddsSelTopByMatch]
     @matchid INT ,
     @bettype INT = 1
@@ -6,12 +6,13 @@ AS
 /*
 	Created: 20101207@Henry
 	Task: Forecast at Lrf Site 
-	DB: DB042.bodb02
+	DB: DB042.bodb02, DBSID-bodb02
 	Original:Age_Forecast_OddsSelTopByMatch
 	
 	Revisions: 
         - 20190102@Joseph: Incorporate changes for E-Sports phase 2b [Redmine: #106553]
 		- 20190415@Percy: Get livehomescore/liveawayscore data from match table instead of odds table [RedmineID: #113303]
+		- 20220729@Victoria: Add DBSID-bodb02 to metadata [RedmineID: #175297]
 		
 */
         SET NOCOUNT ON
