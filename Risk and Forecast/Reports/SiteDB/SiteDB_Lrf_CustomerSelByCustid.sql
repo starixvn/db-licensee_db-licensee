@@ -1,5 +1,6 @@
 /*<info serverAlias="DBSID-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" viewers="" isFunction="0"></info>*/
-CREATE PROCEDURE [dbo].[SiteDB_Lrf_CustomerSelByCustid]
+ALTER PROCEDURE [dbo].[SiteDB_Lrf_CustomerSelByCustid]
+(
 	@LicenseeName	VARCHAR(50),
 	@custids		VARCHAR(MAX)	= NULL,
 	@PageSize		INT				= 50,
@@ -11,6 +12,7 @@ CREATE PROCEDURE [dbo].[SiteDB_Lrf_CustomerSelByCustid]
 	@CustomerClass	VARCHAR(1000)	= NULL,
 	@CommGroups		VARCHAR(1000)	= '',
 	@AgentList		VARCHAR(MAX)
+)
 AS
 /*
 	Created by: [20220801@Sol]
@@ -54,13 +56,14 @@ BEGIN
 	DECLARE @DocHandler INT
 
 	SELECT @LicenseeID	= LicenseeID
-	FROM DBCUST.bodb_Licensee.dbo.Licensees WITH(NOLOCK)
+	FROM DBCUST.bodb_Licensee.dbo.Licensees l WITH(NOLOCK)
 	WHERE LicenseeName = @LicenseeName
 	
 	DECLARE @sporttype	TABLE (SportType INT)
 
 	INSERT INTO @sporttype ( SportType )
-	SELECT DISTINCT SportType FROM [dbo].[SportBettypeMatrix] WITH (NOLOCK)
+	SELECT DISTINCT SportType 
+	FROM [dbo].[SportBettypeMatrix] l WITH(NOLOCK)
 	WHERE RefTable = 3
 
 	BEGIN TRY
@@ -158,7 +161,7 @@ BEGIN
 		SELECT ci.custid, ci.closed, ci.reject, RIGHT(c.ugroup, 1),ci.CustomerClass
 		FROM #TempAg t 
 			 INNER JOIN CustDB.dbo.custInfo ci WITH(NOLOCK) ON t.custid = ci.recommend
-			 INNER JOIN CustDB.dbo.Customer c WITH (NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid 
+			 INNER JOIN CustDB.dbo.Customer c WITH(NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid 
 		WHERE ci.roleid=1
 				AND ci.custid IN (SELECT custid FROM #tblCustList)
 				AND c.username  NOT LIKE ''%CASHOUT%''
@@ -181,7 +184,7 @@ BEGIN
 			(SELECT lci.custid, lci.currency, ISNULL(lc.speciallevel,0) as speciallevel, lci.username, lci.username2 
 			 FROM CustDB.dbo.Customer lci WITH(NOLOCK) 
 				 INNER JOIN #TempAg t ON lci.recommend = t.custid
-				 LEFT JOIN DBCUST.CustDB.dbo.Dep_CustSpecialLevel lc WITH (NOLOCK) ON lc.CustID = lci.CustID
+				 LEFT JOIN DBCUST.CustDB.dbo.Dep_CustSpecialLevel lc WITH(NOLOCK) ON lc.CustID = lci.CustID
 			 WHERE lci.RoleID = 1 
 			 ) lc ON lc.custid = c.custid
 		WHERE 
@@ -194,7 +197,8 @@ BEGIN
 		BEGIN
 			DELETE t
 			FROM #TempMember t
-				LEFT JOIN DBCUST.bodb_Licensee.dbo.LicenseeCustComm lc WITH (NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
+				LEFT JOIN DBCUST.bodb_Licensee.dbo.LicenseeCustComm lc WITH(NOLOCK) 
+					ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
 			WHERE ISNULL(lc.GroupCommID,0) NOT IN (SELECT value FROM STRING_SPLIT(@CommGroups,','))		
 		END 
 		
@@ -224,15 +228,16 @@ BEGIN
 				) a 
 				WHERE a.rownumber BETWEEN @rowstart AND @rowend
 			) t
-			LEFT JOIN DBCUST.bodb_Licensee.dbo.LicenseeBAHistory lb WITH(NOLOCK) ON LicenseeID = @LicenseeID AND t.CustID = lb.CustID AND lb.[Status] = 'Running'
+			LEFT JOIN DBCUST.bodb_Licensee.dbo.LicenseeBAHistory lb WITH(NOLOCK) 
+				ON LicenseeID = @LicenseeID AND t.CustID = lb.CustID AND lb.[Status] = 'Running'
 	END
 	ELSE IF @BAFilter = 1
 	BEGIN
 		SELECT @strSQL = 'INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject,CustomerClass)
 						  SELECT ci.CustID, ci.currency, ISNULL(lc.speciallevel,0)  as speciallevel, cu.username2, cu.username, RIGHT(cu.ugroup, 1), ci.closed, ci.reject,ci.CustomerClass
 						  FROM DBCUST.bodb_Licensee.dbo.LicenseeBAHistory lb WITH(NOLOCK)
-							INNER JOIN CustDB.dbo.CustInfo ci (NOLOCK) ON lb.custid = ci.custid
-							INNER JOIN CustDB.dbo.Customer cu WITH (NOLOCK) ON ci.CustID = cu.custid 
+							INNER JOIN CustDB.dbo.CustInfo ci WITH(NOLOCK) ON lb.custid = ci.custid
+							INNER JOIN CustDB.dbo.Customer cu WITH(NOLOCK) ON ci.CustID = cu.custid 
 							INNER JOIN #TempAg t ON ci.recommend = t.custid
 							LEFT JOIN DBCUST.CustDB.dbo.Dep_CustSpecialLevel lc WITH(NOLOCK) ON ci.custid = lc.custid								
 						 WHERE lb.LicenseeID = ' + CONVERT(VARCHAR(10),@LicenseeID) + '
@@ -253,7 +258,8 @@ BEGIN
 		BEGIN
 			DELETE t
 			FROM #TempMember t
-				LEFT JOIN DBCUST.bodb_Licensee.dbo.LicenseeCustComm lc WITH (NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
+				LEFT JOIN DBCUST.bodb_Licensee.dbo.LicenseeCustComm lc WITH(NOLOCK) 
+					ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
 			WHERE ISNULL(lc.GroupCommID,0) NOT IN (SELECT value FROM dbo.STRING_SPLIT(@CommGroups,','))		
 		END
 		
@@ -286,7 +292,7 @@ BEGIN
 		SELECT ci.custid, ci.closed, ci.reject, RIGHT(c.ugroup, 1),ci.CustomerClass
 		FROM #TempAg t 
 			 INNER JOIN CustDB.dbo.custInfo ci WITH(NOLOCK) ON t.custid = ci.recommend
-			 INNER JOIN CustDB.dbo.Customer c WITH (NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid 
+			 INNER JOIN CustDB.dbo.Customer c WITH(NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid 
 		WHERE ci.roleid=1 
 				AND ci.custid IN (SELECT custid FROM #tblCustList)
 				AND c.username NOT LIKE ''%CashOut%''
@@ -308,7 +314,7 @@ BEGIN
 			#tmpCust c
 			INNER JOIN 
 			(SELECT c.custid, c.currency, ISNULL(lc.speciallevel,0) as speciallevel, c.username, c.username2 
-			 FROM CustDB.dbo.Customer c WITH (NOLOCK)
+			 FROM CustDB.dbo.Customer c WITH(NOLOCK)
 				LEFT JOIN DBCUST.CustDB.dbo.Dep_CustSpecialLevel lc WITH(NOLOCK) ON c.CustID = lc.CustID			 
 				INNER JOIN #TempAg t ON c.recommend = t.custid
 			 WHERE c.RoleID = 1
@@ -324,7 +330,8 @@ BEGIN
 		BEGIN
 			DELETE t
 			FROM #TempMember t
-				LEFT JOIN DBCUST.bodb_Licensee.dbo.LicenseeCustComm lc WITH (NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
+				LEFT JOIN DBCUST.bodb_Licensee.dbo.LicenseeCustComm lc WITH(NOLOCK) 
+					ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
 			WHERE ISNULL(lc.GroupCommID,0) NOT IN (SELECT value FROM dbo.STRING_SPLIT(@CommGroups,','))		
 		END
 		
@@ -362,7 +369,8 @@ BEGIN
 	WHERE
 		BAStatus = 0
 		AND CustID NOT IN (
-			SELECT DISTINCT CustID FROM DBCUST.bodb_Licensee.dbo.LicenseeBAHistory lb WITH (nolock)
+			SELECT DISTINCT CustID 
+			FROM DBCUST.bodb_Licensee.dbo.LicenseeBAHistory lb WITH(nolock)
 			WHERE LicenseeID = @LicenseeID AND Status = 'Done'
 		)
 
@@ -380,11 +388,13 @@ BEGIN
 		BEGIN
 			SET @i = @i + 1
 			SET @LastOffBy = 0
-			SELECT @CustID = CustID FROM @TempBACust WHERE id = @i
+
+			SELECT @CustID = CustID 
+			FROM @TempBACust WHERE id = @i
 		
 			--Get last turn-off BA UserID
 			SELECT TOP 1 @LastOffBy = OffBy
-			FROM DBCUST.bodb_licensee.dbo.[LicenseeBAHistory] WITH (NOLOCK)
+			FROM DBCUST.bodb_licensee.dbo.[LicenseeBAHistory] l WITH(NOLOCK)
 			WHERE
 				[LicenseeID] = @LicenseeID AND
 				[CustID] = @CustID AND
@@ -394,7 +404,8 @@ BEGIN
 			--Check whether the Last turn-off BA is Power BA user or not
 			--If is Power BA User then only Power BA Users can turn-on again
 			IF ISNULL(@LastOffBy, 0) <> 0 AND EXISTS (
-				SELECT 1 FROM DBCUST.bodb_licensee.dbo.LicenseeUserFunctions WITH (NOLOCK)
+				SELECT 1 
+				FROM DBCUST.bodb_licensee.dbo.LicenseeUserFunctions l WITH(NOLOCK)
 				WHERE
 					FunctionID = 54
 					AND UserID = ISNULL(@LastOffBy, 0)
@@ -417,7 +428,7 @@ BEGIN
 		tl.statusID,
 		SUM(actual_stake) AS actual_stacke
 	FROM
-		dbo.translog tl WITH (NOLOCK)
+		dbo.translog tl WITH(NOLOCK)
 		INNER JOIN #TempAg lc ON tl.recommend = lc.CustID
 		INNER JOIN @sporttype s ON s.SportType = productID
 	WHERE tl.statusID IN (0, 1)		-- running and Waiting
@@ -435,7 +446,7 @@ BEGIN
 		g.statusID,
 		SUM(g.actual_stake) AS actual_stacke
 	FROM
-		dbo.bettransRnG g WITH (NOLOCK)
+		dbo.bettransRnG g WITH(NOLOCK)
 		INNER JOIN #TempAg lc ON g.recommend = lc.CustID
 	WHERE g.statusID IN (0, 1)		-- running and Waiting
 	GROUP BY
@@ -451,7 +462,7 @@ BEGIN
 		g.statusID,
 		SUM(g.actual_stake) AS actual_stacke
 	FROM
-		dbo.bettransLC g WITH (NOLOCK)
+		dbo.bettransLC g WITH(NOLOCK)
 		INNER JOIN #TempAg lc ON g.recommend = lc.CustID
 	WHERE g.statusID IN (0, 1)  -- running and Waiting
 	GROUP BY
@@ -484,7 +495,7 @@ BEGIN
 				END), 0) AS Outstanding
 	FROM
 		#Temp t
-		INNER JOIN dbo.bettrans b WITH (NOLOCK) ON t.custid = b.custid
+		INNER JOIN dbo.bettrans b WITH (NOLOCK)ON t.custid = b.custid
 	WHERE b.matchid >= 0
 		AND	bettype < 19999 AND winlostdate > @MoveBetsDay
 	GROUP BY t.custid
@@ -497,7 +508,7 @@ BEGIN
 		0 AS Outstanding
 	FROM
 		#Temp t
-		INNER JOIN dbo.transfer b WITH (NOLOCK) ON t.custid = b.custid
+		INNER JOIN dbo.transfer b WITH(NOLOCK) ON t.custid = b.custid
 	WHERE (bettype = 19999 AND winlostdate <= @MoveBetsDay OR b.Bettype > 19999)
 	GROUP BY t.custid
 
@@ -527,7 +538,7 @@ BEGIN
 		CAST((ISNULL(d.Outstanding, 0) + ISNULL(tl.actual_stake,0)) AS MONEY) AS Outstanding,
 		ISNULL(UPPER(t.ugroup), '') AS OddsGroup
 	FROM #Temp t
-		INNER JOIN #Exchange ex WITH (NOLOCK) ON t.currency = ex.Id
+		INNER JOIN #Exchange ex WITH(NOLOCK) ON t.currency = ex.Id
 		LEFT JOIN #Data d ON t.custid = d.custid
 		LEFT JOIN
 		(
@@ -538,8 +549,8 @@ BEGIN
 			FROM #OutstandingTranslog
 			GROUP BY Custid, Currency
 		) tl ON t.custid = tl.Custid
-		LEFT JOIN DBCUST.bodb_Licensee.dbo.LicenseeCustComm lc WITH (NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
-		LEFT JOIN DBCUST.bodb_Licensee.dbo.LicenseeGroupComm lg WITH (NOLOCK) ON lc.GroupCommID = lg.id			
+		LEFT JOIN DBCUST.bodb_Licensee.dbo.LicenseeCustComm lc WITH(NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
+		LEFT JOIN DBCUST.bodb_Licensee.dbo.LicenseeGroupComm lg WITH(NOLOCK) ON lc.GroupCommID = lg.id			
 	ORDER BY t.username
 
 	DROP TABLE #TempAg

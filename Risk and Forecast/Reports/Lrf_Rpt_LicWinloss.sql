@@ -113,6 +113,7 @@ AS
 		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
 		- 20220318@Hogan: Integrate FGG Guaranteed Gaming [RedmineID: #167897]
 		- 20220601@Hogan: Integrate MaxGame [RedmineID: #172919]
+		- 20220801@Sol: LAP - Scale Out DBTrans - removed min @transid in BT and CO - [Redmine: #175297]
 
 	Param's Explanation:
 		+ @ReportType: 1-Daily; 2-Monthly;
@@ -272,13 +273,6 @@ BEGIN
 			SET @TempFromDate = DATEADD(DAY,1,@MoveBetsDay)
 		ELSE
 			SET @TempFromDate = @_FromDate
-	
-		DECLARE @transid BIGINT
-
-		SELECT TOP (1) @transid = transid
-		FROM dbo.bettrans WITH(NOLOCK)
-		WHERE matchid > 0
-		ORDER BY transid
 
 		DECLARE @HWHLCutDate SMALLDATETIME = '2019-10-01' -- half won/ half lose cut date
 
@@ -439,7 +433,6 @@ BEGIN
 					b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 					AND b.bettype IN (901, 902, 903)
 					AND b.statusID IN (111, 112, 113)
-					AND b.transid >= @transid
 				GROUP BY
 					b.winlostdate,
 					a.currency
@@ -480,7 +473,6 @@ BEGIN
 					b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 					AND b.bettype IN (911, 912, 913)
 					AND b.statusID IN (111, 112, 113)
-					AND b.transid >= @transid
 				GROUP BY
 					b.winlostdate,
 					a.currency
@@ -658,7 +650,6 @@ BEGIN
 					b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 					AND b.bettype IN (901, 902, 903)
 					AND b.statusID IN (111, 112, 113)
-					AND b.transid >= @transid
 				GROUP BY
 					b.winlostdate,
 					b.currency
@@ -699,7 +690,6 @@ BEGIN
 					b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 					AND b.bettype IN (911, 912, 913)
 					AND b.statusID IN (111, 112, 113)
-					AND b.transid >= @transid
 				GROUP BY
 					b.winlostdate,
 					b.currency
