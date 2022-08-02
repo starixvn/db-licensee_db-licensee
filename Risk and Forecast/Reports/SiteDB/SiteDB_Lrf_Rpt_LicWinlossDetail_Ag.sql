@@ -146,7 +146,7 @@ BEGIN
 	DECLARE	@PromotionPrize INT = 0
 
 	SELECT	@LicenseeName = LicenseeName
-	FROM DBCUST.bodb_Licensee.dbo.Licensees (NOLOCK)
+	FROM DBCUST.bodb_Licensee.dbo.Licensees l WITH(NOLOCK)
 	WHERE LicenseeID = @LicenseeID
 
 	DECLARE @IsTest BIT = 0
