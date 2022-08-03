@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02" selecters="bodbLicenseeNet" isFunction="1" isNested="1"></info>*/
+/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02,DBSID-bodb02" selecters="bodbLicenseeNet" isFunction="1" isNested="1"></info>*/
 
 ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 (
@@ -8,7 +8,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 /*
 	Create: 20170703@Harper
 	Description: Get sum_winloss condition
-	DB: DBEXT.bodb02, DBACC.bodb02
+	DB: DBEXT.bodb02, DBACC.bodb02, DBSID-bodb02
 
 	Revisions:
 		- 20170703@Harper: Get SportType by Product follow job sum [Redmine: #78241]
@@ -47,6 +47,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 		- 20220429@Kos: Support Bitcoin [RedmineID: #160160]
 		- 20220601@Hogan: Integrate FGG Guaranteed Gaming [RedmineID: #167897]
 		- 20220601@Hogan: Integrate MaxGame [RedmineID: #172919]
+		- 20220801@Victoria: Add DBSID-bodb02 to metadata [Redmine: #175297]
 */
 RETURNS TABLE
 RETURN
