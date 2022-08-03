@@ -24,7 +24,7 @@ BEGIN
 		INNER JOIN SystemLicensee sl (NOLOCK) ON l.LicenseeID=sl.LicenseeID 
 		INNER JOIN Systems s (NOLOCK) ON sl.SystemID=s.ID 
 		INNER JOIN LicenseeUser lu with (NOLOCK) ON l.LicenseeID = lu.LicenseeID
-		INNER JOIN bodb02.dbo.Site si WITH (NOLOCK) ON l.LicenseeID = si.siteid
+		INNER JOIN bodb02.dbo.Site si WITH (NOLOCK) ON l.LicenseeName = si.site
 		INNER JOIN (SELECT * FROM LicenseeReseller WITH (NOLOCK) WHERE ResellerID <> 3) lr  ON l.LicenseeID = lr.LicenseeID
 		INNER JOIN Resellers r WITH (NOLOCK) ON r.ResellerID = lr.ResellerID
 		LEFT JOIN LicenseeBAConfig lb with (nolock) ON lb.licenseeID = l.licenseeID

@@ -22,7 +22,7 @@ BEGIN
 		, r.ResellerName
 		, si.SiteDBGroupID
 	FROM dbo.Licensees l WITH (NOLOCK)
-		INNER JOIN bodb02.dbo.Site si WITH (NOLOCK) ON l.LicenseeID = si.siteid
+		INNER JOIN bodb02.dbo.Site si WITH (NOLOCK) ON l.LicenseeName = si.site
 		INNER JOIN dbo.SystemLicensee sl WITH (NOLOCK) ON l.LicenseeID = sl.LicenseeID
 		INNER JOIN dbo.Systems s WITH (NOLOCK) ON sl.SystemID = s.ID
 		INNER JOIN dbo.LicenseeReseller lr WITH (NOLOCK) ON l.LicenseeID = lr.LicenseeID AND lr.ResellerID <> 3
