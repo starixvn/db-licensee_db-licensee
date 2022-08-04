@@ -39,6 +39,7 @@ AS
 		- 20210420@Mark: Integrate Time Machine HDP [Redmine: #153302]
 		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
 		- 20220322@Kos: Support Parlay sport [RedmineID: #169282]
+		- 20220714@Hogan: Integrate Volleyball AIO [RedmineID: #175143]
 */
 
 BEGIN
@@ -205,6 +206,8 @@ BEGIN
 									OR bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 									OR (bettype NOT IN (703, 711) AND bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
 									OR bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
+									OR bettype IN (219,220,3912,3914,3916,3918) -- Volleyball AIO
+									OR bettype BETWEEN 3901 AND 3909 -- Volleyball AIO
 									OR (b.bettype = 501 AND b.winlostdate < @501CutoffDate)
 								)
 								THEN 
@@ -372,6 +375,8 @@ BEGIN
 							OR bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 							OR (bettype NOT IN (703, 711) AND bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
 							OR bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
+							OR b.bettype IN (219,220,3912,3914,3916,3918) -- Volleyball AIO
+							OR b.bettype BETWEEN 3901 AND 3909 -- Volleyball AIO
 							OR (b.bettype = 501 AND b.winlostdate < @501CutoffDate)
 						)
 								THEN

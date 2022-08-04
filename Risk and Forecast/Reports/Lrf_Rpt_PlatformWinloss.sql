@@ -119,6 +119,7 @@ AS
 		- 20220429@Kos: Support Bitcoin [RedmineID: #160160]
 		- 20220601@Hogan: Integrate FGG Guaranteed Gaming [RedmineID: #167897]
 		- 20220601@Hogan: Integrate MaxGame [RedmineID: #172919]
+		- 20220714@Hogan: Integrate Volleyball AIO [RedmineID: #175143]
 
 	Param's Explanation:
 		+ @PlatformType: List of platform type (ex: 1,2,3,..)
@@ -694,6 +695,7 @@ BEGIN
 					OR (b.Bettype BETWEEN 1301 AND 1399) --new tennis's bettypes
 					OR (b.Bettype BETWEEN 9001 AND 9399) -- E-Sports 2.0
 					OR (b.Bettype BETWEEN 9400 AND 9998) -- Cricket AIO
+					OR (b.Bettype BETWEEN 3900 AND 3999) -- Volleyball AIO
 					OR b.Bettype = 38					 -- Single Match Parlay
 				) 
 				AND (b.bettype < 901 OR b.bettype > 904)

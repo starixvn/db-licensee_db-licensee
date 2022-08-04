@@ -107,6 +107,7 @@ AS
 		- 20220429@Kos: Support Bitcoin [RedmineID: #160160]
 		- 20220601@Hogan: Integrate FGG Guaranteed Gaming [RedmineID: #167897]
 		- 20220601@Hogan: Integrate MaxGame [RedmineID: #172919]
+		- 20220714@Hogan: Integrate Volleyball AIO [RedmineID: #175143]
 
 	Param's Explanation:
 		+ @IsLive : indicate that whether the report will get live data or not
@@ -269,6 +270,7 @@ BEGIN
 					OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
 					OR (b.Bettype BETWEEN 9001 and 9399) -- E-Sports 2.0
 					OR (b.Bettype BETWEEN 9400 AND 9998) -- Cricket AIO
+					OR (b.Bettype BETWEEN 3900 AND 3999) -- Volleyball AIO
 					OR b.Bettype = 38					 -- Single Match Parlay
 					OR (b.bettype BETWEEN 3611 AND 3620
 						AND EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'SLT')))
@@ -570,6 +572,7 @@ BEGIN
 						OR (b.Bettype BETWEEN 1301 and 1399)
 						OR (b.Bettype BETWEEN 9001 and 9399)
 						OR (b.Bettype BETWEEN 9400 AND 9998)	-- Cricket AIO
+						OR (b.Bettype BETWEEN 3900 AND 3999) -- Volleyball AIO
 						OR b.Bettype = 38						-- Single Match Parlay
 						OR b.bettype BETWEEN 3611 AND 3620		-- Sports Lottery
 						OR b.bettype BETWEEN 7901 AND 7999		-- Bitcoin
@@ -634,6 +637,7 @@ BEGIN
 					OR b.Bettype BETWEEN 1301 and 1399
 					OR b.Bettype BETWEEN 9001 and 9399
 					OR b.Bettype BETWEEN 9400 AND 9998 -- Cricket AIO
+					OR b.Bettype BETWEEN 3900 AND 3999 -- Volleyball AIO
 					OR b.Bettype = 38				   -- Single Match Parlay
 					OR (b.bettype BETWEEN 3611 AND 3620
 						AND EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'SLT')))
@@ -684,6 +688,7 @@ BEGIN
 							OR (b.Bettype BETWEEN 1301 and 1399) 
 							OR (b.Bettype BETWEEN 9001 and 9399) 
 							OR (b.Bettype BETWEEN 9400 AND 9998) -- Cricket AIO
+							OR (b.Bettype BETWEEN 3900 AND 3999) -- Volleyball AIO
 							OR b.Bettype = 38					 -- Single Match Parlay
 							OR b.bettype BETWEEN 3611 AND 3620		-- Sports Lottery
 							OR b.bettype BETWEEN 7901 AND 7999		-- Bitcoin
