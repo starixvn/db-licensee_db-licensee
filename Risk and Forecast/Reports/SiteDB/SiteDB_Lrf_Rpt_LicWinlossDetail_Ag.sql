@@ -201,7 +201,7 @@ BEGIN
 		BEGIN
 			INSERT INTO @VIPCust (CustId)
 			SELECT c.custid
-			FROM dbo.customer c WITH(NOLOCK)
+			FROM CustDB.dbo.customer c WITH(NOLOCK)
 				INNER JOIN #TempAg tma ON tma.CustID = c.recommend
 				INNER JOIN DBCUST.CustDB.dbo.Dep_CustVIP d WITH(NOLOCK) ON c.custid = d.custid
 			WHERE c.roleid = 1

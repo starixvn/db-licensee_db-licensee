@@ -431,8 +431,6 @@ BEGIN
 		END
 	END
 	-- END bettrans range
-
-	-- bettrans14 & bettrans_bk range
 	
 	IF @isSearchCust = 1
 	BEGIN
