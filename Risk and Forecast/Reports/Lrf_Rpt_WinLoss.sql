@@ -161,6 +161,7 @@ AS
 		- 20220429@Kos: Support Bitcoin [RedmineID: #154866]
 		- 20220601@Hogan: Integrate FGG Guaranteed Gaming [RedmineID: #167897]
 		- 20220601@Hogan: Integrate MaxGame [RedmineID: #172919]
+		- 20220812@Hogan: Support Customer Class Is Null [RedmineID: #176156]
 
 	Param's Explanation:
 		@OrderItem:
@@ -511,6 +512,7 @@ BEGIN
 			AND (@OddsGroup = 'All'
 				OR ',' + @OddsGroup + ',' LIKE '%,' + c.ugroup + ',%')
 			AND (@CustomerClass = 'All'
+				OR ',' + @CustomerClass + ',' LIKE '%,0,%' AND CONVERT(VARCHAR(6), ci.CustomerClass) IS NULL
 				OR ',' + @CustomerClass + ',' LIKE '%,' + CONVERT(VARCHAR(6), ci.CustomerClass) + ',%')
 
 		-- check promotion prize - PP promotion prize and NPH Promotion prize and Tips --
@@ -594,6 +596,7 @@ BEGIN
 			AND (@OddsGroup = 'All'
 				OR ',' + @OddsGroup + ',' LIKE '%,' + c.ugroup + ',%')
 			AND (@CustomerClass = 'All'
+				OR ',' + @CustomerClass + ',' LIKE '%,0,%' AND CONVERT(VARCHAR(6), ci.CustomerClass) IS NULL
 				OR ',' + @CustomerClass + ',' LIKE '%,' + CONVERT(VARCHAR(6), ci.CustomerClass) + ',%')
 
 		-- check promotion prize - PP promotion prize and NPH Promotion prize and Tips --
