@@ -90,6 +90,7 @@ AS
 		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
 		- 20220322@Kos: Support Parlay sport [RedmineID: #169282]
 		- 20220513@Hogan: Support Bitcoin [RedmineID: #160160]
+		- 20220714@Hogan: Integrate Volleyball AIO [RedmineID: #175143]
 
 	Parameter's Explanation:
 		- @ReportBy: 1: daily, 2: monthly
@@ -402,6 +403,8 @@ BEGIN
 			OR bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 			OR (bettype NOT IN (703, 711) AND bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
 			OR bettype IN (381,382,386,387,388,389,390,393,394,400) -- PH-AIO new bettypes (phase 5)
+			OR bettype IN (219,220,3912,3914,3916,3918) -- Volleyball AIO
+			OR bettype BETWEEN 3901 AND 3909 -- Volleyball AIO
 			OR (bettype = 501 AND transdate < @501CutoffDate)
 
 		-- CREATE INDEXERS

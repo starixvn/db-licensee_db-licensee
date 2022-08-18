@@ -40,6 +40,7 @@ AS
 					- Remove input param @LicenseeID, @Langkey
 					- Move SP from DBLIC.bodb_Licensee to DBEXT.bodb02
 		- 20220329@Hogan: Hide Mix Parlay (bettypeID 9)[RedmineID: #170438]
+		- 20220714@Hogan: Integrate Volleyball AIO [RedmineID: #175143]
 
 	Param's Explanation:
 		- @SportList: XML format (999: Parlay sport)
@@ -117,17 +118,17 @@ BEGIN
 	END
 
 	-- Group bettypes
-	DECLARE @BetType TABLE (BetType SMALLINT)
+	DECLARE @BetType TABLE (BetType SMALLINT, ProductID INT)
 
 	;WITH CTE_GroupBettype AS (
-		SELECT ISNULL(COALESCE(ss.GroupTypeId, bt.GroupTypeId), sp.BetType) AS BetType
+		SELECT ISNULL(COALESCE(ss.GroupTypeId, bt.GroupTypeId), sp.BetType) AS BetType, sp.ProductID
 		FROM #SportBetType AS sp
 			LEFT JOIN dbo.f_GroupBettype() AS ss ON sp.BetType = ss.bettype
 			LEFT JOIN dbo.f_GroupBettype3rd() AS bt on sp.BetType = bt.bettype
-		GROUP BY ISNULL(COALESCE(ss.GroupTypeId, bt.GroupTypeId), sp.bettype)
+		GROUP BY ISNULL(COALESCE(ss.GroupTypeId, bt.GroupTypeId), sp.bettype), sp.ProductID
 	)
-	INSERT INTO @BetType (BetType)
-	SELECT DISTINCT BetType
+	INSERT INTO @BetType (BetType, ProductID)
+	SELECT DISTINCT BetType, ProductID
 	FROM CTE_GroupBettype
 
 	-- Return result
@@ -140,8 +141,7 @@ BEGIN
 		END AS ProductPrefix,
 		bt.BetType
 	FROM @BetType AS bt
-		INNER JOIN #SportBetType AS sbt ON sbt.BetType = bt.BetType
-		INNER JOIN dbo.Products AS p WITH (NOLOCK) ON p.ProductID = sbt.ProductId
+		INNER JOIN dbo.Products AS p WITH (NOLOCK) ON p.ProductID = bt.ProductId
 	ORDER BY bt.BetType ASC
 
 	DROP TABLE #SportBetType
