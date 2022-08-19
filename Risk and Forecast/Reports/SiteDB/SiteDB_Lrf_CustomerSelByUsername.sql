@@ -578,7 +578,7 @@ BEGIN
 	GROUP BY t.custid
 
 	INSERT INTO #Exchange(Id, Name)
-	EXEC Lrf_CurrencySel 
+	EXEC SiteDB_Lrf_CurrencySel 
 
 	SELECT
 		t.custid,

@@ -518,7 +518,7 @@ BEGIN
 	GROUP BY t.custid
 
 	INSERT INTO #Exchange(Id, Name)
-	EXEC dbo.Lrf_CurrencySel 
+	EXEC dbo.SiteDB_Lrf_CurrencySel 
 	
 	SELECT
 		t.custid,
