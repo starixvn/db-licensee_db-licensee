@@ -19,6 +19,7 @@ AS
 		- 20181010@Sophia: add DBLOG for table UserLog_RunSP [redmine: 99855]
 		- 20190411@Lukas: archive a part of old log records to new database
 		- 20190830@Johnson: Get licenseeID from sitename for LAP [redmine:#112658]
+		- 20220818@Hogan: Update bettype range to get Last Transaction [redmine:#176515]
 	Param's Explanation:	
 */
 BEGIN
@@ -106,7 +107,7 @@ BEGIN
 
 	SELECT @LastTransferDate = MAX(transdate)
 	FROM dbo.bettrans WITH (NOLOCK)
-	WHERE custid = @CustID AND bettype <= 999
+	WHERE custid = @CustID AND bettype < 19999
 		
 	IF 	ISNULL(@LastTransferDate,'') = ''
 	BEGIN
