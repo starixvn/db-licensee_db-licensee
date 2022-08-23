@@ -58,7 +58,8 @@ Revisions:
 	- 20201209@Winfred: Check VIP player when turn on BA [redmine:#146508]
 	- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 	- 20220301@Eden: Deposit - Sportsbook - Revise customer settings [Redmine: #167898] 
-	
+	- 20220823@Tacy: remove update danger for BA member [redmine:#176518]
+
 Param's Explanation:
 
 */
@@ -67,7 +68,7 @@ BEGIN
 
 	--Check Time allow for BA
 	DECLARE @IsAllow BIT
-	DECLARE @ugroup VARCHAR(3), @Danger tinyint
+	DECLARE @ugroup VARCHAR(3)
 	DECLARE @currency INT
 	DECLARE @CurrencyUgroup VARCHAR(3)
 	DECLARE @IsPowerBAUser BIT
@@ -118,7 +119,6 @@ BEGIN
 		SELECT @CurrencyUgroup=ugroup FROM bodb_licensee.dbo.LicenseeCurrencyBAGroup with (nolock) WHERE LicenseeID=@LicenseeID AND Currency=@Currency
 
 		SELECT @ugroup = ugroup FROM customer WITH (NOLOCK) WHERE custid = @custid
-		SELECT @Danger = Danger FROM custinfo WITH(NOLOCK) WHERE custid = @custid
 
 		SET @ErrCode=0
 		SET @ErrMsg= ''
@@ -286,11 +286,6 @@ BEGIN
 		SET @ErrCode=0
 		SET @ErrMsg= ''
 
-		IF(@danger=0)
-		BEGIN
-			SELECT @danger=100
-		END	
-
 		EXEC bodb_licensee.dbo.[Lrf_LicenseeBAHistoryIns]
 			@LicenseeID = @LicenseeID,
 			@CustID = @CustID,
@@ -303,24 +298,13 @@ BEGIN
 			@IP = @IP,
 			@ErrCode = @ErrCode OUTPUT,
 			@ErrMsg = @ErrMsg OUTPUT
+		
 		IF @ErrCode <> 0
 			RETURN
 
 		SET @ErrCode=0
-		SET @ErrMsg= ''			
-		EXEC [Lrf_CustomerUpdDanger]
-			@CustID = @CustID,
-			@UserID = @ModifyBy,
-			@Danger = @danger,
-			@Language = @langkey,
-			@IP = @IP,
-			@ErrCode = @ErrCode OUTPUT,
-			@ErrMsg = @ErrMsg OUTPUT		
-		IF @ErrCode <> 0
-			RETURN
-		
-		SET @ErrCode=0
 		SET @ErrMsg= ''
+
 		EXEC dbo.Lrf_EnableDisableBAMember @CustId = @CustID
 			, @Mode = 'On'
 			, @UpdatedBy = @ModifyBy
@@ -416,27 +400,6 @@ BEGIN
 				@ErrCode = @ErrCode OUTPUT,
 				@ErrMsg = @ErrMsg OUTPUT
 
-				IF @ErrCode <> 0
-				RETURN
-				--restore old dangerous level
-
-				--SELECT @Danger = ISNULL(Danger,0) FROM DBLIC.bodb_licensee.dbo.[LicenseeBAHistory] WITH(NOLOCK) WHERE LicenseeID = @LicenseeID AND CustID = @CustID AND [Status] = 'Running'
-				SELECT @Danger=ISNULL(Danger,0) FROM Custinfo WITH (NOLOCK)  WHERE CustID=@CustID 
-				IF (@Danger=100)
-				BEGIN	
-					Select @Danger=0
-				END
-
-				SET @ErrCode=0
-				SET @ErrMsg= ''
-					EXEC [Lrf_CustomerUpdDanger]
-					@CustID = @CustID,
-					@UserID = @ModifyBy,
-					@Danger = @Danger,
-					@Language = @langkey,
-					@IP = @IP,
-					@ErrCode = @ErrCode OUTPUT,
-					@ErrMsg = @ErrMsg OUTPUT
 				IF @ErrCode <> 0
 				RETURN
 
