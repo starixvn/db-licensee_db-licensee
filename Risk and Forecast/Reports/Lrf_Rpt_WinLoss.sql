@@ -45,7 +45,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
 	@ShowFGGL		BIT = 0,	-- FGG Guaranteed Gaming
 	@ShowMXG		BIT = 0, 	-- MaxGame
 	@DrawFilter				SMALLINT		= 1,
-	@CustomerClass			VARCHAR(200)	= 'All',
+	@CustomerClass			VARCHAR(MAX)	= 'All',
 	@OddsGroup				VARCHAR(100)	= 'All',
 	@CheckPromotionPrize	BIT				= 0,
 	@PageSize				INT				= 1000,
@@ -162,6 +162,7 @@ AS
 		- 20220601@Hogan: Integrate FGG Guaranteed Gaming [RedmineID: #167897]
 		- 20220601@Hogan: Integrate MaxGame [RedmineID: #172919]
 		- 20220812@Hogan: Support Customer Class Is Null [RedmineID: #176156]
+		- 20220825@Kos: Hotfix - Extend length for Customer Class [RedmineID: #177077]
 
 	Param's Explanation:
 		@OrderItem:
