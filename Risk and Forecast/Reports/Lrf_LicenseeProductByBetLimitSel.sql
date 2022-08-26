@@ -25,6 +25,7 @@ AS
 		- 20220429@Hogan: Integrate Bitcoin [redmine:#160160]
 		- 20220601@Hogan: Integrate FGG Guaranteed Gaming [RedmineID: #167897]
 		- 20220601@Hogan: Integrate MaxGame [RedmineID: #172919]
+		- 20220301@Eden: Deposit - Sportsbook - Revise customer settings [Redmine: #167898]
 */
 
  /*
@@ -107,6 +108,12 @@ BEGIN
 		FROM @tblProductActive t
 		WHERE productID IN (SELECT productID FROM tmp)
 	END
+
+	--Alway enable for SB/NG/Keno
+	UPDATE t
+	SET IsEnable = 1
+	FROM @tblProductActive t
+	WHERE productID IN (0,2,8) -- SB/NG/Keno
 
 	--only show list products hardcode
 	SELECT

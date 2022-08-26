@@ -21,7 +21,8 @@ AS
 		- 20201214@Winfred: Adjust PT value with 4 decimal places for SB  [redmine: #146574]
 		- 20210208@Eden: exclude BA member when adjust PT for Sportbook [redmine: #150191]
 		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
-		
+		- 202202220@Elodie: Apply DCS for SB [RedmineID: #167898] 
+
 	Param's Explanation:
 		@Product:	1: Sportbook
 					161: Number Game
@@ -34,9 +35,10 @@ AS
 */ 
 BEGIN
 	SET NOCOUNT ON
-	DECLARE @startRun DATETIME
-	DECLARE @endRun DATETIME
-	DECLARE @duration INT
+	DECLARE @startRun DATETIME, @endRun DATETIME, @duration INT
+	DECLARE @PT VARCHAR(MAX), @PT_xml XML, @ProductID TINYINT, @ProductSettingID INT, @AgentID INT
+	DECLARE @SportBettypeFilter TABLE(SportType INT,Bettype INT,IsLive BIT)		
+
 	SET @startRun = getdate()
 	SELECT @ErrCode = 0, @ErrMsg =''
 
@@ -51,39 +53,121 @@ BEGIN
 	IF @ErrCode <> 0 
 		RETURN 
 
-	CREATE TABLE #temp(custid INT PRIMARY KEY, isfinished BIT DEFAULT(0))
-	INSERT INTO #temp(custid)
-	SELECT custid
+	SELECT @ProductID = CASE	WHEN @Sporttype = 1 THEN 1 
+								WHEN @Sporttype = 161 THEN 3
+								WHEN @Sporttype = 202 THEN 8 END
+	
+	SELECT  @ProductSettingID=ProductSettingID from Dep_ProductSetting WITH(NOLOCK) WHERE ProductID=@ProductID AND SettingType=1
+
+	INSERT INTO @SportBettypeFilter (SportType,Bettype,IsLive)
+	SELECT DISTINCT SportType,Bettype,IsLive
+	FROM Dep_ProductSetting ps WITH(NOLOCK) 
+		INNER JOIN Dep_ProductSettingDetail d WITH(NOLOCK) ON ps.ProductSettingID=d.ProductSettingID  
+	WHERE ProductID = @ProductID AND SettingType=1		
+
+	CREATE TABLE #SMAList(custid INT PRIMARY KEY, roleid TINYINT, isfinished BIT DEFAULT(0))
+	INSERT INTO #SMAList(custid, RoleId)
+	SELECT custid, roleid
 	FROM custinfo WITH(NOLOCK)	
 	WHERE srecommend = @CustID
-			AND mrecommend NOT IN (SELECT custid FROM custinfo WITH(NOLOCK)
-									WHERE srecommend = @CustID AND username LIKE '%Acc%' AND roleid=3)
+		AND mrecommend NOT IN (SELECT custid FROM custInfo WITH (NOLOCK) 
+								WHERE srecommend = @CustID AND roleid = 3 
+									AND (username LIKE '%Acc%' OR username LIKE '%LocalBank%' OR username LIKE '%AFF%' OR username LIKE 'AB88' + 'CAS%'))
+
+		AND roleid IN (4,3,2)
 	
-	BEGIN TRY
-		DECLARE @ids VARCHAR(MAX), @rowcnt INT
-		WHILE (1=1)
-		BEGIN
-			SELECT @ids = ''
+	SELECT @ptVALUE = @ptVALUE * 100
+	SET @PT_xml = (
+		SELECT (
+					SELECT  sporttype									AS '@SportType',
+                            bettype										AS '@BetType',
+                            isLive										AS '@IsLive',
+                            dbo.f_FomatNumericToChar(@ptVALUE)			AS '@PT'
+					FROM @SportBettypeFilter
+					FOR XML PATH('PT'), 
+                    TYPE
+				)
+		FOR XML PATH('ROOT'), 
+        TYPE)
+	SET @PT = CAST(@PT_xml AS VARCHAR(MAX))
 	
-			UPDATE TOP (4000) #temp
-			SET @ids = @ids + CASE @ids WHEN '' THEN '' ELSE ',' END + CAST(custid AS VARCHAR(12))
-				,isfinished = 1
-			FROM #temp
-			WHERE isfinished = 0
+	IF NOT EXISTS (SELECT 1 FROM Dep_LicenseeProductSetting d WITH(NOLOCK)WHERE ProductSettingID=@ProductSettingID AND CustID=@CustID)
+		INSERT INTO Dep_LicenseeProductSetting(CustID,ProductSettingID)
+		VALUES( @CustID,@ProductSettingID)
 
-			SELECT @rowcnt = @@rowcount	
+	IF EXISTS (	SELECT 1 
+				FROM @SportBettypeFilter ft 
+					INNER JOIN dbo.Dep_CustPTSetting_Agent bl WITH (NOLOCK) ON ft.SportType = bl.sporttype AND ft.BetType = bl.bettype AND ft.IsLive = bl.IsLive
+				WHERE bl.custid = @CustID)
+		UPDATE a
+			SET
+				SuperPT  = @ptVALUE
+				,MasterPT = @ptVALUE
+				,AgentPT  = @ptVALUE
+		FROM dbo.Dep_CustPTSetting_Agent a WITH(ROWLOCK,UPDLOCK)
+			INNER JOIN @SportBettypeFilter t ON a.SportType=t.SportType AND a.BetType=t.BetType AND t.IsLive = a.IsLive
+		WHERE a.custid = @CustID
+	ELSE
+		INSERT INTO dbo.Dep_CustPTSetting_Agent(CustID,SportType,BetType,IsLive,SuperPT,MasterPT,AgentPT)
+		SELECT @CustID,SportType,BetType,IsLive,@ptVALUE,@ptVALUE,@ptVALUE
+		FROM @SportBettypeFilter t
 
-			EXEC Acc_CustSetting3rd_12 @ids = @ids, @Sporttype = @Sporttype, @ptVALUE = @ptVALUE
+	IF EXISTS (	SELECT 1 
+				FROM @SportBettypeFilter ft 
+					INNER JOIN dbo.Dep_CustPTSetting_Agent bl WITH (NOLOCK) ON ft.SportType = bl.sporttype AND ft.BetType = bl.bettype AND ft.IsLive = bl.IsLive
+					INNER JOIN #SMAList s ON bl.CustID = s.custid
+				WHERE s.roleid = 3)
+		UPDATE a
+			SET
+				SuperPT  = 0
+				,MasterPT = @ptVALUE
+				,AgentPT  = 0
+		FROM dbo.Dep_CustPTSetting_Agent a WITH(ROWLOCK,UPDLOCK)
+			INNER JOIN @SportBettypeFilter t ON a.SportType=t.SportType AND a.BetType=t.BetType AND t.IsLive = a.IsLive
+			INNER JOIN #SMAList s ON a.CustID = s.custid
+		WHERE s.roleid = 3
+	ELSE
+		INSERT INTO dbo.Dep_CustPTSetting_Agent(CustID,SportType,BetType,IsLive,SuperPT,MasterPT,AgentPT)
+		SELECT s.custid,SportType,BetType,IsLive,0,@ptVALUE,0
+		FROM @SportBettypeFilter t
+			CROSS APPLY #SMAList s
+		WHERE s.roleid = 3
 
-			IF @rowcnt < 4000 BREAK
+	IF EXISTS (	SELECT 1 
+				FROM @SportBettypeFilter ft 
+					INNER JOIN dbo.Dep_CustPTSetting_Agent bl WITH (NOLOCK) ON ft.SportType = bl.sporttype AND ft.BetType = bl.bettype AND ft.IsLive = bl.IsLive
+					INNER JOIN #SMAList s ON bl.CustID = s.custid
+				WHERE s.roleid = 2)
+		UPDATE a
+		SET SuperPT   = 0
+			,MasterPT = 0
+			,AgentPT  = @ptVALUE
+		FROM dbo.Dep_CustPTSetting_Agent a WITH(ROWLOCK,UPDLOCK)
+			INNER JOIN @SportBettypeFilter t ON a.SportType=t.SportType AND a.BetType=t.BetType AND t.IsLive = a.IsLive
+			INNER JOIN #SMAList s ON a.CustID = s.custid
+		WHERE s.roleid = 2
+	ELSE
+		INSERT INTO dbo.Dep_CustPTSetting_Agent(CustID,SportType,BetType,IsLive,SuperPT,MasterPT,AgentPT)
+		SELECT s.custid,SportType,BetType,IsLive,0,0,@ptVALUE
+		FROM @SportBettypeFilter t
+			CROSS APPLY #SMAList s
+		WHERE s.roleid = 2
 
-			WAITFOR DELAY '00:00:00.28'
-		END
-	END TRY
-	BEGIN CATCH
-		SELECT @ErrMsg = ERROR_MESSAGE(), @ErrCode  = ERROR_NUMBER()   					
-		RETURN
-	END CATCH	
+	WHILE (1=1)
+	BEGIN
+		UPDATE TOP (1) s
+		SET s.isfinished = 1,
+			@AgentID = custid
+		FROM #SMAList s
+		WHERE isfinished = 0 AND roleid = 2
+
+		IF @@ROWCOUNT =  0 BREAK
+
+		EXEC Acc_Dep_DynamicCustSetting_01	
+			@CustID=@AgentID,
+			@PT=@PT,					
+			@ProductID=@ProductID	
+	END
 
 	DECLARE @LogSPData VARCHAR(8000)
 

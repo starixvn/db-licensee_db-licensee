@@ -1,4 +1,13 @@
-Risk and Forecast\Reports\api\Lrf_GetLicenseeTurnoverByPlatform.sql
-Risk and Forecast\Reports\api\Lrf_GetLicenseeWLByPlatform.sql
-Risk and Forecast\Reports\Lrf_Rpt_PlatformWinloss.sql
-Risk and Forecast\Reports\Lrf_Rpt_PlatformWinlossDetail.sql
+Risk and Forecast\PlayerComm\dbo.Lrf_CustomerUpdMemberComm.sql
+Risk and Forecast\PlayerComm\dbo.Lrf_CustomerSetDefaultComm.sql
+Risk and Forecast\PlayerComm\dbo.Lrf_LicenseeGroupCommUpd.sql
+Risk and Forecast\PlayerComm\dbo.Lrf_LicenseeGroupCommDel.sql
+Risk and Forecast\PlayerComm\dbo.Lrf_LicenseeCustCommUpd.sql
+Risk and Forecast\PlayerComm\dbo.Lrf_CustomerRemoveGroupComm.sql
+Risk and Forecast\PlayerComm\dbo.Lrf_CustomerMoveGroupComm.sql
+Risk and Forecast\PlayerComm\dbo.Lrf_LicenseeBACustUpdComm.sql
+BA Admin\Internal\Config\dbo.Acc_BA_LicConfigUpd.sql
+BA Admin\Internal\Config\dbo.Acc_BA_SpecialCustUpd.sql
+BA Admin\Internal\Config\dbo.Acc_BA_SpecialCustDel.sql
+BA Admin\Internal\Config\dbo.Acc_BA_SpecialCustAdd.sql
+BA Admin\Internal\Config\dbo.Acc_BA_GroupCurrencyUpd.sql

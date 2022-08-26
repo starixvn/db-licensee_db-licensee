@@ -1,8 +1,4 @@
 ﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbAdminNet" viewers="vnteam" isFunction="0"></info>*/ 
-
-USE bodb_Licensee
-GO
-
 ALTER PROCEDURE [dbo].[Acc_BA_SpecialCustAdd]
 (
 	@LicenseeID  INT =NULL,
@@ -26,7 +22,7 @@ AS
 		- 20131113@Winnie: Change DBTXN.bodb02 to DBTXN.CustDB
 		- 20150606@Kathy: Change link server DBTXN.CustDB to DBCust.CustDB [Redmine:#36216]
 		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
-
+		- 20220301@Eden: Deposit - Sportsbook - Revise customer settings [Redmine: #167898] 
 	Param's Explanation:
 	 
 */
@@ -39,7 +35,7 @@ BEGIN
 	DECLARE @MaxID INT,@CustID INT ,@i INT ,@isBA BIT,@ERROR INT ,@mess VARCHAR(MAX)
 
 	INSERT INTO @CustomerList(strvalue) 
-	SELECT RTRIM(LTRIM(VAL)) FROM Lrf_f_StringSplit(@str,',')					
+	SELECT RTRIM(LTRIM(value)) FROM string_split(@str,',')	WHERE value <> ''				
 
 	INSERT INTO @CustomerID (CustID,Username) 
 	SELECT CustID,username FROM CustDB.dbo.customer WITH (NOLOCK) WHERE username IN (SELECT RTRIM(LTRIM(strvalue)) FROM @CustomerList)
