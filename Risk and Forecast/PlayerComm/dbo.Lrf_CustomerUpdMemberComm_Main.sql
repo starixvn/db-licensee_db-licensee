@@ -95,6 +95,7 @@ AS
 		- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217] 
 		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586] 
 		- 220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
+		- 20220301@Eden: Deposit - Sportsbook - Revise customer settings [Redmine: #167898]
 
 	Param's Explanation:
 
@@ -102,12 +103,17 @@ AS
 BEGIN
 	SET NOCOUNT ON;
 
-	DECLARE @res AS TABLE (custid INT, isfinished BIT)
+	DECLARE @res AS TABLE (custid INT, isfinished BIT DEFAULT 0, AgentID INT, IsScannedAgent BIT DEFAULT 0)
 	
-	INSERT INTO @res (custid, isfinished)
-	SELECT value, 0
+	INSERT INTO @res (custid)
+	SELECT value
 	FROM STRING_SPLIT(@strCustID,',')
 	WHERE value <> ''
+
+	UPDATE r
+	SET r.AgentID = ci.recommend
+	FROM dbo.CustInfo ci WITH(NOLOCK)
+		INNER JOIN @res r ON ci.custid = r.custid
 
 	DECLARE @ids VARCHAR(MAX), @rowcnt INT, @runningCNT INT, @batchSize INT
 	DECLARE @res_batch_tmp AS TABLE (custid INT )
@@ -123,7 +129,6 @@ BEGIN
 			-- phase 2
 			@SexyGamingComm_Group DECIMAL(9,8)=0,
 			@SpadeGamingComm_Group DECIMAL(9,8)=0,
-			@KenoComm_Group DECIMAL(9,8)=0,
 			@LotteryComm_Group DECIMAL(9,8)=0,
 			@VSComm_Group DECIMAL(9,8)=0,
 			@VS2Comm_Group DECIMAL(9,8)=0,
@@ -148,207 +153,240 @@ BEGIN
 			,@AdvantComm_Group			DECIMAL(9,8) = 0
 			,@AdvantMiniComm_Group		DECIMAL(9,8) = 0
 			,@VS3Comm_Group				DECIMAL(9,8) = 0
+			--> 
+			,@SBComm_Group DECIMAL(9,8)
+			,@ParlayComm_Group DECIMAL(9,8) = 0
+			,@NGComm_Group DECIMAL(9,8) = 0
+			,@KenoComm_Group DECIMAL(9,8) = 0
 
-	
-	IF (	@IsUpdateAllbet = 1 OR 
-		@IsUpdateFW = 1 OR @IsUpdateMacau = 1 OR @IsUpdatePP = 1
-		OR @IsUpdateSexyGaming = 1
-		OR @IsUpdateSpadeGaming = 1
-		OR @IsUpdateLottery = 1
-		OR @IsUpdateVS = 1
-		OR @IsUpdateVS2 = 1
-		OR @IsUpdateTableGame = 1
-		
-		OR @IsUpdateVirtualGames = 1	
-		OR @IsUpdateArcadiaGaming = 1	
-		OR @IsUpdateSabaclub  = 1	
-		OR @IsUpdateSAGaming  = 1	
-		OR @IsUpdatePGSoft  = 1	
-		--> phase 4
-		OR @IsUpdateWMCasino = 1	
-		OR @IsUpdateBigGaming = 1	
-		OR @IsUpdateJoker  = 1	
-		OR @IsUpdateGDG  = 1	
-		OR @IsUpdateHabanero  = 1
-		OR @IsUpdateVGaming  = 1
-		--SabaCasino
-		OR @IsUpdateSabaCasino = 1		
-		-- phase 4.2
-		OR @IsUpdateCG				= 1
-		OR @IsUpdateAdvant			= 1
-		OR @IsUpdateAdvantMini		= 1
-		OR @IsUpdateVS3				= 1
-		)
-	BEGIN		
-		SET @AgentID = (SELECT TOP (1) recommend 
-							FROM dbo.CustInfo ci WITH(NOLOCK)
-								INNER JOIN @res r ON ci.custid = r.custid
-							)
-		SELECT 
-			@AllbetComm_Group = MAX(CASE WHEN BetType = 2401 THEN playerdiscount ELSE 0 END),
-			@MacauComm_Group = MAX(CASE WHEN BetType = 4001 THEN playerdiscount ELSE 0 END)
-			,@PPComm_Group = MAX(CASE WHEN BetType = 4101 THEN playerdiscount ELSE 0 END)
-			,@FWComm_Group = MAX(CASE WHEN BetType = 1011 THEN playerdiscount ELSE 0 END)
-			-- phase 2
-			,@SexyGamingComm_Group = MAX(CASE WHEN BetType = 3101 THEN playerdiscount ELSE 0 END)
-			,@SpadeGamingComm_Group = MAX(CASE WHEN BetType = 4301 THEN playerdiscount ELSE 0 END)
-			,@LotteryComm_Group = MAX(CASE WHEN BetType = 1021 THEN playerdiscount ELSE 0 END)
-			,@VSComm_Group = MAX(CASE WHEN BetType = 1201 THEN playerdiscount ELSE 0 END)
-			,@VS2Comm_Group = MAX(CASE WHEN BetType = 2701 THEN playerdiscount ELSE 0 END)
-			,@TableGameComm_Group = MAX(CASE WHEN BetType = 4901 THEN playerdiscount ELSE 0 END)
-			-- phase 3
-			,@VirtualGamesComm_Group = MAX(CASE WHEN BetType = 4601 THEN playerdiscount ELSE 0 END)
-			,@ArcadiaGamingComm_Group = MAX(CASE WHEN BetType = 1901 THEN playerdiscount ELSE 0 END)
-			,@SabaclubComm_Group = MAX(CASE WHEN BetType = 1611 THEN playerdiscount ELSE 0 END)
-			,@SAGamingComm_Group = MAX(CASE WHEN BetType = 3001 THEN playerdiscount ELSE 0 END)
-			,@PGSoftComm_Group = MAX(CASE WHEN BetType = 6001 THEN playerdiscount ELSE 0 END)
-			-->phase 4
-			,@WMCasinoComm_Group = MAX(CASE WHEN BetType = 3401 THEN playerdiscount ELSE 0 END)
-			,@BigGamingComm_Group = MAX(CASE WHEN BetType = 3501 THEN playerdiscount ELSE 0 END)
-			,@JokerComm_Group = MAX(CASE WHEN BetType = 6401 THEN playerdiscount ELSE 0 END)
-			,@GDGComm_Group = MAX(CASE WHEN BetType = 5701 THEN playerdiscount ELSE 0 END)
-			,@HabaneroComm_Group = MAX(CASE WHEN BetType = 7001 THEN playerdiscount ELSE 0 END)
-			,@VGamingComm_Group = MAX(CASE WHEN BetType = 3801 THEN playerdiscount ELSE 0 END)
-			,@SabaCasinoComm_Group = MAX(CASE WHEN BetType = 2101 THEN playerdiscount ELSE 0 END)
-			-- phase 4.2
-			,@CGComm_Group = MAX(CASE WHEN BetType = 7301 THEN playerdiscount ELSE 0 END)
-			,@AdvantComm_Group = MAX(CASE WHEN BetType = 7701 THEN playerdiscount ELSE 0 END)
-			,@AdvantMiniComm_Group = MAX(CASE WHEN BetType = 7801 THEN playerdiscount ELSE 0 END)
-			,@VS3Comm_Group = MAX(CASE WHEN BetType = 5301 THEN playerdiscount ELSE 0 END)
-		FROM dbo.Dep_CustDiscountGroupSetting_Member grp WITH(NOLOCK)
-		WHERE AgentID = @AgentID
-			AND sporttype IN (212,248,219,243,247,220,180,190,222
-								--phase 3
-							,211, 245,165,200,244,232 
-							--phase 4
-							,233,239,234,236,238
-							,171
-							--SabaCasino
-							,208
-							--phase 4.2
-							,231,167,172,174
-							)
-	END	
-								
-	WHILE (1 = 1)
+	WHILE (1 = 1) --Scan Agent
 	BEGIN
-		SELECT @ids = '', @runningCNT = @runningCNT + 1
-		
-		DELETE @res_batch_tmp
-		
-		UPDATE TOP(@batchSize) t
-			SET isfinished = 1
-		OUTPUT deleted.custid
-		INTO @res_batch_tmp(custid)
+		SELECT TOP 1 @AgentID = t.AgentID
 		FROM @res t 
-		WHERE isfinished = 0
+		WHERE IsScannedAgent = 0
 			
 		IF @@ROWCOUNT = 0 BREAK
 	
-		SET @ids = (SELECT custid AS '@id'
-						FROM @res_batch_tmp  t
-						FOR XML PATH('r'), ROOT('root')
-						)	
-		EXEC [Acc_CustSetting3rd_16] 
-			@ids = @ids
-			,@SBComm = @SBComm
-			,@NGComm = @NGComm
-			,@ParlayComm = @ParlayComm
-			,@AllbetComm = @AllbetComm
-			,@MacauComm = @MacauComm
-			,@PPComm = @PPComm
-			,@FWComm = @FWComm
-			,@IsUpdateSB  = @IsUpdateSB
-			,@IsParlayComm  = @IsParlayComm
-			,@IsUpdateNG = @IsUpdateNG			
-			,@IsUpdateAllbet = @IsUpdateAllbet
-			,@IsUpdateMacau = @IsUpdateMacau
-			,@IsUpdatePP = @IsUpdatePP
-			,@IsUpdateFW = @IsUpdateFW
-			,@AgentID = @AgentID
-			,@AllbetComm_Group = @AllbetComm_Group
-			---start param of phase 2 - group 
-			,@MacauComm_Group = @MacauComm_Group	
-			,@PPComm_Group = @PPComm_Group
-			,@FWComm_Group = @FWComm_Group
-			,@SexyGamingComm_Group = @SexyGamingComm_Group
-			,@SpadeGamingComm_Group = @SpadeGamingComm_Group 
-			,@LotteryComm_Group = @LotteryComm_Group
-			,@VSComm_Group = @VSComm_Group
-			,@VS2Comm_Group = @VS2Comm_Group
-			,@TableGameComm_Group = @TableGameComm_Group
-			---start param of phase 2 - update value setting
-			,@IsUpdateSexyGaming = @IsUpdateSexyGaming	
-			,@SexyGamingComm = @SexyGamingComm
-			,@IsUpdateSpadeGaming = @IsUpdateSpadeGaming	
-			,@SpadeGamingComm =  @SpadeGamingComm
-			,@IsUpdateKeno = @IsUpdateKeno
-			,@KenoComm =  @KenoComm
-			,@IsUpdateLottery  = @IsUpdateLottery	
-			,@LotteryComm =  @LotteryComm
-			,@IsUpdateVS = @IsUpdateVS 	
-			,@VSComm =  @VSComm
-			,@IsUpdateVS2 =  @IsUpdateVS2	
-			,@VS2Comm = @VS2Comm 
-			,@IsUpdateTableGame = @IsUpdateTableGame
-			,@TableGameComm = @TableGameComm
-			-- phase 3
-			,@IsUpdateVirtualGames = @IsUpdateVirtualGames
-			,@IsUpdateArcadiaGaming = @IsUpdateArcadiaGaming	
-			,@IsUpdateSabaclub  = @IsUpdateSabaclub	
-			,@IsUpdateSAGaming  = @IsUpdateSAGaming	
-			,@IsUpdatePGSoft  = @IsUpdatePGSoft	
-			,@VirtualGamesComm = @VirtualGamesComm	
-			,@ArcadiaGamingComm = @ArcadiaGamingComm	
-			,@SabaclubComm = @SabaclubComm	
-			,@SAGamingComm = @SAGamingComm	
-			,@PGSoftComm = @PGSoftComm	
-			,@VirtualGamesComm_Group = @VirtualGamesComm_Group	
-			,@ArcadiaGamingComm_Group = @ArcadiaGamingComm_Group	
-			,@SabaclubComm_Group = @SabaclubComm_Group	
-			,@SAGamingComm_Group = @SAGamingComm_Group	
-			,@PGSoftComm_Group =  @PGSoftComm_Group	
+		IF (	
+			@IsUpdateAllbet = 1 
+			OR @IsUpdateFW = 1 
+			OR @IsUpdateMacau = 1 
+			OR @IsUpdatePP = 1
+			OR @IsUpdateSexyGaming = 1
+			OR @IsUpdateSpadeGaming = 1
+			OR @IsUpdateLottery = 1
+			OR @IsUpdateVS = 1
+			OR @IsUpdateVS2 = 1
+			OR @IsUpdateTableGame = 1
+			OR @IsUpdateVirtualGames = 1	
+			OR @IsUpdateArcadiaGaming = 1	
+			OR @IsUpdateSabaclub  = 1	
+			OR @IsUpdateSAGaming  = 1	
+			OR @IsUpdatePGSoft  = 1	
 			--> phase 4
-			,@IsUpdateWMCasino		= @IsUpdateWMCasino		
-			,@IsUpdateBigGaming		= @IsUpdateBigGaming		
-			,@IsUpdateJoker			= @IsUpdateJoker			
-			,@IsUpdateGDG			= @IsUpdateGDG			
-			,@IsUpdateHabanero		= @IsUpdateHabanero	
-			,@IsUpdateVGaming		= @IsUpdateVGaming	
-			-- phase 4.2
-			,@IsUpdateCG			= @IsUpdateCG	
-			,@IsUpdateAdvant		= @IsUpdateAdvant	
-			,@IsUpdateAdvantMini	= @IsUpdateAdvantMini	
-			,@IsUpdateVS3			= @IsUpdateVS3	
-			,@WMCasinoComm				= @WMCasinoComm		
-			,@BigGamingComm				= @BigGamingComm		
-			,@JokerComm					= @JokerComm			
-			,@GDGComm					= @GDGComm			
-			,@HabaneroComm				= @HabaneroComm		
-			,@VGamingComm				= @VGamingComm		
-			-- phase 4.2	
-			,@CGComm				= @CGComm		
-			,@AdvantComm			= @AdvantComm		
-			,@AdvantMiniComm		= @AdvantMiniComm		
-			,@VS3Comm				= @VS3Comm	
-			,@WMCasinoComm_Group		= @WMCasinoComm_Group		
-			,@BigGamingComm_Group		= @BigGamingComm_Group		
-			,@JokerComm_Group			= @JokerComm_Group			
-			,@GDGComm_Group				= @GDGComm_Group		
-			,@HabaneroComm_Group		= @HabaneroComm_Group
-			,@VGamingComm_Group			= @VGamingComm_Group
+			OR @IsUpdateWMCasino = 1	
+			OR @IsUpdateBigGaming = 1	
+			OR @IsUpdateJoker  = 1	
+			OR @IsUpdateGDG  = 1	
+			OR @IsUpdateHabanero  = 1
+			OR @IsUpdateVGaming  = 1	
 			--SabaCasino
-			,@IsUpdateSabaCasino =	@IsUpdateSabaCasino
-			,@SabaCasinoComm = 	@SabaCasinoComm
-			,@SabaCasinoComm_Group = @SabaCasinoComm_Group
-			-- phase 4.2	
-			,@CGComm_Group			= @CGComm_Group	
-			,@AdvantComm_Group		= @AdvantComm_Group	
-			,@AdvantMiniComm_Group	= @AdvantMiniComm_Group	
-			,@VS3Comm_Group			= @VS3Comm_Group	
-		-- delay 00.100ms after 5 times continuous running
-		IF @runningCNT % 2 = 0 WAITFOR DELAY '00:00:00.280'
-	END
+			OR @IsUpdateSabaCasino = 1		
+			-- phase 4.2
+			OR @IsUpdateCG				= 1
+			OR @IsUpdateAdvant			= 1
+			OR @IsUpdateAdvantMini		= 1
+			OR @IsUpdateVS3				= 1
+			--
+			OR @IsUpdateSB  = 1	
+			OR @IsParlayComm  = 1	
+			OR @IsUpdateKeno  = 1
+			OR @IsUpdateNG  = 1	
+			)
+		BEGIN		
+			SELECT 
+				@AllbetComm_Group = MAX(CASE WHEN BetType = 2401 THEN playerdiscount ELSE 0 END),
+				@MacauComm_Group = MAX(CASE WHEN BetType = 4001 THEN playerdiscount ELSE 0 END)
+				,@PPComm_Group = MAX(CASE WHEN BetType = 4101 THEN playerdiscount ELSE 0 END)
+				,@FWComm_Group = MAX(CASE WHEN BetType = 1011 THEN playerdiscount ELSE 0 END)
+				-- phase 2
+				,@SexyGamingComm_Group = MAX(CASE WHEN BetType = 3101 THEN playerdiscount ELSE 0 END)
+				,@SpadeGamingComm_Group = MAX(CASE WHEN BetType = 4301 THEN playerdiscount ELSE 0 END)
+				,@LotteryComm_Group = MAX(CASE WHEN BetType = 1021 THEN playerdiscount ELSE 0 END)
+				,@VSComm_Group = MAX(CASE WHEN BetType = 1201 THEN playerdiscount ELSE 0 END)
+				,@VS2Comm_Group = MAX(CASE WHEN BetType = 2701 THEN playerdiscount ELSE 0 END)
+				,@TableGameComm_Group = MAX(CASE WHEN BetType = 4901 THEN playerdiscount ELSE 0 END)
+				-- phase 3
+				,@VirtualGamesComm_Group = MAX(CASE WHEN BetType = 4601 THEN playerdiscount ELSE 0 END)
+				,@ArcadiaGamingComm_Group = MAX(CASE WHEN BetType = 1901 THEN playerdiscount ELSE 0 END)
+				,@SabaclubComm_Group = MAX(CASE WHEN BetType = 1611 THEN playerdiscount ELSE 0 END)
+				,@SAGamingComm_Group = MAX(CASE WHEN BetType = 3001 THEN playerdiscount ELSE 0 END)
+				,@PGSoftComm_Group = MAX(CASE WHEN BetType = 6001 THEN playerdiscount ELSE 0 END)
+				-->phase 4
+				,@WMCasinoComm_Group = MAX(CASE WHEN BetType = 3401 THEN playerdiscount ELSE 0 END)
+				,@BigGamingComm_Group = MAX(CASE WHEN BetType = 3501 THEN playerdiscount ELSE 0 END)
+				,@JokerComm_Group = MAX(CASE WHEN BetType = 6401 THEN playerdiscount ELSE 0 END)
+				,@GDGComm_Group = MAX(CASE WHEN BetType = 5701 THEN playerdiscount ELSE 0 END)
+				,@HabaneroComm_Group = MAX(CASE WHEN BetType = 7001 THEN playerdiscount ELSE 0 END)
+				,@VGamingComm_Group = MAX(CASE WHEN BetType = 3801 THEN playerdiscount ELSE 0 END)
+				,@SabaCasinoComm_Group = MAX(CASE WHEN BetType = 2101 THEN playerdiscount ELSE 0 END)
+				-- phase 4.2
+				,@CGComm_Group = MAX(CASE WHEN BetType = 7301 THEN playerdiscount ELSE 0 END)
+				,@AdvantComm_Group = MAX(CASE WHEN BetType = 7701 THEN playerdiscount ELSE 0 END)
+				,@AdvantMiniComm_Group = MAX(CASE WHEN BetType = 7801 THEN playerdiscount ELSE 0 END)
+				,@VS3Comm_Group = MAX(CASE WHEN BetType = 5301 THEN playerdiscount ELSE 0 END)
+				--
+				,@SBComm_Group = MAX(CASE WHEN BetType = 1 AND SportType = 1 THEN playerdiscount ELSE 0 END)
+				,@ParlayComm_Group = MAX(CASE WHEN BetType = 9 AND SportType = 1 THEN playerdiscount ELSE 0 END)
+				,@NGComm_Group = MAX(CASE WHEN BetType = 81 THEN playerdiscount ELSE 0 END)
+				,@KenoComm_Group = MAX(CASE WHEN BetType = 1501 THEN playerdiscount ELSE 0 END)
+			FROM dbo.Dep_CustDiscountGroupSetting_Member grp WITH(NOLOCK)
+			WHERE AgentID = @AgentID
+				AND sporttype IN (212,248,219,243,247,220,180,190,222
+									--phase 3
+								,211, 245,165,200,244,232 
+								--phase 4
+								,233,239,234,236,238
+								,171
+								--SabaCasino
+								,208
+								--phase 4.2
+								,231,167,172,174
+								--
+								,1,161,202
+								)
+		END	
+								
+		WHILE (1 = 1)
+		BEGIN
+			SELECT @ids = '', @runningCNT = @runningCNT + 1
+		
+			DELETE @res_batch_tmp
+		
+			UPDATE TOP(@batchSize) t
+				SET isfinished = 1
+			OUTPUT deleted.custid
+			INTO @res_batch_tmp(custid)
+			FROM @res t 
+			WHERE isfinished = 0
+				AND AgentID = @AgentID
+			
+			IF @@ROWCOUNT = 0 BREAK
 	
+			SET @ids = (SELECT custid AS '@id'
+							FROM @res_batch_tmp  t
+							FOR XML PATH('r'), ROOT('root')
+							)	
+			EXEC [Acc_CustSetting3rd_16] 
+				@ids = @ids
+				,@SBComm = @SBComm
+				,@NGComm = @NGComm
+				,@ParlayComm = @ParlayComm
+				,@AllbetComm = @AllbetComm
+				,@MacauComm = @MacauComm
+				,@PPComm = @PPComm
+				,@FWComm = @FWComm
+				,@IsUpdateSB  = @IsUpdateSB
+				,@IsParlayComm  = @IsParlayComm
+				,@IsUpdateNG = @IsUpdateNG			
+				,@IsUpdateAllbet = @IsUpdateAllbet
+				,@IsUpdateMacau = @IsUpdateMacau
+				,@IsUpdatePP = @IsUpdatePP
+				,@IsUpdateFW = @IsUpdateFW
+				,@AgentID = @AgentID
+				,@AllbetComm_Group = @AllbetComm_Group
+				---start param of phase 2 - group 
+				,@MacauComm_Group = @MacauComm_Group	
+				,@PPComm_Group = @PPComm_Group
+				,@FWComm_Group = @FWComm_Group
+				,@SexyGamingComm_Group = @SexyGamingComm_Group
+				,@SpadeGamingComm_Group = @SpadeGamingComm_Group 
+				,@LotteryComm_Group = @LotteryComm_Group
+				,@VSComm_Group = @VSComm_Group
+				,@VS2Comm_Group = @VS2Comm_Group
+				,@TableGameComm_Group = @TableGameComm_Group
+				---start param of phase 2 - update value setting
+				,@IsUpdateSexyGaming = @IsUpdateSexyGaming	
+				,@SexyGamingComm = @SexyGamingComm
+				,@IsUpdateSpadeGaming = @IsUpdateSpadeGaming	
+				,@SpadeGamingComm =  @SpadeGamingComm
+				,@IsUpdateKeno = @IsUpdateKeno
+				,@KenoComm =  @KenoComm
+				,@IsUpdateLottery  = @IsUpdateLottery	
+				,@LotteryComm =  @LotteryComm
+				,@IsUpdateVS = @IsUpdateVS 	
+				,@VSComm =  @VSComm
+				,@IsUpdateVS2 =  @IsUpdateVS2	
+				,@VS2Comm = @VS2Comm 
+				,@IsUpdateTableGame = @IsUpdateTableGame
+				,@TableGameComm = @TableGameComm
+				-- phase 3
+				,@IsUpdateVirtualGames = @IsUpdateVirtualGames
+				,@IsUpdateArcadiaGaming = @IsUpdateArcadiaGaming	
+				,@IsUpdateSabaclub  = @IsUpdateSabaclub	
+				,@IsUpdateSAGaming  = @IsUpdateSAGaming	
+				,@IsUpdatePGSoft  = @IsUpdatePGSoft	
+				,@VirtualGamesComm = @VirtualGamesComm	
+				,@ArcadiaGamingComm = @ArcadiaGamingComm	
+				,@SabaclubComm = @SabaclubComm	
+				,@SAGamingComm = @SAGamingComm	
+				,@PGSoftComm = @PGSoftComm	
+				,@VirtualGamesComm_Group = @VirtualGamesComm_Group	
+				,@ArcadiaGamingComm_Group = @ArcadiaGamingComm_Group	
+				,@SabaclubComm_Group = @SabaclubComm_Group	
+				,@SAGamingComm_Group = @SAGamingComm_Group	
+				,@PGSoftComm_Group =  @PGSoftComm_Group	
+				--> phase 4
+				,@IsUpdateWMCasino		= @IsUpdateWMCasino		
+				,@IsUpdateBigGaming		= @IsUpdateBigGaming		
+				,@IsUpdateJoker			= @IsUpdateJoker			
+				,@IsUpdateGDG			= @IsUpdateGDG			
+				,@IsUpdateHabanero		= @IsUpdateHabanero	
+				,@IsUpdateVGaming		= @IsUpdateVGaming	
+				-- phase 4.2
+				,@IsUpdateCG			= @IsUpdateCG	
+				,@IsUpdateAdvant		= @IsUpdateAdvant	
+				,@IsUpdateAdvantMini		= @IsUpdateAdvantMini	
+				,@IsUpdateVS3			= @IsUpdateVS3	
+				,@WMCasinoComm			= @WMCasinoComm		
+				,@BigGamingComm			= @BigGamingComm		
+				,@JokerComm			= @JokerComm			
+				,@GDGComm			= @GDGComm			
+				,@HabaneroComm			= @HabaneroComm		
+				,@VGamingComm			= @VGamingComm		
+				-- phase 4.2	
+				,@CGComm			= @CGComm		
+				,@AdvantComm			= @AdvantComm		
+				,@AdvantMiniComm		= @AdvantMiniComm		
+				,@VS3Comm			= @VS3Comm	
+				,@WMCasinoComm_Group		= @WMCasinoComm_Group		
+				,@BigGamingComm_Group		= @BigGamingComm_Group		
+				,@JokerComm_Group		= @JokerComm_Group			
+				,@GDGComm_Group			= @GDGComm_Group		
+				,@HabaneroComm_Group		= @HabaneroComm_Group
+				,@VGamingComm_Group		= @VGamingComm_Group	
+				--SabaCasino
+				,@IsUpdateSabaCasino =	@IsUpdateSabaCasino
+				,@SabaCasinoComm = 	@SabaCasinoComm
+				,@SabaCasinoComm_Group = @SabaCasinoComm_Group
+				-- phase 4.2	
+				,@CGComm_Group			= @CGComm_Group	
+				,@AdvantComm_Group		= @AdvantComm_Group	
+				,@AdvantMiniComm_Group		= @AdvantMiniComm_Group	
+				,@VS3Comm_Group			= @VS3Comm_Group	
+				--
+				,@SBComm_Group = @SBComm_Group
+				,@ParlayComm_Group = @ParlayComm_Group
+				,@NGComm_Group = @NGComm_Group
+				,@KenoComm_Group = @KenoComm_Group		
+			-- delay 00.100ms after 5 times continuous running
+			IF @runningCNT % 2 = 0 WAITFOR DELAY '00:00:00.280'
+		END
+
+		UPDATE t
+		SET t.IsScannedAgent = 1
+		FROM @res t
+		WHERE AgentID = @AgentID
+	END
 END	
 GO

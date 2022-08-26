@@ -1,5 +1,4 @@
 /*<info serverAlias="DBCUST-CustDB" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
-
 ALTER PROCEDURE	[dbo].[Lrf_3rdProductUpdCustStatus]  
 	@CustID		INT,
 	@ProductId	INT,
@@ -22,6 +21,7 @@ AS
 		-20190321@Winnie: LAP-Remove MGC & Korea Language RedmineID: #107704
 		-20210823@Johnson: update status for RnG Keno[redmineID:#159696]
 		-20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
+		- 20220301@Eden: Deposit - Sportsbook - Revise customer settings [Redmine: #167898]
 	Param's Explanation:
 */
 BEGIN
@@ -61,32 +61,6 @@ BEGIN
 		RETURN
 		END
 				
-	END
-	ELSE IF @ProductId= 8--RnG Keno
-	BEGIN
-		SELECT @IsEnable_Old = ~ISNULL(IsDisabled,1)
-		FROM dbo.custgametype WITH (NOLOCK)
-		WHERE CustID = @CustId 
-			AND GameTypeID = 1 --Australia Acttab
-
-		SELECT @SEnabled = ~ISNULL(IsDisabled,1)
-		FROM dbo.custgametype WITH (NOLOCK)
-		WHERE CustID = @srecommend 
-			AND GameTypeID = 1 --Australia Acttab
-			
-		IF (@SEnabled = 0)
-			SELECT @IsEnable_Old = 0
-		
-		UPDATE dbo.custgametype WITH (ROWLOCK)
-		SET IsDisabled = CASE @IsEnabled WHEN 1 THEN 0 ELSE 1 END
-		WHERE CustID = @CustId 
-			AND GameTypeID = 1 --Australia Acttab
-		
-		IF(@@ERROR<>0)
-		BEGIN
-		SELECT @ErrMsg='Could not update'
-		RETURN
-		END
 	END
 	ELSE	
 	BEGIN

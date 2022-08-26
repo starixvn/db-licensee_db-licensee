@@ -34,6 +34,7 @@ AS
 		- 20210305@Hogan: Integrate Sport Lottery [RedmineID: #150872]
 		- 20210811@Hogan: Hide Disable/Enable button of products Allbet, Macau games, SA Gaming, AE Sexy, WM, GDG[RedmineID: #160031]
 		- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217]
+		- 20220301@Eden: Deposit - Sportsbook - Revise customer settings [Redmine: #167898]
 
 	EXEC Lrf_LicenseeProductSel @LicenseeID = 2
 */
@@ -121,6 +122,12 @@ BEGIN
 		FROM @tblProductActive t
 		WHERE productID IN (SELECT productID FROM tmp)
 	END
+
+	--Alway enable for SB/NG/Keno
+	UPDATE t
+	SET IsEnable = 1
+	FROM @tblProductActive t
+	WHERE productID IN (0,2,8) -- SB/NG/Keno
 
 	SELECT
 		ProductID,

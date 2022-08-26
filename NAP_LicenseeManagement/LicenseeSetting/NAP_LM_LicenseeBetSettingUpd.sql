@@ -8,6 +8,7 @@ CREATE PROCEDURE [dbo].[NAP_LM_LicenseeBetSettingUpd]
 	,@MinBet MONEY = 0
 	,@MaxBet MONEY = 0
 	,@MaxPerMatch MONEY = 0
+	,@MaxPayoutPerMatch MONEY = 0
 	,@MaxPerBall MONEY = 0
 	,@ExistedMember BIT
 	,@AgentID INT = 0
@@ -15,6 +16,7 @@ CREATE PROCEDURE [dbo].[NAP_LM_LicenseeBetSettingUpd]
 	,@UpdateMinBet BIT = 0
 	,@UpdateMaxBet BIT = 0
 	,@UpdateMPM BIT = 0
+	,@UpdateMaxPayoutPM BIT = 0
 	,@Enable BIT = 0
 	,@EnableDownline BIT = 0
 	,@UserID INT = 0
@@ -34,6 +36,7 @@ AS
 	   - 20150630@Daniel: Migrate custDB to new server DBCus [Redmine:#36216] - Separate exec sp	update cust info
 	   - 20190412@Winnie: Licesee Management-Licensee setting - Cannot update betting limit SMA only for big line  - Redmine: 96951
 	   - 20211224@Johnson: Adjust Bet Limit for Sub Agent [redmine: #165885]
+	   - 202202220@Elodie: Apply DCS for SB [RedmineID: #167898] 
 	Param's Explanation:
 	Example:	DECLARE @ErrCode INT = 0, @ErrMsg NVARCHAR(4000) = ''
 				EXEC NAP_LM_LicenseeBetSettingUpd @CustID = 16947245, @Sporttype = 151, @Bettype = 31, @MinBet = 25, @MaxBet = 205, @MaxPerMatch = 2005, @ExistedMember = 1, @ErrCode = @ErrCode OUTPUT, @ErrMsg = @ErrMsg OUTPUT
@@ -81,9 +84,9 @@ BEGIN
 			RETURN;
 	END
 	
-	CREATE TABLE #temp(custid INT PRIMARY KEY, isfinished BIT DEFAULT(0))
-	INSERT INTO #temp(custid)
-	SELECT custid
+	CREATE TABLE #temp(custid INT PRIMARY KEY, roleid TINYINT, isfinished BIT DEFAULT(0))
+	INSERT INTO #temp(custid, roleid)
+	SELECT custid, roleid
 	FROM customer c WITH(NOLOCK)	
 	WHERE srecommend = @CustID
 			AND mrecommend NOT IN (SELECT custid FROM custinfo WITH(NOLOCK)
@@ -102,7 +105,15 @@ BEGIN
 							WHEN @IsAgentOnly = 0 AND @ExistedMember = 1 AND (@AgentID <> 0 AND (recommend = @AgentID OR roleid IN (3,4)) OR @AgentID =0) THEN 1
 							ELSE 0 END
 						END	
-			
+	IF @Sporttype IN (1,2,3,5,8,10,11,99,9901,9902,43) --Sportbook
+		OR @Sporttype = 161 --NumberGame
+	BEGIN
+		DELETE t
+		FROM #temp t 
+			INNER JOIN Dep_CustSettingMode cm ON t.custid = cm.CustID
+		WHERE roleid = 1 AND cm.IsGroupedBetLimit = 1
+	END
+
 	BEGIN TRY
 		DECLARE @ids VARCHAR(MAX), @rowcnt INT
 		WHILE (1=1)
@@ -117,19 +128,7 @@ BEGIN
 
 			SELECT @rowcnt = @@rowcount	
 		  
-			 --add update cust info exec rep
-			IF @Sporttype IN (161,202) OR @UpdateMPM = 1
-				EXEC [dbo].[Acc_CustomerInfo_Execrep_07]
-					 @ids = @ids
-					 ,@Sporttype = @Sporttype
-					 ,@Bettype = @Bettype
-					 ,@MaxPerMatch = @MaxPerMatch
-					 ,@MaxPerBall = @MaxPerBall
-					 ,@ExistedMember = @ExistedMember
-					 ,@Enable = @Enable
-					 ,@EnableDownline = @EnableDownline
-			
-			IF @Sporttype IN (161,202) OR @UpdateMinBet = 1 OR @UpdateMaxBet = 1
+			IF @Sporttype IN (161,202) OR @UpdateMinBet = 1 OR @UpdateMaxBet = 1 OR @UpdateMPM = 1 OR @UpdateMaxPayoutPM = 1
 				EXEC Acc_CustSetting3rd_11 
 					@ids = @ids, 
 					@srecommend = @CustID, 
@@ -138,9 +137,13 @@ BEGIN
 					@MinBet = @MinBet, 
 					@MaxBet = @MaxBet, 					
 					@MaxPerMatch = @MaxPerMatch, 
+					@MaxPerBall = @MaxPerBall, 
+					@MaxPayoutPerMatch = @MaxPayoutPerMatch, 
 					@ExistedMember = @ExistedMember, 
 					@UpdateMinBet = @UpdateMinBet,
 					@UpdateMaxBet = @UpdateMaxBet,
+					@UpdateMPM = @UpdateMPM,
+					@UpdateMaxPayoutPM = @UpdateMaxPayoutPM,
 					@Enable = @Enable, 
 					@EnableDownline = @EnableDownline
 

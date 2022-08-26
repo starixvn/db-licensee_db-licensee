@@ -1,7 +1,5 @@
-USE CustDB
-GO
-
-CREATE PROCEDURE Lrf_EnableDisableBAMember @CustId INT
+/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet,bodbLicenseeNet" viewers="" isFunction="0"></info>*/
+ALTER PROCEDURE Lrf_EnableDisableBAMember @CustId INT
 	, @Mode VARCHAR(10)
 	, @UpdatedBy INT = 0
 	, @Ip VARCHAR(50) = ''
@@ -12,8 +10,10 @@ AS
 /*
 Created: 20150305@Patrick
 Task : Enable/disable BA member
-DB: DBTXN/CustDB
+DB: DBCUST/CustDB
 Revisions:
+	- 20150305@Patrick: First commit
+	- 20220301@Eden: Deposit - Sportsbook - Revise customer settings [Redmine: #167898]
 Param's Explanation:
 
 */
@@ -55,9 +55,9 @@ BEGIN
 	--write log
 	DECLARE @LogSPData VARCHAR(1024)
 	SELECT @LogSPData = '<Lrf_EnableDisableBAMember CustId="' + COALESCE(CAST(@CustId AS VARCHAR(50)), SPACE(1)) 
-		+ '" ' + '@Mode="' + COALESCE(CAST(@Mode AS VARCHAR(50)), SPACE(1))
-		+ '" ' + '@UpdatedBy="' + COALESCE(CAST(@UpdatedBy AS VARCHAR(50)), SPACE(1))
-		+ '" ' + '@Ip="' + COALESCE(CAST(@Ip AS VARCHAR(50)), SPACE(1)) + '" />'
+		+ '" ' + 'Mode="' + COALESCE(CAST(@Mode AS VARCHAR(50)), SPACE(1))
+		+ '" ' + 'UpdatedBy="' + COALESCE(CAST(@UpdatedBy AS VARCHAR(50)), SPACE(1))
+		+ '" ' + 'Ip="' + COALESCE(CAST(@Ip AS VARCHAR(50)), SPACE(1)) + '" />'
 
 	BEGIN TRY
 		EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP @UserID = @UpdatedBy
@@ -76,8 +76,4 @@ BEGIN
 	END CATCH
 
 END
-GO
-GRANT EXECUTE ON [dbo].[Lrf_EnableDisableBAMember] TO [bodbAdminNet] AS [dbo]
-GO
-GRANT EXECUTE ON [dbo].[Lrf_EnableDisableBAMember] TO [bodbLicenseeNet] AS [dbo]
 GO

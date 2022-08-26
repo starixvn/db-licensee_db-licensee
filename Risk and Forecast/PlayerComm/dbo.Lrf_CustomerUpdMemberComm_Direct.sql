@@ -95,6 +95,7 @@ AS
 		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 		- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217] 
 		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586] 
+		- 20220301@Eden: Deposit - Sportsbook - Revise customer settings [Redmine: #167898]
 				
 	Param's Explanation:	
 
@@ -125,40 +126,6 @@ BEGIN
 		END
 	END
 	
-	IF @IsUpdateSB = 1
-	BEGIN
-		UPDATE [dbo].Dep_CustSetting WITH (ROWLOCK, UPDLOCK)
-			SET playerdiscount = @SBComm 
-		WHERE custid = @CustID
-			AND playerdiscount <> @SBComm  
-			AND bettype NOT IN (9,29) 	
-	END
-	IF @IsParlayComm = 1
-	BEGIN
-		UPDATE [dbo].Dep_CustSetting WITH (ROWLOCK, UPDLOCK)
-			SET playerdiscount = @ParlayComm 
-		WHERE custid = @CustID
-			AND playerdiscount <> @ParlayComm 
-			AND bettype  IN (9,29) 	
-	END		
-		
-	IF (@IsUpdateNG=1) -- update Number Game
-	BEGIN	
-		UPDATE [dbo].Dep_CustSetting3rd WITH (ROWLOCK, UPDLOCK)
-		SET playerdiscount = @NGComm 
-		WHERE custid = @CustID
-			AND playerdiscount <> @NGComm
-			AND sporttype = 161  	
-	END	
-	
-	IF (@IsUpdateKeno = 1)
-	BEGIN
-		UPDATE [dbo].CustSettingGame WITH (ROWLOCK, UPDLOCK)
-			SET playerdiscount = @KenoComm 
-		WHERE custid = @CustID
-			AND playerdiscount <> @KenoComm
-			AND sporttype = 202 AND Bettype = 1501  
-	END
 	-- DCS Structure ---------
 	IF (@IsUpdateMacau=1
 		OR @IsUpdatePP=1
@@ -189,7 +156,11 @@ BEGIN
 		OR @IsUpdateAdvant		= 1
 		OR @IsUpdateAdvantMini	= 1
 		OR @IsUpdateVS3			= 1
-
+		--
+		OR @IsUpdateSB  = 1	
+		OR @IsParlayComm  = 1
+		OR @IsUpdateNG  = 1
+		OR @IsUpdateKeno  = 1
 	)
 	BEGIN
 		INSERT INTO @tblSettingDCS_tmp (IsUpdated,sporttype,Bettype, Comm)
@@ -224,6 +195,14 @@ BEGIN
 				,(@IsUpdateAdvant,172,7701,@AdvantComm)
 				,(@IsUpdateAdvantMini,174,7801,@AdvantMiniComm)
 				,(@IsUpdateVS3,231,5301,@VS3Comm)
+				--
+				,(@IsUpdateSB,1,1,@SBComm)
+				,(@IsUpdateSB,1,4,@SBComm)
+				,(@IsUpdateSB,1,5,@SBComm)
+				,(@IsUpdateSB,2,2,@SBComm)
+				,(@IsParlayComm,1,9,@ParlayComm)
+				,(@IsUpdateNG,161,81,@NGComm)
+				,(@IsUpdateKeno,202,1501,@KenoComm)
 	END
 	
 	IF EXISTS(SELECT TOP (1) 1 FROM @tblSettingDCS_tmp)

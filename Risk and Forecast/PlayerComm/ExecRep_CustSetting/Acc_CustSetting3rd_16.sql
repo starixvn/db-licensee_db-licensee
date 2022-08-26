@@ -92,7 +92,12 @@ ALTER PROCEDURE [dbo].[Acc_CustSetting3rd_16]
 	@CGComm_Group				DECIMAL(9,8) = 0,
 	@AdvantComm_Group			DECIMAL(9,8) = 0,
 	@AdvantMiniComm_Group		DECIMAL(9,8) = 0,
-	@VS3Comm_Group				DECIMAL(9,8) = 0
+	@VS3Comm_Group				DECIMAL(9,8) = 0,
+	--> 
+	@SBComm_Group DECIMAL(9,8),
+	@ParlayComm_Group DECIMAL(9,8) = 0,
+	@NGComm_Group DECIMAL(9,8) = 0,
+	@KenoComm_Group DECIMAL(9,8) = 0
 AS
 /*
 Created: 20120730@Henry
@@ -123,6 +128,7 @@ Revisions:
 	- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217] 
 	- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586] 
 	- 20220613@Winfred: HF LAP - Licensee Commission Group - Player discount don't update when user update Group Comm [Redmine: #174029]   
+	- 20220301@Eden: Deposit - Sportsbook - Revise customer settings [Redmine: #167898]
 
 Param's Explanation:
 • @ErrCode:
@@ -135,8 +141,6 @@ BEGIN
 	SET NOCOUNT ON;
 	
 	IF NOT(dbo.f_CheckRepTable('custinfo') = 1 
-		 AND dbo.f_CheckRepTable('Dep_CustSetting') = 1 
-		 AND dbo.f_CheckRepTable('Dep_CustSetting3rd') = 1 		
 		 AND dbo.f_CheckRepTable('Dep_CustDiscountSetting_Member') = 1 
 		 AND dbo.f_CheckRepTable('Dep_CustDiscountGroupSetting_Member') = 1 
 		 AND dbo.f_CheckRepTable('Dep_CustSettingMode') = 1 
@@ -166,102 +170,6 @@ BEGIN
 	FROM @xml.nodes('/root/r') AS T(C)
 	OPTION (OPTIMIZE FOR (@xml = NULL ))
 	
-	IF @IsUpdateSB = 1 AND @IsParlayComm = 1
-	BEGIN
-		WHILE (1=1)
-		BEGIN
-		
-			DELETE @InputRes_updateComm_batch
-			
-			UPDATE TOP (120) t
-				SET IsfinishedSBParlay = 1
-			OUTPUT deleted.custid
-			INTO @InputRes_updateComm_batch (custid)	
-			FROM @InputRes_updateComm t
-			WHERE t.IsfinishedSBParlay IS NULL	
-			
-			IF @@ROWCOUNT = 0
-				BREAK
-				
-			UPDATE cs
-				SET playerdiscount = CASE WHEN bettype IN (9,29) THEN @ParlayComm ELSE @SBComm END 
-			FROM @InputRes_updateComm_batch r
-				INNER JOIN dbo.Dep_CustSetting cs WITH (ROWLOCK, UPDLOCK) ON r.custid = cs.custid
-		END
-	END
-	ELSE
-	IF @IsUpdateSB = 1
-	BEGIN
-		WHILE (1=1)
-		BEGIN
-		
-			DELETE @InputRes_updateComm_batch
-			
-			UPDATE TOP (120) t
-				SET IsfinishedSB = 1
-			OUTPUT deleted.custid
-			INTO @InputRes_updateComm_batch (custid)	
-			FROM @InputRes_updateComm t
-			WHERE t.IsfinishedSB IS NULL	
-			
-			IF @@ROWCOUNT = 0
-				BREAK
-				
-			UPDATE cs
-			SET playerdiscount = @SBComm 
-			FROM @InputRes_updateComm_batch r
-				INNER JOIN dbo.Dep_CustSetting cs WITH (ROWLOCK, UPDLOCK) ON r.custid = cs.custid
-			WHERE playerdiscount <> @SBComm  	
-				AND bettype NOT IN (9,29)
-		END
-	END
-	ELSE
-	IF @IsParlayComm = 1
-	BEGIN
-		UPDATE cs
-			SET playerdiscount = @ParlayComm 
-		FROM @InputRes_updateComm r
-			INNER JOIN dbo.Dep_CustSetting cs WITH (ROWLOCK, UPDLOCK) ON r.custid = cs.custid
-		WHERE playerdiscount <>  @ParlayComm  	
-			AND bettype  IN (9,29)
-	END
-		
-	IF (@IsUpdateNG=1) -- update Number Game
-	BEGIN
-		WHILE (1=1)
-		BEGIN
-			DELETE @InputRes_updateComm_batch
-			
-			UPDATE TOP (300) t
-				SET IsfinishedNumberGame = 1
-			OUTPUT deleted.custid
-			INTO @InputRes_updateComm_batch (custid)	
-			FROM @InputRes_updateComm t
-			WHERE t.IsfinishedNumberGame IS NULL	
-			
-			IF @@ROWCOUNT = 0
-				BREAK
-				
-			UPDATE cs
-				SET playerdiscount = @NGComm 
-			FROM @InputRes_updateComm_batch r
-				INNER JOIN dbo.Dep_CustSetting3rd cs WITH (ROWLOCK, UPDLOCK) ON r.custid = cs.custid
-			WHERE playerdiscount <> @NGComm
-				AND sporttype = 161 
-				AND bettype BETWEEN 81 AND 90 
-		END
-	END
-	
-	IF (@IsUpdateKeno = 1)
-	BEGIN
-		UPDATE cs
-			SET playerdiscount = @KenoComm 
-		FROM @InputRes_updateComm r
-			INNER JOIN dbo.CustSettingGame cs WITH (ROWLOCK, UPDLOCK) ON r.custid = cs.custid
-		WHERE playerdiscount <>  @KenoComm  	
-			AND sporttype = 202 AND Bettype = 1501
-	END
-	
 	-- DCS Structure ---------
 	IF (@IsUpdateMacau=1
 		OR @IsUpdatePP=1
@@ -290,6 +198,11 @@ BEGIN
 		OR @IsUpdateAdvant	= 1
 		OR @IsUpdateAdvantMini =1
 		OR @IsUpdateVS3	= 1
+		--
+		OR @IsUpdateSB  = 1	
+		OR @IsParlayComm  = 1	
+		OR @IsUpdateKeno  = 1
+		OR @IsUpdateNG  = 1		
 	)
 	BEGIN
 		INSERT INTO @tblSettingDCS_tmp (IsUpdated,sporttype,Bettype,CommGroup, Comm)
@@ -324,6 +237,14 @@ BEGIN
 				,(@IsUpdateAdvant,172,7701,@AdvantComm_Group,@AdvantComm)
 				,(@IsUpdateAdvantMini,174,7801,@AdvantMiniComm_Group,@AdvantMiniComm)
 				,(@IsUpdateVS3,231,5301,@VS3Comm_Group,@VS3Comm)
+				--
+				,(@IsUpdateSB,1,1,@SBComm_Group,@SBComm)
+				,(@IsUpdateSB,1,4,@SBComm_Group,@SBComm)
+				,(@IsUpdateSB,1,5,@SBComm_Group,@SBComm)
+				,(@IsUpdateSB,2,2,@SBComm_Group,@SBComm)
+				,(@IsParlayComm,1,9,@ParlayComm_Group,@ParlayComm)
+				,(@IsUpdateNG,161,81,@NGComm_Group,@NGComm)
+				,(@IsUpdateKeno,202,1501,@KenoComm_Group,@KenoComm)
 	END
 	
 	IF EXISTS(SELECT TOP (1) 1 FROM @tblSettingDCS_tmp)

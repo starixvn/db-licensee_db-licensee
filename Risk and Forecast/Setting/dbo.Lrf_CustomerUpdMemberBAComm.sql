@@ -1,7 +1,4 @@
-﻿/*<info serverAlias="DBCUST-CUSTDB" executers="bodbLicenseeNet,bodbAdminNet" viewers="vnteam" isFunction="0"></info>*/
-USE [CustDB]
-GO
- 
+﻿/*<info serverAlias="DBCUST-CUSTDB" executers="bodbLicenseeNet,bodbAdminNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberBAComm]
 	@LicenseeID INT,
 	@CustID INT,--member
@@ -34,6 +31,7 @@ Revisions:
 	- 20150630@Kathy: add default value for param @OddsGroup 
 	- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
 	- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
+	- 20220301@Eden: Deposit - Sportsbook - Revise customer settings [Redmine: #167898] 
 	
 Param's Explanation:
 
@@ -47,13 +45,13 @@ BEGIN
 
 	DECLARE @Old_GroupComm DECIMAL(9,8) , @Old_ugroup VARCHAR(3) ,@Old_1x2Comm DECIMAL(9,8), @Old_OtherComm DECIMAL(9,8)
 
-	DECLARE @GroupComm DECIMAL(9,8), @ugroup varchar(3), @1x2Comm DECIMAL(9,8), @OtherComm DECIMAL(9,8)
+	DECLARE @GroupComm DECIMAL(9,8), @ugroup varchar(3), @1x2Comm DECIMAL(9,8), @OtherComm DECIMAL(9,8), @AgentID INT
 
 	DECLARE @LogSPData VARCHAR(5000)
 	DECLARE @TrackingValue2 VARCHAR(5000)
 
 	DECLARE @username VARCHAR(50)
-	SELECT @UserName  = username, @currency =currency
+	SELECT @UserName  = username, @currency =currency, @AgentID = recommend
 	FROM customer WITH (NOLOCK) 
 	WHERE CustID = @CustID
 	
@@ -129,33 +127,80 @@ BEGIN
 	FROM customer WITH(NOLOCK)
 	WHERE custid = @custid
 
-	SELECT 
-		@Old_GroupComm = discount
-	FROM dep_custsetting WITH (NOLOCK) 
-	WHERE custid = @Custid AND bettype = 1 AND sporttype = 1
+	IF EXISTS(SELECT 1 FROM Dep_CustSettingMode WITH(NOLOCK) WHERE custid = @CustID AND IsGroupedComm = 1)
+	BEGIN
+		SELECT @Old_GroupComm = AgentDiscount
+		FROM Dep_CustDiscountGroupSetting_Member WITH (NOLOCK) 
+		WHERE AgentID = @AgentID AND bettype = 1 AND sporttype = 1
 
-	SELECT 
-		@Old_1x2Comm = discount
-	FROM dep_custsetting WITH (nolock)
-	WHERE custid = @Custid AND bettype = 5 AND sporttype = 1
+		SELECT @Old_1x2Comm = AgentDiscount
+		FROM Dep_CustDiscountGroupSetting_Member WITH (NOLOCK) 
+		WHERE AgentID = @AgentID AND bettype = 5 AND sporttype = 1
 
-	SELECT 
-		@Old_OtherComm = discount
-	FROM dep_custsetting WITH (nolock)
-	WHERE custid = @Custid AND bettype = 4 AND sporttype = 1
+		SELECT @Old_OtherComm = AgentDiscount
+		FROM Dep_CustDiscountGroupSetting_Member WITH (NOLOCK) 
+		WHERE AgentID = @AgentID AND bettype = 4 AND sporttype = 1
+	END
+	ELSE
+	BEGIN
+		SELECT @Old_GroupComm = AgentDiscount
+		FROM Dep_CustDiscountSetting_Member WITH (NOLOCK) 
+		WHERE CustID = @CustID AND bettype = 1 AND sporttype = 1
 
+		SELECT @Old_1x2Comm = AgentDiscount
+		FROM Dep_CustDiscountSetting_Member WITH (NOLOCK) 
+		WHERE CustID = @CustID AND bettype = 5 AND sporttype = 1
+
+		SELECT @Old_OtherComm = AgentDiscount
+		FROM Dep_CustDiscountSetting_Member WITH (NOLOCK) 
+		WHERE CustID = @CustID AND bettype = 4 AND sporttype = 1
+	END
+
+	--move to invidual setting
+	INSERT INTO dbo.Dep_CustDiscountSetting_Member
+		(
+		 CustID
+		,SportType
+		,BetType
+		,PlayerDiscount
+		,AgentDiscount
+		,MasterDiscount
+		,SuperDiscount
+		)
+	SELECT @CustID
+		,grp.SportType
+		,grp.BetType
+		,grp.PlayerDiscount
+		,grp.AgentDiscount
+		,grp.MasterDiscount
+		,grp.SuperDiscount
+	FROM dbo.Dep_CustDiscountGroupSetting_Member grp WITH(NOLOCK)
+		LEFT JOIN dbo.Dep_CustDiscountSetting_Member cs WITH(NOLOCK) 
+			ON cs.custid = @custid
+			AND cs.sporttype = grp.sporttype
+			AND cs.bettype = grp.bettype
+	WHERE AgentID = @AgentID
+		AND cs.custid IS NULL
+
+	IF (@@ERROR <> 0)
+	BEGIN
+		SELECT @ErrMsg = @UserName + ': '+
+						CASE @Langkey 
+							WHEN 'en-US' THEN 'Update process is unsuccessful !'
+							ELSE [dbo].[Lrf_f_Get_MsgNamebyMsgID](90001,@Langkey)
+						END, @ErrCode = 108
+		RETURN
+	END 
 
 	--update Group commission
-	UPDATE dep_custsetting WITH (ROWLOCK, UPDLOCK)
-	SET
-		discount =  CASE WHEN bettype = 2 AND sporttype = 2 THEN discount ELSE @GroupComm END,
-		adiscount = CASE WHEN bettype = 2 AND sporttype = 2 THEN adiscount ELSE @GroupComm END,
-		sdiscount = CASE WHEN bettype = 2 AND sporttype = 2 THEN sdiscount ELSE @GroupComm END
-	FROM dep_custsetting cs INNER JOIN custinfo c WITH (NOLOCK) ON cs.custid = c.custid
-	WHERE 
-		c.custid=@custid
-		AND c.roleid = 1 
-		AND bettype IN (1,2,3,7,8)
+	UPDATE cs 
+	SET cs.AgentDiscount = @GroupComm,
+		cs.MasterDiscount = @GroupComm,
+		cs.SuperDiscount = @GroupComm
+	FROM Dep_CustDiscountSetting_Member cs WITH (ROWLOCK, UPDLOCK)
+	WHERE cs.custid=@custid
+		AND cs.bettype = 1 AND cs.sporttype = 1
+
 	IF (@@ERROR <> 0)
 	BEGIN
 		SELECT @ErrMsg = @UserName + ': '+
@@ -167,16 +212,14 @@ BEGIN
 	END 
 	
 	--update OtherComm
-	UPDATE cs WITH (ROWLOCK, UPDLOCK)
-	SET
-		cs.discount = @OtherComm,
-		cs.adiscount = @OtherComm,
-		cs.sdiscount = @OtherComm
-	FROM dep_custsetting cs INNER JOIN custinfo c WITH (NOLOCK) ON cs.custid = c.custid
-	WHERE 
-		c.custid=@custid
-		AND c.roleid = 1 
-		AND bettype IN (4,6,9,10,20,21,22) 	
+	UPDATE cs 
+	SET cs.AgentDiscount = @OtherComm,
+		cs.MasterDiscount = @OtherComm,
+		cs.SuperDiscount = @OtherComm
+	FROM Dep_CustDiscountSetting_Member cs WITH (ROWLOCK, UPDLOCK)
+	WHERE cs.custid=@custid
+		AND cs.bettype IN(4,9) AND cs.sporttype = 1
+
 	IF (@@ERROR <> 0)
 	BEGIN
 		SELECT @ErrMsg = @UserName + ': '+
@@ -188,16 +231,14 @@ BEGIN
 	END
 	
 	--update 1x2Comm
-	UPDATE dep_custsetting WITH (ROWLOCK, UPDLOCK)
-	SET
-		discount = @1x2Comm,
-		adiscount = @1x2Comm,
-		sdiscount = @1x2Comm
-	FROM dep_custsetting cs INNER JOIN custinfo c WITH (NOLOCK) ON cs.custid = c.custid
-	WHERE 
-		c.custid=@custid
-		AND c.roleid = 1 
-		AND bettype = 5		
+	UPDATE cs 
+	SET cs.AgentDiscount = @1x2Comm,
+		cs.MasterDiscount = @1x2Comm,
+		cs.SuperDiscount = @1x2Comm
+	FROM Dep_CustDiscountSetting_Member cs WITH (ROWLOCK, UPDLOCK)
+	WHERE cs.custid=@custid
+		AND cs.bettype = 5 AND cs.sporttype = 1	
+
 	IF (@@ERROR <> 0)
 	BEGIN
 		SELECT @ErrMsg = @UserName + ': '+
@@ -205,6 +246,21 @@ BEGIN
 							WHEN 'en-US' THEN 'Update process is unsuccessful !'
 							ELSE [dbo].[Lrf_f_Get_MsgNamebyMsgID](90001,@Langkey)
 						END, @ErrCode = 105
+		RETURN
+	END
+
+	UPDATE d
+	SET IsGroupedComm = 0
+	FROM Dep_CustSettingMode d WITH(ROWLOCK, UPDLOCK) 
+	WHERE custid = @CustID AND IsGroupedComm = 1
+
+	IF (@@ERROR <> 0)
+	BEGIN
+		SELECT @ErrMsg = @UserName + ': '+
+						CASE @Langkey 
+							WHEN 'en-US' THEN 'Update process is unsuccessful !'
+							ELSE [dbo].[Lrf_f_Get_MsgNamebyMsgID](90001,@Langkey)
+						END, @ErrCode = 107
 		RETURN
 	END
 
