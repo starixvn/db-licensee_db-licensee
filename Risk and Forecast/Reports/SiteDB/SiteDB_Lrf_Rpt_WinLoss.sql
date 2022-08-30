@@ -44,7 +44,7 @@ CREATE PROCEDURE [dbo].[SiteDB_Lrf_Rpt_WinLoss]
 	@ShowFGGL		BIT = 0,	-- FGG Guaranteed Gaming
 	@ShowMXG		BIT = 0, 	-- MaxGame
 	@DrawFilter				SMALLINT		= 1,
-	@CustomerClass			VARCHAR(200)	= 'All',
+	@CustomerClass			VARCHAR(MAX)	= 'All',
 	@OddsGroup				VARCHAR(100)	= 'All',
 	@CheckPromotionPrize	BIT				= 0,
 	@PageSize				INT				= 1000,
