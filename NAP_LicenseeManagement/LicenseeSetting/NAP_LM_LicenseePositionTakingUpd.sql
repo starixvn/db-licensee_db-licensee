@@ -169,6 +169,20 @@ BEGIN
 			@ProductID=@ProductID	
 	END
 
+	SELECT TOP 1 @ProductID = ProductID
+	FROM Dep_ProductSettingDetail pd WITH(NOLOCK) 
+		INNER JOIN Dep_ProductSetting p WITH(NOLOCK) ON pd.ProductSettingID = p.ProductSettingID
+	WHERE SportType = @Sporttype AND SettingType = 1
+
+	IF NOT EXISTS (SELECT 1 FROM Dep_ProductSetting ps WITH(NOLOCK) 
+									INNER JOIN Dep_LicenseeProductSetting d WITH(NOLOCK) ON ps.ProductSettingID=d.ProductSettingID WHERE ProductID=@ProductID AND SettingType = 1 AND CustID = @CustID)
+	BEGIN
+		INSERT INTO Dep_LicenseeProductSetting(CustID,ProductSettingID)
+		SELECT @CustID, ProductSettingID
+		FROM Dep_ProductSetting WITH(NOLOCK)
+		WHERE ProductID = @ProductID AND SettingType = 1
+	END	
+
 	DECLARE @LogSPData VARCHAR(8000)
 
 	SELECT  @LogSPData ='<NAP_LM_LicenseePositionTakingUpd custid="'+ coalesce(cast(@CustID AS VARCHAR(20)),space(1))+ '" ' +

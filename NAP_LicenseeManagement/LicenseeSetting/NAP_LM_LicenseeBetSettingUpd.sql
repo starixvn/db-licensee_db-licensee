@@ -45,9 +45,9 @@ AS
 */ 
 BEGIN
  SET NOCOUNT ON
-	DECLARE @startRun DATETIME
-	DECLARE @endRun DATETIME
-	DECLARE @duration INT
+	DECLARE @startRun DATETIME, @endRun DATETIME, @duration INT
+	DECLARE @ProductID SMALLINT, @SettingType TINYINT
+
 	SET @startRun = getdate()
 	SELECT @ErrCode = 0, @ErrMsg =''
 	IF @ExistedMember=1
@@ -156,6 +156,20 @@ BEGIN
 		SELECT @ErrMsg = ERROR_MESSAGE(), @ErrCode  = ERROR_NUMBER()   					
 		RETURN
 	END CATCH
+	
+	SELECT TOP 1 @ProductID = ProductID, @SettingType = SettingType
+	FROM Dep_ProductSettingDetail pd WITH(NOLOCK) 
+		INNER JOIN Dep_ProductSetting p WITH(NOLOCK) ON pd.ProductSettingID = p.ProductSettingID
+	WHERE SportType = @Sporttype AND SettingType IN (9)
+
+	IF NOT EXISTS (SELECT 1 FROM Dep_ProductSetting ps WITH(NOLOCK) 
+									INNER JOIN Dep_LicenseeProductSetting d WITH(NOLOCK) ON ps.ProductSettingID=d.ProductSettingID WHERE ProductID=@ProductID AND SettingType = @SettingType AND CustID = @CustID)
+	BEGIN
+		INSERT INTO Dep_LicenseeProductSetting(CustID,ProductSettingID)
+		SELECT @CustID, ProductSettingID
+		FROM Dep_ProductSetting WITH(NOLOCK)
+		WHERE ProductID = @ProductID AND SettingType = @SettingType
+	END	
 
 	DECLARE @LogSPData VARCHAR(8000)
 
