@@ -22,6 +22,7 @@ AS
 		- 20210208@Eden: exclude BA member when adjust PT for Sportbook [redmine: #150191]
 		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 		- 202202220@Elodie: Apply DCS for SB [RedmineID: #167898] 
+		- 202209010@Elodie: Insert Dep_LicenseeProductSetting in case no data [RedmineID: #177383] 
 
 	Param's Explanation:
 		@Product:	1: Sportbook
