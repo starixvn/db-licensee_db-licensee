@@ -1,3 +1,4 @@
+/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet,bodbLicenseeNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_LM_LicenseeCommissionUpd] 
 	@CustID INT
 	,@Sporttype INT
