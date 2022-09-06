@@ -161,7 +161,7 @@ BEGIN
 	SELECT TOP 1 @ProductID = ProductID, @SettingType = SettingType
 	FROM Dep_ProductSettingDetail pd WITH(NOLOCK) 
 		INNER JOIN Dep_ProductSetting p WITH(NOLOCK) ON pd.ProductSettingID = p.ProductSettingID
-	WHERE SportType = @Sporttype AND SettingType IN (9)
+	WHERE SportType = @Sporttype AND SettingType IN (2,10,11,12)
 
 	IF NOT EXISTS (SELECT 1 FROM Dep_ProductSetting ps WITH(NOLOCK) 
 									INNER JOIN Dep_LicenseeProductSetting d WITH(NOLOCK) ON ps.ProductSettingID=d.ProductSettingID WHERE ProductID=@ProductID AND SettingType = @SettingType AND CustID = @CustID)
