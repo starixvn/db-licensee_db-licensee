@@ -22,7 +22,6 @@ AS
 		- 20210208@Eden: exclude BA member when adjust PT for Sportbook [redmine: #150191]
 		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 		- 202202220@Elodie: Apply DCS for SB [RedmineID: #167898] 
-		- 202209010@Elodie: Insert Dep_LicenseeProductSetting in case no data [RedmineID: #177383] 
 
 	Param's Explanation:
 		@Product:	1: Sportbook
@@ -169,20 +168,6 @@ BEGIN
 			@PT=@PT,					
 			@ProductID=@ProductID	
 	END
-
-	SELECT TOP 1 @ProductID = ProductID
-	FROM Dep_ProductSettingDetail pd WITH(NOLOCK) 
-		INNER JOIN Dep_ProductSetting p WITH(NOLOCK) ON pd.ProductSettingID = p.ProductSettingID
-	WHERE SportType = @Sporttype AND SettingType = 1
-
-	IF NOT EXISTS (SELECT 1 FROM Dep_ProductSetting ps WITH(NOLOCK) 
-									INNER JOIN Dep_LicenseeProductSetting d WITH(NOLOCK) ON ps.ProductSettingID=d.ProductSettingID WHERE ProductID=@ProductID AND SettingType = 1 AND CustID = @CustID)
-	BEGIN
-		INSERT INTO Dep_LicenseeProductSetting(CustID,ProductSettingID)
-		SELECT @CustID, ProductSettingID
-		FROM Dep_ProductSetting WITH(NOLOCK)
-		WHERE ProductID = @ProductID AND SettingType = 1
-	END	
 
 	DECLARE @LogSPData VARCHAR(8000)
 
