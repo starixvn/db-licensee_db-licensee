@@ -1,5 +1,4 @@
 /*<info serverAlias="DBPTCS-bodb_PlaytechCS" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
-
 ALTER PROCEDURE [dbo].[Lrf_Rpt_AGCasinoBalance] 
 	@FromDate				SMALLDATETIME,  
 	@ToDate					SMALLDATETIME,   
@@ -19,6 +18,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_AGCasinoBalance]
 		- 20180529@Joseph: Add OPTION RECOMPILE to fix performance issue
 		- 20190617@Amanda: Add Base currency param [RedmineID: #112531]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
+		- 2022831@Sol: Deposit - AWS - Modify jobs of separated wallet - Move table rptDepWinlost_AGCasino to DB05x - [RedmineID: #176479]
+
 */ 
 AS
 BEGIN
@@ -129,7 +130,7 @@ BEGIN
 			,SUM(c.BetCount) AS TotalTrans
 			,SUM(c.Winlost)  AS Winlost
 			,-SUM(c.Winlost) AS LicenseeWinlost
-	FROM  DBRPT.bodb_report.dbo.rptDepWinlost_AGCasino c  WITH (NOLOCK)
+	FROM  bodb_LicenseeReport.dbo.rptDepWinlost_AGCasino c  WITH (NOLOCK)
 		INNER HASH JOIN #tmpCust ct ON c.CustID = ct.CustID AND c.Currency = ct.Currency
 	WHERE c.Winlostdate BETWEEN @FromDate AND @ToDate 
 	GROUP BY c.Winlostdate	

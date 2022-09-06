@@ -1,5 +1,4 @@
-/*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
-
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_Rpt_AGCasinoWinloss]
 	@FromDate				SMALLDATETIME
 	, @ToDate				SMALLDATETIME
@@ -15,7 +14,8 @@ AS
 	Created: Jim
 	Date: 2014-09-18
 	Task: AG Win Loss report
-	DB: DBACC.bodb02
+	DB: DBEXT.bodb02
+	Original: DBACC.bodb02
 
 	Revisions:
 		- 20141111@Jim: use f_SelLicenseeCust instead of licenseecust (#Redmine 25673)
@@ -32,6 +32,7 @@ AS
 		- 20190617@Amanda: Add Base currency param [RedmineID: #112531]
 		- 20210622@Mark: Change on MoveBet - Add param MoveBetsDay [RedmineID: #154866]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
+		- 2022831@Sol: Deposit - AWS - Modify jobs of separated wallet - Move table rptDepWinlost_AGCasino to DB05x - [RedmineID: #176479]
 
 	Param's Explanation:
 		+ @ReportType : 1 Daily, 2 Monthly
@@ -76,7 +77,7 @@ BEGIN
 	DECLARE @GapDate		DATETIME
 
 	SELECT @GapDate = MAX(c.Winlostdate)
-	FROM bodb_report.dbo.rptDepWinlost_AGCasino AS c WITH (NOLOCK)
+	FROM bodb_LicenseeReport.dbo.rptDepWinlost_AGCasino AS c WITH (NOLOCK)
 	WHERE EXISTS (SELECT 1 FROM #tmpCust tc WHERE c.Custid = tc.CustId)
 
 	IF @ToDate > @GapDate
@@ -141,7 +142,7 @@ BEGIN
 				SUM(c.BetCount) AS TotalTrans,
 				SUM(c.winlost) AS Winlost,
 				-SUM(c.winlost) AS LicenseeWinlost
-			FROM DBLIC.bodb_licenseereport.dbo.rptLicWinloss2 AS c WITH (NOLOCK)
+			FROM bodb_licenseereport.dbo.rptLicWinloss2 AS c WITH (NOLOCK)
 				INNER JOIN @Temp AS ag ON c.recommend = ag.Custid AND c.Currency = ag.Currency
 			WHERE c.winlostdate BETWEEN @TempFromDate AND @ToDate2 
 				AND c.roleid = 2
@@ -173,7 +174,7 @@ BEGIN
 			SUM(c.BetCount) AS TotalTrans,
 			SUM(c.Winlost)  AS Winlost,
 			-SUM(c.Winlost) AS LicenseeWinlost
-		FROM bodb_report.dbo.rptDepWinlost_AGCasino AS c WITH (NOLOCK)
+		FROM bodb_LicenseeReport.dbo.rptDepWinlost_AGCasino AS c WITH (NOLOCK)
 			INNER JOIN #tmpCust AS ct ON c.Custid = ct.CustId AND c.Currency = ct.Currency
 		WHERE c.Winlostdate BETWEEN @FromDate AND @TempToDate 
 		GROUP BY c.Winlostdate,
