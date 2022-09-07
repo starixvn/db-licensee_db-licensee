@@ -36,7 +36,7 @@ AS
 BEGIN
 	SET NOCOUNT ON
 	DECLARE @startRun DATETIME, @endRun DATETIME, @duration INT
-	DECLARE @PT VARCHAR(MAX), @PT_xml XML, @ProductID TINYINT, @ProductSettingID INT, @AgentID INT
+	DECLARE @PT VARCHAR(MAX), @PT_xml XML, @ProductID TINYINT, @AgentID INT
 	DECLARE @SportBettypeFilter TABLE(SportType INT,Bettype INT,IsLive BIT)		
 
 	SET @startRun = getdate()
@@ -57,8 +57,6 @@ BEGIN
 								WHEN @Sporttype = 161 THEN 3
 								WHEN @Sporttype = 202 THEN 8 END
 	
-	SELECT  @ProductSettingID=ProductSettingID from Dep_ProductSetting WITH(NOLOCK) WHERE ProductID=@ProductID AND SettingType=1
-
 	INSERT INTO @SportBettypeFilter (SportType,Bettype,IsLive)
 	SELECT DISTINCT SportType,Bettype,IsLive
 	FROM Dep_ProductSetting ps WITH(NOLOCK) 
@@ -89,11 +87,16 @@ BEGIN
 				)
 		FOR XML PATH('ROOT'), 
         TYPE)
-	SET @PT = CAST(@PT_xml AS VARCHAR(MAX))
-	
-	IF NOT EXISTS (SELECT 1 FROM Dep_LicenseeProductSetting d WITH(NOLOCK)WHERE ProductSettingID=@ProductSettingID AND CustID=@CustID)
+	SET @PT = CAST(@PT_xml AS VARCHAR(MAX))	
+
+	IF NOT EXISTS (SELECT 1 FROM Dep_ProductSetting ps WITH(NOLOCK) 
+									INNER JOIN Dep_LicenseeProductSetting d WITH(NOLOCK) ON ps.ProductSettingID=d.ProductSettingID WHERE ProductID=@ProductID AND SettingType = 1 AND CustID = @CustID)
+	BEGIN
 		INSERT INTO Dep_LicenseeProductSetting(CustID,ProductSettingID)
-		VALUES( @CustID,@ProductSettingID)
+		SELECT @CustID, ProductSettingID
+		FROM Dep_ProductSetting WITH(NOLOCK)
+		WHERE ProductID = @ProductID AND SettingType = 1
+	END	
 
 	IF EXISTS (	SELECT 1 
 				FROM @SportBettypeFilter ft 
