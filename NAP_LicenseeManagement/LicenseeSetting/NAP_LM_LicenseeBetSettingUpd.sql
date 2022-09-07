@@ -162,8 +162,28 @@ BEGIN
 								WHEN @Sporttype = 161 THEN 3
 								WHEN @Sporttype = 202 THEN 8 END
 
+	IF @ProductID = 1
+		AND NOT EXISTS (SELECT 1 FROM Dep_ProductSetting ps WITH(NOLOCK) 
+							INNER JOIN Dep_LicenseeProductSetting d WITH(NOLOCK) ON ps.ProductSettingID=d.ProductSettingID WHERE ProductID=@ProductID AND CustID = @CustID AND SettingType <> 9)	
+	BEGIN
+		INSERT INTO Dep_LicenseeProductSetting(CustID,ProductSettingID)
+		SELECT @CustID, ProductSettingID
+		FROM Dep_ProductSetting WITH(NOLOCK)
+		WHERE ProductID = @ProductID AND SettingType <> 9
+	END
+
+	IF @ProductID <> 1
+		AND NOT EXISTS (SELECT 1 FROM Dep_ProductSetting ps WITH(NOLOCK) 
+							INNER JOIN Dep_LicenseeProductSetting d WITH(NOLOCK) ON ps.ProductSettingID=d.ProductSettingID WHERE ProductID=@ProductID AND CustID = @CustID)	
+	BEGIN
+		INSERT INTO Dep_LicenseeProductSetting(CustID,ProductSettingID)
+		SELECT @CustID, ProductSettingID
+		FROM Dep_ProductSetting WITH(NOLOCK)
+		WHERE ProductID = @ProductID
+	END
+
 	IF NOT EXISTS (SELECT 1 FROM Dep_ProductSetting ps WITH(NOLOCK) 
-									INNER JOIN Dep_LicenseeProductSetting d WITH(NOLOCK) ON ps.ProductSettingID=d.ProductSettingID WHERE ProductID=@ProductID AND CustID = @CustID)
+							INNER JOIN Dep_LicenseeProductSetting d WITH(NOLOCK) ON ps.ProductSettingID=d.ProductSettingID WHERE ProductID=@ProductID AND CustID = @CustID)
 	BEGIN
 		INSERT INTO Dep_LicenseeProductSetting(CustID,ProductSettingID)
 		SELECT @CustID, ProductSettingID
