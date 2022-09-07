@@ -114,6 +114,7 @@ AS
 		- 20220601@Hogan: Integrate MaxGame [RedmineID: #172919]
 		- 20220714@Hogan: Integrate Volleyball AIO [RedmineID: #175143]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
+		- 20221004@Evan: LAP - Support betfrom up to nvarchar(3)
 		- 20230130@Evan: Integrate Jili [RedmineID: #182914]
 	    - 20230303@Evan: Remove inactive products CB, FW, GD, GDG [Redmine: 181424]  
 
@@ -211,7 +212,7 @@ BEGIN
 	SELECT @FDate = @FromDate,
 		@TDate = @ToDate 
 
-	CREATE TABLE #PlatformList (BetFrom NVARCHAR(1) PRIMARY KEY, PlatformType TINYINT)
+	CREATE TABLE #PlatformList (BetFrom NVARCHAR(3) PRIMARY KEY, PlatformType TINYINT)
 
 	INSERT INTO #PlatformList (BetFrom, PlatformType)
 	SELECT betfrom, PlatformType
