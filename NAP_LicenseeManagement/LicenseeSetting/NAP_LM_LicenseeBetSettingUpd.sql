@@ -47,7 +47,7 @@ AS
 BEGIN
  SET NOCOUNT ON
 	DECLARE @startRun DATETIME, @endRun DATETIME, @duration INT
-	DECLARE @ProductID SMALLINT, @SettingType TINYINT
+	DECLARE @ProductID SMALLINT
 
 	SET @startRun = getdate()
 	SELECT @ErrCode = 0, @ErrMsg =''
@@ -158,35 +158,17 @@ BEGIN
 		RETURN
 	END CATCH
 
-	IF @Sporttype = 202
-	BEGIN
-		SELECT TOP 1 @ProductID = ProductID, @SettingType = SettingType
-		FROM Dep_ProductSettingDetail pd WITH(NOLOCK) 
-			INNER JOIN Dep_ProductSetting p WITH(NOLOCK) ON pd.ProductSettingID = p.ProductSettingID
-		WHERE SportType = @Sporttype AND SettingType IN (4)
-
-		IF NOT EXISTS (SELECT 1 FROM Dep_ProductSetting ps WITH(NOLOCK) 
-										INNER JOIN Dep_LicenseeProductSetting d WITH(NOLOCK) ON ps.ProductSettingID=d.ProductSettingID WHERE ProductID=@ProductID AND SettingType = @SettingType AND CustID = @CustID)
-		BEGIN
-			INSERT INTO Dep_LicenseeProductSetting(CustID,ProductSettingID)
-			SELECT @CustID, ProductSettingID
-			FROM Dep_ProductSetting WITH(NOLOCK)
-			WHERE ProductID = @ProductID AND SettingType = @SettingType
-		END	
-	END
-
-	SELECT TOP 1 @ProductID = ProductID, @SettingType = SettingType
-	FROM Dep_ProductSettingDetail pd WITH(NOLOCK) 
-		INNER JOIN Dep_ProductSetting p WITH(NOLOCK) ON pd.ProductSettingID = p.ProductSettingID
-	WHERE SportType = @Sporttype AND SettingType IN (2,10,11,12)
+	SELECT @ProductID = CASE	WHEN @Sporttype = 1 THEN 1 
+								WHEN @Sporttype = 161 THEN 3
+								WHEN @Sporttype = 202 THEN 8 END
 
 	IF NOT EXISTS (SELECT 1 FROM Dep_ProductSetting ps WITH(NOLOCK) 
-									INNER JOIN Dep_LicenseeProductSetting d WITH(NOLOCK) ON ps.ProductSettingID=d.ProductSettingID WHERE ProductID=@ProductID AND SettingType = @SettingType AND CustID = @CustID)
+									INNER JOIN Dep_LicenseeProductSetting d WITH(NOLOCK) ON ps.ProductSettingID=d.ProductSettingID WHERE ProductID=@ProductID AND CustID = @CustID)
 	BEGIN
 		INSERT INTO Dep_LicenseeProductSetting(CustID,ProductSettingID)
 		SELECT @CustID, ProductSettingID
 		FROM Dep_ProductSetting WITH(NOLOCK)
-		WHERE ProductID = @ProductID AND SettingType = @SettingType
+		WHERE ProductID = @ProductID
 	END	
 
 	DECLARE @LogSPData VARCHAR(8000)
