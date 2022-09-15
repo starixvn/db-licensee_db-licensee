@@ -11,7 +11,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLossByLeague_League_Currency]
 	@ShowBA			BIT				= 0,
 	@BetTypeList	VARCHAR(MAX)	= '',
 	@StatusIdList	VARCHAR(50)		= '',
-	@BaseCurrency	VARCHAR(3)		= ''
+	@BaseCurrency	VARCHAR(12)		= ''
 AS
 
 /*
@@ -23,6 +23,7 @@ AS
 		- 20210916@Kos: New SP [RedmineID: #159939]
 		- 20220106@Kos: Support search by username [RedmineID: #165926]
 		- 20220513@Kos: Support Sports Lottery and Bitcoin [RedmineID: #160160]
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 	Param's Explanation:
 		- @BetTypeList: bettype list separated by ','

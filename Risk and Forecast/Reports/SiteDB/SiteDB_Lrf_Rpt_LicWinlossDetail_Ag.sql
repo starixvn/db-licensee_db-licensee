@@ -10,8 +10,8 @@ CREATE PROCEDURE [dbo].[SiteDB_Lrf_Rpt_LicWinlossDetail_Ag]
 	@MoveBetsDay			SMALLDATETIME,
 	@DrawFilter				SMALLINT		= 1,
 	@AgentList				VARCHAR(MAX),
-	@BaseCurrency			VARCHAR(3)		= '',
-	@DefaultBaseCurrency	VARCHAR(3)		= '',
+	@BaseCurrency			VARCHAR(12)		= '',
+	@DefaultBaseCurrency	VARCHAR(12)		= '',
 	@CheckPromotionPrize	BIT				= 0,
 	@VIPPlayerOnly			BIT				= 0
 )
@@ -24,6 +24,7 @@ AS
 
 	Revisions:
 		- 20220801@Sol: initial sp - [Redmine: #175297]
+   		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 	Param's Explanation:
 		+ @CustID: SuperID

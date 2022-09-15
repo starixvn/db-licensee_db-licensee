@@ -4,8 +4,8 @@ CREATE FUNCTION [dbo].[SiteDB_Lrf_f_GetExchangeRate]
 (
     @FromDate				SMALLDATETIME,
     @ToDate					SMALLDATETIME,
-    @BaseCurrency			VARCHAR(3) = '',
-    @DefaultBaseCurrency	VARCHAR(3) = ''			
+    @BaseCurrency			VARCHAR(12) = '',
+    @DefaultBaseCurrency	VARCHAR(12) = ''			
  )
 RETURNS @tempDate TABLE (
 	FromDate			SMALLDATETIME,
@@ -28,6 +28,7 @@ AS
 
 	Revisions:	
 		- 20220729@Victoria: Create function[Redmine #175297]
+		- 20220914@Evan: Add USDT as Base Currencies [Redmine #177481]
 */
 
 BEGIN
@@ -126,6 +127,26 @@ BEGIN
 			END AS DefaultRate
 		FROM CustDB.dbo.ExchangeDailyOanda ex WITH(NOLOCK)
 			INNER JOIN @tblDate dt ON ex.ExchangeDate = dt.lastexchangeday
+
+	IF @BaseCurrency = 'USDT'
+	BEGIN
+		UPDATE a
+		SET a.Rate = b.USDT
+		FROM @tempDate a 
+			INNER JOIN CustDB.dbo.ExchangeDaily_Crypto b WITH(NOLOCK) ON a.ExchangeId = b.ExchangeId
+			INNER JOIN @tblDate c ON b.ExchangeDate = c.lastexchangeday
+	END
+
+	IF @DefaultBaseCurrency = 'USDT'
+	BEGIN
+		UPDATE a
+		SET a.DefaultRate = b.USDT
+		FROM @tempDate a 
+			INNER JOIN CustDB.dbo.ExchangeDaily_Crypto b WITH(NOLOCK) ON a.ExchangeId = b.ExchangeId
+			INNER JOIN @tblDate c ON b.ExchangeDate = c.lastexchangeday
+	END
+
+
 	RETURN
 END
 GO

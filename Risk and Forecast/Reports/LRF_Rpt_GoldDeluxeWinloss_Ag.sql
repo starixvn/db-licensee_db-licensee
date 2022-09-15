@@ -5,8 +5,8 @@ ALTER PROCEDURE [dbo].[LRF_Rpt_GoldDeluxeWinloss_Ag]
 	@FromDate		SMALLDATETIME,  
 	@ToDate			SMALLDATETIME,  
 	@AgentList		VARCHAR(MAX),
-	@BaseCurrency	VARCHAR(3) = '',
-	@DefaultBaseCurrency	VARCHAR(3) = ''
+	@BaseCurrency	VARCHAR(12) = '',
+	@DefaultBaseCurrency	VARCHAR(12) = ''
 AS  
 
 /*  Created: Winnie
@@ -19,6 +19,7 @@ AS
 		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 		- 20181114@Joseph: Integrate Bidme games (GD product) [#101599]
 		- 20190614@Amanda: Add Base currency param [RedmineID: #112531]
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 	Param's Explanation:  
 */  

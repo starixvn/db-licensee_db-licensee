@@ -8,7 +8,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_CasinoTurnover]
 	@MoveBetsDay	SMALLDATETIME,
 	@ProductCodes	VARCHAR(100),
 	@StatusList		VARCHAR(50),
-	@BaseCurrency	VARCHAR(3),
+	@BaseCurrency	VARCHAR(12),
 	@PageSize		INT		= 50,
 	@PageIndex		INT		= 1,
 	@TotalRows		INT		= 0 OUTPUT
@@ -34,6 +34,7 @@ AS
 		- 20210630@Hogan: Integrate Creative Gaming [RedmineID: #152619]
 		- 20211105@Hogan: Integrate AdvantPlay RNG & Mini [RedmineID: #158186]
 		- 20220322@Kos: Revise net turnover [RedmineID: #169843]
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 	Param's Explanation:
 		+ @ProductCodes: "AB,CS,VB"

@@ -11,7 +11,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinlossByTimeZone]
 	@IncludeDraw	BIT				= 0,
 	@ReportBy		TINYINT			= 1,
 	@GroupBy		TINYINT			= 1,
-	@BaseCurrency	VARCHAR(3)		= ''
+	@BaseCurrency	VARCHAR(12)		= ''
 AS
 
 /*
@@ -31,6 +31,7 @@ AS
 		- 20210119@Hogan: Integrate Four Guardians [RedmineID: #148100]
 		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
 		- 20220429@Kos: Support Bitcoin [RedmineID: #160160]
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 	Param's Explanation:
 		+ @TimeZone: = -4: GMT-4

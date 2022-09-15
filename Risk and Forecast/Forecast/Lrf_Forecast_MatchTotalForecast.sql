@@ -6,7 +6,7 @@ ALTER PROCEDURE Lrf_Forecast_MatchTotalForecast
 	@AwayScore		INT OUTPUT,
 	@MatchTime		DATETIME = NULL OUTPUT,
 	@AgentList		VARCHAR(MAX),
-	@BaseCurrency	VARCHAR(3)= ''
+	@BaseCurrency	VARCHAR(12)= ''
 )
 AS
 
@@ -27,6 +27,7 @@ Revisions:
 	20190102@Joseph: Incorporate changes for E-Sports phase 2b [Redmine: #106553]
 	20190611@Amanda: Add Base Currency parameter [Redmine: #112531]
 	20210224@Mark: Change alias DB042 to DBBOF [Redmine: #150375]
+	20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 Param's Explanation:
 	+ @AgentList: xml structure

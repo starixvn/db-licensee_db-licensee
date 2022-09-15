@@ -7,7 +7,7 @@ CREATE  PROCEDURE [dbo].[SiteDB_Lrf_Forecast_SelByLeague]
     @BaseOffsetHTOU		INT ,
     @LeagueID			INT ,
 	@AgentList			VARCHAR(MAX) ,
-	@BaseCurrency		VARCHAR(3)= ''
+	@BaseCurrency		VARCHAR(12)= ''
 AS 
 /*
 Created: 20220729@Victoria
@@ -17,6 +17,7 @@ Original: Lrf_Forecast_SelByLeague
 Revisions:
 
 	- 20220729@Victoria: Create SP[Redmine: #175297]
+    - 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 Param's Explanation:
 	+ @AgentList: xml structure

@@ -11,8 +11,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss]
 	@ReportType				TINYINT			= 1,
 	@MoveBetsDay			SMALLDATETIME,
 	@DrawFilter				SMALLINT		= 1,
-	@BaseCurrency			VARCHAR(3)		= '',
-	@DefaultBaseCurrency	VARCHAR(3)		= '',
+	@BaseCurrency			VARCHAR(12)		= '',
+	@DefaultBaseCurrency	VARCHAR(12)		= '',
 	@CheckPromotionPrize	BIT				= 0,
 	@VIPPlayerOnly			BIT				= 0
 AS
@@ -114,6 +114,7 @@ AS
 		- 20220318@Hogan: Integrate FGG Guaranteed Gaming [RedmineID: #167897]
 		- 20220601@Hogan: Integrate MaxGame [RedmineID: #172919]
 		- 20220801@Sol: LAP - Scale Out DBTrans - removed min @transid in BT and CO - [Redmine: #175297]
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 	Param's Explanation:
 		+ @ReportType: 1-Daily; 2-Monthly;

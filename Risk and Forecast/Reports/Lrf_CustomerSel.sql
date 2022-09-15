@@ -11,7 +11,7 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerSel]
 	@GroupCommID	INT				= -1, --ALL
 	@OddsGroups		VARCHAR(100)	= '',
 	@AgentList		VARCHAR(MAX),
-	@BaseCurrency	VARCHAR(3)
+	@BaseCurrency	VARCHAR(12)
 AS
 
 /*
@@ -68,6 +68,7 @@ AS
 		- 20201005@Winfred: unshow OddsAdj dummy customers [redmine:#142952]
 		- 20210518@Percy: Change code to adapt new Move Bets flow [RedmineID: #154866]
 		- 20211111@Sol: Split Transfer out of bettrans/Support IPv6 - [RedmineID: #164301]
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 	Param's Explanation:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)

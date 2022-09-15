@@ -8,7 +8,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLossByBettype]
 	@BalanceUpDay	SMALLDATETIME,
 	@PageSize		INT				= 1000,
 	@PageIndex		INT				= 1,
-	@BaseCurrency	VARCHAR(3)		= ''
+	@BaseCurrency	VARCHAR(12)		= ''
 AS
 
 /*
@@ -72,6 +72,7 @@ AS
 		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
 		- 20220317@Kos: Integrate Cricket phase 2 [RedmineID: #168034]
 		- 20210818@Kos: Support Bitcoin [RedmineID: #160160]
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 	Param's Explanation:
 		+ @AgentList: XML structure

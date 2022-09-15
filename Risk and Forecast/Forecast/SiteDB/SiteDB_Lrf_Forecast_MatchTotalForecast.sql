@@ -6,7 +6,7 @@ CREATE PROCEDURE SiteDB_Lrf_Forecast_MatchTotalForecast
 	@AwayScore		INT OUTPUT,
 	@MatchTime		DATETIME = NULL OUTPUT,
 	@AgentList		VARCHAR(MAX),
-	@BaseCurrency	VARCHAR(3)= ''
+	@BaseCurrency	VARCHAR(12)= ''
 )
 AS
 
@@ -17,6 +17,7 @@ DB: DBBOF.bodb02
 Original: [Lrf_Forecast_MatchTotalForecast]
 Revisions:    
 	- 20220729@Victoria: Create SP[Redmine: #175297]
+    - 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 Param's Explanation:
 	+ @AgentList: xml structure

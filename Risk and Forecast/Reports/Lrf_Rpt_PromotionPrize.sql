@@ -7,7 +7,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_PromotionPrize]
 	@ToDate					SMALLDATETIME,
 	@MoveBetsDay			SMALLDATETIME,
 	@AgentList				VARCHAR(MAX),
-	@DefaultBaseCurrency	VARCHAR(3),
+	@DefaultBaseCurrency	VARCHAR(12),
 	@VIPPlayerOnly	BIT = 0
 AS
 
@@ -33,6 +33,7 @@ AS
 		- 20210218@Hogan: Enhance Extra Payout excel file [RedmineID: #150292]
 		- 20210322@Hogan: Integrate AE Casino Lucky Draw [RedmineID: #151984]
 		- 20210518@Hogan: Integrate Vgaming [RedmineID: #151583]
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 	Param's Explanation:
 		+ @MoveBetsDay: The day we move tickets to bettrans14

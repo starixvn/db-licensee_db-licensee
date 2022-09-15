@@ -8,7 +8,7 @@ CREATE PROCEDURE [dbo].[SiteDB_Lrf_Rpt_Outstanding]
 	@AgentList		VARCHAR(MAX),
 	@OrderItem		TINYINT			= 1,
 	@IsAscSort		BIT				= 1,
-	@BaseCurrency	VARCHAR(5)		= ''
+	@BaseCurrency	VARCHAR(12)		= ''
 AS 
 /*
 	Created: 20220729@Victoria
@@ -18,6 +18,7 @@ AS
 
 	Revisions:
 		- 20220729@Victoria: Create SP[Redmine: #175297]
+   		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 	Param's Explanation:
 		@OrderItem:

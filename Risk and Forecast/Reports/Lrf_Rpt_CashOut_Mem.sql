@@ -5,8 +5,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_CashOut_Mem]
 	@FromDate				SMALLDATETIME,
 	@ToDate					SMALLDATETIME,
 	@MoveBetsDay			SMALLDATETIME,
-	@BaseCurrency			VARCHAR(3)		= '',
-	@DefaultBaseCurrency	VARCHAR(3)		= ''
+	@BaseCurrency			VARCHAR(12)		= '',
+	@DefaultBaseCurrency	VARCHAR(12)		= ''
 AS
 
 /*
@@ -17,6 +17,7 @@ AS
 	Revisions:
 		- 20211217@Kos: New SP [RedmineID: #165160]
 		- 20220222@Kos: Hotfix - show agent data [RedmineID: #168905]
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 	Param's Explanation:
 		+ @AgentList: XML structure

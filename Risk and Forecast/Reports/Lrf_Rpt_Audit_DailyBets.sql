@@ -5,7 +5,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_Audit_DailyBets]
 	@ProductCodes	VARCHAR(100),
 	@GameCodes		VARCHAR(MAX),
 	@CurrencyList   VARCHAR(500),
-	@BaseCurrency	VARCHAR(3) = '',
+	@BaseCurrency	VARCHAR(12) = '',
 	@PageIndex		INT = 1,
 	@PageSize		INT = 50,
 	@SortBy			VARCHAR(50) = 'TransactionId',
@@ -24,6 +24,7 @@ AS
 		- 20211001@Sol: LAP - Auditing licensees - Enhance Daily Bets - [Redmine: #162355]
 		- 20220302@Sol: temporary prevent Nova88 from viewing data from 1-Mar-2022 - [Redmine: #169131]
 		- 20220118@Sol: LAP - Auditing licensees - Daily Bets - Filter by Sport - [RedmineID: #166056]
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 	Developer's Notes:
 		

@@ -7,7 +7,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_MatchWinLoss]
 	@BalanceUpDay	SMALLDATETIME,
 	@ProductList	VARCHAR(500),
 	@ShowBA			BIT				= 0,
-	@BaseCurrency	VARCHAR(3) = ''
+	@BaseCurrency	VARCHAR(12) = ''
 AS
 
 /*
@@ -51,6 +51,7 @@ AS
 					- Remove input params @showSB, @showNG, @ShowVS, @showVS2
 					- Add input param @ProductList VARCHAR(500), @BalanceUpDay SMALLDATETIME
 					- Rename output column from MemberWinLost to WinLost
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 	Param's Explanation:
 		+ @AgentList: XML structure

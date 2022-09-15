@@ -4,8 +4,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_AGCasinoBalance]
 	@FromDate				SMALLDATETIME,  
 	@ToDate					SMALLDATETIME,   
 	@AgentList				VARCHAR(MAX),
-	@BaseCurrency			VARCHAR(3) = '',
-	@DefaultBaseCurrency	VARCHAR(3) = ''
+	@BaseCurrency			VARCHAR(12) = '',
+	@DefaultBaseCurrency	VARCHAR(12) = ''
 /*  Created: Winnie
 	Date: 2015-01-20
     Task : AG balance report 
@@ -18,6 +18,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_AGCasinoBalance]
 		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 		- 20180529@Joseph: Add OPTION RECOMPILE to fix performance issue
 		- 20190617@Amanda: Add Base currency param [RedmineID: #112531]
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 */ 
 AS
 BEGIN

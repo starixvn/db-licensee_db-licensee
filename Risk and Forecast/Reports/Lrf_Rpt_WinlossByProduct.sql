@@ -9,8 +9,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByProduct]
 	@ProductList			VARCHAR(MAX)	= '',
 	@ReportType				TINYINT			= 1,
 	@DrawFilter				SMALLINT		= 1,
-	@BaseCurrency			VARCHAR(3)		= '',
-	@DefaultBaseCurrency	VARCHAR(3)		= '',
+	@BaseCurrency			VARCHAR(12)		= '',
+	@DefaultBaseCurrency	VARCHAR(12)		= '',
 	@CustId					INT				= 0		OUTPUT,
 	@SystemName				VARCHAR(50)		= ''	OUTPUT,
 	@ErrCode				TINYINT			= 0		OUTPUT,
@@ -102,6 +102,7 @@ AS
 		- 20210831@Kos: Enhance performance [RedmineID: #160981]
 		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
 		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 	Param's Explanation:
 		+ @ReportType: 1-Daily; 2-Monthly

@@ -5,7 +5,7 @@ ALTER PROCEDURE [dbo].[LAP_Statement_Mem_Product]
 	@WinLostDate	SMALLDATETIME,
 	@MoveBetsDay	SMALLDATETIME,
 	@BalanceUpDay	SMALLDATETIME,
-	@BaseCurrency	VARCHAR(3)		= '',
+	@BaseCurrency	VARCHAR(12)		= '',
 	@ModeView		TINYINT			= 1 
 AS
 
@@ -23,6 +23,7 @@ AS
 		- 20210111@Kos: Hotfix - not showing Saba Promotion [RedmineID: #148567]
 		- 20210203@Louis: Saba Red Envelope [RedmineID: #149923]
 		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 	Param's Explanation:
 		- @ModeView: TINYINT

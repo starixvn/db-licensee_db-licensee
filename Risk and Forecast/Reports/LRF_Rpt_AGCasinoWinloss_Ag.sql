@@ -5,8 +5,8 @@ ALTER PROCEDURE [dbo].[LRF_Rpt_AGCasinoWinloss_Ag]
 	@ToDate					SMALLDATETIME,
 	@MoveBetsDay			SMALLDATETIME,
 	@AgentList				VARCHAR(MAX),
-	@BaseCurrency			VARCHAR(3)		= '',
-	@DefaultBaseCurrency	VARCHAR(3)		= ''
+	@BaseCurrency			VARCHAR(12)		= '',
+	@DefaultBaseCurrency	VARCHAR(12)		= ''
 AS
 
 /*
@@ -27,6 +27,7 @@ AS
 		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 		- 20190617@Amanda: Add Base currency param [RedmineID: #112531]
 		- 20210622@Mark: Change on MoveBet - Add param MoveBetsDay [RedmineID: #154866]
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 */
 
 BEGIN
