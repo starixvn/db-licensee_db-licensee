@@ -70,6 +70,7 @@ Revisions:
 --20220518@Rong(DB06.bodb02): Add LG Virtual Sports(SportType:231) Report Data
 --20220801@Max(DB06.bodb02): Add MaxGame(SportType:237) Report Data
 --20220810@Ruby(DB06.bodb02): Add EVO Report Data
+--20220914@Benson(DB06.bodb02): fix Transfer3rd_EVO value error, use Transfer3rd_AVPSlot value display to evo
 */
 BEGIN
 	SET NOCOUNT ON
@@ -733,12 +734,16 @@ BEGIN
 		   ISNULL(o.Transfer3rd_BG, 0) AS Transfer3rd_BG,
 		   ISNULL(o.Transfer3rd_AVPMini, 0) AS Transfer3rd_AVPMini,
 		   ISNULL(o.Transfer3rd_AVPSlot, 0) AS Transfer3rd_AVPSlot,
-		   ISNULL(o.Transfer3rd_AVPSlot, 0) AS Transfer3rd_EVO
+		   ISNULL(o.Transfer3rd_EVO, 0) AS Transfer3rd_EVO
 	FROM @WinlostTmp b
 		LEFT JOIN @WinlostTransfer3rd o ON b.winlostdate = o.winlostdate
 	UNION
 	SELECT @dbtodaydate, d.* FROM @TodayData d
 	ORDER BY b.winlostdate
 END
+
+
+
+
 
 
