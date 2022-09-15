@@ -413,6 +413,7 @@ BEGIN
 			AND (@OddsGroup = 'All'
 				OR ',' + @OddsGroup + ',' LIKE '%,' + c.ugroup + ',%')
 			AND (@CustomerClass = 'All'
+				OR ',' + @CustomerClass + ',' LIKE '%,0,%' AND CONVERT(VARCHAR(6), ci.CustomerClass) IS NULL
 				OR ',' + @CustomerClass + ',' LIKE '%,' + CONVERT(VARCHAR(6), ci.CustomerClass) + ',%')
 
 		-- check promotion prize - PP promotion prize and NPH Promotion prize and Tips --
