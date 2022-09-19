@@ -37,6 +37,7 @@ AS
 	   - 20190412@Winnie: Licesee Management-Licensee setting - Cannot update betting limit SMA only for big line  - Redmine: 96951
 	   - 20211224@Johnson: Adjust Bet Limit for Sub Agent [redmine: #165885]
 	   - 202202220@Elodie: Apply DCS for SB [RedmineID: #167898] 
+	   - 202209010@Elodie: Insert Dep_LicenseeProductSetting in case no data [RedmineID: #177383] 
 	Param's Explanation:
 	Example:	DECLARE @ErrCode INT = 0, @ErrMsg NVARCHAR(4000) = ''
 				EXEC NAP_LM_LicenseeBetSettingUpd @CustID = 16947245, @Sporttype = 151, @Bettype = 31, @MinBet = 25, @MaxBet = 205, @MaxPerMatch = 2005, @ExistedMember = 1, @ErrCode = @ErrCode OUTPUT, @ErrMsg = @ErrMsg OUTPUT
@@ -45,9 +46,9 @@ AS
 */ 
 BEGIN
  SET NOCOUNT ON
-	DECLARE @startRun DATETIME
-	DECLARE @endRun DATETIME
-	DECLARE @duration INT
+	DECLARE @startRun DATETIME, @endRun DATETIME, @duration INT
+	DECLARE @ProductID SMALLINT
+
 	SET @startRun = getdate()
 	SELECT @ErrCode = 0, @ErrMsg =''
 	IF @ExistedMember=1
@@ -156,6 +157,39 @@ BEGIN
 		SELECT @ErrMsg = ERROR_MESSAGE(), @ErrCode  = ERROR_NUMBER()   					
 		RETURN
 	END CATCH
+
+	SELECT @ProductID = CASE	WHEN @Sporttype = 1 THEN 1 
+								WHEN @Sporttype = 161 THEN 3
+								WHEN @Sporttype = 202 THEN 8 END
+
+	IF @ProductID = 1
+		AND NOT EXISTS (SELECT 1 FROM Dep_ProductSetting ps WITH(NOLOCK) 
+							INNER JOIN Dep_LicenseeProductSetting d WITH(NOLOCK) ON ps.ProductSettingID=d.ProductSettingID WHERE ProductID=@ProductID AND CustID = @CustID AND SettingType <> 9)	
+	BEGIN
+		INSERT INTO Dep_LicenseeProductSetting(CustID,ProductSettingID)
+		SELECT @CustID, ProductSettingID
+		FROM Dep_ProductSetting WITH(NOLOCK)
+		WHERE ProductID = @ProductID AND SettingType <> 9
+	END
+
+	IF @ProductID <> 1
+		AND NOT EXISTS (SELECT 1 FROM Dep_ProductSetting ps WITH(NOLOCK) 
+							INNER JOIN Dep_LicenseeProductSetting d WITH(NOLOCK) ON ps.ProductSettingID=d.ProductSettingID WHERE ProductID=@ProductID AND CustID = @CustID)	
+	BEGIN
+		INSERT INTO Dep_LicenseeProductSetting(CustID,ProductSettingID)
+		SELECT @CustID, ProductSettingID
+		FROM Dep_ProductSetting WITH(NOLOCK)
+		WHERE ProductID = @ProductID
+	END
+
+	IF NOT EXISTS (SELECT 1 FROM Dep_ProductSetting ps WITH(NOLOCK) 
+							INNER JOIN Dep_LicenseeProductSetting d WITH(NOLOCK) ON ps.ProductSettingID=d.ProductSettingID WHERE ProductID=@ProductID AND CustID = @CustID)
+	BEGIN
+		INSERT INTO Dep_LicenseeProductSetting(CustID,ProductSettingID)
+		SELECT @CustID, ProductSettingID
+		FROM Dep_ProductSetting WITH(NOLOCK)
+		WHERE ProductID = @ProductID
+	END	
 
 	DECLARE @LogSPData VARCHAR(8000)
 
