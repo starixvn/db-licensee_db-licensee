@@ -1,6 +1,6 @@
-﻿/*<info serverAlias="DB042-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DB042-bodb02,DBSID-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_LeagueSelRunning]
-	@AgentList		VARCHAR(MAX),   
+		@AgentList		VARCHAR(MAX),   
     	@Bettypes		VARCHAR(100) = '0',--0: all, 1:1,3,7,8; 5:5,15 
     	@IsIncludeTestLeague 	BIT = 0
 AS     
@@ -18,6 +18,7 @@ Revisions:
 	- 20150414@Jim: add more bettype Extra Time 1H 1X2 (feature #32844)
 	- 20170227@Harper: LRF - Get data by @AgentList instead of @UserID [RedmineID: #71679]
 	- 20190104@Joseph: Add param @IsIncludeTestLeague to exclude test leagues[Redmine: #107473]
+	- 20220801@Victoria: Add DBSID-bodb02 to metadata [Redmine: #175297]
 
 Param's Explanation:
 	+ @AgentList: xml structure

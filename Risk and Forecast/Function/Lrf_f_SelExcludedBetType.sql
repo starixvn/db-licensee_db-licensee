@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02,DBBOF-bodb02" executers="" viewers="" isFunction="1" isNested="1"></info>*/
+/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02,DBBOF-bodb02,DBSID-bodb02" executers="" viewers="" isFunction="1" isNested="1"></info>*/
 
 ALTER FUNCTION [dbo].[Lrf_f_SelExcludedBetType]()
 RETURNS TABLE
@@ -7,7 +7,7 @@ RETURNS TABLE
 	Creator: Louis
 	Date: 2020-10-08
 	Task: Get Excluded Bet Types from Reports
-	DB: DBEXT-bodb02,DBACC-bodb02,DBBOF-bodb02
+	DB: DBEXT-bodb02,DBACC-bodb02,DBBOF-bodb02,DBSID-bodb02
 	Revision:
 		- 20201008@Louis: Licensee Spread Setting [RedmineID: #142532]
 		- 20210203@Louis: Saba Red Envelope [RedmineID: #149923]
@@ -16,6 +16,7 @@ RETURNS TABLE
 		- 20210518@Hogan: Integrate Vgaming [RedmineID: #151583]
 		- 20220126@Kos: Integrate Spadegaming Jackpot [RedmineID: #167035]
 		- 20220223@Kos: Integrate Allbet Promotion [RedmineID: #167524]
+		- 20220801@Victoria: Add DBSID-bodb02 to metadata [Redmine: #175297]
 */
 
 RETURN
