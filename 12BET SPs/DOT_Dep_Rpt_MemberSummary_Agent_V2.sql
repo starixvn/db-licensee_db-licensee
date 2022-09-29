@@ -73,6 +73,8 @@ Revisions:
 --20220914@Benson(DB06.bodb02): fix Transfer3rd_EVO value error, use Transfer3rd_AVPSlot value display to evo
 --20220830@Ruby(DB06.bodb02): Add Betradar Report Data
 --20220830@Ruby(DB06.bodb02): Add PP Report Data
+--20220927@Ruby(DB06.bodb02): Add BTC(SportType:175) Report Data
+
 */
 BEGIN
 	SET NOCOUNT ON
@@ -115,6 +117,7 @@ BEGIN
 		VgamingDraw money default(0), VgamingTOver money default(0), VgamingWL money default(0), --Vgaming
 		VS3Draw money default(0), VS3TOver money default(0), VS3WL money default(0), --LG Virtual Sports
 		MaxGameDraw money default(0), MaxGameTOver money default(0), MaxGameWL money default(0), --MaxGame
+		BTCDraw money default(0), BTCTOver money default(0), BTCWL money default(0), --Bitcoin
 		Winloss money default(0), ClosingBalance money default(0), Transfer3rd money default(0), DrawGame money default(0),
 		recommend int, mrecommend int, srecommend int, actualrate float, Promotion money, Transfer3rd_Opus money default(0), Transfer3rd_HoGaing money default(0),
 		Transfer3rd_AG money default(0), Transfer3rd_GD money default(0), Transfer3rd_VB money default(0),Transfer3rd_CRYSTAL money default(0),Transfer3rd_LBKeno money default(0),
@@ -154,6 +157,7 @@ BEGIN
 		VgamingDraw money default(0), VgamingTOver money default(0), VgamingWL money default(0), --Vgaming
 		VS3Draw money default(0), VS3TOver money default(0), VS3WL money default(0), --LG Virtual Sports
 		MaxGameDraw money default(0), MaxGameTOver money default(0), MaxGameWL money default(0), --MaxGame
+		BTCDraw money default(0), BTCTOver money default(0), BTCWL money default(0), --Bitcoin
 		Winloss money default(0), ClosingBalance money default(0), Transfer3rd money default(0), DrawGame money default(0),
 		recommend int, mrecommend int, srecommend int, actualrate float, Promotion money)
 
@@ -196,6 +200,7 @@ BEGIN
 			   ISNULL(p1.VgamingDraw, 0) AS VgamingDraw, ISNULL(p1.VgamingTOver, 0) AS VgamingTOver, ISNULL(p1.VgamingWL, 0) AS VgamingWL, --Vgaming
 			   ISNULL(p1.VS3Draw, 0) AS VS3Draw, ISNULL(p1.VS3TOver, 0) AS VS3TOver, ISNULL(p1.VS3WL, 0) AS VS3WL, --LG Virtual Sports
 			   ISNULL(p1.MaxGameDraw, 0) AS MaxGameDraw, ISNULL(p1.MaxGameTOver, 0) AS MaxGameTOver, ISNULL(p1.MaxGameWL, 0) AS MaxGameWL, --MaxGame
+			   ISNULL(p1.BTCDraw, 0) AS BTCDraw, ISNULL(p1.BTCTOver, 0) AS BTCTOver, ISNULL(p1.BTCWL, 0) AS BTCWL, --Bitcoin
 			   b.Winloss, b.ClosingBalance, b.Transfer3rd, b.DrawGame,
 			   b.recommend, b.mrecommend, b.srecommend, b.actualrate, b.Promotion
 		FROM bodb_Report.dbo.rptDepWinlost_bk b WITH(NOLOCK)
@@ -284,10 +289,13 @@ BEGIN
 								SUM(CASE WHEN p.sporttype = 231 THEN p.winlost ELSE 0 END) AS VS3WL,
 								SUM(CASE WHEN p.sporttype = 237 THEN p.drawTO ELSE 0 END) AS MaxGameDraw,
 								SUM(CASE WHEN p.sporttype = 237 THEN p.turnover ELSE 0 END) AS MaxGameTOver,
-								SUM(CASE WHEN p.sporttype = 237 THEN p.winlost ELSE 0 END) AS MaxGameWL
+								SUM(CASE WHEN p.sporttype = 237 THEN p.winlost ELSE 0 END) AS MaxGameWL,
+								SUM(CASE WHEN p.sporttype = 175 THEN p.drawTO ELSE 0 END) AS BTCDraw,
+								SUM(CASE WHEN p.sporttype = 175 THEN p.turnover ELSE 0 END) AS BTCTOver,
+								SUM(CASE WHEN p.sporttype = 175 THEN p.winlost ELSE 0 END) AS BTCWL
 						FROM bodb_Report.dbo.rptDepWinlostByProduct_BK p WITH(NOLOCK)
 						WHERE winlostdate BETWEEN @fromDate AND @toDate 
-							AND p.sporttype IN (0,151,161,162,180,190,191,192,193,202,203,204,205,210,211,212,219,220,251,208,209,-6,164,194,196,245,222,243,200,244,168,169,165,171,231,237) 
+							AND p.sporttype IN (0,151,161,162,180,190,191,192,193,202,203,204,205,210,211,212,219,220,251,208,209,-6,164,194,196,245,222,243,200,244,168,169,165,171,231,237,175) 
 							AND p.custid = @CustId 
 						GROUP BY p.winlostdate, p.custid
 					) p1 ON b.winlostdate = p1.winlostdate
@@ -366,6 +374,7 @@ BEGIN
 			   ISNULL(p1.VgamingDraw, 0) AS VgamingDraw, ISNULL(p1.VgamingTOver, 0) AS VgamingTOver, ISNULL(p1.VgamingWL, 0) AS VgamingWL, --Vgaming
 			   ISNULL(p1.VS3Draw, 0) AS VS3Draw, ISNULL(p1.VS3TOver, 0) AS VS3TOver, ISNULL(p1.VS3WL, 0) AS VS3WL, --LG Virtual Sports
 			   ISNULL(p1.MaxGameDraw, 0) AS MaxGameDraw, ISNULL(p1.MaxGameTOver, 0) AS MaxGameTOver, ISNULL(p1.MaxGameWL, 0) AS MaxGameWL, --MaxGame
+			   ISNULL(p1.BTCDraw, 0) AS BTCDraw, ISNULL(p1.BTCTOver, 0) AS BTCTOver, ISNULL(p1.BTCWL, 0) AS BTCWL, --Bitcoin
 			   b.Winloss, b.ClosingBalance, b.Transfer3rd, b.DrawGame,
 			   b.recommend, b.mrecommend, b.srecommend, b.actualrate, b.Promotion
 		FROM bodb_Report.dbo.rptDepWinlost b WITH(NOLOCK)
@@ -454,11 +463,14 @@ BEGIN
 								SUM(CASE WHEN p.sporttype = 231 THEN p.winlost ELSE 0 END) AS VS3WL,
 								SUM(CASE WHEN p.sporttype = 237 THEN p.drawTO ELSE 0 END) AS MaxGameDraw,
 								SUM(CASE WHEN p.sporttype = 237 THEN p.turnover ELSE 0 END) AS MaxGameTOver,
-								SUM(CASE WHEN p.sporttype = 237 THEN p.winlost ELSE 0 END) AS MaxGameWL
+								SUM(CASE WHEN p.sporttype = 237 THEN p.winlost ELSE 0 END) AS MaxGameWL,
+								SUM(CASE WHEN p.sporttype = 175 THEN p.drawTO ELSE 0 END) AS BTCDraw,
+								SUM(CASE WHEN p.sporttype = 175 THEN p.turnover ELSE 0 END) AS BTCTOver,
+								SUM(CASE WHEN p.sporttype = 175 THEN p.winlost ELSE 0 END) AS BTCWL
 
 						FROM bodb_Report.dbo.rptDepWinlostByProduct p WITH(NOLOCK)
 						WHERE winlostdate BETWEEN @fromDate AND @toDate 
-							AND p.sporttype IN (0,151,161,162,180,190,191,192,193,202,203,204,205,210,211,212,219,220,251,208,209,-6,164,194,196,245,222,243,200,244,168,169,165,171,231,237)
+							AND p.sporttype IN (0,151,161,162,180,190,191,192,193,202,203,204,205,210,211,212,219,220,251,208,209,-6,164,194,196,245,222,243,200,244,168,169,165,171,231,237,175)
 							AND p.custid = @CustId 
 						GROUP BY p.winlostdate, p.custid
 					) p1 ON b.winlostdate = p1.winlostdate
@@ -627,7 +639,8 @@ BEGIN
 			ARCADraw = ISNULL(p1.ARCADraw,0), ARCATOver = ISNULL(p1.ARCATOver,0), ARCAWL = ISNULL(p1.ARCAWL,0),  --Arcadia Gaming
 			VgamingDraw = ISNULL(p1.VgamingDraw,0), VgamingTOver = ISNULL(p1.VgamingTOver,0), VgamingWL = ISNULL(p1.VgamingWL,0), --Vgaming
 			VS3Draw = ISNULL(p1.VS3Draw,0), VS3TOver = ISNULL(p1.VS3TOver,0), VS3WL = ISNULL(p1.VS3WL,0), --LG Virtual Sports  
-			MaxGameDraw = ISNULL(p1.MaxGameDraw,0), MaxGameTOver = ISNULL(p1.MaxGameTOver,0), MaxGameWL = ISNULL(p1.MaxGameWL,0)  --MaxGame
+			MaxGameDraw = ISNULL(p1.MaxGameDraw,0), MaxGameTOver = ISNULL(p1.MaxGameTOver,0), MaxGameWL = ISNULL(p1.MaxGameWL,0),  --MaxGame
+			BTCDraw = ISNULL(p1.BTCDraw,0), BTCTOver = ISNULL(p1.BTCTOver,0), BTCWL = ISNULL(p1.BTCWL,0)  --Bitcoin
 		FROM @TodayData d
 			LEFT JOIN (
 						SELECT p.winlostdate, p.custid, 
@@ -715,10 +728,13 @@ BEGIN
 							   SUM(CASE WHEN p.sporttype = 231 THEN p.winlost ELSE 0 END) AS VS3WL,
 							   SUM(CASE WHEN p.sporttype = 237 THEN p.drawTO ELSE 0 END) AS MaxGameDraw,
 							   SUM(CASE WHEN p.sporttype = 237 THEN p.turnover ELSE 0 END) AS MaxGameTOver,
-							   SUM(CASE WHEN p.sporttype = 237 THEN p.winlost ELSE 0 END) AS MaxGameWL
+							   SUM(CASE WHEN p.sporttype = 237 THEN p.winlost ELSE 0 END) AS MaxGameWL,
+							   SUM(CASE WHEN p.sporttype = 175 THEN p.drawTO ELSE 0 END) AS BTCDraw,
+							   SUM(CASE WHEN p.sporttype = 175 THEN p.turnover ELSE 0 END) AS BTCTOver,
+							   SUM(CASE WHEN p.sporttype = 175 THEN p.winlost ELSE 0 END) AS BTCWL
 						FROM bodb_Report.dbo.rptDepWinlostByProduct p WITH(NOLOCK)
 						WHERE winlostdate = @dbtodaydate
-							AND p.sporttype IN (0,151,161,162,180,190,191,192,193,202,203,204,205,210,211,212,219,220,251,208,209,-6,164,194,196,245,222,243,200,244,168,169,165,171,231,237)
+							AND p.sporttype IN (0,151,161,162,180,190,191,192,193,202,203,204,205,210,211,212,219,220,251,208,209,-6,164,194,196,245,222,243,200,244,168,169,165,171,231,237,175)
 							AND p.custid = @CustId 
 						GROUP BY p.winlostdate, p.custid
 					) p1 ON d.custid = p1.custid
