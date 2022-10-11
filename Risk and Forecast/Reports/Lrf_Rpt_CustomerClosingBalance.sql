@@ -16,7 +16,7 @@ AS
 	Revisions:
 		- 20211125@Sol: Initial sp - [RedmineID: #165136]
 		- 20220121@Sol: Split Transfer out of bettrans/Support IPv6 - [RedmineID: #164301]
-
+		- 20201011@Evan: Support Currency Crypto show USDT [Redmine #177481]
 	Param's Explanation:
 		- @AgentList: list agent of licensee
 */
@@ -35,7 +35,7 @@ BEGIN
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT, @AgentList
 	
 		INSERT INTO @tmpAg(CustId, Currency, CurrCode)
-		SELECT data.AgentId, data.Currency, e.currency
+		SELECT data.AgentId, data.Currency, CASE WHEN ExchangeId = 142 THEN 'USDT' ELSE e.currency END
 		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId INT, Currency INT) AS Data
 			INNER JOIN exchange e WITH(NOLOCK) ON data.currency = e.exchangeid
 
