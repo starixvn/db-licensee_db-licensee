@@ -1,4 +1,4 @@
-﻿  
+﻿  /*<info serverAlias="DBCUST-CUSTDB" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMember_MinMaxBetKN]  
  @UserID INT =0,  
  @Custid INT,  
@@ -15,13 +15,15 @@ DB: DBCUST/CustDB
 Original :  
   
 Revisions:  
-  - 20140605@Jim: use table DBAGE.@tmp_GameType_tmp instead of @tmp_GameType for testing on UAT env  
-  - 20140606@Jim: exclude bettype 1511,1513 in temporarity   
-  - 20140606@Jim: fix bug wrong when get value for parameter  @minbet_old  
-  - 20140714@Jim: support to active bettype  1511,1513 (Kentucky,Michigan : #redmineID :17215)  
-  - 20150226@Jim: use Australia setting for all other Keno's countries. (RedmineID: #30921)  
-  - 20150610@Joseph: Separate CustDB to DBCUST server (Move SP to DBCUST.CustDB, use temp table for GameType table)
-  - 20151023@Victor: Support New Simplified Chinese
+	- 20140605@Jim: use table DBAGE.@tmp_GameType_tmp instead of @tmp_GameType for testing on UAT env  
+	- 20140606@Jim: exclude bettype 1511,1513 in temporarity   
+	- 20140606@Jim: fix bug wrong when get value for parameter  @minbet_old  
+	- 20140714@Jim: support to active bettype  1511,1513 (Kentucky,Michigan : #redmineID :17215)  
+	- 20150226@Jim: use Australia setting for all other Keno's countries. (RedmineID: #30921)  
+	- 20150610@Joseph: Separate CustDB to DBCUST server (Move SP to DBCUST.CustDB, use temp table for GameType table)
+	- 20151023@Victor: Support New Simplified Chinese
+	- 20220720@Tacy: Insert history of member bet setting [RedmineID: 170739]
+
 Param's Explanation:  
 @dataXML Format :  
   '<settings>  
@@ -34,6 +36,8 @@ Param's Explanation:
 */  
   
 SET NOCOUNT ON  
+
+DECLARE @CustList VARCHAR(MAX)
   
 DECLARE @startRun      DATETIME,  
   @endRun        DATETIME,  
@@ -54,7 +58,16 @@ DECLARE @startRun      DATETIME,
   @maxID     INT,  
   @GameTypeID    INT,  
   @GametypeName   NVARCHAR(100)     
-  
+
+DECLARE @History_BetSetting TABLE(
+		  CustID				INT
+		, SportType			SMALLINT
+		, BetType			SMALLINT
+		, MaxBet			MONEY
+		, MaxPerMatch		MONEY
+		, UpdateTime		DATETIME
+		)
+
 CREATE TABLE #Setting (ID INT IDENTITY(1,1),GameTypeID INT,minbet MONEY,maxbet MONEY,maxpermatch MONEY)    
 EXEC sp_xml_preparedocument @iDoc OUTPUT,@dataXML  
 INSERT INTO #Setting (GameTypeID,minbet,maxbet,maxpermatch)  
@@ -248,6 +261,8 @@ BEGIN
     MinBet =@MinBet,  
     MaxBet =@MaxBet,  
     MaxPerGameType =@maxpermatch  
+   OUTPUT deleted.CustID, 202, gt.IBCBettypeID, deleted.MaxBet, deleted.MaxPerGameType, GETDATE()
+	INTO @History_BetSetting (CustID, SportType, BetType, MaxBet, MaxPerMatch, UpdateTime)
    FROM CustGameType cg WITH (ROWLOCK, UPDLOCK)  
     INNER JOIN custinfo AS ci WITH (NOLOCK) ON cg.CustID = ci.CustID  
     --- INNER JOIN DBAGE.bodb02.dbo.gametype_tmp gt WITH (NOLOCK) ON cg.GameTypeID = gt.GameTypeID  -- for UAT  env  
@@ -271,6 +286,31 @@ BEGIN
     RETURN  
    END  
   END  
+
+  --Insert history bet setting
+	DELETE @History_BetSetting
+	WHERE SportType <> 202
+		OR (MaxBet=@maxbet AND MaxPerMatch=@MaxPerMatch)
+
+	IF EXISTS (SELECT 1	FROM @History_BetSetting)
+	BEGIN 
+		SET @CustList = (SELECT DISTINCT
+								CustID			AS '@CustID',
+								SportType		AS '@SportType',
+								BetType			AS '@BetType',
+								MaxBet			AS '@MaxBet',
+								MaxPerMatch		AS '@MaxPerMatch',
+								'NULL'			AS '@StakeLevelList',
+								UpdateTime		AS '@UpdateTime'
+							FROM @History_BetSetting
+							FOR XML PATH ('r'), ROOT ('root')
+						)
+
+		EXECUTE Acc_Dep_DynamicCustSetting_07  @CustList=@CustList, @ErrMsg=@ErrMsg OUTPUT
+
+		IF @ErrMsg<>''
+			RETURN 
+	END
   
  DECLARE @TrackingValue VARCHAR(5000)  
  SELECT @TrackingValue ='<Lrf_CustomerUpdMember_MinMaxBetKN custid="'+ COALESCE(CAST(@custid as VARCHAR(50)),SPACE(1)) + '" ' +  
@@ -309,9 +349,4 @@ BEGIN
 END   
   
 DROP TABLE #setting  
-
-GO
-GRANT EXECUTE ON [dbo].[Lrf_CustomerUpdMember_MinMaxBetKN] TO [bodbLicenseeNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[Lrf_CustomerUpdMember_MinMaxBetKN] TO [vnteam]
 GO
