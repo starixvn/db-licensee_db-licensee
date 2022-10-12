@@ -129,19 +129,11 @@ BEGIN
 		FROM dbo.ExchangeDailyOanda ex WITH(NOLOCK)
 			INNER JOIN @tblDate dt ON ex.ExchangeDate = dt.lastexchangeday
 
-	IF @BaseCurrency = 'USDT'
+	IF @BaseCurrency = 'USDT' OR @DefaultBaseCurrency = 'USDT'
 	BEGIN
 		UPDATE a
-		SET a.Rate = b.USDT
-		FROM @tempDate a 
-			INNER JOIN ExchangeDaily_Crypto b WITH(NOLOCK) ON a.ExchangeId = b.ExchangeId
-			INNER JOIN @tblDate c ON b.ExchangeDate = c.lastexchangeday
-	END
-
-	IF @DefaultBaseCurrency = 'USDT'
-	BEGIN
-		UPDATE a
-		SET a.DefaultRate = b.USDT
+		SET a.Rate = CASE WHEN @BaseCurrency = 'USDT' THEN b.USDT ELSE a.Rate END , 
+			a.DefaultRate = CASE WHEN @DefaultBaseCurrency = 'USDT' THEN b.USDT ELSE a.DefaultRate END
 		FROM @tempDate a 
 			INNER JOIN ExchangeDaily_Crypto b WITH(NOLOCK) ON a.ExchangeId = b.ExchangeId
 			INNER JOIN @tblDate c ON b.ExchangeDate = c.lastexchangeday
