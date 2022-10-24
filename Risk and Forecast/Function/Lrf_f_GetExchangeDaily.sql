@@ -45,8 +45,8 @@ AS
 BEGIN
 
 DECLARE @tmpFromDate DATETIME, @tmpToDate DATETIME, @maxExchangeDate DATETIME, @tmpDate DATETIME, @LastDate DATETIME, @ReferencedExchangeDate DATETIME
-DECLARE @i INT
-
+DECLARE @i INT, @UUS FLOAT = 2E-101;
+ 
 --Get the data after 1st of June 2012 in ExchangeDailyOanda
 --Get the Referenced Exchange Date
 SELECT @maxExchangeDate=MAX(exchangedate) FROM ExchangeDailyOanda WITH (NOLOCK)
@@ -79,7 +79,7 @@ BEGIN
 	WHILE (@tmpDate<=@tmpToDate AND @tmpDate<=@todate)
 	BEGIN
 		INSERT INTO @tempDate (exchangedate,ExchangeId,Code,MYR, USD, EUR, CNY, GBP, HKD, THB, IDR, INH, BDT, INR,USDT, actualrate)
-		SELECT @tmpDate,a.ExchangeId,Code,MYR, USD, EUR, CNY, GBP, HKD, THB, IDR / 1000 AS IDR, VND / 1000 AS INH, BDT, INR,ISNULL(b.USDT,2E-101) AS USDT, actualrate
+		SELECT @tmpDate,a.ExchangeId,Code,MYR, USD, EUR, CNY, GBP, HKD, THB, IDR / 1000 AS IDR, VND / 1000 AS INH, BDT, INR,CASE WHEN a.ExchangeId = 20 THEN @UUS ELSE ISNULL(b.USDT,1) END AS USDT, actualrate
 		FROM ExchangeDailyOanda a WITH (NOLOCK) 
 			LEFT JOIN ExchangeDaily_Crypto b WITH(NOLOCK) ON a.ExchangeId = b.ExchangeId AND b.ExchangeDate = @LastDate
 		WHERE a.ExchangeDate = @LastDate

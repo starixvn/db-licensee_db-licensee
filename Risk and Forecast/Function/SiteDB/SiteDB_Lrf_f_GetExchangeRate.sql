@@ -34,7 +34,7 @@ AS
 BEGIN
 	DECLARE @tblDate AS TABLE(number INT PRIMARY KEY, firstday SMALLDATETIME, lastday SMALLDATETIME, lastexchangeday SMALLDATETIME)
 
-	DECLARE @MonthDist INT, @USDT FLOAT = 2E-101;
+	DECLARE @MonthDist INT, @UUS FLOAT = 2E-101;
 
 	IF (@FromDate > @ToDate)
 		RETURN
@@ -109,7 +109,7 @@ BEGIN
 				WHEN @BaseCurrency = 'INH' THEN ex.VND / 1000
 				WHEN @BaseCurrency = 'BDT' THEN ex.BDT
 				WHEN @BaseCurrency = 'INR' THEN ex.INR
-				WHEN @BaseCurrency = 'USDT' THEN @USDT
+				WHEN @BaseCurrency = 'USDT' AND ExchangeId = 20 THEN @UUS
 				ELSE 1
 			END AS Rate,
 			CASE
@@ -124,7 +124,7 @@ BEGIN
 				WHEN @DefaultBaseCurrency = 'INH' THEN ex.VND / 1000
 				WHEN @DefaultBaseCurrency = 'BDT' THEN ex.BDT
 				WHEN @DefaultBaseCurrency = 'INR' THEN ex.INR
-				WHEN @DefaultBaseCurrency = 'USDT' THEN @USDT
+				WHEN @DefaultBaseCurrency = 'USDT' AND ExchangeId = 20 THEN @UUS
 				ELSE 1
 			END AS DefaultRate
 		FROM CustDB.dbo.ExchangeDailyOanda ex WITH(NOLOCK)

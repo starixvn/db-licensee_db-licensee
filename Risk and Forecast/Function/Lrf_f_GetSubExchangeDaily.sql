@@ -42,7 +42,7 @@ BEGIN
 
 	DECLARE @tblDate AS TABLE(number INT PRIMARY KEY, firstday SMALLDATETIME, lastday SMALLDATETIME, lastexchangeday SMALLDATETIME)
 
-	DECLARE @MonthDist INT
+	DECLARE @MonthDist INT, @UUS FLOAT = 2E-101;
 
 	IF (@FromDate > @ToDate)
 		RETURN
@@ -121,13 +121,13 @@ BEGIN
 			ex.VND / 1000 AS INH, 
 			ex.BDT, 
 			ex.INR, 
-			ISNULL(exc.USDT,2E-101) AS USDT,
+			CASE WHEN ex.ExchangeId = 20 THEN @UUS ELSE ISNULL(exc.USDT,1) END AS USDT,
 			ex.Actualrate
 		FROM dbo.ExchangeDailyOanda ex WITH(NOLOCK)
 			INNER JOIN @tblDate dt ON ex.ExchangeDate = dt.lastexchangeday
 			LEFT JOIN ExchangeDaily_Crypto exc WITH(NOLOCK) ON exc.ExchangeId = ex.ExchangeId AND exc.ExchangeDate = dt.lastexchangeday
 
-	RETURN
+	RETURN 
 
 END
 GO
