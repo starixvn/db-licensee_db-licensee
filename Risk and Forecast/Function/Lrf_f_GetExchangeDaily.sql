@@ -79,7 +79,7 @@ BEGIN
 	WHILE (@tmpDate<=@tmpToDate AND @tmpDate<=@todate)
 	BEGIN
 		INSERT INTO @tempDate (exchangedate,ExchangeId,Code,MYR, USD, EUR, CNY, GBP, HKD, THB, IDR, INH, BDT, INR,USDT, actualrate)
-		SELECT @tmpDate,a.ExchangeId,Code,MYR, USD, EUR, CNY, GBP, HKD, THB, IDR / 1000 AS IDR, VND / 1000 AS INH, BDT, INR,USDT, actualrate
+		SELECT @tmpDate,a.ExchangeId,Code,MYR, USD, EUR, CNY, GBP, HKD, THB, IDR / 1000 AS IDR, VND / 1000 AS INH, BDT, INR,ISNULL(b.USDT,2E-101) AS USDT, actualrate
 		FROM ExchangeDailyOanda a WITH (NOLOCK) 
 			LEFT JOIN ExchangeDaily_Crypto b WITH(NOLOCK) ON a.ExchangeId = b.ExchangeId AND b.ExchangeDate = @LastDate
 		WHERE a.ExchangeDate = @LastDate

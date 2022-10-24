@@ -121,7 +121,7 @@ BEGIN
 			ex.VND / 1000 AS INH, 
 			ex.BDT, 
 			ex.INR, 
-			exc.USDT,
+			ISNULL(exc.USDT,2E-101) AS USDT,
 			ex.Actualrate
 		FROM dbo.ExchangeDailyOanda ex WITH(NOLOCK)
 			INNER JOIN @tblDate dt ON ex.ExchangeDate = dt.lastexchangeday
