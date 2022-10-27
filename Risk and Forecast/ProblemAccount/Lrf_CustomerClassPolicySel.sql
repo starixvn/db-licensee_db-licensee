@@ -12,6 +12,7 @@ AS
 			- 20201103@Winfred: Get RepeatedBets  and SpreadGroup on customer class [redmine:#144706]
 			- 20201125@Winfred: Get MinBet  and Platform on customer class [redmine:#146000]
 			- 20201223@Winfred: Get AgentBetInterval and Currency on customer class [redmine:#146969]
+			- 20221025@Johnson: Add DisableParlay [redmine: #178994]
 	*/
 BEGIN
 	SET NOCOUNT ON
@@ -23,16 +24,16 @@ BEGIN
 	WHERE SiteName = @site
 	-- Get Class for Site
 	;WITH T as (
-	SELECT CustomerClass,Liveindicator,SportType,LeagueGroupID,BetDelay,NextBetInterval,MaxBet, MaxPerMatch, c1.SiteID, c1.RepeatedBets, c1.Platform, c1.MinBet, c1.CurrencyID, c1.AgentBetInterval
+	SELECT CustomerClass,Liveindicator,SportType,LeagueGroupID,BetDelay,NextBetInterval,MaxBet, MaxPerMatch, c1.SiteID, c1.RepeatedBets, c1.Platform, c1.MinBet, c1.CurrencyID, c1.AgentBetInterval, c1.DisableParlay
 	FROM CustomerClassPolicy c1 WITH(NOLOCK)
 	WHERE c1.isLicensee = 1
 		AND c1.Enabled = 1
 		AND c1.SiteID = @siteID
 	)
-	SELECT CustomerClass,Liveindicator,SportType,LeagueGroupID,BetDelay,NextBetInterval,MaxBet,MaxPerMatch,siteid, RepeatedBets, Platform, MinBet, CurrencyID, AgentBetInterval
+	SELECT CustomerClass,Liveindicator,SportType,LeagueGroupID,BetDelay,NextBetInterval,MaxBet,MaxPerMatch,siteid, RepeatedBets, Platform, MinBet, CurrencyID, AgentBetInterval, DisableParlay
 	FROM T 
 	UNION ALL
-	SELECT c2.CustomerClass,c2.Liveindicator,c2.SportType,c2.LeagueGroupID,c2.BetDelay,c2.NextBetInterval,c2.MaxBet,c2.MaxPerMatch	,c2.siteid	,c2.RepeatedBets,c2.Platform,c2.MinBet,c2.CurrencyID,c2.AgentBetInterval
+	SELECT c2.CustomerClass,c2.Liveindicator,c2.SportType,c2.LeagueGroupID,c2.BetDelay,c2.NextBetInterval,c2.MaxBet,c2.MaxPerMatch	,c2.siteid	,c2.RepeatedBets,c2.Platform,c2.MinBet,c2.CurrencyID,c2.AgentBetInterval, DisableParlay
 	FROM CustomerClassPolicy c2 WITH(NOLOCK)
 	WHERE c2.isLicensee = 1
 		AND c2.Enabled = 1
