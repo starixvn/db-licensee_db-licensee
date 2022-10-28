@@ -9,7 +9,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportWinlossByMatch]
 	@ShowBA			BIT				= 0,
 	@SportId		INT				= 0,
 	@LiveIndicator	INT				= 1,
-	@BaseCurrency	VARCHAR(3)		= ''
+	@BaseCurrency	VARCHAR(12)		= ''
 AS
 
 /*
@@ -51,6 +51,7 @@ AS
 					- Remove input params @showSB, @ShowVS, @showVS2
 					- Add input param @ProductList VARCHAR(500)
 					- Don't return BetType, ShowTime, AmountDueTo3rd column anymore
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 	Param's Explanation:
 		+ @AgentList: XML structure

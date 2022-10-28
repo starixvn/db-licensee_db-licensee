@@ -20,7 +20,8 @@ RETURNS @tempDate TABLE (
 	INH									FLOAT, 
 	BDT									FLOAT,
 	INR									FLOAT,
-	Actualrate							FLOAT
+	USDT								FLOAT,
+	Actualrate					FLOAT
 	)
 AS
 /*  
@@ -34,13 +35,14 @@ AS
 	- 20181008@Joseph: Deploy to 2 servers DBACC-bodb02,DB042.bodb02 (used by SP betlists) [Redmine #80941]
 	- 20190426@Joseph: Add INH base currency [Redmine: #112603]
 	- 20210224@Mark: Add BDT and INR as Base Currencies[Redmine #150375]
+	- 20220914@Evan: Add USDT as Base Currencies[Redmine #177481]
 
 */
 BEGIN
 
 	DECLARE @tblDate AS TABLE(number INT PRIMARY KEY, firstday SMALLDATETIME, lastday SMALLDATETIME, lastexchangeday SMALLDATETIME)
 
-	DECLARE @MonthDist INT
+	DECLARE @MonthDist INT, @UUS FLOAT = 2E-101;
 
 	IF (@FromDate > @ToDate)
 		RETURN
@@ -100,6 +102,7 @@ BEGIN
 			INH,
 			BDT,
 			INR,
+			USDT,
 			Actualrate
 	) 
 		SELECT 
@@ -118,11 +121,13 @@ BEGIN
 			ex.VND / 1000 AS INH, 
 			ex.BDT, 
 			ex.INR, 
+			CASE WHEN ex.ExchangeId = 20 THEN @UUS ELSE ISNULL(exc.USDT,1) END AS USDT,
 			ex.Actualrate
 		FROM dbo.ExchangeDailyOanda ex WITH(NOLOCK)
 			INNER JOIN @tblDate dt ON ex.ExchangeDate = dt.lastexchangeday
+			LEFT JOIN ExchangeDaily_Crypto exc WITH(NOLOCK) ON exc.ExchangeId = ex.ExchangeId AND exc.ExchangeDate = dt.lastexchangeday
 
-	RETURN
+	RETURN 
 
 END
 GO

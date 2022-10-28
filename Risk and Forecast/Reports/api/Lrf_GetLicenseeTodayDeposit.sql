@@ -4,7 +4,7 @@ GO
 
 ALTER PROCEDURE [dbo].[Lrf_GetLicenseeTodayDeposit]
     @ReportDate		SMALLDATETIME,
-    @BaseCurrency	VARCHAR(3) = '',
+    @BaseCurrency	VARCHAR(12) = '',
 	@AgentList		VARCHAR(MAX)
 AS 
 
@@ -21,6 +21,7 @@ AS
 		- 20181031@Percy: Remove linked-server DBLIC [RedmineID: #103660]
 		- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
 		- 20191115@Merlin: Get data by AgentList instead of LicenseeID and CurrentcyList[RedmineID: #123651]
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 */
 
 /*

@@ -8,7 +8,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_TurnOver]
 	@ProductList	VARCHAR(500),
 	@ShowBT			BIT			= 0,		-- Bet Trade
 	@ShowCO			BIT			= 0,		-- Cash Out
-	@BaseCurrency	VARCHAR(3)
+	@BaseCurrency	VARCHAR(12)
 AS
 
 /*
@@ -70,6 +70,7 @@ AS
 						- Change to use @ProductList
 		- 20211001@Kos: Change start date to use rptdepwinlost_SUM table [RedmineID: #162568]
 		- 20211109@Kos: Change to use temp table #TempAg [RedmineID: #163191]
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 */
 
 BEGIN

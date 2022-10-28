@@ -7,7 +7,7 @@ ALTER  PROCEDURE [dbo].[Lrf_Forecast_SelByLeague]
     @BaseOffsetHTOU		INT ,
     @LeagueID			INT ,
 	@AgentList			VARCHAR(MAX) ,
-	@BaseCurrency		VARCHAR(3)= ''
+	@BaseCurrency		VARCHAR(12)= ''
 AS 
 /*
 Created: 20101207@Henry
@@ -29,6 +29,7 @@ Revisions:
 	- 20190415@Percy: Get livehomescore/liveawayscore data from match table instead of odds table [RedmineID: #113303]
 	- 20190611@Amanda: Add Base Currency parameter [Redmine: #112531]
 	- 20210224@Mark: Change alias DB042 to DBBOF [Redmine: #150375]
+    - 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 Param's Explanation:
 	+ @AgentList: xml structure

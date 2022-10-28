@@ -7,7 +7,7 @@ ALTER PROCEDURE [dbo].[Lrf_Statement_Mem]
     @MoveBetsDay	DATETIME = NULL,  
     @PageSize		INT = 50,  
     @PageIndex		INT = 1,  
-    @BaseCurrency	VARCHAR(3) = '',
+    @BaseCurrency	VARCHAR(12) = '',
     @TotalRows		INT = 0 OUTPUT 
 AS
 /*  
@@ -42,6 +42,7 @@ Revisions:
 	- 20170320@Paul: Implement Cash Out [RedmineID :#71727]
 	- 20181102@Patrick: DB052 indexes revolution [RedmineID :#103572]
 	- 20190622@Amanda: Add Base currency param [RedmineID: #112531]
+	- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
  
 Param's Explanation:   
 	• @ErrCode:

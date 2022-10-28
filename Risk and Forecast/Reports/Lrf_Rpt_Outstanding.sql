@@ -8,7 +8,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_Outstanding]
 	@AgentList		VARCHAR(MAX),
 	@OrderItem		TINYINT			= 1,
 	@IsAscSort		BIT				= 1,
-	@BaseCurrency	VARCHAR(5)		= ''
+	@BaseCurrency	VARCHAR(12)		= ''
 AS 
 /*
 	Created: 20101201@Jacob
@@ -70,6 +70,7 @@ AS
 		- 20201104@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369]
 		- 20210525@Hogan: Integrate Vgaming [RedmineID: #151583]
 		- 20220126@Kos: Integrate Spadegaming Jackpot [RedmineID: #167035]
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 	Param's Explanation:
 		@OrderItem:

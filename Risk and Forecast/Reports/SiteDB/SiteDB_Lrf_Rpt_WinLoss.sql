@@ -51,7 +51,7 @@ CREATE PROCEDURE [dbo].[SiteDB_Lrf_Rpt_WinLoss]
 	@PageIndex				INT				= 1,
 	@OrderItem				TINYINT			= 1,
 	@IsAscSort				BIT				= 1,
-	@BaseCurrency			VARCHAR(5)		= '',
+	@BaseCurrency			VARCHAR(12)		= '',
 	@ErrCode				INT				= 0 OUTPUT,
 	@ErrMsg					NVARCHAR(200)	= '' OUTPUT
 AS
@@ -63,6 +63,7 @@ AS
 
 	Revisions:
 		- 20220801@Sol: initial sp - [Redmine: #175297]
+   		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 	Param's Explanation:
 		@OrderItem:

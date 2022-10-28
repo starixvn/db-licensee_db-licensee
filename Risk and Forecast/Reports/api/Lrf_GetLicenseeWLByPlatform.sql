@@ -6,7 +6,7 @@ ALTER PROCEDURE [dbo].[Lrf_GetLicenseeWLByPlatform]
 	@ToDate			SMALLDATETIME,
 	@MoveBetsDay	SMALLDATETIME,
 	@ProductList	VARCHAR(100),
-	@BaseCurrency	VARCHAR(3) = ''
+	@BaseCurrency	VARCHAR(12) = ''
 AS
 
 /*
@@ -38,7 +38,8 @@ AS
 		- 20210622@Mark: Change on MoveBet - Add param MoveBetsDay [RedmineID: #154866]
 		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
 					- Add new input param @ProductList VARCHAR(100)
-
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
+		
 	Param explanation:
 		- @ProductList: SB and all products grouped under SB (SB,SLT,...)
 */

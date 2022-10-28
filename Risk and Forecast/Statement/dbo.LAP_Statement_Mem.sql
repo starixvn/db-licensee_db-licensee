@@ -7,7 +7,7 @@ ALTER PROCEDURE [dbo].[LAP_Statement_Mem]
     @MoveBetsDay	SMALLDATETIME,  
     @PageSize		INT = 50,  
     @PageIndex		INT = 1,  
-    @BaseCurrency	VARCHAR(3) = '',
+    @BaseCurrency	VARCHAR(12) = '',
     @TotalRows		INT = 0 OUTPUT 
 AS
 /*
@@ -28,6 +28,7 @@ Revisions:
 	- 20210518@Percy: Change code to adapt new Move Bets flow [RedmineID: #154866]
 	- 20211109@Percy: Fix wrong opening balance issue and add ACCUMULATED BALANCE [RedmineID: #164360]
 	- 20211111@Sol: Split Transfer out of bettrans/Support IPv6 - [RedmineID: #164301]
+    - 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 Param's Explanation:     
 */

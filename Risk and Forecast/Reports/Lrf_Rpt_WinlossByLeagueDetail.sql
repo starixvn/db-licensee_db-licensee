@@ -16,7 +16,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinlossByLeagueDetail]
 	,@ShowSB BIT = 1
 	,@ShowBA BIT = 1
 	,@AgentList		VARCHAR(MAX)
-	,@BaseCurrency	VARCHAR(3) = ''
+	,@BaseCurrency	VARCHAR(12) = ''
 AS
 
 /*
@@ -50,6 +50,7 @@ AS
 		- 20210304@Hogan: Offer Decimal Odds Only for Match [RedmineID: #151010]
 		- 20210304@Hogan: Integrate Cricket AIO [RedmineID: #150386]
 		- 20210420@Mark: Integrate Time Machine HDP [Redmine: #153302]
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 */
 
 BEGIN

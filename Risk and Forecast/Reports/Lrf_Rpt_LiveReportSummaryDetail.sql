@@ -8,7 +8,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportSummaryDetail]
 	@MoveBetsDay	SMALLDATETIME,
 	@Debug			BIT				= 0,
 	@Liveindicator	INT				= 1,
-	@BaseCurrency	VARCHAR(3)		= ''
+	@BaseCurrency	VARCHAR(12)		= ''
 AS
 
 /*
@@ -113,6 +113,7 @@ AS
 		- 20220601@Hogan: Integrate FGG Guaranteed Gaming [RedmineID: #167897]
 		- 20220601@Hogan: Integrate MaxGame [RedmineID: #172919]
 		- 20220714@Hogan: Integrate Volleyball AIO [RedmineID: #175143]
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 	Param's Explanation:
 		+ @Liveindicator: indicate that whether the report will get live data or not

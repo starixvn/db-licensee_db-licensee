@@ -7,7 +7,7 @@ ALTER PROCEDURE [dbo].[Lrf_DormantCustomerSel]
 	@PageIndex		INT				= 1,
 	@TotalRows		INT				= 0  OUTPUT,
 	@AgentList		VARCHAR(MAX),
-	@BaseCurrency	VARCHAR(3)
+	@BaseCurrency	VARCHAR(12)
 AS
 
 /*
@@ -21,6 +21,7 @@ AS
 		- 20200222@Kos: Enhance performance [Redmine: #129003]
 		- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]	
 		- 20211222@Johnson: support search by option for dormant accounts [RedmineID: #164294]
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 	Parameter's Explanation:
 		@searchOption: 0- default search on LRF
 						1- Match prefix

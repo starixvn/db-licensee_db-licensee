@@ -4,7 +4,7 @@ CREATE PROCEDURE [SiteDB_Lrf_Forecast_Sel1X2]
     @matchid		INT ,
     @bettype		INT ,
 	@AgentList		VARCHAR(MAX),
-	@BaseCurrency	VARCHAR(3)= ''
+	@BaseCurrency	VARCHAR(12)= ''
 AS
  /*
 Created by: [20220801@Victoria]
@@ -13,7 +13,7 @@ DB: DBSID-bodb02
 Original: [Lrf_Forecast_Sel1X2]
 Revisions:
 	- 20220801@Victoria: Create SP[Redmine: #175297]
-
+    - 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 Param's explanation:
 	--1:home
 	--2:away

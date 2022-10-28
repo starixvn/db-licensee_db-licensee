@@ -52,7 +52,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
 	@PageIndex				INT				= 1,
 	@OrderItem				TINYINT			= 1,
 	@IsAscSort				BIT				= 1,
-	@BaseCurrency			VARCHAR(5)		= '',
+	@BaseCurrency			VARCHAR(12)		= '',
 	@ErrCode				INT				= 0 OUTPUT,
 	@ErrMsg					NVARCHAR(200)	= '' OUTPUT
 AS
@@ -163,6 +163,7 @@ AS
 		- 20220601@Hogan: Integrate MaxGame [RedmineID: #172919]
 		- 20220812@Hogan: Support Customer Class Is Null [RedmineID: #176156]
 		- 20220825@Kos: Hotfix - Extend length for Customer Class [RedmineID: #177077]
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 	Param's Explanation:
 		@OrderItem:

@@ -6,8 +6,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_AGCasinoWinloss]
 	, @MoveBetsDay			SMALLDATETIME
 	, @ReportType			TINYINT			= 1
 	, @AgentList			VARCHAR(MAX)
-	, @BaseCurrency			VARCHAR(3) = ''
-	, @DefaultBaseCurrency	VARCHAR(3) = ''
+	, @BaseCurrency			VARCHAR(12) = ''
+	, @DefaultBaseCurrency	VARCHAR(12) = ''
 WITH RECOMPILE
 AS
 
@@ -31,6 +31,7 @@ AS
 		- 20190604@Amanda: Fix bug - Dummy balance data is displayed in report [RedmineID: #114611]
 		- 20190617@Amanda: Add Base currency param [RedmineID: #112531]
 		- 20210622@Mark: Change on MoveBet - Add param MoveBetsDay [RedmineID: #154866]
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 	Param's Explanation:
 		+ @ReportType : 1 Daily, 2 Monthly

@@ -6,7 +6,24 @@ ALTER FUNCTION [dbo].[Lrf_f_GetExchangeDaily]
       @todate DATETIME
       
     )
-RETURNS @tempDate TABLE (exchangedate DATETIME,ExchangeId INT,Code VARCHAR(5),MYR FLOAT, USD FLOAT, EUR FLOAT, CNY FLOAT,GBP FLOAT,HKD FLOAT,THB FLOAT,IDR FLOAT,INH FLOAT, BDT FLOAT, INR FLOAT, actualrate FLOAT, UNIQUE CLUSTERED(exchangedate,exchangeid))
+RETURNS @tempDate TABLE 
+(		exchangedate DATETIME,
+		ExchangeId INT,
+		Code VARCHAR(5),
+		MYR FLOAT,
+		USD FLOAT,
+		EUR FLOAT,
+		CNY FLOAT,
+		GBP FLOAT,
+		HKD FLOAT,
+		THB FLOAT,
+		IDR FLOAT,
+		INH FLOAT,
+		BDT FLOAT,
+		INR FLOAT,
+		USDT FLOAT,
+		actualrate FLOAT,
+	UNIQUE CLUSTERED(exchangedate,	exchangeid))
 AS
 
  /*
@@ -23,13 +40,13 @@ AS
 	- 20180724@Sophia: HA - remove table ExchangeDaily [Redmine: #98631]
 	- 20190426@Joseph: Add INH base currency [Redmine: #112603]
 	- 20210224@Mark: Add BDT and INR as Base Currencies[Redmine #150375]
+	- 20220914@Evan: Add USDT as Base Currencies[Redmine #177481]
 */
 BEGIN
 
-DECLARE @tmpFromDate DATETIME, @tmpToDate DATETIME, @maxExchangeDate DATETIME, @tmpDate DATETIME, @gapDate DATETIME, @ReferencedExchangeDate DATETIME
-DECLARE @i INT
-
-
+DECLARE @tmpFromDate DATETIME, @tmpToDate DATETIME, @maxExchangeDate DATETIME, @tmpDate DATETIME, @LastDate DATETIME, @ReferencedExchangeDate DATETIME
+DECLARE @i INT, @UUS FLOAT = 2E-101;
+ 
 --Get the data after 1st of June 2012 in ExchangeDailyOanda
 --Get the Referenced Exchange Date
 SELECT @maxExchangeDate=MAX(exchangedate) FROM ExchangeDailyOanda WITH (NOLOCK)
@@ -39,7 +56,6 @@ SELECT @ReferencedExchangeDate = (SELECT a.ExchangeDate FROM (SELECT TOP 1 Excha
 									AND CAST(CONVERT(VARCHAR(10),@maxExchangeDate,111) AS SMALLDATETIME)
 				GROUP BY ExchangeDate
 				ORDER BY 2 DESC, 1 DESC) a )
-
 
 SET @tmpFromDate = @fromdate
 SET @i = 0
@@ -52,24 +68,28 @@ BEGIN
 	END
 
 	SET @tmpToDate = CAST(CONVERT(VARCHAR(10),  DATEADD(s,-1,DATEADD(mm, DATEDIFF(m,0,@tmpFromDate)+1,0)), 111) AS SMALLDATETIME)
-	
-	--IF @tmpToDate>@ReferencedExchangeDate 
-	--	SET @tmpToDate=@ReferencedExchangeDate
+
+	--select @LastDate
+	SET @LastDate = @tmpToDate
+	IF @LastDate > @ReferencedExchangeDate 
+		SET @LastDate = @ReferencedExchangeDate
 			
 	SET @tmpDate = @tmpFromDate
 	
 	WHILE (@tmpDate<=@tmpToDate AND @tmpDate<=@todate)
 	BEGIN
-		INSERT INTO @tempDate (exchangedate,ExchangeId,Code,MYR, USD, EUR, CNY, GBP, HKD, THB, IDR, INH, BDT, INR, actualrate)
-		SELECT @tmpDate,ExchangeId,Code,MYR, USD, EUR, CNY, GBP, HKD, THB, IDR / 1000 AS IDR, VND / 1000 AS INH, BDT, INR, actualrate
-		FROM ExchangeDailyOanda WITH (NOLOCK)
-		WHERE ExchangeDate = CASE WHEN @tmpToDate > @ReferencedExchangeDate THEN @ReferencedExchangeDate ELSE @tmpToDate END
+		INSERT INTO @tempDate (exchangedate,ExchangeId,Code,MYR, USD, EUR, CNY, GBP, HKD, THB, IDR, INH, BDT, INR,USDT, actualrate)
+		SELECT @tmpDate,a.ExchangeId,Code,MYR, USD, EUR, CNY, GBP, HKD, THB, IDR / 1000 AS IDR, VND / 1000 AS INH, BDT, INR,CASE WHEN a.ExchangeId = 20 THEN @UUS ELSE ISNULL(b.USDT,1) END AS USDT, actualrate
+		FROM ExchangeDailyOanda a WITH (NOLOCK) 
+			LEFT JOIN ExchangeDaily_Crypto b WITH(NOLOCK) ON a.ExchangeId = b.ExchangeId AND b.ExchangeDate = @LastDate
+		WHERE a.ExchangeDate = @LastDate
 	
 		SET @tmpDate = DATEADD(dd,1,@tmpDate)
 	END
 
 	SET @i = @i + 1
 	SET @tmpFromDate = DATEADD(m,1,@tmpFromDate)
+	
 END
 
 RETURN 

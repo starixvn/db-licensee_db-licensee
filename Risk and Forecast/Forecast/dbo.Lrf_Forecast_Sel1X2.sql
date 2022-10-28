@@ -4,7 +4,7 @@ ALTER PROCEDURE [Lrf_Forecast_Sel1X2]
     @matchid		INT ,
     @bettype		INT ,
 	@AgentList		VARCHAR(MAX),
-	@BaseCurrency	VARCHAR(3)= ''
+	@BaseCurrency	VARCHAR(12)= ''
 AS
  /*
 Created by: [20101207@Henry]
@@ -26,6 +26,7 @@ Revisions:
 	- 20180802@Sophia: HA - remove ruben to use new index on DB042 [Redmine: #98631]
 	- 20190611@Amanda: Add Base Currency parameter [Redmine: #112531]
 	- 20210224@Mark: Change alias DB042 to DBBOF [Redmine: #150375]
+    - 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 
 Param's explanation:

@@ -6,8 +6,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss_FromAPI]
 	@ProductCodes	VARCHAR(100)='',
 	@CurrencyList   VARCHAR(500)='',
 	@ReportType		TINYINT = 1,
-	@BaseCurrency	VARCHAR(3) = '',
-    @DefaultBaseCurrency	VARCHAR(3) = ''
+	@BaseCurrency	VARCHAR(12) = '',
+    @DefaultBaseCurrency	VARCHAR(12) = ''
 AS 
 /*  Created: 20180820@Amanda
     Description: LAP - LAP - Implement new Licensee Win Loss report for Ivorybet and Opal88
@@ -27,6 +27,7 @@ AS
 		- 20211005@Sol: Enhance sp - remove sniffing on sitename - [Redmine: #159449]
 		- 20220302@Sol: temporary prevent Nova88 from viewing data from 1-Mar-2022 - [Redmine: #169131]
 		- 20220118@Sol: LAP - Auditing licensees - Daily Bets - Filter by Sport - [RedmineID: #166056]
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 	Developer's Notes:
 		- Notes: If product is NG, search tickets with GameType is RNG

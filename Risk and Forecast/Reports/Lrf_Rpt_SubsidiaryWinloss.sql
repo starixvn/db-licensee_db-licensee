@@ -8,7 +8,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_SubsidiaryWinloss]
 	@ProductList	VARCHAR(1000),
 	@SeparateSabaVS	BIT				= 0,
 	@IncludeRaw		BIT,
-	@BaseCurrency	VARCHAR(3)
+	@BaseCurrency	VARCHAR(12)
 AS
 
 /*
@@ -36,6 +36,7 @@ AS
 		- 20210531@Hogan: Integrate Vgaming [RedmineID: #151583]
 		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
 		- 20220222@Kos: Support Saba Basketball PinGoal [RedmineID: #167859]
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 	Param's Explanation:
 		+ @MoveBetsDay: The day we move tickets to bettrans14

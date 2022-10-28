@@ -11,8 +11,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinlossDetail]
 	@ShowBT 				BIT				= 0,
 	@MoveBetsDay			SMALLDATETIME,
 	@DrawFilter				SMALLINT		= 1,
-	@BaseCurrency			VARCHAR(3)		= '',
-	@DefaultBaseCurrency	VARCHAR(3)		= '',
+	@BaseCurrency			VARCHAR(12)		= '',
+	@DefaultBaseCurrency	VARCHAR(12)		= '',
 	@CheckPromotionPrize	BIT				= 0,
 	@VIPPlayerOnly			BIT				= 0
 AS
@@ -125,6 +125,7 @@ AS
 		- 20220328@Hogan: Macau Games Add new Range bettype[RedmineID: #170607]
 		- 20220601@Hogan: Integrate FGG Guaranteed Gaming [RedmineID: #167897]
 		- 20220601@Hogan: Integrate MaxGame [RedmineID: #172919]
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 	Param's Explanation:
 		+ @CustID: SuperID

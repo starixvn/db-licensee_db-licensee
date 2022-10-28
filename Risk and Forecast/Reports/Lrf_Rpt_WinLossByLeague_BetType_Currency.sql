@@ -13,7 +13,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLossByLeague_BetType_Currency]
 	@ShowBA			BIT				= 0,
 	@BetType		SMALLINT,
 	@StatusIdList	VARCHAR(50)		= '',
-	@BaseCurrency	VARCHAR(3)		= ''
+	@BaseCurrency	VARCHAR(12)		= ''
 AS
 
 /*
@@ -24,6 +24,7 @@ AS
 	Revisions:
 		- 20210916@Kos: New SP [RedmineID: #159939]
 		- 20220106@Kos: Support search by username [RedmineID: #165926]
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 	Param's Explanation:
 		- @StatusIdList: status ID list separated by ','

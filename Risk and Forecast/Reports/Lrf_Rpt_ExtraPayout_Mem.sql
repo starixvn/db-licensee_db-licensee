@@ -8,7 +8,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_ExtraPayout_Mem]
 	@MoveBetsDay		SMALLDATETIME,
 	@ProductList		VARCHAR(100)	= '',
 	@PromotionTypeList	VARCHAR(500)	= '',
-	@BaseCurrency		VARCHAR(3)		= ''
+	@BaseCurrency		VARCHAR(12)		= ''
 AS
 
 /*
@@ -19,6 +19,7 @@ AS
 	Revisions:
 		- 20211016@Kos: Created [RedmineID: #153563]
 		- 20220126@Kos: Integrate Spadegaming Jackpot [RedmineID: #167035]
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 	Param's Explanation:
 		+ @PromotionTypeList: promotion type list separated by ','

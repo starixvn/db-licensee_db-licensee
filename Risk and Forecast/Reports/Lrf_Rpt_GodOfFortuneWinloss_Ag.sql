@@ -6,7 +6,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_GodOfFortuneWinloss_Ag]
 	@ToDate					SMALLDATETIME,
 	@MoveBetsDay			SMALLDATETIME,
 	@DrawFilter				SMALLINT		= 1,
-	@BaseCurrency			VARCHAR(3)		= '',
+	@BaseCurrency			VARCHAR(12)		= '',
 	@ConvertToBaseCurrency	BIT				= 1
 AS
 
@@ -17,6 +17,7 @@ AS
 
 	Revisions:
 		- 20210408@Kos: God of Fortune WL report [RedmineID: #152900]
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 	Param's Explanation:
 		+ @ReportType:

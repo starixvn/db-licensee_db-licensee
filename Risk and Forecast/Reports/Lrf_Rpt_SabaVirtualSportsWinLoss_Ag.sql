@@ -9,8 +9,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_SabaVirtualSportsWinLoss_Ag]
 	@SportType				SMALLINT		= 0,
 	@LeagueId				INT				= 0,
 	@DrawFilter				TINYINT			= 1,
-	@BaseCurrency			VARCHAR(3)		= '',
-	@DefaultBaseCurrency	VARCHAR(3)		= ''
+	@BaseCurrency			VARCHAR(12)		= '',
+	@DefaultBaseCurrency	VARCHAR(12)		= ''
 AS
 
 /*
@@ -24,6 +24,7 @@ AS
 		- 20210521@Mark: Support Saba Soccer PinGoal [RedmineID: #155335]
 		- 20220222@Kos: Support Saba Basketball PinGoal [RedmineID: #167859]
 		- 20220302@Kos: Support filter by customer [RedmineID: #167825]
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 	Param's Explanation:
 		+ @DrawFilter: 1: Normal, 2: No Draw, 3: No Draw for Turnover only

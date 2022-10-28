@@ -7,7 +7,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_SubsidiaryWinlossDetail]
 	@MoveBetsDay	SMALLDATETIME,
 	@ProductList	VARCHAR(1000),
 	@IncludeRaw		BIT,
-	@BaseCurrency	VARCHAR(3)
+	@BaseCurrency	VARCHAR(12)
 AS
 
 /*
@@ -28,6 +28,7 @@ AS
 		- 20201104@Hogan: Add new sport Saba.club Free Bets [RedmineID: #142369]
 		- 20210119@Hogan: Integrate Four Guardians [RedmineID: #148100]
 		- 20210518@Hogan: Integrate Vgaming [RedmineID: #151583]
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 	Param's Explanation:
 		+ @MoveBetsDay: The day we move tickets to bettrans14

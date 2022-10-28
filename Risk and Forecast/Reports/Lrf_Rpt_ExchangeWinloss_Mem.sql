@@ -7,8 +7,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_ExchangeWinloss_Mem]
 	@UserName				VARCHAR(50)	= '',
 	@FromDate				DATE,
 	@ToDate					DATE,
-	@BaseCurrency			VARCHAR(3),
-	@DefaultBaseCurrency	VARCHAR(3)
+	@BaseCurrency			VARCHAR(12),
+	@DefaultBaseCurrency	VARCHAR(12)
 AS
 
 /*
@@ -23,6 +23,7 @@ AS
 		- 20190621@Amanda: Add @BaseCurrency parameter [Redmine: #112531]
 		- 20201110@Kos: Enhance performance [Redmine: #145055]
 		- 20220308@Kos: Support filter by customer [RedmineID: #169283]
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 	exec Lrf_Rpt_ExchangeWinloss_Mem @fromdate='2017-04-24 00:00:00',@todate='2017-04-24 00:00:00',@LicenseeId = 1,@AgentList=N'<ROOT><Agent AgentId="791088" Currency="3"/><Agent AgentId="860379" Currency="6"/><Agent AgentId="2428981" Currency="6"/><Agent AgentId="2812696" Currency="6"/><Agent AgentId="3575140" Currency="6"/><Agent AgentId="4362999" Currency="6"/></ROOT>',@CustID = 4362999
 */

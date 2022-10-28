@@ -6,7 +6,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_MatchWinLossByOutrightParlay]
 	@MoveBetsDay	SMALLDATETIME,
 	@ProductList	VARCHAR(500),
 	@ShowBA			BIT				= 0,
-	@BaseCurrency	VARCHAR(3)		= ''
+	@BaseCurrency	VARCHAR(12)		= ''
 AS
 
 /*
@@ -34,6 +34,7 @@ AS
 					- Add input param @ProductList VARCHAR(500)
 					- Don't return column HomeId, AwayId, IsNeutral, MatchCode, Race, MatchId, LeagueId anymore
 					- Rename output column from MemberWinLost to WinLost
+		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 
 	Param's Explanation:
 		+ @AgentList: XML structure
