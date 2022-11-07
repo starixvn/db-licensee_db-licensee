@@ -24,6 +24,7 @@ AS
 		- 20201110@Kos: Enhance performance [Redmine: #145055]
 		- 20220308@Kos: Support filter by customer [RedmineID: #169283]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
+		- 20221104@Sol: Deposit - AWS - Modify jobs of separated wallet - Move columns setting to new table - [RedmineID: #176479]
 
 	exec Lrf_Rpt_ExchangeWinloss_Mem @fromdate='2017-04-24 00:00:00',@todate='2017-04-24 00:00:00',@LicenseeId = 1,@AgentList=N'<ROOT><Agent AgentId="791088" Currency="3"/><Agent AgentId="860379" Currency="6"/><Agent AgentId="2428981" Currency="6"/><Agent AgentId="2812696" Currency="6"/><Agent AgentId="3575140" Currency="6"/><Agent AgentId="4362999" Currency="6"/></ROOT>',@CustID = 4362999
 */
@@ -79,9 +80,11 @@ BEGIN
 	SET @ProductPrefix = 'BX'
 	
 	INSERT INTO @RawWinLostDate (WinLostDate, StartWLDate, EndWLDate)
-	SELECT DISTINCT WinlostDate, WinlostDate, DATEADD(Day, 1, WinlostDate)
-	FROM bodb_3rdProduct.dbo.Product3rd_SummarizedDateHistory WITH (NOLOCK)
-	WHERE WinlostDate >= @FDate AND WinlostDate <= @TDate AND SumToThirdPartyDate IS NULL
+	SELECT DISTINCT s.WinlostDate, s.WinlostDate, DATEADD(Day, 1, s.WinlostDate)
+	FROM bodb_3rdProduct.dbo.Product3rd_SummarizedDateHistory s WITH (NOLOCK)
+		INNER JOIN bodb_LicenseeReport.dbo.Product3rd_SummarizedDateHistory_Tracking st WITH(NOLOCK)
+			ON s.ID = st.ID
+	WHERE s.WinlostDate >= @FDate AND s.WinlostDate <= @TDate AND st.SumToThirdPartyDate IS NULL
 	
 	SELECT @ProductID = ProductID
 	FROM bodb_licensee.dbo.Product3rd WITH (NOLOCK)
