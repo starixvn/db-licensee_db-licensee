@@ -21,6 +21,7 @@ AS
 	
 	Revisions:
 		- 20220801@Sol: initial sp - [Redmine: #175297]
+		- 20221109@Danny: Enhance performance [Redmine: #180045]
 
 	Parameter's explanations:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
@@ -38,7 +39,8 @@ BEGIN
 	SET NOCOUNT ON
 
 	DECLARE @currentDate DATETIME,
-			@LicenseeID	INT
+			@LicenseeID	INT,
+			@SQL VARCHAR(MAX)
 
 	SELECT  @currentDate = CONVERT(DATE, GETDATE())
 
@@ -49,12 +51,45 @@ BEGIN
 		@RowEnd = @RowStart + @PageSize - 1 
 
 	CREATE TABLE #TempAg (custid INT)
+	CREATE TABLE #LicenseeCustComm (LicenseeID INT, GroupCommID INT, CustID INT PRIMARY KEY, GroupName VARCHAR(100))
+	CREATE TABLE #Dep_CustSpecialLevel(CustID INT PRIMARY KEY, SpecialLevel INT)
+	CREATE TABLE #LicenseeBAHistory(CustID INT, Status VARCHAR(50), OffBy INT, ID INT)
 	
 	DECLARE @DocHandler INT
 	
 	SELECT @LicenseeID	= LicenseeID
 	FROM DBCUST.bodb_Licensee.dbo.Licensees WITH(NOLOCK)
 	WHERE LicenseeName = @LicenseeName
+
+	SELECT @SQL = ' SELECT LicenseeID, GroupCommID, CustID, GroupName
+						FROM OPENQUERY (DBCUST, '' SELECT lc.LicenseeID, lc.GroupCommID, lc.CustID, lg.GroupName
+													FROM bodb_licensee.dbo.LicenseeCustComm lc WITH(NOLOCK)
+													LEFT JOIN bodb_Licensee.dbo.LicenseeGroupComm lg WITH (NOLOCK) ON lc.GroupCommID = lg.id	
+													WHERE lc.LicenseeID = ' +CAST(@LicenseeID AS VARCHAR(50)) + '
+														AND lc.GroupCommID IN (SELECT value FROM STRING_SPLIT('''''+@CommGroups+''''','''',''''))''
+						)
+					'
+	INSERT INTO #LicenseeCustComm(LicenseeID, GroupCommID, CustID, GroupName)
+	EXEC( @SQL)
+
+	SELECT @SQL = ' SELECT CustID, SpecialLevel
+					FROM OPENQUERY (DBCUST, ''	SELECT CustID, SpecialLevel 
+												FROM CustDb.dbo.Dep_CustSpecialLevel WITH(NOLOCK)
+												WHERE SpecialLevel IN (SELECT value FROM STRING_SPLIT('''''+@SpecialLevel+''''','''',''''))
+											''
+					)
+					'
+	INSERT INTO  #Dep_CustSpecialLevel(CustID, SpecialLevel)
+	EXEC( @SQL)
+
+	SELECT @SQL = ' SELECT CustID, status, OffBy, ID
+						FROM OPENQUERY (DBCUST, '' SELECT CustID, status, OffBy, ID
+													FROM bodb_licensee.dbo.LicenseeBAHistory lc WITH(NOLOCK)
+													WHERE LicenseeID = ' +CAST(@LicenseeID AS VARCHAR(50)) + '''
+						)
+					'
+	INSERT INTO  #LicenseeBAHistory(CustID, status,OffBy, ID)
+	EXEC( @SQL)
 
 	DECLARE @sporttype	TABLE (SportType INT)
 
@@ -187,7 +222,7 @@ BEGIN
 				(SELECT lci.custid, lci.currency, ISNULL(lc.speciallevel,0) as speciallevel , lci.username, lci.username2 
 				 FROM CustDB.dbo.Customer lci WITH(NOLOCK) 
 					 INNER JOIN #TempAg t ON lci.recommend = t.custid
-					 LEFT JOIN DBCUST.CustDB.dbo.Dep_CustSpecialLevel lc WITH (NOLOCK) ON lc.CustID = lci.CustID
+					 LEFT JOIN #Dep_CustSpecialLevel lc ON lc.CustID = lci.CustID
 				 WHERE lci.RoleID = 1 
 				 ) lc ON lc.custid = c.custid
 			WHERE 
@@ -198,7 +233,7 @@ BEGIN
 				
 			DELETE t
 			FROM #TempMember t
-				LEFT JOIN DBCUST.bodb_Licensee.dbo.LicenseeCustComm lc WITH (NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
+				LEFT JOIN #LicenseeCustComm lc  ON t.custid=lc.custid
 			WHERE ISNULL(lc.GroupCommID,0) NOT IN (SELECT value FROM STRING_SPLIT(@CommGroups,','))		
 			
 			IF ISNULL(@TotalRows, 0) = 0
@@ -227,19 +262,18 @@ BEGIN
 					) a 
 					WHERE a.rownumber BETWEEN @rowstart AND @rowend
 				) t
-				LEFT JOIN DBCUST.bodb_Licensee.dbo.LicenseeBAHistory lb WITH(NOLOCK) ON LicenseeID = @LicenseeID AND t.CustID = lb.CustID AND lb.[Status] = 'Running'
+				LEFT JOIN #LicenseeBAHistory lb ON t.CustID = lb.CustID AND lb.[Status] = 'Running'
 		END
 		ELSE IF @BAFilter = 1
 		BEGIN
 			SELECT @strSQL = 'INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject,CustomerClass)
 							  SELECT ci.CustID, ci.currency, ISNULL(lc.speciallevel,0)  as speciallevel, cu.username2, cu.username, RIGHT(cu.ugroup, 1), ci.closed, ci.reject,ci.CustomerClass
-							  FROM DBCUST.bodb_Licensee.dbo.LicenseeBAHistory lb WITH(NOLOCK)
+							  FROM #LicenseeBAHistory lb
 								INNER JOIN CustDB.dbo.CustInfo ci (NOLOCK) ON lb.custid = ci.custid
 								INNER JOIN CustDB.dbo.Customer cu WITH (NOLOCK) ON ci.CustID = cu.custid 
 								INNER JOIN #TempAg t ON ci.recommend = t.custid
-								LEFT JOIN DBCUST.CustDB.dbo.Dep_CustSpecialLevel lc WITH(NOLOCK) ON ci.custid = lc.custid
-							 WHERE lb.LicenseeID = ' + CONVERT(VARCHAR(10),@LicenseeID) + '
-								AND lb.[Status] = ''Running''
+								LEFT JOIN #Dep_CustSpecialLevel lc ON ci.custid = lc.custid
+							 WHERE lb.[Status] = ''Running''
 								AND (''' + @OddsGroups + ''' = '''' OR RIGHT(cu.ugroup,1) IN (' + @OddsGroupsC + '))
 								AND ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ') '
 			
@@ -253,7 +287,7 @@ BEGIN
 			
 			DELETE t
 			FROM #TempMember t
-				LEFT JOIN DBCUST.bodb_Licensee.dbo.LicenseeCustComm lc WITH (NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
+				LEFT JOIN #LicenseeCustComm lc  ON t.custid=lc.custid
 			WHERE ISNULL(lc.GroupCommID,0) NOT IN (SELECT value FROM STRING_SPLIT(@CommGroups,','))		
 			
 			IF ISNULL(@TotalRows, 0) = 0
@@ -308,11 +342,11 @@ BEGIN
 				INNER JOIN 
 				(SELECT c.custid, c.currency, ISNULL(lc.speciallevel,0) as speciallevel , c.username, c.username2 
 				 FROM CustDB.dbo.Customer c WITH (NOLOCK)
-					LEFT JOIN DBCUST.CustDB.dbo.Dep_CustSpecialLevel lc WITH(NOLOCK) ON c.CustID = lc.CustID
+					LEFT JOIN #Dep_CustSpecialLevel lc ON c.CustID = lc.CustID
 					INNER JOIN #TempAg t ON c.recommend = t.custid
 				 WHERE c.RoleID = 1
 				 ) lc ON lc.custid = c.custid
-				LEFT JOIN DBCUST.bodb_Licensee.dbo.LicenseeBAHistory lb WITH(NOLOCK) ON lb.LicenseeID = ' + CONVERT(VARCHAR(10),@LicenseeID) + ' AND c.custid = lb.custid AND lb.[Status] = ''Running''				
+				LEFT JOIN #LicenseeBAHistory lb ON c.custid = lb.custid AND lb.[Status] = ''Running''				
 			WHERE ISNULL (lb.CustID, 0) = 0
 				AND ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ')'
 
@@ -321,7 +355,7 @@ BEGIN
 			
 			DELETE t
 			FROM #TempMember t
-				LEFT JOIN DBCUST.bodb_Licensee.dbo.LicenseeCustComm lc WITH (NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
+				LEFT JOIN #LicenseeCustComm lc ON t.custid=lc.custid
 			WHERE ISNULL(lc.GroupCommID,0) NOT IN (SELECT value FROM STRING_SPLIT(@CommGroups,','))		
 			
 			IF ISNULL(@TotalRows, 0) = 0
@@ -361,7 +395,7 @@ BEGIN
 				FROM #TempAg t
 					INNER JOIN CustDB.dbo.Customer c WITH (NOLOCK) ON c.recommend = t.custid
 					INNER JOIN CustDB.dbo.custInfo ci WITH (NOLOCK) ON ci.custid = c.custid
-					LEFT JOIN DBCUST.CustDB.dbo.Dep_CustSpecialLevel lc WITH(NOLOCK) ON c.custid = lc.custid
+					LEFT JOIN #Dep_CustSpecialLevel lc ON c.custid = lc.custid
 				WHERE 
 					c.RoleID = 1
 					AND ((1= '+CONVERT(VARCHAR(10),@searchOption)+ ' AND c.username2 LIKE ''%$' + @Username + '%'') 
@@ -388,9 +422,8 @@ BEGIN
 				FROM #TempAg t
 					INNER JOIN CustDB.dbo.Customer c WITH (NOLOCK) ON c.recommend = t.custid
 					INNER JOIN CustDB.dbo.custInfo ci WITH (NOLOCK) ON ci.custid = c.custid
-					LEFT JOIN DBCUST.CustDB.dbo.Dep_CustSpecialLevel lc WITH(NOLOCK) ON c.custid = lc.custid
-					LEFT JOIN DBCUST.bodb_Licensee.dbo.LicenseeBAHistory lb WITH(NOLOCK) ON lb.LicenseeID = ' + CONVERT(VARCHAR(10),@LicenseeID) + 
-					' AND ci.custid = lb.custid AND lb.[Status] = ''Running''
+					LEFT JOIN #Dep_CustSpecialLevel lc ON c.custid = lc.custid
+					LEFT JOIN #LicenseeBAHistory lb ON ci.custid = lb.custid AND lb.[Status] = ''Running''
 				WHERE 
 					c.roleId = 1
 					AND ((1= '+CONVERT(VARCHAR(10),@searchOption)+ ' AND c.username2 LIKE ''%$' + @Username + '%'') 
@@ -418,7 +451,7 @@ BEGIN
 		
 		DELETE t
 		FROM #TempMember t
-			LEFT JOIN DBCUST.bodb_Licensee.dbo.LicenseeCustComm lc WITH (NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
+			LEFT JOIN #LicenseeCustComm lc ON t.custid=lc.custid 
 		WHERE ISNULL(lc.GroupCommID,0) NOT IN (SELECT value FROM STRING_SPLIT(@CommGroups,','))		
 		
 		IF ISNULL(@TotalRows, 0) = 0
@@ -441,8 +474,7 @@ BEGIN
 					ROW_NUMBER() OVER (ORDER BY ci.currency ASC, ci.custid ASC) AS RowNumber 
 				FROM #TempMember m
 					INNER JOIN CustDB.dbo.custInfo ci WITH (NOLOCK) ON m.CustID = ci.custid
-					LEFT JOIN DBCUST.bodb_Licensee.dbo.LicenseeBAHistory lb WITH (NOLOCK)
-						ON LicenseeID = @LicenseeID AND m.custid = lb.custid AND lb.[Status] = 'Running'
+					LEFT JOIN #LicenseeBAHistory lb ON  m.custid = lb.custid AND lb.[Status] = 'Running'
 			) a 
 		WHERE a.rownumber BETWEEN @rowstart AND @rowend
 	END
@@ -457,8 +489,7 @@ BEGIN
 	WHERE
 		BAStatus = 0
 		AND CustID NOT IN (
-			SELECT DISTINCT CustID FROM DBCUST.bodb_Licensee.dbo.LicenseeBAHistory lb WITH (NOLOCK)
-			WHERE LicenseeID = @LicenseeID AND Status = 'Done'
+			SELECT DISTINCT CustID FROM #LicenseeBAHistory lb WHERE Status = 'Done'
 		)
 
 	--Case 2.2 turned on BA before
@@ -479,10 +510,8 @@ BEGIN
 		
 			--Get last turn-off BA UserID
 			SELECT TOP 1 @LastOffBy = OffBy
-			FROM DBCUST.bodb_licensee.dbo.[LicenseeBAHistory] WITH (NOLOCK)
-			WHERE
-				[LicenseeID] = @LicenseeID AND
-				[CustID] = @CustID AND
+			FROM #LicenseeBAHistory
+			WHERE[CustID] = @CustID AND
 				[Status] = 'Done'
 			ORDER BY ID DESC
 
@@ -591,7 +620,7 @@ BEGIN
 		BAStatus,
 		SpecialLevel,
 		IsPowerBAUserTurnoff,
-		ISNULL(lg.GroupName, '') AS GroupName,		
+		ISNULL(lc.GroupName, '') AS GroupName,		
 		RowNumber,
 		t.CustomerClass,
 		CAST((ISNULL(d.TotalBalance, 0)	- ISNULL(tl.actual_stake,0)) AS MONEY) AS TotalBalance ,
@@ -609,8 +638,8 @@ BEGIN
 			FROM #OutstandingTranslog
 			GROUP BY Custid, Currency
 		)tl ON t.custid = tl.Custid
-		LEFT JOIN DBCUST.bodb_Licensee.dbo.LicenseeCustComm lc WITH (NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
-		LEFT JOIN DBCUST.bodb_Licensee.dbo.LicenseeGroupComm lg WITH (NOLOCK) ON lc.GroupCommID = lg.id	
+		LEFT JOIN #LicenseeCustComm lc  ON t.custid=lc.custid
+		
 	ORDER BY t.username
 
 	DROP TABLE #TempAg
@@ -621,6 +650,8 @@ BEGIN
 	DROP TABLE #TempMember
 	DROP TABLE #Exchange
 	DROP TABLE #TotalBalance
-
+	DROP TABLE #LicenseeCustComm
+	DROP TABLE #Dep_CustSpecialLevel
+	DROP TABLE #LicenseeBAHistory
 END
 GO
