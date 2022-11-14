@@ -212,10 +212,12 @@ BEGIN
 		),
 		tmp2 AS (
 			SELECT custid, DangerLevel, soccer, basketball, UpdateSoccer, UpdateBasketball, recommend, username, username2,
-				CASE WHEN UpdateSoccer<>0 AND UpdateBasketball=0 THEN ModifiedDate_sc
-					 WHEN UpdateSoccer=0 AND UpdateBasketball<>0 THEN ModifiedDate_bb
-					 WHEN ModifiedDate_sc>ModifiedDate_bb		 THEN ModifiedDate_sc 
-																 ELSE ModifiedDate_bb 
+				CASE WHEN UpdateSoccer<>0 AND UpdateBasketball=0	THEN ModifiedDate_sc
+					 WHEN UpdateSoccer=0 AND UpdateBasketball<>0	THEN ModifiedDate_bb
+					 WHEN (UpdateSoccer=1 AND UpdateBasketball=1)
+						OR (UpdateSoccer=2 AND UpdateBasketball=2)	THEN ModifiedDate_sc 
+					 WHEN ModifiedDate_sc>ModifiedDate_bb			THEN ModifiedDate_sc
+																	ELSE ModifiedDate_bb 
 				END LastModifiedDate
 			FROM tmp1 T1
 			WHERE NOT (UpdateSoccer=0 AND UpdateBasketball=0)

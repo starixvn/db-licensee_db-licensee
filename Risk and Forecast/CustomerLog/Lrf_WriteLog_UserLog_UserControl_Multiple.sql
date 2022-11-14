@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-bodb_CustomerLog,DBLOG-bodb_CustomerLog" executers="bodbLicenseeNet" viewers="" selecters=""></info>*/
+/*<info serverAlias="DBCUST-bodb_CustomerLog,DBLOG-bodb_CustomerLog" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="1"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_WriteLog_UserLog_UserControl_Multiple]
 	@LogData NVARCHAR(MAX),	
@@ -111,20 +111,14 @@ BEGIN
 			;WITH Tmp AS (
 			SELECT custid,
 					(SELECT 
-						soccer  as '@Soccer',
+						soccer  as '@NewSoccer',
+						OldSoccer as '@OldSoccer',
 						ISNULL(WinlossSoccer,'') as '@WinlossSoccer',
 						IsUpdatedByPA as '@IsUpdatedByPA'
 					FROM #tblCustLog t1
 					WHERE t1.custid = t.custid
 					FOR XML PATH('R')
-					) as LogNew,
-					(SELECT 
-						OldSoccer as '@Soccer',
-						ISNULL(WinlossSoccer,'') as '@WinlossSoccer'
-					FROM #tblCustLog t2
-					WHERE t2.custid = t.custid
-					FOR XML PATH('R')
-					) as LogOld
+					) as Logdata
 			FROM #tblCustLog t
 			)
 			INSERT INTO  dbo.UserLog_UserControl
@@ -141,7 +135,7 @@ BEGIN
 				@TypeID,
 				@ActionID,
 				@Duration,
-				'<ROOT>' + LogNew + LogOld + '</ROOT>'
+				Logdata
 			FROM Tmp
 		
 			DROP TABLE #tblCustLog
@@ -160,20 +154,14 @@ BEGIN
 			;WITH Tmp AS (
 				SELECT custid,
 					(SELECT 
-						basketball as '@Basketball',
+						basketball as '@NewBasketball',
+						OldBasketball as '@OldBasketball',
 						ISNULL(WinlossBasketball,'') as '@WinlossBasketball',
 						IsUpdatedByPA as '@IsUpdatedByPA'
 					FROM #tblCustLog t1
 					WHERE t1.custid = t.custid
 					FOR XML PATH('R')
-					) as LogNew,
-					(SELECT 
-						OldBasketball as '@Basketball',
-						ISNULL(WinlossBasketball,'') as '@WinlossBasketball'
-					FROM #tblCustLog t2
-					WHERE t2.custid = t.custid
-					FOR XML PATH('R')
-					) as LogOld
+					) as Logdata
 				FROM #tblCustLog t
 			)
 			INSERT INTO  dbo.UserLog_UserControl
@@ -190,7 +178,7 @@ BEGIN
 				@TypeID,
 				@ActionID,
 				@Duration,
-				'<ROOT>' + LogNew + LogOld + '</ROOT>'
+				Logdata
 			FROM Tmp
 		
 			DROP TABLE #tblCustLog
