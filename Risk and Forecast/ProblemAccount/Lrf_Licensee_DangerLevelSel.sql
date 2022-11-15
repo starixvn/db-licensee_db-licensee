@@ -24,7 +24,7 @@ AS
 
 	Paramter's Explanations:
 		@Sporttype	= "Soccer,Basketball"
-		@Level		= [0-15] : DangerLevel
+		@Level		= None ~ 0, [1-15] : DangerLevel
 		@OrderCol	= 1 : System ID
 					= 2 : sort by external ID
 					= 3 : MarkDate
@@ -37,7 +37,9 @@ BEGIN
 	SET NOCOUNT ON
 	
 	DECLARE @RowCount INT, @RowStart INT, @RowEnd INT
-	SELECT  @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
+	SELECT  @PageIndex = @PageIndex - 1, 
+			@RowStart = @PageSize * @PageIndex + 1, 
+			@RowEnd = @RowStart + @PageSize - 1 
 
 	CREATE TABLE #TempAg (custid INT)
 	CREATE TABLE #tblDangerLevel (DangerLevel TINYINT)
@@ -47,6 +49,7 @@ BEGIN
 			SportName			VARCHAR(50))
 
 	CREATE TABLE #CustList (
+			RowID				INT IDENTITY(1,1),
 			CustId				INT PRIMARY KEY, 
 			DangerLevel			INT, 
 			SoccerLevel			TINYINT,
@@ -56,8 +59,19 @@ BEGIN
 			AgentID				INT, 
 			username			VARCHAR(50), 
 			username2			VARCHAR(50), 
-			LastModifiedDate	DATETIME)
+			LastModifiedDate	DATETIME
+	)
 	
+	CREATE TABLE #CustLog (
+			CustId				INT, 
+			DangerLevel_new		TINYINT,
+			DangerLevel_old		TINYINT, 
+			isSoccer			BIT,
+			isManual			BIT,
+			LogDate				DATETIME,
+			PRIMARY KEY CLUSTERED (CustId, LogDate, isSoccer, isManual)
+	)
+
 	DECLARE @DocHandler INT
 
 	BEGIN TRY
@@ -78,7 +92,7 @@ BEGIN
 	END CATCH;
 	
 	INSERT INTO #tblDangerLevel (DangerLevel)
-	SELECT RTRIM(LTRIM(value)) AS DangerLevel
+	SELECT CASE WHEN ISNUMERIC(RTRIM(LTRIM(value)))=1 THEN RTRIM(LTRIM(value)) ELSE 0 END AS DangerLevel
 	FROM string_split(@Level,',')
 
 	INSERT INTO #tblSabaSport (SportName, Sporttype)
@@ -88,166 +102,191 @@ BEGIN
 
 	IF @Username <> ''
 	BEGIN
-		;WITH tmp1 AS (
-			SELECT ci.custid, ISNULL(c.DangerLevel,0) DangerLevel, t.soccer, t.basketball,
-				ci.recommend, ci.username,
-				SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) AS username2,
-				--Soccer
-				CASE WHEN	(t1.custid IS NOT NULL	AND t3.custid IS NULL) OR 
-							(t1.custid IS NOT NULL	AND t3.custid IS NOT NULL AND t1.logdate>t3.logdate) THEN 1	--auto
-					 WHEN	(t1.custid IS NULL		AND t3.custid IS NOT NULL) OR 
-							(t1.custid IS NOT NULL	AND t3.custid IS NOT NULL AND t1.logdate<t3.logdate) THEN 2	--manual	
-																										 ELSE 0
-				END UpdateSoccer,
-				CASE WHEN	(t1.custid IS NOT NULL	AND t3.custid IS NULL) OR 
-							(t1.custid IS NOT NULL	AND t3.custid IS NOT NULL AND t1.logdate>t3.logdate) THEN t1.logdate
-					 WHEN	(t1.custid IS NULL		AND t3.custid IS NOT NULL) OR 
-							(t1.custid IS NOT NULL	AND t3.custid IS NOT NULL AND t1.logdate<t3.logdate) THEN t3.logdate	
-				END ModifiedDate_sc,
-				--Basketball
-				CASE WHEN	(t2.custid IS NOT NULL	AND t4.custid IS NULL) OR 
-							(t2.custid IS NOT NULL	AND t4.custid IS NOT NULL AND t2.logdate>t4.logdate) THEN 1
-					 WHEN	(t2.custid IS NULL		AND t4.custid IS NOT NULL) OR 
-							(t2.custid IS NOT NULL	AND t4.custid IS NOT NULL AND t2.logdate<t4.logdate) THEN 2	
-																										 ELSE 0
-				END UpdateBasketball,
-				CASE WHEN	(t2.custid IS NOT NULL	AND t4.custid IS NULL) OR 
-							(t2.custid IS NOT NULL	AND t4.custid IS NOT NULL AND t2.logdate>t4.logdate) THEN t2.logdate
-					 WHEN	(t2.custid IS NULL		AND t4.custid IS NOT NULL) OR 
-							(t2.custid IS NOT NULL	AND t4.custid IS NOT NULL AND t2.logdate<t4.logdate) THEN t4.logdate	
-				END ModifiedDate_bb
-			FROM customer ci WITH(NOLOCK)
-				INNER JOIN custinfo c WITH(NOLOCK) ON c.custid = ci.custid
-				CROSS APPLY f_GetDangerLevelInfo(ISNULL(c.DangerLevel,0)) t
-				OUTER APPLY (SELECT TOP 1 ul.custid, ul.logdate FROM DBLOG.bodb_CustomerLog.dbo.UserLog_RunSP ul WITH(NOLOCK) 
-							 WHERE ul.custid=ci.custid
-								AND ActionID=1191	-- Auto Update Saba Soccer DangerLevel
-							 ORDER BY logdate DESC) t1
-				OUTER APPLY (SELECT TOP 1 ul.custid, ul.logdate FROM DBLOG.bodb_CustomerLog.dbo.UserLog_RunSP ul WITH(NOLOCK) 
-							 WHERE ul.custid=ci.custid
-								AND ActionID=1192	-- Auto Update Saba Basketball DangerLevel
-							 ORDER BY logdate DESC) t2
-				OUTER APPLY (SELECT TOP 1 ul.custid, ul.logdate FROM DBLOG.bodb_CustomerLog.dbo.UserLog_RunSP ul WITH(NOLOCK) 
-							 WHERE ul.custid=ci.custid
-								AND ActionID=1193	-- Manual Update Saba Soccer DangerLevel
-							 ORDER BY logdate DESC) t3
-				OUTER APPLY (SELECT TOP 1 ul.custid, ul.logdate FROM DBLOG.bodb_CustomerLog.dbo.UserLog_RunSP ul WITH(NOLOCK) 
-							 WHERE ul.custid=ci.custid
-								AND ActionID=1194	-- Manual Update Saba Basketball DangerLevel
-							 ORDER BY logdate DESC) t4
-			WHERE ci.recommend IN (SELECT custid FROM #TempAg)
-				AND (ci.username  LIKE @username + '%' OR ci.username2 LIKE '%$'+@username + '%')		
-				AND ci.roleid = 1
-		),
-		tmp2 AS (
-			SELECT custid, DangerLevel, soccer, basketball, UpdateSoccer, UpdateBasketball, recommend, username, username2,
-				CASE WHEN UpdateSoccer<>0 AND UpdateBasketball=0 THEN ModifiedDate_sc
-					 WHEN UpdateSoccer=0 AND UpdateBasketball<>0 THEN ModifiedDate_bb
-					 WHEN ModifiedDate_sc>ModifiedDate_bb		 THEN ModifiedDate_sc 
-																 ELSE ModifiedDate_bb 
-				END LastModifiedDate
-			FROM tmp1 T1
-			WHERE NOT (UpdateSoccer=0 AND UpdateBasketball=0)
-		)
-		INSERT INTO #CustList(custid, DangerLevel, SoccerLevel, BasketballLevel, UpdateSoccer, UpdateBasketball, AgentID, username, username2, LastModifiedDate)
-		SELECT custid, DangerLevel, soccer, basketball, UpdateSoccer, UpdateBasketball, recommend, username, username2, LastModifiedDate
-		FROM tmp2
-		WHERE (soccer IN (SELECT DangerLevel FROM #tblDangerLevel) OR
-			   basketball IN (SELECT DangerLevel FROM #tblDangerLevel))
-			AND 1 = CASE WHEN @IsCheckAll = 1 THEN 1  
-						 WHEN @IsCheckAll = 0 AND LastModifiedDate BETWEEN @FromDate AND @ToDate THEN 1
-						 ELSE 0 END	
+		INSERT INTO #CustList(custid, DangerLevel, SoccerLevel, BasketballLevel, AgentID, username, username2)
+		SELECT ci.custid, ISNULL(c.DangerLevel,0) DangerLevel, t.soccer, t.basketball,
+			ci.recommend, ci.username,
+			SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) AS username2
+		FROM customer ci WITH(NOLOCK)
+			INNER JOIN custinfo c WITH(NOLOCK) ON c.custid = ci.custid
+			CROSS APPLY f_GetDangerLevelInfo(ISNULL(c.DangerLevel,0)) t
+		WHERE ci.recommend IN (SELECT custid FROM #TempAg)
+			AND (ci.username  LIKE @username + '%' OR ci.username2 LIKE '%$'+@username + '%')		
+			AND ci.roleid = 1
 	END
 	ELSE
 	BEGIN
-		;WITH tmp1 AS (
-			SELECT ci.custid, ISNULL(c.DangerLevel,0) DangerLevel, t.soccer, t.basketball,
-				ci.recommend, ci.username,
-				SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) AS username2,
-				--Soccer
-				CASE WHEN	(t1.custid IS NOT NULL	AND t3.custid IS NULL) OR 
-							(t1.custid IS NOT NULL	AND t3.custid IS NOT NULL AND t1.logdate>t3.logdate) THEN 1	--auto
-					 WHEN	(t1.custid IS NULL		AND t3.custid IS NOT NULL) OR 
-							(t1.custid IS NOT NULL	AND t3.custid IS NOT NULL AND t1.logdate<t3.logdate) THEN 2	--manual	
-																										 ELSE 0
-				END UpdateSoccer,
-				CASE WHEN	(t1.custid IS NOT NULL	AND t3.custid IS NULL) OR 
-							(t1.custid IS NOT NULL	AND t3.custid IS NOT NULL AND t1.logdate>t3.logdate) THEN t1.logdate
-					 WHEN	(t1.custid IS NULL		AND t3.custid IS NOT NULL) OR 
-							(t1.custid IS NOT NULL	AND t3.custid IS NOT NULL AND t1.logdate<t3.logdate) THEN t3.logdate	
-				END ModifiedDate_sc,
-				--Basketball
-				CASE WHEN	(t2.custid IS NOT NULL	AND t4.custid IS NULL) OR 
-							(t2.custid IS NOT NULL	AND t4.custid IS NOT NULL AND t2.logdate>t4.logdate) THEN 1
-					 WHEN	(t2.custid IS NULL		AND t4.custid IS NOT NULL) OR 
-							(t2.custid IS NOT NULL	AND t4.custid IS NOT NULL AND t2.logdate<t4.logdate) THEN 2	
-																										 ELSE 0
-				END UpdateBasketball,
-				CASE WHEN	(t2.custid IS NOT NULL	AND t4.custid IS NULL) OR 
-							(t2.custid IS NOT NULL	AND t4.custid IS NOT NULL AND t2.logdate>t4.logdate) THEN t2.logdate
-					 WHEN	(t2.custid IS NULL		AND t4.custid IS NOT NULL) OR 
-							(t2.custid IS NOT NULL	AND t4.custid IS NOT NULL AND t2.logdate<t4.logdate) THEN t4.logdate	
-				END ModifiedDate_bb
-			FROM customer ci WITH(NOLOCK)
-				INNER JOIN custinfo c WITH(NOLOCK) ON c.custid = ci.custid
-				CROSS APPLY f_GetDangerLevelInfo(ISNULL(c.DangerLevel,0)) t
-				OUTER APPLY (SELECT TOP 1 ul.custid, ul.logdate FROM DBLOG.bodb_CustomerLog.dbo.UserLog_RunSP ul WITH(NOLOCK) 
-							 WHERE ul.custid=ci.custid
-								AND ActionID=1191	-- Auto Update Saba Soccer DangerLevel
-							 ORDER BY logdate DESC) t1
-				OUTER APPLY (SELECT TOP 1 ul.custid, ul.logdate FROM DBLOG.bodb_CustomerLog.dbo.UserLog_RunSP ul WITH(NOLOCK) 
-							 WHERE ul.custid=ci.custid
-								AND ActionID=1192	-- Auto Update Saba Basketball DangerLevel
-							 ORDER BY logdate DESC) t2
-				OUTER APPLY (SELECT TOP 1 ul.custid, ul.logdate FROM DBLOG.bodb_CustomerLog.dbo.UserLog_RunSP ul WITH(NOLOCK) 
-							 WHERE ul.custid=ci.custid
-								AND ActionID=1193	-- Manual Update Saba Soccer DangerLevel
-							 ORDER BY logdate DESC) t3
-				OUTER APPLY (SELECT TOP 1 ul.custid, ul.logdate FROM DBLOG.bodb_CustomerLog.dbo.UserLog_RunSP ul WITH(NOLOCK) 
-							 WHERE ul.custid=ci.custid
-								AND ActionID=1194	-- Manual Update Saba Basketball DangerLevel
-							 ORDER BY logdate DESC) t4
-			WHERE ci.recommend IN (SELECT custid FROM #TempAg)
-				AND ci.roleid = 1
-		),
-		tmp2 AS (
-			SELECT custid, DangerLevel, soccer, basketball, UpdateSoccer, UpdateBasketball, recommend, username, username2,
-				CASE WHEN UpdateSoccer<>0 AND UpdateBasketball=0	THEN ModifiedDate_sc
-					 WHEN UpdateSoccer=0 AND UpdateBasketball<>0	THEN ModifiedDate_bb
-					 WHEN (UpdateSoccer=1 AND UpdateBasketball=1)
-						OR (UpdateSoccer=2 AND UpdateBasketball=2)	THEN ModifiedDate_sc 
-					 WHEN ModifiedDate_sc>ModifiedDate_bb			THEN ModifiedDate_sc
-																	ELSE ModifiedDate_bb 
-				END LastModifiedDate
-			FROM tmp1 T1
-			WHERE NOT (UpdateSoccer=0 AND UpdateBasketball=0)
-		)
-		INSERT INTO #CustList(custid, DangerLevel, SoccerLevel, BasketballLevel, UpdateSoccer, UpdateBasketball, AgentID, username, username2, LastModifiedDate)
-		SELECT custid, DangerLevel, soccer, basketball, UpdateSoccer, UpdateBasketball, recommend, username, username2, LastModifiedDate
-		FROM tmp2
-		WHERE (soccer IN (SELECT DangerLevel FROM #tblDangerLevel) OR
-			   basketball IN (SELECT DangerLevel FROM #tblDangerLevel))
-			AND 1 = CASE WHEN @IsCheckAll = 1 THEN 1  
-						 WHEN @IsCheckAll = 0 AND LastModifiedDate BETWEEN @FromDate AND @ToDate THEN 1
-						 ELSE 0 END	
+		INSERT INTO #CustList(custid, DangerLevel, SoccerLevel, BasketballLevel, AgentID, username, username2)
+		SELECT ci.custid, ISNULL(c.DangerLevel,0) DangerLevel, t.soccer, t.basketball,
+			ci.recommend, ci.username,
+			SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) AS username2
+		FROM customer ci WITH(NOLOCK)
+			INNER JOIN custinfo c WITH(NOLOCK) ON c.custid = ci.custid
+			CROSS APPLY f_GetDangerLevelInfo(ISNULL(c.DangerLevel,0)) t
+		WHERE ci.recommend IN (SELECT custid FROM #TempAg)
+			AND ci.roleid = 1
 	END
+
+	DECLARE @RowID INT = 1
+
+	SELECT @TotalItems = COUNT(1) FROM #CustList
+
+	WHILE (1=1)
+	BEGIN
+		--CustLog:
+		INSERT INTO #CustLog (CustId, LogDate, DangerLevel_new, DangerLevel_old, isSoccer, isManual)
+		SELECT CustId, LogDate, DangerLevel_new, DangerLevel_old, isSoccer, isManual
+		FROM (
+				SELECT TOP 1
+						ul.custid,
+						ul.logdate,
+						x.Control.value('@Soccer', 'tinyint') AS DangerLevel_new,
+						x2.Control.value('@Soccer', 'tinyint') AS DangerLevel_old,
+						1 AS isSoccer,
+						0 AS isManual
+				FROM DBLOG.bodb_CustomerLog.dbo.UserLog_RunSP ul WITH(NOLOCK) 
+					INNER JOIN #CustList cl ON cl.CustId=ul.custid
+					CROSS APPLY (VALUES(CAST(ul.TrackingValue as xml))) AS v(Casted)
+					CROSS APPLY (VALUES(CAST(ul.TrackingValue2 as xml))) AS v2(Casted)
+					CROSS APPLY v.Casted.nodes('/R') AS x(Control)
+					CROSS APPLY v2.Casted.nodes('/R') AS x2(Control)
+				WHERE ul.ActionID IN (1191)
+					AND RowID=@RowID 
+				ORDER BY logdate DESC) A
+		UNION ALL
+		SELECT CustId, LogDate, DangerLevel_new, DangerLevel_old, isSoccer, isManual
+		FROM (
+				SELECT TOP 1
+						ul.custid,
+						ul.logdate,
+						x.Control.value('@Basketball', 'tinyint') AS DangerLevel_new,
+						x2.Control.value('@Basketball', 'tinyint') AS DangerLevel_old,
+						0 AS isSoccer,
+						0 AS isManual
+				FROM DBLOG.bodb_CustomerLog.dbo.UserLog_RunSP ul WITH(NOLOCK) 
+					INNER JOIN #CustList cl ON cl.CustId=ul.custid
+					CROSS APPLY (VALUES(CAST(ul.TrackingValue as xml))) AS v(Casted)
+					CROSS APPLY (VALUES(CAST(ul.TrackingValue2 as xml))) AS v2(Casted)
+					CROSS APPLY v.Casted.nodes('/R') AS x(Control)
+					CROSS APPLY v2.Casted.nodes('/R') AS x2(Control)
+				WHERE ul.ActionID IN (1192)
+					AND RowID=@RowID 
+				ORDER BY logdate DESC) B
+		UNION ALL
+		SELECT CustId, LogDate, DangerLevel_new, DangerLevel_old, isSoccer, isManual
+		FROM (
+				SELECT TOP 3
+						ul.custid,
+						ul.logdate,
+						x.Control.value('@DangerLevel', 'tinyint') AS DangerLevel_new,
+						x2.Control.value('@DangerLevel', 'tinyint') AS DangerLevel_old,
+						1 AS isSoccer,
+						1 AS isManual
+				FROM DBLOG.bodb_CustomerLog.dbo.UserLog_RunSP ul WITH(NOLOCK) 
+					INNER JOIN #CustList cl ON cl.CustId=ul.custid
+					CROSS APPLY (VALUES(CAST(ul.TrackingValue as xml))) AS v(Casted)
+					CROSS APPLY (VALUES(CAST(ul.TrackingValue2 as xml))) AS v2(Casted)
+					CROSS APPLY v.Casted.nodes('/R') AS x(Control)
+					CROSS APPLY v2.Casted.nodes('/R') AS x2(Control)
+				WHERE ul.ActionID=1193
+					AND RowID=@RowID 
+				ORDER BY logdate DESC) C
+		UNION ALL
+		SELECT TOP 3
+				ul.custid,
+				ul.logdate,
+				x.Control.value('@DangerLevel', 'tinyint') AS DangerLevel_new,
+				x2.Control.value('@DangerLevel', 'tinyint') AS DangerLevel_old,
+				0 AS isSoccer,
+				1 AS isManual
+		FROM DBLOG.bodb_CustomerLog.dbo.UserLog_RunSP ul WITH(NOLOCK) 
+			INNER JOIN #CustList cl ON cl.CustId=ul.custid
+			CROSS APPLY (VALUES(CAST(ul.TrackingValue as xml))) AS v(Casted)
+			CROSS APPLY (VALUES(CAST(ul.TrackingValue2 as xml))) AS v2(Casted)
+			CROSS APPLY v.Casted.nodes('/R') AS x(Control)
+			CROSS APPLY v2.Casted.nodes('/R') AS x2(Control)
+		WHERE ul.ActionID IN (1194)
+			AND RowID=@RowID 
+		ORDER BY logdate DESC
+		
+		SET @RowID = @RowID + 1
+		
+		IF @RowID>@TotalItems
+			BREAK
+	END
+	
+	;WITH tmp1 AS (
+		SELECT tmp.CustId,
+				--Soccer
+				CASE WHEN t1.custid IS NOT NULL AND t1.isManual=0 THEN 1	--auto
+					 WHEN t1.custid IS NOT NULL AND t1.isManual=1 THEN 2	--manual	
+																  ELSE 0
+				END UpdateSoccer,
+				t1.LogDate AS ModifiedDate_sc,
+				--Basketball
+				CASE WHEN t2.custid IS NOT NULL AND t2.isManual=0 THEN 1	
+					 WHEN t2.custid IS NOT NULL AND t2.isManual=1 THEN 2	
+																  ELSE 0
+				END UpdateBasketball,
+				t2.LogDate AS ModifiedDate_bb
+		FROM #CustList tmp
+		OUTER APPLY (SELECT TOP 1 cl.CustId, cl.LogDate, isManual FROM #CustLog cl 
+					 WHERE cl.custid=tmp.custid AND cl.isSoccer=1 
+						AND tmp.SoccerLevel=cl.DangerLevel_new
+						AND cl.DangerLevel_new<>cl.DangerLevel_old
+					 ORDER BY LogDate DESC) t1
+		OUTER APPLY (SELECT TOP 1 cl.CustId, cl.LogDate, isManual FROM #CustLog cl 
+					 WHERE cl.custid=tmp.custid AND cl.isSoccer=0 
+						AND tmp.SoccerLevel=cl.DangerLevel_new
+						AND cl.DangerLevel_new<>cl.DangerLevel_old
+					 ORDER BY LogDate DESC) t2
+	),
+	tmp2 AS (
+		SELECT custid, UpdateSoccer, UpdateBasketball,
+			CASE WHEN UpdateSoccer<>0 AND UpdateBasketball=0	THEN ModifiedDate_sc
+					WHEN UpdateSoccer=0 AND UpdateBasketball<>0	THEN ModifiedDate_bb
+					WHEN (UpdateSoccer=1 AND UpdateBasketball=1)
+					  OR (UpdateSoccer=2 AND UpdateBasketball=2)THEN ModifiedDate_sc 
+					WHEN ModifiedDate_sc>ModifiedDate_bb		THEN ModifiedDate_sc
+																ELSE ModifiedDate_bb 
+			END LastModifiedDate
+		FROM tmp1 T1
+		WHERE NOT (UpdateSoccer=0 AND UpdateBasketball=0)
+	)
+	UPDATE t
+	SET	t.UpdateSoccer=t2.UpdateSoccer,
+		t.UpdateBasketball=t2.UpdateBasketball,
+		t.LastModifiedDate=t2.LastModifiedDate
+	FROM #CustList t
+	INNER JOIN tmp2 t2 ON t2.CustId=t.CustId
+	
+	--Filter: @LastModifiedDate
+	DELETE FROM #CustList
+	WHERE NOT (1 = CASE WHEN @IsCheckAll = 1 THEN 1  
+						WHEN @IsCheckAll = 0 AND LastModifiedDate BETWEEN @FromDate AND @ToDate THEN 1
+						ELSE 0 END)
 
 	-- filter @SabaSports AND @DangerLevel
 	IF EXISTS (SELECT 1 FROM #tblSabaSport WHERE Sporttype=1)
 		AND NOT EXISTS (SELECT 1 FROM #tblSabaSport WHERE Sporttype=2)
 		--select: Saba Soccer only
 	BEGIN
-		DELETE from #CustList
-		WHERE (UpdateSoccer=0 AND UpdateBasketball<>0)	--upd basketball only
-			OR (SoccerLevel NOT IN (SELECT DangerLevel FROM #tblDangerLevel))
+		DELETE FROM #CustList
+		WHERE NOT (UpdateSoccer<>0 AND UpdateBasketball=0
+			AND SoccerLevel IN (SELECT DangerLevel FROM #tblDangerLevel))
 	END
 	ELSE IF NOT EXISTS (SELECT 1 FROM #tblSabaSport WHERE Sporttype=1)
 		AND EXISTS (SELECT 1 FROM #tblSabaSport WHERE Sporttype=2)
 		--select: Saba Basketball only
 	BEGIN
-		DELETE from #CustList
-		WHERE (UpdateSoccer<>0 AND UpdateBasketball=0)	--upd soccer only
-			OR (BasketballLevel NOT IN (SELECT DangerLevel FROM #tblDangerLevel))
+		DELETE FROM #CustList
+		WHERE NOT (UpdateSoccer=0 AND UpdateBasketball<>0
+			AND BasketballLevel IN (SELECT DangerLevel FROM #tblDangerLevel))
+	END
+	ELSE --select all sports
+	BEGIN
+		DELETE FROM #CustList
+		WHERE NOT ((SoccerLevel IN (SELECT DangerLevel FROM #tblDangerLevel) 
+			OR BasketballLevel IN (SELECT DangerLevel FROM #tblDangerLevel)))
 	END
 
 	SELECT @TotalItems = COUNT(1) FROM #CustList
@@ -272,8 +311,6 @@ BEGIN
 	WHERE rn BETWEEN @rowstart AND @rowend
 	ORDER BY rn ASC
 
-	DROP TABLE #tblDangerLevel
-	DROP TABLE #CustList
-	DROP TABLE #tblSabaSport
+	DROP TABLE #tblDangerLevel, #CustList, #CustLog, #tblSabaSport, #TempAg
 END
 GO
