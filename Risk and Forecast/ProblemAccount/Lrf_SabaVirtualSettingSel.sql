@@ -9,6 +9,8 @@ AS
 		
 	Revisions:
 		- 20221114@Tacy: Create SP [RedmineID: #179078]
+	Paramter's Explanations:
+		@DangerLevel = None ~ 0, [1-15] : DangerLevel
 */
 BEGIN
 	SET NOCOUNT ON
@@ -16,7 +18,7 @@ BEGIN
 	CREATE TABLE #tblDangerLevel (DangerLevel TINYINT)
 
 	INSERT INTO #tblDangerLevel (DangerLevel)
-	SELECT RTRIM(LTRIM(value)) AS DangerLevel
+	SELECT CASE WHEN ISNUMERIC(RTRIM(LTRIM(value)))=1 THEN RTRIM(LTRIM(value)) ELSE 0 END AS DangerLevel
 	FROM string_split(@DangerLevel,',')
 
 	;WITH tmp AS (
@@ -40,7 +42,7 @@ BEGIN
 			ISNULL(CAST(BetDelay AS varchar),'-') BetDelay,
 			ISNULL(CAST(NextBetInterval AS varchar),'-') NextBetInterval
 	FROM tmp
-	ORDER BY DangerLevel
+	ORDER BY DangerLevel, sportname
 
 	DROP TABLE #tblDangerLevel
 END
