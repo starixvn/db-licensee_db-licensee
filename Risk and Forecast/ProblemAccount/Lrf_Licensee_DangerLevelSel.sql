@@ -149,9 +149,9 @@ BEGIN
 					CROSS APPLY (VALUES(CAST(ul.TrackingValue2 as xml))) AS v2(Casted)
 					CROSS APPLY v.Casted.nodes('/R') AS x(Control)
 					CROSS APPLY v2.Casted.nodes('/R') AS x2(Control)
-				WHERE ul.ActionID IN (1191)
+				WHERE ul.ActionID=1191
 					AND RowID=@RowID 
-				ORDER BY logdate DESC) A
+				ORDER BY ul.logdate DESC) A
 		UNION ALL
 		SELECT CustId, LogDate, DangerLevel_new, DangerLevel_old, isSoccer, isManual
 		FROM (
@@ -168,13 +168,13 @@ BEGIN
 					CROSS APPLY (VALUES(CAST(ul.TrackingValue2 as xml))) AS v2(Casted)
 					CROSS APPLY v.Casted.nodes('/R') AS x(Control)
 					CROSS APPLY v2.Casted.nodes('/R') AS x2(Control)
-				WHERE ul.ActionID IN (1192)
+				WHERE ul.ActionID=1192
 					AND RowID=@RowID 
-				ORDER BY logdate DESC) B
+				ORDER BY ul.logdate DESC) B
 		UNION ALL
 		SELECT CustId, LogDate, DangerLevel_new, DangerLevel_old, isSoccer, isManual
 		FROM (
-				SELECT TOP 3
+				SELECT TOP 1
 						ul.custid,
 						ul.logdate,
 						x.Control.value('@DangerLevel', 'tinyint') AS DangerLevel_new,
@@ -189,9 +189,15 @@ BEGIN
 					CROSS APPLY v2.Casted.nodes('/R') AS x2(Control)
 				WHERE ul.ActionID=1193
 					AND RowID=@RowID 
-				ORDER BY logdate DESC) C
+					AND	--curr = new
+						SoccerLevel = x.Control.value('@DangerLevel', 'tinyint')
+					AND --new<>old
+						x.Control.value('@DangerLevel', 'tinyint')
+						<>
+						x2.Control.value('@DangerLevel', 'tinyint') 
+				ORDER BY ul.logdate DESC) C
 		UNION ALL
-		SELECT TOP 3
+		SELECT TOP 1
 				ul.custid,
 				ul.logdate,
 				x.Control.value('@DangerLevel', 'tinyint') AS DangerLevel_new,
@@ -204,9 +210,15 @@ BEGIN
 			CROSS APPLY (VALUES(CAST(ul.TrackingValue2 as xml))) AS v2(Casted)
 			CROSS APPLY v.Casted.nodes('/R') AS x(Control)
 			CROSS APPLY v2.Casted.nodes('/R') AS x2(Control)
-		WHERE ul.ActionID IN (1194)
+		WHERE ul.ActionID=1194
 			AND RowID=@RowID 
-		ORDER BY logdate DESC
+			AND	--curr = new
+				BasketballLevel = x.Control.value('@DangerLevel', 'tinyint')
+			AND --new<>old
+				x.Control.value('@DangerLevel', 'tinyint')
+				<>
+				x2.Control.value('@DangerLevel', 'tinyint')
+		ORDER BY ul.logdate DESC
 		
 		SET @RowID = @RowID + 1
 		
