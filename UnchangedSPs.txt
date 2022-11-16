@@ -1,2 +1,13 @@
-Risk and Forecast\LicenseeFunction\Lrf_CurrencySel.sql
-Risk and Forecast\Reports\Lrf_SubsidiarySel.sql
+BA Admin\Internal\Report\dbo.Acc_Rpt_BALicWinloss.sql
+BA Admin\Internal\Report\dbo.Acc_Rpt_BALicWinlossByCommissionLevel.sql
+BA Admin\Internal\Report\dbo.Acc_Rpt_BALicWinlossMonthly.sql
+BA Admin\Internal\Report\dbo.Acc_Rpt_BAWinlossByLicensee.sql
+BA Admin\Internal\Report\dbo.Acc_Rpt_BAWinlossByLicenseeDetail.sql
+BA Admin\Internal\Report\dbo.Acc_Rpt_BAWinlossByLicenseeDetail_Ag.sql
+BA Admin\Kahnawake\Report\dbo.Acc_Rpt_BAWinloss.sql
+Risk and Forecast\Reports\Lrf_Rpt_LicWinloss_BySourced.sql
+Risk and Forecast\Reports\Lrf_Rpt_MatchWinloss_ExportExcel.sql
+Risk and Forecast\Statement\dbo.Lrf_Statement_Mem_BetSummary.sql
+Risk and Forecast\Statement\dbo.Lrf_Statement_Rpt.sql
+Risk and Forecast\User-Product Control\TotalBets\dbo.Lrf_TotalBets_Sel161.proc.sql
+Risk and Forecast\User-Product Control\TotalBets\dbo.Lrf_TotalBets_SelHR.proc.sql
