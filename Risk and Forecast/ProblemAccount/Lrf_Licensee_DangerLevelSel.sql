@@ -130,73 +130,72 @@ BEGIN
 
 	SELECT @TotalItems = COUNT(1) FROM #CustList
 
+	
 	WHILE (1=1)
 	BEGIN
 		--CustLog:
 		INSERT INTO #CustLog (CustId, LogDate, DangerLevel_new, DangerLevel_old, isSoccer, isManual)
-		SELECT CustId, LogDate, DangerLevel_new, DangerLevel_old, isSoccer, isManual
-		FROM (
-				SELECT TOP 1
-						ul.custid,
-						ul.logdate,
-						x.Control.value('@Soccer', 'tinyint') AS DangerLevel_new,
-						x2.Control.value('@Soccer', 'tinyint') AS DangerLevel_old,
-						1 AS isSoccer,
-						0 AS isManual
-				FROM DBLOG.bodb_CustomerLog.dbo.UserLog_RunSP ul WITH(NOLOCK) 
-					INNER JOIN #CustList cl ON cl.CustId=ul.custid
-					CROSS APPLY (VALUES(CAST(ul.TrackingValue as xml))) AS v(Casted)
-					CROSS APPLY (VALUES(CAST(ul.TrackingValue2 as xml))) AS v2(Casted)
-					CROSS APPLY v.Casted.nodes('/R') AS x(Control)
-					CROSS APPLY v2.Casted.nodes('/R') AS x2(Control)
-				WHERE ul.ActionID=1191
-					AND RowID=@RowID 
-				ORDER BY ul.logdate DESC) A
-		UNION ALL
-		SELECT CustId, LogDate, DangerLevel_new, DangerLevel_old, isSoccer, isManual
-		FROM (
-				SELECT TOP 1
-						ul.custid,
-						ul.logdate,
-						x.Control.value('@Basketball', 'tinyint') AS DangerLevel_new,
-						x2.Control.value('@Basketball', 'tinyint') AS DangerLevel_old,
-						0 AS isSoccer,
-						0 AS isManual
-				FROM DBLOG.bodb_CustomerLog.dbo.UserLog_RunSP ul WITH(NOLOCK) 
-					INNER JOIN #CustList cl ON cl.CustId=ul.custid
-					CROSS APPLY (VALUES(CAST(ul.TrackingValue as xml))) AS v(Casted)
-					CROSS APPLY (VALUES(CAST(ul.TrackingValue2 as xml))) AS v2(Casted)
-					CROSS APPLY v.Casted.nodes('/R') AS x(Control)
-					CROSS APPLY v2.Casted.nodes('/R') AS x2(Control)
-				WHERE ul.ActionID=1192
-					AND RowID=@RowID 
-				ORDER BY ul.logdate DESC) B
-		UNION ALL
-		SELECT CustId, LogDate, DangerLevel_new, DangerLevel_old, isSoccer, isManual
-		FROM (
-				SELECT TOP 1
-						ul.custid,
-						ul.logdate,
-						x.Control.value('@DangerLevel', 'tinyint') AS DangerLevel_new,
-						x2.Control.value('@DangerLevel', 'tinyint') AS DangerLevel_old,
-						1 AS isSoccer,
-						1 AS isManual
-				FROM DBLOG.bodb_CustomerLog.dbo.UserLog_RunSP ul WITH(NOLOCK) 
-					INNER JOIN #CustList cl ON cl.CustId=ul.custid
-					CROSS APPLY (VALUES(CAST(ul.TrackingValue as xml))) AS v(Casted)
-					CROSS APPLY (VALUES(CAST(ul.TrackingValue2 as xml))) AS v2(Casted)
-					CROSS APPLY v.Casted.nodes('/R') AS x(Control)
-					CROSS APPLY v2.Casted.nodes('/R') AS x2(Control)
-				WHERE ul.ActionID=1193
-					AND RowID=@RowID 
-					AND	--curr = new
-						SoccerLevel = x.Control.value('@DangerLevel', 'tinyint')
-					AND --new<>old
-						x.Control.value('@DangerLevel', 'tinyint')
-						<>
-						x2.Control.value('@DangerLevel', 'tinyint') 
-				ORDER BY ul.logdate DESC) C
-		UNION ALL
+		SELECT TOP 1
+				ul.custid,
+				ul.logdate,
+				x.Control.value('@Soccer', 'tinyint') AS DangerLevel_new,
+				x2.Control.value('@Soccer', 'tinyint') AS DangerLevel_old,
+				1 AS isSoccer,
+				0 AS isManual
+		FROM DBLOG.bodb_CustomerLog.dbo.UserLog_RunSP ul WITH(NOLOCK) 
+			INNER JOIN #CustList cl ON cl.CustId=ul.custid
+			CROSS APPLY (VALUES(CAST(ul.TrackingValue as xml))) AS v(Casted)
+			CROSS APPLY (VALUES(CAST(ul.TrackingValue2 as xml))) AS v2(Casted)
+			CROSS APPLY v.Casted.nodes('/R') AS x(Control)
+			CROSS APPLY v2.Casted.nodes('/R') AS x2(Control)
+		WHERE ul.ActionID=1191
+			AND RowID=@RowID 
+		ORDER BY ul.logdate DESC
+
+		--Auto basketball
+		INSERT INTO #CustLog (CustId, LogDate, DangerLevel_new, DangerLevel_old, isSoccer, isManual)
+		SELECT TOP 1
+				ul.custid,
+				ul.logdate,
+				x.Control.value('@Basketball', 'tinyint') AS DangerLevel_new,
+				x2.Control.value('@Basketball', 'tinyint') AS DangerLevel_old,
+				0 AS isSoccer,
+				0 AS isManual
+		FROM DBLOG.bodb_CustomerLog.dbo.UserLog_RunSP ul WITH(NOLOCK) 
+			INNER JOIN #CustList cl ON cl.CustId=ul.custid
+			CROSS APPLY (VALUES(CAST(ul.TrackingValue as xml))) AS v(Casted)
+			CROSS APPLY (VALUES(CAST(ul.TrackingValue2 as xml))) AS v2(Casted)
+			CROSS APPLY v.Casted.nodes('/R') AS x(Control)
+			CROSS APPLY v2.Casted.nodes('/R') AS x2(Control)
+		WHERE ul.ActionID=1192
+			AND RowID=@RowID 
+		ORDER BY ul.logdate DESC
+		
+		INSERT INTO #CustLog (CustId, LogDate, DangerLevel_new, DangerLevel_old, isSoccer, isManual)
+		SELECT TOP 1
+				ul.custid,
+				ul.logdate,
+				x.Control.value('@DangerLevel', 'tinyint') AS DangerLevel_new,
+				x2.Control.value('@DangerLevel', 'tinyint') AS DangerLevel_old,
+				1 AS isSoccer,
+				1 AS isManual
+		FROM DBLOG.bodb_CustomerLog.dbo.UserLog_RunSP ul WITH(NOLOCK) 
+			INNER JOIN #CustList cl ON cl.CustId=ul.custid
+			CROSS APPLY (VALUES(CAST(ul.TrackingValue as xml))) AS v(Casted)
+			CROSS APPLY (VALUES(CAST(ul.TrackingValue2 as xml))) AS v2(Casted)
+			CROSS APPLY v.Casted.nodes('/R') AS x(Control)
+			CROSS APPLY v2.Casted.nodes('/R') AS x2(Control)
+		WHERE ul.ActionID=1193
+			AND RowID=@RowID 
+			AND	--curr = new
+				SoccerLevel = x.Control.value('@DangerLevel', 'tinyint')
+			AND --new<>old
+				x.Control.value('@DangerLevel', 'tinyint')
+				<>
+				x2.Control.value('@DangerLevel', 'tinyint') 
+		ORDER BY ul.logdate DESC
+		
+		INSERT INTO #CustLog (CustId, LogDate, DangerLevel_new, DangerLevel_old, isSoccer, isManual)
 		SELECT TOP 1
 				ul.custid,
 				ul.logdate,
@@ -303,25 +302,58 @@ BEGIN
 
 	SELECT @TotalItems = COUNT(1) FROM #CustList
 
-	;WITH t1 AS(
-		SELECT *, 
-			CASE WHEN @OrderCol = 1 THEN username 
-				 WHEN @OrderCol = 2 THEN username2 
-				 WHEN @OrderCol = 3 THEN LastModifiedDate 
-				 WHEN @OrderCol = 4 THEN SoccerLevel 
-				 WHEN @OrderCol = 5 THEN BasketballLevel 
-			END OrderCol
-		FROM #CustList
-	),
-	t2 AS (
-		SELECT *, ROW_NUMBER () OVER (ORDER BY CASE WHEN @SortType = 1 THEN OrderCol END ASC,	
-												CASE WHEN @SortType = 2 THEN OrderCol END DESC ) rn
-		FROM t1
-	)
-	SELECT t2.*
-	FROM t2 
-	WHERE rn BETWEEN @rowstart AND @rowend
-	ORDER BY rn ASC
+	IF @OrderCol IN (1,2)
+	BEGIN
+		;WITH t1 AS(
+			SELECT *, 
+				CASE WHEN @OrderCol = 1 THEN username 
+					 WHEN @OrderCol = 2 THEN username2 
+				END OrderCol
+			FROM #CustList
+		),
+		t2 AS (
+			SELECT *, ROW_NUMBER () OVER (ORDER BY CASE WHEN @SortType = 1 THEN OrderCol END ASC,	
+													CASE WHEN @SortType = 2 THEN OrderCol END DESC ) rn
+			FROM t1
+		)
+		SELECT t2.*
+		FROM t2 
+		WHERE rn BETWEEN @rowstart AND @rowend
+		ORDER BY rn ASC
+	END
+	ELSE IF @OrderCol=3
+	BEGIN
+		;WITH t1 AS (
+			SELECT *, ROW_NUMBER () OVER (ORDER BY CASE WHEN @SortType = 1 THEN LastModifiedDate END ASC,	
+													CASE WHEN @SortType = 2 THEN LastModifiedDate END DESC ) rn
+			FROM #CustList
+		)
+		SELECT t1.*
+		FROM T1 
+		WHERE rn BETWEEN @rowstart AND @rowend
+		ORDER BY rn ASC
+	END
+	ELSE
+	BEGIN
+		;WITH t1 AS(
+			SELECT *, 
+				CASE WHEN @OrderCol = 1 THEN username 
+					 WHEN @OrderCol = 2 THEN username2 
+					 WHEN @OrderCol = 4 THEN SoccerLevel 
+					 WHEN @OrderCol = 5 THEN BasketballLevel 
+				END OrderCol
+			FROM #CustList
+		),
+		t2 AS (
+			SELECT *, ROW_NUMBER () OVER (ORDER BY CASE WHEN @SortType = 1 THEN OrderCol END ASC,	
+													CASE WHEN @SortType = 2 THEN OrderCol END DESC ) rn
+			FROM t1
+		)
+		SELECT t2.*
+		FROM t2 
+		WHERE rn BETWEEN @rowstart AND @rowend
+		ORDER BY rn ASC
+	END
 
 	DROP TABLE #tblDangerLevel, #CustList, #CustLog, #tblSabaSport, #TempAg
 END

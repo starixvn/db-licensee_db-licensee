@@ -24,7 +24,7 @@ BEGIN
 	;WITH tmp AS (
 		SELECT DISTINCT
 				DangerLevel, 
-				s.sportname, 
+				sporttype, 
 				LeagueGroupID,
 				CASE WHEN LeagueGroupID=-1 THEN 'All' ELSE 'No' END AS ApplyParlay,
 				CASE WHEN DangerLevel=1 THEN NULL
@@ -34,10 +34,9 @@ BEGIN
 				CASE WHEN DangerLevel=1 THEN NULL
 					 WHEN ActionType=6	THEN Value END AS NextBetInterval
 		FROM DangerLevelPolicy p WITH (NOLOCK)
-		INNER JOIN DBACC.bodb02.dbo.Sports s WITH (NOLOCK) ON p.sporttype=s.sporttype
 		WHERE DangerLevel IN (SELECT DangerLevel FROM #tblDangerLevel)
 	)
-	SELECT	DangerLevel, sportname, LeagueGroupID, ApplyParlay,
+	SELECT	DangerLevel, sporttype, LeagueGroupID, ApplyParlay,
 			ISNULL(CAST(MaxperMatch AS varchar),'-') MaxperMatch,
 			ISNULL(CAST(BetDelay AS varchar),'-') BetDelay,
 			ISNULL(CAST(NextBetInterval AS varchar),'-') NextBetInterval
