@@ -1,6 +1,5 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
-
-ALTER PROCEDURE [dbo].[Lrf_Rpt_ExchangeWinlosss_ByResettledDate]
+ALTER PROCEDURE [dbo].[Lrf_Rpt_ExchangeWinloss_ByResettledDate]
 	@LicenseeId				INT,
 	@AgentList				VARCHAR(MAX),
 	@UserName				VARCHAR(50)	= '',
@@ -12,12 +11,12 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_ExchangeWinlosss_ByResettledDate]
 AS
 
 /*
-	Created: 20221111@Sophia 
+	Created: 20221111@Evan 
 	Description: LAP - Exchange WL report by Resettled Date
 	DB: DBEXT.bodb02
 
 	Revisions:
-		- 20221111@Sophia: Create new report Exchange Winloss by Resettled Date [RedmineID: #179079]		 
+		- 20221111@Evan: Create new report Exchange Winloss by Resettled Date [RedmineID: #179079]		 
 
 */
 
@@ -62,19 +61,11 @@ BEGIN
 		,	@TDate				DATE
 		,	@ProductPrefix		VARCHAR(2)
 		
-	DECLARE @RawWinLostDate AS TABLE (WinLostDate DATE, StartWLDate DATETIME, EndWLDate DATETIME)
-
 	SELECT @FDate = @FromDate,
 		@TDate = @ToDate
 
 	SET @ProductPrefix = 'BX'
 	
-	INSERT INTO @RawWinLostDate (WinLostDate, StartWLDate, EndWLDate)
-	SELECT DISTINCT WinlostDate, WinlostDate, DATEADD(DAY, 1, WinlostDate)
-	FROM bodb_3rdProduct.dbo.Product3rd_SummarizedDateHistory WITH (NOLOCK)
-	WHERE WinlostDate >= @FDate AND WinlostDate <= @TDate
-		AND SumToThirdPartyDate IS NULL
-
 	SELECT @ProductID = ProductID
 	FROM bodb_licensee.dbo.Product3rd WITH (NOLOCK)
 	WHERE ProductPrefix = @ProductPrefix
@@ -108,192 +99,148 @@ BEGIN
 	END
 	-- #EndRegion: Get list custIDs
 
-	-- #Region: Get data has not been moved to sum table yet(yesterday and today)
-	IF EXISTS (SELECT 1 FROM @RawWinLostDate)
-	BEGIN
-		DECLARE @RawFDate	DATE,
-				@RawTDate	DATE,
-				@PartyID	VARCHAR(10)
-		DECLARE @ChargeRates AS TABLE(Rate MONEY, FromDate DATE, ToDate DATE)
+	-- #Region: Handle Data from Sum Table
+	
+	DECLARE @PartyID	VARCHAR(10)
+	DECLARE @ChargeRates AS TABLE(Rate MONEY, FromDate DATE, ToDate DATE)
 
-		SELECT @RawFDate = MIN(WinLostDate), @RawTDate = MAX(WinLostDate)
-		FROM @RawWinLostDate
-
-		SELECT @PartyID = CAST(PartyID AS VARCHAR)
-		FROM bodb_licensee.dbo.OAS_Party WITH(NOLOCK)
-		WHERE OldRefID = @LicenseeId AND PartyType = 1
+	SELECT @PartyID = CAST(PartyID AS VARCHAR)
+	FROM bodb_licensee.dbo.OAS_Party WITH(NOLOCK)
+	WHERE OldRefID = @LicenseeId AND PartyType = 1
 		
+	INSERT INTO @ChargeRates(Rate, FromDate, ToDate)
+	SELECT DI_Rate, Fromdate, Todate
+	FROM bodb_licensee.dbo.LA_f_ChargeInfo(@PartyID, @FDate, @TDate, @ProductPrefix, 'OA', 1)
+	WHERE ChargeType = 1 AND DI_Rate > 0
+		
+	IF NOT EXISTS (SELECT 1 FROM @ChargeRates)
+	BEGIN
 		INSERT INTO @ChargeRates(Rate, FromDate, ToDate)
 		SELECT DI_Rate, Fromdate, Todate
-		FROM bodb_licensee.dbo.LA_f_ChargeInfo(@PartyID, @RawFDate, @RawTDate, @ProductPrefix, 'OA', 1)
+		FROM bodb_licensee.dbo.LA_f_GetChargeInfoWithTrialTime(@PartyID, @FDate, @TDate, @ProductPrefix, 'OA', 1)
 		WHERE ChargeType = 1 AND DI_Rate > 0
-		
-		IF NOT EXISTS (SELECT 1 FROM @ChargeRates)
-		BEGIN
-			INSERT INTO @ChargeRates(Rate, FromDate, ToDate)
-			SELECT DI_Rate, Fromdate, Todate
-			FROM bodb_licensee.dbo.LA_f_GetChargeInfoWithTrialTime(@PartyID, @RawFDate, @RawTDate, @ProductPrefix, 'OA', 1)
-			WHERE ChargeType = 1 AND DI_Rate > 0
-		END
-
-		CREATE TABLE #sumBet (
-			SettledDate		DATE,
-			UserID			VARCHAR(20),
-			EventID			INT,
-			MarketID		VARCHAR(50),
-			CurrencyID		INT,
-			TurnOver		MONEY,
-			Winlost			MONEY,
-			CustComm		MONEY,
-			AgentComm		MONEY,
-			ExVirtualRate	FLOAT
-		)
-		
-		INSERT INTO #sumBet (
-			SettledDate,
-			UserID,
-			EventID,
-			MarketID,
-			CurrencyID,
-			TurnOver,
-			Winlost,
-			CustComm,
-			AgentComm,
-			ExVirtualRate )
-		SELECT
-			CONVERT(DATE, sumbet.settledDate),
-			sumbet.userId,
-			sumbet.eventID,
-			sumbet.marketID,
-			sumbet.currency,
-			SUM(sumbet.stakeTotal/sumbet.ExVirtualRate),		-- TurnOver
-			SUM(sumbet.marketTotal/sumbet.ExVirtualRate),		-- winloss
-			SUM(sumbet.commission/sumbet.ExVirtualRate),		-- CustComm
-			SUM(sumbet.agentCommission/sumbet.ExVirtualRate),	-- AgentComm
-			sumbet.ExVirtualRate
-		FROM bodb_3rdProduct.dbo.Sum_winloss_Exchange AS sumbet WITH (NOLOCK)
-			INNER JOIN @RawWinLostDate AS wldate ON sumbet.settledDate >= wldate.StartWLDate AND sumbet.settledDate < wldate.EndWLDate
-			INNER JOIN @tmpCust AS cust ON cust.Custid = sumbet.CustID
-		GROUP BY
-			sumbet.settledDate,
-			sumbet.userId,
-			sumbet.eventID,
-			sumbet.marketID,
-			sumbet.currency,
-			sumbet.ExVirtualRate
-		
-		CREATE TABLE #detailBet (
-			SettledDate	DATE,
-			UserID		VARCHAR(20),
-			EventID		INT,
-			MarketID	VARCHAR(50),
-			BetCount	INT,
-			Lay			MONEY,
-			Back		MONEY,
-		)
-		
-		INSERT INTO #detailBet (
-			SettledDate,
-			UserID,
-			EventID,
-			MarketID,
-			BetCount,
-			Lay,
-			Back )
-		SELECT
-			sumbet.SettledDate,
-			bet.userId,
-			bet.eventID,
-			bet.marketID,
-			COUNT(bet.betID) AS Betcount,
-			SUM(CASE WHEN bet.matchType = 'Lay' THEN (bet.matchStake/sumbet.ExVirtualRate) ELSE 0 END) AS Lay,
-			SUM(CASE WHEN bet.matchType = 'Back' THEN (bet.matchStake/sumbet.ExVirtualRate) ELSE 0 END) AS Back
-		FROM bodb_3rdProduct.dbo.Bettrans_Exchange bet WITH (NOLOCK)
-			INNER JOIN #sumBet sumbet ON bet.userId = sumbet.UserID AND bet.eventID = sumbet.EventID AND bet.marketID = sumbet.MarketID
-		WHERE bet.betstatus = 'Settled'
-		GROUP BY
-			sumbet.SettledDate,
-			bet.userId,
-			bet.eventID,
-			bet.marketID
-		
-		INSERT INTO #tmpResult(
-			WinLostDate,
-			CurrencyId,
-			Turnover,
-			NetTurnover,
-			TotalTrans,
-			WinLost,
-			LicWinLost,
-			LicNetWL,
-			CustComm,
-			AmountDueTo,
-			AgentComm )
-		SELECT
-			sumbet.SettledDate
-			, sumbet.CurrencyID
-			, SUM(sumbet.Turnover)
-			, SUM(ABS(ISNULL(bet.Lay, 0) - ISNULL(bet.Back, 0)))
-			, SUM(ISNULL(bet.BetCount, 0))
-			, SUM(sumbet.Winlost)
-			, - SUM(sumbet.Winlost)
-			, - SUM(sumbet.Winlost * (1 - ISNULL(rate.Rate, 1)))
-			, SUM(sumbet.CustComm)
-			, - SUM((sumbet.Winlost + sumbet.CustComm) + (-sumbet.Winlost*(1-ISNULL(rate.Rate,1)) + sumbet.AgentComm)) -- (LicWL - NetLicWL) + (LicComm - NetLicComm)
-			, SUM(sumbet.AgentComm)
-		FROM #sumBet sumbet
-			LEFT JOIN #detailBet bet ON sumbet.userId	= bet.userId 
-									AND sumbet.eventID	= bet.eventID 
-									AND sumbet.marketID	= bet.marketID
-									AND sumbet.SettledDate = bet.SettledDate
-			LEFT JOIN @ChargeRates rate ON sumbet.SettledDate BETWEEN rate.FromDate AND rate.ToDate
-		GROUP BY
-			sumbet.SettledDate,
-			sumbet.CurrencyID
-
-		DROP TABLE #sumBet
-		DROP TABLE #detailBet
 	END
-	-- #EndRegion: Get data has not been moved to sum table yet(yesterday and today)
-
-	-- #Region: Handle Data from Sum Table
-	IF @FDate <= @TDate
-	BEGIN
-		INSERT INTO #tmpResult(
-			WinLostDate,
-			CurrencyId,
-			Turnover,
-			NetTurnOver,
-			TotalTrans,
-			WinLost,
-			LicWinLost,
-			LicNetWL,
-			CustComm,
-			AmountDueTo,
-			AgentComm )
-		SELECT
-			b.Winlostdate,
-			b.Currency,
-			SUM(b.Turnover),
-			SUM(ValidBetAmount),
-			SUM(b.BetCount),
-			SUM(b.Winlost),
-			-SUM(b.Winlost),
-			SUM(b.WinLostA),
-			SUM(CommissionP),
-			-SUM(( b.Winlost + b.CommissionP) + ( b.WinLostA + CommissionA)) -- (LicWL - NetLicWL) + (LicComm - NetLicComm)
-			, SUM(CommissionA)
-		FROM bodb_LicenseeReport.dbo.rptDepWinlost_ThirdParty AS b WITH (NOLOCK)
-			INNER JOIN @tmpCust AS c ON b.Custid = c.CustId
-		WHERE b.Winlostdate BETWEEN @FDate AND @TDate
-			AND b.ProductId = @ProductId
-			AND NOT EXISTS (SELECT 1 FROM @RawWinLostDate r WHERE b.Winlostdate = r.WinLostDate)
-		GROUP BY
-			b.Winlostdate,
-			b.Currency
-	END
-	-- #EndRegion: Handle Data	from Sum Table
-
+		
+	CREATE TABLE #sumBet (
+		SettledDate		DATE,
+		UserID			VARCHAR(20),
+		EventID			INT,
+		MarketID		VARCHAR(50),
+		CurrencyID		INT,
+		TurnOver		MONEY,
+		Winlost			MONEY,
+		CustComm		MONEY,
+		AgentComm		MONEY,
+		ExVirtualRate	FLOAT
+	)
+		
+	INSERT INTO #sumBet (
+		SettledDate,
+		UserID,
+		EventID,
+		MarketID,
+		CurrencyID,
+		TurnOver,
+		Winlost,
+		CustComm,
+		AgentComm,
+		ExVirtualRate )
+	SELECT
+		CONVERT(DATE, ISNULL(sumbet.resettledDate,sumbet.settledDate)),
+		sumbet.userId,
+		sumbet.eventID,
+		sumbet.marketID,
+		sumbet.currency,
+		SUM(sumbet.stakeTotal/sumbet.ExVirtualRate),		-- TurnOver
+		SUM(sumbet.marketTotal/sumbet.ExVirtualRate),		-- winloss
+		SUM(sumbet.commission/sumbet.ExVirtualRate),		-- CustComm
+		SUM(sumbet.agentCommission/sumbet.ExVirtualRate),	-- AgentComm
+		sumbet.ExVirtualRate
+	FROM bodb_3rdProduct.dbo.Sum_winloss_Exchange AS sumbet WITH (NOLOCK)
+		INNER JOIN @tmpCust AS cust ON cust.Custid = sumbet.CustID
+	WHERE ISNULL(sumbet.resettledDate,sumbet.settledDate) between @FDate AND @TDate
+	GROUP BY
+		ISNULL(sumbet.resettledDate,sumbet.settledDate),
+		sumbet.userId,
+		sumbet.eventID,
+		sumbet.marketID,
+		sumbet.currency,
+		sumbet.ExVirtualRate
+	 
+	CREATE TABLE #detailBet (
+		SettledDate	DATE,
+		UserID		VARCHAR(20),
+		EventID		INT,
+		MarketID	VARCHAR(50),
+		BetCount	INT,
+		Lay			MONEY,
+		Back		MONEY,
+	)
+		
+	INSERT INTO #detailBet (
+		SettledDate,
+		UserID,
+		EventID,
+		MarketID,
+		BetCount,
+		Lay,
+		Back )
+	SELECT
+		sumbet.SettledDate,
+		bet.userId,
+		bet.eventID,
+		bet.marketID,
+		COUNT(bet.betID) AS Betcount,
+		SUM(CASE WHEN bet.matchType = 'Lay' THEN (bet.matchStake/sumbet.ExVirtualRate) ELSE 0 END) AS Lay,
+		SUM(CASE WHEN bet.matchType = 'Back' THEN (bet.matchStake/sumbet.ExVirtualRate) ELSE 0 END) AS Back
+	FROM bodb_3rdProduct.dbo.Bettrans_Exchange bet WITH (NOLOCK)
+		INNER JOIN #sumBet sumbet ON bet.userId = sumbet.UserID AND bet.eventID = sumbet.EventID AND bet.marketID = sumbet.MarketID
+	WHERE bet.betstatus = 'Settled'
+	GROUP BY
+		sumbet.SettledDate,
+		bet.userId,
+		bet.eventID,
+		bet.marketID
+		
+	INSERT INTO #tmpResult(
+		WinLostDate,
+		CurrencyId,
+		Turnover,
+		NetTurnover,
+		TotalTrans,
+		WinLost,
+		LicWinLost,
+		LicNetWL,
+		CustComm,
+		AmountDueTo,
+		AgentComm )
+	SELECT
+		sumbet.SettledDate WinLostDate
+		, sumbet.CurrencyID CurrencyId
+		, SUM(sumbet.Turnover) Turnover
+		, SUM(ABS(ISNULL(bet.Lay, 0) - ISNULL(bet.Back, 0))) NetTurnover
+		, SUM(ISNULL(bet.BetCount, 0)) TotalTrans
+		, SUM(sumbet.Winlost) WinLost
+		, - SUM(sumbet.Winlost) LicWinLost
+		, - SUM(sumbet.Winlost * (1 - ISNULL(rate.Rate, 1))) LicNetWL
+		, SUM(sumbet.CustComm) CustComm
+		, - SUM((sumbet.Winlost + sumbet.CustComm) + (-sumbet.Winlost*(1-ISNULL(rate.Rate,1)) + sumbet.AgentComm)) AmountDueTo -- (LicWL - NetLicWL) + (LicComm - NetLicComm) 
+		, SUM(sumbet.AgentComm) AgentComm
+	FROM #sumBet sumbet
+		LEFT JOIN #detailBet bet ON sumbet.userId	= bet.userId 
+								AND sumbet.eventID	= bet.eventID 
+								AND sumbet.marketID	= bet.marketID
+								AND sumbet.SettledDate = bet.SettledDate
+		LEFT JOIN @ChargeRates rate ON sumbet.SettledDate BETWEEN rate.FromDate AND rate.ToDate
+	GROUP BY
+		sumbet.SettledDate,
+		sumbet.CurrencyID
+		
+	DROP TABLE #sumBet
+	DROP TABLE #detailBet
+	
+	-- #EndRegion: Handle Data from Sum Table
+	
 	-- #Region: Handle Exchange Rate
 	CREATE TABLE #Exchange (ExchangeId INT, FromDate DATE, ToDate DATE, USD FLOAT, EUR FLOAT, GBP FLOAT, Rate FLOAT, DefaultRate FLOAT)
 
