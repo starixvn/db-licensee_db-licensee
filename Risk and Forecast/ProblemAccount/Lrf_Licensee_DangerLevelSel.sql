@@ -64,8 +64,8 @@ BEGIN
 	
 	CREATE TABLE #CustLog (
 			CustId				INT, 
-			DangerLevel_new		TINYINT,
-			DangerLevel_old		TINYINT, 
+			NewLevel		TINYINT,
+			OldLevel		TINYINT, 
 			isSoccer			BIT,
 			isManual			BIT,
 			LogDate				DATETIME,
@@ -134,12 +134,12 @@ BEGIN
 	WHILE (1=1)
 	BEGIN
 		--CustLog:
-		INSERT INTO #CustLog (CustId, LogDate, DangerLevel_new, DangerLevel_old, isSoccer, isManual)
+		INSERT INTO #CustLog (CustId, LogDate, NewLevel, OldLevel, isSoccer, isManual)
 		SELECT TOP 1
 				ul.custid,
 				ul.logdate,
-				x.Control.value('@Soccer', 'tinyint') AS DangerLevel_new,
-				x2.Control.value('@Soccer', 'tinyint') AS DangerLevel_old,
+				x.Control.value('@DangerLevel', 'tinyint') AS NewLevel,
+				x2.Control.value('@DangerLevel', 'tinyint') AS OldLevel,
 				1 AS isSoccer,
 				0 AS isManual
 		FROM DBLOG.bodb_CustomerLog.dbo.UserLog_RunSP ul WITH(NOLOCK) 
@@ -153,12 +153,12 @@ BEGIN
 		ORDER BY ul.logdate DESC
 
 		--Auto basketball
-		INSERT INTO #CustLog (CustId, LogDate, DangerLevel_new, DangerLevel_old, isSoccer, isManual)
+		INSERT INTO #CustLog (CustId, LogDate, NewLevel, OldLevel, isSoccer, isManual)
 		SELECT TOP 1
 				ul.custid,
 				ul.logdate,
-				x.Control.value('@Basketball', 'tinyint') AS DangerLevel_new,
-				x2.Control.value('@Basketball', 'tinyint') AS DangerLevel_old,
+				x.Control.value('@DangerLevel', 'tinyint') AS NewLevel,
+				x2.Control.value('@DangerLevel', 'tinyint') AS OldLevel,
 				0 AS isSoccer,
 				0 AS isManual
 		FROM DBLOG.bodb_CustomerLog.dbo.UserLog_RunSP ul WITH(NOLOCK) 
@@ -171,12 +171,12 @@ BEGIN
 			AND RowID=@RowID 
 		ORDER BY ul.logdate DESC
 		
-		INSERT INTO #CustLog (CustId, LogDate, DangerLevel_new, DangerLevel_old, isSoccer, isManual)
+		INSERT INTO #CustLog (CustId, LogDate, NewLevel, OldLevel, isSoccer, isManual)
 		SELECT TOP 1
 				ul.custid,
 				ul.logdate,
-				x.Control.value('@DangerLevel', 'tinyint') AS DangerLevel_new,
-				x2.Control.value('@DangerLevel', 'tinyint') AS DangerLevel_old,
+				x.Control.value('@DangerLevel', 'tinyint') AS NewLevel,
+				x2.Control.value('@DangerLevel', 'tinyint') AS OldLevel,
 				1 AS isSoccer,
 				1 AS isManual
 		FROM DBLOG.bodb_CustomerLog.dbo.UserLog_RunSP ul WITH(NOLOCK) 
@@ -195,12 +195,13 @@ BEGIN
 				x2.Control.value('@DangerLevel', 'tinyint') 
 		ORDER BY ul.logdate DESC
 		
-		INSERT INTO #CustLog (CustId, LogDate, DangerLevel_new, DangerLevel_old, isSoccer, isManual)
+		--Manual DangerLevel
+		INSERT INTO #CustLog (CustId, LogDate, NewLevel, OldLevel, isSoccer, isManual)
 		SELECT TOP 1
 				ul.custid,
 				ul.logdate,
-				x.Control.value('@DangerLevel', 'tinyint') AS DangerLevel_new,
-				x2.Control.value('@DangerLevel', 'tinyint') AS DangerLevel_old,
+				x.Control.value('@DangerLevel', 'tinyint') AS NewLevel,
+				x2.Control.value('@DangerLevel', 'tinyint') AS OldLevel,
 				0 AS isSoccer,
 				1 AS isManual
 		FROM DBLOG.bodb_CustomerLog.dbo.UserLog_RunSP ul WITH(NOLOCK) 
@@ -242,13 +243,13 @@ BEGIN
 		FROM #CustList tmp
 		OUTER APPLY (SELECT TOP 1 cl.CustId, cl.LogDate, isManual FROM #CustLog cl 
 					 WHERE cl.custid=tmp.custid AND cl.isSoccer=1 
-						AND tmp.SoccerLevel=cl.DangerLevel_new
-						AND cl.DangerLevel_new<>cl.DangerLevel_old
+						AND tmp.SoccerLevel=cl.NewLevel
+						AND cl.NewLevel<>cl.OldLevel
 					 ORDER BY LogDate DESC) t1
 		OUTER APPLY (SELECT TOP 1 cl.CustId, cl.LogDate, isManual FROM #CustLog cl 
 					 WHERE cl.custid=tmp.custid AND cl.isSoccer=0 
-						AND tmp.SoccerLevel=cl.DangerLevel_new
-						AND cl.DangerLevel_new<>cl.DangerLevel_old
+						AND tmp.SoccerLevel=cl.NewLevel
+						AND cl.NewLevel<>cl.OldLevel
 					 ORDER BY LogDate DESC) t2
 	),
 	tmp2 AS (
