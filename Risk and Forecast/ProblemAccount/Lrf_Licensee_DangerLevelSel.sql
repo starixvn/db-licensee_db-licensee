@@ -23,7 +23,7 @@ AS
 		- 20221109@Tacy: Create SP [RedmineID: #179078]
 
 	Paramter's Explanations:
-		@Sporttype	= "Soccer,Basketball"
+		@Sporttype	= "1,2"
 		@Level		= None ~ 0, [1-15] : DangerLevel
 		@OrderCol	= 1 : System ID
 					= 2 : sort by external ID
@@ -43,10 +43,7 @@ BEGIN
 
 	CREATE TABLE #TempAg (custid INT)
 	CREATE TABLE #tblDangerLevel (DangerLevel TINYINT)
-
-	CREATE TABLE #tblSabaSport (
-			Sporttype			TINYINT,
-			SportName			VARCHAR(50))
+	CREATE TABLE #tblSabaSport (Sporttype TINYINT)
 
 	CREATE TABLE #CustList (
 			RowID				INT IDENTITY(1,1),
@@ -63,12 +60,12 @@ BEGIN
 	)
 	
 	CREATE TABLE #CustLog (
-			CustId				INT, 
-			NewLevel		TINYINT,
-			OldLevel		TINYINT, 
-			isSoccer			BIT,
-			isManual			BIT,
-			LogDate				DATETIME,
+			CustId		INT, 
+			NewLevel	TINYINT,
+			OldLevel	TINYINT, 
+			isSoccer	BIT,
+			isManual	BIT,
+			LogDate		DATETIME,
 			PRIMARY KEY CLUSTERED (CustId, LogDate, isSoccer, isManual)
 	)
 
@@ -95,9 +92,8 @@ BEGIN
 	SELECT CASE WHEN ISNUMERIC(RTRIM(LTRIM(value)))=1 THEN RTRIM(LTRIM(value)) ELSE 0 END AS DangerLevel
 	FROM string_split(@Level,',')
 
-	INSERT INTO #tblSabaSport (SportName, Sporttype)
-	SELECT	RTRIM(LTRIM(value)) AS SportName,
-			CASE WHEN RTRIM(LTRIM(value))='Soccer' THEN 1 ELSE 2 END Sporttype
+	INSERT INTO #tblSabaSport (Sporttype)
+	SELECT	RTRIM(LTRIM(value)) AS Sporttype
 	FROM string_split(@Sporttype,',')
 
 	IF @Username <> ''
@@ -112,6 +108,8 @@ BEGIN
 		WHERE ci.recommend IN (SELECT custid FROM #TempAg)
 			AND (ci.username  LIKE @username + '%' OR ci.username2 LIKE '%$'+@username + '%')		
 			AND ci.roleid = 1
+			AND ((soccer IN (SELECT DangerLevel FROM #tblDangerLevel) 
+			OR basketball IN (SELECT DangerLevel FROM #tblDangerLevel)))
 	END
 	ELSE
 	BEGIN
@@ -124,6 +122,8 @@ BEGIN
 			CROSS APPLY f_GetDangerLevelInfo(ISNULL(c.DangerLevel,0)) t
 		WHERE ci.recommend IN (SELECT custid FROM #TempAg)
 			AND ci.roleid = 1
+			AND ((soccer IN (SELECT DangerLevel FROM #tblDangerLevel) 
+			OR basketball IN (SELECT DangerLevel FROM #tblDangerLevel)))
 	END
 
 	DECLARE @RowID INT = 1
@@ -273,7 +273,9 @@ BEGIN
 	
 	--Filter: @LastModifiedDate
 	DELETE FROM #CustList
-	WHERE NOT (1 = CASE WHEN @IsCheckAll = 1 THEN 1  
+	WHERE NOT (1 = CASE WHEN @IsCheckAll = 1 AND LastModifiedDate IS NOT NULL	THEN 1  
+						WHEN @IsCheckAll = 1 AND LastModifiedDate IS NULL 
+							AND (SoccerLevel=0 OR BasketballLevel=0)			THEN 1  
 						WHEN @IsCheckAll = 0 AND LastModifiedDate BETWEEN @FromDate AND @ToDate THEN 1
 						ELSE 0 END)
 
@@ -317,7 +319,8 @@ BEGIN
 													CASE WHEN @SortType = 2 THEN OrderCol END DESC ) rn
 			FROM t1
 		)
-		SELECT t2.*
+		SELECT CustId, SoccerLevel, BasketballLevel, AgentID, username, username2, 
+				ISNULL(CAST(LastModifiedDate AS varchar),'-') LastModifiedDate
 		FROM t2 
 		WHERE rn BETWEEN @rowstart AND @rowend
 		ORDER BY rn ASC
@@ -329,7 +332,8 @@ BEGIN
 													CASE WHEN @SortType = 2 THEN LastModifiedDate END DESC ) rn
 			FROM #CustList
 		)
-		SELECT t1.*
+		SELECT CustId, SoccerLevel, BasketballLevel, AgentID, username, username2, 
+				ISNULL(CAST(LastModifiedDate AS varchar),'-') LastModifiedDate
 		FROM T1 
 		WHERE rn BETWEEN @rowstart AND @rowend
 		ORDER BY rn ASC
@@ -350,7 +354,8 @@ BEGIN
 													CASE WHEN @SortType = 2 THEN OrderCol END DESC ) rn
 			FROM t1
 		)
-		SELECT t2.*
+		SELECT CustId, SoccerLevel, BasketballLevel, AgentID, username, username2, 
+				ISNULL(CAST(LastModifiedDate AS varchar),'-') LastModifiedDate
 		FROM t2 
 		WHERE rn BETWEEN @rowstart AND @rowend
 		ORDER BY rn ASC
