@@ -1,4 +1,4 @@
-/*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBLOG-bodb_CustomerLog" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_Licensee_DangerLevelSel]
 	@FromDate	DATETIME,
 	@ToDate		DATETIME,
@@ -17,7 +17,7 @@ AS
 /*
 	Created: 20221109@Tacy
 	Task: LAP - Player Segmentation - Saba Virtual Setting 
-	DB: DBACC/bodb02
+	DB: DBLOG/bodb_CustomerLog
 		
 	Revisions:
 		- 20221109@Tacy: Create SP [RedmineID: #179078]
@@ -102,8 +102,8 @@ BEGIN
 		SELECT ci.custid, ISNULL(c.DangerLevel,0) DangerLevel, t.soccer, t.basketball,
 			ci.recommend, ci.username,
 			SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) AS username2
-		FROM customer ci WITH(NOLOCK)
-			INNER JOIN custinfo c WITH(NOLOCK) ON c.custid = ci.custid
+		FROM bodb02.dbo.customer ci WITH(NOLOCK)
+			INNER JOIN bodb02.dbo.custinfo c WITH(NOLOCK) ON c.custid = ci.custid
 			CROSS APPLY f_GetDangerLevelInfo(ISNULL(c.DangerLevel,0)) t
 		WHERE ci.recommend IN (SELECT custid FROM #TempAg)
 			AND (ci.username  LIKE @username + '%' OR ci.username2 LIKE '%$'+@username + '%')		
@@ -142,7 +142,7 @@ BEGIN
 				x2.Control.value('@DangerLevel', 'tinyint') AS OldLevel,
 				1 AS isSoccer,
 				0 AS isManual
-		FROM DBLOG.bodb_CustomerLog.dbo.UserLog_RunSP ul WITH(NOLOCK) 
+		FROM UserLog_RunSP ul WITH(NOLOCK) 
 			INNER JOIN #CustList cl ON cl.CustId=ul.custid
 			CROSS APPLY (VALUES(CAST(ul.TrackingValue as xml))) AS v(Casted)
 			CROSS APPLY (VALUES(CAST(ul.TrackingValue2 as xml))) AS v2(Casted)
@@ -161,7 +161,7 @@ BEGIN
 				x2.Control.value('@DangerLevel', 'tinyint') AS OldLevel,
 				0 AS isSoccer,
 				0 AS isManual
-		FROM DBLOG.bodb_CustomerLog.dbo.UserLog_RunSP ul WITH(NOLOCK) 
+		FROM UserLog_RunSP ul WITH(NOLOCK) 
 			INNER JOIN #CustList cl ON cl.CustId=ul.custid
 			CROSS APPLY (VALUES(CAST(ul.TrackingValue as xml))) AS v(Casted)
 			CROSS APPLY (VALUES(CAST(ul.TrackingValue2 as xml))) AS v2(Casted)
@@ -179,7 +179,7 @@ BEGIN
 				x2.Control.value('@DangerLevel', 'tinyint') AS OldLevel,
 				1 AS isSoccer,
 				1 AS isManual
-		FROM DBLOG.bodb_CustomerLog.dbo.UserLog_RunSP ul WITH(NOLOCK) 
+		FROM UserLog_RunSP ul WITH(NOLOCK) 
 			INNER JOIN #CustList cl ON cl.CustId=ul.custid
 			CROSS APPLY (VALUES(CAST(ul.TrackingValue as xml))) AS v(Casted)
 			CROSS APPLY (VALUES(CAST(ul.TrackingValue2 as xml))) AS v2(Casted)
@@ -204,7 +204,7 @@ BEGIN
 				x2.Control.value('@DangerLevel', 'tinyint') AS OldLevel,
 				0 AS isSoccer,
 				1 AS isManual
-		FROM DBLOG.bodb_CustomerLog.dbo.UserLog_RunSP ul WITH(NOLOCK) 
+		FROM UserLog_RunSP ul WITH(NOLOCK) 
 			INNER JOIN #CustList cl ON cl.CustId=ul.custid
 			CROSS APPLY (VALUES(CAST(ul.TrackingValue as xml))) AS v(Casted)
 			CROSS APPLY (VALUES(CAST(ul.TrackingValue2 as xml))) AS v2(Casted)
