@@ -117,8 +117,8 @@ BEGIN
 		SELECT ci.custid, ISNULL(c.DangerLevel,0) DangerLevel, t.soccer, t.basketball,
 			ci.recommend, ci.username,
 			SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) AS username2
-		FROM customer ci WITH(NOLOCK)
-			INNER JOIN custinfo c WITH(NOLOCK) ON c.custid = ci.custid
+		FROM bodb02.dbo.customer ci WITH(NOLOCK)
+			INNER JOIN bodb02.dbo.custinfo c WITH(NOLOCK) ON c.custid = ci.custid
 			CROSS APPLY f_GetDangerLevelInfo(ISNULL(c.DangerLevel,0)) t
 		WHERE ci.recommend IN (SELECT custid FROM #TempAg)
 			AND ci.roleid = 1
