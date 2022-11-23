@@ -115,7 +115,7 @@ AS
 		- 20220601@Hogan: Integrate MaxGame [RedmineID: #172919]
 		- 20220801@Sol: LAP - Scale Out DBTrans - removed min @transid in BT and CO - [Redmine: #175297]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
-
+		- 20221122@Evan: Integrate Player Tips [RedmineID: #180590]
 	Param's Explanation:
 		+ @ReportType: 1-Daily; 2-Monthly;
 		+ @DrawFilter: 'No Draw' filter is supportted (1:Normal 2:No Draw 3:No Draw for Turnover only)
@@ -487,7 +487,8 @@ BEGIN
 				WHERE b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 					AND ((b.bettype IN (SELECT Bettype FROM @ExcludedBetType WHERE ProductCode <> 'SB') 
 						OR (b.bettype BETWEEN 1611 AND 1699 AND b.matchid = 150)
-						OR (b.bettype BETWEEN 3801 AND 3899 AND b.matchid = 173))
+						OR (b.bettype BETWEEN 3801 AND 3899 AND b.matchid = 173)
+						OR (b.bettype BETWEEN 8700 AND 8709 AND b.matchid = 157))
 						AND b.statusID IN (111,112,113)))
 			BEGIN
 				SET @PromotionPrize = 1
@@ -704,7 +705,8 @@ BEGIN
 				WHERE b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 					AND ((b.bettype IN (SELECT Bettype FROM @ExcludedBetType WHERE ProductCode <> 'SB') 
 						OR (b.bettype BETWEEN 1611 AND 1699 AND b.matchid = 150)
-						OR (b.bettype BETWEEN 3801 AND 3899 AND b.matchid = 173))
+						OR (b.bettype BETWEEN 3801 AND 3899 AND b.matchid = 173) 
+						OR (b.bettype BETWEEN 8700 AND 8709 AND b.matchid = 157))
 						AND b.statusID IN (111,112,113)))
 			BEGIN
 				SET @PromotionPrize = 1
@@ -976,7 +978,7 @@ BEGIN
 								FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)
 									INNER JOIN #TempAg ag ON b.recommend = ag.custID AND ag.currency = b.Currency
 								WHERE b.Winlostdate BETWEEN @_FromDate AND @TempToDate
-									AND ((b.bettype IN (SELECT Bettype FROM @ExcludedBetType WHERE ProductCode <> 'SB') OR b.sporttype IN (150, 173))
+									AND ((b.bettype IN (SELECT Bettype FROM @ExcludedBetType WHERE ProductCode <> 'SB') OR b.sporttype IN (150, 173, 157))
 										AND b.statusID IN (111,112,113))
 									AND b.roleid = 2)
 			BEGIN
@@ -1232,7 +1234,7 @@ BEGIN
 								FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH (NOLOCK)
 									INNER JOIN @VIPCust v ON b.custid = v.CustID
 								WHERE b.Winlostdate BETWEEN @_FromDate AND @TempToDate
-									AND ((b.bettype IN (SELECT Bettype FROM @ExcludedBetType WHERE ProductCode <> 'SB') OR b.sporttype IN (150, 173))
+									AND ((b.bettype IN (SELECT Bettype FROM @ExcludedBetType WHERE ProductCode <> 'SB') OR b.sporttype IN (150, 173, 157))
 										AND b.statusID IN (111,112,113))
 									AND b.roleid = 1)
 			BEGIN
@@ -1464,7 +1466,7 @@ BEGIN
 		INSERT INTO @ExchangeRate(FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
 		SELECT FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate
 		FROM dbo.Lrf_f_GetExchangeRate(@_FromDate, @_ToDate, @BaseCurrency, @DefaultBaseCurrency) e
-		WHERE EXISTS (SELECT 1 FROM #TempAg a WHERE e.ExchangeID = a.Currency)
+		WHERE EXISTS (SELECT 1 FROM #TempAg a WHERE e.ExchangeID = a.Currency) 
 	END
 
 	SELECT

@@ -164,6 +164,7 @@ AS
 		- 20220812@Hogan: Support Customer Class Is Null [RedmineID: #176156]
 		- 20220825@Kos: Hotfix - Extend length for Customer Class [RedmineID: #177077]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
+		- 20221122@Evan: Integrate Player Tips [RedmineID: #180590]
 
 	Param's Explanation:
 		@OrderItem:
@@ -525,7 +526,8 @@ BEGIN
 								AND b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 								AND ((b.bettype IN (SELECT Bettype FROM @ExcludedBetType WHERE ProductCode <> 'SB') 
 									OR (b.bettype BETWEEN 1611 AND 1699 AND b.matchid = 150)
-									OR (b.bettype BETWEEN 3801 AND 3899 AND b.matchid = 173)) 
+									OR (b.bettype BETWEEN 3801 AND 3899 AND b.matchid = 173) 
+									OR (b.bettype BETWEEN 8700 AND 8709 AND b.matchid = 157)) 
 									AND b.statusID IN (111,112,113))
 								AND (@isSearchCust = 0 OR EXISTS (SELECT TOP 1 1 FROM #tmpCust tc WHERE tc.CustID = b.CustID)))
 		BEGIN
@@ -608,7 +610,7 @@ BEGIN
 						FROM bodb_licenseereport.dbo.rptLicWinloss2 b WITH ( NOLOCK )
 						WHERE EXISTS(SELECT TOP (1) 1 FROM @TempAg c WHERE c.CustID = b.recommend)
 							AND b.winlostdate BETWEEN @_FromDate AND @TempToDate
-							AND ((b.bettype IN (SELECT Bettype FROM @ExcludedBetType WHERE ProductCode <> 'SB') OR b.sporttype IN (150, 173))
+							AND ((b.bettype IN (SELECT Bettype FROM @ExcludedBetType WHERE ProductCode <> 'SB') OR b.sporttype IN (150, 173, 157))
 								AND b.statusID IN (111,112,113))
 							AND b.roleid = 1
 							AND (@isSearchCust = 0 OR EXISTS (SELECT TOP 1 1 FROM #tmpCust tc WHERE tc.CustID = b.CustID)))
