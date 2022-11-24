@@ -20,6 +20,7 @@ AS
 		- 20211016@Kos: Created [RedmineID: #153563]
 		- 20220126@Kos: Integrate Spadegaming Jackpot [RedmineID: #167035]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
+		- 20221122@Evan: Integrate Player Tips [RedmineID: #180590]
 
 	Param's Explanation:
 		+ @PromotionTypeList: promotion type list separated by ','
@@ -44,6 +45,7 @@ AS
 			- 6601: Vgaming - Free Bets (SportType: 173)
 			- 6602: Vgaming - Jackpot Prize (BetType: 3899)
 			- 6603: Vgaming - Jackpot Contribution (BetType: 3898)
+			- 7401: Player Tips (BetType: 8700)
 */
 
 BEGIN
@@ -128,6 +130,7 @@ BEGIN
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,6601,%' AND ProductPrefix = 'VGA' AND BetType NOT IN (3899, 3898) THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,6602,%' AND BetType = 3899 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,6603,%' AND BetType = 3898 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,7401,%' AND BetType = 8700 THEN 1
 				ELSE 0
 			END
 
@@ -189,6 +192,7 @@ BEGIN
 				WHEN sbt.ProductCode = 'VGA' AND b.matchid = 173 THEN 6601
 				WHEN b.bettype = 3899 THEN 6602
 				WHEN b.bettype = 3898 THEN 6603
+				WHEN b.bettype = 8700 THEN 7401
 				ELSE 0
 			END AS PromotionType,
 			b.winlostdate,
@@ -239,6 +243,7 @@ BEGIN
 				WHEN sbt.ProductCode = 'VGA' AND b.matchid = 173 THEN 6601
 				WHEN b.bettype = 3899 THEN 6602
 				WHEN b.bettype = 3898 THEN 6603
+				WHEN b.bettype = 8700 THEN 7401
 				ELSE 0
 			END,
 			b.winlostdate,
@@ -300,6 +305,7 @@ BEGIN
 				WHEN b.sporttype = 173 THEN 6601
 				WHEN b.bettype = 3899 THEN 6602
 				WHEN b.bettype = 3898 THEN 6603
+				WHEN b.bettype = 8700 THEN 7401
 				ELSE 0
 			END AS PromotionType,
 			b.winlostdate,
@@ -357,6 +363,7 @@ BEGIN
 				WHEN b.sporttype = 173 THEN 6601
 				WHEN b.bettype = 3899 THEN 6602
 				WHEN b.bettype = 3898 THEN 6603
+				WHEN b.bettype = 8700 THEN 7401
 				ELSE 0
 			END,
 			b.winlostdate,
