@@ -41,7 +41,7 @@ BEGIN
 			ISNULL(CAST(BetDelay AS varchar),'-') BetDelay,
 			ISNULL(CAST(NextBetInterval AS varchar),'-') NextBetInterval
 	FROM tmp
-	ORDER BY DangerLevel, sportname
+	ORDER BY DangerLevel, sporttype
 
 	DROP TABLE #tblDangerLevel
 END

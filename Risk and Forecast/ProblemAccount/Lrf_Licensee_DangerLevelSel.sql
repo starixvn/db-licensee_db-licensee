@@ -58,7 +58,7 @@ BEGIN
 			username2			VARCHAR(50), 
 			LastModifiedDate	DATETIME
 	)
-	
+
 	CREATE TABLE #CustLog (
 			CustId		INT, 
 			NewLevel	TINYINT,
@@ -125,23 +125,16 @@ BEGIN
 			AND ((soccer IN (SELECT DangerLevel FROM #tblDangerLevel) 
 			OR basketball IN (SELECT DangerLevel FROM #tblDangerLevel)))
 	END
-
-	DECLARE @RowID INT = 1
-
-	SELECT @TotalItems = COUNT(1) FROM #CustList
-
 	
-	WHILE (1=1)
-	BEGIN
-		--CustLog:
-		INSERT INTO #CustLog (CustId, LogDate, NewLevel, OldLevel, isSoccer, isManual)
-		SELECT TOP 1
-				ul.custid,
+	--Auto Soccer
+	;WITH CTE AS( 
+		SELECT	ul.custid,
 				ul.logdate,
 				x.Control.value('@DangerLevel', 'tinyint') AS NewLevel,
 				x2.Control.value('@DangerLevel', 'tinyint') AS OldLevel,
 				1 AS isSoccer,
-				0 AS isManual
+				0 AS isManual,
+				ROW_NUMBER () OVER (PARTITION BY cl.CustId, ActionID ORDER BY ul.logdate DESC) rn
 		FROM UserLog_RunSP ul WITH(NOLOCK) 
 			INNER JOIN #CustList cl ON cl.CustId=ul.custid
 			CROSS APPLY (VALUES(CAST(ul.TrackingValue as xml))) AS v(Casted)
@@ -149,18 +142,21 @@ BEGIN
 			CROSS APPLY v.Casted.nodes('/R') AS x(Control)
 			CROSS APPLY v2.Casted.nodes('/R') AS x2(Control)
 		WHERE ul.ActionID=1191
-			AND RowID=@RowID 
-		ORDER BY ul.logdate DESC
+	)
+	INSERT INTO #CustLog (CustId, LogDate, NewLevel, OldLevel, isSoccer, isManual)
+	SELECT CustId, LogDate, NewLevel, OldLevel, isSoccer, isManual
+	FROM CTE
+	WHERE rn=1
 
-		--Auto basketball
-		INSERT INTO #CustLog (CustId, LogDate, NewLevel, OldLevel, isSoccer, isManual)
-		SELECT TOP 1
-				ul.custid,
+	--Auto Basketball
+	;WITH CTE AS( 
+		SELECT	ul.custid,
 				ul.logdate,
 				x.Control.value('@DangerLevel', 'tinyint') AS NewLevel,
 				x2.Control.value('@DangerLevel', 'tinyint') AS OldLevel,
 				0 AS isSoccer,
-				0 AS isManual
+				0 AS isManual,
+				ROW_NUMBER () OVER (PARTITION BY cl.CustId, ActionID ORDER BY ul.logdate DESC) rn
 		FROM UserLog_RunSP ul WITH(NOLOCK) 
 			INNER JOIN #CustList cl ON cl.CustId=ul.custid
 			CROSS APPLY (VALUES(CAST(ul.TrackingValue as xml))) AS v(Casted)
@@ -168,17 +164,21 @@ BEGIN
 			CROSS APPLY v.Casted.nodes('/R') AS x(Control)
 			CROSS APPLY v2.Casted.nodes('/R') AS x2(Control)
 		WHERE ul.ActionID=1192
-			AND RowID=@RowID 
-		ORDER BY ul.logdate DESC
+	)
+	INSERT INTO #CustLog (CustId, LogDate, NewLevel, OldLevel, isSoccer, isManual)
+	SELECT CustId, LogDate, NewLevel, OldLevel, isSoccer, isManual
+	FROM CTE
+	WHERE rn=1
 		
-		INSERT INTO #CustLog (CustId, LogDate, NewLevel, OldLevel, isSoccer, isManual)
-		SELECT TOP 1
-				ul.custid,
+	--Manual Soccer
+	;WITH CTE AS( 
+		SELECT	ul.custid,
 				ul.logdate,
 				x.Control.value('@DangerLevel', 'tinyint') AS NewLevel,
 				x2.Control.value('@DangerLevel', 'tinyint') AS OldLevel,
 				1 AS isSoccer,
-				1 AS isManual
+				1 AS isManual,
+				ROW_NUMBER () OVER (PARTITION BY cl.CustId, ActionID ORDER BY ul.logdate DESC) rn
 		FROM UserLog_RunSP ul WITH(NOLOCK) 
 			INNER JOIN #CustList cl ON cl.CustId=ul.custid
 			CROSS APPLY (VALUES(CAST(ul.TrackingValue as xml))) AS v(Casted)
@@ -186,24 +186,27 @@ BEGIN
 			CROSS APPLY v.Casted.nodes('/R') AS x(Control)
 			CROSS APPLY v2.Casted.nodes('/R') AS x2(Control)
 		WHERE ul.ActionID=1193
-			AND RowID=@RowID 
 			AND	--curr = new
 				SoccerLevel = x.Control.value('@DangerLevel', 'tinyint')
 			AND --new<>old
 				x.Control.value('@DangerLevel', 'tinyint')
 				<>
-				x2.Control.value('@DangerLevel', 'tinyint') 
-		ORDER BY ul.logdate DESC
+				x2.Control.value('@DangerLevel', 'tinyint')
+	)
+	INSERT INTO #CustLog (CustId, LogDate, NewLevel, OldLevel, isSoccer, isManual)
+	SELECT CustId, LogDate, NewLevel, OldLevel, isSoccer, isManual
+	FROM CTE
+	WHERE rn=1
 		
-		--Manual DangerLevel
-		INSERT INTO #CustLog (CustId, LogDate, NewLevel, OldLevel, isSoccer, isManual)
-		SELECT TOP 1
-				ul.custid,
+	--Manual Basketball
+	;WITH CTE AS( 
+		SELECT	ul.custid,
 				ul.logdate,
 				x.Control.value('@DangerLevel', 'tinyint') AS NewLevel,
 				x2.Control.value('@DangerLevel', 'tinyint') AS OldLevel,
 				0 AS isSoccer,
-				1 AS isManual
+				1 AS isManual,
+				ROW_NUMBER () OVER (PARTITION BY cl.CustId, ActionID ORDER BY ul.logdate DESC) rn
 		FROM UserLog_RunSP ul WITH(NOLOCK) 
 			INNER JOIN #CustList cl ON cl.CustId=ul.custid
 			CROSS APPLY (VALUES(CAST(ul.TrackingValue as xml))) AS v(Casted)
@@ -211,21 +214,19 @@ BEGIN
 			CROSS APPLY v.Casted.nodes('/R') AS x(Control)
 			CROSS APPLY v2.Casted.nodes('/R') AS x2(Control)
 		WHERE ul.ActionID=1194
-			AND RowID=@RowID 
 			AND	--curr = new
-				BasketballLevel = x.Control.value('@DangerLevel', 'tinyint')
+				SoccerLevel = x.Control.value('@DangerLevel', 'tinyint')
 			AND --new<>old
 				x.Control.value('@DangerLevel', 'tinyint')
 				<>
 				x2.Control.value('@DangerLevel', 'tinyint')
-		ORDER BY ul.logdate DESC
-		
-		SET @RowID = @RowID + 1
-		
-		IF @RowID>@TotalItems
-			BREAK
-	END
+	)
+	INSERT INTO #CustLog (CustId, LogDate, NewLevel, OldLevel, isSoccer, isManual)
+	SELECT CustId, LogDate, NewLevel, OldLevel, isSoccer, isManual
+	FROM CTE
+	WHERE rn=1
 	
+	--Get LastModifiedDate
 	;WITH tmp1 AS (
 		SELECT tmp.CustId,
 				--Soccer
