@@ -126,6 +126,7 @@ AS
 		- 20220601@Hogan: Integrate FGG Guaranteed Gaming [RedmineID: #167897]
 		- 20220601@Hogan: Integrate MaxGame [RedmineID: #172919]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
+		- 20221122@Evan: Integrate Player Tips [RedmineID: #180590]
 
 	Param's Explanation:
 		+ @CustID: SuperID
