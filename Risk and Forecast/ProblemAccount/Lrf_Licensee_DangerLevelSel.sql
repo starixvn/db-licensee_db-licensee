@@ -124,8 +124,8 @@ BEGIN
 			OR basketball IN (SELECT DangerLevel FROM #tblDangerLevel)))
 	END
 	
-	--Auto Soccer, Basketball
-	;WITH CTE AS( 
+	--Get UserLog
+	;WITH UserLog AS( 
 		SELECT	ul.custid,
 				ul.ActionID,
 				ul.logdate,
@@ -139,8 +139,38 @@ BEGIN
 	)
 	INSERT INTO #CustLog (CustId, LogDate, NewLevel, ActionID)
 	SELECT CustId, LogDate, NewLevel, ActionID
-	FROM CTE
+	FROM UserLog
 	WHERE rn=1
+
+	--Get UserLog_Archive
+	;WITH UserLog_Archive AS( 
+		SELECT	ul.custid,
+				ul.ActionID,
+				ul.logdate,
+				x.Control.value('@DangerLevel', 'tinyint') AS NewLevel,
+				ROW_NUMBER () OVER (PARTITION BY cl.CustId, ul.ActionID ORDER BY ul.logdate DESC) rn
+		FROM bodb_CustomerLog_Archive.dbo.UserLog_RunSP ul WITH(NOLOCK) 
+			INNER JOIN #CustList cl ON cl.CustId=ul.custid
+			CROSS APPLY (VALUES(CAST(ul.TrackingValue as xml))) AS v(Casted)
+			CROSS APPLY v.Casted.nodes('/R') AS x(Control)
+		WHERE ul.ActionID BETWEEN 1191 AND 1194
+	)
+	INSERT INTO #CustLog (CustId, LogDate, NewLevel, ActionID)
+	SELECT CustId, LogDate, NewLevel, ActionID
+	FROM UserLog_Archive
+	WHERE rn=1
+
+	;WITH CTE AS (
+		SELECT *,
+			ROW_NUMBER () OVER (PARTITION BY CustId, ActionID ORDER BY logdate DESC) rn
+		FROM #CustLog 
+	)
+	DELETE cl
+	FROM #CustLog cl
+	INNER JOIN CTE t ON t.CustId=cl.CustId
+					AND t.ActionID=cl.ActionID
+					AND t.LogDate=cl.LogDate
+	WHERE t.rn<>1
 
 	--Get LastModifiedDate
 	UPDATE cl
