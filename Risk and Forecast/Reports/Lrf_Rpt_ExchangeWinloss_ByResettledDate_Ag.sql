@@ -163,7 +163,8 @@ BEGIN
 		sumbet.ExVirtualRate
 	FROM bodb_3rdProduct.dbo.Sum_winloss_Exchange AS sumbet WITH (NOLOCK)
 		INNER JOIN @tmpCust AS cust ON cust.Custid = sumbet.CustID
-	WHERE ISNULL(sumbet.resettledDate,sumbet.settledDate) between @FDate AND @TDate
+	WHERE ISNULL(sumbet.resettledDate,sumbet.settledDate) >= @FDate 
+		AND ISNULL(sumbet.resettledDate,sumbet.settledDate) < DATEADD(dd,1,@TDate) 
 	GROUP BY
 		ISNULL(sumbet.resettledDate,sumbet.settledDate),
 		cust.Recommend,
