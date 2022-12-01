@@ -22,6 +22,7 @@ AS
 		- 20220126@Kos: Integrate Spadegaming Jackpot [RedmineID: #167035]
 		- 20220223@Kos: Integrate Allbet Promotion [RedmineID: #167524]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
+		- 20221122@Evan: Integrate Player Tips [RedmineID: #180590]
 
 	Param's Explanation:
 		+ @PromotionTypeList: promotion type list separated by ','
@@ -46,6 +47,7 @@ AS
 			- 6601: Vgaming - Free Bets (SportType: 173)
 			- 6602: Vgaming - Jackpot Prize (BetType: 3899)
 			- 6603: Vgaming - Jackpot Contribution (BetType: 3898)
+			- 7401: Player Tips (BetType: 8700)
 		+ @ReportType: 1: Daily, 2: Monthly
 */
 
@@ -131,6 +133,7 @@ BEGIN
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,6601,%' AND ProductPrefix = 'VGA' AND BetType NOT IN (3899, 3898) THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,6602,%' AND BetType = 3899 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,6603,%' AND BetType = 3898 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,7401,%' AND BetType = 8700 THEN 1
 				ELSE 0
 			END
 

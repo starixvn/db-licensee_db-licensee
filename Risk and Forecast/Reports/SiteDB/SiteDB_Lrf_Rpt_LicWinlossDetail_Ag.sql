@@ -25,6 +25,7 @@ AS
 	Revisions:
 		- 20220801@Sol: initial sp - [Redmine: #175297]
    		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
+		- 20221122@Evan: Integrate Player Tips [RedmineID: #180590]
 
 	Param's Explanation:
 		+ @CustID: SuperID
@@ -982,7 +983,8 @@ BEGIN
 			WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
 				AND ((b.bettype IN (SELECT Bettype FROM @ExcludedBetType WHERE ProductCode <> 'SB') 
 						OR (b.bettype BETWEEN 1611 AND 1699 AND b.matchid = 150)
-						OR (b.bettype BETWEEN 3801 AND 3899 AND b.matchid = 173)) 
+						OR (b.bettype BETWEEN 3801 AND 3899 AND b.matchid = 173) 
+						OR (b.bettype BETWEEN 8700 AND 8709 AND b.matchid = 157)) 
 					AND b.statusID IN (111,112,113))
 				AND (@VIPPlayerOnly = 0 OR (@VIPPlayerOnly = 1 AND v.custid IS NOT NULL)))
 		BEGIN

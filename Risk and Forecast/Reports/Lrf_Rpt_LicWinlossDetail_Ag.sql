@@ -120,6 +120,7 @@ AS
 		- 20220601@Hogan: Integrate FGG Guaranteed Gaming [RedmineID: #167897]
 		- 20220601@Hogan: Integrate MaxGame [RedmineID: #172919]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
+		- 20221122@Evan: Integrate Player Tips [RedmineID: #180590]
 
 	Param's Explanation:
 		+ @CustID: SuperID
@@ -1077,7 +1078,8 @@ BEGIN
 			WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
 				AND ((b.bettype IN (SELECT Bettype FROM @ExcludedBetType WHERE ProductCode <> 'SB') 
 						OR (b.bettype BETWEEN 1611 AND 1699 AND b.matchid = 150)
-						OR (b.bettype BETWEEN 3801 AND 3899 AND b.matchid = 173)) 
+						OR (b.bettype BETWEEN 3801 AND 3899 AND b.matchid = 173) 
+						OR (b.bettype BETWEEN 8700 AND 8709 AND b.matchid = 157)) 
 					AND b.statusID IN (111,112,113))
 				AND (@VIPPlayerOnly = 0 OR (@VIPPlayerOnly = 1 AND v.custid IS NOT NULL)))
 		BEGIN
@@ -1857,7 +1859,7 @@ BEGIN
 								INNER JOIN #TempAg ag ON b.recommend = ag.custID
 								LEFT JOIN @VIPCust v ON b.custid = v.CustID
 							WHERE b.Winlostdate BETWEEN @FDate AND @TempToDate
-								AND ((b.bettype IN (SELECT Bettype FROM @ExcludedBetType WHERE ProductCode <> 'SB') OR b.sporttype IN (150, 173))
+								AND ((b.bettype IN (SELECT Bettype FROM @ExcludedBetType WHERE ProductCode <> 'SB') OR b.sporttype IN (150, 173, 157))
 									AND b.statusID IN (111,112,113))
 								AND b.roleid = 1
 								AND (@VIPPlayerOnly = 0 OR (@VIPPlayerOnly = 1 AND v.custid IS NOT NULL)))
