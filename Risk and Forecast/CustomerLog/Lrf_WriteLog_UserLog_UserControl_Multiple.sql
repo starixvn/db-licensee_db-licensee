@@ -14,7 +14,7 @@ AS
 
 	Revisions :
 		- 20221109@Johnson: initial sp [redmine:#179961]
-		- 20221110@Tacy: LAP - Support Danger Level report (Add ActionID 1191-1194) [RedmineID: #179078]
+		- 20221110@Tacy: LAP - Support Danger Level report (Add ActionID 1191-1196) [RedmineID: #179078]
 
 	Parameter Explanation:
 		@ActionID = 5567	--Deactive VIP
@@ -22,6 +22,8 @@ AS
 				  = 1192	--Auto Update Saba Basketball Danger Level
 				  = 1193	--Manual Update Saba Soccer Danger Level
 				  = 1194	--Manual Update Saba Basketball Danger Level
+				  = 1195	--Manual Update - Unchanged Saba Soccer Danger Level
+				  = 1196	--Manual Update - Unchanged Saba Basketball Danger Level
 
 		-@ActionID = 5562
 			@LogData = '<Root>
