@@ -36,7 +36,7 @@ AS
 					<r id="2" sport="1" newlevel="10" oldlevel="11" wl="1000" IsPA="1">
 				</Root>
 				'
-		-@ActionID = 1193,1194
+		-@ActionID = 1193~1196
 			@Log = '<Root>
 					<r id="1" sport="0" newflag="1" oldflag="0" newlevel="10" oldlevel="5" />
 					<r id="2" sport="1" newflag="1" oldflag="0" newlevel="10" oldlevel="15" />
@@ -135,7 +135,7 @@ BEGIN
 		
 			DROP TABLE #tblCustLog
 		END
-		ELSE IF @ActionID IN (1193,1194)	--manual update  dangerlevel
+		ELSE IF @ActionID IN (1193,1194,1195,1196)	--manual update  dangerlevel
 		BEGIN
 			INSERT INTO #tblCustLog(custid,sport,newflag,oldflag,newlevel,oldlevel)
 			SELECT t.c.value('@id[1]','int'),

@@ -30,7 +30,7 @@ BEGIN
 				p.DangerLevel, 
 				p.sporttype, 
 				p.LeagueGroupID,
-				CASE WHEN p.LeagueGroupID=-1 THEN 'All' ELSE 'No' END AS ApplyParlay,
+				CASE WHEN p.LeagueGroupID=-1 THEN 1 ELSE 0 END AS ApplyParlay,
 				CASE WHEN p.DangerLevel=1 THEN NULL
 					 WHEN p3.ActionType=3	THEN p3.Value*10000 END AS MaxperMatch,
 				CASE WHEN p.DangerLevel=1 THEN NULL
