@@ -1,8 +1,8 @@
 /*<info serverAlias="DBWH-bodb_DWRS" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE dbo.Lrf_Rpt_AbnormalBet_IPSummary
 	@AgentList		VARCHAR(MAX) ='',
-	@FromDate	DATE = '20220501' , 
-    @ToDate	DATE = '20220901',
+	@FromDate	DATE = '' , 
+    @ToDate	DATE = '',
     @SportTypeList	VARCHAR(MAX) = 'All',
 	@LeagueName	NVARCHAR(100) = N'',
     @BetTypeList	VARCHAR(MAX) = 'All',
@@ -10,6 +10,7 @@ ALTER PROCEDURE dbo.Lrf_Rpt_AbnormalBet_IPSummary
     @ReasonList	VARCHAR(MAX) = 'All',
 	@Username	VARCHAR(50)  = '',  
 	@IP	VARCHAR(40)='',
+	@SearchLanguage	VARCHAR(10)		= 'en-US',
  	@PageSize	INT = 0,
 	@PageIndex	INT = 0
 AS
@@ -30,8 +31,16 @@ Param's Explanation:
 			</ROOT>
 	- @SportTypeList: sporttype list separated by ','
 		+ 'All': all sport types
+		+ -1: Saba Soccer (SportType = 1, LeagueGroupId IN (42, 74))
+		+ -2: Saba Basketball (SportType = 2, LeagueGroupId IN (42))
+		+ -3: Saba Cricket (SportType = 50, LeagueGroupId IN (42))
+		+ -4: Saba Futsal (SportType = 1, LeagueGroupId IN (108))
+		+ -5: Saba Soccer Pingoal (SportType = 1, LeagueGroupId IN (113))
+		+ -6: Saba Basketball Pingoal (SportType = 2, LeagueGroupId IN (122))
 	- @BetTypeList: bettype list separated by ','
 		+ 'All': all bettypes
+	- @ReasonList: Reason list separated by ','
+			+ 'All': all Reason
 	- @Username: exact System ID or External ID
 	- @IP: exact IP
 	- @Liveindicator : indicate that whether the report will get live data or not
@@ -39,6 +48,9 @@ Param's Explanation:
 		+ 1: Live data only
 		+ 2: Mix Live & Non-Live
 	- @PageIndex: starts from 1, set 0 to disable pagination
+	- @SearchLanguage: search language
+			+ en-US: English
+			+ zh-CN: Chinese Simplified
 	- @PageSize: Number of records per page
  	 			 
 */
@@ -50,22 +62,22 @@ Param's Explanation:
 
 	DECLARE @DocHandler INT
 
-	--BEGIN TRY
-	--	EXEC sp_xml_preparedocument @DocHandler OUTPUT, @AgentList
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT, @AgentList
 
-	--	INSERT INTO #TempAg (CustId, Currency)
-	--	SELECT AgentId, Currency
-	--	FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId INT, Currency INT) AS Data
+		INSERT INTO #TempAg (CustId, Currency)
+		SELECT AgentId, Currency
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId INT, Currency INT) AS Data
 
-	--	EXEC sp_xml_removedocument @DocHandler
-	--END TRY
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
 
-	--BEGIN CATCH
-	--	SELECT ErrCode = 100
-	--		,ErrMsg = N'Paramter invalid.'
+	BEGIN CATCH
+		SELECT ErrCode = 100
+			,ErrMsg = N'Paramter invalid.'
 
-	--	RETURN
-	--END CATCH;
+		RETURN
+	END CATCH;
 
 	CREATE TABLE #TempCust (CustId INT PRIMARY KEY)  
 
@@ -82,9 +94,9 @@ Param's Explanation:
 
 	CREATE TABLE #tmpReason (ReasonID INT)
 	CREATE TABLE #tmpSport (SportID INT)
+	CREATE TABLE #tmpSportSaba (SportID INT)
 	CREATE TABLE #tmpBetType (BetTypeID INT)
-	CREATE TABLE #tmpLeague (LeagueID INT)
-
+	
 	IF @ReasonList = 'All'
 		INSERT INTO #tmpReason (ReasonID)
 		SELECT SubIssueTypeId 
@@ -96,14 +108,33 @@ Param's Explanation:
         FROM STRING_SPLIT(@ReasonList, ',')     
     
     IF @SportTypeList = 'All'
+	BEGIN
 		INSERT INTO #tmpSport (SportID)
 		SELECT DISTINCT SportType
 		FROM bodb02.dbo.SportBettypeMatrix WITH(NOLOCK)
 		WHERE ProductID = 1
+	END
     ELSE 
-        INSERT INTO #tmpSport (SportID)
-        SELECT value
-        FROM STRING_SPLIT(@SportTypeList, ',') 
+	BEGIN
+		INSERT INTO #tmpSport (SportID)
+		SELECT value
+		FROM STRING_SPLIT(@SportTypeList, ',') 
+	END
+    
+	IF EXISTS (SELECT 1 FROM #tmpSport WHERE SportID < 0)
+	BEGIN
+		INSERT INTO #tmpSportSaba (SportID)
+        SELECT	CASE WHEN SportID IN (-1,-4,-5) THEN 1 
+					WHEN SportID IN (-2,-6) THEN 2 
+					WHEN SportID = -3 THEN 50 END 
+        FROM #tmpSport  
+		WHERE SportID < 0
+
+		INSERT INTO #tmpSport
+		SELECT a.SportID
+		FROM #tmpSportSaba a LEFT JOIN #tmpSport b ON a.SportID = b.SportID
+		WHERE b.SportID IS NULL
+	END
     
     IF @BetTypeList = 'All'
 		INSERT INTO #tmpBetType (BetTypeID)
@@ -124,8 +155,9 @@ Param's Explanation:
     
 	-- Get league list
 	CREATE TABLE #TempLeague (LeagueId INT)
+	CREATE TABLE #League (LeagueId INT, SportType SMALLINT, LeagueGroupId SMALLINT)
 
-	CREATE CLUSTERED INDEX IX_LeagueId ON #tmpLeague (LeagueId)
+	CREATE CLUSTERED INDEX IX_LeagueId ON #League (LeagueId)
 	CREATE CLUSTERED INDEX IX_LeagueId ON #TempLeague (LeagueId)
 
 	INSERT INTO #TempLeague
@@ -137,23 +169,99 @@ Param's Explanation:
 	UNION
 	SELECT DISTINCT leagueid
 	FROM DBARC.bodb_Archive.dbo.match_bk WITH (NOLOCK) WHERE eventdate BETWEEN @FromDate AND @ToDate
-	UNION
-	SELECT DISTINCT leagueid
-	FROM bodb02.dbo.outright WITH (NOLOCK) WHERE eventdate BETWEEN @FromDate AND @ToDate
-	UNION
-	SELECT DISTINCT leagueid
-	FROM bodb02.dbo.outright14 WITH (NOLOCK) WHERE eventdate BETWEEN @FromDate AND @ToDate
-	UNION
-	SELECT DISTINCT leagueid
-	FROM DBARC.bodb_Archive.dbo.outright_bk WITH (NOLOCK) WHERE eventdate BETWEEN @FromDate AND @ToDate
 
-	INSERT INTO #tmpLeague (LeagueId)
+	INSERT INTO #League (
+		LeagueId,
+		SportType, 
+		LeagueGroupId )
 	SELECT
-		l.leagueid
+		l.leagueid,
+		l.sporttype,
+		l.LeagueGroupID
 	FROM bodb02.dbo.League AS l WITH (NOLOCK)
-	WHERE (@LeagueName = '' OR l.leaguename LIKE '%' + @LeagueName +'%')
-		AND l.sporttype IN ( SELECT SportType FROM #tmpBetType )
+	WHERE (@SportTypeList = 'All'
+			OR ',' + @SportTypeList + ',' LIKE '%,' + CAST(l.sporttype AS VARCHAR(5)) + ',%'
+			OR (',' + @SportTypeList + ',' LIKE '%,-1,%'
+				AND l.sporttype = 1
+				AND l.LeagueGroupID IN (42, 74))
+			OR (',' + @SportTypeList + ',' LIKE '%,-2,%'
+				AND l.sporttype = 2
+				AND l.LeagueGroupID IN (42))
+			OR (',' + @SportTypeList + ',' LIKE '%,-3,%'
+				AND l.sporttype = 50
+				AND l.LeagueGroupID IN (42))
+			OR (',' + @SportTypeList + ',' LIKE '%,-4,%'
+				AND l.sporttype = 1
+				AND l.LeagueGroupID IN (108))
+			OR (',' + @SportTypeList + ',' LIKE '%,-5,%'
+				AND l.sporttype = 1
+				AND l.LeagueGroupID IN (113))
+			OR (',' + @SportTypeList + ',' LIKE '%,-6,%'
+				AND l.sporttype = 2
+				AND l.LeagueGroupID IN (122)))
+		AND (@LeagueName = '' OR CASE
+									WHEN @SearchLanguage = 'zh-CN' THEN l.leaguenamecn
+									ELSE l.leaguename
+								END LIKE '%' + @LeagueName +'%')
+		AND l.sporttype IN ( SELECT SportID FROM #tmpSport )
 		AND EXISTS (SELECT 1 FROM #TempLeague WHERE leagueid = l.leagueid)
+	
+	IF @SportTypeList <> 'All'
+	BEGIN
+		IF ',' + @SportTypeList + ',' NOT LIKE '%,1,%'
+		BEGIN
+			DELETE FROM #League
+			WHERE SportType = 1 AND LeagueGroupId NOT IN (42, 74, 108, 113)
+		END
+
+		IF ',' + @SportTypeList + ',' NOT LIKE '%,2,%'
+		BEGIN
+			DELETE FROM #League
+			WHERE SportType = 2 AND LeagueGroupId NOT IN (42, 122)
+		END
+
+		IF ',' + @SportTypeList + ',' NOT LIKE '%,50,%'
+		BEGIN
+			DELETE FROM #League
+			WHERE SportType = 50 AND LeagueGroupId NOT IN (42)
+		END
+
+		IF ',' + @SportTypeList + ',' NOT LIKE '%,-1,%'
+		BEGIN
+			DELETE FROM #League
+			WHERE SportType = 1 AND LeagueGroupId IN (42, 74)
+		END
+
+		IF ',' + @SportTypeList + ',' NOT LIKE '%,-2,%'
+		BEGIN
+			DELETE FROM #League
+			WHERE SportType = 2 AND LeagueGroupId IN (42)
+		END
+
+		IF ',' + @SportTypeList + ',' NOT LIKE '%,-3,%'
+		BEGIN
+			DELETE FROM #League
+			WHERE SportType = 50 AND LeagueGroupId IN (42)
+		END
+
+		IF ',' + @SportTypeList + ',' NOT LIKE '%,-4,%'
+		BEGIN
+			DELETE FROM #League
+			WHERE SportType = 1 AND LeagueGroupId IN (108)
+		END
+
+		IF ',' + @SportTypeList + ',' NOT LIKE '%,-5,%'
+		BEGIN
+			DELETE FROM #League
+			WHERE SportType = 1 AND LeagueGroupId IN (113)
+		END
+
+		IF ',' + @SportTypeList + ',' NOT LIKE '%,-6,%'
+		BEGIN
+			DELETE FROM #League
+			WHERE SportType = 2 AND LeagueGroupId IN (122)
+		END
+	END
 	
 	CREATE TABLE #tmpData(
 		CustID INT,
@@ -171,16 +279,14 @@ Param's Explanation:
 	INSERT INTO #Src (TransID,CustID,IP)
 	SELECT MAX(f.TransId) TransId,  f.CustID , TRIM(IP) IP
 	FROM bodb_Account.dbo.AbnormalBetTransaction f WITH(NOLOCK)
-		--INNER JOIN bodb02.dbo.Custinfo c WITH(NOLOCK) ON c.custid = f.CustID
-		--INNER JOIN #TempAg AS tma ON tma.CustID = c.recommend  
+		INNER JOIN bodb02.dbo.Custinfo c WITH(NOLOCK) ON c.custid = f.CustID
+		INNER JOIN #TempAg AS tma ON tma.CustID = c.recommend  
+		INNER JOIN #League l ON l.LeagueId = f.leagueid
 	WHERE CreatedDate >= @FromDate 
 		AND CreatedDate < DATEADD(d, 1, @ToDate)
 		AND EXISTS(SELECT TOP 1 1 FROM #tmpReason r WHERE f.SubIssueTypeID = r.ReasonID)
-		AND (f.BetType = 29
-			OR EXISTS(SELECT TOP 1 1 FROM #tmpSport s WHERE f.SportType = s.SportID))
 		AND EXISTS(SELECT TOP 1 1 FROM #tmpBetType b WHERE f.BetType = b.BetTypeID)
 		AND (@UserName = '' OR EXISTS(SELECT 1 FROM #TempCust tc WHERE tc.CustId = f.CustID))
-		AND (@LeagueName = '' OR EXISTS (SELECT 1 FROM #tmpLeague b WHERE f.LeagueID = b.LeagueID))
 		AND ((BetType IN (9, 29) AND ',' + @LiveIndicator + ',' LIKE '%,' + CONVERT(VARCHAR(3), LiveHomeScore) + ',%')  
      			OR (BetType NOT IN (9, 29) AND ',' + @LiveIndicator + ',' LIKE '%,' + CONVERT(VARCHAR(3), LiveIndicator) + ',%')) 
 		AND (@IP = '' OR IP = @IP)
@@ -219,8 +325,9 @@ Param's Explanation:
 	DROP TABLE #tmpData
 	DROP TABLE #tmpReason
 	DROP TABLE #tmpSport 
+	DROP TABLE #tmpSportSaba 
 	DROP TABLE #tmpBetType 
-	DROP TABLE #tmpLeague
+	DROP TABLE #League
 	DROP TABLE #Src
 	DROP TABLE #TempLeague
     DROP TABLE #TempCust  
@@ -229,4 +336,3 @@ Param's Explanation:
 END;
 
 GO
-Lrf_Rpt_AbnormalBet_IPSummary
