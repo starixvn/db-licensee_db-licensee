@@ -95,9 +95,9 @@ Param's Explanation:
 			 OR c.username2 LIKE + '%$%' + @Username + '%')  
 	END  
    
+	DECLARE @SportSaba TABLE (SportID INT)
 	CREATE TABLE #tmpReason (ReasonID INT)
 	CREATE TABLE #tmpSport (SportID INT)
-	CREATE TABLE #tmpSportSaba (SportID INT)
 	CREATE TABLE #tmpBetType (BetTypeID INT, EventType TINYINT)
 
 	CREATE TABLE #tmpCurrency (CurrencyID INT)
@@ -139,8 +139,8 @@ Param's Explanation:
     
 	IF EXISTS (SELECT 1 FROM #tmpSport WHERE SportID < 0)
 	BEGIN
-		INSERT INTO #tmpSportSaba (SportID)
-        SELECT	CASE WHEN SportID IN (-1,-4,-5) THEN 1 
+		INSERT INTO @SportSaba (SportID)
+        SELECT DISTINCT	CASE WHEN SportID IN (-1,-4,-5) THEN 1 
 					WHEN SportID IN (-2,-6) THEN 2 
 					WHEN SportID = -3 THEN 50 END 
         FROM #tmpSport  
@@ -148,7 +148,7 @@ Param's Explanation:
 
 		INSERT INTO #tmpSport
 		SELECT a.SportID
-		FROM #tmpSportSaba a LEFT JOIN #tmpSport b ON a.SportID = b.SportID
+		FROM @SportSaba a LEFT JOIN #tmpSport b ON a.SportID = b.SportID
 		WHERE b.SportID IS NULL
 	END
     
@@ -170,21 +170,8 @@ Param's Explanation:
 		DELETE #tmpBetType WHERE BetTypeID = 29
     
 	-- Get league list
-	CREATE TABLE #TempLeague (LeagueId INT)
 	CREATE TABLE #League (LeagueId INT, SportType SMALLINT, LeagueGroupId SMALLINT)
-
 	CREATE CLUSTERED INDEX IX_LeagueId ON #League (LeagueId)
-	CREATE CLUSTERED INDEX IX_LeagueId ON #TempLeague (LeagueId)
-
-	INSERT INTO #TempLeague
-	SELECT DISTINCT leagueid
-	FROM bodb02.dbo.match WITH (NOLOCK) WHERE eventdate BETWEEN @FromDate AND @ToDate
-	UNION
-	SELECT DISTINCT leagueid
-	FROM bodb02.dbo.match14 WITH (NOLOCK) WHERE eventdate BETWEEN @FromDate AND @ToDate
-	UNION
-	SELECT DISTINCT leagueid
-	FROM DBARC.bodb_Archive.dbo.match_bk WITH (NOLOCK) WHERE eventdate BETWEEN @FromDate AND @ToDate
 
 	INSERT INTO #League (
 		LeagueId,
@@ -195,8 +182,7 @@ Param's Explanation:
 		l.sporttype,
 		l.LeagueGroupID
 	FROM bodb02.dbo.League AS l WITH (NOLOCK)
-	WHERE (@SportTypeList = 'All'
-			OR EXISTS (SELECT 1 FROM #tmpSport t WHERE t.SportID=l.sporttype)
+	WHERE ( EXISTS (SELECT 1 FROM #tmpSport t WHERE t.SportID=l.sporttype)
 			OR (',' + @SportTypeList + ',' LIKE '%,-1,%'
 				AND l.sporttype = 1
 				AND l.LeagueGroupID IN (42, 74))
@@ -219,7 +205,6 @@ Param's Explanation:
 									WHEN @SearchLanguage = 'zh-CN' THEN l.leaguenamecn
 									ELSE l.leaguename
 								END LIKE '%' + @LeagueName +'%')
-		AND EXISTS (SELECT 1 FROM #TempLeague WHERE leagueid = l.leagueid)
 	
 	IF @SportTypeList <> 'All'
 	BEGIN
@@ -277,7 +262,17 @@ Param's Explanation:
 			WHERE SportType = 2 AND LeagueGroupId IN (122)
 		END
 	END
-	
+
+	-- Insert League for Parlay
+	IF @SportTypeList = 'All'
+		AND @LeagueName = ''
+		AND (@BetTypeList = 'All' OR ',' + @BetTypeList + ',' LIKE '%,29,%')
+	BEGIN
+		INSERT INTO #League (LeagueId, SportType, LeagueGroupId)
+		SELECT -1, 0, 0
+		WHERE NOT EXISTS (SELECT 1 FROM #League WHERE LeagueId = -1)
+	END
+
 	CREATE TABLE #tmpData(
 		TransID BIGINT,
 		CustID INT,
@@ -297,7 +292,7 @@ Param's Explanation:
 		LiveIndicator BIT,
 		LiveHomeScore SMALLINT,
 		LiveAwayScore SMALLINT,
-		RptDate SMALLDATETIME,
+		CreatedDate SMALLDATETIME,
 		IP VARCHAR(45),
 		TransDate DATETIME
 	)	
@@ -322,13 +317,13 @@ Param's Explanation:
 		LiveIndicator BIT,
 		LiveHomeScore SMALLINT,
 		LiveAwayScore SMALLINT,
-		RptDate DATE,
+		CreatedDate DATE,
 		IP VARCHAR(40),
 		TransDate DATETIME,
 		RN INT
 	)
 	
-	INSERT INTO #Src(TransID,CustID,SportType,LeagueID,LeagueGroupId,MatchID,SubIssueTypeID,Odds,OddsType,BetType,EventType,BetTeam,CurrencyID,Stake,HDP,LiveIndicator,LiveHomeScore,LiveAwayScore,RptDate,IP,TransDate,RN)
+	INSERT INTO #Src(TransID,CustID,SportType,LeagueID,LeagueGroupId,MatchID,SubIssueTypeID,Odds,OddsType,BetType,EventType,BetTeam,CurrencyID,Stake,HDP,LiveIndicator,LiveHomeScore,LiveAwayScore,CreatedDate,IP,TransDate,RN)
 	SELECT  TransID ,
 			f.CustID ,
 			l.SportType ,
@@ -347,7 +342,7 @@ Param's Explanation:
 			LiveIndicator ,
 			LiveHomeScore ,
 			LiveAwayScore ,
-			RptDate ,
+			CreatedDate ,
 			TRIM(IP) IP,
 			TransDate,
 			ROW_NUMBER() OVER (ORDER BY TransID DESC) RN
@@ -369,7 +364,7 @@ Param's Explanation:
 	BEGIN  
 	DELETE #Src WHERE IP <> @IP  
 	END  
-
+	
 	INSERT INTO #tmpData(TransID ,
 						 CustID ,
 						 SportType ,
@@ -388,7 +383,7 @@ Param's Explanation:
 						 LiveIndicator ,
 						 LiveHomeScore ,
 						 LiveAwayScore ,
-						 RptDate ,
+						 CreatedDate ,
 						 TransDate ,
 						 IP)
 	SELECT  TransID ,
@@ -409,7 +404,7 @@ Param's Explanation:
 			LiveIndicator ,
 			LiveHomeScore ,
 			LiveAwayScore ,
- 			RptDate ,
+ 			CreatedDate ,
  			TransDate ,
 			IP
 	FROM #Src AS T
@@ -418,12 +413,22 @@ Param's Explanation:
 
 	IF EXISTS(SELECT TOP 1 1 FROM #tmpData) AND @ConvertToBaseCur = 1
 	BEGIN
-		INSERT INTO #ExchangeRate(FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
-		SELECT FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate
-		FROM bodb02.dbo.Lrf_f_GetExchangeRate(@FromDate, @ToDate, @BaseCurrency, @BaseCurrency) e
-		WHERE EXISTS (SELECT 1 FROM #TempAg a WHERE e.ExchangeID = a.Currency)
-	END
 
+		DECLARE @sql VARCHAR(8000)= ''
+		SELECT @sql = '	SELECT FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate
+						FROM OPENQUERY(DBEXT, ''SELECT FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate 
+						FROM bodb02.dbo.Lrf_f_GetExchangeRate
+						(''''' + CONVERT(VARCHAR(10), @FromDate, 112) + ''''',
+					 	''''' + CONVERT(VARCHAR(10), @ToDate, 112) + ''''',
+					 	''''' + @BaseCurrency + ''''',
+					  	''''' + @BaseCurrency + ''''')
+						 '')'
+
+		INSERT INTO #ExchangeRate(FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
+		EXEC (@sql)
+		
+	END
+	
 	CREATE TABLE #tmpMatch (
 		Matchid	INT,
 		Homeid	INT,
@@ -465,7 +470,7 @@ Param's Explanation:
 	WHERE matchid IN (SELECT matchid FROM #tmpData)
 		
 	SELECT
-		RptDate AS [Date] ,
+		CreatedDate AS [Date] ,
 		SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS [ExternalID],
 		c.username AS [SystemID],
 		e.currency AS Currency,	
@@ -505,19 +510,17 @@ Param's Explanation:
 		LEFT JOIN bodb_Account.dbo.bettype b WITH (NOLOCK) ON d.BetType = b.typeid
 		LEFT JOIN bodb02.dbo.Exchange e WITH (NOLOCK) ON d.CurrencyID = e.exchangeid 
 		LEFT JOIN bodb02.dbo.Customer c WITH (NOLOCK) ON d.custid = c.custid
-		LEFT JOIN #ExchangeRate er ON d.RptDate BETWEEN er.FromDate AND er.ToDate AND er.ExchangeId = e.ExchangeId
+		LEFT JOIN #ExchangeRate er ON d.CreatedDate BETWEEN er.FromDate AND er.ToDate AND er.ExchangeId = e.ExchangeId
 	WHERE c.custid IS NOT NULL
-	ORDER BY RptDate
+	ORDER BY CreatedDate
 	
 	DROP TABLE #tmpData
 	DROP TABLE #tmpReason
 	DROP TABLE #tmpSport 
-	DROP TABLE #tmpSportSaba 
-	DROP TABLE #tmpBetType 
+ 	DROP TABLE #tmpBetType 
 	DROP TABLE #League
 	DROP TABLE #tmpCurrency
 	DROP TABLE #Src
-	DROP TABLE #TempLeague
 	DROP TABLE #tmpMatch
     DROP TABLE #ExchangeRate  
     DROP TABLE #TempCust  

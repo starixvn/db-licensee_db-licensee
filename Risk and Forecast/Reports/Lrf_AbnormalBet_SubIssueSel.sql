@@ -9,7 +9,8 @@ AS
     
   Revisions:  
    - 20221028@Evan: initial sp [redmine:#174308]  
-  Paramter's Explanations:    
+  Paramter's Explanations: 
+  Note: Get Reason for Dropdown list  
  */  
 BEGIN  
     SET NOCOUNT ON  

@@ -47,9 +47,9 @@ BEGIN
 */
 	SET NOCOUNT ON;
 
+	DECLARE @SportSaba TABLE (SportID INT)
 	CREATE TABLE #tmpReason (ReasonID INT)
 	CREATE TABLE #tmpSport (SportID INT)
-	CREATE TABLE #tmpSportSaba (SportID INT)
 	CREATE TABLE #tmpBetType (BetTypeID INT, EventType TINYINT)
 	
 	IF @ReasonList = 'All'
@@ -78,8 +78,8 @@ BEGIN
     
 	IF EXISTS (SELECT 1 FROM #tmpSport WHERE SportID < 0)
 	BEGIN
-		INSERT INTO #tmpSportSaba (SportID)
-        SELECT	CASE WHEN SportID IN (-1,-4,-5) THEN 1 
+		INSERT INTO @SportSaba (SportID)
+        SELECT DISTINCT CASE WHEN SportID IN (-1,-4,-5) THEN 1 
 					WHEN SportID IN (-2,-6) THEN 2 
 					WHEN SportID = -3 THEN 50 END 
         FROM #tmpSport  
@@ -87,7 +87,7 @@ BEGIN
 
 		INSERT INTO #tmpSport
 		SELECT a.SportID
-		FROM #tmpSportSaba a LEFT JOIN #tmpSport b ON a.SportID = b.SportID
+		FROM @SportSaba a LEFT JOIN #tmpSport b ON a.SportID = b.SportID
 		WHERE b.SportID IS NULL
 	END
 
@@ -110,19 +110,7 @@ BEGIN
 
 	-- Get league list
 	CREATE TABLE #League (LeagueId INT, SportType SMALLINT, LeagueGroupId SMALLINT)
-	CREATE TABLE #TempLeague (LeagueId INT)
 	CREATE CLUSTERED INDEX IX_LeagueId ON #League (LeagueId)
-	CREATE CLUSTERED INDEX IX_LeagueId ON #TempLeague (LeagueId)
-
-	INSERT INTO #TempLeague
-	SELECT DISTINCT leagueid
-	FROM bodb02.dbo.match WITH (NOLOCK) WHERE eventdate BETWEEN @FromDate AND @ToDate
-	UNION
-	SELECT DISTINCT leagueid
-	FROM bodb02.dbo.match14 WITH (NOLOCK) WHERE eventdate BETWEEN @FromDate AND @ToDate
-	UNION
-	SELECT DISTINCT leagueid
-	FROM DBARC.bodb_Archive.dbo.match_bk WITH (NOLOCK) WHERE eventdate BETWEEN @FromDate AND @ToDate
 
 	INSERT INTO #League (
 		LeagueId,
@@ -133,8 +121,7 @@ BEGIN
 		l.sporttype,
 		l.LeagueGroupID
 	FROM bodb02.dbo.League AS l WITH (NOLOCK)
-	WHERE (@SportTypeList = 'All'
-			OR EXISTS (SELECT 1 FROM #tmpSport t WHERE t.SportID=l.sporttype)
+	WHERE ( EXISTS (SELECT 1 FROM #tmpSport t WHERE t.SportID=l.sporttype)
 			OR (',' + @SportTypeList + ',' LIKE '%,-1,%'
 				AND l.sporttype = 1
 				AND l.LeagueGroupID IN (42, 74))
@@ -157,7 +144,6 @@ BEGIN
 									WHEN @SearchLanguage = 'zh-CN' THEN l.leaguenamecn
 									ELSE l.leaguename
 								END LIKE '%' + @LeagueName +'%')
-		AND EXISTS (SELECT 1 FROM #TempLeague WHERE leagueid = l.leagueid)
 
 	IF @SportTypeList <> 'All'
 	BEGIN
@@ -216,6 +202,16 @@ BEGIN
 		END
 	END
 	
+	-- Insert League for Parlay
+	IF @SportTypeList = 'All'
+		AND @LeagueName = ''
+		AND (@BetTypeList = 'All' OR ',' + @BetTypeList + ',' LIKE '%,29,%')
+	BEGIN
+		INSERT INTO #League (LeagueId, SportType, LeagueGroupId)
+		SELECT -1, 0, 0
+		WHERE NOT EXISTS (SELECT 1 FROM #League WHERE LeagueId = -1)
+	END
+
 	CREATE TABLE #Src(
 		RptDate DATE,
 		CreatedDate DATE,
@@ -305,6 +301,7 @@ BEGIN
 		AND ((BetType IN (9, 29) AND ',' + @LiveIndicator + ',' LIKE '%,' + CONVERT(VARCHAR(3), LiveHomeScore) + ',%')  
      			OR (BetType NOT IN (9, 29) AND ',' + @LiveIndicator + ',' LIKE '%,' + CONVERT(VARCHAR(3), LiveStatus) + ',%')) 
 		AND (@LicenseeName = '' OR s.site = @LicenseeName)
+		AND (l.LeagueId IS NOT NULL OR @LeagueName = '')
 	GROUP BY RptDate ,
 		CreatedDate ,
 		f.SiteID ,
@@ -417,11 +414,9 @@ BEGIN
 	DROP TABLE #tmpData
 	DROP TABLE #tmpReason
 	DROP TABLE #tmpSport 
-	DROP TABLE #tmpSportSaba 
 	DROP TABLE #tmpBetType 
  	DROP TABLE #Src
 	DROP TABLE #League
-	DROP TABLE #TempLeague
 	DROP TABLE #tmpMatch
 	   
 END;
