@@ -134,7 +134,7 @@ BEGIN
 		l.LeagueGroupID
 	FROM bodb02.dbo.League AS l WITH (NOLOCK)
 	WHERE (@SportTypeList = 'All'
-			OR ',' + @SportTypeList + ',' LIKE '%,' + CAST(l.sporttype AS VARCHAR(5)) + ',%'
+			OR EXISTS (SELECT 1 FROM #tmpSport t WHERE t.SportID=l.sporttype)
 			OR (',' + @SportTypeList + ',' LIKE '%,-1,%'
 				AND l.sporttype = 1
 				AND l.LeagueGroupID IN (42, 74))
@@ -216,7 +216,7 @@ BEGIN
 			WHERE SportType = 2 AND LeagueGroupId IN (122)
 		END
 	END
-		
+	
 	CREATE TABLE #Src(
 		RptDate DATE,
 		CreatedDate DATE,
@@ -310,8 +310,8 @@ BEGIN
 		CreatedDate ,
 		f.SiteID ,
 		CurrencyID ,
-		f.SportType,
-		f.LeagueID ,
+		l.SportType,
+		l.LeagueID ,
 		l.LeagueGroupId ,
 		MatchID ,
 		SubIssueTypeID,
