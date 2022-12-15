@@ -157,7 +157,6 @@ BEGIN
 									WHEN @SearchLanguage = 'zh-CN' THEN l.leaguenamecn
 									ELSE l.leaguename
 								END LIKE '%' + @LeagueName +'%')
-		AND l.sporttype IN ( SELECT SportID FROM #tmpSport)
 		AND EXISTS (SELECT 1 FROM #TempLeague WHERE leagueid = l.leagueid)
 
 	IF @SportTypeList <> 'All'
