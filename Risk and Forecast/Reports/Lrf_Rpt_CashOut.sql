@@ -1,3 +1,4 @@
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_Rpt_CashOut]
 	@AgentList				VARCHAR(MAX),
 	@FromDate				SMALLDATETIME,
@@ -58,8 +59,11 @@ BEGIN
 		@_FromDate	SMALLDATETIME,
 		@_ToDate	SMALLDATETIME
 
-	--DECLARE @CutoffDate SMALLDATETIME = '2023-01-01'
-	DECLARE @CutoffDate SMALLDATETIME = '2022-08-01'
+	DECLARE @CutoffDate SMALLDATETIME;
+
+	SELECT @CutoffDate = CutoffDate
+	FROM dbo.Lrf_f_GetCutoffDate()
+	WHERE TypeName = 'CashOut'
 
 	SELECT @_FromDate = @FromDate, @_ToDate = @ToDate
 
@@ -108,14 +112,15 @@ BEGIN
 		AND EXISTS (SELECT 1 FROM #TempLeague WHERE leagueid = l.leagueid)	
 
 	-- Get bettype list
-	DECLARE @BetType TABLE (BetType INT PRIMARY KEY)
+	CREATE TABLE #BetType (BetType SMALLINT, ProductCode VARCHAR(10), EventType TINYINT)
+	CREATE CLUSTERED INDEX IX_BetType ON #BetType (BetType)
 
 	DECLARE @IsTest BIT = 0
 	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
 
-	INSERT INTO @BetType (BetType)
+	INSERT INTO #BetType (BetType)
 	SELECT DISTINCT BetType
-	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', 'SB', @IsTest)
+	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', 'SB', 1)
 	WHERE BetType NOT IN (9, 29, 10, 914, 901, 902, 903, 904)
 
 	DECLARE @Data TABLE (
@@ -167,7 +172,9 @@ BEGIN
 		FROM
 			dbo.bettrans AS b WITH (NOLOCK)
 			INNER JOIN #TempAg AS a ON a.CustId = b.recommend
-			INNER JOIN @BetType AS bt ON bt.bettype = b.bettype
+			INNER JOIN #BetType AS bt ON bt.bettype = b.bettype
+			INNER JOIN dbo.match AS m WITH (NOLOCK) ON m.MatchId = b.matchid
+			INNER JOIN #League AS l ON l.LeagueId = m.leagueid
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 			AND b.statusID IN (111, 112, 113)
@@ -176,7 +183,7 @@ BEGIN
 			b.winlostdate,
 			b.currency
 	END
-
+ 
 	-- bettrans14 & bettrans_bk range
 	IF @_FromDate <= @MoveBetsDay
 	BEGIN
@@ -319,5 +326,8 @@ BEGIN
 	ORDER BY ReportType ASC
 
 	DROP TABLE #TempAg
+	DROP TABLE #BetType
+	DROP TABLE #TempLeague
+	DROP TABLE #League
 END
 GO
