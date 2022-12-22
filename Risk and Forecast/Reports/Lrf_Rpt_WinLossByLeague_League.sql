@@ -27,6 +27,7 @@ AS
 		- 20220513@Kos: Support Sports Lottery and Bitcoin [RedmineID: #160160]
 		- 20220616@Kos: Fix issue duplicate LeagueId [RedmineID: #171991]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
+		- 20221207@Evan: Support Saba E-Sports PinGoal [RedmineID: #181224]
 
 	Param's Explanation:
 		- @SportTypeList: sporttype list separated by ','
@@ -37,6 +38,7 @@ AS
 			+ -4: Saba Futsal (SportType = 1, LeagueGroupId IN (108))
 			+ -5: Saba Soccer Pingoal (SportType = 1, LeagueGroupId IN (113))
 			+ -6: Saba Basketball Pingoal (SportType = 2, LeagueGroupId IN (122))
+			+ -7: Saba E-Sports Pingoal (SportType = 43, LeagueGroupId IN (151))
 		- @BetTypeList: bettype list separated by ','
 			+ 'All': all bettypes
 		- @SearchLanguage: search language
@@ -207,7 +209,11 @@ BEGIN
 				AND l.LeagueGroupID IN (113))
 			OR (',' + @SportTypeList + ',' LIKE '%,-6,%'
 				AND l.sporttype = 2
-				AND l.LeagueGroupID IN (122)))
+				AND l.LeagueGroupID IN (122))
+			OR (',' + @SportTypeList + ',' LIKE '%,-7,%'
+				AND l.sporttype = 43
+				AND l.LeagueGroupID IN (151))
+			)
 		AND (@LeagueName = '' OR CASE
 									WHEN @SearchLanguage = 'zh-CN' THEN l.leaguenamecn
 									ELSE l.leaguename
@@ -233,6 +239,12 @@ BEGIN
 		BEGIN
 			DELETE FROM #League
 			WHERE SportType = 50 AND LeagueGroupId NOT IN (42)
+		END
+
+		IF ',' + @SportTypeList + ',' NOT LIKE '%,43,%'
+		BEGIN
+			DELETE FROM #League
+			WHERE SportType = 43 AND LeagueGroupId NOT IN (151)
 		END
 
 		IF ',' + @SportTypeList + ',' NOT LIKE '%,-1,%'
@@ -269,6 +281,12 @@ BEGIN
 		BEGIN
 			DELETE FROM #League
 			WHERE SportType = 2 AND LeagueGroupId IN (122)
+		END
+
+		IF ',' + @SportTypeList + ',' NOT LIKE '%,-7,%'
+		BEGIN
+			DELETE FROM #League
+			WHERE SportType = 43 AND LeagueGroupId IN (151)
 		END
 	END
 
@@ -822,6 +840,7 @@ BEGIN
 			WHEN d.SportType = 1 AND d.LeagueGroupId IN (108) THEN -4
 			WHEN d.SportType = 1 AND d.LeagueGroupId IN (113) THEN -5
 			WHEN d.SportType = 2 AND d.LeagueGroupId IN (122) THEN -6
+			WHEN d.SportType = 43 AND d.LeagueGroupId IN (151) THEN -7
 			ELSE d.SportType
 		END AS SportType,
 		d.LeagueId,
@@ -842,6 +861,7 @@ BEGIN
 			WHEN d.SportType = 1 AND d.LeagueGroupId IN (108) THEN -4
 			WHEN d.SportType = 1 AND d.LeagueGroupId IN (113) THEN -5
 			WHEN d.SportType = 2 AND d.LeagueGroupId IN (122) THEN -6
+			WHEN d.SportType = 43 AND d.LeagueGroupId IN (151) THEN -7
 			ELSE d.SportType
 		END,
 		d.LeagueId

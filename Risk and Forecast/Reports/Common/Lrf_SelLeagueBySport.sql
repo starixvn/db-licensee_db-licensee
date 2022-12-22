@@ -27,6 +27,7 @@ AS
 		- 20211112@Kos: Exclude league and match which IsDeleted = 1 [RedmineID: #163733]
 		- 20220222@Kos: Support Saba Basketball PinGoal [RedmineID: #167859]
 		- 20000609@Kos: Remove IsDeleted for League and Team [Redmine: #171991]
+		- 20221207@Evan: Support Saba E-Sports PinGoal [RedmineID: #181224]
 */
 
 BEGIN
@@ -120,7 +121,9 @@ BEGIN
 			OR (@SportId = -1 AND l.sporttype = 1 AND l.LeagueGroupID IN (113))
 			OR (@SportId = 1 AND l.sporttype = 1 AND l.LeagueGroupID NOT IN (113))
 			OR (@SportId = -2 AND l.sporttype = 2 AND l.LeagueGroupID IN (122))
-			OR (@SportId = 2 AND l.sporttype = 2 AND l.LeagueGroupID NOT IN (122)))
+			OR (@SportId = 2 AND l.sporttype = 2 AND l.LeagueGroupID NOT IN (122))
+			OR (@SportId = -43 AND l.sporttype = 43 AND l.LeagueGroupID IN (151))
+			)
 		AND l.sporttype < 100
 		AND l.leagueid > 0
 	GROUP BY l.leagueid,

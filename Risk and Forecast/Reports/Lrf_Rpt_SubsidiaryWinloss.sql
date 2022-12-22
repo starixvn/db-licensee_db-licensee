@@ -37,6 +37,7 @@ AS
 		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
 		- 20220222@Kos: Support Saba Basketball PinGoal [RedmineID: #167859]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
+		- 20221207@Evan: Support Saba E-Sports PinGoal [RedmineID: #181224]
 
 	Param's Explanation:
 		+ @MoveBetsDay: The day we move tickets to bettrans14
@@ -64,7 +65,8 @@ BEGIN
 
 	CREATE TABLE #BettypeProduct (BetType INT PRIMARY KEY, ProductCode VARCHAR(10))
 	CREATE TABLE #SporttypeProduct (SportType SMALLINT, ProductCode VARCHAR(10))
-
+	CREATE TABLE #Date (Date SMALLDATETIME, PRIMARY KEY(Date))
+	
 	DECLARE @ExcludedBetType TABLE (ProductCode VARCHAR (10), BetType INT)
 	-- Insert Excluded BetType
 	INSERT INTO @ExcludedBetType (ProductCode, BetType)
@@ -149,6 +151,7 @@ BEGIN
 	WHERE (sporttype = 1 AND LeagueGroupID IN (42, 74, 108, 113))
 		OR (sporttype = 2 AND LeagueGroupID IN (42, 122))
 		OR (sporttype = 50 AND LeagueGroupID IN (42))
+		OR (sporttype = 43 AND LeagueGroupID IN (151))
 
 	IF @ToDate > @MoveBetsDay
 	BEGIN
@@ -371,8 +374,7 @@ BEGIN
 
 		IF @ShowSB = 1 AND @SeparateSabaVS = 1
 		BEGIN
-			CREATE TABLE #Date (Date SMALLDATETIME, PRIMARY KEY(Date))
-
+			
 			INSERT INTO #Date
 			SELECT [Date]
 			FROM f_GetDateBetweenTwoDates (@FDate, @TDate)
@@ -487,5 +489,6 @@ BEGIN
 	DROP TABLE #SporttypeProduct
 	DROP TABLE #TempAg
 	DROP TABLE #SabaVirtualSportsLeague
+	DROP TABLE #Date
 END
 GO
