@@ -203,6 +203,12 @@ BEGIN
 							ELSE @CutoffDate
 						END
 
+			DECLARE @SBSportType TABLE (SportType INT PRIMARY KEY)
+
+			INSERT INTO @SBSportType (SportType)
+			SELECT DISTINCT SportType
+			FROM dbo.f_LicWinLoss_ProductSportType_Sel('SB')
+
 			INSERT INTO @Data (
 				CustId,
 				WinLostDate,
@@ -228,7 +234,7 @@ BEGIN
 			FROM
 				bodb_LicenseeReport.dbo.rptLicWinloss2 AS b WITH (NOLOCK)
 				INNER JOIN #TempAg AS a ON a.CustId = b.recommend
-				INNER JOIN @SportType AS s ON s.SportType = b.sporttype
+				INNER JOIN @SBSportType AS s ON s.SportType = b.sporttype
 			WHERE
 				b.winlostdate BETWEEN @_FromDate AND @TempDateCutoff
 				AND b.statusID <> 101	--exclude REJECT

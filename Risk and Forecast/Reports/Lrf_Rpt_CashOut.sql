@@ -112,7 +112,7 @@ BEGIN
 		AND EXISTS (SELECT 1 FROM #TempLeague WHERE leagueid = l.leagueid)	
 
 	-- Get bettype list
-	CREATE TABLE #BetType (BetType SMALLINT, ProductCode VARCHAR(10), EventType TINYINT)
+	CREATE TABLE #BetType (BetType SMALLINT)
 	CREATE CLUSTERED INDEX IX_BetType ON #BetType (BetType)
 
 	DECLARE @IsTest BIT = 0
@@ -120,7 +120,7 @@ BEGIN
 
 	INSERT INTO #BetType (BetType)
 	SELECT DISTINCT BetType
-	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', 'SB', 1)
+	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', 'SB', @IsTest)
 	WHERE BetType NOT IN (9, 29, 10, 914, 901, 902, 903, 904)
 
 	DECLARE @Data TABLE (
@@ -201,6 +201,12 @@ BEGIN
 							ELSE @CutoffDate
 						END
 
+			DECLARE @SBSportType TABLE (SportType INT PRIMARY KEY)
+
+			INSERT INTO @SBSportType (SportType)
+			SELECT DISTINCT SportType
+			FROM dbo.f_LicWinLoss_ProductSportType_Sel('SB')
+			
 			INSERT INTO @Data (
 				WinLostDate,
 				Currency,
@@ -224,7 +230,7 @@ BEGIN
 			FROM
 				bodb_LicenseeReport.dbo.rptLicWinloss2 AS b WITH (NOLOCK)
 				INNER JOIN #TempAg AS a ON a.CustId = b.recommend
-				INNER JOIN @SportType AS s ON s.SportType = b.sporttype
+				INNER JOIN @SBSportType AS s ON s.SportType = b.sporttype
 			WHERE
 				b.winlostdate BETWEEN @_FromDate AND @TempDateCutoff
 				AND b.statusID <> 101	--exclude REJECT
@@ -331,3 +337,4 @@ BEGIN
 	DROP TABLE #League
 END
 GO
+ 
