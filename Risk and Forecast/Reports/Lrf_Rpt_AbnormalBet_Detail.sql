@@ -24,8 +24,8 @@ Task : Abnormal Bet Report (#174308)
 DB: DBDW2/bodb_dwrs 
 Origin: Acc_Rpt_AbnormalBet_Member
 Revisions:
-	20221013@Evan: Initial [RedmineID: #174308]
-	
+	20221013@Evan: 	- Initial [RedmineID: #174308]
+					- Support Saba E-Sports PinGoal
 Param's Explanation:
 	- @AgentList: XML structure
 			<ROOT>
@@ -40,6 +40,7 @@ Param's Explanation:
 		+ -4: Saba Futsal (SportType = 1, LeagueGroupId IN (108))
 		+ -5: Saba Soccer Pingoal (SportType = 1, LeagueGroupId IN (113))
 		+ -6: Saba Basketball Pingoal (SportType = 2, LeagueGroupId IN (122))
+		+ -7: Saba E-Sports Pingoal (SportType = 43, LeagueGroupId IN (151))
 	- @BetTypeList: bettype list separated by ','
 		+ 'All': all bettypes
 	- @ReasonList: Reason list separated by ','
@@ -142,7 +143,8 @@ Param's Explanation:
 		INSERT INTO @SportSaba (SportID)
         SELECT DISTINCT	CASE WHEN SportID IN (-1,-4,-5) THEN 1 
 					WHEN SportID IN (-2,-6) THEN 2 
-					WHEN SportID = -3 THEN 50 END 
+					WHEN SportID = -3 THEN 50 
+					WHEN SportID = -7 THEN 43 END
         FROM #tmpSport  
 		WHERE SportID < 0
 
@@ -200,7 +202,11 @@ Param's Explanation:
 				AND l.LeagueGroupID IN (113))
 			OR (',' + @SportTypeList + ',' LIKE '%,-6,%'
 				AND l.sporttype = 2
-				AND l.LeagueGroupID IN (122)))
+				AND l.LeagueGroupID IN (122))
+			OR (',' + @SportTypeList + ',' LIKE '%,-7,%'
+				AND l.sporttype = 43
+				AND l.LeagueGroupID IN (151))	
+			)
 		AND (@LeagueName = '' OR CASE
 									WHEN @SearchLanguage = 'zh-CN' THEN l.leaguenamecn
 									ELSE l.leaguename
@@ -224,6 +230,12 @@ Param's Explanation:
 		BEGIN
 			DELETE FROM #League
 			WHERE SportType = 50 AND LeagueGroupId NOT IN (42)
+		END
+
+		IF ',' + @SportTypeList + ',' NOT LIKE '%,43,%'
+		BEGIN
+			DELETE FROM #League
+			WHERE SportType = 43 AND LeagueGroupId NOT IN (151)
 		END
 
 		IF ',' + @SportTypeList + ',' NOT LIKE '%,-1,%'
@@ -260,6 +272,12 @@ Param's Explanation:
 		BEGIN
 			DELETE FROM #League
 			WHERE SportType = 2 AND LeagueGroupId IN (122)
+		END
+
+		IF ',' + @SportTypeList + ',' NOT LIKE '%,-7,%'
+		BEGIN
+			DELETE FROM #League
+			WHERE SportType = 43 AND LeagueGroupId IN (151)
 		END
 	END
 
@@ -488,6 +506,7 @@ Param's Explanation:
 			WHEN d.SportType = 1 AND d.LeagueGroupId IN (108) THEN -4
 			WHEN d.SportType = 1 AND d.LeagueGroupId IN (113) THEN -5
 			WHEN d.SportType = 2 AND d.LeagueGroupId IN (122) THEN -6
+			WHEN d.SportType = 43 AND d.LeagueGroupId IN (151) THEN -7
 			ELSE d.SportType
 		END AS Sport,
 		d.LeagueGroupId,
