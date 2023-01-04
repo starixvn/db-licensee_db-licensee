@@ -6,7 +6,7 @@ ALTER PROCEDURE [dbo].[Nap_LM_LAPUser_Update]
 	@UserPWD			VARCHAR(50),
 	@FuncPermissions	VARCHAR(MAX),
 	@IsRemoveGroup		BIT,
-	@Currency			VARCHAR(256)
+	@Currency			VARCHAR(1024)
 AS
 
 /*
@@ -19,6 +19,7 @@ AS
 		- 20191021@Vickie: Update User Info [Redmine: #122008]
 		- 20191206@Vickie: Replace @SiteName parameter by @VendorID parameter [Redmine: #119443]
 		- 20220921@Kos: Extend Currency param data length [Redmine: #178052]
+		- 20230104@Kos: Extend Currency param data length [Redmine: #181486]
 */
 
 BEGIN
