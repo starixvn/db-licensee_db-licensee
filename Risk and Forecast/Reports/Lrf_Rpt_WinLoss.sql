@@ -44,6 +44,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
 	@ShowBTC		BIT = 0, 	-- Bitcoin
 	@ShowFGGL		BIT = 0,	-- FGG Guaranteed Gaming
 	@ShowMXG		BIT = 0, 	-- MaxGame
+	@ShowJIG		BIT = 0, 	-- Jili
 	@DrawFilter				SMALLINT		= 1,
 	@CustomerClass			VARCHAR(MAX)	= 'All',
 	@OddsGroup				VARCHAR(100)	= 'All',
@@ -165,6 +166,7 @@ AS
 		- 20220825@Kos: Hotfix - Extend length for Customer Class [RedmineID: #177077]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20221122@Evan: Integrate Player Tips [RedmineID: #180590]
+		- 20230130@Evan: Integrate Jili [RedmineID: #182914]
 
 	Param's Explanation:
 		@OrderItem:
@@ -385,6 +387,8 @@ BEGIN
 	SELECT 'FGGL' AS Code WHERE @ShowFGGL = 1
 	UNION ALL
 	SELECT 'MXG' AS Code WHERE @ShowMXG = 1
+	UNION ALL
+	SELECT 'JIG' AS Code WHERE @ShowJIG = 1
 
 	-- BT & CO belong to SB
 	SELECT @ProductList = COALESCE(@ProductList + ',' + Code, Code)

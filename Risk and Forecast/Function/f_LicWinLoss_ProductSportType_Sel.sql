@@ -48,6 +48,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 		- 20220601@Hogan: Integrate FGG Guaranteed Gaming [RedmineID: #167897]
 		- 20220601@Hogan: Integrate MaxGame [RedmineID: #172919]
 		- 20220801@Victoria: Add DBSID-bodb02 to metadata [Redmine: #175297]
+		- 20230130@Evan: Integrate Jili [RedmineID: #182914]
 */
 RETURNS TABLE
 RETURN
@@ -98,7 +99,8 @@ RETURN
 					(49, 'VS3', 231, 0),	-- Virtual Sports 3
 					(69, 'BTC', 175, 0),	-- Bitcoin
 					(70, 'FGGL', 176, 0),	-- FGG
-					(60, 'MXG', 237, 0)	-- MaxGame
+					(60, 'MXG', 237, 0),	-- MaxGame
+					(75, 'JIG', 158, 0)	-- Jili
 			) d(ProductID, ProductCode, SportType, BetType)
 	WHERE ',' + @ProductCodes + ',' LIKE '%,' + CAST(ProductCode AS VARCHAR(10)) + ',%'
 GO

@@ -26,6 +26,7 @@ AS
 		- 20220601@Hogan: Integrate FGG Guaranteed Gaming [RedmineID: #167897]
 		- 20220601@Hogan: Integrate MaxGame [RedmineID: #172919]
 		- 20220301@Eden: Deposit - Sportsbook - Revise customer settings [Redmine: #167898]
+		- 20230130@Evan: Integrate Jili [RedmineID: #182914]
 */
 
  /*
@@ -153,7 +154,8 @@ BEGIN
 			49,--	Virtual Sports 3
 			69,--	Bitcoin
 			70,--	FGG	
-			60--	MaxGame
+			60,--	MaxGame
+			75--	Jili
 		)
 	ORDER BY ProductID ASC
 END
