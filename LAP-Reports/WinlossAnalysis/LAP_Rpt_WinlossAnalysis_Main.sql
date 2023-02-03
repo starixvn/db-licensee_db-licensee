@@ -9,9 +9,10 @@ CREATE OR ALTER PROCEDURE LAP_Rpt_WinlossAnalysis_Main
 
 	----------filtering
 	@AgentList		XML = NULL,
-	@ProductIds		NVARCHAR(MAX) = NULL,
-	@SportIds		NVARCHAR(MAX) = NULL,
-	@BettypeIds		NVARCHAR(MAX) = NULL,
+	@ProductIds		VARCHAR(MAX) = NULL,
+	@SportIds		VARCHAR(MAX) = NULL,
+	@BettypeIds		VARCHAR(MAX) = NULL,
+	@StatusIds		VARCHAR(1000) = '112,113',
 
 	----------grouping
 	@GroupMode		TINYINT = 3,
@@ -93,9 +94,15 @@ BEGIN
 				ELSE b.winlostdate 
 			END AS winlostdate,
 			SUM(b.Turnover) AS Turnover
-		FROM [dbo].[f_LicenseeWinlossActiveSel] (@AgentList, @rptFromDate, @rptToDate, @ProductIds) AS b
-		--WHERE
-		--	b.statusID IN (112, 113)
+		FROM [dbo].[f_LicenseeWinlossActiveSel] (
+			@AgentList, 
+			@rptFromDate, 
+			@rptToDate, 
+			@ProductIds, 
+			@SportIds, 
+			@BettypeIds, 
+			@StatusIds
+		) AS b
 
 		GROUP BY b.ProductId, b.recommend, b.currency,
 			CASE 
@@ -156,7 +163,6 @@ BEGIN
 			@TotalRow	= @TotalRow OUTPUT
 	END
 
-	SELECT @TotalRow AS TotalRow	
-		, DATEDIFF(MILLISECOND, @startTime, CURRENT_TIMESTAMP) AS Duration_Ms
+	SELECT DATEDIFF(MILLISECOND, @startTime, CURRENT_TIMESTAMP) AS Duration_Ms
 END
 GO

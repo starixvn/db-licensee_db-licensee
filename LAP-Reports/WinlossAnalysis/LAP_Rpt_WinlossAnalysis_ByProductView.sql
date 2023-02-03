@@ -22,22 +22,21 @@ BEGIN
 	--select @BreakBy AS [@BreakBy];
 	-- TODO: paging
 	WITH paging AS (
-		SELECT rIdx, GroupBy, ProductName, rTotal
+		SELECT rIdx, GroupBy, rTotal
 		FROM (
-			SELECT t.GroupBy, t.ProductName,
+			SELECT t.GroupBy,
 				COUNT(1) OVER() AS rTotal,
 				ROW_NUMBER() OVER(ORDER BY t.GroupBy) AS rIdx
 			FROM (
-				SELECT DISTINCT p.ProductID AS GroupBy, p.ProductName
+				SELECT DISTINCT rpt.ProductID AS GroupBy
 				FROM @rptData rpt
-				INNER JOIN bodb02.dbo.Products p WITH(NOLOCK) ON p.ProductID = rpt.productid
 			) AS t
 		) AS p
 		ORDER BY p.rIdx ASC
 		OFFSET @pageOffset ROWS FETCH NEXT @PageSize ROWS ONLY
 	),
 	result AS (
-		SELECT p.rIdx, p.ProductName AS GroupBy,
+		SELECT p.rIdx, p.GroupBy,
 			CASE 
 				WHEN @BreakBy = 1 THEN rpt.Currency
 				WHEN @BreakBy = 3 THEN rpt.recommend
@@ -48,7 +47,7 @@ BEGIN
 
 		FROM paging p
 		INNER JOIN @rptData rpt ON p.GroupBy = rpt.ProductID 
-		GROUP BY p.rIdx, p.ProductName, p.rTotal,
+		GROUP BY p.rIdx, p.GroupBy, p.rTotal,
 			CASE 
 				WHEN @BreakBy = 1 THEN rpt.Currency
 				WHEN @BreakBy = 3 THEN rpt.recommend
@@ -60,7 +59,7 @@ BEGIN
 	FROM result rs
 	
 	-- total row
-	SELECT @TotalRow = rs.rTotal
+	SELECT TOP(1) @TotalRow = rs.rTotal
 	FROM #result rs
 
 
@@ -69,7 +68,7 @@ BEGIN
 	SET @outputSQL = 
 	N'SELECT rs.rIdx, rs.GroupBy,' +
 		CASE 
-			WHEN @BreakBy = 1 THEN ' ex.Code AS Currency' 
+			WHEN @BreakBy = 1 THEN ' IIF(LEN(ex.Code)=0, ''N/A'', ex.Code) AS Currency' 
 			WHEN @BreakBy = 3 THEN ' ci.username AS Agency' 
 		END + '\
 		, turnover
@@ -84,6 +83,14 @@ BEGIN
 			WHEN @BreakBy = 3 THEN ' ci.custid'
 		END
 
-	EXEC (@outputSQL);
+	EXEC sp_executesql @outputSQL;
+
+	SELECT rs.rIdx, rs.GroupBy,	SUM(Turnover) AS Turnover
+	FROM #result rs
+	GROUP BY rs.rIdx, rs.GroupBy
+
+	SELECT @TotalRow AS TotalRow,
+		SUM(Turnover) AS Turnover
+	FROM @rptData
 
 END
