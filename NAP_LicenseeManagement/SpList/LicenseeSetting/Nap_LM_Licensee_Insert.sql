@@ -27,7 +27,8 @@ AS
 	  - 20190114@Amanda: add more info for new licensee [redmine: #83584]
 	  - 20190418@Amanda: Move code from DBA_Lrf_CreateNewLicensee to this and use LM's SPs instead of DBA's SPs [Redmine: #111321]
 	  - 20191202@Amanda: Remove OA_ tables [Redmine: #119443]
-	  - 20201214@Winfred: Adjust SP to cut off spaces for licensee name  [redmine: #147233]	  
+	  - 20201214@Winfred: Adjust SP to cut off spaces for licensee name  [redmine: #147233]
+	  - 20230207@Danny: reseek LicenseeID when creating new  [redmine: #183209]	
 */
 BEGIN
 	SET NOCOUNT ON;
@@ -92,6 +93,11 @@ BEGIN
 	
 		SELECT @LicenseeID = MAX(LicenseeID) + 1
 		FROM dbo.Licensees WITH (NOLOCK)
+
+		IF @LicenseeID < 50000 
+		BEGIN
+			SELECT @LicenseeID = 50000
+		END
 	
 		INSERT INTO dbo.Licensees
 		(
