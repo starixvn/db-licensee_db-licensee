@@ -14,6 +14,7 @@ AS
 		- 20211006@Howard: New China View Skin, hard code INH2 Currency [RedmineID: #161966]
 		- 20220801@Sol: LAP - Scale Out DBTrans - deploy to sitedb with new metadata [Redmine: #175297]
 		- 20221010@Kos: Support crypto currency [Redmine: 177481]
+		- 20230208@Kai: Hard code USDTJP, USDT currency [Redmine: 183455]
 */
 
 BEGIN
@@ -29,9 +30,12 @@ BEGIN
 			WHEN ExchangeId = 76 THEN 'PS'
 			WHEN ExchangeId = 77 THEN 'PTH'
 			WHEN ExchangeId = 92 THEN 'HID'
+			WHEN ExchangeId = 96 THEN 'USDT'
 			WHEN ExchangeId = 125 THEN 'INH'
+			WHEN ExchangeId = 202 THEN 'USDTJP'
+			-- crypto currencies
 			WHEN ExchangeId = 142 THEN 'USDT'
-			WHEN CurrencyType = 1 THEN currency		-- crypto currencies
+			WHEN CurrencyType = 1 THEN currency		
 			ELSE Code
 		END AS Name
 	FROM CustDB.dbo.Exchange WITH (NOLOCK)
