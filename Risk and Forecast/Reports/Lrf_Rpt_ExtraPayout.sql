@@ -23,6 +23,7 @@ AS
 		- 20220223@Kos: Integrate Allbet Promotion [RedmineID: #167524]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20221122@Evan: Integrate Player Tips [RedmineID: #180590]
+		- 20230208@Evan: Inteagrate SG promotion prize [RedmineID: #183497]
 
 	Param's Explanation:
 		+ @PromotionTypeList: promotion type list separated by ','
@@ -48,6 +49,7 @@ AS
 			- 6602: Vgaming - Jackpot Prize (BetType: 3899)
 			- 6603: Vgaming - Jackpot Contribution (BetType: 3898)
 			- 7401: Player Tips (BetType: 8700)
+			- 3603: SG - Promotion Prize (BetType: 4598)
 		+ @ReportType: 1: Daily, 2: Monthly
 */
 
@@ -120,6 +122,7 @@ BEGIN
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3401,%' AND BetType = 1906 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3601,%' AND BetType = 4600 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3602,%' AND BetType = 4599 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3603,%' AND BetType = 4598 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3701,%' AND BetType = 17000 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3702,%' AND BetType = 17001 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3703,%' AND BetType = 17002 THEN 1
