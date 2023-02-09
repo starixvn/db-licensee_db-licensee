@@ -1,5 +1,5 @@
 /*<info serverAlias="DBACC-bodb02" executers="Dot_Admin,Dot_Member" isFunction="0" isNested="0"></info>*/
-ALTER PROCEDURE [dbo].[DOT_Dep_Rpt_MemberSummary_Agent_V2]
+Alter PROCEDURE [dbo].[DOT_Dep_Rpt_MemberSummary_Agent_V2]
 	@fromDate smalldatetime,
 	@toDate smalldatetime,
 	@CustId INT,
@@ -74,6 +74,7 @@ Revisions:
 --20220830@Ruby(DB06.bodb02): Add Betradar Report Data
 --20220830@Ruby(DB06.bodb02): Add PP Report Data
 --20220927@Ruby(DB06.bodb02): Add BTC(SportType:175) Report Data
+--20221125@Ruby: Remove HR(Racing), MRNG, MG, CB, GG, SC(SABA Club), Live Casino(CA), HoGaming, Opus, GD, VB, LBKeno, iSoftBet(Quartz), IDNPoker Report Data
 
 */
 BEGIN
@@ -90,17 +91,11 @@ BEGIN
 		custid int PRIMARY KEY, currency int, OpeningBalance money default(0), Deposit money default(0), Aff2MemTransfer money default(0),
 		Withdrawal money default(0), Bonus money default(0), Adjustment money default(0), Turnover money default(0), Outstanding money default(0), 
 		SBDraw money default(0), SBTOver money default(0), SBWL money default(0), 
-		HRDraw money default(0), HRTOver money default(0), HRWL money default(0),
 		NODraw money default(0), NOTOver money default(0), NOWL money default(0),
-		CADraw money default(0), CATOver money default(0), CAWL money default(0), 
 		VSDraw money default(0), VSTOver money default(0), VSWL money default(0),
 		KEDraw money default(0), KETOver money default(0), KEWL money default(0), --KENO
 		RNDraw money default(0), RNTOver money default(0), RNWL money default(0), --RNG
-		MRNDraw money default(0), MRNTOver money default(0), MRNWL money default(0), --RNG Mobile
 		VBDraw money default(0), VBTOver money default(0), VBWL money default(0), --VB
-		MGDraw money default(0), MGTOver money default(0), MGWL money default(0), --MG
-		CBDraw money default(0), CBTOver money default(0), CBWL money default(0), --CB
-		GGDraw money default(0), GGTOver money default(0), GGWL money default(0), --GG
 		ALLBETDraw money default(0), ALLBETTOver money default(0), ALLBETWL money default(0), --ALLBET
 		CODraw money default(0), COTOver money default(0), COWL money default(0), --Cash Out
 		KLDraw money default(0), KLTOver money default(0), KLWL money default(0), --KENO Lottery
@@ -109,7 +104,6 @@ BEGIN
 		VGDraw money default(0), VGTOver money default(0), VGWL money default(0), --Virtual Games
 		TGDraw money default(0), TGTOver money default(0), TGWL money default(0), --Table Game
 		AECASINODraw money default(0), AECASINOTOver money default(0), AECASINOWL money default(0), --AE Casino
-		SCDraw money default(0), SCTOver money default(0), SCWL money default(0), --SABA Club
 		SADraw money default(0), SATOver money default(0), SAWL money default(0), --SA
 		H5LDraw money default(0), H5LTOver money default(0), H5LWL money default(0), --Happy 5 Linked Games
 		SLDraw money default(0), SLTOver money default(0), SLWL money default(0), --Sports Lottery
@@ -119,28 +113,22 @@ BEGIN
 		MaxGameDraw money default(0), MaxGameTOver money default(0), MaxGameWL money default(0), --MaxGame
 		BTCDraw money default(0), BTCTOver money default(0), BTCWL money default(0), --Bitcoin
 		Winloss money default(0), ClosingBalance money default(0), Transfer3rd money default(0), DrawGame money default(0),
-		recommend int, mrecommend int, srecommend int, actualrate float, Promotion money, Transfer3rd_Opus money default(0), Transfer3rd_HoGaing money default(0),
-		Transfer3rd_AG money default(0), Transfer3rd_GD money default(0), Transfer3rd_VB money default(0),Transfer3rd_CRYSTAL money default(0),Transfer3rd_LBKeno money default(0),
-		Transfer3rd_Opal money default(0), Transfer3rd_BetSoft money default(0), Transfer3rd_iSoftBet money default(0), Transfer3rd_CitiBet money default(0), Transfer3rd_Topaz money default(0),
+		recommend int, mrecommend int, srecommend int, actualrate float, Promotion money,
+		Transfer3rd_AG money default(0), Transfer3rd_CRYSTAL money default(0),
+		Transfer3rd_Opal money default(0), Transfer3rd_BetSoft money default(0), Transfer3rd_CitiBet money default(0), Transfer3rd_Topaz money default(0),
 		Transfer3rd_IMone money default(0), Transfer3rd_BTi money default(0), Transfer3rd_VRLottery money default(0), Transfer3rd_Sapphire money default(0), Transfer3rd_KYGaming money default(0),
-		Transfer3rd_Moonstone money default(0), Transfer3rd_EA money default(0), Transfer3rd_N2Live money default(0), Transfer3rd_IDNPoker money default(0), Transfer3rd_BG money default(0),
+		Transfer3rd_Moonstone money default(0), Transfer3rd_EA money default(0), Transfer3rd_N2Live money default(0), Transfer3rd_BG money default(0),
 		Transfer3rd_AVPMini money default(0),Transfer3rd_AVPSlot money default(0),Transfer3rd_EVO money default(0),Transfer3rd_Betradar money default(0), Transfer3rd_PP money default(0))
 		
 	DECLARE @WinlostTmp TABLE (
 		winlostdate datetime, custid int, currency int, OpeningBalance money default(0), Deposit money default(0), Aff2MemTransfer money default(0),
 		Withdrawal money default(0), Bonus money default(0), Adjustment money default(0), Turnover money default(0), Outstanding money default(0),
 		SBDraw money default(0), SBTOver money default(0), SBWL money default(0), 
-		HRDraw money default(0), HRTOver money default(0), HRWL money default(0),
 		NODraw money default(0), NOTOver money default(0), NOWL money default(0),
-		CADraw money default(0), CATOver money default(0), CAWL money default(0), 
 		VSDraw money default(0), VSTOver money default(0), VSWL money default(0),
 		KEDraw money default(0), KETOver money default(0), KEWL money default(0), --KENO
 		RNDraw money default(0), RNTOver money default(0), RNWL money default(0), --RNG
-		MRNDraw money default(0), MRNTOver money default(0), MRNWL money default(0), --RNG Mobile
 		VBDraw money default(0), VBTOver money default(0), VBWL money default(0), --VB
-		MGDraw money default(0), MGTOver money default(0), MGWL money default(0), --MG
-		CBDraw money default(0), CBTOver money default(0), CBWL money default(0), --CB
-		GGDraw money default(0), GGTOver money default(0), GGWL money default(0), --GG
 		ALLBETDraw money default(0), ALLBETTOver money default(0), ALLBETWL money default(0), --ALLBET
 		CODraw money default(0), COTOver money default(0), COWL money default(0), --Cash Out
 		KLDraw money default(0), KLTOver money default(0), KLWL money default(0), --KENO Lottery
@@ -149,7 +137,6 @@ BEGIN
 		VGDraw money default(0), VGTOver money default(0), VGWL money default(0), --Virtual Games
 		TGDraw money default(0), TGTOver money default(0), TGWL money default(0), --Table Game
 		AECASINODraw money default(0), AECASINOTOver money default(0), AECASINOWL money default(0), --AE Casino
-		SCDraw money default(0), SCTOver money default(0), SCWL money default(0), --SABA Club
 		SADraw money default(0), SATOver money default(0), SAWL money default(0), --SA
 		H5LDraw money default(0), H5LTOver money default(0), H5LWL money default(0), --Happy 5 Linked Games
 		SLDraw money default(0), SLTOver money default(0), SLWL money default(0), --Sports Lottery
@@ -162,10 +149,10 @@ BEGIN
 		recommend int, mrecommend int, srecommend int, actualrate float, Promotion money)
 
 	--Get Transfer 3rd Winlost data
-	DECLARE @WinlostTransfer3rd TABLE(CustId int , winlostdate datetime, Transfer3rd_Opus money, Transfer3rd_HoGaming money, Transfer3rd_AG money, Transfer3rd_GD money, Transfer3rd_VB money ,
-		Transfer3rd_CRYSTAL money, Transfer3rd_LBKeno money, Transfer3rd_Opal money, Transfer3rd_BetSoft money, Transfer3rd_iSoftBet money, Transfer3rd_CitiBet money, Transfer3rd_Topaz money,
+	DECLARE @WinlostTransfer3rd TABLE(CustId int , winlostdate datetime, Transfer3rd_AG money,
+		Transfer3rd_CRYSTAL money, Transfer3rd_Opal money, Transfer3rd_BetSoft money, Transfer3rd_CitiBet money, Transfer3rd_Topaz money,
 		Transfer3rd_IMone money, Transfer3rd_BTi money, Transfer3rd_VRLottery money, Transfer3rd_Sapphire money, Transfer3rd_KYGaming money, Transfer3rd_Moonstone money, Transfer3rd_EA money,
-		Transfer3rd_N2Live money, Transfer3rd_IDNPoker money, Transfer3rd_BG money, Transfer3rd_AVPMini money, Transfer3rd_AVPSlot money, Transfer3rd_EVO money, Transfer3rd_Betradar money, Transfer3rd_PP money)
+		Transfer3rd_N2Live money, Transfer3rd_BG money, Transfer3rd_AVPMini money, Transfer3rd_AVPSlot money, Transfer3rd_EVO money, Transfer3rd_Betradar money, Transfer3rd_PP money)
 		
 	IF (@fromDate < @CutDate) OR (@toDate < @CutDate)
 	BEGIN
@@ -173,17 +160,11 @@ BEGIN
 		SELECT b.winlostdate, b.custid, b.currency, b.OpeningBalance, b.Deposit, b.Aff2MemTransfer,
 			   b.Withdrawal, b.Bonus, b.Adjustment, b.Turnover, b.Outstanding,
 			   ISNULL(p1.SBDraw, 0) AS SBDraw, ISNULL(p1.SBTOver, 0) AS SBTOver, ISNULL(p1.SBWL, 0) AS SBWL,
-			   ISNULL(p1.HRDraw, 0) AS HRDraw, ISNULL(p1.HRTOver, 0) AS HRTOver, ISNULL(p1.HRWL, 0) AS HRWL,
 			   ISNULL(p1.NODraw, 0) AS NODraw, ISNULL(p1.NOTOver, 0) AS NOTOver, ISNULL(p1.NOWL, 0) AS NOWL,
-			   ISNULL(p1.CADraw, 0) AS CADraw, ISNULL(p1.CATOver, 0) AS CATOver, ISNULL(p1.CAWL, 0) AS CAWL,
 			   ISNULL(p1.VSDraw, 0) AS VSDraw, ISNULL(p1.VSTOver, 0) AS VSTOver, ISNULL(p1.VSWL, 0) AS VSWL,
 			   ISNULL(p1.KEDraw, 0) AS KEDraw, ISNULL(p1.KETOver, 0) AS KETOver, ISNULL(p1.KEWL, 0) AS KEWL, --KENO
 			   ISNULL(p1.RNDraw, 0) AS RNDraw, ISNULL(p1.RNTOver, 0) AS RNTOver, ISNULL(p1.RNWL, 0) AS RNWL, --RNG
-			   ISNULL(p1.MRNDraw, 0) AS MRNDraw, ISNULL(p1.MRNTOver, 0) AS MRNTOver, ISNULL(p1.MRNWL, 0) AS MRNWL, --RNG Mobile
 			   ISNULL(p1.VBDraw, 0) AS VBDraw, ISNULL(p1.VBTOver, 0) AS VBOver, ISNULL(p1.VBWL, 0) AS VBWL, --VB
-			   ISNULL(p1.MGDraw, 0) AS MGDraw, ISNULL(p1.MGTOver, 0) AS MGTOver, ISNULL(p1.MGWL, 0) AS MGWL, --MG
-			   ISNULL(p1.CBDraw, 0) AS CBDraw, ISNULL(p1.CBTOver, 0) AS CBTOver, ISNULL(p1.CBWL, 0) AS CBWL, --CB
-			   ISNULL(p1.GGDraw, 0) AS GGDraw, ISNULL(p1.GGTOver, 0) AS GGTOver, ISNULL(p1.GGWL, 0) AS GGWL, --GG
 			   ISNULL(p1.ALLBETDraw, 0) AS ALLBETDraw, ISNULL(p1.ALLBETTOver, 0) AS ALLBETTOver, ISNULL(p1.ALLBETWL, 0) AS ALLBETWL, --ALLBET
 			   ISNULL(p1.CODraw, 0) AS CODraw, ISNULL(p1.COTOver, 0) AS COTOver, ISNULL(p1.COWL, 0) AS COWL, --Cash Out
 			   ISNULL(p1.KLDraw, 0) AS KLDraw, ISNULL(p1.KLTOver, 0) AS KLTOver, ISNULL(p1.KLWL, 0) AS KLWL, --KENO Lottery
@@ -192,7 +173,6 @@ BEGIN
 			   ISNULL(p1.VGDraw, 0) AS VGDraw, ISNULL(p1.VGTOver, 0) AS VGTOver, ISNULL(p1.VGWL, 0) AS VGWL, --Virtual Games
 			   ISNULL(p1.TGDraw, 0) AS TGDraw, ISNULL(p1.TGTOver, 0) AS TGTOver, ISNULL(p1.TGWL, 0) AS TGWL, --Table Game
 			   ISNULL(p1.AECASINODraw, 0) AS AECASINODraw, ISNULL(p1.AECASINOTOver, 0) AS AECASINOTOver, ISNULL(p1.AECASINOWL, 0) AS AECASINOWL, --AE Casino
-			   ISNULL(p1.SCDraw, 0) AS SCDraw, ISNULL(p1.SCTOver, 0) AS SCTOver, ISNULL(p1.SCWL, 0) AS SCWL, --SABA Club
 			   ISNULL(p1.SADraw, 0) AS SADraw, ISNULL(p1.SATOver, 0) AS SATOver, ISNULL(p1.SAWL, 0) AS SAWL, --SA
 			   ISNULL(p1.H5LDraw, 0) AS H5LDraw, ISNULL(p1.H5LTOver, 0) AS H5LTOver, ISNULL(p1.H5LWL, 0) AS H5LWL, --Happy 5 Linked Games
 			   ISNULL(p1.SLDraw, 0) AS SLDraw, ISNULL(p1.SLTOver, 0) AS SLTOver, ISNULL(p1.SLWL, 0) AS SLWL, --Sports Lottery
@@ -209,15 +189,9 @@ BEGIN
 								SUM(CASE WHEN p.sporttype = 0 THEN p.drawTO ELSE 0 END)AS SBDraw,
 								SUM(CASE WHEN p.sporttype = 0 THEN p.turnover ELSE 0 END) AS SBTOver,
 								SUM(CASE WHEN p.sporttype = 0 THEN p.winlost ELSE 0 END) AS SBWL,
-								SUM(CASE WHEN p.sporttype = 151 THEN p.drawTO ELSE 0 END) AS HRDraw,
-								SUM(CASE WHEN p.sporttype = 151 THEN p.turnover ELSE 0 END) AS HRTOver,
-								SUM(CASE WHEN p.sporttype = 151 THEN p.winlost ELSE 0 END) AS HRWL,
 								SUM(CASE WHEN p.sporttype = 161 THEN p.drawTO ELSE 0 END) AS NODraw, 
 								SUM(CASE WHEN p.sporttype = 161 THEN p.turnover ELSE 0 END) AS NOTOver,
 								SUM(CASE WHEN p.sporttype = 161 THEN p.winlost ELSE 0 END) AS NOWL,
-								SUM(CASE WHEN p.sporttype = 162 THEN p.drawTO ELSE 0 END) AS CADraw,
-								SUM(CASE WHEN p.sporttype = 162 THEN p.turnover ELSE 0 END) AS CATOver,
-								SUM(CASE WHEN p.sporttype = 162 THEN p.winlost ELSE 0 END) AS CAWL,
 								SUM(CASE WHEN p.sporttype = 180 THEN p.drawTO ELSE 0 END) AS VSDraw, 
 								SUM(CASE WHEN p.sporttype = 180 THEN p.turnover ELSE 0 END) AS VSTOver,
 								SUM(CASE WHEN p.sporttype = 180 THEN p.winlost ELSE 0 END) AS VSWL, 
@@ -227,21 +201,9 @@ BEGIN
 								SUM(CASE WHEN p.sporttype IN (251,208,209) THEN p.drawTO ELSE 0 END) AS RNDraw ,
 								SUM(CASE WHEN p.sporttype IN (251,208,209) THEN p.turnover ELSE 0 END) AS RNTOver ,
 								SUM(CASE WHEN p.sporttype IN (251,208,209) THEN p.winlost ELSE 0 END) AS RNWL ,
-								SUM(CASE WHEN p.sporttype = 210 THEN p.drawTO ELSE 0 END) AS MRNDraw ,
-								SUM(CASE WHEN p.sporttype = 210 THEN p.turnover ELSE 0 END) AS MRNTOver ,
-								SUM(CASE WHEN p.sporttype = 210 THEN p.winlost ELSE 0 END) AS MRNWL ,
 								SUM(CASE WHEN p.sporttype = 212 THEN p.drawTO ELSE 0 END) AS VBDraw ,
 								SUM(CASE WHEN p.sporttype = 212 THEN p.turnover ELSE 0 END) AS VBTOver ,
 								SUM(CASE WHEN p.sporttype = 212 THEN p.winlost ELSE 0 END) AS VBWL ,
-								SUM(CASE WHEN p.sporttype IN (203,205) THEN p.drawTO ELSE 0 END) AS MGDraw ,
-								SUM(CASE WHEN p.sporttype IN (203,205) THEN p.turnover ELSE 0 END) AS MGTOver ,
-								SUM(CASE WHEN p.sporttype IN (203,205) THEN p.winlost ELSE 0 END) AS MGWL ,
-								SUM(CASE WHEN p.sporttype = 204 THEN p.drawTO ELSE 0 END) AS CBDraw ,
-								SUM(CASE WHEN p.sporttype = 204 THEN p.turnover ELSE 0 END) AS CBTOver ,
-								SUM(CASE WHEN p.sporttype = 204 THEN p.winlost ELSE 0 END) AS CBWL ,
-								SUM(CASE WHEN p.sporttype = 219 THEN p.drawTO ELSE 0 END) AS GGDraw ,
-								SUM(CASE WHEN p.sporttype = 219 THEN p.turnover ELSE 0 END) AS GGTOver ,
-								SUM(CASE WHEN p.sporttype = 219 THEN p.winlost ELSE 0 END) AS GGWL ,
 								SUM(CASE WHEN p.sporttype = 211 THEN p.drawTO ELSE 0 END) AS ALLBETDraw ,
 								SUM(CASE WHEN p.sporttype = 211 THEN p.turnover ELSE 0 END) AS ALLBETTOver ,
 								SUM(CASE WHEN p.sporttype = 211 THEN p.winlost ELSE 0 END) AS ALLBETWL,
@@ -266,9 +228,6 @@ BEGIN
 								SUM(CASE WHEN p.sporttype = 243 THEN p.drawTO ELSE 0 END) AS AECASINODraw,
 								SUM(CASE WHEN p.sporttype = 243 THEN p.turnover ELSE 0 END) AS AECASINOTOver,
 								SUM(CASE WHEN p.sporttype = 243 THEN p.winlost ELSE 0 END) AS AECASINOWL,
-								SUM(CASE WHEN p.sporttype = 200 THEN p.drawTO ELSE 0 END) AS SCDraw,
-								SUM(CASE WHEN p.sporttype = 200 THEN p.turnover ELSE 0 END) AS SCTOver,
-								SUM(CASE WHEN p.sporttype = 200 THEN p.winlost ELSE 0 END) AS SCWL,
 								SUM(CASE WHEN p.sporttype = 244 THEN p.drawTO ELSE 0 END) AS SADraw,
 								SUM(CASE WHEN p.sporttype = 244 THEN p.turnover ELSE 0 END) AS SATOver,
 								SUM(CASE WHEN p.sporttype = 244 THEN p.winlost ELSE 0 END) AS SAWL,
@@ -295,7 +254,7 @@ BEGIN
 								SUM(CASE WHEN p.sporttype = 175 THEN p.winlost ELSE 0 END) AS BTCWL
 						FROM bodb_Report.dbo.rptDepWinlostByProduct_BK p WITH(NOLOCK)
 						WHERE winlostdate BETWEEN @fromDate AND @toDate 
-							AND p.sporttype IN (0,151,161,162,180,190,191,192,193,202,203,204,205,210,211,212,219,220,251,208,209,-6,164,194,196,245,222,243,200,244,168,169,165,171,231,237,175) 
+							AND p.sporttype IN (0,161,180,190,191,192,193,202,211,212,220,251,208,209,-6,164,194,196,245,222,243,244,168,169,165,171,231,237,175) 
 							AND p.custid = @CustId 
 						GROUP BY p.winlostdate, p.custid
 					) p1 ON b.winlostdate = p1.winlostdate
@@ -303,21 +262,15 @@ BEGIN
 			AND b.custid = @CustId
 			AND b.recommend IN (SELECT value FROM STRING_SPLIT(@agentid,','))
 
-		INSERT INTO @WinlostTransfer3rd (CustId, winlostdate, Transfer3rd_Opus, Transfer3rd_HoGaming, Transfer3rd_AG, Transfer3rd_GD, Transfer3rd_VB ,
-			Transfer3rd_CRYSTAL, Transfer3rd_LBKeno, Transfer3rd_Opal, Transfer3rd_BetSoft, Transfer3rd_iSoftBet, Transfer3rd_CitiBet, Transfer3rd_Topaz,
+		INSERT INTO @WinlostTransfer3rd (CustId, winlostdate, Transfer3rd_AG,
+			Transfer3rd_CRYSTAL, Transfer3rd_Opal, Transfer3rd_BetSoft, Transfer3rd_CitiBet, Transfer3rd_Topaz,
 			Transfer3rd_IMone, Transfer3rd_BTi, Transfer3rd_VRLottery, Transfer3rd_Sapphire, Transfer3rd_KYGaming, Transfer3rd_Moonstone, Transfer3rd_EA,
-			Transfer3rd_N2Live, Transfer3rd_IDNPoker, Transfer3rd_BG, Transfer3rd_AVPMini, Transfer3rd_AVPSlot, Transfer3rd_EVO, Transfer3rd_Betradar, Transfer3rd_PP)
-		SELECT custid, winlostdate, 
-			SUM(CASE PartnerId WHEN 2 THEN TransferAmount ELSE 0 END), -- oops
-			SUM(CASE PartnerId WHEN 1 THEN TransferAmount ELSE 0 END), -- HoGaming
+			Transfer3rd_N2Live, Transfer3rd_BG, Transfer3rd_AVPMini, Transfer3rd_AVPSlot, Transfer3rd_EVO, Transfer3rd_Betradar, Transfer3rd_PP)
+		SELECT custid, winlostdate,
+		    SUM(CASE PartnerId WHEN 2 THEN TransferAmount ELSE 0 END), -- oops
 			SUM(CASE PartnerId WHEN 3 THEN TransferAmount ELSE 0 END), -- AG
-			SUM(CASE PartnerId WHEN 4 THEN TransferAmount ELSE 0 END),  -- GD
-			SUM(CASE PartnerId WHEN 5 THEN TransferAmount ELSE 0 END),  -- VB
 			SUM(CASE PartnerId WHEN 7 THEN TransferAmount ELSE 0 END), -- CRYSTAL
-			SUM(CASE PartnerId WHEN 8 THEN TransferAmount ELSE 0 END), -- LBKeno
-			SUM(CASE PartnerId WHEN 9 THEN TransferAmount ELSE 0 END), -- Opal
 			SUM(CASE PartnerId WHEN 10 THEN TransferAmount ELSE 0 END), -- BetSoft(Amber)
-			SUM(CASE PartnerId WHEN 11 THEN TransferAmount ELSE 0 END), -- iSoftBet(Quartz)
 			SUM(CASE PartnerId WHEN 12 THEN TransferAmount ELSE 0 END), -- CitiBet(Exchange)
 			SUM(CASE WHEN PartnerId IN (13,18) THEN TransferAmount ELSE 0 END), -- Topaz(FG)
 			SUM(CASE PartnerId WHEN 14 THEN TransferAmount ELSE 0 END), -- IMone
@@ -328,7 +281,6 @@ BEGIN
 			SUM(CASE PartnerId WHEN 20 THEN TransferAmount ELSE 0 END), -- Moonstone
 			SUM(CASE PartnerId WHEN 21 THEN TransferAmount ELSE 0 END), -- EA
 			SUM(CASE PartnerId WHEN 22 THEN TransferAmount ELSE 0 END), -- N2Live
-			SUM(CASE PartnerId WHEN 23 THEN TransferAmount ELSE 0 END), -- IDNPoker
 			SUM(CASE PartnerId WHEN 24 THEN TransferAmount ELSE 0 END), -- BG
 			SUM(CASE PartnerId WHEN 25 THEN TransferAmount ELSE 0 END), -- AVPMini
 			SUM(CASE PartnerId WHEN 26 THEN TransferAmount ELSE 0 END), -- AVPSlot
@@ -347,17 +299,11 @@ BEGIN
 		SELECT b.winlostdate, b.custid, b.currency, b.OpeningBalance, b.Deposit, b.Aff2MemTransfer,
 			   b.Withdrawal, b.Bonus, b.Adjustment, b.Turnover, b.Outstanding,
 			   ISNULL(p1.SBDraw, 0) AS SBDraw, ISNULL(p1.SBTOver, 0) AS SBTOver, ISNULL(p1.SBWL, 0) AS SBWL,
-			   ISNULL(p1.HRDraw, 0) AS HRDraw, ISNULL(p1.HRTOver, 0) AS HRTOver, ISNULL(p1.HRWL, 0) AS HRWL,
 			   ISNULL(p1.NODraw, 0) AS NODraw, ISNULL(p1.NOTOver, 0) AS NOTOver, ISNULL(p1.NOWL, 0) AS NOWL,
-			   ISNULL(p1.CADraw, 0) AS CADraw, ISNULL(p1.CATOver, 0) AS CATOver, ISNULL(p1.CAWL, 0) AS CAWL,
 			   ISNULL(p1.VSDraw, 0) AS VSDraw, ISNULL(p1.VSTOver, 0) AS VSTOver, ISNULL(p1.VSWL, 0) AS VSWL,
 			   ISNULL(p1.KEDraw, 0) AS KEDraw, ISNULL(p1.KETOver, 0) AS KETOver, ISNULL(p1.KEWL, 0) AS KEWL, --KENO
 			   ISNULL(p1.RNDraw, 0) AS RNDraw, ISNULL(p1.RNTOver, 0) AS RNTOver, ISNULL(p1.RNWL, 0) AS RNWL, --RNG
-			   ISNULL(p1.MRNDraw, 0) AS MRNDraw, ISNULL(p1.MRNTOver, 0) AS MRNTOver, ISNULL(p1.MRNWL, 0) AS MRNWL, --RNG Mobile
 			   ISNULL(p1.VBDraw, 0) AS VBDraw, ISNULL(p1.VBTOver, 0) AS VBOver, ISNULL(p1.VBWL, 0) AS VBWL, --VB
-			   ISNULL(p1.MGDraw, 0) AS MGDraw, ISNULL(p1.MGTOver, 0) AS MGTOver, ISNULL(p1.MGWL, 0) AS MGWL, --MG
-			   ISNULL(p1.CBDraw, 0) AS CBDraw, ISNULL(p1.CBTOver, 0) AS CBTOver, ISNULL(p1.CBWL, 0) AS CBWL, --CB
-			   ISNULL(p1.GGDraw, 0) AS GGDraw, ISNULL(p1.GGTOver, 0) AS GGTOver, ISNULL(p1.GGWL, 0) AS GGWL, --GG
 			   ISNULL(p1.ALLBETDraw, 0) AS ALLBETDraw, ISNULL(p1.ALLBETTOver, 0) AS ALLBETTOver, ISNULL(p1.ALLBETWL, 0) AS ALLBETWL, --ALLBET
 			   ISNULL(p1.CODraw, 0) AS CODraw, ISNULL(p1.COTOver, 0) AS COTOver, ISNULL(p1.COWL, 0) AS COWL, --Cash Out
 			   ISNULL(p1.KLDraw, 0) AS KLDraw, ISNULL(p1.KLTOver, 0) AS KLTOver, ISNULL(p1.KLWL, 0) AS KLWL, --KENO Lottery
@@ -366,7 +312,6 @@ BEGIN
 			   ISNULL(p1.VGDraw, 0) AS VGDraw, ISNULL(p1.VGTOver, 0) AS VGTOver, ISNULL(p1.VGWL, 0) AS VGWL, --Virtual Games
 			   ISNULL(p1.TGDraw, 0) AS TGDraw, ISNULL(p1.TGTOver, 0) AS TGTOver, ISNULL(p1.TGWL, 0) AS TGWL, --Table Game
 			   ISNULL(p1.AECASINODraw, 0) AS AECASINODraw, ISNULL(p1.AECASINOTOver, 0) AS AECASINOTOver, ISNULL(p1.AECASINOWL, 0) AS AECASINOWL, --AE Casino
-			   ISNULL(p1.SCDraw, 0) AS SCDraw, ISNULL(p1.SCTOver, 0) AS SCTOver, ISNULL(p1.SCWL, 0) AS SCWL, --SABA Club
 			   ISNULL(p1.SADraw, 0) AS SADraw, ISNULL(p1.SATOver, 0) AS SATOver, ISNULL(p1.SAWL, 0) AS SAWL, --SA
 			   ISNULL(p1.H5LDraw, 0) AS H5LDraw, ISNULL(p1.H5LTOver, 0) AS H5LTOver, ISNULL(p1.H5LWL, 0) AS H5LWL, --Happy 5 Linked Games
 			   ISNULL(p1.SLDraw, 0) AS SLDraw, ISNULL(p1.SLTOver, 0) AS SLTOver, ISNULL(p1.SLWL, 0) AS SLWL, --Sports Lottery
@@ -383,15 +328,9 @@ BEGIN
 								SUM(CASE WHEN p.sporttype = 0 THEN p.drawTO ELSE 0 END) AS SBDraw,
 								SUM(CASE WHEN p.sporttype = 0 THEN p.turnover ELSE 0 END) AS SBTOver,
 								SUM(CASE WHEN p.sporttype = 0 THEN p.winlost ELSE 0 END) AS SBWL,
-								SUM(CASE WHEN p.sporttype = 151 THEN p.drawTO ELSE 0 END) AS HRDraw,
-								SUM(CASE WHEN p.sporttype = 151 THEN p.turnover ELSE 0 END) AS HRTOver,
-								SUM(CASE WHEN p.sporttype = 151 THEN p.winlost ELSE 0 END) AS HRWL,
 								SUM(CASE WHEN p.sporttype = 161 THEN p.drawTO ELSE 0 END) AS NODraw, 
 								SUM(CASE WHEN p.sporttype = 161 THEN p.turnover ELSE 0 END) AS NOTOver,
 								SUM(CASE WHEN p.sporttype = 161 THEN p.winlost ELSE 0 END) AS NOWL,
-								SUM(CASE WHEN p.sporttype = 162 THEN p.drawTO ELSE 0 END) AS CADraw,
-								SUM(CASE WHEN p.sporttype = 162 THEN p.turnover ELSE 0 END) AS CATOver,
-								SUM(CASE WHEN p.sporttype = 162 THEN p.winlost ELSE 0 END) AS CAWL,
 								SUM(CASE WHEN p.sporttype = 180 THEN p.drawTO ELSE 0 END) AS VSDraw, 
 								SUM(CASE WHEN p.sporttype = 180 THEN p.turnover ELSE 0 END) AS VSTOver,
 								SUM(CASE WHEN p.sporttype = 180 THEN p.winlost ELSE 0 END) AS VSWL, 
@@ -401,21 +340,9 @@ BEGIN
 								SUM(CASE WHEN p.sporttype IN (251,208,209) THEN p.drawTO ELSE 0 END) AS RNDraw ,
 								SUM(CASE WHEN p.sporttype IN (251,208,209) THEN p.turnover ELSE 0 END) AS RNTOver ,
 								SUM(CASE WHEN p.sporttype IN (251,208,209) THEN p.winlost ELSE 0 END) AS RNWL ,
-								SUM(CASE WHEN p.sporttype = 210 THEN p.drawTO ELSE 0 END) AS MRNDraw ,
-								SUM(CASE WHEN p.sporttype = 210 THEN p.turnover ELSE 0 END) AS MRNTOver ,
-								SUM(CASE WHEN p.sporttype = 210 THEN p.winlost ELSE 0 END) AS MRNWL ,
 								SUM(CASE WHEN p.sporttype = 212 THEN p.drawTO ELSE 0 END) AS VBDraw ,
 								SUM(CASE WHEN p.sporttype = 212 THEN p.turnover ELSE 0 END) AS VBTOver ,
 								SUM(CASE WHEN p.sporttype = 212 THEN p.winlost ELSE 0 END) AS VBWL ,
-								SUM(CASE WHEN p.sporttype IN (203,205) THEN p.drawTO ELSE 0 END) AS MGDraw ,
-								SUM(CASE WHEN p.sporttype IN (203,205) THEN p.turnover ELSE 0 END) AS MGTOver ,
-								SUM(CASE WHEN p.sporttype IN (203,205) THEN p.winlost ELSE 0 END) AS MGWL  ,
-								SUM(CASE WHEN p.sporttype = 204 THEN p.drawTO ELSE 0 END) AS CBDraw ,
-								SUM(CASE WHEN p.sporttype = 204 THEN p.turnover ELSE 0 END) AS CBTOver ,
-								SUM(CASE WHEN p.sporttype = 204 THEN p.winlost ELSE 0 END) AS CBWL ,
-								SUM(CASE WHEN p.sporttype = 219 THEN p.drawTO ELSE 0 END) AS GGDraw ,
-								SUM(CASE WHEN p.sporttype = 219 THEN p.turnover ELSE 0 END) AS GGTOver ,
-								SUM(CASE WHEN p.sporttype = 219 THEN p.winlost ELSE 0 END) AS GGWL ,
 								SUM(CASE WHEN p.sporttype = 211 THEN p.drawTO ELSE 0 END) AS ALLBETDraw ,
 								SUM(CASE WHEN p.sporttype = 211 THEN p.turnover ELSE 0 END) AS ALLBETTOver ,
 								SUM(CASE WHEN p.sporttype = 211 THEN p.winlost ELSE 0 END) AS ALLBETWL,
@@ -440,9 +367,6 @@ BEGIN
 								SUM(CASE WHEN p.sporttype = 243 THEN p.drawTO ELSE 0 END) AS AECASINODraw,
 								SUM(CASE WHEN p.sporttype = 243 THEN p.turnover ELSE 0 END) AS AECASINOTOver,
 								SUM(CASE WHEN p.sporttype = 243 THEN p.winlost ELSE 0 END) AS AECASINOWL,
-								SUM(CASE WHEN p.sporttype = 200 THEN p.drawTO ELSE 0 END) AS SCDraw,
-								SUM(CASE WHEN p.sporttype = 200 THEN p.turnover ELSE 0 END) AS SCTOver,
-								SUM(CASE WHEN p.sporttype = 200 THEN p.winlost ELSE 0 END) AS SCWL,
 								SUM(CASE WHEN p.sporttype = 244 THEN p.drawTO ELSE 0 END) AS SADraw,
 								SUM(CASE WHEN p.sporttype = 244 THEN p.turnover ELSE 0 END) AS SATOver,
 								SUM(CASE WHEN p.sporttype = 244 THEN p.winlost ELSE 0 END) AS SAWL,
@@ -470,7 +394,7 @@ BEGIN
 
 						FROM bodb_Report.dbo.rptDepWinlostByProduct p WITH(NOLOCK)
 						WHERE winlostdate BETWEEN @fromDate AND @toDate 
-							AND p.sporttype IN (0,151,161,162,180,190,191,192,193,202,203,204,205,210,211,212,219,220,251,208,209,-6,164,194,196,245,222,243,200,244,168,169,165,171,231,237,175)
+							AND p.sporttype IN (0,161,180,190,191,192,193,202,211,212,220,251,208,209,-6,164,194,196,245,222,243,244,168,169,165,171,231,237,175)
 							AND p.custid = @CustId 
 						GROUP BY p.winlostdate, p.custid
 					) p1 ON b.winlostdate = p1.winlostdate
@@ -479,21 +403,15 @@ BEGIN
 			AND b.custid = @CustId
 			AND b.recommend IN (SELECT value FROM STRING_SPLIT(@agentid,','))
 
-		INSERT INTO @WinlostTransfer3rd (CustId, winlostdate, Transfer3rd_Opus, Transfer3rd_HoGaming, Transfer3rd_AG, Transfer3rd_GD, Transfer3rd_VB,
-			Transfer3rd_CRYSTAL, Transfer3rd_LBKeno, Transfer3rd_Opal, Transfer3rd_BetSoft, Transfer3rd_iSoftBet, Transfer3rd_CitiBet, Transfer3rd_Topaz,
+		INSERT INTO @WinlostTransfer3rd (CustId, winlostdate, Transfer3rd_AG,
+			Transfer3rd_CRYSTAL, Transfer3rd_Opal, Transfer3rd_BetSoft, Transfer3rd_CitiBet, Transfer3rd_Topaz,
 			Transfer3rd_IMone, Transfer3rd_BTi, Transfer3rd_VRLottery, Transfer3rd_Sapphire, Transfer3rd_KYGaming, Transfer3rd_Moonstone, Transfer3rd_EA,
-			Transfer3rd_N2Live, Transfer3rd_IDNPoker, Transfer3rd_BG, Transfer3rd_AVPMini, Transfer3rd_AVPSlot, Transfer3rd_EVO, Transfer3rd_Betradar, Transfer3rd_PP)
+			Transfer3rd_N2Live, Transfer3rd_BG, Transfer3rd_AVPMini, Transfer3rd_AVPSlot, Transfer3rd_EVO, Transfer3rd_Betradar, Transfer3rd_PP)
 		SELECT custid, winlostdate, 
-			SUM(CASE PartnerId WHEN 2 THEN TransferAmount ELSE 0 END), -- oops
-			SUM(CASE PartnerId WHEN 1 THEN TransferAmount ELSE 0 END), -- HoGaming
 			SUM(CASE PartnerId WHEN 3 THEN TransferAmount ELSE 0 END), -- AG
-			SUM(CASE PartnerId WHEN 4 THEN TransferAmount ELSE 0 END), -- GD
-			SUM(CASE PartnerId WHEN 5 THEN TransferAmount ELSE 0 END),  -- VB
 			SUM(CASE PartnerId WHEN 7 THEN TransferAmount ELSE 0 END), -- CRYSTAL
-			SUM(CASE PartnerId WHEN 8 THEN TransferAmount ELSE 0 END), -- LBKeno
 			SUM(CASE PartnerId WHEN 9 THEN TransferAmount ELSE 0 END), -- Opal
 			SUM(CASE PartnerId WHEN 10 THEN TransferAmount ELSE 0 END), -- BetSoft(Amber)
-			SUM(CASE PartnerId WHEN 11 THEN TransferAmount ELSE 0 END), -- iSoftBet(Quartz)
 			SUM(CASE PartnerId WHEN 12 THEN TransferAmount ELSE 0 END), -- CitiBet(Exchange)
 			SUM(CASE WHEN PartnerId IN (13,18) THEN TransferAmount ELSE 0 END), -- Topaz(FG)
 			SUM(CASE PartnerId WHEN 14 THEN TransferAmount ELSE 0 END), -- IMone
@@ -504,7 +422,6 @@ BEGIN
 			SUM(CASE PartnerId WHEN 20 THEN TransferAmount ELSE 0 END), -- Moonstone
 			SUM(CASE PartnerId WHEN 21 THEN TransferAmount ELSE 0 END), -- EA
 			SUM(CASE PartnerId WHEN 22 THEN TransferAmount ELSE 0 END), -- N2Live
-			SUM(CASE PartnerId WHEN 23 THEN TransferAmount ELSE 0 END), -- IDNPoker
 			SUM(CASE PartnerId WHEN 24 THEN TransferAmount ELSE 0 END), -- BG
 			SUM(CASE PartnerId WHEN 25 THEN TransferAmount ELSE 0 END), -- AVPMini
 			SUM(CASE PartnerId WHEN 26 THEN TransferAmount ELSE 0 END), -- AVPSlot
@@ -526,12 +443,12 @@ BEGIN
 
 		INSERT INTO @TodayData (custid, currency, recommend, mrecommend, srecommend,
 					OpeningBalance, Deposit, Aff2MemTransfer, Withdrawal, Bonus, Adjustment,
-					Transfer3rd, Turnover, DrawGame, Outstanding, Winloss, Transfer3rd_Opus, 
-					Transfer3rd_HoGaing, Transfer3rd_AG, Transfer3rd_GD, Transfer3rd_VB,
-					Transfer3rd_CRYSTAL, Transfer3rd_LBKeno, Transfer3rd_Opal, Transfer3rd_BetSoft,
-					Transfer3rd_iSoftBet, Transfer3rd_CitiBet, Transfer3rd_Topaz, Transfer3rd_IMone,
+					Transfer3rd, Turnover, DrawGame, Outstanding, Winloss, 
+					Transfer3rd_AG,
+					Transfer3rd_CRYSTAL, Transfer3rd_Opal, Transfer3rd_BetSoft,
+					Transfer3rd_CitiBet, Transfer3rd_Topaz, Transfer3rd_IMone,
 					Transfer3rd_BTi, Transfer3rd_VRLottery, Transfer3rd_Sapphire, Transfer3rd_KYGaming,
-					Transfer3rd_Moonstone, Transfer3rd_EA, Transfer3rd_N2Live, Transfer3rd_IDNPoker, Transfer3rd_BG, Transfer3rd_AVPMini, Transfer3rd_AVPSlot, Transfer3rd_EVO, Transfer3rd_Betradar, Transfer3rd_PP, Promotion)		
+					Transfer3rd_Moonstone, Transfer3rd_EA, Transfer3rd_N2Live, Transfer3rd_BG, Transfer3rd_AVPMini, Transfer3rd_AVPSlot, Transfer3rd_EVO, Transfer3rd_Betradar, Transfer3rd_PP, Promotion)		
 		SELECT 
 			ISNULL(B.custid,T.CustId) AS custid,
 			ISNULL(B.currency, T.Currency) AS Currency, 
@@ -539,12 +456,12 @@ BEGIN
 			ISNULL(B.mrecommend, T.mrecommend) AS mrecommend, 
 			ISNULL(B.srecommend, T.srecommend) AS srecommend,
 			@TodayOpeningBalance AS OpeningBalance, ISNULL(Deposit, 0), ISNULL(Aff2MemTransfer, 0), ISNULL(Withdrawal, 0), ISNULL(Bonus, 0), ISNULL(Adjustment, 0),
-			ISNULL(Transfer3rd, 0), ISNULL(Turnover, 0), ISNULL(DrawGame, 0), ISNULL(Outstanding, 0), ISNULL(Winloss, 0), ISNULL(Transfer3rd_Opus, 0), 
-			ISNULL(Transfer3rd_HoGaing, 0), ISNULL(Transfer3rd_AG, 0), ISNULL(Transfer3rd_GD, 0), ISNULL(Transfer3rd_VB, 0),
-			ISNULL(Transfer3rd_CRYSTAL, 0), ISNULL(Transfer3rd_LBKeno, 0), ISNULL(Transfer3rd_Opal, 0), ISNULL(Transfer3rd_BetSoft, 0),
-			ISNULL(Transfer3rd_iSoftBet, 0), ISNULL(Transfer3rd_CitiBet, 0), ISNULL(Transfer3rd_Topaz, 0), ISNULL(Transfer3rd_IMone, 0),
+			ISNULL(Transfer3rd, 0), ISNULL(Turnover, 0), ISNULL(DrawGame, 0), ISNULL(Outstanding, 0), ISNULL(Winloss, 0),
+			ISNULL(Transfer3rd_AG, 0),
+			ISNULL(Transfer3rd_CRYSTAL, 0), ISNULL(Transfer3rd_Opal, 0), ISNULL(Transfer3rd_BetSoft, 0),
+			ISNULL(Transfer3rd_CitiBet, 0), ISNULL(Transfer3rd_Topaz, 0), ISNULL(Transfer3rd_IMone, 0),
 			ISNULL(Transfer3rd_BTi, 0), ISNULL(Transfer3rd_VRLottery, 0), ISNULL(Transfer3rd_Sapphire, 0), ISNULL(Transfer3rd_KYGaming, 0),
-			ISNULL(Transfer3rd_Moonstone, 0), ISNULL(Transfer3rd_EA, 0), ISNULL(Transfer3rd_N2Live, 0), ISNULL(Transfer3rd_IDNPoker, 0), 
+			ISNULL(Transfer3rd_Moonstone, 0), ISNULL(Transfer3rd_EA, 0), ISNULL(Transfer3rd_N2Live, 0),
 			ISNULL(Transfer3rd_BG, 0), ISNULL(Transfer3rd_AVPMini, 0), ISNULL(Transfer3rd_AVPSlot, 0), ISNULL(Transfer3rd_EVO, 0), ISNULL(Transfer3rd_Betradar, 0), ISNULL(Transfer3rd_PP, 0), ISNULL(Promotion, 0)
 		FROM
 		(
@@ -568,16 +485,10 @@ BEGIN
 				SUM(CASE WHEN bettype = 22004 THEN winlost-actual_stake ELSE 0 END) AS 'Bonus',
 				SUM(CASE WHEN bettype IN (21001,21002,21003,21004,21005,22005) THEN winlost-actual_stake ELSE 0 END) AS 'Adjustment',
 				SUM(CASE WHEN bettype IN (22006,22007) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd',
-				SUM(CASE WHEN bettype IN (22010,22011) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_Opus', 
-				SUM(CASE WHEN bettype IN (22008,22009) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_HoGaing', 
 				SUM(CASE WHEN bettype IN (22014,22015) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_AG', 
-				SUM(CASE WHEN bettype IN (22016,22017) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_GD',
-				SUM(CASE WHEN bettype IN (22018,22019) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_VB',
 				SUM(CASE WHEN bettype IN (22020,22021) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_CRYSTAL',
-				SUM(CASE WHEN bettype IN (22022,22023) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_LBKeno',
 				SUM(CASE WHEN bettype IN (22024,22025) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_Opal',
 				SUM(CASE WHEN bettype IN (22026,22027) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_BetSoft',
-				SUM(CASE WHEN bettype IN (22028,22029) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_iSoftBet',
 				SUM(CASE WHEN bettype IN (22030,22031) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_CitiBet',
 				SUM(CASE WHEN bettype IN (22032,22033,22042,22043) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_Topaz',
 				SUM(CASE WHEN bettype IN (22034,22035) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_IMone',
@@ -588,7 +499,6 @@ BEGIN
 				SUM(CASE WHEN bettype IN (22046,22047) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_Moonstone',
 				SUM(CASE WHEN bettype IN (22048,22049) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_EA',
 				SUM(CASE WHEN bettype IN (22050,22051) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_N2Live',
-				SUM(CASE WHEN bettype IN (22052,22053) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_IDNPoker',
 				SUM(CASE WHEN bettype IN (22054,22055) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_BG',
 				SUM(CASE WHEN bettype IN (22056,22057) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_AVPMini',
 				SUM(CASE WHEN bettype IN (22058,22059) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_AVPSlot',
@@ -605,25 +515,20 @@ BEGIN
 		
 		UPDATE d
 		SET ClosingBalance = OpeningBalance + Deposit + Aff2MemTransfer - Withdrawal + Bonus + Adjustment - Outstanding + Winloss + 
-			Transfer3rd + Transfer3rd_HoGaing + Transfer3rd_Opus + Transfer3rd_AG + Transfer3rd_GD + Transfer3rd_VB + Transfer3rd_CRYSTAL + Transfer3rd_LBKeno + Transfer3rd_Opal + Transfer3rd_BetSoft +
-			Transfer3rd_iSoftBet + Transfer3rd_CitiBet + Transfer3rd_Topaz + Transfer3rd_IMone + Transfer3rd_BTi + Transfer3rd_VRLottery + Transfer3rd_Sapphire + Transfer3rd_KYGaming + Transfer3rd_Moonstone +
-			Transfer3rd_EA + Transfer3rd_N2Live + Transfer3rd_IDNPoker + Transfer3rd_BG + Transfer3rd_AVPMini + Transfer3rd_AVPSlot + Transfer3rd_EVO + Transfer3rd_Betradar + Transfer3rd_PP + Promotion,
+			Transfer3rd + Transfer3rd_AG + Transfer3rd_CRYSTAL + Transfer3rd_Opal + Transfer3rd_BetSoft +
+			Transfer3rd_CitiBet + Transfer3rd_Topaz + Transfer3rd_IMone + Transfer3rd_BTi + Transfer3rd_VRLottery + Transfer3rd_Sapphire + Transfer3rd_KYGaming + Transfer3rd_Moonstone +
+			Transfer3rd_EA + Transfer3rd_N2Live + Transfer3rd_BG + Transfer3rd_AVPMini + Transfer3rd_AVPSlot + Transfer3rd_EVO + Transfer3rd_Betradar + Transfer3rd_PP + Promotion,
 			actualrate = e.ActualRate
 		FROM @TodayData d 
 			INNER JOIN exchangedailyoanda e WITH(NOLOCK) ON d.currency = e.ExchangeId
 		
 		UPDATE d
 		SET SBDraw = ISNULL(p1.SBDraw,0), SBTOver = ISNULL(p1.SBTOver,0), SBWL = ISNULL(p1.SBWL,0),
-			HRDraw = ISNULL(p1.HRDraw,0), HRTOver = ISNULL(p1.HRTOver,0), HRWL = ISNULL(p1.HRWL,0),
 			NODraw = ISNULL(p1.NODraw,0), NOTOver = ISNULL(p1.NOTOver,0), NOWL = ISNULL(p1.NOWL,0),
-			CADraw = ISNULL(p1.CADraw,0), CATOver = ISNULL(p1.CATOver,0), CAWL = ISNULL(p1.CAWL,0),
 			VSDraw = ISNULL(p1.VSDraw,0), VSTOver = ISNULL(p1.VSTOver,0), VSWL = ISNULL(p1.VSWL,0),
 			KEDraw = ISNULL(p1.KEDraw,0), KETOver = ISNULL(p1.KETOver,0), KEWL = ISNULL(p1.KEWL,0),  --KENO
 			RNDraw = ISNULL(p1.RNDraw,0), RNTOver = ISNULL(p1.RNTOver,0), RNWL = ISNULL(p1.RNWL,0),  --RNG
-			MRNDraw = ISNULL(p1.MRNDraw,0), MRNTOver = ISNULL(p1.MRNTOver,0), MRNWL = ISNULL(p1.MRNWL,0),  --MRNG
 			VBDraw = ISNULL(p1.VBDraw,0), VBTOver = ISNULL(p1.VBTOver,0), VBWL = ISNULL(p1.VBWL,0),  --VB
-			MGDraw = ISNULL(p1.MGDraw,0), MGTOver = ISNULL(p1.MGTOver,0), MGWL = ISNULL(p1.MGWL,0), --MG
-			GGDraw = ISNULL(p1.GGDraw,0), GGTOver = ISNULL(p1.GGTOver,0), GGWL = ISNULL(p1.GGWL,0), --GG
 			ALLBETDraw = ISNULL(p1.ALLBETDraw,0), ALLBETTOver = ISNULL(p1.ALLBETTOver,0), ALLBETWL = ISNULL(p1.ALLBETWL,0),  --ALLBET
 			CODraw = ISNULL(p1.CODraw,0), COTOver = ISNULL(p1.COTOver,0), COWL = ISNULL(p1.COWL,0), --Cash Out
 			KLDraw = ISNULL(p1.KLDraw,0), KLTOver = ISNULL(p1.KLTOver,0), KLWL = ISNULL(p1.KLWL,0), --KENO Lottery
@@ -632,7 +537,6 @@ BEGIN
 			VGDraw = ISNULL(p1.VGDraw,0), VGTOver = ISNULL(p1.VGTOver,0), VGWL = ISNULL(p1.VGWL,0),  --Virtual Games
 			TGDraw = ISNULL(p1.TGDraw,0), TGTOver = ISNULL(p1.TGTOver,0), TGWL = ISNULL(p1.TGWL,0),  --Table Game
 			AECASINODraw = ISNULL(p1.AECASINODraw,0), AECASINOTOver = ISNULL(p1.AECASINOTOver,0), AECASINOWL = ISNULL(p1.AECASINOWL,0), --AE Casino
-			SCDraw = ISNULL(p1.SCDraw,0), SCTOver = ISNULL(p1.SCTOver,0), SCWL = ISNULL(p1.SCWL,0),  --SABA Club
 			SADraw = ISNULL(p1.SADraw,0), SATOver = ISNULL(p1.SATOver,0), SAWL = ISNULL(p1.SAWL,0),  --SA
 			H5LDraw = ISNULL(p1.H5LDraw,0), H5LTOver = ISNULL(p1.H5LTOver,0), H5LWL = ISNULL(p1.H5LWL,0),  --Happy 5 Linked Games
 			SLDraw = ISNULL(p1.SLDraw,0), SLTOver = ISNULL(p1.SLTOver,0), SLWL = ISNULL(p1.SLWL,0),  --Sports Lottery
@@ -648,15 +552,9 @@ BEGIN
 							   SUM(CASE WHEN p.sporttype = 0 THEN p.drawTO ELSE 0 END) AS SBDraw,
 							   SUM(CASE WHEN p.sporttype = 0 THEN p.turnover ELSE 0 END) AS SBTOver,
 							   SUM(CASE WHEN p.sporttype = 0 THEN p.winlost ELSE 0 END) AS SBWL,
-							   SUM(CASE WHEN p.sporttype = 151 THEN p.drawTO ELSE 0 END) AS HRDraw,
-							   SUM(CASE WHEN p.sporttype = 151 THEN p.turnover ELSE 0 END) AS HRTOver,
-							   SUM(CASE WHEN p.sporttype = 151 THEN p.winlost ELSE 0 END) AS HRWL,
 							   SUM(CASE WHEN p.sporttype = 161 THEN p.drawTO ELSE 0 END) AS NODraw, 
 							   SUM(CASE WHEN p.sporttype = 161 THEN p.turnover ELSE 0 END) AS NOTOver,
 							   SUM(CASE WHEN p.sporttype = 161 THEN p.winlost ELSE 0 END) AS NOWL,
-							   SUM(CASE WHEN p.sporttype = 162 THEN p.drawTO ELSE 0 END) AS CADraw,
-							   SUM(CASE WHEN p.sporttype = 162 THEN p.turnover ELSE 0 END) AS CATOver,
-							   SUM(CASE WHEN p.sporttype = 162 THEN p.winlost ELSE 0 END) AS CAWL,
 							   SUM(CASE WHEN p.sporttype = 180 THEN p.drawTO ELSE 0 END) AS VSDraw, 
 							   SUM(CASE WHEN p.sporttype = 180 THEN p.turnover ELSE 0 END) AS VSTOver,
 							   SUM(CASE WHEN p.sporttype = 180 THEN p.winlost ELSE 0 END) AS VSWL, 
@@ -666,21 +564,9 @@ BEGIN
 							   SUM(CASE WHEN p.sporttype IN (251,208,209) THEN p.drawTO ELSE 0 END) AS RNDraw ,
 							   SUM(CASE WHEN p.sporttype IN (251,208,209) THEN p.turnover ELSE 0 END) AS RNTOver ,
 							   SUM(CASE WHEN p.sporttype IN (251,208,209) THEN p.winlost ELSE 0 END) AS RNWL ,
-							   SUM(CASE WHEN p.sporttype = 210 THEN p.drawTO ELSE 0 END) AS MRNDraw ,
-							   SUM(CASE WHEN p.sporttype = 210 THEN p.turnover ELSE 0 END) AS MRNTOver ,
-							   SUM(CASE WHEN p.sporttype = 210 THEN p.winlost ELSE 0 END) AS MRNWL ,
 							   SUM(CASE WHEN p.sporttype = 212 THEN p.drawTO ELSE 0 END) AS VBDraw ,
 							   SUM(CASE WHEN p.sporttype = 212 THEN p.turnover ELSE 0 END) AS VBTOver ,
 							   SUM(CASE WHEN p.sporttype = 212 THEN p.winlost ELSE 0 END) AS VBWL ,
-							   SUM(CASE WHEN p.sporttype IN (203,205) THEN p.drawTO ELSE 0 END) AS MGDraw ,
-							   SUM(CASE WHEN p.sporttype IN (203,205) THEN p.turnover ELSE 0 END) AS MGTOver ,
-							   SUM(CASE WHEN p.sporttype IN (203,205) THEN p.winlost ELSE 0 END) AS MGWL ,
-							   SUM(CASE WHEN p.sporttype = 204 THEN p.drawTO ELSE 0 END) AS CBDraw ,
-							   SUM(CASE WHEN p.sporttype = 204 THEN p.turnover ELSE 0 END) AS CBTOver ,
-							   SUM(CASE WHEN p.sporttype = 204 THEN p.winlost ELSE 0 END) AS CBWL ,
-							   SUM(CASE WHEN p.sporttype = 219 THEN p.drawTO ELSE 0 END) AS GGDraw ,
-							   SUM(CASE WHEN p.sporttype = 219 THEN p.turnover ELSE 0 END) AS GGTOver ,
-							   SUM(CASE WHEN p.sporttype = 219 THEN p.winlost ELSE 0 END) AS GGWL ,
 							   SUM(CASE WHEN p.sporttype = 211 THEN p.drawTO ELSE 0 END) AS ALLBETDraw ,
 							   SUM(CASE WHEN p.sporttype = 211 THEN p.turnover ELSE 0 END) AS ALLBETTOver ,
 							   SUM(CASE WHEN p.sporttype = 211 THEN p.winlost ELSE 0 END) AS ALLBETWL,
@@ -705,9 +591,6 @@ BEGIN
 							   SUM(CASE WHEN p.sporttype = 243 THEN p.drawTO ELSE 0 END) AS AECASINODraw,
 							   SUM(CASE WHEN p.sporttype = 243 THEN p.turnover ELSE 0 END) AS AECASINOTOver,
 							   SUM(CASE WHEN p.sporttype = 243 THEN p.winlost ELSE 0 END) AS AECASINOWL,
-							   SUM(CASE WHEN p.sporttype = 200 THEN p.drawTO ELSE 0 END) AS SCDraw,
-							   SUM(CASE WHEN p.sporttype = 200 THEN p.turnover ELSE 0 END) AS SCTOver,
-							   SUM(CASE WHEN p.sporttype = 200 THEN p.winlost ELSE 0 END) AS SCWL,
 							   SUM(CASE WHEN p.sporttype = 244 THEN p.drawTO ELSE 0 END) AS SADraw,
 							   SUM(CASE WHEN p.sporttype = 244 THEN p.turnover ELSE 0 END) AS SATOver,
 							   SUM(CASE WHEN p.sporttype = 244 THEN p.winlost ELSE 0 END) AS SAWL,
@@ -734,16 +617,15 @@ BEGIN
 							   SUM(CASE WHEN p.sporttype = 175 THEN p.winlost ELSE 0 END) AS BTCWL
 						FROM bodb_Report.dbo.rptDepWinlostByProduct p WITH(NOLOCK)
 						WHERE winlostdate = @dbtodaydate
-							AND p.sporttype IN (0,151,161,162,180,190,191,192,193,202,203,204,205,210,211,212,219,220,251,208,209,-6,164,194,196,245,222,243,200,244,168,169,165,171,231,237,175)
+							AND p.sporttype IN (0,161,180,190,191,192,193,202,211,212,220,251,208,209,-6,164,194,196,245,222,243,244,168,169,165,171,231,237,175)
 							AND p.custid = @CustId 
 						GROUP BY p.winlostdate, p.custid
 					) p1 ON d.custid = p1.custid
 	END
 
-	SELECT b.*,ISNULL(o.Transfer3rd_Opus,0) AS Transfer3rd_Opus,ISNULL(o.Transfer3rd_HoGaming,0) AS Transfer3rd_HoGaming, ISNULL(o.Transfer3rd_AG,0) AS Transfer3rd_AG,
-		   ISNULL(o.Transfer3rd_GD, 0) AS Transfer3rd_GD, ISNULL(o.Transfer3rd_VB, 0) AS Transfer3rd_VB, ISNULL(o.Transfer3rd_CRYSTAL, 0) AS Transfer3rd_CRYSTAL,
-		   ISNULL(o.Transfer3rd_LBKeno, 0) AS Transfer3rd_LBKeno, ISNULL(o.Transfer3rd_Opal, 0) AS Transfer3rd_Opal, ISNULL(o.Transfer3rd_BetSoft, 0) AS Transfer3rd_BetSoft,
-		   ISNULL(o.Transfer3rd_iSoftBet, 0) AS Transfer3rd_iSoftBet,
+	SELECT b.*,ISNULL(o.Transfer3rd_AG,0) AS Transfer3rd_AG,
+		   ISNULL(o.Transfer3rd_CRYSTAL, 0) AS Transfer3rd_CRYSTAL,
+		   ISNULL(o.Transfer3rd_Opal, 0) AS Transfer3rd_Opal, ISNULL(o.Transfer3rd_BetSoft, 0) AS Transfer3rd_BetSoft,
 		   ISNULL(o.Transfer3rd_CitiBet, 0) AS Transfer3rd_CitiBet,
 		   ISNULL(o.Transfer3rd_Topaz, 0) AS Transfer3rd_Topaz,
 		   ISNULL(o.Transfer3rd_IMone, 0) AS Transfer3rd_IMone,
@@ -754,7 +636,6 @@ BEGIN
 		   ISNULL(o.Transfer3rd_Moonstone, 0) AS Transfer3rd_Moonstone,
 		   ISNULL(o.Transfer3rd_EA, 0) AS Transfer3rd_EA,
 		   ISNULL(o.Transfer3rd_N2Live, 0) AS Transfer3rd_N2Live,
-		   ISNULL(o.Transfer3rd_IDNPoker, 0) AS Transfer3rd_IDNPoker,
 		   ISNULL(o.Transfer3rd_BG, 0) AS Transfer3rd_BG,
 		   ISNULL(o.Transfer3rd_AVPMini, 0) AS Transfer3rd_AVPMini,
 		   ISNULL(o.Transfer3rd_AVPSlot, 0) AS Transfer3rd_AVPSlot,
@@ -767,5 +648,4 @@ BEGIN
 	SELECT @dbtodaydate, d.* FROM @TodayData d
 	ORDER BY b.winlostdate
 END
-
 
