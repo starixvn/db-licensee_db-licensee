@@ -2,6 +2,15 @@
 CREATE OR ALTER PROCEDURE dbo.LAP_Rpt_WInlossAnalysis_ProductSel
 	@LicenseeID		INT = 1
 AS
+/*
+	Created: 20230209@Bobby
+	Task: 172604 - LAP - Winloss Analysis - GEN Bettrans
+	DB: DBEXT.bodb02
+
+	Revisions:
+		- 20230209@Bobby: Created [RedmineID: #172604]
+		
+*/
 BEGIN
 	SET NOCOUNT ON;
 
