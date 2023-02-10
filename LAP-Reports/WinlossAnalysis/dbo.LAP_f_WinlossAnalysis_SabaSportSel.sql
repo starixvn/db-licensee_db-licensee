@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" viewers="" isFunction="1" isNested="0"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="" viewers="" isFunction="1" isNested="0"></info>*/
 CREATE OR ALTER FUNCTION [dbo].[LAP_f_WinlossAnalysis_SabaSportSel] ()
 RETURNS TABLE
 AS
