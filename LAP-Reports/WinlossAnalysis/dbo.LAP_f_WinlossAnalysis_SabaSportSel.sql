@@ -1,8 +1,16 @@
-USE bodb02;
-GO
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" viewers="" isFunction="1" isNested="0"></info>*/
 CREATE OR ALTER FUNCTION [dbo].[LAP_f_WinlossAnalysis_SabaSportSel] ()
 RETURNS TABLE
 AS
+/*
+	Created: 20230209@Bobby
+	Task: 172604 - LAP - Winloss Analysis - GEN Bettrans
+	DB: DBEXT.bodb02
+
+	Revisions:
+		- 20230209@Bobby: Created [RedmineID: #172604]
+		
+*/
 RETURN
 	WITH cteProduct AS (
 		SELECT 1 AS ProductId, 
