@@ -15,11 +15,14 @@ RETURN
 	WITH cteProduct AS (
 		SELECT 1 AS ProductId, 
 			'Sportsbook' AS ProductName, 
-			-3 AS SportType, 
+			-2 AS SabaSportType, 
 			'SABA Soccer' AS SportName, 
 			'SB' AS ProductCode, 
-			903 AS SportOrder, 
-			'{"Sporttype":1, "LeagueGroupID": [42,74,108]}' AS SporttypeRef
+			902 AS SportOrder, 
+			'{"Sporttype":1, "LeagueGroupID": [42,74]}' AS SporttypeRef
+		UNION ALL
+		SELECT 1, 'Sportsbook', -3, 'SABA Futsal', 'SB', 903,
+			'{"Sporttype":1, "LeagueGroupID": [108]}'
 		UNION ALL
 		SELECT 1, 'Sportsbook', -4, 'SABA Soccer PinGoal', 'SB', 904,
 			'{"Sporttype":1, "LeagueGroupID": [113]}'
@@ -36,9 +39,8 @@ RETURN
 		SELECT 1, 'Sportsbook', -8, 'SABA Cricket', 'SB', 908,
 			'{"Sporttype":50, "LeagueGroupID": [42]}'
 		UNION ALL
-		SELECT 1, 'Sportsbook', -2, 'Castout', 'SB', 902, NULL
-		UNION ALL
-		SELECT 1, 'Sportsbook', -1, 'Parlay', 'SB', 901, NULL
+		SELECT 1, 'Sportsbook', -1, 'Parlay', 'SB', 909, 
+			'{"Sporttype":1, "LeagueGroupID": []}'
 	)
-	SELECT ProductID, SportType, ProductName, SportName, ProductCode, SportOrder, SporttypeRef
+	SELECT ProductID, SabaSportType, ProductName, SportName, ProductCode, SportOrder, SporttypeRef
 	FROM cteProduct;
