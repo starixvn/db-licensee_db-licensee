@@ -17,6 +17,7 @@ RETURNS TABLE
 		- 20220126@Kos: Integrate Spadegaming Jackpot [RedmineID: #167035]
 		- 20220223@Kos: Integrate Allbet Promotion [RedmineID: #167524]
 		- 20220801@Victoria: Add DBSID-bodb02 to metadata [Redmine: #175297]
+		- 20230208@Evan: Inteagrate SG promotion prize [RedmineID: #183497]
 */
 
 RETURN
@@ -55,4 +56,7 @@ RETURN
 	SELECT 'SG', 4600									-- Spadegaming Jackpot Prize
 	UNION ALL
 	SELECT 'AB', 2499									-- Allbet Promotion
+	UNION ALL
+	SELECT 'SG', 4598									-- SG promotion prize
+
 GO
