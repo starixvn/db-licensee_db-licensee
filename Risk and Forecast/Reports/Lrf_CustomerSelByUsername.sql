@@ -33,6 +33,7 @@ AS
 		- 20210611@Johnson: exclude dummy accounts [redmine:#156408]
 		- 20210806@Johnson: extend @CustomerClass VARCHAR(1000) [redmine:#159754]
 		- 20211111@Sol: Split Transfer out of bettrans/Support IPv6 - [RedmineID: #164301]
+		- 20230227@Evan: Ensure correct balance calculation when allow to transfer 247 (BU) [Redmine: #173554]
 	Parameter's explanations:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 		+ @SpecialLevel: '1,2,3,4,5,6,7,8,9,10' (all)
@@ -554,8 +555,8 @@ BEGIN
 	INSERT INTO @MBBU (BalanceUpDay, MoveBetsDay)
 	EXEC dbo.Age_SelBalanceUpDay
 
-	DECLARE @MoveBetsDay SMALLDATETIME
-	SELECT  @MoveBetsDay = MoveBetsDay FROM @MBBU
+	DECLARE @MoveBetsDay SMALLDATETIME, @BalanceUpDate SMALLDATETIME
+	SELECT  @MoveBetsDay = MoveBetsDay, @BalanceUpDate = BalanceUpDay FROM @MBBU
 
 	---insert data totalbalance
 	--bettrans
@@ -580,7 +581,10 @@ BEGIN
 	FROM
 		#Temp t
 		INNER JOIN dbo.Transfer b WITH(NOLOCK) ON t.custid = b.custid
-	WHERE (bettype = 19999 AND winlostdate <= @MoveBetsDay OR b.Bettype > 19999)
+	WHERE  1 = CASE WHEN bettype = 19999 AND winlostdate > @MoveBetsDay THEN 0 --> new sum
+	            WHEN bettype = 20000 AND winlostdate > @BalanceUpDate THEN 0 --> new bal
+	            WHEN winlostdate < @BalanceUpDate THEN 0 --> old data
+	            ELSE 1 END
 	GROUP BY t.custid
 
 	INSERT INTO #data(custid, TotalBalance,Outstanding)
