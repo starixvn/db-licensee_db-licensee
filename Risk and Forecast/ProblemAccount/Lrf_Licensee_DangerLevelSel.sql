@@ -21,6 +21,7 @@ AS
 		
 	Revisions:
 		- 20221109@Tacy: Create SP [RedmineID: #179078]
+		- 20230228@Tacy: HF - LAP - Player Segmentation - Saba Virtual Setting - Duplicate datalog
 
 	Paramter's Explanations:
 		@Sporttype	= "1,2"
