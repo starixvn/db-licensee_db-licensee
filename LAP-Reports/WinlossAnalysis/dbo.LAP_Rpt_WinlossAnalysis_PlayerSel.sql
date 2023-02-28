@@ -32,7 +32,7 @@ CREATE OR ALTER PROCEDURE dbo.LAP_Rpt_WinlossAnalysis_PlayerSel
 AS
 /*
 	Created: 20230209@Bobby
-	Task: 172604 - LAP - Winloss Analysis - GEN Bettrans
+	Task: 172604 - LAP - Winloss Analysis - Player mode
 	DB: DBEXT.bodb02
 
 	Revisions:

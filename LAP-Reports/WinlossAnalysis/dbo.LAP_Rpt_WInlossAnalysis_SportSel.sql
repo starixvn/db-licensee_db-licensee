@@ -5,7 +5,7 @@ CREATE OR ALTER PROCEDURE dbo.LAP_Rpt_WinlossAnalysis_SportSel
 AS
 /*
 	Created: 20230209@Bobby
-	Task: 172604 - LAP - Winloss Analysis - GEN Bettrans
+	Task: 172604 - LAP - Winloss Analysis - Get filtering sporttype
 	DB: DBEXT.bodb02
 
 	Revisions:
@@ -21,7 +21,7 @@ BEGIN
 			INNER JOIN bodb02.dbo.Sports s WITH(NOLOCK) ON S.SportType = m.SportType
 			WHERE p.ProductID = 1
 			UNION ALL
-			SELECT 0 AS ProductID, ProductName, SportType, SportName, ProductCode, SportOrder
+			SELECT 0 AS ProductID, ProductName, SabaSportType AS SportType, SportName, ProductCode, SportOrder
 			FROM bodb02.[dbo].[LAP_f_WinlossAnalysis_SabaSportSel] ()
 	),
 	CTE_Product3rd AS (

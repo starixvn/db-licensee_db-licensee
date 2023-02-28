@@ -4,7 +4,7 @@ RETURNS TABLE
 AS
 /*
 	Created: 20230209@Bobby
-	Task: 172604 - LAP - Winloss Analysis - GEN Bettrans
+	Task: 172604 - LAP - Winloss Analysis - SABA sporttype config
 	DB: DBEXT.bodb02
 
 	Revisions:

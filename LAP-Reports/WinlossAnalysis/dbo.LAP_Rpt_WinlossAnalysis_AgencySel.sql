@@ -26,7 +26,7 @@ CREATE OR ALTER PROCEDURE dbo.LAP_Rpt_WinlossAnalysis_AgencySel
 AS
 /*
 	Created: 20230209@Bobby
-	Task: 172604 - LAP - Winloss Analysis - GEN Bettrans
+	Task: 172604 - LAP - Winloss Analysis - Agent mode
 	DB: DBEXT.bodb02
 
 	Revisions:
@@ -205,7 +205,7 @@ BEGIN
 	IF @SBBACheck & 4 = 0 -- 0.SB
 		AND @SBBACheck & 8 = 8 -- 1.BA
 	BEGIN
-		SELECT @ProductCheck = CONCAT(@ProductCheck,',SB') WHERE CHARINDEX('BTC',@ProductCheck)=0;;
+		SELECT @ProductCheck = CONCAT(@ProductCheck,',SB') WHERE CHARINDEX('SB',@ProductCheck)=0;;
 	END
 
 	DROP TABLE IF EXISTS #tmpBettype;
