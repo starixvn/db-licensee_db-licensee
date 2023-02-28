@@ -154,6 +154,7 @@ BEGIN
 			CROSS APPLY (VALUES(CAST(ul.TrackingValue as xml))) AS v(Casted)
 			CROSS APPLY v.Casted.nodes('/R') AS x(Control)
 		WHERE ul.ActionID BETWEEN 1191 AND 1194
+		 AND NOT EXISTS (SELECT 1 FROM #CustLog t WHERE t.CustId=ul.custid AND t.ActionID=ul.ActionID AND t.LogDate=ul.LogDate)
 	)
 	INSERT INTO #CustLog (CustId, LogDate, NewLevel, ActionID)
 	SELECT CustId, LogDate, NewLevel, ActionID
