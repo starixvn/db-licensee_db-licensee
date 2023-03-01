@@ -64,7 +64,7 @@ BEGIN
 				ISNULL(SUM(ISNULL(winlost,0) - ISNULL(actual_stake,0) + ISNULL(playercomm,0)),0) AS ClosingBalance
 		FROM @tmpAg c
 			INNER JOIN bettrans b WITH (NOLOCK) ON b.recommend = c.custid
-		WHERE b.bettype < 19999 AND b.winlostdate > @MoveBetsDay
+		WHERE b.winlostdate > @MoveBetsDay
 		GROUP BY b.custid, c.CurrCode
 
 		---from transfer

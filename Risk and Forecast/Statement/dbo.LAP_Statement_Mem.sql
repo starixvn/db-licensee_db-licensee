@@ -252,11 +252,9 @@ BEGIN
 
 				FROM 
 					bodb02.dbo.bettrans b WITH (NOLOCK)  
-
 				WHERE
 					custid = @_CustID  
 					AND winlostdate >= @_tempStartDate
-					AND b.bettype < 19999
 					AND b.bettype NOT IN (903, 71, 913, 914)
 					AND ((@IsCOMember = 0 AND bettype <> 912) OR (@IsCOMember = 1 AND bettype <> 911))
 					AND 1 = CASE 

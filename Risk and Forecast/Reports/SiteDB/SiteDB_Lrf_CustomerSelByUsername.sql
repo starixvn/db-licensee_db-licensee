@@ -587,7 +587,7 @@ BEGIN
 		#Temp t
 		INNER JOIN bettrans b WITH(NOLOCK) ON t.custid = b.custid
 	WHERE b.matchid >= 0
-		AND	bettype < 19999 AND winlostdate > @MoveBetsDay
+		AND winlostdate > @MoveBetsDay
 	GROUP BY t.custid
 
 	--transfer

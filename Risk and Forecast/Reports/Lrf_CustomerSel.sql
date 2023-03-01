@@ -598,7 +598,7 @@ BEGIN
 		INNER JOIN dbo.bettrans b WITH(NOLOCK) ON t.custid = b.custid
 		LEFT JOIN #ExchangeRate e ON e.ExchangeID = b.currency
 	WHERE b.matchid >= 0
-		AND	bettype < 19999 AND winlostdate > @MoveBetsDay
+		AND winlostdate > @MoveBetsDay
 	GROUP BY t.custid
 
 	--transfer
