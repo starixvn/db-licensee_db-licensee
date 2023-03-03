@@ -13,6 +13,7 @@ AS
 	Revisions:
 		- 20181225@Amanda: Select products that licensees all have [Redmine: #83584]
 		- 20220518@Kos: Change to use STRING_SPLIT [Redmine: #171831]
+      	- 20230303@Evan: Remove inactive products CB, FW, GD, GDG [Redmine: 181424]  
 */
 
 BEGIN
@@ -45,7 +46,7 @@ BEGIN
 	SELECT p.ProductPrefix, p.ProductName
 	FROM dbo.Product3rd p WITH(NOLOCK)
 		INNER JOIN @OfferedProduct o ON p.Productid = o.Id
-
+	WHERE p.Enabled = 1
 	IF EXISTS (SELECT 1 FROM @OfferedProduct WHERE Id = 0)
 	BEGIN
 		INSERT INTO @Product (ProductCode, ProductName)

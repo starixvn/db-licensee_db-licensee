@@ -27,6 +27,7 @@ AS
 		- 20220601@Hogan: Integrate MaxGame [RedmineID: #172919]
 		- 20220301@Eden: Deposit - Sportsbook - Revise customer settings [Redmine: #167898]
 		- 20230130@Evan: Integrate Jili [RedmineID: #182914]
+	    - 20230303@Evan: Remove inactive products CB, FW, GD, GDG [Redmine: 181424]  
 */
 
  /*
@@ -62,7 +63,7 @@ BEGIN
 			p.ProductId
 			,p.ProductName
 			,p.ProductPrefix AS  ProductCode
-			,CASE WHEN p.ProductID IN (10,11,12) OR ApplyDCS = 1 THEN 0 ELSE 1 END 
+			,CASE WHEN p.ProductID IN (10,11) OR ApplyDCS = 1 THEN 0 ELSE 1 END 
 		FROM dbo.Product3rd p WITH (NOLOCK) 
 			INNER JOIN dbo.LicenseeProduct3rd lp WITH (NOLOCK) ON p.ProductId = lp.ProductId
 		WHERE lp.LicenseeID  = @LicenseeID
@@ -83,17 +84,6 @@ BEGIN
 				UPDATE @tblProductActive
 				SET isEnable = 1
 				WHERE ProductID = 10
-		END
-
-		IF EXISTS (SELECT 1 FROM @tblProductActive WHERE ProductID = 12)	-- Vegas Games
-		BEGIN 
-			IF EXISTS (SELECT 1
-				FROM DBCUST.CustDB.dbo.Dep_SupperProductSetting s WITH (NOLOCK)
-					INNER JOIN @tblSuper su ON s.CustID = su.SrecommendID
-				WHERE s.ProductID = 12 AND IsEnabled = 1)
-				UPDATE @tblProductActive
-				SET isEnable = 1
-				WHERE ProductID = 12
 		END
 
 		--check DCS setting
@@ -134,10 +124,8 @@ BEGIN
 			43,--	I4D
 			63,--	SLT
 			62,--	Creative Gaming
-			
 			--20210629@Johnson: add more products
 			6,--	RnG Casino
-			15,--	Colossus Bets
 			25,--	Cash Out
 			31,--	Exchange
 			32,--	Pragmatic
@@ -160,4 +148,4 @@ BEGIN
 	ORDER BY ProductID ASC
 END
 
-GO 
+GO

@@ -16,6 +16,7 @@ AS
 		- 20181112@Amanda: Remove Product from Licensee [Redmine: #83584]
 		- 20181228@Amanda: Modify to allow remove multi products for multi licensees[Redmine: #83584]
 		- 20220518@Kos: Change to use STRING_SPLIT [Redmine: #171831]
+	    - 20230303@Evan: Remove inactive products CB, FW, GD, GDG [Redmine: 181424]  
 */
 
 BEGIN
@@ -178,16 +179,6 @@ BEGIN
 					@IsDelete = 1
 			END
 			
-			IF (@IsRemovePullService = 1 
-				AND EXISTS (SELECT 1 FROM @tblProductPrefix WHERE ProductCode = 'GD')
-				AND EXISTS (SELECT 1 FROM DBPTCS.bodb_PlaytechCS.dbo.LicIntegrationSetting WITH (NOLOCK) WHERE LicenseeID = @LicenseeId AND SettingName = 'GoldDeluxe_VersionKey'))
-			BEGIN
-				EXEC [DBPTCS].[bodb_PlaytechCS].[dbo].[Nap_LM_PullServiceSetting]
-					@LicenseeID = @LicenseeId, 
-					@LicenseeName = @LicenseeName, 
-					@SettingName = 'GoldDeluxe_VersionKey',
-					@IsDelete = 1
-			END
 		END
 
 		SET @n = @n + 1

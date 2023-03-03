@@ -10,6 +10,7 @@ AS
 	 
 	 Revisions:
 	  - 20181101@Amanda: Select Product [Redmine: #83584]
+  	  - 20230303@Evan: Exclude inactive products [Redmine: 181424]  
 */
 BEGIN
 	SET NOCOUNT ON;
@@ -18,5 +19,6 @@ BEGIN
 	UNION
 	SELECT p.ProductPrefix AS ProductCode, p.ProductName
 	FROM dbo.Product3rd p WITH (NOLOCK)
+	WHERE p.Enabled = 1
 END
 GO

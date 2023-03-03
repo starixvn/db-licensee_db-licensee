@@ -21,6 +21,7 @@ AS
 		- 20190419@Amanda: Move code from DBA_Lrf_OfferProduct to this [Redmine: #111321]
 		- 20191202@Amanda: Remove OA_ tables [Redmine: #119443]
 		- 20220518@Kos: Change to use STRING_SPLIT [Redmine: #171831]
+	    - 20230303@Evan: Remove inactive products CB, FW, GD, GDG [Redmine: 181424]  
 */
 
 BEGIN
@@ -197,11 +198,6 @@ BEGIN
 			IF EXISTS (SELECT 1 FROM #tblLicenseeProduct WHERE ProductCode = 'AGC') AND @IsPullService =1
 			BEGIN
 				EXEC DBPTCS.bodb_PlaytechCS.[dbo].[Nap_LM_PullServiceSetting] @LicenseeID = @LicenseeId, @LicenseeName = @Licensee, @SettingName ='AGCasino_VersionKey'
-			END
-
-			IF EXISTS (SELECT 1 FROM #tblLicenseeProduct WHERE ProductCode = 'GD') AND @IsPullService =1  
-			BEGIN
-				EXEC DBPTCS.bodb_PlaytechCS.[dbo].[Nap_LM_PullServiceSetting] @LicenseeID = @LicenseeId, @LicenseeName = @Licensee, @SettingName ='GoldDeluxe_VersionKey'
 			END
 
 			-- 3.5 Config BA

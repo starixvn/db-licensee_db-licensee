@@ -16,6 +16,7 @@ CREATE PROCEDURE [dbo].[Nap_LM_Function_GetByProduct]
 		- 20190422@Amanda: Remove Racing from LRF [Redmine: #99378]
 		- 20190422@Amanda: Remove MicroGaming [Redmine: #107704]
 		- 20191202@Amanda: Remove LA functions and inactive LRF functions [Redmine: #119443]
+	    - 20230303@Evan: Remove inactive products CB, FW, GD, GDG [Redmine: 181424]  
 */
 AS
 BEGIN
@@ -83,32 +84,6 @@ BEGIN
 								)
 	END	
 
-	IF @ProductCode = 'GD'
-	BEGIN 
-		INSERT INTO @tblFunctions (ProductId, FunctionId,TypeID)
-		SELECT	11 AS ProductId -- GD
-				,FunctionID  
-				,1 AS TypeId	 -- Lrf Function
-		FROM dbo.Functions WITH (NOLOCK)
-		WHERE FunctionId    IN (
-									3  -- REPORTS
-								,65 -- Gold Deluxe Winloss
-								)
-	END
-
-	IF @ProductCode = 'CB'
-	BEGIN
-		INSERT INTO @tblFunctions (ProductId, FunctionId,TypeID)
-		SELECT	15 AS ProductId -- CB
-				,FunctionID  
-				,1 AS TypeId	 -- Lrf Function
-		FROM dbo.Functions WITH (NOLOCK)
-		WHERE FunctionId    IN (
-									3  -- REPORTS
-								,71 -- Colossus Bets Win loss
-								)
-	END
-		
 	IF @ProductCode = 'CO'
 	BEGIN
 		INSERT INTO @tblFunctions (ProductId, FunctionId,TypeID)
