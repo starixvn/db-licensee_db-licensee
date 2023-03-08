@@ -19,6 +19,7 @@ AS
 		- 20200220@Louis: Cheat currency name for HID Currency [RedmineID: #128816]
 		- 20211006@Howard: New China View Skin, hard code INH2 Currency [RedmineID: #161966]
 		- 20221010@Kos: Support crypto currency [Redmine: 177481]
+		- 20230208@Kai: Hard code USDTJP, USDT currency [Redmine: 183455]
 */
 
 BEGIN
@@ -41,7 +42,9 @@ BEGIN
 			WHEN lc.currency = 76 THEN 'PS'
 			WHEN lc.currency = 77 THEN 'PTH'
 			WHEN lc.currency = 92 THEN 'HID'
+			WHEN lc.currency = 96 THEN 'USDT'
 			WHEN lc.currency = 125 THEN 'INH'
+			WHEN lc.currency = 202 THEN 'USDTJP'
 			-- crypto currencies
 			WHEN lc.currency = 142 THEN 'USDT'
 			WHEN e.CurrencyType = 1 THEN e.currency
@@ -62,7 +65,9 @@ BEGIN
 			WHEN lc.currency = 76 THEN 'PS'
 			WHEN lc.currency = 77 THEN 'PTH'
 			WHEN lc.currency = 92 THEN 'HID'
+			WHEN lc.currency = 96 THEN 'USDT'
 			WHEN lc.currency = 125 THEN 'INH'
+			WHEN lc.currency = 202 THEN 'USDTJP'
 			-- crypto currencies
 			WHEN lc.currency = 142 THEN 'USDT'
 			WHEN e.CurrencyType = 1 THEN e.currency
