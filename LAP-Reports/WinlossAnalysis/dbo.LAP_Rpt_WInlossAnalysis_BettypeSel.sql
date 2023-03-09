@@ -14,20 +14,20 @@ AS
 */
 BEGIN
 	WITH CTE_Sportbook AS (
-			SELECT DISTINCT m.SportType
+			SELECT DISTINCT m.SportType, m.SportType AS SportOrder
 			FROM bodb02.dbo.SportBettypeMatrix m WITH(NOLOCK)
 			WHERE m.ProductID = 1
 			UNION ALL
-			SELECT SabaSportType AS SportType
+			SELECT SabaSportType AS SportType, SportOrder
 			FROM bodb02.[dbo].[LAP_f_WinlossAnalysis_SabaSportSel] ()
 	),
 	CTE_Product3rd AS (
 		----------- default SB Product
-		SELECT SportType
+		SELECT SportType, SportOrder
 		FROM CTE_Sportbook sb
 		--------------3rd Products
 		UNION ALL
-		SELECT m.SportType
+		SELECT m.SportType, SportType
 		FROM bodb_licensee.dbo.Product3rd p3 WITH(NOLOCK)
 		INNER JOIN bodb_licensee.dbo.LicenseeProduct3rd lp WITH(NOLOCK) ON p3.ProductID = lp.ProductID
 		LEFT JOIN bodb02.dbo.Products p WITH(NOLOCK) ON p.ProductPrefix = p3.ProductPrefix 
@@ -55,7 +55,7 @@ BEGIN
 	),
 	result AS (
 		SELECT DISTINCT	ISNULL(saba.SportType, p.SportType) AS SportType, 
-			ISNULL(saba.SabaSportType,0) AS SabaSportType
+			ISNULL(saba.SabaSportType,0) AS SabaSportType, SportOrder
 		FROM CTE_Product3rd AS p
 		OUTER APPLY (
 			SELECT TOP 1 1 AS HasValue 
@@ -66,16 +66,19 @@ BEGIN
 		WHERE p.SportType NOT IN (150, 173) --exclude free games
 			AND (ISNULL(@SportIDs, 'ALL') = 'ALL' OR ck.HasValue = 1 )
 	)
-	SELECT DISTINCT IIF(rs.SabaSportType <> 0, rs.SabaSportType, rs.SportType) AS SportType, m.Bettype
-	FROM result rs
-		INNER JOIN bodb02.dbo.SportBettypeMatrix m WITH(NOLOCK) ON m.SportType = rs.SportType
-		LEFT JOIN bodb02.[dbo].[Lrf_f_SelExcludedBetType]() e ON e.BetType = m.BetType
-	WHERE e.BetType IS NULL
-		AND 1 = CASE 
-					WHEN rs.SabaSportType <> -1 THEN 1
-					WHEN rs.SabaSportType = -1 AND m.BetType = 29 THEN 1 
-					ELSE 0 
-				END
-	ORDER BY IIF(rs.SabaSportType <> 0, rs.SabaSportType, rs.SportType), m.Bettype
+	SELECT bt.SportType, bt.Bettype 
+	FROM (
+		SELECT DISTINCT IIF(rs.SabaSportType <> 0, rs.SabaSportType, rs.SportType) AS SportType, m.Bettype, SportOrder
+		FROM result rs
+			INNER JOIN bodb02.dbo.SportBettypeMatrix m WITH(NOLOCK) ON m.SportType = rs.SportType
+			LEFT JOIN bodb02.[dbo].[Lrf_f_SelExcludedBetType]() e ON e.BetType = m.BetType
+		WHERE e.BetType IS NULL
+			AND 1 = CASE 
+						WHEN rs.SabaSportType <> -1 THEN 1
+						WHEN rs.SabaSportType = -1 AND m.BetType = 29 THEN 1 
+						ELSE 0 
+					END
+	) AS bt
+	ORDER BY SportOrder, Bettype
 END
 GO
