@@ -289,9 +289,9 @@ BEGIN
 	WHERE EXISTS (SELECT TOP 1 1 FROM @AgencySel a WHERE a.Currency = e.ExchangeID)
 
 	-- TODO: filter raw data
-	IF @ToDate >= @MovebetDay --> get data in bettrans
+	IF @ToDate > @MovebetDay --> get data in bettrans
 	BEGIN
-		SELECT @rptFromDate = DATEADD(DAY,1,@MovebetDay)--@today
+		SELECT @rptFromDate = DATEADD(DAY,1,@MovebetDay)
 			, @rptToDate	= @ToDate;
 
 		INSERT INTO #rptData (GroupBy, BreakBy, ParentKey,

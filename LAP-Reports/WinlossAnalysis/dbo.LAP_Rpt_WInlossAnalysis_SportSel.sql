@@ -15,7 +15,7 @@ AS
 BEGIN
 	WITH CTE_SportbookBA AS (
 			SELECT DISTINCT 0 AS ProductID, p.ProductName, 
-				s.SportType, s.SportName, p.ProductPrefix AS ProductCode, s.SportType AS SportOrder
+				s.SportType, s.SportName, CONCAT(p.ProductPrefix,',BA') AS ProductCode, s.SportType AS SportOrder
 			FROM bodb02.dbo.SportBettypeMatrix m WITH(NOLOCK)
 			INNER JOIN bodb02.dbo.Products p WITH(NOLOCK) ON p.ProductID = m.ProductID
 			INNER JOIN bodb02.dbo.Sports s WITH(NOLOCK) ON S.SportType = m.SportType
@@ -76,3 +76,4 @@ BEGIN
 	ORDER BY ProductID
 		, SportOrder
 END
+GO

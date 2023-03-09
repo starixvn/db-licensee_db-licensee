@@ -333,9 +333,9 @@ BEGIN
 	WHERE EXISTS (SELECT TOP 1 1 FROM @AgencySel a WHERE a.Currency = e.ExchangeID)
 
 	-- TODO: filter raw data
-	IF @ToDate >= @MovebetDay --> get data in bettrans
+	IF @ToDate > @MovebetDay --> get data in bettrans
 	BEGIN
-		SELECT @rptFromDate = DATEADD(DAY,1,@MovebetDay)--@today
+		SELECT @rptFromDate = DATEADD(DAY,1,@MovebetDay)
 			, @rptToDate	= @ToDate;
 
 		INSERT INTO #rptData (GroupBy, BreakBy, ParentKey,
@@ -612,7 +612,7 @@ BEGIN
 		--HAVING SUM(b.NetTurnover) > 0;
 	END
 
-	IF @FromDate <= @MovebetDay -- get sum data from @MovebetDay vs backward
+	IF @FromDate <= @MovebetDay -- get sum data from @MovebetDay
 	BEGIN
 		SELECT @rptFromDate = @FromDate
 			, @rptToDate	= IIF(@ToDate >= @MovebetDay, @MovebetDay, @ToDate);
