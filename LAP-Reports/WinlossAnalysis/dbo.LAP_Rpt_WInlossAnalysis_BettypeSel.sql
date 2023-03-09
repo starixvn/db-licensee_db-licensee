@@ -66,7 +66,7 @@ BEGIN
 		WHERE p.SportType NOT IN (150, 173) --exclude free games
 			AND (ISNULL(@SportIDs, 'ALL') = 'ALL' OR ck.HasValue = 1 )
 	)
-	SELECT DISTINCT rs.SportType, m.Bettype
+	SELECT DISTINCT IIF(rs.SabaSportType <> 0, rs.SabaSportType, rs.SportType) AS SportType, m.Bettype
 	FROM result rs
 		INNER JOIN bodb02.dbo.SportBettypeMatrix m WITH(NOLOCK) ON m.SportType = rs.SportType
 		LEFT JOIN bodb02.[dbo].[Lrf_f_SelExcludedBetType]() e ON e.BetType = m.BetType
@@ -76,5 +76,6 @@ BEGIN
 					WHEN rs.SabaSportType = -1 AND m.BetType = 29 THEN 1 
 					ELSE 0 
 				END
-	ORDER BY rs.SportType, m.Bettype
+	ORDER BY IIF(rs.SabaSportType <> 0, rs.SabaSportType, rs.SportType), m.Bettype
 END
+GO
