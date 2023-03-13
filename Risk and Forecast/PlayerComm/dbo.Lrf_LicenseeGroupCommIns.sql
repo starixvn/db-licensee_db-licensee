@@ -37,6 +37,9 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeGroupCommIns]
 	@AdvantComm			DECIMAL(9,8) = 0,
 	@AdvantMiniComm		DECIMAL(9,8) = 0,
 	@VS3Comm			DECIMAL(9,8) = 0,
+	@MaxGameComm		DECIMAL(9,8) = 0,
+	@FGGComm			DECIMAL(9,8) = 0,
+	@JiliComm			DECIMAL(9,8) = 0,
 
 	@GroupColor VARCHAR(20),
 	@UserID INT,
@@ -74,7 +77,7 @@ Revisions:
 	- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 	- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586] 
 	- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
-	
+	- 20230313@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 Param's Explanation:
 
 */
@@ -126,6 +129,10 @@ BEGIN
 		OR @AdvantComm > 0.15
 		OR @AdvantMiniComm > 0.15
 		OR @VS3Comm > 0.15
+		
+		OR @MaxGameComm > 0.15
+		OR @FGGComm > 0.15
+		OR @JiliComm > 0.15
 	BEGIN
 		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN  'Player Commission should not greater than 0.15'
 										ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200002,@Langkey)
@@ -181,6 +188,10 @@ BEGIN
 											,AdvantComm
 											,AdvantMiniComm
 											,VS3Comm
+											
+											,MaxGameComm
+											,FGGComm
+											,JiliComm
 											)
 		VALUES (@LicenseeID,@GroupName,@SBComm,@NGComm,@GroupColor,@IsDefault,@RNGComm,@ParlayComm
 				,@AllbetComm
@@ -210,6 +221,10 @@ BEGIN
 				,@AdvantComm
 				,@AdvantMiniComm
 				,@VS3Comm
+				
+				,@MaxGameComm
+				,@FGGComm
+				,@JiliComm
 				)
 		
 		IF (@@ERROR <> 0)
@@ -263,7 +278,10 @@ BEGIN
 		'AdvantComm="'+ COALESCE(CAST(@AdvantComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'AdvantMiniComm="'+ COALESCE(CAST(@AdvantMiniComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'VS3Comm="'+ COALESCE(CAST(@VS3Comm as VARCHAR(50)),SPACE(1)) + '" '+
-
+		'MaxGameComm="'+ COALESCE(CAST(@MaxGameComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'FGGComm="'+ COALESCE(CAST(@FGGComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'JiliComm="'+ COALESCE(CAST(@JiliComm as VARCHAR(50)),SPACE(1)) + '" '+
+	
 		'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
 		'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +
 		'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
@@ -308,7 +326,10 @@ BEGIN
 		'AdvantComm="'+ COALESCE(CAST(@AdvantComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'AdvantMiniComm="'+ COALESCE(CAST(@AdvantMiniComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'VS3Comm="'+ COALESCE(CAST(@VS3Comm as VARCHAR(50)),SPACE(1)) + '" '+
-
+		'MaxGameComm="'+ COALESCE(CAST(@MaxGameComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'FGGComm="'+ COALESCE(CAST(@FGGComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'JiliComm="'+ COALESCE(CAST(@JiliComm as VARCHAR(50)),SPACE(1)) + '" '+
+		
 		'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
 		'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +
 		'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +

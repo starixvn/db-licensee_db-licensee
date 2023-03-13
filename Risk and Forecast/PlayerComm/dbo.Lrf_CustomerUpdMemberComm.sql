@@ -64,6 +64,9 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm]
 	@IsUpdateAdvant			BIT = 0,
 	@IsUpdateAdvantMini		BIT = 0,
 	@IsUpdateVS3			BIT = 0,
+	@IsUpdateMaxGame		BIT = 0,
+	@IsUpdateFGG			BIT = 0,
+	@IsUpdateJili			BIT = 0,
 	@WMCasinoComm		DECIMAL(9,8) = 0,
 	@BigGamingComm		DECIMAL(9,8) = 0,
 	@JokerComm			DECIMAL(9,8) = 0,
@@ -73,6 +76,9 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm]
 	@AdvantComm			DECIMAL(9,8) = 0,
 	@AdvantMiniComm		DECIMAL(9,8) = 0,
 	@VS3Comm			DECIMAL(9,8) = 0,
+	@MaxGameComm		DECIMAL(9,8) = 0,
+	@FGGComm			DECIMAL(9,8) = 0,
+	@JiliComm			DECIMAL(9,8) = 0,
 
 	@IP VARCHAR(40),
 	@Langkey VARCHAR(10) = 'en-US',
@@ -120,6 +126,7 @@ AS
 		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586] 
 		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
+		- 20230313@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 		
 	Param's Explanation:
 		1. To update a member/batch members without GroupCommID
@@ -208,6 +215,9 @@ BEGIN
 			,@AdvantMiniComm	= AdvantMiniComm
 			,@VS3Comm			= VS3Comm
 			
+			,@MaxGameComm		= MaxGameComm
+			,@FGGComm			= FGGComm
+			,@JiliComm			= JiliComm
 		FROM dbo.LicenseeGroupComm WITH (NOLOCK)
 		WHERE LicenseeID = @LicenseeID AND id = @GroupCommID AND IsActive=1
 	END
@@ -245,7 +255,10 @@ BEGIN
 		,@AdvantComm	 = ISNULL(@AdvantComm	,0)
 		,@AdvantMiniComm = ISNULL(@AdvantMiniComm,0)
 		,@VS3Comm = ISNULL(@VS3Comm,0)
-
+		
+		,@MaxGameComm = ISNULL(@MaxGameComm,0)
+		,@FGGComm = ISNULL(@FGGComm,0)
+		,@JiliComm = ISNULL(@JiliComm,0)
 	--Validate data
 	IF @SBComm>0.15 OR @NGComm>0.15 OR @RNGComm>0.15 OR @ParlayComm > 0.15
 		OR @AllbetComm > 0.15 
@@ -275,6 +288,10 @@ BEGIN
 		OR @AdvantComm > 0.15
 		OR @AdvantMiniComm > 0.15
 		OR @VS3Comm > 0.15
+		
+		OR @MaxGameComm > 0.15
+		OR @FGGComm > 0.15
+		OR @JiliComm > 0.15
 	BEGIN
 		SELECT @ErrCode=101
 		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN 'Player commission should not be greater than'
@@ -384,7 +401,10 @@ BEGIN
 				,@CGComm					= @CGComm		
 				,@AdvantComm				= @AdvantComm		
 				,@AdvantMiniComm			= @AdvantMiniComm		
-				,@VS3Comm					= @VS3Comm	
+				,@VS3Comm					= @VS3Comm
+				,@MaxGameComm				= @MaxGameComm				
+				,@FGGComm					= @FGGComm
+				,@JiliComm					= @JiliComm
 		END		
 		ELSE
 		BEGIN	
@@ -460,6 +480,9 @@ BEGIN
 					,@IsUpdateAdvant		= @IsUpdateAdvant		
 					,@IsUpdateAdvantMini	= @IsUpdateAdvantMini		
 					,@IsUpdateVS3			= @IsUpdateVS3	
+					,@IsUpdateMaxGame		= @IsUpdateMaxGame	
+					,@IsUpdateFGG			= @IsUpdateFGG	
+					,@IsUpdateJili			= @IsUpdateJili
 					,@WMCasinoComm				= @WMCasinoComm		
 					,@BigGamingComm				= @BigGamingComm		
 					,@JokerComm					= @JokerComm			
@@ -471,7 +494,10 @@ BEGIN
 					,@CGComm					= @CGComm		
 					,@AdvantComm				= @AdvantComm		
 					,@AdvantMiniComm			= @AdvantMiniComm		
-					,@VS3Comm					= @VS3Comm				
+					,@VS3Comm					= @VS3Comm
+					,@MaxGameComm				= @MaxGameComm					
+					,@FGGComm					= @FGGComm
+					,@JiliComm					= @JiliComm
 			END					
 			-- Non-BA and BA under Macaubet have got SBcomm=@SBcomm
 			DECLARE  @strNonBA 	VARCHAR(MAX)
@@ -548,7 +574,15 @@ BEGIN
 					,@CGComm					= @CGComm		
 					,@AdvantComm				= @AdvantComm		
 					,@AdvantMiniComm			= @AdvantMiniComm		
-					,@VS3Comm					= @VS3Comm					
+					,@VS3Comm					= @VS3Comm	
+					
+					,@IsUpdateMaxGame		= @IsUpdateMaxGame	
+					,@IsUpdateFGG			= @IsUpdateFGG	
+					,@IsUpdateJili			= @IsUpdateJili					
+					,@MaxGameComm			= @MaxGameComm					
+					,@FGGComm				= @FGGComm
+					,@JiliComm				= @JiliComm
+					
 			END
 		END
 	END	
@@ -593,7 +627,11 @@ BEGIN
 		'CGComm="'+ COALESCE(CAST(@CGComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'AdvantComm="'+ COALESCE(CAST(@AdvantComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'AdvantMiniComm="'+ COALESCE(CAST(@AdvantMiniComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		'VS3Comm="'+ COALESCE(CAST(@VS3Comm as VARCHAR(50)),SPACE(1)) + '" '
+		'VS3Comm="'+ COALESCE(CAST(@VS3Comm as VARCHAR(50)),SPACE(1)) + '" ' +
+		
+		'MaxGameComm="'+ COALESCE(CAST(@MaxGameComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		'FGGComm="'+ COALESCE(CAST(@FGGComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		'JiliComm="'+ COALESCE(CAST(@JiliComm as VARCHAR(50)),SPACE(1)) + '" ' 
 
 		
 	-- old value
@@ -673,7 +711,11 @@ BEGIN
 							'AdvantComm="'+ COALESCE(CAST(@AdvantComm as VARCHAR(50)),SPACE(1)) + '" ' +
 							'AdvantMiniComm="'+ COALESCE(CAST(@AdvantMiniComm as VARCHAR(50)),SPACE(1)) + '" ' +
 							'VS3Comm="'+ COALESCE(CAST(@VS3Comm as VARCHAR(50)),SPACE(1)) + '" ' +
-
+							
+							'MaxGameComm="'+ COALESCE(CAST(@MaxGameComm as VARCHAR(50)),SPACE(1)) + '" ' +
+							'FGGComm="'+ COALESCE(CAST(@FGGComm as VARCHAR(50)),SPACE(1)) + '" ' +
+							'JiliComm="'+ COALESCE(CAST(@JiliComm as VARCHAR(50)),SPACE(1)) + '" ' +
+							
 						   'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
 						   @LogSPData2 AS '@TrackingValue2'
 						   , @currentdate AS '@LogDate'
@@ -787,7 +829,15 @@ BEGIN
 					,@CGComm					= @CGComm		
 					,@AdvantComm				= @AdvantComm		
 					,@AdvantMiniComm			= @AdvantMiniComm		
-					,@VS3Comm					= @VS3Comm	
+					,@VS3Comm					= @VS3Comm
+
+					,@MaxGameComm				= @MaxGameComm
+					,@FGGComm					= @FGGComm
+					,@JiliComm					= @JiliComm
+					,@IsUpdateMaxGame			= @IsUpdateMaxGame
+					,@IsUpdateFGG				= @IsUpdateFGG
+					,@IsUpdateJili				= @IsUpdateJili
+					
 			END TRY
 			BEGIN CATCH
 				SELECT @ErrCode = ERROR_NUMBER()
