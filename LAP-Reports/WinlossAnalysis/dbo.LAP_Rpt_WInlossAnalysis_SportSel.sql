@@ -13,7 +13,17 @@ AS
 		
 */
 BEGIN
-	WITH CTE_SportbookBA AS (
+	WITH CTE_Code AS (
+		SELECT t.Code 
+		FROM (
+			SELECT ProductCodes =  CONCAT(@ProductCodes, IIF(((',' + @ProductCodes + ',' LIKE '%,SB,%') OR (',' + @ProductCodes + ',' LIKE '%,BA,%')), ',SLT,BTC',''))
+		) AS c
+		CROSS APPLY (
+			SELECT DISTINCT value AS Code
+			FROM STRING_SPLIT(c.ProductCodes, ',') AS t
+		) AS t
+	),
+	CTE_SportbookBA AS (
 			SELECT DISTINCT 0 AS ProductID, p.ProductName, 
 				s.SportType, s.SportName, CONCAT(p.ProductPrefix,',BA') AS ProductCode, s.SportType AS SportOrder
 			FROM bodb02.dbo.SportBettypeMatrix m WITH(NOLOCK)
@@ -40,10 +50,6 @@ BEGIN
 		LEFT JOIN bodb02.dbo.Sports s WITH(NOLOCK) ON S.SportType = m.SportType
 		WHERE p3.Enabled = 1
 			AND (@LicenseeID IS NULL OR lp.LicenseeID = @LicenseeID)
-	),
-	CTE_Code AS (
-		SELECT DISTINCT value AS Code
-		FROM STRING_SPLIT(@ProductCodes, ',') AS t
 	),
 	result AS (
 		SELECT DISTINCT

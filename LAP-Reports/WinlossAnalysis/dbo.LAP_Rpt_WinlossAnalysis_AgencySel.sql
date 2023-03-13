@@ -46,7 +46,7 @@ BEGIN
 		@BetfromRef		XML,
 		@LiveIds		VARCHAR(1000),
 		@BettypeRef		XML,
-		@SportCheck		VARCHAR(1000),
+		@SportCheck		VARCHAR(MAX),
 		@ProductCheck	VARCHAR(MAX),
 		@StatusCheck	VARCHAR(1000),
 		@PlatformCheck	VARCHAR(1000),
@@ -54,7 +54,8 @@ BEGIN
 		@BreakBy		TINYINT,
 		@IsExportExcel	BIT,
 		@BaseDate		SMALLDATETIME = '2000-01-01',
-		@IsViewCOOnlyCheck	BIT
+		@IsViewCOOnlyCheck	BIT,
+		@BettypeIdsCheck	VARCHAR(MAX)
 		;
 
 	-- INPUT: validation
@@ -148,7 +149,6 @@ BEGIN
 	;
 
 	--TODO: Event Products, Sports, Bettypes selection
-	SELECT @SportCheck = @SportIds;
 	DROP TABLE IF EXISTS #tmpSabaSporttype;
 	CREATE TABLE #tmpSabaSporttype (SabaSportType INT, SportType INT, LeagueGroupID INT, SportOrder INT);
 
@@ -165,48 +165,18 @@ BEGIN
 		OUTER APPLY OPENJSON(LeagueGroupIDs) WITH (LeagueGroupID INT '$')
 	) AS t
 
-	--Saba sports
-	IF CHARINDEX('-', @SportCheck) > 0
-	BEGIN
-		DECLARE @MergeSporttype NVARCHAR(100);
+	--TODO: Sports filtering
+	SELECT @SportCheck = @SportIds;
 
-		WITH CTE_SportFilter AS (
-			SELECT CAST(value AS INT) AS sporttype
-			FROM STRING_SPLIT(@SportCheck, ',')
-		),
-		CTE_SabaConvert AS (
-			SELECT DISTINCT saba.SportType
-			FROM CTE_SportFilter AS f
-			INNER JOIN #tmpSabaSporttype saba ON saba.SabaSportType = f.sporttype
-			WHERE f.sporttype < 0
-		)
-		SELECT @MergeSporttype =  COALESCE(@MergeSporttype + ',', '') + CAST(c.SportType AS VARCHAR(10))
-		FROM CTE_SabaConvert c
-		LEFT JOIN CTE_SportFilter f ON f.sporttype = c.SportType
-		WHERE f.sporttype IS NULL;
-
-		SELECT @SportCheck = CONCAT(@SportCheck, CONCAT(',', @MergeSporttype)) WHERE @MergeSporttype IS NOT NULL;
-	END
-
-	--BA/SLT/BTC products
+	--TODO: BA/SLT/BTC products
 	DECLARE @SBBACheck TINYINT;
-	SELECT @SBBACheck = ( POWER(2*1, 1)
+	SELECT @SBBACheck = (POWER(2*1, 1)
 				+ POWER(2*CASE WHEN ISNULL(@ProductCodes, 'ALL') = 'ALL'  OR ',' + @ProductCodes + ',' LIKE '%,SB,%' THEN 1 ELSE 0 END, 2) 
 				+ POWER(2*CASE WHEN ISNULL(@ProductCodes, 'ALL') = 'ALL'  OR ',' + @ProductCodes + ',' LIKE '%,BA,%' THEN 1 ELSE 0 END, 3)),
 			@ProductCheck = @ProductCodes;
-	
-	IF @SBBACheck & 4 = 4 -- 0.SB
-		AND @ProductCheck <> 'ALL'
-	BEGIN
-		SELECT @ProductCheck = CONCAT(@ProductCheck,',SLT') WHERE CHARINDEX('SLT',@ProductCheck)=0;
-		SELECT @ProductCheck = CONCAT(@ProductCheck,',BTC') WHERE CHARINDEX('BTC',@ProductCheck)=0;
-	END
-	
-	IF @SBBACheck & 4 = 0 -- 0.SB
-		AND @SBBACheck & 8 = 8 -- 1.BA
-	BEGIN
-		SELECT @ProductCheck = CONCAT(@ProductCheck,',SB') WHERE CHARINDEX('SB',@ProductCheck)=0;;
-	END
+
+	--TODO: Convert GroupBettype
+	SELECT @BettypeIdsCheck = @BettypeIds;
 
 	DROP TABLE IF EXISTS #tmpBettype;
 	CREATE TABLE #tmpBettype (
@@ -216,49 +186,19 @@ BEGIN
 		EventType				TINYINT,
 		IsContributionBettype	BIT,
 		Product3rdId			SMALLINT,
-		IsPriceBettype			BIT
+		IsPriceBettype			BIT,
+		GroupTypeId				INT
 	);
 	CREATE CLUSTERED INDEX CIX_tmpBettype ON #tmpBettype(Bettype, ProductId);
 
-	;WITH CTE_Product AS (
-		SELECT 0 AS ProductID, p.ProductName, p.ProductPrefix AS ProductCode
-		FROM bodb02.dbo.Products p WITH(NOLOCK) 
-		WHERE p.ProductID = 1
-		UNION ALL
-		SELECT DISTINCT p3.ProductID, p3.ProductName, p3.ProductPrefix AS ProductCode
-		FROM bodb_licensee.dbo.Product3rd p3 WITH(NOLOCK)
-			INNER JOIN bodb_licensee.dbo.LicenseeProduct3rd lp WITH(NOLOCK) ON p3.ProductID = lp.ProductID
-		WHERE p3.Enabled = 1
-	)
-	INSERT INTO #tmpBettype
-	SELECT tbl.ProductId, tbl.Bettype, tbl.RefTable, tbl.EventType,
-		CASE WHEN cont.Bettype IS NOT NULL THEN 1 ELSE 0 END AS IsContributionBettype,
-		tbl.Product3rdId,
-		IIF(e.Bettype > 0, 1, 0) AS IsPriceBettype
-	FROM (
-		SELECT DISTINCT p.ProductID, 
-			CASE WHEN p.ProductID = 1 THEN @SBBACheck ELSE p3.ProductID END AS Product3rdID,
-			m.BetType, 
-			m.RefTable,
-			m.EventType
-		FROM CTE_Product p3 WITH(NOLOCK)
-		INNER JOIN bodb02.dbo.Products p WITH(NOLOCK) ON p.ProductPrefix = p3.ProductCode
-		INNER JOIN bodb02.dbo.SportBettypeMatrix m WITH(NOLOCK) ON m.ProductID = p.ProductID
-		WHERE (@ProductCheck IS NULL OR ',' + @ProductCheck + ',' LIKE '%,' + p3.ProductCode + ',%')
-			AND (@SportCheck IS NULL OR ',' + @SportCheck + ',' LIKE '%,' + CAST(m.SportType AS VARCHAR(3)) + ',%')
-			AND (@BettypeIDs IS NULL OR ',' + @BettypeIDs + ',' LIKE '%,' + CAST(m.BetType AS VARCHAR(3)) + ',%')
-	) AS tbl
-	LEFT JOIN bodb02.[dbo].[Lrf_f_SelExcludedBetType]() e ON e.BetType = tbl.BetType
-	OUTER APPLY 
-	(
-		SELECT f.Bettype
-		FROM bodb02.dbo.f_BettypePrizeGroup() f
-		WHERE f.BettypeGroup = 'Contribution'
-			AND f.Bettype = tbl.bettype
-	) AS cont
-	;
+	INSERT INTO #tmpBettype 
+	SELECT ProductId, Bettype, RefTable, EventType,IsContributionBettype,
+		CASE WHEN ProductID = 1 THEN @SBBACheck ELSE Product3rdID END AS Product3rdId,
+		IsPriceBettype,
+		GroupTypeId
+	FROM bodb02.dbo.LAP_f_WinlossAnalysis_BettypeMatrix (@ProductCheck, @SportCheck, @BettypeIdsCheck, @SBBACheck) AS bm
 
-	WITH CTE_ProductMap AS (
+	;WITH CTE_ProductMap AS (
 		SELECT DISTINCT ProductId, Product3rdId
 		FROM #tmpBettype t
 	)
@@ -305,7 +245,7 @@ BEGIN
 				WHEN @GroupBy = 2 THEN DATEDIFF(HOUR, @BaseDate, DATEADD(DAY, -DATEPART(DAY, b.Winlostdate) +1, b.Winlostdate)) 
 				WHEN @GroupBy = 3 THEN ck.Product3rdIdMix
 				WHEN @GroupBy = 4 THEN ISNULL(ck.sporttype, -9999) 
-				WHEN @GroupBy = 5 THEN s.bettype 
+				WHEN @GroupBy = 5 THEN ISNULL(s.GroupTypeId, s.bettype)
 				WHEN @GroupBy = 6 THEN a.currency
 				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId, -1)
 				WHEN @GroupBy = 8 THEN b.custid
@@ -317,7 +257,7 @@ BEGIN
 				WHEN @BreakBy = 3 THEN b.recommend 
 				ELSE a.currency 
 			END AS BreakBy,
-			CASE WHEN @GroupMode = 4 OR @IsViewCOOnlyCheck = 1 THEN ck.Product3rdIdMix ELSE -1 END AS ParentKey
+			CASE WHEN @GroupMode IN (4, 5) OR @IsViewCOOnlyCheck = 1 THEN IIF(@SBBACheck = 14, 0, ck.Product3rdIdMix) ELSE -1 END AS ParentKey
 			----------------------
 			,SUM(cal.BetCount) AS BetCount
 			,SUM(cal.Turnover) AS Turnover
@@ -339,7 +279,7 @@ BEGIN
 			,SUM(cal.BetEffective * e.Rate) AS BaseBetEffective
 		FROM [bodb02].[dbo].[bettrans] b WITH(NOLOCK)
 			INNER JOIN @AgencySel a ON a.recommend = b.recommend 
-			INNER JOIN #tmpBettype s ON s.bettype = b.bettype 
+			INNER JOIN #tmpBettype s ON s.bettype = b.bettype AND s.RefTable NOT IN (1,2)
 			INNER JOIN #tmpExchange e on e.ExchangeID =  a.Currency AND b.winlostdate BETWEEN e.FromDate AND e.ToDate
 			LEFT JOIN [bodb02].dbo.match m WITH(NOLOCK) ON b.matchid = m.matchid
 			LEFT JOIN [bodb02].[dbo].[Match3rd] m3rd WITH(NOLOCK) ON m3rd.Match3rdId = b.matchid
@@ -441,7 +381,7 @@ BEGIN
 		WHERE b.winlostdate BETWEEN @rptFromDate AND @rptToDate
 			AND ',' + @StatusCheck + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
 			AND (',' + @LiveIds + ',' LIKE '%,' + CAST(ck.liveindicator AS VARCHAR(3)) + ',%')
-			AND (@SportIDs IS NULL OR  ',' + @SportIDs + ',' LIKE '%,' + CAST(ck.sporttype AS VARCHAR(3)) + ',%')
+			AND (@SportIDs IS NULL OR  ',' + @SportIDs + ',' LIKE '%,' + CAST(ck.sporttype AS VARCHAR(10)) + ',%')
 			AND (@PlatformCheck='ALL' OR bf.PlatformId > 0)
 		
 		GROUP BY CASE 
@@ -449,7 +389,7 @@ BEGIN
 				WHEN @GroupBy = 2 THEN DATEDIFF(HOUR, @BaseDate, DATEADD(DAY, -DATEPART(DAY, b.Winlostdate) +1, b.Winlostdate)) 
 				WHEN @GroupBy = 3 THEN ck.Product3rdIdMix
 				WHEN @GroupBy = 4 THEN ISNULL(ck.sporttype, -9999) 
-				WHEN @GroupBy = 5 THEN s.bettype 
+				WHEN @GroupBy = 5 THEN ISNULL(s.GroupTypeId, s.bettype) 
 				WHEN @GroupBy = 6 THEN a.currency
 				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId,-1)
 				WHEN @GroupBy = 8 THEN b.custid
@@ -461,7 +401,7 @@ BEGIN
 				WHEN @BreakBy = 3 THEN b.recommend 
 				ELSE a.currency 
 			END,
-			CASE WHEN @GroupMode = 4 OR @IsViewCOOnlyCheck = 1 THEN ck.Product3rdIdMix ELSE -1 END
+			CASE WHEN @GroupMode IN (4, 5) OR @IsViewCOOnlyCheck = 1 THEN IIF(@SBBACheck = 14, 0, ck.Product3rdIdMix) ELSE -1 END
 		HAVING 
 			SUM(cal.BetCount) > 0
 			
@@ -490,7 +430,7 @@ BEGIN
 				WHEN @BreakBy = 3 THEN b.recommend 
 				ELSE b.currency 
 			END AS BreakBy,
-			CASE WHEN @GroupMode = 4 OR @IsViewCOOnlyCheck = 1 THEN b.Product3rdId ELSE -1 END AS ParentKey
+			CASE WHEN @GroupMode IN (4,5) OR @IsViewCOOnlyCheck = 1 THEN b.Product3rdId ELSE -1 END AS ParentKey
 			--------------
 			,COUNT(1) AS BetCount
 			,SUM(ABS(b.stake)) AS Turnover
@@ -512,11 +452,12 @@ BEGIN
 			,SUM(ABS(b.winlost-b.actual_stake) * e.Rate) AS BaseBetEffective
 				
 		FROM (
-			SELECT b.CustId, b.recommend, a.currency, b.winlostdate, s.Product3rdId, b.productID AS Sporttype, s.Bettype, b.betfrom
+			SELECT b.CustId, b.recommend, a.currency, b.winlostdate, s.Product3rdId, b.productID AS Sporttype
+				,ISNULL(s.GroupTypeId, s.bettype) AS Bettype, b.betfrom
 				,(CASE WHEN s.IsContributionBettype = 0 THEN b.BetStake ELSE 0 END) AS NetTurnover
 				,b.stake, b.actual_stake,b.playercomm,b.comm,b.winlost
 			FROM bodb02.dbo.bettransRnG b WITH(NOLOCK)
-				INNER JOIN #tmpBettype s ON s.Bettype = b.gameID
+				INNER JOIN #tmpBettype s ON s.Bettype = b.gameID AND s.RefTable = 1
 				INNER JOIN @AgencySel a ON a.recommend = b.recommend
 			WHERE b.winlostdate BETWEEN @rptFromDate AND @rptToDate
 				AND ',' + @StatusCheck + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
@@ -529,11 +470,12 @@ BEGIN
 					END
 
 			UNION ALL 
-			SELECT b.CustId, b.recommend, a.currency, b.winlostdate, s.Product3rdId, b.productID AS Sporttype, s.Bettype, b.betfrom
+			SELECT b.CustId, b.recommend, a.currency, b.winlostdate, s.Product3rdId, b.productID AS Sporttype
+				,ISNULL(s.GroupTypeId, s.bettype) AS Bettype, b.betfrom
 				,(CASE WHEN s.IsContributionBettype = 0 THEN b.NetStake ELSE 0 END) AS NetTurnover
 				,b.stake, b.actual_stake,b.playercomm,b.comm,b.winlost
 			FROM bodb02.dbo.bettransLC b WITH(NOLOCK)
-				INNER JOIN #tmpBettype s ON s.Bettype = b.gameID
+				INNER JOIN #tmpBettype s ON s.Bettype = b.gameID AND s.RefTable = 2
 				INNER JOIN @AgencySel a ON a.recommend = b.recommend
 			WHERE b.winlostdate BETWEEN @rptFromDate AND @rptToDate
 				AND ',' + @StatusCheck + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
@@ -543,7 +485,7 @@ BEGIN
 		INNER JOIN #tmpExchange e on e.ExchangeID =  b.Currency AND b.winlostdate BETWEEN e.FromDate AND e.ToDate
 		OUTER APPLY (SELECT TOP 1 bf.PlatformId FROM @PlatformSel bf WHERE b.betfrom =  bf.BetFrom) AS bf
 		WHERE 
-			(@SportIDs IS NULL OR  ',' + @SportIDs + ',' LIKE '%,' + CAST(b.sporttype AS VARCHAR(3)) + ',%')
+			(@SportIDs IS NULL OR  ',' + @SportIDs + ',' LIKE '%,' + CAST(b.sporttype AS VARCHAR(10)) + ',%')
 			AND (@PlatformCheck='ALL' OR bf.PlatformId > 0)
 
 		GROUP BY
@@ -564,7 +506,7 @@ BEGIN
 				WHEN @BreakBy = 3 THEN b.recommend 
 				ELSE b.currency 
 			END,
-			CASE WHEN @GroupMode = 4 OR @IsViewCOOnlyCheck = 1 THEN b.Product3rdId ELSE -1 END
+			CASE WHEN @GroupMode IN (4, 5) OR @IsViewCOOnlyCheck = 1 THEN b.Product3rdId ELSE -1 END
 		--HAVING SUM(b.NetTurnover) > 0;
 
 	END
@@ -585,7 +527,7 @@ BEGIN
 				WHEN @GroupBy = 2 THEN DATEDIFF(HOUR, @BaseDate, DATEADD(DAY, -DATEPART(DAY, b.Winlostdate) +1, b.Winlostdate)) 
 				WHEN @GroupBy = 3 THEN ck.Product3rdIdMix
 				WHEN @GroupBy = 4 THEN ISNULL(ck.Sporttype, -9999) 
-				WHEN @GroupBy = 5 THEN b.bettype 
+				WHEN @GroupBy = 5 THEN ISNULL(bt.GroupTypeId, bt.bettype) 
 				WHEN @GroupBy = 6 THEN a.Currency
 				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId, -1)
 				WHEN @GroupBy = 8 THEN b.custid
@@ -597,7 +539,7 @@ BEGIN
 				WHEN @BreakBy = 3 THEN b.recommend 
 				ELSE a.Currency 
 			END AS BreakBy,
-			CASE WHEN @GroupMode = 4 OR @IsViewCOOnlyCheck = 1 THEN ck.Product3rdIdMix ELSE -1 END As ParentKey
+			CASE WHEN @GroupMode IN (4,5) OR @IsViewCOOnlyCheck = 1 THEN IIF(@SBBACheck = 14, 0, ck.Product3rdIdMix) ELSE -1 END As ParentKey
 			----------------------
 			,SUM(b.BetCount) AS BetCount
 			,SUM(b.Turnover) AS Turnover
@@ -640,7 +582,7 @@ BEGIN
 			b.WinlostDate BETWEEN @rptFromDate AND @rptToDate
 			AND ',' + @StatusCheck + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
 			AND (',' + @LiveIds + ',' LIKE '%,' + CAST(b.liveindicator AS VARCHAR(3)) + ',%')
-			AND (@SportIDs IS NULL OR  ',' + @SportIDs + ',' LIKE '%,' + CAST(ck.sporttype AS VARCHAR(3)) + ',%')
+			AND (@SportIDs IS NULL OR  ',' + @SportIDs + ',' LIKE '%,' + CAST(ck.sporttype AS VARCHAR(10)) + ',%')
 			AND (@PlatformCheck='ALL' OR bf.PlatformId > 0)
 			AND 1 = CASE 
 						WHEN b.Product3rdId IN (42) AND b.Bettype IN (1698,1699) AND b.Sporttype <> 150 THEN 1 
@@ -655,7 +597,7 @@ BEGIN
 				WHEN @GroupBy = 2 THEN DATEDIFF(HOUR, @BaseDate, DATEADD(DAY, -DATEPART(DAY, b.Winlostdate) +1, b.Winlostdate)) 
 				WHEN @GroupBy = 3 THEN ck.Product3rdIdMix
 				WHEN @GroupBy = 4 THEN ISNULL(ck.Sporttype, -9999) 
-				WHEN @GroupBy = 5 THEN b.bettype 
+				WHEN @GroupBy = 5 THEN ISNULL(bt.GroupTypeId, bt.bettype) 
 				WHEN @GroupBy = 6 THEN a.Currency
 				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId, -1)
 				WHEN @GroupBy = 8 THEN b.custid
@@ -667,13 +609,13 @@ BEGIN
 				WHEN @BreakBy = 3 THEN b.recommend 
 				ELSE a.Currency 
 			END,
-			CASE WHEN @GroupMode = 4 OR @IsViewCOOnlyCheck = 1 THEN ck.Product3rdIdMix ELSE -1 END
+			CASE WHEN @GroupMode IN (4,5) OR @IsViewCOOnlyCheck = 1 THEN IIF(@SBBACheck = 14, 0, ck.Product3rdIdMix) ELSE -1 END
 	END
 	
 	-- TODO: Cashout separate from SB&BA
 	DELETE rpt
 	FROM #rptData rpt
-	WHERE @IsViewCOOnlyCheck = 1 AND ParentKey IN(0,3);
+	WHERE @IsViewCOOnlyCheck = 1 AND ParentKey IN(0,3); --> 0.SB,3.BA Product3rdId
 
 	TODO_OUTPUT:
 	DROP TABLE IF EXISTS #result;
@@ -701,12 +643,18 @@ BEGIN
 				LEFT JOIN bodb_licensee.dbo.Product3rd p3 WITH(NOLOCK) ON p3.ProductID = rpt.GroupBy
 				WHERE @GroupBy = 3
 				UNION ALL
-				SELECT DISTINCT CONCAT(ISNULL(p3.ProductPrefix, IIF(rpt.ParentKey=0,'SB',IIF(rpt.ParentKey=-99,'CO','N/A'))), '#', rpt.GroupBy) AS GroupBy, rpt.GroupBy AS GroupKey, rpt.ParentKey
+				SELECT DISTINCT CONCAT(ISNULL(p3.ProductPrefix, IIF(rpt.ParentKey=0,IIF(@SBBACheck=14, 'SB,BA','SB'),IIF(rpt.ParentKey=-99,'CO','N/A'))), '#', rpt.GroupBy) AS GroupBy, rpt.GroupBy AS GroupKey, rpt.ParentKey
 					,ISNULL(saba.SportOrder, rpt.GroupBy)
 				FROM #rptData rpt
 				LEFT JOIN bodb_licensee.dbo.Product3rd p3 WITH(NOLOCK) ON p3.ProductID = rpt.ParentKey
 				LEFT JOIN #tmpSabaSporttype saba ON saba.SabaSportType = rpt.GroupBy
 				WHERE @GroupBy = 4
+				UNION ALL
+				SELECT DISTINCT CONCAT(ISNULL(p3.ProductPrefix, IIF(rpt.ParentKey=0,IIF(@SBBACheck=14, 'SB,BA','SB'),IIF(rpt.ParentKey=-99,'CO','N/A'))), '#', rpt.GroupBy) AS GroupBy, rpt.GroupBy AS GroupKey, rpt.ParentKey
+					,rpt.GroupBy
+				FROM #rptData rpt
+				LEFT JOIN bodb_licensee.dbo.Product3rd p3 WITH(NOLOCK) ON p3.ProductID = rpt.ParentKey
+				WHERE @GroupBy = 5
 				UNION ALL
 				SELECT DISTINCT CAST(ex.Code AS NVARCHAR(100)) AS GroupBy, rpt.GroupBy AS GroupKey, rpt.ParentKey
 					,rpt.GroupBy
@@ -724,7 +672,7 @@ BEGIN
 				SELECT DISTINCT CAST(rpt.GroupBy AS NVARCHAR(100)) AS GroupBy, rpt.GroupBy AS GroupKey, rpt.ParentKey
 					,rpt.GroupBy
 				FROM #rptData rpt
-				WHERE @GroupBy IN(5,7)
+				WHERE @GroupBy = 7
 			) AS t
 		) AS p
 		ORDER BY p.rIdx ASC
@@ -819,3 +767,4 @@ BEGIN
 	SELECT DATEDIFF(MILLISECOND, @startTime, CURRENT_TIMESTAMP) AS Duration_Ms
 
 END
+GO

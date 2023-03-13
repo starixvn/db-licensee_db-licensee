@@ -13,7 +13,17 @@ AS
 		
 */
 BEGIN
-	WITH CTE_Product3rd AS (
+	WITH CTE_Filter AS (
+		SELECT t.Code 
+		FROM (
+			SELECT ProductCodes =  CONCAT(@ProductCodes, IIF(((',' + @ProductCodes + ',' LIKE '%,SB,%') OR (',' + @ProductCodes + ',' LIKE '%,BA,%')), ',SLT,BTC',''))
+		) AS c
+		CROSS APPLY (
+			SELECT DISTINCT value AS Code
+			FROM STRING_SPLIT(c.ProductCodes, ',') AS t
+		) AS t
+	),
+	CTE_Product3rd AS (
 		----------- default SB Product
 		SELECT ProductID, CONCAT(ProductPrefix,',BA') AS ProductCode
 		FROM dbo.Products sb
@@ -27,13 +37,14 @@ BEGIN
 		WHERE p3.Enabled = 1
 			AND (@LicenseeID IS NULL OR lp.LicenseeID = @LicenseeID)
 	),
-	CTE_Filter AS (
-		SELECT DISTINCT value AS Code
-		FROM STRING_SPLIT(@ProductCodes, ',') AS t
-		WHERE @ProductCodes <> 'ALL'
+	CTE_GroupBettype AS (
+		SELECT Bettype, GroupTypeID FROM bodb02.dbo.f_GroupBettype()
+		UNION ALL 
+		SELECT Bettype, GroupTypeID FROM bodb02.dbo.f_GroupBettype3rd()
 	),
 	result AS (
-		SELECT DISTINCT	p.ProductID, m.BetType,
+		SELECT DISTINCT	p.ProductID
+			,ISNULL(gbt.GroupTypeId, m.BetType) AS BetType,
 			CASE 
 				WHEN p.ProductID IN (1, 63,69) AND saba.SBBACheck & 6 = 6 THEN 'SB,BA' 
 				WHEN p.ProductID IN (1, 63,69) AND saba.SBBACheck & 2 = 2 THEN 'SB' 
@@ -47,6 +58,7 @@ BEGIN
 			CROSS APPLY (SELECT value FROM STRING_SPLIT(p.ProductCode, ',') AS t2 WHERE t2.value = t.Code ) AS t2
 		) AS ck
 		INNER JOIN dbo.SportBettypeMatrix m ON m.ProductID = p.ProductID
+		LEFT JOIN CTE_GroupBettype gbt ON gbt.bettype = m.bettype
 		LEFT JOIN bodb02.[dbo].[Lrf_f_SelExcludedBetType]() e ON e.BetType = m.BetType
 		OUTER APPLY (
 			SELECT 
