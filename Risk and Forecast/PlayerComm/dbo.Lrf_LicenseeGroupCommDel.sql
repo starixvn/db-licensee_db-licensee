@@ -40,7 +40,8 @@ AS
 		- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217] 
 		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586]  
 		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
-
+		- 20230314@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
+		
 	Param's Explanation:
 
 */
@@ -90,7 +91,11 @@ BEGIN
 		@AdvantComm			DECIMAL(9,8),
 		@AdvantMiniComm		DECIMAL(9,8),
 		@VS3Comm			DECIMAL(9,8),
-
+		
+		@MaxGameComm		DECIMAL(9,8),
+		@FGGComm			DECIMAL(9,8),
+		@JiliComm			DECIMAL(9,8),
+		
 		@GroupColor VARCHAR(20), 
 		@GroupName VARCHAR(100), 
 		@IsDefault BIT
@@ -152,6 +157,10 @@ BEGIN
 			@AdvantComm			= AdvantComm,
 			@AdvantMiniComm		= AdvantMiniComm,
 			@VS3Comm			= VS3Comm,
+			
+			@MaxGameComm		= MaxGameComm,
+			@FGGComm			= FGGComm,
+			@JiliComm			= JiliComm,
 
 			@GroupColor=color,
 			@GroupName=GroupName,
@@ -305,6 +314,13 @@ BEGIN
 					@AdvantMiniComm			= 0,
 					@VS3Comm				= 0,
 					
+					@IsUpdateMaxGame		= 1,
+					@IsUpdateFGG			= 1,
+					@IsUpdateJili			= 1,
+					@MaxGameComm			= 0,
+					@FGGComm				= 0,
+					@JiliComm				= 0,
+					
 					@isClearGroupComm = 1,
 					@ClearGroupCommGroupID = @GroupCommID,
 					@IsUpdateGroupComm = 1,
@@ -360,6 +376,10 @@ BEGIN
 		'AdvantComm="'+ COALESCE(CAST(@AdvantComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'AdvantMiniComm="'+ COALESCE(CAST(@AdvantMiniComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'VS3Comm="'+ COALESCE(CAST(@VS3Comm as VARCHAR(50)),SPACE(1)) + '" '+
+		
+		'MaxGameComm="'+ COALESCE(CAST(@MaxGameComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'FGGComm="'+ COALESCE(CAST(@FGGComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'JiliComm="'+ COALESCE(CAST(@JiliComm as VARCHAR(50)),SPACE(1)) + '" '+
 
 		'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
 		'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +
@@ -407,6 +427,10 @@ BEGIN
 		'AdvantComm="'+ COALESCE(CAST(@AdvantComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'AdvantMiniComm="'+ COALESCE(CAST(@AdvantMiniComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'VS3Comm="'+ COALESCE(CAST(@VS3Comm as VARCHAR(50)),SPACE(1)) + '" '+
+		
+		'MaxGameComm="'+ COALESCE(CAST(@MaxGameComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'FGGComm="'+ COALESCE(CAST(@FGGComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'JiliComm="'+ COALESCE(CAST(@JiliComm as VARCHAR(50)),SPACE(1)) + '" '+
 
 		'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
 		'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +

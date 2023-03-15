@@ -39,6 +39,7 @@ AS
 		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586] 
 		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
+		- 20230315@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 
 */  
 BEGIN  
@@ -78,6 +79,10 @@ BEGIN
 			@AdvantComm			DECIMAL(9,8) = 0,
 			@AdvantMiniComm		DECIMAL(9,8) = 0,
 			@VS3Comm			DECIMAL(9,8) = 0,
+			
+			@MaxGameComm		DECIMAL(9,8) = 0,
+			@FGGComm			DECIMAL(9,8) = 0,
+			@JiliComm			DECIMAL(9,8) = 0,
 
 			@CustID INT, 
 			@i INT	
@@ -150,7 +155,11 @@ BEGIN
 				@CGComm				= CGComm,
 				@AdvantComm			= AdvantComm,
 				@AdvantMiniComm		= AdvantMiniComm,
-				@VS3Comm			= VS3Comm
+				@VS3Comm			= VS3Comm,
+				
+				@MaxGameComm		= MaxGameComm,
+				@FGGComm			= FGGComm,
+				@JiliComm			= JiliComm
 			FROM dbo.LicenseeCustComm WITH (NOLOCK)
 			WHERE LicenseeID = @LicenseeID AND CustID = @CustID
 					
@@ -224,7 +233,14 @@ BEGIN
 				@AdvantComm				= @AdvantComm,
 				@AdvantMiniComm			= @AdvantMiniComm,
 				@VS3Comm				= @VS3Comm,
-
+				
+				@IsUpdateMaxGame		= 1,
+				@IsUpdateFGG			= 1,
+				@IsUpdateJili			= 1,
+				@MaxGameComm			= @MaxGameComm,
+				@FGGComm				= @FGGComm,
+				@JiliComm				= @JiliComm,
+				
 				@IP=@IP,
 				@Langkey=@Langkey,
 				@ErrCode=@ErrCode OUTPUT,
@@ -310,6 +326,14 @@ BEGIN
 			@AdvantComm				= 0,
 			@AdvantMiniComm			= 0,
 			@VS3Comm				= 0,
+			
+			@IsUpdateMaxGame		= 1,
+			@IsUpdateFGG			= 1,
+			@IsUpdateJili			= 1,
+			@MaxGameComm			= 0,
+			@FGGComm				= 0,
+			@JiliComm				= 0,
+			
 			@IP=@IP,
 			@Langkey=@Langkey,
 			@ErrCode=@ErrCode OUTPUT,
@@ -355,6 +379,10 @@ BEGIN
 			AdvantComm		 = 0,
 			AdvantMiniComm	 = 0,
 			VS3Comm		 = 0,
+			
+			MaxGameComm	 = 0,
+			FGGComm		 = 0,
+			JiliComm	 = 0,
 
 			GroupCommID = 0
 		WHERE LicenseeID = @LicenseeID 

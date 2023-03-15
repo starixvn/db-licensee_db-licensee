@@ -49,7 +49,7 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Direct]
 	@IsUpdateCG				BIT = 0,
 	@IsUpdateAdvant			BIT = 0,
 	@IsUpdateAdvantMini		BIT = 0,
-	@IsUpdateVS3			BIT = 0,
+	@IsUpdateVS3			BIT = 0,	
 	@WMCasinoComm		DECIMAL(9,8) = 0,
 	@BigGamingComm		DECIMAL(9,8) = 0,
 	@JokerComm			DECIMAL(9,8) = 0,
@@ -60,7 +60,14 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Direct]
 	@CGComm				DECIMAL(9,8) = 0,
 	@AdvantComm			DECIMAL(9,8) = 0,
 	@AdvantMiniComm		DECIMAL(9,8) = 0,
-	@VS3Comm			DECIMAL(9,8) = 0
+	@VS3Comm			DECIMAL(9,8) = 0,
+	
+	@IsUpdateMaxGame	BIT = 0,
+	@IsUpdateFGG		BIT = 0,
+	@IsUpdateJili		BIT = 0,
+	@MaxGameComm		DECIMAL(9,8) = 0,
+	@FGGComm			DECIMAL(9,8) = 0,
+	@JiliComm			DECIMAL(9,8) = 0
 AS
 /*
 	Created: 20130114@Henry
@@ -93,6 +100,7 @@ AS
 		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586] 
 		- 20220301@Eden: Deposit - Sportsbook - Revise customer settings [Redmine: #167898]
 		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
+		- 20230314@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 		
 	Param's Explanation:	
 
@@ -156,6 +164,10 @@ BEGIN
 		OR @IsParlayComm  = 1
 		OR @IsUpdateNG  = 1
 		OR @IsUpdateKeno  = 1
+		
+		OR @IsUpdateMaxGame		= 1
+		OR @IsUpdateFGG			= 1
+		OR @IsUpdateJili		= 1
 	)
 	BEGIN
 		INSERT INTO @tblSettingDCS_tmp (IsUpdated,sporttype,Bettype, Comm)
@@ -188,6 +200,10 @@ BEGIN
 				,(@IsUpdateAdvant,172,7701,@AdvantComm)
 				,(@IsUpdateAdvantMini,174,7801,@AdvantMiniComm)
 				,(@IsUpdateVS3,231,5301,@VS3Comm)
+				
+				,(@IsUpdateMaxGame,237,5401,@MaxGameComm)
+				,(@IsUpdateFGG,176,8201,@FGGComm)
+				,(@IsUpdateJili,158,5100,@JiliComm)
 				--
 				,(@IsUpdateSB,1,1,@SBComm)
 				,(@IsUpdateSB,1,4,@SBComm)

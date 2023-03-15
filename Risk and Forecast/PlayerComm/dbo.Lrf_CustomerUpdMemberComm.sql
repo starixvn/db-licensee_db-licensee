@@ -402,6 +402,10 @@ BEGIN
 				,@AdvantComm				= @AdvantComm		
 				,@AdvantMiniComm			= @AdvantMiniComm		
 				,@VS3Comm					= @VS3Comm
+				
+				,@IsUpdateMaxGame			= @IsUpdateMaxGame
+				,@IsUpdateFGG				= @IsUpdateFGG
+				,@IsUpdateJili				= @IsUpdateJili
 				,@MaxGameComm				= @MaxGameComm				
 				,@FGGComm					= @FGGComm
 				,@JiliComm					= @JiliComm

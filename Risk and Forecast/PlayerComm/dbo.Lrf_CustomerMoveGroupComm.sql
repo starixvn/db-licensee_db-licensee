@@ -37,7 +37,11 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerMoveGroupComm]
 	@IsUpdateAdvant			BIT = 0,
 	@IsUpdateAdvantMini		BIT = 0,
 	@IsUpdateVS3			BIT = 0,
-
+	
+	@IsUpdateMaxGame		BIT = 0,
+	@IsUpdateFGG			BIT = 0,
+	@IsUpdateJili			BIT = 0,
+	
 	@IP VARCHAR(40),
 	@Langkey VARCHAR(20) = 'en-US',
 	@ErrCode INT = 0 OUTPUT,
@@ -74,7 +78,8 @@ AS
 		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586] 
 		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
-
+		- 20230315@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
+		
 	Param's Explanation:
 */ 
 BEGIN
@@ -154,6 +159,10 @@ BEGIN
 		,@IsUpdateAdvant		= @IsUpdateAdvant
 		,@IsUpdateAdvantMini	= @IsUpdateAdvantMini
 		,@IsUpdateVS3			= @IsUpdateVS3
+		
+		,@IsUpdateMaxGame		= @IsUpdateMaxGame
+		,@IsUpdateFGG			= @IsUpdateFGG
+		,@IsUpdateJili			= @IsUpdateJili
 
 		,@Langkey=@Langkey
 		,@IP=@IP

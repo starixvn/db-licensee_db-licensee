@@ -62,6 +62,13 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Main]
 	,@AdvantComm		DECIMAL(9,8) = 0
 	,@AdvantMiniComm	DECIMAL(9,8) = 0
 	,@VS3Comm			DECIMAL(9,8) = 0
+	
+	,@IsUpdateMaxGame	BIT = 0
+	,@IsUpdateFGG		BIT = 0
+	,@IsUpdateJili		BIT = 0
+	,@MaxGameComm		DECIMAL(9,8) = 0
+	,@FGGComm			DECIMAL(9,8) = 0
+	,@JiliComm			DECIMAL(9,8) = 0
 AS
 /*
 	Created: 20120907@Viet
@@ -93,7 +100,8 @@ AS
 		- 220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 		- 20220301@Eden: Deposit - Sportsbook - Revise customer settings [Redmine: #167898]
 		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
-
+		- 20230314@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
+		
 	Param's Explanation:
 
 */
@@ -148,6 +156,10 @@ BEGIN
 			,@AdvantComm_Group			DECIMAL(9,8) = 0
 			,@AdvantMiniComm_Group		DECIMAL(9,8) = 0
 			,@VS3Comm_Group				DECIMAL(9,8) = 0
+			
+			,@MaxGameComm_Group			DECIMAL(9,8) = 0
+			,@FGGComm_Group				DECIMAL(9,8) = 0
+			,@JiliComm_Group			DECIMAL(9,8) = 0
 			--> 
 			,@SBComm_Group DECIMAL(9,8)
 			,@ParlayComm_Group DECIMAL(9,8) = 0
@@ -190,6 +202,10 @@ BEGIN
 			OR @IsUpdateAdvant			= 1
 			OR @IsUpdateAdvantMini		= 1
 			OR @IsUpdateVS3				= 1
+			
+			OR @IsUpdateMaxGame			= 1
+			OR @IsUpdateFGG				= 1
+			OR @IsUpdateJili			= 1
 			--
 			OR @IsUpdateSB  = 1	
 			OR @IsParlayComm  = 1	
@@ -226,6 +242,10 @@ BEGIN
 				,@AdvantComm_Group = MAX(CASE WHEN BetType = 7701 THEN playerdiscount ELSE 0 END)
 				,@AdvantMiniComm_Group = MAX(CASE WHEN BetType = 7801 THEN playerdiscount ELSE 0 END)
 				,@VS3Comm_Group = MAX(CASE WHEN BetType = 5301 THEN playerdiscount ELSE 0 END)
+				
+				,@MaxGameComm_Group = MAX(CASE WHEN BetType = 5401 THEN playerdiscount ELSE 0 END)
+				,@FGGComm_Group = MAX(CASE WHEN BetType = 8201 THEN playerdiscount ELSE 0 END)
+				,@JiliComm_Group = MAX(CASE WHEN BetType = 5100 THEN playerdiscount ELSE 0 END)
 				--
 				,@SBComm_Group = MAX(CASE WHEN BetType = 1 AND SportType = 1 THEN playerdiscount ELSE 0 END)
 				,@ParlayComm_Group = MAX(CASE WHEN BetType = 9 AND SportType = 1 THEN playerdiscount ELSE 0 END)
@@ -243,6 +263,9 @@ BEGIN
 								,208
 								--phase 4.2
 								,231,167,172,174
+								
+								--MaxGame,FGG,Jili
+								,158,176,237
 								--
 								,1,161,202
 								)
@@ -358,7 +381,17 @@ BEGIN
 				,@CGComm_Group			= @CGComm_Group	
 				,@AdvantComm_Group		= @AdvantComm_Group	
 				,@AdvantMiniComm_Group		= @AdvantMiniComm_Group	
-				,@VS3Comm_Group			= @VS3Comm_Group	
+				,@VS3Comm_Group			= @VS3Comm_Group
+				
+				,@IsUpdateMaxGame		= @IsUpdateMaxGame
+				,@IsUpdateFGG			= @IsUpdateFGG
+				,@IsUpdateJili			= @IsUpdateJili
+				,@MaxGameComm			= @MaxGameComm
+				,@FGGComm				= @FGGComm
+				,@JiliComm				= @JiliComm
+				,@MaxGameComm_Group		= @MaxGameComm_Group
+				,@FGGComm_Group			= @FGGComm_Group				
+				,@JiliComm_Group		= @JiliComm_Group
 				--
 				,@SBComm_Group = @SBComm_Group
 				,@ParlayComm_Group = @ParlayComm_Group
