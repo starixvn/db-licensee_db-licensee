@@ -1,5 +1,5 @@
 /*<info serverAlias="DBACC-bodb02" executers="Dot_Admin,Dot_Member" isFunction="0" isNested="0"></info>*/
-Alter PROCEDURE [dbo].[DOT_Dep_Rpt_MemberSummary_Agent_V2]
+ALTER PROCEDURE [dbo].[DOT_Dep_Rpt_MemberSummary_Agent_V2]
 	@fromDate smalldatetime,
 	@toDate smalldatetime,
 	@CustId INT,
@@ -75,7 +75,7 @@ Revisions:
 --20220830@Ruby(DB06.bodb02): Add PP Report Data
 --20220927@Ruby(DB06.bodb02): Add BTC(SportType:175) Report Data
 --20221125@Ruby: Remove HR(Racing), MRNG, MG, CB, GG, SC(SABA Club), Live Casino(CA), HoGaming, Opus, GD, VB, LBKeno, iSoftBet(Quartz), IDNPoker Report Data
-
+--20230320@Benson: hotfix add opal data and remove oops data (accidentally deleted opal)
 */
 BEGIN
 	SET NOCOUNT ON
@@ -267,9 +267,9 @@ BEGIN
 			Transfer3rd_IMone, Transfer3rd_BTi, Transfer3rd_VRLottery, Transfer3rd_Sapphire, Transfer3rd_KYGaming, Transfer3rd_Moonstone, Transfer3rd_EA,
 			Transfer3rd_N2Live, Transfer3rd_BG, Transfer3rd_AVPMini, Transfer3rd_AVPSlot, Transfer3rd_EVO, Transfer3rd_Betradar, Transfer3rd_PP)
 		SELECT custid, winlostdate,
-		    SUM(CASE PartnerId WHEN 2 THEN TransferAmount ELSE 0 END), -- oops
 			SUM(CASE PartnerId WHEN 3 THEN TransferAmount ELSE 0 END), -- AG
 			SUM(CASE PartnerId WHEN 7 THEN TransferAmount ELSE 0 END), -- CRYSTAL
+			SUM(CASE PartnerId WHEN 9 THEN TransferAmount ELSE 0 END), -- Opal
 			SUM(CASE PartnerId WHEN 10 THEN TransferAmount ELSE 0 END), -- BetSoft(Amber)
 			SUM(CASE PartnerId WHEN 12 THEN TransferAmount ELSE 0 END), -- CitiBet(Exchange)
 			SUM(CASE WHEN PartnerId IN (13,18) THEN TransferAmount ELSE 0 END), -- Topaz(FG)
@@ -648,4 +648,5 @@ BEGIN
 	SELECT @dbtodaydate, d.* FROM @TodayData d
 	ORDER BY b.winlostdate
 END
+
 
