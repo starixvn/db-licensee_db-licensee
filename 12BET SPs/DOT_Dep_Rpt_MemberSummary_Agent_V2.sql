@@ -76,6 +76,7 @@ Revisions:
 --20220927@Ruby(DB06.bodb02): Add BTC(SportType:175) Report Data
 --20221125@Ruby: Remove HR(Racing), MRNG, MG, CB, GG, SC(SABA Club), Live Casino(CA), HoGaming, Opus, GD, VB, LBKeno, iSoftBet(Quartz), IDNPoker Report Data
 --20230320@Benson: hotfix add opal data and remove oops data (accidentally deleted opal)
+--20230320@Benson: add promotion bettyp(4299,4300,4298,4297,17004,3007,1699,1698,3150,1906,3899,3898,4600,4599,4598,2499,8700)
 */
 BEGIN
 	SET NOCOUNT ON
@@ -469,8 +470,8 @@ BEGIN
 				SUM(CASE WHEN winlostdate = @dbtodaydate AND [status] NOT IN ('VOID', 'REJECT', 'Refund') THEN stake ELSE 0 END) AS 'Turnover',
 				SUM(CASE WHEN winlostdate = @dbtodaydate AND [status] = 'DRAW' THEN stake ELSE 0 END) AS 'DrawGame',
 				SUM(CASE WHEN ruben = 0 THEN actual_stake ELSE 0 END) AS 'Outstanding',
-				SUM(CASE WHEN winlostdate = @dbtodaydate AND bettype NOT IN (17000,17003) AND ruben = 1 THEN winlost-actual_stake+playercomm ELSE 0 END) AS 'Winloss',
-				SUM(CASE WHEN winlostdate = @dbtodaydate AND bettype IN (17000,17003) THEN winlost-actual_stake ELSE 0 END) AS 'Promotion' -- Promotion, Royalty Program
+				SUM(CASE WHEN winlostdate = @dbtodaydate AND bettype NOT IN (17000,17003,4299,4300,4298,4297,17004,3007,1699,1698,3150,1906,3899,3898,4600,4599,4598,2499,8700) AND ruben = 1 THEN winlost-actual_stake+playercomm ELSE 0 END) AS 'Winloss',
+				SUM(CASE WHEN winlostdate = @dbtodaydate AND bettype IN (17000,17003,4299,4300,4298,4297,17004,3007,1699,1698,3150,1906,3899,3898,4600,4599,4598,2499,8700) THEN winlost-actual_stake ELSE 0 END) AS 'Promotion' -- Promotion, Royalty Program
 			FROM bodb02.dbo.bettrans WITH(NOLOCK)
 			WHERE custid = @CustId 
 				AND recommend IN (SELECT value FROM STRING_SPLIT(@agentid,','))	
