@@ -130,6 +130,9 @@ BEGIN
 			@GroupBy	= @GroupMode,
 			@BreakBy	= @BreakdownMode;
 
+	DROP TABLE IF EXISTS #tmpSabaSporttype;
+	CREATE TABLE #tmpSabaSporttype (SabaSportType INT, SportType INT, LeagueGroupID INT, SportOrder INT);
+
 	IF @IsValidGroupMode = 0
 	BEGIN
 		SET @Error = 'Invalid group mode. No data found.'
@@ -142,7 +145,7 @@ BEGIN
 
 	-- TODO: Agency selection
 	;WITH AgencySel AS (
-		SELECT t.c.value('@AgencyId', 'INT') AS recommend
+		SELECT t.c.value('@AgentId', 'INT') AS recommend
 			,t.c.value('@Currency', 'INT') AS Currency
 		FROM @AgentList.nodes('/ROOT/Agent') AS t(c)
 	)
@@ -164,10 +167,6 @@ BEGIN
 	;
 	
 	--TODO: Event Products, Sports, Bettypes selection
-	SELECT @SportCheck = @SportIds;
-	DROP TABLE IF EXISTS #tmpSabaSporttype;
-	CREATE TABLE #tmpSabaSporttype (SabaSportType INT, SportType INT, LeagueGroupID INT, SportOrder INT);
-
 	INSERT INTO #tmpSabaSporttype
 	SELECT saba.SabaSportType, t.SportType, t.LeagueGroupID, saba.SportOrder
 	FROM bodb02.[dbo].[LAP_f_WinlossAnalysis_SabaSportSel] () AS saba
@@ -299,14 +298,14 @@ BEGIN
 				WHEN @BreakBy = 3 THEN b.recommend 
 				ELSE a.currency 
 			END AS BreakBy,
-			CASE WHEN @GroupMode IN (4,5) OR @IsViewCOOnlyCheck = 1 THEN IIF(@SBBACheck = 14, 0, ck.Product3rdIdMix) ELSE -1 END
+			CASE WHEN @GroupMode IN (4,5) OR @IsViewCOOnlyCheck = 1 THEN ck.Product3rdIdMix ELSE -1 END
 			----------------------
 			,SUM(cal.BetCount) AS BetCount
 			,SUM(cal.Turnover) AS Turnover
 			,SUM(cal.NetTurnover) AS NetTurnover
 			,SUM(cal.MemWinloss) AS MemWinloss
 			,SUM(cal.[MemComm]) AS [MemComm]
-			,-SUM(cal.MemWinloss) AS LicWinloss
+			,SUM(cal.[LicWinloss]) AS LicWinloss
 			,SUM(cal.[LicComm]) AS [LicComm]
 			,SUM(cal.AmtDueToBA) AS AmtDueToBA
 			,SUM(cal.BetEffective) AS BetEffective
@@ -315,7 +314,7 @@ BEGIN
 			,SUM(cal.NetTurnover * e.Rate) AS BaseNetTurnover
 			,SUM(cal.MemWinloss * e.Rate) AS BaseMemWinloss
 			,SUM(cal.[MemComm] * e.Rate) AS [BaseMemComm]
-			,-SUM(cal.MemWinloss * e.Rate) AS BaseLicWinloss
+			,SUM(cal.[LicWinloss] * e.Rate) AS BaseLicWinloss
 			,SUM(cal.[LicComm] * e.Rate) AS [BaseLicComm]
 			,SUM(cal.AmtDueToBA * e.Rate) AS BaseAmtDueToBA
 			,SUM(cal.BetEffective * e.Rate) AS BaseBetEffective
@@ -350,7 +349,7 @@ BEGIN
 					END AS NetTurnover,
 					(b.winlost-b.actual_stake) AS MemWinloss,
 					-(CASE
-						WHEN ba.IsBA = 1 THEN (b.winlost + b.awinlost + b.comm) --COUNT for BA's tickets
+						WHEN ba.IsBA = 1 THEN (b.winlost - b.actual_stake + b.awinlost + b.comm) --COUNT for BA's tickets
 						ELSE 0
 					END) AS AmtDueToBA,
 					CASE 
@@ -406,6 +405,10 @@ BEGIN
 						WHEN s.Product3rdId & 8 = 8 AND ba.IsBA = 0 THEN 0
 						ELSE b.[playercomm]
 					END) AS [MemComm]
+				,-(CASE 
+						WHEN ba.IsBA = 1 THEN 0
+						ELSE ck.MemWinloss
+					END) AS [LicWinloss]
 				,(CASE 
 						WHEN s.ProductId <> 1 OR s.Product3rdId & 12 = 12 THEN b.[comm]
 						WHEN s.Product3rdId & 8 = 0 AND ba.IsBA = 1 THEN 0
@@ -443,7 +446,7 @@ BEGIN
 				WHEN @BreakBy = 3 THEN b.recommend 
 				ELSE a.currency 
 			END,
-			CASE WHEN @GroupMode IN (4,5) OR @IsViewCOOnlyCheck = 1 THEN IIF(@SBBACheck = 14, 0, ck.Product3rdIdMix) ELSE -1 END
+			CASE WHEN @GroupMode IN (4,5) OR @IsViewCOOnlyCheck = 1 THEN ck.Product3rdIdMix ELSE -1 END
 		HAVING 
 			SUM(cal.BetCount) > 0
 			
@@ -579,14 +582,14 @@ BEGIN
 				WHEN @BreakBy = 3 THEN b.recommend 
 				ELSE a.Currency 
 			END AS BreakBy,
-			CASE WHEN @GroupMode IN (4,5) OR @IsViewCOOnlyCheck = 1 THEN IIF(@SBBACheck = 14, 0, ck.Product3rdIdMix) ELSE -1 END AS ParentKey
+			CASE WHEN @GroupMode IN (4,5) OR @IsViewCOOnlyCheck = 1 THEN ck.Product3rdIdMix ELSE -1 END AS ParentKey
 			----------------------
 			,SUM(b.BetCount) AS BetCount
 			,SUM(b.Turnover) AS Turnover
 			,SUM(b.NetTurnover) AS NetTurnover
 			,SUM(b.Winlost) AS MemWinloss
 			,SUM(b.[PComm]) AS [MemComm]
-			,-SUM(b.Winlost) AS LicWinloss
+			,SUM(ck.[LicWinloss]) AS LicWinloss
 			,SUM(b.[AComm]) AS [LicComm]
 			,SUM(ck.AmtDueToBA) AS AmtDueToBA
 			,SUM(ABS(b.Winlost)) AS BetEffective
@@ -595,7 +598,7 @@ BEGIN
 			,SUM(b.NetTurnover * e.Rate) AS BaseNetTurnover
 			,SUM(b.Winlost * e.Rate) AS BaseMemWinloss
 			,SUM(b.[PComm] * e.Rate) AS [BaseMemComm]
-			,-SUM(b.Winlost * e.Rate) AS BaseLicWinloss
+			,SUM(ck.[LicWinloss] * e.Rate) AS BaseLicWinloss
 			,SUM(b.[AComm] * e.Rate) AS [BaseLicComm]
 			,SUM(ck.AmtDueToBA * e.Rate) AS BaseAmtDueToBA
 			,SUM(ABS(b.Winlost) * e.Rate) AS BaseBetEffective
@@ -610,6 +613,7 @@ BEGIN
 						WHEN b.Product3rdId = 3 THEN (b.Winlost + b.AWinlost + b.AComm) --COUNT for BA's tickets
 						ELSE 0
 					END) AS AmtDueToBA,
+					-(CASE WHEN b.Product3rdId = 3 THEN 0 ELSE b.winlost END) AS [LicWinloss],
 					ISNULL(saba.SabaSportType, b.Sporttype) AS Sporttype,
 					CASE 
 						WHEN b.Product3rdId IN (63,69) THEN 0 
@@ -649,7 +653,7 @@ BEGIN
 				WHEN @BreakBy = 3 THEN b.recommend 
 				ELSE a.Currency 
 			END,
-			CASE WHEN @GroupMode IN (4,5) OR @IsViewCOOnlyCheck = 1 THEN IIF(@SBBACheck = 14, 0, ck.Product3rdIdMix) ELSE -1 END
+			CASE WHEN @GroupMode IN (4,5) OR @IsViewCOOnlyCheck = 1 THEN ck.Product3rdIdMix ELSE -1 END
 	END
 	
 	-- TODO: Cashout separate from SB&BA
@@ -672,12 +676,12 @@ BEGIN
 				COUNT(1) OVER() AS rTotal,
 				ROW_NUMBER() OVER(ORDER BY t.ParentKey ASC, t.GroupOrder ASC) AS rIdx
 			FROM (
-				SELECT DISTINCT FORMAT(DATEADD(HOUR, rpt.GroupBy, @BaseDate), 'yyyy-MM-dd') AS GroupBy, rpt.GroupBy AS GroupKey, rpt.ParentKey
+				SELECT DISTINCT FORMAT(DATEADD(HOUR, rpt.GroupBy, @BaseDate), 'yyyy-MM-dd') AS GroupBy, rpt.GroupBy AS GroupKey, 0 AS ParentKey
 					,rpt.GroupBy AS GroupOrder
 				FROM #rptData rpt
 				WHERE @GroupBy IN(1,2)
 				UNION ALL
-				SELECT DISTINCT IIF(rpt.GroupBy = 0, 'SB', IIF(rpt.GroupBy = -99,'CO',p3.ProductPrefix)) AS GroupBy, rpt.GroupBy AS GroupKey, rpt.ParentKey
+				SELECT DISTINCT IIF(rpt.GroupBy = 0, 'SB', IIF(rpt.GroupBy = -99,'CO',p3.ProductPrefix)) AS GroupBy, rpt.GroupBy AS GroupKey, 0 AS ParentKey
 					,rpt.GroupBy
 				FROM #rptData rpt
 				LEFT JOIN bodb_licensee.dbo.Product3rd p3 WITH(NOLOCK) ON p3.ProductID = rpt.GroupBy
@@ -696,20 +700,20 @@ BEGIN
 				LEFT JOIN bodb_licensee.dbo.Product3rd p3 WITH(NOLOCK) ON p3.ProductID = rpt.ParentKey
 				WHERE @GroupBy = 5
 				UNION ALL
-				SELECT DISTINCT CAST(ex.Code AS NVARCHAR(100)) AS GroupBy, rpt.GroupBy AS GroupKey, rpt.ParentKey
+				SELECT DISTINCT CAST(ex.Code AS NVARCHAR(100)) AS GroupBy, rpt.GroupBy AS GroupKey, 0 AS ParentKey
 					,rpt.GroupBy
 				FROM #rptData rpt
 				INNER JOIN bodb02.dbo.Exchange ex WITH(NOLOCK) ON ex.ExchangeId = rpt.GroupBy
 				WHERE @GroupBy = 6
 				UNION ALL
-				SELECT DISTINCT CONCAT(ck.ExternalID,'#',ci.username) AS GroupBy, rpt.GroupBy AS GroupKey, rpt.ParentKey
+				SELECT DISTINCT CONCAT(ck.ExternalID,'#',ci.username) AS GroupBy, rpt.GroupBy AS GroupKey, 0 AS ParentKey
 					,rpt.GroupBy
 				FROM #rptData rpt
 				INNER JOIN bodb02.dbo.vw_Customer ci WITH(NOLOCK) ON ci.custid = rpt.GroupBy
 				CROSS APPLY (SELECT SUBSTRING(ci.username2,CHARINDEX('$',ci.username2)+1,100) AS ExternalID) AS ck
 				WHERE @GroupBy = 8
 				UNION ALL
-				SELECT DISTINCT CAST(rpt.GroupBy AS NVARCHAR(100)) AS GroupBy, rpt.GroupBy AS GroupKey, rpt.ParentKey
+				SELECT DISTINCT CAST(rpt.GroupBy AS NVARCHAR(100)) AS GroupBy, rpt.GroupBy AS GroupKey, 0 AS ParentKey
 					,rpt.GroupBy
 				FROM #rptData rpt
 				WHERE @GroupBy = 7
@@ -731,7 +735,7 @@ BEGIN
 			SUM(BaseLicWinloss) AS BaseLicWinloss, SUM(BaseLicComm) AS BaseLicComm,
 			SUM(BaseAmtDueToBA) AS BaseAmtDueToBA, SUM(BaseBetEffective) AS BaseBetEffective
 		FROM paging p
-		INNER JOIN #rptData rpt ON rpt.GroupBy = p.GroupKey AND rpt.ParentKey = p.ParentKey
+		INNER JOIN #rptData rpt ON rpt.GroupBy = p.GroupKey AND 1 = CASE WHEN @GroupMode IN (4,5) AND rpt.ParentKey <> p.ParentKey THEN 0 ELSE 1 END
 		GROUP BY p.rIdx, p.rTotal, p.GroupBy, p.GroupKey, rpt.BreakBy
 	)
 	SELECT rIdx, GroupBy, GroupKey, BreakBy, BetCount, 
@@ -796,7 +800,8 @@ BEGIN
 		SUM(BetCount) AS BetCount, SUM(Turnover) AS Turnover, SUM(NetTurnover) AS NetTurnover, 
 		SUM(MemWinloss) AS MemWinloss, SUM(MemComm) AS MemComm, 
 		SUM(LicWinloss) AS LicWinloss, SUM(LicComm) AS LicComm, 
-		SUM(AmtDueToBA) AS AmtDueToBA, SUM(Margin) AS Margin
+		SUM(AmtDueToBA) AS AmtDueToBA, SUM(BetEffective) AS BetEffective, 
+		IIF(SUM(NetTurnover)=0,0,SUM(LicWinloss)/SUM(NetTurnover)) AS [Margin]
 		,-----BASE
 		SUM(BaseTurnover) AS BaseTurnover, SUM(BaseNetTurnover) AS BaseNetTurnover, 
 		SUM(BaseMemWinloss) AS BaseMemWinloss, SUM(BaseMemComm) AS BaseMemComm, 

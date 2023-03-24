@@ -110,6 +110,8 @@ RETURN
 		WHERE (@ProductCheck IS NULL OR pm.Code IS NOT NULL)
 			AND (@SportCheck IS NULL OR sm.SportType > 0)
 			AND (@BettypeCheck IS NULL OR bm.bettype > 0)
+			AND p.ProductID NOT IN (11, 31) -- NOT Support AG-Casino & Exchange
+			AND m.BetType NOT IN (999) -- Exclude Undefined Sport
 	) AS tbl
 	LEFT JOIN bodb02.[dbo].[Lrf_f_SelExcludedBetType]() e ON e.BetType = tbl.BetType
 	OUTER APPLY 
