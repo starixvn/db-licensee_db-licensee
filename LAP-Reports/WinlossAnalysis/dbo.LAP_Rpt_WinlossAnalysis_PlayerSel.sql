@@ -786,7 +786,8 @@ BEGIN
 		SUM(BetCount) AS BetCount, SUM(Turnover) AS Turnover, SUM(NetTurnover) AS NetTurnover, 
 		SUM(MemWinloss) AS MemWinloss, SUM(MemComm) AS MemComm, 
 		SUM(LicWinloss) AS LicWinloss, SUM(LicComm) AS LicComm, 
-		SUM(AmtDueToBA) AS AmtDueToBA, SUM(BetEffective) AS BetEffective, SUM(Margin) AS Margin
+		SUM(AmtDueToBA) AS AmtDueToBA, SUM(BetEffective) AS BetEffective, 
+		IIF(SUM(NetTurnover)=0,0,SUM(LicWinloss)/SUM(NetTurnover)) AS [Margin]
 		,----BASE
 		SUM(BaseTurnover) AS BaseTurnover, SUM(BaseNetTurnover) AS BaseNetTurnover, 
 		SUM(BaseMemWinloss) AS BaseMemWinloss, SUM(BaseMemComm) AS BaseMemComm, 
