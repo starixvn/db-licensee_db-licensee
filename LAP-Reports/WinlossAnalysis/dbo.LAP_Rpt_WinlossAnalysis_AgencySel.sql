@@ -1,5 +1,5 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" viewers="" isFunction="0" isNested="0"></info>*/
-CREATE OR ALTER PROCEDURE dbo.LAP_Rpt_WinlossAnalysis_AgencySel
+ALTER PROCEDURE dbo.LAP_Rpt_WinlossAnalysis_AgencySel
 	@FromDate		SMALLDATETIME,
 	@ToDate			SMALLDATETIME,
 	@MovebetDay		SMALLDATETIME,
@@ -19,6 +19,10 @@ CREATE OR ALTER PROCEDURE dbo.LAP_Rpt_WinlossAnalysis_AgencySel
 	@GroupMode		TINYINT = 1,
 	@BreakdownMode	TINYINT = 1,
 
+	--sorting
+	@SortKey		TINYINT = 0,
+	@SortType		BIT = 0,
+
 	----------paging
 	@PageIndex		INT = 1,
 	@PageSize		INT = 5,
@@ -31,7 +35,10 @@ AS
 
 	Revisions:
 		- 20230209@Bobby: Created [RedmineID: #172604]
-		
+
+	Param's Explanation:
+		- @SortKey: 0:GroupBy, 1:BetCount, 2:Turnover, 3:NetTurnover, 4:MemWinloss, 5:MemComm, 6:LicWinloss, 7:LicComm, 8:AmtDueToBA, 9:BetEffective, 10:Margin
+		- @SortType: 0:ASC, 1:DESC
 */
 BEGIN
 	SET NOCOUNT ON;
@@ -55,7 +62,8 @@ BEGIN
 		@IsExportExcel	BIT,
 		@BaseDate		SMALLDATETIME = '2000-01-01',
 		@IsViewCOOnlyCheck	BIT,
-		@BettypeIdsCheck	VARCHAR(MAX)
+		@BettypeIdsCheck	VARCHAR(MAX),
+		@NASporttype	SMALLINT = 0
 		;
 
 	-- INPUT: validation
@@ -109,7 +117,7 @@ BEGIN
 	-- VALIDATE: Group modes
 	DECLARE @IsValidGroupMode BIT = 0;
 	SELECT @IsValidGroupMode = CASE 
-							WHEN @GroupMode IN (3,4) AND @BreakdownMode = 2 THEN 0
+							WHEN @GroupMode IN (3,4,5) AND @BreakdownMode = 2 THEN 0
 							WHEN @GroupMode IN (6) AND @BreakdownMode = 1 THEN 0
 							ELSE 1
 						END,
@@ -244,7 +252,7 @@ BEGIN
 				WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, b.winlostdate)
 				WHEN @GroupBy = 2 THEN DATEDIFF(HOUR, @BaseDate, DATEADD(DAY, -DATEPART(DAY, b.Winlostdate) +1, b.Winlostdate)) 
 				WHEN @GroupBy = 3 THEN ck.Product3rdIdMix
-				WHEN @GroupBy = 4 THEN ISNULL(ck.sporttype, -9999) 
+				WHEN @GroupBy = 4 THEN ISNULL(ck.sporttype, @NASporttype) 
 				WHEN @GroupBy = 5 THEN ISNULL(s.GroupTypeId, s.bettype)
 				WHEN @GroupBy = 6 THEN a.currency
 				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId, -1)
@@ -308,7 +316,7 @@ BEGIN
 					END AS NetTurnover,
 					(b.winlost-b.actual_stake) AS MemWinloss,
 					-(CASE
-						WHEN ba.IsBA = 1 THEN (b.winlost + b.awinlost + b.comm) --COUNT for BA's tickets
+						WHEN ba.IsBA = 1 THEN (b.winlost - b.actual_stake + b.awinlost + b.comm) --COUNT for BA's tickets
 						ELSE 0
 					END) AS AmtDueToBA,
 					CASE 
@@ -328,11 +336,11 @@ BEGIN
 						WHEN s.EventType = 2 THEN lo.sporttype
 						WHEN s.EventType = 3 THEN vs.SportType
 						WHEN s.EventType = 5 THEN m3rd.SportType --175-BTC Sport
-						ELSE 0
+						ELSE @NASporttype
 					END AS SportType,
 					ISNULL(CASE WHEN b.bettype IN(29) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
 			) AS ck
-			OUTER APPLY (SELECT TOP 1 bf.PlatformId FROM @PlatformSel bf WHERE b.betfrom =  bf.BetFrom) AS bf
+			CROSS APPLY (SELECT TOP 1 bf.PlatformId FROM @PlatformSel bf WHERE b.betfrom =  bf.BetFrom) AS bf
 			OUTER APPLY (
 				SELECT (CASE 
 						WHEN s.ProductId <> 1 OR s.Product3rdId & 12 = 12 THEN 1
@@ -380,19 +388,19 @@ BEGIN
 						WHEN s.Product3rdId & 8 = 8 AND ba.IsBA = 0 THEN 0
 						ELSE ck.AmtDueToBA
 					END) AS AmtDueToBA
-				,ABS(ck.MemWinloss) AS BetEffective
+				,ABS(b.winlost - b.actual_stake) AS BetEffective
 			) AS cal
 		WHERE b.winlostdate BETWEEN @rptFromDate AND @rptToDate
 			AND ',' + @StatusCheck + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
 			AND (',' + @LiveIds + ',' LIKE '%,' + CAST(ck.liveindicator AS VARCHAR(3)) + ',%')
-			AND (@SportIDs IS NULL OR  ',' + @SportIDs + ',' LIKE '%,' + CAST(ck.sporttype AS VARCHAR(10)) + ',%')
-			AND (@PlatformCheck='ALL' OR bf.PlatformId > 0)
+			AND (ck.sporttype <> 0 AND (@SportIDs IS NULL OR  ',' + @SportIDs + ',' LIKE '%,' + CAST(ck.sporttype AS VARCHAR(10)) + ',%'))
+			--AND (@PlatformCheck='ALL' OR bf.PlatformId > 0)
 		
 		GROUP BY CASE 
 				WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, b.winlostdate)
 				WHEN @GroupBy = 2 THEN DATEDIFF(HOUR, @BaseDate, DATEADD(DAY, -DATEPART(DAY, b.Winlostdate) +1, b.Winlostdate)) 
 				WHEN @GroupBy = 3 THEN ck.Product3rdIdMix
-				WHEN @GroupBy = 4 THEN ISNULL(ck.sporttype, -9999) 
+				WHEN @GroupBy = 4 THEN ISNULL(ck.sporttype, @NASporttype) 
 				WHEN @GroupBy = 5 THEN ISNULL(s.GroupTypeId, s.bettype) 
 				WHEN @GroupBy = 6 THEN a.currency
 				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId,-1)
@@ -421,7 +429,7 @@ BEGIN
 				WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, b.winlostdate)
 				WHEN @GroupBy = 2 THEN DATEDIFF(HOUR, @BaseDate, DATEADD(DAY, -DATEPART(DAY, b.Winlostdate) +1, b.Winlostdate)) 
 				WHEN @GroupBy = 3 THEN b.Product3rdID
-				WHEN @GroupBy = 4 THEN ISNULL(b.sporttype, -9999) 
+				WHEN @GroupBy = 4 THEN ISNULL(b.sporttype, @NASporttype) 
 				WHEN @GroupBy = 5 THEN b.bettype 
 				WHEN @GroupBy = 6 THEN b.currency
 				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId,-1)
@@ -487,17 +495,17 @@ BEGIN
 				
 		) AS b
 		INNER JOIN #tmpExchange e on e.ExchangeID =  b.Currency AND b.winlostdate BETWEEN e.FromDate AND e.ToDate
-		OUTER APPLY (SELECT TOP 1 bf.PlatformId FROM @PlatformSel bf WHERE b.betfrom =  bf.BetFrom) AS bf
+		CROSS APPLY (SELECT TOP 1 bf.PlatformId FROM @PlatformSel bf WHERE b.betfrom =  bf.BetFrom) AS bf
 		WHERE 
 			(@SportIDs IS NULL OR  ',' + @SportIDs + ',' LIKE '%,' + CAST(b.sporttype AS VARCHAR(10)) + ',%')
-			AND (@PlatformCheck='ALL' OR bf.PlatformId > 0)
+			--AND (@PlatformCheck='ALL' OR bf.PlatformId > 0)
 
 		GROUP BY
 			CASE 
 				WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, b.winlostdate)
 				WHEN @GroupBy = 2 THEN DATEDIFF(HOUR, @BaseDate, DATEADD(DAY, -DATEPART(DAY, b.Winlostdate) +1, b.Winlostdate)) 
 				WHEN @GroupBy = 3 THEN b.Product3rdID
-				WHEN @GroupBy = 4 THEN ISNULL(b.sporttype, -9999) 
+				WHEN @GroupBy = 4 THEN ISNULL(b.sporttype, @NASporttype) 
 				WHEN @GroupBy = 5 THEN b.bettype 
 				WHEN @GroupBy = 6 THEN b.currency
 				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId,-1)
@@ -530,7 +538,7 @@ BEGIN
 				WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, b.winlostdate)
 				WHEN @GroupBy = 2 THEN DATEDIFF(HOUR, @BaseDate, DATEADD(DAY, -DATEPART(DAY, b.Winlostdate) +1, b.Winlostdate)) 
 				WHEN @GroupBy = 3 THEN ck.Product3rdIdMix
-				WHEN @GroupBy = 4 THEN ISNULL(ck.Sporttype, -9999) 
+				WHEN @GroupBy = 4 THEN ISNULL(ck.Sporttype, @NASporttype) 
 				WHEN @GroupBy = 5 THEN ISNULL(bt.GroupTypeId, bt.bettype) 
 				WHEN @GroupBy = 6 THEN a.Currency
 				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId, -1)
@@ -582,13 +590,13 @@ BEGIN
 						ELSE b.Product3rdId 
 					END AS Product3rdIdMix
 			) AS ck
-			OUTER APPLY (SELECT TOP 1 bf.PlatformId FROM @PlatformSel bf WHERE b.betfrom =  bf.BetFrom) AS bf
+			CROSS APPLY (SELECT TOP 1 bf.PlatformId FROM @PlatformSel bf WHERE b.betfrom =  bf.BetFrom) AS bf
 		WHERE
 			b.WinlostDate BETWEEN @rptFromDate AND @rptToDate
 			AND ',' + @StatusCheck + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
 			AND (',' + @LiveIds + ',' LIKE '%,' + CAST(b.liveindicator AS VARCHAR(3)) + ',%')
-			AND (@SportIDs IS NULL OR  ',' + @SportIDs + ',' LIKE '%,' + CAST(ck.sporttype AS VARCHAR(10)) + ',%')
-			AND (@PlatformCheck='ALL' OR bf.PlatformId > 0)
+			AND (ck.sporttype <> 0 AND (@SportIDs IS NULL OR  ',' + @SportIDs + ',' LIKE '%,' + CAST(ck.sporttype AS VARCHAR(10)) + ',%'))
+			--AND (@PlatformCheck='ALL' OR bf.PlatformId > 0)
 			AND 1 = CASE 
 						WHEN b.Product3rdId IN (42) AND b.Bettype IN (1698,1699) AND b.Sporttype <> 150 THEN 1 
 						WHEN b.Product3rdId IN (66) AND b.Bettype IN (3898,3899) AND b.Sporttype <> 173 THEN 1
@@ -601,7 +609,7 @@ BEGIN
 				WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, b.winlostdate)
 				WHEN @GroupBy = 2 THEN DATEDIFF(HOUR, @BaseDate, DATEADD(DAY, -DATEPART(DAY, b.Winlostdate) +1, b.Winlostdate)) 
 				WHEN @GroupBy = 3 THEN ck.Product3rdIdMix
-				WHEN @GroupBy = 4 THEN ISNULL(ck.Sporttype, -9999) 
+				WHEN @GroupBy = 4 THEN ISNULL(ck.Sporttype, @NASporttype) 
 				WHEN @GroupBy = 5 THEN ISNULL(bt.GroupTypeId, bt.bettype) 
 				WHEN @GroupBy = 6 THEN a.Currency
 				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId, -1)
@@ -622,6 +630,28 @@ BEGIN
 	FROM #rptData rpt
 	WHERE @IsViewCOOnlyCheck = 1 AND ParentKey IN(0,3); --> 0.SB,3.BA Product3rdId
 
+	-- TODO: Sorting all columns
+	--BetCount, Turnover, NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, AmtDueToBA, BetEffective, Margin
+	DROP TABLE IF EXISTS #tmpSortValue;
+	CREATE TABLE #tmpSortValue (GroupKey INT PRIMARY KEY, SortValue MONEY);
+
+	INSERT INTO #tmpSortValue
+	SELECT GroupBy, (CASE 
+			WHEN @SortKey = 1 THEN SUM(BetCount)
+			WHEN @SortKey = 2 THEN SUM(Turnover)
+			WHEN @SortKey = 3 THEN SUM(NetTurnover)
+			WHEN @SortKey = 4 THEN SUM(MemWinloss)
+			WHEN @SortKey = 5 THEN SUM(MemComm)
+			WHEN @SortKey = 6 THEN SUM(LicWinloss)
+			WHEN @SortKey = 7 THEN SUM(LicComm)
+			WHEN @SortKey = 8 THEN SUM(AmtDueToBA)
+			WHEN @SortKey = 9 THEN SUM(BetEffective)
+			WHEN @SortKey = 10 THEN IIF(SUM(NetTurnover)=0, 0, SUM(LicWinloss)/SUM(NetTurnover))
+			ELSE GroupBy END
+		) AS SortValue
+	FROM #rptData rpt
+	GROUP BY GroupBy;
+
 	TODO_OUTPUT:
 	DROP TABLE IF EXISTS #result;
 	-- CHECK: @IsExportExcel OR NOT
@@ -635,7 +665,12 @@ BEGIN
 		FROM (
 			SELECT t.GroupBy, t.GroupKey, t.ParentKey,
 				COUNT(1) OVER() AS rTotal,
-				ROW_NUMBER() OVER(ORDER BY t.ParentKey ASC, t.GroupOrder ASC) AS rIdx
+				ROW_NUMBER() OVER(
+					ORDER BY 
+						CASE WHEN @SortType = 1 THEN sr.SortValue ELSE 0 END DESC,
+						CASE WHEN @SortType = 0 THEN sr.SortValue ELSE 0 END ASC,
+					t.GroupOrder ASC
+				) AS rIdx
 			FROM (
 				SELECT DISTINCT FORMAT(DATEADD(HOUR, rpt.GroupBy, @BaseDate), 'yyyy-MM-dd') AS GroupBy, rpt.GroupBy AS GroupKey, 0 AS ParentKey
 					,rpt.GroupBy AS GroupOrder
@@ -661,10 +696,9 @@ BEGIN
 				LEFT JOIN bodb_licensee.dbo.Product3rd p3 WITH(NOLOCK) ON p3.ProductID = rpt.ParentKey
 				WHERE @GroupBy = 5
 				UNION ALL
-				SELECT DISTINCT CAST(ex.Code AS NVARCHAR(100)) AS GroupBy, rpt.GroupBy AS GroupKey, 0 AS ParentKey
+				SELECT DISTINCT CAST(rpt.GroupBy AS NVARCHAR(100)) AS GroupBy, rpt.GroupBy AS GroupKey, 0 AS ParentKey
 					,rpt.GroupBy
 				FROM #rptData rpt
-				INNER JOIN bodb02.dbo.Exchange ex WITH(NOLOCK) ON ex.ExchangeId = rpt.GroupBy
 				WHERE @GroupBy = 6
 				UNION ALL
 				SELECT DISTINCT CONCAT(ck.ExternalID,'#',ci.username) AS GroupBy, rpt.GroupBy AS GroupKey, 0 AS ParentKey
@@ -679,6 +713,7 @@ BEGIN
 				FROM #rptData rpt
 				WHERE @GroupBy = 7
 			) AS t
+			INNER JOIN #tmpSortValue sr ON sr.GroupKey =  t.GroupKey
 		) AS p
 		ORDER BY p.rIdx ASC
 		OFFSET @pageOffset ROWS FETCH NEXT @PageSize ROWS ONLY
@@ -717,12 +752,11 @@ BEGIN
 		, ----BASE
 		BaseTurnover, BaseNetTurnover, BaseMemWinloss, BaseMemComm, BaseLicWinloss, BaseLicComm, BaseAmtDueToBA, BaseBetEffective
 	FROM (
-		SELECT rs.rIdx, rs.GroupBy, rs.GroupKey, CAST(ex.Code AS NVARCHAR(100)) AS BreakBy, rs.BreakBy AS BreakOrder,
+		SELECT rs.rIdx, rs.GroupBy, rs.GroupKey, CAST(rs.BreakBy AS NVARCHAR(100)) AS BreakBy, rs.BreakBy AS BreakOrder,
 			BetCount, Turnover, NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, AmtDueToBA, BetEffective, Margin
 			,-----BASE
 			BaseTurnover, BaseNetTurnover, BaseMemWinloss, BaseMemComm, BaseLicWinloss, BaseLicComm, BaseAmtDueToBA, BaseBetEffective
 		FROM #result rs
-			LEFT JOIN bodb02.dbo.Exchange ex WITH(NOLOCK) ON ex.exchangeid = rs.BreakBy
 		WHERE @BreakBy = 1
 		UNION ALL
 		SELECT rs.rIdx, rs.GroupBy,	rs.GroupKey, IIF(rs.BreakBy = 0, 'SB', IIF(rs.BreakBy = -99, 'CO', p3.ProductPrefix)) AS BreakBy, rs.BreakBy AS BreakOrder,

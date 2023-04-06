@@ -1,5 +1,5 @@
 /*<info serverAlias="DBEXT-bodb02" executers="" viewers="" isFunction="1" isNested="0"></info>*/
-CREATE OR ALTER FUNCTION [dbo].[LAP_f_WinlossAnalysis_BettypeMatrix] (
+ALTER FUNCTION [dbo].[LAP_f_WinlossAnalysis_BettypeMatrix] (
 	@ProductCheck	VARCHAR(MAX),
 	@SportCheck		VARCHAR(MAX),
 	@BettypeCheck	VARCHAR(MAX),
@@ -110,15 +110,16 @@ RETURN
 		WHERE (@ProductCheck IS NULL OR pm.Code IS NOT NULL)
 			AND (@SportCheck IS NULL OR sm.SportType > 0)
 			AND (@BettypeCheck IS NULL OR bm.bettype > 0)
-			AND p.ProductID NOT IN (11, 31) -- NOT Support AG-Casino & Exchange
-			AND m.BetType NOT IN (999) -- Exclude Undefined Sport
+			AND p.ProductID NOT IN (11, 31, 37) -- NOT Support Saba Promotion, AG-Casino & Exchange
 	) AS tbl
-	LEFT JOIN bodb02.[dbo].[Lrf_f_SelExcludedBetType]() e ON e.BetType = tbl.BetType
-	OUTER APPLY 
-	(
-		SELECT f.Bettype
-		FROM bodb02.dbo.f_BettypePrizeGroup() f
-		WHERE f.BettypeGroup = 'Contribution'
-			AND f.Bettype = tbl.bettype
-	) AS cont
+		LEFT JOIN bodb02.[dbo].[Lrf_f_SelExcludedBetType]() e ON e.BetType = tbl.BetType
+		OUTER APPLY 
+		(
+			SELECT f.Bettype
+			FROM bodb02.dbo.f_BettypePrizeGroup() f
+			WHERE f.BettypeGroup = 'Contribution'
+				AND f.Bettype = tbl.bettype
+		) AS cont
+		WHERE e.BetType IS NULL
+			AND cont.Bettype IS NULL
 	;
