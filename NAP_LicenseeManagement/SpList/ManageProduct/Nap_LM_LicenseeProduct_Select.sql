@@ -19,6 +19,7 @@ AS
 		- 20180111@Amanda: Add more filter when calling SP with all licensee [Redmine: #83584]
 		- 20180315@Amanda: Add order by [Redmine: #83584]
 		- 20220518@Kos: Change to use STRING_SPLIT [Redmine: #171831]
+  	    - 20230303@Evan: Exclude inactive products [Redmine: 181424]  
 
 	Developer's note:
 	- @LicenseeList = '' : get all
@@ -47,7 +48,7 @@ BEGIN
 		SET p.Id = p3.Productid
 		FROM #Product p
 			INNER JOIN dbo.Product3rd p3 WITH (NOLOCK) ON p.ProductCode = p3.ProductPrefix
-
+		WHERE p3.Enabled = 1	
 		DELETE #Product
 		WHERE Id IS NULL
 	END
@@ -59,6 +60,7 @@ BEGIN
 		INSERT INTO #Product(Id, ProductCode)
 		SELECT Productid, ProductPrefix
 		FROM dbo.Product3rd p WITH (NOLOCK)
+		WHERE p.Enabled = 1
 	END
 
 	IF ISNULL(@LicenseeList, '') <> ''

@@ -110,6 +110,7 @@ AS
 		- 20220714@Hogan: Integrate Volleyball AIO [RedmineID: #175143]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20230130@Evan: Integrate Jili [RedmineID: #182914]
+	    - 20230303@Evan: Remove inactive products CB, FW, GD, GDG [Redmine: 181424]  
 
 	Param's Explanation:
 		+ @IsLive : indicate that whether the report will get live data or not
@@ -353,7 +354,7 @@ BEGIN
 		END
 
 		--Others
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'NG', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'GDG', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM', 'VS3', 'FGGL', 'MXG', 'JIG'))
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'NG', 'VS', 'KN', 'CS', 'VB', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM', 'VS3', 'FGGL', 'MXG', 'JIG'))
 		BEGIN
 			INSERT INTO #tmpWinloss
 			SELECT
@@ -365,7 +366,6 @@ BEGIN
 					WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN' -- Keno
 					WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999 THEN 'CS' -- RNG CASINO
 					WHEN (b.bettype BETWEEN 4001 AND 4100) OR (b.bettype BETWEEN 5800 AND 5999) THEN 'VB' -- Voidbridge
-					WHEN b.bettype BETWEEN 1011 AND 1020 THEN 'FW' -- Fishing World
 					WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
 					WHEN (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) THEN 'VS2'
 					WHEN b.bettype BETWEEN 1021 AND 1099 THEN 'LT'
@@ -380,7 +380,6 @@ BEGIN
 					WHEN b.bettype BETWEEN 3001 AND 3099 THEN 'SAG' -- SAG	
 					WHEN b.bettype BETWEEN 6001 AND 6300 THEN 'PGS' -- PGS
 					WHEN b.bettype BETWEEN 6401 AND 6700 THEN 'JK' -- JK
-					WHEN b.bettype BETWEEN 5701 AND 5799 THEN 'GDG' -- GDG
 					WHEN b.bettype BETWEEN 7001 AND 7300 THEN 'HB' -- HB
 					WHEN b.bettype BETWEEN 3401 AND 3499 THEN 'WM' -- WM
 					WHEN b.bettype BETWEEN 3501 AND 3599 THEN 'BGG'
@@ -414,7 +413,6 @@ BEGIN
 					OR b.bettype BETWEEN 1501 AND 1599 -- Keno
 					OR (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999) -- RNG CASINO
 					OR (b.bettype BETWEEN 4001 AND 4100) OR (b.bettype BETWEEN 5800 AND 5999) -- Voidbridge
-					OR b.bettype BETWEEN 1011 AND 1020 -- FW
 					OR b.bettype BETWEEN 2401 AND 2499 -- AB
 					OR (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) -- BetRadar VS
 					OR b.bettype BETWEEN 1021 AND 1099 -- LT
@@ -429,7 +427,6 @@ BEGIN
 					OR b.bettype BETWEEN 3001 AND 3099 -- SAG
 					OR b.bettype BETWEEN 6001 AND 6300 -- PGS
 					OR b.bettype BETWEEN 6401 AND 6700 -- JK
-					OR b.bettype BETWEEN 5701 AND 5799 -- GDG
 					OR b.bettype BETWEEN 7001 AND 7300 -- HB
 					OR b.bettype BETWEEN 3401 AND 3499 -- WM
 					OR b.bettype BETWEEN 3501 AND 3599 -- BGG
@@ -453,7 +450,6 @@ BEGIN
 					WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN' -- Keno
 					WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999 THEN 'CS' -- RNG CASINO
 					WHEN (b.bettype BETWEEN 4001 AND 4100) OR (b.bettype BETWEEN 5800 AND 5999) THEN 'VB' -- Voidbridge
-					WHEN b.bettype BETWEEN 1011 AND 1020 THEN 'FW' -- Fishing World
 					WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
 					WHEN (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) THEN 'VS2'
 					WHEN b.bettype BETWEEN 1021 AND 1099 THEN 'LT'
@@ -468,7 +464,6 @@ BEGIN
 					WHEN b.bettype BETWEEN 3001 AND 3099 THEN 'SAG' -- SAG
 					WHEN b.bettype BETWEEN 6001 AND 6300 THEN 'PGS' -- PGS
 					WHEN b.bettype BETWEEN 6401 AND 6700 THEN 'JK' -- JK
-					WHEN b.bettype BETWEEN 5701 AND 5799 THEN 'GDG' -- GDG
 					WHEN b.bettype BETWEEN 7001 AND 7300 THEN 'HB' -- HB
 					WHEN b.bettype BETWEEN 3401 AND 3499 THEN 'WM' -- WM
 					WHEN b.bettype BETWEEN 3501 AND 3599 THEN 'BGG'
@@ -564,7 +559,7 @@ BEGIN
 		END
 
 		-- Others
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'FW', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'GDG', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM', 'VS3', 'FGGL', 'MXG', 'JIG'))
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM', 'VS3', 'FGGL', 'MXG', 'JIG'))
 		BEGIN
 			INSERT INTO #tmpWinloss
 			SELECT 
@@ -586,7 +581,6 @@ BEGIN
 					WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN'
 					WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999 THEN 'CS' -- RNG CASINO
 					WHEN (b.bettype BETWEEN 4001 AND 4100) OR (b.bettype BETWEEN 5800 AND 5999) THEN 'VB' -- Voidbridge
-					WHEN b.bettype BETWEEN 1011 AND 1020 THEN 'FW' -- Fishing World
 					WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
 					WHEN b.bettype BETWEEN 2701 AND 2829 THEN 'VS2'
 					WHEN b.bettype BETWEEN 1021 AND 1099 THEN 'LT'
@@ -601,7 +595,6 @@ BEGIN
 					WHEN b.bettype BETWEEN 3001 AND 3099 THEN 'SAG' -- SAG
 					WHEN b.bettype BETWEEN 6001 AND 6300 THEN 'PGS'
 					WHEN b.bettype BETWEEN 6401 AND 6700 THEN 'JK' -- JK
-					WHEN b.bettype BETWEEN 5701 AND 5799 THEN 'GDG' -- GDG
 					WHEN b.bettype BETWEEN 7001 AND 7300 THEN 'HB' -- HB
 					WHEN b.bettype BETWEEN 3401 AND 3499 THEN 'WM' -- WM
 					WHEN b.bettype BETWEEN 3501 AND 3599 THEN 'BGG' 
@@ -656,7 +649,6 @@ BEGIN
 					OR b.bettype BETWEEN 1501 AND 1599 -- Keno
 					OR (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999) -- RNG CASINO
 					OR (b.bettype BETWEEN 4001 AND 4100) OR (b.bettype BETWEEN 5800 AND 5999) -- Voidbridge
-					OR b.bettype BETWEEN 1011 AND 1020 -- FW
 					OR b.bettype BETWEEN 2401 AND 2499 -- AB
 					OR b.bettype BETWEEN 2701 AND 2829 -- VS2
 					OR b.bettype BETWEEN 1021 AND 1099 -- LT
@@ -671,7 +663,6 @@ BEGIN
 					OR b.bettype BETWEEN 3001 AND 3099 -- SAG
 					OR b.bettype BETWEEN 6001 AND 6300 -- PGS
 					OR b.bettype BETWEEN 6401 AND 6700 -- JK
-					OR b.bettype BETWEEN 5701 AND 5799 -- GDG
 					OR b.bettype BETWEEN 7001 AND 7300 -- HB
 					OR b.bettype BETWEEN 3401 AND 3499 -- WM
 					OR b.bettype BETWEEN 3501 AND 3599 -- BGG
@@ -704,7 +695,6 @@ BEGIN
 					WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN'
 					WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999 THEN 'CS' -- RNG CASINO
 					WHEN (b.bettype BETWEEN 4001 AND 4100) OR (b.bettype BETWEEN 5800 AND 5999) THEN 'VB' -- Voidbridge
-					WHEN b.bettype BETWEEN 1011 AND 1020 THEN 'FW' -- Fishing World
 					WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
 					WHEN b.bettype BETWEEN 2701 AND 2829 THEN 'VS2'
 					WHEN b.bettype BETWEEN 1021 AND 1099 THEN 'LT'
@@ -719,7 +709,6 @@ BEGIN
 					WHEN b.bettype BETWEEN 3001 AND 3099 THEN 'SAG' -- SAG	
 					WHEN b.bettype BETWEEN 6001 AND 6300 THEN 'PGS'
 					WHEN b.bettype BETWEEN 6401 AND 6700 THEN 'JK' -- JK
-					WHEN b.bettype BETWEEN 5701 AND 5799 THEN 'GDG' -- GDG
 					WHEN b.bettype BETWEEN 7001 AND 7300 THEN 'HB' -- HB
 					WHEN b.bettype BETWEEN 3401 AND 3499 THEN 'WM' -- WM
 					WHEN b.bettype BETWEEN 3501 AND 3599 THEN 'BGG'

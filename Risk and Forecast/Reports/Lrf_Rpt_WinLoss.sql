@@ -16,7 +16,6 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
 	@ShowAGC		BIT = 0,
 	@ShowVB			BIT = 0,
 	@ShowAB			BIT = 0,
-	@ShowFW			BIT = 0,
 	@ShowCO			BIT = 0,
 	@ShowVS2		BIT = 0,	-- Bet Radar Virtual Sports
 	@ShowLT			BIT = 0,	-- Lottery
@@ -31,7 +30,6 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLoss]
 	@ShowSAG		BIT = 0,	-- SA Gaming
 	@ShowPGS		BIT = 0,	-- PG Soft
 	@ShowJK			BIT = 0,	-- Joker
-	@ShowGDG		BIT = 0,	-- GDG
 	@ShowSLT		BIT = 0,	-- SLT
 	@ShowHB			BIT = 0,	-- Habanero
 	@ShowWM			BIT = 0,	-- WM Live Casino
@@ -167,6 +165,7 @@ AS
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20221122@Evan: Integrate Player Tips [RedmineID: #180590]
 		- 20230130@Evan: Integrate Jili [RedmineID: #182914]
+	    - 20230303@Evan: Remove inactive products CB, FW, GD, GDG [Redmine: 181424]  
 
 	Param's Explanation:
 		@OrderItem:
@@ -332,8 +331,6 @@ BEGIN
 	UNION ALL
 	SELECT 'AB' AS Code WHERE @ShowAB = 1
 	UNION ALL
-	SELECT 'FW' AS Code WHERE @ShowFW = 1
-	UNION ALL
 	SELECT 'CO' AS Code WHERE @ShowCO = 1
 	UNION ALL
 	SELECT 'VS2' AS Code WHERE @ShowVS2 = 1
@@ -361,8 +358,6 @@ BEGIN
 	SELECT 'PGS' AS Code WHERE @ShowPGS = 1
 	UNION ALL
 	SELECT 'JK' AS Code WHERE @ShowJK = 1
-	UNION ALL
-	SELECT 'GDG' AS Code WHERE @ShowGDG = 1
 	UNION ALL
 	SELECT 'SLT' AS Code WHERE @ShowSLT = 1
 	UNION ALL

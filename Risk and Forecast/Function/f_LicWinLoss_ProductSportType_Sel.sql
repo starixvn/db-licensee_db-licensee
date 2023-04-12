@@ -49,6 +49,8 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 		- 20220601@Hogan: Integrate MaxGame [RedmineID: #172919]
 		- 20220801@Victoria: Add DBSID-bodb02 to metadata [Redmine: #175297]
 		- 20230130@Evan: Integrate Jili [RedmineID: #182914]
+	    - 20230303@Evan: Remove inactive products CB, FW, GD, GDG [Redmine: 181424]  
+
 */
 RETURNS TABLE
 RETURN
@@ -60,12 +62,9 @@ RETURN
 					(6, 'CS', 251, 71), (6, 'CS', 208, 0), (6, 'CS', 209, 0), (6, 'CS', 210, 0), -- RNG Casino
 					(8, 'KN', 202, 0),	-- Keno
 					(11, 'AGC', 250, 0), -- AG Casino
-					(12, 'GD ', 255, 0), -- Gold Deluxe
 					(14, 'VG', 249, 0),	 -- Macau
-					(15, 'CB', 204, 0),	 -- Colossus Bets
 					(21, 'AB', 211, 0),	-- Allbet
 					(22, 'VB', 212, 0), -- Macau Games
-					(24, 'FW', 219, 0), -- Fishing World
 					(27, 'VS2', 190, 0), (27, 'VS2', 193, 0),-- Betradar Virtual Sports
 					(27, 'VS2', 194, 0), --  Virtual Soccer Asian Cup
 					(27, 'VS2', 195, 0), --  Virtual Soccer English Premier
@@ -87,7 +86,6 @@ RETURN
 					(51, 'WM', 233, 0),		-- WM Live Casino
 					(55, 'PGS', 232, 0),	-- PG Soft
 					(56, 'JK', 234, 0),		-- Joker
-					(59, 'GDG', 236, 0),	-- GDG
 					(63, 'SLT', 169, 0),	-- Sports Lottery
 					(61, 'HB', 238, 0),		-- Habanero RNG Games
 					(57, 'BGG', 239, 0),	-- Big Gaming

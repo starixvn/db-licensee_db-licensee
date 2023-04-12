@@ -11,6 +11,7 @@ AS
 	 
 	 Revisions:
 	  - 20181105@Amanda: Select Products of Licensee [Redmine: #83584]
+  	  - 20230303@Evan: Exclude inactive products [Redmine: 181424]  
 */
 BEGIN
 	SET NOCOUNT ON;
@@ -25,7 +26,9 @@ BEGIN
 				ELSE p.ProductName END AS ProductName
 	FROM dbo.LicenseeProduct3rd lp WITH(NOLOCK)
 	LEFT JOIN dbo.Product3rd p WITH(NOLOCK) ON lp.ProductID = p.Productid
-	WHERE lp.LicenseeID = @LicenseeId AND (lp.ProductID = 0 OR p.Productid IS NOT NULL)
+	WHERE lp.LicenseeID = @LicenseeId 
+		AND (lp.ProductID = 0 OR ISNULL(p.Enabled,0) > 0)
 
 END
 GO
+
