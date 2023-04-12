@@ -18,7 +18,7 @@ ALTER PROCEDURE dbo.LAP_Rpt_WinlossAnalysis_PlayerSel
 	@IsVIPOnly		BIT = 0,
 	@CustomerClass	VARCHAR(1000) = 'ALL',
 	@OddsGroup		VARCHAR(1000) = 'ALL',
-	@SearchCustID	INT	= NULL,
+	@SearchMode		TINYINT	= 1,
 	@SearchUserName	VARCHAR(50) = NULL,
 
 	-- grouping
@@ -46,6 +46,9 @@ AS
 	Param's Explanation:
 		- @SortKey: 0:GroupBy, 1:BetCount, 2:Turnover, 3:NetTurnover, 4:MemWinloss, 5:MemComm, 6:LicWinloss, 7:LicComm, 8:AmtDueToBA, 9:BetEffective, 10:Margin
 		- @SortType: 0:ASC,1:DESC
+		- @SearchMode: TINYINT
+			+ 1: Match Precise
+			+ 2: Match Case
 		
 */
 BEGIN
@@ -68,7 +71,7 @@ BEGIN
 		@IsVIPOnlyCheck	BIT,
 		@CustClassCheck	VARCHAR(1000),
 		@OddsGroupCheck	VARCHAR(1000),
-		@CustIDCheck	INT,
+		@SearchModeCheck	INT,
 		@SearchUsernameCheck VARCHAR(50),
 		@GroupBy		TINYINT,
 		@BreakBy		TINYINT,
@@ -99,8 +102,8 @@ BEGIN
 		@PlatformCheck	= IIF(@PlatformIds IS NULL, 'ALL', @PlatformIds),
 		@CustClassCheck	= IIF(@CustomerClass = 'ALL', NULL, @CustomerClass),
 		@OddsGroupCheck	= IIF(@OddsGroup = 'ALL', NULL, @OddsGroup),
-		@CustIDCheck	= @SearchCustID,
-		@SearchUsernameCheck = @SearchUsername,
+		@SearchModeCheck		= @SearchMode,
+		@SearchUsernameCheck	= @SearchUsername,
 		@IsVIPOnlyCheck	= ISNULL(@IsVIPOnly,0),
 		@IsViewCOOnlyCheck = ISNULL(@IsViewCOOnly, 0),
 		---- EXPORT
@@ -249,8 +252,7 @@ BEGIN
 	DROP TABLE IF EXISTS #playerSel;
 	CREATE TABLE #playerSel (custid INT PRIMARY KEY, Currency INT);
 	IF (
-		@CustIDCheck > 0
-		OR @IsVIPOnlyCheck = 1
+		@IsVIPOnlyCheck = 1
 		OR @CustClassCheck IS NOT NULL
 		OR @OddsGroupCheck IS NOT NULL
 		OR LEN(@SearchUsernameCheck) > 0
@@ -264,8 +266,10 @@ BEGIN
 		INNER JOIN bodb02.dbo.custInfo ci WITH(NOLOCK) ON ci.custid = c.custid
 		LEFT JOIN bodb02.dbo.Dep_CustVIP vip ON c.custid = vip.CustID
 		WHERE c.roleid = 1
-			AND (@CustIDCheck IS NULL OR c.custid = @CustIDCheck)
-			AND (@SearchUsernameCheck IS NULL OR (c.username2 LIKE  + '%$' + @SearchUsernameCheck + '%' OR c.username LIKE  @SearchUsernameCheck + '%'))
+			AND (@SearchUsernameCheck IS NULL OR (
+				(@SearchModeCheck = 1 AND (c.username2 LIKE  + '%$' + @SearchUsernameCheck OR c.username LIKE  @SearchUsernameCheck))) OR
+				(@SearchModeCheck = 2 AND (c.username2 LIKE  + '%$%' + @SearchUsernameCheck + '%' OR c.username LIKE  '%' + @SearchUsernameCheck + '%'))
+			)
 			AND (@OddsGroupCheck IS NULL
 				OR ',' + @OddsGroupCheck + ',' LIKE '%,' + c.ugroup + ',%')
 			AND (@CustClassCheck IS NULL
@@ -305,12 +309,13 @@ BEGIN
 				WHEN @GroupBy = 6 THEN a.currency
 				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId, -1)
 				WHEN @GroupBy = 8 THEN b.custid
+				WHEN @GroupBy = 9 THEN b.recommend
 				ELSE 0
 			END AS GroupBy, 
 			CASE 
 				WHEN @BreakBy = 1 THEN a.currency 
 				WHEN @BreakBy = 2 THEN ck.Product3rdIdMix
-				WHEN @BreakBy = 3 THEN b.recommend 
+				WHEN @BreakBy = 3 THEN b.custid 
 				ELSE a.currency 
 			END AS BreakBy,
 			CASE WHEN @GroupMode IN (4,5) OR @IsViewCOOnlyCheck = 1 THEN ck.Product3rdIdMix ELSE -1 END
@@ -453,12 +458,13 @@ BEGIN
 				WHEN @GroupBy = 6 THEN a.currency
 				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId,-1)
 				WHEN @GroupBy = 8 THEN b.custid
+				WHEN @GroupBy = 9 THEN b.recommend
 				ELSE 0
 			END, 
 			CASE 
 				WHEN @BreakBy = 1 THEN a.currency 
 				WHEN @BreakBy = 2 THEN ck.Product3rdIdMix
-				WHEN @BreakBy = 3 THEN b.recommend 
+				WHEN @BreakBy = 3 THEN b.custid 
 				ELSE a.currency 
 			END,
 			CASE WHEN @GroupMode IN (4,5) OR @IsViewCOOnlyCheck = 1 THEN ck.Product3rdIdMix ELSE -1 END
@@ -482,12 +488,13 @@ BEGIN
 				WHEN @GroupBy = 6 THEN b.currency
 				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId,-1)
 				WHEN @GroupBy = 8 THEN b.custid
+				WHEN @GroupBy = 9 THEN b.recommend
 				ELSE 0
 			END AS GroupBy, 
 			CASE 
 				WHEN @BreakBy = 1 THEN b.currency 
 				WHEN @BreakBy = 2 THEN b.Product3rdID
-				WHEN @BreakBy = 3 THEN b.recommend 
+				WHEN @BreakBy = 3 THEN b.custid 
 				ELSE b.currency 
 			END AS BreakBy,
 			CASE WHEN @GroupMode IN (4, 5) OR @IsViewCOOnlyCheck = 1 THEN b.Product3rdId ELSE -1 END AS ParentKey
@@ -558,12 +565,13 @@ BEGIN
 				WHEN @GroupBy = 6 THEN b.currency
 				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId,-1)
 				WHEN @GroupBy = 8 THEN b.custid
+				WHEN @GroupBy = 9 THEN b.recommend
 				ELSE 0
 			END, 
 			CASE 
 				WHEN @BreakBy = 1 THEN b.currency 
 				WHEN @BreakBy = 2 THEN b.Product3rdID
-				WHEN @BreakBy = 3 THEN b.recommend 
+				WHEN @BreakBy = 3 THEN b.custid 
 				ELSE b.currency 
 			END,
 			CASE WHEN @GroupMode IN (4, 5) OR @IsViewCOOnlyCheck = 1 THEN b.Product3rdId ELSE -1 END
@@ -589,12 +597,13 @@ BEGIN
 				WHEN @GroupBy = 6 THEN a.Currency
 				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId, -1)
 				WHEN @GroupBy = 8 THEN b.custid
+				WHEN @GroupBy = 9 THEN b.recommend
 				ELSE 0
 			END AS BreakBy, 
 			CASE 
 				WHEN @BreakBy = 1 THEN a.Currency
 				WHEN @BreakBy = 2 THEN ck.Product3rdIdMix
-				WHEN @BreakBy = 3 THEN b.recommend 
+				WHEN @BreakBy = 3 THEN b.custid 
 				ELSE a.Currency 
 			END AS BreakBy,
 			CASE WHEN @GroupMode IN (4,5) OR @IsViewCOOnlyCheck = 1 THEN ck.Product3rdIdMix ELSE -1 END AS ParentKey
@@ -660,12 +669,13 @@ BEGIN
 				WHEN @GroupBy = 6 THEN a.Currency
 				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId, -1)
 				WHEN @GroupBy = 8 THEN b.custid
+				WHEN @GroupBy = 9 THEN b.recommend
 				ELSE 0
 			END, 
 			CASE 
 				WHEN @BreakBy = 1 THEN a.Currency
 				WHEN @BreakBy = 2 THEN ck.Product3rdIdMix
-				WHEN @BreakBy = 3 THEN b.recommend 
+				WHEN @BreakBy = 3 THEN b.custid 
 				ELSE a.Currency 
 			END,
 			CASE WHEN @GroupMode IN (4,5) OR @IsViewCOOnlyCheck = 1 THEN ck.Product3rdIdMix ELSE -1 END
@@ -713,6 +723,7 @@ BEGIN
 				COUNT(1) OVER() AS rTotal,
 				ROW_NUMBER() OVER(
 					ORDER BY 
+						CASE WHEN @GroupBy IN (4,5) THEN t.ParentKey ELSE 0 END ASC,
 						CASE WHEN @SortType = 1 THEN sr.SortValue ELSE 0 END DESC,
 						CASE WHEN @SortType = 0 THEN sr.SortValue ELSE 0 END ASC,
 					t.GroupOrder ASC
@@ -747,6 +758,11 @@ BEGIN
 				FROM #rptData rpt
 				WHERE @GroupBy = 6
 				UNION ALL
+				SELECT DISTINCT CAST(rpt.GroupBy AS NVARCHAR(100)) AS GroupBy, rpt.GroupBy AS GroupKey, 0 AS ParentKey
+					,rpt.GroupBy
+				FROM #rptData rpt
+				WHERE @GroupBy = 7
+				UNION ALL
 				SELECT DISTINCT CONCAT(ck.ExternalID,'#',ci.username) AS GroupBy, rpt.GroupBy AS GroupKey, 0 AS ParentKey
 					,rpt.GroupBy
 				FROM #rptData rpt
@@ -754,10 +770,11 @@ BEGIN
 				CROSS APPLY (SELECT SUBSTRING(ci.username2,CHARINDEX('$',ci.username2)+1,100) AS ExternalID) AS ck
 				WHERE @GroupBy = 8
 				UNION ALL
-				SELECT DISTINCT CAST(rpt.GroupBy AS NVARCHAR(100)) AS GroupBy, rpt.GroupBy AS GroupKey, 0 AS ParentKey
+				SELECT DISTINCT ci.username AS GroupBy, rpt.GroupBy AS GroupKey, 0 AS ParentKey
 					,rpt.GroupBy
 				FROM #rptData rpt
-				WHERE @GroupBy = 7
+				INNER JOIN bodb02.dbo.vw_Customer ci WITH(NOLOCK) ON ci.custid = rpt.GroupBy
+				WHERE @GroupBy = 9
 			) AS t
 			INNER JOIN #tmpSortValue sr ON sr.GroupKey =  t.GroupKey
 		) AS p
@@ -813,12 +830,13 @@ BEGIN
 			LEFT JOIN bodb_licensee.dbo.Product3rd p3 WITH(NOLOCK) ON p3.ProductID = rs.BreakBy
 		WHERE @BreakBy = 2
 		UNION ALL
-		SELECT rs.rIdx, rs.GroupBy,	rs.GroupKey, ci.username AS BreakBy, rs.BreakBy AS BreakOrder,
+		SELECT rs.rIdx, rs.GroupBy,	rs.GroupKey, CONCAT(ck.ExternalID,'#',ci.username) AS BreakBy, rs.BreakBy AS BreakOrder,
 			BetCount, Turnover,	NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, AmtDueToBA, BetEffective, Margin
 			,-----BASE
 			BaseTurnover, BaseNetTurnover, BaseMemWinloss, BaseMemComm, BaseLicWinloss, BaseLicComm, BaseAmtDueToBA, BaseBetEffective
 		FROM #result rs
-			INNER JOIN bodb02.dbo.custinfo ci WITH(NOLOCK) ON ci.custid = rs.BreakBy
+			INNER JOIN bodb02.dbo.vw_Customer ci WITH(NOLOCK) ON ci.custid = rs.BreakBy
+			CROSS APPLY (SELECT SUBSTRING(ci.username2,CHARINDEX('$',ci.username2)+1,100) AS ExternalID) AS ck
 		WHERE @BreakBy = 3
 	) AS rs
 	ORDER BY rs.rIdx, rs.GroupKey, rs.BreakOrder

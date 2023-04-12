@@ -257,12 +257,13 @@ BEGIN
 				WHEN @GroupBy = 6 THEN a.currency
 				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId, -1)
 				WHEN @GroupBy = 8 THEN b.custid
+				WHEN @GroupBy = 9 THEN b.recommend
 				ELSE 0
 			END AS GroupBy, 
 			CASE 
 				WHEN @BreakBy = 1 THEN a.currency 
 				WHEN @BreakBy = 2 THEN ck.Product3rdIdMix
-				WHEN @BreakBy = 3 THEN b.recommend 
+				WHEN @BreakBy = 3 THEN b.custid 
 				ELSE a.currency 
 			END AS BreakBy,
 			CASE WHEN @GroupMode IN (4, 5) OR @IsViewCOOnlyCheck = 1 THEN ck.Product3rdIdMix ELSE -1 END AS ParentKey
@@ -405,12 +406,13 @@ BEGIN
 				WHEN @GroupBy = 6 THEN a.currency
 				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId,-1)
 				WHEN @GroupBy = 8 THEN b.custid
+				WHEN @GroupBy = 9 THEN b.recommend
 				ELSE 0
 			END, 
 			CASE 
 				WHEN @BreakBy = 1 THEN a.currency 
 				WHEN @BreakBy = 2 THEN ck.Product3rdIdMix
-				WHEN @BreakBy = 3 THEN b.recommend 
+				WHEN @BreakBy = 3 THEN b.custid 
 				ELSE a.currency 
 			END,
 			CASE WHEN @GroupMode IN (4, 5) OR @IsViewCOOnlyCheck = 1 THEN ck.Product3rdIdMix ELSE -1 END
@@ -434,12 +436,13 @@ BEGIN
 				WHEN @GroupBy = 6 THEN b.currency
 				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId,-1)
 				WHEN @GroupBy = 8 THEN b.custid
+				WHEN @GroupBy = 9 THEN b.recommend 
 				ELSE 0
 			END AS GroupBy, 
 			CASE 
 				WHEN @BreakBy = 1 THEN b.currency 
 				WHEN @BreakBy = 2 THEN b.Product3rdID
-				WHEN @BreakBy = 3 THEN b.recommend 
+				WHEN @BreakBy = 3 THEN b.custid 
 				ELSE b.currency 
 			END AS BreakBy,
 			CASE WHEN @GroupMode IN (4,5) OR @IsViewCOOnlyCheck = 1 THEN b.Product3rdId ELSE -1 END AS ParentKey
@@ -510,12 +513,13 @@ BEGIN
 				WHEN @GroupBy = 6 THEN b.currency
 				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId,-1)
 				WHEN @GroupBy = 8 THEN b.custid
+				WHEN @GroupBy = 9 THEN b.recommend 
 				ELSE 0
 			END, 
 			CASE 
 				WHEN @BreakBy = 1 THEN b.currency 
 				WHEN @BreakBy = 2 THEN b.Product3rdID
-				WHEN @BreakBy = 3 THEN b.recommend 
+				WHEN @BreakBy = 3 THEN b.custid 
 				ELSE b.currency 
 			END,
 			CASE WHEN @GroupMode IN (4, 5) OR @IsViewCOOnlyCheck = 1 THEN b.Product3rdId ELSE -1 END
@@ -543,12 +547,13 @@ BEGIN
 				WHEN @GroupBy = 6 THEN a.Currency
 				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId, -1)
 				WHEN @GroupBy = 8 THEN b.custid
+				WHEN @GroupBy = 9 THEN b.recommend
 				ELSE 0
 			END AS GroupBy, 
 			CASE 
 				WHEN @BreakBy = 1 THEN a.Currency
 				WHEN @BreakBy = 2 THEN ck.Product3rdIdMix
-				WHEN @BreakBy = 3 THEN b.recommend 
+				WHEN @BreakBy = 3 THEN b.custid 
 				ELSE a.Currency 
 			END AS BreakBy,
 			CASE WHEN @GroupMode IN (4,5) OR @IsViewCOOnlyCheck = 1 THEN ck.Product3rdIdMix ELSE -1 END As ParentKey
@@ -614,12 +619,13 @@ BEGIN
 				WHEN @GroupBy = 6 THEN a.Currency
 				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId, -1)
 				WHEN @GroupBy = 8 THEN b.custid
+				WHEN @GroupBy = 9 THEN b.recommend
 				ELSE 0
 			END, 
 			CASE 
 				WHEN @BreakBy = 1 THEN a.Currency
 				WHEN @BreakBy = 2 THEN ck.Product3rdIdMix
-				WHEN @BreakBy = 3 THEN b.recommend 
+				WHEN @BreakBy = 3 THEN b.custid
 				ELSE a.Currency 
 			END,
 			CASE WHEN @GroupMode IN (4,5) OR @IsViewCOOnlyCheck = 1 THEN ck.Product3rdIdMix ELSE -1 END
@@ -667,10 +673,11 @@ BEGIN
 				COUNT(1) OVER() AS rTotal,
 				ROW_NUMBER() OVER(
 					ORDER BY 
+						CASE WHEN @GroupBy IN (4,5) THEN t.ParentKey ELSE 0 END ASC,
 						CASE WHEN @SortType = 1 THEN sr.SortValue ELSE 0 END DESC,
 						CASE WHEN @SortType = 0 THEN sr.SortValue ELSE 0 END ASC,
 					t.GroupOrder ASC
-				) AS rIdx
+			) AS rIdx
 			FROM (
 				SELECT DISTINCT FORMAT(DATEADD(HOUR, rpt.GroupBy, @BaseDate), 'yyyy-MM-dd') AS GroupBy, rpt.GroupBy AS GroupKey, 0 AS ParentKey
 					,rpt.GroupBy AS GroupOrder
@@ -701,6 +708,11 @@ BEGIN
 				FROM #rptData rpt
 				WHERE @GroupBy = 6
 				UNION ALL
+				SELECT DISTINCT CAST(rpt.GroupBy AS NVARCHAR(100)) AS GroupBy, rpt.GroupBy AS GroupKey, 0 AS ParentKey
+					,rpt.GroupBy
+				FROM #rptData rpt
+				WHERE @GroupBy = 7
+				UNION ALL
 				SELECT DISTINCT CONCAT(ck.ExternalID,'#',ci.username) AS GroupBy, rpt.GroupBy AS GroupKey, 0 AS ParentKey
 					,rpt.GroupBy
 				FROM #rptData rpt
@@ -708,10 +720,12 @@ BEGIN
 				CROSS APPLY (SELECT SUBSTRING(ci.username2,CHARINDEX('$',ci.username2)+1,100) AS ExternalID) AS ck
 				WHERE @GroupBy = 8
 				UNION ALL
-				SELECT DISTINCT CAST(rpt.GroupBy AS NVARCHAR(100)) AS GroupBy, rpt.GroupBy AS GroupKey, 0 AS ParentKey
+				SELECT DISTINCT ci.username AS GroupBy, rpt.GroupBy AS GroupKey, 0 AS ParentKey
 					,rpt.GroupBy
 				FROM #rptData rpt
-				WHERE @GroupBy = 7
+				INNER JOIN bodb02.dbo.vw_Customer ci WITH(NOLOCK) ON ci.custid = rpt.GroupBy
+				WHERE @GroupBy = 9
+				
 			) AS t
 			INNER JOIN #tmpSortValue sr ON sr.GroupKey =  t.GroupKey
 		) AS p
@@ -767,12 +781,13 @@ BEGIN
 			LEFT JOIN bodb_licensee.dbo.Product3rd p3 WITH(NOLOCK) ON p3.ProductID = rs.BreakBy
 		WHERE @BreakBy = 2
 		UNION ALL
-		SELECT rs.rIdx, rs.GroupBy,	rs.GroupKey, ci.username AS BreakBy, rs.BreakBy AS BreakOrder,
+		SELECT rs.rIdx, rs.GroupBy,	rs.GroupKey, CONCAT(ck.ExternalID,'#',ci.username) AS BreakBy, rs.BreakBy AS BreakOrder,
 			BetCount, Turnover,	NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, AmtDueToBA, BetEffective, Margin
 			,-----BASE
 			BaseTurnover, BaseNetTurnover, BaseMemWinloss, BaseMemComm, BaseLicWinloss, BaseLicComm, BaseAmtDueToBA, BaseBetEffective
 		FROM #result rs
-			INNER JOIN bodb02.dbo.custinfo ci WITH(NOLOCK) ON ci.custid = rs.BreakBy
+			INNER JOIN bodb02.dbo.vw_Customer ci WITH(NOLOCK) ON ci.custid = rs.BreakBy
+			CROSS APPLY (SELECT SUBSTRING(ci.username2,CHARINDEX('$',ci.username2)+1,100) AS ExternalID) AS ck
 		WHERE @BreakBy = 3
 	) AS rs
 	ORDER BY rs.rIdx, rs.GroupKey, rs.BreakOrder
