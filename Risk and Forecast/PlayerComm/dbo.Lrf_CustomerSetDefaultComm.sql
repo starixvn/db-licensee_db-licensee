@@ -29,6 +29,7 @@ AS
 		- 20210817@Johnson: Add VGaming [redmine:#159696]
 		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586]   
+		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
 				
 	Param's Explanation:
 */ 
@@ -43,7 +44,6 @@ BEGIN
 		@IsUpdatePP BIT = 0,
 		--@IsUpdateGD	BIT,
 		--@IsUpdateAG BIT,
-		@IsUpdateFW BIT = 0,
 		-- phase 2
 		@IsUpdateSexyGaming BIT = 0,
 		@IsUpdateSpadeGaming BIT = 0,
@@ -62,7 +62,6 @@ BEGIN
 		@IsUpdateWMCasino		BIT = 0,
 		@IsUpdateBigGaming		BIT = 0,
 		@IsUpdateJoker			BIT = 0,
-		@IsUpdateGDG			BIT = 0,
 		@IsUpdateSportsLottery	BIT = 0,
 		@IsUpdateHabanero		BIT = 0,
 		@IsUpdateVGaming		BIT = 0,
@@ -116,8 +115,6 @@ BEGIN
 			--ELSE
 			--	SELECT @IsUpdateAG = 0	
 
-			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=24)
-				SELECT @IsUpdateFW = 1
 			-- phase 2
 			-- 45,36,8,28,5,27,40	
 			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=45)
@@ -157,7 +154,7 @@ BEGIN
 			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=55)
 				SET @IsUpdatePGSoft = 1
 
-			-- phase 4: 51,57,56,59,63,61
+			-- phase 4: 51,57,56,63,61
 			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=51)
 				SET @IsUpdateWMCasino = 1
 			
@@ -167,9 +164,6 @@ BEGIN
 			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=56)
 				SET @IsUpdateJoker = 1		
 			
-			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=59)
-				SET @IsUpdateGDG = 1
-				
 			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=63)
 				SET @IsUpdateSportsLottery = 1
 
@@ -202,7 +196,6 @@ BEGIN
 				,@IsUpdatePP=@IsUpdatePP
 				--,@IsUpdateGD=@IsUpdateGD
 				--,@IsUpdateAG=@IsUpdateAG
-				,@IsUpdateFW = @IsUpdateFW
 				-- phase 2
 				,@IsUpdateSexyGaming = @IsUpdateSexyGaming	
 				,@IsUpdateSpadeGaming = @IsUpdateSpadeGaming	
@@ -220,7 +213,6 @@ BEGIN
 				,@IsUpdateWMCasino		= @IsUpdateWMCasino		
 				,@IsUpdateBigGaming		= @IsUpdateBigGaming		
 				,@IsUpdateJoker			= @IsUpdateJoker			
-				,@IsUpdateGDG			= @IsUpdateGDG		
 				,@IsUpdateHabanero		= @IsUpdateHabanero
 				,@IsUpdateVGaming		= @IsUpdateVGaming	
 				-- phase 4.2

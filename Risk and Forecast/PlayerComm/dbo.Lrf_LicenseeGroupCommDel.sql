@@ -39,6 +39,7 @@ AS
 		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 		- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217] 
 		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586]  
+		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
 
 	Param's Explanation:
 
@@ -64,7 +65,6 @@ BEGIN
 		@PPComm DECIMAL(9,8),
 		--@GDComm DECIMAL(9,8),
 		--@AGComm DECIMAL(9,8),
-		@FWComm DECIMAL(9,8),
 		--phase 2
 		@SexyGamingComm DECIMAL(9,8),
 		@SpadeGamingComm DECIMAL(9,8),
@@ -83,7 +83,6 @@ BEGIN
 		@WMCasinoComm		DECIMAL(9,8),
 		@BigGamingComm		DECIMAL(9,8),
 		@JokerComm			DECIMAL(9,8),
-		@GDGComm			DECIMAL(9,8),
 		@HabaneroComm		DECIMAL(9,8),
 		@VGamingComm		DECIMAL(9,8),
 		-- phase 4.2
@@ -129,7 +128,6 @@ BEGIN
 			@PPComm=PPComm,
 			--@GDComm=GDComm,
 			--@AGComm=AGComm,
-			@FWComm = FWComm,
 			@SexyGamingComm = SexyGamingComm ,
 			@SpadeGamingComm = SpadeGamingComm,
 			@KenoComm = KenoComm,
@@ -147,7 +145,6 @@ BEGIN
 			@WMCasinoComm		= WMCasinoComm,
 			@BigGamingComm		= BigGamingComm,
 			@JokerComm			= JokerComm,
-			@GDGComm			= GDGComm,
 			@HabaneroComm		= HabaneroComm,
 			@VGamingComm		= VGamingComm,
 			-- phase 4.2
@@ -252,7 +249,6 @@ BEGIN
 					@PPComm=0,
 					--@GDComm=0,
 					--@AGComm=0,
-					@FWComm = 0,
 					@IsUpdateNG=1,
 					@IsUpdateRNG=1,					
 					@IsUpdateAllbet=1,
@@ -260,7 +256,6 @@ BEGIN
 					@IsUpdatePP=1,
 					--@IsUpdateGD=1,
 					--@IsUpdateAG=1,
-					@IsUpdateFW = 1,
 					---start param of phase 2
 					@IsUpdateSexyGaming = 1,	
 					@SexyGamingComm = 0,
@@ -292,7 +287,6 @@ BEGIN
 					@IsUpdateWMCasino		= 1,		
 					@IsUpdateBigGaming		= 1,		
 					@IsUpdateJoker			= 1,			
-					@IsUpdateGDG			= 1,
 					@IsUpdateHabanero		= 1,
 					@IsUpdateVGaming		= 1,
 					-- phase 4.2
@@ -303,7 +297,6 @@ BEGIN
 					@WMCasinoComm			= 0	,	
 					@BigGamingComm			= 0,		
 					@JokerComm				= 0,			
-					@GDGComm				= 0,
 					@HabaneroComm			= 0,
 					@VGamingComm			= 0,	
 					-- phase 4.2
@@ -342,7 +335,6 @@ BEGIN
 		'PPComm="'+ COALESCE(CAST(@PPComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		--'GDComm="'+ COALESCE(CAST(@GDComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		--'AGComm="'+ COALESCE(CAST(@AGComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		'FWComm="'+ COALESCE(CAST(@FWComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		--phase 2
 		'SexyGamingComm="'+ COALESCE(CAST(@SexyGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'SpadeGamingComm="'+ COALESCE(CAST(@SpadeGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
@@ -361,7 +353,6 @@ BEGIN
 		'WMCasinoComm="'+ COALESCE(CAST(@WMCasinoComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'BigGamingComm="'+ COALESCE(CAST(@BigGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'JokerComm="'+ COALESCE(CAST(@JokerComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'GDGComm="'+ COALESCE(CAST(@GDGComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'HabaneroComm="'+ COALESCE(CAST(@HabaneroComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'VGamingComm="'+ COALESCE(CAST(@VGamingComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		-- phase 4.2
@@ -390,7 +381,6 @@ BEGIN
 		'PPComm="'+ COALESCE(CAST(@PPComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		--'GDComm="'+ COALESCE(CAST(@GDComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		--'AGComm="'+ COALESCE(CAST(@AGComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		'FWComm="'+ COALESCE(CAST(@FWComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		-- phase 2
 		'SexyGamingComm="'+ COALESCE(CAST(@SexyGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'SpadeGamingComm="'+ COALESCE(CAST(@SpadeGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
@@ -410,7 +400,6 @@ BEGIN
 		'WMCasinoComm="'+ COALESCE(CAST(@WMCasinoComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'BigGamingComm="'+ COALESCE(CAST(@BigGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'JokerComm="'+ COALESCE(CAST(@JokerComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'GDGComm="'+ COALESCE(CAST(@GDGComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'HabaneroComm="'+ COALESCE(CAST(@HabaneroComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'VGamingComm="'+ COALESCE(CAST(@VGamingComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		-- phase 4.2

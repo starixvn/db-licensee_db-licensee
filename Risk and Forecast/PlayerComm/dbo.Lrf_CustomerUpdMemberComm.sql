@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet,bodbAdminNet,Dot_Member" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet,bodbAdminNet,Dot_Member" viewers="" isFunction="0" isNested="1"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm]
 (
 	@LicenseeID INT,
@@ -14,7 +14,6 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm]
 	@PPComm DECIMAL(9,8)=0,	
 	--@GDComm DECIMAL(9,8)=0,	
 	--@AGComm DECIMAL(9,8)=0,	
-	@FWComm DECIMAL(9,8)=0,	
 	@IsUpdateSB BIT = 1,
 	@IsParlayComm BIT = 1,
 	@IsUpdateComm BIT=1,
@@ -25,7 +24,6 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm]
 	@IsUpdatePP BIT = 0,
 	--@IsUpdateGD BIT = 0,
 	--@IsUpdateAG BIT = 0,
-	@IsUpdateFW BIT = 0,
 	@IsUpdateGroupComm BIT = 0,
 	@isClearGroupComm BIT = 0,
 	@ClearGroupCommGroupID INT = 0,
@@ -60,7 +58,6 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm]
 	@IsUpdateWMCasino		BIT = 0,
 	@IsUpdateBigGaming		BIT = 0,
 	@IsUpdateJoker			BIT = 0,
-	@IsUpdateGDG			BIT = 0,
 	@IsUpdateHabanero		BIT = 0,
 	@IsUpdateVgaming		BIT = 0,
 	@IsUpdateCG				BIT = 0,
@@ -70,7 +67,6 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm]
 	@WMCasinoComm		DECIMAL(9,8) = 0,
 	@BigGamingComm		DECIMAL(9,8) = 0,
 	@JokerComm			DECIMAL(9,8) = 0,
-	@GDGComm			DECIMAL(9,8) = 0,
 	@HabaneroComm		DECIMAL(9,8) = 0,
 	@VGamingComm		DECIMAL(9,8) = 0,
 	@CGComm				DECIMAL(9,8) = 0,
@@ -123,6 +119,7 @@ AS
 		- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217] 
 		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586] 
 		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
+		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
 		
 	Param's Explanation:
 		1. To update a member/batch members without GroupCommID
@@ -185,7 +182,6 @@ BEGIN
 			,@PPComm = PPComm
 			--,@GDComm = GDComm
 			--,@AGComm = AGComm
-			,@FWComm = FWComm
 			-- phase 2
 			,@SexyGamingComm  = SexyGamingComm 
 			,@SpadeGamingComm  = SpadeGamingComm
@@ -204,7 +200,6 @@ BEGIN
 			,@WMCasinoComm		= WMCasinoComm
 			,@BigGamingComm		= BigGamingComm
 			,@JokerComm			= JokerComm
-			,@GDGComm			= GDGComm
 			,@HabaneroComm		= HabaneroComm
 			,@VGamingComm		= VGamingComm
 			--> phase 4.2
@@ -227,7 +222,6 @@ BEGIN
 		--,@GDComm = ISNULL(@GDComm,0)
 		--,@AGComm = ISNULL(@AGComm,0)
 		-- phase 2
-		,@FWComm = ISNULL(@FWComm,0)
 		,@SexyGamingComm  =  ISNULL (@SexyGamingComm, 0)
 		,@SpadeGamingComm  = ISNULL (@SpadeGamingComm, 0)
 		,@KenoComm  = ISNULL (@KenoComm, 0)
@@ -245,7 +239,6 @@ BEGIN
 		,@WMCasinoComm = ISNULL(@WMCasinoComm,0)	
 		,@BigGamingComm = ISNULL(@BigGamingComm,0)
 		,@JokerComm = ISNULL(@JokerComm,0)
-		,@GDGComm = ISNULL(@GDGComm,0)	
 		,@HabaneroComm = ISNULL(@HabaneroComm,0)
 		,@VGamingComm = ISNULL(@VGamingComm,0)
 		,@CGComm = ISNULL(@CGComm,0)
@@ -258,7 +251,6 @@ BEGIN
 		OR @AllbetComm > 0.15 
 		OR @MacauComm > 0.15 OR @PPComm > 0.15 
 		--OR @GDComm > 0.15 OR @AGComm > 0.15
-		OR @FWComm > 0.15
 		OR @SexyGamingComm  > 0.15
 		OR @SpadeGamingComm  > 0.15
 		OR @KenoComm  > 0.15
@@ -276,7 +268,6 @@ BEGIN
 		OR @WMCasinoComm > 0.15
 		OR @BigGamingComm > 0.15
 		OR @JokerComm > 0.15
-		OR @GDGComm > 0.15	
 		OR @HabaneroComm > 0.15
 		OR @VGamingComm > 0.15
 		--> phase 4.2
@@ -339,14 +330,12 @@ BEGIN
 				,@AllbetComm=@AllbetComm	
 				,@MacauComm=@MacauComm
 				,@PPComm=@PPComm
-				,@FWComm = @FWComm
 				,@IsUpdateSB = @IsUpdateSB
 				,@IsParlayComm = @IsParlayComm
 				,@IsUpdateNG=@IsUpdateNG			
 				,@IsUpdateAllbet=@IsUpdateAllbet
 				,@IsUpdateMacau=@IsUpdateMacau	
 				,@IsUpdatePP=@IsUpdatePP	
-				,@IsUpdateFW = @IsUpdateFW
 				---start param of phase 2
 				,@IsUpdateSexyGaming = @IsUpdateSexyGaming	
 				,@SexyGamingComm = @SexyGamingComm
@@ -378,7 +367,6 @@ BEGIN
 				,@IsUpdateWMCasino		= @IsUpdateWMCasino		
 				,@IsUpdateBigGaming		= @IsUpdateBigGaming		
 				,@IsUpdateJoker			= @IsUpdateJoker			
-				,@IsUpdateGDG			= @IsUpdateGDG			
 				,@IsUpdateHabanero		= @IsUpdateHabanero	
 				,@IsUpdateVGaming		= @IsUpdateVGaming	
 				,@IsUpdateCG			= @IsUpdateCG			
@@ -388,7 +376,6 @@ BEGIN
 				,@WMCasinoComm				= @WMCasinoComm		
 				,@BigGamingComm				= @BigGamingComm		
 				,@JokerComm					= @JokerComm			
-				,@GDGComm					= @GDGComm			
 				,@HabaneroComm				= @HabaneroComm		
 				,@VGamingComm				= @VGamingComm
 				--Saba Casino
@@ -430,14 +417,12 @@ BEGIN
 					,@AllbetComm = @AllbetComm
 					,@MacauComm = @MacauComm
 					,@PPComm = @PPComm
-					,@FWComm = @FWComm
 					,@IsUpdateSB = @IsUpdateSB
 					,@IsParlayComm = @IsParlayComm
 					,@IsUpdateNG=@IsUpdateNG
 					,@IsUpdateAllbet=@IsUpdateAllbet
 					,@IsUpdateMacau=@IsUpdateMacau
 					,@IsUpdatePP=@IsUpdatePP
-					,@IsUpdateFW = @IsUpdateFW
 					---start param of phase 2
 					,@IsUpdateSexyGaming = @IsUpdateSexyGaming	
 					,@SexyGamingComm = @SexyGamingComm
@@ -469,7 +454,6 @@ BEGIN
 					,@IsUpdateWMCasino		= @IsUpdateWMCasino		
 					,@IsUpdateBigGaming		= @IsUpdateBigGaming		
 					,@IsUpdateJoker			= @IsUpdateJoker			
-					,@IsUpdateGDG			= @IsUpdateGDG			
 					,@IsUpdateHabanero		= @IsUpdateHabanero		
 					,@IsUpdateVGaming		= @IsUpdateVGaming	
 					,@IsUpdateCG			= @IsUpdateCG			
@@ -479,7 +463,6 @@ BEGIN
 					,@WMCasinoComm				= @WMCasinoComm		
 					,@BigGamingComm				= @BigGamingComm		
 					,@JokerComm					= @JokerComm			
-					,@GDGComm					= @GDGComm			
 					,@HabaneroComm				= @HabaneroComm
 					,@VGamingComm				= @VGamingComm	
 					--Saba Casino
@@ -511,14 +494,12 @@ BEGIN
 					,@AllbetComm = @AllbetComm
 					,@MacauComm = @MacauComm
 					,@PPComm = @PPComm
-					,@FWComm = @FWComm
 					,@IsUpdateSB = @IsUpdateSB
 					,@IsParlayComm = @IsParlayComm
 					,@IsUpdateNG=@IsUpdateNG
 					,@IsUpdateAllbet=@IsUpdateAllbet
 					,@IsUpdateMacau=@IsUpdateMacau
 					,@IsUpdatePP=@IsUpdatePP
-					,@IsUpdateFW = @IsUpdateFW
 					---start param of phase 2
 					,@IsUpdateSexyGaming = @IsUpdateSexyGaming	
 					,@SexyGamingComm = @SexyGamingComm
@@ -550,7 +531,6 @@ BEGIN
 					,@IsUpdateWMCasino		= @IsUpdateWMCasino		
 					,@IsUpdateBigGaming		= @IsUpdateBigGaming		
 					,@IsUpdateJoker			= @IsUpdateJoker			
-					,@IsUpdateGDG			= @IsUpdateGDG			
 					,@IsUpdateHabanero		= @IsUpdateHabanero	
 					,@IsUpdateVGaming		= @IsUpdateVGaming		
 					,@IsUpdateCG			= @IsUpdateCG			
@@ -560,7 +540,6 @@ BEGIN
 					,@WMCasinoComm				= @WMCasinoComm		
 					,@BigGamingComm				= @BigGamingComm		
 					,@JokerComm					= @JokerComm			
-					,@GDGComm					= @GDGComm			
 					,@HabaneroComm				= @HabaneroComm
 					,@VGamingComm				= @VGamingComm	
 					--Saba Casino
@@ -588,7 +567,6 @@ BEGIN
 		'AllbetComm="'+ COALESCE(CAST(@AllbetComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'MacauComm="'+ COALESCE(CAST(@MacauComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'PPComm="'+ COALESCE(CAST(@PPComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'FWComm="'+ COALESCE(CAST(@FWComm as VARCHAR(50)),SPACE(1)) + '" '+
 		--'GDComm="'+ COALESCE(CAST(@GDComm as VARCHAR(50)),SPACE(1)) + '" '+
 		--'AGComm="'+ COALESCE(CAST(@AGComm as VARCHAR(50)),SPACE(1)) + '" '
 		-- phase 2
@@ -609,7 +587,6 @@ BEGIN
 		'WMCasinoComm="'+ COALESCE(CAST(@WMCasinoComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'BigGamingComm="'+ COALESCE(CAST(@BigGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'JokerComm="'+ COALESCE(CAST(@JokerComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'GDGComm="'+ COALESCE(CAST(@GDGComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'HabaneroComm="'+ COALESCE(CAST(@HabaneroComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'VGamingComm="'+ COALESCE(CAST(@VGamingComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		-- phase 4.2
@@ -671,7 +648,6 @@ BEGIN
 						   'PPComm="'+ COALESCE(CAST(ISNULL(lcc.PPComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
 						   --'GDComm="'+ COALESCE(CAST(ISNULL(lcc.GDComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
 						   --'AGComm="'+ COALESCE(CAST(ISNULL(lcc.AGComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
-						   'FWComm="'+ COALESCE(CAST(ISNULL(lcc.FWComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
 						    -- phase 2
 							'SexyGamingComm="'+ COALESCE(CAST(ISNULL(lcc.SexyGamingComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
 							'SpadeGamingComm="'+ COALESCE(CAST(ISNULL(lcc.SpadeGamingComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
@@ -690,7 +666,6 @@ BEGIN
 							'WMCasinoComm="'+ COALESCE(CAST(ISNULL(lcc.WMCasinoComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
 							'BigGamingComm="'+ COALESCE(CAST(ISNULL(lcc.BigGamingComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
 							'JokerComm="'+ COALESCE(CAST(ISNULL(lcc.JokerComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
-							'GDGComm="'+ COALESCE(CAST(ISNULL(lcc.GDGComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
 							'HabaneroComm="'+ COALESCE(CAST(ISNULL(lcc.HabaneroComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
 							'VGamingComm="'+ COALESCE(CAST(ISNULL(lcc.VGamingComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
 							-- phase 4.2
@@ -756,7 +731,6 @@ BEGIN
 					@IsUpdatePP = @IsUpdatePP,
 					--@IsUpdateGD = @IsUpdateGD,
 					--@IsUpdateAG = @IsUpdateAG,
-					@IsUpdateFW = @IsUpdateFW,
 					@SBComm = @SBComm,
 					@NGComm = @NGComm,	
 					@RNGComm = @RNGComm,
@@ -766,7 +740,6 @@ BEGIN
 					@PPComm = @PPComm,	
 					--@GDComm = @GDComm,	
 					--@AGComm = @AGComm,
-					@FWComm = @FWComm,
 					@IsUpdateGroupComm = @IsUpdateGroupComm
 					---start param of phase 2
 					,@IsUpdateSexyGaming = @IsUpdateSexyGaming	
@@ -799,7 +772,6 @@ BEGIN
 					,@IsUpdateWMCasino		= @IsUpdateWMCasino		
 					,@IsUpdateBigGaming		= @IsUpdateBigGaming		
 					,@IsUpdateJoker			= @IsUpdateJoker			
-					,@IsUpdateGDG			= @IsUpdateGDG		
 					,@IsUpdateHabanero		= @IsUpdateHabanero		
 					,@IsUpdateVGaming		= @IsUpdateVGaming	
 					,@IsUpdateCG			= @IsUpdateCG			
@@ -809,7 +781,6 @@ BEGIN
 					,@WMCasinoComm				= @WMCasinoComm		
 					,@BigGamingComm				= @BigGamingComm		
 					,@JokerComm					= @JokerComm			
-					,@GDGComm					= @GDGComm			
 					,@HabaneroComm				= @HabaneroComm	
 					,@VGamingComm				= @VGamingComm
 					--> phase 4.2

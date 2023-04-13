@@ -12,7 +12,6 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerMoveGroupComm]
 	@IsUpdatePP BIT = 0,
 	--@IsUpdateGD BIT = 0,
 	--@IsUpdateAG BIT = 0,
-	@IsUpdateFW BIT = 0,
 	--start param of phase 2 
 	@IsUpdateSexyGaming BIT = 0,	
 	@IsUpdateSpadeGaming BIT = 0,	
@@ -32,7 +31,6 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerMoveGroupComm]
 	@IsUpdateWMCasino		BIT = 0,
 	@IsUpdateBigGaming		BIT = 0,
 	@IsUpdateJoker			BIT = 0,
-	@IsUpdateGDG			BIT = 0,
 	@IsUpdateHabanero		BIT = 0,
 	@IsUpdateVGaming		BIT = 0,
 	@IsUpdateCG				BIT = 0,
@@ -75,6 +73,7 @@ AS
 		- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217] 
 		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586] 
 		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
+		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
 
 	Param's Explanation:
 */ 
@@ -129,7 +128,6 @@ BEGIN
 		,@IsUpdatePP=@IsUpdatePP
 		--,@IsUpdateGD=@IsUpdateGD
 		--,@IsUpdateAG=@IsUpdateAG
-		,@IsUpdateFW = @IsUpdateFW
 		---start param of phase 2
 		,@IsUpdateSexyGaming = @IsUpdateSexyGaming	
 		,@IsUpdateSpadeGaming = @IsUpdateSpadeGaming	
@@ -149,7 +147,6 @@ BEGIN
 		,@IsUpdateWMCasino		= @IsUpdateWMCasino		
 		,@IsUpdateBigGaming		= @IsUpdateBigGaming		
 		,@IsUpdateJoker			= @IsUpdateJoker			
-		,@IsUpdateGDG			= @IsUpdateGDG			
 		,@IsUpdateHabanero		= @IsUpdateHabanero
 		,@IsUpdateVGaming		= @IsUpdateVGaming
 		--> phase 4.2

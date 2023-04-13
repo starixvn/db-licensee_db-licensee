@@ -38,6 +38,8 @@ AS
 		- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217] 
 		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586] 
 		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
+		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
+
 */  
 BEGIN  
 	SET NOCOUNT ON
@@ -51,7 +53,6 @@ BEGIN
 			@PPComm DECIMAL(9,8),
 			@GDComm DECIMAL(9,8),
 			@AGComm DECIMAL(9,8),
-			@FWComm DECIMAL(9,8),
 			--phase 2
 			@SexyGamingComm DECIMAL(9,8),
 			@SpadeGamingComm DECIMAL(9,8),
@@ -70,7 +71,6 @@ BEGIN
 			@WMCasinoComm		DECIMAL(9,8) = 0,
 			@BigGamingComm		DECIMAL(9,8) = 0,
 			@JokerComm			DECIMAL(9,8) = 0,
-			@GDGComm			DECIMAL(9,8) = 0,
 			@HabaneroComm		DECIMAL(9,8) = 0,
 			@VGamingComm		DECIMAL(9,8) = 0,
 			-- phase 4.2
@@ -128,7 +128,6 @@ BEGIN
 				@PPComm=PPComm,
 				--@GDComm=GDComm,
 				--@AGComm=AGComm
-				@FWComm = FWComm,
 				@SexyGamingComm = SexyGamingComm ,
 				@SpadeGamingComm = SpadeGamingComm,
 				@KenoComm = KenoComm,
@@ -145,7 +144,6 @@ BEGIN
 				@WMCasinoComm		= WMCasinoComm,
 				@BigGamingComm		= BigGamingComm,
 				@JokerComm			= JokerComm,
-				@GDGComm			= GDGComm,
 				@HabaneroComm		= HabaneroComm,
 				@VGamingComm		= VGamingComm,
 				-- phase 4.2
@@ -172,7 +170,6 @@ BEGIN
 				@PPComm=@PPComm,
 				--@GDComm=@GDComm,
 				--@AGComm=@AGComm,
-				@FWComm = @FWComm,
 				@IsUpdateNG=1,
 				@IsUpdateRNG=1,			
 				@IsUpdateAllbet=1,
@@ -180,7 +177,6 @@ BEGIN
 				@IsUpdatePP=1,
 				--@IsUpdateGD=1,
 				--@IsUpdateAG=1,
-				@IsUpdateFW=1,
 				---start param of phase 2
 				@IsUpdateSexyGaming = 1,	
 				@SexyGamingComm = @SexyGamingComm,
@@ -211,7 +207,6 @@ BEGIN
 				@IsUpdateWMCasino		= 1,		
 				@IsUpdateBigGaming		= 1,		
 				@IsUpdateJoker			= 1,			
-				@IsUpdateGDG			= 1,
 				@IsUpdateHabanero		= 1,
 				@IsUpdateVGaming		= 1,	
 				@IsUpdateCG				= 1,
@@ -222,7 +217,6 @@ BEGIN
 				@WMCasinoComm			= @WMCasinoComm	,	
 				@BigGamingComm			= @BigGamingComm,		
 				@JokerComm				= @JokerComm,			
-				@GDGComm				= @GDGComm,				
 				@HabaneroComm			= @HabaneroComm,
 				@VGamingComm			= @VGamingComm,		
 				-- phase 4.2
@@ -262,7 +256,6 @@ BEGIN
 			@PPComm= 0,
 			--@GDComm= 0,
 			--@AGComm= 0,
-			@FWComm= 0,
 			@IsUpdateNG=1,
 			@IsUpdateRNG=1,	
 			@IsUpdateAllbet=1,
@@ -270,7 +263,6 @@ BEGIN
 			@IsUpdatePP=1,
 			--@IsUpdateGD=1,
 			--@IsUpdateAG=1,	
-			@IsUpdateFW=1,
 			---start param of phase 2
 			@IsUpdateSexyGaming = 1,	
 			@SexyGamingComm = 0,
@@ -302,7 +294,6 @@ BEGIN
 			@IsUpdateWMCasino		= 1,		
 			@IsUpdateBigGaming		= 1,		
 			@IsUpdateJoker			= 1,			
-			@IsUpdateGDG			= 1,
 			@IsUpdateHabanero		= 1,
 			@IsUpdateVGaming		= 1,		
 			@IsUpdateCG				= 1,
@@ -312,7 +303,6 @@ BEGIN
 			@WMCasinoComm			= 0,	
 			@BigGamingComm			= 0,		
 			@JokerComm				= 0,			
-			@GDGComm				= 0,
 			@HabaneroComm			= 0,
 			@VGamingComm			= 0,			
 			-- phase 4.2
@@ -340,7 +330,6 @@ BEGIN
 			PPComm= 0,
 			--GDComm= 0,
 			--AGComm= 0,
-			FWComm = 0,
 			-- phase 2
 			SexyGamingComm = 0 ,
 			SpadeGamingComm = 0,
@@ -359,7 +348,6 @@ BEGIN
 			WMCasinoComm		= 0	,	
 			BigGamingComm		= 0,		
 			JokerComm			= 0,			
-			GDGComm				= 0,	
 			HabaneroComm		= 0,
 			VGamingComm			= 0,			
 			-- phase 4.2
