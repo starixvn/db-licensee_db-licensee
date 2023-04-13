@@ -21,6 +21,7 @@ AS
 	- 20210813@Johnson: Add VGaming [redmine: #159696]
 	- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 	- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586]  
+	- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
 
 */  
 BEGIN  
@@ -37,7 +38,6 @@ BEGIN
 		ISNULL(lc.PPComm,0) AS PPComm,
 		--ISNULL(lc.GDComm,0) AS GDComm,
 		--ISNULL(lc.AGComm,0) AS AGComm,
-		ISNULL(lc.FWComm,0) AS FWComm,
 		ISNULL(SexyGamingComm,0) AS SexyGamingComm ,
 		ISNULL(SpadeGamingComm ,0) AS SpadeGamingComm,
 		ISNULL(KenoComm,0) AS KenoComm,
@@ -55,7 +55,6 @@ BEGIN
 		ISNULL(WMCasinoComm,0) AS WMCasinoComm,
 		ISNULL(BigGamingComm,0) AS BigGamingComm,	
 		ISNULL(JokerComm,0) AS  JokerComm,	
-		ISNULL(GDGComm,0) AS GDGComm,		
 		ISNULL(HabaneroComm,0) AS HabaneroComm,
 		ISNULL(VGamingComm,0) AS VGamingComm,
 		-- phase 4.2

@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CustDB" executers="bodbLicenseeNet,bodbAdminNet,Dot_Member" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CustDB" executers="bodbLicenseeNet,bodbAdminNet,Dot_Member" viewers="" isFunction="0" isNested="1"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Direct]
 	@CustID INT,
 	@SBComm DECIMAL(9,8) ,
@@ -7,14 +7,12 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Direct]
 	@AllbetComm DECIMAL(9,8)=0,	
 	@MacauComm DECIMAL(9,8)=0,	
 	@PPComm DECIMAL(9,8)=0,
-	@FWComm DECIMAL(9,8)=0,
 	@IsUpdateSB BIT = 1,
 	@IsParlayComm BIT = 1,
 	@IsUpdateNG BIT = 0,
 	@IsUpdateAllbet BIT = 0,
 	@IsUpdateMacau BIT = 0,
 	@IsUpdatePP BIT = 0,
-	@IsUpdateFW BIT = 0,
 	--start param of phase 2 
 	@IsUpdateSexyGaming BIT = 0,	
 	@SexyGamingComm DECIMAL(9,8) = 0,
@@ -45,7 +43,6 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Direct]
 	@IsUpdateWMCasino		BIT = 0,
 	@IsUpdateBigGaming		BIT = 0,
 	@IsUpdateJoker			BIT = 0,
-	@IsUpdateGDG			BIT = 0,
 	@IsUpdateHabanero		BIT = 0,
 	@IsUpdateVGaming		BIT = 0,
 	-- phase 4.2
@@ -56,7 +53,6 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Direct]
 	@WMCasinoComm		DECIMAL(9,8) = 0,
 	@BigGamingComm		DECIMAL(9,8) = 0,
 	@JokerComm			DECIMAL(9,8) = 0,
-	@GDGComm			DECIMAL(9,8) = 0,
 	@HabaneroComm		DECIMAL(9,8) = 0,
 	@VGamingComm		DECIMAL(9,8) = 0,
 	@IsUpdateSabaCasino	BIT = 0,
@@ -96,7 +92,8 @@ AS
 		- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217] 
 		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586] 
 		- 20220301@Eden: Deposit - Sportsbook - Revise customer settings [Redmine: #167898]
-				
+		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
+		
 	Param's Explanation:	
 
 */
@@ -129,7 +126,6 @@ BEGIN
 	-- DCS Structure ---------
 	IF (@IsUpdateMacau=1
 		OR @IsUpdatePP=1
-		OR @IsUpdateFW=1
 		OR @IsUpdateSexyGaming = 1
 		OR @IsUpdateSpadeGaming = 1
 		OR @IsUpdateLottery = 1
@@ -147,7 +143,6 @@ BEGIN
 		OR @IsUpdateWMCasino = 1	
 		OR @IsUpdateBigGaming = 1	
 		OR @IsUpdateJoker  = 1	
-		OR @IsUpdateGDG  = 1	
 		OR @IsUpdateHabanero  = 1
 		OR @IsUpdateVGaming  = 1
 		OR @IsUpdateSabaCasino  = 1
@@ -166,7 +161,6 @@ BEGIN
 		INSERT INTO @tblSettingDCS_tmp (IsUpdated,sporttype,Bettype, Comm)
 		VALUES (@IsUpdateMacau, 212,4001, @MacauComm)
 				, (@IsUpdatePP,248,4101, @PPComm )
-				, (@IsUpdateFW,219,1011, @FWComm)
 				-- phase 2
 				,(@IsUpdateSexyGaming,243,3101, @SexyGamingComm )
 				,(@IsUpdateSpadeGaming ,247,4301, @SpadeGamingComm )
@@ -185,7 +179,6 @@ BEGIN
 				,(@IsUpdateWMCasino,233,3401,@WMCasinoComm)
 				,(@IsUpdateBigGaming,239,3501,@BigGamingComm)
 				,(@IsUpdateJoker,234,6401,@JokerComm)
-				,(@IsUpdateGDG,236,5701,@GDGComm)
 				,(@IsUpdateHabanero,238,7001,@HabaneroComm)
 				,(@IsUpdateVGaming,171,3801,@VGamingComm)
 				--Saba Casino

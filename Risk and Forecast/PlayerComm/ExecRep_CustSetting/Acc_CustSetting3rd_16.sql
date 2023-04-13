@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="" viewers="" isFunction="0" isNested="1"></info>*/
 ALTER PROCEDURE [dbo].[Acc_CustSetting3rd_16]
 	@IDs VARCHAR(MAX),
 	@SBComm DECIMAL(9,8) = 0,
@@ -7,19 +7,16 @@ ALTER PROCEDURE [dbo].[Acc_CustSetting3rd_16]
 	@AllbetComm DECIMAL(9,8)=0,	
 	@MacauComm DECIMAL(9,8)=0,	
 	@PPComm DECIMAL(9,8)=0,
-	@FWComm DECIMAL(9,8)=0,
 	@IsUpdateSB BIT = 0,
 	@IsParlayComm BIT = 0,
 	@IsUpdateNG BIT = 0,
 	@IsUpdateAllbet BIT = 0,
 	@IsUpdateMacau BIT = 0,
 	@IsUpdatePP BIT = 0,
-	@IsUpdateFW BIT = 0,
 	@AgentID INT = NULL,
 	@AllbetComm_Group DECIMAL(9,8)=0,	
 	@MacauComm_Group DECIMAL(9,8)=0,	
 	@PPComm_Group DECIMAL(9,8)=0,
-	@FWComm_Group DECIMAL(9,8)=0,
 	-- start param phase 2 - group param
 	@SexyGamingComm_Group DECIMAL(9,8)=0,
 	@SpadeGamingComm_Group DECIMAL(9,8)=0,
@@ -62,7 +59,6 @@ ALTER PROCEDURE [dbo].[Acc_CustSetting3rd_16]
 	@IsUpdateWMCasino		BIT = 0,
 	@IsUpdateBigGaming		BIT = 0,
 	@IsUpdateJoker			BIT = 0,
-	@IsUpdateGDG			BIT = 0,
 	@IsUpdateHabanero		BIT = 0,
 	@IsUpdateVGaming		BIT = 0,
 	@IsUpdateCG				BIT = 0,
@@ -72,7 +68,6 @@ ALTER PROCEDURE [dbo].[Acc_CustSetting3rd_16]
 	@WMCasinoComm		DECIMAL(9,8) = 0,
 	@BigGamingComm		DECIMAL(9,8) = 0,
 	@JokerComm			DECIMAL(9,8) = 0,
-	@GDGComm			DECIMAL(9,8) = 0,
 	@HabaneroComm		DECIMAL(9,8) = 0,
 	@VGamingComm		DECIMAL(9,8) = 0,
 	@CGComm				DECIMAL(9,8) = 0,
@@ -82,7 +77,6 @@ ALTER PROCEDURE [dbo].[Acc_CustSetting3rd_16]
 	@WMCasinoComm_Group			DECIMAL(9,8) = 0,
 	@BigGamingComm_Group		DECIMAL(9,8) = 0,
 	@JokerComm_Group			DECIMAL(9,8) = 0,
-	@GDGComm_Group				DECIMAL(9,8) = 0,
 	@HabaneroComm_Group			DECIMAL(9,8) = 0,
 	@VGamingComm_Group			DECIMAL(9,8) = 0,
 	-- Saba Casino
@@ -129,6 +123,7 @@ Revisions:
 	- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586] 
 	- 20220613@Winfred: HF LAP - Licensee Commission Group - Player discount don't update when user update Group Comm [Redmine: #174029]   
 	- 20220301@Eden: Deposit - Sportsbook - Revise customer settings [Redmine: #167898]
+	- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
 
 Param's Explanation:
 • @ErrCode:
@@ -173,7 +168,6 @@ BEGIN
 	-- DCS Structure ---------
 	IF (@IsUpdateMacau=1
 		OR @IsUpdatePP=1
-		OR @IsUpdateFW=1
 		OR @IsUpdateSexyGaming = 1
 		OR @IsUpdateSpadeGaming = 1
 		OR @IsUpdateLottery = 1
@@ -190,7 +184,6 @@ BEGIN
 		OR @IsUpdateWMCasino = 1	
 		OR @IsUpdateBigGaming = 1	
 		OR @IsUpdateJoker  = 1	
-		OR @IsUpdateGDG  = 1	
 		OR @IsUpdateHabanero  = 1
 		OR @IsUpdateVGaming  = 1	
 		OR @IsUpdateSabaCasino = 1
@@ -208,7 +201,6 @@ BEGIN
 		INSERT INTO @tblSettingDCS_tmp (IsUpdated,sporttype,Bettype,CommGroup, Comm)
 		VALUES (@IsUpdateMacau, 212,4001,@MacauComm_Group, @MacauComm)
 				, (@IsUpdatePP,248,4101,@PPComm_Group ,@PPComm )
-				, (@IsUpdateFW,219,1011,@FWComm_Group ,@FWComm)
 				-- phase 2
 				,(@IsUpdateSexyGaming,243,3101,@SexyGamingComm_Group, @SexyGamingComm )
 				,(@IsUpdateSpadeGaming ,247,4301,@SpadeGamingComm_Group, @SpadeGamingComm )
@@ -227,7 +219,6 @@ BEGIN
 				,(@IsUpdateWMCasino,233,3401,@WMCasinoComm_Group,@WMCasinoComm)
 				,(@IsUpdateBigGaming,239,3501,@BigGamingComm_Group,@BigGamingComm)
 				,(@IsUpdateJoker,234,6401,@JokerComm_Group,@JokerComm)
-				,(@IsUpdateGDG,236,5701,@GDGComm_Group,@GDGComm)
 				,(@IsUpdateHabanero,238,7001,@HabaneroComm_Group,@HabaneroComm)
 				,(@IsUpdateVGaming,171,3801,@VGamingComm_Group,@VGamingComm)
 				-- Saba Casino

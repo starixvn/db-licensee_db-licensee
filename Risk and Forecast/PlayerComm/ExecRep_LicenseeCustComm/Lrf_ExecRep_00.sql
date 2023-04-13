@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-bodb_Licensee" executers="" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-bodb_Licensee" executers="" viewers="" isFunction="0" isNested="1"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_ExecRep_00]
 (
 	@strCustId VARCHAR(MAX) = '',
@@ -12,7 +12,6 @@ ALTER PROCEDURE [dbo].[Lrf_ExecRep_00]
 	@IsUpdatePP BIT = 0,
 	@IsUpdateGD BIT = 0,
 	@IsUpdateAG BIT = 0,
-	@IsUpdateFW BIT = 0,
 	@SBComm DECIMAL(9,8)=0,
 	@NGComm DECIMAL(9,8)=0,	
 	@RNGComm DECIMAL(9,8)=0,
@@ -22,7 +21,6 @@ ALTER PROCEDURE [dbo].[Lrf_ExecRep_00]
 	@PPComm DECIMAL(9,8)=0,	
 	@GDComm DECIMAL(9,8)=0,	
 	@AGComm DECIMAL(9,8)=0,
-	@FWComm DECIMAL(9,8)=0,
 	--start param of phase 2 
 	@IsUpdateSexyGaming BIT = 0,	
 	@SexyGamingComm DECIMAL(9,8) = 0,
@@ -54,7 +52,6 @@ ALTER PROCEDURE [dbo].[Lrf_ExecRep_00]
 	@IsUpdateWMCasino		BIT = 0,
 	@IsUpdateBigGaming		BIT = 0,
 	@IsUpdateJoker			BIT = 0,
-	@IsUpdateGDG			BIT = 0,
 	@IsUpdateHabanero		BIT = 0,
 	@IsUpdateVGaming		BIT = 0,
 	@IsUpdateCG				BIT = 0,
@@ -64,7 +61,6 @@ ALTER PROCEDURE [dbo].[Lrf_ExecRep_00]
 	@WMCasinoComm		DECIMAL(9,8) = 0,
 	@BigGamingComm		DECIMAL(9,8) = 0,
 	@JokerComm			DECIMAL(9,8) = 0,
-	@GDGComm			DECIMAL(9,8) = 0,
 	@HabaneroComm		DECIMAL(9,8) = 0,
 	@VGamingComm		DECIMAL(9,8) = 0,
 	@CGComm				DECIMAL(9,8) = 0,
@@ -94,6 +90,7 @@ AS
 		- 20210817@Johnson: Add VGaming [redmine:#159696]
 		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586]   
+		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
 		
 	Param's Explanation:
 
@@ -147,7 +144,6 @@ BEGIN
 				, AllbetComm=CASE WHEN @IsUpdateAllbet = 1 THEN @AllbetComm ELSE AllbetComm END
 				, MacauComm= CASE WHEN @IsUpdateMacau = 1 THEN @MacauComm ELSE MacauComm END
 				, PPComm= CASE WHEN @IsUpdatePP = 1 THEN @PPComm ELSE PPComm END
-				, FWComm= CASE WHEN @IsUpdateFW = 1 THEN @FWComm ELSE FWComm END
 				-- phase 2
 				, SexyGamingComm  = CASE WHEN @IsUpdateSexyGaming = 1 THEN @SexyGamingComm ELSE SexyGamingComm END 
 				, SpadeGamingComm  = CASE WHEN @IsUpdateSpadeGaming = 1 THEN @SpadeGamingComm ELSE SpadeGamingComm END
@@ -166,7 +162,6 @@ BEGIN
 				,WMCasinoComm = CASE WHEN @IsUpdateWMCasino = 1 THEN @WMCasinoComm ELSE WMCasinoComm END
 				,BigGamingComm = CASE WHEN @IsUpdateBigGaming = 1 THEN @BigGamingComm ELSE BigGamingComm END
 				,JokerComm = CASE WHEN @IsUpdateJoker = 1 THEN @JokerComm ELSE JokerComm END
-				,GDGComm = CASE WHEN @IsUpdateGDG = 1 THEN @GDGComm ELSE GDGComm END
 				,HabaneroComm = CASE WHEN @IsUpdateHabanero = 1 THEN @HabaneroComm ELSE HabaneroComm END
 				,VGamingComm = CASE WHEN @IsUpdateVGaming = 1 THEN @VGamingComm ELSE VGamingComm END
 				-- phase 4.2
@@ -225,7 +220,6 @@ BEGIN
 			OR @IsUpdateAllbet=1
 			OR @IsUpdateMacau=1
 			OR @IsUpdatePP=1
-			OR @IsUpdateFW=1
 			-- phase 2
 			OR @IsUpdateSexyGaming = 1
 			OR @IsUpdateSpadeGaming = 1
@@ -244,7 +238,6 @@ BEGIN
 			OR @IsUpdateWMCasino		= 1
 			OR @IsUpdateBigGaming		= 1
 			OR @IsUpdateJoker			= 1
-			OR @IsUpdateGDG				= 1
 			OR @IsUpdateHabanero		= 1
 			OR @IsUpdateVGaming			= 1
 			-- phase 4.2
@@ -261,7 +254,6 @@ BEGIN
 					, AllbetComm=CASE WHEN @IsUpdateAllbet = 1 THEN @AllbetComm ELSE AllbetComm END
 					, MacauComm= CASE WHEN @IsUpdateMacau = 1 THEN @MacauComm ELSE MacauComm END
 					, PPComm= CASE WHEN @IsUpdatePP = 1 THEN @PPComm ELSE PPComm END
-					, FWComm= CASE WHEN @IsUpdateFW = 1 THEN @FWComm ELSE FWComm END
 					-- phase 2
 					, SexyGamingComm  = CASE WHEN @IsUpdateSexyGaming = 1 THEN @SexyGamingComm ELSE SexyGamingComm END 
 					, SpadeGamingComm  = CASE WHEN @IsUpdateSpadeGaming = 1 THEN @SpadeGamingComm ELSE SpadeGamingComm END
@@ -280,7 +272,6 @@ BEGIN
 					,WMCasinoComm = CASE WHEN @IsUpdateWMCasino = 1 THEN @WMCasinoComm ELSE WMCasinoComm END
 					,BigGamingComm = CASE WHEN @IsUpdateBigGaming = 1 THEN @BigGamingComm ELSE BigGamingComm END
 					,JokerComm = CASE WHEN @IsUpdateJoker = 1 THEN @JokerComm ELSE JokerComm END
-					,GDGComm = CASE WHEN @IsUpdateGDG = 1 THEN @GDGComm ELSE GDGComm END
 					,HabaneroComm = CASE WHEN @IsUpdateHabanero = 1 THEN @HabaneroComm ELSE HabaneroComm END
 					,VGamingComm = CASE WHEN @IsUpdateVGaming = 1 THEN @VGamingComm ELSE VGamingComm END
 					-- phase 4.2

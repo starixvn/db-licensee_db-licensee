@@ -27,6 +27,7 @@ AS
 	 - 20210603@Eden: LAP - Support commission for 3rd party products - Phase 4 [Redmine: #154048]   
 	 - 20210813@Johnson: Add VGaming [redmine: #159696]
 	 - 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586] 
+	 - 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
 
 	Parameter's Explaination: 
 */  
@@ -46,7 +47,6 @@ BEGIN
 		,g.PPComm
 		--,g.GDComm
 		--,g.AGComm
-		,g.FWComm
 		,g.color AS GroupColor
 		,ISNULL(c.NumberOfCustomer,0) AS NumberOfCustomer
 		,g.IsDefault  
@@ -66,7 +66,6 @@ BEGIN
 		,g.WMCasinoComm
 		,g.BigGamingComm
 		,g.JokerComm
-		,g.GDGComm
 		,g.HabaneroComm
 		,g.VGamingComm
 		,g.CGComm
