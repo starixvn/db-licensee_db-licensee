@@ -639,24 +639,36 @@ BEGIN
 	-- TODO: Sorting all columns
 	--BetCount, Turnover, NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, AmtDueToBA, BetEffective, Margin
 	DROP TABLE IF EXISTS #tmpSortValue;
-	CREATE TABLE #tmpSortValue (GroupKey INT PRIMARY KEY, SortValue MONEY);
+	CREATE TABLE #tmpSortValue (GroupKey INT PRIMARY KEY, GroupValue VARCHAR(100), SortValue MONEY);
 
 	INSERT INTO #tmpSortValue
-	SELECT GroupBy, (CASE 
+	SELECT GroupBy, 
+		CASE 
+			WHEN @GroupBy = 8 THEN SUBSTRING(c.Username2,CHARINDEX('$',c.Username2)+1,100)	--> Player ExternalId
+			WHEN @GroupBy = 9 THEN c.Username	--> Agent SystemId
+			ELSE '' END GroupValue,
+		(CASE 
 			WHEN @SortKey = 1 THEN SUM(BetCount)
-			WHEN @SortKey = 2 THEN SUM(Turnover)
-			WHEN @SortKey = 3 THEN SUM(NetTurnover)
-			WHEN @SortKey = 4 THEN SUM(MemWinloss)
-			WHEN @SortKey = 5 THEN SUM(MemComm)
-			WHEN @SortKey = 6 THEN SUM(LicWinloss)
-			WHEN @SortKey = 7 THEN SUM(LicComm)
-			WHEN @SortKey = 8 THEN SUM(AmtDueToBA)
-			WHEN @SortKey = 9 THEN SUM(BetEffective)
-			WHEN @SortKey = 10 THEN IIF(SUM(NetTurnover)=0, 0, SUM(LicWinloss)/SUM(NetTurnover))
+			WHEN @SortKey = 2 THEN SUM(BaseTurnover)
+			WHEN @SortKey = 3 THEN SUM(BaseNetTurnover)
+			WHEN @SortKey = 4 THEN SUM(BaseMemWinloss)
+			WHEN @SortKey = 5 THEN SUM(BaseMemComm)
+			WHEN @SortKey = 6 THEN SUM(BaseLicWinloss)
+			WHEN @SortKey = 7 THEN SUM(BaseLicComm)
+			WHEN @SortKey = 8 THEN SUM(BaseAmtDueToBA)
+			WHEN @SortKey = 9 THEN SUM(BaseBetEffective)
+			WHEN @SortKey = 10 THEN IIF(SUM(BaseNetTurnover)=0, 0, SUM(BaseLicWinloss)/SUM(BaseNetTurnover))
 			ELSE GroupBy END
 		) AS SortValue
+		
 	FROM #rptData rpt
-	GROUP BY GroupBy;
+		LEFT JOIN dbo.vw_Customer c WITH(NOLOCK) ON c.custid = rpt.GroupBy
+	GROUP BY GroupBy,
+		CASE 
+			WHEN @GroupBy = 8 THEN SUBSTRING(c.Username2,CHARINDEX('$',c.Username2)+1,100) 
+			WHEN @GroupBy = 9 THEN c.Username
+			ELSE '' END
+	;
 
 	TODO_OUTPUT:
 	DROP TABLE IF EXISTS #result;
@@ -674,8 +686,9 @@ BEGIN
 				ROW_NUMBER() OVER(
 					ORDER BY 
 						CASE WHEN @GroupBy IN (4,5) THEN t.ParentKey ELSE 0 END ASC,
-						CASE WHEN @SortType = 1 THEN sr.SortValue ELSE 0 END DESC,
-						CASE WHEN @SortType = 0 THEN sr.SortValue ELSE 0 END ASC,
+						CASE WHEN @SortKey	= 0 AND @GroupBy IN (8,9) THEN sr.GroupValue ELSE '' END ASC,
+						CASE WHEN @SortType = 1 AND @SortKey <> 0 THEN sr.SortValue ELSE 0 END DESC,
+						CASE WHEN @SortType = 0 AND @SortKey <> 0 THEN sr.SortValue ELSE 0 END ASC,
 					t.GroupOrder ASC
 			) AS rIdx
 			FROM (
@@ -713,7 +726,7 @@ BEGIN
 				FROM #rptData rpt
 				WHERE @GroupBy = 7
 				UNION ALL
-				SELECT DISTINCT CONCAT(ck.ExternalID,'#',ci.username) AS GroupBy, rpt.GroupBy AS GroupKey, 0 AS ParentKey
+				SELECT DISTINCT CONCAT(ci.username,'#',ck.ExternalID) AS GroupBy, rpt.GroupBy AS GroupKey, 0 AS ParentKey
 					,rpt.GroupBy
 				FROM #rptData rpt
 				INNER JOIN bodb02.dbo.vw_Customer ci WITH(NOLOCK) ON ci.custid = rpt.GroupBy
@@ -781,7 +794,7 @@ BEGIN
 			LEFT JOIN bodb_licensee.dbo.Product3rd p3 WITH(NOLOCK) ON p3.ProductID = rs.BreakBy
 		WHERE @BreakBy = 2
 		UNION ALL
-		SELECT rs.rIdx, rs.GroupBy,	rs.GroupKey, CONCAT(ck.ExternalID,'#',ci.username) AS BreakBy, rs.BreakBy AS BreakOrder,
+		SELECT rs.rIdx, rs.GroupBy,	rs.GroupKey, CONCAT(ci.username,'#',ck.ExternalID) AS BreakBy, rs.BreakBy AS BreakOrder,
 			BetCount, Turnover,	NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, AmtDueToBA, BetEffective, Margin
 			,-----BASE
 			BaseTurnover, BaseNetTurnover, BaseMemWinloss, BaseMemComm, BaseLicWinloss, BaseLicComm, BaseAmtDueToBA, BaseBetEffective
@@ -790,7 +803,9 @@ BEGIN
 			CROSS APPLY (SELECT SUBSTRING(ci.username2,CHARINDEX('$',ci.username2)+1,100) AS ExternalID) AS ck
 		WHERE @BreakBy = 3
 	) AS rs
-	ORDER BY rs.rIdx, rs.GroupKey, rs.BreakOrder
+	ORDER BY rs.rIdx, rs.GroupKey, 
+		CASE WHEN @BreakBy = 3 THEN SUBSTRING(rs.BreakBy,CHARINDEX('#',rs.BreakBy)+1,100) ELSE '' END ASC,
+		rs.BreakOrder ASC
 
 	SELECT rs.rIdx, rs.GroupBy,	
 		SUM(BetCount) AS BetCount, SUM(Turnover) AS Turnover, SUM(NetTurnover) AS NetTurnover, 
