@@ -734,7 +734,7 @@ BEGIN
 				COUNT(1) OVER() AS rTotal,
 				ROW_NUMBER() OVER(
 					ORDER BY 
-						CASE WHEN @GroupBy IN (4,5) THEN t.ParentKey ELSE 0 END ASC,
+						CASE WHEN @SortKey	= 0 AND @GroupBy IN (4,5) THEN t.ParentKey ELSE 0 END ASC,
 						CASE WHEN @SortKey	= 0 AND @GroupBy IN (8,9) THEN sr.GroupValue ELSE '' END ASC,
 						CASE WHEN @SortType = 1 AND @SortKey <> 0 THEN sr.SortValue ELSE 0 END DESC,
 						CASE WHEN @SortType = 0 AND @SortKey <> 0 THEN sr.SortValue ELSE 0 END ASC,
