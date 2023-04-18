@@ -1,5 +1,5 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" viewers="" isFunction="0" isNested="0"></info>*/
-CREATE OR ALTER PROCEDURE dbo.LAP_Rpt_WinlossAnalysis_SportSel
+ALTER PROCEDURE dbo.LAP_Rpt_WinlossAnalysis_SportSel
 	@LicenseeID		INT = NULL,
 	@ProductCodes	VARCHAR(MAX) = 'ALL'
 AS
