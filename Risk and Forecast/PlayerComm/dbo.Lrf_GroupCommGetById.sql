@@ -28,7 +28,7 @@ AS
 	- 20210817@Johnson: Add VGaming [redmine:#159696]
 	- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 	- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586]  
-
+	- 20230412@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
 */  
 BEGIN  
 SET NOCOUNT ON;  
@@ -42,9 +42,6 @@ SELECT g.ID AS GroupCommID,
 	g.AllbetComm,
 	g.MacauComm,
 	g.PPComm,
-	--g.GDComm,
-	--g.AGComm,
-	g.FWComm,
 	g.color AS GroupColor, 
 	g.IsDefault,
 	g.SexyGamingComm,
@@ -63,7 +60,6 @@ SELECT g.ID AS GroupCommID,
 	g.WMCasinoComm,
 	g.BigGamingComm,
 	g.JokerComm,
-	g.GDGComm,
 	g.HabaneroComm,
 	g.VGamingComm,
 	g.CGComm, 			
