@@ -21,7 +21,7 @@ AS
 	- 20210813@Johnson: Add VGaming [redmine: #159696]
 	- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 	- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586]  
-	- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
+	- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511] 
 
 */  
 BEGIN  
