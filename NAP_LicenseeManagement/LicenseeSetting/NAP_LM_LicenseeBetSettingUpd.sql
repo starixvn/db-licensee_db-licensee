@@ -1,6 +1,4 @@
 /*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet,bodbLicenseeNet" viewers="" isFunction="0"></info>*/
-USE CustDB
-GO
 CREATE PROCEDURE [dbo].[NAP_LM_LicenseeBetSettingUpd] 
 	@CustID INT	
 	,@Sporttype INT
@@ -38,6 +36,7 @@ AS
 	   - 20211224@Johnson: Adjust Bet Limit for Sub Agent [redmine: #165885]
 	   - 202202220@Elodie: Apply DCS for SB [RedmineID: #167898] 
 	   - 202209010@Elodie: Insert Dep_LicenseeProductSetting in case no data [RedmineID: #177383] 
+	   - 20221010@Johnson: Add Saba & Saba cricket [redmine: #175659]
 	Param's Explanation:
 	Example:	DECLARE @ErrCode INT = 0, @ErrMsg NVARCHAR(4000) = ''
 				EXEC NAP_LM_LicenseeBetSettingUpd @CustID = 16947245, @Sporttype = 151, @Bettype = 31, @MinBet = 25, @MaxBet = 205, @MaxPerMatch = 2005, @ExistedMember = 1, @ErrCode = @ErrCode OUTPUT, @ErrMsg = @ErrMsg OUTPUT
@@ -106,7 +105,7 @@ BEGIN
 							WHEN @IsAgentOnly = 0 AND @ExistedMember = 1 AND (@AgentID <> 0 AND (recommend = @AgentID OR roleid IN (3,4)) OR @AgentID =0) THEN 1
 							ELSE 0 END
 						END	
-	IF @Sporttype IN (1,2,3,5,8,10,11,99,9901,9902,43) --Sportbook
+	IF @Sporttype IN (1,2,3,5,8,10,11,99,9901,9902,43,50,9907) --Sportbook
 		OR @Sporttype = 161 --NumberGame
 	BEGIN
 		DELETE t
