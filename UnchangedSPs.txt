@@ -1,4 +1,2 @@
-Risk and Forecast\Reports\SiteDB\SiteDB_Lrf_CustomerSelByUsername.sql
-Risk and Forecast\Reports\Lrf_CustomerSelByUsername.sql
-Risk and Forecast\Reports\Lrf_CustomerSelByCustId.sql
-Risk and Forecast\Reports\SiteDB\SiteDB_Lrf_CustomerSelByCustid.sql
+Risk and Forecast\Setting\dbo.Lrf_CustomerUpdMemberBAStatus.sql
+BA Admin\Internal\Config\dbo.Acc_BA_LicConfigUpd.sql
