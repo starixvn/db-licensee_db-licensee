@@ -30,7 +30,7 @@ AS
 	- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586]  
 	- 20230314@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 	- 20230412@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
-	
+	- 20230426@Johnson: missing version PRO [redmine:#182922]
 */  
 BEGIN  
 SET NOCOUNT ON;  
