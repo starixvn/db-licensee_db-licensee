@@ -32,6 +32,7 @@ ALTER PROCEDURE [dbo].[WriteLog_UserLog_UpdMemComm_RunSP]
 		- 20220614@Elodie: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 		- 20230412@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
 		- 20230313@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
+		- 20230426@Johnson: missing version PRO [redmine:#182922]
 		
     Param's Explaination:    	
 		- @UserID: UserId perform this action
