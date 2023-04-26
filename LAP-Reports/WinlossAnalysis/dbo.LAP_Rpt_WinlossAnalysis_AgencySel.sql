@@ -133,8 +133,10 @@ BEGIN
 		GOTO TODO_OUTPUT;
 	END
 
-	DECLARE @AgencySel		TABLE(recommend INT PRIMARY KEY, Currency INT);
-	DECLARE @ProductSel		TABLE (ProductId INT, Product3rdId INT);
+	DROP TABLE IF EXISTS #AgencySel;
+	DROP TABLE IF EXISTS #ProductSel;
+	CREATE TABLE #AgencySel	(recommend INT PRIMARY KEY, Currency INT);
+	CREATE TABLE #ProductSel (ProductId INT, Product3rdId INT PRIMARY KEY);
 
 	-- TODO: Agency selection
 	;WITH AgencySel AS (
@@ -142,7 +144,7 @@ BEGIN
 			,t.c.value('@Currency', 'INT') AS Currency
 		FROM @AgentList.nodes('/ROOT/Agent') AS t(c)
 	)
-	INSERT INTO @AgencySel(recommend, Currency)
+	INSERT INTO #AgencySel(recommend, Currency)
 	SELECT a.recommend, Currency
 	FROM AgencySel a;
 
@@ -210,7 +212,7 @@ BEGIN
 		SELECT DISTINCT ProductId, Product3rdId
 		FROM #tmpBettype t
 	)
-	INSERT INTO @ProductSel(ProductId, Product3rdId)
+	INSERT INTO #ProductSel(ProductId, Product3rdId)
 	SELECT ProductId, Product3rdId
 	FROM CTE_ProductMap t
 	WHERE t.ProductId <> 1
@@ -234,7 +236,7 @@ BEGIN
 	INSERT INTO #tmpExchange
 	SELECT FromDate, ToDate, ExchangeID, Rate
 	FROM bodb02.dbo.Lrf_f_GetExchangeRate(@FromDate, @ToDate, @BaseCurrency, '') AS e
-	WHERE EXISTS (SELECT TOP 1 1 FROM @AgencySel a WHERE a.Currency = e.ExchangeID)
+	WHERE EXISTS (SELECT TOP 1 1 FROM #AgencySel a WHERE a.Currency = e.ExchangeID)
 
 	-- TODO: filter raw data
 	IF @ToDate > @MovebetDay --> get data in bettrans
@@ -242,183 +244,298 @@ BEGIN
 		SELECT @rptFromDate = DATEADD(DAY,1,@MovebetDay)
 			, @rptToDate	= @ToDate;
 
-		INSERT INTO #rptData (GroupBy, BreakBy, ParentKey,
-			BetCount, Turnover, NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, AmtDueToBA, BetEffective
-			,------BASE
-			BaseTurnover, BaseNetTurnover, BaseMemWinloss, BaseMemComm, BaseLicWinloss, BaseLicComm, BaseAmtDueToBA, BaseBetEffective
-		)
-		SELECT 
-			CASE 
-				WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, b.winlostdate)
-				WHEN @GroupBy = 2 THEN DATEDIFF(HOUR, @BaseDate, DATEADD(DAY, -DATEPART(DAY, b.Winlostdate) +1, b.Winlostdate)) 
-				WHEN @GroupBy = 3 THEN ck.Product3rdIdMix
-				WHEN @GroupBy = 4 THEN ISNULL(ck.sporttype, @NASporttype) 
-				WHEN @GroupBy = 5 THEN ISNULL(s.GroupTypeId, s.bettype)
-				WHEN @GroupBy = 6 THEN a.currency
-				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId, -1)
-				WHEN @GroupBy = 8 THEN b.custid
-				WHEN @GroupBy = 9 THEN b.recommend
-				ELSE 0
-			END AS GroupBy, 
-			CASE 
-				WHEN @BreakBy = 1 THEN a.currency 
-				WHEN @BreakBy = 2 THEN ck.Product3rdIdMix
-				WHEN @BreakBy = 3 THEN b.custid 
-				ELSE a.currency 
-			END AS BreakBy,
-			CASE WHEN @GroupMode IN (4, 5) OR @IsViewCOOnlyCheck = 1 THEN ck.Product3rdIdMix ELSE -1 END AS ParentKey
-			----------------------
-			,SUM(cal.BetCount) AS BetCount
-			,SUM(cal.Turnover) AS Turnover
-			,SUM(cal.NetTurnover) AS NetTurnover
-			,SUM(cal.MemWinloss) AS MemWinloss
-			,SUM(cal.[MemComm]) AS [MemComm]
-			,SUM(cal.[LicWinloss]) AS LicWinloss
-			,SUM(cal.[LicComm]) AS [LicComm]
-			,SUM(cal.AmtDueToBA) AS AmtDueToBA
-			,SUM(cal.BetEffective) AS BetEffective
-			,---------BASE
-			SUM(cal.Turnover * e.Rate) AS BaseTurnover
-			,SUM(cal.NetTurnover * e.Rate) AS BaseNetTurnover
-			,SUM(cal.MemWinloss * e.Rate) AS BaseMemWinloss
-			,SUM(cal.[MemComm] * e.Rate) AS [BaseMemComm]
-			,SUM(cal.[LicWinloss] * e.Rate) AS BaseLicWinloss
-			,SUM(cal.[LicComm] * e.Rate) AS [BaseLicComm]
-			,SUM(cal.AmtDueToBA * e.Rate) AS BaseAmtDueToBA
-			,SUM(cal.BetEffective * e.Rate) AS BaseBetEffective
-		FROM [bodb02].[dbo].[bettrans] b WITH(NOLOCK)
-			INNER JOIN @AgencySel a ON a.recommend = b.recommend 
-			INNER JOIN #tmpBettype s ON s.bettype = b.bettype AND s.RefTable NOT IN (1,2)
-			INNER JOIN #tmpExchange e on e.ExchangeID =  a.Currency AND b.winlostdate BETWEEN e.FromDate AND e.ToDate
-			LEFT JOIN [bodb02].dbo.match m WITH(NOLOCK) ON b.matchid = m.matchid
-			LEFT JOIN [bodb02].[dbo].[Match3rd] m3rd WITH(NOLOCK) ON m3rd.Match3rdId = b.matchid
-			LEFT JOIN [bodb02].dbo.League l WITH(NOLOCK) ON m.leagueid = l.leagueid AND l.LeagueGroupID IN (42,74,108,113,122,151)
-			LEFT JOIN [bodb02].dbo.outright o WITH(NOLOCK) ON b.matchid = o.orid
-			LEFT JOIN [bodb02].dbo.League lo WITH (NOLOCK) ON lo.leagueid = o.leagueid
-			LEFT JOIN [bodb02].dbo.VSRaceInfo vs WITH(NOLOCK) ON b.matchid = vs.EventID
-			LEFT JOIN [bodb_licensee].dbo.LicenseeBATransaction_active AS lba WITH (NOLOCK) ON b.transid = lba.transid
-			LEFT JOIN #tmpSabaSporttype saba ON s.ProductId = 1 AND saba.Sporttype = m.Sporttype AND saba.LeagueGroupID = l.LeagueGroupID
-			OUTER APPLY (
+		DECLARE @LiteVersion BIT = 0;
+		SELECT @LiteVersion = 1
+		WHERE @SportIds IS NULL
+			AND @StatusIds = 'ALL'
+			AND @LiveStatusIds = 'ALL'
+			AND @PlatformIds = 'ALL'
+			AND @SBBACheck & 8 = 0
+			AND @GroupBy NOT IN (4) -- sporttype
+			AND @IsViewCOOnlyCheck = 0;
+
+		--SELECT @LiteVersion AS [@LiteVersion]
+		-- TODO: lite filtering
+		IF @LiteVersion = 1
+		BEGIN
+			WITH CTE_bettrans AS (
 				SELECT 
-					IIF(lba.TransID IS NOT NULL, 1, 0) AS IsBA,
-					CASE
-						WHEN s.ProductId = 1 AND s.EventType = 1 AND b.betdaqid = -2 THEN 1 -- Castout
-						ELSE 0
-					END AS TicketType
-			) AS ba
-			OUTER APPLY (
-				SELECT 
-					ABS(b.[stake]) AS Turnover,
-					CASE
-						WHEN s.RefTable IN (1,2) THEN 0 -- Gaming IN bettransRnG/bettransLC
-						WHEN s.ProductID = 1 AND b.statusID IN (111) THEN 0
-						WHEN s.ProductID = 1 AND b.statusID IN (112, 113) AND ABS(b.modds) = 0.25 THEN ABS(stake) / 2
-						ELSE ABS(b.stake)
-					END AS NetTurnover,
-					(b.winlost-b.actual_stake) AS MemWinloss,
-					-(CASE
-						WHEN ba.IsBA = 1 THEN (b.winlost - b.actual_stake + b.awinlost + b.comm) --COUNT for BA's tickets
-						ELSE 0
-					END) AS AmtDueToBA,
-					CASE 
-						WHEN s.ProductId IN (63,69) THEN 0 
-						WHEN @IsViewCOOnlyCheck = 1 AND s.ProductId = 1 AND ba.TicketType = 1 THEN -99 --Cashout 
-						WHEN s.ProductId = 1 AND s.Product3rdID & 4 = 4 AND ba.IsBA = 0 THEN 0 
-						WHEN s.ProductId = 1 AND s.Product3rdID & 8 = 8 AND ba.IsBA = 1 THEN 3
-						ELSE s.Product3rdID END AS Product3rdIdMix,
-					CASE 
-						WHEN s.EventType = 0 THEN
-							CASE 
-								WHEN b.matchid = 29 THEN -1 --Parlay Sport
-								WHEN b.matchid = 2799 THEN b.oddsid --VS Sports
-								ELSE b.matchid
-							END
-						WHEN s.EventType = 1 THEN ISNULL(saba.SabaSportType, m.sporttype)
-						WHEN s.EventType = 2 THEN lo.sporttype
-						WHEN s.EventType = 3 THEN vs.SportType
-						WHEN s.EventType = 5 THEN m3rd.SportType --175-BTC Sport
-						ELSE @NASporttype
-					END AS SportType,
-					ISNULL(CASE WHEN b.bettype IN(29) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
-			) AS ck
-			CROSS APPLY (SELECT TOP 1 bf.PlatformId FROM @PlatformSel bf WHERE b.betfrom =  bf.BetFrom) AS bf
-			OUTER APPLY (
-				SELECT (CASE 
-						WHEN s.ProductId <> 1 OR s.Product3rdId & 12 = 12 THEN 1
-						WHEN s.Product3rdId & 8 = 0 AND ba.IsBA = 1 THEN 0
-						WHEN s.Product3rdId & 8 = 8 AND ba.IsBA = 0 THEN 0
-						ELSE 1
-					END) AS BetCount
-				,(CASE 
-						WHEN s.ProductId <> 1 OR s.Product3rdId & 12 = 12 THEN ck.Turnover
-						WHEN s.Product3rdId & 8 = 0 AND ba.IsBA = 1 THEN 0
-						WHEN s.Product3rdId & 8 = 8 AND ba.IsBA = 0 THEN 0
-						ELSE ck.Turnover
-					END) AS Turnover
-				,(CASE 
-						WHEN s.ProductId <> 1 OR s.Product3rdId & 12 = 12 THEN ck.NetTurnover
-						WHEN s.Product3rdId & 8 = 0 AND ba.IsBA = 1 THEN 0
-						WHEN s.Product3rdId & 8 = 8 AND ba.IsBA = 0 THEN 0
-						ELSE ck.NetTurnover
-					END) AS NetTurnover
-				,(CASE 
-						WHEN s.ProductId <> 1 OR s.Product3rdId & 12 = 12 THEN ck.MemWinloss
-						WHEN s.Product3rdId & 8 = 0 AND ba.IsBA = 1 THEN 0
-						WHEN s.Product3rdId & 8 = 8 AND ba.IsBA = 0 THEN 0
-						ELSE ck.MemWinloss
-					END) AS MemWinloss
-				,(CASE 
-						WHEN s.ProductId <> 1 OR s.Product3rdId & 12 = 12 THEN b.[playercomm]
-						WHEN s.Product3rdId & 8 = 0 AND ba.IsBA = 1 THEN 0
-						WHEN s.Product3rdId & 8 = 8 AND ba.IsBA = 0 THEN 0
-						ELSE b.[playercomm]
-					END) AS [MemComm]
-				,-(CASE 
-						WHEN ba.IsBA = 1 THEN 0
-						ELSE ck.MemWinloss
-					END) AS [LicWinloss]
-				,(CASE 
-						WHEN s.ProductId <> 1 OR s.Product3rdId & 12 = 12 THEN b.[comm]
-						WHEN s.Product3rdId & 8 = 0 AND ba.IsBA = 1 THEN 0
-						WHEN s.Product3rdId & 8 = 8 AND ba.IsBA = 0 THEN 0
-						ELSE b.[comm]
-					END) AS [LicComm]
-				,(CASE 
-						WHEN s.ProductId <> 1 OR s.Product3rdId & 12 = 12 THEN ck.AmtDueToBA
-						WHEN s.Product3rdId & 8 = 0 AND ba.IsBA = 1 THEN 0
-						WHEN s.Product3rdId & 8 = 8 AND ba.IsBA = 0 THEN 0
-						ELSE ck.AmtDueToBA
-					END) AS AmtDueToBA
-				,ABS(b.winlost - b.actual_stake) AS BetEffective
-			) AS cal
-		WHERE b.winlostdate BETWEEN @rptFromDate AND @rptToDate
-			AND ',' + @StatusCheck + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
-			AND (',' + @LiveIds + ',' LIKE '%,' + CAST(ck.liveindicator AS VARCHAR(3)) + ',%')
-			AND (ck.sporttype <> 0 AND (@SportIDs IS NULL OR  ',' + @SportIDs + ',' LIKE '%,' + CAST(ck.sporttype AS VARCHAR(10)) + ',%'))
-			--AND (@PlatformCheck='ALL' OR bf.PlatformId > 0)
-		
-		GROUP BY CASE 
-				WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, b.winlostdate)
-				WHEN @GroupBy = 2 THEN DATEDIFF(HOUR, @BaseDate, DATEADD(DAY, -DATEPART(DAY, b.Winlostdate) +1, b.Winlostdate)) 
-				WHEN @GroupBy = 3 THEN ck.Product3rdIdMix
-				WHEN @GroupBy = 4 THEN ISNULL(ck.sporttype, @NASporttype) 
-				WHEN @GroupBy = 5 THEN ISNULL(s.GroupTypeId, s.bettype) 
-				WHEN @GroupBy = 6 THEN a.currency
-				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId,-1)
-				WHEN @GroupBy = 8 THEN b.custid
-				WHEN @GroupBy = 9 THEN b.recommend
-				ELSE 0
-			END, 
-			CASE 
-				WHEN @BreakBy = 1 THEN a.currency 
-				WHEN @BreakBy = 2 THEN ck.Product3rdIdMix
-				WHEN @BreakBy = 3 THEN b.custid 
-				ELSE a.currency 
-			END,
-			CASE WHEN @GroupMode IN (4, 5) OR @IsViewCOOnlyCheck = 1 THEN ck.Product3rdIdMix ELSE -1 END
-		HAVING 
-			SUM(cal.BetCount) > 0
+					b.recommend, a.Currency,
+					b.WinlostDate, e.Rate,
+					b.CustId,
+					s.bettype, 
+					s.product3rdid,s.ProductId,
+					b.betfrom
+					----------------------
+					,COUNT(1) AS BetCount
+					,SUM(ABS(b.stake)) AS Turnover
+					,SUM(CASE
+							WHEN s.ProductID = 1 AND b.statusID IN (111) THEN 0
+							WHEN s.ProductID = 1 AND b.statusID IN (112, 113) AND ABS(b.modds) = 0.25 THEN ABS(stake) / 2
+							ELSE ABS(b.stake)
+						END) AS NetTurnover
+					,SUM(winlost-actual_stake) AS Winlost
+					,SUM(b.playercomm) AS [PComm]
+					,SUM(b.comm) AS [AComm]
+				FROM [bodb02].[dbo].[bettrans] b WITH(NOLOCK)
+					INNER JOIN #AgencySel a ON a.recommend = b.recommend
+					INNER JOIN #tmpBettype s ON s.bettype = b.bettype AND s.RefTable NOT IN (1,2)
+					INNER JOIN bodb02.dbo.Lrf_f_GetExchangeRate(@rptFromDate, @rptToDate, @BaseCurrency, '') AS e
+						on e.ExchangeID = a.Currency AND b.winlostdate BETWEEN e.FromDate AND e.ToDate
+				WHERE b.winlostdate BETWEEN @rptFromDate AND @rptToDate
+					AND b.StatusId IN (111,112,113)
+				GROUP BY
+					b.recommend, a.Currency,
+					b.WinlostDate, e.Rate,
+					b.CustId,
+					s.bettype,s.product3rdid, s.ProductId,
+					b.betfrom
+			)
+			INSERT INTO #rptData (GroupBy, BreakBy, ParentKey,
+				BetCount, Turnover, NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, AmtDueToBA, BetEffective
+				,------BASE
+				BaseTurnover, BaseNetTurnover, BaseMemWinloss, BaseMemComm, BaseLicWinloss, BaseLicComm, BaseAmtDueToBA, BaseBetEffective
+			)
+			SELECT 
+				CASE 
+					WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, b.winlostdate)
+					WHEN @GroupBy = 2 THEN DATEDIFF(HOUR, @BaseDate, DATEADD(DAY, -DATEPART(DAY, b.Winlostdate) +1, b.Winlostdate)) 
+					WHEN @GroupBy = 3 THEN ck.Product3rdIdMix
+					WHEN @GroupBy = 5 THEN ISNULL(s.GroupTypeId, b.bettype)
+					WHEN @GroupBy = 6 THEN b.currency
+					WHEN @GroupBy = 7 THEN ISNULL(bf.platformId, -1)
+					WHEN @GroupBy = 8 THEN b.custid
+					WHEN @GroupBy = 9 THEN b.recommend
+				END AS GroupBy, 
+				CASE 
+					WHEN @BreakBy = 1 THEN b.currency 
+					WHEN @BreakBy = 2 THEN ck.Product3rdIdMix
+					WHEN @BreakBy = 3 THEN b.custid 
+				END AS BreakBy
+				,CASE WHEN @GroupMode IN (5) THEN ck.Product3rdIdMix ELSE -1 END AS ParentKey
 			
+				----------------------
+				,SUM(BetCount) AS BetCount
+				,SUM(Turnover) AS Turnover
+				,SUM(NetTurnover) AS NetTurnover
+				,SUM(Winlost) AS MemWinloss
+				,SUM(PComm) AS [MemComm]
+				,SUM(-Winlost) AS LicWinloss
+				,SUM(Acomm) AS [LicComm]
+				,SUM(0) AS AmtDueToBA
+				,SUM(ABS(winlost)) AS BetEffective
+				,---------BASE
+				SUM(Turnover* b.Rate) AS BaseTurnover
+				,SUM(NetTurnover * b.Rate) AS BaseNetTurnover
+				,SUM(winlost * b.Rate) AS BaseMemWinloss
+				,SUM(PComm * b.Rate) AS [BaseMemComm]
+				,SUM(-winlost * b.Rate) AS BaseLicWinloss
+				,SUM(AComm * b.Rate) AS [BaseLicComm]
+				,SUM(0 * b.Rate) AS BaseAmtDueToBA
+				,SUM(ABS(b.winlost) * b.Rate) AS BaseBetEffective
+			FROM CTE_bettrans AS b
+				LEFT JOIN bodb02.dbo.f_GroupBettype() s ON s.bettype = b.bettype
+				OUTER APPLY (SELECT TOP 1 bf.PlatformId FROM @PlatformSel bf WHERE b.betfrom =  bf.BetFrom) AS bf
+				OUTER APPLY (
+					SELECT 
+						CASE 
+							WHEN b.ProductId IN (63,69) THEN 0 
+							ELSE b.Product3rdID END AS Product3rdIdMix
+				) AS ck
+			
+			GROUP BY 
+				CASE 
+					WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, b.winlostdate)
+					WHEN @GroupBy = 2 THEN DATEDIFF(HOUR, @BaseDate, DATEADD(DAY, -DATEPART(DAY, b.Winlostdate) +1, b.Winlostdate)) 
+					WHEN @GroupBy = 3 THEN ck.Product3rdIdMix
+					WHEN @GroupBy = 5 THEN ISNULL(s.GroupTypeId, b.bettype) 
+					WHEN @GroupBy = 6 THEN b.currency
+					WHEN @GroupBy = 7 THEN ISNULL(bf.platformId,-1)
+					WHEN @GroupBy = 8 THEN b.custid
+					WHEN @GroupBy = 9 THEN b.recommend
+				END, 
+				CASE 
+					WHEN @BreakBy = 1 THEN b.currency 
+					WHEN @BreakBy = 2 THEN ck.Product3rdIdMix
+					WHEN @BreakBy = 3 THEN b.custid 
+				END,
+				CASE WHEN @GroupMode IN (5) THEN ck.Product3rdIdMix ELSE -1 END
+		END
+		ELSE
+		BEGIN
+			-- TODO: full filtering
+			INSERT INTO #rptData (GroupBy, BreakBy, ParentKey,
+				BetCount, Turnover, NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, AmtDueToBA, BetEffective
+				,------BASE
+				BaseTurnover, BaseNetTurnover, BaseMemWinloss, BaseMemComm, BaseLicWinloss, BaseLicComm, BaseAmtDueToBA, BaseBetEffective
+			)
+			SELECT 
+				CASE 
+					WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, b.winlostdate)
+					WHEN @GroupBy = 2 THEN DATEDIFF(HOUR, @BaseDate, DATEADD(DAY, -DATEPART(DAY, b.Winlostdate) +1, b.Winlostdate)) 
+					WHEN @GroupBy = 3 THEN ck.Product3rdIdMix
+					WHEN @GroupBy = 4 THEN ISNULL(ck.sporttype, @NASporttype) 
+					WHEN @GroupBy = 5 THEN ISNULL(s.GroupTypeId, s.bettype)
+					WHEN @GroupBy = 6 THEN a.currency
+					WHEN @GroupBy = 7 THEN ISNULL(bf.platformId, -1)
+					WHEN @GroupBy = 8 THEN b.custid
+					WHEN @GroupBy = 9 THEN b.recommend
+				END AS GroupBy, 
+				CASE 
+					WHEN @BreakBy = 1 THEN a.currency 
+					WHEN @BreakBy = 2 THEN ck.Product3rdIdMix
+					WHEN @BreakBy = 3 THEN b.custid 
+				END AS BreakBy,
+				CASE WHEN @GroupMode IN (4, 5) OR @IsViewCOOnlyCheck = 1 THEN ck.Product3rdIdMix ELSE -1 END AS ParentKey
+				----------------------
+				,SUM(cal.BetCount) AS BetCount
+				,SUM(cal.Turnover) AS Turnover
+				,SUM(cal.NetTurnover) AS NetTurnover
+				,SUM(cal.MemWinloss) AS MemWinloss
+				,SUM(cal.[MemComm]) AS [MemComm]
+				,SUM(cal.[LicWinloss]) AS LicWinloss
+				,SUM(cal.[LicComm]) AS [LicComm]
+				,SUM(cal.AmtDueToBA) AS AmtDueToBA
+				,SUM(ABS(cal.MemWinloss)) AS BetEffective
+				,---------BASE
+				SUM(cal.Turnover * e.Rate) AS BaseTurnover
+				,SUM(cal.NetTurnover * e.Rate) AS BaseNetTurnover
+				,SUM(cal.MemWinloss * e.Rate) AS BaseMemWinloss
+				,SUM(cal.[MemComm] * e.Rate) AS [BaseMemComm]
+				,SUM(cal.[LicWinloss] * e.Rate) AS BaseLicWinloss
+				,SUM(cal.[LicComm] * e.Rate) AS [BaseLicComm]
+				,SUM(cal.AmtDueToBA * e.Rate) AS BaseAmtDueToBA
+				,SUM(ABS(cal.MemWinloss) * e.Rate) AS BaseBetEffective
+			FROM [bodb02].[dbo].[bettrans] b WITH(NOLOCK)
+				INNER JOIN #AgencySel a ON a.recommend = b.recommend 
+				INNER JOIN #tmpBettype s ON s.bettype = b.bettype AND s.RefTable NOT IN (1,2)
+				INNER JOIN #tmpExchange e on e.ExchangeID =  a.Currency AND b.winlostdate BETWEEN e.FromDate AND e.ToDate
+				LEFT JOIN [bodb02].dbo.match m WITH(NOLOCK) ON b.matchid = m.matchid
+				LEFT JOIN [bodb02].[dbo].[Match3rd] m3rd WITH(NOLOCK) ON m3rd.Match3rdId = b.matchid
+				LEFT JOIN [bodb02].dbo.League l WITH(NOLOCK) ON m.leagueid = l.leagueid AND l.LeagueGroupID IN (42,74,108,113,122,151)
+				LEFT JOIN [bodb02].dbo.outright o WITH(NOLOCK) ON b.matchid = o.orid
+				LEFT JOIN [bodb02].dbo.League lo WITH (NOLOCK) ON lo.leagueid = o.leagueid
+				LEFT JOIN [bodb02].dbo.VSRaceInfo vs WITH(NOLOCK) ON b.matchid = vs.EventID
+				LEFT JOIN [bodb_licensee].dbo.LicenseeBATransaction_active AS lba WITH (NOLOCK) ON b.transid = lba.transid
+				LEFT JOIN #tmpSabaSporttype saba ON s.ProductId = 1 AND saba.Sporttype = m.Sporttype AND saba.LeagueGroupID = l.LeagueGroupID
+				OUTER APPLY (
+					SELECT 
+						IIF(lba.TransID IS NOT NULL, 1, 0) AS IsBA,
+						CASE
+							WHEN s.ProductId = 1 AND s.EventType = 1 AND b.betdaqid = -2 THEN 1 -- Castout
+							ELSE 0
+						END AS TicketType
+				) AS ba
+				OUTER APPLY (
+					SELECT 
+						ABS(b.[stake]) AS Turnover,
+						CASE
+							WHEN s.RefTable IN (1,2) THEN 0 -- Gaming IN bettransRnG/bettransLC
+							WHEN s.ProductID = 1 AND b.statusID IN (111) THEN 0
+							WHEN s.ProductID = 1 AND b.statusID IN (112, 113) AND ABS(b.modds) = 0.25 THEN ABS(stake) / 2
+							ELSE ABS(b.stake)
+						END AS NetTurnover,
+						(b.winlost-b.actual_stake) AS MemWinloss,
+						-(CASE
+							WHEN ba.IsBA = 1 THEN (b.winlost - b.actual_stake + b.awinlost + b.comm) --COUNT for BA's tickets
+							ELSE 0
+						END) AS AmtDueToBA,
+						CASE 
+							WHEN s.ProductId IN (63,69) THEN 0 
+							WHEN @IsViewCOOnlyCheck = 1 AND s.ProductId = 1 AND ba.TicketType = 1 THEN -99 --Cashout 
+							WHEN s.ProductId = 1 AND s.Product3rdID & 4 = 4 AND ba.IsBA = 0 THEN 0 
+							WHEN s.ProductId = 1 AND s.Product3rdID & 8 = 8 AND ba.IsBA = 1 THEN 3
+							ELSE s.Product3rdID END AS Product3rdIdMix,
+						CASE 
+							WHEN s.EventType = 0 THEN
+								CASE 
+									WHEN b.matchid = 29 THEN -1 --Parlay Sport
+									WHEN b.matchid = 2799 THEN b.oddsid --VS Sports
+									ELSE b.matchid
+								END
+							WHEN s.EventType = 1 THEN ISNULL(saba.SabaSportType, m.sporttype)
+							WHEN s.EventType = 2 THEN lo.sporttype
+							WHEN s.EventType = 3 THEN vs.SportType
+							WHEN s.EventType = 5 THEN m3rd.SportType --175-BTC Sport
+							ELSE @NASporttype
+						END AS SportType,
+						ISNULL(CASE WHEN b.bettype IN(29) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
+				) AS ck
+				CROSS APPLY (SELECT TOP 1 bf.PlatformId FROM @PlatformSel bf WHERE b.betfrom =  bf.BetFrom) AS bf
+				OUTER APPLY (
+					SELECT (CASE 
+							WHEN s.ProductId <> 1 OR s.Product3rdId & 12 = 12 THEN 1
+							WHEN s.Product3rdId & 8 = 0 AND ba.IsBA = 1 THEN 0
+							WHEN s.Product3rdId & 8 = 8 AND ba.IsBA = 0 THEN 0
+							ELSE 1
+						END) AS BetCount
+					,(CASE 
+							WHEN s.ProductId <> 1 OR s.Product3rdId & 12 = 12 THEN ck.Turnover
+							WHEN s.Product3rdId & 8 = 0 AND ba.IsBA = 1 THEN 0
+							WHEN s.Product3rdId & 8 = 8 AND ba.IsBA = 0 THEN 0
+							ELSE ck.Turnover
+						END) AS Turnover
+					,(CASE 
+							WHEN s.ProductId <> 1 OR s.Product3rdId & 12 = 12 THEN ck.NetTurnover
+							WHEN s.Product3rdId & 8 = 0 AND ba.IsBA = 1 THEN 0
+							WHEN s.Product3rdId & 8 = 8 AND ba.IsBA = 0 THEN 0
+							ELSE ck.NetTurnover
+						END) AS NetTurnover
+					,(CASE 
+							WHEN s.ProductId <> 1 OR s.Product3rdId & 12 = 12 THEN ck.MemWinloss
+							WHEN s.Product3rdId & 8 = 0 AND ba.IsBA = 1 THEN 0
+							WHEN s.Product3rdId & 8 = 8 AND ba.IsBA = 0 THEN 0
+							ELSE ck.MemWinloss
+						END) AS MemWinloss
+					,(CASE 
+							WHEN s.ProductId <> 1 OR s.Product3rdId & 12 = 12 THEN b.[playercomm]
+							WHEN s.Product3rdId & 8 = 0 AND ba.IsBA = 1 THEN 0
+							WHEN s.Product3rdId & 8 = 8 AND ba.IsBA = 0 THEN 0
+							ELSE b.[playercomm]
+						END) AS [MemComm]
+					,-(CASE 
+							WHEN ba.IsBA = 1 THEN 0
+							ELSE ck.MemWinloss
+						END) AS [LicWinloss]
+					,(CASE 
+							WHEN s.ProductId <> 1 OR s.Product3rdId & 12 = 12 THEN b.[comm]
+							WHEN s.Product3rdId & 8 = 0 AND ba.IsBA = 1 THEN 0
+							WHEN s.Product3rdId & 8 = 8 AND ba.IsBA = 0 THEN 0
+							ELSE b.[comm]
+						END) AS [LicComm]
+					,(CASE 
+							WHEN s.ProductId <> 1 OR s.Product3rdId & 12 = 12 THEN ck.AmtDueToBA
+							WHEN s.Product3rdId & 8 = 0 AND ba.IsBA = 1 THEN 0
+							WHEN s.Product3rdId & 8 = 8 AND ba.IsBA = 0 THEN 0
+							ELSE ck.AmtDueToBA
+						END) AS AmtDueToBA
+				) AS cal
+			WHERE b.winlostdate BETWEEN @rptFromDate AND @rptToDate
+				AND ',' + @StatusCheck + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
+				AND (',' + @LiveIds + ',' LIKE '%,' + CAST(ck.liveindicator AS VARCHAR(3)) + ',%')
+				AND (ck.sporttype <> 0 AND (@SportIDs IS NULL OR  ',' + @SportIDs + ',' LIKE '%,' + CAST(ck.sporttype AS VARCHAR(10)) + ',%'))
+				--AND (@PlatformCheck='ALL' OR bf.PlatformId > 0)
+		
+			GROUP BY CASE 
+					WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, b.winlostdate)
+					WHEN @GroupBy = 2 THEN DATEDIFF(HOUR, @BaseDate, DATEADD(DAY, -DATEPART(DAY, b.Winlostdate) +1, b.Winlostdate)) 
+					WHEN @GroupBy = 3 THEN ck.Product3rdIdMix
+					WHEN @GroupBy = 4 THEN ISNULL(ck.sporttype, @NASporttype) 
+					WHEN @GroupBy = 5 THEN ISNULL(s.GroupTypeId, s.bettype) 
+					WHEN @GroupBy = 6 THEN a.currency
+					WHEN @GroupBy = 7 THEN ISNULL(bf.platformId,-1)
+					WHEN @GroupBy = 8 THEN b.custid
+					WHEN @GroupBy = 9 THEN b.recommend
+				END, 
+				CASE 
+					WHEN @BreakBy = 1 THEN a.currency 
+					WHEN @BreakBy = 2 THEN ck.Product3rdIdMix
+					WHEN @BreakBy = 3 THEN b.custid 
+				END,
+				CASE WHEN @GroupMode IN (4, 5) OR @IsViewCOOnlyCheck = 1 THEN ck.Product3rdIdMix ELSE -1 END
+			HAVING 
+				SUM(cal.BetCount) > 0
+		END
 
 		;----TODO: get data from bettransLC/RnG for 3rd Products
 		INSERT INTO #rptData (GroupBy, BreakBy, ParentKey,
@@ -473,7 +590,7 @@ BEGIN
 				,b.stake, b.actual_stake,b.playercomm,b.comm,b.winlost
 			FROM bodb02.dbo.bettransRnG b WITH(NOLOCK)
 				INNER JOIN #tmpBettype s ON s.Bettype = b.gameID AND s.RefTable = 1
-				INNER JOIN @AgencySel a ON a.recommend = b.recommend
+				INNER JOIN #AgencySel a ON a.recommend = b.recommend
 			WHERE b.winlostdate BETWEEN @rptFromDate AND @rptToDate
 				AND ',' + @StatusCheck + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
 				AND (',' + @LiveIds + ',' LIKE '%,0,%')
@@ -491,7 +608,7 @@ BEGIN
 				,b.stake, b.actual_stake,b.playercomm,b.comm,b.winlost
 			FROM bodb02.dbo.bettransLC b WITH(NOLOCK)
 				INNER JOIN #tmpBettype s ON s.Bettype = b.gameID AND s.RefTable = 2
-				INNER JOIN @AgencySel a ON a.recommend = b.recommend
+				INNER JOIN #AgencySel a ON a.recommend = b.recommend
 			WHERE b.winlostdate BETWEEN @rptFromDate AND @rptToDate
 				AND ',' + @StatusCheck + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
 				AND (',' + @LiveIds + ',' LIKE '%,0,%')
@@ -529,6 +646,7 @@ BEGIN
 
 	IF @FromDate <= @MovebetDay -- get sum data from @MovebetDay vs backward
 	BEGIN
+
 		SELECT @rptFromDate = @FromDate
 			, @rptToDate	= IIF(@ToDate >= @MovebetDay, @MovebetDay, @ToDate);
 
@@ -577,8 +695,8 @@ BEGIN
 			,SUM(ck.AmtDueToBA * e.Rate) AS BaseAmtDueToBA
 			,SUM(ABS(b.Winlost) * e.Rate) AS BaseBetEffective
 		 FROM bodb_LicenseeReport.dbo.rptLicenseeWinloss b WITH(NOLOCK)
-			INNER JOIN @AgencySel a ON a.recommend = b.recommend
-			INNER JOIN @ProductSel ps ON ps.Product3rdId = b.Product3rdId
+			INNER JOIN #AgencySel a ON a.recommend = b.recommend
+			INNER JOIN #ProductSel ps ON ps.Product3rdId = b.Product3rdId
 			INNER JOIN #tmpBettype bt ON bt.Bettype = b.Bettype
 			INNER JOIN #tmpExchange e on e.ExchangeID =  a.Currency AND b.winlostdate BETWEEN e.FromDate AND e.ToDate
 			LEFT JOIN #tmpSabaSporttype saba ON saba.Sporttype = b.Sporttype AND saba.LeagueGroupID = b.LeagueGroupId
@@ -644,6 +762,7 @@ BEGIN
 	INSERT INTO #tmpSortValue
 	SELECT GroupBy, 
 		CASE 
+			WHEN @GroupBy = 6 THEN ex.Code -- Currency Code
 			WHEN @GroupBy = 8 THEN SUBSTRING(c.Username2,CHARINDEX('$',c.Username2)+1,100)	--> Player ExternalId
 			WHEN @GroupBy = 9 THEN c.Username	--> Agent SystemId
 			ELSE '' END GroupValue,
@@ -662,9 +781,11 @@ BEGIN
 		) AS SortValue
 		
 	FROM #rptData rpt
-		LEFT JOIN dbo.vw_Customer c WITH(NOLOCK) ON c.custid = rpt.GroupBy
+		LEFT JOIN dbo.vw_Customer c WITH(NOLOCK) ON c.custid = rpt.GroupBy AND @GroupBy IN (8,9)
+		LEFT JOIN dbo.Exchange ex WITH(NOLOCK) ON ex.ExchangeId = rpt.GroupBy AND @GroupBy IN (6)
 	GROUP BY GroupBy,
 		CASE 
+			WHEN @GroupBy = 6 THEN ex.Code
 			WHEN @GroupBy = 8 THEN SUBSTRING(c.Username2,CHARINDEX('$',c.Username2)+1,100) 
 			WHEN @GroupBy = 9 THEN c.Username
 			ELSE '' END
@@ -686,9 +807,9 @@ BEGIN
 				ROW_NUMBER() OVER(
 					ORDER BY 
 						CASE WHEN @SortKey	= 0 AND @GroupBy IN (4,5) THEN t.ParentKey ELSE 0 END ASC,
-						CASE WHEN @SortKey	= 0 AND @GroupBy IN (8,9) THEN sr.GroupValue ELSE '' END ASC,
-						CASE WHEN @SortType = 1 AND @SortKey <> 0 THEN sr.SortValue ELSE 0 END DESC,
-						CASE WHEN @SortType = 0 AND @SortKey <> 0 THEN sr.SortValue ELSE 0 END ASC,
+						CASE WHEN @SortKey	= 0 AND @GroupBy IN (6,8,9) THEN sr.GroupValue ELSE '' END ASC,
+						CASE WHEN @SortKey <> 0 AND @SortType = 1 THEN sr.SortValue ELSE 0 END DESC,
+						CASE WHEN @SortKey <> 0 AND @SortType = 0 THEN sr.SortValue ELSE 0 END ASC,
 					t.GroupOrder ASC
 			) AS rIdx
 			FROM (
@@ -779,14 +900,15 @@ BEGIN
 		, ----BASE
 		BaseTurnover, BaseNetTurnover, BaseMemWinloss, BaseMemComm, BaseLicWinloss, BaseLicComm, BaseAmtDueToBA, BaseBetEffective
 	FROM (
-		SELECT rs.rIdx, rs.GroupBy, rs.GroupKey, CAST(rs.BreakBy AS NVARCHAR(100)) AS BreakBy, rs.BreakBy AS BreakOrder,
+		SELECT rs.rIdx, rs.GroupBy, rs.GroupKey, CAST(rs.BreakBy AS NVARCHAR(100)) AS BreakBy, rs.BreakBy AS BreakOrder, ex.Code AS BreakKey,
 			BetCount, Turnover, NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, AmtDueToBA, BetEffective, Margin
 			,-----BASE
 			BaseTurnover, BaseNetTurnover, BaseMemWinloss, BaseMemComm, BaseLicWinloss, BaseLicComm, BaseAmtDueToBA, BaseBetEffective
 		FROM #result rs
+		LEFT JOIN dbo.exchange ex (nolock) on ex.exchangeid = rs.BreakBy
 		WHERE @BreakBy = 1
 		UNION ALL
-		SELECT rs.rIdx, rs.GroupBy,	rs.GroupKey, IIF(rs.BreakBy = 0, 'SB', IIF(rs.BreakBy = -99, 'CO', p3.ProductPrefix)) AS BreakBy, rs.BreakBy AS BreakOrder,
+		SELECT rs.rIdx, rs.GroupBy,	rs.GroupKey, IIF(rs.BreakBy = 0, 'SB', IIF(rs.BreakBy = -99, 'CO', p3.ProductPrefix)) AS BreakBy, rs.BreakBy AS BreakOrder, '' AS BreakKey,
 			BetCount, Turnover,	NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, AmtDueToBA, BetEffective,Margin
 			,-----BASE
 			BaseTurnover, BaseNetTurnover, BaseMemWinloss, BaseMemComm, BaseLicWinloss, BaseLicComm, BaseAmtDueToBA, BaseBetEffective
@@ -794,7 +916,7 @@ BEGIN
 			LEFT JOIN bodb_licensee.dbo.Product3rd p3 WITH(NOLOCK) ON p3.ProductID = rs.BreakBy
 		WHERE @BreakBy = 2
 		UNION ALL
-		SELECT rs.rIdx, rs.GroupBy,	rs.GroupKey, CONCAT(ci.username,'#',ck.ExternalID) AS BreakBy, rs.BreakBy AS BreakOrder,
+		SELECT rs.rIdx, rs.GroupBy,	rs.GroupKey, CONCAT(ci.username,'#',ck.ExternalID) AS BreakBy, rs.BreakBy AS BreakOrder, '' AS BreakKey,
 			BetCount, Turnover,	NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, AmtDueToBA, BetEffective, Margin
 			,-----BASE
 			BaseTurnover, BaseNetTurnover, BaseMemWinloss, BaseMemComm, BaseLicWinloss, BaseLicComm, BaseAmtDueToBA, BaseBetEffective
@@ -804,7 +926,10 @@ BEGIN
 		WHERE @BreakBy = 3
 	) AS rs
 	ORDER BY rs.rIdx, rs.GroupKey, 
-		CASE WHEN @BreakBy = 3 THEN SUBSTRING(rs.BreakBy,CHARINDEX('#',rs.BreakBy)+1,100) ELSE '' END ASC,
+		CASE 
+			WHEN @BreakBy = 1 THEN rs.BreakKey
+			WHEN @BreakBy = 3 THEN SUBSTRING(rs.BreakBy,CHARINDEX('#',rs.BreakBy)+1,100) 
+			ELSE '' END ASC,
 		rs.BreakOrder ASC
 
 	SELECT rs.rIdx, rs.GroupBy,	
@@ -831,8 +956,8 @@ BEGIN
 		,-----BASE
 		SUM(BaseTurnover) AS BaseTurnover, SUM(BaseNetTurnover) AS BaseNetTurnover, 
 		SUM(BaseMemWinloss) AS BaseMemWinloss, SUM(BaseMemComm) AS BaseMemComm, 
-		SUM(BaseLicWinloss) AS BaseLicWinloss, SUM(BaseLicComm) AS BaseLicComm
-		,SUM(BaseAmtDueToBA) AS BaseAmtDueToBA, SUM(BaseBetEffective) AS BaseBetEffective
+		SUM(BaseLicWinloss) AS BaseLicWinloss, SUM(BaseLicComm) AS BaseLicComm,
+		SUM(BaseAmtDueToBA) AS BaseAmtDueToBA, SUM(BaseBetEffective) AS BaseBetEffective
 	FROM #rptData
 
 	SELECT DATEDIFF(MILLISECOND, @startTime, CURRENT_TIMESTAMP) AS Duration_Ms
