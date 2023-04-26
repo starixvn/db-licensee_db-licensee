@@ -67,7 +67,14 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeCustCommUpd]
 	@AdvantComm			DECIMAL(9,8) = 0,
 	@AdvantMiniComm		DECIMAL(9,8) = 0,
 	@VS3Comm			DECIMAL(9,8) = 0,
-
+	
+	@IsUpdateMaxGame	BIT = 0,
+	@IsUpdateFGG		BIT = 0,
+	@IsUpdateJili		BIT = 0,
+	@MaxGameComm		DECIMAL(9,8) = 0,
+	@FGGComm			DECIMAL(9,8) = 0,
+	@JiliComm			DECIMAL(9,8) = 0,
+	
 	@IP VARCHAR(40),
 	@Langkey NVARCHAR(10)='en-US',
 	@ErrCode INT = 0 OUTPUT,
@@ -105,7 +112,8 @@ AS
 		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586]  
 		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
-
+		- 20230314@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
+		
 	Param's Explanation:
 */ 
 BEGIN
@@ -210,6 +218,13 @@ BEGIN
 		,@AdvantComm				= @AdvantComm	
 		,@AdvantMiniComm			= @AdvantMiniComm	
 		,@VS3Comm					= @VS3Comm	
+		
+		,@IsUpdateMaxGame			= @IsUpdateMaxGame	
+		,@IsUpdateFGG				= @IsUpdateFGG	
+		,@IsUpdateJili				= @IsUpdateJili	
+		,@MaxGameComm				= @MaxGameComm
+		,@FGGComm					= @FGGComm
+		,@JiliComm					= @JiliComm
 
 		,@IP=@IP
 		,@Langkey=@Langkey

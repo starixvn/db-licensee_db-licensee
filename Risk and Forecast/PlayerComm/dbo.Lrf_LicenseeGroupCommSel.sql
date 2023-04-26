@@ -28,7 +28,7 @@ AS
 	 - 20210813@Johnson: Add VGaming [redmine: #159696]
 	 - 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586] 
 	 - 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511] 
-
+	 - 20230313@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 	Parameter's Explaination: 
 */  
 BEGIN  
@@ -72,6 +72,9 @@ BEGIN
 		,g.AdvantComm
 		,g.AdvantMiniComm
 		,g.VS3Comm
+		,g.MaxGameComm
+		,g.FGGComm
+		,g.JiliComm
 	FROM dbo.LicenseeGroupComm g WITH (NOLOCK)   
 		LEFT JOIN (	SELECT COUNT(1) AS NumberOfCustomer, GroupCommID
 					FROM LicenseeCustComm (NOLOCK)

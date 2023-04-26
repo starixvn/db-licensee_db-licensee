@@ -30,7 +30,8 @@ AS
 		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586]   
 		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
-				
+		- 20230314@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
+		
 	Param's Explanation:
 */ 
 BEGIN
@@ -70,6 +71,10 @@ BEGIN
 		@IsUpdateAdvant			BIT = 0,
 		@IsUpdateAdvantMini		BIT = 0,
 		@IsUpdateVS3			BIT = 0,
+		
+		@IsUpdateMaxGame		BIT = 0,
+		@IsUpdateFGG			BIT = 0,
+		@IsUpdateJili			BIT = 0,
 
 		@LicenseeID INT,		
 		@strCustID VARCHAR(50)
@@ -180,7 +185,15 @@ BEGIN
 				SET @IsUpdateAdvantMini = 1
 			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=49)
 				SET @IsUpdateVS3 = 1
-
+			
+			--MaxGame,FGG,Jili	
+			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=60)
+				SET @IsUpdateMaxGame = 1
+			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=70)
+				SET @IsUpdateFGG = 1
+			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=75)
+				SET @IsUpdateJili = 1	
+	
 			SELECT @strCustID=CAST (@CustID AS VARCHAR(50))
 			
 			EXEC [Lrf_CustomerUpdMemberComm] 
@@ -219,7 +232,11 @@ BEGIN
 				,@IsUpdateCG			= @IsUpdateCG		
 				,@IsUpdateAdvant		= @IsUpdateAdvant		
 				,@IsUpdateAdvantMini	= @IsUpdateAdvantMini		
-				,@IsUpdateVS3			= @IsUpdateVS3	
+				,@IsUpdateVS3			= @IsUpdateVS3
+
+				,@IsUpdateMaxGame		= @IsUpdateMaxGame
+				,@IsUpdateFGG			= @IsUpdateFGG
+				,@IsUpdateJili			= @IsUpdateJili						
 
 				,@IP=''
 				,@Langkey=@Langkey

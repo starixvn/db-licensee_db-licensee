@@ -87,6 +87,16 @@ ALTER PROCEDURE [dbo].[Acc_CustSetting3rd_16]
 	@AdvantComm_Group			DECIMAL(9,8) = 0,
 	@AdvantMiniComm_Group		DECIMAL(9,8) = 0,
 	@VS3Comm_Group				DECIMAL(9,8) = 0,
+	
+	@IsUpdateMaxGame		BIT = 0,
+	@IsUpdateFGG			BIT = 0,
+	@IsUpdateJili			BIT = 0,
+	@MaxGameComm			DECIMAL(9,8) = 0,
+	@FGGComm				DECIMAL(9,8) = 0,
+	@JiliComm				DECIMAL(9,8) = 0,
+	@MaxGameComm_Group		DECIMAL(9,8) = 0,
+	@FGGComm_Group			DECIMAL(9,8) = 0,
+	@JiliComm_Group			DECIMAL(9,8) = 0,
 	--> 
 	@SBComm_Group DECIMAL(9,8),
 	@ParlayComm_Group DECIMAL(9,8) = 0,
@@ -124,7 +134,8 @@ Revisions:
 	- 20220613@Winfred: HF LAP - Licensee Commission Group - Player discount don't update when user update Group Comm [Redmine: #174029]   
 	- 20220301@Eden: Deposit - Sportsbook - Revise customer settings [Redmine: #167898]
 	- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
-
+	- 20230314@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
+	
 Param's Explanation:
 • @ErrCode:
     = 0: Transaction recorded successfully.
@@ -191,6 +202,10 @@ BEGIN
 		OR @IsUpdateAdvant	= 1
 		OR @IsUpdateAdvantMini =1
 		OR @IsUpdateVS3	= 1
+		
+		OR @IsUpdateMaxGame	= 1
+		OR @IsUpdateFGG	= 1
+		OR @IsUpdateJili	= 1
 		--
 		OR @IsUpdateSB  = 1	
 		OR @IsParlayComm  = 1	
@@ -228,6 +243,10 @@ BEGIN
 				,(@IsUpdateAdvant,172,7701,@AdvantComm_Group,@AdvantComm)
 				,(@IsUpdateAdvantMini,174,7801,@AdvantMiniComm_Group,@AdvantMiniComm)
 				,(@IsUpdateVS3,231,5301,@VS3Comm_Group,@VS3Comm)
+				
+				,(@IsUpdateMaxGame,237,5401,@MaxGameComm_Group,@MaxGameComm)
+				,(@IsUpdateFGG,176,8201,@FGGComm_Group,@FGGComm)
+				,(@IsUpdateJili,158,5100,@JiliComm_Group,@JiliComm)
 				--
 				,(@IsUpdateSB,1,1,@SBComm_Group,@SBComm)
 				,(@IsUpdateSB,1,4,@SBComm_Group,@SBComm)

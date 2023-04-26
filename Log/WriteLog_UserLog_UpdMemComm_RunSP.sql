@@ -31,7 +31,8 @@ ALTER PROCEDURE [dbo].[WriteLog_UserLog_UpdMemComm_RunSP]
 		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586]   
 		- 20220614@Elodie: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 		- 20230412@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
-
+		- 20230313@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
+		
     Param's Explaination:    	
 		- @UserID: UserId perform this action
 		- @@strCustID: A string of individual CustId separated by ","
@@ -91,11 +92,16 @@ BEGIN
 				'BigGamingComm="'+ COALESCE(CAST(ISNULL(lcc.BigGamingComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
 				'JokerComm="'+ COALESCE(CAST(ISNULL(lcc.JokerComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
 				'HabaneroComm="'+ COALESCE(CAST(ISNULL(lcc.HabaneroComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
+				'VGamingComm="'+ COALESCE(CAST(ISNULL(lcc.VgamingComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
 				-- phase 4.2
 				'CGComm="'+ COALESCE(CAST(ISNULL(lcc.CGComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
 				'AdvantComm="'+ COALESCE(CAST(ISNULL(lcc.AdvantComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
 				'AdvantMiniComm="'+ COALESCE(CAST(ISNULL(lcc.AdvantMiniComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
 				'VS3Comm="'+ COALESCE(CAST(ISNULL(lcc.VS3Comm,0) as VARCHAR(50)),SPACE(1)) + '" '+
+				
+				'MaxGameComm="'+ COALESCE(CAST(ISNULL(lcc.MaxGameComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
+				'FGGComm="'+ COALESCE(CAST(ISNULL(lcc.FGGComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
+				'JiliComm="'+ COALESCE(CAST(ISNULL(lcc.JiliComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
 
 			   'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
 			   @LogSPData2 AS TrackingValue2

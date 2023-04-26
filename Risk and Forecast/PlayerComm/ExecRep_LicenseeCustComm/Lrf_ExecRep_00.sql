@@ -67,7 +67,14 @@ ALTER PROCEDURE [dbo].[Lrf_ExecRep_00]
 	@AdvantComm			DECIMAL(9,8) = 0,
 	@AdvantMiniComm		DECIMAL(9,8) = 0,
 	@VS3Comm			DECIMAL(9,8) = 0,
-
+	
+	@IsUpdateMaxGame		BIT = 0,
+	@IsUpdateFGG			BIT = 0,
+	@IsUpdateJili			BIT = 0,
+	@MaxGameComm			DECIMAL(9,8) = 0,
+	@FGGComm				DECIMAL(9,8) = 0,
+	@JiliComm				DECIMAL(9,8) = 0,
+	
 	@isClearGroupComm BIT = 0,
 	@IsUpdateGroupComm BIT = 0
 
@@ -91,6 +98,7 @@ AS
 		- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586]   
 		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
+		- 20230314@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 		
 	Param's Explanation:
 
@@ -169,6 +177,10 @@ BEGIN
 				,AdvantComm = CASE WHEN @IsUpdateAdvant = 1 THEN @AdvantComm ELSE AdvantComm END
 				,AdvantMiniComm = CASE WHEN @IsUpdateAdvantMini = 1 THEN @AdvantMiniComm ELSE AdvantMiniComm END
 				,VS3Comm = CASE WHEN @IsUpdateVS3 = 1 THEN @VS3Comm ELSE VS3Comm END
+				
+				,MaxGameComm = CASE WHEN @IsUpdateMaxGame = 1 THEN @MaxGameComm ELSE MaxGameComm END
+				,FGGComm = CASE WHEN @IsUpdateFGG = 1 THEN @FGGComm ELSE FGGComm END
+				,JiliComm = CASE WHEN @IsUpdateJili = 1 THEN @JiliComm ELSE JiliComm END
 		FROM dbo.LicenseeCustComm cs WITH (ROWLOCK,UPDLOCK)
 			INNER JOIN @TempList_Input ip ON cs.CustID = ip.CustID
 			LEFT JOIN @TempLicenseeBA_batch ba ON ba.custid = ip.custid
@@ -245,6 +257,10 @@ BEGIN
 			OR @IsUpdateAdvant			= 1
 			OR @IsUpdateAdvantMini		= 1
 			OR @IsUpdateVS3				= 1
+			
+			OR @IsUpdateMaxGame			= 1
+			OR @IsUpdateFGG				= 1
+			OR @IsUpdateJili			= 1
 
 			)
 		BEGIN	
@@ -279,6 +295,10 @@ BEGIN
 					,AdvantComm = CASE WHEN @IsUpdateAdvant = 1 THEN @AdvantComm ELSE AdvantComm END
 					,AdvantMiniComm = CASE WHEN @IsUpdateAdvantMini = 1 THEN @AdvantMiniComm ELSE AdvantMiniComm END
 					,VS3Comm = CASE WHEN @IsUpdateVS3 = 1 THEN @VS3Comm ELSE VS3Comm END
+					
+					,MaxGameComm = CASE WHEN @IsUpdateMaxGame = 1 THEN @MaxGameComm ELSE MaxGameComm END
+					,FGGComm = CASE WHEN @IsUpdateFGG = 1 THEN @FGGComm ELSE FGGComm END
+					,JiliComm = CASE WHEN @IsUpdateJili = 1 THEN @JiliComm ELSE JiliComm END
 			FROM dbo.LicenseeCustComm cs WITH (ROWLOCK,UPDLOCK)
 				INNER JOIN @TempList_Input ip ON ip.CustID = cs.CustID
 		END

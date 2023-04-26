@@ -68,6 +68,13 @@ CREATE PROCEDURE [dbo].[Lrf_LicenseeGroupCommUpd]
 	@AdvantMiniComm		DECIMAL(9,8) = 0,
 	@VS3Comm			DECIMAL(9,8) = 0,
 	
+	@MaxGameComm		DECIMAL(9,8) = 0,
+	@IsUpdateMaxGame	BIT = 0,
+	@FGGComm			DECIMAL(9,8) = 0,
+	@IsUpdateFGG		BIT = 0,
+	@JiliComm			DECIMAL(9,8) = 0,
+	@IsUpdateJili		BIT = 0,
+	
 	@GroupColor VARCHAR(20),
 	@IsDefault BIT=0, 
 	@IsResetDefault BIT=0,
@@ -107,7 +114,8 @@ AS
 		- 20220112@Eden: LAP - RNG Casino - Implement DCS Settings [Redmine: #166217] 
 		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586]
 		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
-
+		- 20230313@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
+		
 	Param's Explanation:
 
 */
@@ -167,6 +175,10 @@ BEGIN
 		,@AdvantComm_Old		DECIMAL(9,8) = 0
 		,@AdvantMiniComm_Old	DECIMAL(9,8) = 0
 		,@VS3Comm_Old			DECIMAL(9,8) = 0
+		
+		,@MaxGameComm_Old		DECIMAL(9,8) = 0
+		,@FGGComm_Old			DECIMAL(9,8) = 0
+		,@JiliComm_Old			DECIMAL(9,8) = 0
 	
 		,@IsDefault_Old BIT
 		,@custID_cnt INT = 0
@@ -210,6 +222,10 @@ BEGIN
 		OR @AdvantComm > 0.15
 		OR @AdvantMiniComm > 0.15
 		OR @VS3Comm > 0.15
+		
+		OR @MaxGameComm > 0.15
+		OR @FGGComm > 0.15
+		OR @JiliComm > 0.15
 
 	BEGIN
 		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN  'Player Commission should not greater than '
@@ -276,6 +292,10 @@ BEGIN
 			,@AdvantComm_Old 		= AdvantComm
 			,@AdvantMiniComm_Old 	= AdvantMiniComm
 			,@VS3Comm_Old 			= VS3Comm
+			
+			,@MaxGameComm_Old 		= MaxGameComm
+			,@FGGComm_Old 			= FGGComm
+			,@JiliComm_Old 			= JiliComm
 			
 			,@IsDefault_Old=IsDefault			
 		FROM dbo.LicenseeGroupComm WITH (NOLOCK)
@@ -374,7 +394,11 @@ BEGIN
 			@IsUpdateCG  = CASE WHEN @IsUpdateCG = 1 AND @CGComm_Old <> @CGComm  THEN 1 ELSE 0 END,
 			@IsUpdateAdvant  = CASE WHEN @IsUpdateAdvant = 1 AND @AdvantComm_Old <> @AdvantComm  THEN 1 ELSE 0 END,
 			@IsUpdateAdvantMini  = CASE WHEN @IsUpdateAdvantMini = 1 AND @AdvantMiniComm_Old <> @AdvantMiniComm  THEN 1 ELSE 0 END,
-			@IsUpdateVS3  = CASE WHEN @IsUpdateVS3 = 1 AND @VS3Comm_Old <> @VS3Comm  THEN 1 ELSE 0 END
+			@IsUpdateVS3  = CASE WHEN @IsUpdateVS3 = 1 AND @VS3Comm_Old <> @VS3Comm  THEN 1 ELSE 0 END,
+			
+			@IsUpdateMaxGame  = CASE WHEN @IsUpdateMaxGame = 1 AND @MaxGameComm_Old <> @MaxGameComm  THEN 1 ELSE 0 END,
+			@IsUpdateFGG  = CASE WHEN @IsUpdateFGG = 1 AND @FGGComm_Old <> @FGGComm  THEN 1 ELSE 0 END,
+			@IsUpdateJili  = CASE WHEN @IsUpdateJili = 1 AND @JiliComm_Old <> @JiliComm  THEN 1 ELSE 0 END
 		
 		--Update Group Comm + Member Comm + all the comm settings
 		IF (@IsUpdateSB = 1
@@ -407,6 +431,10 @@ BEGIN
 			OR @IsUpdateAdvant			= 1
 			OR @IsUpdateAdvantMini		= 1
 			OR @IsUpdateVS3				= 1
+			
+			OR @IsUpdateMaxGame			= 1
+			OR @IsUpdateFGG				= 1
+			OR @IsUpdateJili			= 1
 			)
 		
 		BEGIN
@@ -446,6 +474,10 @@ BEGIN
 					,AdvantComm = CASE WHEN @IsUpdateAdvant = 1 THEN @AdvantComm ELSE AdvantComm END
 					,AdvantMiniComm = CASE WHEN @IsUpdateAdvantMini = 1 THEN @AdvantMiniComm ELSE AdvantMiniComm END
 					,VS3Comm = CASE WHEN @IsUpdateVS3 = 1 THEN @VS3Comm ELSE VS3Comm END
+					
+					,MaxGameComm = CASE WHEN @IsUpdateMaxGame = 1 THEN @MaxGameComm ELSE MaxGameComm END
+					,FGGComm = CASE WHEN @IsUpdateFGG = 1 THEN @FGGComm ELSE FGGComm END
+					,JiliComm = CASE WHEN @IsUpdateJili = 1 THEN @JiliComm ELSE JiliComm END
 					
 			WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID
 			
@@ -530,6 +562,14 @@ BEGIN
 					,@AdvantComm				= @AdvantComm
 					,@AdvantMiniComm			= @AdvantMiniComm
 					,@VS3Comm					= @VS3Comm
+					
+					,@MaxGameComm				= @MaxGameComm
+					,@FGGComm					= @FGGComm
+					,@JiliComm					= @JiliComm
+					,@IsUpdateMaxGame			= @IsUpdateMaxGame
+					,@IsUpdateFGG				= @IsUpdateFGG
+					,@IsUpdateJili				= @IsUpdateJili
+					
 					,@IP=@IP
 					,@Langkey=@langkey
 					,@ErrCode=@ErrCode OUTPUT
@@ -582,6 +622,10 @@ BEGIN
 			'AdvantComm="'+ COALESCE(CAST(@AdvantComm as VARCHAR(50)),SPACE(1)) + '" '+
 			'AdvantMiniComm="'+ COALESCE(CAST(@AdvantMiniComm as VARCHAR(50)),SPACE(1)) + '" '+
 			'VS3Comm="'+ COALESCE(CAST(@VS3Comm as VARCHAR(50)),SPACE(1)) + '" '+
+			
+			'MaxGameComm="'+ COALESCE(CAST(@MaxGameComm as VARCHAR(50)),SPACE(1)) + '" '+
+			'FGGComm="'+ COALESCE(CAST(@FGGComm as VARCHAR(50)),SPACE(1)) + '" '+
+			'JiliComm="'+ COALESCE(CAST(@JiliComm as VARCHAR(50)),SPACE(1)) + '" '+
 
 			'IsUpdateNG="'+ COALESCE(CAST(@IsUpdateNG as VARCHAR(50)),SPACE(1)) + '" ' +
 			'IsUpdateRNG="'+ COALESCE(CAST(@IsUpdateRNG as VARCHAR(50)),SPACE(1)) + '" ' +			
@@ -630,6 +674,10 @@ BEGIN
 			'AdvantComm="'+ COALESCE(CAST(@AdvantComm_Old as VARCHAR(50)),SPACE(1)) + '" '+
 			'AdvantMiniComm="'+ COALESCE(CAST(@AdvantMiniComm_Old as VARCHAR(50)),SPACE(1)) + '" '+
 			'VS3Comm="'+ COALESCE(CAST(@VS3Comm_Old as VARCHAR(50)),SPACE(1)) + '" '+
+			
+			'MaxGameComm="'+ COALESCE(CAST(@MaxGameComm_Old as VARCHAR(50)),SPACE(1)) + '" '+
+			'FGGComm="'+ COALESCE(CAST(@FGGComm_Old as VARCHAR(50)),SPACE(1)) + '" '+
+			'JiliComm="'+ COALESCE(CAST(@JiliComm_Old as VARCHAR(50)),SPACE(1)) + '" '+
 
 			'IsUpdateNG="'+ COALESCE(CAST(@IsUpdateNG as VARCHAR(50)),SPACE(1)) + '" ' +
 			'IsUpdateRNG="'+ COALESCE(CAST(@IsUpdateRNG as VARCHAR(50)),SPACE(1)) + '" ' +			

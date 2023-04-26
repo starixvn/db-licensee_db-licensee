@@ -28,7 +28,9 @@ AS
 	- 20210817@Johnson: Add VGaming [redmine:#159696]
 	- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 	- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586]  
+	- 20230314@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 	- 20230412@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
+	
 */  
 BEGIN  
 SET NOCOUNT ON;  
@@ -65,7 +67,10 @@ SELECT g.ID AS GroupCommID,
 	g.CGComm, 			
 	g.AdvantComm, 		
 	g.AdvantMiniComm, 	
-	g.VS3Comm 
+	g.VS3Comm,
+	g.MaxGameComm,
+	g.FGGComm,
+	g.JiliComm	
 FROM dbo.LicenseeGroupComm g WITH (NOLOCK) 
 WHERE 
 	IsActive = 1 
