@@ -695,7 +695,6 @@ BEGIN
 	INSERT INTO #tmpSortValue
 	SELECT GroupBy, 
 		CASE 
-			WHEN @GroupBy = 6 THEN ex.Code -- Currency Code
 			WHEN @GroupBy = 8 THEN SUBSTRING(c.Username2,CHARINDEX('$',c.Username2)+1,100)	--> Player ExternalId
 			WHEN @GroupBy = 9 THEN c.Username	--> Agent SystemId
 			ELSE '' END GroupValue,
@@ -714,10 +713,8 @@ BEGIN
 		) AS SortValue
 	FROM #rptData rpt
 		LEFT JOIN dbo.vw_Customer c WITH(NOLOCK) ON c.custid = rpt.GroupBy AND @GroupBy IN (8,9)
-		LEFT JOIN dbo.Exchange ex WITH(NOLOCK) ON ex.ExchangeId = rpt.GroupBy AND @GroupBy IN (6)
 	GROUP BY GroupBy,
 		CASE 
-			WHEN @GroupBy = 6 THEN ex.Code
 			WHEN @GroupBy = 8 THEN SUBSTRING(c.Username2,CHARINDEX('$',c.Username2)+1,100)
 			WHEN @GroupBy = 9 THEN c.Username
 			ELSE '' END
@@ -739,7 +736,7 @@ BEGIN
 				ROW_NUMBER() OVER(
 					ORDER BY 
 						CASE WHEN @SortKey	= 0 AND @GroupBy IN (4,5) THEN t.ParentKey ELSE 0 END ASC,
-						CASE WHEN @SortKey	= 0 AND @GroupBy IN (6,8,9) THEN sr.GroupValue ELSE '' END ASC,
+						CASE WHEN @SortKey	= 0 AND @GroupBy IN (8,9) THEN sr.GroupValue ELSE '' END ASC,
 						CASE WHEN @SortKey <> 0 AND @SortType = 1 THEN sr.SortValue ELSE 0 END DESC,
 						CASE WHEN @SortKey <> 0 AND @SortType = 0 THEN sr.SortValue ELSE 0 END ASC,
 					t.GroupOrder ASC
@@ -831,15 +828,14 @@ BEGIN
 		, ----BASE
 		BaseTurnover, BaseNetTurnover, BaseMemWinloss, BaseMemComm, BaseLicWinloss, BaseLicComm, BaseAmtDueToBA, BaseBetEffective
 	FROM (
-		SELECT rs.rIdx, rs.GroupBy, rs.GroupKey, CAST(rs.BreakBy AS NVARCHAR(100)) AS BreakBy, rs.BreakBy AS BreakOrder, ex.Code AS BreakKey,
+		SELECT rs.rIdx, rs.GroupBy, rs.GroupKey, CAST(rs.BreakBy AS NVARCHAR(100)) AS BreakBy, rs.BreakBy AS BreakOrder,
 			BetCount, Turnover, NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, AmtDueToBA, BetEffective, Margin
 			,-----BASE
 			BaseTurnover, BaseNetTurnover, BaseMemWinloss, BaseMemComm, BaseLicWinloss, BaseLicComm, BaseAmtDueToBA, BaseBetEffective
 		FROM #result rs
-		LEFT JOIN dbo.exchange ex (nolock) on ex.exchangeid = rs.BreakBy
 		WHERE @BreakBy = 1
 		UNION ALL
-		SELECT rs.rIdx, rs.GroupBy,	rs.GroupKey, IIF(rs.BreakBy = 0, 'SB', IIF(rs.BreakBy = -99, 'CO', p3.ProductPrefix)) AS BreakBy, rs.BreakBy AS BreakOrder, '' AS BreakKey,
+		SELECT rs.rIdx, rs.GroupBy,	rs.GroupKey, IIF(rs.BreakBy = 0, 'SB', IIF(rs.BreakBy = -99, 'CO', p3.ProductPrefix)) AS BreakBy, rs.BreakBy AS BreakOrder,
 			BetCount, Turnover,	NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, AmtDueToBA, BetEffective, Margin
 			,-----BASE
 			BaseTurnover, BaseNetTurnover, BaseMemWinloss, BaseMemComm, BaseLicWinloss, BaseLicComm, BaseAmtDueToBA, BaseBetEffective
@@ -847,7 +843,7 @@ BEGIN
 			LEFT JOIN bodb_licensee.dbo.Product3rd p3 WITH(NOLOCK) ON p3.ProductID = rs.BreakBy
 		WHERE @BreakBy = 2
 		UNION ALL
-		SELECT rs.rIdx, rs.GroupBy,	rs.GroupKey, CONCAT(ci.username,'#',ck.ExternalID) AS BreakBy, rs.BreakBy AS BreakOrder, '' AS BreakKey,
+		SELECT rs.rIdx, rs.GroupBy,	rs.GroupKey, CONCAT(ci.username,'#',ck.ExternalID) AS BreakBy, rs.BreakBy AS BreakOrder,
 			BetCount, Turnover,	NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, AmtDueToBA, BetEffective, Margin
 			,-----BASE
 			BaseTurnover, BaseNetTurnover, BaseMemWinloss, BaseMemComm, BaseLicWinloss, BaseLicComm, BaseAmtDueToBA, BaseBetEffective
@@ -858,7 +854,6 @@ BEGIN
 	) AS rs
 	ORDER BY rs.rIdx, rs.GroupKey, 
 		CASE 
-			WHEN @BreakBy = 1 THEN rs.BreakKey
 			WHEN @BreakBy = 3 THEN SUBSTRING(rs.BreakBy,CHARINDEX('#',rs.BreakBy)+1,100) 
 			ELSE '' END ASC,
 		rs.BreakOrder ASC
