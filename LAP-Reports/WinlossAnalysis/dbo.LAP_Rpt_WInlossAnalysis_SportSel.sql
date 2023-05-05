@@ -31,7 +31,7 @@ BEGIN
 			INNER JOIN bodb02.dbo.Sports s WITH(NOLOCK) ON S.SportType = m.SportType
 			WHERE p.ProductID = 1
 			UNION ALL
-			SELECT 0 AS ProductID, ProductName, SabaSportType AS SportType, SportName, ProductCode, SportOrder
+			SELECT 0 AS ProductID, ProductName, SabaSportType AS SportType, SportName, CONCAT(ProductCode,',BA') AS ProductCode, SportOrder
 			FROM bodb02.[dbo].[LAP_f_WinlossAnalysis_SabaSportSel] ()
 	),
 	CTE_Product3rd AS (

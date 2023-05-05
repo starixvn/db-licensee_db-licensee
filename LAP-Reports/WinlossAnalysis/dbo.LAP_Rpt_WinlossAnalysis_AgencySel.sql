@@ -265,7 +265,7 @@ BEGIN
 					b.CustId,
 					s.bettype, 
 					s.product3rdid,s.ProductId,
-					b.betfrom
+					b.betfrom, b.statusId
 					----------------------
 					,COUNT(1) AS BetCount
 					,SUM(ABS(b.stake)) AS Turnover
@@ -289,7 +289,7 @@ BEGIN
 					b.WinlostDate, e.Rate,
 					b.CustId,
 					s.bettype,s.product3rdid, s.ProductId,
-					b.betfrom
+					b.betfrom, b.statusId
 			)
 			INSERT INTO #rptData (GroupBy, BreakBy, ParentKey,
 				BetCount, Turnover, NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, AmtDueToBA, BetEffective
