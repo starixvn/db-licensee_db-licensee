@@ -136,7 +136,7 @@ BEGIN
 	DROP TABLE IF EXISTS #AgencySel;
 	DROP TABLE IF EXISTS #ProductSel;
 	CREATE TABLE #AgencySel	(recommend INT PRIMARY KEY, Currency INT);
-	CREATE TABLE #ProductSel (ProductId INT, Product3rdId INT PRIMARY KEY);
+	CREATE TABLE #ProductSel (ProductId INT, Product3rdId INT);
 
 	-- TODO: Agency selection
 	;WITH AgencySel AS (
@@ -215,16 +215,16 @@ BEGIN
 	INSERT INTO #ProductSel(ProductId, Product3rdId)
 	SELECT ProductId, Product3rdId
 	FROM CTE_ProductMap t
-	WHERE t.ProductId <> 1
+	WHERE t.ProductId NOT IN (1, 63, 69)
 	UNION ALL
 	SELECT ProductId, ck.Product3rdId
 	FROM CTE_ProductMap t
 	CROSS APPLY (
-		VALUES (IIF(t.Product3rdId & 4 = 4, 0, -1))
-			,(IIF(t.Product3rdId & 8 = 8, 3, -1))
+		VALUES (IIF(@SBBACheck & 4 = 4, 0, -1))
+			,(IIF(@SBBACheck & 8 = 8, 3, -1))
 	) 
 	AS ck (Product3rdId)
-	WHERE t.ProductId = 1
+	WHERE t.ProductId IN (1, 63, 69)
 	AND ck.Product3rdId <> -1
 	;
 
@@ -339,7 +339,7 @@ BEGIN
 				OUTER APPLY (
 					SELECT 
 						CASE 
-							WHEN b.ProductId IN (63,69) THEN 0 
+							WHEN b.ProductId IN (1,63,69) THEN 0 
 							ELSE b.Product3rdID END AS Product3rdIdMix
 				) AS ck
 			
@@ -388,24 +388,24 @@ BEGIN
 				END AS BreakBy,
 				CASE WHEN @GroupMode IN (4, 5) OR @IsViewCOOnlyCheck = 1 THEN ck.Product3rdIdMix ELSE -1 END AS ParentKey
 				----------------------
-				,SUM(cal.BetCount) AS BetCount
-				,SUM(cal.Turnover) AS Turnover
-				,SUM(cal.NetTurnover) AS NetTurnover
-				,SUM(cal.MemWinloss) AS MemWinloss
-				,SUM(cal.[MemComm]) AS [MemComm]
-				,SUM(cal.[LicWinloss]) AS LicWinloss
-				,SUM(cal.[LicComm]) AS [LicComm]
-				,SUM(cal.AmtDueToBA) AS AmtDueToBA
-				,SUM(ABS(cal.MemWinloss)) AS BetEffective
+				,COUNT(1) AS BetCount
+				,SUM(ck.Turnover) AS Turnover
+				,SUM(ck.NetTurnover) AS NetTurnover
+				,SUM(ck.MemWinloss) AS MemWinloss
+				,SUM(b.playercomm) AS [MemComm]
+				,-SUM(ck.MemWinloss) AS LicWinloss
+				,SUM(b.comm) AS [LicComm]
+				,SUM(ck.AmtDueToBA) AS AmtDueToBA
+				,SUM(ABS(ck.MemWinloss)) AS BetEffective
 				,---------BASE
-				SUM(cal.Turnover * e.Rate) AS BaseTurnover
-				,SUM(cal.NetTurnover * e.Rate) AS BaseNetTurnover
-				,SUM(cal.MemWinloss * e.Rate) AS BaseMemWinloss
-				,SUM(cal.[MemComm] * e.Rate) AS [BaseMemComm]
-				,SUM(cal.[LicWinloss] * e.Rate) AS BaseLicWinloss
-				,SUM(cal.[LicComm] * e.Rate) AS [BaseLicComm]
-				,SUM(cal.AmtDueToBA * e.Rate) AS BaseAmtDueToBA
-				,SUM(ABS(cal.MemWinloss) * e.Rate) AS BaseBetEffective
+				SUM(ck.Turnover * e.Rate) AS BaseTurnover
+				,SUM(ck.NetTurnover * e.Rate) AS BaseNetTurnover
+				,SUM(ck.MemWinloss * e.Rate) AS BaseMemWinloss
+				,SUM(b.playercomm * e.Rate) AS [BaseMemComm]
+				,-SUM(ck.MemWinloss * e.Rate) AS BaseLicWinloss
+				,SUM(b.comm * e.Rate) AS [BaseLicComm]
+				,SUM(ck.AmtDueToBA * e.Rate) AS BaseAmtDueToBA
+				,SUM(ABS(ck.MemWinloss) * e.Rate) AS BaseBetEffective
 			FROM [bodb02].[dbo].[bettrans] b WITH(NOLOCK)
 				INNER JOIN #AgencySel a ON a.recommend = b.recommend 
 				INNER JOIN #tmpBettype s ON s.bettype = b.bettype AND s.RefTable NOT IN (1,2)
@@ -441,11 +441,11 @@ BEGIN
 							ELSE 0
 						END) AS AmtDueToBA,
 						CASE 
-							WHEN s.ProductId IN (63,69) THEN 0 
-							WHEN @IsViewCOOnlyCheck = 1 AND s.ProductId = 1 AND ba.TicketType = 1 THEN -99 --Cashout 
-							WHEN s.ProductId = 1 AND s.Product3rdID & 4 = 4 AND ba.IsBA = 0 THEN 0 
-							WHEN s.ProductId = 1 AND s.Product3rdID & 8 = 8 AND ba.IsBA = 1 THEN 3
-							ELSE s.Product3rdID END AS Product3rdIdMix,
+							WHEN s.ProductId NOT IN (1,63,69) THEN s.Product3rdID
+							WHEN @IsViewCOOnlyCheck = 1 AND s.ProductId IN (1,63,69) AND ba.TicketType = 1 THEN -99 --Cashout 
+							WHEN s.ProductId IN (1,63,69) AND @SBBACheck & 4 = 4 AND ba.IsBA = 0 THEN 0 
+							WHEN s.ProductId IN (1,63,69) AND @SBBACheck & 8 = 8 AND ba.IsBA = 1 THEN 3
+							END AS Product3rdIdMix,
 						CASE 
 							WHEN s.EventType = 0 THEN
 								CASE 
@@ -462,54 +462,7 @@ BEGIN
 						ISNULL(CASE WHEN b.bettype IN(29) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
 				) AS ck
 				CROSS APPLY (SELECT TOP 1 bf.PlatformId FROM @PlatformSel bf WHERE b.betfrom =  bf.BetFrom) AS bf
-				OUTER APPLY (
-					SELECT (CASE 
-							WHEN s.ProductId <> 1 OR s.Product3rdId & 12 = 12 THEN 1
-							WHEN s.Product3rdId & 8 = 0 AND ba.IsBA = 1 THEN 0
-							WHEN s.Product3rdId & 8 = 8 AND ba.IsBA = 0 THEN 0
-							ELSE 1
-						END) AS BetCount
-					,(CASE 
-							WHEN s.ProductId <> 1 OR s.Product3rdId & 12 = 12 THEN ck.Turnover
-							WHEN s.Product3rdId & 8 = 0 AND ba.IsBA = 1 THEN 0
-							WHEN s.Product3rdId & 8 = 8 AND ba.IsBA = 0 THEN 0
-							ELSE ck.Turnover
-						END) AS Turnover
-					,(CASE 
-							WHEN s.ProductId <> 1 OR s.Product3rdId & 12 = 12 THEN ck.NetTurnover
-							WHEN s.Product3rdId & 8 = 0 AND ba.IsBA = 1 THEN 0
-							WHEN s.Product3rdId & 8 = 8 AND ba.IsBA = 0 THEN 0
-							ELSE ck.NetTurnover
-						END) AS NetTurnover
-					,(CASE 
-							WHEN s.ProductId <> 1 OR s.Product3rdId & 12 = 12 THEN ck.MemWinloss
-							WHEN s.Product3rdId & 8 = 0 AND ba.IsBA = 1 THEN 0
-							WHEN s.Product3rdId & 8 = 8 AND ba.IsBA = 0 THEN 0
-							ELSE ck.MemWinloss
-						END) AS MemWinloss
-					,(CASE 
-							WHEN s.ProductId <> 1 OR s.Product3rdId & 12 = 12 THEN b.[playercomm]
-							WHEN s.Product3rdId & 8 = 0 AND ba.IsBA = 1 THEN 0
-							WHEN s.Product3rdId & 8 = 8 AND ba.IsBA = 0 THEN 0
-							ELSE b.[playercomm]
-						END) AS [MemComm]
-					,-(CASE 
-							WHEN ba.IsBA = 1 THEN 0
-							ELSE ck.MemWinloss
-						END) AS [LicWinloss]
-					,(CASE 
-							WHEN s.ProductId <> 1 OR s.Product3rdId & 12 = 12 THEN b.[comm]
-							WHEN s.Product3rdId & 8 = 0 AND ba.IsBA = 1 THEN 0
-							WHEN s.Product3rdId & 8 = 8 AND ba.IsBA = 0 THEN 0
-							ELSE b.[comm]
-						END) AS [LicComm]
-					,(CASE 
-							WHEN s.ProductId <> 1 OR s.Product3rdId & 12 = 12 THEN ck.AmtDueToBA
-							WHEN s.Product3rdId & 8 = 0 AND ba.IsBA = 1 THEN 0
-							WHEN s.Product3rdId & 8 = 8 AND ba.IsBA = 0 THEN 0
-							ELSE ck.AmtDueToBA
-						END) AS AmtDueToBA
-				) AS cal
+				CROSS APPLY (SELECT TOP 1 ps.Product3rdId FROM #ProductSel ps WHERE ck.Product3rdIdMix = ps.Product3rdId) AS ps
 			WHERE b.winlostdate BETWEEN @rptFromDate AND @rptToDate
 				AND ',' + @StatusCheck + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
 				AND (',' + @LiveIds + ',' LIKE '%,' + CAST(ck.liveindicator AS VARCHAR(3)) + ',%')
@@ -534,7 +487,7 @@ BEGIN
 				END,
 				CASE WHEN @GroupMode IN (4, 5) OR @IsViewCOOnlyCheck = 1 THEN ck.Product3rdIdMix ELSE -1 END
 			HAVING 
-				SUM(cal.BetCount) > 0
+				COUNT(1) > 0
 		END
 
 		;----TODO: get data from bettransLC/RnG for 3rd Products
@@ -564,7 +517,7 @@ BEGIN
 			END AS BreakBy,
 			CASE WHEN @GroupMode IN (4,5) OR @IsViewCOOnlyCheck = 1 THEN b.Product3rdId ELSE -1 END AS ParentKey
 			--------------
-			,COUNT(1) AS BetCount
+			,SUM(BetCount) AS BetCount
 			,SUM(ABS(b.stake)) AS Turnover
 			,SUM(b.NetTurnover) AS NetTurnover
 			,SUM(b.winlost-b.actual_stake) AS MemWinloss
@@ -585,9 +538,10 @@ BEGIN
 				
 		FROM (
 			SELECT b.CustId, b.recommend, a.currency, b.winlostdate, s.Product3rdId, b.productID AS Sporttype
-				,ISNULL(s.GroupTypeId, s.bettype) AS Bettype, b.betfrom
-				,(CASE WHEN s.IsContributionBettype = 0 THEN b.BetStake ELSE 0 END) AS NetTurnover
-				,b.stake, b.actual_stake,b.playercomm,b.comm,b.winlost
+				,ISNULL(s.GroupTypeId, s.bettype) AS Bettype, b.betfrom, b.StatusId
+				,COUNT(1) AS BetCount
+				,SUM(CASE WHEN s.IsContributionBettype = 0 THEN b.BetStake ELSE 0 END) AS NetTurnover
+				,SUM(b.stake) AS stake, SUM(b.actual_stake) AS actual_stake, SUM(b.playercomm) AS playercomm, SUM(b.comm) AS comm, SUM(b.winlost) AS winlost
 			FROM bodb02.dbo.bettransRnG b WITH(NOLOCK)
 				INNER JOIN #tmpBettype s ON s.Bettype = b.gameID AND s.RefTable = 1
 				INNER JOIN #AgencySel a ON a.recommend = b.recommend
@@ -600,18 +554,25 @@ BEGIN
 						WHEN s.IsPriceBettype > 0 THEN 0
 						ELSE 1
 					END
+			GROUP BY
+				b.CustId, b.recommend, a.currency, b.winlostdate, s.Product3rdId, b.productID
+				,ISNULL(s.GroupTypeId, s.bettype), b.betfrom, b.StatusId
 
 			UNION ALL 
 			SELECT b.CustId, b.recommend, a.currency, b.winlostdate, s.Product3rdId, b.productID AS Sporttype
-				,ISNULL(s.GroupTypeId, s.bettype) AS Bettype, b.betfrom
-				,(CASE WHEN s.IsContributionBettype = 0 THEN b.NetStake ELSE 0 END) AS NetTurnover
-				,b.stake, b.actual_stake,b.playercomm,b.comm,b.winlost
+				,ISNULL(s.GroupTypeId, s.bettype) AS Bettype, b.betfrom, b.StatusId
+				,COUNT(1) AS BetCount
+				,SUM(CASE WHEN s.IsContributionBettype = 0 THEN b.NetStake ELSE 0 END) AS NetTurnover
+				,SUM(b.stake) AS stake, SUM(b.actual_stake) AS actual_stake, SUM(b.playercomm) AS playercomm, SUM(b.comm) AS comm, SUM(b.winlost) AS winlost
 			FROM bodb02.dbo.bettransLC b WITH(NOLOCK)
 				INNER JOIN #tmpBettype s ON s.Bettype = b.gameID AND s.RefTable = 2
 				INNER JOIN #AgencySel a ON a.recommend = b.recommend
 			WHERE b.winlostdate BETWEEN @rptFromDate AND @rptToDate
 				AND ',' + @StatusCheck + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
 				AND (',' + @LiveIds + ',' LIKE '%,0,%')
+			GROUP BY
+				b.CustId, b.recommend, a.currency, b.winlostdate, s.Product3rdId, b.productID
+				,ISNULL(s.GroupTypeId, s.bettype), b.betfrom, b.StatusId
 				
 		) AS b
 		INNER JOIN #tmpExchange e on e.ExchangeID =  b.Currency AND b.winlostdate BETWEEN e.FromDate AND e.ToDate
@@ -696,7 +657,6 @@ BEGIN
 			,SUM(ABS(b.Winlost) * e.Rate) AS BaseBetEffective
 		 FROM bodb_LicenseeReport.dbo.rptLicenseeWinloss b WITH(NOLOCK)
 			INNER JOIN #AgencySel a ON a.recommend = b.recommend
-			INNER JOIN #ProductSel ps ON ps.Product3rdId = b.Product3rdId
 			INNER JOIN #tmpBettype bt ON bt.Bettype = b.Bettype
 			INNER JOIN #tmpExchange e on e.ExchangeID =  a.Currency AND b.winlostdate BETWEEN e.FromDate AND e.ToDate
 			LEFT JOIN #tmpSabaSporttype saba ON saba.Sporttype = b.Sporttype AND saba.LeagueGroupID = b.LeagueGroupId
@@ -714,6 +674,7 @@ BEGIN
 					END AS Product3rdIdMix
 			) AS ck
 			CROSS APPLY (SELECT TOP 1 bf.PlatformId FROM @PlatformSel bf WHERE b.betfrom =  bf.BetFrom) AS bf
+			CROSS APPLY (SELECT TOP 1 ps.Product3rdId FROM #ProductSel ps WHERE ck.Product3rdIdMix = ps.Product3rdId) AS ps
 		WHERE
 			b.WinlostDate BETWEEN @rptFromDate AND @rptToDate
 			AND ',' + @StatusCheck + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
