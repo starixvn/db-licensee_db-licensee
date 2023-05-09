@@ -84,8 +84,8 @@ BEGIN
 
 	-- INPUT: validation
 	SELECT @TotalRow	= 0,
-		@PageIndex		= IIF(@PageIndex <= 0, 1, @PageIndex),
-		@PageSize		= IIF(@PageSize <= 0, 50, @PageSize),
+		@PageIndex		= IIF(@PageIndex < 0, 1, @PageIndex),
+		@PageSize		= IIF(@PageSize < 0, 100, @PageSize),
 		@pageOffset		= (@PageIndex - 1) * @PageSize,
 		@startTime		= CURRENT_TIMESTAMP,
 		@today			= CAST(@startTime AS DATE),
