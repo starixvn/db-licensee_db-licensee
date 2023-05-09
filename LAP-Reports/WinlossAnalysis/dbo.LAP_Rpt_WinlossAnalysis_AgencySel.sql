@@ -241,7 +241,7 @@ BEGIN
 	-- TODO: filter raw data
 	IF @ToDate > @MovebetDay --> get data in bettrans
 	BEGIN
-		SELECT @rptFromDate = DATEADD(DAY,1,@MovebetDay)
+		SELECT @rptFromDate = IIF(@FromDate > @MovebetDay, @Fromdate, DATEADD(DAY, 1, @MovebetDay))
 			, @rptToDate	= @ToDate;
 
 		DECLARE @LiteVersion BIT = 0;
@@ -254,7 +254,6 @@ BEGIN
 			AND @GroupBy NOT IN (4) -- sporttype
 			AND @IsViewCOOnlyCheck = 0;
 
-		--SELECT @LiteVersion AS [@LiteVersion]
 		-- TODO: lite filtering
 		IF @LiteVersion = 1
 		BEGIN
@@ -280,8 +279,7 @@ BEGIN
 				FROM [bodb02].[dbo].[bettrans] b WITH(NOLOCK)
 					INNER JOIN #AgencySel a ON a.recommend = b.recommend
 					INNER JOIN #tmpBettype s ON s.bettype = b.bettype AND s.RefTable NOT IN (1,2)
-					INNER JOIN bodb02.dbo.Lrf_f_GetExchangeRate(@rptFromDate, @rptToDate, @BaseCurrency, '') AS e
-						on e.ExchangeID = a.Currency AND b.winlostdate BETWEEN e.FromDate AND e.ToDate
+					INNER JOIN #tmpExchange e on e.ExchangeID =  a.Currency AND b.winlostdate BETWEEN e.FromDate AND e.ToDate
 				WHERE b.winlostdate BETWEEN @rptFromDate AND @rptToDate
 					AND b.StatusId IN (111,112,113)
 				GROUP BY
@@ -467,7 +465,6 @@ BEGIN
 				AND ',' + @StatusCheck + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
 				AND (',' + @LiveIds + ',' LIKE '%,' + CAST(ck.liveindicator AS VARCHAR(3)) + ',%')
 				AND (ck.sporttype <> 0 AND (@SportIDs IS NULL OR  ',' + @SportIDs + ',' LIKE '%,' + CAST(ck.sporttype AS VARCHAR(10)) + ',%'))
-				--AND (@PlatformCheck='ALL' OR bf.PlatformId > 0)
 		
 			GROUP BY CASE 
 					WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, b.winlostdate)
@@ -579,7 +576,6 @@ BEGIN
 		CROSS APPLY (SELECT TOP 1 bf.PlatformId FROM @PlatformSel bf WHERE b.betfrom =  bf.BetFrom) AS bf
 		WHERE 
 			(@SportIDs IS NULL OR  ',' + @SportIDs + ',' LIKE '%,' + CAST(b.sporttype AS VARCHAR(10)) + ',%')
-			--AND (@PlatformCheck='ALL' OR bf.PlatformId > 0)
 
 		GROUP BY
 			CASE 
@@ -680,7 +676,6 @@ BEGIN
 			AND ',' + @StatusCheck + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
 			AND (',' + @LiveIds + ',' LIKE '%,' + CAST(b.liveindicator AS VARCHAR(3)) + ',%')
 			AND (ck.sporttype <> 0 AND (@SportIDs IS NULL OR  ',' + @SportIDs + ',' LIKE '%,' + CAST(ck.sporttype AS VARCHAR(10)) + ',%'))
-			--AND (@PlatformCheck='ALL' OR bf.PlatformId > 0)
 			AND 1 = CASE 
 						WHEN b.Product3rdId IN (42) AND b.Bettype IN (1698,1699) AND b.Sporttype <> 150 THEN 1 
 						WHEN b.Product3rdId IN (66) AND b.Bettype IN (3898,3899) AND b.Sporttype <> 173 THEN 1
