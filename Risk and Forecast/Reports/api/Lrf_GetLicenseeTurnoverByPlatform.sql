@@ -39,6 +39,7 @@ AS
 		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
 					- Add new input param @ProductList VARCHAR(100)
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
+		- 20230330@Evan: LAP - Support betfrom up to nvarchar(4) [RedmineID: #178059]
 		
 	Param explanation:
 		- @ProductList: SB and all products grouped under SB (SB,SLT,...)
@@ -94,7 +95,7 @@ BEGIN
 	WHERE BetType NOT IN (901, 902, 903, 904)
 
 	-- Get platform list
-	CREATE TABLE #PlatformList (betfrom NVARCHAR(1) PRIMARY KEY, PlatformType TINYINT);
+	CREATE TABLE #PlatformList (betfrom NVARCHAR(4) PRIMARY KEY, PlatformType TINYINT);
 
 	INSERT INTO #PlatformList (betfrom, PlatformType)
 	SELECT betfrom, PlatformType

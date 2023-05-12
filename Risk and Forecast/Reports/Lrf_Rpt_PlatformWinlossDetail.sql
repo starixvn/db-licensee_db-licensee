@@ -116,6 +116,7 @@ AS
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20230130@Evan: Integrate Jili [RedmineID: #182914]
 	    - 20230303@Evan: Remove inactive products CB, FW, GD, GDG [Redmine: 181424]  
+		- 20230330@Evan: LAP - Support betfrom up to nvarchar(4) [RedmineID: #178059]
 
 	Param's Explanation:
 		+ @PlatformType: List of platform type (ex: 1,2,3,..)
@@ -211,7 +212,7 @@ BEGIN
 	SELECT @FDate = @FromDate,
 		@TDate = @ToDate 
 
-	CREATE TABLE #PlatformList (BetFrom NVARCHAR(1) PRIMARY KEY, PlatformType TINYINT)
+	CREATE TABLE #PlatformList (BetFrom NVARCHAR(4) PRIMARY KEY, PlatformType TINYINT)
 
 	INSERT INTO #PlatformList (BetFrom, PlatformType)
 	SELECT betfrom, PlatformType
