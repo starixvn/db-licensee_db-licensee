@@ -825,7 +825,7 @@ BEGIN
 			SUM(MemWinloss) AS MemWinloss, SUM(MemComm) AS MemComm, 
 			SUM(LicWinloss) AS LicWinloss, SUM(LicComm) AS LicComm, 
 			SUM(AmtDueToBA) AS AmtDueToBA, SUM(BetEffective) AS BetEffective, 
-			IIF(SUM(NetTurnover)=0,0,SUM(LicWinloss)/SUM(NetTurnover)) AS [Margin]
+			IIF(SUM(BaseNetTurnover)=0,0,SUM(BaseLicWinloss)/SUM(BaseNetTurnover)) AS [Margin]
 			,----BASE
 			SUM(BaseTurnover) AS BaseTurnover, SUM(BaseNetTurnover) AS BaseNetTurnover, 
 			SUM(BaseMemWinloss) AS BaseMemWinloss, SUM(BaseMemComm) AS BaseMemComm, 
@@ -888,7 +888,7 @@ BEGIN
 		SUM(MemWinloss) AS MemWinloss, SUM(MemComm) AS MemComm, 
 		SUM(LicWinloss) AS LicWinloss, SUM(LicComm) AS LicComm, 
 		SUM(AmtDueToBA) AS AmtDueToBA, SUM(BetEffective) AS BetEffective, 
-		IIF(SUM(NetTurnover)=0,0,SUM(LicWinloss)/SUM(NetTurnover)) AS [Margin]
+		IIF(SUM(BaseNetTurnover)=0,0,SUM(BaseLicWinloss)/SUM(BaseNetTurnover)) AS [Margin]
 		,----BASE
 		SUM(BaseTurnover) AS BaseTurnover, SUM(BaseNetTurnover) AS BaseNetTurnover, 
 		SUM(BaseMemWinloss) AS BaseMemWinloss, SUM(BaseMemComm) AS BaseMemComm, 
@@ -903,7 +903,7 @@ BEGIN
 		SUM(MemWinloss) AS MemWinloss, SUM(MemComm) AS MemComm, 
 		SUM(LicWinloss) AS LicWinloss, SUM(LicComm) AS LicComm, 
 		SUM(AmtDueToBA) AS AmtDueToBA, SUM(BetEffective) AS BetEffective, 
-		IIF(SUM(NetTurnover)=0,0,SUM(LicWinloss)/SUM(NetTurnover)) AS [Margin]
+		IIF(SUM(BaseNetTurnover)=0,0,SUM(BaseLicWinloss)/SUM(BaseNetTurnover)) AS [Margin]
 		,-----BASE
 		SUM(BaseTurnover) AS BaseTurnover, SUM(BaseNetTurnover) AS BaseNetTurnover, 
 		SUM(BaseMemWinloss) AS BaseMemWinloss, SUM(BaseMemComm) AS BaseMemComm, 

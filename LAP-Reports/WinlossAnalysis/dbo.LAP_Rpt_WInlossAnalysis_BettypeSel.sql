@@ -70,6 +70,7 @@ BEGIN
 		WHERE m.SportType NOT IN (150, 173) --exclude free games
 			AND (ISNULL(@ProductCodes, 'ALL') = 'ALL' OR ck.HasValue = 1 )
 			AND e.BetType IS NULL
+			AND m.Bettype NOT IN (9) -- exclude Mix Parlay
 	)
 	SELECT rs.ProductCode, rs.BetType
 	FROM result rs
