@@ -248,6 +248,9 @@ BEGIN
 	AS ck (Product3rdId)
 	WHERE t.ProductId IN (1, 63, 69)
 	AND ck.Product3rdId <> -1
+	UNION ALL -- Cashout
+	SELECT -99, -99
+	WHERE @IsViewCOOnlyCheck = 1
 	;
 
 	--TODO: Player selection

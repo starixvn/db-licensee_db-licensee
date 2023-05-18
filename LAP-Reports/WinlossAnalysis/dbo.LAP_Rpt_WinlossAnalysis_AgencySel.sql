@@ -226,6 +226,9 @@ BEGIN
 	AS ck (Product3rdId)
 	WHERE t.ProductId IN (1, 63, 69)
 	AND ck.Product3rdId <> -1
+	UNION ALL -- Cashout
+	SELECT -99, -99
+	WHERE @IsViewCOOnlyCheck = 1
 	;
 
 	--TODO: Exchange rate
@@ -262,7 +265,7 @@ BEGIN
 					b.recommend, a.Currency,
 					b.WinlostDate, e.Rate,
 					b.CustId,
-					s.bettype, 
+					s.bettype, s.GroupTypeId,
 					s.product3rdid,s.ProductId,
 					b.betfrom, b.statusId
 					----------------------
@@ -286,7 +289,7 @@ BEGIN
 					b.recommend, a.Currency,
 					b.WinlostDate, e.Rate,
 					b.CustId,
-					s.bettype,s.product3rdid, s.ProductId,
+					s.bettype, s.GroupTypeId, s.product3rdid, s.ProductId,
 					b.betfrom, b.statusId
 			)
 			INSERT INTO #rptData (GroupBy, BreakBy, ParentKey,
@@ -299,7 +302,7 @@ BEGIN
 					WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, b.winlostdate)
 					WHEN @GroupBy = 2 THEN DATEDIFF(HOUR, @BaseDate, DATEADD(DAY, -DATEPART(DAY, b.Winlostdate) +1, b.Winlostdate)) 
 					WHEN @GroupBy = 3 THEN ck.Product3rdIdMix
-					WHEN @GroupBy = 5 THEN ISNULL(s.GroupTypeId, b.bettype)
+					WHEN @GroupBy = 5 THEN ISNULL(b.GroupTypeId, b.bettype)
 					WHEN @GroupBy = 6 THEN b.currency
 					WHEN @GroupBy = 7 THEN ISNULL(bf.platformId, -1)
 					WHEN @GroupBy = 8 THEN b.custid
@@ -332,7 +335,6 @@ BEGIN
 				,SUM(0 * b.Rate) AS BaseAmtDueToBA
 				,SUM(ABS(b.winlost) * b.Rate) AS BaseBetEffective
 			FROM CTE_bettrans AS b
-				LEFT JOIN bodb02.dbo.f_GroupBettype() s ON s.bettype = b.bettype
 				OUTER APPLY (SELECT TOP 1 bf.PlatformId FROM @PlatformSel bf WHERE b.betfrom =  bf.BetFrom) AS bf
 				OUTER APPLY (
 					SELECT 
@@ -346,7 +348,7 @@ BEGIN
 					WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, b.winlostdate)
 					WHEN @GroupBy = 2 THEN DATEDIFF(HOUR, @BaseDate, DATEADD(DAY, -DATEPART(DAY, b.Winlostdate) +1, b.Winlostdate)) 
 					WHEN @GroupBy = 3 THEN ck.Product3rdIdMix
-					WHEN @GroupBy = 5 THEN ISNULL(s.GroupTypeId, b.bettype) 
+					WHEN @GroupBy = 5 THEN ISNULL(b.GroupTypeId, b.bettype) 
 					WHEN @GroupBy = 6 THEN b.currency
 					WHEN @GroupBy = 7 THEN ISNULL(bf.platformId,-1)
 					WHEN @GroupBy = 8 THEN b.custid
