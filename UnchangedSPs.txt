@@ -1,1 +1,2 @@
-NAP_LicenseeManagement\LicenseeSetting\NAP_LM_LicenseeBetSettingSel.sql
+Risk and Forecast\Setting\Lrf_CustomerUpdMemberBAStatus.sql
+BA Admin\Internal\Config\Acc_BA_LicConfigUpd.sql
