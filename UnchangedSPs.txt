@@ -1,2 +1,1 @@
 Risk and Forecast\Setting\Lrf_CustomerUpdMemberBAStatus.sql
-BA Admin\Internal\Config\Acc_BA_LicConfigUpd.sql
