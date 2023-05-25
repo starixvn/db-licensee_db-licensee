@@ -50,6 +50,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 		- 20220801@Victoria: Add DBSID-bodb02 to metadata [Redmine: #175297]
 		- 20230130@Evan: Integrate Jili [RedmineID: #182914]
 	    - 20230303@Evan: Remove inactive products CB, FW, GD, GDG [Redmine: 181424]  
+		- 20230523@Evan: Integrate YeeBet LC [RedmineID: #187947]
 
 */
 RETURNS TABLE
@@ -98,7 +99,8 @@ RETURN
 					(69, 'BTC', 175, 0),	-- Bitcoin
 					(70, 'FGGL', 176, 0),	-- FGG
 					(60, 'MXG', 237, 0),	-- MaxGame
-					(75, 'JIG', 158, 0)	-- Jili
+					(75, 'JIG', 158, 0),	-- Jili
+					(76, 'YB', 159, 0)	-- YeeBet
 			) d(ProductID, ProductCode, SportType, BetType)
 	WHERE ',' + @ProductCodes + ',' LIKE '%,' + CAST(ProductCode AS VARCHAR(10)) + ',%'
 GO

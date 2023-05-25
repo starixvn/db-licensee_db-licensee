@@ -129,6 +129,7 @@ AS
 		- 20221122@Evan: Integrate Player Tips [RedmineID: #180590]
 		- 20230130@Evan: Integrate Jili [RedmineID: #182914]
 	    - 20230303@Evan: Remove inactive products CB, FW, GD, GDG [Redmine: 181424]  
+    	- 20230523@Evan: Integrate YeeBet LC [RedmineID: #187947]
 
 	Param's Explanation:
 		+ @CustID: SuperID
@@ -187,6 +188,7 @@ BEGIN
 		TurnoverFGGL		MONEY,
 		TurnoverMXG			MONEY,
 		TurnoverJIG			MONEY,
+		TurnoverYB			MONEY,
 		BTActualStake		MONEY,
 		Winlost				MONEY,
 		LicenseeWLSB		MONEY,
@@ -224,6 +226,7 @@ BEGIN
 		LicenseeWLFGGL		MONEY,
 		LicenseeWLMXG		MONEY,
 		LicenseeWLJIG		MONEY,
+		LicenseeWLYB		MONEY,
 		AmtDueToBA			MONEY,
 		CommBA				MONEY,
 		PlayerComm  		MONEY,
@@ -404,6 +407,7 @@ BEGIN
 				0 AS turnoverFGGL,
 				0 AS turnoverMXG,
 				0 AS TurnoverJIG,
+				0 AS TurnoverYB,
 				0 AS BTActualStake,
 				SUM(b.winlost-b.actual_stake) AS Winlost,
 				0 AS LicenseeWLSB,
@@ -441,6 +445,7 @@ BEGIN
 				0 AS LicenseeWLFGGL,
 				0 AS LicenseeWLMXG,
 				0 AS LicenseeWLJIG,
+				0 AS LicenseeWLYB,
 				-SUM(b.winlost-b.actual_stake+awinlost+comm ) AS AmountDueToBA,
 				SUM(comm) AS CommBA,
 				SUM(playercomm) AS PlayerComm,
@@ -521,6 +526,7 @@ BEGIN
 				0 AS turnoverFGGL,
 				0 AS turnoverMXG,
 				0 AS TurnoverJIG,
+				0 AS TurnoverYB,
 				0 AS BTActualStake,
 				SUM(b.winlost-b.actual_stake) AS Winlost,  
 				-SUM(b.winlost-b.actual_stake) AS LicenseeWLSB,
@@ -558,6 +564,7 @@ BEGIN
 				0 AS LicenseeWLFGGL,
 				0 AS LicenseeWLMXG,
 				0 AS LicenseeWLJIG,
+				0 AS LicenseeWLYB,
 				0 AS AmountDueToBA,
 				0 AS CommBA,
 				SUM(b.playercomm) AS PlayerComm,
@@ -629,6 +636,7 @@ BEGIN
 				0 AS turnoverFGGL,
 				0 AS turnoverMXG,
 				0 AS TurnoverJIG,
+				0 AS TurnoverYB,
 				SUM(CASE WHEN b.bettype = 902 THEN b.winlost ELSE 0 END) AS BTAtualStake,
 				SUM(CASE WHEN b.bettype = 903 THEN 0 ELSE b.winlost-b.actual_stake END) AS Winlost,
 				0 AS LicenseeWLSB,
@@ -666,6 +674,7 @@ BEGIN
 				0 AS LicenseeWLFGGL,
 				0 AS LicenseeWLMXG,
 				0 AS LicenseeWLJIG,
+				0 AS LicenseeWLYB,
 				0 AS AmountDueToBA,
 				0 AS CommBA,
 				0 AS PlayerComm,		
@@ -734,6 +743,7 @@ BEGIN
 				0 AS turnoverFGGL,
 				0 AS turnoverMXG,
 				0 AS TurnoverJIG,
+				0 AS TurnoverYB,
 				0 AS BTAtualStake,
 				SUM(CASE WHEN b.bettype = 913 THEN 0 ELSE b.winlost - b.actual_stake END) AS Winlost,  
 				0 AS LicenseeWLSB,
@@ -771,6 +781,7 @@ BEGIN
 				0 AS LicenseeWLFGGL,
 				0 AS LicenseeWLMXG,
 				0 AS LicenseeWLJIG,
+				0 AS LicenseeWLYB,
 				0 AS AmountDueToBA,
 				0 AS CommBA,
 				0 AS PlayerComm,
@@ -934,6 +945,10 @@ BEGIN
 					WHEN bt.ProductCode = 'JIG' THEN b.stake * CASE WHEN @DrawFilter IN (2, 3) AND b.statusID = 111 THEN 0 ELSE 1 END
 					ELSE 0
 				END) AS TurnoverJIG,
+			SUM(CASE
+					WHEN bt.ProductCode = 'YB' THEN b.stake * CASE WHEN @DrawFilter IN (2, 3) AND b.statusID = 111 THEN 0 ELSE 1 END
+					ELSE 0
+				END) AS TurnoverYB,
 			0 AS BTActualStake,
 			SUM(b.winlost-b.actual_stake) AS Winlost,
 			0 AS LicenseeWLSB,
@@ -1019,6 +1034,10 @@ BEGIN
 					WHEN bt.ProductCode = 'JIG' THEN b.winlost - b.actual_stake
 					ELSE 0
 				END) AS LicenseeWLJIG,
+			-SUM(CASE
+					WHEN bt.ProductCode = 'YB' THEN b.winlost - b.actual_stake
+					ELSE 0
+				END) AS LicenseeWLYB,
 			0 AS AmountDueToBA,
 			0 AS CommBA,
 			SUM(b.playercomm) AS PlayerComm,
@@ -1121,6 +1140,7 @@ BEGIN
 				0 AS turnoverFGGL,
 				0 AS turnoverMXG,
 				0 AS TurnoverJIG,
+				0 AS TurnoverYB,
 				0 AS BTActualStake,
 				SUM(b.winlost),
 				0 AS LicenseeWLSB,
@@ -1158,6 +1178,7 @@ BEGIN
 				0 AS LicenseeWLFGGL,
 				0 AS LicenseeWLMXG,
 				0 AS LicenseeWLJIG,
+				0 AS LicenseeWLYB,
 				-SUM(b.winlost+b.awinlost+b.comm) AS AmountDueToBA,
 				SUM(comm) AS CommBA,
 				SUM(playercomm) AS PlayerComm,
@@ -1559,6 +1580,17 @@ BEGIN
 					ELSE 1 END
 				ELSE 0 END
 			) AS TurnoverJIG,
+			SUM(CASE WHEN b.sporttype = 159 THEN 
+				b.turnover
+				*
+				CASE WHEN @drawfilter IN (2,3) THEN
+					CASE
+						WHEN b.statusID = 111 THEN 0
+						WHEN b.statusID IN (114,115) THEN 0.5
+						ELSE 1 END
+					ELSE 1 END
+				ELSE 0 END
+			) AS TurnoverYB,
 			0 AS BTActualStake,
 			SUM(b.winlost),
 			-SUM(CASE WHEN t.ProductCode = 'SB' THEN b.winlost ELSE 0 END) AS LicenseeWLSB,
@@ -1596,6 +1628,7 @@ BEGIN
 			-SUM(CASE WHEN b.sporttype = 176 THEN b.winlost ELSE 0 END) AS LicenseeWLFGGL,
 			-SUM(CASE WHEN b.sporttype = 237 THEN b.winlost ELSE 0 END) AS LicenseeWLMXG,
 			-SUM(CASE WHEN b.sporttype = 158 THEN b.winlost ELSE 0 END) AS LicenseeWLJIG,
+			-SUM(CASE WHEN b.sporttype = 159 THEN b.winlost ELSE 0 END) AS LicenseeWLYB,
 			0 AS AmountDueToBA,
 			0 AS CommBA,
 			SUM(playercomm) AS PlayerComm,
@@ -1669,6 +1702,7 @@ BEGIN
 				0 AS turnoverFGGL,
 				0 AS turnoverMXG,
 				0 AS TurnoverJIG,
+				0 AS TurnoverYB,
 				SUM(CASE WHEN b.bettype = 902 THEN b.winlost + BuyBackAmt + BABuyBackAmt ELSE 0 END) AS BTActualStake,
 				SUM(CASE WHEN b.bettype = 903 THEN 0 ELSE b.winlost END) AS Winlost,
 				0 AS LicenseeWLSB,
@@ -1706,6 +1740,7 @@ BEGIN
 				0 AS LicenseeWLFGGL,
 				0 AS LicenseeWLMXG,
 				0 AS LicenseeWLJIG,
+				0 AS LicenseeWLYB,
 				0 AS AmountDueToBA,
 				0 AS CommBA,
 				0 AS PlayerComm,
@@ -1775,6 +1810,7 @@ BEGIN
 				0 AS turnoverFGGL,
 				0 AS turnoverMXG,
 				0 AS TurnoverJIG,
+				0 AS TurnoverYB,
 				0 AS BTActualStake,
 				SUM(CASE WHEN b.bettype = 913 THEN 0 ELSE b.winlost END) AS Winlost,   
 				0 AS LicenseeWLSB,
@@ -1812,6 +1848,7 @@ BEGIN
 				0 AS LicenseeWLFGGL,
 				0 AS LicenseeWLMXG,
 				0 AS LicenseeWLJIG,
+				0 AS LicenseeWLYB,
 				0 AS AmountDueToBA,
 				0 AS CommBA,
 				0 AS PlayerComm,
@@ -1904,6 +1941,7 @@ BEGIN
 		CAST(SUM(TurnoverFGGL	*e.Rate)	AS MONEY)   AS TurnoverFGGL,
 		CAST(SUM(TurnoverMXG	*e.Rate)	AS MONEY)   AS TurnoverMXG,
 		CAST(SUM(TurnoverJIG	*e.Rate)	AS MONEY)   AS TurnoverJIG,
+		CAST(SUM(TurnoverYB		*e.Rate)	AS MONEY)   AS TurnoverYB,
 		CAST(SUM(BTActualStake	*e.Rate)	AS MONEY)   AS BTActualStake,
 		CAST(SUM(Winlost		*e.Rate)	AS MONEY)   AS Winlost,
 		CAST(SUM(LicenseeWLSB	*e.Rate)	AS MONEY)   AS LicenseeWLSB,
@@ -1941,6 +1979,7 @@ BEGIN
 		CAST(SUM(LicenseeWLFGGL	*e.Rate)	AS MONEY)   AS LicenseeWLFGGL,
 		CAST(SUM(LicenseeWLMXG	*e.Rate)	AS MONEY)   AS LicenseeWLMXG,
 		CAST(SUM(LicenseeWLJIG	*e.Rate)	AS MONEY)   AS LicenseeWLJIG,
+		CAST(SUM(LicenseeWLYB	*e.Rate)	AS MONEY)   AS LicenseeWLYB,
 		CAST(SUM(CommBA			*e.Rate)	AS MONEY)   AS CommBA,
 		CAST(SUM(PlayerComm		*e.Rate)	AS MONEY)   AS PlayerComm,
 		CAST(SUM(AmtDuetoBA		*e.Rate)	AS MONEY)   AS AmtDuetoBA,
@@ -1996,6 +2035,7 @@ BEGIN
 		CAST(SUM(TurnoverFGGL	*e.USD)	AS MONEY)   AS TurnoverFGGLUSD,
 		CAST(SUM(TurnoverMXG	*e.USD)	AS MONEY)   AS TurnoverMXGUSD,
 		CAST(SUM(TurnoverJIG	*e.USD)	AS MONEY)   AS TurnoverJIGUSD,
+		CAST(SUM(TurnoverYB		*e.USD)	AS MONEY)   AS TurnoverYBUSD,
 		CAST(SUM(BTActualStake	*e.USD)	AS MONEY)   AS BTActualStakeUSD,
 		CAST(SUM(Winlost		*e.USD)	AS MONEY)   AS WinlostUSD,
 		CAST(SUM(LicenseeWLSB	*e.USD)	AS MONEY)   AS LicenseeWLSBUSD,
@@ -2033,6 +2073,7 @@ BEGIN
 		CAST(SUM(LicenseeWLFGGL	*e.USD)	AS MONEY)   AS LicenseeWLFGGLUSD,
 		CAST(SUM(LicenseeWLMXG	*e.USD)	AS MONEY)   AS LicenseeWLMXGUSD,
 		CAST(SUM(LicenseeWLJIG	*e.USD)	AS MONEY)   AS LicenseeWLJIGUSD,
+		CAST(SUM(LicenseeWLYB	*e.USD)	AS MONEY)   AS LicenseeWLYBUSD,
 		CAST(SUM(CommBA			*e.USD)	AS MONEY)   AS CommBAUSD,
 		CAST(SUM(PlayerComm		*e.USD)	AS MONEY)   AS PlayerCommUSD,
 		CAST(SUM(AmtDuetoBA		*e.USD)	AS MONEY)   AS AmtDuetoBAUSD,
@@ -2077,6 +2118,7 @@ BEGIN
 		CAST(SUM(TurnoverFGGL	*e.EUR)	AS MONEY)   AS TurnoverFGGLEUR,
 		CAST(SUM(TurnoverMXG	*e.EUR)	AS MONEY)   AS TurnoverMXGEUR,
 		CAST(SUM(TurnoverJIG	*e.EUR)	AS MONEY)   AS TurnoverJIGEUR,
+		CAST(SUM(TurnoverYB		*e.EUR)	AS MONEY)   AS TurnoverYBEUR,
 		CAST(SUM(BTActualStake	*e.EUR)	AS MONEY)   AS BTActualStakeEUR,
 		CAST(SUM(Winlost		*e.EUR)	AS MONEY)   AS WinlostEUR,
 		CAST(SUM(LicenseeWLSB	*e.EUR)	AS MONEY)   AS LicenseeWLSBEUR,
@@ -2114,6 +2156,7 @@ BEGIN
 		CAST(SUM(LicenseeWLFGGL	*e.EUR)	AS MONEY)   AS LicenseeWLFGGLEUR,
 		CAST(SUM(LicenseeWLMXG	*e.EUR)	AS MONEY)   AS LicenseeWLMXGEUR,
 		CAST(SUM(LicenseeWLJIG	*e.EUR)	AS MONEY)   AS LicenseeWLJIGEUR,
+		CAST(SUM(LicenseeWLYB	*e.EUR)	AS MONEY)   AS LicenseeWLYBEUR,
 		CAST(SUM(CommBA			*e.EUR)	AS MONEY)   AS CommBAEUR,
 		CAST(SUM(PlayerComm		*e.EUR)	AS MONEY)   AS PlayerCommEUR,
 		CAST(SUM(AmtDuetoBA		*e.EUR)	AS MONEY)   AS AmtDuetoBAEUR,
@@ -2158,6 +2201,7 @@ BEGIN
 		CAST(SUM(TurnoverFGGL	*e.GBP)	AS MONEY)   AS TurnoverFGGLGBP,
 		CAST(SUM(TurnoverMXG	*e.GBP)	AS MONEY)   AS TurnoverMXGGBP,
 		CAST(SUM(TurnoverJIG	*e.GBP)	AS MONEY)   AS TurnoverJIGGBP,
+		CAST(SUM(TurnoverYB		*e.GBP)	AS MONEY)   AS TurnoverYBGBP,
 		CAST(SUM(BTActualStake	*e.GBP)	AS MONEY)   AS BTActualStakeGBP,
 		CAST(SUM(Winlost		*e.GBP)	AS MONEY)   AS WinlostGBP,
 		CAST(SUM(LicenseeWLSB	*e.GBP)	AS MONEY)   AS LicenseeWLSBGBP,
@@ -2195,6 +2239,7 @@ BEGIN
 		CAST(SUM(LicenseeWLFGGL	*e.GBP)	AS MONEY)   AS LicenseeWLFGGLGBP,
 		CAST(SUM(LicenseeWLMXG	*e.GBP)	AS MONEY)   AS LicenseeWLMXGGBP,
 		CAST(SUM(LicenseeWLJIG	*e.GBP)	AS MONEY)   AS LicenseeWLJIGGBP,
+		CAST(SUM(LicenseeWLYB	*e.GBP)	AS MONEY)   AS LicenseeWLYBGBP,
 		CAST(SUM(CommBA			*e.GBP)	AS MONEY)   AS CommBAGBP,
 		CAST(SUM(PlayerComm		*e.GBP)	AS MONEY)   AS PlayerCommGBP,
 		CAST(SUM(AmtDuetoBA		*e.GBP)	AS MONEY)   AS AmtDuetoBAGBP,
@@ -2239,6 +2284,7 @@ BEGIN
 		CAST(SUM(TurnoverFGGL	*e.DefaultRate)	AS MONEY)   AS TurnoverFGGL,
 		CAST(SUM(TurnoverMXG	*e.DefaultRate)	AS MONEY)   AS TurnoverMXG,
 		CAST(SUM(TurnoverJIG	*e.DefaultRate)	AS MONEY)   AS TurnoverJIG,
+		CAST(SUM(TurnoverYB		*e.DefaultRate)	AS MONEY)   AS TurnoverYB,
 		CAST(SUM(BTActualStake	*e.DefaultRate)	AS MONEY)   AS BTActualStake,
 		CAST(SUM(Winlost		*e.DefaultRate)	AS MONEY)   AS Winlost,
 		CAST(SUM(LicenseeWLSB	*e.DefaultRate)	AS MONEY)   AS LicenseeWLSB,
@@ -2276,6 +2322,7 @@ BEGIN
 		CAST(SUM(LicenseeWLFGGL	*e.DefaultRate)	AS MONEY)   AS LicenseeWLFGGL,
 		CAST(SUM(LicenseeWLMXG	*e.DefaultRate)	AS MONEY)   AS LicenseeWLMXG,
 		CAST(SUM(LicenseeWLJIG	*e.DefaultRate)	AS MONEY)   AS LicenseeWLJIG,
+		CAST(SUM(LicenseeWLYB	*e.DefaultRate)	AS MONEY)   AS LicenseeWLYB,
 		CAST(SUM(CommBA			*e.DefaultRate)	AS MONEY)   AS CommBA,
 		CAST(SUM(PlayerComm		*e.DefaultRate)	AS MONEY)   AS PlayerComm,
 		CAST(SUM(AmtDuetoBA		*e.DefaultRate)	AS MONEY)   AS AmtDuetoBA,

@@ -28,6 +28,7 @@ AS
 		- 20220301@Eden: Deposit - Sportsbook - Revise customer settings [Redmine: #167898]
 		- 20230130@Evan: Integrate Jili [RedmineID: #182914]
 	    - 20230303@Evan: Remove inactive products CB, FW, GD, GDG [Redmine: 181424]  
+    	- 20230523@Evan: Integrate YeeBet LC [RedmineID: #187947]
 */
 
  /*
@@ -143,7 +144,8 @@ BEGIN
 			69,--	Bitcoin
 			70,--	FGG	
 			60,--	MaxGame
-			75--	Jili
+			75,--	Jili
+			76--	YeeBet
 		)
 	ORDER BY ProductID ASC
 END

@@ -42,6 +42,7 @@ CREATE PROCEDURE [dbo].[SiteDB_Lrf_Rpt_WinLoss]
 	@ShowFGGL		BIT = 0,	-- FGG Guaranteed Gaming
 	@ShowMXG		BIT = 0, 	-- MaxGame
 	@ShowJIG		BIT = 0, 	-- Jili
+	@ShowYB			BIT = 0, 	-- YeeBet
 	@DrawFilter				SMALLINT		= 1,
 	@CustomerClass			VARCHAR(MAX)	= 'All',
 	@OddsGroup				VARCHAR(100)	= 'All',
@@ -66,6 +67,7 @@ AS
 		- 20221122@Evan: Integrate Player Tips [RedmineID: #180590]
 		- 20230130@Evan: Integrate Jili [RedmineID: #182914]
 	    - 20230303@Evan: Remove inactive products CB, FW, GD, GDG [Redmine: 181424]  
+		- 20230523@Evan: Integrate YeeBet LC [RedmineID: #187947]
 
 	Param's Explanation:
 		@OrderItem:
@@ -284,6 +286,8 @@ BEGIN
 	SELECT 'MXG' AS Code WHERE @ShowMXG = 1
 	UNION ALL
 	SELECT 'JIG' AS Code WHERE @ShowJIG = 1
+	UNION ALL
+	SELECT 'YB' AS Code WHERE @ShowYB = 1
 
 	-- BT & CO belong to SB
 	SELECT @ProductList = COALESCE(@ProductList + ',' + Code, Code)
