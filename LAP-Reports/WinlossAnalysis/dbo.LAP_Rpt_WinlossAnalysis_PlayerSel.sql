@@ -379,7 +379,8 @@ BEGIN
 					END) AS AmtDueToBA,
 					CASE 
 							WHEN s.ProductId NOT IN (1,63,69) THEN s.Product3rdID
-							WHEN @IsViewCOOnlyCheck = 1 AND s.ProductId IN (1,63,69) AND ba.TicketType = 1 THEN -99 --Cashout 
+							WHEN @IsViewCOOnlyCheck = 1 AND s.ProductId = 1 AND @SBBACheck & 4 = 4 AND ba.IsBA = 0 AND ba.TicketType = 1 THEN -99 --Cashout 
+							WHEN @IsViewCOOnlyCheck = 1 AND s.ProductId = 1 AND @SBBACheck & 8 = 8 AND ba.IsBA = 1 AND ba.TicketType = 1 THEN -99 --Cashout 
 							WHEN s.ProductId IN (1,63,69) AND @SBBACheck & 4 = 4 AND ba.IsBA = 0 THEN 0 
 							WHEN s.ProductId IN (1,63,69) AND @SBBACheck & 8 = 8 AND ba.IsBA = 1 THEN 3
 							END AS Product3rdIdMix,
@@ -604,7 +605,8 @@ BEGIN
 					ISNULL(saba.SabaSportType, b.Sporttype) AS Sporttype,
 					CASE 
 						WHEN b.Product3rdId IN (63,69) THEN 0 
-						WHEN @IsViewCOOnlyCheck = 1 AND b.Product3rdId IN(0, 3) AND b.TicketType = 1 THEN -99 --Cashout 
+						WHEN @IsViewCOOnlyCheck = 1 AND b.Product3rdId = 0 AND @SBBACheck & 4 = 4 AND b.TicketType = 1 THEN -99 --Cashout 
+						WHEN @IsViewCOOnlyCheck = 1 AND b.Product3rdId = 3 AND @SBBACheck & 8 = 8 AND b.TicketType = 1 THEN -99 --Cashout 
 						ELSE b.Product3rdId 
 					END AS Product3rdIdMix
 			) AS ck
