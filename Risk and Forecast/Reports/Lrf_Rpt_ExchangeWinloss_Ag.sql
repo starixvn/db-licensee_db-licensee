@@ -23,6 +23,7 @@ AS
 		- 20201110@Kos: Enhance performance [Redmine: #145055]
 		- 20220308@Kos: Support filter by customer [RedmineID: #169283]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
+		- 20230516@Evan: Change the "Amount Due To" formula & Add output column "Licensee Total"  [Redmine: #186609]
 
 	exec Lrf_Rpt_ExchangeWinloss_Ag @fromdate='2017-04-24 00:00:00',@todate='2017-04-24 00:00:00',@LicenseeId = 1,
 		@AgentList=N'<ROOT><Agent AgentId="791088" Currency="3"/><Agent AgentId="860379" Currency="6"/><Agent AgentId="2428981" Currency="6"/><Agent AgentId="2812696" Currency="6"/><Agent AgentId="3575140" Currency="6"/><Agent AgentId="4362999" Currency="6"/></ROOT>'
@@ -63,7 +64,8 @@ BEGIN
 		LicNetWL	MONEY,
 		CustComm	MONEY,
 		AmountDueTo	MONEY,
-		AgentComm	MONEY
+		AgentComm	MONEY,
+		LicTotal	MONEY
 	)
 
 	DECLARE @ProductID			INT
@@ -117,34 +119,34 @@ BEGIN
 	END
 	-- #EndRegion: Get list custIDs
 
+	DECLARE @PartyID	VARCHAR(10)
+	DECLARE @ChargeRates AS TABLE(Rate MONEY, FromDate DATE, ToDate DATE)
+
+	SELECT @PartyID = CAST(PartyID AS VARCHAR)
+	FROM bodb_licensee.dbo.OAS_Party WITH(NOLOCK)
+	WHERE OldRefID = @LicenseeId AND PartyType = 1
+	
+	INSERT INTO @ChargeRates(Rate, FromDate, ToDate)
+	SELECT DI_Rate, Fromdate, Todate
+	FROM bodb_licensee.dbo.LA_f_ChargeInfo(@PartyID, @FDate, @TDate, @ProductPrefix, 'OA', 1)
+	WHERE ChargeType = 1 AND DI_Rate > 0
+	
+	IF NOT EXISTS (SELECT 1 FROM @ChargeRates)
+	BEGIN
+		INSERT INTO @ChargeRates(Rate, FromDate, ToDate)
+		SELECT DI_Rate, Fromdate, Todate
+		FROM bodb_licensee.dbo.LA_f_GetChargeInfoWithTrialTime(@PartyID, @FDate, @TDate, @ProductPrefix, 'OA', 1)
+		WHERE ChargeType = 1 AND DI_Rate > 0
+	END
+
+	-- CutoffDate apply new term, Change AmountDueTo formula 
+	DECLARE @CutoffDate SMALLDATETIME
+	SET @CutoffDate = '2023-05-01'
+
 	-- #Region: Get data has not been moved to sum table yet(yesterday and today)
 	IF EXISTS (SELECT 1 FROM @RawWinLostDate)
 	BEGIN
-		DECLARE @RawFDate	DATE,
-				@RawTDate	DATE,
-				@PartyID	VARCHAR(10)
-		DECLARE @ChargeRates AS TABLE(Rate MONEY, FromDate DATE, ToDate DATE)
-
-		SELECT @RawFDate = MIN(WinLostDate), @RawTDate = MAX(WinLostDate)
-		FROM @RawWinLostDate
-
-		SELECT @PartyID = CAST(PartyID AS VARCHAR)
-		FROM bodb_licensee.dbo.OAS_Party WITH(NOLOCK)
-		WHERE OldRefID = @LicenseeId AND PartyType = 1
 		
-		INSERT INTO @ChargeRates(Rate, FromDate, ToDate)
-		SELECT DI_Rate, Fromdate, Todate
-		FROM bodb_licensee.dbo.LA_f_ChargeInfo(@PartyID, @RawFDate, @RawTDate, @ProductPrefix, 'OA', 1)
-		WHERE ChargeType = 1 AND DI_Rate > 0
-		
-		IF NOT EXISTS (SELECT 1 FROM @ChargeRates)
-		BEGIN
-			INSERT INTO @ChargeRates(Rate, FromDate, ToDate)
-			SELECT DI_Rate, Fromdate, Todate
-			FROM bodb_licensee.dbo.LA_f_GetChargeInfoWithTrialTime(@PartyID, @RawFDate, @RawTDate, @ProductPrefix, 'OA', 1)
-			WHERE ChargeType = 1 AND DI_Rate > 0
-		END
-
 		CREATE TABLE #sumBet (
 			SettledDate		DATE,
 			CustID			INT,
@@ -242,7 +244,8 @@ BEGIN
 			LicNetWL,
 			CustComm,
 			AmountDueTo,
-			AgentComm
+			AgentComm,
+			LicTotal
 			)
 		SELECT
 			sumbet.CustID 
@@ -255,8 +258,12 @@ BEGIN
 			, - SUM(sumbet.Winlost)
 			, - SUM(sumbet.Winlost * (1 - ISNULL(rate.Rate, 1)))
 			, SUM(sumbet.CustComm)
-			, - SUM((sumbet.Winlost + sumbet.CustComm) + (-sumbet.Winlost*(1-ISNULL(rate.Rate,1)) + sumbet.AgentComm)) -- (LicWL - NetLicWL) + (LicComm - NetLicComm)
+			,CASE WHEN sumbet.SettledDate >= @CutoffDate 
+					THEN - SUM((sumbet.Winlost + sumbet.CustComm) * ( ISNULL(rate.Rate, 0)))  -- - (Customer Total * (1-Licensee rate))
+					ELSE - SUM((sumbet.Winlost + sumbet.CustComm) + (-sumbet.Winlost*(1-ISNULL(rate.Rate,1)) + sumbet.AgentComm)) -- (LicWL - NetLicWL) + (LicComm - NetLicComm)
+				END AS AmountDueTo 
 			, SUM(sumbet.AgentComm)
+			, SUM(-(sumbet.Winlost + sumbet.CustComm) * (1 - ISNULL(rate.Rate, 1)))  LicTotal -- Customer Total * (1- House's rate)
 		FROM #sumBet sumbet
 			LEFT JOIN #detailBet bet ON sumbet.userId	= bet.userId 
 									AND sumbet.eventID	= bet.eventID 
@@ -288,7 +295,8 @@ BEGIN
 			LicNetWL,
 			CustComm,
 			AmountDueTo,
-			AgentComm )
+			AgentComm,
+			LicTotal )
 		SELECT
 			c.Recommend,
 			b.Winlostdate,
@@ -300,10 +308,15 @@ BEGIN
 			-SUM(b.Winlost),
 			SUM(b.WinLostA),
 			SUM(CommissionP),
-			-SUM(( b.Winlost + b.CommissionP) + ( b.WinLostA + CommissionA)), -- (LicWL - NetLicWL) + (LicComm - NetLicComm)
-			SUM(CommissionA)
+			CASE WHEN b.Winlostdate >= @CutoffDate 
+				THEN -SUM((b.Winlost + b.CommissionP) * (ISNULL(rate.Rate, 0))) -- - (Customer Total * (1-Licensee rate))
+				ELSE -SUM(( b.Winlost + b.CommissionP) + ( b.WinLostA + CommissionA)) -- (LicWL - NetLicWL) + (LicComm - NetLicComm)
+				END AS AmountDueTo,
+			SUM(CommissionA),
+			SUM(-(b.Winlost + b.CommissionP) * (1 - ISNULL(rate.Rate, 1))) LicTotal -- Customer Total * (1- House's rate)
 		FROM bodb_LicenseeReport.dbo.rptDepWinlost_ThirdParty b WITH (NOLOCK)
 			INNER JOIN @tmpCust c ON b.Custid = c.CustID
+			LEFT JOIN @ChargeRates rate ON b.Winlostdate BETWEEN rate.FromDate AND rate.ToDate
 		WHERE b.Winlostdate BETWEEN @FDate AND @TDate
 			AND b.ProductId = @ProductID
 			AND NOT EXISTS (SELECT 1 FROM @RawWinLostDate r WHERE b.Winlostdate = r.WinLostDate)
@@ -351,8 +364,7 @@ BEGIN
 		, SUM(r.CustComm * e.Rate)		AS CustComm
 		, SUM(r.LicWinLost * e.Rate)	AS LicenseeWinlost
 		, SUM(r.AmountDueTo * e.Rate)	AS AmountDueTo
-		, SUM(r.AgentComm * e.Rate)		AS AgentComm
-		, SUM(r.LicNetWL * e.Rate)		AS LicNetWL
+		, SUM(r.LicTotal * e.Rate)		AS LicTotal
 		---USD
 		, SUM(r.Turnover * e.USD)		AS TurnOverUSD
 		, SUM(r.NetTurnover * e.USD)	AS NetTurnOverUSD
@@ -360,8 +372,7 @@ BEGIN
 		, SUM(r.CustComm * e.USD)		AS CustCommUSD
 		, SUM(r.LicWinLost * e.USD)		AS LicenseeWinlostUSD
 		, SUM(r.AmountDueTo * e.USD)	AS AmountDueToUSD
-		, SUM(r.AgentComm * e.USD)		AS AgentCommUSD
-		, SUM(r.LicNetWL * e.USD)		AS LicNetWLUSD
+		, SUM(r.LicTotal * e.USD)		AS LicTotalUSD
 		---EUR
 		, SUM(r.Turnover * e.EUR)		AS TurnOverEUR
 		, SUM(r.NetTurnover * e.EUR)	AS NetTurnOverEUR
@@ -369,8 +380,7 @@ BEGIN
 		, SUM(r.CustComm * e.EUR)		AS CustCommEUR
 		, SUM(r.LicWinLost * e.EUR)		AS LicenseeWinlostEUR
 		, SUM(r.AmountDueTo * e.EUR)	AS AmountDueToEUR
-		, SUM(r.AgentComm * e.EUR)		AS AgentCommEUR
-		, SUM(r.LicNetWL * e.EUR)		AS LicNetWLEUR
+		, SUM(r.LicTotal * e.EUR)		AS LicTotalEUR
 		---GBP
 		, SUM(r.Turnover * e.GBP)		AS TurnOverGBP
 		, SUM(r.NetTurnover * e.GBP)	AS NetTurnOverGBP
@@ -378,8 +388,7 @@ BEGIN
 		, SUM(r.CustComm * e.GBP)		AS CustCommGBP
 		, SUM(r.LicWinLost * e.GBP)		AS LicenseeWinlostGBP
 		, SUM(r.AmountDueTo * e.GBP)	AS AmountDueToGBP
-		, SUM(r.AgentComm * e.GBP)		AS AgentCommGBP
-		, SUM(r.LicNetWL * e.GBP)		AS LicNetWLGBP
+		, SUM(r.LicTotal * e.GBP)		AS LicTotalGBP
 		---Default base currency
 		, SUM(r.Turnover * e.DefaultRate)		AS TurnOverBase
 		, SUM(r.NetTurnover * e.DefaultRate)	AS NetTurnOverBase
@@ -387,8 +396,7 @@ BEGIN
 		, SUM(r.CustComm * e.DefaultRate)		AS CustCommBase
 		, SUM(r.LicWinLost * e.DefaultRate)		AS LicenseeWinlostBase
 		, SUM(r.AmountDueTo * e.DefaultRate)	AS AmountDueToBase
-		, SUM(r.AgentComm * e.DefaultRate)		AS AgentCommBase
-		, SUM(r.LicNetWL * e.DefaultRate)		AS LicNetWLBase
+		, SUM(r.LicTotal * e.DefaultRate)		AS LicTotalBase
 	FROM #tmpResult AS r
 		INNER JOIN #Exchange AS e ON r.CurrencyID = e.ExchangeId AND r.Winlostdate BETWEEN e.FromDate AND e.ToDate
 		INNER JOIN dbo.custInfo AS ci WITH (NOLOCK) ON ci.custid = r.CustID

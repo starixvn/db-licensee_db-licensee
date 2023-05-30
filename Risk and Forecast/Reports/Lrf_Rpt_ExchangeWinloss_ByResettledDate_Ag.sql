@@ -1,6 +1,6 @@
 /*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
-ALTER PROCEDURE [dbo].[Lrf_Rpt_ExchangeWinloss_ByResettledDate_Ag]
+ALTER PROCEDURE [dbo].Lrf_Rpt_ExchangeWinloss_ByResettledDate_Ag
 	@LicenseeId				INT,
 	@AgentList				VARCHAR(MAX),
 	@UserName				VARCHAR(50)	= '',
@@ -17,6 +17,7 @@ AS
 
 	Revisions:
 		- 20221111@Evan: Create new report Exchange Winloss by Resettled Date [RedmineID: #179079]		 
+		- 20230516@Evan: Change the "Amount Due To" formula & Add output column "Licensee Total"  [Redmine: #186609]
 
 */
 
@@ -55,7 +56,8 @@ BEGIN
 		LicNetWL	MONEY,
 		CustComm	MONEY,
 		AmountDueTo	MONEY,
-		AgentComm	MONEY
+		AgentComm	MONEY,
+		LicTotal	MONEY
 	)
 
 	DECLARE @ProductID			INT
@@ -123,6 +125,10 @@ BEGIN
 		WHERE ChargeType = 1 AND DI_Rate > 0
 	END
 
+	-- CutoffDate apply new term, Change AmountDueTo formula 
+	DECLARE @CutoffDate SMALLDATETIME
+	SET @CutoffDate = '2023-05-01'
+
 	CREATE TABLE #sumBet (
 		SettledDate		DATE,
 		CustID			INT,
@@ -148,7 +154,8 @@ BEGIN
 		Winlost,
 		CustComm,
 		AgentComm,
-		ExVirtualRate )
+		ExVirtualRate
+		)
 	SELECT
 		CONVERT(DATE, ISNULL(sumbet.resettledDate,sumbet.settledDate)),
 		cust.Recommend,
@@ -221,7 +228,8 @@ BEGIN
 		LicNetWL,
 		CustComm,
 		AmountDueTo,
-		AgentComm
+		AgentComm,
+		LicTotal
 		)
 	SELECT
 		sumbet.CustID 
@@ -234,8 +242,12 @@ BEGIN
 		, - SUM(sumbet.Winlost)
 		, - SUM(sumbet.Winlost * (1 - ISNULL(rate.Rate, 1)))
 		, SUM(sumbet.CustComm)
-		, - SUM((sumbet.Winlost + sumbet.CustComm) + (-sumbet.Winlost*(1-ISNULL(rate.Rate,1)) + sumbet.AgentComm)) -- (LicWL - NetLicWL) + (LicComm - NetLicComm)
+		, CASE WHEN sumbet.SettledDate >= @CutoffDate 
+					THEN - SUM((sumbet.Winlost + sumbet.CustComm) * ( ISNULL(rate.Rate, 0)))  -- - (Customer Total * (1-Licensee rate))
+					ELSE - SUM((sumbet.Winlost + sumbet.CustComm) + (-sumbet.Winlost*(1-ISNULL(rate.Rate,1)) + sumbet.AgentComm)) -- (LicWL - NetLicWL) + (LicComm - NetLicComm)
+				END AS AmountDueTo 
 		, SUM(sumbet.AgentComm)
+		, SUM(-(sumbet.Winlost + sumbet.CustComm) * (1 - ISNULL(rate.Rate, 1)))  LicTotal -- Customer Total * (1- House's rate) 
 	FROM #sumBet sumbet
 		LEFT JOIN #detailBet bet ON sumbet.userId	= bet.userId 
 								AND sumbet.eventID	= bet.eventID 
@@ -289,8 +301,7 @@ BEGIN
 		, SUM(r.CustComm * e.Rate)		AS CustComm
 		, SUM(r.LicWinLost * e.Rate)	AS LicenseeWinlost
 		, SUM(r.AmountDueTo * e.Rate)	AS AmountDueTo
-		, SUM(r.AgentComm * e.Rate)		AS AgentComm
-		, SUM(r.LicNetWL * e.Rate)		AS LicNetWL
+		, SUM(r.LicTotal * e.Rate)		AS LicTotal
 		---USD
 		, SUM(r.Turnover * e.USD)		AS TurnOverUSD
 		, SUM(r.NetTurnover * e.USD)	AS NetTurnOverUSD
@@ -298,8 +309,7 @@ BEGIN
 		, SUM(r.CustComm * e.USD)		AS CustCommUSD
 		, SUM(r.LicWinLost * e.USD)		AS LicenseeWinlostUSD
 		, SUM(r.AmountDueTo * e.USD)	AS AmountDueToUSD
-		, SUM(r.AgentComm * e.USD)		AS AgentCommUSD
-		, SUM(r.LicNetWL * e.USD)		AS LicNetWLUSD
+		, SUM(r.LicTotal * e.USD)		AS LicTotalUSD
 		---EUR
 		, SUM(r.Turnover * e.EUR)		AS TurnOverEUR
 		, SUM(r.NetTurnover * e.EUR)	AS NetTurnOverEUR
@@ -307,8 +317,7 @@ BEGIN
 		, SUM(r.CustComm * e.EUR)		AS CustCommEUR
 		, SUM(r.LicWinLost * e.EUR)		AS LicenseeWinlostEUR
 		, SUM(r.AmountDueTo * e.EUR)	AS AmountDueToEUR
-		, SUM(r.AgentComm * e.EUR)		AS AgentCommEUR
-		, SUM(r.LicNetWL * e.EUR)		AS LicNetWLEUR
+		, SUM(r.LicTotal * e.EUR)		AS LicTotalEUR
 		---GBP
 		, SUM(r.Turnover * e.GBP)		AS TurnOverGBP
 		, SUM(r.NetTurnover * e.GBP)	AS NetTurnOverGBP
@@ -316,8 +325,7 @@ BEGIN
 		, SUM(r.CustComm * e.GBP)		AS CustCommGBP
 		, SUM(r.LicWinLost * e.GBP)		AS LicenseeWinlostGBP
 		, SUM(r.AmountDueTo * e.GBP)	AS AmountDueToGBP
-		, SUM(r.AgentComm * e.GBP)		AS AgentCommGBP
-		, SUM(r.LicNetWL * e.GBP)		AS LicNetWLGBP
+		, SUM(r.LicTotal * e.GBP)		AS LicTotalGBP
 		---Default base currency
 		, SUM(r.Turnover * e.DefaultRate)		AS TurnOverBase
 		, SUM(r.NetTurnover * e.DefaultRate)	AS NetTurnOverBase
@@ -325,8 +333,7 @@ BEGIN
 		, SUM(r.CustComm * e.DefaultRate)		AS CustCommBase
 		, SUM(r.LicWinLost * e.DefaultRate)		AS LicenseeWinlostBase
 		, SUM(r.AmountDueTo * e.DefaultRate)	AS AmountDueToBase
-		, SUM(r.AgentComm * e.DefaultRate)		AS AgentCommBase
-		, SUM(r.LicNetWL * e.DefaultRate)		AS LicNetWLBase
+		, SUM(r.LicTotal * e.DefaultRate)		AS LicTotalBase
 	FROM #tmpResult AS r
 		INNER JOIN #Exchange AS e ON r.CurrencyID = e.ExchangeId AND r.Winlostdate BETWEEN e.FromDate AND e.ToDate
 		INNER JOIN dbo.custInfo AS ci WITH (NOLOCK) ON ci.custid = r.CustID
