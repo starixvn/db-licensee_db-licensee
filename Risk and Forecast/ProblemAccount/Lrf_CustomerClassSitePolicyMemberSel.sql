@@ -24,7 +24,7 @@ BEGIN
 	CREATE TABLE #CustomerClassSitePolicy(CustomerClass	SMALLINT,Enabled BIT,SiteID	VARCHAR(7),SpreadGroup	VARCHAR(3),CurrencyID TINYINT,Platform	TINYINT,PRIMARY KEY(CustomerClass ,Platform))
 	-- Get Class for Site
 	INSERT INTO #CustomerClassSitePolicy(CustomerClass, Enabled, SiteID, SpreadGroup, Platform, CurrencyID)
-	SELECT CustomerClass,c1.Enabled ,c1.SiteID	, c1.SpreadGroup , c1.Platform , c1.CurrencyID
+	SELECT DISTINCT CustomerClass,c1.Enabled ,c1.SiteID	, c1.SpreadGroup , c1.Platform , c1.CurrencyID
 	FROM CustomerClassSitePolicy c1 WITH(NOLOCK)
 	WHERE c1.isLicensee = 1
 		AND c1.CustomerClass = @CustomerClass
