@@ -74,7 +74,7 @@ BEGIN
 					+ POWER(2*CASE WHEN ISNULL(@ProductCodes, 'ALL') = 'ALL'  OR ',' + @ProductCodes + ',' LIKE '%,BA,%' THEN 1 ELSE 0 END, 2)
 				) AS SBBACheck
 		) AS sbba 
-		WHERE p.SportType NOT IN (150, 173) --exclude free games
+		WHERE p.SportType NOT IN (150, 173, 27) --exclude free games & hide Cricket(27)
 			AND (ISNULL(@ProductCodes, 'ALL') = 'ALL' OR ck.HasValue = 1 )
 	)
 	SELECT ProductID, ProductName, ProductCode, SportType, SportName 
