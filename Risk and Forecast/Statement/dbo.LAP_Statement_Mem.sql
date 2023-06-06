@@ -29,6 +29,7 @@ Revisions:
 	- 20211109@Percy: Fix wrong opening balance issue and add ACCUMULATED BALANCE [RedmineID: #164360]
 	- 20211111@Sol: Split Transfer out of bettrans/Support IPv6 - [RedmineID: #164301]
     - 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
+	- 20230227@Evan: Ensure correct balance calculation when allow to transfer 247 (BU) [Redmine: #173554]
 
 Param's Explanation:     
 */
@@ -150,7 +151,7 @@ BEGIN
 			,0 AS commission
 		FROM bodb02.dbo.Transfer b WITH(NOLOCK)
 		WHERE b.custid = @_CustID  
-			AND b.bettype = @BAL_BETTYPE
+			AND b.bettype = @BAL_BETTYPE AND winlostdate = @BalanceUpDay
 	END
 	------------- END INIT: OPENING BALANCE ---------------
 
@@ -251,11 +252,9 @@ BEGIN
 
 				FROM 
 					bodb02.dbo.bettrans b WITH (NOLOCK)  
-
 				WHERE
 					custid = @_CustID  
 					AND winlostdate >= @_tempStartDate
-					AND b.bettype < 19999
 					AND b.bettype NOT IN (903, 71, 913, 914)
 					AND ((@IsCOMember = 0 AND bettype <> 912) OR (@IsCOMember = 1 AND bettype <> 911))
 					AND 1 = CASE 
@@ -368,7 +367,9 @@ BEGIN
 				b.custid = @_CustID  
 				AND b.winlostdate >= @_tempStartDate and b.winlostdate <= @_tempEndDate
 				AND b.bettype >= @BAL_BETTYPE
-					
+				AND 1 = CASE WHEN bettype = @BAL_BETTYPE AND winlostdate > @BalanceUpDay THEN 0 --> new bal
+						WHEN winlostdate < @BalanceUpDay THEN 0 --> old data
+						ELSE 1 END
 		)
 		INSERT INTO #statementRpt (orderkey, winlostdate, transtype, transdesc, turnover,totalamt,commission)
 		SELECT b.orderkey, b.winlostdate, b.transtype, b.transdesc, b.turnover, b.totalamt, b.commission 

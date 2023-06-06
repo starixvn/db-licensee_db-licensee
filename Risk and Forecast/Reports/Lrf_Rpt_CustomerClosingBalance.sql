@@ -17,6 +17,7 @@ AS
 		- 20211125@Sol: Initial sp - [RedmineID: #165136]
 		- 20220121@Sol: Split Transfer out of bettrans/Support IPv6 - [RedmineID: #164301]
 		- 20201011@Evan: Support Currency Crypto show USDT [Redmine #177481]
+		- 20230227@Evan: Ensure correct balance calculation when allow to transfer 247 (BU) [Redmine: #173554]
 	Param's Explanation:
 		- @AgentList: list agent of licensee
 */
@@ -27,6 +28,13 @@ BEGIN
 	-- Get agent list
 	DECLARE @tmpAg TABLE (CustId INT, Currency INT, CurrCode NVARCHAR(50))
 	DECLARE @DocHandler INT
+
+	DECLARE @MBBU TABLE (BalanceUpDay SMALLDATETIME, MoveBetsDay SMALLDATETIME)
+	INSERT INTO @MBBU (BalanceUpDay, MoveBetsDay)
+	EXEC dbo.Age_SelBalanceUpDay
+
+	DECLARE @BalanceUpDate SMALLDATETIME
+	SELECT  @BalanceUpDate = BalanceUpDay FROM @MBBU
 
 	CREATE TABLE #ClosingBalance(CustId INT, CurrName NVARCHAR(50), ClosingBalance MONEY)
 	CREATE TABLE #RunningCust(CustId INT, CurrName NVARCHAR(50))
@@ -56,7 +64,7 @@ BEGIN
 				ISNULL(SUM(ISNULL(winlost,0) - ISNULL(actual_stake,0) + ISNULL(playercomm,0)),0) AS ClosingBalance
 		FROM @tmpAg c
 			INNER JOIN bettrans b WITH (NOLOCK) ON b.recommend = c.custid
-		WHERE b.bettype < 19999 AND b.winlostdate > @MoveBetsDay
+		WHERE b.winlostdate > @MoveBetsDay
 		GROUP BY b.custid, c.CurrCode
 
 		---from transfer
@@ -65,7 +73,10 @@ BEGIN
 				ISNULL(SUM(ISNULL(winlost,0) - ISNULL(actual_stake,0) + ISNULL(playercomm,0)),0) AS ClosingBalance
 		FROM @tmpAg c
 			INNER JOIN dbo.Transfer t WITH (NOLOCK) ON t.recommend = c.custid
-		WHERE (t.bettype = 19999 AND t.winlostdate <= @MoveBetsDay OR t.Bettype > 19999)
+		WHERE 1 = CASE WHEN bettype = 19999 AND winlostdate > @MoveBetsDay THEN 0 --> new sum
+	            WHEN bettype = 20000 AND winlostdate > @BalanceUpDate THEN 0 --> new bal
+	            WHEN winlostdate < @BalanceUpDate THEN 0 --> old data
+	            ELSE 1 END
 		GROUP BY t.custid, c.CurrCode
 
 		SELECT SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS ExternalId , c.Username AS SystemId, t.CurrencyName, t.ClosingBalance
@@ -115,7 +126,10 @@ BEGIN
 		FROM dbo.Transfer t WITH (NOLOCK) 
 			INNER JOIN #RunningCust r
 				ON t.custid = r.custid
-		WHERE (t.bettype = 19999 AND t.winlostdate <= @MoveBetsDay OR t.Bettype > 19999)
+		WHERE 1 = CASE WHEN bettype = 19999 AND winlostdate > @MoveBetsDay THEN 0 --> new sum
+	            WHEN bettype = 20000 AND winlostdate > @BalanceUpDate THEN 0 --> new bal
+	            WHEN winlostdate < @BalanceUpDate THEN 0 --> old data
+	            ELSE 1 END
 		GROUP BY t.custid, r.CurrName
 
 		SELECT SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS ExternalId , c.Username AS SystemId, t.CurrencyName, t.ClosingBalance
