@@ -330,7 +330,7 @@ BEGIN
 			,SUM(ck.NetTurnover) AS NetTurnover
 			,SUM(ck.MemWinloss) AS MemWinloss
 			,SUM(b.playercomm) AS [MemComm]
-			,-SUM(ck.MemWinloss) AS LicWinloss
+			,SUM(ck.LicWinloss) AS LicWinloss
 			,SUM(b.comm) AS [LicComm]
 			,SUM(ck.AmtDueToBA) AS AmtDueToBA
 			,SUM(ABS(ck.MemWinloss)) AS BetEffective
@@ -339,7 +339,7 @@ BEGIN
 			,SUM(ck.NetTurnover * e.Rate) AS BaseNetTurnover
 			,SUM(ck.MemWinloss * e.Rate) AS BaseMemWinloss
 			,SUM(b.playercomm * e.Rate) AS [BaseMemComm]
-			,-SUM(ck.MemWinloss * e.Rate) AS BaseLicWinloss
+			,SUM(ck.LicWinloss * e.Rate) AS BaseLicWinloss
 			,SUM(b.comm * e.Rate) AS [BaseLicComm]
 			,SUM(ck.AmtDueToBA * e.Rate) AS BaseAmtDueToBA
 			,SUM(ABS(ck.MemWinloss) * e.Rate) AS BaseBetEffective
@@ -373,6 +373,7 @@ BEGIN
 						ELSE ABS(b.stake)
 					END AS NetTurnover,
 					(b.winlost-b.actual_stake) AS MemWinloss,
+					CASE WHEN ba.IsBA = 0 THEN -(b.winlost-b.actual_stake) ELSE 0 END AS LicWinloss,
 					-(CASE
 						WHEN ba.IsBA = 1 THEN (b.winlost - b.actual_stake + b.awinlost + b.comm) --COUNT for BA's tickets
 						ELSE 0
