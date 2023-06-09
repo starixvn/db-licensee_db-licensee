@@ -18,6 +18,7 @@ RETURNS TABLE
 		- 20220223@Kos: Integrate Allbet Promotion [RedmineID: #167524]
 		- 20220801@Victoria: Add DBSID-bodb02 to metadata [Redmine: #175297]
 		- 20230208@Evan: Inteagrate SG promotion prize [RedmineID: #183497]
+		- 20230609@Evan: Integrate PG Soft Promotion Prize [RedmineID: #189091]
 */
 
 RETURN
@@ -58,5 +59,7 @@ RETURN
 	SELECT 'AB', 2499									-- Allbet Promotion
 	UNION ALL
 	SELECT 'SG', 4598									-- SG promotion prize
+	UNION ALL
+	SELECT 'PGS', 6300									-- PG Soft Promotion Prize
 
 GO
