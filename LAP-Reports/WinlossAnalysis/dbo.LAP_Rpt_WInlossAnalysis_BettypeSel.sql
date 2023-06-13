@@ -67,10 +67,11 @@ BEGIN
 					+ POWER(2*CASE WHEN ISNULL(@ProductCodes, 'ALL') = 'ALL'  OR ',' + @ProductCodes + ',' LIKE '%,BA,%' THEN 1 ELSE 0 END, 2)
 				) AS SBBACheck
 		) AS saba 
-		WHERE m.SportType NOT IN (150, 173) --exclude free games
+		WHERE m.[Enabled] = 1
+			AND m.SportType NOT IN (150, 173) --exclude free games
 			AND (ISNULL(@ProductCodes, 'ALL') = 'ALL' OR ck.HasValue = 1 )
 			AND e.BetType IS NULL
-			AND m.Bettype NOT IN (9) -- exclude Mix Parlay
+			AND m.Bettype NOT IN (9, 18999) -- exclude Mix Parlay
 	)
 	SELECT rs.ProductCode, rs.BetType
 	FROM result rs

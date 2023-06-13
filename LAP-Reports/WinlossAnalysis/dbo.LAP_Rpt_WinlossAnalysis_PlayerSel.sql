@@ -114,24 +114,24 @@ BEGIN
 	CREATE TABLE #rptData(
 		GroupBy INT, BreakBy INT, ParentKey INT,
 		BetCount	INT,
-		Turnover	MONEY, 
-		NetTurnover MONEY,
-		MemWinloss	MONEY, 
-		MemComm		MONEY,
-		LicWinloss	MONEY, 
-		LicComm		MONEY,
-		AmtDueToBA	MONEY, 
-		BetEffective	MONEY,
+		Turnover	DECIMAL(19,8), 
+		NetTurnover DECIMAL(19,8),
+		MemWinloss	DECIMAL(19,8), 
+		MemComm		DECIMAL(19,8),
+		LicWinloss	DECIMAL(19,8), 
+		LicComm		DECIMAL(19,8),
+		AmtDueToBA	DECIMAL(19,8), 
+		BetEffective	DECIMAL(19,8),
 		Margin		SMALLMONEY,
 		------------BASE
-		BaseTurnover	MONEY, 
-		BaseNetTurnover MONEY,
-		BaseMemWinloss	MONEY, 
-		BaseMemComm		MONEY,
-		BaseLicWinloss	MONEY, 
-		BaseLicComm		MONEY,
-		BaseAmtDueToBA	MONEY, 
-		BaseBetEffective	MONEY
+		BaseTurnover	DECIMAL(19,8), 
+		BaseNetTurnover DECIMAL(19,8),
+		BaseMemWinloss	DECIMAL(19,8), 
+		BaseMemComm		DECIMAL(19,8),
+		BaseLicWinloss	DECIMAL(19,8), 
+		BaseLicComm		DECIMAL(19,8),
+		BaseAmtDueToBA	DECIMAL(19,8), 
+		BaseBetEffective	DECIMAL(19,8)
 	);
 	CREATE CLUSTERED INDEX CIX_rptData ON #rptData(GroupBy, BreakBy);
 
