@@ -21,6 +21,7 @@ AS
 		- 20200907@Sol: Show lost record for some cases [RedmineID: #140884]
 		- 20201008@Sol: Show new column to determine re-settle tickets - [RedmineID: #142346]
 		- 20220111@Sophia: Hide transfer ticket of Single Wallet Licensee [RedmineID: #167343]
+		- 20230614@Evan: Update condition show full cycle of status on ticket  [RedmineID: #189579]
 	
 	Param's Explanation:     
 */
@@ -97,7 +98,7 @@ BEGIN
 			(
 				BalanceChanged <> 0
 				OR 
-				(BalanceChanged = 0 AND ActionID NOT IN (1, 20, 21, 100, 255)) --excluded others (won/lose->won/lose...), Reject Bet, Accept Bet, Bet SUM insert, Balance insert
+				(BalanceChanged = 0 AND ActionID NOT IN (1, 33, 35, 100, 255)) --excluded others (won/lose->won/lose...), LC|RNG Sum, Translog inserted, Bet SUM insert, Balance insert
 			)
 	
 		UNION ALL
@@ -123,7 +124,7 @@ BEGIN
 			(
 				BalanceChanged <> 0
 				OR 
-				(BalanceChanged = 0 AND ActionID NOT IN (1, 20, 21, 100, 255)) --excluded others (won/lose->won/lose...), Reject Bet, Accept Bet, Bet SUM insert, Balance insert
+				(BalanceChanged = 0 AND ActionID NOT IN (1, 33, 35, 100, 255)) --excluded others (won/lose->won/lose...), LC|RNG Sum, Translog inserted, Bet SUM insert, Balance insert
 			)
 	) AS br
 	
