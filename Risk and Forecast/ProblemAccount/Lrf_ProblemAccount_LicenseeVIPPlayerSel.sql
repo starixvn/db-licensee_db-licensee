@@ -24,6 +24,7 @@ AS
 			- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]	
 			- 20201209@Winfred: get isBA for Problem player [redmine:#146508]
 			- 20210128@Johnson: filter customer class [redmine:#]
+			- 20230615@Johnson: sort CC by risk level [redmine:#189631]
 		Paramter's Explanations:
 			- @VipOption: 0: All, 1: Yes, 2 : No
 			- @OrderCol = 1: sort by System ID	
@@ -109,7 +110,7 @@ BEGIN
 							WHEN @VipOption = 2 THEN 0 ELSE isVip END 
 	END
 		
-	SELECT RTRIM(LTRIM(VAL)) AS CustomerClass
+	SELECT ID, RTRIM(LTRIM(VAL)) AS CustomerClass
 	INTO #tblCustomerClass
 	FROM Lrf_f_StringSplit(@CustomerClass,',')
 	
@@ -144,8 +145,9 @@ BEGIN
 	ELSE IF @OrderCol = 4
 	BEGIN
 		;WITH t1 AS(
-		SELECT *, CASE WHEN @OrderCol = 4 THEN CustomerClass END OrderCol
-		FROM #CustList
+		SELECT c.*, CASE WHEN @OrderCol = 4 THEN t.ID END OrderCol
+		FROM #CustList c
+			INNER JOIN #tblCustomerClass t ON c.CustomerClass = t.CustomerClass
 		),
 		t2 AS (
 		SELECT *, ROW_NUMBER () OVER (ORDER BY CASE WHEN @SortType = 1 THEN OrderCol END ASC,	
