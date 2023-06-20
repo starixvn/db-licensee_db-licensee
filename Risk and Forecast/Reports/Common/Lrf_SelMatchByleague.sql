@@ -21,7 +21,8 @@ AS
 		- 20210304@Hogan: Integrate Cricket AIO [RedmineID: #150386]
 		- 20210622@Mark: Change on MoveBet - Add param MoveBetsDay, BalanceUpDay [RedmineID: #154866]
 		- 20211112@Kos: Exclude league and match which IsDeleted = 1 [RedmineID: #163733]
-		
+		- 20230620@Kos: Support filter Saba Sports in BTC [RedmineID: #183841]
+
 	Param's Explanation:
 		- @SportId = 0: all sports
 		- @LeagueId = 0 : get all matches
@@ -34,10 +35,11 @@ BEGIN
 		@TempToDate			DATETIME
 
 	CREATE TABLE #match (
-		MatchId		INT,
-		HomeId		INT,
-		AwayId		INT,
-		LeagueId	INT
+		MatchId			INT,
+		HomeId			INT,
+		AwayId			INT,
+		LeagueId		INT,
+		LeagueGroupID	SMALLINT
 	)
 
 	IF @Todate > @MoveBetsDay
@@ -55,8 +57,10 @@ BEGIN
 			END AS matchid, -- get main match
 			m.homeid,
 			m.awayid,
-			m.leagueid
+			m.leagueid,
+			l.LeagueGroupID
 		FROM bodb02.dbo.match AS m WITH (NOLOCK)
+			INNER JOIN bodb02.dbo.League AS l WITH (NOLOCK) ON l.leagueid = m.leagueid
 		WHERE m.eventdate BETWEEN @TempFromDate AND @ToDate
 			AND ((@LeagueID = 0 AND (m.sporttype < 100 OR m.sporttype = 154))
 				OR m.leagueid = @LeagueID)
@@ -81,11 +85,13 @@ BEGIN
 			CASE
 				WHEN m.sporttype = 50 AND m.ChildMatchType = 200 THEN m.ParentID
 				ELSE m.matchid
-			END AS matchid -- get main match
-			,m.homeid
-			,m.awayid
-			,m.leagueid
+			END AS matchid, -- get main match
+			m.homeid,
+			m.awayid,
+			m.leagueid,
+			l.LeagueGroupID
 		FROM bodb02.dbo.match14 AS m WITH (NOLOCK)
+			INNER JOIN bodb02.dbo.League AS l WITH (NOLOCK) ON l.leagueid = m.leagueid
 		WHERE m.eventdate BETWEEN @BalanceUpDay AND @TempToDate
 			AND ((@LeagueID = 0 AND (m.sporttype < 100 OR m.sporttype = 154))
 				OR m.leagueid = @LeagueID)
@@ -109,11 +115,13 @@ BEGIN
 		SET @LinkedServer = 'DBARC'
 		SET @OPENQUERY = 'SELECT * FROM OPENQUERY('+ @LinkedServer + ','''
 		SET @TSQL = '	SELECT 
-						DISTINCT CASE WHEN m.sporttype = 50 AND m.ChildMatchType = 200 THEN m.ParentID ELSE m.matchid END AS matchid
-							,m.homeid
-							,m.awayid
-							,m.leagueid
+						DISTINCT CASE WHEN m.sporttype = 50 AND m.ChildMatchType = 200 THEN m.ParentID ELSE m.matchid END AS matchid,
+							m.homeid,
+							m.awayid,
+							m.leagueid,
+							l.LeagueGroupID
 						FROM bodb_archive.dbo.match_bk AS m WITH (NOLOCK)
+							INNER JOIN bodb02.dbo.League AS l WITH (NOLOCK) ON l.leagueid = m.leagueid
 						WHERE m.eventdate between ''''' + CAST(@FromDate AS VARCHAR)+'''''' + ' AND ''''' + CAST(@TempToDate AS VARCHAR) + '''''
 							AND ((' + CAST(@LeagueId AS VARCHAR)+' = 0 AND (m.sporttype < 100 OR m.sporttype=154)) OR m.leagueid = ' + CAST(@leagueid AS VARCHAR)+') ' + '
 							AND m.leagueid > 0 
@@ -127,10 +135,12 @@ BEGIN
 		EXEC (@sql)
 	END
 
-	SELECT DISTINCT m.matchid
-		,m.homeid
-		,m.awayid
-		,m.leagueid
+	SELECT DISTINCT
+		m.matchid,
+		m.homeid,
+		m.awayid,
+		m.leagueid,
+		m.LeagueGroupID
 	FROM #match AS m
 	ORDER BY m.matchid DESC
 		,m.homeid
