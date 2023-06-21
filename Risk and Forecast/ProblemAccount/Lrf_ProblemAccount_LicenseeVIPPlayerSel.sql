@@ -25,6 +25,7 @@ AS
 			- 20201209@Winfred: get isBA for Problem player [redmine:#146508]
 			- 20210128@Johnson: filter customer class [redmine:#]
 			- 20230615@Johnson: sort CC by risk level [redmine:#189631]
+			- 20230621@Johnson: show wrong CC when miss info in Custinfo[redmine:#190081]
 		Paramter's Explanations:
 			- @VipOption: 0: All, 1: Yes, 2 : No
 			- @OrderCol = 1: sort by System ID	
@@ -121,6 +122,7 @@ BEGIN
 	
 	DELETE #CustList 
 	WHERE customerClass NOT IN (SELECT customerClass FROM #tblCustomerClass)
+		OR customerClass IS NULL --not have data in custinfo
 	
 	SELECT @TotalItems = COUNT(1) FROM #CustList
 	
