@@ -22,6 +22,7 @@ AS
 		-20210823@Johnson: update status for RnG Keno[redmineID:#159696]
 		-20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 		- 20220301@Eden: Deposit - Sportsbook - Revise customer settings [Redmine: #167898]
+		- 20230615@Tacy: Remove columns and code used by Colossus Bets, GD product [RedmineID: #188096]
 	Param's Explanation:
 */
 BEGIN
@@ -40,75 +41,50 @@ BEGIN
 			,@SEnabled INT = 0
 	SELECT @Srecommend = srecommend FROM dbo.Customer c WITH (NOLOCK) WHERE c.CustID = @CustID
 	
-	IF (@ProductId=15)--CB
+	SELECT @IsEnable_Old = ISNULL(IsEnabled,0)
+	FROM dbo.Dep_CustProductSetting WITH (NOLOCK)
+	WHERE CustID = @CustId AND ProductId=@ProductId
+
+	SELECT @SEnabled = ISNULL(IsEnabled,0) FROM dbo.Dep_SupperProductSetting WITH (NOLOCK) WHERE CustID = @Srecommend AND ProductId=@ProductId
+		
+	IF (@SEnabled = 0)
+		SELECT @IsEnable_Old = 0
+
+	-- Call SP to update status
+	DECLARE @CustIDs VARCHAR(20)
+	SELECT @CustIDs = CONVERT(VARCHAR(20), @CustID)
+
+
+	CREATE TABLE #CustList (CustID INT)
+
+	INSERT INTO #CustList (CustID)
+	SELECT value FROM STRING_SPLIT(@CustIDs,',') WHERE value <> ''
+	IF(@@ERROR<>0)
 	BEGIN
-		SELECT @IsEnable_Old = ~ISNULL(DisableColossusBet,1)
-		FROM dbo.custInfo WITH (NOLOCK)
-		WHERE CustID = @CustId 
-
-		SELECT @SEnabled = ~ISNULL(DisableColossusBet,1) FROM dbo.custInfo WITH (NOLOCK) WHERE CustID = @Srecommend 
-		
-		IF (@SEnabled = 0)
-			SELECT @IsEnable_Old = 0
-		
-		UPDATE dbo.CustInfo WITH (ROWLOCK,UPDLOCK)
-		SET DisableColossusBet = CASE @IsEnabled WHEN 1 THEN 0 ELSE 1 END
-		WHERE CustID = @CustID	
-		
-		IF(@@ERROR<>0)
-		BEGIN
-		SELECT @ErrMsg='Could not update'
-		RETURN
-		END
-				
+	SELECT @ErrMsg='Could not update'
+	RETURN
 	END
-	ELSE	
+
+	UPDATE dbo.Dep_CustProductSetting WITH (ROWLOCK, UPDLOCK)
+	SET IsEnabled = @IsEnabled
+	WHERE ProductId=@ProductId AND CustID IN (SELECT CustID FROM #CustList)
+		AND @ProductId NOT IN (14,17)
+	IF(@@ERROR<>0)
 	BEGIN
-		SELECT @IsEnable_Old = ISNULL(IsEnabled,0)
-		FROM dbo.Dep_CustProductSetting WITH (NOLOCK)
-		WHERE CustID = @CustId AND ProductId=@ProductId
-
-		SELECT @SEnabled = ISNULL(IsEnabled,0) FROM dbo.Dep_SupperProductSetting WITH (NOLOCK) WHERE CustID = @Srecommend AND ProductId=@ProductId
-		
-		IF (@SEnabled = 0)
-			SELECT @IsEnable_Old = 0
-
-		-- Call SP to update status
-		DECLARE @CustIDs VARCHAR(20)
-		SELECT @CustIDs = CONVERT(VARCHAR(20), @CustID)
-
-
-		CREATE TABLE #CustList (CustID INT)
-
-		INSERT INTO #CustList (CustID)
-		SELECT value FROM STRING_SPLIT(@CustIDs,',') WHERE value <> ''
-		IF(@@ERROR<>0)
-		BEGIN
-		SELECT @ErrMsg='Could not update'
-		RETURN
-		END
-
-		UPDATE dbo.Dep_CustProductSetting WITH (ROWLOCK, UPDLOCK)
-		SET IsEnabled = @IsEnabled
-		WHERE ProductId=@ProductId AND CustID IN (SELECT CustID FROM #CustList)
-			AND @ProductId NOT IN (14,17)
-		IF(@@ERROR<>0)
-		BEGIN
-		SELECT @ErrMsg='Could not update'
-		RETURN
-		END
-
-		INSERT INTO dbo.Dep_CustProductSetting (CustID, ProductId, IsEnabled)
-		SELECT CustID, @ProductId, @IsEnabled	
-		FROM #CustList c
-		WHERE NOT EXISTS(SELECT 1 FROM dbo.Dep_CustProductSetting cs WITH (NOLOCK) WHERE cs.CustID = c.CustID AND cs.ProductId=@ProductId)
-		IF(@@ERROR<>0)
-		BEGIN
-			SELECT @ErrMsg='Could not insert'
-			RETURN
-		END
-
+	SELECT @ErrMsg='Could not update'
+	RETURN
 	END
+
+	INSERT INTO dbo.Dep_CustProductSetting (CustID, ProductId, IsEnabled)
+	SELECT CustID, @ProductId, @IsEnabled	
+	FROM #CustList c
+	WHERE NOT EXISTS(SELECT 1 FROM dbo.Dep_CustProductSetting cs WITH (NOLOCK) WHERE cs.CustID = c.CustID AND cs.ProductId=@ProductId)
+	IF(@@ERROR<>0)
+	BEGIN
+		SELECT @ErrMsg='Could not insert'
+		RETURN
+	END
+
 	-- Write log
 	SET @endRun = GETDATE()
 	SET @duration  = DATEDIFF(MILLISECOND,@startRun,@endRun)
