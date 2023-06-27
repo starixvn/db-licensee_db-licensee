@@ -51,6 +51,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 		- 20230130@Evan: Integrate Jili [RedmineID: #182914]
 	    - 20230303@Evan: Remove inactive products CB, FW, GD, GDG [Redmine: 181424]  
 		- 20230523@Evan: Integrate YeeBet LC [RedmineID: #187947]
+		- 20230626@Evan: Integrate MG-RNG (Normal+Promotion Game) [RedmineID: #189988]
 
 */
 RETURNS TABLE
@@ -100,7 +101,8 @@ RETURN
 					(70, 'FGGL', 176, 0),	-- FGG
 					(60, 'MXG', 237, 0),	-- MaxGame
 					(75, 'JIG', 158, 0),	-- Jili
-					(76, 'YB', 159, 0)	-- YeeBet
+					(76, 'YB', 159, 0),		-- YeeBet
+					(73, 'MGRNG', 155, 0)	-- MG-RNG
 			) d(ProductID, ProductCode, SportType, BetType)
 	WHERE ',' + @ProductCodes + ',' LIKE '%,' + CAST(ProductCode AS VARCHAR(10)) + ',%'
 GO
