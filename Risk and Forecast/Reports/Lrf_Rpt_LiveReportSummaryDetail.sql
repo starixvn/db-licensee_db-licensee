@@ -118,7 +118,6 @@ AS
 	    - 20230303@Evan: Remove inactive products CB, FW, GD, GDG [Redmine: 181424]  
 		- 20230523@Evan: Integrate YeeBet LC [RedmineID: #187947]
 		- 20230626@Evan: Integrate MG-RNG (Normal+Promotion Game) [RedmineID: #189988]
-v
 	Param's Explanation:
 		+ @Liveindicator: indicate that whether the report will get live data or not
 			+ 0: Non - Live data only

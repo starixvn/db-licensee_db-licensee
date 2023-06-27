@@ -18,6 +18,7 @@ RETURNS TABLE
 		- 20220223@Kos: Integrate Allbet Promotion [RedmineID: #167524]
 		- 20220801@Victoria: Add DBSID-bodb02 to metadata [Redmine: #175297]
 		- 20230208@Evan: Inteagrate SG promotion prize [RedmineID: #183497]
+		- 20230626@Evan: Integrate MG-RNG (Promotion Game) [RedmineID: #189988]
 */
 
 RETURN
@@ -58,5 +59,7 @@ RETURN
 	SELECT 'AB', 2499									-- Allbet Promotion
 	UNION ALL
 	SELECT 'SG', 4598									-- SG promotion prize
+	UNION ALL
+	SELECT 'MGRNG', 8695									-- MG-RNG promotion prize
 
 GO
