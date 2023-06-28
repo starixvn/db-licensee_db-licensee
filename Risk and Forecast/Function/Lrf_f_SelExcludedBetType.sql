@@ -60,6 +60,6 @@ RETURN
 	UNION ALL
 	SELECT 'SG', 4598									-- SG promotion prize
 	UNION ALL
-	SELECT 'MGRNG', 8695									-- MG-RNG promotion prize
+	SELECT 'MGRNG', 8695								-- MG-RNG promotion prize
 
 GO

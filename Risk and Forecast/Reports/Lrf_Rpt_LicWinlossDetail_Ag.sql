@@ -1638,7 +1638,7 @@ BEGIN
 			-SUM(CASE WHEN b.sporttype = 237 THEN b.winlost ELSE 0 END) AS LicenseeWLMXG,
 			-SUM(CASE WHEN b.sporttype = 158 THEN b.winlost ELSE 0 END) AS LicenseeWLJIG,
 			-SUM(CASE WHEN b.sporttype = 159 THEN b.winlost ELSE 0 END) AS LicenseeWLYB,
-			-SUM(CASE WHEN b.sporttype = 158 THEN b.winlost ELSE 0 END) AS LicenseeWLMGRNG,
+			-SUM(CASE WHEN b.sporttype = 155 THEN b.winlost ELSE 0 END) AS LicenseeWLMGRNG,
 			0 AS AmountDueToBA,
 			0 AS CommBA,
 			SUM(CASE WHEN b.StatusID IN (112,113) THEN playercomm ELSE 0 END) AS PlayerComm,

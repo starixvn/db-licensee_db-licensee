@@ -565,7 +565,7 @@ BEGIN
 	BEGIN
 		SET @SportTypeSQL = @SportTypeSQL + ', (155, ''MGRNG'')'
 
-		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 8400 AND 8699 THEN ''YB''
+		SET @BetTypeSelectSQL = @BetTypeSelectSQL + 'WHEN typeid BETWEEN 8400 AND 8699 THEN ''MGRNG''
 				'
 
 		SET @BetTypeWhereSQL = @BetTypeWhereSQL + ' OR (typeid BETWEEN 8400 AND 8699)'
