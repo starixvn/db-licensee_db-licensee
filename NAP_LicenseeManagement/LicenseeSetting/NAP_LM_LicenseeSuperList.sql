@@ -12,6 +12,7 @@ AS
 	Revisions:
 		- 20150609@Kos: Separate CustDB to DBCUST server (Move SP to DBCUST.CustDB)
 		- 20230224@Winfred: NAP LM - Enhance Bet Setting function for AM to use [redmine:#178105]
+		- 20230629@Winfred: NAP LM - PRO - Licensee Bet Setting - Currency filter has not taken data according to Currency Code [redmine:#190436]
 
 	Param's Explanation:
 	Example:
@@ -20,7 +21,7 @@ AS
 BEGIN
 	SET NOCOUNT ON
 
-	SELECT s.custid, s.username, e.currency, e.ExchangeId
+	SELECT s.custid, s.username, e.currency, e.ExchangeId, e.Code AS CurrencyCode
 	FROM dbo.Dep_CustSuper AS s WITH (NOLOCK)
 		INNER JOIN exchange e WITH(NOLOCK) ON s.currency = e.ExchangeId
 	WHERE s.site = @Site
