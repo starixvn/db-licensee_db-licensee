@@ -105,7 +105,7 @@ BEGIN
 	END CATCH;
 
 	SELECT @Site = site, @CurrencyID = currency, @username = username  FROM Customer c WITH(NOLOCK) WHERE custid = @CustID
-	SELECT @currency = currency  FROM exchange e WITH(NOLOCK) WHERE ExchangeId = @CurrencyID
+	SELECT @currency = Code  FROM exchange e WITH(NOLOCK) WHERE ExchangeId = @CurrencyID
 
 	CREATE TABLE #Subsidiary(custid INT PRIMARY KEY, username VARCHAR(100) )
 	CREATE TABLE #DummyMaster(custid INT PRIMARY KEY)

@@ -21,6 +21,7 @@ AS
 
 	Revisions:
 		   - 20230224@Winfred: NAP LM - Enhance Bet Setting function for AM to use [redmine:#178105]
+		   - 20230629@Winfred: NAP LM - PRO - Licensee Bet Setting - Currency filter has not taken data according to Currency Code [redmine:#190436]
     Param's Explanation:
 		- @CustID : super ID
 		- @AgentID : 0 for All Subsidiary AND <> 0 for only Specific Subsidiary 
@@ -133,7 +134,7 @@ BEGIN
 		RETURN
 	END CATCH;
 
-	SELECT @Site = site, @CurrencyID = c.currency, @Currency = e.currency + '(' + c.username + ')' 		
+	SELECT @Site = site, @CurrencyID = c.currency, @Currency = e.Code + '(' + c.username + ')' 		
 	FROM Customer c WITH(NOLOCK) 
 		INNER JOIN exchange e WITH(NOLOCK) ON c.currency = e.ExchangeId
 	WHERE custid = @CustID
