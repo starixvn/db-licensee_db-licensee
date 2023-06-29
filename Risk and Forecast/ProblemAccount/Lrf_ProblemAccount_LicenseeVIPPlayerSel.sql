@@ -26,6 +26,7 @@ AS
 			- 20210128@Johnson: filter customer class [redmine:#]
 			- 20230615@Johnson: sort CC by risk level [redmine:#189631]
 			- 20230621@Johnson: show wrong CC when miss info in Custinfo[redmine:#190081]
+			- 20230628@Johnson: VIP Management - Enhance Export Excel incase order by CC [redmine:#190159]
 		Paramter's Explanations:
 			- @VipOption: 0: All, 1: Yes, 2 : No
 			- @OrderCol = 1: sort by System ID	
@@ -153,7 +154,7 @@ BEGIN
 		),
 		t2 AS (
 		SELECT *, ROW_NUMBER () OVER (ORDER BY CASE WHEN @SortType = 1 THEN OrderCol END ASC,	
-												CASE WHEN @SortType = 2 THEN OrderCol END DESC) rn
+												CASE WHEN @SortType = 2 THEN OrderCol END DESC, username ASC) rn
 		FROM t1
 		)
 		SELECT t2.*--,ISNULL(isMarkVoid,0) isMarkVoid			
