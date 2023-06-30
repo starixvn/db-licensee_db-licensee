@@ -17,7 +17,8 @@ AS
 	Original:
 
 	Revisions:
-		   - 20230224@Winfred: NAP LM - Enhance Bet Setting function for AM to use [redmine:#178105
+		   - 20230224@Winfred: NAP LM - Enhance Bet Setting function for AM to use [redmine:#178105]
+		   - 20230630@Winfred: When update Currency Bet Setting in case All Subsidiaries + All players, system check violated with its own players [redmine:#190506]
     Param's Explanation:
 		- @CustID : super ID
 		- @AgentID : 0 for All Subsidiary AND <> 0 for only Specific Subsidiary 
@@ -123,7 +124,7 @@ BEGIN
 			INNER JOIN #SportTypeBetType s ON cs.SportType = s.SportType AND cs.BetType = s.Bettype
 			INNER JOIN custinfo ci WITH(NOLOCK) ON cs.custid = ci.custid				
 		WHERE ci.srecommend = @custID AND s.MaxBet IS NOT NULL
-			AND @AgentID = 0
+			AND @AgentID = 0 AND @ExistedMember = 0
 			AND ci.mrecommend NOT IN (SELECT custid FROM #DummyMaster)		
 			AND ci.username NOT LIKE '%CashOut%'
 			AND ci.username  NOT LIKE '%OddsAdj%'
