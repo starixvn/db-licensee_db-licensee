@@ -38,6 +38,7 @@ AS
 		- 20220222@Kos: Support Saba Basketball PinGoal [RedmineID: #167859]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20221207@Evan: Support Saba E-Sports PinGoal [RedmineID: #181224]
+		- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465]
 
 	Param's Explanation:
 		+ @MoveBetsDay: The day we move tickets to bettrans14
@@ -151,7 +152,8 @@ BEGIN
 	WHERE (sporttype = 1 AND LeagueGroupID IN (42, 74, 108, 113))
 		OR (sporttype = 2 AND LeagueGroupID IN (42, 122))
 		OR (sporttype = 50 AND LeagueGroupID IN (42))
-		OR (sporttype = 43 AND LeagueGroupID IN (151))
+		OR (sporttype = 43 AND LeagueGroupID IN (151)
+		OR (sporttype = 5 AND LeagueGroupID IN (42))
 
 	IF @ToDate > @MoveBetsDay
 	BEGIN

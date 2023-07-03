@@ -9,6 +9,7 @@ AS
 
 	Revisions:
 		- 20230209@Bobby: Created [RedmineID: #172604]
+		- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465]
 		
 */
 RETURN
@@ -29,18 +30,20 @@ RETURN
 		UNION ALL
 		SELECT 1, 'Sportsbook', -3, 'SABA Futsal', 'SB', 905,
 			'{"Sporttype":1, "LeagueGroupID": [108]}'
+		UNION ALL	
+		SELECT 1, 'Sportsbook', -9, 'SABA Tennis', 'SB', 906,
+			'{"Sporttype":5, "LeagueGroupID": [42]}'
 		UNION ALL
-		SELECT 1, 'Sportsbook', -4, 'SABA Soccer PinGoal', 'SB', 906,
+		SELECT 1, 'Sportsbook', -4, 'SABA Soccer PinGoal', 'SB', 907,
 			'{"Sporttype":1, "LeagueGroupID": [113]}'
-		
 		UNION ALL
-		SELECT 1, 'Sportsbook', -6, 'SABA Basketball PinGoal', 'SB', 907,
+		SELECT 1, 'Sportsbook', -6, 'SABA Basketball PinGoal', 'SB', 908,
 			'{"Sporttype":2, "LeagueGroupID": [122]}'
 		UNION ALL
-		SELECT 1, 'Sportsbook', -7, 'SABA ESports PinGoal', 'SB', 908,
+		SELECT 1, 'Sportsbook', -7, 'SABA ESports PinGoal', 'SB', 909,
 			'{"Sporttype":43, "LeagueGroupID": [151]}'
 		UNION ALL
-		SELECT 1, 'Sportsbook', -1, 'Parlay', 'SB', 909, 
+		SELECT 1, 'Sportsbook', -1, 'Parlay', 'SB', 910, 
 			'{"Sporttype":1, "LeagueGroupID": []}'
 	)
 	SELECT ProductID, SabaSportType, ProductName, SportName, ProductCode, SportOrder, SporttypeRef

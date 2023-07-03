@@ -26,6 +26,7 @@ AS
 		- 20220302@Kos: Support filter by customer [RedmineID: #167825]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20221207@Evan: Support Saba E-Sports PinGoal [RedmineID: #181224]
+		- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465]
 
 	Param's Explanation:
 		+ @DrawFilter: 1: Normal, 2: No Draw, 3: No Draw for Turnover only
@@ -116,6 +117,7 @@ BEGIN
 			OR (@SportType IN (0, -2) AND sporttype = 2 AND LeagueGroupID IN (122))
 			OR (sporttype = 50 AND LeagueGroupID IN (42))
 			OR (@SportType IN (0, -43) AND sporttype = 43 AND LeagueGroupID IN (151))
+			OR (@sporttype IN (0, 5) AND sporttype = 5 AND LeagueGroupID IN (42))
 			)
 
 	DECLARE @Data TABLE (

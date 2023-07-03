@@ -28,6 +28,7 @@ AS
 		- 20220616@Kos: Fix issue duplicate LeagueId [RedmineID: #171991]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20221207@Evan: Support Saba E-Sports PinGoal [RedmineID: #181224]
+		- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465]
 
 	Param's Explanation:
 		- @SportTypeList: sporttype list separated by ','
@@ -39,6 +40,7 @@ AS
 			+ -5: Saba Soccer Pingoal (SportType = 1, LeagueGroupId IN (113))
 			+ -6: Saba Basketball Pingoal (SportType = 2, LeagueGroupId IN (122))
 			+ -7: Saba E-Sports Pingoal (SportType = 43, LeagueGroupId IN (151))
+			+ -8: Saba Virtual Tennis (SportType = 5, LeagueGroupId IN (42))
 		- @BetTypeList: bettype list separated by ','
 			+ 'All': all bettypes
 		- @SearchLanguage: search language
@@ -287,6 +289,12 @@ BEGIN
 		BEGIN
 			DELETE FROM #League
 			WHERE SportType = 43 AND LeagueGroupId IN (151)
+		END
+
+		IF ',' + @SportTypeList + ',' NOT LIKE '%,-8,%'
+		BEGIN
+			DELETE FROM #League
+			WHERE SportType = 5 AND LeagueGroupId IN (42)
 		END
 	END
 
