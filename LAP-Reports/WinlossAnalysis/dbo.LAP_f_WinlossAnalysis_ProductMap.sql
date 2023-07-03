@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" selecters="bodbLicenseeNet,bodbDownlineNet" viewers="" isFunction="1" isNested="1"></info>*/
+/*<info serverAlias="DBEXT-bodb02" selecters="" viewers="" isFunction="1" isNested="1"></info>*/
 CREATE FUNCTION [dbo].[LAP_f_WinlossAnalysis_ProductMap] (
 	@IsViewCOOnlyCheck BIT, 
 	@SBBACheck INT, 
