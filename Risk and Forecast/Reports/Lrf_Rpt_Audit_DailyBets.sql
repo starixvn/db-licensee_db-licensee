@@ -262,6 +262,7 @@ BEGIN
 							END
 						ELSE 1	
 						END ASC
+				, a.TransactionId ASC
 	END
 	ELSE
 	BEGIN
@@ -355,6 +356,7 @@ BEGIN
 							END
 						ELSE 1	
 						END ASC
+				, a.TransactionId ASC
 	END
 		
 	--- RETURN BET in Detail
