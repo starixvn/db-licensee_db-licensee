@@ -20,6 +20,7 @@ AS
 		- 20220222@Kos: Hotfix - show agent data [RedmineID: #168905]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20221214@Evan: Cash Out WL - Separate Soccer & Basketball [RedmineID: #179083]
+		- 20221214@Evan: Cash Out WL - Fix wrong date range filter [RedmineID: #187388]
 
 	Param's Explanation:
 		+ @AgentList: XML structure
@@ -199,8 +200,8 @@ BEGIN
 		IF @_FromDate < @CutoffDate
 		BEGIN
 			SET @TempDateCutoff = CASE
-							WHEN @TempToDate > @CutoffDate THEN @TempToDate
-							ELSE @CutoffDate
+							WHEN @TempToDate >= @CutoffDate THEN DATEADD(DD,-1,@CutoffDate)
+							ELSE @TempToDate
 						END
 
 			DECLARE @SBSportType TABLE (SportType INT PRIMARY KEY)
@@ -250,6 +251,10 @@ BEGIN
 		
 		IF @TempToDate >= @CutoffDate
 		BEGIN 
+
+			SET @TempFromDate = CASE WHEN @_FromDate > @CutoffDate THEN @_FromDate
+								ELSE @CutoffDate END
+
 			INSERT INTO @Data (
 				CustId,
 				WinLostDate,
@@ -277,7 +282,7 @@ BEGIN
 				INNER JOIN #TempAg AS a ON a.CustId = b.recommend
 				INNER JOIN #League AS l ON l.LeagueId = b.leagueid
 			WHERE
-				b.winlostdate BETWEEN @CutoffDate AND @TempToDate
+				b.winlostdate BETWEEN @TempFromDate AND @TempToDate
 				AND b.statusID <> 101	--exclude REJECT
 				AND b.bettype NOT IN (901, 902, 903, 904, 914, 9, 29, 10)
 				AND b.TicketType = 1
