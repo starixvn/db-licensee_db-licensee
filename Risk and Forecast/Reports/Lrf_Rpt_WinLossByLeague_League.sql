@@ -215,6 +215,9 @@ BEGIN
 			OR (',' + @SportTypeList + ',' LIKE '%,-7,%'
 				AND l.sporttype = 43
 				AND l.LeagueGroupID IN (151))
+			OR (',' + @SportTypeList + ',' LIKE '%,-8,%'
+				AND l.sporttype = 5
+				AND l.LeagueGroupID IN (42))
 			)
 		AND (@LeagueName = '' OR CASE
 									WHEN @SearchLanguage = 'zh-CN' THEN l.leaguenamecn
@@ -849,6 +852,7 @@ BEGIN
 			WHEN d.SportType = 1 AND d.LeagueGroupId IN (113) THEN -5
 			WHEN d.SportType = 2 AND d.LeagueGroupId IN (122) THEN -6
 			WHEN d.SportType = 43 AND d.LeagueGroupId IN (151) THEN -7
+			WHEN d.SportType = 5 AND d.LeagueGroupId IN (42) THEN -8
 			ELSE d.SportType
 		END AS SportType,
 		d.LeagueId,
@@ -870,6 +874,7 @@ BEGIN
 			WHEN d.SportType = 1 AND d.LeagueGroupId IN (113) THEN -5
 			WHEN d.SportType = 2 AND d.LeagueGroupId IN (122) THEN -6
 			WHEN d.SportType = 43 AND d.LeagueGroupId IN (151) THEN -7
+			WHEN d.SportType = 5 AND d.LeagueGroupId IN (42) THEN -8
 			ELSE d.SportType
 		END,
 		d.LeagueId

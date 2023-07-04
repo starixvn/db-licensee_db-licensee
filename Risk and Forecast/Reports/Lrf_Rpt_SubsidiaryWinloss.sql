@@ -152,7 +152,7 @@ BEGIN
 	WHERE (sporttype = 1 AND LeagueGroupID IN (42, 74, 108, 113))
 		OR (sporttype = 2 AND LeagueGroupID IN (42, 122))
 		OR (sporttype = 50 AND LeagueGroupID IN (42))
-		OR (sporttype = 43 AND LeagueGroupID IN (151)
+		OR (sporttype = 43 AND LeagueGroupID IN (151))
 		OR (sporttype = 5 AND LeagueGroupID IN (42))
 
 	IF @ToDate > @MoveBetsDay
