@@ -252,7 +252,7 @@ BEGIN
 		IF @TempToDate >= @CutoffDate
 		BEGIN 
 
-			SET @TempFromDate = CASE WHEN @TempFromDate > @CutoffDate THEN @TempFromDate
+			SET @TempFromDate = CASE WHEN @_FromDate > @CutoffDate THEN @_FromDate
 								ELSE @CutoffDate END
 
 			INSERT INTO @Data (
