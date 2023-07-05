@@ -25,6 +25,7 @@ AS
 		- 20220302@Sol: temporary prevent Nova88 from viewing data from 1-Mar-2022 - [Redmine: #169131]
 		- 20220118@Sol: LAP - Auditing licensees - Daily Bets - Filter by Sport - [RedmineID: #166056]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
+		- 20230704@Bobby: Fix paging lag [Redmine #190828]
 
 	Developer's Notes:
 		
@@ -52,7 +53,7 @@ BEGIN
 	
 	CREATE table #DailyResult
 	(
-		[Index]	INT
+		[Index] INT IDENTITY (1, 1) PRIMARY KEY
 		,RefNo	BIGINT
 		,PlayerName	VARCHAR(30)
 		,CurrencyName VARCHAR(5)
@@ -173,8 +174,7 @@ BEGIN
 	BEGIN
 		INSERT INTO #DailyResult
 		(
-			[Index]	
-			,RefNo	
+			RefNo	
 			,PlayerName	
 			,CurrencyName	
 			,TransTime	
@@ -187,29 +187,8 @@ BEGIN
 			,WinLossBased
 			,GameCode
 		)
-		SELECT ROW_NUMBER() OVER (
-					ORDER BY CASE WHEN @SortOrder = 'desc' THEN 
-										CASE 
-											WHEN @SortBy = 'Turnover' THEN a.BetAmount
-											WHEN @SortBy = 'WinLoss' THEN a.NetAmount
-											WHEN @SortBy = 'TurnoverBased' THEN a.TurnoverBased
-											WHEN @SortBy = 'WinLossBased' THEN a.WinLossBased
-											ELSE a.TransactionId
-										END
-									ELSE 1
-									END DESC
-							, CASE WHEN @SortOrder = 'asc' THEN 
-										CASE
-										WHEN @SortBy = 'Turnover' THEN a.BetAmount
-										WHEN @SortBy = 'WinLoss' THEN a.NetAmount
-										WHEN @SortBy = 'TurnoverBased' THEN a.TurnoverBased
-										WHEN @SortBy = 'WinLossBased' THEN a.WinLossBased
-										ELSE a.TransactionId
-										END
-									ELSE 1	
-									END ASC
-						) AS rowIdx
-			,a.TransactionId
+		SELECT 
+			a.TransactionId
 			,a.Playername
 			,a.Name as CurrencyName
 			,a.TransTime
@@ -262,100 +241,122 @@ BEGIN
 					)
 					AND a.GameCode IN (SELECT GameCode FROM @GameCode)
 			) AS a
+			ORDER BY 
+				CASE WHEN @SortOrder = 'desc' THEN 
+							CASE 
+								WHEN @SortBy = 'Turnover' THEN a.BetAmount
+								WHEN @SortBy = 'WinLoss' THEN a.NetAmount
+								WHEN @SortBy = 'TurnoverBased' THEN a.TurnoverBased
+								WHEN @SortBy = 'WinLossBased' THEN a.WinLossBased
+								ELSE a.TransactionId
+							END
+						ELSE 1
+						END DESC
+				, CASE WHEN @SortOrder = 'asc' THEN 
+							CASE
+							WHEN @SortBy = 'Turnover' THEN a.BetAmount
+							WHEN @SortBy = 'WinLoss' THEN a.NetAmount
+							WHEN @SortBy = 'TurnoverBased' THEN a.TurnoverBased
+							WHEN @SortBy = 'WinLossBased' THEN a.WinLossBased
+							ELSE a.TransactionId
+							END
+						ELSE 1	
+						END ASC
+				, a.TransactionId ASC
 	END
 	ELSE
 	BEGIN
 		INSERT INTO #DailyResult
-			(
-				[Index]	
-				,RefNo	
-				,PlayerName	
-				,CurrencyName	
-				,TransTime	
-				,BetType	
-				,ProductCode	
-				,Turnover	
-				,WinLoss	
-				,[Status]	
-				,TurnoverBased
-				,WinLossBased
-				,GameCode
-			)
-			SELECT ROW_NUMBER() OVER (
-						ORDER BY CASE WHEN @SortOrder = 'desc' THEN 
-											CASE 
-												WHEN @SortBy = 'Turnover' THEN a.BetAmount
-												WHEN @SortBy = 'WinLoss' THEN a.NetAmount
-												WHEN @SortBy = 'TurnoverBased' THEN a.TurnoverBased
-												WHEN @SortBy = 'WinLossBased' THEN a.WinLossBased
-												ELSE a.TransactionId
-											END
-										ELSE 1
-										END DESC
-								, CASE WHEN @SortOrder = 'asc' THEN 
-											CASE
-											WHEN @SortBy = 'Turnover' THEN a.BetAmount
-											WHEN @SortBy = 'WinLoss' THEN a.NetAmount
-											WHEN @SortBy = 'TurnoverBased' THEN a.TurnoverBased
-											WHEN @SortBy = 'WinLossBased' THEN a.WinLossBased
-											ELSE a.TransactionId
-											END
-										ELSE 1	
-										END ASC
-							) AS rowIdx
-				,a.TransactionId
-				,a.Playername
-				,a.Name as CurrencyName
-				,a.TransTime
-				,a.BetType
-				,a.ProductCode
-				,a.Turnover
-				,a.WinLoss
-				,a.Status
-				,TurnoverBased
-				,WinLossBased
-				,a.GameCode
-			FROM (
-					SELECT
-						a.TransactionId
-						,c.Name
-						,a.BetAmount					
-						,a.NetAmount					
-						,a.BetAmount * c.ExRate AS TurnoverBased
-						,-a.NetAmount * c.ExRate AS WinLossBased
-						,pp.Username AS Playername,
-						a.TransactionDate AS TransTime,
-						a.BettypeName AS BetType,
-						CASE
-							WHEN a.GamePlatformCode = 'SB' THEN 'SB'
-							WHEN a.GamePlatformCode = 'RNG' AND a.GameCode = '0161' THEN 'NG'
-							WHEN a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161' THEN 'CS'
-							WHEN a.GamePlatformCode = 'CA' THEN 'LC'
-							ELSE ''
-						END AS ProductCode,
-						a.BetAmount AS Turnover,
-						-a.NetAmount AS WinLoss,
-						CASE
-							WHEN a.NetAmount > 0 THEN -1
-							WHEN a.NetAmount < 0 THEN 1
-							ELSE 0
-						END	AS [Status],
-						a.GameCode
-					FROM bodb_Ploutos.dbo.BetTicket_BK a WITH (NOLOCK)
-					INNER JOIN @Currency c ON c.Code = a.CurrencyCode
-					INNER JOIN bodb_Ploutos.dbo.PlayerProfile pp WITH(NOLOCK) ON pp.BrandCode = a.BrandCode AND pp.CustID = a.CustId
-					WHERE 
-						a.BrandCode = @SiteName
-						AND a.StatusID IN (0, 1)
-						AND a.SettlementDate >= @CurrDate AND a.SettlementDate < @TempToDate 
-						AND ( 
-							(@showSB = 1 AND a.GamePlatformCode = 'SB') 
-							OR (@showNG = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode = '0161')
-							OR (@showCS = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161')
-							OR (@showLC = 1 AND a.GamePlatformCode = 'CA')
-						)
-						AND a.GameCode IN (SELECT GameCode FROM @GameCode)
-				) AS a
+		(
+			RefNo	
+			,PlayerName	
+			,CurrencyName	
+			,TransTime	
+			,BetType	
+			,ProductCode	
+			,Turnover	
+			,WinLoss	
+			,[Status]	
+			,TurnoverBased
+			,WinLossBased
+			,GameCode
+		)
+		SELECT 
+			a.TransactionId
+			,a.Playername
+			,a.Name as CurrencyName
+			,a.TransTime
+			,a.BetType
+			,a.ProductCode
+			,a.Turnover
+			,a.WinLoss
+			,a.Status
+			,TurnoverBased
+			,WinLossBased
+			,a.GameCode
+		FROM (
+				SELECT
+					a.TransactionId
+					,c.Name
+					,a.BetAmount					
+					,a.NetAmount					
+					,a.BetAmount * c.ExRate AS TurnoverBased
+					,-a.NetAmount * c.ExRate AS WinLossBased
+					,pp.Username AS Playername,
+					a.TransactionDate AS TransTime,
+					a.BettypeName AS BetType,
+					CASE
+						WHEN a.GamePlatformCode = 'SB' THEN 'SB'
+						WHEN a.GamePlatformCode = 'RNG' AND a.GameCode = '0161' THEN 'NG'
+						WHEN a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161' THEN 'CS'
+						WHEN a.GamePlatformCode = 'CA' THEN 'LC'
+						ELSE ''
+					END AS ProductCode,
+					a.BetAmount AS Turnover,
+					-a.NetAmount AS WinLoss,
+					CASE
+						WHEN a.NetAmount > 0 THEN -1
+						WHEN a.NetAmount < 0 THEN 1
+						ELSE 0
+					END	AS [Status],
+					a.GameCode
+				FROM bodb_Ploutos.dbo.BetTicket_BK a WITH (NOLOCK)
+				INNER JOIN @Currency c ON c.Code = a.CurrencyCode
+				INNER JOIN bodb_Ploutos.dbo.PlayerProfile pp WITH(NOLOCK) ON pp.BrandCode = a.BrandCode AND pp.CustID = a.CustId
+				WHERE 
+					a.BrandCode = @SiteName
+					AND a.StatusID IN (0, 1)
+					AND a.SettlementDate >= @CurrDate AND a.SettlementDate < @TempToDate 
+					AND ( 
+						(@showSB = 1 AND a.GamePlatformCode = 'SB') 
+						OR (@showNG = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode = '0161')
+						OR (@showCS = 1 AND a.GamePlatformCode = 'RNG' AND a.GameCode <> '0161')
+						OR (@showLC = 1 AND a.GamePlatformCode = 'CA')
+					)
+					AND a.GameCode IN (SELECT GameCode FROM @GameCode)
+			) AS a
+			ORDER BY 
+				CASE WHEN @SortOrder = 'desc' THEN 
+							CASE 
+								WHEN @SortBy = 'Turnover' THEN a.BetAmount
+								WHEN @SortBy = 'WinLoss' THEN a.NetAmount
+								WHEN @SortBy = 'TurnoverBased' THEN a.TurnoverBased
+								WHEN @SortBy = 'WinLossBased' THEN a.WinLossBased
+								ELSE a.TransactionId
+							END
+						ELSE 1
+						END DESC
+				, CASE WHEN @SortOrder = 'asc' THEN 
+							CASE
+							WHEN @SortBy = 'Turnover' THEN a.BetAmount
+							WHEN @SortBy = 'WinLoss' THEN a.NetAmount
+							WHEN @SortBy = 'TurnoverBased' THEN a.TurnoverBased
+							WHEN @SortBy = 'WinLossBased' THEN a.WinLossBased
+							ELSE a.TransactionId
+							END
+						ELSE 1	
+						END ASC
+				, a.TransactionId ASC
 	END
 		
 	--- RETURN BET in Detail
