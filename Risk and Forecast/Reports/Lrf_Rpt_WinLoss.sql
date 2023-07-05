@@ -168,6 +168,7 @@ AS
 		- 20230130@Evan: Integrate Jili [RedmineID: #182914]
 	    - 20230303@Evan: Remove inactive products CB, FW, GD, GDG [Redmine: 181424]  
 		- 20230523@Evan: Integrate YeeBet LC [RedmineID: #187947]
+		- 20230705@Evan: Enhance performance, using IX_Agent when filter by Username [RedmineID: #190577]
 
 	Param's Explanation:
 		@OrderItem:
@@ -293,14 +294,20 @@ BEGIN
 	IF @Username <> ''
 	BEGIN
 		INSERT INTO #tmpCust
-		SELECT c.custid
-		FROM dbo.Customer c WITH (NOLOCK)
-		WHERE EXISTS(SELECT TOP 1 1 FROM @TempAg t WHERE c.recommend = t.CustId)
-			AND (
-				c.username2 	LIKE '%$%' 	+ @Username + '%'
-				OR c.username	LIKE '%' 	+ @Username + '%'
-			) AND c.roleid = 1
-		
+		SELECT a.custid
+		FROM @TempAg t
+			CROSS APPLY
+				(
+					SELECT c.custid 
+					FROM dbo.Customer c WITH(NOLOCK) 
+					WHERE c.recommend = t.CustId
+						AND (
+								c.username2 	LIKE '%$%' 	+ @Username + '%'
+								OR c.username	LIKE '%' 	+ @Username + '%'
+							) 
+						AND c.roleid = 1
+				) a
+
 		IF @@ROWCOUNT = 0
 		BEGIN
 			SELECT @ErrCode = 102
