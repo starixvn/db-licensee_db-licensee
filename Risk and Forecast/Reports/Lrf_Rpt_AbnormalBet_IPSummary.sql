@@ -66,6 +66,11 @@ Param's Explanation:
 
 	DECLARE @DocHandler INT
 
+	DECLARE @CutoffDate SMALLDATETIME;
+	SELECT @CutoffDate = CutoffDate
+	FROM bodb02.dbo.Lrf_f_GetCutOffDate()
+	WHERE TypeName = 'SabaTennis'
+
 	BEGIN TRY
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT, @AgentList
 
@@ -282,6 +287,7 @@ Param's Explanation:
 		BEGIN
 			DELETE FROM #League
 			WHERE SportType = 5 AND LeagueGroupId IN (42)
+				AND @FromDate > @CutoffDate
 		END
 	END
 	
@@ -322,6 +328,10 @@ Param's Explanation:
 		AND ((BetType IN (9, 29) AND ',' + @LiveIndicator + ',' LIKE '%,' + CONVERT(VARCHAR(3), LiveHomeScore) + ',%')  
      			OR (BetType NOT IN (9, 29) AND ',' + @LiveIndicator + ',' LIKE '%,' + CONVERT(VARCHAR(3), LiveIndicator) + ',%')) 
 		AND (@IP = '' OR IP = @IP)
+		AND 1 = CASE 
+					WHEN l.SportType = 5 AND l.LeagueGroupID = 42 AND f.CreatedDate < @CutoffDate THEN 0 
+					ELSE 1
+				END
 	GROUP BY TRIM(IP),f.CustID
 	OPTION (RECOMPILE)
 

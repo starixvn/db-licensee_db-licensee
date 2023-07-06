@@ -157,6 +157,12 @@ BEGIN
 	SELECT @_FromDate = @FromDate,
 		@_ToDate = @ToDate
 
+	DECLARE @CutoffDate SMALLDATETIME;
+
+	SELECT @CutoffDate = CutoffDate
+	FROM dbo.Lrf_f_GetCutoffDate()
+	WHERE TypeName = 'SabaTennis'
+	
 	-- Get league list
 	CREATE TABLE #League (LeagueId INT, SportType SMALLINT, LeagueGroupId SMALLINT)
 	CREATE TABLE #TempLeague (LeagueId INT)
@@ -298,6 +304,7 @@ BEGIN
 		BEGIN
 			DELETE FROM #League
 			WHERE SportType = 5 AND LeagueGroupId IN (42)
+				AND @_FromDate > @CutoffDate
 		END
 	END
 
@@ -852,7 +859,7 @@ BEGIN
 			WHEN d.SportType = 1 AND d.LeagueGroupId IN (113) THEN -5
 			WHEN d.SportType = 2 AND d.LeagueGroupId IN (122) THEN -6
 			WHEN d.SportType = 43 AND d.LeagueGroupId IN (151) THEN -7
-			WHEN d.SportType = 5 AND d.LeagueGroupId IN (42) THEN -8
+			WHEN d.SportType = 5 AND d.LeagueGroupId IN (42) AND d.WinLostDate >= @CutoffDate THEN -8
 			ELSE d.SportType
 		END AS SportType,
 		d.LeagueId,
@@ -874,7 +881,7 @@ BEGIN
 			WHEN d.SportType = 1 AND d.LeagueGroupId IN (113) THEN -5
 			WHEN d.SportType = 2 AND d.LeagueGroupId IN (122) THEN -6
 			WHEN d.SportType = 43 AND d.LeagueGroupId IN (151) THEN -7
-			WHEN d.SportType = 5 AND d.LeagueGroupId IN (42) THEN -8
+			WHEN d.SportType = 5 AND d.LeagueGroupId IN (42) AND d.WinLostDate >= @CutoffDate THEN -8
 			ELSE d.SportType
 		END,
 		d.LeagueId

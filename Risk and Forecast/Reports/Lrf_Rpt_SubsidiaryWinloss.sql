@@ -103,8 +103,12 @@ BEGIN
 
 	-- Get SportBettypeMatrix
 	DECLARE @IsTest BIT = 0
-
 	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
+
+	DECLARE @CutoffDate SMALLDATETIME;
+	SELECT @CutoffDate = CutoffDate
+	FROM dbo.Lrf_f_GetCutOffDate()
+	WHERE TypeName = 'SabaTennis'
 
 	DECLARE @ShowBA BIT = 0,
 		@ShowSB BIT = 0
@@ -144,10 +148,10 @@ BEGIN
 	WHERE ProductCode <> 'SB'
 		AND ',' + @SBProductList + ',' LIKE '%,' + ProductCode + ',%'
 
-	CREATE TABLE #SabaVirtualSportsLeague (LeagueId INT, PRIMARY KEY (LeagueId))
+	CREATE TABLE #SabaVirtualSportsLeague (LeagueId INT, PRIMARY KEY (LeagueId), SportType TINYINT, LeagueGroupID SMALLINT)
 
 	INSERT INTO #SabaVirtualSportsLeague
-	SELECT leagueid
+	SELECT LeagueId, SportType, LeagueGroupID
 	FROM dbo.League WITH (NOLOCK)
 	WHERE (sporttype = 1 AND LeagueGroupID IN (42, 74, 108, 113))
 		OR (sporttype = 2 AND LeagueGroupID IN (42, 122))
@@ -248,6 +252,10 @@ BEGIN
 					OR (@IncludeRaw = 1 AND b.statusID = 111))
 				AND b.bettype <> 10
 				AND b.tpositiontaking <> 0
+				AND 1 = CASE 
+							WHEN l.SportType = 5 AND l.LeagueGroupID = 42 AND b.winlostdate < @CutoffDate THEN 0 
+							ELSE 1
+						END
 			GROUP BY
 				b.winlostdate,
 				b.recommend,
@@ -275,6 +283,10 @@ BEGIN
 						OR (@IncludeRaw = 1 AND b.statusID = 111))
 					AND b.bettype = 10
 					AND b.tpositiontaking <> 0
+					AND 1 = CASE 
+							WHEN l.SportType = 5 AND l.LeagueGroupID = 42 AND b.winlostdate < @CutoffDate THEN 0 
+							ELSE 1
+						END
 				GROUP BY
 					b.winlostdate,
 					b.recommend,
@@ -411,6 +423,10 @@ BEGIN
 						AND b.bettype NOT IN (901, 902, 903, 904, 914, 9, 29)
 						AND (b.statusID IN (112, 113, 114, 115)
 							OR (@IncludeRaw = 1 AND b.statusID = 111)) --exclude REJECT bets
+						AND 1 = CASE 
+									WHEN l.SportType = 5 AND l.LeagueGroupID = 42 AND b.winlostdate < @CutoffDate THEN 0 
+									ELSE 1
+								END
 						AND b.isBA = 0
 					GROUP BY
 						b.Winlostdate,

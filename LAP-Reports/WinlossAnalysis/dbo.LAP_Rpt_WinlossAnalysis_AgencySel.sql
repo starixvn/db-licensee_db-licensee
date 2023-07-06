@@ -126,7 +126,7 @@ BEGIN
 			@BreakBy	= @BreakdownMode;
 
 	DROP TABLE IF EXISTS #tmpSabaSporttype;
-	CREATE TABLE #tmpSabaSporttype (SabaSportType INT, SportType INT, LeagueGroupID INT, SportOrder INT);
+	CREATE TABLE #tmpSabaSporttype (SabaSportType INT, SportType INT, LeagueGroupID INT, SportOrder INT, CutOffDate SMALLDATETIME);
 
 	IF @IsValidGroupMode = 0
 	BEGIN
@@ -164,7 +164,7 @@ BEGIN
 
 	--TODO: Event Products, Sports, Bettypes selection
 	INSERT INTO #tmpSabaSporttype
-	SELECT saba.SabaSportType, t.SportType, t.LeagueGroupID, saba.SportOrder
+	SELECT saba.SabaSportType, t.SportType, t.LeagueGroupID, saba.SportOrder, saba.CutOffDate
 	FROM bodb02.[dbo].[LAP_f_WinlossAnalysis_SabaSportSel] () AS saba
 	OUTER APPLY
 	(
@@ -457,7 +457,10 @@ BEGIN
 									WHEN b.matchid = 2799 THEN b.oddsid --VS Sports
 									ELSE b.matchid
 								END
-							WHEN s.EventType = 1 THEN ISNULL(saba.SabaSportType, m.sporttype)
+							WHEN s.EventType = 1 THEN 
+								ISNULL(CASE WHEN b.winlostdate < saba.CutOffDate THEN m.sporttype
+										ELSE saba.SabaSportType END
+								, m.sporttype)
 							WHEN s.EventType = 2 THEN lo.sporttype
 							WHEN s.EventType = 3 THEN vs.SportType
 							WHEN s.EventType = 5 THEN m3rd.SportType --175-BTC Sport
@@ -612,7 +615,7 @@ BEGIN
 
 		SELECT @rptFromDate = @FromDate
 			, @rptToDate	= IIF(@ToDate >= @MovebetDay, @MovebetDay, @ToDate);
-
+			
 		INSERT INTO #rptData (GroupBy, BreakBy, ParentKey,
 			BetCount, Turnover, NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, AmtDueToBA, BetEffective
 			,------BASE
@@ -668,7 +671,10 @@ BEGIN
 						ELSE 0
 					END) AS AmtDueToBA,
 					-(CASE WHEN b.Product3rdId = 3 THEN 0 ELSE b.winlost END) AS [LicWinloss],
-					ISNULL(saba.SabaSportType, b.Sporttype) AS Sporttype,
+					ISNULL(CASE 
+								WHEN b.winlostdate < saba.CutOffDate THEN b.sporttype
+								ELSE saba.SabaSportType 
+							END, b.Sporttype) AS Sporttype,
 					CASE 
 						WHEN b.Product3rdId IN (63,69) THEN 0
 						WHEN @IsViewCOOnlyCheck = 1 AND b.Product3rdId = 0 AND @SBBACheck & 4 = 4 AND b.TicketType = 1 THEN -99 --Cashout 

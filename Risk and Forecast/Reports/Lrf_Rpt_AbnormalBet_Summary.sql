@@ -55,7 +55,12 @@ BEGIN
 	CREATE TABLE #tmpReason (ReasonID INT)
 	CREATE TABLE #tmpSport (SportID INT)
 	CREATE TABLE #tmpBetType (BetTypeID INT, EventType TINYINT)
-	
+
+	DECLARE @CutoffDate SMALLDATETIME;
+	SELECT @CutoffDate = CutoffDate
+	FROM bodb02.dbo.Lrf_f_GetCutoffDate()
+	WHERE TypeName = 'SabaTennis'
+
 	IF @ReasonList = 'All'
 		INSERT INTO #tmpReason (ReasonID)
 		SELECT SubIssueTypeId 
@@ -236,6 +241,7 @@ BEGIN
 		BEGIN
 			DELETE FROM #League
 			WHERE SportType = 5 AND LeagueGroupId IN (42)
+				AND @FromDate > @CutoffDate
 		END
 	END
 	
@@ -295,7 +301,7 @@ BEGIN
 		BetTeam NVARCHAR(10),
 		RN INT
 	)
-	
+
 	INSERT INTO #Src(
 		RptDate ,
 		CreatedDate ,
@@ -429,7 +435,7 @@ BEGIN
 			WHEN d.SportType = 1 AND d.LeagueGroupId IN (113) THEN -5
 			WHEN d.SportType = 2 AND d.LeagueGroupId IN (122) THEN -6
 			WHEN d.SportType = 43 AND d.LeagueGroupId IN (151) THEN -7
-			WHEN d.SportType = 5 AND d.LeagueGroupId IN (42) THEN -8
+			WHEN d.SportType = 5 AND d.LeagueGroupId IN (42) AND CreatedDate >= @CutoffDate THEN -8
 			ELSE d.SportType
 		END AS Sport
 		,LeagueID AS League

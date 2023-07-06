@@ -100,10 +100,10 @@ BEGIN
 	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', 'SB,CO', @IsTest)
 	WHERE BetType NOT IN (9, 29, 914, 901, 902, 903, 904)
 
-	CREATE TABLE #SabaVirtualSportsLeague (LeagueId INT, PRIMARY KEY (LeagueId))
+	CREATE TABLE #SabaVirtualSportsLeague (LeagueId INT, PRIMARY KEY (LeagueId), SportType TINYINT, LeagueGroupID SMALLINT)
 
 	INSERT INTO #SabaVirtualSportsLeague
-	SELECT leagueid
+	SELECT LeagueId, SportType, LeagueGroupID
 	FROM dbo.League WITH (NOLOCK)
 	WHERE (@LeagueId = 0 OR leagueid = @LeagueId)
 		AND (@SportType = 0
@@ -146,6 +146,11 @@ BEGIN
 
 	DECLARE @TempFromDate	SMALLDATETIME,
 		@TempToDate			SMALLDATETIME
+
+	DECLARE @CutoffDate SMALLDATETIME;
+	SELECT @CutoffDate = CutoffDate
+	FROM dbo.Lrf_f_GetCutOffDate()
+	WHERE TypeName = 'SabaTennis'
 
 	-- bettrans range
 	IF @_ToDate > @MoveBetsDay
@@ -236,6 +241,10 @@ BEGIN
 			AND b.statusID IN (111, 112, 113)
 			AND b.bettype <> 10
 			AND (@Username = '' OR b.custid = @CustId)
+			AND 1 = CASE 
+						WHEN l.SportType = 5 AND l.LeagueGroupID = 42 AND b.winlostdate < @CutoffDate THEN 0 
+						ELSE 1
+					END
 		GROUP BY
 			b.winlostdate,
 			b.currency
@@ -310,6 +319,10 @@ BEGIN
 			AND b.statusID IN (111, 112, 113)
 			AND b.bettype = 10
 			AND (@Username = '' OR b.custid = @CustId)
+			AND 1 = CASE 
+						WHEN l.SportType = 5 AND l.LeagueGroupID = 42 AND b.winlostdate < @CutoffDate THEN 0 
+						ELSE 1
+					END
 		GROUP BY
 			b.winlostdate,
 			b.currency
@@ -403,6 +416,10 @@ BEGIN
 						b.winlostdate = d.Date
 						AND b.statusID <> 101	--exclude REJECT
 						AND b.bettype NOT IN (901, 902, 903, 904, 914, 9, 29)
+						AND 1 = CASE 
+									WHEN l.SportType = 5 AND l.LeagueGroupID = 42 AND b.winlostdate < @CutoffDate THEN 0 
+									ELSE 1
+								END
 					GROUP BY
 						b.winlostdate,
 						b.currency
@@ -483,6 +500,10 @@ BEGIN
 						AND b.winlostdate = d.Date
 						AND b.statusID <> 101	--exclude REJECT
 						AND b.bettype NOT IN (901, 902, 903, 904, 914, 9, 29)
+						AND 1 = CASE 
+									WHEN l.SportType = 5 AND l.LeagueGroupID = 42 AND b.winlostdate < @CutoffDate THEN 0 
+									ELSE 1 
+								END
 					GROUP BY
 						b.winlostdate,
 						b.currency

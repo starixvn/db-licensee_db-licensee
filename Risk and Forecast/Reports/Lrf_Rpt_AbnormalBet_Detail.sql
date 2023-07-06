@@ -99,6 +99,11 @@ Param's Explanation:
 			 OR c.username2 LIKE + '%$%' + @Username + '%')  
 	END  
    
+	DECLARE @CutoffDate SMALLDATETIME;
+	SELECT @CutoffDate = CutoffDate
+	FROM bodb02.dbo.Lrf_f_GetCutoffDate()
+	WHERE TypeName = 'SabaTennis'
+   	
 	DECLARE @SportSaba TABLE (SportID INT)
 	CREATE TABLE #tmpReason (ReasonID INT)
 	CREATE TABLE #tmpSport (SportID INT)
@@ -297,6 +302,8 @@ Param's Explanation:
 		BEGIN
 			DELETE FROM #League
 			WHERE SportType = 5 AND LeagueGroupId IN (42)
+				AND @FromDate > @CutoffDate
+			
 		END
 	END
 
@@ -526,7 +533,7 @@ Param's Explanation:
 			WHEN d.SportType = 1 AND d.LeagueGroupId IN (113) THEN -5
 			WHEN d.SportType = 2 AND d.LeagueGroupId IN (122) THEN -6
 			WHEN d.SportType = 43 AND d.LeagueGroupId IN (151) THEN -7
-			WHEN d.SportType = 5 AND d.LeagueGroupId IN (42) THEN -8
+			WHEN d.SportType = 5 AND d.LeagueGroupId IN (42) AND CreatedDate >= @CutoffDate THEN -8
 			ELSE d.SportType
 		END AS Sport,
 		d.LeagueGroupId,

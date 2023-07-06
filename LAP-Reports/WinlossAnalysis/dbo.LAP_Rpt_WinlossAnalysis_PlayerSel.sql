@@ -146,7 +146,7 @@ BEGIN
 			@BreakBy	= @BreakdownMode;
 
 	DROP TABLE IF EXISTS #tmpSabaSporttype;
-	CREATE TABLE #tmpSabaSporttype (SabaSportType INT, SportType INT, LeagueGroupID INT, SportOrder INT);
+	CREATE TABLE #tmpSabaSporttype (SabaSportType INT, SportType INT, LeagueGroupID INT, SportOrder INT, CutOffDate SMALLDATETIME);
 
 	IF @IsValidGroupMode = 0
 	BEGIN
@@ -185,7 +185,7 @@ BEGIN
 	
 	--TODO: Event Products, Sports, Bettypes selection
 	INSERT INTO #tmpSabaSporttype
-	SELECT saba.SabaSportType, t.SportType, t.LeagueGroupID, saba.SportOrder
+	SELECT saba.SabaSportType, t.SportType, t.LeagueGroupID, saba.SportOrder, saba.CutOffDate
 	FROM bodb02.[dbo].[LAP_f_WinlossAnalysis_SabaSportSel] () AS saba
 	OUTER APPLY
 	(
@@ -394,7 +394,10 @@ BEGIN
 								WHEN b.matchid = 2799 THEN b.oddsid --VS Sports
 								ELSE b.matchid
 							END
-						WHEN s.EventType = 1 THEN ISNULL(saba.SabaSportType, m.sporttype)
+						WHEN s.EventType = 1 THEN 
+								ISNULL(CASE WHEN b.winlostdate < saba.CutOffDate THEN m.sporttype
+										ELSE saba.SabaSportType END
+								, m.sporttype)
 						WHEN s.EventType = 2 THEN lo.sporttype
 						WHEN s.EventType = 3 THEN vs.SportType
 						WHEN s.EventType = 5 THEN m3rd.SportType --175-BTC Sport

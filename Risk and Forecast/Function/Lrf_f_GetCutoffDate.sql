@@ -9,13 +9,16 @@ AS
 	DB: DBEXT-bodb02
 	Revision:
 		- 20221912@Evan: Add cutoff date of Cash Out Win Loss Report [Redmine: #179083]	
+		- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465]
+
 */
 
 RETURN
 
 	SELECT CutoffDate, TypeName
 	FROM (
-		VALUES ('2023-01-01', 'CashOut')
+		VALUES ('2023-01-01', 'CashOut'),
+			('2023-07-01', 'SabaTennis')
 	) AS t (CutoffDate, TypeName)
 	
 GO
