@@ -14,6 +14,7 @@ AS
 
 	Revisions:
 		- 20230209@Bobby: Created [RedmineID: #172604]
+		- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465] 
 		
 */
 RETURN
@@ -29,6 +30,7 @@ RETURN
 			)
 			OUTER APPLY OPENJSON(LeagueGroupIDs) WITH (LeagueGroupID INT '$')
 		) AS t
+		WHERE saba.IsShowUI = 1
 	),
 	CTE_SportInput AS (
 		SELECT CAST(value AS INT) AS sporttype

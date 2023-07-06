@@ -10,6 +10,7 @@ AS
 
 	Revisions:
 		- 20230209@Bobby: Created [RedmineID: #172604]
+		- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465]
 		
 */
 BEGIN
@@ -33,6 +34,7 @@ BEGIN
 			UNION ALL
 			SELECT 0 AS ProductID, ProductName, SabaSportType AS SportType, SportName, CONCAT(ProductCode,',BA') AS ProductCode, SportOrder
 			FROM bodb02.[dbo].[LAP_f_WinlossAnalysis_SabaSportSel] ()
+			WHERE IsShowUI = 1
 	),
 	CTE_Product3rd AS (
 		----------- default SB Product

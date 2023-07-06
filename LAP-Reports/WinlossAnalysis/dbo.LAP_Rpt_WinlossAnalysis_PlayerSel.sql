@@ -196,6 +196,8 @@ BEGIN
 		)
 		OUTER APPLY OPENJSON(LeagueGroupIDs) WITH (LeagueGroupID INT '$')
 	) AS t
+	WHERE saba.IsShowUI = 1
+		
 
 	--TODO: Sports filtering
 	SELECT @SportCheck = @SportIds;
