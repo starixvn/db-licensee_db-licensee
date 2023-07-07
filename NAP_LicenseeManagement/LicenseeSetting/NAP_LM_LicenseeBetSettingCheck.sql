@@ -191,7 +191,7 @@ BEGIN
 
 			IF @ErrCode <> 0
 			BEGIN			
-				SELECT @ErrMsg = 'The value bet setting you just input is violating its Default Bet Setting. Please review and update again!'
+				SELECT @ErrMsg = 'The value bet setting you just input is violating its Default Bet Setting. Please review and update Default Bet Setting!'
 				RETURN						
 			END	
 
@@ -205,7 +205,7 @@ BEGIN
 
 			IF @ErrCode <> 0
 			BEGIN			
-				SELECT @ErrMsg = 'The value bet setting you just input is violating its Default Bet Setting. Please review and update again!'
+				SELECT @ErrMsg = 'The value bet setting you just input is violating its Default Bet Setting. Please review and update Default Bet Setting!'
 				RETURN						
 			END	
 		END
@@ -229,7 +229,7 @@ BEGIN
 
 			IF @ErrCode <> 0
 			BEGIN			
-				SELECT @ErrMsg = 'The value bet setting you just input is violating its Default Bet Setting. Please review and update again!'
+				SELECT @ErrMsg = 'The value bet setting you just input is violating its Default Bet Setting. Please review and update Default Bet Setting!'
 				RETURN						
 			END	
 		END
@@ -238,15 +238,15 @@ BEGIN
 		FROM #SportTypeBetType cs 
 			INNER JOIN #NewDefault s ON cs.SportType = s.SportType AND cs.BetType = s.Bettype	
 		WHERE  s.MaxBet IS NOT NULL
-				AND 1 = CASE WHEN @AgentID = 0 THEN 1 ELSE 0 END
-				AND 1 = CASE WHEN @AgentID <> 0 AND @IsNewMember = 0 AND @ExistedMember = 0 THEN 1 ELSE 0 END 
+				AND 1 = CASE WHEN @AgentID = 0 THEN 1 
+							 WHEN @AgentID <> 0 AND @IsNewMember = 0 AND @ExistedMember = 0 THEN 1 ELSE 0 END 
 				AND 1 = CASE WHEN ((s.MinBet <= s.MaxBet AND s.MaxBet <= s.MaxPerMatch AND s.MaxPerMatch <= s.MaxPayoutPerMatch) AND 
 					(s.MinBet >= cs.MinBet AND s.MaxBet <= cs.MaxBet AND s.MaxPerMatch <= cs.MaxPerMatch AND s.MaxPayoutPerMatch <= cs.MaxPayoutPerMatch)) THEN 0 ELSE 1 END
 
 		IF @ErrCode <> 0
 		BEGIN			
 			SELECT @ErrCode = 103,
-				@ErrMsg = 'The value bet setting you just input is violating its Default Bet Setting. Please review and update again!'
+				@ErrMsg = 'The value bet setting you just input is violating its Default Bet Setting. Please review and update Default Bet Setting!'
 			RETURN						
 		END	
 		
@@ -264,7 +264,7 @@ BEGIN
 		IF @ErrCode <> 0
 		BEGIN			
 			SELECT @ErrCode = 103,
-				@ErrMsg = 'The value bet setting you just input is violating its Default Bet Setting. Please review and update again!'
+				@ErrMsg = 'The value bet setting you just input is violating its Default Bet Setting. Please review and update Default Bet Setting!'
 			RETURN						
 		END	
 	END	
@@ -325,7 +325,7 @@ BEGIN
 
 			IF @ErrCode <> 0
 			BEGIN		
-				SELECT @ErrMsg = 'The value bet setting you just input is violating its Default Bet Setting. Please review and update again!'
+				SELECT @ErrMsg = 'The value bet setting you just input is violating its Default Bet Setting. Please review and update Default Bet Setting!'
 				RETURN						
 			END	
 		END
@@ -349,7 +349,7 @@ BEGIN
 
 			IF @ErrCode <> 0
 			BEGIN		
-				SELECT @ErrMsg = 'The value bet setting you just input is violating its Default Bet Setting. Please review and update again!'
+				SELECT @ErrMsg = 'The value bet setting you just input is violating its Default Bet Setting. Please review and update Default Bet Setting!'
 				RETURN						
 			END	
 		END
@@ -363,7 +363,7 @@ BEGIN
 		IF @ErrCode <> 0
 		BEGIN	
 			SELECT @ErrCode = 107,
-				@ErrMsg = 'The value bet setting you just input is violating its Default Bet Setting. Please review and update again!'
+				@ErrMsg = 'The value bet setting you just input is violating its Default Bet Setting. Please review and update Default Bet Setting!'
 			RETURN						
 		END	
 
