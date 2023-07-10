@@ -457,10 +457,7 @@ BEGIN
 									WHEN b.matchid = 2799 THEN b.oddsid --VS Sports
 									ELSE b.matchid
 								END
-							WHEN s.EventType = 1 THEN 
-								ISNULL(CASE WHEN b.winlostdate < saba.CutOffDate THEN m.sporttype
-										ELSE saba.SabaSportType END
-								, m.sporttype)
+							WHEN s.EventType = 1 THEN ISNULL(saba.SabaSportType, m.sporttype)
 							WHEN s.EventType = 2 THEN lo.sporttype
 							WHEN s.EventType = 3 THEN vs.SportType
 							WHEN s.EventType = 5 THEN m3rd.SportType --175-BTC Sport

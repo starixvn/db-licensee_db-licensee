@@ -302,8 +302,10 @@ Param's Explanation:
 		BEGIN
 			DELETE FROM #League
 			WHERE SportType = 5 AND LeagueGroupId IN (42)
-				AND @FromDate > @CutoffDate
-			
+				AND 1 = CASE
+							WHEN @CutoffDate > @FromDate AND  ',' + @SportTypeList + ',' LIKE '%,5,%' THEN 0
+							ELSE 1 
+						END
 		END
 	END
 
@@ -513,52 +515,79 @@ Param's Explanation:
 	FROM CTE_Matches
 	WHERE matchid IN (SELECT matchid FROM #tmpData)
 		
-	SELECT
-		CreatedDate AS [Date] ,
-		SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS [ExternalID],
-		c.username AS [SystemID],
-		e.currency AS Currency,	
-		d.TransID AS [RefNo],
-		CASE WHEN d.BetType = 29 THEN 0
-			WHEN d.OddsType = 1 AND b.SupportMultipleOdds = 1 THEN d.Odds + 1 ELSE d.Odds END AS Odds,
-		Stake * ISNULL(er.DefaultRate,1) AS Stake,
-		CASE WHEN d.BetType = 29 THEN 0 ELSE HDP END AS HDP,
-		d.LiveHomeScore,
-		d.LiveAwayScore,
-		CASE
-			WHEN d.SportType = 1 AND d.LeagueGroupId IN (42, 74) THEN -1
-			WHEN d.SportType = 2 AND d.LeagueGroupId IN (42) THEN -2
-			WHEN d.SportType = 50 AND d.LeagueGroupId IN (42) THEN -3
-			WHEN d.SportType = 1 AND d.LeagueGroupId IN (108) THEN -4
-			WHEN d.SportType = 1 AND d.LeagueGroupId IN (113) THEN -5
-			WHEN d.SportType = 2 AND d.LeagueGroupId IN (122) THEN -6
-			WHEN d.SportType = 43 AND d.LeagueGroupId IN (151) THEN -7
-			WHEN d.SportType = 5 AND d.LeagueGroupId IN (42) AND CreatedDate >= @CutoffDate THEN -8
-			ELSE d.SportType
-		END AS Sport,
-		d.LeagueGroupId,
-		d.BetType,
-		d.EventType,
-		d.BetTeam AS [Choice],
-		TransDate AS TransTime, 
-		d.LeagueID AS League, 
-		m.homeid,
-		m.awayid,
-		m.IsNeutral,
-		m.GlobalShowTime AS [KOTime],
-		LiveIndicator AS Live,
-		CASE WHEN d.BetType = 29 THEN '-' 
-			ELSE CAST(m.finalhomescore AS NVARCHAR(10))+ '-' + CAST(m.finalawayscore AS NVARCHAR(10)) END AS [FinalScore],
-		IP,
-		d.SubIssueTypeID AS Reason
-	FROM #tmpData d
-		LEFT JOIN #tmpMatch m  ON d.MatchID = m.matchid
-		LEFT JOIN bodb_Account.dbo.bettype b WITH (NOLOCK) ON d.BetType = b.typeid
-		LEFT JOIN bodb02.dbo.Exchange e WITH (NOLOCK) ON d.CurrencyID = e.exchangeid 
-		LEFT JOIN bodb02.dbo.Customer c WITH (NOLOCK) ON d.custid = c.custid
-		LEFT JOIN #ExchangeRate er ON d.CreatedDate BETWEEN er.FromDate AND er.ToDate AND er.ExchangeId = e.ExchangeId
-	WHERE c.custid IS NOT NULL
-	ORDER BY CreatedDate
+	SELECT	Date, 
+			ExternalID, 
+			SystemID, 
+			Currency, 
+			RefNo, 
+			Odds, 
+			Stake, 
+			HDP, 
+			LiveHomeScore, 
+			LiveAwayScore, 
+			Sport, 
+			LeagueGroupId, 
+			BetType, 
+			EventType, 
+			Choice, 
+			TransTime, 
+			League, 
+			homeid, 
+			awayid, 
+			IsNeutral, 
+			KOTime, 
+			Live, 
+			FinalScore, 
+			IP, 
+			Reason
+	FROM (	SELECT
+				CreatedDate AS [Date] ,
+				SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS [ExternalID],
+				c.username AS [SystemID],
+				e.currency AS Currency,	
+				d.TransID AS [RefNo],
+				CASE WHEN d.BetType = 29 THEN 0
+					WHEN d.OddsType = 1 AND b.SupportMultipleOdds = 1 THEN d.Odds + 1 ELSE d.Odds END AS Odds,
+				Stake * ISNULL(er.DefaultRate,1) AS Stake,
+				CASE WHEN d.BetType = 29 THEN 0 ELSE HDP END AS HDP,
+				d.LiveHomeScore,
+				d.LiveAwayScore,
+				CASE
+					WHEN d.SportType = 1 AND d.LeagueGroupId IN (42, 74) THEN -1
+					WHEN d.SportType = 2 AND d.LeagueGroupId IN (42) THEN -2
+					WHEN d.SportType = 50 AND d.LeagueGroupId IN (42) THEN -3
+					WHEN d.SportType = 1 AND d.LeagueGroupId IN (108) THEN -4
+					WHEN d.SportType = 1 AND d.LeagueGroupId IN (113) THEN -5
+					WHEN d.SportType = 2 AND d.LeagueGroupId IN (122) THEN -6
+					WHEN d.SportType = 43 AND d.LeagueGroupId IN (151) THEN -7
+					WHEN d.SportType = 5 AND d.LeagueGroupId IN (42) AND CreatedDate >= @CutoffDate THEN -8
+					ELSE d.SportType
+				END AS Sport,
+				d.LeagueGroupId,
+				d.BetType,
+				d.EventType,
+				d.BetTeam AS [Choice],
+				TransDate AS TransTime, 
+				d.LeagueID AS League, 
+				m.homeid,
+				m.awayid,
+				m.IsNeutral,
+				m.GlobalShowTime AS [KOTime],
+				LiveIndicator AS Live,
+				CASE WHEN d.BetType = 29 THEN '-' 
+					ELSE CAST(m.finalhomescore AS NVARCHAR(10))+ '-' + CAST(m.finalawayscore AS NVARCHAR(10)) END AS [FinalScore],
+				IP,
+				d.SubIssueTypeID AS Reason
+		FROM #tmpData d
+			LEFT JOIN #tmpMatch m  ON d.MatchID = m.matchid
+			LEFT JOIN bodb_Account.dbo.bettype b WITH (NOLOCK) ON d.BetType = b.typeid
+			LEFT JOIN bodb02.dbo.Exchange e WITH (NOLOCK) ON d.CurrencyID = e.exchangeid 
+			LEFT JOIN bodb02.dbo.Customer c WITH (NOLOCK) ON d.custid = c.custid
+			LEFT JOIN #ExchangeRate er ON d.CreatedDate BETWEEN er.FromDate AND er.ToDate AND er.ExchangeId = e.ExchangeId
+		WHERE c.custid IS NOT NULL
+		) AS a
+	WHERE @SportTypeList = 'All' OR ',' + @SportTypeList + ',' LIKE '%,' + CAST(Sport AS VARCHAR(5)) + ',%'
+	ORDER BY [Date]
 	
 	DROP TABLE #tmpData
 	DROP TABLE #tmpReason

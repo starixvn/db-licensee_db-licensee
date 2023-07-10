@@ -246,10 +246,6 @@ BEGIN
 			AND b.statusID IN (111, 112, 113)
 			AND b.bettype <> 10
 			AND (@Username = '' OR b.custid = @CustId)
-			AND 1 = CASE 
-						WHEN l.SportType = 5 AND l.LeagueGroupID = 42 AND b.winlostdate < @CutoffDate THEN 0 
-						ELSE 1
-					END
 		GROUP BY
 			b.custid,
 			b.currency,
@@ -327,10 +323,6 @@ BEGIN
 			AND b.statusID IN (111, 112, 113)
 			AND b.bettype = 10
 			AND (@Username = '' OR b.custid = @CustId)
-			AND 1 = CASE 
-						WHEN l.SportType = 5 AND l.LeagueGroupID = 42 AND b.winlostdate < @CutoffDate THEN 0 
-						ELSE 1
-					END
 		GROUP BY
 			b.custid,
 			b.currency,

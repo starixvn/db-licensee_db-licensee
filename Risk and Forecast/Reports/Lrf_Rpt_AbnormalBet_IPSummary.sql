@@ -149,7 +149,7 @@ Param's Explanation:
     
     IF @BetTypeList = 'All'
 		INSERT INTO #tmpBetType (BetTypeID)
-        SELECT b.BetType
+        SELECT DISTINCT b.BetType
         FROM bodb02.dbo.SportBettypeMatrix b WITH(NOLOCK)
 			INNER JOIN #tmpSport s ON b.SportType = s.SportID
 		WHERE b.ProductID = 1
@@ -168,7 +168,7 @@ Param's Explanation:
 	CREATE TABLE #League (LeagueId INT, SportType SMALLINT, LeagueGroupId SMALLINT)
 
 	CREATE CLUSTERED INDEX IX_LeagueId ON #League (LeagueId)
-
+	
 	INSERT INTO #League (
 		LeagueId,
 		SportType, 
@@ -208,7 +208,6 @@ Param's Explanation:
 									WHEN @SearchLanguage = 'zh-CN' THEN l.leaguenamecn
 									ELSE l.leaguename
 								END LIKE '%' + @LeagueName +'%')
-	
 	IF @SportTypeList <> 'All'
 	BEGIN
 		IF ',' + @SportTypeList + ',' NOT LIKE '%,1,%'
@@ -287,7 +286,10 @@ Param's Explanation:
 		BEGIN
 			DELETE FROM #League
 			WHERE SportType = 5 AND LeagueGroupId IN (42)
-				AND @FromDate > @CutoffDate
+				AND 1 = CASE
+							WHEN @CutoffDate > @FromDate AND  ',' + @SportTypeList + ',' LIKE '%,5,%' THEN 0
+							ELSE 1 
+						END
 		END
 	END
 	
@@ -313,26 +315,42 @@ Param's Explanation:
 		CustID INT,
 		IP VARCHAR(40)
 	)
-
+	
+	;WITH cte_Src AS
+	(
+		SELECT 	f.TransId,
+			 	f.CustID ,
+			 	TRIM(IP) AS IP,
+			 	CASE
+					WHEN l.SportType = 1 AND l.LeagueGroupId IN (42, 74) THEN -1
+					WHEN l.SportType = 2 AND l.LeagueGroupId IN (42) THEN -2
+					WHEN l.SportType = 50 AND l.LeagueGroupId IN (42) THEN -3
+					WHEN l.SportType = 1 AND l.LeagueGroupId IN (108) THEN -4
+					WHEN l.SportType = 1 AND l.LeagueGroupId IN (113) THEN -5
+					WHEN l.SportType = 2 AND l.LeagueGroupId IN (122) THEN -6
+					WHEN l.SportType = 43 AND l.LeagueGroupId IN (151) THEN -7
+					WHEN l.SportType = 5 AND l.LeagueGroupId IN (42) AND f.CreatedDate >= @CutoffDate THEN -8
+				ELSE l.SportType
+			END AS SportType
+		FROM bodb_Account.dbo.AbnormalBetTransaction f WITH(NOLOCK)
+				INNER JOIN bodb02.dbo.Custinfo c WITH(NOLOCK) ON c.custid = f.CustID
+				INNER JOIN #TempAg AS tma ON tma.CustID = c.recommend  
+				INNER JOIN #League l ON l.LeagueId = f.leagueid
+			WHERE CreatedDate >= @FromDate 
+				AND CreatedDate < DATEADD(d, 1, @ToDate)
+				AND EXISTS(SELECT TOP 1 1 FROM #tmpReason r WHERE f.SubIssueTypeID = r.ReasonID)
+				AND EXISTS(SELECT TOP 1 1 FROM #tmpBetType b WHERE f.BetType = b.BetTypeID)
+				AND (@UserName = '' OR EXISTS(SELECT 1 FROM #TempCust tc WHERE tc.CustId = f.CustID))
+				AND ((BetType IN (9, 29) AND ',' + @LiveIndicator + ',' LIKE '%,' + CONVERT(VARCHAR(3), LiveHomeScore) + ',%')  
+		     			OR (BetType NOT IN (9, 29) AND ',' + @LiveIndicator + ',' LIKE '%,' + CONVERT(VARCHAR(3), LiveIndicator) + ',%')) 
+				AND (@IP = '' OR IP = @IP)
+	)
 	INSERT INTO #Src (TransID,CustID,IP)
-	SELECT MAX(f.TransId) TransId,  f.CustID , TRIM(IP) IP
-	FROM bodb_Account.dbo.AbnormalBetTransaction f WITH(NOLOCK)
-		INNER JOIN bodb02.dbo.Custinfo c WITH(NOLOCK) ON c.custid = f.CustID
-		INNER JOIN #TempAg AS tma ON tma.CustID = c.recommend  
-		INNER JOIN #League l ON l.LeagueId = f.leagueid
-	WHERE CreatedDate >= @FromDate 
-		AND CreatedDate < DATEADD(d, 1, @ToDate)
-		AND EXISTS(SELECT TOP 1 1 FROM #tmpReason r WHERE f.SubIssueTypeID = r.ReasonID)
-		AND EXISTS(SELECT TOP 1 1 FROM #tmpBetType b WHERE f.BetType = b.BetTypeID)
-		AND (@UserName = '' OR EXISTS(SELECT 1 FROM #TempCust tc WHERE tc.CustId = f.CustID))
-		AND ((BetType IN (9, 29) AND ',' + @LiveIndicator + ',' LIKE '%,' + CONVERT(VARCHAR(3), LiveHomeScore) + ',%')  
-     			OR (BetType NOT IN (9, 29) AND ',' + @LiveIndicator + ',' LIKE '%,' + CONVERT(VARCHAR(3), LiveIndicator) + ',%')) 
-		AND (@IP = '' OR IP = @IP)
-		AND 1 = CASE 
-					WHEN l.SportType = 5 AND l.LeagueGroupID = 42 AND f.CreatedDate < @CutoffDate THEN 0 
-					ELSE 1
-				END
-	GROUP BY TRIM(IP),f.CustID
+	SELECT MAX(TransId) TransId,  CustID , TRIM(IP) IP
+	FROM cte_Src
+	WHERE 
+		@SportTypeList = 'All' OR ',' + @SportTypeList + ',' LIKE '%,' + CAST(SportType AS VARCHAR(5)) + ',%'
+	GROUP BY TRIM(IP), CustID
 	OPTION (RECOMPILE)
 
 	 IF ISNULL(@IP, '') <> ''  

@@ -394,10 +394,7 @@ BEGIN
 								WHEN b.matchid = 2799 THEN b.oddsid --VS Sports
 								ELSE b.matchid
 							END
-						WHEN s.EventType = 1 THEN 
-								ISNULL(CASE WHEN b.winlostdate < saba.CutOffDate THEN m.sporttype
-										ELSE saba.SabaSportType END
-								, m.sporttype)
+						WHEN s.EventType = 1 THEN ISNULL(saba.SabaSportType, m.sporttype)
 						WHEN s.EventType = 2 THEN lo.sporttype
 						WHEN s.EventType = 3 THEN vs.SportType
 						WHEN s.EventType = 5 THEN m3rd.SportType --175-BTC Sport
@@ -608,7 +605,8 @@ BEGIN
 						ELSE 0
 					END) AS AmtDueToBA,
 					-(CASE WHEN b.Product3rdId = 3 THEN 0 ELSE b.winlost END) AS [LicWinloss],
-					ISNULL(saba.SabaSportType, b.Sporttype) AS Sporttype,
+					ISNULL(CASE WHEN b.winlostdate < saba.CutOffDate THEN b.Sporttype
+								ELSE saba.SabaSportType END, b.Sporttype) AS Sporttype,
 					CASE 
 						WHEN b.Product3rdId IN (63,69) THEN 0 
 						WHEN @IsViewCOOnlyCheck = 1 AND b.Product3rdId = 0 AND @SBBACheck & 4 = 4 AND b.TicketType = 1 THEN -99 --Cashout 
