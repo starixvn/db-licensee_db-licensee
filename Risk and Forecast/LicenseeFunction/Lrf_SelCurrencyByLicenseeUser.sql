@@ -20,6 +20,7 @@ AS
 		- 20211006@Howard: New China View Skin, hard code INH2 Currency [RedmineID: #161966]
 		- 20221010@Kos: Support crypto currency [Redmine: 177481]
 		- 20230208@Kai: Hard code USDTJP, USDT currency [Redmine: 183455]
+		- 20230712@Kai: Hard code USDT2 currency [Redmine: 191163]
 */
 
 BEGIN
@@ -45,6 +46,7 @@ BEGIN
 			WHEN lc.currency = 96 THEN 'USDT'
 			WHEN lc.currency = 125 THEN 'INH'
 			WHEN lc.currency = 202 THEN 'USDTJP'
+			WHEN lc.currency = 206 THEN 'USDT'
 			-- crypto currencies
 			WHEN lc.currency = 142 THEN 'USDT'
 			WHEN e.CurrencyType = 1 THEN e.currency
@@ -68,6 +70,7 @@ BEGIN
 			WHEN lc.currency = 96 THEN 'USDT'
 			WHEN lc.currency = 125 THEN 'INH'
 			WHEN lc.currency = 202 THEN 'USDTJP'
+			WHEN lc.currency = 206 THEN 'USDT'
 			-- crypto currencies
 			WHEN lc.currency = 142 THEN 'USDT'
 			WHEN e.CurrencyType = 1 THEN e.currency

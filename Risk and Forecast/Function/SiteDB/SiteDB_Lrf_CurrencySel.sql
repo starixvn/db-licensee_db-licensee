@@ -15,6 +15,7 @@ AS
 		- 20220801@Sol: LAP - Scale Out DBTrans - deploy to sitedb with new metadata [Redmine: #175297]
 		- 20221010@Kos: Support crypto currency [Redmine: 177481]
 		- 20230208@Kai: Hard code USDTJP, USDT currency [Redmine: 183455]
+		- 20230712@Kai: Hard code USDT2 currency [Redmine: 191163]
 */
 
 BEGIN
@@ -33,6 +34,7 @@ BEGIN
 			WHEN ExchangeId = 96 THEN 'USDT'
 			WHEN ExchangeId = 125 THEN 'INH'
 			WHEN ExchangeId = 202 THEN 'USDTJP'
+			WHEN ExchangeId = 206 THEN 'USDT'
 			-- crypto currencies
 			WHEN ExchangeId = 142 THEN 'USDT'
 			WHEN CurrencyType = 1 THEN currency		
