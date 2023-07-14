@@ -22,6 +22,7 @@ AS
 	Revisions:
 		   - 20230224@Winfred: NAP LM - Enhance Bet Setting function for AM to use [redmine:#178105]
 		   - 20230629@Winfred: NAP LM - PRO - Licensee Bet Setting - Currency filter has not taken data according to Currency Code [redmine:#190436]
+		   - 20230707@Winfred: NAP LM - Insert icorrect data in Dep_CustBetSettingGame_Member for players have isGroupBetLimit = 1 [redmine:#191020]
     Param's Explanation:
 		- @CustID : super ID
 		- @AgentID : 0 for All Subsidiary AND <> 0 for only Specific Subsidiary 
@@ -226,7 +227,7 @@ BEGIN
 		DELETE FROM #temp WHERE roleid = 2
 	END
 
-	IF EXISTS (SELECT 1 FROM #SportTypeBetType ps WHERE SportType IN (1,2,3,5,8,10,11,99,9901,9902,43,161)) --Sportbook VS NumberGame 
+	IF EXISTS (SELECT 1 FROM #SportTypeBetType ps WHERE SportType IN (1,2,3,5,8,10,11,99,9901,9902,43,161,50,9907)) --Sportbook VS NumberGame 
 	BEGIN
 		DELETE t
 		FROM #temp t 
