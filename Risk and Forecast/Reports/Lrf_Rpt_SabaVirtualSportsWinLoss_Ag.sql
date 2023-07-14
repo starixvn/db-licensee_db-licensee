@@ -98,10 +98,10 @@ BEGIN
 	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', 'SB,CO', @IsTest)
 	WHERE BetType NOT IN (9, 29, 914, 901, 902, 903, 904)
 
-	CREATE TABLE #SabaVirtualSportsLeague (LeagueId INT, PRIMARY KEY (LeagueId))
+	CREATE TABLE #SabaVirtualSportsLeague (LeagueId INT, PRIMARY KEY (LeagueId), SportType TINYINT, LeagueGroupID SMALLINT)
 
 	INSERT INTO #SabaVirtualSportsLeague
-	SELECT leagueid
+	SELECT LeagueId, SportType, LeagueGroupID
 	FROM dbo.League WITH (NOLOCK)
 	WHERE (@LeagueId = 0 OR leagueid = @LeagueId)
 		AND (@SportType = 0
@@ -148,7 +148,7 @@ BEGIN
 
 	DECLARE @CutoffDate SMALLDATETIME;
 	SELECT @CutoffDate = CutoffDate
-	FROM dbo.Lrf_f_GetCutoffDate()
+	FROM dbo.Lrf_f_GetCutOffDate()
 	WHERE TypeName = 'SabaTennis'
 
 	IF @_ToDate > @MoveBetsDay

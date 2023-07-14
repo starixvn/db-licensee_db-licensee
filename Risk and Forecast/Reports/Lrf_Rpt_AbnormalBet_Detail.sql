@@ -99,10 +99,7 @@ Param's Explanation:
 			 OR c.username2 LIKE + '%$%' + @Username + '%')  
 	END  
    
-	DECLARE @CutoffDate SMALLDATETIME;
-	SELECT @CutoffDate = CutoffDate
-	FROM bodb02.dbo.Lrf_f_GetCutoffDate()
-	WHERE TypeName = 'SabaTennis'
+	DECLARE @CutoffDate SMALLDATETIME = '2023-07-01';
    	
 	DECLARE @SportSaba TABLE (SportID INT)
 	CREATE TABLE #tmpReason (ReasonID INT)
