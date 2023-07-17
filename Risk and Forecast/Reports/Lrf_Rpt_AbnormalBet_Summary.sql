@@ -56,8 +56,11 @@ BEGIN
 	CREATE TABLE #tmpSport (SportID INT)
 	CREATE TABLE #tmpBetType (BetTypeID INT, EventType TINYINT)
 
-	DECLARE @CutoffDate SMALLDATETIME = '2023-07-01';
-	
+	DECLARE @CutoffDate SMALLDATETIME;
+	SELECT @CutoffDate = CutoffDate
+	FROM dbo.Lrf_f_GetCutoffDate()
+	WHERE TypeName = 'SabaTennis'
+		
 	IF @ReasonList = 'All'
 		INSERT INTO #tmpReason (ReasonID)
 		SELECT SubIssueTypeId 

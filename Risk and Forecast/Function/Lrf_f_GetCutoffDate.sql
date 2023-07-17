@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02,DBLIC-bodb_LicenseeReport,DBBAL-bodb_LicenseeReport" selecters="bodbLicenseeNet" isFunction="1" isNested="1"></info>*/
+/*<info serverAlias="DBEXT-bodb02,DBLIC-bodb_LicenseeReport,DBBAL-bodb_LicenseeReport,DBWH-bodb_DWRS" selecters="bodbLicenseeNet" isFunction="1" isNested="1"></info>*/
 ALTER FUNCTION [dbo].Lrf_f_GetCutOffDate()
 RETURNS TABLE
 AS

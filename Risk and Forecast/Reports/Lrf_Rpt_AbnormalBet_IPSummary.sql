@@ -66,7 +66,10 @@ Param's Explanation:
 
 	DECLARE @DocHandler INT
 
-	DECLARE @CutoffDate SMALLDATETIME = '2023-07-01';
+	DECLARE @CutoffDate SMALLDATETIME;
+	SELECT @CutoffDate = CutoffDate
+	FROM dbo.Lrf_f_GetCutOffDate()
+	WHERE TypeName = 'SabaTennis'
 
 	BEGIN TRY
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT, @AgentList
