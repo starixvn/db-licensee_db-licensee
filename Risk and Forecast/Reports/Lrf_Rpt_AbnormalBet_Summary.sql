@@ -19,8 +19,9 @@ BEGIN
 	DB: DBDW2/bodb_dwrs 
 	Origin: Acc_Rpt_AbnormalBet_Licensee
 	Revisions:
-		20221013@Evan: - Initial [RedmineID: #174308]	
-					   - Support Saba E-Sports PinGoal
+		- 20221013@Evan: Initial [RedmineID: #174308]
+						 Support Saba E-Sports PinGoal
+		- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465]
 	
 	Param's Explanation:
 		- @SportTypeList: sporttype list separated by ','
@@ -32,6 +33,7 @@ BEGIN
 			+ -5: Saba Soccer Pingoal (SportType = 1, LeagueGroupId IN (113))
 			+ -6: Saba Basketball Pingoal (SportType = 2, LeagueGroupId IN (122))
 			+ -7: Saba E-Sports Pingoal (SportType = 43, LeagueGroupId IN (151))
+			+ -8: Saba Virtual Tennis (SportType = 5, LeagueGroupId IN (42))
 		- @BetTypeList: bettype list separated by ','
 			+ 'All': all bettypes
 		- @ReasonList: Reason list separated by ','
@@ -53,7 +55,12 @@ BEGIN
 	CREATE TABLE #tmpReason (ReasonID INT)
 	CREATE TABLE #tmpSport (SportID INT)
 	CREATE TABLE #tmpBetType (BetTypeID INT, EventType TINYINT)
-	
+
+	DECLARE @CutoffDate SMALLDATETIME;
+	SELECT @CutoffDate = CutoffDate
+	FROM dbo.Lrf_f_GetCutoffDate()
+	WHERE TypeName = 'SabaTennis'
+		
 	IF @ReasonList = 'All'
 		INSERT INTO #tmpReason (ReasonID)
 		SELECT SubIssueTypeId 
@@ -84,7 +91,8 @@ BEGIN
         SELECT DISTINCT CASE WHEN SportID IN (-1,-4,-5) THEN 1 
 					WHEN SportID IN (-2,-6) THEN 2 
 					WHEN SportID = -3 THEN 50  
-					WHEN SportID = -7 THEN 43 END 
+					WHEN SportID = -7 THEN 43 
+					WHEN SportID = -8 THEN 5 END 
         FROM #tmpSport  
 		WHERE SportID < 0
 
@@ -146,6 +154,9 @@ BEGIN
 			OR (',' + @SportTypeList + ',' LIKE '%,-7,%'
 				AND l.sporttype = 43
 				AND l.LeagueGroupID IN (151))
+			OR (',' + @SportTypeList + ',' LIKE '%,-8,%'
+				AND l.sporttype = 5
+				AND l.LeagueGroupID IN (42))
 			)
 		AND (@LeagueName = '' OR CASE
 									WHEN @SearchLanguage = 'zh-CN' THEN l.leaguenamecn
@@ -178,7 +189,12 @@ BEGIN
 			WHERE SportType = 43 AND LeagueGroupId NOT IN (151)
 		END
 
-
+		IF ',' + @SportTypeList + ',' NOT LIKE '%,5,%'
+		BEGIN
+			DELETE FROM #League
+			WHERE SportType = 5 AND LeagueGroupId NOT IN (42)
+		END
+		
 		IF ',' + @SportTypeList + ',' NOT LIKE '%,-1,%'
 		BEGIN
 			DELETE FROM #League
@@ -219,6 +235,16 @@ BEGIN
 		BEGIN
 			DELETE FROM #League
 			WHERE SportType = 43 AND LeagueGroupId IN (151)
+		END
+		
+		IF ',' + @SportTypeList + ',' NOT LIKE '%,-8,%'
+		BEGIN
+			DELETE FROM #League
+			WHERE SportType = 5 AND LeagueGroupId IN (42)
+				AND 1 = CASE
+							WHEN @CutoffDate > @FromDate AND  ',' + @SportTypeList + ',' LIKE '%,5,%' THEN 0
+							ELSE 1 
+						END
 		END
 	END
 	
@@ -278,7 +304,7 @@ BEGIN
 		BetTeam NVARCHAR(10),
 		RN INT
 	)
-	
+
 	INSERT INTO #Src(
 		RptDate ,
 		CreatedDate ,
@@ -403,34 +429,52 @@ BEGIN
 	WHERE (RN >= (@PageIndex - 1) * @PageSize + 1 AND RN < @PageIndex * @PageSize + 1) 
 		OR (@PageIndex = 0)		--defaults to all	
 
-	SELECT CONVERT(VARCHAR(20), CreatedDate, 107) AS [Date]
-		,CASE
-			WHEN d.SportType = 1 AND d.LeagueGroupId IN (42, 74) THEN -1
-			WHEN d.SportType = 2 AND d.LeagueGroupId IN (42) THEN -2
-			WHEN d.SportType = 50 AND d.LeagueGroupId IN (42) THEN -3
-			WHEN d.SportType = 1 AND d.LeagueGroupId IN (108) THEN -4
-			WHEN d.SportType = 1 AND d.LeagueGroupId IN (113) THEN -5
-			WHEN d.SportType = 2 AND d.LeagueGroupId IN (122) THEN -6
-			WHEN d.SportType = 43 AND d.LeagueGroupId IN (151) THEN -7
-			ELSE d.SportType
-		END AS Sport
-		,LeagueID AS League
-		,BetType
-		,m.homeid
-		,m.awayid
-		,m.IsNeutral
-		,m.GlobalShowTime AS [KOTime]
-		,LiveStatus AS Live
-		,BetCount [TotalTransaction]
-		,BetType [BetType]
-		,BetTeam AS Choice
-		,SubIssueTypeID AS Reason
-		,CASE WHEN d.BetType = 29 THEN '-' 
-			ELSE CAST(m.finalhomescore AS NVARCHAR(10))+ '-' + CAST(m.finalawayscore AS NVARCHAR(10)) END AS FinalScore
-	FROM #tmpData d
-		LEFT JOIN bodb02.dbo.Exchange e WITH (NOLOCK) ON d.CurrencyID = e.exchangeid 
-		LEFT JOIN #tmpMatch m  ON d.MatchID = m.matchid
-	ORDER BY CreatedDate
+	SELECT	Date,
+			Sport,
+			League,
+			BetType,
+			homeid,
+			awayid,
+			IsNeutral,
+			KOTime,
+			Live,
+			TotalTransaction,
+			BetType,
+			Choice,
+			Reason,
+			FinalScore
+	FROM (	SELECT 
+				CONVERT(VARCHAR(20), CreatedDate, 107) AS [Date]
+				,CASE
+					WHEN d.SportType = 1 AND d.LeagueGroupId IN (42, 74) THEN -1
+					WHEN d.SportType = 2 AND d.LeagueGroupId IN (42) THEN -2
+					WHEN d.SportType = 50 AND d.LeagueGroupId IN (42) THEN -3
+					WHEN d.SportType = 1 AND d.LeagueGroupId IN (108) THEN -4
+					WHEN d.SportType = 1 AND d.LeagueGroupId IN (113) THEN -5
+					WHEN d.SportType = 2 AND d.LeagueGroupId IN (122) THEN -6
+					WHEN d.SportType = 43 AND d.LeagueGroupId IN (151) THEN -7
+					WHEN d.SportType = 5 AND d.LeagueGroupId IN (42) AND CreatedDate >= @CutoffDate THEN -8
+					ELSE d.SportType
+				END AS Sport
+				,LeagueID AS League
+				,BetType
+				,m.homeid
+				,m.awayid
+				,m.IsNeutral
+				,m.GlobalShowTime AS [KOTime]
+				,LiveStatus AS Live
+				,BetCount [TotalTransaction]
+				,BetTeam AS Choice
+				,SubIssueTypeID AS Reason
+				,CASE WHEN d.BetType = 29 THEN '-' 
+					ELSE CAST(m.finalhomescore AS NVARCHAR(10))+ '-' + CAST(m.finalawayscore AS NVARCHAR(10)) END AS FinalScore
+			FROM #tmpData d
+				LEFT JOIN bodb02.dbo.Exchange e WITH (NOLOCK) ON d.CurrencyID = e.exchangeid 
+				LEFT JOIN #tmpMatch m  ON d.MatchID = m.matchid
+		) AS a
+	WHERE 
+		@SportTypeList = 'All' OR ',' + @SportTypeList + ',' LIKE '%,' + CAST(Sport AS VARCHAR(5)) + ',%'
+	ORDER BY CONVERT (SMALLDATETIME, [Date])
 	
 	DROP TABLE #tmpData
 	DROP TABLE #tmpReason
@@ -441,4 +485,5 @@ BEGIN
 	DROP TABLE #tmpMatch
 	   
 END;
+
 GO

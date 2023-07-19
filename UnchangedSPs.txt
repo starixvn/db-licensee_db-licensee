@@ -1,1 +1,4 @@
-NAP_LicenseeManagement\LicenseeSetting\NAP_LM_LicenseeBetLimitUpd.sql
+LAP-Reports\WinlossAnalysis\dbo.LAP_f_WinlossAnalysis_BettypeMatrix.sql
+LAP-Reports\WinlossAnalysis\dbo.LAP_Rpt_WinlossAnalysis_AgencySel.sql
+LAP-Reports\WinlossAnalysis\dbo.LAP_Rpt_WinlossAnalysis_PlayerSel.sql
+LAP-Reports\WinlossAnalysis\dbo.LAP_Rpt_WInlossAnalysis_SportSel.sql

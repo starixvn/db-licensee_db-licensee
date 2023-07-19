@@ -21,8 +21,9 @@ Task : Abnormal Bet Report (#174308)
 DB: DBDW2/bodb_dwrs 
 Origin: Acc_Rpt_AbnormalBet_Member
 Revisions:
-	20221013@Evan: - Initial [RedmineID: #174308]	
-				   - Support Saba E-Sports PinGoal
+	- 20221013@Evan: Initial [RedmineID: #174308]
+					 Support Saba E-Sports PinGoal
+	- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465]
 Param's Explanation:
 	- @AgentList: XML structure
 			<ROOT>
@@ -38,6 +39,7 @@ Param's Explanation:
 		+ -5: Saba Soccer Pingoal (SportType = 1, LeagueGroupId IN (113))
 		+ -6: Saba Basketball Pingoal (SportType = 2, LeagueGroupId IN (122))
 		+ -7: Saba E-Sports Pingoal (SportType = 43, LeagueGroupId IN (151))
+		+ -8: Saba Virtual Tennis (SportType = 5, LeagueGroupId IN (42))
 
 	- @BetTypeList: bettype list separated by ','
 		+ 'All': all bettypes
@@ -63,6 +65,11 @@ Param's Explanation:
 	CREATE CLUSTERED INDEX IX_TempAg ON #TempAg (CustId);
 
 	DECLARE @DocHandler INT
+
+	DECLARE @CutoffDate SMALLDATETIME;
+	SELECT @CutoffDate = CutoffDate
+	FROM dbo.Lrf_f_GetCutOffDate()
+	WHERE TypeName = 'SabaTennis'
 
 	BEGIN TRY
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT, @AgentList
@@ -129,7 +136,8 @@ Param's Explanation:
         SELECT	DISTINCT CASE WHEN SportID IN (-1,-4,-5) THEN 1 
 					WHEN SportID IN (-2,-6) THEN 2 
 					WHEN SportID = -3 THEN 50  
-					WHEN SportID = -7 THEN 43 END 
+					WHEN SportID = -7 THEN 43
+					WHEN SportID = -8 THEN 5 END 
         FROM #tmpSport  
 		WHERE SportID < 0
 
@@ -141,7 +149,7 @@ Param's Explanation:
     
     IF @BetTypeList = 'All'
 		INSERT INTO #tmpBetType (BetTypeID)
-        SELECT b.BetType
+        SELECT DISTINCT b.BetType
         FROM bodb02.dbo.SportBettypeMatrix b WITH(NOLOCK)
 			INNER JOIN #tmpSport s ON b.SportType = s.SportID
 		WHERE b.ProductID = 1
@@ -160,7 +168,7 @@ Param's Explanation:
 	CREATE TABLE #League (LeagueId INT, SportType SMALLINT, LeagueGroupId SMALLINT)
 
 	CREATE CLUSTERED INDEX IX_LeagueId ON #League (LeagueId)
-
+	
 	INSERT INTO #League (
 		LeagueId,
 		SportType, 
@@ -192,12 +200,14 @@ Param's Explanation:
 			OR (',' + @SportTypeList + ',' LIKE '%,-7,%'
 				AND l.sporttype = 43
 				AND l.LeagueGroupID IN (151))
+			OR (',' + @SportTypeList + ',' LIKE '%,-8,%'
+				AND l.sporttype = 5
+				AND l.LeagueGroupID IN (42))
 			)
 		AND (@LeagueName = '' OR CASE
 									WHEN @SearchLanguage = 'zh-CN' THEN l.leaguenamecn
 									ELSE l.leaguename
 								END LIKE '%' + @LeagueName +'%')
-	
 	IF @SportTypeList <> 'All'
 	BEGIN
 		IF ',' + @SportTypeList + ',' NOT LIKE '%,1,%'
@@ -224,6 +234,12 @@ Param's Explanation:
 			WHERE SportType = 43 AND LeagueGroupId NOT IN (151)
 		END
 
+		IF ',' + @SportTypeList + ',' NOT LIKE '%,5,%'
+		BEGIN
+			DELETE FROM #League
+			WHERE SportType = 5 AND LeagueGroupId NOT IN (42)
+		END
+		
 		IF ',' + @SportTypeList + ',' NOT LIKE '%,-1,%'
 		BEGIN
 			DELETE FROM #League
@@ -265,6 +281,16 @@ Param's Explanation:
 			DELETE FROM #League
 			WHERE SportType = 43 AND LeagueGroupId IN (151)
 		END
+
+		IF ',' + @SportTypeList + ',' NOT LIKE '%,-8,%'
+		BEGIN
+			DELETE FROM #League
+			WHERE SportType = 5 AND LeagueGroupId IN (42)
+				AND 1 = CASE
+							WHEN @CutoffDate > @FromDate AND  ',' + @SportTypeList + ',' LIKE '%,5,%' THEN 0
+							ELSE 1 
+						END
+		END
 	END
 	
 	-- Insert League for Parlay
@@ -289,22 +315,42 @@ Param's Explanation:
 		CustID INT,
 		IP VARCHAR(40)
 	)
-
+	
+	;WITH cte_Src AS
+	(
+		SELECT 	f.TransId,
+			 	f.CustID ,
+			 	TRIM(IP) AS IP,
+			 	CASE
+					WHEN l.SportType = 1 AND l.LeagueGroupId IN (42, 74) THEN -1
+					WHEN l.SportType = 2 AND l.LeagueGroupId IN (42) THEN -2
+					WHEN l.SportType = 50 AND l.LeagueGroupId IN (42) THEN -3
+					WHEN l.SportType = 1 AND l.LeagueGroupId IN (108) THEN -4
+					WHEN l.SportType = 1 AND l.LeagueGroupId IN (113) THEN -5
+					WHEN l.SportType = 2 AND l.LeagueGroupId IN (122) THEN -6
+					WHEN l.SportType = 43 AND l.LeagueGroupId IN (151) THEN -7
+					WHEN l.SportType = 5 AND l.LeagueGroupId IN (42) AND f.CreatedDate >= @CutoffDate THEN -8
+				ELSE l.SportType
+			END AS SportType
+		FROM bodb_Account.dbo.AbnormalBetTransaction f WITH(NOLOCK)
+				INNER JOIN bodb02.dbo.Custinfo c WITH(NOLOCK) ON c.custid = f.CustID
+				INNER JOIN #TempAg AS tma ON tma.CustID = c.recommend  
+				INNER JOIN #League l ON l.LeagueId = f.leagueid
+			WHERE CreatedDate >= @FromDate 
+				AND CreatedDate < DATEADD(d, 1, @ToDate)
+				AND EXISTS(SELECT TOP 1 1 FROM #tmpReason r WHERE f.SubIssueTypeID = r.ReasonID)
+				AND EXISTS(SELECT TOP 1 1 FROM #tmpBetType b WHERE f.BetType = b.BetTypeID)
+				AND (@UserName = '' OR EXISTS(SELECT 1 FROM #TempCust tc WHERE tc.CustId = f.CustID))
+				AND ((BetType IN (9, 29) AND ',' + @LiveIndicator + ',' LIKE '%,' + CONVERT(VARCHAR(3), LiveHomeScore) + ',%')  
+		     			OR (BetType NOT IN (9, 29) AND ',' + @LiveIndicator + ',' LIKE '%,' + CONVERT(VARCHAR(3), LiveIndicator) + ',%')) 
+				AND (@IP = '' OR IP = @IP)
+	)
 	INSERT INTO #Src (TransID,CustID,IP)
-	SELECT MAX(f.TransId) TransId,  f.CustID , TRIM(IP) IP
-	FROM bodb_Account.dbo.AbnormalBetTransaction f WITH(NOLOCK)
-		INNER JOIN bodb02.dbo.Custinfo c WITH(NOLOCK) ON c.custid = f.CustID
-		INNER JOIN #TempAg AS tma ON tma.CustID = c.recommend  
-		INNER JOIN #League l ON l.LeagueId = f.leagueid
-	WHERE CreatedDate >= @FromDate 
-		AND CreatedDate < DATEADD(d, 1, @ToDate)
-		AND EXISTS(SELECT TOP 1 1 FROM #tmpReason r WHERE f.SubIssueTypeID = r.ReasonID)
-		AND EXISTS(SELECT TOP 1 1 FROM #tmpBetType b WHERE f.BetType = b.BetTypeID)
-		AND (@UserName = '' OR EXISTS(SELECT 1 FROM #TempCust tc WHERE tc.CustId = f.CustID))
-		AND ((BetType IN (9, 29) AND ',' + @LiveIndicator + ',' LIKE '%,' + CONVERT(VARCHAR(3), LiveHomeScore) + ',%')  
-     			OR (BetType NOT IN (9, 29) AND ',' + @LiveIndicator + ',' LIKE '%,' + CONVERT(VARCHAR(3), LiveIndicator) + ',%')) 
-		AND (@IP = '' OR IP = @IP)
-	GROUP BY TRIM(IP),f.CustID
+	SELECT MAX(TransId) TransId,  CustID , TRIM(IP) IP
+	FROM cte_Src
+	WHERE 
+		@SportTypeList = 'All' OR ',' + @SportTypeList + ',' LIKE '%,' + CAST(SportType AS VARCHAR(5)) + ',%'
+	GROUP BY TRIM(IP), CustID
 	OPTION (RECOMPILE)
 
 	 IF ISNULL(@IP, '') <> ''  

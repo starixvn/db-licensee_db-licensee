@@ -26,6 +26,7 @@ AS
 		- 20220302@Kos: Support filter by customer [RedmineID: #167825]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20221207@Evan: Support Saba E-Sports PinGoal [RedmineID: #181224]
+		- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465]
 
 	Param's Explanation:
 		+ @DrawFilter: 1: Normal, 2: No Draw, 3: No Draw for Turnover only
@@ -97,10 +98,10 @@ BEGIN
 	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', 'SB,CO', @IsTest)
 	WHERE BetType NOT IN (9, 29, 914, 901, 902, 903, 904)
 
-	CREATE TABLE #SabaVirtualSportsLeague (LeagueId INT, PRIMARY KEY (LeagueId))
+	CREATE TABLE #SabaVirtualSportsLeague (LeagueId INT, PRIMARY KEY (LeagueId), SportType TINYINT, LeagueGroupID SMALLINT)
 
 	INSERT INTO #SabaVirtualSportsLeague
-	SELECT leagueid
+	SELECT LeagueId, SportType, LeagueGroupID
 	FROM dbo.League WITH (NOLOCK)
 	WHERE (@LeagueId = 0 OR leagueid = @LeagueId)
 		AND (@SportType = 0
@@ -116,6 +117,7 @@ BEGIN
 			OR (@SportType IN (0, -2) AND sporttype = 2 AND LeagueGroupID IN (122))
 			OR (sporttype = 50 AND LeagueGroupID IN (42))
 			OR (@SportType IN (0, -43) AND sporttype = 43 AND LeagueGroupID IN (151))
+			OR (@sporttype IN (0, 5) AND sporttype = 5 AND LeagueGroupID IN (42))
 			)
 
 	DECLARE @Data TABLE (
@@ -143,6 +145,11 @@ BEGIN
 
 	DECLARE @TempFromDate	SMALLDATETIME,
 		@TempToDate			SMALLDATETIME
+
+	DECLARE @CutoffDate SMALLDATETIME;
+	SELECT @CutoffDate = CutoffDate
+	FROM dbo.Lrf_f_GetCutOffDate()
+	WHERE TypeName = 'SabaTennis'
 
 	IF @_ToDate > @MoveBetsDay
 	BEGIN
@@ -408,6 +415,10 @@ BEGIN
 						b.winlostdate = d.Date
 						AND b.statusID <> 101	--exclude REJECT
 						AND b.bettype NOT IN (901, 902, 903, 904, 914, 9, 29)
+						AND 1 = CASE 
+									WHEN l.SportType = 5 AND l.LeagueGroupID = 42 AND b.winlostdate < @CutoffDate THEN 0 
+									ELSE 1
+								END
 					GROUP BY
 						b.recommend,
 						b.Currency,
@@ -491,6 +502,10 @@ BEGIN
 						AND b.winlostdate = d.Date
 						AND b.statusID <> 101	--exclude REJECT
 						AND b.bettype NOT IN (901, 902, 903, 904, 914, 9, 29)
+						AND 1 = CASE 
+									WHEN l.SportType = 5 AND l.LeagueGroupID = 42 AND b.winlostdate < @CutoffDate THEN 0 
+									ELSE 1
+								END
 					GROUP BY
 						b.recommend,
 						b.Currency,

@@ -28,6 +28,7 @@ AS
 		- 20220616@Kos: Fix issue duplicate LeagueId [RedmineID: #171991]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20221207@Evan: Support Saba E-Sports PinGoal [RedmineID: #181224]
+		- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465]
 
 	Param's Explanation:
 		- @SportTypeList: sporttype list separated by ','
@@ -39,6 +40,7 @@ AS
 			+ -5: Saba Soccer Pingoal (SportType = 1, LeagueGroupId IN (113))
 			+ -6: Saba Basketball Pingoal (SportType = 2, LeagueGroupId IN (122))
 			+ -7: Saba E-Sports Pingoal (SportType = 43, LeagueGroupId IN (151))
+			+ -8: Saba Virtual Tennis (SportType = 5, LeagueGroupId IN (42))
 		- @BetTypeList: bettype list separated by ','
 			+ 'All': all bettypes
 		- @SearchLanguage: search language
@@ -123,7 +125,7 @@ BEGIN
 		AND (@BetTypeList = 'All'
 			OR ',' + @BetTypeList + ',' LIKE '%,' + CAST(BetType AS VARCHAR(5)) + ',%'
 			OR BetType IN (SELECT Bettype FROM dbo.f_GroupBettype() WHERE ',' + @BetTypeList + ',' LIKE '%,' + CAST(GroupTypeId AS VARCHAR(5)) + ',%'))
-
+	
 	IF @SportTypeList <> 'All'
 	BEGIN
 		IF ',' + @SportTypeList + ',' NOT LIKE '%,169,%'		-- Sports Lottery
@@ -155,6 +157,12 @@ BEGIN
 	SELECT @_FromDate = @FromDate,
 		@_ToDate = @ToDate
 
+	DECLARE @CutoffDate SMALLDATETIME;
+
+	SELECT @CutoffDate = CutoffDate
+	FROM dbo.Lrf_f_GetCutOffDate()
+	WHERE TypeName = 'SabaTennis'
+	
 	-- Get league list
 	CREATE TABLE #League (LeagueId INT, SportType SMALLINT, LeagueGroupId SMALLINT)
 	CREATE TABLE #TempLeague (LeagueId INT)
@@ -213,6 +221,9 @@ BEGIN
 			OR (',' + @SportTypeList + ',' LIKE '%,-7,%'
 				AND l.sporttype = 43
 				AND l.LeagueGroupID IN (151))
+			OR (',' + @SportTypeList + ',' LIKE '%,-8,%'
+				AND l.sporttype = 5
+				AND l.LeagueGroupID IN (42))
 			)
 		AND (@LeagueName = '' OR CASE
 									WHEN @SearchLanguage = 'zh-CN' THEN l.leaguenamecn
@@ -288,8 +299,17 @@ BEGIN
 			DELETE FROM #League
 			WHERE SportType = 43 AND LeagueGroupId IN (151)
 		END
+		IF ',' + @SportTypeList + ',' NOT LIKE '%,-8,%'
+		BEGIN
+			DELETE FROM #League
+			WHERE SportType = 5 AND LeagueGroupId IN (42)
+				AND 1 = CASE
+							WHEN @CutoffDate > @_FromDate AND  ',' + @SportTypeList + ',' LIKE '%,5,%' THEN 0
+							ELSE 1 
+						END
+		END
 	END
-
+	
 	-- Insert League for Parlay
 	IF @SportTypeList = 'All'
 		AND @LeagueName = ''
@@ -833,41 +853,49 @@ BEGIN
 
 	-- Return result
 	SELECT
-		CASE
-			WHEN d.SportType = 1 AND d.LeagueGroupId IN (42, 74) THEN -1
-			WHEN d.SportType = 2 AND d.LeagueGroupId IN (42) THEN -2
-			WHEN d.SportType = 50 AND d.LeagueGroupId IN (42) THEN -3
-			WHEN d.SportType = 1 AND d.LeagueGroupId IN (108) THEN -4
-			WHEN d.SportType = 1 AND d.LeagueGroupId IN (113) THEN -5
-			WHEN d.SportType = 2 AND d.LeagueGroupId IN (122) THEN -6
-			WHEN d.SportType = 43 AND d.LeagueGroupId IN (151) THEN -7
-			ELSE d.SportType
-		END AS SportType,
-		d.LeagueId,
-		SUM(d.BetCount) AS BetCount,
-		CAST(SUM(d.Turnover		* e.Rate) AS MONEY) AS Turnover,
-		CAST(SUM(d.WinLost		* e.Rate) AS MONEY) AS WinLost,
-		CAST(SUM(d.LicenseeWL	* e.Rate) AS MONEY) AS LicenseeWL,
-		CAST(SUM(d.BAComm		* e.Rate) AS MONEY) AS BAComm
-	FROM @Data AS d
-		INNER JOIN @ExchangeRate AS e
-			ON d.WinLostDate BETWEEN e.FromDate AND e.ToDate
-				AND d.Currency = e.ExchangeId
-	GROUP BY
-		CASE
-			WHEN d.SportType = 1 AND d.LeagueGroupId IN (42, 74) THEN -1
-			WHEN d.SportType = 2 AND d.LeagueGroupId IN (42) THEN -2
-			WHEN d.SportType = 50 AND d.LeagueGroupId IN (42) THEN -3
-			WHEN d.SportType = 1 AND d.LeagueGroupId IN (108) THEN -4
-			WHEN d.SportType = 1 AND d.LeagueGroupId IN (113) THEN -5
-			WHEN d.SportType = 2 AND d.LeagueGroupId IN (122) THEN -6
-			WHEN d.SportType = 43 AND d.LeagueGroupId IN (151) THEN -7
-			ELSE d.SportType
-		END,
-		d.LeagueId
+		SportType, LeagueId, BetCount, Turnover, WinLost, LicenseeWL, BAComm
+	FROM 
+		(SELECT 
+			CASE
+				WHEN d.SportType = 1 AND d.LeagueGroupId IN (42, 74) THEN -1
+				WHEN d.SportType = 2 AND d.LeagueGroupId IN (42) THEN -2
+				WHEN d.SportType = 50 AND d.LeagueGroupId IN (42) THEN -3
+				WHEN d.SportType = 1 AND d.LeagueGroupId IN (108) THEN -4
+				WHEN d.SportType = 1 AND d.LeagueGroupId IN (113) THEN -5
+				WHEN d.SportType = 2 AND d.LeagueGroupId IN (122) THEN -6
+				WHEN d.SportType = 43 AND d.LeagueGroupId IN (151) THEN -7
+				WHEN d.SportType = 5 AND d.LeagueGroupId IN (42) AND d.WinLostDate >= @CutoffDate THEN -8
+				ELSE d.SportType
+			END AS SportType,
+			d.LeagueId,
+			SUM(d.BetCount) AS BetCount,
+			CAST(SUM(d.Turnover		* e.Rate) AS MONEY) AS Turnover,
+			CAST(SUM(d.WinLost		* e.Rate) AS MONEY) AS WinLost,
+			CAST(SUM(d.LicenseeWL	* e.Rate) AS MONEY) AS LicenseeWL,
+			CAST(SUM(d.BAComm		* e.Rate) AS MONEY) AS BAComm
+			FROM @Data AS d
+			INNER JOIN @ExchangeRate AS e
+				ON d.WinLostDate BETWEEN e.FromDate AND e.ToDate
+					AND d.Currency = e.ExchangeId
+			GROUP BY
+			CASE
+				WHEN d.SportType = 1 AND d.LeagueGroupId IN (42, 74) THEN -1
+				WHEN d.SportType = 2 AND d.LeagueGroupId IN (42) THEN -2
+				WHEN d.SportType = 50 AND d.LeagueGroupId IN (42) THEN -3
+				WHEN d.SportType = 1 AND d.LeagueGroupId IN (108) THEN -4
+				WHEN d.SportType = 1 AND d.LeagueGroupId IN (113) THEN -5
+				WHEN d.SportType = 2 AND d.LeagueGroupId IN (122) THEN -6
+				WHEN d.SportType = 43 AND d.LeagueGroupId IN (151) THEN -7
+				WHEN d.SportType = 5 AND d.LeagueGroupId IN (42) AND d.WinLostDate >= @CutoffDate THEN -8
+				ELSE d.SportType
+			END,
+			d.LeagueId
+		) a
+	WHERE 
+		@SportTypeList = 'All' OR ',' + @SportTypeList + ',' LIKE '%,' + CAST(SportType AS VARCHAR(5)) + ',%'
 	ORDER BY
 		SportType ASC,
-		d.LeagueId ASC
+		LeagueId ASC
 
 	DROP TABLE #TempAg
 	DROP TABLE #SportBetType

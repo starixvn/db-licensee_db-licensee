@@ -35,6 +35,7 @@ AS
 
 	Revisions:
 		- 20230209@Bobby: Created [RedmineID: #172604]
+		- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465]
 
 	Param's Explanation:
 		- @SortKey: 0:GroupBy, 1:BetCount, 2:Turnover, 3:NetTurnover, 4:MemWinloss, 5:MemComm, 6:LicWinloss, 7:LicComm, 8:AmtDueToBA, 9:BetEffective, 10:Margin
@@ -125,7 +126,7 @@ BEGIN
 			@BreakBy	= @BreakdownMode;
 
 	DROP TABLE IF EXISTS #tmpSabaSporttype;
-	CREATE TABLE #tmpSabaSporttype (SabaSportType INT, SportType INT, LeagueGroupID INT, SportOrder INT);
+	CREATE TABLE #tmpSabaSporttype (SabaSportType INT, SportType INT, LeagueGroupID INT, SportOrder INT, CutOffDate SMALLDATETIME);
 
 	IF @IsValidGroupMode = 0
 	BEGIN
@@ -163,7 +164,7 @@ BEGIN
 
 	--TODO: Event Products, Sports, Bettypes selection
 	INSERT INTO #tmpSabaSporttype
-	SELECT saba.SabaSportType, t.SportType, t.LeagueGroupID, saba.SportOrder
+	SELECT saba.SabaSportType, t.SportType, t.LeagueGroupID, saba.SportOrder, saba.CutOffDate
 	FROM bodb02.[dbo].[LAP_f_WinlossAnalysis_SabaSportSel] () AS saba
 	OUTER APPLY
 	(
@@ -174,6 +175,7 @@ BEGIN
 		)
 		OUTER APPLY OPENJSON(LeagueGroupIDs) WITH (LeagueGroupID INT '$')
 	) AS t
+	WHERE saba.IsShowUI = 1
 
 	--TODO: Sports filtering
 	SELECT @SportCheck = @SportIds;
@@ -412,12 +414,12 @@ BEGIN
 				INNER JOIN #tmpExchange e on e.ExchangeID =  a.Currency AND b.winlostdate BETWEEN e.FromDate AND e.ToDate
 				LEFT JOIN [bodb02].dbo.match m WITH(NOLOCK) ON b.matchid = m.matchid
 				LEFT JOIN [bodb02].[dbo].[Match3rd] m3rd WITH(NOLOCK) ON m3rd.Match3rdId = b.matchid
-				LEFT JOIN [bodb02].dbo.League l WITH(NOLOCK) ON m.leagueid = l.leagueid AND l.LeagueGroupID IN (42,74,108,113,122,151)
+				LEFT JOIN [bodb02].dbo.League l WITH(NOLOCK) ON m.leagueid = l.leagueid
 				LEFT JOIN [bodb02].dbo.outright o WITH(NOLOCK) ON b.matchid = o.orid
 				LEFT JOIN [bodb02].dbo.League lo WITH (NOLOCK) ON lo.leagueid = o.leagueid
 				LEFT JOIN [bodb02].dbo.VSRaceInfo vs WITH(NOLOCK) ON b.matchid = vs.EventID
 				LEFT JOIN [bodb_licensee].dbo.LicenseeBATransaction_active AS lba WITH (NOLOCK) ON b.transid = lba.transid
-				LEFT JOIN #tmpSabaSporttype saba ON s.ProductId = 1 AND saba.Sporttype = m.Sporttype AND saba.LeagueGroupID = l.LeagueGroupID
+				LEFT JOIN #tmpSabaSporttype saba ON s.ProductId = 1 AND saba.Sporttype = l.Sporttype AND saba.LeagueGroupID = l.LeagueGroupID
 				OUTER APPLY (
 					SELECT 
 						IIF(lba.TransID IS NOT NULL, 1, 0) AS IsBA,
@@ -610,7 +612,7 @@ BEGIN
 
 		SELECT @rptFromDate = @FromDate
 			, @rptToDate	= IIF(@ToDate >= @MovebetDay, @MovebetDay, @ToDate);
-
+			
 		INSERT INTO #rptData (GroupBy, BreakBy, ParentKey,
 			BetCount, Turnover, NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, AmtDueToBA, BetEffective
 			,------BASE
@@ -666,7 +668,10 @@ BEGIN
 						ELSE 0
 					END) AS AmtDueToBA,
 					-(CASE WHEN b.Product3rdId = 3 THEN 0 ELSE b.winlost END) AS [LicWinloss],
-					ISNULL(saba.SabaSportType, b.Sporttype) AS Sporttype,
+					ISNULL(CASE 
+								WHEN b.winlostdate < saba.CutOffDate THEN b.sporttype
+								ELSE saba.SabaSportType 
+							END, b.Sporttype) AS Sporttype,
 					CASE 
 						WHEN b.Product3rdId IN (63,69) THEN 0
 						WHEN @IsViewCOOnlyCheck = 1 AND b.Product3rdId = 0 AND @SBBACheck & 4 = 4 AND b.TicketType = 1 THEN -99 --Cashout 
