@@ -29,6 +29,7 @@ AS
 		- 20230130@Evan: Integrate Jili [RedmineID: #182914]
 	    - 20230303@Evan: Remove inactive products CB, FW, GD, GDG [Redmine: 181424]  
 		- 20230523@Evan: Integrate YeeBet LC [RedmineID: #187947]
+		- 20230719@Evan: Missing remove inactive products GDG [RedmineID: #191000]
 
 	Param's Explanation:
 		+ @CustID: SuperID
