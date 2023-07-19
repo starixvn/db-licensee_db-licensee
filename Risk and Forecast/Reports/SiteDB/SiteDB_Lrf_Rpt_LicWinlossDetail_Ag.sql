@@ -29,6 +29,7 @@ AS
 		- 20230130@Evan: Integrate Jili [RedmineID: #182914]
 	    - 20230303@Evan: Remove inactive products CB, FW, GD, GDG [Redmine: 181424]  
 		- 20230523@Evan: Integrate YeeBet LC [RedmineID: #187947]
+		- 20230719@Evan: Missing remove inactive products GDG [RedmineID: #191000]
 
 	Param's Explanation:
 		+ @CustID: SuperID
@@ -74,7 +75,6 @@ BEGIN
 		TurnoverSAG			MONEY,
 		TurnoverPGS			MONEY,
 		TurnoverJK			MONEY,
-		TurnoverGDG			MONEY,
 		TurnoverSLT			MONEY,
 		TurnoverHB			MONEY,
 		TurnoverWM			MONEY,
@@ -300,7 +300,6 @@ BEGIN
 				0 AS turnoverSAG,
 				0 AS turnoverPGS,
 				0 AS turnoverJK,
-				0 AS turnoverGDG,
 				0 AS turnoverSLT,
 				0 AS turnoverHB,
 				0 AS turnoverWM,
@@ -427,7 +426,6 @@ BEGIN
 				0 AS turnoverSAG,
 				0 AS turnoverPGS,
 				0 AS turnoverJK,
-				0 AS turnoverGDG,
 				0 AS turnoverSLT,
 				0 AS turnoverHB,
 				0 AS turnoverWM,
@@ -539,7 +537,6 @@ BEGIN
 				0 AS turnoverSAG,
 				0 AS turnoverPGS,
 				0 AS turnoverJK,
-				0 AS turnoverGDG,
 				0 AS turnoverSLT,
 				0 AS turnoverHB,
 				0 AS turnoverWM,
@@ -907,7 +904,6 @@ BEGIN
 				0 AS turnoverSAG,
 				0 AS turnoverPGS,
 				0 AS turnoverJK,
-				0 AS turnoverGDG,
 				0 AS turnoverSLT,
 				0 AS turnoverHB,
 				0 AS turnoverWM,
@@ -1041,7 +1037,6 @@ BEGIN
 		CAST(SUM(TurnoverSAG	*e.Rate)	AS MONEY)		AS TurnoverSAG,
 		CAST(SUM(TurnoverPGS	*e.Rate)	AS MONEY)		AS TurnoverPGS,
 		CAST(SUM(TurnoverJK		*e.Rate)	AS MONEY)		AS TurnoverJK,
-		CAST(SUM(TurnoverGDG	*e.Rate)	AS MONEY)		AS TurnoverGDG,
 		CAST(SUM(TurnoverSLT	*e.Rate)	AS MONEY)		AS TurnoverSLT,
 		CAST(SUM(TurnoverHB		*e.Rate)	AS MONEY)		AS TurnoverHB,
 		CAST(SUM(TurnoverWM		*e.Rate)	AS MONEY)		AS TurnoverWM,
@@ -1137,7 +1132,6 @@ BEGIN
 		CAST(SUM(TurnoverSAG	*e.USD)	AS MONEY)		AS TurnoverSAGUSD,
 		CAST(SUM(TurnoverPGS	*e.USD)	AS MONEY)		AS TurnoverPGSUSD,
 		CAST(SUM(TurnoverJK		*e.USD)	AS MONEY)		AS TurnoverJKUSD,
-		CAST(SUM(TurnoverGDG	*e.USD)	AS MONEY)		AS TurnoverGDGUSD,
 		CAST(SUM(TurnoverSLT	*e.USD)	AS MONEY)		AS TurnoverSLTUSD,
 		CAST(SUM(TurnoverHB		*e.USD)	AS MONEY)		AS TurnoverHBUSD,
 		CAST(SUM(TurnoverWM		*e.USD)	AS MONEY)		AS TurnoverWMUSD,
@@ -1221,7 +1215,6 @@ BEGIN
 		CAST(SUM(TurnoverSAG	*e.EUR)	AS MONEY)		AS TurnoverSAGEUR,
 		CAST(SUM(TurnoverPGS	*e.EUR)	AS MONEY)		AS TurnoverPGSEUR,
 		CAST(SUM(TurnoverJK		*e.EUR)	AS MONEY)		AS TurnoverJKEUR,
-		CAST(SUM(TurnoverGDG	*e.EUR)	AS MONEY)		AS TurnoverGDGEUR,
 		CAST(SUM(TurnoverSLT	*e.EUR)	AS MONEY)		AS TurnoverSLTEUR,
 		CAST(SUM(TurnoverHB		*e.EUR)	AS MONEY)		AS TurnoverHBEUR,
 		CAST(SUM(TurnoverWM		*e.EUR)	AS MONEY)		AS TurnoverWMEUR,
@@ -1305,7 +1298,6 @@ BEGIN
 		CAST(SUM(TurnoverSAG	*e.GBP)	AS MONEY)		AS TurnoverSAGGBP,
 		CAST(SUM(TurnoverPGS	*e.GBP)	AS MONEY)		AS TurnoverPGSGBP,
 		CAST(SUM(TurnoverJK		*e.GBP)	AS MONEY)		AS TurnoverJKGBP,
-		CAST(SUM(TurnoverGDG	*e.GBP)	AS MONEY)		AS TurnoverGDGGBP,
 		CAST(SUM(TurnoverSLT	*e.GBP)	AS MONEY)		AS TurnoverSLTGBP,
 		CAST(SUM(TurnoverHB		*e.GBP)	AS MONEY)		AS TurnoverHBGBP,
 		CAST(SUM(TurnoverWM		*e.GBP)	AS MONEY)		AS TurnoverWMGBP,
@@ -1389,7 +1381,6 @@ BEGIN
 		CAST(SUM(TurnoverSAG	*e.DefaultRate)	AS MONEY)		AS TurnoverSAG,
 		CAST(SUM(TurnoverPGS	*e.DefaultRate)	AS MONEY)		AS TurnoverPGS,
 		CAST(SUM(TurnoverJK		*e.DefaultRate)	AS MONEY)		AS TurnoverJK,
-		CAST(SUM(TurnoverGDG	*e.DefaultRate)	AS MONEY)		AS TurnoverGDG,
 		CAST(SUM(TurnoverSLT	*e.DefaultRate)	AS MONEY)		AS TurnoverSLT,
 		CAST(SUM(TurnoverHB		*e.DefaultRate)	AS MONEY)		AS TurnoverHB,
 		CAST(SUM(TurnoverWM		*e.DefaultRate)	AS MONEY)		AS TurnoverWM,
