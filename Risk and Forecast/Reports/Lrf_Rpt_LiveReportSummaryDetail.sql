@@ -117,7 +117,7 @@ AS
 		- 20230130@Evan: Integrate Jili [RedmineID: #182914]
 	    - 20230303@Evan: Remove inactive products CB, FW, GD, GDG [Redmine: 181424]  
 		- 20230523@Evan: Integrate YeeBet LC [RedmineID: #187947]
-
+		- 20230626@Evan: Integrate MG-RNG (Normal+Promotion Game) [RedmineID: #189988]
 	Param's Explanation:
 		+ @Liveindicator: indicate that whether the report will get live data or not
 			+ 0: Non - Live data only
@@ -248,7 +248,7 @@ BEGIN
 		END
 
 		--Not BA, -- exclude PP Prize 4300, 4299, 4298, 4297, 1906
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'SLT', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM', 'VS3', 'FGGL', 'MXG', 'JIG', 'YB'))
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'SLT', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM', 'VS3', 'FGGL', 'MXG', 'JIG', 'YB', 'MGRNG'))
 		BEGIN
 			SELECT	@sql = @sql + '--Get data from bettrans for non - BA' + CHAR(13)
 
@@ -289,6 +289,7 @@ BEGIN
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','MXG')) = 1 THEN 'WHEN b.bettype BETWEEN 5401 AND 5499 THEN ''MXG''' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','JIG')) = 1 THEN 'WHEN b.bettype BETWEEN 5100 AND 5299 THEN ''JIG''' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','YB')) = 1 THEN 'WHEN b.bettype BETWEEN 3151 AND 3200 THEN ''YB''' + CHAR(13) ELSE '' END
+								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','MGRNG')) = 1 THEN 'WHEN b.bettype BETWEEN 8400 AND 8699 THEN ''MGRNG''' + CHAR(13) ELSE '' END
 								+ 'END AS ProductCode,' + CHAR(13)
 								+ 'b.bettype,' + CHAR(13)
 								+ 'SUM(stake) turnover,' + CHAR(13)
@@ -346,6 +347,7 @@ BEGIN
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','MXG')) = 1 THEN 'OR b.bettype BETWEEN 5401 AND 5499' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','JIG')) = 1 THEN 'OR b.bettype BETWEEN 5100 AND 5299' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','YB')) = 1 THEN 'OR b.bettype BETWEEN 3151 AND 3200' + CHAR(13) ELSE '' END
+								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','MGRNG')) = 1 THEN 'OR b.bettype BETWEEN 8400 AND 8699' + CHAR(13) ELSE '' END
 								+ ') ' + CHAR(13)
 								+ 'GROUP BY  b.winlostdate, t.currency, b.bettype,' + CHAR(13)
 								+ 'CASE' + CHAR(13)		
@@ -383,6 +385,7 @@ BEGIN
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','MXG')) = 1 THEN 'WHEN b.bettype BETWEEN 5401 AND 5499 THEN ''MXG''' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','JIG')) = 1 THEN 'WHEN b.bettype BETWEEN 5100 AND 5299 THEN ''JIG''' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','YB')) = 1 THEN 'WHEN b.bettype BETWEEN 3151 AND 3200 THEN ''YB''' + CHAR(13) ELSE '' END
+								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','MGRNG')) = 1 THEN 'WHEN b.bettype BETWEEN 8400 AND 8699 THEN ''MGRNG''' + CHAR(13) ELSE '' END
 								+ 'END' + CHAR(13)
 
 			--SB for parlay
@@ -504,7 +507,7 @@ BEGIN
 		END
 
 		--Not BA, -- exclude PP Prize 4300, 4299, 4298, 4297
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'SLT', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM', 'VS3', 'FGGL', 'MXG', 'JIG', 'YB'))
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'SLT', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM', 'VS3', 'FGGL', 'MXG', 'JIG', 'YB', 'MGRNG'))
 		BEGIN
 			SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
 								+ 'SELECT b.rptDate, b.currencyID,' + CHAR(13)
@@ -543,6 +546,7 @@ BEGIN
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','MXG')) = 1 THEN 'WHEN b.bettype BETWEEN 5401 AND 5499 THEN ''MXG''' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','JIG')) = 1 THEN 'WHEN b.bettype BETWEEN 5100 AND 5299 THEN ''JIG''' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','YB')) = 1 THEN 'WHEN b.bettype BETWEEN 3151 AND 3200 THEN ''YB''' + CHAR(13) ELSE '' END
+								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','MGRNG')) = 1 THEN 'WHEN b.bettype BETWEEN 8400 AND 8699 THEN ''MGRNG''' + CHAR(13) ELSE '' END
 								+ 'END AS ProductCode,' + CHAR(13)
 								+ 'b.bettype,' + CHAR(13)
 								+ 'SUM(b.turnover) turnover,' + CHAR(13)
@@ -597,6 +601,7 @@ BEGIN
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','MXG')) = 1 THEN 'OR b.bettype BETWEEN 5401 AND 5499' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','JIG')) = 1 THEN 'OR b.bettype BETWEEN 5100 AND 5299' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','YB')) = 1 THEN 'OR b.bettype BETWEEN 3151 AND 3200' + CHAR(13) ELSE '' END
+								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','MGRNG')) = 1 THEN 'OR b.bettype BETWEEN 8400 AND 8699' + CHAR(13) ELSE '' END
 								+ ') ' + CHAR(13)
 								+ 'GROUP BY b.rptDate, b.currencyID, b.bettype,' + CHAR(13)
 								+ 'CASE' + CHAR(13)		
@@ -634,6 +639,7 @@ BEGIN
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','MXG')) = 1 THEN 'WHEN b.bettype BETWEEN 5401 AND 5499 THEN ''MXG''' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','JIG')) = 1 THEN 'WHEN b.bettype BETWEEN 5100 AND 5299 THEN ''JIG''' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','YB')) = 1 THEN 'WHEN b.bettype BETWEEN 3151 AND 3200 THEN ''YB''' + CHAR(13) ELSE '' END
+								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','MGRNG')) = 1 THEN 'WHEN b.bettype BETWEEN 8400 AND 8699 THEN ''MGRNG''' + CHAR(13) ELSE '' END
 								+ 'END' + CHAR(13)
 
 			-- parlay for SB

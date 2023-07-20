@@ -24,6 +24,7 @@ AS
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20221122@Evan: Integrate Player Tips [RedmineID: #180590]
 		- 20230208@Evan: Inteagrate SG promotion prize [RedmineID: #183497]
+		- 20230626@Evan: Integrate MG-RNG (Promotion Game) [RedmineID: #189988]
 
 	Param's Explanation:
 		+ @PromotionTypeList: promotion type list separated by ','
@@ -50,6 +51,7 @@ AS
 			- 6603: Vgaming - Jackpot Contribution (BetType: 3898)
 			- 7401: Player Tips (BetType: 8700)
 			- 3603: SG - Promotion Prize (BetType: 4598)
+			- 7301: MGRNG - Promotion Prize (BetType: 8695)
 		+ @ReportType: 1: Daily, 2: Monthly
 */
 
@@ -137,6 +139,7 @@ BEGIN
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,6602,%' AND BetType = 3899 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,6603,%' AND BetType = 3898 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,7401,%' AND BetType = 8700 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,7301,%' AND BetType = 8695 THEN 1
 				ELSE 0
 			END
 

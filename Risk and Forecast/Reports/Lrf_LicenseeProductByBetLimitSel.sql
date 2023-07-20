@@ -29,6 +29,7 @@ AS
 		- 20230130@Evan: Integrate Jili [RedmineID: #182914]
 	    - 20230303@Evan: Remove inactive products CB, FW, GD, GDG [Redmine: 181424]  
     	- 20230523@Evan: Integrate YeeBet LC [RedmineID: #187947]
+		- 20230626@Evan: Integrate MG-RNG (Normal+Promotion Game) [RedmineID: #189988]
 */
 
  /*
@@ -145,7 +146,8 @@ BEGIN
 			70,--	FGG	
 			60,--	MaxGame
 			75,--	Jili
-			76--	YeeBet
+			76,--	YeeBet
+			73 --	MG-RNG
 		)
 	ORDER BY ProductID ASC
 END

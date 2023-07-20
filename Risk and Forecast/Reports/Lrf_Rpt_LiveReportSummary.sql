@@ -112,6 +112,7 @@ AS
 		- 20230130@Evan: Integrate Jili [RedmineID: #182914]
 	    - 20230303@Evan: Remove inactive products CB, FW, GD, GDG [Redmine: 181424]  
 		- 20230523@Evan: Integrate YeeBet LC [RedmineID: #187947]
+		- 20230626@Evan: Integrate MG-RNG (Normal+Promotion Game) [RedmineID: #189988]
 
 	Param's Explanation:
 		+ @IsLive : indicate that whether the report will get live data or not
@@ -355,7 +356,7 @@ BEGIN
 		END
 
 		--Others
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'NG', 'VS', 'KN', 'CS', 'VB', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM', 'VS3', 'FGGL', 'MXG', 'JIG', 'YB'))
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'NG', 'VS', 'KN', 'CS', 'VB', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM', 'VS3', 'FGGL', 'MXG', 'JIG', 'YB', 'MGRNG'))
 		BEGIN
 			INSERT INTO #tmpWinloss
 			SELECT
@@ -393,6 +394,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 5401 AND 5499 THEN 'MXG'
 					WHEN b.bettype BETWEEN 5100 AND 5299 THEN 'JIG'
 					WHEN b.bettype BETWEEN 3151 AND 3200 THEN 'YB'
+					WHEN b.bettype BETWEEN 8400 AND 8699 THEN 'MGRNG'
 					END AS ProductCode,
 				SUM(stake) turnover,
 				SUM(b.winlost - b.actual_stake) AS Winlost,
@@ -441,6 +443,7 @@ BEGIN
 					OR b.bettype BETWEEN 5401 AND 5499 -- MXG
 					OR b.bettype BETWEEN 5100 AND 5299 -- JIG
 					OR b.bettype BETWEEN 3151 AND 3200 -- YB
+					OR b.bettype BETWEEN 8400 AND 8699 -- MGRNG
 				)
 				AND (b.liveindicator = @Liveindicator OR @Liveindicator = 2)
 				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
@@ -479,6 +482,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 5401 AND 5499 THEN 'MXG'
 					WHEN b.bettype BETWEEN 5100 AND 5299 THEN 'JIG'
 					WHEN b.bettype BETWEEN 3151 AND 3200 THEN 'YB'
+					WHEN b.bettype BETWEEN 8400 AND 8699 THEN 'MGRNG'
 				END
 		END
 	END
@@ -563,7 +567,7 @@ BEGIN
 		END
 
 		-- Others
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM', 'VS3', 'FGGL', 'MXG', 'JIG', 'YB'))
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM', 'VS3', 'FGGL', 'MXG', 'JIG', 'YB', 'MGRNG'))
 		BEGIN
 			INSERT INTO #tmpWinloss
 			SELECT 
@@ -611,6 +615,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 5401 AND 5499 THEN 'MXG'
 					WHEN b.bettype BETWEEN 5100 AND 5299 THEN 'JIG'
 					WHEN b.bettype BETWEEN 3151 AND 3200 THEN 'YB'
+					WHEN b.bettype BETWEEN 8400 AND 8699 THEN 'MGRNG'
 				END AS ProductCode,
 				SUM(b.turnover) turnover,
 				SUM(b.winloss) winlost,
@@ -680,6 +685,7 @@ BEGIN
 					OR b.bettype BETWEEN 5401 AND 5499 -- MXG
 					OR b.bettype BETWEEN 5100 AND 5299 -- JIG
 					OR b.bettype BETWEEN 3151 AND 3200 -- YB
+					OR b.bettype BETWEEN 8400 AND 8699 -- MGRNG
 					)
 				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 			GROUP BY
@@ -727,6 +733,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 5401 AND 5499 THEN 'MXG'
 					WHEN b.bettype BETWEEN 5100 AND 5299 THEN 'JIG'
 					WHEN b.bettype BETWEEN 3151 AND 3200 THEN 'YB'
+					WHEN b.bettype BETWEEN 8400 AND 8699 THEN 'MGRNG'
 				END
 		END
 
