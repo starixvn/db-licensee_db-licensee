@@ -23,6 +23,7 @@ AS
 		   - 20230224@Winfred: NAP LM - Enhance Bet Setting function for AM to use [redmine:#178105]
 		   - 20230629@Winfred: NAP LM - PRO - Licensee Bet Setting - Currency filter has not taken data according to Currency Code [redmine:#190436]
 		   - 20230707@Winfred: NAP LM - Insert icorrect data in Dep_CustBetSettingGame_Member for players have isGroupBetLimit = 1 [redmine:#191020]
+		   - 20230717@Winfred: Enhance performace  [redmine:#191470]
     Param's Explanation:
 		- @CustID : super ID
 		- @AgentID : 0 for All Subsidiary AND <> 0 for only Specific Subsidiary 
@@ -39,7 +40,7 @@ AS
 BEGIN
 	SET NOCOUNT ON
 
-	DECLARE @xml XML, @iDoc INT,@Site NVARCHAR(100),@CurrencyID INT, @Currency NVARCHAR(100) ,@Subsidiary NVARCHAR(100), @ErrName VARCHAR(Max) = ''
+	DECLARE @xml XML, @iDoc INT,@Site VARCHAR(10),@CurrencyID INT, @Currency NVARCHAR(100) ,@Subsidiary NVARCHAR(100), @ErrName VARCHAR(Max) = ''
 	, @startRun DATETIME, @endRun DATETIME, @duration INT, @ProductID SMALLINT = 1, @logSpData  NVARCHAR(MAX), @logSpData_Old  NVARCHAR(MAX), @ActionID INT, @LicenseeID INT, @CustIDList VARCHAR(MAX), @ActionDefaultID SMALLINT, @IsNotDBS BIT  = 0, @UplineUpdate SMALLINT = 0
 	
 	CREATE TABLE #SportBettypeFilter (ProductID TINYINT, Sporttype SMALLINT, Bettype SMALLINT, IsLive BIT, SettingType TINYINT)
@@ -52,19 +53,21 @@ BEGIN
 	CREATE TABLE #NewDefault(SportType INT,Bettype INT,MinBet MONEY,MaxBet MONEY,MaxPerMatch MONEY,MaxPerNumber	MONEY,MaxPayoutPerMatch	MONEY,PRIMARY KEY(Sporttype ,Bettype))
 
 	SET @startRun = GETDATE()
-	SELECT @ErrCode = 0, @ErrMsg =''
-	IF @ExistedMember=1
-	BEGIN
-		EXEC DBEXT.bodb02.dbo.NAP_LM_CustomerSelCheckAllowedDownlines
-		@custid = @CustID
-		,@Language = 'E'
+			
+	EXEC NAP_LM_LicenseeBetSettingCheck			
+		@CustID = @CustID	
+		,@AgentID = @AgentID
+		,@UpdBetLimit = @UpdBetLimit
+		,@Option = @Option
+		,@ExistedMember = @ExistedMember
+		,@IsNewMember = @IsNewMember
+		,@UpdNewMember = @UpdNewMember
+		,@ErrCode = @ErrCode OUTPUT
 		,@ErrMsg = @ErrMsg OUTPUT
-		,@ErrCode=@ErrCode OUTPUT
-	END
-
+		
 	IF @ErrCode <> 0 
-		RETURN 
-	
+		RETURN;
+
 	BEGIN TRY
 		IF @UpdBetLimit IS NOT NULL AND @UpdBetLimit <> ''
 		BEGIN
@@ -158,20 +161,6 @@ BEGIN
 		--checking sportbook
 		BEGIN
 			SET @ProductID = 1
-			
-			EXEC NAP_LM_LicenseeBetSettingCheck			
-				@CustID = @CustID	
-				,@AgentID = @AgentID
-				,@UpdBetLimit = @UpdBetLimit
-				,@Option = @Option
-				,@ExistedMember = @ExistedMember
-				,@IsNewMember = @IsNewMember
-				,@UpdNewMember = @UpdNewMember
-				,@ErrCode = @ErrCode OUTPUT
-				,@ErrMsg = @ErrMsg OUTPUT
-		
-			IF @ErrCode <> 0 
-				RETURN;
 		END	
 		ELSE
 		BEGIN
