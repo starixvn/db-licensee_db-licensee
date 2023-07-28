@@ -7,6 +7,7 @@ ALTER PROCEDURE [dbo].[NAP_LM_LicenseeBetSettingCheck]
 	,@ExistedMember BIT = 0
 	,@IsNewMember BIT = 0	
 	,@UpdNewMember VARCHAR(MAX) = ''
+	,@ExistedDbsCurrency INT = 0 OUTPUT
 	,@ErrCode INT = 0 OUTPUT
 	,@ErrMsg VARCHAR(1000) = '' OUTPUT
 AS
@@ -20,12 +21,16 @@ AS
 		   - 20230224@Winfred: NAP LM - Enhance Bet Setting function for AM to use [redmine:#178105]
 		   - 20230630@Winfred: When update Currency Bet Setting in case All Subsidiaries + All players, system check violated with its own players [redmine:#190506]
 		   - 20230717@Winfred: Enhance performace  [redmine:#191470]
+		   - 20230722@Winfred: NAP LM - Enhance Bet Setting function for AM to use - New Case [redmine:#178105]
     Param's Explanation:
 		- @CustID : super ID
 		- @AgentID : 0 for All Subsidiary AND <> 0 for only Specific Subsidiary 
 		- @Option :  0 for Currency Bet Setting OR 1 for Player Bet Setting
 		- @ExistedMember : existing player 
 		- @IsNewMember : Default Bet Setting 
+		- @ExistedDbsCurrency : 1 - Exists Default Bet Setting of Currency
+								2 - Don't Exists Default Bet Setting of Currency
+								3 - Exists Default Bet Setting of specific Subsidiary
 		- @UpdBetLimit :
 		<ROOT>
 				<BL SportType=1 Bettype=1 MinBet=100 MaxBet=1000 MaxPerMatch=1000 MaxPerNumber=1000 MaxPayoutPerMatch=1000
@@ -246,30 +251,57 @@ BEGIN
 				END	
 			END
 		END
+		
+		IF @AgentID = 0 AND EXISTS (SELECT TOP 1 1 
+					FROM Dep_CustBetLimit_Special cs WITH(NOLOCK)
+							INNER JOIN #SportTypeBetType s ON cs.SportType = s.SportType AND cs.BetType = s.Bettype
+					WHERE cs.CurrencyID = @CurrencyID AND cs.Site = @Site AND cs.MaxBet IS NOT NULL AND cs.AgentID IS NULL	)
+		BEGIN
+			SET @ExistedDbsCurrency = 1
+		END
+		ELSE IF @AgentID <> 0 AND EXISTS (SELECT TOP 1 1 
+					FROM Dep_CustBetLimit_Special cs WITH(NOLOCK)
+							INNER JOIN #SportTypeBetType s ON cs.SportType = s.SportType AND cs.BetType = s.Bettype
+					WHERE cs.CurrencyID = @CurrencyID AND cs.Site = @Site AND cs.MaxBet IS NOT NULL AND cs.AgentID = @AgentID	)
+		BEGIN
+			SET @ExistedDbsCurrency = 3
+		END
 
 		IF @UpdNewMember = ''
 		BEGIN
-			IF @IsNewMember = 0 AND @ExistedMember = 0
+			IF  @IsNewMember = 0 AND @ExistedMember = 0
 			BEGIN
+
 				SELECT TOP 1 @ErrCode = CASE WHEN cs.AgentID IS NULL THEN 106 ELSE  103 END
 				FROM Dep_CustBetLimit_Special cs WITH(NOLOCK)
 					INNER JOIN #SportTypeBetType s ON cs.SportType = s.SportType AND cs.BetType = s.Bettype	
 				WHERE cs.CurrencyID = @CurrencyID AND cs.Site = @Site AND cs.MaxBet IS NOT NULL AND cs.MaxPerMatch IS NOT NULL
 					AND 1 = CASE WHEN @AgentID = 0 AND cs.AgentID IS NULL THEN 1  
 								 WHEN @AgentID <> 0  AND cs.AgentID = @AgentID THEN 1  
-								 WHEN @AgentID <> 0 AND cs.AgentID IS NULL AND (NOT EXISTS(SELECT TOP 1 1  FROM Dep_CustBetLimit_Special WITH(NOLOCK) 
-																				WHERE CurrencyID = @CurrencyID AND Site = @Site AND MaxBet IS NOT NULL 
-																				AND AgentID = @AgentID AND SportType = s.SportType AND BetType = s.Bettype)  
-																				) THEN 1 
 								 ELSE 0 END
 					AND 1 = CASE WHEN ((s.MinBet <= s.MaxBet AND s.MaxBet <= s.MaxPerMatch AND s.MaxPerMatch <= s.MaxPayoutPerMatch) AND 
 							(s.MinBet <= cs.MinBet AND s.MaxBet >= cs.MaxBet AND s.MaxPerMatch >= cs.MaxPerMatch AND s.MaxPayoutPerMatch >= cs.MaxPayoutPerMatch)) THEN 0 ELSE 1 END
 
 				IF @ErrCode <> 0
 				BEGIN			
-					SELECT @ErrMsg = 'The value bet setting you just input is violating its Default Bet Setting. Please review and update Default Bet Setting!'
+					SELECT @ErrMsg = 'The value bet setting you just input is violating its Default Bet Setting. Please review and update Default Bet Setting!' -- CB-03
 					RETURN						
 				END	
+				ELSE 
+				BEGIN
+					IF @AgentID = 0
+					BEGIN
+						IF @ExistedDbsCurrency IN ( 1 ,3 )
+						BEGIN
+							SELECT @ErrMsg = 'Please check value of Default Bet Setting which is applied for new players!' -- CB-04
+						END
+						ELSE
+						BEGIN
+							SET @ExistedDbsCurrency = 2  -- CB-05
+							SELECT @ErrMsg = 'Please add new value of Default Bet Setting which is applied for new players!' -- CB-05
+						END
+					END
+				END
 			END
 
 			IF @AgentID <> 0 AND @IsNewMember = 1
@@ -289,50 +321,45 @@ BEGIN
 				END	
 			END 
 		END
-
-		IF @UpdNewMember <> '' AND @IsNewMember = 1
-		BEGIN
-			IF @AgentID <> 0
-			BEGIN
-				SELECT TOP 1 @ErrCode = 108
-				FROM Dep_CustBetLimit_Special cs WITH(NOLOCK)
-					INNER JOIN #SportTypeBetType s ON cs.SportType = s.SportType AND cs.BetType = s.Bettype	
-					INNER JOIN #NewDefault n ON cs.SportType = n.SportType AND cs.BetType = n.Bettype
-				WHERE cs.CurrencyID = @CurrencyID AND cs.Site = @Site AND cs.MaxBet IS NOT NULL AND cs.MaxPerMatch IS NOT NULL
-					AND EXISTS(SELECT TOP 1 1  FROM Dep_CustBetLimit_Special WITH(NOLOCK) 
-																WHERE CurrencyID = @CurrencyID AND Site = @Site AND MaxBet IS NOT NULL 
-																AND AgentID IS NULL AND SportType = s.SportType AND BetType = s.Bettype)  
-																AND cs.AgentID = @AgentID 
-					AND 1 = CASE WHEN ((s.MinBet <= s.MaxBet AND s.MaxBet <= s.MaxPerMatch AND s.MaxPerMatch <= s.MaxPayoutPerMatch) AND 
-									   (n.MinBet <= n.MaxBet AND n.MaxBet <= n.MaxPerMatch AND n.MaxPerMatch <= n.MaxPayoutPerMatch) AND
-						(n.MinBet <= s.MinBet AND n.MaxBet >= s.MaxBet AND n.MaxPerMatch >= s.MaxPerMatch AND n.MaxPayoutPerMatch >= s.MaxPayoutPerMatch)) THEN 0 ELSE 1 END
-
-				IF @ErrCode <> 0
-				BEGIN			
-					SELECT @ErrMsg = 'The value bet setting you just input is violating its Default Bet Setting. Please review and update Default Bet Setting!'
-					RETURN						
-				END	
-			END
-		END
-
-		SELECT TOP 1 @ErrCode = 103
-		FROM #SportTypeBetType cs 
-			INNER JOIN #NewDefault s ON cs.SportType = s.SportType AND cs.BetType = s.Bettype	
-		WHERE  s.MaxBet IS NOT NULL
-				AND 1 = CASE WHEN @AgentID = 0 THEN 1 
-							 WHEN @AgentID <> 0 AND @IsNewMember = 0 AND @ExistedMember = 0 THEN 1 ELSE 0 END 
-				AND 1 = CASE WHEN ((s.MinBet <= s.MaxBet AND s.MaxBet <= s.MaxPerMatch AND s.MaxPerMatch <= s.MaxPayoutPerMatch) AND 
-					(s.MinBet >= cs.MinBet AND s.MaxBet <= cs.MaxBet AND s.MaxPerMatch <= cs.MaxPerMatch AND s.MaxPayoutPerMatch <= cs.MaxPayoutPerMatch)) THEN 0 ELSE 1 END
-
-		IF @ErrCode <> 0
-		BEGIN			
-			SELECT @ErrCode = 103,
-				@ErrMsg = 'The value bet setting you just input is violating its Default Bet Setting. Please review and update Default Bet Setting!'
-			RETURN						
-		END	
 		
 		IF @IsNewMember = 0 AND @ExistedMember = 0
 		BEGIN
+			IF @AgentID = 0 AND @UpdNewMember <> ''
+			BEGIN
+				INSERT INTO #Subsidiary(custid, username)
+				SELECT a.custid, a.username
+				FROM #Upline a
+					CROSS APPLY ( 
+								SELECT TOP 1 AgentID
+								FROM #NewDefault s 
+									CROSS APPLY (SELECT TOP 1 AgentID AS AgentID, SportType, BetType, MinBet, MaxBet, MaxPerMatch, MaxPerNumber, MaxPayoutPerMatch
+												FROM Dep_CustBetLimit_Special m WITH(NOLOCK)
+												WHERE a.custid = m.AgentID AND m.Site = @Site AND m.CurrencyID = @CurrencyID AND  m.SportType = s.SportType AND m.Bettype = s.Bettype
+												) cs
+								WHERE cs.MaxBet IS NOT NULL
+									AND 1 = CASE WHEN ((s.MinBet <= s.MaxBet AND s.MaxBet <= s.MaxPerMatch AND s.MaxPerMatch <= s.MaxPayoutPerMatch) AND 
+									(s.MinBet <= cs.MinBet AND s.MaxBet >= cs.MaxBet AND s.MaxPerMatch >= cs.MaxPerMatch AND s.MaxPayoutPerMatch >= cs.MaxPayoutPerMatch)) THEN 0 ELSE 1 END
+
+						) KQ
+	
+				UPDATE a
+				SET a.username = a.username + CASE WHEN NULLIF(s.OperatorID,'') IS NOT NULL THEN ' ('+s.OperatorID+')'
+									WHEN ISNULL(s.OperatorID,'') = '' AND s.AgentID IS NOT NULL THEN ' (sub)'
+									ELSE '' END
+				FROM #Subsidiary a
+					LEFT JOIN [SiteConfig].[dbo].[Operator] s WITH(NOLOCK) ON a.Custid=s.AgentID
+
+				SET @ErrName = (SELECT STRING_AGG(username, ', ') WITHIN GROUP (ORDER BY username) FROM #Subsidiary)
+
+				IF @ErrName <> ''
+				BEGIN			
+					SELECT @ErrCode = 109,
+						@ErrMsg = 'The new Default Bet Setting of Currency is violated with Default Bet Setting of Subsidiary. Please review and update again!
+									List of Subsidiaries whose DBS are violated ' + @ErrName
+					RETURN						
+				END	
+			END
+			-- Update DBS and don't Update Current Bet limit
 			SELECT TOP 1 @ErrCode = 103
 			FROM #Upline a
 				CROSS APPLY ( 
@@ -356,6 +383,64 @@ BEGIN
 				RETURN						
 			END	
 		END
+
+		IF @UpdNewMember <> ''  AND @AgentID <> 0
+		BEGIN
+			IF @IsNewMember = 1
+			BEGIN
+				SELECT TOP 1 @ErrCode = 108
+				FROM Dep_CustBetLimit_Special cs WITH(NOLOCK)
+					INNER JOIN #SportTypeBetType s ON cs.SportType = s.SportType AND cs.BetType = s.Bettype	
+					INNER JOIN #NewDefault n ON cs.SportType = n.SportType AND cs.BetType = n.Bettype
+				WHERE cs.CurrencyID = @CurrencyID AND cs.Site = @Site AND cs.MaxBet IS NOT NULL AND cs.MaxPerMatch IS NOT NULL
+					AND EXISTS(SELECT TOP 1 1  FROM Dep_CustBetLimit_Special WITH(NOLOCK) 
+																WHERE CurrencyID = @CurrencyID AND Site = @Site AND MaxBet IS NOT NULL 
+																AND AgentID IS NULL AND SportType = s.SportType AND BetType = s.Bettype)  
+																AND cs.AgentID = @AgentID 
+					AND 1 = CASE WHEN ((s.MinBet <= s.MaxBet AND s.MaxBet <= s.MaxPerMatch AND s.MaxPerMatch <= s.MaxPayoutPerMatch) AND 
+									   (n.MinBet <= n.MaxBet AND n.MaxBet <= n.MaxPerMatch AND n.MaxPerMatch <= n.MaxPayoutPerMatch) AND
+						(n.MinBet <= s.MinBet AND n.MaxBet >= s.MaxBet AND n.MaxPerMatch >= s.MaxPerMatch AND n.MaxPayoutPerMatch >= s.MaxPayoutPerMatch)) THEN 0 ELSE 1 END
+
+				IF @ErrCode <> 0
+				BEGIN			
+					SELECT @ErrMsg = 'The value bet setting you just input is violating its Default Bet Setting. Please review and update Default Bet Setting!' -- CB-03
+					RETURN						
+				END	
+			END
+			ELSE
+			BEGIN
+				-- Update DBS of Subsidiary and it violates with DBS of Currency
+				SELECT TOP 1 @ErrCode = 110
+				FROM Dep_CustBetLimit_Special cs WITH(NOLOCK)
+					INNER JOIN #NewDefault n ON cs.SportType = n.SportType AND cs.BetType = n.Bettype
+				WHERE cs.CurrencyID = @CurrencyID AND cs.Site = @Site AND cs.MaxBet IS NOT NULL AND cs.MaxPerMatch IS NOT NULL AND cs.AgentID IS NULL 
+					AND 1 = CASE WHEN ((n.MinBet <= n.MaxBet AND n.MaxBet <= n.MaxPerMatch AND n.MaxPerMatch <= n.MaxPayoutPerMatch) AND 
+									   (n.MinBet <= n.MaxBet AND n.MaxBet <= n.MaxPerMatch AND n.MaxPerMatch <= n.MaxPayoutPerMatch) AND
+						(n.MinBet >= cs.MinBet AND n.MaxBet <= cs.MaxBet AND n.MaxPerMatch <= cs.MaxPerMatch AND n.MaxPayoutPerMatch <= cs.MaxPayoutPerMatch)) THEN 0 ELSE 1 END
+
+				IF @ErrCode <> 0
+				BEGIN			
+					SELECT @ErrMsg = 'The new Default Bet Setting of Subsidiary is violated with Default Bet Setting of Currency. Please review and update again!!' -- CB-07
+					RETURN						
+				END	
+			END
+		END
+
+		SELECT TOP 1 @ErrCode = 103
+		FROM #SportTypeBetType cs 
+			INNER JOIN #NewDefault s ON cs.SportType = s.SportType AND cs.BetType = s.Bettype	
+		WHERE  s.MaxBet IS NOT NULL
+				AND 1 = CASE WHEN @AgentID = 0 THEN 1 
+							 WHEN @AgentID <> 0 AND @IsNewMember = 0 AND @ExistedMember = 0 THEN 1 ELSE 0 END 
+				AND 1 = CASE WHEN ((s.MinBet <= s.MaxBet AND s.MaxBet <= s.MaxPerMatch AND s.MaxPerMatch <= s.MaxPayoutPerMatch) AND 
+					(s.MinBet >= cs.MinBet AND s.MaxBet <= cs.MaxBet AND s.MaxPerMatch <= cs.MaxPerMatch AND s.MaxPayoutPerMatch <= cs.MaxPayoutPerMatch)) THEN 0 ELSE 1 END
+
+		IF @ErrCode <> 0
+		BEGIN			
+			SELECT @ErrCode = 103,
+				@ErrMsg = 'The value bet setting you just input is violating its Default Bet Setting. Please review and update Default Bet Setting!'
+			RETURN						
+		END	
 	END	
 	ELSE 
 	BEGIN
@@ -381,7 +466,7 @@ BEGIN
 							ELSE '' END
 		FROM #Subsidiary a
 			LEFT JOIN [SiteConfig].[dbo].[Operator] s WITH(NOLOCK) ON a.Custid=s.AgentID
-
+	
 		SET @ErrName = (SELECT STRING_AGG(username, ', ') WITHIN GROUP (ORDER BY username) FROM #Subsidiary)
 		
 		IF @ErrName <> ''
