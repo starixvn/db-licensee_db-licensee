@@ -291,7 +291,7 @@ BEGIN
 				BEGIN
 					IF @AgentID = 0
 					BEGIN
-						IF @ExistedDbsCurrency IN ( 1 ,3 )
+						IF @ExistedDbsCurrency = 1
 						BEGIN
 							SELECT @ErrMsg = 'Please check value of Default Bet Setting which is applied for new players!' -- CB-04
 						END
@@ -299,6 +299,13 @@ BEGIN
 						BEGIN
 							SET @ExistedDbsCurrency = 2  -- CB-05
 							SELECT @ErrMsg = 'Please add new value of Default Bet Setting which is applied for new players!' -- CB-05
+						END
+					END
+					ELSE
+					BEGIN
+						IF @ExistedDbsCurrency = 3
+						BEGIN
+							SELECT @ErrMsg = 'Please check value of Default Bet Setting which is applied for new players!' -- CB-04
 						END
 					END
 				END
