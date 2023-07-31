@@ -7,7 +7,7 @@ ALTER PROCEDURE [dbo].[NAP_LM_LicenseeBetSettingCheck]
 	,@ExistedMember BIT = 0
 	,@IsNewMember BIT = 0	
 	,@UpdNewMember VARCHAR(MAX) = ''
-	,@ExistedDbsCurrency INT = 0 OUTPUT
+	,@ExistedDbs INT = 0 OUTPUT
 	,@ErrCode INT = 0 OUTPUT
 	,@ErrMsg VARCHAR(1000) = '' OUTPUT
 AS
@@ -28,9 +28,8 @@ AS
 		- @Option :  0 for Currency Bet Setting OR 1 for Player Bet Setting
 		- @ExistedMember : existing player 
 		- @IsNewMember : Default Bet Setting 
-		- @ExistedDbsCurrency : 1 - Exists Default Bet Setting of Currency
-								2 - Don't Exists Default Bet Setting of Currency
-								3 - Exists Default Bet Setting of specific Subsidiary
+		- @ExistedDbs		  : 1 - Exists Default Bet Setting 
+								2 - Don't Exists Default Bet Setting
 		- @UpdBetLimit :
 		<ROOT>
 				<BL SportType=1 Bettype=1 MinBet=100 MaxBet=1000 MaxPerMatch=1000 MaxPerNumber=1000 MaxPayoutPerMatch=1000
@@ -252,19 +251,16 @@ BEGIN
 			END
 		END
 		
-		IF @AgentID = 0 AND EXISTS (SELECT TOP 1 1 
+		IF (@AgentID = 0 AND EXISTS (SELECT TOP 1 1 
 					FROM Dep_CustBetLimit_Special cs WITH(NOLOCK)
 							INNER JOIN #SportTypeBetType s ON cs.SportType = s.SportType AND cs.BetType = s.Bettype
-					WHERE cs.CurrencyID = @CurrencyID AND cs.Site = @Site AND cs.MaxBet IS NOT NULL AND cs.AgentID IS NULL	)
-		BEGIN
-			SET @ExistedDbsCurrency = 1
-		END
-		ELSE IF @AgentID <> 0 AND EXISTS (SELECT TOP 1 1 
+					WHERE cs.CurrencyID = @CurrencyID AND cs.Site = @Site AND cs.MaxBet IS NOT NULL AND cs.AgentID IS NULL	))
+			OR (@AgentID <> 0 AND EXISTS (SELECT TOP 1 1 
 					FROM Dep_CustBetLimit_Special cs WITH(NOLOCK)
 							INNER JOIN #SportTypeBetType s ON cs.SportType = s.SportType AND cs.BetType = s.Bettype
-					WHERE cs.CurrencyID = @CurrencyID AND cs.Site = @Site AND cs.MaxBet IS NOT NULL AND cs.AgentID = @AgentID	)
+					WHERE cs.CurrencyID = @CurrencyID AND cs.Site = @Site AND cs.MaxBet IS NOT NULL AND cs.AgentID = @AgentID))
 		BEGIN
-			SET @ExistedDbsCurrency = 3
+			SET @ExistedDbs = 1
 		END
 
 		IF @UpdNewMember = ''
@@ -289,29 +285,16 @@ BEGIN
 				END	
 				ELSE 
 				BEGIN
-					IF @AgentID = 0
+					IF @ExistedDbs = 1
 					BEGIN
-						IF @ExistedDbsCurrency = 1
-						BEGIN
-							SELECT @ErrMsg = 'Please check value of Default Bet Setting which is applied for new players!' -- CB-04
-						END
-						ELSE
-						BEGIN
-							SET @ExistedDbsCurrency = 2  -- CB-05
-							SELECT @ErrMsg = 'Please add new value of Default Bet Setting which is applied for new players!' -- CB-05
-						END
+						SELECT @ErrMsg = 'Please check value of Default Bet Setting which is applied for new players!' -- CB-04
 					END
 					ELSE
 					BEGIN
-						IF @ExistedDbsCurrency = 3
-						BEGIN
-							SELECT @ErrMsg = 'Please check value of Default Bet Setting which is applied for new players!' -- CB-04
-						END
-						ELSE
-						BEGIN
-							SET @ExistedDbsCurrency = 2  -- CB-05
-							SELECT @ErrMsg = 'Please add new value of Default Bet Setting which is applied for new players!' -- CB-05
-						END
+						SET @ExistedDbs = 2  -- CB-05
+						SELECT @ErrMsg = 'Please add new value of Default Bet Setting which is applied for new players!' -- CB-05
+					END
+					
 					END
 				END
 			END
