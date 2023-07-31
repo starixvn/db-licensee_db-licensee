@@ -52,6 +52,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 	    - 20230303@Evan: Remove inactive products CB, FW, GD, GDG [Redmine: 181424]  
 		- 20230523@Evan: Integrate YeeBet LC [RedmineID: #187947]
 		- 20230626@Evan: Integrate MG-RNG (Normal+Promotion Game) [RedmineID: #189988]
+		- 20230801@Evan: Integrate Virtual Sports 3 (Leap Gaming New) [RedmineID: #190908]
 
 */
 RETURNS TABLE
@@ -96,13 +97,14 @@ RETURN
 					(62, 'CG', 167, 0),		-- Creative Gaming
 					(67, 'AP', 172, 0),		-- AdvantPlay
 					(68, 'APM', 174, 0),	-- AdvantPlay Mini
-					(49, 'VS3', 231, 0),	-- Virtual Sports 3
+					(49, 'VS3', 231, 0),	-- Virtual Sports 3 (old)
 					(69, 'BTC', 175, 0),	-- Bitcoin
 					(70, 'FGGL', 176, 0),	-- FGG
 					(60, 'MXG', 237, 0),	-- MaxGame
 					(75, 'JIG', 158, 0),	-- Jili
 					(76, 'YB', 159, 0),		-- YeeBet
-					(73, 'MGRNG', 155, 0)	-- MG-RNG
+					(73, 'MGRNG', 155, 0),	-- MG-RNG
+					(77, 'LG', 178, 0)		-- Leap Gaming VS (VS3)
 			) d(ProductID, ProductCode, SportType, BetType)
 	WHERE ',' + @ProductCodes + ',' LIKE '%,' + CAST(ProductCode AS VARCHAR(10)) + ',%'
 GO

@@ -92,6 +92,7 @@ AS
 		- 20220513@Hogan: Support Bitcoin [RedmineID: #160160]
 		- 20220714@Hogan: Integrate Volleyball AIO [RedmineID: #175143]
 		- 20230708@Evan: Support CN3, INDO & THAI language on LAP [RedmineID: #187132]
+		- 20230801@Evan: Integrate Virtual Sports 3 (Leap Gaming New) [RedmineID: #190908]
 
 	Parameter's Explanation:
 		- @ReportBy: 1: daily, 2: monthly
@@ -214,11 +215,13 @@ BEGIN
 		, transdate		SMALLDATETIME
 	)
 
-	SELECT VAL AS sportId 
-	INTO #ProductID 
-	FROM dbo.f_StringSplit(@Product,',')
-	OPTION(MAXRECURSION 0)
+	CREATE TABLE #ProductID ( sportId INT)
 
+	INSERT INTO #ProductID (sportId)
+	SELECT value AS sportId 
+	FROM STRING_SPLIT(@Product,',')
+	OPTION(MAXRECURSION 0)
+	
 	IF NOT EXISTS (SELECT TOP 1 1 FROM #ProductID )
 	BEGIN
 		RETURN;
@@ -256,13 +259,16 @@ BEGIN
 	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', '', @isTest)
 	WHERE BetType NOT IN (SELECT BetType FROM @ExcludedBetType e WHERE e.ProductCode = ProductPrefix)
 	
-	SELECT VAL AS typeID
-	INTO #BettypeID
-	FROM dbo.f_StringSplit(@Bettype,',') AS b
+	CREATE TABLE #BettypeID ( typeID INT)
+	CREATE TABLE #bettype ( typeID INT, ProductId INT, EventType TINYINT)
+
+	INSERT INTO #BettypeID (typeID)
+	SELECT value 
+	FROM STRING_SPLIT(@Bettype,',') AS b
 	OPTION(MAXRECURSION 0)
 
-	INSERT INTO #BettypeID
-	SELECT ss.bettype AS typeID
+	INSERT INTO #BettypeID (typeID)
+	SELECT ss.bettype 
 	FROM dbo.f_GroupBettype() ss
 		INNER JOIN #BettypeID b ON b.typeid =  ss.GroupTypeId
 	WHERE ss.bettype NOT IN (SELECT typeID FROM #BettypeID)
@@ -273,11 +279,11 @@ BEGIN
 		INNER JOIN #BettypeID b ON b.typeid =  bt.GroupTypeId
 	WHERE bt.bettype NOT IN (SELECT typeID FROM #BettypeID)
 
+	INSERT INTO #bettype (typeID, ProductId, EventType)
 	SELECT 
 		b.typeID
 		, sp.ProductId
 		, sp.EventType
-	INTO #bettype
 	FROM #BettypeID b
 		INNER JOIN @SportBettype sp ON b.typeid =  sp.bettype
 
@@ -350,6 +356,7 @@ BEGIN
 												WHEN b.bettype = 2799 THEN p.sporttype
 												WHEN bt.ProductID = 63 THEN b.matchid
 												WHEN bt.ProductID = 49 THEN b.matchid
+												WHEN bt.ProductID = 77 THEN b.matchid
 												ELSE 1
 											END
 				WHEN bt.ProductID = 69 THEN 175
@@ -611,7 +618,8 @@ BEGIN
 																					ELSE ''
 																				END
 				WHEN (b.bettype BETWEEN 2701 AND 2829) THEN  N'VS2 - ' + bt.typenamee
-				WHEN (b.bettype BETWEEN 5301 AND 5399) THEN  N'VS3 - ' + bt.typenamee
+				WHEN b.bettype = 5301 THEN  N'VS3 - ' + bt.typenamee
+				WHEN (b.bettype BETWEEN 5302 AND 5399) THEN  N'LG - ' + bt.typenamee
 				ELSE  bt.typenamee
 			END AS bettype
 			, SUM(b.betcount)	AS betcount
@@ -637,7 +645,8 @@ BEGIN
 																					ELSE ''
 																				END
 				WHEN (b.bettype BETWEEN 2701 AND 2829) THEN  N'VS2 - ' + bt.typenamee
-				WHEN (b.bettype BETWEEN 5301 AND 5399) THEN  N'VS3 - ' + bt.typenamee
+				WHEN b.bettype = 5301 THEN  N'VS3 - ' + bt.typenamee
+				WHEN (b.bettype BETWEEN 5302 AND 5399) THEN  N'LG - ' + bt.typenamee
 				ELSE  bt.typenamee
 			END
 		ORDER BY b.rowno ASC

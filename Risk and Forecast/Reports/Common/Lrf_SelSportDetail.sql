@@ -30,7 +30,8 @@ AS
 					- Remove input param @LangKey
 		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
 		- 20220429@Kos: Support Bitcoin [RedmineID: #160160]
-
+		- 20230801@Evan: Integrate Virtual Sports 3 (Leap Gaming New) [RedmineID: #190908]
+		
 	Param's Explanation:
 		- @ProductCodes = '' - Get all
 */
@@ -45,7 +46,7 @@ BEGIN
 	FROM dbo.Product3rd AS p WITH (NOLOCK)
 		INNER JOIN dbo.LicenseeProduct3rd AS l WITH (NOLOCK) ON p.Productid = l.ProductID
 	WHERE l.LicenseeID = @LicenseeID
-		AND p.ProductPrefix IN ('BA', 'NG', 'VS', 'VS2', 'KN', 'LT', 'CO', 'TG', 'I4D', 'VS3')
+		AND p.ProductPrefix IN ('BA', 'NG', 'VS', 'VS2', 'KN', 'LT', 'CO', 'TG', 'I4D', 'VS3', 'LG')
 		AND (@ProductCodes = ''
 			OR ',' + @ProductCodes + ',' LIKE '%,' + p.ProductPrefix + ',%')
 
@@ -172,6 +173,15 @@ BEGIN
 		UNION ALL
 		SELECT Id, NULL, 231
 		FROM dbo.Lrf_f_GetSportTypeByProduct('VS3')
+	END
+	-- LG (VS3 new)--
+	IF EXISTS (SELECT 1 FROM @Product3rds WHERE Code = 'LG')
+	BEGIN
+		INSERT INTO @ProductSport(Id, Name, ParentId)
+		SELECT 178, 'LG', NULL
+		UNION ALL
+		SELECT Id, NULL, 178
+		FROM dbo.Lrf_f_GetSportTypeByProduct('LG')
 	END
 
 	SELECT
