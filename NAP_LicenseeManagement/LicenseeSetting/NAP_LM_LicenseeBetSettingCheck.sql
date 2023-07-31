@@ -307,6 +307,11 @@ BEGIN
 						BEGIN
 							SELECT @ErrMsg = 'Please check value of Default Bet Setting which is applied for new players!' -- CB-04
 						END
+						ELSE
+						BEGIN
+							SET @ExistedDbsCurrency = 2  -- CB-05
+							SELECT @ErrMsg = 'Please add new value of Default Bet Setting which is applied for new players!' -- CB-05
+						END
 					END
 				END
 			END
