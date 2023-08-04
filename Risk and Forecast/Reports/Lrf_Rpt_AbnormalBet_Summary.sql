@@ -22,6 +22,7 @@ BEGIN
 		- 20221013@Evan: Initial [RedmineID: #174308]
 						 Support Saba E-Sports PinGoal
 		- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465]
+		- 20230708@Evan: Support CN3, INDO & THAI language on LAP [RedmineID: #187132]
 	
 	Param's Explanation:
 		- @SportTypeList: sporttype list separated by ','
@@ -45,6 +46,8 @@ BEGIN
 		- @SearchLanguage: search language
 			+ en-US: English
 			+ zh-CN: Chinese Simplified
+			+ vi-VN: CN3 (Vietnamese)
+			+ th-TH: Thailand
 		- @PageIndex: starts from 1, set 0 to disable pagination
 		- @PageSize: Number of records per page
  	 			 
@@ -159,10 +162,12 @@ BEGIN
 				AND l.LeagueGroupID IN (42))
 			)
 		AND (@LeagueName = '' OR CASE
-									WHEN @SearchLanguage = 'zh-CN' THEN l.leaguenamecn
+									WHEN @SearchLanguage = 'zh-CN' AND ISNULL(l.leaguenamecn,'') <> '' THEN l.leaguenamecn
+									WHEN @SearchLanguage = 'vi-VN' AND ISNULL(l.leaguenameVN,'') <> '' THEN l.leaguenameVN
+									WHEN @SearchLanguage = 'th-TH' AND ISNULL(l.leaguenameth,'') <> '' THEN l.leaguenameth
 									ELSE l.leaguename
 								END LIKE '%' + @LeagueName +'%')
-
+		
 	IF @SportTypeList <> 'All'
 	BEGIN
 		IF ',' + @SportTypeList + ',' NOT LIKE '%,1,%'

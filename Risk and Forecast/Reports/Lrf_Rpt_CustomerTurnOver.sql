@@ -91,6 +91,7 @@ AS
 		- 20220322@Kos: Support Parlay sport [RedmineID: #169282]
 		- 20220513@Hogan: Support Bitcoin [RedmineID: #160160]
 		- 20220714@Hogan: Integrate Volleyball AIO [RedmineID: #175143]
+		- 20230708@Evan: Support CN3, INDO & THAI language on LAP [RedmineID: #187132]
 
 	Parameter's Explanation:
 		- @ReportBy: 1: daily, 2: monthly
@@ -574,7 +575,7 @@ BEGIN
 					WHEN @Langkey = 'ja-JP'		AND ISNULL(bt.typenamej, '')		<> '' THEN bt.typenamej
 					WHEN @Langkey = 'ko-KR'		AND ISNULL(bt.typenameko, '')		<> '' THEN bt.typenameko
 					WHEN @Langkey = 'es'		AND ISNULL(bt.typenameES, '')		<> '' THEN bt.typenameES
-					WHEN @Langkey = 'vi-VN'		AND ISNULL(bt.typenamee, '')		<> '' THEN bt.typenamee
+					WHEN @Langkey = 'vi-VN'		AND ISNULL(bt.typenameVN, '')		<> '' THEN bt.typenameVN
 					ELSE typenamee 
 				END AS typenamee
 			FROM #bettype b
@@ -591,7 +592,7 @@ BEGIN
 					WHEN @Langkey = 'ja-JP'	AND ISNULL(bt.typenamej, '')		<> '' THEN bt.typenamej
 					WHEN @Langkey = 'ko-KR'	AND ISNULL(bt.typenameko, '')		<> '' THEN bt.typenameko
 					WHEN @Langkey = 'es'  		AND ISNULL(bt.typenameES, '')	<> '' THEN bt.typenameES
-					WHEN @Langkey = 'vi-VN'	AND ISNULL(bt.typenamee, '')		<> '' THEN bt.typenamee
+					WHEN @Langkey = 'vi-VN'	AND ISNULL(bt.typenameVN, '')		<> '' THEN bt.typenameVN
 					ELSE bt.typenamee
 				END
 		)
