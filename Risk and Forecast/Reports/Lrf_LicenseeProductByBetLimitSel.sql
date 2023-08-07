@@ -30,6 +30,7 @@ AS
 	    - 20230303@Evan: Remove inactive products CB, FW, GD, GDG [Redmine: 181424]  
     	- 20230523@Evan: Integrate YeeBet LC [RedmineID: #187947]
 		- 20230626@Evan: Integrate MG-RNG (Normal+Promotion Game) [RedmineID: #189988]
+		- 20230807@Luke: Integrate Virtual Sports 3 - Remove VS3(Old) from filter Bet Setting in LAP [Redmine: #192390]
 */
 
  /*
@@ -141,7 +142,6 @@ BEGIN
 			66,--	VGaming
 			67,--	AdvantPlay 
 			68,--	AdvantPlay Mini
-			49,--	Virtual Sports 3
 			69,--	Bitcoin
 			70,--	FGG	
 			60,--	MaxGame
