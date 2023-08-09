@@ -7,7 +7,6 @@ ALTER PROCEDURE [dbo].[NAP_LM_LicenseeBetSettingCheck]
 	,@ExistedMember BIT = 0
 	,@IsNewMember BIT = 0	
 	,@UpdNewMember VARCHAR(MAX) = ''
-	,@ExistedDbs INT = 0 OUTPUT
 	,@ErrCode INT = 0 OUTPUT
 	,@ErrMsg VARCHAR(1000) = '' OUTPUT
 AS
@@ -28,8 +27,6 @@ AS
 		- @Option :  0 for Currency Bet Setting OR 1 for Player Bet Setting
 		- @ExistedMember : existing player 
 		- @IsNewMember : Default Bet Setting 
-		- @ExistedDbs		  : 1 - Exists Default Bet Setting 
-								2 - Don't Exists Default Bet Setting
 		- @UpdBetLimit :
 		<ROOT>
 				<BL SportType=1 Bettype=1 MinBet=100 MaxBet=1000 MaxPerMatch=1000 MaxPerNumber=1000 MaxPayoutPerMatch=1000
@@ -250,18 +247,6 @@ BEGIN
 				END	
 			END
 		END
-		
-		IF (@AgentID = 0 AND EXISTS (SELECT TOP 1 1 
-					FROM Dep_CustBetLimit_Special cs WITH(NOLOCK)
-							INNER JOIN #SportTypeBetType s ON cs.SportType = s.SportType AND cs.BetType = s.Bettype
-					WHERE cs.CurrencyID = @CurrencyID AND cs.Site = @Site AND cs.MaxBet IS NOT NULL AND cs.AgentID IS NULL	))
-			OR (@AgentID <> 0 AND EXISTS (SELECT TOP 1 1 
-					FROM Dep_CustBetLimit_Special cs WITH(NOLOCK)
-							INNER JOIN #SportTypeBetType s ON cs.SportType = s.SportType AND cs.BetType = s.Bettype
-					WHERE cs.CurrencyID = @CurrencyID AND cs.Site = @Site AND cs.MaxBet IS NOT NULL AND cs.AgentID = @AgentID))
-		BEGIN
-			SET @ExistedDbs = 1
-		END
 
 		IF @UpdNewMember = ''
 		BEGIN
@@ -283,18 +268,6 @@ BEGIN
 					SELECT @ErrMsg = 'The value bet setting you just input is violating its Default Bet Setting. Please review and update Default Bet Setting!' -- CB-03
 					RETURN						
 				END	
-				ELSE 
-				BEGIN
-					IF @ExistedDbs = 1
-					BEGIN
-						SELECT @ErrMsg = 'Please check value of Default Bet Setting which is applied for new players!' -- CB-04
-					END
-					ELSE
-					BEGIN
-						SET @ExistedDbs = 2  -- CB-05
-						SELECT @ErrMsg = 'Please add new value of Default Bet Setting which is applied for new players!' -- CB-05
-					END
-				END
 			END
 
 			IF @AgentID <> 0 AND @IsNewMember = 1
@@ -347,7 +320,7 @@ BEGIN
 				IF @ErrName <> ''
 				BEGIN			
 					SELECT @ErrCode = 109,
-						@ErrMsg = 'The new Default Bet Setting of Currency is violated with Default Bet Setting of Subsidiary. Please review and update again!
+						@ErrMsg = 'The Default Bet Setting of Currency is violated with Default Bet Setting of Subsidiary. Please review and update again!
 									List of Subsidiaries whose DBS are violated ' + @ErrName
 					RETURN						
 				END	
