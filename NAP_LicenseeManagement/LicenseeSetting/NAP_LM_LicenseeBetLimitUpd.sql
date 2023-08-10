@@ -419,8 +419,8 @@ BEGIN
 					d.MaxBet = s.MaxBet,
 					d.MaxPayoutPerMatch = s.MaxPayoutPerMatch,
 					d.MaxPerMatch = s.MaxPerMatch
-				OUTPUT	s.SportType, s.Bettype, deleted.AgentID, deleted.MinBet, deleted.MaxBet, deleted.MaxPerMatch, deleted.MaxPayoutPerMatch   	
-				INTO #NewDefault_History(SportType, Bettype, AgentID, MinBet, MaxBet, MaxPerMatch, MaxPayoutPerMatch)
+				OUTPUT	s.SportType, s.Bettype, deleted.AgentID, deleted.MinBet, deleted.MaxBet, deleted.MaxPerMatch, deleted.MaxPayoutPerMatch ,1 AS UplineUpdate  	
+				INTO #NewDefault_History(SportType, Bettype, AgentID, MinBet, MaxBet, MaxPerMatch, MaxPayoutPerMatch,UplineUpdate)
 				FROM Dep_CustBetLimit_Special d WITH(UPDLOCK)
 					INNER JOIN #NewDefault s ON d.SportType = s.SportType AND d.BetType = s.Bettype	
 				WHERE d.CurrencyID = @CurrencyID AND d.Site = @Site AND 1 = CASE WHEN @AgentID = 0 AND d.AgentID IS NULL THEN 1 
