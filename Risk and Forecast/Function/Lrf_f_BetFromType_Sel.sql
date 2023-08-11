@@ -24,6 +24,7 @@ ALTER FUNCTION [dbo].[Lrf_f_BetFromType_Sel]
 		- 20220708@Hogan: Support add new betfrom '}' [RedmineID: #174895]
 		- 20220801@Victoria: Add DBSID-bodb02 to metadata [Redmine: #175297]
 		- 20230602@Evan: Support add new betfrom '#'&'A000' [Redmine: #188811]
+		- 20230811@Evan: Support add new betfrom W001, W002 & adjust A000 [Redmine: #191840]
 */
 
 RETURNS TABLE
@@ -39,6 +40,7 @@ RETURN
 				(4, 'l'),
 				(4, ']'),
 				(5, '%'),
+				(5, 'W002'),
 				(6, 'c'),
 				(6, '@'),
 				(7, '7'),
@@ -60,13 +62,14 @@ RETURN
 				(13, 'r'),
 				(14, 't'),
 				(15, 'm'),
+				(16, 'A000'),
+				(17, 'W001'), 
 				(88, 'v'),
 				(88, 'd'),
 				(88, 'g'),
 				(88, 'e'),
 				(88, 'u'),
-				(88, '^'),
-				(88, 'A000')
+				(88, '^')
 	) d(PlatformType, betfrom)
 	WHERE @PlatformTypeList = 'All' OR (',' + @PlatformTypeList + ',' LIKE '%,' + CONVERT(VARCHAR(3), d.PlatformType) + ',%')
 GO
