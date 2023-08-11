@@ -3,7 +3,7 @@ ALTER PROCEDURE [dbo].[LAP_Rpt_DetailTransaction_Mem]
     @CustID			INT,  
     @FromDate		DATE,  
     @ToDate			DATE,
-	@TransactionId	BIGINT = NULL,
+	@TransactionId	VARCHAR(50) = NULL,
 	@IsResettled	BIT = 0,
 	@IsSingleWalletLic BIT = 0,
     @PageSize		INT = NULL,  
@@ -55,9 +55,18 @@ BEGIN
 	, @_toDateTime			= @ToDate
 	, @_toDateTime			= DATEADD(DAY, 1, @_toDateTime)
 	, @_custID				= @custID
-	, @_TransactionId		= @TransactionId
 	, @_IsResettled			= @IsResettled
 
+	IF @TransactionId IS NOT NULL
+	BEGIN
+		BEGIN TRY
+			SELECT @_TransactionId	= IIF( ISNUMERIC (@TransactionId) = 1, CONVERT (BIGINT, @TransactionId), 0)
+		END TRY
+		BEGIN CATCH
+			SELECT @_TransactionId = 0
+		END CATCH
+	END
+	
 	INSERT INTO #transactionRpt (
 		transid
 		, bettype
