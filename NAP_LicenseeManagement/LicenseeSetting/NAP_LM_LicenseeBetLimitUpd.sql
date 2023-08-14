@@ -405,7 +405,7 @@ BEGIN
 	IF @Option = 0
 	BEGIN
 		-- Currency only OR Subsidiary only
-		IF  @IsNewMember = 0 AND @ExistedMember = 0
+		IF  @IsNewMember = 0 AND @ExistedMember = 0 AND @IsNotDBS = 0
 		BEGIN
 			IF EXISTS (SELECT TOP 1 1 
 			FROM Dep_CustBetLimit_Special d WITH(NOLOCK)
