@@ -43,12 +43,15 @@ AS
 	Revisions:
 		- 20230209@Bobby: Created [RedmineID: #172604]
 		- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465]
+		- 20230815@Bobby: Enhance search username by prefix [RedmineID: #192721]
+
 	Param's Explanation:
 		- @SortKey: 0:GroupBy, 1:BetCount, 2:Turnover, 3:NetTurnover, 4:MemWinloss, 5:MemComm, 6:LicWinloss, 7:LicComm, 8:AmtDueToBA, 9:BetEffective, 10:Margin
 		- @SortType: 0:ASC,1:DESC
 		- @SearchMode: TINYINT
 			+ 1: Match Precise
 			+ 2: Match Case
+			+ 3: Match Prefix
 		
 */
 BEGIN
@@ -265,6 +268,7 @@ BEGIN
 		OR LEN(@SearchUsernameCheck) > 0
 	)
 	BEGIN
+		SET @SearchUsernameCheck = IIF(LEN(@SearchUsernameCheck) > 0, REPLACE(@SearchUsernameCheck, '_', '[_]'), @SearchUsernameCheck);
 		-- TODO: Search player
 		INSERT INTO #playerSel(custid, Currency)
 		SELECT c.CustID, ag.Currency
@@ -275,7 +279,8 @@ BEGIN
 		WHERE c.roleid = 1
 			AND (@SearchUsernameCheck IS NULL OR (
 				(@SearchModeCheck = 1 AND (c.username2 LIKE  + '%$' + @SearchUsernameCheck OR c.username LIKE  @SearchUsernameCheck))) OR
-				(@SearchModeCheck = 2 AND (c.username2 LIKE  + '%$%' + @SearchUsernameCheck + '%' OR c.username LIKE  '%' + @SearchUsernameCheck + '%'))
+				(@SearchModeCheck = 2 AND (c.username2 LIKE  + '%$%' + @SearchUsernameCheck + '%' OR c.username LIKE  '%' + @SearchUsernameCheck + '%')) OR
+				(@SearchModeCheck = 3 AND (c.username2 LIKE  + '%$' + @SearchUsernameCheck + '%' OR c.username LIKE  @SearchUsernameCheck + '%'))
 			)
 			AND (@OddsGroupCheck IS NULL
 				OR ',' + @OddsGroupCheck + ',' LIKE '%,' + c.ugroup + ',%')
