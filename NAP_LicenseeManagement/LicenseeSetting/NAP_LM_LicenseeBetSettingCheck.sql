@@ -360,9 +360,9 @@ BEGIN
 					INNER JOIN #NewDefault n ON cs.SportType = n.SportType AND cs.BetType = n.Bettype
 				WHERE cs.CurrencyID = @CurrencyID AND cs.Site = @Site AND cs.MaxBet IS NOT NULL AND cs.MaxPerMatch IS NOT NULL
 					AND EXISTS(SELECT TOP 1 1  FROM Dep_CustBetLimit_Special WITH(NOLOCK) 
-																WHERE CurrencyID = @CurrencyID AND Site = @Site AND MaxBet IS NOT NULL 
-																AND AgentID IS NULL AND SportType = s.SportType AND BetType = s.Bettype)  
-																AND cs.AgentID = @AgentID 
+																WHERE CurrencyID = @CurrencyID AND Site = @Site 
+																AND AgentID = @AgentID  AND SportType = s.SportType AND BetType = s.Bettype)  
+																AND cs.AgentID IS NULL 
 					AND 1 = CASE WHEN ((s.MinBet <= s.MaxBet AND s.MaxBet <= s.MaxPerMatch AND s.MaxPerMatch <= s.MaxPayoutPerMatch) AND 
 									   (n.MinBet <= n.MaxBet AND n.MaxBet <= n.MaxPerMatch AND n.MaxPerMatch <= n.MaxPayoutPerMatch) AND
 						(n.MinBet <= s.MinBet AND n.MaxBet >= s.MaxBet AND n.MaxPerMatch >= s.MaxPerMatch AND n.MaxPayoutPerMatch >= s.MaxPayoutPerMatch)) THEN 0 ELSE 1 END
