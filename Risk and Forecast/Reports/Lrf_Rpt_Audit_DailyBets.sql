@@ -26,6 +26,7 @@ AS
 		- 20220118@Sol: LAP - Auditing licensees - Daily Bets - Filter by Sport - [RedmineID: #166056]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20230704@Bobby: Fix paging lag [Redmine #190828]
+		- 20230814@Evan: Ivory - Adjust rate show real figures for currency cut off 000 [Redmine #192602]
 
 	Developer's Notes:
 		
@@ -48,7 +49,7 @@ BEGIN
 	
 	DECLARE @Product TABLE (ProductCode VARCHAR(10))
 	DECLARE @GameCode TABLE (GameCode VARCHAR(10))
-	DECLARE @Currency AS TABLE (Id INT, Code VARCHAR(5), Name VARCHAR(5), ExRate FLOAT)
+	DECLARE @Currency AS TABLE (Id INT, Code VARCHAR(5), Name VARCHAR(5), ExRate FLOAT, ExRateOrg FLOAT)
 	DECLARE @ArchivedDate DATETIME, @CurrDate DATETIME
 	
 	CREATE table #DailyResult
@@ -138,10 +139,11 @@ BEGIN
 	
 	-- GET ExRate
 	UPDATE c
-	SET c.ExRate = ISNULL(e.Rate, 1)
+	SET c.ExRate = ISNULL(e.Rate, 1),
+		c.ExRateOrg = CASE WHEN @SiteName = 'Ivorybet' THEN 1 * ex.MultipliedBy ELSE 1 END
 	FROM @Currency c
 	LEFT JOIN dbo.Lrf_f_GetExchangeRate(@CurrDate, @CurrDate, @BaseCurrency, '') e ON c.Id = e.ExchangeId
-
+	INNER JOIN Exchange ex WITH(NOLOCK) ON e.ExchangeId = ex.ExchangeId
 	SELECT @SiteName = dbo.Lrf_f_MappingAuditSite(@SiteName)
 
 	IF (@SortBy <> 'WinLoss' AND @SortBy <> 'Turnover' AND @SortBy <> 'TurnoverBased' AND @SortBy <> 'WinLossBased')
@@ -204,8 +206,8 @@ BEGIN
 				SELECT
 					a.TransactionId
 					,c.Name
-					,a.BetAmount					
-					,a.NetAmount					
+					,a.BetAmount * c.ExRateOrg AS BetAmount					
+					,a.NetAmount * c.ExRateOrg AS NetAmount				
 					,a.BetAmount * c.ExRate AS TurnoverBased
 					,-a.NetAmount * c.ExRate AS WinLossBased
 					,pp.Username AS Playername,
@@ -218,8 +220,8 @@ BEGIN
 						WHEN a.GamePlatformCode = 'CA' THEN 'LC'
 						ELSE ''
 					END AS ProductCode,
-					a.BetAmount AS Turnover,
-					-a.NetAmount AS WinLoss,
+					a.BetAmount * c.ExRateOrg AS Turnover,
+					-a.NetAmount * c.ExRateOrg AS WinLoss,
 					CASE
 						WHEN a.NetAmount > 0 THEN -1
 						WHEN a.NetAmount < 0 THEN 1
@@ -298,8 +300,8 @@ BEGIN
 				SELECT
 					a.TransactionId
 					,c.Name
-					,a.BetAmount					
-					,a.NetAmount					
+					,a.BetAmount * c.ExRateOrg AS BetAmount					
+					,a.NetAmount * c.ExRateOrg AS NetAmount				
 					,a.BetAmount * c.ExRate AS TurnoverBased
 					,-a.NetAmount * c.ExRate AS WinLossBased
 					,pp.Username AS Playername,
@@ -312,8 +314,8 @@ BEGIN
 						WHEN a.GamePlatformCode = 'CA' THEN 'LC'
 						ELSE ''
 					END AS ProductCode,
-					a.BetAmount AS Turnover,
-					-a.NetAmount AS WinLoss,
+					a.BetAmount * c.ExRateOrg AS Turnover,
+					-a.NetAmount * c.ExRateOrg AS WinLoss,
 					CASE
 						WHEN a.NetAmount > 0 THEN -1
 						WHEN a.NetAmount < 0 THEN 1
