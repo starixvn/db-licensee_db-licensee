@@ -143,7 +143,7 @@ BEGIN
 		c.ExRateOrg = CASE WHEN @SiteName = 'Ivorybet' THEN 1 * ex.MultipliedBy ELSE 1 END
 	FROM @Currency c
 	LEFT JOIN dbo.Lrf_f_GetExchangeRate(@CurrDate, @CurrDate, @BaseCurrency, '') e ON c.Id = e.ExchangeId
-	INNER JOIN Exchange ex WITH(NOLOCK) ON e.ExchangeId = ex.ExchangeId
+	INNER JOIN Exchange ex WITH(NOLOCK) ON c.Id = ex.ExchangeId
 	SELECT @SiteName = dbo.Lrf_f_MappingAuditSite(@SiteName)
 
 	IF (@SortBy <> 'WinLoss' AND @SortBy <> 'Turnover' AND @SortBy <> 'TurnoverBased' AND @SortBy <> 'WinLossBased')
