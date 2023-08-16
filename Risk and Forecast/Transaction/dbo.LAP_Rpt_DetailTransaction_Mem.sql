@@ -3,7 +3,7 @@ ALTER PROCEDURE [dbo].[LAP_Rpt_DetailTransaction_Mem]
     @CustID			INT,  
     @FromDate		DATE,  
     @ToDate			DATE,
-	@TransactionId	BIGINT = NULL,
+	@TransactionId	VARCHAR(50) = NULL,
 	@IsResettled	BIT = 0,
 	@IsSingleWalletLic BIT = 0,
     @PageSize		INT = NULL,  
@@ -22,6 +22,7 @@ AS
 		- 20201008@Sol: Show new column to determine re-settle tickets - [RedmineID: #142346]
 		- 20220111@Sophia: Hide transfer ticket of Single Wallet Licensee [RedmineID: #167343]
 		- 20230614@Evan: Update condition show full cycle of status on ticket  [RedmineID: #189579]
+		- 20230810@Evan: Add SettlementType filter Recover Bets [RedmineID: #191844]
 	
 	Param's Explanation:     
 */
@@ -54,9 +55,18 @@ BEGIN
 	, @_toDateTime			= @ToDate
 	, @_toDateTime			= DATEADD(DAY, 1, @_toDateTime)
 	, @_custID				= @custID
-	, @_TransactionId		= @TransactionId
 	, @_IsResettled			= @IsResettled
 
+	IF @TransactionId IS NOT NULL
+	BEGIN
+		BEGIN TRY
+			SELECT @_TransactionId	= IIF( ISNUMERIC (@TransactionId) = 1, CONVERT (BIGINT, @TransactionId), 0)
+		END TRY
+		BEGIN CATCH
+			SELECT @_TransactionId = 0
+		END CATCH
+	END
+	
 	INSERT INTO #transactionRpt (
 		transid
 		, bettype
@@ -83,12 +93,12 @@ BEGIN
 			, BalanceChanged AS changedAmt
 			, NewBalance AS totalAmt
 			, RowID
-			, CASE WHEN br.SettlementType IN (2,3) THEN 1 ELSE 0 END AS IsResettled
+			, CASE WHEN br.SettlementType IN (2,3,10,11) THEN 1 ELSE 0 END AS IsResettled
 		FROM BalanceRecord.dbo.BalanceRecord_bk br WITH(NOLOCK)
 		WHERE
 			br.transid = ISNULL(@_TransactionId, br.transid)
 			AND 1 = CASE 
-						WHEN @_IsResettled = 1 AND br.SettlementType IN (2,3) THEN 1 -- get re-settled tickets only
+						WHEN @_IsResettled = 1 AND br.SettlementType IN (2,3,10,11) THEN 1 -- get re-settled tickets only
 						WHEN @_IsResettled = 0 THEN 1 -- get all tickets
 						ELSE 0
 					END
@@ -109,12 +119,12 @@ BEGIN
 			, BalanceChanged AS changedAmt
 			, NewBalance AS totalAmt
 			, RowID
-			, CASE WHEN SettlementType IN (2,3) THEN 1 ELSE 0 END AS IsResettled
+			, CASE WHEN SettlementType IN (2,3,10,11) THEN 1 ELSE 0 END AS IsResettled
 		FROM bodb02.dbo.BalanceRecord WITH(NOLOCK)
 		WHERE 
 			transid = ISNULL(@_TransactionId, transid)
 			AND 1 = CASE 
-						WHEN @_IsResettled = 1 AND SettlementType IN (2,3) THEN 1 -- get re-settled tickets only
+						WHEN @_IsResettled = 1 AND SettlementType IN (2,3,10,11) THEN 1 -- get re-settled tickets only
 						WHEN @_IsResettled = 0 THEN 1 -- get all tickets
 						ELSE 0
 					END
