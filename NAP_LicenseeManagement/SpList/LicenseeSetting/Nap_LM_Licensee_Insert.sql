@@ -5,7 +5,7 @@ CREATE PROCEDURE [dbo].[Nap_LM_Licensee_Insert]
 	, @SuperWildCard		VARCHAR(100) = ''
 	, @LicenseeType			VARCHAR(50)
 	, @IsSpecial			BIT = 0
-	, @ProductCode			VARCHAR(100) = ''
+	, @ProductCode			VARCHAR(MAX) = ''
 	, @SystemisActive		VARCHAR(100) = ''
 	, @IsAllowMemberComm	BIT = 0
 	, @EffectiveDate		DATE = ''
@@ -29,6 +29,7 @@ AS
 	  - 20191202@Amanda: Remove OA_ tables [Redmine: #119443]
 	  - 20201214@Winfred: Adjust SP to cut off spaces for licensee name  [redmine: #147233]
 	  - 20230207@Danny: reseek LicenseeID when creating new  [redmine: #183209]	
+	  - 20230814@Winfred: Integrate MaxGame, VS3 new products - remove VS3 Old [redmine:#183802]
 */
 BEGIN
 	SET NOCOUNT ON;
