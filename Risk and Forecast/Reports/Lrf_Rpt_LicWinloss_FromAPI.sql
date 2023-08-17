@@ -28,6 +28,7 @@ AS
 		- 20220302@Sol: temporary prevent Nova88 from viewing data from 1-Mar-2022 - [Redmine: #169131]
 		- 20220118@Sol: LAP - Auditing licensees - Daily Bets - Filter by Sport - [RedmineID: #166056]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
+		- 20230814@Evan: Ivory - Adjust rate show real figures for currency cut off 000 [Redmine #192602]
 
 	Developer's Notes:
 		- Notes: If product is NG, search tickets with GameType is RNG
@@ -500,16 +501,33 @@ BEGIN
 	-- Exchange Rate
 	CREATE TABLE #Exchange (ExFromDate DATE, ExToDate DATE, ExchangeID INT, USD FLOAT, GBP FLOAT, EUR FLOAT, Rate FLOAT, DefaultRate FLOAT )
 	
-	INSERT INTO #Exchange(ExFromDate, ExToDate, ExchangeID, USD, GBP, EUR, Rate, DefaultRate)
-	SELECT	FromDate, 
-			ToDate,
-			ExchangeID,
-			USD,
-			GBP,
-			EUR,
-			Rate,
-			DefaultRate
-	FROM bodb02.dbo.Lrf_f_GetExchangeRate(@FDate, @TDate, @BaseCurrency, @DefaultBaseCurrency) exc
+	IF @BaseCurrency = '' AND @SiteName ='IvoryBet'
+	BEGIN
+		INSERT INTO #Exchange(ExFromDate, ExToDate, ExchangeID, USD, GBP, EUR, Rate, DefaultRate)
+		SELECT	FromDate, 
+				ToDate,
+				e.ExchangeID,
+				USD,
+				GBP,
+				EUR,
+				Rate * e.MultipliedBy,
+				DefaultRate
+		FROM bodb02.dbo.Lrf_f_GetExchangeRate(@FDate, @TDate, @BaseCurrency, @DefaultBaseCurrency) exc 
+			INNER JOIN Exchange e WITH(NOLOCK) ON e.ExchangeId = exc.ExchangeId 
+	END
+	ELSE
+	BEGIN
+		INSERT INTO #Exchange(ExFromDate, ExToDate, ExchangeID, USD, GBP, EUR, Rate, DefaultRate)
+		SELECT	FromDate, 
+				ToDate,
+				ExchangeID,
+				USD,
+				GBP,
+				EUR,
+				Rate,
+				DefaultRate
+		FROM bodb02.dbo.Lrf_f_GetExchangeRate(@FDate, @TDate, @BaseCurrency, @DefaultBaseCurrency) exc
+	END
 
 	-- Return data
 	IF (@ReportType = 1)
