@@ -24,6 +24,7 @@ AS
 		   - 20230629@Winfred: NAP LM - PRO - Licensee Bet Setting - Currency filter has not taken data according to Currency Code [redmine:#190436]
 		   - 20230707@Winfred: NAP LM - Insert icorrect data in Dep_CustBetSettingGame_Member for players have isGroupBetLimit = 1 [redmine:#191020]
 		   - 20230717@Winfred: Enhance performace  [redmine:#191470]
+		   - 20230722@Winfred: NAP LM - Enhance Bet Setting function for AM to use - New Case [redmine:#178105]
     Param's Explanation:
 		- @CustID : super ID
 		- @AgentID : 0 for All Subsidiary AND <> 0 for only Specific Subsidiary 
@@ -406,23 +407,39 @@ BEGIN
 		-- Currency only OR Subsidiary only
 		IF  @IsNewMember = 0 AND @ExistedMember = 0 AND @IsNotDBS = 0
 		BEGIN
-			UPDATE d 
-			SET d.MinBet = s.MinBet,
-				d.MaxBet = s.MaxBet,
-				d.MaxPayoutPerMatch = s.MaxPayoutPerMatch,
-				d.MaxPerMatch = s.MaxPerMatch
-			OUTPUT	s.SportType, s.Bettype, deleted.AgentID, deleted.MinBet, deleted.MaxBet, deleted.MaxPerMatch, deleted.MaxPayoutPerMatch , 1 AS UplineUpdate
-			INTO #NewDefault_History(SportType, Bettype, AgentID, MinBet, MaxBet, MaxPerMatch, MaxPayoutPerMatch, UplineUpdate)
-			FROM Dep_CustBetLimit_Special d WITH(UPDLOCK)
+			IF EXISTS (SELECT TOP 1 1 
+			FROM Dep_CustBetLimit_Special d WITH(NOLOCK)
 				INNER JOIN #NewDefault s ON d.SportType = s.SportType AND d.BetType = s.Bettype	
-			WHERE d.CurrencyID = @CurrencyID AND d.Site = @Site 
+			WHERE d.CurrencyID = @CurrencyID AND d.Site = @Site  
 				AND 1 = CASE WHEN @AgentID = 0 AND d.AgentID IS NULL THEN 1 
-							 WHEN @AgentID <> 0 AND  d.AgentID = @AgentID THEN 1
-							 WHEN @AgentID <> 0 AND d.AgentID IS NULL AND NOT EXISTS (SELECT TOP 1 1 
-																	FROM Dep_CustBetLimit_Special d WITH(NOLOCK)
-																		INNER JOIN #NewDefault s ON d.SportType = s.SportType AND d.BetType = s.Bettype	
-																	WHERE d.CurrencyID = @CurrencyID AND d.Site = @Site AND AgentID = @AgentID) THEN 1
-								ELSE 0 END
+							 WHEN @AgentID <> 0 AND  d.AgentID = @AgentID THEN 1 ELSE 0 END)
+			BEGIN
+				UPDATE d 
+				SET d.MinBet = s.MinBet,
+					d.MaxBet = s.MaxBet,
+					d.MaxPayoutPerMatch = s.MaxPayoutPerMatch,
+					d.MaxPerMatch = s.MaxPerMatch
+				OUTPUT	s.SportType, s.Bettype, deleted.AgentID, deleted.MinBet, deleted.MaxBet, deleted.MaxPerMatch, deleted.MaxPayoutPerMatch ,1 AS UplineUpdate  	
+				INTO #NewDefault_History(SportType, Bettype, AgentID, MinBet, MaxBet, MaxPerMatch, MaxPayoutPerMatch,UplineUpdate)
+				FROM Dep_CustBetLimit_Special d WITH(UPDLOCK)
+					INNER JOIN #NewDefault s ON d.SportType = s.SportType AND d.BetType = s.Bettype	
+				WHERE d.CurrencyID = @CurrencyID AND d.Site = @Site AND 1 = CASE WHEN @AgentID = 0 AND d.AgentID IS NULL THEN 1 
+																				 WHEN @AgentID <> 0 AND  d.AgentID = @AgentID THEN 1 ELSE 0 END
+			END
+			ELSE 
+			BEGIN
+				INSERT INTO Dep_CustBetLimit_Special([Site], CurrencyID, SportType, AgentID, MinBet, MaxBet, MaxPerMatch, MaxPerBall, MaxPayoutPerMatch, Bettype)
+				SELECT @Site, @CurrencyID, SportType, CASE WHEN @AgentID = 0 THEN NULL ELSE @AgentID END AS AgentID, MinBet, MaxBet, MaxPerMatch, NULL AS MaxPerBall, MaxPayoutPerMatch, Bettype 
+				FROM #NewDefault n
+				UNION 
+				SELECT @Site, @CurrencyID, SportType, CASE WHEN @AgentID = 0 THEN NULL ELSE @AgentID END AS AgentID, NULL AS MinBet, NULL AS  MaxBet, NULL AS  MaxPerMatch, NULL AS MaxPerBall, NULL AS  MaxPayoutPerMatch, Bettype
+				FROM #SportBettypeFilter d
+				WHERE ProductID = 1 AND NOT EXISTS (SELECT TOP 1 1 FROM #NewDefault WHERE  SportType = d.SportType AND BetType = d.Bettype)
+				
+				INSERT INTO #AgentLog(custid) SELECT CASE WHEN @AgentID = 0 THEN -1 ELSE @AgentID END AS AgentID 
+				SET @ActionDefaultID = 13
+			END
+
 		END
 		ELSE IF @AgentID = 0 AND @IsNewMember = 1 -- Currency + All player OR Currency + New player
 		BEGIN
