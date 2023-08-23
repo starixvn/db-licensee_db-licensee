@@ -44,6 +44,7 @@ AS
 		- 20231122@Evan: Handle betfrom for Jollysports [Redmine: #197192]	
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20240311@Eddie: Change 'bodbLicenseeNet' to 'wsv_lap' account [RedmineID: #201098]
+		- 20230822@Evan: Integrate Parlay Boost - [RedmineID: #192238]
 		
 	Param explanation:
 		- @ProductList: SB and all products grouped under SB (SB,SLT,...)
@@ -184,7 +185,7 @@ BEGIN
 		WHERE b.winlostdate BETWEEN @FDate AND @TempToDate
 			AND b.roleid = 1
 			AND b.statusID <> 101 --exclude REJECT bets
-			AND b.bettype IN (0, -29)
+			AND b.bettype IN (0, -29, -1)
 			AND (b.isBA = 0 OR b.isBA IS NULL)
 		GROUP BY
 			b.currency,

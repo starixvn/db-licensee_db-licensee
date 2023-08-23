@@ -20,6 +20,8 @@ AS
 		- 20231214@Evan: Hide Upcoming bettype [RedmineID: #197020]
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20240306@Evan: Remove checking Enabled in SportBettypeMatrix [RedmineID: #201944]
+		- 20230822@Evan: Integrate Parlay Boost - [RedmineID: #192238]
+
 */
 
 BEGIN
@@ -51,7 +53,13 @@ BEGIN
 			LEFT JOIN bodb02.dbo.Lrf_f_GroupBettype() AS ss ON sp.bettype = ss.bettype
 		WHERE ',' + @ProductCode + ',' LIKE '%,' + p.ProductPrefix + ',%'
 			AND sp.BetType NOT IN (913, 914)
-			AND sp.BetType NOT IN (901,902,903,904/*bettrade*/,500,502/*Criket*/,300,301,302,303,304/*MO*/,999/*Licensee Spread Setting*/,9/*Mix Parlay*/)
+			AND sp.BetType NOT IN (	901,902,903,904 -- bettrade
+									,500,502 		-- Criket
+									,300,301,302,303,304 	-- MO
+									,999 	-- Licensee Spread Setting
+									,9 		-- Mix Parlay
+									,998 	-- Parlay Boost Adjustment
+									)
 			AND (sp.BetType < 801 OR sp.BetType > 899) -- MG
 			AND b.typenamee NOT LIKE '%Upcoming%'
 		GROUP BY ISNULL(ss.GroupTypeId, sp.bettype)

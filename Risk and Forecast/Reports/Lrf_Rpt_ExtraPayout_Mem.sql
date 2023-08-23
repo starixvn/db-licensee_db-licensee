@@ -27,6 +27,7 @@ AS
 		- 20231018@Evan: Integrate Saba Reward Risk-free Rebate [redmine: #196881]
 		- 20231213@Evan: Integrate Live22 Promotion [RedmineID: #197702]
 		- 20240416@Evan: Integrate Saba Coins [RedmineID: #202281]
+		- 20230822@Evan: Integrate Parlay Boost - [RedmineID: #192238]
 
 	Param's Explanation:
 		+ @PromotionTypeList: promotion type list separated by ','
@@ -60,6 +61,8 @@ AS
 			- 3603: SG - Promotion Prize (BetType: 4598)
 			- 7301: MGRNG - Promotion Prize (BetType: 8695)
 			- 7901: Live22 - Promotion Prize (BetType: 7698)
+			- 2901: Sportsbook - Parlay Boost (BetType: 29)
+
 */
 
 BEGIN
@@ -153,6 +156,7 @@ BEGIN
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,7401,%' AND BetType = 8700 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,7301,%' AND BetType = 8695 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,7901,%' AND BetType = 7698 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,2901,%' AND BetType = 29 THEN 1
 				ELSE 0
 			END
 
@@ -178,7 +182,39 @@ BEGIN
 								WHEN @FromDate <= @MoveBetsDay THEN DATEADD(DAY, 1, @MoveBetsDay)
 								ELSE @FromDate
 							END
-
+		
+		;WITH cte_Data AS
+		(
+			SELECT 
+				b.custid,
+				sbt.ProductCode,
+				b.winlostdate,
+				b.matchid,
+				b.currency,
+				b.bettype,
+				b.stake,
+				b.winlost,
+				b.actual_stake,
+				b.awinlost,
+				b.oddsspread,
+				ISNULL(TRY_CAST(TRY_CAST(ExtraInfo AS XML).value('(/p1/@bba)[1]', 'VARCHAR(50)') AS MONEY),0) AS BoostBonusAmt,
+				ISNULL(TRY_CAST(TRY_CAST(ExtraInfo AS XML).value('(/p1/@lbbs)[1]', 'VARCHAR(50)') AS MONEY),0) AS lbbs -- Licensee Boost bonus Sharing 
+			FROM dbo.bettrans AS b WITH (NOLOCK)
+				INNER JOIN #TempAg AS a ON a.CustId = b.recommend
+				INNER JOIN #SportBetType AS sbt ON sbt.BetType = b.bettype
+				LEFT JOIN #TempCust AS c ON c.CustId = b.custid
+			WHERE
+				b.winlostdate BETWEEN @TempFromDate AND @ToDate
+				AND b.statusID IN (111, 112, 113)
+				AND 1 = CASE
+							WHEN sbt.ProductCode = 'SBC' AND b.bettype NOT IN (1698, 1699) AND b.matchid <> 150 THEN 0
+							WHEN sbt.ProductCode = 'VGA' AND b.bettype NOT IN (3898, 3899) AND b.matchid <> 173 THEN 0
+							WHEN sbt.ProductCode = 'SB' AND b.bettype = 29 AND b.oddsspread <> 2 THEN 0
+							WHEN sbt.ProductCode = 'SB' AND b.bettype = 29 AND (b.statusID <> 112 OR ISNULL(TRY_CAST(TRY_CAST(ExtraInfo AS XML).value('(/p1/@bba)[1]', 'VARCHAR(50)') AS MONEY),0) <= 0) AND b.oddsspread = 2 THEN 0
+							ELSE 1
+						END
+				AND (@Username = '' OR c.CustId IS NOT NULL)
+		)
 		INSERT INTO @Data (
 			CustId,
 			ProductCode,
@@ -191,7 +227,7 @@ BEGIN
 			SharingAmount )
 		SELECT
 			b.custid,
-			sbt.ProductCode,
+			b.ProductCode,
 			CASE
 				WHEN b.bettype = 2499 THEN 2101
 				WHEN b.bettype = 4299 THEN 3201
@@ -213,16 +249,17 @@ BEGIN
 				WHEN b.bettype = 17009 THEN 3709
 				WHEN b.bettype = 17010 THEN 3710
 				WHEN b.bettype = 3007 THEN 3901
-				WHEN sbt.ProductCode = 'SBC' AND b.matchid = 150 THEN 4201
+				WHEN b.ProductCode = 'SBC' AND b.matchid = 150 THEN 4201
 				WHEN b.bettype = 1699 THEN 4202
 				WHEN b.bettype = 1698 THEN 4203
 				WHEN b.bettype = 3150 THEN 4501
-				WHEN sbt.ProductCode = 'VGA' AND b.matchid = 173 THEN 6601
+				WHEN b.ProductCode = 'VGA' AND b.matchid = 173 THEN 6601
 				WHEN b.bettype = 3899 THEN 6602
 				WHEN b.bettype = 3898 THEN 6603
 				WHEN b.bettype = 8700 THEN 7401
 				WHEN b.bettype = 8695 THEN 7301
 				WHEN b.bettype = 7698 THEN 7901
+				WHEN b.ProductCode = 'SB' AND b.bettype = 29 THEN 2901
 				ELSE 0
 			END AS PromotionType,
 			b.winlostdate,
@@ -232,25 +269,18 @@ BEGIN
 					WHEN b.bettype IN (4297, 1698, 3898, 4599) THEN b.oddsspread
 					ELSE b.stake
 				END) AS Turnover,
-			SUM(b.winlost - b.actual_stake) AS Amount,
-			SUM(b.awinlost) AS SharingAmount
-		FROM
-			dbo.bettrans AS b WITH (NOLOCK)
-			INNER JOIN #TempAg AS a ON a.CustId = b.recommend
-			INNER JOIN #SportBetType AS sbt ON sbt.BetType = b.bettype
-			LEFT JOIN #TempCust AS c ON c.CustId = b.custid
-		WHERE
-			b.winlostdate BETWEEN @TempFromDate AND @ToDate
-			AND b.statusID IN (111, 112, 113)
-			AND 1 = CASE
-						WHEN sbt.ProductCode = 'SBC' AND b.bettype NOT IN (1698, 1699) AND b.matchid <> 150 THEN 0
-						WHEN sbt.ProductCode = 'VGA' AND b.bettype NOT IN (3898, 3899) AND b.matchid <> 173 THEN 0
-						ELSE 1
-					END
-			AND (@Username = '' OR c.CustId IS NOT NULL)
+			SUM(CASE
+					WHEN b.bettype = 29 THEN BoostBonusAmt
+					ELSE b.winlost - b.actual_stake
+				END) AS Amount,
+			SUM(CASE
+					WHEN b.bettype = 29 THEN -BoostBonusAmt * lbbs
+					ELSE b.awinlost
+				END) AS SharingAmount
+		FROM cte_Data b
 		GROUP BY
 			b.custid,
-			sbt.ProductCode,
+			b.ProductCode,
 			CASE
 				WHEN b.bettype = 2499 THEN 2101
 				WHEN b.bettype = 4299 THEN 3201
@@ -272,16 +302,17 @@ BEGIN
 				WHEN b.bettype = 17009 THEN 3709
 				WHEN b.bettype = 17010 THEN 3710
 				WHEN b.bettype = 3007 THEN 3901
-				WHEN sbt.ProductCode = 'SBC' AND b.matchid = 150 THEN 4201
+				WHEN b.ProductCode = 'SBC' AND b.matchid = 150 THEN 4201
 				WHEN b.bettype = 1699 THEN 4202
 				WHEN b.bettype = 1698 THEN 4203
 				WHEN b.bettype = 3150 THEN 4501
-				WHEN sbt.ProductCode = 'VGA' AND b.matchid = 173 THEN 6601
+				WHEN b.ProductCode = 'VGA' AND b.matchid = 173 THEN 6601
 				WHEN b.bettype = 3899 THEN 6602
 				WHEN b.bettype = 3898 THEN 6603
 				WHEN b.bettype = 8700 THEN 7401
 				WHEN b.bettype = 8695 THEN 7301
 				WHEN b.bettype = 7698 THEN 7901
+				WHEN b.ProductCode = 'SB' AND b.bettype = 29 THEN 2901
 				ELSE 0
 			END,
 			b.winlostdate,
@@ -319,6 +350,7 @@ BEGIN
 				WHEN sbt.BetType IS NOT NULL THEN sbt.ProductCode
 				WHEN b.sporttype = 150 THEN 'SBC'
 				WHEN b.sporttype = 173 THEN 'VGA'
+				WHEN b.bettype = -1 THEN 'SB'
 				ELSE ''
 			END AS ProductCode,
 			CASE
@@ -352,6 +384,7 @@ BEGIN
 				WHEN b.bettype = 8700 THEN 7401
 				WHEN b.bettype = 8695 THEN 7301
 				WHEN b.bettype = 7698 THEN 7901
+				WHEN b.bettype = -1 THEN 2901
 				ELSE 0
 			END AS PromotionType,
 			b.winlostdate,
@@ -361,8 +394,14 @@ BEGIN
 					WHEN b.bettype IN (4297, 1698, 3898, 4599) THEN b.BuyBackAmt
 					ELSE b.turnover
 				END) AS Turnover,
-			SUM(b.winlost) AS Amount,
-			SUM(b.awinlost) AS SharingAmount
+			SUM(CASE 
+					WHEN b.bettype = -1 THEN BetEffective -- Parlay Boost bonus amount
+					ELSE b.winlost 
+				END) AS Amount,
+			SUM(CASE 
+					WHEN b.bettype = -1 THEN -b.BuyBackAmt -- Licensee Sharing Boost bonus
+					ELSE b.awinlost 
+				END) AS SharingAmount
 		FROM
 			bodb_LicenseeReport.dbo.rptLicWinloss2 AS b WITH (NOLOCK)
 			INNER JOIN #TempAg AS a ON a.CustId = b.recommend
@@ -376,6 +415,7 @@ BEGIN
 						WHEN sbt.BetType IS NOT NULL THEN 1
 						WHEN ',' + @PromotionTypeList + ',' LIKE '%,4201,%' AND b.sporttype = 150 THEN 1
 						WHEN ',' + @PromotionTypeList + ',' LIKE '%,6601,%' AND b.sporttype = 173 THEN 1
+						WHEN ',' + @PromotionTypeList + ',' LIKE '%,2901,%' AND b.bettype = -1 AND BetEffective > 0 THEN 1 -- BetEffective = Bettrans.ExtraInfo(bba)
 						ELSE 0
 					END
 			AND (@Username = '' OR c.CustId IS NOT NULL)
@@ -385,6 +425,7 @@ BEGIN
 				WHEN sbt.BetType IS NOT NULL THEN sbt.ProductCode
 				WHEN b.sporttype = 150 THEN 'SBC'
 				WHEN b.sporttype = 173 THEN 'VGA'
+				WHEN b.bettype = -1 THEN 'SB'
 				ELSE ''
 			END,
 			CASE
@@ -418,6 +459,7 @@ BEGIN
 				WHEN b.bettype = 8700 THEN 7401
 				WHEN b.bettype = 8695 THEN 7301
 				WHEN b.bettype = 7698 THEN 7901
+				WHEN b.bettype = -1 THEN 2901
 				ELSE 0
 			END,
 			b.winlostdate,

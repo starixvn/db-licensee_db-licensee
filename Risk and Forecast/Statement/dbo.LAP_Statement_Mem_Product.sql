@@ -135,7 +135,7 @@ BEGIN
 		WHERE
 			b.custid = @_custID
 			AND b.winlostdate = @_winlostdate
-			AND b.bettype NOT IN (903, 71, 913, 914, 999)
+			AND b.bettype NOT IN (903, 71, 913, 914, 999, 998)
 			AND ((ISNULL(@IsCOMember, 0) = 0 AND b.bettype <> 912) OR (@IsCOMember = 1 AND b.bettype <> 911))
 			AND 1 = CASE
 						WHEN @_ModeView = 1 AND b.statusID IN (111, 112, 113) AND pb.betTypeId IS NULL THEN 1
@@ -201,7 +201,7 @@ BEGIN
 		WHERE
 			b.custid = @_custid
 			AND b.winlostdate = @_winlostdate
-			AND b.bettype NOT IN (903, 71, 913, 914, 999)
+			AND b.bettype NOT IN (903, 71, 913, 914, 999, 998)
 			AND ((@IsCOMember = 0 AND b.bettype <> 912) OR (@IsCOMember = 1 AND b.bettype <> 911))
 			AND 1 = CASE
 						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) AND pb.betTypeId IS NULL THEN 1
@@ -227,7 +227,7 @@ BEGIN
 		WHERE 
 			b.custid = @_custid
 			AND b.winlostdate = @_winlostdate
-			AND b.bettype NOT IN (903, 71, 913, 914, 999)
+			AND b.bettype NOT IN (903, 71, 913, 914, 999, 998)
 			AND ((@IsCOMember = 0 AND b.bettype <> 912) OR (@IsCOMember = 1 AND b.bettype <> 911))
 			AND 1 = CASE
 						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) AND pb.betTypeId IS NULL THEN 1

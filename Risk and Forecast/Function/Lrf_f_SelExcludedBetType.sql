@@ -23,10 +23,14 @@ RETURNS TABLE
 		- 20231018@Evan: Integrate Saba Reward Risk-free Rebate [redmine: #196881]
 		- 20231213@Evan: Integrate Live22 Promotion [RedmineID: #197702]
 		- 20240416@Evan: Integrate Saba Coins [RedmineID: #202281]
+		- 20230822@Evan: Integrate Parlay Boost - [RedmineID: #192238]
+
 */
 
 RETURN
 	SELECT 'SB' AS ProductCode, 999 AS BetType			-- Licensee Spread Setting
+	UNION ALL
+	SELECT 'SB', 998									-- Parlay Boost Adjustment
 	UNION ALL
 	SELECT 'PP', 4297 									-- Pragmatic Play - Promotion Prize
 	UNION ALL
