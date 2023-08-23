@@ -24,6 +24,7 @@ AS
 		- 20210203@Louis: Saba Red Envelope [RedmineID: #149923]
 		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
+		- 20230822@Evan: Integrate Parlay Boost - [RedmineID: #192238]
 
 	Param's Explanation:
 		- @ModeView: TINYINT
@@ -111,7 +112,7 @@ BEGIN
 			b.custid = @_custID
 			AND b.winlostdate = @_winlostdate
 			AND b.bettype < 19999 -- bet tickets
-			AND b.bettype NOT IN (903, 71, 913, 914, 999)
+			AND b.bettype NOT IN (903, 71, 913, 914, 999, 998)
 			AND ((ISNULL(@IsCOMember, 0) = 0 AND b.bettype <> 912) OR (@IsCOMember = 1 AND b.bettype <> 911))
 			AND 1 = CASE
 						WHEN @_ModeView = 1 AND b.statusID IN (111, 112, 113) AND b.bettype NOT IN (17000, 17003, 17004) THEN 1
@@ -176,7 +177,7 @@ BEGIN
 		WHERE
 			b.custid = @_custid
 			AND b.winlostdate = @_winlostdate
-			AND b.bettype NOT IN (903, 71, 913, 914, 999)
+			AND b.bettype NOT IN (903, 71, 913, 914, 999, 998)
 			AND ((@IsCOMember = 0 AND b.bettype <> 912) OR (@IsCOMember = 1 AND b.bettype <> 911))
 			AND 1 = CASE
 						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) AND b.bettype NOT IN (17000, 17003, 17004) THEN 1
@@ -201,7 +202,7 @@ BEGIN
 		WHERE 
 			b.custid = @_custid
 			AND b.winlostdate = @_winlostdate
-			AND b.bettype NOT IN (903, 71, 913, 914, 999)
+			AND b.bettype NOT IN (903, 71, 913, 914, 999, 998)
 			AND ((@IsCOMember = 0 AND b.bettype <> 912) OR (@IsCOMember = 1 AND b.bettype <> 911))
 			AND 1 = CASE
 						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) AND b.bettype NOT IN (17000, 17003, 17004) THEN 1

@@ -25,6 +25,7 @@ AS
 		- 20210916@Kos: New SP [RedmineID: #159939]
 		- 20220106@Kos: Support search by username [RedmineID: #165926]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
+		- 20230822@Evan: Integrate Parlay Boost - [RedmineID: #192238]
 
 	Param's Explanation:
 		- @BetTypeList: bettype list separated by ','
@@ -99,7 +100,7 @@ BEGIN
 	INSERT INTO @SportBetType (BetType, ProductCode, EventType)
 	SELECT DISTINCT BetType, ProductPrefix, EventType
 	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
-	WHERE BetType NOT IN (901, 902, 903, 904, 999)
+	WHERE BetType NOT IN (901, 902, 903, 904, 999, 998)
 		AND BetType NOT BETWEEN 801 AND 806
 		AND (@BetTypeList = 'All'
 			OR ',' + @BetTypeList + ',' LIKE '%,' + CAST(BetType AS VARCHAR(5)) + ',%'

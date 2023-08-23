@@ -19,10 +19,14 @@ RETURNS TABLE
 		- 20220801@Victoria: Add DBSID-bodb02 to metadata [Redmine: #175297]
 		- 20230208@Evan: Inteagrate SG promotion prize [RedmineID: #183497]
 		- 20230626@Evan: Integrate MG-RNG (Promotion Game) [RedmineID: #189988]
+		- 20230822@Evan: Integrate Parlay Boost - [RedmineID: #192238]
+
 */
 
 RETURN
 	SELECT 'SB' AS ProductCode, 999 AS BetType			-- Licensee Spread Setting
+	UNION ALL
+	SELECT 'SB', 998									-- Parlay Boost Adjustment
 	UNION ALL
 	SELECT 'PP', 4297 									-- Pragmatic Play - Promotion Prize
 	UNION ALL

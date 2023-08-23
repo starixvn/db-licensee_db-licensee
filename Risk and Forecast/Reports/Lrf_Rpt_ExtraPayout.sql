@@ -25,6 +25,7 @@ AS
 		- 20221122@Evan: Integrate Player Tips [RedmineID: #180590]
 		- 20230208@Evan: Inteagrate SG promotion prize [RedmineID: #183497]
 		- 20230626@Evan: Integrate MG-RNG (Promotion Game) [RedmineID: #189988]
+		- 20230822@Evan: Integrate Parlay Boost - [RedmineID: #192238]
 
 	Param's Explanation:
 		+ @PromotionTypeList: promotion type list separated by ','
@@ -52,6 +53,7 @@ AS
 			- 7401: Player Tips (BetType: 8700)
 			- 3603: SG - Promotion Prize (BetType: 4598)
 			- 7301: MGRNG - Promotion Prize (BetType: 8695)
+			
 		+ @ReportType: 1: Daily, 2: Monthly
 */
 

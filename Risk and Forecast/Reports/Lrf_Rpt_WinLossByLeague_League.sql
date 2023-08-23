@@ -30,6 +30,7 @@ AS
 		- 20221207@Evan: Support Saba E-Sports PinGoal [RedmineID: #181224]
 		- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465]
 		- 20230708@Evan: Support CN3, INDO & THAI language on LAP [RedmineID: #187132]
+		- 20230822@Evan: Integrate Parlay Boost - [RedmineID: #192238]
 
 	Param's Explanation:
 		- @SportTypeList: sporttype list separated by ','
@@ -123,7 +124,7 @@ BEGIN
 	INSERT INTO #SportBetType (BetType, ProductCode, EventType)
 	SELECT DISTINCT BetType, ProductPrefix, EventType
 	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
-	WHERE BetType NOT IN (901, 902, 903, 904, 999)
+	WHERE BetType NOT IN (901, 902, 903, 904, 999, 998)
 		AND BetType NOT BETWEEN 801 AND 806
 		AND (@BetTypeList = 'All'
 			OR ',' + @BetTypeList + ',' LIKE '%,' + CAST(BetType AS VARCHAR(5)) + ',%'

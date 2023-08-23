@@ -41,6 +41,7 @@ AS
 					- Move SP from DBLIC.bodb_Licensee to DBEXT.bodb02
 		- 20220329@Hogan: Hide Mix Parlay (bettypeID 9)[RedmineID: #170438]
 		- 20220714@Hogan: Integrate Volleyball AIO [RedmineID: #175143]
+		- 20230822@Evan: Integrate Parlay Boost - [RedmineID: #192238]
 
 	Param's Explanation:
 		- @SportList: XML format (999: Parlay sport)
@@ -105,8 +106,8 @@ BEGIN
 	FROM dbo.SportBettypeMatrix AS s WITH (NOLOCK)
 		INNER JOIN @SportFilter AS f ON f.SportType = s.SportType
 	WHERE s.IsTest <= @IsTest
-		AND s.bettype NOT IN (901, 902, 903, 904, 500, 502, 300, 301, 302, 303, 304, 911, 912, 913, 914, 999, 18999, 9, 29, 38)
-		AND s.bettype NOT BETWEEN 801 AND 899	-- Metric Gaming
+		AND s.bettype NOT IN (901, 902, 903, 904, 500, 502, 300, 301, 302, 303, 304, 911, 912, 913, 914, 999, 998, 18999, 9, 29, 38)
+		AND s.bettype NOT BETWEEN 801 AND 899					-- Metric Gaming
 		AND (s.SportType <> 5 OR s.BetType NOT IN (5, 15))		-- Tennis
 
 	-- Insert Parlay bettypes
