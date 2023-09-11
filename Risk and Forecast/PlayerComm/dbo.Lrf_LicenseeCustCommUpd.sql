@@ -75,6 +75,11 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeCustCommUpd]
 	@FGGComm			DECIMAL(9,8) = 0,
 	@JiliComm			DECIMAL(9,8) = 0,
 	
+	@IsUpdateYeeBet		BIT = 0,
+	@IsUpdateMgRNG		BIT = 0,
+	@YeeBetComm			DECIMAL(9,8) = 0,
+	@MgRNGComm			DECIMAL(9,8) = 0,
+
 	@IP VARCHAR(40),
 	@Langkey NVARCHAR(10)='en-US',
 	@ErrCode INT = 0 OUTPUT,
@@ -113,6 +118,7 @@ AS
 		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
 		- 20230314@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
+		- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
 		
 	Param's Explanation:
 */ 
@@ -225,6 +231,11 @@ BEGIN
 		,@MaxGameComm				= @MaxGameComm
 		,@FGGComm					= @FGGComm
 		,@JiliComm					= @JiliComm
+
+		,@IsUpdateYeeBet			= @IsUpdateYeeBet
+		,@IsUpdateMgRNG				= @IsUpdateMgRNG
+		,@YeeBetComm				= @YeeBetComm				
+		,@MgRNGComm					= @MgRNGComm
 
 		,@IP=@IP
 		,@Langkey=@Langkey

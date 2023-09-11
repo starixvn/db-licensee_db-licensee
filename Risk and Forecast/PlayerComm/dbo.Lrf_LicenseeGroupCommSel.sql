@@ -29,6 +29,8 @@ AS
 	 - 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586] 
 	 - 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511] 
 	 - 20230313@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
+	 - 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
+
 	Parameter's Explaination: 
 */  
 BEGIN  
@@ -75,6 +77,8 @@ BEGIN
 		,g.MaxGameComm
 		,g.FGGComm
 		,g.JiliComm
+		,g.YeeBetComm
+		,g.MgRNGComm
 	FROM dbo.LicenseeGroupComm g WITH (NOLOCK)   
 		LEFT JOIN (	SELECT COUNT(1) AS NumberOfCustomer, GroupCommID
 					FROM LicenseeCustComm (NOLOCK)

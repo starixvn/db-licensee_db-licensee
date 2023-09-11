@@ -31,6 +31,8 @@ AS
 	- 20230314@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 	- 20230412@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
 	- 20230426@Johnson: missing version PRO [redmine:#182922]
+	- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
+
 */  
 BEGIN  
 SET NOCOUNT ON;  
@@ -70,7 +72,9 @@ SELECT g.ID AS GroupCommID,
 	g.VS3Comm,
 	g.MaxGameComm,
 	g.FGGComm,
-	g.JiliComm	
+	g.JiliComm,
+	g.YeeBetComm,	
+	g.MgRNGComm
 FROM dbo.LicenseeGroupComm g WITH (NOLOCK) 
 WHERE 
 	IsActive = 1 

@@ -75,6 +75,11 @@ ALTER PROCEDURE [dbo].[Lrf_ExecRep_00]
 	@FGGComm				DECIMAL(9,8) = 0,
 	@JiliComm				DECIMAL(9,8) = 0,
 	
+	@IsUpdateYeeBet			BIT = 0,
+	@IsUpdateMgRNG			BIT = 0,
+	@YeeBetComm				DECIMAL(9,8) = 0,
+	@MgRNGComm				DECIMAL(9,8) = 0,
+
 	@isClearGroupComm BIT = 0,
 	@IsUpdateGroupComm BIT = 0
 
@@ -99,6 +104,7 @@ AS
 		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586]   
 		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
 		- 20230314@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
+		- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
 		
 	Param's Explanation:
 
@@ -181,6 +187,9 @@ BEGIN
 				,MaxGameComm = CASE WHEN @IsUpdateMaxGame = 1 THEN @MaxGameComm ELSE MaxGameComm END
 				,FGGComm = CASE WHEN @IsUpdateFGG = 1 THEN @FGGComm ELSE FGGComm END
 				,JiliComm = CASE WHEN @IsUpdateJili = 1 THEN @JiliComm ELSE JiliComm END
+
+				,YeeBetComm = CASE WHEN @IsUpdateYeeBet = 1 THEN @YeeBetComm ELSE YeeBetComm END
+				,MgRNGComm = CASE WHEN @IsUpdateMgRNG = 1 THEN @MgRNGComm ELSE MgRNGComm END
 		FROM dbo.LicenseeCustComm cs WITH (ROWLOCK,UPDLOCK)
 			INNER JOIN @TempList_Input ip ON cs.CustID = ip.CustID
 			LEFT JOIN @TempLicenseeBA_batch ba ON ba.custid = ip.custid
@@ -262,6 +271,8 @@ BEGIN
 			OR @IsUpdateFGG				= 1
 			OR @IsUpdateJili			= 1
 
+			OR @IsUpdateYeeBet			= 1
+			OR @IsUpdateMgRNG			= 1
 			)
 		BEGIN	
 			UPDATE cs
@@ -299,6 +310,9 @@ BEGIN
 					,MaxGameComm = CASE WHEN @IsUpdateMaxGame = 1 THEN @MaxGameComm ELSE MaxGameComm END
 					,FGGComm = CASE WHEN @IsUpdateFGG = 1 THEN @FGGComm ELSE FGGComm END
 					,JiliComm = CASE WHEN @IsUpdateJili = 1 THEN @JiliComm ELSE JiliComm END
+
+					,YeeBetComm = CASE WHEN @IsUpdateYeeBet = 1 THEN @YeeBetComm ELSE YeeBetComm END
+					,MgRNGComm = CASE WHEN @IsUpdateMgRNG = 1 THEN @MgRNGComm ELSE MgRNGComm END
 			FROM dbo.LicenseeCustComm cs WITH (ROWLOCK,UPDLOCK)
 				INNER JOIN @TempList_Input ip ON ip.CustID = cs.CustID
 		END

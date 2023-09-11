@@ -33,6 +33,7 @@ ALTER PROCEDURE [dbo].[WriteLog_UserLog_UpdMemComm_RunSP]
 		- 20230412@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
 		- 20230313@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 		- 20230426@Johnson: missing version PRO [redmine:#182922]
+		- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
 		
     Param's Explaination:    	
 		- @UserID: UserId perform this action
@@ -103,6 +104,9 @@ BEGIN
 				'MaxGameComm="'+ COALESCE(CAST(ISNULL(lcc.MaxGameComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
 				'FGGComm="'+ COALESCE(CAST(ISNULL(lcc.FGGComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
 				'JiliComm="'+ COALESCE(CAST(ISNULL(lcc.JiliComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
+
+				'YeeBetComm="'+ COALESCE(CAST(ISNULL(lcc.YeeBetComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
+				'MgRNGComm="'+ COALESCE(CAST(ISNULL(lcc.MgRNGComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
 
 			   'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
 			   @LogSPData2 AS TrackingValue2

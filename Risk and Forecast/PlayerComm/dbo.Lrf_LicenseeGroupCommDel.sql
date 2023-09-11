@@ -41,6 +41,7 @@ AS
 		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586]  
 		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
 		- 20230314@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
+		- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
 		
 	Param's Explanation:
 
@@ -96,6 +97,9 @@ BEGIN
 		@FGGComm			DECIMAL(9,8),
 		@JiliComm			DECIMAL(9,8),
 		
+		@YeeBetComm			DECIMAL(9,8),
+		@MgRNGComm			DECIMAL(9,8),
+
 		@GroupColor VARCHAR(20), 
 		@GroupName VARCHAR(100), 
 		@IsDefault BIT
@@ -161,6 +165,9 @@ BEGIN
 			@MaxGameComm		= MaxGameComm,
 			@FGGComm			= FGGComm,
 			@JiliComm			= JiliComm,
+
+			@YeeBetComm			= YeeBetComm,
+			@MgRNGComm			= MgRNGComm,
 
 			@GroupColor=color,
 			@GroupName=GroupName,
@@ -320,7 +327,12 @@ BEGIN
 					@MaxGameComm			= 0,
 					@FGGComm				= 0,
 					@JiliComm				= 0,
-					
+
+					@IsUpdateYeeBet			= 1,
+					@IsUpdateMgRNG			= 1,
+					@YeeBetComm				= 0,
+					@MgRNGComm				= 0,
+
 					@isClearGroupComm = 1,
 					@ClearGroupCommGroupID = @GroupCommID,
 					@IsUpdateGroupComm = 1,
@@ -381,6 +393,9 @@ BEGIN
 		'FGGComm="'+ COALESCE(CAST(@FGGComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'JiliComm="'+ COALESCE(CAST(@JiliComm as VARCHAR(50)),SPACE(1)) + '" '+
 
+		'YeeBetComm="'+ COALESCE(CAST(@YeeBetComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'MgRNGComm="'+ COALESCE(CAST(@MgRNGComm as VARCHAR(50)),SPACE(1)) + '" '+
+
 		'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
 		'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +
 		'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
@@ -431,6 +446,9 @@ BEGIN
 		'MaxGameComm="'+ COALESCE(CAST(@MaxGameComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'FGGComm="'+ COALESCE(CAST(@FGGComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'JiliComm="'+ COALESCE(CAST(@JiliComm as VARCHAR(50)),SPACE(1)) + '" '+
+
+		'YeeBetComm="'+ COALESCE(CAST(@YeeBetComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'MgRNGComm="'+ COALESCE(CAST(@MgRNGComm as VARCHAR(50)),SPACE(1)) + '" '+
 
 		'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
 		'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +

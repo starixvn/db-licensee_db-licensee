@@ -41,6 +41,9 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerMoveGroupComm]
 	@IsUpdateMaxGame		BIT = 0,
 	@IsUpdateFGG			BIT = 0,
 	@IsUpdateJili			BIT = 0,
+
+	@IsUpdateYeeBet			BIT = 0,
+	@IsUpdateMgRNG			BIT = 0,
 	
 	@IP VARCHAR(40),
 	@Langkey VARCHAR(20) = 'en-US',
@@ -79,6 +82,7 @@ AS
 		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
 		- 20230315@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
+		- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
 		
 	Param's Explanation:
 */ 
@@ -163,6 +167,9 @@ BEGIN
 		,@IsUpdateMaxGame		= @IsUpdateMaxGame
 		,@IsUpdateFGG			= @IsUpdateFGG
 		,@IsUpdateJili			= @IsUpdateJili
+
+		,@IsUpdateYeeBet			= @IsUpdateYeeBet
+		,@IsUpdateMgRNG				= @IsUpdateMgRNG
 
 		,@Langkey=@Langkey
 		,@IP=@IP
