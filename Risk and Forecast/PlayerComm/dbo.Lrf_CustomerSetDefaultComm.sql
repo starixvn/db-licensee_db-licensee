@@ -31,6 +31,7 @@ AS
 		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586]   
 		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
 		- 20230314@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
+		- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
 		
 	Param's Explanation:
 */ 
@@ -75,6 +76,9 @@ BEGIN
 		@IsUpdateMaxGame		BIT = 0,
 		@IsUpdateFGG			BIT = 0,
 		@IsUpdateJili			BIT = 0,
+
+		@IsUpdateYeeBet			BIT = 0,
+		@IsUpdateMgRNG			BIT = 0,
 
 		@LicenseeID INT,		
 		@strCustID VARCHAR(50)
@@ -193,7 +197,13 @@ BEGIN
 				SET @IsUpdateFGG = 1
 			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=75)
 				SET @IsUpdateJili = 1	
-	
+
+			--YeeBet,MgRNG
+			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=76)
+				SET @IsUpdateYeeBet = 1	
+			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=73)
+				SET @IsUpdateMgRNG = 1	
+
 			SELECT @strCustID=CAST (@CustID AS VARCHAR(50))
 			
 			EXEC [Lrf_CustomerUpdMemberComm] 
@@ -237,6 +247,9 @@ BEGIN
 				,@IsUpdateMaxGame		= @IsUpdateMaxGame
 				,@IsUpdateFGG			= @IsUpdateFGG
 				,@IsUpdateJili			= @IsUpdateJili						
+
+				,@IsUpdateYeeBet		= @IsUpdateYeeBet						
+				,@IsUpdateMgRNG			= @IsUpdateMgRNG					
 
 				,@IP=''
 				,@Langkey=@Langkey

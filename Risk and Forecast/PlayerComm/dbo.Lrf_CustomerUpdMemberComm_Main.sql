@@ -69,6 +69,11 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Main]
 	,@MaxGameComm		DECIMAL(9,8) = 0
 	,@FGGComm			DECIMAL(9,8) = 0
 	,@JiliComm			DECIMAL(9,8) = 0
+
+	,@IsUpdateYeeBet	BIT = 0
+	,@IsUpdateMgRNG		BIT = 0
+	,@YeeBetComm		DECIMAL(9,8) = 0
+	,@MgRNGComm			DECIMAL(9,8) = 0
 AS
 /*
 	Created: 20120907@Viet
@@ -101,6 +106,7 @@ AS
 		- 20220301@Eden: Deposit - Sportsbook - Revise customer settings [Redmine: #167898]
 		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
 		- 20230314@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
+		- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
 		
 	Param's Explanation:
 
@@ -160,6 +166,9 @@ BEGIN
 			,@MaxGameComm_Group			DECIMAL(9,8) = 0
 			,@FGGComm_Group				DECIMAL(9,8) = 0
 			,@JiliComm_Group			DECIMAL(9,8) = 0
+
+			,@YeeBetComm_Group			DECIMAL(9,8) = 0
+			,@MgRNGComm_Group			DECIMAL(9,8) = 0
 			--> 
 			,@SBComm_Group DECIMAL(9,8)
 			,@ParlayComm_Group DECIMAL(9,8) = 0
@@ -206,6 +215,10 @@ BEGIN
 			OR @IsUpdateMaxGame			= 1
 			OR @IsUpdateFGG				= 1
 			OR @IsUpdateJili			= 1
+
+			OR @IsUpdateYeeBet			= 1
+			OR @IsUpdateMgRNG			= 1
+
 			--
 			OR @IsUpdateSB  = 1	
 			OR @IsParlayComm  = 1	
@@ -246,6 +259,9 @@ BEGIN
 				,@MaxGameComm_Group = MAX(CASE WHEN BetType = 5401 THEN playerdiscount ELSE 0 END)
 				,@FGGComm_Group = MAX(CASE WHEN BetType = 8201 THEN playerdiscount ELSE 0 END)
 				,@JiliComm_Group = MAX(CASE WHEN BetType = 5100 THEN playerdiscount ELSE 0 END)
+
+				,@YeeBetComm_Group = MAX(CASE WHEN BetType = 3151 THEN playerdiscount ELSE 0 END)
+				,@MgRNGComm_Group = MAX(CASE WHEN BetType = 8400 THEN playerdiscount ELSE 0 END)
 				--
 				,@SBComm_Group = MAX(CASE WHEN BetType = 1 AND SportType = 1 THEN playerdiscount ELSE 0 END)
 				,@ParlayComm_Group = MAX(CASE WHEN BetType = 9 AND SportType = 1 THEN playerdiscount ELSE 0 END)
@@ -266,6 +282,9 @@ BEGIN
 								
 								--MaxGame,FGG,Jili
 								,158,176,237
+
+								--MG_RnG,Yeebet
+								,155,159
 								--
 								,1,161,202
 								)
@@ -392,6 +411,13 @@ BEGIN
 				,@MaxGameComm_Group		= @MaxGameComm_Group
 				,@FGGComm_Group			= @FGGComm_Group				
 				,@JiliComm_Group		= @JiliComm_Group
+
+				,@IsUpdateYeeBet		= @IsUpdateYeeBet
+				,@IsUpdateMgRNG			= @IsUpdateMgRNG
+				,@YeeBetComm			= @YeeBetComm
+				,@MgRNGComm				= @MgRNGComm
+				,@YeeBetComm_Group		= @YeeBetComm_Group				
+				,@MgRNGComm_Group		= @MgRNGComm_Group
 				--
 				,@SBComm_Group = @SBComm_Group
 				,@ParlayComm_Group = @ParlayComm_Group

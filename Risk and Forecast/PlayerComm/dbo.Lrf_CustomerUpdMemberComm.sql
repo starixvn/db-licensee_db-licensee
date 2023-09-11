@@ -80,6 +80,11 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm]
 	@FGGComm			DECIMAL(9,8) = 0,
 	@JiliComm			DECIMAL(9,8) = 0,
 
+	@IsUpdateYeeBet			BIT = 0,
+	@IsUpdateMgRNG			BIT = 0,
+	@YeeBetComm			DECIMAL(9,8) = 0,
+	@MgRNGComm			DECIMAL(9,8) = 0,
+
 	@IP VARCHAR(40),
 	@Langkey VARCHAR(10) = 'en-US',
 	@ErrCode INT = 0 OUTPUT,
@@ -127,6 +132,7 @@ AS
 		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
 		- 20230313@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
+		- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
 		
 	Param's Explanation:
 		1. To update a member/batch members without GroupCommID
@@ -218,6 +224,9 @@ BEGIN
 			,@MaxGameComm		= MaxGameComm
 			,@FGGComm			= FGGComm
 			,@JiliComm			= JiliComm
+
+			,@YeeBetComm		= YeeBetComm
+			,@MgRNGComm			= MgRNGComm
 		FROM dbo.LicenseeGroupComm WITH (NOLOCK)
 		WHERE LicenseeID = @LicenseeID AND id = @GroupCommID AND IsActive=1
 	END
@@ -259,6 +268,10 @@ BEGIN
 		,@MaxGameComm = ISNULL(@MaxGameComm,0)
 		,@FGGComm = ISNULL(@FGGComm,0)
 		,@JiliComm = ISNULL(@JiliComm,0)
+
+		,@YeeBetComm = ISNULL(@YeeBetComm,0)
+		,@MgRNGComm = ISNULL(@MgRNGComm,0)
+
 	--Validate data
 	IF @SBComm>0.15 OR @NGComm>0.15 OR @RNGComm>0.15 OR @ParlayComm > 0.15
 		OR @AllbetComm > 0.15 
@@ -292,6 +305,9 @@ BEGIN
 		OR @MaxGameComm > 0.15
 		OR @FGGComm > 0.15
 		OR @JiliComm > 0.15
+
+		OR @YeeBetComm > 0.15
+		OR @MgRNGComm > 0.15
 	BEGIN
 		SELECT @ErrCode=101
 		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN 'Player commission should not be greater than'
@@ -409,6 +425,11 @@ BEGIN
 				,@MaxGameComm				= @MaxGameComm				
 				,@FGGComm					= @FGGComm
 				,@JiliComm					= @JiliComm
+
+				,@IsUpdateYeeBet			= @IsUpdateYeeBet
+				,@IsUpdateMgRNG				= @IsUpdateMgRNG
+				,@YeeBetComm				= @YeeBetComm				
+				,@MgRNGComm					= @MgRNGComm
 		END		
 		ELSE
 		BEGIN	
@@ -502,6 +523,11 @@ BEGIN
 					,@MaxGameComm				= @MaxGameComm					
 					,@FGGComm					= @FGGComm
 					,@JiliComm					= @JiliComm
+
+					,@IsUpdateYeeBet			= @IsUpdateYeeBet
+					,@IsUpdateMgRNG				= @IsUpdateMgRNG
+					,@YeeBetComm				= @YeeBetComm				
+					,@MgRNGComm					= @MgRNGComm
 			END					
 			-- Non-BA and BA under Macaubet have got SBcomm=@SBcomm
 			DECLARE  @strNonBA 	VARCHAR(MAX)
@@ -586,7 +612,11 @@ BEGIN
 					,@MaxGameComm			= @MaxGameComm					
 					,@FGGComm				= @FGGComm
 					,@JiliComm				= @JiliComm
-					
+
+					,@IsUpdateYeeBet			= @IsUpdateYeeBet
+					,@IsUpdateMgRNG				= @IsUpdateMgRNG
+					,@YeeBetComm				= @YeeBetComm				
+					,@MgRNGComm					= @MgRNGComm
 			END
 		END
 	END	
@@ -635,9 +665,11 @@ BEGIN
 		
 		'MaxGameComm="'+ COALESCE(CAST(@MaxGameComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'FGGComm="'+ COALESCE(CAST(@FGGComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		'JiliComm="'+ COALESCE(CAST(@JiliComm as VARCHAR(50)),SPACE(1)) + '" ' 
+		'JiliComm="'+ COALESCE(CAST(@JiliComm as VARCHAR(50)),SPACE(1)) + '" ' +
 
-		
+		'YeeBetComm="'+ COALESCE(CAST(@YeeBetComm as VARCHAR(50)),SPACE(1)) + '" ' +
+		'MgRNGComm="'+ COALESCE(CAST(@MgRNGComm as VARCHAR(50)),SPACE(1)) + '" ' 
+
 	-- old value
 	SELECT @LogSPData2 = 'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +
 		'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
@@ -711,15 +743,18 @@ BEGIN
 							'HabaneroComm="'+ COALESCE(CAST(ISNULL(lcc.HabaneroComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
 							'VGamingComm="'+ COALESCE(CAST(ISNULL(lcc.VGamingComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
 							-- phase 4.2
-							'CGComm="'+ COALESCE(CAST(@CGComm as VARCHAR(50)),SPACE(1)) + '" ' +
-							'AdvantComm="'+ COALESCE(CAST(@AdvantComm as VARCHAR(50)),SPACE(1)) + '" ' +
-							'AdvantMiniComm="'+ COALESCE(CAST(@AdvantMiniComm as VARCHAR(50)),SPACE(1)) + '" ' +
-							'VS3Comm="'+ COALESCE(CAST(@VS3Comm as VARCHAR(50)),SPACE(1)) + '" ' +
-							
-							'MaxGameComm="'+ COALESCE(CAST(@MaxGameComm as VARCHAR(50)),SPACE(1)) + '" ' +
-							'FGGComm="'+ COALESCE(CAST(@FGGComm as VARCHAR(50)),SPACE(1)) + '" ' +
-							'JiliComm="'+ COALESCE(CAST(@JiliComm as VARCHAR(50)),SPACE(1)) + '" ' +
-							
+							'CGComm="'+ COALESCE(CAST(ISNULL(lcc.CGComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+							'AdvantComm="'+ COALESCE(CAST(ISNULL(lcc.AdvantComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+							'AdvantMiniComm="'+ COALESCE(CAST(ISNULL(lcc.AdvantMiniComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+							'VS3Comm="'+ COALESCE(CAST(ISNULL(lcc.VS3Comm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+
+							'MaxGameComm="'+ COALESCE(CAST(ISNULL(lcc.MaxGameComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+							'FGGComm="'+ COALESCE(CAST(ISNULL(lcc.FGGComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+							'JiliComm="'+ COALESCE(CAST(ISNULL(lcc.JiliComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+
+							'YeeBetComm="'+ COALESCE(CAST(ISNULL(lcc.YeeBetComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+							'MgRNGComm="'+ COALESCE(CAST(ISNULL(lcc.MgRNGComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
+
 						   'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
 						   @LogSPData2 AS '@TrackingValue2'
 						   , @currentdate AS '@LogDate'
@@ -841,7 +876,11 @@ BEGIN
 					,@IsUpdateMaxGame			= @IsUpdateMaxGame
 					,@IsUpdateFGG				= @IsUpdateFGG
 					,@IsUpdateJili				= @IsUpdateJili
-					
+
+					,@IsUpdateYeeBet			= @IsUpdateYeeBet
+					,@IsUpdateMgRNG				= @IsUpdateMgRNG
+					,@YeeBetComm				= @YeeBetComm				
+					,@MgRNGComm					= @MgRNGComm
 			END TRY
 			BEGIN CATCH
 				SELECT @ErrCode = ERROR_NUMBER()

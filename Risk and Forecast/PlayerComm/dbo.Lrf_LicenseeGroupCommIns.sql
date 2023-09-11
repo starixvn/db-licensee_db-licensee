@@ -41,6 +41,9 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeGroupCommIns]
 	@FGGComm			DECIMAL(9,8) = 0,
 	@JiliComm			DECIMAL(9,8) = 0,
 
+	@YeeBetComm			DECIMAL(9,8) = 0,
+	@MgRNGComm			DECIMAL(9,8) = 0,
+
 	@GroupColor VARCHAR(20),
 	@UserID INT,
 	@IP VARCHAR(40),
@@ -78,6 +81,8 @@ Revisions:
 	- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586] 
 	- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
 	- 20230313@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
+	- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
+
 Param's Explanation:
 
 */
@@ -133,6 +138,9 @@ BEGIN
 		OR @MaxGameComm > 0.15
 		OR @FGGComm > 0.15
 		OR @JiliComm > 0.15
+
+		OR @YeeBetComm > 0.15
+		OR @MgRNGComm > 0.15
 	BEGIN
 		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN  'Player Commission should not greater than 0.15'
 										ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200002,@Langkey)
@@ -192,6 +200,9 @@ BEGIN
 											,MaxGameComm
 											,FGGComm
 											,JiliComm
+
+											,YeeBetComm
+											,MgRNGComm
 											)
 		VALUES (@LicenseeID,@GroupName,@SBComm,@NGComm,@GroupColor,@IsDefault,@RNGComm,@ParlayComm
 				,@AllbetComm
@@ -225,6 +236,9 @@ BEGIN
 				,@MaxGameComm
 				,@FGGComm
 				,@JiliComm
+
+				,@YeeBetComm
+				,@MgRNGComm
 				)
 		
 		IF (@@ERROR <> 0)
@@ -281,7 +295,10 @@ BEGIN
 		'MaxGameComm="'+ COALESCE(CAST(@MaxGameComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'FGGComm="'+ COALESCE(CAST(@FGGComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'JiliComm="'+ COALESCE(CAST(@JiliComm as VARCHAR(50)),SPACE(1)) + '" '+
-	
+		
+		'YeeBetComm="'+ COALESCE(CAST(@YeeBetComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'MgRNGComm="'+ COALESCE(CAST(@MgRNGComm as VARCHAR(50)),SPACE(1)) + '" '+
+
 		'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
 		'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +
 		'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
@@ -329,7 +346,10 @@ BEGIN
 		'MaxGameComm="'+ COALESCE(CAST(@MaxGameComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'FGGComm="'+ COALESCE(CAST(@FGGComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'JiliComm="'+ COALESCE(CAST(@JiliComm as VARCHAR(50)),SPACE(1)) + '" '+
-		
+	
+		'YeeBetComm="'+ COALESCE(CAST(@YeeBetComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'MgRNGComm="'+ COALESCE(CAST(@MgRNGComm as VARCHAR(50)),SPACE(1)) + '" '+
+
 		'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
 		'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +
 		'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +

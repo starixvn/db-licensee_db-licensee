@@ -67,7 +67,12 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Direct]
 	@IsUpdateJili		BIT = 0,
 	@MaxGameComm		DECIMAL(9,8) = 0,
 	@FGGComm			DECIMAL(9,8) = 0,
-	@JiliComm			DECIMAL(9,8) = 0
+	@JiliComm			DECIMAL(9,8) = 0,
+
+	@IsUpdateYeeBet			BIT = 0,
+	@IsUpdateMgRNG			BIT = 0,
+	@YeeBetComm				DECIMAL(9,8) = 0,
+	@MgRNGComm				DECIMAL(9,8) = 0
 AS
 /*
 	Created: 20130114@Henry
@@ -101,6 +106,7 @@ AS
 		- 20220301@Eden: Deposit - Sportsbook - Revise customer settings [Redmine: #167898]
 		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
 		- 20230314@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
+		- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
 		
 	Param's Explanation:	
 
@@ -168,6 +174,9 @@ BEGIN
 		OR @IsUpdateMaxGame		= 1
 		OR @IsUpdateFGG			= 1
 		OR @IsUpdateJili		= 1
+
+		OR @IsUpdateYeeBet		= 1
+		OR @IsUpdateMgRNG		= 1
 	)
 	BEGIN
 		INSERT INTO @tblSettingDCS_tmp (IsUpdated,sporttype,Bettype, Comm)
@@ -204,6 +213,10 @@ BEGIN
 				,(@IsUpdateMaxGame,237,5401,@MaxGameComm)
 				,(@IsUpdateFGG,176,8201,@FGGComm)
 				,(@IsUpdateJili,158,5100,@JiliComm)
+
+				,(@IsUpdateYeeBet,159,3151,@YeeBetComm)
+				,(@IsUpdateMgRNG,155,8400,@MgRNGComm)
+
 				--
 				,(@IsUpdateSB,1,1,@SBComm)
 				,(@IsUpdateSB,1,4,@SBComm)

@@ -75,6 +75,11 @@ CREATE PROCEDURE [dbo].[Lrf_LicenseeGroupCommUpd]
 	@JiliComm			DECIMAL(9,8) = 0,
 	@IsUpdateJili		BIT = 0,
 	
+	@YeeBetComm			DECIMAL(9,8) = 0,
+	@IsUpdateYeeBet		BIT = 0,
+	@MgRNGComm			DECIMAL(9,8) = 0,
+	@IsUpdateMgRNG		BIT = 0,
+
 	@GroupColor VARCHAR(20),
 	@IsDefault BIT=0, 
 	@IsResetDefault BIT=0,
@@ -115,6 +120,7 @@ AS
 		- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586]
 		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
 		- 20230313@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
+		- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
 		
 	Param's Explanation:
 
@@ -179,6 +185,9 @@ BEGIN
 		,@MaxGameComm_Old		DECIMAL(9,8) = 0
 		,@FGGComm_Old			DECIMAL(9,8) = 0
 		,@JiliComm_Old			DECIMAL(9,8) = 0
+
+		,@YeeBetComm_Old		DECIMAL(9,8) = 0
+		,@MgRNGComm_Old			DECIMAL(9,8) = 0
 	
 		,@IsDefault_Old BIT
 		,@custID_cnt INT = 0
@@ -227,6 +236,8 @@ BEGIN
 		OR @FGGComm > 0.15
 		OR @JiliComm > 0.15
 
+		OR @YeeBetComm > 0.15
+		OR @MgRNGComm > 0.15
 	BEGIN
 		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN  'Player Commission should not greater than '
 										ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200002,@Langkey)
@@ -296,6 +307,9 @@ BEGIN
 			,@MaxGameComm_Old 		= MaxGameComm
 			,@FGGComm_Old 			= FGGComm
 			,@JiliComm_Old 			= JiliComm
+
+			,@YeeBetComm_Old 		= YeeBetComm
+			,@MgRNGComm_Old 		= MgRNGComm
 			
 			,@IsDefault_Old=IsDefault			
 		FROM dbo.LicenseeGroupComm WITH (NOLOCK)
@@ -398,7 +412,10 @@ BEGIN
 			
 			@IsUpdateMaxGame  = CASE WHEN @IsUpdateMaxGame = 1 AND @MaxGameComm_Old <> @MaxGameComm  THEN 1 ELSE 0 END,
 			@IsUpdateFGG  = CASE WHEN @IsUpdateFGG = 1 AND @FGGComm_Old <> @FGGComm  THEN 1 ELSE 0 END,
-			@IsUpdateJili  = CASE WHEN @IsUpdateJili = 1 AND @JiliComm_Old <> @JiliComm  THEN 1 ELSE 0 END
+			@IsUpdateJili  = CASE WHEN @IsUpdateJili = 1 AND @JiliComm_Old <> @JiliComm  THEN 1 ELSE 0 END,
+
+			@IsUpdateYeeBet  = CASE WHEN @IsUpdateYeeBet = 1 AND @YeeBetComm_Old <> @YeeBetComm  THEN 1 ELSE 0 END,
+			@IsUpdateMgRNG  = CASE WHEN @IsUpdateMgRNG = 1 AND @MgRNGComm_Old <> @MgRNGComm  THEN 1 ELSE 0 END
 		
 		--Update Group Comm + Member Comm + all the comm settings
 		IF (@IsUpdateSB = 1
@@ -435,6 +452,9 @@ BEGIN
 			OR @IsUpdateMaxGame			= 1
 			OR @IsUpdateFGG				= 1
 			OR @IsUpdateJili			= 1
+
+			OR @IsUpdateYeeBet			= 1
+			OR @IsUpdateMgRNG			= 1
 			)
 		
 		BEGIN
@@ -479,6 +499,8 @@ BEGIN
 					,FGGComm = CASE WHEN @IsUpdateFGG = 1 THEN @FGGComm ELSE FGGComm END
 					,JiliComm = CASE WHEN @IsUpdateJili = 1 THEN @JiliComm ELSE JiliComm END
 					
+					,YeeBetComm = CASE WHEN @IsUpdateYeeBet = 1 THEN @YeeBetComm ELSE YeeBetComm END
+					,MgRNGComm = CASE WHEN @IsUpdateMgRNG = 1 THEN @MgRNGComm ELSE MgRNGComm END
 			WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID
 			
 			SET @IsexistMember = (SELECT TOP (1) 1 
@@ -570,6 +592,11 @@ BEGIN
 					,@IsUpdateFGG				= @IsUpdateFGG
 					,@IsUpdateJili				= @IsUpdateJili
 					
+					,@YeeBetComm				= @YeeBetComm
+					,@MgRNGComm					= @MgRNGComm
+					,@IsUpdateYeeBet			= @IsUpdateYeeBet
+					,@IsUpdateMgRNG				= @IsUpdateMgRNG
+
 					,@IP=@IP
 					,@Langkey=@langkey
 					,@ErrCode=@ErrCode OUTPUT
@@ -627,6 +654,9 @@ BEGIN
 			'FGGComm="'+ COALESCE(CAST(@FGGComm as VARCHAR(50)),SPACE(1)) + '" '+
 			'JiliComm="'+ COALESCE(CAST(@JiliComm as VARCHAR(50)),SPACE(1)) + '" '+
 
+			'YeeBetComm="'+ COALESCE(CAST(@YeeBetComm as VARCHAR(50)),SPACE(1)) + '" '+
+			'MgRNGComm="'+ COALESCE(CAST(@MgRNGComm as VARCHAR(50)),SPACE(1)) + '" '+
+
 			'IsUpdateNG="'+ COALESCE(CAST(@IsUpdateNG as VARCHAR(50)),SPACE(1)) + '" ' +
 			'IsUpdateRNG="'+ COALESCE(CAST(@IsUpdateRNG as VARCHAR(50)),SPACE(1)) + '" ' +			
 			'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
@@ -678,6 +708,9 @@ BEGIN
 			'MaxGameComm="'+ COALESCE(CAST(@MaxGameComm_Old as VARCHAR(50)),SPACE(1)) + '" '+
 			'FGGComm="'+ COALESCE(CAST(@FGGComm_Old as VARCHAR(50)),SPACE(1)) + '" '+
 			'JiliComm="'+ COALESCE(CAST(@JiliComm_Old as VARCHAR(50)),SPACE(1)) + '" '+
+
+			'YeeBetComm="'+ COALESCE(CAST(@YeeBetComm_Old as VARCHAR(50)),SPACE(1)) + '" '+
+			'MgRNGComm="'+ COALESCE(CAST(@MgRNGComm_Old as VARCHAR(50)),SPACE(1)) + '" '+
 
 			'IsUpdateNG="'+ COALESCE(CAST(@IsUpdateNG as VARCHAR(50)),SPACE(1)) + '" ' +
 			'IsUpdateRNG="'+ COALESCE(CAST(@IsUpdateRNG as VARCHAR(50)),SPACE(1)) + '" ' +			

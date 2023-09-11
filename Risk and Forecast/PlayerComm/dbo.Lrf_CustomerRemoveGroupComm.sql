@@ -40,6 +40,7 @@ AS
 		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
 		- 20230315@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
+		- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
 
 */  
 BEGIN  
@@ -83,6 +84,9 @@ BEGIN
 			@MaxGameComm		DECIMAL(9,8) = 0,
 			@FGGComm			DECIMAL(9,8) = 0,
 			@JiliComm			DECIMAL(9,8) = 0,
+
+			@YeeBetComm			DECIMAL(9,8) = 0,
+			@MgRNGComm			DECIMAL(9,8) = 0,
 
 			@CustID INT, 
 			@i INT	
@@ -159,7 +163,10 @@ BEGIN
 				
 				@MaxGameComm		= MaxGameComm,
 				@FGGComm			= FGGComm,
-				@JiliComm			= JiliComm
+				@JiliComm			= JiliComm,
+
+				@YeeBetComm			= YeeBetComm,
+				@MgRNGComm			= MgRNGComm
 			FROM dbo.LicenseeCustComm WITH (NOLOCK)
 			WHERE LicenseeID = @LicenseeID AND CustID = @CustID
 					
@@ -240,6 +247,11 @@ BEGIN
 				@MaxGameComm			= @MaxGameComm,
 				@FGGComm				= @FGGComm,
 				@JiliComm				= @JiliComm,
+
+				@IsUpdateYeeBet			= 1,
+				@IsUpdateMgRNG			= 1,
+				@YeeBetComm				= @YeeBetComm,			
+				@MgRNGComm				= @MgRNGComm,
 				
 				@IP=@IP,
 				@Langkey=@Langkey,
@@ -333,6 +345,11 @@ BEGIN
 			@MaxGameComm			= 0,
 			@FGGComm				= 0,
 			@JiliComm				= 0,
+
+			@IsUpdateYeeBet			= 1,
+			@IsUpdateMgRNG			= 1,
+			@YeeBetComm				= 0,			
+			@MgRNGComm				= 0,
 			
 			@IP=@IP,
 			@Langkey=@Langkey,
@@ -383,6 +400,9 @@ BEGIN
 			MaxGameComm	 = 0,
 			FGGComm		 = 0,
 			JiliComm	 = 0,
+
+			YeeBetComm	 = 0,
+			MgRNGComm	 = 0,
 
 			GroupCommID = 0
 		WHERE LicenseeID = @LicenseeID 
