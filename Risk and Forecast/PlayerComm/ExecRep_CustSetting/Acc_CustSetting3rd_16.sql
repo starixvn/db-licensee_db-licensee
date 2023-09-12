@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="" viewers="" isFunction="0" isNested="1"></info>*/
+ï»¿/*<info serverAlias="DBCUST-CUSTDB" executers="" viewers="" isFunction="0" isNested="1"></info>*/
 ALTER PROCEDURE [dbo].[Acc_CustSetting3rd_16]
 	@IDs VARCHAR(MAX),
 	@SBComm DECIMAL(9,8) = 0,
@@ -144,13 +144,14 @@ Revisions:
 	- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
 	- 20230314@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 	- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
-	
+	- 20230808@Tacy: LAP - Offer Player Commission to VS3 (new) [redmine: #192203]
+
 Param's Explanation:
-• @ErrCode:
+ï¿½ @ErrCode:
     = 0: Transaction recorded successfully.
     > 0: Specific Error.
     
-• @ErrMsg: Error description.
+ï¿½ @ErrMsg: Error description.
 */
 BEGIN
 	SET NOCOUNT ON;
@@ -254,7 +255,7 @@ BEGIN
 				,(@IsUpdateCG,167,7301,@CGComm_Group,@CGComm)
 				,(@IsUpdateAdvant,172,7701,@AdvantComm_Group,@AdvantComm)
 				,(@IsUpdateAdvantMini,174,7801,@AdvantMiniComm_Group,@AdvantMiniComm)
-				,(@IsUpdateVS3,231,5301,@VS3Comm_Group,@VS3Comm)
+				,(@IsUpdateVS3,178,5302,@VS3Comm_Group,@VS3Comm)
 				
 				,(@IsUpdateMaxGame,237,5401,@MaxGameComm_Group,@MaxGameComm)
 				,(@IsUpdateFGG,176,8201,@FGGComm_Group,@FGGComm)

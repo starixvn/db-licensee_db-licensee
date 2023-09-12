@@ -107,6 +107,7 @@ AS
 		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
 		- 20230314@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 		- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
+		- 20230808@Tacy: LAP - Offer Player Commission to VS3 (new) [redmine: #192203]
 		
 	Param's Explanation:	
 
@@ -208,7 +209,7 @@ BEGIN
 				,(@IsUpdateCG,167,7301,@CGComm)
 				,(@IsUpdateAdvant,172,7701,@AdvantComm)
 				,(@IsUpdateAdvantMini,174,7801,@AdvantMiniComm)
-				,(@IsUpdateVS3,231,5301,@VS3Comm)
+				,(@IsUpdateVS3,178,5302,@VS3Comm)
 				
 				,(@IsUpdateMaxGame,237,5401,@MaxGameComm)
 				,(@IsUpdateFGG,176,8201,@FGGComm)
