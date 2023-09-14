@@ -59,6 +59,7 @@ Revisions:
 	- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 	- 20220301@Eden: Deposit - Sportsbook - Revise customer settings [Redmine: #167898] 
 	- 20220823@Tacy: remove update danger for BA member [redmine:#176518]
+	- 20230814@Luke: LAP - SEA Localization [Redmine: #187132]
 
 Param's Explanation:
 
@@ -126,7 +127,7 @@ BEGIN
 		IF ISNULL(@CurrencyUgroup,'') = ''
 		BEGIN
 			SELECT @ErrMsg = CASE @Langkey 
-							WHEN 'en-US' THEN 'This currency is not offered to operate BA yet !'
+							WHEN 'en-US' THEN 'This currency is not offered to operate BA yet!'
 							ELSE  dbo.Lrf_f_Get_MsgNamebyMsgID(200033,@Langkey)
 					END, @ErrCode = 104
 			RETURN
@@ -171,7 +172,7 @@ BEGIN
 		IF ISNULL(@EnableBA,0) = 0
 		BEGIN
 			SELECT @ErrMsg = 	CASE @Langkey 
-						WHEN 'en-US' THEN 'This licensee is not allowed BA !'
+						WHEN 'en-US' THEN 'This licensee is not allowed BA!'
 						ELSE  [dbo].[Lrf_f_Get_MsgNamebyMsgID](200037,@Langkey)
 				END, @ErrCode = 100
 			RETURN
@@ -194,7 +195,7 @@ BEGIN
 			BEGIN
 					
 			SELECT @ErrMsg = 	CASE @Langkey 
-									WHEN 'en-US' THEN 'This currency is not allowed BA !'
+									WHEN 'en-US' THEN 'This currency is not allowed BA!'
 									ELSE  [dbo].[Lrf_f_Get_MsgNamebyMsgID](200034,@Langkey)
 								END, @ErrCode = 101
 				RETURN
@@ -213,7 +214,7 @@ BEGIN
 				)
 		BEGIN
 			SELECT @ErrMsg = 	CASE @Langkey 
-						WHEN 'en-US' THEN 'This member has already enabled BA !'
+						WHEN 'en-US' THEN 'This member has already enabled BA!'
 						ELSE  [dbo].[Lrf_f_Get_MsgNamebyMsgID](200035,@Langkey)
 				END, @ErrCode = 102
 			RETURN
@@ -236,7 +237,7 @@ BEGIN
 				AND @IsPowerBAUser=0
 			BEGIN
 				SELECT @ErrMsg = 	CASE @Langkey 
-							WHEN 'en-US' THEN 'You are not allowed to change BA status !'
+							WHEN 'en-US' THEN 'You are not allowed to change BA status!'
 							ELSE  [dbo].[Lrf_f_Get_MsgNamebyMsgID](200036,@Langkey)
 					END, @ErrCode = 103
 				RETURN
@@ -349,7 +350,7 @@ BEGIN
 		IF @LicenseeID IN (7)
 		BEGIN
 			SELECT @ErrMsg = 	CASE @Langkey 
-						WHEN 'en-US' THEN 'You are not allowed to change BA status !'
+						WHEN 'en-US' THEN 'You are not allowed to change BA status!'
 						ELSE  [dbo].[Lrf_f_Get_MsgNamebyMsgID](200036,@Langkey)
 				END, @ErrCode = 103
 			RETURN
@@ -367,7 +368,7 @@ BEGIN
 						)
 			BEGIN
 				SELECT @ErrMsg = 	CASE @Langkey 
-						WHEN 'en-US' THEN 'This member has already disabled BA ! !'
+						WHEN 'en-US' THEN 'This member has already disabled BA!'
 						ELSE  [dbo].[Lrf_f_Get_MsgNamebyMsgID](200038,@Langkey)
 				END, @ErrCode = 106
 				RETURN
@@ -439,4 +440,3 @@ BEGIN
 	END
 END
 GO
-

@@ -83,6 +83,7 @@ AS
 		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
 		- 20230315@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 		- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
+		- 20230821@Luke: LAP - SEA Localization [Redmine: #187132]
 		
 	Param's Explanation:
 */ 
@@ -109,8 +110,9 @@ BEGIN
 			LEFT JOIN LicenseeCust b WITH (NOLOCK) ON t.CustID=b.CustID AND b.LicenseeID=@LicenseeID
 		WHERE b.CustID IS NULL)
 	BEGIN
-		SELECT @ErrCode=100
-		SELECT @ErrMsg='Customer does not belong to licensee'
+		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN  'Customer does not belong to licensee'
+										ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200051,@Langkey)
+										END, @ErrCode = 100
 		RETURN 
 	END
 	

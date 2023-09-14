@@ -1,4 +1,4 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_CustomerUpdDanger]
+﻿﻿ALTER PROCEDURE [dbo].[Lrf_CustomerUpdDanger]
 	@CustID INT,
 	@UserID INT,
 	@Danger INT,

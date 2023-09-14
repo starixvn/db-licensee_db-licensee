@@ -1,4 +1,4 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_CustomerUpdClosed]
+﻿﻿ALTER PROCEDURE [dbo].[Lrf_CustomerUpdClosed]
 	@LicenseeID INT,	
 	@Custid INT,--memberid  
 	@Closed BIT,	

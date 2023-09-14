@@ -20,6 +20,7 @@ AS
 	Revisions:
 		- 20130413@Jim: support multi language
 		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
+		- 20230814@Luke: LAP - SEA Localization [Redmine: #187132]
 
 	Param's Explanation:
 
@@ -45,7 +46,7 @@ BEGIN
 	BEGIN
 		SELECT @ErrMsg = 
 						CASE @Langkey 
-							WHEN 'en-US' THEN 'Process turn off BA is unsuccessful !'
+							WHEN 'en-US' THEN 'Process turn off BA is unsuccessful!'
 							ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200015,@Langkey)
 						END, @ErrCode = 100
 		RETURN
@@ -71,6 +72,4 @@ BEGIN
 		@duration = @duration
 END
 GO
- 
-
 

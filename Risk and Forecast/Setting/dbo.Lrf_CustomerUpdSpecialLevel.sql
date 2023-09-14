@@ -18,6 +18,7 @@ DB: DBCUST.CustDB
 Revisions:
 	- 20130413@Jim: support multi language
 	- 20180810@Sophia: Change the way to update/insert SpecialLevel, use new table Dep_CustSpecialLevel [redmine: #99464] 
+	- 20230821@Luke: LAP - SEA Localization [Redmine: #187132]
 	
 Param's Explanation:
 
@@ -35,7 +36,7 @@ IF @SpecialLevel <0 OR @SpecialLevel>10
 BEGIN
 	SELECT @ErrMsg =
 					CASE @Langkey 
-						WHEN 'en-US' THEN 'Wrong special level !'
+						WHEN 'en-US' THEN 'Wrong special level!'
 						ELSE [dbo].[Lrf_f_Get_MsgNamebyMsgID](200008,@Langkey)
 					END, @ErrCode = 100
 END
@@ -62,7 +63,7 @@ BEGIN
 		BEGIN
 			SELECT @ErrMsg =
 				CASE @Langkey 
-					WHEN 'en-US' THEN 'Could not update special level for this member !'
+					WHEN 'en-US' THEN 'Could not update special level for this member!'
 					ELSE [dbo].[Lrf_f_Get_MsgNamebyMsgID](200010,@Langkey)
 				END, @ErrCode = 100
 		END
@@ -86,7 +87,7 @@ BEGIN
 		BEGIN
 			SELECT @ErrMsg =
 				CASE @Langkey 
-					WHEN 'en-US' THEN 'Could not update special level for this member !'
+					WHEN 'en-US' THEN 'Could not update special level for this member!'
 					ELSE [dbo].[Lrf_f_Get_MsgNamebyMsgID](200010,@Langkey)
 				END, @ErrCode = 100
 		END

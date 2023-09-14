@@ -121,6 +121,7 @@ AS
 		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
 		- 20230313@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 		- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
+		- 20230814@Luke: LAP - SEA Localization [Redmine: #187132]
 		
 	Param's Explanation:
 
@@ -239,9 +240,9 @@ BEGIN
 		OR @YeeBetComm > 0.15
 		OR @MgRNGComm > 0.15
 	BEGIN
-		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN  'Player Commission should not greater than '
+		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN  'Player Commission should not be greater than'
 										ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200002,@Langkey)
-										END +'0.15', @ErrCode = 100
+										END +' 0.15', @ErrCode = 100
 		RETURN
 	END
 
