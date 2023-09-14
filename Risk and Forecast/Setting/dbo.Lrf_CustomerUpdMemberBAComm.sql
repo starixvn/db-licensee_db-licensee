@@ -32,6 +32,7 @@ Revisions:
 	- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
 	- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 	- 20220301@Eden: Deposit - Sportsbook - Revise customer settings [Redmine: #167898] 
+	- 20230814@Luke: LAP - SEA Localization [Redmine: #187132]
 	
 Param's Explanation:
 
@@ -186,7 +187,7 @@ BEGIN
 	BEGIN
 		SELECT @ErrMsg = @UserName + ': '+
 						CASE @Langkey 
-							WHEN 'en-US' THEN 'Update process is unsuccessful !'
+							WHEN 'en-US' THEN 'Update process is unsuccessful!'
 							ELSE [dbo].[Lrf_f_Get_MsgNamebyMsgID](90001,@Langkey)
 						END, @ErrCode = 108
 		RETURN
@@ -205,7 +206,7 @@ BEGIN
 	BEGIN
 		SELECT @ErrMsg = @UserName + ': '+
 						CASE @Langkey 
-							WHEN 'en-US' THEN 'Update process is unsuccessful !'
+							WHEN 'en-US' THEN 'Update process is unsuccessful!'
 							ELSE [dbo].[Lrf_f_Get_MsgNamebyMsgID](90001,@Langkey)
 						END, @ErrCode = 103
 		RETURN
@@ -224,7 +225,7 @@ BEGIN
 	BEGIN
 		SELECT @ErrMsg = @UserName + ': '+
 						CASE @Langkey 
-							WHEN 'en-US' THEN 'Update process is unsuccessful !'
+							WHEN 'en-US' THEN 'Update process is unsuccessful!'
 							ELSE [dbo].[Lrf_f_Get_MsgNamebyMsgID](90001,@Langkey)
 						END, @ErrCode = 104
 		RETURN
@@ -243,7 +244,7 @@ BEGIN
 	BEGIN
 		SELECT @ErrMsg = @UserName + ': '+
 						CASE @Langkey 
-							WHEN 'en-US' THEN 'Update process is unsuccessful !'
+							WHEN 'en-US' THEN 'Update process is unsuccessful!'
 							ELSE [dbo].[Lrf_f_Get_MsgNamebyMsgID](90001,@Langkey)
 						END, @ErrCode = 105
 		RETURN
@@ -258,7 +259,7 @@ BEGIN
 	BEGIN
 		SELECT @ErrMsg = @UserName + ': '+
 						CASE @Langkey 
-							WHEN 'en-US' THEN 'Update process is unsuccessful !'
+							WHEN 'en-US' THEN 'Update process is unsuccessful!'
 							ELSE [dbo].[Lrf_f_Get_MsgNamebyMsgID](90001,@Langkey)
 						END, @ErrCode = 107
 		RETURN
@@ -279,7 +280,7 @@ BEGIN
 	BEGIN
 		SELECT @ErrMsg = @UserName + ': '+
 						CASE @Langkey
-							WHEN 'en-US' THEN 'Update process is unsuccessful !'
+							WHEN 'en-US' THEN 'Update process is unsuccessful!'
 							ELSE [dbo].[Lrf_f_Get_MsgNamebyMsgID](90001,@Langkey)
 						END, @ErrCode = 106
 		RETURN

@@ -1,4 +1,4 @@
-﻿ALTER PROCEDURE [dbo].[Lrf_CustomerUpdSuspended]
+﻿﻿ALTER PROCEDURE [dbo].[Lrf_CustomerUpdSuspended]
 	@LicenseeID INT,	
 	@Custid INT,--memberid  
 	@Suspended BIT,	
