@@ -21,6 +21,7 @@ AS
 		- 20221010@Kos: Support crypto currency [Redmine: 177481]
 		- 20230208@Kai: Hard code USDTJP, USDT currency [Redmine: 183455]
 		- 20230712@Kai: Hard code USDT2 currency [Redmine: 191163]
+		- 20230918@Kai: Hard code USDKH, MP currency [Redmine: 193757]
 */
 
 BEGIN
@@ -47,6 +48,8 @@ BEGIN
 			WHEN lc.currency = 125 THEN 'INH'
 			WHEN lc.currency = 202 THEN 'USDTJP'
 			WHEN lc.currency = 206 THEN 'USDT'
+			WHEN lc.currency = 208 THEN 'USDKH'
+			WHEN lc.currency = 209 THEN 'MP'
 			-- crypto currencies
 			WHEN lc.currency = 142 THEN 'USDT'
 			WHEN e.CurrencyType = 1 THEN e.currency
@@ -71,6 +74,8 @@ BEGIN
 			WHEN lc.currency = 125 THEN 'INH'
 			WHEN lc.currency = 202 THEN 'USDTJP'
 			WHEN lc.currency = 206 THEN 'USDT'
+			WHEN lc.currency = 208 THEN 'USDKH'
+			WHEN lc.currency = 209 THEN 'MP'
 			-- crypto currencies
 			WHEN lc.currency = 142 THEN 'USDT'
 			WHEN e.CurrencyType = 1 THEN e.currency
