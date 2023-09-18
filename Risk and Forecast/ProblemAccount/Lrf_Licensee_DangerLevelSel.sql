@@ -21,7 +21,8 @@ AS
 		
 	Revisions:
 		- 20221109@Tacy: Create SP [RedmineID: #179078]
-		- 20230228@Tacy: HF - LAP - Player Segmentation - Saba Virtual Setting - Duplicate datalog
+		- 20230228@Tacy: HF - LAP - Player Segmentation - Saba Virtual Setting - Duplicate datalog [RedmineID: #184368]
+		- 20230824@Tacy: LAP - Player Segmentation - Saba Virtual Setting - Enhance performance [RedmineID: #193149]
 
 	Paramter's Explanations:
 		@Sporttype	= "1,2"
@@ -61,12 +62,45 @@ BEGIN
 	)
 
 	CREATE TABLE #CustLog (
-			CustId		INT, 
-			NewLevel	TINYINT,
-			LogDate		DATETIME,
-			ActionID	INT,
+			CustId			INT, 
+			TrackingValue	NVARCHAR(MAX),
+			NewLevel		TINYINT,
+			LogDate			DATETIME,
+			ActionID		INT,
 			PRIMARY KEY CLUSTERED (CustId, LogDate, ActionID)
 	)
+	
+	CREATE TABLE #CustLog_Archive (
+			CustId			INT, 
+			ActionID		INT,
+			PRIMARY KEY CLUSTERED (CustId, ActionID)
+	)
+
+	CREATE TABLE #CustLog_ArchiveTmp (
+			CustId			INT, 
+			ActionID		INT,
+			PRIMARY KEY CLUSTERED (CustId, ActionID)
+	)
+
+	DECLARE @ActionLog TABLE (ActionID SMALLINT)
+
+	DECLARE @__archiveDate DATETIME, @MinLogDate DATETIME
+	
+	SELECT @__archiveDate = DATEADD(DAY, 1, bodb_CustomerLog.dbo.f_CustomerLog_GetArchiveDate())
+	
+	SELECT @MinLogDate='2022-12-14'
+
+	IF @IsCheckAll=0
+	BEGIN
+		IF @ToDate < @MinLogDate
+			RETURN
+		IF @FromDate < @MinLogDate
+			SET @FromDate=@MinLogDate
+	END
+	ELSE
+	BEGIN
+		SELECT @FromDate=@MinLogDate, @ToDate=GETDATE()
+	END
 
 	DECLARE @DocHandler INT
 
@@ -87,6 +121,12 @@ BEGIN
 		RETURN
 	END CATCH;
 	
+	INSERT INTO @ActionLog (ActionID)
+	SELECT 1191 UNION ALL
+	SELECT 1192 UNION ALL
+	SELECT 1193 UNION ALL
+	SELECT 1194 
+
 	INSERT INTO #tblDangerLevel (DangerLevel)
 	SELECT RTRIM(LTRIM(value)) AS DangerLevel
 	FROM string_split(@Level,',')
@@ -130,49 +170,80 @@ BEGIN
 		SELECT	ul.custid,
 				ul.ActionID,
 				ul.logdate,
-				x.Control.value('@DangerLevel', 'tinyint') AS NewLevel,
+				ul.TrackingValue,
 				ROW_NUMBER () OVER (PARTITION BY cl.CustId, ul.ActionID ORDER BY ul.logdate DESC) rn
 		FROM UserLog_RunSP ul WITH(NOLOCK) 
 			INNER JOIN #CustList cl ON cl.CustId=ul.custid
-			CROSS APPLY (VALUES(CAST(ul.TrackingValue as xml))) AS v(Casted)
-			CROSS APPLY v.Casted.nodes('/R') AS x(Control)
 		WHERE ul.ActionID BETWEEN 1191 AND 1194
+		AND logdate>=@FromDate
 	)
-	INSERT INTO #CustLog (CustId, LogDate, NewLevel, ActionID)
-	SELECT CustId, LogDate, NewLevel, ActionID
+	INSERT INTO #CustLog (CustId, LogDate, TrackingValue, ActionID)
+	SELECT CustId, LogDate, TrackingValue, ActionID
 	FROM UserLog
 	WHERE rn=1
 
 	--Get UserLog_Archive
-	;WITH UserLog_Archive AS( 
-		SELECT	ul.custid,
-				ul.ActionID,
-				ul.logdate,
-				x.Control.value('@DangerLevel', 'tinyint') AS NewLevel,
-				ROW_NUMBER () OVER (PARTITION BY cl.CustId, ul.ActionID ORDER BY ul.logdate DESC) rn
-		FROM bodb_CustomerLog_Archive.dbo.UserLog_RunSP ul WITH(NOLOCK) 
-			INNER JOIN #CustList cl ON cl.CustId=ul.custid
-			CROSS APPLY (VALUES(CAST(ul.TrackingValue as xml))) AS v(Casted)
-			CROSS APPLY v.Casted.nodes('/R') AS x(Control)
-		WHERE ul.ActionID BETWEEN 1191 AND 1194
-		 AND NOT EXISTS (SELECT 1 FROM #CustLog t WHERE t.CustId=ul.custid AND t.ActionID=ul.ActionID AND t.LogDate=ul.LogDate)
-	)
-	INSERT INTO #CustLog (CustId, LogDate, NewLevel, ActionID)
-	SELECT CustId, LogDate, NewLevel, ActionID
-	FROM UserLog_Archive
-	WHERE rn=1
+	IF NOT @FromDate >= @__archiveDate
+	BEGIN
+		INSERT INTO #CustLog_Archive (CustId, ActionID)
+		SELECT cl.CustId, al.ActionID
+		FROM #CustList cl
+		CROSS APPLY @ActionLog al
+		OUTER APPLY (SELECT clg.CustId FROM #CustLog clg WHERE cl.CustId=clg.CustId AND al.ActionID=clg.ActionID) t
+		WHERE t.CustId IS NULL
 
-	;WITH CTE AS (
-		SELECT *,
-			ROW_NUMBER () OVER (PARTITION BY CustId, ActionID ORDER BY logdate DESC) rn
-		FROM #CustLog 
-	)
-	DELETE cl
-	FROM #CustLog cl
-	INNER JOIN CTE t ON t.CustId=cl.CustId
-					AND t.ActionID=cl.ActionID
-					AND t.LogDate=cl.LogDate
-	WHERE t.rn<>1
+		WHILE (1=1)
+		BEGIN
+			TRUNCATE TABLE #CustLog_ArchiveTmp
+
+			DELETE TOP (2000) T
+			OUTPUT deleted.CustId, deleted.ActionID INTO #CustLog_ArchiveTmp
+			FROM #CustLog_Archive T
+
+			IF @@ROWCOUNT=0
+				BREAK;
+
+			;WITH UserLog_Archive AS( 
+				SELECT	ul.custid,
+						ul.ActionID,
+						ul.logdate
+				FROM #CustLog_ArchiveTmp cl
+				CROSS APPLY (SELECT TOP 1 ul.custid, ul.ActionID, ul.logdate
+								FROM bodb_CustomerLog_Archive.dbo.UserLog_RunSP ul WITH(NOLOCK)
+								WHERE cl.CustId=ul.custid
+								AND ul.ActionID = cl.ActionID
+								AND UL.logdate>=@FromDate
+								ORDER BY logdate DESC) ul
+				WHERE NOT EXISTS (SELECT 1 
+								 FROM #CustLog t2 
+								 WHERE t2.CustId=ul.custid 
+								 AND t2.ActionID=ul.ActionID 
+								)
+		
+			)
+			INSERT INTO #CustLog (CustId, LogDate, ActionID)
+			SELECT CustId, LogDate, ActionID
+			FROM UserLog_Archive
+		END
+
+		--Update: Trackingvalue
+		UPDATE t
+		SET t.TrackingValue = ul.TrackingValue
+		FROM #CustLog t
+			INNER JOIN  bodb_CustomerLog_Archive.dbo.UserLog_RunSP ul WITH(NOLOCK) 
+				ON t.CustId = ul.custid
+				AND t.ActionID = ul.ActionID
+				AND t.LogDate = ul.logdate
+		WHERE t.TrackingValue IS NULL
+			AND ul.logdate >= @FromDate
+	END
+
+	--Update: NewLevel
+	UPDATE clg
+	SET clg.NewLevel=x.Control.value('@DangerLevel', 'tinyint')
+	FROM #CustLog clg
+	CROSS APPLY (VALUES(CAST(clg.TrackingValue as xml))) AS v(Casted)
+	CROSS APPLY v.Casted.nodes('/R') AS x(Control)
 
 	--Get LastModifiedDate
 	UPDATE cl
@@ -186,36 +257,25 @@ BEGIN
 
 	--Filter: @LastModifiedDate
 	DELETE FROM #CustList
-	WHERE NOT (1 = CASE WHEN @IsCheckAll = 1 AND LastModifiedDate IS NOT NULL	THEN 1  
+	WHERE NOT (1 = CASE WHEN LastModifiedDate BETWEEN @FromDate AND @ToDate	THEN 1  
 						WHEN @IsCheckAll = 1 AND LastModifiedDate IS NULL 
-							AND (SoccerLevel=0 OR BasketballLevel=0)			THEN 1  
-						WHEN @IsCheckAll = 0 AND LastModifiedDate BETWEEN @FromDate AND @ToDate THEN 1
+							AND (SoccerLevel=0 OR BasketballLevel=0)		THEN 1  
 						ELSE 0 END)
 
 	--UpdateSoccer/Basketball???
 	;WITH tmp1 AS (
 		SELECT tmp.CustId,
 				--Soccer
-				CASE WHEN tmp.ActionID=1191 
-						AND
-						((t1.CustId IS NOT NULL AND tmp.ActionID=t1.ActionID) OR t1.CustId IS NULL) THEN 1	--Auto update
+				CASE WHEN tmp.ActionID IN (1191,1193)							THEN 1
 					 WHEN tmp.ActionID=1192 
 						AND t1.CustId IS NOT NULL AND t1.ActionID=1191
-						AND DATEDIFF(HH, tmp.LastModifiedDate, t1.LogDate)=0						THEN 1
-					 WHEN tmp.ActionID=1193 
-						AND
-						(t1.CustId IS NULL OR (t1.CustId IS NOT NULL AND tmp.ActionID=t1.ActionID)) THEN 1	--Manual update
+						AND DATEDIFF(HH, tmp.LastModifiedDate, t1.LogDate)=0	THEN 1
 					 ELSE 0
 				END UpdateSoccer,
-				CASE WHEN tmp.ActionID=1192 
-						AND
-						((t2.CustId IS NOT NULL AND tmp.ActionID=t2.ActionID) OR t2.CustId IS NULL) THEN 1	--Auto update
+				CASE WHEN tmp.ActionID IN (1192,1194)							THEN 1	
 					 WHEN tmp.ActionID=1191 
 						AND t2.CustId IS NOT NULL AND t2.ActionID=1192
-						AND DATEDIFF(HH, tmp.LastModifiedDate, t2.LogDate)=0						THEN 1
-					 WHEN tmp.ActionID=1194 
-						AND
-						(t2.CustId IS NULL OR (t2.CustId IS NOT NULL AND tmp.ActionID=t2.ActionID)) THEN 1	--Manual update
+						AND DATEDIFF(HH, tmp.LastModifiedDate, t2.LogDate)=0	THEN 1
 					 ELSE 0
 				END UpdateBasketball
 		FROM #CustList tmp
@@ -240,7 +300,7 @@ BEGIN
 		--select: Saba Soccer
 	BEGIN
 		DELETE FROM #CustList
-		WHERE UpdateSoccer=0
+		WHERE (UpdateSoccer=0 AND LastModifiedDate IS NOT NULL)	--GET ALL
 			OR SoccerLevel NOT IN (SELECT DangerLevel FROM #tblDangerLevel)	
 	END
 	ELSE IF NOT EXISTS (SELECT 1 FROM #tblSabaSport WHERE Sporttype=1)
@@ -248,7 +308,7 @@ BEGIN
 		--select: Saba Basketball
 	BEGIN
 		DELETE FROM #CustList
-		WHERE UpdateBasketball=0
+		WHERE (UpdateBasketball=0 AND LastModifiedDate IS NOT NULL)	--GET ALL
 			OR BasketballLevel NOT IN (SELECT DangerLevel FROM #tblDangerLevel)
 	END
 	ELSE --select all sports
@@ -313,6 +373,6 @@ BEGIN
 		ORDER BY rn ASC
 	END
 
-	DROP TABLE #tblDangerLevel, #CustList, #CustLog, #tblSabaSport, #TempAg
+	DROP TABLE #tblDangerLevel, #CustList, #CustLog, #tblSabaSport, #TempAg, #CustLog_Archive, #CustLog_ArchiveTmp
 END
 GO
