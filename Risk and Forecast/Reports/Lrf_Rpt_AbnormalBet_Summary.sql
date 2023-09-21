@@ -23,7 +23,8 @@ BEGIN
 						 Support Saba E-Sports PinGoal
 		- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465]
 		- 20230708@Evan: Support CN3, INDO & THAI language on LAP [RedmineID: #187132]
-	
+		- 20230920@Evan: Clean code un-use  [RedmineID: #193757]
+
 	Param's Explanation:
 		- @SportTypeList: sporttype list separated by ','
 			+ 'All': all sport types
@@ -474,7 +475,6 @@ BEGIN
 				,CASE WHEN d.BetType = 29 THEN '-' 
 					ELSE CAST(m.finalhomescore AS NVARCHAR(10))+ '-' + CAST(m.finalawayscore AS NVARCHAR(10)) END AS FinalScore
 			FROM #tmpData d
-				LEFT JOIN bodb02.dbo.Exchange e WITH (NOLOCK) ON d.CurrencyID = e.exchangeid 
 				LEFT JOIN #tmpMatch m  ON d.MatchID = m.matchid
 		) AS a
 	WHERE 

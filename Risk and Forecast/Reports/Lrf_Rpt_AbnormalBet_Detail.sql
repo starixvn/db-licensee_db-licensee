@@ -28,6 +28,7 @@ Revisions:
 					 Support Saba E-Sports PinGoal
 	- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465]
 	- 20230708@Evan: Support CN3, INDO & THAI language on LAP [RedmineID: #187132]
+	- 20230920@Evan: Hardcode show USDKH, MP [RedmineID: #193757]
 
 Param's Explanation:
 	- @AgentList: XML structure
@@ -111,8 +112,7 @@ Param's Explanation:
 	CREATE TABLE #tmpReason (ReasonID INT)
 	CREATE TABLE #tmpSport (SportID INT)
 	CREATE TABLE #tmpBetType (BetTypeID INT, EventType TINYINT)
-
-	CREATE TABLE #tmpCurrency (CurrencyID INT)
+	CREATE TABLE #tmpCurrency (CurrencyID INT, CurrencyCode VARCHAR(12))
 	CREATE TABLE #ExchangeRate 
 	(
 		FromDate	SMALLDATETIME,
@@ -541,11 +541,14 @@ Param's Explanation:
 			IsNeutral
 	FROM CTE_Matches
 	WHERE matchid IN (SELECT matchid FROM #tmpData)
-		
+	
+	INSERT INTO #tmpCurrency (CurrencyID, CurrencyCode)
+	SELECT Id, Name FROM OPENQUERY(DBEXT,'EXEC bodb02.dbo.Lrf_CurrencySel')
+
 	SELECT	Date, 
 			ExternalID, 
 			SystemID, 
-			Currency, 
+			Currency , 
 			RefNo, 
 			Odds, 
 			Stake, 
@@ -571,7 +574,7 @@ Param's Explanation:
 				CreatedDate AS [Date] ,
 				SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS [ExternalID],
 				c.username AS [SystemID],
-				e.currency AS Currency,	
+				e.CurrencyCode AS Currency,	
 				d.TransID AS [RefNo],
 				CASE WHEN d.BetType = 29 THEN 0
 					WHEN d.OddsType = 1 AND b.SupportMultipleOdds = 1 THEN d.Odds + 1 ELSE d.Odds END AS Odds,
@@ -608,9 +611,9 @@ Param's Explanation:
 		FROM #tmpData d
 			LEFT JOIN #tmpMatch m  ON d.MatchID = m.matchid
 			LEFT JOIN bodb_Account.dbo.bettype b WITH (NOLOCK) ON d.BetType = b.typeid
-			LEFT JOIN bodb02.dbo.Exchange e WITH (NOLOCK) ON d.CurrencyID = e.exchangeid 
+			LEFT JOIN #tmpCurrency e ON d.CurrencyID = e.CurrencyID 
 			LEFT JOIN bodb02.dbo.Customer c WITH (NOLOCK) ON d.custid = c.custid
-			LEFT JOIN #ExchangeRate er ON d.CreatedDate BETWEEN er.FromDate AND er.ToDate AND er.ExchangeId = e.ExchangeId
+			LEFT JOIN #ExchangeRate er ON d.CreatedDate BETWEEN er.FromDate AND er.ToDate AND er.ExchangeId = e.CurrencyID
 		WHERE c.custid IS NOT NULL
 		) AS a
 	WHERE @SportTypeList = 'All' OR ',' + @SportTypeList + ',' LIKE '%,' + CAST(Sport AS VARCHAR(5)) + ',%'
@@ -629,5 +632,3 @@ Param's Explanation:
     DROP TABLE #TempAg  
 
 END;
-
-GO
