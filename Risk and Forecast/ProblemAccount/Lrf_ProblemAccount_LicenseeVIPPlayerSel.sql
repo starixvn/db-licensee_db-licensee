@@ -1,5 +1,4 @@
 /*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
-
 ALTER PROCEDURE [dbo].[Lrf_ProblemAccount_LicenseeVIPPlayerSel]
 	@Username	VARCHAR(50) = '',
 	@AgentList	VARCHAR(MAX),
@@ -7,7 +6,9 @@ ALTER PROCEDURE [dbo].[Lrf_ProblemAccount_LicenseeVIPPlayerSel]
 	@OrderCol	TINYINT = 1,
 	@SortType	TINYINT = 1,
 	@CustomerClass VARCHAR(1000)='',
-	
+	@IsCheckAll	BIT,
+	@FromDate	DATETIME,
+	@ToDate		DATETIME,
 	@PageSize	INT = 1000,
 	@PageIndex	INT = 1,
 	@TotalItems	INT = 0 OUTPUT
@@ -27,6 +28,7 @@ AS
 			- 20230615@Johnson: sort CC by risk level [redmine:#189631]
 			- 20230621@Johnson: show wrong CC when miss info in Custinfo[redmine:#190081]
 			- 20230628@Johnson: VIP Management - Enhance Export Excel incase order by CC [redmine:#190159]
+			- 20230803@Winfred: LAP - Player Segmentation - Add Risk Level's last update time [redmine:#191101]
 		Paramter's Explanations:
 			- @VipOption: 0: All, 1: Yes, 2 : No
 			- @OrderCol = 1: sort by System ID	
@@ -41,8 +43,8 @@ BEGIN
 	DECLARE @RowCount INT, @RowStart INT, @RowEnd INT
 	SELECT  @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
 
-	CREATE TABLE #TempAg (custid INT)
-	CREATE TABLE #CustList (CustId INT PRIMARY KEY, CustomerClass SMALLINT, AgentID INT, username VARCHAR(50), username2 VARCHAR(50), isVIP BIT, IsBA BIT)
+	DECLARE @TempAg TABLE (custid INT)
+	CREATE TABLE #CustList (CustId INT PRIMARY KEY, CustomerClass SMALLINT, AgentID INT, username VARCHAR(50), username2 VARCHAR(50), isVIP BIT, IsBA BIT, LastMaskDate DATETIME,IsValid BIT DEFAULT(0))
 	
 	DECLARE @DocHandler INT
 
@@ -50,7 +52,7 @@ BEGIN
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT
 			,@AgentList
 	
-		INSERT INTO #TempAg(CustId)
+		INSERT INTO @TempAg(CustId)
 		SELECT AgentId
 		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
 
@@ -64,53 +66,29 @@ BEGIN
 		RETURN
 	END CATCH;
 	
-	IF @Username <> ''
-	BEGIN
-		;WITH t AS (
+	;WITH t AS (
 		SELECT ci.custid, ci.recommend as AgentID, username, 
 			SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) AS username2,
-			CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END AS isVIP
-			,CASE WHEN b.custid IS NULL THEN 0 ELSE 1 END AS IsBA
+			username2 AS username2Ori
 		FROM customer ci WITH(NOLOCK)
-			LEFT JOIN Dep_CustVIP d WITH(NOLOCK) ON ci.custid = d.custid
-			LEFT JOIN Dep_CustBAActive b WITH(NOLOCK) ON ci.custid = b.custid
-		WHERE ci.recommend IN (SELECT custid FROM #TempAg)
-			AND roleid = 1
-			AND (username  LIKE @username + '%' OR username2 LIKE '%$'+@username + '%')
-			AND ci.username  NOT LIKE '%CASHOUT%'
-			AND ci.username  NOT LIKE '%ClearBal%'
-			AND ci.username  NOT LIKE '%BetTrade%'
-			AND ci.username  NOT LIKE '%01OddsAdj%'
-		)
-		INSERT INTO #CustList(custid,AgentID,username,username2,isVip,IsBA)
-		SELECT custid,AgentID, username, username2, isVip,IsBA
-		FROM t
-		WHERE isVIP = CASE WHEN @VipOption = 1 THEN 1
-							WHEN @VipOption = 2 THEN 0 ELSE isVip END 
-	END
-	ELSE
-	BEGIN
-		;WITH t AS (
-		SELECT ci.custid, ci.recommend as AgentID, username, 
-			SUBSTRING(ci.username2,  CHARINDEX('$',ci.username2)+1, LEN(ci.username2)-CHARINDEX('$',ci.username2)) AS username2,
-			CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END AS isVIP
-			,CASE WHEN b.custid IS NULL THEN 0 ELSE 1 END AS IsBA
-		FROM customer ci WITH(NOLOCK)
-			LEFT JOIN Dep_CustVIP d WITH(NOLOCK) ON ci.custid = d.custid
-			LEFT JOIN Dep_CustBAActive b WITH(NOLOCK) ON ci.custid = b.custid			
-		WHERE ci.recommend IN (SELECT custid FROM #TempAg)
-			AND roleid = 1	
-			AND ci.username  NOT LIKE '%CASHOUT%'	
-			AND ci.username  NOT LIKE '%ClearBal%'
-			AND ci.username  NOT LIKE '%BetTrade%'
-			AND ci.username  NOT LIKE '%01OddsAdj%'
-		)
-		INSERT INTO #CustList(custid,AgentID,username,username2,isVip,IsBA)
-		SELECT custid, AgentID, username, username2, isVip,IsBA
-		FROM t
-		WHERE isVIP = CASE WHEN @VipOption = 1 THEN 1
-							WHEN @VipOption = 2 THEN 0 ELSE isVip END 
-	END
+			INNER JOIN @TempAg a ON ci.recommend = a.custid
+		WHERE roleid = 1			
+	)
+	INSERT INTO #CustList(custid,AgentID,username,username2,isVip,IsBA)
+	SELECT t.custid,AgentID, username, username2, 
+		CASE WHEN c.custid IS NULL THEN 0 ELSE 1 END,
+		CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END
+	FROM t
+		OUTER APPLY ( SELECT TOP 1 custid FROM dbo.Dep_CustVIP WITH (NOLOCK) WHERE custid = t.custid ) c
+		OUTER APPLY ( SELECT TOP 1 custid FROM dbo.Dep_CustBAActive WITH (NOLOCK) WHERE custid = t.custid ) d
+	WHERE (@VipOption = 0 
+		OR ( @VipOption = 1 AND c.custid IS NOT NULL)
+		OR (@VipOption = 2 AND c.custid IS NULL))
+		AND ((@Username <> '' AND (username  LIKE @username + '%' OR username2Ori LIKE '%$'+@username + '%')) OR @Username = '')
+		AND t.username  NOT LIKE '%CASHOUT%'
+		AND t.username  NOT LIKE '%ClearBal%'
+		AND t.username  NOT LIKE '%BetTrade%'
+		AND t.username  NOT LIKE '%01OddsAdj%'
 		
 	SELECT ID, RTRIM(LTRIM(VAL)) AS CustomerClass
 	INTO #tblCustomerClass
@@ -125,6 +103,25 @@ BEGIN
 	WHERE customerClass NOT IN (SELECT customerClass FROM #tblCustomerClass)
 		OR customerClass IS NULL --not have data in custinfo
 	
+	IF @IsCheckAll = 1
+	BEGIN
+		UPDATE a 
+		SET a.LastMaskDate = b.ModifiedDate , a.IsValid = 1
+		FROM #CustList a
+			CROSS APPLY (SELECT TOP 1 ModifiedDate FROM Dep_CustomerClass WITH(NOLOCK) WHERE CustID = a.CustID) b
+		WHERE a.customerClass <> 0
+	END
+	ELSE
+	BEGIN
+		UPDATE a 
+		SET a.LastMaskDate = b.ModifiedDate , a.IsValid = 1
+		FROM #CustList a
+			CROSS APPLY (SELECT TOP 1 ModifiedDate FROM Dep_CustomerClass WITH(NOLOCK) WHERE CustID = a.CustID AND ModifiedDate BETWEEN @FromDate AND @ToDate) b
+		WHERE a.customerClass <> 0
+
+		DELETE #CustList WHERE IsValid = 0
+	END
+
 	SELECT @TotalItems = COUNT(1) FROM #CustList
 	
 	IF @OrderCol IN (1,2)
@@ -163,9 +160,26 @@ BEGIN
 		WHERE rn BETWEEN @rowstart AND @rowend
 		ORDER BY rn ASC
 	END
+	ELSE IF @OrderCol = 5
+	BEGIN
+		;WITH t1 AS(
+		SELECT c.*, CASE WHEN @OrderCol = 5 THEN c.LastMaskDate END OrderCol
+		FROM #CustList c
+			INNER JOIN #tblCustomerClass t ON c.CustomerClass = t.CustomerClass
+		),
+		t2 AS (
+		SELECT *, ROW_NUMBER () OVER (ORDER BY CASE WHEN @SortType = 1 THEN OrderCol END ASC,	
+												CASE WHEN @SortType = 2 THEN OrderCol END DESC, username ASC) rn
+		FROM t1
+		)
+		SELECT t2.*--,ISNULL(isMarkVoid,0) isMarkVoid			
+		FROM t2 
+			LEFT JOIN ProblemAccount p WITH(NOLOCK) ON t2.custid = p.custid
+		WHERE rn BETWEEN @rowstart AND @rowend
+		ORDER BY rn ASC
+	END
 	
 	DROP TABLE #tblCustomerClass
-	DROP TABLE #TempAg	
 	DROP TABLE #CustList
 END	
 GO
