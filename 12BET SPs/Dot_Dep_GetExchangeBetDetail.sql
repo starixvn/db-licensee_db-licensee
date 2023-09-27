@@ -15,6 +15,12 @@ Revisions:
 */
 BEGIN
 	SET NOCOUNT ON
+
+	DECLARE @version_key1 TIMESTAMP, @siteID1 CHAR(7);
+
+	SELECT @version_key1 = CONVERT(TIMESTAMP, @version_key)
+		 , @siteID1 = CONVERT(CHAR(7), @siteID)
+
 	IF @betId IS NOT NULL
 	BEGIN
 		SET @version_key = 0
@@ -45,7 +51,7 @@ BEGIN
 				AND b.userid = s.userid
 				AND b.marketid = s.marketid
 		WHERE b.betid = @betId
-			AND b.extension1 = @siteID
+			AND b.extension1 = @siteID1
 	END
 	ELSE
 	BEGIN
@@ -75,8 +81,8 @@ BEGIN
 			LEFT JOIN [dbo].[Sum_winloss_Exchange] s WITH (NOLOCK) ON b.eventid = s.eventid
 				AND b.userid = s.userid
 				AND b.marketid = s.marketid
-		WHERE b.tstamp > CONVERT(TIMESTAMP, @version_key)
-			AND b.extension1 = @siteID
+		WHERE b.tstamp > @version_key1
+			AND b.extension1 = @siteID1
 		ORDER BY b.tstamp
 	END
 END
