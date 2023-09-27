@@ -3,6 +3,7 @@ ALTER PROCEDURE [dbo].[Dot_Dep_GetExchangeBetDetail]
 	  @siteID INT
 	, @version_key BIGINT = 0
 	, @betId BIGINT = NULL
+	, @betPlaced DATETIME = NULL
 AS
 /*
 DB: DBLIC-bodb_3rdProduct
@@ -12,15 +13,28 @@ Revisions:
 --20180222@Candice(Licensee DB) : add betstatus
 --20220428@Boren(Licensee DB) : add settledDate & resettledDate from Sum_winloss_Exchange table. (key:eventid/userid/marketid)
 --20230915@Boren(Licensee DB) : remove select eventtype, extension1, unMatchAmount, reduction, add fancyBetRuns.
+--20230920@Boren(Licensee DB) : add @betPlaced.
 */
 BEGIN
 	SET NOCOUNT ON
 
-	DECLARE @version_key1 TIMESTAMP, @siteID1 CHAR(7);
+	DECLARE @version_key_min BIGINT = 0
+		  , @tstamp TIMESTAMP
+		  , @extension1 CHAR(7);
 
-	SELECT @version_key1 = CONVERT(TIMESTAMP, @version_key)
-		 , @siteID1 = CONVERT(CHAR(7), @siteID)
-
+	SELECT TOP 1 @version_key_min = CONVERT(BIGINT, b.tstamp)
+	FROM [dbo].[Bettrans_Exchange] b WITH (NOLOCK)
+	WHERE betPlaced >= @betPlaced
+	ORDER BY CONVERT(BIGINT, b.tstamp) 
+	
+	IF @version_key < @version_key_min
+	BEGIN
+	  SELECT @version_key = @version_key_min - 1
+	END
+	
+	SELECT @tstamp = CONVERT(TIMESTAMP, @version_key)
+		 , @extension1 = CONVERT(CHAR(7), @siteID)
+	
 	IF @betId IS NOT NULL
 	BEGIN
 		SET @version_key = 0
@@ -51,7 +65,7 @@ BEGIN
 				AND b.userid = s.userid
 				AND b.marketid = s.marketid
 		WHERE b.betid = @betId
-			AND b.extension1 = @siteID1
+			AND b.extension1 = @extension1
 	END
 	ELSE
 	BEGIN
@@ -81,8 +95,10 @@ BEGIN
 			LEFT JOIN [dbo].[Sum_winloss_Exchange] s WITH (NOLOCK) ON b.eventid = s.eventid
 				AND b.userid = s.userid
 				AND b.marketid = s.marketid
-		WHERE b.tstamp > @version_key1
-			AND b.extension1 = @siteID1
+		WHERE b.tstamp > @tstamp
+			AND b.extension1 = @extension1
 		ORDER BY b.tstamp
 	END
 END
+
+GO
