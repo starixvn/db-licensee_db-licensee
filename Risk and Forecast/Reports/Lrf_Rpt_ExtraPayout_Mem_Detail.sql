@@ -23,6 +23,7 @@ AS
 		- 20221122@Evan: Integrate Player Tips [RedmineID: #180590]
 		- 20230208@Evan: Inteagrate SG promotion prize [RedmineID: #183497]
 		- 20230626@Evan: Integrate MG-RNG (Promotion Game) [RedmineID: #189988]
+		- 20230822@Evan: Integrate Parlay Boost - [RedmineID: #192238]
 
 	Param's Explanation:
 		+ @PromotionTypeList: promotion type list separated by ','
@@ -50,6 +51,8 @@ AS
 			- 7401: Player Tips (BetType: 8700)
 			- 3603: SG - Promotion Prize (BetType: 4598)
 			- 7301: MGRNG - Promotion Prize (BetType: 8695)
+			- 2901: Sportsbook - Parlay Boost (BetType: 29)
+
 */
 
 BEGIN
@@ -112,6 +115,7 @@ BEGIN
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,6603,%' AND BetType = 3898 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,7401,%' AND BetType = 8700 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,7301,%' AND BetType = 8695 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,2901,%' AND BetType = 29 THEN 1
 				ELSE 0
 			END
 
@@ -174,14 +178,22 @@ BEGIN
 				WHEN b.bettype = 3898 THEN 6603
 				WHEN b.bettype = 8700 THEN 7401
 				WHEN b.bettype = 8695 THEN 7301
+				WHEN sbt.ProductCode = 'SB' AND b.bettype = 29 THEN 2901
 				ELSE 0
 			END AS PromotionType,
 			CASE
 				WHEN b.bettype IN (4297, 1698, 3898, 4599) THEN b.oddsspread
 				ELSE b.stake
 			END AS Turnover,
-			(b.winlost - b.actual_stake) AS Amount,
-			b.awinlost AS SharingAmount
+			CASE
+				WHEN b.bettype = 29 AND b.statusID = 112  AND b.oddsspread = 2 THEN ISNULL(TRY_CAST(TRY_CAST(ExtraInfo AS XML).value('(/p1/@bba)[1]', 'VARCHAR(50)') AS MONEY),0)
+				ELSE b.winlost - b.actual_stake
+			END AS Amount,
+			CASE
+				WHEN b.bettype = 29 AND b.statusID = 112  AND b.oddsspread = 2 THEN -ISNULL(TRY_CAST(TRY_CAST(ExtraInfo AS XML).value('(/p1/@bba)[1]', 'VARCHAR(50)') AS MONEY),0) 
+					* ISNULL(TRY_CAST(TRY_CAST(ExtraInfo AS XML).value('(/p1/@lbbs)[1]', 'VARCHAR(50)') AS MONEY),0)
+				ELSE b.awinlost
+			END AS SharingAmount
 		FROM dbo.bettrans AS b WITH (NOLOCK, INDEX = IX_custid)
 			INNER JOIN #SportBetType AS sbt ON sbt.BetType = b.bettype
 		WHERE b.custid = @CustId
@@ -190,10 +202,12 @@ BEGIN
 			AND 1 = CASE
 						WHEN sbt.ProductCode = 'SBC' AND b.bettype NOT IN (1698, 1699) AND b.matchid <> 150 THEN 0
 						WHEN sbt.ProductCode = 'VGA' AND b.bettype NOT IN (3898, 3899) AND b.matchid <> 173 THEN 0
+						WHEN sbt.ProductCode = 'SB' AND b.bettype = 29 AND b.statusID <> 112  AND b.oddsspread <> 2 THEN 0
 						ELSE 1
 					END
+					 
 	END
-
+	
 	-- bettrans14
 	IF @FromDate <= @MoveBetsDay AND @ToDate >= @BalanceUpDay
 	BEGIN
@@ -244,14 +258,22 @@ BEGIN
 				WHEN b.bettype = 3898 THEN 6603
 				WHEN b.bettype = 8700 THEN 7401
 				WHEN b.bettype = 8695 THEN 7301
+				WHEN sbt.ProductCode = 'SB' AND b.bettype = 29 THEN 2901
 				ELSE 0
 			END AS PromotionType,
 			CASE
 				WHEN b.bettype IN (4297, 1698, 3898, 4599) THEN b.oddsspread
 				ELSE b.stake
 			END AS Turnover,
-			(b.winlost - b.actual_stake) AS Amount,
-			b.awinlost AS SharingAmount
+			CASE
+				WHEN b.bettype = 29 AND b.statusID = 112  AND b.oddsspread = 2 THEN ISNULL(TRY_CAST(TRY_CAST(ExtraInfo AS XML).value('(/p1/@bba)[1]', 'VARCHAR(50)') AS MONEY),0)
+				ELSE b.winlost - b.actual_stake
+			END AS Amount,
+			CASE
+				WHEN b.bettype = 29 AND b.statusID = 112  AND b.oddsspread = 2 THEN -ISNULL(TRY_CAST(TRY_CAST(ExtraInfo AS XML).value('(/p1/@bba)[1]', 'VARCHAR(50)') AS MONEY),0) 
+					* ISNULL(TRY_CAST(TRY_CAST(ExtraInfo AS XML).value('(/p1/@lbbs)[1]', 'VARCHAR(50)') AS MONEY),0)
+				ELSE b.awinlost
+			END AS SharingAmount
 		FROM dbo.bettrans14 AS b WITH (NOLOCK, INDEX = IX_memberStatement14)
 			INNER JOIN #SportBetType AS sbt ON sbt.BetType = b.bettype
 		WHERE b.custid = @CustId
@@ -260,6 +282,7 @@ BEGIN
 			AND 1 = CASE
 						WHEN sbt.ProductCode = 'SBC' AND b.bettype NOT IN (1698, 1699) AND b.matchid <> 150 THEN 0
 						WHEN sbt.ProductCode = 'VGA' AND b.bettype NOT IN (3898, 3899) AND b.matchid <> 173 THEN 0
+						WHEN sbt.ProductCode = 'SB' AND b.bettype = 29 AND b.statusID <> 112  AND b.oddsspread <> 2 THEN 0
 						ELSE 1
 					END
 	END
@@ -309,14 +332,22 @@ BEGIN
 				WHEN b.bettype = 3898 THEN 6603
 				WHEN b.bettype = 8700 THEN 7401
 				WHEN b.bettype = 8695 THEN 7301
+				WHEN sbt.ProductCode = 'SB' AND b.bettype = 29 THEN 2901
 				ELSE 0
 			END AS PromotionType,
 			CASE
 				WHEN b.bettype IN (4297, 1698, 3898, 4599) THEN b.oddsspread
 				ELSE b.stake
 			END AS Turnover,
-			(b.winlost - b.actual_stake) AS Amount,
-			b.awinlost AS SharingAmount
+			CASE
+				WHEN b.bettype = 29 AND b.statusID = 112  AND b.oddsspread = 2 THEN ISNULL(TRY_CAST(TRY_CAST(ExtraInfo AS XML).value('(/p1/@bba)[1]', 'VARCHAR(50)') AS MONEY),0)
+				ELSE b.winlost - b.actual_stake
+			END AS Amount,
+			CASE
+				WHEN b.bettype = 29 AND b.statusID = 112  AND b.oddsspread = 2 THEN -ISNULL(TRY_CAST(TRY_CAST(ExtraInfo AS XML).value('(/p1/@bba)[1]', 'VARCHAR(50)') AS MONEY),0) 
+					* ISNULL(TRY_CAST(TRY_CAST(ExtraInfo AS XML).value('(/p1/@lbbs)[1]', 'VARCHAR(50)') AS MONEY),0)
+				ELSE b.awinlost
+			END AS SharingAmount
 		FROM bodb_Archive.dbo.bettrans_bk AS b WITH (NOLOCK, INDEX = IX_custid)
 			INNER JOIN #SportBetType AS sbt ON sbt.BetType = b.bettype
 		WHERE b.custid = @CustId
@@ -325,6 +356,7 @@ BEGIN
 			AND 1 = CASE
 						WHEN sbt.ProductCode = 'SBC' AND b.bettype NOT IN (1698, 1699) AND b.matchid <> 150 THEN 0
 						WHEN sbt.ProductCode = 'VGA' AND b.bettype NOT IN (3898, 3899) AND b.matchid <> 173 THEN 0
+						WHEN sbt.ProductCode = 'SB' AND b.bettype = 29 AND b.statusID <> 112  AND b.oddsspread <> 2 THEN 0
 						ELSE 1
 					END
 	END
