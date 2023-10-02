@@ -139,12 +139,14 @@ BEGIN
 	END
 	
 	-- CutoffDate apply new term, Change AmountDueTo formula 
-	DECLARE @CutoffDate SMALLDATETIME
-	SET	@CutoffDate = '2023-05-01'	
-
+	DECLARE @COD_NewTerm SMALLDATETIME
 	-- CutoffDate apply view resettled ticket data
-	DECLARE @CutoffDate_v1 SMALLDATETIME
-	SET @CutoffDate_v1 = '2023-10-01'
+	DECLARE @COD_ViewResettled SMALLDATETIME
+
+	SELECT @COD_NewTerm = CASE WHEN TypeName = 'ExchangeWL_NewTerm' THEN CutoffDate ELSE @COD_NewTerm END 
+	 	 , @COD_ViewResettled = CASE WHEN TypeName = 'ExchangeWL_ViewResettled' THEN CutoffDate  ELSE @COD_ViewResettled END 
+	FROM dbo.Lrf_f_GetCutOffDate()
+	WHERE TypeName IN ('ExchangeWL_ViewResettled','ExchangeWL_NewTerm')
 	
 	CREATE TABLE #sumBet (
 		SettledDate		DATE,
@@ -191,6 +193,9 @@ BEGIN
 		WHERE sumbet.settledDate >= @FDate 
 			AND sumbet.settledDate < DATEADD(dd,1,@TDate) 
 			AND ISNULL(sumbet.IsResettled,0) = CASE WHEN @ViewResettledOnly = 1 THEN 1 ELSE ISNULL(sumbet.IsResettled,0) END
+			AND 1 = CASE WHEN @ViewResettledOnly = 1 AND sumbet.resettledDate >= @COD_ViewResettled THEN 1
+						WHEN @ViewResettledOnly = 0 THEN 1 
+					ELSE 0 END
 		GROUP BY
 			sumbet.settledDate,
 			sumbet.CustID,
@@ -233,6 +238,9 @@ BEGIN
 		WHERE ISNULL(sumbet.resettledDate,sumbet.settledDate) >= @FDate 
 			AND ISNULL(sumbet.resettledDate,sumbet.settledDate) < DATEADD(dd,1,@TDate) 
 			AND ISNULL(sumbet.IsResettled,0) = CASE WHEN @ViewResettledOnly = 1 THEN 1 ELSE ISNULL(sumbet.IsResettled,0) END
+			AND 1 = CASE WHEN @ViewResettledOnly = 1 AND sumbet.resettledDate >= @COD_ViewResettled THEN 1
+						WHEN @ViewResettledOnly = 0 THEN 1 
+					ELSE 0 END
 		GROUP BY
 			ISNULL(sumbet.resettledDate,sumbet.settledDate),
 			sumbet.CustID,
@@ -303,7 +311,7 @@ BEGIN
 		, - SUM(sumbet.Winlost)
 		, - SUM(sumbet.Winlost * (1 - ISNULL(rate.Rate, 1)))
 		, SUM(sumbet.CustComm)
-		, CASE WHEN sumbet.SettledDate >= @CutoffDate 
+		, CASE WHEN sumbet.SettledDate >= @COD_NewTerm 
 					THEN - SUM((sumbet.Winlost + sumbet.CustComm) * ( ISNULL(rate.Rate, 0)))  -- - (Customer Total * (1-Licensee rate))
 					ELSE - SUM((sumbet.Winlost + sumbet.CustComm) + (-sumbet.Winlost*(1-ISNULL(rate.Rate,1)) + sumbet.AgentComm)) -- (LicWL - NetLicWL) + (LicComm - NetLicComm)
 				END AS AmountDueTo 
