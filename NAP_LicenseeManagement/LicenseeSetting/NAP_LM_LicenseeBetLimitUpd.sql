@@ -25,6 +25,7 @@ AS
 		   - 20230707@Winfred: NAP LM - Insert icorrect data in Dep_CustBetSettingGame_Member for players have isGroupBetLimit = 1 [redmine:#191020]
 		   - 20230717@Winfred: Enhance performace  [redmine:#191470]
 		   - 20230722@Winfred: NAP LM - Enhance Bet Setting function for AM to use - New Case [redmine:#178105]
+		   - 20230929@Winfred: Bet Setting of players not updated in case update Player Bet Setting (all players) [redmine:#194669]
     Param's Explanation:
 		- @CustID : super ID
 		- @AgentID : 0 for All Subsidiary AND <> 0 for only Specific Subsidiary 
@@ -212,11 +213,6 @@ BEGIN
 		LEFT JOIN [SiteConfig].[dbo].[Operator] s WITH(NOLOCK) ON c.Custid=s.AgentID
 	WHERE roleid = 2
 
-	IF @Option = 1
-	BEGIN
-		DELETE FROM #temp WHERE roleid = 2
-	END
-
 	IF EXISTS (SELECT 1 FROM #SportTypeBetType ps WHERE SportType IN (1,2,3,5,8,10,11,99,9901,9902,43,161,50,9907)) --Sportbook VS NumberGame 
 	BEGIN
 		DELETE t
@@ -279,6 +275,7 @@ BEGIN
 						@UpdBetLimit = @UpdBetLimit, 
 						@ExistedMember = @ExistedMember, 
 						@UpdCurency = @UpdCurency,
+						@Option = @Option,
 						@Mode = 'Sportbook' 
 
 					SET @SMAs = ''
