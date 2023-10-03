@@ -91,14 +91,14 @@ BEGIN
 	IF @Username = ''
 	BEGIN
 		INSERT INTO @TmpCust (CustId, Recommend)
-		SELECT c.custid, c.recommend
+		SELECT DISTINCT c.custid, c.recommend
 		FROM dbo.Customer AS c WITH (NOLOCK)
 			INNER JOIN @TempAg AS ag ON ag.CustId = c.recommend
 	END
 	ELSE
 	BEGIN
 		INSERT INTO @TmpCust (CustId, Recommend)
-		SELECT c.custid, c.recommend
+		SELECT DISTINCT c.custid, c.recommend
 		FROM dbo.Customer AS c WITH (NOLOCK)
 			INNER JOIN @TempAg AS ag ON ag.CustId = c.recommend
 		WHERE c.username = @Username
@@ -106,7 +106,7 @@ BEGIN
 		IF NOT EXISTS (SELECT 1 FROM @TmpCust)
 		BEGIN
 			INSERT INTO @TmpCust (CustId, Recommend)
-			SELECT c.custid, c.recommend
+			SELECT DISTINCT c.custid, c.recommend
 			FROM dbo.Customer AS c WITH (NOLOCK)
 				INNER JOIN @TempAg AS ag ON ag.CustId = c.recommend
 			WHERE c.username2 LIKE + '%$' + @Username
