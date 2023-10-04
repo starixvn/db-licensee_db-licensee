@@ -16,6 +16,7 @@ AS
 		- 20221010@Kos: Support crypto currency [Redmine: 177481]
 		- 20230208@Kai: Hard code USDTJP, USDT currency [Redmine: 183455]
 		- 20230712@Kai: Hard code USDT2 currency [Redmine: 191163]
+		- 20230918@Kai: Hard code USDKH, MP currency [Redmine: 193757]
 */
 
 BEGIN
@@ -35,6 +36,8 @@ BEGIN
 			WHEN ExchangeId = 125 THEN 'INH'
 			WHEN ExchangeId = 202 THEN 'USDTJP'
 			WHEN ExchangeId = 206 THEN 'USDT'
+			WHEN ExchangeId = 208 THEN 'USDKH'
+			WHEN ExchangeId = 209 THEN 'MP'
 			-- crypto currencies
 			WHEN ExchangeId = 142 THEN 'USDT'
 			WHEN CurrencyType = 1 THEN currency		
