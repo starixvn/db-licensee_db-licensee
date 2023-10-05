@@ -1,6 +1,6 @@
 /*<info serverAlias="DBSID-bodb02" selecters="bodbLicenseeNet" viewers="" isFunction="1" isNested="1"></info>*/
 
-CREATE FUNCTION [dbo].[SiteDB_Lrf_f_GetExchangeRate]
+ALTER FUNCTION [dbo].[SiteDB_Lrf_f_GetExchangeRate]
 (
     @FromDate				SMALLDATETIME,
     @ToDate					SMALLDATETIME,
@@ -29,6 +29,7 @@ AS
 	Revisions:	
 		- 20220729@Victoria: Create function[Redmine #175297]
 		- 20220914@Evan: Add USDT as Base Currencies [Redmine #177481]
+		- 20231005@Evan: Add PHP as Base Currencies [Redmine #194863]
 */
 
 BEGIN
@@ -110,6 +111,7 @@ BEGIN
 				WHEN @BaseCurrency = 'BDT' THEN ex.BDT
 				WHEN @BaseCurrency = 'INR' THEN ex.INR
 				WHEN @BaseCurrency = 'USDT' AND ExchangeId = 20 THEN @UUS
+				WHEN @BaseCurrency = 'PHP' THEN ex.PHP
 				ELSE 1
 			END AS Rate,
 			CASE
@@ -125,6 +127,7 @@ BEGIN
 				WHEN @DefaultBaseCurrency = 'BDT' THEN ex.BDT
 				WHEN @DefaultBaseCurrency = 'INR' THEN ex.INR
 				WHEN @DefaultBaseCurrency = 'USDT' AND ExchangeId = 20 THEN @UUS
+				WHEN @DefaultBaseCurrency = 'PHP' THEN ex.PHP
 				ELSE 1
 			END AS DefaultRate
 		FROM CustDB.dbo.ExchangeDailyOanda ex WITH(NOLOCK)

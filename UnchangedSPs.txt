@@ -1,2 +1,40 @@
-Risk and Forecast\Setting\dbo.Lrf_CustomerUpdMemberBAStatus.sql
-BA Admin\Internal\Config\dbo.Acc_BA_LicConfigUpd.sql
+Risk and Forecast\Reports\Lrf_Rpt_SabaVirtualSportsWinLoss.sql
+Risk and Forecast\Reports\Lrf_Rpt_SabaVirtualSportsWinLoss_Ag.sql
+Risk and Forecast\Reports\Lrf_Rpt_SabaVirtualSportsWinLoss_Mem.sql
+LAP-Reports\WinlossAnalysis\dbo.LAP_Rpt_WinlossAnalysis_AgencySel.sql
+LAP-Reports\WinlossAnalysis\dbo.LAP_Rpt_WinlossAnalysis_PlayerSel.sql
+Risk and Forecast\Reports\Lrf_Rpt_MatchWinLoss.sql
+Risk and Forecast\Reports\Lrf_Rpt_MatchWinLossByBettype.sql
+Risk and Forecast\Reports\Lrf_Rpt_MatchWinLossByOutrightParlay.sql
+Risk and Forecast\Reports\Lrf_Rpt_MatchWinLossDetail.sql
+Risk and Forecast\Reports\Lrf_Rpt_LicWinlossByTimeZone.sql
+Risk and Forecast\Reports\Lrf_Rpt_WinLossByLeague_BetType.sql
+Risk and Forecast\Reports\Lrf_Rpt_WinLossByLeague_BetType_Currency.sql
+Risk and Forecast\Reports\Lrf_Rpt_WinLossByLeague_League.sql
+Risk and Forecast\Reports\Lrf_Rpt_WinLossByLeague_League_Currency.sql
+Risk and Forecast\Reports\Lrf_Rpt_WinLossByLeague_Match.sql
+Risk and Forecast\Reports\Lrf_Rpt_WinLossByLeague_Match_Currency.sql
+Risk and Forecast\Reports\Lrf_Rpt_LiveReportSummary.sql
+Risk and Forecast\Reports\Lrf_Rpt_LiveReportSummaryDetail.sql
+Risk and Forecast\Reports\Lrf_Rpt_LiveReportWinlossByMatch.sql
+Risk and Forecast\Reports\Lrf_Rpt_TurnOver.sql
+Risk and Forecast\Reports\Lrf_Rpt_SubsidiaryWinloss.sql
+Risk and Forecast\Reports\Lrf_Rpt_SubsidiaryWinlossDetail.sql
+Risk and Forecast\Reports\Lrf_Rpt_ExtraPayout.sql
+Risk and Forecast\Reports\Lrf_Rpt_ExtraPayout_Mem.sql
+Risk and Forecast\Reports\Lrf_Rpt_ExtraPayout_Mem_Detail.sql
+Risk and Forecast\Reports\Lrf_Rpt_AGCasinoWinloss.sql
+Risk and Forecast\Reports\LRF_Rpt_AGCasinoWinloss_Ag.sql
+Risk and Forecast\Reports\LRF_Rpt_AGCasinoWinloss_Mem.sql
+Risk and Forecast\Reports\Lrf_Rpt_AGCasinoBalance.sql
+Risk and Forecast\Reports\LRF_Rpt_AGCasinoBalance_Ag.sql
+Risk and Forecast\Reports\LRF_Rpt_AGCasinoBalance_Mem.sql
+Risk and Forecast\Reports\Lrf_Rpt_ExchangeWinloss.sql
+Risk and Forecast\Reports\Lrf_Rpt_ExchangeWinloss_Ag.sql
+Risk and Forecast\Reports\Lrf_Rpt_ExchangeWinloss_ByResettledDate.sql
+Risk and Forecast\Reports\Lrf_Rpt_ExchangeWinloss_ByResettledDate_Ag.sql
+Risk and Forecast\Reports\Lrf_Rpt_ExchangeWinloss_ByResettledDate_Mem.sql
+Risk and Forecast\Reports\Lrf_Rpt_ExchangeWinloss_Mem.sql
+Risk and Forecast\Reports\Lrf_Rpt_Outstanding.sql
+Risk and Forecast\Reports\SiteDB\SiteDB_Lrf_Rpt_Outstanding.sql
+Risk and Forecast\Reports\Lrf_Rpt_AbnormalBet_Detail.sql
