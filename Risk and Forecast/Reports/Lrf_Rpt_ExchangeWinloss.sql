@@ -189,8 +189,8 @@ BEGIN
 			INNER JOIN @tmpCust AS cust ON cust.Custid = sumbet.CustID
 		WHERE sumbet.settledDate >= @FDate 
 			AND sumbet.settledDate < DATEADD(dd,1,@TDate)
-			AND ISNULL(sumbet.IsResettled,0) = CASE WHEN @ViewResettledOnly = 1 THEN 1 ELSE ISNULL(sumbet.IsResettled,0) END
-			AND 1 = CASE WHEN @ViewResettledOnly = 1 AND sumbet.resettledDate >= @COD_ViewResettled THEN 1
+			AND ISNULL(sumbet.IsResettled,0) = IIF(@ViewResettledOnly = 1,1,ISNULL(sumbet.IsResettled, 0))
+			AND 1 = CASE WHEN @ViewResettledOnly = 1 AND sumbet.settledDate >= @COD_ViewResettled THEN 1
 						WHEN @ViewResettledOnly = 0 THEN 1 
 					ELSE 0 END
 		GROUP BY
@@ -231,10 +231,7 @@ BEGIN
 			INNER JOIN @tmpCust AS cust ON cust.Custid = sumbet.CustID
 		WHERE ISNULL(sumbet.resettledDate,sumbet.settledDate) >= @FDate 
 			AND ISNULL(sumbet.resettledDate,sumbet.settledDate) < DATEADD(dd,1,@TDate)
-			AND ISNULL(sumbet.IsResettled,0) = CASE WHEN @ViewResettledOnly = 1 THEN 1 ELSE ISNULL(sumbet.IsResettled,0) END
-			AND 1 = CASE WHEN @ViewResettledOnly = 1 AND sumbet.resettledDate >= @COD_ViewResettled THEN 1
-						WHEN @ViewResettledOnly = 0 THEN 1 
-					ELSE 0 END
+			AND ISNULL(sumbet.IsResettled,0) = IIF(@ViewResettledOnly = 1,1,ISNULL(sumbet.IsResettled, 0))
 		GROUP BY
 			ISNULL(sumbet.resettledDate,sumbet.settledDate),
 			sumbet.userId,
