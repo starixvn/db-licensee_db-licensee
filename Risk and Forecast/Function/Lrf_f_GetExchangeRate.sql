@@ -30,7 +30,7 @@ AS
 		- 20190619@Amanda: Create function[Redmine #112531]
 		- 20210224@Mark: Add BDT and INR as Base Currencies[Redmine #150375]
 		- 20220914@Evan: Add USDT as Base Currencies [Redmine #177481]
-		- 20231005@Evan: Add PHP as Base Currencies [Redmine #194863]
+		- 20231005@Evan: Add PHP as Base Currencies, list currencies currently supported [Redmine #194863]
 
 */
 
@@ -114,6 +114,12 @@ BEGIN
 				WHEN @BaseCurrency = 'INR' THEN ex.INR
 				WHEN @BaseCurrency = 'USDT' AND ExchangeId = 20 THEN @UUS
 				WHEN @BaseCurrency = 'PHP' THEN ex.PHP
+				WHEN @BaseCurrency = 'AUD' THEN ex.AUD
+				WHEN @BaseCurrency = 'CHF' THEN ex.CHF
+				WHEN @BaseCurrency = 'SGD' THEN ex.SGD
+				WHEN @BaseCurrency = 'KRW' THEN ex.KRW
+				WHEN @BaseCurrency = 'JPY' THEN ex.JPY
+				WHEN @BaseCurrency = 'TWD' THEN ex.TWD
 				ELSE 1
 			END AS Rate,
 			CASE
@@ -130,6 +136,12 @@ BEGIN
 				WHEN @DefaultBaseCurrency = 'INR' THEN ex.INR
 				WHEN @DefaultBaseCurrency = 'USDT' AND ExchangeId = 20 THEN @UUS
 				WHEN @DefaultBaseCurrency = 'PHP' THEN ex.PHP
+				WHEN @DefaultBaseCurrency = 'AUD' THEN ex.AUD
+				WHEN @DefaultBaseCurrency = 'CHF' THEN ex.CHF
+				WHEN @DefaultBaseCurrency = 'SGD' THEN ex.SGD
+				WHEN @DefaultBaseCurrency = 'KRW' THEN ex.KRW
+				WHEN @DefaultBaseCurrency = 'JPY' THEN ex.JPY
+				WHEN @DefaultBaseCurrency = 'TWD' THEN ex.TWD
 				ELSE 1
 			END AS DefaultRate
 		FROM dbo.ExchangeDailyOanda ex WITH(NOLOCK)

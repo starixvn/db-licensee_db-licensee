@@ -29,7 +29,7 @@ AS
 	Revisions:	
 		- 20220729@Victoria: Create function[Redmine #175297]
 		- 20220914@Evan: Add USDT as Base Currencies [Redmine #177481]
-		- 20231005@Evan: Add PHP as Base Currencies [Redmine #194863]
+		- 20231005@Evan: Add PHP as Base Currencies, list currencies currently supported [Redmine #194863]
 */
 
 BEGIN
@@ -112,6 +112,12 @@ BEGIN
 				WHEN @BaseCurrency = 'INR' THEN ex.INR
 				WHEN @BaseCurrency = 'USDT' AND ExchangeId = 20 THEN @UUS
 				WHEN @BaseCurrency = 'PHP' THEN ex.PHP
+				WHEN @BaseCurrency = 'AUD' THEN ex.AUD
+				WHEN @BaseCurrency = 'CHF' THEN ex.CHF
+				WHEN @BaseCurrency = 'SGD' THEN ex.SGD
+				WHEN @BaseCurrency = 'KRW' THEN ex.KRW
+				WHEN @BaseCurrency = 'JPY' THEN ex.JPY
+				WHEN @BaseCurrency = 'TWD' THEN ex.TWD
 				ELSE 1
 			END AS Rate,
 			CASE
