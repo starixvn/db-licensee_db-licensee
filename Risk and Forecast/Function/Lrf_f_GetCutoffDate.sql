@@ -10,6 +10,7 @@ AS
 	Revision:
 		- 20221912@Evan: Add cutoff date of Cash Out Win Loss Report [Redmine: #179083]	
 		- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465]
+		- 20230702@Evan: LAP - Enhance Exchange reports (Support View Resettled Ticket Data + add COD for NewTerm) [Redmine: #193954]
 
 */
 
@@ -18,7 +19,9 @@ RETURN
 	SELECT CutoffDate, TypeName
 	FROM (
 		VALUES ('2023-01-01', 'CashOut'),
-			('2023-07-01', 'SabaTennis')
+			('2023-07-01', 'SabaTennis'),
+			('2023-05-01', 'ExchangeWL_NewTerm'),
+			('2023-09-01', 'ExchangeWL_ViewResettled')
 	) AS t (CutoffDate, TypeName)
 	
 GO
