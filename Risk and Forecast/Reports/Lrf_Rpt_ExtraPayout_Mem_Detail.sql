@@ -282,7 +282,8 @@ BEGIN
 			AND 1 = CASE
 						WHEN sbt.ProductCode = 'SBC' AND b.bettype NOT IN (1698, 1699) AND b.matchid <> 150 THEN 0
 						WHEN sbt.ProductCode = 'VGA' AND b.bettype NOT IN (3898, 3899) AND b.matchid <> 173 THEN 0
-						WHEN sbt.ProductCode = 'SB' AND b.bettype = 29 AND b.statusID <> 112  AND b.oddsspread <> 2 THEN 0
+						WHEN sbt.ProductCode = 'SB' AND b.bettype = 29 AND b.statusID = 112  AND b.oddsspread <> 2 THEN 0
+						WHEN sbt.ProductCode = 'SB' AND b.bettype = 29 AND b.statusID <> 112  AND b.oddsspread = 2 THEN 0
 						ELSE 1
 					END
 	END
