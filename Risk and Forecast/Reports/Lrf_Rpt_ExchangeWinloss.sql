@@ -72,8 +72,7 @@ BEGIN
 		AgentComm		MONEY,
 		LicTotal		MONEY)
 
-	DECLARE @ProductId			INT
-		,	@FDate				DATE
+	DECLARE @FDate				DATE
 		,	@TDate				DATE
 		,	@ProductPrefix		VARCHAR(2)
 		
@@ -82,10 +81,6 @@ BEGIN
 
 	SET @ProductPrefix = 'BX'
 	
-	SELECT @ProductID = ProductID
-	FROM bodb_licensee.dbo.Product3rd WITH (NOLOCK)
-	WHERE ProductPrefix = @ProductPrefix
-
 	-- #Region: Get list custIDs
 	DECLARE @TmpCust AS TABLE (CustId INT PRIMARY KEY)
 
