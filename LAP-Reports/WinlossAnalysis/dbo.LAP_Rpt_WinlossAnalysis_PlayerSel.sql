@@ -44,6 +44,7 @@ AS
 		- 20230209@Bobby: Created [RedmineID: #172604]
 		- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465]
 		- 20230815@Bobby: Enhance search username by prefix [RedmineID: #192721]
+		- 20230703@Bobby: Enhance perf - bettrans product3rd filtering [RedmineID: #195292]
 
 	Param's Explanation:
 		- @SortKey: 0:GroupBy, 1:BetCount, 2:Turnover, 3:NetTurnover, 4:MemWinloss, 5:MemComm, 6:LicWinloss, 7:LicComm, 8:AmtDueToBA, 9:BetEffective, 10:Margin
@@ -303,6 +304,9 @@ BEGIN
 	-- TODO: filter raw data
 	IF @ToDate > @MovebetDay --> get data in bettrans
 	BEGIN
+		DECLARE @strProduct3rd VARCHAR(4000);
+		SELECT @strProduct3rd = STRING_AGG(Product3rdId,',') FROM ( SELECT DISTINCT Product3rdId FROM #ProductSel ps ) AS t
+
 		SELECT @rptFromDate = IIF(@FromDate > @MovebetDay, @Fromdate, DATEADD(DAY, 1, @MovebetDay))
 			, @rptToDate	= @ToDate;
 
@@ -407,12 +411,13 @@ BEGIN
 					END AS SportType,
 					ISNULL(CASE WHEN b.bettype IN(29) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
 			) AS ck
-			CROSS APPLY (SELECT TOP 1 bf.PlatformId FROM @PlatformSel bf WHERE b.betfrom =  bf.BetFrom) AS bf
-			CROSS APPLY (SELECT TOP 1 ps.Product3rdId FROM #ProductSel ps WHERE ck.Product3rdIdMix = ps.Product3rdId) AS ps
+			INNER JOIN @PlatformSel bf ON b.betfrom =  bf.BetFrom
+			
 		WHERE b.winlostdate BETWEEN @rptFromDate AND @rptToDate
 			AND ',' + @StatusCheck + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
 			AND (',' + @LiveIds + ',' LIKE '%,' + CAST(ck.liveindicator AS VARCHAR(3)) + ',%')
 			AND (ck.sporttype <> 0 AND (@SportIDs IS NULL OR  ',' + @SportIDs + ',' LIKE '%,' + CAST(ck.sporttype AS VARCHAR(10)) + ',%'))
+			AND (',' + @strProduct3rd + ',' LIKE '%,' + CAST(ck.Product3rdIdMix AS VARCHAR(3)) + ',%')
 		
 		GROUP BY CASE 
 				WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, b.winlostdate)
