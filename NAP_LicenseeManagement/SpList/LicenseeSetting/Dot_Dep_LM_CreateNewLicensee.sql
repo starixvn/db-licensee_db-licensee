@@ -3,7 +3,7 @@
 CREATE PROCEDURE [dbo].[Dot_Dep_LM_CreateNewLicensee]
 	@LicenseeName			VARCHAR(50)
 	, @LicenseeType			VARCHAR(50)
-	, @ProductCode			VARCHAR(100) = ''
+	, @ProductCode			VARCHAR(MAX) = ''
 	, @SystemisActive		VARCHAR(100) = 'LRF,OA,Accounting'
 	, @ErrCode				INT = 0 OUTPUT
 	, @ErrMsg				NVARCHAR(MAX) = '' OUTPUT
@@ -16,6 +16,7 @@ AS
 	 
 	 Revisions:
 	  - 20190425@Amanda: Wrap all steps to create new licensee on LM system to one SP for SiteBuilder [Redmine: #111321]
+	  - 20230814@Winfred: Integrate MaxGame, VS3 new products - remove VS3 Old [redmine:#183802]
 */
 BEGIN
 	SET NOCOUNT ON;
