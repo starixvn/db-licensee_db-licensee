@@ -25,33 +25,10 @@ AS
 		- 20221122@Evan: Integrate Player Tips [RedmineID: #180590]
 		- 20230208@Evan: Inteagrate SG promotion prize [RedmineID: #183497]
 		- 20230626@Evan: Integrate MG-RNG (Promotion Game) [RedmineID: #189988]
+		- 20231018@Evan: Enhance SPs + Integrate Saba Casino Royale Tournament Prize [redmine: #194505]
 
 	Param's Explanation:
-		+ @PromotionTypeList: promotion type list separated by ','
-			- 2101: Allbet - Promotion (BetType: 2499)
-			- 3201: PP - Tournament Prize (BetType: 4299)
-			- 3202: PP - Promotion Prize (BetType: 4300)
-			- 3203: PP - Jackpot Prize (BetType: 4298)
-			- 3204: PP - Jackpot Contribution (BetType: 4297)
-			- 3401: Arcadia Gaming - Bonus (BetType: 1906)
-			- 3601: SG - Jackpot Prize (BetType: 4600)
-			- 3602: SG - Jackpot Contribution (BetType: 4599)
-			- 3701: Saba Lucky Spin (BetType: 17000)
-			- 3702: Saba Lucky Spot (BetType: 17001)
-			- 3703: Non - Cash Prize (BetType: 17002)
-			- 3704: Saba Loyalty Points Exchange (BetType: 17003)
-			- 3705: Saba Red Envelope (BetType: 17004)
-			- 3901: SA Gaming - Tip (BetType: 3007)
-			- 4201: Saba.club - Free Bets (SportType: 150)
-			- 4202: Saba.club - Jackpot Prize (BetType: 1699)
-			- 4203: Saba.club - Jackpot Contribution (BetType: 1698)
-			- 4501: AE Sexy - Lucky Draw (BetType: 3150)
-			- 6601: Vgaming - Free Bets (SportType: 173)
-			- 6602: Vgaming - Jackpot Prize (BetType: 3899)
-			- 6603: Vgaming - Jackpot Contribution (BetType: 3898)
-			- 7401: Player Tips (BetType: 8700)
-			- 3603: SG - Promotion Prize (BetType: 4598)
-			- 7301: MGRNG - Promotion Prize (BetType: 8695)
+		+ @PromotionTypeList: promotion type list separated by ',' (Get PromotionTypeList from Lrf_f_SelPromotionType)
 		+ @ReportType: 1: Daily, 2: Monthly
 */
 
@@ -102,9 +79,19 @@ BEGIN
 			RETURN
 		END
 	END
+	
+	-- Get PromotionTypeList 
+	DECLARE @tbPromotionTypeList TABLE (PromotionType SMALLINT, Bettype INT, ProductCode VARCHAR(10), SportType SMALLINT)
+	INSERT INTO @tbPromotionTypeList (PromotionType, Bettype, ProductCode, SportType)
+	SELECT a.PromotionType
+		 , a.Bettype 
+		 , a.ProductCode 
+		 , a.SportType 
+	FROM Lrf_f_SelPromotionType (@ProductList,@PromotionTypeList) AS a   
+	WHERE a.PromotionType IN (SELECT value FROM STRING_SPLIT(@PromotionTypeList,','))
 
 	-- Get sport/bettype matrix
-	CREATE TABLE #SportBetType (BetType SMALLINT, ProductCode VARCHAR(10), EventType TINYINT)
+	CREATE TABLE #SportBetType (BetType SMALLINT, ProductCode VARCHAR(10), EventType TINYINT, PromotionType SMALLINT, SportType SMALLINT)
 
 	CREATE CLUSTERED INDEX IX_BetType ON #SportBetType (BetType)
 
@@ -112,37 +99,16 @@ BEGIN
 
 	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
 
-	INSERT INTO #SportBetType (BetType, ProductCode, EventType)
-	SELECT DISTINCT BetType, ProductPrefix, EventType
-	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
-	WHERE 1 = CASE
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,2101,%' AND BetType = 2499 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3201,%' AND BetType = 4299 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3202,%' AND BetType = 4300 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3203,%' AND BetType = 4298 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3204,%' AND BetType = 4297 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3401,%' AND BetType = 1906 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3601,%' AND BetType = 4600 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3602,%' AND BetType = 4599 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3603,%' AND BetType = 4598 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3701,%' AND BetType = 17000 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3702,%' AND BetType = 17001 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3703,%' AND BetType = 17002 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3704,%' AND BetType = 17003 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3705,%' AND BetType = 17004 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3901,%' AND BetType = 3007 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,4201,%' AND ProductPrefix = 'SBC' AND BetType NOT IN (1698, 1699) THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,4202,%' AND BetType = 1699 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,4203,%' AND BetType = 1698 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,4501,%' AND BetType = 3150 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,6601,%' AND ProductPrefix = 'VGA' AND BetType NOT IN (3899, 3898) THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,6602,%' AND BetType = 3899 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,6603,%' AND BetType = 3898 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,7401,%' AND BetType = 8700 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,7301,%' AND BetType = 8695 THEN 1
-				ELSE 0
-			END
-
+	INSERT INTO #SportBetType (BetType, ProductCode, EventType, PromotionType, SportType)
+	SELECT DISTINCT a.BetType
+				  , a.ProductPrefix
+				  , a.EventType
+				  , b.PromotionType
+				  , b.SportType
+	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest) a
+		INNER JOIN @tbPromotionTypeList b ON b.ProductCode = a.ProductPrefix
+			AND a.BetType = ISNULL(b.Bettype, a.BetType)
+	
 	DECLARE @Data TABLE (
 		ProductCode		VARCHAR(10),
 		WinLostDate		SMALLDATETIME,
@@ -154,8 +120,8 @@ BEGIN
 	)
 
 	DECLARE @TempFromDate	SMALLDATETIME,
-		@TempToDate			SMALLDATETIME
-
+			@TempToDate		SMALLDATETIME;
+		
 	-- bettrans range
 	IF @ToDate > @MoveBetsDay
 	BEGIN
@@ -192,8 +158,7 @@ BEGIN
 			b.winlostdate BETWEEN @TempFromDate AND @ToDate
 			AND b.statusID IN (111, 112, 113)
 			AND 1 = CASE
-						WHEN sbt.ProductCode = 'SBC' AND b.bettype NOT IN (1698, 1699) AND b.matchid <> 150 THEN 0
-						WHEN sbt.ProductCode = 'VGA' AND b.bettype NOT IN (3898, 3899) AND b.matchid <> 173 THEN 0
+						WHEN sbt.ProductCode IN ('SBC','VGA') AND b.matchid <> sbt.SportType THEN 0
 						ELSE 1
 					END
 			AND (@Username = '' OR c.CustId IS NOT NULL)
@@ -211,13 +176,6 @@ BEGIN
 							ELSE @ToDate
 						END
 
-		DELETE #SportBetType
-		WHERE 1 = CASE
-					WHEN ProductCode = 'SBC' AND BetType NOT IN (1698, 1699) THEN 1
-					WHEN ProductCode = 'VGA' AND BetType NOT IN (3899, 3898) THEN 1
-					ELSE 0
-				END
-
 		INSERT INTO @Data (
 			ProductCode,
 			WinLostDate,
@@ -227,12 +185,7 @@ BEGIN
 			Amount,
 			SharingAmount )
 		SELECT
-			CASE
-				WHEN sbt.BetType IS NOT NULL THEN sbt.ProductCode
-				WHEN b.sporttype = 150 THEN 'SBC'
-				WHEN b.sporttype = 173 THEN 'VGA'
-				ELSE ''
-			END AS ProductCode,
+			sbt.ProductCode,
 			b.winlostdate,
 			b.currency,
 			SUM(b.BetCount) AS BetCount,
@@ -245,26 +198,15 @@ BEGIN
 		FROM
 			bodb_LicenseeReport.dbo.rptLicWinloss2 AS b WITH (NOLOCK)
 			INNER JOIN #TempAg AS a ON a.CustId = b.recommend
-			LEFT JOIN #SportBetType AS sbt ON sbt.BetType = b.bettype
+			INNER JOIN #SportBetType AS sbt ON sbt.BetType = b.bettype AND b.sporttype = ISNULL(sbt.SportType,b.SportType)
 			LEFT JOIN #TempCust AS c ON c.CustId = b.custid
 		WHERE
 			b.winlostdate BETWEEN @FromDate AND @TempToDate
 			AND b.statusID IN (111, 112, 113)
 			AND b.roleid = 1
-			AND 1 = CASE
-						WHEN sbt.BetType IS NOT NULL THEN 1
-						WHEN ',' + @PromotionTypeList + ',' LIKE '%,4201,%' AND b.sporttype = 150 THEN 1
-						WHEN ',' + @PromotionTypeList + ',' LIKE '%,6601,%' AND b.sporttype = 173 THEN 1
-						ELSE 0
-					END
 			AND (@Username = '' OR c.CustId IS NOT NULL)
 		GROUP BY
-			CASE
-				WHEN sbt.BetType IS NOT NULL THEN sbt.ProductCode
-				WHEN b.sporttype = 150 THEN 'SBC'
-				WHEN b.sporttype = 173 THEN 'VGA'
-				ELSE ''
-			END,
+			sbt.ProductCode,
 			b.winlostdate,
 			b.currency
 	END

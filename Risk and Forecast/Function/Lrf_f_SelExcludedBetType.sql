@@ -19,6 +19,7 @@ RETURNS TABLE
 		- 20220801@Victoria: Add DBSID-bodb02 to metadata [Redmine: #175297]
 		- 20230208@Evan: Inteagrate SG promotion prize [RedmineID: #183497]
 		- 20230626@Evan: Integrate MG-RNG (Promotion Game) [RedmineID: #189988]
+		- 20200916@Evan: Integrate Saba Casino Royale Tournament Prize [redmine: #194505]
 */
 
 RETURN
@@ -37,6 +38,8 @@ RETURN
 	SELECT 'SPR', 17003									-- Saba Loyalty
 	UNION ALL
 	SELECT 'SPR', 17004									-- Saba Red Envelope
+	UNION ALL
+	SELECT 'SPR', 17006									-- Casino Royale Tournament
 	UNION ALL
 	SELECT 'SAG', 3007									-- SA Gaming Tip ticket
 	UNION ALL
