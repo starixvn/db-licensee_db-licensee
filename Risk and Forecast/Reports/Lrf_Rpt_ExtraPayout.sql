@@ -25,6 +25,7 @@ AS
 		- 20221122@Evan: Integrate Player Tips [RedmineID: #180590]
 		- 20230208@Evan: Inteagrate SG promotion prize [RedmineID: #183497]
 		- 20230626@Evan: Integrate MG-RNG (Promotion Game) [RedmineID: #189988]
+		- 20231018@Evan: Integrate Saba Casino Royale Tournament Prize [redmine: #194505]
 
 	Param's Explanation:
 		+ @PromotionTypeList: promotion type list separated by ','
@@ -41,6 +42,7 @@ AS
 			- 3703: Non - Cash Prize (BetType: 17002)
 			- 3704: Saba Loyalty Points Exchange (BetType: 17003)
 			- 3705: Saba Red Envelope (BetType: 17004)
+			- 3706: Casino Royale Tournament (BetType: 17006)
 			- 3901: SA Gaming - Tip (BetType: 3007)
 			- 4201: Saba.club - Free Bets (SportType: 150)
 			- 4202: Saba.club - Jackpot Prize (BetType: 1699)
@@ -130,6 +132,7 @@ BEGIN
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3703,%' AND BetType = 17002 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3704,%' AND BetType = 17003 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3705,%' AND BetType = 17004 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3706,%' AND BetType = 17006 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3901,%' AND BetType = 3007 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,4201,%' AND ProductPrefix = 'SBC' AND BetType NOT IN (1698, 1699) THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,4202,%' AND BetType = 1699 THEN 1
