@@ -116,6 +116,7 @@ AS
 		- 20230801@Evan: Integrate Virtual Sports 3 (Leap Gaming New) [RedmineID: #190908]
 		- 20231107@Evan: Integrate SEAL Entertainment [RedmineID: #180648]
 		- 20231117@Evan: Integrate WE Live Casino [RedmineID: #196573]
+		- 20230801@Evan: HF Ticket Parlay for BA [RedmineID: #196313]
 
 	Param's Explanation:
 		+ @IsLive : indicate that whether the report will get live data or not
@@ -245,6 +246,7 @@ BEGIN
 				AND (b.liveindicator = @Liveindicator OR @Liveindicator = 2)
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
+				AND b.bettype NOT IN (9,29,2799)
 				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 			GROUP BY
 				b.winlostdate,
@@ -252,6 +254,36 @@ BEGIN
 			OPTION(RECOMPILE)
 		END
 
+		--parlay for BA
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'SB'))
+		BEGIN	
+			INSERT INTO #tmpWinloss
+			SELECT
+				b.winlostdate,
+				t.currency,
+				'BA' AS ProductCode,
+				SUM(stake) turnover,
+				SUM(b.winlost - b.actual_stake) AS Winlost,
+				SUM(- 1 * (b.winlost - b.actual_stake)) AS LicenseeWL,
+				SUM(comm) AS Comm,
+				SUM(b.playercomm) AS PlayerComm,
+				- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd,
+				COUNT(b.transid) BetCount
+			FROM
+				dbo.bettrans b WITH (NOLOCK)
+				INNER JOIN #TempAg t ON b.recommend = t.custid
+				INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active ba WITH (NOLOCK) ON b.recommend = ba.recommend AND b.TransId = ba.TransID
+			WHERE
+				b.winlostdate BETWEEN @TempFromDate AND @TDate
+				AND b.bettype IN (9,29,2799)
+				AND b.statusID IN (111, 112, 113)
+				AND (b.livehomescore = @Liveindicator OR @Liveindicator = 2)
+			GROUP BY
+				b.winlostdate,
+				t.currency,
+				b.bettype
+		END
+		
 		--SB
 		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'SB'))
 		BEGIN
