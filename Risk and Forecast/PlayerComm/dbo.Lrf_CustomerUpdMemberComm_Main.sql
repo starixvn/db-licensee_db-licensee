@@ -107,6 +107,7 @@ AS
 		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
 		- 20230314@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 		- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
+		- 20230808@Tacy: LAP - Offer Player Commission to VS3 (new) [redmine: #192203]
 		
 	Param's Explanation:
 
@@ -254,7 +255,7 @@ BEGIN
 				,@CGComm_Group = MAX(CASE WHEN BetType = 7301 THEN playerdiscount ELSE 0 END)
 				,@AdvantComm_Group = MAX(CASE WHEN BetType = 7701 THEN playerdiscount ELSE 0 END)
 				,@AdvantMiniComm_Group = MAX(CASE WHEN BetType = 7801 THEN playerdiscount ELSE 0 END)
-				,@VS3Comm_Group = MAX(CASE WHEN BetType = 5301 THEN playerdiscount ELSE 0 END)
+				,@VS3Comm_Group = MAX(CASE WHEN BetType = 5302 THEN playerdiscount ELSE 0 END)
 				
 				,@MaxGameComm_Group = MAX(CASE WHEN BetType = 5401 THEN playerdiscount ELSE 0 END)
 				,@FGGComm_Group = MAX(CASE WHEN BetType = 8201 THEN playerdiscount ELSE 0 END)
@@ -278,13 +279,18 @@ BEGIN
 								--SabaCasino
 								,208
 								--phase 4.2
-								,231,167,172,174
+								--,231 VS3 (old)
+								,167,172,174
 								
 								--MaxGame,FGG,Jili
 								,158,176,237
 
 								--MG_RnG,Yeebet
 								,155,159
+
+								--VS3 (new)
+								,178
+
 								--
 								,1,161,202
 								)

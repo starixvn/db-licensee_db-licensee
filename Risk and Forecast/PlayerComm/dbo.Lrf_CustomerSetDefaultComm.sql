@@ -32,6 +32,7 @@ AS
 		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
 		- 20230314@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 		- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
+		- 20230808@Tacy: LAP - Offer Player Commission to VS3 (new) [redmine: #192203]
 		
 	Param's Explanation:
 */ 
@@ -187,7 +188,7 @@ BEGIN
 				SET @IsUpdateAdvant = 1
 			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=68)
 				SET @IsUpdateAdvantMini = 1
-			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=49)
+			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=77)	--VS3 (new)
 				SET @IsUpdateVS3 = 1
 			
 			--MaxGame,FGG,Jili	
