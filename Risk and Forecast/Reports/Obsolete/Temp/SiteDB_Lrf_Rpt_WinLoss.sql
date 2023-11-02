@@ -44,6 +44,7 @@ ALTER PROCEDURE [dbo].[SiteDB_Lrf_Rpt_WinLoss]
 	@ShowJIG		BIT = 0, 	-- Jili
 	@ShowYB			BIT = 0, 	-- YeeBet
 	@ShowMGRNG		BIT = 0, 	-- MGRNG
+	@ShowLG			BIT = 0, 	-- Leap Gaming VS (VS3)
 	@DrawFilter				SMALLINT		= 1,
 	@CustomerClass			VARCHAR(MAX)	= 'All',
 	@OddsGroup				VARCHAR(100)	= 'All',
@@ -70,6 +71,7 @@ AS
 	    - 20230303@Evan: Remove inactive products CB, FW, GD, GDG [Redmine: 181424]  
 		- 20230523@Evan: Integrate YeeBet LC [RedmineID: #187947]
 		- 20230626@Evan: Integrate MG-RNG (Normal+Promotion Game) [RedmineID: #189988]
+		- 20230801@Evan: Integrate Virtual Sports 3 (Leap Gaming New) [RedmineID: #190908]
 
 	Param's Explanation:
 		@OrderItem:
@@ -292,6 +294,8 @@ BEGIN
 	SELECT 'YB' AS Code WHERE @ShowYB = 1
 	UNION ALL
 	SELECT 'MGRNG' AS Code WHERE @ShowMGRNG = 1
+	UNION ALL
+	SELECT 'LG' AS Code WHERE @ShowLG = 1
 
 	-- BT & CO belong to SB
 	SELECT @ProductList = COALESCE(@ProductList + ',' + Code, Code)

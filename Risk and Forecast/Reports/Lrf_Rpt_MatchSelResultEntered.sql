@@ -21,77 +21,110 @@ Revisions:
 	- 20180129@Harper: Remove LC from product list [RedmineID: #85965]
 	- 20180807@Amanda: Remove Racing [RedmineID: #99378]
 	- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
+	- 20230928@Evan: Integrate Virtual Sports 3 (Leap Gaming New) [RedmineID: #190908]
 */
 
+BEGIN
 	SET NOCOUNT ON
-	
-	DECLARE @ShowNG BIT, @ShowVS BIT, @ShowVS2 BIT
-	
-    SELECT  @isShowAll = CASE @isShowAll
-                           WHEN 1 THEN NULL
-                           ELSE 0
-                         END
 
-    DECLARE @FromDate DATETIME ,
-        @ToDate DATETIME
-    SELECT  @ToDate = CONVERT(DATETIME, CONVERT(NVARCHAR(20), GETDATE(), 101))
-    SELECT  @FromDate = DATEADD(dd, -1, @ToDate)
-    
-    DECLARE @Result AS Table(IsToday INT, EventDate SMALLDATETIME, Sporttype INT, Entered INT, NonEntered INT)
+	DECLARE @ShowNG BIT
+		  , @ShowVS BIT
+		  , @ShowVS2 BIT
 
-	INSERT INTO @Result (IsToday,EventDate,Sporttype,Entered,NonEntered)
-    SELECT  datediff(dd,@FromDate,EventDate ) as IsToday,
-			EventDate , 
-			sporttype,
-            SUM(CASE WHEN eventstatus in ('completed','refund') THEN 1 ELSE 0 END) AS Entered ,  
-            SUM(CASE WHEN eventstatus NOT in ('completed','refund')  THEN 1 ELSE 0 END) AS NonEntered 
-            
-            
-    FROM    ( 
-				SELECT    LeagueID ,
-						EventDate ,
-						MAX(EventStatus) AS EventStatus
-				FROM      Match WITH ( NOLOCK )
-				WHERE     Match.EventDate BETWEEN @FromDate AND @ToDate
-						AND Match.eventstatus <> 'closed'
-				GROUP BY  leagueid ,
-						EventDate ,
-						matchid--, awayid
-				UNION ALL
-				SELECT  r.LeagueID
-						,o.EventDate
-						,MAX(o.EventStatus)
-				FROM VSOutright o WITH (NOLOCK)
-					INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
-					WHERE o.EventDate BETWEEN @FromDate AND @ToDate
-							AND o.EventStatus <> 'closed'	
-					GROUP BY r.LeagueID
-							,o.EventDate
-							,EventTime
-            ) AS Match
-            INNER JOIN League WITH ( NOLOCK ) ON Match.LeagueID = League.LeagueID
-                                                 AND League.isTest = ISNULL(@isShowAll,
-                                                              League.isTest)
-    GROUP BY EventDate, sporttype
- --   ORDER BY EventDate, sporttype
+	SELECT @isShowAll =
+					   CASE @isShowAll
+						   WHEN 1 THEN NULL
+						   ELSE 0
+					   END
+
+	DECLARE @FromDate DATETIME
+		  , @ToDate DATETIME
+	SELECT @ToDate = CONVERT(DATETIME, CONVERT(NVARCHAR(20), GETDATE(), 101))
+	SELECT @FromDate = DATEADD(dd, -1, @ToDate)
+
+	DECLARE @Result AS TABLE (
+		  IsToday INT
+		, EventDate SMALLDATETIME
+		, Sporttype INT
+		, Entered INT
+		, NonEntered INT
+	)
+
+	INSERT INTO @Result (IsToday, EventDate, Sporttype, Entered, NonEntered)
+	SELECT DATEDIFF(dd, @FromDate, EventDate) AS IsToday
+		 , EventDate
+		 , sporttype
+		 , SUM(CASE
+			   WHEN EventStatus IN ('completed', 'refund') THEN 1
+			   ELSE 0
+		   END) AS Entered
+		 , SUM(CASE
+			   WHEN EventStatus NOT IN ('completed', 'refund') THEN 1
+			   ELSE 0
+		   END) AS NonEntered
+	FROM (
+		SELECT leagueid
+			 , EventDate
+			 , MAX(EventStatus) AS EventStatus
+		FROM Match WITH (NOLOCK)
+		WHERE Match.EventDate BETWEEN @FromDate AND @ToDate
+			AND Match.EventStatus <> 'closed'
+		GROUP BY leagueid
+			   , EventDate
+			   , matchid--, awayid
+		UNION ALL
+		SELECT r.leagueid
+			 , o.EventDate
+			 , MAX(o.EventStatus)
+		FROM VSOutright o WITH (NOLOCK)
+			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
+		WHERE o.EventDate BETWEEN @FromDate AND @ToDate
+			AND o.EventStatus <> 'closed'
+		GROUP BY r.leagueid
+			   , o.EventDate
+			   , EventTime
+	) AS Match
+		INNER JOIN League WITH (NOLOCK) ON Match.leagueid = League.leagueid
+			AND League.isTest = ISNULL(@isShowAll,League.isTest)
+	GROUP BY EventDate
+		   , sporttype
+	--   ORDER BY EventDate, sporttype
 
 
 	IF @LicenseeID <> 0
 	BEGIN
-		SELECT @ShowNG=0, @ShowVS=0, @ShowVS2=0
-	
-		IF EXISTS(SELECT 1 FROM bodb_licensee.dbo.LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=2) SET @ShowNG=1
-		IF EXISTS(SELECT 1 FROM bodb_licensee.dbo.LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=5) SET @ShowVS=1
-		IF EXISTS(SELECT 1 FROM bodb_licensee.dbo.LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=27) SET @ShowVS2=1
-		
-		IF @ShowNG=0 DELETE FROM @Result WHERE Sporttype IN (161, 164)
-		IF @ShowVS=0 DELETE FROM @Result WHERE Sporttype BETWEEN 180 AND 189
-		IF @ShowVS2=0 DELETE FROM @Result WHERE Sporttype BETWEEN 190 AND 199
-	END
-	DELETE @Result WHERE Sporttype = 219
-	
-	SELECT * FROM @Result
-	ORDER BY EventDate, sporttype
+		SELECT @ShowNG = 0
+			 , @ShowVS = 0
+			 , @ShowVS2 = 0
 
+		IF EXISTS (SELECT 1 FROM bodb_licensee.dbo.LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID = @LicenseeID
+			   AND ProductID = 2)
+			SET @ShowNG = 1
+
+		IF EXISTS (SELECT 1 FROM bodb_licensee.dbo.LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID = @LicenseeID
+			   AND ProductID = 5)
+			SET @ShowVS = 1
+
+		IF EXISTS (SELECT 1 FROM bodb_licensee.dbo.LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID = @LicenseeID
+			   AND ProductID = 27)
+			SET @ShowVS2 = 1
+
+		IF @ShowNG = 0
+			DELETE FROM @Result WHERE Sporttype IN (161, 164)
+
+		IF @ShowVS = 0
+			DELETE FROM @Result WHERE Sporttype BETWEEN 180 AND 189
+
+		IF @ShowVS2 = 0
+			DELETE FROM @Result WHERE Sporttype BETWEEN 190 AND 199
+	END
+
+	DELETE @Result WHERE Sporttype IN (219,178)
+
+	SELECT IsToday, EventDate, Sporttype, Entered, NonEntered
+	FROM @Result
+	ORDER BY EventDate, Sporttype
+
+END
  
 GO

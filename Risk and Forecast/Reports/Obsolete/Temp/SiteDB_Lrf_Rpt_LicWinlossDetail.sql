@@ -31,6 +31,7 @@ AS
 	    - 20230303@Evan: Remove inactive products CB, FW, GD, GDG [Redmine: 181424]  
 		- 20230523@Evan: Integrate YeeBet LC [RedmineID: #187947]
 		- 20230626@Evan: Integrate MG-RNG (Normal+Promotion Game) [RedmineID: #189988]
+		- 20230801@Evan: Integrate Virtual Sports 3 (Leap Gaming New) [RedmineID: #190908]
 
 	Param's Explanation:
 		+ @CustID: SuperID
@@ -91,6 +92,7 @@ BEGIN
 		TurnoverJIG			MONEY,
 		TurnoverYB			MONEY,
 		TurnoverMGRNG		MONEY,
+		TurnoverLG			MONEY,
 		BTActualStake		MONEY,
 		Winlost				MONEY,
 		LicenseeWLSB		MONEY,
@@ -130,6 +132,7 @@ BEGIN
 		LicenseeWLJIG		MONEY,
 		LicenseeWLYB		MONEY,
 		LicenseeWLMGRNG		MONEY,
+		LicenseeWLLG		MONEY,
 		AmtDueToBA			MONEY,
 		CommBA				MONEY,
 		PlayerComm  		MONEY,
@@ -312,6 +315,7 @@ BEGIN
 				0 AS turnoverJIG,
 				0 AS turnoverYB,
 				0 AS turnoverMGRNG,
+				0 AS turnoverLG,
 				0 AS BTActualStake,
 				SUM(b.winlost-b.actual_stake) AS Winlost,
 				0 AS LicenseeWLSB,
@@ -351,6 +355,7 @@ BEGIN
 				0 AS LicenseeWLJIG,
 				0 AS LicenseeWLYB,
 				0 AS LicenseeWLMGRNG,
+				0 AS LicenseeWLLG,
 				-SUM(b.winlost-b.actual_stake+awinlost+comm ) AS AmountDueToBA,
 				SUM(comm) AS CommBA,
 				SUM(playercomm) AS PlayerComm,
@@ -433,6 +438,7 @@ BEGIN
 				0 AS turnoverJIG,
 				0 AS turnoverYB,
 				0 AS turnoverMGRNG,
+				0 AS turnoverLG,
 				0 AS BTActualStake,
 				SUM(b.winlost-b.actual_stake) AS Winlost,  
 				-SUM(b.winlost-b.actual_stake) AS LicenseeWLSB,
@@ -472,6 +478,7 @@ BEGIN
 				0 AS LicenseeWLJIG,
 				0 AS LicenseeWLYB,
 				0 AS LicenseeWLMGRNG,
+				0 AS LicenseeWLLG,
 				0 AS AmountDueToBA,
 				0 AS CommBA,
 				SUM(b.playercomm) AS PlayerComm,
@@ -545,6 +552,7 @@ BEGIN
 				0 AS turnoverJIG,
 				0 AS turnoverYB,
 				0 AS turnoverMGRNG,
+				0 AS turnoverLG,
 				SUM(CASE WHEN b.bettype = 902 THEN b.winlost ELSE 0 END) AS BTAtualStake,
 				SUM(CASE WHEN b.bettype = 903 THEN 0 ELSE b.winlost-b.actual_stake END) AS Winlost,
 				0 AS LicenseeWLSB,
@@ -584,6 +592,7 @@ BEGIN
 				0 AS LicenseeWLJIG,
 				0 AS LicenseeWLYB,
 				0 AS LicenseeWLMGRNG,
+				0 AS LicenseeWLLG,
 				0 AS AmountDueToBA,
 				0 AS CommBA,
 				0 AS PlayerComm,		
@@ -654,6 +663,7 @@ BEGIN
 				0 AS turnoverJIG,
 				0 AS turnoverYB,
 				0 AS turnoverMGRNG,
+				0 AS turnoverLG,
 				0 AS BTAtualStake,
 				SUM(CASE WHEN b.bettype = 913 THEN 0 ELSE b.winlost - b.actual_stake END) AS Winlost,  
 				0 AS LicenseeWLSB,
@@ -693,6 +703,7 @@ BEGIN
 				0 AS LicenseeWLJIG,
 				0 AS LicenseeWLYB,
 				0 AS LicenseeWLMGRNG,
+				0 AS LicenseeWLLG,
 				0 AS AmountDueToBA,
 				0 AS CommBA,
 				0 AS PlayerComm,
@@ -864,6 +875,10 @@ BEGIN
 					WHEN bt.ProductCode = 'MGRNG' THEN b.stake * CASE WHEN @DrawFilter IN (2, 3) AND b.statusID = 111 THEN 0 ELSE 1 END
 					ELSE 0
 				END) AS turnoverMGRNG,
+			SUM(CASE
+					WHEN bt.ProductCode = 'LG' THEN b.stake * CASE WHEN @DrawFilter IN (2, 3) AND b.statusID = 111 THEN 0 ELSE 1 END
+					ELSE 0
+				END) AS turnoverLG,
 			0 AS BTActualStake,
 			SUM(b.winlost-b.actual_stake) AS Winlost,
 			0 AS LicenseeWLSB,
@@ -957,6 +972,10 @@ BEGIN
 					WHEN bt.ProductCode = 'MGRNG' THEN b.winlost - b.actual_stake
 					ELSE 0
 				END) AS LicenseeWLMGRNG,
+			-SUM(CASE
+					WHEN bt.ProductCode = 'LG' THEN b.winlost - b.actual_stake
+					ELSE 0
+				END) AS LicenseeWLLG,
 			0 AS AmountDueToBA,
 			0 AS CommBA,
 			SUM(b.playercomm) AS PlayerComm,
@@ -1053,6 +1072,7 @@ BEGIN
 		CAST(SUM(TurnoverJIG	*e.Rate)	AS MONEY)   AS TurnoverJIG,
 		CAST(SUM(TurnoverYB		*e.Rate)	AS MONEY)   AS TurnoverYB,
 		CAST(SUM(TurnoverMGRNG	*e.Rate)	AS MONEY)   AS TurnoverMGRNG,
+		CAST(SUM(TurnoverLG		*e.Rate)	AS MONEY)   AS TurnoverLG,
 		CAST(SUM(BTActualStake	*e.Rate)	AS MONEY)   AS BTActualStake,
 		CAST(SUM(Winlost		*e.Rate)	AS MONEY)   AS Winlost,
 		CAST(SUM(LicenseeWLSB	*e.Rate)	AS MONEY)   AS LicenseeWLSB,
@@ -1092,6 +1112,7 @@ BEGIN
 		CAST(SUM(LicenseeWLJIG	*e.Rate)	AS MONEY)   AS LicenseeWLJIG,
 		CAST(SUM(LicenseeWLYB	*e.Rate)	AS MONEY)   AS LicenseeWLYB,
 		CAST(SUM(LicenseeWLMGRNG	*e.Rate)	AS MONEY)   AS LicenseeWLMGRNG,
+		CAST(SUM(LicenseeWLLG	*e.Rate)	AS MONEY)   AS LicenseeWLLG,
 		CAST(SUM(CommBA			*e.Rate)	AS MONEY)   AS CommBA,
 		CAST(SUM(PlayerComm		*e.Rate)	AS MONEY)   AS PlayerComm,
 		CAST(SUM(AmtDuetoBA		*e.Rate)	AS MONEY)   AS AmtDuetoBA,
@@ -1149,6 +1170,7 @@ BEGIN
 		CAST(SUM(TurnoverJIG	*e.USD)	AS MONEY)   AS TurnoverJIGUSD,
 		CAST(SUM(TurnoverYB		*e.USD)	AS MONEY)   AS TurnoverYBUSD,
 		CAST(SUM(TurnoverMGRNG	*e.USD)	AS MONEY)   AS TurnoverMGRNGUSD,
+		CAST(SUM(TurnoverLG		*e.USD)	AS MONEY)   AS TurnoverLGUSD,
 		CAST(SUM(BTActualStake	*e.USD)	AS MONEY)   AS BTActualStakeUSD,
 		CAST(SUM(Winlost		*e.USD)	AS MONEY)   AS WinlostUSD,
 		CAST(SUM(LicenseeWLSB	*e.USD)	AS MONEY)   AS LicenseeWLSBUSD,
@@ -1188,6 +1210,7 @@ BEGIN
 		CAST(SUM(LicenseeWLJIG	*e.USD)	AS MONEY)   AS LicenseeWLJIGUSD,
 		CAST(SUM(LicenseeWLYB	*e.USD)	AS MONEY)   AS LicenseeWLYBUSD,
 		CAST(SUM(LicenseeWLMGRNG	*e.USD)	AS MONEY)   AS LicenseeWLMGRNGUSD,
+		CAST(SUM(LicenseeWLLG	*e.USD)	AS MONEY)   AS LicenseeWLLGUSD,
 		CAST(SUM(CommBA			*e.USD)	AS MONEY)   AS CommBAUSD,
 		CAST(SUM(PlayerComm		*e.USD)	AS MONEY)   AS PlayerCommUSD,
 		CAST(SUM(AmtDuetoBA		*e.USD)	AS MONEY)   AS AmtDuetoBAUSD,
@@ -1234,6 +1257,7 @@ BEGIN
 		CAST(SUM(TurnoverJIG	*e.EUR)	AS MONEY)   AS TurnoverJIGEUR,
 		CAST(SUM(TurnoverYB		*e.EUR)	AS MONEY)   AS TurnoverYBEUR,
 		CAST(SUM(TurnoverMGRNG	*e.EUR)	AS MONEY)   AS TurnoverMGRNGEUR,
+		CAST(SUM(TurnoverLG		*e.EUR)	AS MONEY)   AS TurnoverLGEUR,
 		CAST(SUM(BTActualStake	*e.EUR)	AS MONEY)   AS BTActualStakeEUR,
 		CAST(SUM(Winlost		*e.EUR)	AS MONEY)   AS WinlostEUR,
 		CAST(SUM(LicenseeWLSB	*e.EUR)	AS MONEY)   AS LicenseeWLSBEUR,
@@ -1273,6 +1297,7 @@ BEGIN
 		CAST(SUM(LicenseeWLJIG	*e.EUR)	AS MONEY)   AS LicenseeWLJIGEUR,
 		CAST(SUM(LicenseeWLYB	*e.EUR)	AS MONEY)   AS LicenseeWLYBEUR,
 		CAST(SUM(LicenseeWLMGRNG	*e.EUR)	AS MONEY)   AS LicenseeWLMGRNGEUR,
+		CAST(SUM(LicenseeWLLG	*e.EUR)	AS MONEY)   AS LicenseeWLLGEUR,
 		CAST(SUM(CommBA			*e.EUR)	AS MONEY)   AS CommBAEUR,
 		CAST(SUM(PlayerComm		*e.EUR)	AS MONEY)   AS PlayerCommEUR,
 		CAST(SUM(AmtDuetoBA		*e.EUR)	AS MONEY)   AS AmtDuetoBAEUR,
@@ -1319,6 +1344,7 @@ BEGIN
 		CAST(SUM(TurnoverJIG	*e.GBP)	AS MONEY)   AS TurnoverJIGGBP,
 		CAST(SUM(TurnoverYB		*e.GBP)	AS MONEY)   AS TurnoverYBGBP,
 		CAST(SUM(TurnoverMGRNG	*e.GBP)	AS MONEY)   AS TurnoverMGRNGGBP,
+		CAST(SUM(TurnoverLG		*e.GBP)	AS MONEY)   AS TurnoverLGGBP,
 		CAST(SUM(BTActualStake	*e.GBP)	AS MONEY)   AS BTActualStakeGBP,
 		CAST(SUM(Winlost		*e.GBP)	AS MONEY)   AS WinlostGBP,
 		CAST(SUM(LicenseeWLSB	*e.GBP)	AS MONEY)   AS LicenseeWLSBGBP,
@@ -1358,6 +1384,7 @@ BEGIN
 		CAST(SUM(LicenseeWLJIG	*e.GBP)	AS MONEY)   AS LicenseeWLJIGGBP,
 		CAST(SUM(LicenseeWLYB	*e.GBP)	AS MONEY)   AS LicenseeWLYBGBP,
 		CAST(SUM(LicenseeWLMGRNG	*e.GBP)	AS MONEY)   AS LicenseeWLMGRNGGBP,
+		CAST(SUM(LicenseeWLLG	*e.GBP)	AS MONEY)   AS LicenseeWLLGGBP,
 		CAST(SUM(CommBA			*e.GBP)	AS MONEY)   AS CommBAGBP,
 		CAST(SUM(PlayerComm		*e.GBP)	AS MONEY)   AS PlayerCommGBP,
 		CAST(SUM(AmtDuetoBA		*e.GBP)	AS MONEY)   AS AmtDuetoBAGBP,
@@ -1404,6 +1431,7 @@ BEGIN
 		CAST(SUM(TurnoverJIG	*e.DefaultRate)	AS MONEY)   AS TurnoverJIG,
 		CAST(SUM(TurnoverYB		*e.DefaultRate)	AS MONEY)   AS TurnoverYB,
 		CAST(SUM(TurnoverMGRNG	*e.DefaultRate)	AS MONEY)   AS TurnoverMGRNG,
+		CAST(SUM(TurnoverLG		*e.DefaultRate)	AS MONEY)   AS TurnoverLG,
 		CAST(SUM(BTActualStake	*e.DefaultRate)	AS MONEY)   AS BTActualStake,
 		CAST(SUM(Winlost		*e.DefaultRate)	AS MONEY)   AS Winlost,
 		CAST(SUM(LicenseeWLSB	*e.DefaultRate)	AS MONEY)   AS LicenseeWLSB,
@@ -1443,6 +1471,7 @@ BEGIN
 		CAST(SUM(LicenseeWLJIG	*e.DefaultRate)	AS MONEY)   AS LicenseeWLJIG,
 		CAST(SUM(LicenseeWLYB	*e.DefaultRate)	AS MONEY)   AS LicenseeWLYB,
 		CAST(SUM(LicenseeWLMGRNG	*e.DefaultRate)	AS MONEY)   AS LicenseeWLMGRNG,
+		CAST(SUM(LicenseeWLLG	*e.DefaultRate)	AS MONEY)   AS LicenseeWLLG,
 		CAST(SUM(CommBA			*e.DefaultRate)	AS MONEY)   AS CommBA,
 		CAST(SUM(PlayerComm		*e.DefaultRate)	AS MONEY)   AS PlayerComm,
 		CAST(SUM(AmtDuetoBA		*e.DefaultRate)	AS MONEY)   AS AmtDuetoBA,
