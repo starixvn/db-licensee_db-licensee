@@ -30,6 +30,8 @@ AS
 	    - 20230303@Evan: Remove inactive products CB, FW, GD, GDG [Redmine: 181424]  
     	- 20230523@Evan: Integrate YeeBet LC [RedmineID: #187947]
 		- 20230626@Evan: Integrate MG-RNG (Normal+Promotion Game) [RedmineID: #189988]
+		- 20230913@Luke: Integrate Virtual Sports 3 [Redmine: #193901]
+						 Remove Virtual Sports 3 (Old)
 */
 
  /*
@@ -141,13 +143,13 @@ BEGIN
 			66,--	VGaming
 			67,--	AdvantPlay 
 			68,--	AdvantPlay Mini
-			49,--	Virtual Sports 3
 			69,--	Bitcoin
 			70,--	FGG	
 			60,--	MaxGame
 			75,--	Jili
 			76,--	YeeBet
-			73 --	MG-RNG
+			73, --	MG-RNG
+			77 --	Virtual Sports 3
 		)
 	ORDER BY ProductID ASC
 END
