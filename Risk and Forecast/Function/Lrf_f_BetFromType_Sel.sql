@@ -26,6 +26,7 @@ ALTER FUNCTION [dbo].[Lrf_f_BetFromType_Sel]
 		- 20230602@Evan: Support add new betfrom '#'&'A000' [Redmine: #188811]
 		- 20230811@Evan: Support add new betfrom W001, W002 & adjust A000 [Redmine: #191840]
 		- 20231030@Evan: Support Revert betfrom % & W002 [Redmine: #196175]
+		- 20231103@Evan: Support add new betfrom A001 [Redmine: #196463]
 	
 
 	Param's Explanation:
@@ -94,7 +95,8 @@ RETURN
 				(88, 'g'),
 				(88, 'e'),
 				(88, 'u'),
-				(88, '^')
+				(88, '^'),
+				(88, 'A001')
 	) d(PlatformType, betfrom)
 	WHERE @PlatformTypeList = 'All' OR (',' + @PlatformTypeList + ',' LIKE '%,' + CONVERT(VARCHAR(3), d.PlatformType) + ',%')
 GO
