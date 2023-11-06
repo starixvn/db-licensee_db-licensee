@@ -9,7 +9,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_Audit_DailyBets]
 	@PageIndex		INT = 1,
 	@PageSize		INT = 50,
 	@SortBy			VARCHAR(50) = 'TransactionId',
-	@SortOrder		VARCHAR(4) = 'asc'
+	@SortOrder		VARCHAR(4) = 'asc',
+	@LoginName		VARCHAR(50) = ''
 AS 
 /*  Created: 20191028@Amanda
     Description: LAP - Implement new report for auditing
@@ -27,6 +28,7 @@ AS
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20230704@Bobby: Fix paging lag [Redmine #190828]
 		- 20230814@Evan: Ivory - Adjust rate show real figures for currency cut off 000 [Redmine #192602]
+		- 20231025@Bobby: Customer Admin - [redmine: #195850]
 
 	Developer's Notes:
 		
@@ -50,7 +52,7 @@ BEGIN
 	DECLARE @Product TABLE (ProductCode VARCHAR(10))
 	DECLARE @GameCode TABLE (GameCode VARCHAR(10))
 	DECLARE @Currency AS TABLE (Id INT, Code VARCHAR(5), Name VARCHAR(5), ExRate FLOAT, ExRateOrg FLOAT)
-	DECLARE @ArchivedDate DATETIME, @CurrDate DATETIME
+	DECLARE @ArchivedDate DATETIME, @CurrDate DATETIME, @IsAuditUser BIT
 	
 	CREATE table #DailyResult
 	(
@@ -171,6 +173,16 @@ BEGIN
 		@RowStart = @PageSize * @PageIndex + 1,
 		@RowEnd = @RowStart + @PageSize - 1
 
+	-- Audit Login
+	SET @IsAuditUser = 0;
+	DECLARE @auditLogin TABLE(LoginName VARCHAR(50))
+	INSERT @auditLogin (LoginName) 
+	VALUES('GCOMRCI1'),('Pagcor12'),('Pagcor1');
+
+	SELECT TOP 1 @IsAuditUser = 1 
+	FROM @auditLogin 
+	WHERE (LoginName = @LoginName AND @SiteName = '12Bet') OR @SiteName <> '12Bet'
+
 	-- GATHER BET Soure
 	IF (@CurrDate >= @ArchivedDate)
 	BEGIN
@@ -210,7 +222,7 @@ BEGIN
 					,a.NetAmount * c.ExRateOrg AS NetAmount				
 					,a.BetAmount * c.ExRate AS TurnoverBased
 					,-a.NetAmount * c.ExRate AS WinLossBased
-					,pp.Username AS Playername,
+					,IIF(@IsAuditUser = 1, pp.Username, pp.Username2) AS Playername,
 					a.TransactionDate AS TransTime,
 					a.BettypeName AS BetType,
 					CASE
@@ -304,7 +316,7 @@ BEGIN
 					,a.NetAmount * c.ExRateOrg AS NetAmount				
 					,a.BetAmount * c.ExRate AS TurnoverBased
 					,-a.NetAmount * c.ExRate AS WinLossBased
-					,pp.Username AS Playername,
+					,IIF(@IsAuditUser = 1, pp.Username, pp.Username2) AS Playername,
 					a.TransactionDate AS TransTime,
 					a.BettypeName AS BetType,
 					CASE
