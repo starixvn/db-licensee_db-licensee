@@ -1,1 +1,2 @@
 NAP_LicenseeManagement\LicenseeSetting\NAP_LM_LicenseeBetLimitUpd.sql
+Risk and Forecast\Reports\api\Lrf_GetLicenseeWLByPlatform.sql
