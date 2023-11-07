@@ -25,6 +25,7 @@ ALTER FUNCTION [dbo].[Lrf_f_BetFromType_Sel]
 		- 20220801@Victoria: Add DBSID-bodb02 to metadata [Redmine: #175297]
 		- 20230602@Evan: Support add new betfrom '#'&'A000' [Redmine: #188811]
 		- 20230811@Evan: Support add new betfrom W001, W002 & adjust A000 [Redmine: #191840]
+		- 20231030@Evan: Support Revert betfrom % & W002 [Redmine: #196175]
 	
 
 	Param's Explanation:
@@ -34,7 +35,7 @@ ALTER FUNCTION [dbo].[Lrf_f_BetFromType_Sel]
 				2: Desktop China
 				3: Desktop Others
 				4: Mobile Standard
-				5: Mobile Galaxy
+				5: Mobile Euro
 				6: Mobile Compact
 				7: Mobile Others
 				8: E-Sports Desktop	
@@ -47,6 +48,7 @@ ALTER FUNCTION [dbo].[Lrf_f_BetFromType_Sel]
 				15: WAP
 				16: Chat Room
 				17: Desktop Galaxy
+				18: Mobile Galaxy
 				88: Others
 */
 
@@ -63,7 +65,6 @@ RETURN
 				(4, 'l'),
 				(4, ']'),
 				(5, '%'),
-				(5, 'W002'),
 				(6, 'c'),
 				(6, '@'),
 				(7, '7'),
@@ -87,6 +88,7 @@ RETURN
 				(15, 'm'),
 				(16, 'A000'),
 				(17, 'W001'), 
+				(18, 'W002'),
 				(88, 'v'),
 				(88, 'd'),
 				(88, 'g'),
