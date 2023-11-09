@@ -29,6 +29,7 @@ AS
 		- 20220118@Sol: LAP - Auditing licensees - Daily Bets - Filter by Sport - [RedmineID: #166056]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20230814@Evan: Ivory - Adjust rate show real figures for currency cut off 000 [Redmine #192602]
+		- 20231109@Evan: 12B - Adjust rate show real figures for currency cut off 000 [Redmine #196557]
 
 	Developer's Notes:
 		- Notes: If product is NG, search tickets with GameType is RNG
@@ -501,7 +502,7 @@ BEGIN
 	-- Exchange Rate
 	CREATE TABLE #Exchange (ExFromDate DATE, ExToDate DATE, ExchangeID INT, USD FLOAT, GBP FLOAT, EUR FLOAT, Rate FLOAT, DefaultRate FLOAT )
 	
-	IF @BaseCurrency = '' AND @SiteName ='IvoryBet'
+	IF @BaseCurrency = '' AND @SiteName IN ('IvoryBet','12B')
 	BEGIN
 		INSERT INTO #Exchange(ExFromDate, ExToDate, ExchangeID, USD, GBP, EUR, Rate, DefaultRate)
 		SELECT	FromDate, 

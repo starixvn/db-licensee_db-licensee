@@ -32,6 +32,7 @@ AS
 		- 20231025@Bobby: Customer Admin - [redmine: #195850]
 		- 20231116@Bobby: Daily Bets - add audit admin login [redmine: #195850]
 		- 20231123@Bobby: Daily Bets - Ivory search RefNo [redmine: #197277]
+		- 20231109@Evan: 12B - Adjust rate show real figures for currency cut off 000 [Redmine #196557]
 
 	Developer's Notes:
 		
@@ -147,7 +148,7 @@ BEGIN
 	-- GET ExRate
 	UPDATE c
 	SET c.ExRate = ISNULL(e.Rate, 1),
-		c.ExRateOrg = CASE WHEN @SiteName = 'Ivorybet' THEN 1 * ex.MultipliedBy ELSE 1 END
+		c.ExRateOrg = CASE WHEN @SiteName IN ('Ivorybet','12B') THEN 1 * ex.MultipliedBy ELSE 1 END
 	FROM @Currency c
 	LEFT JOIN dbo.Lrf_f_GetExchangeRate(@CurrDate, @CurrDate, @BaseCurrency, '') e ON c.Id = e.ExchangeId
 	INNER JOIN Exchange ex WITH(NOLOCK) ON c.Id = ex.ExchangeId
