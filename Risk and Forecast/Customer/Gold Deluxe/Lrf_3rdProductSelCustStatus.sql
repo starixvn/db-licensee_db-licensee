@@ -18,6 +18,8 @@ AS
 		- 20151108@Jim: Separated MicroGaming into 2 product
 		- 20160909@Winnie: support colossusBet RedmineID: #63785
 		- 20190926@Eden: 3rd party products - Remove InActive Products Phase 2 [Redmine: #118699]
+		- 20231110@Tacy: remove colossusBet [RedmineID: #196731]
+
 	Param's Explanation:
 */
 BEGIN
@@ -33,18 +35,7 @@ BEGIN
 			,@Currency=c.currency
 	FROM bodb02.dbo.Customer c WITH (NOLOCK) 
 	WHERE c.CustID = @CustID
-	IF (@ProductId =15 ) 
-	BEGIN
-	SELECT @IsEnabled = ~ISNULL(DisableColossusBet, 1)
-	FROM bodb02.dbo.CustInfo WITH (NOLOCK) 
-	WHERE CustID = @CustId 
 	
-	SELECT @IsLineEnabled = ~ISNULL(DisableColossusBet, 1)
-	FROM bodb02.dbo.CustInfo WITH (NOLOCK) 
-	WHERE CustID = @Srecommend 
-	END
-	ELSE
-	BEGIN
 	SELECT @IsEnabled = ISNULL(IsEnabled,0)
 	FROM DBCUST.CustDB.dbo.Dep_CustProductSetting WITH (NOLOCK)
 	WHERE CustID = @CustId AND ProductId=@ProductId
@@ -52,11 +43,8 @@ BEGIN
 	SELECT @IsLineEnabled = ISNULL(IsEnabled, 0) 		
 	FROM DBCUST.CustDB.dbo.Dep_SupperProductSetting WITH (NOLOCK) 
 	WHERE CustID = @Srecommend  AND ProductId=@ProductId
-	
 
-	END	
 	IF (@IsLineEnabled = 0)
 		SELECT @IsEnabled = 0
-	
 END
 GO
