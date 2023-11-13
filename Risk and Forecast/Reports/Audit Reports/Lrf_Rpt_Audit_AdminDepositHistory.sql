@@ -47,7 +47,7 @@ BEGIN
 
 	--TODO: Get transaction history
 	BEGIN
-		SELECT @tmpFromDate = IIF(@FromDate >= @BUDate, DATEADD(DAY, 1, @BUDate), @FromDate)
+		SELECT @tmpFromDate = IIF(@FromDate <= @BUDate, @BUDate, @FromDate)
 			,@tmpToDate = @ToDate;
 
 		INSERT INTO #TransResult (TransId, TransDate, Amount)
@@ -55,13 +55,14 @@ BEGIN
 		FROM dbo.transfer t WITH(NOLOCK)
 		WHERE t.CustId = @CustId
 			AND t.bettype = 22001
+			AND t.Winlostdate >= @BUDate
 			AND t.Winlostdate BETWEEN @tmpFromDate AND @tmpToDate
 
 
 		---------------------bk range
 		DECLARE @rmtQuery NVARCHAR(MAX);
 
-		SELECT @tmpFromDate = @FromDate
+		SELECT @tmpFromDate = DATEADD(DAY, -1, @FromDate)
 			, @tmpToDate = IIF(@ToDate >= @BUDate, @BUDate, @ToDate)
 
 		SELECT @rmtQuery = N'INSERT INTO #TransResult (TransId, TransDate, Amount)
@@ -78,7 +79,7 @@ BEGIN
 	END
 		
 	--- RETURN BET in Detail
-	SELECT @tmpToDate = DATEADD(DAY, 1, @ToDate)
+	SELECT @tmpToDate = DATEADD(DAY, 1, @ToDate) --> whole day
 	OUTPUT_DETAIL:
 	SELECT 
 		TransId	
