@@ -115,6 +115,7 @@ AS
 		- 20230626@Evan: Integrate MG-RNG (Normal+Promotion Game) [RedmineID: #189988]
 		- 20230801@Evan: Integrate Virtual Sports 3 (Leap Gaming New) [RedmineID: #190908]
 		- 20231107@Evan: Integrate SEAL Entertainment [RedmineID: #180648]
+		- 20231117@Evan: Integrate WE Live Casino [RedmineID: #196573]
 
 	Param's Explanation:
 		+ @IsLive : indicate that whether the report will get live data or not
@@ -358,7 +359,7 @@ BEGIN
 		END
 
 		--Others
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'NG', 'VS', 'KN', 'CS', 'VB', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM', 'VS3', 'FGGL', 'MXG', 'JIG', 'YB', 'MGRNG', 'LG', 'SEA'))
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'NG', 'VS', 'KN', 'CS', 'VB', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM', 'VS3', 'FGGL', 'MXG', 'JIG', 'YB', 'MGRNG', 'LG', 'SEA', 'WE'))
 		BEGIN
 			INSERT INTO #tmpWinloss
 			SELECT
@@ -399,6 +400,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 8400 AND 8699 THEN 'MGRNG'
 					WHEN b.bettype BETWEEN 5302 AND 5399 THEN 'LG'
 					WHEN b.bettype BETWEEN 8900 AND 8999 THEN 'SEA'
+					WHEN b.bettype BETWEEN 10300 AND 10399 THEN 'WE'
 					END AS ProductCode,
 				SUM(stake) turnover,
 				SUM(b.winlost - b.actual_stake) AS Winlost,
@@ -450,6 +452,7 @@ BEGIN
 					OR b.bettype BETWEEN 8400 AND 8699 -- MGRNG
 					OR b.bettype BETWEEN 5302 AND 5399 -- LG
 					OR b.bettype BETWEEN 8900 AND 8999 -- SEA
+					OR b.bettype BETWEEN 10300 AND 10399 -- WE
 				)
 				AND (b.liveindicator = @Liveindicator OR @Liveindicator = 2)
 				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
@@ -491,6 +494,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 8400 AND 8699 THEN 'MGRNG'
 					WHEN b.bettype BETWEEN 5302 AND 5399 THEN 'LG'
 					WHEN b.bettype BETWEEN 8900 AND 8999 THEN 'SEA'
+					WHEN b.bettype BETWEEN 10300 AND 10399 THEN 'WE'
 				END
 		END
 	END
@@ -575,7 +579,7 @@ BEGIN
 		END
 
 		-- Others
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM', 'VS3', 'FGGL', 'MXG', 'JIG', 'YB', 'MGRNG', 'LG', 'SEA'))
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM', 'VS3', 'FGGL', 'MXG', 'JIG', 'YB', 'MGRNG', 'LG', 'SEA', 'WE'))
 		BEGIN
 			INSERT INTO #tmpWinloss
 			SELECT 
@@ -626,6 +630,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 8400 AND 8699 THEN 'MGRNG'
 					WHEN b.bettype BETWEEN 5302 AND 5399 THEN 'LG'
 					WHEN b.bettype BETWEEN 8900 AND 8999 THEN 'SEA'
+					WHEN b.bettype BETWEEN 10300 AND 10399 THEN 'WE'
 				END AS ProductCode,
 				SUM(b.turnover) turnover,
 				SUM(b.winloss) winlost,
@@ -698,6 +703,7 @@ BEGIN
 					OR b.bettype BETWEEN 8400 AND 8699 -- MGRNG
 					OR b.bettype BETWEEN 5302 AND 5399 -- LG
 					OR b.bettype BETWEEN 8900 AND 8999 -- SEA
+					OR b.bettype BETWEEN 10300 AND 10399 -- WE
 					)
 				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 			GROUP BY
@@ -748,6 +754,7 @@ BEGIN
 					WHEN b.bettype BETWEEN 8400 AND 8699 THEN 'MGRNG'
 					WHEN b.bettype BETWEEN 5302 AND 5399 THEN 'LG'
 					WHEN b.bettype BETWEEN 8900 AND 8999 THEN 'SEA'
+					WHEN b.bettype BETWEEN 10300 AND 10399 THEN 'WE'
 				END
 		END
 
