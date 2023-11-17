@@ -3,6 +3,7 @@ ALTER PROCEDURE [dbo].[NAP_LM_LicenseeBetSettingSel]
 	@CustID INT
 	,@Product INT
 	,@AgentID INT = 0 
+	,@Option BIT = 0
 AS
 /*
 	Created: Elodie
@@ -19,19 +20,20 @@ AS
 		- 20211223@Johnson: adjust the betlimit at the subsidiary agent level [redmine:#165885]
 		- 202202220@Elodie: Apply DCS for SB [RedmineID: #167898] 
 		- 20220921@Winfred: Licensee DCS setting - HF Get multiple bet limit . [Feature #178013]
+		- 20231022@Winfred: NAP LM - Enhance Licensee Bet Setting function [Feature #194623]
 
 	Param's Explanation:
 		@Product:	1: Sportbook
 					161: Number Game					
 					202: Keno
 		@CustID: superID
-		
+		@Option :  0 for Currency Bet Setting OR 1 for Player Bet Setting
 	Example: EXEC NAP_LM_LicenseeBetSettingSel @CustID = 916498, @Product = 1
 		
 */ 
 BEGIN
 	SET NOCOUNT ON
-	DECLARE @ProductID TINYINT
+	DECLARE @ProductID TINYINT, @MemberID INT, @Agent01 INT = @AgentID
 	CREATE TABLE #SportBettypeFilter (ProductID TINYINT, Sporttype SMALLINT, Bettype SMALLINT, IsLive BIT, SettingType TINYINT)
 	SELECT @ProductID = CASE	WHEN @Product = 1 THEN 1 
 								WHEN @Product = 161 THEN 3
@@ -43,32 +45,91 @@ BEGIN
 	
 	IF @ProductID = 1 --Sportbook
 	BEGIN
-		IF @AgentID = 0
+		IF @Option = 0
 		BEGIN
-			SET @AgentID = @CustID
-		END
+			IF @AgentID = 0
+			BEGIN
+				SET @AgentID = @CustID
+			END
 
-		SELECT	cs.sporttype AS SportTypeID
-				,cs.bettype AS BetTypeID
-				,MinBet
-				,MaxBet
-				,MaxPerMatch
-				,MaxPayoutPerMatch
-		FROM Dep_CustBetSettingGame_Agent AS cs WITH (NOLOCK) 
-			INNER JOIN #SportBettypeFilter pd WITH (NOLOCK) ON pd.SportType = cs.SportType AND pd.BetType = cs.BetType
-		WHERE cs.custid = @CustID 
-			AND pd.SettingType = 10
+			SELECT	cs.sporttype AS SportTypeID
+					,cs.bettype AS BetTypeID
+					,MinBet
+					,MaxBet
+					,MaxPerMatch
+					,MaxPayoutPerMatch
+			FROM Dep_CustBetSettingGame_Agent AS cs WITH (NOLOCK) 
+				INNER JOIN #SportBettypeFilter pd WITH (NOLOCK) ON pd.SportType = cs.SportType AND pd.BetType = cs.BetType
+			WHERE cs.custid = @CustID 
+				AND pd.SettingType = 10
 		
-		SELECT	cs.sporttype AS SportTypeID
-				,cs.bettype AS BetTypeID
-				,MinBet
-				,MaxBet
-				,MaxPerMatch
-				,MaxPayoutPerMatch
-		FROM Dep_CustBetSettingGame_Agent AS cs WITH (NOLOCK) 
-			INNER JOIN #SportBettypeFilter pd WITH (NOLOCK) ON pd.SportType = cs.SportType AND pd.BetType = cs.BetType
-		WHERE cs.custid = @AgentID 
-			AND pd.SettingType = 10
+			SELECT	cs.sporttype AS SportTypeID
+					,cs.bettype AS BetTypeID
+					,MinBet
+					,MaxBet
+					,MaxPerMatch
+					,MaxPayoutPerMatch
+			FROM Dep_CustBetSettingGame_Agent AS cs WITH (NOLOCK) 
+				INNER JOIN #SportBettypeFilter pd WITH (NOLOCK) ON pd.SportType = cs.SportType AND pd.BetType = cs.BetType
+			WHERE cs.custid = @AgentID 
+				AND pd.SettingType = 10
+		END
+		ELSE
+		BEGIN
+			IF @AgentID = 0
+			BEGIN
+				CREATE TABLE #tblmrecommend  (CustID INT PRIMARY KEY)
+		
+				INSERT INTO #tblmrecommend(CustID)
+				SELECT custid FROM custinfo WITH (NOLOCK) WHERE roleid=3
+				and username LIKE '%Acc%' and srecommend=@CustID
+
+				SET @Agent01 = (SELECT TOP 1 Custid FROM custInfo WITH(NOLOCK) WHERE srecommend = @CustID AND roleid = 2 
+											AND mrecommend NOT IN (SELECT CustID FROM #tblmrecommend) ORDER BY custid ASC)
+				
+				SET @AgentID = @CustID
+
+				DROP TABLE #tblmrecommend
+			END
+			
+			SET @MemberID = (SELECT TOP 1 Custid FROM custInfo WITH(NOLOCK) WHERE srecommend = @CustID AND recommend = @Agent01 AND roleid = 1 ORDER BY custid ASC)
+
+			SELECT	cs.sporttype AS SportTypeID
+					,cs.bettype AS BetTypeID
+					,MinBet
+					,MaxBet
+					,MaxPerMatch
+					,MaxPayoutPerMatch
+			FROM Dep_CustBetSettingGame_Agent AS cs WITH (NOLOCK) 
+				INNER JOIN #SportBettypeFilter pd WITH (NOLOCK) ON pd.SportType = cs.SportType AND pd.BetType = cs.BetType
+			WHERE cs.custid = @AgentID 
+				AND pd.SettingType = 10
+
+			IF EXISTS (SELECT 1 FROM Dep_CustSettingMode ps WITH (NOLOCK) WHERE CustID = @MemberID AND IsGroupedBetLimit = 1)
+			BEGIN
+				SELECT	cs.sporttype AS SportTypeID
+						,cs.bettype AS BetTypeID
+						,MinBet
+						,MaxBet
+						,MaxPerMatch
+						,MaxPayoutPerMatch
+				FROM Dep_CustBetSettingGameGroup_Member AS cs WITH (NOLOCK) 
+					INNER JOIN #SportBettypeFilter pd WITH (NOLOCK) ON pd.SportType = cs.SportType AND pd.BetType = cs.BetType
+				WHERE cs.AgentID = @Agent01 AND pd.SettingType = 10
+			END
+			ELSE
+			BEGIN
+				SELECT	cs.sporttype AS SportTypeID
+						,cs.bettype AS BetTypeID
+						,MinBet
+						,MaxBet
+						,MaxPerMatch
+						,MaxPayoutPerMatch
+				FROM Dep_CustBetSettingGame_Member AS cs WITH (NOLOCK) 
+					INNER JOIN #SportBettypeFilter pd WITH (NOLOCK) ON pd.SportType = cs.SportType AND pd.BetType = cs.BetType
+				WHERE cs.custid = @MemberID AND pd.SettingType = 10
+			END
+		END
 	END
 	ELSE IF @ProductID = 3 --Number Game
 	BEGIN
