@@ -93,6 +93,7 @@ AS
 		- 20220714@Hogan: Integrate Volleyball AIO [RedmineID: #175143]
 		- 20230708@Evan: Support CN3, INDO & THAI language on LAP [RedmineID: #187132]
 		- 20230801@Evan: Integrate Virtual Sports 3 (Leap Gaming New) [RedmineID: #190908]
+		- 20231120@Evan: Support INDO & THAI language on LAP [RedmineID: #196246]
 
 	Parameter's Explanation:
 		- @ReportBy: 1: daily, 2: monthly
@@ -579,6 +580,7 @@ BEGIN
 					WHEN @Langkey = 'zh-TW'		AND ISNULL(bt.typenamec_uni, '')	<> '' THEN bt.typenamec_uni
 					WHEN @Langkey = 'zh-Hans'	AND ISNULL(bt.typenamecn, '')		<> '' THEN bt.typenamecn
 					WHEN @Langkey = 'th-TH'		AND ISNULL(bt.typenameth, '')		<> '' THEN bt.typenameth
+					WHEN @Langkey = 'id-ID'		AND ISNULL(bt.typenameID, '')		<> '' THEN bt.typenameID
 					WHEN @Langkey = 'ja-JP'		AND ISNULL(bt.typenamej, '')		<> '' THEN bt.typenamej
 					WHEN @Langkey = 'ko-KR'		AND ISNULL(bt.typenameko, '')		<> '' THEN bt.typenameko
 					WHEN @Langkey = 'es'		AND ISNULL(bt.typenameES, '')		<> '' THEN bt.typenameES
@@ -596,6 +598,7 @@ BEGIN
 					WHEN @Langkey = 'zh-TW'	AND ISNULL(bt.typenamec_uni, '')	<> '' THEN bt.typenamec_uni
 					WHEN @Langkey = 'zh-Hans'	AND ISNULL(bt.typenamecn, '')	<> '' THEN bt.typenamecn
 					WHEN @Langkey = 'th-TH'	AND ISNULL(bt.typenameth, '')		<> '' THEN bt.typenameth
+					WHEN @Langkey = 'id-ID'	AND ISNULL(bt.typenameID, '')		<> '' THEN bt.typenameID
 					WHEN @Langkey = 'ja-JP'	AND ISNULL(bt.typenamej, '')		<> '' THEN bt.typenamej
 					WHEN @Langkey = 'ko-KR'	AND ISNULL(bt.typenameko, '')		<> '' THEN bt.typenameko
 					WHEN @Langkey = 'es'  		AND ISNULL(bt.typenameES, '')	<> '' THEN bt.typenameES
