@@ -21,6 +21,7 @@ AS
 		   - 20230630@Winfred: When update Currency Bet Setting in case All Subsidiaries + All players, system check violated with its own players [redmine:#190506]
 		   - 20230717@Winfred: Enhance performace  [redmine:#191470]
 		   - 20230722@Winfred: NAP LM - Enhance Bet Setting function for AM to use - New Case [redmine:#178105]
+			-20230722@Winfred: NAP LM - Enhance performance when adjusting betlimit for big licensees  [redmine:#195079]
     Param's Explanation:
 		- @CustID : super ID
 		- @AgentID : 0 for All Subsidiary AND <> 0 for only Specific Subsidiary 
@@ -44,6 +45,8 @@ BEGIN
 	BEGIN
 		EXEC dbo.NAP_LM_CustomerSelCheckAllowedDownlines
 		@custid = @CustID
+		,@AgentID = @AgentID
+		,@IsSetting = 1
 		,@Language = 'E'
 		,@ErrMsg = @ErrMsg OUTPUT
 		,@ErrCode=@ErrCode OUTPUT
