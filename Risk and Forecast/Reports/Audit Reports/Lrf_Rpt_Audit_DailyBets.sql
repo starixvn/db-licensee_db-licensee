@@ -10,7 +10,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_Audit_DailyBets]
 	@PageSize		INT = 50,
 	@SortBy			VARCHAR(50) = 'TransactionId',
 	@SortOrder		VARCHAR(4) = 'asc',
-	@LoginName		VARCHAR(50) = ''
+	@LoginName		VARCHAR(50) = '',
+	@SearchRefNo	BIGINT = NULL
 AS 
 /*  Created: 20191028@Amanda
     Description: LAP - Implement new report for auditing
@@ -30,6 +31,7 @@ AS
 		- 20230814@Evan: Ivory - Adjust rate show real figures for currency cut off 000 [Redmine #192602]
 		- 20231025@Bobby: Customer Admin - [redmine: #195850]
 		- 20231116@Bobby: Daily Bets - add audit admin login [redmine: #195850]
+		- 20231123@Bobby: Daily Bets - Ivory search RefNo [redmine: #197277]
 
 	Developer's Notes:
 		
@@ -53,7 +55,9 @@ BEGIN
 	DECLARE @Product TABLE (ProductCode VARCHAR(10))
 	DECLARE @GameCode TABLE (GameCode VARCHAR(10))
 	DECLARE @Currency AS TABLE (Id INT, Code VARCHAR(5), Name VARCHAR(5), ExRate FLOAT, ExRateOrg FLOAT)
-	DECLARE @ArchivedDate DATETIME, @CurrDate DATETIME, @IsAuditUser BIT
+	DECLARE @ArchivedDate DATETIME, @CurrDate DATETIME, @IsAuditUser BIT, @SearchTransId BIGINT;
+
+	SELECT @SearchTransId = @SearchRefNo;
 	
 	CREATE table #DailyResult
 	(
@@ -255,6 +259,7 @@ BEGIN
 						OR (@showLC = 1 AND a.GamePlatformCode = 'CA')
 					)
 					AND a.GameCode IN (SELECT GameCode FROM @GameCode)
+					AND a.TransactionId = ISNULL(@SearchTransId, a.TransactionId)
 			) AS a
 			ORDER BY 
 				CASE WHEN @SortOrder = 'desc' THEN 
@@ -349,6 +354,7 @@ BEGIN
 						OR (@showLC = 1 AND a.GamePlatformCode = 'CA')
 					)
 					AND a.GameCode IN (SELECT GameCode FROM @GameCode)
+					AND a.TransactionId = ISNULL(@SearchTransId, a.TransactionId)
 			) AS a
 			ORDER BY 
 				CASE WHEN @SortOrder = 'desc' THEN 
