@@ -32,6 +32,7 @@ AS
 		- 20230626@Evan: Integrate MG-RNG (Normal+Promotion Game) [RedmineID: #189988]
 		- 20230913@Luke: Integrate Virtual Sports 3 [Redmine: #193901]
 						 Remove Virtual Sports 3 (Old)
+		- 20231123@Johnson: Add Seal Entertainment [redmine: #180380]				 
 */
 
  /*
@@ -146,6 +147,7 @@ BEGIN
 			69,--	Bitcoin
 			70,--	FGG	
 			60,--	MaxGame
+			72,-- 	Seal Entertainment
 			75,--	Jili
 			76,--	YeeBet
 			73, --	MG-RNG
