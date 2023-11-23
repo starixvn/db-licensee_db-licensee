@@ -29,6 +29,7 @@ AS
 		- 20230704@Bobby: Fix paging lag [Redmine #190828]
 		- 20230814@Evan: Ivory - Adjust rate show real figures for currency cut off 000 [Redmine #192602]
 		- 20231025@Bobby: Customer Admin - [redmine: #195850]
+		- 20231116@Bobby: Daily Bets - add audit admin login [redmine: #195850]
 
 	Developer's Notes:
 		
@@ -177,7 +178,7 @@ BEGIN
 	SET @IsAuditUser = 0;
 	DECLARE @auditLogin TABLE(LoginName VARCHAR(50))
 	INSERT @auditLogin (LoginName) 
-	VALUES('GCOMRCI1'),('Pagcor12'),('Pagcor1');
+	VALUES('GCOMRCI1'),('Pagcor12'),('Pagcor1'),('Pagcoracc');
 
 	SELECT TOP 1 @IsAuditUser = 1 
 	FROM @auditLogin 
