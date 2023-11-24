@@ -111,7 +111,8 @@ BEGIN
 			   END AS IsResettled
 		FROM BalanceRecord.dbo.BalanceRecord_bk br WITH (NOLOCK)
 			LEFT JOIN @Bettype_TransLog b ON br.bettype = b.Bettype
-		WHERE br.transid = ISNULL(@_TransactionId, br.transid)
+		WHERE  
+			(br.transid = ISNULL(@_TransactionId, br.transid) OR br.refno = ISNULL(@_TransactionId, br.refno))
 			AND 1 = CASE
 				WHEN @_IsResettled = 1 AND
 					br.SettlementType IN (2, 3, 10, 11) THEN 1 -- get re-settled tickets only
@@ -142,7 +143,7 @@ BEGIN
 		FROM bodb02.dbo.BalanceRecord br WITH (NOLOCK)
 			LEFT JOIN @Bettype_TransLog b ON br.bettype = b.Bettype 
 		WHERE 
-			transid = ISNULL(@_TransactionId, transid)
+			(br.transid = ISNULL(@_TransactionId, br.transid) OR br.refno = ISNULL(@_TransactionId, br.refno))
 			AND 1 = CASE 
 						WHEN @_IsResettled = 1 AND SettlementType IN (2,3,10,11) THEN 1 -- get re-settled tickets only
 						WHEN @_IsResettled = 0 THEN 1 -- get all tickets
