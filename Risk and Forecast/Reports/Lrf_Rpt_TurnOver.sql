@@ -71,6 +71,7 @@ AS
 		- 20211001@Kos: Change start date to use rptdepwinlost_SUM table [RedmineID: #162568]
 		- 20211109@Kos: Change to use temp table #TempAg [RedmineID: #163191]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
+		- 20231127@Evan: Enhance performance [Redmine #198479]
 */
 
 BEGIN
@@ -499,7 +500,7 @@ BEGIN
 				(
 					SELECT
 						p.winlostdate,
-						c.currency,
+						a.currency,
 						SUM(ISNULL(p.Turnover, 0)) AS Turnover,
 						SUM(ISNULL(p.OutStanding, 0)) AS PendingFund,
 						SUM(ISNULL(p.winlost, 0)) AS Winloss,
@@ -513,7 +514,7 @@ BEGIN
 						AND c.roleid = 1
 						AND p.sporttype IN (SELECT SportType FROM @SportType)
 					GROUP BY p.winlostdate,
-						c.currency
+						a.currency
 				)
 				UPDATE #tmpRpt
 				SET Turnover	= ISNULL(s.Turnover, 0),
