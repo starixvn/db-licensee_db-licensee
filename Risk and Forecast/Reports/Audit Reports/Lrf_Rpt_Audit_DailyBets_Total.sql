@@ -5,7 +5,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_Audit_DailyBets_Total]
 	@ProductCodes	VARCHAR(100),
 	@GameCodes		VARCHAR(MAX),
 	@CurrencyList   VARCHAR(500),
-	@BaseCurrency	VARCHAR(12) = ''
+	@BaseCurrency	VARCHAR(12) = '',
+	@SearchRefNo	BIGINT = NULL
 AS 
 /*  Created: 20191104@Amanda
     Description: LAP - Implement new report for auditing
@@ -23,6 +24,7 @@ AS
 		- 20220302@Sol: temporary prevent Nova88 from viewing data from 1-Mar-2022 - [Redmine: #169131]
 		- 20220118@Sol: LAP - Auditing licensees - Daily Bets - Filter by Sport - [RedmineID: #166056]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
+		- 20231123@Bobby: Daily Bets - Ivory search RefNo [redmine: #197277]
 
 	Developer's Notes:
 		
@@ -44,7 +46,9 @@ BEGIN
 	DECLARE @Product TABLE (ProductCode VARCHAR(10))
 	DECLARE @GameCode TABLE (GameCode VARCHAR(10))
 	DECLARE @Currency AS TABLE(Id INT, Code VARCHAR(5), ExRate FLOAT)
-	DECLARE @ArchivedDate DATETIME, @CurrDate DATETIME
+	DECLARE @ArchivedDate DATETIME, @CurrDate DATETIME, @SearchTransId BIGINT;
+
+	SELECT @SearchTransId = @SearchRefNo;
 
 	----temporary prevent Nova88 from viewing data from 1-Mar-2022
 	IF (@SiteName = 'Nova88' AND @Date >= CAST('20220301' AS DATE))
@@ -138,6 +142,7 @@ BEGIN
 					OR (@showLC = 1 AND a.GamePlatformCode = 'CA')
 				)
 			AND a.GameCode IN (SELECT GameCode FROM @GameCode)
+			AND a.TransactionId = ISNULL(@SearchTransId, a.TransactionId)
 	END
 	ELSE
 	BEGIN
@@ -160,6 +165,7 @@ BEGIN
 					OR (@showLC = 1 AND a.GamePlatformCode = 'CA')
 				)
 			AND a.GameCode IN (SELECT GameCode FROM @GameCode)
+			AND a.TransactionId = ISNULL(@SearchTransId, a.TransactionId)
 	END
 		
 END
