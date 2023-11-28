@@ -13,7 +13,8 @@ AS
    
     Revisions:  
 		- 20231025@Bobby: Customer Admin - [redmine: #195850]
-		
+		- 20231109@Evan: 12B - Adjust rate show real figures for currency cut off 000 [Redmine #196557]
+
     Param's Explanation:  
 	  
 */
@@ -34,6 +35,7 @@ BEGIN
 		,TransDate	DATETIME
 		,Amount		MONEY
 		,Remark		NVARCHAR(1000)
+		,Currency		TINYINT
 	)
 
 	IF NOT EXISTS (SELECT 1 
@@ -50,8 +52,8 @@ BEGIN
 		SELECT @tmpFromDate = IIF(@FromDate <= @BUDate, @BUDate, @FromDate)
 			,@tmpToDate = @ToDate;
 
-		INSERT INTO #TransResult (TransId, TransDate, Amount)
-		SELECT TransId, DATEADD(HH, 8, TransDate) AS TransDate, ABS(Winlost-Actual_Stake) AS Amount
+		INSERT INTO #TransResult (TransId, TransDate, Amount, Currency)
+		SELECT TransId, DATEADD(HH, 8, TransDate) AS TransDate, ABS(Winlost-Actual_Stake) AS Amount, Currency
 		FROM dbo.transfer t WITH(NOLOCK)
 		WHERE t.CustId = @CustId
 			AND t.bettype = 22001
@@ -65,9 +67,9 @@ BEGIN
 		SELECT @tmpFromDate = DATEADD(DAY, -1, @FromDate)
 			, @tmpToDate = IIF(@ToDate >= @BUDate, @BUDate, @ToDate)
 
-		SELECT @rmtQuery = N'INSERT INTO #TransResult (TransId, TransDate, Amount)
-			SELECT TransId, TransDate, Amount
-			FROM OPENQUERY(DBARC, ''SELECT TransId, DATEADD(HH, 8, TransDate) AS TransDate, ABS(Credit-Debit) AS Amount
+		SELECT @rmtQuery = N'INSERT INTO #TransResult (TransId, TransDate, Amount, Currency)
+			SELECT TransId, TransDate, Amount, Currency
+			FROM OPENQUERY(DBARC, ''SELECT TransId, DATEADD(HH, 8, TransDate) AS TransDate, ABS(Credit-Debit) AS Amount, Currency
 			FROM bodb_Archive.dbo.transfer_bk t WITH(NOLOCK)
 			WHERE t.CustId = '+ CAST(@CustId AS VARCHAR(15))+'
 				AND t.bettype = 22001
@@ -84,9 +86,10 @@ BEGIN
 	SELECT 
 		TransId	
 		,TransDate	
-		,Amount
+		,Amount * e.MultipliedBy AS Amount
 		,ISNULL(Remark, '') AS Remark
 	FROM #TransResult p
+		INNER JOIN Exchange e WITH(NOLOCK) ON p.Currency = e.ExchangeId
 	WHERE TransDate >= @FromDate AND TransDate < @tmpToDate
 	ORDER BY TransDate DESC
 

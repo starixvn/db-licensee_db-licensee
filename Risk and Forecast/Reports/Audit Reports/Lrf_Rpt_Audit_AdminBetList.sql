@@ -16,6 +16,7 @@ AS
    
     Revisions:  
 		- 20231025@Bobby: Customer Admin - [redmine: #195850]
+		- 20231109@Evan: 12B - Adjust rate show real figures for currency cut off 000 [Redmine #196557]
 		
     Param's Explanation:  
 	  
@@ -72,7 +73,7 @@ BEGIN
 	-- GET ExRate
 	UPDATE c
 	SET c.ExRate = ISNULL(e.Rate, 1),
-		c.ExRateOrg = CASE WHEN @SiteName = 'Ivorybet' THEN 1 * ex.MultipliedBy ELSE 1 END
+		c.ExRateOrg = 1 * ex.MultipliedBy
 	FROM @Currency c
 	LEFT JOIN dbo.Lrf_f_GetExchangeRate(@FromDate, @ToDate, @BaseCurrency, '') e ON c.Id = e.ExchangeId
 	INNER JOIN dbo.Exchange ex WITH(NOLOCK) ON c.Id = ex.ExchangeId
