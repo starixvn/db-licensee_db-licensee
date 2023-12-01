@@ -13,6 +13,7 @@ ALTER PROCEDURE dbo.LAP_Rpt_WinlossAnalysis_AgencySel
 	@StatusIds		VARCHAR(1000)	= 'ALL',
 	@PlatformIds	VARCHAR(1000)	= 'ALL',
 	@LiveStatusIds	VARCHAR(1000)	= 'ALL',
+	@SpecialPlatform	TINYINT	= 0,
 
 	-- grouping
 	@IsViewCOOnly		BIT = 0,
@@ -38,6 +39,7 @@ AS
 		- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465]
 		- 20230703@Bobby: Enhance perf [RedmineID: #190474]
 		- 20230703@Bobby: Enhance perf - bettrans product3rd filtering [RedmineID: #195292]
+		- 20231122@Evan: Handle betfrom for Jollysports [Redmine: #197192]	
 		
 
 	Param's Explanation:
@@ -163,7 +165,8 @@ BEGIN
 	INSERT INTO @PlatformSel
 	SELECT DISTINCT f.PlatformType, f.betfrom
 	FROM bodb02.[dbo].[Lrf_f_BetFromType_Sel](@PlatformCheck) AS f
-	;
+	WHERE SpecialPlatform = @SpecialPlatform
+	
 
 	--TODO: Event Products, Sports, Bettypes selection
 	INSERT INTO #tmpSabaSporttype

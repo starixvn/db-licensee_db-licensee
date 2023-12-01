@@ -6,7 +6,8 @@ ALTER PROCEDURE [dbo].[Lrf_GetLicenseeTurnoverByPlatform]
 	@ToDate			SMALLDATETIME,
 	@MoveBetsDay	SMALLDATETIME,
 	@ProductList	VARCHAR(100),
-	@BaseCurrency	VARCHAR(12) = ''
+	@BaseCurrency	VARCHAR(12) = '',
+	@SpecialPlatform TINYINT = 0
 AS
 
 /*
@@ -40,6 +41,7 @@ AS
 					- Add new input param @ProductList VARCHAR(100)
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20230330@Evan: LAP - Support betfrom up to nvarchar(4) [RedmineID: #178059]
+		- 20231122@Evan: Handle betfrom for Jollysports [Redmine: #197192]	
 		
 	Param explanation:
 		- @ProductList: SB and all products grouped under SB (SB,SLT,...)
@@ -100,7 +102,8 @@ BEGIN
 	INSERT INTO #PlatformList (betfrom, PlatformType)
 	SELECT betfrom, PlatformType
 	FROM Lrf_f_BetFromType_Sel('All')
-
+	WHERE SpecialPlatform = @SpecialPlatform
+	
 	CREATE TABLE #WinLoss (
 		WinLostDate		SMALLDATETIME,
 		Currency		INT,

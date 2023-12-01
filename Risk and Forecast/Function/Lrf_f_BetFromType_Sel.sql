@@ -27,11 +27,13 @@ ALTER FUNCTION [dbo].[Lrf_f_BetFromType_Sel]
 		- 20230811@Evan: Support add new betfrom W001, W002 & adjust A000 [Redmine: #191840]
 		- 20231030@Evan: Support Revert betfrom % & W002 [Redmine: #196175]
 		- 20231103@Evan: Support add new betfrom A001,A002 [Redmine: #196463]
+		- 20231122@Evan: Handle betfrom for Jollysports [Redmine: #197192]	
 	
 
 	Param's Explanation:
 			+ @PlatformType: List of platform type (ex: 1,2,3,..)
 				All: All
+				-- Normal site
 				1: Desktop New Asia
 				2: Desktop China
 				3: Desktop Others
@@ -51,53 +53,103 @@ ALTER FUNCTION [dbo].[Lrf_f_BetFromType_Sel]
 				17: Desktop Galaxy
 				18: Mobile Galaxy
 				88: Others
+				-- Jollysports
+				91: Desktop
+				92: Mobile
+				99: Others
+
 */
 
 RETURNS TABLE
 RETURN
-	SELECT PlatformType, betfrom
+	SELECT PlatformType, betfrom, d.SpecialPlatform
 	FROM (
-		VALUES	(1, 'x'),
-				(2, 'a'),
-				(2, 'z'),
-				(2, '['),
-				(3, '9'),
-				(3, '>'),
-				(4, 'l'),
-				(4, ']'),
-				(5, '%'),
-				(6, 'c'),
-				(6, '@'),
-				(7, '7'),
-				(7, '8'),
-				(7, '_'),
-				(7, '.'),
-				(7, '$'),
-				(7, '}'),
-				(7, '#'),
-				(8, '1'),
-				(8, '4'),
-				(9, '2'),
-				(9, '5'),
-				(10, '3'),
-				(10, '6'),
-				(11, 'o'),
-				(11, '~'),
-				(12, '0'),
-				(13, 'r'),
-				(14, 't'),
-				(15, 'm'),
-				(16, 'A000'),
-				(17, 'W001'), 
-				(18, 'W002'),
-				(88, 'v'),
-				(88, 'd'),
-				(88, 'g'),
-				(88, 'e'),
-				(88, 'u'),
-				(88, '^'),
-				(88, 'A001'),
-				(88, 'A002')
-	) d(PlatformType, betfrom)
+		VALUES	
+				-- Normal licensees
+				(1, 'x',0),
+				(2, 'a',0),
+				(2, 'z',0),
+				(2, '[',0),
+				(3, '9',0),
+				(3, '>',0),
+				(4, 'l',0),
+				(4, ']',0),
+				(5, '%',0),
+				(6, 'c',0),
+				(6, '@',0),
+				(7, '7',0),
+				(7, '8',0),
+				(7, '_',0),
+				(7, '.',0),
+				(7, '$',0),
+				(7, '}',0),
+				(7, '#',0),
+				(8, '1',0),
+				(8, '4',0),
+				(9, '2',0),
+				(9, '5',0),
+				(10, '3',0),
+				(10, '6',0),
+				(11, 'o',0),
+				(11, '~',0),
+				(12, '0',0),
+				(13, 'r',0),
+				(14, 't',0),
+				(15, 'm',0),
+				(16, 'A000',0),
+				(17, 'W001',0), 
+				(18, 'W002',0),
+				(88, 'v',0),
+				(88, 'd',0),
+				(88, 'g',0),
+				(88, 'e',0),
+				(88, 'u',0),
+				(88, '^',0),
+				(88, 'A001',0),
+				(88, 'A002',0),
+
+				-- Jollysports licensee
+				(99, 'x',2),
+				(99, 'a',2),
+				(99, 'z',2),
+				(99, '[',2),
+				(99, '9',2),
+				(99, '>',2),
+				(99, 'l',2),
+				(99, ']',2),
+				(99, '%',2),
+				(99, 'c',2),
+				(99, '@',2),
+				(99, '7',2),
+				(99, '8',2),
+				(99, '_',2),
+				(99, '.',2),
+				(99, '$',2),
+				(99, '}',2),
+				(99, '#',2),
+				(99, '1',2),
+				(99, '4',2),
+				(99, '2',2),
+				(99, '5',2),
+				(99, '3',2),
+				(99, '6',2),
+				(99, 'o',2),
+				(99, '~',2),
+				(99, '0',2),
+				(99, 'r',2),
+				(99, 't',2),
+				(99, 'm',2),
+				(99, 'A000',2),
+				(99, 'W001',2), 
+				(99, 'W002',2),
+				(99, 'v',2),
+				(99, 'd',2),
+				(99, 'g',2),
+				(99, 'e',2),
+				(99, 'u',2),
+				(99, '^',2),
+				(91, 'A001',2),
+				(92, 'A002',2)
+	) d(PlatformType, betfrom, SpecialPlatform)
 	WHERE @PlatformTypeList = 'All' OR (',' + @PlatformTypeList + ',' LIKE '%,' + CONVERT(VARCHAR(3), d.PlatformType) + ',%')
 GO
