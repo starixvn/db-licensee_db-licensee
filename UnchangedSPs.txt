@@ -1,14 +1,24 @@
-Risk and Forecast\Setting\dbo.Lrf_CustomerUpdMemberBAStatus.sql
-Risk and Forecast\PlayerComm\dbo.Lrf_CustomerUpdMemberComm.sql
-Risk and Forecast\User-Product Control\dbo.Lrf_BATimeCheck.sql
-Risk and Forecast\PlayerComm\dbo.Lrf_CustomerMoveGroupComm.sql
-Risk and Forecast\PlayerComm\dbo.Lrf_CustomerRemoveGroupComm.sql
+Risk and Forecast\Reports\Lrf_Rpt_CustomerTurnOver.sql
+Risk and Forecast\Reports\Lrf_Rpt_CustomerTurnOver_MonthlyPagination.sql
+Risk and Forecast\Reports\Lrf_Rpt_CustomerTurnOver_Pagination.sql
+Risk and Forecast\Reports\Lrf_Rpt_CustomerTurnOver_SumMember.sql
+Risk and Forecast\Reports\Lrf_Rpt_CustomerTurnOver_SumTotal.sql
 Risk and Forecast\Setting\dbo.Lrf_CustomerUpdMemberBAComm.sql
-Risk and Forecast\Setting\dbo.Lrf_CustomerUpdSpecialLevel.sql
-Risk and Forecast\Setting\dbo.Lrf_LicenseeBAHistoryIns.sql
-Risk and Forecast\Setting\dbo.Lrf_LicenseeBAHistoryUpdDone.sql
-Risk and Forecast\PlayerComm\dbo.Lrf_LicenseeGroupCommDel.sql
-Risk and Forecast\PlayerComm\dbo.Lrf_LicenseeGroupCommUpd.sql
-Risk and Forecast\LicenseeFunction\dbo.LRF_LicenseeUserFunctionsDel.sql
-Risk and Forecast\User-Product Control\dbo.Lrf_UserPwdReset.sql
-Risk and Forecast\User-Product Control\dbo.Lrf_UserUpdAccount.sql
+Risk and Forecast\Reports\Lrf_Rpt_LiveReportBySport.sql
+Risk and Forecast\Reports\Lrf_Rpt_LiveReportSummary.sql
+Risk and Forecast\Reports\Lrf_Rpt_LiveReportSummaryDetail.sql
+Risk and Forecast\Reports\Lrf_Rpt_LiveReportWinlossByMatch.sql
+Risk and Forecast\Reports\Lrf_Rpt_MatchWinLoss.sql
+Risk and Forecast\Reports\Lrf_Rpt_MatchWinloss_ExportExcel.sql
+Risk and Forecast\Reports\Lrf_Rpt_MatchWinLossByBettype.sql
+Risk and Forecast\Reports\Lrf_Rpt_MatchWinLossByOutrightParlay.sql
+Risk and Forecast\Reports\Lrf_Rpt_MatchWinLossDetail.sql
+Risk and Forecast\Reports\Lrf_Rpt_Outstanding.sql
+Risk and Forecast\Reports\SiteDB\SiteDB_Lrf_Rpt_Outstanding.sql
+Risk and Forecast\Reports\Winloss Analysis\dbo.LAP_f_WinlossAnalysis_BettypeMatrix.sql
+Risk and Forecast\Reports\Winloss Analysis\dbo.LAP_Rpt_WInlossAnalysis_BettypeSel.sql
+Risk and Forecast\Reports\Winloss Analysis\dbo.LAP_Rpt_WinlossAnalysis_AgencySel.sql
+Risk and Forecast\Reports\Winloss Analysis\dbo.LAP_Rpt_WinlossAnalysis_PlayerSel.sql
+Risk and Forecast\Reports\Lrf_Rpt_LicWinloss.sql
+Risk and Forecast\Reports\Lrf_Rpt_LicWinlossDetail.sql
+Risk and Forecast\Reports\Lrf_Rpt_LicWinlossDetail_Ag.sql

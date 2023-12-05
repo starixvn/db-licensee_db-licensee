@@ -24,6 +24,7 @@ AS
 		- 20230208@Evan: Inteagrate SG promotion prize [RedmineID: #183497]
 		- 20230626@Evan: Integrate MG-RNG (Promotion Game) [RedmineID: #189988]
 		- 20231018@Evan: Integrate Saba Casino Royale Tournament Prize [redmine: #194505]
+		- 20231018@Evan: Integrate Saba Reward Risk-free Rebate [redmine: #196881]
 
 	Param's Explanation:
 		+ @PromotionTypeList: promotion type list separated by ','
@@ -41,6 +42,7 @@ AS
 			- 3704: Saba Loyalty Points Exchange (BetType: 17003)
 			- 3705: Saba Red Envelope (BetType: 17004)
 			- 3706: Casino Royale Tournament (BetType: 17006)
+			- 3707: Saba Reward Risk-free Rebate (BetType: 17007)
 			- 3901: SA Gaming - Tip (BetType: 3007)
 			- 4201: Saba.club - Free Bets (SportType: 150)
 			- 4202: Saba.club - Jackpot Prize (BetType: 1699)
@@ -105,6 +107,7 @@ BEGIN
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3704,%' AND BetType = 17003 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3705,%' AND BetType = 17004 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3706,%' AND BetType = 17006 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3707,%' AND BetType = 17007 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3901,%' AND BetType = 3007 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,4201,%' AND ProductPrefix = 'SBC' AND BetType NOT IN (1698, 1699) THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,4202,%' AND BetType = 1699 THEN 1
@@ -121,6 +124,7 @@ BEGIN
 	DECLARE @Data TABLE (
 		WinLostDate		SMALLDATETIME,
 		RefNo			BIGINT,
+		BetID			BIGINT,
 		ProductCode		VARCHAR(10),
 		PromotionType	SMALLINT,
 		Turnover		MONEY,
@@ -130,7 +134,7 @@ BEGIN
 
 	DECLARE @TempToDate	SMALLDATETIME,
 		@TempFromDate	SMALLDATETIME
-
+		
 	-- bettrans
 	IF @ToDate > @MoveBetsDay
 	BEGIN
@@ -143,6 +147,7 @@ BEGIN
 		INSERT INTO @Data (
 			WinLostDate,
 			RefNo,
+			BetID,
 			ProductCode,
 			PromotionType,
 			Turnover,
@@ -151,6 +156,7 @@ BEGIN
 		SELECT
 			b.winlostdate,
 			b.transid,
+			CASE WHEN b.bettype = 17007 THEN b.refno ELSE NULL END AS BetID,
 			sbt.ProductCode,
 			CASE
 				WHEN b.bettype = 2499 THEN 2101
@@ -168,6 +174,7 @@ BEGIN
 				WHEN b.bettype = 17003 THEN 3704
 				WHEN b.bettype = 17004 THEN 3705
 				WHEN b.bettype = 17006 THEN 3706
+				WHEN b.bettype = 17007 THEN 3707
 				WHEN b.bettype = 3007 THEN 3901
 				WHEN sbt.ProductCode = 'SBC' AND b.matchid = 150 THEN 4201
 				WHEN b.bettype = 1699 THEN 4202
@@ -196,6 +203,7 @@ BEGIN
 						WHEN sbt.ProductCode = 'VGA' AND b.bettype NOT IN (3898, 3899) AND b.matchid <> 173 THEN 0
 						ELSE 1
 					END
+					
 	END
 
 	-- bettrans14
@@ -214,6 +222,7 @@ BEGIN
 		INSERT INTO @Data (
 			WinLostDate,
 			RefNo,
+			BetID,
 			ProductCode,
 			PromotionType,
 			Turnover,
@@ -222,6 +231,7 @@ BEGIN
 		SELECT
 			b.winlostdate,
 			b.transid,
+			CASE WHEN b.bettype = 17007 THEN b.refno ELSE -1 END AS BetID,
 			sbt.ProductCode,
 			CASE
 				WHEN b.bettype = 2499 THEN 2101
@@ -239,6 +249,7 @@ BEGIN
 				WHEN b.bettype = 17003 THEN 3704
 				WHEN b.bettype = 17004 THEN 3705
 				WHEN b.bettype = 17006 THEN 3706
+				WHEN b.bettype = 17007 THEN 3707
 				WHEN b.bettype = 3007 THEN 3901
 				WHEN sbt.ProductCode = 'SBC' AND b.matchid = 150 THEN 4201
 				WHEN b.bettype = 1699 THEN 4202
@@ -280,6 +291,7 @@ BEGIN
 		INSERT INTO @Data (
 			WinLostDate,
 			RefNo,
+			BetID,
 			ProductCode,
 			PromotionType,
 			Turnover,
@@ -288,6 +300,7 @@ BEGIN
 		SELECT
 			b.winlostdate,
 			b.transid,
+			CASE WHEN b.bettype = 17007 THEN b.refno ELSE -1 END AS BetID,
 			sbt.ProductCode,
 			CASE
 				WHEN b.bettype = 2499 THEN 2101
@@ -305,6 +318,7 @@ BEGIN
 				WHEN b.bettype = 17003 THEN 3704
 				WHEN b.bettype = 17004 THEN 3705
 				WHEN b.bettype = 17006 THEN 3706
+				WHEN b.bettype = 17007 THEN 3707
 				WHEN b.bettype = 3007 THEN 3901
 				WHEN sbt.ProductCode = 'SBC' AND b.matchid = 150 THEN 4201
 				WHEN b.bettype = 1699 THEN 4202
@@ -367,6 +381,7 @@ BEGIN
 	SELECT
 		d.WinLostDate,
 		d.RefNo,
+		ISNULL(CONVERT(VARCHAR(20), d.BetID),'-') BetID,
 		d.ProductCode,
 		d.PromotionType,
 		d.Turnover,

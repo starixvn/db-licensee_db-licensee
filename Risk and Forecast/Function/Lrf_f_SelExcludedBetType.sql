@@ -20,6 +20,7 @@ RETURNS TABLE
 		- 20230208@Evan: Inteagrate SG promotion prize [RedmineID: #183497]
 		- 20230626@Evan: Integrate MG-RNG (Promotion Game) [RedmineID: #189988]
 		- 20231018@Evan: Integrate Saba Casino Royale Tournament Prize [redmine: #194505]
+		- 20231018@Evan: Integrate Saba Reward Risk-free Rebate [redmine: #196881]
 */
 
 RETURN
@@ -40,6 +41,8 @@ RETURN
 	SELECT 'SPR', 17004									-- Saba Red Envelope
 	UNION ALL
 	SELECT 'SPR', 17006									-- Casino Royale Tournament
+	UNION ALL
+	SELECT 'SPR', 17007									-- Saba Reward Risk-free Rebate
 	UNION ALL
 	SELECT 'SAG', 3007									-- SA Gaming Tip ticket
 	UNION ALL
