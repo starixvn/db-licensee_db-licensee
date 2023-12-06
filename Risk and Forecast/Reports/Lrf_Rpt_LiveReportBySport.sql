@@ -114,6 +114,7 @@ AS
 		- 20230801@Evan: Integrate Virtual Sports 3 (Leap Gaming New) [RedmineID: #190908]
 		- 20231107@Evan: Integrate SEAL Entertainment [RedmineID: #180648]
 		- 20231117@Evan: Integrate WE Live Casino [RedmineID: #196573]
+		- 20231206@Evan: Integrate VS3 Sport 179 [RedmineID: #190908]
 
 	Param's Explanation:
 		@Liveindicator : indicate that whether the report will get live data or not
@@ -326,7 +327,6 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 5100 AND 5299 THEN 158 -- JIG' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 3151 AND 3200 THEN 159 -- YB' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 8400 AND 8699 THEN 155 -- MGRNG' + CHAR(13)
-								+ 'WHEN b.bettype BETWEEN 5302 AND 5399 THEN 178 -- LG' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 8900 AND 8999 THEN 156 -- SEA' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 10300 AND 10399 THEN 228 -- WE' + CHAR(13)
 								+ 'ELSE m.SportType END as Sporttype,' + CHAR(13)
@@ -438,7 +438,6 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 5100 AND 5299 THEN 158 -- JIG' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 3151 AND 3200 THEN 159 -- YB' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 8400 AND 8699 THEN 155 -- MGRNG' + CHAR(13)
-								+ 'WHEN b.bettype BETWEEN 5302 AND 5399 THEN 178 -- LG' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 8900 AND 8999 THEN 156 -- SEA' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 10300 AND 10399 THEN 228 -- WE' + CHAR(13)
 								+ 'ELSE m.SportType END ' + CHAR(13)
@@ -632,7 +631,6 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 5100 AND 5299 THEN 158' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 3151 AND 3200 THEN 159' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 8400 AND 8699 THEN 155' + CHAR(13)
-								+ 'WHEN b.bettype BETWEEN 5302 AND 5399 THEN 178' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 8900 AND 8999 THEN 156' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 10300 AND 10399 THEN 228' + CHAR(13)
 								+ 'ELSE ISNULL(l.sporttype, 0)' + CHAR(13)
@@ -737,7 +735,6 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 5100 AND 5299 THEN 158' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 3151 AND 3200 THEN 159' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 8400 AND 8699 THEN 155' + CHAR(13)
-								+ 'WHEN b.bettype BETWEEN 5302 AND 5399 THEN 178' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 8900 AND 8999 THEN 156' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 10300 AND 10399 THEN 228' + CHAR(13)
 								+ 'ELSE ISNULL(l.sporttype, 0)' + CHAR(13)
