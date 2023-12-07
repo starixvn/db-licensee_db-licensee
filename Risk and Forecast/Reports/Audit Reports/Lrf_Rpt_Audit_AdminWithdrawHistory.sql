@@ -3,7 +3,8 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_Audit_AdminWithdrawHistory]
 	@CustId			INT,
 	@FromDate		SMALLDATETIME,
 	@ToDate			SMALLDATETIME,
-	@BUDate			SMALLDATETIME
+	@BUDate			SMALLDATETIME,
+	@SiteName		VARCHAR(15)
 	
 AS 
 /*  
@@ -14,6 +15,7 @@ AS
     Revisions:  
 		- 20231025@Bobby: Customer Admin - [redmine: #195850]
 		- 20231109@Evan: 12B - Adjust rate show real figures for currency cut off 000 [Redmine #196557]
+		- 20231211@Bobby: Ivory Player Report - [redmine: #197945]
 
     Param's Explanation:  
 	  
@@ -22,8 +24,7 @@ BEGIN
     
 	SET NOCOUNT ON;
 	
-	DECLARE @SiteName	VARCHAR(15) = '12Bet'
-		,@tmpFromDate	SMALLDATETIME
+	DECLARE @tmpFromDate	SMALLDATETIME
 		,@tmpToDate		SMALLDATETIME
 	;
 
@@ -35,7 +36,10 @@ BEGIN
 		,Amount		MONEY
 		,Remark		NVARCHAR(1000)
 		,Currency		TINYINT
-	)
+	);
+
+	-- Brand mapping
+	SELECT @SiteName = dbo.Lrf_f_MappingAuditSite(@SiteName)
 	
 	IF NOT EXISTS (SELECT 1 
 		FROM [bodb_Ploutos].[dbo].[PlayerProfile] p WITH(NOLOCK) 
