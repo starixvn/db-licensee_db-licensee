@@ -55,6 +55,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 		- 20230801@Evan: Integrate Virtual Sports 3 (Leap Gaming New) [RedmineID: #190908]
 		- 20231107@Evan: Integrate SEAL Entertainment [RedmineID: #180648]
 		- 20231117@Evan: Integrate WE Live Casino [RedmineID: #196573]
+		- 20231213@Evan: Integrate Live22 [RedmineID: #197702]
 
 */
 RETURNS TABLE
@@ -108,7 +109,8 @@ RETURN
 					(73, 'MGRNG', 155, 0),	-- MG-RNG
 					(77, 'LG', 178, 0),		-- Leap Gaming VS (VS3)
 					(72, 'SEA', 156, 0),	-- SEAL
-					(80, 'WE', 228, 0)		-- WE Live Casino (WE)
+					(80, 'WE', 228, 0),		-- WE Live Casino (WE)
+					(79, 'L22', 227, 0)		-- Live 22
 			) d(ProductID, ProductCode, SportType, BetType)
 	WHERE ',' + @ProductCodes + ',' LIKE '%,' + CAST(ProductCode AS VARCHAR(10)) + ',%'
 GO
