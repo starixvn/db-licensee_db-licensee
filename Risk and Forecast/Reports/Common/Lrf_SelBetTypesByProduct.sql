@@ -17,6 +17,7 @@ AS
 		- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]
 		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
 		- 20220329@Hogan: Hide Mix Parlay (bettypeID 9)[RedmineID: #170438]
+		- 20231214@Evan: Hide Upcoming bettype [RedmineID: #197020]
 */
 
 BEGIN
@@ -37,6 +38,7 @@ BEGIN
 		SELECT ISNULL(COALESCE(ss.GroupTypeId,bt.GroupTypeId), sp.bettype) AS bettype
 		FROM bodb02.dbo.SportBettypeMatrix AS sp WITH (NOLOCK)
 			INNER JOIN bodb02.dbo.Products AS p WITH (NOLOCK) ON p.ProductID = sp.ProductID
+			INNER JOIN bodb02.dbo.bettype AS b WITH (NOLOCK) ON b.typeid = sp.BetType
 			LEFT JOIN bodb02.dbo.f_GroupBettype() AS ss ON sp.bettype = ss.bettype
 			LEFT JOIN bodb02.dbo.f_GroupBettype3rd() AS bt on sp.bettype = bt.bettype
 		WHERE ',' + @ProductCode + ',' LIKE '%,' + p.ProductPrefix + ',%'
@@ -44,6 +46,7 @@ BEGIN
 			AND sp.BetType NOT IN (913, 914)
 			AND sp.BetType NOT IN (901,902,903,904/*bettrade*/,500,502/*Criket*/,300,301,302,303,304/*MO*/,999/*Licensee Spread Setting*/,9/*Mix Parlay*/)
 			AND (sp.BetType < 801 OR sp.BetType > 899) -- MG
+			AND b.typenamee NOT LIKE '%Upcoming%'
 		GROUP BY ISNULL(COALESCE(ss.GroupTypeId, bt.GroupTypeId), sp.BetType)
 	END
 END
