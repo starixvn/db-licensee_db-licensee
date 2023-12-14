@@ -668,7 +668,7 @@ BEGIN
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','LG')) = 1 THEN 'WHEN b.bettype BETWEEN 5302 AND 5399 THEN ''LG''' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SEA')) = 1 THEN 'WHEN b.bettype BETWEEN 8900 AND 8999 THEN ''SEA''' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','WE')) = 1 THEN 'WHEN b.bettype BETWEEN 10300 AND 10399 THEN ''WE''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','L22')) = 1 THEN 'WHEN b.bettype BETWEEN 10300 AND 10399 THEN ''L22''' + CHAR(13) ELSE '' END
+								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','L22')) = 1 THEN 'WHEN b.bettype BETWEEN 7601 AND 7700 THEN ''L22''' + CHAR(13) ELSE '' END
 								+ 'END' + CHAR(13)
 
 			-- parlay for SB

@@ -21,6 +21,7 @@ RETURNS TABLE
 		- 20230626@Evan: Integrate MG-RNG (Promotion Game) [RedmineID: #189988]
 		- 20231018@Evan: Integrate Saba Casino Royale Tournament Prize [redmine: #194505]
 		- 20231018@Evan: Integrate Saba Reward Risk-free Rebate [redmine: #196881]
+		- 20231213@Evan: Integrate Live22 Promotion [RedmineID: #197702]
 */
 
 RETURN
@@ -67,5 +68,7 @@ RETURN
 	SELECT 'SG', 4598									-- SG promotion prize
 	UNION ALL
 	SELECT 'MGRNG', 8695								-- MG-RNG promotion prize
+	UNION ALL
+	SELECT 'L22', 7698									-- L22 promotion prize
 
 GO

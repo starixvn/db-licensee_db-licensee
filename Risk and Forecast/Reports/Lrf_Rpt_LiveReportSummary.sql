@@ -455,6 +455,7 @@ BEGIN
 					OR b.bettype BETWEEN 5302 AND 5399 -- LG
 					OR b.bettype BETWEEN 8900 AND 8999 -- SEA
 					OR b.bettype BETWEEN 10300 AND 10399 -- WE
+					OR b.bettype BETWEEN 7601 AND 7700 -- L22
 				)
 				AND (b.liveindicator = @Liveindicator OR @Liveindicator = 2)
 				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)

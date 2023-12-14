@@ -27,6 +27,7 @@ AS
 		- 20230626@Evan: Integrate MG-RNG (Promotion Game) [RedmineID: #189988]
 		- 20231018@Evan: Integrate Saba Casino Royale Tournament Prize [redmine: #194505]
 		- 20231018@Evan: Integrate Saba Reward Risk-free Rebate [redmine: #196881]
+		- 20231213@Evan: Integrate Live22 Promotion [RedmineID: #197702]
 
 	Param's Explanation:
 		+ @PromotionTypeList: promotion type list separated by ','
@@ -56,6 +57,7 @@ AS
 			- 7401: Player Tips (BetType: 8700)
 			- 3603: SG - Promotion Prize (BetType: 4598)
 			- 7301: MGRNG - Promotion Prize (BetType: 8695)
+			- 7901: Live22 - Promotion Prize (BetType: 7698)
 		+ @ReportType: 1: Daily, 2: Monthly
 */
 
@@ -146,6 +148,7 @@ BEGIN
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,6603,%' AND BetType = 3898 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,7401,%' AND BetType = 8700 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,7301,%' AND BetType = 8695 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,7901,%' AND BetType = 7698 THEN 1
 				ELSE 0
 			END
 
