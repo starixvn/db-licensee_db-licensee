@@ -32,6 +32,7 @@ AS
 			- 20201209@Winfred: get isBA for Problem player [redmine:#146508]
 			- 20210128@Johnson: filter customer class [redmine:#]
 			- 20210607@Johnson: change source for Problem account, remove @BaseCurrency[redmine:#155692]
+			- 20231219@Winfred: LAP - Allow mark VIP for BA players [Redmine: #198627]
 		Paramter's Explanations:
 			@OrderCol = 1: System ID
 						= 2: sort by external ID
@@ -160,10 +161,10 @@ BEGIN
 												CASE WHEN @SortType = 2 THEN OrderCol END DESC ) rn
 		FROM t1
 		)
-		SELECT t2.*, CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END as isVIP,CASE WHEN b.custid IS NULL THEN 0 ELSE 1 END AS IsBA
+		SELECT t2.*, CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END as isVIP--,CASE WHEN b.custid IS NULL THEN 0 ELSE 1 END AS IsBA
 		FROM t2 
 			LEFT JOIN Dep_CustVIP d WITH(NOLOCK) ON t2.custid = d.custid
-			LEFT JOIN Dep_CustBAActive b WITH(NOLOCK) ON t2.custid = b.custid
+			--LEFT JOIN Dep_CustBAActive b WITH(NOLOCK) ON t2.custid = b.custid
 		WHERE rn BETWEEN @rowstart AND @rowend
 		ORDER BY rn ASC
 	END
@@ -174,10 +175,10 @@ BEGIN
 												CASE WHEN @SortType = 2 THEN CustomerClass END DESC) rn
 		FROM #CustList a
 		)
-		SELECT t.*, CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END as isVIP,CASE WHEN b.custid IS NULL THEN 0 ELSE 1 END AS IsBA
+		SELECT t.*, CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END as isVIP--,CASE WHEN b.custid IS NULL THEN 0 ELSE 1 END AS IsBA
 		FROM t
 			LEFT JOIN Dep_CustVIP d WITH(NOLOCK) ON t.custid = d.custid
-			LEFT JOIN Dep_CustBAActive b WITH(NOLOCK) ON t.custid = b.custid
+			--LEFT JOIN Dep_CustBAActive b WITH(NOLOCK) ON t.custid = b.custid
 		WHERE rn BETWEEN @rowstart AND @rowend
 		ORDER BY rn ASC
 	END
@@ -188,10 +189,10 @@ BEGIN
 												CASE WHEN @SortType = 2 THEN CreatedDate END DESC) rn
 		FROM #CustList
 		)
-		SELECT t.*, CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END as isVIP,CASE WHEN b.custid IS NULL THEN 0 ELSE 1 END AS IsBA
+		SELECT t.*, CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END as isVIP--,CASE WHEN b.custid IS NULL THEN 0 ELSE 1 END AS IsBA
 		FROM t			
 			LEFT JOIN Dep_CustVIP d WITH(NOLOCK) ON t.custid = d.custid
-			LEFT JOIN Dep_CustBAActive b WITH(NOLOCK) ON t.custid = b.custid
+			--LEFT JOIN Dep_CustBAActive b WITH(NOLOCK) ON t.custid = b.custid
 		WHERE rn BETWEEN @rowstart AND @rowend
 		ORDER BY rn ASC
 	END	
