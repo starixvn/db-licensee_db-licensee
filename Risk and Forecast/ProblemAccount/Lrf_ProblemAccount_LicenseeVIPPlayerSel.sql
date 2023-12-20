@@ -29,6 +29,7 @@ AS
 			- 20230621@Johnson: show wrong CC when miss info in Custinfo[redmine:#190081]
 			- 20230628@Johnson: VIP Management - Enhance Export Excel incase order by CC [redmine:#190159]
 			- 20230803@Winfred: LAP - Player Segmentation - Add Risk Level's last update time [redmine:#191101]
+			- 20231219@Winfred: LAP - Allow mark VIP for BA players [Redmine: #198627]
 		Paramter's Explanations:
 			- @VipOption: 0: All, 1: Yes, 2 : No
 			- @OrderCol = 1: sort by System ID	
@@ -44,8 +45,8 @@ BEGIN
 	SELECT  @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
 
 	DECLARE @TempAg TABLE (custid INT)
-	CREATE TABLE #CustList (CustId INT PRIMARY KEY, CustomerClass SMALLINT, AgentID INT, username VARCHAR(50), username2 VARCHAR(50), isVIP BIT, IsBA BIT, LastMaskDate DATETIME,IsValid BIT DEFAULT(0))
-	
+	CREATE TABLE #CustList (CustId INT PRIMARY KEY, CustomerClass SMALLINT, AgentID INT, username VARCHAR(50), username2 VARCHAR(50), isVIP BIT, LastMaskDate DATETIME,IsValid BIT DEFAULT(0))
+	--, IsBA BIT
 	DECLARE @DocHandler INT
 
 	BEGIN TRY
@@ -74,13 +75,13 @@ BEGIN
 			INNER JOIN @TempAg a ON ci.recommend = a.custid
 		WHERE roleid = 1			
 	)
-	INSERT INTO #CustList(custid,AgentID,username,username2,isVip,IsBA)
+	INSERT INTO #CustList(custid,AgentID,username,username2,isVip)--,IsBA)
 	SELECT t.custid,AgentID, username, username2, 
-		CASE WHEN c.custid IS NULL THEN 0 ELSE 1 END,
-		CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END
+		CASE WHEN c.custid IS NULL THEN 0 ELSE 1 END
+		--,CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END
 	FROM t
 		OUTER APPLY ( SELECT TOP 1 custid FROM dbo.Dep_CustVIP WITH (NOLOCK) WHERE custid = t.custid ) c
-		OUTER APPLY ( SELECT TOP 1 custid FROM dbo.Dep_CustBAActive WITH (NOLOCK) WHERE custid = t.custid ) d
+		--OUTER APPLY ( SELECT TOP 1 custid FROM dbo.Dep_CustBAActive WITH (NOLOCK) WHERE custid = t.custid ) d
 	WHERE (@VipOption = 0 
 		OR ( @VipOption = 1 AND c.custid IS NOT NULL)
 		OR (@VipOption = 2 AND c.custid IS NULL))

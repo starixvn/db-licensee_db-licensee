@@ -60,6 +60,7 @@ Revisions:
 	- 20220301@Eden: Deposit - Sportsbook - Revise customer settings [Redmine: #167898] 
 	- 20220823@Tacy: remove update danger for BA member [redmine:#176518]
 	- 20230814@Luke: LAP - SEA Localization [Redmine: #187132]
+	- 20231219@Winfred: LAP - Allow mark VIP for BA players [Redmine: #198627]
 
 Param's Explanation:
 
@@ -178,14 +179,14 @@ BEGIN
 			RETURN
 		END
 		
-		IF  EXISTS (SELECT 1 FROM Dep_CustVIP WITH (NOLOCK) WHERE @CustID=CustID )
-		BEGIN
-			SELECT @ErrMsg = 	CASE @Langkey 
-									WHEN 'en-US' THEN 'This is VIP player. To turn on BA, please turn off VIP for the player first.'
-									ELSE  [dbo].[Lrf_f_Get_MsgNamebyMsgID](200050,@Langkey)
-								END, @ErrCode = 105
-			RETURN
-		END
+		--IF  EXISTS (SELECT 1 FROM Dep_CustVIP WITH (NOLOCK) WHERE @CustID=CustID )
+		--BEGIN
+		--	SELECT @ErrMsg = 	CASE @Langkey 
+		--							WHEN 'en-US' THEN 'This is VIP player. To turn on BA, please turn off VIP for the player first.'
+		--							ELSE  [dbo].[Lrf_f_Get_MsgNamebyMsgID](200050,@Langkey)
+		--						END, @ErrCode = 105
+		--	RETURN
+		--END
 
 		--do not allow Licensee 12BET turn on BA Member on EUR and GBP
 		IF @LicenseeID=1 --12bet
