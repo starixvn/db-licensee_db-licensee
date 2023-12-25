@@ -31,6 +31,7 @@ AS
 		- 20210224@Mark: Add BDT and INR as Base Currencies[Redmine #150375]
 		- 20220914@Evan: Add USDT as Base Currencies [Redmine #177481]
 		- 20231005@Evan: Add PHP as Base Currencies, list currencies currently supported [Redmine #194863]
+		- 20231215@Evan: Support Base Currency MP [Redmine #198400]
 
 */
 
@@ -113,7 +114,7 @@ BEGIN
 				WHEN @BaseCurrency = 'BDT' THEN ex.BDT
 				WHEN @BaseCurrency = 'INR' THEN ex.INR
 				WHEN @BaseCurrency = 'USDT' AND ExchangeId = 20 THEN @UUS
-				WHEN @BaseCurrency = 'PHP' THEN ex.PHP
+				WHEN @BaseCurrency IN ('MP','PHP') THEN ex.PHP
 				WHEN @BaseCurrency = 'AUD' THEN ex.AUD
 				WHEN @BaseCurrency = 'CHF' THEN ex.CHF
 				WHEN @BaseCurrency = 'SGD' THEN ex.SGD
@@ -135,7 +136,7 @@ BEGIN
 				WHEN @DefaultBaseCurrency = 'BDT' THEN ex.BDT
 				WHEN @DefaultBaseCurrency = 'INR' THEN ex.INR
 				WHEN @DefaultBaseCurrency = 'USDT' AND ExchangeId = 20 THEN @UUS
-				WHEN @DefaultBaseCurrency = 'PHP' THEN ex.PHP
+				WHEN @DefaultBaseCurrency IN ('MP','PHP') THEN ex.PHP
 				WHEN @DefaultBaseCurrency = 'AUD' THEN ex.AUD
 				WHEN @DefaultBaseCurrency = 'CHF' THEN ex.CHF
 				WHEN @DefaultBaseCurrency = 'SGD' THEN ex.SGD
