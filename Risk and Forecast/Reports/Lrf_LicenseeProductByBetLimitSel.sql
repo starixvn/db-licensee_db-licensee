@@ -33,6 +33,7 @@ AS
 		- 20230913@Luke: Integrate Virtual Sports 3 [Redmine: #193901]
 						 Remove Virtual Sports 3 (Old)
 		- 20231123@Johnson: Add Seal Entertainment [redmine: #180380]				 
+		- 20231124@Luke: Integrate WE Live Casino [Redmine: #196573]
 */
 
  /*
@@ -150,8 +151,9 @@ BEGIN
 			72,-- 	Seal Entertainment
 			75,--	Jili
 			76,--	YeeBet
-			73, --	MG-RNG
-			77 --	Virtual Sports 3
+			73,--	MG-RNG
+			77,--	Virtual Sports 3
+			80 --	WE Live Casino
 		)
 	ORDER BY ProductID ASC
 END
