@@ -27,7 +27,7 @@ AS
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20230516@Evan: Change the "Amount Due To" formula & Add output column "Licensee Total"  [Redmine: #186609]
 		- 20230925@Evan: LAP - Enhance Exchange reports (View Resettled Ticket Data + merge code view resettled report) [Redmine: #193954]
-
+		- 20240102@Evan: Enhance performance [Redmine #198757]
 	Param's Explanation: 
 		@ReportType : 1 - Daily, 2 - Monthly
 		@ReportViewType : 1 - Settled Date, 2 - ReSettled Date
@@ -77,31 +77,31 @@ BEGIN
 		,	@ProductPrefix		VARCHAR(2)
 		
 	SELECT @FDate = @FromDate,
-		@TDate = @ToDate
+		@TDate = DATEADD(dd,1,@ToDate)
 
 	SET @ProductPrefix = 'BX'
 	
 	-- #Region: Get list custIDs
-	DECLARE @TmpCust AS TABLE (CustId INT PRIMARY KEY)
+	CREATE TABLE #TmpCust (CustId INT PRIMARY KEY)
 
 	IF @Username = ''
 	BEGIN
-		INSERT INTO @TmpCust (CustId)
+		INSERT INTO #TmpCust (CustId)
 		SELECT DISTINCT c.custid
 		FROM dbo.Customer AS c WITH (NOLOCK)
 			INNER JOIN @TempAg AS ag ON ag.CustId = c.recommend
 	END
 	ELSE
 	BEGIN
-		INSERT INTO @TmpCust (CustId)
+		INSERT INTO #TmpCust (CustId)
 		SELECT DISTINCT c.custid
 		FROM dbo.Customer AS c WITH (NOLOCK)
 			INNER JOIN @TempAg AS ag ON ag.CustId = c.recommend
 		WHERE c.username = @Username
 
-		IF NOT EXISTS (SELECT 1 FROM @TmpCust)
+		IF NOT EXISTS (SELECT 1 FROM #TmpCust)
 		BEGIN
-			INSERT INTO @TmpCust (CustId)
+			INSERT INTO #TmpCust (CustId)
 			SELECT DISTINCT c.custid
 			FROM dbo.Customer AS c WITH (NOLOCK)
 				INNER JOIN @TempAg AS ag ON ag.CustId = c.recommend
@@ -121,14 +121,14 @@ BEGIN
 	
 	INSERT INTO @ChargeRates(Rate, FromDate, ToDate)
 	SELECT DI_Rate, Fromdate, Todate
-	FROM bodb_licensee.dbo.LA_f_ChargeInfo(@PartyID, @FDate, @TDate, @ProductPrefix, 'OA', 1)
+	FROM bodb_licensee.dbo.LA_f_ChargeInfo(@PartyID, @FDate, @ToDate, @ProductPrefix, 'OA', 1)
 	WHERE ChargeType = 1 AND DI_Rate > 0
 	
 	IF NOT EXISTS (SELECT 1 FROM @ChargeRates)
 	BEGIN
 		INSERT INTO @ChargeRates(Rate, FromDate, ToDate)
 		SELECT DI_Rate, Fromdate, Todate
-		FROM bodb_licensee.dbo.LA_f_GetChargeInfoWithTrialTime(@PartyID, @FDate, @TDate, @ProductPrefix, 'OA', 1)
+		FROM bodb_licensee.dbo.LA_f_GetChargeInfoWithTrialTime(@PartyID, @FDate, @ToDate, @ProductPrefix, 'OA', 1)
 		WHERE ChargeType = 1 AND DI_Rate > 0
 	END
 
@@ -155,9 +155,10 @@ BEGIN
 		ExVirtualRate	FLOAT
 	)
 	
+
 	IF @ReportViewType = 1 
 	BEGIN
-    	
+
 		INSERT INTO #sumBet (
 			SettledDate,
 			UserID,
@@ -181,15 +182,15 @@ BEGIN
 			SUM(sumbet.agentCommission/sumbet.ExVirtualRate),	-- AgentComm
 			sumbet.ExVirtualRate
 		FROM bodb_3rdProduct.dbo.Sum_winloss_Exchange AS sumbet WITH (NOLOCK)
-			INNER JOIN @tmpCust AS cust ON cust.Custid = sumbet.CustID
+			INNER JOIN #TmpCust AS cust ON cust.Custid = sumbet.CustID
 		WHERE sumbet.settledDate >= @FDate 
-			AND sumbet.settledDate < DATEADD(dd,1,@TDate)
+			AND sumbet.settledDate < @TDate
 			AND ISNULL(sumbet.IsResettled,0) = IIF(@ViewResettledOnly = 1,1,ISNULL(sumbet.IsResettled, 0))
 			AND 1 = CASE WHEN @ViewResettledOnly = 1 AND sumbet.settledDate >= @COD_ViewResettled THEN 1
 						WHEN @ViewResettledOnly = 0 THEN 1 
 					ELSE 0 END
 		GROUP BY
-			sumbet.settledDate,
+			CONVERT(DATE, sumbet.settledDate),
 			sumbet.userId,
 			sumbet.eventID,
 			sumbet.marketID,
@@ -199,7 +200,7 @@ BEGIN
 
 	ELSE -- @ReportViewType = 2
 	BEGIN
-
+		
     	INSERT INTO #sumBet (
 			SettledDate,
 			UserID,
@@ -212,7 +213,7 @@ BEGIN
 			AgentComm,
 			ExVirtualRate )
 		SELECT
-			CONVERT(DATE, ISNULL(sumbet.resettledDate,sumbet.settledDate)),
+			CONVERT(DATE, sumbet.settledDate),
 			sumbet.userId,
 			sumbet.eventID,
 			sumbet.marketID,
@@ -223,17 +224,54 @@ BEGIN
 			SUM(sumbet.agentCommission/sumbet.ExVirtualRate),	-- AgentComm
 			sumbet.ExVirtualRate
 		FROM bodb_3rdProduct.dbo.Sum_winloss_Exchange AS sumbet WITH (NOLOCK)
-			INNER JOIN @tmpCust AS cust ON cust.Custid = sumbet.CustID
-		WHERE ISNULL(sumbet.resettledDate,sumbet.settledDate) >= @FDate 
-			AND ISNULL(sumbet.resettledDate,sumbet.settledDate) < DATEADD(dd,1,@TDate)
+			INNER JOIN #TmpCust AS cust ON cust.Custid = sumbet.CustID
+		WHERE sumbet.settledDate >= @FDate 
+			AND sumbet.settledDate < @TDate
+			AND sumbet.resettledDate IS NULL
 			AND ISNULL(sumbet.IsResettled,0) = IIF(@ViewResettledOnly = 1,1,ISNULL(sumbet.IsResettled, 0))
 		GROUP BY
-			ISNULL(sumbet.resettledDate,sumbet.settledDate),
+			CONVERT(DATE, sumbet.settledDate),
 			sumbet.userId,
 			sumbet.eventID,
 			sumbet.marketID,
 			sumbet.currency,
 			sumbet.ExVirtualRate
+
+		INSERT INTO #sumBet (
+			SettledDate,
+			UserID,
+			EventID,
+			MarketID,
+			CurrencyID,
+			TurnOver,
+			Winlost,
+			CustComm,
+			AgentComm,
+			ExVirtualRate )
+		SELECT
+			CONVERT(DATE, resettledDate),
+			sumbet.userId,
+			sumbet.eventID,
+			sumbet.marketID,
+			sumbet.currency,
+			SUM(sumbet.stakeTotal/sumbet.ExVirtualRate),		-- TurnOver
+			SUM(sumbet.marketTotal/sumbet.ExVirtualRate),		-- winloss
+			SUM(sumbet.commission/sumbet.ExVirtualRate),		-- CustComm
+			SUM(sumbet.agentCommission/sumbet.ExVirtualRate),	-- AgentComm
+			sumbet.ExVirtualRate
+		FROM bodb_3rdProduct.dbo.Sum_winloss_Exchange AS sumbet WITH (NOLOCK)
+			INNER JOIN #TmpCust AS cust ON cust.Custid = sumbet.CustID
+		WHERE sumbet.resettledDate >= @FDate 
+			AND sumbet.resettledDate < @TDate
+			AND ISNULL(sumbet.IsResettled,0) = IIF(@ViewResettledOnly = 1,1,ISNULL(sumbet.IsResettled, 0))
+		GROUP BY
+			CONVERT(DATE, resettledDate),
+			sumbet.userId,
+			sumbet.eventID,
+			sumbet.marketID,
+			sumbet.currency,
+			sumbet.ExVirtualRate
+
     END
 	 
 	CREATE TABLE #detailBet (
@@ -400,5 +438,6 @@ BEGIN
 
 	DROP TABLE #TmpResult
 	DROP TABLE #Exchange
+	DROP TABLE #TmpCust
 END
 GO
