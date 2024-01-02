@@ -28,6 +28,7 @@ ALTER FUNCTION [dbo].[Lrf_f_BetFromType_Sel]
 		- 20231030@Evan: Support Revert betfrom % & W002 [Redmine: #196175]
 		- 20231103@Evan: Support add new betfrom A001,A002 [Redmine: #196463]
 		- 20231122@Evan: Handle betfrom for Jollysports [Redmine: #197192]	
+		- 20240102@Evan: Support add new betfrom I001 [Redmine: #198817]	
 	
 
 	Param's Explanation:
@@ -107,6 +108,7 @@ RETURN
 				(88, '^',0),
 				(88, 'A001',0),
 				(88, 'A002',0),
+				(88, 'I001',0),
 
 				-- Jollysports licensee
 				(99, 'x',2),
@@ -148,6 +150,7 @@ RETURN
 				(99, 'e',2),
 				(99, 'u',2),
 				(99, '^',2),
+				(99, 'I001',2),
 				(91, 'A001',2),
 				(92, 'A002',2)
 	) d(PlatformType, betfrom, SpecialPlatform)
