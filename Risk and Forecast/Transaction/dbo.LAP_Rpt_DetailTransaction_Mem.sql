@@ -23,6 +23,7 @@ AS
 		- 20220111@Sophia: Hide transfer ticket of Single Wallet Licensee [RedmineID: #167343]
 		- 20230614@Evan: Update condition show full cycle of status on ticket  [RedmineID: #189579]
 		- 20230810@Evan: Add SettlementType filter Recover Bets [RedmineID: #191844]
+		- 20230810@Evan: Show bettrans.refno for settled record of Translog products [RedmineID: #196379]
 	
 	Param's Explanation:     
 */
@@ -50,6 +51,14 @@ BEGIN
 		, rowIdx			INT PRIMARY KEY
 		, IsResettled		BIT
     )
+
+	-- Get bettype translog--
+	DECLARE @Bettype_TransLog TABLE (Bettype SMALLINT)
+
+	INSERT INTO @Bettype_TransLog
+	SELECT DISTINCT BetType
+	FROM dbo.SportBettypeMatrix (NOLOCK)
+	WHERE RefTable = 3 --translog
 
 	SELECT @_fromDateTime	= @FromDate
 	, @_toDateTime			= @ToDate
@@ -86,43 +95,55 @@ BEGIN
 		, rowIdx = ROW_NUMBER() OVER(ORDER BY RowID)
 		, br.IsResettled
 	FROM (
-		SELECT transid
-			, bettype
-			, actiondate AS transtime
-			, REPLACE([action],'TransLog','Ticket') AS transremark
-			, BalanceChanged AS changedAmt
-			, NewBalance AS totalAmt
-			, RowID
-			, CASE WHEN br.SettlementType IN (2,3,10,11) THEN 1 ELSE 0 END AS IsResettled
-		FROM BalanceRecord.dbo.BalanceRecord_bk br WITH(NOLOCK)
-		WHERE
-			br.transid = ISNULL(@_TransactionId, br.transid)
-			AND 1 = CASE 
-						WHEN @_IsResettled = 1 AND br.SettlementType IN (2,3,10,11) THEN 1 -- get re-settled tickets only
-						WHEN @_IsResettled = 0 THEN 1 -- get all tickets
-						ELSE 0
-					END
-			AND custid = @_custid
-			AND actiondate BETWEEN @_fromDateTime AND @_toDateTime
-			AND 
-			(
-				BalanceChanged <> 0
-				OR 
-				(BalanceChanged = 0 AND ActionID NOT IN (1, 33, 35, 100, 255)) --excluded others (won/lose->won/lose...), LC|RNG Sum, Translog inserted, Bet SUM insert, Balance insert
+		SELECT CASE
+				   WHEN b.Bettype IS NOT NULL AND br.refno IS NOT NULL THEN br.refno
+				   ELSE br.transid
+			   END AS transid
+			 , br.bettype
+			 , ActionDate AS transtime
+			 , REPLACE([Action], 'TransLog', 'Ticket') AS transremark
+			 , BalanceChanged AS changedAmt
+			 , NewBalance AS totalAmt
+			 , RowID
+			 , CASE
+				   WHEN br.SettlementType IN (2, 3, 10, 11) THEN 1
+				   ELSE 0
+			   END AS IsResettled
+		FROM BalanceRecord.dbo.BalanceRecord_bk br WITH (NOLOCK)
+			LEFT JOIN @Bettype_TransLog b ON br.bettype = b.Bettype
+		WHERE  
+			(br.transid = ISNULL(@_TransactionId, br.transid) OR br.refno = ISNULL(@_TransactionId, br.refno))
+			AND 1 = CASE
+				WHEN @_IsResettled = 1 AND
+					br.SettlementType IN (2, 3, 10, 11) THEN 1 -- get re-settled tickets only
+				WHEN @_IsResettled = 0 THEN 1 -- get all tickets
+				ELSE 0
+			END
+			AND custid = @_custID
+			AND ActionDate BETWEEN @_fromDateTime AND @_toDateTime
+			AND (
+			BalanceChanged <> 0 OR (BalanceChanged = 0 AND ActionID NOT IN (1, 33, 35, 100, 255)) --excluded others (won/lose->won/lose...), LC|RNG Sum, Translog inserted, Bet SUM insert, Balance insert
 			)
 	
 		UNION ALL
-		SELECT transid
-			, bettype
-			, actiondate AS transtime
-			, REPLACE([action],'TransLog','Ticket') AS transremark
-			, BalanceChanged AS changedAmt
-			, NewBalance AS totalAmt
-			, RowID
-			, CASE WHEN SettlementType IN (2,3,10,11) THEN 1 ELSE 0 END AS IsResettled
-		FROM bodb02.dbo.BalanceRecord WITH(NOLOCK)
+		SELECT CASE
+				   WHEN b.Bettype IS NOT NULL AND br.refno IS NOT NULL THEN br.refno
+				   ELSE br.transid
+			   END AS transid
+			 , br.bettype
+			 , ActionDate AS transtime
+			 , REPLACE([Action], 'TransLog', 'Ticket') AS transremark
+			 , BalanceChanged AS changedAmt
+			 , NewBalance AS totalAmt
+			 , RowID
+			 , CASE
+				   WHEN SettlementType IN (2, 3, 10, 11) THEN 1
+				   ELSE 0
+			   END AS IsResettled
+		FROM bodb02.dbo.BalanceRecord br WITH (NOLOCK)
+			LEFT JOIN @Bettype_TransLog b ON br.bettype = b.Bettype 
 		WHERE 
-			transid = ISNULL(@_TransactionId, transid)
+			(br.transid = ISNULL(@_TransactionId, br.transid) OR br.refno = ISNULL(@_TransactionId, br.refno))
 			AND 1 = CASE 
 						WHEN @_IsResettled = 1 AND SettlementType IN (2,3,10,11) THEN 1 -- get re-settled tickets only
 						WHEN @_IsResettled = 0 THEN 1 -- get all tickets
