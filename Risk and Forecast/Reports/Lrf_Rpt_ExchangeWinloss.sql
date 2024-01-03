@@ -72,12 +72,12 @@ BEGIN
 		AgentComm		MONEY,
 		LicTotal		MONEY)
 
-	DECLARE @FDate				DATE
-		,	@TDate				DATE
+	DECLARE @FDate				DATETIME
+		,	@TDate				DATETIME
 		,	@ProductPrefix		VARCHAR(2)
 		
-	SELECT @FDate = @FromDate,
-		@TDate = DATEADD(dd,1,@ToDate)
+	SELECT	@FDate = @FromDate,
+			@TDate = DATEADD(dd,1,@ToDate)
 
 	SET @ProductPrefix = 'BX'
 	
@@ -141,7 +141,7 @@ BEGIN
 	 	 , @COD_ViewResettled = CASE WHEN TypeName = 'ExchangeWL_ViewResettled' THEN CutoffDate  ELSE @COD_ViewResettled END 
 	FROM dbo.Lrf_f_GetCutOffDate()
 	WHERE TypeName IN ('ExchangeWL_ViewResettled','ExchangeWL_NewTerm')
-
+	
 	CREATE TABLE #sumBet (
 		SettledDate		DATE,
 		UserID			VARCHAR(20),
@@ -158,7 +158,6 @@ BEGIN
 
 	IF @ReportViewType = 1 
 	BEGIN
-
 		INSERT INTO #sumBet (
 			SettledDate,
 			UserID,
@@ -228,7 +227,7 @@ BEGIN
 		WHERE sumbet.settledDate >= @FDate 
 			AND sumbet.settledDate < @TDate
 			AND sumbet.resettledDate IS NULL
-			AND ISNULL(sumbet.IsResettled,0) = IIF(@ViewResettledOnly = 1,1,ISNULL(sumbet.IsResettled, 0))
+			AND @ViewResettledOnly = 0
 		GROUP BY
 			CONVERT(DATE, sumbet.settledDate),
 			sumbet.userId,

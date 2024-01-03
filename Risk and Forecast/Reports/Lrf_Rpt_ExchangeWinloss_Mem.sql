@@ -71,8 +71,8 @@ BEGIN
 		LicTotal	MONEY
 	)
 
-	DECLARE @FDate				DATE
-		,	@TDate				DATE
+	DECLARE @FDate				DATETIME
+		,	@TDate				DATETIME
 		,	@ProductPrefix		VARCHAR(2)
 	
 	SELECT @FDate = @FromDate,
@@ -234,10 +234,7 @@ BEGIN
 		WHERE settledDate >= @FDate 
 			AND settledDate < @TDate 
 			AND sumbet.resettledDate IS NULL
-			AND ISNULL(sumbet.IsResettled,0) = IIF(@ViewResettledOnly = 1,1,ISNULL(sumbet.IsResettled, 0))
-			AND 1 = CASE WHEN @ViewResettledOnly = 1 AND sumbet.resettledDate >= @COD_ViewResettled THEN 1
-						WHEN @ViewResettledOnly = 0 THEN 1 
-					ELSE 0 END
+			AND @ViewResettledOnly = 0
 		GROUP BY
 			CONVERT(DATE, settledDate),
 			sumbet.CustID,
@@ -276,9 +273,6 @@ BEGIN
 		WHERE resettledDate >= @FDate 
 			AND resettledDate < @TDate 
  			AND ISNULL(sumbet.IsResettled,0) = IIF(@ViewResettledOnly = 1,1,ISNULL(sumbet.IsResettled, 0))
-			AND 1 = CASE WHEN @ViewResettledOnly = 1 AND sumbet.resettledDate >= @COD_ViewResettled THEN 1
-						WHEN @ViewResettledOnly = 0 THEN 1 
-					ELSE 0 END
 		GROUP BY
 			CONVERT(DATE, resettledDate),
 			sumbet.CustID,

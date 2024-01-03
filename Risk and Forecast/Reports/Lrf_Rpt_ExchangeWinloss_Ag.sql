@@ -71,8 +71,8 @@ BEGIN
 		LicTotal	MONEY
 	)
 
-	DECLARE @FDate				DATE
-		,	@TDate				DATE
+	DECLARE @FDate				DATETIME
+		,	@TDate				DATETIME
 		,	@ProductPrefix		VARCHAR(2)
 
 
@@ -234,7 +234,7 @@ BEGIN
 		WHERE settledDate >= @FDate 
 			AND settledDate < @TDate
 			AND sumbet.resettledDate IS NULL
-			AND ISNULL(sumbet.IsResettled,0) = IIF(@ViewResettledOnly = 1,1,ISNULL(sumbet.IsResettled, 0))
+			AND @ViewResettledOnly = 0
 		GROUP BY
 			CONVERT(DATE, sumbet.settledDate),
 			cust.Recommend,
