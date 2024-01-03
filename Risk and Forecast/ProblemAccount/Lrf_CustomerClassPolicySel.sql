@@ -13,38 +13,49 @@ AS
 			- 20201125@Winfred: Get MinBet  and Platform on customer class [redmine:#146000]
 			- 20201223@Winfred: Get AgentBetInterval and Currency on customer class [redmine:#146969]
 			- 20221025@Johnson: Add DisableParlay [redmine: #178994]
+			- 20231212@Luke: LAP - Switch to new structure of CTS [Redmine: #197111]
 	*/
 BEGIN
 	SET NOCOUNT ON
-	
-	DECLARE @siteID VARCHAR(7) 
-	
-	SELECT @siteID = siteID 
-	FROM SiteConfig.dbo.LicVendorProfile WITH(NOLOCK)
-	WHERE SiteName = @site
+
 	-- Get Class for Site
 	;WITH T as (
-	SELECT CustomerClass,Liveindicator,SportType,LeagueGroupID,BetDelay,NextBetInterval,MaxBet, MaxPerMatch, c1.SiteID, c1.RepeatedBets, c1.Platform, c1.MinBet, c1.CurrencyID, c1.AgentBetInterval, c1.DisableParlay
-	FROM CustomerClassPolicy c1 WITH(NOLOCK)
-	WHERE c1.isLicensee = 1
-		AND c1.Enabled = 1
-		AND c1.SiteID = @siteID
+	SELECT r.CustomerClass, r.IsLive AS LiveIndicator, r.SportType, r.RuleID, r.RuleTitle, pm.PolicyTitle, r.BetDelay, r.NextBetInterval, r.MaxBet, r.MaxPerMatch, sm.Site, r.RepeatedBets, sm.Platform, r.MinBet, sm.Currency AS CurrencyID, r.AgentBetInterval, r.DisableParlay
+	FROM			CustomerClassRule r					WITH (NOLOCK)
+		INNER JOIN CustomerClassPolicyRule pr			WITH (NOLOCK) ON r.RuleID = pr.RuleID
+		INNER JOIN CustomerClassSiteManagement sm		WITH (NOLOCK) ON pr.PolicyID = sm.PolicyID
+		INNER JOIN CustomerClassPolicyManagement pm		WITH (NOLOCK) ON pm.PolicyID = pr.PolicyID
+		INNER JOIN Site s								WITH (NOLOCK) ON s.site = sm.Site
+	WHERE s.isLicensee = 1
+		AND r.Enable = 1
+		AND sm.Site = @site
+	), 
+	T1 AS
+	(
+		SELECT CustomerClass,Liveindicator,SportType,RuleID,RuleTitle,PolicyTitle,BetDelay,NextBetInterval,MaxBet,MaxPerMatch,Site, RepeatedBets, Platform, MinBet, CurrencyID, AgentBetInterval, DisableParlay
+		FROM T 
+		UNION ALL
+		SELECT r.CustomerClass, r.IsLive AS LiveIndicator, r.SportType, r.RuleID, r.RuleTitle, pm.PolicyTitle, r.BetDelay, r.NextBetInterval, r.MaxBet, r.MaxPerMatch, sm.Site, r.RepeatedBets, sm.Platform, r.MinBet, sm.Currency AS CurrencyID, r.AgentBetInterval, r.DisableParlay
+		FROM			CustomerClassRule r					WITH (NOLOCK)
+			INNER JOIN CustomerClassPolicyRule pr			WITH (NOLOCK) ON r.RuleID = pr.RuleID
+			INNER JOIN CustomerClassSiteManagement sm		WITH (NOLOCK) ON pr.PolicyID = sm.PolicyID
+			INNER JOIN CustomerClassPolicyManagement pm		WITH (NOLOCK) ON pm.PolicyID = pr.PolicyID
+		WHERE Enable = 1
+			AND sm.Site IN ('All', 'AllDeposit')
+			AND NOT EXISTS (SELECT 1
+							FROM T
+							WHERE t.customerClass = r.CustomerClass
+								AND t.SportType = r.SportType
+								AND t.Liveindicator = r.IsLive
+							)
 	)
-	SELECT CustomerClass,Liveindicator,SportType,LeagueGroupID,BetDelay,NextBetInterval,MaxBet,MaxPerMatch,siteid, RepeatedBets, Platform, MinBet, CurrencyID, AgentBetInterval, DisableParlay
-	FROM T 
-	UNION ALL
-	SELECT c2.CustomerClass,c2.Liveindicator,c2.SportType,c2.LeagueGroupID,c2.BetDelay,c2.NextBetInterval,c2.MaxBet,c2.MaxPerMatch	,c2.siteid	,c2.RepeatedBets,c2.Platform,c2.MinBet,c2.CurrencyID,c2.AgentBetInterval, DisableParlay
-	FROM CustomerClassPolicy c2 WITH(NOLOCK)
-	WHERE c2.isLicensee = 1
-		AND c2.Enabled = 1
-		AND c2.SiteID IS NULL
-		AND NOT EXISTS (SELECT 1
-						FROM T
-						WHERE t.customerClass = c2.customerClass
-							AND t.SportType = c2.SportType
-							AND t.Liveindicator = c2.Liveindicator
-							AND t.LeagueGroupID = c2.LeagueGroupID
-						)
-	ORDER BY CustomerClass,SportType,LeagueGroupID,Liveindicator 		
+
+	SELECT  CustomerClass,Liveindicator,SportType,RuleTitle,PolicyTitle,LeagueGroupID,(BetDelay-1)*100 AS BetDelay,NextBetInterval,MaxBet,MaxPerMatch,Site, RepeatedBets, Platform, MinBet, CurrencyID, AgentBetInterval, DisableParlay
+	FROM T1
+		CROSS APPLY (
+			SELECT STRING_AGG(LeagueGroupID,',') WITHIN GROUP (ORDER BY LeagueGroupID) AS LeagueGroupID
+			FROM CustomerClassRuleLeagueGroup rlg WITH (NOLOCK)
+			WHERE T1.RuleID = rlg.RuleID
+		) lg
+	ORDER BY CustomerClass,SportType,LeagueGroupID,Liveindicator
 END
-		
