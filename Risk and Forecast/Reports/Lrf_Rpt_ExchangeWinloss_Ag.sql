@@ -188,9 +188,9 @@ BEGIN
 		WHERE sumbet.settledDate >= @FDate 
 			AND sumbet.settledDate < @TDate
 			AND ISNULL(sumbet.IsResettled,0) = IIF(@ViewResettledOnly = 1,1,ISNULL(sumbet.IsResettled, 0))
-			AND 1 = CASE WHEN @ViewResettledOnly = 1 AND sumbet.settledDate >= @COD_ViewResettled THEN 1
-						WHEN @ViewResettledOnly = 0 THEN 1 
-					ELSE 0 END
+			AND 1 = CASE WHEN @ViewResettledOnly = 1 AND sumbet.settledDate >= @COD_ViewResettled THEN sumbet.IsResettled -- get ticket resettled only
+						WHEN @ViewResettledOnly = 0 THEN 1 -- get all ticket settled & resettled
+					ELSE 0 END -- not get ticket settledDate < @CutOffDate 
 		GROUP BY
 			CONVERT(DATE, sumbet.settledDate),
 			cust.Recommend,
@@ -273,7 +273,8 @@ BEGIN
 			INNER JOIN #tmpCust AS cust ON cust.Custid = sumbet.CustID
 		WHERE resettledDate >= @FDate 
 			AND resettledDate < @TDate
-			AND ISNULL(sumbet.IsResettled,0) = IIF(@ViewResettledOnly = 1,1,ISNULL(sumbet.IsResettled, 0))
+			AND 1 = CASE WHEN @ViewResettledOnly = 1 THEN sumbet.IsResettled -- get ticket resettled only
+						WHEN @ViewResettledOnly = 0 THEN 1 END -- get all ticket settled & resettled
 		GROUP BY
 			CONVERT(DATE, resettledDate),
 			cust.Recommend,
@@ -282,8 +283,11 @@ BEGIN
 			sumbet.marketID,
 			sumbet.currency,
 			sumbet.ExVirtualRate
+
 	END	
 
+	CREATE CLUSTERED INDEX cix_sumBet ON #sumBet(userId, marketID, eventID, settledDate)
+	
 	CREATE TABLE #detailBet (
 		SettledDate	DATE,
 		UserID		VARCHAR(20),
@@ -449,5 +453,6 @@ BEGIN
 
 	DROP TABLE #tmpResult
 	DROP TABLE #Exchange
+	DROP TABLE #TmpCust
 END
 GO
