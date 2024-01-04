@@ -83,6 +83,7 @@ Revisions:
 	- 20230313@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 	- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
 	- 20230810@Luke: LAP - SEA Localization [Redmine: #187132]  
+	- 20231222@Luke: LAP - Support Indonesian & Thai language [Redmine: #196246]  
 
 Param's Explanation:
 
@@ -369,7 +370,7 @@ BEGIN
 	END
 	ELSE
 	BEGIN
-		SELECT @ErrMsg =CASE @Langkey WHEN  'en-US' THEN 'This Group Name has been created before!'
+		SELECT @ErrMsg =CASE @Langkey WHEN  'en-US' THEN 'This group name has been already chosen, please try another name!'
 									  ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200020,@Langkey)
 									  END, @ErrCode = 102
 	END
