@@ -24,8 +24,6 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Main]
 	,@LotteryComm DECIMAL(9,8) = 0
 	,@IsUpdateVS BIT = 0	
 	,@VSComm DECIMAL(9,8) = 0
-	,@IsUpdateVS2 BIT = 0	
-	,@VS2Comm DECIMAL(9,8) = 0
 	,@IsUpdateTableGame BIT = 0	
 	,@TableGameComm DECIMAL(9,8) = 0
 	
@@ -50,7 +48,6 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Main]
 	,@IsUpdateCG			BIT = 0
 	,@IsUpdateAdvant		BIT = 0
 	,@IsUpdateAdvantMini	BIT = 0
-	,@IsUpdateVS3			BIT = 0
 	,@WMCasinoComm		DECIMAL(9,8) = 0
 	,@BigGamingComm		DECIMAL(9,8) = 0
 	,@JokerComm			DECIMAL(9,8) = 0
@@ -61,7 +58,6 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Main]
 	,@CGComm			DECIMAL(9,8) = 0
 	,@AdvantComm		DECIMAL(9,8) = 0
 	,@AdvantMiniComm	DECIMAL(9,8) = 0
-	,@VS3Comm			DECIMAL(9,8) = 0
 	
 	,@IsUpdateMaxGame	BIT = 0
 	,@IsUpdateFGG		BIT = 0
@@ -108,6 +104,7 @@ AS
 		- 20230314@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 		- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
 		- 20230808@Tacy: LAP - Offer Player Commission to VS3 (new) [redmine: #192203]
+		- 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
 		
 	Param's Explanation:
 
@@ -142,7 +139,6 @@ BEGIN
 			@SpadeGamingComm_Group DECIMAL(9,8)=0,
 			@LotteryComm_Group DECIMAL(9,8)=0,
 			@VSComm_Group DECIMAL(9,8)=0,
-			@VS2Comm_Group DECIMAL(9,8)=0,
 			@TableGameComm_Group DECIMAL(9,8)=0
 			-- phase 3
 			,@VirtualGamesComm_Group DECIMAL(9,8) = 0	
@@ -162,7 +158,6 @@ BEGIN
 			,@CGComm_Group				DECIMAL(9,8) = 0
 			,@AdvantComm_Group			DECIMAL(9,8) = 0
 			,@AdvantMiniComm_Group		DECIMAL(9,8) = 0
-			,@VS3Comm_Group				DECIMAL(9,8) = 0
 			
 			,@MaxGameComm_Group			DECIMAL(9,8) = 0
 			,@FGGComm_Group				DECIMAL(9,8) = 0
@@ -192,7 +187,6 @@ BEGIN
 			OR @IsUpdateSpadeGaming = 1
 			OR @IsUpdateLottery = 1
 			OR @IsUpdateVS = 1
-			OR @IsUpdateVS2 = 1
 			OR @IsUpdateTableGame = 1
 			OR @IsUpdateVirtualGames = 1	
 			OR @IsUpdateArcadiaGaming = 1	
@@ -211,7 +205,6 @@ BEGIN
 			OR @IsUpdateCG				= 1
 			OR @IsUpdateAdvant			= 1
 			OR @IsUpdateAdvantMini		= 1
-			OR @IsUpdateVS3				= 1
 			
 			OR @IsUpdateMaxGame			= 1
 			OR @IsUpdateFGG				= 1
@@ -236,7 +229,6 @@ BEGIN
 				,@SpadeGamingComm_Group = MAX(CASE WHEN BetType = 4301 THEN playerdiscount ELSE 0 END)
 				,@LotteryComm_Group = MAX(CASE WHEN BetType = 1021 THEN playerdiscount ELSE 0 END)
 				,@VSComm_Group = MAX(CASE WHEN BetType = 1201 THEN playerdiscount ELSE 0 END)
-				,@VS2Comm_Group = MAX(CASE WHEN BetType = 2701 THEN playerdiscount ELSE 0 END)
 				,@TableGameComm_Group = MAX(CASE WHEN BetType = 4901 THEN playerdiscount ELSE 0 END)
 				-- phase 3
 				,@VirtualGamesComm_Group = MAX(CASE WHEN BetType = 4601 THEN playerdiscount ELSE 0 END)
@@ -255,7 +247,6 @@ BEGIN
 				,@CGComm_Group = MAX(CASE WHEN BetType = 7301 THEN playerdiscount ELSE 0 END)
 				,@AdvantComm_Group = MAX(CASE WHEN BetType = 7701 THEN playerdiscount ELSE 0 END)
 				,@AdvantMiniComm_Group = MAX(CASE WHEN BetType = 7801 THEN playerdiscount ELSE 0 END)
-				,@VS3Comm_Group = MAX(CASE WHEN BetType = 5302 THEN playerdiscount ELSE 0 END)
 				
 				,@MaxGameComm_Group = MAX(CASE WHEN BetType = 5401 THEN playerdiscount ELSE 0 END)
 				,@FGGComm_Group = MAX(CASE WHEN BetType = 8201 THEN playerdiscount ELSE 0 END)
@@ -270,8 +261,12 @@ BEGIN
 				,@KenoComm_Group = MAX(CASE WHEN BetType = 1501 THEN playerdiscount ELSE 0 END)
 			FROM dbo.Dep_CustDiscountGroupSetting_Member grp WITH(NOLOCK)
 			WHERE AgentID = @AgentID
-				AND sporttype IN (212,248,219,243,247,220,180,190,222
-									--phase 3
+				AND sporttype IN (212,248,219,243,247,220
+								--Dummy VS
+								,9908
+
+								,222
+								--phase 3
 								,211, 245,165,200,244,232 
 								--phase 4
 								,233,239,234,236,238
@@ -279,7 +274,6 @@ BEGIN
 								--SabaCasino
 								,208
 								--phase 4.2
-								--,231 VS3 (old)
 								,167,172,174
 								
 								--MaxGame,FGG,Jili
@@ -287,9 +281,6 @@ BEGIN
 
 								--MG_RnG,Yeebet
 								,155,159
-
-								--VS3 (new)
-								,178
 
 								--
 								,1,161,202
@@ -339,7 +330,6 @@ BEGIN
 				,@SpadeGamingComm_Group = @SpadeGamingComm_Group 
 				,@LotteryComm_Group = @LotteryComm_Group
 				,@VSComm_Group = @VSComm_Group
-				,@VS2Comm_Group = @VS2Comm_Group
 				,@TableGameComm_Group = @TableGameComm_Group
 				---start param of phase 2 - update value setting
 				,@IsUpdateSexyGaming = @IsUpdateSexyGaming	
@@ -352,8 +342,6 @@ BEGIN
 				,@LotteryComm =  @LotteryComm
 				,@IsUpdateVS = @IsUpdateVS 	
 				,@VSComm =  @VSComm
-				,@IsUpdateVS2 =  @IsUpdateVS2	
-				,@VS2Comm = @VS2Comm 
 				,@IsUpdateTableGame = @IsUpdateTableGame
 				,@TableGameComm = @TableGameComm
 				-- phase 3
@@ -382,7 +370,6 @@ BEGIN
 				,@IsUpdateCG			= @IsUpdateCG	
 				,@IsUpdateAdvant		= @IsUpdateAdvant	
 				,@IsUpdateAdvantMini		= @IsUpdateAdvantMini	
-				,@IsUpdateVS3			= @IsUpdateVS3	
 				,@WMCasinoComm			= @WMCasinoComm		
 				,@BigGamingComm			= @BigGamingComm		
 				,@JokerComm			= @JokerComm			
@@ -392,7 +379,6 @@ BEGIN
 				,@CGComm			= @CGComm		
 				,@AdvantComm			= @AdvantComm		
 				,@AdvantMiniComm		= @AdvantMiniComm		
-				,@VS3Comm			= @VS3Comm	
 				,@WMCasinoComm_Group		= @WMCasinoComm_Group		
 				,@BigGamingComm_Group		= @BigGamingComm_Group		
 				,@JokerComm_Group		= @JokerComm_Group			
@@ -406,7 +392,6 @@ BEGIN
 				,@CGComm_Group			= @CGComm_Group	
 				,@AdvantComm_Group		= @AdvantComm_Group	
 				,@AdvantMiniComm_Group		= @AdvantMiniComm_Group	
-				,@VS3Comm_Group			= @VS3Comm_Group
 				
 				,@IsUpdateMaxGame		= @IsUpdateMaxGame
 				,@IsUpdateFGG			= @IsUpdateFGG

@@ -30,6 +30,7 @@ AS
 	 - 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511] 
 	 - 20230313@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 	 - 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
+	 - 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
 
 	Parameter's Explaination: 
 */  
@@ -47,8 +48,6 @@ BEGIN
 		,g.AllbetComm
 		,g.MacauComm
 		,g.PPComm
-		--,g.GDComm
-		--,g.AGComm
 		,g.color AS GroupColor
 		,ISNULL(c.NumberOfCustomer,0) AS NumberOfCustomer
 		,g.IsDefault  
@@ -57,7 +56,6 @@ BEGIN
 		,g.LotteryComm
 		,g.KenoComm
 		,g.VSComm
-		,g.VS2Comm
 		,g.TableGameComm
 		,g.VirtualGamesComm	
 		,g.ArcadiaGamingComm
@@ -73,7 +71,6 @@ BEGIN
 		,g.CGComm
 		,g.AdvantComm
 		,g.AdvantMiniComm
-		,g.VS3Comm
 		,g.MaxGameComm
 		,g.FGGComm
 		,g.JiliComm

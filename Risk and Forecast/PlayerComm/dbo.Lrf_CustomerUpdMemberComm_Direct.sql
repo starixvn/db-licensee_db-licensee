@@ -24,8 +24,6 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Direct]
 	@LotteryComm DECIMAL(9,8) = 0,
 	@IsUpdateVS BIT = 0,	
 	@VSComm DECIMAL(9,8) = 0,
-	@IsUpdateVS2 BIT = 0,	
-	@VS2Comm DECIMAL(9,8) = 0,
 	@IsUpdateTableGame BIT = 0,	
 	@TableGameComm DECIMAL(9,8) = 0,
 	-- param of phase 3
@@ -49,7 +47,6 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Direct]
 	@IsUpdateCG				BIT = 0,
 	@IsUpdateAdvant			BIT = 0,
 	@IsUpdateAdvantMini		BIT = 0,
-	@IsUpdateVS3			BIT = 0,	
 	@WMCasinoComm		DECIMAL(9,8) = 0,
 	@BigGamingComm		DECIMAL(9,8) = 0,
 	@JokerComm			DECIMAL(9,8) = 0,
@@ -60,7 +57,6 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Direct]
 	@CGComm				DECIMAL(9,8) = 0,
 	@AdvantComm			DECIMAL(9,8) = 0,
 	@AdvantMiniComm		DECIMAL(9,8) = 0,
-	@VS3Comm			DECIMAL(9,8) = 0,
 	
 	@IsUpdateMaxGame	BIT = 0,
 	@IsUpdateFGG		BIT = 0,
@@ -108,6 +104,7 @@ AS
 		- 20230314@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 		- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
 		- 20230808@Tacy: LAP - Offer Player Commission to VS3 (new) [redmine: #192203]
+		- 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
 		
 	Param's Explanation:	
 
@@ -145,7 +142,6 @@ BEGIN
 		OR @IsUpdateSpadeGaming = 1
 		OR @IsUpdateLottery = 1
 		OR @IsUpdateVS = 1
-		OR @IsUpdateVS2 = 1
 		OR @IsUpdateTableGame = 1
 		-- PHASE 3
 		OR @IsUpdateVirtualGames = 1
@@ -165,7 +161,6 @@ BEGIN
 		OR @IsUpdateCG			= 1
 		OR @IsUpdateAdvant		= 1
 		OR @IsUpdateAdvantMini	= 1
-		OR @IsUpdateVS3			= 1
 		--
 		OR @IsUpdateSB  = 1	
 		OR @IsParlayComm  = 1
@@ -187,8 +182,7 @@ BEGIN
 				,(@IsUpdateSexyGaming,243,3101, @SexyGamingComm )
 				,(@IsUpdateSpadeGaming ,247,4301, @SpadeGamingComm )
 				,(@IsUpdateLottery ,220,1021, @LotteryComm )
-				,(@IsUpdateVS ,180,1201, @VSComm )
-				,(@IsUpdateVS2 ,190,2701, @VS2Comm )
+				,(@IsUpdateVS ,9908,1201, @VSComm )
 				,(@IsUpdateTableGame ,222,4901, @TableGameComm )
 				-- Phase 3
 				,(@IsUpdateVirtualGames,245,4601,@VirtualGamesComm)
@@ -209,7 +203,6 @@ BEGIN
 				,(@IsUpdateCG,167,7301,@CGComm)
 				,(@IsUpdateAdvant,172,7701,@AdvantComm)
 				,(@IsUpdateAdvantMini,174,7801,@AdvantMiniComm)
-				,(@IsUpdateVS3,178,5302,@VS3Comm)
 				
 				,(@IsUpdateMaxGame,237,5401,@MaxGameComm)
 				,(@IsUpdateFGG,176,8201,@FGGComm)

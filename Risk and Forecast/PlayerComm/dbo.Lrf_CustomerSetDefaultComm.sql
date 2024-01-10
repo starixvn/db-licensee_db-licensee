@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet,bodbAdminNet,Dot_Member" viewers="" isFunction="0"></info>*/ 
+﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet,bodbAdminNet,Dot_Member" isNested="1" isFunction="0"></info>*/ 
 ALTER PROCEDURE [dbo].[Lrf_CustomerSetDefaultComm]
 	@LicenseeName VARCHAR(50),
 	@CustID INT,--member
@@ -33,6 +33,7 @@ AS
 		- 20230314@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 		- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
 		- 20230808@Tacy: LAP - Offer Player Commission to VS3 (new) [redmine: #192203]
+		- 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
 		
 	Param's Explanation:
 */ 
@@ -45,15 +46,12 @@ BEGIN
 		@IsUpdateAllbet BIT = 0,
 		@IsUpdateMacau BIT = 0,
 		@IsUpdatePP BIT = 0,
-		--@IsUpdateGD	BIT,
-		--@IsUpdateAG BIT,
 		-- phase 2
 		@IsUpdateSexyGaming BIT = 0,
 		@IsUpdateSpadeGaming BIT = 0,
 		@IsUpdateKeno BIT = 0,
 		@IsUpdateLottery BIT = 0,
 		@IsUpdateVS BIT = 0,
-		@IsUpdateVS2 BIT = 0,
 		@IsUpdateTableGame BIT = 0,
 		
 		@IsUpdateVirtualGames BIT = 0,
@@ -72,7 +70,6 @@ BEGIN
 		@IsUpdateCG				BIT = 0,
 		@IsUpdateAdvant			BIT = 0,
 		@IsUpdateAdvantMini		BIT = 0,
-		@IsUpdateVS3			BIT = 0,
 		
 		@IsUpdateMaxGame		BIT = 0,
 		@IsUpdateFGG			BIT = 0,
@@ -115,16 +112,6 @@ BEGIN
 			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=32)
 				SELECT @IsUpdatePP = 1
 						
-			--IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=11)
-			--	SELECT @IsUpdateGD = 1
-			--ELSE
-			--	SELECT @IsUpdateGD = 0	
-			
-			--IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=10)
-			--	SELECT @IsUpdateAG = 1
-			--ELSE
-			--	SELECT @IsUpdateAG = 0	
-
 			-- phase 2
 			-- 45,36,8,28,5,27,40	
 			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=45)
@@ -141,9 +128,6 @@ BEGIN
 			
 			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=5)
 				SET @IsUpdateVS = 1
-			
-			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=27)
-				SET @IsUpdateVS2 = 1
 			
 			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=40)
 				SET @IsUpdateTableGame = 1
@@ -188,8 +172,6 @@ BEGIN
 				SET @IsUpdateAdvant = 1
 			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=68)
 				SET @IsUpdateAdvantMini = 1
-			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=77)	--VS3 (new)
-				SET @IsUpdateVS3 = 1
 			
 			--MaxGame,FGG,Jili	
 			IF EXISTS ( SELECT TOP 1 1 FROM LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID=@LicenseeID AND ProductID=60)
@@ -218,15 +200,12 @@ BEGIN
 				,@IsUpdateAllbet=@IsUpdateAllbet
 				,@IsUpdateMacau=@IsUpdateMacau
 				,@IsUpdatePP=@IsUpdatePP
-				--,@IsUpdateGD=@IsUpdateGD
-				--,@IsUpdateAG=@IsUpdateAG
 				-- phase 2
 				,@IsUpdateSexyGaming = @IsUpdateSexyGaming	
 				,@IsUpdateSpadeGaming = @IsUpdateSpadeGaming	
 				,@IsUpdateKeno = @IsUpdateKeno
 				,@IsUpdateLottery  = @IsUpdateLottery	
 				,@IsUpdateVS = @IsUpdateVS 	
-				,@IsUpdateVS2 =  @IsUpdateVS2	
 				,@IsUpdateTableGame = @IsUpdateTableGame
 				,@IsUpdateVirtualGames = @IsUpdateVirtualGames
 				,@IsUpdateArcadiaGaming = @IsUpdateArcadiaGaming
@@ -243,7 +222,6 @@ BEGIN
 				,@IsUpdateCG			= @IsUpdateCG		
 				,@IsUpdateAdvant		= @IsUpdateAdvant		
 				,@IsUpdateAdvantMini	= @IsUpdateAdvantMini		
-				,@IsUpdateVS3			= @IsUpdateVS3
 
 				,@IsUpdateMaxGame		= @IsUpdateMaxGame
 				,@IsUpdateFGG			= @IsUpdateFGG

@@ -22,7 +22,6 @@ ALTER PROCEDURE [dbo].[Acc_CustSetting3rd_16]
 	@SpadeGamingComm_Group DECIMAL(9,8)=0,
 	@LotteryComm_Group DECIMAL(9,8)=0,
 	@VSComm_Group DECIMAL(9,8)=0,
-	@VS2Comm_Group DECIMAL(9,8)=0,
 	@TableGameComm_Group DECIMAL(9,8)=0,	
 	-- start param phase 2 - new value setting
 	@IsUpdateSexyGaming BIT = 0,	
@@ -35,8 +34,6 @@ ALTER PROCEDURE [dbo].[Acc_CustSetting3rd_16]
 	@LotteryComm DECIMAL(9,8) = 0,
 	@IsUpdateVS BIT = 0,	
 	@VSComm DECIMAL(9,8) = 0,
-	@IsUpdateVS2 BIT = 0,	
-	@VS2Comm DECIMAL(9,8) = 0,
 	@IsUpdateTableGame BIT = 0,	
 	@TableGameComm DECIMAL(9,8) = 0,
 	-- phase 3
@@ -64,7 +61,6 @@ ALTER PROCEDURE [dbo].[Acc_CustSetting3rd_16]
 	@IsUpdateCG				BIT = 0,
 	@IsUpdateAdvant			BIT = 0,
 	@IsUpdateAdvantMini		BIT = 0,
-	@IsUpdateVS3			BIT = 0,
 	@WMCasinoComm		DECIMAL(9,8) = 0,
 	@BigGamingComm		DECIMAL(9,8) = 0,
 	@JokerComm			DECIMAL(9,8) = 0,
@@ -73,7 +69,6 @@ ALTER PROCEDURE [dbo].[Acc_CustSetting3rd_16]
 	@CGComm				DECIMAL(9,8) = 0,
 	@AdvantComm			DECIMAL(9,8) = 0,
 	@AdvantMiniComm		DECIMAL(9,8) = 0,
-	@VS3Comm			DECIMAL(9,8) = 0,
 	@WMCasinoComm_Group			DECIMAL(9,8) = 0,
 	@BigGamingComm_Group		DECIMAL(9,8) = 0,
 	@JokerComm_Group			DECIMAL(9,8) = 0,
@@ -86,7 +81,6 @@ ALTER PROCEDURE [dbo].[Acc_CustSetting3rd_16]
 	@CGComm_Group				DECIMAL(9,8) = 0,
 	@AdvantComm_Group			DECIMAL(9,8) = 0,
 	@AdvantMiniComm_Group		DECIMAL(9,8) = 0,
-	@VS3Comm_Group				DECIMAL(9,8) = 0,
 	
 	@IsUpdateMaxGame		BIT = 0,
 	@IsUpdateFGG			BIT = 0,
@@ -145,7 +139,7 @@ Revisions:
 	- 20230314@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 	- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
 	- 20230808@Tacy: LAP - Offer Player Commission to VS3 (new) [redmine: #192203]
-
+	- 20240126@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
 Param's Explanation:
 � @ErrCode:
     = 0: Transaction recorded successfully.
@@ -193,7 +187,6 @@ BEGIN
 		OR @IsUpdateSpadeGaming = 1
 		OR @IsUpdateLottery = 1
 		OR @IsUpdateVS = 1
-		OR @IsUpdateVS2 = 1
 		OR @IsUpdateTableGame = 1
 		OR @IsUpdateVirtualGames = 1
 		OR @IsUpdateArcadiaGaming = 1
@@ -211,7 +204,6 @@ BEGIN
 		OR @IsUpdateCG	= 1
 		OR @IsUpdateAdvant	= 1
 		OR @IsUpdateAdvantMini =1
-		OR @IsUpdateVS3	= 1
 		
 		OR @IsUpdateMaxGame	= 1
 		OR @IsUpdateFGG	= 1
@@ -233,8 +225,7 @@ BEGIN
 				,(@IsUpdateSexyGaming,243,3101,@SexyGamingComm_Group, @SexyGamingComm )
 				,(@IsUpdateSpadeGaming ,247,4301,@SpadeGamingComm_Group, @SpadeGamingComm )
 				,(@IsUpdateLottery ,220,1021,@LotteryComm_Group, @LotteryComm )
-				,(@IsUpdateVS ,180,1201,@VSComm_Group, @VSComm )
-				,(@IsUpdateVS2 ,190,2701,@VS2Comm_Group, @VS2Comm )
+				,(@IsUpdateVS ,9908,1201,@VSComm_Group, @VSComm )
 				,(@IsUpdateTableGame ,222,4901,@TableGameComm_Group, @TableGameComm )
 				-- Phase 3
 				,(@IsUpdateVirtualGames,245,4601,@VirtualGamesComm_Group,@VirtualGamesComm)
@@ -255,7 +246,6 @@ BEGIN
 				,(@IsUpdateCG,167,7301,@CGComm_Group,@CGComm)
 				,(@IsUpdateAdvant,172,7701,@AdvantComm_Group,@AdvantComm)
 				,(@IsUpdateAdvantMini,174,7801,@AdvantMiniComm_Group,@AdvantMiniComm)
-				,(@IsUpdateVS3,178,5302,@VS3Comm_Group,@VS3Comm)
 				
 				,(@IsUpdateMaxGame,237,5401,@MaxGameComm_Group,@MaxGameComm)
 				,(@IsUpdateFGG,176,8201,@FGGComm_Group,@FGGComm)

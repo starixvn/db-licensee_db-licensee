@@ -18,7 +18,6 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerMoveGroupComm]
 	@IsUpdateKeno BIT = 0,	
 	@IsUpdateLottery BIT = 0,	
 	@IsUpdateVS BIT = 0,	
-	@IsUpdateVS2 BIT = 0,	
 	@IsUpdateTableGame BIT = 0,	
 	-- end of phase 2
 	-- phase 3
@@ -36,7 +35,6 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerMoveGroupComm]
 	@IsUpdateCG				BIT = 0,
 	@IsUpdateAdvant			BIT = 0,
 	@IsUpdateAdvantMini		BIT = 0,
-	@IsUpdateVS3			BIT = 0,
 	
 	@IsUpdateMaxGame		BIT = 0,
 	@IsUpdateFGG			BIT = 0,
@@ -84,7 +82,7 @@ AS
 		- 20230315@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 		- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
 		- 20230821@Luke: LAP - SEA Localization [Redmine: #187132]
-		
+		- 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
 	Param's Explanation:
 */ 
 BEGIN
@@ -137,15 +135,12 @@ BEGIN
 		,@IsUpdateAllbet=@IsUpdateAllbet
 		,@IsUpdateMacau=@IsUpdateMacau
 		,@IsUpdatePP=@IsUpdatePP
-		--,@IsUpdateGD=@IsUpdateGD
-		--,@IsUpdateAG=@IsUpdateAG
 		---start param of phase 2
 		,@IsUpdateSexyGaming = @IsUpdateSexyGaming	
 		,@IsUpdateSpadeGaming = @IsUpdateSpadeGaming	
 		,@IsUpdateKeno = @IsUpdateKeno
 		,@IsUpdateLottery  = @IsUpdateLottery	
 		,@IsUpdateVS = @IsUpdateVS 	
-		,@IsUpdateVS2 =  @IsUpdateVS2	
 		,@IsUpdateTableGame = @IsUpdateTableGame
 		-- end of param phase 2
 		-- phase 3
@@ -164,14 +159,13 @@ BEGIN
 		,@IsUpdateCG			= @IsUpdateCG
 		,@IsUpdateAdvant		= @IsUpdateAdvant
 		,@IsUpdateAdvantMini	= @IsUpdateAdvantMini
-		,@IsUpdateVS3			= @IsUpdateVS3
 		
 		,@IsUpdateMaxGame		= @IsUpdateMaxGame
 		,@IsUpdateFGG			= @IsUpdateFGG
 		,@IsUpdateJili			= @IsUpdateJili
 
-		,@IsUpdateYeeBet			= @IsUpdateYeeBet
-		,@IsUpdateMgRNG				= @IsUpdateMgRNG
+		,@IsUpdateYeeBet		= @IsUpdateYeeBet
+		,@IsUpdateMgRNG			= @IsUpdateMgRNG
 
 		,@Langkey=@Langkey
 		,@IP=@IP
