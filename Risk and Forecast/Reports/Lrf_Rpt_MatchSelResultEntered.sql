@@ -22,6 +22,7 @@ Revisions:
 	- 20180807@Amanda: Remove Racing [RedmineID: #99378]
 	- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
 	- 20230928@Evan: Integrate Virtual Sports 3 (Leap Gaming New) [RedmineID: #190908]
+	- 20231206@Evan: Integrate VS3 Sport 179 [RedmineID: #190908]
 */
 
 BEGIN
@@ -119,7 +120,7 @@ BEGIN
 			DELETE FROM @Result WHERE Sporttype BETWEEN 190 AND 199
 	END
 
-	DELETE @Result WHERE Sporttype IN (219,178)
+	DELETE @Result WHERE Sporttype IN (219,178,179)
 
 	SELECT IsToday, EventDate, Sporttype, Entered, NonEntered
 	FROM @Result
