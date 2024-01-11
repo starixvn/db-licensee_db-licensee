@@ -30,6 +30,7 @@ Revisions:
 	- 20211111@Sol: Split Transfer out of bettrans/Support IPv6 - [RedmineID: #164301]
     - 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 	- 20230227@Evan: Ensure correct balance calculation when allow to transfer 247 (BU) [Redmine: #173554]
+	- 20231018@Evan: Integrate Saba Reward Risk-free Rebate + add missing bettype 17006 [redmine: #196881]
 
 Param's Explanation:     
 */
@@ -193,11 +194,11 @@ BEGIN
 			INSERT INTO #statementRpt (orderkey, winlostdate, transtype, transdesc, turnover,totalamt,commission)
 			SELECT 
 				CASE
-					WHEN statusID IN (101, 102, 103) AND bettype NOT IN (17000, 17003, 17004) THEN @VOID_KEY
-					WHEN bettype IN (17000, 17003, 17004) THEN @PROMO_KEY
+					WHEN statusID IN (101, 102, 103) AND bettype NOT IN (17000, 17003, 17004, 17006, 17007) THEN @VOID_KEY
+					WHEN bettype IN (17000, 17003, 17004, 17006, 17007) THEN @PROMO_KEY
 					ELSE @BET_KEY END AS orderkey, 
 				winlostdate,
-				CASE WHEN bettype IN (17000, 17003, 17004) THEN 'PROMO' ELSE 'BET' END AS transtype,
+				CASE WHEN bettype IN (17000, 17003, 17004, 17006, 17007) THEN 'PROMO' ELSE 'BET' END AS transtype,
 				NULL AS transdesc,
 				SUM(CASE 
 					WHEN bettype IN (33, 43) AND liveawayscore = 0 AND livehomescore <> 0 AND ruben = 1 THEN stake/2 
@@ -213,11 +214,11 @@ BEGIN
 				AND ((@IsCOMember = 0 AND b.bettype <> 912) OR (@IsCOMember = 1 AND b.bettype <> 911))
 			GROUP BY
 				CASE
-					WHEN statusID IN (101, 102, 103) AND bettype NOT IN (17000, 17003, 17004) THEN @VOID_KEY
-					WHEN bettype IN (17000, 17003, 17004) THEN @PROMO_KEY
+					WHEN statusID IN (101, 102, 103) AND bettype NOT IN (17000, 17003, 17004, 17006, 17007) THEN @VOID_KEY
+					WHEN bettype IN (17000, 17003, 17004, 17006, 17007) THEN @PROMO_KEY
 					ELSE @BET_KEY END, 
 				winlostdate,
-				CASE WHEN bettype IN (17000, 17003, 17004) THEN 'PROMO' ELSE 'BET' END
+				CASE WHEN bettype IN (17000, 17003, 17004, 17006, 17007) THEN 'PROMO' ELSE 'BET' END
 		END  
 
 		-- bettrans tickets -- after @MoveBetsDay
@@ -236,11 +237,11 @@ BEGIN
 				SELECT 
 					CASE
 						WHEN statusID IN (0, 1) THEN @OUT_KEY
-						WHEN statusID IN (101, 102, 103) AND bettype NOT IN (17000, 17003, 17004) THEN @VOID_KEY
-						WHEN bettype IN (17000, 17003, 17004) THEN @PROMO_KEY
+						WHEN statusID IN (101, 102, 103) AND bettype NOT IN (17000, 17003, 17004, 17006, 17007) THEN @VOID_KEY
+						WHEN bettype IN (17000, 17003, 17004, 17006, 17007) THEN @PROMO_KEY
 						ELSE @BET_KEY END AS orderkey,  
 					winlostdate,
-					CASE WHEN bettype IN (17000, 17003, 17004) THEN 'PROMO' ELSE 'BET' END AS transtype,
+					CASE WHEN bettype IN (17000, 17003, 17004, 17006, 17007) THEN 'PROMO' ELSE 'BET' END AS transtype,
 					NULL transdesc,
 					SUM(CASE 
 						WHEN bettype IN (33, 43) AND liveawayscore = 0 AND livehomescore <> 0 AND ruben = 1 THEN stake/2 
@@ -266,11 +267,11 @@ BEGIN
 				GROUP BY
 					CASE
 						WHEN statusID IN (0, 1) THEN @OUT_KEY
-						WHEN statusID IN (101, 102, 103) AND bettype NOT IN (17000, 17003, 17004) THEN @VOID_KEY
-						WHEN bettype IN (17000, 17003, 17004) THEN @PROMO_KEY
+						WHEN statusID IN (101, 102, 103) AND bettype NOT IN (17000, 17003, 17004, 17006, 17007) THEN @VOID_KEY
+						WHEN bettype IN (17000, 17003, 17004, 17006, 17007) THEN @PROMO_KEY
 						ELSE @BET_KEY END,  
 					winlostdate,
-					CASE WHEN bettype IN (17000, 17003, 17004) THEN 'PROMO' ELSE 'BET' END
+					CASE WHEN bettype IN (17000, 17003, 17004, 17006, 17007) THEN 'PROMO' ELSE 'BET' END
 			
 				--include running Keno bet
 				UNION ALL
