@@ -33,6 +33,7 @@ AS
 		- 20231116@Bobby: Daily Bets - add audit admin login [redmine: #195850]
 		- 20231123@Bobby: Daily Bets - Ivory search RefNo [redmine: #197277]
 		- 20231109@Evan: 12B - Adjust rate show real figures for currency cut off 000 [Redmine #196557]
+		- 20240109@Bobby: Daily Bets - 12B add Payout column [redmine: #198014]
 
 	Developer's Notes:
 		
@@ -71,9 +72,11 @@ BEGIN
 		,ProductCode VARCHAR(10)
 		,Turnover MONEY
 		,WinLoss MONEY
+		,Payout MONEY
 		,[Status] SMALLINT
 		,TurnoverBased MONEY
 		,WinLossBased MONEY
+		,PayoutBased MONEY
 		,GameCode VARCHAR(10)
 	)
 
@@ -89,8 +92,10 @@ BEGIN
 			,ProductCode
 			,Turnover
 			,WinLoss
+			,Payout
 			,p.TurnoverBased
 			,p.WinLossBased
+			,PayoutBased
 			,[Status]
 		FROM #DailyResult p
 		
@@ -154,7 +159,7 @@ BEGIN
 	INNER JOIN Exchange ex WITH(NOLOCK) ON c.Id = ex.ExchangeId
 	SELECT @SiteName = dbo.Lrf_f_MappingAuditSite(@SiteName)
 
-	IF (@SortBy <> 'WinLoss' AND @SortBy <> 'Turnover' AND @SortBy <> 'TurnoverBased' AND @SortBy <> 'WinLossBased')
+	IF (@SortBy NOT IN ('WinLoss', 'Turnover', 'Payout', 'TurnoverBased', 'WinLossBased', 'PayoutBased'))
 	BEGIN
 		SET @SortBy = 'TransactionId'
 		SET @SortOrder = 'asc'
@@ -202,9 +207,11 @@ BEGIN
 			,ProductCode	
 			,Turnover	
 			,WinLoss	
+			,Payout
 			,[Status]	
 			,TurnoverBased
 			,WinLossBased
+			,PayoutBased
 			,GameCode
 		)
 		SELECT 
@@ -216,9 +223,11 @@ BEGIN
 			,a.ProductCode
 			,a.Turnover
 			,a.WinLoss
+			,a.Payout
 			,a.Status
 			,TurnoverBased
 			,WinLossBased
+			,PayoutBased
 			,a.GameCode
 		FROM (
 				SELECT
@@ -228,6 +237,7 @@ BEGIN
 					,a.NetAmount * c.ExRateOrg AS NetAmount				
 					,a.BetAmount * c.ExRate AS TurnoverBased
 					,-a.NetAmount * c.ExRate AS WinLossBased
+					,(a.BetAmount-a.NetAmount)* c.ExRate AS PayoutBased
 					,IIF(@IsAuditUser = 1, pp.Username, pp.Username2) AS Playername,
 					a.TransactionDate AS TransTime,
 					a.BettypeName AS BetType,
@@ -240,6 +250,7 @@ BEGIN
 					END AS ProductCode,
 					a.BetAmount * c.ExRateOrg AS Turnover,
 					-a.NetAmount * c.ExRateOrg AS WinLoss,
+					(a.BetAmount-a.NetAmount)* c.ExRateOrg AS Payout,
 					CASE
 						WHEN a.NetAmount > 0 THEN -1
 						WHEN a.NetAmount < 0 THEN 1
@@ -267,8 +278,10 @@ BEGIN
 							CASE 
 								WHEN @SortBy = 'Turnover' THEN a.BetAmount
 								WHEN @SortBy = 'WinLoss' THEN a.NetAmount
+								WHEN @SortBy = 'Payout' THEN a.Payout
 								WHEN @SortBy = 'TurnoverBased' THEN a.TurnoverBased
 								WHEN @SortBy = 'WinLossBased' THEN a.WinLossBased
+								WHEN @SortBy = 'PayoutBased' THEN a.PayoutBased
 								ELSE a.TransactionId
 							END
 						ELSE 1
@@ -277,8 +290,10 @@ BEGIN
 							CASE
 							WHEN @SortBy = 'Turnover' THEN a.BetAmount
 							WHEN @SortBy = 'WinLoss' THEN a.NetAmount
+							WHEN @SortBy = 'Payout' THEN a.Payout
 							WHEN @SortBy = 'TurnoverBased' THEN a.TurnoverBased
 							WHEN @SortBy = 'WinLossBased' THEN a.WinLossBased
+							WHEN @SortBy = 'PayoutBased' THEN a.PayoutBased
 							ELSE a.TransactionId
 							END
 						ELSE 1	
@@ -297,9 +312,11 @@ BEGIN
 			,ProductCode	
 			,Turnover	
 			,WinLoss	
+			,Payout
 			,[Status]	
 			,TurnoverBased
 			,WinLossBased
+			,PayoutBased
 			,GameCode
 		)
 		SELECT 
@@ -311,9 +328,11 @@ BEGIN
 			,a.ProductCode
 			,a.Turnover
 			,a.WinLoss
+			,a.Payout
 			,a.Status
 			,TurnoverBased
 			,WinLossBased
+			,PayoutBased
 			,a.GameCode
 		FROM (
 				SELECT
@@ -323,6 +342,7 @@ BEGIN
 					,a.NetAmount * c.ExRateOrg AS NetAmount				
 					,a.BetAmount * c.ExRate AS TurnoverBased
 					,-a.NetAmount * c.ExRate AS WinLossBased
+					,(a.BetAmount-a.NetAmount)* c.ExRate AS PayoutBased
 					,IIF(@IsAuditUser = 1, pp.Username, pp.Username2) AS Playername,
 					a.TransactionDate AS TransTime,
 					a.BettypeName AS BetType,
@@ -335,6 +355,7 @@ BEGIN
 					END AS ProductCode,
 					a.BetAmount * c.ExRateOrg AS Turnover,
 					-a.NetAmount * c.ExRateOrg AS WinLoss,
+					(a.BetAmount-a.NetAmount)* c.ExRateOrg AS Payout,
 					CASE
 						WHEN a.NetAmount > 0 THEN -1
 						WHEN a.NetAmount < 0 THEN 1
@@ -362,8 +383,10 @@ BEGIN
 							CASE 
 								WHEN @SortBy = 'Turnover' THEN a.BetAmount
 								WHEN @SortBy = 'WinLoss' THEN a.NetAmount
+								WHEN @SortBy = 'Payout' THEN a.Payout
 								WHEN @SortBy = 'TurnoverBased' THEN a.TurnoverBased
 								WHEN @SortBy = 'WinLossBased' THEN a.WinLossBased
+								WHEN @SortBy = 'PayoutBased' THEN a.PayoutBased
 								ELSE a.TransactionId
 							END
 						ELSE 1
@@ -372,8 +395,10 @@ BEGIN
 							CASE
 							WHEN @SortBy = 'Turnover' THEN a.BetAmount
 							WHEN @SortBy = 'WinLoss' THEN a.NetAmount
+							WHEN @SortBy = 'Payout' THEN a.Payout
 							WHEN @SortBy = 'TurnoverBased' THEN a.TurnoverBased
 							WHEN @SortBy = 'WinLossBased' THEN a.WinLossBased
+							WHEN @SortBy = 'PayoutBased' THEN a.PayoutBased
 							ELSE a.TransactionId
 							END
 						ELSE 1	
@@ -392,8 +417,10 @@ BEGIN
 		,g.GameName AS SportName
 		,Turnover
 		,WinLoss
+		,Payout
 		,p.TurnoverBased
 		,p.WinLossBased
+		,PayoutBased
 		,[Status]
 	FROM #DailyResult p
 		INNER JOIN bodb_Ploutos.dbo.GameDetail g WITH(NOLOCK)
@@ -405,6 +432,7 @@ BEGIN
 	SELECT TotalRows = COUNT(1) 
 			,TotalTurnover = SUM(TurnoverBased) 
 			,TotalWinLoss = SUM(WinLossBased) 
+			,TotalPayout = SUM(PayoutBased) 
 	FROM #DailyResult
 
 	DROP TABLE #DailyResult;

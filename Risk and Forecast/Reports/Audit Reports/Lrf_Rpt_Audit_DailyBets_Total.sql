@@ -25,6 +25,7 @@ AS
 		- 20220118@Sol: LAP - Auditing licensees - Daily Bets - Filter by Sport - [RedmineID: #166056]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20231123@Bobby: Daily Bets - Ivory search RefNo [redmine: #197277]
+		- 20240109@Bobby: Daily Bets - 12B add Payout column [redmine: #198014]
 
 	Developer's Notes:
 		
@@ -125,9 +126,10 @@ BEGIN
 	IF (@CurrDate >= @ArchivedDate)
 	BEGIN
 		SELECT
-			COUNT(a.TransactionId)			AS TotalRows,
-			SUM(a.BetAmount * c.ExRate)		AS TotalTurnover,
-			- SUM(a.NetAmount * c.ExRate)	AS TotalWinLoss
+			COUNT(a.TransactionId)				AS TotalRows,
+			SUM(a.BetAmount * c.ExRate)			AS TotalTurnover,
+			- SUM(a.NetAmount * c.ExRate)		AS TotalWinLoss,
+			SUM((a.BetAmount-a.NetAmount)* c.ExRate) AS TotalPayout
 		FROM bodb_Ploutos.dbo.BetTicket a WITH (NOLOCK)
 		INNER JOIN @Currency c ON c.Code = a.CurrencyCode
 		INNER JOIN bodb_Ploutos.dbo.PlayerProfile pp WITH(NOLOCK) ON pp.BrandCode = a.BrandCode AND pp.CustID = a.CustId
@@ -148,9 +150,10 @@ BEGIN
 	BEGIN
 		
 		SELECT
-			COUNT(a.TransactionId)			AS TotalRows,
-			SUM(a.BetAmount * c.ExRate)		AS TotalTurnover,
-			- SUM(a.NetAmount * c.ExRate)	AS TotalWinLoss
+			COUNT(a.TransactionId)				AS TotalRows,
+			SUM(a.BetAmount * c.ExRate)			AS TotalTurnover,
+			- SUM(a.NetAmount * c.ExRate)		AS TotalWinLoss,
+			SUM((a.BetAmount-a.NetAmount)* c.ExRate) AS TotalPayout
 		FROM bodb_Ploutos.dbo.BetTicket_BK a WITH (NOLOCK)
 		INNER JOIN @Currency c ON c.Code = a.CurrencyCode
 		INNER JOIN bodb_Ploutos.dbo.PlayerProfile pp WITH(NOLOCK) ON pp.BrandCode = a.BrandCode AND pp.CustID = a.CustId
