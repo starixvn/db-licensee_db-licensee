@@ -41,6 +41,7 @@ AS
 					- Move SP from DBLIC.bodb_Licensee to DBEXT.bodb02
 		- 20220329@Hogan: Hide Mix Parlay (bettypeID 9)[RedmineID: #170438]
 		- 20220714@Hogan: Integrate Volleyball AIO [RedmineID: #175143]
+		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 
 	Param's Explanation:
 		- @SportList: XML format (999: Parlay sport)
@@ -121,11 +122,11 @@ BEGIN
 	DECLARE @BetType TABLE (BetType SMALLINT, ProductID INT)
 
 	;WITH CTE_GroupBettype AS (
-		SELECT ISNULL(COALESCE(ss.GroupTypeId, bt.GroupTypeId), sp.BetType) AS BetType, sp.ProductID
+		SELECT ISNULL(ss.GroupTypeId, sp.BetType) AS BetType, ISNULL(lf.GroupProductId,lf.ProductId) ProductId
 		FROM #SportBetType AS sp
-			LEFT JOIN dbo.f_GroupBettype() AS ss ON sp.BetType = ss.bettype
-			LEFT JOIN dbo.f_GroupBettype3rd() AS bt on sp.BetType = bt.bettype
-		GROUP BY ISNULL(COALESCE(ss.GroupTypeId, bt.GroupTypeId), sp.bettype), sp.ProductID
+			LEFT JOIN dbo.Lrf_f_GroupBettype() AS ss ON sp.BetType = ss.bettype
+			LEFT JOIN dbo.Lrf_f_GroupProduct() AS lf on lf.ProductId = sp.ProductId
+		GROUP BY ISNULL(ss.GroupTypeId, sp.BetType), ISNULL(lf.GroupProductId,lf.ProductId)
 	)
 	INSERT INTO @BetType (BetType, ProductID)
 	SELECT DISTINCT BetType, ProductID

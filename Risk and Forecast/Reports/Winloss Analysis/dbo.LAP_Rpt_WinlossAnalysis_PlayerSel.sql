@@ -47,6 +47,7 @@ AS
 		- 20230815@Bobby: Enhance search username by prefix [RedmineID: #192721]
 		- 20230703@Bobby: Enhance perf - bettrans product3rd filtering [RedmineID: #195292]
 		- 20231122@Evan: Handle betfrom for Jollysports [Redmine: #197192]	
+		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 
 	Param's Explanation:
 		- @SortKey: 0:GroupBy, 1:BetCount, 2:Turnover, 3:NetTurnover, 4:MemWinloss, 5:MemComm, 6:LicWinloss, 7:LicComm, 8:AmtDueToBA, 9:BetEffective, 10:Margin
@@ -239,8 +240,9 @@ BEGIN
 	FROM bodb02.dbo.LAP_f_WinlossAnalysis_BettypeMatrix (@ProductCheck, @SportCheck, @BettypeIdsCheck, @SBBACheck) AS bm
 
 	;WITH CTE_ProductMap AS (
-		SELECT DISTINCT ProductId, Product3rdId
-		FROM #tmpBettype t
+		SELECT DISTINCT ISNULL(lf.ProductId,t.ProductId) AS ProductId
+					  , ISNULL(lf.ProductId,t.Product3rdId) AS Product3rdId
+		FROM #tmpBettype t	LEFT JOIN bodb02.dbo.Lrf_f_GroupProduct() lf ON t.ProductId = lf.GroupProductId
 	)
 	INSERT INTO #ProductSel(ProductId, Product3rdId)
 	SELECT ProductId, Product3rdId
@@ -623,7 +625,8 @@ BEGIN
 						WHEN b.Product3rdId IN (63,69) THEN 0 
 						WHEN @IsViewCOOnlyCheck = 1 AND b.Product3rdId = 0 AND @SBBACheck & 4 = 4 AND b.TicketType = 1 THEN -99 --Cashout 
 						WHEN @IsViewCOOnlyCheck = 1 AND b.Product3rdId = 3 AND @SBBACheck & 8 = 8 AND b.TicketType = 1 THEN -99 --Cashout 
-						ELSE b.Product3rdId 
+						WHEN bt.ProductId = 1 THEN b.Product3rdId
+						ELSE bt.Product3rdId
 					END AS Product3rdIdMix
 			) AS ck
 			CROSS APPLY (SELECT TOP 1 bf.PlatformId FROM @PlatformSel bf WHERE b.betfrom =  bf.BetFrom) AS bf

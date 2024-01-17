@@ -52,6 +52,7 @@ AS
 					- Add input param @ProductList VARCHAR(500)
 					- Don't return BetType, ShowTime, AmountDueTo3rd column anymore
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
+		- 20241701@Evan: Merge VS1, VS2, VS3 as VS only [RedmineID: #199523]
 
 	Param's Explanation:
 		+ @AgentList: XML structure
@@ -97,6 +98,14 @@ BEGIN
 
 	IF @ShowBA = 1
 		SET @ProductList = @ProductList + ',SB'
+		
+	SELECT @ProductList = STRING_AGG(b.ProductPrefix, ',')
+	FROM (
+		SELECT DISTINCT ISNULL(b.ProductPrefix,p.ProductPrefix) AS ProductPrefix
+		FROM STRING_SPLIT(@ProductList, ',') a
+			INNER JOIN dbo.Products p WITH (NOLOCK) ON a.Value = p.ProductPrefix
+			LEFT JOIN dbo.Lrf_f_GroupProduct() b ON p.ProductID = b.GroupProductId
+	) b
 
 	-- Get bettype list
 	DECLARE @BetType TABLE (BetType INT PRIMARY KEY, ProductCode VARCHAR(10), EventType TINYINT)

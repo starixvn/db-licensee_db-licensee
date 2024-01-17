@@ -25,6 +25,7 @@ AS
 		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20231018@Evan: Integrate Saba Reward Risk-free Rebate + add missing bettype 17006 [redmine: #196881]
+		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 
 	Param's Explanation:
 		- @ModeView: TINYINT
@@ -228,14 +229,15 @@ BEGIN
 		FROM [dbo].[f_SportBettypeMatrix_Sel] (0, 0, 0, 2, '','',@IsTest)
 	)
 	INSERT INTO #StatementRpt(ProductId, WinLostDate, Turnover, TotalAmt, Commission)
-	SELECT s.ProductID
+	SELECT ISNULL(lf.GroupProductId, s.ProductID) AS ProductID
 		, @_winlostdate		AS WinLostDate
 		, SUM(b.Turnover)	AS Turnover
 		, SUM(b.WinLost)	AS TotalAmt
 		, SUM(b.PlayerComm)	AS Commission
 	FROM #BetTicket AS b
 		INNER JOIN CTE_SportProduct AS s ON b.bettype = s.bettype
-	GROUP BY s.productId
+		LEFT JOIN dbo.Lrf_f_GroupProduct() lf ON s.ProductId = lf.ProductId
+	GROUP BY ISNULL(lf.GroupProductId, s.ProductID)
 
 	-- Get Data of PayOutTrans for Progressive Jackpot Win
 	UNION

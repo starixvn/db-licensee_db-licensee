@@ -40,6 +40,7 @@ AS
 		- 20230703@Bobby: Enhance perf [RedmineID: #190474]
 		- 20230703@Bobby: Enhance perf - bettrans product3rd filtering [RedmineID: #195292]
 		- 20231122@Evan: Handle betfrom for Jollysports [Redmine: #197192]	
+		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		
 
 	Param's Explanation:
@@ -217,8 +218,9 @@ BEGIN
 	FROM bodb02.dbo.LAP_f_WinlossAnalysis_BettypeMatrix (@ProductCheck, @SportCheck, @BettypeIdsCheck, @SBBACheck) AS bm
 
 	;WITH CTE_ProductMap AS (
-		SELECT DISTINCT ProductId, Product3rdId
-		FROM #tmpBettype t
+		SELECT DISTINCT ISNULL(lf.ProductId,t.ProductId) AS ProductId
+					  , ISNULL(lf.ProductId,t.Product3rdId) AS Product3rdId
+		FROM #tmpBettype t	LEFT JOIN bodb02.dbo.Lrf_f_GroupProduct() lf ON t.ProductId = lf.GroupProductId
 	)
 	INSERT INTO #ProductSel(ProductId, Product3rdId)
 	SELECT ProductId, Product3rdId
@@ -645,7 +647,7 @@ BEGIN
 				WHEN @BreakBy = 3 THEN b.custid 
 				ELSE a.Currency 
 			END AS BreakBy,
-			CASE WHEN @GroupMode IN (4,5) OR @IsViewCOOnlyCheck = 1 THEN ck.Product3rdId ELSE -1 END As ParentKey
+			CASE WHEN @GroupMode IN (4,5) OR @IsViewCOOnlyCheck = 1 THEN ck.Product3rdId ELSE -1 END AS ParentKey
 			----------------------
 			,SUM(b.BetCount) AS BetCount
 			,SUM(b.Turnover) AS Turnover
@@ -675,7 +677,8 @@ BEGIN
 					WHEN b.Product3rdId IN (63,69) THEN 0
 					WHEN @IsViewCOOnlyCheck = 1 AND b.Product3rdId = 0 AND @SBBACheck & 4 = 4 AND b.TicketType = 1 THEN -99 --Cashout 
 					WHEN @IsViewCOOnlyCheck = 1 AND b.Product3rdId = 3 AND @SBBACheck & 8 = 8 AND b.TicketType = 1 THEN -99 --Cashout  
-					ELSE b.Product3rdId 
+					WHEN bt.ProductId = 1 THEN b.Product3rdId
+					ELSE bt.Product3rdId 
 				END AS Product3rdId
 			) AS ck
 			INNER JOIN @PlatformSel bf ON bf.betfrom =  b.BetFrom
@@ -762,7 +765,7 @@ BEGIN
 	-- CHECK: @IsExportExcel OR NOT
 	SELECT @pageOffset = 0, @PageSize = 2147483647 -- INT.Max
 	WHERE @IsExportExcel = 1;
-
+	
 	-- TODO: paging
 	;WITH paging AS (
 		SELECT rIdx, GroupBy, GroupKey, ParentKey

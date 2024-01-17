@@ -15,6 +15,7 @@ AS
 	Revisions:
 		- 20230209@Bobby: Created [RedmineID: #172604]
 		- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465] 
+		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		
 */
 RETURN
@@ -37,7 +38,7 @@ RETURN
 		FROM STRING_SPLIT(@SportCheck, ',')
 	),
 	CTE_SportFilter AS (
-		SELECT saba.SportType
+		SELECT saba.SportType 
 		FROM CTE_SportInput AS f
 		INNER JOIN CTE_SabaSport saba ON saba.SabaSportType = f.sporttype
 		WHERE f.sporttype < 0
@@ -45,7 +46,7 @@ RETURN
 		SELECT sporttype FROM CTE_SportInput
 	),
 	CTE_GroupBettype AS (
-		SELECT Bettype, GroupTypeID FROM bodb02.dbo.f_GroupBettype()
+		SELECT Bettype, GroupTypeID FROM bodb02.dbo.Lrf_f_GroupBettype()
 		--UNION ALL 
 		--SELECT Bettype, GroupTypeID FROM bodb02.dbo.f_GroupBettype3rd()
 	),
@@ -104,7 +105,8 @@ RETURN
 			gbt.GroupTypeId
 		FROM CTE_Product p3 WITH(NOLOCK)
 			INNER JOIN bodb02.dbo.Products p WITH(NOLOCK) ON p.ProductPrefix = p3.ProductCode
-			INNER JOIN bodb02.dbo.SportBettypeMatrix m WITH(NOLOCK) ON m.ProductID = p.ProductID
+			LEFT JOIN bodb02.dbo.Lrf_f_GroupProduct() lf ON p.Productid = lf.GroupProductId
+			INNER JOIN bodb02.dbo.SportBettypeMatrix m WITH(NOLOCK) ON m.ProductID = ISNULL(lf.ProductID,p.ProductID)
 			LEFT JOIN CTE_ProductFilter pm ON pm.Code = p3.ProductCode
 			LEFT JOIN CTE_SportFilter sm ON sm.SportType = m.SportType
 			LEFT JOIN CTE_BettypeFilter bm ON bm.bettype = m.BetType
@@ -115,6 +117,7 @@ RETURN
 			AND p.ProductID NOT IN (11, 31, 37) -- NOT Support Saba Promotion, AG-Casino & Exchange
 	) AS tbl
 		LEFT JOIN bodb02.[dbo].[Lrf_f_SelExcludedBetType]() e ON e.BetType = tbl.BetType
+		LEFT JOIN bodb02.dbo.Lrf_f_GroupProduct() lf ON tbl.Productid = lf.Productid AND lf.GroupProductId <> lf.ProductId
 		OUTER APPLY 
 		(
 			SELECT f.Bettype
@@ -124,4 +127,5 @@ RETURN
 		) AS cont
 		WHERE e.BetType IS NULL
 			AND cont.Bettype IS NULL
+			AND  (lf.Productid IS NULL OR ISNULL(@ProductCheck, 'ALL') <> 'ALL') -- exclude product in group product
 	;

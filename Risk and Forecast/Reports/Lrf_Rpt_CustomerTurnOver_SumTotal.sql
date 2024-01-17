@@ -40,6 +40,7 @@ AS
 		- 20220224@Hogan: Integrate Virtual Sports 3 (Leap Gaming)[RedmineID: #145337]
 		- 20220322@Kos: Support Parlay sport [RedmineID: #169282]
 		- 20220714@Hogan: Integrate Volleyball AIO [RedmineID: #175143]
+		- 20241701@Evan: Remove VS3 (old) [RedmineID: #199523]
 */
 
 BEGIN
@@ -201,7 +202,7 @@ BEGIN
 									OR (b.bettype BETWEEN 603 AND 607 OR b.bettype BETWEEN 609 AND 613 OR b.bettype BETWEEN 615 AND 617) -- Basketball bettypes
 									OR b.bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
 									OR b.bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
-									OR bettype BETWEEN 5301 AND 5399 -- Virtual Sport 3
+									OR bettype BETWEEN 5302 AND 5399 -- Virtual Sport 3 (LG)
 									OR bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 									OR bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 									OR (bettype NOT IN (703, 711) AND bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
@@ -370,7 +371,7 @@ BEGIN
 							OR (b.bettype BETWEEN 603 AND 607 OR b.bettype BETWEEN 609 AND 613 OR b.bettype BETWEEN 615 AND 617) -- Basketball bettypes
 							OR b.bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
 							OR b.bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
-							OR bettype BETWEEN 5301 AND 5399 -- Virtual Sport 3
+							OR bettype BETWEEN 5302 AND 5399 -- Virtual Sport 3 (LG)
 							OR bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 							OR bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 							OR (bettype NOT IN (703, 711) AND bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)

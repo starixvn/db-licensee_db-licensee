@@ -94,6 +94,7 @@ AS
 		- 20230708@Evan: Support CN3, INDO & THAI language on LAP [RedmineID: #187132]
 		- 20230801@Evan: Integrate Virtual Sports 3 (Leap Gaming New) [RedmineID: #190908]
 		- 20231120@Evan: Support INDO & THAI language on LAP [RedmineID: #196246]
+		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 
 	Parameter's Explanation:
 		- @ReportBy: 1: daily, 2: monthly
@@ -270,15 +271,9 @@ BEGIN
 
 	INSERT INTO #BettypeID (typeID)
 	SELECT ss.bettype 
-	FROM dbo.f_GroupBettype() ss
+	FROM dbo.Lrf_f_GroupBettype() ss
 		INNER JOIN #BettypeID b ON b.typeid =  ss.GroupTypeId
 	WHERE ss.bettype NOT IN (SELECT typeID FROM #BettypeID)
-
-	INSERT INTO #BettypeID
-	SELECT bt.bettype AS typeID
-	FROM dbo.f_GroupBettype3rd() bt
-		INNER JOIN #BettypeID b ON b.typeid =  bt.GroupTypeId
-	WHERE bt.bettype NOT IN (SELECT typeID FROM #BettypeID)
 
 	INSERT INTO #bettype (typeID, ProductId, EventType)
 	SELECT 
@@ -356,7 +351,6 @@ BEGIN
 				WHEN bt.EventType = 0 THEN CASE
 												WHEN b.bettype = 2799 THEN p.sporttype
 												WHEN bt.ProductID = 63 THEN b.matchid
-												WHEN bt.ProductID = 49 THEN b.matchid
 												WHEN bt.ProductID = 77 THEN b.matchid
 												ELSE 1
 											END
@@ -407,7 +401,7 @@ BEGIN
 			OR (bettype BETWEEN 603 AND 607 OR bettype BETWEEN 609 AND 613 OR bettype BETWEEN 615 AND 617) -- Basketball bettypes
 			OR bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
 			OR bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
-			OR bettype BETWEEN 5301 AND 5399 -- Virtual Sport 3
+			OR bettype BETWEEN 5302 AND 5399 -- Virtual Sport 3 (LG)
 			OR bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 			OR bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 			OR (bettype NOT IN (703, 711) AND bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
@@ -588,9 +582,8 @@ BEGIN
 					ELSE typenamee 
 				END AS typenamee
 			FROM #bettype b
-				LEFT JOIN dbo.f_GroupBettype() ss ON b.typeID 	= ss.bettype
-				LEFT JOIN dbo.f_GroupBettype3rd() ss2 ON b.typeID 	= ss2.bettype
-				INNER JOIN dbo.bettype bt WITH(NOLOCK) ON ISNULL(COALESCE(ss.GroupTypeID, ss2.GroupTypeID), b.typeID) = bt.typeid
+				LEFT JOIN dbo.Lrf_f_GroupBettype() ss ON b.typeID 	= ss.bettype
+				INNER JOIN dbo.bettype bt WITH(NOLOCK) ON ISNULL(ss.GroupTypeID, b.typeID) = bt.typeid
 			GROUP BY 
 				b.typeID
 				,CASE 
@@ -616,14 +609,9 @@ BEGIN
 			, b.currency AS currencyid
 			, b.sporttype
 			, CASE WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) OR (b.bettype BETWEEN 3601 AND 3610) THEN  N'NG - ' + bt.typenamee
-				 WHEN (b.bettype BETWEEN 1201 AND 1299) THEN  N'VS - '+bt.typenamee + CASE WHEN b.bettype = 1204 THEN '(Soccer)'
-																					WHEN b.bettype = 1235 THEN '(Tennis)'
-																					ELSE ''
-																				END
-				WHEN (b.bettype BETWEEN 2701 AND 2829) THEN  N'VS2 - ' + bt.typenamee
-				WHEN b.bettype = 5301 THEN  N'VS3 - ' + bt.typenamee
-				WHEN (b.bettype BETWEEN 5302 AND 5399) THEN  N'LG - ' + bt.typenamee
-				ELSE  bt.typenamee
+				 ELSE  bt.typenamee	+ CASE	WHEN b.bettype = 1204 THEN '(Soccer)' 
+											WHEN b.bettype = 1235 THEN '(Tennis)' 
+											ELSE '' END
 			END AS bettype
 			, SUM(b.betcount)	AS betcount
 			, SUM(b.turnover)	AS turnover
@@ -643,14 +631,9 @@ BEGIN
 			, b.currency
 			, b.sporttype
 			, CASE WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) OR (b.bettype BETWEEN 3601 AND 3610) THEN  N'NG - ' + bt.typenamee
-				WHEN (b.bettype BETWEEN 1201 AND 1299) THEN  N'VS - '+bt.typenamee + CASE WHEN b.bettype = 1204 THEN '(Soccer)'
-																					WHEN b.bettype = 1235 THEN '(Tennis)'
-																					ELSE ''
-																				END
-				WHEN (b.bettype BETWEEN 2701 AND 2829) THEN  N'VS2 - ' + bt.typenamee
-				WHEN b.bettype = 5301 THEN  N'VS3 - ' + bt.typenamee
-				WHEN (b.bettype BETWEEN 5302 AND 5399) THEN  N'LG - ' + bt.typenamee
-				ELSE  bt.typenamee
+				ELSE  bt.typenamee	+ CASE	WHEN b.bettype = 1204 THEN '(Soccer)' 
+											WHEN b.bettype = 1235 THEN '(Tennis)' 
+											ELSE '' END
 			END
 		ORDER BY b.rowno ASC
 

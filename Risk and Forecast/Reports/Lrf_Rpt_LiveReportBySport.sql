@@ -116,6 +116,7 @@ AS
 		- 20231117@Evan: Integrate WE Live Casino [RedmineID: #196573]
 		- 20231206@Evan: Integrate VS3 Sport 179 [RedmineID: #190908]
 		- 20231213@Evan: Integrate Live22 [RedmineID: #197702]
+		- 20241701@Evan: Merge VS, VS2, VS3 as VS only + Remove VS3 (old) [RedmineID: #199523]
 
 	Param's Explanation:
 		@Liveindicator : indicate that whether the report will get live data or not
@@ -185,6 +186,14 @@ BEGIN
 
 	IF @ProductCodes IS NULL
 		SET @ProductCodes = ''
+	
+	SELECT @ProductCodes = STRING_AGG(b.ProductPrefix, ',')
+	FROM (
+		SELECT DISTINCT ISNULL(b.ProductPrefix,p.ProductPrefix) AS ProductPrefix
+		FROM STRING_SPLIT(@ProductCodes, ',') a
+			INNER JOIN dbo.Products p WITH (NOLOCK) ON a.Value = p.ProductPrefix
+			LEFT JOIN dbo.Lrf_f_GroupProduct() b ON p.ProductID = b.GroupProductId
+	) b
 
 	CREATE TABLE #ProductCodes (ProductCode VARCHAR(10))
 
@@ -270,7 +279,7 @@ BEGIN
 		END
 
 		-- exclude PP Prize 4300, 4299, 4298, 4297
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'SLT', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM', 'VS3', 'FGGL', 'MXG','JIG','YB','MGRNG','LG', 'SEA','WE','L22'))
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'SLT', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM', 'FGGL', 'MXG','JIG','YB','MGRNG','LG','SEA','WE','L22'))
 		BEGIN
 			SELECT @sql = @sql + '--Get data from bettrans for non-BA' + CHAR(13)
 
@@ -321,7 +330,6 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 7301 AND 7600 THEN 167 -- CG' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 7701 AND 7799 THEN 172 -- AP' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 7801 AND 7899 THEN 174 -- APM' + CHAR(13)
-								+ 'WHEN b.bettype = 5301 THEN 231 -- VS3' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 7901 AND 7999 THEN 175 -- BTC' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 8201 AND 8299 THEN 176 -- FGGL' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 5401 AND 5499 THEN 237 -- MXG' + CHAR(13)
@@ -383,7 +391,6 @@ BEGIN
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','CG')) = 1 THEN 'OR b.bettype BETWEEN 7301 AND 7600' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','AP')) = 1 THEN 'OR b.bettype BETWEEN 7701 AND 7799' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','APM')) = 1 THEN 'OR b.bettype BETWEEN 7801 AND 7899' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VS3')) = 1 THEN 'OR b.bettype = 5301' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','BTC')) = 1 THEN 'OR b.bettype BETWEEN 7901 AND 7999' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','FGGL')) = 1 THEN 'OR b.bettype BETWEEN 8201 AND 8299' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','MXG')) = 1 THEN 'OR b.bettype BETWEEN 5401 AND 5499' + CHAR(13) ELSE '' END
@@ -434,7 +441,6 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 7301 AND 7600 THEN 167 -- CG' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 7701 AND 7799 THEN 172 -- AP' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 7801 AND 7899 THEN 174 -- APM' + CHAR(13)
-								+ 'WHEN b.bettype = 5301 THEN 231 -- VS3' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 7901 AND 7999 THEN 175 -- BTC' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 8201 AND 8299 THEN 176 -- FGGL' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 5401 AND 5499 THEN 237 -- MXG' + CHAR(13)
@@ -590,7 +596,7 @@ BEGIN
 		END
 
 		--Not BA, -- exclude PP Prize 4300, 4299, 4298, 4297
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'SLT', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM', 'VS3', 'FGGL', 'MXG', 'JIG', 'YB', 'MGRNG', 'LG', 'SEA','WE','L22'))
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'ID', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'SLT', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM', 'FGGL', 'MXG', 'JIG', 'YB', 'MGRNG', 'LG', 'SEA', 'WE','L22'))
 		BEGIN
 			SELECT	@sql = @sql + '--Get data from rpt_Betting for non-BA' + CHAR(13)
 
@@ -628,7 +634,6 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 7301 AND 7600 THEN 167' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 7701 AND 7799 THEN 172' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 7801 AND 7899 THEN 174' + CHAR(13)
-								+ 'WHEN b.bettype = 5301 THEN 231' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 7901 AND 7999 THEN 175' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 8201 AND 8299 THEN 176' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 5401 AND 5499 THEN 237' + CHAR(13)
@@ -689,7 +694,6 @@ BEGIN
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','CG')) = 1 THEN 'OR b.bettype BETWEEN 7301 AND 7600' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','AP')) = 1 THEN 'OR b.bettype BETWEEN 7701 AND 7799' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','APM')) = 1 THEN 'OR b.bettype BETWEEN 7801 AND 7899' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VS3')) = 1 THEN 'OR b.bettype = 5301' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','BTC')) = 1 THEN 'OR b.bettype BETWEEN 7901 AND 7999' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','FGGL')) = 1 THEN 'OR b.bettype BETWEEN 8201 AND 8299' + CHAR(13) ELSE '' END
 								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','MXG')) = 1 THEN 'OR b.bettype BETWEEN 5401 AND 5499' + CHAR(13) ELSE '' END
@@ -734,7 +738,6 @@ BEGIN
 								+ 'WHEN b.bettype BETWEEN 7301 AND 7600 THEN 167' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 7701 AND 7799 THEN 172' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 7801 AND 7899 THEN 174' + CHAR(13)
-								+ 'WHEN b.bettype = 5301 THEN 231' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 7901 AND 7999 THEN 175' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 8201 AND 8299 THEN 176' + CHAR(13)
 								+ 'WHEN b.bettype BETWEEN 5401 AND 5499 THEN 237' + CHAR(13)
