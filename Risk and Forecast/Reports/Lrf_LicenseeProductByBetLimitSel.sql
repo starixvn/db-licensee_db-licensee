@@ -34,11 +34,13 @@ AS
 						 Remove Virtual Sports 3 (Old)
 		- 20231123@Johnson: Add Seal Entertainment [redmine: #180380]				 
 		- 20231124@Luke: Integrate WE Live Casino [Redmine: #196573]
+		- 20240501@Tacy: Integrate Live22 [Redmine: #197702]
+
 */
 
  /*
  EXEC Lrf_LicenseeProductByBetLimitSel
-	@LicenseeID='12bet'
+	@LicenseeName='12bet'
  */
 
 BEGIN
@@ -153,9 +155,9 @@ BEGIN
 			76,--	YeeBet
 			73,--	MG-RNG
 			77,--	Virtual Sports 3
-			80 --	WE Live Casino
+			80, --	WE Live Casino
+			79 --	Live22
 		)
 	ORDER BY ProductID ASC
 END
-
 GO
