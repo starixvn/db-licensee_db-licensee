@@ -1,7 +1,19 @@
-Risk and Forecast\Setting\dbo.Lrf_CustomerUpdMemberBAComm.sql
+Risk and Forecast\Reports\Lrf_Rpt_CustomerBalance.sql
+Risk and Forecast\Reports\Lrf_Rpt_LicWinlossByTimeZone.sql
+Risk and Forecast\Reports\Lrf_Rpt_SubsidiaryWinloss.sql
+Risk and Forecast\Reports\Lrf_Rpt_SubsidiaryWinlossDetail.sql
+Risk and Forecast\Reports\Lrf_Rpt_TurnOver.sql
+Risk and Forecast\Reports\api\Lrf_GetLicenseeTurnoverByPlatform.sql
+Risk and Forecast\Reports\api\Lrf_GetLicenseeWLByPlatform.sql
+Risk and Forecast\Reports\Audit Reports\Lrf_Rpt_LicWinloss_BySourced.sql
+Risk and Forecast\Reports\Lrf_Rpt_CustomerTurnOver.sql
+Risk and Forecast\Reports\Lrf_Rpt_CustomerTurnOver_MonthlyPagination.sql
+Risk and Forecast\Reports\Lrf_Rpt_CustomerTurnOver_Pagination.sql
+Risk and Forecast\Reports\Lrf_Rpt_CustomerTurnOver_SumMember.sql
+Risk and Forecast\Reports\Lrf_Rpt_CustomerTurnOver_SumTotal.sql
 Risk and Forecast\Reports\Lrf_Rpt_LiveReportBySport.sql
-Risk and Forecast\Reports\Winloss Analysis\dbo.LAP_Rpt_WinlossAnalysis_AgencySel.sql
-Risk and Forecast\Reports\Winloss Analysis\dbo.LAP_Rpt_WinlossAnalysis_PlayerSel.sql
+Risk and Forecast\Reports\Lrf_Rpt_LiveReportSummary.sql
+Risk and Forecast\Reports\Lrf_Rpt_LiveReportSummaryDetail.sql
 Risk and Forecast\Reports\Lrf_Rpt_LiveReportWinlossByMatch.sql
 Risk and Forecast\Reports\Lrf_Rpt_MatchWinLoss.sql
 Risk and Forecast\Reports\Lrf_Rpt_MatchWinloss_ExportExcel.sql
@@ -14,6 +26,3 @@ Risk and Forecast\Reports\Winloss Analysis\dbo.LAP_f_WinlossAnalysis_BettypeMatr
 Risk and Forecast\Reports\Winloss Analysis\dbo.LAP_Rpt_WInlossAnalysis_BettypeSel.sql
 Risk and Forecast\Reports\Winloss Analysis\dbo.LAP_Rpt_WinlossAnalysis_AgencySel.sql
 Risk and Forecast\Reports\Winloss Analysis\dbo.LAP_Rpt_WinlossAnalysis_PlayerSel.sql
-Risk and Forecast\Reports\Lrf_Rpt_LicWinloss.sql
-Risk and Forecast\Reports\Lrf_Rpt_LicWinlossDetail.sql
-Risk and Forecast\Reports\Lrf_Rpt_LicWinlossDetail_Ag.sql

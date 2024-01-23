@@ -10,6 +10,8 @@ AS
 
 	Revisions:
 		- 20230209@Bobby: Created [RedmineID: #172604]
+		- 20231214@Evan: Hide Upcoming bettype [RedmineID: #197020]
+
 		
 */
 BEGIN
@@ -75,6 +77,8 @@ BEGIN
 	)
 	SELECT rs.ProductCode, rs.BetType
 	FROM result rs
+		INNER JOIN bettype b WITH (NOLOCK) ON rs.BetType = b.typeid
+	WHERE b.typenamee NOT LIKE '%Upcoming%'
 	ORDER BY rs.ProductID, rs.BetType
 END
 GO
