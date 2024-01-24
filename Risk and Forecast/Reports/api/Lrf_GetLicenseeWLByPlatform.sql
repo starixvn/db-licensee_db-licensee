@@ -42,6 +42,7 @@ AS
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20230330@Evan: LAP - Support betfrom up to nvarchar(4) [RedmineID: #178059]
 		- 20231122@Evan: Handle betfrom for Jollysports [Redmine: #197192]	
+		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		
 	Param explanation:
 		- @ProductList: SB and all products grouped under SB (SB,SLT,...)
@@ -78,21 +79,28 @@ BEGIN
 	END CATCH;
 
 	-- Get sport type list
-	DECLARE @SportType	TABLE (SportType INT PRIMARY KEY, ProductCode VARCHAR(10))
+	DECLARE @SportType	TABLE (SportType INT PRIMARY KEY)
 
-	INSERT INTO @SportType (SportType, ProductCode)
-	SELECT DISTINCT SportType, ProductCode
+	SELECT @ProductList = STRING_AGG(b.ProductPrefix, ',')
+	FROM (
+		SELECT DISTINCT ISNULL(b.ProductPrefix,a.Value) AS ProductPrefix
+		FROM STRING_SPLIT(@ProductList, ',') a
+			LEFT JOIN dbo.Lrf_f_GroupProduct() b ON a.Value = b.GroupProductPrefix
+	) b
+	
+	INSERT INTO @SportType (SportType)
+	SELECT DISTINCT SportType
 	FROM dbo.f_LicWinLoss_ProductSportType_Sel(@ProductList)
 
 	-- Get bettype list
-	DECLARE @BetType TABLE (BetType INT PRIMARY KEY, ProductCode VARCHAR(10))
+	DECLARE @BetType TABLE (BetType INT PRIMARY KEY)
 
 	DECLARE @IsTest BIT = 0
 
 	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
 
-	INSERT INTO @BetType (BetType, ProductCode)
-	SELECT DISTINCT BetType, ProductPrefix
+	INSERT INTO @BetType (BetType)
+	SELECT DISTINCT BetType
 	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
 	WHERE BetType NOT IN (901, 902, 903, 904)
 
@@ -201,5 +209,6 @@ BEGIN
 	DROP TABLE #Exchange;
 	DROP TABLE #WinLoss;
 	DROP TABLE #TempAg;
+	DROP TABLE #PlatformList;
 END
 GO

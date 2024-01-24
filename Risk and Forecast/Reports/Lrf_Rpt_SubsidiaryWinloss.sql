@@ -39,6 +39,7 @@ AS
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20221207@Evan: Support Saba E-Sports PinGoal [RedmineID: #181224]
 		- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465]
+		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 
 	Param's Explanation:
 		+ @MoveBetsDay: The day we move tickets to bettrans14
@@ -119,17 +120,26 @@ BEGIN
 	IF @ShowBA = 1
 		SET @ProductList = @ProductList + ',SB'
 
+	SELECT @ProductList = STRING_AGG(b.ProductPrefix, ',')
+	FROM (
+		SELECT DISTINCT ISNULL(b.ProductPrefix,a.Value) AS ProductPrefix
+		FROM STRING_SPLIT(@ProductList, ',') a
+			LEFT JOIN dbo.Lrf_f_GroupProduct() b ON a.Value = b.GroupProductPrefix
+	) b
+
 	-- Insert Bettype
 	INSERT INTO #BettypeProduct (BetType, ProductCode)		-- Don't have ProductCode IN (BT, CO)
-	SELECT DISTINCT BetType, ProductPrefix
-	FROM dbo.f_SportBettypeMatrix_Sel (0, 0, 0, 2, '', @ProductList, @IsTest)
+	SELECT DISTINCT BetType, ISNULL(p.GroupProductPrefix, s.ProductPrefix)
+	FROM dbo.f_SportBettypeMatrix_Sel (0, 0, 0, 2, '', @ProductList, @IsTest) s
+		LEFT JOIN dbo.Lrf_f_GroupProduct() p ON s.ProductID = p.ProductId
 	WHERE BetType NOT IN (901, 902, 903, 904, 911, 912, 913, 914)
-			AND Bettype NOT IN (SELECT BetType FROM @ExcludedBetType e WHERE e.ProductCode = ProductPrefix)
+			AND Bettype NOT IN (SELECT BetType FROM @ExcludedBetType e WHERE e.ProductCode = s.ProductPrefix)
 
 	-- Insert Sport Type
 	INSERT INTO #SporttypeProduct (SportType, ProductCode)		-- Don't have ProductCode IN (BT, CO)
-	SELECT DISTINCT SportType, ProductCode
-	FROM dbo.f_LicWinLoss_ProductSportType_Sel(@ProductList)
+	SELECT DISTINCT SportType, ISNULL(p.GroupProductPrefix, s.ProductCode)
+	FROM dbo.f_LicWinLoss_ProductSportType_Sel(@ProductList) s 
+		LEFT JOIN dbo.Lrf_f_GroupProduct() p ON s.ProductID = p.ProductId
 	WHERE SportType NOT IN (150, 173)
 	-----End Get SportBettypeMatrix
 

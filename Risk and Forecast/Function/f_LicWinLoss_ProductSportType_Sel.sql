@@ -56,6 +56,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 		- 20231107@Evan: Integrate SEAL Entertainment [RedmineID: #180648]
 		- 20231117@Evan: Integrate WE Live Casino [RedmineID: #196573]
 		- 20231213@Evan: Integrate Live22 [RedmineID: #197702]
+		- 20241701@Evan: Remove VS3 (old) [RedmineID: #199523]
 
 */
 RETURNS TABLE
@@ -100,7 +101,6 @@ RETURN
 					(62, 'CG', 167, 0),		-- Creative Gaming
 					(67, 'AP', 172, 0),		-- AdvantPlay
 					(68, 'APM', 174, 0),	-- AdvantPlay Mini
-					(49, 'VS3', 231, 0),	-- Virtual Sports 3 (old)
 					(69, 'BTC', 175, 0),	-- Bitcoin
 					(70, 'FGGL', 176, 0),	-- FGG
 					(60, 'MXG', 237, 0),	-- MaxGame

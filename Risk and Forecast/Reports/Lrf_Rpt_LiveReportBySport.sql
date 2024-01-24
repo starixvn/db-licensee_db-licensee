@@ -189,10 +189,9 @@ BEGIN
 	
 	SELECT @ProductCodes = STRING_AGG(b.ProductPrefix, ',')
 	FROM (
-		SELECT DISTINCT ISNULL(b.ProductPrefix,p.ProductPrefix) AS ProductPrefix
+		SELECT DISTINCT ISNULL(b.ProductPrefix,a.Value) AS ProductPrefix
 		FROM STRING_SPLIT(@ProductCodes, ',') a
-			INNER JOIN dbo.Products p WITH (NOLOCK) ON a.Value = p.ProductPrefix
-			LEFT JOIN dbo.Lrf_f_GroupProduct() b ON p.ProductID = b.GroupProductId
+			LEFT JOIN dbo.Lrf_f_GroupProduct() b ON a.Value = b.GroupProductPrefix
 	) b
 
 	CREATE TABLE #ProductCodes (ProductCode VARCHAR(10))

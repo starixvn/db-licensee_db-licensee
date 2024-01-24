@@ -351,7 +351,6 @@ BEGIN
 				WHEN bt.EventType = 0 THEN CASE
 												WHEN b.bettype = 2799 THEN p.sporttype
 												WHEN bt.ProductID = 63 THEN b.matchid
-												WHEN bt.ProductID = 77 THEN b.matchid
 												ELSE 1
 											END
 				WHEN bt.ProductID = 69 THEN 175
@@ -568,7 +567,7 @@ BEGIN
 	BEGIN
 		WITH CTE_Bettype AS
 		(
-			SELECT b.typeID
+			SELECT bt.typeID AS GrouptypeID, b.typeID
 				,CASE 
 					WHEN @Langkey = 'zh-CN'		AND ISNULL(bt.typenamecn, '')		<> '' THEN bt.typenamecn
 					WHEN @Langkey = 'zh-TW'		AND ISNULL(bt.typenamec_uni, '')	<> '' THEN bt.typenamec_uni
@@ -585,7 +584,7 @@ BEGIN
 				LEFT JOIN dbo.Lrf_f_GroupBettype() ss ON b.typeID 	= ss.bettype
 				INNER JOIN dbo.bettype bt WITH(NOLOCK) ON ISNULL(ss.GroupTypeID, b.typeID) = bt.typeid
 			GROUP BY 
-				b.typeID
+				bt.typeID, b.typeID
 				,CASE 
 					WHEN @Langkey = 'zh-CN'	AND ISNULL(bt.typenamecn, '')		<> '' THEN bt.typenamecn
 					WHEN @Langkey = 'zh-TW'	AND ISNULL(bt.typenamec_uni, '')	<> '' THEN bt.typenamec_uni
@@ -608,10 +607,8 @@ BEGIN
 			, b.nickname
 			, b.currency AS currencyid
 			, b.sporttype
-			, CASE WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) OR (b.bettype BETWEEN 3601 AND 3610) THEN  N'NG - ' + bt.typenamee
-				 ELSE  bt.typenamee	+ CASE	WHEN b.bettype = 1204 THEN '(Soccer)' 
-											WHEN b.bettype = 1235 THEN '(Tennis)' 
-											ELSE '' END
+			, CASE WHEN (bt.GrouptypeID BETWEEN 81 AND 120) OR (bt.GrouptypeID BETWEEN 8101 AND 8120) OR (bt.GrouptypeID BETWEEN 3601 AND 3610) THEN  N'NG - ' + bt.typenamee
+				 ELSE  bt.typenamee
 			END AS bettype
 			, SUM(b.betcount)	AS betcount
 			, SUM(b.turnover)	AS turnover
@@ -630,10 +627,8 @@ BEGIN
 			, b.nickname
 			, b.currency
 			, b.sporttype
-			, CASE WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) OR (b.bettype BETWEEN 3601 AND 3610) THEN  N'NG - ' + bt.typenamee
-				ELSE  bt.typenamee	+ CASE	WHEN b.bettype = 1204 THEN '(Soccer)' 
-											WHEN b.bettype = 1235 THEN '(Tennis)' 
-											ELSE '' END
+			, CASE WHEN (bt.GrouptypeID BETWEEN 81 AND 120) OR (bt.GrouptypeID BETWEEN 8101 AND 8120) OR (bt.GrouptypeID BETWEEN 3601 AND 3610) THEN  N'NG - ' + bt.typenamee
+				ELSE  bt.typenamee
 			END
 		ORDER BY b.rowno ASC
 
@@ -658,6 +653,7 @@ BEGIN
 	DROP TABLE #custData
 	DROP TABLE #tempSumTotal
 	DROP TABLE #tempBettrans
+	DROP TABLE #tmpParlay
 
 	--SET duration time
 	SET @Duration = DATEDIFF(MS, @startTime, GETDATE())

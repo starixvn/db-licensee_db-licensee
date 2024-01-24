@@ -80,7 +80,7 @@ BEGIN
 				) AS SBBACheck
 		) AS sbba 
 		WHERE p.SportType NOT IN (150, 173, 27) --exclude free games & hide Cricket(27)
-			AND  lf.ProductId IS NULL -- exclude product in group product
+			AND  (lf.ProductId IS NULL OR ISNULL(@ProductCodes, 'ALL') <> 'ALL') -- exclude product in group product
 			AND (ISNULL(@ProductCodes, 'ALL') = 'ALL' OR ck.HasValue = 1 )
 	)
 	SELECT ProductID, ProductName, ProductCode, SportType, SportName 

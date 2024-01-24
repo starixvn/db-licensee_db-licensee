@@ -23,6 +23,7 @@ Revisions:
 	- 20181210@Joseph: Integrate Happy 5 for NumberGame [RedmineID: #103698]
 	- 20230928@Evan: Integrate Virtual Sports 3 (Leap Gaming New) [RedmineID: #190908]
 	- 20231206@Evan: Integrate VS3 Sport 179 [RedmineID: #190908]
+	- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 */
 
 BEGIN
@@ -30,7 +31,6 @@ BEGIN
 
 	DECLARE @ShowNG BIT
 		  , @ShowVS BIT
-		  , @ShowVS2 BIT
 
 	SELECT @isShowAll =
 					   CASE @isShowAll
@@ -96,7 +96,6 @@ BEGIN
 	BEGIN
 		SELECT @ShowNG = 0
 			 , @ShowVS = 0
-			 , @ShowVS2 = 0
 
 		IF EXISTS (SELECT 1 FROM bodb_licensee.dbo.LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID = @LicenseeID
 			   AND ProductID = 2)
@@ -106,18 +105,14 @@ BEGIN
 			   AND ProductID = 5)
 			SET @ShowVS = 1
 
-		IF EXISTS (SELECT 1 FROM bodb_licensee.dbo.LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID = @LicenseeID
-			   AND ProductID = 27)
-			SET @ShowVS2 = 1
-
 		IF @ShowNG = 0
 			DELETE FROM @Result WHERE Sporttype IN (161, 164)
 
 		IF @ShowVS = 0
-			DELETE FROM @Result WHERE Sporttype BETWEEN 180 AND 189
+		BEGIN
+			DELETE FROM @Result WHERE Sporttype BETWEEN 180 AND 199
+		END
 
-		IF @ShowVS2 = 0
-			DELETE FROM @Result WHERE Sporttype BETWEEN 190 AND 199
 	END
 
 	DELETE @Result WHERE Sporttype IN (219,178,179)

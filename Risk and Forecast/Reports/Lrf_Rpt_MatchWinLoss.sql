@@ -95,10 +95,9 @@ BEGIN
 
 	SELECT @ProductList = STRING_AGG(b.ProductPrefix, ',')
 	FROM (
-		SELECT DISTINCT ISNULL(b.ProductPrefix,p.ProductPrefix) AS ProductPrefix
+		SELECT DISTINCT ISNULL(b.ProductPrefix,a.Value) AS ProductPrefix
 		FROM STRING_SPLIT(@ProductList, ',') a
-			INNER JOIN dbo.Products p WITH (NOLOCK) ON a.Value = p.ProductPrefix
-			LEFT JOIN dbo.Lrf_f_GroupProduct() b ON p.ProductID = b.GroupProductId
+			LEFT JOIN dbo.Lrf_f_GroupProduct() b ON a.Value = b.GroupProductPrefix
 	) b
 		
 	DECLARE @BetType TABLE (BetType INT PRIMARY KEY, ProductCode VARCHAR(10), EventType TINYINT)
@@ -108,10 +107,11 @@ BEGIN
 	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
 
 	INSERT INTO @BetType (BetType, ProductCode, EventType)
-	SELECT DISTINCT BetType, ISNULL(p1.ProductPrefix, s.ProductPrefix), EventType
+	SELECT DISTINCT BetType
+				  , ISNULL(p.GroupProductPrefix, s.ProductPrefix)
+				  , EventType
 	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '',  @ProductList, @IsTest) s
-		LEFT JOIN dbo.Lrf_f_GroupProduct() p ON s.ProductID = p.ProductId
-		LEFT JOIN dbo.Lrf_f_GroupProduct() p1 ON p.GroupProductId = p1.ProductId AND p1.ProductId = p1.GroupProductId
+	LEFT JOIN dbo.Lrf_f_GroupProduct() p ON s.ProductID = p.ProductId
 	WHERE EventType IN (1, 3)
 		AND BetType NOT IN (SELECT BetType FROM dbo.Lrf_f_SelExcludedBetType())
 
