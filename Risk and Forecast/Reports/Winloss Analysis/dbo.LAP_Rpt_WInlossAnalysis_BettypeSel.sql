@@ -41,7 +41,7 @@ BEGIN
 			AND (@LicenseeID IS NULL OR lp.LicenseeID = @LicenseeID)
 	),
 	CTE_GroupBettype AS (
-		SELECT Bettype, GroupTypeID FROM bodb02.dbo.f_GroupBettype()
+		SELECT Bettype, GroupTypeID FROM bodb02.dbo.Lrf_f_GroupBettype()
 		--UNION ALL 
 		--SELECT Bettype, GroupTypeID FROM bodb02.dbo.f_GroupBettype3rd()
 	),
