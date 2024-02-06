@@ -1,7 +1,7 @@
 /*<info serverAlias="DBCUST-bodb_Licensee" executers="wsv_lap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_LicenseeGroupCommDel]
 	@LicenseeID INT,
-	@GroupCommID INT,
+	@GroupDiscountID INT,
 	@UserID INT,
 	@IP varchar(40),
 	@IsRemovePlayercomm BIT,
@@ -43,7 +43,7 @@ AS
 		- 20230314@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 		- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
 		- 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
-		
+		- 20240202@Johnson: Restructure Commission [redmine:#179088]
 	Param's Explanation:
 
 */
@@ -58,7 +58,9 @@ BEGIN
 	DECLARE @LogSPData VARCHAR(MAX)
 	DECLARE @TrackingValue2 VARCHAR(MAX)
 	DECLARE @IsexistMember BIT = 0
-
+	
+	DECLARE @tblSettings TABLE(SportType SMALLINT, BetType SMALLINT, Discount DECIMAL(9,8))
+		
 	DECLARE @SBComm DECIMAL(9,8), 
 		@NGComm DECIMAL(9,8),
 		@RNGComm DECIMAL(9,8),
@@ -103,7 +105,7 @@ BEGIN
 	
 	IF @IsRemovePlayercomm = 1
 	BEGIN
-		SET @custID_cnt = (SELECT COUNT(1) FROM LicenseeCustComm WITH (NOLOCK) WHERE LicenseeID = @LicenseeID AND GroupCommID = @GroupCommID)
+		SET @custID_cnt = (SELECT COUNT(1) FROM LicenseeCustDiscount WITH (NOLOCK) WHERE LicenseeID = @LicenseeID AND GroupDiscountID = @GroupDiscountID)
 		
 		IF @custID_cnt > 100000
 		BEGIN
@@ -114,8 +116,8 @@ BEGIN
 		END
 	END
 	IF NOT EXISTS(
-		SELECT TOP 1 1 FROM dbo.LicenseeGroupComm WITH (NOLOCK)
-		WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID
+		SELECT TOP 1 1 FROM dbo.LicenseeGroupDiscount WITH (NOLOCK)
+		WHERE LicenseeID = @LicenseeID AND GroupDiscountID = @GroupDiscountID
 	)
 	BEGIN
 		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN 'This Group does not exist!'
@@ -165,11 +167,13 @@ BEGIN
 			@GroupColor=color,
 			@GroupName=GroupName,
 			@IsDefault=IsDefault
-		FROM dbo.LicenseeGroupComm WITH (NOLOCK)
+		FROM dbo.LicenseeGroupDiscount WITH (NOLOCK)
 		WHERE LicenseeID = @LicenseeID 
-			AND ID = @GroupCommID
+			AND GroupDiscountID = @GroupDiscountID
 		
-		IF @IsResetDefault=0 AND EXISTS(SELECT TOP 1 1 FROM dbo.LicenseeGroupComm WITH (NOLOCK) WHERE LicenseeID = @LicenseeID AND  IsDefault=1 AND IsActive = 1 AND ID=@GroupCommID)
+		INSERT INTO @tblSettings
+		
+		IF @IsResetDefault=0 AND EXISTS(SELECT TOP 1 1 FROM dbo.LicenseeGroupComm WITH (NOLOCK) WHERE LicenseeID = @LicenseeID AND  IsDefault=1 AND IsActive = 1 AND GroupDiscountID=@GroupDiscountID)
 		BEGIN
 			SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN 'This is the default group. Do you want to proceed?'
 														ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200017,@Langkey) 
@@ -180,7 +184,7 @@ BEGIN
 		IF @IsRemovePlayercomm=0
 		BEGIN
 			UPDATE dbo.LicenseeGroupComm WITH (ROWLOCK,UPDLOCK) SET IsActive = 0
-			WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID
+			WHERE LicenseeID = @LicenseeID AND GroupDiscountID = @GroupDiscountID
 			
 			DECLARE @TempCustID AS TABLE (CustID INT,IsFinished BIT)
 			DECLARE @TempList_batch AS TABLE (CustID INT)
@@ -189,7 +193,7 @@ BEGIN
 			SELECT ls.custid
 			FROM dbo.LicenseeCustComm ls WITH (NOLOCK)
 				INNER JOIN CustDB.dbo.Customer c WITH (NOLOCK) ON ls.CustID = c.custid
-			WHERE LicenseeID = @LicenseeID AND GroupCommID = @GroupCommID
+			WHERE LicenseeID = @LicenseeID AND GroupDiscountID = @GroupDiscountID
 			
 			IF @@ROWCOUNT > 0
 			BEGIN
@@ -211,12 +215,12 @@ BEGIN
 									FROM @TempList_batch
 									FOR XML PATH('')
 									),1,1,'')
-					--Update GroupcommID = 0 for LicenseeCustComm
+					--Update GroupDiscountID = 0 for LicenseeCustComm
 					BEGIN TRY
 						EXEC dbo.Lrf_ExecRep_00
 								@strCustId = @strCustID,
 								@LicenseeID = @LicenseeID,
-								@GroupCommID = @GroupCommID,
+								@GroupDiscountID = @GroupDiscountID,
 								@isClearGroupComm = 1
 								
 					END TRY
@@ -231,7 +235,7 @@ BEGIN
 		ELSE IF @IsRemovePlayercomm=1
 		BEGIN
 			UPDATE dbo.LicenseeGroupComm WITH (ROWLOCK,UPDLOCK) SET IsActive = 0
-			WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID AND IsActive=1		
+			WHERE LicenseeID = @LicenseeID AND GroupDiscountID = @GroupDiscountID AND IsActive=1		
 			
 			--get list of affected Customers
 			SELECT @StrCustID=''
@@ -239,7 +243,7 @@ BEGIN
 			--Remove commission of players in group
 			SET @IsexistMember = (SELECT TOP (1) 1 
 								FROM LicenseeCustComm ls WITH (NOLOCK)
-								WHERE LicenseeID = @LicenseeID AND GroupCommID = @GroupCommID)
+								WHERE LicenseeID = @LicenseeID AND GroupDiscountID = @GroupDiscountID)
 						
 			IF @IsexistMember = 1			
 			BEGIN
@@ -248,7 +252,7 @@ BEGIN
 					@LicenseeID=@LicenseeID,
 					@StrCustID='',
 					@UserID=@UserID,
-					@GroupCommID=0,
+					@GroupDiscountID=0,
 					@SBComm=0,
 					@NGComm=0,
 					@RNGComm=0,
@@ -319,7 +323,7 @@ BEGIN
 					@MgRNGComm				= 0,
 
 					@isClearGroupComm = 1,
-					@ClearGroupCommGroupID = @GroupCommID,
+					@ClearGroupCommGroupID = @GroupDiscountID,
 					@IsUpdateGroupComm = 1,
 					@IP=@IP,
 					@ErrCode=@ErrCode OUTPUT,
@@ -335,7 +339,7 @@ BEGIN
 		SET @endRun = GETDATE()
 		SET @duration  = datediff (millisecond,@startRun,@endRun)	
 		
-		SELECT @LogSPData = '<Lrf_LicenseeGroupCommDel GroupCommID="'+ COALESCE(CAST(@GroupCommID as VARCHAR(50)),SPACE(1)) + '" ' +
+		SELECT @LogSPData = '<Lrf_LicenseeGroupCommDel GroupDiscountID="'+ COALESCE(CAST(@GroupDiscountID as VARCHAR(50)),SPACE(1)) + '" ' +
 		'LicenseeID="'+ COALESCE(CAST(@LicenseeID as VARCHAR(50)),SPACE(1)) + '" ' +
 		'GroupName="'+ COALESCE(CAST(@GroupName as VARCHAR(100)),SPACE(1)) + '" ' +
 		'SBComm="'+ COALESCE(CAST(@SBComm as VARCHAR(50)),SPACE(1)) + '" ' +
@@ -384,7 +388,7 @@ BEGIN
 		'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
 		'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(8000)),SPACE(1))+ '" />'
 
-		SELECT @TrackingValue2 = '<Lrf_LicenseeGroupCommDel GroupCommID="'+ COALESCE(CAST(@GroupCommID as VARCHAR(50)),SPACE(1)) + '" ' +
+		SELECT @TrackingValue2 = '<Lrf_LicenseeGroupCommDel GroupDiscountID="'+ COALESCE(CAST(@GroupDiscountID as VARCHAR(50)),SPACE(1)) + '" ' +
 		'LicenseeID="'+ COALESCE(CAST(@LicenseeID as VARCHAR(50)),SPACE(1)) + '" ' +
 		'GroupName="'+ COALESCE(CAST(@GroupName as VARCHAR(100)),SPACE(1)) + '" ' +
 		'SBComm="'+ COALESCE(CAST(@SBComm as VARCHAR(50)),SPACE(1)) + '" ' +
