@@ -46,9 +46,7 @@ RETURN
 		SELECT sporttype FROM CTE_SportInput
 	),
 	CTE_GroupBettype AS (
-		SELECT Bettype, GroupTypeID FROM bodb02.dbo.Lrf_f_GroupBettype()
-		--UNION ALL 
-		--SELECT Bettype, GroupTypeID FROM bodb02.dbo.f_GroupBettype3rd()
+		SELECT Bettype, GroupTypeID FROM bodb02.dbo.Lrf_f_GroupBettype()	
 	),
 	CTE_BettypeInput AS (
 		SELECT CAST(value AS INT) AS Bettype 

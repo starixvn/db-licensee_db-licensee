@@ -25,6 +25,7 @@ AS
 		- 20210916@Kos: New SP [RedmineID: #159939]
 		- 20220106@Kos: Support search by username [RedmineID: #165926]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
+		- 20241701@Evan: Update f_GroupBettype to Lrf_f_GroupBettype [RedmineID: #199523]
 
 	Param's Explanation:
 		- @StatusIdList: status ID list separated by ','
@@ -97,8 +98,8 @@ BEGIN
 	INSERT INTO @SportBetType (BetType, ProductCode, EventType)
 	SELECT DISTINCT BetType, ProductPrefix, EventType
 	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
-	WHERE BetType IN (	SELECT Bettype FROM dbo.f_GroupBettype() WHERE GroupTypeId = @BetType
-						UNION SELECT GroupTypeId FROM dbo.f_GroupBettype() WHERE bettype = @BetType
+	WHERE BetType IN (	SELECT Bettype FROM dbo.Lrf_f_GroupBettype() WHERE GroupTypeId = @BetType
+						UNION SELECT GroupTypeId FROM dbo.Lrf_f_GroupBettype() WHERE bettype = @BetType
 						UNION SELECT @BetType)
 
 	DECLARE @Data TABLE (

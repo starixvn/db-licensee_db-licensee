@@ -42,8 +42,6 @@ BEGIN
 	),
 	CTE_GroupBettype AS (
 		SELECT Bettype, GroupTypeID FROM bodb02.dbo.Lrf_f_GroupBettype()
-		--UNION ALL 
-		--SELECT Bettype, GroupTypeID FROM bodb02.dbo.f_GroupBettype3rd()
 	),
 	result AS (
 		SELECT DISTINCT	p.ProductID

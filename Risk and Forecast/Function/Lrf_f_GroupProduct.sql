@@ -15,7 +15,7 @@ AS
 */
 
 RETURN
-	SELECT 5 AS ProductId, 5 AS GroupProductId, 'VS' AS ProductPrefix, 'VS' AS GroupProductPrefix
+	SELECT 5 AS ProductId, 5 AS GroupProductId, CAST('VS' AS VARCHAR(10)) AS ProductPrefix, CAST('VS' AS VARCHAR(10)) AS GroupProductPrefix
 	UNION ALL
 	SELECT 27, 5, 'VS2' , 'VS' 
 	UNION ALL

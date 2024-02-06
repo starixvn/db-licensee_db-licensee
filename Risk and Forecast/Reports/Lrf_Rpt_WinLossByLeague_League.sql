@@ -30,6 +30,7 @@ AS
 		- 20221207@Evan: Support Saba E-Sports PinGoal [RedmineID: #181224]
 		- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465]
 		- 20230708@Evan: Support CN3, INDO & THAI language on LAP [RedmineID: #187132]
+		- 20241701@Evan: Update f_GroupBettype to Lrf_f_GroupBettype [RedmineID: #199523]
 
 	Param's Explanation:
 		- @SportTypeList: sporttype list separated by ','
@@ -127,7 +128,7 @@ BEGIN
 		AND BetType NOT BETWEEN 801 AND 806
 		AND (@BetTypeList = 'All'
 			OR ',' + @BetTypeList + ',' LIKE '%,' + CAST(BetType AS VARCHAR(5)) + ',%'
-			OR BetType IN (SELECT Bettype FROM dbo.f_GroupBettype() WHERE ',' + @BetTypeList + ',' LIKE '%,' + CAST(GroupTypeId AS VARCHAR(5)) + ',%'))
+			OR BetType IN (SELECT Bettype FROM dbo.Lrf_f_GroupBettype() WHERE ',' + @BetTypeList + ',' LIKE '%,' + CAST(GroupTypeId AS VARCHAR(5)) + ',%'))
 	
 	IF @SportTypeList <> 'All'
 	BEGIN
