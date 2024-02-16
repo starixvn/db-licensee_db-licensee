@@ -13,6 +13,7 @@ AS
 		- 20231214@Evan: Hide Upcoming bettype [RedmineID: #197020]
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20240306@Evan: Remove checking Enabled in SportBettypeMatrix [RedmineID: #201944]
+		- 20240216@Evan: Integrate Saba Play [RedmineID: #198245]
 
 		
 */
@@ -53,13 +54,14 @@ BEGIN
 				ELSE p.ProductCode 
 			END AS ProductCode
 		FROM CTE_Product3rd AS p
+		LEFT JOIN (SELECT DISTINCT ProductID,RefProductID FROM ProductSiteConfig  WITH(NOLOCK)) psc ON psc.RefProductID = p.ProductID
 		LEFT JOIN bodb02.dbo.Lrf_f_GroupProduct() lf ON p.ProductID = lf.GroupProductId
 		OUTER APPLY (
 			SELECT TOP 1 1 AS HasValue 
 			FROM CTE_Filter AS t
 			CROSS APPLY (SELECT value FROM STRING_SPLIT(p.ProductCode, ',') AS t2 WHERE t2.value = t.Code ) AS t2
 		) AS ck
-		INNER JOIN dbo.SportBettypeMatrix m ON m.ProductID = ISNULL(lf.ProductID,p.ProductID)
+		INNER JOIN dbo.SportBettypeMatrix m ON m.ProductID = COALESCE(psc.ProductID,lf.ProductID,p.ProductID) 
 		LEFT JOIN CTE_GroupBettype gbt ON gbt.bettype = m.bettype
 		LEFT JOIN bodb02.[dbo].[Lrf_f_SelExcludedBetType]() e ON e.BetType = m.BetType
 		OUTER APPLY (

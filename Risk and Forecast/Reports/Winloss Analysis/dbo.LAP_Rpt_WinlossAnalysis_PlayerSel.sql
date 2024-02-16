@@ -53,6 +53,7 @@ AS
 		- 20240304@Evan: Grant execute new acc [RedmineID: #201283]
 		- 20240410@Eddie: change metadata 'bodbLicenseeNet,wsv_lap,wsv_alp' to 'wsv_lap,wsv_alp' [RedmineID: #202935]
 		- 20240506@Bobby: Cashout separation [RedmineID: #200269]
+		- 20240216@Evan: Integrate Saba Play [RedmineID: #198245]
 
 	Param's Explanation:
 		- @SortKey: 0:GroupBy, 1:BetCount, 2:Turnover, 3:NetTurnover, 4:MemWinloss, 5:MemComm, 6:LicWinloss, 7:LicComm, 8:AmtDueToBA, 9:BetEffective, 10:Margin
@@ -175,7 +176,7 @@ BEGIN
 	DROP TABLE IF EXISTS #AgencySel;
 	DROP TABLE IF EXISTS #BetTypeSel;
 	DROP TABLE IF EXISTS #ProductSel;
-	CREATE TABLE #AgencySel	(recommend INT PRIMARY KEY, Currency INT);
+	CREATE TABLE #AgencySel	(recommend INT PRIMARY KEY, Currency INT, SiteID INT);
 	CREATE TABLE #BetTypeSel (ProductCode VARCHAR(10), Bettype INT, ProductId INT);
 	CREATE TABLE #ProductSel (ProductId INT, Product3rdId INT);
 	
@@ -186,9 +187,11 @@ BEGIN
 			,t.c.value('@Currency', 'INT') AS Currency
 		FROM @AgentList.nodes('/ROOT/Agent') AS t(c)
 	)
-	INSERT INTO #AgencySel(recommend, Currency)
-	SELECT a.recommend, Currency
-	FROM AgencySel a;
+	INSERT INTO #AgencySel(recommend, Currency, SiteID)
+	SELECT a.recommend, a.Currency, s.siteid
+	FROM AgencySel a
+		INNER JOIN dbo.Customer c WITH (NOLOCK) ON c.custid = a.recommend
+ 		INNER JOIN DBCUST.CUSTDB.dbo.site s WITH (NOLOCK)ON s.site = c.site
 
 	-- TODO: Bettype selection
 	;WITH BettypeSel AS (
@@ -311,7 +314,7 @@ BEGIN
 
 	--TODO: Player selection
 	DROP TABLE IF EXISTS #playerSel;
-	CREATE TABLE #playerSel (custid INT PRIMARY KEY, Currency INT);
+	CREATE TABLE #playerSel (custid INT PRIMARY KEY, Currency INT, SiteID INT);
 	IF (
 		@IsVIPOnlyCheck = 1
 		OR @CustClassCheck IS NOT NULL
@@ -321,8 +324,8 @@ BEGIN
 	BEGIN
 		SET @SearchUsernameCheck = IIF(LEN(@SearchUsernameCheck) > 0, REPLACE(@SearchUsernameCheck, '_', '[_]'), @SearchUsernameCheck);
 		-- TODO: Search player
-		INSERT INTO #playerSel(custid, Currency)
-		SELECT c.CustID, ag.Currency
+		INSERT INTO #playerSel(custid, Currency, SiteID)
+		SELECT c.CustID, ag.Currency, ag.SiteID
 		FROM bodb02.dbo.vw_Customer c WITH(NOLOCK)
 		INNER JOIN #AgencySel ag ON ag.recommend = c.recommend
 		INNER JOIN bodb02.dbo.custInfo ci WITH(NOLOCK) ON ci.custid = c.custid
@@ -550,15 +553,27 @@ BEGIN
 			FROM bodb02.dbo.bettransRnG b WITH(NOLOCK)
 				INNER JOIN #tmpBettype s ON s.Bettype = b.gameID AND s.RefTable = 1
 				INNER JOIN #playerSel a ON a.custid = b.custid
+				OUTER APPLY (
+					SELECT c.SiteID
+						 , c.ProductID
+						 , c.RefProductID
+						 , c.AffectedDate
+						 , CASE WHEN s.ProductId = c.RefProductID AND b.winlostdate < c.AffectedDate THEN 0 
+								WHEN s.ProductId = c.ProductID AND b.winlostdate >= c.AffectedDate THEN 0
+								ELSE 1 END isVaild
+					FROM ProductSiteConfig c WITH(NOLOCK)
+					WHERE c.SiteID = a.SiteID AND (s.ProductId = c.ProductID OR s.ProductId = c.RefProductID)
+				) p
 			WHERE b.winlostdate BETWEEN @rptFromDate AND @rptToDate
 				AND ',' + @StatusCheck + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
 				AND (',' + @LiveIds + ',' LIKE '%,0,%')
 				AND 1 = CASE 
 						WHEN s.Product3rdId IN (42) AND s.Bettype IN (1698,1699) AND b.ProductID <> 150 THEN 1 
-						WHEN s.Product3rdId IN (66) AND s.Bettype IN (3898,3899) AND b.ProductID <> 173 THEN 1
+						WHEN s.Product3rdId IN (66,82) AND s.Bettype IN (3898,3899) AND b.ProductID <> 173 THEN 1
 						WHEN s.IsPriceBettype > 0 THEN 0
 						ELSE 1
 					END
+				AND 1 = CASE WHEN p.isVaild IS NULL AND s.ProductId = 82 THEN 0 ELSE ISNULL(p.isVaild, 1) END
 			GROUP BY
 				b.CustId, b.recommend, a.currency, b.winlostdate, s.Product3rdId, b.productID
 				,ISNULL(s.GroupTypeId, s.bettype), b.betfrom, b.StatusId
@@ -658,7 +673,7 @@ BEGIN
 			,SUM(ABS(b.Winlost) * e.Rate) AS BaseBetEffective
 		 FROM bodb_LicenseeReport.dbo.rptLicenseeWinloss b WITH(NOLOCK)
 			INNER JOIN #playerSel a ON a.custid = b.CustId
-			INNER JOIN #tmpBettype bt ON bt.Bettype = b.Bettype
+			INNER JOIN #tmpBettype bt ON bt.Bettype = b.Bettype AND bt.Product3rdId = b.Product3rdId
 			INNER JOIN #tmpExchange e on e.ExchangeID =  a.Currency AND b.winlostdate BETWEEN e.FromDate AND e.ToDate
 			LEFT JOIN #tmpSabaSporttype saba ON saba.Sporttype = b.Sporttype AND saba.LeagueGroupID = b.LeagueGroupId
 			OUTER APPLY (
@@ -686,7 +701,7 @@ BEGIN
 			AND (ck.Sporttype <> 0 AND (@SportIDs IS NULL OR  ',' + @SportIDs + ',' LIKE '%,' + CAST(ck.Sporttype AS VARCHAR(10)) + ',%'))
 			AND 1 = CASE 
 						WHEN b.Product3rdId IN (42) AND b.Bettype IN (1698,1699) AND b.Sporttype <> 150 THEN 1 
-						WHEN b.Product3rdId IN (66) AND b.Bettype IN (3898,3899) AND b.Sporttype <> 173 THEN 1
+						WHEN b.Product3rdId IN (66,82) AND b.Bettype IN (3898,3899) AND b.Sporttype <> 173 THEN 1
 						WHEN bt.IsPriceBettype > 0 THEN 0
 						ELSE 1
 					END

@@ -13,6 +13,7 @@ AS
 		- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465]
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20240304@Evan: Grant execute new acc [RedmineID: #201283]
+		- 20240216@Evan: Integrate Saba Play [RedmineID: #198245]
 
 		
 */
@@ -51,12 +52,13 @@ BEGIN
 		FROM bodb_licensee.dbo.Product3rd p3 WITH(NOLOCK)
 		INNER JOIN bodb_licensee.dbo.LicenseeProduct3rd lp WITH(NOLOCK) ON p3.ProductID = lp.ProductID
 		LEFT JOIN bodb02.dbo.Products p WITH(NOLOCK) ON p.ProductPrefix = p3.ProductPrefix 
-		LEFT JOIN bodb02.dbo.Lrf_f_GroupProduct() lf ON p.Productid = lf.GroupProductId
-		LEFT JOIN bodb02.dbo.SportBettypeMatrix m WITH(NOLOCK) ON m.ProductID = ISNULL(lf.ProductID,p.ProductID)
+		LEFT JOIN (SELECT DISTINCT ProductID,RefProductID FROM ProductSiteConfig  WITH(NOLOCK)) psc ON psc.RefProductID = p3.Productid
+		LEFT JOIN bodb02.dbo.Lrf_f_GroupProduct() lf ON p.Productid = lf.GroupProductId 
+		LEFT JOIN bodb02.dbo.SportBettypeMatrix m WITH(NOLOCK) ON m.ProductID = COALESCE(psc.ProductID,lf.ProductID,p.ProductID) 
 		LEFT JOIN bodb02.dbo.Sports s WITH(NOLOCK) ON S.SportType = m.SportType
 		WHERE p3.Enabled = 1
 			AND (@LicenseeID IS NULL OR lp.LicenseeID = @LicenseeID)
-	),
+),
 	result AS (
 		SELECT DISTINCT
 			CASE WHEN p.ProductID IN (0,63,69) THEN 0 ELSE p.ProductID END AS ProductID,

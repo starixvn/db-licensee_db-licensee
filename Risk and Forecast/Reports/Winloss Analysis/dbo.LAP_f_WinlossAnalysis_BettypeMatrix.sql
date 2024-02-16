@@ -17,6 +17,7 @@ AS
 		- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465] 
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20240304@Evan: Grant execute new acc [RedmineID: #201283]
+		- 20240216@Evan: Integrate Saba Play [RedmineID: #198245]
 		
 */
 RETURN
@@ -117,8 +118,9 @@ RETURN
 			gbt.GroupTypeId
 		FROM CTE_Product p3 WITH(NOLOCK)
 			INNER JOIN bodb02.dbo.Products p WITH(NOLOCK) ON p.ProductPrefix = p3.ProductCode
-			LEFT JOIN bodb02.dbo.Lrf_f_GroupProduct() lf ON p.Productid = lf.GroupProductId
-			INNER JOIN bodb02.dbo.SportBettypeMatrix m WITH(NOLOCK) ON m.ProductID = ISNULL(lf.ProductID,p.ProductID)
+			LEFT JOIN (SELECT DISTINCT ProductID,RefProductID FROM ProductSiteConfig WITH(NOLOCK)) psc ON psc.RefProductID = p3.Productid
+			LEFT JOIN bodb02.dbo.Lrf_f_GroupProduct() lf ON p.ProductId = lf.GroupProductId
+			INNER JOIN bodb02.dbo.SportBettypeMatrix m WITH (NOLOCK) ON m.ProductId = COALESCE(psc.ProductID,lf.ProductID,p.ProductID) 
 			LEFT JOIN CTE_ProductFilter pm ON pm.Code = p3.ProductCode
 			LEFT JOIN CTE_SportFilter sm ON sm.SportType = m.SportType
 			LEFT JOIN CTE_BettypeFilter bm ON bm.bettype = m.BetType

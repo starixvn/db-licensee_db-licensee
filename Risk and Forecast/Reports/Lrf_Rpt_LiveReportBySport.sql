@@ -160,7 +160,7 @@ BEGIN
 	DROP TABLE IF EXISTS #tmpBettype
 	DROP TABLE IF EXISTS #tmpVS
 
-	CREATE TABLE #TempAg (CustId INT, Currency INT)
+	CREATE TABLE #TempAg (CustId INT, Currency INT, SiteID INT)
 
 	CREATE CLUSTERED INDEX CIX_TempAg ON #TempAg (CustId);
 
@@ -183,9 +183,15 @@ BEGIN
 	BEGIN TRY
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT,@AgentList
 
+		;WITH AgencySel AS (
+			SELECT AgentId, Currency
+			FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId INT, Currency INT) AS Data
+		)
 		INSERT INTO #TempAg (custID, currency)
-		SELECT AgentId, Currency
-		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId INT, Currency INT) AS Data
+		SELECT a.AgentId, a.Currency, s.siteid
+		FROM AgencySel a
+			INNER JOIN dbo.Customer c WITH (NOLOCK) ON c.custid = a.recommend
+	 		INNER JOIN dbo.site s WITH (NOLOCK)ON s.site = c.site
 
 		EXEC sp_xml_removedocument @DocHandler
 	END TRY
@@ -265,6 +271,17 @@ BEGIN
 		FROM bettrans b WITH (NOLOCK)
 			INNER JOIN #TempAg t ON b.recommend = t.custid
 			INNER JOIN #tmpBettype bt ON b.bettype = bt.Bettype
+			OUTER APPLY (
+					SELECT c.SiteID
+						 , c.ProductID
+						 , c.RefProductID
+						 , c.AffectedDate
+						 , CASE WHEN s.ProductId = c.RefProductID AND b.winlostdate < c.AffectedDate THEN 0 
+								WHEN s.ProductId = c.ProductID AND b.winlostdate >= c.AffectedDate THEN 0
+								ELSE 1 END isVaild
+					FROM ProductSiteConfig c WITH(NOLOCK)
+					WHERE c.SiteID = a.SiteID AND (s.ProductId = c.ProductID OR s.ProductId = c.RefProductID)
+				) p
 			LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON b.recommend = BA.recommend AND b.TransId = BA.TransId 
 			LEFT JOIN [match] m WITH (NOLOCK) ON b.matchid = m.matchid 
 			LEFT JOIN [bodb02].[dbo].[Match3rd] m3rd WITH(NOLOCK) ON m3rd.Match3rdId = b.matchid
@@ -282,7 +299,8 @@ BEGIN
 					ELSE 1 END
 			AND 1 = CASE WHEN b.bettype BETWEEN 1611 AND 1697 AND b.matchid = 150 THEN 0
 						WHEN b.bettype BETWEEN 3801 AND 3899 AND b.matchid = 173 THEN 0
-					ELSE 1 END	
+					ELSE 1 END
+			AND 1 = CASE WHEN p.isVaild IS NULL AND s.ProductId = 82 THEN 0 ELSE ISNULL(p.isVaild, 1) END	
 		GROUP BY b.winlostdate
 				, t.Currency
 				, CASE 

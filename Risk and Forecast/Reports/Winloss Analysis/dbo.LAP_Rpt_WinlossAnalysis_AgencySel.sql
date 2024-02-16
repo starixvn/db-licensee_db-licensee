@@ -44,6 +44,7 @@ AS
 		- 20240304@Evan: Grant execute new acc [RedmineID: #201283]
 		- 20240410@Eddie: change metadata 'bodbLicenseeNet,wsv_lap,wsv_alp' to 'wsv_lap,wsv_alp' [RedmineID: #202935]
 		- 20240506@Bobby: Cashout separation [RedmineID: #200269]
+		- 20240216@Evan: Integrate Saba Play [RedmineID: #198245]
 		
 
 	Param's Explanation:
@@ -150,7 +151,7 @@ BEGIN
 	DROP TABLE IF EXISTS #AgencySel;
 	DROP TABLE IF EXISTS #BetTypeSel;
 	DROP TABLE IF EXISTS #ProductSel;
-	CREATE TABLE #AgencySel	(recommend INT PRIMARY KEY, Currency INT);
+	CREATE TABLE #AgencySel	(recommend INT PRIMARY KEY, Currency INT,SiteID INT);
 	CREATE TABLE #BetTypeSel (ProductCode VARCHAR(10), Bettype INT, ProductId INT);
 	CREATE TABLE #ProductSel (ProductId INT, Product3rdId INT);
 
@@ -160,9 +161,11 @@ BEGIN
 			,t.c.value('@Currency', 'INT') AS Currency
 		FROM @AgentList.nodes('/ROOT/Agent') AS t(c)
 	)
-	INSERT INTO #AgencySel(recommend, Currency)
-	SELECT a.recommend, Currency
-	FROM AgencySel a;
+	INSERT INTO #AgencySel(recommend, Currency, SiteID)
+	SELECT a.recommend, a.Currency, s.siteid
+	FROM AgencySel a
+		INNER JOIN dbo.Customer c WITH (NOLOCK) ON c.custid = a.recommend
+ 		INNER JOIN dbo.site s WITH (NOLOCK)ON s.site = c.site
 
 	-- TODO: Bettype selection
 	;WITH BettypeSel AS (
@@ -416,6 +419,7 @@ BEGIN
 				END,
 				CASE WHEN @GroupMode IN (5) THEN ck.Product3rdIdMix ELSE -1 END
 		END
+		
 		ELSE
 		BEGIN
 			-- TODO: full filtering
@@ -605,15 +609,27 @@ BEGIN
 			FROM bodb02.dbo.bettransRnG b WITH(NOLOCK)
 				INNER JOIN #tmpBettype s ON s.Bettype = b.gameID AND s.RefTable = 1
 				INNER JOIN #AgencySel a ON a.recommend = b.recommend
+				OUTER APPLY (
+					SELECT c.SiteID
+						 , c.ProductID
+						 , c.RefProductID
+						 , c.AffectedDate
+						 , CASE WHEN s.ProductId = c.RefProductID AND b.winlostdate < c.AffectedDate THEN 0 
+								WHEN s.ProductId = c.ProductID AND b.winlostdate >= c.AffectedDate THEN 0
+								ELSE 1 END isVaild
+					FROM ProductSiteConfig c WITH(NOLOCK)
+					WHERE c.SiteID = a.SiteID AND (s.ProductId = c.ProductID OR s.ProductId = c.RefProductID)
+				) p
 			WHERE b.winlostdate BETWEEN @rptFromDate AND @rptToDate
 				AND ',' + @StatusCheck + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
 				AND (',' + @LiveIds + ',' LIKE '%,0,%')
 				AND 1 = CASE 
 						WHEN s.Product3rdId IN (42) AND s.Bettype IN (1698,1699) AND b.ProductID <> 150 THEN 1 
-						WHEN s.Product3rdId IN (66) AND s.Bettype IN (3898,3899) AND b.ProductID <> 173 THEN 1
+						WHEN s.Product3rdId IN (66,82) AND s.Bettype IN (3898,3899) AND b.ProductID <> 173 THEN 1
 						WHEN s.IsPriceBettype > 0 THEN 0
 						ELSE 1
-					END
+					END 
+				AND 1 = CASE WHEN p.isVaild IS NULL AND s.ProductId = 82 THEN 0 ELSE ISNULL(p.isVaild, 1) END
 			GROUP BY
 				b.CustId, b.recommend, a.currency, b.winlostdate, s.Product3rdId, b.productID
 				,ISNULL(s.GroupTypeId, s.bettype), b.betfrom, b.StatusId
@@ -660,8 +676,8 @@ BEGIN
 				ELSE b.currency 
 			END,
 			CASE WHEN @GroupMode IN (4, 5) OR @IsViewCOOnlyCheck = 1 THEN b.Product3rdId ELSE -1 END
+			
 		--HAVING SUM(b.NetTurnover) > 0;
-
 	END
 
 	IF @FromDate <= @MovebetDay -- get sum data from @MovebetDay vs backward
@@ -715,7 +731,7 @@ BEGIN
 			,SUM(ABS(b.Winlost) * e.Rate) AS BaseBetEffective
 		 FROM bodb_LicenseeReport.dbo.rptLicenseeWinloss b WITH(NOLOCK)
 			INNER JOIN #AgencySel a ON a.recommend = b.recommend
-			INNER JOIN #tmpBettype bt ON bt.Bettype = b.Bettype
+			INNER JOIN #tmpBettype bt ON bt.Bettype = b.Bettype AND bt.Product3rdId = b.Product3rdId
 			INNER JOIN #tmpExchange e on e.ExchangeID =  a.Currency AND b.winlostdate BETWEEN e.FromDate AND e.ToDate
 			LEFT JOIN #tmpSabaSporttype saba ON saba.Sporttype = b.Sporttype AND saba.LeagueGroupID = b.LeagueGroupId AND b.winlostdate >= ISNULL(saba.CutOffDate,b.winlostdate)
 			CROSS APPLY (
@@ -739,12 +755,11 @@ BEGIN
 			AND (b.sporttype <> 0 AND (@SportIDs IS NULL OR  ',' + @SportIDs + ',' LIKE '%,' + CAST(ISNULL(saba.SabaSportType, b.Sporttype) AS VARCHAR(10)) + ',%'))
 			AND 1 = CASE 
 						WHEN b.Product3rdId IN (42) AND b.Bettype IN (1698,1699) AND b.Sporttype <> 150 THEN 1 
-						WHEN b.Product3rdId IN (66) AND b.Bettype IN (3898,3899) AND b.Sporttype <> 173 THEN 1
+						WHEN b.Product3rdId IN (66,82) AND b.Bettype IN (3898,3899) AND b.Sporttype <> 173 THEN 1
 						WHEN bt.IsPriceBettype > 0 THEN 0
 						ELSE 1
 					END
 			AND NOT (b.Product3rdId IN (0, 3) AND b.TicketType = 1 AND @CashoutModeCheck = 1) --- exclude CO from SB & BA
-
 		GROUP BY 
 			CASE 
 				WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, b.winlostdate)
@@ -806,7 +821,7 @@ BEGIN
 			WHEN @GroupBy = 9 THEN c.Username
 			ELSE '' END
 	;
-
+	
 	TODO_OUTPUT:
 	DROP TABLE IF EXISTS #result;
 	-- CHECK: @IsExportExcel OR NOT
@@ -826,8 +841,7 @@ BEGIN
 						CASE WHEN @SortKey	= 0 AND @GroupBy IN (8,9) THEN sr.GroupValue ELSE '' END ASC,
 						CASE WHEN @SortKey <> 0 AND @SortType = 1 THEN sr.SortValue ELSE 0 END DESC,
 						CASE WHEN @SortKey <> 0 AND @SortType = 0 THEN sr.SortValue ELSE 0 END ASC,
-					t.GroupOrder ASC
-			) AS rIdx
+					t.GroupOrder ASC) AS rIdx
 			FROM (
 				SELECT DISTINCT FORMAT(DATEADD(HOUR, rpt.GroupBy, @BaseDate), 'yyyy-MM-dd') AS GroupBy, rpt.GroupBy AS GroupKey, 0 AS ParentKey
 					,rpt.GroupBy AS GroupOrder
