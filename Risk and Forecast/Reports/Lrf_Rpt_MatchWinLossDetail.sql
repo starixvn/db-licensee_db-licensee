@@ -140,6 +140,7 @@ BEGIN
 		EventType		TINYINT,
 		SportType		SMALLINT,
 		BetType			SMALLINT,
+		ProductCode		VARCHAR(10),
 		LiveIndicator	BIT,
 		Currency		INT,
 		BetCount		INT,
@@ -170,6 +171,7 @@ BEGIN
 			EventType,
 			SportType,
 			BetType,
+			ProductCode,
 			LiveIndicator,
 			Currency,
 			BetCount,
@@ -209,6 +211,7 @@ BEGIN
 				ELSE 0
 			END AS SportType,
 			b.bettype,
+			bt.ProductCode,
 			CASE
 				WHEN bt.ProductCode = 'NG' THEN b.liveindicator
 				ELSE 0
@@ -241,6 +244,7 @@ BEGIN
 					ELSE 1
 				END <> 0
 		GROUP BY
+			bt.ProductCode,
 			b.bettype,
 			CASE
 				WHEN bt.EventType IN (1, 3) THEN b.matchid
@@ -301,6 +305,7 @@ BEGIN
 			EventType,
 			SportType,
 			BetType,
+			ProductCode,
 			LiveIndicator,
 			Currency,
 			BetCount,
@@ -339,6 +344,7 @@ BEGIN
 				ELSE 0
 			END AS SportType,
 			b.bettype,
+			bt.ProductCode,
 			CASE
 				WHEN bt.ProductCode = 'NG' THEN b.liveindicator
 				ELSE 0
@@ -371,6 +377,7 @@ BEGIN
 					ELSE 1
 				END <> 0
 		GROUP BY
+			bt.ProductCode,
 			b.bettype,
 			CASE
 				WHEN bt.EventType IN (1, 3) THEN b.matchid
@@ -507,6 +514,7 @@ BEGIN
 				LeagueId,
 				SportType,
 				BetType,
+				ProductCode,
 				LiveIndicator
 			FROM @Data
 		) AS Temp
@@ -533,6 +541,7 @@ BEGIN
 				CASE
 					WHEN ISNULL(ss.bettype, 0) <> 0 THEN ss.GroupTypeId ELSE b.BetType
 				END AS BetType,
+				b.ProductCode,
 				b.LiveIndicator,
 				SUM(b.BetCount) AS BetCount,
 				CAST(SUM(b.Turnover		* e.Rate) AS MONEY) AS Turnover,
@@ -559,6 +568,7 @@ BEGIN
 				CASE
 					WHEN ISNULL(ss.bettype, 0) <> 0 THEN ss.GroupTypeId ELSE b.BetType
 				END,
+				b.ProductCode,
 				b.LiveIndicator
 			) wl
 	WHERE wl.RowNum BETWEEN @RowStart AND @RowEnd
