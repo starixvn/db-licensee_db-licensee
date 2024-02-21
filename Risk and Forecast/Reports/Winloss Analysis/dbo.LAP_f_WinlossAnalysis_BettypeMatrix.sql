@@ -46,7 +46,7 @@ RETURN
 		SELECT sporttype FROM CTE_SportInput
 	),
 	CTE_GroupBettype AS (
-		SELECT Bettype, GroupTypeID FROM bodb02.dbo.Lrf_f_GroupBettype()	
+		SELECT Bettype, GroupTypeID FROM bodb02.dbo.f_GroupBettype()	
 	),
 	CTE_BettypeInput AS (
 		SELECT CAST(value AS INT) AS Bettype 
@@ -108,7 +108,7 @@ RETURN
 			LEFT JOIN CTE_ProductFilter pm ON pm.Code = p3.ProductCode
 			LEFT JOIN CTE_SportFilter sm ON sm.SportType = m.SportType
 			LEFT JOIN CTE_BettypeFilter bm ON bm.bettype = m.BetType
-			LEFT JOIN CTE_GroupBettype gbt ON gbt.bettype = m.Bettype
+			LEFT JOIN bodb02.dbo.Lrf_f_GroupBettype() gbt ON gbt.bettype = m.Bettype
 		WHERE (@ProductCheck IS NULL OR pm.Code IS NOT NULL)
 			AND (@SportCheck IS NULL OR sm.SportType > 0)
 			AND (@BettypeCheck IS NULL OR bm.bettype > 0)

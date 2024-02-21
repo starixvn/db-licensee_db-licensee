@@ -4,7 +4,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerTurnOver]
 	@AgentList		VARCHAR(MAX)
 	,@Username		VARCHAR(50)		= ''
 	,@Product		VARCHAR(MAX)
-	,@BetType		VARCHAR(MAX)
+	,@BetType		XML
 	,@CurrencyId	INT
 	,@FromDate		SMALLDATETIME
 	,@ToDate		SMALLDATETIME
@@ -100,7 +100,7 @@ AS
 		- @ReportBy: 1: daily, 2: monthly
 		- @FilterBy: 1: Win, 2: Loss, 3: Draw
 		- @SportID: Sport type ID
-		- @bettype: Bet type ID
+		- @bettype: <ROOT><Bettype pc="SB" bt="1,3,4,5"/><Bettype pc="VS" bt="1,3,4,5"/></ROOT>
 		- @MoveBetsDay: The day we move tickets to bettrans14
 */
 
@@ -263,27 +263,39 @@ BEGIN
 	
 	CREATE TABLE #BettypeID ( typeID INT)
 	CREATE TABLE #bettype ( typeID INT, ProductId INT, EventType TINYINT)
+	CREATE TABLE #BetTypeSel (ProductCode VARCHAR(10), Bettype INT, ProductId INT);
 
-	INSERT INTO #BettypeID (typeID)
-	SELECT value 
-	FROM STRING_SPLIT(@Bettype,',') AS b
-	OPTION(MAXRECURSION 0)
+	-- TODO: Bettype selection
+	;WITH BettypeSel AS (
+		SELECT t.c.value('@pc', 'VARCHAR(10)') AS ProductCode
+			,t.c.value('@bt', 'VARCHAR(MAX)') AS Bettype
+		FROM @BetType.nodes('/ROOT/Bettype') AS t(c)
+		)
+	INSERT INTO #BetTypeSel(ProductCode, Bettype)
+	SELECT a.ProductCode, b.value
+	FROM BettypeSel a
+	CROSS APPLY (
+		SELECT value FROM STRING_SPLIT (a.Bettype,',') 
+	) b;
 
-	INSERT INTO #BettypeID (typeID)
-	SELECT ss.bettype 
-	FROM dbo.Lrf_f_GroupBettype() ss
-		INNER JOIN #BettypeID b ON b.typeid =  ss.GroupTypeId
-	WHERE ss.bettype NOT IN (SELECT typeID FROM #BettypeID)
+	UPDATE a 
+	SET a.ProductId = p.ProductID
+	FROM #BetTypeSel a 
+		INNER JOIN Products p WITH(NOLOCK) ON a.ProductCode = p.ProductPrefix
 
+	;WITH cte_bettype AS (
+		SELECT DISTINCT sb.BetType, sb.ProductID, sb.EventType
+		FROM #BetTypeSel b
+			LEFT JOIN dbo.Lrf_f_GroupProduct() lfgp ON lfgp.GroupProductId = b.ProductId
+			LEFT JOIN bodb02.dbo.Lrf_f_GroupBettype() l ON l.GroupTypeId = b.Bettype
+			INNER JOIN @SportBettype sb ON sb.BetType = ISNULL(l.Bettype,b.Bettype) AND ISNULL(lfgp.ProductId, b.ProductId) = sb.ProductId
+	)
 	INSERT INTO #bettype (typeID, ProductId, EventType)
-	SELECT 
-		b.typeID
-		, sp.ProductId
-		, sp.EventType
-	FROM #BettypeID b
-		INNER JOIN @SportBettype sp ON b.typeid =  sp.bettype
+	SELECT BetType, ProductID, EventType 
+	FROM cte_bettype
 
 	DROP TABLE #BettypeID
+	DROP TABLE #BetTypeSel
 
 	SELECT @Username 	=  LTRIM(RTRIM(ISNULL(@Username,'')))
 		, @tempFromDate =  CASE WHEN @FromDate <= @MoveBetsDay THEN DATEADD(DAY,1,@MoveBetsDay)
@@ -466,6 +478,9 @@ BEGIN
 		DELETE b
 		FROM #tempBettrans b
 		WHERE NOT EXISTS (SELECT 1 FROM #ProductID p WHERE p.sportId = b.sporttype)
+
+		DROP TABLE #tmpParlay
+
 	END
 
 	GET_SUMTOTAL:
@@ -653,7 +668,6 @@ BEGIN
 	DROP TABLE #custData
 	DROP TABLE #tempSumTotal
 	DROP TABLE #tempBettrans
-	DROP TABLE #tmpParlay
 
 	--SET duration time
 	SET @Duration = DATEDIFF(MS, @startTime, GETDATE())

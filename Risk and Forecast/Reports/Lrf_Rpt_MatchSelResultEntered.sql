@@ -115,7 +115,7 @@ BEGIN
 
 	END
 
-	DELETE @Result WHERE Sporttype IN (219,178,179)
+	DELETE @Result WHERE Sporttype = 219
 
 	SELECT IsToday, EventDate, Sporttype, Entered, NonEntered
 	FROM @Result

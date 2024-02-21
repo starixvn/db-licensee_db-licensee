@@ -122,11 +122,11 @@ BEGIN
 	DECLARE @BetType TABLE (BetType SMALLINT, ProductID INT)
 
 	;WITH CTE_GroupBettype AS (
-		SELECT ISNULL(ss.GroupTypeId, sp.BetType) AS BetType, ISNULL(lf.GroupProductId,lf.ProductId) ProductId
+		SELECT ISNULL(ss.GroupTypeId, sp.BetType) AS BetType, ISNULL(lf.GroupProductId,sp.ProductId) ProductId
 		FROM #SportBetType AS sp
 			LEFT JOIN dbo.Lrf_f_GroupBettype() AS ss ON sp.BetType = ss.bettype
 			LEFT JOIN dbo.Lrf_f_GroupProduct() AS lf on lf.ProductId = sp.ProductId
-		GROUP BY ISNULL(ss.GroupTypeId, sp.BetType), ISNULL(lf.GroupProductId,lf.ProductId)
+		GROUP BY ISNULL(ss.GroupTypeId, sp.BetType), ISNULL(lf.GroupProductId,sp.ProductId)
 	)
 	INSERT INTO @BetType (BetType, ProductID)
 	SELECT DISTINCT BetType, ProductID

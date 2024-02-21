@@ -9,7 +9,7 @@ ALTER PROCEDURE dbo.LAP_Rpt_WinlossAnalysis_AgencySel
 	@BaseCurrency	VARCHAR(10)		= 'EUR',
 	@ProductCodes	VARCHAR(MAX)	= 'ALL', --'SB,NG,etc...'
 	@SportIds		VARCHAR(MAX)	= 'ALL',
-	@BettypeIds		VARCHAR(MAX)	= 'ALL',
+	@BettypeIds		XML,
 	@StatusIds		VARCHAR(1000)	= 'ALL',
 	@PlatformIds	VARCHAR(1000)	= 'ALL',
 	@LiveStatusIds	VARCHAR(1000)	= 'ALL',
@@ -46,6 +46,7 @@ AS
 	Param's Explanation:
 		- @SortKey: 0:GroupBy, 1:BetCount, 2:Turnover, 3:NetTurnover, 4:MemWinloss, 5:MemComm, 6:LicWinloss, 7:LicComm, 8:AmtDueToBA, 9:BetEffective, 10:Margin
 		- @SortType: 0:ASC, 1:DESC
+		- @BettypeIds: <ROOT><Bettype pc="SB" bt="1,3,4,5"/><Bettype pc="VS" bt="1,3,4,5"/></ROOT>
 */
 BEGIN
 	SET NOCOUNT ON;
@@ -87,7 +88,6 @@ BEGIN
 		----------------Default values 
 		@ProductCodes	= IIF(@ProductCodes='ALL', NULL, @ProductCodes),
 		@SportIds		= IIF(@SportIds='ALL', NULL, @SportIds),
-		@BettypeIds		= IIF(@BettypeIds='ALL', NULL, @BettypeIds),
 		@StatusCheck	= IIF(@StatusIds='ALL', '111,112,113,114,115', @StatusIds),
 		@LiveIds		= IIF(@LiveStatusIds='ALL', '0,1,2', @LiveStatusIds),
 		@PlatformCheck	= IIF(@PlatformIds IS NULL, 'ALL', @PlatformIds),
@@ -141,8 +141,10 @@ BEGIN
 	END
 
 	DROP TABLE IF EXISTS #AgencySel;
+	DROP TABLE IF EXISTS #BetTypeSel;
 	DROP TABLE IF EXISTS #ProductSel;
 	CREATE TABLE #AgencySel	(recommend INT PRIMARY KEY, Currency INT);
+	CREATE TABLE #BetTypeSel (ProductCode VARCHAR(10), Bettype INT, ProductId INT);
 	CREATE TABLE #ProductSel (ProductId INT, Product3rdId INT);
 
 	-- TODO: Agency selection
@@ -154,6 +156,25 @@ BEGIN
 	INSERT INTO #AgencySel(recommend, Currency)
 	SELECT a.recommend, Currency
 	FROM AgencySel a;
+
+	-- TODO: Bettype selection
+	;WITH BettypeSel AS (
+		SELECT t.c.value('@pc', 'VARCHAR(10)') AS ProductCode
+			,t.c.value('@bt', 'VARCHAR(MAX)') AS Bettype
+		FROM @BettypeIds.nodes('/ROOT/Bettype') AS t(c)
+		)
+	INSERT INTO #BetTypeSel(ProductCode, Bettype)
+	SELECT a.ProductCode, b.value
+	FROM BettypeSel a
+	CROSS APPLY (
+		SELECT value FROM STRING_SPLIT (a.Bettype,',') 
+	) b;
+
+	UPDATE a 
+	SET a.ProductId = p.ProductID
+	FROM #BetTypeSel a 
+		INNER JOIN Products p WITH(NOLOCK) ON a.ProductCode = p.ProductPrefix
+
 
 	--TODO: Status selection -> include half WON/LOSE if any
 	SELECT @StatusCheck = CONCAT(@StatusCheck, IIF(CHARINDEX('112', @StatusCheck) > 0, ',114','')),
@@ -195,7 +216,18 @@ BEGIN
 			@ProductCheck = @ProductCodes;
 
 	--TODO: Convert GroupBettype
-	SELECT @BettypeIdsCheck = @BettypeIds;
+	WITH cte_bettype AS (
+		SELECT ProductCode
+			 , sbm.BetType
+		FROM #BetTypeSel b
+			LEFT JOIN dbo.Lrf_f_GroupProduct() lfgp ON lfgp.GroupProductId = b.ProductId
+			LEFT JOIN bodb02.dbo.Lrf_f_GroupBettype() l ON l.GroupTypeId = b.Bettype
+			INNER JOIN SportBettypeMatrix sbm WITH(NOLOCK) ON sbm.BetType = ISNULL(l.Bettype,b.Bettype) AND ISNULL(lfgp.ProductId, b.ProductId) = sbm.ProductId
+		GROUP BY ProductCode
+			   , sbm.BetType
+	)
+	SELECT @BettypeIdsCheck = STRING_AGG(CAST(BetType AS NVARCHAR(MAX)), ',') 
+	FROM cte_bettype;
 
 	DROP TABLE IF EXISTS #tmpBettype;
 	CREATE TABLE #tmpBettype (
