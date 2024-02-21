@@ -14,6 +14,7 @@ AS
 		- 20181225@Amanda: Select products that licensees do not have [Redmine: #83584]
 		- 20220518@Kos: Change to use STRING_SPLIT [Redmine: #171831]
   	  	- 20230303@Evan: Exclude inactive products [Redmine: 181424]  
+	    - 20241701@Evan: Exclude VS2, VS3, VS4 [RedmineID: #199251]
 */
 
 BEGIN
@@ -40,7 +41,7 @@ BEGIN
 	SELECT p.ProductPrefix, p.ProductName
 	FROM dbo.Product3rd p WITH(NOLOCK)
 		LEFT JOIN @OfferedProduct o ON p.Productid = o.Id
-	WHERE o.Id IS NULL AND p.Enabled = 1
+	WHERE o.Id IS NULL AND p.Enabled = 1 AND p.Productid NOT IN (27,49,77,83)
 
 	IF NOT EXISTS (SELECT 1 FROM @OfferedProduct WHERE Id = 0)
 	BEGIN

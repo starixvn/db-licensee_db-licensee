@@ -14,6 +14,8 @@ AS
 		- 20181225@Amanda: Select products that licensees all have [Redmine: #83584]
 		- 20220518@Kos: Change to use STRING_SPLIT [Redmine: #171831]
       	- 20230303@Evan: Remove inactive products CB, FW, GD, GDG [Redmine: 181424]  
+	    - 20241701@Evan: Exclude VS2, VS3, VS4 [RedmineID: #199251]
+		
 */
 
 BEGIN
@@ -46,7 +48,7 @@ BEGIN
 	SELECT p.ProductPrefix, p.ProductName
 	FROM dbo.Product3rd p WITH(NOLOCK)
 		INNER JOIN @OfferedProduct o ON p.Productid = o.Id
-	WHERE p.Enabled = 1
+	WHERE p.Enabled = 1 AND p.Productid NOT IN (27,49,77,83)
 	IF EXISTS (SELECT 1 FROM @OfferedProduct WHERE Id = 0)
 	BEGIN
 		INSERT INTO @Product (ProductCode, ProductName)
