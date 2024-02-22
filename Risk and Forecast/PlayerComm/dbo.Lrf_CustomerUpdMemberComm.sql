@@ -4,7 +4,10 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm]
 	@LicenseeID INT,
 	@strCustID VARCHAR(MAX) = '',--member
 	@UserID INT,
-	@GroupCommID INT = 0,
+	@GroupDiscountID INT = 0,
+	
+	@DiscountSettings VARCHAR(MAX) = '',
+	
 	@SBComm DECIMAL(9,8)=0,
 	@NGComm DECIMAL(9,8)=0,	
 	@RNGComm DECIMAL(9,8)=0,
@@ -20,9 +23,11 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm]
 	@IsUpdateAllbet BIT = 0,
 	@IsUpdateMacau BIT = 0,
 	@IsUpdatePP BIT = 0,
-	@IsUpdateGroupComm BIT = 0,
+	
+	@IsUpdateGroupComm BIT = 0,	
 	@isClearGroupComm BIT = 0,
 	@ClearGroupCommGroupID INT = 0,
+	
 	--start param of phase 2 
 	@IsUpdateSexyGaming BIT = 0,	
 	@SexyGamingComm DECIMAL(9,8) = 0,
@@ -127,14 +132,14 @@ AS
 		- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
 		- 20230814@Luke: LAP - SEA Localization [Redmine: #187132]
 		- 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
-		
+		- 20240220@Johnson: Restructure Commission [redmine:#179088]
 	Param's Explanation:
 		1. To update a member/batch members without GroupCommID
 EXEC [Lrf_CustomerUpdMemberComm_907] @LicenseeID=xx,@strCustID,xx,@UserID=xx,@SBComm=xx,@NGComm=xx,@RNGComm=xx, @IsUpdateNG=xx,@IsUpdateRNG=xx,@IP=xx,@ErrCode=@ErrCode OUTPUT,@ErrMsg=@ErrMsg OUTPUT
 		2. To update a member/batch members with GroupCommID
-EXEC [Lrf_CustomerUpdMemberComm_907] @LicenseeID=xx,@strCustID,xx,@UserID=xx,@GroupCommID=xx,@SBComm=xx,@NGComm=xx,@RNGComm=xx,@IsUpdateNG=xx,@IsUpdateRNG=xx,@IP=xx,@ErrCode=@ErrCode OUTPUT,@ErrMsg=@ErrMsg OUTPUT
+EXEC [Lrf_CustomerUpdMemberComm_907] @LicenseeID=xx,@strCustID,xx,@UserID=xx,@GroupDiscountID=xx,@SBComm=xx,@NGComm=xx,@RNGComm=xx,@IsUpdateNG=xx,@IsUpdateRNG=xx,@IP=xx,@ErrCode=@ErrCode OUTPUT,@ErrMsg=@ErrMsg OUTPUT
 		3. To update member group without update commission
-EXEC [Lrf_CustomerUpdMemberComm_907] @IsUpdateComm=0,@LicenseeID=xx,@strCustID,xx,@UserID=xx,@GroupCommID=xx,@SBComm=xx,@NGComm=xx,@RNGComm=xx,@IsUpdateNG=xx,@IsUpdateRNG=xx,@IP=xx,@ErrCode=@ErrCode OUTPUT,@ErrMsg=@ErrMsg OUTPUT
+EXEC [Lrf_CustomerUpdMemberComm_907] @IsUpdateComm=0,@LicenseeID=xx,@strCustID,xx,@UserID=xx,@GroupDiscountID=xx,@SBComm=xx,@NGComm=xx,@RNGComm=xx,@IsUpdateNG=xx,@IsUpdateRNG=xx,@IP=xx,@ErrCode=@ErrCode OUTPUT,@ErrMsg=@ErrMsg OUTPUT
 */
 BEGIN
 	SET NOCOUNT ON;
@@ -142,7 +147,7 @@ BEGIN
 	DECLARE @startRun DATETIME
 	DECLARE @endRun DATETIME
 	DECLARE @duration INT
-	DECLARE	@GroupCommID_tmp INT
+	DECLARE	@GroupDiscountID_tmp INT
 	DECLARE @CustID_Direct INT
 
 	SET @startRun = GETDATE()
@@ -152,7 +157,19 @@ BEGIN
 	DECLARE @LogSPData VARCHAR(4000)
 	DECLARE @LogSPData2 VARCHAR(4000)
 	DECLARE @MacauLicenseeID INT
-
+	
+	DECLARE @tblSettings TABLE(SportType SMALLINT, BetType SMALLINT, Discount DECIMAL(9,8), Discount_Old DECIMAL(9,8))
+	
+	DECLARE @xmlDiscountSettings XML
+	
+	SELECT @xmlDiscountSettings = CAST(@DiscountSettings as XML)
+	
+	INSERT INTO @tblSettings (SportType,BetType,Discount)
+	SELECT t.c.value('@SportType[1]','smallint'),
+		t.c.value('@BetType[1]','smallint'),
+		ISNULL(t.c.value('@Discount[1]','DECIMAL(9,8)'),0)
+	FROM @xmlDiscountSettings.nodes('/Root/r') as T(c)
+		
 	SELECT  @MacauLicenseeID =  LicenseeID
 	FROM dbo.Licensees WITH (NOLOCK)
 	WHERE LicenseeName ='Macaubet'
@@ -168,10 +185,10 @@ BEGIN
 		RETURN
 	END
 
-	IF @GroupCommID>0 --Get SBComm,NGComm,RNGComm From Group
+	IF @GroupDiscountID>0 --Get SBComm,NGComm,RNGComm From Group
 	BEGIN
 		--Check existence
-		IF NOT EXISTS (SELECT 1 FROM dbo.LicenseeGroupComm WITH (NOLOCK) WHERE LicenseeID = @LicenseeID AND id = @GroupCommID AND IsActive=1)
+		IF NOT EXISTS (SELECT 1 FROM dbo.LicenseeGroupDiscount WITH (NOLOCK) WHERE LicenseeID = @LicenseeID AND GroupDiscountID = @GroupDiscountID AND IsActive=1)
 		BEGIN
 			SELECT @ErrCode=101
 			SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN  'The Group Commission does not exist, please check again!'
@@ -180,118 +197,17 @@ BEGIN
 			RETURN
 		END
 	
-		SELECT @SBComm=SBComm
-			,@NGComm=NGComm
-			,@RNGComm=RNGComm
-			,@ParlayComm= ParlayComm
-			,@AllbetComm = AllbetComm
-			,@MacauComm = MacauComm
-			,@PPComm = PPComm
-			-- phase 2
-			,@SexyGamingComm  = SexyGamingComm 
-			,@SpadeGamingComm  = SpadeGamingComm
-			,@KenoComm  = KenoComm
-			,@LotteryComm  = LotteryComm
-			,@VSComm  = VSComm
-			,@TableGameComm  = TableGameComm
-			-- phase 3
-			,@VirtualGamesComm = VirtualGamesComm	
-			,@ArcadiaGamingComm = ArcadiaGamingComm	
-			,@SabaclubComm = SabaclubComm
-			,@SAGamingComm = SAGamingComm	
-			,@PGSoftComm = PGSoftComm	
-			--Phase 4
-			,@WMCasinoComm		= WMCasinoComm
-			,@BigGamingComm		= BigGamingComm
-			,@JokerComm			= JokerComm
-			,@HabaneroComm		= HabaneroComm
-			,@VGamingComm		= VGamingComm
-			--> phase 4.2
-			,@CGComm			= CGComm
-			,@AdvantComm		= AdvantComm
-			,@AdvantMiniComm	= AdvantMiniComm
-			
-			,@MaxGameComm		= MaxGameComm
-			,@FGGComm			= FGGComm
-			,@JiliComm			= JiliComm
-
-			,@YeeBetComm		= YeeBetComm
-			,@MgRNGComm			= MgRNGComm
-		FROM dbo.LicenseeGroupComm WITH (NOLOCK)
-		WHERE LicenseeID = @LicenseeID AND id = @GroupCommID AND IsActive=1
+		UPDATE t
+		SET t.Discount = ISNULL(l.Discount,0)
+		FROM LicenseeGroupDiscountDetail g WITH(NOLOCK)
+			INNER JOIN @tblSettings t ON g.SportType = t.SportType
+										AND g.Bettype = t.Bettype
+		WHERE LicenseeID = @LicenseeID 
+			AND GroupDiscountID = @GroupDiscountID 			
 	END
 
-	SELECT @SBComm=ISNULL(@SBComm,0)
-		,@NGComm=ISNULL(@NGComm,0)
-		,@RNGComm=ISNULL(@RNGComm,0)
-		,@ParlayComm = ISNULL(@ParlayComm,0)
-		,@AllbetComm = ISNULL(@AllbetComm,0)
-		,@MacauComm = ISNULL(@MacauComm,0)
-		,@PPComm = ISNULL(@PPComm,0)
-		-- phase 2
-		,@SexyGamingComm  =  ISNULL (@SexyGamingComm, 0)
-		,@SpadeGamingComm  = ISNULL (@SpadeGamingComm, 0)
-		,@KenoComm  = ISNULL (@KenoComm, 0)
-		,@LotteryComm  = ISNULL (@LotteryComm, 0)
-		,@VSComm  = ISNULL (@VSComm, 0)
-		,@TableGameComm  = ISNULL (@TableGameComm, 0)
-		-- phase 3
-		,@VirtualGamesComm = ISNULL(@VirtualGamesComm,0)	
-		,@ArcadiaGamingComm = ISNULL(@ArcadiaGamingComm,0)
-		,@SabaclubComm = ISNULL(@SabaclubComm,0)
-		,@SAGamingComm = ISNULL(@SAGamingComm,0)	
-		,@PGSoftComm = ISNULL(@PGSoftComm,0)	
-		-- phase 4
-		,@WMCasinoComm = ISNULL(@WMCasinoComm,0)	
-		,@BigGamingComm = ISNULL(@BigGamingComm,0)
-		,@JokerComm = ISNULL(@JokerComm,0)
-		,@HabaneroComm = ISNULL(@HabaneroComm,0)
-		,@VGamingComm = ISNULL(@VGamingComm,0)
-		,@CGComm = ISNULL(@CGComm,0)
-		,@AdvantComm	 = ISNULL(@AdvantComm	,0)
-		,@AdvantMiniComm = ISNULL(@AdvantMiniComm,0)
-		
-		,@MaxGameComm = ISNULL(@MaxGameComm,0)
-		,@FGGComm = ISNULL(@FGGComm,0)
-		,@JiliComm = ISNULL(@JiliComm,0)
-
-		,@YeeBetComm = ISNULL(@YeeBetComm,0)
-		,@MgRNGComm = ISNULL(@MgRNGComm,0)
-
 	--Validate data
-	IF @SBComm>0.15 OR @NGComm>0.15 OR @RNGComm>0.15 OR @ParlayComm > 0.15
-		OR @AllbetComm > 0.15 
-		OR @MacauComm > 0.15 OR @PPComm > 0.15 
-		--OR @GDComm > 0.15 OR @AGComm > 0.15
-		OR @SexyGamingComm  > 0.15
-		OR @SpadeGamingComm  > 0.15
-		OR @KenoComm  > 0.15
-		OR @LotteryComm  > 0.15
-		OR @VSComm  > 0.15
-		OR @TableGameComm  > 0.15
-		--Phase 3
-		OR @VirtualGamesComm > 0.15
-		OR @ArcadiaGamingComm > 0.15
-		OR @SabaclubComm > 0.15
-		OR @SAGamingComm > 0.15
-		OR @PGSoftComm > 0.15
-		--Phase 4
-		OR @WMCasinoComm > 0.15
-		OR @BigGamingComm > 0.15
-		OR @JokerComm > 0.15
-		OR @HabaneroComm > 0.15
-		OR @VGamingComm > 0.15
-		--> phase 4.2
-		OR @CGComm > 0.15
-		OR @AdvantComm > 0.15
-		OR @AdvantMiniComm > 0.15
-		
-		OR @MaxGameComm > 0.15
-		OR @FGGComm > 0.15
-		OR @JiliComm > 0.15
-
-		OR @YeeBetComm > 0.15
-		OR @MgRNGComm > 0.15
+	IF EXISTS (SELECT 1 FROM @tblSettings WHERE Discount > 0.15)	
 	BEGIN
 		SELECT @ErrCode=101
 		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN 'Player commission should not be greater than'
@@ -306,17 +222,17 @@ BEGIN
 	DECLARE @TempList_batch AS TABLE (CustID INT)
 	
 	IF @isClearGroupComm = 1
-		SET @GroupCommID_tmp = @ClearGroupCommGroupID
+		SET @GroupDiscountID_tmp = @ClearGroupCommGroupID
 	ELSE
-		SET @GroupCommID_tmp = @GroupCommID
+		SET @GroupDiscountID_tmp = @GroupDiscountID
 			
 	IF @IsUpdateGroupComm = 1 AND @strCustID = ''
 	BEGIN
 		INSERT INTO @TempCustID (CustID)
 		SELECT ls.custid
-		FROM LicenseeCustComm ls WITH (NOLOCK)
+		FROM LicenseeCustDiscount ls WITH (NOLOCK)
 			INNER JOIN CustDB.dbo.Customer c WITH (NOLOCK) ON ls.CustID = c.custid
-		WHERE ls.LicenseeID = @LicenseeID AND ls.GroupCommID = @GroupCommID_tmp
+		WHERE ls.LicenseeID = @LicenseeID AND ls.GroupCommID = @GroupDiscountID_tmp
 		
 		SELECT @TotalMemCount=@@ROWCOUNT
 		
@@ -332,6 +248,11 @@ BEGIN
 		
 	END
 	
+	SELECT @DiscountSettings = CAST((SELECT SportType,BetType,Discount
+									FROM @tblSettings
+									FOR XML RAW('r'), ROOT('Root')		
+									) AS VARCHAR(MAX))
+	
 	--Call execrep to update player commission
 	IF @IsUpdateComm=1
 	BEGIN
@@ -341,75 +262,7 @@ BEGIN
 			
 			EXEC CustDB.dbo.[Lrf_CustomerUpdMemberComm_Direct] 
 				@CustID=@CustID_Direct
-				,@SBComm=@SBComm
-				,@NGComm=@NGComm
-				,@ParlayComm = @ParlayComm
-				,@AllbetComm=@AllbetComm	
-				,@MacauComm=@MacauComm
-				,@PPComm=@PPComm
-				,@IsUpdateSB = @IsUpdateSB
-				,@IsParlayComm = @IsParlayComm
-				,@IsUpdateNG=@IsUpdateNG			
-				,@IsUpdateAllbet=@IsUpdateAllbet
-				,@IsUpdateMacau=@IsUpdateMacau	
-				,@IsUpdatePP=@IsUpdatePP	
-				---start param of phase 2
-				,@IsUpdateSexyGaming = @IsUpdateSexyGaming	
-				,@SexyGamingComm = @SexyGamingComm
-				,@IsUpdateSpadeGaming = @IsUpdateSpadeGaming	
-				,@SpadeGamingComm =  @SpadeGamingComm
-				,@IsUpdateKeno = @IsUpdateKeno
-				,@KenoComm =  @KenoComm
-				,@IsUpdateLottery  = @IsUpdateLottery	
-				,@LotteryComm =  @LotteryComm
-				,@IsUpdateVS = @IsUpdateVS 	
-				,@VSComm =  @VSComm
-				,@IsUpdateTableGame = @IsUpdateTableGame
-				,@TableGameComm = @TableGameComm
-				---end of phase 2
-				-- phase 3
-				,@IsUpdateVirtualGames = @IsUpdateVirtualGames
-				,@IsUpdateArcadiaGaming = @IsUpdateArcadiaGaming
-				,@IsUpdateSabaclub  = @IsUpdateSabaclub
-				,@IsUpdateSAGaming  = @IsUpdateSAGaming
-				,@IsUpdatePGSoft  = @IsUpdatePGSoft
-				,@VirtualGamesComm = @VirtualGamesComm
-				,@ArcadiaGamingComm = @ArcadiaGamingComm
-				,@SabaclubComm = @SabaclubComm
-				,@SAGamingComm = @SAGamingComm
-				,@PGSoftComm = @PGSoftComm
-				--> phase 4
-				,@IsUpdateWMCasino		= @IsUpdateWMCasino		
-				,@IsUpdateBigGaming		= @IsUpdateBigGaming		
-				,@IsUpdateJoker			= @IsUpdateJoker			
-				,@IsUpdateHabanero		= @IsUpdateHabanero	
-				,@IsUpdateVGaming		= @IsUpdateVGaming	
-				,@IsUpdateCG			= @IsUpdateCG			
-				,@IsUpdateAdvant		= @IsUpdateAdvant		
-				,@IsUpdateAdvantMini	= @IsUpdateAdvantMini		
-				,@WMCasinoComm				= @WMCasinoComm		
-				,@BigGamingComm				= @BigGamingComm		
-				,@JokerComm					= @JokerComm			
-				,@HabaneroComm				= @HabaneroComm		
-				,@VGamingComm				= @VGamingComm
-				--Saba Casino
-				,@IsUpdateSabaCasino = @IsUpdateRNG
-				,@SabaCasinoComm = @RNGComm
-				,@CGComm					= @CGComm		
-				,@AdvantComm				= @AdvantComm		
-				,@AdvantMiniComm			= @AdvantMiniComm		
-				
-				,@IsUpdateMaxGame			= @IsUpdateMaxGame
-				,@IsUpdateFGG				= @IsUpdateFGG
-				,@IsUpdateJili				= @IsUpdateJili
-				,@MaxGameComm				= @MaxGameComm				
-				,@FGGComm					= @FGGComm
-				,@JiliComm					= @JiliComm
-
-				,@IsUpdateYeeBet			= @IsUpdateYeeBet
-				,@IsUpdateMgRNG				= @IsUpdateMgRNG
-				,@YeeBetComm				= @YeeBetComm				
-				,@MgRNGComm					= @MgRNGComm
+				@DiscountSettings = @DiscountSettings
 		END		
 		ELSE
 		BEGIN	
@@ -436,6 +289,7 @@ BEGIN
 			BEGIN				
 				EXEC CustDB.dbo.[Lrf_CustomerUpdMemberComm_Main] 
 					@strCustID=@strBA
+					
 					,@SBComm=0
 					,@NGComm=@NGComm
 					,@ParlayComm = 0	
@@ -598,7 +452,7 @@ BEGIN
 
 	--Write Log
 	-- new value
-	SELECT @LogSPData = 'GroupCommID="'+ COALESCE(CAST(@GroupCommID as VARCHAR(50)),SPACE(1)) + '" ' +
+	SELECT @LogSPData = 'GroupCommID="'+ COALESCE(CAST(@GroupDiscountID as VARCHAR(50)),SPACE(1)) + '" ' +
 		'LicenseeID="'+ COALESCE(CAST(@LicenseeID as VARCHAR(50)),SPACE(1)) + '" ' +
 		'SBComm="'+ COALESCE(CAST(@SBComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'NGComm="'+ COALESCE(CAST(@NGComm as VARCHAR(50)),SPACE(1)) + '" ' +
@@ -767,7 +621,7 @@ BEGIN
 			EXEC dbo.Lrf_ExecRep_00
 					@strCustId = @strCustID,
 					@LicenseeID = @LicenseeID,
-					@GroupCommID = @GroupCommID,
+					@GroupDiscountID = @GroupDiscountID,
 					@MacauLicenseeID = @MacauLicenseeID,
 					@IsUpdateNG = @IsUpdateNG,
 					@IsUpdateRNG = @IsUpdateRNG,	

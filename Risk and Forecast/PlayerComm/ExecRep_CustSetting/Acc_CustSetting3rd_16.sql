@@ -1,109 +1,8 @@
 ﻿/*<info serverAlias="DBCUST-CUSTDB" executers="" viewers="" isFunction="0" isNested="1"></info>*/
 ALTER PROCEDURE [dbo].[Acc_CustSetting3rd_16]
 	@IDs VARCHAR(MAX),
-	@SBComm DECIMAL(9,8) = 0,
-	@NGComm DECIMAL(9,8)=0,	
-	@ParlayComm DECIMAL(9,8)=0,
-	@AllbetComm DECIMAL(9,8)=0,	
-	@MacauComm DECIMAL(9,8)=0,	
-	@PPComm DECIMAL(9,8)=0,
-	@IsUpdateSB BIT = 0,
-	@IsParlayComm BIT = 0,
-	@IsUpdateNG BIT = 0,
-	@IsUpdateAllbet BIT = 0,
-	@IsUpdateMacau BIT = 0,
-	@IsUpdatePP BIT = 0,
-	@AgentID INT = NULL,
-	@AllbetComm_Group DECIMAL(9,8)=0,	
-	@MacauComm_Group DECIMAL(9,8)=0,	
-	@PPComm_Group DECIMAL(9,8)=0,
-	-- start param phase 2 - group param
-	@SexyGamingComm_Group DECIMAL(9,8)=0,
-	@SpadeGamingComm_Group DECIMAL(9,8)=0,
-	@LotteryComm_Group DECIMAL(9,8)=0,
-	@VSComm_Group DECIMAL(9,8)=0,
-	@TableGameComm_Group DECIMAL(9,8)=0,	
-	-- start param phase 2 - new value setting
-	@IsUpdateSexyGaming BIT = 0,	
-	@SexyGamingComm DECIMAL(9,8) = 0,
-	@IsUpdateSpadeGaming BIT = 0,	
-	@SpadeGamingComm DECIMAL(9,8) = 0,
-	@IsUpdateKeno BIT = 0,	
-	@KenoComm DECIMAL(9,8) = 0,
-	@IsUpdateLottery BIT = 0,	
-	@LotteryComm DECIMAL(9,8) = 0,
-	@IsUpdateVS BIT = 0,	
-	@VSComm DECIMAL(9,8) = 0,
-	@IsUpdateTableGame BIT = 0,	
-	@TableGameComm DECIMAL(9,8) = 0,
-	-- phase 3
-	@IsUpdateVirtualGames BIT = 0,	
-	@IsUpdateArcadiaGaming BIT = 0,	
-	@IsUpdateSabaclub BIT = 0,	
-	@IsUpdateSAGaming BIT = 0,	
-	@IsUpdatePGSoft BIT = 0,	
-	@VirtualGamesComm DECIMAL(9,8) = 0,	
-	@ArcadiaGamingComm DECIMAL(9,8) = 0,	
-	@SabaclubComm DECIMAL(9,8) = 0,	
-	@SAGamingComm DECIMAL(9,8) = 0,	
-	@PGSoftComm DECIMAL(9,8) = 0,
-	@VirtualGamesComm_Group DECIMAL(9,8) = 0,	
-	@ArcadiaGamingComm_Group DECIMAL(9,8) = 0,	
-	@SabaclubComm_Group DECIMAL(9,8) = 0,	
-	@SAGamingComm_Group DECIMAL(9,8) = 0,	
-	@PGSoftComm_Group DECIMAL(9,8) = 0,
-	-->phase 4
-	@IsUpdateWMCasino		BIT = 0,
-	@IsUpdateBigGaming		BIT = 0,
-	@IsUpdateJoker			BIT = 0,
-	@IsUpdateHabanero		BIT = 0,
-	@IsUpdateVGaming		BIT = 0,
-	@IsUpdateCG				BIT = 0,
-	@IsUpdateAdvant			BIT = 0,
-	@IsUpdateAdvantMini		BIT = 0,
-	@WMCasinoComm		DECIMAL(9,8) = 0,
-	@BigGamingComm		DECIMAL(9,8) = 0,
-	@JokerComm			DECIMAL(9,8) = 0,
-	@HabaneroComm		DECIMAL(9,8) = 0,
-	@VGamingComm		DECIMAL(9,8) = 0,
-	@CGComm				DECIMAL(9,8) = 0,
-	@AdvantComm			DECIMAL(9,8) = 0,
-	@AdvantMiniComm		DECIMAL(9,8) = 0,
-	@WMCasinoComm_Group			DECIMAL(9,8) = 0,
-	@BigGamingComm_Group		DECIMAL(9,8) = 0,
-	@JokerComm_Group			DECIMAL(9,8) = 0,
-	@HabaneroComm_Group			DECIMAL(9,8) = 0,
-	@VGamingComm_Group			DECIMAL(9,8) = 0,
-	-- Saba Casino
-	@IsUpdateSabaCasino		BIT = 0,
-	@SabaCasinoComm			DECIMAL(9,8) = 0,
-	@SabaCasinoComm_Group	DECIMAL(9,8) = 0,
-	@CGComm_Group				DECIMAL(9,8) = 0,
-	@AdvantComm_Group			DECIMAL(9,8) = 0,
-	@AdvantMiniComm_Group		DECIMAL(9,8) = 0,
-	
-	@IsUpdateMaxGame		BIT = 0,
-	@IsUpdateFGG			BIT = 0,
-	@IsUpdateJili			BIT = 0,
-	@MaxGameComm			DECIMAL(9,8) = 0,
-	@FGGComm				DECIMAL(9,8) = 0,
-	@JiliComm				DECIMAL(9,8) = 0,
-	@MaxGameComm_Group		DECIMAL(9,8) = 0,
-	@FGGComm_Group			DECIMAL(9,8) = 0,
-	@JiliComm_Group			DECIMAL(9,8) = 0,
-
-	@IsUpdateYeeBet			BIT = 0,
-	@IsUpdateMgRNG			BIT = 0,
-	@YeeBetComm				DECIMAL(9,8) = 0,
-	@MgRNGComm				DECIMAL(9,8) = 0,
-	@YeeBetComm_Group		DECIMAL(9,8) = 0,
-	@MgRNGComm_Group		DECIMAL(9,8) = 0,
-
-	--> 
-	@SBComm_Group DECIMAL(9,8),
-	@ParlayComm_Group DECIMAL(9,8) = 0,
-	@NGComm_Group DECIMAL(9,8) = 0,
-	@KenoComm_Group DECIMAL(9,8) = 0
+	@DiscountSettings VARCHAR(MAX) = '',
+	@AgentID INT = NULL	
 AS
 /*
 Created: 20120730@Henry
@@ -140,6 +39,7 @@ Revisions:
 	- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
 	- 20230808@Tacy: LAP - Offer Player Commission to VS3 (new) [redmine: #192203]
 	- 20240126@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
+	- 20240222@Johnson: Restructure Commission [redmine:#179088]
 Param's Explanation:
 � @ErrCode:
     = 0: Transaction recorded successfully.
@@ -158,20 +58,10 @@ BEGIN
 	 )
 		RETURN 
 
-	DECLARE @InputRes_updateComm AS TABLE (custid INT PRIMARY KEY
-					, IsfinishedSB BIT
-					, IsfinishedParlay BIT
-					, IsfinishedSBParlay BIT
-					, IsfinishedNumberGame BIT
-					)
-	
+	DECLARE @InputRes_updateComm AS TABLE (custid INT PRIMARY KEY)
 			
 	DECLARE @InputRes_updateComm_batch AS TABLE (custid INT PRIMARY KEY)
 	DECLARE @xml XML
-	
-	-- param for DCS
-	DECLARE @sporttype SMALLINT, @bettype SMALLINT, @Comm DECIMAL(9,8), @CommGroup DECIMAL(9,8)			
-	DECLARE @tblSettingDCS_tmp AS TABLE (IsUpdated BIT,sporttype SMALLINT,Bettype SMALLINT, Comm DECIMAL(9,8),CommGroup DECIMAL(9,8), isfinished BIT DEFAULT(0))
 	
 	SET @xml = CONVERT(XML, @IDs) 
 	
@@ -180,100 +70,37 @@ BEGIN
 	FROM @xml.nodes('/root/r') AS T(C)
 	OPTION (OPTIMIZE FOR (@xml = NULL ))
 	
-	-- DCS Structure ---------
-	IF (@IsUpdateMacau=1
-		OR @IsUpdatePP=1
-		OR @IsUpdateSexyGaming = 1
-		OR @IsUpdateSpadeGaming = 1
-		OR @IsUpdateLottery = 1
-		OR @IsUpdateVS = 1
-		OR @IsUpdateTableGame = 1
-		OR @IsUpdateVirtualGames = 1
-		OR @IsUpdateArcadiaGaming = 1
-		OR @IsUpdateSabaclub  = 1
-		OR @IsUpdateSAGaming  = 1
-		OR @IsUpdatePGSoft  = 1
-		OR @IsUpdateAllbet = 1
-		--> phase 4
-		OR @IsUpdateWMCasino = 1	
-		OR @IsUpdateBigGaming = 1	
-		OR @IsUpdateJoker  = 1	
-		OR @IsUpdateHabanero  = 1
-		OR @IsUpdateVGaming  = 1	
-		OR @IsUpdateSabaCasino = 1
-		OR @IsUpdateCG	= 1
-		OR @IsUpdateAdvant	= 1
-		OR @IsUpdateAdvantMini =1
-		
-		OR @IsUpdateMaxGame	= 1
-		OR @IsUpdateFGG	= 1
-		OR @IsUpdateJili	= 1
-
-		OR @IsUpdateYeeBet	= 1
-		OR @IsUpdateMgRNG	= 1
-		--
-		OR @IsUpdateSB  = 1	
-		OR @IsParlayComm  = 1	
-		OR @IsUpdateKeno  = 1
-		OR @IsUpdateNG  = 1		
-	)
-	BEGIN
-		INSERT INTO @tblSettingDCS_tmp (IsUpdated,sporttype,Bettype,CommGroup, Comm)
-		VALUES (@IsUpdateMacau, 212,4001,@MacauComm_Group, @MacauComm)
-				, (@IsUpdatePP,248,4101,@PPComm_Group ,@PPComm )
-				-- phase 2
-				,(@IsUpdateSexyGaming,243,3101,@SexyGamingComm_Group, @SexyGamingComm )
-				,(@IsUpdateSpadeGaming ,247,4301,@SpadeGamingComm_Group, @SpadeGamingComm )
-				,(@IsUpdateLottery ,220,1021,@LotteryComm_Group, @LotteryComm )
-				,(@IsUpdateVS ,9908,1201,@VSComm_Group, @VSComm )
-				,(@IsUpdateTableGame ,222,4901,@TableGameComm_Group, @TableGameComm )
-				-- Phase 3
-				,(@IsUpdateVirtualGames,245,4601,@VirtualGamesComm_Group,@VirtualGamesComm)
-				,(@IsUpdateArcadiaGaming,165,1901,@ArcadiaGamingComm_Group,@ArcadiaGamingComm)
-				,(@IsUpdateSabaclub,200,1611,@SabaclubComm_Group,@SabaclubComm)
-				,(@IsUpdateSAGaming,244,3001,@SAGamingComm_Group,@SAGamingComm)
-				,(@IsUpdatePGSoft,232,6001,@PGSoftComm_Group,@PGSoftComm)
-				,(@IsUpdateAllbet,211,2401,@AllbetComm_Group,@AllbetComm)
-				-- Phase 4
-				,(@IsUpdateWMCasino,233,3401,@WMCasinoComm_Group,@WMCasinoComm)
-				,(@IsUpdateBigGaming,239,3501,@BigGamingComm_Group,@BigGamingComm)
-				,(@IsUpdateJoker,234,6401,@JokerComm_Group,@JokerComm)
-				,(@IsUpdateHabanero,238,7001,@HabaneroComm_Group,@HabaneroComm)
-				,(@IsUpdateVGaming,171,3801,@VGamingComm_Group,@VGamingComm)
-				-- Saba Casino
-				,(@IsUpdateSabaCasino,208,2101,@SabaCasinoComm_Group,@SabaCasinoComm)
-				-- Phase 4.2
-				,(@IsUpdateCG,167,7301,@CGComm_Group,@CGComm)
-				,(@IsUpdateAdvant,172,7701,@AdvantComm_Group,@AdvantComm)
-				,(@IsUpdateAdvantMini,174,7801,@AdvantMiniComm_Group,@AdvantMiniComm)
-				
-				,(@IsUpdateMaxGame,237,5401,@MaxGameComm_Group,@MaxGameComm)
-				,(@IsUpdateFGG,176,8201,@FGGComm_Group,@FGGComm)
-				,(@IsUpdateJili,158,5100,@JiliComm_Group,@JiliComm)
-
-				,(@IsUpdateYeeBet,159,3151,@YeeBetComm_Group,@YeeBetComm)
-				,(@IsUpdateMgRNG,155,8400,@MgRNGComm_Group,@MgRNGComm)
-				--
-				,(@IsUpdateSB,1,1,@SBComm_Group,@SBComm)
-				,(@IsUpdateSB,1,4,@SBComm_Group,@SBComm)
-				,(@IsUpdateSB,1,5,@SBComm_Group,@SBComm)
-				,(@IsUpdateSB,2,2,@SBComm_Group,@SBComm)
-				,(@IsParlayComm,1,9,@ParlayComm_Group,@ParlayComm)
-				,(@IsUpdateNG,161,81,@NGComm_Group,@NGComm)
-				,(@IsUpdateKeno,202,1501,@KenoComm_Group,@KenoComm)
-	END
+	-- param for DCS
+	DECLARE @sporttype SMALLINT, @bettype SMALLINT, @Discount DECIMAL(9,8), @DiscountGroup DECIMAL(9,8)			
+	DECLARE @tblSettings TABLE(SportType SMALLINT, BetType SMALLINT, Discount DECIMAL(9,8), DiscountGroup DECIMAL(9,8), isfinished BIT DEFAULT(0))
 	
-	IF EXISTS(SELECT TOP (1) 1 FROM @tblSettingDCS_tmp)
+	DECLARE @xmlDiscountSettings XML
+	
+	SELECT @xmlDiscountSettings = CAST(@DiscountSettings as XML)
+	
+	INSERT INTO @tblSettings (SportType,BetType,Discount)
+	SELECT t.c.value('@SportType[1]','smallint'),
+		t.c.value('@BetType[1]','smallint'),
+		t.c.value('@Discount[1]','DECIMAL(9,8)')
+	FROM @xmlDiscountSettings.nodes('/Root/r') as T(c)
+	
+	UPDATE t
+	SET	DiscountGroup = ISNULL(grp.playerdiscount,0)
+	FROM dbo.Dep_CustDiscountGroupSetting_Member grp WITH(NOLOCK)
+		INNER JOIN @tblSettings t ON grp.SportType = t.SportType AND grp.BetType = t.BetType
+	WHERE AgentID = @AgentID
+			
+	IF EXISTS(SELECT TOP (1) 1 FROM @tblSettings)
 	BEGIN
 		WHILE (1=1)
 		BEGIN
-			UPDATE TOP (1) @tblSettingDCS_tmp
+			UPDATE TOP (1) @tblSettings
 				SET isfinished = 1
 					,@sporttype = sporttype
 					,@bettype = Bettype
-					,@Comm = comm 
-					,@CommGroup = CommGroup
-			WHERE isfinished = 0 AND IsUpdated = 1
+					,@Discount = Discount 
+					,@DiscountGroup = DiscountGroup
+			WHERE isfinished = 0
 			
 			IF @@ROWCOUNT = 0 BREAK
 			
@@ -283,7 +110,7 @@ BEGIN
 					WHERE isGroupedComm = 1)
 			BEGIN
 				--check if setting change really or not before move
-				IF @CommGroup <> @Comm
+				IF @DiscountGroup <> @Discount
 				BEGIN		
 					----move to individual setting
 					INSERT INTO dbo.Dep_CustDiscountSetting_Member
@@ -297,7 +124,7 @@ BEGIN
 					SELECT t.CustID
 						,grp.SportType
 						,grp.BetType
-						,CASE WHEN grp.SportType = @sporttype AND grp.BetType = @bettype THEN @Comm ELSE grp.PlayerDiscount END
+						,CASE WHEN grp.SportType = @sporttype AND grp.BetType = @bettype THEN @Discount ELSE grp.PlayerDiscount END
 						,grp.AgentDiscount
 						,grp.MasterDiscount
 						,grp.SuperDiscount
@@ -321,12 +148,12 @@ BEGIN
 			END		
 			
 			UPDATE cs
-				SET playerdiscount = @Comm
+				SET playerdiscount = @Discount
 			FROM @InputRes_updateComm r
 				INNER JOIN dbo.Dep_CustDiscountSetting_Member cs WITH(UPDLOCK,ROWLOCK) ON r.custid = cs.CustID
 			WHERE sporttype = @sporttype
 				AND bettype = @bettype
-				AND playerdiscount <> @Comm
+				AND playerdiscount <> @Discount
 			
 			WAITFOR DELAY '00:00:00.10'	
 		END	

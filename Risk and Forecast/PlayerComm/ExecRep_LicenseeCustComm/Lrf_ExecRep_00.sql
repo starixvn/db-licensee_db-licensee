@@ -98,7 +98,7 @@ AS
 		- 20230314@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 		- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
 		- 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
-		
+		- 20240220@Johnson: Restructure Commission [redmine:#179088]
 	Param's Explanation:
 
 */
@@ -120,15 +120,16 @@ BEGIN
 	FROM @xml.nodes('/root/r') AS T(C)
 	OPTION (OPTIMIZE FOR (@xml = NULL ))
 	
-	IF @isClearGroupComm = 1
+	IF @isClearGroupDiscount = 1
 	BEGIN
 		UPDATE lc
-			SET GroupCommID = 0
-		FROM dbo.LicenseeCustComm lc WITH (ROWLOCK,UPDLOCK) 
+			SET GroupDiscountID = 0
+		FROM dbo.LicenseeCustDiscount lc WITH (ROWLOCK,UPDLOCK) 
 			INNER JOIN @TempList_Input t ON lc.CustID = t.CustID
 		
 		RETURN	
 	END
+	/*
 	-- Get list of BA members
 	INSERT INTO @TempLicenseeBA_batch (CustID)
 	SELECT t.CustID 
@@ -304,7 +305,7 @@ BEGIN
 				INNER JOIN @TempList_Input ip ON ip.CustID = cs.CustID
 		END
 		
-	END
+	END*/
 	
 END
 
