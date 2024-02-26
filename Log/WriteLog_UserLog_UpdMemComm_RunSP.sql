@@ -1,12 +1,7 @@
 /*<info serverAlias="DBLOG-bodb_CustomerLog,DBCUST-bodb_CustomerLog" executers="bodbLicenseeNet,bodbAdminNet,Dot_Member" isNested="1" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[WriteLog_UserLog_UpdMemComm_RunSP]
 (
-	@UserID INT,
-	@strCustID VARCHAR(MAX) = NULL,
-	@ActionID INT = 2612,	
-	@LogSPData nvarchar(4000) = NULL, -- new value
-	@LogSPData2 nvarchar(4000) = NULL, -- old value
-	@Duration INT = NULL
+	@Log xml = NULL	
 )	
 /*  
 	Created: 20140703@Francis
@@ -35,7 +30,7 @@ ALTER PROCEDURE [dbo].[WriteLog_UserLog_UpdMemComm_RunSP]
 		- 20230426@Johnson: missing version PRO [redmine:#182922]
 		- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
 		- 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
-
+		- 20240322@Johnson: Restructure Commission [redmine:#179088]
     Param's Explaination:    	
 		- @UserID: UserId perform this action
 		- @@strCustID: A string of individual CustId separated by ","
@@ -49,74 +44,64 @@ BEGIN
 	-- SET NOCOUNT ON added to prevent extra result sets from
 		-- interfering with SELECT statements.
 	SET NOCOUNT ON;   
-
-	IF @strCustID IS NOT NULL AND @LogSPData IS NOT NULL AND @LogSPData2 IS NOT NULL
-	BEGIN
-		DECLARE @CustIDTempTable AS TABLE (CustID INT)
-		DECLARE @LogTempTable AS TABLE (CustID INT, TrackingValue VARCHAR(MAX), TrackingValue2 VARCHAR(MAX))
-
-		INSERT INTO @CustIDTempTable (CustID)
-		SELECT VALUE
-		FROM string_split(@strCustID,',')
-		WHERE VALUE <> ''
+	
+	DECLARE @handle INT
+	
+	DECLARE @tmpLog TABLE(UserID  INT,  
+						  CustID INT,						 
+						  TrackingValue VARCHAR(MAX),
+						  TrackingValue2 VARCHAR(MAX),
+						  ActionID INT,
+						  Duration INT,
+						  logdate DATETIME,
+						  Isfinished BIT
+						  )
 		
-		INSERT INTO @LogTempTable (CustID, TrackingValue, TrackingValue2)
-		SELECT a.CustID,
-			   '<Lrf_CustomerUpdMemberComm custid="'+ COALESCE(CAST(a.CustID as VARCHAR(50)),SPACE(1)) + '" ' + 
-			   @LogSPData +  
-			   'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
-			   @LogSPData2 AS TrackingValue,
-			   '<Lrf_CustomerUpdMemberComm custid="'+ COALESCE(CAST(a.CustID as VARCHAR(50)),SPACE(1)) + '" ' +
-			   'GroupCommID="'+ COALESCE(CAST(ISNULL(lcc.GroupCommID,0) as VARCHAR(50)),SPACE(1)) + '" ' +
-			   'LicenseeID="'+ COALESCE(CAST(ISNULL(lcc.LicenseeID,0) as VARCHAR(50)),SPACE(1)) + '" ' +
-			   'SBComm="'+ COALESCE(CAST(ISNULL(lcc.SBComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
-			   'ParlayComm="'+ COALESCE(CAST(ISNULL(lcc.ParlayComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
-			   'NGComm="'+ COALESCE(CAST(ISNULL(lcc.NGComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
-			   'RNGComm="'+ COALESCE(CAST(ISNULL(lcc.RNGComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +			 
-			   'AllbetComm="'+ COALESCE(CAST(ISNULL(lcc.AllbetComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
-			   'MacauComm="'+ COALESCE(CAST(ISNULL(lcc.MacauComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
-			   'PPComm="'+ COALESCE(CAST(ISNULL(lcc.PPComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
-			   -- phase 2
-				'SexyGamingComm="'+ COALESCE(CAST(ISNULL(lcc.SexyGamingComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
-				'SpadeGamingComm="'+ COALESCE(CAST(ISNULL(lcc.SpadeGamingComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
-				'KenoComm="'+ COALESCE(CAST(ISNULL(lcc.KenoComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
-				'LotteryComm="'+ COALESCE(CAST(ISNULL(lcc.LotteryComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
-				'VSComm="'+ COALESCE(CAST(ISNULL(lcc.VSComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
-				'TableGameComm="'+ COALESCE(CAST(ISNULL(lcc.TableGameComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
-				--phase 3
-				'VirtualGamesComm="'+ COALESCE(CAST(ISNULL(lcc.VirtualGamesComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
-				'ArcadiaGamingComm="'+ COALESCE(CAST(ISNULL(lcc.ArcadiaGamingComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
-				'SabaclubComm="'+ COALESCE(CAST(ISNULL(lcc.SabaclubComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
-				'SAGamingComm="'+ COALESCE(CAST(ISNULL(lcc.SAGamingComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
-				'PGSoftComm="'+ COALESCE(CAST(ISNULL(lcc.PGSoftComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
-				-- phase 4
-				'WMCasinoComm="'+ COALESCE(CAST(ISNULL(lcc.WMCasinoComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
-				'BigGamingComm="'+ COALESCE(CAST(ISNULL(lcc.BigGamingComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
-				'JokerComm="'+ COALESCE(CAST(ISNULL(lcc.JokerComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
-				'HabaneroComm="'+ COALESCE(CAST(ISNULL(lcc.HabaneroComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
-				'VGamingComm="'+ COALESCE(CAST(ISNULL(lcc.VgamingComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
-				-- phase 4.2
-				'CGComm="'+ COALESCE(CAST(ISNULL(lcc.CGComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
-				'AdvantComm="'+ COALESCE(CAST(ISNULL(lcc.AdvantComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
-				'AdvantMiniComm="'+ COALESCE(CAST(ISNULL(lcc.AdvantMiniComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
-				
-				'MaxGameComm="'+ COALESCE(CAST(ISNULL(lcc.MaxGameComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
-				'FGGComm="'+ COALESCE(CAST(ISNULL(lcc.FGGComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
-				'JiliComm="'+ COALESCE(CAST(ISNULL(lcc.JiliComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
+	DECLARE @tmpLog_batch TABLE(UserID  INT,  
+						  CustID INT,						 
+						  TrackingValue VARCHAR(MAX),
+						  TrackingValue2 VARCHAR(MAX),
+						  ActionID INT,
+						  Duration INT,
+						  logdate DATETIME
+						  )					  
+		
+	EXECUTE sys.sp_xml_preparedocument @handle OUTPUT, @log
+	
+	INSERT INTO @tmpLog	(UserID, CustID, ActionID, TrackingValue, TrackingValue2, Duration,LogDate)
+	SELECT UserID, CustID,  ActionID, TrackingValue, TrackingValue2, Duration, LogDate	
+	FROM OPENXML(@handle,'/Root/Row',1) 
+			WITH (UserID  int,  
+				  CustID int,
+				  ActionID INT,
+				  TrackingValue NVARCHAR(MAX),
+				  TrackingValue2 NVARCHAR(MAX),
+				  Duration INT,
+				  LogDate DATETIME
+				  ); 
+			  
+	EXEC sp_xml_removedocument @handle; 
+	
+	WHILE (1=1)
+	BEGIN	
+		DELETE @tmpLog_batch
+		
+		UPDATE TOP (2000) t
+			SET Isfinished = 1
+		OUTPUT deleted.UserID, deleted.CustID,  deleted.ActionID, deleted.TrackingValue, deleted.TrackingValue2, deleted.Duration, deleted.LogDate
+		INTO @tmpLog_batch(UserID, CustID, ActionID, TrackingValue, TrackingValue2, Duration,LogDate)	
+		FROM @tmpLog t
+		WHERE t.Isfinished IS NULL
 
-				'YeeBetComm="'+ COALESCE(CAST(ISNULL(lcc.YeeBetComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
-				'MgRNGComm="'+ COALESCE(CAST(ISNULL(lcc.MgRNGComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
-
-			   'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
-			   @LogSPData2 AS TrackingValue2
-		FROM @CustIDTempTable a
-			LEFT JOIN bodb_licensee.dbo.LicenseeCustComm lcc WITH (NOLOCK) ON a.CustID = lcc.CustID
-			
-		INSERT INTO dbo.UserLog_RunSP (UserID, CustID, SPName, Doing, ActionID, TrackingValue, TrackingValue2, Duration)
-		SELECT @UserID, CustID, NULL, NULL, @ActionID, TrackingValue, TrackingValue2, @Duration
-		FROM @LogTempTable
-					  
-	END
+		IF @@ROWCOUNT = 0 BREAK
+		
+		INSERT INTO dbo.UserLog_RunSP (UserID, CustID, SPName, Doing, ActionID, TrackingValue, TrackingValue2, Duration,LogDate,CreatedDate)
+		SELECT UserID, CustID, NULL, NULL, ActionID, TrackingValue, TrackingValue2, Duration,LogDate,GETDATE()
+		FROM @tmpLog_batch
+		
+		WAITFOR DELAY '00:00:0.100'
+		
+	END				
 END
 
 GO

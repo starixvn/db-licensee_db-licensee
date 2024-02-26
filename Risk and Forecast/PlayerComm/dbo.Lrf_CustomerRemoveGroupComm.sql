@@ -42,7 +42,7 @@ AS
 		- 20230315@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 		- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
 		- 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
-
+		- 20240329@Johnson: Restructure Commission [redmine:#179088]
 */  
 BEGIN  
 	SET NOCOUNT ON
@@ -119,134 +119,6 @@ BEGIN
 	
 	IF @IsRemovePlayercomm=0
 	BEGIN
-		SELECT @i = 0
-		WHILE (@i<(SELECT MAX(ID) FROM @TempCustID))
-		BEGIN
-			SET @i = @i + 1
-			SELECT @CustID = CustID FROM @TempCustID WHERE ID=@i
-			--Get current setting
-			SELECT @SBComm=SBComm,
-				@NGComm=NGComm,
-				@RNGComm=RNGComm,
-				@ParlayComm = ParlayComm,
-				@AllbetComm=AllbetComm,				
-				@MacauComm=MacauComm,
-				@PPComm=PPComm,
-				@SexyGamingComm = SexyGamingComm ,
-				@SpadeGamingComm = SpadeGamingComm,
-				@KenoComm = KenoComm,
-				@LotteryComm = LotteryComm,
-				@VSComm = VSComm,
-				@TableGameComm = TableGameComm,
-				@VirtualGamesComm  = VirtualGamesComm,
-				@ArcadiaGamingComm  = ArcadiaGamingComm,
-				@SabaclubComm  = SabaclubComm,
-				@SAGamingComm  = SAGamingComm,
-				@PGSoftComm  = PGSoftComm,
-				--Phase 4
-				@WMCasinoComm		= WMCasinoComm,
-				@BigGamingComm		= BigGamingComm,
-				@JokerComm			= JokerComm,
-				@HabaneroComm		= HabaneroComm,
-				@VGamingComm		= VGamingComm,
-				-- phase 4.2
-				@CGComm				= CGComm,
-				@AdvantComm			= AdvantComm,
-				@AdvantMiniComm		= AdvantMiniComm,
-				
-				@MaxGameComm		= MaxGameComm,
-				@FGGComm			= FGGComm,
-				@JiliComm			= JiliComm,
-
-				@YeeBetComm			= YeeBetComm,
-				@MgRNGComm			= MgRNGComm
-			FROM dbo.LicenseeCustComm WITH (NOLOCK)
-			WHERE LicenseeID = @LicenseeID AND CustID = @CustID
-					
-			--Update List of affected Customers               
-			EXEC [Lrf_CustomerUpdMemberComm] 
-				@LicenseeID=@LicenseeID,
-				@strCustID=@CustID,
-				@UserID=@UserID,
-				@IsUpdateComm=0,
-				@GroupCommID=0,
-				@SBComm=@SBComm,
-				@NGComm=@NGComm,
-				@RNGComm=@RNGComm,
-				@ParlayComm = @ParlayComm,	
-				@AllbetComm=@AllbetComm,
-				@MacauComm=@MacauComm,
-				@PPComm=@PPComm,
-				@IsUpdateNG=1,
-				@IsUpdateRNG=1,			
-				@IsUpdateAllbet=1,
-				@IsUpdateMacau=1,
-				@IsUpdatePP=1,
-				---start param of phase 2
-				@IsUpdateSexyGaming = 1,	
-				@SexyGamingComm = @SexyGamingComm,
-				@IsUpdateSpadeGaming = 1,	
-				@SpadeGamingComm = @SpadeGamingComm,
-				@IsUpdateKeno = 1,
-				@KenoComm = @KenoComm,
-				@IsUpdateLottery = 1,	
-				@LotteryComm = @LotteryComm,
-				@IsUpdateVS = 1,
-				@VSComm = @VSComm,
-				@IsUpdateTableGame = 1,
-				@TableGameComm = @TableGameComm,
-				-- phase 3
-				@IsUpdateVirtualGames = 1,
-				@IsUpdateArcadiaGaming = 1,
-				@IsUpdateSabaclub  = 1,
-				@IsUpdateSAGaming  = 1,
-				@IsUpdatePGSoft  = 1,
-				@VirtualGamesComm = @VirtualGamesComm,
-				@ArcadiaGamingComm = @ArcadiaGamingComm,
-				@SabaclubComm = @SabaclubComm,
-				@SAGamingComm = @SAGamingComm,
-				@PGSoftComm = @PGSoftComm,
-				--> phase 4
-				@IsUpdateWMCasino		= 1,		
-				@IsUpdateBigGaming		= 1,		
-				@IsUpdateJoker			= 1,			
-				@IsUpdateHabanero		= 1,
-				@IsUpdateVGaming		= 1,	
-				@IsUpdateCG				= 1,
-				@IsUpdateAdvant			= 1,
-				@IsUpdateAdvantMini		= 1,
-
-				@WMCasinoComm			= @WMCasinoComm	,	
-				@BigGamingComm			= @BigGamingComm,		
-				@JokerComm				= @JokerComm,			
-				@HabaneroComm			= @HabaneroComm,
-				@VGamingComm			= @VGamingComm,		
-				-- phase 4.2
-				@CGComm					= @CGComm,
-				@AdvantComm				= @AdvantComm,
-				@AdvantMiniComm			= @AdvantMiniComm,
-				
-				@IsUpdateMaxGame		= 1,
-				@IsUpdateFGG			= 1,
-				@IsUpdateJili			= 1,
-				@MaxGameComm			= @MaxGameComm,
-				@FGGComm				= @FGGComm,
-				@JiliComm				= @JiliComm,
-
-				@IsUpdateYeeBet			= 1,
-				@IsUpdateMgRNG			= 1,
-				@YeeBetComm				= @YeeBetComm,			
-				@MgRNGComm				= @MgRNGComm,
-				
-				@IP=@IP,
-				@Langkey=@Langkey,
-				@ErrCode=@ErrCode OUTPUT,
-				@ErrMsg=@ErrMsg OUTPUT	
-				
-			IF @ErrCode<>0
-			RETURN
-		END
-		
 		UPDATE dbo.LicenseeCustComm WITH (ROWLOCK,UPDLOCK) 
 		SET GroupCommID=0
 		WHERE LicenseeID = @LicenseeID 
@@ -254,79 +126,70 @@ BEGIN
 	END
 	ELSE IF @IsRemovePlayercomm=1
 	BEGIN
+		DECLARE @DiscountSettings VARCHAR(MAX) = ''
+		DECLARE @tblSettingDCS AS TABLE (IsUpdate BIT,sporttype SMALLINT,Bettype SMALLINT)
+		DECLARE @IsUpdate BIT = 1
+		
+		INSERT INTO @tblSettingDCS (IsUpdate,sporttype,Bettype)
+		VALUES (@IsUpdate, 212,4001)
+			, (@IsUpdate,248,4101)
+			-- phase 2
+			,(@IsUpdate,243,3101)
+			,(@IsUpdate ,247,4301)
+			,(@IsUpdate ,220,1021)
+			,(@IsUpdate ,9908,1201)
+			,(@IsUpdate ,222,4901)
+			-- Phase 3
+			,(@IsUpdate,245,4601)
+			,(@IsUpdate,165,1901)
+			,(@IsUpdate,200,1611)
+			,(@IsUpdate,244,3001)
+			,(@IsUpdate,232,6001)
+			,(@IsUpdate,211,2401)
+			--Saba Casino
+			,(@IsUpdate,208,2101)
+			--> phase 4
+			,(@IsUpdate,233,3401)
+			,(@IsUpdate,239,3501)
+			,(@IsUpdate,234,6401)
+			,(@IsUpdate,238,7001)
+			,(@IsUpdate,171,3801)				
+			-- Phase 4.2
+			,(@IsUpdate,167,7301)
+			,(@IsUpdate,172,7701)
+			,(@IsUpdate,174,7801)
+			
+			,(@IsUpdate,237,5401)
+			,(@IsUpdate,176,8201)
+			,(@IsUpdate,158,5100)
+
+			,(@IsUpdate,159,3151)
+			,(@IsUpdate,155,8400)
+
+			--
+			,(@IsUpdate,1,1)
+			,(@IsUpdate,1,4)
+			,(@IsUpdate,1,5)
+			,(@IsUpdate,2,2)
+			,(@IsUpdate,1,9)
+			,(@IsUpdate,161,81)
+			,(@IsUpdate,202,1501)
+	
+		SELECT @DiscountSettings = (
+			SELECT SportType, BetType, 0 Discount
+			FROM @tblSettingDCS			
+			FOR XML PATH('r'), ROOT('Root')
+		)		
+			
 		--Update List of affected Customers               
 		EXEC [Lrf_CustomerUpdMemberComm] 
 			@LicenseeID=@LicenseeID,
 			@strCustID=@strCustIDOriginal,
 			@UserID=@UserID,
 			@GroupCommID=0,
-			@SBComm=0,
-			@NGComm=0,
-			@RNGComm=0,
-			@ParlayComm = 0,
-			@AllbetComm= 0,
-			@MacauComm= 0,
-			@PPComm= 0,
-			@IsUpdateNG=1,
-			@IsUpdateRNG=1,	
-			@IsUpdateAllbet=1,
-			@IsUpdateMacau=1,
-			@IsUpdatePP=1,
-			---start param of phase 2
-			@IsUpdateSexyGaming = 1,	
-			@SexyGamingComm = 0,
-			@IsUpdateSpadeGaming = 1,	
-			@SpadeGamingComm = 0,
-			@IsUpdateKeno = 1,
-			@KenoComm = 0,
-			@IsUpdateLottery = 1,	
-			@LotteryComm = 0,
-			@IsUpdateVS = 1,
-			@VSComm = 0,
-			@IsUpdateTableGame = 1,
-			@TableGameComm = 0,
 			
-			-- phase 3
-			@IsUpdateVirtualGames = 1,
-			@IsUpdateArcadiaGaming = 1,
-			@IsUpdateSabaclub  = 1,
-			@IsUpdateSAGaming  = 1,
-			@IsUpdatePGSoft  = 1,
-			@VirtualGamesComm = 0,
-			@ArcadiaGamingComm = 0,
-			@SabaclubComm = 0,
-			@SAGamingComm = 0,
-			@PGSoftComm = 0,
-			--> phase 4
-			@IsUpdateWMCasino		= 1,		
-			@IsUpdateBigGaming		= 1,		
-			@IsUpdateJoker			= 1,			
-			@IsUpdateHabanero		= 1,
-			@IsUpdateVGaming		= 1,		
-			@IsUpdateCG				= 1,
-			@IsUpdateAdvant			= 1,
-			@IsUpdateAdvantMini		= 1,
-			@WMCasinoComm			= 0,	
-			@BigGamingComm			= 0,		
-			@JokerComm				= 0,			
-			@HabaneroComm			= 0,
-			@VGamingComm			= 0,			
-			-- phase 4.2
-			@CGComm					= 0,
-			@AdvantComm				= 0,
-			@AdvantMiniComm			= 0,
-			
-			@IsUpdateMaxGame		= 1,
-			@IsUpdateFGG			= 1,
-			@IsUpdateJili			= 1,
-			@MaxGameComm			= 0,
-			@FGGComm				= 0,
-			@JiliComm				= 0,
-
-			@IsUpdateYeeBet			= 1,
-			@IsUpdateMgRNG			= 1,
-			@YeeBetComm				= 0,			
-			@MgRNGComm				= 0,
+			@GroupDiscountID=0,
+			@DiscountSettings = @DiscountSettings,
 			
 			@IP=@IP,
 			@Langkey=@Langkey,
@@ -338,46 +201,7 @@ BEGIN
 		
 		--Update players out of LicenseeCustComm GroupCommID
 		UPDATE LicenseeCustComm WITH (ROWLOCK,UPDLOCK)
-		SET 
-			SBComm = 0,
-			ParlayComm = 0,
-			NGComm = 0,
-			RNGComm = 0,
-			AllbetComm= 0,
-			MacauComm= 0,
-			PPComm= 0,
-			-- phase 2
-			SexyGamingComm = 0 ,
-			SpadeGamingComm = 0,
-			KenoComm = 0,
-			LotteryComm = 0,
-			VSComm = 0,
-			TableGameComm = 0,
-			--phase 3
-			VirtualGamesComm = 0,	
-			ArcadiaGamingComm = 0,	
-			SabaclubComm = 0,	
-			SAGamingComm = 0,	
-			PGSoftComm = 0,
-			-->phase 4
-			WMCasinoComm		= 0	,	
-			BigGamingComm		= 0,		
-			JokerComm			= 0,			
-			HabaneroComm		= 0,
-			VGamingComm			= 0,			
-			-- phase 4.2
-			CGComm			 = 0,
-			AdvantComm		 = 0,
-			AdvantMiniComm	 = 0,
-			
-			MaxGameComm	 = 0,
-			FGGComm		 = 0,
-			JiliComm	 = 0,
-
-			YeeBetComm	 = 0,
-			MgRNGComm	 = 0,
-
-			GroupCommID = 0
+		SET GroupCommID = 0
 		WHERE LicenseeID = @LicenseeID 
 		AND CustID IN (SELECT CustID FROM @TempCustID)
 	END

@@ -209,7 +209,7 @@ BEGIN
 			
 			--Remove commission of players in group
 			SET @IsexistMember = (SELECT TOP (1) 1 
-								FROM LicenseeCustComm ls WITH (NOLOCK)
+								FROM LicenseeCustDiscount ls WITH (NOLOCK)
 								WHERE LicenseeID = @LicenseeID AND GroupDiscountID = @GroupDiscountID)
 						
 			IF @IsexistMember = 1			
@@ -315,10 +315,10 @@ BEGIN
 		'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +
 		'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
 		'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(8000)),SPACE(1))+ '" >' +
-		COALESCE(CAST(SELECT SportType,BetType,Discount
+		COALESCE(CAST((SELECT SportType,BetType,Discount
 				FROM @tblSettings
 				FOR XML RAW('r')		
-				) AS VARCHAR(MAX), SPACE(1)) + 
+				) AS VARCHAR(MAX)), SPACE(1)) + 
 		'</Lrf_LicenseeGroupCommDel>'		
 		
 
@@ -331,10 +331,10 @@ BEGIN
 		'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +
 		'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
 		'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(8000)),SPACE(1))+ '" >' +
-		COALESCE(CAST(SELECT SportType,BetType,Discount
+		COALESCE(CAST((SELECT SportType,BetType,Discount
 				FROM @tblSettings
 				FOR XML RAW('r')		
-				) AS VARCHAR(MAX), SPACE(1)) + 
+				) AS VARCHAR(MAX)), SPACE(1)) + 
 		'</Lrf_LicenseeGroupCommDel>'	
 		
 		EXEC Lrf_WriteLog_UserLog_RunSP_Wrapper

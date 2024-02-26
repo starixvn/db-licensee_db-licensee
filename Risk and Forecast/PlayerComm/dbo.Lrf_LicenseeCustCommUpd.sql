@@ -4,73 +4,7 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeCustCommUpd]
 	@strCustIDOriginal VARCHAR(MAX),--member
 	@strCustID VARCHAR(MAX)  OUTPUT,--member
 	@UserID INT,
-	@SBComm DECIMAL(9,8),
-	@ParlayComm DECIMAL(9,8),
-	@NGComm DECIMAL(9,8) = 0,	
-	@RNGComm DECIMAL(9,8) = 0,
-	@AllbetComm DECIMAL(9,8) = 0,
-	@MacauComm DECIMAL(9,8) = 0,
-	@PPComm DECIMAL(9,8) = 0,
-	@IsUpdateNG BIT = 0,
-	@IsUpdateRNG BIT = 0,
-	@IsUpdateAllbet BIT = 0,
-	@IsUpdateMacau BIT = 0,
-	@IsUpdatePP BIT = 0,
-	--start param of phase 2 
-	@IsUpdateSexyGaming BIT = 0,	
-	@SexyGamingComm DECIMAL(9,8) = 0,
-	@IsUpdateSpadeGaming BIT = 0,	
-	@SpadeGamingComm DECIMAL(9,8) = 0,
-	@IsUpdateKeno BIT = 0,	
-	@KenoComm DECIMAL(9,8) = 0,
-	@IsUpdateLottery BIT = 0,	
-	@LotteryComm DECIMAL(9,8) = 0,
-	@IsUpdateVS BIT = 0,	
-	@VSComm DECIMAL(9,8) = 0,
-	@IsUpdateTableGame BIT = 0,	
-	@TableGameComm DECIMAL(9,8) = 0,
-	-- end of phase 2
-	-- phase 3
-	@IsUpdateVirtualGames BIT = 0 ,
-	@IsUpdateArcadiaGaming BIT = 0,
-	@IsUpdateSabaclub BIT = 0,
-	@IsUpdateSAGaming BIT = 0,
-	@IsUpdatePGSoft BIT = 0,
-	@VirtualGamesComm DECIMAL(9,8) = 0,
-	@ArcadiaGamingComm DECIMAL(9,8) = 0,
-	@SabaclubComm DECIMAL(9,8) = 0,
-	@SAGamingComm DECIMAL(9,8) = 0,
-	@PGSoftComm DECIMAL(9,8) = 0,
-	-->phase 4
-	@IsUpdateWMCasino		BIT = 0,
-	@IsUpdateBigGaming		BIT = 0,
-	@IsUpdateJoker			BIT = 0,
-	@IsUpdateHabanero		BIT = 0,
-	@IsUpdateVGaming		BIT = 0,
-	-- phase 4.2
-	@IsUpdateCG				BIT = 0,
-	@IsUpdateAdvant			BIT = 0,
-	@IsUpdateAdvantMini		BIT = 0,
-	@WMCasinoComm		DECIMAL(9,8) = 0,
-	@BigGamingComm		DECIMAL(9,8) = 0,
-	@JokerComm			DECIMAL(9,8) = 0,
-	@HabaneroComm		DECIMAL(9,8) = 0,
-	@VGamingComm		DECIMAL(9,8) = 0,
-	@CGComm				DECIMAL(9,8) = 0,
-	@AdvantComm			DECIMAL(9,8) = 0,
-	@AdvantMiniComm		DECIMAL(9,8) = 0,
-	
-	@IsUpdateMaxGame	BIT = 0,
-	@IsUpdateFGG		BIT = 0,
-	@IsUpdateJili		BIT = 0,
-	@MaxGameComm		DECIMAL(9,8) = 0,
-	@FGGComm			DECIMAL(9,8) = 0,
-	@JiliComm			DECIMAL(9,8) = 0,
-	
-	@IsUpdateYeeBet		BIT = 0,
-	@IsUpdateMgRNG		BIT = 0,
-	@YeeBetComm			DECIMAL(9,8) = 0,
-	@MgRNGComm			DECIMAL(9,8) = 0,
+	@DiscountSettings VARCHAR(MAX) = '',
 
 	@IP VARCHAR(40),
 	@Langkey NVARCHAR(10)='en-US',
@@ -112,7 +46,7 @@ AS
 		- 20230314@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 		- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
 		- 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
-		
+		- 20240404@Johnson: Restructure Commission [redmine:#179088]
 	Param's Explanation:
 */ 
 BEGIN
@@ -154,74 +88,9 @@ BEGIN
 		@LicenseeID=@LicenseeID
 		,@strCustID=@strCustIDOriginal
 		,@UserID=@UserID
-		,@SBComm=@SBComm
-		,@ParlayComm = @ParlayComm
-		,@NGComm=@NGComm
-		,@RNGComm=@RNGComm	
-		,@AllbetComm = @AllbetComm
-		,@MacauComm = @MacauComm
-		,@PPComm = @PPComm
-		,@IsUpdateNG=@IsUpdateNG
-		,@IsUpdateRNG=@IsUpdateRNG	
-		,@IsUpdateAllbet=@IsUpdateAllbet
-		,@IsUpdateMacau=@IsUpdateMacau
-		,@IsUpdatePP=@IsUpdatePP
-		---start param of phase 2
-		,@IsUpdateSexyGaming = @IsUpdateSexyGaming	
-		,@SexyGamingComm = @SexyGamingComm
-		,@IsUpdateSpadeGaming = @IsUpdateSpadeGaming	
-		,@SpadeGamingComm =  @SpadeGamingComm
-		,@IsUpdateKeno = @IsUpdateKeno
-		,@KenoComm =  @KenoComm
-		,@IsUpdateLottery  = @IsUpdateLottery	
-		,@LotteryComm =  @LotteryComm
-		,@IsUpdateVS = @IsUpdateVS 	
-		,@VSComm =  @VSComm
-		,@IsUpdateTableGame = @IsUpdateTableGame
-		,@TableGameComm = @TableGameComm
-		---end of phase 2
-		-- phase 3
-		,@IsUpdateVirtualGames = @IsUpdateVirtualGames
-		,@IsUpdateArcadiaGaming = @IsUpdateArcadiaGaming
-		,@IsUpdateSabaclub  = @IsUpdateSabaclub
-		,@IsUpdateSAGaming  = @IsUpdateSAGaming
-		,@IsUpdatePGSoft  = @IsUpdatePGSoft
-		,@VirtualGamesComm = @VirtualGamesComm
-		,@ArcadiaGamingComm = @ArcadiaGamingComm
-		,@SabaclubComm = @SabaclubComm
-		,@SAGamingComm = @SAGamingComm
-		,@PGSoftComm = @PGSoftComm
-		--> phase 4
-		,@IsUpdateWMCasino		= @IsUpdateWMCasino		
-		,@IsUpdateBigGaming		= @IsUpdateBigGaming		
-		,@IsUpdateJoker			= @IsUpdateJoker			
-		,@IsUpdateHabanero		= @IsUpdateHabanero		
-		,@IsUpdateVGaming		= @IsUpdateVGaming	
-		-- phase 4.2
-		,@IsUpdateCG			= @IsUpdateCG		
-		,@IsUpdateAdvant		= @IsUpdateAdvant		
-		,@IsUpdateAdvantMini	= @IsUpdateAdvantMini		
-		,@WMCasinoComm				= @WMCasinoComm		
-		,@BigGamingComm				= @BigGamingComm		
-		,@JokerComm					= @JokerComm			
-		,@HabaneroComm				= @HabaneroComm	
-		,@VGamingComm				= @VGamingComm	
-		,@CGComm					= @CGComm	
-		,@AdvantComm				= @AdvantComm	
-		,@AdvantMiniComm			= @AdvantMiniComm	
 		
-		,@IsUpdateMaxGame			= @IsUpdateMaxGame	
-		,@IsUpdateFGG				= @IsUpdateFGG	
-		,@IsUpdateJili				= @IsUpdateJili	
-		,@MaxGameComm				= @MaxGameComm
-		,@FGGComm					= @FGGComm
-		,@JiliComm					= @JiliComm
-
-		,@IsUpdateYeeBet			= @IsUpdateYeeBet
-		,@IsUpdateMgRNG				= @IsUpdateMgRNG
-		,@YeeBetComm				= @YeeBetComm				
-		,@MgRNGComm					= @MgRNGComm
-
+		,@DiscountSettings = @DiscountSettings
+		
 		,@IP=@IP
 		,@Langkey=@Langkey
 		,@ErrCode=@ErrCode OUTPUT

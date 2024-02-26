@@ -1,5 +1,5 @@
 ﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="wsv_lap" viewers="" isFunction="0"></info>*/
-CREATE PROCEDURE [dbo].[Lrf_LicenseeGroupCommUpd]
+ALTER PROCEDURE [dbo].[Lrf_LicenseeGroupCommUpd]
 	@LicenseeID INT,
 	@GroupDiscountID INT,
 	@GroupName VARCHAR(100),	
@@ -97,7 +97,7 @@ BEGIN
 	SELECT t.c.value('@SportType[1]','smallint'),
 		t.c.value('@BetType[1]','smallint'),
 		t.c.value('@Discount[1]','DECIMAL(9,8)')
-	FROM @CommSettings.nodes('/Root/r') as T(c)
+	FROM @xmlDiscountSettings.nodes('/Root/r') as T(c)
 	
 	UPDATE t
 	SET t.Discount_Old = l.Discount
@@ -119,7 +119,7 @@ BEGIN
 		RETURN
 	END
 
-	SET @custID_cnt = (SELECT COUNT(1) FROM LicenseeCustDiscount WITH (NOLOCK) WHERE LicenseeID = @LicenseeID AND GroupCommID = @GroupDiscountID)
+	SET @custID_cnt = (SELECT COUNT(1) FROM LicenseeCustDiscount WITH (NOLOCK) WHERE LicenseeID = @LicenseeID AND GroupDiscountID = @GroupDiscountID)
 	
 	IF @custID_cnt >= 100000
 	BEGIN
@@ -132,7 +132,7 @@ BEGIN
 		
 	IF NOT EXISTS(
 		SELECT TOP 1 1 FROM dbo.LicenseeGroupDiscount WITH (NOLOCK)
-		WHERE LicenseeID = @LicenseeID AND ID = @GroupDiscountID
+		WHERE LicenseeID = @LicenseeID AND GroupDiscountID = @GroupDiscountID
 	)
 	BEGIN
 		SELECT @ErrMsg =CASE @Langkey WHEN 'en-US' THEN 'This Group does not exist!'
@@ -168,7 +168,7 @@ BEGIN
 				
 				--Set IsDefault for current group
 				UPDATE dbo.LicenseeGroupDiscount WITH (ROWLOCK,UPDLOCK)
-				SET IsDefault=1 WHERE LicenseeID = @LicenseeID AND ID = @GroupDiscountID
+				SET IsDefault=1 WHERE LicenseeID = @LicenseeID AND GroupDiscountID = @GroupDiscountID
 				
 				SET @FlagUpdateIsDefault=1
 			END
@@ -229,8 +229,8 @@ BEGIN
 				EXEC [Lrf_CustomerUpdMemberComm] 
 					@LicenseeID=@LicenseeID
 					,@StrCustID = ''
-					,@IsUpdateGroupComm = 1
-					,@IsUpdateRNG = @IsUpdateRNG
+					,@IsUpdateGroupDiscount = 1
+					--,@IsUpdateRNG = @IsUpdateRNG
 					,@UserID=@UserID
 					,@GroupDiscountID=@GroupDiscountID
 					,@DiscountSettings = @DiscountSettings					
@@ -258,10 +258,10 @@ BEGIN
 			'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +
 			'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
 			'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(8000)),SPACE(1))+ '">' +
-			COALESCE(CAST(SELECT SportType,BetType,Discount
+			COALESCE(CAST((SELECT SportType,BetType,Discount
 				FROM @tblSettings
 				FOR XML RAW('r')		
-				) AS VARCHAR(MAX), SPACE(1)) + 
+				) AS VARCHAR(MAX)), SPACE(1)) + 
 			'</Lrf_LicenseeGroupDiscountUpd>'	
 
 			SELECT @TrackingValue2 = '<Lrf_LicenseeGroupDiscountUpd GroupDiscountID="'+ COALESCE(CAST(@GroupDiscountID as VARCHAR(50)),SPACE(1)) + '" ' +
@@ -273,10 +273,10 @@ BEGIN
 			'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +
 			'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
 			'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(8000)),SPACE(1))+ '">' +
-			COALESCE(CAST(SELECT SportType,BetType,Discount_Old as Discount
+			COALESCE(CAST((SELECT SportType,BetType,Discount_Old as Discount
 				FROM @tblSettings
 				FOR XML RAW('r')		
-				) AS VARCHAR(MAX), SPACE(1)) + 
+				) AS VARCHAR(MAX)), SPACE(1)) + 
 			'</Lrf_LicenseeGroupDiscountUpd>'
 		
 			EXEC Lrf_WriteLog_UserLog_RunSP_Wrapper

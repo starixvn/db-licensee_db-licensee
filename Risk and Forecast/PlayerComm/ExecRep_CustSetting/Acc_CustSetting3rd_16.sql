@@ -84,6 +84,17 @@ BEGIN
 		t.c.value('@Discount[1]','DECIMAL(9,8)')
 	FROM @xmlDiscountSettings.nodes('/Root/r') as T(c)
 	
+	IF EXISTS (SELECT 1 FROM @tblSettings WHERE SportType =1 AND Bettype = 1)
+	BEGIN
+		INSERT INTO @tblSettings (SportType,BetType,Discount)
+		SELECT s.SportType,s.BetType,Discount
+		FROM @tblSettings t
+			CROSS APPLY (SELECT 1 Sporttype, 4 AS Bettype
+						UNION SELECT 1,5
+						UNION SELECT 2,2) s
+		WHERE t.Sporttype = 1 AND t.Bettype = 1
+	END
+	
 	UPDATE t
 	SET	DiscountGroup = ISNULL(grp.playerdiscount,0)
 	FROM dbo.Dep_CustDiscountGroupSetting_Member grp WITH(NOLOCK)

@@ -60,6 +60,17 @@ BEGIN
 		t.c.value('@Discount[1]','DECIMAL(9,8)')
 	FROM @xmlDiscountSettings.nodes('/Root/r') as T(c)
 	
+	IF EXISTS (SELECT 1 FROM @tblSettings WHERE SportType =1 AND Bettype = 1)
+	BEGIN
+		INSERT INTO @tblSettings (SportType,BetType,Discount)
+		SELECT s.SportType,s.BetType,Discount
+		FROM @tblSettings t
+			CROSS APPLY (SELECT 1 Sporttype, 4 AS Bettype
+						UNION SELECT 1,5
+						UNION SELECT 2,2) s
+		WHERE t.Sporttype = 1 AND t.Bettype = 1
+	END
+	
 	SELECT @AgentID = recommend 
 	FROM CustInfo WITH(NOLOCK)
 	WHERE CustID = @CustID
@@ -77,7 +88,7 @@ BEGIN
 			UPDATE t
 			SET Discount = 0
 			FROM @tblSettings
-			WHERE SportType = 1
+			WHERE SportType IN (1,2)
 		END
 	END
 	

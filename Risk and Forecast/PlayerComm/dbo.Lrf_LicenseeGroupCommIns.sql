@@ -76,7 +76,7 @@ BEGIN
 	SELECT t.c.value('@SportType[1]','smallint'),
 		t.c.value('@BetType[1]','smallint'),
 		t.c.value('@Discount[1]','DECIMAL(9,8)')
-	FROM @CommSettings.nodes('/Root/r') as T(c)
+	FROM @xmlDiscountSettings.nodes('/Root/r') as T(c)
 
 	--Validate data 
 	IF EXISTS (SELECT TOP 1 1 FROM @tblSettings WHERE Discount > 0.15)	
@@ -137,10 +137,10 @@ BEGIN
 		'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +
 		'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
 		'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(8000)),SPACE(1))+ '">'+
-		COALESCE(CAST(SELECT SportType,BetType,Discount
+		COALESCE(CAST((SELECT SportType,BetType,Discount
 				FROM @tblSettings
 				FOR XML RAW('r')		
-				) AS VARCHAR(MAX), SPACE(1)) + 
+				) AS VARCHAR(MAX)), SPACE(1)) + 
 		'</Lrf_LicenseeGroupCommIns>'					
 		
 		EXEC Lrf_WriteLog_UserLog_RunSP_Wrapper

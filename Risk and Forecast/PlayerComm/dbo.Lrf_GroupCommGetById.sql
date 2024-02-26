@@ -1,6 +1,6 @@
 ﻿/*<info serverAlias="DBLIC-bodb_Licensee" executers="wsv_lap" viewers="" isFunction="0"></info>*/ 
 ALTER PROCEDURE [dbo].[Lrf_GroupCommGetById]
-	@GroupCommID	INT,
+	@GroupDiscountID	INT,
 	@LicenseeID		INT
 
 AS  
@@ -33,51 +33,27 @@ AS
 	- 20230426@Johnson: missing version PRO [redmine:#182922]
 	- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
 	- 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
-
+	- 20240403@Johnson: Restructure Commission [redmine:#179088]
 */  
 BEGIN  
 SET NOCOUNT ON;  
 
-SELECT g.ID AS GroupCommID,
+SELECT g.GroupDiscountID,
 	g.GroupName,
-	g.SBComm,
-	g.NGComm,
-	g.RNGComm,
-	g.Parlaycomm,	
-	g.AllbetComm,
-	g.MacauComm,
-	g.PPComm,
 	g.color AS GroupColor, 
-	g.IsDefault,
-	g.SexyGamingComm,
-	g.SpadeGamingComm,
-	g.LotteryComm,
-	g.KenoComm,
-	g.VSComm,
-	g.TableGameComm,
-	g.VirtualGamesComm,	
-	g.ArcadiaGamingComm,	
-	g.SabaclubComm,	
-	g.SAGamingComm,	
-	g.PGSoftComm,
-	--> Phase 4
-	g.WMCasinoComm,
-	g.BigGamingComm,
-	g.JokerComm,
-	g.HabaneroComm,
-	g.VGamingComm,
-	g.CGComm, 			
-	g.AdvantComm, 		
-	g.AdvantMiniComm, 	
-	g.MaxGameComm,
-	g.FGGComm,
-	g.JiliComm,
-	g.YeeBetComm,	
-	g.MgRNGComm
-FROM dbo.LicenseeGroupComm g WITH (NOLOCK) 
+	g.IsDefault
+FROM LicenseeGroupDiscount g WITH(NOLOCK)
 WHERE 
 	IsActive = 1 
-	AND Id = @GroupCommID
+	AND GroupDiscountID = @GroupDiscountID
 	AND Licenseeid=@LicenseeID
+	
+SELECT Sporttype, Bettype, Discount
+FROM LicenseeGroupDiscount g WITH(NOLOCK)
+	INNER JOIN LicenseeGroupDiscountDetail gd WITH (NOLOCK) ON g.GroupDiscountID = gd.GroupDiscountID	
+WHERE 
+	IsActive = 1 
+	AND g.GroupDiscountID = @GroupDiscountID
+	AND g.Licenseeid=@LicenseeID		
 END
 GO   
