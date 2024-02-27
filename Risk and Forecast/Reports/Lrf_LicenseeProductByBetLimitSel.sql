@@ -1,13 +1,14 @@
-/*<info serverAlias="DBLIC-bodb_licensee" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBCUST-bodb_licensee" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_LicenseeProductByBetLimitSel]
 	@LicenseeName VARCHAR(50)
+	,@SettingStatus TINYINT = 0
 AS
 
 /*
 	Created: 20190626@Johnson
 	Task: Product list hardcode which offered for selected licensees
-	DB: DBLIC/bodb_licensee
+	DB: DBCUST/bodb_licensee
 	Original: Lrf_LicenseeProductSel
 	
 	Revisions:
@@ -35,6 +36,7 @@ AS
 		- 20231123@Johnson: Add Seal Entertainment [redmine: #180380]				 
 		- 20231124@Luke: Integrate WE Live Casino [Redmine: #196573]
 		- 20240501@Tacy: Integrate Live22 [Redmine: #197702]
+		- 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports & move to DBCUST [Redmine: #199523]
 
 */
 
@@ -53,7 +55,7 @@ BEGIN
 		ProductID INT,
 		ProductName VARCHAR(50),
 		ProductCode VARCHAR(10),
-		isEnable BIT)
+		isEnable BIT DEFAULT (0))
 
 	SELECT @LicenseeiD = LicenseeiD
 	FROM dbo.Licensees WITH (NOLOCK) 
@@ -61,7 +63,7 @@ BEGIN
 
 	INSERT INTO @tblSuper (SrecommendID)
 	SELECT CustID
-	FROM DBCUST.CustDB.dbo.Dep_CustSuper WITH (NOLOCK)
+	FROM CustDB.dbo.Dep_CustSuper WITH (NOLOCK)
 	WHERE Site = @LicenseeName
 
 	IF EXISTS (SELECT 1 FROM @tblSuper)
@@ -71,10 +73,12 @@ BEGIN
 			p.ProductId
 			,p.ProductName
 			,p.ProductPrefix AS  ProductCode
-			,CASE WHEN p.ProductID IN (10,11) OR ApplyDCS = 1 THEN 0 ELSE 1 END 
+			,CASE WHEN p.ProductID IN (10,3,37) OR ApplyDCS = 1 THEN 0 ELSE 1 END --AG Casino, BA, Saba Promotion
 		FROM dbo.Product3rd p WITH (NOLOCK) 
 			INNER JOIN dbo.LicenseeProduct3rd lp WITH (NOLOCK) ON p.ProductId = lp.ProductId
-		WHERE lp.LicenseeID  = @LicenseeID
+		WHERE lp.LicenseeID  = @LicenseeID AND OfferSite IN (0,2)
+			AND ((Enabled=1 AND ISNULL(p.EndOfSupportDate, GETDATE())>= CAST(GETDATE() AS DATE)) 
+				OR p.Productid=25) --Cash Out (enabled by default, following Sportsbook [#165160])
 
 		UNION ALL
 
@@ -96,11 +100,13 @@ BEGIN
 
 		--check DCS setting
 		;WITH tmp AS(
-		SELECT DISTINCT ps.ProductID 
-		FROM DBCUST.CustDB.dbo.Dep_LicenseeProductSetting lps WITH (NOLOCK)
-			INNER JOIN DBCUST.CustDB.dbo.Dep_ProductSetting ps WITH (NOLOCK) ON lps.ProductSettingID = ps.ProductSettingID
-			INNER JOIN @tblSuper su ON lps.CustID = su.SrecommendID
-		WHERE ps.ProductID IN (SELECT productID FROM dbo.Product3rd p WITH (NOLOCK) WHERE applyDCS = 1)
+			SELECT DISTINCT ps.ProductID 
+			FROM DBCUST.CustDB.dbo.Dep_LicenseeProductSetting lps WITH (NOLOCK)
+				INNER JOIN CustDB.dbo.Dep_ProductSetting ps WITH (NOLOCK) ON lps.ProductSettingID = ps.ProductSettingID
+				INNER JOIN CustDB.dbo.Dep_ProductSettingDetail psd WITH (NOLOCK) ON psd.ProductSettingID = ps.ProductSettingID
+				INNER JOIN @tblSuper su ON lps.CustID = su.SrecommendID
+			WHERE ps.ProductID IN (SELECT productID FROM dbo.Product3rd p WITH (NOLOCK) WHERE applyDCS = 1)
+				AND psd.SettingStatus<=@SettingStatus AND ps.SettingType=4 --Product Status
 		)
 		UPDATE t
 		SET isEnable = 1
@@ -112,7 +118,7 @@ BEGIN
 	UPDATE t
 	SET IsEnable = 1
 	FROM @tblProductActive t
-	WHERE productID IN (0,2,8) -- SB/NG/Keno
+	WHERE productID IN (0,2,8)
 
 	--only show list products hardcode
 	SELECT
@@ -121,42 +127,14 @@ BEGIN
 		,ProductCode
 		,isEnable
 	FROM @tblProductActive t 
-	WHERE ProductID IN (0,--Sportsbook
-			2,--	Number Game
-			5,--	Virtual Sports
-			27,--	Virtual Sports 2
-			10,--	AG Casino
-			8,--	RNG Keno
-			28,--	Lottery
-			40,--	Table
-			43,--	I4D
-			63,--	SLT
-			62,--	Creative Gaming
-			--20210629@Johnson: add more products
-			6,--	RnG Casino
-			25,--	Cash Out
-			31,--	Exchange
-			32,--	Pragmatic
-			61,--	Habanero
-			56,--	Joker
-			42,--	Saba.club
-			36,--	SG
-			38,--	Virtual Games
-			34,--	Arcadia Gaming
-			55,--	PG Soft
-			66,--	VGaming
-			67,--	AdvantPlay 
-			68,--	AdvantPlay Mini
-			69,--	Bitcoin
-			70,--	FGG	
-			60,--	MaxGame
-			72,-- 	Seal Entertainment
-			75,--	Jili
-			76,--	YeeBet
-			73,--	MG-RNG
-			77,--	Virtual Sports 3
-			80, --	WE Live Casino
-			79 --	Live22
+	WHERE T.isEnable=1
+	AND ProductID NOT IN (
+			 21 -- Allbet
+			,22 -- Macau Games
+			,39 -- SA Gaming
+			,45 -- AE Sexy
+			,51 -- WM
+			,57 -- BG	
 		)
 	ORDER BY ProductID ASC
 END

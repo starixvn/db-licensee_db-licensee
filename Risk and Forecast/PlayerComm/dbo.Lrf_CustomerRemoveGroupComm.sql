@@ -41,6 +41,7 @@ AS
 		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
 		- 20230315@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 		- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
+		- 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
 
 */  
 BEGIN  
@@ -53,15 +54,12 @@ BEGIN
 			@AllbetComm DECIMAL(9,8),
 			@MacauComm DECIMAL(9,8),
 			@PPComm DECIMAL(9,8),
-			@GDComm DECIMAL(9,8),
-			@AGComm DECIMAL(9,8),
 			--phase 2
 			@SexyGamingComm DECIMAL(9,8),
 			@SpadeGamingComm DECIMAL(9,8),
 			@KenoComm DECIMAL(9,8),
 			@LotteryComm DECIMAL(9,8),
 			@VSComm DECIMAL(9,8),
-			@VS2Comm DECIMAL(9,8),
 			@TableGameComm DECIMAL(9,8),
 			-- phase 3
 			@VirtualGamesComm DECIMAL(9,8) = 0,
@@ -79,7 +77,6 @@ BEGIN
 			@CGComm				DECIMAL(9,8) = 0,
 			@AdvantComm			DECIMAL(9,8) = 0,
 			@AdvantMiniComm		DECIMAL(9,8) = 0,
-			@VS3Comm			DECIMAL(9,8) = 0,
 			
 			@MaxGameComm		DECIMAL(9,8) = 0,
 			@FGGComm			DECIMAL(9,8) = 0,
@@ -135,14 +132,11 @@ BEGIN
 				@AllbetComm=AllbetComm,				
 				@MacauComm=MacauComm,
 				@PPComm=PPComm,
-				--@GDComm=GDComm,
-				--@AGComm=AGComm
 				@SexyGamingComm = SexyGamingComm ,
 				@SpadeGamingComm = SpadeGamingComm,
 				@KenoComm = KenoComm,
 				@LotteryComm = LotteryComm,
 				@VSComm = VSComm,
-				@VS2Comm = VS2Comm,
 				@TableGameComm = TableGameComm,
 				@VirtualGamesComm  = VirtualGamesComm,
 				@ArcadiaGamingComm  = ArcadiaGamingComm,
@@ -159,7 +153,6 @@ BEGIN
 				@CGComm				= CGComm,
 				@AdvantComm			= AdvantComm,
 				@AdvantMiniComm		= AdvantMiniComm,
-				@VS3Comm			= VS3Comm,
 				
 				@MaxGameComm		= MaxGameComm,
 				@FGGComm			= FGGComm,
@@ -184,15 +177,11 @@ BEGIN
 				@AllbetComm=@AllbetComm,
 				@MacauComm=@MacauComm,
 				@PPComm=@PPComm,
-				--@GDComm=@GDComm,
-				--@AGComm=@AGComm,
 				@IsUpdateNG=1,
 				@IsUpdateRNG=1,			
 				@IsUpdateAllbet=1,
 				@IsUpdateMacau=1,
 				@IsUpdatePP=1,
-				--@IsUpdateGD=1,
-				--@IsUpdateAG=1,
 				---start param of phase 2
 				@IsUpdateSexyGaming = 1,	
 				@SexyGamingComm = @SexyGamingComm,
@@ -204,8 +193,6 @@ BEGIN
 				@LotteryComm = @LotteryComm,
 				@IsUpdateVS = 1,
 				@VSComm = @VSComm,
-				@IsUpdateVS2 = 1,	
-				@VS2Comm = @VS2Comm, 
 				@IsUpdateTableGame = 1,
 				@TableGameComm = @TableGameComm,
 				-- phase 3
@@ -228,7 +215,6 @@ BEGIN
 				@IsUpdateCG				= 1,
 				@IsUpdateAdvant			= 1,
 				@IsUpdateAdvantMini		= 1,
-				@IsUpdateVS3			= 1,
 
 				@WMCasinoComm			= @WMCasinoComm	,	
 				@BigGamingComm			= @BigGamingComm,		
@@ -239,7 +225,6 @@ BEGIN
 				@CGComm					= @CGComm,
 				@AdvantComm				= @AdvantComm,
 				@AdvantMiniComm			= @AdvantMiniComm,
-				@VS3Comm				= @VS3Comm,
 				
 				@IsUpdateMaxGame		= 1,
 				@IsUpdateFGG			= 1,
@@ -282,15 +267,11 @@ BEGIN
 			@AllbetComm= 0,
 			@MacauComm= 0,
 			@PPComm= 0,
-			--@GDComm= 0,
-			--@AGComm= 0,
 			@IsUpdateNG=1,
 			@IsUpdateRNG=1,	
 			@IsUpdateAllbet=1,
 			@IsUpdateMacau=1,
 			@IsUpdatePP=1,
-			--@IsUpdateGD=1,
-			--@IsUpdateAG=1,	
 			---start param of phase 2
 			@IsUpdateSexyGaming = 1,	
 			@SexyGamingComm = 0,
@@ -302,8 +283,6 @@ BEGIN
 			@LotteryComm = 0,
 			@IsUpdateVS = 1,
 			@VSComm = 0,
-			@IsUpdateVS2 = 1,	
-			@VS2Comm = 0, 
 			@IsUpdateTableGame = 1,
 			@TableGameComm = 0,
 			
@@ -327,7 +306,6 @@ BEGIN
 			@IsUpdateCG				= 1,
 			@IsUpdateAdvant			= 1,
 			@IsUpdateAdvantMini		= 1,
-			@IsUpdateVS3			= 1,		
 			@WMCasinoComm			= 0,	
 			@BigGamingComm			= 0,		
 			@JokerComm				= 0,			
@@ -337,7 +315,6 @@ BEGIN
 			@CGComm					= 0,
 			@AdvantComm				= 0,
 			@AdvantMiniComm			= 0,
-			@VS3Comm				= 0,
 			
 			@IsUpdateMaxGame		= 1,
 			@IsUpdateFGG			= 1,
@@ -369,15 +346,12 @@ BEGIN
 			AllbetComm= 0,
 			MacauComm= 0,
 			PPComm= 0,
-			--GDComm= 0,
-			--AGComm= 0,
 			-- phase 2
 			SexyGamingComm = 0 ,
 			SpadeGamingComm = 0,
 			KenoComm = 0,
 			LotteryComm = 0,
 			VSComm = 0,
-			VS2Comm = 0,
 			TableGameComm = 0,
 			--phase 3
 			VirtualGamesComm = 0,	
@@ -395,7 +369,6 @@ BEGIN
 			CGComm			 = 0,
 			AdvantComm		 = 0,
 			AdvantMiniComm	 = 0,
-			VS3Comm		 = 0,
 			
 			MaxGameComm	 = 0,
 			FGGComm		 = 0,

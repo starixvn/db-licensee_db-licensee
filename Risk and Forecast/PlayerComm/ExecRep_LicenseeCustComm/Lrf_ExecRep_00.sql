@@ -10,8 +10,6 @@ ALTER PROCEDURE [dbo].[Lrf_ExecRep_00]
 	@IsUpdateAllbet BIT = 0,
 	@IsUpdateMacau BIT = 0,
 	@IsUpdatePP BIT = 0,
-	@IsUpdateGD BIT = 0,
-	@IsUpdateAG BIT = 0,
 	@SBComm DECIMAL(9,8)=0,
 	@NGComm DECIMAL(9,8)=0,	
 	@RNGComm DECIMAL(9,8)=0,
@@ -19,8 +17,6 @@ ALTER PROCEDURE [dbo].[Lrf_ExecRep_00]
 	@AllbetComm DECIMAL(9,8)=0,	
 	@MacauComm DECIMAL(9,8)=0,	
 	@PPComm DECIMAL(9,8)=0,	
-	@GDComm DECIMAL(9,8)=0,	
-	@AGComm DECIMAL(9,8)=0,
 	--start param of phase 2 
 	@IsUpdateSexyGaming BIT = 0,	
 	@SexyGamingComm DECIMAL(9,8) = 0,
@@ -32,8 +28,6 @@ ALTER PROCEDURE [dbo].[Lrf_ExecRep_00]
 	@LotteryComm DECIMAL(9,8) = 0,
 	@IsUpdateVS BIT = 0,	
 	@VSComm DECIMAL(9,8) = 0,
-	@IsUpdateVS2 BIT = 0,	
-	@VS2Comm DECIMAL(9,8) = 0,
 	@IsUpdateTableGame BIT = 0,	
 	@TableGameComm DECIMAL(9,8) = 0,
 	-- end of phase 2
@@ -57,7 +51,6 @@ ALTER PROCEDURE [dbo].[Lrf_ExecRep_00]
 	@IsUpdateCG				BIT = 0,
 	@IsUpdateAdvant			BIT = 0,
 	@IsUpdateAdvantMini		BIT = 0,
-	@IsUpdateVS3			BIT = 0,
 	@WMCasinoComm		DECIMAL(9,8) = 0,
 	@BigGamingComm		DECIMAL(9,8) = 0,
 	@JokerComm			DECIMAL(9,8) = 0,
@@ -66,7 +59,6 @@ ALTER PROCEDURE [dbo].[Lrf_ExecRep_00]
 	@CGComm				DECIMAL(9,8) = 0,
 	@AdvantComm			DECIMAL(9,8) = 0,
 	@AdvantMiniComm		DECIMAL(9,8) = 0,
-	@VS3Comm			DECIMAL(9,8) = 0,
 	
 	@IsUpdateMaxGame		BIT = 0,
 	@IsUpdateFGG			BIT = 0,
@@ -105,6 +97,7 @@ AS
 		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
 		- 20230314@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 		- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
+		- 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
 		
 	Param's Explanation:
 
@@ -164,7 +157,6 @@ BEGIN
 				, KenoComm  = CASE WHEN @IsUpdateKeno = 1 THEN @KenoComm ELSE KenoComm END
 				, LotteryComm  = CASE WHEN @IsUpdateLottery = 1 THEN @LotteryComm ELSE LotteryComm END
 				, VSComm  = CASE WHEN @IsUpdateVS = 1 THEN @VSComm ELSE VSComm END
-				, VS2Comm = CASE WHEN @IsUpdateVS2 = 1 THEN @VS2Comm ELSE VS2Comm END
 				, TableGameComm  = CASE WHEN @IsUpdateTableGame = 1 THEN @TableGameComm ELSE TableGameComm END
 				-- PHASE 3
 				, VirtualGamesComm  = CASE WHEN @IsUpdateVirtualGames = 1 THEN @VirtualGamesComm  ELSE VirtualGamesComm END
@@ -182,7 +174,6 @@ BEGIN
 				,CGComm = CASE WHEN @IsUpdateCG = 1 THEN @CGComm ELSE CGComm END
 				,AdvantComm = CASE WHEN @IsUpdateAdvant = 1 THEN @AdvantComm ELSE AdvantComm END
 				,AdvantMiniComm = CASE WHEN @IsUpdateAdvantMini = 1 THEN @AdvantMiniComm ELSE AdvantMiniComm END
-				,VS3Comm = CASE WHEN @IsUpdateVS3 = 1 THEN @VS3Comm ELSE VS3Comm END
 				
 				,MaxGameComm = CASE WHEN @IsUpdateMaxGame = 1 THEN @MaxGameComm ELSE MaxGameComm END
 				,FGGComm = CASE WHEN @IsUpdateFGG = 1 THEN @FGGComm ELSE FGGComm END
@@ -247,7 +238,6 @@ BEGIN
 			OR @IsUpdateKeno = 1
 			OR @IsUpdateLottery = 1
 			OR @IsUpdateVS = 1
-			OR @IsUpdateVS2 = 1
 			OR @IsUpdateTableGame = 1
 			--PHASE 3
 			OR @IsUpdateVirtualGames  = 1
@@ -265,7 +255,6 @@ BEGIN
 			OR @IsUpdateCG				= 1
 			OR @IsUpdateAdvant			= 1
 			OR @IsUpdateAdvantMini		= 1
-			OR @IsUpdateVS3				= 1
 			
 			OR @IsUpdateMaxGame			= 1
 			OR @IsUpdateFGG				= 1
@@ -287,7 +276,6 @@ BEGIN
 					, KenoComm  = CASE WHEN @IsUpdateKeno = 1 THEN @KenoComm ELSE KenoComm END
 					, LotteryComm  = CASE WHEN @IsUpdateLottery = 1 THEN @LotteryComm ELSE LotteryComm END
 					, VSComm  = CASE WHEN @IsUpdateVS = 1 THEN @VSComm ELSE VSComm END
-					, VS2Comm = CASE WHEN @IsUpdateVS2 = 1 THEN @VS2Comm ELSE VS2Comm END
 					, TableGameComm  = CASE WHEN @IsUpdateTableGame = 1 THEN @TableGameComm ELSE TableGameComm END
 					-- PHASE 3
 					, VirtualGamesComm  = CASE WHEN @IsUpdateVirtualGames = 1 THEN @VirtualGamesComm  ELSE VirtualGamesComm END
@@ -305,7 +293,6 @@ BEGIN
 					,CGComm = CASE WHEN @IsUpdateCG = 1 THEN @CGComm ELSE CGComm END
 					,AdvantComm = CASE WHEN @IsUpdateAdvant = 1 THEN @AdvantComm ELSE AdvantComm END
 					,AdvantMiniComm = CASE WHEN @IsUpdateAdvantMini = 1 THEN @AdvantMiniComm ELSE AdvantMiniComm END
-					,VS3Comm = CASE WHEN @IsUpdateVS3 = 1 THEN @VS3Comm ELSE VS3Comm END
 					
 					,MaxGameComm = CASE WHEN @IsUpdateMaxGame = 1 THEN @MaxGameComm ELSE MaxGameComm END
 					,FGGComm = CASE WHEN @IsUpdateFGG = 1 THEN @FGGComm ELSE FGGComm END

@@ -9,15 +9,12 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeGroupCommIns]
 	@AllbetComm DECIMAL (9,8)=0,
 	@MacauComm DECIMAL (9,8)=0,
 	@PPComm DECIMAL (9,8)=0,
-	--@AGComm DECIMAL (9,8)=0,
-	--@GDComm DECIMAL (9,8)=0,
 	--start param of phase 2 
 	@SexyGamingComm DECIMAL(9,8) = 0,
 	@SpadeGamingComm DECIMAL(9,8) = 0,
 	@KenoComm DECIMAL(9,8) = 0,
 	@LotteryComm DECIMAL(9,8) = 0,
 	@VSComm DECIMAL(9,8) = 0,
-	@VS2Comm DECIMAL(9,8) = 0,
 	@TableGameComm DECIMAL(9,8) = 0,
 	-- end of phase 2
 	-- phase 3
@@ -36,7 +33,6 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeGroupCommIns]
 	@CGComm				DECIMAL(9,8) = 0,
 	@AdvantComm			DECIMAL(9,8) = 0,
 	@AdvantMiniComm		DECIMAL(9,8) = 0,
-	@VS3Comm			DECIMAL(9,8) = 0,
 	@MaxGameComm		DECIMAL(9,8) = 0,
 	@FGGComm			DECIMAL(9,8) = 0,
 	@JiliComm			DECIMAL(9,8) = 0,
@@ -84,6 +80,7 @@ Revisions:
 	- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
 	- 20230810@Luke: LAP - SEA Localization [Redmine: #187132]  
 	- 20231222@Luke: LAP - Support Indonesian & Thai language [Redmine: #196246]  
+	- 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
 
 Param's Explanation:
 
@@ -109,15 +106,12 @@ BEGIN
 		OR @AllbetComm > 0.15
 		OR @MacauComm > 0.15 
 		OR @PPComm > 0.15 
-		--OR @GDComm > 0.15 
-		--OR @AGComm > 0.15 
 		-- phase 2
 		OR @SexyGamingComm  > 0.15
 		OR @SpadeGamingComm  > 0.15
 		OR @KenoComm  > 0.15
 		OR @LotteryComm  > 0.15
 		OR @VSComm  > 0.15
-		OR @VS2Comm > 0.15
 		OR @TableGameComm  > 0.15
 		--Phase 3
 		OR @VirtualGamesComm > 0.15
@@ -135,7 +129,6 @@ BEGIN
 		OR @CGComm > 0.15
 		OR @AdvantComm > 0.15
 		OR @AdvantMiniComm > 0.15
-		OR @VS3Comm > 0.15
 		
 		OR @MaxGameComm > 0.15
 		OR @FGGComm > 0.15
@@ -173,13 +166,11 @@ BEGIN
 		INSERT INTO dbo.LicenseeGroupComm (LicenseeID,GroupName,SBComm,NGComm,color,isDefault,RNGComm,ParlayComm
 											,AllbetComm
 											,MacauComm,PPComm
-											--,GDComm,AGComm
 											,SexyGamingComm  
 											,SpadeGamingComm  
 											,KenoComm  
 											,LotteryComm  
 											,VSComm  
-											,VS2Comm 
 											,TableGameComm 
 											
 											,VirtualGamesComm 
@@ -197,7 +188,6 @@ BEGIN
 											,CGComm
 											,AdvantComm
 											,AdvantMiniComm
-											,VS3Comm
 											
 											,MaxGameComm
 											,FGGComm
@@ -209,13 +199,11 @@ BEGIN
 		VALUES (@LicenseeID,@GroupName,@SBComm,@NGComm,@GroupColor,@IsDefault,@RNGComm,@ParlayComm
 				,@AllbetComm
 				,@MacauComm,@PPComm
-				--,@GDComm,@AGComm
 				,@SexyGamingComm  
 				,@SpadeGamingComm  
 				,@KenoComm  
 				,@LotteryComm  
 				,@VSComm  
-				,@VS2Comm 
 				,@TableGameComm  
 				
 				,@VirtualGamesComm 
@@ -233,7 +221,6 @@ BEGIN
 				,@CGComm
 				,@AdvantComm
 				,@AdvantMiniComm
-				,@VS3Comm
 				
 				,@MaxGameComm
 				,@FGGComm
@@ -267,15 +254,12 @@ BEGIN
 		'AllbetComm="'+ COALESCE(CAST(@ALlbetComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'MacauComm="'+ COALESCE(CAST(@MacauComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'PPComm="'+ COALESCE(CAST(@PPComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		--'GDComm="'+ COALESCE(CAST(@GDComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		--'AGComm="'+ COALESCE(CAST(@AGComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		-- phase 2
 		'SexyGamingComm="'+ COALESCE(CAST(@SexyGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'SpadeGamingComm="'+ COALESCE(CAST(@SpadeGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'KenoComm="'+ COALESCE(CAST(@KenoComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'LotteryComm="'+ COALESCE(CAST(@LotteryComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'VSComm="'+ COALESCE(CAST(@VSComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'VS2Comm="'+ COALESCE(CAST(@VS2Comm as VARCHAR(50)),SPACE(1)) + '" '+
 		'TableGameComm="'+ COALESCE(CAST(@TableGameComm as VARCHAR(50)),SPACE(1)) + '" '+
 		-- phase 3
 		'VirtualGamesComm="'+ COALESCE(CAST(@VirtualGamesComm as VARCHAR(50)),SPACE(1)) + '" '+
@@ -293,7 +277,6 @@ BEGIN
 		'CGComm="'+ COALESCE(CAST(@CGComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'AdvantComm="'+ COALESCE(CAST(@AdvantComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'AdvantMiniComm="'+ COALESCE(CAST(@AdvantMiniComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'VS3Comm="'+ COALESCE(CAST(@VS3Comm as VARCHAR(50)),SPACE(1)) + '" '+
 		'MaxGameComm="'+ COALESCE(CAST(@MaxGameComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'FGGComm="'+ COALESCE(CAST(@FGGComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'JiliComm="'+ COALESCE(CAST(@JiliComm as VARCHAR(50)),SPACE(1)) + '" '+
@@ -318,15 +301,12 @@ BEGIN
 		'AllbetComm="'+ COALESCE(CAST(@ALlbetComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'MacauComm="'+ COALESCE(CAST(@MacauComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'PPComm="'+ COALESCE(CAST(@PPComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		--'GDComm="'+ COALESCE(CAST(@GDComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		--'AGComm="'+ COALESCE(CAST(@AGComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		-- phase 2
 		'SexyGamingComm="'+ COALESCE(CAST(@SexyGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'SpadeGamingComm="'+ COALESCE(CAST(@SpadeGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'KenoComm="'+ COALESCE(CAST(@KenoComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'LotteryComm="'+ COALESCE(CAST(@LotteryComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'VSComm="'+ COALESCE(CAST(@VSComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'VS2Comm="'+ COALESCE(CAST(@VS2Comm as VARCHAR(50)),SPACE(1)) + '" '+
 		'TableGameComm="'+ COALESCE(CAST(@TableGameComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		-- phase 3
 		'VirtualGamesComm="'+ COALESCE(CAST(@VirtualGamesComm as VARCHAR(50)),SPACE(1)) + '" '+
@@ -344,7 +324,6 @@ BEGIN
 		'CGComm="'+ COALESCE(CAST(@CGComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'AdvantComm="'+ COALESCE(CAST(@AdvantComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'AdvantMiniComm="'+ COALESCE(CAST(@AdvantMiniComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'VS3Comm="'+ COALESCE(CAST(@VS3Comm as VARCHAR(50)),SPACE(1)) + '" '+
 		'MaxGameComm="'+ COALESCE(CAST(@MaxGameComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'FGGComm="'+ COALESCE(CAST(@FGGComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'JiliComm="'+ COALESCE(CAST(@JiliComm as VARCHAR(50)),SPACE(1)) + '" '+

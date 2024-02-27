@@ -32,6 +32,7 @@ AS
 	- 20230412@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
 	- 20230426@Johnson: missing version PRO [redmine:#182922]
 	- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
+	- 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
 
 */  
 BEGIN  
@@ -53,7 +54,6 @@ SELECT g.ID AS GroupCommID,
 	g.LotteryComm,
 	g.KenoComm,
 	g.VSComm,
-	g.VS2Comm,
 	g.TableGameComm,
 	g.VirtualGamesComm,	
 	g.ArcadiaGamingComm,	
@@ -69,7 +69,6 @@ SELECT g.ID AS GroupCommID,
 	g.CGComm, 			
 	g.AdvantComm, 		
 	g.AdvantMiniComm, 	
-	g.VS3Comm,
 	g.MaxGameComm,
 	g.FGGComm,
 	g.JiliComm,

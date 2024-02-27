@@ -34,7 +34,8 @@ ALTER PROCEDURE [dbo].[WriteLog_UserLog_UpdMemComm_RunSP]
 		- 20230313@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 		- 20230426@Johnson: missing version PRO [redmine:#182922]
 		- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
-		
+		- 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
+
     Param's Explaination:    	
 		- @UserID: UserId perform this action
 		- @@strCustID: A string of individual CustId separated by ","
@@ -81,7 +82,6 @@ BEGIN
 				'KenoComm="'+ COALESCE(CAST(ISNULL(lcc.KenoComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
 				'LotteryComm="'+ COALESCE(CAST(ISNULL(lcc.LotteryComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
 				'VSComm="'+ COALESCE(CAST(ISNULL(lcc.VSComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
-				'VS2Comm="'+ COALESCE(CAST(ISNULL(lcc.VS2Comm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
 				'TableGameComm="'+ COALESCE(CAST(ISNULL(lcc.TableGameComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
 				--phase 3
 				'VirtualGamesComm="'+ COALESCE(CAST(ISNULL(lcc.VirtualGamesComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
@@ -99,7 +99,6 @@ BEGIN
 				'CGComm="'+ COALESCE(CAST(ISNULL(lcc.CGComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
 				'AdvantComm="'+ COALESCE(CAST(ISNULL(lcc.AdvantComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
 				'AdvantMiniComm="'+ COALESCE(CAST(ISNULL(lcc.AdvantMiniComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
-				'VS3Comm="'+ COALESCE(CAST(ISNULL(lcc.VS3Comm,0) as VARCHAR(50)),SPACE(1)) + '" '+
 				
 				'MaxGameComm="'+ COALESCE(CAST(ISNULL(lcc.MaxGameComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
 				'FGGComm="'+ COALESCE(CAST(ISNULL(lcc.FGGComm,0) as VARCHAR(50)),SPACE(1)) + '" '+

@@ -11,15 +11,11 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeCustCommUpd]
 	@AllbetComm DECIMAL(9,8) = 0,
 	@MacauComm DECIMAL(9,8) = 0,
 	@PPComm DECIMAL(9,8) = 0,
-	--@GDComm DECIMAL(9,8) = 0,
-	--@AGComm DECIMAL(9,8) = 0,
 	@IsUpdateNG BIT = 0,
 	@IsUpdateRNG BIT = 0,
 	@IsUpdateAllbet BIT = 0,
 	@IsUpdateMacau BIT = 0,
 	@IsUpdatePP BIT = 0,
-	--@IsUpdateGD BIT = 0,
-	--@IsUpdateAG BIT = 0,
 	--start param of phase 2 
 	@IsUpdateSexyGaming BIT = 0,	
 	@SexyGamingComm DECIMAL(9,8) = 0,
@@ -31,8 +27,6 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeCustCommUpd]
 	@LotteryComm DECIMAL(9,8) = 0,
 	@IsUpdateVS BIT = 0,	
 	@VSComm DECIMAL(9,8) = 0,
-	@IsUpdateVS2 BIT = 0,	
-	@VS2Comm DECIMAL(9,8) = 0,
 	@IsUpdateTableGame BIT = 0,	
 	@TableGameComm DECIMAL(9,8) = 0,
 	-- end of phase 2
@@ -57,7 +51,6 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeCustCommUpd]
 	@IsUpdateCG				BIT = 0,
 	@IsUpdateAdvant			BIT = 0,
 	@IsUpdateAdvantMini		BIT = 0,
-	@IsUpdateVS3			BIT = 0,
 	@WMCasinoComm		DECIMAL(9,8) = 0,
 	@BigGamingComm		DECIMAL(9,8) = 0,
 	@JokerComm			DECIMAL(9,8) = 0,
@@ -66,7 +59,6 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeCustCommUpd]
 	@CGComm				DECIMAL(9,8) = 0,
 	@AdvantComm			DECIMAL(9,8) = 0,
 	@AdvantMiniComm		DECIMAL(9,8) = 0,
-	@VS3Comm			DECIMAL(9,8) = 0,
 	
 	@IsUpdateMaxGame	BIT = 0,
 	@IsUpdateFGG		BIT = 0,
@@ -119,6 +111,7 @@ AS
 		- 20221201@Tacy: Non-sports products - Remove GDG and Fishing World [RedmineID: #174511]
 		- 20230314@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 		- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
+		- 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
 		
 	Param's Explanation:
 */ 
@@ -168,15 +161,11 @@ BEGIN
 		,@AllbetComm = @AllbetComm
 		,@MacauComm = @MacauComm
 		,@PPComm = @PPComm
-		--,@GDComm = @GDComm
-		--,@AGComm = @AGComm
 		,@IsUpdateNG=@IsUpdateNG
 		,@IsUpdateRNG=@IsUpdateRNG	
 		,@IsUpdateAllbet=@IsUpdateAllbet
 		,@IsUpdateMacau=@IsUpdateMacau
 		,@IsUpdatePP=@IsUpdatePP
-		--,@IsUpdateGD=@IsUpdateGD
-		--,@IsUpdateAG=@IsUpdateAG
 		---start param of phase 2
 		,@IsUpdateSexyGaming = @IsUpdateSexyGaming	
 		,@SexyGamingComm = @SexyGamingComm
@@ -188,8 +177,6 @@ BEGIN
 		,@LotteryComm =  @LotteryComm
 		,@IsUpdateVS = @IsUpdateVS 	
 		,@VSComm =  @VSComm
-		,@IsUpdateVS2 =  @IsUpdateVS2	
-		,@VS2Comm = @VS2Comm 
 		,@IsUpdateTableGame = @IsUpdateTableGame
 		,@TableGameComm = @TableGameComm
 		---end of phase 2
@@ -214,7 +201,6 @@ BEGIN
 		,@IsUpdateCG			= @IsUpdateCG		
 		,@IsUpdateAdvant		= @IsUpdateAdvant		
 		,@IsUpdateAdvantMini	= @IsUpdateAdvantMini		
-		,@IsUpdateVS3			= @IsUpdateVS3		
 		,@WMCasinoComm				= @WMCasinoComm		
 		,@BigGamingComm				= @BigGamingComm		
 		,@JokerComm					= @JokerComm			
@@ -223,7 +209,6 @@ BEGIN
 		,@CGComm					= @CGComm	
 		,@AdvantComm				= @AdvantComm	
 		,@AdvantMiniComm			= @AdvantMiniComm	
-		,@VS3Comm					= @VS3Comm	
 		
 		,@IsUpdateMaxGame			= @IsUpdateMaxGame	
 		,@IsUpdateFGG				= @IsUpdateFGG	

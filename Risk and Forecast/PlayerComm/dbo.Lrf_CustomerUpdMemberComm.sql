@@ -12,8 +12,6 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm]
 	@AllbetComm DECIMAL(9,8)=0,	
 	@MacauComm DECIMAL(9,8)=0,	
 	@PPComm DECIMAL(9,8)=0,	
-	--@GDComm DECIMAL(9,8)=0,	
-	--@AGComm DECIMAL(9,8)=0,	
 	@IsUpdateSB BIT = 1,
 	@IsParlayComm BIT = 1,
 	@IsUpdateComm BIT=1,
@@ -22,8 +20,6 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm]
 	@IsUpdateAllbet BIT = 0,
 	@IsUpdateMacau BIT = 0,
 	@IsUpdatePP BIT = 0,
-	--@IsUpdateGD BIT = 0,
-	--@IsUpdateAG BIT = 0,
 	@IsUpdateGroupComm BIT = 0,
 	@isClearGroupComm BIT = 0,
 	@ClearGroupCommGroupID INT = 0,
@@ -38,8 +34,6 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm]
 	@LotteryComm DECIMAL(9,8) = 0,
 	@IsUpdateVS BIT = 0,	
 	@VSComm DECIMAL(9,8) = 0,
-	@IsUpdateVS2 BIT = 0,	
-	@VS2Comm DECIMAL(9,8) = 0,
 	@IsUpdateTableGame BIT = 0,	
 	@TableGameComm DECIMAL(9,8) = 0,
 	-- end of phase 2
@@ -63,7 +57,6 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm]
 	@IsUpdateCG				BIT = 0,
 	@IsUpdateAdvant			BIT = 0,
 	@IsUpdateAdvantMini		BIT = 0,
-	@IsUpdateVS3			BIT = 0,
 	@IsUpdateMaxGame		BIT = 0,
 	@IsUpdateFGG			BIT = 0,
 	@IsUpdateJili			BIT = 0,
@@ -75,7 +68,6 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm]
 	@CGComm				DECIMAL(9,8) = 0,
 	@AdvantComm			DECIMAL(9,8) = 0,
 	@AdvantMiniComm		DECIMAL(9,8) = 0,
-	@VS3Comm			DECIMAL(9,8) = 0,
 	@MaxGameComm		DECIMAL(9,8) = 0,
 	@FGGComm			DECIMAL(9,8) = 0,
 	@JiliComm			DECIMAL(9,8) = 0,
@@ -134,6 +126,7 @@ AS
 		- 20230313@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 		- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
 		- 20230814@Luke: LAP - SEA Localization [Redmine: #187132]
+		- 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
 		
 	Param's Explanation:
 		1. To update a member/batch members without GroupCommID
@@ -194,15 +187,12 @@ BEGIN
 			,@AllbetComm = AllbetComm
 			,@MacauComm = MacauComm
 			,@PPComm = PPComm
-			--,@GDComm = GDComm
-			--,@AGComm = AGComm
 			-- phase 2
 			,@SexyGamingComm  = SexyGamingComm 
 			,@SpadeGamingComm  = SpadeGamingComm
 			,@KenoComm  = KenoComm
 			,@LotteryComm  = LotteryComm
 			,@VSComm  = VSComm
-			,@VS2Comm = VS2Comm
 			,@TableGameComm  = TableGameComm
 			-- phase 3
 			,@VirtualGamesComm = VirtualGamesComm	
@@ -220,7 +210,6 @@ BEGIN
 			,@CGComm			= CGComm
 			,@AdvantComm		= AdvantComm
 			,@AdvantMiniComm	= AdvantMiniComm
-			,@VS3Comm			= VS3Comm
 			
 			,@MaxGameComm		= MaxGameComm
 			,@FGGComm			= FGGComm
@@ -239,15 +228,12 @@ BEGIN
 		,@AllbetComm = ISNULL(@AllbetComm,0)
 		,@MacauComm = ISNULL(@MacauComm,0)
 		,@PPComm = ISNULL(@PPComm,0)
-		--,@GDComm = ISNULL(@GDComm,0)
-		--,@AGComm = ISNULL(@AGComm,0)
 		-- phase 2
 		,@SexyGamingComm  =  ISNULL (@SexyGamingComm, 0)
 		,@SpadeGamingComm  = ISNULL (@SpadeGamingComm, 0)
 		,@KenoComm  = ISNULL (@KenoComm, 0)
 		,@LotteryComm  = ISNULL (@LotteryComm, 0)
 		,@VSComm  = ISNULL (@VSComm, 0)
-		,@VS2Comm = ISNULL (@VS2Comm, 0)
 		,@TableGameComm  = ISNULL (@TableGameComm, 0)
 		-- phase 3
 		,@VirtualGamesComm = ISNULL(@VirtualGamesComm,0)	
@@ -264,7 +250,6 @@ BEGIN
 		,@CGComm = ISNULL(@CGComm,0)
 		,@AdvantComm	 = ISNULL(@AdvantComm	,0)
 		,@AdvantMiniComm = ISNULL(@AdvantMiniComm,0)
-		,@VS3Comm = ISNULL(@VS3Comm,0)
 		
 		,@MaxGameComm = ISNULL(@MaxGameComm,0)
 		,@FGGComm = ISNULL(@FGGComm,0)
@@ -283,7 +268,6 @@ BEGIN
 		OR @KenoComm  > 0.15
 		OR @LotteryComm  > 0.15
 		OR @VSComm  > 0.15
-		OR @VS2Comm > 0.15
 		OR @TableGameComm  > 0.15
 		--Phase 3
 		OR @VirtualGamesComm > 0.15
@@ -301,7 +285,6 @@ BEGIN
 		OR @CGComm > 0.15
 		OR @AdvantComm > 0.15
 		OR @AdvantMiniComm > 0.15
-		OR @VS3Comm > 0.15
 		
 		OR @MaxGameComm > 0.15
 		OR @FGGComm > 0.15
@@ -381,8 +364,6 @@ BEGIN
 				,@LotteryComm =  @LotteryComm
 				,@IsUpdateVS = @IsUpdateVS 	
 				,@VSComm =  @VSComm
-				,@IsUpdateVS2 =  @IsUpdateVS2	
-				,@VS2Comm = @VS2Comm 
 				,@IsUpdateTableGame = @IsUpdateTableGame
 				,@TableGameComm = @TableGameComm
 				---end of phase 2
@@ -406,7 +387,6 @@ BEGIN
 				,@IsUpdateCG			= @IsUpdateCG			
 				,@IsUpdateAdvant		= @IsUpdateAdvant		
 				,@IsUpdateAdvantMini	= @IsUpdateAdvantMini		
-				,@IsUpdateVS3			= @IsUpdateVS3			
 				,@WMCasinoComm				= @WMCasinoComm		
 				,@BigGamingComm				= @BigGamingComm		
 				,@JokerComm					= @JokerComm			
@@ -418,7 +398,6 @@ BEGIN
 				,@CGComm					= @CGComm		
 				,@AdvantComm				= @AdvantComm		
 				,@AdvantMiniComm			= @AdvantMiniComm		
-				,@VS3Comm					= @VS3Comm
 				
 				,@IsUpdateMaxGame			= @IsUpdateMaxGame
 				,@IsUpdateFGG				= @IsUpdateFGG
@@ -480,8 +459,6 @@ BEGIN
 					,@LotteryComm =  @LotteryComm
 					,@IsUpdateVS = @IsUpdateVS 	
 					,@VSComm =  @VSComm
-					,@IsUpdateVS2 =  @IsUpdateVS2	
-					,@VS2Comm = @VS2Comm 
 					,@IsUpdateTableGame = @IsUpdateTableGame
 					,@TableGameComm = @TableGameComm
 					---end of phase 2
@@ -505,7 +482,6 @@ BEGIN
 					,@IsUpdateCG			= @IsUpdateCG			
 					,@IsUpdateAdvant		= @IsUpdateAdvant		
 					,@IsUpdateAdvantMini	= @IsUpdateAdvantMini		
-					,@IsUpdateVS3			= @IsUpdateVS3	
 					,@IsUpdateMaxGame		= @IsUpdateMaxGame	
 					,@IsUpdateFGG			= @IsUpdateFGG	
 					,@IsUpdateJili			= @IsUpdateJili
@@ -520,7 +496,6 @@ BEGIN
 					,@CGComm					= @CGComm		
 					,@AdvantComm				= @AdvantComm		
 					,@AdvantMiniComm			= @AdvantMiniComm		
-					,@VS3Comm					= @VS3Comm
 					,@MaxGameComm				= @MaxGameComm					
 					,@FGGComm					= @FGGComm
 					,@JiliComm					= @JiliComm
@@ -568,8 +543,6 @@ BEGIN
 					,@LotteryComm =  @LotteryComm
 					,@IsUpdateVS = @IsUpdateVS 	
 					,@VSComm =  @VSComm
-					,@IsUpdateVS2 =  @IsUpdateVS2	
-					,@VS2Comm = @VS2Comm 
 					,@IsUpdateTableGame = @IsUpdateTableGame
 					,@TableGameComm = @TableGameComm
 					---end of phase 2
@@ -593,7 +566,6 @@ BEGIN
 					,@IsUpdateCG			= @IsUpdateCG			
 					,@IsUpdateAdvant		= @IsUpdateAdvant		
 					,@IsUpdateAdvantMini	= @IsUpdateAdvantMini		
-					,@IsUpdateVS3			= @IsUpdateVS3						
 					,@WMCasinoComm				= @WMCasinoComm		
 					,@BigGamingComm				= @BigGamingComm		
 					,@JokerComm					= @JokerComm			
@@ -605,7 +577,6 @@ BEGIN
 					,@CGComm					= @CGComm		
 					,@AdvantComm				= @AdvantComm		
 					,@AdvantMiniComm			= @AdvantMiniComm		
-					,@VS3Comm					= @VS3Comm	
 					
 					,@IsUpdateMaxGame		= @IsUpdateMaxGame	
 					,@IsUpdateFGG			= @IsUpdateFGG	
@@ -636,15 +607,12 @@ BEGIN
 		'AllbetComm="'+ COALESCE(CAST(@AllbetComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'MacauComm="'+ COALESCE(CAST(@MacauComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'PPComm="'+ COALESCE(CAST(@PPComm as VARCHAR(50)),SPACE(1)) + '" '+
-		--'GDComm="'+ COALESCE(CAST(@GDComm as VARCHAR(50)),SPACE(1)) + '" '+
-		--'AGComm="'+ COALESCE(CAST(@AGComm as VARCHAR(50)),SPACE(1)) + '" '
 		-- phase 2
 		'SexyGamingComm="'+ COALESCE(CAST(@SexyGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'SpadeGamingComm="'+ COALESCE(CAST(@SpadeGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'KenoComm="'+ COALESCE(CAST(@KenoComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'LotteryComm="'+ COALESCE(CAST(@LotteryComm as VARCHAR(50)),SPACE(1)) + '" '+
 		'VSComm="'+ COALESCE(CAST(@VSComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'VS2Comm="'+ COALESCE(CAST(@VS2Comm as VARCHAR(50)),SPACE(1)) + '" '+
 		'TableGameComm="'+ COALESCE(CAST(@TableGameComm as VARCHAR(50)),SPACE(1)) + '" '+
 		-- phase 3
 		'VirtualGamesComm="'+ COALESCE(CAST(@VirtualGamesComm as VARCHAR(50)),SPACE(1)) + '" '+
@@ -662,7 +630,6 @@ BEGIN
 		'CGComm="'+ COALESCE(CAST(@CGComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'AdvantComm="'+ COALESCE(CAST(@AdvantComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'AdvantMiniComm="'+ COALESCE(CAST(@AdvantMiniComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		'VS3Comm="'+ COALESCE(CAST(@VS3Comm as VARCHAR(50)),SPACE(1)) + '" ' +
 		
 		'MaxGameComm="'+ COALESCE(CAST(@MaxGameComm as VARCHAR(50)),SPACE(1)) + '" ' +
 		'FGGComm="'+ COALESCE(CAST(@FGGComm as VARCHAR(50)),SPACE(1)) + '" ' +
@@ -721,15 +688,12 @@ BEGIN
 						   'AllbetComm="'+ COALESCE(CAST(ISNULL(lcc.AllbetComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
 						   'MacauComm="'+ COALESCE(CAST(ISNULL(lcc.MacauComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
 						   'PPComm="'+ COALESCE(CAST(ISNULL(lcc.PPComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
-						   --'GDComm="'+ COALESCE(CAST(ISNULL(lcc.GDComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
-						   --'AGComm="'+ COALESCE(CAST(ISNULL(lcc.AGComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
 						    -- phase 2
 							'SexyGamingComm="'+ COALESCE(CAST(ISNULL(lcc.SexyGamingComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
 							'SpadeGamingComm="'+ COALESCE(CAST(ISNULL(lcc.SpadeGamingComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
 							'KenoComm="'+ COALESCE(CAST(ISNULL(lcc.KenoComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
 							'LotteryComm="'+ COALESCE(CAST(ISNULL(lcc.LotteryComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
 							'VSComm="'+ COALESCE(CAST(ISNULL(lcc.VSComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
-							'VS2Comm="'+ COALESCE(CAST(ISNULL(lcc.VS2Comm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
 							'TableGameComm="'+ COALESCE(CAST(ISNULL(lcc.TableGameComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
 							-- phase 3
 							'VirtualGamesComm="'+ COALESCE(CAST(ISNULL(lcc.VirtualGamesComm,0) as VARCHAR(50)),SPACE(1)) + '" '+
@@ -747,7 +711,6 @@ BEGIN
 							'CGComm="'+ COALESCE(CAST(ISNULL(lcc.CGComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
 							'AdvantComm="'+ COALESCE(CAST(ISNULL(lcc.AdvantComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
 							'AdvantMiniComm="'+ COALESCE(CAST(ISNULL(lcc.AdvantMiniComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
-							'VS3Comm="'+ COALESCE(CAST(ISNULL(lcc.VS3Comm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
 
 							'MaxGameComm="'+ COALESCE(CAST(ISNULL(lcc.MaxGameComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
 							'FGGComm="'+ COALESCE(CAST(ISNULL(lcc.FGGComm,0) as VARCHAR(50)),SPACE(1)) + '" ' +
@@ -811,8 +774,6 @@ BEGIN
 					@IsUpdateAllbet = @IsUpdateAllbet,
 					@IsUpdateMacau = @IsUpdateMacau,
 					@IsUpdatePP = @IsUpdatePP,
-					--@IsUpdateGD = @IsUpdateGD,
-					--@IsUpdateAG = @IsUpdateAG,
 					@SBComm = @SBComm,
 					@NGComm = @NGComm,	
 					@RNGComm = @RNGComm,
@@ -820,8 +781,6 @@ BEGIN
 					@AllbetComm = @AllbetComm,	
 					@MacauComm = @MacauComm,	
 					@PPComm = @PPComm,	
-					--@GDComm = @GDComm,	
-					--@AGComm = @AGComm,
 					@IsUpdateGroupComm = @IsUpdateGroupComm
 					---start param of phase 2
 					,@IsUpdateSexyGaming = @IsUpdateSexyGaming	
@@ -834,8 +793,6 @@ BEGIN
 					,@LotteryComm =  @LotteryComm
 					,@IsUpdateVS = @IsUpdateVS 	
 					,@VSComm =  @VSComm
-					,@IsUpdateVS2 =  @IsUpdateVS2	
-					,@VS2Comm = @VS2Comm 
 					,@IsUpdateTableGame = @IsUpdateTableGame
 					,@TableGameComm = @TableGameComm
 					-------end of phase 2
@@ -859,7 +816,6 @@ BEGIN
 					,@IsUpdateCG			= @IsUpdateCG			
 					,@IsUpdateAdvant		= @IsUpdateAdvant		
 					,@IsUpdateAdvantMini	= @IsUpdateAdvantMini		
-					,@IsUpdateVS3			= @IsUpdateVS3
 					,@WMCasinoComm				= @WMCasinoComm		
 					,@BigGamingComm				= @BigGamingComm		
 					,@JokerComm					= @JokerComm			
@@ -869,7 +825,6 @@ BEGIN
 					,@CGComm					= @CGComm		
 					,@AdvantComm				= @AdvantComm		
 					,@AdvantMiniComm			= @AdvantMiniComm		
-					,@VS3Comm					= @VS3Comm
 
 					,@MaxGameComm				= @MaxGameComm
 					,@FGGComm					= @FGGComm
