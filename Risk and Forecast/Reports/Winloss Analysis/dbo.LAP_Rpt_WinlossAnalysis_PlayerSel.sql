@@ -192,10 +192,14 @@ BEGIN
 		SELECT value FROM STRING_SPLIT (a.Bettype,',') 
 	) b;
 
-	UPDATE a 
-	SET a.ProductId = p.ProductID
-	FROM #BetTypeSel a 
-		INNER JOIN Products p WITH(NOLOCK) ON a.ProductCode = p.ProductPrefix
+	UPDATE a
+	SET a.ProductId = IIF(a.ProductCode = 'VS', 5, t.ProductId)
+	FROM #BetTypeSel a
+		CROSS APPLY (
+			SELECT TOP 1 p.ProductID AS ProductID
+			FROM SportBettypeMatrix p WITH (NOLOCK)
+			WHERE p.BetType = a.Bettype
+		) AS t
 
 	--TODO: Status selection -> include half WON/LOSE if any
 	SELECT @StatusCheck = CONCAT(@StatusCheck, IIF(CHARINDEX('112', @StatusCheck) > 0, ',114','')),

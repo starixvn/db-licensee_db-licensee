@@ -46,7 +46,20 @@ RETURN
 		SELECT sporttype FROM CTE_SportInput
 	),
 	CTE_GroupBettype AS (
-		SELECT Bettype, GroupTypeID FROM bodb02.dbo.f_GroupBettype()	
+		SELECT DISTINCT t.bettype, t.GroupTypeId 
+		FROM
+		(
+			SELECT bt.typeid AS bettype, bt.DisplayedTypeId AS GroupTypeId
+			FROM dbo.bettype bt WITH (NOLOCK)
+			WHERE bt.typeid <> bt.DisplayedTypeId
+				AND EXISTS (SELECT 1 FROM dbo.SportBettypeMatrix s WITH (NOLOCK) WHERE bt.typeid = s.bettype AND s.ProductId  = 1)
+		) a 
+		CROSS APPLY 
+		(
+			SELECT bettype, GroupTypeId
+			UNION ALL
+			SELECT GroupTypeId, GroupTypeId
+		) t	
 	),
 	CTE_BettypeInput AS (
 		SELECT CAST(value AS INT) AS Bettype 

@@ -279,9 +279,13 @@ BEGIN
 	) b;
 
 	UPDATE a 
-	SET a.ProductId = p.ProductID
-	FROM #BetTypeSel a 
-		INNER JOIN Products p WITH(NOLOCK) ON a.ProductCode = p.ProductPrefix
+	SET a.ProductId = IIF(a.ProductCode = 'VS', 5, t.ProductId)
+	FROM #BetTypeSel a
+		CROSS APPLY (
+			SELECT TOP 1 p.ProductID AS ProductID
+			FROM SportBettypeMatrix p WITH (NOLOCK)
+			WHERE p.BetType = a.Bettype
+		) AS t
 
 	;WITH cte_bettype AS (
 		SELECT DISTINCT sb.BetType, sb.ProductID, sb.EventType
