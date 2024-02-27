@@ -63,6 +63,7 @@ AS
 		- 20200423@Vickie: Integrate Saba Club [RedmineID: #132702]
 						- Change to use @ProductList
 		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
+		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 
 	Param's Explanation:
 		+ @TopCount:
@@ -110,14 +111,22 @@ BEGIN
 	IF ',' + @ProductList + ',' LIKE '%,SB,%'
 		SET @ShowSB = 1
 
+	SELECT @ProductList = STRING_AGG(b.ProductPrefix, ',')
+	FROM (
+		SELECT DISTINCT ISNULL(b.ProductPrefix,a.Value) AS ProductPrefix
+		FROM STRING_SPLIT(@ProductList, ',') a
+			LEFT JOIN dbo.Lrf_f_GroupProduct() b ON a.Value = b.GroupProductPrefix
+	) b
+
 	-- Get sport type
 	CREATE TABLE #SportType (SportType INT PRIMARY KEY, ProductCode VARCHAR(10))
 
 	IF LEN(ISNULL(@ProductList, '')) > 0 
 	BEGIN
 		INSERT INTO #SportType (SportType, ProductCode)
-		SELECT DISTINCT SportType, ProductCode
-		FROM dbo.f_LicWinLoss_ProductSportType_Sel(@ProductList)
+		SELECT DISTINCT SportType, ISNULL(p.GroupProductPrefix, s.ProductCode)
+		FROM dbo.f_LicWinLoss_ProductSportType_Sel(@ProductList) s 
+			LEFT JOIN dbo.Lrf_f_GroupProduct() p ON s.ProductID = p.ProductId
 	END
 
 	IF @ShowBT = 1

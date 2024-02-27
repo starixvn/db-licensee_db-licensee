@@ -25,7 +25,7 @@ AS
 		- 20210916@Kos: New SP [RedmineID: #159939]
 		- 20220106@Kos: Support search by username [RedmineID: #165926]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
-
+		- 20241701@Evan: Update f_GroupBettype to Lrf_f_GroupBettype [RedmineID: #199523]
 	Param's Explanation:
 		- @StatusIdList: status ID list separated by ','
 		- @Username: exact System ID or External ID
@@ -101,7 +101,7 @@ BEGIN
 		AND BetType NOT BETWEEN 801 AND 806
 		AND (@BetTypeList = 'All'
 			OR ',' + @BetTypeList + ',' LIKE '%,' + CAST(BetType AS VARCHAR(5)) + ',%')
-			OR BetType IN (SELECT Bettype FROM dbo.f_GroupBettype() WHERE ',' + @BetTypeList + ',' LIKE '%,' + CAST(GroupTypeId AS VARCHAR(5)) + ',%')
+			OR BetType IN (SELECT Bettype FROM dbo.Lrf_f_GroupBettype() WHERE ',' + @BetTypeList + ',' LIKE '%,' + CAST(GroupTypeId AS VARCHAR(5)) + ',%')
 
 	DECLARE @Data TABLE (
 		BetType		INT,
@@ -635,7 +635,7 @@ BEGIN
 		INNER JOIN @ExchangeRate AS e
 			ON d.WinLostDate BETWEEN e.FromDate AND e.ToDate
 				AND d.Currency = e.ExchangeId
-		LEFT JOIN dbo.f_GroupBettype() AS ss ON ss.bettype = d.BetType
+		LEFT JOIN dbo.Lrf_f_GroupBettype() AS ss ON ss.bettype = d.BetType
 	GROUP BY CASE
 				WHEN ISNULL(ss.bettype, 0) <> 0 THEN ss.GroupTypeId
 				ELSE d.BetType

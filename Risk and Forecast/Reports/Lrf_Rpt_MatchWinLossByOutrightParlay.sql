@@ -35,6 +35,7 @@ AS
 					- Don't return column HomeId, AwayId, IsNeutral, MatchCode, Race, MatchId, LeagueId anymore
 					- Rename output column from MemberWinLost to WinLost
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
+		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 
 	Param's Explanation:
 		+ @AgentList: XML structure
@@ -75,6 +76,13 @@ BEGIN
 	IF @ShowBA = 1
 		SET @ProductList = @ProductList + ',SB'
 
+	SELECT @ProductList = STRING_AGG(b.ProductPrefix, ',')
+	FROM (
+		SELECT DISTINCT ISNULL(b.ProductPrefix,a.Value) AS ProductPrefix
+		FROM STRING_SPLIT(@ProductList, ',') a
+			LEFT JOIN dbo.Lrf_f_GroupProduct() b ON a.Value = b.GroupProductPrefix
+	) b
+			
 	DECLARE @BetType TABLE (BetType INT PRIMARY KEY, ProductCode VARCHAR(10), EventType TINYINT)
 
 	DECLARE @IsTest BIT = 0
@@ -88,6 +96,7 @@ BEGIN
 		AND BetType NOT IN (SELECT BetType FROM dbo.Lrf_f_SelExcludedBetType())
 
 	DECLARE @Data TABLE (
+		ProductCode	VARCHAR(10),
 		BetType		SMALLINT,
 		Currency	INT,
 		BetCount	INT,
@@ -106,6 +115,7 @@ BEGIN
 	IF @_Date > @MoveBetsDay
 	BEGIN
 		INSERT INTO @Data (
+			ProductCode,
 			BetType,
 			Currency,
 			BetCount,
@@ -116,6 +126,7 @@ BEGIN
 			CommBA,
 			AmtDueToBA )
 		SELECT
+			bt.ProductCode,
 			b.bettype,
 			b.currency,
 			COUNT(1) AS BetCount,
@@ -145,6 +156,7 @@ BEGIN
 					ELSE 1
 				END <> 0
 		GROUP BY
+			bt.ProductCode,
 			b.bettype,
 			bt.EventType,
 			b.currency
@@ -154,6 +166,7 @@ BEGIN
 	IF @_Date <= @MoveBetsDay
 	BEGIN
 		INSERT INTO @Data (
+			ProductCode,
 			BetType,
 			Currency,
 			BetCount,
@@ -164,6 +177,7 @@ BEGIN
 			CommBA,
 			AmtDueToBA )
 		SELECT
+			bt.ProductCode,
 			b.bettype,
 			b.currency,
 			SUM(b.betcount) AS BetCount,
@@ -193,6 +207,7 @@ BEGIN
 					ELSE 1
 				END <> 0
 		GROUP BY
+			bt.ProductCode,
 			b.bettype,
 			bt.EventType,
 			b.currency
@@ -206,7 +221,8 @@ BEGIN
 
 	-- Result
 	SELECT
-		b.BetType,
+		b.ProductCode,
+		ISNULL(ss.GroupTypeId,b.bettype) AS bettype,  
 		SUM(b.BetCount) AS BetCount,
 		CAST(SUM(b.Turnover		* e.Rate) AS MONEY) AS Turnover,
 		CAST(SUM(b.WinLost		* e.Rate) AS MONEY) AS WinLost,
@@ -216,6 +232,7 @@ BEGIN
 		CAST(SUM(b.AmtDueToBA	* e.Rate) AS MONEY) AS AmtDuetoBA
 	FROM @Data AS b
 		INNER JOIN @ExchangeDaily AS e ON e.ExchangeId = b.Currency
-	GROUP BY b.BetType
+		LEFT JOIN dbo.Lrf_f_GroupBettype() ss ON b.bettype = ss.bettype
+	GROUP BY b.ProductCode, ISNULL(ss.GroupTypeId,b.bettype)  
 END
 GO

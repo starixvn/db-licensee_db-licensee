@@ -52,6 +52,7 @@ AS
 					- Add input param @ProductList VARCHAR(500), @BalanceUpDay SMALLDATETIME
 					- Rename output column from MemberWinLost to WinLost
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
+		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 
 	Param's Explanation:
 		+ @AgentList: XML structure
@@ -92,6 +93,13 @@ BEGIN
 	IF @ShowBA = 1
 		SET @ProductList = @ProductList + ',SB'
 
+	SELECT @ProductList = STRING_AGG(b.ProductPrefix, ',')
+	FROM (
+		SELECT DISTINCT ISNULL(b.ProductPrefix,a.Value) AS ProductPrefix
+		FROM STRING_SPLIT(@ProductList, ',') a
+			LEFT JOIN dbo.Lrf_f_GroupProduct() b ON a.Value = b.GroupProductPrefix
+	) b
+		
 	DECLARE @BetType TABLE (BetType INT PRIMARY KEY, ProductCode VARCHAR(10), EventType TINYINT)
 
 	DECLARE @IsTest BIT = 0
@@ -99,8 +107,11 @@ BEGIN
 	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
 
 	INSERT INTO @BetType (BetType, ProductCode, EventType)
-	SELECT DISTINCT BetType, ProductPrefix, EventType
-	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
+	SELECT DISTINCT BetType
+				  , ISNULL(p.GroupProductPrefix, s.ProductPrefix)
+				  , EventType
+	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '',  @ProductList, @IsTest) s
+	LEFT JOIN dbo.Lrf_f_GroupProduct() p ON s.ProductID = p.ProductId
 	WHERE EventType IN (1, 3)
 		AND BetType NOT IN (SELECT BetType FROM dbo.Lrf_f_SelExcludedBetType())
 

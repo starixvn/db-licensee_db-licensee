@@ -9,7 +9,7 @@ ALTER PROCEDURE dbo.LAP_Rpt_WinlossAnalysis_PlayerSel
 	@BaseCurrency	VARCHAR(10)		= 'EUR',
 	@ProductCodes	VARCHAR(MAX)	= 'ALL', --'SB,NG,etc...'
 	@SportIds		VARCHAR(MAX)	= 'ALL',
-	@BettypeIds		VARCHAR(MAX)	= 'ALL',
+	@BettypeIds		XML,
 	@StatusIds		VARCHAR(1000)	= 'ALL',
 	@PlatformIds	VARCHAR(1000)	= 'ALL',
 	@LiveStatusIds	VARCHAR(1000)	= 'ALL',
@@ -47,6 +47,7 @@ AS
 		- 20230815@Bobby: Enhance search username by prefix [RedmineID: #192721]
 		- 20230703@Bobby: Enhance perf - bettrans product3rd filtering [RedmineID: #195292]
 		- 20231122@Evan: Handle betfrom for Jollysports [Redmine: #197192]	
+		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 
 	Param's Explanation:
 		- @SortKey: 0:GroupBy, 1:BetCount, 2:Turnover, 3:NetTurnover, 4:MemWinloss, 5:MemComm, 6:LicWinloss, 7:LicComm, 8:AmtDueToBA, 9:BetEffective, 10:Margin
@@ -55,7 +56,8 @@ AS
 			+ 1: Match Precise
 			+ 2: Match Case
 			+ 3: Match Prefix
-		
+		- @BettypeIds: <ROOT><Bettype pc="SB" bt="1,3,4,5"/><Bettype pc="VS" bt="1,3,4,5"/></ROOT>
+
 */
 BEGIN
 	SET NOCOUNT ON;
@@ -102,7 +104,6 @@ BEGIN
 		----------------Default values 
 		@ProductCodes	= IIF(@ProductCodes='ALL', NULL, @ProductCodes),
 		@SportIds		= IIF(@SportIds='ALL', NULL, @SportIds),
-		@BettypeIds		= IIF(@BettypeIds='ALL', NULL, @BettypeIds),
 		@StatusCheck	= IIF(@StatusIds='ALL', '111,112,113,114,115', @StatusIds),
 		@LiveIds		= IIF(@LiveStatusIds='ALL', '0,1,2', @LiveStatusIds),
 		@PlatformCheck	= IIF(@PlatformIds IS NULL, 'ALL', @PlatformIds),
@@ -161,8 +162,10 @@ BEGIN
 	END
 
 	DROP TABLE IF EXISTS #AgencySel;
+	DROP TABLE IF EXISTS #BetTypeSel;
 	DROP TABLE IF EXISTS #ProductSel;
 	CREATE TABLE #AgencySel	(recommend INT PRIMARY KEY, Currency INT);
+	CREATE TABLE #BetTypeSel (ProductCode VARCHAR(10), Bettype INT, ProductId INT);
 	CREATE TABLE #ProductSel (ProductId INT, Product3rdId INT);
 	
 
@@ -175,6 +178,24 @@ BEGIN
 	INSERT INTO #AgencySel(recommend, Currency)
 	SELECT a.recommend, Currency
 	FROM AgencySel a;
+
+	-- TODO: Bettype selection
+	;WITH BettypeSel AS (
+		SELECT t.c.value('@pc', 'VARCHAR(10)') AS ProductCode
+			,t.c.value('@bt', 'VARCHAR(MAX)') AS Bettype
+		FROM @BettypeIds.nodes('/ROOT/Bettype') AS t(c)
+		)
+	INSERT INTO #BetTypeSel(ProductCode, Bettype)
+	SELECT a.ProductCode, b.value
+	FROM BettypeSel a
+	CROSS APPLY (
+		SELECT value FROM STRING_SPLIT (a.Bettype,',') 
+	) b;
+
+	UPDATE a 
+	SET a.ProductId = p.ProductID
+	FROM #BetTypeSel a 
+		INNER JOIN Products p WITH(NOLOCK) ON a.ProductCode = p.ProductPrefix
 
 	--TODO: Status selection -> include half WON/LOSE if any
 	SELECT @StatusCheck = CONCAT(@StatusCheck, IIF(CHARINDEX('112', @StatusCheck) > 0, ',114','')),
@@ -216,7 +237,18 @@ BEGIN
 			@ProductCheck = @ProductCodes;
 
 	--TODO: Convert GroupBettype
-	SELECT @BettypeIdsCheck = @BettypeIds;
+	WITH cte_bettype AS (
+		SELECT ProductCode
+			 , sbm.BetType
+		FROM #BetTypeSel b
+			LEFT JOIN dbo.Lrf_f_GroupProduct() lfgp ON lfgp.GroupProductId = b.ProductId
+			LEFT JOIN bodb02.dbo.Lrf_f_GroupBettype() l ON l.GroupTypeId = b.Bettype
+			INNER JOIN SportBettypeMatrix sbm WITH(NOLOCK) ON sbm.BetType = ISNULL(l.Bettype,b.Bettype) AND ISNULL(lfgp.ProductId, b.ProductId) = sbm.ProductId
+		GROUP BY ProductCode
+			   , sbm.BetType
+	)
+	SELECT @BettypeIdsCheck = STRING_AGG(CAST(BetType AS NVARCHAR(MAX)), ',') 
+	FROM cte_bettype;
 
 	DROP TABLE IF EXISTS #tmpBettype;
 	CREATE TABLE #tmpBettype (
@@ -239,8 +271,9 @@ BEGIN
 	FROM bodb02.dbo.LAP_f_WinlossAnalysis_BettypeMatrix (@ProductCheck, @SportCheck, @BettypeIdsCheck, @SBBACheck) AS bm
 
 	;WITH CTE_ProductMap AS (
-		SELECT DISTINCT ProductId, Product3rdId
-		FROM #tmpBettype t
+		SELECT DISTINCT ISNULL(lf.ProductId,t.ProductId) AS ProductId
+					  , ISNULL(lf.ProductId,t.Product3rdId) AS Product3rdId
+		FROM #tmpBettype t	LEFT JOIN bodb02.dbo.Lrf_f_GroupProduct() lf ON t.ProductId = lf.GroupProductId
 	)
 	INSERT INTO #ProductSel(ProductId, Product3rdId)
 	SELECT ProductId, Product3rdId
@@ -623,7 +656,8 @@ BEGIN
 						WHEN b.Product3rdId IN (63,69) THEN 0 
 						WHEN @IsViewCOOnlyCheck = 1 AND b.Product3rdId = 0 AND @SBBACheck & 4 = 4 AND b.TicketType = 1 THEN -99 --Cashout 
 						WHEN @IsViewCOOnlyCheck = 1 AND b.Product3rdId = 3 AND @SBBACheck & 8 = 8 AND b.TicketType = 1 THEN -99 --Cashout 
-						ELSE b.Product3rdId 
+						WHEN bt.ProductId = 1 THEN b.Product3rdId
+						ELSE bt.Product3rdId
 					END AS Product3rdIdMix
 			) AS ck
 			CROSS APPLY (SELECT TOP 1 bf.PlatformId FROM @PlatformSel bf WHERE b.betfrom =  bf.BetFrom) AS bf

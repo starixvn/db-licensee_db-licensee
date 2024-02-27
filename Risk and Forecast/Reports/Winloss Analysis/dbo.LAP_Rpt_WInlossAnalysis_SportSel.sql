@@ -11,6 +11,7 @@ AS
 	Revisions:
 		- 20230209@Bobby: Created [RedmineID: #172604]
 		- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465]
+		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		
 */
 BEGIN
@@ -48,22 +49,24 @@ BEGIN
 		FROM bodb_licensee.dbo.Product3rd p3 WITH(NOLOCK)
 		INNER JOIN bodb_licensee.dbo.LicenseeProduct3rd lp WITH(NOLOCK) ON p3.ProductID = lp.ProductID
 		LEFT JOIN bodb02.dbo.Products p WITH(NOLOCK) ON p.ProductPrefix = p3.ProductPrefix 
-		LEFT JOIN bodb02.dbo.SportBettypeMatrix m WITH(NOLOCK) ON m.ProductID = p.ProductID
+		LEFT JOIN bodb02.dbo.Lrf_f_GroupProduct() lf ON p.Productid = lf.GroupProductId
+		LEFT JOIN bodb02.dbo.SportBettypeMatrix m WITH(NOLOCK) ON m.ProductID = ISNULL(lf.ProductID,p.ProductID)
 		LEFT JOIN bodb02.dbo.Sports s WITH(NOLOCK) ON S.SportType = m.SportType
 		WHERE p3.Enabled = 1
 			AND (@LicenseeID IS NULL OR lp.LicenseeID = @LicenseeID)
 	),
 	result AS (
 		SELECT DISTINCT
-			CASE WHEN ProductID IN (0,63,69) THEN 0 ELSE ProductID END AS ProductID,
-			CASE WHEN ProductID IN (0,63,69) THEN 'Sportsbook' ELSE ProductName END AS ProductName,
+			CASE WHEN p.ProductID IN (0,63,69) THEN 0 ELSE p.ProductID END AS ProductID,
+			CASE WHEN p.ProductID IN (0,63,69) THEN 'Sportsbook' ELSE ProductName END AS ProductName,
 			CASE 
-				WHEN ProductID IN (0, 63,69) AND sbba.SBBACheck & 6 = 6 THEN 'SB,BA' 
-				WHEN ProductID IN (0, 63,69) AND sbba.SBBACheck & 2 = 2 THEN 'SB' 
-				WHEN ProductID IN (0, 63,69) AND sbba.SBBACheck & 4 = 4 THEN 'BA' 
+				WHEN p.ProductID IN (0, 63,69) AND sbba.SBBACheck & 6 = 6 THEN 'SB,BA' 
+				WHEN p.ProductID IN (0, 63,69) AND sbba.SBBACheck & 2 = 2 THEN 'SB' 
+				WHEN p.ProductID IN (0, 63,69) AND sbba.SBBACheck & 4 = 4 THEN 'BA' 
 				ELSE ProductCode END AS ProductCode,
 			SportType, SportName, SportOrder
-		FROM CTE_Product3rd AS p
+		FROM CTE_Product3rd AS p 
+		LEFT JOIN bodb02.dbo.Lrf_f_GroupProduct() lf ON p.ProductID = lf.ProductId AND lf.GroupProductId <> lf.ProductId
 		OUTER APPLY (
 			SELECT TOP 1 1 AS HasValue 
 			FROM CTE_Code AS t
@@ -77,6 +80,7 @@ BEGIN
 				) AS SBBACheck
 		) AS sbba 
 		WHERE p.SportType NOT IN (150, 173, 27) --exclude free games & hide Cricket(27)
+			AND  (lf.ProductId IS NULL OR ISNULL(@ProductCodes, 'ALL') <> 'ALL') -- exclude product in group product
 			AND (ISNULL(@ProductCodes, 'ALL') = 'ALL' OR ck.HasValue = 1 )
 	)
 	SELECT ProductID, ProductName, ProductCode, SportType, SportName 

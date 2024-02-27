@@ -72,6 +72,7 @@ AS
 		- 20211109@Kos: Change to use temp table #TempAg [RedmineID: #163191]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20231127@Evan: Enhance performance [Redmine #198479]
+		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 */
 
 BEGIN
@@ -104,6 +105,13 @@ BEGIN
 
 	IF ',' + @ProductList + ',' LIKE '%,SB,%'
 		SET @ShowSB = 1
+
+	SELECT @ProductList = STRING_AGG(b.ProductPrefix, ',')
+	FROM (
+		SELECT DISTINCT ISNULL(b.ProductPrefix,a.Value) AS ProductPrefix
+		FROM STRING_SPLIT(@ProductList, ',') a
+			LEFT JOIN dbo.Lrf_f_GroupProduct() b ON a.Value = b.GroupProductPrefix
+	) b
 
 	DECLARE @SportType TABLE (SportType INT)
 

@@ -69,6 +69,7 @@ AS
 					- Rename output column from MemberWinLost to WinLost, SumMemberWinLost to SumWinLost
 					- Don't return column Race, showtime anymore
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
+		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 
 	Param's Explanation:
 		+ @AgentList: XML structure
@@ -109,6 +110,13 @@ BEGIN
 	IF @ShowBA = 1
 		SET @ProductList = @ProductList + ',SB'
 
+	SELECT @ProductList = STRING_AGG(b.ProductPrefix, ',')
+	FROM (
+		SELECT DISTINCT ISNULL(b.ProductPrefix,a.Value) AS ProductPrefix
+		FROM STRING_SPLIT(@ProductList, ',') a
+			LEFT JOIN dbo.Lrf_f_GroupProduct() b ON a.Value = b.GroupProductPrefix
+	) b
+	
 	DECLARE @BetType TABLE (BetType INT PRIMARY KEY, ProductCode VARCHAR(10), EventType TINYINT)
 
 	DECLARE @IsTest BIT = 0
@@ -132,6 +140,7 @@ BEGIN
 		EventType		TINYINT,
 		SportType		SMALLINT,
 		BetType			SMALLINT,
+		ProductCode		VARCHAR(10),
 		LiveIndicator	BIT,
 		Currency		INT,
 		BetCount		INT,
@@ -162,6 +171,7 @@ BEGIN
 			EventType,
 			SportType,
 			BetType,
+			ProductCode,
 			LiveIndicator,
 			Currency,
 			BetCount,
@@ -201,6 +211,7 @@ BEGIN
 				ELSE 0
 			END AS SportType,
 			b.bettype,
+			bt.ProductCode,
 			CASE
 				WHEN bt.ProductCode = 'NG' THEN b.liveindicator
 				ELSE 0
@@ -233,6 +244,7 @@ BEGIN
 					ELSE 1
 				END <> 0
 		GROUP BY
+			bt.ProductCode,
 			b.bettype,
 			CASE
 				WHEN bt.EventType IN (1, 3) THEN b.matchid
@@ -293,6 +305,7 @@ BEGIN
 			EventType,
 			SportType,
 			BetType,
+			ProductCode,
 			LiveIndicator,
 			Currency,
 			BetCount,
@@ -331,6 +344,7 @@ BEGIN
 				ELSE 0
 			END AS SportType,
 			b.bettype,
+			bt.ProductCode,
 			CASE
 				WHEN bt.ProductCode = 'NG' THEN b.liveindicator
 				ELSE 0
@@ -363,6 +377,7 @@ BEGIN
 					ELSE 1
 				END <> 0
 		GROUP BY
+			bt.ProductCode,
 			b.bettype,
 			CASE
 				WHEN bt.EventType IN (1, 3) THEN b.matchid
@@ -499,6 +514,7 @@ BEGIN
 				LeagueId,
 				SportType,
 				BetType,
+				ProductCode,
 				LiveIndicator
 			FROM @Data
 		) AS Temp
@@ -509,7 +525,7 @@ BEGIN
 	SELECT
 		bettype,
 		GroupTypeId
-	FROM dbo.f_GroupBettype()
+	FROM dbo.Lrf_f_GroupBettype()
 
 	SELECT wl.*
 	FROM ( SELECT
@@ -525,6 +541,7 @@ BEGIN
 				CASE
 					WHEN ISNULL(ss.bettype, 0) <> 0 THEN ss.GroupTypeId ELSE b.BetType
 				END AS BetType,
+				b.ProductCode,
 				b.LiveIndicator,
 				SUM(b.BetCount) AS BetCount,
 				CAST(SUM(b.Turnover		* e.Rate) AS MONEY) AS Turnover,
@@ -551,6 +568,7 @@ BEGIN
 				CASE
 					WHEN ISNULL(ss.bettype, 0) <> 0 THEN ss.GroupTypeId ELSE b.BetType
 				END,
+				b.ProductCode,
 				b.LiveIndicator
 			) wl
 	WHERE wl.RowNum BETWEEN @RowStart AND @RowEnd

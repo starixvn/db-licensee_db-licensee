@@ -24,6 +24,7 @@ AS
 		- 20220106@Kos: Support search by username [RedmineID: #165926]
 		- 20220513@Kos: Support Sports Lottery and Bitcoin [RedmineID: #160160]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
+		- 20241701@Evan: Update f_GroupBettype to Lrf_f_GroupBettype [RedmineID: #199523]
 
 	Param's Explanation:
 		- @BetTypeList: bettype list separated by ','
@@ -107,7 +108,7 @@ BEGIN
 		AND BetType NOT BETWEEN 801 AND 806
 		AND (@BetTypeList = 'All'
 			OR ',' + @BetTypeList + ',' LIKE '%,' + CAST(BetType AS VARCHAR(5)) + ',%'
-			OR BetType IN (SELECT Bettype FROM dbo.f_GroupBettype() WHERE ',' + @BetTypeList + ',' LIKE '%,' + CAST(GroupTypeId AS VARCHAR(5)) + ',%'))
+			OR BetType IN (SELECT Bettype FROM dbo.Lrf_f_GroupBettype() WHERE ',' + @BetTypeList + ',' LIKE '%,' + CAST(GroupTypeId AS VARCHAR(5)) + ',%'))
 
 	-- Parlay
 	IF @LeagueId = -9

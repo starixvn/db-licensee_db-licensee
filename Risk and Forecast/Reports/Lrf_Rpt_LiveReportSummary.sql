@@ -117,6 +117,7 @@ AS
 		- 20231107@Evan: Integrate SEAL Entertainment [RedmineID: #180648]
 		- 20231117@Evan: Integrate WE Live Casino [RedmineID: #196573]
 		- 20231213@Evan: Integrate Live22 [RedmineID: #197702]
+		- 20241701@Evan: Merge VS, VS2, VS3 as VS only + Remove VS3 (old) [RedmineID: #199523]
 
 	Param's Explanation:
 		+ @IsLive : indicate that whether the report will get live data or not
@@ -200,11 +201,19 @@ BEGIN
 	IF @ProductCodes IS NULL
 		SET @ProductCodes = ''
 
+	SELECT @ProductCodes = STRING_AGG(b.ProductPrefix, ',')
+	FROM (
+		SELECT DISTINCT ISNULL(b.ProductPrefix,a.Value) AS ProductPrefix
+		FROM STRING_SPLIT(@ProductCodes, ',') a
+			LEFT JOIN dbo.Lrf_f_GroupProduct() b ON a.Value = b.GroupProductPrefix
+	) b
+
 	CREATE TABLE #ProductCodes (ProductCode VARCHAR(10))
 
 	INSERT INTO #ProductCodes (ProductCode)
-	SELECT ISNULL(Val,'')
-	FROM dbo.strSplit(@ProductCodes,',') 
+	SELECT ISNULL(value,'')
+	FROM STRING_SPLIT(@ProductCodes,',') 
+
 	
 	IF @TDate > @MoveBetsDay
 	BEGIN
@@ -336,7 +345,7 @@ BEGIN
 			SELECT
 				b.winlostdate,
 				t.currency,
-				'VS2' AS ProductCode,
+				'VS' AS ProductCode,
 				SUM(stake) turnover,
 				SUM(b.winlost - b.actual_stake) AS Winlost,
 				SUM(- 1 * (b.winlost - b.actual_stake)) AS LicenseeWL,
@@ -360,7 +369,7 @@ BEGIN
 		END
 
 		--Others
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'NG', 'VS', 'KN', 'CS', 'VB', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM', 'VS3', 'FGGL', 'MXG', 'JIG', 'YB', 'MGRNG', 'LG', 'SEA', 'WE', 'L22'))
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'NG', 'VS', 'VS2', 'LG', 'KN', 'CS', 'VB', 'AB', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM', 'FGGL', 'MXG', 'JIG', 'YB', 'MGRNG', 'SEA', 'WE', 'L22'))
 		BEGIN
 			INSERT INTO #tmpWinloss
 			SELECT
@@ -368,12 +377,10 @@ BEGIN
 				t.currency,
 				CASE 
 					WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) OR (b.bettype BETWEEN 3601 AND 3610) THEN 'NG'
-					WHEN b.bettype BETWEEN 1201 AND 1299 THEN 'VS'
 					WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN' -- Keno
 					WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999 THEN 'CS' -- RNG CASINO
 					WHEN (b.bettype BETWEEN 4001 AND 4100) OR (b.bettype BETWEEN 5800 AND 5999) THEN 'VB' -- Voidbridge
 					WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
-					WHEN (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) THEN 'VS2'
 					WHEN b.bettype BETWEEN 1021 AND 1099 THEN 'LT'
 					WHEN b.bettype BETWEEN 4101 AND 4296 OR b.bettype BETWEEN 6701 AND 7000 THEN 'PP' -- PP -- exclude 4300, 4299, 4298, 4297
 					WHEN b.bettype BETWEEN 1901 AND 1999 THEN 'CC' -- CC
@@ -393,13 +400,12 @@ BEGIN
 					WHEN b.bettype BETWEEN 7301 AND 7600 THEN 'CG'
 					WHEN b.bettype BETWEEN 7701 AND 7799 THEN 'AP'
 					WHEN b.bettype BETWEEN 7801 AND 7899 THEN 'APM'
-					WHEN b.bettype = 5301 THEN 'VS3'
 					WHEN b.bettype BETWEEN 8201 AND 8299 THEN 'FGGL'
 					WHEN b.bettype BETWEEN 5401 AND 5499 THEN 'MXG'
 					WHEN b.bettype BETWEEN 5100 AND 5299 THEN 'JIG'
 					WHEN b.bettype BETWEEN 3151 AND 3200 THEN 'YB'
 					WHEN b.bettype BETWEEN 8400 AND 8699 THEN 'MGRNG'
-					WHEN b.bettype BETWEEN 5302 AND 5399 THEN 'LG'
+					WHEN (b.bettype BETWEEN 1201 AND 1299) OR (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) OR (b.bettype BETWEEN 5302 AND 5399) THEN 'VS'
 					WHEN b.bettype BETWEEN 8900 AND 8999 THEN 'SEA'
 					WHEN b.bettype BETWEEN 10300 AND 10399 THEN 'WE'
 					WHEN b.bettype BETWEEN 7601 AND 7700 THEN 'L22'
@@ -446,7 +452,6 @@ BEGIN
 					OR b.bettype BETWEEN 7301 AND 7600 -- CG
 					OR b.bettype BETWEEN 7701 AND 7799 -- AP
 					OR b.bettype BETWEEN 7801 AND 7899 -- APM
-					OR b.bettype = 5301 -- VS3
 					OR b.bettype BETWEEN 8201 AND 8299 -- FGGL
 					OR b.bettype BETWEEN 5401 AND 5499 -- MXG
 					OR b.bettype BETWEEN 5100 AND 5299 -- JIG
@@ -464,12 +469,10 @@ BEGIN
 				t.currency,
 				CASE 
 					WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) OR (b.bettype BETWEEN 3601 AND 3610) THEN 'NG'
-					WHEN b.bettype BETWEEN 1201 AND 1299 THEN 'VS'
 					WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN' -- Keno
 					WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999 THEN 'CS' -- RNG CASINO
 					WHEN (b.bettype BETWEEN 4001 AND 4100) OR (b.bettype BETWEEN 5800 AND 5999) THEN 'VB' -- Voidbridge
 					WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
-					WHEN (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) THEN 'VS2'
 					WHEN b.bettype BETWEEN 1021 AND 1099 THEN 'LT'
 					WHEN b.bettype BETWEEN 4101 AND 4296 OR b.bettype BETWEEN 6701 AND 7000 THEN 'PP' -- PP -- exclude 4300, 4299, 4298, 4297
 					WHEN b.bettype BETWEEN 1901 AND 1999 THEN 'CC' -- CC
@@ -489,13 +492,12 @@ BEGIN
 					WHEN b.bettype BETWEEN 7301 AND 7600 THEN 'CG'
 					WHEN b.bettype BETWEEN 7701 AND 7799 THEN 'AP'
 					WHEN b.bettype BETWEEN 7801 AND 7899 THEN 'APM'
-					WHEN b.bettype = 5301 THEN 'VS3'
 					WHEN b.bettype BETWEEN 8201 AND 8299 THEN 'FGGL'
 					WHEN b.bettype BETWEEN 5401 AND 5499 THEN 'MXG'
 					WHEN b.bettype BETWEEN 5100 AND 5299 THEN 'JIG'
 					WHEN b.bettype BETWEEN 3151 AND 3200 THEN 'YB'
 					WHEN b.bettype BETWEEN 8400 AND 8699 THEN 'MGRNG'
-					WHEN b.bettype BETWEEN 5302 AND 5399 THEN 'LG'
+					WHEN (b.bettype BETWEEN 1201 AND 1299) OR (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) OR (b.bettype BETWEEN 5302 AND 5399) THEN 'VS' --VS
 					WHEN b.bettype BETWEEN 8900 AND 8999 THEN 'SEA'
 					WHEN b.bettype BETWEEN 10300 AND 10399 THEN 'WE'
 					WHEN b.bettype BETWEEN 7601 AND 7700 THEN 'L22'
@@ -583,7 +585,7 @@ BEGIN
 		END
 
 		-- Others
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'KN', 'CS', 'VB', 'AB', 'VS2', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM', 'VS3', 'FGGL', 'MXG', 'JIG', 'YB', 'MGRNG', 'LG', 'SEA', 'WE', 'L22'))
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'VS2', 'LG', 'KN', 'CS', 'VB', 'AB', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM', 'FGGL', 'MXG', 'JIG', 'YB', 'MGRNG', 'SEA', 'WE', 'L22'))
 		BEGIN
 			INSERT INTO #tmpWinloss
 			SELECT 
@@ -601,12 +603,10 @@ BEGIN
 						OR b.bettype BETWEEN 3611 AND 3620		-- Sports Lottery
 						OR b.bettype BETWEEN 7901 AND 7999		-- Bitcoin
 						THEN 'SB'
-					WHEN b.bettype BETWEEN 1201 AND 1299 THEN 'VS'
 					WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN'
 					WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999 THEN 'CS' -- RNG CASINO
 					WHEN (b.bettype BETWEEN 4001 AND 4100) OR (b.bettype BETWEEN 5800 AND 5999) THEN 'VB' -- Voidbridge
 					WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
-					WHEN b.bettype BETWEEN 2701 AND 2829 THEN 'VS2'
 					WHEN b.bettype BETWEEN 1021 AND 1099 THEN 'LT'
 					WHEN b.bettype BETWEEN 4101 AND 4296 OR b.bettype BETWEEN 6701 AND 7000 THEN 'PP' -- PP -- exclude 4300, 4299, 4298, 4297
 					WHEN b.bettype BETWEEN 1901 AND 1999 THEN 'CC'
@@ -626,13 +626,12 @@ BEGIN
 					WHEN b.bettype BETWEEN 7301 AND 7600 THEN 'CG'
 					WHEN b.bettype BETWEEN 7701 AND 7799 THEN 'AP'
 					WHEN b.bettype BETWEEN 7801 AND 7899 THEN 'APM'
-					WHEN b.bettype = 5301 THEN 'VS3'
 					WHEN b.bettype BETWEEN 8201 AND 8299 THEN 'FGGL'
 					WHEN b.bettype BETWEEN 5401 AND 5499 THEN 'MXG'
 					WHEN b.bettype BETWEEN 5100 AND 5299 THEN 'JIG'
 					WHEN b.bettype BETWEEN 3151 AND 3200 THEN 'YB'
 					WHEN b.bettype BETWEEN 8400 AND 8699 THEN 'MGRNG'
-					WHEN b.bettype BETWEEN 5302 AND 5399 THEN 'LG'
+					WHEN (b.bettype BETWEEN 1201 AND 1299) OR (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) OR (b.bettype BETWEEN 5302 AND 5399) THEN 'VS' --VS
 					WHEN b.bettype BETWEEN 8900 AND 8999 THEN 'SEA'
 					WHEN b.bettype BETWEEN 10300 AND 10399 THEN 'WE'
 					WHEN b.bettype BETWEEN 7601 AND 7700 THEN 'L22'
@@ -700,7 +699,6 @@ BEGIN
 					OR b.bettype BETWEEN 7301 AND 7600 -- CG
 					OR b.bettype BETWEEN 7701 AND 7799 -- AP
 					OR b.bettype BETWEEN 7801 AND 7899 -- APM
-					OR b.bettype = 5301 -- VS3
 					OR b.bettype BETWEEN 8201 AND 8299 -- FGGL
 					OR b.bettype BETWEEN 5401 AND 5499 -- MXG
 					OR b.bettype BETWEEN 5100 AND 5299 -- JIG
@@ -727,12 +725,10 @@ BEGIN
 							OR b.bettype BETWEEN 3611 AND 3620		-- Sports Lottery
 							OR b.bettype BETWEEN 7901 AND 7999		-- Bitcoin
 						THEN 'SB'
-					WHEN b.bettype BETWEEN 1201 AND 1299 THEN 'VS'
 					WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN'
 					WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999 THEN 'CS' -- RNG CASINO
 					WHEN (b.bettype BETWEEN 4001 AND 4100) OR (b.bettype BETWEEN 5800 AND 5999) THEN 'VB' -- Voidbridge
 					WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
-					WHEN b.bettype BETWEEN 2701 AND 2829 THEN 'VS2'
 					WHEN b.bettype BETWEEN 1021 AND 1099 THEN 'LT'
 					WHEN b.bettype BETWEEN 4101 AND 4296 OR b.bettype BETWEEN 6701 AND 7000 THEN 'PP' -- exclude 4300, 4299, 4298, 4297
 					WHEN b.bettype BETWEEN 1901 AND 1999 THEN 'CC'
@@ -752,13 +748,12 @@ BEGIN
 					WHEN b.bettype BETWEEN 7301 AND 7600 THEN 'CG'
 					WHEN b.bettype BETWEEN 7701 AND 7799 THEN 'AP'
 					WHEN b.bettype BETWEEN 7801 AND 7899 THEN 'APM'
-					WHEN b.bettype = 5301 THEN 'VS3'
 					WHEN b.bettype BETWEEN 8201 AND 8299 THEN 'FGGL'
 					WHEN b.bettype BETWEEN 5401 AND 5499 THEN 'MXG'
 					WHEN b.bettype BETWEEN 5100 AND 5299 THEN 'JIG'
 					WHEN b.bettype BETWEEN 3151 AND 3200 THEN 'YB'
 					WHEN b.bettype BETWEEN 8400 AND 8699 THEN 'MGRNG'
-					WHEN b.bettype BETWEEN 5302 AND 5399 THEN 'LG'
+					WHEN (b.bettype BETWEEN 1201 AND 1299) OR (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) OR (b.bettype BETWEEN 5302 AND 5399) THEN 'VS' --VS
 					WHEN b.bettype BETWEEN 8900 AND 8999 THEN 'SEA'
 					WHEN b.bettype BETWEEN 10300 AND 10399 THEN 'WE'
 					WHEN b.bettype BETWEEN 7601 AND 7700 THEN 'L22'
@@ -809,7 +804,7 @@ BEGIN
 			SELECT
 				b.rptDate,
 				b.currencyID,
-				'VS2' AS ProductCode,
+				'VS' AS ProductCode,
 				SUM(b.turnover) turnover,
 				SUM(b.winloss) winlost,
 				SUM(-1 * b.winloss) AS LicenseeWL,

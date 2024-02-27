@@ -11,6 +11,7 @@ AS
 	Revisions:
 		- 20230209@Bobby: Created [RedmineID: #172604]
 		- 20231214@Evan: Hide Upcoming bettype [RedmineID: #197020]
+		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 
 		
 */
@@ -40,9 +41,7 @@ BEGIN
 			AND (@LicenseeID IS NULL OR lp.LicenseeID = @LicenseeID)
 	),
 	CTE_GroupBettype AS (
-		SELECT Bettype, GroupTypeID FROM bodb02.dbo.f_GroupBettype()
-		--UNION ALL 
-		--SELECT Bettype, GroupTypeID FROM bodb02.dbo.f_GroupBettype3rd()
+		SELECT Bettype, GroupTypeID FROM bodb02.dbo.Lrf_f_GroupBettype()
 	),
 	result AS (
 		SELECT DISTINCT	p.ProductID
@@ -54,12 +53,13 @@ BEGIN
 				ELSE p.ProductCode 
 			END AS ProductCode
 		FROM CTE_Product3rd AS p
+		LEFT JOIN bodb02.dbo.Lrf_f_GroupProduct() lf ON p.ProductID = lf.GroupProductId
 		OUTER APPLY (
 			SELECT TOP 1 1 AS HasValue 
 			FROM CTE_Filter AS t
 			CROSS APPLY (SELECT value FROM STRING_SPLIT(p.ProductCode, ',') AS t2 WHERE t2.value = t.Code ) AS t2
 		) AS ck
-		INNER JOIN dbo.SportBettypeMatrix m ON m.ProductID = p.ProductID
+		INNER JOIN dbo.SportBettypeMatrix m ON m.ProductID = ISNULL(lf.ProductID,p.ProductID)
 		LEFT JOIN CTE_GroupBettype gbt ON gbt.bettype = m.bettype
 		LEFT JOIN bodb02.[dbo].[Lrf_f_SelExcludedBetType]() e ON e.BetType = m.BetType
 		OUTER APPLY (
@@ -78,7 +78,8 @@ BEGIN
 	SELECT rs.ProductCode, rs.BetType
 	FROM result rs
 		INNER JOIN bettype b WITH (NOLOCK) ON rs.BetType = b.typeid
-	WHERE b.typenamee NOT LIKE '%Upcoming%'
+		LEFT JOIN bodb02.dbo.Lrf_f_GroupProduct() lf ON rs.ProductID = lf.ProductId AND lf.GroupProductId <> lf.ProductId
+	WHERE b.typenamee NOT LIKE '%Upcoming%' AND (lf.ProductId IS NULL OR ISNULL(@ProductCodes, 'ALL') <> 'ALL') -- exclude product in group product
 	ORDER BY rs.ProductID, rs.BetType
 END
 GO

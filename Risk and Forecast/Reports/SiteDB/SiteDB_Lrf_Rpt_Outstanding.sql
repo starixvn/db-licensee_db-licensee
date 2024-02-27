@@ -19,6 +19,7 @@ AS
 	Revisions:
 		- 20220729@Victoria: Create SP[Redmine: #175297]
    		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
+		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 
 	Param's Explanation:
 		@OrderItem:
@@ -78,6 +79,13 @@ BEGIN
 
 	IF @ShowBA = 1
 		SET @ProductList = @ProductList + ',SB'
+
+	SELECT @ProductList = STRING_AGG(b.ProductPrefix, ',')
+	FROM (
+		SELECT DISTINCT ISNULL(b.ProductPrefix,a.Value) AS ProductPrefix
+		FROM STRING_SPLIT(@ProductList, ',') a
+			LEFT JOIN dbo.Lrf_f_GroupProduct() b ON a.Value = b.GroupProductPrefix
+	) b
 
 	IF LEN(ISNULL(@ProductList, '')) > 0 
 	BEGIN
