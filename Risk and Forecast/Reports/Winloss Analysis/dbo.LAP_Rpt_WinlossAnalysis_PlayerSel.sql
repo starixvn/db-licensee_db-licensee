@@ -197,6 +197,16 @@ BEGIN
 	FROM #BetTypeSel a 
 		INNER JOIN Products p WITH(NOLOCK) ON a.ProductCode = p.ProductPrefix
 
+	UPDATE a
+	SET a.ProductId = p.ProductId
+	FROM #BetTypeSel a
+		CROSS APPLY (
+			SELECT TOP 1 sbm.ProductId
+			FROM SportBettypeMatrix sbm WITH (NOLOCK)
+			WHERE sbm.BetType = a.bettype
+				AND a.ProductCode <> 'VS'
+		) p
+
 	--TODO: Status selection -> include half WON/LOSE if any
 	SELECT @StatusCheck = CONCAT(@StatusCheck, IIF(CHARINDEX('112', @StatusCheck) > 0, ',114','')),
 		@StatusCheck = CONCAT(@StatusCheck, IIF(CHARINDEX('113', @StatusCheck) > 0, ',115',''))
