@@ -82,6 +82,7 @@ Revisions:
 --20230727@Ruby(DB06.bodb02): Add BT1 Report Data
 --20231225@KenYang(DB06.bodb02): Add JILISlot, PGSoft Report Data
 --20240104@Benson: Add Saba Reward Risk free Rebate (bettype: 17007) in the promotion 
+--20240207@KenYang(DB06.bodb02): Add Virtual Football League(SportType:178), Virtual Soccer Bundesliga(SportType:195) Report Data
 */
 BEGIN
 	SET NOCOUNT ON
@@ -219,9 +220,9 @@ BEGIN
 								SUM(CASE WHEN p.sporttype = 220 THEN p.drawTO ELSE 0 END) AS KLDraw, 
 								SUM(CASE WHEN p.sporttype = 220 THEN p.turnover ELSE 0 END) AS KLTOver,
 								SUM(CASE WHEN p.sporttype = 220 THEN p.winlost ELSE 0 END) AS KLWL ,
-								SUM(CASE WHEN p.sporttype IN (190,191,192,193,194,196) THEN p.drawTO ELSE 0 END) AS VS2Draw, 
-								SUM(CASE WHEN p.sporttype IN (190,191,192,193,194,196) THEN p.turnover ELSE 0 END) AS VS2TOver,
-								SUM(CASE WHEN p.sporttype IN (190,191,192,193,194,196) THEN p.winlost ELSE 0 END) AS VS2WL ,
+								SUM(CASE WHEN p.sporttype IN (190,191,192,193,194,195,196) THEN p.drawTO ELSE 0 END) AS VS2Draw, 
+								SUM(CASE WHEN p.sporttype IN (190,191,192,193,194,195,196) THEN p.turnover ELSE 0 END) AS VS2TOver,
+								SUM(CASE WHEN p.sporttype IN (190,191,192,193,194,195,196) THEN p.winlost ELSE 0 END) AS VS2WL ,
 								SUM(CASE WHEN p.sporttype = -6 THEN p.drawTO ELSE 0 END) AS CODraw,
 								SUM(CASE WHEN p.sporttype = -6 THEN p.turnover ELSE 0 END) AS COTOver,
 								SUM(CASE WHEN p.sporttype = -6 THEN p.winlost ELSE 0 END) AS COWL,
@@ -252,9 +253,9 @@ BEGIN
 								SUM(CASE WHEN p.sporttype = 171 THEN p.drawTO ELSE 0 END) AS VgamingDraw,
 								SUM(CASE WHEN p.sporttype = 171 THEN p.turnover ELSE 0 END) AS VgamingTOver,
 								SUM(CASE WHEN p.sporttype = 171 THEN p.winlost ELSE 0 END) AS VgamingWL,
-								SUM(CASE WHEN p.sporttype = 231 THEN p.drawTO ELSE 0 END) AS VS3Draw,
-								SUM(CASE WHEN p.sporttype = 231 THEN p.turnover ELSE 0 END) AS VS3TOver,
-								SUM(CASE WHEN p.sporttype = 231 THEN p.winlost ELSE 0 END) AS VS3WL,
+								SUM(CASE WHEN p.sporttype IN (178,231) THEN p.drawTO ELSE 0 END) AS VS3Draw,
+								SUM(CASE WHEN p.sporttype IN (178,231) THEN p.turnover ELSE 0 END) AS VS3TOver,
+								SUM(CASE WHEN p.sporttype IN (178,231) THEN p.winlost ELSE 0 END) AS VS3WL,
 								SUM(CASE WHEN p.sporttype = 237 THEN p.drawTO ELSE 0 END) AS MaxGameDraw,
 								SUM(CASE WHEN p.sporttype = 237 THEN p.turnover ELSE 0 END) AS MaxGameTOver,
 								SUM(CASE WHEN p.sporttype = 237 THEN p.winlost ELSE 0 END) AS MaxGameWL,
@@ -263,7 +264,7 @@ BEGIN
 								SUM(CASE WHEN p.sporttype = 175 THEN p.winlost ELSE 0 END) AS BTCWL
 						FROM bodb_Report.dbo.rptDepWinlostByProduct_BK p WITH(NOLOCK)
 						WHERE winlostdate BETWEEN @fromDate AND @toDate 
-							AND p.sporttype IN (0,161,180,190,191,192,193,202,211,212,220,251,208,209,-6,164,194,196,245,222,243,244,168,169,165,171,231,237,175) 
+							AND p.sporttype IN (0,161,180,190,191,192,193,202,211,212,220,251,208,209,-6,164,194,196,245,222,243,244,168,169,165,171,231,237,175,195,178) 
 							AND p.custid = @CustId 
 						GROUP BY p.winlostdate, p.custid
 					) p1 ON b.winlostdate = p1.winlostdate
@@ -365,9 +366,9 @@ BEGIN
 								SUM(CASE WHEN p.sporttype = 220 THEN p.drawTO ELSE 0 END) AS KLDraw, 
 								SUM(CASE WHEN p.sporttype = 220 THEN p.turnover ELSE 0 END) AS KLTOver,
 								SUM(CASE WHEN p.sporttype = 220 THEN p.winlost ELSE 0 END) AS KLWL ,
-								SUM(CASE WHEN p.sporttype IN (190,191,192,193,194,196) THEN p.drawTO ELSE 0 END) AS VS2Draw, 
-								SUM(CASE WHEN p.sporttype IN (190,191,192,193,194,196) THEN p.turnover ELSE 0 END) AS VS2TOver,
-								SUM(CASE WHEN p.sporttype IN (190,191,192,193,194,196) THEN p.winlost ELSE 0 END) AS VS2WL,
+								SUM(CASE WHEN p.sporttype IN (190,191,192,193,194,195,196) THEN p.drawTO ELSE 0 END) AS VS2Draw, 
+								SUM(CASE WHEN p.sporttype IN (190,191,192,193,194,195,196) THEN p.turnover ELSE 0 END) AS VS2TOver,
+								SUM(CASE WHEN p.sporttype IN (190,191,192,193,194,195,196) THEN p.winlost ELSE 0 END) AS VS2WL,
 								SUM(CASE WHEN p.sporttype = -6 THEN p.drawTO ELSE 0 END) AS CODraw,
 								SUM(CASE WHEN p.sporttype = -6 THEN p.turnover ELSE 0 END) AS COTOver,
 								SUM(CASE WHEN p.sporttype = -6 THEN p.winlost ELSE 0 END) AS COWL,
@@ -398,9 +399,9 @@ BEGIN
 								SUM(CASE WHEN p.sporttype = 171 THEN p.drawTO ELSE 0 END) AS VgamingDraw,
 								SUM(CASE WHEN p.sporttype = 171 THEN p.turnover ELSE 0 END) AS VgamingTOver,
 								SUM(CASE WHEN p.sporttype = 171 THEN p.winlost ELSE 0 END) AS VgamingWL,
-								SUM(CASE WHEN p.sporttype = 231 THEN p.drawTO ELSE 0 END) AS VS3Draw,
-								SUM(CASE WHEN p.sporttype = 231 THEN p.turnover ELSE 0 END) AS VS3TOver,
-								SUM(CASE WHEN p.sporttype = 231 THEN p.winlost ELSE 0 END) AS VS3WL,
+								SUM(CASE WHEN p.sporttype IN (178,231) THEN p.drawTO ELSE 0 END) AS VS3Draw,
+								SUM(CASE WHEN p.sporttype IN (178,231) THEN p.turnover ELSE 0 END) AS VS3TOver,
+								SUM(CASE WHEN p.sporttype IN (178,231) THEN p.winlost ELSE 0 END) AS VS3WL,
 								SUM(CASE WHEN p.sporttype = 237 THEN p.drawTO ELSE 0 END) AS MaxGameDraw,
 								SUM(CASE WHEN p.sporttype = 237 THEN p.turnover ELSE 0 END) AS MaxGameTOver,
 								SUM(CASE WHEN p.sporttype = 237 THEN p.winlost ELSE 0 END) AS MaxGameWL,
@@ -410,7 +411,7 @@ BEGIN
 
 						FROM bodb_Report.dbo.rptDepWinlostByProduct p WITH(NOLOCK)
 						WHERE winlostdate BETWEEN @fromDate AND @toDate 
-							AND p.sporttype IN (0,161,180,190,191,192,193,202,211,212,220,251,208,209,-6,164,194,196,245,222,243,244,168,169,165,171,231,237,175)
+							AND p.sporttype IN (0,161,180,190,191,192,193,202,211,212,220,251,208,209,-6,164,194,196,245,222,243,244,168,169,165,171,231,237,175,195,178)
 							AND p.custid = @CustId 
 						GROUP BY p.winlostdate, p.custid
 					) p1 ON b.winlostdate = p1.winlostdate
@@ -607,9 +608,9 @@ BEGIN
 							   SUM(CASE WHEN p.sporttype = 220 THEN p.drawTO ELSE 0 END) AS KLDraw, 
 							   SUM(CASE WHEN p.sporttype = 220 THEN p.turnover ELSE 0 END) AS KLTOver,
 							   SUM(CASE WHEN p.sporttype = 220 THEN p.winlost ELSE 0 END) AS KLWL ,
-							   SUM(CASE WHEN p.sporttype IN (190,191,192,193,194,196) THEN p.drawTO ELSE 0 END) AS VS2Draw, 
-							   SUM(CASE WHEN p.sporttype IN (190,191,192,193,194,196) THEN p.turnover ELSE 0 END) AS VS2TOver,
-							   SUM(CASE WHEN p.sporttype IN (190,191,192,193,194,196) THEN p.winlost ELSE 0 END) AS VS2WL ,
+							   SUM(CASE WHEN p.sporttype IN (190,191,192,193,194,195,196) THEN p.drawTO ELSE 0 END) AS VS2Draw, 
+							   SUM(CASE WHEN p.sporttype IN (190,191,192,193,194,195,196) THEN p.turnover ELSE 0 END) AS VS2TOver,
+							   SUM(CASE WHEN p.sporttype IN (190,191,192,193,194,195,196) THEN p.winlost ELSE 0 END) AS VS2WL ,
 							   SUM(CASE WHEN p.sporttype = -6 THEN p.drawTO ELSE 0 END) AS CODraw,
 							   SUM(CASE WHEN p.sporttype = -6 THEN p.turnover ELSE 0 END) AS COTOver,
 							   SUM(CASE WHEN p.sporttype = -6 THEN p.winlost ELSE 0 END) AS COWL,
@@ -640,9 +641,9 @@ BEGIN
 							   SUM(CASE WHEN p.sporttype = 171 THEN p.drawTO ELSE 0 END) AS VgamingDraw,
 							   SUM(CASE WHEN p.sporttype = 171 THEN p.turnover ELSE 0 END) AS VgamingTOver,
 							   SUM(CASE WHEN p.sporttype = 171 THEN p.winlost ELSE 0 END) AS VgamingWL,
-							   SUM(CASE WHEN p.sporttype = 231 THEN p.drawTO ELSE 0 END) AS VS3Draw,
-							   SUM(CASE WHEN p.sporttype = 231 THEN p.turnover ELSE 0 END) AS VS3TOver,
-							   SUM(CASE WHEN p.sporttype = 231 THEN p.winlost ELSE 0 END) AS VS3WL,
+							   SUM(CASE WHEN p.sporttype IN (178,231) THEN p.drawTO ELSE 0 END) AS VS3Draw,
+							   SUM(CASE WHEN p.sporttype IN (178,231) THEN p.turnover ELSE 0 END) AS VS3TOver,
+							   SUM(CASE WHEN p.sporttype IN (178,231) THEN p.winlost ELSE 0 END) AS VS3WL,
 							   SUM(CASE WHEN p.sporttype = 237 THEN p.drawTO ELSE 0 END) AS MaxGameDraw,
 							   SUM(CASE WHEN p.sporttype = 237 THEN p.turnover ELSE 0 END) AS MaxGameTOver,
 							   SUM(CASE WHEN p.sporttype = 237 THEN p.winlost ELSE 0 END) AS MaxGameWL,
@@ -651,7 +652,7 @@ BEGIN
 							   SUM(CASE WHEN p.sporttype = 175 THEN p.winlost ELSE 0 END) AS BTCWL
 						FROM bodb_Report.dbo.rptDepWinlostByProduct p WITH(NOLOCK)
 						WHERE winlostdate = @dbtodaydate
-							AND p.sporttype IN (0,161,180,190,191,192,193,202,211,212,220,251,208,209,-6,164,194,196,245,222,243,244,168,169,165,171,231,237,175)
+							AND p.sporttype IN (0,161,180,190,191,192,193,202,211,212,220,251,208,209,-6,164,194,196,245,222,243,244,168,169,165,171,231,237,175,195,178)
 							AND p.custid = @CustId 
 						GROUP BY p.winlostdate, p.custid
 					) p1 ON d.custid = p1.custid
@@ -688,6 +689,3 @@ BEGIN
 	SELECT @dbtodaydate, d.* FROM @TodayData d
 	ORDER BY b.winlostdate
 END
-
-
-
