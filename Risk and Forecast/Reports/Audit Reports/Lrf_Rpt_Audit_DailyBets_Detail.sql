@@ -108,6 +108,7 @@ BEGIN
 	FROM bodb_Ploutos.dbo.BetTicket a WITH (NOLOCK)
 		INNER JOIN @Currency c ON c.Code = a.CurrencyCode
 		INNER JOIN bodb_Ploutos.dbo.Brand br WITH(NOLOCK) ON br.BrandCode = a.BrandCode
+		INNER JOIN bodb_Ploutos.dbo.PlayerProfile pp WITH(NOLOCK) ON pp.BrandCode = a.BrandCode AND pp.CustID = a.CustId
 	WHERE 
 		a.BrandCode = @SiteName
 		AND a.StatusID IN (0, 1)
