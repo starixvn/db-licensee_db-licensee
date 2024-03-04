@@ -31,6 +31,7 @@ AS
 		- 20220914@Evan: Add USDT as Base Currencies [Redmine #177481]
 		- 20231005@Evan: Add PHP as Base Currencies, list currencies currently supported [Redmine #194863]
 		- 20231215@Evan: Support Base Currency MP [Redmine #198400]
+		- 20240112@Evan: Support based currency TRY & NPR [Redmine #197693]
 
 */
 
@@ -120,6 +121,8 @@ BEGIN
 				WHEN @BaseCurrency = 'KRW' THEN ex.KRW
 				WHEN @BaseCurrency = 'JPY' THEN ex.JPY
 				WHEN @BaseCurrency = 'TWD' THEN ex.TWD
+				WHEN @BaseCurrency = 'TRY' THEN ex.TRY
+				WHEN @BaseCurrency = 'NPR' THEN ex.NPR
 				ELSE 1
 			END AS Rate,
 			CASE
@@ -142,6 +145,8 @@ BEGIN
 				WHEN @DefaultBaseCurrency = 'KRW' THEN ex.KRW
 				WHEN @DefaultBaseCurrency = 'JPY' THEN ex.JPY
 				WHEN @DefaultBaseCurrency = 'TWD' THEN ex.TWD
+				WHEN @DefaultBaseCurrency = 'TRY' THEN ex.TRY
+				WHEN @DefaultBaseCurrency = 'NPR' THEN ex.NPR
 				ELSE 1
 			END AS DefaultRate
 		FROM CustDB.dbo.ExchangeDailyOanda ex WITH(NOLOCK)
