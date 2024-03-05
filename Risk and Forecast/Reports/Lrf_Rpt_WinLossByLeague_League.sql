@@ -31,6 +31,7 @@ AS
 		- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465]
 		- 20230708@Evan: Support CN3, INDO & THAI language on LAP [RedmineID: #187132]
 		- 20241701@Evan: Update f_GroupBettype to Lrf_f_GroupBettype [RedmineID: #199523]
+		- 20240304@Evan: Integrate Saba Ice Hockey [RedmineID: #201283]
 
 	Param's Explanation:
 		- @SportTypeList: sporttype list separated by ','
@@ -43,6 +44,7 @@ AS
 			+ -6: Saba Basketball Pingoal (SportType = 2, LeagueGroupId IN (122))
 			+ -7: Saba E-Sports Pingoal (SportType = 43, LeagueGroupId IN (151))
 			+ -8: Saba Virtual Tennis (SportType = 5, LeagueGroupId IN (42))
+			+ -9: Saba Ice Hockey (SportType = 4, LeagueGroupId IN (42))
 		- @BetTypeList: bettype list separated by ','
 			+ 'All': all bettypes
 		- @SearchLanguage: search language
@@ -228,6 +230,9 @@ BEGIN
 			OR (',' + @SportTypeList + ',' LIKE '%,-8,%'
 				AND l.sporttype = 5
 				AND l.LeagueGroupID IN (42))
+			OR (',' + @SportTypeList + ',' LIKE '%,-9,%'
+				AND l.sporttype = 4
+				AND l.LeagueGroupID IN (42))
 			)
 		AND (@LeagueName = '' OR CASE
 									WHEN @SearchLanguage = 'zh-CN' AND ISNULL(l.leaguenamecn,'') <> '' THEN l.leaguenamecn
@@ -262,6 +267,18 @@ BEGIN
 		BEGIN
 			DELETE FROM #League
 			WHERE SportType = 43 AND LeagueGroupId NOT IN (151)
+		END
+		
+		IF ',' + @SportTypeList + ',' NOT LIKE '%,5,%'
+		BEGIN
+			DELETE FROM #League
+			WHERE SportType = 5 AND LeagueGroupId NOT IN (42)
+		END
+
+		IF ',' + @SportTypeList + ',' NOT LIKE '%,4,%'
+		BEGIN
+			DELETE FROM #League
+			WHERE SportType = 4 AND LeagueGroupId NOT IN (42)
 		END
 
 		IF ',' + @SportTypeList + ',' NOT LIKE '%,-1,%'
@@ -313,6 +330,11 @@ BEGIN
 							WHEN @CutoffDate > @_FromDate AND  ',' + @SportTypeList + ',' LIKE '%,5,%' THEN 0
 							ELSE 1 
 						END
+		END
+		IF ',' + @SportTypeList + ',' NOT LIKE '%,-9,%'
+		BEGIN	
+			DELETE FROM #League
+			WHERE SportType = 4 AND LeagueGroupId IN (42)
 		END
 	END
 	
@@ -871,6 +893,7 @@ BEGIN
 				WHEN d.SportType = 2 AND d.LeagueGroupId IN (122) THEN -6
 				WHEN d.SportType = 43 AND d.LeagueGroupId IN (151) THEN -7
 				WHEN d.SportType = 5 AND d.LeagueGroupId IN (42) AND d.WinLostDate >= @CutoffDate THEN -8
+				WHEN d.SportType = 4 AND d.LeagueGroupId IN (42) THEN -9
 				ELSE d.SportType
 			END AS SportType,
 			d.LeagueId,
@@ -893,6 +916,7 @@ BEGIN
 				WHEN d.SportType = 2 AND d.LeagueGroupId IN (122) THEN -6
 				WHEN d.SportType = 43 AND d.LeagueGroupId IN (151) THEN -7
 				WHEN d.SportType = 5 AND d.LeagueGroupId IN (42) AND d.WinLostDate >= @CutoffDate THEN -8
+				WHEN d.SportType = 4 AND d.LeagueGroupId IN (42) THEN -9
 				ELSE d.SportType
 			END,
 			d.LeagueId

@@ -29,6 +29,7 @@ Revisions:
 	- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465]
 	- 20230708@Evan: Support CN3, INDO & THAI language on LAP [RedmineID: #187132]
 	- 20230920@Evan: Hardcode show USDKH, MP [RedmineID: #193757]
+	- 20240304@Evan: Integrate Saba Ice Hockey [RedmineID: #201283]
 
 Param's Explanation:
 	- @AgentList: XML structure
@@ -46,6 +47,7 @@ Param's Explanation:
 		+ -6: Saba Basketball Pingoal (SportType = 2, LeagueGroupId IN (122))
 		+ -7: Saba E-Sports Pingoal (SportType = 43, LeagueGroupId IN (151))
 		+ -8: Saba Virtual Tennis (SportType = 5, LeagueGroupId IN (42))
+		+ -9: Saba Ice Hockey (SportType = 3, LeagueGroupId IN (42))
 	- @BetTypeList: bettype list separated by ','
 		+ 'All': all bettypes
 	- @ReasonList: Reason list separated by ','
@@ -156,7 +158,8 @@ Param's Explanation:
 					WHEN SportID IN (-2,-6) THEN 2 
 					WHEN SportID = -3 THEN 50 
 					WHEN SportID = -7 THEN 43
-					WHEN SportID = -8 THEN 5 END
+					WHEN SportID = -8 THEN 5
+					WHEN SportID = -9 THEN 4 END
         FROM #tmpSport  
 		WHERE SportID < 0
 
@@ -221,6 +224,9 @@ Param's Explanation:
 			OR (',' + @SportTypeList + ',' LIKE '%,-8,%'
 				AND l.sporttype = 5
 				AND l.LeagueGroupID IN (42))	
+			OR (',' + @SportTypeList + ',' LIKE '%,-9,%'
+				AND l.sporttype = 4
+				AND l.LeagueGroupID IN (42))	
 			)
 		AND (@LeagueName = '' OR CASE
 									WHEN @SearchLanguage = 'zh-CN' AND ISNULL(l.leaguenamecn,'') <> '' THEN l.leaguenamecn
@@ -259,6 +265,12 @@ Param's Explanation:
 		BEGIN
 			DELETE FROM #League
 			WHERE SportType = 5 AND LeagueGroupId NOT IN (42)
+		END
+
+		IF ',' + @SportTypeList + ',' NOT LIKE '%,4,%'
+		BEGIN
+			DELETE FROM #League
+			WHERE SportType = 4 AND LeagueGroupId NOT IN (42)
 		END
 
 		IF ',' + @SportTypeList + ',' NOT LIKE '%,-1,%'
@@ -311,6 +323,12 @@ Param's Explanation:
 							WHEN @CutoffDate > @FromDate AND  ',' + @SportTypeList + ',' LIKE '%,5,%' THEN 0
 							ELSE 1 
 						END
+		END
+		
+		IF ',' + @SportTypeList + ',' NOT LIKE '%,-9,%'
+		BEGIN	
+			DELETE FROM #League
+			WHERE SportType = 4 AND LeagueGroupId IN (42)
 		END
 	END
 

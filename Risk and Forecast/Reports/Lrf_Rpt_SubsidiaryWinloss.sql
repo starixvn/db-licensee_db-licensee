@@ -40,6 +40,7 @@ AS
 		- 20221207@Evan: Support Saba E-Sports PinGoal [RedmineID: #181224]
 		- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465]
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
+		- 20240304@Evan: Integrate Saba Ice Hockey [RedmineID: #201283]
 
 	Param's Explanation:
 		+ @MoveBetsDay: The day we move tickets to bettrans14
@@ -168,6 +169,7 @@ BEGIN
 		OR (sporttype = 50 AND LeagueGroupID IN (42))
 		OR (sporttype = 43 AND LeagueGroupID IN (151))
 		OR (sporttype = 5 AND LeagueGroupID IN (42))
+		OR (sporttype = 4 AND LeagueGroupID IN (42))
 
 	IF @ToDate > @MoveBetsDay
 	BEGIN
