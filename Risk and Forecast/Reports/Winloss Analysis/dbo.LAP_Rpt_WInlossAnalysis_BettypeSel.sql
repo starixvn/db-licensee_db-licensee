@@ -12,6 +12,7 @@ AS
 		- 20230209@Bobby: Created [RedmineID: #172604]
 		- 20231214@Evan: Hide Upcoming bettype [RedmineID: #197020]
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
+		- 20240306@Evan: Remove checking Enabled in SportBettypeMatrix [RedmineID: #201944]
 
 		
 */
@@ -37,8 +38,7 @@ BEGIN
 		FROM bodb_licensee.dbo.Product3rd p3 WITH(NOLOCK)
 		INNER JOIN bodb_licensee.dbo.LicenseeProduct3rd lp WITH(NOLOCK) ON p3.ProductID = lp.ProductID
 		LEFT JOIN bodb02.dbo.Products p WITH(NOLOCK) ON p.ProductPrefix = p3.ProductPrefix 
-		WHERE p3.Enabled = 1
-			AND (@LicenseeID IS NULL OR lp.LicenseeID = @LicenseeID)
+		WHERE (@LicenseeID IS NULL OR lp.LicenseeID = @LicenseeID)
 	),
 	CTE_GroupBettype AS (
 		SELECT Bettype, GroupTypeID FROM bodb02.dbo.Lrf_f_GroupBettype()
@@ -69,8 +69,7 @@ BEGIN
 					+ POWER(2*CASE WHEN ISNULL(@ProductCodes, 'ALL') = 'ALL'  OR ',' + @ProductCodes + ',' LIKE '%,BA,%' THEN 1 ELSE 0 END, 2)
 				) AS SBBACheck
 		) AS saba 
-		WHERE m.[Enabled] = 1
-			AND m.SportType NOT IN (150, 173) --exclude free games
+		WHERE m.SportType NOT IN (150, 173) --exclude free games
 			AND (ISNULL(@ProductCodes, 'ALL') = 'ALL' OR ck.HasValue = 1 )
 			AND e.BetType IS NULL
 			AND m.Bettype NOT IN (9, 18999) -- exclude Mix Parlay
