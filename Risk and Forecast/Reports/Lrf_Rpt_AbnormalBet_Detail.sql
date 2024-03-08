@@ -47,7 +47,7 @@ Param's Explanation:
 		+ -6: Saba Basketball Pingoal (SportType = 2, LeagueGroupId IN (122))
 		+ -7: Saba E-Sports Pingoal (SportType = 43, LeagueGroupId IN (151))
 		+ -8: Saba Virtual Tennis (SportType = 5, LeagueGroupId IN (42))
-		+ -9: Saba Ice Hockey (SportType = 3, LeagueGroupId IN (42))
+		+ -9: Saba Ice Hockey (SportType = 4, LeagueGroupId IN (42))
 	- @BetTypeList: bettype list separated by ','
 		+ 'All': all bettypes
 	- @ReasonList: Reason list separated by ','
@@ -609,6 +609,7 @@ Param's Explanation:
 					WHEN d.SportType = 2 AND d.LeagueGroupId IN (122) THEN -6
 					WHEN d.SportType = 43 AND d.LeagueGroupId IN (151) THEN -7
 					WHEN d.SportType = 5 AND d.LeagueGroupId IN (42) AND CreatedDate >= @CutoffDate THEN -8
+					WHEN d.SportType = 4 AND d.LeagueGroupId IN (42) THEN -9
 					ELSE d.SportType
 				END AS Sport,
 				d.LeagueGroupId,

@@ -42,7 +42,7 @@ Param's Explanation:
 		+ -6: Saba Basketball Pingoal (SportType = 2, LeagueGroupId IN (122))
 		+ -7: Saba E-Sports Pingoal (SportType = 43, LeagueGroupId IN (151))
 		+ -8: Saba Virtual Tennis (SportType = 5, LeagueGroupId IN (42))
-		+ -9: Saba Ice Hockey (SportType = 3, LeagueGroupId IN (42))
+		+ -9: Saba Ice Hockey (SportType = 4, LeagueGroupId IN (42))
 
 	- @BetTypeList: bettype list separated by ','
 		+ 'All': all bettypes
@@ -142,7 +142,8 @@ Param's Explanation:
 					WHEN SportID IN (-2,-6) THEN 2 
 					WHEN SportID = -3 THEN 50  
 					WHEN SportID = -7 THEN 43
-					WHEN SportID = -8 THEN 5 END 
+					WHEN SportID = -8 THEN 5
+					WHEN SportID = -9 THEN 4 END 
         FROM #tmpSport  
 		WHERE SportID < 0
 
@@ -353,6 +354,7 @@ Param's Explanation:
 					WHEN l.SportType = 2 AND l.LeagueGroupId IN (122) THEN -6
 					WHEN l.SportType = 43 AND l.LeagueGroupId IN (151) THEN -7
 					WHEN l.SportType = 5 AND l.LeagueGroupId IN (42) AND f.CreatedDate >= @CutoffDate THEN -8
+					WHEN l.SportType = 4 AND l.LeagueGroupId IN (42) THEN -9
 				ELSE l.SportType
 			END AS SportType
 		FROM bodb_Account.dbo.AbnormalBetTransaction f WITH(NOLOCK)
