@@ -18,6 +18,7 @@ ALTER PROCEDURE dbo.LAP_Rpt_WinlossAnalysis_PlayerSel
 	------ player 
 	@IsVIPOnly		BIT = 0,
 	@CustomerClass	VARCHAR(1000) = 'ALL',
+	@FullCustomerClass VARCHAR(1000) = 'ALL',
 	@OddsGroup		VARCHAR(1000) = 'ALL',
 	@SearchMode		TINYINT	= 1,
 	@SearchUserName	VARCHAR(50) = NULL,
@@ -48,6 +49,7 @@ AS
 		- 20230703@Bobby: Enhance perf - bettrans product3rd filtering [RedmineID: #195292]
 		- 20231122@Evan: Handle betfrom for Jollysports [Redmine: #197192]	
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
+		- 20240305@Bobby: HF Risk level filter [RedmineID: #200913]
 
 	Param's Explanation:
 		- @SortKey: 0:GroupBy, 1:BetCount, 2:Turnover, 3:NetTurnover, 4:MemWinloss, 5:MemComm, 6:LicWinloss, 7:LicComm, 8:AmtDueToBA, 9:BetEffective, 10:Margin
@@ -78,6 +80,7 @@ BEGIN
 		@PlatformCheck	VARCHAR(1000),
 		@IsVIPOnlyCheck	BIT,
 		@CustClassCheck	VARCHAR(1000),
+		@FullCustomerClassCheck VARCHAR(1000),
 		@OddsGroupCheck	VARCHAR(1000),
 		@SearchModeCheck	INT,
 		@SearchUsernameCheck VARCHAR(50),
@@ -108,6 +111,7 @@ BEGIN
 		@LiveIds		= IIF(@LiveStatusIds='ALL', '0,1,2', @LiveStatusIds),
 		@PlatformCheck	= IIF(@PlatformIds IS NULL, 'ALL', @PlatformIds),
 		@CustClassCheck	= IIF(@CustomerClass = 'ALL', NULL, @CustomerClass),
+		@FullCustomerClassCheck = IIF(@FullCustomerClass = 'ALL', NULL, @FullCustomerClass),
 		@OddsGroupCheck	= IIF(@OddsGroup = 'ALL', NULL, @OddsGroup),
 		@SearchModeCheck		= @SearchMode,
 		@SearchUsernameCheck	= @SearchUsername,
@@ -325,8 +329,9 @@ BEGIN
 			AND (@OddsGroupCheck IS NULL
 				OR ',' + @OddsGroupCheck + ',' LIKE '%,' + c.ugroup + ',%')
 			AND (@CustClassCheck IS NULL
-				OR ',' + @CustClassCheck + ',' LIKE '%,0,%' AND CONVERT(VARCHAR(6), ci.CustomerClass) IS NULL
-				OR ',' + @CustClassCheck + ',' LIKE '%,' + CONVERT(VARCHAR(6), ci.CustomerClass) + ',%')
+				OR (',' + @CustClassCheck + ',' LIKE '%,0,%' AND (ISNULL(ci.CustomerClass, 0) = 0 OR  ',' + @FullCustomerClassCheck + ',' NOT LIKE  '%,' + CONVERT(VARCHAR(6), ci.CustomerClass) + ',%' ))
+				OR (',' + @CustClassCheck + ',' LIKE '%,' + CONVERT(VARCHAR(6), ci.CustomerClass) + ',%')
+			)
 			AND (@IsVIPOnlyCheck = 0 OR vip.CustID > 0);
 	END
 
