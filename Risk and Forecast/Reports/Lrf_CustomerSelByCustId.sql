@@ -9,6 +9,7 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerSelByCustid]
 	@SpecialLevel	VARCHAR(100)	= '',
 	@OddsGroups		VARCHAR(100)	= '',
 	@CustomerClass	VARCHAR(1000)	= NULL,
+	@FullCustomerClass	VARCHAR(1000)	= NULL,
 	@CommGroups		VARCHAR(1000)	= '',
 	@AgentList		VARCHAR(MAX)
 AS
@@ -32,11 +33,13 @@ AS
 		- 20210806@Johnson: extend @CustomerClass VARCHAR(1000) [redmine:#159754]
 		- 20211111@Sol: Split Transfer out of bettrans/Support IPv6 - [RedmineID: #164301]
 		- 20230227@Evan: Ensure correct balance calculation when allow to transfer 247 (BU) [Redmine: #173554]
-
+		- 20240304@Johnson: HF filter Risk Level "Uncategorized" not show [redmine: #200913]
 	Parameter's explanations:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 		+ @SpecialLevel: default value '1,2,3,4,5,6,7,8,9,10' (all)
 		+ @CustomerClass: '0,1,2,3,4,5,6,7,8,9,10,11,12,13' (all)
+		+ @FullCustomerClass: '0,1,2,3,4,5,6,7,8,9,10,11,12,13' (all)
+			-> CC = 0: Uncategorized
 		+ @OddsGroups: Member's Odds Group
 		+ @CommGroups: Member's comm group
 */
@@ -45,7 +48,8 @@ BEGIN
 	SET NOCOUNT ON
 
 	DECLARE @currentDate DATETIME,
-			@LicenseeID	INT
+			@LicenseeID	INT,
+			@IsUncategorizedCC BIT = 0
 
 	SELECT  @currentDate = CONVERT(DATE, GETDATE())
 	
@@ -54,7 +58,12 @@ BEGIN
 	SELECT  @PageIndex = @PageIndex - 1,
 		@RowStart = @PageSize * @PageIndex + 1,
 		@RowEnd = @RowStart + @PageSize - 1 
-
+	
+	IF EXISTS (SELECT 1 
+			FROM STRING_SPLIT(@CustomerClass,',')
+			WHERE value = 0)
+	SELECT @IsUncategorizedCC = 1
+	
 	CREATE TABLE #TempAg (custid INT)
 	CREATE TABLE #tblCustList (custid INT)
 	
@@ -180,7 +189,9 @@ BEGIN
 				
 		IF ISNULL(@CustomerClass, '') <> ''
 		BEGIN
-			SET @strSQL = @strSQL + 'AND ISNULL(ci.CustomerClass,0) IN  (' +  @CustomerClass + ')'	
+			SET @strSQL = @strSQL + 'AND ISNULL(ci.CustomerClass,0) IN  (' +  @CustomerClass + ')' +
+							CASE WHEN @IsUncategorizedCC = 1 THEN ' OR ISNULL(ci.CustomerClass,0) NOT IN ('+  @FullCustomerClass + ')'
+										ELSE '' END
 		END 		
 			
 		--EXEC sp_executesql @strSQL
@@ -256,7 +267,9 @@ BEGIN
 							
 		IF ISNULL(@CustomerClass, '') <> ''
 		BEGIN
-			SET @strSQL = @strSQL + 'AND ISNULL(ci.CustomerClass,0) IN  (' +  @CustomerClass + ')'	
+			SET @strSQL = @strSQL + 'AND ISNULL(ci.CustomerClass,0) IN  (' +  @CustomerClass + ')' +
+							CASE WHEN @IsUncategorizedCC = 1 THEN ' OR ISNULL(ci.CustomerClass,0) NOT IN ('+  @FullCustomerClass + ')'
+										ELSE '' END
 		END 
 		
 		--EXEC sp_executesql @strSQL
@@ -308,7 +321,9 @@ BEGIN
 				
 		IF ISNULL(@CustomerClass, '') <> ''
 		BEGIN
-			SET @strSQL = @strSQL + 'AND ISNULL(ci.CustomerClass,0) IN  (' +  @CustomerClass + ')'	
+			SET @strSQL = @strSQL + 'AND ISNULL(ci.CustomerClass,0) IN  (' +  @CustomerClass + ')' +
+							CASE WHEN @IsUncategorizedCC = 1 THEN ' OR ISNULL(ci.CustomerClass,0) NOT IN ('+  @FullCustomerClass + ')'
+										ELSE '' END
 		END 		
 			
 	

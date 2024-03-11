@@ -6,6 +6,7 @@ ALTER PROCEDURE [dbo].[Lrf_ProblemAccount_LicenseeVIPPlayerSel]
 	@OrderCol	TINYINT = 1,
 	@SortType	TINYINT = 1,
 	@CustomerClass VARCHAR(1000)='',
+	@FullCustomerClass	VARCHAR(1000)	= NULL,
 	@IsCheckAll	BIT,
 	@FromDate	DATETIME,
 	@ToDate		DATETIME,
@@ -36,7 +37,9 @@ AS
 						= 2: external ID	
 						= 4: customer Class	(follow Lrf_ProblemAccount_LicenseeProblemPlayerSel)	
 			- @SortType = 1: ASC, 2: DESC
-			- @CustomerClass: '0,1,2,3,4,5,6,7,8,9,10,11,12,13' (all)		
+			- @CustomerClass: '0,1,2,3,4,5,6,7,8,9,10,11,12,13' (all)
+			- @FullCustomerClass: '0,1,2,3,4,5,6,7,8,9,10,11,12,13' (all)
+				-> CC = 0: Uncategorized	
 	*/
 BEGIN
 	SET NOCOUNT ON
@@ -47,7 +50,8 @@ BEGIN
 	DECLARE @TempAg TABLE (custid INT)
 	CREATE TABLE #CustList (CustId INT PRIMARY KEY, CustomerClass SMALLINT, AgentID INT, username VARCHAR(50), username2 VARCHAR(50), isVIP BIT, LastMaskDate DATETIME,IsValid BIT DEFAULT(0))
 	--, IsBA BIT
-	DECLARE @DocHandler INT
+	DECLARE @DocHandler INT,	
+		@IsUncategorizedCC BIT = 0
 
 	BEGIN TRY
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT
@@ -95,14 +99,33 @@ BEGIN
 	INTO #tblCustomerClass
 	FROM Lrf_f_StringSplit(@CustomerClass,',')
 	
+	SELECT ID, RTRIM(LTRIM(VAL)) AS CustomerClass
+	INTO #tblFullCustomerClass
+	FROM Lrf_f_StringSplit(@FullCustomerClass,',')
+	
 	UPDATE t
 	SET t.customerClass = ISNULL(ci.customerClass,0)
 	FROM #CustList t
 		INNER JOIN custinfo ci WITH(NOLOCK) ON t.custid = ci.custid
-	
-	DELETE #CustList 
-	WHERE customerClass NOT IN (SELECT customerClass FROM #tblCustomerClass)
-		OR customerClass IS NULL --not have data in custinfo
+		
+	IF EXISTS (SELECT 1 FROM #tblCustomerClass WHERE CustomerClass = 0)
+	BEGIN
+		;WITH T AS (
+			SELECT c.CustID, c.CustomerClass, CASE WHEN c.CustomerClass IS NOT NULL AND c.CustomerClass NOT IN (SELECT CustomerClass FROM #tblFullCustomerClass WHERE CustomerClass <> 0) THEN 1 ELSE 0 END as IsUncategorizedCC
+			FROM #CustList c		
+		)
+		DELETE T
+		WHERE customerClass IS NULL --not have data in custinfo
+			OR 1 = CASE WHEN IsUncategorizedCC = 1 THEN 0
+						WHEN IsUncategorizedCC = 0 AND CustomerClass IN (SELECT CustomerClass FROM #tblCustomerClass) THEN 0 
+						ELSE 1 END
+	END
+	ELSE 	
+	BEGIN
+		DELETE #CustList 
+		WHERE customerClass NOT IN (SELECT customerClass FROM #tblCustomerClass)
+			OR customerClass IS NULL --not have data in custinfo
+	END
 	
 	IF @IsCheckAll = 1
 	BEGIN
@@ -181,6 +204,7 @@ BEGIN
 	END
 	
 	DROP TABLE #tblCustomerClass
+	DROP TABLE #tblFullCustomerClass
 	DROP TABLE #CustList
 END	
 GO
