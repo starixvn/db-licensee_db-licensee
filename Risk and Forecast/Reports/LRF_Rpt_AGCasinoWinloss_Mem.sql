@@ -30,7 +30,7 @@ AS
 		- 20190617@Amanda: Add Base currency param [RedmineID: #112531]
 		- 20210622@Mark: Change on MoveBet - Add param MoveBetsDay [RedmineID: #154866]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
-		- 20240226@Evan: Integrate AG promotion [Redmine #201067]
+		- 20240226@Evan: Integrate AG promotion + remove un-use code [Redmine #201067]
 */
 
 BEGIN
@@ -83,127 +83,36 @@ BEGIN
 
 	CREATE CLUSTERED INDEX cix_CustId ON #tmpCust(CustId)
 
-	DECLARE @TempFromDate	DATETIME
-	DECLARE @TempToDate		DATETIME
-	DECLARE @GapDate		DATETIME
-
-	SELECT @GapDate = MAX(c.Winlostdate)
+	DECLARE @TempFromDate	DATE = @FromDate
+	DECLARE @TempToDate		DATE = @ToDate
+	
+	INSERT INTO #tmpResult (
+		CustId,
+		WinLostDate,
+		Bettype,
+		Currency,
+		TurnOver,
+		TotalTrans,
+		WinLost,
+		LicenseeWinLost,
+		JpContribution)
+	SELECT
+		c.Custid,
+		c.Winlostdate,
+		c.Bettype,
+		ct.Currency,
+		SUM(c.TurnOver) AS TurnOver,
+		SUM(c.BetCount) AS TotalTrans,
+		SUM(c.Winlost)  AS Winlost,
+		-SUM(c.Winlost) AS LicenseeWinlost,
+		ISNULL(-SUM(c.JpContribution),0) AS JpContribution
 	FROM bodb_report.dbo.rptDepWinlost_AGCasino AS c WITH (NOLOCK)
-	WHERE EXISTS (SELECT 1 FROM #tmpCust AS tc WHERE c.Custid = tc.CustId)
-
-	IF @ToDate > @GapDate
-	BEGIN
-		IF @FromDate <= @GapDate
-			SET @TempFromDate =  DATEADD(DAY,1,@GapDate)
-		ELSE
-			SET @TempFromDate = @FromDate
-
-		DECLARE @FromDate2	DATETIME
-		DECLARE @ToDate2	DATETIME
-
-		IF @ToDate > @MoveBetsDay
-		BEGIN
-			IF @TempFromDate <= @MoveBetsDay
-				SET @FromDate2 =  DATEADD(DAY, 1, @MoveBetsDay)
-			ELSE
-				SET @FromDate2 = @FromDate
-
-			INSERT INTO #tmpResult (
-				CustId,
-				WinLostDate,
-				Currency,
-				TurnOver,
-				TotalTrans,
-				WinLost,
-				LicenseeWinLost )
-			SELECT
-				c.custid,
-				c.winlostdate,
-				c.currency,
-				SUM(c.stake)		AS TurnOver,
-				COUNT(1)			AS TotalTrans,
-				SUM(c.winlost - c.actual_stake)	AS Winlost,
-				- SUM(c.Winlost - c.actual_stake)	AS LicenseeWinlost
-			FROM dbo.bettransLC AS c WITH (NOLOCK)
-				INNER JOIN #tmpCust AS ct ON c.Custid = ct.CustId AND c.Currency = ct.Currency
-			WHERE c.winlostdate BETWEEN @FromDate2 AND @ToDate 
-				AND c.statusID IN (111, 112, 113)
-				AND c.productID = 10 -- AG
-			GROUP BY c.CustId,
-				c.Winlostdate,
-				c.Currency
-		END
-
-		IF @TempFromDate <= @MoveBetsDay 
-		BEGIN
-			IF @ToDate >= @MoveBetsDay
-				SET @ToDate2 = @MoveBetsDay
-			ELSE
-				SET @ToDate2 = @ToDate
-
-			INSERT INTO #tmpResult (
-				CustId,
-				WinLostDate,
-				Currency,
-				TurnOver,
-				TotalTrans,
-				WinLost,
-				LicenseeWinLost )
-			SELECT
-				c.CustID,
-				c.Winlostdate,
-				c.Currency,
-				SUM(c.TurnOver) AS TurnOver,
-				SUM(c.BetCount) AS TotalTrans,
-				SUM(c.Winlost)  AS Winlost,
-				-SUM(c.Winlost) AS LicenseeWinlost
-			FROM DBLIC.bodb_licenseereport.dbo.rptLicWinloss2 AS c WITH (NOLOCK)
-				INNER JOIN #tmpCust AS ct ON c.Custid = ct.CustId AND c.Currency = ct.Currency
-			WHERE c.Winlostdate BETWEEN @TempFromDate AND @ToDate2
-				AND c.roleid = 1
-				AND c.sporttype = 250 -- AG Casino
-				AND c.statusID <> 101
-			GROUP BY c.CustId,
-				c.Winlostdate,
-				c.Currency
-		END
-	END
-
-	IF @FromDate <= @GapDate 
-	BEGIN
-		IF @ToDate >= @GapDate
-			SET @TempToDate = @GapDate
-		ELSE
-			SET @TempToDate = @ToDate
-
-		INSERT INTO #tmpResult (
-			CustId,
-			WinLostDate,
-			Bettype,
-			Currency,
-			TurnOver,
-			TotalTrans,
-			WinLost,
-			LicenseeWinLost,
-			JpContribution)
-		SELECT
-			c.Custid,
-			c.Winlostdate,
-			c.Bettype,
-			ct.Currency,
-			SUM(c.TurnOver) AS TurnOver,
-			SUM(c.BetCount) AS TotalTrans,
-			SUM(c.Winlost)  AS Winlost,
-			-SUM(c.Winlost) AS LicenseeWinlost,
-			ISNULL(-SUM(c.JpContribution),0) AS JpContribution
-		FROM bodb_report.dbo.rptDepWinlost_AGCasino AS c WITH (NOLOCK)
-			INNER JOIN #tmpCust AS ct ON c.CustID = ct.CustID
-		WHERE c.Winlostdate BETWEEN @FromDate AND @TempToDate 
-		GROUP BY c.CustId,
-			c.Winlostdate,
-			c.Bettype,
-			ct.Currency
-	END
+		INNER JOIN #tmpCust AS ct ON c.CustID = ct.CustID
+	WHERE c.Winlostdate BETWEEN @TempFromDate AND @TempToDate 
+	GROUP BY c.CustId,
+		c.Winlostdate,
+		c.Bettype,
+		ct.Currency
 
 	IF EXISTS (SELECT TOP(1) 1 FROM #tmpResult)
 	BEGIN
