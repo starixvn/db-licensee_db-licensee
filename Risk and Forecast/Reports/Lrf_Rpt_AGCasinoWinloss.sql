@@ -72,6 +72,8 @@ BEGIN
 	FROM dbo.custInfo AS co WITH (NOLOCK)
 		INNER JOIN @Temp AS lc ON co.recommend = lc.CustId AND lc.Currency = co.Currency
 
+	CREATE CLUSTERED INDEX cix_CustId ON #tmpCust(CustId)
+	
 	DECLARE @TempFromDate	DATETIME
 	DECLARE @TempToDate		DATETIME
 	DECLARE @GapDate		DATETIME
@@ -172,16 +174,16 @@ BEGIN
 		SELECT
 			c.Winlostdate,
 			c.Bettype,
-			c.Currency,
+			ct.Currency,
 			SUM(c.TurnOver) AS TurnOver,
 			SUM(c.BetCount) AS TotalTrans,
 			SUM(c.Winlost)  AS Winlost,
 			-SUM(c.Winlost) AS LicenseeWinlost,
 			ISNULL(-SUM(c.JpContribution),0) AS JpContribution
 		FROM bodb_report.dbo.rptDepWinlost_AGCasino AS c WITH (NOLOCK)
-			INNER JOIN #tmpCust AS ct ON c.Custid = ct.CustId AND c.Currency = ct.Currency
+			INNER JOIN #tmpCust AS ct ON c.Custid = ct.CustId
 		WHERE c.Winlostdate BETWEEN @FromDate AND @TempToDate 
-		GROUP BY c.Winlostdate, c.Bettype, c.Currency
+		GROUP BY c.Winlostdate, c.Bettype, ct.Currency
 	END
 
 	IF EXISTS (SELECT TOP(1) 1 FROM #tmpResult)
