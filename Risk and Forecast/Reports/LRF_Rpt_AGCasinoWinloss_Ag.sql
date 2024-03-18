@@ -28,6 +28,7 @@ AS
 		- 20190617@Amanda: Add Base currency param [RedmineID: #112531]
 		- 20210622@Mark: Change on MoveBet - Add param MoveBetsDay [RedmineID: #154866]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
+		- 20240226@Evan: Integrate AG promotion + remove un-use code [Redmine #201067]
 */
 
 BEGIN
@@ -36,11 +37,13 @@ BEGIN
 	CREATE TABLE #tmpResult (
 		CustId			INT,
 		WinLostDate		DATETIME,
+		Bettype 		INT DEFAULT (1800),
 		Currency		INT,
-		TurnOver		MONEY,
+		TurnOver		MONEY DEFAULT (0),
 		TotalTrans		INT,
-		WinLost			MONEY,
-		LicenseeWinLost	MONEY )
+		WinLost			MONEY DEFAULT (0),
+		LicenseeWinLost	MONEY DEFAULT (0), 
+		JpContribution MONEY DEFAULT (0))
 
 	CREATE TABLE #tmpCust (
 		Recommend	INT,
@@ -82,122 +85,39 @@ BEGIN
 		dbo.custInfo AS co WITH (NOLOCK)
 		INNER JOIN @Temp AS lc ON lc.CustId = co.Recommend AND co.Currency = lc.Currency
 
-	DECLARE @TempFromDate	DATETIME
-	DECLARE @TempToDate		DATETIME
-	DECLARE @GapDate		DATETIME
+	CREATE CLUSTERED INDEX cix_CustId ON #tmpCust(CustId)
 
-	SELECT @GapDate = MAX(c.Winlostdate)
+	DECLARE @TempFromDate	DATE = @FromDate
+	DECLARE @TempToDate		DATE = @ToDate
+
+
+	INSERT INTO #tmpResult (
+		CustId,
+		WinLostDate,
+		Bettype,
+		Currency,
+		TurnOver,
+		TotalTrans,
+		WinLost,
+		LicenseeWinLost,
+		JpContribution )
+	SELECT
+		ct.recommend AS CustID,
+		c.Winlostdate,
+		c.Bettype,
+		ct.Currency,
+		SUM(c.TurnOver) AS TurnOver,
+		SUM(c.BetCount) AS TotalTrans,
+		SUM(c.Winlost)  AS Winlost,
+		-SUM(c.Winlost) AS LicenseeWinlost,
+		ISNULL(-SUM(c.JpContribution),0) AS JpContribution
 	FROM bodb_report.dbo.rptDepWinlost_AGCasino AS c WITH (NOLOCK)
-	WHERE EXISTS (SELECT 1 FROM #tmpCust tc WHERE c.Custid = tc.CustId)
-	
-	IF @ToDate > @GapDate
-	BEGIN
-		IF @FromDate <= @GapDate
-			SET @TempFromDate =  DATEADD(DAY,1,@GapDate)
-		ELSE
-			SET @TempFromDate = @FromDate
-
-		DECLARE @FromDate2	DATETIME
-		DECLARE @ToDate2	DATETIME
-
-		IF @ToDate > @MoveBetsDay
-		BEGIN
-			IF @TempFromDate <= @MoveBetsDay 
-				SET @FromDate2 =  DATEADD(DAY, 1, @MoveBetsDay)
-			ELSE
-				SET @FromDate2 = @FromDate
-
-			INSERT INTO #tmpResult (
-				CustId,
-				WinLostDate,
-				Currency,
-				TurnOver,
-				TotalTrans,
-				WinLost,
-				LicenseeWinLost )
-			SELECT
-				c.recommend,
-				c.winlostdate,
-				c.currency,
-				SUM(c.stake)		AS TurnOver,
-				COUNT(1)			AS TotalTrans,
-				SUM(c.winlost - c.actual_stake)	AS Winlost,
-				- SUM(c.Winlost - c.actual_stake)	AS LicenseeWinlost
-			FROM dbo.bettransLC AS c WITH (NOLOCK)
-				INNER JOIN #tmpCust AS ct ON c.Custid = ct.CustId AND c.Currency = ct.Currency
-			WHERE c.Winlostdate BETWEEN @FromDate2 AND @ToDate
-				AND c.statusID IN (111, 112, 113)
-				AND c.productID = 10 -- AG
-			GROUP BY c.Recommend,
-				c.Winlostdate,
-				c.Currency
-		END
-
-		IF @TempFromDate <= @MoveBetsDay 
-		BEGIN
-			IF @ToDate >= @MoveBetsDay
-				SET @ToDate2 = @MoveBetsDay
-			ELSE
-				SET @ToDate2 = @ToDate
-
-			INSERT INTO #tmpResult (
-				CustId,
-				WinLostDate,
-				Currency,
-				TurnOver,
-				TotalTrans,
-				WinLost,
-				LicenseeWinLost )
-			SELECT
-				c.Recommend,
-				c.Winlostdate,
-				c.Currency,
-				SUM(c.TurnOver) AS TurnOver,
-				SUM(c.BetCount) AS TotalTrans,
-				SUM(c.Winlost)  AS Winlost,
-				-SUM(c.Winlost) AS LicenseeWinlost
-			FROM DBLIC.bodb_licenseereport.dbo.rptLicWinloss2 AS c WITH (NOLOCK)
-				INNER JOIN (SELECT DISTINCT Recommend, Currency FROM #tmpCust) AS ct ON c.Custid = ct.Recommend AND c.Currency = ct.Currency
-			WHERE c.Winlostdate BETWEEN @TempFromDate AND @ToDate2
-				AND c.roleid = 2
-				AND c.sporttype = 250 -- AG Casino
-				AND c.statusID <> 101
-			GROUP BY c.Recommend,
-				c.Winlostdate,
-				c.Currency
-		END
-	END
-
-	IF @FromDate <= @GapDate
-	BEGIN
-		IF @ToDate >= @GapDate
-			SET @TempToDate = @GapDate
-		ELSE
-			SET @TempToDate = @ToDate
-
-		INSERT INTO #tmpResult (
-			CustId,
-			WinLostDate,
-			Currency,
-			TurnOver,
-			TotalTrans,
-			WinLost,
-			LicenseeWinLost )
-		SELECT
-			ct.recommend AS CustID,
-			c.Winlostdate,
-			c.Currency,
-			SUM(c.TurnOver) AS TurnOver,
-			SUM(c.BetCount) AS TotalTrans,
-			SUM(c.Winlost)  AS Winlost,
-			-SUM(c.Winlost) AS LicenseeWinlost
-		FROM bodb_report.dbo.rptDepWinlost_AGCasino AS c WITH (NOLOCK)
-			INNER JOIN #tmpCust AS ct ON c.CustID = ct.CustID AND c.Currency = ct.Currency
-		WHERE c.Winlostdate BETWEEN @FromDate AND @TempToDate 
-		GROUP BY ct.Recommend,
-			c.Winlostdate,
-			c.Currency
-	END
+		INNER JOIN #tmpCust AS ct ON c.CustID = ct.CustID
+	WHERE c.Winlostdate BETWEEN @TempFromDate AND @TempToDate 
+	GROUP BY ct.Recommend,
+		c.Winlostdate,
+		c.Bettype, 
+		ct.Currency
 
 	IF EXISTS (SELECT TOP(1) 1 FROM #tmpResult)
 	BEGIN
@@ -208,29 +128,52 @@ BEGIN
 	END
 
 	SELECT r.CustID
-		,c.Username
-		,r.Currency
-		,SUM(r.TotalTrans)	AS TotalTrans
+		, c.Username
+		, r.Currency
+		, SUM(CASE WHEN r.Bettype = 1800 THEN r.TotalTrans ELSE 0 END) AS TotalTrans
 
-		,SUM(r.TurnOver			* e.Rate)	AS TurnOver
-		,SUM(r.WinLost			* e.Rate)	AS Winlost
-		,SUM(r.LicenseeWinLost	* e.Rate)	AS LicenseeWinlost
+		, SUM(r.TurnOver * e.Rate) AS TurnOver
+		, SUM(r.WinLost * e.Rate) AS Winlost
+		, SUM(CASE WHEN r.Bettype = 1800 THEN r.LicenseeWinLost ELSE 0 END * e.Rate) AS LicenseeWinlost
+		, SUM(CASE WHEN r.Bettype = 1802 THEN r.JpContribution ELSE 0 END * e.Rate) AS ContributionWinlost
+		, SUM(CASE WHEN r.Bettype = 1803 THEN r.LicenseeWinLost ELSE 0 END * e.Rate) AS PromotionWinlost
+		, SUM(CASE WHEN r.Bettype = 1801 THEN r.LicenseeWinLost ELSE 0 END * e.Rate) AS JackpotWinlost
+	 	, SUM(CASE WHEN r.Bettype IN (1800,1802) THEN (r.LicenseeWinLost + r.JpContribution) * e.Rate ELSE 0 END) AS TotalLicenseeWinlost
+
 		---USD
-		,SUM(r.TurnOver			* e.USD)	AS TurnOverUSD
-		,SUM(r.WinLost			* e.USD)	AS WinlostUSD
-		,SUM(r.LicenseeWinLost	* e.USD)	AS LicenseeWinlostUSD
+		, SUM(r.TurnOver * e.USD) AS TurnOverUSD
+		, SUM(r.WinLost * e.USD) AS WinlostUSD
+		, SUM(CASE WHEN r.Bettype = 1800 THEN r.LicenseeWinLost ELSE 0 END * e.USD) AS LicenseeWinlostUSD
+		, SUM(CASE WHEN r.Bettype = 1802 THEN r.JpContribution ELSE 0 END * e.USD) AS ContributionWinlostUSD
+		, SUM(CASE WHEN r.Bettype = 1803 THEN r.LicenseeWinLost ELSE 0 END * e.USD) AS PromotionWinlostUSD
+		, SUM(CASE WHEN r.Bettype = 1801 THEN r.LicenseeWinLost ELSE 0 END * e.USD) AS JackpotWinlostUSD
+		, SUM(CASE WHEN r.Bettype IN (1800,1802) THEN (r.LicenseeWinLost + r.JpContribution) * e.USD ELSE 0 END) AS TotalLicenseeWinlostUSD
+
 		---EUR
-		,SUM(r.TurnOver			* e.EUR)	AS TurnOverEUR
-		,SUM(r.WinLost			* e.EUR)	AS WinlostEUR
-		,SUM(r.LicenseeWinLost	* e.EUR)	AS LicenseeWinlostEUR
+		, SUM(r.TurnOver * e.EUR) AS TurnOverEUR
+		, SUM(r.WinLost * e.EUR) AS WinlostEUR
+		, SUM(CASE WHEN r.Bettype = 1800 THEN r.LicenseeWinLost ELSE 0 END * e.EUR) AS LicenseeWinlostEUR
+		, SUM(CASE WHEN r.Bettype = 1802 THEN r.JpContribution ELSE 0 END * e.EUR) AS ContributionWinlostEUR
+		, SUM(CASE WHEN r.Bettype = 1803 THEN r.LicenseeWinLost ELSE 0 END * e.EUR) AS PromotionWinlostEUR
+		, SUM(CASE WHEN r.Bettype = 1801 THEN r.LicenseeWinLost ELSE 0 END * e.EUR) AS JackpotWinlostEUR
+		, SUM(CASE WHEN r.Bettype IN (1800,1802) THEN (r.LicenseeWinLost + r.JpContribution) * e.EUR ELSE 0 END) AS TotalLicenseeWinlostEUR
+
 		---GBP
-		,SUM(r.TurnOver			* e.GBP)	AS TurnOverGBP
-		,SUM(r.WinLost			* e.GBP)	AS WinlostGBP
-		,SUM(r.LicenseeWinLost	* e.GBP)	AS LicenseeWinlostGBP
-		---Default Base Currency
-		,SUM(r.TurnOver			* e.DefaultRate)	AS TurnOverBase
-		,SUM(r.WinLost			* e.DefaultRate)	AS WinlostBase
-		,SUM(r.LicenseeWinLost	* e.DefaultRate)	AS LicenseeWinlostBase
+		, SUM(r.TurnOver * e.GBP) AS TurnOverGBP
+		, SUM(r.WinLost * e.GBP) AS WinlostGBP
+		, SUM(CASE WHEN r.Bettype = 1800 THEN r.LicenseeWinLost ELSE 0 END * e.GBP) AS LicenseeWinlostGBP
+		, SUM(CASE WHEN r.Bettype = 1802 THEN r.JpContribution ELSE 0 END * e.GBP) AS ContributionWinlostGBP
+		, SUM(CASE WHEN r.Bettype = 1803 THEN r.LicenseeWinLost ELSE 0 END * e.GBP) AS PromotionWinlostGBP
+		, SUM(CASE WHEN r.Bettype = 1801 THEN r.LicenseeWinLost ELSE 0 END * e.GBP) AS JackpotWinlostGBP
+		, SUM(CASE WHEN r.Bettype IN (1800,1802) THEN (r.LicenseeWinLost + r.JpContribution) * e.GBP ELSE 0 END) AS TotalLicenseeWinlostGBP
+		---DefaultRate
+		, SUM(r.TurnOver * e.DefaultRate) AS TurnOverBase
+		, SUM(r.WinLost * e.DefaultRate) AS WinlostBase
+		, SUM(CASE WHEN r.Bettype = 1800 THEN r.LicenseeWinLost ELSE 0 END * e.DefaultRate) AS LicenseeWinlostBase
+		, SUM(CASE WHEN r.Bettype = 1802 THEN r.JpContribution ELSE 0 END * e.DefaultRate) AS ContributionWinlostBase
+		, SUM(CASE WHEN r.Bettype = 1803 THEN r.LicenseeWinLost ELSE 0 END * e.DefaultRate) AS PromotionWinlostBase
+		, SUM(CASE WHEN r.Bettype = 1801 THEN r.LicenseeWinLost ELSE 0 END * e.DefaultRate) AS JackpotWinlostBase
+		, SUM(CASE WHEN r.Bettype IN (1800,1802) THEN (r.LicenseeWinLost + r.JpContribution) * e.DefaultRate ELSE 0 END) AS TotalLicenseeWinlostBase
 	FROM #tmpResult AS r
 		INNER JOIN dbo.custInfo AS c WITH (NOLOCK) ON r.CustID = c.CustID
 		INNER JOIN #TempExchange AS e ON r.Winlostdate BETWEEN e.FromDate AND e.ToDate AND r.currency = e.ExchangeId
