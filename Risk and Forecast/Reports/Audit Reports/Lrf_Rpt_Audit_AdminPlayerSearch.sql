@@ -1,4 +1,4 @@
-/*<info serverAlias="DBPLO-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBPLO-bodb02" executers="wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_Rpt_Audit_AdminPlayerSearch]  	
 	@SearchName		VARCHAR(50)
 AS 
@@ -9,6 +9,7 @@ AS
    
     Revisions:  
 		- 20231025@Bobby: Customer Admin - [redmine: #195850]
+		- 20240321@Eddie: Change Link Server and metadata "bodbLicenseeNet" [RedmineID: #202712]
 		
     Param's Explanation:  
 	  
@@ -45,7 +46,7 @@ BEGIN
     SELECT @spName += IIF(@IsTest = 1, '_xtest', ''),
         @rmtQuery = N'
         INSERT INTO #tmpPlayerInfo
-        EXEC DBDeposit.Deposit_DB.dbo.'+@spName+' @Username = '''+@SearchName + ''''
+        EXEC DBDEPOSIT2.Deposit_DB.dbo.'+@spName+' @Username = '''+@SearchName + ''''
 
     EXEC (@rmtQuery)
 
