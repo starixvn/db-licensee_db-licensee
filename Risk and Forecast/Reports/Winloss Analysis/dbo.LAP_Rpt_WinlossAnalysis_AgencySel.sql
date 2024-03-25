@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet,wsv_lap,wsv_alp" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE dbo.LAP_Rpt_WinlossAnalysis_AgencySel
 	@FromDate		SMALLDATETIME,
 	@ToDate			SMALLDATETIME,
@@ -41,6 +41,7 @@ AS
 		- 20230703@Bobby: Enhance perf - bettrans product3rd filtering [RedmineID: #195292]
 		- 20231122@Evan: Handle betfrom for Jollysports [Redmine: #197192]	
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
+		- 20240304@Evan: Grant execute new acc [RedmineID: #201283]
 		
 
 	Param's Explanation:
