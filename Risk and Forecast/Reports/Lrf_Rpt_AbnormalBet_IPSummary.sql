@@ -1,4 +1,4 @@
-/*<info serverAlias="DBWH-bodb_DWRS" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBWH-bodb_DWRS" executers="bodbLicenseeNet,wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE dbo.Lrf_Rpt_AbnormalBet_IPSummary
 	@AgentList		VARCHAR(MAX) ='',
 	@FromDate	DATE = '' , 
@@ -25,6 +25,7 @@ Revisions:
 					 Support Saba E-Sports PinGoal
 	- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465]
 	- 20230708@Evan: Support CN3, INDO & THAI language on LAP [RedmineID: #187132]
+	- 20240304@Evan: Integrate Saba Ice Hockey [RedmineID: #201283]
 Param's Explanation:
 	- @AgentList: XML structure
 			<ROOT>
@@ -41,6 +42,7 @@ Param's Explanation:
 		+ -6: Saba Basketball Pingoal (SportType = 2, LeagueGroupId IN (122))
 		+ -7: Saba E-Sports Pingoal (SportType = 43, LeagueGroupId IN (151))
 		+ -8: Saba Virtual Tennis (SportType = 5, LeagueGroupId IN (42))
+		+ -9: Saba Ice Hockey (SportType = 4, LeagueGroupId IN (42))
 
 	- @BetTypeList: bettype list separated by ','
 		+ 'All': all bettypes
@@ -140,7 +142,8 @@ Param's Explanation:
 					WHEN SportID IN (-2,-6) THEN 2 
 					WHEN SportID = -3 THEN 50  
 					WHEN SportID = -7 THEN 43
-					WHEN SportID = -8 THEN 5 END 
+					WHEN SportID = -8 THEN 5
+					WHEN SportID = -9 THEN 4 END 
         FROM #tmpSport  
 		WHERE SportID < 0
 
@@ -205,7 +208,10 @@ Param's Explanation:
 				AND l.LeagueGroupID IN (151))
 			OR (',' + @SportTypeList + ',' LIKE '%,-8,%'
 				AND l.sporttype = 5
-				AND l.LeagueGroupID IN (42))
+				AND l.LeagueGroupID IN (42))	
+			OR (',' + @SportTypeList + ',' LIKE '%,-9,%'
+				AND l.sporttype = 4
+				AND l.LeagueGroupID IN (42))	
 			)
 		AND (@LeagueName = '' OR CASE
 									WHEN @SearchLanguage = 'zh-CN' AND ISNULL(l.leaguenamecn,'') <> '' THEN l.leaguenamecn
@@ -246,6 +252,12 @@ Param's Explanation:
 			WHERE SportType = 5 AND LeagueGroupId NOT IN (42)
 		END
 		
+		IF ',' + @SportTypeList + ',' NOT LIKE '%,4,%'
+		BEGIN
+			DELETE FROM #League
+			WHERE SportType = 4 AND LeagueGroupId NOT IN (42)
+		END
+
 		IF ',' + @SportTypeList + ',' NOT LIKE '%,-1,%'
 		BEGIN
 			DELETE FROM #League
@@ -297,6 +309,12 @@ Param's Explanation:
 							ELSE 1 
 						END
 		END
+		
+		IF ',' + @SportTypeList + ',' NOT LIKE '%,-9,%'
+		BEGIN	
+			DELETE FROM #League
+			WHERE SportType = 4 AND LeagueGroupId IN (42)
+		END
 	END
 	
 	-- Insert League for Parlay
@@ -336,6 +354,7 @@ Param's Explanation:
 					WHEN l.SportType = 2 AND l.LeagueGroupId IN (122) THEN -6
 					WHEN l.SportType = 43 AND l.LeagueGroupId IN (151) THEN -7
 					WHEN l.SportType = 5 AND l.LeagueGroupId IN (42) AND f.CreatedDate >= @CutoffDate THEN -8
+					WHEN l.SportType = 4 AND l.LeagueGroupId IN (42) THEN -9
 				ELSE l.SportType
 			END AS SportType
 		FROM bodb_Account.dbo.AbnormalBetTransaction f WITH(NOLOCK)

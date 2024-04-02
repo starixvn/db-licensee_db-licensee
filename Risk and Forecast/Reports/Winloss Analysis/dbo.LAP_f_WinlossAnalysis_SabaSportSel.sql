@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" selecters="bodbLicenseeNet,bodbDownlineNet" viewers="" isFunction="1" isNested="1"></info>*/
+/*<info serverAlias="DBEXT-bodb02" selecters="bodbLicenseeNet,wsv_lap,wsv_alp" viewers="" isFunction="1" isNested="1"></info>*/
 ALTER FUNCTION [dbo].[LAP_f_WinlossAnalysis_SabaSportSel] ()
 RETURNS TABLE
 AS
@@ -10,7 +10,7 @@ AS
 	Revisions:
 		- 20230209@Bobby: Created [RedmineID: #172604]
 		- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465]
-		
+		- 20240304@Evan: Integrate Saba Ice Hockey [RedmineID: #201283]
 */
 RETURN
 	WITH cteProduct AS (
@@ -36,16 +36,19 @@ RETURN
 		SELECT 1, 'Sportsbook', -9, 'SABA Tennis', 'SB', 906,
 			'{"Sporttype":5, "LeagueGroupID": [42]}', 1, '2023-07-01'
 		UNION ALL
-		SELECT 1, 'Sportsbook', -4, 'SABA Soccer PinGoal', 'SB', 907,
+		SELECT 1, 'Sportsbook', -10, 'SABA Ice Hockey', 'SB', 907, 
+			'{"Sporttype":4, "LeagueGroupID": [42]}', 1, NULL
+		UNION ALL
+		SELECT 1, 'Sportsbook', -4, 'SABA Soccer PinGoal', 'SB', 908,
 			'{"Sporttype":1, "LeagueGroupID": [113]}', 1, NULL
 		UNION ALL
-		SELECT 1, 'Sportsbook', -6, 'SABA Basketball PinGoal', 'SB', 908,
+		SELECT 1, 'Sportsbook', -6, 'SABA Basketball PinGoal', 'SB', 909,
 			'{"Sporttype":2, "LeagueGroupID": [122]}', 1, NULL
 		UNION ALL
-		SELECT 1, 'Sportsbook', -7, 'SABA ESports PinGoal', 'SB', 909,
+		SELECT 1, 'Sportsbook', -7, 'SABA ESports PinGoal', 'SB', 910,
 			'{"Sporttype":43, "LeagueGroupID": [151]}', 1, NULL
 		UNION ALL
-		SELECT 1, 'Sportsbook', -1, 'Parlay', 'SB', 910, 
+		SELECT 1, 'Sportsbook', -1, 'Parlay', 'SB', 911, 
 			'{"Sporttype":1, "LeagueGroupID": []}', 1, NULL
 	)
 	SELECT ProductID, SabaSportType, ProductName, SportName, ProductCode, SportOrder, SporttypeRef, IsShowUI, CutOffDate

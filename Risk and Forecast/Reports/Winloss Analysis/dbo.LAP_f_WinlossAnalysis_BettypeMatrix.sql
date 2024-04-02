@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" selecters="bodbLicenseeNet,bodbDownlineNet" viewers="" isFunction="1" isNested="1"></info>*/
+/*<info serverAlias="DBEXT-bodb02" selecters="bodbLicenseeNet,wsv_lap,wsv_alp" viewers="" isFunction="1" isNested="1"></info>*/
 ALTER FUNCTION [dbo].[LAP_f_WinlossAnalysis_BettypeMatrix] (
 	@ProductCheck	VARCHAR(MAX),
 	@SportCheck		VARCHAR(MAX),
@@ -16,6 +16,7 @@ AS
 		- 20230209@Bobby: Created [RedmineID: #172604]
 		- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465] 
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
+		- 20240304@Evan: Grant execute new acc [RedmineID: #201283]
 		
 */
 RETURN

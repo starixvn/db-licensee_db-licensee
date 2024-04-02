@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet,wsv_lap,wsv_alp" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE dbo.LAP_Rpt_WinlossAnalysis_PlayerSel
 	@FromDate		SMALLDATETIME,
 	@ToDate			SMALLDATETIME,
@@ -50,6 +50,7 @@ AS
 		- 20231122@Evan: Handle betfrom for Jollysports [Redmine: #197192]	
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20240305@Bobby: HF Risk level filter [RedmineID: #200913]
+		- 20240304@Evan: Grant execute new acc [RedmineID: #201283]
 
 	Param's Explanation:
 		- @SortKey: 0:GroupBy, 1:BetCount, 2:Turnover, 3:NetTurnover, 4:MemWinloss, 5:MemComm, 6:LicWinloss, 7:LicComm, 8:AmtDueToBA, 9:BetEffective, 10:Margin

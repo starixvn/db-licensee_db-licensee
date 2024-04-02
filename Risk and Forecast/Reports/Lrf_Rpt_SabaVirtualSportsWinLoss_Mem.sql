@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet,wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_SabaVirtualSportsWinLoss_Mem]
 	@AgentList				VARCHAR(MAX),
@@ -30,6 +30,7 @@ AS
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20221207@Evan: Support Saba E-Sports PinGoal [RedmineID: #181224]
 		- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465]
+		- 20240304@Evan: Integrate Saba Ice Hockey [RedmineID: #201283]
 
 	Param's Explanation:
 		+ @ReportType: 1: Daily, 2: Monthly
@@ -123,6 +124,7 @@ BEGIN
 			OR (sporttype = 50 AND LeagueGroupID IN (42))
 			OR (@SportType IN (0, -43) AND sporttype = 43 AND LeagueGroupID IN (151))
 			OR (@sporttype IN (0, 5) AND sporttype = 5 AND LeagueGroupID IN (42))
+			OR (@sporttype IN (0, 4) AND sporttype = 4 AND LeagueGroupID IN (42))
 			)
 
 	DECLARE @Data TABLE (
