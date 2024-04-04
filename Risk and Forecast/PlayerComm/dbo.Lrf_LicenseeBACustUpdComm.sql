@@ -21,10 +21,10 @@ BEGIN
 	DECLARE @SBComm [decimal](9,8), @ParlayComm [decimal](9,8)
 	SELECT  @SBComm = 0 , @ParlayComm = 0
 		
-	SELECT @SBComm = lgc.SBComm
-		   ,@ParlayComm = lgc.ParlayComm
-	FROM dbo.LicenseeCustDiscount lcs WITH (NOLOCK)
-		INNER JOIN dbo.LicenseeGroupDiscount lgc WITH (NOLOCK) ON lcs.GroupDiscountID = lgc.GroupDiscountID AND lcs.LicenseeID = lgc.Licenseeid
+	SELECT @SBComm = ISNULL(MAX(CASE WHEN lgc.SportType = 1 AND lgc.BetType = 1 THEN lgc.Discount ELSE 0 END),0),
+		   @ParlayComm = ISNULL(MAX(CASE WHEN lgc.SportType = 1 AND lgc.BetType = 9 THEN lgc.Discount ELSE 0 END),0)
+	FROM LicenseeCustDiscount lcs WITH(NOLOCK)
+		INNER JOIN dbo.LicenseeGroupDiscountDetail lgc WITH (NOLOCK) ON lcs.GroupDiscountID = lgc.GroupDiscountID AND lcs.LicenseeID = lgc.Licenseeid
 	WHERE lcs.LicenseeID = @LicenseeID AND CustID = @CustID	   
 	  
 	IF (@IsBA =1 )	--- Turn-on BA

@@ -31,7 +31,7 @@ BEGIN
 	SET NOCOUNT ON;  
 	SELECT 
 		lc.CustID,		
-		lc.GroupCommID		
+		lc.GroupDiscountID		
 	FROM dbo.LicenseeCustDiscount lc WITH (NOLOCK)			
 	WHERE lc.CustID = @CustID	
 	
