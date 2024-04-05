@@ -200,7 +200,6 @@ BEGIN
 					@StrCustID='',
 					@UserID=@UserID,
 					@GroupDiscountID=0,
-					
 					@DiscountSettings = @DiscountSettings,
 
 					@isClearGroupDiscount = 1,
