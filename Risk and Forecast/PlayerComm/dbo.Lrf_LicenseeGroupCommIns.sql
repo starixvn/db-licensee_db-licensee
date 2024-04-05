@@ -85,7 +85,18 @@ BEGIN
 										ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200002,@Langkey)
 										END + ' 0.15', @ErrCode = 100
 	END
-
+	
+	IF EXISTS (SELECT 1 FROM @tblSettings WHERE SportType =1 AND Bettype = 1)
+	BEGIN
+		INSERT INTO @tblSettings (SportType,BetType,Discount)
+		SELECT s.SportType,s.BetType,Discount
+		FROM @tblSettings t
+			CROSS APPLY (SELECT 1 Sporttype, 4 AS Bettype
+						UNION SELECT 1,5
+						UNION SELECT 2,2) s
+		WHERE t.Sporttype = 1 AND t.Bettype = 1
+	END
+	
 	IF NOT EXISTS(
 		SELECT TOP 1 1 FROM dbo.LicenseeGroupDiscount WITH (NOLOCK)
 		WHERE LicenseeID = @LicenseeID AND	GroupName = @GroupName AND IsActive = 1
@@ -146,8 +157,9 @@ BEGIN
 		EXEC Lrf_WriteLog_UserLog_RunSP_Wrapper
 					@UserID = @UserID,
 					@CustID = @GroupDiscountID,
-					@ActionID = 2609,
-					@TrackingValue = @LogSPData,					
+					@ActionID = 2615,
+					@TrackingValue = @LogSPData,
+					@TrackingValue2 = @LogSPData,	
 					@duration = @duration
 		
 	END

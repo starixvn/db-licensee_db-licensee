@@ -31,61 +31,54 @@ AS
 	 - 20230313@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 	 - 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
 	 - 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
-
+	 - 20240408@Johnson: Restructure Commission [redmine:#179088]
 	Parameter's Explaination: 
 */  
 BEGIN  
 	SET NOCOUNT ON;  
-
+	CREATE TABLE #Result (GroupDiscountID INT PRIMARY KEY, GroupName VARCHAR(100), GroupColor VARCHAR(20),NumberOfCustomer INT,IsDefault BIT)
+	DECLARE @SportBetype TABLE (sporttype SMALLINT, bettype INT, ProductPrefix VARCHAR(20))
+	
+	INSERT INTO @SportBetype (sporttype,bettype,ProductPrefix)
+	SELECT SportType,bettype,
+		CASE WHEN SportType = 1 AND Bettype = 1 THEN 'SB'
+			WHEN SportType = 1 AND Bettype = 9 THEN 'Parlay'
+			WHEN SportType = 161 AND Bettype = 81 THEN 'NG' ELSE p.ProductPrefix END
+	FROM CustDB.dbo.Dep_ProductSetting d WITH(NOLOCK)
+		INNER JOIN CustDB.dbo.Dep_ProductSettingDetail dp WITH(NOLOCK) 
+			ON d.ProductSettingID = dp.ProductSettingID
+		LEFT JOIN Product3rd p WITH(NOLOCK) ON d.ProductID = p.ProductID
+	WHERE SettingType = 9
+		AND SettingStatus <> 2
+		AND 1 = CASE WHEN (Sporttype = 1 AND Bettype IN (4,5)) OR Sporttype = 2 THEN 0 ELSE 1 END
+				
 	SELECT @GroupName = ltrim(rtrim(@GroupName))
-
-	SELECT g.ID AS GroupCommID
-		,g.GroupName
-		,g.SBComm
-		,g.NGComm
-		,g.RNGComm
-		,g.Parlaycomm	
-		,g.AllbetComm
-		,g.MacauComm
-		,g.PPComm
+	
+	INSERT INTO #Result(GroupDiscountID,GroupName,GroupColor,NumberOfCustomer,IsDefault)
+	SELECT g.GroupDiscountID
+		,g.GroupName		
 		,g.color AS GroupColor
 		,ISNULL(c.NumberOfCustomer,0) AS NumberOfCustomer
-		,g.IsDefault  
-		,g.SexyGamingComm
-		,g.SpadeGamingComm
-		,g.LotteryComm
-		,g.KenoComm
-		,g.VSComm
-		,g.TableGameComm
-		,g.VirtualGamesComm	
-		,g.ArcadiaGamingComm
-		,g.SabaclubComm	
-		,g.SAGamingComm	
-		,g.PGSoftComm
-		--> Phase 4
-		,g.WMCasinoComm
-		,g.BigGamingComm
-		,g.JokerComm
-		,g.HabaneroComm
-		,g.VGamingComm
-		,g.CGComm
-		,g.AdvantComm
-		,g.AdvantMiniComm
-		,g.MaxGameComm
-		,g.FGGComm
-		,g.JiliComm
-		,g.YeeBetComm
-		,g.MgRNGComm
-	FROM dbo.LicenseeGroupComm g WITH (NOLOCK)   
-		LEFT JOIN (	SELECT COUNT(1) AS NumberOfCustomer, GroupCommID
-					FROM LicenseeCustComm (NOLOCK)
+		,g.IsDefault 
+	FROM dbo.LicenseeGroupDiscount g WITH (NOLOCK)   
+		LEFT JOIN (	SELECT COUNT(1) AS NumberOfCustomer, GroupDiscountID
+					FROM LicenseeCustDiscount (NOLOCK)
 					WHERE LicenseeID = @LicenseeID
-					GROUP BY GroupCommID) c ON g.id=c.GroupCommID  
+					GROUP BY GroupDiscountID) c ON g.GroupDiscountID=c.GroupDiscountID  
 	WHERE   
 		IsActive = 1   
 		AND (@GroupName='' OR (@GroupName<>'' AND GroupName LIKE '%' + @GroupName + '%'))  
 		AND g.LicenseeID = @LicenseeID  
 	OPTION (MAXDOP 4)  
-
+	
+	SELECT * FROM #Result
+	ORDER BY GroupDiscountID
+	
+	SELECT GroupDiscountID, g.Sporttype, g.Bettype, s.ProductPrefix as ProductCode, Discount
+	FROM LicenseeGroupDiscountDetail g WITH(NOLOCK)
+		INNER JOIN @SportBetype s ON g.SportType = s.SportType AND s.Bettype = g.Bettype
+	WHERE GroupDiscountID IN (SELECT GroupDiscountID FROM #Result)
+	ORDER BY GroupDiscountID
+	
 END
 GO

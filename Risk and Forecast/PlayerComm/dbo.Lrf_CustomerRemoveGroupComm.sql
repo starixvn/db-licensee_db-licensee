@@ -1,8 +1,7 @@
 ﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="wsv_lap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_CustomerRemoveGroupComm]
 	@LicenseeID INT,
-	@strCustIDOriginal VARCHAR(MAX),--member
-	@strCustID VARCHAR(MAX) OUTPUT,--member
+	@strCustIDOriginal VARCHAR(MAX),--member	
 	@UserID INT,
 	@IP varchar(40),
 	@IsRemovePlayercomm BIT,
@@ -46,48 +45,7 @@ AS
 */  
 BEGIN  
 	SET NOCOUNT ON
-	
-	DECLARE @SBComm DECIMAL(9,8), 
-			@NGComm DECIMAL(9,8),
-			@RNGComm DECIMAL(9,8),
-			@ParlayComm DECIMAL(9,8),
-			@AllbetComm DECIMAL(9,8),
-			@MacauComm DECIMAL(9,8),
-			@PPComm DECIMAL(9,8),
-			--phase 2
-			@SexyGamingComm DECIMAL(9,8),
-			@SpadeGamingComm DECIMAL(9,8),
-			@KenoComm DECIMAL(9,8),
-			@LotteryComm DECIMAL(9,8),
-			@VSComm DECIMAL(9,8),
-			@TableGameComm DECIMAL(9,8),
-			-- phase 3
-			@VirtualGamesComm DECIMAL(9,8) = 0,
-			@ArcadiaGamingComm DECIMAL(9,8) = 0,
-			@SabaclubComm DECIMAL(9,8) = 0,
-			@SAGamingComm DECIMAL(9,8) = 0,
-			@PGSoftComm DECIMAL(9,8) = 0,
-			-->phase 4
-			@WMCasinoComm		DECIMAL(9,8) = 0,
-			@BigGamingComm		DECIMAL(9,8) = 0,
-			@JokerComm			DECIMAL(9,8) = 0,
-			@HabaneroComm		DECIMAL(9,8) = 0,
-			@VGamingComm		DECIMAL(9,8) = 0,
-			-- phase 4.2
-			@CGComm				DECIMAL(9,8) = 0,
-			@AdvantComm			DECIMAL(9,8) = 0,
-			@AdvantMiniComm		DECIMAL(9,8) = 0,
-			
-			@MaxGameComm		DECIMAL(9,8) = 0,
-			@FGGComm			DECIMAL(9,8) = 0,
-			@JiliComm			DECIMAL(9,8) = 0,
-
-			@YeeBetComm			DECIMAL(9,8) = 0,
-			@MgRNGComm			DECIMAL(9,8) = 0,
-
-			@CustID INT, 
-			@i INT	
-	
+		
 	SELECT @strCustIDOriginal = ltrim(rtrim(@strCustIDOriginal))
 	
 	IF @strCustIDOriginal = ''
@@ -102,10 +60,10 @@ BEGIN
 	DECLARE @TempCustID  AS TABLE (ID int IDENTITY(1,1),CustID INT)
 	INSERT INTO @TempCustID (CustID)
 	SELECT cs.CustID 
-	FROM dbo.LicenseeCustComm cs WITH (NOLOCK) 
+	FROM dbo.LicenseeCustDiscount cs WITH (NOLOCK) 
 		INNER JOIN STRING_SPLIT(@strCustIDOriginal,',') AS t ON RTRIM(LTRIM(t.value)) = cs.CustID
 	WHERE LicenseeID = @LicenseeID 
-			AND GroupCommID > 0
+			AND GroupDiscountID > 0
 	OPTION (MAXRECURSION 0)
 	
 	IF NOT EXISTS(SELECT TOP 1 1 FROM @TempCustID)
@@ -117,77 +75,74 @@ BEGIN
 		RETURN	
 	END
 	
+	DECLARE @DiscountSettings VARCHAR(MAX) = ''
+	DECLARE @tblSettingDCS AS TABLE (sporttype SMALLINT,Bettype SMALLINT)
+	
+	INSERT INTO @tblSettingDCS (sporttype,Bettype)	
+	SELECT SportType,bettype
+	FROM CustDB.dbo.Dep_ProductSetting d WITH(NOLOCK)
+		INNER JOIN CustDB.dbo.Dep_ProductSettingDetail dp WITH(NOLOCK) 
+			ON d.ProductSettingID = dp.ProductSettingID
+	WHERE SettingType = 9
+	
+	DECLARE @i INT,
+			@CustID INT
+
 	IF @IsRemovePlayercomm=0
-	BEGIN
-		UPDATE dbo.LicenseeCustComm WITH (ROWLOCK,UPDLOCK) 
-		SET GroupCommID=0
+	BEGIN		
+		SELECT @i = 0
+		WHILE (@i<(SELECT MAX(ID) FROM @TempCustID))
+		BEGIN
+			SET @i = @i + 1
+			SELECT @CustID = CustID FROM @TempCustID WHERE ID=@i
+			
+			SELECT @DiscountSettings = (
+			SELECT t.SportType as '@SportType', t.BetType as '@BetType', ISNULL(ld.Discount,0) as '@Discount'
+			FROM @tblSettingDCS t
+				CROSS APPLY LicenseeCustDiscount lc WITH(NOLOCK)
+				LEFT JOIN LicenseeGroupDiscountDetail ld WITH(NOLOCK) ON lc.GroupDiscountID = ld.GroupDiscountID
+																		AND ld.SportType = t.SportType
+																		AND ld.BetType = t.Bettype
+			WHERE custid = @custid
+			FOR XML PATH('r'), ROOT('Root')
+			)	
+			
+			--Update List of affected Customers               
+			EXEC [Lrf_CustomerUpdMemberComm] 
+				@LicenseeID=@LicenseeID,
+				@strCustID=@CustID,
+				@UserID=@UserID,
+				
+				@IsUpdateDiscount= 0,
+				@GroupDiscountID=0,
+				@DiscountSettings = @DiscountSettings,
+				
+				@IP=@IP,
+				@Langkey=@Langkey,
+				@ErrCode=@ErrCode OUTPUT,
+				@ErrMsg=@ErrMsg OUTPUT
+
+		END
+		
+		UPDATE dbo.LicenseeCustDiscount WITH (ROWLOCK,UPDLOCK) 
+		SET GroupDiscountID=0
 		WHERE LicenseeID = @LicenseeID 
 			AND CustID IN (SELECT CustID FROM @TempCustID)
 	END
 	ELSE IF @IsRemovePlayercomm=1
-	BEGIN
-		DECLARE @DiscountSettings VARCHAR(MAX) = ''
-		DECLARE @tblSettingDCS AS TABLE (IsUpdate BIT,sporttype SMALLINT,Bettype SMALLINT)
-		DECLARE @IsUpdate BIT = 1
-		
-		INSERT INTO @tblSettingDCS (IsUpdate,sporttype,Bettype)
-		VALUES (@IsUpdate, 212,4001)
-			, (@IsUpdate,248,4101)
-			-- phase 2
-			,(@IsUpdate,243,3101)
-			,(@IsUpdate ,247,4301)
-			,(@IsUpdate ,220,1021)
-			,(@IsUpdate ,9908,1201)
-			,(@IsUpdate ,222,4901)
-			-- Phase 3
-			,(@IsUpdate,245,4601)
-			,(@IsUpdate,165,1901)
-			,(@IsUpdate,200,1611)
-			,(@IsUpdate,244,3001)
-			,(@IsUpdate,232,6001)
-			,(@IsUpdate,211,2401)
-			--Saba Casino
-			,(@IsUpdate,208,2101)
-			--> phase 4
-			,(@IsUpdate,233,3401)
-			,(@IsUpdate,239,3501)
-			,(@IsUpdate,234,6401)
-			,(@IsUpdate,238,7001)
-			,(@IsUpdate,171,3801)				
-			-- Phase 4.2
-			,(@IsUpdate,167,7301)
-			,(@IsUpdate,172,7701)
-			,(@IsUpdate,174,7801)
-			
-			,(@IsUpdate,237,5401)
-			,(@IsUpdate,176,8201)
-			,(@IsUpdate,158,5100)
-
-			,(@IsUpdate,159,3151)
-			,(@IsUpdate,155,8400)
-
-			--
-			,(@IsUpdate,1,1)
-			,(@IsUpdate,1,4)
-			,(@IsUpdate,1,5)
-			,(@IsUpdate,2,2)
-			,(@IsUpdate,1,9)
-			,(@IsUpdate,161,81)
-			,(@IsUpdate,202,1501)
-	
+	BEGIN	
 		SELECT @DiscountSettings = (
-			SELECT SportType, BetType, 0 Discount
-			FROM @tblSettingDCS			
-			FOR XML PATH('r'), ROOT('Root')
-		)		
-			
+		SELECT SportType as '@SportType', BetType as '@BetType', 0 as '@Discount'
+		FROM @tblSettingDCS			
+		FOR XML PATH('r'), ROOT('Root')
+		)	
+		
 		--Update List of affected Customers               
 		EXEC [Lrf_CustomerUpdMemberComm] 
 			@LicenseeID=@LicenseeID,
 			@strCustID=@strCustIDOriginal,
 			@UserID=@UserID,
-			@GroupCommID=0,
-			
+						
 			@GroupDiscountID=0,
 			@DiscountSettings = @DiscountSettings,
 			
@@ -200,8 +155,8 @@ BEGIN
 			RETURN
 		
 		--Update players out of LicenseeCustComm GroupCommID
-		UPDATE LicenseeCustComm WITH (ROWLOCK,UPDLOCK)
-		SET GroupCommID = 0
+		UPDATE LicenseeCustDiscount WITH (ROWLOCK,UPDLOCK)
+		SET GroupDiscountID = 0
 		WHERE LicenseeID = @LicenseeID 
 		AND CustID IN (SELECT CustID FROM @TempCustID)
 	END

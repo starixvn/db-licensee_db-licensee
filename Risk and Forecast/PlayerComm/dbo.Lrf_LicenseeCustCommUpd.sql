@@ -80,7 +80,7 @@ BEGIN
 
 	INSERT INTO @TempCustID (CustID)
 	SELECT cs.CustID 
-	FROM dbo.LicenseeCustComm cs WITH (NOLOCK) 
+	FROM dbo.LicenseeCustDiscount cs WITH (NOLOCK) 
 		INNER JOIN #tempCust t ON cs.CustID = t.CustID
 	WHERE LicenseeID = @LicenseeID 
 
@@ -97,8 +97,8 @@ BEGIN
 		,@ErrMsg=@ErrMsg OUTPUT
 
 	UPDATE cs
-		SET GroupCommID=0
-	FROM dbo.LicenseeCustComm cs WITH (ROWLOCK,UPDLOCK)
+		SET GroupDiscountID=0
+	FROM dbo.LicenseeCustDiscount cs WITH (ROWLOCK,UPDLOCK)
 		INNER JOIN @TempCustID t ON cs.CustID = t.CustID
 	WHERE LicenseeID = @LicenseeID 
 END	

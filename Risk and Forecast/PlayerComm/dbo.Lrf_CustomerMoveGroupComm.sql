@@ -1,11 +1,9 @@
 ﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="wsv_lap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_CustomerMoveGroupComm]
 	@LicenseeID INT,
-	@strCustIDOriginal VARCHAR(MAX),--member
-	@strCustID VARCHAR(MAX) OUTPUT,--member
+	@strCustIDOriginal VARCHAR(MAX),--member	
 	@UserID INT,
-	@GroupDiscountID INT,
-	
+	@GroupDiscountID INT,	
 	@IP VARCHAR(40),
 	@Langkey VARCHAR(20) = 'en-US',
 	@ErrCode INT = 0 OUTPUT,
@@ -90,56 +88,17 @@ BEGIN
 	END
 	
 	DECLARE @DiscountSettings VARCHAR(MAX) = ''
-	DECLARE @tblSettingDCS AS TABLE (IsUpdate BIT,sporttype SMALLINT,Bettype SMALLINT)
-	DECLARE @IsUpdate BIT = 1
-	
-	INSERT INTO @tblSettingDCS (IsUpdate,sporttype,Bettype)
-	VALUES (@IsUpdate, 212,4001)
-		, (@IsUpdate,248,4101)
-		-- phase 2
-		,(@IsUpdate,243,3101)
-		,(@IsUpdate ,247,4301)
-		,(@IsUpdate ,220,1021)
-		,(@IsUpdate ,9908,1201)
-		,(@IsUpdate ,222,4901)
-		-- Phase 3
-		,(@IsUpdate,245,4601)
-		,(@IsUpdate,165,1901)
-		,(@IsUpdate,200,1611)
-		,(@IsUpdate,244,3001)
-		,(@IsUpdate,232,6001)
-		,(@IsUpdate,211,2401)
-		--Saba Casino
-		,(@IsUpdate,208,2101)
-		--> phase 4
-		,(@IsUpdate,233,3401)
-		,(@IsUpdate,239,3501)
-		,(@IsUpdate,234,6401)
-		,(@IsUpdate,238,7001)
-		,(@IsUpdate,171,3801)				
-		-- Phase 4.2
-		,(@IsUpdate,167,7301)
-		,(@IsUpdate,172,7701)
-		,(@IsUpdate,174,7801)
+	DECLARE @tblSettingDCS AS TABLE (sporttype SMALLINT,Bettype SMALLINT)
 		
-		,(@IsUpdate,237,5401)
-		,(@IsUpdate,176,8201)
-		,(@IsUpdate,158,5100)
-
-		,(@IsUpdate,159,3151)
-		,(@IsUpdate,155,8400)
-
-		--
-		,(@IsUpdate,1,1)
-		,(@IsUpdate,1,4)
-		,(@IsUpdate,1,5)
-		,(@IsUpdate,2,2)
-		,(@IsUpdate,1,9)
-		,(@IsUpdate,161,81)
-		,(@IsUpdate,202,1501)
+	INSERT INTO @tblSettingDCS (sporttype,Bettype)	
+	SELECT SportType,bettype
+	FROM CustDB.dbo.Dep_ProductSetting d WITH(NOLOCK)
+		INNER JOIN CustDB.dbo.Dep_ProductSettingDetail dp WITH(NOLOCK) 
+			ON d.ProductSettingID = dp.ProductSettingID
+	WHERE SettingType = 9
 
 	SELECT @DiscountSettings = (
-		SELECT SportType, BetType, 0 Discount
+		SELECT SportType as '@SportType', BetType as '@BetType', 0 as '@Discount'
 		FROM @tblSettingDCS			
 		FOR XML PATH('r'), ROOT('Root')
 	)		

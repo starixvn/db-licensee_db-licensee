@@ -9,7 +9,7 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm]
 	@isClearGroupDiscount BIT = 0,
 	@ClearGroupDiscountGroupID INT = 0,
 	@IsUpdateDiscount BIT=1,
-	@IsUpdateGroupDiscount BIT=1,
+	@IsUpdateGroupDiscount BIT=0,
 	@IP VARCHAR(40),
 	@Langkey VARCHAR(10) = 'en-US',
 	@ErrCode INT = 0 OUTPUT,
@@ -81,9 +81,7 @@ BEGIN
 	SET @startRun = GETDATE()
 
 	DECLARE @TotalMemCount INT
-
-	DECLARE @LogSPData VARCHAR(4000)
-	DECLARE @LogSPData2 VARCHAR(4000)
+		
 	DECLARE @MacauLicenseeID INT
 	
 	DECLARE @tblSettings TABLE(SportType SMALLINT, BetType SMALLINT, Discount DECIMAL(9,8), Discount_Old DECIMAL(9,8))
@@ -271,7 +269,8 @@ BEGIN
 	
 	SET @endRun = GETDATE()
 	SET @duration  = DATEDIFF (millisecond,@startRun,@endRun)	
-
+	
+	DECLARE @LogSPData VARCHAR(4000)
 	--Write Log
 	-- new value
 	SELECT @LogSPData = 'GroupDiscountID="'+ COALESCE(CAST(@GroupDiscountID as VARCHAR(50)),SPACE(1)) + '" ' +
@@ -326,7 +325,7 @@ BEGIN
 						ORDER BY SportType,BetType
 						FOR XML RAW('r')		
 						) AS VARCHAR(MAX)) AS TrackingValue
-				,CAST((SELECT SportType,BetType,Discount
+				,CAST((SELECT SportType,BetType,PlayerDiscount as Discount
 						FROM CustDB.dbo.Dep_CustDiscountGroupSetting_Member (NOLOCK)
 						WHERE AgentID = a.AgentID									
 						FOR XML RAW('r')		
@@ -335,22 +334,28 @@ BEGIN
 			WHERE a.IsGroupedComm = 1
 		)
 		SELECT @log = (
-					SELECT CustID AS '@CustID'
+					SELECT t.CustID AS '@CustID'
 							, @UserID AS	'@UserID'	
 							, 2612 '@ActionID'
-							, '<Lrf_CustomerUpdMemberComm custid="'+ COALESCE(CAST(CustID as VARCHAR(50)),SPACE(1)) + '" ' + 
+							, '<Lrf_CustomerUpdMemberComm custid="'+ COALESCE(CAST(t.CustID as VARCHAR(50)),SPACE(1)) + '" ' + 
 							@LogSPData + 
 							TrackingValue + 		
 						    '</Lrf_CustomerUpdMemberComm>' AS '@TrackingValue'
 							
-							,'<Lrf_CustomerUpdMemberComm custid="'+ COALESCE(CAST(CustID as VARCHAR(50)),SPACE(1)) + '" ' + 
-							@LogSPData + 
+							,'<Lrf_CustomerUpdMemberComm custid="'+ COALESCE(CAST(t.CustID as VARCHAR(50)),SPACE(1)) + '" ' + 
+							'GroupDiscountID="'+ COALESCE(CAST(lcc.GroupDiscountID as VARCHAR(50)),SPACE(1)) + '" ' +
+							'LicenseeID="'+ COALESCE(CAST(@LicenseeID as VARCHAR(50)),SPACE(1)) + '" ' + 		 
+							'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +
+							'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
+							'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(8000)),SPACE(1))+ '">' + 
+							
 							TrackingValue2 + 		
 						    '</Lrf_CustomerUpdMemberComm>' AS '@TrackingValue2'							
 							,@currentdate AS '@LogDate'
 						    ,@duration AS '@Duration'							
-					FROM T 					
-					FOR XML PATH('Row'), ROOT('Root')	
+					FROM T 		
+						LEFT JOIN dbo.LicenseeCustDiscount lcc WITH (NOLOCK) ON t.CustID = lcc.CustID
+					FOR XML PATH('Row')
 					)
 	
 		EXEC bodb_CustomerLog.sb.CustomerLog_SendMessage @xml = @log, 
@@ -362,14 +367,18 @@ BEGIN
 		--SELECT @SB_Error
 		IF @SB_Error = 1
 		BEGIN
+			DECLARE @str_Log VARCHAR(MAX) 
+
+			SELECT @str_Log = '<Root>' + CAST(@Log as VARCHAR(MAX)) + '</Root>'
+			
 			BEGIN TRY
 			
 				EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_UpdMemComm_RunSP
-						@Log = @Log
+						@Log = @str_Log
 			END TRY
 			BEGIN CATCH
 				EXEC bodb_CustomerLog.dbo.WriteLog_UserLog_UpdMemComm_RunSP
-						@Log = @Log
+						@Log = @str_Log
 			END CATCH
 		END
 		

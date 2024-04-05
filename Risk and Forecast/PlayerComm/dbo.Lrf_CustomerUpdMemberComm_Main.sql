@@ -95,6 +95,7 @@ BEGIN
 							)	
 			EXEC [Acc_CustSetting3rd_16] 
 				@ids = @ids,
+				@AgentID = @AgentID,
 				@DiscountSettings = @DiscountSettings
 				
 			-- delay 00.100ms after 5 times continuous running

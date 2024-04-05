@@ -1,7 +1,7 @@
-/*<info serverAlias="DBLOG-bodb_CustomerLog,DBCUST-bodb_CustomerLog" executers="bodbLicenseeNet,bodbAdminNet,Dot_Member" isNested="1" isFunction="0"></info>*/
+/*<info serverAlias="DBLOG-bodb_CustomerLog,DBCUST-bodb_CustomerLog" executers="wsv_lap,wsv_nap,svc_tig" isNested="1" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[WriteLog_UserLog_UpdMemComm_RunSP]
 (
-	@Log xml = NULL	
+	@Log VARCHAR(MAX) = NULL	
 )	
 /*  
 	Created: 20140703@Francis

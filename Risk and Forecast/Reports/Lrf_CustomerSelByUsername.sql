@@ -36,6 +36,7 @@ AS
 		- 20211111@Sol: Split Transfer out of bettrans/Support IPv6 - [RedmineID: #164301]
 		- 20230227@Evan: Ensure correct balance calculation when allow to transfer 247 (BU) [Redmine: #173554]
 		- 20240304@Johnson: HF filter Risk Level "Uncategorized" not show [redmine: #200913]
+		- 20240618@Johnson: Restructure Commission [redmine:#179088]
 	Parameter's explanations:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 		+ @SpecialLevel: '1,2,3,4,5,6,7,8,9,10' (all)
@@ -222,8 +223,8 @@ BEGIN
 				
 			DELETE t
 			FROM #TempMember t
-				LEFT JOIN bodb_Licensee.dbo.LicenseeCustComm lc WITH (NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
-			WHERE ISNULL(lc.GroupCommID,0) NOT IN (SELECT val FROM dbo.strSplit(@CommGroups,','))		
+				LEFT JOIN bodb_Licensee.dbo.LicenseeCustDiscount lc WITH (NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
+			WHERE ISNULL(lc.GroupDiscountID,0) NOT IN (SELECT val FROM dbo.strSplit(@CommGroups,','))		
 			
 			IF ISNULL(@TotalRows, 0) = 0
 				SELECT @TotalRows = COUNT(c.custid) FROM #TempMember c
@@ -279,8 +280,8 @@ BEGIN
 			
 			DELETE t
 			FROM #TempMember t
-				LEFT JOIN bodb_Licensee.dbo.LicenseeCustComm lc WITH (NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
-			WHERE ISNULL(lc.GroupCommID,0) NOT IN (SELECT val FROM dbo.strSplit(@CommGroups,','))		
+				LEFT JOIN bodb_Licensee.dbo.LicenseeCustDiscount lc WITH (NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
+			WHERE ISNULL(lc.GroupDiscountID,0) NOT IN (SELECT val FROM dbo.strSplit(@CommGroups,','))		
 			
 			IF ISNULL(@TotalRows, 0) = 0
 				SELECT @TotalRows = COUNT(c.custid) FROM #TempMember c
@@ -349,8 +350,8 @@ BEGIN
 			
 			DELETE t
 			FROM #TempMember t
-				LEFT JOIN bodb_Licensee.dbo.LicenseeCustComm lc WITH (NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
-			WHERE ISNULL(lc.GroupCommID,0) NOT IN (SELECT val FROM dbo.strSplit(@CommGroups,','))		
+				LEFT JOIN bodb_Licensee.dbo.LicenseeCustDiscount lc WITH (NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
+			WHERE ISNULL(lc.GroupDiscountID,0) NOT IN (SELECT val FROM dbo.strSplit(@CommGroups,','))		
 			
 			IF ISNULL(@TotalRows, 0) = 0
 				SELECT @TotalRows = COUNT(c.custid) FROM #TempMember c
@@ -450,8 +451,8 @@ BEGIN
 		
 		DELETE t
 		FROM #TempMember t
-			LEFT JOIN bodb_Licensee.dbo.LicenseeCustComm lc WITH (NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
-		WHERE ISNULL(lc.GroupCommID,0) NOT IN (SELECT val FROM dbo.strSplit(@CommGroups,','))		
+			LEFT JOIN bodb_Licensee.dbo.LicenseeCustDiscount lc WITH (NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
+		WHERE ISNULL(lc.GroupDiscountID,0) NOT IN (SELECT val FROM dbo.strSplit(@CommGroups,','))		
 		
 		IF ISNULL(@TotalRows, 0) = 0
 			SELECT @TotalRows = COUNT(c.custid) FROM #TempMember c
@@ -644,8 +645,8 @@ BEGIN
 			FROM #OutstandingTranslog
 			GROUP BY Custid, Currency
 		)tl ON t.custid = tl.Custid
-		LEFT JOIN bodb_Licensee.dbo.LicenseeCustComm lc WITH (NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
-		LEFT JOIN bodb_Licensee.dbo.LicenseeGroupComm lg WITH (NOLOCK) ON lc.GroupCommID = lg.id	
+		LEFT JOIN bodb_Licensee.dbo.LicenseeCustDiscount lc WITH (NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
+		LEFT JOIN bodb_Licensee.dbo.LicenseeGroupDiscount lg WITH (NOLOCK) ON lc.GroupDiscountID = lg.GroupDiscountID	
 	ORDER BY t.username
 
 	DROP TABLE #TempAg

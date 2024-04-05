@@ -87,7 +87,7 @@ BEGIN
 			--Update SBComm = 0, ParlayComm = 0
 			UPDATE t
 			SET Discount = 0
-			FROM @tblSettings
+			FROM @tblSettings t
 			WHERE SportType IN (1,2)
 		END
 	END

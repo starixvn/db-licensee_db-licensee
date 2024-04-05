@@ -6,8 +6,7 @@ ALTER PROCEDURE [dbo].[Lrf_LicenseeGroupCommUpd]
 	@GroupColor VARCHAR(20),
 	@IsDefault BIT=0, 
 	@IsResetDefault BIT=0,
-	@DiscountSettings VARCHAR(MAX) = '',
-	@IsUpdateRNG BIT = 0,
+	@DiscountSettings VARCHAR(MAX) = '',	
 	@UserID INT,
 	@IP varchar(40),
 	@Langkey VARCHAR(20) = 'en-US',
@@ -54,19 +53,7 @@ AS
 */
 BEGIN
 	SET NOCOUNT ON
-	-- fix bug: #142797
-	/*
-	IF (@IsUpdateNG = 0) AND  (@IsUpdateRNG = 0) 
-	BEGIN
-		UPDATE [dbo].[LicenseeGroupDiscount]
-		SET
-			 GroupName = @GroupName,
-			 color = @GroupColor,
-			 IsDefault = @IsDefault
-		WHERE id = @GroupDiscountID AND Licenseeid = @LicenseeID
-		RETURN
-	END
-	*/
+	
 	DECLARE @startRun DATETIME
 	DECLARE @endRun DATETIME
 	DECLARE @duration INT
@@ -118,7 +105,19 @@ BEGIN
 										END +' 0.15', @ErrCode = 100
 		RETURN
 	END
-
+	
+	
+	IF EXISTS (SELECT 1 FROM @tblSettings WHERE SportType =1 AND Bettype = 1)
+	BEGIN
+		INSERT INTO @tblSettings (SportType,BetType,Discount)
+		SELECT s.SportType,s.BetType,Discount
+		FROM @tblSettings t
+			CROSS APPLY (SELECT 1 Sporttype, 4 AS Bettype
+						UNION SELECT 1,5
+						UNION SELECT 2,2) s
+		WHERE t.Sporttype = 1 AND t.Bettype = 1
+	END
+		
 	SET @custID_cnt = (SELECT COUNT(1) FROM LicenseeCustDiscount WITH (NOLOCK) WHERE LicenseeID = @LicenseeID AND GroupDiscountID = @GroupDiscountID)
 	
 	IF @custID_cnt >= 100000
@@ -230,7 +229,7 @@ BEGIN
 					@LicenseeID=@LicenseeID
 					,@StrCustID = ''
 					,@IsUpdateGroupDiscount = 1
-					--,@IsUpdateRNG = @IsUpdateRNG
+					
 					,@UserID=@UserID
 					,@GroupDiscountID=@GroupDiscountID
 					,@DiscountSettings = @DiscountSettings					
@@ -266,9 +265,9 @@ BEGIN
 
 			SELECT @TrackingValue2 = '<Lrf_LicenseeGroupDiscountUpd GroupDiscountID="'+ COALESCE(CAST(@GroupDiscountID as VARCHAR(50)),SPACE(1)) + '" ' +
 			'LicenseeID="'+ COALESCE(CAST(@LicenseeID as VARCHAR(50)),SPACE(1)) + '" ' +
-			'GroupName="'+ COALESCE(CAST(@GroupName as VARCHAR(100)),SPACE(1)) + '" ' +					
-			'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
-			'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +
+			'GroupName="'+ COALESCE(CAST(@GroupName_Old as VARCHAR(100)),SPACE(1)) + '" ' +					
+			'GroupColor="'+ COALESCE(CAST(@GroupColor_Old as VARCHAR(40)),SPACE(1)) + '" ' +
+			'IsDefault="'+ COALESCE(CAST(@IsDefault_Old as VARCHAR(40)),SPACE(1)) + '" ' +
 			'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
 			'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +
 			'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
@@ -282,13 +281,11 @@ BEGIN
 			EXEC Lrf_WriteLog_UserLog_RunSP_Wrapper
 					@UserID = @UserID,
 					@CustID = @GroupDiscountID,
-					@ActionID = 2610,
+					@ActionID = 2616,
 					@TrackingValue = @LogSPData,
 					@TrackingValue2 = @TrackingValue2,
 					@duration = @duration
 		END
-		IF @IsUpdateRNG=0
-		SELECT @StrCustID = ''
 	END
 END	
 GO

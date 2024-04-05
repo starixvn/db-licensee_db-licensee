@@ -71,7 +71,14 @@ BEGIN
 	
 	SET @BA_cnt = @@ROWCOUNT
 */	
-	IF @IsUpdateGroupDiscount = 0 
+	IF @IsUpdateGroupDiscount = 1 
+	BEGIN
+		UPDATE lc
+			SET GroupDiscountID = @GroupDiscountID
+		FROM dbo.LicenseeCustDiscount lc WITH (ROWLOCK,UPDLOCK) 
+			INNER JOIN @TempList_Input t ON lc.CustID = t.CustID		
+	END
+	ELSE
 	BEGIN
 		MERGE dbo.LicenseeCustDiscount AS target
 		USING (SELECT @LicenseeID AS LicenseeID

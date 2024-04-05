@@ -61,45 +61,7 @@ BEGIN
 	
 	DECLARE @tblSettings TABLE(SportType SMALLINT, BetType SMALLINT, Discount DECIMAL(9,8))
 		
-	DECLARE @SBComm DECIMAL(9,8), 
-		@NGComm DECIMAL(9,8),
-		@RNGComm DECIMAL(9,8),
-		@ParlayComm DECIMAL(9,8), 		
-		@AllbetComm DECIMAL(9,8),
-		@MacauComm DECIMAL(9,8),
-		@PPComm DECIMAL(9,8),
-		--phase 2
-		@SexyGamingComm DECIMAL(9,8),
-		@SpadeGamingComm DECIMAL(9,8),
-		@KenoComm DECIMAL(9,8),
-		@LotteryComm DECIMAL(9,8),
-		@VSComm DECIMAL(9,8),
-		@TableGameComm DECIMAL(9,8),
-		--phase 3
-		@VirtualGamesComm DECIMAL(9,8) ,
-		@ArcadiaGamingComm DECIMAL(9,8),
-		@SabaclubComm DECIMAL(9,8),
-		@SAGamingComm DECIMAL(9,8),
-		@PGSoftComm DECIMAL(9,8),
-		--Phase 4
-		@WMCasinoComm		DECIMAL(9,8),
-		@BigGamingComm		DECIMAL(9,8),
-		@JokerComm			DECIMAL(9,8),
-		@HabaneroComm		DECIMAL(9,8),
-		@VGamingComm		DECIMAL(9,8),
-		-- phase 4.2
-		@CGComm				DECIMAL(9,8),
-		@AdvantComm			DECIMAL(9,8),
-		@AdvantMiniComm		DECIMAL(9,8),
-		
-		@MaxGameComm		DECIMAL(9,8),
-		@FGGComm			DECIMAL(9,8),
-		@JiliComm			DECIMAL(9,8),
-		
-		@YeeBetComm			DECIMAL(9,8),
-		@MgRNGComm			DECIMAL(9,8),
-
-		@GroupColor VARCHAR(20), 
+	DECLARE @GroupColor VARCHAR(20), 
 		@GroupName VARCHAR(100), 
 		@IsDefault BIT
 	
@@ -214,84 +176,36 @@ BEGIN
 						
 			IF @IsexistMember = 1			
 			BEGIN
+				DECLARE @DiscountSettings VARCHAR(MAX) = ''
+				DECLARE @tblSettingDCS AS TABLE (sporttype SMALLINT,Bettype SMALLINT)
+					
+				INSERT INTO @tblSettingDCS (sporttype,Bettype)	
+				SELECT SportType,bettype
+				FROM CustDB.dbo.Dep_ProductSetting d WITH(NOLOCK)
+					INNER JOIN CustDB.dbo.Dep_ProductSettingDetail dp WITH(NOLOCK) 
+						ON d.ProductSettingID = dp.ProductSettingID
+				WHERE SettingType = 9
+					AND 1 = CASE WHEN (Sporttype = 1 AND Bettype IN (4,5)) OR Sporttype = 2 THEN 0 ELSE 1 END
+					AND SettingStatus <> 2
+
+				SELECT @DiscountSettings = (
+					SELECT SportType, BetType, 0 Discount
+					FROM @tblSettingDCS			
+					FOR XML RAW('r'), ROOT('Root')
+				)		
+				
 				--Update List of affected Customers               
 				EXEC [Lrf_CustomerUpdMemberComm] 
 					@LicenseeID=@LicenseeID,
 					@StrCustID='',
 					@UserID=@UserID,
 					@GroupDiscountID=0,
-					@SBComm=0,
-					@NGComm=0,
-					@RNGComm=0,
-					@ParlayComm=0,	
-					@AllbetComm=0,
-					@MacauComm=0,
-					@PPComm=0,
-					@IsUpdateNG=1,
-					@IsUpdateRNG=1,					
-					@IsUpdateAllbet=1,
-					@IsUpdateMacau=1,
-					@IsUpdatePP=1,
-					---start param of phase 2
-					@IsUpdateSexyGaming = 1,	
-					@SexyGamingComm = 0,
-					@IsUpdateSpadeGaming = 1,	
-					@SpadeGamingComm = 0,
-					@IsUpdateKeno = 1,
-					@KenoComm = 0,
-					@IsUpdateLottery = 1,	
-					@LotteryComm = 0,
-					@IsUpdateVS = 1,
-					@VSComm = 0,
-					@IsUpdateTableGame = 1,
-					@TableGameComm = 0,
-					-- phase 3
-					@IsUpdateVirtualGames = 1,
-					@IsUpdateArcadiaGaming = 1,
-					@IsUpdateSabaclub  = 1,
-					@IsUpdateSAGaming  = 1,
-					@IsUpdatePGSoft  = 1,
 					
-					@VirtualGamesComm = 0,
-					@ArcadiaGamingComm = 0,
-					@SabaclubComm = 0,
-					@SAGamingComm = 0,
-					@PGSoftComm = 0,
-					--> phase 4
-					@IsUpdateWMCasino		= 1,		
-					@IsUpdateBigGaming		= 1,		
-					@IsUpdateJoker			= 1,			
-					@IsUpdateHabanero		= 1,
-					@IsUpdateVGaming		= 1,
-					-- phase 4.2
-					@IsUpdateCG				= 1,
-					@IsUpdateAdvant			= 1,
-					@IsUpdateAdvantMini		= 1,
-					@WMCasinoComm			= 0	,	
-					@BigGamingComm			= 0,		
-					@JokerComm				= 0,			
-					@HabaneroComm			= 0,
-					@VGamingComm			= 0,	
-					-- phase 4.2
-					@CGComm					= 0,
-					@AdvantComm				= 0,
-					@AdvantMiniComm			= 0,
-					
-					@IsUpdateMaxGame		= 1,
-					@IsUpdateFGG			= 1,
-					@IsUpdateJili			= 1,
-					@MaxGameComm			= 0,
-					@FGGComm				= 0,
-					@JiliComm				= 0,
+					@DiscountSettings = @DiscountSettings,
 
-					@IsUpdateYeeBet			= 1,
-					@IsUpdateMgRNG			= 1,
-					@YeeBetComm				= 0,
-					@MgRNGComm				= 0,
-
-					@isClearGroupComm = 1,
-					@ClearGroupCommGroupID = @GroupDiscountID,
-					@IsUpdateGroupComm = 1,
+					@isClearGroupDiscount = 1,
+					@ClearGroupDiscountGroupID = @GroupDiscountID,
+					@IsUpdateGroupDiscount = 1,
 					@IP=@IP,
 					@ErrCode=@ErrCode OUTPUT,
 					@ErrMsg=@ErrMsg OUTPUT
@@ -340,7 +254,7 @@ BEGIN
 		EXEC Lrf_WriteLog_UserLog_RunSP_Wrapper
 			@UserID = @UserID,
 			@CustID = @LicenseeID,
-			@ActionID = 2611,
+			@ActionID = 2617,
 			@TrackingValue = @LogSPData,
 			@TrackingValue2 = @TrackingValue2,
 			@duration = @duration	

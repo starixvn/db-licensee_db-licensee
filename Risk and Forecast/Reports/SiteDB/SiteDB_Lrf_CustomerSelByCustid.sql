@@ -27,7 +27,7 @@ AS
 		- 20240304@Johnson: HF filter Risk Level "Uncategorized" not show [redmine: #200913]
 		- 20240318@Bobby: LAP EC enhancement - [RedmineID: #191592]
 		- 20240318@Bobby: HF - Filter SpecialLevel - [RedmineID: #208328]
-
+		- 20240618@Johnson: Restructure Commission [redmine:#179088]
 	Parameter's explanations:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 		+ @SpecialLevel: default value '1,2,3,4,5,6,7,8,9,10' (all)
@@ -75,7 +75,7 @@ BEGIN
 
 	CREATE TABLE #TempAg (custid INT)
 	CREATE TABLE #tblCustList (custid INT PRIMARY KEY)
-	CREATE TABLE #LicenseeCustComm (LicenseeID INT, GroupCommID INT, CustID INT PRIMARY KEY, GroupName VARCHAR(100))
+	CREATE TABLE #LicenseeCustDiscount (LicenseeID INT, GroupDiscountID INT, CustID INT PRIMARY KEY, GroupName VARCHAR(100))
 	CREATE TABLE #Dep_CustSpecialLevel(CustID INT PRIMARY KEY, SpecialLevel INT)
 	CREATE TABLE #LicenseeBAHistory(CustID INT, Status VARCHAR(50), OffBy INT, ID INT)
 	
@@ -91,16 +91,16 @@ BEGIN
 	FROM DBCUST.bodb_Licensee.dbo.Licensees l WITH(NOLOCK)
 	WHERE LicenseeName = @LicenseeName
 
-	SELECT @SQL = ' SELECT LicenseeID, GroupCommID, CustID, GroupName
-						FROM OPENQUERY (DBCUST, '' SELECT lc.LicenseeID, lc.GroupCommID, lc.CustID, lg.GroupName
-													FROM bodb_licensee.dbo.LicenseeCustComm lc WITH(NOLOCK)
-													LEFT JOIN bodb_Licensee.dbo.LicenseeGroupComm lg WITH (NOLOCK) ON lc.GroupCommID = lg.id	
+	SELECT @SQL = ' SELECT LicenseeID, GroupDiscountID, CustID, GroupName
+						FROM OPENQUERY (DBCUST, '' SELECT lc.LicenseeID, lc.GroupDiscountID, lc.CustID, lg.GroupName
+													FROM bodb_licensee.dbo.LicenseeCustDiscount lc WITH(NOLOCK)
+													LEFT JOIN bodb_Licensee.dbo.LicenseeGroupDiscount lg WITH (NOLOCK) ON lc.GroupDiscountID = lg.GroupDiscountID	
 													WHERE lc.LicenseeID = ' +CAST(@LicenseeID AS VARCHAR(50)) + '
 													AND lc.CustID IN (SELECT value FROM STRING_SPLIT('''''+@custids+''''','''',''''))
-													AND lc.GroupCommID IN (SELECT value FROM STRING_SPLIT('''''+@CommGroups+''''','''',''''))''
+													AND lc.GroupDiscountID IN (SELECT value FROM STRING_SPLIT('''''+@CommGroups+''''','''',''''))''
 						)
 					'
-	INSERT INTO #LicenseeCustComm(LicenseeID, GroupCommID, CustID, GroupName)
+	INSERT INTO #LicenseeCustDiscount(LicenseeID, GroupDiscountID, CustID, GroupName)
 	EXEC( @SQL)
 
 	SELECT @SQL = ' SELECT CustID, SpecialLevel
@@ -263,8 +263,8 @@ BEGIN
 		BEGIN
 			DELETE t
 			FROM #TempMember t
-				LEFT JOIN #LicenseeCustComm lc ON t.custid=lc.custid 
-			WHERE ISNULL(lc.GroupCommID,0) NOT IN (SELECT value FROM STRING_SPLIT(@CommGroups,','))		
+				LEFT JOIN #LicenseeCustDiscount lc ON t.custid=lc.custid 
+			WHERE ISNULL(lc.GroupDiscountID,0) NOT IN (SELECT value FROM STRING_SPLIT(@CommGroups,','))		
 		END 
 		
 		IF ISNULL(@TotalRows, 0) = 0
@@ -323,8 +323,8 @@ BEGIN
 		BEGIN
 			DELETE t
 			FROM #TempMember t
-				LEFT JOIN #LicenseeCustComm lc WITH(NOLOCK) ON t.custid=lc.custid
-			WHERE ISNULL(lc.GroupCommID,0) NOT IN (SELECT value FROM STRING_SPLIT(@CommGroups,','))		
+				LEFT JOIN #LicenseeCustDiscount lc WITH(NOLOCK) ON t.custid=lc.custid
+			WHERE ISNULL(lc.GroupDiscountID,0) NOT IN (SELECT value FROM STRING_SPLIT(@CommGroups,','))		
 		END
 		
 		IF ISNULL(@TotalRows, 0) = 0
@@ -396,8 +396,8 @@ BEGIN
 		BEGIN
 			DELETE t
 			FROM #TempMember t
-				LEFT JOIN #LicenseeCustComm lc ON t.custid=lc.custid 
-			WHERE ISNULL(lc.GroupCommID,0) NOT IN (SELECT value FROM STRING_SPLIT(@CommGroups,','))		
+				LEFT JOIN #LicenseeCustDiscount lc ON t.custid=lc.custid 
+			WHERE ISNULL(lc.GroupDiscountID,0) NOT IN (SELECT value FROM STRING_SPLIT(@CommGroups,','))		
 		END
 		
 		IF ISNULL(@TotalRows, 0) = 0
@@ -614,7 +614,7 @@ BEGIN
 			FROM #OutstandingTranslog
 			GROUP BY Custid, Currency
 		) tl ON t.custid = tl.Custid
-		LEFT JOIN #LicenseeCustComm lc WITH(NOLOCK) ON t.custid=lc.custid
+		LEFT JOIN #LicenseeCustDiscount lc WITH(NOLOCK) ON t.custid=lc.custid
 		
 	ORDER BY t.username
 
