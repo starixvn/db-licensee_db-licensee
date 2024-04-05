@@ -106,7 +106,6 @@ BEGIN
 			WHERE custid = @custid
 			FOR XML PATH('r'), ROOT('Root')
 			)	
-			
 			--Update List of affected Customers               
 			EXEC [Lrf_CustomerUpdMemberComm] 
 				@LicenseeID=@LicenseeID,
