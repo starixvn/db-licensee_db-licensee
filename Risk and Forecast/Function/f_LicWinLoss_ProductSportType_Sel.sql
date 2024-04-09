@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02,DBSID-bodb02" selecters="bodbLicenseeNet" isFunction="1" isNested="1"></info>*/
+/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02,DBSID-bodb02" selecters="wsv_lap" isFunction="1" isNested="1"></info>*/
 
 ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 (
@@ -57,6 +57,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 		- 20231117@Evan: Integrate WE Live Casino [RedmineID: #196573]
 		- 20231213@Evan: Integrate Live22 [RedmineID: #197702]
 		- 20241701@Evan: Remove VS3 (old) [RedmineID: #199523]
+		- 20240308@Eddie: Integrate UU Slots and change 'bodbLicenseeNet' to 'wsv_lap' account [RedmineID: #201098]
 
 */
 RETURNS TABLE
@@ -67,22 +68,22 @@ RETURN
 					(3, 'NG', 161, 0),(3, 'NG', 164, 0),(3, 'NG', 168, 0),	-- Number Game
 					(5, 'VS', 180, 0),	-- Virtual Sports
 					(6, 'CS', 251, 71), (6, 'CS', 208, 0), (6, 'CS', 209, 0), (6, 'CS', 210, 0), -- RNG Casino
-					(8, 'KN', 202, 0),	-- Keno
-					(11, 'AGC', 250, 0), -- AG Casino
-					(14, 'VG', 249, 0),	 -- Macau
-					(21, 'AB', 211, 0),	-- Allbet
-					(22, 'VB', 212, 0), -- Macau Games
+					(8, 'KN', 202, 0),		-- Keno
+					(11, 'AGC', 250, 0), 	-- AG Casino
+					(14, 'VG', 249, 0),	 	-- Macau
+					(21, 'AB', 211, 0),		-- Allbet
+					(22, 'VB', 212, 0), 	-- Macau Games
 					(27, 'VS2', 190, 0), (27, 'VS2', 193, 0),-- Betradar Virtual Sports
-					(27, 'VS2', 194, 0), --  Virtual Soccer Asian Cup
-					(27, 'VS2', 195, 0), --  Virtual Soccer English Premier
-					(27, 'VS2', 196, 0), --  Virtual Soccer Champions Cup
-					(27, 'VS2', 197, 0), --  Virtual Soccer Euro Cup
-					(28, 'LT', 220, 0),	-- Lottery
-					(31, 'BX', 221, 0), -- Exchange
-					(32, 'PP', 248, 0),	-- PP
-					(34, 'CC', 165, 0),	-- Card club
-					(36, 'SG', 247, 0),	-- Spadegaming
-					(37, 'SPR', 246, 0), -- Saba Promotion
+					(27, 'VS2', 194, 0), 	--  Virtual Soccer Asian Cup
+					(27, 'VS2', 195, 0), 	--  Virtual Soccer English Premier
+					(27, 'VS2', 196, 0), 	--  Virtual Soccer Champions Cup
+					(27, 'VS2', 197, 0), 	--  Virtual Soccer Euro Cup
+					(28, 'LT', 220, 0),		-- Lottery
+					(31, 'BX', 221, 0), 	-- Exchange
+					(32, 'PP', 248, 0),		-- PP
+					(34, 'CC', 165, 0),		-- Card club
+					(36, 'SG', 247, 0),		-- Spadegaming
+					(37, 'SPR', 246, 0), 	-- Saba Promotion
 					(38, 'VRG', 245, 0),	-- Virtual Games
 					(40, 'TG', 222, 0),		-- Table Games
 					(43, 'I4D', 223, 0),	-- Indo 4D
@@ -110,7 +111,8 @@ RETURN
 					(77, 'LG', 178, 0),		-- Leap Gaming VS (VS3)
 					(72, 'SEA', 156, 0),	-- SEAL
 					(80, 'WE', 228, 0),		-- WE Live Casino (WE)
-					(79, 'L22', 227, 0)		-- Live 22
+					(79, 'L22', 227, 0),	-- Live 22
+					(78, 'UUSL', 216, 0)	-- UU Slots
 			) d(ProductID, ProductCode, SportType, BetType)
 	WHERE ',' + @ProductCodes + ',' LIKE '%,' + CAST(ProductCode AS VARCHAR(10)) + ',%'
 GO
