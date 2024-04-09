@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinlossByTimeZone]
 	@AgentList		VARCHAR(MAX),
@@ -32,6 +32,7 @@ AS
 		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
 		- 20220429@Kos: Support Bitcoin [RedmineID: #160160]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
+		- 20240311@Eddie: Change 'bodbLicenseeNet' to 'wsv_lap' account [RedmineID: #201098]
 
 	Param's Explanation:
 		+ @TimeZone: = -4: GMT-4

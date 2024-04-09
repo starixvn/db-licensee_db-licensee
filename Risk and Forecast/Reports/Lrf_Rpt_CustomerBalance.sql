@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+﻿/*<info serverAlias="DBACC-bodb02" executers="wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_CustomerBalance]
 	@AgentList		VARCHAR(MAX),
@@ -64,6 +64,7 @@ AS
 						- Change to use @ProductList
 		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
+		- 20240311@Eddie: Change 'bodbLicenseeNet' to 'wsv_lap' account [RedmineID: #201098]
 
 	Param's Explanation:
 		+ @TopCount:

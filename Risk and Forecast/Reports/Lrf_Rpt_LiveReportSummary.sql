@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportSummary]
 	@AgentList		VARCHAR(MAX),
@@ -118,6 +118,7 @@ AS
 		- 20231117@Evan: Integrate WE Live Casino [RedmineID: #196573]
 		- 20231213@Evan: Integrate Live22 [RedmineID: #197702]
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only + Remove VS3 (old) [RedmineID: #199523]
+		- 20240308@Eddie: Integrate UU Slots and change 'bodbLicenseeNet' to 'wsv_lap' account [RedmineID: #201098]
 
 	Param's Explanation:
 		+ @IsLive : indicate that whether the report will get live data or not
@@ -369,7 +370,7 @@ BEGIN
 		END
 
 		--Others
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'NG', 'VS', 'VS2', 'LG', 'KN', 'CS', 'VB', 'AB', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM', 'FGGL', 'MXG', 'JIG', 'YB', 'MGRNG', 'SEA', 'WE', 'L22'))
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'VS', 'VS2', 'LG', 'KN', 'CS', 'VB', 'AB', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM', 'FGGL', 'MXG', 'JIG', 'YB', 'MGRNG', 'SEA', 'WE', 'L22', 'UUSL'))
 		BEGIN
 			INSERT INTO #tmpWinloss
 			SELECT
@@ -397,18 +398,19 @@ BEGIN
 					WHEN b.bettype BETWEEN 3401 AND 3499 THEN 'WM' -- WM
 					WHEN b.bettype BETWEEN 3501 AND 3599 THEN 'BGG'
 					WHEN (b.bettype BETWEEN 3801 AND 3899) AND b.matchid <> 173 THEN 'VGA' -- VGA
-					WHEN b.bettype BETWEEN 7301 AND 7600 THEN 'CG'
-					WHEN b.bettype BETWEEN 7701 AND 7799 THEN 'AP'
-					WHEN b.bettype BETWEEN 7801 AND 7899 THEN 'APM'
-					WHEN b.bettype BETWEEN 8201 AND 8299 THEN 'FGGL'
-					WHEN b.bettype BETWEEN 5401 AND 5499 THEN 'MXG'
-					WHEN b.bettype BETWEEN 5100 AND 5299 THEN 'JIG'
-					WHEN b.bettype BETWEEN 3151 AND 3200 THEN 'YB'
-					WHEN b.bettype BETWEEN 8400 AND 8699 THEN 'MGRNG'
+					WHEN b.bettype  BETWEEN 7301 AND 7600 THEN 'CG'
+					WHEN b.bettype  BETWEEN 7701 AND 7799 THEN 'AP'
+					WHEN b.bettype  BETWEEN 7801 AND 7899 THEN 'APM'
+					WHEN b.bettype  BETWEEN 8201 AND 8299 THEN 'FGGL'
+					WHEN b.bettype  BETWEEN 5401 AND 5499 THEN 'MXG'
+					WHEN b.bettype  BETWEEN 5100 AND 5299 THEN 'JIG'
+					WHEN b.bettype  BETWEEN 3151 AND 3200 THEN 'YB'
+					WHEN b.bettype  BETWEEN 8400 AND 8699 THEN 'MGRNG'
 					WHEN (b.bettype BETWEEN 1201 AND 1299) OR (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) OR (b.bettype BETWEEN 5302 AND 5399) THEN 'VS'
-					WHEN b.bettype BETWEEN 8900 AND 8999 THEN 'SEA'
+					WHEN b.bettype BETWEEN 8900  AND 8999  THEN 'SEA'
 					WHEN b.bettype BETWEEN 10300 AND 10399 THEN 'WE'
-					WHEN b.bettype BETWEEN 7601 AND 7700 THEN 'L22'
+					WHEN b.bettype BETWEEN 7601  AND 7700  THEN 'L22'
+					WHEN b.bettype BETWEEN 10000 AND 10299 THEN 'UUSL'
 					END AS ProductCode,
 				SUM(stake) turnover,
 				SUM(b.winlost - b.actual_stake) AS Winlost,
@@ -435,32 +437,33 @@ BEGIN
 					OR (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) -- BetRadar VS
 					OR b.bettype BETWEEN 1021 AND 1099 -- LT
 					OR b.bettype BETWEEN 4101 AND 4296 OR b.bettype BETWEEN 6701 AND 7000 -- PP -- exclude 4300, 4299, 4298, 4297
-					OR b.bettype BETWEEN 1901 AND 1999-- CC
-					OR b.bettype BETWEEN 4301 AND 4600 -- SG
-					OR b.bettype BETWEEN 4601 AND 4900 -- VRG
-					OR b.bettype BETWEEN 4901 AND 5000 -- TG
-					OR b.bettype BETWEEN 5001 AND 5099 -- I4D
-					OR b.bettype BETWEEN 3101 AND 3149 -- SXG
+					OR b.bettype BETWEEN 1901  AND 1999-- CC
+					OR b.bettype BETWEEN 4301  AND 4600 -- SG
+					OR b.bettype BETWEEN 4601  AND 4900 -- VRG
+					OR b.bettype BETWEEN 4901  AND 5000 -- TG
+					OR b.bettype BETWEEN 5001  AND 5099 -- I4D
+					OR b.bettype BETWEEN 3101  AND 3149 -- SXG
 					OR (b.bettype BETWEEN 1611 AND 1697 AND b.matchid <> 150) -- SBC
-					OR b.bettype BETWEEN 3001 AND 3099 -- SAG
-					OR b.bettype BETWEEN 6001 AND 6300 -- PGS
-					OR b.bettype BETWEEN 6401 AND 6700 -- JK
-					OR b.bettype BETWEEN 7001 AND 7300 -- HB
-					OR b.bettype BETWEEN 3401 AND 3499 -- WM
-					OR b.bettype BETWEEN 3501 AND 3599 -- BGG
+					OR b.bettype BETWEEN 3001  AND 3099 -- SAG
+					OR b.bettype BETWEEN 6001  AND 6300 -- PGS
+					OR b.bettype BETWEEN 6401  AND 6700 -- JK
+					OR b.bettype BETWEEN 7001  AND 7300 -- HB
+					OR b.bettype BETWEEN 3401  AND 3499 -- WM
+					OR b.bettype BETWEEN 3501  AND 3599 -- BGG
 					OR (b.bettype BETWEEN 3801 AND 3899 AND b.matchid <> 173)-- VGA
-					OR b.bettype BETWEEN 7301 AND 7600 -- CG
-					OR b.bettype BETWEEN 7701 AND 7799 -- AP
-					OR b.bettype BETWEEN 7801 AND 7899 -- APM
-					OR b.bettype BETWEEN 8201 AND 8299 -- FGGL
-					OR b.bettype BETWEEN 5401 AND 5499 -- MXG
-					OR b.bettype BETWEEN 5100 AND 5299 -- JIG
-					OR b.bettype BETWEEN 3151 AND 3200 -- YB
-					OR b.bettype BETWEEN 8400 AND 8699 -- MGRNG
-					OR b.bettype BETWEEN 5302 AND 5399 -- LG
-					OR b.bettype BETWEEN 8900 AND 8999 -- SEA
+					OR b.bettype BETWEEN 7301  AND 7600 -- CG
+					OR b.bettype BETWEEN 7701  AND 7799 -- AP
+					OR b.bettype BETWEEN 7801  AND 7899 -- APM
+					OR b.bettype BETWEEN 8201  AND 8299 -- FGGL
+					OR b.bettype BETWEEN 5401  AND 5499 -- MXG
+					OR b.bettype BETWEEN 5100  AND 5299 -- JIG
+					OR b.bettype BETWEEN 3151  AND 3200 -- YB
+					OR b.bettype BETWEEN 8400  AND 8699 -- MGRNG
+					OR b.bettype BETWEEN 5302  AND 5399 -- LG
+					OR b.bettype BETWEEN 8900  AND 8999 -- SEA
 					OR b.bettype BETWEEN 10300 AND 10399 -- WE
-					OR b.bettype BETWEEN 7601 AND 7700 -- L22
+					OR b.bettype BETWEEN 7601  AND 7700  -- L22
+					OR b.bettype BETWEEN 10000 AND 10299 -- UUSL
 				)
 				AND (b.liveindicator = @Liveindicator OR @Liveindicator = 2)
 				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
@@ -475,32 +478,33 @@ BEGIN
 					WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
 					WHEN b.bettype BETWEEN 1021 AND 1099 THEN 'LT'
 					WHEN b.bettype BETWEEN 4101 AND 4296 OR b.bettype BETWEEN 6701 AND 7000 THEN 'PP' -- PP -- exclude 4300, 4299, 4298, 4297
-					WHEN b.bettype BETWEEN 1901 AND 1999 THEN 'CC' -- CC
-					WHEN b.bettype BETWEEN 4301 AND 4600 THEN 'SG' -- SG
-					WHEN b.bettype BETWEEN 4601 AND 4900 THEN 'VRG' -- VRG
-					WHEN b.bettype BETWEEN 4901 AND 5000 THEN 'TG' -- TG
-					WHEN b.bettype BETWEEN 5001 AND 5099 THEN 'I4D' -- I4D
-					WHEN b.bettype BETWEEN 3101 AND 3149 THEN 'SXG' -- SXG
+					WHEN b.bettype BETWEEN 1901  AND 1999 THEN 'CC' -- CC
+					WHEN b.bettype BETWEEN 4301  AND 4600 THEN 'SG' -- SG
+					WHEN b.bettype BETWEEN 4601  AND 4900 THEN 'VRG' -- VRG
+					WHEN b.bettype BETWEEN 4901  AND 5000 THEN 'TG' -- TG
+					WHEN b.bettype BETWEEN 5001  AND 5099 THEN 'I4D' -- I4D
+					WHEN b.bettype BETWEEN 3101  AND 3149 THEN 'SXG' -- SXG
 					WHEN (b.bettype BETWEEN 1611 AND 1697) AND b.matchid <> 150 THEN 'SBC' -- SBC
-					WHEN b.bettype BETWEEN 3001 AND 3099 THEN 'SAG' -- SAG
-					WHEN b.bettype BETWEEN 6001 AND 6300 THEN 'PGS' -- PGS
-					WHEN b.bettype BETWEEN 6401 AND 6700 THEN 'JK' -- JK
-					WHEN b.bettype BETWEEN 7001 AND 7300 THEN 'HB' -- HB
-					WHEN b.bettype BETWEEN 3401 AND 3499 THEN 'WM' -- WM
-					WHEN b.bettype BETWEEN 3501 AND 3599 THEN 'BGG'
+					WHEN b.bettype BETWEEN 3001  AND 3099 THEN 'SAG' -- SAG
+					WHEN b.bettype BETWEEN 6001  AND 6300 THEN 'PGS' -- PGS
+					WHEN b.bettype BETWEEN 6401  AND 6700 THEN 'JK' -- JK
+					WHEN b.bettype BETWEEN 7001  AND 7300 THEN 'HB' -- HB
+					WHEN b.bettype BETWEEN 3401  AND 3499 THEN 'WM' -- WM
+					WHEN b.bettype BETWEEN 3501  AND 3599 THEN 'BGG'
 					WHEN (b.bettype BETWEEN 3801 AND 3899) AND b.matchid <> 173 THEN 'VGA' -- VGA
-					WHEN b.bettype BETWEEN 7301 AND 7600 THEN 'CG'
-					WHEN b.bettype BETWEEN 7701 AND 7799 THEN 'AP'
-					WHEN b.bettype BETWEEN 7801 AND 7899 THEN 'APM'
-					WHEN b.bettype BETWEEN 8201 AND 8299 THEN 'FGGL'
-					WHEN b.bettype BETWEEN 5401 AND 5499 THEN 'MXG'
-					WHEN b.bettype BETWEEN 5100 AND 5299 THEN 'JIG'
-					WHEN b.bettype BETWEEN 3151 AND 3200 THEN 'YB'
-					WHEN b.bettype BETWEEN 8400 AND 8699 THEN 'MGRNG'
+					WHEN b.bettype BETWEEN 7301  AND 7600 THEN 'CG'
+					WHEN b.bettype BETWEEN 7701  AND 7799 THEN 'AP'
+					WHEN b.bettype BETWEEN 7801  AND 7899 THEN 'APM'
+					WHEN b.bettype BETWEEN 8201  AND 8299 THEN 'FGGL'
+					WHEN b.bettype BETWEEN 5401  AND 5499 THEN 'MXG'
+					WHEN b.bettype BETWEEN 5100  AND 5299 THEN 'JIG'
+					WHEN b.bettype BETWEEN 3151  AND 3200 THEN 'YB'
+					WHEN b.bettype BETWEEN 8400  AND 8699 THEN 'MGRNG'
 					WHEN (b.bettype BETWEEN 1201 AND 1299) OR (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) OR (b.bettype BETWEEN 5302 AND 5399) THEN 'VS' --VS
-					WHEN b.bettype BETWEEN 8900 AND 8999 THEN 'SEA'
+					WHEN b.bettype BETWEEN 8900  AND 8999  THEN 'SEA'
 					WHEN b.bettype BETWEEN 10300 AND 10399 THEN 'WE'
-					WHEN b.bettype BETWEEN 7601 AND 7700 THEN 'L22'
+					WHEN b.bettype BETWEEN 7601  AND 7700  THEN 'L22'
+					WHEN b.bettype BETWEEN 10000 AND 10299 THEN 'UUSL'
 				END
 		END
 	END
@@ -585,7 +589,7 @@ BEGIN
 		END
 
 		-- Others
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'VS2', 'LG', 'KN', 'CS', 'VB', 'AB', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM', 'FGGL', 'MXG', 'JIG', 'YB', 'MGRNG', 'SEA', 'WE', 'L22'))
+		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'VS2', 'LG', 'KN', 'CS', 'VB', 'AB', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM', 'FGGL', 'MXG', 'JIG', 'YB', 'MGRNG', 'SEA', 'WE', 'L22', 'UUSL'))
 		BEGIN
 			INSERT INTO #tmpWinloss
 			SELECT 
@@ -609,32 +613,33 @@ BEGIN
 					WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
 					WHEN b.bettype BETWEEN 1021 AND 1099 THEN 'LT'
 					WHEN b.bettype BETWEEN 4101 AND 4296 OR b.bettype BETWEEN 6701 AND 7000 THEN 'PP' -- PP -- exclude 4300, 4299, 4298, 4297
-					WHEN b.bettype BETWEEN 1901 AND 1999 THEN 'CC'
-					WHEN b.bettype BETWEEN 4301 AND 4600 THEN 'SG' -- SG
-					WHEN b.bettype BETWEEN 4601 AND 4900 THEN 'VRG'
-					WHEN b.bettype BETWEEN 4901 AND 5000 THEN 'TG'
-					WHEN b.bettype BETWEEN 5001 AND 5099 THEN 'I4D'
-					WHEN b.bettype BETWEEN 3101 AND 3149 THEN 'SXG' -- SXG
+					WHEN b.bettype BETWEEN 1901  AND 1999 THEN 'CC'
+					WHEN b.bettype BETWEEN 4301  AND 4600 THEN 'SG' -- SG
+					WHEN b.bettype BETWEEN 4601  AND 4900 THEN 'VRG'
+					WHEN b.bettype BETWEEN 4901  AND 5000 THEN 'TG'
+					WHEN b.bettype BETWEEN 5001  AND 5099 THEN 'I4D'
+					WHEN b.bettype BETWEEN 3101  AND 3149 THEN 'SXG' -- SXG
 					WHEN (b.bettype BETWEEN 1611 AND 1697) AND b.TicketType <> 2 THEN 'SBC'
-					WHEN b.bettype BETWEEN 3001 AND 3099 THEN 'SAG' -- SAG
-					WHEN b.bettype BETWEEN 6001 AND 6300 THEN 'PGS'
-					WHEN b.bettype BETWEEN 6401 AND 6700 THEN 'JK' -- JK
-					WHEN b.bettype BETWEEN 7001 AND 7300 THEN 'HB' -- HB
-					WHEN b.bettype BETWEEN 3401 AND 3499 THEN 'WM' -- WM
-					WHEN b.bettype BETWEEN 3501 AND 3599 THEN 'BGG' 
+					WHEN b.bettype BETWEEN 3001  AND 3099 THEN 'SAG' -- SAG
+					WHEN b.bettype BETWEEN 6001  AND 6300 THEN 'PGS'
+					WHEN b.bettype BETWEEN 6401  AND 6700 THEN 'JK' -- JK
+					WHEN b.bettype BETWEEN 7001  AND 7300 THEN 'HB' -- HB
+					WHEN b.bettype BETWEEN 3401  AND 3499 THEN 'WM' -- WM
+					WHEN b.bettype BETWEEN 3501  AND 3599 THEN 'BGG' 
 					WHEN (b.bettype BETWEEN 3801 AND 3899) AND b.TicketType <> 2 THEN 'VGA'
-					WHEN b.bettype BETWEEN 7301 AND 7600 THEN 'CG'
-					WHEN b.bettype BETWEEN 7701 AND 7799 THEN 'AP'
-					WHEN b.bettype BETWEEN 7801 AND 7899 THEN 'APM'
-					WHEN b.bettype BETWEEN 8201 AND 8299 THEN 'FGGL'
-					WHEN b.bettype BETWEEN 5401 AND 5499 THEN 'MXG'
-					WHEN b.bettype BETWEEN 5100 AND 5299 THEN 'JIG'
-					WHEN b.bettype BETWEEN 3151 AND 3200 THEN 'YB'
-					WHEN b.bettype BETWEEN 8400 AND 8699 THEN 'MGRNG'
+					WHEN b.bettype BETWEEN 7301  AND 7600 THEN 'CG'
+					WHEN b.bettype BETWEEN 7701  AND 7799 THEN 'AP'
+					WHEN b.bettype BETWEEN 7801  AND 7899 THEN 'APM'
+					WHEN b.bettype BETWEEN 8201  AND 8299 THEN 'FGGL'
+					WHEN b.bettype BETWEEN 5401  AND 5499 THEN 'MXG'
+					WHEN b.bettype BETWEEN 5100  AND 5299 THEN 'JIG'
+					WHEN b.bettype BETWEEN 3151  AND 3200 THEN 'YB'
+					WHEN b.bettype BETWEEN 8400  AND 8699 THEN 'MGRNG'
 					WHEN (b.bettype BETWEEN 1201 AND 1299) OR (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) OR (b.bettype BETWEEN 5302 AND 5399) THEN 'VS' --VS
-					WHEN b.bettype BETWEEN 8900 AND 8999 THEN 'SEA'
+					WHEN b.bettype BETWEEN 8900  AND 8999  THEN 'SEA'
 					WHEN b.bettype BETWEEN 10300 AND 10399 THEN 'WE'
-					WHEN b.bettype BETWEEN 7601 AND 7700 THEN 'L22'
+					WHEN b.bettype BETWEEN 7601  AND 7700  THEN 'L22'
+					WHEN b.bettype BETWEEN 10000 AND 10299 THEN 'UUSL'
 				END AS ProductCode,
 				SUM(b.turnover) turnover,
 				SUM(b.winloss) winlost,
@@ -661,9 +666,9 @@ BEGIN
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
 				AND (b.bettype <= 30
-					OR b.bettype BETWEEN 121 AND 999
-					OR b.Bettype BETWEEN 1301 and 1399
-					OR b.Bettype BETWEEN 9001 and 9399
+					OR b.bettype BETWEEN 121  AND 999
+					OR b.Bettype BETWEEN 1301 AND 1399
+					OR b.Bettype BETWEEN 9001 AND 9399
 					OR b.Bettype BETWEEN 9400 AND 9998 -- Cricket AIO
 					OR b.Bettype BETWEEN 3900 AND 3999 -- Volleyball AIO
 					OR b.Bettype = 38				   -- Single Match Parlay
@@ -671,7 +676,7 @@ BEGIN
 						AND EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'SLT')))
 					OR (b.bettype BETWEEN 7901 AND 7999
 						AND EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'BTC')))
-					OR b.bettype BETWEEN 81 AND 120
+					OR b.bettype BETWEEN 81   AND 120
 					OR b.bettype BETWEEN 8101 AND 8120 -- Number Game: Happy 5
 					OR b.bettype BETWEEN 3601 AND 3610 -- Happy 5 Linked Games
 					OR b.bettype BETWEEN 1201 AND 1299
@@ -682,32 +687,33 @@ BEGIN
 					OR b.bettype BETWEEN 2701 AND 2829 -- VS2
 					OR b.bettype BETWEEN 1021 AND 1099 -- LT
 					OR b.bettype BETWEEN 4101 AND 4296 OR b.bettype BETWEEN 6701 AND 7000 -- PP -- exclude 4300, 4299, 4298, 4297
-					OR b.bettype BETWEEN 1901 AND 1999 -- CC
-					OR b.bettype BETWEEN 4301 AND 4600 -- SG
-					OR b.bettype BETWEEN 4601 AND 4900 -- VRG
-					OR b.bettype BETWEEN 4901 AND 5000 -- TG
-					OR b.bettype BETWEEN 5001 AND 5099 -- I4D
-					OR b.bettype BETWEEN 3101 AND 3149 -- SXG
+					OR b.bettype BETWEEN 1901  AND 1999 -- CC
+					OR b.bettype BETWEEN 4301  AND 4600 -- SG
+					OR b.bettype BETWEEN 4601  AND 4900 -- VRG
+					OR b.bettype BETWEEN 4901  AND 5000 -- TG
+					OR b.bettype BETWEEN 5001  AND 5099 -- I4D
+					OR b.bettype BETWEEN 3101  AND 3149 -- SXG
 					OR (b.bettype BETWEEN 1611 AND 1697 AND b.TicketType <> 2) -- SBC
-					OR b.bettype BETWEEN 3001 AND 3099 -- SAG
-					OR b.bettype BETWEEN 6001 AND 6300 -- PGS
-					OR b.bettype BETWEEN 6401 AND 6700 -- JK
-					OR b.bettype BETWEEN 7001 AND 7300 -- HB
-					OR b.bettype BETWEEN 3401 AND 3499 -- WM
-					OR b.bettype BETWEEN 3501 AND 3599 -- BGG
+					OR b.bettype BETWEEN 3001  AND 3099 -- SAG
+					OR b.bettype BETWEEN 6001  AND 6300 -- PGS
+					OR b.bettype BETWEEN 6401  AND 6700 -- JK
+					OR b.bettype BETWEEN 7001  AND 7300 -- HB
+					OR b.bettype BETWEEN 3401  AND 3499 -- WM
+					OR b.bettype BETWEEN 3501  AND 3599 -- BGG
 					OR (b.bettype BETWEEN 3801 AND 3899 AND b.TicketType <> 2) -- VGA
-					OR b.bettype BETWEEN 7301 AND 7600 -- CG
-					OR b.bettype BETWEEN 7701 AND 7799 -- AP
-					OR b.bettype BETWEEN 7801 AND 7899 -- APM
-					OR b.bettype BETWEEN 8201 AND 8299 -- FGGL
-					OR b.bettype BETWEEN 5401 AND 5499 -- MXG
-					OR b.bettype BETWEEN 5100 AND 5299 -- JIG
-					OR b.bettype BETWEEN 3151 AND 3200 -- YB
-					OR b.bettype BETWEEN 8400 AND 8699 -- MGRNG
-					OR b.bettype BETWEEN 5302 AND 5399 -- LG
-					OR b.bettype BETWEEN 8900 AND 8999 -- SEA
+					OR b.bettype BETWEEN 7301  AND 7600 -- CG
+					OR b.bettype BETWEEN 7701  AND 7799 -- AP
+					OR b.bettype BETWEEN 7801  AND 7899 -- APM
+					OR b.bettype BETWEEN 8201  AND 8299 -- FGGL
+					OR b.bettype BETWEEN 5401  AND 5499 -- MXG
+					OR b.bettype BETWEEN 5100  AND 5299 -- JIG
+					OR b.bettype BETWEEN 3151  AND 3200 -- YB
+					OR b.bettype BETWEEN 8400  AND 8699 -- MGRNG
+					OR b.bettype BETWEEN 5302  AND 5399 -- LG
+					OR b.bettype BETWEEN 8900  AND 8999 -- SEA
 					OR b.bettype BETWEEN 10300 AND 10399 -- WE
-					OR b.bettype BETWEEN 7601 AND 7700 -- L22
+					OR b.bettype BETWEEN 7601  AND 7700  -- L22
+					OR b.bettype BETWEEN 10000 AND 10299 -- UUSL
 					)
 				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 			GROUP BY
@@ -717,13 +723,13 @@ BEGIN
 					WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) OR (b.bettype BETWEEN 3601 AND 3610) THEN 'NG'
 					WHEN b.bettype <= 30 
 							OR (b.bettype BETWEEN 121 AND 999) 
-							OR (b.Bettype BETWEEN 1301 and 1399) 
-							OR (b.Bettype BETWEEN 9001 and 9399) 
+							OR (b.Bettype BETWEEN 1301 AND 1399) 
+							OR (b.Bettype BETWEEN 9001 AND 9399) 
 							OR (b.Bettype BETWEEN 9400 AND 9998) -- Cricket AIO
 							OR (b.Bettype BETWEEN 3900 AND 3999) -- Volleyball AIO
 							OR b.Bettype = 38					 -- Single Match Parlay
-							OR b.bettype BETWEEN 3611 AND 3620		-- Sports Lottery
-							OR b.bettype BETWEEN 7901 AND 7999		-- Bitcoin
+							OR b.bettype BETWEEN 3611 AND 3620	 -- Sports Lottery
+							OR b.bettype BETWEEN 7901 AND 7999	 -- Bitcoin
 						THEN 'SB'
 					WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN'
 					WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999 THEN 'CS' -- RNG CASINO
@@ -731,32 +737,33 @@ BEGIN
 					WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
 					WHEN b.bettype BETWEEN 1021 AND 1099 THEN 'LT'
 					WHEN b.bettype BETWEEN 4101 AND 4296 OR b.bettype BETWEEN 6701 AND 7000 THEN 'PP' -- exclude 4300, 4299, 4298, 4297
-					WHEN b.bettype BETWEEN 1901 AND 1999 THEN 'CC'
-					WHEN b.bettype BETWEEN 4301 AND 4600 THEN 'SG' -- SG
-					WHEN b.bettype BETWEEN 4601 AND 4900 THEN 'VRG'
-					WHEN b.bettype BETWEEN 4901 AND 5000 THEN 'TG'
-					WHEN b.bettype BETWEEN 5001 AND 5099 THEN 'I4D'
-					WHEN b.bettype BETWEEN 3101 AND 3149 THEN 'SXG' -- SXG
+					WHEN b.bettype BETWEEN 1901  AND 1999 THEN 'CC'
+					WHEN b.bettype BETWEEN 4301  AND 4600 THEN 'SG' -- SG
+					WHEN b.bettype BETWEEN 4601  AND 4900 THEN 'VRG'
+					WHEN b.bettype BETWEEN 4901  AND 5000 THEN 'TG'
+					WHEN b.bettype BETWEEN 5001  AND 5099 THEN 'I4D'
+					WHEN b.bettype BETWEEN 3101  AND 3149 THEN 'SXG' -- SXG
 					WHEN (b.bettype BETWEEN 1611 AND 1697) AND b.TicketType <> 2 THEN 'SBC'
-					WHEN b.bettype BETWEEN 3001 AND 3099 THEN 'SAG' -- SAG	
-					WHEN b.bettype BETWEEN 6001 AND 6300 THEN 'PGS'
-					WHEN b.bettype BETWEEN 6401 AND 6700 THEN 'JK' -- JK
-					WHEN b.bettype BETWEEN 7001 AND 7300 THEN 'HB' -- HB
-					WHEN b.bettype BETWEEN 3401 AND 3499 THEN 'WM' -- WM
-					WHEN b.bettype BETWEEN 3501 AND 3599 THEN 'BGG'
+					WHEN b.bettype BETWEEN 3001  AND 3099 THEN 'SAG' -- SAG	
+					WHEN b.bettype BETWEEN 6001  AND 6300 THEN 'PGS'
+					WHEN b.bettype BETWEEN 6401  AND 6700 THEN 'JK' -- JK
+					WHEN b.bettype BETWEEN 7001  AND 7300 THEN 'HB' -- HB
+					WHEN b.bettype BETWEEN 3401  AND 3499 THEN 'WM' -- WM
+					WHEN b.bettype BETWEEN 3501  AND 3599 THEN 'BGG'
 					WHEN (b.bettype BETWEEN 3801 AND 3899) AND b.TicketType <> 2 THEN 'VGA' -- VGA
-					WHEN b.bettype BETWEEN 7301 AND 7600 THEN 'CG'
-					WHEN b.bettype BETWEEN 7701 AND 7799 THEN 'AP'
-					WHEN b.bettype BETWEEN 7801 AND 7899 THEN 'APM'
-					WHEN b.bettype BETWEEN 8201 AND 8299 THEN 'FGGL'
-					WHEN b.bettype BETWEEN 5401 AND 5499 THEN 'MXG'
-					WHEN b.bettype BETWEEN 5100 AND 5299 THEN 'JIG'
-					WHEN b.bettype BETWEEN 3151 AND 3200 THEN 'YB'
-					WHEN b.bettype BETWEEN 8400 AND 8699 THEN 'MGRNG'
+					WHEN b.bettype BETWEEN 7301  AND 7600 THEN 'CG'
+					WHEN b.bettype BETWEEN 7701  AND 7799 THEN 'AP'
+					WHEN b.bettype BETWEEN 7801  AND 7899 THEN 'APM'
+					WHEN b.bettype BETWEEN 8201  AND 8299 THEN 'FGGL'
+					WHEN b.bettype BETWEEN 5401  AND 5499 THEN 'MXG'
+					WHEN b.bettype BETWEEN 5100  AND 5299 THEN 'JIG'
+					WHEN b.bettype BETWEEN 3151  AND 3200 THEN 'YB'
+					WHEN b.bettype BETWEEN 8400  AND 8699 THEN 'MGRNG'
 					WHEN (b.bettype BETWEEN 1201 AND 1299) OR (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) OR (b.bettype BETWEEN 5302 AND 5399) THEN 'VS' --VS
-					WHEN b.bettype BETWEEN 8900 AND 8999 THEN 'SEA'
+					WHEN b.bettype BETWEEN 8900  AND 8999  THEN 'SEA'
 					WHEN b.bettype BETWEEN 10300 AND 10399 THEN 'WE'
-					WHEN b.bettype BETWEEN 7601 AND 7700 THEN 'L22'
+					WHEN b.bettype BETWEEN 7601  AND 7700  THEN 'L22'
+					WHEN b.bettype BETWEEN 10000 AND 10299 THEN 'UUSL'
 				END
 		END
 

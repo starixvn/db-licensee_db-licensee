@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_GetLicenseeWLByPlatform]
 	@AgentList		VARCHAR(MAX),
@@ -43,6 +43,7 @@ AS
 		- 20230330@Evan: LAP - Support betfrom up to nvarchar(4) [RedmineID: #178059]
 		- 20231122@Evan: Handle betfrom for Jollysports [Redmine: #197192]	
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
+		- 20240311@Eddie: Change 'bodbLicenseeNet' to 'wsv_lap' account [RedmineID: #201098]
 		
 	Param explanation:
 		- @ProductList: SB and all products grouped under SB (SB,SLT,...)

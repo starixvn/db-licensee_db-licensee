@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet,wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_SubsidiaryWinloss]
 	@AgentList		VARCHAR(MAX),
@@ -41,6 +41,7 @@ AS
 		- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465]
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20240304@Evan: Integrate Saba Ice Hockey [RedmineID: #201283]
+		- 20240311@Eddie: Change 'bodbLicenseeNet' to 'wsv_lap' account [RedmineID: #201098]
 
 	Param's Explanation:
 		+ @MoveBetsDay: The day we move tickets to bettrans14
