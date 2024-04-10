@@ -204,12 +204,6 @@ BEGIN
 
 	IF @ProductCodes IS NULL
 		SET @ProductCodes = ''
-	
-	CREATE TABLE #ProductCodes (ProductCode VARCHAR(10))
-
-	INSERT INTO #ProductCodes (ProductCode)
-	SELECT value
-	FROM STRING_SPLIT(@ProductCodes, ',')
 
 	DECLARE @SBBACheck TINYINT, @NASportType SMALLINT = 0;
 	SELECT @SBBACheck = (POWER(2*1, 1)
@@ -220,6 +214,7 @@ BEGIN
 	INSERT INTO #tmpBettype (Bettype, EventType)
 	SELECT DISTINCT a.Bettype,a.EventType
 	FROM dbo.LAP_f_WinlossAnalysis_BettypeMatrix (@ProductCodes,null,null,@SBBACheck) a 
+		INNER JOIN (SELECT DISTINCT ProductID, ProductCode FROM dbo.f_LicWinLoss_ProductSportType_Sel(@ProductCodes)) b ON a.ProductId = b.ProductID
 	WHERE NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = a.Bettype) AND a.Bettype <> 72
 			AND (a.bettype < 901 OR a.bettype > 904)
 			AND (a.bettype < 911 OR a.bettype > 914)
@@ -231,11 +226,12 @@ BEGIN
 		ELSE
 			SET @TempFromDate = @FDate
 
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'BA'))
+		--BA
+		IF ',' + @ProductCodes + ',' LIKE '%,BA,%'
 		BEGIN
 			
 			--Get data from bettrans for BA
-			INSERT INTO #tmpWinloss
+			INSERT INTO #tmpWinloss (winlostdate, Currency, SportType, TurnOver, Winlost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, Betcount)
 			SELECT b.winlostdate
 				 , b.Currency
 				 , CASE
@@ -274,7 +270,7 @@ BEGIN
 					 END
 
 			--BA for parlay
-			INSERT INTO #tmpWinloss
+			INSERT INTO #tmpWinloss (winlostdate, Currency, SportType, TurnOver, Winlost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, Betcount)
 			SELECT b.winlostdate
 				 , b.Currency
 				 , CASE
@@ -315,7 +311,7 @@ BEGIN
 			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
 		WHERE EventDate BETWEEN @TempFromDate AND @TDate
 
-		INSERT INTO #tmpWinloss
+		INSERT INTO #tmpWinloss (winlostdate, Currency, SportType, TurnOver, Winlost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, Betcount)
 		SELECT b.winlostdate
 			, b.Currency
 			, CASE 
@@ -342,6 +338,7 @@ BEGIN
 		WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND (@Liveindicator = b.liveindicator OR @Liveindicator = 2)
 			AND b.bettype NOT IN (9, 29, 2799, 10449)
+			AND b.tpositiontaking <> 0
 			AND b.statusID IN (111, 112, 113)
 			AND BA.TransId IS NULL
 			AND 1 = CASE WHEN b.bettype BETWEEN 1611 AND 1697 AND b.matchid = 150 THEN 0
@@ -358,7 +355,7 @@ BEGIN
 				ELSE @NASportType END
 
 		-- Get Tikect Parlay
-		INSERT INTO #tmpWinloss
+		INSERT INTO #tmpWinloss (winlostdate, Currency, SportType, TurnOver, Winlost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, Betcount)
 		SELECT b.winlostdate
 				, b.currency
 				, CASE
@@ -380,6 +377,7 @@ BEGIN
 		WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND (@Liveindicator = b.livehomescore OR @Liveindicator = 2)
 			AND b.bettype IN (9, 29, 2799, 10449)
+			AND b.tpositiontaking <> 0
 			AND b.statusID IN (111, 112, 113)
 			AND BA.TransId IS NULL
 		GROUP BY b.winlostdate
@@ -390,7 +388,7 @@ BEGIN
 						WHEN b.bettype IN (2799, 10449) THEN 104 --VS Parlay
 					END
 
-		DROP TABLE #tmpVS
+		DROP TABLE IF EXISTS #tmpVS
 	END
 	
 	IF @FDate <= @MoveBetsDay
@@ -408,7 +406,7 @@ BEGIN
 		WHERE b.EventType = 0
 		
 		--BA
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode  IN ('', 'BA'))
+		IF ',' + @ProductCodes + ',' LIKE '%,BA,%'
 		BEGIN
 			-- Get data from rpt_Betting_BA for BA
 			INSERT INTO #tmpWinloss (winlostdate, Currency, SportType, TurnOver, Winlost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, Betcount)
@@ -573,10 +571,9 @@ BEGIN
 			AND e.ExchangeId = b.currency
 	GROUP BY b.SportType
 
-	DROP TABLE #tmpWinloss
-	DROP TABLE #TempExchange
-	DROP TABLE #LicenseeList
-	DROP TABLE #ProductCodes
-	DROP TABLE #tmpBettype
+	DROP TABLE IF EXISTS #tmpWinloss
+	DROP TABLE IF EXISTS #TempExchange
+	DROP TABLE IF EXISTS #LicenseeList
+	DROP TABLE IF EXISTS #tmpBettype
 END
 GO

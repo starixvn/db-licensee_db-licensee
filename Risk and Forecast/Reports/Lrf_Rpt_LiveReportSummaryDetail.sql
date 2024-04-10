@@ -212,12 +212,6 @@ BEGIN
 	IF @ProductCodes IS NULL
 		SET @ProductCodes = ''
 	
-	CREATE TABLE #ProductCodes (ProductCode VARCHAR(10))
-
-	INSERT INTO #ProductCodes (ProductCode)
-	SELECT ISNULL(value,'')
-	FROM STRING_SPLIT(@ProductCodes,',')
-
 	DECLARE @SBBACheck TINYINT;
 	SELECT @SBBACheck = (POWER(2*1, 1)
 				+ POWER(2*CASE WHEN ISNULL(@ProductCodes, 'ALL') = 'ALL'  OR ',' + @ProductCodes + ',' LIKE '%,SB,%' THEN 1 ELSE 0 END, 2) 
@@ -240,10 +234,10 @@ BEGIN
 			SET @TempFromDate = @FDate
 
 		--BA
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'BA'))
+		IF ',' + @ProductCodes + ',' LIKE '%,BA,%'
 		BEGIN
 			--Get data from rpt_Betting_BA for BA
-			INSERT INTO #tmpWinloss
+			INSERT INTO #tmpWinloss (winlostdate, Currency, ProductCode, BetType, TurnOver, Winlost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, Betcount)
 			SELECT b.winlostdate
 				 , t.currency
 				 , 'BA' AS ProductCode
@@ -278,7 +272,7 @@ BEGIN
 				   , b.bettype
 
 			--Get data from rpt_BettingParlay for BA
-			INSERT INTO #tmpWinloss
+			INSERT INTO #tmpWinloss (winlostdate, Currency, ProductCode, BetType, TurnOver, Winlost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, Betcount)
 			SELECT b.winlostdate
 				 , t.currency
 				 , 'BA' AS ProductCode
@@ -307,7 +301,7 @@ BEGIN
 
 		--Get data from bettrans for non - BA
 
-		INSERT INTO #tmpWinloss
+		INSERT INTO #tmpWinloss (winlostdate, Currency, ProductCode, BetType, TurnOver, Winlost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, Betcount)
 		SELECT b.winlostdate
 				, t.currency
 				, bt.ProductCode
@@ -327,6 +321,7 @@ BEGIN
 		WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND b.statusID IN (111, 112, 113)
 			AND b.bettype NOT IN (9, 29, 2799, 10449)
+			AND b.tpositiontaking <> 0
 			AND (b.liveindicator = @Liveindicator OR @Liveindicator = 2)
 			AND BA.TransId IS NULL
 		GROUP BY b.winlostdate
@@ -335,7 +330,7 @@ BEGIN
 				, b.bettype
 			
 		--Get Parlay tickets
-		INSERT INTO #tmpWinloss
+		INSERT INTO #tmpWinloss (winlostdate, Currency, ProductCode, BetType, TurnOver, Winlost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, Betcount)
 		SELECT b.winlostdate
 				, t.currency
 				, bt.ProductCode
@@ -354,6 +349,7 @@ BEGIN
 		WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND b.statusID IN (111, 112, 113)
 			AND b.bettype IN (9, 29, 2799, 10449)
+			AND b.tpositiontaking <> 0
 			AND (b.livehomescore = @Liveindicator OR @Liveindicator = 2)
 			AND BA.TransId IS NULL
 		GROUP BY b.winlostdate
@@ -370,10 +366,10 @@ BEGIN
 			SET @TempToDate = @TDate
 
 		--BA
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'BA'))
+		IF ',' + @ProductCodes + ',' LIKE '%,BA,%'
 		BEGIN
 			--Get data from rpt_Betting_BA for BA
-			INSERT INTO #tmpWinloss
+			INSERT INTO #tmpWinloss (winlostdate, Currency, ProductCode, BetType, TurnOver, Winlost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, Betcount)
 			SELECT b.rptDate
 				 , b.CurrencyID
 				 , 'BA' AS ProductCode
@@ -403,7 +399,7 @@ BEGIN
 				   , b.bettype
 		
 			--Get data from rpt_BettingParlay for BA
-			INSERT INTO #tmpWinloss
+			INSERT INTO #tmpWinloss (winlostdate, Currency, ProductCode, BetType, TurnOver, Winlost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, Betcount)
 			SELECT b.rptDate
 				 , b.CurrencyID
 				 , 'BA' AS ProductCode
@@ -431,7 +427,7 @@ BEGIN
 
 		--Not BA, -- exclude PP Prize 4300, 4299, 4298, 4297
 		
-		INSERT INTO #tmpWinloss
+		INSERT INTO #tmpWinloss (winlostdate, Currency, ProductCode, BetType, TurnOver, Winlost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, Betcount)
 		SELECT b.rptDate
 			 , b.CurrencyID
 			 , bt.ProductCode
@@ -460,7 +456,7 @@ BEGIN
 			   , bt.ProductCode
 
 		-- Get parlay tickets
-		INSERT INTO #tmpWinloss
+		INSERT INTO #tmpWinloss (winlostdate, Currency, ProductCode, BetType, TurnOver, Winlost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, Betcount)
 		SELECT b.rptDate
 			 , b.CurrencyID
 			 , bt.ProductCode
@@ -543,11 +539,10 @@ BEGIN
 		ELSE b.bettype
 	END
 
-	DROP TABLE #tmpWinloss
-	DROP TABLE #TempExchange
-	DROP TABLE #LicenseeList
-	DROP TABLE #ProductCodes
-	DROP TABLE #tmpBettype
+	DROP TABLE IF EXISTS #tmpWinloss
+	DROP TABLE IF EXISTS #TempExchange
+	DROP TABLE IF EXISTS #LicenseeList
+	DROP TABLE IF EXISTS #tmpBettype
 
 END
 GO

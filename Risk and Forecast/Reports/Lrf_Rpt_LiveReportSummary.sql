@@ -205,12 +205,6 @@ BEGIN
 	IF @ProductCodes IS NULL
 		SET @ProductCodes = ''
 
-	CREATE TABLE #ProductCodes (ProductCode VARCHAR(10),ProductID INT)
-
-	INSERT INTO #ProductCodes (ProductCode)
-	SELECT ISNULL(value,'')
-	FROM STRING_SPLIT(@ProductCodes,',') 
-
 	DECLARE @SBBACheck TINYINT;
 	SELECT @SBBACheck = (POWER(2*1, 1)
 				+ POWER(2*CASE WHEN ISNULL(@ProductCodes, 'ALL') = 'ALL'  OR ',' + @ProductCodes + ',' LIKE '%,SB,%' THEN 1 ELSE 0 END, 2) 
@@ -233,7 +227,7 @@ BEGIN
 			SET @TempFromDate = @FDate
 
 		--Get ticket BA
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'BA'))
+		IF ',' + @ProductCodes + ',' LIKE '%,BA,%'
 		BEGIN
 			;WITH CTE AS
 			(
@@ -243,7 +237,7 @@ BEGIN
 				UNION
 				SELECT NULL
 			)
-			INSERT INTO #tmpWinloss
+			INSERT INTO #tmpWinloss (WinLostDate, Currency, ProductCode, Turnover, WinLost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, BetCount)
 			SELECT
 				b.winlostdate,
 				t.currency,
@@ -274,9 +268,9 @@ BEGIN
 		END
 
 		--Get ticket parlay for BA
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'BA'))
+		IF ',' + @ProductCodes + ',' LIKE '%,BA,%'
 		BEGIN	
-			INSERT INTO #tmpWinloss
+			INSERT INTO #tmpWinloss (WinLostDate, Currency, ProductCode, Turnover, WinLost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, BetCount)
 			SELECT
 				b.winlostdate,
 				t.currency,
@@ -303,7 +297,7 @@ BEGIN
 		END
 
 		--Get ticket non BA
-		INSERT INTO #tmpWinloss
+		INSERT INTO #tmpWinloss (WinLostDate, Currency, ProductCode, Turnover, WinLost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, BetCount)
 		SELECT
 			b.winlostdate,
 			t.currency,
@@ -319,20 +313,28 @@ BEGIN
 			dbo.bettrans AS b WITH (NOLOCK)
 			INNER JOIN #TempAg AS t ON b.recommend = t.custid
 			INNER JOIN #tmpBettype bt ON b.bettype = bt.Bettype
+			LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON b.recommend = BA.recommend AND b.TransId = BA.TransId
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @TDate
-				
 			AND (b.bettype NOT IN (9,29,2799,10449))
 			AND b.tpositiontaking <> 0
 			AND b.statusID IN (111, 112, 113)
 			AND (b.liveindicator = @Liveindicator OR @Liveindicator = 2)
+			AND BA.TransId IS NULL
+			AND 1 = CASE
+				WHEN b.bettype BETWEEN 1611 AND 1697 AND
+					b.matchid = 150 THEN 0
+				WHEN b.bettype BETWEEN 3801 AND 3899 AND
+					b.matchid = 173 THEN 0
+				ELSE 1
+			END
 		GROUP BY
 			b.winlostdate,
 			t.currency,
 			bt.ProductCode
 			
 		--Get ticket parlay
-		INSERT INTO #tmpWinloss
+		INSERT INTO #tmpWinloss (WinLostDate, Currency, ProductCode, Turnover, WinLost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, BetCount)
 		SELECT
 			b.winlostdate,
 			t.currency,
@@ -368,9 +370,9 @@ BEGIN
 			SET @TempToDate = @TDate
 
 		-- BA
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'BA'))
+		IF ',' + @ProductCodes + ',' LIKE '%,BA,%'
 		BEGIN
-			INSERT INTO #tmpWinloss
+			INSERT INTO #tmpWinloss (WinLostDate, Currency, ProductCode, Turnover, WinLost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, BetCount)
 			SELECT
 				b.rptdate,
 				b.currencyID,
@@ -388,12 +390,7 @@ BEGIN
 			WHERE
 				b.rptDate BETWEEN @FDate AND @TempToDate
 				AND b.status NOT IN (-1,103)
-				AND
-				(
-					(@Liveindicator = 0 AND b.IsLive = 0)
-					OR (@Liveindicator = 1 AND b.IsLive = 1)
-					OR (@Liveindicator = 2)
-				)
+				AND (b.IsLive = @Liveindicator OR @Liveindicator = 2)
 				AND b.bettype NOT IN (9,29)
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
@@ -403,7 +400,7 @@ BEGIN
 				b.currencyID
 			
 			-- parlay for BA
-			INSERT INTO #tmpWinloss
+			INSERT INTO #tmpWinloss (WinLostDate, Currency, ProductCode, Turnover, WinLost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, BetCount)
 			SELECT
 				b.rptdate,
 				b.currencyID,
@@ -425,12 +422,7 @@ BEGIN
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
 				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
-				AND
-				(
-					(@Liveindicator = 0 AND b.IsLive = 0)
-					OR (@Liveindicator = 1 AND b.IsLive = 1)
-					OR (@Liveindicator = 2)
-				)
+ 				AND (b.IsLive = @Liveindicator OR @Liveindicator = 2)
 				AND b.isBA = 1
 			GROUP BY 
 				b.rptdate,
@@ -438,7 +430,7 @@ BEGIN
 		END
 		
 		--Get Ticket non BA
-		INSERT INTO #tmpWinloss
+		INSERT INTO #tmpWinloss (WinLostDate, Currency, ProductCode, Turnover, WinLost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, BetCount)
 		SELECT 
 			b.rptDate,
 			b.currencyID,
@@ -460,13 +452,16 @@ BEGIN
 			AND (b.IsLive = @Liveindicator OR @Liveindicator = 2) 
 			AND b.CustomerCategory IN (-1, 1001, 1003)
 			AND b.bettype NOT IN (9,29,2799,10449) 
+			AND 1 = CASE WHEN b.bettype BETWEEN 1611 AND 1697 AND b.TicketType = 2 THEN 0
+						WHEN b.bettype BETWEEN 3801 AND 3899 AND b.TicketType = 2 THEN 0
+					ELSE 1 END	
 		GROUP BY
 			b.rptDate,
 			b.currencyID,
 			bt.ProductCode
 
 		-- Get ticket parlay
-		INSERT INTO #tmpWinloss
+		INSERT INTO #tmpWinloss (WinLostDate, Currency, ProductCode, Turnover, WinLost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, BetCount)
 		SELECT 
 			b.rptDate,
 			b.currencyID,
@@ -495,9 +490,6 @@ BEGIN
 			bt.ProductCode
 	END
 
-	----Filter again by ProductCodes
-	DELETE #tmpWinloss 
-	WHERE ProductCode NOT IN (SELECT ProductCode FROM #ProductCodes)
 	---------------------------------
 
 	CREATE NONCLUSTERED INDEX IX_tmpWinloss ON #tmpWinloss (Currency)
@@ -529,11 +521,10 @@ BEGIN
 	GROUP BY ProductCode
 	ORDER BY ProductCode
 
-	DROP TABLE #TempAg
-	DROP TABLE #tmpWinloss
-	DROP TABLE #TempExchange
-	DROP TABLE #ProductCodes
-	DROP TABLE #LicenseeList
-	DROP TABLE #tmpBettype
+	DROP TABLE IF EXISTS #TempAg
+	DROP TABLE IF EXISTS #tmpWinloss
+	DROP TABLE IF EXISTS #TempExchange
+	DROP TABLE IF EXISTS #LicenseeList
+	DROP TABLE IF EXISTS #tmpBettype
 END
 GO
