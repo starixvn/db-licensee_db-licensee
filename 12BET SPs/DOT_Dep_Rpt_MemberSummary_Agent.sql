@@ -1,4 +1,4 @@
-/*<info serverAlias="DBACC-bodb02" executers="Dot_Admin,Dot_Member" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBACC-bodb02" executers="ow_12bet" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[DOT_Dep_Rpt_MemberSummary_Agent]
 	@fromDate smalldatetime,
 	@toDate smalldatetime,
@@ -48,7 +48,8 @@ Revisions:
 --20230607@KenYang(DB06):Add PMSports, PMLive Report Data
 --20230727@Ruby(DB06):Add BT1 Report Data
 --20231225@KenYang(DB06):Add JILISlot, PGSoft Report Data
---20240104@Benson: Add Saba Reward Risk free Rebate (bettype: 17007) in the promotion 
+--20240104@Benson: Add Saba Reward Risk free Rebate (bettype: 17007) in the promotion
+-- 20240410@Eddie: Change metadata 'Dot_Admin,Dot_Member' to 'ow_12bet' - [Redmine: #202118]
 */
 SET @agentid = [dbo].[f_StrRtrimLastSeparator] (@agentid,',')
 
